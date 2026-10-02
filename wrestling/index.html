@@ -2218,6 +2218,7 @@
   </div>
   <div class="frow">
     <button class="ghost" id="fSpeed" onclick="cycleSpeed()">Speed 1x</button>
+    <button class="ghost" id="fTiming" onclick="toggleTiming()">Timing on</button>
     <button class="ghost" onclick="skipFight()">Skip to Result</button>
   </div>
 </div>
@@ -7203,7 +7204,8 @@ const RULES=[
   </ul>
   <p class="log">The bars up top are <b>damage taken</b>, not health. Nobody loses by running out. <b>Momentum</b> in the middle shows who's in control.</p>
   <p class="log">A match goes through phases: the feeling out, the shine, the heat, the comeback, the finish. Big moves only land late. You don't open with your finisher.</p>
-  <p class="log">Every so often the match stops and asks you to <b>call a spot</b>. Every option shows its real odds. This is the part you control, and it's where match ratings get made.</p>`},
+  <p class="log">Every so often the match stops and asks you to <b>call a spot</b>. Every option shows its real odds. This is the part you control, and it's where match ratings get made.</p>
+  <p class="log">Kick-outs, escapes and climbs are a mash. Rather not mash? Set <b>Timing off</b> under the match. Each one becomes a single press, with the odds shown.</p>`},
  {n:'Match Rating', h:`
   <p class="log">Every match gets a score from <b>0 to 100</b>, shown as <b>stars</b> out of five. Your whole career runs on this number.</p>
   <div class="rulecall"><b>Winning isn't the point.</b> A <b>90-rated loss</b> gets you more rep, more love from the office and more popularity than a <b>50-rated win</b>. Ducking tough opponents is the slowest way to the top.</div>
@@ -7315,7 +7317,7 @@ function applyPromoTheme(){
   }catch(_){}
 }
 function go(s){
-  applyPromoTheme();
+  applyPromoTheme(); syncTimingBtn();
   // the walkthrough is anchored to the hub; leaving it must not strand the overlay
   if(TOUR_I>=0 && TOURN==='hub' && s!=='career') endTour();
   if(G) G.screen=s;
@@ -9098,6 +9100,14 @@ function pushInboxItem(it){ G.car.inbox=G.car.inbox||[]; if(it&&it.y==null){ it.
    ============================================================ */
 let MS=null, FIGHT_SPEED=1, FIGHT_GEN=0;
 const sleep=ms=>new Promise(r=>setTimeout(r, ms/FIGHT_SPEED));
+/* NOT EVERYBODY CAN MASH. A kick-out, an escape or a climb can be played as a
+   timed mash or as one untimed press resolved off your stats with the odds
+   shown. The odds are near what a steady player gets mashing, so it is an
+   access choice and not an easy mode. It is remembered on the save. */
+function timingOff(){ return !!(G&&G.prefs&&G.prefs.untimed); }
+function syncTimingBtn(){ const b=$('fTiming'); if(b) b.textContent=timingOff()?'Timing off':'Timing on'; }
+function toggleTiming(){ G.prefs=G.prefs||{}; G.prefs.untimed=!G.prefs.untimed; syncTimingBtn(); try{ save(); }catch(_){} }
+function untimedOdds(need){ return clamp(0.5+(ovr(G.w)-60)/200-((need||8)-8)*0.03, 0.3, 0.85); }
 function cycleSpeed(){ FIGHT_SPEED = FIGHT_SPEED===1?2:FIGHT_SPEED===2?4:1; $('fSpeed').textContent='Speed '+FIGHT_SPEED+'x'; }
 
 // deterministic pixel look for an opponent, from their id/name
@@ -9148,6 +9158,15 @@ function tapWindow(ms, prompt, opts){
   opts=opts||{};
   // a headless harness cannot press the button: RTR_AUTO.tap answers for it
   if(window.RTR_AUTO && RTR_AUTO.tap!=null){ return sleep(Math.min(ms,120)).then(()=>!!RTR_AUTO.tap); }
+  if(timingOff()) return new Promise(res=>{
+    const arena=$('arena'); if(!arena){ res(false); return; }
+    const odds=untimedOdds(opts.taps||8);
+    const wrap=document.createElement('div'); wrap.className='tapwin';
+    wrap.innerHTML=`<div class="tw-p">${prompt||'NOW'}</div><div class="tw-hint">no clock · ${Math.round(odds*100)}% off your stats</div>
+      <button class="tw-b" type="button"><span class="tw-lab">GO</span></button>`;
+    arena.appendChild(wrap);
+    wrap.querySelector('button').addEventListener('click',()=>{ try{ arena.removeChild(wrap); }catch(_e){} res(rnd()<odds); });
+  });
   return new Promise(res=>{
     const arena=$('arena'); if(!arena){ res(false); return; }
     const need = Math.max(3, opts.taps||8);
@@ -17527,11 +17546,24 @@ async function pmRhythmBeat(cut, previewLine, idx, total){
   const center = 0.62 + (rnd()-0.5)*0.10;
   const duration = 1500 + idx*100;
   const label = ['HOOK','PUNCH LINE','CLOSE'][idx] || `BEAT ${idx+1}`;
+  if(timingOff()){
+    // the untimed beat: the line lands off charisma, with the chance printed
+    const odds=clamp(0.3+(G.w.attrs.ch||40)/140*pres.bandMult,0.3,0.9);
+    $('pmChoices').innerHTML=`<div class="pmrhy"><div class="pmr-k">Beat ${idx+1} of ${total} · ${label} <span class="pmr-stage">${pres.label}</span></div>
+      <div class="pmr-preview">"${previewLine}"</div><div class="pmr-hint">No clock. ${Math.round(odds*100)}% to land it, off your charisma.</div>
+      <button class="pmr-tap" id="pmrTap">Deliver it</button><div class="pmr-result" id="pmrResult">&nbsp;</div></div>`;
+    await new Promise(r=>{ $('pmrTap').onclick=r; });
+    $('pmrTap').disabled=true;
+    const roll=rnd(), hit=roll<odds*0.35?1:roll<odds?0.75:0.3;
+    $('pmrResult').innerHTML=hit>=0.9?'<b style="color:var(--gold)">PERFECT</b>':hit>=0.6?'<b style="color:var(--green)">landed</b>':'<span style="color:var(--text-dim)">flat</span>';
+    if(hit>=0.9) promoBigFx();
+    await sleep(350); return hit;
+  }
   $('pmChoices').innerHTML = `
     <div class="pmrhy">
       <div class="pmr-k">Beat ${idx+1} of ${total} · ${label} <span class="pmr-stage">${pres.label}</span></div>
       <div class="pmr-preview">"${previewLine}"</div>
-      <div class="pmr-hint">${pres.bandMult<1?'The window is tight. This one matters. ':''}Tap when the meter hits the gold band.</div>
+      <div class="pmr-hint">${pres.bandMult<1?'The window is tight. This one matters. ':''}Tap when the meter hits the gold band. <button class="ghost" style="font-size:11px;padding:2px 8px;" onclick="G.prefs=G.prefs||{};G.prefs.untimed=true;try{save()}catch(_){}">Turn timing off</button></div>
       <div class="pmr-bar" id="pmrBar">
         <div class="pmr-band" style="left:${Math.round((center-band/2)*100)}%;width:${Math.round(band*100)}%;"></div>
         <div class="pmr-cursor" id="pmrCursor"></div>
