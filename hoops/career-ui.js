@@ -366,6 +366,11 @@ var CSS = [
 '.cr-name .cr-num{flex:0 0 64px;text-align:center;font-family:var(--k-f-pixel);font-size:14px;}',
 '.cr-name .k-btn{margin:2px;min-height:46px;}',
 '.cr-chips{display:flex;gap:4px;flex-wrap:wrap;}',
+'.cr-size{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}',
+'.cr-step{display:grid;grid-template-columns:auto 1fr auto;grid-template-rows:auto auto;align-items:center;gap:4px 6px;}',
+'.cr-step .k-label{grid-column:1/-1;}',
+'.cr-step .k-btn{min-width:40px;min-height:44px;padding:0;font-size:20px;}',
+'.cr-step output{text-align:center;white-space:nowrap;font:700 16px var(--k-f-text);font-variant-numeric:tabular-nums;color:var(--k-ink);}',
 '.cr-chips .k-chip{flex:1 1 0;min-width:52px;}',
 '.cr-opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;}',
 '@media (max-width:379px){.cr-opts{grid-template-columns:1fr;}}',
@@ -470,8 +475,30 @@ var form = null;
 function freshForm(){
   var seed = String(Math.floor(Math.random() * 1e9));
   var B = window.RTF_BALLER;
-  return { seed: seed, name: C.randomName(seed), num: Math.floor(Math.random() * 100), pos: 'SF', arch: 'twoway', bg: 'oad', start: proOpen() ? 'hs' : 'gen',
-    origin: '', legend: true, look: B ? B.lookFor(seed) : {}, diff: 'normal', challenge: '' };
+  return { seed: seed, name: C.randomName(seed), num: Math.floor(Math.random() * 100), pos: 'SF', arch: 'sf_wing', bg: 'oad', start: proOpen() ? 'hs' : 'gen',
+    origin: '', legend: true, look: B ? B.lookFor(seed) : {}, diff: 'normal', challenge: '', ht: 79, wt: C.wtFor(79) };
+}
+/* A new position keeps the kind of player and the size where it still fits:
+   the archetype on the same base, and the height and weight pulled into the
+   new position's range. */
+function setPos(p){
+  var was = C.ARCHES[form.arch] || {}, keys = C.archesFor(p);
+  form.pos = p;
+  if (keys.indexOf(form.arch) < 0) form.arch = keys.filter(function(k){ return C.ARCHES[k].base === (was.base || form.arch); })[0] || keys[0];
+  var z = C.POS_SIZE[p];
+  if (!(form.ht >= z.ht[0] && form.ht <= z.ht[1])) form.ht = z.mid;
+  fitWt();
+}
+function fitWt(){ var r = C.wtRange(form.ht); if (!(form.wt >= r[0] && form.wt <= r[1])) form.wt = C.wtFor(form.ht); }
+/* What the size does, in one line: read off the same tilt the engine adds. */
+function sizeLine(){
+  var t = C.sizeTilt(form.pos, form.ht, form.wt), name = { reb: 'rebounding', def: 'defense', fin: 'finishing', ath: 'athleticism', pla: 'playmaking', sho: 'shooting' };
+  var up = [], down = [];
+  Object.keys(t).sort(function(a, b){ return Math.abs(t[b]) - Math.abs(t[a]); }).forEach(function(k){ var v = Math.round(t[k]); if (v > 0) up.push('+' + v + ' ' + name[k]); else if (v < 0) down.push(v + ' ' + name[k]); });
+  if (!up.length && !down.length) return 'Right in the middle for a ' + C.POS_NAME[form.pos].toLowerCase() + '. No trade-offs.';
+  var z = C.POS_SIZE[form.pos], dh = form.ht - z.mid, dw = form.wt - C.wtFor(form.ht);
+  var big = dh > 0 || dw > 0 ? ' Big bodies break down sooner.' : dw < 0 ? ' A light frame holds up a little better.' : '';
+  return (up.length ? up.slice(0, 3).join(', ') + '. ' : '') + (down.length ? down.slice(0, 3).join(', ') + '.' : '') + big;
 }
 /* RUN THE FLOOR PRO IS WHAT PLAYS THE ROAD (PLAN.md Phase E). A guest and a
    free account start on draft night from a road generated for them, a new one
@@ -481,7 +508,7 @@ function freshForm(){
 function proOpen(){ var M = window.RTF_MODES_UI; return !!(M && M.proOpen && M.proOpen()); }
 function askPro(why){ var M = window.RTF_MODES_UI; if (M && M.openPro) M.openPro(why); }
 function lifeOpts(){
-  return { seed: form.seed, name: form.name, num: form.num, pos: form.pos, arch: form.arch, bg: form.bg, start: form.start, look: form.look, league: league(),
+  return { seed: form.seed, name: form.name, num: form.num, pos: form.pos, arch: form.arch, bg: form.bg, start: form.start, look: form.look, league: league(), ht: form.ht, wt: form.wt,
     origin: form.origin || undefined, legend: form.legend !== false, parent: form.parent || undefined, parentLeague: form.parentLeague || undefined,
     diff: form.diff || 'normal', challenge: form.challenge || undefined };
 }
@@ -535,7 +562,7 @@ function preview(){
   var o = lifeOpts();
   /* Only what changes the career is in the key: the name, the number and the
      look are laid over the same career, so typing does not replay a road. */
-  var k = [o.seed, o.pos, o.arch, o.start, o.origin, o.legend, o.parent ? o.parent.id : '', o.diff, o.challenge].join('|');
+  var k = [o.seed, o.pos, o.arch, o.start, o.origin, o.legend, o.parent ? o.parent.id : '', o.diff, o.challenge, o.ht, o.wt].join('|');
   if (PV.k !== k) { PV.k = k; PV.L = form.start === 'hs' ? C.newLife(o) : C.generateRoad(o); }
   var L = PV.L;
   L.name = String(form.name || '') || L.name; L.num = form.num; L.look = C.cleanLook(form.look);
@@ -589,11 +616,27 @@ function setHtml(){
     + '<div class="cr-opts" id="cr-ch">' + list + '</div></details>';
 }
 var chOpen = false;
+/* Height and weight: two steppers inside the position's range, and a line
+   saying what the size buys and costs. */
+function sizeHtml(){
+  var z = C.POS_SIZE[form.pos], r = C.wtRange(form.ht);
+  var step = function(id, label, val, lo, hi, dn, up){
+    return '<div class="cr-step" role="group" aria-label="' + label + '"><span class="k-label">' + label + '</span>'
+      + '<button type="button" class="k-btn k-sec" data-size="' + dn + '"' + (lo ? ' disabled' : '') + ' aria-label="' + label + ' down">-</button>'
+      + '<output id="' + id + '" aria-live="polite">' + val + '</output>'
+      + '<button type="button" class="k-btn k-sec" data-size="' + up + '"' + (hi ? ' disabled' : '') + ' aria-label="' + label + ' up">+</button></div>';
+  };
+  return '<span class="lab k-label">Height and weight</span><div class="cr-size">'
+    + step('cr-ht', 'Height', C.heightText(form.ht), form.ht <= z.ht[0], form.ht >= z.ht[1], 'ht:-1', 'ht:1')
+    + step('cr-wt', 'Weight', form.wt + ' lb', form.wt <= r[0], form.wt >= r[1], 'wt:-5', 'wt:5')
+    + '</div><p class="cr-town" id="cr-sizeline">' + esc(sizeLine()) + '</p>';
+}
 function buildView(){
   if (!form) form = freshForm();
+  if (C.archesFor(form.pos).indexOf(form.arch) < 0 || !(form.ht > 0)) setPos(form.pos);
   var L = preview(), k = C.colorsOf(L);
   var pos = C.POS.map(function(p){ var on = form.pos === p; return '<button class="k-chip' + (on ? ' on' : '') + '" data-pos="' + p + '" aria-pressed="' + on + '">' + p + '</button>'; }).join('');
-  var arch = C.ARCH_KEYS.map(function(key){ var a = C.ARCHES[key], on = form.arch === key;
+  var arch = C.archesFor(form.pos).map(function(key){ var a = C.ARCHES[key], on = form.arch === key;
     return '<button class="cr-opt' + (on ? ' on' : '') + '" data-arch="' + key + '" aria-pressed="' + on + '"><b>' + esc(a.name) + '</b><small>' + esc(a.blurb) + '</small></button>'; }).join('');
   var road = form.start === 'hs', pro = proOpen();
   var starts = '<button class="cr-opt' + (road ? ' on' : '') + (pro ? '' : ' cr-locked') + '" data-start="hs" aria-pressed="' + road + '"><b>High school'
@@ -630,8 +673,9 @@ function buildView(){
     + '<input id="cr-num" class="cr-num" inputmode="numeric" maxlength="2" value="' + form.num + '" aria-label="Jersey number">'
     + '<button class="k-btn k-sec" id="cr-dice" type="button" aria-label="New random name">New</button></div>'
     + '<span class="lab k-label">Position</span><div class="cr-chips" id="cr-pos" role="group" aria-label="Position">' + pos + '</div>'
+    + sizeHtml()
     + '<span class="lab k-label">Your look</span>' + lookRows(form.look, k.primary, k.secondary, form.num)
-    + '<span class="lab k-label">Your game</span><div class="cr-opts" id="cr-arch">' + arch + '</div>'
+    + '<span class="lab k-label">Your game as a ' + esc(C.POS_NAME[form.pos].toLowerCase()) + '</span><div class="cr-opts" id="cr-arch">' + arch + '</div>'
     + ori
     + '<span class="lab k-label">Where it starts</span><div class="cr-opts" id="cr-start">' + starts + '</div>'
     + (road ? '<p class="cr-town">' + esc(rv.what) + ' at ' + esc(rv.where) + '. ' + esc(rv.sub) + '.</p>'
@@ -651,7 +695,13 @@ function wireBuild(){
   if (nm) nm.oninput = function(){ form.name = nm.value; };
   if (nu) nu.oninput = function(){ var v = nu.value.replace(/\D/g, '').slice(0, 2); nu.value = v; form.num = v === '' ? 0 : +v; };
   $('cr-dice').onclick = function(){ var s = String(Math.floor(Math.random() * 1e9)); form.seed = s; form.name = C.randomName(s); render(); };
-  root.querySelectorAll('[data-pos]').forEach(function(b){ b.onclick = function(){ form.pos = b.getAttribute('data-pos'); render(); }; });
+  root.querySelectorAll('[data-pos]').forEach(function(b){ b.onclick = function(){ setPos(b.getAttribute('data-pos')); render(); }; });
+  root.querySelectorAll('[data-size]').forEach(function(b){ b.onclick = function(){
+    var p = b.getAttribute('data-size').split(':'), z = C.POS_SIZE[form.pos];
+    if (p[0] === 'ht') { form.ht = Math.max(z.ht[0], Math.min(z.ht[1], form.ht + +p[1])); fitWt(); }
+    else { var r = C.wtRange(form.ht); form.wt = Math.max(r[0], Math.min(r[1], form.wt + +p[1])); }
+    render();
+  }; });
   root.querySelectorAll('[data-arch]').forEach(function(b){ b.onclick = function(){ form.arch = b.getAttribute('data-arch'); render(); }; });
   root.querySelectorAll('[data-origin]').forEach(function(b){ b.onclick = function(){ form.origin = b.getAttribute('data-origin'); render(); }; });
   root.querySelectorAll('[data-diff]').forEach(function(b){ b.onclick = function(){ form.diff = b.getAttribute('data-diff'); render(); }; });
@@ -720,7 +770,7 @@ function idCard(L){
   if (cs) lines.push('Challenge: ' + cs.name + ' · ' + (cs.met ? 'Done' : cs.out ? 'Out of reach' : cs.prog));
   if (L.opt && L.opt.diff) lines.push(C.DIFFS[L.opt.diff].name + ' difficulty');
   var per = C.personaOf ? C.personaOf(L) : '';
-  var strip = tag(L.pos + ' · ' + C.ARCHES[L.arch].name, 'k-team') + tag('#' + L.num)
+  var strip = tag(L.pos + ' · ' + C.ARCHES[L.arch].name, 'k-team') + tag('#' + L.num + (L.ht ? ' · ' + C.heightText(L.ht) + ' ' + L.wt : ''))
     + (per && per !== 'Still writing it' ? '<span class="k-tag k-gold cr-persona" title="How the league sees you">' + esc(per) + '</span>' : '');
   return '<div class="k-panel k-team k-card-player cr-id">'
     + '<div class="k-stage"><div class="k-set">' + setArt(stageKind(L), k.primary, k.secondary, L.seed) + '</div>'
@@ -1699,7 +1749,7 @@ function startSon(c){
   var look = B ? B.lookFor(seed) : {};
   if (a.look) { look.skin = a.look.skin; look.hc = a.look.hc; }
   var last = String(a.name).trim().split(/\s+/).slice(-1)[0];
-  form = { seed: seed, name: C.randomName(seed).split(' ')[0] + ' ' + last, num: Math.floor(Math.random() * 100), pos: a.pos || 'SF', arch: 'twoway', bg: 'oad',
+  form = { seed: seed, name: C.randomName(seed).split(' ')[0] + ' ' + last, num: Math.floor(Math.random() * 100), pos: a.pos || 'SF', arch: C.archesFor(a.pos || 'SF')[0], bg: 'oad', ht: C.POS_SIZE[a.pos || 'SF'].mid, wt: C.wtFor(C.POS_SIZE[a.pos || 'SF'].mid),
     start: 'hs', origin: '', legend: true, look: look,
     parent: { id: a.id, name: a.name, num: a.num, pos: a.pos, pts: a.pts, seasons: a.seasons, score: a.score, verdict: a.verdict,
       rings: a.rings, star: a.star, hof: a.hof, clubs: a.teams || [], jersey: a.jersey, gen: a.gen || 1, end: a.to, age: a.age },
