@@ -65,7 +65,7 @@ function playCareer({ diff, policy, cap }) {
   G.prefs.difficulty = diff;
   const c = G.car, faults = [], scenes = {};
   const F = m => { if (faults.length < 8) faults.push(`Y${c.year}W${c.week} ${m}`); };
-  const start = c.year; let guard = 0, n = 0, maxTier = 0, injuredOnce = false, world = false;
+  const start = c.year; let guard = 0, n = 0, fa = 0, faBest = -1, maxTier = 0, injuredOnce = false, world = false;
   const pickOpt = opts => policy === 'first' ? opts[0] : policy === 'random' ? opts[Math.floor(Math.random() * opts.length)] : opts[n % opts.length];
   while (!c.retired && c.year < start + cap && guard++ < 60 * 40) {
     if (!(c.cond >= 0 && c.cond <= 100)) F('condition out of range');
@@ -75,14 +75,24 @@ function playCareer({ diff, policy, cap }) {
     if (c.title && !c.reigns.some(r => r.title === c.title && !r.lostYear)) F('title with no open reign');
     const pr = (PROMOS.find(p => p.id === (c.deal && c.deal.promo)) || {});
     if (c.title && pr.tier === 'global') world = true;   // a top tier promotion's own belt
-    const ti = TIERS.findIndex(t => t.id === (tierOfRep(c.rep) || 'indie')); if (ti > maxTier) maxTier = ti;
+    // where you WORK, not what your rep would allow: the band is about the job
+    const ti = TIERS.findIndex(t => t.id === (pr.tier || 'indie')); if (ti > maxTier) maxTier = ti;
     while (G.w.tp > 0) {
       const b = G.w.tp;
-      const a = policy === 'random' ? ATTRS[Math.floor(Math.random() * ATTRS.length)][0] : ((catById(c.plan.a) || {}).attr || 'po');
+      // rotate trains like a sensible player: the weakest of the stats OVR leans on
+      const bal = () => ['te', 'ps', 'po', 'ch', 'ae', 'to', 'st'].reduce((m, k) => (G.w.attrs[k] < G.w.attrs[m] ? k : m), 'te');
+      const a = policy === 'random' ? ATTRS[Math.floor(Math.random() * ATTRS.length)][0] : policy === 'rotate' ? bal() : ((catById(c.plan.a) || {}).attr || 'po');
       try { spendTP(a); } catch (_) { G.w.tp--; }
       if (G.w.tp >= b) G.w.tp--;
     }
-    if (c.freeAgent) { try { signDeal(0); } catch (_) { c.freeAgent = false; } continue; }
+    if (c.freeAgent) { try {
+      // a sensible player signs up the ladder: the biggest promotion, then the money
+      const TI = id => TIERS.findIndex(t => t.id === ((PROMOS.find(p => p.id === id) || {}).tier || 'indie'));
+      if (!c.faOffers || !c.faOffers.length) c.faOffers = freeAgentOffers();
+      if (!c.faOffers.length) { c.freeAgent = false; continue; }
+      const offs = c.faOffers; let bi = 0; fa++; offs.forEach(o => { faBest = Math.max(faBest, TI(o.promo)); });
+      offs.forEach((o, i) => { const a = offs[bi]; if (TI(o.promo) > TI(a.promo) || (TI(o.promo) === TI(a.promo) && (o.weekly || 0) > (a.weekly || 0))) bi = i; });
+      signDeal(bi); } catch (_) { c.freeAgent = false; } continue; }
     if (c.injWeeks > 0) { if (c.injWeeks >= 8) injuredOnce = true; try { doRest(); } catch (e) { F('doRest threw: ' + e.message); break; } continue; }
     if (c.mentorWeeks > 0) { try { doMentorWeek(); } catch (e) { F('mentor threw: ' + e.message); break; } continue; }
     try { bookWeek(); } catch (e) { F('bookWeek threw: ' + e.message); break; }
@@ -117,8 +127,10 @@ function playCareer({ diff, policy, cap }) {
   const legacy = legacyOf(c, G.w);
   return {
     diff, policy, faults, scenes, years: c.year - start, age: c.age, matches: n, maxTier,
-    anyTitle: (c.reigns || []).length > 0, world, legacy, hof: legacy >= 120, headliner: legacy >= 180,
+    anyTitle: (c.reigns || []).length > 0, world, legacy, hof: legacy >= HALL_BAR, headliner: legacy >= HEADLINE_BAR,
     injuryEnd: /landing too many|doctor/i.test(c.retireReason || ''), injuredOnce,
+    raw: { rep: Math.round(c.rep), reigns: (c.reigns || []).length, wins: c.rec.w, losses: c.rec.l, pop: Math.round(c.pop),
+      fa, faBest, repTier: TIERS.findIndex(t => t.id === tierOfRep(c.rep)), main: (c.reigns || []).filter(r => !r.kind).length, byTier: (c.reigns || []).filter(r => !r.kind).reduce((o, r) => (o[r.tier || '?'] = (o[r.tier || '?'] || 0) + 1, o), {}), wpct: Math.round(100 * c.rec.w / Math.max(1, c.rec.w + c.rec.l)), legacy, ovr: ovr(G.w), best: c.bestMatch || 0, chronic: (c.chronic || []).length, why: c.retireReason || '' },
   };
 }
 
@@ -181,7 +193,7 @@ const ids = Object.keys(seen).sort((a, b) => seen[b] - seen[a]);
 console.log(`\nscenes reached: ${ids.length}. Most common: ${ids.slice(0, 6).map(k => `${k} ${seen[k]}`).join(', ')}`);
 console.log(`least common: ${ids.slice(-6).map(k => `${k} ${seen[k]}`).join(', ')}`);
 const outFile = path.join(ROOT, 'wrestling', 'sim', 'last-run.json');
-fs.writeFileSync(outFile, JSON.stringify({ careers: results.length, at: 'see git log', scenes: seen }, null, 1));
+fs.writeFileSync(outFile, JSON.stringify({ careers: results.length, at: 'see git log', scenes: seen, raw: results.map(r => ({ d: r.diff, y: r.years, tier: r.maxTier, world: r.world, ...r.raw })) }, null, 1));
 if (STRICT && bandMisses) failures++;
 console.log(failures ? `\n${failures} FAILED` : `\nall good${bandMisses ? ` (${bandMisses} balance readings outside their bands, reported only)` : ''}`);
 process.exit(failures ? 1 : 0);

@@ -117,6 +117,27 @@ Still to do: B1 entrances, B6 new match types, B8 supershow cards, the ceremony 
 
 ## Phase C · The story engine
 
+**C11 to C13, first pass (balance), measured over 300 careers.** One difficulty table
+(`DIFF`) now sets how closely opponents keep up, rep, injury, retirement, the rating each
+tier asks for and how often the office hands out title shots. A serious injury can end a
+career. A belt is not a revolving door: a fresh shot waits twelve weeks after a reign and
+gets rarer each time you have held that belt. An outgrown wrestler always gets one offer
+from the next rung. Legacy is on a fixed scale (each part bounded, a belt counted once),
+with the Hall at 236 and headliner at 264 (`HALL_BAR`, `legacyGrade`).
+
+| | rookie | pro | legend |
+|---|---|---|---|
+| median years | 16 (15-19) | 15 (13-17) | 15 (10-15) |
+| reach national TV | 69 (75-85) | 69 (60-72) | 52 (40-55) |
+| world title | 64 (45-60) | 42 (28-40) | 17 (12-22) |
+| Hall of Fame | 46 (35-50) | 27 (22-32) | 9 (10-18) |
+| headliner | 10 (8-14) | 2 (4-8) | 1 (1-4) |
+| ended by injury | 8 (6-12) | 6 (8-14) | 7 (10-18) |
+
+Still out: every career wins some title (the indie belt is too easy) and every career has a
+long injury. The simulator now signs up the ladder and its `rotate` policy trains the weakest
+key stat, because a policy that never moves up measures the policy rather than the game.
+
 C1 data driven events (prerequisites, weights, cooldowns, rarity, chains), lazy loaded by
 stage · C2 the flag memory and quote system · C3 the two layer tags · C4 multi month feuds ·
 C5 booking politics and the push meter · C6 gimmicks, turns the crowd can reject,

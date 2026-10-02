@@ -2985,7 +2985,7 @@ const BANDS = {
   respect:  [[55,'Would work with you'],[25,'Rates you'],[1,'Noticed you'],[0,'No opinion']],
   heat:     [[55,'Bitter'],[25,'Bad blood'],[1,'Friction'],[0,'None']],
   age:      [[38,'Veteran'],[33,'Late prime'],[27,'Prime'],[24,'Rising'],[0,'Rookie']],
-  legacy:   [[80,'Immortal'],[60,'Hall of Fame'],[40,'A good career'],[20,'A career'],[0,'A footnote']],
+  legacy:   [[264,'Immortal'],[236,'Hall of Fame'],[180,'A good career'],[110,'A career'],[0,'A footnote']],
   score:    [[80,'Elite'],[60,'Strong'],[40,'Average'],[0,'Weak']],
 };
 function bandOf(kind, v){
@@ -3609,7 +3609,17 @@ function freeAgentOffers(){
       pitch: p.id===cur.id ? `${p.name} want to keep you.` : `${p.name} have made an offer.` });
   });
   o.sort((a,b)=>b.want-a.want);
-  return o.slice(0,5);
+  /* A RISING STAR GETS THE CALL. The top five by want were nearly always the
+     wrestler's own tier, because a bigger company starts six points behind
+     per rung, so careers that had outgrown the regional scene never saw a
+     national offer and spent twenty years there. When rep has earned the next
+     rung, the keenest offer from it is always on the table. */
+  const top=o.slice(0,5), curTi=promoTierIdx(cur);
+  if(earned>curTi && !top.some(x=>promoTierIdx(promoById(x.promo))>curTi)){
+    const up=o.find(x=>promoTierIdx(promoById(x.promo))>curTi);
+    if(up) top[top.length===5?4:top.length]=up;
+  }
+  return top;
 }
 // which products favour which archetypes. This is why the same wrestler
 // is a main-eventer in one company and a mid-carder in another
@@ -5921,7 +5931,8 @@ function attrOf(w,k){ const base=(w&&w.attrs||{})[k]||0;
 function ovr(w){ const a=w.attrs; const f=(k)=>attrOf(w,k);
   return Math.round(f('po')*0.16+f('te')*0.19+f('ae')*0.11+f('ch')*0.16+f('ps')*0.19+f('to')*0.10+f('st')*0.09); }
 function tierOf(rep,o){ const lvl=(o!=null?o:(G?ovr(G.w):0));
-  let t=TIERS[0]; TIERS.forEach(x=>{ if(rep>=x.rep && lvl>=x.minOvr) t=x; }); return t; }
+  const g=(G&&G.prefs)?diffK().gate:0;
+  let t=TIERS[0]; TIERS.forEach(x=>{ if(rep>=x.rep && lvl>=x.minOvr+(x.minOvr?g:0)) t=x; }); return t; }
 function tierIdx(){ return Math.max(0,TIERS.findIndex(t=>t.id===workTier().id)); }
 function masteryTier(cat){ const m=G.w.mastery[cat]||0; let t=1; MTIERS.forEach(x=>{ if(m>=x.mastery) t=x.t; }); return t; }
 function moveUnlocked(mv){ return G.w.moves.includes(mv.id); }
@@ -8081,7 +8092,7 @@ function injuryRisk(o){
   // file alone guarantees the next injury.
   const chronic   = Math.min(4,(c.chronic||[]).length) * 0.02;
   const diff = (G.prefs&&G.prefs.difficulty)||'pro';
-  const diffInj = diff==='rookie'?0.85 : diff==='legend'?1.20 : 1;
+  const diffInj = diffK().inj;
   return clamp((stipPart + condPart + wearPart + workedHurt + chronic) * sc.inj * diffInj, 0, 0.85);
 }
 function offerRisk(o){ return injuryRisk(o); }
@@ -8089,7 +8100,7 @@ function offerRep(o){
   // a night's work is worth more against a better opponent and under a stipulation
   const q=44 + o.oppOvr*0.20 + (o.mult-1)*14;
   const diff = (G.prefs&&G.prefs.difficulty)||'pro';
-  const diffRep = diff==='rookie'?0.90 : diff==='legend'?1.20 : 1;
+  const diffRep = diffK().rep;
   return Math.round((q*0.30+6+(o.stakes==='title'?30:0))*(1+tierIdx()*0.2)*facBonus('rep')*diffRep);
 }
 // the one-line reason to pick each card
@@ -8560,11 +8571,19 @@ function doStyleRefit(styleId){
   pushInboxItem({ico:pico('swap',18),sev:'good',txt:`<b>Style refit.</b> You're working as a ${(styleOf()||{}).name||styleId} now.`});
   save(); renderCareer(); toast('New working style: '+(styleOf()||{}).name);
 }
-// Difficulty scaling: rookie/pro/legend multiplies opponent OVR.
-function diffOppMult(){
-  const d = (G && G.prefs && G.prefs.difficulty) || 'pro';
-  return d==='rookie' ? 0.92 : d==='legend' ? 1.10 : 1;
-}
+/* DIFFICULTY, IN ONE PLACE. It used to be a 0.92 or 1.10 on opponent OVR,
+   and the simulator measured that as nothing: every difficulty reached the
+   top tier, won a title and made the Hall. What a harder career needs is
+   opponents who keep up as you improve (share: how much of the gap between
+   the tier's base and your OVR the booker closes), rep that comes slower,
+   a body that breaks more, and an earlier walk away. Tuned against
+   wrestling/sim/run.mjs and NARRATIVE.md section 12. */
+const DIFF={
+  rookie:{share:0.66, opp:0.97, rep:1.00, inj:0.85, ret:0.85, gate:-3, shot:1.25},
+  pro:   {share:0.82, opp:1.00, rep:0.78, inj:1.10, ret:1.20, gate:2,  shot:0.60},
+  legend:{share:0.94, opp:1.03, rep:0.60, inj:1.35, ret:1.60, gate:9,  shot:0.35} };
+function diffK(){ const d=(G&&G.prefs&&G.prefs.difficulty)||'pro'; return DIFF[d]||DIFF.pro; }
+function diffOppMult(){ return diffK().opp; }
 function diffLabel(){
   const d = (G && G.prefs && G.prefs.difficulty) || 'pro';
   return d==='rookie' ? 'Rookie' : d==='legend' ? 'Legend' : 'Pro';
@@ -8654,7 +8673,7 @@ function makeOffers(){
     // it: promoters book you tougher as you get better, so matches stay competitive
     // without ever throwing a rookie to a main-eventer.
     const mid=55, myOvr=ovr(G.w);
-    const anchor=t.base+Math.max(0,myOvr-t.base)*0.72;
+    const anchor=t.base+Math.max(0,myOvr-t.base)*diffK().share;
     const oppOvr=Math.round(clamp((anchor+((opp.over||55)-mid)*0.32+(rnd()*7-3.5))*diffOppMult(),12,99));
     if(third) third.ovr=Math.round(clamp((anchor+(third.over-mid)*0.32+(rnd()*7-3.5))*diffOppMult(),12,99));
     let stakes='standard';
@@ -8674,11 +8693,20 @@ function makeOffers(){
     const shotAge = G.car.titleShot
       ? (G.car.year*WEEKS_PER_YEAR+G.car.week) - ((G.car.titleShot.y||G.car.year)*WEEKS_PER_YEAR+(G.car.titleShot.w||G.car.week))
       : -1;
-    if(i===2 && holds && rnd()<0.78) stakes='defense';
+    /* A BELT IS NOT A REVOLVING DOOR. The simulator found careers holding one
+       regional title fourteen times: lose it, cash the rematch, lose it, and the
+       office kept handing out fresh shots on top. A fresh shot now waits twelve
+       weeks after a reign ends and gets rarer every time you have held that
+       belt. The rematch clause is untouched; it is a promise, not a whim. */
+    const _beltTimes=(G.car.reigns||[]).filter(r=>r.title===belt).length;
+    const _lastEnd=(G.car.reigns||[]).filter(r=>r.title===belt&&r.lostYear).reduce((m,r)=>Math.max(m,r.lostYear*WEEKS_PER_YEAR+(r.lostWeek||0)),-99);
+    const _cool=(G.car.year*WEEKS_PER_YEAR+G.car.week)-_lastEnd>=12;
+    const freshShot=_cool ? diffK().shot/(1+_beltTimes*0.9) : 0;
+    if(i===2 && holds && rnd()<0.45) stakes='defense';
     // A promised title shot goes on top of the card: immediately at a PPV,
     // and on regular TV once it has waited long enough.
     else if(i===2 && !holds && G.car.titleShot && (ppv || shotAge>=4 || rnd()<0.35)){ stakes='title'; }
-    else if(i===2 && !holds && trusted && reactionOf()>=Math.min(70,18+tierIdx()*16) && rnd()<0.30) stakes='title';
+    else if(i===2 && !holds && trusted && reactionOf()>=Math.min(70,18+tierIdx()*16) && rnd()<0.30*freshShot) stakes='title';
     // Tag titles: a team defence or a shot at them. Only on tag matches, and
     // only when your promotion actually has tag titles.
     else if(st[1]==='tag' && myTeam() && tagBelt && holdsTag && rnd()<0.65) stakes='tag_defense';
@@ -8696,7 +8724,7 @@ function makeOffers(){
     // PPV night: a live feud is booked to blow off, and every offer moves up to Main Event.
     if(ppv){
       if(_s && _s.charId===opp.id && _s.stage<3) _s.stage=3;   // force to blow-off intensity
-      if(!holds && trusted && reactionOf()>=Math.min(60,10+tierIdx()*14) && stakes==='standard' && rnd()<0.45) stakes='title';
+      if(!holds && trusted && reactionOf()>=Math.min(60,10+tierIdx()*14) && stakes==='standard' && rnd()<0.45*freshShot) stakes='title';
     }
     // Your position on the card follows standing, how hot the act is, and how
     // loud the room is FOR THIS LEVEL. Crowd reaction is hard-capped by tier
@@ -13011,7 +13039,7 @@ function applyMatch(o,res){
     c._catchPeak = true;
     setTimeout(()=>promptCatchphrase(), 600);
   }
-  const repGain=Math.round((res.quality*0.30+(draw?5:res.win?9:2)+(o.stakes==='title'?30:0))*(1+tierIdx()*0.2)*facBonus('rep'));
+  const repGain=Math.round((res.quality*0.30+(draw?5:res.win?9:2)+(o.stakes==='title'?30:0))*(1+tierIdx()*0.2)*facBonus('rep')*diffK().rep);
   c.rep+=repGain;
   // fame is tier-relative: tearing it up on the indies doesn't make you a household name
   const reach=0.35+tierIdx()*0.28;
@@ -13102,7 +13130,7 @@ function applyMatch(o,res){
     // gap between you and who you beat, the match rating, and (later) the
     // defenses stacked onto it. Read by Hall of Fame and end-of-year awards.
     const reignPrestige = Math.round(30 + (o.oppOvr - ovr(w))*0.8 + Math.max(0,res.quality-60)*0.7 + (o.ppv?12:0));
-    c.reigns.push({title:belt,year:c.year,week:c.week,defenses:0,
+    c.reigns.push({title:belt,year:c.year,week:c.week,defenses:0,tier:workTier().id,
                    wonFrom:o.oppName,wonAt:o.ppv||null,prestige:Math.max(20,reignPrestige)});
     titleMsg=`You're the new <b>${belt}</b>!`; c.pop=clamp(c.pop+6,1,100); c.standing=clamp(c.standing+8);
     if(w.gimmick) w.gimmick.heat=clamp(w.gimmick.heat+12,0,100);
@@ -14501,12 +14529,17 @@ function takeInjury(cats,stipMult,severityBoost){
   }
   // Career-ending catastrophe: four or more chronic injuries on file and a big
   // one just landed. The doctor said it, and you knew before he did.
-  if((c.chronic||[]).length>=4 && wk>=12 && (def.part==='Neck'||def.part==='Back')){
+  /* Before this the only way an injury ended a career was four chronic entries
+     plus a neck or back of twelve weeks, which the simulator never saw once.
+     Any serious layoff now carries a chance that this is the one, and the
+     chance grows with what is already on file. */
+  const _endOdds = wk>=12 ? clamp((0.0015*Math.min(6,(c.chronic||[]).length) + (c.age>=33?0.002:0))*diffK().inj, 0, 0.04) : 0;
+  if(((c.chronic||[]).length>=6 && wk>=12 && (def.part==='Neck'||def.part==='Back') && rnd()<0.5*diffK().inj) || (_endOdds && rnd()<_endOdds)){
     try{ queueMoment(pico('cross',36), 'The doctor said it. You knew before he did.',
       {kick:'CAREER OVER', sub:`After a ${def.nm.toLowerCase()}, this one doesn't heal.`}); }catch(_e){}
     newsPush({ico:pico('cross',14),cat:'retire',
       text:`<b>${G.w.name} has retired.</b> One landing too many. The ${def.part.toLowerCase()} wouldn't heal.`});
-    setTimeout(()=>retire('One landing too many. The doctor said it.'), 200);
+    retire('One landing too many. The doctor said it.');
   }
   return c.hurt;
 }
@@ -14833,12 +14866,48 @@ function yearEnd(){
   // chronic injury and every mile makes the walk-away odds real.
   const retireOdds = (c.age>=40?0.05:0) + (c.age>=44?0.08:0) + (c.age>=48?0.14:0)
                     + mileage*0.030 + ((c.chronic||[]).length)*0.05;
-  if(c.age>=36 && rnd()<retireOdds){ retire('Your body finally called it. Too many miles, too many landings.'); }
+  if(c.age>=34 && rnd()<retireOdds*diffK().ret){ retire('Your body finally called it. Too many miles, too many landings.'); }
 }
 function _retireCoinBonus(){ try{ awardCoins(COIN_CAREER_DONE,'a career, start to finish',true); }catch(_){} }
 // One legacy number, read by the Hall screen, the legends archive and the
 // career simulator. It was written out three times.
-function legacyOf(c,w){ return Math.round(c.rep/60 + c.reigns.length*14 + c.rec.w*1.4 + c.pop*0.7 + ovr(w)*0.6); }
+/* LEGACY ON A FIXED SCALE. The old sum grew with every match ever worked
+   (rep/60 plus wins times 1.4), so a long career scored about 1,100 against a
+   Hall bar of 120 and every wrestler was inducted. Each part is now bounded,
+   and a belt counts once, so the score says what a career reached rather than
+   how long it ran:
+     main titles   each belt once by its tier (a world title 34), plus a
+                   little for repeat reigns and defenses, up to 80
+     side belts    up to 12
+     how high      0, 6, 16 or 30 by the highest tier you WORKED in
+     the crowd     peak popularity, up to 30
+     the work      the best match over 80, up to 20
+     the years     up to 10
+     the record    win rate, -10 to 10
+     the awards    year end honours, up to 30
+   The Hall bar stays 120 and the grade letters stay where they were. */
+/* The bars sit where the simulator put the target rates: about a quarter of
+   Pro careers in the Hall, one in sixteen a headliner (NARRATIVE.md s.12). */
+const HALL_BAR=236, HEADLINE_BAR=264;
+function legacyGrade(l){ return l>=HEADLINE_BAR?'A+':l>=250?'A':l>=HALL_BAR?'B+':l>=200?'B':l>=160?'C+':l>=110?'C':'D'; }
+function legacyOf(c,w){
+  const rg=c.reigns||[], TW={indie:4,regional:8,national:18,global:34}, TX={indie:1,regional:2,national:5,global:12};
+  const mains=rg.filter(r=>!r.kind), seen={};
+  let titles=0, extra=0;
+  mains.forEach(r=>{ if(seen[r.title]) extra+=TX[r.tier]||3; else { seen[r.title]=1; titles+=TW[r.tier]||10; } });
+  titles=Math.min(130, titles+Math.min(48,extra)+Math.min(15,mains.reduce((s,r)=>s+(r.defenses||0),0)*0.5));
+  const side=Math.min(12, rg.filter(r=>r.kind).length*3);
+  const peak=c.peakTier!=null?Math.max(c.peakTier,promoTierIdx(myPromo())):TIERS.findIndex(t=>t.id===tierOfRep(c.rep));
+  const tierPts=[0,6,16,30][Math.max(0,peak)]||0;
+  const peakPop=Math.max(c.pop||0, ...((c.yearAwards||[]).map(y=>y.pop||0)));
+  const crowd=Math.min(30, peakPop*0.3);
+  const work=Math.min(20, Math.max(0,(c.bestMatch||0)-80));
+  const years=Math.min(10, (c.year||0)*0.5);
+  const n=(c.rec.w||0)+(c.rec.l||0), wp=n?(c.rec.w||0)/n:0.5;
+  const record=n<20?0:clamp((wp-0.6)*50,-10,10);
+  const honours=Math.min(30, (c.yearAwards||[]).reduce((s,y)=>s+((y.badges||[]).length),0)*3);
+  return Math.round(titles+side+tierPts+crowd+work+years+record+honours);
+}
 function retire(reason){ G.car.retired=true; G.car.retireReason=reason||'You walked away on your own terms.';
   _retireCoinBonus();     // a finished career is the biggest single coin award in the game
   archiveToLegends();     // record this career to the cross-save Hall of Legends
@@ -14885,7 +14954,7 @@ function saveLegends(list){ try{ localStorage.setItem(LEGENDS_KEY, JSON.stringif
 function archiveToLegends(){
   const c=G.car, w=G.w;
   const legacy=legacyOf(c,w);
-  const grade= legacy>=180?'A+':legacy>=150?'A':legacy>=120?'B+':legacy>=95?'B':legacy>=70?'C+':legacy>=45?'C':'D';
+  const grade= legacyGrade(legacy);
   const entry={ name:w.name, nick:w.nick||'', years:c.year, wl:`${c.rec.w}-${c.rec.l}`,
     titles:c.reigns.length, earnings:c.earnings, pop:Math.round(c.pop||0), ovr:ovr(w),
     style:(styleOf()||{}).id||'', promo:myPromo().short, retired:c.retireReason,
@@ -14893,7 +14962,7 @@ function archiveToLegends(){
     // NG+ keepsakes: the identity a previous career can pass into the next one
     finisherName:w.finisherName||null, finisherNameB:w.finisherNameB||null,
     catch:w.catch||null, entrance:w.entrance||null,
-    inducted: legacy>=120,   // read by the NG+ picker so only Hall wrestlers show
+    inducted: legacy>=HALL_BAR,   // read by the NG+ picker so only Hall wrestlers show
     grade, legacy, at:{y:c.year,w:c.week} };
   const list=loadLegends();
   list.unshift(entry);
@@ -17979,6 +18048,7 @@ function signDeal(i){
            sched:(c.deal&&c.deal.sched)||'regular', creative:o.creative, merch:o.merch, signedY:c.year,
            downside:o.downside||o.weekly, noCompete:o.noCompete||0, signingBonus:o.signingBonus||0 };
   c.freeAgent=false; c.faOffers=null; c.offers=null;
+  c.peakTier=Math.max(c.peakTier||0, promoTierIdx(pr));   // the highest rung you actually worked
   // signing bonus lands in the bank on signing day
   if(o.signingBonus){ G.bag.coins += o.signingBonus; c.earnings += o.signingBonus;
     pushInboxItem({ico:pico('money',18),sev:'good',txt:`<b>Signing bonus.</b> ${money(o.signingBonus)} on signing day.`}); }
@@ -20756,8 +20826,8 @@ function confirmRetire(){ modal('Hang up the boots?','You can retire any time. Y
 function renderHof(){
   const c=G.car, w=G.w;
   const legacy=legacyOf(c,w);
-  const grade= legacy>=180?'A+':legacy>=150?'A':legacy>=120?'B+':legacy>=95?'B':legacy>=70?'C+':legacy>=45?'C':'D';
-  const inducted=legacy>=120;
+  const grade= legacyGrade(legacy);
+  const inducted=legacy>=HALL_BAR;
   // Grade by area, not just one number, so the induction reads like a real one
   const rings= Math.min(100, Math.round((c.rec.w||0)*1.2 + (c.reigns||[]).length*4 + ((c.awards||[]).length*3)));
   const draws= Math.min(100, Math.round((c.pop||0)*0.75 + (c.earnings||0)/900));
@@ -20862,7 +20932,7 @@ function pickHofClass(){
       const list=loadLegends();
       list.unshift({name:ch.name, nick:ch.nick||'', years:0, wl:'', titles:0, earnings:0, pop:ch.over||60,
         ovr:ch.over||60, style:ch.style||'', promo:myPromo().short, retired:'Inducted by '+G.w.name,
-        yearAwards:[], trophies:[], inducted:true, grade:'B+', legacy:120,
+        yearAwards:[], trophies:[], inducted:true, grade:'B+', legacy:HALL_BAR,
         at:{y:c.year,w:c.week}, inductedBy:G.w.name});
       saveLegends(list);
       toast(`${ch.name} inducted alongside ${G.w.name}`);
