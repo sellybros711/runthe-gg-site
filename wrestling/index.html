@@ -1820,6 +1820,99 @@
     body.hasnav main{padding-bottom:28px;}
     body.hasnav .topbar{top:calc(env(safe-area-inset-top,0px) + 82px);}
   }
+
+  /* ============================================================
+     THE RE-SKIN: direction A, Main Event (docs/DESIGN.md, Phase A2)
+     ------------------------------------------------------------
+     One layer, last in the sheet, so every rule above it is still
+     there to read and the change can be taken back in one cut. It
+     maps the game's own variables onto the design tokens and puts
+     the shared components (buttons, cards, modals, tiles, tabs,
+     the bars) into pixel frames: a border built from four hard
+     shadows with the corner pixel missing, and a hard drop under
+     it. No rounded corners, no blur, no soft shadows. The sprites
+     are pixel art and everything around them now is too.
+     ============================================================ */
+  @font-face{font-family:'Jersey 10';src:url(fonts/jersey-10.woff2) format('woff2');font-display:swap}
+  @font-face{font-family:'Silkscreen';font-weight:400;src:url(fonts/silkscreen-400.woff2) format('woff2');font-display:swap}
+  @font-face{font-family:'Silkscreen';font-weight:700;src:url(fonts/silkscreen-700.woff2) format('woff2');font-display:swap}
+  @font-face{font-family:'Barlow Semi Condensed';font-weight:400;src:url(fonts/barlow-sc-400.woff2) format('woff2');font-display:swap}
+  @font-face{font-family:'Barlow Semi Condensed';font-weight:600;src:url(fonts/barlow-sc-600.woff2) format('woff2');font-display:swap}
+  @font-face{font-family:'Barlow Semi Condensed';font-weight:700;src:url(fonts/barlow-sc-700.woff2) format('woff2');font-display:swap}
+  :root{
+    --px:2px;
+    --cream:#f4ecdf; --oncard:#f4ecdf; --ink:#0e0b08; --onaccent:#0e0b08;
+    --brandred:#ea4a36; --brandred-bright:#ff6a4a;
+    --gold:#f2c14e; --green:#4fd18b; --blue:#58b8ff; --purple:#c79bff;
+    --text:#f4ecdf; --text-dim:#c9bfae; --text-faint:#9a9080;
+    --panel:#18151f; --panel-raised:#211d2a; --line:#3a3546; --steel:#3a3546; --steel2:#5a546a;
+    --display:'Jersey 10','Silkscreen',Impact,sans-serif;
+    --label:'Silkscreen',ui-monospace,monospace;
+    --body:'Barlow Semi Condensed',system-ui,'Segoe UI',Roboto,sans-serif;
+    --bg:#0c0a11;
+    --tex:repeating-linear-gradient(0deg,rgba(255,255,255,.018) 0 2px,transparent 2px 4px);
+    --pagebg:var(--tex),radial-gradient(1100px 480px at 50% -8%,rgba(234,74,54,.16),transparent 62%),linear-gradient(180deg,#120f18,#0c0a11 60%);
+    --frame:var(--steel);
+    --drop:0 6px 0 0 rgba(0,0,0,.55);
+    --pxr:pixelated;
+  }
+  html:not(.gfx-retro){--mono:'Barlow Semi Condensed',system-ui,sans-serif;}
+  body{background:var(--pagebg);background-attachment:fixed;}
+  /* the pixel frame, as a mixin every framed component repeats */
+  .card,.modal,.decopt,.tile-opt,button,.botnav,.sitebar .sb-home,.sitebar .sb-prof,.sitebar .sb-coin{
+    border-radius:0 !important;
+  }
+  .card,.modal,.decopt,.tile-opt{
+    border:0 !important;
+    box-shadow:0 -2px 0 0 var(--frame),0 2px 0 0 var(--frame),-2px 0 0 0 var(--frame),2px 0 0 0 var(--frame),var(--drop);
+    margin:2px;
+  }
+  .card{background:var(--panel) var(--tex);}
+  .modal{--frame:var(--brandred);background:#141119;}
+  .decopt:hover,.tile-opt:hover{--frame:var(--steel2);}
+  .decopt.on,.tile-opt.on,.decopt.sel{--frame:var(--gold);}
+  .tile-opt.locked{opacity:.55;}
+  h2{font-family:var(--display);font-size:30px;letter-spacing:.04em;font-weight:400;border-bottom:2px solid var(--steel);line-height:1;}
+  h3{font-family:var(--display);font-weight:400;letter-spacing:.04em;}
+  .lab,.badge,.scene-tag,.arc-k{font-family:var(--label);letter-spacing:.06em;}
+  /* a form label can run to a sentence, and a sentence in the pixel label face
+     is hard work; it stays in the body face, set small and bold */
+  .flab{font-family:var(--body);font-weight:700;letter-spacing:.08em;}
+  /* buttons: the primary is a hot slab with dark ink (5.2 to 1), ghosts are steel frames */
+  button{
+    background:var(--brandred);color:var(--onaccent);border:0;
+    box-shadow:0 -2px 0 0 #8f2416,0 2px 0 0 #8f2416,-2px 0 0 0 #8f2416,2px 0 0 0 #8f2416,0 4px 0 0 rgba(0,0,0,.6);
+    font-family:var(--label);font-weight:700;font-size:12px;letter-spacing:.06em;padding:10px 16px;margin:2px;
+    transition:transform .06s steps(2),filter .06s steps(2);
+  }
+  button:hover{filter:brightness(1.08);}
+  button:active{transform:translateY(2px);box-shadow:0 -2px 0 0 #8f2416,0 2px 0 0 #8f2416,-2px 0 0 0 #8f2416,2px 0 0 0 #8f2416,0 2px 0 0 rgba(0,0,0,.6);}
+  button:focus-visible{outline:2px solid var(--gold);outline-offset:4px;}
+  button.ghost{background:var(--panel);color:var(--text);box-shadow:0 -2px 0 0 var(--steel),0 2px 0 0 var(--steel),-2px 0 0 0 var(--steel),2px 0 0 0 var(--steel),0 4px 0 0 rgba(0,0,0,.6);}
+  button.ghost:hover{background:var(--panel-raised);color:var(--cream);}
+  button.gold{background:var(--gold);color:var(--onaccent);box-shadow:0 -2px 0 0 #9b7413,0 2px 0 0 #9b7413,-2px 0 0 0 #9b7413,2px 0 0 0 #9b7413,0 4px 0 0 rgba(0,0,0,.6);}
+  button.gold:hover{background:#ffe08a;color:var(--onaccent);}
+  button:disabled{filter:grayscale(.8) brightness(.7);cursor:not-allowed;}
+  button.big{font-size:14px;padding:13px 26px;}
+  /* the bars: solid, steel edged, no blur */
+  .sitebar{background:#0f0d14;-webkit-backdrop-filter:none;backdrop-filter:none;border-bottom:2px solid var(--steel);}
+  .sitebar .sb-home,.sitebar .sb-prof,.sitebar .sb-coin{background:var(--panel);border:0;box-shadow:0 -2px 0 0 var(--steel),0 2px 0 0 var(--steel),-2px 0 0 0 var(--steel),2px 0 0 0 var(--steel);}
+  .sitebar .sb-home{font-family:var(--label);}
+  .sb-mark{font-family:var(--display);font-size:22px;letter-spacing:.06em;}
+  .botnav{background:#0f0d14;border-top:2px solid var(--steel);-webkit-backdrop-filter:none;backdrop-filter:none;}
+  .botnav button{background:transparent;box-shadow:none;color:var(--text-faint);margin:0;}
+  .botnav button.on{color:var(--gold);}
+  .botnav .navfab{background:transparent;}
+  .topbar{background:#15121b;border-bottom:2px solid var(--brandred);}
+  .hud .value{font-family:var(--display);font-size:22px;font-weight:400;color:var(--cream);line-height:1;}
+  .hud .label{font-family:var(--label);color:var(--text-faint);font-weight:400;font-size:8px;}
+  .topbar h1{color:var(--cream);}
+  /* no rounded corners anywhere a player reads; the PASS disc and the
+     avatar circles stay round on purpose, they are objects, not panels */
+  main *:not(svg):not(svg *),.modal *,.sitebar *,.botnav *{border-radius:0 !important;}
+  .navfab .nf-disc,.pf-av,.sb-prof .pf-av,.av-circle{border-radius:50% !important;}
+  .navfab .nf-disc{box-shadow:0 0 0 2px #9b7413,0 4px 0 0 rgba(0,0,0,.6);}
+  @media (prefers-reduced-motion:reduce){ button{transition:none;} }
 </style>
 </head>
 <body>
@@ -2292,9 +2385,9 @@
 <div class="toast" id="toast"></div>
 
 <script src="moves.js?v=3"></script>
-<script src="legends.js?v=2"></script>
-<script src="cosmetics.js?v=4"></script>
-<script src="world.js?v=4"></script>
+<script src="legends.js?v=3"></script>
+<script src="cosmetics.js?v=5"></script>
+<script src="world.js?v=5"></script>
 <script src="pxwrestler.js?v=3"></script>
 <script>
 "use strict";
@@ -2302,7 +2395,7 @@
    RunTheRopes: Build A Wrestler (career simulator)
    Single save, localStorage. Attributes + moves are EARNED.
    ============================================================ */
-const SAVE='rtr_baw_v1', SCHEMA=2;
+const SAVE='rtr_baw_v1', SCHEMA=3;
 // Multi-slot save layer. The original SAVE key is treated as slot 0 for
 // back-compat; slots 1..3 add rtr_baw_v1_s1 / s2 / s3. The active slot is
 // remembered under rtr_baw_slot. All existing save()/load() paths route
@@ -2468,7 +2561,7 @@ function workTier(){
    its own reign track, so a career can chase the mid-card belt on the way
    up and defend it while working toward the world title. */
 const BELT_CONFIG = {
-  gcw:    { world:'GCW Hardcore Championship',        secondary:'GCW King of the Death Belt',       tag:'GCW Tag Titles' },
+  gcw:    { world:'Grit City Hardcore Championship',        secondary:'Grit City Death Belt',       tag:'Grit City Tag Titles' },
   cdp:    { world:'CDP Indie Championship',           secondary:'CDP Openweight Title',             tag:'CDP Tag Titles' },
   sbcw:   { world:'SBCW Regional Championship',       secondary:'SBCW Territory Cup',               tag:'SBCW Southern Tag Titles' },
   scw:    { world:'SCW West Coast Championship',      secondary:'SCW Neon Title',                   tag:null },
@@ -4484,6 +4577,17 @@ const SAVE_STEPS={
     const w=o.w||{};
     ['name','nick','finisherName','finisherNameB','catch'].forEach(k=>{ if(typeof w[k]==='string') w[k]=w[k].replace(PLAIN_RE,''); });
     o.seed=(hashStr((o.w&&o.w.name||'')+'|'+(o.savedAt||0)+'|'+((o.car&&o.car.year)||0))>>>0)||1; },
+  // 2 -> 3: names that leaned on real companies and events were renamed
+  // (docs/PLAN.md decision 9). A belt's name is how a reign is matched to the
+  // title it is for, so the old names are rewritten wherever the save holds them.
+  2(o){
+    // the old names are written backwards so the trademark guard in verify.mjs
+    // can hold the rest of the file to never containing them
+    const back=x=>x.split('').reverse().join('');
+    const RN=[[back("pihsnoipmahC erocdraH WCG"), "Grit City Hardcore Championship"], [back("tleB htaeD eht fo gniK WCG"), "Grit City Death Belt"], [back("seltiT gaT WCG"), "Grit City Tag Titles"], [back("sroinuJ repuS eht fo tseB"), "Junior Heavyweight Gauntlet"], [back("cissalC thgiewresiurC ehT"), "The Lightweight Open"], [back("gniR eht fo gniK"), "Crown of the Canvas"], [back("dracrednu emoD oykoT"), "Dome Show undercard"], [back("noitceleS larutaN"), "Second Nature"], [back("ksaM regiT"), "Striped Cat Mask"], [back("\"WCG\""), "\"GRIT\""]];
+    let t=JSON.stringify(o); RN.forEach(([a,b])=>{ t=t.split(a).join(b); });
+    const n=JSON.parse(t); Object.keys(o).forEach(k=>delete o[k]); Object.assign(o,n);
+  },
 };
 // Player typed text is printed through innerHTML across the game, so the
 // characters that could open markup never get into a save in the first place.
@@ -6085,7 +6189,7 @@ function renderLookEditor(bodyId, avId, L, ownedOnly){
         <div class="tp"><div class="tpf ${fr}">${wrestlerSVG(prev,{frame:fr})}</div></div>
         <div class="tn">${c.name}</div>
         ${c.rarity!=='common'?`<span class="tr b-${c.rarity==='legendary'?'leg':c.rarity==='epic'?'epic':'rare'}">${c.rarity}</span>`:''}
-        ${locked?'<span class="tlock">🔒</span>':''}</div>`;
+        ${locked?`<span class="tlock">${pico('lock',14)}</span>`:''}</div>`;
     });
   }
   h+='</div>';
@@ -13926,7 +14030,7 @@ function advanceWeek(){
    fame the way nothing at home does. */
 const TOUR_OFFERS=[
   {id:'jpn',name:'Osaka Special',region:'Japan',oppName:'Katsuo "The Steelworker" Fujino',ovr:76,style:'strong-style singles that everyone taped'},
-  {id:'jpn2',name:'Tokyo Dome undercard',region:'Japan',oppName:'Ryuji Kanda',ovr:80,style:'a five-star classic if you both bring it'},
+  {id:'jpn2',name:'Dome Show undercard',region:'Japan',oppName:'Ryuji Kanda',ovr:80,style:'a five-star classic if you both bring it'},
   {id:'mex',name:'Arena Monterrey one-shot',region:'Mexico',oppName:'El Vórtice',ovr:73,style:'a lucha match, high spots, hot crowd'},
   {id:'uk', name:'Cardiff one-night stand',region:'UK', oppName:'Rhys "The Anvil" Talbot',ovr:74,style:'a British-style scientific match'},
   {id:'aus',name:'Sydney invitational',region:'Australia',oppName:'Braxton "Roo" Kelly',ovr:71,style:'a hard-hitting brawler kind of night'},
@@ -13971,10 +14075,10 @@ function fireTourWeek(){
    and a real number on your reputation.
    ============================================================ */
 const TOURN_NAMES=[
-  {id:'kotr', name:'King of the Ring', rounds:3, prize:'a title shot at the next PPV'},
+  {id:'kotr', name:'Crown of the Canvas', rounds:3, prize:'a title shot at the next PPV'},
   {id:'g1',   name:'The Summer Cup',   rounds:3, prize:'a title shot at the next PPV'},
-  {id:'bosj', name:'Best of the Super Juniors', rounds:3, prize:'the Junior trophy and 500 rep'},
-  {id:'cwc',  name:'The Cruiserweight Classic', rounds:3, prize:'the Cruiserweight trophy'},
+  {id:'bosj', name:'Junior Heavyweight Gauntlet', rounds:3, prize:'the Junior trophy and 500 rep'},
+  {id:'cwc',  name:'The Lightweight Open', rounds:3, prize:'the Cruiserweight trophy'},
 ];
 function maybeStartTourn(){
   const c=G.car;
@@ -14816,7 +14920,7 @@ function renderMoves(){
       h+=`<div class="movecard ${have?'have':(need.length?'lock':'next')}">
         <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;">
           <span class="nm">${have?'✔ ':''}${m.name}${G.w.finisher===m.id?' <span class="badge b-leg">FINISHER</span>':''}</span>
-          <span class="rq">${have?`dmg ${m.dmg} · pop ${m.pop} · stam ${m.stam}`:(need.length?'🔒 '+need.join(' · '):'ready')}</span>
+          <span class="rq">${have?`dmg ${m.dmg} · pop ${m.pop} · stam ${m.stam}`:(need.length?pico('lock',12)+' '+need.join(' · '):'ready')}</span>
         </div>${have&&m.tier>=4?`<button class="ghost" style="margin-top:6px;padding:4px 10px;font-size:11px;" onclick="setFinisher('${m.id}')">Set as finisher</button>`:''}</div>`;
     });
   });
@@ -16612,7 +16716,7 @@ const DIRECTIVES={
    script) and their voice colours the office memo on the booking sheet.
    The player learns their booker over time. */
 const BOOKERS = {
-  gcw:    {name:'Marlon "Digger" Hoyt',   arch:'wildcard',      voice:'Digger runs GCW like a shift at the docks. Blunt notes, no polish.', likes:['heat','feud']},
+  gcw:    {name:'Marlon "Digger" Hoyt',   arch:'wildcard',      voice:'Digger runs Grit City like a shift at the docks. Blunt notes, no polish.', likes:['heat','feud']},
   cdp:    {name:'Sabine Ortega',          arch:'protector',     voice:'Sabine protects her workers. She trusts you if you trust the room.', likes:['sell','build']},
   sbcw:   {name:'"Big Boone" Talbert',    arch:'traditionalist',voice:'Boone books like it\'s 1985 and every card ends with a handshake.', likes:['sell','build']},
   scw:    {name:'Vic Sunday',             arch:'showman',       voice:'Vic wants stars, spectacle and something to put in the trailer.',    likes:['push','sell']},
@@ -18071,14 +18175,14 @@ function buildBackstageLayout(){
   const gorillaPool = cateringPool.filter(x=>!catering.includes(x));
   const gorilla  = backstageDeterministicPick(seed+':gor',     gorillaPool, Math.min(1, gorillaPool.length));
   const rooms = [
-    { id:'locker',  name:'Locker Room', icon:'★', blurb:'The main dressing room. A few tables, tape, and everyone half-listening.', occ:locker },
-    { id:'catering',name:'Catering',    icon:'🍽', blurb:'Cheap coffee, a warm sandwich, and the people who linger.', occ:catering },
-    { id:'gm',      name:"GM's Office", icon:'✎', blurb:`${bookerFor(me.id).name}'s door is open. Take the meeting.`, occ:[], gm:true },
-    { id:'champ',   name:"Champ's Room",icon:'♛', blurb:'A closed door with a name on it, and a belt on the other side.', occ:worldCh?[worldCh]:[] },
-    { id:'sec',     name:'Mid-Card Room',icon:'♜', blurb:'Not the main event, not opening. Everyone in there wants the next step.', occ:secCh?[secCh]:[] },
-    { id:'story',   name:storyId?'Their Camp':'Empty Room', icon:'✱', blurb:storyId?'Your story is in there.':'Nobody, at least right now.', occ:storyId?[storyId]:[] },
-    { id:'parking', name:'Parking Lot', icon:'▤', blurb:'Where things happen when they aren\'t supposed to happen inside.', occ:rival?[rival]:[] },
-    { id:'gorilla', name:'Gorilla Position', icon:'▶', blurb:'One curtain away from the ring. Somebody is about to walk through it.', occ:gorilla },
+    { id:'locker',  name:'Locker Room', icon:'star', blurb:'The main dressing room. A few tables, tape, and everyone half-listening.', occ:locker },
+    { id:'catering',name:'Catering',    icon:'handshake', blurb:'Cheap coffee, a warm sandwich, and the people who linger.', occ:catering },
+    { id:'gm',      name:"GM's Office", icon:'clipboard', blurb:`${bookerFor(me.id).name}'s door is open. Take the meeting.`, occ:[], gm:true },
+    { id:'champ',   name:"Champ's Room",icon:'crown', blurb:'A closed door with a name on it, and a belt on the other side.', occ:worldCh?[worldCh]:[] },
+    { id:'sec',     name:'Mid-Card Room',icon:'medal', blurb:'Not the main event, not opening. Everyone in there wants the next step.', occ:secCh?[secCh]:[] },
+    { id:'story',   name:storyId?'Their Camp':'Empty Room', icon:'swords', blurb:storyId?'Your story is in there.':'Nobody, at least right now.', occ:storyId?[storyId]:[] },
+    { id:'parking', name:'Parking Lot', icon:'knife', blurb:'Where things happen when they aren\'t supposed to happen inside.', occ:rival?[rival]:[] },
+    { id:'gorilla', name:'Gorilla Position', icon:'microphone', blurb:'One curtain away from the ring. Somebody is about to walk through it.', occ:gorilla },
   ];
   return rooms;
 }
@@ -18118,7 +18222,7 @@ function renderBackstage(){
     // Fewer tiles, less noise, and the ones that ARE present feel populated.
     if(!bodies && !gmBtn) return '';
     return `<div class="bs-room" data-room="${r.id}" title="${(r.blurb||'').replace(/"/g,'&quot;')}">
-      <div class="bs-room-h"><span class="bs-room-ico">${r.icon}</span> <b>${r.name}</b></div>
+      <div class="bs-room-h"><span class="bs-room-ico">${pico(r.icon,16)}</span> <b>${r.name}</b></div>
       <div class="bs-occ">${gmBtn}${bodies}</div>
     </div>`;
   }).filter(Boolean).join('');

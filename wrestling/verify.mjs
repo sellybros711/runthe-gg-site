@@ -63,6 +63,8 @@ const BLOCK = [
   // finishers named after the wrestler who owns them, moved off in the move catalogue
   'Walls of Jericho','Regal Stretch','Anaconda Vice','Con-Chair-To','Hulk-Up','Jackhammer','Perfect-Plex',
   'Emerald Flowsion','Tiger Driver','Burning Hammer','BAH GAWD',
+  // renamed in docs/PLAN.md decision 9 (old saves are rewritten by save step 2)
+  'GCW','King of the Ring','Best of the Super Juniors','Cruiserweight Classic','Tokyo Dome','Tiger Mask','Natural Selection',
 ];
 const files = fs.readdirSync(path.join(ROOT,'wrestling')).filter(f=>/\.(js|html)$/.test(f)).map(f=>'wrestling/'+f)
   .concat(['wrestling/booking/index.html']);

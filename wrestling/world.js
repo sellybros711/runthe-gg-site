@@ -11,7 +11,7 @@
    tiers: indie → regional → national → global
    ============================================================ */
 window.RTR_PROMOS = [
-  { id:'gcw',    short:'GCW',  name:'Grit City Wrestling',            tier:'indie',    region:'Rust Belt, USA',
+  { id:'gcw',    short:'GRIT', name:'Grit City Wrestling',            tier:'indie',    region:'Rust Belt, USA',
     color:'#a8602c', product:'Hardcore / Deathmatch',
     blurb:'A converted bingo hall, three hundred screaming lunatics, and absolutely no guardrails.' },
   { id:'cdp',    short:'CDP',  name:'Cellar Door Pro',                tier:'indie',    region:'Pacific Northwest, USA',
@@ -392,7 +392,7 @@ window.RTR_CHARS = [
 
   { id:'c_mabel', name:'Mabel Okonkwo', nick:'The Landlord', promo:'gcw', align:'face', over:43,
     style:'powerhouse', attrs:{po:80,te:42,ae:24,ch:62,ps:52,to:70,st:56}, finisher:'Eviction Notice',
-    gimmick:'Owns the building GCW runs in. Wrestles because somebody has to keep the tenants in line.',
+    gimmick:'Owns the building Grit City runs in. Wrestles because somebody has to keep the tenants in line.',
     traits:['strong','respected','stoic'],
     look:L('#5d3a22','#241a12','#e07b39','#1a1a1a',{hairStyle:'short',attire:'singlet',boots:'tall',acc:'belt',pattern:'solid'}),
     lines:{ taunt:['Rent is due.','I don\'t throw people out. I throw them through.'],
