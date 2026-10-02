@@ -44,6 +44,22 @@ backup and restore; a career seed that salts every scene pick, and the random st
 and carried on across a resume; player text stripped of markup characters on the way in and
 in old saves; one `legacyOf()`; the simulator. Item 3 below is dropped by decision 7.
 
+**The baseline the simulator measured (1,000 careers, the game as it is before Phase C):**
+no career hit a fault, and the balance is off almost everywhere, in ways the story engine has
+to fix rather than a constant:
+
+| | today, all three difficulties | target (NARRATIVE.md section 12) |
+|---|---|---|
+| median career | 17 to 18 years on every difficulty | 15 to 19 / 13 to 17 / 10 to 15 |
+| reach national TV, win a title | 100% | 40 to 98% depending on difficulty |
+| Hall of Fame | **100%**: `legacyOf` medians about 1,100 against a bar of 120 | 10 to 50% |
+| world title | 7 to 10% | 12 to 60% |
+| career ended by injury | 0% | 6 to 18% |
+| distinct scenes a career can meet | 30 | the catalog's 489 |
+
+Difficulty barely moves anything, and the legacy formula's scale makes the Hall and its
+grades meaningless. Both are Phase C work (C11 to C13) and are measured, not guessed, now.
+
 1. Save version 2 with a migration chain: `load()` never returns null for an old schema again;
    it migrates forward and keeps a per slot backup of the pre migration save.
 2. Fix the slot 0 only backup and restore.

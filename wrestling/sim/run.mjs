@@ -57,6 +57,8 @@ const URL = `http://localhost:${server.address().port}/wrestling/`;
 // one career, played entirely inside the page
 function playCareer({ diff, policy, cap }) {
   try { endTour(); closeModal(); } catch (_) {}
+  // nobody is looking: screens are not drawn, the career state is all that moves
+  if (!window.__quiet) { window.__quiet = 1; const nop = function(){}; go = nop; toast = nop; modal = nop; save = nop; }
   localStorage.removeItem(activeSaveKey());
   doQuickStart();
   try { endTour(); closeModal(); } catch (_) {}
