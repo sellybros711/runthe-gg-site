@@ -480,6 +480,165 @@ if ('crossword'.includes(only) || !only) {
   }
 }
 
+/* ------------------------------------------------------------------- sweep */
+/* The ten found by sweeping all twelve games for the same classes of bug. */
+if ('sweep'.includes(only) || !only) {
+  R.section('Sweep 1: the Common Ground share card counts the groups that were really found');
+  {
+    const { ctx, p } = await open('match', { tier: 'card' });
+    const mc = await p.evaluate(() => typeof RTGShare.matchCount !== 'function' ? [{}, {}, {}] : [
+      RTGShare.matchCount({ stat: '🧩 2/4 groups', statInt: null }),
+      RTGShare.matchCount({ stat: '🧩 4/4 · 1:20 · 0 misses', statInt: 80 }),
+      RTGShare.matchCount({ stat: 'whatever', solved: 3, cats: 4 })]);
+    R.ok(mc[0].solved === 2 && mc[0].cats === 4, 'a lost board with two groups reads 2/4, not 0/5', JSON.stringify(mc[0]));
+    R.ok(mc[1].solved === 4 && mc[1].cats === 4, 'a cleared board reads 4/4, not 5/5', JSON.stringify(mc[1]));
+    R.ok(mc[2].solved === 3, 'the spec\'s own count wins over the stat line', JSON.stringify(mc[2]));
+    await ctx.close();
+    // A lost result replayed from storage (a free account whose one play is
+    // spent): no groups found must not read as all of them.
+    const fr = await open('match', { tier: 'free' }); const q = fr.p;
+    for (const order of [[], [2, 0]]) {
+      await q.evaluate(o => { const d = new Date(), k = 'grid_match_result_' + d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+        localStorage.setItem('rtg:trial:v1', JSON.stringify({ used: { match: 1 } }));
+        localStorage.setItem(k, JSON.stringify({ won:false, time:90, mistakes:4, grade:'F', order:o })); }, order);
+      await q.reload({ waitUntil: 'load' }); await sleep(2200);
+      const r = await q.evaluate(() => { const sp = window.RTG_CARD_SPEC ? RTG_CARD_SPEC() : null;
+        return { verdict: (document.getElementById('resVerdict') || {}).textContent, solved: sp && sp.solved, cats: sp && sp.cats, n: sp && RTGShare.matchCount && RTGShare.matchCount(sp) }; });
+      R.ok(r.solved === order.length && r.cats === 4 && r.n && r.n.solved === order.length && new RegExp('^' + order.length + ' of 4').test(r.verdict || ''),
+        'a lost board replayed with ' + order.length + ' found says ' + order.length + ' of 4, on screen and on the card', JSON.stringify(r));
+    }
+    await fr.ctx.close();
+  }
+
+  R.section('Sweep 2 and 7: a lookup that cannot reach the network is not "no such player"');
+  {
+    const { ctx, p } = await open('chain', { tier: 'card' });
+    const lk = await p.evaluate(async () => {
+      RTG_LIVECHECK.clearCache();
+      const off = await RTG_LIVECHECK.lookup(['Zebulon Qwertyfield']);
+      const tc = await RTGTeamCheck.clubs('Zebulon Qwertyfield', 'NBA');
+      RTG_LIVECHECK.clearCache(); RTG_LIVECHECK.setFetch(() => Promise.resolve({ ok: true, json: () => ({ players: {} }) }));
+      const on = await RTG_LIVECHECK.lookup(['Zebulon Qwertyfield']);
+      RTG_LIVECHECK.setFetch(null); RTG_LIVECHECK.clearCache();
+      return { off: off['zebulon qwertyfield'], tc, on: on['zebulon qwertyfield'] || null };
+    });
+    R.ok(lk.off && lk.off.unreachable === true, 'a failed lookup comes back marked unreachable', JSON.stringify(lk.off));
+    R.ok(lk.tc && lk.tc.unreachable === true, 'and the team check passes that on rather than "not found"', JSON.stringify(lk.tc));
+    R.ok(!lk.on || !lk.on.unreachable, 'a lookup that answered with nobody is still just "not found"', JSON.stringify(lk.on));
+    await p.click('#startBtn'); await sleep(1500); await pastTrialGate(p);
+    await p.fill('#ask', 'Zebulon Qwertyfield'); await p.press('#ask', 'Enter');
+    await p.waitForFunction(() => /record books/.test(document.getElementById('msg').textContent) || document.querySelectorAll('#strikes i.on').length, null, { timeout: 8000 }).catch(() => {});
+    const ch = await p.evaluate(() => ({ strikes: document.querySelectorAll('#strikes i.on').length, msg: document.getElementById('msg').textContent, box: document.getElementById('ask').value }));
+    R.ok(ch.strikes === 0 && /record books/.test(ch.msg), 'Chain: our network failing costs no strike and says so', JSON.stringify(ch));
+    R.ok(ch.box === 'Zebulon Qwertyfield', 'and the name goes back in the box to try again', JSON.stringify(ch));
+    await p.click('#giveBtn'); await sleep(900);
+    const end = await p.evaluate(() => ({ title: document.getElementById('mTitle').textContent, sub: document.getElementById('mSub').textContent,
+      route: document.getElementById('mRoute').textContent, stat: (window.RTG_CARD_SPEC ? RTG_CARD_SPEC().stat : '') }));
+    R.ok(end.title !== 'NO ROUTE', 'the end screen no longer says NO ROUTE over the route it shows', JSON.stringify(end));
+    R.ok(end.sub === 'Gave up' && end.stat === 'Gave up', 'a chain given up is "Gave up" on screen and on the card alike', JSON.stringify(end));
+    await ctx.close();
+  }
+
+  R.section('Sweep 3: Rank It does not offer a try that is not there');
+  {
+    const { ctx, p } = await open('rankit', { tier: 'card' });
+    let done = false;
+    for (let i = 0; i < 5 && !done; i++) {
+      await p.click('#checkBtn'); await sleep(400); await pastTrialGate(p);
+      done = await p.evaluate(() => !!document.querySelector('.podium') || !document.getElementById('scrim').classList.contains('hidden'));
+    }
+    await sleep(300);
+    const st = await p.evaluate(() => ({ fb: document.getElementById('rkFeedback').textContent, hint: document.getElementById('hintline').textContent, btn: document.getElementById('checkBtn').textContent }));
+    R.ok(!/\b\d+ tr(y|ies) left|last try/i.test(st.fb + ' ' + st.hint + ' ' + st.btn), 'after the last try, nothing on the board says there is a try left', JSON.stringify(st));
+    await ctx.close();
+  }
+
+  R.section('Sweep 4: High Low ignores arrows typed in a field, and names what its last button does');
+  {
+    const { ctx, p } = await open('highlow', { tier: 'card' });
+    await p.click('.catchip >> nth=0'); await sleep(800); await p.click('#results button >> nth=0'); await sleep(1200);
+    const playing = await p.evaluate(() => document.getElementById('panelPlay').classList.contains('on'));
+    await p.evaluate(() => { const i = document.createElement('input'); i.id = '__probe'; document.body.appendChild(i); i.focus(); });
+    await p.keyboard.press('ArrowUp'); await p.keyboard.press('ArrowDown'); await sleep(300);
+    const rev = await p.evaluate(() => document.getElementById('oppCard').classList.contains('revealed'));
+    R.ok(playing && !rev, 'an arrow key pressed in a text field makes no guess', JSON.stringify({ playing, rev }));
+    await ctx.close();
+    const f = await open('highlow', { tier: 'free' }); const q = f.p;
+    await pastTrialGate(q); await q.click('.catchip >> nth=0').catch(() => {}); await sleep(800);
+    await q.click('#results button >> nth=0').catch(() => {}); await sleep(1200); await pastTrialGate(q);
+    for (let i = 0; i < 40; i++) {
+      if (await q.evaluate(() => !document.getElementById('scrim').classList.contains('hidden'))) break;
+      await q.evaluate(() => { const b = document.getElementById('btnHigher'); if (b && !b.disabled) b.click(); }); await sleep(1100);
+    }
+    const ag = await q.evaluate(() => ({ open: !document.getElementById('scrim').classList.contains('hidden'), label: document.getElementById('mAgain').textContent.trim(),
+      can: window.RTGTokens ? RTGTokens.canPlay('highlow') : null }));
+    R.ok(ag.open && (ag.can || ag.label !== 'Play again'), 'with the free run spent, the button does not say "Play again"', JSON.stringify(ag));
+    await f.ctx.close();
+  }
+
+  R.section('Sweep 5: the invite only promises what it gives');
+  {
+    for (const g of ['chain', 'sportegories']) {
+      const { ctx, p } = await open(g, { tier: 'free' });
+      const t = await p.evaluate(() => new Promise(res => { const sc = document.getElementById('scrim'); if (!sc) return res(null);
+        sc.classList.remove('hidden'); setTimeout(() => { const a = document.querySelector('.rtgref-ad'); res(a ? a.textContent : ''); }, 400); }));
+      if (t === '' || t === null) { R.ok(true, g + ': no invite on this result screen'); }
+      else {
+        R.ok(/free games/.test(t), g + ': the invite says the extra go is at the free games', t);
+        if (g === 'chain') R.ok(!/Play again/.test(t), 'chain: on a card game it does not ask "Play again?"', t);
+      }
+      await ctx.close();
+    }
+  }
+
+  R.section('Sweep 6: the sound nudge sits up top and never takes a tap');
+  {
+    const { ctx, p } = await open('table', { tier: 'card' });
+    const n = await p.evaluate(() => { localStorage.removeItem('runthegrid_sound_nudged'); if (RTGSound.isOn && RTGSound.isOn()) RTGSound.toggle(); RTGSound.win();
+      const el = document.getElementById('rtgSoundNudge'); if (!el) return null; const b = el.getBoundingClientRect(), a = document.getElementById('answerIn').getBoundingClientRect();
+      return { top: b.top, bottom: b.bottom, pe: getComputedStyle(el).pointerEvents, text: el.textContent, overField: !(b.bottom <= a.top || b.top >= a.bottom) }; });
+    R.ok(n && n.top < 140 && n.pe === 'none' && !n.overField, 'the nudge is near the top, clear of the answer field, and takes no taps', JSON.stringify(n));
+    R.ok(n && !/ - /.test(n.text), 'and its copy has no spaced hyphen', n && n.text);
+    await ctx.close();
+  }
+
+  R.section('Sweep 8: on a touch screen the small controls reach toward a fingertip');
+  {
+    const { ctx, p } = await open('guess', { tier: 'card' });
+    const hits = await p.evaluate(() => {
+      const ids = ['#rtgHowtoBtn', '#themeBtn', '#rtbProf', '#btnClue', '.modesw button'];
+      return ids.map(sel => { const el = document.querySelector(sel); if (!el) return { sel, missing: true };
+        const b = el.getBoundingClientRect(), cx = b.left + b.width / 2, cy = b.top + b.height / 2;
+        const mine = (x, y) => { const h = document.elementFromPoint(x, y); return !!h && (h === el || el.contains(h)); };
+        let up = 0, dn = 0; while (up < 30 && mine(cx, cy - up - 1)) up++; while (dn < 30 && mine(cx, cy + dn + 1)) dn++;
+        return { sel, h: Math.round(b.height), hit: up + dn + 1, self: mine(cx, cy) }; });
+    });
+    for (const h of hits) R.ok(!h.missing && h.self && h.hit >= 42, h.sel + ' answers a tap across about 44px of height (drawn ' + h.h + ')', JSON.stringify(h));
+    await ctx.close();
+  }
+
+  R.section('Sweep 9: the dead second checker is gone from Common Ground');
+  {
+    const src = (await import('node:fs')).readFileSync('arcade/match/index.html', 'utf8');
+    R.ok(!/function validate\s*\(/.test(src), 'match/index.html has no validate()');
+  }
+
+  R.section('Sweep 10: nothing under the reader moves once the page has painted');
+  {
+    const watch = { match: '#pool', guess: '.searchwrap', table: '#answerbar', chain: '#startBtn', '': '.tiles' };
+    for (const [g, sel] of Object.entries(watch)) for (const w of [375, 1280]) {
+      const { ctx, p } = await page(browser, base, { tier: g === '' || g === 'chain' ? 'guest' : 'card', vp: { width: w, height: 800 }, mobile: w < 600 });
+      await p.addInitScript(sel => { window.__ys = []; function f(){ const e = document.querySelector(sel); if (e) window.__ys.push(Math.round(e.getBoundingClientRect().top + scrollY));
+        if (performance.now() < 3000) requestAnimationFrame(f); } requestAnimationFrame(f); }, sel);
+      await p.goto(base + '/arcade/' + (g ? g + '/' : ''), { waitUntil: 'load' }); await sleep(3200);
+      const ys = await p.evaluate(() => window.__ys);
+      const span = ys.length ? Math.max(...ys) - Math.min(...ys) : -1;
+      R.ok(span >= 0 && span <= 3, (g || 'hub') + '@' + w + ': ' + sel + ' stays put from first paint (moved ' + span + 'px)');
+      await ctx.close();
+    }
+  }
+}
+
 await browser.close(); srv.close();
 console.log(R.fails() ? '\n' + R.fails() + ' failed' : '\narcade bugs ok');
 process.exit(R.fails() ? 1 : 0);

@@ -518,3 +518,51 @@ html body .choices .choice:hover:not(:disabled){border-color:color-mix(in srgb,v
 html body .choices .choice:active:not(:disabled){transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.18);}
 html body .choices .choice.correct{border-color:var(--green); background:color-mix(in srgb,var(--green) 15%,var(--card));}
 html body .choices .choice.wrong{border-color:var(--red); background:color-mix(in srgb,var(--red) 14%,var(--card));}
+
+/* ---- Holding the space for things that arrive a beat after first paint ----
+   The top banner (topbanner.js) is built in script and inserted at the top of
+   <body>, so every arcade page painted without it and then moved down 51px
+   when it landed. Its height is fixed (34px controls, 8px padding, a 1px
+   rule), so the space is held by a pseudo element until the real banner is
+   there to take it. Every page that loads this file builds the banner except
+   join, which opts out with body.no-rtb. (Keying it on the script tag does
+   not work: the tag sits at the end of <body> and is parsed after first
+   paint, which is the moment the space is needed.) */
+body:not(.no-rtb):not(:has(> .rtg-topbanner))::before{
+  content:""; display:block; height:calc(51px + env(safe-area-inset-top, 0px));
+}
+/* The hub's theme button row is emptied into the banner and hidden when the
+   banner is built (topbanner.js, data-banner-host). Hide it from the start so
+   the page does not lose a 36px row a beat after it has been drawn. */
+body:not(.no-rtb) [data-banner-host]{display:none;}
+/* The sport switch row is filled by mode.js after the corpus loads. Filled it
+   is 46px at every width; the per-page reservations said 48 on a phone and 38
+   on a desktop, so it still nudged the board on every load. */
+html body .modesw:empty{min-height:46px;}
+
+/* ---- Tap targets on a touch screen ----
+   Several controls are drawn smaller than a fingertip (the 32px header icons,
+   36px filter chips, a 26px shuffle). There is no room to draw them bigger on
+   a 375px phone, so on a coarse pointer each gets an invisible hit area that
+   reaches toward 44px without reaching into a neighbour. Nothing visible
+   moves. */
+@media (pointer:coarse){
+  .rtg-topbanner .rtb-logo, #rtbTokens, #rtbProf, #rtgHowtoBtn, .themeBtn, #themeBtn,
+  #streakStat, #streakChip, .modesw button, #shuffleBtn, #btnClue, #rows .rrow button,
+  #prevClue, #nextClue, #btnDir, #btnCheck, #btnReveal, #revealBtn, #practiceBtn,
+  .ed-chip, .tk-share, #tourOpen{ position:relative; }
+  .rtg-topbanner .rtb-logo::after, #rtbTokens::after, #rtbProf::after,
+  #rtgHowtoBtn::after, .themeBtn::after, #themeBtn::after,
+  #streakStat::after, #streakChip::after,
+  .modesw button::after, #shuffleBtn::after, #btnClue::after, #rows .rrow button::after,
+  #prevClue::after, #nextClue::after, #btnDir::after, #btnCheck::after, #btnReveal::after,
+  #revealBtn::after, #practiceBtn::after, .ed-chip::after, .tk-share::after, #tourOpen::after{
+    content:""; position:absolute; inset:-4px -3px;
+  }
+  .rtg-topbanner .rtb-logo::after{ inset:-7px; }
+  #rtbTokens::after, #rtbProf::after{ inset:-8px -4px; }
+  #shuffleBtn::after{ inset:-9px -4px; }
+  #btnClue::after, .tk-share::after{ inset:-7px -4px; }
+  #rows .rrow button::after{ inset:-2px -5px; }
+  #prevClue::after, #nextClue::after{ inset:-4px -2px; }
+}

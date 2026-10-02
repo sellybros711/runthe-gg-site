@@ -110,10 +110,14 @@
       var L = (typeof window !== 'undefined' && window.RTG_LIVECHECK) || null;
       if (!L || !L.lookup) return Promise.resolve(null);
       var key = String(name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+      /* null is "nobody by that name"; { unreachable: true } is "we could not
+         ask". A caller that charges for a wrong answer must not charge for
+         the second. */
       return L.lookup([name]).then(function (map) {
         var p = map && map[key];
+        if (p && p.unreachable) return { unreachable: true };
         return (p && p.found) ? p : null;
-      })['catch'](function () { return null; });
+      })['catch'](function () { return { unreachable: true }; });
     } catch (e) { return Promise.resolve(null); }
   }
 
@@ -152,6 +156,7 @@
   function clubs(name, sport) {
     return live(name).then(function (p) {
       if (!p) return null;
+      if (p.unreachable) return { name: name, unreachable: true, stints: [] };
       /* Found, but he is somebody else: the NFL's Chris Davis when the chain is
          a baseball one. Comes back named rather than as a flat null, because
          "we could not find him" and "that is the wrong league's player" are
@@ -172,6 +177,7 @@
   function onClubIn(name, team, year, sport) {
     return live(name).then(function (p) {
       if (!p) return { ok: null, why: 'unreachable' };
+      if (p.unreachable) return { ok: null, why: 'unreachable' };
       if (!sportFits(p, sport)) return { ok: false, why: 'different sport', name: p.name };
       var rows = (p.teams || []).filter(function (t) { return sameClub(t.name, team); });
       if (!rows.length) return { ok: false, why: 'never there', name: p.name };

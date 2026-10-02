@@ -38,7 +38,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=5" />
+<link rel="stylesheet" href="/arcade/arcade.css?v=6" />
 <script src="/arcade/icons.js?v=3"></script>
 <script src="/arcade/gamemarks.js?v=4"></script>
 <style>
@@ -342,6 +342,9 @@
      stay in the markup for the games' own paint calls and are not shown. */
   .dprog .pips{display:none; gap:5px;}
   .dprog .dring{display:inline-flex;}
+  /* The ring and the date are drawn by script after first paint. Empty they
+     took no room, and the whole tile list dropped 30px when they arrived. */
+  .dprog .dring:empty{width:30px; height:30px;}
   /* THE ARCADE'S STREAK, next to the ring that fills it. One number for the
      whole arcade: the flame in the nav has been showing the largest of the
      twelve per-game streaks, which climbs while you skip eleven games. This
@@ -692,6 +695,7 @@
   .zone-head .day{font-size:clamp(32px, 7vw, 44px); letter-spacing:.01em; line-height:.95; text-transform:uppercase;}
   .zone-head .dayd{display:block; margin-top:8px; font-family:var(--f); font-size:13px; font-weight:800;
     letter-spacing:.02em; text-transform:none; color:var(--mut);}
+  .zone-head .dayd:empty::before{content:"\00a0";}
   .zone-head .dprog{margin:4px 0 0; padding:6px 12px 6px 7px; border-radius:999px;
     background:var(--card); border:1px solid var(--line2);}
   /* the tour is a quiet link under the date, not a second button competing
@@ -1147,7 +1151,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/topbanner.js?v=10"></script>
 <script src="/arcade/auth-ui.js?v=9"></script>
 <script src="/arcade/card.js?v=22"></script>
-<script src="/arcade/referral.js?v=11"></script>
+<script src="/arcade/referral.js?v=12"></script>
 <script src="/arcade/nav.js?v=3"></script>
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/tour.js?v=1"></script>

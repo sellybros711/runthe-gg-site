@@ -31,7 +31,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=5" />
+<link rel="stylesheet" href="/arcade/arcade.css?v=6" />
 <script src="/arcade/icons.js?v=3"></script>
 <style>
   :root{
@@ -438,9 +438,9 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/topbanner.js?v=10"></script>
 <script src="/arcade/auth-ui.js?v=9"></script>
 <script src="/arcade/card.js?v=22"></script>
-<script src="/arcade/referral.js?v=11"></script>
-<script src="/arcade/sfx.js?v=2"></script>
-<script src="/arcade/share.js?v=9"></script>
+<script src="/arcade/referral.js?v=12"></script>
+<script src="/arcade/sfx.js?v=3"></script>
+<script src="/arcade/share.js?v=10"></script>
 <script src="/arcade/result.js?v=1"></script>
 <script src="/arcade/resultart.js?v=4"></script>
 <script src="/arcade/gamemarks.js?v=4"></script>
@@ -802,6 +802,11 @@ window.GA_ID='G-L29P5MRWKE';
   btnLower.addEventListener('click', function(){ guess('lower'); });
   document.addEventListener('keydown', function(ev){
     if(!P.play.classList.contains('on') || !playing || busy) return;
+    /* An arrow typed in a field moves the caret; it is not a guess. Same for
+       anything inside an open sheet (the sign-in form, the store). */
+    var t=ev.target, tag=(t && t.tagName) || '';
+    if(/^(INPUT|TEXTAREA|SELECT)$/.test(tag) || (t && t.isContentEditable)) return;
+    if(t && t.closest && t.closest('[role="dialog"], .rtgpg-scrim')) return;
     if(ev.key==='ArrowUp'){ ev.preventDefault(); guess('higher'); }
     else if(ev.key==='ArrowDown'){ ev.preventDefault(); guess('lower'); }
   });
@@ -857,6 +862,7 @@ window.GA_ID='G-L29P5MRWKE';
     var subEl=document.getElementById('mSub'); subEl.textContent=sub; subEl.classList.toggle('newbest', NEWBEST);
     document.getElementById('lb').classList.add('on');
     setTimeout(function(){
+      updateAgainBtn();
       document.getElementById('scrim').classList.remove('hidden');
       if(run>=5 || NEWBEST){ confetti(NEWBEST?130:80, NEWBEST); try{ if(window.RTGSound) RTGSound.win(); }catch(e){} }
     }, 260);
@@ -872,7 +878,24 @@ window.GA_ID='G-L29P5MRWKE';
   }
 
   document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); });
-  document.getElementById('mAgain').addEventListener('click', function(){ backToSetup(); });
+  /* With the free run spent, "Play again" was a live button that led to a
+     gate saying no. It names what it actually does now, like every other card
+     game's result screen, and opens the offer rather than the dead end. */
+  function updateAgainBtn(){
+    var b=document.getElementById('mAgain'); if(!b) return;
+    if(!canStart()){
+      if(window.RTGCard && RTGCard.wallButton) RTGCard.wallButton(b);
+      else { b.textContent=(window.RTGTokens && RTGTokens.blockMsg) ? RTGTokens.blockMsg(GAME) : 'Back tomorrow'; b.disabled=true; b.classList.add('spent'); }
+    } else { b.textContent='Play again'; b.disabled=false; b.classList.remove('spent'); }
+  }
+  document.getElementById('mAgain').addEventListener('click', function(){
+    if(!canStart()){
+      document.getElementById('scrim').classList.add('hidden');
+      try{ if(window.RTGCard && RTGCard.wall){ RTGCard.wall(); return; } }catch(e){}
+      backToSetup(); return;
+    }
+    backToSetup();
+  });
   /* The result screen shows this card too (resultart.js), so the spec the
      share button builds is now a function both can call. */
   function cardSpec(){

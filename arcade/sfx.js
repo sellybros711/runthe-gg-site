@@ -65,10 +65,15 @@
   function nudge() {
     if (on) return;
     try { if (localStorage.getItem('runthegrid_sound_nudged')) return; localStorage.setItem('runthegrid_sound_nudged', '1'); } catch (e) { return; }
+    /* It sat at the bottom of the screen, which on a phone is where the
+       answer box and the keyboard are, so it covered the field mid-round. The
+       speaker it points at is in the top bar, so it sits up there now, under
+       the banner, and takes no taps: it can never be in the way of one. */
     var el = document.createElement('div');
+    el.id = 'rtgSoundNudge';
     el.setAttribute('role', 'status');
-    el.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:24px;z-index:10001;background:var(--card,#10233A);color:var(--ink,#F4F7FB);border:1px solid var(--line2,rgba(255,255,255,.2));border-radius:12px;padding:11px 16px;font:800 12.5px/1.4 system-ui,sans-serif;box-shadow:0 10px 30px -8px rgba(0,0,0,.5);max-width:88vw;text-align:center;';
-    el.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9l4 6M21 9l-4 6"/></svg>Sound is off - tap the speaker up top to feel the wins';
+    el.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top, 0px) + 60px);pointer-events:none;z-index:10001;background:var(--card,#10233A);color:var(--ink,#F4F7FB);border:1px solid var(--line2,rgba(255,255,255,.2));border-radius:12px;padding:11px 16px;font:800 12.5px/1.4 system-ui,sans-serif;box-shadow:0 10px 30px -8px rgba(0,0,0,.5);max-width:88vw;text-align:center;';
+    el.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9l4 6M21 9l-4 6"/></svg>Sound is off. Tap the speaker up top to hear the wins.';
     document.body.appendChild(el);
     setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 5000);
   }

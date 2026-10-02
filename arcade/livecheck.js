@@ -617,7 +617,16 @@
       var ps = (j && j.players) || {};
       for (var k in ps) { cache[k] = ps[k]; out[k] = ps[k]; }
       return out;
-    }).catch(function () { return out; });   // fail soft: caller keeps its corpus verdict
+    }).catch(function () {
+      /* Fail soft, but say WHY. A lookup that never got an answer is not the
+         same thing as one that came back empty: the first is our network, the
+         second is a name nobody has heard of. Both used to come back as a
+         missing key, so a dropped connection told a player their real answer
+         did not exist, and in Chain it cost them a strike. Never cached: the
+         next ask should try the network again. */
+      want.forEach(function (n) { var k = norm2(n); if (!(k in out)) out[k] = { found: false, unreachable: true }; });
+      return out;
+    });
   }
 
   // ---------- grading an unknown answer ----------
@@ -638,6 +647,11 @@
       pending.forEach(function (p) {
         var key = String(p.text || '').trim().toLowerCase().replace(/\s+/g, ' ');
         var prof = map[key];
+        if (prof && prof.unreachable) {
+          out[p.i] = { ok: false, reason: 'unknown', live: 'offline',
+            msg: 'Couldn’t reach the record books to check this one.' };
+          return;
+        }
         if (!prof || !prof.found) {
           // Not "no player by that name" — we don't get to declare who exists.
           // We looked in two places and came up empty; a typo is the likeliest

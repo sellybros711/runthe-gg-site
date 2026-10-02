@@ -193,6 +193,9 @@ LC.clearCache();
 LC.setFetch(async () => { throw new Error('offline'); });
 const offline = await LC.resolve(puz, [{ i: 0, text: 'Chase Brown' }], {});
 is(offline[0].reason, 'unknown', 'resolve: a failed lookup falls back, it does not crash');
+// ...and blames the network, not the spelling of a name we never got to check.
+is(offline[0].live, 'offline', 'resolve: a lookup that never got an answer is marked offline, not missing');
+is(/record books/.test(offline[0].msg) && !/spelling/.test(offline[0].msg), true, 'resolve: and says the check could not be made');
 
 /* ---------- the endpoint's own parsing ---------- */
 /* Wikidata is unreachable from CI, so the wire format is pinned here instead:
