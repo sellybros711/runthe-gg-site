@@ -930,6 +930,9 @@ async function browser() {
   /* PHASE E, through the page: the Vault, the share card, a son, and an Easy
      career that is kept but never filed. */
   async function vaultWalk(fin) {
+    /* The reload arm above dropped the stood-in Pro: a page asks the account
+       again on every load. */
+    await page.evaluate(() => window.RTF_MODES_UI._pro(true));
     const card = await page.evaluate(() => { const c = RTF_CAREER_UI.state().hof[0]; return { story: c.story, id: c.id, ids: c.ids, found: c.found }; });
     ok(Array.isArray(card.story) && card.story.length >= 3 && !card.story.some((x) => /undefined|NaN/.test(x.p) || DASH.test(x.p)), `the Hall card keeps a written story (${card.story && card.story.map((x) => x.h).join(', ')})`);
     ok(card.found && card.found.length > 0, `a first career puts its ending and its road in the Vault (${(card.found || []).length})`);
