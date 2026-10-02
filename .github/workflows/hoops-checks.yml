@@ -110,4 +110,4 @@ jobs:
       # A thousand careers: crashes, careers that never end, unfilled tokens,
       # wrong-year lines, continuity, and the balance bands due by the phase.
       - name: Career simulator
-        run: node hoops/sim-career.mjs --n 1000 --phase D
+        run: node hoops/sim-career.mjs --n 1000 --phase E

@@ -624,9 +624,9 @@ function buildView(){
     + '<span class="lab k-label">Your game</span><div class="cr-opts" id="cr-arch">' + arch + '</div>'
     + ori
     + '<span class="lab k-label">Where it starts</span><div class="cr-opts" id="cr-start">' + starts + '</div>'
-    + setHtml()
     + (road ? '<p class="cr-town">' + esc(rv.what) + ' at ' + esc(rv.where) + '. ' + esc(rv.sub) + '.</p>'
       : '<span class="lab k-label">Your road to the draft</span>' + roadHtml(L, true))
+    + setHtml()
     + '<div class="cr-preview"><div class="cr-pfig">' + setArt(stageKind(L), k.primary, k.secondary, form.seed)
     + (B ? B.img(lookOf(L), { c1: k.primary, c2: k.secondary, num: form.num, age: L.age, pose: 'ball', scale: 2 }) : '') + '</div>'
     + '<div><div class="cr-povr"><span class="k-num">' + C.ovrOf(L) + '</span><span class="k-label">Overall</span></div>'
