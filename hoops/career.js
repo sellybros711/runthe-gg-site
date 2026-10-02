@@ -112,7 +112,86 @@ const ARCHES = {
   anchor: { name: 'Rim protector', blurb: 'Nothing easy at the rim. Ever.',
     tilt: { def: 10, reb: 6, sho: -8, pla: -4 }, usage: -0.04, three: -0.12 },
 };
-const ARCH_KEYS = Object.keys(ARCHES);
+/* The six above are the BASE kinds the sim knows (usage, three-point share,
+   the rim protector's blocks), and the only keys a career saved before this
+   carries. Every position now has six of its own, each built on one of them,
+   so a point guard picks among point guards and a center among centers. */
+const POS_ARCHES = {
+  PG: [
+    ['pg_floor', 'floor', 'Floor general', 'Sees the play before it happens.', { pla: 10, iq: 6, def: -2, reb: -4 }],
+    ['pg_score', 'scorer', 'Scoring guard', 'Shoots first. Asks later.', { sho: 7, fin: 4, pla: 1, def: -5 }],
+    ['pg_pnr', 'floor', 'Pick-and-roll maestro', 'Lives off the screen. Reads every coverage.', { pla: 8, iq: 4, sho: 3, ath: -2, def: -4 }],
+    ['pg_pest', 'twoway', 'Defensive pest', 'Picks you up full court. Every trip.', { def: 9, ath: 4, pla: 1, sho: -3 }],
+    ['pg_speed', 'slasher', 'Speed demon', 'A first step nobody stays in front of.', { ath: 8, fin: 5, sho: -3, iq: -2 }],
+    ['pg_deep', 'scorer', 'Deep threat', 'Logo threes off the dribble.', { sho: 10, pla: 1, fin: -3, def: -3 }, { three: 0.12 }],
+  ],
+  SG: [
+    ['sg_three', 'scorer', 'Three-level scorer', 'The rim, the elbow, the arc. Pick one.', { sho: 6, fin: 5, pla: -1, def: -5 }],
+    ['sg_sniper', 'scorer', 'Sharpshooter', 'Catch, set, splash.', { sho: 11, fin: -2, pla: -3, ath: -2 }, { three: 0.14, usage: 0 }],
+    ['sg_3d', 'twoway', 'Three-and-D', 'Guards the best wing. Hits the corner three.', { def: 8, sho: 3, ath: 1, pla: -3 }, { three: 0.08 }],
+    ['sg_slash', 'slasher', 'Slasher', 'Lives at the rim. Lives at the line.', { fin: 8, ath: 6, sho: -5 }],
+    ['sg_combo', 'floor', 'Combo guard', 'Runs the point when the point sits.', { pla: 6, sho: 4, iq: 2, reb: -4 }],
+    ['sg_heat', 'scorer', 'Microwave', 'Heats up fast. Shoots like it.', { sho: 6, fin: 5, def: -6, iq: -1 }, { usage: 0.05 }],
+  ],
+  SF: [
+    ['sf_wing', 'twoway', 'Two-way wing', 'Guards the best player. Hits the open three.', { def: 8, ath: 3, sho: 1, pla: -3 }],
+    ['sf_create', 'scorer', 'Shot creator', 'Gets a bucket from anywhere.', { sho: 7, fin: 4, pla: -1, def: -5 }],
+    ['sf_point', 'floor', 'Point forward', 'The ball runs through him at six-eight.', { pla: 8, iq: 4, reb: 2, sho: -2, def: -4 }],
+    ['sf_flyer', 'slasher', 'High flyer', 'Above the rim. Every night.', { ath: 9, fin: 6, sho: -5, iq: -3 }],
+    ['sf_move', 'stretch', 'Movement shooter', 'Never stops running. Never misses open.', { sho: 9, iq: 3, def: -3, reb: -3 }, { three: 0.1 }],
+    ['sf_glue', 'twoway', 'Glue guy', 'Does the small things. Wins games.', { iq: 6, def: 4, reb: 3, sho: 1, fin: -4, ath: -3 }, { usage: -0.04 }],
+  ],
+  PF: [
+    ['pf_stretch', 'stretch', 'Stretch four', 'Pulls the big out to the arc.', { sho: 8, reb: 2, def: -2, ath: -2 }],
+    ['pf_bully', 'slasher', 'Bruiser', 'Bully ball in the paint.', { fin: 8, reb: 6, sho: -6, ath: -2 }, { three: -0.1 }],
+    ['pf_run', 'slasher', 'Athletic four', 'Runs the floor. Finishes every lob.', { ath: 8, fin: 6, reb: 2, sho: -6, pla: -3 }],
+    ['pf_face', 'scorer', 'Face-up four', 'Jab step, rip through, score.', { sho: 5, fin: 5, pla: 1, def: -4, reb: -2 }],
+    ['pf_switch', 'twoway', 'Switch defender', 'Guards one through five.', { def: 9, ath: 3, reb: 2, sho: -2, pla: -3 }],
+    ['pf_hub', 'floor', 'Playmaking four', 'Short roll, hand off, finds the cutter.', { pla: 8, iq: 5, sho: -2, ath: -3, def: -2 }],
+  ],
+  C: [
+    ['c_rim', 'anchor', 'Rim protector', 'Nothing easy at the rim. Ever.', { def: 10, reb: 6, sho: -8, pla: -4 }],
+    ['c_stretch', 'stretch', 'Stretch five', 'A center who lives at the arc.', { sho: 8, reb: 2, def: -2, ath: -2 }],
+    ['c_post', 'scorer', 'Post scorer', 'Back to the basket. Drop step. Hook. Done.', { fin: 9, iq: 3, sho: -4, ath: -4, pla: -2 }, { three: -0.14 }],
+    ['c_lob', 'slasher', 'Lob threat', 'Rolls hard. Catches everything.', { ath: 8, fin: 7, sho: -8, pla: -4 }, { three: -0.14 }],
+    ['c_glass', 'anchor', 'Glass cleaner', 'Every rebound is his.', { reb: 11, def: 4, sho: -7, pla: -4 }],
+    ['c_hub', 'floor', 'Playmaking big', 'Runs the offense from the elbow.', { pla: 9, iq: 5, sho: 2, ath: -5, def: -3 }],
+  ],
+};
+for (const p in POS_ARCHES) for (const [key, base, name, blurb, tilt, more] of POS_ARCHES[p]) {
+  const b = ARCHES[base];
+  ARCHES[key] = Object.assign({ name, blurb, tilt, usage: b.usage, three: b.three, base, pos: p }, more || {});
+}
+const ARCH_KEYS = ['scorer', 'floor', 'twoway', 'slasher', 'stretch', 'anchor'];
+const archesFor = (pos) => (POS_ARCHES[pos] || []).map((x) => x[0]);
+const archBase = (L) => (ARCHES[L.arch] && ARCHES[L.arch].base) || L.arch;
+/* Moving position keeps the kind of player you are: the new position's
+   archetype on the same base, or the one your ratings fit best. */
+function archForPos(L, pos) {
+  const keys = archesFor(pos);
+  if (!keys.length || ARCHES[L.arch].pos == null) return L.arch;
+  const same = keys.find((k) => ARCHES[k].base === archBase(L));
+  return same || keys.slice().sort((a, b) => archFit(L, b) - archFit(L, a))[0];
+}
+
+/* HEIGHT AND WEIGHT. Inches and pounds, picked in the builder inside a range
+   for the position. Being tall for your spot buys glass, rim defense and
+   finishing and costs a step and a handle; heavy for your frame buys strength
+   at the cost of the bounce. Zero at the position's middle, so a career saved
+   before this, which has neither, plays exactly as it did. */
+const POS_SIZE = { PG: { ht: [72, 78], mid: 75 }, SG: { ht: [74, 80], mid: 77 }, SF: { ht: [77, 82], mid: 79 }, PF: { ht: [79, 84], mid: 81 }, C: { ht: [81, 88], mid: 84 } };
+const wtFor = (ht) => Math.round((195 + (ht - 75) * 8) / 5) * 5;
+const wtRange = (ht) => [Math.max(160, wtFor(ht) - 30), Math.min(320, wtFor(ht) + 40)];
+function sizeOf(L) {
+  const z = POS_SIZE[L.pos] || POS_SIZE.SF;
+  const ht = Number.isFinite(L.ht) ? L.ht : z.mid;
+  return { ht, wt: Number.isFinite(L.wt) ? L.wt : wtFor(ht), dh: ht - z.mid, dw: ((Number.isFinite(L.wt) ? L.wt : wtFor(ht)) - wtFor(ht)) / 10 };
+}
+function sizeTilt(pos, ht, wt) {
+  const z = POS_SIZE[pos] || POS_SIZE.SF, dh = ht - z.mid, dw = (wt - wtFor(ht)) / 10;
+  return { reb: 1.6 * dh + 1.2 * dw, def: 0.8 * dh + 0.3 * dw, fin: 0.5 * dh + 1.0 * dw, ath: -1.1 * dh - 1.4 * dw, pla: -0.8 * dh - 0.2 * dw, sho: -0.4 * dh - 0.4 * dw };
+}
+const heightText = (ht) => Math.floor(ht / 12) + '\'' + (ht % 12) + '"';
 
 /* How you got to draft night. This is where high school and college live in a
    career that starts in June: they decide your age, your polish and how high
@@ -778,7 +857,7 @@ function newLife(opts) {
   const o = opts || {};
   const seed = o.seed != null ? String(o.seed) : String(Math.floor(Math.random() * 1e9));
   const pos = POS.indexOf(o.pos) >= 0 ? o.pos : 'SF';
-  const arch = ARCHES[o.arch] ? o.arch : 'twoway';
+  const arch = ARCHES[o.arch] && (!ARCHES[o.arch].pos || ARCHES[o.arch].pos === pos) ? o.arch : 'twoway';
   const bgKey = BACKGROUNDS[o.bg] ? o.bg : 'oad';
   const bg = BACKGROUNDS[bgKey];
   /* `start: 'hs'` begins as a fifteen year old sophomore. Anything else is
@@ -816,16 +895,30 @@ function newLife(opts) {
   if (parent) legacyLeague(L, parent, o.parentLeague, road ? AGE_HS : bg.age);
   const rng = E.createSeededRNG(E.hashSeed(seed + ':create'));
   if (L.num == null) L.num = Math.floor(rng() * 100);
+  /* A size is kept when the builder picked one, or on a story career, which
+     draws one off its own stream when nobody did. A sweep that passes neither
+     makes the same player it always made. */
+  const z = POS_SIZE[pos];
+  if (Number.isFinite(+o.ht) || L.opt.story) {
+    const zr = E.createSeededRNG(E.hashSeed(seed + ':size'));
+    L.ht = Number.isFinite(+o.ht) ? clamp(Math.round(+o.ht), z.ht[0], z.ht[1]) : clamp(Math.round(z.mid + norm(zr) * 1.3), z.ht[0], z.ht[1]);
+    const wr = wtRange(L.ht);
+    L.wt = Number.isFinite(+o.wt) ? clamp(Math.round(+o.wt / 5) * 5, wr[0], wr[1]) : clamp(Math.round((wtFor(L.ht) + norm(zr) * 12) / 5) * 5, wr[0], wr[1]);
+  }
+  const st = Number.isFinite(L.ht) ? sizeTilt(pos, L.ht, L.wt) : {};
   const prof = POS_PROFILE[pos], tilt = ARCHES[arch].tilt, bt = road ? {} : (bg.tilt || {});
   const base = road ? ROAD_BASE : bg.base;
   for (const k of RATINGS) {
-    L.rt[k] = clamp(Math.round(base + (prof[k] || 0) + (tilt[k] || 0) + (bt[k] || 0) + norm(rng) * 3), road ? 25 : 30, 88);
+    L.rt[k] = clamp(Math.round(base + (prof[k] || 0) + (tilt[k] || 0) + (bt[k] || 0) + (st[k] || 0) + norm(rng) * 3), road ? 25 : 30, 88);
   }
   /* Skewed low: most ceilings are a starter's, and a few are the roof. */
   L.pot = road ? Math.round(ROAD_POT[0] + Math.pow(rng(), ROAD_POT[2]) * (ROAD_POT[1] - ROAD_POT[0]))
     : Math.round(bg.pot[0] + Math.pow(rng(), 1.7) * (bg.pot[1] - bg.pot[0]));
   L.eth = Math.round(45 + rng() * 40);
   L.dur = Math.round(45 + rng() * 45);
+  /* Size has a price: a body that is tall or heavy for its spot breaks down
+     sooner, and a light one holds up a little better. */
+  if (Number.isFinite(L.ht)) { const sz = sizeOf(L); L.dur = clamp(Math.round(L.dur - Math.max(0, sz.dh) * 1.5 - Math.max(0, sz.dw) * 2.5 + Math.max(0, -sz.dw) * 1.5), 25, 95); }
   /* Where you are from, and on draft night the road you took to get here. */
   if (L.opt.story) {
     setOrigin(L, parent ? 'pro_son' : o.origin);
@@ -1132,11 +1225,11 @@ function lineMeans(L, min, usage) {
   const tpa = fga * threeShare;
   const tpp = clamp(0.28 + (r.sho - 55) * 0.0032, 0.22, 0.44);
   const ftp = clamp(0.62 + (r.sho - 50) * 0.005, 0.5, 0.92);
-  const posReb = { PG: 4, SG: 4.6, SF: 6, PF: 7.6, C: 8.6 }[L.pos];
+  const posReb = { PG: 4, SG: 4.6, SF: 6, PF: 7.6, C: 8.6 }[L.pos] + (Number.isFinite(L.ht) ? sizeOf(L).dh * 0.25 : 0);
   const reb = Math.max(posReb * 0.55, posReb + (r.reb - 50) * 0.14) * min / 36;
   const ast = Math.max(0.3, (0.8 + (r.pla - 45) * 0.16) * (0.7 + usage) * min / 36);
   const stl = Math.max(0.1, (0.5 + (r.def - 55) * 0.02 + (r.ath - 55) * 0.008) * min / 36);
-  const big = { PG: 0.2, SG: 0.25, SF: 0.45, PF: 0.8, C: 1.2 }[L.pos] + (L.arch === 'anchor' ? 0.6 : 0);
+  const big = Math.max(0.1, { PG: 0.2, SG: 0.25, SF: 0.45, PF: 0.8, C: 1.2 }[L.pos] + (archBase(L) === 'anchor' ? 0.6 : 0) + (Number.isFinite(L.ht) ? sizeOf(L).dh * 0.07 : 0));
   const blk = Math.max(0.05, (big + (r.def - 55) * 0.02 * big) * min / 36);
   return { pts, fga, tpa, tpp, fta, ftp, reb, ast, stl, blk, ts };
 }
@@ -3450,7 +3543,8 @@ function buildCards(L) {
       text: 'Which one is yours?', ctx: { ks }, options: ks.map((k) => ({ label: SIGS[k][0], hint: RATING_NAME[k] + ' ' + L.rt[k] + '.' })) });
     return;
   }
-  const best = ARCH_KEYS.slice().sort((a, b) => archFit(L, b) - archFit(L, a))[0];
+  const pool = ARCHES[L.arch].pos ? archesFor(L.pos) : ARCH_KEYS;
+  const best = pool.slice().sort((a, b) => archFit(L, b) - archFit(L, a))[0];
   if (best !== L.arch && L.age >= 24 && archFit(L, best) - archFit(L, L.arch) >= 45 && L.year - (F.archAsk || 0) >= 4) {
     F.archAsk = L.year;
     L.pending.push({ id: 'build_arch', kind: 'event', key: 'arch:' + L.year, eyebrow: calendar(L, 'off'), title: 'Your game has changed.',
@@ -3469,7 +3563,7 @@ function buildCards(L) {
 function chooseBuild(L, card, i) {
   if (card.id === 'build_sig') { const k = card.ctx.ks[i]; L.sig = { k, name: SIGS[k][0], y: L.year }; logIt(L, 'Signature move: ' + SIGS[k][0] + '.', 'gold'); bump(L, { fame: 3 }); return SIGS[k][1]; }
   if (card.id === 'build_arch') { if (i === 0) { const was = ARCHES[L.arch].name; L.arch = card.ctx.to; logIt(L, 'From ' + was.toLowerCase() + ' to ' + ARCHES[L.arch].name.toLowerCase() + '.', 'good'); return 'New reports, new role. You are a ' + ARCHES[L.arch].name.toLowerCase() + ' now.'; } bump(L, { morale: 2 }); return 'You know who you are.'; }
-  if (card.id === 'build_pos') { if (i === 0) { L.pos = card.ctx.to; logIt(L, 'Moved to ' + POS_NAME[L.pos].toLowerCase() + '.', 'good'); bump(L, { trust: 4 }); return 'New spot on the floor. It fits.'; } bump(L, { trust: -2 }); return 'He lets it go. For now.'; }
+  if (card.id === 'build_pos') { if (i === 0) { L.arch = archForPos(L, card.ctx.to); L.pos = card.ctx.to; logIt(L, 'Moved to ' + POS_NAME[L.pos].toLowerCase() + '.', 'good'); bump(L, { trust: 4 }); return 'New spot on the floor. It fits.'; } bump(L, { trust: -2 }); return 'He lets it go. For now.'; }
   return null;
 }
 /* A signature move pays on the shot it is. */
@@ -3916,11 +4010,11 @@ function amMeans(L, min) {
   const tpa = fga * threeShare;
   const tpp = clamp(0.28 + (r.sho - 50) * 0.003, 0.2, 0.45);
   const ftp = clamp(0.6 + (r.sho - 45) * 0.005, 0.5, 0.9);
-  const posReb = { PG: 3.6, SG: 4.2, SF: 5.6, PF: 7.2, C: 8.4 }[L.pos];
+  const posReb = { PG: 3.6, SG: 4.2, SF: 5.6, PF: 7.2, C: 8.4 }[L.pos] + (Number.isFinite(L.ht) ? sizeOf(L).dh * 0.25 : 0);
   const reb = Math.max(1, posReb + (r.reb - 50) * 0.13 + rel * 0.1) * k;
   const ast = Math.max(0.7, 1.6 + (r.pla - 40) * 0.12 + rel * 0.04) * k;
   const stl = Math.max(0.1, 0.6 + (r.def - 50) * 0.02 + rel * 0.02) * k;
-  const big = { PG: 0.2, SG: 0.25, SF: 0.45, PF: 0.8, C: 1.2 }[L.pos] + (L.arch === 'anchor' ? 0.6 : 0);
+  const big = Math.max(0.1, { PG: 0.2, SG: 0.25, SF: 0.45, PF: 0.8, C: 1.2 }[L.pos] + (archBase(L) === 'anchor' ? 0.6 : 0) + (Number.isFinite(L.ht) ? sizeOf(L).dh * 0.07 : 0));
   const blk = Math.max(0.05, big + (r.def - 50) * 0.02 * big + rel * 0.02 * big) * k;
   return { pts, fga, tpa, tpp, fta, ftp, reb, ast, stl, blk };
 }
@@ -7169,7 +7263,7 @@ const publicAPI = {
   DIFFS, DIFF_KEYS, CHALLENGES, CHALLENGE_KEYS, challengeOf,
   CAREER_API_VERSION, LIFE_VERSION,
   CONF, CLUBS, confOf, POS, POS_NAME, RATINGS, RATING_NAME, RATING_SHORT, WEIGHTS,
-  ARCHES, ARCH_KEYS, BACKGROUNDS, BG_KEYS, AGENTS, AWARD_NAME, ROUNDS, VERDICTS, EVENTS,
+  ARCHES, ARCH_KEYS, POS_ARCHES, archesFor, archBase, POS_SIZE, wtFor, wtRange, sizeOf, sizeTilt, heightText, BACKGROUNDS, BG_KEYS, AGENTS, AWARD_NAME, ROUNDS, VERDICTS, EVENTS,
   seedLeague, normaliseNets, newLife, randomName, overall, ovrOf, step, choose, nextLabel,
   view, perGame, totals, legacy, legacyScore, clubNet, clubTier, rotationBar,
   roleOf, lineMeans, capFor, marketSalary, projectedPick, draftOrder, money, ordinal,

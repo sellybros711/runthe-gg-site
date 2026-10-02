@@ -571,6 +571,20 @@ section('10. the press room, the persona, the look');
       all[C.personaOf(M)] = 1;
     }
   }
+  /* Villain is rare by design (about one villain-style career in a hundred
+     and forty ends there), so a fixed sample is a coin flip on whether it is
+     met. A persona not met yet is searched for further, with the style that
+     aims at it, up to a bound: the claim is that it can be reached. */
+  const AIM = ['villain', 'low', 'quiet', 'loose', 'mid', 'pro', 'show', 'fan', 'face'];
+  C.PERSONAS.flat().forEach((p, j) => {
+    for (let i = 0; !all[p] && i < 600; i++) {
+      const M = C.newLife({ seed: 'persona+:' + AIM[j] + i, start: i % 2 ? 'hs' : 'draft', league });
+      const pick = style(AIM[j]);
+      let g = 0;
+      while (!M.retired && g++ < 4000) { if (M.pending.length) C.choose(M, pick(M, M.pending[0])); else C.step(M); }
+      all[C.personaOf(M)] = 1;
+    }
+  });
   const missing = C.PERSONAS.flat().filter((p) => !all[p]);
   ok(missing.length === 0, `all nine personas are reachable (${missing.join(', ') || 'all nine'})`);
   ok(Object.keys(C.EVENT_REP).every((id) => C.EVENTS[id] && C.EVENTS[id].options.length === C.EVENT_REP[id].length),
@@ -678,6 +692,30 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
   const st = C.careerStory(dad);
   ok(st.length >= 4 && st.some((x) => x.h === 'The league') && st.every((x) => !(/undefined|NaN|\{[a-z]+\}/.test(x.p) || DASH.test(x.p))), `a career's story has its chapters and no junk (${st.map((x) => x.h).join(', ')})`);
   ok(new RegExp(T.pts.toLocaleString('en-US')).test(st.map((x) => x.p).join(' ')), 'and the points in it are the career\'s');
+}
+
+/* Six archetypes for each position, named for that position, each on one of
+   the six base kinds the sim reads; and a size that moves the ratings. */
+{
+  section('11c. archetypes by position, and height and weight');
+  const names = new Set();
+  let bad = [];
+  for (const p of C.POS) {
+    const ks = C.archesFor(p);
+    if (ks.length !== 6) bad.push(p + ' has ' + ks.length);
+    const nm = new Set(ks.map((k) => C.ARCHES[k].name));
+    if (nm.size !== 6) bad.push(p + ' repeats a name');
+    for (const k of ks) { const a = C.ARCHES[k]; if (a.pos !== p || C.ARCH_KEYS.indexOf(a.base) < 0 || DASH.test(a.name + a.blurb)) bad.push(k); names.add(p + a.name); }
+    const L = C.newLife({ seed: 'arch:' + p, pos: p, arch: C.archesFor(p === 'C' ? 'PG' : 'C')[0], league });
+    if (C.ARCHES[L.arch].pos) bad.push(p + ' took another position\'s archetype');
+  }
+  ok(!bad.length, `six archetypes a position, all its own (${bad.join('; ') || C.POS.map((p) => C.archesFor(p).length).join('/')})`);
+  const tall = C.newLife({ seed: 'size', pos: 'C', arch: 'c_rim', ht: 88, wt: 290, league });
+  const small = C.newLife({ seed: 'size', pos: 'C', arch: 'c_rim', ht: 81, wt: 225, league });
+  ok(tall.rt.reb > small.rt.reb && tall.rt.ath < small.rt.ath && tall.dur < small.dur, `a big center rebounds more, moves less and breaks down sooner (reb ${tall.rt.reb}/${small.rt.reb}, ath ${tall.rt.ath}/${small.rt.ath}, dur ${tall.dur}/${small.dur})`);
+  ok(tall.ht === 88 && tall.wt === 290 && C.newLife({ seed: 'size', pos: 'PG', ht: 90, league }).ht === 78, 'a size outside the position is held to its range');
+  const old = C.newLife({ seed: 'size:old', pos: 'SF', arch: 'twoway', league, story: false });
+  ok(old.ht == null && C.ARCHES[old.arch].name === 'Two-way wing', 'a career without a size or with an old archetype is the same player it was');
 }
 
 /* A Saturday contest names its field and its scores, and they have to agree
@@ -797,7 +835,12 @@ async function browser() {
   /* The builder: what is picked is what is played. High school is the
      default; draft night shows the backgrounds and hides them again. */
   await page.click('[data-pos="C"]');
-  await page.click('[data-arch="anchor"]');
+  const archs = await page.$$eval('[data-arch]', (b) => b.map((x) => x.getAttribute('data-arch')));
+  ok(archs.length === 6 && archs.every((k) => /^c_/.test(k)), `a center picks from six center archetypes (${archs.join(', ')})`);
+  await page.click('[data-size="ht:1"]'); await page.click('[data-size="wt:5"]');
+  const sz = await page.evaluate(() => ({ ht: document.querySelector('#cr-ht').textContent, wt: document.querySelector('#cr-wt').textContent, line: document.querySelector('#cr-sizeline').textContent }));
+  ok(/^7'1"$/.test(sz.ht) && /lb$/.test(sz.wt) && /rebounding/.test(sz.line), `height and weight step and say what they do (${sz.ht}, ${sz.wt}: ${sz.line})`);
+  await page.click('[data-arch="c_rim"]');
   /* PHASE E: a guest starts on draft night, from a road generated for him.
      High school is Run The Floor Pro: the press opens the offer and changes
      nothing. Then Pro, stood in, and the walk plays the road itself. */
@@ -816,7 +859,7 @@ async function browser() {
   await page.fill('#cr-name', 'Checker McTest');
   await page.click('#cr-go');
   const made = await page.evaluate(() => RTF_CAREER_UI.state().cur);
-  ok(made && made.pos === 'C' && made.arch === 'anchor' && made.stage === 'hs' && made.age === 15 && made.name === 'Checker McTest',
+  ok(made && made.pos === 'C' && made.arch === 'c_rim' && made.ht === 85 && made.stage === 'hs' && made.age === 15 && made.name === 'Checker McTest',
     `the builder's picks are the career's (${made && [made.pos, made.arch, made.stage, made.age, made.name].join(', ')})`);
   const third = await page.evaluate(() => (document.querySelectorAll('.cr-fact .k')[2] || {}).textContent || '');
   ok(/ranking/i.test(third), `a sophomore is told his ranking, not his bank (${third})`);
