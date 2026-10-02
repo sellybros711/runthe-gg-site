@@ -779,7 +779,9 @@ async function browser() {
   await page.click('[data-start="hs"]');
   const gate = await page.evaluate(() => ({ sheet: !document.getElementById('pro-sheet').hidden, on: document.querySelector('[data-start].on').getAttribute('data-start') }));
   ok(gate.sheet && gate.on === 'gen', 'pressing high school without Pro opens the offer and keeps draft night');
-  await page.evaluate(() => { const x = document.querySelector('#pro-sheet [data-pro-x]'); if (x) x.click(); window.RTF_MODES_UI._pro(true); });
+  /* Stood in through the one call Career asks, because the page's own
+     account read answers "not signed in, no Pro" whenever it lands. */
+  await page.evaluate(() => { const x = document.querySelector('#pro-sheet [data-pro-x]'); if (x) x.click(); window.RTF_MODES_UI.proOpen = () => true; });
   await page.click('[data-start="hs"]');
   ok(!(await page.$('#cr-roadbox')) && !(await page.$('[data-bg]')), 'with Pro, a high school start shows no generated road');
   await page.fill('#cr-name', 'Checker McTest');
@@ -930,9 +932,8 @@ async function browser() {
   /* PHASE E, through the page: the Vault, the share card, a son, and an Easy
      career that is kept but never filed. */
   async function vaultWalk(fin) {
-    /* The reload arm above dropped the stood-in Pro: a page asks the account
-       again on every load. */
-    await page.evaluate(() => window.RTF_MODES_UI._pro(true));
+    /* The reload arm above dropped the stood-in Pro. */
+    await page.evaluate(() => { window.RTF_MODES_UI.proOpen = () => true; });
     const card = await page.evaluate(() => { const c = RTF_CAREER_UI.state().hof[0]; return { story: c.story, id: c.id, ids: c.ids, found: c.found }; });
     ok(Array.isArray(card.story) && card.story.length >= 3 && !card.story.some((x) => /undefined|NaN/.test(x.p) || DASH.test(x.p)), `the Hall card keeps a written story (${card.story && card.story.map((x) => x.h).join(', ')})`);
     ok(card.found && card.found.length > 0, `a first career puts its ending and its road in the Vault (${(card.found || []).length})`);
