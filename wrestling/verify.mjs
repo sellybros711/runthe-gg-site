@@ -1298,7 +1298,12 @@ section('two styles, one rig');
     Object.keys(slots).forEach(sl=>slots[sl].forEach(v=>{
       const L=Object.assign({},DEFLOOK,{[LEG[sl]||sl]:v});
       try{ const g=RTR_PX.paint(RTR_PX.fromLegacy(L),{pose:'idle'}); const lit=g.reduce((n,r)=>n+r.filter(Boolean).length,0);
-        if(lit<300) out.convert.push(sl+':'+v+' draws '+lit); else out.converted++; }
+        if(lit<300) out.convert.push(sl+':'+v+' draws '+lit); else out.converted++;
+        // nothing may touch the canvas edge, on any build or pose: the outline needs the cell
+        ['lean','athletic','heavy','super','giant'].forEach(bd=>RTR_PX.POSES.forEach(po=>{
+          const e=RTR_PX.paint(RTR_PX.fromLegacy(Object.assign({},L,{build:bd})),{pose:po});
+          if(e[0].some(Boolean)||e[e.length-1].some(Boolean)||e.some(r=>r[0]||r[r.length-1])) out.convert.push(sl+':'+v+' touches the edge ('+bd+' '+po+')');
+        })); }
       catch(e){ out.convert.push(sl+':'+v+' threw '+e.message); }
     }));
     return out;
@@ -1321,7 +1326,7 @@ section('two styles, one rig');
   r.shapes.length ? bad('belt plates that do not draw smooth: '+r.shapes.join(', ')) : ok('every belt plate shape draws smooth');
   r.oneLook ? ok('the graphics toggle is retired: a stored Retro still draws the pixel sprites') : bad('the retired graphics toggle still changes the figure or is still on screen');
   (!after.cls && after.px) ? ok('and a reload keeps one look') : bad('a reload brought the old Retro look back: '+JSON.stringify(after));
-  (r.converted>=100 && !r.convert.length) ? ok(`every ownable cosmetic value converts to a drawn sprite (${r.converted})`)
+  (r.converted>=100 && !r.convert.length) ? ok(`every ownable cosmetic value converts to a drawn sprite clear of the canvas edge on every build and pose (${r.converted})`)
     : bad(`cosmetics that do not convert: ${r.convert.slice(0,6).join('; ')} (${r.converted} fine)`);
   await page.close();
 }
