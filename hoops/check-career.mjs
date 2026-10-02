@@ -300,7 +300,10 @@ section('5. real players and coaches by name, everybody else generated');
      over into generated rookies as the real men retire. */
   const L = C.newLife({ seed: 'mates', league });
   const real = new Set();
-  for (const r of ROWS) if (r.s === league.latest && r.t === 'BOS') real.add(r.n);
+  /* With today's rosters (league.rs) the real Celtics are the file's, whose
+     rookies are already on it; without, the data's last season. */
+  if (league.rs) for (const p of league.roster.BOS) real.add(p[0]);
+  else for (const r of ROWS) if (r.s === league.latest && r.t === 'BOS') real.add(r.n);
   const y1 = C.matesOf(L, 'BOS');
   const y1real = y1.filter((m) => m.real);
   ok(y1real.length >= 8 && y1real.every((m) => real.has(m.n)) && y1.length - y1real.length <= 1,
