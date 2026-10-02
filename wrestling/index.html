@@ -491,6 +491,9 @@
   .ev-tag.ev-K{color:var(--gold);border-color:var(--gold);}
   .ev-result{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
   .ev-result span{padding:4px 9px;border:1px solid var(--line);font-size:12px;color:var(--cream);}
+  .ev-result span.ev-kept{border-style:dashed;color:var(--text-faint);}
+  .ev-recall{margin-top:10px;padding:8px 10px;border-left:3px solid var(--gold);background:rgba(255,255,255,.03);font-size:12px;color:var(--text-faint);}
+  .ev-recall b{color:var(--cream);font-weight:normal;}
   .scene-opt-t{font-size:14px;color:var(--cream);line-height:1.4;}
   .scene-opt-n{font-size:11px;color:var(--text-faint);margin-top:5px;font-style:italic;}
   .scene-walk{margin-top:14px;text-align:center;}
@@ -20634,7 +20637,7 @@ function applySegmentEffect(eff, who){
    Bump EV_VERSION whenever the build is re-run, or a returning visitor keeps
    the stage files they already had.
    ============================================================ */
-const EV_VERSION=2;
+const EV_VERSION=3;
 const EV={all:[], loaded:{}, loading:{}};
 function evDrain(){ const R=window.RTR_EVENTS; if(!R||!R.q||!R.q.length) return;
   while(R.q.length){ const list=R.q.shift(); list.forEach(e=>{ if(!EV.all.some(x=>x.id===e.id)) EV.all.push(e); }); } }
@@ -20731,9 +20734,32 @@ function catalogApply(e, i){
     out.push(k==='money'?`Money ${d>0?'+':'-'}$${Math.abs(d).toLocaleString()}`:`${EV_NAMES[k]||k} ${d>0?'+':''}${d}`);
   });
   o.flags.forEach(f=>sceneRemember(f));
+  // C2, the memory: what you chose, and when, so a later event can quote it back
+  st.mem=st.mem||{};
+  const memo={y:c.year, w:c.week, t:o.t, id:e.id};
+  st.mem['#'+e.id]=memo; o.flags.forEach(f=>{ st.mem[f]=memo; });
+  if(o.flags.some(evRecalled)) out.push({kept:1, t:'They will remember this'});
   // the rows this one leads to open in two to six weeks
   e.next.forEach(id=>{ if(st.seen[id]==null && st.open[id]==null) st.open[id]=now+2+evHash(id+careerSeed())%5; });
   return out;
+}
+/* Is any event in the catalog going to bring this flag back up? */
+function evRecalled(f){ return EV.all.some(x=>(x.recall||[]).indexOf(f)>=0); }
+/* The earlier choices this event remembers, newest first, at most two.
+   A recall key is a flag, or an event id prefix (a condition like "a04_2 seen"). */
+function evRecall(e){
+  const mem=(evState().mem)||{}, seen={}, out=[];
+  (e.recall||[]).forEach(k=>{
+    let m=mem[k];
+    if(!m && /^[a-z]\d\d_/.test(k)) m=Object.keys(mem).filter(id=>id.indexOf('#'+k)===0).map(id=>mem[id])[0];
+    if(m && !seen[m.id]){ seen[m.id]=1; out.push(m); }
+  });
+  return out.sort((a,b)=>(b.y*100+b.w)-(a.y*100+a.w)).slice(0,2);
+}
+function evAgo(m){ const n=G.car.year-m.y; return n<=0?'Earlier this year':n===1?'Last year':`${n} years ago`; }
+function evRecallHtml(e){
+  const r=evRecall(e); if(!r.length) return '';
+  return r.map(m=>`<div class="ev-recall">${evAgo(m)}, you chose: <b>\u201c${m.t.replace(/[.]$/,'')}.\u201d</b></div>`).join('');
 }
 function evTitle(id){ return evCap(id.replace(/^(a\d+_\d+[a-z]?|day|org)_/,'').replace(/_/g,' ')); }
 function evSetup(t){ t=(t||'').trim(); if(!t) return ''; t=evCap(t); return /[.!?]$/.test(t)?t:t+'.'; }
@@ -20745,14 +20771,14 @@ function playCatalogEvent(e, onDone){
   const stg=evStages().find(n=>e.st.indexOf(n)>=0)||e.st[0];
   body.innerHTML=`<div class="scene-tag">${EV_STAGE_NAME[stg]||''} · ${e.rar}</div>
     <div class="scene-head"><div class="scene-av scene-av-narr">${pico('microphone',36)}</div>
-      <div><div class="scene-who">${evTitle(e.id)}</div><div class="scene-line">${evSetup(e.setup)}</div></div></div>
+      <div><div class="scene-who">${evTitle(e.id)}</div><div class="scene-line">${evSetup(e.setup)}</div>${evRecallHtml(e)}</div></div>
     <div class="scene-optlist">${e.opts.map((o,i)=>`<div class="scene-opt" data-i="${i}">
       <div class="scene-opt-t">${o.t} <span class="ev-tag ev-${o.tag}">${o.tag==='K'?'In character':'Real life'}</span></div></div>`).join('')}</div>`;
   back.classList.add('open');
   body.querySelectorAll('.scene-opt').forEach(el=>{ el.onclick=()=>{
     const lines=catalogApply(e,+el.dataset.i);
     markSegmentPlayed(); save();
-    body.querySelector('.scene-optlist').outerHTML=`<div class="ev-result">${lines.length?lines.map(l=>`<span>${l}</span>`).join(''):'<span>It stays with you.</span>'}</div>
+    body.querySelector('.scene-optlist').outerHTML=`<div class="ev-result">${lines.length?lines.map(l=>l&&l.kept?`<span class="ev-kept">${l.t}</span>`:`<span>${l}</span>`).join(''):'<span>It stays with you.</span>'}</div>
       <div class="scene-walk"><button id="evDone">Continue</button></div>`;
     document.getElementById('evDone').onclick=()=>{ closeScene(); if(onDone) onDone(); };
   }; });
