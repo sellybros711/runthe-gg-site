@@ -31,7 +31,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=5" />
+<link rel="stylesheet" href="/arcade/arcade.css?v=7" />
 <style>
   :root{
     --bg:#071426; --card:#10233A; --card2:#162B44; --card3:#1A3350;
@@ -81,6 +81,8 @@
   .clubline{font-family:var(--hero); font-weight:400; text-transform:uppercase; line-height:.98; margin:8px 0 2px;
     font-size:clamp(30px,8.4vw,46px); letter-spacing:.01em;}
   .season{font-family:var(--hero); font-weight:400; font-size:15px; letter-spacing:.14em; color:var(--mut);}
+  /* Filled in by script: hold its line so the Start button does not drop. */
+  .season:empty::before{content:"\00a0";}
   .blurb{color:var(--mut); font-size:14px; font-weight:600; margin:14px auto 18px; max-width:34ch; line-height:1.5;}
   .gobtn{width:100%; border:0; border-radius:12px; padding:15px 16px; font-family:var(--hero); font-weight:400;
     font-size:20px; letter-spacing:.04em; text-transform:uppercase; color:var(--onAccent); background:var(--rc); cursor:pointer;}
@@ -186,6 +188,9 @@ window.GA_ID='G-L29P5MRWKE';
   s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
   document.head.appendChild(s);})();
 </script>
+<script src="/arcade/tokens.js?v=15"></script>
+<script src="/arcade/metrics.js?v=3"></script>
+<script src="/arcade/gamehead.js?v=3"></script>
 </head>
 <body>
 <div class="wrap">
@@ -289,34 +294,35 @@ window.GA_ID='G-L29P5MRWKE';
 </div>
 <div class="toast" id="toast"></div>
 
+<script src="/arcade/franchise.js?v=1"></script>
 <script src="/arcade/icons.js?v=3"></script>
-<script src="/arcade/tokens.js?v=13"></script>
-<script src="/arcade/day.js?v=2"></script>
-<script src="/arcade/dayroll.js?v=1"></script>
+<script src="/arcade/day.js?v=3"></script>
+<script src="/arcade/dayroll.js?v=2"></script>
 <!-- archive.js reads RTGTokens.isPro() as it parses, so it must come after tokens.js -->
-<script src="/arcade/archive.js?v=2"></script>
+<script src="/arcade/archive.js?v=3"></script>
 <script src="/arcade/gamemarks.js?v=4"></script>
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=21"></script>
-<script src="/arcade/leaderboard.js?v=15"></script>
-<script src="/arcade/alltime.js?v=3"></script>
+<script src="/arcade/board.js?v=24"></script>
+<script src="/arcade/leaderboard.js?v=16"></script>
+<script src="/arcade/alltime.js?v=4"></script>
 <script src="/arcade/auth.js?v=4"></script>
-<script src="/arcade/topbanner.js?v=10"></script>
+<script src="/arcade/topbanner.js?v=11"></script>
 <script src="/arcade/auth-ui.js?v=9"></script>
-<script src="/arcade/card.js?v=22"></script>
-<script src="/arcade/referral.js?v=11"></script>
-<script src="/arcade/demo.js?v=4"></script>
-<script src="/arcade/pregame.js?v=26"></script>
-<script src="/arcade/funnel.js?v=12"></script>
-<script src="/arcade/share.js?v=9"></script>
-<script src="/arcade/result.js?v=1"></script>
-<script src="/arcade/resultart.js?v=4"></script>
-<script src="/arcade/resultstats.js?v=2"></script>
-<script src="/arcade/sfx.js?v=2"></script>
-<script src="/arcade/teammates.js?v=34"></script>
-<script src="/arcade/livecheck.js?v=8"></script>
-<script src="/arcade/teamcheck.js?v=2"></script>
+<script src="/arcade/card.js?v=23"></script>
+<script src="/arcade/referral.js?v=12"></script>
+<script src="/arcade/demo.js?v=5"></script>
+<script src="/arcade/pregame.js?v=29"></script>
+<script src="/arcade/funnel.js?v=14"></script>
+<script src="/arcade/share.js?v=11"></script>
+<script src="/arcade/result.js?v=2"></script>
+<script src="/arcade/resultart.js?v=5"></script>
+<script src="/arcade/resultstats.js?v=3"></script>
+<script src="/arcade/review.js?v=1" defer></script>
+<script src="/arcade/sfx.js?v=4"></script>
+<script src="/arcade/teammates.js?v=35"></script>
+<script src="/arcade/livecheck.js?v=11"></script>
+<script src="/arcade/teamcheck.js?v=3"></script>
 <script src="/arcade/type.js?v=5"></script>
 <script>
 (function(){
@@ -468,7 +474,25 @@ window.GA_ID='G-L29P5MRWKE';
   // ---------- state ----------
   var found = {}, foundN = 0, timer=null, left=SECONDS, done=false, startedAt=0;
 
-  function clubName(){ return D.teams[board.team]; }
+  /* TODAY'S BOARD SURVIVES A RELOAD. The play is spent on Start, so a reload
+     used to land on the "free play used" wall with nothing named. The ranked
+     daily board is kept with the names found and WHEN the clock runs out. The
+     clock is wall time: it keeps running while the page is away, so a reload
+     is not a free pause. Back after it ran out, and the board is scored as it
+     stood. */
+  var RESUME_KEY='rtg:resume:rollcall', ENDS=0, restoring=false;
+  function readResume(){ try{ var r=JSON.parse(LS.getItem(RESUME_KEY)); return (r&&typeof r==='object')?r:null; }catch(e){ return null; } }
+  function clearResume(){ try{ LS.removeItem(RESUME_KEY); }catch(e){} }
+  function saveResume(){
+    if(restoring || ARCHIVE || !isDaily || done || !attemptFirst || !board) return;
+    try{ LS.setItem(RESUME_KEY, JSON.stringify({ d:pdate(), team:board.team, year:board.year, ends:ENDS,
+      found:Object.keys(found), extra:extra.slice() })); }catch(e){}
+  }
+
+  /* The club as it was called that season: the roster files carry
+     "Washington Commanders" for every Washington year. */
+  function eraName(b){ var n=D.teams[b.team], sp=sportOf(b); return (window.RTGFranchise && sp) ? RTGFranchise.nameAt(sp, n, b.year, b.year) : n; }
+  function clubName(){ return eraName(board); }
   // the board is one club, so its sport is the sport of anyone on it. The live
   // check needs it: a name can be two men in two leagues.
   function sportOf(b){
@@ -491,7 +515,7 @@ window.GA_ID='G-L29P5MRWKE';
     // so the answer key is in hand before the ninety seconds start.
     loadShard(b, function(){});
   }
-  function clubOf(b){ return D.teams[b.team]; }
+  function clubOf(b){ return eraName(b); }
   /* AN NBA SEASON HAS TWO YEARS IN ITS NAME AND WE WERE ONLY PRINTING ONE.
      Our year is Basketball-Reference's, which labels a season by the year it
      ENDS: 2010 is the 2009-10 season. A player reads "2010 SEASON" as 2010-11,
@@ -554,7 +578,7 @@ window.GA_ID='G-L29P5MRWKE';
   // `num` is only there for a deep cut off our own roster page: we know the
   // shirt he wore, so the row shows it exactly like a printed slot does.
   function addExtra(name, note, num){
-    extra.push({ name:name, note:note||'' });
+    extra.push({ name:name, note:note||'', num:(num==null?null:num) });
     foundN++;
     $('tallyN').textContent=foundN;
     var host=$('slots');
@@ -563,6 +587,7 @@ window.GA_ID='G-L29P5MRWKE';
     el.querySelector('.nm').textContent = name;
     el.querySelector('.no').textContent = (num==null||num<0) ? 'deep cut' : ('#'+num+' · deep cut');
     host.appendChild(el);
+    saveResume();
   }
   /* "Roger Mason Jr.." is what naive concatenation gives you. A name that
      already ends in a full stop has one. */
@@ -585,7 +610,7 @@ window.GA_ID='G-L29P5MRWKE';
       var pos = board.ids.indexOf(ids[a]);
       if(pos<0) continue;
       if(found[ids[a]]){ message('You already got ' + sentence(nameOf(ids[a])), 'warn'); return; }
-      found[ids[a]]=1; foundN++;
+      found[ids[a]]=1; foundN++; saveResume();
       fillSlot(pos, ids[a]);
       $('tallyN').textContent=foundN;
       message(sentence(nameOf(ids[a])) + ' Yes!', 'good');
@@ -634,7 +659,8 @@ window.GA_ID='G-L29P5MRWKE';
     }
     checking = true;
     message('Checking…', 'warn');
-    TC.onClubIn(raw, clubName(), board.year, sportOf(board)).then(function(r){
+    // the raw club name: the live record files a club under one name for all its years
+    TC.onClubIn(raw, D.teams[board.team], board.year, sportOf(board)).then(function(r){
       checking = false;
       if(done) return;
       if(r && r.ok === true){
@@ -662,6 +688,7 @@ window.GA_ID='G-L29P5MRWKE';
   }
 
   function tick(){
+    if(ENDS) left = Math.max(0, Math.ceil((ENDS-Date.now())/1000));
     var m=Math.floor(left/60), s=left%60;
     $('clockT').textContent = m+':'+String(s).padStart(2,'0');
     $('barFill').style.width = Math.max(0, left/SECONDS*100)+'%';
@@ -669,7 +696,7 @@ window.GA_ID='G-L29P5MRWKE';
     $('clock').classList.toggle('warn', warn);
     $('barFill').classList.toggle('warn', warn);
     if(left<=0){ clearInterval(timer); timer=null; finish(false); return; }
-    left--;
+    if(!ENDS) left--;
   }
 
   function startPuzzle(daily){
@@ -691,16 +718,42 @@ window.GA_ID='G-L29P5MRWKE';
       attemptFirst = !!(att && att.first);
     } else { attemptFirst = false; }
     updateAgainBtn();
+    ENDS = startedAt + SECONDS*1000;
+    showBoard();
+    saveResume();
+    setTimeout(function(){ try{ $('ask').focus(); }catch(e){} }, 120);
+  }
+  function showBoard(){
     $('scrim').classList.add('hidden');
     renderBoard();
     $('panelSetup').classList.remove('on'); $('panelPlay').classList.add('on');
     tick(); if(timer) clearInterval(timer); timer=setInterval(tick,1000);
-    setTimeout(function(){ try{ $('ask').focus(); }catch(e){} }, 120);
+  }
+  function resumeBoard(r){
+    var b = pickBoard(true, pdate());
+    if(!b || b.team!==r.team || b.year!==r.year){ clearResume(); return; }
+    board=b; isDaily=true; attemptFirst=true; done=false; found={}; foundN=0; extra=[]; checking=false;
+    ENDS = +r.ends || Date.now(); startedAt = ENDS - SECONDS*1000;
+    buildRoster();
+    loadShard(b, function(){ if(board===b) buildRoster(); });
+    restoring=true;
+    showBoard();
+    (r.found||[]).forEach(function(k){
+      var id = isNaN(+k) ? k : +k, pos = board.ids.indexOf(id);
+      if(pos<0 || found[id]) return;
+      found[id]=1; foundN++; fillSlot(pos, id);
+    });
+    (r.extra||[]).forEach(function(x){ if(x && x.name) addExtra(x.name, x.note, x.num); });
+    $('tallyN').textContent=foundN;
+    restoring=false;
+    if(left<=0){ finish(false); return; }
+    toast('Picked up where you left off');
   }
 
-  function finish(cleared){
+  function finish(cleared, byChoice){
     if(done) return;
     done=true;
+    if(isDaily && !ARCHIVE){ clearResume(); if(window.RTGTokens && RTGTokens.complete) RTGTokens.complete(GAME); }
     if(timer){ clearInterval(timer); timer=null; }
     var total = board.ids.length;
     var secs = Math.max(3, Math.min(SECONDS, Math.round((Date.now()-startedAt)/1000)));
@@ -714,6 +767,10 @@ window.GA_ID='G-L29P5MRWKE';
       var num = numberAt(id, board.team, board.year);
       el.querySelector('.no').textContent = (num==null? '' : '#'+num);
     });
+    if(window.RTGReview) RTGReview.set(GAME, board.ids.map(function(id){
+      var num = numberAt(id, board.team, board.year);
+      return { q:nameOf(id)+(num==null?'':' (#'+num+')'), you: found[id] ? nameOf(id) : '', answer:nameOf(id), ok: !!found[id], note: found[id] ? '' : 'Missed' };
+    }).concat(extra.map(function(x){ return { q:'Off the board', you:x.name, answer:'', ok:true, note:x.note||'A deep cut' }; })));
 
     var st=load(), prevBest=st.best||0, best=Math.max(prevBest, foundN);
     if(isDaily && !ARCHIVE){ st.best=best; st.last={d:today(), score:foundN, total:total}; save(st); }
@@ -750,7 +807,7 @@ window.GA_ID='G-L29P5MRWKE';
       prevBest:(prevBest>0?prevBest:null), isBest:(isDaily && !ARCHIVE && foundN>0 && foundN>prevBest),
       streak:(st.streak||0) }; }catch(e){}
     var perfect = foundN===total;
-    $('mSub').textContent = perfect ? 'Full roster!' : (foundN>prevBest && foundN>0 ? 'New personal best!' : (cleared ? 'Board cleared!' : 'Time’s up'));
+    $('mSub').textContent = perfect ? 'Full roster!' : (foundN>prevBest && foundN>0 ? 'New personal best!' : (cleared ? 'Board cleared!' : (byChoice ? 'Board done' : 'Time’s up')));
     $('scrim').classList.remove('hidden');
     if(perfect){ sfx('win'); }
   }
@@ -785,7 +842,7 @@ window.GA_ID='G-L29P5MRWKE';
   $('practiceBtn').addEventListener('click', function(){ startPuzzle(false); });
   $('goBtn').addEventListener('click', submitName);
   $('ask').addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); submitName(); } });
-  $('doneBtn').addEventListener('click', function(){ finish(false); });
+  $('doneBtn').addEventListener('click', function(){ finish(false, true); });
   $('mClose').addEventListener('click', function(){ $('scrim').classList.add('hidden'); });
   $('mAgain').addEventListener('click', function(){
     if(!ARCHIVE && window.RTGTokens && !RTGTokens.canPlay(GAME)){
@@ -848,10 +905,15 @@ window.GA_ID='G-L29P5MRWKE';
     $('startBtn').disabled=true;
   } else {
     renderSetup();
+    var R=readResume(), st0=load();
+    var live = !ARCHIVE && R && R.d===pdate() && !(st0.last && st0.last.d===today()) &&
+               window.RTGTokens && RTGTokens.playsOf(GAME)>0;
+    if(R && !live) clearResume();
+    if(live) resumeBoard(R);
   }
 })();
 </script>
-<script src="/arcade/howto.js?v=24"></script>
+<script src="/arcade/howto.js?v=26"></script>
 <script>if (window.RTGHowto) RTGHowto.init('rollcall');</script>
 </body>
 </html>

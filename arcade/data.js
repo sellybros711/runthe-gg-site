@@ -291,6 +291,44 @@
    * it costs nothing: the documented contract above is read e.pt, fall back to
    * e.t[0], and the first club is always a true thing to say.
    */
+  /* ------------------------------------------------------------------
+   * ONE CLUB, ONE ENTRY; EACH NAME AS IT WAS (franchise.js -> RTGFranchise)
+   *
+   * e.t becomes the club names as they were in the player's years (no more
+   * "Washington Commanders" for a 2009 career, no "Sacramento Kings" for the
+   * Cincinnati Royals), and e.tk the franchises, one each, so a player who
+   * stayed through a move counts one club and two Raiders are teammates of
+   * one franchise. Show e.t; count and compare e.tk.
+   * ---------------------------------------------------------------- */
+  /* Hall of Fame flags that cannot be true. Albert Pujols retired after the
+     2022 season and is not on a Cooperstown ballot until 2028. The same list
+     is applied by scripts/build-sportegories.mjs. */
+  var NOT_HOF = { 'MLB|albert pujols': 1 };
+  ENT.forEach(function (e) {
+    if (e && e.hof && NOT_HOF[e.sport + '|' + String(e.name || '').toLowerCase()]) {
+      e.hof = false;
+      if (Array.isArray(e.aw)) e.aw = e.aw.filter(function (a) { return a !== 'Hall of Fame'; });
+    }
+  });
+
+  /* A player who transferred went to more than one school. A few source rows
+     carry them all in one string, latest first ("Miami; Washington State;
+     Incarnate Word"), which every game then printed and compared as if it
+     were one school's name: Alma Mater offered the whole string as a choice
+     and refused any single school typed. So e.col is the school he finished
+     at, and e.cols every school he attended. A game that grades a typed
+     answer accepts any of e.cols. scripts/audit-athletes.mjs reports these. */
+  ENT.forEach(function (e) {
+    if (!e || typeof e.col !== 'string' || e.col.indexOf(';') < 0) return;
+    var parts = e.col.split(';').map(function (s) { return s.trim(); }).filter(Boolean);
+    if (!parts.length) return;
+    e.col = parts[0];
+    if (parts.length > 1) e.cols = parts;
+  });
+
+  var FR = root.RTGFranchise;
+  if (FR && FR.normalize) ENT.forEach(function (e) { FR.normalize(e); });
+
   var PR = root.RTG_PRIMARY;
   if (PR && PR.of) {
     var ptHit = 0, ptOdd = 0;
@@ -298,6 +336,8 @@
       if (!e || !e.name || !e.sport || e.pt) return;
       var t = PR.of(e.sport, e.name);
       if (!t) return;
+      var sp = FR && FR.span ? FR.span(e) : null;
+      if (sp) t = FR.nameAt(e.sport, t, sp[0], sp[1]);
       if (Array.isArray(e.t) && e.t.length && e.t.indexOf(t) === -1) { ptOdd++; return; }
       e.pt = t; ptHit++;
     });

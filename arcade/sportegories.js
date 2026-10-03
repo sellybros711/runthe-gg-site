@@ -219,6 +219,23 @@
   var CATS_PER = 8;
   var LETTER_MIN_CATS = 120;     // don't roll a letter the library can barely serve
   var TIER_PLAN = [0, 0, 1, 1, 2, 1, 1, 2];   // 2 anchor, 4 mid, 2 hard
+  /* Flag 'broadcats' (flags.js). A board any fan can start on: four Anchor
+     categories (the tier the build gives to categories with 200+ known
+     answers: positions, eras, the big awards, the big conferences), three
+     Mid and one Hard. The labels stay Anchor, Mid and Hard. */
+  var TIER_PLAN_BROAD = [0, 0, 1, 0, 1, 0, 2, 1];   // 4 anchor, 3 mid, 1 hard
+  /* Retired from the daily board under the same flag: categories that count
+     franchises ("Played for the Miami Heat and 3 other franchises", "Played
+     for 4+ franchises", "Cornerback who played for 3+ teams", "Played for
+     exactly two franchises"). A fan cannot answer them
+     from memory, and franchise counts are the field the data gets wrong most
+     often (relocations, a week on a practice squad). "Never played for
+     another franchise" stays: that one a fan does know. */
+  var RETIRED = /\b\d\+ (teams|franchises)\b|\bother franchises?\b|exactly two franchises/i;
+  function broadOn(dateStr) {
+    var F = (typeof self !== 'undefined' ? self : this).RTGFlags;
+    try { return !!(F && F.on && F.on('broadcats', dateStr)); } catch (e) { return false; }
+  }
   /* Sport mix. The library is football-heavy by nature (NFL rosters churn), so
    * bias the draw toward basketball and away from baseball, and cap any one
    * sport so a day can't turn into an all-MLB card. */
@@ -322,7 +339,7 @@
     return L;
   }
 
-  function build(seed, forcedLetter) {
+  function build(seed, forcedLetter, broad) {
     if (!data()) return null;
     var r = rng(seed);
     var pick = (D.letters || []).filter(function (L) { return (D.byLetter[L] || []).length >= LETTER_MIN_CATS; });
@@ -337,6 +354,7 @@
       for (var wi = 0; wi < pick.length; wi++) { roll -= w[wi]; if (roll <= 0) { L = pick[wi]; break; } }
     }
     var avail = viableFor(L);
+    if (broad) avail = avail.filter(function (c) { return !RETIRED.test(c.l); });
     var out = [], used = {}, byTag = {}, bySport = {};
     function freeSport(c) { return (bySport[c.s || 'ANY'] || 0) < (SPORT_CAP[c.s || 'ANY'] || 3); }
     function draw(opts) {                       // weighted by sport AND breadth
@@ -346,7 +364,7 @@
       for (i = 0; i < opts.length; i++) { roll -= wOf(opts[i]); if (roll <= 0) return opts[i]; }
       return opts[opts.length - 1];
     }
-    TIER_PLAN.forEach(function (want) {
+    (broad ? TIER_PLAN_BROAD : TIER_PLAN).forEach(function (want) {
       var opts = avail.filter(function (c) {
         return !used[c.i] && c.t === want && (byTag[c.g] || 0) < 2 && freeSport(c);
       });
@@ -357,12 +375,57 @@
       var c = draw(opts);
       used[c.i] = 1; byTag[c.g] = (byTag[c.g] || 0) + 1;
       bySport[c.s || 'ANY'] = (bySport[c.s || 'ANY'] || 0) + 1;
-      out.push({ i: c.i, label: c.l, tier: c.t, axis: c.g, sport: c.s || 'ANY', pool: c.n, valid: (D.viab[c.i] || {})[L.toLowerCase()] || 0 });
+      out.push({ i: c.i, label: eraLabel(c.l, c.s), tier: c.t, axis: c.g, sport: c.s || 'ANY', pool: c.n, valid: (D.viab[c.i] || {})[L.toLowerCase()] || 0 });
     });
     return { letter: L, cats: out, seed: seed };
   }
-  function daily(dateStr) { return build(hash('sportegories:' + dateStr), letterForDate(dateStr)); }
-  function practice(seed) { return build(hash('sportegories:practice:' + (seed == null ? Math.floor(Math.random() * 1e9) : seed))); }
+  /* A team category accepts every era of its franchise (the data's alias
+     table files the Houston Oilers under the Titans), so the label names every
+     era too: "Played for the Houston Oilers / Tennessee Titans", not a 2022
+     name for a 1980s career. Labels that already use a shared nickname
+     ("the Raiders") are left as they are. franchise.js is optional here. */
+  /* The names the players this file accepts for a club actually played
+     under, worked out from each one's decades. So the label promises exactly
+     what the check accepts: the 76ers read "Syracuse Nationals / Philadelphia
+     76ers" only if a Syracuse-era player is in the file. */
+  var UNDER = null;
+  function namesUnder(sport, team) {
+    var F = (typeof self !== 'undefined' ? self : this).RTGFranchise;
+    if (!UNDER) {
+      UNDER = {};
+      (P || []).forEach(function (p) {
+        var bits = p.decBits || 0, lo = null, hi = null;
+        for (var b = 0; b < 16; b++) if (bits & (1 << b)) { var y = D.dec0 + 10 * b; if (lo == null) lo = y; hi = y + 9; }
+        p.teams.forEach(function (t) {
+          var k = p.sport + '|' + t, n = (lo != null && F) ? F.nameAt(p.sport, t, lo, hi) : t;
+          var m = UNDER[k] = UNDER[k] || {};
+          m[n] = (m[n] || 0) + 1;
+        });
+      });
+    }
+    // The two names most of these players wore; a name only a handful wore
+    // (the Cleveland Naps) does not get to stand for the club.
+    var m = UNDER[sport + '|' + team];
+    if (!m) return [team];
+    var ns = Object.keys(m).sort(function (a, b) { return m[b] - m[a]; });
+    return ns.filter(function (n, i) { return i < 2 && (i === 0 || m[n] >= 2); });
+  }
+  function eraLabel(lab, sport) {
+    var F = (typeof self !== 'undefined' ? self : this).RTGFranchise;
+    if (!F || !F.franchiseLabel || !F._F || !sport || !F._F[sport]) return lab;
+    var keys = Object.keys(F._F[sport]).sort(function (a, b) { return b.length - a.length; });
+    for (var k = 0; k < keys.length; k++) {
+      var at = lab.indexOf('the ' + keys[k]);
+      if (at < 0) continue;
+      var end = at + 4 + keys[k].length, after = lab.charAt(end);
+      if (after && /[A-Za-z]/.test(after)) continue;
+      var nl = F.label(sport, keys[k], namesUnder(sport, keys[k]));
+      return nl && nl !== keys[k] ? lab.slice(0, at + 4) + nl + lab.slice(end) : lab;
+    }
+    return lab;
+  }
+  function daily(dateStr) { return build(hash('sportegories:' + dateStr), letterForDate(dateStr), broadOn(dateStr)); }
+  function practice(seed) { return build(hash('sportegories:practice:' + (seed == null ? Math.floor(Math.random() * 1e9) : seed)), null, broadOn()); }
 
   // ---------- grading ----------
   /* Returns:

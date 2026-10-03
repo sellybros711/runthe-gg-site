@@ -31,7 +31,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Press+Start+2P&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=5" />
+<link rel="stylesheet" href="/arcade/arcade.css?v=7" />
 <script src="/arcade/icons.js?v=3"></script>
 <style>
   :root{
@@ -51,7 +51,7 @@
     --ink:#0D1B2C; --mut:#51637A; --dim:#8B98A6;
     --line:rgba(13,27,44,.10); --line2:rgba(13,27,44,.18);
     --coralT:#D8452F; --brandT:#B4530A; --brand2T:#C4372C; --mossT:#5F7A12; --goldT:#A87508; --tealT:#0E7C89; --greenT:#17A34A; --red:#C4372C;
-    --hlT:#B4530A;
+    --hlT:#9A4406;
     --nfl:#2358E0; --mlb:#D8452F; --nba:#A87508;
     --shadow:0 6px 18px -12px rgba(13,27,44,.25);
   }
@@ -85,6 +85,11 @@
 
   .panel{display:none;}
   .panel.on{display:block;}
+  /* which panel opens is decided by script (the gate, the setup, or a run in
+     progress), so until one is on, the how-to tab and the footer wait too.
+     Drawn first they sat at the top of an empty page and were pushed 800px
+     down a moment later. */
+  .wrap:not(:has(.panel.on)) > .gj, .wrap:not(:has(.panel.on)) > .foot{display:none;}
 
   /* ===== card gate (non-members) ===== */
   .gate{background:var(--card); border:1px solid var(--line2); border-top:5px solid var(--hl); border-radius:16px; padding:30px 22px; text-align:center; box-shadow:var(--shadow); max-width:520px; margin:20px auto;}
@@ -104,7 +109,7 @@
   .setupsub{font-size:12.5px; color:var(--mut); margin:0 2px 16px; font-weight:600;}
 
   .catsport{margin-bottom:18px;}
-  .catsport h3{display:flex; align-items:center; gap:8px; font-size:11px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; color:var(--sc,var(--mut)); margin:0 2px 9px;}
+  .catsport h3{display:flex; align-items:center; gap:8px; font-size:11px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; color:color-mix(in srgb, var(--sc,var(--mut)) 66%, var(--ink)); margin:0 2px 9px;}
   .catsport h3::after{content:""; flex:1; height:1px; background:var(--line);}
   .catgrid{display:grid; grid-template-columns:1fr 1fr; gap:9px;}
   @media (min-width:540px){ .catgrid{grid-template-columns:1fr 1fr 1fr;} }
@@ -113,7 +118,7 @@
   .catchip:active{transform:translateY(0);}
   .catchip .cl{display:block; font-weight:900; font-size:14px; line-height:1.15;}
   .catchip .cc{display:block; font-size:10px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--mut); margin-top:4px;}
-  .catsoon{margin:11px 2px 0; padding:10px 12px; border:1.5px dashed var(--sc,var(--line2)); border-radius:11px; text-align:center; font-size:11px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:var(--sc,var(--mut));}
+  .catsoon{margin:11px 2px 0; padding:10px 12px; border:1.5px dashed var(--sc,var(--line2)); border-radius:11px; text-align:center; font-size:11px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:color-mix(in srgb, var(--sc,var(--mut)) 66%, var(--ink));}
 
   .crumb{display:flex; align-items:center; gap:10px; margin:0 2px 14px; flex-wrap:wrap;}
   .crumb .back{appearance:none; border:1px solid var(--line2); background:var(--card); color:var(--mut); font-family:inherit; font-weight:800; font-size:12px; border-radius:8px; padding:7px 11px; cursor:pointer;}
@@ -251,6 +256,9 @@ window.GA_ID='G-L29P5MRWKE';
   s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
   document.head.appendChild(s);})();
 </script>
+<script src="/arcade/tokens.js?v=15"></script>
+<script src="/arcade/metrics.js?v=3"></script>
+<script src="/arcade/gamehead.js?v=3"></script>
 </head>
 <body>
 <div class="wrap">
@@ -293,7 +301,7 @@ window.GA_ID='G-L29P5MRWKE';
     <!-- step 1: pick a category -->
     <div class="setup" id="stepCategory">
       <div class="setuphead">Pick a category</div>
-      <div class="setupsub">Pick a stat. Then pick your starting player and call each next player higher or lower.</div>
+      <div class="setupsub">Pick a stat, then call higher or lower.</div>
       <div id="catList"></div>
     </div>
 
@@ -349,7 +357,7 @@ window.GA_ID='G-L29P5MRWKE';
           <span class="arr" aria-hidden="true">▼</span>LOWER<span class="sub">smaller number</span>
         </button>
       </div>
-      <div class="hint" id="playHint">Higher or lower than the baseline? See how long you can go.</div>
+      <div class="hint" id="playHint">Higher or lower? Go as long as you can.</div>
     </div>
 
     <div class="lb" id="lb">
@@ -417,39 +425,42 @@ window.GA_ID='G-L29P5MRWKE';
 <div class="toast" id="toast"></div>
 
 <script src="../match/entities.js?v=12"></script>
-<script src="/arcade/stars.js?v=4"></script>
+<script src="/arcade/stars.js?v=5"></script>
 <script src="/arcade/awards.js?v=3"></script>
-<script src="/arcade/primary.js?v=33"></script>
-<script src="/arcade/data.js?v=5"></script>
-<script src="/arcade/jerseys.js?v=33"></script>
+<script src="/arcade/primary.js?v=34"></script>
+<script src="/arcade/franchise.js?v=1"></script>
+<script src="/arcade/data.js?v=8"></script>
+<script src="/arcade/flags.js?v=2"></script>
+<script src="/arcade/fame.js?v=1"></script>
+<script src="/arcade/jerseys.js?v=34"></script>
 <script src="/arcade/stats.js?v=4"></script>
 <script src="/arcade/hlstats.js?v=5"></script>
 <script src="/arcade/rosterstats.js?v=4"></script>
-<script src="/arcade/tokens.js?v=13"></script>
-<script src="/arcade/day.js?v=2"></script>
-<script src="/arcade/dayroll.js?v=1"></script>
+<script src="/arcade/day.js?v=3"></script>
+<script src="/arcade/dayroll.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=21"></script>
-<script src="/arcade/leaderboard.js?v=15"></script>
-<script src="/arcade/alltime.js?v=3"></script>
+<script src="/arcade/board.js?v=24"></script>
+<script src="/arcade/leaderboard.js?v=16"></script>
+<script src="/arcade/alltime.js?v=4"></script>
 <script src="/arcade/auth.js?v=4"></script>
 <script src="/arcade/mycard.js?v=14"></script>
-<script src="/arcade/topbanner.js?v=10"></script>
+<script src="/arcade/topbanner.js?v=11"></script>
 <script src="/arcade/auth-ui.js?v=9"></script>
-<script src="/arcade/card.js?v=22"></script>
-<script src="/arcade/referral.js?v=11"></script>
-<script src="/arcade/sfx.js?v=2"></script>
-<script src="/arcade/share.js?v=9"></script>
-<script src="/arcade/result.js?v=1"></script>
-<script src="/arcade/resultart.js?v=4"></script>
+<script src="/arcade/card.js?v=23"></script>
+<script src="/arcade/referral.js?v=12"></script>
+<script src="/arcade/sfx.js?v=4"></script>
+<script src="/arcade/share.js?v=11"></script>
+<script src="/arcade/result.js?v=2"></script>
+<script src="/arcade/resultart.js?v=5"></script>
 <script src="/arcade/gamemarks.js?v=4"></script>
 <!-- pregame.js gates the one free play of this Arcade Card game; calendar.js
      is what gives that gate the game's name and accent. -->
 <script src="/arcade/calendar.js?v=15"></script>
-<script src="/arcade/demo.js?v=4"></script>
-<script src="/arcade/pregame.js?v=26"></script>
-<script src="/arcade/resultstats.js?v=2"></script>
-<script src="/arcade/modal-a11y.js?v=1"></script>
+<script src="/arcade/demo.js?v=5"></script>
+<script src="/arcade/pregame.js?v=29"></script>
+<script src="/arcade/resultstats.js?v=3"></script>
+<script src="/arcade/review.js?v=1" defer></script>
+<script src="/arcade/modal-a11y.js?v=2"></script>
 <script>
 (function(){
   'use strict';
@@ -582,8 +593,28 @@ window.GA_ID='G-L29P5MRWKE';
   function isActive(e){ return !!(e && ACTIVE[e.id]); }
 
   // ---------- draw a fresh opponent from the category pool ----------
+  /* Flag 'ramp' (flags.js, fame.js): the next player comes from the fame
+     band for the call the streak has reached, so a run opens on household
+     names and the deeper names arrive as the streak grows. A player already
+     shown in this run is not dealt again. With the flag off nothing here runs. */
+  var RSEEN={};
+  function drawRamp(cat, baseline, bv){
+    var on=false;
+    try{ on=!!(window.RTGFlags && window.RTGFame && RTGFlags.on('ramp')); }catch(e){}
+    if(!on) return null;
+    if(run===0) RSEEN={};
+    RSEEN[baseline.id]=1;
+    var c=RTGFame.pick(cat.pool||[], run, Math.random, function(e){
+      if(RSEEN[e.id]) return true;
+      var v=cat.vfn(e); return v==null || v===bv;
+    });
+    if(!c) return null;
+    RSEEN[c.id]=1;
+    return { ent:c, val:cat.vfn(c) };
+  }
   function drawOpponent(cat, baseline){
     var pool = cat.pool || [], bv = cat.vfn(baseline);
+    var ramped = drawRamp(cat, baseline, bv); if(ramped) return ramped;
     var recog = pool.filter(function(e){ return e.id!==baseline.id && (e.f||0)>=3; });
     if(recog.length < 8) recog = pool.filter(function(e){ return e.id!==baseline.id && (e.f||0)>=2; });
     if(!recog.length) recog = pool.filter(function(e){ return e.id!==baseline.id; });
@@ -598,9 +629,39 @@ window.GA_ID='G-L29P5MRWKE';
     return null;
   }
 
+  /* For scripts/check-content.mjs: the opponents a run would be dealt from the
+     most famous starting player, without playing. Restores the run counter and
+     the seen list, so it changes nothing about a game in progress. */
+  window.__rtgDeal = function(n){
+    // the chosen category, or before one is picked the one with most players
+    var c=cat || CATS.slice().sort(function(x,y){ return (y.pool||[]).length-(x.pool||[]).length; })[0];
+    if(!c || !c.pool || !c.pool.length) return null;
+    var keepRun=run, keepSeen=RSEEN, out=[];
+    var b=(window.RTGFame ? RTGFame.rank(c.pool) : c.pool)[0];
+    try{
+      for(var k=0;k<(n||30);k++){
+        run=k; var o=drawOpponent(c, b); if(!o) break;
+        out.push({ target:o.ent, extra:c.label }); b=o.ent;
+      }
+    } finally { run=keepRun; RSEEN=keepSeen; }
+    return out;
+  };
+
   // ---------- state ----------
   var cat=null, baseline=null, baselineVal=0, opp=null, oppVal=0, runStart=0;
   var run=0, best=0, busy=false, playing=false, charged=false;
+
+  /* A RUN SURVIVES A RELOAD. The play is spent when the first player is
+     picked, so a reload mid-run used to land on the "free play used" wall
+     with the run thrown away. The run is kept here: the category, the two
+     players on screen, the streak and when it began. */
+  var RESUME_KEY='rtg:resume:highlow';
+  function readResume(){ try{ var r=JSON.parse(LS.getItem(RESUME_KEY)); return (r&&typeof r==='object')?r:null; }catch(e){ return null; } }
+  function clearResume(){ try{ LS.removeItem(RESUME_KEY); }catch(e){} }
+  function saveResume(){
+    if(!playing || !charged || !cat || !baseline || !opp) return;
+    try{ LS.setItem(RESUME_KEY, JSON.stringify({ d:DATE, cat:cat.key, base:baseline.id, opp:opp.id, run:run, t0:runStart, first:attemptFirst?1:0 })); }catch(e){}
+  }
 
   function load(){ try{ return JSON.parse(LS.getItem(SAVE_KEY))||{}; }catch(e){ return {}; } }
   function save(s){ try{ LS.setItem(SAVE_KEY, JSON.stringify(s)); }catch(e){} }
@@ -714,7 +775,7 @@ window.GA_ID='G-L29P5MRWKE';
 
   function startGame(baseId){
     var e = idMap[baseId]; if(!e || !cat) return;
-    baseline=e; run=0; playing=true; busy=false; charged=false;
+    baseline=e; run=0; playing=true; busy=false; charged=false; if(window.RTGReview) RTGReview.start(GAME);
     runStart=Date.now();   // real elapsed time is the board's tiebreak
     var s=load(); best=s.best||0;
     document.getElementById('streakN').textContent='0';
@@ -752,7 +813,11 @@ window.GA_ID='G-L29P5MRWKE';
   function nextOpponent(){
     var drawn=drawOpponent(cat, baseline);
     if(!drawn){ toast('No more fair matchups. Nice run!'); finish(); return; }
-    opp=drawn.ent; oppVal=drawn.val;
+    showOpponent(drawn.ent, drawn.val);
+    saveResume();
+  }
+  function showOpponent(ent, val){
+    opp=ent; oppVal=val;
     oppCard.classList.remove('revealed','correct','wrong');
     document.getElementById('oppName').textContent=opp.name;
     document.getElementById('oppMeta').textContent=metaLine(opp);
@@ -767,6 +832,9 @@ window.GA_ID='G-L29P5MRWKE';
     var actualHigher = oppVal > baselineVal;   // ties never presented
     var correct = (dir==='higher') === actualHigher;
     oppCard.classList.add('revealed'); oppCard.classList.add(correct?'correct':'wrong');
+    if(window.RTGReview){ var rvt=function(h){ var d=document.createElement('div'); d.innerHTML=h; return d.textContent; };
+      RTGReview.add(GAME, { q:opp.name+' vs '+baseline.name+' ('+cat.label+')', you:dir==='higher'?'Higher':'Lower',
+        answer:(actualHigher?'Higher':'Lower')+': '+rvt(fmtVal(cat, oppVal, opp))+' to '+rvt(fmtVal(cat, baselineVal, baseline)), ok:correct }); }
     if(correct){
       run++; if(run>best) best=run;
       document.getElementById('streakN').textContent=run;
@@ -781,11 +849,28 @@ window.GA_ID='G-L29P5MRWKE';
   btnLower.addEventListener('click', function(){ guess('lower'); });
   document.addEventListener('keydown', function(ev){
     if(!P.play.classList.contains('on') || !playing || busy) return;
+    /* An arrow typed in a field moves the caret; it is not a guess. Same for
+       anything inside an open sheet (the sign-in form, the store). */
+    var t=ev.target, tag=(t && t.tagName) || '';
+    if(/^(INPUT|TEXTAREA|SELECT)$/.test(tag) || (t && t.isContentEditable)) return;
+    if(t && t.closest && t.closest('[role="dialog"], .rtgpg-scrim')) return;
     if(ev.key==='ArrowUp'){ ev.preventDefault(); guess('higher'); }
     else if(ev.key==='ArrowDown'){ ev.preventDefault(); guess('lower'); }
   });
 
-  document.getElementById('quitBtn').addEventListener('click', function(){ backToSetup(); });
+  /* Leaving a run part way used to throw it away with the play already spent.
+     Now it asks first, and a yes ends the run where it stands, the same as a
+     miss: that is the "confirms quitting" that counts a play as used. A card
+     member has nothing to lose, so they are not asked. */
+  document.getElementById('quitBtn').addEventListener('click', function(){
+    var unlimited = !!(window.RTGTokens && RTGTokens.hasCard && RTGTokens.hasCard());
+    if(playing && charged && !unlimited){
+      if(!window.confirm('End this run now? It counts as your play.')) return;
+      finish(); return;
+    }
+    if(playing) clearResume();
+    backToSetup();
+  });
   function backToSetup(){
     playing=false; busy=false;
     document.getElementById('scrim').classList.add('hidden');
@@ -801,6 +886,7 @@ window.GA_ID='G-L29P5MRWKE';
   var NEWBEST=false;
   function finish(){
     if(!playing) return; playing=false; busy=false;
+    clearResume(); if(window.RTGTokens && RTGTokens.complete) RTGTokens.complete(GAME);
     var s=load(); var prevBest=s.best||0;
     NEWBEST = run>0 && run>prevBest;
     s.best=Math.max(prevBest, run); s.last={ run:run }; save(s); best=s.best;
@@ -823,6 +909,7 @@ window.GA_ID='G-L29P5MRWKE';
     var subEl=document.getElementById('mSub'); subEl.textContent=sub; subEl.classList.toggle('newbest', NEWBEST);
     document.getElementById('lb').classList.add('on');
     setTimeout(function(){
+      updateAgainBtn();
       document.getElementById('scrim').classList.remove('hidden');
       if(run>=5 || NEWBEST){ confetti(NEWBEST?130:80, NEWBEST); try{ if(window.RTGSound) RTGSound.win(); }catch(e){} }
     }, 260);
@@ -838,12 +925,33 @@ window.GA_ID='G-L29P5MRWKE';
   }
 
   document.getElementById('mClose').addEventListener('click', function(){ document.getElementById('scrim').classList.add('hidden'); });
-  document.getElementById('mAgain').addEventListener('click', function(){ backToSetup(); });
+  /* With the free run spent, "Play again" was a live button that led to a
+     gate saying no. It names what it actually does now, like every other card
+     game's result screen, and opens the offer rather than the dead end. */
+  function updateAgainBtn(){
+    var b=document.getElementById('mAgain'); if(!b) return;
+    if(!canStart()){
+      if(window.RTGCard && RTGCard.wallButton) RTGCard.wallButton(b);
+      else { b.textContent=(window.RTGTokens && RTGTokens.blockMsg) ? RTGTokens.blockMsg(GAME) : 'Back tomorrow'; b.disabled=true; b.classList.add('spent'); }
+    } else { b.textContent='Play again'; b.disabled=false; b.classList.remove('spent'); }
+  }
+  document.getElementById('mAgain').addEventListener('click', function(){
+    if(!canStart()){
+      document.getElementById('scrim').classList.add('hidden');
+      try{ if(window.RTGCard && RTGCard.wall){ RTGCard.wall(); return; } }catch(e){}
+      backToSetup(); return;
+    }
+    backToSetup();
+  });
   /* The result screen shows this card too (resultart.js), so the spec the
      share button builds is now a function both can call. */
   function cardSpec(){
     var stat=(run>0?'🔥 ':'')+run+' in a row'+(cat?(' · '+cat.label):'');
-    return { key:'highlow', date:DATE, grid:'', stat:stat, statInt:run };
+    // the run as squares, ten to a row, ending on the call that missed
+    var cells=[]; for(var i=0;i<Math.min(run,30);i++) cells.push('\uD83D\uDFE9');
+    if(run<30) cells.push('\uD83D\uDFE5');
+    var rows=[]; for(var j=0;j<cells.length;j+=10) rows.push(cells.slice(j,j+10).join(''));
+    return { key:'highlow', date:DATE, grid:rows.join('\n'), stat:stat, statInt:run };
   }
   window.RTG_CARD_SPEC = cardSpec;
   document.getElementById('mShare').addEventListener('click', function(){
@@ -862,7 +970,7 @@ window.GA_ID='G-L29P5MRWKE';
         var pill=document.getElementById('lbPill'); if(pill) pill.textContent='Live';
         var samp=document.getElementById('lbSample'); if(!samp) return;
         if(!rows.length){ samp.innerHTML='<div class="samplab">Today’s board</div><div class="note" style="margin:2px 0 0">Nobody’s posted yet today. Be the first.</div>'; }
-        else{ var me=(RTG_BOARD.state().name||'').toLowerCase(), h='<div class="samplab">Top runs today</div>';
+        else{ var me=((RTG_BOARD.boardName&&RTG_BOARD.boardName())||RTG_BOARD.state().name||'').toLowerCase(), h='<div class="samplab">Top runs today</div>';
           for(var i=0;i<rows.length;i++){ var r=rows[i], nm=r.display_name||'Player', mine=me&&nm.toLowerCase()===me;
             h+='<div class="row'+(mine?' you':'')+'"><span class="rk">'+(i+1)+'</span><span class="who">'+esc(nm)+'</span><span class="tm">'+(r.run_len||0)+' in a row</span></div>'; }
           samp.innerHTML=h;
@@ -890,7 +998,23 @@ window.GA_ID='G-L29P5MRWKE';
   document.getElementById('yourBest').textContent = s0.best||0;
   if(s0.last && s0.last.run!=null) document.getElementById('yourRun').textContent = s0.last.run+' in a row';
 
-  if(canStart()) revealGame(); else { paintGate(); show('gate'); }
+  // A run left part way through today comes straight back.
+  var R0=readResume(), resumed=false;
+  if(R0 && R0.d===DATE && window.RTGTokens && RTGTokens.inProgress && RTGTokens.inProgress(GAME)){
+    var c0=catByKey[R0.cat], b0=idMap[R0.base], o0=idMap[R0.opp];
+    if(c0 && b0 && o0){
+      cat=c0; baseline=b0; run=Math.max(0,R0.run|0); runStart=+R0.t0||Date.now();
+      playing=true; busy=false; charged=true; attemptFirst=!!R0.first; best=(load().best||0);
+      revealed=true; document.getElementById('lb').classList.add('on');
+      document.getElementById('streakN').textContent=String(run);
+      document.getElementById('mbMetric').textContent = cat.sport+' · '+cat.label+(cat.note?(' ('+cat.note+')'):'');
+      baselineVal=cat.vfn(baseline);
+      show('play'); setBaselineCard(baseline, baselineVal); showOpponent(o0, cat.vfn(o0));
+      resumed=true; toast('Picked up where you left off');
+    }
+  }
+  if(R0 && !resumed) clearResume();
+  if(!resumed){ if(canStart()) revealGame(); else { paintGate(); show('gate'); } }
   if(window.RTG_BOARD){
     try{ RTG_BOARD.boot(); RTG_BOARD.onChange(function(){
       if(canStart()){ revealGame(); renderRealBoard(); } else if(!revealed){ paintGate(); }
@@ -917,7 +1041,7 @@ window.GA_ID='G-L29P5MRWKE';
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go();
 })();
 </script>
-<script src="/arcade/howto.js?v=24"></script>
+<script src="/arcade/howto.js?v=26"></script>
 <script>if (window.RTGHowto) RTGHowto.init('highlow');</script>
 </body>
 </html>

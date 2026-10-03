@@ -48,7 +48,7 @@ import { join, relative } from 'path';
    the <title> of the two pages a shared challenge link opens. The rest were
    comments, which this rule covers too. */
 const GUARDED = ['wrestling', 'hoops', 'globe', 'mythiball', 'golf', 'cfb', 'football',
-  'assets', 'baseball'];
+  'assets', 'baseball', 'arcade'];
 const EXT = /\.(html|js|mjs|css|json|md|txt|svg)$/i;
 const SKIP = /(^|\/)(node_modules|\.git)(\/|$)/;
 

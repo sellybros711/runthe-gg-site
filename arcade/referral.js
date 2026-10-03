@@ -126,7 +126,7 @@
   // ---- share: hand the inviter their link ----------------------------------
   // Native share sheet where there is one (phones), clipboard everywhere else,
   // with a toast either way. cb(ok) fires when the link is out the door.
-  var SHARE_TEXT = 'Play Run The Arcade with me. It’s twelve quick daily sports puzzles. Sign up with my link and we both get an extra go today.';
+  var SHARE_TEXT = 'Play Run The Arcade with me. It’s twelve quick daily sports puzzles. Sign up with my link and we both get an extra go at today’s free games.';
   function toast(msg){
     try{
       var el=document.getElementById('rtg-ref-toast');
@@ -232,8 +232,16 @@
        time: this sits at the foot of every result screen, including a
        cardholder's and a first play of the day. "Play again?" is true for
        everybody looking at it. */
-    ad.innerHTML='<div class="h">Play again? <b>Invite a friend for another try.</b></div>'+
-      '<div class="s">They sign up with your link and you both get an extra go at today’s games.</div>'+
+    /* The reward is an extra go at the FREE games. On a card game's result
+       screen "Play again? ... another try" promised a go at the game in front
+       of them, which the invite never grants. There it says what it does give. */
+    var g=((location.pathname||'').match(/\/arcade\/([a-z]+)\//)||[])[1]||'';
+    var onCard=false;
+    try{ onCard = !!(g && window.RTGTokens && RTGTokens.isFreeGame && !RTGTokens.isFreeGame(g)); }catch(e){}
+    ad.innerHTML=(onCard
+        ? '<div class="h"><b>Invite a friend.</b> You both get an extra go.</div>'
+        : '<div class="h">Play again? <b>Invite a friend for another try.</b></div>')+
+      '<div class="s">They sign up with your link and you both get an extra go at today’s free games.</div>'+
       '<button type="button">'+icon('invite')+' Invite a friend</button>';
     ad.querySelector('button').addEventListener('click', function(){ share(); });
     sheet.appendChild(ad);                            // foot of the modal

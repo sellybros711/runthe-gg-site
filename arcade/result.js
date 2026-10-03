@@ -32,9 +32,10 @@
  * knows, because it just compared them.
  *
  * Everything is guarded and everything degrades. No spec: the row is left
- * exactly as the game built it. No session: the rank line is skipped rather
- * than faked, since a guest posts nothing and has no rank to show. Offline:
- * the chips that need the network never arrive and the rest still render.
+ * exactly as the game built it. No session: the rank is worked out from this
+ * run's own score against today's field (see placeLocal), so a guest is
+ * placed too. Offline: the chips that need the network never arrive and the
+ * rest still render.
  */
 (function () {
   'use strict';
@@ -149,7 +150,7 @@
     var parts = [];
     // rank goes first and arrives late: a placeholder holds its spot so the
     // row does not jump when it lands
-    parts.push(signedIn() ? '<span class="c rank pending" data-rank><b>&middot;&middot;&middot;</b><span>today</span></span>' : null);
+    parts.push((window.RTG_BOARD && RTG_BOARD.rank) ? '<span class="c rank pending" data-rank><b>&middot;&middot;&middot;</b><span>today</span></span>' : null);
     if (bestTxt != null && bestTxt !== '') {
       parts.push(sp.isBest
         ? chip('new', '<b>' + esc(bestTxt) + '</b>', 'new best' + (sp.prevBest != null && sp.prevBest !== '' ? ' <s>' + esc(sp.prevBest) + '</s>' : ''))
@@ -168,16 +169,60 @@
     el.outerHTML = html;
   }
 
+  /* EVERYBODY IS PLACED AGAINST TODAY'S FIELD, not only accounts.
+
+     A signed-in player is placed by their own row (myRun), as before. Anyone
+     else, and an account whose row has not landed, is placed by the score
+     board.js worked out for this run (the same formula as the server's score
+     column), against the rows already on the board. The field is a public
+     read, so this needs nothing a guest does not have.
+
+     Off by one is the trap: a run that is NOT on the board has to count itself
+     into the field (total + 1), and one that IS on it must not count itself
+     twice. So a guest waits briefly to hear whether board.js posted it
+     (rtg:guestposted, flag guestboard) before asking. */
+  function placeLocal(sheet, sp, B, onBoard) {
+    function ask(score) {
+      if (score == null) { setChip(sheet, '[data-rank]', null); return; }
+      Promise.all([B.rank(sp.key, sp.date, score), B.playerCount(sp.key, sp.date)]).then(function (r) {
+        if (r[0] == null || r[1] == null) { setChip(sheet, '[data-rank]', null); return; }
+        setChip(sheet, '[data-rank]', rankChip(r[0], onBoard ? r[1] : r[1] + 1));
+      }).catch(function () { setChip(sheet, '[data-rank]', null); });
+    }
+    var have = B.lastScore ? B.lastScore(sp.key, sp.date) : null;
+    if (have != null) { ask(have); return; }
+    // the game may open its modal a beat before it submits
+    var done = false;
+    function on(e) {
+      var d = e && e.detail;
+      if (done || !d || d.game !== sp.key || d.date !== sp.date) return;
+      done = true; document.removeEventListener('rtg:runscored', on); ask(d.score);
+    }
+    document.addEventListener('rtg:runscored', on);
+    setTimeout(function () { if (!done) { done = true; document.removeEventListener('rtg:runscored', on); setChip(sheet, '[data-rank]', null); } }, 4000);
+  }
   function fill(sheet, sp) {
     var B = window.RTG_BOARD;
-    if (!B || !signedIn()) { setChip(sheet, '[data-rank]', null); }
-    else if (B.myRun && B.rank && B.playerCount) {
+    if (!B || !B.rank || !B.playerCount) { setChip(sheet, '[data-rank]', null); }
+    else if (signedIn() && B.myRun) {
       B.myRun(sp.key, sp.date).then(function (run) {
-        if (!run || run.score == null) { setChip(sheet, '[data-rank]', null); return null; }
+        if (!run || run.score == null) { placeLocal(sheet, sp, B, false); return null; }
         return Promise.all([B.rank(sp.key, sp.date, run.score), B.playerCount(sp.key, sp.date)])
           .then(function (r) { setChip(sheet, '[data-rank]', rankChip(r[0], r[1])); });
       }).catch(function () { setChip(sheet, '[data-rank]', null); });
-    } else setChip(sheet, '[data-rank]', null);
+    } else if (B.postedAsGuest && B.postedAsGuest(sp.key, sp.date)) {
+      placeLocal(sheet, sp, B, true);
+    } else if (B.guestBoard && B.guestBoard()) {
+      // posting as a guest: count them in once the row is there, else not
+      var settled = false;
+      var heard = function (e) {
+        var d = e && e.detail;
+        if (settled || !d || d.game !== sp.key || d.date !== sp.date) return;
+        settled = true; document.removeEventListener('rtg:guestposted', heard); placeLocal(sheet, sp, B, true);
+      };
+      document.addEventListener('rtg:guestposted', heard);
+      setTimeout(function () { if (!settled) { settled = true; document.removeEventListener('rtg:guestposted', heard); placeLocal(sheet, sp, B, false); } }, 3000);
+    } else placeLocal(sheet, sp, B, false);
 
     // streak: the server's if there is one, the game's own save if not
     var local = sp.streak;

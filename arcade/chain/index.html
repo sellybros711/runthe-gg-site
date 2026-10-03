@@ -31,7 +31,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=5" />
+<link rel="stylesheet" href="/arcade/arcade.css?v=7" />
 <style>
   :root{
     --bg:#071426; --card:#10233A; --card2:#162B44; --card3:#1A3350;
@@ -81,6 +81,9 @@
   .kick{font-size:10.5px; font-weight:900; letter-spacing:.16em; text-transform:uppercase; color:var(--chT);}
   .pair{display:flex; flex-direction:column; align-items:center; gap:6px; margin:12px 0 4px;}
   .pair .nm{font-family:var(--hero); font-weight:400; text-transform:uppercase; line-height:.98; font-size:clamp(26px,7.2vw,38px);}
+  /* The far name is filled in by script; empty it took no line at all and the
+     Start button jumped down when it arrived. */
+  .pair .nm:empty::before{content:"\00a0";}
   .pair .to{font-size:10.5px; font-weight:900; letter-spacing:.18em; text-transform:uppercase; color:var(--dim);}
   .blurb{color:var(--mut); font-size:14px; font-weight:600; margin:14px auto 18px; max-width:34ch; line-height:1.5;}
   .gobtn{width:100%; border:0; border-radius:12px; padding:15px 16px; font-family:var(--hero); font-weight:400;
@@ -183,6 +186,9 @@ window.GA_ID='G-L29P5MRWKE';
   s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
   document.head.appendChild(s);})();
 </script>
+<script src="/arcade/tokens.js?v=15"></script>
+<script src="/arcade/metrics.js?v=3"></script>
+<script src="/arcade/gamehead.js?v=3"></script>
 </head>
 <body>
 <div class="wrap">
@@ -205,7 +211,7 @@ window.GA_ID='G-L29P5MRWKE';
         <div class="to">to</div>
         <div class="nm" id="setupB"></div>
       </div>
-      <p class="blurb">Name the 2 teammates that connect them. Get both and you’re done.</p>
+      <p class="blurb">Name the 2 teammates that link them.</p>
       <button class="gobtn" id="startBtn" type="button">Start today’s chain</button>
       <button class="ghost" id="practiceBtn" type="button">Random pair</button>
       <div class="bestline" id="bestLine"></div>
@@ -284,34 +290,35 @@ window.GA_ID='G-L29P5MRWKE';
 </div>
 <div class="toast" id="toast"></div>
 
+<script src="/arcade/franchise.js?v=1"></script>
 <script src="/arcade/icons.js?v=3"></script>
-<script src="/arcade/tokens.js?v=13"></script>
-<script src="/arcade/day.js?v=2"></script>
-<script src="/arcade/dayroll.js?v=1"></script>
+<script src="/arcade/day.js?v=3"></script>
+<script src="/arcade/dayroll.js?v=2"></script>
 <!-- archive.js reads RTGTokens.isPro() as it parses, so it must come after tokens.js -->
-<script src="/arcade/archive.js?v=2"></script>
+<script src="/arcade/archive.js?v=3"></script>
 <script src="/arcade/gamemarks.js?v=4"></script>
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=21"></script>
-<script src="/arcade/leaderboard.js?v=15"></script>
-<script src="/arcade/alltime.js?v=3"></script>
+<script src="/arcade/board.js?v=24"></script>
+<script src="/arcade/leaderboard.js?v=16"></script>
+<script src="/arcade/alltime.js?v=4"></script>
 <script src="/arcade/auth.js?v=4"></script>
-<script src="/arcade/topbanner.js?v=10"></script>
+<script src="/arcade/topbanner.js?v=11"></script>
 <script src="/arcade/auth-ui.js?v=9"></script>
-<script src="/arcade/card.js?v=22"></script>
-<script src="/arcade/referral.js?v=11"></script>
-<script src="/arcade/demo.js?v=4"></script>
-<script src="/arcade/pregame.js?v=26"></script>
-<script src="/arcade/funnel.js?v=12"></script>
-<script src="/arcade/share.js?v=9"></script>
-<script src="/arcade/result.js?v=1"></script>
-<script src="/arcade/resultart.js?v=4"></script>
-<script src="/arcade/resultstats.js?v=2"></script>
-<script src="/arcade/sfx.js?v=2"></script>
-<script src="/arcade/teammates.js?v=34"></script>
-<script src="/arcade/livecheck.js?v=8"></script>
-<script src="/arcade/teamcheck.js?v=2"></script>
+<script src="/arcade/card.js?v=23"></script>
+<script src="/arcade/referral.js?v=12"></script>
+<script src="/arcade/demo.js?v=5"></script>
+<script src="/arcade/pregame.js?v=29"></script>
+<script src="/arcade/funnel.js?v=14"></script>
+<script src="/arcade/share.js?v=11"></script>
+<script src="/arcade/result.js?v=2"></script>
+<script src="/arcade/resultart.js?v=5"></script>
+<script src="/arcade/resultstats.js?v=3"></script>
+<script src="/arcade/review.js?v=1" defer></script>
+<script src="/arcade/sfx.js?v=4"></script>
+<script src="/arcade/teammates.js?v=35"></script>
+<script src="/arcade/livecheck.js?v=11"></script>
+<script src="/arcade/teamcheck.js?v=3"></script>
 <script src="/arcade/type.js?v=5"></script>
 <script>
 (function(){
@@ -381,8 +388,12 @@ window.GA_ID='G-L29P5MRWKE';
   }
   function linkText(l){
     if(!l) return '';
-    if(!l.dated || l.y0==null) return l.team + ', years not confirmed';
-    return l.team + ', ' + (l.y0===l.y1 ? l.y0 : l.y0+' to '+l.y1);
+    // The club as it was called in those years: the stint file names every
+    // Washington season "Commanders".
+    var F=window.RTGFranchise, sp=puz?sportOf(puz.a):null;
+    var tm = (F && sp && l.y0!=null) ? F.nameAt(sp, l.team, l.y0, l.y1) : l.team;
+    if(!l.dated || l.y0==null) return tm + ', years not confirmed';
+    return tm + ', ' + (l.y0===l.y1 ? l.y0 : l.y0+' to '+l.y1);
   }
   // roster index, so neighbours can be listed without touching every player
   var ROSTER = {};
@@ -446,6 +457,20 @@ window.GA_ID='G-L29P5MRWKE';
   // ---------- state ----------
   var puz=null, isDaily=true, filled=[], strikes=0, done=false, timer=null, startedAt=0, elapsed=0;
 
+  /* TODAY'S CHAIN SURVIVES A RELOAD. The play is spent on Start, so a reload
+     used to land on the "free play used" wall halfway up a ladder. The ranked
+     daily chain is kept with the links placed, the strikes and the clock. The
+     clock resumes where it stopped, the same rule as the crossword: time is
+     this game's score, not its limit. */
+  var RESUME_KEY='rtg:resume:chain';
+  function readResume(){ try{ var r=JSON.parse(LS.getItem(RESUME_KEY)); return (r&&typeof r==='object')?r:null; }catch(e){ return null; } }
+  function clearResume(){ try{ LS.removeItem(RESUME_KEY); }catch(e){} }
+  function saveResume(){
+    if(ARCHIVE || !isDaily || done || !attemptFirst || !puz) return;
+    try{ LS.setItem(RESUME_KEY, JSON.stringify({ d:pdate(), a:puz.a, b:puz.b, filled:filled, strikes:strikes,
+      elapsed:Math.round((Date.now()-startedAt)/1000) })); }catch(e){}
+  }
+
   function slots(){ return puz.links-1; }        // 3 links = 2 names in between
 
   function renderSetup(){
@@ -496,7 +521,7 @@ window.GA_ID='G-L29P5MRWKE';
     var w=$('ask').parentNode; w.classList.remove('shake'); void w.offsetWidth; w.classList.add('shake');
   }
   function strike(msg){
-    strikes++; message(msg, 'bad'); sfx('bad'); shake(); renderLadder();
+    strikes++; if(window.RTGReview) RTGReview.add(GAME, { q:'Strike '+strikes, you:'', answer:'', ok:false, note:msg }); message(msg, 'bad'); sfx('bad'); shake(); renderLadder(); saveResume();
     if(strikes>=STRIKES) finish(false);
   }
 
@@ -504,7 +529,7 @@ window.GA_ID='G-L29P5MRWKE';
   function place(node, l){
     filled.push({ node:node, link:l });
     sfx('good');
-    renderLadder();
+    renderLadder(); saveResume();
     if(filled.length>=slots()){
       var close = linkOf(node.stints, localNode(puz.b).stints);
       message('Linked! ' + node.name + ' and ' + nameOf(puz.b) + ': ' + linkText(close) + '.', 'good');
@@ -554,6 +579,7 @@ window.GA_ID='G-L29P5MRWKE';
     TC.clubs(raw, sportOf(puz.a)).then(function(found){
       checking = false;
       if(done) return;
+      if(found && found.unreachable){ offline(); return; }
       if(!found){
         strike(ids.length ? ('Nope. Never teammates with ' + prev.name + '.')
                           : 'Couldn’t find a player by that name.');
@@ -573,13 +599,21 @@ window.GA_ID='G-L29P5MRWKE';
       place({ id:null, name:found.name, live:true, stints:found.stints }, l);
     })['catch'](function(){
       checking = false;
-      if(!done) strike('Couldn’t check that one. Try another name.');
+      if(!done) offline();
     });
+    /* Our network failing is not the player's mistake. It used to cost a
+       strike ("Couldn't check that one"), so a dropped connection could break
+       a chain on its own. Now it costs nothing and the name goes back in the
+       box to try again. */
+    function offline(){
+      var box=$('ask'); if(box && !box.value) box.value = raw;
+      message('Couldn’t reach the record books. No strike. Try again in a moment.', 'warn');
+    }
   }
 
   function undo(){
     if(done || !filled.length) return;
-    filled.pop(); renderLadder(); message('', '');
+    filled.pop(); renderLadder(); message('', ''); saveResume();
     try{ $('ask').focus(); }catch(e){}
   }
 
@@ -596,25 +630,48 @@ window.GA_ID='G-L29P5MRWKE';
     }
     var p = pickPair(daily, pdate());
     if(!p){ toast('Couldn’t build a chain'); return; }
-    puz=p; isDaily=daily; filled=[]; strikes=0; done=false; elapsed=0; startedAt=Date.now();
+    puz=p; isDaily=daily; filled=[]; strikes=0; done=false; elapsed=0; startedAt=Date.now(); if(window.RTGReview) RTGReview.start(GAME);
     if(!ARCHIVE && window.RTGTokens && RTGTokens.startAttempt){
       var att = RTGTokens.startAttempt(GAME);
       attemptFirst = !!(att && att.first);
     } else { attemptFirst = false; }
     updateAgainBtn();
+    showLadder();
+    saveResume();
+    setTimeout(function(){ try{ $('ask').focus(); }catch(e){} }, 120);
+  }
+  function showLadder(){
     $('scrim').classList.add('hidden');
     renderLadder(); message('', '');
     $('panelSetup').classList.remove('on'); $('panelPlay').classList.add('on');
-    $('clockT').textContent='0:00';
+    tick();
     if(timer) clearInterval(timer); timer=setInterval(tick,1000);
-    setTimeout(function(){ try{ $('ask').focus(); }catch(e){} }, 120);
+  }
+  function resumeChain(r){
+    var p = pickPair(true, pdate());
+    if(!p || p.a!==r.a || p.b!==r.b){ clearResume(); return; }
+    puz=p; isDaily=true; attemptFirst=true; done=false;
+    filled = Array.isArray(r.filled) ? r.filled : [];
+    strikes = Math.max(0, r.strikes|0);
+    startedAt = Date.now() - Math.max(0, r.elapsed|0)*1000;
+    showLadder();
+    toast('Picked up where you left off');
   }
 
   function finish(solved){
     if(done) return;
     done=true;
+    if(isDaily && !ARCHIVE){ clearResume(); if(window.RTGTokens && RTGTokens.complete) RTGTokens.complete(GAME); }
     if(timer){ clearInterval(timer); timer=null; }
     elapsed = Math.max(3, Math.round((Date.now()-startedAt)/1000));
+    if(window.RTGReview){
+      var rvPrev = RTGReview.read(GAME), rvStr = rvPrev ? rvPrev.rows.filter(function(r){ return r.ok===false; }) : [];
+      var rvFrom = nameOf(puz.a);
+      RTGReview.set(GAME, filled.map(function(f){
+        var row = { q:rvFrom+' to '+f.node.name, you:f.node.name, answer:'', ok:true, note:linkText(f.link) };
+        rvFrom = f.node.name; return row;
+      }).concat(rvStr).concat(solved ? [] : [{ q:'Chain to '+nameOf(puz.b), you:'', answer:'', ok:false, note:'Not finished' }]));
+    }
 
     var st=load(), prevBest=st.best||0;
     if(solved && (!prevBest || elapsed<prevBest)) st.best=elapsed;
@@ -643,7 +700,10 @@ window.GA_ID='G-L29P5MRWKE';
 
     $('mSub').textContent = solved ? (strikes===0 ? 'Clean chain!' : 'Chain closed!') : (strikes>=STRIKES ? 'Chain broken' : 'Gave up');
     $('mScore').textContent = solved ? mmss(elapsed) : '--';
-    $('mTitle').textContent = solved ? 'YOUR TIME' : 'NO ROUTE';
+    /* "NO ROUTE" sat over "Here's one way through" and the route itself, so
+       the screen said there was no way and then showed one. What the player
+       lacks is a time, not a route. */
+    $('mTitle').textContent = solved ? 'YOUR TIME' : 'NO TIME';
     $('mLinks').textContent = puz.links;
     $('mMiss').textContent = strikes;
     $('mBest').textContent = st.best ? mmss(st.best) : '-';
@@ -692,7 +752,7 @@ window.GA_ID='G-L29P5MRWKE';
     for(var s=0;s<strikes;s++) cells.push('🟥');
     var solved = filled.length>=(puz?puz.links-1:1) && done;
     return { key:'chain', date:today(), grid:cells.join(''),
-             stat: solved ? (mmss(elapsed)+' · '+strikes+' wrong') : 'Chain broken',
+             stat: solved ? (mmss(elapsed)+' · '+strikes+' wrong') : (strikes>=STRIKES ? 'Chain broken' : 'Gave up'),
              statInt: solved ? elapsed : null };
   }
   window.RTG_CARD_SPEC = cardSpec;
@@ -770,10 +830,15 @@ window.GA_ID='G-L29P5MRWKE';
     $('startBtn').disabled=true;
   } else {
     renderSetup();
+    var R=readResume(), st0=load();
+    var live = !ARCHIVE && R && R.d===pdate() && !(st0.last && st0.last.d===today()) &&
+               window.RTGTokens && RTGTokens.playsOf(GAME)>0;
+    if(R && !live) clearResume();
+    if(live) resumeChain(R);
   }
 })();
 </script>
-<script src="/arcade/howto.js?v=24"></script>
+<script src="/arcade/howto.js?v=26"></script>
 <script>if (window.RTGHowto) RTGHowto.init('chain');</script>
 </body>
 </html>

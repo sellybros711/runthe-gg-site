@@ -19,6 +19,10 @@ on:
       - 'arcade/jerseys.js'
       - 'scripts/build-sportegories.mjs'
       - 'scripts/check-sportegories.mjs'
+      - 'scripts/check-sportegories-leagues.mjs'
+      - 'scripts/nba-awards.json'
+      - 'arcade/franchise.js'
+      - 'arcade/livecheck.js'
       - '.github/workflows/sportegories-check.yml'
   push:
     branches: [main]
@@ -29,6 +33,10 @@ on:
       - 'arcade/jerseys.js'
       - 'scripts/build-sportegories.mjs'
       - 'scripts/check-sportegories.mjs'
+      - 'scripts/check-sportegories-leagues.mjs'
+      - 'scripts/nba-awards.json'
+      - 'arcade/franchise.js'
+      - 'arcade/livecheck.js'
       - '.github/workflows/sportegories-check.yml'
   workflow_dispatch: {}
 
@@ -45,3 +53,5 @@ jobs:
         with:
           node-version: '20'
       - run: node scripts/check-sportegories.mjs
+      # every category type, per league it names (Hall of Famer, MVP, Rookie of the Year...)
+      - run: node scripts/check-sportegories-leagues.mjs
