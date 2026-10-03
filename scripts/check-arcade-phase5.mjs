@@ -180,6 +180,32 @@ const FINISH = {
   chain:    async p => { await clickIf(p, '#giveBtn'); },
 };
 
+/* SCORE makes one right move, so the run ends with a score and the game
+   submits it. Used by the scored-run section to prove a finish that reaches
+   the board is counted once, not once by board.js and again by metrics.js. */
+const SCORE = {
+  oddone: async p => {
+    const t = await p.evaluate(() => { const d = window.__rtgDeal(200); const ids = [...document.querySelectorAll('#choices .choice')].map(e => e.dataset.id).sort().join(); const r = d.find(x => x.five.map(f => f.id).sort().join() === ids); return r ? r.target.id : null; });
+    if (!t) return false;
+    await p.click('#choices .choice[data-id="' + t + '"]'); await sleep(900);
+    await clickIf(p, '#whySkip'); await sleep(600); await p.mouse.click(5, 300); await sleep(900);
+    return true;
+  },
+  almamater: async p => {
+    if (!(await vis(p, '#choices .choice'))) { await clickIf(p, '#bailBtn'); await sleep(500); }
+    const k = await p.evaluate(() => { const nm = document.getElementById('pName').textContent.trim(); const r = window.__rtgDeal(200).find(x => x.target.name === nm); return r ? r.schools.findIndex(s => s === r.col) : -1; });
+    if (k < 0) return false;
+    await p.click('#choices .choice[data-i="' + k + '"]'); await sleep(900); await p.mouse.click(5, 300); await sleep(900);
+    return true;
+  },
+  highlow: async p => {
+    const v = await p.evaluate(() => { const n = id => parseFloat((document.getElementById(id) || {}).textContent.replace(/[^\d.]/g, '')); return [n('baseVal'), n('oppVal')]; });
+    if (isNaN(v[0]) || isNaN(v[1]) || v[0] === v[1]) return false;
+    await p.click(v[1] > v[0] ? '#btnHigher' : '#btnLower'); await sleep(1800);
+    return true;
+  },
+};
+
 /* ---- one run ------------------------------------------------------------- */
 const VIEWS = { 375: { mobile: true, vp: { width: 375, height: 740 } }, 1280: { mobile: false, vp: { width: 1280, height: 900 } } };
 
@@ -189,7 +215,7 @@ async function shot(p, name){
 }
 const events = p => p.evaluate(() => (window.dataLayer || []).filter(a => a && a[0] === 'event').map(a => ({ ev: a[1], p: a[2] || {} }))).catch(() => []);
 
-async function run(game, tier, view){
+async function run(game, tier, view, opts = {}){
   const V = VIEWS[view];
   const tag = view + '-' + tier + '-';
   const r = { game, tier, view, playable: false, gateTaps: 0, boardOnScreen: null, moved: false, resumed: false,
@@ -241,12 +267,22 @@ async function run(game, tier, view){
     // a walled page can still show a result sheet ("come back tomorrow"),
     // and that is not this run reaching its end
     if (r.wallAfterReload) { await shot(p, tag + 'end-' + game); return r; }
+    // no wall and no game: back on the start screen, where a player starts over
+    if (!r.resumed) {
+      try { await FIRST[game](p); await sleep(1400); r.restarted = true; r.notes.push('restarted from the start screen'); }
+      catch (e) { r.notes.push('restart: ' + e.message.split('\n')[0].slice(0, 100)); }
+    }
+    if (opts.score) {
+      try { r.scored = await SCORE[game](p); } catch (e) { r.notes.push('score: ' + e.message.split('\n')[0].slice(0, 120)); }
+    }
     try { await FINISH[game](p, ctx); } catch (e) { r.notes.push('finish: ' + e.message.split('\n')[0].slice(0, 120)); }
     r.finished = await until(p, () => ended(p), () => sleep(500), 20);
     await sleep(1200);
     await shot(p, tag + 'end-' + game);
     if (!r.finished) return r;
 
+    // the "sound is off" note a first win brings must not sit on the result card
+    r.nudgeOverSheet = await p.evaluate(() => !!document.getElementById('rtgSoundNudge'));
     await (await shareBtn(p)).click({ timeout: 3000 });
     await sleep(1500);
     const shared = await p.evaluate(() => window.__shared || []);
@@ -332,8 +368,37 @@ if (!RECORD) {
       R.ok(r.shareText, id + ' Share sends text first');
       R.ok(r.shareEvent, id + ' sends arcade_share (text)');
     }
+    R.ok(!r.nudgeOverSheet, id + ' no sound note over the result card');
     R.ok(r.errors === 0, id + ' no page errors', r.notes.join('; '));
   }
+}
+
+/* ---- a run with a score ------------------------------------------------ */
+if (!RECORD && !ONLY) {
+  R.section('A finish with a score is counted once');
+  for (const g of Object.keys(SCORE)) {
+    const r = await run(g, 'card', 375, { score: true });
+    R.ok(r.scored, g + ' made a right move', r.notes.join('; '));
+    R.ok(r.finished, g + ' reached the end screen', r.notes.join('; '));
+    R.ok(r.completedKind === 'submitted', g + ' sends arcade_game_completed once, from board.js (submitted)', r.completedKind || 'none');
+    R.ok(r.errors === 0, g + ' no page errors', r.notes.join('; '));
+  }
+}
+
+/* ---- the sound note waits for the sheet --------------------------------- */
+if (!RECORD && !ONLY) {
+  R.section('The sound note waits until the result sheet closes');
+  const { ctx, p } = await page(browser, base, { tier: 'card' });
+  await p.goto(base + '/arcade/crossword/', { waitUntil: 'load' }); await sleep(1800);
+  await FIRST.crossword(p); await sleep(600);
+  await FINISH.crossword(p);
+  await until(p, () => ended(p), () => sleep(400), 20); await sleep(1500);
+  const over = await p.evaluate(() => !!document.getElementById('rtgSoundNudge'));
+  await p.evaluate(() => document.getElementById('scrim').classList.add('hidden')); await sleep(400);
+  const after = await p.evaluate(() => ({ on: !!document.getElementById('rtgSoundNudge'), seen: localStorage.getItem('runthegrid_sound_nudged') }));
+  R.ok(!over, 'a first win does not put the note over the result card');
+  R.ok(after.on && after.seen === '1', 'it shows once the sheet closes, and only then is marked seen', JSON.stringify(after));
+  await ctx.close();
 }
 
 /* ---- the two events a playthrough cannot reach ---------------------------- */

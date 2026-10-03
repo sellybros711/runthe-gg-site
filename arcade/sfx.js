@@ -64,6 +64,28 @@
   // for everyone. Point at the speaker button once, then never again.
   function nudge() {
     if (on) return;
+    try { if (localStorage.getItem('runthegrid_sound_nudged')) return; } catch (e) { return; }
+    /* A win opens the result sheet a beat after this cue, and the sheet covers
+       the top bar the note points at, so the note used to sit on top of the
+       result card for five seconds. It waits for the sheet to close instead,
+       and is only marked as seen once somebody has actually been shown it. */
+    setTimeout(function () {
+      if (!sheetOpen()) { show(); return; }
+      if (!window.MutationObserver) return;
+      var mo = new MutationObserver(function () { if (!sheetOpen()) { mo.disconnect(); show(); } });
+      ['scrim', 'resultModal'].forEach(function (id) {
+        var e = document.getElementById(id);
+        if (e) mo.observe(e, { attributes: true, attributeFilter: ['class', 'hidden'] });
+      });
+    }, 700);
+  }
+  function sheetOpen() {
+    var sc = document.getElementById('scrim'), rm = document.getElementById('resultModal');
+    return !!((sc && !sc.classList.contains('hidden') && !sc.hasAttribute('hidden') && sc.getClientRects().length) ||
+              (rm && !rm.hasAttribute('hidden') && rm.getClientRects().length));
+  }
+  function show() {
+    if (on) return;
     try { if (localStorage.getItem('runthegrid_sound_nudged')) return; localStorage.setItem('runthegrid_sound_nudged', '1'); } catch (e) { return; }
     /* It sat at the bottom of the screen, which on a phone is where the
        answer box and the keyboard are, so it covered the field mid-round. The
