@@ -1497,7 +1497,7 @@ function collegeOf(L){
    everything. The news flags only stop a headline twice and are left. */
 function trimLeague(lg){
   var o = {};
-  for (var k in lg) if (k !== 'news' && k !== 'rost' && k !== 'rostY' && k !== 'lines') o[k] = lg[k];
+  for (var k in lg) if (k !== 'news' && k !== 'rost' && k !== 'rostY' && k !== 'lines' && k !== 'pool' && k !== 'fa') o[k] = lg[k];
   if (o.figs) o.figs = o.figs.filter(function(f){ return !f.gone; });
   if (o.champs) { var ks = Object.keys(o.champs).sort().slice(-40), c = {}; ks.forEach(function(y){ c[y] = o.champs[y]; }); o.champs = c; }
   return JSON.parse(JSON.stringify(o));

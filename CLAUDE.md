@@ -10982,11 +10982,24 @@ save with no roster gets the page's when it opens on the same season of data, an
 reads year one's stars and ages them.
 
 **ON A STORY CAREER THE ROSTERS MOVE** (`rostOf`, `rosterSummer` from `driftLeague`). They start
-as the data's last season (2025-26) and live in `L.league.rost`. Every summer: the old retire, a
-rookie a club, five to nine like-for-like trades, ten to seventeen free agents (mostly toward a
-thin roster), and about one summer in three a star moves. Every club carries thirteen to
-fifteen; a waived man goes to a pool the short clubs sign from before any journeyman is
-generated, or a real player would vanish on a roster cap. A club that gained talent gains a
+as the data's last season (2025-26) and live in `L.league.rost`. Every summer: the old retire,
+five to nine like-for-like trades, ten to seventeen free agents (mostly toward a thin roster), and
+about one summer in three a star moves. Every club carries thirteen to fifteen.
+
+**ONE MOVE A MAN A SUMMER.** A player reported Jaylon Tyson traded to the Pelicans and signed by
+the Hornets two lines later: a man moved by a trade was still eligible for free agency and the
+roster cut. `moved` in `rosterSummer` holds everybody who changed clubs, and none of them is
+traded, signed or let go again until next summer. check-career 12b reads the feed for it.
+
+**REAL MEN BEFORE INVENTED ONES.** Every club used to draft an invented rookie every summer,
+whether it needed one or not, which pushed real men off the end of the roster and out of the
+league. Now a club over fifteen lets an invented man go before a real one of about the same worth,
+a real man let go joins `L.league.pool`, and a club under fourteen signs from that pool first. A
+rookie is drafted only when the pool is empty, a journeyman only below thirteen. The pool starts
+as `league.fa` (`seedToday`): the men past a club's fifteen in the roster file and last season's
+players on no roster today, up to 60. Invented men were 10% of the league two summers in and 22%
+four in; now under 1% and 9%. Past that the share is real men retiring, which nothing can avoid.
+A club that gained talent gains a
 little net rating (a share of the change, the league kept centred). Moves go to the feed, and
 anything touching your club to the beats and the log. A reader that jumps years plays the
 missed summers quietly (`rostNow`). The rosters are not kept on a Hall card (`trimLeague` drops

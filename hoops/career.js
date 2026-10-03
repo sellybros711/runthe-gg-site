@@ -392,7 +392,7 @@ function seedToday(rows, latest, today) {
     if (r.s === latest) { (last[r.i] = last[r.i] || []).push(r); }
     if (r.s >= latest - 2) { const b = by[r.i] = by[r.i] || {}; (b[r.s] = b[r.s] || []).push(r); }
   }
-  const net = {}, stars = {}, roster = {}, lines = {};
+  const net = {}, stars = {}, roster = {}, lines = {}, fa = [];
   for (const c of CLUBS) {
     const men = (today.clubs[c] || []).map((m) => {
       const mine = last[m.i] || [];
@@ -408,6 +408,7 @@ function seedToday(rows, latest, today) {
       return { m, w: round1(w), pos, born, rows: mine };
     }).sort((a, b) => b.w - a.w);
     roster[c] = men.slice(0, 15).map((x) => [x.m.n, x.pos, x.born, x.w, latest]);
+    for (const x of men.slice(15)) fa.push([x.m.n, x.pos, x.born, x.w, latest]);
     stars[c] = men.slice(0, 3).map((x) => x.m.n);
     /* Strength off last season's rows of the men he now has, the best one per
        man, so a traded player counts once and for his new club. */
@@ -416,7 +417,19 @@ function seedToday(rows, latest, today) {
   }
   const coach = {};
   for (const c of CLUBS) if (today.coaches && today.coaches[c]) coach[c] = String(today.coaches[c]).slice(0, 40);
-  return { latest: latest || 2026, rs: latest + 1, net: normaliseNets(net), stars, roster, lines, cn: coach };
+  /* And the men who played last season and are on no roster today. */
+  const on = new Set();
+  for (const c of CLUBS) for (const m of today.clubs[c] || []) on.add(m.i);
+  for (const i in last) {
+    if (on.has(i)) continue;
+    const top = last[i].slice().sort((a, b) => (b.g || 0) - (a.g || 0))[0];
+    const born = bornOf(top, first[i]);
+    if (latest + 1 - born > 33) continue;
+    const v = worthOf(by[i] || {}, latest);
+    fa.push([top.n, posFromData(String(top.pp || top.ep || 'SF').split(';')[0], [top]), born, round1(Math.max(0.2, v == null ? 0.5 : v)), latest]);
+  }
+  fa.sort((a, b) => b[3] - a[3]);
+  return { latest: latest || 2026, rs: latest + 1, net: normaliseNets(net), stars, roster, lines, cn: coach, fa: fa.slice(0, 60) };
 }
 /* Mean zero, a spread of 4.6 points, which is roughly the real league's. */
 function normaliseNets(net) {
@@ -776,6 +789,9 @@ function rostBuild(L, Y) {
     for (let d = (lg.rs || lg.latest || 2026) + 1; d <= Y; d++) R[c].push(rookieFor(L, c, d));
     R[c] = R[c].filter((e) => !rostGone(L, e, Y));
   }
+  /* The real men past a club's fifteen: today's free agents and two-way
+     players. A short club signs one of them before anybody is invented. */
+  lg.pool = (lg.fa || []).map((p) => ({ n: p[0], pos: p[1], b: p[2], w: p[3], s: p[4] })).filter((e) => !rostGone(L, e, Y));
   if (storyOn(L)) uniqueNames(L, R, Y);
   lg.rost = R; lg.rostY = Y;
   return R;
@@ -814,27 +830,37 @@ function rosterSummer(L, beats, quietY) {
   for (const c of CLUBS) before[c] = clubTalent(R, c, Y - 1);
   const news = [];
   const mine = L.stage === 'nba' && L.team;
+  const pool = (lg.pool || []).filter((e) => !rostGone(L, e, Y));
   for (const c of CLUBS) {
     for (const e of R[c]) if (rostGone(L, e, Y) && !e.g && rostCurW(e, Y - 1) >= 3) news.push({ w: rostCurW(e, Y - 1), t: e.n + ' retires.', c });
     R[c] = R[c].filter((e) => !rostGone(L, e, Y));
-    const rk = rookieFor(L, c, Y); rk.pos = thinPos(R[c], rk.pos); R[c].push(rk);
   }
-  uniqueNames(L, R, Y);
+  /* ONE MOVE A MAN A SUMMER. A man traded in July is not traded again, let go
+     or signed somewhere else before camp, so the news never says he went to
+     two clubs. */
+  const moved = new Set();
   const other = (c) => { let o = c; while (o === c) o = pick(rng, CLUBS); return o; };
   const move = (from, i, to, how) => {
     const e = R[from].splice(i, 1)[0];
     R[to].push(e);
+    moved.add(e);
     news.push({ w: rostCurW(e, Y), t: e.n + (how === 'trade' ? ' is traded to the ' : ' signs with the ') + nick(to) + '.', c: from, to });
     return e;
+  };
+  const sign = (e, to) => {
+    R[to].push(e);
+    moved.add(e);
+    if (!e.g) news.push({ w: rostCurW(e, Y), t: e.n + ' signs with the ' + nick(to) + '.', c: null, to });
   };
   /* Trades: two clubs swap players of about the same value. */
   const trades = 5 + Math.floor(rng() * 5);
   for (let k = 0; k < trades; k++) {
     const a = pick(rng, CLUBS), b = other(a);
-    if (!R[a].length || !R[b].length) continue;
-    const i = Math.floor(rng() * R[a].length), wa = rostCurW(R[a][i], Y);
+    const ia = R[a].map((e, x) => x).filter((x) => !moved.has(R[a][x]));
+    if (!ia.length || !R[b].length) continue;
+    const i = pick(rng, ia), wa = rostCurW(R[a][i], Y);
     let j = -1, best = 99;
-    R[b].forEach((e, x) => { const d = Math.abs(rostCurW(e, Y) - wa); if (d < best) { best = d; j = x; } });
+    R[b].forEach((e, x) => { if (moved.has(e)) return; const d = Math.abs(rostCurW(e, Y) - wa); if (d < best) { best = d; j = x; } });
     if (j < 0 || best > 1.5 + wa * 0.25) continue;
     const eb = R[b][j];
     move(a, i, b, 'trade');
@@ -842,34 +868,41 @@ function rosterSummer(L, beats, quietY) {
   }
   /* Now and then a star asks out. */
   if (rng() < 0.35) {
-    const pool = [];
-    for (const c of CLUBS) R[c].forEach((e) => { const w = rostCurW(e, Y); if (w >= 7 && Y - e.b >= 25) pool.push([c, e, w]); });
-    if (pool.length) { const [c, e] = pick(rng, pool); move(c, R[c].indexOf(e), other(c), 'trade'); }
+    const stars = [];
+    for (const c of CLUBS) R[c].forEach((e) => { const w = rostCurW(e, Y); if (w >= 7 && Y - e.b >= 25 && !moved.has(e)) stars.push([c, e, w]); });
+    if (stars.length) { const [c, e] = pick(rng, stars); move(c, R[c].indexOf(e), other(c), 'trade'); }
   }
   /* Free agency: veterans change teams, mostly toward a thin roster. */
   const fa = 10 + Math.floor(rng() * 8);
   for (let k = 0; k < fa; k++) {
     const c = pick(rng, CLUBS);
-    const vets = R[c].map((e, i) => [e, i]).filter(([e]) => Y - e.b >= 24);
+    const vets = R[c].map((e, i) => [e, i]).filter(([e]) => Y - e.b >= 24 && !moved.has(e));
     if (!vets.length) continue;
     const [, i] = pick(rng, vets);
     const thin = CLUBS.slice().sort((x, y) => R[x].length - R[y].length).slice(0, 8);
     const to = rng() < 0.6 ? pick(rng, thin.filter((x) => x !== c).length ? thin.filter((x) => x !== c) : [other(c)]) : other(c);
     move(c, i, to, 'fa');
   }
-  /* Every club carries thirteen to fifteen. A short one signs a journeyman;
-     a long one waives its last man. */
-  /* Waived men go to a pool the short clubs sign from first, so a real
-     player is cut from one roster and turns up on another. */
-  const waived = [];
-  for (const c of CLUBS) if (R[c].length > 15) { R[c].sort((x, y) => rostCurW(y, Y) - rostCurW(x, Y)); waived.push(...R[c].splice(15)); }
-  waived.sort((x, y) => rostCurW(y, Y) - rostCurW(x, Y));
-  for (const c of CLUBS.slice().sort((x, y) => R[x].length - R[y].length)) {
-    while (R[c].length < 13 && waived.length) R[c].push(waived.shift());
+  /* Every club carries thirteen to fifteen. A long one lets its last man go,
+     and an invented man before a real one of about the same worth. Nobody
+     who moved this summer is let go: he was just wanted. A real man let go
+     joins the free agents and can sign anywhere, which is his one move. */
+  for (const c of CLUBS) {
+    if (R[c].length <= 15) continue;
+    const keep = (e) => rostCurW(e, Y) + (e.g ? 0 : 0.6) + (moved.has(e) ? 99 : 0);
+    R[c].sort((x, y) => keep(y) - keep(x));
+    for (const e of R[c].splice(15)) if (!e.g) pool.push(e);
   }
+  pool.sort((x, y) => rostCurW(y, Y) - rostCurW(x, Y));
+  /* A short club signs a real free agent first. Only when there is none does
+     it draft a rookie, and only then a journeyman nobody has heard of. */
+  const short = () => CLUBS.slice().sort((x, y) => R[x].length - R[y].length);
+  for (const c of short()) while (R[c].length < 14 && pool.length) sign(pool.shift(), c);
+  for (const c of CLUBS) if (R[c].length < 14) { const rk = rookieFor(L, c, Y); rk.pos = thinPos(R[c], rk.pos); R[c].push(rk); }
   for (const c of CLUBS) {
     while (R[c].length < 13) { const r = E.createSeededRNG(E.hashSeed(String(L.seed) + ':vet:' + c + ':' + Y + ':' + R[c].length)); R[c].push({ n: pick(r, FIRST) + ' ' + pick(r, PEOPLE_LAST), pos: thinPos(R[c], pick(r, R_POS)), b: Y - 27 - Math.floor(r() * 6), w: round1(0.4 + r() * 1.6), g: 1, d: Y - 6 }); }
   }
+  lg.pool = pool.slice(0, 60);
   uniqueNames(L, R, Y);
   /* A club that got better plays a little better: a share of the talent it
      gained, with the league kept centred. */
@@ -7168,7 +7201,7 @@ story({
     t: 'The league tries a four-point line.', x: 'Thirty-two feet. One season, as an experiment.',
     o: [O('Practice it all summer', { sho: 2, fame: 4 }, 'You hit nine in the first month. The experiment is extended.', { set: 'legend.four' }),
       O('Ignore it', { iq: 1 }, 'You keep taking good shots. Others do not.', { set: 'legend.four' })] },
-  lg_relocation: { at: 'off', legend: true, req: { team: true, seasons: [5, null] }, when: (L) => clubNet(L, L.team) < -3, w: 1, rar: 'rare',
+  lg_relocation: { at: 'off', legend: true, req: { team: true, seasons: [5, null] }, when: (L) => clubNet(L, L.team) < -3, w: 2, rar: 'rare',
     t: 'They might move the team.', x: '{lazlo} has a stadium plan in another city. The fans are marching downtown.',
     o: [O('March with them', { fame: 6, morale: 6, trust: -4 }, 'Ten thousand people and you at the front. The plan dies in a month.', { set: 'legend.relocation' }),
       O('Stay out of it', { trust: 2 }, 'The plan dies anyway. Some fans remember you stayed quiet.', { set: 'legend.relocation' })] },

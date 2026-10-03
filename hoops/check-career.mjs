@@ -910,6 +910,43 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
   ok(legsN > 40 && legsFirst / legsN > 0.65, `past thirty the legs go before the jumper (${legsFirst} of ${legsN})`);
 }
 
+/* ONE MOVE A MAN A SUMMER, AND REAL MEN BEFORE INVENTED ONES. A player
+   reported a summer that traded Jaylon Tyson to the Pelicans and signed him
+   to the Hornets in the next line. And a short club drafted an invented
+   rookie every summer whether it needed one or not, which pushed real men off
+   the end of the roster and out of the league. */
+{
+  section('12b. one move a summer, and the free agents are real');
+  let summers = 0, twice = [], gen2 = [], gen4 = [], realWaived = 0;
+  for (let i = 0; i < 40; i++) {
+    let lastY = -1;
+    play('mv:' + i, 'random', { pos: C.POS[i % 5], arch: C.ARCH_KEYS[i % 6] }, (L) => {
+      const lg = L.league;
+      if (!lg.rost || lg.rostY === lastY) return;
+      lastY = lg.rostY;
+      summers++;
+      const seen = {};
+      for (const f of L.feed || []) {
+        if (f.k !== 'move' || f.y !== L.year) continue;
+        const m = /^(.+?) (?:is traded to|signs with) /.exec(f.t);
+        if (m) { seen[m[1]] = (seen[m[1]] || 0) + 1; if (seen[m[1]] === 2) twice.push(m[1] + ' ' + L.year); }
+      }
+      let tot = 0, gen = 0;
+      for (const c in lg.rost) for (const e of lg.rost[c]) { tot++; if (e.g) gen++; }
+      const k = lastY - (lg.rs || 0);
+      if (k === 2) gen2.push(gen / tot);
+      if (k === 4) gen4.push(gen / tot);
+      for (const e of lg.pool || []) if (e.g) realWaived++;
+    });
+  }
+  const mean = (a) => a.reduce((x, y) => x + y, 0) / (a.length || 1);
+  ok(summers > 200 && twice.length === 0, `no man is reported moving twice in one summer (${twice.slice(0, 3).join(', ') || 'none'} over ${summers} summers)`);
+  ok(gen2.length > 20 && mean(gen2) < 0.03, `two summers in, the league is real men (${(mean(gen2) * 100).toFixed(1)}% invented)`);
+  ok(gen4.length > 20 && mean(gen4) < 0.15, `four summers in, still mostly real (${(mean(gen4) * 100).toFixed(1)}% invented)`);
+  ok(realWaived === 0, `the free agent pool holds only real men (${realWaived} invented found)`);
+  ok(league.fa && league.fa.length > 20, `today's free agents are seeded into the pool (${league.fa ? league.fa.length : 0})`);
+}
+
 if (!QUICK) await browser();
 
 console.log('');
