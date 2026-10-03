@@ -381,7 +381,13 @@ function worthOf(bySeason, latest) {
     const w = rs.reduce((a, r) => a + (r.w || 0), 0), g = rs.reduce((a, r) => a + (r.g || 0), 0);
     if (g <= 0) return;
     const rel = wt * Math.min(1, g / 50);
-    num += rel * w / Math.max(g, 25);
+    /* PERFORMANCE IS WIN SHARES AND PRODUCTION, half each. Win shares alone
+       rate a high-usage guard on a bad club under a center on a good one;
+       the box score alone ignores whether it won. Production is points,
+       rebounds, assists, steals and blocks a game, read in win shares a game
+       (twelve a night is replacement level). */
+    const pr = rs.reduce((a, r) => a + (r.g || 0) * Math.max(0, (r.pts || 0) + 1.2 * (r.reb || 0) + 1.6 * (r.ast || 0) + 2 * ((r.stl || 0) + (r.blk || 0)) - 12) * 0.24 / 70, 0) / g;
+    num += rel * (0.5 * w / Math.max(g, 25) + 0.5 * pr * Math.min(1, g / 25));
     den += rel;
     gs += wt * g; gw += wt;
   });
@@ -452,10 +458,32 @@ function driftLeague(L, beats) {
   coachCarousel(L, beats);
   const rng = rngAt(L, 'drift');
   const net = {};
+  /* A STORY CLUB IS AS GOOD AS ITS PLAYERS. After the summer's moves every
+     club is rated off its rotation's overalls, weighted the way the minutes
+     go, with a little left to coaching and luck. Your own club is rated
+     without you: what you add is your impact on the floor. */
+  if (storyOn(L) && rostOf(L)) {
+    leagueSummer(L);
+    rosterSummer(L, beats);
+    L.league.net = rosterNets(L, rng);
+    return;
+  }
   for (const c of CLUBS) net[c] = (L.league.net[c] || 0) * 0.62 + norm(rng) * 3.6;
   L.league.net = normaliseNets(net);
   leagueSummer(L);
   rosterSummer(L, beats);
+}
+const NET_WT = [0.15, 0.14, 0.13, 0.12, 0.11, 0.1, 0.08, 0.07, 0.06, 0.04];
+function clubOvr(L, c) {
+  const m = matesOf(L, c).filter((x) => !(c === L.team && x.n === L.name)).map((x) => x.ovr).sort((a, b) => b - a);
+  let v = 0;
+  NET_WT.forEach((w, k) => { v += w * (m[k] != null ? m[k] : 60); });
+  return v;
+}
+function rosterNets(L, rng) {
+  const net = {};
+  for (const c of CLUBS) net[c] = clubOvr(L, c) + norm(rng) * 0.6;
+  return normaliseNets(net);
 }
 const clubNet = (L, c) => L.league.net[c] || 0;
 function clubTier(net) {
@@ -942,11 +970,30 @@ function uniqueNames(L, R, Y) {
   }
 }
 /* Who is on club c in the current year, best first. */
+/* EVERY PLAYER HAS AN OVERALL, ON YOUR SCALE. A man's worth is what he
+   produces a season (win shares, measured off his real seasons and aged),
+   and it is read onto the same 0 to 99 scale your own overall is on, fitted
+   so a club's best man is about a 78, its fifth about a 69, its ninth about
+   a 63, a star in the high 80s. The table was read off today's rosters by rank
+   against where a career's overall sits: a typical rookie 62, a typical
+   peak 75, a star's peak in the high 80s, so a rookie starts around the
+   eighth man and a typical peak is a starter. Minutes, the starting five and
+   a club's strength all compare these numbers, so a 77 in his second year
+   plays behind the better players on his club. */
+const W_OVR = [[0, 54], [1, 59], [2.2, 63], [3.7, 69], [5.1, 74], [6.6, 78], [9.7, 85], [13, 90], [16, 94]];
+function mateOvr(w) {
+  const x = Math.max(0, w);
+  for (let k = 1; k < W_OVR.length; k++) if (x <= W_OVR[k][0]) {
+    const [a, oa] = W_OVR[k - 1], [b, ob] = W_OVR[k];
+    return Math.round(oa + (x - a) / (b - a) * (ob - oa));
+  }
+  return W_OVR[W_OVR.length - 1][1];
+}
 function matesOf(L, c) {
   const lg = L.league;
   const Y = L.year;
   const R = rostNow(L);
-  if (R && R[c]) return R[c].filter((e) => !rostGone(L, e, Y)).map((e) => ({ n: e.n, pos: e.pos, age: Y - e.b, w: rostCurW(e, Y), real: e.g ? 0 : 1 })).sort((a, b) => b.w - a.w);
+  if (R && R[c]) return R[c].filter((e) => !rostGone(L, e, Y)).map((e) => { const w = rostCurW(e, Y); return { n: e.n, pos: e.pos, age: Y - e.b, w, ovr: mateOvr(w), real: e.g ? 0 : 1 }; }).sort((a, b) => b.w - a.w);
   const out = [];
   const base = lg.roster && lg.roster[c];
   if (base) {
@@ -966,6 +1013,7 @@ function matesOf(L, c) {
     const yrs = Y - d;
     out.push({ n, pos: pick(r, R_POS), age: 20 + yrs, w: round1(peak * Math.min(1, 0.35 + yrs * 0.2)), real: 0 });
   }
+  for (const m of out) m.ovr = mateOvr(m.w);
   return out.sort((a, b) => b.w - a.w);
 }
 /* School teammates are generated, keyed on the school and the year. */
@@ -1777,8 +1825,37 @@ function effOvr(L) {
   const s = L.season;
   return ovrOf(L) + (L.m.morale - 55) * 0.04 + (s ? s.mods.perf : 0) - Math.max(0, 45 - L.m.health) * 0.08;
 }
+/* MINUTES ARE A PLACE ON YOUR CLUB (story careers in the league). You are
+   ranked against your teammates' overalls: the best man on the club plays
+   about thirty-four minutes, the fifth about twenty-six, the ninth about
+   eleven, the way a real rotation is shaped. diff is your overall against
+   the club's fifth best man, so nought is the edge of the starting five. */
+const RANK_MIN = [34.5, 32.5, 30.5, 28.5, 26.5, 23, 19.5, 16, 12, 8, 5, 3, 2, 2, 2, 2];
+function roleRank(L) {
+  const mates = matesOf(L, L.team);
+  if (!mates.length) return null;
+  const me = effOvr(L);
+  const above = mates.filter((m) => m.ovr > me).length;
+  const fifth = (mates[4] || mates[mates.length - 1]).ovr;
+  /* Between two ranks the gap decides: a man a point behind the one ahead
+     of him plays close to his minutes. */
+  const up = above > 0 ? mates.filter((m) => m.ovr > me).reduce((a, m) => Math.min(a, m.ovr), 99) : null;
+  const lean = up != null ? clamp(1 - (up - me) / 4, 0, 1) * 0.5 : 0;
+  const min = RANK_MIN[above] + lean * ((RANK_MIN[Math.max(0, above - 1)]) - RANK_MIN[above]);
+  return { above, min, diff: me - fifth, best: above === 0 };
+}
 function roleOf(L) {
   const net = clubNet(L, L.team);
+  if (storyOn(L) && L.stage === 'nba' && L.team && rostOf(L)) {
+    const rk = roleRank(L);
+    if (rk) {
+      let min = rk.min + (L.m.trust - 50) * 0.05 + (L.season ? L.season.mods.min : 0);
+      if (L.contract && L.contract.kind === 'rookie' && L.draft && L.draft.pick <= 5 && net < 0) min += 3;
+      min = clamp(depthCheck(L, min, rk.diff), 2, 38.5);
+      const label = rk.best && min >= 33 ? 'Franchise player' : min >= 24 ? 'Starter' : min >= 15 ? 'Rotation' : 'End of bench';
+      return { min: round1(min), diff: rk.diff, label, starter: min >= 24, rank: rk.above + 1 };
+    }
+  }
   const diff = effOvr(L) - rotationBar(net);
   let min = diff >= 14 ? 35.5 : diff >= 7 ? 32.5 : diff >= 0 ? 27.5 : diff >= -5 ? 20 : diff >= -10 ? 13 : 7;
   min += (L.m.trust - 50) * 0.05 + (L.season ? L.season.mods.min : 0);
@@ -1837,13 +1914,13 @@ function rotationOf(L) {
      starter puts you in the five, at whatever minutes he plays you. */
   if (role.starter && at > 4) at = 4;
   const youStart = at < 5;
-  const me = { n: L.name, pos: L.pos, age: L.age, you: true, min: mine, pts: null, w: 0 };
+  const me = { n: L.name, pos: L.pos, age: L.age, you: true, min: mine, pts: null, w: 0, ovr: ovrOf(L) };
   const epOf = (m) => { const ln = lines[m.n]; return ln && ln[5] ? String(ln[5]).split(';') : null; };
-  const cands = mates.map((m) => ({ v: Math.max(0.1, m.w), pos: m.pos, ep: epOf(m), m }));
+  const cands = mates.map((m) => ({ v: Math.max(0.1, (m.ovr || mateOvr(m.w)) - 55), pos: m.pos, ep: epOf(m), m }));
   if (youStart) cands.unshift({ v: 1000, pos: L.pos, ep: null, force: true, m: me });
   const five = bestFive(cands);
   const starters = five.slots.map((i, j) => ({ slot: SLOTS5[j], m: cands[i].m }));
-  const bench = mates.filter((m) => !starters.some((x) => x.m === m)).sort((a, b) => b.w - a.w);
+  const bench = mates.filter((m) => !starters.some((x) => x.m === m)).sort((a, b) => b.ovr - a.ovr || b.w - a.w);
   /* Minutes: the rotation's shape without your slot. Starters take the top
      of it by value, the bench the rest, scaled so the club plays 240. */
   const shape = ROT_SHAPE.slice(0, mates.length + 1);
@@ -1854,10 +1931,10 @@ function rotationOf(L) {
     /* Points: last season's rate for a man the data has, otherwise one off
        his value; at the minutes he is getting now. */
     const rate = ln && ln[0] > 0 ? ln[1] / ln[0] : 0.18 + Math.max(0, m.w) * 0.035;
-    return { n: m.n, pos: m.pos, age: m.age, real: m.real, min, pts: min > 0 ? round1(rate * min) : 0, slot };
+    return { n: m.n, pos: m.pos, age: m.age, real: m.real, ovr: m.ovr, min, pts: min > 0 ? round1(rate * min) : 0, slot };
   };
   const rows = new Map();
-  starters.filter((x) => x.m !== me).sort((a, b) => b.m.w - a.m.w).forEach((x, k, arr) => rows.set(x.m, row(x.m, k, x.slot)));
+  starters.filter((x) => x.m !== me).sort((a, b) => b.m.ovr - a.m.ovr || b.m.w - a.m.w).forEach((x, k, arr) => rows.set(x.m, row(x.m, k, x.slot)));
   const nS = starters.filter((x) => x.m !== me).length;
   bench.forEach((m, k) => rows.set(m, row(m, nS + k, null)));
   me.slot = youStart ? starters.find((x) => x.m === me).slot : null;
@@ -1873,7 +1950,10 @@ function rotationOf(L) {
 }
 function usageOf(L, role) {
   const a = ARCHES[L.arch];
-  const u = 0.13 + 0.17 * clamp(role.diff / 22 + 0.35, 0, 1.25) + a.usage + (L.season ? L.season.mods.usage : 0);
+  /* On a story career the shots go down the club's pecking order: the best
+     man is the first option, the fourth starter the fourth. */
+  const f = role.rank ? clamp(0.8 - (role.rank - 1) * 0.12 + role.diff * 0.01, 0, 1.25) : clamp(role.diff / 22 + 0.35, 0, 1.25);
+  const u = 0.13 + 0.17 * f + a.usage + (L.season ? L.season.mods.usage : 0);
   return clamp(u, 0.08, 0.37);
 }
 /* The man's per-game means at these minutes. */
@@ -3992,14 +4072,14 @@ function chooseCoachReview(L, i, rng) {
    the save: it is a cache, not a fact about the career. */
 const FIVE_CACHE = typeof WeakMap !== 'undefined' ? new WeakMap() : null;
 function inFive(L) {
-  const key = [L.year, L.team, L.pos, Math.round(youW(L) * 4), L.league.rostY, L.season && L.season.deadline ? 1 : 0, L.league.rost && L.league.rost[L.team] ? L.league.rost[L.team].length : 0].join(':');
+  const key = [L.year, L.team, L.pos, Math.round(effOvr(L)), L.league.rostY, L.season && L.season.deadline ? 1 : 0, L.league.rost && L.league.rost[L.team] ? L.league.rost[L.team].length : 0].join(':');
   const hit = FIVE_CACHE && FIVE_CACHE.get(L);
   if (hit && hit.key === key) return hit.v;
   const mates = matesOf(L, L.team).slice(0, 13);
   const lines = L.league.lines || {};
   const epOf = (m) => { const ln = lines[m.n]; return ln && ln[5] ? String(ln[5]).split(';') : null; };
-  const me = { v: youW(L), pos: L.pos, ep: null, me: 1 };
-  const five = bestFive([me].concat(mates.map((m) => ({ v: Math.max(0.1, m.w), pos: m.pos, ep: epOf(m) }))));
+  const me = { v: Math.max(0.1, effOvr(L) - 55), pos: L.pos, ep: null, me: 1 };
+  const five = bestFive([me].concat(mates.map((m) => ({ v: Math.max(0.1, m.ovr - 55), pos: m.pos, ep: epOf(m) }))));
   const v = !!(five && five.slots.indexOf(0) >= 0);
   if (FIVE_CACHE) FIVE_CACHE.set(L, { key, v });
   return v;
@@ -8596,7 +8676,7 @@ const publicAPI = {
   isAm, colorsOf, roadView, nationalRank, rankText, starsOf, draftTalk, collegeOffers, schoolNet,
   LOOK_KEYS, cleanLook, setLook, TONES, PRESSERS, PERSONAS, EVENT_REP, repOf, personaOf, presserCard,
   COACHES_NOW, COACH_POOL, COACH_NAMES, PEOPLE_M, PEOPLE_F, PEOPLE_X, PEOPLE_LAST, FIRST, LAST, RIVAL_FIRST, RIVAL_LAST,
-  coachState, coachOf, coachName, coachCarousel, myCoach, matesOf, myMates, personName, peopleKey, say, CLUBS,
+  coachState, coachOf, coachName, coachCarousel, myCoach, matesOf, mateOvr, clubOvr, myMates, personName, peopleKey, say, CLUBS,
   lockerOf, CAST, TRAITS, rollTraits, migrate, remember, recall, hasTrait, REAL_TOKENS, INVENTED_TOKENS, BASKETBALL_ONLY,
   STORY_VERSION, BAL, storyOn, recurs, figs, activeFigs, figOvr, mvpRace, legacyView, GOALS, OUTLETS, NICKS, feed, TRAIT_NAME, BADGES, badgeList, SIGS, archFit, trait, continuity, continuityLog, ARC_EVENTS, CALLBACKS, callback, memories, ago, relate, relOf, EVENT_REL, arcData, STORY_RECURS, STORY_PHASES, calendar, RARITY, EVENT_TAGS, REQ, reqOk, defineEvents,
   ORIGINS, ORIGIN_KEYS, ROUTES, routesOf, routeOn, HOF_TIERS, OUTCOMES, SECRETS, ENDING_COUNT, endingOf, STORY_EV, STORY_NBA, STORY_AM, evById, AFTER_PATHS, ALT_NAME,

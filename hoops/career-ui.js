@@ -229,12 +229,13 @@ var CSS = [
 '.cr-tabs .k-tab{min-width:0;font-size:11px;letter-spacing:.08em;}',
 /* the rotation: one row a player, names give way before numbers do */
 '.cr-rot{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:2px;}',
-'.cr-rot li{display:grid;grid-template-columns:2em minmax(0,1fr) 3.2em 3.2em;gap:8px;align-items:center;padding:6px 8px;background:rgba(143,160,214,.07);font-size:13px;color:var(--k-ink-2);}',
+'.cr-rot li{display:grid;grid-template-columns:2em minmax(0,1fr) 2.4em 3.2em 3.2em;gap:8px;align-items:center;padding:6px 8px;background:rgba(143,160,214,.07);font-size:13px;color:var(--k-ink-2);}',
 '.cr-rot .who{min-width:0;display:grid;}',
 '.cr-rot .who b,.cr-rot .who small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
 '.cr-rot .who b{color:var(--k-ink);font-weight:600;}',
 '.cr-rot .who small{color:var(--k-ink-3);font-size:11px;}',
 '.cr-rot .v{text-align:right;font-variant-numeric:tabular-nums;}',
+'.cr-rot .v.ovr{font-family:var(--k-f-pixel);font-size:11px;color:var(--k-ink);}',
 '.cr-rot .n{font-family:var(--k-f-pixel);font-size:9px;color:var(--k-ink-3);}',
 '.cr-rot li.you{box-shadow:inset 3px 0 0 var(--k-accent);background:rgba(255,140,40,.10);}',
 '.cr-rot li.you .who b{font-weight:800;}',
@@ -1106,10 +1107,10 @@ function teamHtml(L){
     var at = x.slot && x.slot !== x.pos ? x.pos + ', playing ' + x.slot : x.pos || '';
     return sep + '<li class="cr-rot-r' + (x.you ? ' you' : '') + (x.min <= 0 ? ' dnp' : '') + '"><span class="n">' + (x.slot || i + 1) + '</span>'
       + '<span class="who"><b>' + esc(x.you ? x.n + ' (you)' : x.n) + '</b><small>' + esc(at) + ' · ' + x.age + ' · ' + esc(x.role) + '</small></span>'
-      + '<span class="v">' + (x.min > 0 ? x.min : '-') + '</span><span class="v">' + pts + '</span></li>';
+      + '<span class="v ovr">' + (x.ovr != null ? x.ovr : '-') + '</span><span class="v">' + (x.min > 0 ? x.min : '-') + '</span><span class="v">' + pts + '</span></li>';
   }).join('');
   return head + '<p class="k-small cr-rot-line">' + line + '</p>'
-    + '<ol class="cr-rot" aria-label="Rotation"><li class="cr-rot-h" aria-hidden="true"><span class="n"></span><span class="who">Starters</span><span class="v">Min</span><span class="v">Pts</span></li>' + rows + '</ol>';
+    + '<ol class="cr-rot" aria-label="Rotation"><li class="cr-rot-h" aria-hidden="true"><span class="n"></span><span class="who">Starters</span><span class="v">Ovr</span><span class="v">Min</span><span class="v">Pts</span></li>' + rows + '</ol>';
 }
 /* The people a career has met, closest and furthest first. */
 function peopleHtml(L){

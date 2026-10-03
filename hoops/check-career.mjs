@@ -991,6 +991,44 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
   ok(distinct.size >= 15, `thirty shooting guards built the same way start as different players (${distinct.size} different strengths and weaknesses)`);
 }
 
+/* EVERY PLAYER HAS AN OVERALL AND MINUTES FOLLOW IT. A player reported a
+   77 in his second year leading a club with three better players in
+   minutes: teammates were rated in win shares and you in an overall, and
+   the conversion made you an All-Star. */
+{
+  section('12d. every player has an overall, and minutes follow the club\'s order');
+  const L0 = C.newLife({ seed: 'ovr', league, start: 'draft' });
+  const all = [];
+  for (const c of C.CLUBS) for (const m of C.matesOf(L0, c)) all.push(m);
+  ok(all.length > 300 && all.every((m) => Number.isFinite(m.ovr) && m.ovr >= 40 && m.ovr <= 99), `every man in the league has an overall (${all.length})`);
+  const by = (n) => (all.find((m) => m.n === n) || {}).ovr;
+  const top = all.slice().sort((a, b) => b.ovr - a.ovr)[0];
+  ok(top.ovr >= 86, `the league's best player rates like one (${top.n} ${top.ovr})`);
+  const med = (k) => { const v = C.CLUBS.map((c) => (C.matesOf(L0, c)[k] || {}).ovr).sort((a, b) => a - b); return v[15]; };
+  ok(med(0) >= 76 && med(0) <= 82 && med(4) >= 64 && med(4) <= 70, `a club's best man is about a 79 and its fifth about a 67 (${med(0)}, ${med(4)})`);
+  let looks = 0, crowded = 0, overplayed = [], netOk = 0, netN = 0;
+  for (let i = 0; i < 60; i++) {
+    const L = C.generateRoad({ seed: 'mn:' + i, league, pos: C.POS[i % 5] });
+    let g = 0, lastY = 0;
+    while (!L.retired && g++ < 4000 && L.history.length < 8) {
+      if (L.pending.length) C.choose(L, (L.steps * 7 + i) % L.pending[0].options.length); else C.step(L);
+      if (L.stage !== 'nba' || !L.team || !L.season || L.year === lastY) continue;
+      lastY = L.year;
+      const mates = C.matesOf(L, L.team), me = C.view(L).ovr;
+      const role = C.roleOf(L);
+      looks++;
+      const better = mates.filter((m) => m.ovr >= me + 2).length;
+      if (better >= 3) { crowded++; if (role.min > 33.5 || role.label === 'Franchise player') overplayed.push(L.year + ': ' + me + ' with ' + better + ' better, ' + role.min + ' min'); }
+      /* Club strength follows the rosters: the better half by overall is the
+         better half by net rating, most of the time. */
+      const o = C.CLUBS.map((c) => [C.clubOvr(L, c), C.clubNet(L, c)]).sort((a, b) => a[0] - b[0]);
+      netN++; if (o.slice(15).reduce((a, x) => a + x[1], 0) > o.slice(0, 15).reduce((a, x) => a + x[1], 0)) netOk++;
+    }
+  }
+  ok(looks > 200 && crowded > 20 && overplayed.length === 0, `with three better teammates you never lead the club in minutes (${overplayed.slice(0, 2).join('; ') || crowded + ' crowded seasons, none overplayed'})`);
+  ok(netOk >= netN * 0.9, `the clubs with better players are the better clubs (${netOk} of ${netN})`);
+}
+
 if (!QUICK) await browser();
 
 console.log('');

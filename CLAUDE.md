@@ -11077,6 +11077,31 @@ career-ui.js; new kit icons crown, shield, sprout, flame, globe, six, net), fram
 (gold NBA, blue college, green high school), with a count in the corner. Tapping one names it
 under the shelf. A wall of pills was too much reading.
 
+**EVERY PLAYER HAS AN OVERALL, AND MINUTES ARE A PLACE ON YOUR CLUB** (story careers). A
+player reported a 77 in his second year leading a club with three better players in minutes:
+teammates were rated in win shares, you in an overall, and `youW` turned a 77 into an
+All-Star's eight win shares. Now:
+
+- **A man's worth is half win shares and half production** (`worthOf`: points, rebounds,
+  assists, steals and blocks a game, twelve a night is replacement), because win shares alone
+  rated Luka Doncic under Kon Knueppel. Measured off his real seasons and aged as before.
+- **`mateOvr` reads worth onto your scale** (`W_OVR`), fitted so a club's best man is about a
+  79, its fifth about a 67, its ninth about a 61, and a star in the high 80s; a career's own
+  overall runs about 62 as a rookie and 75 at a typical peak. Every `matesOf` row carries
+  `ovr`, and the Team tab shows it.
+- **Minutes come from rank** (`roleRank`, `RANK_MIN`): the best man plays about 34, the fifth
+  about 26, the ninth about 12, with a little for trust and a close gap. `diff` is your overall
+  against the club's fifth best, so nought is the edge of the starting five, and `bestFive`
+  compares overalls. Shots go down the same order (`usageOf` reads `role.rank`).
+- **A club is as good as its players**: each summer `rosterNets` rates every club off its
+  rotation's overalls, weighted like the minutes, plus a little for coaching and luck. Your
+  own club is rated without you; you are your impact on the floor.
+
+check-career 12d holds it: every man has an overall, the best man and the club ranks land
+where the table says, a player with three better teammates never plans the most minutes,
+and the better half of the league by overall is the better half by net. The usage slope was
+tuned once against Hall of Fame (32 with the first slope, 26.6 now).
+
 **A ROSTER POSITION TRUSTS THE DATA WITHIN ONE SPOT.** The roster file's coarse F against the
 stats' C used to fall back to SF, so true centers were listed as small forwards. `posFromData`
 keeps the data's position when it is in the file's family or one step from it.
