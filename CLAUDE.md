@@ -11073,9 +11073,42 @@ shooting guards built the same way for at least fifteen different strength and w
 
 **AWARDS AND BADGES ARE ICONS.** The Trophies shelf and the player card's traits, signature
 move and skill badges are pixel icons on tiles (`AW_ICON`, `TRAIT_ICON`, `BADGE_ICON` in
-career-ui.js; new kit icons crown, shield, sprout, flame, globe, six, net), framed by level
-(gold NBA, blue college, green high school), with a count in the corner. Tapping one names it
-under the shelf. A wall of pills was too much reading.
+career-ui.js; new kit icons crown, shield, sprout, flame, globe, six, net), with a count in
+the corner. Tapping one names it under the shelf. A wall of pills was too much reading.
+
+**NO FRAME ROUND AN ICON, AND THE TROPHY ICONS ARE ELEVEN CELLS.** Reported: hard to tell what
+any of them was. Two causes. A 2px border round a 7 by 7 icon was a second outline round the
+icon's own, and the seven cell drawings were too small to be anything: a medal was an outline
+ring and a dot, a crown and a trophy were one blob in two colours. The tile is a soft tint of
+the icon's own colour (`--ic`) with the level as a short bar under it (`--lv`). `ICONS_L` in
+career-kit.js redraws twelve of them on an 11 cell grid, drawn at 4x by `K.badgeHtml`, which
+falls back to the 7 cell icon at 6x so both are about 44px. The icon palette gained fixed `r`
+and `q` (a red and blue ribbon): a ribbon in the medal's own dark shade vanished into the tile.
+Look at a screenshot before changing one: a white cross on a medal read as a first aid kit.
+
+**A TRADE IS YOUR TRADE ONLY WHEN YOU MOVED.** Reported: "traded to the Pacers while on the
+Pacers", and LaMelo gone from the roster. The roster was right: your club's own deadline deal
+had sold him. `deadlineClub` pushed that deal as a `trade` beat, and `scenes.js` reads `trade`
+as you, so it played "Breaking. You have been traded to" your own club. Club deals are
+`club_trade` now. `joinTeam` and `tradeTo` refuse a move to the club you are on. The move you
+make is recorded in `TRADED` (module state, never saved) and turned into one `trade` beat by
+`tradeBeat` at the end of `choose` and `step`, carrying where from, where to, who went back,
+when (deadline, summer, season), how (the card), and the people who tell you
+(`tradePeople`: both general managers, your agent, whoever is home with you, the oldest head in
+the locker room you leave, all invented). `tradePeople` reads `L.life` without creating it,
+because a story off career has no `life` key and `--story off` must stay byte identical.
+
+**AND IT IS A CUTSCENE, NOT A STUDIO GRAPHIC.** `tradeScene` in scenes.js picks how it reaches
+you off when and how, seeded on the career and the year: a call from your agent at home at
+11:42 at night (`trade_home`), pulled out of shootaround into the general manager's office
+(`trade_practice`), a knock at a hotel door on a road trip (`trade_road`), your name on the
+timeline before your phone rings (`trade_leak`), or the call you asked for (`trade_ask`). Every
+one ends on `trade_arrive`, the new general manager and first practice in the new colours.
+Until then every beat is `club: 'from'`, so the room and your jersey are the club you are
+leaving, and the header reads "Hornets to Pacers". Three kit rooms were added for it: `home`,
+`office` and `hotel`. check-career 12e: every trade beat is a real move with people to tell it,
+club deals are club news, nobody is traded to his own club, and every scene the picker can
+choose is written.
 
 **EVERY PLAYER HAS AN OVERALL, AND MINUTES ARE A PLACE ON YOUR CLUB** (story careers). A
 player reported a 77 in his second year leading a club with three better players in minutes:

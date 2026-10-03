@@ -1791,8 +1791,15 @@ function runDraft(L, beats) {
   if (round === 1) L.pending.unshift(presserCard(L, 'draft'));
 }
 
+/* THE LAST TIME YOU WERE TRADED, for the scene that tells you. It lives
+   outside the save on purpose: it is about this press of a button, and the
+   step or the card that made the trade turns it into a beat and clears it. */
+let TRADED = null;
 function joinTeam(L, c, trade) {
   const from = L.team;
+  /* Nobody is traded to the club he is already on. */
+  if (trade && from && from === c) return false;
+  if (trade && from) TRADED = { from, to: c, back: null };
   L.team = c;
   L.m.trust = 50;
   if (trade) L.flags.moved = (L.flags.moved || 0) + 1;
@@ -2823,7 +2830,8 @@ function offseason(L, beats) {
     const to = weighted(rng, CLUBS.filter((x) => x !== L.team), (x) => 2 + clubNet(L, x) + 6);
     L.flags.tradeAsk = false;
     joinTeam(L, to, true);
-    beats.push({ kind: 'trade', text: 'Your request is granted. Traded to the ' + E.teamName(to) + '.', tone: 'gold' });
+    beats.push(Object.assign({ kind: 'trade', text: 'Your request is granted. Traded to the ' + E.teamName(to) + '.', tone: 'gold', from: TRADED && TRADED.from, to, how: 'ask', when: 'summer' }, TRADED && TRADED.from ? tradePeople(L, TRADED.from) : {}));
+    TRADED = null;
   }
   if (L.age >= bal(L, 'maxAge', 40)) { retire(L, beats, 'The body made the call at ' + L.age + '.'); return; }
   if (storyOn(L) && L.flags.farewell === L.year) { retire(L, beats, 'Retired at ' + L.age + ' after a farewell season.'); return; }
@@ -3872,8 +3880,9 @@ function tradeNow(L, rng, contender) {
 }
 function tradeTo(L, to, rng) {
   const from = L.team;
+  if (!to || to === from) return;
   joinTeam(L, to, true);
-  if (storyOn(L) && from) swapBack(L, from, to, rng);
+  if (storyOn(L) && from) { const b = swapBack(L, from, to, rng); if (b && TRADED) TRADED.back = b.n; }
   const s = L.season;
   if (s && s.g > 0 && s.g < GAMES) {
     /* The record follows the club, not the man: the new club's games so far. */
@@ -4225,7 +4234,7 @@ function deadlineClub(L, beats, rng) {
     s.deadline.got = get.e.n;
     const t = 'Deadline: the ' + nick(c) + ' get ' + get.e.n + ' from the ' + nick(src) + (back ? ' for ' + back.n : '') + '.';
     feed(L, 'move', t); logIt(L, t, 'good');
-    beats.push({ kind: 'trade', text: t, tone: 'good' });
+    beats.push({ kind: 'club_trade', text: t, tone: 'good' });
     if (get.e.pos === L.pos && rostCurW(get.e, Y) > youW(L)) {
       bump(L, { min: -3, morale: -2 });
       beats.push({ kind: 'role', text: 'He plays your position, and plays it well. Your minutes take a hit.', tone: 'bad' });
@@ -4241,7 +4250,7 @@ function deadlineClub(L, beats, rng) {
     s.deadline.lost = vet.n;
     const t = 'Deadline: the ' + nick(c) + ' send ' + vet.n + ' to the ' + nick(to) + (back ? ' for ' + back.n : '') + '.';
     feed(L, 'move', t); logIt(L, t, '');
-    beats.push({ kind: 'trade', text: t, tone: '' });
+    beats.push({ kind: 'club_trade', text: t, tone: '' });
     if (vet.pos === L.pos || (NEXT_POS[L.pos] || []).indexOf(vet.pos) >= 0) {
       bump(L, { min: 3 });
       beats.push({ kind: 'role', text: 'His minutes are yours now.', tone: 'good' });
@@ -5063,7 +5072,7 @@ function feed(L, kind, t, src, y) {
 const HEAD = {
   award: (b) => b.award === 'mvp' ? '{name} is your MVP.' : b.award === 'star' ? null : '{name}: ' + b.text.replace(/\.$/, '') + '.',
   champ: (b) => '{name} and the {club} win it all.',
-  trade: (b) => { const m = /Traded to the (.+?)\./.exec(b.text); return m ? '{name} is traded to the ' + m[1] + '.' : null; },
+  trade: (b) => { if (b.back) return null; const m = /Traded to the (.+?)\./.exec(b.text); return m ? '{name} is traded to the ' + m[1] + '.' : null; },
   trait: (b) => b.trait ? '{name} has a reputation now: ' + TRAIT_NAME[b.trait].toLowerCase() + '.' : null,
   badge: () => null,
   milestone: (b) => '{name} reaches ' + b.text.replace(/^([0-9,]+) career/, '$1 career').toLowerCase(),
@@ -5071,6 +5080,28 @@ const HEAD = {
   finals_loss: () => '{name} comes up short in the Finals.',
   retire: () => '{name} retires.',
 };
+/* A trade made by a card or a step becomes one beat, with where you came
+   from, where you are going, who went the other way and when it happened,
+   so the scene can tell you the way it would really reach you. */
+function tradeBeat(L, beats, how) {
+  const t = TRADED;
+  TRADED = null;
+  if (!t || !beats || beats.some((b) => b.kind === 'trade')) return;
+  const ph = L.phase;
+  const when = ph === 'off' || ph === 'pre' || ph === 'drafted' ? 'summer' : ph === 'mid' || ph === 'early' ? 'deadline' : 'season';
+  beats.push(Object.assign({ kind: 'trade', text: 'Traded to the ' + E.teamName(t.to) + '.', tone: 'gold', from: t.from, to: t.to, back: t.back, how: how || '', when }, tradePeople(L, t.from)));
+}
+/* Who tells you, for the scene: the general manager who traded you, the one
+   who traded for you, your agent, whoever is home with you, and the oldest
+   head in the locker room you are leaving. All of them invented. */
+function tradePeople(L, from) {
+  const f = L.life || {}, paired = f.rel && f.rel !== 'single';
+  return {
+    oldgm: personName(L, 'gm:' + from), newgm: say(L, '{gm}'), agent: say(L, '{agent}'),
+    fam: paired ? say(L, '{partner}') : say(L, '{mom}'), famRole: paired ? (f.rel === 'married' ? 'family' : 'partner') : 'mom',
+    kids: f.kids || 0, oldmate: from ? lockerOf(L, from)[0].n : '',
+  };
+}
 function headlines(L, beats) {
   if (!storyOn(L) || !beats || !beats.length) return;
   for (const b of beats) {
@@ -7787,6 +7818,7 @@ function choose(L, i, extra) {
   if (!opt) return null;
   const touch = extra && Number.isFinite(+extra.touch) ? clamp(+extra.touch, -1, 1) : 0;
   const rng = rngAt(L, 'pick:' + card.key + ':' + i);
+  TRADED = null;
   const before = snapshot(L);
   let text = '', tone = '', beats = [], made = null, contest = null;
   L.pending.shift();
@@ -8010,6 +8042,7 @@ function choose(L, i, extra) {
     }
   }
   text = say(L, text);
+  tradeBeat(L, beats, card.id === 'deadline' ? 'deadline' : card.id);
   headlines(L, beats);
   sayAll(L, beats);
   const after = snapshot(L);
@@ -8054,6 +8087,7 @@ function nextLabel(L) {
 function step(L) {
   if (L.retired) return { beats: [] };
   if (L.pending.length) return { beats: [], blocked: true };
+  TRADED = null;
   const beats = [];
   L.steps++;
   switch (L.phase) {
@@ -8150,6 +8184,7 @@ function step(L) {
     case 'col_off': amNewYear(L, beats); break;
     case 'pro_year': proYear(L, beats); break;
   }
+  tradeBeat(L, beats);
   headlines(L, beats);
   sayAll(L, beats);
   return { beats };
@@ -8662,7 +8697,7 @@ const fatherYears = (L) => L.parent ? L.parent.seasons : 9;
 const yearsWord = (n) => n === 1 ? 'one season' : (NUMWORDS[n] ? NUMWORDS[n].toLowerCase() : n) + ' seasons';
 
 const publicAPI = {
-  generateRoad, roadStory, careerStory, cleanParent, leagueEnd, LEGACY_LEAGUE,
+  generateRoad, tradeTo, roadStory, careerStory, cleanParent, leagueEnd, LEGACY_LEAGUE,
   DIFFS, DIFF_KEYS, CHALLENGES, CHALLENGE_KEYS, challengeOf,
   CAREER_API_VERSION, LIFE_VERSION,
   CONF, CLUBS, confOf, POS, POS_NAME, RATINGS, RATING_NAME, RATING_SHORT, WEIGHTS,

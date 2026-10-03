@@ -297,8 +297,13 @@ var CSS = [
 '.cr-vs td.win{color:var(--k-good);font-weight:800;}',
 '.cr-aw{display:flex;flex-direction:column;gap:8px;}',
 '.cr-awgrid{display:flex;flex-wrap:wrap;gap:8px;}',
-'.cr-awi{position:relative;width:52px;height:52px;display:grid;place-items:center;background:var(--k-panel-2);border:2px solid var(--k-frame);cursor:pointer;padding:0;}',
-'.cr-awi-pro{border-color:#c9a23a;}.cr-awi-col{border-color:#4f73b8;}.cr-awi-hs{border-color:#2e8a62;}',
+/* No frame round an icon: at 7 by 7 cells a 2px border was a second outline
+   round the icon's own, and the two together were most of what the eye saw.
+   The tile is a soft tint of the icon's own colour, and the level is a short
+   bar under it rather than a ring round it. */
+'.cr-awi{position:relative;width:54px;height:54px;display:grid;place-items:center;background:var(--k-panel-2);background:color-mix(in srgb,var(--ic,#b8c3e6) 15%,var(--k-panel-2));border:0;cursor:pointer;padding:0;}',
+'.cr-awi:after{content:"";position:absolute;left:14px;right:14px;bottom:3px;height:3px;background:var(--lv,transparent);}',
+'.cr-awi-pro{--lv:#c9a23a;}.cr-awi-col{--lv:#4f73b8;}.cr-awi-hs{--lv:#2e8a62;}',
 '.cr-awi.on{outline:2px solid var(--k-ink);outline-offset:1px;}',
 '.cr-awi i{position:absolute;right:-6px;top:-6px;min-width:18px;height:18px;padding:0 4px;background:#ff7a1a;color:#0b0e1a;font:700 11px/18px var(--k-f-pixel);font-style:normal;text-align:center;border:2px solid #0b0e1a;}',
 '.cr-awcap{font-size:13px;color:var(--k-ink-2);min-height:18px;}',
@@ -929,7 +934,7 @@ var TRAIT_ICON = { clutch: ['star', '#ffd166'], coachable: ['whistle', '#b8c3e6'
 var BADGE_ICON = { deadeye: ['ball', '#ffd166'], floorgen: ['arrow', '#7fb2ff'], lockdown: ['shield', '#7fb2ff'], glass: ['up', '#3ecf8e'], finisher: ['flame', '#ff7a1a'],
   flight: ['plane', '#7fb2ff'], brain: ['clip', '#ffd166'], bucket: ['ball', '#ff7a1a'], dimes: ['share', '#3ecf8e'], boards: ['down', '#3ecf8e'] };
 function iconTile(ic, name, cls){
-  return '<button type="button" class="cr-awi ' + (cls || '') + '" data-aw="' + esc(name) + '" title="' + esc(name) + '" aria-label="' + esc(name) + '">' + K.iconHtml(ic[0], 5, ic[1]) + '</button>';
+  return '<button type="button" class="cr-awi ' + (cls || '') + '" style="--ic:' + (ic[1] || '#b8c3e6') + '" data-aw="' + esc(name) + '" title="' + esc(name) + '" aria-label="' + esc(name) + '">' + (K.badgeHtml ? K.badgeHtml(ic[0], ic[1]) : K.iconHtml(ic[0], 6, ic[1])) + '</button>';
 }
 function knownHtml(L){
   var out = [];
@@ -1200,8 +1205,8 @@ function awardTags(aw){
     var ic = AW_ICON[a.k] || ['medal', '#ffd166'];
     var lvl = /^c_/.test(a.k) ? 'col' : /^hs_/.test(a.k) ? 'hs' : 'pro';
     var name = (a.n > 1 ? a.n + 'x ' : '') + a.name;
-    return '<button type="button" class="cr-awi cr-awi-' + lvl + '" data-aw="' + esc(name) + '" title="' + esc(name) + '" aria-label="' + esc(name) + '">'
-      + K.iconHtml(ic[0], 5, ic[1]) + (a.n > 1 ? '<i>' + a.n + '</i>' : '') + '</button>';
+    return '<button type="button" class="cr-awi cr-awi-' + lvl + '" style="--ic:' + (ic[1] || '#b8c3e6') + '" data-aw="' + esc(name) + '" title="' + esc(name) + '" aria-label="' + esc(name) + '">'
+      + (K.badgeHtml ? K.badgeHtml(ic[0], ic[1]) : K.iconHtml(ic[0], 6, ic[1])) + (a.n > 1 ? '<i>' + a.n + '</i>' : '') + '</button>';
   }).join('');
   return '<span class="cr-awgrid">' + tiles + '</span><span class="cr-awcap" aria-live="polite">Tap a badge to see what it is.</span>';
 }

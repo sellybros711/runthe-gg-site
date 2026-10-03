@@ -1027,6 +1027,41 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
   }
   ok(looks > 200 && crowded > 20 && overplayed.length === 0, `with three better teammates you never lead the club in minutes (${overplayed.slice(0, 2).join('; ') || crowded + ' crowded seasons, none overplayed'})`);
   ok(netOk >= netN * 0.9, `the clubs with better players are the better clubs (${netOk} of ${netN})`);
+
+  section('12e. a trade means you moved, and it is told the way it reaches you');
+  /* Reported: "traded to the Pacers while on the Pacers". It was your club's
+     own deadline deal (a teammate sold) carrying the kind the scene reads as
+     YOUR trade. A trade beat must mean you changed clubs, and a club's deal
+     is a different kind. */
+  let tb = 0, club = 0, wrong = [];
+  const whens = new Set();
+  for (let i = 0; i < 80; i++) {
+    const L = C.generateRoad({ seed: 'tr:' + i, league, pos: C.POS[i % 5] });
+    let g = 0;
+    while (!L.retired && g++ < 4000 && L.history.length < 12) {
+      const before = L.team;
+      const res = L.pending.length ? C.choose(L, (L.steps * 7 + i) % L.pending[0].options.length) : C.step(L);
+      for (const b of (res && res.beats) || []) {
+        if (b.kind === 'club_trade') club++;
+        if (b.kind !== 'trade') continue;
+        tb++; whens.add(b.when);
+        if (!before || before === L.team || b.from !== before || b.to !== L.team) wrong.push(L.year + ' ' + before + ' to ' + L.team + ' (' + b.from + ' to ' + b.to + ')');
+        if (!b.agent || !b.oldgm || !b.newgm || !b.fam) wrong.push('a trade beat with nobody to tell you: ' + JSON.stringify(b));
+      }
+    }
+  }
+  ok(tb > 30 && wrong.length === 0, `every trade beat is a real move, with the people who tell you (${tb} trades${wrong.length ? ': ' + wrong.slice(0, 2).join('; ') : ''})`);
+  ok(club > 50, `your club's own deadline deals are club news, not your trade (${club})`);
+  ok(whens.has('deadline') && whens.has('summer'), `trades come at the deadline and in the summer (${[...whens].join(', ')})`);
+  const Ls = C.newLife({ seed: 'self', league, start: 'draft' });
+  let gs = 0; while (!Ls.team && gs++ < 400) { if (Ls.pending.length) C.choose(Ls, 0); else C.step(Ls); }
+  const t0 = Ls.team, log0 = Ls.log.length, mv0 = Ls.flags.moved || 0;
+  C.tradeTo(Ls, t0, () => 0.5);
+  ok(Ls.team === t0 && Ls.log.length === log0 && (Ls.flags.moved || 0) === mv0, 'nobody is traded to the club he is already on');
+  const SC = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'scenes.js'), 'utf8');
+  const ids = [...new Set((SC.match(/'trade_[a-z]+'/g) || []).map((x) => x.slice(1, -1)))];
+  ok(ids.length >= 6 && ids.every((id) => new RegExp('\\n  ' + id + ': \\[').test(SC)), `every trade scene the picker can choose is written (${ids.join(', ')})`);
+  ok(!/has\('club_trade'\)/.test(SC) && !/Breaking\. ' \+ c\.name \+ ' has been traded/.test(SC), 'a club deal never plays as your trade, and a trade is not a studio graphic');
 }
 
 if (!QUICK) await browser();
