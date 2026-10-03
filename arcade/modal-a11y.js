@@ -1,7 +1,7 @@
-/* modal-a11y.js — accessibility for the end-of-game result modals across all
+/* modal-a11y.js: accessibility for the end-of-game result modals across all
  * nine arcade games. The modals ship as plain <div>s; this adds dialog
  * semantics (role/aria-modal/aria-labelledby), moves focus into the modal on
- * open, traps Tab within it, closes on Escape, and restores focus on close —
+ * open, traps Tab within it, closes on Escape, and restores focus on close,
  * without touching any game's own logic.
  *
  * Self-mounting and fail-soft: eight games toggle `#scrim.hidden`, Common Ground

@@ -1,15 +1,15 @@
 /* =============================================================================
- * RunTheGrid / Daily Crossword — infinite daily generator
+ * RunTheGrid / Daily Crossword: infinite daily generator
  *
  * window.RTG_CWGEN.forDate('YYYY-MM-DD') -> puzzle in the exact puzzles.js
  * schema the engine consumes ({id,date,size,rows,entries:[{num,dir,r,c,
  * answer,clue}],...}), or null (page then falls back to the bank rotation).
  *
  * Deterministic: seeded from 'cwgen-'+date with the same xmur3/mulberry32
- * PRNGs the other games use — same date, same puzzle, on every device.
+ * PRNGs the other games use: same date, same puzzle, on every device.
  *
  * Fills are SURNAMES (A-Z, len 3-9) drawn from window.GRID_ENTITIES
- * (grid/match/entities.js — must be loaded before this script in the
+ * (grid/match/entities.js must be loaded before this script in the
  * browser; Node callers pass the corpus as forDate's 2nd arg).
  *
  * CLUES NAME NOBODY. Not the surname (that is the answer) and, since this
@@ -26,7 +26,7 @@
  * era, team, position) until it fits the chosen player ONLY. A clue two
  * players could wear is rejected outright.
  *
- * Grid: small dense mini (7-9), criss-cross placement — seed across word,
+ * Grid: small dense mini (7-9), criss-cross placement: seed across word,
  * then grow by intersecting perpendicular placements (budgeted backtracking).
  * Every entry crosses >=1 other; leftover cells become blocks; by
  * construction every maximal run of >=2 white cells is exactly one entry.
@@ -73,7 +73,7 @@
     return s.toUpperCase().replace(/[^A-Z]/g, '');
   }
   // last name token (suffixes like Jr./III dropped); single-token names are
-  // skipped — their "surname" IS the whole famous name, which a clue must
+  // skipped: their "surname" IS the whole famous name, which a clue must
   // never effectively hand over.
   function surnameOf(name) {
     var parts = String(name || '').trim().split(/\s+/);
@@ -185,7 +185,7 @@
   }
 
   // clue for a pool word. rng picks among templates (pass null for a
-  // deterministic eligibility probe — succeeds iff ANY template works, so a
+  // deterministic eligibility probe: succeeds iff ANY template works, so a
   // word that passes the probe always clues at build time too).
   //
   // A clue is an ANCHOR plus a FACT. The anchor says who we are looking at in
@@ -470,7 +470,7 @@
   }
 
   /* ---- team-nickname + sport-vocab pools ---------------------------------
-   * Every crossword used to be eight rows of "<Team> great <First> ___" —
+   * Every crossword used to be eight rows of "<Team> great <First> ___":
    * fine mechanics, one-note read. These two secondary pools mix in team
    * nicknames (CUBS/JETS/HEAT) and sport vocabulary (MVP/HOF/RBI/TDS) with
    * their own clue templates so a solved puzzle has real variety.
@@ -622,12 +622,12 @@
   }
 
   /* ---- word pool ----------------------------------------------------------- */
-  // one word per surname: {w, e (chosen — most famous), rivals (ALL other
-  // corpus entities sharing the surname, any fame — ambiguity is checked
+  // one word per surname: {w, e (chosen: most famous), rivals (ALL other
+  // corpus entities sharing the surname, any fame; ambiguity is checked
   // against everyone)}. Only surnames whose chosen player is fame>=4 and
   // provably disambiguable make the pool.
   // Only truly recognizable players can be crossword ANSWERS. .star (from the
-  // stars.js overlay) is the primary signal — hand-curated list of ~700 NBA /
+  // stars.js overlay) is the primary signal: a hand-curated list of ~700 NBA /
   // NFL / MLB names any casual sports fan would know. Auto-detected fallback
   // for anyone not on the curated list, so a rising legend still qualifies.
   /* Three NFL positions a generated clue cannot rescue, and one door out.
@@ -687,7 +687,7 @@
     return pool;
   }
   // How many extra copies of each hand-clued player go into the pick pool.
-  // Tuned against a 365-day run — see scripts/check-cluebank.mjs, which reports
+  // Tuned against a 365-day run (see scripts/check-cluebank.mjs, which reports
   // the resulting share of curated clue slots.
   var CURATED_WEIGHT = 14;
   // CUR_DECADE is part of the key: eligibility is decided by clueFor, which
@@ -701,7 +701,7 @@
       // `staticClue` so finalize skips the surname clue generator for them.
       // Surnames outnumber team+vocab 100:1 in the corpus, so uniform random
       // sampling would rarely mix them in. Repeat the static entries enough
-      // times that they become ~25% of pick weight — a typical 8-entry mini
+      // times that they become ~25% of pick weight: a typical 8-entry mini
       // averages 2 non-surname answers, breaking up the surname monotone.
       var surnames = buildPool(corpus);
       var team = buildTeamPool();
@@ -713,7 +713,7 @@
       // does double duty: the puzzle reads better (a real moment instead of
       // "NFL Pro Bowler Jack ___"), and it stops the grid filling up with
       // technically-eligible players no casual fan could name. The long tail
-      // stays in the pool so the generator never starves on a hard grid — it
+      // stays in the pool so the generator never starves on a hard grid. It
       // just stops being the default.
       var handed = surnames.filter(function (w) { return hasCurated(w.e); });
       if (handed.length) {

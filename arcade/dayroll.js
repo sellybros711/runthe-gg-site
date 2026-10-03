@@ -1,4 +1,4 @@
-/* dayroll.js — pick up the new day without being told to reload.
+/* dayroll.js: pick up the new day without being told to reload.
  *
  * Every game captures its puzzle date exactly once, at parse:
  *
@@ -7,7 +7,7 @@
  * and never looks again. That is fine for a session that starts and ends the
  * same day, and wrong for the way people actually use a phone: the tab is
  * never closed. Lock the phone at night, open it in the morning, and iOS
- * restores the page from memory with yesterday's DATE still in it — same
+ * restores the page from memory with yesterday's DATE still in it: same
  * board, same "played today" lock, same result screen. Every day. The end
  * modal even counts down "New boards in 00:00:00" and then does nothing when
  * it reaches zero, which is how this stayed invisible: the page looks like it
@@ -22,7 +22,7 @@
  * this fixes. They finish the board they started; the next time they come
  * back to the tab, they get the new day.
  *
- * Archive mode is exempt — ?date= is a deliberate past date, not a stale one.
+ * Archive mode is exempt: ?date= is a deliberate past date, not a stale one.
  */
 (function () {
   'use strict';

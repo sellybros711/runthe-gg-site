@@ -1,13 +1,13 @@
 /* =============================================================================
- * RunThe.GG / Arcade — curated clue bank (window.RTG_CLUES)
+ * RunThe.GG / Arcade: curated clue bank (window.RTG_CLUES)
  *
  * WHY THIS EXISTS
- * Every clue in the arcade used to be assembled from structured fields —
- * team, award, decade, position — which produces mechanically correct and
+ * Every clue in the arcade used to be assembled from structured fields
+ * (team, award, decade, position), which produces mechanically correct and
  * completely forgettable lines: "Saints Pro Bowler Mark ___", "NFL Pro Bowler
  * Jack ___". Eight of those in one crossword read as eight copies of the same
  * clue. (The one template that could have been interesting, the `ml` milestone
- * field, was never populated anywhere in the codebase — dead since it shipped.)
+ * field, was never populated anywhere in the codebase: dead since it shipped.)
  *
  * A good sports clue points at a MOMENT, not a row in a database. You cannot
  * derive "his one-handed catch against Dallas in 2014" from a team list. So
@@ -16,7 +16,7 @@
  * SHAPE
  *   { n:'Odell Beckham Jr.', s:'NFL', c:[ {x:'whose ...', g:1}, ... ] }
  *
- *   n  full name, spelled exactly as the corpus spells it (validated — see
+ *   n  full name, spelled exactly as the corpus spells it (validated: see
  *      scripts/check-cluebank.mjs, which fails on any name the corpus lacks)
  *   s  sport key: NBA | NFL | MLB
  *   c  clues, best first
@@ -25,7 +25,7 @@
  *        crossword -> "Odell ___, whose one-handed catch against Dallas ..."
  *        guess     -> "This player's one-handed catch against Dallas ..."
  *   g  1 when the clue is also safe for Guess the Player, i.e. it names none
- *      of that player's own teams, his position, or his jersey number —
+ *      of that player's own teams, his position, or his jersey number:
  *      earning those is what the Guess board is for. An opponent is fine
  *      ("against Dallas"), which is why so many moment clues qualify.
  *
@@ -47,7 +47,7 @@
 
   var P = [
 
-    /* ======================================================= NBA — moments */
+    /* ======================================================= NBA: moments */
     { n:'Michael Jordan', s:'NBA', c:[
       { x:'who dropped 38 in the 1997 Finals while too sick to stand up straight between plays', g:1 },
       { x:'whose last shot as a Bull, a jumper over Bryon Russell in Utah, won a sixth title', g:1 },
@@ -163,7 +163,7 @@
     { n:'Draymond Green', s:'NBA', c:[
       { x:'who was Defensive Player of the Year without ever being the tallest man on the floor', g:1 }]},
 
-    /* ======================================================= NFL — moments */
+    /* ======================================================= NFL: moments */
     { n:'Odell Beckham Jr.', s:'NFL', c:[
       { x:'whose one-handed grab against Dallas in 2014 is still the catch every highlight means', g:1 }]},
     { n:'David Tyree', s:'NFL', c:[
@@ -257,7 +257,7 @@
     { n:'Rob Gronkowski', s:'NFL', c:[
       { x:'who spiked footballs hard enough to hurt himself and retired twice', g:1 }]},
 
-    /* ======================================================= MLB — moments */
+    /* ======================================================= MLB: moments */
     { n:'Kirk Gibson', s:'MLB', c:[
       { x:'who limped out on two bad legs and hit a walk-off to open the 1988 World Series', g:1 }]},
     { n:'Joe Carter', s:'MLB', c:[
@@ -330,7 +330,7 @@
     { n:'Vladimir Guerrero', s:'MLB', c:[
       { x:'who swung at pitches that bounced, and hit them, and never wore batting gloves', g:1 }]},
 
-    /* ================================================ NBA — second tranche */
+    /* ================================================ NBA: second tranche */
     { n:'Chris Bosh', s:'NBA', c:[
       { x:'who grabbed the rebound that set up the most famous corner three in Finals history', g:1 },
       { x:'whose career was ended by blood clots while he was still an All-Star', g:1 }]},
@@ -381,7 +381,7 @@
     { n:'Julius Erving', s:'NBA', c:[
       { x:'whose baseline scoop around the backboard in the 1980 Finals still gets replayed', g:1 }]},
 
-    /* ================================================ NFL — second tranche */
+    /* ================================================ NFL: second tranche */
     { n:'Darrelle Revis', s:'NFL', c:[
       { x:'whose coverage was so total that the patch of field he worked got called an island', g:1 }]},
     { n:'Stefon Diggs', s:'NFL', c:[
@@ -441,7 +441,7 @@
     { n:'Troy Polamalu', s:'NFL', c:[
       { x:'whose hair was insured for a million dollars and who timed the snap better than anyone', g:1 }]},
 
-    /* ================================================ MLB — second tranche */
+    /* ================================================ MLB: second tranche */
     { n:'Hideo Nomo', s:'MLB', c:[
       { x:'whose corkscrew delivery earned the nickname Tornado and opened the door for a generation', g:1 }]},
     { n:'Roy Halladay', s:'MLB', c:[
@@ -532,7 +532,7 @@
     return given + ' ___, ' + one.x;
   }
 
-  /* Guess form: no name at all, and only clues tagged safe — a clue naming
+  /* Guess form: no name at all, and only clues tagged safe: a clue naming
    * the player's own team or position would hand over a board column.       */
   function forGuess(sport, name) {
     var c = get(sport, name), out = [];

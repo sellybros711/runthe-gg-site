@@ -1,17 +1,17 @@
 /* =============================================================================
- * Run The Arcade — authored board bank
+ * Run The Arcade: authored board bank
  *
  * Each board is 5 categories x 5 tiles (25 total). Every tile carries `fits`:
  * the list of categories it genuinely satisfies. A tile with two fits is a
- * TRAP — it truly belongs to two lanes, but only one global arrangement solves
+ * TRAP: it truly belongs to two lanes, but only one global arrangement solves
  * the board (enforced by generator.solve, verified in verify.js). `solution`
  * records that one valid assignment.
  *
- * fame: 1 (deep cut) .. 5 (household name) — drives difficulty scoring (§6).
+ * fame: 1 (deep cut) .. 5 (household name): drives difficulty scoring (§6).
  *
  * SPORT WEIGHTING (product direction): football (NFL) and basketball (NBA) are
  * the co-leads, baseball (MLB) a close third. Golf/tennis/hockey/Olympics/
- * wrestling/boxing/UFC appear only rarely and only as the very biggest stars —
+ * wrestling/boxing/UFC appear only rarely and only as the very biggest stars:
  * none of them lead a board. The launch bank below stays inside NFL/NBA/MLB.
  *
  * These boards are hand-authored and solver-verified for the prototype. The
@@ -31,7 +31,7 @@
     return { id: id, name: name, sport: sport, fame: fame, fits: fits };
   }
 
-  /* ---------- Board 1 — "Sunday & Center" (NFL + NBA co-lead) ---------------
+  /* ---------- Board 1: "Sunday & Center" (NFL + NBA co-lead) ---------------
    * Traps: Emmitt Smith is a Cowboy AND an NFL MVP; Jordan & Derrick Rose are
    * Bulls AND NBA MVPs. Each points into a lane of single-fit tiles, so no
    * alternate assignment exists. */
@@ -80,7 +80,7 @@
     }
   };
 
-  /* ---------- Board 2 — "Hardwood Legends" (NBA-forward) --------------------
+  /* ---------- Board 2: "Hardwood Legends" (NBA-forward) --------------------
    * Traps: four Lakers/Celtics were also NBA MVPs (Kobe, Magic, Bird, Russell);
    * Magic is also a Johnson. All bridge into full, single-fit lanes. */
   var board2 = {
@@ -128,7 +128,7 @@
     }
   };
 
-  /* ---------- Board 3 — "Around the Horn" (MLB-forward) ---------------------
+  /* ---------- Board 3: "Around the Horn" (MLB-forward) ---------------------
    * Traps: Ruth & Mantle are Yankees AND 500-HR men; Reggie Jackson is a
    * Jackson AND a 500-HR man. All bridge into the full 500-HR lane. */
   var board3 = {

@@ -1,7 +1,7 @@
-/* livecheck.js — grade Sportegories answers that aren't in our corpus.
+/* livecheck.js: grade Sportegories answers that aren't in our corpus.
  *
  * The corpus is 9,400 players and every active pro is in it, so a name that
- * misses is a genuine deep cut — a retired backup, a cup-of-coffee career.
+ * misses is a genuine deep cut: a retired backup, a cup-of-coffee career.
  * Exactly the answer this game exists to reward. It used to be told "No player
  * by that name", which is a lie, and scored as if the player had made it up.
  * This module does the honest thing: ask whether the person exists, pull the
@@ -168,7 +168,7 @@
   };
 
   /* Which of our vocab colleges could this outside label mean? Returns every
-   * plausible entry, not one guess — the predicate only needs to know whether
+   * plausible entry, not one guess. The predicate only needs to know whether
    * its own answer is in the set, so ambiguity between "Miami" and "Miami (FL)"
    * costs nothing. */
   function collegesFor(label, vb) {
@@ -343,7 +343,7 @@
   /* true / false / null, where null means "the facts we have don't settle it". */
   /* Which predicates can be given the benefit of the doubt, and which cannot.
      A gap on a POSITION or a COLLEGE means we hold partial evidence and simply
-     cannot resolve the last step — we know he is a guard, the category wants a
+     cannot resolve the last step: we know he is a guard, the category wants a
      shooting guard. A gap on an AWARD means the opposite: award data is so
      incomplete that those predicates are confirm-only by design, so `null` is
      their normal state and accepting it would hand a free point to any real
@@ -385,7 +385,7 @@
 
   /* Whether an unresolved clause deserves the point anyway: every gap has to be
      a soft one, and we must have positively confirmed something else about the
-     player — otherwise "real athlete" alone would satisfy any category. */
+     player. Otherwise "real athlete" alone would satisfy any category. */
   function softPass(gaps) {
     if (!gaps || !gaps.kinds || !gaps.kinds.length) return false;
     /* "Confirmed something else" is the right guard for a multi-clause
@@ -427,7 +427,7 @@
       }
 
       case 'award':
-        // Award lists are chronically incomplete out there — a Pro Bowl that
+        // Award lists are chronically incomplete out there: a Pro Bowl that
         // isn't listed didn't not happen. Confirm, never deny.
         return s.awards.indexOf(pr.v) >= 0 ? true : null;
       case 'awardRe':
@@ -457,7 +457,7 @@
 
       case 'act': {
         if (s.died) return false;
-        // A source that actually knows beats any inference from stint dates —
+        // A source that actually knows beats any inference from stint dates:
         // a long tenure with no end date is not evidence of retirement.
         if (s.active !== null && s.active !== undefined) return s.active;
         /* Read the LATEST stint, not any stint. An open-ended spell is the
@@ -486,7 +486,7 @@
 
      One real difference: the register holds a career span, not per-team dates.
      That is exactly right for "played in the 2010s" and for counting teams, and
-     it is why an active player's last stint is left open-ended — otherwise a
+     it is why an active player's last stint is left open-ended. Otherwise a
      current player would read as retired. */
   var OCC_OF = { NFL: 'American football player', MLB: 'baseball player', NBA: 'basketball player' };
   function split(v) { return String(v == null ? '' : v).split('|').filter(Boolean); }
@@ -517,7 +517,7 @@
 
   /* Every unresolved answer is a hole in the register with a name on it, and
      the player just told us where it is. Fire-and-forget: the game never waits
-     on this and never shows an error for it — a failed report must not cost
+     on this and never shows an error for it: a failed report must not cost
      anyone a point. Dedup per session so one card can't spam a category. */
   var _sent = {};
   function D_LABEL(i) {
@@ -630,7 +630,7 @@
   }
 
   // ---------- grading an unknown answer ----------
-  /* pending: [{ i, text }] — the answers check() flagged as live:true.
+  /* pending: [{ i, text }]: the answers check() flagged as live:true.
    * Resolves to { <i>: result } in the same shape check() returns, so the game
    * can drop them straight into its results array. */
   function resolve(puz, pending, usedNames) {
@@ -653,7 +653,7 @@
           return;
         }
         if (!prof || !prof.found) {
-          // Not "no player by that name" — we don't get to declare who exists.
+          // Not "no player by that name": we don't get to declare who exists.
           // We looked in two places and came up empty; a typo is the likeliest
           // reason, so point at that instead of at the player.
           out[p.i] = { ok: false, reason: 'unknown', live: 'missing',
@@ -677,7 +677,7 @@
            the three outcomes: it reads as the game being broken, and it is our
            data that fell short, not the player's knowledge. So when every gap
            is a soft one and we confirmed something else about them, give the
-           point — and record it, because that answer is exactly the row the
+           point, and record it, because that answer is exactly the row the
            register is missing. */
         if (v === null && softPass(gaps)) {
           var mk = SP.letterHits(puz, p.text);

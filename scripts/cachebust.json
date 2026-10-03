@@ -18,15 +18,15 @@
     },
     "../match/entities.js": {
       "v": "12",
-      "sha": "664edb1b32a25f85"
+      "sha": "82fef46c71162b85"
     },
     "/arcade/former.js": {
       "v": "4",
       "sha": "0b77dee2f572dd6b"
     },
     "/arcade/stars.js": {
-      "v": "4",
-      "sha": "8f815b786f1769e5"
+      "v": "5",
+      "sha": "a6e29b6b7f7c1e3d"
     },
     "/arcade/awards.js": {
       "v": "3",
@@ -93,24 +93,24 @@
       "sha": "2c0f1bb48415ffd9"
     },
     "/arcade/modal-a11y.js": {
-      "v": "1",
-      "sha": "bfc89e7ef5333115"
+      "v": "2",
+      "sha": "32e31f752ee0f7ce"
     },
     "/arcade/day.js": {
       "v": "3",
       "sha": "b439237ac07ec089"
     },
     "/arcade/dayroll.js": {
-      "v": "1",
-      "sha": "922f9e5471c30dcb"
+      "v": "2",
+      "sha": "d568e3a1575f8fb5"
     },
     "/arcade/mode.js": {
-      "v": "7",
-      "sha": "23074fdc8f43b862"
+      "v": "8",
+      "sha": "ca3a68b3b64a071f"
     },
     "/arcade/archive.js": {
-      "v": "2",
-      "sha": "15970ca0ab5a2b04"
+      "v": "3",
+      "sha": "0531494fc5183283"
     },
     "/arcade/favteam.js": {
       "v": "1",
@@ -137,8 +137,8 @@
       "sha": "53833ada3258fca2"
     },
     "/arcade/topbanner.js": {
-      "v": "10",
-      "sha": "d148108e5e743762"
+      "v": "11",
+      "sha": "e9fc2cee11997143"
     },
     "/arcade/auth-ui.js": {
       "v": "9",
@@ -207,12 +207,12 @@
       "sha": "b439237ac07ec089"
     },
     "/arcade/dayroll.js": {
-      "v": "1",
-      "sha": "922f9e5471c30dcb"
+      "v": "2",
+      "sha": "d568e3a1575f8fb5"
     },
     "/arcade/archive.js": {
-      "v": "2",
-      "sha": "15970ca0ab5a2b04"
+      "v": "3",
+      "sha": "0531494fc5183283"
     },
     "/arcade/board.js": {
       "v": "24",
@@ -227,8 +227,8 @@
       "sha": "53833ada3258fca2"
     },
     "/arcade/topbanner.js": {
-      "v": "10",
-      "sha": "d148108e5e743762"
+      "v": "11",
+      "sha": "e9fc2cee11997143"
     },
     "/arcade/auth-ui.js": {
       "v": "9",
@@ -270,15 +270,15 @@
     },
     "../match/entities.js": {
       "v": "12",
-      "sha": "664edb1b32a25f85"
+      "sha": "82fef46c71162b85"
     },
     "/arcade/former.js": {
       "v": "4",
       "sha": "0b77dee2f572dd6b"
     },
     "/arcade/stars.js": {
-      "v": "4",
-      "sha": "8f815b786f1769e5"
+      "v": "5",
+      "sha": "a6e29b6b7f7c1e3d"
     },
     "/arcade/awards.js": {
       "v": "3",
@@ -345,24 +345,24 @@
       "sha": "2c0f1bb48415ffd9"
     },
     "/arcade/modal-a11y.js": {
-      "v": "1",
-      "sha": "bfc89e7ef5333115"
+      "v": "2",
+      "sha": "32e31f752ee0f7ce"
     },
     "/arcade/day.js": {
       "v": "3",
       "sha": "b439237ac07ec089"
     },
     "/arcade/dayroll.js": {
-      "v": "1",
-      "sha": "922f9e5471c30dcb"
+      "v": "2",
+      "sha": "d568e3a1575f8fb5"
     },
     "/arcade/mode.js": {
-      "v": "7",
-      "sha": "23074fdc8f43b862"
+      "v": "8",
+      "sha": "ca3a68b3b64a071f"
     },
     "/arcade/archive.js": {
-      "v": "2",
-      "sha": "15970ca0ab5a2b04"
+      "v": "3",
+      "sha": "0531494fc5183283"
     },
     "/arcade/board.js": {
       "v": "24",
@@ -385,8 +385,8 @@
       "sha": "53833ada3258fca2"
     },
     "/arcade/topbanner.js": {
-      "v": "10",
-      "sha": "d148108e5e743762"
+      "v": "11",
+      "sha": "e9fc2cee11997143"
     },
     "/arcade/auth-ui.js": {
       "v": "9",
@@ -459,12 +459,12 @@
       "sha": "b439237ac07ec089"
     },
     "/arcade/dayroll.js": {
-      "v": "1",
-      "sha": "922f9e5471c30dcb"
+      "v": "2",
+      "sha": "d568e3a1575f8fb5"
     },
     "/arcade/archive.js": {
-      "v": "2",
-      "sha": "15970ca0ab5a2b04"
+      "v": "3",
+      "sha": "0531494fc5183283"
     },
     "/arcade/gamemarks.js": {
       "v": "4",
@@ -491,8 +491,8 @@
       "sha": "c71a149f3b8da69e"
     },
     "/arcade/topbanner.js": {
-      "v": "10",
-      "sha": "d148108e5e743762"
+      "v": "11",
+      "sha": "e9fc2cee11997143"
     },
     "/arcade/auth-ui.js": {
       "v": "9",
@@ -547,8 +547,8 @@
       "sha": "f49143dc7a01c16a"
     },
     "/arcade/livecheck.js": {
-      "v": "10",
-      "sha": "fe10a391d84f3713"
+      "v": "11",
+      "sha": "c9d71872b4c34ca0"
     },
     "/arcade/teamcheck.js": {
       "v": "3",
@@ -582,19 +582,19 @@
     },
     "puzzles.js": {
       "v": "11",
-      "sha": "7aea7737d6227d84"
+      "sha": "04421b4e0617da3d"
     },
     "../match/entities.js": {
       "v": "12",
-      "sha": "664edb1b32a25f85"
+      "sha": "82fef46c71162b85"
     },
     "/arcade/former.js": {
       "v": "4",
       "sha": "0b77dee2f572dd6b"
     },
     "/arcade/stars.js": {
-      "v": "4",
-      "sha": "8f815b786f1769e5"
+      "v": "5",
+      "sha": "a6e29b6b7f7c1e3d"
     },
     "/arcade/awards.js": {
       "v": "3",
@@ -605,8 +605,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/cluebank.js": {
-      "v": "2",
-      "sha": "a4222cc200670d79"
+      "v": "3",
+      "sha": "d1c6424bc81b200b"
     },
     "/arcade/primary.js": {
       "v": "33",
@@ -630,7 +630,7 @@
     },
     "gen.js": {
       "v": "15",
-      "sha": "1b2d2117150b0003"
+      "sha": "0a487b1f46d38b5b"
     },
     "data/mini-words.js": {
       "v": "1",
@@ -673,20 +673,20 @@
       "sha": "2c0f1bb48415ffd9"
     },
     "/arcade/modal-a11y.js": {
-      "v": "1",
-      "sha": "bfc89e7ef5333115"
+      "v": "2",
+      "sha": "32e31f752ee0f7ce"
     },
     "/arcade/day.js": {
       "v": "3",
       "sha": "b439237ac07ec089"
     },
     "/arcade/dayroll.js": {
-      "v": "1",
-      "sha": "922f9e5471c30dcb"
+      "v": "2",
+      "sha": "d568e3a1575f8fb5"
     },
     "/arcade/archive.js": {
-      "v": "2",
-      "sha": "15970ca0ab5a2b04"
+      "v": "3",
+      "sha": "0531494fc5183283"
     },
     "/arcade/board.js": {
       "v": "24",
@@ -709,8 +709,8 @@
       "sha": "53833ada3258fca2"
     },
     "/arcade/topbanner.js": {
-      "v": "10",
-      "sha": "d148108e5e743762"
+      "v": "11",
+      "sha": "e9fc2cee11997143"
     },
     "/arcade/auth-ui.js": {
       "v": "9",
@@ -768,15 +768,15 @@
     },
     "../match/entities.js": {
       "v": "12",
-      "sha": "664edb1b32a25f85"
+      "sha": "82fef46c71162b85"
     },
     "/arcade/former.js": {
       "v": "4",
       "sha": "0b77dee2f572dd6b"
     },
     "/arcade/stars.js": {
-      "v": "4",
-      "sha": "8f815b786f1769e5"
+      "v": "5",
+      "sha": "a6e29b6b7f7c1e3d"
     },
     "/arcade/awards.js": {
       "v": "3",
@@ -787,8 +787,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/cluebank.js": {
-      "v": "2",
-      "sha": "a4222cc200670d79"
+      "v": "3",
+      "sha": "d1c6424bc81b200b"
     },
     "/arcade/primary.js": {
       "v": "33",
@@ -843,24 +843,24 @@
       "sha": "2c0f1bb48415ffd9"
     },
     "/arcade/modal-a11y.js": {
-      "v": "1",
-      "sha": "bfc89e7ef5333115"
+      "v": "2",
+      "sha": "32e31f752ee0f7ce"
     },
     "/arcade/day.js": {
       "v": "3",
       "sha": "b439237ac07ec089"
     },
     "/arcade/dayroll.js": {
-      "v": "1",
-      "sha": "922f9e5471c30dcb"
+      "v": "2",
+      "sha": "d568e3a1575f8fb5"
     },
     "/arcade/mode.js": {
-      "v": "7",
-      "sha": "23074fdc8f43b862"
+      "v": "8",
+      "sha": "ca3a68b3b64a071f"
     },
     "/arcade/archive.js": {
-      "v": "2",
-      "sha": "15970ca0ab5a2b04"
+      "v": "3",
+      "sha": "0531494fc5183283"
     },
     "/arcade/board.js": {
       "v": "24",
@@ -883,8 +883,8 @@
       "sha": "53833ada3258fca2"
     },
     "/arcade/topbanner.js": {
-      "v": "10",
-      "sha": "d148108e5e743762"
+      "v": "11",
+      "sha": "e9fc2cee11997143"
     },
     "/arcade/auth-ui.js": {
       "v": "9",
@@ -946,11 +946,11 @@
     },
     "../match/entities.js": {
       "v": "12",
-      "sha": "664edb1b32a25f85"
+      "sha": "82fef46c71162b85"
     },
     "/arcade/stars.js": {
-      "v": "4",
-      "sha": "8f815b786f1769e5"
+      "v": "5",
+      "sha": "a6e29b6b7f7c1e3d"
     },
     "/arcade/awards.js": {
       "v": "3",
@@ -997,8 +997,8 @@
       "sha": "b439237ac07ec089"
     },
     "/arcade/dayroll.js": {
-      "v": "1",
-      "sha": "922f9e5471c30dcb"
+      "v": "2",
+      "sha": "d568e3a1575f8fb5"
     },
     "/arcade/board.js": {
       "v": "24",
@@ -1021,8 +1021,8 @@
       "sha": "53833ada3258fca2"
     },
     "/arcade/topbanner.js": {
-      "v": "10",
-      "sha": "d148108e5e743762"
+      "v": "11",
+      "sha": "e9fc2cee11997143"
     },
     "/arcade/auth-ui.js": {
       "v": "9",
@@ -1077,8 +1077,8 @@
       "sha": "1b39e3fb22e52841"
     },
     "/arcade/modal-a11y.js": {
-      "v": "1",
-      "sha": "bfc89e7ef5333115"
+      "v": "2",
+      "sha": "32e31f752ee0f7ce"
     },
     "/arcade/howto.js": {
       "v": "26",
@@ -1107,8 +1107,8 @@
       "sha": "b439237ac07ec089"
     },
     "/arcade/dayroll.js": {
-      "v": "1",
-      "sha": "922f9e5471c30dcb"
+      "v": "2",
+      "sha": "d568e3a1575f8fb5"
     },
     "/arcade/board.js": {
       "v": "24",
@@ -1123,8 +1123,8 @@
       "sha": "53833ada3258fca2"
     },
     "/arcade/topbanner.js": {
-      "v": "10",
-      "sha": "d148108e5e743762"
+      "v": "11",
+      "sha": "e9fc2cee11997143"
     },
     "/arcade/auth-ui.js": {
       "v": "9",
@@ -1204,15 +1204,15 @@
     },
     "entities.js": {
       "v": "12",
-      "sha": "664edb1b32a25f85"
+      "sha": "82fef46c71162b85"
     },
     "/arcade/former.js": {
       "v": "4",
       "sha": "0b77dee2f572dd6b"
     },
     "/arcade/stars.js": {
-      "v": "4",
-      "sha": "8f815b786f1769e5"
+      "v": "5",
+      "sha": "a6e29b6b7f7c1e3d"
     },
     "/arcade/awards.js": {
       "v": "3",
@@ -1236,7 +1236,7 @@
     },
     "generator.js": {
       "v": "15",
-      "sha": "3fb7d3faeae04701"
+      "sha": "f93261dce1ecfb47"
     },
     "/arcade/sfx.js": {
       "v": "4",
@@ -1271,24 +1271,24 @@
       "sha": "2c0f1bb48415ffd9"
     },
     "/arcade/modal-a11y.js": {
-      "v": "1",
-      "sha": "bfc89e7ef5333115"
+      "v": "2",
+      "sha": "32e31f752ee0f7ce"
     },
     "/arcade/day.js": {
       "v": "3",
       "sha": "b439237ac07ec089"
     },
     "/arcade/mode.js": {
-      "v": "7",
-      "sha": "23074fdc8f43b862"
+      "v": "8",
+      "sha": "ca3a68b3b64a071f"
     },
     "/arcade/dayroll.js": {
-      "v": "1",
-      "sha": "922f9e5471c30dcb"
+      "v": "2",
+      "sha": "d568e3a1575f8fb5"
     },
     "/arcade/archive.js": {
-      "v": "2",
-      "sha": "15970ca0ab5a2b04"
+      "v": "3",
+      "sha": "0531494fc5183283"
     },
     "/arcade/board.js": {
       "v": "24",
@@ -1311,8 +1311,8 @@
       "sha": "53833ada3258fca2"
     },
     "/arcade/topbanner.js": {
-      "v": "10",
-      "sha": "d148108e5e743762"
+      "v": "11",
+      "sha": "e9fc2cee11997143"
     },
     "/arcade/auth-ui.js": {
       "v": "9",
@@ -1370,15 +1370,15 @@
     },
     "../match/entities.js": {
       "v": "12",
-      "sha": "664edb1b32a25f85"
+      "sha": "82fef46c71162b85"
     },
     "/arcade/former.js": {
       "v": "4",
       "sha": "0b77dee2f572dd6b"
     },
     "/arcade/stars.js": {
-      "v": "4",
-      "sha": "8f815b786f1769e5"
+      "v": "5",
+      "sha": "a6e29b6b7f7c1e3d"
     },
     "/arcade/awards.js": {
       "v": "3",
@@ -1441,20 +1441,20 @@
       "sha": "2c0f1bb48415ffd9"
     },
     "/arcade/modal-a11y.js": {
-      "v": "1",
-      "sha": "bfc89e7ef5333115"
+      "v": "2",
+      "sha": "32e31f752ee0f7ce"
     },
     "/arcade/day.js": {
       "v": "3",
       "sha": "b439237ac07ec089"
     },
     "/arcade/dayroll.js": {
-      "v": "1",
-      "sha": "922f9e5471c30dcb"
+      "v": "2",
+      "sha": "d568e3a1575f8fb5"
     },
     "/arcade/archive.js": {
-      "v": "2",
-      "sha": "15970ca0ab5a2b04"
+      "v": "3",
+      "sha": "0531494fc5183283"
     },
     "/arcade/board.js": {
       "v": "24",
@@ -1477,8 +1477,8 @@
       "sha": "53833ada3258fca2"
     },
     "/arcade/topbanner.js": {
-      "v": "10",
-      "sha": "d148108e5e743762"
+      "v": "11",
+      "sha": "e9fc2cee11997143"
     },
     "/arcade/auth-ui.js": {
       "v": "9",
@@ -1540,15 +1540,15 @@
     },
     "../match/entities.js": {
       "v": "12",
-      "sha": "664edb1b32a25f85"
+      "sha": "82fef46c71162b85"
     },
     "/arcade/former.js": {
       "v": "4",
       "sha": "0b77dee2f572dd6b"
     },
     "/arcade/stars.js": {
-      "v": "4",
-      "sha": "8f815b786f1769e5"
+      "v": "5",
+      "sha": "a6e29b6b7f7c1e3d"
     },
     "/arcade/awards.js": {
       "v": "3",
@@ -1611,24 +1611,24 @@
       "sha": "2c0f1bb48415ffd9"
     },
     "/arcade/modal-a11y.js": {
-      "v": "1",
-      "sha": "bfc89e7ef5333115"
+      "v": "2",
+      "sha": "32e31f752ee0f7ce"
     },
     "/arcade/day.js": {
       "v": "3",
       "sha": "b439237ac07ec089"
     },
     "/arcade/dayroll.js": {
-      "v": "1",
-      "sha": "922f9e5471c30dcb"
+      "v": "2",
+      "sha": "d568e3a1575f8fb5"
     },
     "/arcade/mode.js": {
-      "v": "7",
-      "sha": "23074fdc8f43b862"
+      "v": "8",
+      "sha": "ca3a68b3b64a071f"
     },
     "/arcade/archive.js": {
-      "v": "2",
-      "sha": "15970ca0ab5a2b04"
+      "v": "3",
+      "sha": "0531494fc5183283"
     },
     "/arcade/board.js": {
       "v": "24",
@@ -1651,8 +1651,8 @@
       "sha": "53833ada3258fca2"
     },
     "/arcade/topbanner.js": {
-      "v": "10",
-      "sha": "d148108e5e743762"
+      "v": "11",
+      "sha": "e9fc2cee11997143"
     },
     "/arcade/auth-ui.js": {
       "v": "9",
@@ -1717,12 +1717,12 @@
       "sha": "b439237ac07ec089"
     },
     "/arcade/dayroll.js": {
-      "v": "1",
-      "sha": "922f9e5471c30dcb"
+      "v": "2",
+      "sha": "d568e3a1575f8fb5"
     },
     "/arcade/archive.js": {
-      "v": "2",
-      "sha": "15970ca0ab5a2b04"
+      "v": "3",
+      "sha": "0531494fc5183283"
     },
     "/arcade/gamemarks.js": {
       "v": "4",
@@ -1749,8 +1749,8 @@
       "sha": "c71a149f3b8da69e"
     },
     "/arcade/topbanner.js": {
-      "v": "10",
-      "sha": "d148108e5e743762"
+      "v": "11",
+      "sha": "e9fc2cee11997143"
     },
     "/arcade/auth-ui.js": {
       "v": "9",
@@ -1805,8 +1805,8 @@
       "sha": "f49143dc7a01c16a"
     },
     "/arcade/livecheck.js": {
-      "v": "10",
-      "sha": "fe10a391d84f3713"
+      "v": "11",
+      "sha": "c9d71872b4c34ca0"
     },
     "/arcade/teamcheck.js": {
       "v": "3",
@@ -1847,12 +1847,12 @@
       "sha": "b439237ac07ec089"
     },
     "/arcade/dayroll.js": {
-      "v": "1",
-      "sha": "922f9e5471c30dcb"
+      "v": "2",
+      "sha": "d568e3a1575f8fb5"
     },
     "/arcade/archive.js": {
-      "v": "2",
-      "sha": "15970ca0ab5a2b04"
+      "v": "3",
+      "sha": "0531494fc5183283"
     },
     "/arcade/gamemarks.js": {
       "v": "4",
@@ -1875,8 +1875,8 @@
       "sha": "c71a149f3b8da69e"
     },
     "/arcade/topbanner.js": {
-      "v": "10",
-      "sha": "d148108e5e743762"
+      "v": "11",
+      "sha": "e9fc2cee11997143"
     },
     "/arcade/auth-ui.js": {
       "v": "9",
@@ -1943,8 +1943,8 @@
       "sha": "a57bea864c491e94"
     },
     "/arcade/livecheck.js": {
-      "v": "10",
-      "sha": "fe10a391d84f3713"
+      "v": "11",
+      "sha": "c9d71872b4c34ca0"
     },
     "/arcade/howto.js": {
       "v": "26",
@@ -1970,15 +1970,15 @@
     },
     "../match/entities.js": {
       "v": "12",
-      "sha": "664edb1b32a25f85"
+      "sha": "82fef46c71162b85"
     },
     "/arcade/former.js": {
       "v": "4",
       "sha": "0b77dee2f572dd6b"
     },
     "/arcade/stars.js": {
-      "v": "4",
-      "sha": "8f815b786f1769e5"
+      "v": "5",
+      "sha": "a6e29b6b7f7c1e3d"
     },
     "/arcade/awards.js": {
       "v": "3",
@@ -2049,20 +2049,20 @@
       "sha": "2c0f1bb48415ffd9"
     },
     "/arcade/modal-a11y.js": {
-      "v": "1",
-      "sha": "bfc89e7ef5333115"
+      "v": "2",
+      "sha": "32e31f752ee0f7ce"
     },
     "/arcade/day.js": {
       "v": "3",
       "sha": "b439237ac07ec089"
     },
     "/arcade/dayroll.js": {
-      "v": "1",
-      "sha": "922f9e5471c30dcb"
+      "v": "2",
+      "sha": "d568e3a1575f8fb5"
     },
     "/arcade/archive.js": {
-      "v": "2",
-      "sha": "15970ca0ab5a2b04"
+      "v": "3",
+      "sha": "0531494fc5183283"
     },
     "/arcade/board.js": {
       "v": "24",
@@ -2085,8 +2085,8 @@
       "sha": "53833ada3258fca2"
     },
     "/arcade/topbanner.js": {
-      "v": "10",
-      "sha": "d148108e5e743762"
+      "v": "11",
+      "sha": "e9fc2cee11997143"
     },
     "/arcade/auth-ui.js": {
       "v": "9",

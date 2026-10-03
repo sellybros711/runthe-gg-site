@@ -5,10 +5,10 @@
    the dominant layout-shift source across the arcade). */
 html{scrollbar-gutter:stable;}
 /* ============================================================================
-   Run The Arcade — shared design layer ("Sports Arcade Control Room")
+   Run The Arcade: shared design layer ("Sports Arcade Control Room")
    ----------------------------------------------------------------------------
    STAGE 2 (foundation): this file is loaded BEFORE each page's existing inline
-   <style>, so inline rules always win on conflict — loading it alone changes
+   <style>, so inline rules always win on conflict. Loading it alone changes
    nothing. Everything here is either:
      (a) token FALLBACKS whose values match the per-page inline :root, or
      (b) NEW opt-in classes namespaced `a-` / `.arcade-*` that no page uses yet.
@@ -207,7 +207,7 @@ body:has(.a-gametitle) .brand.logo .sub{display:none;}
 /* uniform treatment across the whole title, so <b> just matches its surroundings */
 .a-gametitle__plate b{font-weight:400; color:inherit; -webkit-text-stroke:inherit; text-shadow:inherit;}
 /* dark = solid accent fill with a restrained neon glow (a lit marquee sign, and
-   far more legible than the old hollow outline — dark accents like a maroon
+   far more legible than the old hollow outline: dark accents like a maroon
    fav-team red were unreadable as strokes). light = solid accent fill darkened
    toward near-black so every accent clears WCAG large-text contrast. */
 :root[data-theme="light"] .a-gametitle__plate{
@@ -221,8 +221,8 @@ body:has(.a-gametitle) .brand.logo .sub{display:none;}
 }
 
 /* ---- result screen: one hero, one quiet line -----------------------------
-   Every game ends by telling you one number. Which number differs — a time, a
-   run, guesses used, points — but the shape of the telling shouldn't, and it
+   Every game ends by telling you one number. Which number differs (a time, a
+   run, guesses used, points), but the shape of the telling shouldn't, and it
    had drifted: six games led with a 60px hero while Guess and Daily Match
    split their result across three equal boxes, so the thing you actually
    earned sat at the same weight as "1 miss".

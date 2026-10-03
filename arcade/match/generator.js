@@ -2,12 +2,12 @@
  * RunTheGrid / Common Ground: generator / engine
  *
  * Two ways to get a board, same output shape:
- *   buildFromDB(date, entities)  — the real thing: discovers categories from the
+ *   buildFromDB(date, entities):  the real thing: discovers categories from the
  *       tagged entity DB via an inverted index, samples 5 under the spec's
  *       spread rules, assigns a unique 25-tile board, tunes trap density.
- *   generateDaily(date, bank)    — authored fallback: picks a hand-verified board
+ *   generateDaily(date, bank):    authored fallback: picks a hand-verified board
  *       from data.js when the DB can't satisfy a given day.
- *   daily(date, {entities, bank}) — try the DB, fall back to the bank.
+ *   daily(date, {entities, bank}): try the DB, fall back to the bank.
  *
  * The fairness backbone in both paths: solve() proves EXACTLY ONE valid
  * assignment before a board is ever returned. Runs in the browser and Node.
@@ -148,7 +148,7 @@
   }
 
   /* =========================================================================
-   * DATA-DRIVEN GENERATOR (§3–§5)
+   * DATA-DRIVEN GENERATOR (§3-§5)
    * ======================================================================= */
 
   // maps a position's readable singular (from import-corpus) to its plural label;
@@ -208,7 +208,7 @@
       if (ent.dp === 1) add('pick1', 'No. 1 Overall Picks', 'career', ent);
       if (ent.col) add('col:' + ent.col, 'Played College at ' + ent.col, 'career', ent);
       if (ent.b) add('born:' + ent.b, 'Born in ' + ent.b, 'career', ent);
-      // position codes collide across sports (NBA "C" vs NHL "C") — key by sport
+      // position codes collide across sports (NBA "C" vs NHL "C"), so key by sport
       if (ent.pos) add('pos:' + ent.sport + ':' + ent.pos, ent.sport + ' ' + (POS_LABEL[ent.pos] || (ent.pos + 's')), 'career', ent);
       (ent.decade || []).forEach(function (dec) { add('decade:' + dec, 'Played in the ' + dec + 's', 'career', ent); });
       if (ent.nat) add('nat:' + ent.nat, ent.nat + ' Athletes', 'career', ent);
@@ -218,7 +218,7 @@
       var w = deriveWordplay(ent.name);
       (ent.na || []).forEach(function (c) { add('namealso:' + c, 'Name Is Also a ' + c.charAt(0).toUpperCase() + c.slice(1), 'wordplay', ent); });
       add('surname:' + w.surname, 'Surname: ' + w.surname, 'wordplay', ent);
-      // initials categories are omitted on purpose — "these 5 share initials" isn't
+      // initials categories are omitted on purpose: "these 5 share initials" isn't
       // a deducible group, and they crowd out better wordplay.
       if (w.allit) add('allit', 'Alliterative Names', 'wordplay', ent);
     });
@@ -254,9 +254,9 @@
   // filled in; a family cap of 3 keeps a board from being all one family.
   // career carries the board while achievement/statistical are empty (no awards
   // yet); wordplay is capped so it's flavor, not a crutch. MIN_FAMILIES rises
-  // back to 2–3 automatically once awards/milestones fill those families in.
+  // back to 2-3 automatically once awards/milestones fill those families in.
   // wordplay (surname / name-also / alliterative) is capped at ONE per board so
-  // a board can never be solved by scanning last names — it forces real sports
+  // a board can never be solved by scanning last names: it forces real sports
   // groups (teams, jersey numbers, decades, draft classes, nationalities, …).
   var FAM_CAP = { wordplay: 1 }, DEFAULT_FAM_CAP = 5, MIN_FAMILIES = 1;
   var BIG3 = { NFL: 1, NBA: 1, MLB: 1 };
@@ -349,9 +349,9 @@
 
   // FAIRNESS GUARD 2: categories salient enough that players will group by
   // them. A board must not contain 4+ tiles sharing one of these unless it IS
-  // one of the board's own groups — "all four played for the Dodgers" must
+  // one of the board's own groups: "all four played for the Dodgers" must
   // never be a wrong answer even when the Dodgers aren't a lane today.
-  // (Broad facts — decade, nationality, HOF — are exempt or boards would be
+  // (Broad facts such as decade, nationality and HOF are exempt or boards would be
   // impossible; nobody groups four names as "played in the 2010s" first.)
   var GUARDED_FAMILIES = { team: 1, jersey: 1, surname: 1, namealso: 1, col: 1, draft: 1, pick1: 1, award: 1, mile: 1, pos: 1, born: 1, allit: 1, nat: 1 };
   // nationalities so large that most boards hold 4+ (only USA); guarding them
@@ -406,7 +406,7 @@
       var board = makeBoard(chosen, sol, entMap);
       var r = solve(board); if (r.count !== 1) continue;
       var traps = trapEdges(board);
-      // FAIRNESS RULE 1: zero traps — no name on the board outside a group's
+      // FAIRNESS RULE 1: zero traps: no name on the board outside a group's
       // four may also satisfy that group (per the DB). A factually valid
       // grouping must never be rejected. Ambiguity is a bug, not a feature.
       var offb = traps === 0 ? offBoardFoursome(board, allCats, entMap) : true;
