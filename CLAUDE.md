@@ -11197,6 +11197,48 @@ without one carries no `rs` or `cn` key: `replay-careers --story off` is byte id
 1,000 careers. An old save keeps its own roster. check-story, check-career and sim-career all
 seed from the file when the repo has it, so the bands are measured on the league that ships.
 
+#### Ratings and salaries are the real ones, and the scale a player reads is 2K's
+
+```
+node hoops/build/fetch-ratings.mjs     writes hoops/data/ratings.json (runs here and on the runner)
+```
+
+Reported by the owner off the Team tab: Wembanyama read 82, the scale stopped in the low 90s,
+and nobody had a salary. Our own model reads a man off his box scores and squeezes the stars
+together. So two published files are joined to `rosters.json` by name and ride on it
+(`C.withRatings`):
+
+| | source |
+|---|---|
+| NBA 2K27 overalls, every current player rated 75 or better | 2KRatings, via a public GitHub CSV |
+| every 2026-27 salary | a public GitHub CSV |
+
+Both are on raw.githubusercontent.com, the one host the sandbox and a runner can both reach;
+2KRatings, nba.com and Spotrac are refused here. The roster workflow refreshes it after the
+rosters, keeps the old file if a source is down, and commits both. A name that matches nobody
+is printed, never guessed (`ALIASES` takes the few spelled two ways).
+
+**TWO SCALES, ONE BRANCH.** Every overall inside career.js is still the model's (a rookie 62,
+a typical peak 75, an MVP 92) and every rule and band is written on it. What a player READS is
+`show(o)`, the 2K scale, fitted by putting today's league in order both ways: a rookie reads
+about 75, a good starter the mid 80s, the best men 96 and 97, and 99 is the top. It is
+monotone, so no comparison changes. A rated man's internal overall is `showInv(his 2K)` and his
+worth is read back off it (`wFromOvr`), so minutes, the five and club strength all follow the
+real order. A man the file leaves out is held under 75. Every rated man is rated for the
+season about to be played, so nobody is aged into it.
+
+**The UI shows `C.show` everywhere**, the ratings bars included. **Copy that prints a number
+goes through `ovT(L, o)`**, which is `show` on a story career and the old number on a save from
+before, because the story-off replay fingerprints every log line and must stay byte identical.
+
+**Pay** is the real figure for the season it is for (`payOf`); after that a market figure off
+the 2K overall (`PAY_AT`, the median real salary at each rating, scaled with the cap). Nobody
+here knows a man's next contract, so a later year is an estimate by design.
+
+**`inFive`'s cache key carries the exact overall and the club's names**: rounded, a cached
+answer outlived a change a reload would have seen, which check-career's reload test caught the
+moment ratings went to one decimal.
+
 **THE CAROUSEL** (`coachCarousel`, run from `driftLeague` every summer, the road years too):
 a club fires on how it played (your club on the record you actually played, and never after a
 title), a coach past 71 may retire, an interim is likely replaced, and the hire is weighted

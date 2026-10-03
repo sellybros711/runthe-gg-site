@@ -809,8 +809,8 @@ function play(beats, ctx, opts){
     var t = ov.querySelector('.sc-tape');
     if (!bt.tape || !ctx.rival) { if (t) t.parentNode.removeChild(t); return; }
     if (t) return;
-    var r = ctx.rival, L = ctx.L, me = C.ovrOf ? C.ovrOf(L) : 0;
-    var rows = [['OVR', me, r.ovr], ['Ceiling', L.pot, r.pot], ['Pick', L.draft && L.draft.pick || '-', r.pick], ['Age', L.age, r.age], ['Position', L.pos, r.pos]];
+    var r = ctx.rival, L = ctx.L, me = C.ovrOf ? C.show(C.ovrOf(L)) : 0;
+    var rows = [['OVR', me, C.show(r.ovr)], ['Ceiling', C.show(L.pot), C.show(r.pot)], ['Pick', L.draft && L.draft.pick || '-', r.pick], ['Age', L.age, r.age], ['Position', L.pos, r.pos]];
     var el = document.createElement('div');
     el.className = 'sc-tape';
     el.innerHTML = '<div class="tp-h"><b>' + esc(ctx.last) + '</b><span>Tale of the tape</span><b>' + esc(last(r.name)) + '</b></div>'

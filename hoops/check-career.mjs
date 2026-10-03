@@ -38,7 +38,7 @@ function section(t) { console.log(`\n${t}\n${'-'.repeat(t.length)}`); }
 
 /* The league the game seeds: today's rosters when the repo has them. */
 const ROSTERS_FILE = new URL('./data/rosters.json', import.meta.url);
-const league = C.seedLeague(ROWS, fs.existsSync(ROSTERS_FILE) ? JSON.parse(fs.readFileSync(ROSTERS_FILE, 'utf8')) : null);
+const league = C.seedLeague(ROWS, C.withRatings(fs.existsSync(ROSTERS_FILE) ? JSON.parse(fs.readFileSync(ROSTERS_FILE, 'utf8')) : null, (() => { const f = new URL('./data/ratings.json', import.meta.url); return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : null; })()));
 /* An en or em dash in copy, built from its code points so this file carries none. */
 const DASH = new RegExp('[' + String.fromCharCode(8211, 8212) + ']');
 
@@ -833,8 +833,10 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
     /* His worth is measured at 38, so the season he joins at 39 takes one
        year off it and not a lifetime: the old rule discounted every year past
        thirty and left him a quarter of himself. */
+    /* A man the real ratings cover is rated for the season about to be
+       played, so he is aged from the season after it. */
     const L0 = C.newLife({ seed: 'age:check', league, story: true });
-    L0.year = league.rs;
+    L0.year = (cur && cur[5] ? cur[4] : league.rs - 1) + 1;
     const now = C.matesOf(L0, 'GSW').find((m) => m.n === 'Stephen Curry');
     ok(now && now.w >= cur[3] * 0.7 && now.w < cur[3], `and he is aged one year, not nine (${now && now.w} against ${cur && cur[3]})`);
   }
@@ -1005,7 +1007,35 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
   const top = all.slice().sort((a, b) => b.ovr - a.ovr)[0];
   ok(top.ovr >= 86, `the league's best player rates like one (${top.n} ${top.ovr})`);
   const med = (k) => { const v = C.CLUBS.map((c) => (C.matesOf(L0, c)[k] || {}).ovr).sort((a, b) => a - b); return v[15]; };
-  ok(med(0) >= 76 && med(0) <= 82 && med(4) >= 64 && med(4) <= 70, `a club's best man is about a 79 and its fifth about a 67 (${med(0)}, ${med(4)})`);
+  /* THE REAL RATINGS AND THE REAL PAY. A man the 2K ratings cover reads his
+     rating exactly in the season it is for, a man they leave out reads under
+     75, and his salary is the real one. Asked only when the repo has the file. */
+  const RF = new URL('./data/ratings.json', import.meta.url);
+  if (fs.existsSync(RF) && league.rs) {
+    const RT = JSON.parse(fs.readFileSync(RF, 'utf8'));
+    const ids = {};
+    const RO = JSON.parse(fs.readFileSync(ROSTERS_FILE, 'utf8'));
+    for (const c in RO.clubs) for (const m of RO.clubs[c]) ids[m.n] = m.i;
+    const L1 = C.newLife({ seed: 'real', league, start: 'draft' });
+    L1.year = league.rs;
+    const men = []; for (const c of C.CLUBS) for (const m of C.matesOf(L1, c)) men.push(m);
+    const wrong = men.filter((m) => RT.men[ids[m.n]] && RT.men[ids[m.n]].o && C.show(m.ovr) !== RT.men[ids[m.n]].o);
+    ok(!wrong.length, `every rated man reads his 2K rating (${wrong.slice(0, 3).map((m) => m.n + ' ' + C.show(m.ovr) + ' not ' + RT.men[ids[m.n]].o).join(', ') || men.length + ' men'})`);
+    const over = men.filter((m) => ids[m.n] && !(RT.men[ids[m.n]] || {}).o && C.show(m.ovr) >= 75);
+    ok(!over.length, `a man the 2K ratings leave out reads under 75 (${over.slice(0, 3).map((m) => m.n + ' ' + C.show(m.ovr)).join(', ') || 'all'})`);
+    const wem = men.find((m) => m.n === 'Victor Wembanyama');
+    ok(!wem || C.show(wem.ovr) >= 95, `Wembanyama is at least a 95 (${wem && C.show(wem.ovr)})`);
+    const badPay = men.filter((m) => RT.men[ids[m.n]] && RT.men[ids[m.n]].p && m.pay !== RT.men[ids[m.n]].p);
+    ok(!badPay.length, `every man is paid his real salary this season (${badPay.slice(0, 3).map((m) => m.n + ' $' + m.pay).join(', ') || 'all'})`);
+    L1.year = league.rs + 3;
+    ok(C.CLUBS.every((c) => C.matesOf(L1, c).every((m) => m.pay > 0 && m.pay < 80)), 'and a market salary for every man in a later season');
+  }
+  ok(C.show(99) === 99 && C.show(62) === 75 && C.show(92) === 97, `the scale a player reads runs to 99 (a rookie 62 reads ${C.show(62)}, an MVP 92 reads ${C.show(92)})`);
+  let mono = true; for (let x = 20; x < 99; x += 0.5) if (C.show(x + 0.5) < C.show(x)) mono = false;
+  ok(mono, 'and it never runs backwards, so no comparison of two overalls can change');
+  /* On the scale a player reads, which is 2K's: a club's best man is about
+     a 90 and its fifth about a 79. */
+  ok(C.show(med(0)) >= 87 && C.show(med(0)) <= 93 && C.show(med(4)) >= 76 && C.show(med(4)) <= 82, `a club's best man is about a 90 and its fifth about a 79 (${C.show(med(0))}, ${C.show(med(4))})`);
   let looks = 0, crowded = 0, overplayed = [], netOk = 0, netN = 0;
   for (let i = 0; i < 60; i++) {
     const L = C.generateRoad({ seed: 'mn:' + i, league, pos: C.POS[i % 5] });

@@ -33,7 +33,7 @@ const clone = (x) => JSON.parse(JSON.stringify(x));
 /* Today's rosters when the repo has them (hoops/data/rosters.json, written by
    the roster workflow), so every section plays the league a career joins. */
 const ROSTERS = fs.existsSync(path.join(HERE, 'data', 'rosters.json')) ? JSON.parse(fs.readFileSync(path.join(HERE, 'data', 'rosters.json'), 'utf8')) : null;
-const league = C.seedLeague(ROWS, ROSTERS);
+const league = C.seedLeague(ROWS, C.withRatings(ROSTERS, (() => { const f = new URL('./data/ratings.json', import.meta.url); return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : null; })()));
 const words = (s) => String(s).replace(/\{[a-z0-9]+(?::\w+)?\}/gi, 'X').split(/\s+/).filter(Boolean).length;
 const POOLS = { nba: C.EVENTS, am: C.AM_EVENTS, arc: C.ARC_EVENTS, story: C.STORY_EV };
 

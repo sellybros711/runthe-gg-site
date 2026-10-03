@@ -395,7 +395,15 @@ function worthOf(bySeason, latest) {
      a knee costs a little, not most of what he is. */
   return den > 0 ? (num / den) * clamp(gs / gw, 45, 76) : null;
 }
+/* The rosters with the real ratings file riding on them, for a reader that
+   loads the two separately. */
+function withRatings(rosters, ratings) {
+  if (!rosters || !ratings || !ratings.men) return rosters;
+  return Object.assign({}, rosters, { ratings });
+}
 function seedToday(rows, latest, today) {
+  const RT = (today.ratings && today.ratings.season === latest + 1 && today.ratings.men) || {};
+  const RTN = Object.keys(RT).length > 0;
   const last = {}, by = {}, first = {};
   for (const r of rows || []) {
     if (!(first[r.i] <= r.s)) first[r.i] = r.s;
@@ -409,16 +417,25 @@ function seedToday(rows, latest, today) {
       const seasons = by[m.i] || {};
       const recent = [latest, latest - 1, latest - 2].map((y) => (seasons[y] || []).slice().sort((a, b) => (b.g || 0) - (a.g || 0))[0]).filter(Boolean);
       const v = worthOf(seasons, latest);
-      const w = v == null ? 1.2 : v;
+      /* THE REAL RATING WINS. A man the 2K ratings cover is worth exactly
+         the rating fans know, read back onto our scale, for the season about
+         to be played. A man they do not cover is rated under 75 by them, so
+         his box score reading is held under that. */
+      const rr = RT[m.i] || {};
+      const w = rr.o ? wFromOvr(showInv(rr.o)) : RTN ? Math.min(v == null ? 1.2 : v, wFromOvr(showInv(74.4))) : v == null ? 1.2 : v;
       /* Last season's line, from whichever club he played most for. */
       const top = mine.slice().sort((a, b) => (b.g || 0) - (a.g || 0))[0];
       if (top) lines[m.n] = [round1(top.mp || 0), round1(top.pts || 0), round1(top.reb || 0), round1(top.ast || 0), round1(top.tpa || 0), String(top.ep || top.pp || '')];
       const pos = posFromData(m.pos, recent);
       const born = m.b || (top ? bornOf(top, first[m.i]) : latest - 21);
-      return { m, w: round1(w), pos, born, rows: mine };
+      return { m, w: round1(w), pos, born, rows: mine, o: rr.o || 0, p: rr.p || 0 };
     }).sort((a, b) => b.w - a.w);
-    roster[c] = men.slice(0, 15).map((x) => [x.m.n, x.pos, x.born, x.w, latest]);
-    for (const x of men.slice(15)) fa.push([x.m.n, x.pos, x.born, x.w, latest]);
+    /* With the ratings file every man is read for the season about to be
+       played (a 2K rating is that season's), so nobody is aged into it. */
+    const ms = RTN ? latest + 1 : latest;
+    const tup = (x) => (x.o || x.p ? [x.m.n, x.pos, x.born, x.w, ms, x.o, x.p] : [x.m.n, x.pos, x.born, x.w, ms]);
+    roster[c] = men.slice(0, 15).map(tup);
+    for (const x of men.slice(15)) fa.push(tup(x));
     stars[c] = men.slice(0, 3).map((x) => x.m.n);
     /* Strength off last season's rows of the men he now has, the best one per
        man, so a traded player counts once and for his new club. */
@@ -812,10 +829,19 @@ function rookieFor(L, c, d) {
 }
 /* The rosters as the data has them, aged to season Y: a rookie a club for
    every draft after the data's, and the men who have retired by then gone. */
+/* A roster tuple: name, position, born, worth, the season the worth was
+   measured in, and for a man the real ratings cover his 2K overall and his
+   salary for that season. */
+function fromTup(p) {
+  const e = p[4] ? { n: p[0], pos: p[1], b: p[2], w: p[3], s: p[4] } : { n: p[0], pos: p[1], b: p[2], w: p[3] };
+  if (p[5]) e.o = p[5];
+  if (p[6]) e.pay = p[6];
+  return e;
+}
 function rostBuild(L, Y) {
   const lg = L.league, R = {};
   for (const c of CLUBS) {
-    R[c] = ((lg.roster && lg.roster[c]) || []).map((p) => (p[4] ? { n: p[0], pos: p[1], b: p[2], w: p[3], s: p[4] } : { n: p[0], pos: p[1], b: p[2], w: p[3] }));
+    R[c] = ((lg.roster && lg.roster[c]) || []).map(fromTup);
     /* Today's rosters already carry this season's real rookies, so invented
        ones start with the next draft. */
     for (let d = (lg.rs || lg.latest || 2026) + 1; d <= Y; d++) R[c].push(rookieFor(L, c, d));
@@ -823,7 +849,7 @@ function rostBuild(L, Y) {
   }
   /* The real men past a club's fifteen: today's free agents and two-way
      players. A short club signs one of them before anybody is invented. */
-  lg.pool = (lg.fa || []).map((p) => ({ n: p[0], pos: p[1], b: p[2], w: p[3], s: p[4] })).filter((e) => !rostGone(L, e, Y));
+  lg.pool = (lg.fa || []).map(fromTup).filter((e) => !rostGone(L, e, Y));
   if (storyOn(L)) uniqueNames(L, R, Y);
   lg.rost = R; lg.rostY = Y;
   return R;
@@ -980,20 +1006,75 @@ function uniqueNames(L, R, Y) {
    eighth man and a typical peak is a starter. Minutes, the starting five and
    a club's strength all compare these numbers, so a 77 in his second year
    plays behind the better players on his club. */
+/* THE SCALE A PLAYER READS IS NBA 2K'S. Inside, every overall is the
+   model's: a rookie about 62, a typical peak 75, an MVP 92, and every rule
+   and balance band in this file is written on that. What is printed is
+   that number on the 2K scale, which runs to 99 and is the one fans know:
+   a rookie about a 75, a good starter in the mid 80s, the best men in the
+   league 96 and 97. Fitted by putting today's league in order both ways
+   (the model's reading of 450 men against their 2K27 ratings), so a man
+   who ranks 30th reads what the 30th best 2K rating is. It is monotone, so
+   nothing that compares two overalls can come out differently. */
+const SHOW = [[0, 30], [30, 45], [45, 58], [55, 68], [60, 73], [62, 75], [65, 78], [68, 80], [72, 82], [75, 84], [78, 87], [81, 90], [84, 92], [87, 94], [90, 96], [93, 97.5], [96, 98.5], [99, 99]];
+function lerpT(T, x, i, j) {
+  if (x <= T[0][i]) return T[0][j];
+  for (let k = 1; k < T.length; k++) if (x <= T[k][i]) { const a = T[k - 1], b = T[k]; return a[j] + (x - a[i]) / (b[i] - a[i]) * (b[j] - a[j]); }
+  return T[T.length - 1][j];
+}
+/* Copy a story career prints is on the 2K scale; a save from before keeps
+   the words it was written with. */
+function ovT(L, o) { return storyOn(L) ? show(o) : o; }
+function show(o) { return o == null || isNaN(o) ? o : Math.round(lerpT(SHOW, o, 0, 1)); }
+function showInv(o) { return round1(lerpT(SHOW, o, 1, 0)); }
 const W_OVR = [[0, 54], [1, 59], [2.2, 63], [3.7, 69], [5.1, 74], [6.6, 78], [9.7, 85], [13, 90], [16, 94]];
-function mateOvr(w) {
+function mateOvrX(w) {
   const x = Math.max(0, w);
   for (let k = 1; k < W_OVR.length; k++) if (x <= W_OVR[k][0]) {
     const [a, oa] = W_OVR[k - 1], [b, ob] = W_OVR[k];
-    return Math.round(oa + (x - a) / (b - a) * (ob - oa));
+    return oa + (x - a) / (b - a) * (ob - oa);
   }
   return W_OVR[W_OVR.length - 1][1];
+}
+function mateOvr(w) { return Math.round(mateOvrX(w)); }
+/* The worth a man of this overall carries: W_OVR read backwards. */
+function wFromOvr(o) {
+  if (o <= W_OVR[0][1]) return W_OVR[0][0];
+  for (let k = 1; k < W_OVR.length; k++) if (o <= W_OVR[k][1]) {
+    const [a, oa] = W_OVR[k - 1], [b, ob] = W_OVR[k];
+    return round1(a + (o - oa) / (ob - oa) * (b - a));
+  }
+  return W_OVR[W_OVR.length - 1][0];
+}
+/* A man the real ratings cover keeps his exact rating, moved only by what the
+   years have done to him since; anybody else is read off his worth. */
+function ovrOfMan(e, w) {
+  if (!e.o) return mateOvr(w);
+  return round1(showInv(e.o) + mateOvrX(w) - mateOvrX(e.w));
+}
+/* What a man is paid. His real salary for the season it is for; after that a
+   market figure off his overall, because nobody here knows his next deal. */
+function payOf(L, e, Y, w) {
+  if (e.pay && Y <= (e.s || 0)) return e.pay;
+  if (e.pay && !e.o && Y <= ((L.league && L.league.rs) || 0)) return e.pay;
+  return marketPay(L, show(ovrOfMan(e, w)), Y - e.b);
+}
+/* The 2026-27 market, read off the real salaries against the real ratings
+   (the median pay at each overall): a minimum deal in the low 70s, about $11M
+   at 79, about $32M at 84, a max from 90 up. A man past 35 takes less.
+   Scaled with the cap after that season. */
+const PAY_AT = [[60, 1.3], [70, 2.3], [74, 3.5], [76, 6], [79, 11], [81, 18], [84, 32], [87, 40], [90, 52], [93, 57], [99, 62]];
+function marketPay(L, o, age) {
+  let v = PAY_AT[PAY_AT.length - 1][1];
+  for (let k = 1; k < PAY_AT.length; k++) if (o <= PAY_AT[k][0]) { const [a, va] = PAY_AT[k - 1], [b, vb] = PAY_AT[k]; v = va + (Math.max(o, a) - a) / (b - a) * (vb - va); break; }
+  if (age >= 35) v = Math.min(v, 12);
+  const y = L.year || 2027;
+  return round1(v * (capFor(y) / capFor(2027)));
 }
 function matesOf(L, c) {
   const lg = L.league;
   const Y = L.year;
   const R = rostNow(L);
-  if (R && R[c]) return R[c].filter((e) => !rostGone(L, e, Y)).map((e) => { const w = rostCurW(e, Y); return { n: e.n, pos: e.pos, age: Y - e.b, w, ovr: mateOvr(w), real: e.g ? 0 : 1 }; }).sort((a, b) => b.w - a.w);
+  if (R && R[c]) return R[c].filter((e) => !rostGone(L, e, Y)).map((e) => { const w = rostCurW(e, Y); return { n: e.n, pos: e.pos, age: Y - e.b, w, ovr: ovrOfMan(e, w), real: e.g ? 0 : 1, pay: payOf(L, e, Y, w) }; }).sort((a, b) => b.w - a.w);
   const out = [];
   const base = lg.roster && lg.roster[c];
   if (base) {
@@ -1924,7 +2005,7 @@ function rotationOf(L) {
      starter puts you in the five, at whatever minutes he plays you. */
   if (role.starter && at > 4) at = 4;
   const youStart = at < 5;
-  const me = { n: L.name, pos: L.pos, age: L.age, you: true, min: mine, pts: null, w: 0, ovr: ovrOf(L) };
+  const me = { n: L.name, pos: L.pos, age: L.age, you: true, min: mine, pts: null, w: 0, ovr: ovrOf(L), pay: L.contract ? L.contract.salary : null };
   const epOf = (m) => { const ln = lines[m.n]; return ln && ln[5] ? String(ln[5]).split(';') : null; };
   const cands = mates.map((m) => ({ v: Math.max(0.1, (m.ovr || mateOvr(m.w)) - 55), pos: m.pos, ep: epOf(m), m }));
   if (youStart) cands.unshift({ v: 1000, pos: L.pos, ep: null, force: true, m: me });
@@ -1941,7 +2022,7 @@ function rotationOf(L) {
     /* Points: last season's rate for a man the data has, otherwise one off
        his value; at the minutes he is getting now. */
     const rate = ln && ln[0] > 0 ? ln[1] / ln[0] : 0.18 + Math.max(0, m.w) * 0.035;
-    return { n: m.n, pos: m.pos, age: m.age, real: m.real, ovr: m.ovr, min, pts: min > 0 ? round1(rate * min) : 0, slot };
+    return { n: m.n, pos: m.pos, age: m.age, real: m.real, ovr: m.ovr, pay: m.pay, min, pts: min > 0 ? round1(rate * min) : 0, slot };
   };
   const rows = new Map();
   starters.filter((x) => x.m !== me).sort((a, b) => b.m.ovr - a.m.ovr || b.m.w - a.m.w).forEach((x, k, arr) => rows.set(x.m, row(x.m, k, x.slot)));
@@ -2213,8 +2294,8 @@ function allStarCheck(L, beats) {
     id: 'allstar', kind: 'event', key: 'allstar', eyebrow: 'All-Star Weekend', title: 'They want you Saturday night too.',
     text: 'One event, or none. Your call.',
     options: [
-      { label: 'Dunk contest', hint: 'Athleticism ' + L.rt.ath + '.' },
-      { label: 'Three-point contest', hint: 'Shooting ' + L.rt.sho + '.' },
+      { label: 'Dunk contest', hint: 'Athleticism ' + ovT(L, L.rt.ath) + '.' },
+      { label: 'Three-point contest', hint: 'Shooting ' + ovT(L, L.rt.sho) + '.' },
       { label: 'Rest your legs', hint: 'Sunday is enough.' },
     ],
   });
@@ -2490,31 +2571,31 @@ const MOMENTS = {
   buzzer: { w: () => 2, title: 'The ball, the clock, the horn.',
     text: (L, o) => 'Tied with the ' + o + '. Four seconds. It comes to you.',
     opts: (L) => [
-      { label: 'Take the shot', hint: 'Shooting ' + L.rt.sho + '.', p: clamp(0.3 + (L.rt.sho - 50) * 0.006, 0.15, 0.62), play: 'buzzer' },
+      { label: 'Take the shot', hint: 'Shooting ' + ovT(L, L.rt.sho) + '.', p: clamp(0.3 + (L.rt.sho - 50) * 0.006, 0.15, 0.62), play: 'buzzer' },
       { label: 'Drive and kick', hint: 'Find somebody.', p: 0.38 },
     ] },
   ft: { w: () => 2, title: 'Two shots. Down one.',
     text: (L, o) => 'Fouled with two seconds left against the ' + o + '. The building is trying to get in your head.',
     opts: (L) => [
-      { label: 'Step to the line', hint: 'Shooting ' + L.rt.sho + '.', p: clamp(0.6 + (L.rt.sho - 50) * 0.006 + (L.rt.iq - 50) * 0.002, 0.42, 0.95), play: 'ft' },
+      { label: 'Step to the line', hint: 'Shooting ' + ovT(L, L.rt.sho) + '.', p: clamp(0.6 + (L.rt.sho - 50) * 0.006 + (L.rt.iq - 50) * 0.002, 0.42, 0.95), play: 'ft' },
       { label: 'Let them ice you', hint: 'Two timeouts. Long walk.', p: clamp(0.56 + (L.rt.sho - 50) * 0.006 + (L.rt.iq - 50) * 0.004, 0.4, 0.93) },
     ] },
   poster: { w: (L) => L.rt.ath >= 68 ? 1.5 : 0, title: 'One man between you and the rim.',
     text: (L, o) => 'A runout against the ' + o + '. Their big has planted himself in the lane.',
     opts: (L) => [
-      { label: 'Rise up', hint: 'Athleticism ' + L.rt.ath + '.', p: clamp(0.34 + ((L.rt.ath + L.rt.fin) / 2 - 60) * 0.008, 0.2, 0.75), play: 'poster' },
+      { label: 'Rise up', hint: 'Athleticism ' + ovT(L, L.rt.ath) + '.', p: clamp(0.34 + ((L.rt.ath + L.rt.fin) / 2 - 60) * 0.008, 0.2, 0.75), play: 'poster' },
       { label: 'Lay it in', hint: 'Two points is two points.', p: 0.8 },
     ] },
   block: { w: (L) => L.rt.def >= 64 && L.rt.ath >= 60 ? 1.5 : 0, title: 'He thinks he is gone.',
     text: (L, o) => 'A steal at the other end and a ' + o + ' guard is all alone. You are four steps behind him.',
     opts: (L) => [
-      { label: 'Chase him down', hint: 'Defense ' + L.rt.def + '.', p: clamp(0.3 + ((L.rt.def + L.rt.ath) / 2 - 60) * 0.009, 0.15, 0.7), play: 'block' },
+      { label: 'Chase him down', hint: 'Defense ' + ovT(L, L.rt.def) + '.', p: clamp(0.3 + ((L.rt.def + L.rt.ath) / 2 - 60) * 0.009, 0.15, 0.7), play: 'block' },
       { label: 'Let it go', hint: 'Save your legs.', p: 0 },
     ] },
   stop: { w: (L) => L.rt.def >= 58 ? 1.5 : 0, title: 'Up one. Last possession.',
     text: (L, o) => 'The ' + o + ' clear out a side for their best scorer. You ask for the assignment.',
     opts: (L) => [
-      { label: 'Guard him', hint: 'Defense ' + L.rt.def + '.', p: clamp(0.36 + (L.rt.def - 55) * 0.008, 0.2, 0.75), play: 'stop' },
+      { label: 'Guard him', hint: 'Defense ' + ovT(L, L.rt.def) + '.', p: clamp(0.36 + (L.rt.def - 55) * 0.008, 0.2, 0.75), play: 'stop' },
       { label: 'Send the double', hint: 'Make somebody else beat you.', p: 0.5 },
     ] },
 };
@@ -2588,7 +2669,7 @@ function clutchCard(L, cur, home) {
     eyebrow: 'Game 7 · ' + ROUNDS[cur.round], title: 'Tied. Nine seconds. Your ball.',
     text: (home ? 'Home crowd on its feet' : 'A road crowd trying to rattle you') + ' against the ' + nick(cur.opp) + '. What is the play?',
     ctx: { round: cur.round, opp: cur.opp, home },
-    options: opts.map((o) => ({ label: o.label, hint: RATING_NAME[o.rate] + ' ' + L.rt[o.rate] + '.' })),
+    options: opts.map((o) => ({ label: o.label, hint: RATING_NAME[o.rate] + ' ' + ovT(L, L.rt[o.rate]) + '.' })),
   };
 }
 
@@ -2692,15 +2773,16 @@ function developStory(L, beats) {
   if (focus) L.focus = null;
   const after = ovrOf(L);
   const diff = after - before;
-  const moved = RATINGS.map((k) => [k, L.rt[k] - was[k]]).filter((x) => x[1]).sort((x, y) => Math.abs(y[1]) - Math.abs(x[1])).slice(0, 2);
+  const moved = RATINGS.map((k) => [k, ovT(L, L.rt[k]) - ovT(L, was[k])]).filter((x) => x[1]).sort((x, y) => Math.abs(y[1]) - Math.abs(x[1])).slice(0, 2);
   const detail = moved.length ? ' ' + moved.map(([k, v]) => RATING_NAME[k] + ' ' + (v > 0 ? '+' : '') + v).join(', ') + '.' : '';
   const head = jump === 'up' && diff > 0 ? 'A breakout summer. ' : jump === 'flat' ? 'A quiet summer. The jump did not come. ' : '';
   if (diff || head) {
-    const t = head + (diff > 0 ? 'Up ' + diff + ' overall, to ' + after + '.' : diff < 0 ? 'Down ' + (-diff) + ' overall, to ' + after + '.' : 'Still ' + after + ' overall.') + detail;
+    const sd = ovT(L, after) - ovT(L, before), sa = ovT(L, after);
+    const t = head + (sd > 0 ? 'Up ' + sd + ' overall, to ' + sa + '.' : sd < 0 ? 'Down ' + (-sd) + ' overall, to ' + sa + '.' : 'Still ' + sa + ' overall.') + detail;
     beats.push({ kind: 'dev', text: t, tone: diff > 0 ? 'good' : diff < 0 ? 'bad' : '' });
     logIt(L, t, diff > 0 ? 'good' : diff < 0 ? 'bad' : '');
   }
-  if (focus && L.rt[focus] > was[focus]) beats.push({ kind: 'dev', text: 'Your summer project paid off: ' + RATING_NAME[focus].toLowerCase() + ' ' + was[focus] + ' to ' + L.rt[focus] + '.', tone: 'good' });
+  if (focus && L.rt[focus] > was[focus]) beats.push({ kind: 'dev', text: 'Your summer project paid off: ' + RATING_NAME[focus].toLowerCase() + ' ' + ovT(L, was[focus]) + ' to ' + ovT(L, L.rt[focus]) + '.', tone: 'good' });
   if (a >= 29 && L.rt.ath < was.ath - 2 && !L.flags.stepGone) { L.flags.stepGone = L.year; beats.push({ kind: 'dev', text: 'The first step is going. You will have to win with your head.', tone: 'bad' }); }
   if (diff >= 1 && a >= 24) reveal(L, 'lateBloomer', 'Still getting better at ' + a + '.', beats);
   if (L.eth >= 85 && a >= 22) reveal(L, 'gymRat', 'First in the gym. Every day.', beats);
@@ -2731,7 +2813,8 @@ function develop(L, beats) {
   const after = ovrOf(L);
   const diff = after - before;
   if (diff) {
-    const t = diff > 0 ? 'Up ' + diff + ' overall this summer, to ' + after + '.' : 'Down ' + (-diff) + ' overall, to ' + after + '.';
+    const sd = ovT(L, after) - ovT(L, before), sa = ovT(L, after);
+    const t = sd > 0 ? 'Up ' + sd + ' overall this summer, to ' + sa + '.' : sd < 0 ? 'Down ' + (-sd) + ' overall, to ' + sa + '.' : 'Still ' + sa + ' overall.';
     beats.push({ kind: 'dev', text: t, tone: diff > 0 ? 'good' : 'bad' });
     logIt(L, t, diff > 0 ? 'good' : 'bad');
   }
@@ -2811,7 +2894,7 @@ function retireCard(L) {
   return {
     id: 'retire', kind: 'event', key: 'retire',
     eyebrow: 'The summer', title: 'Is it time?',
-    text: 'You are ' + L.age + '. Your overall is ' + ovrOf(L) + '. The body has an opinion.',
+    text: 'You are ' + L.age + '. Your overall is ' + ovT(L, ovrOf(L)) + '. The body has an opinion.',
     options: [
       { label: 'One more season', hint: 'Find out what is left.' },
       { label: 'Retire', hint: 'Walk away on your own terms.' },
@@ -2873,7 +2956,7 @@ function offseason(L, beats) {
       L.pending.push({
         id: 'nooffer', kind: 'event', key: 'nooffer', eyebrow: 'Free agency',
         title: 'Nobody called.',
-        text: 'Your overall is ' + o + '. The league has moved on.',
+        text: 'Your overall is ' + ovT(L, o) + '. The league has moved on.',
         options: [
           { label: 'Retire', hint: 'It was a career.' },
           { label: 'Play overseas', hint: 'A year away, then try again.' },
@@ -3839,7 +3922,7 @@ function afterCard(L) {
     id: 'after', kind: 'event', key: 'after', eyebrow: 'After basketball', title: 'What comes next?',
     text: 'You are ' + L.age + '. You have ' + money(L.cash) + ' in the bank and the rest of your life.',
     options: [
-      { label: 'Coach', hint: 'Basketball IQ ' + L.rt.iq + '. Start on a bench somewhere.' },
+      { label: 'Coach', hint: 'Basketball IQ ' + ovT(L, L.rt.iq) + '. Start on a bench somewhere.' },
       { label: 'Television', hint: 'Fame ' + L.m.fame + '. A desk and a suit.' },
       { label: 'Run a front office', hint: 'Build a team the way you would have wanted one.' },
       { label: 'Business', hint: 'Money ' + money(L.cash) + '. Make it work for you.' },
@@ -4097,7 +4180,10 @@ function chooseCoachReview(L, i, rng) {
    the save: it is a cache, not a fact about the career. */
 const FIVE_CACHE = typeof WeakMap !== 'undefined' ? new WeakMap() : null;
 function inFive(L) {
-  const key = [L.year, L.team, L.pos, Math.round(effOvr(L)), L.league.rostY, L.season && L.season.deadline ? 1 : 0, L.league.rost && L.league.rost[L.team] ? L.league.rost[L.team].length : 0].join(':');
+  /* The key is everything the answer reads, exactly: a rounded overall let a
+     cached answer outlive a change a reload would have seen, which a real
+     rating carried to one decimal made happen. */
+  const key = [L.year, L.team, L.pos, effOvr(L).toFixed(4), L.league.rostY, L.season && L.season.deadline ? 1 : 0, L.league.rost && L.league.rost[L.team] ? L.league.rost[L.team].map((e) => e.n).join(',') : 0].join(':');
   const hit = FIVE_CACHE && FIVE_CACHE.get(L);
   if (hit && hit.key === key) return hit.v;
   const mates = matesOf(L, L.team).slice(0, 13);
@@ -4365,7 +4451,7 @@ function trainingCard(L) {
   return {
     id: 'training', kind: 'event', key: 'training',
     eyebrow: 'Summer of ' + (L.year - 1), title: 'How do you spend the summer?',
-    text: 'You are ' + L.age + '. Overall ' + ovrOf(L) + '. Health ' + L.m.health + '.',
+    text: 'You are ' + L.age + '. Overall ' + ovT(L, ovrOf(L)) + '. Health ' + L.m.health + '.',
     options: [
       { label: 'Shooting gym', hint: 'Shooting and IQ.' },
       { label: 'Strength and speed', hint: 'Athleticism, finishing, rebounding.' },
@@ -4913,7 +4999,7 @@ function buildCards(L) {
   if (!L.sig && L.age >= 23 && ovrOf(L) >= 74) {
     const ks = top.slice(0, 3);
     L.pending.push({ id: 'build_sig', kind: 'event', key: 'sig:' + L.year, eyebrow: calendar(L, 'off'), title: 'Every great one has a move.',
-      text: 'Which one is yours?', ctx: { ks }, options: ks.map((k) => ({ label: SIGS[k][0], hint: RATING_NAME[k] + ' ' + L.rt[k] + '.' })) });
+      text: 'Which one is yours?', ctx: { ks }, options: ks.map((k) => ({ label: SIGS[k][0], hint: RATING_NAME[k] + ' ' + ovT(L, L.rt[k]) + '.' })) });
     return;
   }
   const pool = ARCHES[L.arch].pos ? archesFor(L.pos) : ARCH_KEYS;
@@ -4930,7 +5016,7 @@ function buildCards(L) {
     F.posAsk = L.year;
     L.pending.push({ id: 'build_pos', kind: 'event', key: 'pos:' + L.year, eyebrow: calendar(L, 'off'), title: '{coach} wants to try you at ' + POS_NAME[alt[0]].toLowerCase() + '.',
       text: 'Your ratings play ' + alt[1] + ' better there.', ctx: { to: alt[0] },
-      options: [{ label: 'Move to ' + alt[0], hint: 'Overall ' + overall(L.rt, alt[0]) + ' there.' }, { label: 'Stay at ' + L.pos, hint: 'It is your position.' }] });
+      options: [{ label: 'Move to ' + alt[0], hint: 'Overall ' + ovT(L, overall(L.rt, alt[0])) + ' there.' }, { label: 'Stay at ' + L.pos, hint: 'It is your position.' }] });
   }
 }
 function chooseBuild(L, card, i) {
@@ -5574,7 +5660,7 @@ function amClutchCard(L, t, g) {
     title: 'Tied. Six seconds. Your ball.',
     text: (t.kind === 'hs' ? 'The whole town is in the gym.' : 'March. Every bracket in the country is watching.') + ' What is the play?',
     ctx: { r: g.r },
-    options: opts.map((o) => ({ label: o.label, hint: RATING_NAME[o.rate] + ' ' + L.rt[o.rate] + '.' })),
+    options: opts.map((o) => ({ label: o.label, hint: RATING_NAME[o.rate] + ' ' + ovT(L, L.rt[o.rate]) + '.' })),
   };
 }
 
@@ -5781,7 +5867,8 @@ function developAm(L, beats) {
   for (const k of RATINGS) L.rt[k] = clamp(Math.round(L.rt[k] + grow * (0.6 + rng() * 0.8)), 25, 99);
   const after = ovrOf(L);
   if (after !== before) {
-    const t = 'Up ' + (after - before) + ' overall this summer, to ' + after + '.';
+    const sd = ovT(L, after) - ovT(L, before), sa = ovT(L, after);
+    const t = sd > 0 || !storyOn(L) ? 'Up ' + sd + ' overall this summer, to ' + sa + '.' : 'Still ' + sa + ' overall.';
     beats.push({ kind: 'dev', text: t, tone: 'good' });
     logIt(L, t, 'good');
   }
@@ -6031,7 +6118,7 @@ function hsSummerCard(L) {
   return {
     id: 'hs_summer', kind: 'event', key: 'hs_summer', eyebrow: 'Summer before ' + GRADE[L.am.grade] + ' year',
     title: 'How do you spend the summer?',
-    text: 'You are ' + L.age + '. Overall ' + ovrOf(L) + '. ' + rankText(L.am.rank) + '.',
+    text: 'You are ' + L.age + '. Overall ' + ovT(L, ovrOf(L)) + '. ' + rankText(L.am.rank) + '.',
     options: [
       { label: 'The shoe circuit', hint: 'Travel team, big gyms, every scout. Hard on the body.' },
       { label: 'Skills trainer every day', hint: 'Get better at what you do.' },
@@ -6320,7 +6407,7 @@ const ARC_EVENTS = {
   arc_promise_2: {
     phases: ['pre'], stage: 'nba', req: { team: true },
     title: '{gm} remembers April.',
-    text: (L) => { const d = ovrOf(L) - (arcData(L, 'promise').ovr || ovrOf(L)); return d > 0 ? 'You came back ' + d + ' better. He says so in front of the staff.' : 'You promised a big summer. You came back the same player.'; },
+    text: (L) => { const d = ovT(L, ovrOf(L)) - ovT(L, arcData(L, 'promise').ovr || ovrOf(L)); return d > 0 ? 'You came back ' + d + ' better. He says so in front of the staff.' : 'You promised a big summer. You came back the same player.'; },
     options: [
       { label: 'Point at the work', run: (L) => { const up = ovrOf(L) > (arcData(L, 'promise').ovr || 99); arcEnd(L, 'promise', up ? 'kept' : 'broken'); relate(L, 'gm', up ? 15 : -10, up ? 'You kept your April promise.' : 'You broke your April promise.'); bump(L, up ? { min: 3, trust: 4 } : { trust: -4 }); return up ? 'More minutes. Earned.' : 'He nods. He has heard it before.'; } },
       { label: 'Keep your head down', run: (L) => { const up = ovrOf(L) > (arcData(L, 'promise').ovr || 99); arcEnd(L, 'promise', up ? 'kept' : 'broken'); bump(L, { trust: up ? 6 : 1, eth: 3 }); return 'You go to work. That is the answer either way.'; } },
@@ -8293,7 +8380,7 @@ function overseasYear(L, beats) {
   if (!list.length || L.age >= 34) {
     L.pending.push({
       id: 'nooffer', kind: 'event', key: 'nooffer2', eyebrow: 'Free agency', title: 'The NBA still is not calling.',
-      text: 'Overall ' + ovrOf(L) + '. One more year away, or call it?',
+      text: 'Overall ' + ovT(L, ovrOf(L)) + '. One more year away, or call it?',
       options: [{ label: 'Retire', hint: 'It was a career.' }, { label: 'Another year overseas', hint: 'Keep the dream alive.' }],
     });
   } else L.pending.push(faCard(L, list, 'back'));
@@ -8736,7 +8823,7 @@ const publicAPI = {
   isAm, colorsOf, roadView, nationalRank, rankText, starsOf, draftTalk, collegeOffers, schoolNet,
   LOOK_KEYS, cleanLook, setLook, TONES, PRESSERS, PERSONAS, EVENT_REP, repOf, personaOf, presserCard,
   COACHES_NOW, COACH_POOL, COACH_NAMES, PEOPLE_M, PEOPLE_F, PEOPLE_X, PEOPLE_LAST, FIRST, LAST, RIVAL_FIRST, RIVAL_LAST,
-  coachState, coachOf, coachName, coachCarousel, myCoach, matesOf, mateOvr, clubOvr, myMates, personName, peopleKey, say, CLUBS,
+  coachState, coachOf, coachName, coachCarousel, myCoach, matesOf, mateOvr, show, showInv, marketPay, withRatings, clubOvr, myMates, personName, peopleKey, say, CLUBS,
   lockerOf, CAST, TRAITS, rollTraits, migrate, remember, recall, hasTrait, REAL_TOKENS, INVENTED_TOKENS, BASKETBALL_ONLY,
   STORY_VERSION, BAL, storyOn, recurs, figs, activeFigs, figOvr, mvpRace, legacyView, GOALS, OUTLETS, NICKS, feed, TRAIT_NAME, BADGES, badgeList, SIGS, archFit, trait, continuity, continuityLog, ARC_EVENTS, CALLBACKS, callback, memories, ago, relate, relOf, EVENT_REL, arcData, STORY_RECURS, STORY_PHASES, calendar, RARITY, EVENT_TAGS, REQ, reqOk, defineEvents,
   ORIGINS, ORIGIN_KEYS, ROUTES, routesOf, routeOn, HOF_TIERS, OUTCOMES, SECRETS, ENDING_COUNT, endingOf, STORY_EV, STORY_NBA, STORY_AM, evById, AFTER_PATHS, ALT_NAME,

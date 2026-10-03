@@ -67,6 +67,12 @@ jobs:
       - name: Rosters
         run: node hoops/build/fetch-rosters.mjs --season "${{ steps.season.outputs.season }}"
 
+      # The real 2K ratings and salaries, joined to the rosters just written.
+      # Both files are on raw.githubusercontent.com. A source that is down
+      # keeps the last file rather than taking the rosters down with it.
+      - name: Ratings and salaries
+        run: node hoops/build/fetch-ratings.mjs || echo "::warning::ratings not refreshed; keeping hoops/data/ratings.json"
+
       - name: The league seeds from it
         run: node hoops/check-rosters.mjs
 
@@ -75,9 +81,9 @@ jobs:
         run: |
           git config user.name "hoops-data-bot"
           git config user.email "noreply@anthropic.com"
-          git add hoops/data/rosters.json
+          git add hoops/data/rosters.json hoops/data/ratings.json
           git diff --cached --quiet && echo "rosters unchanged" || {
-            git commit -m "Refresh Run The Floor rosters from Basketball-Reference"
+            git commit -m "Refresh Run The Floor rosters, ratings and salaries"
             for i in 1 2 3 4 5; do
               git push && break
               echo "push rejected, rebasing (attempt $i)"

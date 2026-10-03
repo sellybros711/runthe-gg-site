@@ -229,7 +229,7 @@ var CSS = [
 '.cr-tabs .k-tab{min-width:0;font-size:11px;letter-spacing:.08em;}',
 /* the rotation: one row a player, names give way before numbers do */
 '.cr-rot{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:2px;}',
-'.cr-rot li{display:grid;grid-template-columns:2em minmax(0,1fr) 2.4em 3.2em 3.2em;gap:8px;align-items:center;padding:6px 8px;background:rgba(143,160,214,.07);font-size:13px;color:var(--k-ink-2);}',
+'.cr-rot li{display:grid;grid-template-columns:2em minmax(0,1fr) 2.4em 3.4em 2.8em 2.8em;gap:8px;align-items:center;padding:6px 8px;background:rgba(143,160,214,.07);font-size:13px;color:var(--k-ink-2);}',
 '.cr-rot .who{min-width:0;display:grid;}',
 '.cr-rot .who b,.cr-rot .who small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
 '.cr-rot .who b{color:var(--k-ink);font-weight:600;}',
@@ -661,11 +661,12 @@ var ROSTERS = null, ROSTERS_DONE = false;
 function loadRosters(){
   if (ROSTERS_DONE || loadRosters.asked) return;
   loadRosters.asked = true;
-  var done = function(j){ ROSTERS = j && j.clubs ? j : null; ROSTERS_DONE = true; LEAGUE = null; };
+  /* The real ratings and salaries (data/ratings.json) ride on the rosters.
+     Without them a man is read off his box scores, as before. */
+  var done = function(j){ ROSTERS = j && j[0] && j[0].clubs ? j[0] : null; if (ROSTERS && j[1] && j[1].men) ROSTERS.ratings = j[1]; ROSTERS_DONE = true; LEAGUE = null; };
+  var get = function(u){ return fetch(u, { cache: 'no-cache' }).then(function(r){ return r.ok ? r.json() : null; }, function(){ return null; }); };
   try {
-    fetch('data/rosters.json', { cache: 'no-cache' })
-      .then(function(r){ return r.ok ? r.json() : null; })
-      .then(done, function(){ done(null); });
+    Promise.all([get('data/rosters.json'), get('data/ratings.json')]).then(done, function(){ done(null); });
   } catch (e) { done(null); }
 }
 loadRosters();
@@ -682,10 +683,10 @@ function league(){
 function rtRows(L, prev, fill){
   var w = C.WEIGHTS[L.pos];
   return C.RATINGS.map(function(k){
-    var d = prev && prev[k] != null ? L.rt[k] - prev[k] : 0;
+    var d = prev && prev[k] != null ? C.show(L.rt[k]) - C.show(prev[k]) : 0;
     return '<div class="k-row' + (w[k] >= 0.2 ? ' is-key' : '') + '"><span>' + C.RATING_NAME[k] + '</span>'
-      + K.bar(L.rt[k], w[k] >= 0.2 ? 'var(--k-good)' : null, fill && d !== 0)
-      + '<span class="k-v">' + L.rt[k] + '</span>'
+      + K.bar(C.show(L.rt[k]), w[k] >= 0.2 ? 'var(--k-good)' : null, fill && d !== 0)
+      + '<span class="k-v">' + C.show(L.rt[k]) + '</span>'
       + '<span class="k-delta ' + (d > 0 ? 'up' : d < 0 ? 'down' : '') + '">' + (d ? (d > 0 ? '+' : '') + d : '') + '</span></div>';
   }).join('');
 }
@@ -801,7 +802,7 @@ function buildView(){
        head and shoulders, because hair is what is being chosen there. */
     + '<div class="cr-preview"><div class="cr-pfig' + (bstep === 'look' ? ' cr-zoom' : '') + '">' + setArt(stageKind(L), k.primary, k.secondary, form.seed)
     + (B ? B.img(lookOf(L), { c1: k.primary, c2: k.secondary, num: form.num, age: L.age, pose: bstep === 'look' ? 'stand' : 'ball', scale: bstep === 'look' ? 4 : 2 }) : '') + '</div>'
-    + '<div class="cr-pside"><div class="cr-povr"><span class="k-num">' + C.ovrOf(L) + '</span><span class="k-label">Overall</span>'
+    + '<div class="cr-pside"><div class="cr-povr"><span class="k-num">' + C.show(C.ovrOf(L)) + '</span><span class="k-label">Overall</span>'
     + '<span class="cr-ceil">Ceiling <b>' + grade(L) + '</b></span></div>'
     + '<div class="cr-rt k-rows">' + rtRows(L, null, false) + '</div></div></div>'
     + (form.parent ? ori : '')
@@ -886,7 +887,7 @@ function wireBuild(){
    replay them. */
 var stage = { beats: [], result: null, draft: null };
 var tab = 'log';
-function snap(L){ return { ovr: C.ovrOf(L), m: Object.assign({}, L.m), rt: Object.assign({}, L.rt), team: L.team }; }
+function snap(L){ return { ovr: C.show(C.ovrOf(L)), m: Object.assign({}, L.m), rt: Object.assign({}, L.rt), team: L.team }; }
 
 var TIPS = {
   health: ['Health', 'Your body. Under 40 and injuries come more often and last longer. Rest and treatment bring it back.'],
@@ -920,7 +921,7 @@ function idCard(L){
     + '<div class="k-teamwash"></div><div class="k-scrim-r"></div>'
     + '<div class="k-actor">' + portrait(L, { pose: L.team || rv ? 'ball' : 'stand', scale: 3 }) + '</div>'
     + '<div class="k-id"><h3 class="k-hero">' + esc(L.name) + '</h3>' + tag(club, 'k-team')
-    + '</div><div class="k-ovr"><span class="k-num" id="cr-ovr">' + v.ovr + '</span><span class="k-pix">OVR</span></div></div>'
+    + '</div><div class="k-ovr"><span class="k-num" id="cr-ovr">' + C.show(v.ovr) + '</span><span class="k-pix">OVR</span></div></div>'
     + '<div class="cr-lines">' + lines.map(function(t){ return '<span class="cr-sub2">' + esc(t) + '</span>'; }).join('') + '</div>'
     + '<div class="k-strip">' + strip + '</div>' + knownHtml(L) + '</div>';
 }
@@ -1076,7 +1077,7 @@ function ratingsHtml(L, d){
   var wide = window.matchMedia && window.matchMedia('(min-width:720px)').matches;
   var open = wide || rtOpen || moved;
   return '<details class="k-panel cr-sec cr-rtfold"' + (open ? ' open' : '') + '><summary class="k-eyebrow">' + K.iconHtml('up', 2) + 'Ratings'
-    + '<span class="cr-rtsum">' + C.ovrOf(L) + ' OVR · Ceiling ' + grade(L) + '</span></summary>'
+    + '<span class="cr-rtsum">' + C.show(C.ovrOf(L)) + ' OVR · Ceiling ' + grade(L) + '</span></summary>'
     + '<p class="k-small" style="margin:0 0 10px">Green counts most at ' + esc(L.pos) + '. Ceiling ' + grade(L) + '.</p>'
     + '<div class="cr-rt cr-two k-rows">' + rtRows(L, d && d.rt, !!d) + '</div></details>';
 }
@@ -1112,10 +1113,10 @@ function teamHtml(L){
     var at = x.slot && x.slot !== x.pos ? x.pos + ', playing ' + x.slot : x.pos || '';
     return sep + '<li class="cr-rot-r' + (x.you ? ' you' : '') + (x.min <= 0 ? ' dnp' : '') + '"><span class="n">' + (x.slot || i + 1) + '</span>'
       + '<span class="who"><b>' + esc(x.you ? x.n + ' (you)' : x.n) + '</b><small>' + esc(at) + ' · ' + x.age + ' · ' + esc(x.role) + '</small></span>'
-      + '<span class="v ovr">' + (x.ovr != null ? x.ovr : '-') + '</span><span class="v">' + (x.min > 0 ? x.min : '-') + '</span><span class="v">' + pts + '</span></li>';
+      + '<span class="v ovr">' + (x.ovr != null ? C.show(x.ovr) : '-') + '</span><span class="v pay">' + (x.pay ? money(x.pay) : '-') + '</span><span class="v">' + (x.min > 0 ? x.min : '-') + '</span><span class="v">' + pts + '</span></li>';
   }).join('');
   return head + '<p class="k-small cr-rot-line">' + line + '</p>'
-    + '<ol class="cr-rot" aria-label="Rotation"><li class="cr-rot-h" aria-hidden="true"><span class="n"></span><span class="who">Starters</span><span class="v">Ovr</span><span class="v">Min</span><span class="v">Pts</span></li>' + rows + '</ol>';
+    + '<ol class="cr-rot" aria-label="Rotation"><li class="cr-rot-h" aria-hidden="true"><span class="n"></span><span class="who">Starters</span><span class="v">Ovr</span><span class="v pay">Pay</span><span class="v">Min</span><span class="v">Pts</span></li>' + rows + '</ol>';
 }
 /* The people a career has met, closest and furthest first. */
 function peopleHtml(L){
@@ -1163,7 +1164,7 @@ function seasonsTable(L){
   if (!L.history.length) return am || '<p class="k-small">No seasons yet.</p>';
   var rows = L.history.slice().reverse().map(function(h){
     return '<tr class="' + (h.po === 'Champion' ? 'champ is-best' : '') + '">' + td('Season', seasonTag(h.y)) + td('Team', esc(h.t ? E.TEAM_NAMES[h.t] || h.t : '-'), 'cr-wide')
-      + td('OVR', h.ovr) + td('GP', h.gp) + td('PTS', h.pts) + td('REB', h.reb) + td('AST', h.ast)
+      + td('OVR', C.show(h.ovr)) + td('GP', h.gp) + td('PTS', h.pts) + td('REB', h.reb) + td('AST', h.ast)
       + td('Record', h.w + '-' + h.l) + td('Finish', esc(h.po), 'cr-wide') + '</tr>';
   }).join('');
   return '<div class="cr-tblw k-tablewrap"><table class="k-table cr-tbl"><thead><tr><th>Season</th><th>Team</th><th>OVR</th><th>GP</th><th>PTS</th><th>REB</th><th>AST</th><th>Record</th><th>Finish</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
@@ -1176,7 +1177,7 @@ function amTable(list){
     var fin = h.finish || '-';
     if (h.seed) fin = h.seed + ' seed · ' + fin;
     return '<tr class="' + (/champion/i.test(fin) ? 'champ is-best' : '') + '">' + td('Season', seasonTag(h.y)) + td('School', esc(h.school), 'cr-wide')
-      + td('OVR', h.ovr) + td('GP', h.gp) + td('PTS', h.pts) + td('REB', h.reb) + td('AST', h.ast)
+      + td('OVR', C.show(h.ovr)) + td('GP', h.gp) + td('PTS', h.pts) + td('REB', h.reb) + td('AST', h.ast)
       + td('Record', h.w + '-' + h.l) + td('Finish', esc(fin), 'cr-wide') + '</tr>';
   }).join('');
   return '<div class="cr-tblw k-tablewrap"><table class="k-table cr-tbl"><thead><tr><th>Season</th><th>School</th><th>OVR</th><th>GP</th><th>PTS</th><th>REB</th><th>AST</th><th>Record</th><th>Finish</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
@@ -1290,7 +1291,7 @@ function wireLife(L, d){
   K.wireTips(root);
   var dr = $('cr-draftbox');
   if (dr) K.theme(dr, dr.getAttribute('data-c1'), dr.getAttribute('data-c2'));
-  if (d && d.ovr != null && d.ovr !== C.ovrOf(L)) K.countUp($('cr-ovr'), C.ovrOf(L), { from: d.ovr, ms: 700 });
+  if (d && d.ovr != null && d.ovr !== C.show(C.ovrOf(L))) K.countUp($('cr-ovr'), C.show(C.ovrOf(L)), { from: d.ovr, ms: 700 });
   if (stage.draft) animateDraft();
 }
 function openRetire(L){
@@ -2017,7 +2018,7 @@ function render(){
   /* The chip in the top bar says who you are mid-career and nothing otherwise:
      it sits beside the Career button, and a second "Career" there reads as
      the same button twice. */
-  if (P.bar) P.bar(st.cur ? st.cur.name.split(' ').slice(-1)[0] + ' · ' + C.ovrOf(st.cur) : '');
+  if (P.bar) P.bar(st.cur ? st.cur.name.split(' ').slice(-1)[0] + ' · ' + C.show(C.ovrOf(st.cur)) : '');
 }
 function open(){
   if (!league()) { P.toast('The league is still loading.'); return; }
@@ -2056,7 +2057,7 @@ function renderHero(){
     var where = rv ? rv.what + (rv.level === 'High school' ? ' at ' + rv.where : '') : L.team ? teamName(L.team) : 'Draft prospect';
     var when = L.season ? seasonTag(L.season.year) + ' · ' + L.season.w + '-' + L.season.l : (L.year ? 'Summer of ' + (L.year - 1) : '');
     cur.innerHTML = portrait(L, { pose: 'ball', scale: 2 }) + '<div><b>' + esc(L.name) + '</b><span>' + esc(where) + '</span><span>Age ' + L.age + ' · ' + esc(when) + '</span></div>'
-      + '<div class="o"><b>' + v.ovr + '</b><span>OVR</span></div>';
+      + '<div class="o"><b>' + C.show(v.ovr) + '</b><span>OVR</span></div>';
     cur.style.setProperty('--c1', k.primary);
     cur.hidden = false;
     if (say) say.hidden = true;
