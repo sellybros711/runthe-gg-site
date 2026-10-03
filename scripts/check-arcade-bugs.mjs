@@ -594,9 +594,14 @@ if ('sweep'.includes(only) || !only) {
   R.section('Sweep 6: the sound nudge sits up top and never takes a tap');
   {
     const { ctx, p } = await open('table', { tier: 'card' });
-    const n = await p.evaluate(() => { localStorage.removeItem('runthegrid_sound_nudged'); if (RTGSound.isOn && RTGSound.isOn()) RTGSound.toggle(); RTGSound.win();
+    // it waits 700ms to see whether a result sheet is opening (sfx.js), and
+    // with none open it shows straight after
+    const n = await p.evaluate(() => new Promise(res => { localStorage.removeItem('runthegrid_sound_nudged'); if (RTGSound.isOn && RTGSound.isOn()) RTGSound.toggle(); RTGSound.win();
+      setTimeout(() => res(read()), 900);
+      function read(){
       const el = document.getElementById('rtgSoundNudge'); if (!el) return null; const b = el.getBoundingClientRect(), a = document.getElementById('answerIn').getBoundingClientRect();
-      return { top: b.top, bottom: b.bottom, pe: getComputedStyle(el).pointerEvents, text: el.textContent, overField: !(b.bottom <= a.top || b.top >= a.bottom) }; });
+      return { top: b.top, bottom: b.bottom, pe: getComputedStyle(el).pointerEvents, text: el.textContent, overField: !(b.bottom <= a.top || b.top >= a.bottom) }; }
+    }));
     R.ok(n && n.top < 140 && n.pe === 'none' && !n.overField, 'the nudge is near the top, clear of the answer field, and takes no taps', JSON.stringify(n));
     R.ok(n && !/ - /.test(n.text), 'and its copy has no spaced hyphen', n && n.text);
     await ctx.close();

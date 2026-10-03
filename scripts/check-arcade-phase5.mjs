@@ -20,8 +20,7 @@
 
    Reading the "before" side: main has no resume, so a reload mid-game puts a
    guest or free player on a wall (the play is gone) and a card holder back on
-   the start screen. A card holder could start a new game there; the drivers
-   only finish a game in progress, so those runs read as not ending.
+   the start screen, where the run starts a fresh game the way a person would.
 
    Offline by construction (the harness refuses Supabase, analytics and ads),
    so nothing is filed to a live board. gtag is the page's own inline stub, so
