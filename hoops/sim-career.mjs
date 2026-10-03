@@ -61,7 +61,7 @@ const clone = (x) => JSON.parse(JSON.stringify(x));
 /* Events that are allowed to come back in one career, by design. Anything
    else dealt twice is a repeat. The list shrinks as Phase C gives the
    recurring events memory and cooldowns. */
-const SYSTEM = new Set(['training', 'hs_summer', 'injury', 'clutch', 'amclutch', 'moment', 'presser', 'fa', 'extension', 'workout', 'nooffer', 'offers',
+const SYSTEM = new Set(['training', 'hs_summer', 'injury', 'clutch', 'amclutch', 'moment', 'presser', 'fa', 'extension', 'workout', 'interview', 'pworkout', 'nooffer', 'offers',
   'allstar', 'retire', 'declare', 'portal', 'commit', 'signing', 'build_arch', 'build_pos', 'build_sig', 'goal', 'nickname',
   // the front office and the bench: a deadline, a talk and a review come every season they apply
   'deadline', 'coach_talk', 'coach_review']);
@@ -173,7 +173,10 @@ if (!SCRIPT && !ONLY) {
   const NE = Math.max(120, Math.ceil(N / 5));
   for (const d of C.DIFF_KEYS) for (let i = 0; i < NE; i++) {
     const pol = POLICIES[i % POLICIES.length];
-    try { EX.gen[d].push(Object.assign(run('gen:' + d + i, 'gen', pol, null, true, { diff: d, pos: C.POS[i % 5], arch: C.ARCH_KEYS[i % 6] }), { pol })); }
+    /* One seed for all three difficulties, so Easy against Normal is the same
+       kid played two ways. Seeded apart, two samples of 200 carried about four
+       points of seed noise against a band of two. */
+    try { EX.gen[d].push(Object.assign(run('gen:' + i, 'gen', pol, null, true, { diff: d, pos: C.POS[i % 5], arch: C.ARCH_KEYS[i % 6] }), { pol })); }
     catch (e) { crashes++; if (crashes <= 3) console.error('crash gen' + i + ': ' + e.stack.split('\n').slice(0, 3).join(' | ')); }
   }
   /* Sons of the first sweep's careers that reached the league, a father with
@@ -277,7 +280,8 @@ const M = {
   const G = EX.gen, allGen = [].concat(G.easy, G.normal, G.hard);
   const roads = allGen.map((x) => C.roadStory(x.L).join(' '));
   M['E: generated road reaches the draft'] = share(allGen, (x) => x.L.opt.gen === 1 && x.L.amHist.length > 0 && !!x.L.draft);
-  M['E: generated roads that are distinct'] = 100 * new Set(roads).size / Math.max(1, roads.length);
+  /* Distinct within a difficulty: the three share their seeds on purpose. */
+  M['E: generated roads that are distinct'] = 100 * new Set(G.normal.map((x) => C.roadStory(x.L).join(' '))).size / Math.max(1, G.normal.length);
   M['E: Hall of Fame, generated, Normal'] = hofOf(G.normal);
   M['E: Hall of Fame, Easy over Normal'] = hofOf(G.easy) - hofOf(G.normal);
   M['E: Hall of Fame, Normal over Hard'] = hofOf(G.normal) - hofOf(G.hard);

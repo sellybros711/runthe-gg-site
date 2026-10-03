@@ -294,7 +294,13 @@ var CSS = [
 '  .cr-tbl.cr-vs tr{grid-template-columns:repeat(3,minmax(0,1fr));}',
 '}',
 '.cr-vs td.win{color:var(--k-good);font-weight:800;}',
-'.cr-aw{display:flex;flex-wrap:wrap;gap:8px;}',
+'.cr-aw{display:flex;flex-direction:column;gap:8px;}',
+'.cr-awgrid{display:flex;flex-wrap:wrap;gap:8px;}',
+'.cr-awi{position:relative;width:52px;height:52px;display:grid;place-items:center;background:var(--k-panel-2);border:2px solid var(--k-frame);cursor:pointer;padding:0;}',
+'.cr-awi-pro{border-color:#c9a23a;}.cr-awi-col{border-color:#4f73b8;}.cr-awi-hs{border-color:#2e8a62;}',
+'.cr-awi.on{outline:2px solid var(--k-ink);outline-offset:1px;}',
+'.cr-awi i{position:absolute;right:-6px;top:-6px;min-width:18px;height:18px;padding:0 4px;background:#ff7a1a;color:#0b0e1a;font:700 11px/18px var(--k-f-pixel);font-style:normal;text-align:center;border:2px solid #0b0e1a;}',
+'.cr-awcap{font-size:13px;color:var(--k-ink-2);min-height:18px;}',
 '.cr-aw .k-tag{white-space:normal;line-height:1.5;}',
 '.cr-tot{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0 0 14px;}',
 '.cr-tot div{padding:10px 4px;text-align:center;background:var(--k-panel-2);}',
@@ -318,7 +324,8 @@ var CSS = [
 '.cr-final p.cr-col{color:var(--k-ink);font-weight:700;}',
 '.cr-final .rtf-baller{display:block;margin:4px auto 6px;filter:drop-shadow(0 6px 0 rgba(5,7,13,.55));}',
 '.cr-final .cr-tot{margin:16px 0 0;}',
-'.cr-final .cr-aw{justify-content:center;margin-top:14px;}',
+'.cr-final .cr-aw{align-items:center;margin-top:14px;}.cr-final .cr-awgrid{justify-content:center;}',
+'.cr-aw.cr-awrow{flex-direction:row;flex-wrap:wrap;}',
 '.cr-epi p{margin:0 0 12px;font-size:14.5px;line-height:1.5;}',
 '.cr-epi p:last-child{margin:0;}',
 '.cr-epi .cr-secret{color:var(--k-gold);font-weight:800;}',
@@ -913,12 +920,22 @@ function idCard(L){
 }
 /* What the career has shown: revealed traits (with the reason on hover and
    for a screen reader), the signature move and the skill badges. */
+/* Traits, the signature move and the skill badges are icons too, read the
+   same way the awards are: tap one for its name. */
+var TRAIT_ICON = { clutch: ['star', '#ffd166'], coachable: ['whistle', '#b8c3e6'], injuryProne: ['heart', '#ff6b6b'], lateBloomer: ['sprout', '#3ecf8e'],
+  lockerVoice: ['mic', '#ffd166'], gymRat: ['ball', '#e2762a'], hothead: ['flame', '#ff6b6b'], bigStage: ['crown', '#ffd166'], ironMan: ['shield', '#c9d2e3'],
+  filmJunkie: ['clip', '#7fb2ff'], spender: ['cash', '#ff6b6b'], saver: ['cash', '#3ecf8e'], showman: ['star', '#ff7a1a'], loyal: ['home', '#c98b4e'], mercenary: ['cash', '#ffd166'] };
+var BADGE_ICON = { deadeye: ['ball', '#ffd166'], floorgen: ['arrow', '#7fb2ff'], lockdown: ['shield', '#7fb2ff'], glass: ['up', '#3ecf8e'], finisher: ['flame', '#ff7a1a'],
+  flight: ['plane', '#7fb2ff'], brain: ['clip', '#ffd166'], bucket: ['ball', '#ff7a1a'], dimes: ['share', '#3ecf8e'], boards: ['down', '#3ecf8e'] };
+function iconTile(ic, name, cls){
+  return '<button type="button" class="cr-awi ' + (cls || '') + '" data-aw="' + esc(name) + '" title="' + esc(name) + '" aria-label="' + esc(name) + '">' + K.iconHtml(ic[0], 5, ic[1]) + '</button>';
+}
 function knownHtml(L){
   var out = [];
-  (C.TRAITS || []).forEach(function(k){ var t = L.traits && L.traits[k]; if (t && t.known) out.push('<span class="k-tag k-gold" title="' + esc(t.why || '') + '">' + esc(C.TRAIT_NAME[k]) + '<span class="sr-only"> ' + esc(t.why || '') + '</span></span>'); });
-  if (L.sig) out.push('<span class="k-tag k-team" title="Signature move">' + esc(L.sig.name) + '</span>');
-  (C.badgeList ? C.badgeList(L) : []).forEach(function(b){ out.push('<span class="k-tag">' + esc(b.name) + '</span>'); });
-  return out.length ? '<div class="cr-known" aria-label="Known for">' + out.join('') + '</div>' : '';
+  (C.TRAITS || []).forEach(function(k){ var t = L.traits && L.traits[k]; if (t && t.known) out.push(iconTile(TRAIT_ICON[k] || ['star', '#ffd166'], C.TRAIT_NAME[k] + (t.why ? '. ' + t.why : ''), 'cr-awi-pro')); });
+  if (L.sig) out.push(iconTile(['arrow', '#ff7a1a'], 'Signature move: ' + L.sig.name, 'cr-awi-col'));
+  (C.badgeList ? C.badgeList(L) : []).forEach(function(b){ out.push(iconTile(BADGE_ICON[b.k] || ['medal', '#b8c3e6'], 'Badge: ' + b.name, 'cr-awi-hs')); });
+  return out.length ? '<div class="cr-known cr-aw" aria-label="Known for"><span class="cr-awgrid">' + out.join('') + '</span><span class="cr-awcap" aria-live="polite">Tap one to see what it is.</span></div>' : '';
 }
 function meters(L, d){
   var m = L.m;
@@ -1165,9 +1182,37 @@ function awardCounts(L){
     'c_champ', 'c_npoy', 'c_mop', 'c_aa1', 'c_aa2', 'c_f4', 'c_fr', 'c_cpoy', 'c_allconf', 'hs_state', 'hs_mrbb', 'hs_aag', 'hs_allstate'];
   return order.filter(function(k){ return n[k]; }).map(function(k){ return { k: k, n: n[k], name: C.AWARD_NAME[k] }; });
 }
+/* AN AWARD IS AN ICON, not a sentence. A wall of pills was too much to read,
+   so each award is its picture, colored for its tier, with a count in the
+   corner. Tap one and its name shows under the shelf. */
+var AW_ICON = {
+  champ: ['trophy', '#ffd166'], mvp: ['crown', '#ffd166'], fmvp: ['crown', '#ff9f43'], an1: ['medal', '#ffd166'],
+  an2: ['medal', '#c9d2e3'], an3: ['medal', '#d08a4a'], dpoy: ['shield', '#ffd166'], star: ['star', '#ffd166'],
+  roy: ['sprout', '#3ecf8e'], '6moy': ['six', '#ffd166'], mip: ['up', '#3ecf8e'], scor: ['flame', '#ff7a1a'],
+  ad1: ['shield', '#c9d2e3'], ad2: ['shield', '#d08a4a'], olympic: ['globe', '#ffd166'],
+  c_champ: ['trophy', '#7fb2ff'], c_npoy: ['crown', '#7fb2ff'], c_mop: ['star', '#7fb2ff'], c_aa1: ['medal', '#7fb2ff'],
+  c_aa2: ['medal', '#9fb6d8'], c_f4: ['net', '#f4f1e8'], c_fr: ['sprout', '#7fb2ff'], c_cpoy: ['crown', '#9fb6d8'], c_allconf: ['medal', '#5fc4c4'],
+  hs_state: ['trophy', '#d08a4a'], hs_mrbb: ['crown', '#3ecf8e'], hs_aag: ['star', '#3ecf8e'], hs_allstate: ['medal', '#3ecf8e'],
+};
 function awardTags(aw){
-  return aw.map(function(a){ return '<span class="k-tag k-gold">' + K.iconHtml(/champ|state/.test(a.k) ? 'trophy' : 'medal', 1) + (a.n > 1 ? a.n + 'x ' : '') + esc(a.name) + '</span>'; }).join('');
+  var tiles = aw.map(function(a){
+    var ic = AW_ICON[a.k] || ['medal', '#ffd166'];
+    var lvl = /^c_/.test(a.k) ? 'col' : /^hs_/.test(a.k) ? 'hs' : 'pro';
+    var name = (a.n > 1 ? a.n + 'x ' : '') + a.name;
+    return '<button type="button" class="cr-awi cr-awi-' + lvl + '" data-aw="' + esc(name) + '" title="' + esc(name) + '" aria-label="' + esc(name) + '">'
+      + K.iconHtml(ic[0], 5, ic[1]) + (a.n > 1 ? '<i>' + a.n + '</i>' : '') + '</button>';
+  }).join('');
+  return '<span class="cr-awgrid">' + tiles + '</span><span class="cr-awcap" aria-live="polite">Tap a badge to see what it is.</span>';
 }
+document.addEventListener('click', function(e){
+  var b = e.target && e.target.closest && e.target.closest('.cr-awi');
+  if (!b) return;
+  var wrap = b.closest('.cr-aw'), cap = wrap && wrap.querySelector('.cr-awcap');
+  if (!cap) return;
+  wrap.querySelectorAll('.cr-awi.on').forEach(function(x){ x.classList.remove('on'); });
+  b.classList.add('on');
+  cap.textContent = b.getAttribute('data-aw');
+});
 function totalsHtml(T, second){
   return '<div class="cr-tot">'
     + '<div><b>' + T.pts.toLocaleString('en-US') + '</b><span>Points</span></div>'
@@ -1784,7 +1829,7 @@ function storyHtml(story){
 function foundHtml(card){
   var f = card.found;
   if (!f || !f.length) return '';
-  return '<div class="k-panel k-tight k-gold cr-found"><div class="k-eyebrow">' + K.iconHtml('vault', 2) + 'New in the Vault</div><div class="cr-aw">'
+  return '<div class="k-panel k-tight k-gold cr-found"><div class="k-eyebrow">' + K.iconHtml('vault', 2) + 'New in the Vault</div><div class="cr-aw cr-awrow">'
     + f.map(function(k){ return '<span class="k-tag k-gold">' + esc(vaultName(k)) + '</span>'; }).join('') + '</div></div>';
 }
 function vaultName(k){

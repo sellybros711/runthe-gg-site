@@ -164,7 +164,7 @@ section('3. every event fires somewhere in the sweep');
   const ids = Object.keys(C.EVENTS).filter((id) => id !== 'hometown_call');
   const dark = ids.filter((id) => !fired[id]);
   ok(dark.length === 0, `every one of ${ids.length} events is dealt (${dark.join(', ') || 'none dark'})`);
-  for (const id of ['combine', 'workout', 'agent', 'training', 'clutch', 'fa', 'retire', 'extension', 'allstar', 'injury']) {
+  for (const id of ['combine', 'interview', 'pworkout', 'agent', 'training', 'clutch', 'fa', 'retire', 'extension', 'allstar', 'injury']) {
     ok(fired[id] > 0, `the ${id} card is dealt (${fired[id] || 0})`);
   }
 }
@@ -446,7 +446,11 @@ section('8. three hundred careers from high school, and where they land');
       routes[L.bg] = (routes[L.bg] || 0) + 1;
       if (L.draft) picks.push(L.draft.pick || 99);
       const draftAge = (L.history[0] || {}).age;
-      if (draftAge != null) ages[draftAge] = (ages[draftAge] || 0) + 1;
+      /* An undrafted man who goes overseas comes back when he is good enough
+         to be noticed, which can be years. Nobody drafts a rec league player
+         off a promise any more, so those roads are counted apart. */
+      if (draftAge != null && !C.recall(L, 'route.undrafted')) ages[draftAge] = (ages[draftAge] || 0) + 1;
+      if (draftAge != null && C.recall(L, 'route.undrafted') && draftAge > 31) bad.push(`${pol}${i}: an undrafted rookie at ${draftAge}`);
       if (draftAge === 18 && !C.recall(L, 'route.reclass')) bad.push(`${pol}${i}: an 18-year-old rookie who never reclassified`);
       for (const h of L.amHist) {
         for (const k of ['pts', 'reb', 'ast', 'gp', 'w', 'l', 'ovr']) if (!Number.isFinite(h[k])) bad.push(`${pol}${i} ${h.lvl} ${h.y}: ${k} is ${h[k]}`);
@@ -945,6 +949,46 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
   ok(gen4.length > 20 && mean(gen4) < 0.15, `four summers in, still mostly real (${(mean(gen4) * 100).toFixed(1)}% invented)`);
   ok(realWaived === 0, `the free agent pool holds only real men (${realWaived} invented found)`);
   ok(league.fa && league.fa.length > 20, `today's free agents are seeded into the pool (${league.fa ? league.fa.length : 0})`);
+}
+
+/* EVERY ROAD ENDS ON TODAY'S DRAFT, AND THE DRAFT IS NOT YOURS TO PICK. A
+   player reported landing in a 2030 league that had shuffled for years, and
+   being offered the first pick most careers through a workout that promised
+   a slot. */
+{
+  section('12c. the draft is 2026-27, the combine is a week, and the slot is the board\'s');
+  const rs = league.rs || league.latest + 1;
+  let n = 0, onToday = 0, future = [], ones = 0, picks = 0, interviews = 0, works = 0, slotHint = 0, sameBos = 0, distinct = new Set();
+  for (let i = 0; i < 240; i++) {
+    const L = i % 2 ? C.generateRoad({ seed: 'dr:' + i, league, pos: C.POS[i % 5] }) : C.newLife({ seed: 'dr:' + i, league, start: 'hs', pos: C.POS[i % 5] });
+    let g = 0;
+    while (g++ < 3000 && !(L.pending.length && L.pending[0].id === 'combine')) { if (L.pending.length) C.choose(L, (L.steps * 7 + i) % L.pending[0].options.length); else C.step(L); }
+    n++;
+    if (L.year === rs) onToday++;
+    const walk = (o, p) => { if (typeof o === 'number') { if (Number.isInteger(o) && o > rs && o < 2100 && !/^(league|arcs\.\w+\.y$)/.test(p)) future.push(p + '=' + o); return; } if (o && typeof o === 'object') for (const k in o) walk(o[k], p ? p + '.' + k : k); };
+    walk(JSON.parse(JSON.stringify(L)), '');
+    const R = C.rostOf(L);
+    if (R && league.roster && R.BOS.some((e) => e.n === league.roster.BOS[0][0])) sameBos++;
+    /* Play the week the way a player chasing the top of the board would. */
+    while (g++ < 3000 && !L.draft) {
+      if (L.pending.length) {
+        const c = L.pending[0];
+        if (c.id === 'interview') interviews++;
+        if (c.id === 'pworkout') works++;
+        if (c.options.some((o) => /pick \d|picks? \d|\d+(st|nd|rd|th)\b/i.test((o.hint || '') + o.label))) slotHint++;
+        C.choose(L, 0);
+      } else C.step(L);
+    }
+    if (L.draft && L.draft.pick) { picks++; if (L.draft.pick === 1) ones++; }
+  }
+  ok(onToday === n, `every road reaches the combine in the ${rs - 1}-${String(rs).slice(2)} season (${onToday} of ${n})`);
+  ok(future.length === 0, `nothing the road wrote is dated after it (${future.slice(0, 3).join(', ') || 'none'})`);
+  ok(sameBos === n, `the drafted league is today's rosters (${sameBos} of ${n})`);
+  ok(interviews >= n * 1.5 && works >= n * 0.9, `the combine is two interviews and a workout (${interviews} interviews, ${works} workouts over ${n})`);
+  ok(slotHint === 0, `no card in the draft week offers you a slot (${slotHint})`);
+  ok(picks > 150 && ones / picks < 0.06, `the first pick is rare (${ones} of ${picks})`);
+  for (let i = 0; i < 30; i++) { const L = C.newLife({ seed: 'sig:' + i, league, start: 'hs', pos: 'SG', arch: 'scorer' }); if (L.flags.sig) distinct.add(L.flags.sig.up[0] + '>' + L.flags.sig.down); }
+  ok(distinct.size >= 15, `thirty shooting guards built the same way start as different players (${distinct.size} different strengths and weaknesses)`);
 }
 
 if (!QUICK) await browser();

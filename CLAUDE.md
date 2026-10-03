@@ -11028,10 +11028,58 @@ data's newest season, so the usual draft came four summers later, after four sum
 drift: club strength regresses toward the middle, stars are traded, benches turn over. The
 real league was gone before the player arrived. A story career that starts in high school is
 now dated `ROAD_LEAD` (4) seasons back and flagged `L.opt.cal`, and `driftLeague` does nothing
-for it until the season after the data's newest. Measured over 300 generated roads: drafts
-land in 2027 (the first season after the data) 42% of the time, 2028 to 2031 for longer
-roads, which arrive in a league that has moved for exactly the extra years. An old save has
-no flag and keeps its calendar; a son keeps his father's.
+for it until the season after the data's newest.
+
+**AND THEN EVERY ROAD WAS MADE TO END ON THE 2026 DRAFT**, asked for by the owner: the year
+you are drafted is 2026-27, whatever road got you there. A road is three to seven years long
+and the player decides how long, so no start date can promise where it ends (dated four years
+back, only 42% of drafts landed in 2027). The road plays on a floating calendar: `driftLeague`
+and `rosterSummer` do nothing for a `cal` career until it reaches the NBA, and at the combine
+`landOnToday` moves every year the career wrote (the log, the feed, memory, arcs, the people
+ledger, the event log, `amHist`, traits, the invented stars) so the rookie season is `lg.rs`.
+The rosters, the pool and the coaches the league opened with are rebuilt fresh; a college
+coach who took an NBA job on the road keeps it, re-dated. check-career 12c holds all 240
+test roads to the 2026-27 season, nothing dated after it, and today's rosters. An old save
+has no flag and keeps its calendar; a son keeps his father's.
+
+**THE COMBINE IS A WEEK AND THE SLOT IS THE BOARD'S** (story careers). It used to be one
+card and then a workout card offering three clubs with their pick ("They pick 1st") and a 45%
+promise, which is choosing where you are drafted and put about one career in ten at first
+overall. Now: testing day (test everything, shoot and drill, scrimmage, or sit out, each read
+off the ratings it shows), two interviews with clubs that pick near where the board has you
+(a generated GM asks about you, and a question the road gave a reason for comes first:
+the injury, the transfer, the rec league, skipping college), then one private workout with the
+club you impressed most. Every answer moves that club's interest (`L.flags.intr`, read
+against the club's seeded style: culture, swagger or grit) and a little of the board. On the
+night: a club that loved you takes you up to four picks early, a projected undrafted player
+the workout club liked goes in its late second round, and `classTop` seeds the class's own
+best prospects, so you go first only when you beat all of them. First overall went about 10%
+to about 3%. A rec league player is no longer drafted off a promise; he goes undrafted and
+overseas until he is good enough to be noticed, which can make him an older rookie. The old
+cards stay for a career from before the story engine, so the replay is identical.
+
+**The two draft bands pull against each other**, which is NARRATIVE's warning arriving here:
+the late second round rescue lowers undrafted and raises reaching the league. It only rescues
+a player just off the board (`draftStock >= 71`), who would mostly make a roster through
+Summer League anyway, and a story career grows less overseas past 25, so a rec league player
+does not play his way back at 29. check-career counts undrafted roads apart in its rookie age
+claim and caps them at 31. sim-career now plays Easy, Normal and Hard on one seed each: seeded
+apart, two samples of 200 carried about four points of noise against a band of two.
+
+**NO TWO CAREERS START IN ONE PLACE.** A story career rolls a signature off its own stream: two
+ratings ahead of the position and build, one behind, a small overall shift, and how much the
+town is talking (starting fame), said in the first log line. check-career 12c asks thirty
+shooting guards built the same way for at least fifteen different strength and weakness pairs.
+
+**AWARDS AND BADGES ARE ICONS.** The Trophies shelf and the player card's traits, signature
+move and skill badges are pixel icons on tiles (`AW_ICON`, `TRAIT_ICON`, `BADGE_ICON` in
+career-ui.js; new kit icons crown, shield, sprout, flame, globe, six, net), framed by level
+(gold NBA, blue college, green high school), with a count in the corner. Tapping one names it
+under the shelf. A wall of pills was too much reading.
+
+**A ROSTER POSITION TRUSTS THE DATA WITHIN ONE SPOT.** The roster file's coarse F against the
+stats' C used to fall back to SF, so true centers were listed as small forwards. `posFromData`
+keeps the data's position when it is in the file's family or one step from it.
 
 **Moving the dates reseeds every high school career**, because the draws are keyed on the
 year, and that exposed a band sitting on its edge: reaching the NBA from high school was

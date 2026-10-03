@@ -433,12 +433,20 @@ var ICONS = {
   vault: ['ooooooo', 'ohbbbbo', 'obkkkbo', 'obkwkbo', 'obkkkbo', 'osbbbso', 'ooooooo'],
   tree: ['..ooo..', '.ohbbo.', 'ohbbbbo', 'obbsbbo', '.ooooo.', '...k...', '..kkk..'],
   share: ['....oo.', '...obo.', 'ooobbo.', 'ohbbbo.', 'obbbo..', 'osbo...', 'ooo....'],
+  crown: ['.......', 'o..o..o', 'oo.o.oo', 'ohbobbo', 'obbbbbo', 'owbwbwo', 'ooooooo'],
+  shield: ['ooooooo', 'ohbbbbo', 'obbwbbo', 'obwwwbo', '.obwbo.', '..obo..', '...o...'],
+  sprout: ['.oo.oo.', 'ohbobho', '.oobo..', '...o...', '.ooooo.', '.obbbo.', '..ooo..'],
+  flame: ['...o...', '..oho..', '.ohbo..', '.obbbo.', 'obbhbbo', 'obswsbo', '.ooooo.'],
+  globe: ['..ooo..', '.ohbbo.', 'ohkbkbo', 'obbkbbo', 'obkbkbo', '.osbso.', '..ooo..'],
+  six: ['.ooooo.', 'obbbbo.', 'obo....', 'obbbbo.', 'obo.obo', 'obbbbbo', '.ooooo.'],
+  net: ['ooooooo', 'ohbbbbo', '.okwko.', '.owkwo.', '..okw..', '..owo..', '...o...'],
 };
 var ICON_BASE = {
   heart: '#e5483f', face: '#f2b632', star: '#ffd166', clip: '#7fb2ff', cash: '#3ecf8e', ball: '#e2762a',
   trophy: '#e8b33c', medal: '#e8b33c', arrow: '#ff7a1a', up: '#3ecf8e', down: '#ff6b6b', lock: '#8fa0d6',
   check: '#3ecf8e', mic: '#b8c3e6', sound: '#ffd166', mute: '#8fa0d6', shoe: '#ff7a1a', ring: '#ffd166', whistle: '#b8c3e6', plane: '#7fb2ff', home: '#c98b4e',
   vault: '#b8c3e6', tree: '#3ecf8e', share: '#ff7a1a',
+  crown: '#ffd166', shield: '#7fb2ff', sprout: '#3ecf8e', flame: '#ff7a1a', globe: '#7fb2ff', six: '#b8c3e6', net: '#f4f1e8',
 };
 function icon(name, color){
   var g = ICONS[name]; if (!g) return null;

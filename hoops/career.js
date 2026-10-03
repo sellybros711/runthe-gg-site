@@ -364,7 +364,11 @@ function posFromData(filePos, rowsNewestFirst) {
   for (const r of rowsNewestFirst) {
     const pp = r && String(r.pp || '').split(';')[0];
     if (R_POS.indexOf(pp) < 0) continue;
-    if (R_POS.indexOf(filePos) >= 0 || !fam || fam.indexOf(pp) >= 0) return pp;
+    /* The data's spot when it is in the file's family or one step from it:
+       a big the file calls F is often a center in the data, and the
+       coarse letter is the rougher of the two. */
+    const near = (f) => Math.abs(R_POS.indexOf(f) - R_POS.indexOf(pp)) <= 1;
+    if (R_POS.indexOf(filePos) >= 0 || !fam || fam.some(near)) return pp;
   }
   if (R_POS.indexOf(filePos) >= 0) return filePos;
   return POS_COARSE[filePos] || 'SF';
@@ -444,7 +448,7 @@ function normaliseNets(net) {
 function driftLeague(L, beats) {
   /* Before the data's season is over nothing moves: those summers are the
      real past, and the league in the data is what it became. */
-  if (L.opt && L.opt.cal && L.year <= L.league.latest + 1) return;
+  if (L.opt && L.opt.cal && (L.year <= L.league.latest + 1 || L.stage !== 'nba')) return;
   coachCarousel(L, beats);
   const rng = rngAt(L, 'drift');
   const net = {};
@@ -823,7 +827,7 @@ function rosterSummer(L, beats, quietY) {
   /* A career dated back (L.opt.cal) is in the real past until the season
      after the data's: no trades, no signings, nobody invented. The rosters
      are the data's, built fresh for that season. */
-  if (L.opt && L.opt.cal && Y <= L.league.latest + 1) { rostBuild(L, Y); return; }
+  if (L.opt && L.opt.cal && (Y <= L.league.latest + 1 || L.stage !== 'nba')) { rostBuild(L, Math.min(Y, L.league.latest + 1)); L.league.rostY = Y; return; }
   const rng = E.createSeededRNG(E.hashSeed(String(L.seed) + ':' + Y + ':moves')), lg = L.league;
   lg.rostY = Y;
   const before = {};
@@ -1260,6 +1264,27 @@ function newLife(opts) {
   for (const k of RATINGS) {
     L.rt[k] = clamp(Math.round(base + (prof[k] || 0) + (tilt[k] || 0) + (bt[k] || 0) + (st[k] || 0) + norm(rng) * 3), road ? 25 : 30, 88);
   }
+  /* NO TWO CAREERS START IN ONE PLACE (story careers). Two things you do
+     better than your position and your build say, one thing you do worse,
+     and how much the town is talking about you, off their own stream so no
+     other draw moves. Two players with the same builder settings are two
+     different kids. */
+  if (L.opt.story) {
+    const sr = E.createSeededRNG(E.hashSeed(seed + ':sig'));
+    const ks = RATINGS.slice();
+    for (let i = ks.length - 1; i > 0; i--) { const j = Math.floor(sr() * (i + 1)); const t = ks[i]; ks[i] = ks[j]; ks[j] = t; }
+    const off = Math.round(norm(sr) * 1.5);
+    for (const k of RATINGS) L.rt[k] += off;
+    L.rt[ks[0]] += 4 + Math.floor(sr() * 4);
+    L.rt[ks[1]] += 2 + Math.floor(sr() * 3);
+    L.rt[ks[2]] -= 5 + Math.floor(sr() * 4);
+    /* Zero sum: the rest give back what the two strengths took, so a
+       signature is a shape, not a better player. */
+    for (const k of ks.slice(3)) L.rt[k] -= 1;
+    for (const k of RATINGS) L.rt[k] = clamp(L.rt[k], road ? 25 : 30, 88);
+    L.flags.sig = { up: [ks[0], ks[1]], down: ks[2] };
+    if (road) L.m.fame = clamp(2 + Math.floor(sr() * 12), 0, 100);
+  }
   /* Skewed low: most ceilings are a starter's, and a few are the roof. */
   L.pot = road ? Math.round(ROAD_POT[0] + Math.pow(rng(), ROAD_POT[2]) * (ROAD_POT[1] - ROAD_POT[0]))
     : Math.round(bg.pot[0] + Math.pow(rng(), 1.7) * (bg.pot[1] - bg.pot[0]));
@@ -1284,6 +1309,8 @@ function newLife(opts) {
     L.cash = 0;
     newRoad(L, rng);
     logIt(L, L.name + ', ' + POS_NAME[pos].toLowerCase() + '. A sophomore at ' + L.am.hs.name + '. Age ' + L.age + '.', 'gold');
+    const rn = (k) => k === 'iq' ? 'basketball IQ' : RATING_NAME[k].toLowerCase();
+    if (L.flags.sig) logIt(L, 'Your ' + rn(L.flags.sig.up[0]) + ' is ahead of your age. Your ' + rn(L.flags.sig.down) + ' is behind it.', '');
     queueEvents(L, 'hs_sum', L.opt.story || rngAt(L, 'n:sum')() < 0.5 ? 1 : 0, AM_EVENTS);
     sayAll(L);
     return L;
@@ -1405,7 +1432,115 @@ function draftOrder(L) {
   return first.concat(first);
 }
 
+/* THE COMBINE (story careers). Testing, two interviews and a private
+   workout, and none of them is a choice of where you go. A club you impress
+   is more likely to take you if it picks near where the board has you, and a
+   good week moves the board a little. Where you land is still the board's. */
+const CLUB_STYLE = ['culture', 'swagger', 'grit'];
+const styleOf = (L, c) => CLUB_STYLE[E.hashSeed(String(L.seed) + ':style:' + c) % 3];
+function intrOf(L) { return L.flags.intr || (L.flags.intr = {}); }
+/* The club that told you it loved you: an old promise, or the room you
+   impressed most at the combine. */
+function lovedBy(L) {
+  if (L.flags.promise) return L.flags.promise.club;
+  const I = L.flags.intr || {};
+  let best = null;
+  for (const c in I) if (I[c] >= 6 && (!best || I[c] > I[best])) best = c;
+  return best;
+}
+/* Clubs that pick near where the board has you, so the rooms you are in are
+   the rooms that could call your name. Seeded, never chosen. */
+function combineClubs(L) {
+  const order = draftOrder(L), proj = projectedPick(L);
+  const rng = rngAt(L, 'cmb:clubs');
+  const lo = clamp(proj - 8, 1, 52), hi = clamp(proj + 10, 9, 60);
+  const out = [];
+  for (let k = 0; k < 40 && out.length < 3; k++) {
+    const c = order[lo - 1 + Math.floor(rng() * (hi - lo + 1))];
+    if (c && out.indexOf(c) < 0) out.push(c);
+  }
+  return out;
+}
+/* Questions a front office asks, about you. A question the road gave you a
+   reason to be asked comes first. */
+const CMB_Q = [
+  { id: 'weak', when: () => true, q: 'What is the worst part of your game?',
+    a: [['Name it, and how you are fixing it', { culture: 2, grit: 1 }, [0, 3], 'He nods. "Nobody says that." He writes for a while.'],
+      ['Say defense, then talk about effort', { grit: 2 }, [0, 1], 'Safe. He has heard it before. He likes the effort part.'],
+      ['Say you do not have one', { swagger: 2, culture: -2 }, [3, -2], 'He laughs. You cannot tell which way.']] },
+  { id: 'injury', when: (L) => !!(recall(L, 'inj.col') || recall(L, 'inj.hs')), q: 'Tell us about the injury.',
+    a: [['Walk them through the rehab', { culture: 2, grit: 1 }, [0, 3], 'You know every week of it. Their doctor smiles.'],
+      ['Say it is behind you', { swagger: 1 }, [1, 0], 'He wants more than that. He writes "medical" and underlines it.'],
+      ['Offer to run for them right now', { grit: 2 }, [1, 1], 'You do sprints in dress shoes. They believe you.']] },
+  { id: 'transfer', when: (L) => !!recall(L, 'route.portal'), q: 'Why did you transfer?',
+    a: [['Minutes. You needed the ball', { swagger: 2 }, [1, -1], 'Honest. A little sharp. He likes sharp.'],
+      ['The fit was wrong. You own it', { culture: 2 }, [0, 3], 'No blame on anybody. He circles something.'],
+      ['Your old coach left', { grit: 1 }, [0, 1], 'He knows the story. It checks out.']] },
+  { id: 'path', when: (L) => !!(recall(L, 'route.gl') || recall(L, 'route.intl') || recall(L, 'route.gap')), q: 'You skipped college. Why?',
+    a: [['To be a pro sooner', { swagger: 2, grit: 1 }, [2, 0], 'He likes the hunger.'],
+      ['Family needed the money', { culture: 2 }, [1, 3], 'The room goes quiet. Then warm.'],
+      ['To play against men', { grit: 2 }, [1, 1], 'He asks about the grown men. You have stories.']] },
+  { id: 'nobody', when: (L) => !!(recall(L, 'route.juco') || recall(L, 'route.walkon') || recall(L, 'route.rec')), q: 'Nobody recruited you. Why should we?',
+    a: [['Because nobody recruited you', { grit: 3 }, [1, 2], 'He writes "chip" and underlines it twice.'],
+      ['Show them your numbers', { culture: 1 }, [0, 1], 'The numbers are real. He knows it.'],
+      ['Say they missed, not you', { swagger: 2 }, [2, -1], 'Bold. He grins at the GM beside him.']] },
+  { id: 'bench', when: () => true, q: 'Would you come off the bench for us?',
+    a: [['Whatever the team needs', { culture: 3 }, [0, 3], 'The right answer. You meant it, too.'],
+      ['For a year. Then you start', { swagger: 1, grit: 1 }, [1, 1], 'He likes the clock in your head.'],
+      ['No. You are a starter', { swagger: 2, culture: -2 }, [3, -2], 'He respects it. His coach will not.']] },
+  { id: 'circle', when: () => true, q: 'Who is in your circle?',
+    a: [['Family. Same people as always', { culture: 2 }, [1, 2], 'He asks about your mom. You talk for ten minutes.'],
+      ['Your trainer and your agent', { grit: 1 }, [0, 1], 'Professional. He nods.'],
+      ['A lot of people', { swagger: 1, culture: -1 }, [2, -1], 'He asks how many. You count. He stops you.']] },
+  { id: 'weird', when: () => true, q: 'If you were a shoe, which one?',
+    a: [['A work boot', { grit: 3 }, [1, 1], 'He loves it. It goes on a sticky note.'],
+      ['Your own signature shoe', { swagger: 3 }, [3, -1], 'He laughs. "Ambitious."'],
+      ['Ask why he wants to know', { culture: 1 }, [0, 1], '"Nobody asks that." He tells you. It is a test of nothing.']] },
+  { id: 'film', when: () => true, q: 'Here is your worst game. Walk us through it.',
+    a: [['Break down every mistake', { culture: 2, grit: 1 }, [0, 3], 'You find two they had not noticed.'],
+      ['Point out what the refs missed', { swagger: 1, culture: -2 }, [1, -3], 'He turns the screen off a little early.'],
+      ['Ask for your best game instead', { swagger: 2 }, [2, -1], 'He puts it on. You talk over all of it.']] },
+];
+function interviewCard(L, clubs, n) {
+  const c = clubs[n];
+  const used = L.flags.cmbQ || (L.flags.cmbQ = []);
+  const rng = rngAt(L, 'cmb:q' + n);
+  const open = CMB_Q.filter((x) => used.indexOf(x.id) < 0 && x.when(L));
+  const told = open.filter((x) => x.id !== 'weak' && x.id !== 'bench' && x.id !== 'circle' && x.id !== 'weird' && x.id !== 'film');
+  const q = told.length && rng() < 0.7 ? pick(rng, told) : pick(rng, open);
+  used.push(q.id);
+  const gm = personName(L, 'gm:' + c);
+  return {
+    id: 'interview', kind: 'event', key: 'interview:' + q.id, eyebrow: 'Combine interviews', title: 'The ' + nick(c) + ' want twenty minutes.',
+    text: gm + ' runs the room. "' + q.q + '"', ctx: { club: c, q: q.id, n, clubs },
+    options: q.a.map((x) => ({ label: x[0] })),
+  };
+}
+function pworkoutCard(L) {
+  const I = intrOf(L);
+  const clubs = (L.flags.cmbClubs || []).slice().sort((a, b) => (I[b] || 0) - (I[a] || 0));
+  const c = clubs[0] || combineClubs(L)[0];
+  return {
+    id: 'pworkout', kind: 'event', key: 'pworkout', eyebrow: 'Private workout', title: 'The ' + nick(c) + ' fly you in.',
+    text: 'Their coaches, their gym, one afternoon. What do you show them?', ctx: { club: c },
+    options: [
+      { label: 'Go one on one with another prospect', hint: 'Win and they remember it. Lose and they remember that.' },
+      { label: 'Run their sets with the coaches', hint: 'Show them you learn fast.' },
+      { label: 'Shoot until they say stop', hint: 'The jumper does the talking.' },
+    ],
+  };
+}
 function combineCard(L) {
+  if (storyOn(L)) return {
+    id: 'combine', kind: 'event', key: 'combine', eyebrow: 'Draft combine', title: 'Testing day.',
+    text: 'Every team is in the gym. Scouts with stopwatches. How do you play it?', ctx: { story: 1 },
+    options: [
+      { label: 'Test everything', hint: 'Sprints, vertical, agility. Your body is on display.' },
+      { label: 'Shoot and run the drills', hint: 'Show your skill, skip the sprints.' },
+      { label: 'Play in the scrimmages', hint: 'Five on five against the class. Anything can happen.' },
+      { label: 'Sit out. Let the tape talk', hint: 'Nothing gained. Some teams wonder why.' },
+    ],
+  };
   return {
     id: 'combine', kind: 'event', key: 'combine',
     eyebrow: 'Draft combine', title: 'The scouts are in the gym.',
@@ -1451,12 +1586,107 @@ function rookieSalary(L, p) {
   return round1(cap * (0.072 * Math.pow(0.948, p - 1)));
 }
 
+const stockUp = (L, d) => { L.flags.stock = (L.flags.stock || 0) + d; };
+function chooseCombine(L, i, rng) {
+  const r = rng();
+  let text, tone = '';
+  const ath = L.rt.ath + (Number.isFinite(L.ht) ? 0 : 0);
+  if (i === 0) {
+    if (r < clamp(0.25 + (ath - 55) * 0.014, 0.1, 0.85)) { stockUp(L, 2.4); text = 'Top five in the vertical and the lane agility. The phone starts ringing.'; tone = 'good'; }
+    else if (r < 0.75) { stockUp(L, 0.3); text = 'Solid numbers. Nothing anybody talks about.'; }
+    else { stockUp(L, -2); text = 'Slow in the sprints. A few teams cool on you.'; tone = 'bad'; }
+  } else if (i === 1) {
+    const sk = (L.rt.sho + L.rt.fin) / 2;
+    if (r < clamp(0.3 + (sk - 55) * 0.014, 0.1, 0.85)) { stockUp(L, 1.6); text = 'Forty-one of fifty off the move. The room goes quiet.'; tone = 'good'; }
+    else { stockUp(L, -0.8); text = 'A cold day in the drills. It gets noticed.'; tone = 'bad'; }
+  } else if (i === 2) {
+    const o = ovrOf(L) + (L.rt.iq - 60) * 0.2;
+    if (r < clamp(0.2 + (o - 60) * 0.02, 0.08, 0.8)) { stockUp(L, 3); bump(L, { fame: 3 }); text = 'You own the scrimmage. Two GMs leave their seats to call home.'; tone = 'gold'; }
+    else if (r < 0.7) { stockUp(L, 0.4); text = 'A good game in a sloppy scrimmage. Nobody learns much.'; }
+    else { stockUp(L, -2.6); text = 'Four turnovers in the first half. It is on every highlight show.'; tone = 'bad'; }
+  } else {
+    stockUp(L, L.m.fame >= 45 ? 0 : -0.6); text = L.m.fame >= 45 ? 'You stay home. Your stock does not move.' : 'You stay home. A few teams wonder what you are hiding.';
+  }
+  L.flags.cmbTest = i;
+  const clubs = combineClubs(L);
+  L.flags.cmbClubs = clubs;
+  L.pending.unshift(interviewCard(L, clubs, 0));
+  queueEvents(L, 'predraft', 1 + (rng() < 0.4 ? 1 : 0));
+  return { text, tone };
+}
+function chooseInterview(L, card, i, rng) {
+  const q = CMB_Q.find((x) => x.id === card.ctx.q), a = q.a[i], c = card.ctx.club;
+  const st = styleOf(L, c);
+  const I = intrOf(L);
+  const d = (a[1][st] || 0) + 1 + (rng() < 0.3 ? 1 : 0);
+  I[c] = (I[c] || 0) + d;
+  moveRep(L, a[2][0], a[2][1]);
+  if (d >= 3) stockUp(L, 0.3);
+  remember(L, 'cmb.' + q.id, i);
+  const clubs = card.ctx.clubs;
+  if (card.ctx.n + 1 < 2 && clubs[card.ctx.n + 1]) L.pending.unshift(interviewCard(L, clubs, card.ctx.n + 1));
+  else L.pending.unshift(pworkoutCard(L));
+  const how = d >= 3 ? ' You can tell they loved it.' : d <= 0 ? ' You can tell it did not land.' : '';
+  return { text: a[3] + how, tone: d >= 3 ? 'good' : d <= 0 ? 'bad' : '' };
+}
+function choosePworkout(L, card, i, rng) {
+  const c = card.ctx.club, I = intrOf(L);
+  const r = rng();
+  let text, tone = '';
+  if (i === 0) {
+    if (r < clamp(0.25 + (ovrOf(L) - 60) * 0.02, 0.1, 0.8)) { I[c] = (I[c] || 0) + 4; stockUp(L, 1.2); text = 'You win the one on one, eleven to six. Their GM stops pretending to text.'; tone = 'good'; }
+    else { I[c] = (I[c] || 0) - 1; stockUp(L, -0.6); text = 'The other kid wins it. You go home quiet.'; tone = 'bad'; }
+  } else if (i === 1) {
+    if (r < clamp(0.35 + (L.rt.iq - 60) * 0.02, 0.15, 0.85)) { I[c] = (I[c] || 0) + 3; text = 'You run their whole playbook by the end of the day. Their coach asks for your number.'; tone = 'good'; }
+    else { I[c] = (I[c] || 0) + 1; text = 'You get lost in one set. They are patient about it.'; }
+  } else {
+    if (r < clamp(0.3 + (L.rt.sho - 60) * 0.02, 0.1, 0.85)) { I[c] = (I[c] || 0) + 2; stockUp(L, 0.8); text = 'Eighty-two of a hundred. They stop counting at sixty.'; tone = 'good'; }
+    else { I[c] = (I[c] || 0) + 0; text = 'A streaky day. They have seen better shooters this week.'; }
+  }
+  L.pending.unshift(agentCard(L));
+  return { text, tone };
+}
+/* THE CLASS. You are not the only prospect, so the top of the board is not
+   yours by default. A class has its own best players, seeded per career, and
+   you go first only when you are better than all of them on the night. */
+function classTop(L) {
+  const r = rngAt(L, 'class');
+  const top = 95.5 + norm(r) * 2.2;
+  const out = [top];
+  for (let k = 1; k < 6; k++) out.push(out[k - 1] - 0.6 - r() * 1.6);
+  return out;
+}
 function runDraft(L, beats) {
   const order = draftOrder(L);
   const rng = rngAt(L, 'draftnight');
   let p = projectedPick(L, norm(rng) * 2.2);
   const promised = L.flags.promise;
   let team = null;
+  if (storyOn(L) && !promised && p > 60 && !(recall(L, 'route.rec') && !recall(L, 'rec.viral'))) {
+    /* Just off the board, a club that liked you in the room can still spend a
+       late second round pick on you. Only just off it: a player that far
+       from the board makes a roster through Summer League or not at all. */
+    const I = L.flags.intr || {};
+    let best = null;
+    for (const c of L.flags.cmbClubs || []) if (!best || (I[c] || 0) > (I[best] || 0)) best = c;
+    if (best && (I[best] || 0) >= 1 && draftStock(L) >= 71 && rng() < 0.65 + (I[best] - 1) * 0.05) {
+      /* Their own second round pick, the latest one they have. */
+      for (let k = 60; k >= 31; k--) if (order[k - 1] === best) { team = best; p = k; L.flags.reach = best; break; }
+    }
+  }
+  if (storyOn(L) && !promised && !team && p <= 60) {
+    /* A club that loved you takes you a little early, if it picks within a
+       few slots ahead of where you would go. Never more than that. */
+    const s = draftStock(L) + norm(rng) * 1.5;
+    p = Math.max(p, 1 + classTop(L).filter((x) => x > s).length);
+    /* Second round means the second round, however good the road was. */
+    if (L.challenge === 'ch_late') p = Math.max(p, 31);
+    const I = L.flags.intr || {};
+    for (let k = Math.max(L.challenge === 'ch_late' ? 31 : 1, p - 4); k < p; k++) {
+      const c = order[k - 1];
+      if ((I[c] || 0) >= 4 && rng() < 0.25 + (I[c] - 4) * 0.08) { team = c; p = k; L.flags.reach = c; break; }
+    }
+  }
   if (promised && promised.slot <= p + 6) { team = promised.club; p = promised.slot; }
   if (!team) {
     if (p > 60) team = null;
@@ -3138,7 +3368,7 @@ const EVENTS = {
     ],
   },
   superteam: {
-    phases: ['off'], when: (L) => ovrOf(L) >= 84 && L.contract && L.contract.years >= 1 && clubNet(L, L.team) < (storyOn(L) ? 3 : 2), weight: () => 2,
+    phases: ['off'], when: (L) => ovrOf(L) >= (storyOn(L) ? 82 : 84) && L.contract && L.contract.years >= 1 && clubNet(L, L.team) < (storyOn(L) ? 3 : 2), weight: (L) => storyOn(L) ? 3 : 2,
     title: '{agent} has a contender on the line.',
     text: () => 'Two stars there want a third. They want you, and they want an answer this week.',
     options: [
@@ -3420,6 +3650,14 @@ function makeRival(L, myPick) {
     pot: clamp(Math.round(L.pot + norm(rng) * 5), 60, 97), seasons: [], retired: false,
     star: 0, mvp: 0, rings: 0, pts: 0, gp: 0,
   };
+  /* On a story career two men are never taken with one pick, and the rival
+     goes to the club that really picks there. */
+  if (storyOn(L)) {
+    const R = L.rival;
+    if (myPick && R.pick === myPick) R.pick = myPick === 1 ? 2 : myPick - 1;
+    const c = draftOrder(L)[R.pick - 1];
+    if (c && c !== L.team) R.team = c;
+  }
 }
 function rivalSeason(L, beats) {
   const r = L.rival;
@@ -5613,6 +5851,38 @@ function colYear(L) {
   queueEvents(L, 'col_pre', rngAt(L, 'n:cpre')() < 0.65 ? 1 : 0, AM_EVENTS);
 }
 
+/* EVERY ROAD ENDS ON TODAY'S DRAFT. A road is three to seven years long and
+   the player decides how long, so no start date can promise where it ends.
+   The road is played on a floating calendar instead: the league does not
+   move while you are an amateur (driftLeague, rosterSummer), and at the
+   combine every year the career has written is moved so the rookie season is
+   the one the roster file is for. You are drafted into today's league, with
+   today's rosters and today's coaches, whatever road got you there. */
+function landOnToday(L) {
+  const lg = L.league, target = lg.rs || (lg.latest || 2026) + 1;
+  const d = target - L.year;
+  delete lg.rost; delete lg.rostY; delete lg.pool;
+  if (!d) return;
+  const sh = (v) => (Number.isFinite(v) && v > 1900 ? v + d : v);
+  L.year += d;
+  for (const h of L.amHist || []) h.y = sh(h.y);
+  for (const x of L.log || []) x.y = sh(x.y);
+  for (const x of L.feed || []) x.y = sh(x.y);
+  for (const k in L.mem || {}) L.mem[k].y = sh(L.mem[k].y);
+  for (const k in L.arcs || {}) { const a = L.arcs[k]; a.y = sh(a.y); a.at = sh(a.at); }
+  for (const k in L.evlog || {}) L.evlog[k] = L.evlog[k].map(sh);
+  for (const k in L.people || {}) { const p = L.people[k]; p.met = sh(p.met); for (const n of p.notes || []) n[0] = sh(n[0]); }
+  for (const k in L.traits || {}) L.traits[k].known = sh(L.traits[k].known);
+  if (L.flags.offUsed) L.flags.offUsed.y = sh(L.flags.offUsed.y);
+  if (L.life) L.life.since = sh(L.life.since);
+  for (const f of lg.figs || []) { f.b = sh(f.b); f.gone = sh(f.gone); if (f.won) f.won = f.won.map(sh); }
+  for (const k in lg.news || {}) lg.news[k] = sh(lg.news[k]);
+  /* A college coach who took an NBA job on the road (coach_leaves) keeps it,
+     dated on the same calendar. The coaches the league opened with keep the
+     dates they came with. */
+  for (const c in lg.coach || {}) { const x = lg.coach[c]; if (x && x.n !== COACHES_NOW[c][0] && x.n !== (lg.cn && lg.cn[c])) x.since = Math.min(target, sh(x.since)); }
+  for (const f of lg.free || []) f.out = Math.min(target - 1, sh(f.out));
+}
 /* The road ends at the combine card a draft-night career starts on. */
 function toDraft(L, beats, route) {
   if (storyOn(L) && L.am && L.am.college) remember(L, 'route.' + (L.am.cyear >= 4 ? 'four' : L.am.cyear === 1 ? 'oad' : 'college'), true);
@@ -5622,6 +5892,7 @@ function toDraft(L, beats, route) {
   L.team = null;
   L.flags.stock = (L.flags.stock || 0) + (L.am.stock || 0);
   chStock(L);
+  if (L.opt && L.opt.cal) landOnToday(L);
   L.phase = 'combine';
   L.pending.push(combineCard(L));
   const t = 'You declare for the ' + (L.year - 1) + ' NBA Draft.';
@@ -6705,9 +6976,9 @@ story({
     t: 'Rookie of the Month.', x: 'November is yours. The league sends a plaque.',
     o: [O('Give it to your mom', { morale: 6 }, 'It goes on her mantel, next to your fourth grade spelling bee trophy.', { rel: [['mom', 10]] }),
       O('Put it in your locker', { fame: 2, eth: 2 }, 'A reminder. Eleven more months to win.')] },
-  promise_broken: { at: 'dn', when: (L) => !!(L.flags.promise && L.draft && L.draft.team && L.flags.promise.club !== L.draft.team), w: 7,
-    t: 'They promised. They passed.', x: (L) => 'The ' + nick(L.flags.promise.club) + ' said you were their pick. They took somebody else.',
-    o: [O('Remember it', { eth: 4 }, 'You write the date on a piece of tape inside your shoe.', { start: ['promise2', 'arc_promise2_2', 'early', 1, { club: 0 }], do: (L) => { arcData(L, 'promise2').club = L.flags.promise.club; } }),
+  promise_broken: { at: 'dn', when: (L) => !!(lovedBy(L) && L.draft && L.draft.team && lovedBy(L) !== L.draft.team), w: 7,
+    t: 'They loved you. They passed.', x: (L) => 'The ' + nick(lovedBy(L)) + ' told your agent you were their guy. They took somebody else.',
+    o: [O('Remember it', { eth: 4 }, 'You write the date on a piece of tape inside your shoe.', { start: ['promise2', 'arc_promise2_2', 'early', 1, { club: 0 }], do: (L) => { arcData(L, 'promise2').club = lovedBy(L); } }),
       O('Let it go', { morale: 3 }, 'Business. You meant it. Mostly.', { set: 'promise.forgiven' })] },
 });
 
@@ -7442,6 +7713,7 @@ function choose(L, i, extra) {
   const road = card.id === 'presser' ? choosePresser(L, card, opt, rng) : chooseAm(L, card, i, opt, rng, beats, touch);
   if (road) { text = road.text; tone = road.tone; if (road.made != null) made = road.made; } else switch (card.id) {
     case 'combine': {
+      if (card.ctx && card.ctx.story) { ({ text, tone } = chooseCombine(L, i, rng)); break; }
       const r = rng();
       if (i === 0) {
         const fit = (L.rt.ath + L.rt.sho) / 2;
@@ -7468,6 +7740,8 @@ function choose(L, i, extra) {
       L.pending.unshift(agentCard(L));
       break;
     }
+    case 'interview': { ({ text, tone } = chooseInterview(L, card, i, rng)); break; }
+    case 'pworkout': { ({ text, tone } = choosePworkout(L, card, i, rng)); break; }
     case 'agent': {
       L.agent = opt.agent;
       text = say(L, '{agent}') + ' it is.';
@@ -7856,7 +8130,11 @@ function overseasYear(L, beats) {
   const rng = rngAt(L, 'overseas');
   const d = Math.round(1 + rng() * 2);
   if (storyOn(L)) L.flags.overseasYears = (L.flags.overseasYears || 0) + 1;
-  for (const k of RATINGS) L.rt[k] = clamp(L.rt[k] + (L.age <= 28 ? d : -1), 25, 99);
+  /* A story career grows less overseas past twenty-five: Europe makes a man
+     a pro, and a rec league player does not play his way to the league
+     through it at twenty-nine. */
+  const up = storyOn(L) && L.age > 25 ? Math.max(0, d - 2) : d;
+  for (const k of RATINGS) L.rt[k] = clamp(L.rt[k] + (L.age <= 28 ? up : -1), 25, 99);
   L.earned = round1(L.earned + 0.8);
   L.cash = round1(L.cash + 0.4);
   beats.push({ kind: 'overseas', text: 'A year in Europe. Twenty a night and a lot of pasta.', tone: '' });

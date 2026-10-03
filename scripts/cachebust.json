@@ -2269,8 +2269,8 @@
   },
   "hoops/design/style-guide.html": {
     "../career-kit.js": {
-      "v": "4",
-      "sha": "8b501442a1a2e0f5"
+      "v": "5",
+      "sha": "676f992581be08b8"
     },
     "../baller.js": {
       "v": "4",
@@ -2311,8 +2311,8 @@
       "sha": "814d6471760c59b4"
     },
     "career.js": {
-      "v": "25",
-      "sha": "2705857eae664f23"
+      "v": "26",
+      "sha": "bb96544fc8aa5960"
     },
     "baller.js": {
       "v": "4",
@@ -2343,8 +2343,8 @@
       "sha": "cf0b521fc02dfcd7"
     },
     "career-kit.js": {
-      "v": "4",
-      "sha": "8b501442a1a2e0f5"
+      "v": "5",
+      "sha": "676f992581be08b8"
     },
     "sound.js": {
       "v": "1",
@@ -2363,8 +2363,8 @@
       "sha": "2ec4a97f63ad97db"
     },
     "career-ui.js": {
-      "v": "28",
-      "sha": "7d24cf8d9238b176"
+      "v": "29",
+      "sha": "1e736a8d6ea182e6"
     },
     "data/players.json": {
       "v": "5",
