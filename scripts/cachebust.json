@@ -5,8 +5,12 @@
       "sha": "96ddcdb15ea90ca2"
     },
     "/arcade/tokens.js": {
-      "v": "14",
-      "sha": "f3747d7b1403f64a"
+      "v": "15",
+      "sha": "d647e53a1bc1a49a"
+    },
+    "/arcade/metrics.js": {
+      "v": "3",
+      "sha": "d37ab08269df2f39"
     },
     "/arcade/gamehead.js": {
       "v": "3",
@@ -113,8 +117,8 @@
       "sha": "d28844bc9b057049"
     },
     "/arcade/board.js": {
-      "v": "23",
-      "sha": "56e93ca68f46e7a3"
+      "v": "24",
+      "sha": "462513f83beba07e"
     },
     "/arcade/leaderboard.js": {
       "v": "16",
@@ -195,8 +199,8 @@
       "sha": "51637c7e8598cb9d"
     },
     "/arcade/tokens.js": {
-      "v": "14",
-      "sha": "f3747d7b1403f64a"
+      "v": "15",
+      "sha": "d647e53a1bc1a49a"
     },
     "/arcade/day.js": {
       "v": "3",
@@ -211,8 +215,8 @@
       "sha": "15970ca0ab5a2b04"
     },
     "/arcade/board.js": {
-      "v": "23",
-      "sha": "56e93ca68f46e7a3"
+      "v": "24",
+      "sha": "462513f83beba07e"
     },
     "/arcade/auth.js": {
       "v": "4",
@@ -253,8 +257,12 @@
       "sha": "96ddcdb15ea90ca2"
     },
     "/arcade/tokens.js": {
-      "v": "14",
-      "sha": "f3747d7b1403f64a"
+      "v": "15",
+      "sha": "d647e53a1bc1a49a"
+    },
+    "/arcade/metrics.js": {
+      "v": "3",
+      "sha": "d37ab08269df2f39"
     },
     "/arcade/gamehead.js": {
       "v": "3",
@@ -357,8 +365,8 @@
       "sha": "15970ca0ab5a2b04"
     },
     "/arcade/board.js": {
-      "v": "23",
-      "sha": "56e93ca68f46e7a3"
+      "v": "24",
+      "sha": "462513f83beba07e"
     },
     "/arcade/leaderboard.js": {
       "v": "16",
@@ -427,8 +435,12 @@
   },
   "arcade/chain/index.html": {
     "/arcade/tokens.js": {
-      "v": "14",
-      "sha": "f3747d7b1403f64a"
+      "v": "15",
+      "sha": "d647e53a1bc1a49a"
+    },
+    "/arcade/metrics.js": {
+      "v": "3",
+      "sha": "d37ab08269df2f39"
     },
     "/arcade/gamehead.js": {
       "v": "3",
@@ -463,8 +475,8 @@
       "sha": "d633f99672c5715c"
     },
     "/arcade/board.js": {
-      "v": "23",
-      "sha": "56e93ca68f46e7a3"
+      "v": "24",
+      "sha": "462513f83beba07e"
     },
     "/arcade/leaderboard.js": {
       "v": "16",
@@ -557,8 +569,12 @@
       "sha": "96ddcdb15ea90ca2"
     },
     "/arcade/tokens.js": {
-      "v": "14",
-      "sha": "f3747d7b1403f64a"
+      "v": "15",
+      "sha": "d647e53a1bc1a49a"
+    },
+    "/arcade/metrics.js": {
+      "v": "3",
+      "sha": "d37ab08269df2f39"
     },
     "/arcade/gamehead.js": {
       "v": "3",
@@ -673,8 +689,8 @@
       "sha": "15970ca0ab5a2b04"
     },
     "/arcade/board.js": {
-      "v": "23",
-      "sha": "56e93ca68f46e7a3"
+      "v": "24",
+      "sha": "462513f83beba07e"
     },
     "/arcade/leaderboard.js": {
       "v": "16",
@@ -739,8 +755,12 @@
       "sha": "96ddcdb15ea90ca2"
     },
     "/arcade/tokens.js": {
-      "v": "14",
-      "sha": "f3747d7b1403f64a"
+      "v": "15",
+      "sha": "d647e53a1bc1a49a"
+    },
+    "/arcade/metrics.js": {
+      "v": "3",
+      "sha": "d37ab08269df2f39"
     },
     "/arcade/gamehead.js": {
       "v": "3",
@@ -843,8 +863,8 @@
       "sha": "15970ca0ab5a2b04"
     },
     "/arcade/board.js": {
-      "v": "23",
-      "sha": "56e93ca68f46e7a3"
+      "v": "24",
+      "sha": "462513f83beba07e"
     },
     "/arcade/leaderboard.js": {
       "v": "16",
@@ -913,8 +933,12 @@
       "sha": "96ddcdb15ea90ca2"
     },
     "/arcade/tokens.js": {
-      "v": "14",
-      "sha": "f3747d7b1403f64a"
+      "v": "15",
+      "sha": "d647e53a1bc1a49a"
+    },
+    "/arcade/metrics.js": {
+      "v": "3",
+      "sha": "d37ab08269df2f39"
     },
     "/arcade/gamehead.js": {
       "v": "3",
@@ -977,8 +1001,8 @@
       "sha": "922f9e5471c30dcb"
     },
     "/arcade/board.js": {
-      "v": "23",
-      "sha": "56e93ca68f46e7a3"
+      "v": "24",
+      "sha": "462513f83beba07e"
     },
     "/arcade/leaderboard.js": {
       "v": "16",
@@ -1071,8 +1095,12 @@
       "sha": "51637c7e8598cb9d"
     },
     "/arcade/tokens.js": {
-      "v": "14",
-      "sha": "f3747d7b1403f64a"
+      "v": "15",
+      "sha": "d647e53a1bc1a49a"
+    },
+    "/arcade/metrics.js": {
+      "v": "3",
+      "sha": "d37ab08269df2f39"
     },
     "/arcade/day.js": {
       "v": "3",
@@ -1083,8 +1111,8 @@
       "sha": "922f9e5471c30dcb"
     },
     "/arcade/board.js": {
-      "v": "23",
-      "sha": "56e93ca68f46e7a3"
+      "v": "24",
+      "sha": "462513f83beba07e"
     },
     "/arcade/auth.js": {
       "v": "4",
@@ -1121,8 +1149,8 @@
   },
   "arcade/join/index.html": {
     "/arcade/board.js": {
-      "v": "23",
-      "sha": "56e93ca68f46e7a3"
+      "v": "24",
+      "sha": "462513f83beba07e"
     },
     "/arcade/icons.js": {
       "v": "3",
@@ -1133,8 +1161,8 @@
       "sha": "51637c7e8598cb9d"
     },
     "/arcade/tokens.js": {
-      "v": "14",
-      "sha": "f3747d7b1403f64a"
+      "v": "15",
+      "sha": "d647e53a1bc1a49a"
     },
     "/arcade/day.js": {
       "v": "3",
@@ -1163,8 +1191,12 @@
       "sha": "96ddcdb15ea90ca2"
     },
     "/arcade/tokens.js": {
-      "v": "14",
-      "sha": "f3747d7b1403f64a"
+      "v": "15",
+      "sha": "d647e53a1bc1a49a"
+    },
+    "/arcade/metrics.js": {
+      "v": "3",
+      "sha": "d37ab08269df2f39"
     },
     "/arcade/gamehead.js": {
       "v": "3",
@@ -1259,8 +1291,8 @@
       "sha": "15970ca0ab5a2b04"
     },
     "/arcade/board.js": {
-      "v": "23",
-      "sha": "56e93ca68f46e7a3"
+      "v": "24",
+      "sha": "462513f83beba07e"
     },
     "/arcade/leaderboard.js": {
       "v": "16",
@@ -1325,8 +1357,12 @@
       "sha": "96ddcdb15ea90ca2"
     },
     "/arcade/tokens.js": {
-      "v": "14",
-      "sha": "f3747d7b1403f64a"
+      "v": "15",
+      "sha": "d647e53a1bc1a49a"
+    },
+    "/arcade/metrics.js": {
+      "v": "3",
+      "sha": "d37ab08269df2f39"
     },
     "/arcade/gamehead.js": {
       "v": "3",
@@ -1421,8 +1457,8 @@
       "sha": "15970ca0ab5a2b04"
     },
     "/arcade/board.js": {
-      "v": "23",
-      "sha": "56e93ca68f46e7a3"
+      "v": "24",
+      "sha": "462513f83beba07e"
     },
     "/arcade/leaderboard.js": {
       "v": "16",
@@ -1491,8 +1527,12 @@
       "sha": "96ddcdb15ea90ca2"
     },
     "/arcade/tokens.js": {
-      "v": "14",
-      "sha": "f3747d7b1403f64a"
+      "v": "15",
+      "sha": "d647e53a1bc1a49a"
+    },
+    "/arcade/metrics.js": {
+      "v": "3",
+      "sha": "d37ab08269df2f39"
     },
     "/arcade/gamehead.js": {
       "v": "3",
@@ -1591,8 +1631,8 @@
       "sha": "15970ca0ab5a2b04"
     },
     "/arcade/board.js": {
-      "v": "23",
-      "sha": "56e93ca68f46e7a3"
+      "v": "24",
+      "sha": "462513f83beba07e"
     },
     "/arcade/leaderboard.js": {
       "v": "16",
@@ -1653,8 +1693,12 @@
   },
   "arcade/rollcall/index.html": {
     "/arcade/tokens.js": {
-      "v": "14",
-      "sha": "f3747d7b1403f64a"
+      "v": "15",
+      "sha": "d647e53a1bc1a49a"
+    },
+    "/arcade/metrics.js": {
+      "v": "3",
+      "sha": "d37ab08269df2f39"
     },
     "/arcade/gamehead.js": {
       "v": "3",
@@ -1689,8 +1733,8 @@
       "sha": "d633f99672c5715c"
     },
     "/arcade/board.js": {
-      "v": "23",
-      "sha": "56e93ca68f46e7a3"
+      "v": "24",
+      "sha": "462513f83beba07e"
     },
     "/arcade/leaderboard.js": {
       "v": "16",
@@ -1779,8 +1823,12 @@
   },
   "arcade/sportegories/index.html": {
     "/arcade/tokens.js": {
-      "v": "14",
-      "sha": "f3747d7b1403f64a"
+      "v": "15",
+      "sha": "d647e53a1bc1a49a"
+    },
+    "/arcade/metrics.js": {
+      "v": "3",
+      "sha": "d37ab08269df2f39"
     },
     "/arcade/gamehead.js": {
       "v": "3",
@@ -1815,8 +1863,8 @@
       "sha": "d633f99672c5715c"
     },
     "/arcade/board.js": {
-      "v": "23",
-      "sha": "56e93ca68f46e7a3"
+      "v": "24",
+      "sha": "462513f83beba07e"
     },
     "/arcade/leaderboard.js": {
       "v": "16",
@@ -1909,8 +1957,12 @@
       "sha": "96ddcdb15ea90ca2"
     },
     "/arcade/tokens.js": {
-      "v": "14",
-      "sha": "f3747d7b1403f64a"
+      "v": "15",
+      "sha": "d647e53a1bc1a49a"
+    },
+    "/arcade/metrics.js": {
+      "v": "3",
+      "sha": "d37ab08269df2f39"
     },
     "/arcade/gamehead.js": {
       "v": "3",
@@ -2013,8 +2065,8 @@
       "sha": "15970ca0ab5a2b04"
     },
     "/arcade/board.js": {
-      "v": "23",
-      "sha": "56e93ca68f46e7a3"
+      "v": "24",
+      "sha": "462513f83beba07e"
     },
     "/arcade/leaderboard.js": {
       "v": "16",

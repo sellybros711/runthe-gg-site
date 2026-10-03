@@ -425,7 +425,13 @@
 
   /* GA4: one event when a play actually starts, tagged with the specific arcade
      game so each game can be reported on its own. Inert if gtag is absent. */
-  var GA_LABEL = {'match':'Common Ground','crossword':'Daily Crossword','guess':'Guess the Player','table':'Number Game','oddone':'Odd One Out','career':'Career Path','rankit':'Rank It','almamater':'Alma Mater','sportegories':'Sportegories','highlow':'High Low'};
+  /* Roll Call and Chain were missing, so their starts were reported under
+     their keys while board.js reported their completions under their names,
+     and the two never divided into one funnel. */
+  var GA_LABEL = {'match':'Common Ground','crossword':'Daily Crossword','guess':'Guess the Player','table':'Number Game','oddone':'Odd One Out','career':'Career Path','rankit':'Rank It','almamater':'Alma Mater','sportegories':'Sportegories','highlow':'High Low','rollcall':'Roll Call','chain':'Chain'};
+  function gaName(game){ return GA_LABEL[game] || game; }
+  // metrics.js times the first move off this; it fires wherever a play starts
+  function firstMove(game, tryNo){ try{ document.dispatchEvent(new CustomEvent('rtg:firstmove', { detail:{ game:game, tryNo:tryNo } })); }catch(e){} }
   function gaGame(ev, game, extra){
     try{
       if (typeof window.gtag !== 'function') return;
@@ -440,6 +446,7 @@
     if(unlimited()){
       s.plays[game]=before+1; s.st[game]='p'; write(s); bumpLife(game); emit('rtg:tokens');
       gaGame('arcade_game_started', game, { tier:'card', try_no:before+1 });
+      firstMove(game, before+1);
       return { ok:true, tryNo:before+1, first:(before===0), bonus:(before>0), left:Infinity };
     }
     if(!canPlay(game)){ gaGame('arcade_play_blocked', game, { reason:String(why(game)||'') });
@@ -452,6 +459,7 @@
     if(wasTrial) markTrialUsed(game);
     s.plays[game]=before+1; s.st[game]='p'; write(s); bumpLife(game); emit('rtg:tokens');
     gaGame('arcade_game_started', game, { tier: wasTrial ? 'trial' : (signedIn() ? 'free' : 'guest'), try_no:before+1 });
+    firstMove(game, before+1);
     serverSpend(game);
     return { ok:true, tryNo:before+1, first:(before===0), bonus:false, trial:wasTrial, left:remainingOf(game) };
   }
@@ -514,6 +522,7 @@
     isPro: hasCard, hasCard: hasCard,           // isPro kept for existing callers
     signedIn: signedIn,
     tier: tier,
+    gaName: gaName,
     testing: function(){ return TESTING; },
     isFreeGame: isFreeGame,
     unlocked: unlocked,

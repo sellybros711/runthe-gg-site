@@ -499,8 +499,11 @@
           posted: ranked,                       // false = finished, on no leaderboard
           seconds: Math.max(0, Math.round(opts.seconds || 0)),
           mistakes: opts.mistakes || 0,
-          run_len: (opts.runLen == null ? 0 : Math.max(0, Math.round(opts.runLen)))
+          run_len: (opts.runLen == null ? 0 : Math.max(0, Math.round(opts.runLen))),
+          submitted: true                       // metrics.js sends the rest, with false
         });
+        // metrics.js reads this to know a finish was already counted here
+        window.RTGCompletedSent = (window.RTGCompletedSent || 0) + 1;
       }
     }catch(e){}
     // Every game funnels its ranked result through here, so this is the one
