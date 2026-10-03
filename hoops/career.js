@@ -8395,6 +8395,9 @@ function view(L) {
   };
 }
 
+/* Whether high school and college were played rather than generated. */
+function amPlayed(L) { return (L.amHist || []).length > 0 && !(L.opt && L.opt.gen); }
+
 /* What a finished life adds up to, for badges.js' careerFeats and the board.
    Plain numbers and flags, so neither of those needs this file. */
 function featSummary(L) {
@@ -8403,7 +8406,10 @@ function featSummary(L) {
   return {
     seasons: T.seasons, pts: T.pts, rings: T.rings, mvp: T.mvp, fmvp: T.fmvp, star: T.star, dpoy: T.dpoy,
     score: f.score, pick: (L.draft && L.draft.pick) || 0, undrafted: !!(L.draft && !L.draft.pick),
-    road: (L.amHist || []).length > 0, ncaa: T.ncaa || 0, state: T.state || 0, npoy: T.npoy || 0,
+    /* High school and college count only when they were PLAYED, which is Pro.
+       A generated road is the backstory a free career starts from, so it earns
+       nothing: Career is about the NBA. */
+    road: amPlayed(L), ncaa: amPlayed(L) ? T.ncaa || 0 : 0, state: amPlayed(L) ? T.state || 0 : 0, npoy: amPlayed(L) ? T.npoy || 0 : 0,
     jersey: !!f.jersey, oneClub: teams.size === 1, g7: L.flags.g7 || 0,
     rivalBeat: !!(L.rival && T.seasons >= 5 && T.pts > L.rival.pts), married: lifeOf(L).rel === 'married', kids: lifeOf(L).kids,
     home: !!L.flags.home, headCoach: /head coach/.test(f.after || ''), olympic: T.olympic,

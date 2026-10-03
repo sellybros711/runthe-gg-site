@@ -1183,7 +1183,10 @@ function amTable(list){
 }
 function awardCounts(L){
   var n = {};
-  L.history.concat(L.amHist || []).forEach(function(h){ (h.aw || []).forEach(function(a){ n[a] = (n[a] || 0) + 1; }); });
+  /* A generated road (free, draft night) is backstory, so its high school and
+     college hardware is not on the shelf. A road you played (Pro) is. */
+  var am = L.opt && L.opt.gen ? [] : (L.amHist || []);
+  L.history.concat(am).forEach(function(h){ (h.aw || []).forEach(function(a){ n[a] = (n[a] || 0) + 1; }); });
   var order = ['champ', 'mvp', 'fmvp', 'an1', 'an2', 'an3', 'dpoy', 'star', 'roy', '6moy', 'mip', 'scor', 'ad1', 'ad2', 'olympic',
     'c_champ', 'c_npoy', 'c_mop', 'c_aa1', 'c_aa2', 'c_f4', 'c_fr', 'c_cpoy', 'c_allconf', 'hs_state', 'hs_mrbb', 'hs_aag', 'hs_allstate'];
   return order.filter(function(k){ return n[k]; }).map(function(k){ return { k: k, n: n[k], name: C.AWARD_NAME[k] }; });
@@ -1541,7 +1544,7 @@ function collegeOf(L){
   col.forEach(function(h){ if (schools.indexOf(h.school) < 0) schools.push(h.school); });
   var titles = col.filter(function(h){ return (h.aw || []).indexOf('c_champ') >= 0; }).length;
   var yrs = col.length === 1 ? 'One and done at ' : col.length + ' years at ';
-  return yrs + schools.join(' and ') + (titles ? '. National champion' : '');
+  return yrs + (schools.length > 2 ? schools.slice(0, -1).join(', ') + ' and ' + schools[schools.length - 1] : schools.join(' and ')) + (titles ? '. National champion' : '');
 }
 
 /* The league a son starts in, kept small: the slot is half a megabyte for
@@ -1717,7 +1720,7 @@ function finalView(card){
     + (card.persona && card.persona !== 'Still writing it' ? '<p class="cr-col">The league knew you as: ' + esc(card.persona) + '.</p>' : '')
     + (card.college ? '<p class="cr-col">' + esc(card.college) + '</p>' : '')
     + (card.jersey ? '<p class="cr-col">Your #' + esc(String(card.num)) + ' hangs in the rafters for the ' + esc(E.TEAM_NAMES[card.jersey] || card.jersey) + '.</p>' : '')
-    + totalsHtml(T, '<div><b>' + (T.pts / gp).toFixed(1) + '</b><span>A game</span></div><div><b>' + T.seasons + '</b><span>Seasons</span></div>')
+    + totalsHtml(T, '<div><b>' + (T.pts / gp).toFixed(1) + '</b><span>A game</span></div><div><b>' + T.seasons + '</b><span>' + (T.seasons === 1 ? 'Season' : 'Seasons') + '</span></div>')
     + aw + '</div></div>'
     + (card.after || card.rival || card.life || card.ending ? '<div class="k-panel cr-sec cr-epi">'
       + (card.ending && card.ending.secretName ? '<p class="cr-secret"><span class="k">A secret ending</span>' + esc(card.ending.secretName) + '</p>' : '')

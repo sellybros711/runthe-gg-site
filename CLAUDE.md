@@ -11406,6 +11406,12 @@ in `finish()`, only for a career that reached the league, through `RTF_PAGE.feat
 **`check-badges` plays careers as well as drafts**, two starts and three ways of answering cards,
 and lights the whole shelf.
 
+**High school and college earn nothing unless they were PLAYED**, the owner's call: Career is
+about the NBA. A generated road (`L.opt.gen`, the free draft-night start) is backstory, so its
+amateur awards are off the trophy shelf (`awardCounts`) and `featSummary` sends no road,
+national title, state title or national player of the year. `amPlayed(L)` is the test. A road
+played from high school (Pro) keeps both.
+
 **Olympic gold was never recorded, and the badge sweep is what found it.** The olympics card
 wrote a `goldYear` that `closeSeason` read a season late, after the history it should have
 written to was already pushed, so `cr-gold` was dark in 900 careers. The card writes `olympic`

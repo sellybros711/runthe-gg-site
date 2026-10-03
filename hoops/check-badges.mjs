@@ -556,7 +556,6 @@ const EXCUSED = {
      MVP turns up about once in nine hundred blind lives: a coin flip on the
      seed, which is what made the full sweep red on main. The proof is that
      the count moved. */
-  'cr-mvp3': ['grind', () => (career.feats['cr.mvp'] || 0) > 0],
   /* The record is 38,000 points, past every real career but one, so a blind
      sweep reaches it a few times in a thousand lives and the full sweep is a
      coin flip on the seed. The rung under it (30,000) has to light. */
