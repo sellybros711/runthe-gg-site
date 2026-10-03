@@ -11077,6 +11077,15 @@ ratings ahead of the position and build, one behind, a small overall shift, and 
 town is talking (starting fame), said in the first log line. check-career 12c asks thirty
 shooting guards built the same way for at least fifteen different strength and weakness pairs.
 
+**A TWO-WAY DEAL IS G LEAGUE NIGHTS, and the first NBA night follows the depth chart.**
+Reported: undrafted, signed out of Summer League, and opening night had him checking in. A story
+career's Summer League signing sets `L.contract.tw`. `roleOf` caps it at `TW_MIN` (7) NBA minutes
+and labels it Two-way, and `roleReview` converts it to a standard deal once he belongs in the
+rotation (`diff >= -4`) or outplays the minutes. The 1-year contract lapses at season end. The
+debut is four scenes, picked by `debutScene` off the role: `debut_start` (introduced),
+`debut_bench` (checks in off the bench), `debut_dnp` (a towel on opening night, garbage time a
+few games later) and `debut_gl` (the G League, then the call-up). check-career 12f holds it.
+
 **AWARDS AND BADGES ARE ICONS.** The Trophies shelf and the player card's traits, signature
 move and skill badges are pixel icons on tiles (`AW_ICON`, `TRAIT_ICON`, `BADGE_ICON` in
 career-ui.js; new kit icons crown, shield, sprout, flame, globe, six, net), with a count in

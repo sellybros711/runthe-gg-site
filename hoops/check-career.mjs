@@ -1062,6 +1062,29 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
   const ids = [...new Set((SC.match(/'trade_[a-z]+'/g) || []).map((x) => x.slice(1, -1)))];
   ok(ids.length >= 6 && ids.every((id) => new RegExp('\\n  ' + id + ': \\[').test(SC)), `every trade scene the picker can choose is written (${ids.join(', ')})`);
   ok(!/has\('club_trade'\)/.test(SC) && !/Breaking\. ' \+ c\.name \+ ' has been traded/.test(SC), 'a club deal never plays as your trade, and a trade is not a studio graphic');
+
+  section('12f. a two-way rookie starts in the G League, and the first night follows the depth chart');
+  /* Reported: undrafted, signed out of Summer League, and the opening night
+     scene had him checking in. A two-way deal is G League nights until the
+     club converts it, and the debut is told from the role he has. */
+  let twN = 0, twOver = [], conv = 0;
+  for (let i = 0; i < 40; i++) {
+    const L = C.newLife({ seed: 'tw:' + i, league, start: 'draft' });
+    let g = 0; while (!L.team && g++ < 400) { if (L.pending.length) C.choose(L, 0); else C.step(L); }
+    if (!L.team || !L.contract) continue;
+    L.contract.tw = 1;
+    const y0 = L.year;
+    while (!L.retired && g++ < 2000 && L.year === y0) {
+      if (L.season && L.season.role && L.contract.tw) { twN++; if (!L.season.role.tw || L.season.role.min > 7) twOver.push(L.season.role.label + ' ' + L.season.role.min); }
+      const res = L.pending.length ? C.choose(L, 0) : C.step(L);
+      for (const b of (res && res.beats) || []) if (/converts your two-way/.test(b.text || '')) conv++;
+    }
+  }
+  ok(twN > 20 && twOver.length === 0, `a two-way player plays G League minutes until he is converted (${twN} looks${twOver.length ? ': ' + twOver.slice(0, 2).join('; ') : ''})`);
+  ok(conv > 0, `a two-way deal can be converted in season (${conv})`);
+  const dids = ['debut_start', 'debut_bench', 'debut_dnp', 'debut_gl'];
+  ok(dids.every((id) => new RegExp('\\n  ' + id + ': \\[').test(SC)) && !/\n  debut: \[/.test(SC), 'the first night is four scenes, not one');
+  ok(/if \(ct\.tw\) \{[^}]*debut_gl/.test(SC), 'a two-way rookie opens the season in the G League scene');
 }
 
 if (!QUICK) await browser();

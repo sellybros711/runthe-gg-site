@@ -73,6 +73,7 @@ var CAST = {
   oldgm: { name: function(c){ return c.oldgm; }, role: function(c){ return 'General manager, ' + c.fromNick; }, outlet: 'office' },
   newgm: { name: function(c){ return c.newgm; }, role: function(c){ return 'General manager, ' + c.toNick; }, outlet: 'office' },
   fam: { name: function(c){ return c.fam; }, role: function(c){ return c.famRole === 'mom' ? 'Mom' : 'At home'; }, outlet: 'home' },
+  vet: { name: function(c){ return c.vet; }, role: function(c){ return 'Veteran, ' + c.nick; }, outlet: 'team' },
   mate: { name: function(c){ return c.oldmate; }, role: function(c){ return 'Teammate, ' + c.fromNick; }, outlet: 'team' },
 };
 
@@ -349,11 +350,58 @@ var SCENES = {
       tx: function(c){ return 'Sixty names. Not ' + c.last + '. The suit stays on until the phone rings.'; } },
     { who: 'whit', room: 'studio', pic: null, tx: 'Undrafted is a door, not a wall. Ask anybody who walked through it.' },
   ],
-  debut: [
+  /* A FIRST NBA NIGHT IS WHERE YOU ARE ON THE DEPTH CHART. pickScene picks
+     one off the role the engine gave you: a starter is introduced, a rotation
+     player checks in off the bench, the end of the bench waves a towel and
+     waits, and a two-way rookie opens the season in the G League. A
+     checking-in-on-opening-night scene for an undrafted two-way player was
+     the bug report. */
+  debut_start: [
+    { who: 'narr', room: 'locker', pic: 'me', pose: 'stand', name: function(c){ return c.home ? '6:58 PM' : '7:04 PM'; }, role: 'Opening night',
+      tx: vary([
+        function(c){ return 'Your name is on the whiteboard in the starting five. ' + c.vet.split(' ')[0] + ' taps it twice on his way out.'; },
+        function(c){ return 'Tape, shoes, tape again. ' + c.vet.split(' ')[0] + ' sits down next to you. "Breathe. They pay you for the fourth quarter, not the first minute."'; },
+      ]) },
+    { who: 'vance', room: 'arena', pic: 'me', pose: 'ball', shot: 'debut', loud: true, board: function(c){ return '#' + c.num; },
+      tx: function(c){ return c.home ? 'And starting, from ' + c.from + '. Number ' + c.num + '. ' + c.name + '!' : 'On the road for his first one. ' + c.name + ' starts. The boos are a compliment.'; } },
+    { who: 'bell', room: 'arena', pic: 'me', pose: 'stand', board: function(c){ return '#' + c.num; },
+      tx: function(c){ return c.fam ? c.fam + ' is in section 112 with a sign nobody can read from here.' : 'Somebody back home has this on a phone propped against a cereal box.'; } },
+  ],
+  debut_bench: [
+    { who: 'narr', room: 'arena', pic: 'me', pose: 'stand', name: 'First quarter', role: 'Opening night',
+      tx: vary([
+        function(c){ return 'Four minutes left in the first. ' + c.coach + ' looks down the bench and says your name.'; },
+        function(c){ return 'First timeout. An assistant taps your knee. You are in.'; },
+      ]) },
     { who: 'vance', room: 'arena', pic: 'me', pose: 'ball', shot: 'debut', board: function(c){ return '#' + c.num; },
-      tx: function(c){ return 'Opening night. ' + c.name + ' checks in for the first time. Number ' + c.num + '.'; } },
-    { who: 'bell', room: 'arena', pic: 'me', pose: 'ball', board: function(c){ return '#' + c.num; },
-      tx: function(c){ return 'Family in section 112. You can hear them from the floor.'; } },
+      tx: vary([
+        function(c){ return 'Checking in for the ' + c.nick + ', the rookie. ' + c.name + '. Number ' + c.num + '.'; },
+        function(c){ return 'Here comes ' + c.last + ' off the bench. First NBA minutes. Let\'s see what he\'s got.'; },
+      ]) },
+    { who: 'bell', room: 'arena', pic: 'me', pose: 'stand', board: function(c){ return '#' + c.num; },
+      tx: function(c){ return c.older ? 'He took the long way here. ' + c.age + ' years old, first minute in the league.' : 'His first touch goes right back out. Nerves. The second one goes in.'; } },
+  ],
+  debut_dnp: [
+    { who: 'narr', room: 'arena', pic: 'me', pose: 'stand', name: 'Opening night', role: 'End of the bench',
+      tx: vary([
+        function(c){ return 'You are in uniform. You are not in the game. Forty-eight minutes of standing up for timeouts.'; },
+        function(c){ return 'Fifteenth man. You get a towel and the best seat in the house.'; },
+      ]) },
+    { who: 'vet', room: 'locker', pic: 'me', pose: 'stand',
+      tx: function(c){ return 'Hey. I sat for a month my first year. Stay ready so you don\'t have to get ready.'; } },
+    { who: 'narr', room: 'arena', pic: 'me', pose: 'ball', shot: 'debut', name: function(c){ return c.when; }, role: 'Garbage time',
+      tx: function(c){ return 'Up ' + c.margin + ' with three minutes left, the crowd starts chanting your name before ' + c.coach + ' even looks down the bench. You check in. Your first NBA bucket counts the same as any other.'; } },
+  ],
+  debut_gl: [
+    { who: 'narr', room: 'arena', pic: 'me', pose: 'stand', name: 'Opening night', role: 'G League',
+      tx: vary([
+        function(c){ return 'The ' + c.nick + ' open the season without you. You watch it on a laptop in a hotel near the G League arena.'; },
+        function(c){ return 'Two-way life. The big club opens at home. You open in a gym that seats three thousand, and two thousand came.'; },
+      ]) },
+    { who: 'narr', room: 'arena', pic: 'me', pose: 'ball', name: 'G League', role: 'Week one',
+      tx: function(c){ return 'Thirty-four minutes a night down here. Every one of them gets cut up and sent to the front office.'; } },
+    { who: 'agent', room: 'hotel', pic: 'me', pose: 'up',
+      tx: function(c){ return 'It\'s ' + c.agent.split(' ')[0] + '. Pack a bag. The ' + c.nick + ' are short a body tomorrow and they asked for you.'; } },
   ],
   title: [
     { who: 'vance', room: 'arena', pic: 'me', pose: 'up', loud: true, confetti: true, shot: 'title', board: 'CHAMPIONS',
@@ -593,6 +641,22 @@ function tradeScene(b, L){
   if (!from) pool = ['trade_ask'];
   return { id: pool[n % pool.length], x: x, then: 'trade_arrive' };
 }
+/* The first night, told from where the engine put you. Nothing here decides
+   anything: the role is already set, and this reads it. */
+function debutScene(L){
+  var r = (L.season && L.season.role) || {}, ct = L.contract || {};
+  var n = B.hash(L.seed + ':debut');
+  var x = { home: n % 2 === 0, vet: C.say ? C.say(L, '{tvet}') : '', agent: C.say ? C.say(L, '{agent}') : 'Your agent',
+    older: L.age >= 24, from: (L.am && L.am.college) || (C.say ? C.say(L, '{town}') : 'home'),
+    margin: 18 + n % 15, when: ['Game 4', 'Game 6', 'Game 9', 'Game 11'][n % 4] };
+  var life = L.life || {};
+  if (life.pn && (life.rel === 'married' || life.rel === 'engaged')) x.fam = C.say ? C.say(L, '{partner}') : '';
+  else if (n % 3) x.fam = 'Your mom';
+  if (ct.tw) { x.level = 'Pro'; return { id: 'debut_gl', x: x }; }
+  if (r.starter) return { id: 'debut_start', x: x };
+  if (r.min != null && r.min < 12) return { id: 'debut_dnp', x: x };
+  return { id: 'debut_bench', x: x };
+}
 function pickScene(res, L){
   if (!res) return null;
   var beats = (res.beats || []).slice();
@@ -626,7 +690,7 @@ function pickScene(res, L){
   /* Ring night: the first press of a season after a title, once. */
   var h0 = L.history && L.history[L.history.length - 1];
   if ((b = has('role')) && L.stage === 'nba' && h0 && h0.aw && h0.aw.indexOf('champ') >= 0 && h0.t === L.team && L.flags && L.flags.ringNight !== L.year) { L.flags.ringNight = L.year; return { id: 'ring_night' }; }
-  if ((b = has('role')) && L.seasonsDone === 0 && L.stage === 'nba' && !(L.flags && L.flags.debutSeen)) { L.flags.debutSeen = 1; return { id: 'debut' }; }
+  if ((b = has('role')) && L.seasonsDone === 0 && L.stage === 'nba' && !(L.flags && L.flags.debutSeen)) { L.flags.debutSeen = 1; return debutScene(L); }
   return null;
 }
 

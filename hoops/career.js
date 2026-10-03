@@ -1851,6 +1851,8 @@ function roleRank(L) {
   const min = RANK_MIN[above] + lean * ((RANK_MIN[Math.max(0, above - 1)]) - RANK_MIN[above]);
   return { above, min, diff: me - fifth, best: above === 0 };
 }
+/* A two-way player's NBA minutes: the rest of his nights are in the G League. */
+const TW_MIN = 7;
 function roleOf(L) {
   const net = clubNet(L, L.team);
   if (storyOn(L) && L.stage === 'nba' && L.team && rostOf(L)) {
@@ -1859,6 +1861,7 @@ function roleOf(L) {
       let min = rk.min + (L.m.trust - 50) * 0.05 + (L.season ? L.season.mods.min : 0);
       if (L.contract && L.contract.kind === 'rookie' && L.draft && L.draft.pick <= 5 && net < 0) min += 3;
       min = clamp(depthCheck(L, min, rk.diff), 2, 38.5);
+      if (L.contract && L.contract.tw) return { min: round1(Math.min(min, TW_MIN)), diff: rk.diff, label: 'Two-way', starter: false, rank: rk.above + 1, tw: 1 };
       const label = rk.best && min >= 33 ? 'Franchise player' : min >= 24 ? 'Starter' : min >= 15 ? 'Rotation' : 'End of bench';
       return { min: round1(min), diff: rk.diff, label, starter: min >= 24, rank: rk.above + 1 };
     }
@@ -4032,6 +4035,19 @@ function roleReview(L, beats, when) {
   const s = L.season, role = roleOf(L), perf = perfOf(L), st = coachStyle(L);
   const rng = rngAt(L, 'review:' + when);
   const coach = myCoach(L);
+  /* A two-way deal is converted once you belong in the rotation, or once you
+     outplay the minutes it gives you. Until then nothing else here applies. */
+  if (L.contract && L.contract.tw) {
+    if ((role.diff >= -4 || perf >= 1.1) && rng() < 0.55) {
+      delete L.contract.tw;
+      L.contract.years = Math.max(L.contract.years, 2); L.contract.total = Math.max(L.contract.total, 2);
+      bump(L, { trust: 4, morale: 6 });
+      const t = say(L, '{gm}') + ' converts your two-way deal. A standard contract. No more G League.';
+      beats.push({ kind: 'role', text: t, tone: 'good' });
+      logIt(L, t, 'good');
+    }
+    return;
+  }
   if (perf >= 1.09 && role.min < 34 && rng() < 0.6) {
     const up = role.starter ? 2 : role.min >= 19 ? Math.max(3, 25 - role.min) : 4;
     bump(L, { min: up, trust: 3 });
@@ -7889,9 +7905,12 @@ function choose(L, i, extra) {
         remember(L, 'sl.made', true);
       }
       L.contract = { years: 1, total: 1, salary: round1(capFor(L.year) * MIN_PCT), kind: 'min', start: L.year };
+      /* A two-way deal is mostly G League nights, until the club converts it. */
+      if (card.ctx && card.ctx.story) L.contract.tw = 1;
       joinTeam(L, opt.club, false);
       L.draft = { pick: null, round: null, team: opt.club };
-      text = 'Two-way deal with the ' + E.teamName(opt.club) + '. Prove it.'; tone = 'good';
+      text = L.contract.tw ? 'Two-way deal with the ' + E.teamName(opt.club) + '. Most nights you are in the G League. Prove it.'
+        : 'Two-way deal with the ' + E.teamName(opt.club) + '. Prove it.'; tone = 'good';
       logIt(L, text, 'good');
       L.phase = 'drafted';
       openYear(L);
