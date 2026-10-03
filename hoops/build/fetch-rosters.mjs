@@ -41,6 +41,30 @@ export const CLUBS = ['ATL', 'BOS', 'BRK', 'CHI', 'CHO', 'CLE', 'DET', 'IND', 'M
   'NYK', 'ORL', 'PHI', 'TOR', 'WAS', 'DAL', 'DEN', 'GSW', 'HOU', 'LAC', 'LAL', 'MEM',
   'MIN', 'NOP', 'OKC', 'PHO', 'POR', 'SAC', 'SAS', 'UTA'];
 
+/* SIGNINGS THE PAGES HAVE NOT CAUGHT UP WITH. A club page lists a man once he
+   has signed, and a restricted free agent who signs late is on no page at all
+   until somebody updates it, so a career would join a league without him.
+   Reported by the owner: Jalen Duren re-signed with Detroit for five years and
+   $200M and was in no club. Each row puts a man on his club (and off any
+   other) and carries his salary for the season, because the salary file was
+   written before he signed. Delete a row once the pages and the salary file
+   both have him; until then it is applied to every refresh, here and in
+   fetch-ratings.mjs. */
+export const SIGNINGS = [
+  { i: 'durenja01', n: 'Jalen Duren', pos: 'C', b: 2003, club: 'DET', pay: 40.0 },
+];
+
+/* Put every signing on its club, once. Pure, so a saved file can be patched
+   with no network. */
+export function applySignings(rosters) {
+  for (const s of SIGNINGS) {
+    if (!rosters.clubs[s.club]) continue;
+    for (const c in rosters.clubs) rosters.clubs[c] = rosters.clubs[c].filter((m) => m.i !== s.i);
+    rosters.clubs[s.club].push({ i: s.i, n: s.n, pos: s.pos, b: s.b });
+  }
+  return rosters;
+}
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const arg = (name, fallback) => {
   const i = process.argv.indexOf(`--${name}`);
@@ -115,10 +139,17 @@ async function main() {
     seen[m.i] = c; return true;
   });
   if (twice.length) console.log('\nOn two pages, kept on the first: ' + twice.join('; '));
-  const out = { season, clubs, coaches, twice: twice.length };
+  const out = applySignings({ season, clubs, coaches, twice: twice.length });
   fs.writeFileSync(OUT, JSON.stringify(out) + '\n');
   const n = Object.values(clubs).reduce((s, l) => s + l.length, 0);
   console.log(`\nWrote ${path.relative(process.cwd(), OUT)}: ${n} players on 30 clubs for ${season - 1}-${String(season).slice(2)}.`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) main();
+if (import.meta.url === `file://${process.argv[1]}`) {
+  if (process.argv.includes('--signings')) {
+    /* Apply the table to the committed file, with no fetch. */
+    const r = applySignings(JSON.parse(fs.readFileSync(OUT, 'utf8')));
+    fs.writeFileSync(OUT, JSON.stringify(r) + '\n');
+    console.log('Applied ' + SIGNINGS.length + ' signing(s) to ' + path.relative(process.cwd(), OUT));
+  } else main();
+}

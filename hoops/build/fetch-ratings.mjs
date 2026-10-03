@@ -30,6 +30,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { SIGNINGS } from './fetch-rosters.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(HERE, '..', 'data', 'ratings.json');
@@ -92,6 +93,9 @@ export function joinRatings(rosters, ratingsCsv, salariesCsv) {
     if (!hit || hit.length !== 1) { missed.pay.push(r.player_name); continue; }
     (men[hit[0]] = men[hit[0]] || {}).p = Math.round(pay / 1e5) / 10;
   }
+  /* A late signing's salary is not in the salary file yet, so the contract he
+     signed is used (fetch-rosters.mjs keeps the table). */
+  for (const s of SIGNINGS) if (s.pay > 0) (men[s.i] = men[s.i] || {}).p = s.pay;
   const sorted = {};
   for (const k of Object.keys(men).sort()) sorted[k] = men[k];
   return { season: rosters.season, men: sorted, missed };

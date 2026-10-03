@@ -11231,6 +11231,15 @@ season about to be played, so nobody is aged into it.
 goes through `ovT(L, o)`**, which is `show` on a story career and the old number on a save from
 before, because the story-off replay fingerprints every log line and must stay byte identical.
 
+**A LATE SIGNING IS A HAND ROW, `SIGNINGS` in `fetch-rosters.mjs`.** A restricted
+free agent who signs after the club pages and the salary file were written is on no
+roster: Jalen Duren re-signed with Detroit (five years, $200M) and was in no club.
+Each row puts a man on his club (and off any other) and carries the salary he signed
+for. It is applied on every refresh (the roster fetch and `fetch-ratings.mjs`), so the
+weekly workflow cannot drop him, and `node hoops/build/fetch-rosters.mjs --signings`
+applies it to the committed file with no network. check-rosters holds every row to
+its club and its pay. Delete a row once both sources have him.
+
 **Pay** is the real figure for the season it is for (`payOf`); after that a market figure off
 the 2K overall (`PAY_AT`, the median real salary at each rating, scaled with the cap). Nobody
 here knows a man's next contract, so a later year is an estimate by design.

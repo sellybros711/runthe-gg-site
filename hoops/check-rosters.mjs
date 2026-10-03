@@ -58,6 +58,14 @@ ok(!(RO.twice > 6), `a handful at most were on two club pages and kept on one ($
 const known = Object.keys(ids).filter((i) => ROWS.some((r) => r.i === i && r.s >= latest - 1)).length;
 ok(known / Object.keys(ids).length > 0.6, `most of the league played last season and joins the data (${known} of ${Object.keys(ids).length})`);
 
+// ── late signings (fetch-rosters.mjs SIGNINGS) ──
+const { SIGNINGS } = await import('./build/fetch-rosters.mjs');
+const RATE = fs.existsSync(path.join(HERE, 'data', 'ratings.json')) ? JSON.parse(fs.readFileSync(path.join(HERE, 'data', 'ratings.json'), 'utf8')).men : {};
+for (const s of SIGNINGS) {
+  ok((ids[s.i] || []).join() === s.club, `${s.n} signed with ${s.club} and is on that roster and no other (${(ids[s.i] || []).join() || 'none'})`);
+  ok(!(s.pay > 0) || (RATE[s.i] && RATE[s.i].p === s.pay), `${s.n} is paid the $${s.pay}M he signed for (${RATE[s.i] && RATE[s.i].p})`);
+}
+
 // ── the season a career joins ──
 const league = C.seedLeague(ROWS, RO);
 ok(league.rs === latest + 1, 'the league is seeded from the file');
