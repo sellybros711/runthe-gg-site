@@ -104,7 +104,7 @@
       '  text-transform:uppercase;text-decoration:none;-webkit-tap-highlight-color:transparent;}',
       '.rtgnav .ic{position:relative;display:block;width:23px;height:23px;}',
       '.rtgnav .ic svg{width:100%;height:100%;display:block;}',
-      '.rtgnav a.on,.rtgnav button.on{color:var(--coralT,#F06A5F);',
+      '.rtgnav a.on,.rtgnav button.on{color:color-mix(in srgb, var(--coralT,#F06A5F) 78%, var(--ink,#F4F7FB));',
       '  background:color-mix(in srgb, var(--coral,#F06A5F) 15%, transparent);}',
       '.rtgnav a:hover:not(.on),.rtgnav button:hover:not(.on){color:var(--ink,#F4F7FB);}',
       '.rtgnav a:active,.rtgnav button:active{transform:translateY(1px);}',

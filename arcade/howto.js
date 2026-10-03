@@ -1,85 +1,74 @@
 /* Run The Arcade - shared "How to play" helper.
    Usage: <script src="/arcade/howto.js"></script> then RTGHowto.init('table').
    Injects a "?" topbar button + a small modal with per-game bullets.
-   First-ever visit auto-opens the modal once (localStorage 'rtg:howto:<game>'),
-   unless the page booted with a result modal already showing (locked state). */
+   It never opens by itself: the board's one line of instruction does that
+   job, and the ? is there for anything more. */
 (function(){
   'use strict';
 
   var CONTENT = {
     match: [
       'Sixteen names. Four hidden groups of four.',
-      'A group can be a team, a jersey number, a last name. Anything they share.',
-      'Pick four and lock them in. "One away" means 3 of your 4 go together.',
-      '4 wrong guesses and your day’s over. Solve all four groups to keep your streak.'
+      'Pick four that share something. "One away" means 3 of 4 fit.',
+      'Four misses ends your day.'
     ],
     table: [
-      'One player, one team. What number did they wear there?',
-      'Type it. Exact is a bullseye. Off by 2 or less still counts.',
-      'You get one save. Miss for real a second time and your run’s over.',
-      'It starts with big names and gets deeper the longer you go.'
+      'What number did he wear for that team?',
+      'Exact is a bullseye. Within 2 still counts.',
+      'One save. A second miss ends the run.'
     ],
     career: [
-      'Only players who moved around. Every answer played for at least 3 teams.',
-      'You start with position, college and era for free. Then the teams show up one at a time, first team first.',
-      'No multiple choice. Type who it is. Get it off the first team for 5 points, off two or three for 3, and less from there.',
-      'Stuck? Take 4 names for 1 point. A wrong answer ends your run.'
+      'Every answer played for 3 or more teams.',
+      'Teams show one at a time. Call it off one team for 5.',
+      'Take 4 names for 1. One miss ends the run.'
     ],
     oddone: [
-      'Five names. Four of them have something in common: a team, a position, a decade, or the Hall of Fame.',
-      'Tap the one that doesn’t belong. That’s 1 point.',
-      'Then name what the other four share for a second point.',
-      'Tap the wrong name and your run’s over. A wrong link just costs you the bonus.'
+      'Five names. Tap the one that doesn’t belong for 1.',
+      'Name what the other four share for 1 more.',
+      'A wrong tap ends the run.'
     ],
     rankit: [
-      'Five retired NBA, NFL or MLB players. One career stat, like points, home runs, passing yards or saves.',
-      'Most goes on top. Tap two names to swap them, then hit Check.',
-      'One puzzle a day. You get 5 tries. Fewest tries wins the board.',
-      'You see the real numbers after every check, so each try tells you something.'
+      'Five players, one career stat. Most goes on top.',
+      'Tap two to swap, then Check. You see the real numbers.',
+      'Five tries. Fewest tries wins.'
     ],
     guess: [
-      'One NBA, NFL or MLB player from any era. We tell you the sport.',
-      'Guess any player from that sport. The tiles compare whole careers: position, teams, debut decade, college and awards.',
-      'Green means a match. Yellow means close. Arrows point higher or lower.',
-      'You get 8 guesses. Stuck? Burn a clue for a hint.'
+      'One player. We tell you the sport.',
+      'Green is a match. Yellow is close. Arrows point the way.',
+      'Eight guesses. A clue costs no guess.'
     ],
     almamater: [
-      'You get one NBA, NFL or MLB player at a time. Where did they go to college?',
-      'Type the school. Don’t stress the spelling. UNC, North Carolina and University of North Carolina all count.',
-      'Type it for 2 points. Stuck? Take the 4 choices for 1.',
-      'Pick the wrong school and your run’s over. A spelling we don’t know costs you nothing.'
+      'Where did he go to college? Type the school for 2.',
+      'Spelling is forgiven. Take 4 choices for 1.',
+      'A wrong school ends the run.'
     ],
     crossword: [
-      'A quick sports mini. Type into the grid.',
-      'Tap a cell to switch across and down. Clues are below.',
-      'Fastest clean solve tops the board.',
-      'Free players get one Reveal. Pro gets unlimited.'
+      'A sports mini. Tap a square and type.',
+      'Tap again to switch across and down.',
+      'Fastest clean solve tops the board.'
     ],
     sportegories: [
-      'One letter, eight sports categories, two minutes.',
-      'Type a full name. The first OR last name can start with the letter. On B, Chris Bosh and Barry Bonds both count.',
-      'Every row is marked Anchor, Mid, Hard or Spice. Knock out the Anchors first.',
-      'When the clock runs out, the round’s over. Fill all eight for a perfect day.'
+      'One letter, eight categories, two minutes.',
+      'First or last name can start with the letter.',
+      'Fill all eight for a perfect day.'
     ],
     rollcall: [
-      'One team, one season, 90 seconds on the clock.',
-      'Every blank is a player who wore that uniform that year. Type the names you remember.',
-      'Right player, wrong season? That’s not a miss. We’ll tell you when he was there.',
-      'Wrong names only cost you time. Your score is how many you get.'
+      'One team, one season, 90 seconds.',
+      'Type the players who wore that uniform.',
+      'Wrong names only cost time.'
     ],
     chain: [
-      'Two players. Find the two teammates that connect them.',
-      'Each name has to have played with the one above it. Same team, same years.',
-      'The last name has to connect to the player at the bottom too.',
-      '4 wrong names and the chain breaks. Your time is your score, so a clean solve wins the day.'
+      'Two players. Name two teammates that link them.',
+      'Each name played with the one above, same years.',
+      'Four wrong names breaks the chain.'
     ],
     highlow: [
-      'Pick a category. There are NBA, NFL and MLB stat pools.',
-      'Players come two at a time. Is the next one higher or lower on the stat?',
-      'Every right call shows the real number and keeps your run going.',
-      'One miss and it’s over. There’s no finish line. Just your best run.'
+      'Pick a stat. Is the next player higher or lower?',
+      'Every right call keeps the run going.',
+      'One miss ends it.'
     ]
   };
+
 
   var booted = false;
 
@@ -90,20 +79,22 @@
       '.rtgHowto-scrim{position:fixed;inset:0;background:rgba(3,9,18,.66);backdrop-filter:blur(4px);z-index:66;display:none;align-items:flex-start;justify-content:center;padding:max(24px,env(safe-area-inset-top)) 16px 24px;overflow:auto;}' +
       '.rtgHowto-scrim.on{display:flex;}' +
       '.rtgHowto-card{width:100%;max-width:360px;background:var(--card);border:1px solid var(--line2);border-radius:16px;padding:22px 20px 20px;position:relative;box-shadow:var(--shadow,0 30px 80px -20px rgba(0,0,0,.7));margin:auto 0;font-family:var(--f,inherit);}' +
-      '.rtgHowto-x{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;border:1px solid var(--line2);background:transparent;color:var(--ink);font-size:14px;line-height:1;cursor:pointer;padding:0;}' +
-      '.rtgHowto-title{font-family:var(--hero,inherit);font-weight:400;letter-spacing:.02em;text-transform:uppercase;font-size:20px;margin:0 34px 12px 0;color:var(--ink);}' +
-      '.rtgHowto-sub{margin:-6px 0 14px;color:var(--mut);font-size:13px;line-height:1.5;}' +
+      '.rtgHowto-x{position:absolute;top:8px;right:8px;width:44px;height:44px;border-radius:50%;border:1px solid var(--line2);background:transparent;color:var(--ink);font-size:14px;line-height:1;cursor:pointer;padding:0;}' +
+      '.rtgHowto-title{font-family:var(--hero,inherit);font-weight:400;letter-spacing:.02em;text-transform:uppercase;font-size:20px;margin:0 44px 12px 0;color:var(--ink);}' +
+      '.rtgHowto-sub{margin:-6px 0 14px;color:var(--mut);font-size:16px;line-height:1.45;}' +
       '.rtgHowto-demo{margin:0 0 14px;}' +
-      '.rtgHowto-rules{margin:0 0 16px;border-top:1px solid var(--line2);padding-top:12px;}' +
-      '.rtgHowto-rules summary{list-style:none;cursor:pointer;font-size:12px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);display:flex;align-items:center;gap:6px;}' +
+      '.rtgHowto-rules{margin:0 0 16px;border-top:1px solid var(--line2);padding-top:2px;}' +
+      '.rtgHowto-rules summary{list-style:none;cursor:pointer;font-size:12px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);display:flex;align-items:center;gap:6px;min-height:44px;}' +
       '.rtgHowto-rules summary::-webkit-details-marker{display:none;}' +
       '.rtgHowto-rules summary::after{content:"+";margin-left:auto;font-size:15px;line-height:1;}' +
       '.rtgHowto-rules[open] summary::after{content:"\\2212";}' +
-      '.rtgHowto-rules[open] summary{margin-bottom:10px;}' +
-      '.rtgHowto-list{margin:0;padding:0 0 0 18px;text-align:left;color:var(--mut);font-size:13px;line-height:1.55;}' +
+      '.rtgHowto-rules[open] summary{margin-bottom:6px;}' +
+      '.rtgHowto-list{margin:0;padding:0 0 0 18px;text-align:left;color:var(--mut);font-size:16px;line-height:1.45;}' +
       '.rtgHowto-list li{margin:0 0 8px;}' +
       '.rtgHowto-list li:last-child{margin-bottom:0;}' +
-      '.rtgHowto-ok{display:block;width:100%;appearance:none;border:0;border-radius:11px;padding:13px;min-height:46px;background:var(--brand,#FF8A3D);color:var(--onAccent,#160B02);font-family:var(--f,inherit);font-weight:800;font-size:13px;cursor:pointer;}';
+      '.rtgHowto-set{display:flex;gap:8px;margin:0 0 14px;}' +
+      '.rtgHowto-set button{flex:1 1 0;min-height:44px;appearance:none;border-radius:11px;border:1px solid var(--line2);background:var(--card2,var(--card));color:var(--ink);font-family:var(--f,inherit);font-weight:800;font-size:15px;cursor:pointer;}' +
+      '.rtgHowto-ok{display:block;width:100%;appearance:none;border:0;border-radius:11px;padding:13px;min-height:46px;background:var(--brand,#FF8A3D);color:var(--onAccent,#160B02);font-family:var(--f,inherit);font-weight:800;font-size:16px;cursor:pointer;}';
     // Pages without a --hero display font (e.g. the crossword) fall back to the
     // body font - bump the title weight there so it still reads as a heading.
     var hero = '';
@@ -201,6 +192,22 @@
       demo = { host: stagewrap, handle: null };
     }
     card.appendChild(rules);
+    /* Sound and theme live here as well as in the header, because on a phone
+       the header is one row (gamehead.js) and they are the two controls that
+       left it. Each button presses the page's own control, so there is one
+       place that owns the setting. */
+    var set = document.createElement('div');
+    set.className = 'rtgHowto-set';
+    var sndOrig = document.querySelector('[data-sound-toggle]');
+    var thmOrig = document.getElementById('themeBtn');
+    var sndB = null, thmB = null;
+    function paintSet(){
+      if (sndB) sndB.textContent = 'Sound: ' + (sndOrig.classList.contains('snd-off') ? 'off' : 'on');
+      if (thmB) thmB.textContent = 'Theme: ' + (document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark');
+    }
+    if (sndOrig) { sndB = document.createElement('button'); sndB.type = 'button'; sndB.addEventListener('click', function(){ sndOrig.click(); setTimeout(paintSet, 0); }); set.appendChild(sndB); }
+    if (thmOrig) { thmB = document.createElement('button'); thmB.type = 'button'; thmB.addEventListener('click', function(){ thmOrig.click(); setTimeout(paintSet, 0); }); set.appendChild(thmB); }
+    if (sndB || thmB) card.appendChild(set);
     card.appendChild(ok);
     scrim.appendChild(card);
     document.body.appendChild(scrim);
@@ -225,6 +232,7 @@
       } catch (e) { return null; }
     }
     function open(){
+      if (typeof paintSet === 'function') paintSet();
       scrim.classList.add('on');
       if (demo && !demo.handle) demo.handle = RTGDemo.mount(demo.host, key, accent());
     }
@@ -256,30 +264,10 @@
       else topbar.appendChild(btn);
     }
 
-    // ---- auto-open on first-ever visit ----------------------------------
-    // Wait a beat so the game's boot logic (which may reveal a result modal
-    // for a locked/finished day, typically after a ~300ms timeout) has run.
-    // If any game scrim is showing we skip the auto-open and leave the flag
-    // unset, so the intro still shows on the next fresh visit.
-    /* On a first visit, open THIS. It used to hand off to a tour that pointed
-       at the league switcher and the score box, which answers "what is this
-       control" for somebody who does not yet know what the game is. The demo
-       answers the earlier question by playing a round, and once you have seen
-       one the controls explain themselves.
-       Still waits for the pregame overlay and any result modal to be gone:
-       opening onto a screen they cannot see would be worse than saying
-       nothing. */
-    if(!seen()){
-      var tries = 0;
-      var wait = setInterval(function(){
-        if (++tries > 40) { clearInterval(wait); return; }              // ~12s, then give up
-        if (document.querySelector('.scrim:not(.hidden)')) return;      // a result is showing
-        if (document.querySelector('.rtgpg-scrim:not([hidden])')) return; // pregame is showing
-        clearInterval(wait);
-        markSeen();
-        open();
-      }, 300);
-    }
+    /* NO AUTO-OPEN. A first visit goes straight into a playable game: the
+       board carries one line of instruction and the ? holds the rest (the
+       demo, the scoring and the rules). The sheet used to open on its own the
+       first time, in front of the board somebody had just tapped into. */
   }
 
   window.RTGHowto = { init: init };

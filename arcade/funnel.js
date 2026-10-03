@@ -263,12 +263,27 @@
     if (have || !rowEl || !rowEl.parentNode) return;
     var box = document.createElement('div');
     box.className = 'funguest'; box.id = 'funGuest';
+    /* SAVING THE STREAK is the reason to make an account, so that is what this
+       says, with the streak's own number where the game has one. With the
+       guest board on (flags.js guestboard) the score IS on today's board, under
+       a generated name, and the line says so once board.js has posted it. */
     var msg = document.createElement('span');
-    msg.textContent = 'Playing as a guest. This score stays on this device and is not on the leaderboard.';
+    function say() {
+      var n = 0;
+      try { n = +((window.RTGResultSpec && RTGResultSpec.streak) || 0); } catch (e) {}
+      var head = n >= 2 ? ('Your ' + n + '-day streak is on this device only.') : 'Your streak is on this device only.';
+      var B = window.RTG_BOARD, on = !!(B && B.guestBoard && B.guestBoard()), nm = on && B.boardName ? B.boardName() : null;
+      var board = on ? (nm ? ' You\u2019re on today\u2019s board as ' + nm + '.' : ' Your score goes on today\u2019s board.')
+                     : ' This score is not on the leaderboard.';
+      msg.textContent = head + board + ' Make a free account to keep it.';
+    }
+    say();
+    document.addEventListener('rtg:guestposted', function () { if (box.isConnected) say(); });
     var btn = document.createElement('button');
-    btn.type = 'button'; btn.textContent = 'Create a free account';
+    btn.type = 'button'; btn.textContent = 'Save my streak';
     btn.addEventListener('click', function () {
-      try { if (window.RTGAuthUI && RTGAuthUI.open) { RTGAuthUI.open('signup', { src:'result_guest' }); return; } } catch (e) {}
+      try { if (window.gtag) gtag('event', 'arcade_save_streak_tap', { arcade_game: (window.RTGResultSpec && RTGResultSpec.key) || '' }); } catch (e) {}
+      try { if (window.RTGAuthUI && RTGAuthUI.open) { RTGAuthUI.open('signup', { src:'result_save_streak' }); return; } } catch (e) {}
       location.href = '/arcade/';
     });
     box.appendChild(msg); box.appendChild(btn);
@@ -284,7 +299,7 @@
       var bs = sheet.querySelectorAll('button');
       for (var i = 0; i < bs.length; i++) {
         if (bs[i] !== btn && !box.contains(bs[i]) && bs[i].offsetParent !== null &&
-            (bs[i].textContent || '').trim() === btn.textContent) { btn.hidden = true; return; }
+            /^(Create a free account|Save my streak)$/.test((bs[i].textContent || '').trim())) { btn.hidden = true; return; }
       }
       btn.hidden = false;
     }
@@ -369,7 +384,8 @@
   // close the result overlay and reveal today's leaderboard rail
   function showBoard() {
     try {
-      var s = document.getElementById('scrim'); if (s) s.classList.add('hidden');
+      // An inline result card (Sportegories) is not an overlay: leave it where it is.
+      var s = document.getElementById('scrim'); if (s && !s.classList.contains('inline')) s.classList.add('hidden');
       var r = document.getElementById('resultModal'); if (r) r.setAttribute('hidden', '');
       document.body.style.overflow = '';
       var lb = document.querySelector('.lb, .mlb');

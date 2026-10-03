@@ -29,7 +29,7 @@
   'use strict';
 
   /* ============================================================
-   * NBA - all-time icons (any era) + modern stars (~1990–present)
+   * NBA - all-time icons (any era) + modern stars (~1990-present)
    * ============================================================ */
   var NBA_ICONS = [
     'Kareem Abdul-Jabbar','Wilt Chamberlain','Bill Russell','Larry Bird','Magic Johnson','Michael Jordan',

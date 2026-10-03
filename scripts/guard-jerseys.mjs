@@ -71,7 +71,8 @@ const FOUNDED = {
   'Charlotte Bobcats': 2004, 'Memphis Grizzlies': 2001, 'Toronto Raptors': 1995,
   'Oklahoma City Thunder': 2008, 'Brooklyn Nets': 2012, 'New Orleans Pelicans': 2013,
   'Washington Nationals': 2005, 'Miami Marlins': 2012, 'Tampa Bay Rays': 2008,
-  'Arizona Diamondbacks': 1998, 'Colorado Rockies': 1993, 'Cleveland Guardians': 2022
+  'Arizona Diamondbacks': 1998, 'Colorado Rockies': 1993, 'Cleveland Guardians': 2022,
+  'Washington Commanders': 2022, 'Washington Football Team': 2020
 };
 {
   const early = new Map();

@@ -56,7 +56,7 @@ push or pull request touching a guarded directory
 (`.github/workflows/dash-check.yml`).
 
 The guarded list inside that script is `wrestling`, `hoops`, `globe`,
-`mythiball`, `golf`, `cfb`, `football`, `assets` and `baseball`. The rest of the
+`mythiball`, `golf`, `cfb`, `football`, `assets`, `baseball` and `arcade`. The rest of the
 repo predates the rule and still contains hundreds of em dashes; add a directory to
 `GUARDED` only after cleaning it, never before, or the check becomes noise
 people learn to ignore.
@@ -86,6 +86,12 @@ is the same miss as the football placeholders above, found from the other side.
 
 **`baseball` was a contained job**: 57 offenders across six files, and almost
 all of them wanted a colon, a full stop or a pair of parentheses.
+
+**`arcade` carried 199**, and one was a player's: the archive bar read "Past days
+need an Arcade Card" and a dash. The rest were comments, READMEs, three
+generators' file headers and the 2026-07-23 audit records. None was an empty
+value. Its data files (jerseys, rosters, the Sportegories corpus) are rebuilt by
+bots and are guarded too, so a scraped name carrying an en dash fails here.
 
 Run the checker against anything ad hoc:
 

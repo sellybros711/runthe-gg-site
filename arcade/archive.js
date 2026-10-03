@@ -86,7 +86,7 @@
     bar.style.cssText='position:sticky; top:0; z-index:40; display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; '
       +'padding:7px 14px; font-family:var(--f,system-ui); font-weight:800; font-size:12px; letter-spacing:.01em; '
       +'color:#160B02; background:var(--brand,#FF8A3D); box-shadow:0 2px 10px -4px rgba(0,0,0,.5);';
-    bar.innerHTML='<span>Past days need an Arcade Card &mdash; showing <b>today\u2019s</b> puzzle instead.</span>'
+    bar.innerHTML='<span>Past days need an Arcade Card. Showing <b>today\u2019s</b> puzzle instead.</span>'
       +'<a href="/arcade/archive/" style="color:#160B02; text-decoration:underline; font-weight:900;">See the archive</a>';
     if(document.body) document.body.insertBefore(bar, document.body.firstChild);
   }

@@ -38,7 +38,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Rubik:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=5" />
+<link rel="stylesheet" href="/arcade/arcade.css?v=7" />
 <script src="/arcade/icons.js?v=3"></script>
 <style>
 :root{
@@ -117,7 +117,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .inforow{display:flex; align-items:center; justify-content:space-between; gap:8px;
   background:var(--card); border:1px solid var(--line2); border-radius:12px; box-shadow:var(--shadow);
   padding:9px 13px; margin-bottom:12px;}
-.inforow .seg{font-family:var(--pix); font-size:10px; letter-spacing:.4px; font-weight:800; color:var(--ink);}
+.inforow .seg{font-family:var(--pix); font-size:10px; letter-spacing:.4px; font-weight:800; color:var(--ink); text-transform:uppercase;}
 .inforow .seg small{color:var(--mut); font-weight:700;}
 .inforow .sep{width:1px; height:18px; background:var(--line2);}
 .inforow .size{color:var(--newsT);}
@@ -127,6 +127,14 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
 /* ---------- grid ---------- */
 .board-wrap{position:relative; margin-bottom:12px; container-type:inline-size;}
+/* Under the pinned deck (clue, controls and keys) a phone has about 320px of
+   window between the top banner and the deck. A full-width square board is
+   taller than that, so its bottom rows sat behind the clue while you typed.
+   --fitW is that window's height, measured by fitBoard() below: the board
+   narrows to it so the whole grid is on screen with the keyboard up. */
+@media (max-width:999px){
+  .board-wrap{max-width:var(--fitW,100%); margin-left:auto; margin-right:auto;}
+}
 .board{display:grid; gap:2px; width:100%; aspect-ratio:1/1;
   background:var(--grid-line); border:2px solid var(--grid-line); border-radius:8px; padding:2px;
   box-shadow:var(--shadow); overflow:hidden;}
@@ -140,14 +148,14 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   font-family:var(--pix); font-weight:800; user-select:none; cursor:pointer; text-transform:uppercase;
   color:var(--cell-ink); transition:background .12s ease;}
 .cell.block{background:#0b1522; cursor:default;}
-.cell .num{position:absolute; top:2px; left:3px; font-size:9px; font-weight:800; color:rgba(10,20,32,.5); line-height:1;}
+.cell .num{position:absolute; top:2px; left:3px; font-size:9px; font-weight:800; color:rgba(10,20,32,.74); line-height:1;}
 .cell .num{font-size:max(calc(17cqw / var(--n,5)), 7px);}
 .cell .ch{font-size:min(6.4vw,30px); line-height:1; color:var(--cell-ink);}
 .cell .ch{font-size:calc(56cqw / var(--n,5));}
 .cell.inword{background:var(--word);}
-.cell.inword .num{color:rgba(10,20,32,.5);}
+.cell.inword .num{color:rgba(10,20,32,.74);}
 .cell.sel{background:var(--sel); color:var(--cell-ink);}
-.cell.sel .num{color:rgba(10,20,32,.7);}
+.cell.sel .num{color:rgba(10,20,32,.82);}
 .cell.good .ch{color:#1f8b39;}
 .cell.bad .ch{color:#d23a22;}
 .cell.sel.good .ch,.cell.sel.bad .ch{color:var(--cell-ink);}
@@ -174,7 +182,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .cluebar .arw:active{background:var(--line2);}
 .cluebar .body{flex:1; min-width:0; padding:9px 12px; display:flex; flex-direction:column; justify-content:center;}
 .cluebar .tag{font-family:var(--pix); font-size:8px; letter-spacing:1px; font-weight:800; color:var(--newsT); text-transform:uppercase;}
-.cluebar .txt{font-size:15px; font-weight:600; line-height:1.3; color:var(--ink);}
+.cluebar .txt{font-size:16px; font-weight:600; line-height:1.3; color:var(--ink);}
 
 /* ---------- controls ---------- */
 .controls{display:flex; gap:8px; margin-bottom:14px;}
@@ -194,10 +202,10 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .list h3{font-family:var(--pix); font-size:11px; letter-spacing:1px; font-weight:800; color:var(--newsT);
   margin:0 0 6px; text-transform:uppercase;}
 .list ol{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px;}
-.list li{display:flex; gap:7px; padding:6px 8px; border-radius:8px; font-size:13px; line-height:1.25; cursor:pointer; color:var(--ink);}
+.list li{display:flex; gap:7px; padding:6px 8px; border-radius:8px; font-size:16px; line-height:1.25; cursor:pointer; color:var(--ink);}
 .list li .n{font-weight:800; color:var(--mut); flex:0 0 auto; min-width:16px; text-align:right;}
 .list li.active{background:var(--word); color:var(--cell-ink);}
-.list li.active .n{color:rgba(10,20,32,.6);}
+.list li.active .n{color:rgba(10,20,32,.8);}
 .list li.done .t{color:var(--dim); text-decoration:line-through;}
 
 /* On a phone the masthead was eating roughly a third of the screen before the
@@ -220,10 +228,10 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   .playbar{padding-top:7px;}
   .playbar .cluebar{margin-bottom:6px;}
   .playbar .cluebar .body{padding:7px 11px;}
-  .playbar .cluebar .txt{font-size:14px;}
+  .playbar .cluebar .txt{font-size:16px;}
   .playbar .controls{margin-bottom:4px;}
   .playbar .controls button{padding:8px 4px; font-size:11.5px;}
-  .playbar .key{height:38px;}
+  .playbar .key{height:39px;}
   .playbar .krow{margin-bottom:5px;}
 }
 
@@ -353,6 +361,7 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
       grid-template-areas:
         "top   top"
         "title title"
+        "line  lb"
         "info  lb"
         "play  lb"
         "board lb"
@@ -361,6 +370,10 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
     .wrap > .topbar{ grid-area:top; }
     .wrap > .a-gametitle{ grid-area:title; }
     .wrap > .inforow{ grid-area:info; }
+    .wrap > .rtggh-line{ grid-area:line; text-align:left; }
+    /* the clue bar is drawn two lines tall before the first clue lands, so
+       filling it in does not push the board down (it moved it 21px) */
+    .playbar .cluebar .txt{ min-height:2.6em; }
     .wrap > .playbar{ grid-area:play; position:static; margin:0; padding:0;
       background:none; border-top:0; box-shadow:none; }
     .wrap > .board-wrap{ grid-area:board; }
@@ -395,6 +408,9 @@ window.GA_ID='G-L29P5MRWKE';
   s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
   document.head.appendChild(s);})();
 </script>
+<script src="/arcade/tokens.js?v=15"></script>
+<script src="/arcade/metrics.js?v=3"></script>
+<script src="/arcade/gamehead.js?v=3"></script>
 </head>
 <body>
 <div class="wrap">
@@ -426,6 +442,9 @@ window.GA_ID='G-L29P5MRWKE';
     <span class="seg clock" aria-label="Time"><span class="n" id="timerN">0:00</span></span>
   </div>
 
+  <!-- the one line of instruction, in the markup so it is there at first
+       paint (gamehead.js styles it; injected, it pushed the board 21px) -->
+  <p class="rtggh-line">Tap a square and type. Tap twice to switch.</p>
 
   <div class="board-wrap">
     <div class="board" id="board" role="grid" aria-label="Crossword grid"></div>
@@ -555,41 +574,46 @@ window.GA_ID='G-L29P5MRWKE';
      daily; the authored bank above still wins on exact launch-week dates. -->
 <script src="../match/entities.js?v=12"></script>
 <script src="/arcade/former.js?v=4"></script>
-<script src="/arcade/stars.js?v=4"></script>
+<script src="/arcade/stars.js?v=5"></script>
 <script src="/arcade/awards.js?v=3"></script>
 <script src="/arcade/supplement.js?v=6"></script>
-<script src="/arcade/cluebank.js?v=2"></script>
+<script src="/arcade/cluebank.js?v=3"></script>
 <script src="/arcade/primary.js?v=34"></script>
-<script src="/arcade/data.js?v=5"></script>
-<script src="gen.js?v=14"></script>
-<script src="/arcade/sfx.js?v=2"></script>
-<script src="/arcade/result.js?v=1"></script>
-<script src="/arcade/funnel.js?v=12"></script>
-<script src="/arcade/share.js?v=9"></script>
-<script src="/arcade/resultart.js?v=4"></script>
-<script src="/arcade/resultstats.js?v=2"></script>
+<script src="/arcade/franchise.js?v=1"></script>
+<script src="/arcade/data.js?v=8"></script>
+<script src="/arcade/flags.js?v=2"></script>
+<script src="/arcade/fame.js?v=1"></script>
+<script src="gen.js?v=15"></script>
+<script src="data/mini-words.js?v=1"></script>
+<script src="mini.js?v=1"></script>
+<script src="/arcade/sfx.js?v=4"></script>
+<script src="/arcade/result.js?v=2"></script>
+<script src="/arcade/funnel.js?v=14"></script>
+<script src="/arcade/share.js?v=11"></script>
+<script src="/arcade/resultart.js?v=5"></script>
+<script src="/arcade/resultstats.js?v=3"></script>
+<script src="/arcade/review.js?v=1" defer></script>
 <script src="/arcade/challenge.js?v=4"></script>
-<script src="/arcade/modal-a11y.js?v=1"></script>
-<script src="/arcade/tokens.js?v=13"></script>
-<script src="/arcade/day.js?v=2"></script>
-<script src="/arcade/dayroll.js?v=1"></script>
-<script src="/arcade/archive.js?v=2"></script>
+<script src="/arcade/modal-a11y.js?v=2"></script>
+<script src="/arcade/day.js?v=3"></script>
+<script src="/arcade/dayroll.js?v=2"></script>
+<script src="/arcade/archive.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=21"></script>
-<script src="/arcade/leaderboard.js?v=15"></script>
-<script src="/arcade/alltime.js?v=3"></script>
+<script src="/arcade/board.js?v=24"></script>
+<script src="/arcade/leaderboard.js?v=16"></script>
+<script src="/arcade/alltime.js?v=4"></script>
 <script src="/arcade/auth.js?v=4"></script>
 <script src="/arcade/mycard.js?v=14"></script>
-<script src="/arcade/topbanner.js?v=10"></script>
+<script src="/arcade/topbanner.js?v=11"></script>
 <script src="/arcade/auth-ui.js?v=9"></script>
-<script src="/arcade/card.js?v=22"></script>
-<script src="/arcade/referral.js?v=11"></script>
+<script src="/arcade/card.js?v=23"></script>
+<script src="/arcade/referral.js?v=12"></script>
 <script src="/arcade/gamemarks.js?v=4"></script>
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="/arcade/archivecta.js?v=2"></script>
-<script src="/arcade/demo.js?v=4"></script>
-<script src="/arcade/pregame.js?v=26"></script>
-<script src="/arcade/howto.js?v=24"></script>
+<script src="/arcade/demo.js?v=5"></script>
+<script src="/arcade/pregame.js?v=29"></script>
+<script src="/arcade/howto.js?v=26"></script>
 <script>
 (function(){
   "use strict";
@@ -620,6 +644,13 @@ window.GA_ID='G-L29P5MRWKE';
   // date; anything date-keyed (board submit/leaderboard, streak save) uses DATE.
   function dailyFor(dateStr){
     for(var i=0;i<LIST.length;i++){ if(LIST[i].id===dateStr) return LIST[i]; }
+    // The dense mini (every letter crossed), behind the densecw flag. The
+    // flag is read for the puzzle's own day, so an archive board from before
+    // the switch is the board it was. A day the mini cannot build falls
+    // through to gen.js below.
+    if(window.RTG_CWMINI && window.RTGFlags && RTGFlags.on('densecw', dateStr)){
+      try{ var m = RTG_CWMINI.forDate(dateStr); if(m) return m; }catch(e){}
+    }
     if(window.RTG_CWGEN){
       try{ var g = RTG_CWGEN.forDate(dateStr); if(g) return g; }catch(e){}
     }
@@ -682,14 +713,21 @@ window.GA_ID='G-L29P5MRWKE';
 
   // ---- state ----------------------------------------------------------------
   var sel = { r:0, c:0, dir:'A' };
+  /* Start on a clue, not on a square. The cursor used to open on the first
+     white square going Across, and on most days that square starts no Across
+     word (106 of 180 grids have no 1 Across), so no clue lit up and the first
+     letter typed went nowhere. The lowest-numbered Across clue, or Down when a
+     grid has none, is where a solver expects to begin. */
+  function startSel(){
+    var a=P.entries.filter(function(e){ return e.dir==='A'; }).sort(function(x,y){ return x.num-y.num; })[0]
+        || P.entries.slice().sort(function(x,y){ return x.num-y.num; })[0];
+    if(a){ sel.r=a.r; sel.c=a.c; sel.dir=a.dir; }
+  }
   var startedAt = null, elapsed = 0, tick = null, done = false;
   var charged = false, attemptFirst = false;
   var hintsUsed = 0;   // free players get 1 reveal per play; Pro (and tester/archive) unlimited
 
-  // pick first white cell
-  (function(){ outer:
-    for(var r=0;r<N;r++) for(var c=0;c<N;c++) if(!cells[r][c].block){ sel.r=r; sel.c=c; break outer; }
-  })();
+  startSel();   // the first clue, not the first square
 
   // ---- render the board -----------------------------------------------------
   var board = document.getElementById('board');
@@ -710,6 +748,7 @@ window.GA_ID='G-L29P5MRWKE';
     board.style.width = (cell*N + chrome) + 'px';
   }
   sizeBoard();
+  window.RTGCwSize = sizeBoard;   // fitBoard() narrows the wrap, then asks again
   var szT; addEventListener('resize', function(){ clearTimeout(szT); szT = setTimeout(sizeBoard, 90); });
   addEventListener('orientationchange', function(){ setTimeout(sizeBoard, 120); });
   for(var r=0;r<N;r++) for(var c=0;c<N;c++){
@@ -802,6 +841,7 @@ window.GA_ID='G-L29P5MRWKE';
     }
     startedAt = performance.now();
     tick = setInterval(updateTimer, 250);
+    saveResume();   // the play was just spent: keep it restorable from this tap on
   }
   function updateTimer(){
     if(!startedAt) return;
@@ -875,15 +915,40 @@ window.GA_ID='G-L29P5MRWKE';
     jumpTo(order[idx]);
   }
 
+  /* The grid listens to the whole page, so it has to know when a key is NOT
+     for it: typing an email into the sign-in form used to fill the grid, and
+     Tab could not leave a dialog. Anything with its own text field, or any
+     open dialog, keeps its keys. */
+  function keysElsewhere(ev){
+    var t=ev.target;
+    if(t && t!==document.body && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return true;
+    /* "Open" means drawn: a closed sheet is display:none, and a display:none
+       box still reports position:fixed, so the box list is what to ask. */
+    var ds=document.querySelectorAll('[role="dialog"], [aria-modal="true"]');
+    for(var i=0;i<ds.length;i++){ if(!ds[i].hidden && ds[i].getClientRects().length) return true; }
+    var sc=document.getElementById('scrim'); if(sc && !sc.classList.contains('hidden')) return true;
+    return false;
+  }
+  /* An arrow along the current word moves; an arrow across it turns first,
+     the way every crossword app works, so the highlighted clue always matches
+     the direction you are about to type in. */
+  function arrow(dir, dr, dc){
+    if(sel.dir!==dir && ownerOf(sel.r, sel.c, dir)){ sel.dir=dir; render(); return; }
+    var r=sel.r, c=sel.c;
+    for(var i=0;i<N;i++){ r+=dr; c+=dc; if(r<0||c<0||r>=N||c>=N) return;
+      if(!cells[r][c].block){ sel.r=r; sel.c=c; if(!ownerOf(r,c,sel.dir) && ownerOf(r,c,dir)) sel.dir=dir;
+        else if(!ownerOf(r,c,sel.dir)) toggleDir(); render(); return; } }
+  }
   document.addEventListener('keydown', function(ev){
     if(ev.metaKey||ev.ctrlKey||ev.altKey) return;
+    if(keysElsewhere(ev)) return;
     var k=ev.key;
     if(/^[a-zA-Z]$/.test(k)){ typeLetter(k); ev.preventDefault(); }
-    else if(k==='Backspace'){ backspace(); ev.preventDefault(); }
-    else if(k==='ArrowUp'){ sel.dir='D'; move(-1,0); ev.preventDefault(); }
-    else if(k==='ArrowDown'){ sel.dir='D'; move(1,0); ev.preventDefault(); }
-    else if(k==='ArrowLeft'){ sel.dir='A'; move(0,-1); ev.preventDefault(); }
-    else if(k==='ArrowRight'){ sel.dir='A'; move(0,1); ev.preventDefault(); }
+    else if(k==='Backspace'||k==='Delete'){ backspace(); ev.preventDefault(); }
+    else if(k==='ArrowUp'){ arrow('D',-1,0); ev.preventDefault(); }
+    else if(k==='ArrowDown'){ arrow('D',1,0); ev.preventDefault(); }
+    else if(k==='ArrowLeft'){ arrow('A',0,-1); ev.preventDefault(); }
+    else if(k==='ArrowRight'){ arrow('A',0,1); ev.preventDefault(); }
     else if(k===' '){ toggleDir(); render(); ev.preventDefault(); }
     else if(k==='Tab'){ nextClue(ev.shiftKey?-1:1); ev.preventDefault(); }
   });
@@ -967,7 +1032,7 @@ window.GA_ID='G-L29P5MRWKE';
     }
     var el = startedAt ? (performance.now()-startedAt)/1000 : elapsed;
     try{ localStorage.setItem(RESUME_KEY, JSON.stringify({
-      date:DATE, letters:letters, elapsed:Math.round(el*10)/10, hintsUsed:hintsUsed
+      date:DATE, pid:P.id, letters:letters, elapsed:Math.round(el*10)/10, hintsUsed:hintsUsed
     })); }catch(e){}
   }
 
@@ -996,8 +1061,15 @@ window.GA_ID='G-L29P5MRWKE';
   }
 
   function finish(){ if(window.RTGArchive&&RTGArchive.markDone)RTGArchive.markDone('crossword', DATE);
+    if(!done && !TESTER && !ARCHIVE && window.RTGTokens && RTGTokens.complete) RTGTokens.complete('crossword');
     done=true; if(tick) clearInterval(tick);
     clearResume();   // attempt is over - nothing left to restore
+    if(window.RTGReview) RTGReview.set('crossword', P.entries.slice().sort(function(a,b){ return a.dir===b.dir ? a.num-b.num : (a.dir<b.dir?-1:1); }).map(function(e){
+      var cs=entryCells(e), typed='', rev=false;
+      cs.forEach(function(rc){ var k=cells[rc[0]][rc[1]]; typed+=(k.val||'.'); if(k.revealed) rev=true; });
+      return { q:e.num+(e.dir==='A'?' Across: ':' Down: ')+String(e.clue).replace(/<[^>]*>/g,''), you:typed, answer:e.answer,
+               ok: rev ? null : typed.toUpperCase()===String(e.answer).toUpperCase(), note: rev ? 'Revealed' : '' };
+    }));
     elapsed = startedAt ? (performance.now()-startedAt)/1000 : 0;
     document.getElementById('timerN').textContent = fmt(elapsed);
 
@@ -1097,8 +1169,18 @@ window.GA_ID='G-L29P5MRWKE';
   // a crossword's shape is the puzzle's, not the solver's, and posting it
   // spoils which squares are blocked while boasting about nothing. The time is
   // the boast, and the poster already draws its own grid art.
+  /* The grid's shape, one square a cell: black squares are visible before a
+     letter is typed, so the picture gives nothing away. Green is a letter you
+     typed, yellow one you revealed. */
+  function shareGrid(){
+    var rows=[];
+    for(var r=0;r<N;r++){ var row='';
+      for(var c=0;c<N;c++){ var cl=cells[r][c]; row += cl.block ? '\u2B1B' : (cl.revealed ? '\uD83D\uDFE8' : '\uD83D\uDFE9'); }
+      rows.push(row); }
+    return rows.join('\n');
+  }
   function cardSpec(){
-    return { key:'crossword', date:DATE,
+    return { key:'crossword', date:DATE, grid:shareGrid(),
       stat:'\u23F1 '+N+'\u00D7'+N+' in '+fmt(elapsed), statInt:Math.round(elapsed) };
   }
   window.RTG_CARD_SPEC = cardSpec;
@@ -1219,9 +1301,7 @@ window.GA_ID='G-L29P5MRWKE';
     startedAt=null; elapsed=0;
     document.getElementById('timerN').textContent='0:00';
     // reset the cursor to the first white cell
-    (function(){ outer:
-      for(var r=0;r<N;r++) for(var c=0;c<N;c++) if(!cells[r][c].block){ sel.r=r; sel.c=c; sel.dir='A'; break outer; }
-    })();
+    startSel();
     var scr=document.getElementById('scrim'); if(scr) scr.classList.add('hidden');
     var b=document.getElementById('board'); if(b){ b.style.pointerEvents=''; b.style.opacity=''; }
     stopCountdown();
@@ -1295,7 +1375,7 @@ window.GA_ID='G-L29P5MRWKE';
       var samp=lb.querySelector('.lb-sample'); if(samp){ samp.style.opacity='1';
         if(!rows.length){ samp.innerHTML='<div class="lb-samplab">Today’s board</div><div class="note" style="margin:2px 0 0">Nobody’s posted yet today. Be the first.</div>'; }
         else{
-          var me=(RTG_BOARD.state().name||'').toLowerCase(), h='<div class="lb-samplab">Today’s fastest</div>';
+          var me=((RTG_BOARD.boardName&&RTG_BOARD.boardName())||RTG_BOARD.state().name||'').toLowerCase(), h='<div class="lb-samplab">Today’s fastest</div>';
           for(var i=0;i<rows.length;i++){ var r=rows[i], nm=r.display_name||'Player', mine=me&&nm.toLowerCase()===me;
             h+='<div class="row'+(mine?' you':'')+'"><span class="rk">'+(i+1)+'</span><span class="who">'+lbEsc(nm)+'</span><span class="tm">'+RTG_BOARD.fmtTime(r.base_seconds)+'</span></div>'; }
           samp.innerHTML=h;
@@ -1324,7 +1404,12 @@ window.GA_ID='G-L29P5MRWKE';
   if(!TESTER && !ARCHIVE){
     var rs = readResume();
     if(rs && rs.date===DATE && saved.lastDone!==DATE &&
-       window.RTGTokens && RTGTokens.playsOf('crossword')>0){ RES = rs; }
+       window.RTGTokens && RTGTokens.playsOf('crossword')>0){
+      RES = rs;
+      // letters typed into a different grid (a flag changed the day's puzzle
+      // mid-solve) are not this grid's letters: keep the attempt, drop them
+      if(rs.pid && rs.pid!==P.id) RES.letters = [];
+    }
     else if(rs){ clearResume(); }   // stale (old date / already finished)
   }
   // token gate: out of plays -> locked review (streak bookkeeping already
@@ -1338,6 +1423,55 @@ window.GA_ID='G-L29P5MRWKE';
   } else {
     beginAttempt();
   }
+})();
+</script>
+<script>
+/* The whole grid fits above the pinned deck on a phone.
+   The deck's height moves with the clue (one line to three), so it is reserved
+   at three lines of clue: measured at the clue's real length the board would
+   grow and shrink between clues. The answer is a width, because the board is
+   square. Desktop (1000px and up) has no pinned deck and is left alone. */
+(function(){
+  var wrap=document.querySelector('.board-wrap'), bar=document.querySelector('.playbar'),
+      txt=document.getElementById('clueTxt'), board=document.getElementById('board');
+  if(!wrap||!bar||!board) return;
+  var MIN=220;
+  function topEdge(){ var b=document.querySelector('.rtg-topbanner'); return b ? Math.max(0, b.getBoundingClientRect().bottom) : 0; }
+  function deck(){
+    var h=bar.getBoundingClientRect().height;
+    if(txt){ var lh=parseFloat(getComputedStyle(txt).lineHeight)||20; h+=Math.max(0, 3*lh - txt.getBoundingClientRect().height); }
+    return h;
+  }
+  /* sizeBoard() in the game snaps the board to a width its cells divide
+     evenly, off the wrap's width, so it has to run again after the wrap moves. */
+  function fitBoard(){
+    var was=wrap.style.getPropertyValue('--fitW');
+    if(window.innerWidth>=1000) wrap.style.removeProperty('--fitW');
+    else wrap.style.setProperty('--fitW', Math.max(MIN, Math.floor(window.innerHeight - topEdge() - deck() - 10))+'px');
+    if(wrap.style.getPropertyValue('--fitW')!==was && window.RTGCwSize) window.RTGCwSize();
+  }
+  /* A tap or a key lands on the board: if part of it is under the deck or the
+     banner, scroll it back into the window between them. */
+  function inView(){
+    if(window.innerWidth>=1000) return;
+    var r=board.getBoundingClientRect(), top=topEdge()+4, bot=bar.getBoundingClientRect().top-4;
+    if(r.bottom>bot) window.scrollBy(0, Math.min(r.bottom-bot, r.top-top));
+    else if(r.top<top) window.scrollBy(0, r.top-top);
+  }
+  window.RTGCwFit={ fit:fitBoard, inView:inView };
+  fitBoard();
+  /* the top banner is drawn by topbanner.js and can land after this runs */
+  window.addEventListener('load', fitBoard);
+  window.addEventListener('resize', fitBoard);
+  if(window.ResizeObserver) new ResizeObserver(fitBoard).observe(bar);
+  board.addEventListener('click', function(){ requestAnimationFrame(inView); });
+  document.addEventListener('keydown', function(e){
+    var t=e.target, tag=t && t.tagName;
+    if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||(t&&t.isContentEditable)) return;
+    if(!document.getElementById('scrim').classList.contains('hidden')) return;
+    requestAnimationFrame(inView);
+  });
+  document.addEventListener('pointerdown', function(e){ if(e.target.closest && e.target.closest('.kbd')) requestAnimationFrame(inView); });
 })();
 </script>
 <script>

@@ -38,9 +38,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/arcade/arcade.css?v=5" />
+<link rel="stylesheet" href="/arcade/arcade.css?v=7" />
 <script src="/arcade/icons.js?v=3"></script>
 <script src="/arcade/gamemarks.js?v=4"></script>
+<!-- pure localStorage and synchronous, so it can load before the tiles and
+     their order can be set before the first paint -->
+<script src="/arcade/tokens.js?v=15"></script>
+<script src="/arcade/metrics.js?v=3"></script>
 <style>
   :root{
     --bg:#071426; --card:#10233A; --card2:#162B44;
@@ -142,7 +146,7 @@
   /* next-milestone progress: thin track under the streak number, label at right */
   .hud-streak .sbar{position:relative; height:6px; margin:10px 44px 0 0; border-radius:999px; background:var(--line2); overflow:visible;}
   .hud-streak .sbar i{position:absolute; inset:0 auto 0 0; width:0; border-radius:999px; background:linear-gradient(90deg, var(--coral), var(--gold)); transition:width .6s ease;}
-  .hud-streak .sbar .lab{position:absolute; right:-44px; top:50%; transform:translateY(-50%); font-size:10px; font-weight:900; color:var(--mut); font-variant-numeric:tabular-nums; white-space:nowrap;}
+  .hud-streak .sbar .lab{position:absolute; right:-44px; top:50%; transform:translateY(-50%); font-size:10px; font-weight:900; color:var(--ink); font-variant-numeric:tabular-nums; white-space:nowrap;}
   /* streak-up micro-celebration: quick pop on the number, one-time glow on the flame */
   @keyframes streakpop{0%{transform:scale(1);}40%{transform:scale(1.28);}100%{transform:scale(1);}}
   .hud-streak .big .n.pop{display:inline-block; animation:streakpop .55s ease;}
@@ -241,7 +245,7 @@
   .iv-head{font-family:var(--hero); font-weight:400; letter-spacing:.02em; text-transform:uppercase;
     font-size:clamp(22px,5.5vw,30px); line-height:1.05; margin:9px 0 4px; color:var(--ink);}
   .iv-head b{color:var(--greenT); font-weight:400;}
-  .iv-sub{font-size:13.5px; color:var(--mut); font-weight:600; line-height:1.5; max-width:440px; margin:0 auto;}
+  .iv-sub{font-size:16px; color:var(--mut); font-weight:600; line-height:1.5; max-width:440px; margin:0 auto;}
   .iv-cta{appearance:none; border:0; cursor:pointer; font-family:var(--f); font-weight:900; font-size:15px;
     border-radius:13px; padding:14px 22px; min-height:52px; width:100%; max-width:330px; margin:16px auto 0;
     display:flex; align-items:center; justify-content:center; gap:9px;
@@ -342,6 +346,9 @@
      stay in the markup for the games' own paint calls and are not shown. */
   .dprog .pips{display:none; gap:5px;}
   .dprog .dring{display:inline-flex;}
+  /* The ring and the date are drawn by script after first paint. Empty they
+     took no room, and the whole tile list dropped 30px when they arrived. */
+  .dprog .dring:empty{width:30px; height:30px;}
   /* THE ARCADE'S STREAK, next to the ring that fills it. One number for the
      whole arcade: the flame in the nav has been showing the largest of the
      twelve per-game streaks, which climbs while you skip eleven games. This
@@ -400,7 +407,7 @@
   .tsec:first-child{margin-top:0;}
   .tsec b{display:block; font-family:var(--hero); font-weight:400; letter-spacing:.07em;
     text-transform:uppercase; font-size:14px; color:var(--ink);}
-  .tsec span{display:block; font-size:12px; color:var(--mut); margin-top:2px;}
+  .tsec span{display:block; font-size:16px; color:var(--mut); margin-top:2px;}
   /* The two free games in each section lead it. Members get these overwritten
      inline with a most-recently-played order; these are the resting state, so
      there is no reflow for everyone else. */
@@ -428,6 +435,7 @@
   .tile .status{position:absolute; top:11px; right:12px; z-index:2; font-size:9.5px; font-weight:900; letter-spacing:.08em; text-transform:uppercase;
     padding:4px 9px; border-radius:999px; line-height:1; border:1.5px solid color-mix(in srgb, var(--ink) 30%, transparent); color:var(--ink); background:color-mix(in srgb,var(--card) 55%, transparent);}
   .tile .status.ready{border-color:color-mix(in srgb, var(--ink) 32%, transparent); color:var(--ink);}
+  .tile .status.prog{border-color:var(--gold); color:var(--goldT,var(--gold)); background:color-mix(in srgb,var(--card) 78%, transparent);}
   .tile .status.done{border-color:var(--green); color:var(--greenT); background:color-mix(in srgb,var(--card) 78%, transparent);}
   /* The price of a tile, said once, in the corner every other state already
      uses. Filled rather than outlined, because these two are labels for what
@@ -681,7 +689,7 @@
   .top[hidden]{display:none;}
   .wrap{padding-top:calc(18px + env(safe-area-inset-top,0));}
 
-  /* kicker, then the title across the whole width, then the tour link and
+  /* kicker, then the title across the whole width, then the one-line hint and
      the day's ring sharing the last row. The ring used to sit beside the
      title and squeezed it onto two lines on every phone. */
   .zone-head{display:grid; grid-template-columns:1fr auto; align-items:center; gap:6px 14px; margin:4px 2px 18px;}
@@ -692,14 +700,12 @@
   .zone-head .day{font-size:clamp(32px, 7vw, 44px); letter-spacing:.01em; line-height:.95; text-transform:uppercase;}
   .zone-head .dayd{display:block; margin-top:8px; font-family:var(--f); font-size:13px; font-weight:800;
     letter-spacing:.02em; text-transform:none; color:var(--mut);}
+  .zone-head .dayd:empty::before{content:"\00a0";}
   .zone-head .dprog{margin:4px 0 0; padding:6px 12px 6px 7px; border-radius:999px;
     background:var(--card); border:1px solid var(--line2);}
-  /* the tour is a quiet link under the date, not a second button competing
-     with the day's ring for the same row */
-  .zone-head .rtgtour-open{grid-column:1; grid-row:3; justify-self:start; min-width:0; margin:4px 0 0 !important;
-    border:0 !important; background:transparent !important; padding:4px 0 !important; box-shadow:none !important;
-    font-size:12.5px !important; text-align:left; white-space:normal; color:var(--mut) !important;}
-  .zone-head .rtgtour-open:hover{color:var(--ink) !important;}
+  /* One line where the six-step tour used to start. The tiles say the rest. */
+  .zone-head .zhint{grid-column:1; grid-row:3; justify-self:start; min-width:0; margin:4px 0 0;
+    font-size:16px; font-weight:700; color:var(--mut);}
 
   .tiles{gap:14px;}
   .tsec{margin:10px 0 -2px;}
@@ -817,6 +823,7 @@ window.GA_ID='G-L29P5MRWKE';
           </span>
           <span class="day">Today's Games<span class="dayd" id="dayDate"></span></span>
           <span class="dprog" id="dprog"><span class="dring" id="dring" aria-hidden="true"></span><span class="dstreak" id="dstreak" hidden></span><span class="pips"><span class="pip" id="pipT"></span><span class="pip" id="pipM"></span><span class="pip" id="pipR"></span><span class="pip" id="pipO"></span><span class="pip" id="pipK"></span><span class="pip" id="pipA"></span><span class="pip" id="pipG"></span><span class="pip" id="pipC"></span><span class="pip" id="pipS"></span><span class="pip" id="pipL"></span><span class="pip" id="pipN"></span><span class="pip" id="pipH"></span></span><span id="dprogT">0 / 9 played</span></span>
+          <span class="zhint">Tap a game to play. Four are free every day.</span>
         </div>
 
         <div class="tiles">
@@ -984,294 +991,9 @@ window.GA_ID='G-L29P5MRWKE';
             </span>
           </a>
         </div>
-
-        <!-- The Vault gets its own front door. It used to be reachable only by
-             tapping a game you had already finished, which meant it was hidden
-             behind having played, and hidden completely from anyone who had
-             not. Members open it; everyone else sees it locked, which is the
-             point of showing it at all. -->
-        <button class="vaultbtn" id="vaultBtn" type="button">
-          <span class="vb-ic" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
-          </span>
-          <span class="vb-t"><b>The Vault</b><span id="vbSub">Every past day, still playable</span></span>
-          <span class="vb-end" id="vbEnd" aria-hidden="true">›</span>
-        </button>
-
-        <!-- THE DAY CARD. When the ring is full this is the top of the page:
-             every game's line, the count, Share today, and the countdown.
-             It used to be one sentence ("Clean sweep!") and a gold ticket,
-             which is a receipt. This is the thing you send. -->
-        <div class="double" id="double">
-          <div class="dc-top">
-            <span class="dc-ring" id="dcRing" aria-hidden="true"></span>
-            <div class="dc-head">
-              <b id="dcTitle">Day done</b>
-              <span class="sub" id="dcSub">You played them all! New ones drop in <b id="cdT2">--</b>.</span>
-            </div>
-          </div>
-          <ul class="dc-lines" id="dcLines"></ul>
-          <div class="dc-row">
-            <button class="dc-share" id="dcShare" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4M12 2v13"/></svg>Share today</button>
-          </div>
-        </div>
-
-        <!-- ORDER IS THE ARGUMENT. For a free player whose free tries are spent,
-             the grid above is just the four free games, so what sits directly under
-             them is the pitch: here is the other 23 a day. The editions strip follows
-             as the second exhibit. Both sections already hide for members. -->
-        <section class="cardpitch" id="cardpitch" aria-labelledby="cp-head">
-          <div class="cp-kicker">Arcade Card</div>
-          <h2 class="cp-head" id="cp-head"><s>4</s> <b>27 daily games</b></h2>
-          <p class="cp-sub">Four games are free every day. The Card opens all twelve with no limits. You also get NBA, NFL and MLB editions of five of them.</p>
-          <ul class="cp-perks">
-            <li><i>&#10003;</i> Unlimited plays, every day</li>
-            <li><i>&#10003;</i> NBA, NFL &amp; MLB editions of five of them</li>
-            <li><i>&#10003;</i> Six members-only games</li>
-            <li><i>&#10003;</i> The full archive of past days</li>
-          </ul>
-          <button class="cp-cta" type="button" id="cpGet">Get the Arcade Card</button>
-          <div class="cp-price"><b>$4.17/mo</b> billed annually <s>$71.88</s><span class="cp-save">Save 30%</span><br>or $5.99/month &middot; cancel anytime</div>
-        </section>
-        <section class="editions" id="editions">
-          <h2 class="ed-h">Five games, three more ways</h2>
-          <p class="ed-s">Common Ground, Alma Mater, Career Path, Guess the Player and Rank It also come in NBA, NFL and MLB editions. Each one has its own board and its own streak. Card members get all of them.</p>
-          <div class="ed-row">
-            <button class="ed-chip ed-nba" type="button" data-ed="NBA"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>NBA</button>
-            <button class="ed-chip ed-nfl" type="button" data-ed="NFL"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>NFL</button>
-            <button class="ed-chip ed-mlb" type="button" data-ed="MLB"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>MLB</button>
-          </div>
-        </section>
-
-        <section class="invite" id="invite" aria-labelledby="iv-head">
-          <div class="iv-kicker">Invite bonus</div>
-          <h2 class="iv-head" id="iv-head">Bring a friend, <b>you both get a bonus</b></h2>
-          <p class="iv-sub">Share your link. When a friend signs up with it, you both get an extra play of today’s free games.</p>
-          <!-- The RTGIcons 'invite' mark, inlined because this is static markup
-               that renders before any script runs, the way the edition chips
-               above are. Same 24x24 grid and the same family attributes. -->
-          <button class="iv-cta" type="button" id="ivShare"><svg width="1em" height="1em" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="square" stroke-linejoin="miter"><circle cx="9" cy="7" r="3.4"/><path d="M3.2 20.6v-1.1a5.8 5.8 0 0 1 11.6 0v1.1"/><path d="M20 9.5v5.6M17.2 12.3h5.6"/></svg> Invite a friend</button>
-          <div class="iv-tally" id="ivTally"></div>
-        </section>
-
-
-        <details class="gjx">
-<summary>About Run The Arcade<span class="gjx-chev" aria-hidden="true"></span></summary>
-<section class="gj" style="padding:0 4px;">
-          <style>
-          .gj{margin:30px 0 6px;border-top:1px solid var(--line2);padding-top:22px;text-align:left;}
-          .gj h2{font-family:var(--hero);font-weight:400;letter-spacing:.02em;text-transform:uppercase;font-size:19px;margin:0 0 8px;color:var(--ink);}
-          .gj p{font-size:13.5px;line-height:1.6;color:var(--mut);margin:0 0 10px;font-weight:600;}
-          .gj ul{margin:0 0 6px;padding-left:20px;}
-          .gj li{font-size:13.5px;line-height:1.6;color:var(--mut);margin:4px 0;font-weight:600;}
-          .gj a{color:var(--tealT);font-weight:800;text-decoration:none;}
-          .gj a:hover{text-decoration:underline;}
-/* The how-to block, folded. Open, five headings of prose sat in the middle of the game
-   and on the desktop grid pages it auto-placed into whatever cell was free, which put it
-   above the puzzle. Folded it is one quiet line, and grid-column:1/-1 means it can only
-   land in a row where every column is free, i.e. a new row at the bottom. Folded is not
-   hidden: the text ships in the HTML either way and Google indexes a closed details at
-   full weight. */
-.gjx{grid-column:1/-1;margin:30px 0 6px;border-top:1px solid var(--line2,rgba(148,163,184,.25));}
-.gjx>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:9px;
-  font-family:var(--hero,'Anton',Impact,sans-serif);font-weight:400;text-transform:uppercase;
-  letter-spacing:.02em;font-size:15px;color:var(--ink,#F4F7FB);padding:14px 2px;
-  -webkit-tap-highlight-color:transparent;}
-.gjx>summary::-webkit-details-marker{display:none;}
-.gjx>summary .gjx-chev{margin-left:auto;width:8px;height:8px;flex:0 0 auto;
-  border-right:2px solid var(--mut,#A9B8CB);border-bottom:2px solid var(--mut,#A9B8CB);
-  transform:rotate(45deg);transition:transform .2s ease;margin-right:4px;}
-.gjx[open]>summary .gjx-chev{transform:rotate(-135deg);}
-.gjx .gj{margin:0 0 10px;border-top:0;padding-top:0;}
-
-          </style>
-          <h2>What is Run The Arcade?</h2>
-          <p>Run The Arcade is twelve quick daily sports games in one place. One streak, one set of
-            leaderboards, one account. Every puzzle resets at midnight your time. Everyone plays the
-            same board, so you can compare scores and settle the group chat. Nothing to install. It
-            all runs in your browser.</p>
-          <ul>
-            <li><a href="/arcade/match/">Common Ground</a>: sixteen names, four hidden groups of four.</li>
-            <li><a href="/arcade/sportegories/">Sportegories</a>: one letter, eight categories, two minutes.</li>
-            <li><a href="/arcade/almamater/">Alma Mater</a>: name where each player went to college.</li>
-            <li><a href="/arcade/career/">Career Path</a>: guess the player from the teams they played for.</li>
-            <li><a href="/arcade/crossword/">Daily Crossword</a>: a sports mini against the clock.</li>
-            <li><a href="/arcade/oddone/">Odd One Out</a>: four have something in common. One doesn’t.</li>
-            <li><a href="/arcade/guess/">Guess the Player</a>: figure out the mystery athlete in eight guesses.</li>
-            <li><a href="/arcade/rankit/">Rank It</a>: order five careers by one stat.</li>
-            <li><a href="/arcade/table/">Number Game</a>: type the jersey number they wore.</li>
-            <li><a href="/arcade/rollcall/">Roll Call</a>: name a team’s roster from one season.</li>
-            <li><a href="/arcade/chain/">Chain</a>: connect two players through their teammates.</li>
-            <li><a href="/arcade/highlow/">High Low</a>: an endless higher-or-lower streak.</li>
-          </ul>
-          <p>The Daily Crossword, Sportegories, Alma Mater and Career Path are free every day, no
-            account needed. The Arcade Card opens all twelve with no limits, plus the Archive of past
-            days. Make a free account and it keeps your trophies and streaks across every game on
-            <a href="/">RunThe.GG</a>.</p>
-        </section>
-</details>
-
-        <div class="m-links">
-          <a href="/">Sign in to save your streak →</a>
-          <a href="/arcade/archive/">Play past days →</a>
-        </div>
-      </main>
-    </div>
-
-    <div class="foot">
-      <div class="soc">
-        <a href="https://tiktok.com/@runthegames" target="_blank" rel="noopener" aria-label="TikTok"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3c.3 2 1.5 3.6 3.5 4v3c-1.4 0-2.7-.4-3.8-1.1V15a5.5 5.5 0 1 1-5.5-5.5c.3 0 .6 0 .9.1v3a2.5 2.5 0 1 0 1.8 2.4V3z"/></svg></a>
-        <a href="https://instagram.com/runthe.gg" target="_blank" rel="noopener" aria-label="Instagram"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></a>
-        <a href="https://x.com/RunTheGG" target="_blank" rel="noopener" aria-label="X"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3h3l-7 8 8 10h-6l-5-6-5 6H3l8-9L3 3h6l4 5z"/></svg></a>
-      </div>
-      <a class="h" href="/">RunThe.GG</a> · @RunTheGG
-      <div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;margin:14px 0;"><span style="font-size:12px;opacity:.72;">Free to play, funded by players.</span><a href="https://ko-fi.com/runthegames" target="_blank" rel="noopener noreferrer" aria-label="Support RunThe.GG on Ko-fi" style="display:inline-flex;align-items:center;gap:7px;font-weight:800;font-size:12.5px;line-height:1;color:#fff;background:linear-gradient(180deg,#ff7a6b,#ec4863);border-radius:999px;padding:9px 16px;text-decoration:none;box-shadow:0 8px 18px -10px rgba(236,72,99,.85);white-space:nowrap;">&#9829; Support us</a></div>
-      <div class="footlinks">
-        <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a> ·
-        <a href="/ideas/#arcade">Ideas</a> ·
-        <a href="/contact.html">Report a data error</a>
-      </div>
-    </div>
-  </div>
-
-</div>
-
-<script src="/arcade/favteam.js"></script>
-<script src="/arcade/tokens.js?v=13"></script>
-<script src="/arcade/day.js?v=2"></script>
-<script src="/arcade/dayroll.js?v=1"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=21"></script>
-<script src="/arcade/auth.js?v=4"></script>
-<script src="/arcade/mycard.js?v=14"></script>
-<script src="/arcade/topbanner.js?v=10"></script>
-<script src="/arcade/auth-ui.js?v=9"></script>
-<script src="/arcade/card.js?v=22"></script>
-<script src="/arcade/referral.js?v=11"></script>
-<script src="/arcade/nav.js?v=3"></script>
-<script src="/arcade/calendar.js?v=15"></script>
-<script src="/arcade/tour.js?v=1"></script>
-<script src="/arcade/tourdata.js?v=6"></script>
 <script>
-/* THE FIRST NINETY SECONDS.
-   Ten tiles with no explanation is the single biggest thing standing between
-   someone arriving and someone playing: it does not say what the place is,
-   what a streak is for, or which one to open. The walkthrough points at the
-   real tiles and answers those in order, and it stays available afterwards
-   because plenty of people skip it and come back wanting it. */
-(function () {
-  function startTour(force){
-    if (!window.RTGTour || !window.RTGTourData) return;
-    if (force) RTGTour.replay('hub', RTGTourData.HUB);
-    else RTGTour.once('hub', RTGTourData.HUB);
-  }
-  function mountButton(){
-    if (!window.RTGTour) return;
-    var head = document.querySelector('.zone-head');
-    if (!head || document.getElementById('tourOpen')) return;
-    var b = RTGTour.button('New here? Show me around');
-    b.id = 'tourOpen';
-    b.style.cssText = 'margin:10px auto 0; display:flex;';
-    b.addEventListener('click', function(){ startTour(true); });
-    head.appendChild(b);
-  }
-  function go(){
-    mountButton();
-    // let the tiles finish painting so the spotlight lands on a real rectangle
-    setTimeout(function(){ startTour(false); }, 650);
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
-  else go();
-})();
-</script>
-<script>
-(function () {
-  var LS = window.localStorage;
-  function g(k, d) { try { return LS.getItem(k) || d; } catch (e) { return d; } }
+(function(){
   var TOK = window.RTGTokens || null;
-
-  // ---- theme toggle (shared suite preference) ----
-  function applyThemeMeta() {
-    var t = document.documentElement.getAttribute('data-theme');
-    var m = document.getElementById('themeMeta');
-    if (m) m.setAttribute('content', t === 'light' ? '#EEF2F7' : '#071426');
-  }
-  applyThemeMeta();
-
-  // ---- Alma Mater card ----
-  // This used to repaint the tile in whichever college team you had picked,
-  // which is how an arbitrary hex ended up as a button background, with no
-  // team set it fell back to a dark maroon and the PLAY label sat on it at
-  // 1.78:1. Alma Mater owns its colour now (moss, in the token block above);
-  // picking your school belongs to a different game.
-  function applyFavCard() {
-    var card = document.getElementById('cardAlma'); if (!card) return;
-    card.style.removeProperty('--c');
-  }
-  applyFavCard();
-
-  document.getElementById('themeBtn').addEventListener('click', function () {
-    var next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-    document.documentElement.setAttribute('data-theme', next);
-    try { LS.setItem('runthegrid_theme', next); } catch (e) {}
-    applyThemeMeta();
-    applyFavCard();
-  });
-
-  // ---- the Day Card, filled from day.js when the ring is full ----
-  function paintDayCard() {
-    var box = document.getElementById('double'); if (!box || !window.RTGDay) return;
-    var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
-    var s = RTGDay.state();
-    if (!s.allDone) { box.classList.remove('on'); return; }
-    var lines = document.getElementById('dcLines');
-    if (lines) lines.innerHTML = s.games.filter(function (x) { return x.avail; }).map(function (x) {
-      return '<li><span>' + esc(x.name) + '</span><span>' + esc(x.line || 'Played') + '</span></li>';
-    }).join('');
-    var no = RTGDay.dayNo(s.date);
-    var ttl = document.getElementById('dcTitle'); if (ttl) ttl.textContent = 'Day' + (no ? ' ' + no : '') + ' done';
-    RTGDay.ring(document.getElementById('dcRing'), { n: s.doneN, total: s.total, size: 54, stroke: 5, label: s.doneN + '/' + s.total });
-    box.classList.add('on');
-    var sh = document.getElementById('dcShare');
-    if (sh && !sh._wired) { sh._wired = true; sh.addEventListener('click', function () { RTGDay.shareDay(); }); }
-    // Arrived from the last result screen (SEE YOUR DAY): land on the card.
-    if (location.hash === '#day') { try { box.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {} }
-  }
-  // ---- live countdown to local midnight (feeds the clean-sweep banner) ----
-  function pad(n) { return String(n).padStart(2, '0'); }
-  function tickCd() {
-    var n = new Date();
-    var t = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1, 0, 0, 0, 0) - n;
-    var s = Math.max(0, Math.floor(t / 1000));
-    var c2 = document.getElementById('cdT2'); if (c2) c2.textContent = Math.floor(s / 3600) + 'h ' + pad(Math.floor((s % 3600) / 60)) + 'm';
-  }
-  // Pause the countdown when the tab is hidden: it was writing to two nodes
-  // every second forever in background tabs.
-  var cdTimer=null;
-  function startCd(){ if(cdTimer) return; tickCd(); cdTimer=setInterval(tickCd,1000); }
-  function stopCd(){ if(cdTimer){ clearInterval(cdTimer); cdTimer=null; } }
-  startCd();
-  document.addEventListener('visibilitychange', function(){ document.hidden ? stopCd() : startCd(); });
-
-  // ---- daily plays wallet + streaks ----
-  // The plays counter and the whole player HUD now live in the Arcade Card
-  // (top banner) and the banner's own tokens chip; the hub only gates entry.
-
-  // A locked tile does not navigate: tapping it opens the Arcade Card offer
-  // right here, naming the game it is for. Walking someone to a game page only
-  // to wall them there costs a page load to say the same thing.
-  //
-  // ---- price chips + ordering ----------------------------------------------
-  // Six of the ten are Arcade Card games. Everyone else sees them locked, and
-  // sees the four free ones first in each section. Members see no locks and get
-  // their sections ordered by what they played most recently.
-  //
-  // The corner chip carries it: FREE on the four, MEMBERS ONLY on the six. Not
-  // "Premium", which is the word every subscription wall uses and says only
-  // "pay". "Members only" says there is a room and you can be in it, which is
-  // the same thing the Arcade Card, the gold, and the copy everywhere else are
-  // already saying. Once played, "Solved" wins the corner back: what you did
-  // today is worth more there than a price you have already paid.
   (function(){
     if(!TOK) return;
     var TILE = { match:'cardMatch', crossword:'cardCross', sportegories:'cardSpg', rankit:'cardRank',
@@ -1370,7 +1092,11 @@ window.GA_ID='G-L29P5MRWKE';
         keys.forEach(function(k,i){
           var el=document.getElementById(TILE[k]); if(!el) return;
           el.style.order = String(ord++);
-          var lock = !!(TOK.cardOnly && TOK.cardOnly(k));
+          /* A card game whose free look was started and not finished is still
+             this player's to finish (pregame.js lets it through), so it is not
+             drawn as locked while it is in progress. */
+          var going = !!(TOK.inProgress && TOK.inProgress(k));
+          var lock = !going && !!(TOK.cardOnly && TOK.cardOnly(k));
           el.classList.toggle('locked', lock);
           var play = el.querySelector('.play');
           if(lock && play) play.innerHTML = LOCK+'ARCADE CARD';
@@ -1380,6 +1106,8 @@ window.GA_ID='G-L29P5MRWKE';
           // runs after the first paint, so re-check the tile rather than the
           // chip's own class.
           if(el.classList.contains('solved')) return;
+          if(going){ st.className='status prog'; st.textContent='In progress';
+            if(play && !el.classList.contains('locked')) play.innerHTML='RESUME <span class="arw">→</span>'; return; }
           var tryFree = !lock && !member && !!(TOK.trialOffer && TOK.trialOffer(k));
           if(lock){
             st.className='status members';
@@ -1427,9 +1155,269 @@ window.GA_ID='G-L29P5MRWKE';
     }, true);
     paint();
     document.addEventListener('rtg:tokens', paint);
-    if(window.RTG_BOARD && RTG_BOARD.onChange) RTG_BOARD.onChange(paint);
     window.PAINT_LOCKS = paint;      // re-run after mark() rewrites the play pills
   })();
+})();
+</script>
+
+        <!-- The Vault gets its own front door. It used to be reachable only by
+             tapping a game you had already finished, which meant it was hidden
+             behind having played, and hidden completely from anyone who had
+             not. Members open it; everyone else sees it locked, which is the
+             point of showing it at all. -->
+        <button class="vaultbtn" id="vaultBtn" type="button">
+          <span class="vb-ic" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+          </span>
+          <span class="vb-t"><b>The Vault</b><span id="vbSub">Every past day, still playable</span></span>
+          <span class="vb-end" id="vbEnd" aria-hidden="true">›</span>
+        </button>
+
+        <!-- THE DAY CARD. When the ring is full this is the top of the page:
+             every game's line, the count, Share today, and the countdown.
+             It used to be one sentence ("Clean sweep!") and a gold ticket,
+             which is a receipt. This is the thing you send. -->
+        <div class="double" id="double">
+          <div class="dc-top">
+            <span class="dc-ring" id="dcRing" aria-hidden="true"></span>
+            <div class="dc-head">
+              <b id="dcTitle">Day done</b>
+              <span class="sub" id="dcSub">You played them all! New ones drop in <b id="cdT2">--</b>.</span>
+            </div>
+          </div>
+          <ul class="dc-lines" id="dcLines"></ul>
+          <div class="dc-row">
+            <button class="dc-share" id="dcShare" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4M12 2v13"/></svg>Share today</button>
+          </div>
+        </div>
+
+        <!-- ORDER IS THE ARGUMENT. For a free player whose free tries are spent,
+             the grid above is just the four free games, so what sits directly under
+             them is the pitch: here is the other 23 a day. The editions strip follows
+             as the second exhibit. Both sections already hide for members. -->
+        <section class="cardpitch" id="cardpitch" aria-labelledby="cp-head">
+          <div class="cp-kicker">Arcade Card</div>
+          <h2 class="cp-head" id="cp-head"><s>4</s> <b>27 daily games</b></h2>
+          <p class="cp-sub">Four games are free every day. The Card opens all twelve with no limits. You also get NBA, NFL and MLB editions of five of them.</p>
+          <ul class="cp-perks">
+            <li><i>&#10003;</i> Unlimited plays, every day</li>
+            <li><i>&#10003;</i> NBA, NFL &amp; MLB editions of five of them</li>
+            <li><i>&#10003;</i> Six members-only games</li>
+            <li><i>&#10003;</i> The full archive of past days</li>
+          </ul>
+          <button class="cp-cta" type="button" id="cpGet">Get the Arcade Card</button>
+          <div class="cp-price"><b>$4.17/mo</b> billed annually <s>$71.88</s><span class="cp-save">Save 30%</span><br>or $5.99/month &middot; cancel anytime</div>
+        </section>
+        <section class="editions" id="editions">
+          <h2 class="ed-h">Five games, three more ways</h2>
+          <p class="ed-s">Common Ground, Alma Mater, Career Path, Guess the Player and Rank It also come in NBA, NFL and MLB editions. Each one has its own board and its own streak. Card members get all of them.</p>
+          <div class="ed-row">
+            <button class="ed-chip ed-nba" type="button" data-ed="NBA"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>NBA</button>
+            <button class="ed-chip ed-nfl" type="button" data-ed="NFL"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>NFL</button>
+            <button class="ed-chip ed-mlb" type="button" data-ed="MLB"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>MLB</button>
+          </div>
+        </section>
+
+        <section class="invite" id="invite" aria-labelledby="iv-head">
+          <div class="iv-kicker">Invite bonus</div>
+          <h2 class="iv-head" id="iv-head">Bring a friend, <b>you both get a bonus</b></h2>
+          <p class="iv-sub">Share your link. When a friend signs up with it, you both get an extra play of today’s free games.</p>
+          <!-- The RTGIcons 'invite' mark, inlined because this is static markup
+               that renders before any script runs, the way the edition chips
+               above are. Same 24x24 grid and the same family attributes. -->
+          <button class="iv-cta" type="button" id="ivShare"><svg width="1em" height="1em" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="square" stroke-linejoin="miter"><circle cx="9" cy="7" r="3.4"/><path d="M3.2 20.6v-1.1a5.8 5.8 0 0 1 11.6 0v1.1"/><path d="M20 9.5v5.6M17.2 12.3h5.6"/></svg> Invite a friend</button>
+          <div class="iv-tally" id="ivTally"></div>
+        </section>
+
+
+        <details class="gjx">
+<summary>About Run The Arcade<span class="gjx-chev" aria-hidden="true"></span></summary>
+<section class="gj" style="padding:0 4px;">
+          <style>
+          .gj{margin:30px 0 6px;border-top:1px solid var(--line2);padding-top:22px;text-align:left;}
+          .gj h2{font-family:var(--hero);font-weight:400;letter-spacing:.02em;text-transform:uppercase;font-size:19px;margin:0 0 8px;color:var(--ink);}
+          .gj p{font-size:16px;line-height:1.55;color:var(--mut);margin:0 0 10px;font-weight:600;}
+          .gj ul{margin:0 0 6px;padding-left:20px;}
+          .gj li{font-size:16px;line-height:1.5;color:var(--mut);margin:4px 0;font-weight:600;}
+          .gj a{color:var(--tealT);font-weight:800;text-decoration:none;}
+          .gj a:hover{text-decoration:underline;}
+/* The how-to block, folded. Open, five headings of prose sat in the middle of the game
+   and on the desktop grid pages it auto-placed into whatever cell was free, which put it
+   above the puzzle. Folded it is one quiet line, and grid-column:1/-1 means it can only
+   land in a row where every column is free, i.e. a new row at the bottom. Folded is not
+   hidden: the text ships in the HTML either way and Google indexes a closed details at
+   full weight. */
+.gjx{grid-column:1/-1;margin:30px 0 6px;border-top:1px solid var(--line2,rgba(148,163,184,.25));}
+.gjx>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:9px;
+  font-family:var(--hero,'Anton',Impact,sans-serif);font-weight:400;text-transform:uppercase;
+  letter-spacing:.02em;font-size:15px;color:var(--ink,#F4F7FB);padding:14px 2px;
+  -webkit-tap-highlight-color:transparent;}
+.gjx>summary::-webkit-details-marker{display:none;}
+.gjx>summary .gjx-chev{margin-left:auto;width:8px;height:8px;flex:0 0 auto;
+  border-right:2px solid var(--mut,#A9B8CB);border-bottom:2px solid var(--mut,#A9B8CB);
+  transform:rotate(45deg);transition:transform .2s ease;margin-right:4px;}
+.gjx[open]>summary .gjx-chev{transform:rotate(-135deg);}
+.gjx .gj{margin:0 0 10px;border-top:0;padding-top:0;}
+
+          </style>
+          <h2>What is Run The Arcade?</h2>
+          <p>Run The Arcade is twelve quick daily sports games in one place. One streak, one set of
+            leaderboards, one account. Every puzzle resets at midnight your time. Everyone plays the
+            same board, so you can compare scores and settle the group chat. Nothing to install. It
+            all runs in your browser.</p>
+          <ul>
+            <li><a href="/arcade/match/">Common Ground</a>: sixteen names, four hidden groups of four.</li>
+            <li><a href="/arcade/sportegories/">Sportegories</a>: one letter, eight categories, two minutes.</li>
+            <li><a href="/arcade/almamater/">Alma Mater</a>: name where each player went to college.</li>
+            <li><a href="/arcade/career/">Career Path</a>: guess the player from the teams they played for.</li>
+            <li><a href="/arcade/crossword/">Daily Crossword</a>: a sports mini against the clock.</li>
+            <li><a href="/arcade/oddone/">Odd One Out</a>: four have something in common. One doesn’t.</li>
+            <li><a href="/arcade/guess/">Guess the Player</a>: figure out the mystery athlete in eight guesses.</li>
+            <li><a href="/arcade/rankit/">Rank It</a>: order five careers by one stat.</li>
+            <li><a href="/arcade/table/">Number Game</a>: type the jersey number they wore.</li>
+            <li><a href="/arcade/rollcall/">Roll Call</a>: name a team’s roster from one season.</li>
+            <li><a href="/arcade/chain/">Chain</a>: connect two players through their teammates.</li>
+            <li><a href="/arcade/highlow/">High Low</a>: an endless higher-or-lower streak.</li>
+          </ul>
+          <p>The Daily Crossword, Sportegories, Alma Mater and Career Path are free every day, no
+            account needed. The Arcade Card opens all twelve with no limits, plus the Archive of past
+            days. Make a free account and it keeps your trophies and streaks across every game on
+            <a href="/">RunThe.GG</a>.</p>
+        </section>
+</details>
+
+        <div class="m-links">
+          <a href="/">Sign in to save your streak →</a>
+          <a href="/arcade/archive/">Play past days →</a>
+        </div>
+      </main>
+    </div>
+
+    <div class="foot">
+      <div class="soc">
+        <a href="https://tiktok.com/@runthegames" target="_blank" rel="noopener" aria-label="TikTok"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3c.3 2 1.5 3.6 3.5 4v3c-1.4 0-2.7-.4-3.8-1.1V15a5.5 5.5 0 1 1-5.5-5.5c.3 0 .6 0 .9.1v3a2.5 2.5 0 1 0 1.8 2.4V3z"/></svg></a>
+        <a href="https://instagram.com/runthe.gg" target="_blank" rel="noopener" aria-label="Instagram"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></a>
+        <a href="https://x.com/RunTheGG" target="_blank" rel="noopener" aria-label="X"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3h3l-7 8 8 10h-6l-5-6-5 6H3l8-9L3 3h6l4 5z"/></svg></a>
+      </div>
+      <a class="h" href="/">RunThe.GG</a> · @RunTheGG
+      <div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;margin:14px 0;"><span style="font-size:16px;color:var(--mut);">Free to play, funded by players.</span><a href="https://ko-fi.com/runthegames" target="_blank" rel="noopener noreferrer" aria-label="Support RunThe.GG on Ko-fi" style="display:inline-flex;align-items:center;gap:7px;font-weight:800;font-size:12.5px;line-height:1;color:#fff;background:linear-gradient(180deg,#c43a57,#a8304a);border-radius:999px;padding:9px 16px;text-decoration:none;box-shadow:0 8px 18px -10px rgba(236,72,99,.85);white-space:nowrap;">&#9829; Support us</a></div>
+      <div class="footlinks">
+        <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a> ·
+        <a href="/ideas/#arcade">Ideas</a> ·
+        <a href="/contact.html">Report a data error</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="/arcade/favteam.js"></script>
+<script src="/arcade/day.js?v=3"></script>
+<script src="/arcade/dayroll.js?v=2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="/arcade/board.js?v=24"></script>
+<script src="/arcade/auth.js?v=4"></script>
+<script src="/arcade/mycard.js?v=14"></script>
+<script src="/arcade/topbanner.js?v=11"></script>
+<script src="/arcade/auth-ui.js?v=9"></script>
+<script src="/arcade/card.js?v=23"></script>
+<script src="/arcade/referral.js?v=12"></script>
+<script src="/arcade/nav.js?v=4"></script>
+<script src="/arcade/calendar.js?v=15"></script>
+<script>
+(function () {
+  var LS = window.localStorage;
+  function g(k, d) { try { return LS.getItem(k) || d; } catch (e) { return d; } }
+  var TOK = window.RTGTokens || null;
+
+  // ---- theme toggle (shared suite preference) ----
+  function applyThemeMeta() {
+    var t = document.documentElement.getAttribute('data-theme');
+    var m = document.getElementById('themeMeta');
+    if (m) m.setAttribute('content', t === 'light' ? '#EEF2F7' : '#071426');
+  }
+  applyThemeMeta();
+
+  // ---- Alma Mater card ----
+  // This used to repaint the tile in whichever college team you had picked,
+  // which is how an arbitrary hex ended up as a button background, with no
+  // team set it fell back to a dark maroon and the PLAY label sat on it at
+  // 1.78:1. Alma Mater owns its colour now (moss, in the token block above);
+  // picking your school belongs to a different game.
+  function applyFavCard() {
+    var card = document.getElementById('cardAlma'); if (!card) return;
+    card.style.removeProperty('--c');
+  }
+  applyFavCard();
+
+  document.getElementById('themeBtn').addEventListener('click', function () {
+    var next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', next);
+    try { LS.setItem('runthegrid_theme', next); } catch (e) {}
+    applyThemeMeta();
+    applyFavCard();
+  });
+
+  // ---- the Day Card, filled from day.js when the ring is full ----
+  function paintDayCard() {
+    var box = document.getElementById('double'); if (!box || !window.RTGDay) return;
+    var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+    var s = RTGDay.state();
+    if (!s.allDone) { box.classList.remove('on'); return; }
+    var lines = document.getElementById('dcLines');
+    if (lines) lines.innerHTML = s.games.filter(function (x) { return x.avail; }).map(function (x) {
+      return '<li><span>' + esc(x.name) + '</span><span>' + esc(x.line || 'Played') + '</span></li>';
+    }).join('');
+    var no = RTGDay.dayNo(s.date);
+    var ttl = document.getElementById('dcTitle'); if (ttl) ttl.textContent = 'Day' + (no ? ' ' + no : '') + ' done';
+    RTGDay.ring(document.getElementById('dcRing'), { n: s.doneN, total: s.total, size: 54, stroke: 5, label: s.doneN + '/' + s.total });
+    box.classList.add('on');
+    var sh = document.getElementById('dcShare');
+    if (sh && !sh._wired) { sh._wired = true; sh.addEventListener('click', function () { RTGDay.shareDay(); }); }
+    // Arrived from the last result screen (SEE YOUR DAY): land on the card.
+    if (location.hash === '#day') { try { box.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {} }
+  }
+  // ---- live countdown to local midnight (feeds the clean-sweep banner) ----
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function tickCd() {
+    var n = new Date();
+    var t = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1, 0, 0, 0, 0) - n;
+    var s = Math.max(0, Math.floor(t / 1000));
+    var c2 = document.getElementById('cdT2'); if (c2) c2.textContent = Math.floor(s / 3600) + 'h ' + pad(Math.floor((s % 3600) / 60)) + 'm';
+  }
+  // Pause the countdown when the tab is hidden: it was writing to two nodes
+  // every second forever in background tabs.
+  var cdTimer=null;
+  function startCd(){ if(cdTimer) return; tickCd(); cdTimer=setInterval(tickCd,1000); }
+  function stopCd(){ if(cdTimer){ clearInterval(cdTimer); cdTimer=null; } }
+  startCd();
+  document.addEventListener('visibilitychange', function(){ document.hidden ? stopCd() : startCd(); });
+
+  // ---- daily plays wallet + streaks ----
+  // The plays counter and the whole player HUD now live in the Arcade Card
+  // (top banner) and the banner's own tokens chip; the hub only gates entry.
+
+  // A locked tile does not navigate: tapping it opens the Arcade Card offer
+  // right here, naming the game it is for. Walking someone to a game page only
+  // to wall them there costs a page load to say the same thing.
+  //
+  // ---- price chips + ordering ----------------------------------------------
+  // Six of the ten are Arcade Card games. Everyone else sees them locked, and
+  // sees the four free ones first in each section. Members see no locks and get
+  // their sections ordered by what they played most recently.
+  //
+  // The corner chip carries it: FREE on the four, MEMBERS ONLY on the six. Not
+  // "Premium", which is the word every subscription wall uses and says only
+  // "pay". "Members only" says there is a room and you can be in it, which is
+  // the same thing the Arcade Card, the gold, and the copy everywhere else are
+  // already saying. Once played, "Solved" wins the corner back: what you did
+  // today is worth more there than a price you have already paid.
+  /* The tile arrangement runs as soon as the tiles are parsed (the script
+     right after them), so the first paint already has the final order. It
+     used to run here, after a dozen scripts, and on a slow connection the
+     page painted every tile in markup order and then reshuffled them. The
+     board arrives later, so its listener is added here. */
+  if(window.PAINT_LOCKS && window.RTG_BOARD && RTG_BOARD.onChange) RTG_BOARD.onChange(window.PAINT_LOCKS);
   var cur = parseInt(g('grid_match_streak', '0'), 10) || 0;
   var best = parseInt(g('grid_best_streak', '0'), 10) || 0;
   var cw = {}; try { cw = JSON.parse(g('rtg:cw:v1', '{}')) || {}; } catch (e) {}
@@ -1568,6 +1556,7 @@ window.GA_ID='G-L29P5MRWKE';
   // Pro sees PLAY AGAIN (practice); free sees ✓ DONE until tomorrow.
   function triesLeft(key) { return TOK ? TOK.triesLeft(key) : 1; }
   function hasCard() { return !!(TOK && TOK.hasCard && TOK.hasCard()); }
+  function started(key) { try { return !!(TOK && TOK.inProgress && TOK.inProgress(key)); } catch (e) { return false; } }
   var ARW = ' <span class="arw">→</span>';
   var CAL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>';
   var TROPHY_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h12v4a6 6 0 0 1-12 0zM6 6H3v2a3 3 0 0 0 3 3M18 6h3v2a3 3 0 0 1-3 3M9 20h6M12 15v5"/></svg>';
@@ -1582,6 +1571,12 @@ window.GA_ID='G-L29P5MRWKE';
       card.classList.add('solved');
       st.className = 'status done'; st.textContent = statusText || 'Solved';
       document.getElementById(pipId).classList.add('done');
+    } else if (started(key)) {
+      /* STARTED AND NOT FINISHED. The game page restores it (tokens.js
+         inProgress), so the tile says so and the pill says RESUME rather than
+         PLAY, which would read as a fresh start of a board already begun. */
+      card.classList.add('inprog');
+      st.className = 'status prog'; st.textContent = 'In progress';
     } else {
       card.classList.add('unplayed');
       st.className = 'status ready';
@@ -1608,6 +1603,8 @@ window.GA_ID='G-L29P5MRWKE';
       play.classList.add('hollow');
       play.innerHTML = TICK_SVG + '<b class="pd">PLAYED</b><span class="vr">View result</span>';
       card.classList.add('recap'); card.setAttribute('data-recap', key);
+    } else if (!done && started(key)) {
+      play.innerHTML = 'RESUME' + ARW;
     } else if (!done) {
       // Not played yet, whoever you are: PLAY. What the play COSTS is the
       // badge's job in the corner, which is where free, members only and the
@@ -1627,10 +1624,10 @@ window.GA_ID='G-L29P5MRWKE';
   mark('cardCareer','pipR', 'stR', 'playR', rDone, runText(rs, 'pts'), 'career');
   mark('cardRank',  'pipK', 'stK', 'playK', kDone, 'Solved', 'rankit');
   mark('cardAlma',  'pipA', 'stA', 'playA', aDone, runText(as, 'pts'), 'almamater');
-  mark('cardSpg',   'pipS', 'stS', 'playS', sDone, (sg.last && sg.last.score != null) ? ('Solved · ' + sg.last.score + ' pts') : 'Solved', 'sportegories');
+  mark('cardSpg',   'pipS', 'stS', 'playS', sDone, (sg.last && sg.last.score != null) ? ('Solved · ' + sg.last.score + (sg.last.score===1?' pt':' pts')) : 'Solved', 'sportegories');
   // High Low is endless, so "done" is simply having run it today.
   var hs = {}; try { hs = JSON.parse(g('rtg:highlow:v1', '{}')) || {}; } catch (e) {}
-  var hDone = false; try { hDone = !!(TOK && TOK.playsOf && TOK.playsOf('highlow') > 0); } catch (e) {}
+  var hDone = false; try { hDone = !!(TOK && TOK.playsOf && TOK.playsOf('highlow') > 0) && !started('highlow'); } catch (e) {}
   mark('cardRoll',  'pipL', 'stL', 'playL', lDone, (rc.last && rc.last.score != null) ? ('Named ' + rc.last.score + '/' + rc.last.total) : 'Played', 'rollcall');
   mark('cardChain', 'pipN', 'stN', 'playN', nDone, (ch.last && ch.last.solved) ? 'Chained' : 'Played', 'chain');
   mark('cardHigh',  'pipH', 'stH', 'playH', hDone, runText(hs), 'highlow');

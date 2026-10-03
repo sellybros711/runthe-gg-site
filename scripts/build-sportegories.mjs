@@ -358,8 +358,30 @@ for (const [key, val] of Object.entries(AWARDS)) {
   if (!recs) continue;
   for (const rec of recs) for (const a of val.aw || []) if (!rec.aw.includes(a)) rec.aw.push(a);
 }
-// hall-of-fame flag lives in awards for many players
-for (const rec of [...pool.values()].flat()) if (rec.aw.includes('Hall of Fame')) rec.hof = 1;
+/* NBA winners Wikipedia's categories do not give us: Rookie of the Year,
+   Defensive Player of the Year and Sixth Man (scripts/fetch-nba-awards.mjs).
+   Matched on name within the NBA only, like the awards above. */
+try {
+  const NBAW = JSON.parse(R('scripts/nba-awards.json')).winners || {};
+  for (const [name, tags] of Object.entries(NBAW)) {
+    const recs = pool.get('NBA|' + nkFull(name));
+    if (!recs) continue;
+    for (const rec of recs) for (const a of tags) if (!rec.aw.includes(a)) rec.aw.push(a);
+  }
+} catch (e) { console.warn('skip scripts/nba-awards.json: ' + e.message); }
+/* THE HALL OF FAME IS ONE FACT IN TWO PLACES, and the category reads only one.
+   "Hall of Famer" tests the award list, but the curated corpus records an
+   induction as the hof flag, so Ben Wallace, Wayne Gretzky, Sue Bird and every
+   boxer, driver and wrestler in it were refused for a category they are the
+   whole point of. Both directions now, so either source proves it.
+   NOT_HOF corrects flags that cannot be true: Albert Pujols retired after
+   2022 and is not eligible for Cooperstown until 2028. */
+const NOT_HOF = new Set(['MLB|' + nkFull('Albert Pujols')]);
+for (const rec of [...pool.values()].flat()) {
+  if (NOT_HOF.has(rec.sport + '|' + nkFull(rec.name))) { rec.hof = 0; rec.aw = rec.aw.filter((a) => a !== 'Hall of Fame'); continue; }
+  if (rec.aw.includes('Hall of Fame')) rec.hof = 1;
+  else if (rec.hof) rec.aw.push('Hall of Fame');
+}
 
 // career stats are keyed by CORPUS id only
 const STATVALS = {};
@@ -650,12 +672,33 @@ const AW_LABEL = {
   'Hall of Fame': 'Hall of Famer', 'Pro Bowl': 'Pro Bowler',
   'NBA All-Star': 'NBA All-Star', 'MLB All-Star': 'MLB All-Star'
 };
+/* An award name two leagues share ("Defensive Player of the Year", "Rookie of
+   the Year") says which leagues it checks, and a generic name only one league
+   holds carries that league. "Defensive Player of the Year winner" used to
+   check the NFL alone and refused Ben Wallace. */
+const NAMES_LEAGUE = /NBA|NFL|MLB|Super Bowl|World Series|Cy Young|Gold Glove|Silver Slugger|Pro Bowl|All-Star|Hall of Fame/;
+const orList = (l) => l.length > 1 ? l.slice(0, -1).join(', ') + ' or ' + l[l.length - 1] : l.join('');
 AWDS.forEach((a) => {
-  const n = PLAYERS.filter((p) => p.aw.includes(a)).length;
-  if (n >= 30) add(AW_LABEL[a] || `${a} winner`, { k: 'award', v: a }, 'award');
+  const holders = PLAYERS.filter((p) => p.aw.includes(a));
+  if (holders.length < 30) return;
+  const leagues = ['NBA', 'NFL', 'MLB', 'NHL', 'WNBA'].filter((x) => holders.some((p) => p.sport === x));
+  let label = AW_LABEL[a] || `${a} winner`;
+  if (!NAMES_LEAGUE.test(a)) label = leagues.length === 1 ? `${leagues[0]} ${a}` : `${a} (${orList(leagues)})`;
+  else if (a === 'Finals MVP') label = 'NBA Finals MVP';
+  add(label, { k: 'award', v: a }, 'award');
 });
-add('MVP winner (any sport)', { k: 'awardRe', v: 'MVP' }, 'award');
-add('Rookie of the Year', { k: 'awardRe', v: 'Rookie of the Year' }, 'award');
+/* A label that says "any sport" promises every league in the game, and the
+   award data only covers some of them: there is no Hart Trophy or WNBA MVP on
+   file, so Connor McDavid and A'ja Wilson were refused for "MVP winner (any
+   sport)". The label now names the leagues the data can actually check. */
+const leaguesWith = (re) => {
+  const order = ['NBA', 'NFL', 'MLB', 'NHL', 'WNBA'];
+  const have = new Set(PLAYERS.filter((p) => p.aw.some((a) => a.includes(re))).map((p) => p.sport));
+  const l = order.filter((x) => have.has(x));
+  return l.length > 1 ? l.slice(0, -1).join(', ') + ' or ' + l[l.length - 1] : l.join('');
+};
+add(`MVP winner (${leaguesWith('MVP')})`, { k: 'awardRe', v: 'MVP' }, 'award');
+add(`Rookie of the Year (${leaguesWith('Rookie of the Year')})`, { k: 'awardRe', v: 'Rookie of the Year' }, 'award');
 // -- college
 const AN = (s) => (/^(SEC|ACC|A|E|I|O|U)/.test(s) ? 'an' : 'a');
 Object.keys(CONF).forEach((c) => add(`Played at ${AN(c)} ${c} school`, { k: 'conf', v: c }, 'col'));

@@ -1,7 +1,7 @@
-/* Run The Arcade — QA harness (design doc §11).
+/* Run The Arcade: QA harness (design doc §11).
  * node verify.js
  * Asserts every authored board has exactly one solution, trap density lands in
- * 3–6, and family/sport spread holds; then dry-runs a year of daily generation. */
+ * 3-6, and family/sport spread holds; then dry-runs a year of daily generation. */
 'use strict';
 var Gen = require('./generator.js');
 var BANK = require('./data.js');
@@ -28,7 +28,7 @@ BANK.forEach(function (board) {
   }
 
   var traps = Gen.trapEdges(board);
-  ok(traps >= 3 && traps <= 6, 'trap density in 3–6 (got ' + traps + ')');
+  ok(traps >= 3 && traps <= 6, 'trap density in 3-6 (got ' + traps + ')');
 
   var fams = {}; board.categories.forEach(function (c) { fams[c.family] = (fams[c.family] || 0) + 1; });
   var famCount = Object.keys(fams).length;

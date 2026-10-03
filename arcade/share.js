@@ -294,13 +294,12 @@
     // solved out of five, so the losing/partial share still gets a bespoke card
     // instead of the generic emoji grid. ----
     function artMatch(spec) {
-      var m = /(\d)\s*\/\s*5/.exec(spec.stat || '');
-      var solved = m ? (+m[1]) : (spec.statInt != null ? 5 : 0);
-      var won = solved >= 5;
+      var mc = matchCount(spec), solved = mc.solved, n = mc.cats;
+      var won = solved >= n;
       clabel('daily match', 430);
-      cbig(solved + '/5', 600, 200, won ? accent : '#E5484D');
+      cbig(solved + '/' + n, 600, 200, won ? accent : '#E5484D');
       clabel(won ? 'board cleared' : 'groups found', 668, won ? '#8AA0B8' : '#E5A5A5');
-      var n = 5, cw = 128, gap = 20, tw = n * cw + (n - 1) * gap, sx = (W - tw) / 2, y = 770, ch = 74;
+      var cw = 128, gap = 20, tw = n * cw + (n - 1) * gap, sx = (W - tw) / 2, y = 770, ch = 74;
       for (var i = 0; i < n; i++) {
         var x = sx + i * (cw + gap), lit = i < solved;
         if (lit) { g.fillStyle = accent; rr(x, y, cw, ch, 16); g.fill(); }
@@ -420,11 +419,26 @@
     } catch (e) {}
   }
 
+  /* TEXT FIRST. Every game's Share button lands here, and what it sends is the
+     text card: "Run The Arcade · <game> #<day>", a row of squares that shows
+     the shape of the result and none of the answers, the stat, and the link.
+     Text is what pastes into a group chat, and it is the one form every app
+     shows in full. The poster is still there, one tap further: the card on
+     the end screen offers it as "Share the image" (resultart.js), which is
+     sendImage below.
+     spec: { key, date, grid, stat, statInt } */
+  function send(spec) {
+    remember(spec);
+    try { if (window.gtag) gtag('event', 'arcade_share', { arcade_game: spec.key, share_kind: 'text' }); } catch (e) {}
+    fire(card(spec.key, spec.date, { grid: spec.grid, stat: spec.stat }), spec.statInt);
+  }
+
   // Share the visual card + the text (which still carries the tappable link and
   // the challenge). Web Share with the image on mobile; on desktop, save the
   // PNG and copy the text. Falls back to plain text if anything is unavailable.
   // spec: { key, date, grid, stat, statInt }
-  function send(spec) {
+  function sendImage(spec) {
+    try { if (window.gtag) gtag('event', 'arcade_share', { arcade_game: spec.key, share_kind: 'image' }); } catch (e) {}
     remember(spec);
     var text = card(spec.key, spec.date, { grid: spec.grid, stat: spec.stat });
     try { window.RTGShareStat = (spec.statInt == null || isNaN(spec.statInt)) ? null : spec.statInt; } catch (e) {}
@@ -467,6 +481,24 @@
   function recall(key, date) {
     try { return JSON.parse(localStorage.getItem(slot(key, date)) || 'null'); } catch (e) { return null; }
   }
+  /* How many groups a Common Ground card shows found, out of how many.
+     The board has four groups. This used to read "N/5" out of the stat line,
+     which never matched a four-group stat, so every loss drew 0/5 and every
+     win 5/5. The spec carries both numbers now; the stat line is only read
+     for a spec built before it did, and "N/M" is read whatever M is. */
+  function matchCount(spec) {
+    spec = spec || {};
+    var cats = (spec.cats | 0) > 0 ? (spec.cats | 0) : 0;
+    var solved = (spec.solved != null && !isNaN(+spec.solved)) ? (+spec.solved | 0) : null;
+    if (solved == null || !cats) {
+      var m = /(\d+)\s*\/\s*(\d+)/.exec(String(spec.stat || ''));
+      if (m) { if (solved == null) solved = +m[1]; if (!cats) cats = +m[2]; }
+    }
+    if (!cats) cats = 4;
+    if (solved == null) solved = spec.statInt != null ? cats : 0;
+    return { solved: Math.max(0, Math.min(cats, solved)), cats: cats };
+  }
+
   // Draw to a data URL, waiting for the display faces so Anton/Archivo don't
   // fall back to a system face mid-draw (the same guard send() uses).
   function preview(spec) {
@@ -481,7 +513,7 @@
 
   window.RTGShare = {
     NAMES: NAMES, name: name, url: url, puzzleNo: puzzleNo,
-    header: header, card: card, fire: fire, send: send, draw: draw, note: note,
-    remember: remember, recall: recall, preview: preview
+    header: header, card: card, fire: fire, send: send, sendImage: sendImage, draw: draw, note: note,
+    remember: remember, recall: recall, preview: preview, matchCount: matchCount
   };
 })();
