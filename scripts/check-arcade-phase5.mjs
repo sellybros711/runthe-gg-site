@@ -14,6 +14,14 @@
      node scripts/check-arcade-phase5.mjs --only guess    one game
      node scripts/check-arcade-phase5.mjs --record        write runs.json, assert nothing
                                                           (how the "before" table is made on main)
+     node scripts/check-arcade-phase5.mjs --before scripts/arcade-phase5-before.json
+                                                          the table against main as it was at
+                                                          5a38ca58, recorded with this harness
+
+   Reading the "before" side: main has no resume, so a reload mid-game puts a
+   guest or free player on a wall (the play is gone) and a card holder back on
+   the start screen. A card holder could start a new game there; the drivers
+   only finish a game in progress, so those runs read as not ending.
 
    Offline by construction (the harness refuses Supabase, analytics and ads),
    so nothing is filed to a live board. gtag is the page's own inline stub, so
