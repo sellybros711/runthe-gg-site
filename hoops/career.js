@@ -289,13 +289,18 @@ function traitMult(L, k, v) {
 }
 /* What a card moved, for the screen. */
 function snapshot(L) {
-  return { rt: Object.assign({}, L.rt), m: Object.assign({}, L.m), cash: L.cash, ovr: ovrOf(L) };
+  const o = { rt: Object.assign({}, L.rt), m: Object.assign({}, L.m), cash: L.cash, ovr: ovrOf(L) };
+  /* A story career shows what a card did to your minutes and your spot,
+     because that is most of what a coach or a trade changes. */
+  if (storyOn(L) && L.stage === 'nba' && L.team && L.season) { o.min = roleOf(L).min; o.pos = L.pos; o.team = L.team; }
+  return o;
 }
 function diffOf(a, b) {
   const out = [];
   for (const k of RATINGS) if (b.rt[k] !== a.rt[k]) out.push({ k, label: RATING_NAME[k], d: b.rt[k] - a.rt[k] });
   for (const k of METERS) if (b.m[k] !== a.m[k]) out.push({ k, label: k[0].toUpperCase() + k.slice(1), d: b.m[k] - a.m[k] });
   if (Math.abs(b.cash - a.cash) >= 0.05) out.push({ k: 'cash', label: 'Cash', d: round1(b.cash - a.cash), money: true });
+  if (a.min != null && b.min != null && a.team === b.team && Math.abs(b.min - a.min) >= 1) out.push({ k: 'min', label: 'Minutes', d: Math.round(b.min - a.min) });
   return out;
 }
 
@@ -336,34 +341,73 @@ function seedLeague(rows, rosters) {
   for (const c in by) for (const r of by[c]) lines[r.n] = [round1(r.mp || 0), round1(r.pts || 0), round1(r.reb || 0), round1(r.ast || 0), round1(r.tpa || 0), String(r.ep || r.pp || '')];
   return { latest: latest || 2026, net: normaliseNets(net), stars, roster: rosterSeed(rows, latest), lines };
 }
-/* The clubs as rosters.json has them. A man's worth is his last season in the
-   data (all his clubs added), or the one before at a discount, or a rookie's.
-   The net comes off the same rows his new club now holds, so a club that
-   traded for a star plays like it. */
+/* The clubs as rosters.json has them. The net comes off last season's rows of
+   the men each club now holds, so a club that traded for a star plays like it.
+
+   POSITION. The roster file writes a coarse G, F or C (Basketball-Reference's
+   roster table), which read as SG and SF turned the league's best shooting
+   point guard into a shooting guard and its best passing power forward into
+   a small forward, and left his club with no point guard at all. A man's position is the one the data lists for his most
+   recent season, when that agrees with the file's letter; the coarse letter is
+   only the fallback for a man the data has never seen.
+
+   WORTH. A season's win shares are a count, so a season lost to injury reads
+   as a worse player: a star's 43 games one season read 4.1 against 7.9 the
+   year before. A man's worth is his last three seasons, each as a rate per game
+   over a full season, weighted toward the newest and toward the seasons he
+   actually played. It is stamped with the season it was measured in (the
+   fifth field), so the rosters age him from there and not from scratch. */
 const POS_COARSE = { G: 'SG', F: 'SF', GF: 'SF', FC: 'PF' };
+const POS_FAMILY = { G: ['PG', 'SG'], F: ['SF', 'PF'], C: ['C', 'PF'], GF: ['SG', 'SF'], FC: ['PF', 'C'] };
+function posFromData(filePos, rowsNewestFirst) {
+  const fam = POS_FAMILY[filePos];
+  for (const r of rowsNewestFirst) {
+    const pp = r && String(r.pp || '').split(';')[0];
+    if (R_POS.indexOf(pp) < 0) continue;
+    if (R_POS.indexOf(filePos) >= 0 || !fam || fam.indexOf(pp) >= 0) return pp;
+  }
+  if (R_POS.indexOf(filePos) >= 0) return filePos;
+  return POS_COARSE[filePos] || 'SF';
+}
+function worthOf(bySeason, latest) {
+  let num = 0, den = 0, gs = 0, gw = 0;
+  [[latest, 0.6], [latest - 1, 0.3], [latest - 2, 0.1]].forEach(([y, wt]) => {
+    const rs = bySeason[y];
+    if (!rs || !rs.length) return;
+    const w = rs.reduce((a, r) => a + (r.w || 0), 0), g = rs.reduce((a, r) => a + (r.g || 0), 0);
+    if (g <= 0) return;
+    const rel = wt * Math.min(1, g / 50);
+    num += rel * w / Math.max(g, 25);
+    den += rel;
+    gs += wt * g; gw += wt;
+  });
+  /* A rate per game, times the games a man like him plays: a season lost to
+     a knee costs a little, not most of what he is. */
+  return den > 0 ? (num / den) * clamp(gs / gw, 45, 76) : null;
+}
 function seedToday(rows, latest, today) {
-  const last = {}, prev = {}, first = {}, lineOf = {};
+  const last = {}, by = {}, first = {};
   for (const r of rows || []) {
     if (!(first[r.i] <= r.s)) first[r.i] = r.s;
     if (r.s === latest) { (last[r.i] = last[r.i] || []).push(r); }
-    else if (r.s >= latest - 2 && !(prev[r.i] && prev[r.i].s >= r.s)) prev[r.i] = r;
+    if (r.s >= latest - 2) { const b = by[r.i] = by[r.i] || {}; (b[r.s] = b[r.s] || []).push(r); }
   }
   const net = {}, stars = {}, roster = {}, lines = {};
   for (const c of CLUBS) {
     const men = (today.clubs[c] || []).map((m) => {
       const mine = last[m.i] || [];
-      let w;
-      if (mine.length) w = mine.reduce((a, r) => a + (r.w || 0), 0);
-      else if (prev[m.i]) w = (prev[m.i].w || 0) * 0.7;
-      else w = 1.2;
+      const seasons = by[m.i] || {};
+      const recent = [latest, latest - 1, latest - 2].map((y) => (seasons[y] || []).slice().sort((a, b) => (b.g || 0) - (a.g || 0))[0]).filter(Boolean);
+      const v = worthOf(seasons, latest);
+      const w = v == null ? 1.2 : v;
       /* Last season's line, from whichever club he played most for. */
       const top = mine.slice().sort((a, b) => (b.g || 0) - (a.g || 0))[0];
       if (top) lines[m.n] = [round1(top.mp || 0), round1(top.pts || 0), round1(top.reb || 0), round1(top.ast || 0), round1(top.tpa || 0), String(top.ep || top.pp || '')];
-      const pos = R_POS.indexOf(m.pos) >= 0 ? m.pos : POS_COARSE[m.pos] || 'SF';
+      const pos = posFromData(m.pos, recent);
       const born = m.b || (top ? bornOf(top, first[m.i]) : latest - 21);
       return { m, w: round1(w), pos, born, rows: mine };
     }).sort((a, b) => b.w - a.w);
-    roster[c] = men.slice(0, 15).map((x) => [x.m.n, x.pos, x.born, x.w]);
+    roster[c] = men.slice(0, 15).map((x) => [x.m.n, x.pos, x.born, x.w, latest]);
     stars[c] = men.slice(0, 3).map((x) => x.m.n);
     /* Strength off last season's rows of the men he now has, the best one per
        man, so a traded player counts once and for his new club. */
@@ -673,7 +717,28 @@ function retireAge(L, name, w) {
    now and then a star moves. A club that gets better gets a little better on
    the floor. A career saved before this builds its rosters the first time it
    reads them, from the same seed rosters, so nobody it knew disappears. */
+/* A REAL MAN'S YEAR. A roster seeded from today's file stamps each man with
+   the season his worth was measured in (e.s), and he is aged from there, not
+   from scratch: what a 38 year old did last season already carries his age,
+   so a second discount for it took a 39 year old star to a quarter of
+   himself before he had played a game. From then on a young man grows, a man in his prime holds
+   and a veteran declines a little faster each year, and each man has his own
+   arc (seeded off his name) so not every 22 year old makes the same leap. */
+const REAL_CURVE = { 19: 1.2, 20: 1.18, 21: 1.15, 22: 1.12, 23: 1.08, 24: 1.05, 25: 1.03, 26: 1.01, 27: 1, 28: 0.98, 29: 0.96, 30: 0.93, 31: 0.9, 32: 0.87, 33: 0.84, 34: 0.82, 35: 0.8 };
+function realArc(e) { const r = E.createSeededRNG(E.hashSeed('arc:' + e.n)); return (r() + r() + r()) / 3 * 2 - 1; }
+function realCurW(e, Y) {
+  if (Y <= e.s) return round1(e.w);
+  const arc = realArc(e);
+  let v = e.w;
+  for (let y = e.s + 1; y <= Y; y++) {
+    const a = y - e.b;
+    const f = REAL_CURVE[a] || (a < 19 ? 1.2 : 0.78);
+    v *= f >= 1 ? 1 + (f - 1) * (1 + arc * 0.8) : f + arc * 0.025;
+  }
+  return round1(Math.max(0.1, Math.min(v, Math.max(e.w * 2.6, 6))));
+}
 function rostCurW(e, Y) {
+  if (e.s && !e.g) return realCurW(e, Y);
   const age = Y - e.b;
   const grow = e.g ? Math.min(1, 0.35 + (Y - e.d) * 0.2) : 1;
   return round1(e.w * grow * (age <= 30 ? 1 : Math.max(0.1, 1 - (age - 30) * 0.08)));
@@ -705,12 +770,13 @@ function rookieFor(L, c, d) {
 function rostBuild(L, Y) {
   const lg = L.league, R = {};
   for (const c of CLUBS) {
-    R[c] = ((lg.roster && lg.roster[c]) || []).map((p) => ({ n: p[0], pos: p[1], b: p[2], w: p[3] }));
+    R[c] = ((lg.roster && lg.roster[c]) || []).map((p) => (p[4] ? { n: p[0], pos: p[1], b: p[2], w: p[3], s: p[4] } : { n: p[0], pos: p[1], b: p[2], w: p[3] }));
     /* Today's rosters already carry this season's real rookies, so invented
        ones start with the next draft. */
     for (let d = (lg.rs || lg.latest || 2026) + 1; d <= Y; d++) R[c].push(rookieFor(L, c, d));
     R[c] = R[c].filter((e) => !rostGone(L, e, Y));
   }
+  if (storyOn(L)) uniqueNames(L, R, Y);
   lg.rost = R; lg.rostY = Y;
   return R;
 }
@@ -753,6 +819,7 @@ function rosterSummer(L, beats, quietY) {
     R[c] = R[c].filter((e) => !rostGone(L, e, Y));
     const rk = rookieFor(L, c, Y); rk.pos = thinPos(R[c], rk.pos); R[c].push(rk);
   }
+  uniqueNames(L, R, Y);
   const other = (c) => { let o = c; while (o === c) o = pick(rng, CLUBS); return o; };
   const move = (from, i, to, how) => {
     const e = R[from].splice(i, 1)[0];
@@ -803,6 +870,7 @@ function rosterSummer(L, beats, quietY) {
   for (const c of CLUBS) {
     while (R[c].length < 13) { const r = E.createSeededRNG(E.hashSeed(String(L.seed) + ':vet:' + c + ':' + Y + ':' + R[c].length)); R[c].push({ n: pick(r, FIRST) + ' ' + pick(r, PEOPLE_LAST), pos: thinPos(R[c], pick(r, R_POS)), b: Y - 27 - Math.floor(r() * 6), w: round1(0.4 + r() * 1.6), g: 1, d: Y - 6 }); }
   }
+  uniqueNames(L, R, Y);
   /* A club that got better plays a little better: a share of the talent it
      gained, with the league kept centred. */
   const d = {};
@@ -818,6 +886,22 @@ function rosterSummer(L, beats, quietY) {
     if (beats && L.stage === 'nba') beats.push({ kind: 'news', text: (ours ? 'Your club: ' : 'Around the league: ') + x.t, tone: '' });
     feed(L, 'move', x.t);
     if (ours) logIt(L, x.t, '');
+  }
+}
+/* NO TWO MEN IN THE LEAGUE SHARE A NAME. Generated rookies are drawn from
+   two short lists, so two clubs drew the same man in about one season in
+   four, and the deadline then printed "Mateo Tisdell to the Heat, Mateo
+   Tisdell to the Timberwolves". A clash is redrawn until it is gone. */
+function uniqueNames(L, R, Y) {
+  const seen = new Set();
+  for (const c of CLUBS) for (const e of R[c]) {
+    if (!seen.has(e.n)) { seen.add(e.n); continue; }
+    if (!e.g) continue;
+    for (let k = 1; k < 40 && seen.has(e.n); k++) {
+      const r = E.createSeededRNG(E.hashSeed(String(L.seed) + ':rename:' + c + ':' + Y + ':' + e.n + ':' + k));
+      e.n = pick(r, FIRST) + ' ' + pick(r, PEOPLE_LAST);
+    }
+    seen.add(e.n);
   }
 }
 /* Who is on club c in the current year, best first. */
@@ -1436,7 +1520,7 @@ function roleOf(L) {
   let min = diff >= 14 ? 35.5 : diff >= 7 ? 32.5 : diff >= 0 ? 27.5 : diff >= -5 ? 20 : diff >= -10 ? 13 : 7;
   min += (L.m.trust - 50) * 0.05 + (L.season ? L.season.mods.min : 0);
   if (L.contract && L.contract.kind === 'rookie' && L.draft && L.draft.pick <= 5 && net < 0) min += 3;
-  min = clamp(min, 2, 38.5);
+  min = clamp(depthCheck(L, min, diff), 2, 38.5);
   const label = (diff >= 12 && min >= 33) ? 'Franchise player' : min >= 30 ? 'Starter' : min >= 24 ? 'Starter' : min >= 15 ? 'Rotation' : 'End of bench';
   return { min: round1(min), diff, label, starter: min >= 24 };
 }
@@ -1486,6 +1570,9 @@ function rotationOf(L) {
   const mates = matesOf(L, L.team).slice(0, 14);
   let at = ROT_SHAPE.findIndex((m) => m <= mine);
   if (at < 0 || at > mates.length) at = mates.length;
+  /* The label and the screen are one answer: a coach who calls you a
+     starter puts you in the five, at whatever minutes he plays you. */
+  if (role.starter && at > 4) at = 4;
   const youStart = at < 5;
   const me = { n: L.name, pos: L.pos, age: L.age, you: true, min: mine, pts: null, w: 0 };
   const epOf = (m) => { const ln = lines[m.n]; return ln && ln[5] ? String(ln[5]).split(';') : null; };
@@ -1706,7 +1793,12 @@ function awards(L, st) {
   const rookie = L.seasonsDone === 0;
   /* THE LEAGUE ALWAYS HAS OTHER MVP CANDIDATES, so even a perfect year is a
      little better than a coin flip. */
-  if (gpOk && o >= 91 && seed <= 3) {
+  /* A story career's MVP needs a 92, not a 91: a real deadline puts good
+     players on good clubs and a top three seed with them, and at 91 MVPs ran
+     3.5 in a hundred careers against a band of 1 to 3. Measured over 1,000:
+     cutting the vote's odds instead barely moved it (3.3 at 0.42), because a
+     man good enough to win one wins it in a season where the odds are high. */
+  if (gpOk && o >= (storyOn(L) ? 92 : 91) && seed <= 3) {
     const sc = (o - 93) * 0.6 + (w - 55) * 0.1 + (pg.pts - 27) * 0.15 + (L.m.fame - 70) * 0.02;
     if (rng() < (storyOn(L) ? 0.52 : 0.62) * lg(sc - 0.4)) out.push('mvp');
   } else rng();
@@ -2154,7 +2246,115 @@ function clutchCard(L, cur, home) {
    twenty-nine in the legs and reaches the jumper last. */
 const GROW = { 19: 0.24, 20: 0.22, 21: 0.2, 22: 0.18, 23: 0.15, 24: 0.11, 25: 0.08, 26: 0.05, 27: 0.02 };
 const DECLINE = { 29: 0.9, 30: 1.5, 31: 2.1, 32: 2.7, 33: 3.3, 34: 3.9, 35: 4.5, 36: 5.1, 37: 5.7 };
+/* HOW A PLAYER CHANGES, on a story career. Every skill has its own clock:
+   the bounce comes first and goes first, a jumper and a feel for the game
+   keep getting better into a man's thirties, and the glass and the defense
+   sit in between. Who plays grows, who sits grows slower. A summer can be a
+   breakout or a stall, a coach's project gets extra work, and no summer moves
+   a man more than nine points, because +12 in one offseason read as a cheat
+   code rather than a kid getting better.
+
+   The old curve (one rate for every rating, then legs and IQ weights on the
+   way down) is kept exactly for a save from before story careers. */
+const SKILL_GROW = {
+  ath: [[21, 1.45], [23, 1.1], [25, 0.55], [99, 0.1]],
+  fin: [[23, 1.1], [26, 0.95], [99, 0.6]],
+  def: [[23, 0.95], [27, 1.05], [99, 0.7]],
+  reb: [[24, 1.05], [27, 0.85], [99, 0.5]],
+  sho: [[22, 0.8], [26, 1.1], [99, 1.3]],
+  pla: [[22, 0.85], [27, 1.1], [99, 1.15]],
+  iq: [[22, 0.75], [27, 1.15], [99, 1.3]],
+};
+const shapeAt = (rows, a) => { for (const [to, v] of rows) if (a <= to) return v; return rows[rows.length - 1][1]; };
+/* On the way down: the legs go from 28, the touch and the brain much later. */
+function skillDecline(k, a) {
+  if (k === 'ath') return a >= 28 ? 1.55 : 0;
+  if (k === 'fin' || k === 'def') return 1.15;
+  if (k === 'reb') return 0.95;
+  if (k === 'sho') return a >= 34 ? 0.7 : 0.35;
+  if (k === 'pla') return a >= 34 ? 0.8 : 0.5;
+  if (k === 'iq') return a >= 34 ? 0.5 : 0;
+  return 0.9;
+}
+const SUMMER_CAP = 9;
+function developStory(L, beats) {
+  const before = ovrOf(L), was = Object.assign({}, L.rt);
+  const rng = rngAt(L, 'develop');
+  const a = L.age;
+  const gap = Math.max(0, L.pot - before);
+  const eth = 0.65 + L.eth / 100 * 0.7 + (trait(L, 'gymRat') ? 0.12 : 0);
+  let grow = gap * (GROW[a] || 0) * eth;
+  if (trait(L, 'lateBloomer')) grow = a <= 22 ? grow * 0.8 : a <= 27 ? grow + gap * 0.05 * eth : grow;
+  grow *= lvl(L).grow;
+  /* Minutes are where a young man learns. */
+  const h = L.history[L.history.length - 1];
+  const min = h && h.y === L.year && h.min != null ? h.min : (L.season && L.season.gp ? L.season.tot.min / L.season.gp : 20);
+  if (a <= 25) grow *= 0.8 + 0.3 * clamp((min - 8) / 26, 0, 1);
+  grow += L.flags.devCarry || 0;
+  /* A breakout or a stall, mostly for the young. */
+  let jump = '';
+  const roll = rng();
+  if (a <= 25 && gap >= 6 && roll < 0.11) { grow *= 1.5; jump = 'up'; }
+  else if (a <= 26 && gap >= 4 && roll > 0.9) { grow *= 0.45; jump = 'flat'; }
+  const dec = (DECLINE[a] || (a >= 38 ? 6.5 : 0)) * (1.2 - L.dur / 250) * (L.flags.longevity ? 0.75 : 1) * bal(L, 'dec', 1) * lvl(L).dec
+    + Math.max(0, 50 - L.m.health) * 0.03;
+  const early = a === 27 ? 0.5 : a === 28 ? 1 : 0;
+  const focus = L.focus && L.focus.y === L.year ? L.focus.k : null;
+  /* The clocks move growth and decline between skills, never in total: for
+     every position and age the weighted sum is the old curve's, so a career
+     is as long and as good as it was and only its shape changed. Measured
+     without this, the jumper and the brain aging slower than the legs added
+     two points to every man at 32 and doubled the MVPs. */
+  const w = WEIGHTS[L.pos];
+  let gS = 0, dS = 0, dOld = 0;
+  for (const k of RATINGS) {
+    gS += w[k] * shapeAt(SKILL_GROW[k], a);
+    dS += w[k] * skillDecline(k, a);
+    dOld += w[k] * (k === 'ath' ? 1.6 : k === 'fin' || k === 'def' ? 1.15 : k === 'sho' || k === 'iq' ? 0.45 : 0.9);
+  }
+  const gN = gS > 0 ? 1 / gS : 1, dN = dS > 0 ? dOld / dS : 1;
+  const d = {};
+  for (const k of RATINGS) {
+    let x = grow * shapeAt(SKILL_GROW[k], a) * gN * (0.6 + rng() * 0.8);
+    if (k === 'ath' && early) x -= early * (0.6 + rng() * 0.8);
+    if (dec) x -= dec * skillDecline(k, a) * dN * (0.7 + rng() * 0.6) * (k === focus ? 0.5 : 1);
+    if (k === 'iq' && a <= 33) x += 0.6;
+    if (k === 'iq' && trait(L, 'filmJunkie')) x += 0.5;
+    if (k === focus) x += 1.5 + Math.max(0, grow) * 0.4;
+    d[k] = x;
+  }
+  /* The cap is on the overall, so a summer can still be all shooting. */
+  let gain = 0;
+  for (const k of RATINGS) gain += d[k] * w[k];
+  /* What the cap holds back is not lost: it is next summer's head start, so
+     a top prospect gets to the same place a year more slowly. */
+  L.flags.devCarry = 0;
+  if (gain > SUMMER_CAP) { L.flags.devCarry = round1(gain - SUMMER_CAP); for (const k of RATINGS) if (d[k] > 0) d[k] *= SUMMER_CAP / gain; }
+  /* And no single skill jumps more than seven: a kid adds a step, not a new
+     body. Measured, the bounce alone went +16 in one summer without it. */
+  for (const k of RATINGS) d[k] = Math.min(d[k], 7);
+  for (const k of RATINGS) L.rt[k] = clamp(Math.round(L.rt[k] + d[k]), 25, 99);
+  if (jump === 'up') L.pot = clamp(L.pot + 2, 40, 99);
+  if (jump === 'flat') L.pot = clamp(L.pot - 2, 40, 99);
+  if (focus) L.focus = null;
+  const after = ovrOf(L);
+  const diff = after - before;
+  const moved = RATINGS.map((k) => [k, L.rt[k] - was[k]]).filter((x) => x[1]).sort((x, y) => Math.abs(y[1]) - Math.abs(x[1])).slice(0, 2);
+  const detail = moved.length ? ' ' + moved.map(([k, v]) => RATING_NAME[k] + ' ' + (v > 0 ? '+' : '') + v).join(', ') + '.' : '';
+  const head = jump === 'up' && diff > 0 ? 'A breakout summer. ' : jump === 'flat' ? 'A quiet summer. The jump did not come. ' : '';
+  if (diff || head) {
+    const t = head + (diff > 0 ? 'Up ' + diff + ' overall, to ' + after + '.' : diff < 0 ? 'Down ' + (-diff) + ' overall, to ' + after + '.' : 'Still ' + after + ' overall.') + detail;
+    beats.push({ kind: 'dev', text: t, tone: diff > 0 ? 'good' : diff < 0 ? 'bad' : '' });
+    logIt(L, t, diff > 0 ? 'good' : diff < 0 ? 'bad' : '');
+  }
+  if (focus && L.rt[focus] > was[focus]) beats.push({ kind: 'dev', text: 'Your summer project paid off: ' + RATING_NAME[focus].toLowerCase() + ' ' + was[focus] + ' to ' + L.rt[focus] + '.', tone: 'good' });
+  if (a >= 29 && L.rt.ath < was.ath - 2 && !L.flags.stepGone) { L.flags.stepGone = L.year; beats.push({ kind: 'dev', text: 'The first step is going. You will have to win with your head.', tone: 'bad' }); }
+  if (diff >= 1 && a >= 24) reveal(L, 'lateBloomer', 'Still getting better at ' + a + '.', beats);
+  if (L.eth >= 85 && a >= 22) reveal(L, 'gymRat', 'First in the gym. Every day.', beats);
+  bump(L, { health: 28 });
+}
 function develop(L, beats) {
+  if (storyOn(L)) return developStory(L, beats);
   const before = ovrOf(L);
   const rng = rngAt(L, 'develop');
   const a = L.age;
@@ -2690,11 +2890,13 @@ const EVENTS = {
   trade_rumor: {
     phases: ['mid'], when: (L) => !L.flags.tradeAsk && L.contract && L.contract.years >= 1, weight: (L) => clubNet(L, L.team) < -2 ? 4 : 1.5,
     title: 'Your name is in trade talks.',
-    text: () => 'The deadline is Thursday. Your phone will not stop.',
+    /* On a story career the deadline is a real day that has already passed
+       when this is dealt (tradeDeadline), so the talk is about the summer. */
+    text: (L) => storyOn(L) ? 'The deadline came and went. The rumors did not. Every summer mock trade has your name in it.' : 'The deadline is Thursday. Your phone will not stop.',
     options: [
-      { label: 'Tell them you want to stay', run: (L, r) => { bump(L, { trust: 6 }); if (ok(r, 0.8)) return 'General manager {gm} hears you. You stay.'; tradeNow(L, r); return 'They trade you anyway. Business.'; } },
-      { label: 'Ask to go to a contender', run: (L, r) => { if (ok(r, 0.55)) { tradeNow(L, r, true); return 'Done. You are headed to a winner.'; } bump(L, { trust: -8 }); return 'No deal. And now everybody knows you wanted out.'; } },
-      { label: 'Say nothing', run: (L, r) => { if (ok(r, 0.25)) { tradeNow(L, r); return 'A call at midnight. You have been traded.'; } return 'Thursday passes. You stay.'; } },
+      { label: 'Tell them you want to stay', run: (L, r) => { if (storyOn(L)) { bump(L, { trust: 6 }); return '{gm} says he hears you. Summer will tell.'; } bump(L, { trust: 6 }); if (ok(r, 0.8)) return 'General manager {gm} hears you. You stay.'; tradeNow(L, r); return 'They trade you anyway. Business.'; } },
+      { label: 'Ask to go to a contender', run: (L, r) => { if (storyOn(L)) { if (L.contract && L.contract.years >= 2) { L.flags.tradeAsk = true; bump(L, { trust: -6 }); return '{agent} makes the call. If it happens, it happens this summer.'; } bump(L, { trust: -4 }); return 'You are a free agent this summer anyway. The call does nothing but annoy {gm}.'; } if (ok(r, 0.55)) { tradeNow(L, r, true); return 'Done. You are headed to a winner.'; } bump(L, { trust: -8 }); return 'No deal. And now everybody knows you wanted out.'; } },
+      { label: 'Say nothing', run: (L, r) => { if (storyOn(L)) return 'You let your game do the talking. The rumors fade by April.'; if (ok(r, 0.25)) { tradeNow(L, r); return 'A call at midnight. You have been traded.'; } return 'Thursday passes. You stay.'; } },
     ],
   },
   tank: {
@@ -2903,7 +3105,7 @@ const EVENTS = {
     ],
   },
   superteam: {
-    phases: ['off'], when: (L) => ovrOf(L) >= 84 && L.contract && L.contract.years >= 1 && clubNet(L, L.team) < 2, weight: () => 2,
+    phases: ['off'], when: (L) => ovrOf(L) >= 84 && L.contract && L.contract.years >= 1 && clubNet(L, L.team) < (storyOn(L) ? 3 : 2), weight: () => 2,
     title: '{agent} has a contender on the line.',
     text: () => 'Two stars there want a third. They want you, and they want an answer this week.',
     options: [
@@ -3306,11 +3508,21 @@ function buzzer(L, r, p) {
   bump(L, { morale: -4 });
   return 'Off the back iron. You will see it in your sleep.';
 }
-/* A trade forced by a card, mid-season or in a summer. */
+/* A trade forced by a card, mid-season or in a summer. On a story career the
+   club that takes you is one with a use for you: a hole at your position
+   counts as much as how good they are, and a real man goes back the other
+   way, because nobody in this league is traded for nothing. */
 function tradeNow(L, rng, contender) {
   const pool = CLUBS.filter((x) => x !== L.team);
-  const to = weighted(rng, pool, (x) => contender ? Math.max(0.2, clubNet(L, x) + 4) : 1);
+  const to = storyOn(L) && rostOf(L)
+    ? weighted(rng, pool, (x) => (contender ? Math.max(0.2, clubNet(L, x) + 4) : 1) * (0.5 + needAt(L, x, L.pos)))
+    : weighted(rng, pool, (x) => contender ? Math.max(0.2, clubNet(L, x) + 4) : 1);
+  tradeTo(L, to, rng);
+}
+function tradeTo(L, to, rng) {
+  const from = L.team;
   joinTeam(L, to, true);
+  if (storyOn(L) && from) swapBack(L, from, to, rng);
   const s = L.season;
   if (s && s.g > 0 && s.g < GAMES) {
     /* The record follows the club, not the man: the new club's games so far. */
@@ -3319,6 +3531,457 @@ function tradeNow(L, rng, contender) {
     s.l = s.g - s.w;
     s.team = to;
   }
+}
+
+// ─── the bench: your coach, your role and your minutes (story careers) ──────
+
+/* EVERY COACH HAS A WAY OF DOING THINGS, seeded off his name so the same real
+   coach is the same man in every career. It changes what he will hear in his
+   office and what earns minutes in his rotation. */
+const COACH_STYLES = {
+  players: { name: "A players' coach", line: 'He talks things out. His door is open.', ask: 0.1, cut: 0.7, young: 0, def: 0, fit: 0 },
+  defense: { name: 'Defense first', line: 'Minutes are earned on the defensive end.', ask: -0.05, cut: 1, young: 0, def: 1, fit: 0 },
+  vets: { name: 'Trusts veterans', line: 'You play for him by being there every night for years.', ask: 0, cut: 1, young: -0.12, def: 0, fit: 0 },
+  youth: { name: 'Plays the kids', line: 'Young legs get his minutes.', ask: 0, cut: 1, young: 0.12, def: 0, fit: 0 },
+  system: { name: 'A system coach', line: 'Everybody has a spot. Fit the system and you play.', ask: -0.05, cut: 1, young: 0, def: 0, fit: 0.15 },
+};
+const STYLE_KEYS = Object.keys(COACH_STYLES);
+const styleKey = (L) => STYLE_KEYS[E.hashSeed('style:' + myCoach(L)) % STYLE_KEYS.length];
+const coachStyle = (L) => COACH_STYLES[styleKey(L)];
+/* What a coach sees: what you have done against what a man your size and
+   skill should do in the minutes you have played. One is par. A coach who
+   lives on defense counts your defense too. */
+function perfOf(L) {
+  const s = L.season;
+  if (!s || s.gp < 6 || !s.tot.min) return 1;
+  const role = roleOf(L), min = s.tot.min / s.gp;
+  const m = lineMeans(L, min, usageOf(L, role));
+  const pg = perGame(s);
+  const want = m.pts + 0.5 * m.reb + 0.7 * m.ast;
+  const got = pg.pts + 0.5 * pg.reb + 0.7 * pg.ast;
+  /* The box score runs about four percent over the means it is drawn from
+     (rounding, and no negative games), so par is centred on what the sim
+     actually hands a man rather than on the formula. Over 1,100 stretches
+     the middle eighty percent of players land between 0.95 and 1.15 of it. */
+  let r = want > 0 ? got / want - 0.04 : 1;
+  if (coachStyle(L).def) r += (L.rt.def - 62) / 120;
+  return clamp(r, 0.4, 1.8);
+}
+const tsOf = (s) => { const t = s.tot; const d = 2 * (t.fga + 0.44 * t.fta); return d > 0 ? Math.round(t.pts / d * 1000) / 10 : 0; };
+/* Where you could also play: the spot next to yours where the club is thin
+   and your ratings travel. */
+function otherSpot(L) {
+  let best = null;
+  for (const p of NEXT_POS[L.pos] || []) {
+    const lose = ovrOf(L) - overall(L.rt, p);
+    if (lose > 3) continue;
+    const v = needAt(L, L.team, p) - needAt(L, L.team, L.pos) - lose * 0.03;
+    if (!best || v > best.v) best = { p, v };
+  }
+  return best && best.v > 0.05 ? best.p : null;
+}
+/* The rating a coach tells you to work on: what your position asks for most
+   that you have least of. */
+function weakSpot(L) {
+  const w = WEIGHTS[L.pos];
+  return RATINGS.slice().sort((a, b) => (w[b] * (90 - L.rt[b])) - (w[a] * (90 - L.rt[a])))[0];
+}
+/* THE CONVERSATION. Not "ask for more" and a coin: the options are the ones
+   your situation has, and each one tells you roughly what it will take. */
+function coachTalkCard(L) {
+  const s = L.season, role = roleOf(L), st = coachStyle(L), perf = perfOf(L);
+  const pg = s && s.gp ? perGame(s) : null;
+  const opener = pg
+    ? 'You are at ' + pg.min + ' minutes, ' + pg.pts + ' points on ' + tsOf(s) + ' percent true shooting. The ' + nick(L.team) + ' are ' + s.w + '-' + s.l + '.'
+    : 'Camp opens Tuesday. He has you down for ' + Math.round(role.min) + ' minutes a night.';
+  const read = perf >= 1.07 ? 'He likes what he sees.' : perf <= 0.95 ? 'He has seen the tape.' : 'He thinks you are about where you should be.';
+  const opts = [];
+  const odds = (p) => p >= 0.6 ? 'Good odds.' : p >= 0.4 ? 'Even money.' : p >= 0.2 ? 'A long shot.' : 'Not likely.';
+  const pMore = coachP(L, 'more');
+  if (role.min < 36) opts.push({ k: 'more', label: 'Ask for more minutes', hint: odds(pMore) + ' He goes by what you have shown.' });
+  if (!role.starter && role.min >= 12) opts.push({ k: 'start', label: 'Ask to start', hint: odds(coachP(L, 'start')) + ' Somebody loses his spot.' });
+  const spot = otherSpot(L);
+  if (spot) opts.push({ k: 'pos', to: spot, label: 'Offer to play ' + POS_NAME[spot].toLowerCase(), hint: odds(coachP(L, 'pos')) + ' The ' + nick(L.team) + ' are thin there.' });
+  if (role.starter && role.min >= 28) opts.push({ k: 'ball', label: 'Ask for the ball in crunch time', hint: odds(coachP(L, 'ball')) + ' More shots, more pressure.' });
+  if (role.starter && s && s.g && s.w < s.l) opts.push({ k: 'bench', label: 'Offer to come off the bench', hint: 'For the team. He will remember it.' });
+  opts.push({ k: 'focus', label: 'Ask what to work on', hint: 'He will tell you. It costs nothing.' });
+  return {
+    id: 'coach_talk', kind: 'event', key: 'coach_talk:' + L.year + ':' + (s ? s.g : 0), eyebrow: st.name + ' · ' + myCoach(L),
+    title: myCoach(L) + ' has ten minutes.', text: opener + ' ' + read + ' ' + st.line,
+    ctx: { ks: opts.slice(0, 4).map((o) => o.k), to: spot },
+    options: opts.slice(0, 4).map((o) => ({ label: o.label, hint: o.hint })),
+  };
+}
+function coachP(L, k) {
+  const role = roleOf(L), st = coachStyle(L), perf = perfOf(L);
+  const ageAdj = L.age <= 24 ? st.young : L.age >= 30 ? -st.young : 0;
+  const base = 0.2 + (L.m.trust - 50) * 0.008 + clamp(role.diff, -12, 12) * 0.012 + (perf - 1) * 0.9 + st.ask + ageAdj;
+  if (k === 'more') return clamp(base + 0.1, 0.05, 0.88);
+  if (k === 'start') return clamp(base - 0.08, 0.04, 0.8);
+  if (k === 'pos') return clamp(0.35 + st.fit + needAt(L, L.team, (otherSpot(L) || L.pos)) * 0.4 + (L.m.trust - 50) * 0.005, 0.1, 0.9);
+  if (k === 'ball') return clamp(base + (L.m.fame - 40) * 0.005, 0.05, 0.85);
+  return 1;
+}
+function chooseCoachTalk(L, card, i, rng) {
+  const k = card.ctx.ks[i], st = coachStyle(L), coach = myCoach(L);
+  const p = coachP(L, k);
+  const yes = rng() < p;
+  L.flags.talks = (L.flags.talks || 0) + 1;
+  if (k === 'focus') {
+    const r = weakSpot(L);
+    L.focus = { k: r, y: L.year };
+    bump(L, { trust: 3 });
+    return coach + ' does not hesitate: ' + RATING_NAME[r].toLowerCase() + '. Get it where it should be and the minutes follow. It is your summer project now.';
+  }
+  if (k === 'bench') {
+    bump(L, { min: -4, trust: 10, morale: -2, win: 0.4 });
+    relate(L, 'tvet', 6, 'You gave up your starting spot.');
+    remember(L, 'role.sacrifice', true);
+    return coach + ' stares at you for a second. Then he shakes your hand. You run the second unit, and the first one plays better.';
+  }
+  if (k === 'more') {
+    if (yes) { bump(L, { min: 4, trust: 2 }); return coach + ' gives you four more minutes a night. Now keep them.'; }
+    bump(L, { trust: -4 * st.cut, morale: -2 });
+    return 'He wants to see more first. The meeting is short.';
+  }
+  if (k === 'start') {
+    if (yes) { bump(L, { min: 8, trust: 2 }); remember(L, 'role.won', L.year); return coach + ' puts you with the first five on Monday. You do not give the spot back.'; }
+    bump(L, { trust: -5 * st.cut, morale: -3 });
+    return 'Not yet. He walks you through what the starter does that you do not. He is not wrong.';
+  }
+  if (k === 'pos') {
+    const to = card.ctx.to;
+    if (yes && to) { const was = L.pos; L.arch = archForPos(L, to); L.pos = to; bump(L, { min: 3, trust: 4 }); logIt(L, 'Moved from ' + POS_NAME[was].toLowerCase() + ' to ' + POS_NAME[to].toLowerCase() + '.', 'good'); return coach + ' draws it up on the whiteboard. You are a ' + POS_NAME[to].toLowerCase() + ' now, and there are minutes there.'; }
+    bump(L, { trust: -2 });
+    return 'He needs you where you are. He means it as a compliment.';
+  }
+  if (k === 'ball') {
+    if (yes) { bump(L, { usage: 0.025, trust: 2, fame: 2 }); remember(L, 'role.closer', L.year); return 'The last play of every close game is yours now. ' + coach + ' says do not make him regret it.'; }
+    bump(L, { trust: -5 * st.cut });
+    return 'He goes to the hot hand. Which, he points out, has not been yours.';
+  }
+  return '';
+}
+/* THE ROLE IS EARNED IN SEASON. After the first stretch and again at the
+   break a coach looks at what you have done. Outplay your minutes and you get
+   more of them; play under them for long enough and you lose some, and he
+   tells you so to your face. It is the same par perfOf reads, so a hot start
+   earns a role and a cold one costs one, the way it does in the league. */
+function roleReview(L, beats, when) {
+  if (!storyOn(L) || L.stage !== 'nba' || !L.team || !L.season || L.season.gp < 12) return;
+  const s = L.season, role = roleOf(L), perf = perfOf(L), st = coachStyle(L);
+  const rng = rngAt(L, 'review:' + when);
+  const coach = myCoach(L);
+  if (perf >= 1.09 && role.min < 34 && rng() < 0.6) {
+    const up = role.starter ? 2 : role.min >= 19 ? Math.max(3, 25 - role.min) : 4;
+    bump(L, { min: up, trust: 3 });
+    const now = roleOf(L);
+    const t = role.starter ? coach + ' gives you more of the fourth quarter.'
+      : now.starter ? coach + ' moves you into the starting five.' : coach + ' gives you a real spot in the rotation.';
+    beats.push({ kind: 'role', text: t, tone: 'good' });
+    logIt(L, t, 'good');
+    return;
+  }
+  if (perf <= 0.96 && role.min >= 18 && rng() < 0.6 * st.cut) {
+    bump(L, { min: -4, morale: -3 });
+    const t = coach + ' cuts your minutes.';
+    beats.push({ kind: 'role', text: t, tone: 'bad' });
+    logIt(L, t, 'bad');
+    if (rng() < 0.6) L.pending.push({
+      id: 'coach_review', kind: 'event', key: 'coach_review:' + L.year + ':' + when, eyebrow: 'After practice · ' + coach,
+      title: coach + ' tells you why.', text: 'Your numbers are down from where they should be: ' + perGame(s).pts + ' points on ' + tsOf(s) + ' percent. He wants them earned back.',
+      options: [
+        { label: 'Take it and go to work', hint: 'Trust and work ethic. The minutes come back if the play does.' },
+        { label: 'Ask what he needs to see', hint: 'He tells you. It becomes your project.' },
+        { label: 'Go over his head to {gm}', hint: 'Risky. A star can win this. A role player cannot.' },
+        { label: 'Say it to the reporters', hint: 'It feels good for a day.' },
+      ],
+    });
+  }
+}
+function chooseCoachReview(L, i, rng) {
+  if (i === 0) { bump(L, { trust: 5, eth: 3 }); return 'Extra film, extra shots. He sees you there at seven in the morning.'; }
+  if (i === 1) { const r = weakSpot(L); L.focus = { k: r, y: L.year }; bump(L, { trust: 4 }); return 'He names it: ' + RATING_NAME[r].toLowerCase() + '. He walks you through the clips. It is your project now.'; }
+  if (i === 2) {
+    if (rng() < clamp(0.1 + (L.m.fame - 40) * 0.01, 0.05, 0.75)) { bump(L, { min: 4, trust: -8 }); relate(L, 'gm', 4); return '{gm} makes a call. Your minutes are back. ' + myCoach(L) + ' will not look at you.'; }
+    bump(L, { trust: -12, morale: -3 }); relate(L, 'gm', -8, 'You went over the coach to him.');
+    return '{gm} tells you to talk to your coach. Who already knows you went to {gm}.';
+  }
+  bump(L, { fame: 3, morale: 2, trust: -9 });
+  relate(L, 'beat', 4);
+  return 'It leads the late show. It leads practice the next morning, too.';
+}
+/* YOUR SPOT IN THE ROTATION IS A POSITION. Two men cannot both start at
+   point guard, so if the man ahead of you at your spot is better and there
+   is no room next to it, you come off the bench whatever your overall says,
+   and if the five is better with you in it, you start. bestFive is the same
+   rule the rotation screen draws. */
+/* roleOf is asked on every card (the receipt shows minutes), so whether you
+   are in the five is remembered until something it reads changes. Kept off
+   the save: it is a cache, not a fact about the career. */
+const FIVE_CACHE = typeof WeakMap !== 'undefined' ? new WeakMap() : null;
+function inFive(L) {
+  const key = [L.year, L.team, L.pos, Math.round(youW(L) * 4), L.league.rostY, L.season && L.season.deadline ? 1 : 0, L.league.rost && L.league.rost[L.team] ? L.league.rost[L.team].length : 0].join(':');
+  const hit = FIVE_CACHE && FIVE_CACHE.get(L);
+  if (hit && hit.key === key) return hit.v;
+  const mates = matesOf(L, L.team).slice(0, 13);
+  const lines = L.league.lines || {};
+  const epOf = (m) => { const ln = lines[m.n]; return ln && ln[5] ? String(ln[5]).split(';') : null; };
+  const me = { v: youW(L), pos: L.pos, ep: null, me: 1 };
+  const five = bestFive([me].concat(mates.map((m) => ({ v: Math.max(0.1, m.w), pos: m.pos, ep: epOf(m) }))));
+  const v = !!(five && five.slots.indexOf(0) >= 0);
+  if (FIVE_CACHE) FIVE_CACHE.set(L, { key, v });
+  return v;
+}
+function depthCheck(L, min, diff) {
+  if (!storyOn(L) || L.stage !== 'nba' || !L.team || !rostOf(L)) return min;
+  const starts = inFive(L);
+  if (starts && min < 24) return Math.min(min + 2, 26);
+  if (!starts && min >= 24) return Math.max(19, Math.min(min, 23.5) - (diff < 6 ? 2 : 0));
+  return min;
+}
+
+// ─── the trade deadline (story careers) ─────────────────────────────────────
+
+/* THE DEADLINE IS A REAL DAY. Every February the league's contenders buy and
+   its losing clubs sell, and real men change clubs: a veteran on a bad team
+   goes to a good one for a young piece and a pick. Your club is one of them.
+   It buys, sells or stands pat by its record, and if your name is on the
+   phone, {gm} calls you before it is done.
+
+   It happens at the All-Star break, after game 55, which is where the old
+   trade_rumor card already sat. The record follows the club, as it always
+   has. */
+
+/* What a man of this overall is worth, in the win shares the rosters keep. */
+const youW = (L) => Math.max(0.3, (effOvr(L) - 58) * 0.42);
+/* How badly club c needs a man at pos: one when nobody there can play, about
+   nought when an All-Star has the spot. */
+function needAt(L, c, pos) {
+  const mates = matesOf(L, c);
+  let best = 0;
+  for (const m of mates) {
+    const f = m.pos === pos ? 1 : (NEXT_POS[pos] || []).indexOf(m.pos) >= 0 ? 0.6 : 0;
+    best = Math.max(best, m.w * f);
+  }
+  return clamp(1 - best / 8, 0, 1);
+}
+/* How a club is doing: your own record when it is yours, otherwise its net. */
+function winPct(L, c) {
+  const s = L.season;
+  if (c === L.team && s && s.g) return s.w / s.g;
+  return clamp(0.5 + clubNet(L, c) * 0.03, 0.15, 0.85);
+}
+const recText = (L, c) => {
+  const s = L.season, g = s && s.g ? s.g : 55;
+  const w = c === L.team && s && s.g ? s.w : Math.round(g * winPct(L, c));
+  return w + '-' + (g - w);
+};
+/* A real man moves from one club to another. Returns him. */
+function moveMan(R, from, e, to) {
+  const i = R[from].indexOf(e);
+  if (i < 0) return null;
+  R[from].splice(i, 1);
+  R[to].push(e);
+  return e;
+}
+/* When you are traded, somebody comes back: the man on the club taking you
+   whose worth is nearest yours, from anywhere but the top of their roster. */
+function swapBack(L, from, to, rng) {
+  const R = rostNow(L);
+  if (!R || !R[to] || !R[to].length) return null;
+  const Y = L.year, mine = youW(L);
+  const keep = R[to].slice().sort((a, b) => rostCurW(b, Y) - rostCurW(a, Y))[0];
+  let best = null, d = 1e9;
+  for (const e of R[to]) {
+    if (e === keep && R[to].length > 1) continue;
+    const x = Math.abs(rostCurW(e, Y) - mine * 0.8) + rng() * 0.3;
+    if (x < d) { d = x; best = e; }
+  }
+  if (!best) return null;
+  moveMan(R, to, best, from);
+  const t = L.name + ' is traded to the ' + nick(to) + '. ' + best.n + ' goes to the ' + nick(from) + '.';
+  feed(L, 'move', t);
+  L.season && (L.season.dlBack = best.n);
+  return best;
+}
+/* WHO IS ON THE MARKET. A deadline deal is a veteran role player, not a
+   franchise: a club does not sell its best man in February, and nobody worth
+   more than an All-Star's season changes clubs at the deadline. The first
+   cut of this sent two of the league's five best young stars to new clubs in
+   two Februaries out of five, which is a league nobody would recognize. */
+function forSale(R, c, Y, moved) {
+  const best = R[c].slice().sort((a, b) => rostCurW(b, Y) - rostCurW(a, Y))[0];
+  return R[c].filter((e) => e !== best && !(moved && moved.has(e)) && Y - e.b >= 27 && rostCurW(e, Y) >= 2 && rostCurW(e, Y) <= 7)
+    .sort((a, b) => rostCurW(b, Y) - rostCurW(a, Y));
+}
+/* The league's own deadline: sellers send a veteran to a buyer for youth. */
+function deadlineLeague(L, beats, rng) {
+  const R = rostNow(L);
+  if (!R) return;
+  const Y = L.year;
+  const ranked = CLUBS.slice().sort((a, b) => winPct(L, b) - winPct(L, a));
+  const buyers = ranked.slice(0, 9).filter((c) => c !== L.team);
+  const sellers = ranked.slice(-11).filter((c) => c !== L.team);
+  const moved = new Set(), news = [];
+  const n = 2 + Math.floor(rng() * 3);
+  for (let k = 0; k < n && buyers.length && sellers.length; k++) {
+    const sc = pick(rng, sellers), bc = pick(rng, buyers);
+    const vet = pick(rng, forSale(R, sc, Y, moved).slice(0, 3));
+    if (!vet) continue;
+    const vw = rostCurW(vet, Y);
+    const back = R[bc].filter((e) => !moved.has(e) && Y - e.b <= 26 && rostCurW(e, Y) <= vw * 0.75)
+      .sort((a, b) => rostCurW(b, Y) - rostCurW(a, Y))[0]
+      || R[bc].filter((e) => !moved.has(e)).sort((a, b) => rostCurW(a, Y) - rostCurW(b, Y))[0];
+    if (!back) continue;
+    moveMan(R, sc, vet, bc); moveMan(R, bc, back, sc);
+    moved.add(vet); moved.add(back);
+    const gain = clamp((vw - rostCurW(back, Y)) * 0.1, 0, 0.6);
+    L.league.net[bc] = round1(clubNet(L, bc) + gain);
+    L.league.net[sc] = round1(clubNet(L, sc) - gain * 0.5);
+    news.push({ w: vw, t: 'Deadline: ' + vet.n + ' to the ' + nick(bc) + ', ' + back.n + ' to the ' + nick(sc) + '.' });
+  }
+  news.sort((a, b) => b.w - a.w);
+  news.forEach((x, i) => { feed(L, 'move', x.t); if (i < 2) beats.push({ kind: 'news', text: x.t, tone: '' }); });
+}
+/* Your club at the deadline: a contender adds a veteran where it is thin, a
+   losing club sells its best one. Either way it is a man you know by name. */
+function deadlineClub(L, beats, rng) {
+  const R = rostNow(L), s = L.season;
+  if (!R || !s) return null;
+  const Y = L.year, c = L.team, pct = winPct(L, c), net = clubNet(L, c);
+  const mode = (pct >= 0.6 || (pct >= 0.54 && net >= 2)) ? 'buy' : pct <= 0.42 ? 'sell' : 'hold';
+  s.deadline = { mode };
+  /* A buyer's gain is somebody's loss, and the other contenders buy too
+     (deadlineLeague), so your club is no likelier to land a man than they
+     are and gains no more than he is worth. */
+  if (mode === 'buy' && rng() < 0.35) {
+    const pos = R_POS.slice().sort((a, b) => needAt(L, c, b) - needAt(L, c, a))[0];
+    const from = CLUBS.filter((x) => x !== c).sort((a, b) => winPct(L, a) - winPct(L, b)).slice(0, 10);
+    let get = null, src = null;
+    for (const x of from) for (const e of forSale(R, x, Y)) {
+      const v = rostCurW(e, Y) * (e.pos === pos ? 1.4 : 1) + rng() * 0.5;
+      if (!get || v > get.v) { get = { e, v }; src = x; }
+    }
+    if (!get) return mode;
+    const back = R[c].filter((e) => Y - e.b <= 25).sort((a, b) => rostCurW(a, Y) - rostCurW(b, Y))[0]
+      || R[c].slice().sort((a, b) => rostCurW(a, Y) - rostCurW(b, Y))[0];
+    moveMan(R, src, get.e, c);
+    if (back) moveMan(R, c, back, src);
+    const gain = clamp((rostCurW(get.e, Y) - (back ? rostCurW(back, Y) : 0)) * 0.1, 0.1, 0.6);
+    L.league.net[c] = round1(net + gain);
+    L.league.net[src] = round1(clubNet(L, src) - gain * 0.5);
+    s.deadline.got = get.e.n;
+    const t = 'Deadline: the ' + nick(c) + ' get ' + get.e.n + ' from the ' + nick(src) + (back ? ' for ' + back.n : '') + '.';
+    feed(L, 'move', t); logIt(L, t, 'good');
+    beats.push({ kind: 'trade', text: t, tone: 'good' });
+    if (get.e.pos === L.pos && rostCurW(get.e, Y) > youW(L)) {
+      bump(L, { min: -3, morale: -2 });
+      beats.push({ kind: 'role', text: 'He plays your position, and plays it well. Your minutes take a hit.', tone: 'bad' });
+    } else bump(L, { morale: 3 });
+  } else if (mode === 'sell' && rng() < 0.55) {
+    const vet = forSale(R, c, Y)[0];
+    if (!vet) return mode;
+    const to = CLUBS.filter((x) => x !== c).sort((a, b) => winPct(L, b) - winPct(L, a))[Math.floor(rng() * 6)];
+    const back = R[to].filter((e) => Y - e.b <= 25).sort((a, b) => rostCurW(a, Y) - rostCurW(b, Y))[0];
+    moveMan(R, c, vet, to);
+    if (back) moveMan(R, to, back, c);
+    L.league.net[c] = round1(net - clamp(rostCurW(vet, Y) * 0.08, 0.2, 1));
+    s.deadline.lost = vet.n;
+    const t = 'Deadline: the ' + nick(c) + ' send ' + vet.n + ' to the ' + nick(to) + (back ? ' for ' + back.n : '') + '.';
+    feed(L, 'move', t); logIt(L, t, '');
+    beats.push({ kind: 'trade', text: t, tone: '' });
+    if (vet.pos === L.pos || (NEXT_POS[L.pos] || []).indexOf(vet.pos) >= 0) {
+      bump(L, { min: 3 });
+      beats.push({ kind: 'role', text: 'His minutes are yours now.', tone: 'good' });
+    }
+  }
+  return mode;
+}
+/* The clubs that would take you: a contender with a hole at your position,
+   and a club where you would start. */
+function deadlineDests(L, rng) {
+  const c = L.team, pos = L.pos;
+  const others = CLUBS.filter((x) => x !== c);
+  /* The best three clubs in the league are not calling: they have no room
+     under the tax and no hole at your spot. A contender here is a good club
+     a piece away. */
+  const ranked = others.slice().sort((a, b) => winPct(L, b) - winPct(L, a));
+  const band = ranked.slice(3, 14);
+  const contend = band.slice().sort((a, b) => (needAt(L, b, pos) + rng() * 0.3) - (needAt(L, a, pos) + rng() * 0.3))[0];
+  const start = others.filter((x) => x !== contend).sort((a, b) => (needAt(L, b, pos) + rng() * 0.15) - (needAt(L, a, pos) + rng() * 0.15))[0];
+  return [contend, start];
+}
+function roleThere(L, c) {
+  const diff = effOvr(L) - rotationBar(clubNet(L, c));
+  const need = needAt(L, c, L.pos);
+  return diff >= 10 ? 'You would be the man' : (diff >= 0 || need >= 0.6) ? 'You would start' : diff >= -6 ? 'A rotation role' : 'Bench minutes';
+}
+function deadlineCard(L, why, dests) {
+  const s = L.season, c = L.team;
+  const [a, b] = dests;
+  const lead = why === 'ask' ? 'You asked out. {gm} says he has two real offers.'
+    : why === 'sell' ? 'The ' + nick(c) + ' are ' + recText(L, c) + '. {gm} is selling, and you are what other clubs want.'
+      : 'Your minutes have dried up. {gm} thinks a fresh start helps everybody.';
+  return {
+    id: 'deadline', kind: 'event', key: 'deadline:' + L.year, eyebrow: 'Trade deadline · 3pm Eastern',
+    title: why === 'ask' ? 'Your trade request has buyers.' : '{gm} is taking calls on you.',
+    text: lead + ' The ' + nick(a) + ' and the ' + nick(b) + ' are on the phone.',
+    ctx: { why, dests: [a, b], from: c },
+    options: [
+      { label: 'Push for the ' + nick(a), hint: recText(L, a) + '. ' + roleThere(L, a) + '.' },
+      { label: 'Push for the ' + nick(b), hint: recText(L, b) + '. ' + roleThere(L, b) + '.' },
+      { label: 'Tell {gm} you want to stay', hint: why === 'ask' ? 'Take the request back.' : 'Loyalty counts. It may not be enough.' },
+      { label: 'Let {agent} handle it', hint: 'Wherever the deal is best for you.' },
+    ],
+  };
+}
+/* Seasons in a row with the club you are on now. */
+function tenure(L) {
+  let n = 0;
+  for (let i = L.history.length - 1; i >= 0 && L.history[i].t === L.team; i--) n++;
+  return n;
+}
+function tradeDeadline(L, beats) {
+  if (!storyOn(L) || L.stage !== 'nba' || !L.team || !L.season || !rostOf(L)) return;
+  const rng = rngAt(L, 'deadline');
+  deadlineLeague(L, beats, rng);
+  const mode = deadlineClub(L, beats, rng);
+  const s = L.season, o = ovrOf(L), role = roleOf(L);
+  const c = L.contract;
+  let why = null;
+  if (L.flags.tradeAsk) why = 'ask';
+  else if (mode === 'sell' && L.age >= 27 && o >= 68 && c && c.kind !== 'rookie' && rng() < 0.45) why = 'sell';
+  else if (role.min < 16 && L.age >= 23 && s.g > 0 && rng() < 0.3) why = 'minutes';
+  if (!why) { if (mode !== 'hold') beats.push({ kind: 'news', text: 'The deadline passes. You are still a ' + nick(L.team).replace(/s$/, '') + '.', tone: '' }); return; }
+  L.pending.push(deadlineCard(L, why, deadlineDests(L, rng)));
+}
+function chooseDeadline(L, card, i, rng) {
+  const { why, dests } = card.ctx;
+  const fame = L.m.fame, gmRel = relOf(L, 'gm');
+  /* Names first: once the trade is made, {gm} is somebody else's. */
+  const gm = say(L, '{gm}');
+  const swing = (fame - 40) * 0.004 + gmRel / 250;
+  const go = (to, t) => { const from = L.team; tradeTo(L, to, rng); L.flags.tradeAsk = false; remember(L, 'deadline.traded', from); return t; };
+  if (i === 0 || i === 1) {
+    const want = dests[i], other = dests[1 - i];
+    const p = clamp((why === 'ask' ? 0.55 : why === 'sell' ? 0.5 : 0.45) + swing, 0.15, 0.85);
+    if (rng() < p) { bump(L, { morale: 6 }); relate(L, 'gm', 6, 'He got you where you wanted to go.', gm); return go(want, 'Done. ' + gm + ' makes the deal with the ' + nick(want) + '. You fly out tonight.'); }
+    if (rng() < 0.5) { bump(L, { morale: -3 }); return go(other, 'The ' + nick(want) + ' would not pay. You are a ' + nick(other).replace(/s$/, '') + ' now.'); }
+    bump(L, { trust: -6, morale: -4 }); relate(L, 'gm', -8, 'You pushed to leave at the deadline.');
+    L.flags.tradeAsk = why === 'ask';
+    return 'Three o\'clock comes and goes. You stay, and everybody knows you wanted out.';
+  }
+  if (i === 2) {
+    if (why === 'ask') { L.flags.tradeAsk = false; bump(L, { trust: 8, morale: 2 }); relate(L, 'gm', 8, 'You took your trade request back.'); return gm + ' pulls you off the market. The locker room notices.'; }
+    const p = clamp(0.45 + L.m.trust * 0.004 + Math.min(tenure(L), 6) * 0.04 + swing, 0.15, 0.9);
+    if (rng() < p) { bump(L, { trust: 6, morale: 4 }); relate(L, 'gm', 8, 'He kept you at the deadline.'); return gm + ' hangs up on both of them. You are staying.'; }
+    bump(L, { morale: -6 }); relate(L, 'gm', -6, 'He traded you after you asked to stay.', gm);
+    return go(dests[0], gm + ' listens. Then he trades you anyway. Business. The ' + nick(dests[0]) + ' are getting a player.');
+  }
+  const pick2 = needAt(L, dests[0], L.pos) + winPct(L, dests[0]) >= needAt(L, dests[1], L.pos) + winPct(L, dests[1]) ? 0 : 1;
+  if (why === 'ask' || rng() < 0.75) { relate(L, 'agent', 4); return go(dests[pick2], '{agent} gets you the better fit. The ' + nick(dests[pick2]) + '.'); }
+  return '{agent} calls back at 3:05. Nothing. You stay put.';
 }
 
 /* The year's training card, which is the one card every summer deals. */
@@ -6381,8 +7044,8 @@ story({
     t: 'The in-season tournament final.', x: 'December in Las Vegas. A cup, prize money and a court painted gold.',
     o: [O('Take it seriously', { fame: 3, health: -3 }, '', { do: (L, r) => { if (ok(r, 0.5)) { bump(L, { cash: 0.3, morale: 6 }); remember(L, 'lg.cup', true); return 'You win the cup. The prize money buys the whole staff a vacation.'; } bump(L, { morale: -3 }); return 'You lose the final by two. A strange December hurt.'; } }),
       O('Treat it like any game', { health: 2 }, 'You lose the final. You are fresh in April.')] },
-  lg_deadline_day: { at: 'mid', req: { team: true, seasons: [1, null] }, when: (L) => clubNet(L, L.team) > 3, w: 1, rar: 'uncommon',
-    t: 'Deadline day. The front office is buying.', x: 'They want to add a veteran. They ask what the team needs.',
+  lg_deadline_day: { at: 'mid', req: { team: true, seasons: [1, null] }, when: (L) => clubNet(L, L.team) > 3 && (!L.season || !L.season.deadline || (L.season.deadline.mode === 'buy' && !L.season.deadline.got)), w: 1, rar: 'uncommon',
+    t: 'The buyout market. The front office is still buying.', x: 'The deadline passed with no deal. Now they want a veteran off the buyout market. They ask what the team needs.',
     o: [O('A shooter', { win: 0.4 }, 'They get one. Your driving lanes open up.'),
       O('A defender', { win: 0.4, def: 1 }, 'They get one. You finally get a night off from the best scorer.')] },
   lg_lockout: { at: 'off', req: { seasons: [2, null] }, when: (L) => !recall(L, 'lg.lockout') && L.year % 11 === 3, w: 4, rar: 'rare',
@@ -6936,6 +7599,9 @@ function choose(L, i, extra) {
       break;
     }
     case 'goal': L.season.goal = card.ctx.ks[i]; text = 'Locked in. April will tell.'; break;
+    case 'deadline': text = chooseDeadline(L, card, i, rng); tone = L.team !== card.ctx.from ? 'gold' : ''; break;
+    case 'coach_talk': text = chooseCoachTalk(L, card, i, rng); break;
+    case 'coach_review': text = chooseCoachReview(L, i, rng); break;
     case 'nickname':
       if (i === 0) { L.nick = card.ctx.nm; logIt(L, 'They call you ' + L.nick + '.', 'gold'); feed(L, 'nick', L.name + ' has a name now: ' + L.nick + '.'); text = 'It sticks. Kids at camp call you it.'; tone = 'gold'; }
       else { text = 'They mostly drop it.'; }
@@ -7023,6 +7689,7 @@ function step(L) {
       playChunk(L, 'early', beats);
       queueMoment(L, 'early');
       beats.push(recordBeat(L, 'After 27'));
+      roleReview(L, beats, 'early');
       rollInjury(L, 'mid', beats);
       L.phase = 'early';
       queueEvents(L, 'early', 1 + (rngAt(L, 'n:early')() < (storyOn(L) ? 0.35 : 0.6) ? 1 : 0));
@@ -7035,6 +7702,8 @@ function step(L) {
       rollInjury(L, 'late', beats);
       allStarCheck(L, beats);
       midseasonFirings(L, beats);
+      roleReview(L, beats, 'break');
+      tradeDeadline(L, beats);
       if (storyOn(L)) { L.season.race = mvpRace(L); debate(L); }
       L.phase = 'mid';
       queueEvents(L, 'mid', 1 + (rngAt(L, 'n:mid')() < (storyOn(L) ? 0.3 : 0.5) ? 1 : 0));
@@ -7217,9 +7886,10 @@ function openYear(L) {
 const inSeason = (L) => !!(L.season && L.team && ['drafted', 'pre', 'early', 'mid'].indexOf(L.phase) >= 0);
 const ACTS = {
   coach: {
-    name: 'Talk to {coach}', blurb: 'Ask your coach for a bigger role.', cost: () => 0,
+    name: 'Talk to {coach}', blurb: 'Your role, your minutes, your position.', cost: () => 0,
     when: (L) => inSeason(L),
     run(L, r) {
+      if (storyOn(L)) { L.pending.push(coachTalkCard(L)); return myCoach(L) + ' waves you in and shuts the door.'; }
       const role = roleOf(L);
       const p = 0.25 + (L.m.trust - 50) * 0.012 + role.diff * 0.02;
       if (r() < clamp(p, 0.08, 0.85)) { bump(L, { min: 4, usage: 0.01, trust: 2 }); return 'He agrees. More minutes, more touches. Now earn them.'; }
@@ -7606,6 +8276,7 @@ const publicAPI = {
   CAREER_API_VERSION, LIFE_VERSION,
   CONF, CLUBS, confOf, POS, POS_NAME, RATINGS, RATING_NAME, RATING_SHORT, WEIGHTS,
   ARCHES, ARCH_KEYS, POS_ARCHES, archesFor, archBase, POS_SIZE, wtFor, wtRange, sizeOf, sizeTilt, heightText, BACKGROUNDS, BG_KEYS, AGENTS, AWARD_NAME, ROUNDS, VERDICTS, EVENTS,
+  perfOf, coachStyle, COACH_STYLES, needAt, coachTalkCard, tradeDeadline, youW, weakSpot,
   seedLeague, normaliseNets, newLife, rotationOf, bestFive, fitAt, rostOf, rostNow, randomName, overall, ovrOf, step, choose, nextLabel,
   view, perGame, totals, legacy, legacyScore, clubNet, clubTier, rotationBar,
   roleOf, lineMeans, capFor, marketSalary, projectedPick, draftOrder, money, ordinal,

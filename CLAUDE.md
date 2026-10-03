@@ -11084,6 +11084,85 @@ names your club's coach, and year one's Celtics are the real Celtics while thirt
 are all generated. Generated coaches skip any name already on a bench, which is what the two
 benches claim caught.
 
+#### The front office, the bench and the summer (story careers)
+
+```
+node hoops/check-career.mjs --quick   section 12: positions, the deadline, the coach, development
+node hoops/check-rosters.mjs          the roster file's positions and worth
+```
+
+Asked for by the owner: trade deadlines, real coach conversations with options, players at the
+right positions, and believable progression and regression. All of it is behind `storyOn`, so
+`replay-careers --story off` stays byte identical and check-saves is untouched.
+
+**POSITIONS ARE THE DATA'S.** `rosters.json` writes Basketball-Reference's coarse G, F or C,
+and read as SG and SF it put the league's best shooting point guard at shooting guard and left
+his club with no point guard. `seedToday` takes the position `players.json` lists for a man's
+most recent season when it agrees with the file's letter (`posFromData`), and the coarse map is
+only for a man the data has never seen. check-career asserts Curry PG, Jokic C, Green PF, and a
+point guard on nearly every club.
+
+**WORTH IS A RATE, AND A REAL MAN IS AGED FROM WHERE IT WAS MEASURED.** A season's win shares
+are a count, so a season lost to injury read as a worse player. `worthOf` is the last three
+seasons as a rate per game, weighted to the newest and to games played, times the games a man
+like him plays. The roster tuple carries a fifth field, the season it was measured in, and
+`realCurW` ages him from there with `REAL_CURVE` and a per-man arc seeded off his name. The old
+rule discounted every year past thirty from scratch and left a 39 year old at a quarter of
+himself before he played. Only file-seeded leagues carry the fifth field; anything else keeps
+the old formula.
+
+**NO TWO MEN IN THE LEAGUE SHARE A NAME** (`uniqueNames`). Generated rookies came off two short
+lists and the deadline printed one name traded for itself.
+
+**THE DEADLINE IS A REAL DAY** (`tradeDeadline`, at the All-Star break after game 55):
+
+- The league's sellers send a veteran to a buyer for youth (`deadlineLeague`). `forSale` is the
+  market: not a club's best man, worth 2 to 7, 27 or older. The first cut moved two of the
+  league's best young stars in five Februaries.
+- Your club buys, sells or holds by its record (`deadlineClub`). A buy lands a named man where
+  the club is thin; one at your position costs you minutes, a sale at your position hands you
+  his. A buyer is no likelier than the other contenders and gains no more than the man is
+  worth: at 60% and a flat win bonus it pushed rings from 25% to 37% of careers.
+- If you are on the phone, `deadlineCard` asks: push for a contender with a hole at your spot
+  (ranked 4th to 14th, because the top three have no room), push for a club you would start for,
+  ask to stay, or let your agent pick. Why you are on the phone is a seller shopping a veteran,
+  a request you made, or minutes that dried up. A trade sends a named man back (`swapBack`).
+- The result names the GM who made the call, read before the trade (`{gm}` is the new club's
+  after it). The old `trade_rumor` card is about the summer on a story career, because the day
+  it talked about has passed when it is dealt.
+
+**THE COACH IS A PERSON WITH A WAY OF DOING THINGS.** `coachStyle` is seeded off his name
+(players' coach, defense first, trusts veterans, plays the kids, system coach) and moves what he
+will hear and what earns minutes. Talk to the coach opens `coachTalkCard`, whose options are the
+ones your situation has: more minutes, to start, to play the spot next door where the club is
+thin (`otherSpot`), the ball late, to come off the bench for a losing team, or what to work on.
+Each hint says roughly the odds. **A real coach is never quoted**: his answers are told, not put
+in quotation marks, which is the real-people rule and is what check-career 5c reads.
+
+**THE ROLE IS EARNED IN SEASON** (`roleReview`, after game 27 and at the break). `perfOf` is
+what you have done against what a man of your ratings should do in your minutes, centred on what
+the sim actually hands out (it runs four percent over its own means). Outplay it and you move up;
+play under it and you lose minutes, and he may tell you why (`coach_review`). Measured: as many
+promotions as cuts.
+
+**YOUR SPOT IS A POSITION** (`depthCheck`, `inFive`). Two men cannot both start at point guard:
+if the five is better with you in it you start, and if a better man has your spot you come off
+the bench whatever your overall says. `inFive` is cached per career in a WeakMap, off the save,
+because `roleOf` is asked on every card now (the receipt shows a Minutes line).
+
+**DEVELOPMENT HAS A CLOCK PER SKILL** (`developStory`). The bounce comes first and goes first,
+the jumper and the feel last into the thirties. Minutes speed a young player up, a summer can be
+a breakout or a stall, a coach's project (`L.focus`) gets extra work, and no summer moves the
+overall more than nine or one skill more than seven. **The clocks move growth and decline between
+skills and never in total**: for every position and age the weighted sum is the old curve's. The
+first cut let the jumper and the brain age slower without taking it back from the legs, which
+added two points to every man at 32 and doubled the MVPs. What the cap holds back carries to the
+next summer (`devCarry`).
+
+**A story career's MVP needs a 92, not a 91**: a real deadline puts good players on good clubs,
+and MVPs ran 3.5 in a hundred against a band of 1 to 3. Cutting the vote's odds instead barely
+moved it (3.3 at 0.42), because a man good enough to win one wins it in a year the odds are high.
+
 **NOT A SECOND MODEL OF A ROSTER.** Year one's club nets come off the real rosters through
 `teamStrength`, scaled to a spread of 4.6, and every year after drifts on a mean-reverting
 walk, because projecting a real person's future is the line above. One man's impact on his

@@ -811,6 +811,105 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
   ok(realIn / seatsIn > 0.6, `the field is mostly real players (${realIn} of ${seatsIn} seats)`);
 }
 
+/* ── 12. the front office, the bench and the summer ──────────────────────
+   Reported by the owner: trades only happened when a card said so, a talk
+   with the coach was one button and a coin, the rosters had Curry at
+   shooting guard, and a summer could move a man twelve points. */
+{
+  section('12. positions, the deadline, the coach and how a player changes');
+  if (league.rs) {
+    const where = (n) => { for (const c of C.CLUBS) { const p = league.roster[c].find((x) => x[0] === n); if (p) return p; } return null; };
+    const want = { 'Stephen Curry': 'PG', 'Jalen Brunson': 'PG', 'Shai Gilgeous-Alexander': 'PG', 'Nikola Jokić': 'C', 'Draymond Green': 'PF' };
+    const wrongPos = Object.keys(want).filter((n) => where(n) && where(n)[1] !== want[n]);
+    ok(!wrongPos.length, `real men play the position the data lists (${wrongPos.map((n) => n + ' at ' + where(n)[1]).join(', ') || 'Curry PG, Jokic C, Green PF'})`);
+    const noPG = C.CLUBS.filter((c) => !league.roster[c].some((x) => x[1] === 'PG'));
+    ok(noPG.length <= 3, `a point guard on nearly every club (${noPG.length} without: ${noPG.join(', ')})`);
+    const cur = where('Stephen Curry');
+    ok(cur && cur[3] >= 4.5, `a season cut short by injury is not a worse player (Curry's worth ${cur && cur[3]})`);
+    /* His worth is measured at 38, so the season he joins at 39 takes one
+       year off it and not a lifetime: the old rule discounted every year past
+       thirty and left him a quarter of himself. */
+    const L0 = C.newLife({ seed: 'age:check', league, story: true });
+    L0.year = league.rs;
+    const now = C.matesOf(L0, 'GSW').find((m) => m.n === 'Stephen Curry');
+    ok(now && now.w >= cur[3] * 0.7 && now.w < cur[3], `and he is aged one year, not nine (${now && now.w} against ${cur && cur[3]})`);
+  }
+  /* The deadline and the coach, over careers played three ways. */
+  let dl = 0, traded = 0, swap = 0, stars = 0, badName = 0, talks = 0, focusPaid = 0, focusSet = 0, up = 0, cut = 0;
+  let dupNames = 0, bigSummer = 0, bigSkill = 0, summers = 0, legsFirst = 0, legsN = 0, posTalk = 0, posFar = 0, notFive = 0, fiveChecks = 0;
+  const kinds = new Set();
+  for (let k = 0; k < 90; k++) {
+    const L = C.newLife({ seed: 'fo:' + k, league, story: true });
+    let g = 0, prev = null;
+    while (!L.retired && g++ < 4000) {
+      if (L.pending.length) {
+        const c = L.pending[0];
+        if (c.id === 'deadline') {
+          dl++; kinds.add(c.ctx.why);
+          const gm = C.say(L, '{gm}'), from = L.team, i = k % 4;
+          const R = C.rostNow(L), had = R[c.ctx.dests[0]].map((e) => e.n).concat(R[c.ctx.dests[1]].map((e) => e.n));
+          const res = C.choose(L, i);
+          if (L.team !== from) {
+            traded++;
+            if (C.matesOf(L, from).some((m) => had.indexOf(m.n) >= 0)) swap++;
+            if (/{gm}/.test(res.text) || (res.text.indexOf(C.say(L, '{gm}')) >= 0 && C.say(L, '{gm}') !== gm)) badName++;
+          }
+          continue;
+        }
+        if (c.id === 'coach_talk') {
+          talks++;
+          const ks = c.ctx.ks, i = ks.indexOf('focus') >= 0 && k % 2 ? ks.indexOf('focus') : (k + talks) % ks.length;
+          if (ks[i] === 'pos') { posTalk++; const was = L.pos; C.choose(L, i); if (L.pos !== was && Math.abs(C.POS.indexOf(L.pos) - C.POS.indexOf(was)) !== 1) posFar++; continue; }
+          if (ks[i] === 'focus') focusSet++;
+          C.choose(L, i); continue;
+        }
+        C.choose(L, (L.steps * 7 + c.key.length * 3) % c.options.length);
+        continue;
+      }
+      /* Ask the coach once a season, as a player who wants a word. */
+      if (L.team && L.phase === 'early' && (!L.flags.acts || L.flags.acts.y !== L.year)) { L.cash = Math.max(L.cash, 0.5); C.act(L, 'coach'); continue; }
+      const before = L.phase === 'po' || L.phase === 'late' ? Object.assign({}, L.rt) : null, ovr0 = C.ovrOf(L), age0 = L.age, foc = L.focus && L.focus.k;
+      const out = C.step(L);
+      for (const b of out.beats) {
+        if (/starting five|real spot|fourth quarter/.test(b.text)) up++;
+        if (/cuts your minutes/.test(b.text)) cut++;
+        if (/summer project paid off/.test(b.text)) focusPaid++;
+        if (/^Deadline: /.test(b.text)) {
+          const m = /^Deadline: (?:the \w[\w ]* (?:get|send) )?(.+?) (?:to the|from the) /.exec(b.text);
+          const nm = m && m[1];
+          const hits = C.CLUBS.map((c) => C.matesOf(L, c).find((e) => e.n === nm)).filter(Boolean);
+          if (hits.length > 1) dupNames++;
+          else if (hits[0] && hits[0].w > 7.2) stars++;
+        }
+      }
+      if (before && out.beats.some((b) => b.kind === 'dev')) {
+        summers++;
+        const gain = C.ovrOf(L) - ovr0;
+        if (gain > 9) bigSummer++;
+        for (const r of C.RATINGS) if (L.rt[r] - before[r] > 8 + (r === foc ? 2 : 0)) bigSkill++;
+        if (age0 >= 31) { legsN++; if (before.ath - L.rt.ath >= before.sho - L.rt.sho) legsFirst++; }
+      }
+      if (L.team && L.season && L.season.gp && L.phase === 'early') {
+        const role = C.roleOf(L), rot = C.rotationOf(L);
+        fiveChecks++;
+        if (role.starter !== !!rot.slot && role.min >= 22 && role.min <= 26) notFive++;
+      }
+    }
+  }
+  ok(dl >= 25 && kinds.size >= 2, `the deadline calls about you, for more than one reason (${dl} calls: ${[...kinds].join(', ')})`);
+  ok(traded >= 8 && swap === traded, `a deadline trade sends a named man back the other way (${swap} of ${traded})`);
+  ok(stars === 0, `no franchise star changes clubs at the deadline (${stars})`);
+  ok(dupNames === 0, `no two men in the league share a name (${dupNames} deadline names found twice)`);
+  ok(badName === 0, `the result names the general manager who made the call, not the new one (${badName})`);
+  ok(talks >= 300, `a talk with the coach is a conversation with options (${talks} talks)`);
+  ok(focusSet > 30 && focusPaid >= focusSet * 0.5, `a coach's summer project pays off in the summer (${focusPaid} of ${focusSet})`);
+  ok(posTalk > 5 && posFar === 0, `a position change is only ever to the spot next door (${posTalk} asked, ${posFar} too far)`);
+  ok(up > 40 && cut > 40 && up < cut * 2.5 && cut < up * 2.5, `the coach both promotes and cuts on what you show (${up} up, ${cut} down)`);
+  ok(summers > 500 && bigSummer === 0, `no summer moves a man more than nine (${bigSummer} of ${summers})`);
+  ok(bigSkill === 0, `and no skill more than seven, eight with rounding (${bigSkill})`);
+  ok(legsN > 40 && legsFirst / legsN > 0.65, `past thirty the legs go before the jumper (${legsFirst} of ${legsN})`);
+}
+
 if (!QUICK) await browser();
 
 console.log('');
