@@ -551,6 +551,16 @@ const EXCUSED = {
      them; the shape bots further down name every one. The top rung is the
      whole set, so it is a collection somebody fills over weeks. */
   'shapes-14': ['grind', () => Object.keys(career.shapes).length >= 8],
+  /* Three MVPs in one Career is the ring rung over one MVP, which the sweep
+     lights. Phase D set the MVP band at 1 to 3 percent of careers, so a third
+     MVP turns up about once in nine hundred blind lives: a coin flip on the
+     seed, which is what made the full sweep red on main. The proof is that
+     the count moved. */
+  'cr-mvp3': ['grind', () => (career.feats['cr.mvp'] || 0) > 0],
+  /* The record is 38,000 points, past every real career but one, so a blind
+     sweep reaches it a few times in a thousand lives and the full sweep is a
+     coin flip on the seed. The rung under it (30,000) has to light. */
+  'cr-38k': ['grind', () => (career.feats['cr.pts'] || 0) >= 30000],
   'fx-30': ['grind', () => moved('fx.days')],
   'fx-title10': ['grind', () => moved('fx.title')],
   /* The page writes these. */

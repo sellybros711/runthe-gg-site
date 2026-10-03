@@ -16,6 +16,7 @@
  */
 
 import { bbrRows, cell, positions, seasonTables } from './fetch-nba.mjs';
+import { parseRoster } from './fetch-rosters.mjs';
 import { deriveEligibility } from './build-players.mjs';
 import { parseSolo, parseTeams, parseAllStars, seasonIn, slugsIn, AWARDS, AWARD_RANK }
   from './fetch-awards.mjs';
@@ -461,6 +462,30 @@ is(slugsIn("<td><a href='/players/o/onealsh01.html'>Shaquille O'Neal</a></td>"),
 is(slugsIn('<td><a href="/players/v/vanhoke01.html">Keith Van Horn</a></td>'), ['vanhoke01'],
   'and a two-word surname is one slug like any other');
 is(slugsIn('<td>no links at all</td>'), [], 'a row with no player links yields none');
+
+// ─── a club's roster page, for the season a Career joins ────────────────────
+/* The roster table carries the slug in the player link and the birth date as
+   text. Shaped like the club pages: a header row, a two-way contract, an
+   unclosed row, and the coach line above the table. */
+const ROSTER_PAGE = `
+<p><strong>Coach:</strong>
+ <a href="/coaches/daigneu01c.html">Mark Daigneault</a> (0-0)</p>
+<table class="sortable stats_table" id="roster"><thead>
+<tr><th data-stat="number">No.</th><th data-stat="player">Player</th><th data-stat="pos">Pos</th></tr>
+</thead><tbody>
+<tr><th data-stat="number">2</th><td data-stat="player" csk="Gilgeous-Alexander,Shai"><a href="/players/g/gilgesh01.html">Shai Gilgeous-Alexander</a></td><td data-stat="pos">PG</td><td data-stat="height">6-6</td><td data-stat="birth_date" csk="19980712"><a href="/friv/birthdays.fcgi?month=7&amp;day=12">July 12, 1998</a></td></tr>
+<tr><th data-stat="number">21</th><td data-stat="player"><a href='https://www.basketball-reference.com/players/w/wigginaa01.html'>Aaron Wiggins</a> (TW)</td><td data-stat="pos">SG-SF</td><td data-stat="birth_date">January 2, 1999</td>
+<tr><th data-stat="number">55</th><td data-stat="player"><a href="/players/h/hartenis01.html">Isaiah Hartenstein</a><td data-stat="pos">C<td data-stat="birth_date">May 5, 1998
+</tbody></table>`;
+{
+  const r = parseRoster(ROSTER_PAGE);
+  is(r.men.map((m) => m.i), ['gilgesh01', 'wigginaa01', 'hartenis01'], 'roster: three men, no header row');
+  is(r.men[0], { i: 'gilgesh01', n: 'Shai Gilgeous-Alexander', pos: 'PG', b: 1998 }, 'roster: a whole row');
+  is([r.men[1].n, r.men[1].pos, r.men[1].tw], ['Aaron Wiggins', 'SG', 1], 'roster: a two-way contract is kept, marked, and the tag leaves the name');
+  is([r.men[2].pos, r.men[2].b], ['C', 1998], 'roster: an unclosed row still parses');
+  is(r.coach, 'Mark Daigneault', 'roster: the head coach');
+  is(parseRoster('<html>no table</html>').men, [], 'roster: a page with no roster table yields nobody, which the fetch refuses');
+}
 
 // ─── report ─────────────────────────────────────────────────────────────────
 

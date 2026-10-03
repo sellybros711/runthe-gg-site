@@ -117,7 +117,7 @@ window.RTR_COSMETICS.push(
   { id:'f_halfpaint',slot:'face',name:'Half Paint',      rarity:'epic',      v:'halfpaint' },
   { id:'f_venom',   slot:'face', name:'Venom Paint',     rarity:'legendary', v:'venom' },
   // MASK
-  { id:'m_tiger',   slot:'mask', name:'Tiger Mask',      rarity:'epic',      v:'tiger' },
+  { id:'m_tiger',   slot:'mask', name:'Striped Cat Mask',      rarity:'epic',      v:'tiger' },
   { id:'m_skullm',  slot:'mask', name:'Bone Mask',       rarity:'epic',      v:'skullmask' },
   { id:'m_phantom', slot:'mask', name:'Phantom Mask',    rarity:'legendary', v:'phantom' },
   // ATTIRE

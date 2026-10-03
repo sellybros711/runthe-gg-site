@@ -195,7 +195,8 @@ function brick(w, h, o){
    between them changes: the ground, the light and one accent.
 
      kind   'hs' | 'col' | 'intl' | 'gl' | 'nba', and for scenes 'press' |
-            'draft' | 'studio' | 'locker' | 'hall'
+            'draft' | 'studio' | 'locker' | 'hall' | 'home' | 'office' |
+            'hotel'
      o.c1, o.c2   the home colours (school, club)
      o.floorAt    where the floor starts, as a share of the height (0.6) */
 function room(kind, w, h, o){
@@ -373,6 +374,82 @@ function room(kind, w, h, o){
       var cx2 = Math.round(w / 2), cy2 = Math.round((by2 + h) / 2 + 2), rr = 14;
       for (var a2 = 0; a2 < 360; a2 += 4){ var t3 = a2 * Math.PI / 180; rect(Math.round(cx2 + Math.cos(t3) * rr), Math.round(cy2 + Math.sin(t3) * rr * 0.35), 1, 1, c2); }
       spot(Math.round(w * 0.5), 0, 0.35, 0.08);
+    } else if (kind === 'home'){
+      /* Home, late: a dark living room, a window on the city, a couch, a lamp
+         and a phone on the coffee table lighting up the ceiling. Nothing in
+         it wears a club's colours, because it is not the club's. */
+      rect(0, 0, w, h, '#17141f');
+      for (var hw = 0; hw < w; hw += 5) rect(hw, 0, 1, Math.round(h * 0.66), '#1b1824');
+      var wx = Math.round(w * 0.58), ww2 = Math.round(w * 0.3), wy0 = 6, wh2 = Math.round(h * 0.36);
+      rect(wx - 2, wy0 - 2, ww2 + 4, wh2 + 4, '#2b2433');
+      rect(wx, wy0, ww2, wh2, '#0a1124');
+      for (var sx3 = wx; sx3 < wx + ww2; sx3 += 4){ var tall = 6 + ((r() * wh2 * 0.6) | 0); rect(sx3, wy0 + wh2 - tall, 3, tall, '#141c33'); for (var wl = wy0 + wh2 - tall + 2; wl < wy0 + wh2 - 1; wl += 3) if (r() < 0.35) rect(sx3 + 1, wl, 1, 1, '#ffd98a'); }
+      rect(wx + Math.round(ww2 / 2), wy0, 1, wh2, '#2b2433'); rect(wx, wy0 + Math.round(wh2 / 2), ww2, 1, '#2b2433');
+      rect(wx + 3, wy0 + 3, 3, 3, '#e8ecf6');
+      var lx3 = Math.round(w * 0.16), ly3 = Math.round(h * 0.2);
+      rect(lx3 - 4, ly3, 9, 6, '#e8c890'); rect(lx3 - 4, ly3, 9, 1, '#fff0c8'); rect(lx3, ly3 + 6, 1, Math.round(h * 0.62) - ly3 - 6, '#2a2430');
+      spot(lx3, ly3 + 6, 0.5, 0.10);
+      var fl3 = Math.round(h * 0.66);
+      rect(0, fl3, w, h - fl3, '#2a1f1a');
+      for (var fx3 = 0; fx3 < w; fx3 += 8) rect(fx3, fl3, 1, h - fl3, '#231a16');
+      var rgx = Math.round(w * 0.2), rgw = Math.round(w * 0.6);
+      rect(rgx, fl3 + 4, rgw, h - fl3 - 5, '#3a2c3c'); rect(rgx + 2, fl3 + 6, rgw - 4, 1, '#4a3a4c');
+      var cy4 = Math.round(h * 0.5), cxw = Math.round(w * 0.52), cx4 = Math.round(w * 0.06);
+      rect(cx4, cy4, cxw, Math.round(h * 0.14), '#3d4a6b'); rect(cx4, cy4, cxw, 1, '#5a6a92');
+      rect(cx4 - 3, cy4 + 3, 4, Math.round(h * 0.16), '#34405e'); rect(cx4 + cxw - 1, cy4 + 3, 4, Math.round(h * 0.16), '#34405e');
+      rect(cx4, cy4 + Math.round(h * 0.14), cxw, Math.round(h * 0.06), '#2c3651');
+      for (var cu = cx4 + 4; cu < cx4 + cxw - 6; cu += Math.round(cxw / 3)) rect(cu, cy4 + 2, Math.round(cxw / 3) - 3, 1, '#46557a');
+      var tx3 = Math.round(w * 0.62), tyy = Math.round(h * 0.74);
+      rect(tx3, tyy, Math.round(w * 0.24), 3, '#5a3d28'); rect(tx3, tyy, Math.round(w * 0.24), 1, '#7a5638');
+      rect(tx3 + 3, tyy + 3, 1, 5, '#3a2818'); rect(tx3 + Math.round(w * 0.24) - 4, tyy + 3, 1, 5, '#3a2818');
+      var phx = tx3 + Math.round(w * 0.1);
+      rect(phx, tyy - 2, 4, 2, '#0b0e1a'); rect(phx + 1, tyy - 2, 2, 1, '#9fe0ff');
+      for (var gl2 = 1; gl2 < 14; gl2++){ c.fillStyle = 'rgba(160,220,255,' + (0.05 - gl2 * 0.003).toFixed(3) + ')'; c.fillRect(phx + 2 - gl2 * 2, tyy - 3 - gl2 * 3, gl2 * 4, 3); }
+      c.fillStyle = 'rgba(40,60,120,.18)'; c.fillRect(0, 0, w, h);
+    } else if (kind === 'office'){
+      /* The general manager's office: dark wood, a big desk, the club's
+         framed jerseys on the wall and the practice court through the glass. */
+      rect(0, 0, w, h, '#20180f');
+      for (var ow = 0; ow < w; ow += 7){ rect(ow, 0, 6, Math.round(h * 0.64), '#2a1f14'); rect(ow, 0, 1, Math.round(h * 0.64), '#33261a'); }
+      var gx = Math.round(w * 0.55), gw = Math.round(w * 0.4), gy = 5, gh = Math.round(h * 0.34);
+      rect(gx - 1, gy - 1, gw + 2, gh + 2, '#0b0e1a'); rect(gx, gy, gw, gh, '#3a3020');
+      for (var pk = gx; pk < gx + gw; pk += 4) rect(pk, gy + Math.round(gh * 0.5), 1, Math.round(gh * 0.5), '#4a3c26');
+      rect(gx, gy + Math.round(gh * 0.5), gw, 1, '#efe6d2'); rect(gx + Math.round(gw / 2) - 4, gy + Math.round(gh * 0.5), 8, Math.round(gh * 0.5), mix(c1, '#3a3020', 0.5));
+      c.fillStyle = 'rgba(200,220,255,.10)'; c.fillRect(gx, gy, gw, gh);
+      for (var fj = 0; fj < 3; fj++){ var fjx = Math.round(w * 0.06) + fj * Math.round(w * 0.15), fjy = 8;
+        rect(fjx - 1, fjy - 1, 13, 16, '#c9a23a'); rect(fjx, fjy, 11, 14, '#14100a');
+        rect(fjx + 2, fjy + 2, 7, 10, c1); rect(fjx + 4, fjy + 2, 3, 2, '#14100a'); rect(fjx + 2, fjy + 4, 7, 1, c2); rect(fjx + 4, fjy + 7, 3, 3, c2); }
+      var dy3 = Math.round(h * 0.64);
+      rect(0, dy3, w, h - dy3, '#1a140d');
+      var dkx = Math.round(w * 0.12), dkw = Math.round(w * 0.76), dky = Math.round(h * 0.72);
+      rect(dkx, dky, dkw, h - dky, '#4a2f1c'); rect(dkx, dky, dkw, 2, '#6b4529'); rect(dkx, dky + 2, dkw, 1, '#2a1a0e');
+      rect(dkx + 6, dky - 3, 10, 3, '#efe6d2'); rect(dkx + 7, dky - 2, 8, 1, '#9aa4b2');
+      rect(dkx + dkw - 18, dky - 6, 9, 6, '#0b0e1a'); rect(dkx + dkw - 17, dky - 5, 7, 4, mix(c1, '#0b0e1a', 0.3));
+      rect(dkx + Math.round(dkw / 2) - 2, dky - 2, 5, 2, '#2a2e38');
+      spot(Math.round(w * 0.45), 0, 0.32, 0.10);
+    } else if (kind === 'hotel'){
+      /* A hotel on a road trip: the bed, a door with the hall light under it,
+         the curtains half open on somebody else's city, a lamp on low. */
+      rect(0, 0, w, h, '#1c1a24');
+      for (var hp = 0; hp < w; hp += 3) rect(hp, 0, 1, Math.round(h * 0.62), hp % 6 ? '#1f1d28' : '#22202c');
+      var hwx = Math.round(w * 0.36), hww = Math.round(w * 0.3), hwy = 5, hwh = Math.round(h * 0.4);
+      rect(hwx, hwy, hww, hwh, '#0b1226');
+      for (var hs3 = hwx; hs3 < hwx + hww; hs3 += 3){ var ht = 4 + ((r() * hwh * 0.7) | 0); rect(hs3, hwy + hwh - ht, 2, ht, '#18213a'); if (r() < 0.5) rect(hs3, hwy + hwh - ht + 2, 1, 1, '#ffe2a0'); }
+      rect(hwx - 6, hwy - 2, 8, hwh + 6, '#6b3a3a'); rect(hwx + hww - 2, hwy - 2, 8, hwh + 6, '#6b3a3a');
+      for (var cf = 0; cf < hwh + 6; cf += 3){ rect(hwx - 4, hwy - 2 + cf, 1, 2, '#53292a'); rect(hwx + hww + 2, hwy - 2 + cf, 1, 2, '#53292a'); }
+      var drx = Math.round(w * 0.84), drw = Math.round(w * 0.12);
+      rect(drx, 6, drw, Math.round(h * 0.6) - 6, '#3a3242'); rect(drx + drw - 3, Math.round(h * 0.34), 2, 2, '#c9a23a');
+      rect(drx, Math.round(h * 0.6) - 1, drw, 1, '#fff0c8');
+      var hfl = Math.round(h * 0.62);
+      rect(0, hfl, w, h - hfl, '#2b2633');
+      for (var hc = 0; hc < w * (h - hfl) / 12; hc++) rect((r() * w) | 0, hfl + ((r() * (h - hfl)) | 0), 1, 1, '#332d3c');
+      var bdx = Math.round(w * 0.04), bdw = Math.round(w * 0.46), bdy = Math.round(h * 0.56);
+      rect(bdx, bdy - 10, 4, 10, '#4a3a2a'); rect(bdx, bdy, bdw, Math.round(h * 0.2), '#e8e4dc'); rect(bdx, bdy, bdw, 2, '#ffffff');
+      rect(bdx + 6, bdy - 3, 12, 4, '#f4f1ea'); rect(bdx, bdy + Math.round(h * 0.12), bdw, Math.round(h * 0.08), '#5a6a92');
+      var lpx = Math.round(w * 0.56), lpy = Math.round(h * 0.42);
+      rect(lpx - 3, lpy, 7, 5, '#e8c890'); rect(lpx, lpy + 5, 1, 6, '#3a3040'); rect(lpx - 4, lpy + 11, 9, 4, '#3a2c22');
+      spot(lpx, lpy + 5, 0.55, 0.08);
+      c.fillStyle = 'rgba(30,40,90,.16)'; c.fillRect(0, 0, w, h);
     } else if (kind === 'hall'){
       /* The Hall of Fame: dark wood, gold columns, bronze plaques down the
          walls, a carpet to the stage and one warm light. */
@@ -430,20 +507,49 @@ var ICONS = {
   home: ['...o...', '..obo..', '.obbbo.', 'ohbbbbo', 'obkbkbo', 'obkbkbo', 'ooooooo'],
   sound: ['...o...', '..oo.o.', 'oohbo.o', 'ohbbo.o', 'oobbo.o', '..oo.o.', '...o...'],
   mute: ['...o...', '..oo...', 'oohbo.o', 'ohbbooo', 'oobbo.o', '..oo...', '...o...'],
+  vault: ['ooooooo', 'ohbbbbo', 'obkkkbo', 'obkwkbo', 'obkkkbo', 'osbbbso', 'ooooooo'],
+  tree: ['..ooo..', '.ohbbo.', 'ohbbbbo', 'obbsbbo', '.ooooo.', '...k...', '..kkk..'],
+  share: ['....oo.', '...obo.', 'ooobbo.', 'ohbbbo.', 'obbbo..', 'osbo...', 'ooo....'],
+  crown: ['.......', 'o..o..o', 'oo.o.oo', 'ohbobbo', 'obbbbbo', 'owbwbwo', 'ooooooo'],
+  shield: ['ooooooo', 'ohbbbbo', 'obbwbbo', 'obwwwbo', '.obwbo.', '..obo..', '...o...'],
+  sprout: ['.oo.oo.', 'ohbobho', '.oobo..', '...o...', '.ooooo.', '.obbbo.', '..ooo..'],
+  flame: ['...o...', '..oho..', '.ohbo..', '.obbbo.', 'obbhbbo', 'obswsbo', '.ooooo.'],
+  globe: ['..ooo..', '.ohbbo.', 'ohkbkbo', 'obbkbbo', 'obkbkbo', '.osbso.', '..ooo..'],
+  six: ['.ooooo.', 'obbbbo.', 'obo....', 'obbbbo.', 'obo.obo', 'obbbbbo', '.ooooo.'],
+  net: ['ooooooo', 'ohbbbbo', '.okwko.', '.owkwo.', '..okw..', '..owo..', '...o...'],
 };
 var ICON_BASE = {
   heart: '#e5483f', face: '#f2b632', star: '#ffd166', clip: '#7fb2ff', cash: '#3ecf8e', ball: '#e2762a',
   trophy: '#e8b33c', medal: '#e8b33c', arrow: '#ff7a1a', up: '#3ecf8e', down: '#ff6b6b', lock: '#8fa0d6',
   check: '#3ecf8e', mic: '#b8c3e6', sound: '#ffd166', mute: '#8fa0d6', shoe: '#ff7a1a', ring: '#ffd166', whistle: '#b8c3e6', plane: '#7fb2ff', home: '#c98b4e',
+  vault: '#b8c3e6', tree: '#3ecf8e', share: '#ff7a1a',
+  crown: '#ffd166', shield: '#7fb2ff', sprout: '#3ecf8e', flame: '#ff7a1a', globe: '#7fb2ff', six: '#b8c3e6', net: '#f4f1e8',
 };
-function icon(name, color){
-  var g = ICONS[name]; if (!g) return null;
+/* The big icons: the same letters on an eleven cell grid, for the trophy and
+   badge tiles. At seven cells the outline ring is most of a medal, and a
+   crown and a trophy were the same blob in two colours. */
+var ICONS_L = {
+  trophy: ['..ooooooo..', 'oohhbbbbsoo', 'o.ohbbbbo.o', 'o.ohbbbbo.o', '.oohbbbsoo.', '...obbbso..', '....obso...', '....obo....', '...obbbo...', '..obbbbso..', '..ooooooo..'],
+  crown: ['...........', 'o....o....o', 'oo..oho..oo', 'obo.obo.obo', 'obbobbbobbo', 'ohbbbbbbbbo', 'obwbbwbbwbo', 'obbbbbbbbbo', 'ossssssssso', 'ooooooooooo', '...........'],
+  medal: ['orqo...oqro', '.orqo.oqro.', '..orqoqro..', '...orqro...', '...ooooo...', '..ohhhbso..', '.ohbbwbbso.', '.ohwwwwwso.', '.obbwbwbso.', '..osbbbso..', '...ooooo...'],
+  star: ['.....o.....', '....oho....', '...ohbbo...', 'oohhbbbbsoo', '.ohbbbbbso.', '..obbbbbo..', '..obbbbbo..', '.obbsosbbo.', '.obso.osbo.', 'obso...osbo', 'ooo.....ooo'],
+  shield: ['ooooooooooo', 'ohhbbbbbbso', 'ohbbbbbbbso', 'ohbwbbbwbso', 'ohbbwbwbbso', '.ohbbwbbso.', '.obbbbbbso.', '..obbbbso..', '...obbso...', '....oso....', '.....o.....'],
+  sprout: ['.ooo...ooo.', 'ohhbo.ohbbo', 'obbbsoobbso', '.osbbobbso.', '..ooobooo..', '....obo....', '....obo....', '.ooooooooo.', '.okkkkkkko.', '..okkkkko..', '..ooooooo..'],
+  six: ['..ooooooo..', '.ohhbbbbso.', '.obbooooo..', '.obbo......', '.obbooooo..', '.ohbbbbbbo.', '.obbo..obbo', '.obbo..obbo', '.obbooobbso', '..osbbbbso.', '...oooooo..'],
+  up: ['.....o.....', '....oho....', '...ohbbo...', '..ohbbbbo..', '.ohbbbbbbo.', 'oooohbsoooo', '...ohbso...', '...ohbso...', '...ohbso...', '...ohbso...', '...ooooo...'],
+  flame: ['.....o.....', '....oho....', '...ohbo.o..', '...ohbooho.', '..ohbbbobbo', '.ohbbbbbbso', 'ohbbbhhbbso', 'obbbhwwhbso', 'obbshwwhsso', '.obsswwsso.', '..ooooooo..'],
+  globe: ['...ooooo...', '..ohbkbbo..', '.ohbbkbbbo.', 'ohkkkkkkkko', 'obbbbkbbbso', 'obbbbkbbbso', 'okkkkkkkkko', '.obbbkbbso.', '..obbkbso..', '...ooooo...', '...........'],
+  net: ['ooooooooooo', 'ohhbbbbbbso', 'ooooooooooo', '.owkwkwkwo.', '.okwkwkwko.', '..owkwkwo..', '..okwkwko..', '...owkwo...', '...okwko...', '....owo....', '....ooo....'],
+  ball: ['...ooooo...', '..ohbkbbo..', '.ohbbkbbbo.', 'ohkbbkbbkso', 'obbkbkbkbso', 'okkkkkkkkko', 'obbkbkbkbso', 'osbkbkbkbso', '.osbbkbbso.', '..osbkbso..', '...ooooo...'],
+};
+function icon(name, color, big){
+  var g = (big && ICONS_L[name]) || ICONS[name]; if (!g) return null;
   var base = color || ICON_BASE[name] || '#b8c3e6';
-  return cached('icon:' + name + ':' + base, function(cv){
+  return cached('icon:' + name + ':' + base + (g.length > 7 ? ':L' : ''), function(cv){
     var h = g.length, w = 0; g.forEach(function(r){ w = Math.max(w, r.length); });
     cv.width = w; cv.height = h;
     var c = cv.getContext('2d'), R = ramp(base);
-    var P = { o: outlineOf(base), s: R[1], b: R[2], h: R[4], w: '#f4f1e8', k: mix(base, '#0b0e1a', 0.78) };
+    var P = { o: outlineOf(base), s: R[1], b: R[2], h: R[4], w: '#f4f1e8', k: mix(base, '#0b0e1a', 0.78), r: '#d8434b', q: '#3f74d8' };
     for (var y = 0; y < h; y++) for (var x = 0; x < g[y].length; x++){
       var ch = g[y][x]; if (!P[ch]) continue;
       c.fillStyle = P[ch]; c.fillRect(x, y, 1, 1);
@@ -457,6 +563,9 @@ function img(asset, scale, cls, alt){
   return '<img class="k-px' + (cls ? ' ' + cls : '') + '" src="' + asset.url + '" width="' + asset.w * s + '" height="' + asset.h * s + '" alt="' + (alt || '') + '"' + (alt ? '' : ' aria-hidden="true"') + ' draggable="false">';
 }
 function iconHtml(name, scale, color, alt){ return img(icon(name, color), scale || 2, 'k-ico', alt); }
+/* A tile icon: the eleven cell drawing at 4x where there is one, the seven
+   cell one at 6x where there is not, so both come out about 44px. */
+function badgeHtml(name, color, alt){ return ICONS_L[name] ? img(icon(name, color, true), 4, 'k-ico', alt) : img(icon(name, color), 6, 'k-ico', alt); }
 
 /* ─── the stylesheet ───────────────────────────────────────────────────── */
 
@@ -827,7 +936,7 @@ function dialog(scrim, opts){
 var API = {
   API_VERSION: API_VERSION, T: T, CSS: CSS,
   mix: mix, contrast: contrast, ramp: ramp, teamVars: teamVars, theme: theme,
-  crowd: crowd, wood: wood, brick: brick, room: room, icon: icon, img: img, iconHtml: iconHtml, ICONS: Object.keys(ICONS),
+  crowd: crowd, wood: wood, brick: brick, room: room, icon: icon, img: img, iconHtml: iconHtml, badgeHtml: badgeHtml, ICONS_L: Object.keys(ICONS_L), ICONS: Object.keys(ICONS),
   pips: pips, bar: bar, tickerHtml: tickerHtml, wireTips: wireTips, countUp: countUp, toast: toast, wipe: wipe, dialog: dialog, reduced: reduced, inject: inject,
 };
 if (typeof module !== 'undefined' && module.exports) module.exports = API;

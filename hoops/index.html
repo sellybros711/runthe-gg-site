@@ -1744,6 +1744,16 @@
     margin-left:3px;margin-right:3px;
     box-shadow:0 -3px 0 0 #2d3a66,0 3px 0 0 #2d3a66,-3px 0 0 0 #2d3a66,3px 0 0 0 #2d3a66;}
   .career-hero > *{position:relative;z-index:1;}
+  /* THE WHOLE CARD IS THE DOOR, like the puzzle cards under it. On a phone its
+     button is docked at the foot of the screen, so without this the card a
+     thumb lands on first was the one thing on the page that did nothing.
+     career-ui.js routes a press anywhere on it to the button's own handler. */
+  .career-hero.live{cursor:pointer;transition:filter .12s;}
+  .career-hero.live:hover{filter:brightness(1.12);}
+  .career-hero.live:active{transform:translateY(1px);}
+  .career-hero .ch-chip{position:absolute;top:16px;right:14px;font-size:10.5px;font-weight:800;padding:2px 9px;
+    background:#ff7a1a;color:#160b02;white-space:nowrap;}
+  .career-hero:not(.live) .ch-chip{display:none;}
   .career-hero .ch-set{position:absolute;inset:0;z-index:0;overflow:hidden;opacity:.24;pointer-events:none;
     -webkit-mask:linear-gradient(90deg,transparent 20%,#000 75%);mask:linear-gradient(90deg,transparent 20%,#000 75%);}
   .career-hero .ch-set img{position:absolute;right:0;top:0;height:100%;width:auto;image-rendering:pixelated;}
@@ -2571,6 +2581,7 @@
        where, none says what the mode is. -->
   <section class="card career-hero" id="career" aria-labelledby="ch-title">
     <span class="ch-eye">Career <i>New</i></span>
+    <span class="ch-chip" id="ch-chip" aria-hidden="true">Play</span>
     <h2 id="ch-title">Live an NBA life.</h2>
     <p class="ch-say" id="ch-say">High school to the Hall of Fame. Recruiting, March, contracts, rivals and Game 7s. Every call is yours.</p>
     <ol class="ch-path" id="ch-path" aria-hidden="true"><li>High school</li><li>College</li><li>Draft</li><li>Ring</li><li class="end">Hall</li></ol>
@@ -3424,8 +3435,8 @@
 <script src="badges.js?v=5"></script>
 <script src="courts.js?v=2"></script>
 <script src="modes.js?v=9"></script>
-<script src="career.js?v=14"></script>
-<script src="baller.js?v=3"></script>
+<script src="career.js?v=28"></script>
+<script src="baller.js?v=4"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
      or either file fails to load, the game runs exactly as it did, with runs
      kept in this browser and the board reporting itself unreachable. An account
@@ -11935,6 +11946,21 @@ window.RTF_PAGE = {
       return;
     }
     copyAndDownload(text, null);
+  },
+  /* A picture and its words, for Career's share card: the share sheet when it
+     takes files, the text alone when it does not, and the clipboard and a
+     download on a laptop. shareRun's own rules, for a blob drawn elsewhere. */
+  shareImage: function(text, blob){
+    var file = null;
+    try { if (blob) file = new File([blob], 'run-the-floor.png', { type: 'image/png' }); } catch (e) { file = null; }
+    var sheet;
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) sheet = navigator.share({ text: text, files: [file] });
+    else if (navigator.share) sheet = navigator.share({ text: text });
+    else sheet = Promise.reject(new Error('no share sheet'));
+    return sheet.catch(function(err){
+      if (err && err.name === 'AbortError') return;
+      copyAndDownload(text, blob);
+    });
   }
 };
 
@@ -11950,12 +11976,12 @@ boot();
 </script>
 <!-- AFTER the page, because it draws through window.RTF_PAGE, which the script
      above publishes. -->
-<script src="modes-ui.js?v=17"></script>
-<script src="career-kit.js?v=3"></script>
+<script src="modes-ui.js?v=18"></script>
+<script src="career-kit.js?v=6"></script>
 <script src="sound.js?v=1"></script>
 <script src="court.js?v=1"></script>
 <script src="ticker.js?v=1"></script>
-<script src="scenes.js?v=5"></script>
-<script src="career-ui.js?v=16"></script>
+<script src="scenes.js?v=6"></script>
+<script src="career-ui.js?v=31"></script>
 </body>
 </html>

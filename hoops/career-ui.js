@@ -40,9 +40,21 @@ function load(){
     /* Every career that comes off disk is migrated before anything reads it,
        and `last` (the finished career's Hall card) is kept: it used to be
        dropped here, which lost the board row a reload should still show. */
-    if (v && typeof v === 'object') return { cur: v.cur ? C.migrate(v.cur) : null, hof: Array.isArray(v.hof) ? v.hof : [], last: v.last || null };
+    if (v && typeof v === 'object') return backfill({ cur: v.cur ? C.migrate(v.cur) : null, hof: Array.isArray(v.hof) ? v.hof : [], last: v.last || null,
+      vault: v.vault && typeof v.vault === 'object' ? v.vault : null, arc: Array.isArray(v.arc) ? v.arc : null });
   } catch (e) {}
-  return { cur: null, hof: [] };
+  return backfill({ cur: null, hof: [] });
+}
+/* THE VAULT (Phase E) rides in the same slot. `arc` is every finished career
+   as a short entry, newest first, kept long after its full Hall card falls
+   off the twenty on `hof`; `vault` is every ending, road, origin and
+   challenge this account has found, with when. A slot written before either
+   existed builds them from the Hall cards it has, once. */
+var ARC_MAX = 200;
+function backfill(st){
+  if (!st.arc) st.arc = (st.hof || []).map(compact);
+  if (!st.vault) { st.vault = {}; (st.hof || []).slice().reverse().forEach(function(c){ vaultAdd(st, c); }); }
+  return st;
 }
 var S = null;
 function store(){ if (!S) S = load(); return S; }
@@ -58,6 +70,52 @@ function reload(){
   renderHero();
 }
 function onScreen(){ var el = $('s-car'); return !!(el && el.classList.contains('active')); }
+
+
+/* What the Vault keeps of a career, and the father a son is built from. */
+function cardId(c){ return String(c.id || (c.name + ':' + (c.at || c.from))); }
+function compact(c){
+  var T = c.totals || {}, e = c.ending || null;
+  return { id: cardId(c), parent: c.parent || null, gen: c.gen || 1, name: c.name, num: c.num, pos: c.pos, from: c.from, to: c.to, age: c.age,
+    verdict: c.verdict, score: c.score, hof: !!(e && HOF_IN[e.tier]),
+    tier: e ? e.tierName : '', pts: T.pts || 0, seasons: T.seasons || 0, rings: T.rings || 0, star: T.star || 0, mvp: T.mvp || 0,
+    teams: (c.teams || []).slice(0, 8), jersey: c.jersey || null, c1: c.c1, c2: c.c2, look: c.look || null, at: c.at || 0,
+    diff: c.diff || null, ch: c.ch || null, sons: sonsIn(c) };
+}
+/* Every Vault key a card earns: t tier, o outcome, s secret, r road, g origin,
+   c a challenge met. A card from before the ids were kept is read back
+   through the names, which are the catalog's own. */
+function inv(obj, pickName){ var o = {}; for (var k in obj) o[pickName ? pickName(obj[k]) : obj[k]] = k; return o; }
+var HOF_IN = { hof_first: 1, hof_eventual: 1, hof_debate: 1, hof_committee: 1 };
+var INV = null;
+function invs(){
+  if (!INV) INV = { t: inv(C.HOF_TIERS || {}), o: inv(C.OUTCOMES || {}), s: inv(C.SECRETS || {}),
+    r: inv(C.ROUTES || {}, function(x){ return x[0]; }), g: inv(C.ORIGINS || {}, function(x){ return x.name; }) };
+  return INV;
+}
+function vaultKeys(c){
+  var out = [], ids = c.ids, e = c.ending, I = invs();
+  if (ids) {
+    if (ids.tier) out.push('t:' + ids.tier);
+    (ids.outs || []).forEach(function(k){ out.push('o:' + k); });
+    if (ids.secret) out.push('s:' + ids.secret);
+    (ids.routes || []).forEach(function(k){ out.push('r:' + k); });
+    if (ids.origin) out.push('g:' + ids.origin);
+  } else if (e) {
+    if (e.tier || I.t[e.tierName]) out.push('t:' + (e.tier || I.t[e.tierName]));
+    (e.names || []).forEach(function(n){ if (I.o[n]) out.push('o:' + I.o[n]); });
+    if (e.secretName && I.s[e.secretName]) out.push('s:' + I.s[e.secretName]);
+    (e.routes || []).forEach(function(n){ if (I.r[n]) out.push('r:' + I.r[n]); });
+    if (c.origin && I.g[c.origin]) out.push('g:' + I.g[c.origin]);
+  }
+  if (c.ch && c.ch.met) out.push('c:' + c.ch.id);
+  return out;
+}
+function vaultAdd(st, c){
+  var fresh = [];
+  vaultKeys(c).forEach(function(k){ if (!st.vault[k]) { st.vault[k] = c.at || 1; fresh.push(k); } });
+  return fresh;
+}
 
 // ─── the stylesheet ─────────────────────────────────────────────────────────
 
@@ -131,6 +189,16 @@ var CSS = [
 /* the rows a press moved, two to a line so a long receipt does not push the next card off the screen */
 '.cr-result ul{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:16px;}',
 '.cr-result li{font-size:12.5px;}',
+/* the contest table: one row an entrant, names give way before scores do */
+'.cr-ct{display:grid;gap:2px;font-size:12.5px;}',
+'.cr-ct-r{display:grid;grid-template-columns:minmax(0,1fr) 3.4em 3.4em;gap:8px;align-items:center;padding:5px 8px;background:rgba(143,160,214,.07);color:var(--k-ink-2);}',
+'.cr-ct-r span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+'.cr-ct-r span+span{text-align:right;font-variant-numeric:tabular-nums;}',
+'.cr-ct-r b{display:inline-block;min-width:1.4em;font-family:var(--k-f-pixel);font-size:9px;color:var(--k-ink-3);}',
+'.cr-ct-r i{font-style:normal;color:var(--k-ink-3);}',
+'.cr-ct-h{background:none;padding-top:0;padding-bottom:2px;font:800 10px var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;color:var(--k-ink-3);}',
+'.cr-ct-r.you{color:var(--k-ink);font-weight:700;box-shadow:inset 3px 0 0 var(--k-accent);}',
+'.cr-ct-r.win b,.cr-ct-r.win span+span+span{color:var(--k-gold);}',
 '.cr-card .k-eyebrow{color:var(--k-accent);}',
 '.cr-card .k-h1{font-size:28px;margin-bottom:8px;}',
 '#cr-card-h:focus{outline:none;}',
@@ -159,6 +227,22 @@ var CSS = [
 '.cr-rt .k-row.is-key span:first-child:after{content:"";display:inline-block;width:5px;height:5px;margin-left:6px;vertical-align:2px;background:var(--k-good);}',
 '.cr-tabs{margin:0 0 12px;}',
 '.cr-tabs .k-tab{min-width:0;font-size:11px;letter-spacing:.08em;}',
+/* the rotation: one row a player, names give way before numbers do */
+'.cr-rot{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:2px;}',
+'.cr-rot li{display:grid;grid-template-columns:2em minmax(0,1fr) 2.4em 3.2em 3.2em;gap:8px;align-items:center;padding:6px 8px;background:rgba(143,160,214,.07);font-size:13px;color:var(--k-ink-2);}',
+'.cr-rot .who{min-width:0;display:grid;}',
+'.cr-rot .who b,.cr-rot .who small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+'.cr-rot .who b{color:var(--k-ink);font-weight:600;}',
+'.cr-rot .who small{color:var(--k-ink-3);font-size:11px;}',
+'.cr-rot .v{text-align:right;font-variant-numeric:tabular-nums;}',
+'.cr-rot .v.ovr{font-family:var(--k-f-pixel);font-size:11px;color:var(--k-ink);}',
+'.cr-rot .n{font-family:var(--k-f-pixel);font-size:9px;color:var(--k-ink-3);}',
+'.cr-rot li.you{box-shadow:inset 3px 0 0 var(--k-accent);background:rgba(255,140,40,.10);}',
+'.cr-rot li.you .who b{font-weight:800;}',
+'.cr-rot li.dnp{opacity:.6;}',
+'.cr-rot li.cr-rot-h,.cr-rot li.cr-rot-sep{background:none;padding-top:8px;padding-bottom:2px;font:800 10px var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;color:var(--k-ink-3);}',
+'.cr-rot li.cr-rot-sep{display:block;}',
+'.cr-rot-line{margin:10px 0 0;}',
 /* six tabs are two rows of three on a phone */
 '@media (max-width:519px){.cr-tabs.k-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));}}',
 /* the people around you: a name, who they are, a meter that runs both ways */
@@ -211,7 +295,18 @@ var CSS = [
 '  .cr-tbl.cr-vs tr{grid-template-columns:repeat(3,minmax(0,1fr));}',
 '}',
 '.cr-vs td.win{color:var(--k-good);font-weight:800;}',
-'.cr-aw{display:flex;flex-wrap:wrap;gap:8px;}',
+'.cr-aw{display:flex;flex-direction:column;gap:8px;}',
+'.cr-awgrid{display:flex;flex-wrap:wrap;gap:8px;}',
+/* No frame round an icon: at 7 by 7 cells a 2px border was a second outline
+   round the icon's own, and the two together were most of what the eye saw.
+   The tile is a soft tint of the icon's own colour, and the level is a short
+   bar under it rather than a ring round it. */
+'.cr-awi{position:relative;width:54px;height:54px;display:grid;place-items:center;background:var(--k-panel-2);background:color-mix(in srgb,var(--ic,#b8c3e6) 15%,var(--k-panel-2));border:0;cursor:pointer;padding:0;}',
+'.cr-awi:after{content:"";position:absolute;left:14px;right:14px;bottom:3px;height:3px;background:var(--lv,transparent);}',
+'.cr-awi-pro{--lv:#c9a23a;}.cr-awi-col{--lv:#4f73b8;}.cr-awi-hs{--lv:#2e8a62;}',
+'.cr-awi.on{outline:2px solid var(--k-ink);outline-offset:1px;}',
+'.cr-awi i{position:absolute;right:-6px;top:-6px;min-width:18px;height:18px;padding:0 4px;background:#ff7a1a;color:#0b0e1a;font:700 11px/18px var(--k-f-pixel);font-style:normal;text-align:center;border:2px solid #0b0e1a;}',
+'.cr-awcap{font-size:13px;color:var(--k-ink-2);min-height:18px;}',
 '.cr-aw .k-tag{white-space:normal;line-height:1.5;}',
 '.cr-tot{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0 0 14px;}',
 '.cr-tot div{padding:10px 4px;text-align:center;background:var(--k-panel-2);}',
@@ -235,12 +330,54 @@ var CSS = [
 '.cr-final p.cr-col{color:var(--k-ink);font-weight:700;}',
 '.cr-final .rtf-baller{display:block;margin:4px auto 6px;filter:drop-shadow(0 6px 0 rgba(5,7,13,.55));}',
 '.cr-final .cr-tot{margin:16px 0 0;}',
-'.cr-final .cr-aw{justify-content:center;margin-top:14px;}',
+'.cr-final .cr-aw{align-items:center;margin-top:14px;}.cr-final .cr-awgrid{justify-content:center;}',
+'.cr-aw.cr-awrow{flex-direction:row;flex-wrap:wrap;}',
 '.cr-epi p{margin:0 0 12px;font-size:14.5px;line-height:1.5;}',
 '.cr-epi p:last-child{margin:0;}',
 '.cr-epi .cr-secret{color:var(--k-gold);font-weight:800;}',
 '.cr-epi .cr-secret .k{color:var(--k-gold);}',
 '.cr-road{margin:0 0 12px;font-size:14px;line-height:1.5;color:var(--k-ink-2);}',
+'.cr-roadbox{margin:0 0 12px;}.cr-roadbox .cr-list{margin:0;}',
+'.cr-reveal li{animation:cr-roadin .4s steps(4,end) both;}',
+'@keyframes cr-roadin{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}',
+'@media (prefers-reduced-motion:reduce){.cr-reveal li{animation:none;}}',
+'details.cr-roadbox > summary,details.cr-rtfold > summary{cursor:pointer;list-style:none;margin:0;min-height:28px;display:flex;align-items:center;}',
+'details.cr-roadbox > summary::-webkit-details-marker,details.cr-rtfold > summary::-webkit-details-marker{display:none;}',
+'details.cr-roadbox > summary:after,details.cr-rtfold > summary:after{content:"+";margin-left:auto;font:normal 12px var(--k-f-pixel);color:var(--k-ink-3);}',
+'details.cr-roadbox[open] > summary:after,details.cr-rtfold[open] > summary:after{content:"-";}',
+'details.cr-roadbox[open] > summary,details.cr-rtfold[open] > summary{margin-bottom:8px;}',
+'.cr-rtsum{margin-left:auto;margin-right:10px;font:700 12px var(--k-f-text);letter-spacing:0;text-transform:none;color:var(--k-ink-2);}',
+/* Phase E: the legacy banner, the story, the Vault */
+'.cr-son{margin:0 0 12px;}.cr-son p{margin:6px 0 0;font-size:14px;line-height:1.45;}',
+'.cr-gen{display:flex;align-items:center;gap:8px;margin:-4px 0 10px;font:800 11px var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;color:var(--k-gold);}',
+'.cr-story h3.cr-sub:first-of-type{margin-top:4px;}',
+'.cr-story p{margin:4px 0 10px;font-size:14.5px;line-height:1.55;color:var(--k-ink);}',
+'.cr-sonbtn{margin:0 0 14px;}',
+'.cr-chres{margin:0 var(--k-px) 12px;}.cr-chres p{margin:6px 0 0;font-size:14px;}',
+'.cr-easy{margin:0 var(--k-px) 12px;}',
+'.cr-found{margin:0 var(--k-px) 12px;}.cr-found .cr-aw{margin-top:8px;}',
+'.cr-vsum{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:0 var(--k-px) 14px;}',
+'.cr-vsum .k-num{font-size:26px;color:var(--k-gold);}',
+'.cr-vbar{flex:1 1 140px;height:10px;background:var(--k-panel-3);box-shadow:0 0 0 2px var(--k-frame);}',
+'.cr-vbar i{display:block;height:100%;background:var(--k-gold);transform-origin:left;}',
+'.cr-vgrid{list-style:none;margin:6px 0 14px;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;}',
+'.cr-vgrid li{display:flex;align-items:center;gap:8px;min-height:40px;padding:6px 8px;font:700 12.5px/1.25 var(--k-f-text);background:var(--k-panel-2);box-shadow:0 0 0 2px var(--k-frame);}',
+'.cr-vgrid li.got{color:var(--k-ink);box-shadow:0 0 0 2px var(--k-gold);}',
+'.cr-vgrid li.no{color:var(--k-ink-3);}',
+'.cr-arc{list-style:none;margin:0;padding:0;}',
+'.cr-arc li{border-top:1px solid rgba(143,160,214,.12);}.cr-arc li:first-child{border-top:0;}',
+'.cr-aentry{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:6px 4px;background:none;border:0;color:var(--k-ink);text-align:left;cursor:pointer;font:inherit;}',
+'button.cr-aentry:hover,button.cr-aentry:focus-visible{background:var(--k-panel-2);}',
+'.cr-aentry.big{padding:10px 0;}',
+'.cr-apic{flex:0 0 44px;display:flex;justify-content:center;}.cr-aentry.big .cr-apic{flex-basis:88px;}',
+'.cr-apic img{height:64px;width:auto;}.cr-aentry.big .cr-apic img{height:128px;}',
+'.cr-awho{min-width:0;display:grid;gap:2px;}.cr-awho b{font-size:15px;}.cr-awho small{font-size:12px;color:var(--k-ink-2);}',
+'.cr-tree,.cr-tree ul{list-style:none;margin:0;padding:0;}',
+'.cr-tree ul{margin-left:22px;padding-left:12px;border-left:3px solid var(--k-frame);}',
+'.cr-tree{margin:0 0 14px;}',
+'.cr-lockbox{display:grid;justify-items:start;gap:10px;padding:6px 0;}.cr-lockbox p{margin:0;font-size:14px;line-height:1.5;}',
+'.cr-opt .cr-pro{margin-left:6px;vertical-align:2px;font-size:10px;}',
+'.cr-opt.cr-locked b{color:var(--k-ink-2);}',
 '.cr-epi .k{display:block;font:800 10px var(--k-f-text);letter-spacing:.14em;text-transform:uppercase;color:var(--k-ink-3);margin-bottom:3px;}',
 '.cr-place{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 var(--k-px) 14px;font-size:14px;color:var(--k-ink-2);}',
 '.cr-place b{color:var(--k-ink);}',
@@ -266,6 +403,11 @@ var CSS = [
 '.cr-name .cr-num{flex:0 0 64px;text-align:center;font-family:var(--k-f-pixel);font-size:14px;}',
 '.cr-name .k-btn{margin:2px;min-height:46px;}',
 '.cr-chips{display:flex;gap:4px;flex-wrap:wrap;}',
+'.cr-size{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}',
+'.cr-step{display:grid;grid-template-columns:auto 1fr auto;grid-template-rows:auto auto;align-items:center;gap:4px 6px;}',
+'.cr-step .k-label{grid-column:1/-1;}',
+'.cr-step .k-btn{min-width:40px;min-height:44px;padding:0;font-size:20px;}',
+'.cr-step output{text-align:center;white-space:nowrap;font:700 16px var(--k-f-text);font-variant-numeric:tabular-nums;color:var(--k-ink);}',
 '.cr-chips .k-chip{flex:1 1 0;min-width:52px;}',
 '.cr-opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;}',
 '@media (max-width:379px){.cr-opts{grid-template-columns:1fr;}}',
@@ -286,6 +428,42 @@ var CSS = [
 '.cr-town{margin:12px 0 0;font-size:14px;color:var(--k-ink);font-weight:700;}',
 '.cr-grade{font-size:13px;color:var(--k-ink-2);margin:8px 0 16px;}',
 '.cr-grade b{color:var(--k-gold);}',
+/* the builder in steps: the player on top, four tabs, a pinned start */
+'.cr-build .cr-preview{grid-template-columns:96px minmax(0,1fr);gap:12px;align-items:start;margin:0 0 12px;}',
+'.cr-build .cr-preview .cr-pfig{width:96px;height:140px;}',
+'.cr-build .cr-pside{min-width:0;}',
+'.cr-build .cr-povr{display:flex;align-items:baseline;gap:6px;margin:0 0 6px;}',
+'.cr-build .cr-povr .k-num{font-size:26px;margin:0;}',
+'.cr-ceil{margin-left:auto;font:800 11px var(--k-f-text);letter-spacing:.08em;text-transform:uppercase;color:var(--k-ink-2);}',
+'.cr-ceil b{color:var(--k-gold);}',
+'.cr-build .cr-rt{gap:3px;}',
+'.cr-build .cr-rt .k-row{grid-template-columns:84px minmax(0,1fr) 22px 0;font-size:11.5px;min-height:0;}',
+'.cr-build .cr-rt .k-row .k-delta{display:none;}',
+'.cr-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:0 0 4px;}',
+'.cr-stab{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 4px;border:0;cursor:pointer;font:800 12.5px var(--k-f-text);color:var(--k-ink-2);background:var(--k-panel-2);}',
+'.cr-stab i{font:normal 8px var(--k-f-pixel);color:var(--k-ink-3);}',
+'.cr-stab.on{color:#160b02;background:var(--k-gold);}',
+'.cr-stab.on i{color:#160b02;}',
+'.cr-stab:focus-visible{outline:2px solid var(--k-gold);outline-offset:2px;}',
+'.cr-pane[hidden]{display:none;}',
+'.cr-pane > .lab:first-child,.cr-pane > .cr-intro:first-child{margin-top:14px;}',
+'.cr-pane > .cr-look{margin-top:14px;}',
+'.cr-opts.cr-pick{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;}',
+'.cr-opts.cr-pick .cr-opt{padding:10px;min-height:44px;}',
+'.cr-opts.cr-pick .cr-opt b{font-size:13px;margin:0;}',
+'.cr-opts.cr-pick .cr-opt small{display:none;}',
+'.cr-look.cr-look-nofig{display:block;}',
+'.cr-look.cr-look-nofig > div:first-child{position:static;padding:0;background:none;}',
+'.cr-look-nofig .cr-sw{gap:2px;}',
+'.cr-look-nofig .cr-sw button.dot{width:30px;height:30px;margin:2px;}',
+'.cr-build .cr-preview .cr-pfig.cr-zoom .rtf-baller{bottom:auto;top:-4px;}',
+'.cr-look-nofig [aria-label="Facial hair color"] button.dot{width:26px;height:26px;}',
+'.cr-look-nofig [aria-label="Facial hair color"] button:first-child{padding:6px 8px;}',
+'.cr-look-nofig .cr-sw button{padding:6px 9px;}',
+'.cr-cta{position:sticky;bottom:0;z-index:5;display:flex;gap:6px;margin:16px -16px -16px;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(13,17,32,.86),#0d1120 40%);}',
+'.cr-cta #cr-go{flex:1 1 auto;margin:0;font-size:15px;padding:0 10px;}',
+'.cr-cta #cr-bnext{flex:0 0 auto;margin:0;min-height:52px;display:inline-flex;align-items:center;gap:8px;}',
+'@media (min-width:720px){.cr-opts.cr-pick{grid-template-columns:repeat(3,minmax(0,1fr));}}',
 /* the look chooser (the options are the sprite\'s and are not changed here) */
 '.cr-look{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:start;}',
 '.cr-look > div:first-child{position:sticky;top:64px;padding:8px;background:var(--k-panel-2);}',
@@ -370,16 +548,46 @@ var form = null;
 function freshForm(){
   var seed = String(Math.floor(Math.random() * 1e9));
   var B = window.RTF_BALLER;
-  return { seed: seed, name: C.randomName(seed), num: Math.floor(Math.random() * 100), pos: 'SF', arch: 'twoway', bg: 'oad', start: 'hs',
-    origin: '', legend: true, look: B ? B.lookFor(seed) : {} };
+  return { seed: seed, name: C.randomName(seed), num: Math.floor(Math.random() * 100), pos: 'SF', arch: 'sf_wing', bg: 'oad', start: proOpen() ? 'hs' : 'gen',
+    origin: '', legend: true, look: B ? B.lookFor(seed) : {}, diff: 'normal', challenge: '', ht: 79, wt: C.wtFor(79) };
 }
+/* A new position keeps the kind of player and the size where it still fits:
+   the archetype on the same base, and the height and weight pulled into the
+   new position's range. */
+function setPos(p){
+  var was = C.ARCHES[form.arch] || {}, keys = C.archesFor(p);
+  form.pos = p;
+  if (keys.indexOf(form.arch) < 0) form.arch = keys.filter(function(k){ return C.ARCHES[k].base === (was.base || form.arch); })[0] || keys[0];
+  var z = C.POS_SIZE[p];
+  if (!(form.ht >= z.ht[0] && form.ht <= z.ht[1])) form.ht = z.mid;
+  fitWt();
+}
+function fitWt(){ var r = C.wtRange(form.ht); if (!(form.wt >= r[0] && form.wt <= r[1])) form.wt = C.wtFor(form.ht); }
+/* What the size does, in one line: read off the same tilt the engine adds. */
+function sizeLine(){
+  var t = C.sizeTilt(form.pos, form.ht, form.wt), name = { reb: 'rebounding', def: 'defense', fin: 'finishing', ath: 'athleticism', pla: 'playmaking', sho: 'shooting' };
+  var up = [], down = [];
+  Object.keys(t).sort(function(a, b){ return Math.abs(t[b]) - Math.abs(t[a]); }).forEach(function(k){ var v = Math.round(t[k]); if (v > 0) up.push('+' + v + ' ' + name[k]); else if (v < 0) down.push(v + ' ' + name[k]); });
+  if (!up.length && !down.length) return 'Right in the middle for a ' + C.POS_NAME[form.pos].toLowerCase() + '. No trade-offs.';
+  var z = C.POS_SIZE[form.pos], dh = form.ht - z.mid, dw = form.wt - C.wtFor(form.ht);
+  var big = dh > 0 || dw > 0 ? ' Big bodies break down sooner.' : dw < 0 ? ' A light frame holds up a little better.' : '';
+  return (up.length ? up.slice(0, 3).join(', ') + '. ' : '') + (down.length ? down.slice(0, 3).join(', ') + '.' : '') + big;
+}
+/* RUN THE FLOOR PRO IS WHAT PLAYS THE ROAD (PLAN.md Phase E). A guest and a
+   free account start on draft night from a road generated for them, a new one
+   every career; Pro can start at fifteen. Asked of modes-ui.js, which owns the
+   purchase, so a lapse or PRO_LIVE off is decided in one place. A career
+   already started is never taken away: the gate is this screen's start button. */
+function proOpen(){ var M = window.RTF_MODES_UI; return !!(M && M.proOpen && M.proOpen()); }
+function askPro(why){ var M = window.RTF_MODES_UI; if (M && M.openPro) M.openPro(why); }
 function lifeOpts(){
-  return { seed: form.seed, name: form.name, num: form.num, pos: form.pos, arch: form.arch, bg: form.bg, start: form.start, look: form.look, league: league(),
-    origin: form.origin || undefined, legend: form.legend !== false };
+  return { seed: form.seed, name: form.name, num: form.num, pos: form.pos, arch: form.arch, bg: form.bg, start: form.start, look: form.look, league: league(), ht: form.ht, wt: form.wt,
+    origin: form.origin || undefined, legend: form.legend !== false, parent: form.parent || undefined, parentLeague: form.parentLeague || undefined,
+    diff: form.diff || 'normal', challenge: form.challenge || undefined };
 }
 /* The look chooser, shared by the builder and the Look sheet mid-career. The
    options are the sprite's own (baller.js) and are listed, never changed. */
-function lookRows(look, c1, c2, num){
+function lookRows(look, c1, c2, num, noFig){
   var B = window.RTF_BALLER;
   if (!B) return '';
   var L = B.normal(look);
@@ -395,11 +603,20 @@ function lookRows(look, c1, c2, num){
       return '<button type="button" class="dot' + (on ? ' on' : '') + '" data-lk="' + key[0] + '" data-lv="' + i + '" style="background:' + c + '" aria-pressed="' + on + '" aria-label="' + key[1] + ' ' + (i + 1) + '"></button>';
     }).join('') + '</div></div>';
   };
-  return '<div class="cr-look"><div>' + B.img(L, { c1: c1, c2: c2, num: num, scale: 3 }) + '</div><div>'
+  /* Facial hair colour is its own choice, shown once there is facial hair to
+     colour. Match is the natural colour that goes with the hair. */
+  var bcRow = L.beard === 'none' ? '' : '<div class="cr-lrow"><span class="k k-label">Facial hair color</span><div class="cr-sw" role="group" aria-label="Facial hair color">'
+    + '<button type="button" data-lk="bc" data-lv="auto" class="' + (L.bc < 0 ? 'on' : '') + '" aria-pressed="' + (L.bc < 0) + '">Match</button>'
+    + B.HAIR_COLORS.map(function(x, i){
+      var on = L.bc === i;
+      return '<button type="button" class="dot' + (on ? ' on' : '') + '" data-lk="bc" data-lv="' + i + '" style="background:' + x[1] + '" aria-pressed="' + on + '" aria-label="Facial hair color ' + (i + 1) + '"></button>';
+    }).join('') + '</div></div>';
+  return '<div class="cr-look' + (noFig ? ' cr-look-nofig' : '') + '">' + (noFig ? '' : '<div>' + B.img(L, { c1: c1, c2: c2, num: num, scale: 3 }) + '</div>') + '<div>'
     + dots(['skin', 'Skin'], B.SKINS)
     + chips(['hair', 'Hair'], B.HAIRS)
     + dots(['hc', 'Hair color'], B.HAIR_COLORS.map(function(x){ return x[1]; }))
-    + chips(['beard', 'Face'], B.BEARDS)
+    + chips(['beard', 'Facial hair'], B.BEARDS)
+    + bcRow
     + '<details class="cr-gear"' + (gearOpen ? ' open' : '') + '><summary>Gear and build</summary>'
     + chips(['band', 'Headband'], B.BANDS)
     + chips(['sleeve', 'Arm sleeve'], B.SLEEVES)
@@ -415,21 +632,52 @@ function wireLook(root, look, onChange){
   root.querySelectorAll('[data-lk]').forEach(function(b){
     b.onclick = function(){
       var k = b.getAttribute('data-lk'), v = b.getAttribute('data-lv');
-      look[k] = k === 'skin' || k === 'hc' ? +v : v;
+      if (v === 'auto') delete look[k];
+      else look[k] = k === 'skin' || k === 'hc' || k === 'bc' ? +v : v;
       onChange();
     };
   });
 }
-function preview(){ return C.newLife(lifeOpts()); }
+/* The builder's preview is the career the start button would make: the road
+   generated, or the sophomore. A generated road is a few milliseconds. */
+var PV = { k: null, L: null };
+function preview(){
+  var o = lifeOpts();
+  /* Only what changes the career is in the key: the name, the number and the
+     look are laid over the same career, so typing does not replay a road. */
+  var k = [o.seed, o.pos, o.arch, o.start, o.origin, o.legend, o.parent ? o.parent.id : '', o.diff, o.challenge, o.ht, o.wt].join('|');
+  if (PV.k !== k) { PV.k = k; PV.L = form.start === 'hs' ? C.newLife(o) : C.generateRoad(o); }
+  var L = PV.L;
+  L.name = String(form.name || '') || L.name; L.num = form.num; L.look = C.cleanLook(form.look);
+  return L;
+}
 var LEAGUE = null;
+/* TODAY'S ROSTERS (data/rosters.json): the clubs as they stand for the season a
+   career joins, refreshed by a workflow and fetched no-cache with no ?v=,
+   because a bot rewrites it under one name. Until it has answered, a league is
+   seeded without it and not kept, so the first career started after it lands
+   joins the real clubs. No file, or a stale one, is the data's last season. */
+var ROSTERS = null, ROSTERS_DONE = false;
+function loadRosters(){
+  if (ROSTERS_DONE || loadRosters.asked) return;
+  loadRosters.asked = true;
+  var done = function(j){ ROSTERS = j && j.clubs ? j : null; ROSTERS_DONE = true; LEAGUE = null; };
+  try {
+    fetch('data/rosters.json', { cache: 'no-cache' })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(done, function(){ done(null); });
+  } catch (e) { done(null); }
+}
+loadRosters();
 function league(){
   if (LEAGUE) return LEAGUE;
   var d = P.data;
   if (!d || !d.allPlayers) return null;
   var rows = [];
   for (var k in d.allPlayers) rows.push(d.allPlayers[k]);
-  LEAGUE = C.seedLeague(rows);
-  return LEAGUE;
+  var lg = C.seedLeague(rows, ROSTERS);
+  if (ROSTERS_DONE) LEAGUE = lg;
+  return lg;
 }
 function rtRows(L, prev, fill){
   var w = C.WEIGHTS[L.pos];
@@ -442,76 +690,186 @@ function rtRows(L, prev, fill){
   }).join('');
 }
 
+/* The road a generated career took, as a short list. In the builder it says
+   that New draws another. */
+function roadHtml(L, builder){
+  var lines = C.roadStory ? C.roadStory(L) : [];
+  if (!lines.length) return '';
+  var list = '<ul class="cr-list">' + lines.map(function(t){ return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>';
+  /* In the career it is a fold, one line until it is opened: it is history,
+     and on a phone it stood between the player and the card he has to answer. */
+  /* THE ROAD IS A REVEAL. The builder never shows it: it is played the moment
+     the career starts, and the first screen of the career opens on it, line
+     by line. After the first press it folds to one line, because by then it
+     is history. */
+  if (!builder) {
+    var rev = !!stage.reveal;
+    if (rev) list = '<ul class="cr-list cr-reveal">' + lines.map(function(t, i){ return '<li style="animation-delay:' + (i * 0.35).toFixed(2) + 's">' + esc(t) + '</li>'; }).join('') + '</ul>';
+    return '<details class="k-panel k-tight cr-roadbox' + (rev ? ' k-in' : '') + '" id="cr-roadbox"' + (rev ? ' open' : '') + '><summary class="k-eyebrow">' + K.iconHtml('clip', 2) + (rev ? 'Your road to the draft' : 'How you got here') + '</summary>' + list + '</details>';
+  }
+  return '<div class="k-panel k-tight cr-roadbox" id="cr-roadbox">' + list
+    + '<p class="k-small" style="margin:8px 0 0">Played for you. Press New for another road.</p></div>';
+}
+/* Difficulty and a challenge (Phase E). A challenge that fixes the difficulty
+   holds the chips where it put them. */
+function setHtml(){
+  if (!C.DIFFS) return '';
+  var fixed = form.challenge && C.CHALLENGES[form.challenge] && C.CHALLENGES[form.challenge].diff;
+  var dk = fixed || form.diff || 'normal';
+  var diff = C.DIFF_KEYS.map(function(k){ var on = dk === k;
+    return '<button class="k-chip' + (on ? ' on' : '') + '" data-diff="' + k + '" aria-pressed="' + on + '"' + (fixed && !on ? ' disabled' : '') + '>' + esc(C.DIFFS[k].name) + '</button>'; }).join('');
+  var ch = C.CHALLENGES[form.challenge];
+  var list = '<button class="cr-opt' + (!form.challenge ? ' on' : '') + '" data-ch="" aria-pressed="' + !form.challenge + '"><b>No challenge</b><small>Just a career.</small></button>'
+    + C.CHALLENGE_KEYS.map(function(k){ var c = C.CHALLENGES[k], on = form.challenge === k, got = !!store().vault['c:' + k];
+      return '<button class="cr-opt' + (on ? ' on' : '') + '" data-ch="' + k + '" aria-pressed="' + on + '"><b>' + esc(c.name) + (got ? ' ' + K.iconHtml('check', 1) : '') + '</b><small>' + esc(c.blurb) + '</small></button>'; }).join('');
+  return '<span class="lab k-label">Difficulty</span><div class="cr-chips" id="cr-diff" role="group" aria-label="Difficulty">' + diff + '</div>'
+    + '<p class="cr-town">' + esc(C.DIFFS[dk].blurb) + '</p>'
+    + '<details class="cr-gear cr-chal"' + (form.challenge || chOpen ? ' open' : '') + '><summary>' + (ch ? 'Challenge: ' + esc(ch.name) : 'Play a challenge') + '</summary>'
+    + '<div class="cr-opts" id="cr-ch">' + list + '</div></details>';
+}
+var chOpen = false;
+/* Height and weight: two steppers inside the position's range, and a line
+   saying what the size buys and costs. */
+function sizeHtml(){
+  var z = C.POS_SIZE[form.pos], r = C.wtRange(form.ht);
+  var step = function(id, label, val, lo, hi, dn, up){
+    return '<div class="cr-step" role="group" aria-label="' + label + '"><span class="k-label">' + label + '</span>'
+      + '<button type="button" class="k-btn k-sec" data-size="' + dn + '"' + (lo ? ' disabled' : '') + ' aria-label="' + label + ' down">-</button>'
+      + '<output id="' + id + '" aria-live="polite">' + val + '</output>'
+      + '<button type="button" class="k-btn k-sec" data-size="' + up + '"' + (hi ? ' disabled' : '') + ' aria-label="' + label + ' up">+</button></div>';
+  };
+  return '<span class="lab k-label">Height and weight</span><div class="cr-size">'
+    + step('cr-ht', 'Height', C.heightText(form.ht), form.ht <= z.ht[0], form.ht >= z.ht[1], 'ht:-1', 'ht:1')
+    + step('cr-wt', 'Weight', form.wt + ' lb', form.wt <= r[0], form.wt >= r[1], 'wt:-5', 'wt:5')
+    + '</div><p class="cr-town" id="cr-sizeline">' + esc(sizeLine()) + '</p>';
+}
 function buildView(){
-  if (!form) form = freshForm();
+  if (!form) { form = freshForm(); bstep = 'player'; }
+  if (C.archesFor(form.pos).indexOf(form.arch) < 0 || !(form.ht > 0)) setPos(form.pos);
   var L = preview(), k = C.colorsOf(L);
   var pos = C.POS.map(function(p){ var on = form.pos === p; return '<button class="k-chip' + (on ? ' on' : '') + '" data-pos="' + p + '" aria-pressed="' + on + '">' + p + '</button>'; }).join('');
-  var arch = C.ARCH_KEYS.map(function(key){ var a = C.ARCHES[key], on = form.arch === key;
+  var arch = C.archesFor(form.pos).map(function(key){ var a = C.ARCHES[key], on = form.arch === key;
     return '<button class="cr-opt' + (on ? ' on' : '') + '" data-arch="' + key + '" aria-pressed="' + on + '"><b>' + esc(a.name) + '</b><small>' + esc(a.blurb) + '</small></button>'; }).join('');
-  var bg = C.BG_KEYS.map(function(key){ var b = C.BACKGROUNDS[key], on = form.bg === key;
-    return '<button class="cr-opt' + (on ? ' on' : '') + '" data-bg="' + key + '" aria-pressed="' + on + '"><b>' + esc(b.name) + '</b><small>Age ' + b.age + '. ' + esc(b.blurb) + '</small></button>'; }).join('');
-  var road = form.start === 'hs';
-  var starts = '<button class="cr-opt' + (road ? ' on' : '') + '" data-start="hs" aria-pressed="' + road + '"><b>High school</b><small>Age 15. Recruiting, college, March, then the draft.</small></button>'
-    + '<button class="cr-opt' + (!road ? ' on' : '') + '" data-start="draft" aria-pressed="' + !road + '"><b>Draft night</b><small>Skip ahead. Pick how you got there.</small></button>';
+  var archOn = C.ARCHES[form.arch];
+  var road = form.start === 'hs', pro = proOpen();
+  var starts = '<button class="cr-opt' + (road ? ' on' : '') + (pro ? '' : ' cr-locked') + '" data-start="hs" aria-pressed="' + road + '"><b>High school'
+    + (pro ? '' : ' <span class="k-tag k-gold cr-pro">Pro</span>') + '</b><small>Age 15. Play recruiting, college and March yourself.</small></button>'
+    + '<button class="cr-opt' + (!road ? ' on' : '') + '" data-start="gen" aria-pressed="' + !road + '"><b>Draft night</b><small>Your road to the draft is played for you. A new one every career.</small></button>';
   var rv = road && C.roadView ? C.roadView(L) : null;
   /* Where you are from (Phase D). Left on Surprise me, the seed draws one and
      the line under the chips says which. */
   var ori = '';
-  if (C.ORIGIN_KEYS) {
+  if (form.parent) {
+    var fp = form.parent;
+    ori = '<div class="k-panel k-tight k-gold cr-son"><div class="k-eyebrow">' + K.iconHtml('tree', 2) + 'A legacy career</div>'
+      + '<p><b>Son of ' + esc(fp.name) + '.</b> ' + esc(fp.verdict) + '. ' + fp.pts.toLocaleString('en-US') + ' points over ' + fp.seasons + (fp.seasons === 1 ? ' season.' : ' seasons.') + '</p>'
+      + '<p class="k-small">You start in ' + (L.year - 1) + ', years after he retired. Pass his ' + fp.pts.toLocaleString('en-US') + ' points if you can.</p></div>';
+  } else if (C.ORIGIN_KEYS) {
     var any = !form.origin;
-    ori = '<span class="lab k-label">Where you are from</span><div class="cr-opts" id="cr-origin" role="group" aria-label="Where you are from">'
+    ori = '<span class="lab k-label">Where you are from</span><div class="cr-opts cr-pick" id="cr-origin" role="group" aria-label="Where you are from">'
       + '<button class="cr-opt' + (any ? ' on' : '') + '" data-origin="" aria-pressed="' + any + '"><b>Surprise me</b><small>One of these, drawn for you.</small></button>'
       + C.ORIGIN_KEYS.map(function(o){ var on = form.origin === o; return '<button class="cr-opt' + (on ? ' on' : '') + '" data-origin="' + o + '" aria-pressed="' + on + '"><b>' + esc(C.ORIGINS[o].name) + '</b><small>' + esc(C.ORIGINS[o].blurb) + '</small></button>'; }).join('')
-      + '</div>' + (any && L.origin ? '<p class="cr-town" id="cr-origin-line">Drawn: <b>' + esc(C.ORIGINS[L.origin].name) + '.</b> ' + esc(C.ORIGINS[L.origin].blurb) + '</p>' : '')
+      + '</div>' + (any && L.origin ? '<p class="cr-town" id="cr-origin-line">Drawn: <b>' + esc(C.ORIGINS[L.origin].name) + '.</b> ' + esc(C.ORIGINS[L.origin].blurb) + '</p>'
+        : !any ? '<p class="cr-town">' + esc(C.ORIGINS[form.origin].blurb) + '</p>' : '')
       + '<span class="lab k-label">Legend moments</span><div class="cr-chips" id="cr-legend" role="group" aria-label="Legend moments">'
       + '<button class="k-chip' + (form.legend ? ' on' : '') + '" data-legend="1" aria-pressed="' + !!form.legend + '">On</button>'
       + '<button class="k-chip' + (!form.legend ? ' on' : '') + '" data-legend="0" aria-pressed="' + !form.legend + '">Off</button></div>'
       + '<p class="cr-town">Rare, larger than life stories. Off keeps every story grounded.</p>';
   }
   var B = window.RTF_BALLER;
-  return '<div class="cr-top"><h2 class="k-h1">New career</h2><button class="k-btn k-quiet" id="cr-home">Home</button></div>'
+  /* FOUR SHORT STEPS, NOT ONE LONG FORM. On a phone the builder was four and
+     a half screens of scrolling with the start button at the bottom. Now the
+     player is always on top (the figure, the overall and every rating, so a
+     change in any step shows at once), the steps are tabs, and the start
+     button is pinned to the foot of the screen: a career can start from any
+     step. Every step stays in the page and the others are hidden, so nothing
+     a step holds is ever lost by moving between them. */
+  var steps = [['player', 'Player'], ['look', 'Look'], ['story', 'Story'], ['start', 'Start']];
+  var si = 0; steps.forEach(function(x, i){ if (x[0] === bstep) si = i; });
+  var tabs = '<div class="cr-steps" role="tablist" aria-label="Build your player">' + steps.map(function(x, i){
+    var on = x[0] === bstep;
+    return '<button type="button" role="tab" class="cr-stab' + (on ? ' on' : '') + '" data-bstep="' + x[0] + '" aria-selected="' + on + '"><i>' + (i + 1) + '</i>' + x[1] + '</button>';
+  }).join('') + '</div>';
+  var pane = function(id, html){ return '<div class="cr-pane" role="tabpanel" data-pane="' + id + '"' + (id === bstep ? '' : ' hidden') + '>' + html + '</div>'; };
+  var next = steps[si + 1];
+  var goText = road ? (pro ? 'Start your sophomore year' : 'Get Pro to start in high school') : 'Go to the draft combine';
+  return '<div class="cr-top"><h2 class="k-h1">' + (form.parent ? 'Your son' : 'New career') + '</h2><div class="cr-topbtns">'
+    + (form.parent ? '<button class="k-btn k-quiet" id="cr-noson" type="button">Not a son</button>' : '')
+    + '<button class="k-btn k-quiet" id="cr-vault" type="button">' + K.iconHtml('vault', 2) + ' Vault</button><button class="k-btn k-quiet" id="cr-home">Home</button></div></div>'
     + '<div class="k-panel cr-build">'
-    + '<p class="cr-intro">Your player is made up. The schools and the league are real.</p>'
-    + '<span class="lab k-label">Name and number</span>'
-    + '<div class="cr-name"><input id="cr-name" maxlength="28" value="' + esc(form.name) + '" aria-label="Player name" autocomplete="off">'
-    + '<input id="cr-num" class="cr-num" inputmode="numeric" maxlength="2" value="' + form.num + '" aria-label="Jersey number">'
-    + '<button class="k-btn k-sec" id="cr-dice" type="button" aria-label="New random name">New</button></div>'
-    + '<span class="lab k-label">Position</span><div class="cr-chips" id="cr-pos" role="group" aria-label="Position">' + pos + '</div>'
-    + '<span class="lab k-label">Your look</span>' + lookRows(form.look, k.primary, k.secondary, form.num)
-    + '<span class="lab k-label">Your game</span><div class="cr-opts" id="cr-arch">' + arch + '</div>'
-    + ori
-    + '<span class="lab k-label">Where it starts</span><div class="cr-opts" id="cr-start">' + starts + '</div>'
-    + (road ? '<p class="cr-town">' + esc(rv.what) + ' at ' + esc(rv.where) + '. ' + esc(rv.sub) + '.</p>'
-      : '<span class="lab k-label">Your road to the draft</span><div class="cr-opts" id="cr-bg">' + bg + '</div>')
-    + '<div class="cr-preview"><div class="cr-pfig">' + setArt(stageKind(L), k.primary, k.secondary, form.seed)
-    + (B ? B.img(lookOf(L), { c1: k.primary, c2: k.secondary, num: form.num, age: L.age, pose: 'ball', scale: 2 }) : '') + '</div>'
-    + '<div><div class="cr-povr"><span class="k-num">' + C.ovrOf(L) + '</span><span class="k-label">Overall</span></div>'
+    /* On the Look step the figure is drawn at twice the size and framed on the
+       head and shoulders, because hair is what is being chosen there. */
+    + '<div class="cr-preview"><div class="cr-pfig' + (bstep === 'look' ? ' cr-zoom' : '') + '">' + setArt(stageKind(L), k.primary, k.secondary, form.seed)
+    + (B ? B.img(lookOf(L), { c1: k.primary, c2: k.secondary, num: form.num, age: L.age, pose: bstep === 'look' ? 'stand' : 'ball', scale: bstep === 'look' ? 4 : 2 }) : '') + '</div>'
+    + '<div class="cr-pside"><div class="cr-povr"><span class="k-num">' + C.ovrOf(L) + '</span><span class="k-label">Overall</span>'
+    + '<span class="cr-ceil">Ceiling <b>' + grade(L) + '</b></span></div>'
     + '<div class="cr-rt k-rows">' + rtRows(L, null, false) + '</div></div></div>'
-    + '<p class="cr-grade">Scouts grade your ceiling <b>' + grade(L) + '</b>. Age ' + L.age + '. How high you go is up to you.</p>'
-    + '<button class="k-btn k-block k-big" id="cr-go">' + (road ? 'Start your sophomore year' : 'Go to the draft combine') + '</button>'
+    + (form.parent ? ori : '')
+    + tabs
+    + pane('player', '<span class="lab k-label">Name and number</span>'
+      + '<div class="cr-name"><input id="cr-name" maxlength="28" value="' + esc(form.name) + '" aria-label="Player name" autocomplete="off">'
+      + '<input id="cr-num" class="cr-num" inputmode="numeric" maxlength="2" value="' + form.num + '" aria-label="Jersey number">'
+      + '<button class="k-btn k-sec" id="cr-dice" type="button" aria-label="New random name">New</button></div>'
+      + '<span class="lab k-label">Position</span><div class="cr-chips" id="cr-pos" role="group" aria-label="Position">' + pos + '</div>'
+      + sizeHtml()
+      + '<span class="lab k-label">Your game as a ' + esc(C.POS_NAME[form.pos].toLowerCase()) + '</span><div class="cr-opts cr-pick" id="cr-arch">' + arch + '</div>'
+      + (archOn ? '<p class="cr-town">' + esc(archOn.blurb) + '</p>' : ''))
+    + pane('look', lookRows(form.look, k.primary, k.secondary, form.num, true))
+    + pane('story', (form.parent ? '' : ori) + setHtml())
+    + pane('start', '<p class="cr-intro">Your player is made up. The schools and the league are real.</p>'
+      + '<span class="lab k-label">Where it starts</span><div class="cr-opts" id="cr-start">' + starts + '</div>'
+      + (road ? '<p class="cr-town">' + esc(rv.what) + ' at ' + esc(rv.where) + '. ' + esc(rv.sub) + '.</p>'
+        : '<p class="cr-town">Your road to the draft is played the moment you start. You see how it went at the combine.</p>')
+      + '<p class="cr-grade">Scouts grade your ceiling <b>' + grade(L) + '</b>. Age ' + L.age + '. How high you go is up to you.</p>')
+    + '<div class="cr-cta">' + (next ? '<button class="k-btn k-sec" id="cr-bnext" type="button" data-bstep="' + next[0] + '">' + next[1] + ' ' + K.iconHtml('arrow', 1) + '</button>' : '')
+    + '<button class="k-btn k-block k-big" id="cr-go">' + goText + '</button></div>'
     + '</div>';
 }
+var bstep = 'player';
 function wireBuild(){
   var root = $('s-car');
   var nm = $('cr-name'), nu = $('cr-num');
   if (nm) nm.oninput = function(){ form.name = nm.value; };
   if (nu) nu.oninput = function(){ var v = nu.value.replace(/\D/g, '').slice(0, 2); nu.value = v; form.num = v === '' ? 0 : +v; };
   $('cr-dice').onclick = function(){ var s = String(Math.floor(Math.random() * 1e9)); form.seed = s; form.name = C.randomName(s); render(); };
-  root.querySelectorAll('[data-pos]').forEach(function(b){ b.onclick = function(){ form.pos = b.getAttribute('data-pos'); render(); }; });
+  root.querySelectorAll('[data-pos]').forEach(function(b){ b.onclick = function(){ setPos(b.getAttribute('data-pos')); render(); }; });
+  root.querySelectorAll('[data-size]').forEach(function(b){ b.onclick = function(){
+    var p = b.getAttribute('data-size').split(':'), z = C.POS_SIZE[form.pos];
+    if (p[0] === 'ht') { form.ht = Math.max(z.ht[0], Math.min(z.ht[1], form.ht + +p[1])); fitWt(); }
+    else { var r = C.wtRange(form.ht); form.wt = Math.max(r[0], Math.min(r[1], form.wt + +p[1])); }
+    render();
+  }; });
   root.querySelectorAll('[data-arch]').forEach(function(b){ b.onclick = function(){ form.arch = b.getAttribute('data-arch'); render(); }; });
-  root.querySelectorAll('[data-bg]').forEach(function(b){ b.onclick = function(){ form.bg = b.getAttribute('data-bg'); render(); }; });
   root.querySelectorAll('[data-origin]').forEach(function(b){ b.onclick = function(){ form.origin = b.getAttribute('data-origin'); render(); }; });
+  root.querySelectorAll('[data-diff]').forEach(function(b){ b.onclick = function(){ form.diff = b.getAttribute('data-diff'); render(); }; });
+  root.querySelectorAll('[data-ch]').forEach(function(b){ b.onclick = function(){ form.challenge = b.getAttribute('data-ch'); chOpen = true; render(); }; });
+  var cg = root.querySelector('.cr-chal'); if (cg) cg.ontoggle = function(){ chOpen = cg.open; };
   root.querySelectorAll('[data-legend]').forEach(function(b){ b.onclick = function(){ form.legend = b.getAttribute('data-legend') === '1'; render(); }; });
-  root.querySelectorAll('[data-start]').forEach(function(b){ b.onclick = function(){ form.start = b.getAttribute('data-start'); render(); }; });
+  root.querySelectorAll('[data-start]').forEach(function(b){ b.onclick = function(){
+    var v = b.getAttribute('data-start');
+    if (v === 'hs' && !proOpen()) { askPro('career'); return; }
+    form.start = v; render();
+  }; });
+  root.querySelectorAll('[data-bstep]').forEach(function(b){ b.onclick = function(){
+    bstep = b.getAttribute('data-bstep'); render();
+    var t = root.querySelector('.cr-steps');
+    if (t && t.getBoundingClientRect().top < 0) t.scrollIntoView({ block: 'start' });
+  }; });
   $('cr-home').onclick = goHome;
+  $('cr-vault').onclick = openVault;
+  var ns = $('cr-noson');
+  if (ns) ns.onclick = function(){ form = null; render(); };
   wireLook(root, form.look, render);
   $('cr-go').onclick = function(){
+    if (form.start === 'hs' && !proOpen()) { askPro('career'); return; }
+    if (form.parent && !proOpen()) { askPro('family'); return; }
     var name = String(form.name || '').replace(/\s+/g, ' ').trim() || C.randomName(form.seed);
     var o = lifeOpts(); o.name = name;
-    var L = C.newLife(o);
+    var L = form.start === 'hs' ? C.newLife(o) : C.generateRoad(o);
     store().cur = L;
+    var gen = form.start !== 'hs';
     form = null;
-    stage = { beats: [], result: null };
+    stage = { beats: [], result: null, reveal: gen };
     save();
     K.wipe();
     render();
@@ -551,8 +909,11 @@ function idCard(L){
   if ((L.team || rv) && v.coach) lines.push('Coach ' + v.coach);
   if (!rv && ct && ct.kind !== 'overseas') lines.push(money(ct.salary) + ' a year · ' + ct.years + (ct.years === 1 ? ' year left' : ' years left'));
   if (L.season && L.season.goal && C.GOALS[L.season.goal]) lines.push('Chasing: ' + C.GOALS[L.season.goal][0].toLowerCase());
+  var cs = C.challengeOf ? C.challengeOf(L) : null;
+  if (cs) lines.push('Challenge: ' + cs.name + ' · ' + (cs.met ? 'Done' : cs.out ? 'Out of reach' : cs.prog));
+  if (L.opt && L.opt.diff) lines.push(C.DIFFS[L.opt.diff].name + ' difficulty');
   var per = C.personaOf ? C.personaOf(L) : '';
-  var strip = tag(L.pos + ' · ' + C.ARCHES[L.arch].name, 'k-team') + tag('#' + L.num)
+  var strip = tag(L.pos + ' · ' + C.ARCHES[L.arch].name, 'k-team') + tag('#' + L.num + (L.ht ? ' · ' + C.heightText(L.ht) + ' ' + L.wt : ''))
     + (per && per !== 'Still writing it' ? '<span class="k-tag k-gold cr-persona" title="How the league sees you">' + esc(per) + '</span>' : '');
   return '<div class="k-panel k-team k-card-player cr-id">'
     + '<div class="k-stage"><div class="k-set">' + setArt(stageKind(L), k.primary, k.secondary, L.seed) + '</div>'
@@ -565,12 +926,22 @@ function idCard(L){
 }
 /* What the career has shown: revealed traits (with the reason on hover and
    for a screen reader), the signature move and the skill badges. */
+/* Traits, the signature move and the skill badges are icons too, read the
+   same way the awards are: tap one for its name. */
+var TRAIT_ICON = { clutch: ['star', '#ffd166'], coachable: ['whistle', '#b8c3e6'], injuryProne: ['heart', '#ff6b6b'], lateBloomer: ['sprout', '#3ecf8e'],
+  lockerVoice: ['mic', '#ffd166'], gymRat: ['ball', '#e2762a'], hothead: ['flame', '#ff6b6b'], bigStage: ['crown', '#ffd166'], ironMan: ['shield', '#c9d2e3'],
+  filmJunkie: ['clip', '#7fb2ff'], spender: ['cash', '#ff6b6b'], saver: ['cash', '#3ecf8e'], showman: ['star', '#ff7a1a'], loyal: ['home', '#c98b4e'], mercenary: ['cash', '#ffd166'] };
+var BADGE_ICON = { deadeye: ['ball', '#ffd166'], floorgen: ['arrow', '#7fb2ff'], lockdown: ['shield', '#7fb2ff'], glass: ['up', '#3ecf8e'], finisher: ['flame', '#ff7a1a'],
+  flight: ['plane', '#7fb2ff'], brain: ['clip', '#ffd166'], bucket: ['ball', '#ff7a1a'], dimes: ['share', '#3ecf8e'], boards: ['down', '#3ecf8e'] };
+function iconTile(ic, name, cls){
+  return '<button type="button" class="cr-awi ' + (cls || '') + '" style="--ic:' + (ic[1] || '#b8c3e6') + '" data-aw="' + esc(name) + '" title="' + esc(name) + '" aria-label="' + esc(name) + '">' + (K.badgeHtml ? K.badgeHtml(ic[0], ic[1]) : K.iconHtml(ic[0], 6, ic[1])) + '</button>';
+}
 function knownHtml(L){
   var out = [];
-  (C.TRAITS || []).forEach(function(k){ var t = L.traits && L.traits[k]; if (t && t.known) out.push('<span class="k-tag k-gold" title="' + esc(t.why || '') + '">' + esc(C.TRAIT_NAME[k]) + '<span class="sr-only"> ' + esc(t.why || '') + '</span></span>'); });
-  if (L.sig) out.push('<span class="k-tag k-team" title="Signature move">' + esc(L.sig.name) + '</span>');
-  (C.badgeList ? C.badgeList(L) : []).forEach(function(b){ out.push('<span class="k-tag">' + esc(b.name) + '</span>'); });
-  return out.length ? '<div class="cr-known" aria-label="Known for">' + out.join('') + '</div>' : '';
+  (C.TRAITS || []).forEach(function(k){ var t = L.traits && L.traits[k]; if (t && t.known) out.push(iconTile(TRAIT_ICON[k] || ['star', '#ffd166'], C.TRAIT_NAME[k] + (t.why ? '. ' + t.why : ''), 'cr-awi-pro')); });
+  if (L.sig) out.push(iconTile(['arrow', '#ff7a1a'], 'Signature move: ' + L.sig.name, 'cr-awi-col'));
+  (C.badgeList ? C.badgeList(L) : []).forEach(function(b){ out.push(iconTile(BADGE_ICON[b.k] || ['medal', '#b8c3e6'], 'Badge: ' + b.name, 'cr-awi-hs')); });
+  return out.length ? '<div class="cr-known cr-aw" aria-label="Known for"><span class="cr-awgrid">' + out.join('') + '</span><span class="cr-awcap" aria-live="polite">Tap one to see what it is.</span></div>' : '';
 }
 function meters(L, d){
   var m = L.m;
@@ -639,7 +1010,19 @@ function resultHtml(r, fresh){
   return '<div class="k-panel k-receipt cr-result ' + (r.tone || '') + (fresh ? ' k-in' : '') + '" aria-live="polite">'
     + '<div class="k-eyebrow">' + K.iconHtml('check', 2) + 'What changed</div>'
     + '<div class="cr-you">You: ' + esc(r.label) + '</div><p class="k-what">' + esc(r.text) + '</p>'
+    + contestHtml(r.contest)
     + (rows ? '<ul>' + rows + '</ul>' : '') + '</div>';
+}
+/* A Saturday contest: who was in it, round one, the final, and where you
+   finished. Out in round one is a hyphen in the final column. */
+function contestHtml(c){
+  if (!c || !c.rows) return '';
+  var head = '<div class="cr-ct-r cr-ct-h" role="row"><span role="columnheader">The field</span><span role="columnheader">Rd 1</span><span role="columnheader">Final</span></div>';
+  return '<div class="cr-ct" role="table" aria-label="' + esc(c.name) + ' results">' + head + c.rows.map(function(x){
+    return '<div class="cr-ct-r' + (x.you ? ' you' : '') + (x.place === 1 ? ' win' : '') + '" role="row">'
+      + '<span role="cell"><b>' + x.place + '</b>' + esc(x.you ? 'You' : x.n) + ' <i>' + esc(x.club) + '</i></span>'
+      + '<span role="cell">' + x.r1 + '</span><span role="cell">' + (x.f == null ? '-' : x.f) + '</span></div>';
+  }).join('') + '</div>';
 }
 function draftHtml(L, d){
   if (!d) return '';
@@ -653,6 +1036,7 @@ function draftHtml(L, d){
 
 function stageHtml(L, fresh){
   var out = '';
+  if (L.opt && L.opt.gen && !L.draft && L.stage === 'nba') out += roadHtml(L, false);
   if (stage.draft) out += draftHtml(L, stage.draft);
   out += resultHtml(stage.result, fresh);
   out += beatsHtml(stage.beats, fresh);
@@ -683,25 +1067,55 @@ function dockHtml(L){
   return '<div class="cr-dock" id="cr-dock"><button class="k-btn k-block k-big cr-next" id="cr-next">' + esc(lab) + '</button></div>';
 }
 
+/* The ratings are a fold on a phone, so the decision card and the season
+   numbers come first. It opens itself when a press has just moved a rating,
+   stays the way it was left otherwise, and is always open on a wide screen. */
+var rtOpen = false;
 function ratingsHtml(L, d){
-  return '<div class="k-panel cr-sec"><div class="k-eyebrow">' + K.iconHtml('up', 2) + 'Ratings</div>'
+  var moved = !!(d && d.rt && C.RATINGS.some(function(k){ return d.rt[k] != null && d.rt[k] !== L.rt[k]; }));
+  var wide = window.matchMedia && window.matchMedia('(min-width:720px)').matches;
+  var open = wide || rtOpen || moved;
+  return '<details class="k-panel cr-sec cr-rtfold"' + (open ? ' open' : '') + '><summary class="k-eyebrow">' + K.iconHtml('up', 2) + 'Ratings'
+    + '<span class="cr-rtsum">' + C.ovrOf(L) + ' OVR · Ceiling ' + grade(L) + '</span></summary>'
     + '<p class="k-small" style="margin:0 0 10px">Green counts most at ' + esc(L.pos) + '. Ceiling ' + grade(L) + '.</p>'
-    + '<div class="cr-rt cr-two k-rows">' + rtRows(L, d && d.rt, !!d) + '</div></div>';
+    + '<div class="cr-rt cr-two k-rows">' + rtRows(L, d && d.rt, !!d) + '</div></details>';
 }
 function tabsHtml(L){
   var body = '';
   if (tab === 'log') {
     var log = L.log.slice().reverse().slice(0, 160);
     body = '<ul class="cr-log">' + log.map(function(e){ return '<li class="' + (e.tone || '') + '"><span class="yr">' + e.y + '</span><span>' + esc(e.t) + '</span></li>'; }).join('') + '</ul>';
-  } else if (tab === 'seasons') body = seasonsTable(L);
+  } else if (tab === 'team' && C.rotationOf && C.rotationOf(L)) body = teamHtml(L);
+  else if (tab === 'seasons') body = seasonsTable(L);
   else if (tab === 'people') body = peopleHtml(L);
   else if (tab === 'legacy') body = legacyHtml(L);
   else if (tab === 'news') body = newsHtml(L);
   else body = trophies(L);
   var t = function(id, name){ var on = tab === id; return '<button class="k-tab" role="tab" aria-selected="' + on + '" data-tab="' + id + '">' + name + '</button>'; };
-  return '<div class="k-panel cr-sec"><div class="k-tabs cr-tabs" role="tablist">' + t('log', 'Story') + t('seasons', 'Seasons') + t('trophies', 'Trophies')
+  return '<div class="k-panel cr-sec"><div class="k-tabs cr-tabs" role="tablist">' + t('log', 'Story') + (L.opt && L.opt.story && C.rotationOf && C.rotationOf(L) ? t('team', 'Team') : '') + t('seasons', 'Seasons') + t('trophies', 'Trophies')
     + (L.opt && L.opt.story ? t('people', 'People') + t('legacy', 'Legacy') + t('news', 'News') : '') + '</div>'
     + '<div role="tabpanel">' + body + '</div></div>';
+}
+/* YOUR CLUB: the thirteen in rotation order, where you stand, and the
+   minutes. A teammate's points are an estimate at this season's minutes (see
+   rotationOf); yours are the season you are playing. */
+function teamHtml(L){
+  var R = C.rotationOf(L), s = L.season, pg = s && s.gp ? C.perGame(s) : null;
+  var ord = function(n){ var v = n % 100, x = ['th', 'st', 'nd', 'rd']; return n + (x[(v - 20) % 10] || x[v] || x[0]); };
+  var head = '<div class="cr-leg"><div><b>' + ord(R.rank) + '</b><span>In the rotation</span></div>'
+    + '<div><b>' + R.min + '</b><span>' + (R.played ? 'Minutes a night' : 'Minutes planned') + '</span></div>'
+    + '<div><b>' + esc(R.slot ? 'Start ' + R.slot : R.role) + '</b><span>Your role</span></div></div>';
+  var line = esc(teamName(R.club)) + (s && s.gp ? ' · ' + s.w + '-' + s.l : '') + (pg ? ' · You: ' + pg.pts + ' points, ' + pg.reb + (pg.reb === 1 ? ' rebound, ' : ' rebounds, ') + pg.ast + (pg.ast === 1 ? ' assist' : ' assists') : '');
+  var rows = R.list.map(function(x, i){
+    var pts = x.you ? (pg ? pg.pts : '-') : x.min > 0 ? x.pts : '-';
+    var sep = i === 5 ? '<li class="cr-rot-sep" aria-hidden="true">Bench</li>' : '';
+    var at = x.slot && x.slot !== x.pos ? x.pos + ', playing ' + x.slot : x.pos || '';
+    return sep + '<li class="cr-rot-r' + (x.you ? ' you' : '') + (x.min <= 0 ? ' dnp' : '') + '"><span class="n">' + (x.slot || i + 1) + '</span>'
+      + '<span class="who"><b>' + esc(x.you ? x.n + ' (you)' : x.n) + '</b><small>' + esc(at) + ' · ' + x.age + ' · ' + esc(x.role) + '</small></span>'
+      + '<span class="v ovr">' + (x.ovr != null ? x.ovr : '-') + '</span><span class="v">' + (x.min > 0 ? x.min : '-') + '</span><span class="v">' + pts + '</span></li>';
+  }).join('');
+  return head + '<p class="k-small cr-rot-line">' + line + '</p>'
+    + '<ol class="cr-rot" aria-label="Rotation"><li class="cr-rot-h" aria-hidden="true"><span class="n"></span><span class="who">Starters</span><span class="v">Ovr</span><span class="v">Min</span><span class="v">Pts</span></li>' + rows + '</ol>';
 }
 /* The people a career has met, closest and furthest first. */
 function peopleHtml(L){
@@ -774,9 +1188,37 @@ function awardCounts(L){
     'c_champ', 'c_npoy', 'c_mop', 'c_aa1', 'c_aa2', 'c_f4', 'c_fr', 'c_cpoy', 'c_allconf', 'hs_state', 'hs_mrbb', 'hs_aag', 'hs_allstate'];
   return order.filter(function(k){ return n[k]; }).map(function(k){ return { k: k, n: n[k], name: C.AWARD_NAME[k] }; });
 }
+/* AN AWARD IS AN ICON, not a sentence. A wall of pills was too much to read,
+   so each award is its picture, colored for its tier, with a count in the
+   corner. Tap one and its name shows under the shelf. */
+var AW_ICON = {
+  champ: ['trophy', '#ffd166'], mvp: ['crown', '#ffd166'], fmvp: ['crown', '#ff9f43'], an1: ['medal', '#ffd166'],
+  an2: ['medal', '#c9d2e3'], an3: ['medal', '#d08a4a'], dpoy: ['shield', '#ffd166'], star: ['star', '#ffd166'],
+  roy: ['sprout', '#3ecf8e'], '6moy': ['six', '#ffd166'], mip: ['up', '#3ecf8e'], scor: ['flame', '#ff7a1a'],
+  ad1: ['shield', '#c9d2e3'], ad2: ['shield', '#d08a4a'], olympic: ['globe', '#ffd166'],
+  c_champ: ['trophy', '#7fb2ff'], c_npoy: ['crown', '#7fb2ff'], c_mop: ['star', '#7fb2ff'], c_aa1: ['medal', '#7fb2ff'],
+  c_aa2: ['medal', '#9fb6d8'], c_f4: ['net', '#f4f1e8'], c_fr: ['sprout', '#7fb2ff'], c_cpoy: ['crown', '#9fb6d8'], c_allconf: ['medal', '#5fc4c4'],
+  hs_state: ['trophy', '#d08a4a'], hs_mrbb: ['crown', '#3ecf8e'], hs_aag: ['star', '#3ecf8e'], hs_allstate: ['medal', '#3ecf8e'],
+};
 function awardTags(aw){
-  return aw.map(function(a){ return '<span class="k-tag k-gold">' + K.iconHtml(/champ|state/.test(a.k) ? 'trophy' : 'medal', 1) + (a.n > 1 ? a.n + 'x ' : '') + esc(a.name) + '</span>'; }).join('');
+  var tiles = aw.map(function(a){
+    var ic = AW_ICON[a.k] || ['medal', '#ffd166'];
+    var lvl = /^c_/.test(a.k) ? 'col' : /^hs_/.test(a.k) ? 'hs' : 'pro';
+    var name = (a.n > 1 ? a.n + 'x ' : '') + a.name;
+    return '<button type="button" class="cr-awi cr-awi-' + lvl + '" style="--ic:' + (ic[1] || '#b8c3e6') + '" data-aw="' + esc(name) + '" title="' + esc(name) + '" aria-label="' + esc(name) + '">'
+      + (K.badgeHtml ? K.badgeHtml(ic[0], ic[1]) : K.iconHtml(ic[0], 6, ic[1])) + (a.n > 1 ? '<i>' + a.n + '</i>' : '') + '</button>';
+  }).join('');
+  return '<span class="cr-awgrid">' + tiles + '</span><span class="cr-awcap" aria-live="polite">Tap a badge to see what it is.</span>';
 }
+document.addEventListener('click', function(e){
+  var b = e.target && e.target.closest && e.target.closest('.cr-awi');
+  if (!b) return;
+  var wrap = b.closest('.cr-aw'), cap = wrap && wrap.querySelector('.cr-awcap');
+  if (!cap) return;
+  wrap.querySelectorAll('.cr-awi.on').forEach(function(x){ x.classList.remove('on'); });
+  b.classList.add('on');
+  cap.textContent = b.getAttribute('data-aw');
+});
 function totalsHtml(T, second){
   return '<div class="cr-tot">'
     + '<div><b>' + T.pts.toLocaleString('en-US') + '</b><span>Points</span></div>'
@@ -822,6 +1264,8 @@ function lifeView(L, d){
 
 function wireLife(L, d){
   var root = $('s-car');
+  var rf = root.querySelector('.cr-rtfold');
+  if (rf) rf.ontoggle = function(){ if (!(window.matchMedia && window.matchMedia('(min-width:720px)').matches)) rtOpen = rf.open; };
   $('cr-home').onclick = goHome;
   var lb = $('cr-lookbtn');
   if (lb) lb.onclick = openLook;
@@ -1100,6 +1544,15 @@ function collegeOf(L){
   return yrs + schools.join(' and ') + (titles ? '. National champion' : '');
 }
 
+/* The league a son starts in, kept small: the slot is half a megabyte for
+   everything. The news flags only stop a headline twice and are left. */
+function trimLeague(lg){
+  var o = {};
+  for (var k in lg) if (k !== 'news' && k !== 'rost' && k !== 'rostY' && k !== 'lines' && k !== 'pool' && k !== 'fa') o[k] = lg[k];
+  if (o.figs) o.figs = o.figs.filter(function(f){ return !f.gone; });
+  if (o.champs) { var ks = Object.keys(o.champs).sort().slice(-40), c = {}; ks.forEach(function(y){ c[y] = o.champs[y]; }); o.champs = c; }
+  return JSON.parse(JSON.stringify(o));
+}
 /* A finished career leaves the slot and goes on the shelf of Hall of Fame
    cards, so the next one can start while this one is still on screen. */
 function finish(){
@@ -1114,17 +1567,34 @@ function finish(){
     from: L.history.length ? L.history[0].y : L.year, to: L.history.length ? L.history[L.history.length - 1].y : L.year,
     teams: teams, totals: f.totals, awards: awardCounts(L), history: L.history, amHist: L.amHist || [], college: collegeOf(L),
     after: f.after || '', jersey: f.jersey || null, rival: f.rival || null, life: f.life || '',
+    sons: C.sonsOf ? C.sonsOf(L) : 0,
     nick: f.nick || null, traits: f.traits || null, sig: f.sig || null, badges: f.badges || null, moments: f.moments || null, goals: f.goals || null,
     team: teams[teams.length - 1] || null, at: Date.now(),
     origin: f.origin || null, epilogue: f.epilogue || '',
-    ending: f.ending ? { tier: f.ending.tier, tierName: f.ending.tierName, names: f.ending.names || [], secretName: f.ending.secretName || null, routes: f.ending.routes || [] } : null };
+    ending: f.ending ? { tier: f.ending.tier, tierName: f.ending.tierName, names: f.ending.names || [], secretName: f.ending.secretName || null, routes: f.ending.routes || [] } : null,
+    /* Phase E: who this was, whose son, the story, the Vault ids, and the
+       league as he left it for a son to start in. */
+    id: String(L.seed), parent: L.parent ? L.parent.id : null, gen: L.parent ? (L.parent.gen || 1) + 1 : 1,
+    story: C.careerStory ? C.careerStory(L) : null,
+    ids: f.ending ? { tier: f.ending.tier, outs: f.ending.outcomes || [], secret: f.ending.secret || null,
+      routes: C.routesOf ? C.routesOf(L) : [], origin: L.origin || null } : null,
+    lg: C.leagueEnd && C.storyOn(L) ? trimLeague(C.leagueEnd(L)) : null,
+    diff: L.opt && L.opt.diff ? L.opt.diff : null,
+    ch: C.challengeOf && C.challengeOf(L) ? { id: L.challenge, met: C.challengeOf(L).met } : null };
+  var easy = card.diff === 'easy';
   /* The badges, through the page's one feat writer, so a Career badge is
      kept on the account the way every other mode's is. */
   var BD = window.RTF_BADGES;
-  if (BD && BD.careerFeats && C.featSummary && P.feats && L.history.length) P.feats(BD.careerFeats(C.featSummary(L)));
-  var sum = C.boardSummary ? C.boardSummary(L) : null;
+  /* AN EASY CAREER IS FOR THE STORY: no badges and no board. It is still
+     kept in the Vault, which records what happened rather than ranks it. */
+  if (!easy && BD && BD.careerFeats && C.featSummary && P.feats && L.history.length) P.feats(BD.careerFeats(C.featSummary(L)));
+  var sum = C.boardSummary && !easy ? C.boardSummary(L) : null;
   st.hof.unshift(card);
   if (st.hof.length > 20) st.hof.length = 20;
+  st.arc = (st.arc || []).filter(function(a){ return a.id !== card.id; });
+  st.arc.unshift(compact(card));
+  if (st.arc.length > ARC_MAX) st.arc.length = ARC_MAX;
+  card.found = vaultAdd(st, card);
   st.cur = null;
   st.last = card;
   save();
@@ -1235,7 +1705,8 @@ function finalView(card){
   var aw = card.awards && card.awards.length ? '<div class="cr-aw">' + awardTags(card.awards) + '</div>' : '';
   var hist = { history: card.history || [], amHist: card.amHist || [] };
   var B = window.RTF_BALLER;
-  return '<div class="cr-top"><h2 class="k-h1">Career over</h2><button class="k-btn k-quiet cr-home" id="cr-home">Home</button></div>'
+  return '<div class="cr-top"><h2 class="k-h1">Career over</h2><div class="cr-topbtns"><button class="k-btn k-quiet" id="cr-vault2" type="button">' + K.iconHtml('vault', 2) + ' Vault</button><button class="k-btn k-quiet cr-home" id="cr-home">Home</button></div></div>'
+    + (card.parent ? '<p class="cr-gen">' + K.iconHtml('tree', 2) + ' Generation ' + (card.gen || 2) + '</p>' : '')
     + '<div class="k-panel ' + (hof ? 'k-gold' : 'k-team') + ' cr-final">'
     + '<div class="cr-hset">' + setArt('nba', hof ? '#a8761c' : card.c1, hof ? '#ffd166' : card.c2, 'hall' + card.name) + '</div><div class="cr-hin">'
     + (B && card.look ? B.img(card.look, { c1: card.c1, c2: card.c2, num: card.num, age: card.age, pose: card.totals && card.totals.rings ? 'trophy' : 'suit', scale: 3 }) : '')
@@ -1263,7 +1734,12 @@ function finalView(card){
       + (card.moments && card.moments.length ? '<p><span class="k">Moments</span></p><ul class="cr-list">' + card.moments.map(function(m){ return '<li><span class="yr">' + m.y + '</span>' + esc(m.t) + '</li>'; }).join('') + '</ul>' : '')
       + '</div>' : '')
     + '<div class="k-panel k-tight cr-place" id="cr-place" hidden></div>'
+    + (card.ch && C.CHALLENGES && C.CHALLENGES[card.ch.id] ? '<div class="k-panel k-tight ' + (card.ch.met ? 'k-gold' : '') + ' cr-chres"><div class="k-eyebrow">' + K.iconHtml(card.ch.met ? 'check' : 'lock', 2) + 'Challenge · ' + esc(C.CHALLENGES[card.ch.id].name) + '</div><p>' + (card.ch.met ? 'Met. It is in the Vault.' : 'Not met. ' + esc(C.CHALLENGES[card.ch.id].blurb)) + '</p></div>' : '')
+    + (card.diff === 'easy' ? '<p class="k-small cr-easy">Played on Easy. Not on the Career board and no badges.</p>' : '')
+    + foundHtml(card)
     + '<div class="cr-btnrow"><button class="k-btn" id="cr-share">Share it</button><button class="k-btn k-sec" id="cr-again">New career</button></div>'
+    + (canFather(card) ? '<button class="k-btn k-sec k-block cr-sonbtn" id="cr-son" type="button">' + K.iconHtml('tree', 2) + ' Play as your son' + (proOpen() ? '' : ' <span class="k-tag k-gold cr-pro">Pro</span>') + '</button>' : '')
+    + storyHtml(card.story)
     + '<div class="k-panel cr-sec"><div class="k-eyebrow">' + K.iconHtml('clip', 2) + 'Season by season</div>' + seasonsTable(hist) + '</div>';
 }
 function shareText(card){
@@ -1275,11 +1751,229 @@ function shareText(card){
   if (card.college) bits.push(card.college + '.');
   return 'Run The Floor · Career\n' + bits.join(' ') + '\nLive your own NBA life: ' + P.SHARE_URL;
 }
+/* THE SHARE CARD (Phase E): the Hall card as a trading card, 540 by 756, in
+   the kit's colours with the player drawn at a whole-number scale. Only what
+   the card already says is on it. */
+function drawCard(card){
+  var B = window.RTF_BALLER, T = card.totals || {};
+  var W = 540, H = 756, cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  var x = cv.getContext('2d');
+  var hof = card.ending ? HOF_IN[card.ending.tier] : card.score >= 55;
+  var edge = hof ? '#ffd166' : (card.c2 || '#c9ccd6');
+  x.fillStyle = '#0a0d18'; x.fillRect(0, 0, W, H);
+  x.fillStyle = edge; x.fillRect(12, 12, W - 24, H - 24);
+  x.fillStyle = '#111629'; x.fillRect(20, 20, W - 40, H - 40);
+  var g = x.createLinearGradient(0, 20, 0, 420);
+  g.addColorStop(0, card.c1 || '#2b3242'); g.addColorStop(1, '#111629');
+  x.fillStyle = g; x.fillRect(20, 20, W - 40, 400);
+  x.fillStyle = 'rgba(5,7,13,.35)';
+  for (var i = 0; i < 30; i++) x.fillRect(20, 20 + i * 14, W - 40, 6);
+  x.textAlign = 'center';
+  x.fillStyle = '#ffd166'; x.font = '14px "Press Start 2P", monospace';
+  x.fillText('RUN THE FLOOR · CAREER', W / 2, 54);
+  if (B && card.look) {
+    var fig = B.canvas(card.look, { c1: card.c1, c2: card.c2, num: card.num, age: card.age, pose: T.rings ? 'trophy' : 'suit', scale: 5 });
+    x.imageSmoothingEnabled = false;
+    x.drawImage(fig, (W - fig.width) / 2, 82);
+  }
+  var fit = function(t, max, size, face){ var n = size; do { x.font = n + 'px ' + face; n -= 2; } while (x.measureText(t).width > max && n > 12); };
+  x.fillStyle = '#eef2f9';
+  fit(String(card.name).toUpperCase(), W - 80, 52, '"Anton", Impact, sans-serif');
+  x.fillText(String(card.name).toUpperCase(), W / 2, 466);
+  x.fillStyle = '#b8c3e6'; x.font = '600 18px "Archivo", system-ui, sans-serif';
+  x.fillText('#' + card.num + ' · ' + card.pos + ' · ' + card.from + '-' + card.to + (card.gen > 1 ? ' · Generation ' + card.gen : ''), W / 2, 496);
+  x.fillStyle = hof ? '#ffd166' : '#ff7a1a';
+  fit(String(card.verdict).toUpperCase(), W - 80, 34, '"Anton", Impact, sans-serif');
+  x.fillText(String(card.verdict).toUpperCase(), W / 2, 540);
+  var cells = [[(T.pts || 0).toLocaleString('en-US'), 'Points'], [String(T.rings || 0), 'Rings'], [String(T.star || 0), 'All-Star'], [String(T.mvp || 0), 'MVP']];
+  var cw = (W - 80) / 4;
+  cells.forEach(function(c, k){
+    var cx = 40 + cw * k;
+    x.fillStyle = '#18203a'; x.fillRect(cx + 4, 566, cw - 8, 86);
+    x.fillStyle = '#eef2f9'; x.font = '18px "Press Start 2P", monospace';
+    fit(c[0], cw - 20, 18, '"Press Start 2P", monospace');
+    x.fillText(c[0], cx + cw / 2, 608);
+    x.fillStyle = '#8fa0d6'; x.font = '800 13px "Archivo", system-ui, sans-serif';
+    x.fillText(c[1].toUpperCase(), cx + cw / 2, 636);
+  });
+  var foot = card.ending ? card.ending.tierName + (card.ending.secretName ? ' · ' + card.ending.secretName : '') : '';
+  if (foot) { x.fillStyle = '#b8c3e6'; fit(foot, W - 80, 18, '600 18px "Archivo", system-ui, sans-serif'); x.fillText(foot, W / 2, 684); }
+  x.fillStyle = '#8fa0d6'; x.font = '12px "Press Start 2P", monospace';
+  x.fillText(String(P.SHARE_URL || 'runthe.gg/hoops').replace(/^https?:\/\//, '').replace(/\/$/, ''), W / 2, 718);
+  return cv;
+}
+function shareCard(card){
+  var text = shareText(card);
+  var ready = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+  ready.then(function(){
+    var cv = null;
+    try { cv = drawCard(card); } catch (e) { if (window.console) console.error('career card failed to draw', e); }
+    if (!cv || !cv.toBlob || !P.shareImage) { P.shareText(text); return; }
+    cv.toBlob(function(blob){ P.shareImage(text, blob); }, 'image/png');
+  });
+}
 function wireFinal(card){
   $('cr-home').onclick = goHome;
+  var sb = $('cr-son'); if (sb) sb.onclick = function(){ startSon(card); };
+  $('cr-vault2').onclick = openVault;
   $('cr-again').onclick = function(){ store().last = null; save(); form = null; K.wipe(); render(); window.scrollTo(0, 0); };
-  $('cr-share').onclick = function(){ P.shareText(shareText(card)); };
+  $('cr-share').onclick = function(){ shareCard(card); };
   paintPlace(card);
+}
+
+
+// ─── the Vault (Phase E) ────────────────────────────────────────────────────
+
+/* The written story, one heading a chapter. */
+function storyHtml(story){
+  if (!story || !story.length) return '';
+  return '<div class="k-panel cr-sec cr-story"><div class="k-eyebrow">' + K.iconHtml('clip', 2) + 'Your story</div>'
+    + story.map(function(x){ return '<h3 class="cr-sub">' + esc(x.h) + '</h3><p>' + esc(x.p) + '</p>'; }).join('') + '</div>';
+}
+/* What this career put in the Vault for the first time. */
+function foundHtml(card){
+  var f = card.found;
+  if (!f || !f.length) return '';
+  return '<div class="k-panel k-tight k-gold cr-found"><div class="k-eyebrow">' + K.iconHtml('vault', 2) + 'New in the Vault</div><div class="cr-aw cr-awrow">'
+    + f.map(function(k){ return '<span class="k-tag k-gold">' + esc(vaultName(k)) + '</span>'; }).join('') + '</div></div>';
+}
+function vaultName(k){
+  var t = k.slice(0, 1), id = k.slice(2);
+  if (t === 't') return (C.HOF_TIERS || {})[id] || id;
+  if (t === 'o') return (C.OUTCOMES || {})[id] || id;
+  if (t === 's') return (C.SECRETS || {})[id] || id;
+  if (t === 'r') return ((C.ROUTES || {})[id] || [id])[0];
+  if (t === 'g') return ((C.ORIGINS || {})[id] || { name: id }).name;
+  if (t === 'c') return ((C.CHALLENGES || {})[id] || { name: id }).name;
+  return id;
+}
+/* The shelves, in the order a career meets them. */
+function vaultShelves(){
+  var sh = [
+    { k: 'g', name: 'Where you came from', ids: C.ORIGIN_KEYS || [] },
+    { k: 'r', name: 'The road', ids: Object.keys(C.ROUTES || {}) },
+    { k: 't', name: 'The Hall', ids: Object.keys(C.HOF_TIERS || {}) },
+    { k: 'o', name: 'Remembered as', ids: Object.keys(C.OUTCOMES || {}) },
+    { k: 's', name: 'Secret endings', ids: Object.keys(C.SECRETS || {}), secret: true },
+  ];
+  if (C.CHALLENGE_KEYS) sh.push({ k: 'c', name: 'Challenges', ids: C.CHALLENGE_KEYS });
+  return sh;
+}
+function vaultCount(st){
+  var have = 0, all = 0;
+  vaultShelves().forEach(function(s){ s.ids.forEach(function(id){ all++; if (st.vault[s.k + ':' + id]) have++; }); });
+  return { have: have, all: all };
+}
+var view = null, vtab = 'endings', vopen = null;
+function openVault(){ view = 'vault'; vopen = null; closeOff(); render(); window.scrollTo(0, 0); }
+function vaultView(){
+  var st = store(), n = vaultCount(st);
+  var t = function(id, name){ var on = vtab === id; return '<button class="k-tab" role="tab" aria-selected="' + on + '" data-vtab="' + id + '">' + name + '</button>'; };
+  var body = vtab === 'careers' ? careersHtml(st) : vtab === 'family' ? familyHtml(st) : endingsHtml(st);
+  return '<div class="cr-top"><h2 class="k-h1">The Vault</h2><div class="cr-topbtns"><button class="k-btn k-quiet" id="cr-vback" type="button">Back</button><button class="k-btn k-quiet" id="cr-home" type="button">Home</button></div></div>'
+    + '<div class="k-panel k-tight cr-vsum"><span class="k-num">' + n.have + '</span><span>of ' + n.all + ' found</span>'
+    + '<span class="cr-vbar" aria-hidden="true"><i style="width:' + Math.round(100 * n.have / Math.max(1, n.all)) + '%"></i></span>'
+    + '<span class="k-small">' + st.arc.length + (st.arc.length === 1 ? ' career played' : ' careers played') + '</span></div>'
+    + '<div class="k-panel cr-sec"><div class="k-tabs cr-tabs" role="tablist">' + t('endings', 'Endings') + t('careers', 'Careers') + t('family', 'Family') + '</div>'
+    + '<div role="tabpanel">' + body + '</div></div>';
+}
+function endingsHtml(st){
+  return vaultShelves().map(function(sh){
+    var have = sh.ids.filter(function(id){ return st.vault[sh.k + ':' + id]; }).length;
+    return '<h3 class="cr-sub">' + esc(sh.name) + ' · ' + have + ' of ' + sh.ids.length + '</h3><ul class="cr-vgrid">' + sh.ids.map(function(id){
+      var got = !!st.vault[sh.k + ':' + id], nm = vaultName(sh.k + ':' + id);
+      return '<li class="' + (got ? 'got' : 'no') + '">' + K.iconHtml(got ? (sh.k === 's' ? 'star' : 'check') : 'lock', 1)
+        + '<span>' + (got || !sh.secret ? esc(nm) : 'Secret') + '</span>' + (got ? '' : '<span class="sr-only"> (not found yet)</span>') + '</li>';
+    }).join('') + '</ul>';
+  }).join('');
+}
+function fullCard(id){ var h = store().hof || []; for (var i = 0; i < h.length; i++) if (cardId(h[i]) === id) return h[i]; return null; }
+function arcEntry(id){ var a = store().arc || []; for (var i = 0; i < a.length; i++) if (a[i].id === id) return a[i]; return null; }
+function careersHtml(st){
+  if (!st.arc.length) return '<p class="k-small">No finished careers yet. Every one you play ends up here.</p>';
+  if (vopen) {
+    var a = arcEntry(vopen);
+    if (a) {
+      var c = fullCard(a.id);
+      return '<button class="k-btn k-quiet" id="cr-vlist" type="button">All careers</button>' + entryHtml(a, true)
+        + (canFather(a) ? '<button class="k-btn k-sec k-block cr-sonbtn" data-son="' + esc(a.id) + '" type="button">' + K.iconHtml('tree', 2) + ' Play as his son' + (proOpen() ? '' : ' <span class="k-tag k-gold cr-pro">Pro</span>') + '</button>' : '')
+        + (c && c.story ? storyHtml(c.story) : '<p class="k-small">The full story is kept for your last twenty careers.</p>');
+    }
+  }
+  return '<ul class="cr-arc">' + st.arc.map(function(a){ return '<li>' + entryHtml(a, false) + '</li>'; }).join('') + '</ul>';
+}
+function entryHtml(a, big){
+  var B = window.RTF_BALLER;
+  var pic = B && a.look ? B.img(a.look, { c1: a.c1, c2: a.c2, num: a.num, age: a.age, pose: a.rings ? 'trophy' : 'suit', scale: big ? 2 : 1, still: true }) : '';
+  var inner = '<span class="cr-apic">' + pic + '</span><span class="cr-awho"><b>' + esc(a.name) + '</b>'
+    + '<small>' + a.from + '-' + a.to + ' · ' + a.pts.toLocaleString('en-US') + ' pts' + (a.rings ? ' · ' + a.rings + (a.rings === 1 ? ' ring' : ' rings') : '') + '</small>'
+    + '<small>' + esc(a.verdict) + (a.gen > 1 ? ' · Generation ' + a.gen : '') + '</small></span>';
+  return big ? '<div class="cr-aentry big">' + inner + '</div>' : '<button class="cr-aentry" type="button" data-arc="' + esc(a.id) + '">' + inner + '</button>';
+}
+/* THE FAMILY TREE is Run The Floor Pro's. A family is every career linked by
+   `parent`, drawn from the oldest down; a career with no son yet is a tree of
+   one and is not drawn, because a tree of one is the careers list. */
+function familyHtml(st){
+  if (!proOpen()) {
+    return '<div class="cr-lockbox">' + K.iconHtml('lock', 3) + '<p><b>The family tree is Pro.</b> When a career ends, play as his son. He starts years later, in the league his father left, with his father\'s points to chase.</p>'
+      + '<button class="k-btn" id="cr-fampro" type="button">Get Run The Floor Pro</button></div>';
+  }
+  var by = {}, ids = {};
+  st.arc.forEach(function(a){ ids[a.id] = a; });
+  st.arc.forEach(function(a){ if (a.parent && ids[a.parent]) (by[a.parent] = by[a.parent] || []).push(a); });
+  var roots = st.arc.filter(function(a){ return (!a.parent || !ids[a.parent]) && by[a.id]; });
+  if (!roots.length) return '<p class="k-small">No families yet. Finish a career, then press Play as your son.</p>';
+  var node = function(a){
+    var kids = (by[a.id] || []).slice().sort(function(x, y){ return x.from - y.from; });
+    return '<li>' + entryHtml(a, false) + (kids.length ? '<ul>' + kids.map(node).join('') + '</ul>' : '') + '</li>';
+  };
+  return roots.map(function(r){ return '<ul class="cr-tree">' + node(r) + '</ul>'; }).join('');
+}
+function wireVault(){
+  var root = $('s-car');
+  $('cr-home').onclick = goHome;
+  $('cr-vback').onclick = function(){ view = null; render(); window.scrollTo(0, 0); };
+  root.querySelectorAll('[data-vtab]').forEach(function(b){ b.onclick = function(){ vtab = b.getAttribute('data-vtab'); vopen = null; render(); var t = root.querySelector('[data-vtab="' + vtab + '"]'); if (t) t.focus(); }; });
+  root.querySelectorAll('[data-arc]').forEach(function(b){ b.onclick = function(){ vtab = 'careers'; vopen = b.getAttribute('data-arc'); render(); window.scrollTo(0, 0); }; });
+  root.querySelectorAll('[data-son]').forEach(function(b){ b.onclick = function(){ var id = b.getAttribute('data-son'); startSon(fullCard(id) || arcEntry(id)); }; });
+  var l = $('cr-vlist'); if (l) l.onclick = function(){ vopen = null; render(); };
+  var fp = $('cr-fampro'); if (fp) fp.onclick = function(){ askPro('family'); };
+}
+/* Play as his son: the builder, with the father on it. Pro, asked first. A
+   full Hall card carries the league he left; an older entry starts the son
+   in a league played forward from the data's own year. */
+/* A son is the son of a former pro, so his father has to have played, and
+   he has to have had a son. A card filed before sons were counted reads its
+   life line, which names the kids; without kids there is no son. */
+function sonsIn(c){
+  if (!c) return 0;
+  if (typeof c.sons === 'number') return c.sons;
+  var m = /(\d+) (?:son|kid)/.exec(c.life || '');
+  return m ? +m[1] : 0;
+}
+function canFather(c){ return !!c && ((c.totals ? c.totals.seasons : c.seasons) || 0) > 0 && sonsIn(c) > 0; }
+function startSon(c){
+  if (!canFather(c)) return;
+  if (!proOpen()) { askPro('family'); return; }
+  var a = c.totals ? compact(c) : c;
+  var seed = String(Math.floor(Math.random() * 1e9));
+  var B = window.RTF_BALLER;
+  var look = B ? B.lookFor(seed) : {};
+  if (a.look) { look.skin = a.look.skin; look.hc = a.look.hc; }
+  var last = String(a.name).trim().split(/\s+/).slice(-1)[0];
+  form = { seed: seed, name: C.randomName(seed).split(' ')[0] + ' ' + last, num: Math.floor(Math.random() * 100), pos: a.pos || 'SF', arch: C.archesFor(a.pos || 'SF')[0], bg: 'oad', ht: C.POS_SIZE[a.pos || 'SF'].mid, wt: C.wtFor(C.POS_SIZE[a.pos || 'SF'].mid),
+    start: 'hs', origin: '', legend: true, look: look,
+    parent: { id: a.id, name: a.name, num: a.num, pos: a.pos, pts: a.pts, seasons: a.seasons, score: a.score, verdict: a.verdict,
+      rings: a.rings, star: a.star, hof: a.hof, clubs: a.teams || [], jersey: a.jersey, gen: a.gen || 1, end: a.to, age: a.age },
+    parentLeague: c.lg || null };
+  var st = store();
+  st.last = null;
+  save();
+  view = null;
+  K.wipe();
+  render();
+  window.scrollTo(0, 0);
 }
 
 // ─── the screen ─────────────────────────────────────────────────────────────
@@ -1297,7 +1991,10 @@ function render(){
   /* A career saved before rosters rode on the life gets the real ones now,
      as long as it was opened on the same season of data. */
   var lg = league();
-  if (st.cur && st.cur.league && !st.cur.league.roster && lg && lg.roster && st.cur.league.latest === lg.latest) st.cur.league.roster = lg.roster;
+  if (st.cur && st.cur.league && !st.cur.league.roster && lg && lg.roster && st.cur.league.latest === lg.latest) {
+    st.cur.league.roster = lg.roster;
+    if (lg.rs) st.cur.league.rs = lg.rs;
+  }
   /* The screen wears the club's colours, and a move to a new one is a wipe
      in the new colours rather than a silent repaint. */
   var col = st.cur ? C.colorsOf(st.cur) : st.last ? { primary: st.last.c1, secondary: st.last.c2 } : null;
@@ -1305,7 +2002,8 @@ function render(){
   var team = st.cur ? st.cur.team : null;
   if (st.cur && lastTeam && team && team !== lastTeam) { K.wipe(); K.toast(K.iconHtml('home', 2) + '<span>Welcome to the ' + esc(teamName(team)) + '.</span>', 'k-gold'); }
   lastTeam = team;
-  if (st.cur) {
+  if (view === 'vault') { body.innerHTML = vaultView(); wireVault(); }
+  else if (st.cur) {
     var d = stage.delta || null;
     stage.delta = null;
     body.innerHTML = lifeView(st.cur, d);
@@ -1321,6 +2019,7 @@ function render(){
 function open(){
   if (!league()) { P.toast('The league is still loading.'); return; }
   S = null;
+  view = null;
   stage = { beats: [], result: null, draft: null };
   lastTeam = null;
   P.show('s-car');
@@ -1373,6 +2072,18 @@ function renderHero(){
   }
   go.disabled = !league();
   go.onclick = open;
+  /* The card answers a press anywhere on it, the way the puzzle cards do. The
+     button stays the one focusable control, so a keyboard and a screen reader
+     meet a single door rather than a button nested in a button. */
+  if (hero) {
+    hero.classList.toggle('live', !go.disabled);
+    var chip = $('ch-chip');
+    if (chip) chip.textContent = L && !L.retired ? 'Continue' : 'Play';
+    hero.onclick = function(e){
+      if (go.disabled || (e.target.closest && e.target.closest('button,a,input,select'))) return;
+      open();
+    };
+  }
 }
 
 window.RTF_CAREER_UI = {
@@ -1387,6 +2098,14 @@ window.RTF_CAREER_UI = {
      the tallest receipt rather than whichever one a random career deals. */
   paintPress: function(st){ stage = st; render(); scrollStage(); },
   boardIds: boardIds,
+  /* check-career.mjs only: the road the start button would play, which the
+     builder deliberately never shows. */
+  previewRoad: function(){ return form && form.start !== 'hs' && C.roadStory ? C.roadStory(preview()) : []; },
+  openVault: function(){ open(); openVault(); },
+  /* check-career.mjs only: the share card for the Hall card on screen. */
+  drawCard: function(){ var l = store().last; return l ? drawCard(l) : null; },
+  /* modes-ui.js calls this when Pro arrives or goes, so the builder redraws. */
+  proChanged: function(){ if (onScreen() && !store().cur && !store().last) { if (form && form.start === 'hs' && !proOpen()) form.start = 'gen'; render(); } },
 };
 
 function boot(){

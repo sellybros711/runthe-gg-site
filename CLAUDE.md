@@ -10977,10 +10977,210 @@ out of a chair and real assistants, the third field saying who has run a bench. 
 there and nowhere else. **Teammates are never typed**: `seedLeague` writes `roster` (the
 club's top twelve, name, position, an estimated birth year off the draft year, win shares)
 onto the life, and `matesOf` ages them a year at a time and retires them at an age seeded per
-man. Each draft class after that adds one generated rookie a club for about ten years. Nobody
-is traded: the league around you is a picture of who was there. An old save with no roster
-gets the page's when it opens on the same season of data, and otherwise reads year one's
-stars and ages them.
+man. Each draft class after that adds one generated rookie a club for about ten years. An old
+save with no roster gets the page's when it opens on the same season of data, and otherwise
+reads year one's stars and ages them.
+
+**ON A STORY CAREER THE ROSTERS MOVE** (`rostOf`, `rosterSummer` from `driftLeague`). They start
+as the data's last season (2025-26) and live in `L.league.rost`. Every summer: the old retire,
+five to nine like-for-like trades, ten to seventeen free agents (mostly toward a thin roster), and
+about one summer in three a star moves. Every club carries thirteen to fifteen.
+
+**ONE MOVE A MAN A SUMMER.** A player reported Jaylon Tyson traded to the Pelicans and signed by
+the Hornets two lines later: a man moved by a trade was still eligible for free agency and the
+roster cut. `moved` in `rosterSummer` holds everybody who changed clubs, and none of them is
+traded, signed or let go again until next summer. check-career 12b reads the feed for it.
+
+**REAL MEN BEFORE INVENTED ONES.** Every club used to draft an invented rookie every summer,
+whether it needed one or not, which pushed real men off the end of the roster and out of the
+league. Now a club over fifteen lets an invented man go before a real one of about the same worth,
+a real man let go joins `L.league.pool`, and a club under fourteen signs from that pool first. A
+rookie is drafted only when the pool is empty, a journeyman only below thirteen. The pool starts
+as `league.fa` (`seedToday`): the men past a club's fifteen in the roster file and last season's
+players on no roster today, up to 60. Invented men were 10% of the league two summers in and 22%
+four in; now under 1% and 9%. Past that the share is real men retiring, which nothing can avoid.
+A club that gained talent gains a
+little net rating (a share of the change, the league kept centred). Moves go to the feed, and
+anything touching your club to the beats and the log. A reader that jumps years plays the
+missed summers quietly (`rostNow`). The rosters are not kept on a Hall card (`trimLeague` drops
+them, with `lines`): a son's league rebuilds them, which is right, because the 2026 men have
+aged out by then.
+
+**THE TEAM TAB** (story careers, NBA only) is `rotationOf`: the starting five, then the bench
+in minutes order, you placed by your real minutes (the season's average once a game is played,
+the coach's plan before), the rest of 240 shared off a real rotation's shape. **The five always
+covers PG, SG, SF, PF and C**: `bestFive` is exact over every way of seating five, a man counts
+at full value at his own position, 0.85 next to it (or at a second position the data lists),
+0.15 two away and 0.03 further, so a center only plays the point when nobody else can. You are
+forced into it when your minutes make you a starter. check-career 11d holds it to brute force. It is display only: the season
+sim reads minutes from `roleOf` and never from this. A teammate's points are last season's
+rate (`lines`, off the data) at this season's minutes.
+
+**THE SATURDAY CONTESTS ARE REAL PLAYERS** (`contestField`). A dunk contest or a three-point
+contest is basketball, so the field comes off the league's rosters (young wings and guards for
+the dunk, the men who take the most threes for the other), then the invented stars, then
+generated names. The result is drawn first and the field is written around it on its own
+stream; check-career 11b holds the field to the headline.
+
+**THE ROAD ENDS IN TODAY'S LEAGUE.** Reported by a player: drafted into a 2032 league, the
+Thunder had no Shai Gilgeous-Alexander and picked 10th. A high school career started in the
+data's newest season, so the usual draft came four summers later, after four summers of
+drift: club strength regresses toward the middle, stars are traded, benches turn over. The
+real league was gone before the player arrived. A story career that starts in high school is
+now dated `ROAD_LEAD` (4) seasons back and flagged `L.opt.cal`, and `driftLeague` does nothing
+for it until the season after the data's newest.
+
+**AND THEN EVERY ROAD WAS MADE TO END ON THE 2026 DRAFT**, asked for by the owner: the year
+you are drafted is 2026-27, whatever road got you there. A road is three to seven years long
+and the player decides how long, so no start date can promise where it ends (dated four years
+back, only 42% of drafts landed in 2027). The road plays on a floating calendar: `driftLeague`
+and `rosterSummer` do nothing for a `cal` career until it reaches the NBA, and at the combine
+`landOnToday` moves every year the career wrote (the log, the feed, memory, arcs, the people
+ledger, the event log, `amHist`, traits, the invented stars) so the rookie season is `lg.rs`.
+The rosters, the pool and the coaches the league opened with are rebuilt fresh; a college
+coach who took an NBA job on the road keeps it, re-dated. check-career 12c holds all 240
+test roads to the 2026-27 season, nothing dated after it, and today's rosters. An old save
+has no flag and keeps its calendar; a son keeps his father's.
+
+**THE COMBINE IS A WEEK AND THE SLOT IS THE BOARD'S** (story careers). It used to be one
+card and then a workout card offering three clubs with their pick ("They pick 1st") and a 45%
+promise, which is choosing where you are drafted and put about one career in ten at first
+overall. Now: testing day (test everything, shoot and drill, scrimmage, or sit out, each read
+off the ratings it shows), two interviews with clubs that pick near where the board has you
+(a generated GM asks about you, and a question the road gave a reason for comes first:
+the injury, the transfer, the rec league, skipping college), then one private workout with the
+club you impressed most. Every answer moves that club's interest (`L.flags.intr`, read
+against the club's seeded style: culture, swagger or grit) and a little of the board. On the
+night: a club that loved you takes you up to four picks early, a projected undrafted player
+the workout club liked goes in its late second round, and `classTop` seeds the class's own
+best prospects, so you go first only when you beat all of them. First overall went about 10%
+to about 3%. A rec league player is no longer drafted off a promise; he goes undrafted and
+overseas until he is good enough to be noticed, which can make him an older rookie. The old
+cards stay for a career from before the story engine, so the replay is identical.
+
+**The two draft bands pull against each other**, which is NARRATIVE's warning arriving here:
+the late second round rescue lowers undrafted and raises reaching the league. It only rescues
+a player just off the board (`draftStock >= 71`), who would mostly make a roster through
+Summer League anyway, and a story career grows less overseas past 25, so a rec league player
+does not play his way back at 29. check-career counts undrafted roads apart in its rookie age
+claim and caps them at 31. sim-career now plays Easy, Normal and Hard on one seed each: seeded
+apart, two samples of 200 carried about four points of noise against a band of two.
+
+**NO TWO CAREERS START IN ONE PLACE.** A story career rolls a signature off its own stream: two
+ratings ahead of the position and build, one behind, a small overall shift, and how much the
+town is talking (starting fame), said in the first log line. check-career 12c asks thirty
+shooting guards built the same way for at least fifteen different strength and weakness pairs.
+
+**AWARDS AND BADGES ARE ICONS.** The Trophies shelf and the player card's traits, signature
+move and skill badges are pixel icons on tiles (`AW_ICON`, `TRAIT_ICON`, `BADGE_ICON` in
+career-ui.js; new kit icons crown, shield, sprout, flame, globe, six, net), with a count in
+the corner. Tapping one names it under the shelf. A wall of pills was too much reading.
+
+**NO FRAME ROUND AN ICON, AND THE TROPHY ICONS ARE ELEVEN CELLS.** Reported: hard to tell what
+any of them was. Two causes. A 2px border round a 7 by 7 icon was a second outline round the
+icon's own, and the seven cell drawings were too small to be anything: a medal was an outline
+ring and a dot, a crown and a trophy were one blob in two colours. The tile is a soft tint of
+the icon's own colour (`--ic`) with the level as a short bar under it (`--lv`). `ICONS_L` in
+career-kit.js redraws twelve of them on an 11 cell grid, drawn at 4x by `K.badgeHtml`, which
+falls back to the 7 cell icon at 6x so both are about 44px. The icon palette gained fixed `r`
+and `q` (a red and blue ribbon): a ribbon in the medal's own dark shade vanished into the tile.
+Look at a screenshot before changing one: a white cross on a medal read as a first aid kit.
+
+**A TRADE IS YOUR TRADE ONLY WHEN YOU MOVED.** Reported: "traded to the Pacers while on the
+Pacers", and LaMelo gone from the roster. The roster was right: your club's own deadline deal
+had sold him. `deadlineClub` pushed that deal as a `trade` beat, and `scenes.js` reads `trade`
+as you, so it played "Breaking. You have been traded to" your own club. Club deals are
+`club_trade` now. `joinTeam` and `tradeTo` refuse a move to the club you are on. The move you
+make is recorded in `TRADED` (module state, never saved) and turned into one `trade` beat by
+`tradeBeat` at the end of `choose` and `step`, carrying where from, where to, who went back,
+when (deadline, summer, season), how (the card), and the people who tell you
+(`tradePeople`: both general managers, your agent, whoever is home with you, the oldest head in
+the locker room you leave, all invented). `tradePeople` reads `L.life` without creating it,
+because a story off career has no `life` key and `--story off` must stay byte identical.
+
+**AND IT IS A CUTSCENE, NOT A STUDIO GRAPHIC.** `tradeScene` in scenes.js picks how it reaches
+you off when and how, seeded on the career and the year: a call from your agent at home at
+11:42 at night (`trade_home`), pulled out of shootaround into the general manager's office
+(`trade_practice`), a knock at a hotel door on a road trip (`trade_road`), your name on the
+timeline before your phone rings (`trade_leak`), or the call you asked for (`trade_ask`). Every
+one ends on `trade_arrive`, the new general manager and first practice in the new colours.
+Until then every beat is `club: 'from'`, so the room and your jersey are the club you are
+leaving, and the header reads "Hornets to Pacers". Three kit rooms were added for it: `home`,
+`office` and `hotel`. check-career 12e: every trade beat is a real move with people to tell it,
+club deals are club news, nobody is traded to his own club, and every scene the picker can
+choose is written.
+
+**EVERY PLAYER HAS AN OVERALL, AND MINUTES ARE A PLACE ON YOUR CLUB** (story careers). A
+player reported a 77 in his second year leading a club with three better players in minutes:
+teammates were rated in win shares, you in an overall, and `youW` turned a 77 into an
+All-Star's eight win shares. Now:
+
+- **A man's worth is half win shares and half production** (`worthOf`: points, rebounds,
+  assists, steals and blocks a game, twelve a night is replacement), because win shares alone
+  rated Luka Doncic under Kon Knueppel. Measured off his real seasons and aged as before.
+- **`mateOvr` reads worth onto your scale** (`W_OVR`), fitted so a club's best man is about a
+  79, its fifth about a 67, its ninth about a 61, and a star in the high 80s; a career's own
+  overall runs about 62 as a rookie and 75 at a typical peak. Every `matesOf` row carries
+  `ovr`, and the Team tab shows it.
+- **Minutes come from rank** (`roleRank`, `RANK_MIN`): the best man plays about 34, the fifth
+  about 26, the ninth about 12, with a little for trust and a close gap. `diff` is your overall
+  against the club's fifth best, so nought is the edge of the starting five, and `bestFive`
+  compares overalls. Shots go down the same order (`usageOf` reads `role.rank`).
+- **A club is as good as its players**: each summer `rosterNets` rates every club off its
+  rotation's overalls, weighted like the minutes, plus a little for coaching and luck. Your
+  own club is rated without you; you are your impact on the floor.
+
+check-career 12d holds it: every man has an overall, the best man and the club ranks land
+where the table says, a player with three better teammates never plans the most minutes,
+and the better half of the league by overall is the better half by net. The usage slope was
+tuned once against Hall of Fame (32 with the first slope, 26.6 now).
+
+**A ROSTER POSITION TRUSTS THE DATA WITHIN ONE SPOT.** The roster file's coarse F against the
+stats' C used to fall back to SF, so true centers were listed as small forwards. `posFromData`
+keeps the data's position when it is in the file's family or one step from it.
+
+**Moving the dates reseeds every high school career**, because the draws are keyed on the
+year, and that exposed a band sitting on its edge: reaching the NBA from high school was
+94.9% over 3,000 careers against a ceiling of 95, identical before and after the change, so
+CI's 1,000 flapped to 95.6. The fix is a real tune, not a band: an undrafted player's
+Summer League tryout floor went 10% to 5% (every one of those tryouts in the sample sat on
+the floor), which puts it at 94.4 on CI's sample and 94.3 on 1,500 roads. Two other levers
+were tried and measured to do nothing: the tryout's base, and the overall a player needs to
+be noticed from overseas.
+
+**A CAREER JOINS TODAY'S ROSTERS, NOT LAST SEASON'S.** Reported by the owner: Curry, LeBron,
+Durant and Harden are under contract for 2026-27, and the game could retire them before it,
+because the league was seeded off the season that had ENDED (2025-26) and then aged a year by
+its own rules. It also had none of the summer's trades, signings or rookies.
+
+```
+node hoops/build/fetch-rosters.mjs --season 2027   (on a runner: .github/workflows/hoops-rosters.yml)
+node hoops/check-rosters.mjs                       the file, the season, the handover
+```
+
+`hoops/data/rosters.json` is every club for the season about to be played: each man's
+Basketball-Reference id, name, position and birth year, two-way contracts marked, and the head
+coach. **Basketball-Reference is blocked from the sandbox**, so the file is only ever written
+by the workflow, weekly (Mondays) and on dispatch, committed only when it moved, with no clock
+in it. The page fetches it no-cache with no `?v=` (`loadRosters` in career-ui.js), the NFL
+schedule file's arrangement, and does not keep a league seeded before it has answered.
+
+`seedLeague(rows, rosters)` uses it only when its season is the one after the data's newest
+(`seedToday`): a man carries what he did last season (all his clubs added), a club's net comes
+off the rows of the men it now has, and the league is stamped `rs`. On `rs`:
+
+- **Nobody leaves before that season is played** (`rostGone`): no retirement, no trade, no
+  invented rookie (they start with the next draft). A draft night career and a high school
+  road that lands in `rs` both meet exactly the file.
+- **After it the simulation decides**, and a veteran past the usual age gets the season after
+  `rs` plus up to one more, so the old guard is not emptied in one summer.
+- **The file's coach replaces `COACHES_NOW`** for a club where they differ (`L.league.cn`),
+  and the carousel takes over from there.
+
+No file, or a file for another season, is the old behaviour exactly, and a league seeded
+without one carries no `rs` or `cn` key: `replay-careers --story off` is byte identical over
+1,000 careers. An old save keeps its own roster. check-story, check-career and sim-career all
+seed from the file when the repo has it, so the bands are measured on the league that ships.
 
 **THE CAROUSEL** (`coachCarousel`, run from `driftLeague` every summer, the road years too):
 a club fires on how it played (your club on the record you actually played, and never after a
@@ -11002,6 +11202,85 @@ club has one coach after every step and no coach sits on two benches, a card abo
 names your club's coach, and year one's Celtics are the real Celtics while thirty years on they
 are all generated. Generated coaches skip any name already on a bench, which is what the two
 benches claim caught.
+
+#### The front office, the bench and the summer (story careers)
+
+```
+node hoops/check-career.mjs --quick   section 12: positions, the deadline, the coach, development
+node hoops/check-rosters.mjs          the roster file's positions and worth
+```
+
+Asked for by the owner: trade deadlines, real coach conversations with options, players at the
+right positions, and believable progression and regression. All of it is behind `storyOn`, so
+`replay-careers --story off` stays byte identical and check-saves is untouched.
+
+**POSITIONS ARE THE DATA'S.** `rosters.json` writes Basketball-Reference's coarse G, F or C,
+and read as SG and SF it put the league's best shooting point guard at shooting guard and left
+his club with no point guard. `seedToday` takes the position `players.json` lists for a man's
+most recent season when it agrees with the file's letter (`posFromData`), and the coarse map is
+only for a man the data has never seen. check-career asserts Curry PG, Jokic C, Green PF, and a
+point guard on nearly every club.
+
+**WORTH IS A RATE, AND A REAL MAN IS AGED FROM WHERE IT WAS MEASURED.** A season's win shares
+are a count, so a season lost to injury read as a worse player. `worthOf` is the last three
+seasons as a rate per game, weighted to the newest and to games played, times the games a man
+like him plays. The roster tuple carries a fifth field, the season it was measured in, and
+`realCurW` ages him from there with `REAL_CURVE` and a per-man arc seeded off his name. The old
+rule discounted every year past thirty from scratch and left a 39 year old at a quarter of
+himself before he played. Only file-seeded leagues carry the fifth field; anything else keeps
+the old formula.
+
+**NO TWO MEN IN THE LEAGUE SHARE A NAME** (`uniqueNames`). Generated rookies came off two short
+lists and the deadline printed one name traded for itself.
+
+**THE DEADLINE IS A REAL DAY** (`tradeDeadline`, at the All-Star break after game 55):
+
+- The league's sellers send a veteran to a buyer for youth (`deadlineLeague`). `forSale` is the
+  market: not a club's best man, worth 2 to 7, 27 or older. The first cut moved two of the
+  league's best young stars in five Februaries.
+- Your club buys, sells or holds by its record (`deadlineClub`). A buy lands a named man where
+  the club is thin; one at your position costs you minutes, a sale at your position hands you
+  his. A buyer is no likelier than the other contenders and gains no more than the man is
+  worth: at 60% and a flat win bonus it pushed rings from 25% to 37% of careers.
+- If you are on the phone, `deadlineCard` asks: push for a contender with a hole at your spot
+  (ranked 4th to 14th, because the top three have no room), push for a club you would start for,
+  ask to stay, or let your agent pick. Why you are on the phone is a seller shopping a veteran,
+  a request you made, or minutes that dried up. A trade sends a named man back (`swapBack`).
+- The result names the GM who made the call, read before the trade (`{gm}` is the new club's
+  after it). The old `trade_rumor` card is about the summer on a story career, because the day
+  it talked about has passed when it is dealt.
+
+**THE COACH IS A PERSON WITH A WAY OF DOING THINGS.** `coachStyle` is seeded off his name
+(players' coach, defense first, trusts veterans, plays the kids, system coach) and moves what he
+will hear and what earns minutes. Talk to the coach opens `coachTalkCard`, whose options are the
+ones your situation has: more minutes, to start, to play the spot next door where the club is
+thin (`otherSpot`), the ball late, to come off the bench for a losing team, or what to work on.
+Each hint says roughly the odds. **A real coach is never quoted**: his answers are told, not put
+in quotation marks, which is the real-people rule and is what check-career 5c reads.
+
+**THE ROLE IS EARNED IN SEASON** (`roleReview`, after game 27 and at the break). `perfOf` is
+what you have done against what a man of your ratings should do in your minutes, centred on what
+the sim actually hands out (it runs four percent over its own means). Outplay it and you move up;
+play under it and you lose minutes, and he may tell you why (`coach_review`). Measured: as many
+promotions as cuts.
+
+**YOUR SPOT IS A POSITION** (`depthCheck`, `inFive`). Two men cannot both start at point guard:
+if the five is better with you in it you start, and if a better man has your spot you come off
+the bench whatever your overall says. `inFive` is cached per career in a WeakMap, off the save,
+because `roleOf` is asked on every card now (the receipt shows a Minutes line).
+
+**DEVELOPMENT HAS A CLOCK PER SKILL** (`developStory`). The bounce comes first and goes first,
+the jumper and the feel last into the thirties. Minutes speed a young player up, a summer can be
+a breakout or a stall, a coach's project (`L.focus`) gets extra work, and no summer moves the
+overall more than nine or one skill more than seven. **The clocks move growth and decline between
+skills and never in total**: for every position and age the weighted sum is the old curve's. The
+first cut let the jumper and the brain age slower without taking it back from the legs, which
+added two points to every man at 32 and doubled the MVPs. What the cap holds back carries to the
+next summer (`devCarry`).
+
+**A story career's MVP needs a 92, not a 91**: a real deadline puts good players on good clubs,
+and MVPs ran 3.5 in a hundred against a band of 1 to 3. Cutting the vote's odds instead barely
+moved it (3.3 at 0.42), because a man good enough to win one wins it in a year the odds are high.
 
 **NOT A SECOND MODEL OF A ROSTER.** Year one's club nets come off the real rosters through
 `teamStrength`, scaled to a spread of 4.6, and every year after drifts on a mean-reverting
@@ -11177,6 +11456,36 @@ always drawable. A career from before looks gets `lookFor(seed)`. The rival is d
 `lookFor(name)`, so he always looks the same. **Only the invented are drawn**: no real player
 gets a face or a hashed look.
 
+**A HAIRSTYLE IS A SILHOUETTE FIRST.** Asked for by the owner, because only the afro read:
+every other style hugged the skull, so a fade, a buzz and a flat top were one helmet with
+different noise on it. Each style is now a shape (`TOPS` in baller.js gives the volume above
+the skull row by row: a flat top is a box, a curly top a scalloped dome, twists and long hair
+hang past the ears), and the texture after the shading is a pattern per style rather than a
+hash: two by two curl clumps, twisted ropes with a dark seam, plaited cornrows with scalp
+between, a fade dithered into the skin. `braids` is labelled Cornrows and keeps its id,
+because the id is in saves. **Hair has its own ramp** (`hairRamp`): the general ramp lifts
+near black so a black jersey has room for a fold, and on hair that drew black hair as a taupe
+helmet. Render a contact sheet of every style in four colours before changing any of it;
+check-sprite was re-recorded once for this pass and its header says what moved.
+
+**Facial hair has its own colour** (`bc`, an index into `HAIR_COLORS`). Absent means Match,
+the natural colour that goes with the hair, which is what every look had before, so no old
+look changes. The row only shows once there is facial hair to colour.
+
+**THE BUILDER IS FOUR STEPS** (Player, Look, Story, Start), because as one form it was four
+and a half phone screens with the start button at the bottom. The player, his overall and
+all seven ratings stay on top; the Look step draws him twice the size framed on the head,
+because hair is what is being chosen there; the start button is pinned to the foot of the
+screen on every step. **Every step stays in the page with the others hidden**, so nothing a
+step holds is lost moving between them, and a walker has to press `[data-bstep]` before it
+clicks anything inside a step. check-career holds each step under 1.75 screens with the
+button on screen. **The road to the draft is never shown in the builder**: it is played the
+moment a draft-night career starts, and the career's first screen opens on it, line by line
+(`stage.reveal`). After the first press it is a fold reading How you got here. A walker that
+needs the road before starting asks `RTF_CAREER_UI.previewRoad()`, which is the checker's
+alone. On a phone the ratings are a fold too, so the card to answer comes sooner; they open
+themselves when a press has just moved one.
+
 **The press room is the engine's** (`TONES`, `PRESSERS`, `presserCard`). After a first-round
 pick, an MVP, a title, a Finals loss and a national title, a `presser` card is pushed; every
 answer is a TONE and moves `L.rep` (fans, respect). `EVENT_REP` gives twenty everyday event
@@ -11320,6 +11629,74 @@ Four meters, not five: the fifth in PLAN.md waits for the story engine (Phase C)
 to have something real to measure. The leaderboard's Career tab keeps the
 game's shared board chrome, because restyling one tab of seven is a seam inside
 the board rather than one removed at its door.
+
+#### Phase E: Pro starts in high school, a free career starts from a generated road
+
+```
+node hoops/sim-career.mjs --n 1000 --phase E   the second sweep: generated roads, sons, difficulty, challenges
+node hoops/check-career.mjs                    section 11 (the engine), section 7 (the gate, the Vault, a son)
+```
+
+The owner's calls, 2026-10-02: no daily seeded career; playing the road from high
+school and the family tree are **Run The Floor Pro** (`rtf_premium`, the $9.99
+Endless already sells). A guest or free account starts on draft night from a
+pre-NBA life generated for them, a new one every career.
+
+**THE GENERATED ROAD IS THE REAL ROAD.** `C.generateRoad(opts)` is
+`newLife({ start: 'hs' })` played by an automatic policy (each card answered off
+`rngAt(L, 'gen:' + steps + ':' + id)`) and stopped at the combine card, with
+`L.opt.gen = 1`. Not a new formula: its NBA outcomes sit in the road's own bands,
+and the memories, people and routes it made carry on. `C.roadStory(L)` is the road
+in short lines, read off `amHist` and the route memories. The four background cards
+are gone from the builder for everybody; the engine still takes `bg`, so old saves
+and the sweeps are unchanged.
+
+**THE GATE IS THE START BUTTON.** `proOpen()` in `career-ui.js` asks
+`RTF_MODES_UI.proOpen()` (owning Pro, or `PRO_LIVE` off). Pressing High school or
+Play as your son without it opens the Pro sheet and changes nothing. A career
+already started is never taken away. `RTF_CAREER_UI.proChanged` redraws the
+builder when Pro arrives.
+
+**THE VAULT** rides in the `rtf.life.v1` slot: `arc` is every finished career as a
+short entry (200 kept; the full Hall card is still the newest 20 on `hof`), and
+`vault` is every key found (`t:` tier, `o:` outcome, `s:` secret, `r:` road, `g:`
+origin, `c:` challenge met). A card stores its ids (`card.ids`); an older card is
+read back through the catalog's names, and a slot from before is backfilled once on
+load. Tabs: Endings, Careers (each opens into its story), Family.
+
+**THE STORY** is `C.careerStory(L)`, chapters built only from what the career
+recorded, kept on the Hall card. Called by the page at the end, so it moves nothing
+the season reads.
+
+**A SON IS THE SON OF A FORMER PRO.** `newLife({ parent, parentLeague })` forces the
+`pro_son` origin and stores `L.parent` (`cleanParent`): the father's real points are
+`origin.father`, `{father}` and `{dad}` are his name, and his seasons are the copy's
+count. **He starts in his own year, in the league his father left**:
+`legacyLeague` copies the card's `lg` (`C.leagueEnd`, trimmed by the page) and plays
+the gap forward a summer at a time with `driftLeague`, so coaches and invented stars
+move on. A card without `lg` plays forward from the data's year. Only a father who
+reached the league can have a son (`canFather`). Four `leg_*` cards are his.
+
+**DIFFICULTY** is `L.opt.diff`, never written for Normal: `lvl(L)` multiplies growth
+and decline and injury odds and adds to a player's impact, and every Normal term is
+a multiply by one or an add of nought. **That is proved, not argued**: the story-on
+replay of 1,000 careers is byte identical. An **Easy** career files no Career badges
+and is not submitted to the board. Measured at 3,000: Hall of Fame on generated
+careers is about 31% Easy, 21% Normal, 12% Hard.
+
+**CHALLENGES** (`C.CHALLENGES`, nine) are goals over an ordinary career, with an
+optional start (`stock`, applied once at the combine by `chStock`) or a fixed
+difficulty. `challengeOf(L)` says where it stands; met or not is kept on the card
+and in the Vault. Each one is met in the sweep, played as itself on Easy; a
+challenge no player can chase is the unearnable badge, which is why Sixth Man and
+Three rings were replaced.
+
+**THE SHARE CARD** is `drawCard` in `career-ui.js` (540 by 756, the kit's colours,
+the player at a whole scale), shared through `RTF_PAGE.shareImage`, which is
+`shareRun`'s own path for a blob drawn elsewhere.
+
+**Leaderboards by challenge and by Vault completion need a migration** and are
+Phase G.
 
 #### Phase D: origins, roads, endings, and a legend layer with an off switch
 

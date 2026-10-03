@@ -15,6 +15,13 @@
  * band, sleeve, shoe and build appears), both breath frames, young and greying,
  * and the cell grid is hashed. The hashes in hoops/build/fixtures were recorded
  * from baller.js as of commit 7c75a34, before any cutscene work.
+ *
+ * RE-RECORDED ONCE, ON PURPOSE, for the hair pass the owner asked for: every
+ * style but the afro was redrawn as a silhouette first, and hair got its own
+ * ramp so black hair stopped reading grey. That moved 872 of the 960. Every
+ * one of the 88 that did not is a bald look, and the only bald ones that did
+ * move wear a cap, where bald used to be drawn as a buzz cut. That is the
+ * proof the pass touched hair and nothing else.
  */
 import fs from 'node:fs';
 import path from 'node:path';

@@ -1,0 +1,86 @@
+name: Refresh Run The Floor rosters
+
+# Writes hoops/data/rosters.json: every NBA club as it stands for the season
+# about to be played, which is the league a Career joins. See the header of
+# hoops/build/fetch-rosters.mjs for why players.json cannot answer that.
+#
+# Basketball-Reference is blocked from the development sandbox and open from
+# GitHub's runners, so this is the only place the fetch can run.
+#
+# WEEKLY, AND IT COMMITS ONLY WHEN THE FILE MOVED. Rosters change all year:
+# the draft, free agency, the trade deadline, a waiver claim. The file carries
+# no clock, so an unchanged league is an unchanged file and no commit.
+#
+# The page fetches it no-cache with no ?v=, because a bot rewrites it under one
+# name, which is the NFL schedule file's arrangement.
+#
+# NO SECRETS. It reads a public site and writes one file back to this branch.
+
+on:
+  workflow_dispatch:
+    inputs:
+      season:
+        description: 'The season to fetch (the year it ENDS). Leave blank for the next one to be played.'
+        required: false
+      commit:
+        description: 'Commit the file back to this branch?'
+        type: boolean
+        default: true
+  schedule:
+    - cron: '17 10 * * 1'   # Mondays
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hoops-rosters-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  rosters:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch parsers still parse
+        run: node hoops/build/check-fetch.mjs
+
+      # THE SEASON ABOUT TO BE PLAYED: the one after the last that has ended.
+      # A season ends in June, so from July the next one is the year after.
+      - name: The season a Career joins
+        id: season
+        run: |
+          S="${{ inputs.season }}"
+          if [ -z "$S" ]; then
+            Y=$(date -u +%Y)
+            M=$(date -u +%m)
+            if [ "$((10#$M))" -lt 7 ]; then Y=$((Y - 1)); fi
+            S=$((Y + 1))
+          fi
+          echo "season=$S" >> "$GITHUB_OUTPUT"
+          echo "Fetching rosters for the season ending $S"
+
+      - name: Rosters
+        run: node hoops/build/fetch-rosters.mjs --season "${{ steps.season.outputs.season }}"
+
+      - name: The league seeds from it
+        run: node hoops/check-rosters.mjs
+
+      - name: Commit
+        if: ${{ github.event_name == 'schedule' || inputs.commit }}
+        run: |
+          git config user.name "hoops-data-bot"
+          git config user.email "noreply@anthropic.com"
+          git add hoops/data/rosters.json
+          git diff --cached --quiet && echo "rosters unchanged" || {
+            git commit -m "Refresh Run The Floor rosters from Basketball-Reference"
+            for i in 1 2 3 4 5; do
+              git push && break
+              echo "push rejected, rebasing (attempt $i)"
+              git pull --rebase origin "${GITHUB_REF_NAME}" || exit 1
+            done
+          }

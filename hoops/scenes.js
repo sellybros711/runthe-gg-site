@@ -51,6 +51,9 @@ var OUTLETS = {
   prep: { name: 'Rising Rim', c: '#f2c14e' },
   timeline: { name: 'The Timeline', c: '#9aa4b2' },
   team: { name: 'Locker room', c: '#c9ccd6' },
+  phone: { name: 'Incoming call', c: '#3ddc97' },
+  home: { name: 'Off the clock', c: '#9fb6ff' },
+  office: { name: 'Front office', c: '#c9a23a' },
 };
 var CAST = {
   vance: { name: 'Rocco Vance', role: 'Play-by-play', outlet: 'night' },
@@ -63,6 +66,14 @@ var CAST = {
   commish: { name: function(c){ return c.commish; }, role: 'Commissioner', outlet: 'night' },
   coach: { name: function(c){ return c.coach; }, role: function(c){ return c.level === 'NBA' ? 'Head coach, ' + c.nick : 'Your coach'; }, outlet: 'team' },
   feed: { name: 'The Timeline', role: 'Fan reaction', outlet: 'timeline' },
+  /* The people a trade reaches you through. All invented: the career names
+     them (career.js tradePeople), never this file. */
+  narr: { name: '', role: '', outlet: 'home' },
+  agent: { name: function(c){ return c.agent; }, role: 'Your agent', outlet: 'phone' },
+  oldgm: { name: function(c){ return c.oldgm; }, role: function(c){ return 'General manager, ' + c.fromNick; }, outlet: 'office' },
+  newgm: { name: function(c){ return c.newgm; }, role: function(c){ return 'General manager, ' + c.toNick; }, outlet: 'office' },
+  fam: { name: function(c){ return c.fam; }, role: function(c){ return c.famRole === 'mom' ? 'Mom' : 'At home'; }, outlet: 'home' },
+  mate: { name: function(c){ return c.oldmate; }, role: function(c){ return 'Teammate, ' + c.fromNick; }, outlet: 'team' },
 };
 
 /* Fan handles, invented, for the feed. */
@@ -189,7 +200,7 @@ function cssOnce(){
 /* A pixel room: the kit's 132 by 80 set, scaled by a whole number so every
    cell is the same size, big enough to cover the stage and cropped from the
    middle. Text on a board or a screen sits in the set's own coordinates. */
-var PIX_ROOM = { arena: 1, press: 1, draft: 1, studio: 1, gym: 1, locker: 1, hall: 1 };
+var PIX_ROOM = { arena: 1, press: 1, draft: 1, studio: 1, gym: 1, locker: 1, hall: 1, home: 1, office: 1, hotel: 1 };
 function pixKind(room, c){
   if (room === 'arena') return c.level === 'College' ? 'col' : c.level === 'High school' ? 'hs' : c.level === 'Pro' ? 'gl' : 'nba';
   if (room === 'gym') return 'hs';
@@ -383,9 +394,72 @@ var SCENES = {
     { who: 'greer', room: 'gym', pic: 'me', pose: 'up', confetti: true, shot: 'title',
       tx: function(c){ return c.school + ' wins state. The whole town is on the floor. ' + c.last + ' is somewhere in the middle of it.'; } },
   ],
-  trade: [
-    { who: 'bell', room: 'studio', pic: 'me', pose: 'stand', tx: function(c){ return 'Breaking. ' + c.name + ' has been traded to the ' + c.teamName + '.'; } },
-    { who: 'whit', room: 'studio', pic: null, tx: 'New city, new jersey, same question. Can he carry a team?' },
+  /* A TRADE IS TOLD THE WAY IT REACHES YOU, and that is almost never a
+     podium. pickScene picks one of these off when it happened and how, and
+     every one of them ends on trade_arrive, in the new colours. */
+  trade_home: [
+    { who: 'narr', room: 'home', pic: 'me', pose: 'stand', name: '11:42 PM', role: 'Home',
+      tx: vary([
+        function(c){ return 'The house is quiet. ' + (c.famRole === 'mom' ? 'Your mom is staying the week.' : c.fam + ' fell asleep on the couch an hour ago.') + ' Your phone lights up the ceiling.'; },
+        function(c){ return 'You are halfway through a movie you will never finish. The phone buzzes on the table. Then again. Then again.'; },
+      ]) },
+    { who: 'agent', room: 'home', pic: 'me', pose: 'sad1',
+      tx: function(c){ return 'It\'s ' + c.agent.split(' ')[0] + '. You sitting down? The ' + c.fromNick + ' just traded you to the ' + c.toNick + '.'; } },
+    { who: 'agent', room: 'home', pic: 'me', pose: 'sad1',
+      tx: function(c){ return (c.back ? c.back + ' goes the other way. ' : '') + 'It\'s done. There is a flight at nine. I\'m sorry nobody called you first.'; } },
+    { who: 'fam', room: 'home', pic: 'me', pose: 'stand',
+      tx: vary([
+        function(c){ var w = c.city || 'The ' + c.toNick; return c.famRole === 'mom' ? 'Baby. ' + w + '? Okay. Okay. I\'ll help you pack.' : c.kids ? (c.city ? c.city + '? ' : '') + 'What do we tell the kids?' : (c.city ? 'So we\'re moving to ' + c.city + '. Tonight?' : 'So we\'re moving. Tonight?'); },
+        function(c){ return c.famRole === 'mom' ? 'They don\'t know what they just gave away. Go show them.' : 'Hey. Look at me. They wanted you. That\'s what this means.'; },
+      ]) },
+  ],
+  trade_practice: [
+    { who: 'narr', room: 'locker', pic: 'me', pose: 'stand', name: '10:15 AM', role: 'Shootaround', club: 'from',
+      tx: function(c){ return 'A staffer walks onto the floor and waits by the baseline. Everybody stops. Everybody knows what that means.'; } },
+    { who: 'oldgm', room: 'office', pic: 'me', pose: 'stand', club: 'from',
+      tx: function(c){ return 'Close the door. I wanted you to hear it from me. We traded you to the ' + c.toNick + '.'; } },
+    { who: 'oldgm', room: 'office', pic: 'me', pose: 'sad1', club: 'from',
+      tx: function(c){ return (c.back ? 'We get ' + c.back + '. ' : '') + 'It was a basketball decision. It wasn\'t about you. Thank you for everything.'; } },
+    { who: 'mate', room: 'locker', pic: 'me', pose: 'stand', club: 'from',
+      tx: vary([
+        function(c){ return 'Your stuff is already in a bag. ' + c.oldmate.split(' ')[0] + ' is sitting on it. "Go kill it over there. Just not against us."'; },
+        function(c){ return c.oldmate.split(' ')[0] + ' is waiting at your locker. A hug. "You were the best part of this place. Don\'t forget to call."'; },
+      ]) },
+  ],
+  trade_road: [
+    { who: 'narr', room: 'hotel', pic: 'me', pose: 'stand', name: '1:08 AM', role: 'Road trip', club: 'from',
+      tx: function(c){ return 'Hotel room. A knock at the door. The traveling secretary, holding a plane ticket and a sad smile.'; } },
+    { who: 'oldgm', room: 'hotel', pic: 'me', pose: 'sad1', club: 'from',
+      tx: function(c){ return 'Sorry about the hour. Deadline\'s at three. We sent you to the ' + c.toNick + (c.back ? ' for ' + c.back : '') + '. You don\'t play tomorrow.'; } },
+    { who: 'agent', room: 'hotel', pic: 'me', pose: 'stand',
+      tx: function(c){ return 'I heard twenty minutes ago. Get some sleep. The ' + c.toNick + ' want you for the stretch run, and they mean it.'; } },
+  ],
+  trade_leak: [
+    { who: 'narr', room: 'home', pic: 'me', pose: 'stand', name: '9:47 PM', role: 'Home',
+      tx: function(c){ return 'You are on the couch scrolling. Your name is on the screen before your phone rings.'; } },
+    { who: 'feed', room: 'home', pic: 'me', pose: 'sad1', tx: '',
+      feed: function(c){ return [
+        { h: '@thefloorwire', t: 'Sources: the ' + c.fromNick + ' are trading ' + c.name + ' to the ' + c.toNick + (c.back ? ' for ' + c.back : '') + '.', likes: 4100 + (c.vseed || 0) * 13 },
+        { h: HANDLES[(c.vseed || 0) % HANDLES.length], t: c.fromNick + ' fans in shambles right now.', likes: 380 + (c.vseed || 0) },
+      ]; } },
+    { who: 'agent', room: 'home', pic: 'me', pose: 'stand',
+      tx: function(c){ return 'I know. I know. It leaked before they called me. It\'s real. Pack light, you can send for the rest.'; } },
+  ],
+  trade_ask: [
+    { who: 'narr', room: 'home', pic: 'me', pose: 'stand', name: '2:30 PM', role: 'The summer',
+      tx: 'You asked out in the spring. The phone has been face down on the counter ever since.' },
+    { who: 'agent', room: 'home', pic: 'me', pose: 'up',
+      tx: function(c){ return 'You got your wish. You\'re a ' + c.toNick.replace(/s$/, '') + '. They gave up real stuff for you, so make them right.'; } },
+  ],
+  trade_arrive: [
+    { who: 'newgm', room: 'office', pic: 'me', pose: 'suit',
+      tx: vary([
+        function(c){ return 'Welcome to ' + (c.city || 'the ' + c.toNick) + '. We have wanted you for a year. Your locker is ready.'; },
+        function(c){ return 'Big day for us. You make us better the second you walk in. Let\'s go to work.'; },
+        function(c){ return 'Glad you\'re here. We traded for who you are, not who you were. Show us.'; },
+      ]) },
+    { who: 'bell', room: 'arena', pic: 'me', pose: 'ball', board: function(c){ return c.toNick.toUpperCase(); },
+      tx: function(c){ return 'First practice with the ' + c.toNick + '. New jersey. ' + (c.num ? 'Number ' + c.num + ', if he can keep it.' : 'Same game.'); } },
   ],
   milestone: [
     { who: 'sato', room: 'studio', pic: 'me', pose: 'ball', tx: function(c){ return c.text + ' Only a few have been there.'; } },
@@ -421,6 +495,9 @@ var SCENES = {
     { who: 'whit', room: 'studio', pic: 'rival', pose: 'trophy', tx: function(c){ return c.rival.name + ' wins MVP. You came into the league together. Just saying.'; } },
   ],
 };
+/* Until you land, you are still in the old club's colours: every beat of a
+   trade scene before trade_arrive is set at the club you are leaving. */
+['trade_home', 'trade_practice', 'trade_road', 'trade_leak', 'trade_ask'].forEach(function(id){ SCENES[id].forEach(function(b){ b.club = 'from'; }); });
 /* What is said before a decision is put to you. */
 var CARD_INTROS = {
   presser: function(card, c){ return [{ who: c.level === 'College' ? 'greer' : 'kim', room: 'press', pic: 'me', pose: card.topic === 'draft' ? 'cap' : card.topic === 'title' || card.topic === 'mvp' ? 'trophy' : 'stand',
@@ -497,6 +574,25 @@ function feedFor(tone, c, bad){
 /* ─── which scene, from what the engine just did ──────────────────────────
    A step's beats or a choice's result. The first match wins, in the order a
    fan would rank the moments. */
+/* Which way a trade reaches you, off when it happened and how. Seeded on the
+   career and the year, so a reload tells the same story. */
+function tradeScene(b, L){
+  var to = b.to || L.team, from = b.from || '';
+  var toNick = E.TEAM_NAMES[to] || to, fromNick = from ? (E.TEAM_NAMES[from] || from) : 'club';
+  var tm = E.team ? E.team(to) : null, city = (tm && tm.city) || '';
+  var x = { from: from, to: to, back: b.back || '', fromNick: fromNick, toNick: toNick, city: city,
+    oldgm: b.oldgm || 'The general manager', newgm: b.newgm || 'The general manager', agent: b.agent || 'Your agent',
+    fam: b.fam || 'Mom', famRole: b.famRole || 'mom', kids: b.kids || 0, oldmate: b.oldmate || 'Your teammate' };
+  var fk = from && E.clubSkin ? E.clubSkin(from) : null;
+  if (fk) { x.fc1 = fk.primary; x.fc2 = fk.secondary; x.teamName = fromNick + ' to ' + toNick; }
+  var n = B.hash(L.seed + ':trade:' + L.year + ':' + to);
+  var pool = b.how === 'ask' ? ['trade_ask']
+    : b.when === 'summer' ? ['trade_home', 'trade_leak', 'trade_home']
+      : b.when === 'deadline' ? ['trade_road', 'trade_practice', 'trade_home', 'trade_leak']
+        : ['trade_practice', 'trade_home', 'trade_leak'];
+  if (!from) pool = ['trade_ask'];
+  return { id: pool[n % pool.length], x: x, then: 'trade_arrive' };
+}
 function pickScene(res, L){
   if (!res) return null;
   var beats = (res.beats || []).slice();
@@ -523,7 +619,7 @@ function pickScene(res, L){
   }
   if (has('finals_loss')) return { id: 'finals_loss' };
   if ((b = has('award', function(x){ return x.award === 'star' && x.n === 1; }))) return { id: 'allstar' };
-  if ((b = has('trade'))) return { id: 'trade' };
+  if ((b = has('trade'))) return tradeScene(b, L);
   if ((b = has('retire'))) return { id: 'retire', x: { verdict: L.final && L.final.verdict }, then: L.final && L.final.jersey ? 'rafters' : null };
   if ((b = has('milestone'))) return { id: 'milestone', x: { text: b.text } };
   if ((b = has('rival', function(x){ return /wins MVP/.test(x.text); })) && L.rival) return { id: 'rival_mvp' };
@@ -583,17 +679,20 @@ function play(beats, ctx, opts){
     var r = bt.room || roomName;
     roomName = r;
     var oc = OUTLETS[CAST[bt.who] ? CAST[bt.who].outlet : 'night'].c;
-    var key = r + '|' + T(bt.board, ctx) + '|' + (bt.loud ? 1 : 0) + '|' + (r === 'studio' ? oc : '');
+    /* A beat set at the club you are leaving wears that club's colours. */
+    var k1 = bt.club === 'from' && ctx.fc1 ? ctx.fc1 : ctx.c1, k2 = bt.club === 'from' && ctx.fc2 ? ctx.fc2 : ctx.c2;
+    var key = r + '|' + T(bt.board, ctx) + '|' + (bt.loud ? 1 : 0) + '|' + (r === 'studio' ? oc : '') + '|' + k1;
     if (key !== room) {
       room = key;
       var on2 = OUTLETS[CAST[bt.who] ? CAST[bt.who].outlet : 'night'];
-      $('.sc-rooms').innerHTML = roomHTML(r, { c1: ctx.c1, c2: ctx.c2, oc: oc, level: ctx.level, loud: bt.loud, board: T(bt.board, ctx), outlet: on2 ? on2.name.toUpperCase() : '' });
+      $('.sc-rooms').innerHTML = roomHTML(r, { c1: k1, c2: k2, oc: oc, level: ctx.level, loud: bt.loud, board: T(bt.board, ctx), outlet: on2 ? on2.name.toUpperCase() : '' });
     }
     $('.sc-conf').innerHTML = bt.confetti ? confettiHTML(ctx) : '';
     fitPix(ov);
   }
   function setCast(bt){
-    var k = (bt.pic || '') + '|' + (bt.pose || '');
+    var old = bt.club === 'from' && ctx.fc1;
+    var k = (bt.pic || '') + '|' + (bt.pose || '') + '|' + (old ? 'from' : '');
     var el = $('.sc-cast');
     if (k === castKey) {
       var imgs = el.querySelectorAll('img');
@@ -602,7 +701,7 @@ function play(beats, ctx, opts){
     }
     castKey = k;
     var html = '';
-    var me = function(){ return B.img(ctx.look, { c1: ctx.c1, c2: ctx.c2, num: ctx.num, pose: bt.pose || 'stand', age: ctx.age, scale: 6 }, 'in'); };
+    var me = function(){ return B.img(ctx.look, { c1: old ? ctx.fc1 : ctx.c1, c2: old ? ctx.fc2 : ctx.c2, num: ctx.num, pose: bt.pose || 'stand', age: ctx.age, scale: 6 }, 'in'); };
     var rv = function(){
       var r = ctx.rival, last = r && r.seasons && r.seasons[r.seasons.length - 1];
       var k2 = last && E.clubSkin ? E.clubSkin(last.team) : { primary: '#2b3242', secondary: '#c9ccd6' };
@@ -660,8 +759,8 @@ function play(beats, ctx, opts){
     var out = OUTLETS[who.outlet] || OUTLETS.night;
     ov.style.setProperty('--oc', bt.who === 'me' ? ctx.c2 : out.c);
     $('.sc-out span').textContent = bt.who === 'me' ? 'Live' : out.name;
-    $('.sc-who b').textContent = T(who.name, ctx) || '';
-    $('.sc-who span').textContent = T(who.role, ctx) || '';
+    $('.sc-who b').textContent = T(bt.name != null ? bt.name : who.name, ctx) || '';
+    $('.sc-who span').textContent = T(bt.role != null ? bt.role : who.role, ctx) || '';
   }
   function paint(){
     var bt = list[i];
@@ -827,7 +926,7 @@ function build(L, pick, card){
      scene chained onto another (the title after a Game 7 winner) tells its
      own facts rather than the first scene's. */
   c.vseed = B.hash(L.seed + ':' + L.year + ':' + c.sceneId) % 997;
-  beats = beats.map(function(b){ var o = {}; for (var k in b) o[k] = b[k]; o.tx = T(b.tx, c); o.board = T(b.board, c);
+  beats = beats.map(function(b){ var o = {}; for (var k in b) o[k] = b[k]; o.tx = T(b.tx, c); o.board = T(b.board, c); if (b.feed) o.feed = T(b.feed, c);
     /* A shot is played against this moment's own facts too (the pick on
        draft night, the award at the podium), not the scene's opening ones. */
     if (b.shot) o.sx = { pick: c.pick, award: c.sceneId === 'mvp' ? 'Most Valuable Player' : c.award, teamName: c.teamName, nick: c.nick, year: c.year, num: c.num, from: c.from, to: c.to };

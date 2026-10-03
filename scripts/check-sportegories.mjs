@@ -270,15 +270,16 @@ console.log('\n7) the letter may be the first name or the last');
     fail('the refusal says ' + JSON.stringify(neither.msg) + ', which does not tell them either name will do');
   } else ok('and the refusal says it: ' + JSON.stringify(neither.msg));
 
-  /* The how-to has to agree, and its example has to be a legal answer. It used
-     to offer "Bosh", one line under a rule saying a bare "Chris" will not
-     count. */
+  /* The instruction has to agree, and any example has to be a legal answer.
+     It used to offer "Bosh", one line under a rule saying a bare "Chris" will
+     not count. The numbered rules became one line in Phase 3 (<p class="rule">
+     on the board), so that line is what is read. */
   const page = readFileSync('arcade/sportegories/index.html', 'utf8');
-  const rule = /<span class="b">2<\/span><div>([\s\S]{0,220}?)<\/div>/.exec(page);
+  const rule = /<p class="rule">([\s\S]{0,240}?)<\/p>/.exec(page);
   const txt = rule ? rule[1].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ') : '';
-  if (!/first name or the last/i.test(txt)) fail('rule 2 no longer says the letter can be the first name or the last: ' + JSON.stringify(txt));
-  else if (/[\u201c"]\s*Bosh\s*[\u201d"]/.test(txt)) fail('rule 2 offers a bare surname as an answer, which rule 1 forbids');
-  else ok('rule 2 reads: ' + txt.trim());
+  if (!/first or last name|first name or the last/i.test(txt)) fail('the instruction no longer says the letter can be the first name or the last: ' + JSON.stringify(txt));
+  else if (/[\u201c"]\s*Bosh\s*[\u201d"]/.test(txt)) fail('the instruction offers a bare surname as an answer, which the rules forbid');
+  else ok('the instruction reads: ' + txt.trim());
 }
 
 /* ---- 8. the tips name things that are really on the screen -------------- */
