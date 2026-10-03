@@ -1037,6 +1037,18 @@ window.GA_ID='G-L29P5MRWKE';
   @media(prefers-reduced-motion:reduce){ .hq.wheel.ready .hqi, .hq.wheel.ready .hqi .wbi, .hq .hqd{animation:none} }
   @media(max-width:380px){ .hq{font-size:10px; letter-spacing:0; padding-left:0; padding-right:0} }
   @media(min-width:920px){ .hqbar{min-width:372px; margin:0} .hq{min-height:66px; font-size:11.5px; padding:9px 6px} }
+  /* The next season's countdown under the quick bar. One line, in the next season's colour. */
+  .hqwrap{margin:10px 0 13px} .hqwrap .hqbar{margin:0}
+  .hqcd{display:flex; align-items:center; justify-content:center; gap:10px; width:100%; margin-top:7px; padding:7px 12px;
+    border-radius:12px; border:1px solid color-mix(in srgb,var(--acc) 55%,transparent); cursor:pointer;
+    background:linear-gradient(180deg,color-mix(in srgb,var(--acc) 22%,transparent),rgba(0,0,0,.32));
+    color:#fff; font:800 11px/1 var(--body); letter-spacing:.12em; text-transform:uppercase}
+  .hqcd:hover{border-color:var(--acc)}
+  .hqcd:focus-visible{outline:2px solid var(--acc); outline-offset:2px}
+  .hqcd .hqcdl{color:color-mix(in srgb,var(--acc) 45%,#fff)}
+  .hqcd .hqcdt{font:900 14px/1 var(--body); letter-spacing:.04em; font-variant-numeric:tabular-nums; text-transform:none}
+  .hqcd span{white-space:nowrap}
+  @media(max-width:380px){ .hqcd{gap:6px; padding:7px 8px; font-size:10px; letter-spacing:.04em} .hqcd .hqcdt{font-size:13px} }
   /* Prize Wheel: a compact pill in the hero row instead of a full mode card (owner). The little wheel
      spins and the pill glows only when a spin is actually waiting, so it reads as "there's something
      here for you" without eating a screenful. */
@@ -9942,7 +9954,14 @@ function passSeasonStartTxt(n){ try{
 // The INSTANT a season stops, which is the end of that last day rather than its start. A countdown built
 // off passSeasonEndUTC() would run out a full day early and tell somebody the pass was gone while it was
 // still on sale.
-function passSeasonEndMs(n){ return passSeasonEndUTC(n) + 86400000; }
+function passSeasonEndMs(n){ return etMidnightMs(TOURPASS_EPOCH + (Math.max(1,n|0))*TOURPASS_LEN); }
+// Midnight EASTERN at the start of a day number, as an instant. A season turns over when todayKey()
+// (Eastern) does, so a clock that ran to UTC midnight hit zero at 8pm or 7pm Eastern and announced a new
+// season four or five hours before the game changed over. The offset is asked of the zone at that date,
+// because the seasons cross the November clock change.
+function etMidnightMs(day){ const base=day*86400000;
+  try{ const h=+new Intl.DateTimeFormat('en-US',{timeZone:TZ_DAILY,hour:'numeric',hourCycle:'h23'}).format(new Date(base+12*3600000));
+    return base+(12-h)*3600000; }catch(e){ return base; } }
 // A countdown split into the four units a clock shows. Clamped at zero: the season boundary is checked by
 // day elsewhere, and a clock counting backwards past its own deadline is worse than one sitting at 00.
 function passCountdown(n, now){
@@ -14928,7 +14947,31 @@ function scrTitle(){
     { const ru=qb('roster', pxMedalSVG(PXICONS.chartup,'#6fd3ff'), 'Rosters', 'Roster Updates', openRosterUpdates,
          rosterUpdUnseen()?'<span class="hqd"></span>':'');
       ru.setAttribute('data-rosterbtn',''); }
-    (head||w).appendChild(hw); }   // (daily quests moved to the compact nav row below, which carries the "still to do" dot)
+    // The next season's countdown, under the quick bar in a season's last 14 days, and only for a season
+    // that has been written (an unauthored one would count down to a pass with nothing on it). It names the
+    // NUMBER and nothing else: what the next season holds is still not shown before it starts (owner).
+    let qwrap=hw; const ssn=passSeason(), nx=ssn.n+1;
+    if(PASS_SEASONS[nx] && ssn.daysLeft<=14){
+      hw.classList.remove('homehead-act');
+      qwrap=$(`<div class="homehead-act hqwrap"></div>`); qwrap.appendChild(hw);
+      const acc=(PASS_SEASONS[nx].accent)||'#a24be0';
+      const cd=$(`<button type="button" class="hqcd" style="--acc:${acc}" aria-label="Season ${nx} countdown, opens the Tour Pass"><span class="hqcdl">Season ${nx} starts in</span><span class="hqcdt" aria-live="off"></span></button>`);
+      cd.onclick=function(){ S.overlay='tourpass'; render(); };
+      qwrap.appendChild(cd);
+      const tt=cd.querySelector('.hqcdt'), pad=function(v){ return v<10?'0'+v:String(v); };
+      // The first tick runs while the home screen is still being built, before the button is in the page,
+      // so the stop is only for a button that WAS on screen and has since been thrown away by a render.
+      let seen=false;
+      const tick=function(){
+        if(cd.isConnected) seen=true; else if(seen){ clearInterval(iv); return; }
+        const sec=Math.max(0, Math.floor((passSeasonEndMs(ssn.n)-Date.now())/1000));
+        if(sec<=0){ clearInterval(iv); tt.textContent='Now'; return; }
+        const d=Math.floor(sec/86400), h=Math.floor(sec/3600)%24, m=Math.floor(sec/60)%60, x=sec%60;
+        tt.textContent=(d?d+'d ':'')+pad(h)+'h '+pad(m)+'m '+pad(x)+'s';
+      };
+      const iv=setInterval(tick,1000); tick();
+    }
+    (head||w).appendChild(qwrap); }   // (daily quests moved to the compact nav row below, which carries the "still to do" dot)
   // (career bests moved off the top onto the new-career card, see careerHeroCard)
   const stack=$(`<div class="stack"></div>`);
   const ri=resumeInfo();
