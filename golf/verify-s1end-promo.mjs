@@ -145,7 +145,10 @@ window.__S1 = {
    rather than a mystery slowdown three screens later */
 window.__S1._ids=new Set();
 (function(){ var si=window.setInterval, ci=window.clearInterval;
-  window.setInterval=function(){ var id=si.apply(window,arguments); window.__S1._ids.add(id); return id; };
+  // Only the popup's own clock is followed. The home screen under it carries the next season's countdown,
+  // which is another timer started by the same render and stopped by its own button leaving the page.
+  window.setInterval=function(fn){ var id=si.apply(window,arguments);
+    if(String(fn).indexOf('passCountdown(1)')>=0) window.__S1._ids.add(id); return id; };
   window.clearInterval=function(id){ window.__S1._ids.delete(id); return ci.apply(window,arguments); }; })();
 /* Pretend today falls somewhere else in the pass calendar, without moving the machine's clock. _left is
    days remaining in the season, which is what picks a beat. */
@@ -197,8 +200,9 @@ const run = async () => {
   console.log('    last day ' + D.endDay + ' · locks at ' + D.endMs + ' · reads as "' + D.txt + '"');
   ok('the last day is derived from the epoch and the length, not written down',
     D.endDay === '2026-10-04', D.endDay);
+  // midnight EASTERN, when todayKey() turns the season over (EDT in October, so 04:00 UTC)
   ok('and the deadline is the END of that day, so the clock does not expire a day early',
-    D.endMs === '2026-10-05T00:00:00.000Z', D.endMs);
+    D.endMs === '2026-10-05T04:00:00.000Z', D.endMs);
   ok('season 2 ends on its own date', /December/.test(D.season2), D.season2);
   ok('the boost is the 20 tiers the copy promises', D.boostTiers === 20);
   ok('the countdown is running and inside the season', D.cd.ms > 0 && D.cd.d < D.len, D.cd);
