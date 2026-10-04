@@ -1284,7 +1284,20 @@ if (!QUICK) {
   ok(dk.widths.length === 1 && dk.wrap > 900, `the teammates are tiles of one width (${dk.widths.join(', ')}px) on a page ${Math.round(dk.wrap)}px wide`);
   ok(dk.cols && dk.twoLines, 'in two columns of clubs, with the years on a line under the name');
   ok(dk.below, 'and the header starts under the site bar');
+  /* PINNED: scrolled to the bottom of the picker, both ends are still on screen,
+     right under the site bar. A phone scrolls them away, which is the room. */
+  const pin = async () => friend.evaluate(() => {
+    window.scrollTo(0, document.documentElement.scrollHeight);
+    const hdr = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hdr')) || 50;
+    return [...document.querySelectorAll('#s-pass .ps-top > .ps-end')].map((e) => {
+      const q = e.getBoundingClientRect(); return q.top >= hdr - 1 && q.bottom <= innerHeight; });
+  });
+  await friend.waitForTimeout(100);
+  const pinned = await pin();
+  ok(pinned.length === 2 && pinned.every(Boolean), 'on a desktop both ends stay on screen while the picker scrolls');
   await friend.setViewportSize({ width: 390, height: 844 });
+  await friend.waitForTimeout(100);
+  ok(!(await pin()).every(Boolean), 'and a phone scrolls them away');
   await friend.goto('http://local.test/hoops/#fix=CHI_1996', { waitUntil: 'domcontentloaded' });
   await friend.waitForSelector('#s-fix #fx-pat', { timeout: 60000 });
   ok(/Picked team/.test(await friend.textContent('#s-fix .cq-rung')), 'and a team link opens the picked team');

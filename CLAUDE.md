@@ -12365,6 +12365,16 @@ page's confetti (`RTF_PAGE.confetti`). `check-modes` asserts the card is above t
 ends, the lane has par plus one hands, and the desktop row, tile widths, two columns
 and two line tiles off the rectangles; each was proved by breaking it.
 
+**On a desktop the two ends and the timeline are pinned under the site bar, and run
+the width of the window**, asked for by the owner: the two players are the whole
+puzzle, so they stay on screen while the picker scrolls. The bar carries the app bar's
+blurred backdrop, bled up over the gap under the bar. **The timeline is drawn WIDER,
+never scaled up**: `psTlWidth()` makes the viewBox the box's width over
+`PS_TL_SCALE`, because the 340 wide picture stretched across a 1920 window came out
+400px tall. A resize redraws the timeline alone when its width bucket moves. A phone
+keeps 340 and scrolls the ends away. `check-modes` asserts both, and removing the
+sticky fails it.
+
 #### Endless and picked puzzles, and the day they are Pro
 
 ```

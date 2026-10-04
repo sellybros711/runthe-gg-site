@@ -788,6 +788,13 @@ var CSS = [
   '  .wrap:has(#s-pass.active){max-width:1040px;}',
   '  .ps-top{grid-template-columns:230px 1fr 230px;grid-template-areas:"a t b";gap:14px;align-items:stretch;}',
   '  .ps-top>.ps-to{display:none;}',
+  /* PINNED. The two ends are the whole puzzle, so they stay on screen while the
+     picker scrolls under them. The backdrop is the app bar's, bled to the window
+     and up over the gap under the bar, so a tile never shows between the cards. */
+  /* And it runs the width of the window, not the page: the timeline is the
+     thing that needs the room, and the ends sit at the screen's edges. */
+  '  .ps-top{position:sticky;top:var(--hdr);z-index:40;padding:8px 24px 10px;margin:-8px calc(50% - 50vw) 10px;grid-template-columns:clamp(230px,18vw,300px) 1fr clamp(230px,18vw,300px);}',
+  '  .ps-top:before{content:"";position:absolute;inset:-10px 0 0;background:rgba(13,17,23,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);z-index:-1;}',
   '  .ps-top>.ps-tlw{display:flex;flex-direction:column;justify-content:flex-end;}',
   '  .ps-end{display:flex;flex-direction:column;justify-content:flex-end;padding:14px 16px;}',
   '  .ps-end b{font-size:24px;}',
@@ -2455,11 +2462,23 @@ function spanTxt(id){ var sp = graph().span[id]; return sp[0] === sp[1] ? String
    each pass an arc between two of them. It is the picture of what the puzzle
    is, which is moving the ball through time, and it is drawn from the chain
    rather than stored, so a reload draws the same flight. */
+/* ON A DESKTOP THE BAR IS THE WIDTH OF THE WINDOW, so the drawing is made wider
+   rather than scaled up: a 340 wide picture stretched across 1300px came out
+   400px tall. W is the box's width at a fixed scale, rounded so a small resize
+   does not redraw. A phone keeps 340. */
+var PS_TL_SCALE = 1.45;
+function psTlWidth(){
+  if (!(window.matchMedia && matchMedia('(min-width:920px)').matches)) return 340;
+  var el = document.querySelector('#s-pass .ps-top > .ps-tlw');
+  var px = el && el.clientWidth ? el.clientWidth
+    : innerWidth - 76 - 2 * Math.min(300, Math.max(230, innerWidth * 0.18));
+  return Math.max(340, Math.round(px / PS_TL_SCALE / 20) * 20);
+}
 function psTimeline(st){
   var g = graph(), pz = psPuzzle();
   var yrs = data().teamSeasons.map(function(t){ return t.season; });
   var y0 = Math.min.apply(null, yrs), y1 = Math.max.apply(null, yrs);
-  var W = 340, H = 104, pad = 14, base = 84;
+  var W = psTlWidth(), H = 104, pad = 14, base = 84;
   var X = function(y){ return pad + (y - y0) / (y1 - y0) * (W - pad * 2); };
   var mid = function(id){ var sp = g.span[id]; return (sp[0] + sp[1]) / 2; };
   var h = '<svg class="ps-tl" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">';
@@ -2496,6 +2515,15 @@ function psTimeline(st){
     + (hx / W * 100) + '% - 11px)">';
   return '<div class="ps-tlw">' + h + '</div>';
 }
+/* A resize redraws only the timeline, and only when its width bucket moves. */
+window.addEventListener('resize', function(){
+  var el = document.querySelector('#s-pass.active .ps-top > .ps-tlw');
+  var svg = el && el.querySelector('.ps-tl');
+  if (!svg || psPicking) return;
+  if (svg.getAttribute('viewBox') === '0 0 ' + psTlWidth() + ' 104') return;
+  var t = document.createElement('div'); t.innerHTML = psTimeline(psState());
+  el.innerHTML = t.firstChild.innerHTML;
+});
 
 function psClock(n){
   var left = M.PS.CLOCK - n;
