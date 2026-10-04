@@ -11702,6 +11702,50 @@ to have something real to measure. The leaderboard's Career tab keeps the
 game's shared board chrome, because restyling one tab of seven is a seam inside
 the board rather than one removed at its door.
 
+#### The cards before and after a season are read off the season (story careers)
+
+Reported by the owner: the pre and post season prompts were very repetitive.
+Measured over sixty careers, they were. Every September dealt the same training
+card with the same five answers and the same goal card in the same voice. Every
+April went to the same four cards (the playoff assignment, the exit interview, a
+hamstring, a guarantee), because almost nothing else could be dealt between game
+82 and the first playoff game.
+
+- **The summer card** (`summerCard`) opens on what last season was (a title, a
+  Finals loss, a first round exit, a new city, a contract year, a season of missed
+  games) and offers four of sixteen programs (`SUMMER`). Some come only to a career
+  they fit: post work for a big, national team camp at 78 and up, Summer League in
+  the first three years, rehab after a short season. A program offered last summer
+  is less likely to come round. Each is worth what one of the old five was, so
+  balance does not move; the same program three summers running pays 0.6 and says
+  so. The card id is still `training`, and an old card without `ctx.ks` resolves
+  the old way.
+- **The goal card** has eighteen goals and six people who ask (`GOAL_ASK`): the GM,
+  the agent, the beat writer, the trainer, your mom, or the mirror. Nobody asks two
+  Septembers running, the card says whether you hit last year's, and in April the
+  person who asked answers (`GOAL_SAID`) and the relationship moves.
+- **Thirty five new cards** (`apr_*`, `sep_*`, `jun_*`), each once a career and
+  each read off where the season stands: the top seed, an underdog, the play-in,
+  your first playoffs, a missed season, a parade, the other team's parade, a
+  holdout, a captaincy, a new number in a new city. April went from four cards to
+  about twenty sharing it.
+
+**Two things the simulator caught.** The thirty five cards share their slots with
+the legend layer, so the share of careers meeting a legend card fell from 34% to
+30%, on the floor; `LEGEND_W` went 1 to 1.4 and it reads 37.7%. And the sixth man
+route and the "great sixth man" ending asked for a season with the role "Sixth
+man", which nothing wrote: the story roles were Franchise player, Starter,
+Rotation, End of bench. The first man off the bench (20 minutes or more, sixth or
+better on the club) is labelled that now, and three such seasons earn the ending
+as they already earned the route. The old sweep had met the ending exactly once
+in 1,000 careers, by a Sixth Man award.
+
+**`late` is after game 82.** An April card that talks about the last home game in
+the future tense is wrong; three were rewritten for that before shipping.
+
+`replay-careers --story off` is byte identical over 1,000 careers: everything here
+is behind `storyOn`.
+
 #### Phase E: Pro starts in high school, a free career starts from a generated road
 
 ```
