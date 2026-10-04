@@ -11,7 +11,9 @@
  * So this holds the season table to what the pass sells:
  *
  *   VALUE      every pack, shard and spin Season 1 paid is still paid, at the same tier, and no tier
- *              pays fewer coins. A new season is never a worse pass.
+ *              pays fewer coins. The one exception is a Pro pack a season names in `swap` (owner, Oct
+ *              2026): it is traded for that tier's exclusive, so the tier must carry one, and it keeps
+ *              its spin and shard. Season 2 swaps exactly tiers 10, 45, 48 and 53.
  *   EXCLUSIVE  every item on a season's track is on that track only: price 0, in no pack pool, in no
  *              drop, on no other season, carrying no stat boost, and never offered for coins.
  *   DRAWN      every item actually renders. A hat id with no sprite silently falls back to the plain
@@ -46,6 +48,7 @@ window.__P = {
     _walletCache={paid:0, lifePurchased:0, lifeGranted:0, tokens:0, passActive:true, passPeriod:'S'+passSeason().n};
     try{ cloudPush=function(){}; }catch(e){} },
   season(){ return passSeason(); },
+  swap(n){ return ((PASS_SEASONS[n]||{}).swap||{}); },
   tables(){ var out={};
     [1,2,3].forEach(function(n){ var L={free:[],prem:[]};
       for(var t=1;t<=PASS_TIERS;t++){ L.free.push(passTierReward(t,'free',n)); L.prem.push(passTierReward(t,'prem',n)); }
@@ -61,6 +64,8 @@ window.__P = {
     var listed=(cosmeticItems(cat)||[]).some(function(o){ return o.id===id; });
     var drawn=false;
     if(cat==='hw') drawn=!!PXG_HATS[id]; else if(cat==='ew') drawn=!!PXG_EYEWEAR[id];
+    else if(cat==='club') drawn=!!(PXG_CLUBS[id]&&PXG_CLUB_PAL[id]&&CLUBS_BY[id]); else if(cat==='top') drawn=!!(PXG_TOPS[id]&&PXG_TOP_PAL[id]);
+    else if(cat==='cleats') drawn=!!(PXG_CLEATS[id]&&PXG_CLEATS_PAL[id]);
     else if(cat==='ball') drawn=!!(PXG_BALL[id]&&PXG_BALL_PAL[id]); else if(cat==='pat') drawn=!!PXPAT_BY[id];
     else if(cat==='fx') drawn=!!PXFX_BY[id]; else if(cat==='plate') drawn=!!PLATE_STYLE[id]; else if(cat==='cardbg') drawn=!!CARDBG_ART[id];
     var inPool=packPool().some(function(e){ return e.cat===cat && e.id===id; });
@@ -188,6 +193,8 @@ try {
 
   head('value: Season 2 is never a worse pass than Season 1');
   const T = await E('tables');
+  const SW = await E('swap', 2);
+  ok('Season 2 swaps exactly Pro tiers 10, 45, 48 and 53 (owner)', JSON.stringify(SW) === JSON.stringify({ prem: [10, 45, 48, 53] }), SW);
   const sum = (L, k) => L.reduce((a, r) => a + (k === 'coins' ? (r.coins || 0) : 0), 0);
   for (const lane of ['free', 'prem']) {
     const s1 = T[1][lane], s2 = T[2][lane];
@@ -195,11 +202,18 @@ try {
     const moved = [];
     for (let i = 0; i < s1.length; i++) {
       const a = s1[i], z = s2[i];
-      // Season 2 may ADD a pack where Season 1 had only a cosmetic; it may never change or drop one.
+      // Season 2 may ADD a pack where Season 1 had only a cosmetic; it may never change or drop one,
+      // except a Pro pack it SWAPS for that tier's exclusive.
+      const swapped = (SW[lane] || []).includes(i + 1);
+      if (swapped) { if (z.pack || !z.cos) moved.push(i + 1); else if (JSON.stringify(a.shard || null) !== JSON.stringify(z.shard || null) || JSON.stringify(a.spin || null) !== JSON.stringify(z.spin || null) || (z.coins || 0) < (a.coins || 0)) moved.push(i + 1); continue; }
       if ((a.pack && JSON.stringify(a.pack) !== JSON.stringify(z.pack || null)) || JSON.stringify(a.shard || null) !== JSON.stringify(z.shard || null)
         || JSON.stringify(a.spin || null) !== JSON.stringify(z.spin || null) || (z.coins || 0) < (a.coins || 0)) moved.push(i + 1);
     }
-    ok(`${lane}: every pack, shard and spin is where Season 1 put it, and no tier pays fewer coins`, !moved.length, moved);
+    ok(`${lane}: every pack, shard and spin is where Season 1 put it (or swapped for an exclusive), and no tier pays fewer coins`, !moved.length, moved);
+    if (lane === 'prem') {
+      const sw = (SW.prem || []).map(t => t + ':' + (s2[t - 1].cos ? s2[t - 1].cos.cat + '/' + s2[t - 1].cos.id : 'none') + (s2[t - 1].pack ? '+pack' : '') + (s2[t - 1].spin ? '+spin' : ''));
+      ok('prem: each swapped tier pays its exclusive instead of the pack, and 48 keeps its spin', sw.join(',') === '10:club/broomstick,45:top/shacket,48:cleats/hayride+spin,53:club/pitchfork', sw);
+    }
     const added = s2.map((z, i) => (!s1[i].pack && z.pack) ? (i + 1) + ':' + z.pack.tier : null).filter(Boolean);
     if (lane === 'free') ok('free: the two tiers Season 1 spent on cosmetics pay a seasonal pack instead', added.join(',') === '15:seasonal,35:seasonal', added);
     else ok('prem: no pack is added on the Pro lane', !added.length, added);
@@ -300,7 +314,7 @@ try {
 
   head('claiming the whole track');
   const CL = await E('claimAll');
-  ok(`all ${CL.n} rewards claim, and every cosmetic lands in the closet`, CL.cos.length === 17 && CL.cos.every(c => c.owned), CL.cos.filter(c => !c.owned));
+  ok(`all ${CL.n} rewards claim, and every cosmetic lands in the closet`, CL.cos.length === 21 && CL.cos.every(c => c.owned), CL.cos.filter(c => !c.owned));
 
   const at = async (iso) => { await page.clock.setSystemTime(new Date(iso)); };
 
