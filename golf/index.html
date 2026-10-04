@@ -14979,7 +14979,14 @@ function scrTitle(){
       const tick=function(){
         if(cd.isConnected) seen=true; else if(seen){ clearInterval(iv); return; }
         const sec=Math.max(0, Math.floor((passSeasonEndMs(ssn.n)-Date.now())/1000));
-        if(sec<=0){ clearInterval(iv); tt.textContent='Now'; return; }
+        // At zero the home screen redraws itself, so Season 2 (and its launch popup) arrives on the second.
+        // It waits for the game's own season to have turned, which is the same Eastern midnight, so a
+        // rounding gap can never redraw the old season. A popup open on top is left alone: closing it redraws.
+        if(sec<=0){ tt.textContent='00h 00m 00s';
+          if(passSeason().n===ssn.n) return;
+          clearInterval(iv);
+          if(cd.isConnected && S.screen==='title' && !S.overlay){ try{ render(); }catch(e){} }
+          return; }
         const d=Math.floor(sec/86400), h=Math.floor(sec/3600)%24, m=Math.floor(sec/60)%60, x=sec%60;
         tt.textContent=(d?d+'d ':'')+pad(h)+'h '+pad(m)+'m '+pad(x)+'s';
       };
