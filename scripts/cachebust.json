@@ -2560,7 +2560,7 @@
     },
     "career.js": {
       "v": "31",
-      "sha": "3588a7eb516a89c5"
+      "sha": "a599f6da96c7ba8a"
     },
     "baller.js": {
       "v": "4",
@@ -2611,8 +2611,8 @@
       "sha": "e9c8d56731f18a7e"
     },
     "career-ui.js": {
-      "v": "33",
-      "sha": "4d6e6365e4f34636"
+      "v": "34",
+      "sha": "625fe3cb8f9680e8"
     },
     "data/players.json": {
       "v": "5",

@@ -205,6 +205,44 @@ var CSS = [
 '.cr-card.clutch{background:linear-gradient(180deg,#2a2412,var(--k-panel) 70%);}',
 '.cr-card.clutch .k-eyebrow{color:var(--k-gold);}',
 '.cr-choice{min-height:56px;}',
+/* THE DECISION TRAY. On a phone the card on top is docked to the bottom of the
+   screen, always in the same place, with the feed behind it as context. It is
+   the same element as the inline card, so every reader of #cr-card and
+   .cr-choice is untouched. Capped at 45% of the screen, or it is a modal again,
+   and it scrolls inside itself past that. The page is padded by the tray's own
+   measured height (--cr-tray) so nothing in the column hides behind it. */
+'@media (max-width:719px){',
+'  #s-car .cr-card{position:fixed;left:0;right:0;bottom:0;z-index:20;margin:0;max-height:45vh;max-height:45dvh;overflow-y:auto;overscroll-behavior:contain;',
+'    padding:12px 14px calc(12px + env(safe-area-inset-bottom,0px));background:var(--k-panel);',
+'    box-shadow:0 -3px 0 0 var(--cr-edge,var(--k-accent)),0 -6px 0 0 #05070d,0 -18px 30px rgba(3,5,10,.55);animation:none;}',
+'  #s-car .cr-card.clutch{--cr-edge:var(--k-gold);}',
+'  #s-car .cr-card .k-eyebrow{margin-bottom:4px;}',
+'  #s-car .cr-card .k-h1{font-size:22px;margin-bottom:6px;}',
+'  #s-car .cr-card > p{margin:0 0 10px;font-size:14px;line-height:1.45;}',
+'  #s-car .cr-card > p.cr-clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}',
+'  #s-car .cr-card .k-opts{gap:6px;}',
+'  #s-car .cr-card .cr-choice{min-height:50px;}',
+'  #s-car .cr-tray-rise{animation:cr-tray-rise 200ms var(--k-e-move) both;}',
+'  #s-car .cr-tray-swap > *{animation:cr-tray-swap 180ms ease-out both;}',
+'  #s-car.cr-has-tray .cr-main{padding-bottom:calc(var(--cr-tray,0px) + 12px);}',
+'  #s-car.screen.active{animation-name:cr-scrin;}',
+'}',
+'.cr-wait{display:inline-block;margin-left:auto;padding:2px 6px;font:800 9px var(--k-f-text);letter-spacing:.14em;text-transform:uppercase;color:#05070d;background:var(--cr-edge,var(--k-accent));}',
+'.cr-card .k-eyebrow{display:flex;align-items:center;gap:6px;}',
+'.cr-more{margin:-4px 0 10px;padding:4px 0;background:none;border:0;color:var(--k-accent);font:800 11px var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;cursor:pointer;}',
+'.cr-more[hidden]{display:none;}',
+'@keyframes cr-tray-rise{from{transform:translateY(100%);}to{transform:none;}}',
+'@keyframes cr-tray-swap{from{opacity:0;}to{opacity:1;}}',
+/* A position:fixed tray inside a transformed screen is positioned against the
+   screen, not the window, so the career screen enters on opacity alone. */
+'@keyframes cr-scrin{from{opacity:0;}to{opacity:1;}}',
+/* the receipt's moved rows, folded on a phone to one line you can open */
+'.cr-rows > summary{cursor:pointer;list-style:none;font-size:12.5px;color:var(--k-ink-2);padding:6px 0 2px;}',
+'.cr-rows > summary::-webkit-details-marker{display:none;}',
+'.cr-rows > summary b{color:var(--k-accent);font:800 10px var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;margin-left:6px;}',
+'.cr-rows[open] > summary b.op{display:none;}.cr-rows:not([open]) > summary b.cl{display:none;}',
+'.cr-rows > summary .up{color:var(--k-good);}.cr-rows > summary .down{color:var(--k-bad);}',
+'@media (prefers-reduced-motion:reduce){#s-car .cr-tray-rise,#s-car .cr-tray-swap > *{animation:none;}}',
 '.cr-acts{display:flex;gap:4px;flex-wrap:wrap;margin:0;}',
 '.cr-acts .k-btn{flex:1 1 0;min-width:120px;font-size:12.5px;padding:10px;}',
 /* the action the thumb reaches: pinned to the bottom of the column */
@@ -989,11 +1027,43 @@ function cardHtml(L, c, fresh){
     return '<li><button class="k-opt cr-choice" data-i="' + i + '"' + (i < 9 ? ' aria-keyshortcuts="' + (i + 1) + '"' : '') + '>'
       + '<span class="k-key" aria-hidden="true">' + (i + 1) + '</span><span>' + esc(o.label) + (o.hint ? '<small>' + esc(o.hint) + '</small>' : '') + '</span></button></li>';
   }).join('');
-  return '<div class="k-panel k-decision cr-card' + cls + (fresh ? ' k-in' : '') + '" id="cr-card" role="group" aria-labelledby="cr-card-h">'
-    + '<div class="k-eyebrow">' + K.iconHtml(c.kind === 'clutch' ? 'ball' : 'whistle', 2) + esc(c.eyebrow || 'Your call') + '</div>'
-    + '<h3 class="k-h1" id="cr-card-h">' + esc(c.title) + '</h3>' + (c.text ? '<p>' + esc(c.text) + '</p>' : '')
+  /* On a phone the card is the tray: it rises once when a decision arrives
+     and fades its contents when one replaces another, and never moves when a
+     redraw keeps the same card. */
+  var key = cardKey(c), motion = '';
+  if (trayMode()) motion = !trayKey ? ' cr-tray-rise' : trayKey !== key ? ' cr-tray-swap' : '';
+  else if (fresh) motion = ' k-in';
+  trayKey = key;
+  var wait = c.eyebrow && c.eyebrow !== 'Your call' ? '<span class="cr-wait">Your call</span>' : '<span class="cr-wait">Waiting on you</span>';
+  return '<div class="k-panel k-decision cr-card' + cls + motion + '" id="cr-card" role="group" aria-labelledby="cr-card-h">'
+    + '<div class="k-eyebrow">' + K.iconHtml(c.kind === 'clutch' ? 'ball' : 'whistle', 2) + esc(c.eyebrow || 'Your call') + wait + '</div>'
+    + '<h3 class="k-h1" id="cr-card-h">' + esc(c.title) + '</h3>'
+    + (c.text ? '<p class="cr-clamp" id="cr-card-p">' + esc(c.text) + '</p><button type="button" class="cr-more" id="cr-card-more" hidden>More</button>' : '')
     + '<ol class="k-opts">' + opts + '</ol></div>';
 }
+/* The tray is a phone layout: a wide screen has room, so the card stays in
+   the column. */
+var trayKey = null;
+function trayMode(){ return !(window.matchMedia && window.matchMedia('(min-width:720px)').matches); }
+function cardKey(c){ return (c.key || c.id || '') + '|' + c.title; }
+/* After a paint: pad the column by the tray's real height, and offer More
+   only when the setup really is cut. */
+function fitTray(){
+  var root = $('s-car'), card = $('cr-card');
+  if (!root) return;
+  var on = !!(card && trayMode() && getComputedStyle(card).position === 'fixed');
+  root.classList.toggle('cr-has-tray', on);
+  if (!card) trayKey = null;
+  if (!on) { root.style.removeProperty('--cr-tray'); return; }
+  root.style.setProperty('--cr-tray', Math.ceil(card.getBoundingClientRect().height) + 'px');
+  var p = $('cr-card-p'), more = $('cr-card-more');
+  if (p && more) {
+    more.hidden = !(p.classList.contains('cr-clamp') && p.scrollHeight > p.clientHeight + 2);
+    more.onclick = function(){ p.classList.remove('cr-clamp'); more.hidden = true; fitTray(); };
+  }
+}
+var trayRO = window.ResizeObserver ? new ResizeObserver(function(){ fitTray(); }) : null;
+window.addEventListener('resize', function(){ if (onScreen && onScreen()) fitTray(); });
 function beatsHtml(list, fresh){
   if (!list || !list.length) return '';
   return '<ul class="k-panel k-tight cr-beats' + (fresh ? ' k-in' : '') + '">' + list.map(function(b, i){
@@ -1012,7 +1082,20 @@ function resultHtml(r, fresh){
     + '<div class="k-eyebrow">' + K.iconHtml('check', 2) + 'What changed</div>'
     + '<div class="cr-you">You: ' + esc(r.label) + '</div><p class="k-what">' + esc(r.text) + '</p>'
     + contestHtml(r.contest)
-    + (rows ? '<ul>' + rows + '</ul>' : '') + '</div>';
+    + rowsFold(r.diff || [], rows) + '</div>';
+}
+/* On a phone the rows a press moved fold to one line (the first three, then
+   how many more), so the receipt above the tray stays short. Open on a wide
+   screen, where there is room. */
+function rowsFold(diff, rows){
+  if (!rows) return '';
+  if (!trayMode()) return '<ul>' + rows + '</ul>';
+  var bit = function(x){
+    var v = x.money ? (x.d > 0 ? '+' : '-') + money(Math.abs(x.d)) : (x.d > 0 ? '+' : '') + x.d;
+    return esc(x.k === 'trust' ? 'Trust' : x.label) + ' <span class="' + (x.d > 0 ? 'up' : 'down') + '">' + v + '</span>';
+  };
+  var line = diff.slice(0, 3).map(bit).join(' · ') + (diff.length > 3 ? ' · ' + (diff.length - 3) + ' more' : '');
+  return '<details class="cr-rows"><summary>' + line + '<b class="op">Show</b><b class="cl">Hide</b></summary><ul>' + rows + '</ul></details>';
 }
 /* A Saturday contest: who was in it, round one, the final, and where you
    finished. Out in round one is a hyphen in the final column. */
@@ -1293,6 +1376,9 @@ function wireLife(L, d){
   if (dr) K.theme(dr, dr.getAttribute('data-c1'), dr.getAttribute('data-c2'));
   if (d && d.ovr != null && d.ovr !== C.show(C.ovrOf(L))) K.countUp($('cr-ovr'), C.show(C.ovrOf(L)), { from: d.ovr, ms: 700 });
   if (stage.draft) animateDraft();
+  fitTray();
+  var tc = $('cr-card');
+  if (trayRO) { trayRO.disconnect(); if (tc) trayRO.observe(tc); }
 }
 function openRetire(L){
   openSheet('<h3 class="k-h1">Retire now?</h3><p class="cash">The career ends here and goes in your Hall of Fame. There is no coming back.</p>'
@@ -1468,7 +1554,9 @@ function scrollStage(){
   /* A decision is what the eye has to land on: if its first answer would
      sit below the fold, the screen moves to it even when the stage itself
      starts on screen. */
-  var ch = st.querySelector('.cr-choice'), cr = ch ? ch.getBoundingClientRect() : null;
+  /* In the tray the answers are pinned on screen already, so the page only
+     has to bring what happened into view above it. */
+  var ch = trayMode() && document.querySelector('#s-car.cr-has-tray') ? null : st.querySelector('.cr-choice'), cr = ch ? ch.getBoundingClientRect() : null;
   var low = cr && cr.bottom > window.innerHeight - 24;
   if (r.top < 60 || r.top > window.innerHeight * 0.55 || low) {
     /* When a receipt and the beats stand above the card, the stage top is

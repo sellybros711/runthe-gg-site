@@ -1281,7 +1281,7 @@ async function browser() {
 
   /* Play it out, pressing the first choice or the next button, reading the
      glass for a field that printed as nothing. */
-  let presses = 0, junk = [], reloaded = false, offOpened = false, resumed = null, keyed = false, docked = false, offFold = [], cardsSeen = 0, tall = false;
+  let presses = 0, junk = [], reloaded = false, offOpened = false, resumed = null, keyed = false, docked = false, offFold = [], cardsSeen = 0, tall = false, trayed = false, trayBad = [];
   const stagesSeen = {};
   while (presses++ < 900) {
     const st = await page.evaluate(() => {
@@ -1338,6 +1338,55 @@ async function browser() {
       });
       ok(r > 0 && r <= 844, `under the tallest receipt, the card's first answer is still on the screen (${r})`);
     }
+    /* THE DECISION TRAY. On a phone the card on top is docked to the bottom
+       of the screen: fixed, at most 45% of it, every answer reachable without
+       scrolling the page, the column padded so nothing hides behind it, and
+       no step button while it waits. Asked at two phones and a desktop, where
+       the card stays in the column. A long setup folds behind More. */
+    if (!trayed && st.card && st.steps >= 5) {
+      trayed = true;
+      const probe = () => page.evaluate(() => {
+        const c = document.querySelector('#cr-card'), o = [...c.querySelectorAll('.cr-choice')];
+        const r = c.getBoundingClientRect(), y0 = window.scrollY, H = window.innerHeight;
+        const fixed = getComputedStyle(c).position === 'fixed';
+        let reach = true;
+        o.forEach((b) => { b.scrollIntoView({ block: 'nearest' }); const q = b.getBoundingClientRect(); if (q.top < 0 || q.bottom > H + 0.5) reach = false; });
+        const moved = Math.abs(window.scrollY - y0) > 1 && fixed;
+        c.scrollTop = 0;
+        window.scrollTo(0, document.documentElement.scrollHeight);
+        const q = document.querySelector('#cr-quit'), qb = q ? q.getBoundingClientRect().bottom : 0, top2 = c.getBoundingClientRect().top;
+        return { fixed, h: r.height, H, bottom: Math.round(r.bottom), reach, moved, clear: !q || !fixed || qb <= top2 + 1, next: !!document.querySelector('#cr-next'), rise: c.className };
+      });
+      for (const [w, h] of [[390, 844], [360, 640]]) {
+        await page.setViewportSize({ width: w, height: h });
+        await page.evaluate(() => RTF_CAREER_UI.paintPress({ beats: [], result: null }));
+        const t = await probe();
+        ok(t.fixed && t.bottom === t.H, `at ${w}x${h} the card is a tray docked to the bottom (${t.fixed ? 'fixed' : 'in the column'}, bottom ${t.bottom} of ${t.H})`);
+        ok(t.h <= t.H * 0.46, `at ${w}x${h} the tray is at most 45% of the screen (${Math.round(t.h)}px)`);
+        ok(t.reach && !t.moved, `at ${w}x${h} every answer is reachable without scrolling the page`);
+        ok(t.clear, `at ${w}x${h} the column is padded so the last of it clears the tray`);
+        ok(!t.next, `at ${w}x${h} there is no step button while a card waits`);
+        const more = await page.evaluate(() => {
+          const L = RTF_CAREER_UI.state().cur, c = L.pending[0], was = c.text;
+          c.text = Array(12).fill('A long setup for a card that runs well past three lines on a phone.').join(' ');
+          RTF_CAREER_UI.paintPress({ beats: [], result: null });
+          const m = document.querySelector('#cr-card-more'), shown = !!m && !m.hidden;
+          const h0 = document.querySelector('#cr-card').getBoundingClientRect().height;
+          if (m) m.click();
+          const p = document.querySelector('#cr-card-p'), open = !!p && !p.classList.contains('cr-clamp');
+          const h1 = document.querySelector('#cr-card').getBoundingClientRect().height;
+          c.text = was; RTF_CAREER_UI.paintPress({ beats: [], result: null });
+          return { shown, open, grew: h1 >= h0, cap: h1 <= innerHeight * 0.46 };
+        });
+        ok(more.shown && more.open && more.grew && more.cap, `at ${w}x${h} a long setup folds behind More, opens in place and stays under the cap (${JSON.stringify(more)})`);
+      }
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await page.evaluate(() => RTF_CAREER_UI.paintPress({ beats: [], result: null }));
+      const d = await page.evaluate(() => getComputedStyle(document.querySelector('#cr-card')).position);
+      ok(d !== 'fixed', `on a desktop the card stays in the column (${d})`);
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.evaluate(() => RTF_CAREER_UI.paintPress({ beats: [], result: null }));
+    }
     if (!keyed && st.card && st.steps >= 3) {
       keyed = true;
       await page.keyboard.press('1');
@@ -1368,6 +1417,8 @@ async function browser() {
       const r = await c.boundingBox();
       if (!(r && r.y >= 0 && r.y + r.height <= 844) && offFold.length < 3) offFold.push(`${st.card} at press ${presses} (${r && Math.round(r.y + r.height)})`);
       cardsSeen++;
+      const tb = await page.evaluate(() => { const k = document.querySelector('#cr-card'); return getComputedStyle(k).position === 'fixed' && k.getBoundingClientRect().height <= innerHeight * 0.46; });
+      if (!tb && trayBad.length < 3) trayBad.push(`${st.card} at press ${presses}`);
       await c.click();
     } else {
       const nx = await page.$('#cr-next');
@@ -1378,6 +1429,8 @@ async function browser() {
   ok(junk.length === 0, `no field ever printed as undefined or NaN (${junk.join(', ') || 'none'})`);
   ok(reloaded, 'the reload arm ran');
   ok(tall, 'the tall receipt arm ran');
+  ok(trayed, 'the tray arm ran');
+  ok(trayBad.length === 0, `every card on the walk is a docked tray under the cap (${trayBad.join(', ') || 'all'})`);
   ok(keyed && docked, 'the keyboard and the docked-action arms ran');
   ok(cardsSeen > 20 && offFold.length === 0, `every card's first answer is on the screen (${cardsSeen} cards; ${offFold.join(', ') || 'none off'})`);
   ok(stagesSeen.hs && (stagesSeen.col || stagesSeen.pro) && stagesSeen.nba, `the walk went from high school to the league (${Object.keys(stagesSeen).join(', ')})`);

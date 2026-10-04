@@ -11693,6 +11693,18 @@ in it are easy to undo by accident:
   below the fold. check-career paints the tallest receipt over a real card
   (`RTF_CAREER_UI.paintPress`, the checker's alone) rather than hoping a random
   career deals one, and checks every card's first answer, not a sample.
+- **On a phone the card on top is a tray docked to the bottom of the screen**
+  (under 720px). It is the same `#cr-card` element, made `position:fixed` by a
+  media query, so every reader of `.cr-choice` is untouched. It is capped at 45%
+  of the screen and scrolls inside itself past that, because a tray that covers
+  half the screen is a modal again. `fitTray()` pads the column by the tray's
+  measured height (`--cr-tray`), a long setup folds behind More, and the moved
+  rows of a receipt fold to one line. It rises once when a card arrives and
+  fades when one replaces another. The career screen enters on opacity alone,
+  because a transformed ancestor would pin a fixed tray to the screen rather
+  than the window. check-career's tray arm asserts the dock, the cap, every
+  answer reachable without scrolling the page, the padding and no step button,
+  at 390x844 and 360x640, and that a desktop keeps the card in the column.
 - **Focus goes where the next thing is** after a keyboard press (the card's
   heading or the next button), never on a mouse press, never with a scroll. A
   number key answers the card on top; a sheet or a scene being open stops it.
