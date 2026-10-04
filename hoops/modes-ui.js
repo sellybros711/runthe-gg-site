@@ -583,6 +583,7 @@ var CSS = [
   '.fx-chips{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 8px;scrollbar-width:none;}',
   '.fx-chips::-webkit-scrollbar{display:none;}',
   '.fx-chip{flex:0 0 auto;width:auto;border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:800;',
+  '  background:#141a26;border:1px solid var(--cardb);color:var(--mut);}',
   '.fx-chip.on{background:#0f766e;border-color:#5eead4;color:#fff;}',
   '.fx-fil{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:2px 0 4px;}',
   '.fx-fil .fx-q{padding:10px 12px;font-size:14px;}',
@@ -705,10 +706,15 @@ var CSS = [
   '.ps-clock b{display:block;font-family:var(--pixel);font-size:20px;color:#ff5a36;text-shadow:0 0 8px rgba(255,90,54,.6);}',
   '.ps-clock.low b{animation:psBlink 1s steps(2) infinite;}',
   '@keyframes psBlink{50%{opacity:.35}}',
-  '.ps-ends{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;margin:0 0 10px;}',
+  '.ps-top{display:grid;grid-template-columns:1fr auto 1fr;grid-template-areas:"a h b" "t t t";gap:10px;align-items:center;margin:0 0 10px;}',
+  '.ps-top>.ps-end{grid-area:a;align-self:stretch;}',
+  '.ps-top>.ps-end.tgt{grid-area:b;}',
+  '.ps-top>.ps-to{grid-area:h;}',
+  '.ps-top>.ps-tlw{grid-area:t;margin:0;}',
   '.ps-end{background:#141a26;border:1px solid var(--cardb);border-radius:12px;padding:10px 12px;min-width:0;}',
-  '.ps-end b{display:block;font-family:var(--display);font-weight:400;font-size:19px;line-height:1.1;text-transform:uppercase;margin-top:3px;}',
-  '.ps-end small{font-size:11.5px;color:var(--dim);font-weight:700;}',
+  '.ps-end b{display:block;font-family:var(--display);font-weight:400;font-size:19px;line-height:1.1;text-transform:uppercase;margin-top:3px;overflow-wrap:anywhere;}',
+  '.ps-end small{display:block;font-size:11.5px;color:var(--dim);font-weight:700;margin-top:2px;}',
+  '.ps-end .mx-eyebrow{display:block;}',
   '.ps-end.tgt{border-color:rgba(242,193,78,.55);background:#1e1a10;text-align:right;}',
   '.ps-end.tgt b{color:var(--gold);}',
   '.ps-pic{display:flex;margin:0 0 8px;}',
@@ -731,10 +737,11 @@ var CSS = [
   '.ps-pick{display:grid;gap:10px;}',
   '.ps-grp{background:#10151f;border:1px solid var(--line);border-radius:10px;padding:10px;}',
   '.ps-gh{display:flex;align-items:center;gap:8px;font-weight:800;font-size:13px;color:var(--c-acc);margin-bottom:8px;}',
-  '.ps-mates{display:flex;flex-wrap:wrap;gap:6px;}',
+  '.ps-mates{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:6px;}',
   '.ps-mate{background:#161d2b;border:1px solid #2a3450;border-radius:8px;padding:6px 10px;color:var(--ink);',
-  '  font-family:var(--body);font-weight:700;font-size:13px;text-align:left;cursor:pointer;line-height:1.2;}',
-  '.ps-mate small{display:block;font-size:10.5px;color:var(--dim);font-weight:700;}',
+  '  font-family:var(--body);font-weight:700;font-size:13px;text-align:left;cursor:pointer;line-height:1.2;',
+  '  min-width:0;width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}',
+  '.ps-mate small{display:block;font-size:10.5px;color:var(--dim);font-weight:700;overflow:hidden;text-overflow:ellipsis;}',
   '.ps-mate:hover:not(:disabled){filter:none;border-color:var(--gold);}',
   '.ps-mate.used{opacity:.35;}',
   '.ps-gh em{font-style:normal;color:var(--dim);margin-left:4px;}',
@@ -742,8 +749,54 @@ var CSS = [
   '  font-family:var(--body);font-weight:800;font-size:12px;cursor:pointer;}',
   '.ps-mate.tgt{border-color:var(--gold);background:#2a2412;box-shadow:0 0 0 1px var(--gold) inset;animation:mxPulse 1.4s infinite;}',
   '.ps-go{background:linear-gradient(180deg,#d9a52a,#a8781a);border-color:#d9a52a;}',
-  '.ps-big{color:var(--gold);margin:14px 0 8px;}',
-  '.ps-done{padding:22px 16px;}',
+  '.ps-done{padding:18px 16px 16px;margin:0 0 12px;text-align:center;position:relative;overflow:hidden;}',
+  '.ps-done.win{border-color:rgba(242,193,78,.7);background:radial-gradient(120% 90% at 50% 0%,rgba(242,193,78,.22),rgba(242,193,78,0) 60%),#141a26;',
+  '  box-shadow:0 0 0 1px rgba(242,193,78,.35),0 10px 40px rgba(242,193,78,.18);}',
+  '.ps-done.miss{border-color:rgba(255,90,54,.5);background:radial-gradient(120% 90% at 50% 0%,rgba(255,90,54,.16),rgba(255,90,54,0) 60%),#141a26;}',
+  '.ps-done-top{display:flex;align-items:center;justify-content:center;gap:22px;flex-wrap:wrap;}',
+  '.ps-verdict{display:grid;justify-items:center;gap:4px;}',
+  '.ps-head{font-family:var(--pixel);font-size:30px;line-height:1.1;color:var(--gold);text-shadow:0 3px 0 #7a5410,0 0 22px rgba(242,193,78,.45);}',
+  '.ps-done.miss .ps-head{color:#ff5a36;text-shadow:0 3px 0 #6e1f0e;}',
+  '.ps-done.win .ps-head{animation:psPop .6s cubic-bezier(.3,1.6,.5,1) both;}',
+  '@keyframes psPop{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}',
+  '.ps-stars{display:flex;gap:4px;font-size:22px;line-height:1;}',
+  '.ps-stars span{color:#3a4258;}',
+  '.ps-stars span.on{color:var(--gold);text-shadow:0 0 10px rgba(242,193,78,.6);}',
+  '.ps-score{display:grid;justify-items:center;background:#05060b;border:2px solid #2a3350;border-radius:10px;padding:8px 16px;}',
+  '.ps-score b{font-family:var(--pixel);font-size:34px;line-height:1;color:var(--gold);}',
+  '.ps-done.miss .ps-score b{color:#ff5a36;}',
+  '.ps-score span{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin-top:6px;}',
+  '.ps-lane{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:center;gap:6px 4px;margin:16px 0 4px;}',
+  '.ps-hop{display:grid;justify-items:center;gap:4px;width:64px;}',
+  '.ps-hop b{font-size:11.5px;font-weight:800;max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+  '.ps-lp{display:flex;}',
+  '.ps-lp .portrait{border-radius:7px;border:1px solid rgba(255,255,255,.16);}',
+  '.ps-hop.last .ps-lp .portrait{border-color:var(--gold);box-shadow:0 0 0 2px rgba(242,193,78,.35),0 0 16px rgba(242,193,78,.4);}',
+  '.ps-hop.last b{color:var(--gold);}',
+  '.ps-arrow{display:grid;justify-items:center;align-content:center;height:44px;min-width:34px;}',
+  '.ps-arrow span{font-size:9.5px;font-weight:800;color:var(--mut);white-space:nowrap;}',
+  '.ps-arrow i{display:block;width:28px;height:2px;margin-top:4px;background:repeating-linear-gradient(90deg,var(--gold) 0 4px,transparent 4px 7px);position:relative;}',
+  '.ps-arrow i::after{content:"";position:absolute;right:-2px;top:-3px;border:4px solid transparent;border-left:6px solid var(--gold);border-right:0;}',
+  '.ps-best{margin:10px auto 0;max-width:520px;}',
+  '@media(max-width:480px){.ps-lane{gap:6px 2px;} .ps-hop{width:48px;} .ps-hop b{max-width:48px;font-size:10.5px;}',
+  '  .ps-arrow{min-width:36px;} .ps-arrow span{font-size:8.5px;} .ps-arrow i{width:24px;}}',
+  '.ps-acts{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:14px;}',
+  '.ps-acts button{flex:0 1 320px;min-width:0;width:auto;}',
+  /* THE DESKTOP. The page widens, the timeline sits between the two ends, and
+     the picker is two columns of even tiles rather than one long column. */
+  '@media(min-width:920px){',
+  '  .wrap:has(#s-pass.active){max-width:1040px;}',
+  '  .ps-top{grid-template-columns:230px 1fr 230px;grid-template-areas:"a t b";gap:14px;align-items:stretch;}',
+  '  .ps-top>.ps-to{display:none;}',
+  '  .ps-top>.ps-tlw{display:flex;flex-direction:column;justify-content:flex-end;}',
+  '  .ps-end{display:flex;flex-direction:column;justify-content:flex-end;padding:14px 16px;}',
+  '  .ps-end b{font-size:24px;}',
+  '  .ps-pic{margin-bottom:auto;padding-bottom:12px;}',
+  '  .ps-pick{grid-template-columns:1fr 1fr;align-items:start;}',
+  '  .ps-head{font-size:40px;}',
+  '  .ps-hop{width:76px;} .ps-hop b{max-width:76px;font-size:12.5px;}',
+  '  .ps-arrow{min-width:52px;} .ps-arrow i{width:44px;}',
+  '}',
   '.ps-done i{color:var(--dim);font-style:normal;}',
 
   /* the leaderboard sheet */
@@ -2434,16 +2487,21 @@ function psClock(n){
     + (left < 10 ? '0' : '') + left + '</b></div>';
 }
 
-function psEnds(st){
+function psEnds(st, tl){
   var g = graph(), pz = psPuzzle();
   /* Once the ball is there the left card is where it started, or both cards
      would name the same man. The portraits are the two ends of the puzzle and
      never move, so the left one is always the man who started with it. */
   var holder = st.done ? pz.from : st.chain[st.chain.length - 1];
-  return '<div class="ps-ends"><div class="ps-end"><div class="ps-pic">' + portrait(pz.from, 3, -1) + '</div><span class="mx-eyebrow">'
+  /* ONE GRID, TWO SHAPES. A phone puts the two ends side by side with the hoop
+     between them and the timeline under both. A desktop puts the timeline
+     BETWEEN the two ends, which is the picture the puzzle is: one career on
+     the left, one on the right, and the passes that join them. */
+  return '<div class="ps-top"><div class="ps-end"><div class="ps-pic">' + portrait(pz.from, 3, -1) + '</div><span class="mx-eyebrow">'
     + (st.done ? 'Started with' : st.chain.length === 1 ? 'Starts with the ball' : 'Has the ball') + '</span><b>'
     + esc(g.nameOf[holder]) + '</b><small>' + spanTxt(holder) + '</small></div>'
     + '<div class="ps-to">' + pix(ART.hoop, HOOP_PAL, 3) + '</div>'
+    + tl
     + '<div class="ps-end tgt"><div class="ps-pic">' + portrait(pz.to, 3, 1) + '</div><span class="mx-eyebrow">Get it to</span><b>' + esc(g.nameOf[pz.to])
     + '</b><small>' + spanTxt(pz.to) + '</small></div></div>';
 }
@@ -2527,6 +2585,7 @@ function psPass(to){
   psOpenStints = {};
   if (st.done) { if (!psEnd) psSubmit(pz, st); psFeats(pz, st); }
   psRender(true);
+  if (st.solved && P.confetti) P.confetti();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -2549,25 +2608,51 @@ function psVerdict(st){
   return over <= 0 ? 'Perfect pass' : over === 1 ? 'One extra pass' : over === 2 ? 'Worked for it' : 'Got it there';
 }
 
+/* THE PASSING LANE. A finished chain is drawn as the ball going hand to hand:
+   every man who touched it, in order, with the club and season that joined
+   each pair written on the pass between them. */
+function psLane(st){
+  var g = graph(), h = '<div class="ps-lane">';
+  st.chain.forEach(function(id, i){
+    if (i) {
+      var shared = M.psShared(g, st.chain[i - 1], id);
+      h += '<div class="ps-arrow"><span>' + esc(tsParts(shared[shared.length - 1]).short) + '</span><i></i></div>';
+    }
+    var last = i === st.chain.length - 1;
+    h += '<div class="ps-hop' + (i === 0 ? ' first' : '') + (last && st.solved ? ' last' : '') + '"><div class="ps-lp">'
+      + portrait(id, 2, last ? 1 : -1) + '</div><b>' + esc(surname(g.nameOf[id])) + '</b></div>';
+  });
+  return h + '</div>';
+}
+
 function psDoneHtml(st){
-  var g = graph(), pz = psPuzzle();
+  var g = graph(), pz = psPuzzle(), n = passesOf(st), over = n - pz.par;
   var best = M.psPath(g, pz.from, pz.to);
   var bestHtml = best.map(function(id){ return esc(surname(g.nameOf[id])); }).join(' <i>to</i> ');
-  return '<div class="mx-card mx-scan ps-done mx-rise" style="text-align:center">'
-    + '<div class="mx-eyebrow">' + esc(psVerdict(st)) + '</div>'
-    + '<div class="cq-big ps-big">' + (st.solved ? passesOf(st) : 'X') + '</div>'
-    + '<div class="mx-eyebrow" style="color:var(--ink)">' + (st.solved ? plural(passesOf(st), 'pass', 'passes') + ' · par ' + pz.par : 'The ball never got there') + '</div>'
-    + '<p class="mx-say">A shortest chain: ' + bestHtml + '.</p>'
-    + (psEnd ? '' : '<div id="ps-place" class="fx-place"></div>') + '</div>'
+  var head = !st.solved ? 'Shot clock' : over <= 0 ? 'Bucket!' : over === 1 ? 'And one!' : 'Scored';
+  var stars = '';
+  if (st.solved) for (var i = 0; i < 3; i++) stars += '<span class="' + (i < 3 - Math.min(3, Math.max(0, over)) ? 'on' : '') + '">★</span>';
+  return '<div class="mx-card ps-done mx-rise ' + (st.solved ? 'win' : 'miss') + '">'
+    + '<div class="ps-done-top"><div class="ps-verdict"><div class="mx-eyebrow">' + esc(psVerdict(st)) + '</div>'
+    + '<div class="ps-head">' + head + '</div>'
+    + (st.solved ? '<div class="ps-stars" aria-label="' + Math.max(0, 3 - Math.max(0, over)) + ' of 3">' + stars + '</div>' : '')
+    + '</div><div class="ps-score"><b>' + (st.solved ? n : 'X') + '</b><span>'
+    + (st.solved ? (n === 1 ? 'pass' : 'passes') + ' · par ' + pz.par : 'Never got there') + '</span></div></div>'
+    + psLane(st)
+    + '<p class="mx-say ps-best">' + (st.solved && over <= 0 ? 'No shorter way exists.' : 'A shortest chain: ' + bestHtml + '.') + '</p>'
+    + (psEnd ? '' : '<div id="ps-place" class="fx-place"></div>')
+    + '<div class="ps-acts">'
     + (psEnd
-      ? (endlessOpen() ? '<div class="mx-row"><button class="big ps-go" id="ps-next">Next puzzle</button></div>' : '')
-        + '<div class="mx-row" style="margin-top:8px"><button class="' + (endlessOpen() ? 'ghost' : 'big ps-go') + '" id="ps-share">'
-        + (pz.custom ? 'Send it to a friend' : 'Share') + '</button></div>'
-        + '<p class="fx-hint" style="text-align:center">' + (pz.custom ? 'The link gives them the same two players.' : 'Endless. Off the leaderboard.') + '</p>'
-      : '<div class="mx-row"><button class="big ps-go" id="ps-share">Share</button></div>'
-        + '<div class="mx-row" style="margin-top:8px"><button class="ghost" id="ps-board">Today\'s leaderboard</button></div>'
-        + endlessDoor('ps-endless', 'Play another puzzle')
-        + '<p class="fx-hint" style="text-align:center">A new puzzle tomorrow.</p>');
+      ? (endlessOpen() ? '<button class="big ps-go" id="ps-next">Next puzzle</button>' : '')
+        + '<button class="' + (endlessOpen() ? 'ghost' : 'big ps-go') + '" id="ps-share">'
+        + (pz.custom ? 'Send it to a friend' : 'Share') + '</button>'
+      : '<button class="big ps-go" id="ps-share">Share</button>'
+        + '<button class="ghost" id="ps-board">Today\'s leaderboard</button>')
+    + '</div>'
+    + (psEnd
+      ? '<p class="fx-hint" style="text-align:center">' + (pz.custom ? 'The link gives them the same two players.' : 'Endless. Off the leaderboard.') + '</p>'
+      : endlessDoor('ps-endless', 'Play another puzzle') + '<p class="fx-hint" style="text-align:center">A new puzzle tomorrow.</p>')
+    + '</div>';
 }
 
 function psShareText(st){
@@ -2592,12 +2677,10 @@ function psRender(animate){
     + '<div><div class="mh ps-mh">Six Passes</div><div class="cq-rung">' + psLabel(pz) + ' · Par ' + pz.par
     + (streak > 1 ? ' · ' + streak + ' days in a row' : '') + '</div></div>'
     + (st.done ? '' : psClock(passesOf(st))) + '</div>'
-    + psEnds(st)
-    + psTimeline(st).replace('ps-tlw', 'ps-tlw' + (animate ? ' fresh' : ''))
-    + psChainHtml(st);
-  if (st.done) {
-    h += psDoneHtml(st);
-  } else {
+    + (st.done ? psDoneHtml(st) : '')
+    + psEnds(st, psTimeline(st).replace('ps-tlw', 'ps-tlw' + (animate ? ' fresh' : '')))
+    + (st.done ? '' : psChainHtml(st));
+  if (!st.done) {
     h += '<h3 class="fx-step">' + (st.chain.length === 1 ? 'Who does ' : 'Now who does ') + esc(surname(g.nameOf[holder]))
       + ' pass to?</h3><p class="mx-say" style="margin-top:0">Anybody he played with, same team, same season. Every pass is final.</p>'
       + '<input class="fx-q ps-q" id="ps-q" type="search" autocomplete="off" spellcheck="false" placeholder="Filter his teammates" value="' + esc(psFilter) + '">'

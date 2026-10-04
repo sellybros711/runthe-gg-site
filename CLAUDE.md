@@ -12339,6 +12339,32 @@ and a broader frame for a center or power forward. The timeline ends at a pixel
 hoop, and the mode icon is the same hoop. It used to be a bullseye and a golf
 flag, which are two other sports.
 
+#### A missing brace unstyled half the modes, and the desktop is its own shape
+
+Reported as Six Passes looking jumbled on a desktop: names and years run together,
+ragged orange pills, the ends stacked down the left edge. **None of it was a layout
+choice.** The leaderboard pass deleted the line that closed `.fx-chip` in
+`modes-ui.js`'s injected stylesheet, so that rule swallowed every rule after it:
+Fix History's filters and offers, all of Six Passes and the board sheet drew as
+raw browser defaults. Nothing threw. `check-modes` section 6 now counts the
+stylesheet's braces out of the source, and fails on the deleted line.
+
+With the styles back, the screen has two shapes off one grid (`.ps-top`). A phone
+sets the ends side by side with the hoop between and the timeline under both. From
+920px the page widens to 1040, the timeline sits BETWEEN the two ends (one career
+left, one right, the passes joining them), and the picker is two columns of clubs,
+each a grid of even tiles with the name over its years and long names cut with an
+ellipsis rather than a wider tile.
+
+**A finished chain is a win card, above everything else.** It used to be four lines
+of text and a count under the timeline. Now: the verdict in the pixel face
+(Bucket!, And one!, Scored, or Shot clock in red), three stars off how far over par,
+the count on a scoreboard, and a passing lane of every man who touched the ball, in
+order, with the club and season of each pass on the arrow. A solved chain fires the
+page's confetti (`RTF_PAGE.confetti`). `check-modes` asserts the card is above the
+ends, the lane has par plus one hands, and the desktop row, tile widths, two columns
+and two line tiles off the rectangles; each was proved by breaking it.
+
 #### Endless and picked puzzles, and the day they are Pro
 
 ```

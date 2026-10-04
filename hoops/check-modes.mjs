@@ -727,6 +727,18 @@ section('5b. endless and picked puzzles never share a seed with a day');
 // ── 6. a number a player reads is the number the game plays ─────────────────
 section('6. the copy and the SQL agree with the constants');
 {
+  /* A RULE WITH NO CLOSING BRACE SWALLOWS EVERY RULE AFTER IT, in silence. The
+     leaderboard pass deleted the line that closed .fx-chip, and every screen
+     styled after it (Fix History's dock, all of Six Passes, the board sheet)
+     drew as raw browser defaults for a week. Nothing threw. So the injected
+     stylesheet is read out of modes-ui.js and its braces are counted. */
+  const ui = fs.readFileSync(path.join(HERE, 'modes-ui.js'), 'utf8');
+  const cssSrc = ui.slice(ui.indexOf('var CSS = ['), ui.indexOf("].join(", ui.indexOf('var CSS = [')) + 1);
+  const css = new Function('return ' + cssSrc.replace(/^var CSS = /, ''))().join('');
+  let depth = 0, low = 0;
+  for (const ch of css.replace(/"[^"]*"/g, '')) { if (ch === '{') depth++; else if (ch === '}') { depth--; low = Math.min(low, depth); } }
+  ok(css.length > 20000 && depth === 0 && low === 0, `the modes stylesheet closes every brace it opens (depth ${depth}, ${css.length} chars)`);
+
   const WORD = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
   const ORD = ['', '', 'second', 'third', 'fourth', 'fifth', 'sixth'];
   const how = fs.readFileSync(path.join(HERE, 'how-to-play.html'), 'utf8');
@@ -1072,6 +1084,16 @@ if (!QUICK) {
   const pssub = posts.find((p) => p.fn === 'rtf_submit_passes');
   ok(!!pssub && pssub.body.p_par === chain.par && pssub.body.p_solved === true, 'and is filed with its par and solved');
   ok(/Perfect pass/i.test(await page.textContent('#s-pass')), 'a chain at par is called a perfect pass');
+  const win = await page.evaluate(() => {
+    const d = document.querySelector('#s-pass .ps-done'), top = document.querySelector('#s-pass .ps-top');
+    return { win: !!d && d.classList.contains('win'), first: !!d && !!top && (d.compareDocumentPosition(top) & 4) > 0,
+      hops: document.querySelectorAll('#s-pass .ps-lane .ps-hop').length, last: !!document.querySelector('#s-pass .ps-hop.last'),
+      head: (document.querySelector('#s-pass .ps-head') || {}).textContent || '' };
+  });
+  ok(win.win && win.first, 'a solved chain is a win card, above the ends and the timeline');
+  ok(win.hops === chain.par + 1 && win.last && /Bucket/.test(win.head),
+    `and draws the passing lane, man to man (${win.hops} hands, "${win.head}")`);
+
 
   /* ENDLESS AND PICKED PUZZLES. None of this may touch today: not the day's
      saved result, not the board, not the days-played count. */
@@ -1230,6 +1252,28 @@ if (!QUICK) {
     s: JSON.parse(localStorage.getItem('rtf.passes.endless.v1')) }));
   ok(/Custom/.test(fr.rung) && fr.s.pz.from === 'jordami01' && fr.s.pz.to === 'jamesle01', `a friend's link opens the made puzzle ("${fr.rung}")`);
   ok(fr.hash === '', 'and the hash is cleared once it has been read');
+  /* THE DESKTOP. The page widens, the timeline sits BETWEEN the two ends, and
+     the teammates are even tiles in two columns, each a name over its years.
+     Measured off the rectangles, because every way this goes wrong renders. */
+  await friend.setViewportSize({ width: 1440, height: 900 });
+  await friend.waitForTimeout(200);
+  const dk = await friend.evaluate(() => {
+    const r = (q) => document.querySelector(q).getBoundingClientRect();
+    const a = r('#s-pass .ps-top > .ps-end'), t = r('#s-pass .ps-top > .ps-tlw'), b = r('#s-pass .ps-top > .ps-end.tgt');
+    const tiles = [...document.querySelectorAll('#s-pass .ps-grp')[0].querySelectorAll('.ps-mate')].map((m) => m.getBoundingClientRect());
+    const grps = [...document.querySelectorAll('#s-pass .ps-grp')].slice(0, 2).map((g) => g.getBoundingClientRect());
+    const m = document.querySelector('#s-pass .ps-mate'), sm = m.querySelector('small').getBoundingClientRect(), mr = m.getBoundingClientRect();
+    const head = r('#s-pass .cq-head'), bar = document.querySelector('header, .topbar');
+    return { row: a.right <= t.left && t.right <= b.left && Math.abs(a.top - t.top) < 2 && Math.abs(b.top - t.top) < 2,
+      widths: [...new Set(tiles.map((x) => Math.round(x.width)))], wrap: r('#s-pass').width,
+      cols: grps.length === 2 && Math.abs(grps[0].top - grps[1].top) < 2,
+      twoLines: sm.top >= mr.top + 12, below: !bar || head.top >= bar.getBoundingClientRect().bottom - 1 };
+  });
+  ok(dk.row, 'on a desktop the timeline sits between the two ends, on one row');
+  ok(dk.widths.length === 1 && dk.wrap > 900, `the teammates are tiles of one width (${dk.widths.join(', ')}px) on a page ${Math.round(dk.wrap)}px wide`);
+  ok(dk.cols && dk.twoLines, 'in two columns of clubs, with the years on a line under the name');
+  ok(dk.below, 'and the header starts under the site bar');
+  await friend.setViewportSize({ width: 390, height: 844 });
   await friend.goto('http://local.test/hoops/#fix=CHI_1996', { waitUntil: 'domcontentloaded' });
   await friend.waitForSelector('#s-fix #fx-pat', { timeout: 60000 });
   ok(/Picked team/.test(await friend.textContent('#s-fix .cq-rung')), 'and a team link opens the picked team');

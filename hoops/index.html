@@ -11896,6 +11896,7 @@ function recordFeats(f){
 window.RTF_PAGE = {
   get data(){ return DATA; },
   feats: recordFeats,
+  confetti: fireConfetti,
   arenaChanged: arenaChanged,
   /* The shelf, for modes-ui.js: whether it can be written, the queue that
      writes it, and the policy that says what a slot means. */
@@ -11976,7 +11977,7 @@ boot();
 </script>
 <!-- AFTER the page, because it draws through window.RTF_PAGE, which the script
      above publishes. -->
-<script src="modes-ui.js?v=18"></script>
+<script src="modes-ui.js?v=19"></script>
 <script src="career-kit.js?v=6"></script>
 <script src="sound.js?v=1"></script>
 <script src="court.js?v=1"></script>
