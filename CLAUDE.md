@@ -12419,6 +12419,13 @@ Pro away mid-puzzle. **Opening a link never asks**: `fxPlayPicked` and `psPlayPi
 doors a link uses, because whoever made the link is the one Pro paid for, and the walk opens
 both links on a fresh guest page to prove it.
 
+**Tester accounts are comped Pro** (`PRO_TESTERS` in `modes-ui.js`, the five usernames
+the football game's `dynasty-access.js` comps One Franchise to, plus `PRO_TESTER_IDS` for an
+account with no name). `proRefresh` asks it before `premium_products()`. It is a comp in the
+page and never a `premium_unlocks` row, so nothing is filed and no other game sees it. No email
+addresses in that list: the file is public. check-modes holds a tester to every door open and a
+name off the list to every door shut.
+
 **The checkout is stood in and never let out**, the same rule as the football store: section 7
 answers `/api/stripe/checkout-bundle` itself with `stripe_not_configured`, asserts the body
 names `floor-pro` and the token rides in the header, and fails if anything else was asked.

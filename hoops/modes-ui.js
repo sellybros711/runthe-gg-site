@@ -1527,6 +1527,22 @@ var PRO_LIVE = true;
 var PRO_BUNDLE = 'floor-pro';
 var PRO_PRICE = '$9.99';
 var proOwned = false;
+/* TESTER ACCOUNTS ARE COMPED PRO, the owner's call. Usernames as the board
+   prints them (matched lowercased, because set_username keeps the casing
+   somebody typed), or an account id for an account with no name yet. The same
+   five the football game's dynasty-access.js comps One Franchise to.
+   NO EMAIL ADDRESSES HERE: this file is served to anybody who asks for it.
+   It is a comp in the page and never a premium_unlocks row, so nothing is
+   filed, the receipt is not a purchase, and a tester signing in on another
+   site's game is not handed rtf_premium there. It is forgeable from the
+   console, which costs nothing: Pro gates puzzles nobody is ranked on. */
+var PRO_TESTERS = ['malikwillislover', 'runnyj', 'slimeyb3', 'csel8', 'jordantest'];
+var PRO_TESTER_IDS = [];
+function proTester(st){
+  if (!st || !st.signedIn) return false;
+  if (st.name && PRO_TESTERS.indexOf(String(st.name).toLowerCase()) >= 0) return true;
+  return !!st.userId && PRO_TESTER_IDS.indexOf(String(st.userId)) >= 0;
+}
 function endlessOpen(){ return !PRO_LIVE || proOwned; }
 function fxStore(){ return lsGet(FX_KEY) || { days: {} }; }
 /* THREE SHAPES OF RESULT, read as one. The first version was one man for one
@@ -3245,6 +3261,7 @@ function proRefresh(force){
   var ask = ++proAsked, a = P.auth();
   if (!a || !a.premiumProducts) return Promise.resolve();
   if (!signedAcct()) { proSet(false); return Promise.resolve(); }
+  if (proTester(a.state && a.state())) { proSet(true); return Promise.resolve(); }
   return a.premiumProducts(force).then(function(prods){
     if (ask !== proAsked || !Array.isArray(prods)) return;
     proSet(prods.indexOf('rtf_premium') >= 0);
@@ -3364,7 +3381,9 @@ window.RTF_MODES_UI = {
   /* For the checker. Nothing on the page reads these. */
   _cq: function(){ return cq; },
   _pro: function(on){ proSet(!!on); },
-  _proRefresh: function(){ return proRefresh(true); }
+  _proRefresh: function(){ return proRefresh(true); },
+  /* Whether an auth state is on the tester comp. The checker's. */
+  _tester: function(st){ return proTester(st); }
 };
 if (data()) onData();
 })();

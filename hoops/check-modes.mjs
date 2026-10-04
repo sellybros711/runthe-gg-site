@@ -1158,6 +1158,17 @@ if (!QUICK) {
   }
   await page.evaluate(() => { window.__owns = ['ps_premium', 'cfb_premium']; return window.RTF_MODES_UI._proRefresh(); });
   ok(await page.evaluate(() => document.querySelectorAll('.td-end button.lk').length) === 4, 'another game\'s Pro does not open this one');
+  /* A TESTER IS COMPED: owning nothing, a name on the list opens every door,
+     whatever casing it was typed in, and a name off it does not. */
+  const lockedAs = (name) => page.evaluate((n) => {
+    window.__owns = [];
+    const f = window.RTF_PAGE.auth();
+    f.state = () => ({ signedIn: true, email: 'buyer@example.com', name: n, userId: 'u-1' });
+    return window.RTF_MODES_UI._proRefresh().then(() => document.querySelectorAll('.td-end button.lk').length);
+  }, name);
+  ok(await lockedAs('RunnyJ') === 0, 'a tester account owning nothing gets Pro');
+  ok(await lockedAs('notatester') === 4, 'an account off the tester list owning nothing does not');
+  ok(await page.evaluate(() => !window.RTF_MODES_UI._tester({ signedIn: false, name: 'runnyj' })), 'and a signed out state is never a tester');
   await page.evaluate(() => { window.__owns = ['rtf_premium']; return window.RTF_MODES_UI._proRefresh(); });
   await page.evaluate(() => { window.RTF_PAGE.auth = window.__realAuth; window.RTF_PAGE.goHome(); });
   const before5 = await page.evaluate(([d, pd]) => ({
