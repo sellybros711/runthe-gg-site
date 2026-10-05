@@ -139,6 +139,9 @@ window.__P = {
     out.claimable=passClaimable();
     _walletCache=Object.assign({},w,{passActive:false, passPeriod:''});
     out.hadOldMark=passHadPro(n,{pro:true}); out.hadS1Mark=passHadPro(1,{pro:true}); out.hadNewMark=passHadPro(n,{pro:true,proS:'S'+n});
+    // a FREE player's tab left open across the change: runtour_wallet said pass_period S<n-1>, pass_active false
+    _walletCache=Object.assign({},w,{passActive:false, passPeriod:'S'+(n-1)}); out.freeStale=passHadPro(n-1,{pro:false});
+    _walletCache=Object.assign({},w,{passActive:true, passPeriod:'S'+(n-1)}); out.buyerStale=passHadPro(n-1,{pro:false});
     _walletCache=Object.assign({},w,{passActive:true, passPeriod:'S'+n});
     out.liveActive=dailyPassActive(); var s2=passState(); out.liveMarkS=s2.proS||'';
     out.merged=mergeTourPass({season:n,xp:0,pro:true,curveV:PASS_CURVE_V,claimed:{free:[],prem:[]}}, {season:n,xp:0,pro:true,proS:'S'+n,curveV:PASS_CURVE_V,claimed:{free:[],prem:[]}}).proS;
@@ -541,6 +544,8 @@ try {
   ok('...while Season 1 still settles off the mark it always had', STW.hadS1Mark === true, STW);
   ok('a Season 2 buyer is Pro and the track is stamped with the season', STW.liveActive === true && STW.liveMarkS === 'S2', STW);
   ok('the cloud merge carries the season stamp', STW.merged === 'S2', STW);
+  ok('a free player\'s stale wallet is not proof of last season\'s Pro (pass_period is the season read, not bought)', STW.freeStale === false, STW);
+  ok('...while a stale wallet that says the pass was active still is', STW.buyerStale === true, STW);
 
   head('page errors');
   ok('none', errs.length === 0, errs.slice(0, 3));
