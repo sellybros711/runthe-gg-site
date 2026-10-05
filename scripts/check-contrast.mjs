@@ -202,6 +202,32 @@ for (const p of PAGES) {
     const seen = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
     if (seen !== theme) console.log('  !! theme did not apply on '+(p||'hub')+': wanted '+theme+', got '+seen);
     const rows = await page.evaluate(PROBE);
+    /* THE END SCREEN AFTER IT IS RANKED. funnel.js promotes the next game and
+       takes the game's loud class (gold, primary, go) off Play again. On the
+       crossword that left a button with no background of its own, so it fell
+       back to the browser's light grey under the game's white ink: "Play
+       again" white on white, reported from a phone. The sheet is hidden when a
+       page loads, so the audit above never saw it. Open it, demote the button
+       exactly as funnel.js does, and measure that. */
+    const ranked = await page.evaluate(({ probe }) => {
+      const b = document.querySelector('#mAgain, #resAgain');
+      if (!b) return [];
+      /* With !important: the crossword hides its sheet with a `hidden` class
+         that carries it, and a plain inline display lost to that, so the first
+         version of this pass measured a button 0px wide and reported nothing. */
+      for (let n = b; n && n !== document.body; n = n.parentElement) {
+        n.removeAttribute('hidden');
+        const cs = getComputedStyle(n);
+        if (cs.display === 'none') n.style.setProperty('display', 'block', 'important');
+        if (cs.visibility === 'hidden') n.style.setProperty('visibility', 'visible', 'important');
+        if (+cs.opacity < 1) n.style.setProperty('opacity', '1', 'important');
+      }
+      if (!b.offsetWidth) return [{ t: 'end sheet could not be opened', r: 0, need: 1, cls: 'funsecond' }];
+      b.classList.remove('gold', 'primary', 'go');
+      b.classList.add('funsecond');
+      return (0, eval)('(' + probe + ')')().filter((r) => /funsecond/.test(r.cls));
+    }, { probe: PROBE.toString() });
+    for (const r of ranked) rows.push(r);
     const bad = rows.filter(r => r.r < r.need);
     if (bad.length) {
       // dedupe by text

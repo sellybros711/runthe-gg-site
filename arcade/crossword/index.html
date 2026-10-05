@@ -273,8 +273,12 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .statgrid .box{background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:12px 4px;}
 .statgrid .v{font-family:var(--pix); font-size:18px; font-weight:800; color:var(--newsT);}
 .statgrid .k{font-size:9px; letter-spacing:1px; color:var(--mut); text-transform:uppercase; margin-top:4px; font-weight:700;}
-.modal .btn{width:100%; border:0; border-radius:12px; padding:13px; font-family:var(--pix); font-weight:800; font-size:14px;
-  letter-spacing:.5px; margin-top:8px; box-shadow:var(--shadow); color:var(--ink);}
+.modal .btn{width:100%; border:1px solid var(--line2); border-radius:12px; padding:13px; font-family:var(--pix); font-weight:800; font-size:14px;
+  letter-spacing:.5px; margin-top:8px; box-shadow:var(--shadow); color:var(--ink); background:var(--card);}
+/* A FILL OF ITS OWN. funnel.js takes `gold` off Play again when it promotes
+   the next game, and this rule had no background, so the button fell back to
+   the browser's light grey under white ink: white on white in dark mode. */
+.modal .btn.gold{border-color:transparent;}
 .modal .btn.gold{background:var(--btnP); color:var(--btnP-ink); box-shadow:0 12px 24px -14px var(--btnP);}
 .modal .btn.spent{background:var(--panel2); color:var(--mut); border:1px solid var(--line2); box-shadow:none; cursor:default; opacity:1;}
 .modal .btn.ghost{background:var(--card); border:1px solid var(--line2); color:var(--ink); box-shadow:none;}
