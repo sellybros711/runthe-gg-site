@@ -49,12 +49,12 @@
       "sha": "664dc7fc25eaef66"
     },
     "/arcade/flags.js": {
-      "v": "2",
-      "sha": "8842c02ffac4a889"
+      "v": "3",
+      "sha": "36556aec6d4058cf"
     },
     "/arcade/fame.js": {
-      "v": "1",
-      "sha": "984ea47a66ee8451"
+      "v": "2",
+      "sha": "8eb403844838a3f1"
     },
     "/arcade/rosters.js": {
       "v": "5",
@@ -301,12 +301,12 @@
       "sha": "664dc7fc25eaef66"
     },
     "/arcade/flags.js": {
-      "v": "2",
-      "sha": "8842c02ffac4a889"
+      "v": "3",
+      "sha": "36556aec6d4058cf"
     },
     "/arcade/fame.js": {
-      "v": "1",
-      "sha": "984ea47a66ee8451"
+      "v": "2",
+      "sha": "8eb403844838a3f1"
     },
     "/arcade/teamcolors.js": {
       "v": "2",
@@ -621,12 +621,12 @@
       "sha": "664dc7fc25eaef66"
     },
     "/arcade/flags.js": {
-      "v": "2",
-      "sha": "8842c02ffac4a889"
+      "v": "3",
+      "sha": "36556aec6d4058cf"
     },
     "/arcade/fame.js": {
-      "v": "1",
-      "sha": "984ea47a66ee8451"
+      "v": "2",
+      "sha": "8eb403844838a3f1"
     },
     "gen.js": {
       "v": "15",
@@ -802,6 +802,10 @@
       "v": "8",
       "sha": "664dc7fc25eaef66"
     },
+    "/arcade/flags.js": {
+      "v": "3",
+      "sha": "36556aec6d4058cf"
+    },
     "/arcade/rosters.js": {
       "v": "5",
       "sha": "ea3953060c82b767"
@@ -969,12 +973,12 @@
       "sha": "664dc7fc25eaef66"
     },
     "/arcade/flags.js": {
-      "v": "2",
-      "sha": "8842c02ffac4a889"
+      "v": "3",
+      "sha": "36556aec6d4058cf"
     },
     "/arcade/fame.js": {
-      "v": "1",
-      "sha": "984ea47a66ee8451"
+      "v": "2",
+      "sha": "8eb403844838a3f1"
     },
     "/arcade/jerseys.js": {
       "v": "35",
@@ -1401,12 +1405,12 @@
       "sha": "664dc7fc25eaef66"
     },
     "/arcade/flags.js": {
-      "v": "2",
-      "sha": "8842c02ffac4a889"
+      "v": "3",
+      "sha": "36556aec6d4058cf"
     },
     "/arcade/fame.js": {
-      "v": "1",
-      "sha": "984ea47a66ee8451"
+      "v": "2",
+      "sha": "8eb403844838a3f1"
     },
     "/arcade/sfx.js": {
       "v": "4",
@@ -1927,8 +1931,8 @@
       "sha": "c51a588b3f3d2559"
     },
     "/arcade/flags.js": {
-      "v": "2",
-      "sha": "8842c02ffac4a889"
+      "v": "3",
+      "sha": "36556aec6d4058cf"
     },
     "/arcade/sportegories-data.js": {
       "v": "48",
@@ -2001,12 +2005,16 @@
       "sha": "664dc7fc25eaef66"
     },
     "/arcade/flags.js": {
-      "v": "2",
-      "sha": "8842c02ffac4a889"
+      "v": "3",
+      "sha": "36556aec6d4058cf"
+    },
+    "/arcade/rosters.js": {
+      "v": "5",
+      "sha": "ea3953060c82b767"
     },
     "/arcade/fame.js": {
-      "v": "1",
-      "sha": "984ea47a66ee8451"
+      "v": "2",
+      "sha": "8eb403844838a3f1"
     },
     "/arcade/jerseys.js": {
       "v": "35",

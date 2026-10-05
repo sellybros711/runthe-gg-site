@@ -401,8 +401,9 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/primary.js?v=35"></script>
 <script src="/arcade/franchise.js?v=1"></script>
 <script src="/arcade/data.js?v=8"></script>
-<script src="/arcade/flags.js?v=2"></script>
-<script src="/arcade/fame.js?v=1"></script>
+<script src="/arcade/flags.js?v=3"></script>
+<script src="/arcade/rosters.js?v=5"></script>
+<script src="/arcade/fame.js?v=2"></script>
 <script src="/arcade/jerseys.js?v=35"></script>
 <script src="/arcade/teamcolors.js?v=2"></script>
 <script src="/arcade/sfx.js?v=4"></script>
@@ -552,7 +553,32 @@ window.GA_ID='G-L29P5MRWKE';
     }
     return out;
   }
+  /* Flag 'current': today's players, asked about the number they wear now.
+     The owner's call for a game aimed at younger fans. A stint is current
+     when it reaches the newest season the stint files hold, and the player
+     has to be on a roster today (rosters.js), so a man who retired last
+     spring is not dealt on a number he no longer wears. One stint a player,
+     most famous first, shuffled within each fame level by the day's seed so
+     everybody gets the same run. A pool too thin to fill a run keeps the
+     whole history for that day. */
+  function buildCurrentRounds(){
+    var R=window.RTG_ROSTERS && window.RTG_ROSTERS.players;
+    if(!R || !R.length) return null;
+    var on={}; R.forEach(function(p){ if(p && p.n) on[p.s+'|'+_nkey(p.n)]=1; });
+    var top=0; POOL.forEach(function(r){ if((r.y1||0)>top) top=r.y1||0; });
+    var best={};
+    POOL.forEach(function(r){
+      if((r.y1||0)<top-1 || !on[r.sport+'|'+_nkey(r.name)]) return;
+      var b=best[r.id]; if(!b || (r.y1||0)>(b.y1||0)) best[r.id]=r;
+    });
+    var a=Object.keys(best).map(function(k){ return best[k]; });
+    if(a.length<60) return null;
+    for(var i=a.length-1;i>0;i--){ var j=ri(i+1); var t=a[i]; a[i]=a[j]; a[j]=t; }
+    a.sort(function(x,y){ return (y.f||0)-(x.f||0); });
+    return a.slice(0, ROUNDS);
+  }
   function buildRounds(){
+    if(flagOn('current')){ var cur=buildCurrentRounds(); if(cur) return cur; }
     if(flagOn('ramp')) return buildRampRounds();
     var out=[], seen={}, guard=0;
     while(out.length<ROUNDS && guard<20000){ guard++;

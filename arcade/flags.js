@@ -43,6 +43,14 @@
     // The dense mini crossword (every letter crossed) in place of the sparse
     // layout.
     densecw:   { since: null, pct: 0, daily: true },
+    // Career Path: the first eight cards are careers that reached the 1990s,
+    // the next eight the 1970s, anyone after that (fame.js eraOrder). Asked
+    // for by the owner after a run opened on a 1960s Yankee. On from the day
+    // after it shipped, so the board in play that day did not move.
+    eras:      { since: '2026-10-06', pct: 0, daily: true },
+    // Guess the Player, Alma Mater and Number Game deal current players only.
+    // Eight tries to find any player in baseball history was the report.
+    current:   { since: '2026-10-06', pct: 0, daily: true },
     // Phase 3: a guest's finished run goes on the daily board under a
     // generated name, through an anonymous session (board.js). Needs
     // supabase/132_arcade_guest_board.sql and "Allow anonymous sign-ins" in the

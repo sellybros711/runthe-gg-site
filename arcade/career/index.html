@@ -440,8 +440,8 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/primary.js?v=35"></script>
 <script src="/arcade/franchise.js?v=1"></script>
 <script src="/arcade/data.js?v=8"></script>
-<script src="/arcade/flags.js?v=2"></script>
-<script src="/arcade/fame.js?v=1"></script>
+<script src="/arcade/flags.js?v=3"></script>
+<script src="/arcade/fame.js?v=2"></script>
 <script src="/arcade/teamcolors.js?v=2"></script>
 <script src="/arcade/sfx.js?v=4"></script>
 <script src="/arcade/result.js?v=2"></script>
@@ -593,15 +593,22 @@ window.GA_ID='G-L29P5MRWKE';
     want = Math.min(want || BATCH, ROUNDS);
     var pool=poolForMode();
     var out=[], guard=0, seen={}, bad={};
-    var RAMP=flagOn('ramp'), DECOYS=flagOn('decoys');
+    var RAMP=flagOn('ramp'), DECOYS=flagOn('decoys'), ERAS=flagOn('eras') && !!RTGFame.eraOk;
     if(preSeen) Object.keys(preSeen).forEach(function(k){ seen[k]=1; });
+    /* Flag 'eras': the opening cards are careers that reached the 1990s and
+       the 1970s (fame.js eraOk), keyed on the card number like the ramp. A
+       run used to open on a 1960s Yankee outfielder. `eraTries` lets a card
+       nobody in this mode's pool can fill fall back to anyone. */
+    var eraTries=0;
     while(out.length<want && guard<8000){ guard++;
-      var t;
+      var t, k=(base||0)+out.length, gate=ERAS && eraTries<400;
       if(RAMP){
-        t=RTGFame.pick(pool, (base||0)+out.length, rng, function(e){ return seen[e.id] || bad[e.id]; });
+        t=RTGFame.pick(pool, k, rng, function(e){ return seen[e.id] || bad[e.id] || (gate && !RTGFame.eraOk(e, k)); });
+        if(!t && gate){ eraTries=400; continue; }
         if(!t) break;
       } else t=pool[ri(pool.length)];
       if(seen[t.id]) continue;   // each athlete stars at most once per day
+      if(gate && !RTGFame.eraOk(t, k)){ eraTries++; continue; }
       var tpath=pathOf(t);
       var tteams=fk(t);
       // Distractors: same sport, and NOT the same exact team path (no second
@@ -649,7 +656,7 @@ window.GA_ID='G-L29P5MRWKE';
         if(distract.length<3){ takeFrom(shuffle(others).filter(function(e){ return e.id!==t.id; })); }
       }
       var opts=shuffle([t].concat(distract)).map(function(e){ return e.id; });
-      out.push({ target:t.id, opts:opts }); seen[t.id]=1;
+      out.push({ target:t.id, opts:opts }); seen[t.id]=1; eraTries=0;
     }
     return out;
   }

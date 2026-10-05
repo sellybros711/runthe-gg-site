@@ -395,8 +395,8 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/primary.js?v=35"></script>
 <script src="/arcade/franchise.js?v=1"></script>
 <script src="/arcade/data.js?v=8"></script>
-<script src="/arcade/flags.js?v=2"></script>
-<script src="/arcade/fame.js?v=1"></script>
+<script src="/arcade/flags.js?v=3"></script>
+<script src="/arcade/fame.js?v=2"></script>
 <script src="/arcade/rosters.js?v=5"></script>
 <script src="/arcade/sfx.js?v=4"></script>
 <script src="/arcade/result.js?v=2"></script>
@@ -526,6 +526,11 @@ window.GA_ID='G-L29P5MRWKE';
   ENT.forEach(function(e){ if(!e) return; addPlayer(e.name, e.sport, e.col, (e.pt || (e.t&&e.t.length?e.t[0]:null)), e.f||0, 0, e); });
   var ROS=(window.RTG_ROSTERS && Array.isArray(window.RTG_ROSTERS.players)) ? window.RTG_ROSTERS.players : null;
   if(ROS){ ROS.forEach(function(p){ if(p) addPlayer(p.n, p.s, p.col, p.t, 0, 1); }); }
+  /* Who is on a club TODAY, by name: rosters.js is the authority. A corpus
+     player who is still playing was added above with act 0, because the
+     corpus row arrives first and the roster row is then a duplicate. */
+  var ROSTERED={}; if(ROS){ ROS.forEach(function(p){ if(p && p.n) ROSTERED[p.n+'|'+p.s]=1; }); }
+  function isCurrent(p){ return !!(p.act || ROSTERED[p.name+'|'+p.sport]); }
   // distractor sampling leans on well-known (frequently attended) programs
   var COMMON=Object.keys(colFreq).sort(function(a,b){ return colFreq[b]-colFreq[a]; });
   // Readiness for the CURRENT mode: enough players + colleges of the chosen
@@ -591,6 +596,15 @@ window.GA_ID='G-L29P5MRWKE';
   // name below that is a coin-flip nobody knows, so it's dropped entirely.
   function eligiblePool(){
     var out=[];
+    /* Flag 'current': today's players only. The owner's call, for a game
+       aimed at younger fans: a run that reached Chet Walker on its second
+       card lost the player. Read per board day, so an archived day before
+       the switch is dealt the way it was. */
+    if(flagOn('current')){
+      POOL.forEach(function(p){ if((!SPORTFILTER || p.sport===SPORTFILTER) && isCurrent(p)) out.push(p); });
+      if(out.length>=40) return out;
+      out=[];
+    }
     // .star (from stars.js) is the primary "recognizable" signal. Falls back
     // to fame + career-length for uncurated names so no obvious icon slips
     // out and no journeyman OL sneaks in.
