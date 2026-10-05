@@ -59,7 +59,8 @@ window.__P = {
     return out; },
   items(){ var out=[];
     Object.keys(PASS_SEASONS).forEach(function(n){ var d=PASS_SEASONS[n], lanes=d.legacy?(d.excl||{}):{prem:d.items};
-      ['free','prem'].forEach(function(lane){ var m=lanes[lane]||{}; Object.keys(m).forEach(function(t){ out.push({season:+n,lane:lane,tier:+t,cat:m[t].cat,id:m[t].id,name:m[t].name}); }); }); });
+      ['free','prem'].forEach(function(lane){ var m=lanes[lane]||{}; Object.keys(m).forEach(function(t){ out.push({season:+n,lane:lane,tier:+t,cat:m[t].cat,id:m[t].id,name:m[t].name});
+        if(m[t].also) out.push({season:+n,lane:lane,tier:+t,cat:m[t].also.cat,id:m[t].also.id,name:m[t].also.name}); }); }); });
     return out; },
   audit(cat,id){
     var listed=(cosmeticItems(cat)||[]).some(function(o){ return o.id===id; });
@@ -68,7 +69,7 @@ window.__P = {
     else if(cat==='club') drawn=!!(PXG_CLUBS[id]&&PXG_CLUB_PAL[id]&&CLUBS_BY[id]); else if(cat==='top') drawn=!!(PXG_TOPS[id]&&PXG_TOP_PAL[id]);
     else if(cat==='cleats') drawn=!!(PXG_CLEATS[id]&&PXG_CLEATS_PAL[id]);
     else if(cat==='ball') drawn=!!(PXG_BALL[id]&&PXG_BALL_PAL[id]); else if(cat==='pat') drawn=!!PXPAT_BY[id];
-    else if(cat==='fx') drawn=!!PXFX_BY[id]; else if(cat==='plate') drawn=!!PLATE_STYLE[id]; else if(cat==='cardbg') drawn=!!CARDBG_ART[id];
+    else if(cat==='fx') drawn=!!PXFX_BY[id]; else if(cat==='body') drawn=!!BODY_SKINS[id]; else if(cat==='plate') drawn=!!PLATE_STYLE[id]; else if(cat==='cardbg') drawn=!!CARDBG_ART[id];
     var inPool=packPool().some(function(e){ return e.cat===cat && e.id===id; });
     var inDrop=!!DROP_BY_ITEM[cat+'|'+id], reward=cosRewardOnly(cat,id), boost=!!COS_BOOST[cosKey(cat,id)];
     return {listed:listed, drawn:drawn, base:cosmeticPriceBase(cat,id), price:cosmeticPrice(cat,id), packOnly:cosPackOnly(cat,id),
@@ -98,7 +99,8 @@ window.__P = {
     return {before:before, m1:m1, m2:m2, pool:packCredits('seasonal'), asLive:liveSeasonalPackId()?packCredits(liveSeasonalPackId()):null,
       live:liveSeasonalPackId(), opensAs:packType('seasonal').id}; },
   claimAll(){ var s=passState(); s.xp=passXpForTier(PASS_TIERS); passSave(s); var got=passClaimAll(); var own=coinState().owned;
-    return {n:got.length, cos:got.filter(function(r){return r.cos;}).map(function(r){ return {cat:r.cos.cat,id:r.cos.id,owned:!!own[cosKey(r.cos.cat,r.cos.id)]}; })}; },
+    var cs=[]; got.forEach(function(r){ [r.cos,r.cos2].forEach(function(c){ if(c) cs.push({cat:c.cat,id:c.id,owned:!!own[cosKey(c.cat,c.id)]}); }); });
+    return {n:got.length, cos:cs}; },
   /* the Go Pro pitch, which only a player WITHOUT the pass sees */
   sales(){ var had=_walletCache.passActive; _walletCache.passActive=false;
     var d=document.createElement('div'); document.body.appendChild(d); S.overlay='tourpass'; overlayTourPass(d);
@@ -247,6 +249,7 @@ try {
   const n1 = T[1].free.filter(r => r.cos).length + T[1].prem.filter(r => r.cos).length;
   ok(`Season 2 has more cosmetics than Season 1 (${n2} against ${n1})`, n2 > n1);
   ok('the Pro capstone at tier 60 is a cosmetic', !!T[2].prem[59].cos, T[2].prem[59].cos);
+  ok('and it is two: the Pumpkin Head skin and the Will-o\'-Wisp Aura', T[2].prem[59].cos && T[2].prem[59].cos.id === 'pumpkinhead' && T[2].prem[59].cos2 && T[2].prem[59].cos2.id === 'wisp', [T[2].prem[59].cos, T[2].prem[59].cos2]);
 
   head('exclusive: every pass item is on one track and nowhere else');
   const items = await E('items');
@@ -332,7 +335,7 @@ try {
 
   head('claiming the whole track');
   const CL = await E('claimAll');
-  ok(`all ${CL.n} rewards claim, and every cosmetic lands in the closet`, CL.cos.length === 21 && CL.cos.every(c => c.owned), CL.cos.filter(c => !c.owned));
+  ok(`all ${CL.n} rewards claim, and every cosmetic lands in the closet`, CL.cos.length === 22 && CL.cos.every(c => c.owned), CL.cos.filter(c => !c.owned));
 
   const at = async (iso) => { await page.clock.setSystemTime(new Date(iso)); };
 

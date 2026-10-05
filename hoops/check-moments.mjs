@@ -150,7 +150,10 @@ section('5. every moving frame is the rig, inside the grid');
         }
         for (const [need, re] of [['head', /^head$/], ['hand', /hand$/], ['shoe', /^shoe$/]]) if (![...names].some((n) => re.test(n))) missing.add(pose + ' ' + need);
         const cols = new Set(); B.paint(lk, { pose, dress, c1: '#552583', c2: '#FDB927', num: 23 }).forEach((r) => r.forEach((c) => { if (c) cols.add(c); }));
-        if (cols.size < 22) flat.add(pose);
+        /* 20 and not 22 since the 3D model: the golf game's paint step is five
+           tones a material, so a bald man with no beard in his club's shoes
+           really does wear fewer materials, at 20 or 21. Flat is a handful. */
+        if (cols.size < 20) flat.add(pose);
       }
     }
   }

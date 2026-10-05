@@ -7,7 +7,7 @@
  * posed 3D model and hands every cell to the profile renderer's paint step, so it looks like the profile
  * picture. Everything that can go wrong here goes wrong quietly: a material the palette does not know is
  * painted magenta, a ball anchor off the canvas puts the golfer away from the ball, a gate that leaks shows
- * a preview to everybody. So each is asked directly.
+ * the wrong thing to the wrong people. So each is asked directly.
  */
 import { chromium } from 'playwright';
 
@@ -25,17 +25,22 @@ await pg.waitForFunction(() => typeof hvSwingMarkup === 'function' && window.RTT
 
 head('1. WHO SEES IT');
 const gate = await pg.evaluate(() => {
-  const r = {};
+  const r = {}, keepLive = G3D_LIVE; r.live = G3D_LIVE;
   sbUser = null; sbUsername = ''; r.out = g3dOn();
   sbUser = { id: 'x' }; sbUsername = 'somebodyelse'; r.other = g3dOn();
-  sbUser = { id: 't' }; sbUsername = 'CSel8'; r.tester = g3dOn();
-  r.live = G3D_LIVE;
+  G3D_LIVE = false;                                   // the kill switch: back to the testers alone
+  sbUser = null; sbUsername = ''; r.offOut = g3dOn();
+  sbUser = { id: 'x' }; sbUsername = 'somebodyelse'; r.offOther = g3dOn();
+  sbUser = { id: 't' }; sbUsername = 'CSel8'; r.offTester = g3dOn();
+  G3D_LIVE = keepLive;
   const keep = window.RTT_G3D; window.RTT_G3D = { API_VERSION: 999 }; r.stale = g3dOn(); window.RTT_G3D = keep;
   return r; });
-ok('signed out: the old sprites', gate.out === false);
-ok('signed in as anybody else: the old sprites', gate.other === false);
-ok('a tester: the 3D golfer', gate.tester === true);
-ok('G3D_LIVE is false, so this is still a preview', gate.live === false);
+ok('G3D_LIVE is true: the 3D golfer is live', gate.live === true);
+ok('live: signed out gets the 3D golfer', gate.out === true);
+ok('live: anybody signed in gets the 3D golfer', gate.other === true);
+ok('kill switch: signed out keeps the old sprites', gate.offOut === false);
+ok('kill switch: anybody else keeps the old sprites', gate.offOther === false);
+ok('kill switch: a tester still gets the 3D golfer', gate.offTester === true);
 ok('a stale module is refused', gate.stale === false);
 
 head('2. EVERY LOOK, EVERY AIM, EVERY SHOT');
@@ -113,18 +118,17 @@ ok('a hat never changes the golfer\'s size', items.shrink.length === 0, items.sh
 ok('nothing runs off the top of the canvas', items.clipped.length === 0, items.clipped);
 ok('no item leaves a piece lying apart from the golfer', items.stray.length === 0, items.stray.slice(0, 12));
 
-head('3. THE TRACER USES IT FOR A TESTER, AND ONLY FOR A TESTER');
+head('3. THE TRACER DRAWS IT, AND THE KILL SWITCH PUTS THE OLD SPRITE BACK');
 const tr = await pg.evaluate(() => {
   const ck = Object.keys(DAILY_COURSES)[2], h = DAILY_COURSES[ck].holes[1], sk = {}; CATS.forEach(c => sk[c.k] = 80);
   const shots = dShotSeq(h[0], h[1], h[0], mulberry32(7), sk, {}); const hole = { n: 2, par: h[0], yards: h[1], shots };
   S.look = Object.assign({}, DEFLOOK);
   const grab = () => { const n = hvNode(hole, 1, 1, ck); const im = n.querySelector('image.hvsw'); return im ? im.getAttribute('width') + 'x' + im.getAttribute('height') + ':' + im.getAttribute('href').length : ''; };
-  sbUser = { id: 't' }; sbUsername = 'CSel8'; const t = grab();
-  sbUser = { id: 'x' }; sbUsername = 'somebodyelse'; const o = grab();
-  const lw = RTT_G3D.set(S.look, 0, 'full');
-  return { t, o, w: lw.W, h: lw.H }; });
-ok('a tester\'s tee shot draws the 3D golfer', tr.t !== '' && tr.t !== tr.o, tr);
-ok('anybody else\'s tee shot keeps the old sprite', tr.o !== '' && tr.t !== tr.o, tr);
+  sbUser = { id: 'x' }; sbUsername = 'somebodyelse'; const live = grab();
+  const keep = G3D_LIVE; G3D_LIVE = false; const off = grab(); G3D_LIVE = keep;
+  return { live, off }; });
+ok('a tee shot draws the 3D golfer', tr.live !== '' && tr.live !== tr.off, tr);
+ok('with the kill switch, a tee shot keeps the old sprite', tr.off !== '' && tr.live !== tr.off, tr);
 
 ok('no page errors', errs.length === 0, errs.slice(0, 3));
 await b.close();

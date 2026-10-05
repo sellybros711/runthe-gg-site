@@ -1,13 +1,12 @@
-name: Putting Green and course golfer checks
+name: Putting Green checks
 
 # The Run The Tour putting game (golf/putt), a tester preview. Every themed hole
 # and two weeks of Daily Holes are PLAYED by a solver to par, the real greens
 # are built off the page's own hvGeom in a browser, and the tester gate is
-# asserted shut for everybody else. The 3D course golfer (golf/golfer3d.js), the
-# same tester preview, is drawn for every look, aim and shot. Runs locally, unchanged:
+# asserted shut for everybody else. The course golfer has its own workflow
+# (golfer3d-check.yml). Runs locally, unchanged:
 #
 #   node golf/putt/check-putt.mjs
-#   node golf/check-golfer3d.mjs        (with a server on :8099)
 #
 # No secrets, no deploy.
 
@@ -15,16 +14,12 @@ on:
   pull_request:
     paths:
       - 'golf/putt/**'
-      - 'golf/golfer3d.js'
-      - 'golf/check-golfer3d.mjs'
       - 'golf/index.html'
       - '.github/workflows/putt-check.yml'
   push:
     branches: [main]
     paths:
       - 'golf/putt/**'
-      - 'golf/golfer3d.js'
-      - 'golf/check-golfer3d.mjs'
       - 'golf/index.html'
       - '.github/workflows/putt-check.yml'
   workflow_dispatch: {}
@@ -47,8 +42,3 @@ jobs:
           npx playwright install --with-deps chromium
       - name: The physics, the greens, every hole played to par
         run: node golf/putt/check-putt.mjs --days 14
-      - name: The 3D course golfer, every look and every aim
-        run: |
-          (python3 -m http.server 8099 >/dev/null 2>&1 &)
-          sleep 2
-          node golf/check-golfer3d.mjs
