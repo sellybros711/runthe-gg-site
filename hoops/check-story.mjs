@@ -134,6 +134,16 @@ section('4. the copy is short');
     }
   }
   ok(long.length === 0, `titles under 11 words, card text under 23 and three sentences, answers under 8, results under 17 (${long.slice(0, 5).join('; ') || 'all'})`);
+  /* Run The Tour's shape: a place over the title, and a line under every
+     answer saying what the choice is really about. */
+  const bare = [];
+  for (const k in POOLS) for (const id in POOLS[k]) {
+    const ev = POOLS[k][id];
+    const tag = typeof ev.tag === 'function' ? ev.tag(L) : ev.tag;
+    if (!tag || words(tag) > 3) bare.push(id + ' tag');
+    for (const o of ev.options) if (!o.hint || words(o.hint) > 6 || o.hint === o.label) bare.push(id + ' "' + o.label + '"');
+  }
+  ok(bare.length === 0, `every card names its place in three words or less, and every answer has a line under it of six or less (${bare.length} missing: ${bare.slice(0, 5).join('; ') || 'none'})`);
 }
 
 section('5. arcs: set up, escalate, pay off, and end more than one way');
