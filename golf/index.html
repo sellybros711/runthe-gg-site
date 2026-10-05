@@ -10921,7 +10921,7 @@ const PXBALL=[
   {id:'acorn',        name:'Acorn',           hist:'Season 2 Tour Pass',         price:0, col:'#c08a4a', tracer:{g:'rgba(192,138,74,.5)', c:'#f0d2a4'}},
   {id:'jackolantern', name:'Jack-o\'-Lantern', hist:'Season 2 Tour Pass',        price:0, col:'#f08a1e', tracer:{g:'rgba(240,138,30,.6)', c:'#ffd27a'}},
   // the Spooky Szn hunt prize: price 0, so it is never in a pack, the shop or the shard exchange (HUNT_PRIZES)
-  {id:'blackcat',     name:'Black Cat Ball',   hist:'Spooky Szn hunt prize',      price:0, col:'#2a2433', tracer:{g:'rgba(150,120,200,.5)', c:'#ffd23a'}} ];
+  {id:'blackcat',     name:'Black Cat Ball',   hist:'Haunted Links hunt prize',      price:0, col:'#2a2433', tracer:{g:'rgba(150,120,200,.5)', c:'#ffd23a'}} ];
 const PXBALL_BY={}; PXBALL.forEach(function(o){ PXBALL_BY[o.id]=o; });
 function ballOf(look){ var id=(look&&look.ball)||'none'; return (id&&id!=='none'&&PXBALL_BY[id])?PXBALL_BY[id]:null; }
 /* ==== PLAYER CARDS (owner): a collectible flip card of your golfer. Customize the NAMEPLATE + CARD
@@ -10983,7 +10983,7 @@ const CARDBGS=[
  // SEASON 2: two Tour Pass backdrops and the two collection rewards
  {id:'pumpkinfield', name:'Pumpkin Field',     hist:'Season 2 Tour Pass'},
  {id:'hallowseve',   name:'Hallows Eve',       hist:'Season 2 Tour Pass'},
- {id:'hauntedhollow',name:'Haunted Hollow',    hist:'Spooky Season collection reward'},
+ {id:'hauntedhollow',name:'Haunted Hollow',    hist:'Haunted Links collection reward'},
  {id:'cornfield',    name:'Cornfield Sunset',  hist:'Harvest Classic collection reward'},
 ];
 // pixel-scene config per background (hand-authored palettes so each reads distinct)
@@ -26567,8 +26567,8 @@ const NEWS_DATE2='8/22/26';
 const NEWS_DATE3='8/27/26';
 const NEWS_DATE4='10/1/26';
 const NEWS_ENTRIES=[
-  {id:'spooky-szn', date:NEWS_DATE4, cat:'tour', icon:'🎃', title:'Spooky Szn is here',
-   blurb:'October dresses the game up. Cobwebs and lit pumpkins on the home screen, a pumpkin by your golfer, and the Spooky Season drop in the Pro Shop until Oct 31.',
+  {id:'spooky-szn', date:NEWS_DATE4, cat:'tour', icon:'🎃', title:'Haunted Links is here',
+   blurb:'October dresses the game up. Cobwebs and lit pumpkins on the home screen, a pumpkin by your golfer, and the Haunted Links drop in the Pro Shop until Oct 31.',
    where:'The home screen and the Pro Shop.'},
   {id:'spooky-hunt', date:NEWS_DATE4, cat:'tour', icon:'💰', title:'Ten spooky things to find',
    blurb:'Spiders, ghosts, bats, a pumpkin and a black cat are hiding around the game. Tap each one you spot. Find all ten for the Black Cat Ball and 1,000 coins. You can only get the ball here.',
@@ -26661,7 +26661,7 @@ const NEWS_ENTRIES=[
    blurb:'Base, Tour, seasonal and Champion packs. Odds are published; better tiers pull rarer items more often. Opening one spins a CS-style wheel that slows onto your pull. Duplicates from a paid pack refund coins and a shard; free packs still pay a shard.',
    where:'Pro Shop, Packs tab.'},
   {id:'drops', date:NEWS_DATE2, cat:'sim', icon:'🌟', title:'Seasonal drops that come and go',
-   blurb:'Themed collections that appear during their real-world window and return the next year. Summer Smash, Spooky Season, Harvest Classic, Winter Classic, The Big Game, plus the sets that never leave. Finish a collection for a coin bonus and an exclusive card cosmetic.',
+   blurb:'Themed collections that appear during their real-world window and return the next year. Summer Smash, Haunted Links, Harvest Classic, Winter Classic, The Big Game, plus the sets that never leave. Finish a collection for a coin bonus and an exclusive card cosmetic.',
    where:'Pro Shop, Drops tab.'},
   {id:'legend-tokens', date:NEWS_DATE2, cat:'career', icon:'🪙', title:'Legend Tokens',
    blurb:'Complete a career that hits an elite bar and the game mints a Legend Token from that golfer at their peak. Every token you hold plays the daily challenge free, as many times a day as you like, and their scores sit on a separate Career Golfers board.',
@@ -35737,39 +35737,102 @@ function passRewardCell(r){
 }
 let _tpcss=false;
 function passStyleOnce(){ if(_tpcss) return; _tpcss=true; const st=document.createElement('style'); st.textContent=`
-  /* ---- season bar: a full-bleed sticky app bar (spans the whole screen, not the padded column) ---- */
+  /* ---- the Tour Pass hub. The page wears the SEASON, not the game's green: night purple with the
+     season's accent (--tp-acc, from PASS_SEASONS) for progress and gold for anything you can take. ---- */
+  @property --tpp{syntax:'<number>';inherits:true;initial-value:0}
+  .tpov.tp-track-page,.tpov.tps-page{--tp-acc:#e0762a;--tp-acc2:#ffb35a;--tp-pro:#a66bff;--tp-bg:#140b22;--muted:#b9abcb;
+    background:#100919;background-image:radial-gradient(110% 55% at 50% -8%,rgba(224,118,42,.22),transparent 62%),radial-gradient(90% 60% at 100% 45%,rgba(130,70,220,.18),transparent 70%),linear-gradient(180deg,#170d29 0%,#110a1d 55%,#0b0713 100%);background-attachment:fixed}
   .tpov{overflow-x:hidden}
   .tpov.tp-track-page{padding-top:0}
   .tpov .x{z-index:8}   /* stays tappable above the full-bleed season bar */
   .tpov .tp-head{position:sticky;top:0;z-index:6;
     margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw);
-    padding:calc(10px + env(safe-area-inset-top,0px)) 16px 13px;
-    background:linear-gradient(180deg,#15452b 0%,#0d2c1a 58%,#081f12 100%);
-    border-bottom:1px solid rgba(241,208,74,.3);box-shadow:0 14px 30px -18px #000}
-  .tp-hin{max-width:560px;margin:0 auto}
-  .tp-htop{display:flex;align-items:center;gap:9px;min-height:26px}
-  .tp-kick{font:900 12.5px/1 var(--body);letter-spacing:.2em;color:#c9adff}
-  .tp-ssnbig{font-family:var(--display);font-style:italic;font-size:30px;line-height:1.05;color:#ff9d55;letter-spacing:.01em;padding-right:104px;white-space:nowrap;margin-bottom:6px}
-  .tp-new{background:linear-gradient(180deg,#e8823a,#a5450f);color:#fff;font:900 10px/1 var(--body);letter-spacing:.13em;padding:5px 9px;border-radius:6px}
-  .tp-pro{background:linear-gradient(180deg,#c08bff,#7048d6);color:#fff;font:900 10px/1 var(--body);letter-spacing:.13em;padding:5px 9px;border-radius:6px;box-shadow:0 5px 14px -5px rgba(160,90,255,.9)}
-  .tp-trow{display:flex;align-items:flex-end;gap:14px;margin-top:11px}
-  .tp-tblock{flex:0 0 auto}
-  .tp-tlab{display:block;font:900 9px/1 var(--body);letter-spacing:.2em;color:rgba(255,255,255,.42);margin-bottom:5px}
-  .tp-tbig{display:flex;align-items:baseline;gap:2px;line-height:1}
-  .tp-tbig b{font:900 36px/.9 var(--body);color:var(--gold);text-shadow:0 4px 18px rgba(241,208,74,.4)}
-  .tp-tbig i{font:900 13px/1 var(--body);color:rgba(255,255,255,.45);font-style:normal}
-  .tp-prog{flex:1;min-width:0;padding-bottom:2px}
-  .tp-bar{position:relative;height:14px;border-radius:8px;background:rgba(0,0,0,.42);overflow:hidden;border:1px solid rgba(255,255,255,.1)}
-  .tp-fill{height:100%;border-radius:7px;background:linear-gradient(90deg,#ffe488,#f0a51e);box-shadow:0 0 14px rgba(241,208,74,.55)}
-  .tp-xp{font:800 10.5px/1 var(--body);color:rgba(255,255,255,.82);margin-top:6px;text-align:right}
-  .tp-meta{font:700 10.5px/1.3 var(--body);color:rgba(255,255,255,.45);margin-top:9px}
+    padding:calc(12px + env(safe-area-inset-top,0px)) 16px 12px;
+    background:linear-gradient(180deg,rgba(30,16,48,.97),rgba(20,11,34,.95));-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+    border-bottom:1px solid rgba(224,118,42,.4);box-shadow:0 14px 30px -18px #000}
+  .tp-hin{max-width:600px;margin:0 auto}
+  .tp-hrow{display:flex;align-items:center;gap:13px;padding-right:96px;min-height:70px}
+  .tp-htxt{min-width:0}
+  .tp-htop{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .tp-kick{font:900 11px/1 var(--body);letter-spacing:.2em;color:#d9c4ff}
+  .tp-ssnbig{font-family:var(--display);font-style:italic;font-size:30px;line-height:1;color:var(--tp-acc2);letter-spacing:.01em;white-space:nowrap;margin-top:5px;text-shadow:0 4px 20px rgba(224,118,42,.45)}
+  .tp-sname{font:800 11.5px/1.2 var(--body);color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tp-new{background:linear-gradient(180deg,#e8823a,#a5450f);color:#fff;font:900 9.5px/1 var(--body);letter-spacing:.13em;padding:4px 7px;border-radius:6px}
+  .tp-pro{background:linear-gradient(180deg,#c08bff,#7048d6);color:#fff;font:900 9.5px/1 var(--body);letter-spacing:.13em;padding:4px 7px;border-radius:6px;box-shadow:0 5px 14px -5px rgba(160,90,255,.9)}
+  /* the tier ring: the season's progress to the NEXT tier, drawn round the tier number */
+  .tp-tblock{flex:0 0 auto;--tpp:var(--p)}
+  .tp-fresh .tp-tblock{animation:tpRing 1.1s cubic-bezier(.2,.8,.2,1) both}
+  @keyframes tpRing{from{--tpp:0}}
+  .tp-ring{width:70px;height:70px;border-radius:50%;padding:5px;
+    background:conic-gradient(var(--tp-acc2) 0,var(--tp-acc) calc(var(--tpp)*1%),rgba(255,255,255,.1) calc(var(--tpp)*1%));
+    box-shadow:0 0 22px -6px rgba(224,118,42,.75)}
+  .tp-ringin{width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at 50% 30%,#2a1840,#150b24);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+  .tp-tlab{display:block;font:900 7.5px/1 var(--body);letter-spacing:.16em;color:rgba(255,255,255,.55)}
+  .tp-ringin b{font:900 25px/1 var(--body);color:#ffe7b0;margin-top:2px}
+  .tp-ringin i{font:900 9px/1 var(--body);color:rgba(255,255,255,.45);font-style:normal;margin-top:1px}
+  .tp-prog{margin-top:10px}
+  .tp-bar{position:relative;height:12px;border-radius:8px;background:rgba(0,0,0,.45);overflow:hidden;border:1px solid rgba(255,255,255,.1)}
+  .tp-fill{position:relative;height:100%;border-radius:7px;background:linear-gradient(90deg,var(--tp-acc),var(--tp-acc2) 70%,#ffe488);box-shadow:0 0 14px rgba(255,160,70,.6);transform-origin:left;overflow:hidden}
+  .tp-fresh .tp-fill{animation:tpFill 1.1s cubic-bezier(.2,.8,.2,1) both}
+  @keyframes tpFill{from{transform:scaleX(0)}}
+  .tp-fill:after{content:'';position:absolute;top:0;bottom:0;left:-40%;width:40%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:tpShine 2.6s ease-in-out infinite}
+  @keyframes tpShine{0%{transform:translateX(0)}60%,100%{transform:translateX(350%)}}
+  .tp-xprow{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:6px}
+  .tp-xp{font:800 11px/1 var(--body);color:rgba(255,255,255,.88)}
+  .tp-days{font:800 10.5px/1 var(--body);color:var(--tp-acc2);white-space:nowrap}
+  .tp-meta{font:700 10.5px/1.3 var(--body);color:var(--muted);margin-top:7px}
   .tp-ev{font:700 11.5px/1.35 var(--body);color:#ffcf96;margin-top:7px;padding:6px 9px;border-radius:9px;background:rgba(255,140,40,.12);border:1px solid rgba(255,179,90,.35)}
   .tp-ev b{color:#ffb35a}
-  .tpov .pchal{margin:12px 0 0;max-width:none}
+  .tp-body{max-width:600px;margin:14px auto 0}
+  /* rewards waiting: the loudest thing on the page, because it is the one thing that pays right now */
+  .tp-claimbar{position:relative;display:flex;align-items:center;gap:12px;width:100%;border:0;cursor:pointer;text-align:left;overflow:hidden;
+    padding:13px 14px;border-radius:16px;background:linear-gradient(180deg,#ffd862,#eb9e1c);color:#2a1b03;
+    box-shadow:0 12px 30px -14px rgba(255,190,50,.95),inset 0 1px 0 rgba(255,255,255,.5);animation:tpGlow 2.2s ease-in-out infinite}
+  .tp-claimbar:active{transform:translateY(1px)}
+  .tp-claimbar:after{content:'';position:absolute;top:0;bottom:0;left:-50%;width:35%;transform:skewX(-18deg);background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:tpSweep 2.8s ease-in-out infinite}
+  @keyframes tpSweep{0%{left:-50%}55%,100%{left:130%}}
+  @keyframes tpGlow{0%,100%{box-shadow:0 12px 30px -14px rgba(255,190,50,.8),inset 0 1px 0 rgba(255,255,255,.5)}50%{box-shadow:0 14px 36px -10px rgba(255,190,50,1),inset 0 1px 0 rgba(255,255,255,.5)}}
+  .tp-cbgift{font-size:30px;line-height:1;animation:tpBob 1.4s ease-in-out infinite;filter:drop-shadow(0 4px 6px rgba(0,0,0,.25))}
+  @keyframes tpBob{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-4px) rotate(6deg)}}
+  .tp-cbtxt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+  .tp-cbtxt b{font:900 17px/1.05 var(--body)}
+  .tp-cbtxt span{font:800 11px/1.2 var(--body);opacity:.75}
+  .tp-cbgo{flex:0 0 auto;font:900 12px/1 var(--body);letter-spacing:.04em;background:#2a1b03;color:#ffd862;border-radius:10px;padding:9px 12px}
+  /* next up: what the very next tier pays, on both lanes */
+  .tp-next{margin-top:12px;padding:12px;border-radius:16px;border:1px solid rgba(224,118,42,.4);background:linear-gradient(180deg,rgba(224,118,42,.14),rgba(255,255,255,.02))}
+  .tp-nhd{display:flex;align-items:baseline;gap:8px}
+  .tp-nk{font:900 10px/1 var(--body);letter-spacing:.18em;color:var(--tp-acc2)}
+  .tp-nhd b{font:900 15px/1 var(--body);color:var(--oncard)}
+  .tp-ngo{margin-left:auto;font:800 11px/1 var(--body);color:var(--muted)}
+  .tp-nlanes{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
+  .tp-nslot{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;text-align:center;min-height:86px;padding:16px 6px 9px;border-radius:12px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.1)}
+  .tp-nslot.prem{border-color:rgba(166,107,255,.5);background:linear-gradient(180deg,rgba(140,90,240,.2),rgba(0,0,0,.15))}
+  .tp-nslot.lk>*:not(.tp-nl){opacity:.55;filter:saturate(.6)}
+  .tp-nl{position:absolute;top:6px;left:8px;font:900 8.5px/1 var(--body);letter-spacing:.14em;color:rgba(255,255,255,.55)}
+  .tp-nslot.prem .tp-nl{color:#cfb2ff}
+  /* coming up: the exclusives still ahead, the chase in one swipe */
+  .tp-feat{margin-top:14px}
+  .tp-fh{display:flex;align-items:baseline;justify-content:space-between;font:900 10.5px/1 var(--body);letter-spacing:.18em;color:var(--muted);margin:0 2px 8px}
+  .tp-fh span{letter-spacing:.02em;font-weight:800;color:var(--tp-acc2)}
+  .tp-frow{display:flex;gap:9px;overflow-x:auto;padding:4px 2px 8px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .tp-frow::-webkit-scrollbar{display:none}
+  .tp-fi{flex:0 0 104px;scroll-snap-align:start;position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;padding:12px 6px 9px;border-radius:14px;cursor:pointer;text-align:center;color:inherit;
+    border:1.5px solid var(--rc,rgba(255,255,255,.2));background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02));box-shadow:0 0 18px -10px var(--rc,transparent)}
+  .tp-fi:active{transform:translateY(1px)}
+  .tp-fth{width:50px;height:50px;filter:drop-shadow(0 6px 8px rgba(0,0,0,.4))}
+  .tp-fth .sthumb,.tp-fth img,.tp-fth canvas,.tp-fth svg{width:100%;height:100%;display:block;object-fit:contain}
+  .tp-fn{font:800 10.5px/1.2 var(--body);color:var(--oncard);min-height:2.4em;display:flex;align-items:center}
+  .tp-ft{font:900 9.5px/1 var(--body);letter-spacing:.06em;color:var(--tp-acc2)}
+  .tp-fpro{position:absolute;top:-7px;right:6px;font:900 8px/1 var(--body);letter-spacing:.1em;padding:3px 6px;border-radius:6px;background:linear-gradient(180deg,#c08bff,#7048d6);color:#fff}
+  .tp-proon{display:flex;align-items:center;gap:10px;margin-top:12px;padding:11px 13px;border-radius:14px;border:1px solid rgba(166,107,255,.55);background:linear-gradient(90deg,rgba(150,95,240,.25),rgba(150,95,240,.06))}
+  .tp-proon .tp-pro{flex:0 0 auto}
+  .tp-proon b{font:900 13px/1.2 var(--body);color:#e6d8ff}
+  .tp-proon div span{font:700 11px/1.3 var(--body);color:var(--muted);display:block}
+  .tpov .pchal{margin:12px 0 0;max-width:none;background:rgba(20,10,34,.55);border-color:rgba(255,255,255,.12)}
   .tp-stamps{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0 0;padding:9px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.035)}
   .tp-stl{font:900 10px/1 var(--body);letter-spacing:.16em;color:rgba(255,255,255,.55)}
-  .tp-stq{position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);font:900 7px/1 var(--body);letter-spacing:.1em;font-style:normal;padding:2px 4px;border-radius:5px;background:#f1d04a;color:#1b1406;white-space:nowrap}
-  .tp-ot{max-width:560px;margin:6px auto 14px;padding:13px 14px;border-radius:16px;border:1.5px dashed rgba(201,160,255,.35);background:rgba(162,75,224,.06);text-align:center}
+  .tp-stq{position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);z-index:2;font:900 7px/1 var(--body);letter-spacing:.1em;font-style:normal;padding:2px 4px;border-radius:5px;background:#f1d04a;color:#1b1406;white-space:nowrap}
+  .tp-ot{max-width:600px;margin:6px auto 14px;padding:13px 14px;border-radius:16px;border:1.5px dashed rgba(201,160,255,.35);background:rgba(162,75,224,.06);text-align:center}
   .tp-ot.live{border-style:solid;border-color:rgba(201,160,255,.6);background:rgba(162,75,224,.12)}
   .tp-oth{font:900 11px/1 var(--body);letter-spacing:.16em;color:#c9a0ff}
   .tp-otms{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
@@ -35777,38 +35840,54 @@ function passStyleOnce(){ if(_tpcss) return; _tpcss=true; const st=document.crea
   .tp-otm b{display:block;font:900 16px/1 var(--body);color:#f1d04a;letter-spacing:.05em}
   .tp-otm span{display:block;font:800 9.5px/1 var(--body);letter-spacing:.12em;color:rgba(255,255,255,.6);margin-top:5px}
   .tp-otm.on{opacity:1;border-color:#f1d04a;background:rgba(241,208,74,.12);box-shadow:0 0 18px -6px rgba(241,208,74,.7)}
-  .tp-cta{margin:14px auto 0;max-width:560px}
+  .tp-cta{margin:14px auto 0;max-width:600px}
   .tp-jump{max-width:340px;margin:12px auto 0}
-  /* ---- the track ---- */
-  .tp-legend{display:flex;max-width:560px;margin:18px auto 9px;padding:0 2px;gap:10px}
-  .tp-legend span{flex:1;text-align:center;font:900 10px/1 var(--body);letter-spacing:.18em;color:rgba(255,255,255,.55);padding-bottom:6px;border-bottom:2px solid rgba(255,255,255,.14)}
-  .tp-legend span:first-child{flex:0 0 54px}
-  .tp-legend .pro{color:#c9adff;border-color:rgba(167,139,250,.5)}
-  .tp-track{max-width:560px;margin:0 auto;padding-bottom:10px}
-  .tp-row{display:grid;grid-template-columns:54px 1fr 1fr;gap:10px;align-items:stretch;margin-bottom:11px;border-radius:16px;transition:box-shadow .3s ease}
-  .tp-row.tp-flash{box-shadow:0 0 0 3px rgba(241,208,74,.55)}
-  .tp-tnum{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1.5px solid rgba(255,255,255,.13);border-radius:13px;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02))}
-  .tp-tnum::before{content:'';position:absolute;left:50%;top:-12px;width:3px;height:12px;margin-left:-1.5px;background:rgba(255,255,255,.12);border-radius:2px}
-  .tp-track .tp-row:first-child .tp-tnum::before{display:none}
-  .tp-tnum b{font:900 19px/1 var(--body);color:var(--oncard)}
-  .tp-tnum span{font:800 8px/1 var(--body);color:rgba(255,255,255,.4);margin-top:4px}
-  .tp-row.reached .tp-tnum{border-color:rgba(241,208,74,.5);background:linear-gradient(180deg,rgba(241,208,74,.19),rgba(241,208,74,.05))}
-  .tp-row.reached .tp-tnum b{color:var(--gold)}
-  .tp-row.reached .tp-tnum::before{background:linear-gradient(180deg,#eba61f,#ffd447)}
-  .tp-row.cur .tp-tnum{border-color:#ffe488;background:linear-gradient(180deg,#ffd447,#eba61f);box-shadow:0 0 0 3px rgba(241,208,74,.2),0 8px 20px -10px rgba(241,208,74,.95)}
-  .tp-row.cur .tp-tnum b{color:#241a05}
-  .tp-row.cur .tp-tnum span{color:rgba(36,26,5,.72)}
-  .tp-row.cap .tp-tnum b{font-size:22px}
-  .tp-cell{position:relative;border-radius:14px;border:1.5px solid rgba(255,255,255,.1);background:linear-gradient(180deg,rgba(255,255,255,.065),rgba(255,255,255,.015));padding:12px 8px 36px;display:flex;flex-direction:column;align-items:center;gap:5px;min-height:92px;justify-content:center;text-align:center}
-  .tp-cell.prem{border-color:rgba(167,139,250,.36);background:linear-gradient(180deg,rgba(140,95,235,.2),rgba(120,80,214,.05))}
-  .tp-cell.locked{opacity:.32;filter:saturate(.45)}
-  .tp-cell.prolock{opacity:.5;filter:saturate(.6)}
-  .tp-cell.claimed{opacity:.52;border-color:rgba(53,214,160,.3)}
-  .tp-cell.claimable{border-color:var(--gold);background:linear-gradient(180deg,rgba(241,208,74,.17),rgba(241,208,74,.03));animation:tpReady 2.4s ease-in-out infinite}
-  .tp-cell.prem.claimable{border-color:#c08bff;background:linear-gradient(180deg,rgba(176,120,255,.24),rgba(120,80,214,.05));animation:tpReadyP 2.4s ease-in-out infinite}
-  @keyframes tpReady{0%,100%{box-shadow:0 0 0 1px rgba(241,208,74,.45),0 10px 26px -16px rgba(241,208,74,.7)}50%{box-shadow:0 0 0 1px rgba(241,208,74,.85),0 12px 30px -12px rgba(241,208,74,1)}}
-  @keyframes tpReadyP{0%,100%{box-shadow:0 0 0 1px rgba(192,139,255,.45),0 10px 26px -16px rgba(167,139,250,.7)}50%{box-shadow:0 0 0 1px rgba(192,139,255,.9),0 12px 30px -12px rgba(167,139,250,1)}}
-  @media (prefers-reduced-motion:reduce){ .tp-cell.claimable,.tp-cell.prem.claimable{animation:none;box-shadow:0 0 0 1px rgba(241,208,74,.7)} }
+  /* ---- the track: a rail of tier nodes, the free lane and the Pro lane either side of nothing ---- */
+  .tp-legend{display:grid;grid-template-columns:52px 1fr 1fr;max-width:600px;margin:20px auto 10px;padding:0 2px;gap:9px}
+  .tp-legend span{text-align:center;font:900 10px/1 var(--body);letter-spacing:.18em;color:rgba(255,255,255,.6);padding-bottom:7px;border-bottom:2px solid rgba(255,255,255,.14)}
+  .tp-legend .pro{color:#cfb2ff;border-color:rgba(166,107,255,.6)}
+  .tp-track{max-width:600px;margin:0 auto;padding-bottom:10px}
+  .tp-row{display:grid;grid-template-columns:52px 1fr 1fr;gap:9px;align-items:stretch;margin-bottom:10px;border-radius:16px;transition:box-shadow .3s ease}
+  .tp-row.tp-flash{box-shadow:0 0 0 3px rgba(255,179,90,.65)}
+  .tp-tnum{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+  .tp-tnum::before{content:'';position:absolute;left:50%;top:-10px;bottom:-10px;width:4px;margin-left:-2px;background:rgba(255,255,255,.1);border-radius:2px}
+  .tp-track .tp-row:first-child .tp-tnum::before{top:50%}
+  .tp-track .tp-row:last-child .tp-tnum::before{bottom:50%}
+  .tp-tnum b{position:relative;z-index:1;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:900 15px/1 var(--body);color:rgba(255,255,255,.75);
+    background:#1e1231;border:2px solid rgba(255,255,255,.16)}
+  .tp-tnum span{position:relative;z-index:1;font:800 8px/1 var(--body);color:rgba(255,255,255,.45);background:#140b22;padding:1px 4px;border-radius:4px}
+  .tp-row.reached .tp-tnum::before{background:linear-gradient(180deg,var(--tp-acc),var(--tp-acc2));box-shadow:0 0 10px rgba(224,118,42,.6)}
+  .tp-row.reached .tp-tnum b{background:linear-gradient(180deg,var(--tp-acc2),var(--tp-acc));border-color:#ffd9a8;color:#2a1405}
+  .tp-row.cur .tp-tnum b{border-color:var(--tp-acc2);color:#fff;background:#2a1838;animation:tpPulse 1.8s ease-in-out infinite}
+  .tp-row.cur .tp-tnum::after{content:'NEXT';position:absolute;top:50%;left:50%;transform:translate(-50%,-38px);z-index:2;font:900 7.5px/1 var(--body);letter-spacing:.12em;padding:3px 5px;border-radius:5px;background:var(--tp-acc);color:#fff}
+  @keyframes tpPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,179,90,.6)}50%{box-shadow:0 0 0 7px rgba(255,179,90,0)}}
+  .tp-row.cap .tp-tnum b{width:46px;height:46px;font-size:21px;color:#ffd862;border-color:#ffd862;box-shadow:0 0 18px -4px rgba(255,216,98,.8)}
+  .tp-row.cap.reached .tp-tnum b{color:#2a1405}
+  .tp-row.ten:not(.cap) .tp-tnum b{border-width:2.5px}
+  .tp-cell{position:relative;border-radius:14px;border:1.5px solid rgba(255,255,255,.1);background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.015));padding:12px 8px 38px;display:flex;flex-direction:column;align-items:center;gap:5px;min-height:96px;justify-content:center;text-align:center}
+  .tp-cell.prem{border-color:rgba(166,107,255,.38);background:linear-gradient(180deg,rgba(140,90,240,.22),rgba(110,70,210,.05))}
+  .tp-cell.ms{border-color:var(--rc);background:radial-gradient(90% 70% at 50% 30%,color-mix(in srgb,var(--rc) 26%,transparent),transparent 75%),linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.015));box-shadow:0 0 22px -10px var(--rc)}
+  .tp-cell.ms .prc-thumb{width:50px;height:50px}
+  .tp-ex{position:absolute;top:-7px;left:50%;transform:translateX(-50%);font:900 7.5px/1 var(--body);letter-spacing:.12em;font-style:normal;padding:3px 6px;border-radius:6px;background:var(--rc);color:#170c05;white-space:nowrap}
+  .tp-cell.locked{opacity:.4;filter:saturate(.5)}
+  .tp-cell.prolock{opacity:.6;filter:saturate(.7)}
+  .tp-cell.claimed{opacity:.55}
+  .tp-cell.claimed:after{content:'✓';position:absolute;top:7px;right:8px;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:900 11px/1 var(--body);background:#35d6a0;color:#06210f}
+  .tp-cell.claimable{border-color:#ffd862;background:radial-gradient(90% 70% at 50% 30%,rgba(255,216,98,.28),transparent 75%),linear-gradient(180deg,rgba(255,216,98,.12),rgba(255,216,98,.02));animation:tpReady 2.2s ease-in-out infinite}
+  .tp-cell.prem.claimable{border-color:#c08bff;background:radial-gradient(90% 70% at 50% 30%,rgba(192,139,255,.32),transparent 75%),linear-gradient(180deg,rgba(176,120,255,.2),rgba(120,80,214,.04));animation:tpReadyP 2.2s ease-in-out infinite}
+  .tp-cell.claimable>:first-child{animation:tpBob2 1.6s ease-in-out infinite}
+  @keyframes tpBob2{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+  @keyframes tpReady{0%,100%{box-shadow:0 0 0 1px rgba(255,216,98,.45),0 10px 26px -16px rgba(255,216,98,.7)}50%{box-shadow:0 0 0 1px rgba(255,216,98,.9),0 12px 30px -10px rgba(255,216,98,1)}}
+  @keyframes tpReadyP{0%,100%{box-shadow:0 0 0 1px rgba(192,139,255,.45),0 10px 26px -16px rgba(167,139,250,.7)}50%{box-shadow:0 0 0 1px rgba(192,139,255,.9),0 12px 30px -10px rgba(167,139,250,1)}}
+  /* the moment a reward is taken: the tile pops and throws sparks */
+  .tp-cell.tp-burst{animation:tpPop .55s cubic-bezier(.2,1.6,.4,1)}
+  @keyframes tpPop{0%{transform:scale(.9)}60%{transform:scale(1.06)}100%{transform:scale(1)}}
+  .tp-spk{position:absolute;left:50%;top:42%;z-index:3;width:7px;height:7px;margin:-3.5px;border-radius:50%;background:var(--sc,#ffd862);box-shadow:0 0 8px var(--sc,#ffd862);pointer-events:none;
+    animation:tpSpark .8s ease-out forwards}
+  @keyframes tpSpark{0%{transform:rotate(var(--a)) translateY(0) scale(1);opacity:1}100%{transform:rotate(var(--a)) translateY(-54px) scale(.3);opacity:0}}
+  @media (prefers-reduced-motion:reduce){ .tp-cell.claimable,.tp-cell.prem.claimable,.tp-claimbar,.tp-cbgift,.tp-cell.claimable>:first-child,.tp-row.cur .tp-tnum b,.tp-fill:after,.tp-claimbar:after{animation:none}
+    .tp-fresh .tp-fill,.tp-fresh .tp-tblock,.tp-cell.tp-burst,.tp-spk{animation:none} .tp-spk{display:none} }
+  @media (max-width:360px){ .tp-hrow{padding-right:88px;gap:10px} .tp-ring{width:62px;height:62px} .tp-ringin b{font-size:22px} .tp-ssnbig{font-size:26px} }
   .prc-ic{font:900 23px/1 var(--body)}
   .prc-lab{font:800 11px/1.2 var(--body);color:var(--oncard)}
   .prc-thumb{width:38px;height:38px}
@@ -35817,10 +35896,10 @@ function passStyleOnce(){ if(_tpcss) return; _tpcss=true; const st=document.crea
   .prc-pack{width:32px;height:41px;object-fit:contain;image-rendering:pixelated}
   .prc-extra{display:inline-flex;align-items:center;gap:3px;font:800 9px/1 var(--body);color:#ffd45e}
   .tp-badge{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font:900 9.5px/1 var(--body);letter-spacing:.03em;padding:5px 10px;border-radius:8px;white-space:nowrap}
-  .tp-badge.done{background:rgba(53,214,160,.2);color:#35d6a0}
-  .tp-badge.lock{background:rgba(255,255,255,.07);color:rgba(255,255,255,.5)}
-  .tp-claim{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);border:0;border-radius:8px;padding:7px 17px;font:900 11px/1 var(--body);letter-spacing:.03em;background:linear-gradient(180deg,#ffd447,#eba61f);color:#241a05;cursor:pointer;box-shadow:0 5px 14px -5px rgba(241,208,74,.95)}
-  .tp-cell.prem .tp-claim{background:linear-gradient(180deg,#c08bff,#7048d6);color:#fff;box-shadow:0 5px 14px -5px rgba(160,90,255,.95)}
+  .tp-badge.done{background:rgba(53,214,160,.18);color:#4fe0ad}
+  .tp-badge.lock{background:rgba(255,255,255,.07);color:rgba(255,255,255,.55)}
+  .tp-claim{position:absolute;bottom:7px;left:8px;right:8px;border:0;border-radius:9px;padding:8px 6px;font:900 11.5px/1 var(--body);letter-spacing:.06em;background:linear-gradient(180deg,#ffd862,#eb9e1c);color:#2a1b03;cursor:pointer;box-shadow:0 6px 16px -6px rgba(255,190,50,1)}
+  .tp-cell.prem .tp-claim{background:linear-gradient(180deg,#c08bff,#7048d6);color:#fff;box-shadow:0 6px 16px -6px rgba(160,90,255,1)}
   /* ---------- Tour Pass sales surfaces (signed-out page + the Go Pro pitch) ---------- */
   .tps-gopro{cursor:pointer;transition:transform .12s ease,box-shadow .2s ease}
   .tps-gopro:hover{box-shadow:0 0 0 2px rgba(241,208,74,.55),0 0 34px -10px rgba(241,208,74,.6)}
@@ -35834,7 +35913,7 @@ function passStyleOnce(){ if(_tpcss) return; _tpcss=true; const st=document.crea
     filter:drop-shadow(0 8px 16px rgba(162,75,224,.45))}
   .tps-hero{position:relative;max-width:540px;margin:10px auto 0;border-radius:18px;overflow:hidden;
     border:1px solid rgba(167,139,250,.5);padding:16px 14px 18px;text-align:center;
-    background:radial-gradient(120% 95% at 50% 0%,rgba(162,75,224,.45),rgba(8,28,17,.15) 64%),linear-gradient(180deg,#170c2c,#081c11 72%);
+    background:radial-gradient(120% 95% at 50% 0%,rgba(162,75,224,.45),rgba(13,8,24,.15) 64%),radial-gradient(80% 60% at 100% 100%,rgba(224,118,42,.22),transparent 70%),linear-gradient(180deg,#1c0f33,#110a1e 72%);
     box-shadow:0 18px 44px -26px rgba(162,75,224,.9),inset 0 1px 0 rgba(255,255,255,.08)}
   .tps-rays{position:absolute;left:50%;top:-60%;width:200%;height:200%;transform:translateX(-50%);pointer-events:none;
     background:conic-gradient(from 0deg,rgba(255,212,71,.13) 0 5deg,transparent 5deg 28deg);animation:tpsSpin 34s linear infinite}
@@ -35926,6 +36005,8 @@ function passProExclusivesTxt(){ const c=passLootSummary('prem').cos; if(!c.leng
   if(c.length===1) return 'the '+cap.name;
   if(c.length===2) return 'the '+c[0].name+' and the '+cap.name;
   return c.length+' season exclusives, including the '+cap.name; }
+// The colour a pass cosmetic wears on the track: its rarity's, so an epic reads as an epic.
+function passCosCol(c){ try{ const o=(cosmeticItems(c.cat)||[]).find(x=>x.id===c.id); const rr=ACC_RARITY[(o&&o.rar)||'epic']; return rr?rr.c:'#b06be0'; }catch(e){ return '#b06be0'; } }
 function passCosThumb(c){ const col=(c.cat==='fx'&&PXFX_BY[c.id])?PXFX_BY[c.id].col:null; return cosThumbHTML(c.cat,{id:c.id,col:col}); }
 // The visual loot pile for a lane: exclusives first (they're the chase), then packs, shards, coins.
 function passLootTilesHTML(lane){
@@ -36020,22 +36101,41 @@ function overlayTourPass(screen){
   const tx=passTierShown(s.xp), ot=passSystemsOn()&&tier>=PASS_TIERS, top=ot?PASS_OT_MAX:PASS_TIERS, capX=passXpForTierX(top);
   const base=tx<top?passXpForTierX(tx):capX, nxt=tx<top?passXpForTierX(tx+1):capX;
   const into=Math.round(Math.min(s.xp,capX)-base), need=Math.max(1,nxt-base), pct=tx<top?Math.min(100,Math.round(100*into/need)):100;
-  const claimable=passClaimable(), evLine=passEventLine();
-  const ov=$(`<div class="ov tpov tp-track-page" role="dialog" aria-modal="true" aria-label="Tour Pass">
+  const claimable=passClaimable(), evLine=passEventLine(), sdef=passSeasonDef();
+  // The first paint animates (the ring and the bar fill up); a re-render after a claim does not replay it.
+  const fresh=(_lastView||'').split('|')[1]!=='tourpass';
+  const burst=S._tpBurst; S._tpBurst=null;
+  const ov=$(`<div class="ov tpov tp-track-page${fresh?' tp-fresh':''}" role="dialog" aria-modal="true" aria-label="Tour Pass" style="--tp-acc:${sdef.accent||'#e0762a'}">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button></div>`);
-  // Full-bleed sticky season bar: spans the whole screen width, with the tier + progress reading as one unit.
+  // Full-bleed sticky season bar: the tier ring, the season, and the bar to the next tier.
   ov.appendChild($(`<div class="tp-head"><div class="tp-hin">
-    <div class="tp-ssnbig">Season ${ssn.n}</div>
-    <div class="tp-htop"><span class="tp-kick">TOUR PASS</span>${ssn.day<=14?'<span class="tp-new">NEW SEASON</span>':''}${pro?'<span class="tp-pro">PRO</span>':''}</div>
-    <div class="tp-trow">
-      <div class="tp-tblock"><span class="tp-tlab">${ot?'OVERTIME':'TIER'}</span><div class="tp-tbig"><b>${tx}</b><i>/${top}</i></div></div>
-      <div class="tp-prog">
-        <div class="tp-bar"><div class="tp-fill" style="width:${pct}%"></div></div>
-        <div class="tp-xp">${tx<top?into+' / '+need+' XP to Tier '+(tx+1):'EVERY TIER REACHED'}</div></div>
+    <div class="tp-hrow">
+      <div class="tp-tblock" style="--p:${pct}"><div class="tp-ring"><div class="tp-ringin"><span class="tp-tlab">${ot?'OVERTIME':'TIER'}</span><b>${tx}</b><i>/${top}</i></div></div></div>
+      <div class="tp-htxt">
+        <div class="tp-htop"><span class="tp-kick">TOUR PASS</span>${ssn.day<=14?'<span class="tp-new">NEW SEASON</span>':''}${pro?'<span class="tp-pro">PRO</span>':''}</div>
+        <div class="tp-ssnbig">Season ${ssn.n}</div>
+        ${sdef.name&&!sdef.legacy?`<div class="tp-sname">${esc(sdef.name)}</div>`:''}
+      </div>
     </div>
-    <div class="tp-meta">${ssn.daysLeft} day${ssn.daysLeft===1?'':'s'} left this season · earn Pass XP in every mode</div>
+    <div class="tp-prog">
+      <div class="tp-bar"><div class="tp-fill" style="width:${pct}%"></div></div>
+      <div class="tp-xprow"><span class="tp-xp">${tx<top?into+' / '+need+' XP to Tier '+(tx+1):'EVERY TIER REACHED'}</span><span class="tp-days">${ssn.daysLeft} day${ssn.daysLeft===1?'':'s'} left</span></div></div>
     ${evLine?`<div class="tp-ev">${evLine}</div>`:''}
   </div></div>`));
+  // ---- the hub above the track: what you can take now, what is next, and what is worth chasing ----
+  const hub=$(`<div class="tp-body"></div>`);
+  if(claimable>0) hub.appendChild($(`<button class="tp-claimbar" data-claimall><span class="tp-cbgift">🎁</span>
+    <span class="tp-cbtxt"><b>${claimable} reward${claimable===1?'':'s'} ready</b><span>Tap to claim ${claimable===1?'it':'them all'}</span></span><span class="tp-cbgo">Claim ▸</span></button>`));
+  if(tier<PASS_TIERS){ const nt=tier+1, toGo=Math.max(0,passXpForTier(nt)-s.xp);
+    hub.appendChild($(`<div class="tp-next"><div class="tp-nhd"><span class="tp-nk">NEXT UP</span><b>Tier ${nt}</b><span class="tp-ngo">${coinFmt(toGo)} XP to go</span></div>
+      <div class="tp-nlanes"><div class="tp-nslot free"><span class="tp-nl">FREE</span>${passRewardCell(passTierReward(nt,'free'))}</div>
+      <div class="tp-nslot prem${pro?'':' lk'}"><span class="tp-nl">PRO${pro?'':' · LOCKED'}</span>${passRewardCell(passTierReward(nt,'prem'))}</div></div></div>`)); }
+  // Every exclusive still ahead, nearest first. Tapping one takes you to its tier on the track.
+  const feat=[]; for(let t=tier+1;t<=PASS_TIERS;t++) ['free','prem'].forEach(l=>{ const r=passTierReward(t,l); if(r.cos) feat.push({t:t,lane:l,c:r.cos}); });
+  if(feat.length) hub.appendChild($(`<div class="tp-feat"><div class="tp-fh">COMING UP<span>${feat.length} exclusive${feat.length===1?'':'s'} to unlock</span></div>
+    <div class="tp-frow">${feat.slice(0,12).map(f=>`<button class="tp-fi" data-goto="${f.t}" style="--rc:${passCosCol(f.c)}">${f.lane==='prem'&&!pro?'<span class="tp-fpro">PRO</span>':''}
+      <span class="tp-fth">${passCosThumb(f.c)}</span><span class="tp-fn">${esc(f.c.name)}</span><span class="tp-ft">TIER ${f.t}</span></button>`).join('')}</div></div>`));
+  ov.appendChild(hub);
   const cta=$(`<div class="tp-cta"></div>`);
   if(!pro){
     if(TOURPASS_ENABLED){
@@ -36063,8 +36163,7 @@ function overlayTourPass(screen){
       cta.appendChild($(`<div class="scout" style="text-align:center;border-color:#a78bfa;margin:0"><b style="color:#a78bfa">Pro lane</b> <span class="small muted">· unlocks with the Tour Pass, coming soon</span></div>`));
     }
   }
-  else cta.appendChild($(`<div class="scout" style="text-align:center;border-color:#a78bfa;margin:0"><b style="color:#a78bfa">✓ Pro active${devMode()&&!dailyPassActive()?' (dev)':''} · Season ${ssn.n}</b> <span class="small muted">· claim both lanes on every tier you reach</span></div>`));
-  if(claimable>0) cta.appendChild($(`<button class="btn goldfill" data-claimall style="margin:10px auto 0">Claim all · ${claimable} ready</button>`));
+  else cta.appendChild($(`<div class="tp-proon" style="margin-top:0"><span class="tp-pro">PRO</span><div><b>Pro active${devMode()&&!dailyPassActive()?' (dev)':''} · Season ${ssn.n}</b><span>Both lanes pay out on every tier you reach.</span></div></div>`));
   try{ const pc=passChalHTML(); if(pc) cta.appendChild($(pc)); }catch(e){}
   // Your stamps so far, and what this season's stamp still needs. Nothing to show before the first one.
   if(passSystemsOn()) try{ const stH=passStampsHTML(), got=passTierX(s.xp)>=PASS_STAMP_TIER;
@@ -36090,12 +36189,15 @@ function overlayTourPass(screen){
     const reached=tier>=t, fC=s.claimed.free.indexOf(t)>=0, pC=s.claimed.prem.indexOf(t)>=0;
     const cell=(lane)=>{ const r=passTierReward(t,lane), claimed=lane==='prem'?pC:fC;
       let badge, st;
+      const ms=r.cos?` ms" style="--rc:${passCosCol(r.cos)}`:'', ex=r.cos?'<em class="tp-ex">EXCLUSIVE</em>':'';
+      const pop=(burst&&burst.t===t&&burst.lane===lane)?' tp-burst':'';
+      const sparks=pop?Array.from({length:10},(_,i)=>`<i class="tp-spk" style="--a:${i*36}deg;--sc:${lane==='prem'?'#c08bff':'#ffd862'}"></i>`).join(''):'';
       if(claimed){ badge=`<span class="tp-badge done">✓ Claimed</span>`; st='claimed'; }
       else if(reached && (lane==='free'||pro)){ badge=`<button class="tp-claim" data-claim="${t}" data-lane="${lane}">Claim</button>`; st='claimable'; }
       else if(reached && lane==='prem'){ badge=`<span class="tp-badge lock">Pro only</span>`; st='prolock'; }
       else { badge=`<span class="tp-badge lock">🔒 Tier ${t}</span>`; st='locked'; }
-      return `<div class="tp-cell ${lane} ${st}">${passRewardCell(r)}${badge}</div>`; };
-    track.appendChild($(`<div class="tp-row ${reached?'reached':''} ${t===tier+1?'cur':''} ${t===PASS_TIERS?'cap':''}" data-t="${t}">
+      return `<div class="tp-cell ${lane} ${st}${pop}${ms}">${ex}${passRewardCell(r)}${badge}${sparks}</div>`; };
+    track.appendChild($(`<div class="tp-row ${reached?'reached':''} ${t===tier+1?'cur':''} ${t===PASS_TIERS?'cap':''} ${t%10===0?'ten':''}" data-t="${t}">
       <div class="tp-tnum"><b>${t===PASS_TIERS?'★':t}</b><span>${passXpForTier(t)>=1000?(passXpForTier(t)/1000).toFixed(1).replace(/\.0$/,'')+'k':passXpForTier(t)}</span>${t===PASS_STAMP_TIER?'<em class="tp-stq">STAMP</em>':''}</div>
       ${cell('free')}${cell('prem')}</div>`));
   }
@@ -36112,7 +36214,8 @@ function overlayTourPass(screen){
   const gp=ov.querySelector('[data-gopro]'); if(gp){ gp.onclick=()=>{ beginPassPurchase(); };
     gp.onkeydown=(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); beginPassPurchase(); } }; }
   const ca=ov.querySelector('[data-claimall]'); if(ca) ca.onclick=()=>{ const got=passClaimAll(); if(got.length){ S.passClaimSummary=passClaimAgg(got); S.overlay='passclaim'; render(); } };
-  ov.querySelectorAll('[data-claim]').forEach(b=>b.onclick=()=>{ const rr=passClaim(+b.getAttribute('data-claim'), b.getAttribute('data-lane')); if(rr.ok){ toast('<span style="color:var(--gold);font-weight:800">Claimed!</span> '+passRewardLabel(rr.reward),3200); render(); } else toast(rr.msg); });
+  ov.querySelectorAll('[data-claim]').forEach(b=>b.onclick=()=>{ const t=+b.getAttribute('data-claim'), ln=b.getAttribute('data-lane'), rr=passClaim(t, ln);
+    if(rr.ok){ S._tpBurst={t:t, lane:ln}; try{ sfx('holeGood'); }catch(e){} try{ buzz(12); }catch(e){} toast('<span style="color:var(--gold);font-weight:800">Claimed!</span> '+passRewardLabel(rr.reward),3200); render(); } else toast(rr.msg); });
   screen.appendChild(ov);
   // NEVER auto-scroll: the page always opens at the top and only moves when the player asks it to.
   const jumpRow=()=>ov.querySelector('.tp-row.cur')||ov.querySelector('[data-t="'+Math.max(1,Math.min(tier,PASS_TIERS))+'"]');
@@ -36121,6 +36224,8 @@ function overlayTourPass(screen){
     cur.scrollIntoView({block:'center', behavior:_tpRed?'auto':'smooth'});
     cur.classList.add('tp-flash'); setTimeout(()=>{ cur.classList.remove('tp-flash'); },1700); };
   ov.querySelectorAll('[data-jump]').forEach(b=>b.onclick=jump);
+  ov.querySelectorAll('[data-goto]').forEach(b=>b.onclick=()=>{ const row=ov.querySelector('[data-t="'+b.getAttribute('data-goto')+'"]'); if(!row) return;
+    row.scrollIntoView({block:'center', behavior:_tpRed?'auto':'smooth'}); row.classList.add('tp-flash'); setTimeout(()=>{ row.classList.remove('tp-flash'); },1700); });
   setupPassScrollCue(ov, jumpRow(), jump);
 }
 // Floating "scroll to last reward" pill at the bottom of the Tour Pass, same pattern as the results page:
@@ -36574,7 +36679,7 @@ const PACK_TYPES={
   // pack ladder is not being re-tuned here, only given a pack for October and one for November, so the Tour
   // Pass's seasonal packs are themed for the whole season instead of falling back to Tour packs.
   // fromSeason: the Spooky drop opens Oct 1, four days before Season 2. Its pack waits for the season.
-  spooky:{id:'spooky', name:'Spooky Season Pack', short:'Spooky', price:30000, seasonal:true, fromSeason:2,
+  spooky:{id:'spooky', name:'Haunted Links Pack', short:'Haunted', price:30000, seasonal:true, fromSeason:2,
           dropId:'spooky', dropBias:0.40,
           odds:[['common',0.30],['rare',0.40],['epic',0.22],['legendary',0.08]],
           pityEpic:6, pityLeg:24, col:'#e07a1f', accent:'#ffc48a', glow:'rgba(224,122,31,.5)', icon:'🎃'},
@@ -36797,7 +36902,7 @@ const DROPS=[
  {id:'summer', name:'Summer Smash', kicker:'Poolside Season', accent:'#ff9d3a', window:[[7,1],[8,31]],
   blurb:'Sun\'s out. Floppy hats, sunset fades and beach shades, live for the hottest stretch of the year. Complete it to unlock the Endless Summer card backdrop, the Rubber Ducky Floatie and 100,000 coins.',
   items:[['pat','pineapple'],['pat','sunset'],['pat','aloha'],['hw','floppy'],['ew','beach'],['ball','flamingo'],['fx','heatwave'],['club','poolnoodle'],['plate','sunsplash']]},
- {id:'spooky', name:'Spooky Season', kicker:'October Only', accent:'#e07a1f', window:[[10,1],[10,31]],
+ {id:'spooky', name:'Haunted Links', kicker:'October Only', accent:'#e07a1f', window:[[10,1],[10,31]],
   blurb:'Witch hats, skeleton ribs and a cape with a taste for blood. Complete it to unlock the Haunted Hollow card backdrop and 100,000 coins. Returns every October.',
   items:[['hw','witch'],['pat','skeleton'],['pat','pumpkinpatch'],['ball','ghost'],['fx','ecto'],['top','cape'],['cleats','phantom']]},
  {id:'winter', name:'Winter Classic', kicker:'Holiday Collection', accent:'#9fdcff', window:[[12,1],[12,31]],
@@ -37088,7 +37193,7 @@ function overlaySpookySzn(screen){
   const embers=R?'':Array.from({length:16},(_,i)=>{ const c=i%3===0?'#7dff5a':'#ff9a3a';
     return `<span class="spk-ember" style="left:${(4+i*6)%96}%;background:${c};box-shadow:0 0 6px ${c};animation-duration:${(7+(i*37)%6)}s;animation-delay:${((i*53)%70)/10}s"></span>`; }).join('');
   const hang=(left,len,h,delay)=>`<div class="spk-hang" style="left:${left};animation-delay:${delay}s"><div class="silk" style="height:${len}px"></div><div class="bob" style="animation-delay:${delay}s">${spkEl('spider',h)}</div></div>`;
-  const ov=$(`<div class="spk-ov${still?' still':''}" role="dialog" aria-modal="true" aria-label="Spooky Szn is here">
+  const ov=$(`<div class="spk-ov${still?' still':''}" role="dialog" aria-modal="true" aria-label="Haunted Links is here">
     <img class="spk-moon" src="${spkMoonURL()}" alt="">
     <div class="spk-fog"></div><div class="spk-fog b"></div>
     ${embers}
@@ -37100,7 +37205,7 @@ function overlaySpookySzn(screen){
     <div class="spk-card">
       <span class="spk-pump">${spkEl('pumpkin',72)}</span>
       <div class="spk-kick">October only</div>
-      <div class="spk-ttl">SPOOKY SZN</div>
+      <div class="spk-ttl">HAUNTED LINKS</div>
       <div class="spk-sub">IS HERE</div>
       <p class="spk-lede">The haunted drop is live until ${ends}. Witch hats, skeleton ribs and a cape with a taste for blood.</p>
       <div class="spk-items">${items}</div>
