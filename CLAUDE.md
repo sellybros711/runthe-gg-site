@@ -19180,6 +19180,60 @@ song a curator wrote up, and nothing else. `data_drift.mjs` enforces that,
 failing any refresh where a derived value moved for a song whose own history
 did not.
 
+## The Putting Green, a Run The Tour tester preview
+
+```
+node golf/putt/check-putt.mjs             physics, the real greens, every themed hole, 21 dailies, the page
+node golf/putt/check-putt.mjs --quick     physics, the real greens and the page
+```
+
+`golf/putt/putt.js` is a game you PLAY inside Run The Tour: Tour Greens (nine putts on a course's
+real greens), a themed Daily Hole and eight themed nine-hole mini golf courses. `golf/putt/DESIGN.md`
+is the analysis of the mini golf games it learns from and what is still to do.
+
+**IT IS NOT LAUNCHED.** The home card is drawn by `puttOn()` in `golf/index.html` for the
+`PUTT_TESTERS` usernames and nobody else, read off the server-attributed `sbUsername`. There is no
+localStorage override, on purpose: a flag in the browser is a switch any visitor can flip. Setting
+`PUTT_LIVE` to true is the launch. The module loads for everybody (`putt/putt.js?v=`, so the
+cachebust check holds it) and draws nothing until `open()`.
+
+**The greens are the game's own.** `fromHost()` reads `hvGeom` (size, outline, pins, bunkers,
+water), `hvBiome` (colours) and the fictional venue name through `puttHost()`. Slope is built per
+course from `fit.put` and the green words in its blurb. Never put a real course name on screen.
+
+**The physics decides, and the checker plays it.** Stimp is a deceleration, slope is 5/7 g sin,
+and the cup catches a ball that falls far enough before its centre leaves the hole. Every themed
+hole and every daily the check walks is solved to par by a search, and no shot may leave the course
+or roll for ever. The first run found a ball resting on a rail being called out, because the
+material grid is a quarter foot: OUT is only believed once the exact polygon agrees.
+
+### A mini golf hole is a small 3D scene, and the land round it is a built place
+
+`golf/putt/hole3d.js` draws a themed hole the way the golfer is drawn: a height field and voxel solids,
+painted by PXHD. `golf/putt/land.js` builds the land a hole sits in, one composed place per theme (a
+churchyard, a farm, a cabin in the pines, a garden, a glen with a round tower, a tulip field, a night fair, a
+shore with a lighthouse), owner's rule: a fictional landscape, never a scatter of stickers. A real green
+stays on the flat painter.
+
+- **It draws only what stands still.** The ball, the cup, the aim, the windmill's paddles and sails and the
+  sliders are drawn every frame through the projection `render()` hands back (`pr`, `zAt`), so they sit on
+  the picture. `w2s` takes the 3D camera, and a screen drag becomes a direction on the hole through
+  `scrDir`, because up the screen is further than it looks.
+- **Nothing tall goes in front of the course.** Trees and buildings stand behind it and beside it; in front
+  go low things. `furnish()` fills whatever ground the screen asks for, so a wide hole on a tall phone is
+  not left on a bare band (`opt.aspect` grows the land to the stage's shape).
+- **It never holds a frame.** A hole renders once, and the next hole renders ahead while this one is
+  played, through `slices()`: a few milliseconds a frame, never while the ball rolls or a pull back is
+  held. Measured at 2x CPU throttle, play stays at 60 fps median while it works. Only the first hole of a
+  round waits, behind "Setting up the hole".
+- **The golfer is the 3D modelled one**, `golfer3d.js`'s putting stroke through `puttHost().golfer3`, side-on
+  to the line with the putter on the ball: address while aiming, the take back while a pull is held, the
+  through for a moment once it is struck. It is sized off its own figure height (`fig`) and anchored on its
+  own ball cell. The flat profile golfer is only the fallback for a page without the 3D golfer.
+- **A blocked or stale module, or a render that throws, draws the hole flat.** `check-putt.mjs` asserts
+  that, plus every themed hole with no unknown material, open carpet landing on carpet in the picture, and
+  the sliced render matching the one-shot render pixel for pixel.
+
 ## Run The Tour's course golfer is the profile golfer, drawn from a 3D model
 
 ```
