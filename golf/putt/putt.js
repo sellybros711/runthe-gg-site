@@ -1036,7 +1036,7 @@ function strike(){
   var P = S.play, C = P.C, ft = P.pow * maxFt(C), v = speedFor(C, ft), a = C.kind === 'real' ? Math.atan2(P.target[1] - P.ball[1], P.target[0] - P.ball[0]) : P.aimAng;
   var t0 = performance.now() / 1000 - P.clock0;
   P.shot = simulate(C, P.ball[0], P.ball[1], Math.cos(a) * v, Math.sin(a) * v, t0);
-  P.shotStart = performance.now(); P.strokes++; P.state = 'roll'; P.pow = 0; P.evI = 0; P.prev = P.ball.slice(); P.lastFt = ft;
+  P.shotStart = performance.now(); P.shotAng = a; P.strokes++; P.state = 'roll'; P.pow = 0; P.evI = 0; P.prev = P.ball.slice(); P.lastFt = ft;
   P.trail = P.shot.pts; hud();
 }
 function sound(k){ var h = S.host;
@@ -1081,8 +1081,9 @@ function frame(){
   drawCup(ctx, C, cam, Math.hypot(bx - C.cup[0], by - C.cup[1]));
   if (P.trail && P.state === 'aim') drawTrail(ctx, cam, P.trail);
   if (P.state === 'aim') drawAim(ctx, P, cam);
+  // the golfer stands at the ball while aiming, and holds the follow through a moment once it is struck
+  if ((P.state === 'aim' && !(P.intro && performance.now() - P.intro < 1300)) || (P.state === 'roll' && performance.now() - P.shotStart < 900)) drawGolfer(ctx, P, cam);
   drawBall(ctx, cam, bx, by, falling);
-  if (P.state === 'aim' && !(P.intro && performance.now() - P.intro < 1300)) drawGolfer(ctx, P, cam);
   readChip(P, bx, by);
 }
 function settle(){
@@ -1223,8 +1224,19 @@ function drawAim(ctx, P, cam){
     ctx.fillStyle = g; ctx.fillRect(x, y, w * P.pow, h);
   }
 }
+function imgOf(url){ S.imgs = S.imgs || {}; var im = S.imgs[url]; if (!im){ im = new Image(); im.src = url; S.imgs[url] = im; var ks = Object.keys(S.imgs); if (ks.length > 40) delete S.imgs[ks[0]]; } return im; }
 function drawGolfer(ctx, P, cam){
-  var h = S.host; if (!h.golfer) return;
+  var h = S.host, at = P.state === 'aim' ? P.ball : P.prev, ang = P.state === 'aim' ? (P.C.kind === 'real' ? Math.atan2(P.target[1] - P.ball[1], P.target[0] - P.ball[0]) : P.aimAng) : P.shotAng;
+  // the 3D modelled golfer (golfer3d.js through the page), side-on to the putt, putter on the ball:
+  // address while aiming, the take back while a pull is held, the through once it is struck
+  if (h.golfer3){ var g = null; try{ g = h.golfer3(Math.cos(ang), Math.sin(ang)); }catch(e){ g = null; }
+    if (g && g.urls){ var im = imgOf(g.urls[P.state !== 'aim' ? 2 : P.pow > 0.02 ? 1 : 0]);
+      if (im.complete && im.naturalWidth){ var hg = (P.C.kind === 'real' ? 3.4 : 3.1) * cam.s, kk = hg / g.fig, bp = w2s(cam, at[0], at[1]);
+        ctx.save(); ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(im, Math.round(bp[0] - g.ball[0] * kk), Math.round(bp[1] - g.ball[1] * kk), Math.round(g.W * kk), Math.round(g.H * kk));
+        ctx.restore(); }
+      return; } }   // still loading: draw nothing this frame rather than flash the flat golfer
+  if (!h.golfer || P.state !== 'aim') return;
   if (!S.gcv){ try{ S.gcv = h.golfer(); }catch(e){ S.gcv = null; } }
   var g = S.gcv; if (!g || !g.width) return;
   var hgt = (P.C.kind === 'real' ? 3.4 : cam.v3 ? 3.1 : 2.9) * cam.s, k = hgt / g.height, w = Math.round(g.width * k), hh = Math.round(g.height * k);

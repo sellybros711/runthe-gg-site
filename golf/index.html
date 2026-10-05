@@ -60,7 +60,7 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- The Putting Green: a tester preview. It draws nothing until puttOn() opens it (see PUTT_TESTERS). -->
-<script defer src="putt/putt.js?v=2"></script>
+<script defer src="putt/putt.js?v=3"></script>
 <script defer src="putt/land.js?v=1"></script>
 <script defer src="putt/hole3d.js?v=1"></script>
 <!-- The course golfer in the profile style, asked through g3dOn(). -->
@@ -22099,6 +22099,8 @@ function puttHost(){
     todayKey:todayKey, dailyCourseKey:dailyCourseKey,
     sfx:function(n){ try{ sfx(n); }catch(e){} }, buzz:function(p){ try{ buzz(p); }catch(e){} },
     golfer:function(){ return pxGolferCanvas(S.look,{noBall:true}); },
+    // the 3D modelled golfer the tracer plays with, standing side-on to the putt: address, take back, through
+    golfer3:function(vx,vy){ return g3dOn()?g3dSet(S.look,vx,vy,'putt'):null; },
     onClose:function(){ try{ render(); }catch(e){} } };
 }
 function openPutt(){ if(!puttOn()) return; try{ track('putt_open'); }catch(e){} window.RTT_PUTT.open(puttHost()); }

@@ -19226,6 +19226,10 @@ stays on the flat painter.
   played, through `slices()`: a few milliseconds a frame, never while the ball rolls or a pull back is
   held. Measured at 2x CPU throttle, play stays at 60 fps median while it works. Only the first hole of a
   round waits, behind "Setting up the hole".
+- **The golfer is the 3D modelled one**, `golfer3d.js`'s putting stroke through `puttHost().golfer3`, side-on
+  to the line with the putter on the ball: address while aiming, the take back while a pull is held, the
+  through for a moment once it is struck. It is sized off its own figure height (`fig`) and anchored on its
+  own ball cell. The flat profile golfer is only the fallback for a page without the 3D golfer.
 - **A blocked or stale module, or a render that throws, draws the hole flat.** `check-putt.mjs` asserts
   that, plus every themed hole with no unknown material, open carpet landing on carpet in the picture, and
   the sliced render matching the one-shot render pixel for pixel.
