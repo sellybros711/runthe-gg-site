@@ -12206,6 +12206,7 @@ function render(){
     if(S.overlay==='s1end') overlayS1End(app);
     if(S.overlay==='spookyszn') overlaySpookySzn(app);
     if(S.overlay==='haunted') overlayHaunted(app);
+    if(S.overlay==='winter') overlayWinter(app);
     if(S.overlay==='arcadead') overlayArcadeAd(app);
     if(S.overlay==='purchased') overlayPurchased(app);
     if(S.overlay==='coinlog') overlayCoinLog(app);
@@ -14689,6 +14690,7 @@ function homeModeList(){
   list.push({id:'online', act:true, pri:4, make:(o)=>onlineModeCard(o)});
   if(passEnabled())       list.push({id:'pass', act:true, pri:9, hero:false, make:()=>tourPassCard()});
   try{ if(hlLive()) list.push({id:'haunted', act:true, pri:9, hero:false, make:()=>hauntedCard()}); }catch(e){}
+  try{ if(wcLive()) list.push({id:'winter', act:true, pri:9, hero:false, make:()=>winterCard()}); }catch(e){}
   if(spotlightLiveToday()){ let sact=true; try{ sact=spotAttemptsLeft(monthlySpotlight(todayKey()).mk)>0; }catch(e){}
     list.push({id:'spot', act:sact, pri:5, make:()=>spotlightHeroCard()}); }
   return list;
@@ -15136,7 +15138,7 @@ function scrTitle(){
   if(rest.length){
     const side=$(`<div class="homeside"><div class="rail-lab">Also today<i></i></div><div class="homerail"></div></div>`);
     const rail=side.querySelector('.homerail');
-    rest.forEach(m=>{ const c=m.make({rail:true}); c.classList.add('railc'); if(m.id==='haunted') c.classList.add('hl-rail'); rail.appendChild(c); });
+    rest.forEach(m=>{ const c=m.make({rail:true}); c.classList.add('railc'); if(m.id==='haunted'||m.id==='winter') c.classList.add('hl-rail'); rail.appendChild(c); });
     main.appendChild(side);
   }
   w.appendChild(main);
@@ -15146,8 +15148,8 @@ function scrTitle(){
   const extras=$(`<div class="homeextras"></div>`);
   // Haunted Links on a desktop sits in the left column under the hero (it replaces the drop banner
   // there); the rail copy is hidden at that width. A phone keeps the rail copy and the banner.
-  const hlHere=rest.some(m=>m.id==='haunted');
-  if(hlHere){ try{ const hc=hauntedCard(); hc.classList.add('hl-left'); extras.appendChild(hc); }catch(e){} }
+  const evm=rest.find(m=>m.id==='haunted'||m.id==='winter'), hlHere=!!evm;
+  if(evm){ try{ const hc=evm.make({}); hc.classList.add('hl-left'); extras.appendChild(hc); }catch(e){} }
   if(ri && !cs){
     const go=$(`<button class="btn ghost">New Career<span class="sub">Build a new golfer</span></button>`);
     go.onclick=()=>{homeSetLastMode('career');reset();S.mode='easy';S.screen='setup';render();};
@@ -15162,7 +15164,7 @@ function scrTitle(){
   // routes straight to the Pro Shop's Drops tab. Fully data-driven off the DROPS registry. ──
   try{ const ld=liveThemedDrop();
     if(ld){ const pr=dropProgress(ld), done=pr.own>=pr.tot;
-      const db=$(`<button class="homedrop${hlHere&&ld.id==='spooky'?' hd-hl':''}" style="--dacc:${ld.accent}">
+      const db=$(`<button class="homedrop${hlHere&&(ld.id==='spooky'||ld.id==='winter')?' hd-hl':''}" style="--dacc:${ld.accent}">
         <span class="hd-dot"></span>
         <span class="hd-txt"><b>${esc(ld.name)} is LIVE</b><span>${(typeof dropClaimable==='function'&&dropClaimable(ld))?'🏆 COMPLETE · tap to CLAIM your reward!':done?'✓ Collection complete!':`Collect all ${pr.tot} · you have ${pr.own} · ends ${_DROP_MON[ld.window[1][0]-1]} ${ld.window[1][1]}`}</span></span>
         <span class="hd-go">▸</span>`);
@@ -37495,6 +37497,282 @@ function overlayHaunted(screen){
     if(g==='home'){ S.overlay=null; S.screen='title'; } else if(g==='shop'){ S.overlay='shop'; S.shopSec='apparel'; } else S.overlay=g; render(); });
   screen.appendChild(ov);
 }
+
+/* ═══════════════ WINTER CLASSIC: the December event page ═════════════════════════════════════════
+   Owner (Oct 2026): December's version of Haunted Links, named for the drop the shop already sells that
+   month, with two things to do:
+     THE ADVENT CALENDAR  25 doors, Dec 1 to Dec 25. A door holds a golf trivia question and a prize; a right
+                          answer doubles the prize and a wrong one still pays it. The prizes climb day by day
+                          and Christmas is the big one. Tour Pass Pro adds a second prize to every door.
+                          A door missed on its day can still be opened late, until the event ends on Dec 31.
+     HANUKKAH GIFTS       eight nights, Dec 4 to Dec 11, each lit by Dec 12. A night's gift is gelt (coins)
+                          and a spin of the dreidel: gimel doubles it, hei adds half, nun and shin leave it.
+   Every door and every night is a synced owned flag ('wc:<year>:d<n>', 'wc:<year>:h<n>'), so each pays once
+   per account whatever device opens it. Nothing here is for sale. Days are Eastern (todayKey).
+   QA: ?wcday=20261214 pretends it is that Eastern day for this page only. */
+const WC_LAST_DOOR=25, WC_END_DAY=31, WC_HNK_FROM=4, WC_HNK_NIGHTS=8, WC_HNK_LAST=12;
+// one question a door, every one about the game itself (rules, words, history), never a real course
+const WC_TRIVIA=[   // easy on Dec 1, harder as Christmas gets closer, and a tough one behind door 25
+  {q:'How many holes make up a standard full round of golf?', a:['18','9','12','36'], why:'Eighteen holes, the whole world over.'},
+  {q:'What do golfers shout to warn people a ball is heading their way?', a:['Fore!','Duck!','Heads!','Below!'], why:'Shout it early and loud.'},
+  {q:'One over par on a hole is a...', a:['Bogey','Birdie','Double','Par plus'], why:'Two over is a double bogey.'},
+  {q:'Two under par on a single hole is called what?', a:['An eagle','A birdie','An albatross','A condor'], why:'Birdie is one under, eagle two, albatross three.'},
+  {q:'A hole that bends left or right is called a...', a:['Dogleg','Hairpin','Switchback','Kink'], why:'It looks like a dog\'s hind leg.'},
+  {q:'A "gimme" is...', a:['A short putt your opponent concedes','A free mulligan','A tap-in eagle','A lucky bounce'], why:'Only in match play or a friendly round.'},
+  {q:'What does "the beach" mean on a golf course?', a:['A bunker','A water hazard','The cart path','The rough'], why:'Sand is sand.'},
+  {q:'For a right-handed golfer, a shot that curves hard to the left is a...', a:['Hook','Slice','Fade','Shank'], why:'A slice bends the other way.'},
+  {q:'How many clubs may a player carry in a round under the Rules of Golf?', a:['14','12','13','16'], why:'Fourteen is the most. Fewer is fine.'},
+  {q:'In match play, each hole is...', a:['Won, lost or halved','Scored by total strokes','Worth Stableford points','Skipped if tied'], why:'You play the holes, not the total.'},
+  {q:'Getting "up and down" means...', a:['Holing out in two from off the green','Making a hole in one','Hitting over a hill','A ball that bounces twice'], why:'One chip or pitch, one putt.'},
+  {q:'Three under par on a single hole is called what?', a:['An albatross','An eagle','A condor','An ace'], why:'Also known as a double eagle.'},
+  {q:'What is the diameter of the hole on a putting green?', a:['4.25 inches','4 inches','4.5 inches','5 inches'], why:'Four and a quarter inches, the same for over a century.'},
+  {q:'A ball hit out of bounds costs you how many penalty strokes?', a:['1, plus the distance','2, no distance','None','Loss of the hole'], why:'Stroke and distance: one shot, then play again from where you hit.'},
+  {q:'You hit a "provisional ball" when your first one...', a:['Might be lost or out of bounds','Is in a bunker','Hit a tree','Stopped on the green'], why:'It saves walking back if the first is gone.'},
+  {q:'In "foursomes", two partners...', a:['Hit alternate shots with one ball','Each play their own ball','Play the better ball','Take turns teeing off only'], why:'Also called alternate shot.'},
+  {q:'In standard Stableford scoring, a par is worth how many points?', a:['2','1','3','0'], why:'Bogey 1, par 2, birdie 3, eagle 4.'},
+  {q:'How long may you search for a lost ball under the current Rules?', a:['3 minutes','2 minutes','5 minutes','10 minutes'], why:'It came down from five to three in 2019.'},
+  {q:'How tall may a tee be under the Rules?', a:['4 inches','3 inches','5 inches','6 inches'], why:'Four inches is the longest a tee may be.'},
+  {q:'In match play, being "dormie" means you are...', a:['Up by as many holes as are left','Level with your opponent','Down by one','On the last hole'], why:'You can no longer lose the match outright.'},
+  {q:'What is the smallest diameter a regulation golf ball may have?', a:['1.68 inches','1.62 inches','1.72 inches','1.75 inches'], why:'Any smaller is not conforming.'},
+  {q:'What is the heaviest a golf ball may weigh?', a:['1.62 ounces','1.5 ounces','1.75 ounces','2 ounces'], why:'About 45.9 grams.'},
+  {q:'Before rubber cores, the "gutty" ball was made from what?', a:['Gutta-percha','Cork','Leather','Ivory'], why:'A tree sap that set hard. It replaced the feather-stuffed featherie.'},
+  {q:'The oldest of golf\'s major championships was first played in...', a:['1860','1744','1895','1916'], why:'A small field of eight men played the first one.'},
+  {q:'A hole in one on a par 5 would be called a...', a:['Condor','Albatross','Eagle','Phoenix'], why:'Four under on one hole. Almost never happens.'}];
+function wcNow(){ try{ const f=(typeof location!=='undefined')&&/[?&]wcday=(\d{8})/.exec(location.search||''); if(f) return +f[1]; }catch(e){} return todayKey(); }
+function wcYear(){ return Math.floor(wcNow()/10000); }
+function wcMonth(){ return Math.floor(wcNow()/100)%100; }
+function wcDay(){ return wcNow()%100; }
+function wcLive(){ return wcMonth()===12 && wcDay()<=WC_END_DAY; }
+function wcKey(kind,n){ return 'wc:'+wcYear()+':'+kind+n; }
+function wcGot(kind,n){ try{ return coinState().owned[wcKey(kind,n)]||0; }catch(e){ return 0; } }
+// a door opens on its own day and stays openable to the end of the event
+function wcDoorOpen(n){ return wcLive() && wcDay()>=n; }
+function wcDoorTodo(n){ return wcDoorOpen(n) && !wcGot('d',n); }
+// what door n pays before the trivia: the free prize, and what Pro adds on top
+function wcDoorPrize(n,pro){
+  if(n===WC_LAST_DOOR) return {coins:5000+(pro?7500:0), packs:[{tier:'tour',n:1}].concat(pro?[{tier:'champ',n:1}]:[])};
+  const c=150+30*(n-1);   // 150 on Dec 1, climbing to 840 on Christmas Eve
+  return {coins:c+(pro?c:0), packs:(pro&&n%6===0)?[{tier:'seasonal',n:1}]:[]}; }
+function wcPrizeTxt(p){ const bits=[coinFmt(p.coins)+' coins']; (p.packs||[]).forEach(k=>bits.push((k.n>1?k.n+'× ':'')+packType(k.tier).name)); return bits.join(' + '); }
+function wcDouble(p){ return {coins:p.coins*2, packs:(p.packs||[]).map(k=>({tier:k.tier,n:k.n*2}))}; }
+function wcPay(p,why){ addBonusCoins(p.coins,{silent:true}); (p.packs||[]).forEach(k=>{ try{ grantFreePack(k.n,{tier:k.tier,silent:true,why:why}); }catch(e){} }); }
+// the question behind a door, with its answers in an order that is the same for everybody that day
+function wcQuestion(n){ const t=WC_TRIVIA[(n-1)%WC_TRIVIA.length], ord=[0,1,2,3];
+  let h=n*2654435761+wcYear()*97; for(let i=3;i>0;i--){ h=(h*1103515245+12345)>>>0; const j=h%(i+1); const x=ord[i]; ord[i]=ord[j]; ord[j]=x; }
+  return {q:t.q, why:t.why, opts:ord.map(i=>({txt:t.a[i], right:i===0}))}; }
+// answer door n: pays once, doubled for a right answer. Returns what it paid, or null.
+function wcAnswer(n,right){ if(!sbSignedIn()||!wcDoorTodo(n)) return null;
+  const base=wcDoorPrize(n,passProActive()), paid=right?wcDouble(base):base;
+  const s=coinState(); s.owned[wcKey('d',n)]=right?2:1; coinSave(s);
+  wcPay(paid,'Winter Classic door '+n); try{ track('winter_door',{n:n,right:!!right,coins:paid.coins}); }catch(e){}
+  return paid; }
+// Hanukkah: night k (1 to 8) is Dec 3+k, and every night can be lit until Dec 12
+function wcHnkLive(){ return wcLive() && wcDay()>=WC_HNK_FROM && wcDay()<=WC_HNK_LAST; }
+function wcNightOpen(k){ return wcHnkLive() && wcDay()>=WC_HNK_FROM+k-1; }
+function wcNightTodo(k){ return wcNightOpen(k) && !wcGot('h',k); }
+function wcGelt(k,pro){ const c=(k===WC_HNK_NIGHTS?2000:200*k)*(pro?2:1); return {coins:c, packs:k===WC_HNK_NIGHTS?[{tier:'seasonal',n:1}]:[]}; }
+const WC_DREIDEL=[{l:'נ',name:'Nun',x:1,say:'Nun: the gift as it is.'},{l:'ג',name:'Gimel',x:2,say:'Gimel! The gift is doubled.'},
+  {l:'ה',name:'Hei',x:1.5,say:'Hei: half again on top.'},{l:'ש',name:'Shin',x:1,say:'Shin: the gift as it is.'}];
+// the dreidel lands the same way for the same account and night, so reopening the page never re-spins it
+function wcSpin(k){ let h=0; const id=(sbUser&&sbUser.id)||'guest', str=id+'|'+wcYear()+'|'+k; for(let i=0;i<str.length;i++) h=(h*31+str.charCodeAt(i))>>>0; return WC_DREIDEL[h%4]; }
+function wcLight(k){ if(!sbSignedIn()||!wcNightTodo(k)) return null;
+  const g=wcGelt(k,passProActive()), d=wcSpin(k), paid={coins:Math.round(g.coins*d.x), packs:g.packs};
+  const s=coinState(); s.owned[wcKey('h',k)]=1; coinSave(s);
+  wcPay(paid,'Hanukkah night '+k); try{ track('winter_hanukkah',{n:k,spin:d.name,coins:paid.coins}); }catch(e){}
+  return {paid:paid, spin:d}; }
+// what the home card counts: doors waiting, and tonight's candle if it is unlit
+function wcTodo(){ if(!wcLive()||!sbSignedIn()) return 0; let n=0;
+  for(let d=1;d<=Math.min(WC_LAST_DOOR,wcDay());d++) if(!wcGot('d',d)) n++;
+  for(let k=1;k<=WC_HNK_NIGHTS;k++) if(wcNightTodo(k)) n++; return n; }
+function wcDoorsOpened(){ let n=0; for(let d=1;d<=WC_LAST_DOOR;d++) if(wcGot('d',d)) n++; return n; }
+function wcDrop(){ return dropById('winter'); }
+let _wccss=false;
+function wcStyleOnce(){ if(_wccss) return; _wccss=true; const st=document.createElement('style'); st.textContent=`
+  .gc-winter{background:radial-gradient(70% 110% at 100% 0%,rgba(255,214,110,.32),transparent 60%),radial-gradient(80% 120% at 0% 100%,rgba(220,60,70,.4),transparent 65%),linear-gradient(158deg,#164a7a,#0d2a4a 60%,#081a30);color:#eef8ff;--chip:rgba(0,0,0,.3)}
+  .gc-winter .gc-title{color:#ffffff;text-shadow:0 0 14px rgba(160,220,255,.6)}
+  .gc-winter .gc-kick{color:#ffd56e}
+  .gc-winter .gc-badge.claim{background:#ffd56e;color:#3a2200}
+  .ov.wc-ov{--wc-r:#e8404e;--wc-g:#ffd56e;--wc-i:#9fdcff;--muted:#b4c8dc;background:#07131f;
+    background-image:radial-gradient(100% 45% at 50% -5%,rgba(159,220,255,.22),transparent 65%),radial-gradient(80% 50% at 100% 70%,rgba(232,64,78,.12),transparent 70%),linear-gradient(180deg,#0c2238,#08182a 60%,#050e18)}
+  .wc-ov .x{z-index:8;position:absolute;top:14px;right:14px}
+  .wc-snow{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+  .wc-snow i{position:absolute;top:-12px;width:var(--s);height:var(--s);border-radius:50%;background:#fff;opacity:.55;animation:wcSnow var(--d) linear infinite}
+  @keyframes wcSnow{to{transform:translate(var(--dx),110vh)}}
+  .wc-hero{position:relative;max-width:600px;margin:6px auto 0;padding:24px 16px 16px;text-align:center;border-radius:20px;overflow:hidden;
+    background:linear-gradient(180deg,rgba(159,220,255,.12),rgba(255,255,255,.02));border:1px solid rgba(159,220,255,.25)}
+  .wc-lights{position:absolute;left:0;right:0;top:0;height:22px;display:flex;justify-content:space-around;pointer-events:none}
+  .wc-lights i{width:9px;height:13px;border-radius:50% 50% 45% 45%;margin-top:6px;background:var(--c);box-shadow:0 0 10px var(--c);animation:wcBlink 1.6s ease-in-out infinite;animation-delay:var(--dl)}
+  @keyframes wcBlink{50%{opacity:.35;box-shadow:none}}
+  .wc-kick{font:900 11px/1 var(--body);letter-spacing:.22em;color:var(--wc-g);margin-top:8px}
+  .wc-ttl{font-family:var(--display);font-size:clamp(38px,10vw,58px);line-height:1;margin:6px 0 4px;color:#fff;text-shadow:0 0 22px rgba(159,220,255,.55)}
+  .wc-lede{font-size:14px;color:#d6e8f6;margin:0 auto 10px;max-width:420px}
+  .wc-chips{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+  .wc-chip{font:900 10px/1 var(--body);letter-spacing:.1em;padding:6px 9px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);color:#eaf4ff}
+  .wc-chip.hot{background:var(--wc-r);border-color:transparent}
+  .wc-chip.pro{background:linear-gradient(180deg,#c08bff,#7048d6);border-color:transparent}
+  .wc-sec{max-width:600px;margin:16px auto 0;padding:14px;border-radius:18px;background:rgba(8,22,38,.7);border:1px solid rgba(159,220,255,.2);text-align:left}
+  .wc-sh{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .wc-sh .k{font:900 11px/1 var(--body);letter-spacing:.2em;color:var(--wc-i)}
+  .wc-sh b{font:900 14px/1 var(--body);color:#fff}
+  .wc-sub{font-size:12.5px;color:var(--muted);margin:6px 0 12px}
+  .wc-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+  .wc-door{position:relative;aspect-ratio:1/1.08;border-radius:12px;border:0;padding:0;cursor:pointer;font:900 20px/1 var(--display);color:#fff;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    background:linear-gradient(160deg,#c43440,#8a1c28);box-shadow:inset 0 0 0 2px rgba(255,214,110,.5),0 6px 14px -8px #000}
+  .wc-door:nth-child(even){background:linear-gradient(160deg,#1f6e4a,#0f4630)}
+  .wc-door:nth-child(3n){background:linear-gradient(160deg,#2a5a92,#173a66)}
+  .wc-door small{font:800 8.5px/1 var(--body);letter-spacing:.08em;opacity:.85}
+  .wc-door.lock{filter:saturate(.35) brightness(.6);cursor:default}
+  .wc-door.lock small{opacity:.7}
+  .wc-door.today{box-shadow:inset 0 0 0 2px var(--wc-g),0 0 0 3px rgba(255,214,110,.35),0 0 22px rgba(255,214,110,.55);animation:wcBob 1.8s ease-in-out infinite}
+  @keyframes wcBob{50%{transform:translateY(-3px) rotate(-1.5deg)}}
+  .wc-door.late{box-shadow:inset 0 0 0 2px #9fdcff,0 0 14px rgba(159,220,255,.45)}
+  .wc-door.done{background:rgba(255,255,255,.06)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);color:rgba(255,255,255,.5);cursor:default}
+  .wc-door.done .ck{font:900 16px/1 var(--body);color:#7ee0a8}
+  .wc-door.done .ck.star{color:var(--wc-g)}
+  .wc-door.xmas{background:linear-gradient(160deg,#ffd56e,#d99a1a)!important;color:#3a2200;box-shadow:inset 0 0 0 2px #fff3c4,0 0 24px rgba(255,214,110,.5)}
+  .wc-door.xmas.lock{filter:saturate(.6) brightness(.7)}
+  .wc-door .bow{position:absolute;top:-4px;right:-3px;font-size:15px}
+  .wc-legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;font:700 10.5px/1.3 var(--body);color:var(--muted)}
+  .wc-legend b{color:#fff}
+  /* the question */
+  .wc-q{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(3,9,16,.82);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+  .wc-qc{width:100%;max-width:440px;border-radius:20px;padding:20px 16px 16px;text-align:center;background:linear-gradient(180deg,#123456,#0a1e34);border:1px solid rgba(159,220,255,.35);box-shadow:0 30px 60px -20px #000;animation:wcPop .35s cubic-bezier(.2,1.3,.4,1) both}
+  @keyframes wcPop{from{transform:scale(.8);opacity:0}}
+  .wc-qk{font:900 11px/1 var(--body);letter-spacing:.2em;color:var(--wc-g)}
+  .wc-qq{font:800 18px/1.35 var(--body);color:#fff;margin:10px 0 6px}
+  .wc-qp{font:700 12px/1.4 var(--body);color:var(--muted);margin-bottom:12px}
+  .wc-qp b{color:var(--wc-g)}
+  .wc-opt{display:block;width:100%;margin:7px 0 0;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#fff;font:800 15px/1.2 var(--body);cursor:pointer;text-align:center}
+  .wc-opt:hover{background:rgba(255,255,255,.12)}
+  .wc-opt.right{background:#1f8a5a;border-color:#7ee0a8}
+  .wc-opt.wrong{background:#8a1c28;border-color:#e8404e}
+  .wc-res{margin-top:12px;font:900 20px/1.2 var(--body);color:#fff}
+  .wc-res.win{color:var(--wc-g)}
+  .wc-why{font-size:12.5px;color:#d6e8f6;margin-top:4px}
+  .wc-paid{margin-top:8px;font:900 15px/1.3 var(--body);color:#ffd45e}
+  .wc-qx{margin-top:14px}
+  /* the menorah */
+  .wc-hnk{border-color:rgba(130,180,255,.4);background:linear-gradient(180deg,rgba(40,70,140,.35),rgba(8,22,38,.7))}
+  .wc-men{display:flex;justify-content:center;align-items:flex-end;gap:7px;margin:8px 0 4px;height:96px}
+  .wc-cd{position:relative;width:12px;height:52px;border-radius:3px 3px 0 0;background:linear-gradient(180deg,#e8eef8,#a9b8d0)}
+  .wc-cd.sh{height:66px;background:linear-gradient(180deg,#ffe6a0,#d0a440)}
+  .wc-cd .fl{position:absolute;left:50%;top:-17px;width:10px;height:16px;margin-left:-5px;border-radius:50% 50% 45% 45%/60% 60% 40% 40%;
+    background:radial-gradient(circle at 50% 70%,#fff6c8,#ffb43a 60%,#ff6a1a);box-shadow:0 0 14px 4px rgba(255,170,60,.65);animation:wcFlame .9s ease-in-out infinite alternate}
+  @keyframes wcFlame{to{transform:scaleY(1.15) translateY(-1px)}}
+  .wc-cd.off .fl{display:none}
+  .wc-base{width:230px;height:9px;margin:0 auto;border-radius:4px;background:linear-gradient(180deg,#d6a94a,#8a6420)}
+  .wc-nights{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px}
+  .wc-nt{border-radius:11px;padding:8px 4px;text-align:center;font:800 10.5px/1.25 var(--body);color:#dfe9ff;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12)}
+  .wc-nt b{display:block;font:900 13px/1 var(--body);color:#fff;margin-bottom:3px}
+  .wc-nt.todo{background:linear-gradient(180deg,#3d6cd6,#2347a0);border-color:#9fc4ff;cursor:pointer;box-shadow:0 0 16px rgba(120,170,255,.5)}
+  .wc-nt.done{color:#9fe0c0}
+  .wc-nt.lock{opacity:.45}
+  .wc-dr{display:inline-block;font:900 44px/1 'Times New Roman',serif;color:#fff;margin:6px 0;animation:wcSpin 1s cubic-bezier(.2,.8,.3,1) both}
+  @keyframes wcSpin{from{transform:rotate(-1080deg) scale(.4)}}
+  .wc-shop{display:block;width:100%;margin-top:12px;border:0;cursor:pointer;border-radius:12px;padding:12px;font:900 14px/1 var(--body);letter-spacing:.06em;background:linear-gradient(180deg,#bfe8ff,#6fb8e8);color:#082036}
+  .wc-items{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+  .wc-it{border-radius:10px;padding:4px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)}
+  .wc-it.no{opacity:.5}
+  .wc-note{max-width:600px;margin:12px auto 0;text-align:center;font:700 11px/1.4 var(--body);color:var(--muted)}
+  @media (prefers-reduced-motion:reduce){ .wc-snow i,.wc-lights i,.wc-door.today,.wc-cd .fl,.wc-dr,.wc-qc{animation:none!important} }`;
+  document.head.appendChild(st); }
+// the home-screen card, for as long as December runs
+function winterCard(){ wcStyleOnce();
+  const n=wcTodo(), d=wcDay(), hk=wcHnkLive();
+  const badge=n>0?`<span class="gc-badge claim">${n} to open</span>`:`<span class="gc-badge">${Math.max(0,WC_END_DAY-d+1)}D LEFT</span>`;
+  const mid=d<=WC_LAST_DOOR?(wcGot('d',Math.min(d,WC_LAST_DOOR))?`Door ${Math.min(d,WC_LAST_DOOR)} opened · ${wcDoorsOpened()} of ${WC_LAST_DOOR} so far`:`Door ${d} is waiting${d===WC_LAST_DOOR?': the big one':''}`)
+    :`${wcDoorsOpened()} of ${WC_LAST_DOOR} doors opened`;
+  const card=$(`<button class="gcard gc-winter" aria-label="Winter Classic event">
+    <div class="gc-top"><div style="min-width:0"><div class="gc-kick">🎄 December event</div><div class="gc-title">Winter Classic</div></div>${badge}</div>
+    <div class="gc-mid">${mid}${hk?` · Hanukkah night ${Math.min(WC_HNK_NIGHTS,d-WC_HNK_FROM+1)}`:''}</div>
+    <div class="gc-row"><span class="gc-go">${n>0?'Open it ▸':'Open the event ▸'}</span></div></button>`);
+  card.onclick=()=>{ try{ track('winter_card'); }catch(e){} S.overlay='winter'; render(); };
+  return card; }
+function overlayWinter(screen){
+  if(!wcLive()){ S.overlay=null; return; }
+  wcStyleOnce();
+  const signed=sbSignedIn(), pro=passProActive(), d=wcDay(), left=Math.max(0,WC_END_DAY-d+1), opened=wcDoorsOpened();
+  const reduce=decorReduced();
+  const snow=reduce?'':`<div class="wc-snow" aria-hidden="true">${[...Array(26)].map((_,i)=>`<i style="left:${(i*37)%100}%;--s:${2+(i*7)%4}px;--d:${7+(i*5)%9}s;--dx:${((i*13)%40)-20}px;animation-delay:${-((i*3)%12)}s"></i>`).join('')}</div>`;
+  const lights=`<div class="wc-lights" aria-hidden="true">${['#e8404e','#ffd56e','#5fd38a','#6fb8e8','#e8404e','#ffd56e','#5fd38a','#6fb8e8','#e8404e','#ffd56e','#5fd38a'].map((c,i)=>`<i style="--c:${c};--dl:${(i%4)*.4}s"></i>`).join('')}</div>`;
+  const doors=[...Array(WC_LAST_DOOR)].map((_,i)=>{ const n=i+1, got=wcGot('d',n), open=wcDoorOpen(n), xmas=n===WC_LAST_DOOR;
+    if(got) return `<button class="wc-door done${xmas?' xmas':''}" aria-label="Door ${n}, opened" disabled>${n}<span class="ck${got===2?' star':''}">${got===2?'★':'✓'}</span></button>`;
+    if(!open) return `<button class="wc-door lock${xmas?' xmas':''}" aria-label="Door ${n}, opens Dec ${n}" disabled>${xmas?'<span class="bow">🎀</span>':''}${n}<small>DEC ${n}</small></button>`;
+    return `<button class="wc-door ${n===d?'today':'late'}${xmas?' xmas':''}" data-wcdoor="${n}" aria-label="Door ${n}, open it">${xmas?'<span class="bow">🎀</span>':''}${n}<small>${n===d?'TODAY':'OPEN'}</small></button>`; }).join('');
+  const nowPrize=wcDoorPrize(Math.min(Math.max(d,1),WC_LAST_DOOR),pro), xPrize=wcDoorPrize(WC_LAST_DOOR,false), xPro=wcDoorPrize(WC_LAST_DOOR,true);
+  // Hanukkah, from Dec 4 to Dec 12
+  let hnk='';
+  if(wcHnkLive() || (d<WC_HNK_FROM)){
+    const lit=k=>!!wcGot('h',k);
+    // night 1's candle stands on the right and each night adds the next one to its left, the shamash in the middle
+    const cds=[8,7,6,5].map(k=>`<span class="wc-cd${lit(k)?'':' off'}"><i class="fl"></i></span>`).join('')+`<span class="wc-cd sh"><i class="fl"></i></span>`+[4,3,2,1].map(k=>`<span class="wc-cd${lit(k)?'':' off'}"><i class="fl"></i></span>`).join('');
+    const nights=[...Array(WC_HNK_NIGHTS)].map((_,i)=>{ const k=i+1, g=wcGelt(k,pro);
+      if(lit(k)) return `<div class="wc-nt done"><b>Night ${k}</b>✓ Lit</div>`;
+      if(wcNightOpen(k)) return `<button class="wc-nt todo" data-wcnight="${k}"><b>Night ${k}</b>Light it ▸</button>`;
+      return `<div class="wc-nt lock"><b>Night ${k}</b>Dec ${WC_HNK_FROM+k-1}</div>`; }).join('');
+    hnk=`<div class="wc-sec wc-hnk"><div class="wc-sh"><span class="k">HANUKKAH GIFTS</span><b>${d<WC_HNK_FROM?'Starts Dec '+WC_HNK_FROM:[1,2,3,4,5,6,7,8].filter(lit).length+' of '+WC_HNK_NIGHTS+' lit'}</b></div>
+      <p class="wc-sub">Eight nights of gelt, Dec ${WC_HNK_FROM} to ${WC_HNK_FROM+WC_HNK_NIGHTS-1}. Light each candle by Dec ${WC_HNK_LAST}. Every gift spins the dreidel: gimel doubles it, hei adds half. Night 8 adds a pack.${pro?' Pro doubles the gelt.':''}</p>
+      <div class="wc-men" aria-hidden="true">${cds}</div><div class="wc-base"></div>
+      ${d<WC_HNK_FROM?'':`<div class="wc-nights">${nights}</div>`}</div>`; }
+  const dr=wcDrop(), items=(dr?dr.items:[]).map(ci=>{ let th=''; try{ const o=(cosmeticItems(ci[0])||[]).find(x=>x.id===ci[1])||{id:ci[1]}; th=cosThumbHTML(ci[0],o); }catch(e){}
+    return `<div class="wc-it ${cosOwned(ci[0],ci[1])?'yes':'no'}">${th}</div>`; }).join('');
+  const dp=dr?dropProgress(dr):{own:0,tot:0};
+  const ov=$(`<div class="ov wc-ov" role="dialog" aria-modal="true" aria-label="Winter Classic">${snow}
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <div class="wc-hero">${lights}
+      <div class="wc-kick">DECEMBER EVENT</div>
+      <div class="wc-ttl">WINTER CLASSIC</div>
+      <p class="wc-lede">A door a day until Christmas. Answer the golf question behind it to double the prize.</p>
+      <div class="wc-chips"><span class="wc-chip hot">⏳ ${left} DAY${left===1?'':'S'} LEFT</span><span class="wc-chip">FREE TO PLAY</span>${pro?'<span class="wc-chip pro">PRO PRIZES ON</span>':''}</div></div>
+    <div class="wc-sec"><div class="wc-sh"><span class="k">THE ADVENT CALENDAR</span><b>${opened} of ${WC_LAST_DOOR}</b></div>
+      <p class="wc-sub">${d<=WC_LAST_DOOR?`${d===WC_LAST_DOOR?'The Christmas door':'Today\'s door'} pays ${wcPrizeTxt(nowPrize)}. A right answer doubles it.`:'Missed a door? It opens until Dec 31.'}${d<WC_LAST_DOOR?` Prizes grow every day. Christmas pays ${wcPrizeTxt(pro?xPro:xPrize)}.`:''}${pro?'':` Tour Pass Pro adds a second prize to every door.`}</p>
+      <div class="wc-grid">${doors}</div>
+      <div class="wc-legend"><span><b>★</b> right answer, prize doubled</span><span><b>✓</b> opened</span><span>Missed doors open until Dec 31</span></div></div>
+    ${hnk}
+    ${dr?`<div class="wc-sec"><div class="wc-sh"><span class="k">THE DROP</span><b>${dp.own} of ${dp.tot}</b></div>
+      <p class="wc-sub">${esc(dr.blurb||'')}</p><div class="wc-items">${items}</div>
+      <button class="wc-shop" data-wcshop>Shop the drop ▸</button></div>`:''}
+    <div class="wc-note">${signed?'Each door and each night pays once per account.':'Sign in to open doors and light candles. Each one pays once per account.'}</div>
+    <button class="btn red" style="margin-top:14px">Close</button></div>`);
+  const close=()=>{ S.overlay=null; S.wcDoor=null; render(); };
+  ov.querySelectorAll('.x,.btn.red').forEach(el=>el.onclick=close);
+  const needIn=()=>{ S.overlay='account'; S.acctMode='signin'; S.acctErr=''; render(); };
+  ov.querySelectorAll('[data-wcdoor]').forEach(b=>b.onclick=()=>{ if(!signed) return needIn(); wcAsk(ov,+b.getAttribute('data-wcdoor')); });
+  ov.querySelectorAll('[data-wcnight]').forEach(b=>b.onclick=()=>{ if(!signed) return needIn(); wcLightUI(ov,+b.getAttribute('data-wcnight')); });
+  const sh=ov.querySelector('[data-wcshop]'); if(sh) sh.onclick=()=>{ try{ track('winter_shop'); }catch(e){} S.overlay='shop'; S.shopSec='drops'; S.shopDrop='winter'; render(); };
+  screen.appendChild(ov);
+}
+// the question card, over the calendar
+function wcAsk(ov,n){ const q=wcQuestion(n), base=wcDoorPrize(n,passProActive());
+  const box=$(`<div class="wc-q" role="dialog" aria-modal="true" aria-label="Door ${n}"><div class="wc-qc">
+    <div class="wc-qk">${n===WC_LAST_DOOR?'🎄 CHRISTMAS DOOR':'DOOR '+n}</div>
+    <div class="wc-qq">${esc(q.q)}</div>
+    <div class="wc-qp">Prize: <b>${esc(wcPrizeTxt(base))}</b>. Get it right to double it.</div>
+    ${q.opts.map((o,i)=>`<button class="wc-opt" data-i="${i}">${esc(o.txt)}</button>`).join('')}
+    <div class="wc-out"></div></div></div>`);
+  let done=false;
+  box.querySelectorAll('.wc-opt').forEach(b=>b.onclick=()=>{ if(done) return; done=true;
+    const pick=q.opts[+b.getAttribute('data-i')], paid=wcAnswer(n,pick.right);
+    box.querySelectorAll('.wc-opt').forEach((x,i)=>{ x.disabled=true; if(q.opts[i].right) x.classList.add('right'); else if(x===b) x.classList.add('wrong'); });
+    const out=box.querySelector('.wc-out');
+    out.innerHTML=`<div class="wc-res${pick.right?' win':''}">${pick.right?'Correct! Prize doubled.':'Not quite.'}</div><div class="wc-why">${esc(q.why)}</div>`
+      +(paid?`<div class="wc-paid">+${esc(wcPrizeTxt(paid))}</div>`:'')+`<button class="btn goldfill wc-qx">${n===WC_LAST_DOOR?'Merry Christmas ▸':'Nice ▸'}</button>`;
+    try{ if(pick.right){ sfx('win'); buzz([12,40,12]); } else { sfx('holeGood'); buzz(10); } }catch(e){}
+    out.querySelector('.wc-qx').onclick=()=>{ box.remove(); render(); }; });
+  box.addEventListener('click',e=>{ if(e.target===box&&!done) box.remove(); });
+  ov.appendChild(box); }
+function wcLightUI(ov,k){ const r=wcLight(k); if(!r) return;
+  const box=$(`<div class="wc-q" role="dialog" aria-modal="true" aria-label="Hanukkah night ${k}"><div class="wc-qc">
+    <div class="wc-qk">HANUKKAH · NIGHT ${k}</div>
+    <div class="wc-dr" aria-hidden="true">${r.spin.l}</div>
+    <div class="wc-res${r.spin.x>1?' win':''}">${esc(r.spin.say)}</div>
+    <div class="wc-paid">+${esc(wcPrizeTxt(r.paid))}</div>
+    <div class="wc-why">Happy Hanukkah. Come back tomorrow for the next candle.</div>
+    <button class="btn goldfill wc-qx">Nice ▸</button></div></div>`);
+  try{ sfx(r.spin.x>1?'win':'holeGood'); buzz(12); }catch(e){}
+  box.querySelector('.wc-qx').onclick=()=>{ box.remove(); render(); };
+  ov.appendChild(box); }
 
 // ---- the home scene: webs in the corners and lit pumpkins on the ground ----
 function spookySceneHTML(){
