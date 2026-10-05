@@ -1325,6 +1325,7 @@ window.GA_ID='G-L29P5MRWKE';
   .resumecard.railc .rc-stat b{font-size:13px} .resumecard.railc .rc-stat span{font-size:9px}
   .resumecard.railc .rc-go{font-size:11.5px; padding:6px 10px}
   .railc .oc-row{display:none}
+  @media(max-width:919px){ .homeextras .hl-left{display:none!important} }
   /* ── DESKTOP: use the whole width ── */
   @media(min-width:920px){
     .titlewrap{max-width:1180px}
@@ -1377,6 +1378,9 @@ window.GA_ID='G-L29P5MRWKE';
     .home-nav.compact .nichip svg{width:30px; height:30px}
     .home-nav.compact .nl{font-size:12.5px}
     .homedrop{max-width:640px}
+    /* Haunted Links lives under the hero here: no rail copy, no drop banner */
+    .homerail .hl-rail, .homedrop.hd-hl{display:none!important}
+    .homeextras .hl-left{width:100%; max-width:none; margin:0 0 14px}
     /* the dusk-course motifs are sized for a phone; on a wide screen they'd sprawl behind the cards */
     .sc-bunker{width:190px; left:1%; filter:drop-shadow(0 7px 13px rgba(0,0,0,.3)) brightness(.6) saturate(.75)}
     .sc-green{width:400px; right:-3%; filter:drop-shadow(0 8px 15px rgba(0,0,0,.3)) brightness(.66) saturate(.8)}
@@ -15040,7 +15044,7 @@ function scrTitle(){
   if(rest.length){
     const side=$(`<div class="homeside"><div class="rail-lab">Also today<i></i></div><div class="homerail"></div></div>`);
     const rail=side.querySelector('.homerail');
-    rest.forEach(m=>{ const c=m.make({rail:true}); c.classList.add('railc'); rail.appendChild(c); });
+    rest.forEach(m=>{ const c=m.make({rail:true}); c.classList.add('railc'); if(m.id==='haunted') c.classList.add('hl-rail'); rail.appendChild(c); });
     main.appendChild(side);
   }
   w.appendChild(main);
@@ -15048,6 +15052,10 @@ function scrTitle(){
   // Spotlight gets a one-line tease so the month's event isn't invisible. On desktop these sit under
   // the hero (filling the left column); on a phone they just follow the rail.
   const extras=$(`<div class="homeextras"></div>`);
+  // Haunted Links on a desktop sits in the left column under the hero (it replaces the drop banner
+  // there); the rail copy is hidden at that width. A phone keeps the rail copy and the banner.
+  const hlHere=rest.some(m=>m.id==='haunted');
+  if(hlHere){ try{ const hc=hauntedCard(); hc.classList.add('hl-left'); extras.appendChild(hc); }catch(e){} }
   if(ri && !cs){
     const go=$(`<button class="btn ghost">New Career<span class="sub">Build a new golfer</span></button>`);
     go.onclick=()=>{homeSetLastMode('career');reset();S.mode='easy';S.screen='setup';render();};
@@ -15062,7 +15070,7 @@ function scrTitle(){
   // routes straight to the Pro Shop's Drops tab. Fully data-driven off the DROPS registry. ──
   try{ const ld=liveThemedDrop();
     if(ld){ const pr=dropProgress(ld), done=pr.own>=pr.tot;
-      const db=$(`<button class="homedrop" style="--dacc:${ld.accent}">
+      const db=$(`<button class="homedrop${hlHere&&ld.id==='spooky'?' hd-hl':''}" style="--dacc:${ld.accent}">
         <span class="hd-dot"></span>
         <span class="hd-txt"><b>${esc(ld.name)} is LIVE</b><span>${(typeof dropClaimable==='function'&&dropClaimable(ld))?'🏆 COMPLETE · tap to CLAIM your reward!':done?'✓ Collection complete!':`Collect all ${pr.tot} · you have ${pr.own} · ends ${_DROP_MON[ld.window[1][0]-1]} ${ld.window[1][1]}`}</span></span>
         <span class="hd-go">▸</span>`);
