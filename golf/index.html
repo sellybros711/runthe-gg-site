@@ -1199,7 +1199,7 @@ window.GA_ID='G-L29P5MRWKE';
   .gc-amber{background:linear-gradient(158deg,#f6c463,#ec9a25 60%,#df7d1c); color:#24170a; --chip:rgba(20,14,6,.15)}
   .gc-purple{background:linear-gradient(158deg,#b07ef0,#8149cf 58%,#6d38bd); color:#f5edff; --chip:rgba(24,8,42,.32)}
   .gc-gold{background:var(--gold-grad-d); color:#24170a; --chip:rgba(20,14,6,.16)}
-  .gc-pass{background:linear-gradient(158deg,#8b6cf5,#5a34c8 50%,#c79a1e); color:#f7f1ff; --chip:rgba(18,8,40,.34)}
+  .gc-pass{background:linear-gradient(158deg,#d66a22,#a5450f 52%,#5a34c8); color:#fff6ee; --chip:rgba(40,14,4,.32)}
   .gc-wheel{background:linear-gradient(158deg,#ff7ab8,#d43c86 56%,#a52468); color:#fff2f8; --chip:rgba(40,6,24,.3)}
   .gc-wheel.ready{box-shadow:0 12px 26px rgba(0,0,0,.42),0 0 0 2px rgba(255,214,236,.55),0 0 22px rgba(255,122,184,.5);animation:gcWheelPulse 2.3s ease-in-out infinite}
   @keyframes gcWheelPulse{0%,100%{box-shadow:0 12px 26px rgba(0,0,0,.42),0 0 0 2px rgba(255,214,236,.5),0 0 18px rgba(255,122,184,.42)}50%{box-shadow:0 12px 30px rgba(0,0,0,.46),0 0 0 2px rgba(255,235,246,.85),0 0 30px rgba(255,122,184,.75)}}
@@ -9741,7 +9741,15 @@ function walletInfo(){ return _walletCache; }
 // daily_tokens/pass_active are absent pre-migration-71 → 0/false; migration 72 makes pass_active follow
 // the 60-day season (pass_period = 'S<n>') instead of the calendar month.
 function dailyTokens(){ return _walletCache?(_walletCache.tokens||0):0; }
-function dailyPassActive(){ return !!(_walletCache&&_walletCache.passActive); }
+// The wallet answers for the season it was READ in. A tab left open across a season change still holds
+// last season's pass_active, and read as-is it gave a Season 1 buyer the Season 2 Pro lane and stamped
+// the new season's track as Pro (which the cloud merge then keeps). So a wallet whose period is not this
+// season counts as no pass, and asks the server again.
+function walletStale(){ return !!(_walletCache && _walletCache.passPeriod && _walletCache.passPeriod!==passPeriodNow()); }
+var _walletRecheck=0;
+function dailyPassActive(){ if(!_walletCache||!_walletCache.passActive) return false;
+  if(walletStale()){ var t=Date.now(); if(t-_walletRecheck>60000){ _walletRecheck=t; try{ loadWallet(); }catch(e){} } return false; }
+  return true; }
 function passRewardMult(){ var m=dailyPassActive()?PASS_REWARD_MULT:1; if(typeof passProActive==='function'&&passProActive()) m=Math.max(m,PASS_PRO_MULT); return m; }
 function loadWallet(cb){ if(!sb||!sbSignedIn()){ _walletCache=null; return; }
   try{ sb.rpc('runtour_wallet').then(function(r){ if(!r.error && r.data && r.data[0]){ var d=r.data[0];
@@ -9984,7 +9992,10 @@ function passState(){ let s=LS.get(acctKey('bag_tourpass'),null); const cur=pass
   // `pro` was the retired coin unlock. It now means "this account had Pro at some point THIS season", which
   // is what season-end settlement asks about once the entitlement itself has rolled over. The cloud merge
   // already ORs it, so it can only ever be set.
-  try{ if(!s.pro && passProActive()){ s.pro=true; passSave(s); } }catch(e){}
+  // `proS` is the same mark written as the season it belongs to. From Season 2 on it is the one that
+  // counts: a stale wallet could set the bare `pro` on a new season's track before this fix, and that
+  // flag can never be cleared because the cloud merge ORs it.
+  try{ if(passProActive() && (!s.pro || s.proS!=='S'+cur)){ s.pro=true; s.proS='S'+cur; passSave(s); } }catch(e){}
   return s; }
 function passSave(s){ try{ LS.set(acctKey('bag_tourpass'), s); }catch(e){} if(typeof cloudPush==='function') cloudPush(); }
 // PRO = the server 60-day Tour Pass entitlement (runtour_wallet().pass_active, bought for $14.99 once
@@ -10205,7 +10216,7 @@ function passArchiveNote(st){ try{
   let xp=Math.max(0,+st.xp||0); if((st.curveV|0)!==PASS_CURVE_V){ const c={xp:xp, curveV:st.curveV}; passConvertCurve(c); xp=c.xp; }
   const a=passArchive(), o=a[n]||{}, oc=o.claimed||{}, cl=st.claimed||{};
   const uni=(x,y)=>{ const u=new Set(); (x||[]).forEach(v=>u.add(+v)); (y||[]).forEach(v=>u.add(+v)); return [...u].filter(v=>v>0).sort((p,q)=>p-q); };
-  const nv={season:n, xp:Math.max(xp,+o.xp||0), pro:!!(st.pro||o.pro), curveV:PASS_CURVE_V,
+  const nv={season:n, xp:Math.max(xp,+o.xp||0), pro:!!(st.pro||o.pro), proS:(st.proS==='S'+n||o.proS==='S'+n)?'S'+n:'', curveV:PASS_CURVE_V,
     claimed:{free:uni(cl.free,oc.free), prem:uni(cl.prem,oc.prem)}};
   if(JSON.stringify(nv)===JSON.stringify(a[n])) return;
   a[n]=nv; LS.set(acctKey('bag_passprev'),a); if(typeof cloudPush==='function') cloudPush();
@@ -10214,7 +10225,7 @@ function mergePassArchive(x, y){ const out={};
   [x,y].forEach(a=>{ if(!a||typeof a!=='object') return; Object.keys(a).forEach(k=>{ const v=a[k]; if(!/^\d+$/.test(k)||!v||typeof v!=='object') return;
     const o=out[k]; if(!o){ out[k]=JSON.parse(JSON.stringify(v)); return; }
     const uni=(p,q)=>[...new Set([...(p||[]),...(q||[])])].sort((m,n)=>m-n);
-    out[k]={season:+k, xp:Math.max(+o.xp||0,+v.xp||0), pro:!!(o.pro||v.pro), curveV:Math.max(+o.curveV||0,+v.curveV||0),
+    out[k]={season:+k, xp:Math.max(+o.xp||0,+v.xp||0), pro:!!(o.pro||v.pro), proS:(o.proS==='S'+k||v.proS==='S'+k)?'S'+k:'', curveV:Math.max(+o.curveV||0,+v.curveV||0),
       claimed:{free:uni(o.claimed&&o.claimed.free, v.claimed&&v.claimed.free), prem:uni(o.claimed&&o.claimed.prem, v.claimed&&v.claimed.prem)}}; }); });
   return out; }
 function passSettled(){ const l=LS.get(acctKey('bag_passsettled'),null); return (l&&typeof l==='object')?l:{}; }
@@ -10223,7 +10234,7 @@ function mergePassSettled(x, y){ const out={};
     ['free','prem'].forEach(ln=>{ o[ln]=[...new Set([...(o[ln]||[]),...((v[ln]||[]).map(Number))])].sort((m,n)=>m-n); }); }); });
   return out; }
 function passHadPro(n, st){ try{
-  if(devMode()) return true; if(st&&st.pro) return true;
+  if(devMode()) return true; if(st&&st.pro&&(n<2||st.proS==='S'+n)) return true;
   const bp=LS.get(acctKey('bag_pass'),null)||{}; if(bp.claimed==='S'+n) return true;
   if(_walletCache && _walletCache.passPeriod==='S'+n) return true;
 }catch(e){} return false; }
@@ -10286,10 +10297,11 @@ function mergeTourPass(local, server){
   // versions differ, take the already-CONVERTED side wholesale; only compare xp when they agree.
   const lv=+local.curveV||0, sv=+server.curveV||0;
   if(lv!==sv){ const w=lv>sv?local:server, o=lv>sv?server:local;
-    return { season:w.season, xp:+w.xp||0, pro:!!(w.pro||o.pro), curveV:Math.max(lv,sv),
+    return { season:w.season, xp:+w.xp||0, pro:!!(w.pro||o.pro), proS:(w.proS==='S'+w.season||o.proS==='S'+w.season)?'S'+w.season:'', curveV:Math.max(lv,sv),
       claimed:{ free:uni(w.claimed&&w.claimed.free, o.claimed&&o.claimed.free),
                 prem:uni(w.claimed&&w.claimed.prem, o.claimed&&o.claimed.prem) } }; }
   return { season:local.season, xp:Math.max(+local.xp||0,+server.xp||0), pro:!!(local.pro||server.pro),
+    proS:(local.proS==='S'+local.season||server.proS==='S'+local.season)?'S'+local.season:'',
     curveV:Math.max(lv,sv),
     claimed:{ free:uni(local.claimed&&local.claimed.free, server.claimed&&server.claimed.free),
               prem:uni(local.claimed&&local.claimed.prem, server.claimed&&server.claimed.prem) } };
