@@ -33,7 +33,7 @@ const gate = await pg.evaluate(() => {
   const m = window.RTT_T3D; window.RTT_T3D = { API_VERSION: 999 }; r.stale = t3dOn(); window.RTT_T3D = m;
   T3D_LIVE = true; sbUser = null; sbUsername = ''; r.liveOut = t3dOn();
   T3D_LIVE = keep; return r; });
-ok('T3D_LIVE ships false: a tester preview', gate.live === false);
+ok('T3D_LIVE ships true: the 3D course is live for everybody', gate.live === true);
 ok('signed out sees the flat course', gate.out === false);
 ok('another account sees the flat course', gate.other === false);
 ok('a tester sees the 3D course (any capitalisation)', gate.tester === true);
