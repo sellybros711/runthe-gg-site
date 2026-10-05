@@ -921,19 +921,33 @@ window.GA_ID='G-L29P5MRWKE';
   });
 
   /* The typeahead searches EVERY player in the file, never this roster. A
-     roster-filtered suggester would answer the question for you. */
+     roster-filtered suggester would answer the question for you.
+     AND EVERY MAN ON THAT DECADE'S ROSTERS, the owner's report on an NFL
+     board: a player he knew off the top of his head was on the roster file
+     and counted when submitted, but typing his name suggested nothing, so the
+     game looked like it had never heard of him. The roster shard holds every
+     squad in the deck for the board's league and decade (thousands of names
+     on a football board), so it gives nothing away about this one. The file's
+     own names come first in each pass, so a board whose shard has not loaded
+     suggests exactly what it always did. */
+  function shardNames(){
+    var pack = board && window['RTG_ROSTERS_'+shardKey(board)];
+    if(!pack || !pack.names) return null;
+    if(!pack._n) pack._n = pack.names.map(norm);
+    return pack;
+  }
   if(window.RTGType && D && D.players){
     RTGType.mount($('ask'), {
       source: function(q, n){
         var k=norm(q); if(k.length<2) return [];
-        var out=[];
-        for(var i=0;i<NAMES.length && out.length<(n||8);i++){
-          if(NAMES[i].indexOf(k)===0) out.push(nameOf(i));
-        }
-        if(out.length<(n||8)){
-          for(var j=0;j<NAMES.length && out.length<(n||8);j++){
-            if(NAMES[j].indexOf(k)>0 && out.indexOf(nameOf(j))<0) out.push(nameOf(j));
-          }
+        n = n||8;
+        var out=[], had={};
+        function add(nm){ var x=norm(nm); if(had[x]) return; had[x]=1; out.push(nm); }
+        var P = shardNames();
+        for(var pass=0; pass<2 && out.length<n; pass++){
+          var hit = pass ? function(x){ return x.indexOf(k)>0; } : function(x){ return x.indexOf(k)===0; };
+          for(var i=0;i<NAMES.length && out.length<n;i++) if(hit(NAMES[i])) add(nameOf(i));
+          if(P) for(var j=0;j<P._n.length && out.length<n;j++) if(hit(P._n[j])) add(P.names[j]);
         }
         return out;
       },

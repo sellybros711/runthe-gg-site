@@ -283,6 +283,56 @@ console.log('\n5. Roll Call, flag fullroster');
   }
 }
 
+/* ---- 6. Roll Call, football and baseball: the board stays, the file knows everyone */
+/* The report: a player the owner knew off the top of his head was on the
+   roster file and counted when submitted, but typing him suggested nothing,
+   so the game looked like it had never heard of him. The printed board stays
+   the 8 or 10 a fan would know; the typeahead and the answer key are the
+   whole roster. Checked on the first football board in the deck and the
+   first baseball one. */
+console.log('\n6. Roll Call, football and baseball know the whole roster');
+{
+  const T = {}; new Function('window', readFileSync(path.join(ROOT, 'arcade/teammates.js'), 'utf8'))(T);
+  const D = T.RTG_TEAMMATES;
+  const nk = (x) => String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const inFile = new Set(D.players.map((p) => nk(p[0])));
+  for (const sport of ['NFL', 'MLB']) {
+    const at = D.roll.findIndex((r) => D.sports[D.players[r[2][0]][1]] === sport);
+    const [team, year, ids] = D.roll[at];
+    const day = new Date(Date.parse('2026-07-22T00:00:00Z') + at * 864e5).toISOString().slice(0, 10);
+    const key = sport + '_' + Math.floor(year / 10) * 10;
+    const R = {}; new Function('window', readFileSync(path.join(ROOT, 'arcade/rosters/' + key.toLowerCase().replace('_', '-') + '.js'), 'utf8'))(R);
+    const P = R['RTG_ROSTERS_' + key], roster = P.r[P.teams.indexOf(D.teams[team])][year].map((x) => P.names[x[0]]);
+    // a man the curated file has never heard of, so only the roster can know him
+    const who = roster.find((n) => !inFile.has(nk(n)) && n.split(' ').length === 2 && n.length >= 10);
+    if (!who) { fail(sport + ': no roster-only player on the ' + year + ' ' + D.teams[team] + ' board to ask about'); continue; }
+    const { page, close } = await open('rollcall', 'current', day);
+    await page.waitForFunction(() => /\d+ names to find/.test((document.getElementById('setupBlurb') || {}).textContent || ''));
+    await page.waitForTimeout(600);
+    if (await page.$('#rtgpgGo')) { await page.click('#rtgpgGo'); await page.waitForTimeout(500); }
+    if (await page.$eval('#panelPlay', (el) => !el.classList.contains('on')).catch(() => true)) await page.click('#startBtn');
+    await page.waitForSelector('#slots .slot');
+    const slots = await page.$$eval('#slots .slot', (els) => els.length);
+    await page.waitForFunction((k) => !!window['RTG_ROSTERS_' + k], key, { timeout: 8000 }).catch(() => {});
+    await page.click('#ask');
+    await page.type('#ask', who.slice(0, 7), { delay: 30 });
+    await page.waitForTimeout(300);
+    const offered = await page.$$eval('.rtgtype-item', (els) => els.map((e) => e.textContent.trim()));
+    await page.fill('#ask', who);
+    await page.press('#ask', 'Enter');
+    await page.waitForTimeout(400);
+    const got = await page.$$eval('#slots .slot.got', (els) => els.map((e) => ({ n: e.querySelector('.nm').textContent, deep: e.classList.contains('deep') })));
+    const label = day + ' ' + year + ' ' + D.teams[team];
+    if (slots !== ids.length) fail(label + ': the board has ' + slots + ' blanks, not the ' + ids.length + ' it prints');
+    else ok(label + ': the board is still the ' + slots + ' printed names, of ' + roster.length + ' on the roster');
+    if (!offered.some((o) => o.indexOf(who) >= 0)) fail(label + ': typing "' + who.slice(0, 7) + '" does not suggest ' + who + ' (offered: ' + offered.join(', ') + ')');
+    else ok('typing "' + who.slice(0, 7) + '" suggests ' + who + ', who is only on the roster file');
+    if (!got.some((g) => g.n === who && g.deep)) fail(label + ': ' + who + ' does not count as a deep cut');
+    else ok('and naming him counts, as a deep cut');
+    await close();
+  }
+}
+
 await browser.close();
 server.close();
 if (bad) { console.error('\n' + bad + ' problem' + (bad === 1 ? '' : 's')); process.exit(1); }
