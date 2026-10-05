@@ -183,6 +183,7 @@ function hitCircle(s, cx, cy, r, e){
 function simulate(C, x, y, vx, vy, t0){
   var s = { x:x, y:y, vx:vx, vy:vy }, out = { pts:[[x, y, 0]], holed:false, water:false, out:false, rest:null, ev:[], t:0 };
   var z = 0, zv = 0, over = false, cr = C.cupR, cx = C.cup[0], cy = C.cup[1], t = 0, n = 0, port = -1;
+  var rx = x, ry = y;   // where the ball was half a second ago, for the pinned-against-a-rail rest below
   var walls = C.walls, bums = C.bumpers, movs = C.movers, ports = C.portals;
   for (;;){
     var m = C.mats.at(s.x, s.y);
@@ -236,6 +237,11 @@ function simulate(C, x, y, vx, vy, t0){
     }
     t += DT; n++;
     if (n % SUB === 0) out.pts.push([s.x, s.y, t]);
+    /* A ball held against a rail by a slope steeper than friction never meets the rule above: the
+       slope pushes, the rail cancels it, and it sits still while the slope says it should roll. So a
+       slow ball that has gone nowhere in half a second has come to rest. Measured, without this the
+       bowl, the volcano and the tiers each kept a few putts "rolling" to MAX_T. */
+    if (n % 240 === 0){ if (!over && Math.hypot(s.vx, s.vy) < 4 * STOP_V && Math.hypot(s.x - rx, s.y - ry) < 0.02) break; rx = s.x; ry = s.y; }
     if (t > MAX_T) break;
   }
   out.t = t; out.rest = [s.x, s.y]; out.pts.push([s.x, s.y, t]);
