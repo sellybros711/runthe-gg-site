@@ -440,7 +440,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/primary.js?v=35"></script>
 <script src="/arcade/franchise.js?v=1"></script>
 <script src="/arcade/data.js?v=9"></script>
-<script src="/arcade/flags.js?v=4"></script>
+<script src="/arcade/flags.js?v=5"></script>
 <script src="/arcade/fame.js?v=2"></script>
 <script src="/arcade/teamcolors.js?v=2"></script>
 <script src="/arcade/sfx.js?v=4"></script>
@@ -595,6 +595,33 @@ window.GA_ID='G-L29P5MRWKE';
     var out=[], guard=0, seen={}, bad={};
     var RAMP=flagOn('ramp'), DECOYS=flagOn('decoys'), ERAS=flagOn('eras') && !!RTGFame.eraOk;
     if(preSeen) Object.keys(preSeen).forEach(function(k){ seen[k]=1; });
+    /* Flag 'current': careers that reached the 2020s, the owner's call after
+       the eras gate still dealt the 1970s by the seventeenth card. A game for
+       younger fans asks about players they watched. A sport mode too thin for
+       a run (under 40) starts at careers that reached the 2010s, and a run
+       that uses everyone up moves down a tier rather than ending. Nobody
+       older is dealt while anybody newer is left. */
+    var CUR=flagOn('current') && !!RTGFame.lastDecade;
+    function recent(e, d){ return !!e.act || RTGFame.lastDecade(e)>=d; }
+    var tiers=[pool];
+    if(CUR){
+      var t20=pool.filter(function(e){ return recent(e, 2020); }), t10=pool.filter(function(e){ return recent(e, 2010); });
+      tiers = t20.length>=40 ? [t20, t10, pool] : [t10, pool];
+    }
+    function liveTier(){
+      for(var i=0;i<tiers.length;i++){
+        var tr=tiers[i];
+        for(var j=0;j<tr.length;j++) if(!seen[tr[j].id] && !bad[tr[j].id]) return tr;
+      }
+      return tiers[tiers.length-1];
+    }
+    // and the three wrong names are just as recent, or the answer is the only
+    // modern name on the card
+    function recentOnly(list, strict){
+      if(!CUR) return list;
+      var r=list.filter(function(e){ return recent(e, 2010); });
+      return (strict || r.length>=3) ? r : list;
+    }
     /* Flag 'eras': the opening cards are careers that reached the 1990s and
        the 1970s (fame.js eraOk), keyed on the card number like the ramp. A
        run used to open on a 1960s Yankee outfielder. `eraTries` lets a card
@@ -602,6 +629,7 @@ window.GA_ID='G-L29P5MRWKE';
     var eraTries=0;
     while(out.length<want && guard<8000){ guard++;
       var t, k=(base||0)+out.length, gate=ERAS && eraTries<400;
+      if(CUR) pool=liveTier();
       if(RAMP){
         t=RTGFame.pick(pool, k, rng, function(e){ return seen[e.id] || bad[e.id] || (gate && !RTGFame.eraOk(e, k)); });
         if(!t && gate){ eraTries=400; continue; }
@@ -615,7 +643,7 @@ window.GA_ID='G-L29P5MRWKE';
       // correct answer). The sport bucket is filtered ONCE per candidate using
       // a precomputed path index; rebuilding it per iteration meant ~500k array
       // scans and ~430ms of blocked main thread before first paint.
-      var others=sameSportExcept(t, tpath);
+      var others=recentOnly(sameSportExcept(t, tpath));
       if(others.length<3){ bad[t.id]=1; continue; }
       // Prefer decoys that SHARE at least one team with the target - "he also
       // played for the Lakers" is a far more tempting wrong answer than a random
@@ -633,7 +661,7 @@ window.GA_ID='G-L29P5MRWKE';
       // The overlap set comes from the team index, so neither branch scans the
       // whole sport bucket. Late rounds still rank by shared-team count, but
       // only across the (small) overlap set before falling back.
-      var overlap=overlapWith(t, tpath);
+      var overlap=recentOnly(overlapWith(t, tpath), true);
       if(DECOYS){
         /* A wrong name has to be believable: same league (already), the same
            era, the same position family, and about as well known as the

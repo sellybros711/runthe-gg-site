@@ -50,6 +50,8 @@
     eras:      { since: '2026-10-06', pct: 0, daily: true },
     // Guess the Player, Alma Mater and Number Game deal current players only.
     // Eight tries to find any player in baseball history was the report.
+    // Career Path deals careers that reached the 2020s, and its wrong names
+    // reached the 2010s: the eras gate above still let the 1970s in.
     current:   { since: '2026-10-06', pct: 0, daily: true },
     // Roll Call, NBA boards: every man on that season's roster is a blank,
     // not only the famous eight. DeShawn Stevenson started for the 2009-10

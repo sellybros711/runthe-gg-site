@@ -121,6 +121,32 @@ console.log('\n1. Career Path, flag eras');
   }
 }
 
+/* ---- 1b. Career Path: careers that reached the 2020s --------------------- */
+console.log('\n1b. Career Path, flag current');
+{
+  /* The eras gate let the 1970s in by the seventeenth card, and the owner's
+     answer was that nobody wants those at all. Every answer has to have
+     played into the 2020s, and every wrong name beside it into the 2010s. */
+  const { page, close } = await open('career', 'current,eras');
+  const deal = await page.evaluate(() => window.__rtgDeal(60).map((r) => ({
+    n: r.target.name, act: !!r.target.act, d: r.target.decade || [],
+    o: r.opts.filter((o) => o.id !== r.target.id).map((o) => ({ n: o.name, act: !!o.act, d: o.decade || [] })) })));
+  const old = deal.filter((r) => !r.act && last(r.d) < 2020);
+  const oldOpt = deal.flatMap((r) => r.o).filter((o) => !o.act && last(o.d) < 2010);
+  if (deal.length < 40) fail('only ' + deal.length + ' cards dealt');
+  else if (old.length) fail(old.length + ' answers did not play into the 2020s: ' + old.slice(0, 6).map((r) => r.n + ' (' + last(r.d) + 's)').join(', '));
+  else ok(deal.length + ' cards, every answer played into the 2020s: ' + deal.slice(0, 4).map((r) => r.n).join(', ') + ' ...');
+  if (oldOpt.length) fail(oldOpt.length + ' wrong names are older than the 2010s: ' + oldOpt.slice(0, 6).map((o) => o.n).join(', '));
+  else ok('and so did every wrong name beside them');
+  await close();
+  // the gate is what did it: with the flag off the older careers are dealt
+  const off = await open('career', '-current,-eras');
+  const offOld = await off.page.evaluate(() => window.__rtgDeal(60).filter((r) => !r.target.act && window.RTGFame.lastDecade(r.target) < 2020).length);
+  if (!offOld) fail('with the flag off no older career is dealt either, so this proves nothing');
+  else ok('with the flag off ' + offOld + ' of 60 answers are older careers');
+  await off.close();
+}
+
 /* ---- 2. Alma Mater: current players only -------------------------------- */
 console.log('\n2. Alma Mater, flag current');
 {
