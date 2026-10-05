@@ -5,7 +5,7 @@
  *
  * Nobody on the team bought the Season 1 pass (the test accounts are dev accounts, which get Pro free and
  * never see a buy button), so this plays one. The wallet is stood in for exactly as runtour_wallet answers
- * it: pass_active false and the last period bought, then pass_active true and 'S2' once the webhook lands.
+ * it: pass_active false with pass_period the CURRENT season, then pass_active true once the webhook lands.
  *
  *   PROMPT     the Season 2 launch popup offers the track, and the track and the store both sell the pass
  *   CHECKOUT   every buy button posts package 'tourpass' to create-checkout, and nothing else
@@ -82,7 +82,9 @@ fs.writeFileSync(PROBE, src.replace(/<\/body>(?![\s\S]*<\/body>)/, '<script>' + 
 const b = await chromium.launch();
 const errs = [];
 try {
-  for (const period of ['S1', '']) {
+  // runtour_wallet answers pass_period with the CURRENT season for everybody (S2), and a tab opened in
+  // Season 1 still holds S1.
+  for (const period of ['S2', 'S1']) {
     const page = await b.newPage({ viewport: { width: 390, height: 844 } });
     page.on('pageerror', (e) => errs.push(String(e)));
     await page.clock.setSystemTime(new Date('2026-10-06T16:00:00Z'));
@@ -90,7 +92,7 @@ try {
     await page.waitForFunction(() => window.__R && typeof passSeason === 'function');
     const E = (f, ...a) => page.evaluate(([f, a]) => window.__R[f](...a), [f, a]);
 
-    head(`a Season 1 buyer opens the game in Season 2 (the wallet says pass_period ${period ? "'" + period + "'" : 'nothing'})`);
+    head(`a Season 1 buyer opens the game in Season 2 (the wallet says pass_period '${period}')`);
     const W = await E('rig', period);
     ok('the wallet loaded and shows no pass this season', W && W.passActive === false, W);
     const S0 = await E('state');

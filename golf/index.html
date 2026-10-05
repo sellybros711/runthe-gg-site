@@ -10236,7 +10236,10 @@ function mergePassSettled(x, y){ const out={};
 function passHadPro(n, st){ try{
   if(devMode()) return true; if(st&&st.pro&&(n<2||st.proS==='S'+n)) return true;
   const bp=LS.get(acctKey('bag_pass'),null)||{}; if(bp.claimed==='S'+n) return true;
-  if(_walletCache && _walletCache.passPeriod==='S'+n) return true;
+  // pass_period is the season the wallet was READ in, not a season bought (runtour_wallet returns the
+  // current period for everybody). Only a wallet that also says the pass was active is proof of Pro.
+  // Without passActive, a free player's tab left open across a season change read as a Pro buyer.
+  if(_walletCache && _walletCache.passActive && _walletCache.passPeriod==='S'+n) return true;
 }catch(e){} return false; }
 // Pays what is owed and returns {season: [rewards]} for anything it paid (empty when nothing was owed).
 function passSettle(){ const paid={}; try{
