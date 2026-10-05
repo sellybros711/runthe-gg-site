@@ -10120,14 +10120,19 @@ function passTierAt(xp){ let t=0; while(t<PASS_TIERS && xp>=passXpForTier(t+1)) 
      - a player who misses days loses nothing, because their bank and the open pace both wait for them;
      - a double XP weekend counts its days twice toward the pace, so it still moves a player who is at pace;
      - Overtime is not paced: once the 60 tiers are open (day 50) the pace lifts entirely.
-   `grand` keeps anybody who climbed before the pace existed exactly where they were. */
+   `grand` keeps anybody who climbed before the pace existed exactly where they were.
+   The pace opens TIERS, not XP (owner, Oct 5: seven tiers in one season on day one). The curve makes early
+   tiers cheap (about 100 XP) and late ones dear (about 1,500), so an even XP pace opened six tiers on day one
+   and barely one a day at the end. Opening PASS_TIERS/PASS_PACE_DAYS tiers a day (1.2) makes every day of
+   the season worth the same climb; the XP it takes to get there is whatever the curve says that stretch costs. */
 const PASS_PACE_DAYS=50;
 function passPaceDays(){ const ssn=passSeason(); let d=ssn.day;
   try{ const t=todayKey(); passEvents().forEach(e=>{ if(t>=e.from) d+=passDk(Math.min(e.to,t))-passDk(e.from)+1; }); }catch(e){}
   return d; }
-function passPacePerDay(){ return Math.round(passXpForTier(PASS_TIERS)/PASS_PACE_DAYS); }
-function passAllow(s){ const total=passXpForTier(PASS_TIERS), a=passPacePerDay()*passPaceDays();
-  if(a>=total) return Infinity; return Math.max(a, +(s&&s.grand)||0); }
+function passPaceTiers(){ return PASS_TIERS*passPaceDays()/PASS_PACE_DAYS; }   // tiers open today, fractional
+function passXpAtTier(t){ const f=Math.floor(t), a=passXpForTier(f); return f>=PASS_TIERS?a:a+(t-f)*(passXpForTier(f+1)-a); }
+function passAllow(s){ const t=passPaceTiers(); if(t>=PASS_TIERS) return Infinity;
+  return Math.max(Math.round(passXpAtTier(t)), +(s&&s.grand)||0); }
 function passBank(s){ return Math.max(0, Math.round(+((s||passState()).bank)||0)); }
 // move banked XP onto the track as far as today's pace allows; true if anything moved
 function passDrain(s){ const b=passBank(s); if(!b) return false; const room=passAllow(s)-s.xp; if(!(room>0)) return false;
@@ -26747,7 +26752,7 @@ const NEWS_ENTRIES=[
    blurb:'Seven new pieces: a Reaper Hood, Mummy Wrap, the Eyeball, Coffin Clubs, Cauldron Smoke, Bone Cleats and a Graveyard card. A new step at 10 pieces pays 5,000 coins.',
    where:'The Haunted Links page and the Pro Shop.'},
   {id:'s2-pace', date:NEWS_DATE5, cat:'tour', icon:'📅', title:'The Tour Pass lasts the season',
-   blurb:'The track opens a day at a time, so all 60 tiers take about 50 days. XP past today\'s pace is banked. It unlocks on later days and none of it is lost.',
+   blurb:'The track opens about a tier a day, so all 60 tiers take about 50 days. XP past today\'s pace is banked. It unlocks on later days and none of it is lost.',
    where:'The Tour Pass.'},
   {id:'s2-dress', date:NEWS_DATE5, cat:'tour', icon:'🍂', title:'The pass dresses for the season',
    blurb:'Bats and pumpkins through October. Falling leaves in November.',
@@ -36307,7 +36312,7 @@ function overlayTourPass(screen){
       <div class="tp-bar"><div class="tp-fill" style="width:${pct}%"></div></div>
       <div class="tp-xprow"><span class="tp-xp">${tx<top?into+' / '+need+' XP to Tier '+(tx+1):'EVERY TIER REACHED'}</span><span class="tp-days">${ssn.daysLeft} day${ssn.daysLeft===1?'':'s'} left</span></div></div>
     ${evLine?`<div class="tp-ev">${evLine}</div>`:''}
-    ${passBank(s)>0?`<div class="tp-bank">🔒 ${coinFmt(passBank(s))} XP banked. It unlocks as the season goes (${coinFmt(passPacePerDay())} a day).</div>`:''}
+    ${passBank(s)>0?`<div class="tp-bank">🔒 ${coinFmt(passBank(s))} XP banked. It unlocks as the season goes, about a tier a day.</div>`:''}
   </div></div>`));
   // ---- the hub above the track: what you can take now, what is next, and what is worth chasing ----
   const hub=$(`<div class="tp-body"></div>`);
