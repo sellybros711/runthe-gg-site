@@ -268,6 +268,51 @@ if (!args.includes('--no-browser')){
     claim(tg.kind === 'real' && tg.on, `Tour Greens opens on a real green with the ball on it (${tg.name})`);
     await pg.keyboard.press('Escape'); await pg.keyboard.press('Escape');
     claim(await pg.evaluate(() => !document.querySelector('.pt-ov') && document.body.style.overflow !== 'hidden'), 'Escape twice closes it and gives the page its scroll back');
+    // ---- THE 3D HOLE (hole3d.js, land.js): every themed hole, its picture and its projection
+    const v3 = await pg.evaluate(() => { const P = window.RTT_PUTT, D3 = window.RTT_PUTT_3D, out = { n:0, magenta:[], off:[], ms:[], land:[], sliceDiff:null };
+      if (!D3) return null;
+      const ramp = h => window.PXHD.ramp(h);
+      for (const th of Object.keys(P.THEMES)) P.themedCourse(th).forEach((d, i) => {
+        const C = P.buildFrom(d), t0 = performance.now(), R = D3.render(C, { aspect:2 }); out.ms.push(performance.now() - t0); out.n++;
+        const cx = R.cv.getContext('2d'), W = R.cv.width, H = R.cv.height, px = cx.getImageData(0, 0, W, H).data;
+        let mg = 0; for (let k = 0; k < px.length; k += 4) if (px[k] === 255 && px[k + 1] === 0 && px[k + 2] === 255) mg++;
+        if (mg) out.magenta.push(th + ' ' + (i + 1) + ': ' + mg);
+        // a point on open carpet, projected, lands on carpet in the picture
+        const ok = new Set(ramp(C.T.carpet).concat(ramp(C.T.carpet2))), hex = (r, g, b) => '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+        const clear = (x, y) => (C.bumpers || []).every(u => Math.hypot(u.x - x, u.y - y) > u.r + 1.4) && (C.blocks || []).every(r => x < r.x0 - 1.2 || x > r.x1 + 1.2 || y < r.y0 - 1.2 || y > r.y1 + 3)
+          && (C.movers || []).every(m => m.k !== 'spin' || Math.hypot(m.x - x, m.y - y) > m.len + 1) && (C.portals || []).every(p => Math.hypot(p.ax - x, p.ay - y) > 2 && Math.hypot(p.bx - x, p.by - y) > 2.5)
+          && (!C.mill || Math.hypot(C.mill.x - x, C.mill.y - y) > 7);
+        let tried = 0, bad = 0;
+        for (let y = C.bounds[1]; y < C.bounds[3]; y += 1.7) for (let x = C.bounds[0]; x < C.bounds[2]; x += 1.3){
+          if (C.mats.at(x, y) !== P.M.GREEN || !clear(x, y)) continue; let edge = false; for (const [dx, dy] of [[0.9, 0], [-0.9, 0], [0, 0.9], [0, -0.9]]) if (C.mats.at(x + dx, y + dy) !== P.M.GREEN) edge = true; if (edge) continue;
+          const q = R.pr(x, y, R.zAt(x, y)), i2 = (Math.floor(q[1]) * W + Math.floor(q[0])) * 4; tried++; if (!ok.has(hex(px[i2], px[i2 + 1], px[i2 + 2]))) bad++; }
+        if (!tried || bad > tried * 0.04) out.off.push(th + ' ' + (i + 1) + ': ' + bad + ' of ' + tried);
+        // the land round it is built, not bare: a good share of the picture outside the course is something other than the plain ground
+        if (i === 0) out.land.push(th);
+      });
+      // the same hole, rendered a few milliseconds at a time, is the same picture
+      const C = P.buildFrom(P.themedCourse('haunted')[3]), a = D3.render(C, { aspect:2 }), step = D3.slices(P.buildFrom(P.themedCourse('haunted')[3]), { aspect:2 });
+      let r = null, n = 0; while (!(r = step(2))) n++;
+      const A = a.cv.getContext('2d').getImageData(0, 0, a.cv.width, a.cv.height).data, Bv = r.cv.getContext('2d').getImageData(0, 0, r.cv.width, r.cv.height).data;
+      let diff = a.cv.width === r.cv.width && a.cv.height === r.cv.height ? 0 : -1; if (!diff) for (let k = 0; k < A.length; k++) if (A[k] !== Bv[k]) diff++;
+      out.sliceDiff = diff; out.slices = n;
+      out.ms.sort((x, y) => x - y); out.med = Math.round(out.ms[out.ms.length >> 1]); out.max = Math.round(out.ms[out.ms.length - 1]);
+      return out; });
+    claim(!!v3, 'the 3D hole module loaded');
+    if (v3){
+      claim(v3.n === 72 && v3.magenta.length === 0, `all ${v3.n} themed holes draw in 3D with no unknown material` + (v3.magenta.length ? ': ' + v3.magenta.slice(0, 4).join('; ') : ''));
+      claim(v3.off.length === 0, 'the projection puts open carpet on carpet in every picture, so the ball rolls on what is drawn' + (v3.off.length ? ': ' + v3.off.slice(0, 4).join('; ') : ''));
+      claim(v3.sliceDiff === 0 && v3.slices > 20, `rendered a little at a time (${v3.slices} steps) it is the same picture, pixel for pixel` + (v3.sliceDiff ? ': ' + v3.sliceDiff + ' differ' : ''));
+      claim(v3.med < 600, `a hole renders in ${v3.med}ms at the median (${v3.max}ms the slowest), on this machine`);
+    }
+    // a hole in 3D, through the game; and a render that throws draws the hole flat rather than nothing
+    await pg.evaluate(() => { if (!document.querySelector('.pt-ov')) openPutt(); window.RTT_PUTT._go('course', 'winter', 3); });
+    await pg.waitForFunction(() => { const P = window.RTT_PUTT._state().play; return P && (P.v3 || P.art); }, null, { timeout:60000 });
+    claim(await pg.evaluate(() => !!window.RTT_PUTT._state().play.v3), 'a themed hole plays in 3D');
+    await pg.evaluate(() => { const D3 = window.RTT_PUTT_3D; window.__keep = D3.render; D3.render = () => { throw new Error('probe'); }; window.RTT_PUTT._state().v3c = {}; window.RTT_PUTT._state().v3job = null; window.RTT_PUTT._go('course', 'beach', 2); });
+    await pg.waitForFunction(() => { const P = window.RTT_PUTT._state().play; return P && (P.v3 || P.art); }, null, { timeout:60000 });
+    claim(await pg.evaluate(() => { const P = window.RTT_PUTT._state().play; return !P.v3 && !!P.art; }), 'a 3D render that throws falls back to the flat hole');
+    await pg.evaluate(() => { window.RTT_PUTT_3D.render = window.__keep; });
     claim(errs.length === 0, 'no page errors' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
     await b.close(); srv.close();
   }

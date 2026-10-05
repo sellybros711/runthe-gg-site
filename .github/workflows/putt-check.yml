@@ -3,7 +3,8 @@ name: Putting Green checks
 # The Run The Tour putting game (golf/putt), a tester preview. Every themed hole
 # and two weeks of Daily Holes are PLAYED by a solver to par, the real greens
 # are built off the page's own hvGeom in a browser, and the tester gate is
-# asserted shut for everybody else. The course golfer has its own workflow
+# asserted shut for everybody else. Every themed hole is drawn in 3D (hole3d.js,
+# land.js) and its projection checked against the picture. The course golfer has its own workflow
 # (golfer3d-check.yml). Runs locally, unchanged:
 #
 #   node golf/putt/check-putt.mjs

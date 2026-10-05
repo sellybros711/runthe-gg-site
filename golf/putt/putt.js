@@ -691,6 +691,7 @@ var SKIN = {
   coffin:function(u, v){ var w = 0.55 + (v < -0.4 ? (v + 1) * 0.6 : 0.36 - (v + 0.4) * 0.28); if (Math.abs(u) > w || Math.abs(v) > 0.95) return null; if (Math.abs(u) > w - 0.14 || Math.abs(v) > 0.82) return '#2a1810';
     if ((Math.abs(u) < 0.07 && v > -0.6 && v < 0.2) || (Math.abs(v + 0.35) < 0.07 && Math.abs(u) < 0.25)) return '#c9a227'; return '#5a3a24'; }
 };
+RTT_PUTT.SKIN = SKIN;   // hole3d.js builds a bumper's 3D shape from the same skin the flat painter uses
 function moverCol(k, T){ return rgb(k === 'blade' ? T.spinner : T.wallLo); }
 
 function paintCourse(C){
@@ -875,6 +876,36 @@ function startRound(mode, arg){
   }
   S.round = R; playHole();
 }
+/* THE 3D HOLE (golf/putt/hole3d.js and land.js). A mini golf hole is drawn as a small 3D scene in the
+   golfer's style, with the land of its theme built round it. It is rendered once per hole, ahead of
+   time where it can be (the next hole renders while this one is played), and everything that moves is
+   drawn over it through its projection. A real green stays on the flat painter. A blocked or stale
+   module, or a render that throws, falls back to the flat painter, so a hole is never blank. */
+function v3Ok(){ return !!(window.RTT_PUTT_3D && window.RTT_PUTT_3D.API_VERSION === 1 && window.RTT_PUTT_LAND && window.PXHD); }
+function v3Asp(){ var r = S.stage && S.stage.getBoundingClientRect(); return r && r.width ? Math.round(Math.min(2.4, r.height / r.width) * 5) / 5 : 1.6; }
+function v3Key(d){ return [d.tpl, d.seed, d.theme, d.extra || 0, v3Asp()].join('|'); }
+function v3Get(d, C){
+  if (d.real || !v3Ok()) return null; S.v3c = S.v3c || {}; var k = v3Key(d);
+  // the hole being asked for is half rendered already: finish that rather than start again
+  if (S.v3job && S.v3job.k === k){ var J = S.v3job, o = null; S.v3job = null; try{ while (!(o = J.step(1e9))); S.v3c[k] = o; }catch(e){ S.v3c[k] = null; } }
+  if (S.v3c[k] === undefined){ try{ S.v3c[k] = window.RTT_PUTT_3D.render(C || buildFrom(d), { aspect:v3Asp() }); }catch(e){ try{ console.warn('putt 3D hole failed, drawing it flat', e); }catch(_){} S.v3c[k] = null; }
+    var ks = Object.keys(S.v3c); if (ks.length > 4) delete S.v3c[ks[0]]; }
+  return S.v3c[k];
+}
+// render the next hole while this one is played, so moving on does not wait. It is done a few
+// milliseconds a frame (frame() calls v3Tick), because a whole hole at once would stall a phone
+// for over a second in the middle of somebody's putt.
+function v3Ahead(){
+  var R = S.round; if (!R || !v3Ok()) return; var nd = R.holes[R.i + 1]; if (!nd || nd.real || (S.v3c && S.v3c[v3Key(nd)] !== undefined)) return;
+  try{ S.v3job = { k:v3Key(nd), step:window.RTT_PUTT_3D.slices(buildFrom(nd), { aspect:v3Asp() }) }; }catch(e){ S.v3job = null; }
+}
+function v3Tick(){
+  var J = S.v3job; if (!J) return;
+  var P = S.play; if (P && (P.state !== 'aim' || S.held)) return;   // never while the ball rolls or a pull back is held: those are the frames that matter
+  var out = null; try{ out = J.step(2.5); }catch(e){ S.v3job = null; S.v3c = S.v3c || {}; S.v3c[J.k] = null; return; }
+  if (out){ S.v3job = null; S.v3c = S.v3c || {}; S.v3c[J.k] = out; var ks = Object.keys(S.v3c); if (ks.length > 4) delete S.v3c[ks[0]]; }
+}
+
 function buildHole(d){
   if (!d.real) return buildFrom(d);
   var spec = fromHost(S.host, d.courseKey, d.hole), C = buildReal(spec, { pin:d.pin }), rnd = mulberry(d.seed);
@@ -886,7 +917,9 @@ function playHole(){
   var R = S.round, d = R.holes[R.i], C = buildHole(d);
   S.screen = 'play';
   S.play = { C:C, ball:C.tee.slice(), prev:C.tee.slice(), strokes:0, state:'aim', aimAng:Math.atan2(C.cup[1] - C.tee[1], C.cup[0] - C.tee[0]),
-    target:C.cup.slice(), firstFt:Math.hypot(C.cup[0] - C.tee[0], C.cup[1] - C.tee[1]), pow:0, trail:null, read:C.kind === 'real', clock0:performance.now() / 1000, art:paintCourse(C), cam:null, cap:C.kind === 'real' ? 5 : C.par + 3 };
+    target:C.cup.slice(), firstFt:Math.hypot(C.cup[0] - C.tee[0], C.cup[1] - C.tee[1]), pow:0, trail:null, read:C.kind === 'real', clock0:performance.now() / 1000, art:null, v3:null, cam:null, cap:C.kind === 'real' ? 5 : C.par + 3 };
+  var cached = !d.real && v3Ok() && ((S.v3c && S.v3c[v3Key(d)]) || (S.v3job && S.v3job.k === v3Key(d) && v3Get(d, C)));
+  if (cached) S.play.v3 = cached; else if (d.real || !v3Ok()) S.play.art = paintCourse(C);
   var sub = C.kind === 'real' ? (C.sub + ' · Putt ' + (R.i + 1) + ' of ' + R.holes.length) : (R.mode === 'daily' ? (R.kick + ' · Par ' + C.par) : ('Hole ' + (R.i + 1) + ' of 9 · Par ' + C.par));
   S.ov.innerHTML = top(C.kind === 'real' ? R.title : (R.mode === 'daily' ? R.title : d.name), sub, '') + '<div class="pt-stage"><canvas></canvas><div class="pt-read" hidden></div></div>\
     <div class="pt-bar">' + (C.kind === 'real' ? '<button class="pt-bt" data-l aria-label="Aim left">◂</button><button class="pt-bt" data-r aria-label="Aim right">▸</button>' : '') +
@@ -900,7 +933,15 @@ function playHole(){
   S.onResize && window.removeEventListener('resize', S.onResize);
   S.onResize = function(){ sizeCanvas(); }; window.addEventListener('resize', S.onResize);
   sizeCanvas(); hud();
-  cancelAnimationFrame(S.raf); S.raf = requestAnimationFrame(frame);
+  cancelAnimationFrame(S.raf);
+  var P0 = S.play;
+  if (!P0.v3 && !P0.art){   // a 3D hole not rendered yet: say so for the moment it takes, then draw it
+    var ctx0 = S.cv.getContext('2d'); ctx0.fillStyle = C.T.bg; ctx0.fillRect(0, 0, S.cv.width, S.cv.height);
+    ctx0.fillStyle = 'rgba(255,255,255,.75)'; ctx0.font = '800 ' + Math.round(14 * S.dpr) + 'px system-ui,sans-serif'; ctx0.textAlign = 'center'; ctx0.fillText('Setting up the hole', S.cv.width / 2, S.cv.height / 2);
+    setTimeout(function(){ if (!S || S.play !== P0) return; P0.v3 = v3Get(d, C); if (!P0.v3) P0.art = paintCourse(C); P0.cam = null; P0.camNow = null; S.raf = requestAnimationFrame(frame); v3Ahead(); }, 30);
+    return;
+  }
+  S.raf = requestAnimationFrame(frame); v3Ahead();
 }
 function holdRepeat(btn, fn){ var t = null, iv = null;
   btn.onpointerdown = function(e){ e.preventDefault(); fn(); t = setTimeout(function(){ iv = setInterval(fn, 50); }, 300); };
@@ -925,6 +966,16 @@ function hud(){
 /* --------------------------------------------------------------------------------- the camera */
 function camFor(P){
   var C = P.C, W = S.cv.width, H = S.cv.height, b = C.bounds, dpr = S.dpr;
+  if (P.v3){
+    // the course and a little of its land fill the stage, at a whole number of screen pixels per art pixel
+    var V = P.v3, xs = C.poly.map(function(p){ return p[0]; }), ys = C.poly.map(function(p){ return p[1]; });
+    var x0 = Math.min.apply(null, xs) - 6.5, x1 = Math.max.apply(null, xs) + 6.5, y0 = Math.min.apply(null, ys) - 5, y1 = Math.max.apply(null, ys) + 3, zc = 0.35;   // room for the land round it, which is half the point
+    var a0 = V.pr(x0, y0, zc + 1.2), a1 = V.pr(x1, y1, zc);
+    var kk = Math.max(1, Math.floor(Math.min(W / (a1[0] - a0[0]), H / (a1[1] - a0[1]))));
+    var cxA = (a0[0] + a1[0]) / 2, cyA = (a0[1] + a1[1]) / 2, ox = Math.round(W / 2 - cxA * kk), oy = Math.round(H / 2 - cyA * kk), iw = V.cv.width * kk, ih = V.cv.height * kk;
+    ox = iw >= W ? clamp(ox, W - iw, 0) : Math.round((W - iw) / 2); oy = ih >= H ? clamp(oy, H - ih, 0) : Math.round((H - ih) / 2);
+    return { v3:V, k:kk, ox:ox, oy:oy, s:kk / ART };
+  }
   if (C.kind !== 'real'){
     var s = Math.min(W / (b[2] - b[0] - 4), H / (b[3] - b[1] - 4));
     var k = Math.max(1, Math.floor(s * ART)); s = k / ART;
@@ -936,14 +987,20 @@ function camFor(P){
   s2 = clamp(s2, sMin, sMax); var k2 = Math.max(1, Math.round(s2 * ART)); s2 = k2 / ART;
   return { s:s2, cx:(bx + cx) / 2, cy:(by + cy) / 2 };
 }
-function w2s(c, x, y){ return [S.cv.width / 2 + (x - c.cx) * c.s, S.cv.height / 2 + (y - c.cy) * c.s]; }
-function s2w(c, X, Y){ return [c.cx + (X - S.cv.width / 2) / c.s, c.cy + (Y - S.cv.height / 2) / c.s]; }
+function w2s(c, x, y, z){
+  if (c.v3){ var p = c.v3.pr(x, y, z == null ? c.v3.zAt(x, y) : z); return [c.ox + p[0] * c.k, c.oy + p[1] * c.k]; }
+  return [S.cv.width / 2 + (x - c.cx) * c.s, S.cv.height / 2 + (y - c.cy) * c.s]; }
+function s2w(c, X, Y){
+  if (c.v3){ var w = c.v3.un((X - c.ox) / c.k, (Y - c.oy) / c.k, 0.35); return c.v3.un((X - c.ox) / c.k, (Y - c.oy) / c.k, c.v3.zAt(w[0], w[1])); }
+  return [c.cx + (X - S.cv.width / 2) / c.s, c.cy + (Y - S.cv.height / 2) / c.s]; }
+// a screen direction as a direction on the hole: the 3D camera looks down at an angle, so up the screen is further than it looks
+function scrDir(c, dx, dy){ return c && c.v3 ? Math.atan2(dy / c.v3.se, dx) : Math.atan2(dy, dx); }
 
 /* ---------------------------------------------------------------------------------- the input */
 function bindInput(cv){
   var drag = null;
   cv.onpointerdown = function(e){
-    var P = S.play; if (!P || P.state !== 'aim') return; cv.setPointerCapture(e.pointerId);
+    var P = S.play; if (!P || P.state !== 'aim') return; cv.setPointerCapture(e.pointerId); S.held = true;
     var X = e.offsetX * S.dpr, Y = e.offsetY * S.dpr, c = P.camNow || camFor(P);
     if (P.C.kind === 'real'){
       var t = w2s(c, P.target[0], P.target[1]);
@@ -957,10 +1014,10 @@ function bindInput(cv){
     if (drag.k === 'aim'){ var w = s2w(c, X + drag.dx, Y + drag.dy); P.target = w; P.aimAng = Math.atan2(w[1] - P.ball[1], w[0] - P.ball[0]); return; }
     var dx = drag.x0 - X, dy = drag.y0 - Y, L = Math.hypot(dx, dy), maxL = Math.min(S.cv.height * 0.42, 300 * S.dpr);
     P.pow = clamp(L / maxL, 0, 1);
-    if (P.C.kind !== 'real' && L > 6 * S.dpr) P.aimAng = Math.atan2(dy, dx);
+    if (P.C.kind !== 'real' && L > 6 * S.dpr) P.aimAng = scrDir(c, dx, dy);
   };
   cv.onpointerup = cv.onpointercancel = function(e){
-    var P = S.play, d = drag; drag = null; if (!P || !d) return;
+    var P = S.play, d = drag; drag = null; S.held = false; if (!P || !d) return;
     if (d.k === 'pow' && P.pow > 0.02 && e.type === 'pointerup') strike(); else P.pow = 0;
   };
 }
@@ -990,6 +1047,7 @@ function frame(){
   if (!S || S.screen !== 'play') return;
   S.raf = requestAnimationFrame(frame);
   var P = S.play, C = P.C, ctx = S.cv.getContext('2d'), W = S.cv.width, H = S.cv.height, now = performance.now() / 1000, clock = now - P.clock0;
+  v3Tick();
   // where the ball is: at rest, or partway along the putt it is playing back
   var bx = P.ball[0], by = P.ball[1], falling = 0;
   if (P.state === 'roll'){
@@ -1008,15 +1066,17 @@ function frame(){
   var tgt = camFor(P);
   if (!P.camNow && C.kind === 'real'){ var bb = C.bounds, sw = Math.min(S.cv.width / (C.spec.rx * 2.5), S.cv.height / (C.spec.ry * 2.5));
     P.camNow = { s:sw, cx:0, cy:0 }; P.intro = performance.now(); }
-  if (!P.camNow || C.kind !== 'real') P.camNow = tgt;
+  if (!P.camNow || C.kind !== 'real') P.camNow = tgt;   // a mini hole holds still: the whole hole is the shot
   else if (P.state === 'aim'){ var c0 = P.camNow, e = (P.intro && performance.now() - P.intro < 1500) ? (performance.now() - P.intro < 700 ? 0 : 0.05) : 0.16; P.camNow = { s:c0.s + (tgt.s - c0.s) * e, cx:c0.cx + (tgt.cx - c0.cx) * e, cy:c0.cy + (tgt.cy - c0.cy) * e };
     if (Math.abs(P.camNow.s - tgt.s) < 0.02) P.camNow.s = tgt.s; }
   var cam = P.camNow;
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = false;
   var bg = C.kind === 'real' ? ((C.biome && C.biome.base) || '#5f8a30') : C.T.bg; ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
-  var o = w2s(cam, C.bounds[0], C.bounds[1]), k = cam.s * ART;
-  ctx.drawImage(P.art, Math.round(o[0]), Math.round(o[1]), Math.round(P.art.width * k), Math.round(P.art.height * k));
-  if (C.movers.length) drawMovers(ctx, C, cam, clock);
+  if (cam.v3) ctx.drawImage(cam.v3.cv, cam.ox, cam.oy, cam.v3.cv.width * cam.k, cam.v3.cv.height * cam.k);
+  else { var o = w2s(cam, C.bounds[0], C.bounds[1]), k = cam.s * ART;
+    ctx.drawImage(P.art, Math.round(o[0]), Math.round(o[1]), Math.round(P.art.width * k), Math.round(P.art.height * k)); }
+  if (C.movers.length) (cam.v3 ? drawMovers3 : drawMovers)(ctx, C, cam, clock);
+  if (cam.v3 && cam.v3.mill) drawSails(ctx, C, cam, clock);
   if (P.read) drawRead(ctx, C, cam);
   drawCup(ctx, C, cam, Math.hypot(bx - C.cup[0], by - C.cup[1]));
   if (P.trail && P.state === 'aim') drawTrail(ctx, cam, P.trail);
@@ -1067,24 +1127,56 @@ function drawMovers(ctx, C, cam, t){
       ctx.fillStyle = T.wallHi; ctx.beginPath(); ctx.arc(c[0], c[1], m.hub * cam.s, 0, 6.29); ctx.fill(); }
   });
 }
+// in 3D a paddle or a slider is a bar with a top and a front face, standing on the carpet
+function bar3(ctx, cam, s, w, h, top, side, ink){
+  var za = cam.v3.zAt(s[0], s[1]), zb = cam.v3.zAt(s[2], s[3]), a0 = w2s(cam, s[0], s[1], za), b0 = w2s(cam, s[2], s[3], zb), a1 = w2s(cam, s[0], s[1], za + h), b1 = w2s(cam, s[2], s[3], zb + h);
+  ctx.fillStyle = side; ctx.beginPath(); ctx.moveTo(a0[0], a0[1] + w * 0.25); ctx.lineTo(b0[0], b0[1] + w * 0.25); ctx.lineTo(b1[0], b1[1]); ctx.lineTo(a1[0], a1[1]); ctx.closePath(); ctx.fill();
+  ctx.lineCap = 'round'; ctx.strokeStyle = ink; ctx.lineWidth = w + Math.max(2, w * 0.25); ctx.beginPath(); ctx.moveTo(a1[0], a1[1]); ctx.lineTo(b1[0], b1[1]); ctx.stroke();
+  ctx.strokeStyle = top; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(a1[0], a1[1]); ctx.lineTo(b1[0], b1[1]); ctx.stroke();
+}
+function drawMovers3(ctx, C, cam, t){
+  var T = C.T;
+  C.movers.forEach(function(m){
+    var segs = moverAt(m, t), w = Math.max(m.w * cam.s, 3), h = m.k === 'spin' ? 0.45 : 0.6;
+    segs.sort(function(a, b){ return (a[1] + a[3]) - (b[1] + b[3]); });   // the far blade first
+    segs.forEach(function(s){ bar3(ctx, cam, s, w, h, m.k === 'spin' ? T.spinner : T.wall, m.k === 'spin' ? '#3a2a1a' : T.wallLo, T.ink); });
+    if (m.k === 'spin'){ var z = cam.v3.zAt(m.x, m.y), c = w2s(cam, m.x, m.y, z + h + 0.05); ctx.fillStyle = T.ink; ctx.beginPath(); ctx.arc(c[0], c[1], m.hub * cam.s + 2, 0, 6.29); ctx.fill();
+      ctx.fillStyle = T.wallHi; ctx.beginPath(); ctx.arc(c[0], c[1], m.hub * cam.s, 0, 6.29); ctx.fill(); }
+  });
+}
+// the windmill's sails turn with its paddles, on the face of the tower
+function drawSails(ctx, C, cam, t){
+  var M3 = cam.v3.mill, sp = null; C.movers.forEach(function(m){ if (m.k === 'spin' && !sp) sp = m; });
+  var th = sp ? sp.phase + sp.omega * t * 0.6 : t * 0.7, T = C.T;
+  for (var a = 0; a < 4; a++){
+    var ang = th + a * Math.PI / 2, ca = Math.cos(ang), sa = Math.sin(ang), pts = [[0.35, -0.08], [M3.r, -0.08], [M3.r, 0.85], [0.6, 0.85]].map(function(q){
+      return w2s(cam, M3.x + ca * q[0] - sa * q[1], M3.y, M3.z + sa * q[0] + ca * q[1]); });
+    ctx.fillStyle = '#efe6cf'; ctx.strokeStyle = '#4a2c14'; ctx.lineWidth = Math.max(1.5, cam.s * 0.07);
+    ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (var i = 1; i < 4; i++) ctx.lineTo(pts[i][0], pts[i][1]); ctx.closePath(); ctx.fill(); ctx.stroke();
+    var e = w2s(cam, M3.x + ca * M3.r, M3.y, M3.z + sa * M3.r), o = w2s(cam, M3.x, M3.y, M3.z);
+    ctx.lineWidth = Math.max(2, cam.s * 0.12); ctx.beginPath(); ctx.moveTo(o[0], o[1]); ctx.lineTo(e[0], e[1]); ctx.stroke();
+  }
+  var hb = w2s(cam, M3.x, M3.y, M3.z); ctx.fillStyle = T.ink; ctx.beginPath(); ctx.arc(hb[0], hb[1], Math.max(3, cam.s * 0.32), 0, 6.29); ctx.fill();
+}
 function drawRead(ctx, C, cam){
   var step = C.kind === 'real' ? 3 : 2, b = C.bounds, s = cam.s;
   for (var y = b[1] + step / 2; y < b[3]; y += step) for (var x = b[0] + step / 2; x < b[2]; x += step){
     var m = C.mats.at(x, y); if (m !== M.GREEN && m !== M.FRINGE) continue;
     var gx = C.field.gx(x, y), gy = C.field.gy(x, y), g = Math.hypot(gx, gy); if (g < 0.003) continue;
     var p = w2s(cam, x, y); if (p[0] < -20 || p[1] < -20 || p[0] > S.cv.width + 20 || p[1] > S.cv.height + 20) continue;
-    var L = Math.min(step * 0.42, 0.6 + g * 22) * s, ux = -gx / g, uy = -gy / g;
+    var Lw = Math.min(step * 0.42, 0.6 + g * 22), wx = -gx / g, wy = -gy / g, pa = w2s(cam, x - wx * Lw / 2, y - wy * Lw / 2), pb = w2s(cam, x + wx * Lw / 2, y + wy * Lw / 2);
+    var L = Math.hypot(pb[0] - pa[0], pb[1] - pa[1]) || 1, ux = (pb[0] - pa[0]) / L, uy = (pb[1] - pa[1]) / L;
     var col = g < 0.015 ? 'rgba(160,220,255,.75)' : g < 0.03 ? 'rgba(255,240,140,.85)' : 'rgba(255,120,90,.9)';
     ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = Math.max(1.2, s * 0.06);
-    ctx.beginPath(); ctx.moveTo(p[0] - ux * L / 2, p[1] - uy * L / 2); ctx.lineTo(p[0] + ux * L / 2, p[1] + uy * L / 2); ctx.stroke();
-    var hx = p[0] + ux * L / 2, hy = p[1] + uy * L / 2, hs = Math.max(3, L * 0.32);
+    ctx.beginPath(); ctx.moveTo(pa[0], pa[1]); ctx.lineTo(pb[0], pb[1]); ctx.stroke();
+    var hx = pb[0], hy = pb[1], hs = Math.max(3, L * 0.32);
     ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(hx - ux * hs - uy * hs * 0.6, hy - uy * hs + ux * hs * 0.6); ctx.lineTo(hx - ux * hs + uy * hs * 0.6, hy - uy * hs - ux * hs * 0.6); ctx.closePath(); ctx.fill();
   }
 }
 function drawCup(ctx, C, cam, dBall){
-  var p = w2s(cam, C.cup[0], C.cup[1]), r = Math.max(C.cupR * cam.s, 5.5 * S.dpr);
-  ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(p[0], p[1] + r * 0.12, r * 1.18, r * 1.05, 0, 0, 6.29); ctx.fill();
-  ctx.fillStyle = '#0d0f0c'; ctx.beginPath(); ctx.ellipse(p[0], p[1], r, r * 0.92, 0, 0, 6.29); ctx.fill();
+  var p = w2s(cam, C.cup[0], C.cup[1]), r = Math.max(C.cupR * cam.s, 5.5 * S.dpr), sq = cam.v3 ? cam.v3.se : 0.92;
+  ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(p[0], p[1] + r * 0.12, r * 1.18, r * (sq + 0.13), 0, 0, 6.29); ctx.fill();
+  ctx.fillStyle = '#0d0f0c'; ctx.beginPath(); ctx.ellipse(p[0], p[1], r, r * sq, 0, 0, 6.29); ctx.fill();
   ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = Math.max(1, S.dpr); ctx.stroke();
   // the flag comes out once the ball is close, the way it is tended on tour
   var a = clamp((dBall - 4) / 6, 0, 1); if (a <= 0) return;
@@ -1097,7 +1189,10 @@ function drawCup(ctx, C, cam, dBall){
 function drawBall(ctx, cam, x, y, fall){
   var p = w2s(cam, x, y), r = Math.max(BALL_R * cam.s, 3.6 * S.dpr) * (1 - fall * 0.55);
   if (fall >= 1) return;
-  ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.arc(p[0] + r * 0.35, p[1] + r * 0.4, r, 0, 6.29); ctx.fill();
+  if (cam.v3){   // in 3D the ball sits ON the carpet: its shadow on the ground, the ball a radius up
+    ctx.fillStyle = 'rgba(0,0,0,.32)'; ctx.beginPath(); ctx.ellipse(p[0] + r * 0.3, p[1] + r * 0.1, r * 1.05, r * 0.6, 0, 0, 6.29); ctx.fill();
+    p = [p[0], p[1] - r * cam.v3.ce * (1 - fall)];
+  } else { ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.arc(p[0] + r * 0.35, p[1] + r * 0.4, r, 0, 6.29); ctx.fill(); }
   ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, 6.29); ctx.fill();
   ctx.strokeStyle = 'rgba(30,40,30,.55)'; ctx.lineWidth = Math.max(1, S.dpr * 0.8); ctx.stroke();
   ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.beginPath(); ctx.arc(p[0] - r * 0.3, p[1] - r * 0.3, r * 0.3, 0, 6.29); ctx.fill();
@@ -1116,9 +1211,9 @@ function drawAim(ctx, P, cam){
     ctx.beginPath(); ctx.moveTo(t[0] - 16 * d, t[1]); ctx.lineTo(t[0] - 6 * d, t[1]); ctx.moveTo(t[0] + 6 * d, t[1]); ctx.lineTo(t[0] + 16 * d, t[1]);
     ctx.moveTo(t[0], t[1] - 16 * d); ctx.lineTo(t[0], t[1] - 6 * d); ctx.moveTo(t[0], t[1] + 6 * d); ctx.lineTo(t[0], t[1] + 16 * d); ctx.stroke();
   } else {
-    var L = (2 + P.pow * 12) * cam.s, ux = Math.cos(P.aimAng), uy = Math.sin(P.aimAng);
+    var Lw = 2 + P.pow * 12, ux = Math.cos(P.aimAng), uy = Math.sin(P.aimAng);
     ctx.fillStyle = 'rgba(255,255,255,.85)';
-    for (var s = 10 * d; s < L; s += 9 * d){ ctx.beginPath(); ctx.arc(b[0] + ux * s, b[1] + uy * s, 1.8 * d, 0, 6.29); ctx.fill(); }
+    for (var s = 10 * d; s < Lw * cam.s; s += 9 * d){ var q = w2s(cam, P.ball[0] + ux * s / cam.s, P.ball[1] + uy * s / cam.s); ctx.beginPath(); ctx.arc(q[0], q[1], 1.8 * d, 0, 6.29); ctx.fill(); }
   }
   if (P.pow > 0){
     // the pace, as a meter that fills toward red: the further back, the harder
@@ -1132,7 +1227,7 @@ function drawGolfer(ctx, P, cam){
   var h = S.host; if (!h.golfer) return;
   if (!S.gcv){ try{ S.gcv = h.golfer(); }catch(e){ S.gcv = null; } }
   var g = S.gcv; if (!g || !g.width) return;
-  var hgt = (P.C.kind === 'real' ? 3.4 : 2.9) * cam.s, k = Math.max(1, Math.round(hgt / g.height)), w = g.width * k, hh = g.height * k;
+  var hgt = (P.C.kind === 'real' ? 3.4 : cam.v3 ? 3.1 : 2.9) * cam.s, k = hgt / g.height, w = Math.round(g.width * k), hh = Math.round(g.height * k);
   var b = w2s(cam, P.ball[0], P.ball[1]), side = Math.cos(P.aimAng) >= 0 ? -1 : 1;
   ctx.save(); ctx.imageSmoothingEnabled = false;
   ctx.translate(Math.round(b[0] + side * (w * 0.42)), Math.round(b[1] - hh * 0.9));
