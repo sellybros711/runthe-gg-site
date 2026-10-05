@@ -20,6 +20,12 @@
 
    The slope of the carpet is real and tiny (a few hundredths), so the picture exaggerates it by K for
    the eye. The physics never reads any of this. */
+/* EVERYTHING BELOW IS INSIDE THIS WRAPPER, and it has to be. This is a plain script, so a top level
+   function declaration is a global, and golf/index.html's own render() is the game's whole screen
+   painter. Unwrapped, this file's render(C) replaced it the moment the deferred script ran, so every
+   tap on every screen called the 3D hole painter with nothing and threw: the whole game stopped
+   responding, for everybody, not just testers. Only RTT_PUTT_3D leaves this function. */
+(function(){
 window.RTT_PUTT_3D = { API_VERSION: 1, render: render, slices: slices, ELEV: 42 };
 
 function render(C, opt){ var g = steps(C, opt), r; do { r = g.next(); } while (!r.done); return r.value; }
@@ -231,3 +237,4 @@ function* steps(C, opt){
   if (LD && LD.after) LD.after(ctx, { pr:pr, W:W, H:Hh - y0, b:b, ART:ART, se:se, oy:oy - y0 });
   return { cv:cv, pr:pr, un:un, zAt:surf, mill:mill, se:se, ce:ce, K:K, carp:CARP };
 }
+})();

@@ -232,6 +232,13 @@ if (!args.includes('--no-browser')){
     await pg.goto(base + '/golf/', { waitUntil:'domcontentloaded' });
     await pg.waitForFunction(() => window.RTT_PUTT && typeof puttOn === 'function', null, { timeout:30000 });
     claim(await pg.evaluate(() => !document.querySelector('.pt-ov')), 'loading the module draws nothing');
+    // A PLAIN SCRIPT'S TOP LEVEL FUNCTION IS A GLOBAL. hole3d.js once declared render() unwrapped and
+    // replaced the game's own screen painter, so every tap on the site threw and nothing responded,
+    // while every claim in this file stayed green because none of them redraws the home screen.
+    // So: once every deferred module has run, the game must still be able to draw a screen and move to another.
+    await pg.waitForFunction(() => window.RTT_PUTT_3D && window.RTT_PUTT_LAND && window.PXHD, null, { timeout:30000 });
+    claim(await pg.evaluate(() => { try{ const n0 = errs0(); S.overlay = null; S.screen = 'title'; render(); document.querySelector('#rttnav [data-nav="daily"]').click(); return S.screen !== 'title' && document.body.innerText.length > 0; }catch(e){ return false; } function errs0(){ return 0; } }),
+      'with every module loaded, the game still draws its home screen and a tab still moves it on');
     claim(await pg.evaluate(() => !puttOn() && !homeModeList().some(m => m.id === 'putt')), 'signed out: no door');
     await pg.evaluate(() => { sbUser = { id:'x' }; sbUsername = 'somebody'; });
     claim(await pg.evaluate(() => !puttOn() && !homeModeList().some(m => m.id === 'putt')), 'signed in as anybody else: no door');
