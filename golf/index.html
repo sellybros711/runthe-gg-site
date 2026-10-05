@@ -837,6 +837,49 @@ window.GA_ID='G-L29P5MRWKE';
     box-shadow:0 8px 24px -8px rgba(224,118,42,.75),inset 0 1px 0 rgba(255,255,255,.45)}
   .btn.tpgo .sub{color:rgba(42,18,4,.78)}
   .btn.tpgo:active{transform:translateY(2px)}
+  /* ---- pass themes: Halloween (Oct 4 to 31), then the harvest to the end of Season 2 ---- */
+  .tpdeco{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+  .tpdeco i{position:absolute;display:block;font-style:normal}
+  .tpdeco svg{display:block;width:100%;height:100%}
+  .tpd-moon{top:150px;right:-26px;width:120px;height:120px;border-radius:50%;
+    background:radial-gradient(circle at 38% 36%,#fff4d6,#f0dca8 55%,#d6bf86);opacity:.22;box-shadow:0 0 70px 20px rgba(255,236,190,.16)}
+  .tpd-web{width:150px;height:150px;color:rgba(230,220,255,.16)}
+  .tpd-web.l{top:0;left:0}
+  .tpd-web.r{top:0;right:0;transform:scaleX(-1)}
+  .tp-track-page .tpd-web{top:150px}
+  .tpd-bat{width:30px;height:12px;color:rgba(8,4,14,.85);filter:drop-shadow(0 0 6px rgba(255,170,90,.18));animation:tpdBat var(--d) ease-in-out infinite}
+  .tpd-bat svg{animation:tpdFlap .32s ease-in-out infinite alternate;transform-origin:50% 40%}
+  @keyframes tpdBat{0%,100%{transform:translate(0,0)}25%{transform:translate(38px,-16px)}50%{transform:translate(70px,6px)}75%{transform:translate(28px,18px)}}
+  @keyframes tpdFlap{from{transform:scaleY(1)}to{transform:scaleY(.45)}}
+  .tpd-pk{bottom:12px;width:58px;height:50px;opacity:.5;filter:drop-shadow(0 0 16px rgba(255,140,40,.45))}
+  .tpd-pk.a{left:10px}.tpd-pk.b{right:14px;width:44px;height:38px;bottom:16px}
+  .tpd-fog{left:-10%;right:-10%;bottom:-40px;height:200px;background:radial-gradient(60% 70% at 30% 100%,rgba(120,220,140,.10),transparent 70%),radial-gradient(60% 70% at 75% 100%,rgba(160,120,255,.10),transparent 70%)}
+  .tpd-hmoon{top:170px;right:-34px;width:120px;height:120px;border-radius:50%;
+    background:radial-gradient(circle at 40% 38%,#ffd88a,#f0a640 60%,#c8702a);opacity:.16;box-shadow:0 0 80px 24px rgba(255,170,70,.14)}
+  .tpd-leaf{top:-40px;width:calc(20px*var(--s));height:calc(23px*var(--s));opacity:.62;animation:tpdFall var(--d) linear infinite}
+  @keyframes tpdFall{0%{transform:translate(0,0) rotate(0)}25%{transform:translate(10px,28vh) rotate(80deg)}50%{transform:translate(-8px,56vh) rotate(170deg)}75%{transform:translate(8px,84vh) rotate(260deg)}100%{transform:translate(0,112vh) rotate(350deg)}}
+  .tpd-tg .tpd-fog{background:radial-gradient(60% 70% at 30% 100%,rgba(244,184,78,.12),transparent 70%),radial-gradient(60% 70% at 80% 100%,rgba(176,58,32,.14),transparent 70%)}
+  @media (prefers-reduced-motion:reduce){ .tpd-bat,.tpd-bat svg,.tpd-leaf{animation:none!important} }
+  /* the harvest palette: a warm brown night in place of the purple one (Pro stays purple) */
+  .ov.tpskin.tpth-harvest,.tpov.tp-track-page.tpth-harvest,.tpov.tps-page.tpth-harvest,.ov.slov.tpth-harvest{--muted:#cdb79c;background:#170b06;
+    background-image:radial-gradient(110% 55% at 50% -8%,rgba(244,184,78,.22),transparent 62%),radial-gradient(90% 60% at 0% 60%,rgba(176,58,32,.22),transparent 70%),linear-gradient(180deg,#26130a 0%,#190c07 55%,#0f0704 100%)!important}
+  .tpov.tpth-harvest .tp-head{background:linear-gradient(180deg,rgba(46,22,12,.97),rgba(30,15,8,.95));border-bottom-color:rgba(244,184,78,.45)}
+  .tpov.tpth-harvest .tp-ringin{background:radial-gradient(circle at 50% 30%,#3a1e10,#1e0f08)}
+  .tpov.tpth-harvest .tp-kick{color:#f6dcb4}
+  .ov.tpskin.tpth-halloween,.tpov.tp-track-page.tpth-halloween,.tpov.tps-page.tpth-halloween,.ov.slov.tpth-halloween{background-color:#100919;
+    background-image:radial-gradient(110% 55% at 50% -8%,rgba(224,118,42,.24),transparent 62%),radial-gradient(70% 45% at 0% 100%,rgba(110,210,120,.12),transparent 70%),radial-gradient(90% 60% at 100% 45%,rgba(130,70,220,.2),transparent 70%),linear-gradient(180deg,#170d29 0%,#110a1d 55%,#0b0713 100%)}
+  .tpov.tpth-halloween .tp-head{border-bottom-color:rgba(224,118,42,.55)}
+  /* cards (home Tour Pass card, store pass card) */
+  .tpcard{position:relative;overflow:hidden}
+  .tpdc{position:absolute;pointer-events:none;display:block;z-index:0}
+  .tpcard>*:not(.tpdc){position:relative;z-index:1}
+  .tpdc svg{display:block;width:100%;height:100%}
+  .tpdc-web{top:0;right:0;width:74px;height:74px;color:rgba(255,240,225,.28);transform:scaleX(-1)}
+  .tpdc-bat{top:14px;right:62px;width:26px;height:10px;color:rgba(20,6,2,.75)}
+  .tpdc-lv{top:8px;right:12px;width:24px;height:26px;transform:rotate(-18deg);opacity:.9}
+  .tpdc-lv2{top:30px;right:38px;width:16px;height:18px;transform:rotate(30deg);opacity:.8}
+  .gc-pass.tpth-harvest{background:linear-gradient(158deg,#d4692a,#9a3c14 50%,#5a2a12)}
+  .gc-pass.tpth-halloween{background:linear-gradient(158deg,#d66a22,#a5450f 50%,#4a2a9a)}
   /* featured button (a neat/new feature we want to stand out) + a "NEW" corner sticker */
   .btn.feat{position:relative; animation:featPulse 2.4s ease-in-out infinite}
   @keyframes featPulse{0%,100%{box-shadow:0 8px 20px -8px rgba(90,55,175,.72), 0 0 0 1px rgba(167,139,250,.45), inset 0 1px 0 rgba(255,255,255,.3)}
@@ -5534,7 +5577,8 @@ function overlaySeasonLaunch(screen){
   const cap=prem.length?prem[prem.length-1]:null;
   const thumbs=all.slice(0,8).map(c=>`<div class="sl-th" title="${esc(c.name)}">${passCosThumb(c)}</div>`).join('');
   const ld=(typeof liveThemedDrop==='function')?liveThemedDrop():null;
-  const ov=$(`<div class="ov s1ov slov" role="dialog" aria-modal="true" style="text-align:center">
+  const ov=$(`<div class="ov s1ov slov${n===passSeason().n?passThemeCls():''}" role="dialog" aria-modal="true" style="text-align:center">
+    ${n===passSeason().n?passThemeDeco('page'):''}
     <style>
       .ov.slov{display:flex;flex-direction:column;background:
         radial-gradient(90% 52% at 50% -8%, rgba(224,118,42,.26), rgba(224,118,42,0) 62%),
@@ -5862,7 +5906,8 @@ function overlayPurchased(screen){
       +(b&&b.packTier?'<div class="scout" style="max-width:360px;margin:0 auto 12px;text-align:center;border-color:'+b.col+'"><b style="color:'+b.col+'">🎁 +'+b.packN+' '+packTierLabel(b.packTier)+' pack'+(b.packN>1?'s':'')+' included</b><div class="small muted" style="margin-top:2px">Already added · Pro Shop → Packs</div></div>':'')
       +'<button class="btn goldfill act" style="max-width:360px;margin:0 auto 8px">'+(b&&b.packTier?'Open your pack'+(b.packN>1?'s':'')+' ▸':'Spend them ▸')+'</button>';
   }
-  var ov=$('<div class="ov'+(p.kind==='pass'?' tpskin':'')+'" role="dialog" aria-modal="true" style="text-align:center'+(p.kind==='pass'?';--tp-acc:'+passAcc():'')+'">'
+  var ov=$('<div class="ov'+(p.kind==='pass'?' tpskin'+passThemeCls():'')+'" role="dialog" aria-modal="true" style="text-align:center'+(p.kind==='pass'?';--tp-acc:'+passAcc()+';--tp-acc2:'+passAcc2():'')+'">'
+    +(p.kind==='pass'?passThemeDeco('page'):'')
     +'<button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>'
     +'<div style="font:800 11px var(--body);letter-spacing:.2em;text-transform:uppercase;color:#35d6a0;margin-bottom:10px">✓ Purchase complete</div>'
     +inner
@@ -10125,6 +10170,8 @@ const PASS_SEASONS={
   // Oct 5 - Dec 3 2026. One pass, one list: twenty-one Halloween and Thanksgiving pieces on the Pro lane,
   // capped by a ghost light over a cold field. Four of them replace a Pro pack (`swap`).
   2:{ name:'Hallows & Harvest', accent:'#e0762a', accent2:'#ffb35a',
+      // the pass's dress (ET day keys, inclusive): Halloween through October, then the harvest to the season's end
+      themes:[ {id:'halloween', from:20261004, to:20261031}, {id:'harvest', from:20261101, to:20261203} ],
       capstone:{fx:'wisp', plate:'pass2plate'},
       launch:{ tag:'🎃 Hallows & Harvest', lede:'Twenty-one Halloween and Thanksgiving pieces, all on one track.' },
       // Pro tiers whose pack is traded for the exclusive at that tier (owner, Oct 2026). The Jack-o'-Lantern
@@ -10174,8 +10221,42 @@ const PASS_SEASONS={
 const PASS_NEXT_TEASE=false;
 function passSeasonDef(n){ n=n||passSeason().n; return PASS_SEASONS[n]||{name:'Tour Pass', accent:'#a24be0', capstone:null, items:{}, add:{}}; }
 // the live season's colours, for every surface that talks about the pass (the hub sets the same on its page)
-function passAcc(n){ return passSeasonDef(n).accent||'#e0762a'; }
-function passAcc2(n){ const d=passSeasonDef(n); return d.accent2||d.accent||'#ffb35a'; }
+function passAcc(n){ if(!n){ const t=PASS_THEME_COL[passThemeNow()]; if(t) return t[0]; } return passSeasonDef(n).accent||'#e0762a'; }
+function passAcc2(n){ if(!n){ const t=PASS_THEME_COL[passThemeNow()]; if(t) return t[1]; } const d=passSeasonDef(n); return d.accent2||d.accent||'#ffb35a'; }
+/* PASS THEMES. A season can dress the pass for part of its run (PASS_SEASONS[n].themes, ET day keys). Every
+   pass surface reads passThemeCls() for its class and passThemeDeco() for the drawn pieces; none of it changes
+   what anything pays. QA: ?ptheme=halloween, ?ptheme=harvest, ?ptheme=none. */
+const PASS_THEME_COL={ halloween:['#e0762a','#ffb35a'], harvest:['#cf5a26','#f4b84e'] };
+function passThemeNow(){ try{
+  const f=(typeof location!=='undefined')&&/[?&]ptheme=([a-z]+)/.exec(location.search||'');
+  if(f) return PASS_THEME_COL[f[1]]?f[1]:null;
+  const t=todayKey(), th=(passSeasonDef().themes||[]).find(x=>t>=x.from&&t<=x.to); return th?th.id:null; }catch(e){ return null; } }
+function passThemeCls(){ const t=passThemeNow(); return t?' tpth-'+t:''; }
+let _tpWeb=null;
+function tpWebSVG(){ if(_tpWeb) return _tpWeb;   // a corner cobweb: spokes from the corner, sagging threads between them
+  const sp=[0,15,30,45,60,75,90].map(a=>a*Math.PI/180), R=[22,40,58,76,94]; let d='';
+  sp.forEach(a=>{ d+=`M0 0L${(100*Math.cos(a)).toFixed(1)} ${(100*Math.sin(a)).toFixed(1)}`; });
+  R.forEach(r=>{ for(let i=0;i<sp.length-1;i++){ const a0=sp[i],a1=sp[i+1],am=(a0+a1)/2, rm=r*0.86;
+    d+=`M${(r*Math.cos(a0)).toFixed(1)} ${(r*Math.sin(a0)).toFixed(1)}Q${(rm*Math.cos(am)).toFixed(1)} ${(rm*Math.sin(am)).toFixed(1)} ${(r*Math.cos(a1)).toFixed(1)} ${(r*Math.sin(a1)).toFixed(1)}`; } });
+  return _tpWeb=`<svg viewBox="0 0 100 100"><path d="${d}" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>`; }
+const TP_BAT='<svg viewBox="0 0 40 16"><path fill="currentColor" d="M20 6c1-2 1.6-3 2-4 .2 1.2.6 2 1.4 2.6C26 1.4 31 0 40 3c-4 1-6 3-6.4 6-2-1.2-4-1-5.6.6-1.2-1-2.6-1.2-3.8-.4C23 11 21.6 13 20 16c-1.6-3-3-5-4.2-6.8-1.2-.8-2.6-.6-3.8.4-1.6-1.6-3.6-1.8-5.6-.6C6 6 4 4 0 3c9-3 14-1.6 16.6 1.6.8-.6 1.2-1.4 1.4-2.6.4 1 1 2 2 4z"/></svg>';
+const TP_PUMPKIN='<svg viewBox="0 0 40 34"><path fill="#3f6b2a" d="M19 6c0-3 1-5 4-6l1 2c-2 1-2.6 2.4-2.6 4z"/><ellipse cx="11" cy="20" rx="10" ry="13" fill="#c8561a"/><ellipse cx="29" cy="20" rx="10" ry="13" fill="#c8561a"/><ellipse cx="20" cy="20" rx="11" ry="14" fill="#e8782a"/><path fill="#ffd25e" d="M12 16l4 3h-5zM28 16l-4 3h5zM12 25c3 3 13 3 16 0l-2 4-2-2-2 3-2-3-2 3-2-3-2 2z"/></svg>';
+const TP_LEAF='<svg viewBox="0 0 20 23"><path fill="currentColor" d="M10 0l1.4 4.2 2.2-1.2-.6 4.2 3.8-2.6-.6 2.4 3.2-.4-1.8 2.8 2 1-5 3.6.6 1.6-4.6-.6.2 3.8h-1.6l.2-3.8-4.6.6.6-1.6-5-3.6 2-1-1.8-2.8 3.2.4-.6-2.4 3.8 2.6-.6-4.2 2.2 1.2z"/><path d="M10 14.4V23" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';
+const TP_OAK='<svg viewBox="0 0 20 23"><path fill="currentColor" d="M10 1c2 1 2.6 3 2 4.4 1.6-.6 3.4.4 3 2.2 1.8 0 2.8 1.8 1.6 3.2 1.4.6 1.4 2.6 0 3.2.8 1.4-.6 3-2.2 2.4-.4 1.6-2.4 2.2-3.6 1.2L10 20l-.8-2.4c-1.2 1-3.2.4-3.6-1.2-1.6.6-3-1-2.2-2.4-1.4-.6-1.4-2.6 0-3.2C2.2 9.4 3.2 7.6 5 7.6c-.4-1.8 1.4-2.8 3-2.2C7.4 4 8 2 10 1z"/><path d="M10 4v19" stroke="rgba(0,0,0,.28)" stroke-width="1"/></svg>';
+// the drawn pieces for a page (fixed behind the content) or a card (in its corner)
+function passThemeDeco(kind){ const t=passThemeNow(); if(!t) return '';
+  if(kind==='card'){
+    if(t==='halloween') return `<span class="tpdc tpdc-web" aria-hidden="true">${tpWebSVG()}</span><span class="tpdc tpdc-bat" aria-hidden="true">${TP_BAT}</span>`;
+    return `<span class="tpdc tpdc-lv" aria-hidden="true" style="color:#f4b84e">${TP_LEAF}</span><span class="tpdc tpdc-lv2" aria-hidden="true" style="color:#e86a2a">${TP_OAK}</span>`; }
+  if(t==='halloween'){
+    const bats=[[12,30,9,0],[64,18,11,-3],[80,42,8,-6],[30,60,10,-2]].map(b=>`<i class="tpd-bat" style="left:${b[0]}%;top:${b[1]}%;--d:${b[2]}s;animation-delay:${b[3]}s">${TP_BAT}</i>`).join('');
+    return `<div class="tpdeco tpd-hw" aria-hidden="true"><i class="tpd-moon"></i><i class="tpd-web l">${tpWebSVG()}</i><i class="tpd-web r">${tpWebSVG()}</i>${bats}
+      <i class="tpd-pk a">${TP_PUMPKIN}</i><i class="tpd-pk b">${TP_PUMPKIN}</i><i class="tpd-fog"></i></div>`; }
+  const cols=['#c4441c','#e07a24','#e8a832','#9c3a1a','#d8622a','#f0b84a'];
+  // they fall down the sides, where there is no text to read through them
+  const xs=[1,5,9,13,84,88,92,96,3,94];
+  const leaves=xs.map((x,i)=>`<i class="tpd-leaf" style="left:${x}%;color:${cols[i%cols.length]};--d:${11+(i*7)%9}s;--s:${0.75+((i*13)%6)/10};animation-delay:${-((i*5)%14)}s">${i%3===2?TP_OAK:TP_LEAF}</i>`).join('');
+  return `<div class="tpdeco tpd-tg" aria-hidden="true"><i class="tpd-hmoon"></i>${leaves}<i class="tpd-fog"></i></div>`; }
 function passTierReward(t, lane, n){
   const def=passSeasonDef(n), base=passBaseReward(t, lane);
   if(def.legacy) return base;
@@ -36092,7 +36173,7 @@ function overlayTourPass(screen){
   passStyleOnce(); clearPassScrollCue();
   const ssn=passSeason();
   if(!sbSignedIn()){
-    const ov=$(`<div class="ov tpov tps-page" role="dialog" aria-modal="true" aria-label="Tour Pass">
+    const ov=$(`<div class="ov tpov tps-page${passThemeCls()}" role="dialog" aria-modal="true" aria-label="Tour Pass" style="--tp-acc:${passAcc()};--tp-acc2:${passAcc2()}">${passThemeDeco('page')}
       <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button></div>`);
     ov.appendChild($(`<div class="tps-ribbon">The Season Is Live</div>`));
     ov.appendChild(passHeroNode(ssn));
@@ -36126,8 +36207,8 @@ function overlayTourPass(screen){
   // The first paint animates (the ring and the bar fill up); a re-render after a claim does not replay it.
   const fresh=(_lastView||'').split('|')[1]!=='tourpass';
   const burst=S._tpBurst; S._tpBurst=null;
-  const ov=$(`<div class="ov tpov tp-track-page${fresh?' tp-fresh':''}" role="dialog" aria-modal="true" aria-label="Tour Pass" style="--tp-acc:${sdef.accent||'#e0762a'}">
-    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button></div>`);
+  const ov=$(`<div class="ov tpov tp-track-page${fresh?' tp-fresh':''}${passThemeCls()}" role="dialog" aria-modal="true" aria-label="Tour Pass" style="--tp-acc:${passAcc()};--tp-acc2:${passAcc2()}">
+    ${passThemeDeco('page')}<button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button></div>`);
   // Full-bleed sticky season bar: the tier ring, the season, and the bar to the next tier.
   ov.appendChild($(`<div class="tp-head"><div class="tp-hin">
     <div class="tp-hrow">
@@ -36278,7 +36359,7 @@ function tourPassCard(){
     if(cl>0) badge=`<span class="gc-badge claim">${cl} to claim</span>`;
   } else mid=`Earn XP in every mode · climb ${PASS_TIERS} tiers of rewards`;
   const boostChip=(xpBoostActive()?xpBoostChip():'')+passEventChip();
-  const card=$(`<button class="gcard gc-pass" aria-label="Tour Pass season ${ssn.n}">
+  const card=$(`<button class="gcard gc-pass tpcard${passThemeCls()}" aria-label="Tour Pass season ${ssn.n}">${passThemeDeco('card')}
     <div class="gc-top"><div style="min-width:0"><div class="gc-kick">🎟️ Season ${ssn.n}</div><div class="gc-title">Tour Pass</div></div>${badge}</div>
     <div class="gc-mid">${mid}</div>
     <div class="gc-row">${boostChip}<span class="gc-go">${sbSignedIn()?'View the Track ▸':'Play ▸'}</span></div>
@@ -36299,8 +36380,8 @@ function overlayPassClaim(screen){
   if(a.spins>0) cells.push(passRewardCell({spin:{n:a.spins}}));
   if(a.coins>0) cells.push(passRewardCell({coins:a.coins}));
   const grid=cells.map(c=>`<div class="tp-cell claimed" style="border-color:rgba(241,208,74,.35)">${c}</div>`).join('');
-  const ov=$(`<div class="ov tpov tpskin" role="dialog" aria-modal="true" style="text-align:center;--tp-acc:${passAcc()};--tp-acc2:${passAcc2()}">
-    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+  const ov=$(`<div class="ov tpov tpskin${passThemeCls()}" role="dialog" aria-modal="true" style="text-align:center;--tp-acc:${passAcc()};--tp-acc2:${passAcc2()}">
+    ${passThemeDeco('page')}<button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <div class="tag" style="color:var(--tp-acc2);border-color:var(--tp-acc2);margin:0 auto">🎟️ Season ${passSeason().n} Tour Pass</div>
     <h3 class="tphead" style="margin:12px 0 2px;font-size:28px">${a.settled?`Season ${a.settled.join(' and ')} rewards delivered`:`${a.n} reward${a.n===1?'':'s'} claimed!`}</h3>
     <p class="lede" style="margin:0 auto 14px;max-width:420px">${a.settled?`You reached these tiers and never claimed them. The season ended, so we claimed them for you: ${a.n} reward${a.n===1?'':'s'}.`:'Everything from the tiers you reached, straight into your account.'}</p>
@@ -37862,7 +37943,7 @@ function overlayPassLevel(screen){
   // Tiers here are EXTENDED (passTierX): past 60 they are overtime tiers, which pay no reward but can earn a mark.
   const pro=passProActive(), gained=Math.max(0,pl.tier1-pl.tier0), TOPX=PASS_OT_MAX, cap=passXpForTierX(TOPX);
   const std=Math.max(0,Math.min(PASS_TIERS,pl.tier1)-pl.tier0), ev=pl.event?passEvents().find(e=>e.id===pl.event):null;
-  const ov=$(`<div class="ov plov tpskin" role="dialog" aria-modal="true" aria-label="Tour Pass level up" style="--tp-acc:${passAcc()};--tp-acc2:${passAcc2()}"></div>`);
+  const ov=$(`<div class="ov plov tpskin${passThemeCls()}" role="dialog" aria-modal="true" aria-label="Tour Pass level up" style="--tp-acc:${passAcc()};--tp-acc2:${passAcc2()}"></div>`);
   const inner=$(`<div class="pl-inner"></div>`); const ovAppend=ov.appendChild.bind(ov); ov.appendChild=(n)=>inner.appendChild(n);
   ov.appendChild($(`<div><div class="pl-kick">Tour Pass · Season ${passSeason().n}${pl.tier1>PASS_TIERS?' · Overtime':''}</div>
     <h3 class="pl-title tphead">${pl.tier1>PASS_TIERS?'Overtime tier':'Tier'} ${pl.tier1} reached</h3>
@@ -37898,6 +37979,7 @@ function overlayPassLevel(screen){
   later.onclick=()=>{ S.passLevel=null; S.overlay=null; render(); };
   ov.appendChild(later);
   ovAppend(inner); ov.appendChild=ovAppend;
+  if(passThemeNow()) ov.insertBefore($(passThemeDeco('page')),ov.firstChild);
   screen.appendChild(ov);
   // ---- animate: fill this tier, roll the numbers over, repeat for every tier gained ----
   const fill=ov.querySelector('#pl-f'), lab=ov.querySelector('#pl-x'),
@@ -38835,7 +38917,9 @@ function bucketShopNode(focus){
   if(TOURPASS_ENABLED && showPass){
     var passCol=passAcc(), passCol2=passAcc2(), active=dailyPassActive(), ssn=passSeason();
     wrap.appendChild($('<div class="small muted" style="text-transform:uppercase;letter-spacing:.14em;font-weight:800;text-align:center;margin:22px 0 2px;color:'+passCol2+'">Season '+ssn.n+' Tour Pass</div>'));
-    var pc=$('<div class="'+(active?'':'packcard-glow')+'" style="--pkg:'+passCol+'aa;max-width:400px;margin:8px auto 0;padding:14px;border-radius:16px;background:radial-gradient(120% 70% at 50% -10%,'+passCol+'40,transparent 62%),linear-gradient(165deg,#1d1030,#110a1d);border:2px solid '+passCol+';'+(active?'box-shadow:0 0 18px '+passCol+'66':'')+'"></div>');
+    var pth=passThemeNow(), pnight=pth==='harvest'?'#2a140a,#170b06':'#1d1030,#110a1d';
+    var pc=$('<div class="tpcard'+passThemeCls()+(active?'':' packcard-glow')+'" style="--pkg:'+passCol+'aa;max-width:400px;margin:8px auto 0;padding:14px;border-radius:16px;background:radial-gradient(120% 70% at 50% -10%,'+passCol+'40,transparent 62%),linear-gradient(165deg,'+pnight+');border:2px solid '+passCol+';'+(active?'box-shadow:0 0 18px '+passCol+'66':'')+'"></div>');
+    if(pth) pc.insertAdjacentHTML('afterbegin',passThemeDeco('card'));
     pc.appendChild($('<div class="tphead" style="font-family:var(--display);font-size:24px;text-align:center;--tp-acc:'+passCol+'">'+esc(passThemeName())+'</div>'));
     pc.appendChild($('<div class="small" style="text-align:center;color:#cfe6d8;margin:2px 0 8px">A 60-day season pass · '+ssn.daysLeft+' day'+(ssn.daysLeft>1?'s':'')+' left in Season '+ssn.n+'</div>'));
     var perks=$('<div style="display:flex;flex-direction:column;gap:5px;margin:0 auto;max-width:300px"></div>');
