@@ -2521,16 +2521,16 @@
       "sha": "c97f297dd16b2919"
     },
     "../baller.js": {
-      "v": "6",
-      "sha": "b27ea4855b0f274a"
+      "v": "7",
+      "sha": "ed12f1e7d3fbd579"
     },
     "../sound.js": {
-      "v": "1",
-      "sha": "656d4b3828a6edf2"
+      "v": "2",
+      "sha": "fbf8ac8bab981947"
     },
     "../court.js": {
-      "v": "1",
-      "sha": "1a084c077d1c7381"
+      "v": "2",
+      "sha": "3e06f49818711946"
     },
     "../ticker.js": {
       "v": "1",
@@ -2559,12 +2559,12 @@
       "sha": "814d6471760c59b4"
     },
     "career.js": {
-      "v": "32",
-      "sha": "5517d826dd63a47e"
+      "v": "33",
+      "sha": "f2f29a02066255ee"
     },
     "baller.js": {
-      "v": "6",
-      "sha": "b27ea4855b0f274a"
+      "v": "7",
+      "sha": "ed12f1e7d3fbd579"
     },
     "board.js": {
       "v": "7",
@@ -2595,20 +2595,20 @@
       "sha": "c97f297dd16b2919"
     },
     "sound.js": {
-      "v": "1",
-      "sha": "656d4b3828a6edf2"
+      "v": "2",
+      "sha": "fbf8ac8bab981947"
     },
     "court.js": {
-      "v": "1",
-      "sha": "1a084c077d1c7381"
+      "v": "2",
+      "sha": "3e06f49818711946"
     },
     "ticker.js": {
       "v": "1",
       "sha": "430851c9fed6fd89"
     },
     "scenes.js": {
-      "v": "8",
-      "sha": "e9c8d56731f18a7e"
+      "v": "9",
+      "sha": "fa6fc01516be8d1d"
     },
     "career-ui.js": {
       "v": "35",

@@ -78,6 +78,10 @@ var CUES = {
   organ: function(t){ [262, 330, 392, 523].forEach(function(f, i){ tone(t + i * 0.1, 0.22, 'square', f, 0, 0.06); }); tone(t + 0.42, 0.45, 'square', 523, 0, 0.08); },
   thud: function(t){ tone(t, 0.25, 'sine', 90, 40, 0.6); noise(t, 0.12, 'lowpass', 400, 1, 0.3); },
   roar: function(t, o){ noise(t, (o && o.dur) || 2.4, 'bandpass', 900, 0.5, 0.32, 0.25); noise(t, (o && o.dur) || 2.4, 'lowpass', 400, 0.7, 0.2, 0.3); },
+  /* a release in the gold of the meter: a bright two-note ding */
+  perfect: function(t){ tone(t, 0.18, 'square', 1568, 0, 0.05); tone(t + 0.07, 0.3, 'square', 2093, 0, 0.05); },
+  /* a hand on the ball: a slap and a little air */
+  slap: function(t){ noise(t, 0.07, 'highpass', 1800, 1, 0.35, 0.003); tone(t, 0.08, 'sine', 220, 120, 0.25); },
   groan: function(t){ var f = noise(t, 1.4, 'bandpass', 700, 0.6, 0.2, 0.08); f.frequency.exponentialRampToValueAtTime(260, t + 1.3); },
 };
 function cue(name, opts){
