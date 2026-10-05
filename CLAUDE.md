@@ -19180,30 +19180,68 @@ song a curator wrote up, and nothing else. `data_drift.mjs` enforces that,
 failing any refresh where a derived value moved for a song whose own history
 did not.
 
-## The Putting Green, a Run The Tour tester preview
+## Putt Putt Tour, a Run The Tour tester preview
 
 ```
-node golf/putt/check-putt.mjs             physics, the real greens, every themed hole, 21 dailies, the page
-node golf/putt/check-putt.mjs --quick     physics, the real greens and the page
+node golf/putt/check-putt.mjs               physics, real greens, all 50 Tour holes beaten under par, dailies, the page
+node golf/putt/check-putt.mjs --quick       physics, the real greens and the page
+node golf/putt/check-putt.mjs --tour-par    what par each Tour hole should carry, off the solver
 ```
 
-`golf/putt/putt.js` is a game you PLAY inside Run The Tour: Tour Greens (nine putts on a course's
-real greens), a themed Daily Hole and eight themed nine-hole mini golf courses. `golf/putt/DESIGN.md`
-is the analysis of the mini golf games it learns from and what is still to do.
+`golf/putt/putt.js` is a mini golf game you PLAY inside Run The Tour. It opens on a hub: the Daily
+Hole on top, and under it the Tour map, a winding path of 50 levels in five worlds of ten (The
+Clubhouse, Haunted Hollow, Frostbite Pines, Seashell Shores, Tour Week). Every tenth level is a
+signature hole. `golf/putt/DESIGN.md` is the analysis of the mini golf games it learns from. **It
+replaced the Putting Green menu** (Tour Greens and eight themed courses), which the owner said was
+not what was being built. The real greens live on as Tour Week's Tour Pin levels.
 
-**IT IS NOT LAUNCHED.** The home card is drawn by `puttOn()` in `golf/index.html` for the
-`PUTT_TESTERS` usernames and nobody else, read off the server-attributed `sbUsername`. There is no
-localStorage override, on purpose: a flag in the browser is a switch any visitor can flip. Setting
-`PUTT_LIVE` to true is the launch. The module loads for everybody (`putt/putt.js?v=`, so the
-cachebust check holds it) and draws nothing until `open()`.
+**THE RULE, ONE PER HOLE.** Under par beats the hole and opens the next. Exactly par loses nothing and
+goes again. Over par takes a life, and it is decided the moment par strokes are used with the ball out,
+so nobody putts out a lost hole (`settle()` calls `tourOut(false)`). Quitting or restarting after the
+first putt costs a life too. 3 lives, 6 with a Tour Pass; the last one starts a 24 hour clock. Lives are
+sold for money only (the refill sheet shows $0.99 and says the checkout opens at launch; a tester gets a
+free refill). The Daily Hole never costs a life: one scored try a day, 40 coins to play, 40 more under
+par, and a streak.
+
+**Par is the solver's, and it means beatable without luck.** `solveRobust` in the checker only counts a
+holing putt whose neighbours (a degree of aim, most of a foot of pace, a beat either side on a moving
+hole) mostly hole too. `--tour-par` prints the par each level should carry: the robust route plus one,
+never under 3. The full run asserts every level is beaten in par minus one that way, and that no two
+holes share a layout. Change a layout, re-run `--tour-par`, write the par into `LEVELS`.
+
+**The coins are exactly 20,000**, 4,000 a world: 120 a hole and 520 for the signature hole the first
+time it is beaten, 40 for a first ace, and 2,000 for finishing the world. Replays pay nothing. They go
+through the page's `addBonusCoins`, so a Tour Pass multiplier does not apply. The signature, world, ace
+and streak rewards are recorded by name in the Tour record and are not wearable yet.
+
+**Where it is kept, said plainly.** The Tour record (`bag_ppt_v1`, account-scoped through the page's
+`acctKey`) is in the browser. The mockup's server ledger (lives on server time, a tester table the score
+calls check, a shared Daily Hole board) is not built, so a tester could reset a clock by clearing site
+data, and the Daily Hole result screen says the board is not there yet.
+
+**Two hazards were added to the engine for it**: conveyors (`M.BELT`, a zone with a push in
+`C.belts`) and bounce pads (a bumper with `e` over 1, capped at `V_MAX`). Mini golf sand is
+`MINI_SAND_STIMP`, slow but playable; a real green's bunker still stops a ball dead. Timed gates are a
+`slide` mover across a gap in a wall.
+
+**IT IS NOT LAUNCHED.** The home card, second in the list right after Play 18, is drawn by `puttOn()`
+in `golf/index.html` for the `PUTT_TESTERS` usernames and nobody else, read off the server-attributed
+`sbUsername`. There is no localStorage override, on purpose: a flag in the browser is a switch any
+visitor can flip. Setting `PUTT_LIVE` to true is the launch. The module loads for everybody
+(`putt/putt.js?v=`, so the cachebust check holds it) and draws nothing until `open()`.
+
+**A PLAIN SCRIPT'S TOP LEVEL FUNCTION IS A GLOBAL.** `hole3d.js` once declared `render()` unwrapped,
+which replaced the game's own screen painter for everybody, and the whole site stopped responding.
+Every file here is inside one function wrapper and publishes one global. `check-putt.mjs` asserts the
+game still draws its home screen with every module loaded.
 
 **The greens are the game's own.** `fromHost()` reads `hvGeom` (size, outline, pins, bunkers,
 water), `hvBiome` (colours) and the fictional venue name through `puttHost()`. Slope is built per
 course from `fit.put` and the green words in its blurb. Never put a real course name on screen.
 
 **The physics decides, and the checker plays it.** Stimp is a deceleration, slope is 5/7 g sin,
-and the cup catches a ball that falls far enough before its centre leaves the hole. Every themed
-hole and every daily the check walks is solved to par by a search, and no shot may leave the course
+and the cup catches a ball that falls far enough before its centre leaves the hole. Every Tour
+hole, every calendar theme's holes and every daily the check walks is solved by a search, and no shot may leave the course
 or roll for ever. The first run found a ball resting on a rail being called out, because the
 material grid is a quarter foot: OUT is only believed once the exact polygon agrees.
 
@@ -19211,7 +19249,7 @@ material grid is a quarter foot: OUT is only believed once the exact polygon agr
 
 `golf/putt/hole3d.js` draws a themed hole the way the golfer is drawn: a height field and voxel solids,
 painted by PXHD. `golf/putt/land.js` builds the land a hole sits in, one composed place per theme (a
-churchyard, a farm, a cabin in the pines, a garden, a glen with a round tower, a tulip field, a night fair, a
+clubhouse with its practice green, a tournament grandstand and leaderboard, a churchyard, a farm, a cabin in the pines, a garden, a glen with a round tower, a tulip field, a night fair, a
 shore with a lighthouse), owner's rule: a fictional landscape, never a scatter of stickers. A real green
 stays on the flat painter.
 

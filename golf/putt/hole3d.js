@@ -100,7 +100,7 @@ function* steps(C, opt){
     var terr = typeof mm === 'string' && mm.charAt(0) === 't';
     var flat = (mm === 'rail' || mm === 'ground') ? 0 : 1, gn = terr ? (LD.gain || 1) : 1, n = camN(-zx * flat * gn, -zy * flat * gn, 1);
     var ti = Math.floor((x - b[0]) / ART), tj = Math.floor((y - b[1]) / ART);
-    var key = terr ? mm : mm === 'rail' ? 'rail' : mm === 'ground' ? 'ground' : mm === M.WATER ? 'haz' : mm === M.ICE ? 'ice' : mm === M.MUD ? 'slow' : 'carpet';
+    var key = terr ? mm : mm === 'rail' ? 'rail' : mm === 'ground' ? 'ground' : mm === M.WATER ? 'haz' : mm === M.ICE ? 'ice' : mm === M.MUD ? 'slow' : mm === M.SAND ? 'sand' : mm === M.BELT ? 'belt' : 'carpet';
     var ex2 = { ti:ti, tj:tj, dt:key === 'ground' ? -1 : 0, nl:terr };
     if (GE[kk]) for (var qq in GE[kk]) ex2[qq] = GE[kk][qq];
     splat(x, y, z, key, n, ex2);
@@ -213,6 +213,8 @@ function* steps(C, opt){
     if (m === 'rail') return R(T.wall);
     if (m === 'haz') return R(((x + (y >> 1) * 3) % 13) === 0 ? T.hazCol2 : T.hazCol);
     if (m === 'ice') return R(T.hazCol); if (m === 'slow') return R(T.slowCol);
+    if (m === 'sand') return R(n < 0.14 ? '#d9c48a' : '#ecdba4');
+    if (m === 'belt'){ var bl = C.belts && C.belts[0], horiz = !bl || Math.abs(bl.ax) >= Math.abs(bl.ay), q = horiz ? (c.ti || x) : (c.tj || y); return R((((q % 6) + 6) % 6) < 3 ? '#3a3f48' : '#5a616c'); }
     if (m.charAt(0) === 'x') return R(m.slice(2));
     if (m.charAt(0) === 't'){ var kk2 = m.slice(2), tt = LD.mats[kk2];
       if (tt.length > 4 && tt[4]) return tt[4](c, R, h3);

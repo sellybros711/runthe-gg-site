@@ -630,5 +630,84 @@ window.RTT_PUTT_LAND = (function(){
     };
   };
 
+  /* ---------------- THE CLUBHOUSE: practice greens behind a white clubhouse, a gravel path, big shade trees, a flag on the practice green */
+  BUILD.clubhouse = function(L){
+    var C = L.C, P1 = L.P1, seed = L.seed, clearAt = L.clearAt, spot = L.spot, spotRect = L.spotRect, north = L.north;
+    var club = spotRect(8.5, 5, function(x, y){ return north(x, y) * 1.3 - Math.abs(x - L.cx) * 0.25; });
+    var prac = spot(2.6, function(x, y){ return Math.abs(x - L.cx) * 0.5 + (club && x * club.x < 0 ? 2 : 0) - Math.abs(y - L.cy) * 0.2; });
+    var path = club ? L.route([club.x, club.y + club.d / 2 + 0.3], [C.tee[0], P1[1] + 1.4], seed + 4, 1) : null;
+    if (club) L.used.push({ x:club.x, y:club.y + club.d / 2 + 1.4, r:1.8 });
+    var dPa = L.dist(path);
+    function onPath(x, y){ return dPa(x, y) < 0.65; }
+    var trees = []; for (var i = 0; i < 8; i++){ var t = spot(1.6, function(x, y){ return north(x, y) * 0.6 + L.side(x) * 3 + Math.min(L.far(x, y), 5) * 0.4; }, function(x, y){ return !onPath(x, y); }); if (t) trees.push(t); }
+    var bench = spot(0.9, function(x, y){ return -Math.abs(clearAt(x, y) - 2.4) + hash(5, 2, seed); }, function(x, y){ return !onPath(x, y); });
+    var lamps = path ? path.filter(function(p, k){ return k % 3 === 1; }).map(function(p, k){ return [p[0] + (k % 2 ? 1 : -1), p[1]]; }).filter(function(p){ return clearAt(p[0], p[1]) > 0.9; }) : [];
+    function pracD(x, y){ return prac ? 1 - Math.hypot((x - prac.x) / prac.r, (y - prac.y) / (prac.r * 0.8)) : -1; }
+    return {
+      h:function(x, y){ var z = (fbm(x * 0.05, y * 0.05, seed) - 0.45) * 1.6 * sm(1.5, 7, clearAt(x, y)); if (pracD(x, y) > 0) z = z * 0.4 + 0.08; if (onPath(x, y)) z -= 0.04; return z; },
+      mat:function(x, y){ if (pracD(x, y) > 0) return ['prac']; if (onPath(x, y)) return ['path']; return ['grass']; },
+      build:function(B){
+        if (club){ var w = club.w, d = club.d;
+          house(B, club, { wh:2.7, rh:1.5, ov:0.4, chim:'#9a4a32', step:'#d9d2c2',
+            wall:function(dx, dy, t){ if (dy > d / 2 - 0.15 && Math.abs(dx) < 0.55 && t < 1.9) return '#2f5d3a';
+              if (dy > d / 2 - 0.15 && (Math.abs(Math.abs(dx) - 2.2) < 0.55 || Math.abs(Math.abs(dx) - 3.6) < 0.35) && t > 0.9 && t < 1.9) return (Math.abs(t - 1.4) < 0.05) ? '#ffffff' : '#9fd0e8';
+              if (t < 0.3) return '#cfc8b6'; return (Math.floor(t * 4) % 2) ? '#f6f3ea' : '#ebe6d8'; },
+            roof:function(dx, dy, t, rr, eave){ return eave ? '#1f4a2c' : ((Math.floor(dx * 2.5 + 20) % 2) ? '#2f6b3e' : '#2a6038'); } });
+          var fx = club.x + (club.x < L.cx ? w / 2 + 1 : -w / 2 - 1), fy = club.y + d / 2 + 0.8, fz = B.gz(fx, fy);   // the club flag on its pole
+          B.solid(fx - 0.2, fy - 0.2, fz, fx + 1.3, fy + 0.2, fz + 4.4, function(px, py, pz){ var t = pz - fz; if (Math.hypot(px - fx, py - fy) < 0.07 && t < 4.3) return '#e8e8e8';
+            if (px > fx && px < fx + 1.2 && t > 3.3 && t < 4.1 && Math.abs(py - fy) < 0.05) return (t > 3.7) ? '#F1D04A' : '#1f4a2c'; return null; }); }
+        if (prac){ var px0 = prac.x, py0 = prac.y, pz0 = B.gz(px0, py0) + 0.08;   // a practice flag
+          B.solid(px0 - 0.1, py0 - 0.1, pz0, px0 + 0.9, py0 + 0.1, pz0 + 2.2, function(px, py, pz){ var t = pz - pz0; if (Math.hypot(px - px0, py - py0) < 0.05 && t < 2.1) return '#ffffff';
+            if (px > px0 && px < px0 + 0.8 && t > 1.6 && t < 2.1 && Math.abs(py - py0) < 0.04) return '#e53935'; return null; }); }
+        trees.forEach(function(t, i){ broadTree(B, t.x, t.y, 4 + hash(i, seed, 7) * 1.6, '#5a3d2e', ['#2f7d3e', '#3b8f4a', '#25693a'], i + seed); });
+        lamps.forEach(function(p){ lamp(B, p[0], p[1], '#2a2a30', '#fff3c4'); });
+        if (bench){ var bx = bench.x, by = bench.y, bz = B.gz(bx, by);
+          B.solid(bx - 1.1, by - 0.4, bz, bx + 1.1, by + 0.4, bz + 1, function(px, py, pz){ var dx = px - bx, dy = py - by, t = pz - bz; if (Math.abs(dx) > 1) return null;
+            if (Math.abs(t - 0.45) < 0.06 && Math.abs(dy) < 0.25) return '#8a6a44'; if (dy > 0.18 && dy < 0.28 && t > 0.5 && t < 0.9) return '#8a6a44';
+            if (Math.abs(Math.abs(dx) - 0.85) < 0.07 && t < 0.45) return '#2a2a30'; return null; }); }
+      },
+      fill:{ on:['grass'], trees:0.36, lows:0.28, tree:function(B, x, y, i){ broadTree(B, x, y, 3.8 + hash(i, seed, 31) * 1.6, '#5a3d2e', ['#2f7d3e', '#3b8f4a', '#25693a'], i + seed * 11); },
+        low:function(B, x, y, i){ bush(B, x, y, 0.45, i % 3 ? ['#3b8f4a', '#2f7d3e', '#4a9a52'] : ['#3b8f4a', '#ffffff', '#3b8f4a', '#e53935']); } },
+      gain:1.5,
+      mats:{ grass:['#7fb35e', '#89bd66', '#73a754', 0.16, function(c, R){ return R((Math.floor(c.tj / 6) % 2) ? '#7fb35e' : '#76aa56'); }],
+        prac:['#5fae58', '#69b862', '#56a350', 0.12], path:['#d8ccb0', '#e4d9c0', '#c8ba98', 0.3] }
+    };
+  };
+
+  /* ---------------- TOUR WEEK: a tournament green. A grandstand full of people, a big leaderboard, rope lines and tall trees */
+  BUILD.tour = function(L){
+    var C = L.C, P0 = L.P0, P1 = L.P1, seed = L.seed, clearAt = L.clearAt, spot = L.spot, spotRect = L.spotRect, north = L.north;
+    var stand = spotRect(10, 3.6, function(x, y){ return north(x, y) * 1.4 - Math.abs(x - L.cx) * 0.3; });
+    var board = spotRect(5.5, 1, function(x, y){ return north(x, y) * 0.6 + Math.abs(x - L.cx) * 0.5 + (stand && x * stand.x < 0 ? 3 : 0); });
+    var trees = []; for (var i = 0; i < 9; i++){ var t = spot(1.6, function(x, y){ return north(x, y) * 0.6 + L.side(x) * 3; }); if (t) trees.push(t); }
+    // rope posts a little off the course on both sides
+    var posts = []; for (var y = P0[1] + 2; y < P1[1] - 1; y += 3.2){ [P0[0] - 2.2, P1[0] + 2.2].forEach(function(x){ if (clearAt(x, y) > 1.2 && clearAt(x, y) < 3.5) posts.push([x, y]); }); }
+    var CROWD = ['#e53935', '#1e88e5', '#ffffff', '#ffd23f', '#43a047', '#ff8a3c', '#1d2a44', '#f48fb1'];
+    return {
+      h:function(x, y){ return (fbm(x * 0.05, y * 0.05, seed) - 0.45) * 1.4 * sm(1.5, 7, clearAt(x, y)); },
+      mat:function(x, y){ return ['grass']; },
+      build:function(B){
+        if (stand){ var sx = stand.x, sy = stand.y, sz = B.gz(sx, sy), w = stand.w, d = stand.d, rows = 5, rh = 0.55;   // stepped seating, back row highest
+          B.solid(sx - w / 2, sy - d / 2, sz - 0.1, sx + w / 2, sy + d / 2, sz + rows * rh + 1.4, function(px, py, pz){ var dx = px - sx, dy = py - sy, t = pz - sz;
+            var row = Math.floor((d / 2 - dy) / (d / rows)), top = (row + 1) * rh; if (row < 0 || row >= rows) return null;
+            if (t < top - 0.08) return (Math.abs(dx) > w / 2 - 0.15) ? '#1d2a44' : '#2a3a5a';
+            if (t < top + 0.5 && ((Math.floor(dx * 2.2 + 30) + row) % 3) !== 0 && Math.abs(dx) < w / 2 - 0.25){ var k = hash(Math.floor(dx * 2.2 + 30), row, seed); return t > top + 0.36 ? (k < 0.5 ? '#6a4a30' : '#e8c8a0') : CROWD[Math.floor(k * CROWD.length)]; }
+            return null; }); }
+        if (board){ var bx = board.x, by = board.y, bz = B.gz(bx, by), bw = board.w;   // the leaderboard on two legs
+          B.solid(bx - bw / 2, by - 0.4, bz, bx + bw / 2, by + 0.4, bz + 4, function(px, py, pz){ var dx = px - bx, t = pz - bz;
+            if (t < 1.6) return (Math.abs(Math.abs(dx) - bw * 0.35) < 0.12 && Math.abs(py - by) < 0.12) ? '#1d2a44' : null;
+            if (Math.abs(dx) > bw / 2 - 0.05 || t > 3.95 || Math.abs(py - by) > 0.22) return Math.abs(py - by) < 0.25 ? '#0f1626' : null;
+            if (t > 3.5) return '#F1D04A'; var r = Math.floor((t - 1.6) / 0.38); return (r % 2 && Math.abs(dx) < bw / 2 - 0.4) ? (dx < -bw * 0.2 ? '#ffffff' : '#ff5a5a') : '#173a24'; }); }
+        trees.forEach(function(t, i){ broadTree(B, t.x, t.y, 4.6 + hash(i, seed, 7) * 1.8, '#4a3626', ['#1f5a32', '#2a6b3c', '#174a28'], i + seed); });
+        posts.forEach(function(p, i){ var zb = B.gz(p[0], p[1]); B.solid(p[0] - 0.15, p[1] - 1.7, zb, p[0] + 0.15, p[1] + 1.7, zb + 1, function(px, py, pz){ var t = pz - zb;
+          if (Math.hypot(px - p[0], py - p[1]) < 0.07 && t < 0.9) return '#ffffff'; if (Math.abs(px - p[0]) < 0.04 && Math.abs(t - 0.75 - Math.abs(py - p[1]) * 0.05) < 0.04) return '#F1D04A'; return null; }); });
+      },
+      fill:{ on:['grass'], trees:0.34, lows:0.2, tree:function(B, x, y, i){ broadTree(B, x, y, 4.4 + hash(i, seed, 33) * 1.8, '#4a3626', ['#1f5a32', '#2a6b3c', '#174a28'], i + seed * 17); },
+        low:function(B, x, y, i){ bush(B, x, y, 0.45, ['#2a6b3c', '#1f5a32', '#357a46']); } },
+      gain:1.4,
+      mats:{ grass:['#3f8a4a', '#47954f', '#367d42', 0.14, function(c, R){ return R((Math.floor((c.ti + c.tj) / 7) % 2) ? '#3f8a4a' : '#378045'); }] }
+    };
+  };
+
   return { make:make };
 })();

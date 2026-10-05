@@ -46,9 +46,10 @@ var V_MAX = 15;             // ft/s
 var ART = 0.25;             // ft per art pixel: the pixel grid the greens are painted on
 
 // materials, in the order a painter would lay them
-var M = { OUT:0, GREEN:1, FRINGE:2, ROUGH:3, SAND:4, WATER:5, ICE:6, MUD:7 };
+var M = { OUT:0, GREEN:1, FRINGE:2, ROUGH:3, SAND:4, WATER:5, ICE:6, MUD:7, BELT:8 };
 // what each surface rolls like, as a stimp reading (GREEN is the course's own)
-var MAT_STIMP = { 2:3.0, 3:1.2, 4:0.3, 6:34, 7:1.4 };
+var MAT_STIMP = { 2:3.0, 3:1.2, 4:0.3, 6:34, 7:1.4, 8:9 };
+var MINI_SAND_STIMP = 1.3;   // a mini golf sand trap slows a ball hard but can be putted out of; a real bunker (0.3) cannot
 
 /* ======================================================================================= helpers */
 function hstr(s){ s = String(s); var h = 2166136261 >>> 0; for (var i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h >>> 0; }
@@ -127,7 +128,10 @@ function makeMats(b, fn){
 }
 
 /* =================================================================================== the physics */
-function fricOf(C, m){ var s = m === M.GREEN ? C.stimp : (MAT_STIMP[m] || 1); return V_STIMP * V_STIMP / (2 * s); }
+function fricOf(C, m){ var s = m === M.GREEN ? C.stimp : (m === M.SAND && C.kind === 'mini') ? MINI_SAND_STIMP : (MAT_STIMP[m] || 1); return V_STIMP * V_STIMP / (2 * s); }
+// a conveyor: the push it gives a ball rolling on it, in ft/s^2, or null off the belts
+function beltAt(C, x, y){ var B = C.belts; if (!B) return null;
+  for (var i = 0; i < B.length; i++){ var b = B[i]; if (x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1) return b; } return null; }
 // the speed that rolls `ft` feet on flat ground at this course's speed: how the power is set
 function speedFor(C, ft){ return Math.min(V_MAX, Math.sqrt(2 * fricOf(C, M.GREEN) * Math.max(0, ft))); }
 function feetFor(C, v){ return v * v / (2 * fricOf(C, M.GREEN)); }
@@ -193,7 +197,9 @@ function simulate(C, x, y, vx, vy, t0){
     if (m === M.WATER){ out.water = true; out.ev.push([t, 'water']); break; }
     if (m === M.OUT){ out.out = true; out.ev.push([t, 'out']); break; }
     var gx = C.field.gx(s.x, s.y), gy = C.field.gy(s.x, s.y);
-    var ax = -ROLL * G * gx, ay = -ROLL * G * gy, sp = Math.hypot(s.vx, s.vy), af = fricOf(C, m), sl = Math.hypot(ax, ay);
+    var ax = -ROLL * G * gx, ay = -ROLL * G * gy, sp = Math.hypot(s.vx, s.vy), af = fricOf(C, m);
+    if (m === M.BELT){ var bl = beltAt(C, s.x, s.y); if (bl){ ax += bl.ax; ay += bl.ay; } }
+    var sl = Math.hypot(ax, ay);
     if (over){ ax = 0; ay = 0; }   // over the hole the ball is falling, not rolling
     if (sp < STOP_V && !over && sl <= af){ break; }
     if (sp > 1e-9 && !over){ var dvx = -af * s.vx / sp * DT, dvy = -af * s.vy / sp * DT;
@@ -203,7 +209,7 @@ function simulate(C, x, y, vx, vy, t0){
     s.x += s.vx * DT; s.y += s.vy * DT;
     var hit = false, i;
     for (i = 0; i < walls.length; i++){ var w = walls[i]; if (hitSeg(s, w[0], w[1], w[2], w[3], w[4], w[5])) hit = true; }
-    for (i = 0; i < bums.length; i++){ var bm = bums[i]; if (hitCircle(s, bm.x, bm.y, bm.r, bm.e)) hit = true; }
+    for (i = 0; i < bums.length; i++){ var bm = bums[i]; if (hitCircle(s, bm.x, bm.y, bm.r, bm.e)){ hit = true; if (bm.e > 1){ var vv = Math.hypot(s.vx, s.vy); if (vv > V_MAX){ s.vx *= V_MAX / vv; s.vy *= V_MAX / vv; } } } }
     for (i = 0; i < movs.length; i++){ var mo = movs[i], segs = moverAt(mo, t0 + t);
       for (var q = 0; q < segs.length; q++){ var sg = segs[q];
         var mx = (sg[0] + sg[2]) / 2, my = (sg[1] + sg[3]) / 2, vb = moverVel(mo, t0 + t, mx, my);
@@ -250,7 +256,7 @@ function simulate(C, x, y, vx, vy, t0){
 
 /* ============================================================================ a course, assembled */
 function finishCourse(C){
-  C.walls = C.walls || []; C.bumpers = C.bumpers || []; C.movers = C.movers || []; C.portals = C.portals || [];
+  C.walls = C.walls || []; C.bumpers = C.bumpers || []; C.movers = C.movers || []; C.portals = C.portals || []; C.belts = C.belts || [];
   C.field = makeField(C.bounds, C.comps || [], C.flats || []);
   C.mats = makeMats(C.bounds, C.matFn);
   return C;
@@ -404,12 +410,24 @@ var THEMES = {
     bumper:'star', block:'crate', spinner:'#ffffff', slider:'crate', tunnel:'pipe', flag:'#ffffff',
     decor:['burst', 'flagpole', 'star'], acc:'#ffd23f',
     holes:['The Fuse', 'Sparkler', 'Bottle Rocket', 'The Pinwheel', 'Reflecting Pool', 'Grand Stand', 'The Launch Tube', 'Big Bang', 'The Finale'] },
+  clubhouse:{ light:true, name:'The Clubhouse', kick:'World 1', bg:'#7fb35e', bg2:'#73a754', carpet:'#2f8f4e', carpet2:'#2a8246', wall:'#f4efe2', wallHi:'#ffffff', wallLo:'#a99c7c', ink:'#1d3524',
+    haz:'water', hazCol:'#3f9fe0', hazCol2:'#9fd6f7', hazName:'Practice pond', slow:'mud', slowCol:'#e9d8a6', slowName:'Sand',
+    bumper:'stone', block:'hay', spinner:'#ffffff', slider:'crate', tunnel:'pipe', flag:'#e53935',
+    decor:['flower', 'flagpole'], acc:'#F1D04A',
+    holes:['First Tee', 'Pace', 'The Slope', 'Bank Shot', 'Sand Trap', 'Twin Bunkers', 'Bumper Alley', 'The Crown', 'Dogleg Left', 'Clubhouse Classic'] },
+  tour:{ name:'Tour Week', kick:'World 5', bg:'#2f6b3a', bg2:'#2a6034', carpet:'#3aa05a', carpet2:'#349150', wall:'#1d2a44', wallHi:'#3a4d73', wallLo:'#0f1626', ink:'#0a1020',
+    haz:'water', hazCol:'#2f8fd8', hazCol2:'#8fd0ff', hazName:'The lake', slow:'mud', slowCol:'#efe2b8', slowName:'Bunker',
+    bumper:'pad', block:'crate', spinner:'#ffffff', slider:'crate', tunnel:'pipe', flag:'#F1D04A',
+    decor:['flagpole', 'star'], acc:'#F1D04A',
+    holes:['Tour Pin', 'Bounce House', 'Tour Pin', 'Pinball', 'Tour Pin', 'Pad Bank', 'Tour Pin', 'Grandstand', 'Tour Pin', 'Island Green'] },
   beach:{ light:true, name:'Seashell Shores', kick:'Summer', bg:'#f1dc9c', bg2:'#e8d08a', carpet:'#1ea77d', carpet2:'#1b9a73', wall:'#ffffff', wallHi:'#ffffff', wallLo:'#9fd8e6', ink:'#1b3a4a',
     haz:'water', hazCol:'#22a7e0', hazCol2:'#8fdcff', hazName:'Tide pool', slow:'mud', slowCol:'#f5e2a5', slowName:'Soft sand',
     bumper:'beachball', block:'castle', spinner:'#ffd23f', slider:'surfboard', tunnel:'shell', flag:'#ff5a3c',
     decor:['palm', 'umbrella', 'crab', 'castle'], acc:'#ff5a3c',
     holes:['Low Tide', 'Sandcastle', 'Crab Walk', 'The Lighthouse', 'Tide Pool', 'Boardwalk', 'Shell Game', 'Surf’s Up', 'Sunset'] }
 };
+// the themes the calendar hands the Daily Hole (the Clubhouse and Tour Week are Tour worlds only)
+var CAL_THEMES = ['haunted', 'harvest', 'winter', 'sweetheart', 'shamrock', 'spring', 'firework', 'beach'];
 // what theme a calendar day wears (Eastern date, MM-DD)
 function themeForDay(dayKey){
   var md = String(dayKey).slice(5), m = +md.slice(0, 2), d = +md.slice(3, 5);
@@ -534,11 +552,17 @@ function buildMini(tplName, seed, themeId, label, extra){
     if (H.mill) H.mill.x = -H.mill.x;
   }
   if (extra) ornament(H, r, T, extra);
+  return courseFromH(H, tplName, seed, themeId, label);
+}
+// a hole laid out in feet (H) made into a course the physics and both painters can use
+function courseFromH(H, tplName, seed, themeId, label){
+  var T = THEMES[themeId] || THEMES.haunted;
   var xs = H.poly.map(function(p){ return p[0]; }), ys = H.poly.map(function(p){ return p[1]; });
   var pad = 6, b = [Math.min.apply(null, xs) - pad, Math.min.apply(null, ys) - pad, Math.max.apply(null, xs) + pad, Math.max.apply(null, ys) + pad];
   var C = { kind:'mini', tpl:tplName, theme:themeId, T:T, name:label || tplName, bounds:b, poly:H.poly, comps:H.comps, flats:H.flats,
-    stimp:themeId === 'winter' ? 9.5 : 9, cup:H.cup, cupR:CUP_R_MINI, tee:H.tee, par:H.par,
-    walls:polyWalls(H.poly, 0, 0.72).concat(H.walls), bumpers:H.bumpers, blocks:H.blocks, movers:H.movers, portals:H.portals, zones:H.zones, mill:H.mill, seed:seed };
+    stimp:H.stimp || (themeId === 'winter' ? 9.5 : 9), cup:H.cup, cupR:CUP_R_MINI, tee:H.tee, par:H.par,
+    walls:polyWalls(H.poly, 0, 0.72).concat(H.walls), bumpers:H.bumpers, blocks:H.blocks, movers:H.movers, portals:H.portals, zones:H.zones, mill:H.mill, seed:seed,
+    belts:(H.belts || []).map(function(z){ return { x0:Math.min(z.x0, z.x1), y0:Math.min(z.y0, z.y1), x1:Math.max(z.x0, z.x1), y1:Math.max(z.y0, z.y1), ax:z.ax, ay:z.ay }; }) };
   C.matFn = function(x, y){
     if (!inPoly(H.poly, x, y)) return M.OUT;
     var m = M.GREEN;
@@ -599,7 +623,123 @@ function dailyHole(dayKey){
   var tpl = cyc[((dn % L) + L) % L], T = THEMES[th];
   return { tpl:tpl, seed:seed, theme:th, name:T.holes[Math.floor(r() * T.holes.length)], day:dayKey, extra:2 };
 }
-function buildFrom(desc){ return buildMini(desc.tpl, desc.seed, desc.theme, desc.name, desc.extra || 0); }
+/* ============================================================== THE PUTT PUTT TOUR: 50 HOLES */
+/* Five worlds of ten, played strictly in order. Every hole is laid out here by hand, in feet, tee at
+   the bottom and the cup toward the top, and no two share a layout. Par is the solver's: the checker
+   finds a route one stroke UNDER par with room for error on every hole, because under par is the only
+   way on. Every tenth hole is the world's signature hole. A world brings at least two new hazards. */
+var WORLDS = [
+  { id:'clubhouse', name:'The Clubhouse', theme:'clubhouse', blurb:'Practice greens behind the clubhouse.', haz:['Rails and banks', 'Sand', 'Slopes'] },
+  { id:'haunted', name:'Haunted Hollow', theme:'haunted', blurb:'Gravestones, crypts and a windmill that never stops.', haz:['Windmills', 'Tunnels'] },
+  { id:'winter', name:'Frostbite Pines', theme:'winter', blurb:'Ice that keeps the ball rolling, and gates on a clock.', haz:['Ice', 'Moving bumpers', 'Timed gates'] },
+  { id:'beach', name:'Seashell Shores', theme:'beach', blurb:'Water costs a stroke. Ramps and conveyors.', haz:['Water', 'Ramps', 'Conveyors'] },
+  { id:'tour', name:'Tour Week', theme:'tour', blurb:'Real greens from the game’s own courses, and bounce pads.', haz:['Tour pins', 'Bounce pads'] }
+];
+function rectP(w, L, x0){ x0 = x0 || 0; return [[x0 - w / 2, 0], [x0 + w / 2, 0], [x0 + w / 2, -L], [x0 - w / 2, -L]]; }
+function lvH(poly, tee, cup){ var H = T_common(); H.poly = poly; H.tee = tee; H.cup = cup; return H; }
+function bumps(H, T, list){ list.forEach(function(b){ addBumper(H, b[0], b[1], b[2] || 0.75, T.bumper); }); }
+function pads(H, list){ list.forEach(function(b){ H.bumpers.push({ x:b[0], y:b[1], r:b[2] || 0.75, e:1.32, skin:'pad' }); }); }
+function zoneR(H, m, x0, y0, x1, y1){ H.zones.push({ t:'rect', x0:x0, y0:y0, x1:x1, y1:y1, m:m }); }
+function zoneC(H, m, x, y, r){ H.zones.push({ t:'circle', x:x, y:y, r:r, m:m }); }
+function millAt(H, T, y0, hw, omega, xc){ xc = xc || 0;
+  addBlock(H, xc - hw, y0, xc - 1.1, y0 - 3.5, T.block); addBlock(H, xc + 1.1, y0, xc + hw, y0 - 3.5, T.block);
+  H.movers.push({ k:'spin', x:xc, y:y0 + 2.2, len:2.3, hub:0.32, arms:4, w:0.32, omega:omega, phase:0.7, skin:T.spinner }); H.mill = { x:xc, y:y0 - 1.75 }; }
+// a gate: a bar across a gap in a wall that slides into the wall and back on a clock. dir +1 opens into the wall on the right.
+function gateAt(H, T, y, gx0, gx1, period, phase, dir){ var w = gx1 - gx0, cx = (gx0 + gx1) / 2; dir = dir || 1;
+  H.movers.push({ k:'slide', ax:cx, ay:y, bx:cx + dir * (w + 0.4), by:y, len:w + 0.3, ang:0, w:0.42, period:period, phase:phase || 0, skin:T.slider }); }
+function slider(H, T, y, x0, x1, period, phase){ H.movers.push({ k:'slide', ax:x0, ay:y, bx:x1, by:y, len:2.4, ang:0, w:0.5, period:period, phase:phase || 0, skin:T.slider }); }
+function portal(H, T, ax, ay, bx, by, dx, dy){ H.portals.push({ ax:ax, ay:ay, r:0.75, bx:bx, by:by, dx:dx, dy:dy, skin:T.tunnel }); }
+function belt(H, x0, y0, x1, y1, ax, ay){ H.belts = H.belts || []; H.belts.push({ x0:x0, y0:y0, x1:x1, y1:y1, ax:ax, ay:ay }); zoneR(H, M.BELT, x0, y0, x1, y1); }
+function flatAt(H, x, y){ H.flats.push({ x:x, y:y, s:0.8, keep:0.2 }); }
+
+/* par is filled in by the checker's solver (golf/putt/check-putt.mjs, --tour-par) and written here */
+var LEVELS = [
+  // ---- 1 THE CLUBHOUSE: aim, then pace, then slope, then rails, sand and banks
+  { par:3, f:function(T){ return lvH(rectP(8, 24), [0, -2.5], [0, -20]); } },
+  { par:3, f:function(T){ var H = lvH(rectP(7, 40), [0, -2.5], [0, -36.5]); H.comps.push({ k:'plane', gx:0, gy:-0.012 }); return H; } },
+  { par:3, f:function(T){ var H = lvH(rectP(10, 28), [-1.5, -2.5], [2.5, -24]); H.comps.push({ k:'plane', gx:0.03, gy:0 }); return H; } },
+  { par:3, f:function(T){ return lvH([[-4, 0], [4, 0], [4, -14], [20, -14], [20, -22], [0, -22], [-4, -18]], [0, -2.5], [16.5, -18]); } },
+  { par:3, f:function(T){ var H = lvH(rectP(9, 32), [0, -2.5], [0, -28.5]); zoneR(H, M.SAND, -4.5, -14, 1.8, -18); return H; } },
+  { par:3, f:function(T){ var H = lvH(rectP(12, 30), [0, -2.5], [0, -26]); zoneC(H, M.SAND, -3.3, -16, 2.2); zoneC(H, M.SAND, 3.3, -16, 2.2); H.comps.push({ k:'mound', x:0, y:-21, s:2, a:0.15 }); return H; } },
+  { par:3, f:function(T){ var H = lvH(rectP(8, 38), [0, -2.5], [0, -34.5]); bumps(H, T, [[-1.8, -9], [1.8, -15], [-1.8, -21], [1.8, -27]]); return H; } },
+  { par:3, f:function(T){ var H = lvH(rectP(11, 28), [0, -2.5], [3, -24]); H.comps.push({ k:'crown', x:0, y:-14, rx:6, ry:9, a:0.3 }); flatAt(H, 3, -24); return H; } },
+  { par:3, f:function(T){ var H = lvH([[-4, 0], [4, 0], [4, -26], [-18, -26], [-18, -18], [-4, -18]], [0, -2.5], [-14.5, -22]); H.comps.push({ k:'mound', x:0, y:-11, s:2.4, a:0.2 }); zoneC(H, M.SAND, -9, -24.2, 1.3); return H; } },
+  { par:4, sig:true, f:function(T){ var H = lvH([[-4, 0], [4, 0], [4, -12], [18, -12], [18, -42], [8, -42], [8, -20], [-4, -20]], [0, -2.5], [13, -38.5]);
+    zoneC(H, M.SAND, 15.2, -25, 1.6); H.comps.push({ k:'ramp', x0:13, y0:-28, ux:0, uy:-1, len:5, a:0.42 }); bumps(H, T, [[1.6, -9], [11, -16.5]]); flatAt(H, 13, -38.5); return H; } },
+  // ---- 2 HAUNTED HOLLOW: windmills and tunnels
+  { par:3, f:function(T){ var H = lvH(rectP(9, 36), [0, -2.5], [0, -32.5]); millAt(H, T, -20, 4.5, 1.3); return H; } },
+  { par:3, f:function(T){ var H = lvH(rectP(13, 34), [0, -2.5], [-2, -29]); addBlock(H, -6.5, -17, 6.5, -18.5, T.block); portal(H, T, 3.5, -15.3, 3, -20.7, 0, -1); bumps(H, T, [[-2, -9]]); return H; } },
+  { par:3, f:function(T){ var H = lvH(rectP(13, 34), [0, -2.5], [2.8, -28.5]); addBlock(H, -6.5, -17, 6.5, -18.5, T.block);
+    portal(H, T, -3.5, -15.3, -5.2, -20.7, 0, -1); portal(H, T, 3.5, -15.3, 2.6, -20.7, 0, -1); bumps(H, T, [[0, -9, 0.8]]); return H; } },
+  { par:3, f:function(T){ var H = lvH([[-4, 0], [4, 0], [4, -20], [16, -20], [16, -28], [-16, -28], [-16, -20], [-4, -20]], [0, -2.5], [-13, -24]); bumps(H, T, [[0, -25, 0.9], [7, -24]]); return H; } },
+  { par:3, f:function(T){ var H = lvH(rectP(10, 36), [0, -2.5], [3, -33]); zoneR(H, M.MUD, -5, -11, 2, -13); zoneR(H, M.MUD, -2, -20, 5, -22); zoneR(H, M.MUD, -5, -27, 2, -29); return H; } },
+  { par:3, f:function(T){ var H = lvH([[-4.5, 0], [4.5, 0], [4.5, -22], [18, -22], [18, -30], [-4.5, -30]], [0, -2.5], [15, -26]); millAt(H, T, -12, 4.5, -1.2); return H; } },
+  { par:3, f:function(T){ var H = lvH([[-12, 0], [-4, 0], [-4, -20], [4, -20], [4, 0], [12, 0], [12, -28], [-12, -28]], [-8, -2.5], [8, -4.5]); bumps(H, T, [[0, -24.2, 0.9]]); return H; } },
+  { par:3, f:function(T){ var H = lvH(rectP(13, 32), [0, -2.5], [4, -29]); addBlock(H, 1.0, -21, 1.6, -32, T.block); addBlock(H, 1.0, -21, 6.5, -21.6, T.block);
+    portal(H, T, -3, -24, 4, -23.1, 0, -1); bumps(H, T, [[-2.6, -12]]); return H; } },
+  { par:3, f:function(T){ var H = lvH(rectP(9, 44), [0, -2.5], [0, -40.5]); millAt(H, T, -12, 4.5, 1.4); millAt(H, T, -28, 4.5, -1.1); return H; } },
+  { par:4, sig:true, f:function(T){ var H = lvH(rectP(13, 54), [0, -2.5], [0, -50.5]); addBlock(H, -6.5, -14, 6.5, -15.5, T.block);
+    portal(H, T, -3.5, -12.3, -5.2, -17.7, 0, -1); portal(H, T, 3.5, -12.3, 2.2, -17.7, 0, -1);
+    addBlock(H, -6.5, -30, -1.1, -33.5, T.block); addBlock(H, 1.1, -30, 6.5, -33.5, T.block);
+    H.movers.push({ k:'spin', x:0, y:-27.8, len:2.3, hub:0.32, arms:4, w:0.32, omega:1.25, phase:0.2, skin:T.spinner }); H.mill = { x:0, y:-31.75 };
+    zoneR(H, M.MUD, -6.5, -40, 2.5, -42); flatAt(H, 0, -50.5); return H; } },
+  // ---- 3 FROSTBITE PINES: ice, moving bumpers and timed gates
+  { par:3, f:function(T){ var H = lvH(rectP(10, 34), [0, -2.5], [0, -30.5]); zoneC(H, M.ICE, 0, -17, 3.2); return H; } },
+  { par:3, f:function(T){ var H = lvH(rectP(9, 36), [0, -2.5], [0, -32.5]); slider(H, T, -18, -3.2, 3.2, 3, 0); return H; } },
+  { par:3, f:function(T){ var H = lvH(rectP(10, 34), [0, -2.5], [0, -30]); addBlock(H, -5, -17, -1.2, -18.5, T.block); addBlock(H, 1.2, -17, 5, -18.5, T.block); gateAt(H, T, -17.75, -1.2, 1.2, 3.4, 0, 1); return H; } },
+  { par:3, f:function(T){ var H = lvH(rectP(9, 36), [0, -2.5], [0, -31.5]); zoneR(H, M.ICE, -2.5, -12, 2.5, -27); return H; } },
+  { par:3, f:function(T){ var H = lvH([[-4, 0], [4, 0], [4, -14], [12, -14], [12, -34], [2, -34], [2, -22], [-4, -22]], [0, -2.5], [7, -30.5]); zoneR(H, M.ICE, 4, -14.6, 11.4, -21.4); return H; } },
+  { par:3, f:function(T){ var H = lvH(rectP(10, 44), [0, -2.5], [0, -40]); addBlock(H, -5, -14, -3.5, -15.5, T.block); addBlock(H, -1.1, -14, 5, -15.5, T.block); gateAt(H, T, -14.75, -3.5, -1.1, 3, 0, 1);
+    addBlock(H, -5, -28, 1.1, -29.5, T.block); addBlock(H, 3.5, -28, 5, -29.5, T.block); gateAt(H, T, -28.75, 1.1, 3.5, 4.2, 0.4, -1); return H; } },
+  { par:3, f:function(T){ var H = lvH(rectP(11, 36), [0, -2.5], [0, -32]); slider(H, T, -12, -3.8, 3.8, 2.8, 0); slider(H, T, -24, 3.8, -3.8, 3.6, 0.5); bumps(H, T, [[-3.3, -18], [3.3, -18]]); return H; } },
+  { par:3, f:function(T){ var H = lvH(rectP(13, 30), [0, -2.5], [0, -25]); zoneR(H, M.ICE, -6.5, -14, 6.5, -20); bumps(H, T, [[-4.4, -22.5], [4.4, -22.5]]); return H; } },
+  { par:3, f:function(T){ var H = lvH(rectP(13, 34), [0, -2.5], [-3, -30]); addBlock(H, -6.5, -18, 6.5, -19.5, T.block); portal(H, T, -3, -16.3, 3, -21.6, 0, -1); zoneR(H, M.ICE, 0.5, -23, 5.5, -28); return H; } },
+  { par:4, sig:true, f:function(T){ var H = lvH(rectP(11, 52), [0, -2.5], [0, -48.5]); addBlock(H, -5.5, -12, -1.2, -13.5, T.block); addBlock(H, 1.2, -12, 5.5, -13.5, T.block); gateAt(H, T, -12.75, -1.2, 1.2, 3.2, 0, 1);
+    slider(H, T, -22, -4, 4, 3.4, 0.25); zoneR(H, M.ICE, -5.5, -29, 5.5, -34); addBlock(H, -5.5, -39, 0.4, -40.5, T.block); addBlock(H, 2.8, -39, 5.5, -40.5, T.block); gateAt(H, T, -39.75, 0.4, 2.8, 3.8, 0.6, -1); flatAt(H, 0, -48.5); return H; } },
+  // ---- 4 SEASHELL SHORES: water, ramps and conveyors
+  { par:3, f:function(T){ var H = lvH(rectP(12, 34), [0, -2.5], [0, -29.5]); zoneR(H, M.WATER, -6, -15, 6, -19); zoneR(H, M.GREEN, -1.3, -15, 1.3, -19); return H; } },
+  { par:3, f:function(T){ var H = lvH(rectP(9, 38), [0, -2.5], [0, -33]); H.comps.push({ k:'ramp', x0:0, y0:-14, ux:0, uy:-1, len:6, a:0.55 }); H.comps.push({ k:'ramp', x0:0, y0:-35.6, ux:0, uy:-1, len:2.2, a:0.3 }); return H; } },
+  { par:3, f:function(T){ var H = lvH(rectP(12, 34), [0, -2.5], [-2, -29]); belt(H, -6, -14, 6, -19, 5, 0); return H; } },
+  { par:3, f:function(T){ var H = lvH(rectP(14, 32), [0, -2.5], [0, -28]); zoneC(H, M.WATER, 0, -16, 3.6); return H; } },
+  { par:3, f:function(T){ var H = lvH([[-4, 0], [4, 0], [4, -30], [-16, -30], [-16, -22], [-4, -22]], [0, -2.5], [-13.5, -26]); belt(H, -10.5, -22.6, -4, -29.4, -4, 0); return H; } },
+  { par:3, f:function(T){ var H = lvH(rectP(10, 38), [0, -2.5], [-1, -33]); zoneR(H, M.WATER, -5, -12, 5, -15); zoneR(H, M.GREEN, 2.4, -12, 4.6, -15); H.comps.push({ k:'ramp', x0:0, y0:-20, ux:0, uy:-1, len:6, a:0.5 }); return H; } },
+  { par:3, f:function(T){ var H = lvH(rectP(13, 30), [0, -2.5], [0, -21]); zoneR(H, M.WATER, -7.5, -14, 7.5, -26.5); zoneC(H, M.GREEN, 0, -21, 3.2); zoneR(H, M.GREEN, 1.4, -14, 3.6, -21); H.comps.push({ k:'mound', x:0, y:-21, s:2.4, a:-0.12 }); return H; } },
+  { par:3, f:function(T){ var H = lvH(rectP(14, 40), [0, -2.5], [-4, -36]); addBlock(H, -7, -12, 3, -14, T.block); addBlock(H, -3, -24, 7, -26, T.block); belt(H, -6.4, -14.6, 6.4, -23.4, -3.5, 0); return H; } },
+  { par:3, f:function(T){ var H = lvH(rectP(10, 40), [0, -2.5], [0, -36]); zoneR(H, M.WATER, -5, -12, -3.6, -30); zoneR(H, M.WATER, 3.6, -12, 5, -30);
+    H.comps.push({ k:'mound', x:0, y:-11, s:2.2, a:0.22 }); H.comps.push({ k:'mound', x:0, y:-19, s:2.2, a:0.22 }); H.comps.push({ k:'mound', x:0, y:-27, s:2.2, a:0.22 }); return H; } },
+  { par:4, sig:true, f:function(T){ var H = lvH(rectP(14, 52), [0, -2.5], [0, -48]); zoneR(H, M.WATER, -7, -12, 7, -16); zoneR(H, M.GREEN, -5.5, -12, -3, -16);
+    belt(H, -7, -22, 7, -26, 4.5, 0); H.comps.push({ k:'ramp', x0:0, y0:-30, ux:0, uy:-1, len:5, a:0.45 }); zoneC(H, M.WATER, -4.5, -41, 2); zoneC(H, M.WATER, 4.5, -41, 2); flatAt(H, 0, -48); return H; } },
+  // ---- 5 TOUR WEEK: real greens, read like a pro, and bounce pads
+  { par:3, real:{ ft:12, k:3 } },
+  { par:3, f:function(T){ var H = lvH(rectP(10, 30), [0, -2.5], [-2.5, -26]); addBlock(H, -5, -15, 2.5, -16.5, T.block); pads(H, [[-3, -8, 0.8], [3.3, -22, 0.8]]); return H; } },
+  { par:3, real:{ ft:16, k:11 } },
+  { par:3, f:function(T){ var H = lvH(rectP(12, 36), [0, -2.5], [0, -32.5]); pads(H, [[-3, -12], [3, -12], [0, -20], [-3.5, -27], [3.5, -27]]); return H; } },
+  { par:3, real:{ ft:20, k:19 } },
+  { par:3, f:function(T){ var H = lvH([[-4, 0], [4, 0], [4, -16], [18, -16], [18, -24], [-4, -24]], [0, -2.5], [15, -20]); pads(H, [[-2.6, -21.4, 0.9]]); return H; } },
+  { par:3, real:{ ft:24, k:27 } },
+  { par:3, f:function(T){ var H = lvH(rectP(12, 34), [0, -2.5], [3, -30]); H.comps.push({ k:'plane', gx:0.02, gy:0 }); H.comps.push({ k:'ridge', x:0, y:-24, nx:0, ny:-1, w:1.5, a:0.35 }); pads(H, [[-4, -18], [4, -10]]); flatAt(H, 3, -30); return H; } },
+  { par:3, real:{ ft:28, k:35 } },
+  { par:4, sig:true, f:function(T){ var H = lvH(rectP(16, 42), [0, -2.5], [0, -28]); zoneR(H, M.WATER, -8, -10, 8, -36); zoneC(H, M.GREEN, 0, -28, 3.8); zoneR(H, M.GREEN, -1.2, -10, 1.2, -25);
+    pads(H, [[-5, -30, 0.8], [5, -30, 0.8]]); H.comps.push({ k:'mound', x:0, y:-28, s:2.6, a:-0.1 }); return H; } }
+];
+function levelName(n){ var L = LEVELS[n - 1], W = WORLDS[Math.floor((n - 1) / 10)]; return (THEMES[W.theme].holes || [])[(n - 1) % 10] || ('Hole ' + n); }
+function worldOf(n){ return WORLDS[Math.floor((n - 1) / 10)]; }
+// the desc a Tour level plays as: the same shape the daily and the themed holes use, so the 3D cache keys work
+function tourDesc(n, host){
+  var L = LEVELS[n - 1], W = worldOf(n), seed = hstr('ppt:' + n);
+  if (L.real){
+    var keys = (host && host.keys) || [], ck = keys.length ? keys[(L.real.k * 7 + n) % keys.length] : null, c = ck && host.courses[ck];
+    if (c) return { real:true, tour:n, courseKey:ck, hole:L.real.k % c.holes.length, pin:L.real.k % 4, ft:L.real.ft, seed:seed, par:L.par };
+    return { tour:n, tpl:'lv' + n + 'b', seed:seed, theme:W.theme, name:levelName(n), fallback:true };
+  }
+  return { tour:n, tpl:'lv' + n, seed:seed, theme:W.theme, name:levelName(n) };
+}
+function buildLevel(n){
+  var L = LEVELS[n - 1], W = worldOf(n), T = THEMES[W.theme], f = L.f || LEVELS[41].f;   // a real green with no host plays the world's pad hole instead
+  var H = f(T); H.par = L.par; if (W.theme === 'winter') H.stimp = 9.5;
+  return courseFromH(H, 'lv' + n, hstr('ppt:' + n), W.theme, levelName(n));
+}
+function buildFrom(desc){ if (desc.tour) return buildLevel(desc.tour); return buildMini(desc.tpl, desc.seed, desc.theme, desc.name, desc.extra || 0); }
 
 function scoreName(strokes, par){
   if (strokes === 1) return 'Hole in one';
@@ -616,7 +756,7 @@ var RTT_PUTT = {
   simulate:simulate, speedFor:speedFor, feetFor:feetFor, fricOf:fricOf, moverAt:moverAt,
   makeField:makeField, finishCourse:finishCourse, inPoly:inPoly,
   greenCharacter:greenCharacter, buildReal:buildReal, spotFor:spotFor, fromHost:fromHost,
-  buildMini:buildMini, buildFrom:buildFrom, themedCourse:themedCourse, dailyHole:dailyHole, themeForDay:themeForDay, scoreName:scoreName
+  CAL_THEMES:CAL_THEMES, buildMini:buildMini, buildFrom:buildFrom, LEVELS:LEVELS, WORLDS:WORLDS, buildLevel:buildLevel, tourDesc:tourDesc, levelName:levelName, themedCourse:themedCourse, dailyHole:dailyHole, themeForDay:themeForDay, scoreName:scoreName
 };
 /* ================================================================================ THE PICTURE */
 /* Everything static is painted ONCE, onto a pixel grid of ART feet per pixel (the same grid the
@@ -694,6 +834,8 @@ var SKIN = {
   crab:function(u, v){ var b = ell(u, v, 0.55, 0.38) < 1, cl = ell(Math.abs(u) - 0.68, v + 0.48, 0.2, 0.18) < 1, leg = Math.abs(v - 0.15 - Math.abs(u) * 0.3) < 0.07 && Math.abs(u) > 0.45 && Math.abs(u) < 0.9;
     if (b && v < -0.1 && Math.abs(Math.abs(u) - 0.18) < 0.07) return '#222'; return (b || cl || leg) ? (u < 0 ? '#ff7043' : '#e64a19') : null; },
   log:function(u, v){ if (Math.abs(u) > 0.92 || Math.abs(v) > 0.7) return null; if (Math.abs(v) < 0.36 && Math.abs(u) < 0.55) return '#2a1a10'; if (Math.abs(u) > 0.78) return ((Math.hypot(u, v) * 9 | 0) % 2) ? '#c08a4a' : '#9a6a36'; return (v < 0) ? '#7a4a24' : '#5e3818'; },
+  pad:function(u, v){ var r = Math.hypot(u, v); if (r > 0.96) return null; if (r > 0.8) return '#1d2a44'; if (r > 0.62) return '#F1D04A'; if (r > 0.44) return '#ff5a3c';
+    return (Math.abs(u) < 0.12 || Math.abs(v) < 0.12) ? '#ffffff' : '#F1D04A'; },
   coffin:function(u, v){ var w = 0.55 + (v < -0.4 ? (v + 1) * 0.6 : 0.36 - (v + 0.4) * 0.28); if (Math.abs(u) > w || Math.abs(v) > 0.95) return null; if (Math.abs(u) > w - 0.14 || Math.abs(v) > 0.82) return '#2a1810';
     if ((Math.abs(u) < 0.07 && v > -0.6 && v < 0.2) || (Math.abs(v + 0.35) < 0.07 && Math.abs(u) < 0.25)) return '#c9a227'; return '#5a3a24'; }
 };
@@ -719,10 +861,11 @@ function paintCourse(C){
       if (real){ var band = Math.floor((x * sa + y * sb) / 5) & 1; c = shade(band ? pal.green : shade(pal.green, -0.06), lit); }
       else { c = shade(n < 0.16 ? pal.green2 : pal.green, lit); }
     }
-    else if (m === M.SAND){ c = n < 0.12 ? pal.speck : pal.sand; }
+    else if (m === M.SAND){ c = real ? (n < 0.12 ? pal.speck : pal.sand) : (n < 0.14 ? [217, 196, 138] : [236, 219, 164]); }
     else if (m === M.WATER){ c = real ? (((i * 3 + j * 5) % 23 === 0) ? pal.ripple : pal.water) : ((((i + (j >> 1) * 3) % 17) === 0) ? pal.haz2 : pal.haz); }
     else if (m === M.ICE){ c = (((i + j) % 11) < 2) ? pal.haz2 : pal.haz; }
     else if (m === M.MUD){ c = n < 0.22 ? shade(pal.slow, -0.18) : pal.slow; }
+    else if (m === M.BELT){ c = ((((C.belts[0] && Math.abs(C.belts[0].ay) > Math.abs(C.belts[0].ax)) ? j : i) % 6) < 3) ? [58, 63, 72] : [90, 97, 108]; }
     else c = pal.out;
     put(o, c);
   }
@@ -800,7 +943,32 @@ var CSS = '\
 .pt-th.now{outline:2px solid #F1D04A;outline-offset:1px}.pt-tag{display:inline-block;font-size:10px;font-weight:900;letter-spacing:.1em;padding:3px 7px;border-radius:999px;background:#F1D04A;color:#10241a;margin-left:6px;vertical-align:2px}\
 .pt-sel{width:100%;margin-top:8px;padding:9px;border-radius:10px;background:#0a1912;color:#e8f2ec;border:1px solid rgba(255,255,255,.2);font:inherit;font-size:13px}\
 .pt-card table{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px;font-variant-numeric:tabular-nums}.pt-card td{padding:3px 2px;border-bottom:1px solid rgba(255,255,255,.07)}\
-.pt-card td:last-child{text-align:right;font-weight:800}';
+.pt-card td:last-child{text-align:right;font-weight:800}\
+.pp-stat{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-weight:800;font-size:11px;color:#cfe0d8}.pp-coin{color:#ffd45e}.pp-coin:before{content:"\\25CF ";color:#ffd45e}\
+.pp-hearts,.pp-lives{display:flex;gap:3px}.pp-lives{justify-content:center;margin:6px 0 2px}.pp-h{width:14px;height:12px;background:rgba(255,255,255,.18);clip-path:path("M7 12 L1 6 A3 3 0 0 1 7 2 A3 3 0 0 1 13 6 Z")}.pp-h.on{background:#ff4d6d}\
+.pp-clock{color:#9fbfae;font-variant-numeric:tabular-nums}\
+.pp-hub{flex:1;min-height:0;display:flex;flex-direction:column;max-width:560px;width:100%;margin:0 auto}\
+.pp-daily{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 10px;margin:10px 12px 8px;padding:12px 14px;border-radius:16px;border:2px solid;text-align:left;font:inherit;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.35)}\
+.pp-daily .k{grid-column:1;font-size:10.5px;letter-spacing:.14em;font-weight:900;text-transform:uppercase;opacity:.85}.pp-daily .t{grid-column:1;font-family:var(--display,inherit);font-size:21px;line-height:1.1}\
+.pp-daily .m{grid-column:1;font-size:12px;opacity:.9}.pp-daily .g{grid-column:2;grid-row:1/4;font-weight:900;font-size:14px;background:#F1D04A;color:#10241a;border-radius:11px;padding:10px 14px}\
+.pp-map{position:relative;flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;border-top:1px solid rgba(241,208,74,.25)}\
+.pp-world{position:relative;margin:0 auto}.pp-band{position:absolute;left:-200px;right:-200px;background-size:cover;background-position:center;background-repeat:no-repeat;image-rendering:pixelated}\
+.pp-wname{position:absolute;left:0;right:0;text-align:center;pointer-events:none;text-shadow:0 2px 0 rgba(0,0,0,.55),0 0 8px rgba(0,0,0,.5)}.pp-wname b{display:block;font-family:var(--display,inherit);font-size:18px;letter-spacing:.02em}.pp-wname span{font-size:11px;font-weight:800;opacity:.8}\
+.pp-path{position:absolute;left:0;top:0;pointer-events:none}.pp-path path{fill:none;stroke:rgba(255,255,255,.75);stroke-width:5;stroke-dasharray:2 11;stroke-linecap:round}\
+.pp-lv{position:absolute;transform:translate(-50%,-50%);width:50px;height:50px;border-radius:50%;border:3px solid #10241a;background:#F1D04A;color:#10241a;font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 4px 0 rgba(0,0,0,.35);padding:0}\
+.pp-lv b{font-family:var(--display,inherit);font-size:19px;line-height:1}.pp-lv span{font-size:10px;font-weight:900;line-height:1;opacity:.8}\
+.pp-lv.done{background:#fff7d6}.pp-lv.ace{background:linear-gradient(160deg,#ffe680,#d9a514);border-color:#7a5200}.pp-lv.lock{background:#5a6b62;color:#c9d6cf;border-color:#2a3530;box-shadow:none}\
+.pp-lv.sig{width:62px;height:62px}.pp-lv i{position:absolute;top:-12px;right:-6px;font-style:normal;font-size:17px;color:#ffd45e;text-shadow:0 1px 0 #000}\
+.pp-lv.cur{outline:4px solid #fff;animation:ppPulse 1.4s ease-in-out infinite}@keyframes ppPulse{50%{outline-color:rgba(255,255,255,.35)}}\
+.pp-me{position:absolute;transform:translate(-50%,-100%);pointer-events:none}.pp-meimg{display:block;height:56px;image-rendering:pixelated}\
+.pp-toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 24px);transform:translate(-50%,20px);opacity:0;transition:.2s;background:#10241a;border:1px solid #F1D04A;color:#fff;font-weight:800;font-size:13px;padding:9px 14px;border-radius:11px;z-index:3;pointer-events:none}.pp-toast.on{opacity:1;transform:translate(-50%,0)}\
+.pp-sheet{position:absolute;inset:0;z-index:4;background:rgba(3,10,7,.72);display:flex;align-items:center;justify-content:center;padding:16px}\
+.pp-card{width:min(340px,100%);background:linear-gradient(168deg,#0e3020,#06170f);border:1.5px solid rgba(241,208,74,.45);border-radius:18px;padding:16px;text-align:center}\
+.pp-card .k{font-size:11px;letter-spacing:.14em;font-weight:900;color:#ff8a8a}.pp-card .t{font-family:var(--display,inherit);font-size:24px;color:#fff;margin:4px 0}.pp-card .m{font-size:13px;color:#cfe0d8;margin:4px 0 12px}\
+.pp-big{font-family:var(--display,inherit);font-size:38px;color:#F1D04A;font-variant-numeric:tabular-nums}.pp-wide{display:block;width:100%;margin-top:8px}.pp-wide small{display:block;font-size:10.5px;font-weight:700;opacity:.75}.pt-go[disabled]{opacity:.55;cursor:default}\
+.pp-nums{display:flex;justify-content:center;gap:16px;margin:8px 0}.pp-nums span{font-size:10.5px;letter-spacing:.1em;color:#9fbfae;font-weight:800;text-transform:uppercase}.pp-nums b{display:block;font-size:24px;color:#fff;letter-spacing:0}\
+.pp-coins{font-weight:900;color:#ffd45e;font-size:16px;margin:4px 0 6px}.pp-reward{background:rgba(241,208,74,.12);border:1px solid rgba(241,208,74,.45);border-radius:11px;padding:8px;margin:8px 0;font-weight:800;font-size:13px;color:#fff}.pp-fine{font-size:11px!important;opacity:.75}\
+.pp-dres{border-radius:16px;padding:16px;text-align:center}.pp-dres .k{font-size:11px;letter-spacing:.14em;font-weight:900;text-transform:uppercase;opacity:.85}.pp-dres .t{font-family:var(--display,inherit);font-size:34px;margin:4px 0}.pp-dres .m{font-size:13px}';
 
 var S = null;   // the open game, or null
 function el(html){ var d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstChild; }
@@ -809,13 +977,13 @@ function load(){ try{ return JSON.parse(localStorage.getItem('bag_putt_v1')) || 
 function save(st){ try{ localStorage.setItem('bag_putt_v1', JSON.stringify(st)); }catch(e){} }
 /* The game's day key is a NUMBER (20261005), Eastern; this module's is the ISO string. Read the game's
    so the daily turns over when the rest of the game does, and write it the way this file reads it. */
-function today(){ try{ var k = String(S.host.todayKey()); if (/^\d{8}$/.test(k)) return k.slice(0, 4) + '-' + k.slice(4, 6) + '-' + k.slice(6, 8); if (/^\d{4}-\d{2}-\d{2}$/.test(k)) return k; }catch(e){} return new Date().toISOString().slice(0, 10); }
+function today(){ try{ var k = String(hostOf().todayKey()); if (/^\d{8}$/.test(k)) return k.slice(0, 4) + '-' + k.slice(4, 6) + '-' + k.slice(6, 8); if (/^\d{4}-\d{2}-\d{2}$/.test(k)) return k; }catch(e){} return new Date().toISOString().slice(0, 10); }
 function fmtPar(d){ return d === 0 ? 'E' : (d > 0 ? '+' + d : String(d)); }
 
 function open(host){
   if (S) close();
   if (!document.getElementById('pt-css')){ var st = document.createElement('style'); st.id = 'pt-css'; st.textContent = CSS; document.head.appendChild(st); }
-  var ov = el('<div class="pt-ov" role="dialog" aria-modal="true" aria-label="Putting Green"></div>');
+  var ov = el('<div class="pt-ov" role="dialog" aria-modal="true" aria-label="Putt Putt Tour"></div>');
   document.body.appendChild(ov);
   S = { host:host || {}, ov:ov, prevOverflow:document.body.style.overflow };
   document.body.style.overflow = 'hidden';
@@ -824,7 +992,7 @@ function open(host){
 }
 function close(){
   if (!S) return;
-  cancelAnimationFrame(S.raf); window.removeEventListener('keydown', S.onKey); if (S.onResize) window.removeEventListener('resize', S.onResize);
+  cancelAnimationFrame(S.raf); clearInterval(S.tick); window.removeEventListener('keydown', S.onKey); if (S.onResize) window.removeEventListener('resize', S.onResize);
   document.body.style.overflow = S.prevOverflow || ''; S.ov.remove();
   var h = S.host; S = null; try{ if (h.onClose) h.onClose(); }catch(e){}
 }
@@ -832,37 +1000,242 @@ function top(title, sub, right){
   return '<div class="pt-top"><button class="pt-x" data-x>' + (S.screen === 'menu' ? 'Close' : 'Back') + '</button><div class="pt-hd"><b>' + esc(title) + '</b><span>' + esc(sub) + '</span></div><div class="pt-sc">' + (right || '') + '</div></div>';
 }
 
-/* ----------------------------------------------------------------------------------- the menu */
-function showMenu(){
-  cancelAnimationFrame(S.raf); S.screen = 'menu'; S.play = null;
-  var h = S.host, dk = today(), dh = dailyHole(dk), dT = THEMES[dh.theme], st = load(), drec = (st.daily || {})[dk];
-  var nowTh = themeForDay(dk);
-  var ck = S.tourKey; try{ if (!ck && h.dailyCourseKey) ck = h.dailyCourseKey(h.todayKey()); }catch(e){} ck = (h.courses && h.courses[ck]) ? ck : (h.keys && h.keys[0]);
-  var cname = (h.courses && h.courses[ck] && h.courses[ck].v) || ck || 'Tour course';
-  var dInk = dT.light ? dT.ink : '#fff';
-  var themes = Object.keys(THEMES).sort(function(a, b){ return (a === nowTh ? -1 : 0) - (b === nowTh ? -1 : 0); });
-  var opts = (h.keys || []).map(function(k){ return '<option value="' + esc(k) + '"' + (k === ck ? ' selected' : '') + '>' + esc(h.courses[k].v || k) + '</option>'; }).join('');
-  var tb = (st.tour || {})[ck];
-  S.ov.innerHTML = top('Putting Green', 'Tester preview · not live yet') + '<div class="pt-menu">\
-    <button class="pt-card" data-daily style="background:linear-gradient(160deg,' + dT.bg2 + ',' + dT.bg + ');border-color:' + dT.acc + '">\
-      <div class="k" style="color:' + dInk + ';opacity:.8">Daily hole · ' + esc(dT.kick) + '</div><div class="t" style="color:' + dInk + '">' + esc(dh.name) + '</div>\
-      <div class="m" style="color:' + dInk + '">' + esc(dT.name) + '. One hole, the same for everyone today.' + (drec ? ' Best today: ' + drec.best + (drec.first ? ' (first try ' + drec.first + ')' : '') + '.' : '') + '</div>\
-      <span class="g" style="color:' + (dT.light ? dT.ink : '#F1D04A') + '">' + (drec ? 'Play again' : 'Play today’s hole') + ' ▸</span></button>\
-    <div class="pt-sh">TOUR GREENS</div>\
-    <div class="pt-card" style="cursor:default"><div class="k">Real greens · 9 putts</div><div class="t">' + esc(cname) + '</div>\
-      <div class="m">The real greens from Run The Tour, same shape and same pins. Read the break, lag it close, hole out. Par is 2 a green.' + (typeof tb === 'number' ? ' Best: ' + fmtPar(tb) + '.' : '') + '</div>\
-      <select class="pt-sel" data-course aria-label="Course">' + opts + '</select>\
-      <button class="pt-go" data-tour style="margin-top:10px;width:100%">Putt these greens ▸</button></div>\
-    <div class="pt-sh">THEMED COURSES · 9 HOLES</div><div class="pt-grid">' +
-    themes.map(function(id){ var T = THEMES[id], best = (st.courses || {})[id];
-      return '<button class="pt-th' + (id === nowTh ? ' now' : '') + '" data-th="' + id + '" style="background:linear-gradient(160deg,' + T.bg2 + ',' + T.bg + ');color:' + (T.light ? T.ink : '#fff') + '">\
-        <div class="k">' + esc(T.kick) + (id === nowTh ? ' · now' : '') + '</div><div class="t">' + esc(T.name) + '</div><div class="m">' + (best != null ? 'Best ' + fmtPar(best) : '9 holes') + '</div></button>'; }).join('') +
-    '</div></div>';
+/* ============================================================================ THE TOUR, PLAYED */
+/* The mode opens on the Tour map with the Daily Hole on top. The rules, in full:
+     under par   the hole is beaten and the next one opens (coins the first time only)
+     exactly par nothing lost, nothing won: go again
+     over par    a life goes and the hole restarts. It is decided the moment par strokes are used
+                 with the ball still out, so nobody putts out a hole that is already lost.
+   Quitting after the first putt costs a life too. The Daily Hole never costs one.
+   3 lives, 6 with a Tour Pass. When the last one goes a 24 hour clock starts and fills them.
+
+   WHAT IS KEPT WHERE, said plainly: everything here is kept in this browser, per account, through
+   the page's own account-scoped key. The mockup's server ledger (lives on server time, a tester table
+   the score calls check, the Daily Hole board) is not built yet, so for now a tester could reset a
+   clock by clearing site data. Nobody but a tester can open the mode at all. */
+var COIN_HOLE = 120, COIN_SIG = 520, COIN_ACE = 40, COIN_WORLD = 2000, COIN_DAILY = 40, COIN_DAILY_PAR = 40;
+var LIFE_MS = 24 * 3600 * 1000;
+var SIG_REWARD = ['Clubhouse Visor', 'Crypt Keeper Hat', 'Snowflake Putter', 'Seashell Ball', 'Tour Week Trophy Trail'];
+var WORLD_REWARD = ['Clubhouse Polo', 'Lantern Trail', 'Ice Skate Shoes', 'Lighthouse Cap', 'Champion Celebration'];
+var ACE_REWARD = { 5:'Hole in One Charm', 15:'Golden Putter', 30:'Ace Crown' };
+var STREAK_REWARD = { 7:'Week Streak Ball', 30:'Month Streak Visor', 100:'Century Streak Trail' };
+var HOSTX = null;   // the host when the mode is closed, for the home screen card
+function hostOf(){ return (S && S.host) || HOSTX || {}; }
+function pkey(){ try{ var h = hostOf(); return h.storeKey ? h.storeKey('bag_ppt_v1') : 'bag_ppt_v1'; }catch(e){ return 'bag_ppt_v1'; } }
+function pload(){ var st = null; try{ st = JSON.parse(localStorage.getItem(pkey())); }catch(e){} st = st || {};
+  st.lv = st.lv || 1; st.best = st.best || {}; st.ace = st.ace || {}; st.paid = st.paid || {}; st.wpaid = st.wpaid || {}; st.daily = st.daily || {}; st.rewards = st.rewards || []; st.streak = st.streak || { n:0, last:null, best:0 };
+  if (st.lives == null) st.lives = livesMax();
+  if (st.refillAt && Date.now() >= st.refillAt){ st.lives = livesMax(); st.refillAt = null; psave(st); }
+  return st; }
+function psave(st){ try{ localStorage.setItem(pkey(), JSON.stringify(st)); }catch(e){} }
+function livesMax(){ try{ var h = hostOf(); return h.passActive && h.passActive() ? 6 : 3; }catch(e){ return 3; } }
+function loseLife(st){ st.lives = Math.max(0, (st.lives == null ? livesMax() : st.lives) - 1); if (st.lives === 0 && !st.refillAt) st.refillAt = Date.now() + LIFE_MS; psave(st); }
+function coins(n, label){ try{ if (S.host.coins) S.host.coins(n, label); }catch(e){} }
+function hms(ms){ ms = Math.max(0, ms); var s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return h + ':' + (m < 10 ? '0' : '') + m + ':' + (x < 10 ? '0' : '') + x; }
+function hm(ms){ var m = Math.max(0, Math.round(ms / 60000)); return Math.floor(m / 60) + 'h ' + (m % 60) + 'm'; }
+// how long until the game's day turns over (Eastern midnight), which is when the next Daily Hole arrives
+function msToNextDay(){ try{ var now = new Date(), et = new Date(now.toLocaleString('en-US', { timeZone:'America/New_York' })), nx = new Date(et); nx.setHours(24, 0, 0, 0); return nx - et; }catch(e){ return 0; } }
+function wl(n){ return Math.floor((n - 1) / 10) + 1 + '-' + ((n - 1) % 10 + 1); }
+function aceCount(st){ return Object.keys(st.ace).length; }
+function grant(st, name){ if (name && st.rewards.indexOf(name) < 0) st.rewards.push(name); }
+
+function hearts(st){ var mx = Math.max(livesMax(), st.lives), out = '';
+  for (var i = 0; i < mx; i++) out += '<i class="pp-h' + (i < st.lives ? ' on' : '') + '"></i>'; return out; }
+function golferImg(cls){ try{ var c = S.host.golfer && S.host.golfer(); if (c && c.toDataURL) return '<img class="' + cls + '" alt="" src="' + c.toDataURL() + '">'; }catch(e){} return ''; }
+
+/* ----------------------------------------------------------------------------------- the hub */
+function showMenu(){ showHub(); }
+function showHub(){
+  cancelAnimationFrame(S.raf); S.screen = 'menu'; S.play = null; clearInterval(S.tick);
+  var st = pload(), dk = today(), dh = dailyHole(dk), dT = THEMES[dh.theme], drec = st.daily[dk], dInk = dT.light ? dT.ink : '#fff';
+  var bal = ''; try{ if (S.host.balance) bal = Number(S.host.balance()).toLocaleString(); }catch(e){}
+  S.ov.innerHTML = '<div class="pt-top"><button class="pt-x" data-x>Close</button><div class="pt-hd"><b>Putt Putt Tour</b><span>Tester preview · not live yet</span></div>\
+    <div class="pp-stat"><span class="pp-hearts" data-hearts>' + hearts(st) + '</span><span class="pp-clock" data-clock></span>' + (bal !== '' ? '<span class="pp-coin">' + bal + '</span>' : '') + '</div></div>\
+    <div class="pp-hub"><button class="pp-daily" data-daily style="background:linear-gradient(160deg,' + dT.bg2 + ',' + dT.bg + ');color:' + dInk + ';border-color:' + dT.acc + '">\
+      <span class="k">Daily Hole · ' + esc(dT.kick) + '</span><span class="t">' + esc(dh.name) + '</span>\
+      <span class="m">' + (drec && drec.done ? 'Done · ' + drec.s + ' (par ' + drec.par + ') · next in ' + hm(msToNextDay()) : 'Not played · next in ' + hm(msToNextDay())) + (st.streak.n > 1 ? ' · Streak ' + st.streak.n : '') + '</span>\
+      <span class="g">' + (drec && drec.done ? 'See result ▸' : 'Play ▸') + '</span></button>\
+    <div class="pp-map" data-map></div></div>';
   S.ov.querySelector('[data-x]').onclick = close;
-  S.ov.querySelector('[data-daily]').onclick = function(){ startRound('daily'); };
-  S.ov.querySelector('[data-course]').onchange = function(e){ S.tourKey = e.target.value; showMenu(); };
-  S.ov.querySelector('[data-tour]').onclick = function(){ startRound('tour', ck); };
-  S.ov.querySelectorAll('[data-th]').forEach(function(b){ b.onclick = function(){ startRound('course', b.getAttribute('data-th')); }; });
+  S.ov.querySelector('[data-daily]').onclick = function(){ if (drec && drec.done) dailyResult(); else startDaily(); };
+  drawMap(st);
+  var clk = S.ov.querySelector('[data-clock]');
+  var tick = function(){ var s2 = pload(); if (s2.refillAt){ clk.textContent = 'Full in ' + hms(s2.refillAt - Date.now()); } else clk.textContent = '';
+    var h = S.ov.querySelector('[data-hearts]'); if (h) h.innerHTML = hearts(s2); };
+  tick(); S.tick = setInterval(function(){ if (!S || S.screen !== 'menu') return clearInterval(S && S.tick); tick(); }, 1000);
+}
+/* THE MAP: level 1 at the bottom, a dashed path winding up through five worlds, each world on its own
+   ground. The golfer stands on the level being played and the map opens scrolled to it. */
+function drawMap(st){
+  var box = S.ov.querySelector('[data-map]'), N = LEVELS.length, STEP = 92, PADB = 70, WH = 64, H = N * STEP + WORLDS.length * WH + PADB + 60, W = 340;
+  var pos = []; for (var n = 1; n <= N; n++){ var w = Math.floor((n - 1) / 10), y = H - PADB - (n - 1) * STEP - w * WH, x = W / 2 + Math.sin((n - 1) * 0.9) * 105; pos.push([x, y]); }
+  var bands = WORLDS.map(function(Wd, w){ var T = THEMES[Wd.theme], top = pos[w * 10 + 9][1] - STEP / 2 - WH, bot = w === 0 ? H : pos[w * 10][1] + STEP / 2;
+    return '<div class="pp-band" data-w="' + w + '" style="top:' + top + 'px;height:' + (bot - top) + 'px;background:linear-gradient(180deg,' + T.bg2 + ',' + T.bg + ')"></div>\
+      <div class="pp-wname" style="top:' + (top + 10) + 'px;color:' + (T.light ? T.ink : '#fff') + '"><b>World ' + (w + 1) + ' · ' + esc(Wd.name) + '</b><span>' + esc(Wd.haz.join(' · ')) + '</span></div>'; }).join('');
+  var d = pos.map(function(p, i){ return (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' ');
+  var badges = pos.map(function(p, i){ var n = i + 1, L = LEVELS[i], best = st.best[n], open = n <= st.lv, cur = n === st.lv, ace = !!st.ace[n];
+    var cls = 'pp-lv' + (L.sig ? ' sig' : '') + (open ? '' : ' lock') + (cur ? ' cur' : '') + (best != null ? ' done' : '') + (ace ? ' ace' : '');
+    return '<button class="' + cls + '" data-lv="' + n + '" style="left:' + p[0] + 'px;top:' + p[1] + 'px" aria-label="Level ' + n + (open ? '' : ', locked') + '">' +
+      '<b>' + n + '</b>' + (best != null ? '<span>' + best + '</span>' : '') + (L.sig ? '<i>★</i>' : '') + '</button>'; }).join('');
+  var cp = pos[Math.min(N, st.lv) - 1];
+  box.innerHTML = '<div class="pp-world" style="height:' + H + 'px;width:' + W + 'px">' + bands +
+    '<svg class="pp-path" width="' + W + '" height="' + H + '"><path d="' + d + '"/></svg>' + badges +
+    '<div class="pp-me" style="left:' + cp[0] + 'px;top:' + (cp[1] - 34) + 'px">' + golferImg('pp-meimg') + '</div></div>';
+  box.querySelectorAll('[data-lv]').forEach(function(b){ b.onclick = function(){ var n = +b.getAttribute('data-lv'); if (n > pload().lv) return toastHub('Beat level ' + (n - 1) + ' under par to open it.'); startLevel(n); }; });
+  requestAnimationFrame(function(){ box.scrollTop = Math.max(0, cp[1] - box.clientHeight * 0.6); });
+  mapArt(box);
+}
+/* EACH WORLD'S GROUND ON THE MAP IS THAT WORLD'S OWN LAND, the same 3D place its holes sit in, rendered
+   once a visit a world at a time between frames and laid under the path. Owner's rule for the level
+   screen as much as for the holes: a built place, never a scatter of stickers. A blocked 3D module
+   leaves the plain colour bands. */
+var MAPART = {};
+function mapArt(box){
+  if (!v3Ok()) return;
+  var w = 0;
+  (function next(){
+    if (!S || S.screen !== 'menu' || w >= WORLDS.length) return;
+    var band = box.querySelector('.pp-band[data-w="' + w + '"]');
+    if (band){
+      if (MAPART[w] === undefined){ try{ var R = window.RTT_PUTT_3D.render(buildLevel(w * 10 + (w === 4 ? 2 : 1)), { aspect:1.7 }); MAPART[w] = { u:R.cv.toDataURL(), w:R.cv.width, h:R.cv.height }; }catch(e){ MAPART[w] = null; } }
+      if (MAPART[w]){ var T = THEMES[WORLDS[w].theme];
+        band.style.backgroundImage = 'radial-gradient(closest-side,rgba(0,0,0,0) 55%,' + T.bg + ' 98%),url(' + MAPART[w].u + '),linear-gradient(' + T.bg + ',' + T.bg + ')';
+        var iw = MAPART[w].w * 2 + 'px ' + MAPART[w].h * 2 + 'px'; band.style.backgroundSize = iw + ',' + iw + ',100% 100%'; band.style.backgroundRepeat = 'no-repeat'; band.style.backgroundPosition = 'center 38%'; }
+    }
+    w++; setTimeout(next, 30);
+  })();
+}
+function toastHub(msg){ var t = S.ov.querySelector('.pp-toast'); if (!t){ t = el('<div class="pp-toast"></div>'); S.ov.appendChild(t); } t.textContent = msg; t.classList.add('on'); clearTimeout(S.tt); S.tt = setTimeout(function(){ t.classList.remove('on'); }, 1800); }
+
+/* ------------------------------------------------------------------------------ out of lives */
+function outOfLives(){
+  var st = pload(), sh = el('<div class="pp-sheet"><div class="pp-card"><div class="k">Out of lives</div><div class="t">Full lives in</div><div class="pp-big" data-c>' + hms((st.refillAt || Date.now()) - Date.now()) + '</div>\
+    <div class="m">The Daily Hole never uses a life.</div>\
+    <button class="pt-go pp-wide" disabled>Refill lives · $0.99<small>Checkout opens at launch</small></button>' +
+    (S.host.tester && S.host.tester() ? '<button class="pt-bt pp-wide" data-free>Tester refill · free</button>' : '') +
+    '<button class="pt-bt pp-wide" data-wait>Wait it out</button></div></div>');
+  S.ov.appendChild(sh);
+  var c = sh.querySelector('[data-c]'), iv = setInterval(function(){ if (!sh.isConnected) return clearInterval(iv); var s2 = pload(); if (!s2.refillAt){ clearInterval(iv); sh.remove(); showHub(); return; } c.textContent = hms(s2.refillAt - Date.now()); }, 1000);
+  sh.querySelector('[data-wait]').onclick = function(){ sh.remove(); };
+  var fr = sh.querySelector('[data-free]'); if (fr) fr.onclick = function(){ var s2 = pload(); s2.lives = livesMax(); s2.refillAt = null; psave(s2); sh.remove(); showHub(); };
+}
+
+/* ---------------------------------------------------------------------------- a Tour level */
+function startLevel(n){
+  var st = pload();
+  if (st.lives <= 0) return outOfLives();
+  var d = tourDesc(n, S.host);
+  S.round = { mode:'ppt', lv:n, i:0, cards:[], holes:[d], title:levelName(n) };
+  playHole();
+}
+function startDaily(){
+  var dk = today(), d = dailyHole(dk);
+  S.round = { mode:'pdaily', day:dk, i:0, cards:[], holes:[d], title:d.name, kick:THEMES[d.theme].name };
+  playHole();
+}
+// what the bar under the title says during a hole
+function tourSub(R, C, P){
+  if (R.mode === 'ppt'){ var left = C.par - 1 - P.strokes; return 'Hole ' + wl(R.lv) + ' · Par ' + C.par + ' · ' + (left > 0 ? left + ' left to beat par' : 'Hole this one to make par'); }
+  if (R.mode === 'pdaily') return R.kick + ' · Daily Hole · Par ' + C.par;
+  return (C.kind === 'real' ? C.sub : (R.kick || '')) + ' · Par ' + C.par;
+}
+// leaving a hole: free before the first putt, a life after it on the Tour
+function leaveHole(){
+  var P = S.play, R = S.round;
+  if (R && R.mode === 'ppt' && P && P.strokes > 0 && P.state !== 'done'){
+    return confirmSheet('Leave this hole?', 'You have putted, so leaving costs a life.', 'Leave · lose a life', function(){ var st = pload(); loseLife(st); showHub(); }); }
+  if (R && R.mode === 'pdaily' && P && P.strokes > 0 && P.state !== 'done'){
+    return confirmSheet('Leave the Daily Hole?', 'You get one scored try a day. Leaving now scores it as a pick up.', 'Leave and score it', function(){ dailyFinish(P.C.par + 3, P.C.par); }); }
+  showHub();
+}
+function restartHole(){
+  var P = S.play, R = S.round;
+  if (R.mode === 'ppt' && P.strokes > 0 && P.state !== 'done') return confirmSheet('Restart?', 'You have putted, so a restart costs a life.', 'Restart · lose a life', function(){ var st = pload(); loseLife(st); if (st.lives <= 0) return showHub(), outOfLives(); playHole(); });
+  if (R.mode === 'pdaily' && P.strokes > 0) return toast('One scored try a day. Finish this one.');
+  playHole();
+}
+function confirmSheet(title, body, yes, fn){
+  var sh = el('<div class="pp-sheet"><div class="pp-card"><div class="t">' + esc(title) + '</div><div class="m">' + esc(body) + '</div><button class="pt-go pp-wide" data-y>' + esc(yes) + '</button><button class="pt-bt pp-wide" data-n>Keep playing</button></div></div>');
+  S.ov.appendChild(sh); sh.querySelector('[data-n]').onclick = function(){ sh.remove(); }; sh.querySelector('[data-y]').onclick = function(){ sh.remove(); fn(); };
+}
+function popup(html, wire){ var pop = el('<div class="pt-pop pp-pop">' + html + '</div>'); (S.stage || S.ov).appendChild(pop); if (S.play) S.play.state = 'done';
+  pop.querySelectorAll('[data-a]').forEach(function(b){ b.onclick = function(){ wire[b.getAttribute('data-a')](); }; }); return pop; }
+
+// a Tour hole ends one of three ways
+function tourOut(holed){
+  var P = S.play, R = S.round, C = P.C, n = R.lv, s = P.strokes, par = C.par, st = pload();
+  if (holed && s < par){
+    var first = st.best[n] == null, lines = [];
+    st.best[n] = first ? s : Math.min(st.best[n], s);
+    if (n === st.lv && n < LEVELS.length) st.lv = n + 1;
+    if (n === LEVELS.length && st.lv === n) st.lv = n;   // the end of the Tour
+    var got = 0;
+    if (!st.paid[n]){ st.paid[n] = 1; var c = LEVELS[n - 1].sig ? COIN_SIG : COIN_HOLE; got += c; }
+    if (s === 1 && !st.ace[n]){ st.ace[n] = 1; got += COIN_ACE; var ac = aceCount(st); if (ACE_REWARD[ac]){ grant(st, ACE_REWARD[ac]); lines.push('New: ' + ACE_REWARD[ac]); } }
+    var w = Math.floor((n - 1) / 10), worldDone = LEVELS[n - 1].sig && !st.wpaid[w];
+    if (worldDone){ st.wpaid[w] = 1; grant(st, SIG_REWARD[w]); grant(st, WORLD_REWARD[w]); }
+    psave(st); if (got) coins(got + (worldDone ? COIN_WORLD : 0), 'Putt Putt Tour ' + wl(n));
+    try{ S.host.sfx && S.host.sfx('holeGood'); }catch(e){}
+    if (worldDone) return worldComplete(n, s, par, got);
+    return popup('<div class="k">' + (s === 1 ? 'HOLE IN ONE' : 'HOLE BEATEN') + '</div><div class="t">' + esc(scoreName(s, par)) + '</div>\
+      <div class="pp-nums"><span><b>' + s + '</b>Strokes</span><span><b>' + par + '</b>Par</span><span><b>' + fmtPar(s - par) + '</b>To par</span></div>' +
+      (got ? '<div class="pp-coins">+' + got + ' coins</div>' : '<div class="s">Coins land the first time only.</div>') + lines.map(function(t){ return '<div class="s">' + esc(t) + '</div>'; }).join('') +
+      (n < LEVELS.length ? '<div class="s">Level ' + (n + 1) + ' is open.</div>' : '<div class="s">That is the whole Tour.</div>') +
+      '<div class="row"><button class="pt-bt" data-a="again">Replay</button>' + (n < LEVELS.length ? '<button class="pt-go" data-a="next">Next hole ▸</button>' : '<button class="pt-go" data-a="map">Map</button>') + '</div>',
+      { again:function(){ startLevel(n); }, next:function(){ startLevel(n + 1); }, map:showHub });
+  }
+  if (holed && s === par){
+    return popup('<div class="k">LEVEL ' + n + '</div><div class="t">Par</div><div class="s">No life lost. You need one under to move on.</div>\
+      <div class="pp-nums"><span><b>' + s + '</b>Strokes</span><span><b>' + par + '</b>Par</span></div><div class="row"><button class="pt-bt" data-a="map">Map</button><button class="pt-go" data-a="again">Go again</button></div>',
+      { map:showHub, again:function(){ startLevel(n); } });
+  }
+  // over par: the moment par strokes are gone with the ball still out
+  loseLife(st);
+  return popup('<div class="k">OUT OF STROKES</div><div class="t">Over par</div><div class="s">' + par + ' strokes used and still not down.</div>\
+    <div class="pp-lives">' + hearts(st) + '</div><div class="s">' + (st.lives ? st.lives + (st.lives === 1 ? ' life' : ' lives') + ' left' : 'That was your last life.') + '</div>\
+    <div class="row"><button class="pt-bt" data-a="map">Map</button><button class="pt-go" data-a="again">' + (st.lives ? 'Try again' : 'Refill') + '</button></div>',
+    { map:showHub, again:function(){ if (pload().lives > 0) startLevel(n); else { showHub(); outOfLives(); } } });
+}
+function worldComplete(n, s, par, got){
+  var w = Math.floor((n - 1) / 10), Wd = WORLDS[w], nx = WORLDS[w + 1];
+  return popup('<div class="k">WORLD ' + (w + 1) + ' COMPLETE</div><div class="t">' + esc(Wd.name) + '</div><div class="s">Signature hole beaten in ' + s + ' (par ' + par + ').</div>\
+    <div class="pp-reward">New · ' + esc(SIG_REWARD[w]) + '<br>New · ' + esc(WORLD_REWARD[w]) + '</div>\
+    <div class="pp-coins">+' + got + ' coins · +' + COIN_WORLD.toLocaleString() + ' world bonus</div>' +
+    (nx ? '<div class="s">World ' + (w + 2) + ', ' + esc(nx.name) + ', is open.</div>' : '<div class="s">You have finished the Putt Putt Tour.</div>') +
+    '<div class="s pp-fine">Rewards are saved to your Tour record. They become wearable at launch.</div>\
+    <div class="row"><button class="pt-bt" data-a="map">Map</button>' + (nx ? '<button class="pt-go" data-a="next">Next world ▸</button>' : '') + '</div>',
+    { map:showHub, next:function(){ startLevel(n + 1); } });
+}
+
+/* ----------------------------------------------------------------------------- the Daily Hole */
+function dailyFinish(s, par){
+  var st = pload(), dk = S.round.day, rec = st.daily[dk];
+  if (rec && rec.done) return dailyResult();
+  st.daily[dk] = { s:s, par:par, done:1 };
+  var got = COIN_DAILY + (s < par ? COIN_DAILY_PAR : 0);
+  // the streak counts days played in a row, on the game's own calendar
+  var y = new Date(Date.parse(dk + 'T12:00:00Z') - 86400000).toISOString().slice(0, 10);
+  st.streak.n = st.streak.last === y ? st.streak.n + 1 : (st.streak.last === dk ? st.streak.n : 1); st.streak.last = dk; st.streak.best = Math.max(st.streak.best || 0, st.streak.n);
+  if (STREAK_REWARD[st.streak.n]) grant(st, STREAK_REWARD[st.streak.n]);
+  psave(st); coins(got, 'Daily Hole');
+  if (s < par) try{ S.host.sfx && S.host.sfx('holeGood'); }catch(e){}
+  dailyResult(got);
+}
+function dailyResult(got){
+  var st = pload(), dk = S.round && S.round.day || today(), rec = st.daily[dk], dh = dailyHole(dk), T = THEMES[dh.theme];
+  if (!rec) return showHub();
+  var label = rec.s >= rec.par + 3 ? 'Picked up' : scoreName(rec.s, rec.par);
+  cancelAnimationFrame(S.raf); S.screen = 'card';
+  S.ov.innerHTML = top('Daily Hole', T.name + ' · ' + dk, '<b>' + rec.s + '</b>par ' + rec.par) + '<div class="pt-menu">\
+    <div class="pp-dres" style="background:linear-gradient(160deg,' + T.bg2 + ',' + T.bg + ');color:' + (T.light ? T.ink : '#fff') + '"><div class="k">' + esc(T.kick) + ' · ' + esc(dh.name) + '</div>\
+      <div class="t">' + esc(label) + '</div><div class="m">' + rec.s + (rec.s === 1 ? ' stroke' : ' strokes') + ', par ' + rec.par + (rec.s < rec.par ? ' · beat par' : '') + '</div>\
+      <div class="m">Streak ' + (st.streak.n || 1) + (st.streak.best > 1 ? ' · best ' + st.streak.best : '') + '</div>' + (got ? '<div class="pp-coins">+' + got + ' coins</div>' : '') + '</div>\
+    <div class="pt-card" style="cursor:default"><div class="k">Leaderboard</div><div class="m">The shared Daily Hole board needs the server ledger, which is not built yet. Your own result is saved.</div></div>\
+    <div class="m" style="text-align:center;color:#9fbfae">Played. Next Daily Hole in ' + hm(msToNextDay()) + '.</div>\
+    <button class="pt-go" data-share>Share result</button><button class="pt-bt" data-menu>Map</button></div>';
+  S.ov.querySelector('[data-x]').onclick = showHub; S.ov.querySelector('[data-menu]').onclick = showHub;
+  S.ov.querySelector('[data-share]').onclick = function(e){ var txt = 'Run The Tour · Putt Putt Tour Daily Hole ' + dk + '\n' + T.name + ': ' + dh.name + '\n' + label + ' (' + rec.s + ', par ' + rec.par + ')\nrunthe.gg/golf';
+    try{ navigator.clipboard.writeText(txt); e.currentTarget.textContent = 'Copied'; }catch(err){} };
 }
 
 /* ---------------------------------------------------------------------------------- a round */
@@ -916,21 +1289,22 @@ function buildHole(d){
   if (!d.real) return buildFrom(d);
   var spec = fromHost(S.host, d.courseKey, d.hole), C = buildReal(spec, { pin:d.pin }), rnd = mulberry(d.seed);
   var spot = null, ft = d.ft; while (!spot && ft > 3){ spot = spotFor(C, ft, rnd); if (!spot) ft -= 3; }
-  C.tee = spot || [C.cup[0], C.cup[1] + 6]; C.par = 2; C.name = spec.name; C.sub = spec.sub;
+  C.tee = spot || [C.cup[0], C.cup[1] + 6]; C.par = d.par || 2; C.name = spec.name; C.sub = spec.sub;
   return C;
 }
 function playHole(){
   var R = S.round, d = R.holes[R.i], C = buildHole(d);
   S.screen = 'play';
   S.play = { C:C, ball:C.tee.slice(), prev:C.tee.slice(), strokes:0, state:'aim', aimAng:Math.atan2(C.cup[1] - C.tee[1], C.cup[0] - C.tee[0]),
-    target:C.cup.slice(), firstFt:Math.hypot(C.cup[0] - C.tee[0], C.cup[1] - C.tee[1]), pow:0, trail:null, read:C.kind === 'real', clock0:performance.now() / 1000, art:null, v3:null, cam:null, cap:C.kind === 'real' ? 5 : C.par + 3 };
+    target:C.cup.slice(), firstFt:Math.hypot(C.cup[0] - C.tee[0], C.cup[1] - C.tee[1]), pow:0, trail:null, read:C.kind === 'real', clock0:performance.now() / 1000, art:null, v3:null, cam:null, cap:R.mode === 'ppt' ? C.par : (C.kind === 'real' ? 5 : C.par + 3) };
   var cached = !d.real && v3Ok() && ((S.v3c && S.v3c[v3Key(d)]) || (S.v3job && S.v3job.k === v3Key(d) && v3Get(d, C)));
   if (cached) S.play.v3 = cached; else if (d.real || !v3Ok()) S.play.art = paintCourse(C);
-  var sub = C.kind === 'real' ? (C.sub + ' · Putt ' + (R.i + 1) + ' of ' + R.holes.length) : (R.mode === 'daily' ? (R.kick + ' · Par ' + C.par) : ('Hole ' + (R.i + 1) + ' of 9 · Par ' + C.par));
-  S.ov.innerHTML = top(C.kind === 'real' ? R.title : (R.mode === 'daily' ? R.title : d.name), sub, '') + '<div class="pt-stage"><canvas></canvas><div class="pt-read" hidden></div></div>\
+  var sub = tourSub(R, C, S.play), title = R.mode === 'ppt' ? (C.kind === 'real' ? 'Tour Pin · ' + C.name : levelName(R.lv)) : R.title;
+  S.ov.innerHTML = top(title, sub, '') + '<div class="pt-stage"><canvas></canvas><div class="pt-read" hidden></div></div>\
     <div class="pt-bar">' + (C.kind === 'real' ? '<button class="pt-bt" data-l aria-label="Aim left">◂</button><button class="pt-bt" data-r aria-label="Aim right">▸</button>' : '') +
-    '<div class="pt-hint" data-hint></div><button class="pt-bt' + (S.play.read ? ' on' : '') + '" data-read>Read</button></div>';
-  S.ov.querySelector('[data-x]').onclick = function(){ showMenu(); };
+    '<div class="pt-hint" data-hint></div><button class="pt-bt" data-restart aria-label="Restart the hole">↺</button><button class="pt-bt' + (S.play.read ? ' on' : '') + '" data-read>Read</button></div>';
+  S.ov.querySelector('[data-x]').onclick = function(){ leaveHole(); };
+  S.ov.querySelector('[data-restart]').onclick = function(){ restartHole(); };
   S.ov.querySelector('[data-read]').onclick = function(e){ S.play.read = !S.play.read; e.currentTarget.classList.toggle('on', S.play.read); };
   var nudge = function(s){ return function(){ aimNudge(s * 0.0035); }; };
   if (C.kind === 'real'){ holdRepeat(S.ov.querySelector('[data-l]'), nudge(-1)); holdRepeat(S.ov.querySelector('[data-r]'), nudge(1)); }
@@ -964,7 +1338,8 @@ function sizeCanvas(){
 function hud(){
   var P = S.play, R = S.round, C = P.C, sc = S.ov.querySelector('.pt-sc');
   var tot = 0, par = 0; R.cards.forEach(function(c){ tot += c.s; par += c.p; });
-  sc.innerHTML = R.holes.length > 1 ? '<b>' + fmtPar(tot - par) + '</b>Stroke ' + (P.strokes + 1) : '<b>' + P.strokes + '</b>' + (P.strokes === 1 ? 'stroke' : 'strokes');
+  sc.innerHTML = '<b>' + P.strokes + '</b>' + (P.strokes === 1 ? 'stroke' : 'strokes');
+  var sub = S.ov.querySelector('.pt-hd span'); if (sub) sub.textContent = tourSub(R, C, P);
   var hint = S.ov.querySelector('[data-hint]');
   if (hint) hint.textContent = C.kind === 'real' ? 'Drag the ring to aim. Pull back anywhere to set the pace, let go to putt.' : 'Pull back from anywhere and let go. Further back hits it harder.';
 }
@@ -1029,7 +1404,7 @@ function bindInput(cv){
 }
 function onKey(e){
   if (!S) return;
-  if (e.key === 'Escape'){ e.preventDefault(); if (S.screen === 'menu') close(); else showMenu(); return; }
+  if (e.key === 'Escape'){ e.preventDefault(); if (S.ov.querySelector('.pp-sheet')){ S.ov.querySelector('.pp-sheet').remove(); return; } if (S.screen === 'menu') close(); else if (S.screen === 'play') leaveHole(); else showHub(); return; }
   var P = S.play; if (!P || P.state !== 'aim') return;
   var fine = e.shiftKey ? 0.2 : 1;
   if (e.key === 'ArrowLeft' || e.key === 'ArrowRight'){ e.preventDefault(); var s = e.key === 'ArrowLeft' ? -1 : 1;
@@ -1098,6 +1473,7 @@ function settle(){
   else P.ball = sh.rest.slice();
   P.state = 'aim'; P.shot = null;
   if (sh.holed){ return holeOut(); }
+  if (S.round.mode === 'ppt' && P.strokes >= C.par){ P.state = 'done'; return tourOut(false); }
   if (P.strokes >= P.cap){ return holeOut(true); }
   P.target = C.cup.slice(); P.aimAng = Math.atan2(C.cup[1] - P.ball[1], C.cup[0] - P.ball[0]);
   hud();
@@ -1256,6 +1632,8 @@ function drawGolfer(ctx, P, cam){
 /* -------------------------------------------------------------------------------- holing out */
 function holeOut(picked){
   var P = S.play, R = S.round, C = P.C, s = picked ? P.cap : P.strokes, par = C.par;
+  if (R.mode === 'ppt'){ P.state = 'done'; return tourOut(true); }
+  if (R.mode === 'pdaily'){ P.state = 'done'; return dailyFinish(s, par); }
   R.cards.push({ s:s, p:par, n:(R.i + 1), name:C.kind === 'real' ? C.sub : (R.holes[R.i].name || C.name) });
   var label = picked ? 'Picked up' : (C.kind === 'real' ? (s === 1 ? 'One putt' : s === 2 ? 'Two putts' : s + ' putts') : scoreName(s, par));
   if (!picked && s <= par - 1) try{ S.host.sfx && S.host.sfx('holeGood'); }catch(e){}
@@ -1296,6 +1674,13 @@ function scorecard(){
 }
 RTT_PUTT.open = open; RTT_PUTT.close = close; RTT_PUTT.paintCourse = paintCourse; RTT_PUTT.SKIN = SKIN;
 RTT_PUTT._state = function(){ return S; };
+// the checker's door straight onto a Tour level. Nothing on the page calls it.
+RTT_PUTT._level = function(n){ if (S) startLevel(n); };
+RTT_PUTT.COINS = { hole:COIN_HOLE, sig:COIN_SIG, ace:COIN_ACE, world:COIN_WORLD, daily:COIN_DAILY, dailyPar:COIN_DAILY_PAR };
+// what the home screen card shows: today's Daily Hole, your level and your lives
+RTT_PUTT.summary = function(host){ HOSTX = host || HOSTX; var st = pload(), dk = today(), dh = dailyHole(dk), rec = st.daily[dk];
+  return { lv:Math.min(st.lv, LEVELS.length), levels:LEVELS.length, world:worldOf(Math.min(st.lv, LEVELS.length)).name, lives:st.lives, max:livesMax(), refillAt:st.refillAt || null,
+    daily:{ name:dh.name, theme:THEMES[dh.theme].name, kick:THEMES[dh.theme].kick, done:!!(rec && rec.done), s:rec && rec.s, par:rec && rec.par }, nextMs:msToNextDay() }; };
 // the checker's door: start a round at a given hole. Nothing on the page calls it.
 RTT_PUTT._go = function(mode, arg, i){ if (!S) return; startRound(mode, arg); if (i){ S.round.i = i; playHole(); } };
 
