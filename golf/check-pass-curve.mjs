@@ -5,6 +5,7 @@
  *
  *   CURVE     v6: tier 1 costs 800 and tier 60 2,000, about 84,000 in all; overtime tiers cost 2,000
  *   BRIEFS    a sponsor brief feeds the Track at the season rate, like the season it is part of
+ *   SIMMED    a season simmed to the end (Skip to end), and any brief it settles, pays coins and no Pass XP
  *   NO LIMIT  an award lands on the track in full, whatever the day
  *   REPLAYS   Daily rounds 1 to 3 pay Pass XP; round 4 on (unlimited plays, tokens) pays coins and no XP
  *   MIGRATION a v4 player keeps their tier; XP banked while the day pace was live comes back once, at the
@@ -65,7 +66,9 @@ try {
     out.heavy = play(3, 3, 60);
     out.steady = play(2, 3, 60);
     out.casual = play(1, 1, 60);
-    out.briefRate = /awardPlayCoins\(rw\.coins, b\.brand\+' brief', PASS_XP_SEASON/.test(document.documentElement.innerHTML);
+    const src = [...document.scripts].map((x) => x.textContent).join('\n');
+    out.briefRate = /awardPlayCoins\(rw\.coins, b\.brand\+' brief', \(S\.season&&S\.season\.skipped\)\?0:PASS_XP_SEASON/.test(src);
+    out.simmed = /awardPlayCoins\(amt, label, skipped\?0:PASS_XP_SEASON\)/.test(src);
     todayKey = () => keyOf(1);
     todayKey = real; return out;
   });
@@ -73,7 +76,8 @@ try {
   ok(`v6: ${R.curve.total} XP in all, tier 1 at ${R.curve.t1}, tier 60 at ${Math.round(R.curve.t60)}, overtime ${R.curve.ot} a tier`, R.curve.v === 6 && Math.abs(R.curve.total - 84000) < 500 && R.curve.t1 === 800 && Math.abs(R.curve.t60 - 2000) < 5 && R.curve.ot >= R.curve.t60, R.curve);
   ok('play XP is half what it was (0.6 to 0.3)', R.curve.rate === 0.3, R.curve.rate);
   ok('a decent season (about 640 XP) is most of the first tier, not three tiers', R.decent > 500 && R.decent < 800, R.decent);
-  ok('a sponsor brief feeds the Track at the season rate', R.briefRate);
+  ok('a sponsor brief feeds the Track at the season rate, and nothing once the season is simmed', R.briefRate);
+  ok('a season simmed to the end (Skip to end) pays no Pass XP', R.simmed);
   head('no daily limit');
   ok('a 20,000 XP award on day 1 lands on the track in full', R.big === 20000, R.big);
   head('Daily replays');
