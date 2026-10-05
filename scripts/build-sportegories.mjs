@@ -369,6 +369,63 @@ try {
     for (const rec of recs) for (const a of tags) if (!rec.aw.includes(a)) rec.aw.push(a);
   }
 } catch (e) { console.warn('skip scripts/nba-awards.json: ' + e.message); }
+/* ONE MAN, TWO NAMES.
+ *
+ * The pool is keyed on the name, so a player the sources spell two ways is two
+ * records, and each holds half of him. Penny Hardaway came in from the corpus
+ * with four All-Star selections and no college. Anfernee Hardaway came in from
+ * former.js with Memphis and no awards. A player who typed the name on his
+ * birth certificate into "NBA All-Star who played for the Orlando Magic" was
+ * told we could not verify the franchise's best player of the 1990s. The
+ * other spelling failed "played college ball at Memphis" the same way.
+ *
+ * Nothing threw. Each record is a valid record. The only symptom is a right
+ * answer refused, and only for whichever name the player happened to use.
+ *
+ * Deliberately an explicit list, like FRANCHISE below. A nickname dictionary
+ * finds these pairs and also finds Carl and Carlton Davis, who are two men.
+ * scripts/check-sportegories.mjs reports likely new pairs without failing,
+ * because a roster name the bot pulls in tonight is not a reason to stop the
+ * daily build.
+ *
+ * THE RECORDS ARE PAIRED HERE AND JOINED IN THE GAME, NOT MERGED HERE. Merging
+ * them in this file moved the category picker: one fewer record shifts the
+ * per-letter counts, and 25 boards already played came out with different
+ * categories, which is somebody's archived day rewritten under them. So both
+ * records ship exactly as before and `same` names the pairs. sportegories.js
+ * gives each half the union of both when it loads, which changes what an
+ * answer proves and never which board a day gets. */
+const ONE_PERSON = [
+  ['NBA', 'Penny Hardaway', 'Anfernee Hardaway'],
+  ['NFL', 'Michael Vick', 'Mike Vick'],
+  ['NFL', 'Patrick Surtain II', 'Pat Surtain II'],
+  ['NFL', 'Sauce Gardner', 'Ahmad Gardner'],
+  ['NFL', 'Trent Brown', 'Trenton Brown'],
+  ['NFL', 'Olu Fashanu', 'Olumuyiwa Fashanu'],
+  ['NFL', 'Foye Oluokun', 'Foyesade Oluokun'],
+  ['NFL', 'Jacob Martin', 'Jake Martin'],
+  ['MLB', 'Tris Speaker', 'Tristram Speaker']
+];
+const folded = [];
+for (const [sport, name, other] of ONE_PERSON) {
+  const keep = (pool.get(sport + '|' + nkFull(name)) || []);
+  const goneKey = sport + '|' + nkFull(other), gone = pool.get(goneKey) || [];
+  // The same man shares a club with himself. Pick the pair that does, so a
+  // namesake in either bucket is never the one paired. Club names are not
+  // unified yet at this point (FRANCHISE runs later), so Tris Speaker's
+  // Indians and Tristram Speaker's Guardians do not match: when each name is
+  // one man and their decades overlap, that is enough for a listed pair.
+  let a = null, b = null;
+  for (const x of keep) for (const y of gone) {
+    if (!a && x.t.some((t) => y.t.includes(t))) { a = x; b = y; }
+  }
+  if (!a && keep.length === 1 && gone.length === 1 && keep[0].decade.some((d) => gone[0].decade.includes(d))) {
+    a = keep[0]; b = gone[0];
+  }
+  if (!a) { if (keep.length && gone.length) console.warn('one person: ' + name + ' and ' + other + ' share no club, left apart'); continue; }
+  folded.push([a, b]);
+}
+if (folded.length) console.log('one person, two names: ' + folded.length + ' pairs joined');
 /* THE HALL OF FAME IS ONE FACT IN TWO PLACES, and the category reads only one.
    "Hall of Famer" tests the award list, but the curated corpus records an
    induction as the hof flag, so Ben Wallace, Wayne Gretzky, Sue Bird and every
@@ -921,6 +978,9 @@ const payload = {
      second copy to drift. */
   alias: FRANCHISE,
   players: compact,
+  /* [shown, other]: two records that are one man (see ONE_PERSON). The game
+     joins them when it loads, so either name proves every fact of either. */
+  same: folded.map(([a, b]) => [PLAYERS.indexOf(a), PLAYERS.indexOf(b)]).filter(([a, b]) => a >= 0 && b >= 0),
   cats: CATS.map((c) => ({ i: c.i, l: c.l, p: c.p, g: c.g, n: c.n, t: c.t, s: c.s })),
   viab: viability,
   letters: PLAYABLE,

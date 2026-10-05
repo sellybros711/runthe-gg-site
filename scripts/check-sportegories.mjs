@@ -123,6 +123,14 @@ console.log('\n3) no "Active" category suggests a player it does not call active
     const k = D.sports[rec[1]] + '|' + norm(rec[0]);
     byName.set(k, (byName.get(k) || false) || !!(rec[7] & 1));
   }
+  // One man held under two names is active under both (section 9): the game
+  // joins the pair at load, so Ahmad Gardner is as active as Sauce Gardner.
+  for (const [i, j] of D.same || []) {
+    const a = D.players[i], b = D.players[j]; if (!a || !b) continue;
+    const ka = D.sports[a[1]] + '|' + norm(a[0]), kb = D.sports[b[1]] + '|' + norm(b[0]);
+    const on = byName.get(ka) || byName.get(kb);
+    byName.set(ka, on); byName.set(kb, on);
+  }
   let offers = 0;
   const wrong = [];
   for (const cat of actives) {
@@ -331,6 +339,93 @@ console.log('\n8) the tips describe the game as it is');
       else ok('and the only thing that closes a row is grade(), at the end');
     }
   }
+}
+
+/* ---- 9. one man, two names, one record -------------------------------- */
+/* A player typed "Anfernee Hardaway" into "NBA All-Star who played for the
+   Orlando Magic" and was told we could not verify it. The data held him twice:
+   "Penny Hardaway" with his All-Star years and no college, "Anfernee Hardaway"
+   with Memphis and no awards. Each name failed a category the other passed.
+   ONE_PERSON in the builder ships such pairs as `same`, and the game joins
+   them at load. This asks the GAME, through check(), that both
+   names land on one record carrying the facts each half used to hold. */
+{
+  console.log('\n9. one man, two names, one record');
+  const atLetter = (name) => name.trim().split(/\s+/)[0][0];
+  const ask = (label, name) => {
+    const at = D.cats.findIndex((c) => c.l === label);
+    if (at < 0) return null;
+    return S.check({ letter: atLetter(name), cats: [{ i: D.cats[at].i }] }, 0, name, {});
+  };
+  // The report, by the name the player used, on the category it was filed on.
+  for (const [label, name] of [
+    ['NBA All-Star who played for the Orlando Magic', 'Anfernee Hardaway'],
+    ['NBA All-Star who played for the Orlando Magic', 'Penny Hardaway'],
+    ['Played college at Memphis', 'Penny Hardaway'],
+    ['Played college at Memphis', 'Anfernee Hardaway']
+  ]) {
+    const r = ask(label, name);
+    if (!r) fail('the category "' + label + '" no longer exists');
+    else if (!r.ok) fail(name + ' is refused by "' + label + '" (' + r.reason + ')');
+    else ok(name + ' fits "' + label + '"');
+  }
+  /* Every listed pair, through a category built from BOTH records' facts:
+     every club, every award and the college. Both names have to pass it and
+     land inside the pair, or the join is only half done. */
+  const same = D.same || [];
+  if (same.length < 8) fail('only ' + same.length + ' pairs shipped; the pairing is not running');
+  let pairs = 0;
+  for (const [i, j] of same) {
+    const A = D.players[i], B = D.players[j];
+    if (!A || !B) { fail('a pair points at a record that does not exist: ' + i + ', ' + j); continue; }
+    const all = [];
+    for (const p of [A, B]) {
+      for (const t of p[3]) all.push({ k: 'team', v: D.teams[t] });
+      for (const a of p[5]) all.push({ k: 'award', v: D.awards[a] });
+      if (p[4] >= 0) all.push({ k: 'col', v: D.cols[p[4]] });
+    }
+    const at = D.cats.length;
+    D.cats.push({ i: at, l: 'probe', p: { all } });
+    const res = [A[0], B[0]].map((n) => S.check({ letter: atLetter(n), cats: [{ i: at }] }, 0, n, {}));
+    // and naming him twice is one answer, whichever name came first
+    const first = res[0].ok ? { [res[0].player.idx]: 1 } : {};
+    const again = S.check({ letter: atLetter(B[0]), cats: [{ i: at }] }, 0, B[0], first);
+    D.cats.pop();
+    const miss = res.map((r, k) => (!r.ok || (r.player.idx !== i && r.player.idx !== j)) ? [A[0], B[0]][k] + ' (' + (r.reason || 'other record') + ')' : null).filter(Boolean);
+    if (miss.length) fail(A[0] + ' / ' + B[0] + ': ' + miss.join(', '));
+    else if (again.reason !== 'dup') fail(A[0] + ' then ' + B[0] + ' scores twice (' + (again.reason || 'ok') + ')');
+    else pairs++;
+  }
+  if (pairs) ok(pairs + ' pairs answer to both names with every club, award and college of one man, once');
+
+  /* Likely new pairs, reported and never failed. A roster name the bot pulls
+     in tonight is not a reason to stop the daily build, and a nickname match
+     also finds Carl and Carlton Davis, who are two men. Read the list and add
+     a real pair to ONE_PERSON in scripts/build-sportegories.mjs. */
+  const NICK = [['mike', 'michael'], ['pat', 'patrick'], ['penny', 'anfernee'], ['sauce', 'ahmad'],
+    ['tris', 'tristram'], ['trent', 'trenton'], ['jake', 'jacob'], ['olu', 'olumuyiwa'], ['foye', 'foyesade'],
+    ['magic', 'earvin'], ['chris', 'christopher'], ['matt', 'matthew'], ['tom', 'thomas'], ['bill', 'william'],
+    ['bob', 'robert'], ['jim', 'james'], ['joe', 'joseph'], ['dan', 'daniel'], ['dave', 'david'],
+    ['tony', 'anthony'], ['steve', 'stephen'], ['ken', 'kenneth'], ['nick', 'nicholas'], ['alex', 'alexander'],
+    ['ben', 'benjamin'], ['sam', 'samuel'], ['ed', 'edward'], ['rick', 'richard'], ['greg', 'gregory'],
+    ['josh', 'joshua'], ['zach', 'zachary'], ['andy', 'andrew'], ['larry', 'lawrence'], ['ron', 'ronald'],
+    ['jeff', 'jeffrey'], ['tim', 'timothy'], ['cam', 'cameron'], ['nate', 'nathan']];
+  const nick = (a, b) => NICK.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
+  const tk = (n) => n.replace(/ (Jr\.|Sr\.|II|III|IV)$/, '').split(/\s+/).map(norm).filter(Boolean);
+  const byLast = new Map();
+  D.players.forEach((p, i) => { const t = tk(p[0]); const k = p[1] + '|' + t[t.length - 1]; (byLast.get(k) || byLast.set(k, []).get(k)).push(i); });
+  const held = new Set(same.flatMap(([i, j]) => [i + '|' + j, j + '|' + i]));
+  const maybe = [];
+  for (const ids of byLast.values()) for (const a of ids) for (const b of ids) {
+    if (a >= b) continue;
+    const A = D.players[a], B = D.players[b], ta = tk(A[0]), tb = tk(B[0]);
+    if (ta[0] === tb[0] || !nick(ta[0], tb[0])) continue;
+    if (!(A[6] & B[6]) || !A[3].some((t) => B[3].includes(t))) continue;
+    if (held.has(a + '|' + b)) continue;
+    maybe.push(D.sports[A[1]] + ' ' + A[0] + ' / ' + B[0]);
+  }
+  if (maybe.length) console.log('  note ' + maybe.length + ' possible second spellings to read: ' + maybe.slice(0, 10).join(' | '));
+  else ok('no unlisted nickname pairs share a club and a decade');
 }
 
 if (bad) { console.error('\n' + bad + ' problem' + (bad === 1 ? '' : 's')); process.exit(1); }

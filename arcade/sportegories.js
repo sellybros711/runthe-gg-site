@@ -74,6 +74,33 @@
       var k = p.first + '|' + p.last;
       (BY_KEY[k] = BY_KEY[k] || []).push(p.idx);
     });
+    /* A man the sources spell two ways is two records, each holding half of
+       him (scripts/build-sportegories.mjs, ONE_PERSON). Penny Hardaway had
+       the All-Star years and Anfernee Hardaway had Memphis, so each name
+       failed a category the other passed. Joined here, at load, so the board
+       a day gets never moves: each half carries the union of both, either
+       name finds both, and naming him twice is a duplicate. */
+    (D.same || []).forEach(function (pr) {
+      var a = P[pr[0]], b = P[pr[1]]; if (!a || !b) return;
+      var u = function (x, y) { var o = x.slice(); y.forEach(function (v) { if (o.indexOf(v) < 0) o.push(v); }); return o; };
+      var teams = u(a.teams, b.teams), aw = u(a.aw, b.aw);
+      [a, b].forEach(function (p, k) {
+        var q = k ? a : b;
+        p.teams = teams; p.aw = aw;
+        if (!p.col) p.col = q.col;
+        if (!p.pos) p.pos = q.pos;
+        if (!p.rpos) p.rpos = q.rpos;
+        if (!p.st) p.st = q.st;
+        p.decBits = a.decBits | b.decBits;
+        p.act = a.act || b.act;
+        p.f = Math.max(a.f || 0, b.f || 0);
+        p.person = a.idx;
+      });
+      [a, b].forEach(function (p, k) {
+        var ids = BY_KEY[p.first + '|' + p.last], o = k ? a : b;
+        if (ids.indexOf(o.idx) < 0) ids.push(o.idx);
+      });
+    });
   }
 
   // ---------- predicate evaluation (mirrors the builder) ----------
@@ -536,10 +563,12 @@
     var hits = P.filter(function (p) {
       return (p.first[0] === L || p.last[0] === L) && test(p, def.p);
     }).sort(function (a, b) { return (b.f || 0) - (a.f || 0); });
+    /* And one per MAN: Penny and Anfernee Hardaway are one record pair, so
+       the reveal names him once, by the first of the two it reaches. */
     for (var i = 0; i < hits.length && out.length < (limit || 10); i++) {
-      var n = hits[i].name;
-      if (seen[n.toLowerCase()]) continue;
-      seen[n.toLowerCase()] = 1; out.push(n);
+      var n = hits[i].name, who = hits[i].person != null ? '#' + hits[i].person : n.toLowerCase();
+      if (seen[n.toLowerCase()] || seen[who]) continue;
+      seen[n.toLowerCase()] = 1; seen[who] = 1; out.push(n);
     }
     return out;
   }
