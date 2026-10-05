@@ -120,7 +120,10 @@ window.__P = {
   otherCard(code){ var d=document.createElement('div'); d.innerHTML=playerCardHTML({self:false, uid:'x', name:'Other', look:Object.assign({},DEFLOOK,{stamps:code}), rep:'Amateur'}); var st=d.querySelector('.pcstamps'); return st?st.textContent:null; },
   event(){ return {now:(passEventNow()||{}).id||null, mult:passEventMult(), soon:(passEventSoon(3)||{e:{}}).e.id||null, line:passEventLine().replace(/<[^>]+>/g,''), chip:passEventChip().replace(/<[^>]+>/g,'')}; },
   addXp(n, boost){ try{ var w=wheelState(); w.boostUntil=boost?Date.now()+600000:0; wheelSave(w); }catch(e){}
-    var s=passState(), before=s.xp; passAddXp(n); var after=passState().xp; S._passPop=null; return after-before; },
+    // the season pace (check-pass-pace.mjs) is not this file's subject: give the award room under it, or a
+    // day-1 test that adds a dozen tiers would see them banked rather than on the track
+    var s=passState(), before=s.xp; s.grand=Math.max(+s.grand||0, before+n*8); passSave(s);
+    passAddXp(n); var after=passState().xp; S._passPop=null; return after-before; },
   eventNote(){ var got=[]; var t0=window.toast; window.toast=function(h){ got.push(String(h).replace(/<[^>]+>/g,' ')); };
     try{ Object.keys(localStorage).forEach(function(k){ if(k.indexOf('bag_passev_')>=0) localStorage.removeItem(k); }); }catch(e){}
     maybePassEventNote(); maybePassEventNote(); return new Promise(function(r){ setTimeout(function(){ window.toast=t0; r(got); }, 1700); }); },
