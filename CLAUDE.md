@@ -19124,6 +19124,27 @@ hole and every daily the check walks is solved to par by a search, and no shot m
 or roll for ever. The first run found a ball resting on a rail being called out, because the
 material grid is a quarter foot: OUT is only believed once the exact polygon agrees.
 
+### The course golfer is the profile golfer, drawn from a 3D model (tester preview)
+
+```
+node golf/check-golfer3d.mjs        every look, every aim, every shot, and who sees it (server on :8099)
+```
+
+`golf/golfer3d.js` plays the tracer's shot with the player's own golfer: a small posed 3D model whose every
+cell is handed to the profile renderer's own `paint()` (PXHD in `golf/index.html`). So the light, the colour
+ramps, the contact shadows and the soft outline are the profile picture's, and the model only says what is in
+each cell and which way it faces. One model covers every aim (snapped to eight), both hands, and the full
+swing, chip and putt. The golfer stands side-on to the line like a real golfer.
+
+**It is behind `g3dOn()`**: the putt testers until `G3D_LIVE` is true. A blocked or stale module falls back
+to the old sprites, which are untouched. `PXHD.Sprite` takes a size now, and the 44 by 56 profile grid is the
+default, so every profile picture is byte for byte what it was. Measured on 40 looks against the old file.
+
+**What it does not draw yet**: novelty hats are the standing art stamped on the head (as the old sprites did),
+the duck floatie is not drawn, and club cosmetics use the plain club colours. Drawing a set costs about 20ms
+on a desktop and 60ms on a throttled phone, once per look, aim and kind of shot, and the other seven aims are
+drawn while the page is idle.
+
 ## The release newsletter
 
 ```

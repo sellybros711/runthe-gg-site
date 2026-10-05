@@ -61,6 +61,8 @@
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- The Putting Green: a tester preview. It draws nothing until puttOn() opens it (see PUTT_TESTERS). -->
 <script defer src="putt/putt.js?v=1"></script>
+<!-- The course golfer in the profile style: a tester preview, asked through g3dOn(). -->
+<script defer src="golfer3d.js?v=1"></script>
 <!-- Google Consent Mode v2 defaults. Advertising storage is denied until the certified CMP (loaded by
      the AdSense tag below) records the user's choice; the CMP then updates these signals automatically,
      including tightening analytics where local law requires it. Analytics storage defaults to granted so
@@ -17179,15 +17181,16 @@ function hairRamp(hex){ const l=lum(hex); const r=ramp(hex,{spread:l<.2?.55:1}).
   if(l<.2){ r[3]=mix(hex,'#8a7a9a',.28); r[4]=mix(hex,'#b8aac8',.45); } return r; }
 
 // ---- the canvas of parts ----
-function Sprite(){ this.g=[]; for(let y=0;y<H;y++) this.g.push(new Array(W).fill(null)); this.z=0; }
-Sprite.prototype.fill=function(mask,part,opt){ opt=opt||{}; const z=++this.z;
+// w,h default to the profile grid. The course golfer (golfer3d.js) asks for a larger one.
+function Sprite(w,h){ this.W=w||W; this.H=h||H; this.g=[]; for(let y=0;y<this.H;y++) this.g.push(new Array(this.W).fill(null)); this.z=0; }
+Sprite.prototype.fill=function(mask,part,opt){ opt=opt||{}; const z=++this.z, W=this.W, H=this.H;
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){ if(!mask(x+.5,y+.5,x,y)) continue;
     if(opt.under && this.g[y][x]) continue;
     this.g[y][x]=Object.assign({tag:this.tag},part,{t:opt.t!=null?opt.t:null,dt:opt.dt||0,z}); } };
-Sprite.prototype.set=function(x,y,m,t,extra){ if(x<0||y<0||x>=W||y>=H) return; this.g[y][x]=Object.assign({m,t,z:++this.z,dt:0,tag:this.tag},extra||{}); };
+Sprite.prototype.set=function(x,y,m,t,extra){ if(x<0||y<0||x>=this.W||y>=this.H) return; this.g[y][x]=Object.assign({m,t,z:++this.z,dt:0,tag:this.tag},extra||{}); };
 Sprite.prototype.tone=function(x,y,t){ const c=this.g[y]&&this.g[y][x]; if(c) c.t=t; };
 Sprite.prototype.nudge=function(x,y,d){ const c=this.g[y]&&this.g[y][x]; if(c) c.dt=(c.dt||0)+d; };
-Sprite.prototype.clear=function(mask){ for(let y=0;y<H;y++)for(let x=0;x<W;x++) if(mask(x+.5,y+.5,x,y)) this.g[y][x]=null; };
+Sprite.prototype.clear=function(mask){ const W=this.W, H=this.H; for(let y=0;y<H;y++)for(let x=0;x<W;x++) if(mask(x+.5,y+.5,x,y)) this.g[y][x]=null; };
 const ell=(cx,cy,rx,ry)=>(x,y)=>((x-cx)/rx)**2+((y-cy)/ry)**2<=1;
 const rect=(x0,y0,x1,y1)=>(x,y,ix,iy)=>ix>=x0&&ix<=x1&&iy>=y0&&iy<=y1;
 const poly=pts=>(x,y)=>{let c=false;for(let i=0,j=pts.length-1;i<pts.length;j=i++){const[xi,yi]=pts[i],[xj,yj]=pts[j];
@@ -17213,7 +17216,7 @@ function toneOf(c,x,y){ if(c.t!=null) return c.t;
 
 // Paint: tones, contact shadows, the inner contour where one part overlaps another, and the soft
 // outline one pixel INSIDE the silhouette in the part's own shadow colour (owner: no dark outer ring).
-Sprite.prototype.paint=function(ctx,px,rampOf,only){ const g=this.g, T=[];
+Sprite.prototype.paint=function(ctx,px,rampOf,only){ const g=this.g, T=[], W=this.W, H=this.H;
   for(let y=0;y<H;y++){ T.push([]); for(let x=0;x<W;x++){ const c=g[y][x]; T[y].push(c?toneOf(c,x,y):-1); } }
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){ const c=g[y][x]; if(!c||c.t!=null||c.noAO) continue;
     for(const[dx,dy]of[[0,-1],[1,0],[-1,0]]){ const o=g[y+dy]&&g[y+dy][x+dx];
@@ -17474,7 +17477,7 @@ function renderMap(map,colOf,o){ o=o||{}; const s=new Sprite(), px=o.px||6, skip
   const cv=document.createElement('canvas'); cv.width=(x1-x0+1)*px; cv.height=(y1-y0+1)*px;
   cv.getContext('2d').drawImage(full,x0*px,y0*px,cv.width,cv.height,0,0,cv.width,cv.height);
   return cv; }
-return { render, renderMap, ramp, mix };
+return { render, renderMap, ramp, mix, Sprite, skinRamp, hairRamp, lum };   // the last four: golfer3d.js
 })();
 function pxGolferCanvas(look,opts){
   look=look||S.look||DEFLOOK; const av=avLook(look);
@@ -17942,9 +17945,13 @@ function hvSwingMarkup(g,p,look){
   // CS502-anim / CS506: the righty golfer uses the new 4-direction SW4 poses for the FULL swing AND for
   // chip/putt (same perfected body, small chip/putt motion) snapped to the aim; lefty keeps the pxDir8
   // system for now. N=up S=down E=right W=left.
-  const useSw4 = !look.lefty;
+  // The 3D course golfer (golfer3d.js, testers): the player's own golfer in the profile style, standing
+  // side-on to the real aim. It replaces both sprite sets below when it is on, lefties included.
+  const g3 = g3dOn() ? g3dSet(look, vx, vy, kind) : null;
+  const useSw4 = !g3 && !look.lefty;
   let set, dir, anch;
-  if(useSw4){
+  if(g3){ anch=g3.ball; }
+  else if(useSw4){
     dir = sw4For(vx, vy);
     try{ set=pxSw4(look,dir); }catch(e){ return ''; }
     anch = PXG_SW4_ANCH[dir] || [12,18];
@@ -17954,21 +17961,22 @@ function hvSwingMarkup(g,p,look){
     try{ set=pxDir8(look,dir); }catch(e){ return ''; }
     anch = dir8Anchor(dir, kind, !!look.lefty);
   }
-  const frames=set[kind]||set.full; if(!frames||!frames[0]) return '';
+  const frames=g3?g3.urls:(set[kind]||set.full); if(!frames||!frames[0]) return '';
   const clsBase = kind==='full'?['sw0','sw1','sw2','sw3']
     : (kind==='chip'?['sw0','sw1','sw2','sw3']   // CS508: chip reuses the full-swing animation (smaller top)
     : ['pt0','pt1','pt2']);                       // CS508: 3-frame putt stroke
   const cam=hvCamFor2(g,p);
   // SW4 canvases carry SW4_HR headroom rows above the grid (tall stamped hats); the body keeps its exact
   // size/anchor - only the image box grows upward, so the hat can extend above the head.
-  const W=PXG_DIR8_W, H=PXG_DIR8_H+(useSw4?SW4_HR:0);
+  const W=g3?g3.W:PXG_DIR8_W, H=g3?g3.H:PXG_DIR8_H+(useSw4?SW4_HR:0);
   if(useSw4) anch=[anch[0], anch[1]+SW4_HR];
   // putt plays under the tight green close-up → size to that frame; full/chip use a fixed small size.
   // putt plays under the tight green close-up → size to that frame; a HOLE-OUT now zooms too (hvCamFor2),
   // so scale to that camera as well or the golfer would balloon; a normal full/chip shot keeps the fixed size.
   const bodyGH = kind==='putt' ? Math.max(13, Math.min(21, cam[3]*0.16))
     : (cam[3] < HV_H ? Math.max(15, Math.min(22, cam[3]*0.15)) : 22);
-  const GH = bodyGH*H/PXG_DIR8_H;
+  // the 3D golfer is sized so its FIGURE is as tall as the old sprite's figure (24 of its 26 rows)
+  const GH = g3 ? bodyGH*(24/PXG_DIR8_H)*H/g3.fig : bodyGH*H/PXG_DIR8_H;
   const GW=GH*W/H;
   const x0=A[0]-GW*(anch[0]/W), y0=A[1]-GH*(anch[1]/H);   // place the ball-anchor at the shot origin A; NO rotation
   const img=(u,cls)=>`<image class="hvsw ${cls}" href="${u}" x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${GW.toFixed(1)}" height="${GH.toFixed(1)}" preserveAspectRatio="none"/>`;
@@ -18025,21 +18033,21 @@ function hvAddressGolfer(hole, holeIdx, courseKey, look){
   if(!HV_SWING) return '';
   const shots=(hole&&hole.shots)||[]; if(!shots.length || !shots[0].k) return '';
   look=look||S.look||DEFLOOK;
-  const useSw4=!look.lefty;   // CS502-anim: righty uses the new N (up-the-hole) address; lefty keeps pxDir8
+  const g3=g3dOn()?g3dSet(look,0,-1,'full'):null;   // the 3D golfer addresses it facing up the hole too
+  const useSw4=!g3&&!look.lefty;   // CS502-anim: righty uses the new N (up-the-hole) address; lefty keeps pxDir8
   const dir=useSw4?'N':'W';
-  let set; try{ set=useSw4?pxSw4(look,dir):pxDir8(look,dir); }catch(e){ return ''; }
-  if(!set) return '';
+  let set; if(!g3){ try{ set=useSw4?pxSw4(look,dir):pxDir8(look,dir); }catch(e){ return ''; } if(!set) return ''; }
   const seedN=(dHash(courseKey||'x')^Math.imul((holeIdx|0)+1,0x9e3779b1))>>>0;
   let g, plots;
   if(hole._hv && hole._hv.g && hole._hv.plots && hole._hv.plots.length){ g=hole._hv.g; plots=hole._hv.plots; }
   else { g=hvGeom(seedN, hole.par, hole.yards||hole.yd||400, courseKey, holeIdx); plots=hvPlots(g, shots, seedN); }
   const p0=plots[0]; if(!p0 || !p0.rest) return '';
   const A=hvProj(g, p0.rest[0], p0.rest[1]);   // the drive's resting spot = where the approach is played from
-  const addr=set.full&&set.full[0];            // address frame (frame 0 of the full swing)
+  const addr=g3?g3.urls[0]:(set.full&&set.full[0]);   // address frame (frame 0 of the full swing)
   if(!addr) return '';
-  const W=PXG_DIR8_W, H=PXG_DIR8_H+(useSw4?SW4_HR:0);
-  const GH=22*H/PXG_DIR8_H, GW=GH*W/H;
-  let anch=(useSw4?(PXG_SW4_ANCH.N||[12,18]):dir8Anchor('N','full', !!look.lefty));
+  const W=g3?g3.W:PXG_DIR8_W, H=g3?g3.H:PXG_DIR8_H+(useSw4?SW4_HR:0);
+  const GH=g3?22*(24/PXG_DIR8_H)*H/g3.fig:22*H/PXG_DIR8_H, GW=GH*W/H;
+  let anch=g3?g3.ball:(useSw4?(PXG_SW4_ANCH.N||[12,18]):dir8Anchor('N','full', !!look.lefty));
   if(useSw4) anch=[anch[0], anch[1]+SW4_HR];
   const x0=A[0]-GW*(anch[0]/W), y0=A[1]-GH*(anch[1]/H);   // stands over the ball facing up the hole (no rotation)
   return `<g class="hvswing hvsw-full"><image class="hvsw hvsw-static" href="${addr}" x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${GW.toFixed(1)}" height="${GH.toFixed(1)}" preserveAspectRatio="none"/></g>`;
@@ -21902,6 +21910,22 @@ function cutscenesOn(){
 var PUTT_LIVE=false;
 const PUTT_API=1;                                         // the putt.js API this page was written against
 var PUTT_TESTERS=['csel8','runnyj','malikwillislover'];      // tester accounts (lowercased usernames)
+/* ---- THE 3D COURSE GOLFER (golf/golfer3d.js): the tracer's golfer in the profile style. Testers only until
+   G3D_LIVE. A blocked or stale module, or a draw that throws, falls back to the old sprites. ---- */
+var G3D_LIVE=false;
+const G3D_API=1;                                          // the golfer3d.js API this page was written against
+function g3dOn(){
+  try{
+    if(!(window.RTT_G3D && window.RTT_G3D.API_VERSION===G3D_API)) return false;
+    if(G3D_LIVE) return true;
+    return sbSignedIn() && PUTT_TESTERS.indexOf((sbUsername||'').toLowerCase())>=0;
+  }catch(e){ return false; }
+}
+// screen vector -> the golfer's frames. 0 degrees is up the screen.
+function g3dSet(look,vx,vy,kind){
+  try{ const a=Math.atan2(vx,-vy)*180/Math.PI; const r=window.RTT_G3D.set(look,a,kind); window.RTT_G3D.warm(look,kind); return r; }
+  catch(e){ return null; }
+}
 function puttOn(){
   try{
     if(!(window.RTT_PUTT && window.RTT_PUTT.API_VERSION===PUTT_API)) return false;   // a blocked or stale module draws no door
