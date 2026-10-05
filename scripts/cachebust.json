@@ -2513,6 +2513,10 @@
     "/assets/newsletter.js": {
       "v": "2",
       "sha": "260c8dc0bc33a527"
+    },
+    "golfer3d.js": {
+      "v": "2",
+      "sha": "df2380fc4f534c8b"
     }
   },
   "hoops/design/style-guide.html": {

@@ -19108,6 +19108,53 @@ song a curator wrote up, and nothing else. `data_drift.mjs` enforces that,
 failing any refresh where a derived value moved for a song whose own history
 did not.
 
+## Run The Tour's course golfer is the profile golfer, drawn from a 3D model
+
+```
+node golf/check-golfer3d.mjs        every look, every aim, every shot, and who sees it (server on :8099)
+```
+
+`golf/golfer3d.js` plays the tracer's shot with the player's own golfer: a small posed 3D model whose every
+cell is handed to the profile renderer's own `paint()` (PXHD in `golf/index.html`). So the light, the colour
+ramps, the contact shadows and the soft outline are the profile picture's, and the model only says what is in
+each cell and which way it faces. One model covers every aim (snapped to eight), both hands, and the full
+swing, chip and putt. The golfer stands side-on to the line like a real golfer.
+
+**It is live for everybody**, asked through `g3dOn()`. `G3D_LIVE = false` is the kill switch, which puts it
+back to the `G3D_TESTERS` accounts alone. A blocked or stale module falls back
+to the old sprites, which are untouched. `PXHD.Sprite` takes a size now, and the 44 by 56 profile grid is the
+default, so every profile picture is byte for byte what it was. Measured on 40 looks against the old file.
+
+**Every item in the store is drawn on it, and the hats and glasses come out of one rule.** A hat or a pair of
+glasses is built from the profile picture's OWN art, so each wears exactly its own colours and a new one needs
+no code. Each row of the front art is spun round the head's up axis (`hull()`): the run through the middle of a
+row is a solid slice (a crown, a cone, a brim), a row with a hole in the middle is a band round the head (a
+wreath, a hood round the face), and a piece standing off on its own (antlers, horns) is a flat cut-out. Glasses
+are a thin layer on the face, with arms run back over the ears. `HAT3D` holds the few that need telling apart:
+the halo is a ring, headphones and antlers are flat, the pirate hat is narrow front to back, the mortarboard is
+square. The tops, plus fours, cleats and every novelty club (scepter, candy cane, sword, wand, hockey stick,
+hot dog, pool noodle, coffin, broom, pitchfork) are modelled. A recoloured club kit draws the club the shot
+uses in the kit's finish; a novelty club is the novelty for every shot, so a scepter putts too.
+
+Three things in that art were wrong for 3D and nothing threw:
+
+- **Face and hair pixels under a brim were spun into the hat**, as tan centres on every brim hat. Skin and
+  hair characters are left out; the model's own head is underneath.
+- **The profile head is shorter than the model's**, so the head poked through the crown of a low hat. A
+  closed hat is domed over the top in its crown's colour, and a band is never narrower than the head.
+- **The top hat's art carries a stray strip at row 55**, hidden behind the body on the profile. In 3D it lay
+  on the grass. Nothing below the shoulders is read, and `check-golfer3d.mjs` asserts no item leaves a piece
+  apart from the golfer, which reintroducing the strip fails at every aim.
+
+**The figure's size is read off the head, never the top pixel**, because the page sizes the golfer by it and
+a witch hat would otherwise shrink him. The canvas is 94 tall for the same hats. `check-golfer3d.mjs` draws
+every hat, glasses, top, legwear, cleats, club, body skin and hair one at a time, from four sides, and asserts
+each changes the picture, paints no unknown material, keeps the size and stays on the canvas.
+
+Drawing a set costs about 20ms on a desktop and 60 to 100ms on a throttled phone, once per look, aim and kind
+of shot, and the other seven aims are drawn while the page is idle. A hull is marched only inside its own box
+and only in front of what is already in the cell.
+
 ## The release newsletter
 
 ```
