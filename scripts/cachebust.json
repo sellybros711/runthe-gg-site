@@ -2517,6 +2517,10 @@
     "golfer3d.js": {
       "v": "2",
       "sha": "df2380fc4f534c8b"
+    },
+    "tracer3d.js": {
+      "v": "1",
+      "sha": "cd93df083850feee"
     }
   },
   "hoops/design/style-guide.html": {
