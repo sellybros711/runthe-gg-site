@@ -11008,7 +11008,7 @@ four in; now under 1% and 9%. Past that the share is real men retiring, which no
 A club that gained talent gains a
 little net rating (a share of the change, the league kept centred). Moves go to the feed, and
 anything touching your club to the beats and the log. A reader that jumps years plays the
-missed summers quietly (`rostNow`). The rosters are not kept on a Hall card (`trimLeague` drops
+missed summers quietly (`rostNow`). The rosters and the league office are not kept on a Hall card (`trimLeague` drops
 them, with `lines`): a son's league rebuilds them, which is right, because the 2026 men have
 aged out by then.
 
@@ -11391,6 +11391,96 @@ pull never swaps a career out from under somebody playing it.
 so the dock can carry `#b-career` from boot on a phone; Classic's Start stays in the Classic
 card. The first-visit guide names five modes with Career first and points at the docked
 button. `check-home`'s budget went 2.5 to 2.9 screens for it (2.40, 2.79 and 1.95 measured).
+
+#### The league office: everybody ages, retires, signs, gets drafted and gets traded
+
+```
+node hoops/check-career.mjs           section 12g holds the league's shape over a dozen careers
+```
+
+Reported by the owner: players did not progress or regress at a natural rate, role players
+lasted to 37 doing nothing, trades were one man for one man with no picks, and a headline read
+"X to the Pacers". Measured first, over careers played to the end: 15% of the league was 35 or
+older, a 2K 70 still on a roster at 37, invented players peaking at 23. The league now runs the
+way NBA 2K's franchise mode does, in miniature, on every story career (`officeSummer`,
+`officeDeadline` in career.js).
+
+**A MAN IS HIS OVERALL, AND IT MOVES A YEAR AT A TIME.** Each man carries `c` (this season's
+overall on the model's scale), `cp` (last season's), `cy`, and `pot`, a ceiling of his own.
+`devMan` grows a young man a share of the gap to his ceiling each year (`LG_GROW`, more at 19
+than at 26), with a stall now and then and a breakout that raises the ceiling. From 28 he
+declines (`LG_DECLINE`), slowly at first and three to four points a year by 35, a star a little
+slower, each man on his own arc, and any year can cost a few points to an injury. Seeded per
+man and season, so a reload sees the same league. **Worth is read off the overall** (`wFromOvr`),
+so minutes, the five and club strength did not change shape.
+
+**RETIREMENT IS A DECISION, NOT AN AGE** (`retireP`): it rises with age and falls with how good
+he still is. A 90 at 37 plays on, a 72 at 32 is done, nobody under 30 walks away, and a man
+past 34 who has fallen off a rotation is out. A man nobody signs waits in the pool and retires
+from it. Measured: about 1.5 to 3% of the league is 35 or older (the real league runs about 3),
+and the median career ends at 34.
+
+**CONTRACTS.** Every man has `k` (the last season of his deal) and `sal`. A real man's 2026-27
+salary is the real one and runs on until his seeded end year. When a deal ends his club keeps
+him or lets him go (`resignings`: a star nearly always, a fading veteran rarely, a club over
+the tax less often). **Free agency** (`freeAgency`) signs the best man first, where a spot he
+would start at, money under the apron, a contender for a veteran and his old club add up. A
+signed salary never passes the max, 35 percent of the cap.
+
+**THE DRAFT** (`leagueDraft`), every June from the 2027 draft on: last season's standings
+(`seasonWins`, your club's real record in them), the lottery on the NBA's odds for the top four,
+two rounds, an invented class of 64 drawn so the top pick becomes a star most years and the
+second round is long shots, and scouts who draft the ceiling and get it wrong. A first-round
+pick signs a four-year rookie deal; a second-rounder makes the roster only if he beats the last
+man on it. **The class is tuned so the league keeps its stars**: 12.7% of the league at 85 and
+up on day one, about 11% ten years on. Move the class and that check moves with it.
+
+**PICKS ARE ASSETS.** `fo.picks` maps a pick (`draft:round:original club`) to whoever holds it,
+four drafts out. `picksOf` answers who holds what, from an index rebuilt when a pick changes
+hands (`fo.pv`).
+
+**TRADES ARE PACKAGES** (`leagueTrades`, `buildPackage`). A club is winning, in the middle or
+rebuilding (`clubModes`), and values a man (`vMan`) as now against two years from now, weighted
+by that, less what he is overpaid for the years left; a pick (`vPick`) by the slot it is likely
+to land and how far out it is. Four stories, the ones the real league tells:
+
+| | |
+|---|---|
+| a contender buys a veteran | from a club selling, for young players and picks |
+| a salary dump | a club over the tax pays somebody with picks to take a contract |
+| a swap | two clubs trade men who fit the other better |
+| a star | once in a while, a star on a club going nowhere, for a haul |
+
+Salaries match the way the rules make them (a club over the cap takes back no more than 125
+percent plus a little), a club's best man is never in a package, at most two men go out in an
+ordinary deal and three for a star, and the buyer only says yes to a deal it thinks it won.
+Measured: about 70% of trades carry picks.
+
+**THE HEADLINE IS THE NEWSROOM'S**: "The Pacers have traded Bennedict Mathurin, Jarace Walker
+and a 2029 first-round pick to the Pelicans for Zion Williamson." `pickWords` says a pick the
+way a reporter does ("the Kings' 2028 second-round pick", "three first-round picks and a
+second-round pick"). Your club at the deadline (`deadlineClubFO`) and your own trade
+(`swapBackFO`) go through the same engine, so when you are traded the package that comes back
+for you is named, picks and all, and the scene says it.
+
+**Everything goes on the transaction log** (`fo.tx`, the last 160, each with who moved and in
+which window), the biggest stories and anything touching your club make the feed, and the News
+tab folds in last season's standings and the transactions. The Team tab shows each man's years
+left and the club's picks, and which firsts it owes.
+
+**THE MVP RACE IS THE REAL LEAGUE NOW.** The ladder at the break and the MVP when you do not
+win it were nine invented stars (`figs`) floating outside the rosters, with moves of their own
+that contradicted the transaction log. With the office the race is every man rated 78 or more
+on the rosters as they stand (`mvpRace`, with `fo.mvps` for the voters' fatigue), and the
+invented stars stand still (`figYear` returns). Your own MVP is decided where it always was.
+
+**A save from before the office upgrades the first time it reads its rosters** (`rostOf`): every
+man is put on the new model from what the old one said he was worth that season, so nobody
+jumps. `landOnToday` drops the office with the rosters, and a son's league builds its own.
+
+**It is about 1.7 times as slow per career as the league it replaced**, which is the trade
+windows. `MEMO` holds payrolls, values and depth for a window and forgets a club the moment its
+roster changes; without it a career was 2.5 times as slow.
 
 #### The road: high school, college, and the draft it ends at
 

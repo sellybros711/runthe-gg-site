@@ -842,6 +842,7 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
   }
   /* The deadline and the coach, over careers played three ways. */
   let dl = 0, traded = 0, swap = 0, stars = 0, badName = 0, talks = 0, focusPaid = 0, focusSet = 0, up = 0, cut = 0;
+  let dlDeals = 0, badHead = [];
   let dupNames = 0, bigSummer = 0, bigSkill = 0, summers = 0, legsFirst = 0, legsN = 0, posTalk = 0, posFar = 0, notFive = 0, fiveChecks = 0;
   const kinds = new Set();
   for (let k = 0; k < 90; k++) {
@@ -880,12 +881,15 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
         if (/starting five|real spot|fourth quarter/.test(b.text)) up++;
         if (/cuts your minutes/.test(b.text)) cut++;
         if (/summer project paid off/.test(b.text)) focusPaid++;
-        if (/^Deadline: /.test(b.text)) {
-          const m = /^Deadline: (?:the \w[\w ]* (?:get|send) )?(.+?) (?:to the|from the) /.exec(b.text);
+        if (/^Deadline/.test(b.text)) {
+          dlDeals++;
+          /* The first man named is the one the deal is about. */
+          const m = /have traded (.+?)(?:,| and | to the )/.exec(b.text);
           const nm = m && m[1];
           const hits = C.CLUBS.map((c) => C.matesOf(L, c).find((e) => e.n === nm)).filter(Boolean);
           if (hits.length > 1) dupNames++;
-          else if (hits[0] && hits[0].w > 7.2) stars++;
+          else if (hits[0] && C.show(hits[0].ovr) >= 90 && hits[0].age <= 30) stars++;
+          if (!/^Deadline(?: deal)?: the [\w .']+ have traded .+ to the [\w .']+ (for .+|to clear cap space|for cash considerations)\.$/.test(b.text)) badHead.push(b.text);
         }
       }
       if (before && out.beats.some((b) => b.kind === 'dev')) {
@@ -904,7 +908,11 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
   }
   ok(dl >= 25 && kinds.size >= 2, `the deadline calls about you, for more than one reason (${dl} calls: ${[...kinds].join(', ')})`);
   ok(traded >= 8 && swap === traded, `a deadline trade sends a named man back the other way (${swap} of ${traded})`);
-  ok(stars === 0, `no franchise star changes clubs at the deadline (${stars})`);
+  /* A deadline blockbuster happens in the real league (a star or two a
+     decade), but a young superstar moving most Februaries is a league nobody
+     would recognize. */
+  ok(stars <= Math.max(2, dlDeals * 0.02), `a young superstar rarely moves at the deadline (${stars} of ${dlDeals} deadline deals)`);
+  ok(dlDeals > 100 && badHead.length === 0, `a deadline headline reads like a newsroom wrote it: who traded what to whom for what (${badHead.slice(0, 2).join(' | ') || dlDeals + ' deals'})`);
   ok(dupNames === 0, `no two men in the league share a name (${dupNames} deadline names found twice)`);
   ok(badName === 0, `the result names the general manager who made the call, not the new one (${badName})`);
   ok(talks >= 300, `a talk with the coach is a conversation with options (${talks} talks)`);
@@ -923,7 +931,7 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
    the end of the roster and out of the league. */
 {
   section('12b. one move a summer, and the free agents are real');
-  let summers = 0, twice = [], gen2 = [], gen4 = [], realWaived = 0;
+  let summers = 0, twice = [], gen2 = [], gen4 = [], realWaived = 0, moves = 0, trades = 0, withPicks = 0;
   for (let i = 0; i < 40; i++) {
     let lastY = -1;
     play('mv:' + i, 'random', { pos: C.POS[i % 5], arch: C.ARCH_KEYS[i % 6] }, (L) => {
@@ -932,10 +940,12 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
       lastY = lg.rostY;
       summers++;
       const seen = {};
-      for (const f of L.feed || []) {
-        if (f.k !== 'move' || f.y !== L.year) continue;
-        const m = /^(.+?) (?:is traded to|signs with) /.exec(f.t);
-        if (m) { seen[m[1]] = (seen[m[1]] || 0) + 1; if (seen[m[1]] === 2) twice.push(m[1] + ' ' + L.year); }
+      for (const x of (lg.fo && lg.fo.tx) || []) {
+        if (x.y !== L.year || x.w !== 'summer' || !x.m) continue;
+        for (const n of x.m) { seen[n] = (seen[n] || 0) + 1; if (seen[n] === 2) twice.push(n + ' ' + L.year); }
+        moves++;
+        if (x.k === 'trade' && /pick/.test(x.t)) withPicks++;
+        if (x.k === 'trade') trades++;
       }
       let tot = 0, gen = 0;
       for (const c in lg.rost) for (const e of lg.rost[c]) { tot++; if (e.g) gen++; }
@@ -947,8 +957,13 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
   }
   const mean = (a) => a.reduce((x, y) => x + y, 0) / (a.length || 1);
   ok(summers > 200 && twice.length === 0, `no man is reported moving twice in one summer (${twice.slice(0, 3).join(', ') || 'none'} over ${summers} summers)`);
-  ok(gen2.length > 20 && mean(gen2) < 0.03, `two summers in, the league is real men (${(mean(gen2) * 100).toFixed(1)}% invented)`);
-  ok(gen4.length > 20 && mean(gen4) < 0.15, `four summers in, still mostly real (${(mean(gen4) * 100).toFixed(1)}% invented)`);
+  /* A real draft brings about forty rookies a year into a league of 450, and
+     the real league turns over that fast too. What must not happen is real
+     men pushed out for invented ones: rookies replace retirements and the
+     men nobody signs, so two drafts in the league is still four fifths real. */
+  ok(gen2.length > 20 && mean(gen2) < 0.22, `two summers in, the league is mostly real men (${(mean(gen2) * 100).toFixed(1)}% invented, two draft classes)`);
+  ok(gen4.length > 20 && mean(gen4) < 0.4, `four summers in, still mostly real (${(mean(gen4) * 100).toFixed(1)}% invented)`);
+  ok(moves > 300 && trades > 100 && withPicks / trades > 0.4, `a summer has trades and signings, and most trades carry picks (${moves} moves, ${withPicks} of ${trades} trades with picks)`);
   ok(realWaived === 0, `the free agent pool holds only real men (${realWaived} invented found)`);
   ok(league.fa && league.fa.length > 20, `today's free agents are seeded into the pool (${league.fa ? league.fa.length : 0})`);
 }
@@ -1115,6 +1130,57 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
   const dids = ['debut_start', 'debut_bench', 'debut_dnp', 'debut_gl'];
   ok(dids.every((id) => new RegExp('\\n  ' + id + ': \\[').test(SC)) && !/\n  debut: \[/.test(SC), 'the first night is four scenes, not one');
   ok(/if \(ct\.tw\) \{[^}]*debut_gl/.test(SC), 'a two-way rookie opens the season in the G League scene');
+}
+
+/* THE LEAGUE OFFICE. Reported by the owner: players did not grow or decline
+   at a natural rate, role players hung around to 37 doing nothing, trades
+   had no picks in them, and a headline read "X to the Pacers". Measured over
+   a dozen careers played to the end, a season at a time. */
+{
+  section('12g. the league ages, retires, drafts and trades like the real one');
+  const byYear = {}, leave = [], grow = [], fade = [], heads = [], overMax = [];
+  let lingering = 0, looked = 0;
+  for (let k = 0; k < 12; k++) {
+    const L = C.newLife({ seed: 'office:' + k, league, start: 'draft' });
+    let g = 0, lastY = 0, prev = null;
+    while (!L.retired && g++ < 5000) {
+      if (L.pending.length) C.choose(L, (L.steps * 7 + k) % L.pending[0].options.length); else C.step(L);
+      if (L.stage !== 'nba' || !L.league.rost || L.year === lastY) continue;
+      lastY = L.year;
+      const y = L.year - L.league.rs, cap = C.capFor(L.year);
+      const now = new Map();
+      for (const c of C.CLUBS) for (const m of C.matesOf(L, c)) {
+        now.set(m.n, m);
+        const b = byYear[y] = byYear[y] || { n: 0, old: 0, s85: 0 };
+        b.n++; if (m.age >= 35) b.old++; if (C.show(m.ovr) >= 85) b.s85++;
+        if (y >= 3) { looked++; if (m.age >= 35 && C.show(m.ovr) < 75) lingering++; }
+        if (m.pay > cap * 0.351 && (!m.real || y >= 5)) overMax.push(m.n + ' $' + m.pay + ' in ' + L.year);
+        if (prev && prev.has(m.n)) { const d = m.ovr - prev.get(m.n).ovr; if (m.age <= 23) grow.push(d); if (m.age >= 32) fade.push(d); }
+      }
+      if (prev && y >= 2) for (const [n, m] of prev) if (!now.has(n) && m.age >= 26) leave.push(m.age + 1);
+      prev = now;
+    }
+    for (const x of (L.league.fo && L.league.fo.tx) || []) heads.push(x);
+  }
+  const mean = (a) => a.reduce((x, y) => x + y, 0) / (a.length || 1);
+  const med = (a) => a.slice().sort((x, y) => x - y)[Math.floor(a.length / 2)];
+  const late = Object.keys(byYear).filter((y) => y >= 4 && y <= 14 && byYear[y].n > 2000);
+  const oldShare = mean(late.map((y) => byYear[y].old / byYear[y].n));
+  ok(late.length >= 6 && oldShare > 0.012 && oldShare < 0.06, `about one man in thirty is 35 or older, as in the real league (${(oldShare * 100).toFixed(1)}%)`);
+  ok(lingering / looked < 0.004, `a 35-year-old who can no longer play is out of the league (${lingering} of ${looked} roster spots)`);
+  ok(leave.length > 500 && med(leave) >= 31 && med(leave) <= 35, `a career ends in the early thirties for most, later for a star (median ${med(leave)} of ${leave.length})`);
+  ok(mean(grow) > 1.5 && mean(fade) < -1, `the young grow and the old fade, a year at a time (${mean(grow).toFixed(1)} a year at 23 and under, ${mean(fade).toFixed(1)} at 32 and over)`);
+  const s0 = byYear[0] ? byYear[0].s85 / byYear[0].n : 0, s10 = mean(late.filter((y) => y >= 8).map((y) => byYear[y].s85 / byYear[y].n));
+  ok(s10 > s0 * 0.6 && s10 < s0 * 1.5, `the league keeps its stars as the real ones age out (85 and up: ${(s0 * 100).toFixed(1)}% at the start, ${(s10 * 100).toFixed(1)}% ten years on)`);
+  ok(overMax.length === 0, `a deal the league signs never pays past the max, 35 percent of the cap (${overMax.slice(0, 2).join(', ') || 'none'})`);
+  const tr = heads.filter((x) => x.k === 'trade'), pk = tr.filter((x) => /pick/.test(x.t));
+  ok(tr.length > 200 && pk.length / tr.length > 0.4, `most trades carry draft picks (${pk.length} of ${tr.length})`);
+  const head = /^The [\w .']+ have traded .+ to the [\w .']+ (for .+|to clear cap space|for cash considerations)\.$/;
+  const badT = tr.filter((x) => !head.test(x.t));
+  ok(badT.length === 0, `a trade headline says who traded what to whom for what (${badT.slice(0, 2).map((x) => x.t).join(' | ') || 'all ' + tr.length})`);
+  ok(heads.some((x) => x.k === 'draft' && /first overall/.test(x.t)) && heads.some((x) => x.k === 'fa' && /-year, \$/.test(x.t)) && heads.some((x) => x.k === 'retire'), 'the league has a draft night, free agency and retirements');
+  const blowout = tr.filter((x) => (x.t.match(/,/g) || []).length > 4);
+  ok(blowout.length / tr.length < 0.05, `a trade is a few men and a few picks, not a roster (${blowout.length} of ${tr.length} name more than five assets)`);
 }
 
 if (!QUICK) await browser();

@@ -433,7 +433,8 @@ function seedToday(rows, latest, today) {
     /* With the ratings file every man is read for the season about to be
        played (a 2K rating is that season's), so nobody is aged into it. */
     const ms = RTN ? latest + 1 : latest;
-    const tup = (x) => (x.o || x.p ? [x.m.n, x.pos, x.born, x.w, ms, x.o, x.p] : [x.m.n, x.pos, x.born, x.w, ms]);
+    /* The eighth field is the season he debuted, for "retires after 18 seasons". */
+    const tup = (x) => [x.m.n, x.pos, x.born, x.w, ms, x.o || 0, x.p || 0, first[x.m.i] || 0];
     roster[c] = men.slice(0, 15).map(tup);
     for (const x of men.slice(15)) fa.push(tup(x));
     stars[c] = men.slice(0, 3).map((x) => x.m.n);
@@ -500,6 +501,12 @@ function clubOvr(L, c) {
 function rosterNets(L, rng) {
   const net = {};
   for (const c of CLUBS) net[c] = clubOvr(L, c) + norm(rng) * 0.6;
+  /* The scale the nets are drawn on is kept, so a deadline deal moves a
+     club's net by what it gained and nothing else. */
+  if (fo(L)) {
+    const v = CLUBS.map((c) => net[c]), m = v.reduce((a, x) => a + x, 0) / v.length;
+    fo(L).nz = { m: round1(m), sd: round1(Math.sqrt(v.reduce((a, x) => a + (x - m) * (x - m), 0) / v.length) || 1) };
+  }
   return normaliseNets(net);
 }
 const clubNet = (L, c) => L.league.net[c] || 0;
@@ -800,12 +807,21 @@ function realCurW(e, Y) {
   return round1(Math.max(0.1, Math.min(v, Math.max(e.w * 2.6, 6))));
 }
 function rostCurW(e, Y) {
+  if (e.cy != null) return wFromOvr(manOvr(e, Y));
+  return oldCurW(e, Y);
+}
+/* What the model before the league office said a man was worth: a closed
+   curve of his age. Read once, when a man is first put on the new model. */
+function oldCurW(e, Y) {
   if (e.s && !e.g) return realCurW(e, Y);
   const age = Y - e.b;
   const grow = e.g ? Math.min(1, 0.35 + (Y - e.d) * 0.2) : 1;
   return round1(e.w * grow * (age <= 30 ? 1 : Math.max(0.1, 1 - (age - 30) * 0.08)));
 }
 function rostGone(L, e, Y) {
+  /* On the league office's model a man leaves when he retires or nobody
+     signs him, and he is taken off the roster then. */
+  if (e.cy != null) return false;
   const age = Y - e.b;
   if (e.g) return age > 34 || Y - e.d >= 11;
   /* On today's rosters nobody leaves before the season they are under contract
@@ -836,6 +852,7 @@ function fromTup(p) {
   const e = p[4] ? { n: p[0], pos: p[1], b: p[2], w: p[3], s: p[4] } : { n: p[0], pos: p[1], b: p[2], w: p[3] };
   if (p[5]) e.o = p[5];
   if (p[6]) e.pay = p[6];
+  if (p[7]) e.dy = p[7];
   return e;
 }
 function rostBuild(L, Y) {
@@ -852,11 +869,28 @@ function rostBuild(L, Y) {
   lg.pool = (lg.fa || []).map(fromTup).filter((e) => !rostGone(L, e, Y));
   if (storyOn(L)) uniqueNames(L, R, Y);
   lg.rost = R; lg.rostY = Y;
+  /* A fresh league starts the front office fresh: every man on the new
+     model, every club holding its own picks. */
+  if (storyOn(L)) {
+    for (const c of CLUBS) for (const e of R[c]) initMan(L, e, Y);
+    for (const e of lg.pool) initMan(L, e, Y);
+    lg.fo = { picks: {}, rec: {}, tx: [] };
+  }
   return R;
 }
 function rostOf(L) {
   if (!storyOn(L) || !L.league.roster) return null;
-  if (L.league.rost) return L.league.rost;
+  const lg = L.league;
+  if (lg.rost) {
+    /* A league saved before the front office: put every man on the new
+       model from what he was worth that season, so nobody jumps. */
+    if (!lg.fo) {
+      for (const c of CLUBS) for (const e of lg.rost[c]) initMan(L, e, lg.rostY);
+      for (const e of lg.pool || []) initMan(L, e, lg.rostY);
+      lg.fo = { picks: {}, rec: {}, tx: [] };
+    }
+    return lg.rost;
+  }
   return rostBuild(L, L.year);
 }
 /* A reader that jumps years plays the summers it missed, quietly. */
@@ -882,7 +916,17 @@ function rosterSummer(L, beats, quietY) {
      after the data's: no trades, no signings, nobody invented. The rosters
      are the data's, built fresh for that season. */
   if (L.opt && L.opt.cal && (Y <= L.league.latest + 1 || L.stage !== 'nba')) { rostBuild(L, Math.min(Y, L.league.latest + 1)); L.league.rostY = Y; return; }
-  const rng = E.createSeededRNG(E.hashSeed(String(L.seed) + ':' + Y + ':moves')), lg = L.league;
+  const lg = L.league;
+  if (fo(L)) {
+    /* The front office runs every summer in order, quietly through any it
+       missed, so a summer is never skipped and never played twice. */
+    while (lg.rostY < Y - 1) { lg.rostY++; officeSummer(L, R, lg.rostY, null, true); }
+    lg.rostY = Y;
+    officeSummer(L, R, Y, beats, !!quietY);
+    uniqueNames(L, R, Y);
+    return;
+  }
+  const rng = E.createSeededRNG(E.hashSeed(String(L.seed) + ':' + Y + ':moves'));
   lg.rostY = Y;
   const before = {};
   for (const c of CLUBS) before[c] = clubTalent(R, c, Y - 1);
@@ -995,6 +1039,741 @@ function uniqueNames(L, R, Y) {
     seen.add(e.n);
   }
 }
+// ─── the front office: a league that runs itself (story careers) ────────────
+
+/* THE LEAGUE OFFICE. Reported by the owner: players did not grow or decline
+ * at a natural rate, role players hung around to 37 doing nothing, trades were
+ * one man for one man with no picks in them, and the headlines read "X to the
+ * Pacers". This is the league NBA 2K's franchise mode runs, in miniature:
+ *
+ *   every man has an overall that moves a year at a time: the young grow
+ *   toward a ceiling of their own, a man holds through his late twenties, and
+ *   the decline speeds up after thirty, faster for a role player than a star;
+ *
+ *   retirement is a decision, not an age: a star plays to 38, a 70 is gone at
+ *   32, and a man nobody signs for a summer or two walks away;
+ *
+ *   contracts run out, clubs re-sign who they want and the rest are free
+ *   agents, who sign where there is money, minutes and a reason;
+ *
+ *   a real draft every June: the standings, a lottery, two rounds, rookie
+ *   deals, and picks a club can trade for four drafts out;
+ *
+ *   trades are packages valued by what each club wants: a contender pays for
+ *   now with youth and picks, a rebuilding club sells for the future, a club
+ *   over the tax pays somebody to take a contract, and now and then a star
+ *   gets moved for a haul.
+ *
+ * The state lives on each man (c: his overall this season, on the model's
+ * scale; pot: the ceiling he grows toward; k: the last season of his deal;
+ * sal: what it pays) and in L.league.fo (pick ownership, standings, the
+ * transaction log). A career saved before this upgrades the first time it
+ * reads its rosters, from the numbers it had, so nobody jumps. */
+const LG_GROW = { 19: 0.3, 20: 0.28, 21: 0.26, 22: 0.24, 23: 0.22, 24: 0.2, 25: 0.17, 26: 0.13, 27: 0.08 };
+const LG_DECLINE = { 28: 0.3, 29: 0.6, 30: 1, 31: 1.5, 32: 2, 33: 2.6, 34: 3.1, 35: 3.5, 36: 3.9, 37: 4.3 };
+const LG_RETIRE = { 31: 0.01, 32: 0.02, 33: 0.04, 34: 0.07, 35: 0.11, 36: 0.17, 37: 0.25, 38: 0.35, 39: 0.47, 40: 0.6 };
+const LOTTO = [140, 140, 140, 125, 105, 90, 75, 60, 45, 30, 20, 15, 10, 5];
+const NUMW = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven'];
+const fo = (L) => (L.league && L.league.fo) || null;
+const manRng = (L, e, tag, Y) => E.createSeededRNG(E.hashSeed(String(L.seed) + ':' + tag + ':' + e.n + ':' + Y));
+/* A man's overall in season Y: this season's, or last season's for a reader
+   looking back across the summer. */
+function manOvr(e, Y) { return Y < e.cy && e.cp != null ? e.cp : e.c; }
+const dealPay = (L, o, age, Y) => {
+  const y0 = L.year;
+  L.year = Y;
+  const v = marketPay(L, show(o), age);
+  L.year = y0;
+  return v;
+};
+function payY(L, e, Y) {
+  if (e.you) return e.sal;
+  return payOf(L, e, Y, rostCurW(e, Y));
+}
+function payroll(L, R, c, Y) {
+  if (MEMO && MEMO.pay[c] != null) return MEMO.pay[c];
+  let p = 0;
+  for (const e of R[c]) p += payY(L, e, Y);
+  if (c === L.team && L.contract && L.stage === 'nba') p += L.contract.salary || 0;
+  if (MEMO) MEMO.pay[c] = p;
+  return p;
+}
+/* What he signs for and for how long. */
+function dealYears(r, a, s) {
+  if (a >= 34) return 1;
+  if (a >= 31) return 1 + Math.floor(r() * 2) + (s >= 86 ? 1 : 0);
+  if (a >= 28) return 2 + Math.floor(r() * 2) + (s >= 86 ? 1 : 0);
+  return Math.min(5, 2 + Math.floor(r() * 3) + (s >= 84 ? 1 : 0));
+}
+/* The first time a man is read on the new model: his overall from what the
+   old model said he was worth, a ceiling to grow toward, and a contract. */
+function initMan(L, e, B) {
+  if (e.cy != null) return e;
+  e.c = round1(ovrOfMan(e, oldCurW(e, B)));
+  e.cy = B; e.cp = e.c;
+  const r = manRng(L, e, 'pot', 0), a = B - e.b;
+  if (e.pot == null) e.pot = round1(Math.min(97, e.c + Math.max(0, 27 - a) * (0.4 + 2.9 * Math.pow(r(), 1.3))));
+  if (e.k == null) {
+    const u = r(), s = show(e.c);
+    let yrs = a <= 22 ? 1 + Math.floor(u * 3) : u < 0.28 ? 0 : u < 0.58 ? 1 : u < 0.82 ? 2 : 3;
+    if (s >= 88 && yrs < 3) yrs++;
+    e.k = B + yrs;
+    e.sal = e.pay || dealPay(L, e.c, a, B);
+  }
+  return e;
+}
+/* A YEAR OF A MAN'S CAREER. Young, he grows a share of the gap to his
+   ceiling each year, more at nineteen than at twenty-six, with real variance:
+   a stall, a breakout summer that raises the ceiling too. From twenty-eight he
+   declines, a little at first and a lot by thirty-five, and a star holds on
+   better than a role player. Each man ages his own way (realArc, off his
+   name), and any year can cost him a few points to an injury. Seeded per man
+   and season, so a reload sees the same league. */
+function devMan(L, e, Y) {
+  while (e.cy < Y) {
+    const y = e.cy + 1, a = y - e.b, r = manRng(L, e, 'dev', y), c = e.c;
+    let d;
+    if (a <= 27) {
+      const rate = LG_GROW[a] != null ? LG_GROW[a] : 0.3;
+      let g = Math.max(0, e.pot - c) * rate;
+      if (r() < 0.07) g *= 0.3;
+      d = g + norm(r) * (a <= 24 ? 1.7 : 1.2);
+      if (a <= 25 && r() < 0.05) { const j = 3 + r() * 3; d += j; e.pot = round1(Math.min(99, e.pot + j)); }
+    } else {
+      const dec = (LG_DECLINE[a] != null ? LG_DECLINE[a] : 4.7) * (1 - 0.35 * realArc(e)) * (c >= 80 ? 0.8 : 1);
+      d = -dec + norm(r) * 1.1;
+    }
+    if (r() < (a >= 30 ? 0.04 + (a - 30) * 0.01 : 0.025)) d -= 2 + r() * 4;
+    e.cp = c;
+    e.c = round1(clamp(c + clamp(d, -9, 9), 40, 99));
+    e.cy = y;
+  }
+}
+/* RETIREMENT IS A DECISION. The chance rises with age and falls with how good
+   he still is: a 90 at 37 plays on, a 72 at 32 is done. A man on a deal he
+   is still worth plays it out a little more often. Unsigned, he goes sooner. */
+function retireP(e, Y, unsigned) {
+  const a = Y - e.b, s = show(e.c);
+  if (unsigned) return a >= 33 ? 0.85 : a >= 29 ? 0.45 : (e.fa || 0) >= 2 ? 0.6 : 0.12;
+  /* Nobody in his twenties walks away from a roster spot. */
+  if (a <= 29) return 0;
+  let p = a <= 30 ? 0.003 : LG_RETIRE[a] != null ? LG_RETIRE[a] : 0.85;
+  p *= s >= 90 ? 0.3 : s >= 85 ? 0.45 : s >= 80 ? 0.75 : s >= 76 ? 1.1 : s >= 73 ? 2 : 3.5;
+  /* Past 34, a man who has fallen off the rotation is done. */
+  if (a >= 35 && s < 75) p = Math.max(p, 0.7);
+  if (e.k != null && e.k >= Y && s >= 78) p *= 0.6;
+  return Math.min(0.97, p);
+}
+
+/* ── standings, picks and the draft ── */
+
+/* Every club's wins in season Y. Your club's are the season you played; the
+   rest are drawn off how good each club was, once, and kept. */
+function seasonWins(L, Y) {
+  const F = fo(L);
+  F.rec = F.rec || {};
+  if (F.rec[Y]) return F.rec[Y];
+  const rng = E.createSeededRNG(E.hashSeed(String(L.seed) + ':' + Y + ':standings'));
+  const w = {};
+  for (const c of CLUBS) w[c] = Math.round(82 * clamp(0.5 + clubNet(L, c) * 0.031 + norm(rng) * 0.045, 0.16, 0.84));
+  const h = (L.history || []).find((x) => x.y === Y && x.t);
+  if (h && h.w != null) w[h.t] = h.w;
+  F.rec[Y] = w;
+  for (const k in F.rec) if (+k < Y - 3) delete F.rec[k];
+  return w;
+}
+const pickKey = (d, r, c) => d + ':' + r + ':' + c;
+const pickOwner = (F, d, r, c) => (F.picks && F.picks[pickKey(d, r, c)]) || c;
+/* The picks club c holds in drafts d0 to d0 + 3, its own and anybody else's. */
+const PICK_IDX = typeof WeakMap !== 'undefined' ? new WeakMap() : null;
+function picksOf(L, c, d0) {
+  const F = fo(L);
+  if (!F) return [];
+  /* Every club's picks at once, kept until a pick changes hands (F.pv). */
+  const key = d0 + ':' + (F.pv || 0);
+  let ix = PICK_IDX && PICK_IDX.get(F);
+  if (!ix || ix.key !== key) {
+    const by = {};
+    for (const x of CLUBS) by[x] = [];
+    for (let d = d0; d <= d0 + 3; d++) for (const r of [1, 2]) for (const o of CLUBS) by[pickOwner(F, d, r, o)].push({ d, r, o });
+    ix = { key, by };
+    if (PICK_IDX) PICK_IDX.set(F, ix);
+  }
+  return ix.by[c].slice();
+}
+/* A window of trades or a free agency reads the same payrolls, values and
+   depth over and over; this memo holds them for the window and forgets a
+   club the moment its roster changes. */
+let MEMO = null;
+const memoOpen = () => { MEMO = { pay: {}, v: new Map(), bap: {} }; };
+const memoClose = () => { MEMO = null; };
+const memoDrop = (c) => { if (!MEMO) return; delete MEMO.pay[c]; delete MEMO.bap[c]; };
+/* Where a pick is likely to land: off the owner's strength now, regressed
+   toward the middle for a draft further out. */
+function pickSlot(L, pk, Y) {
+  const n = Math.max(1, pk.d - Y + 1);
+  return clamp(Math.round(15.5 + clubNet(L, pk.o) * 2.6 * Math.pow(0.6, n - 1)), 1, 30);
+}
+/* The ceiling a pick at this slot usually brings, on the model's scale: the
+   first pick about an 82 (a 90 on the 2K scale), the tenth about a 70, the
+   thirtieth about a 59. Read off the class below, which is drawn to match. */
+const potAt = (slot) => 55 + 28 * Math.pow(Math.max(0, 1 - slot / 65), 3);
+/* A rookie deal, off the slot: Pick 1 about seven percent of the cap, the
+   scale falling to about one and a half by pick 30, the minimum after. */
+const rookieScale = (p, Y) => round1(p > 30 ? capFor(Y) * MIN_PCT : capFor(Y) * 0.072 * Math.pow(0.948, p - 1));
+/* A DRAFT CLASS. Sixty-four prospects, invented, drawn so the class has a
+   real shape: a top pick who becomes a star most years, a lottery of future
+   starters, and a second round of long shots. A class can be deep or thin, and
+   one in twenty-five carries a generational talent. Scouts draft the ceiling,
+   and they get it wrong: the board is the ceiling plus what he is now, plus
+   their error, so there are busts and steals. */
+function draftClass(L, D, taken) {
+  const rng = E.createSeededRNG(E.hashSeed(String(L.seed) + ':class:' + D));
+  const depth = 0.85 + rng() * 0.3, out = [];
+  const AGES = [19, 19, 19, 19, 20, 20, 20, 21, 21, 22, 22];
+  for (let k = 0; k < 64; k++) {
+    const age = pick(rng, AGES);
+    let pot = 55.5 + 31 * depth * Math.pow(rng(), 3.2);
+    const c = pot - Math.max(3, (27 - age) * 1.95 + norm(rng) * 1.5);
+    out.push({ age, pot, c, pos: pick(rng, R_POS) });
+  }
+  out.sort((a, b) => b.pot - a.pot);
+  if (rng() < 0.04) { out[0].pot = Math.min(97, out[0].pot + 6); out[0].c += 3; }
+  for (const p of out) {
+    p.grade = p.pot * 0.75 + p.c * 0.25 + norm(rng) * 3.5;
+    p.n = freshName(L, 'prospect:' + D + ':' + p.grade.toFixed(3), taken);
+  }
+  return out.sort((a, b) => b.grade - a.grade);
+}
+/* A name nobody in the league has. */
+function freshName(L, key, taken) {
+  for (let k = 0; k < 60; k++) {
+    const r = E.createSeededRNG(E.hashSeed(String(L.seed) + ':name:' + key + ':' + k));
+    const n = pick(r, FIRST) + ' ' + pick(r, PEOPLE_LAST);
+    if (!taken.has(n)) { taken.add(n); return n; }
+  }
+  const n = 'Prospect ' + taken.size;
+  taken.add(n);
+  return n;
+}
+/* The order for draft D: the fourteen clubs that missed the playoffs in the
+   lottery, the NBA's odds for the first four picks, then everybody by
+   record, worst first. The second round is straight reverse standings. */
+function draftOrderFor(L, D) {
+  const W = seasonWins(L, D);
+  const tie = (c) => E.hashSeed(c + ':' + D) % 997;
+  const asc = CLUBS.slice().sort((a, b) => W[a] - W[b] || tie(a) - tie(b));
+  const rng = E.createSeededRNG(E.hashSeed(String(L.seed) + ':' + D + ':lotto'));
+  const lot = asc.slice(0, 14), top = [];
+  for (let i = 0; i < 4; i++) {
+    const c = weighted(rng, lot, (x) => LOTTO[asc.indexOf(x)]);
+    top.push(c);
+    lot.splice(lot.indexOf(c), 1);
+  }
+  return { r1: top.concat(lot, asc.slice(14)), r2: asc.slice(), worst: asc[0] };
+}
+/* THE DRAFT, run in the summer before season Y (so it is the Y - 1 draft).
+   Every first-round pick signs a four-year rookie deal; a second-round pick
+   makes the roster only if he is better than the last man on it, and is
+   otherwise stashed overseas and gone. */
+function leagueDraft(L, R, Y, news, taken) {
+  const F = fo(L), D = Y - 1;
+  const ord = draftOrderFor(L, D), board = draftClass(L, D, taken);
+  const slots = ord.r1.map((o) => ({ o, r: 1 })).concat(ord.r2.map((o) => ({ o, r: 2 })));
+  const picked = [];
+  slots.forEach((sl, i) => {
+    const p = i + 1, club = pickOwner(F, D, sl.r, sl.o), pr = board.shift();
+    if (!pr) return;
+    const e = { n: pr.n, pos: pr.pos, b: Y - pr.age, w: 0, g: 1, d: Y, c: round1(pr.c), cy: Y, cp: round1(pr.c), pot: round1(pr.pot), pk: D + ' #' + p };
+    e.k = Y + (sl.r === 1 ? 3 : 1);
+    e.sal = rookieScale(p, Y);
+    e.nt = Y;
+    if (sl.r === 2) {
+      const worst = R[club].slice().sort((a, b) => a.c - b.c)[0];
+      if (R[club].length >= 15 && !(worst && e.c > worst.c + 1)) return;
+    }
+    R[club].push(e);
+    picked.push({ p, club, e, from: sl.o });
+  });
+  if (F.picks) for (const k in F.picks) if (+k.split(':')[0] <= D) delete F.picks[k];
+  F.pv = (F.pv || 0) + 1;
+  /* The night's headlines: the lottery, the top three, and your club. */
+  const top = picked.slice(0, 3);
+  if (ord.r1[0] !== ord.worst) news.push({ w: 9, k: 'draft', c: ord.r1[0], t: 'The ' + nick(pickOwner(F, D, 1, ord.r1[0])) + ' win the lottery and the first pick.' });
+  if (top.length === 3) news.push({ w: 9.5, k: 'draft', c: top[0].club, t: D + ' draft: the ' + nick(top[0].club) + ' take ' + top[0].e.n + ' first overall. ' + top[1].e.n + ' goes second to the ' + nick(top[1].club) + ', ' + top[2].e.n + ' third to the ' + nick(top[2].club) + '.' });
+  if (L.team && L.stage === 'nba') for (const x of picked) if (x.club === L.team && x.p > 3) news.push({ w: 2, k: 'draft', c: L.team, t: 'The ' + nick(L.team) + ' draft ' + x.e.n + ' with the ' + ordinal(x.p) + ' pick.' });
+  return picked;
+}
+
+/* ── contracts and free agency ── */
+
+/* Deals that end this summer: a club keeps the men it wants, and the rest are
+   free agents. A star is nearly always kept, a fading veteran rarely. */
+function resignings(L, R, Y, news) {
+  const fas = [];
+  for (const c of CLUBS) {
+    const order = R[c].slice().sort((a, b) => b.c - a.c);
+    const tax = payroll(L, R, c, Y) > capFor(Y) * 1.22;
+    for (const e of R[c].slice()) {
+      if (e.k == null || e.k >= Y) continue;
+      const a = Y - e.b, s = show(e.c), rank = order.indexOf(e), r = manRng(L, e, 'resign', Y);
+      let p = 0.45 + (s >= 86 ? 0.4 : s >= 82 ? 0.25 : s >= 78 ? 0.1 : -0.12) + (rank < 5 ? 0.1 : 0) - (a >= 33 ? 0.2 : 0) - (tax && s < 82 ? 0.25 : 0) + (e.pk && a <= 25 ? 0.15 : 0);
+      if (r() < p) {
+        const yrs = dealYears(r, a, s);
+        e.k = Y + yrs - 1;
+        e.sal = round1(Math.min(dealPay(L, e.c, a, Y) * (0.92 + r() * 0.16), capFor(Y) * 0.35));
+        delete e.pay;
+        if (s >= 84) news.push({ w: s - 80, k: 'deal', c, t: e.n + ' re-signs with the ' + nick(c) + ': ' + NUMW[yrs] + ' years, ' + moneyWords(e.sal * yrs) + '.' });
+      } else {
+        R[c].splice(R[c].indexOf(e), 1);
+        e.from = c;
+        fas.push(e);
+      }
+    }
+  }
+  return fas;
+}
+const moneyWords = (m) => '$' + (m >= 10 ? Math.round(m) : round1(m)) + ' million';
+/* The best man a club has at a position, counting the spots next door. */
+function bestAtPos(R, c, pos) {
+  const mb = MEMO && (MEMO.bap[c] || (MEMO.bap[c] = {}));
+  if (mb && mb[pos] != null) return mb[pos];
+  let b = 0;
+  for (const e of R[c]) { const f = e.pos === pos ? 1 : (NEXT_POS[pos] || []).indexOf(e.pos) >= 0 ? 0.92 : 0.75; b = Math.max(b, e.c * f); }
+  if (mb) mb[pos] = b;
+  return b;
+}
+/* FREE AGENCY. The best man on the market goes first, to the club where he
+   is worth the most to both sides: a spot he would start at, money it can
+   pay him, a contender for a veteran, home for a man who wants it. A club
+   with no money pays the minimum and gets a man who will take it. Who nobody
+   signs waits in the pool; a man in it too long retires. */
+function freeAgency(L, R, Y, fas, moved, news) {
+  const pool = (L.league.pool || []).concat(fas).sort((a, b) => b.c - a.c);
+  const cap = capFor(Y), apron = cap * 1.36, minDeal = cap * MIN_PCT;
+  const pay = {};
+  for (const c of CLUBS) pay[c] = payroll(L, R, c, Y);
+  const left = [];
+  for (const e of pool) {
+    const a = Y - e.b, s = show(e.c), r = manRng(L, e, 'fa', Y);
+    const ask = round1(Math.min(dealPay(L, e.c, a, Y) * (0.9 + r() * 0.2), cap * 0.35));
+    let best = null, bs = 0.2;
+    for (const c of CLUBS) {
+      if (R[c].length >= 15) continue;
+      const room = apron - pay[c] - ask;
+      const cheap = ask <= minDeal * 1.6;
+      if (room < 0 && !cheap) continue;
+      const better = R[c].filter((x) => x.c > e.c).length;
+      if (better >= 12) continue;
+      /* Nobody hands a roster spot to a man past 34 who can no longer play. */
+      if (a >= 34 && s < 76) continue;
+      let sc = clamp((e.c - bestAtPos(R, c, e.pos) + 6) / 12, 0, 1.2) + (better < 8 ? 0.4 : 0) + (better < 5 ? 0.3 : 0);
+      if (a >= 29) sc += (clubNet(L, c) + 5) * 0.05;
+      if (e.from === c) sc += 0.25;
+      sc += r() * 0.35;
+      if (sc > bs) { bs = sc; best = c; }
+    }
+    if (!best) { left.push(e); continue; }
+    const yrs = dealYears(r, a, s);
+    const sal = apron - pay[best] - ask < 0 ? round1(minDeal) : ask;
+    e.k = Y + yrs - 1; e.sal = sal; delete e.pay; delete e.fa;
+    R[best].push(e);
+    pay[best] += sal;
+    memoDrop(best);
+    moved.add(e);
+    news.push({ w: s - 78, k: 'fa', c: best, from: e.from, m: [e.n], win: 'summer', quiet: !(s >= 81 || best === L.team), t: e.n + ' signs a ' + NUMW[yrs] + '-year, ' + moneyWords(sal * yrs) + ' deal with the ' + nick(best) + '.' });
+    delete e.from;
+  }
+  /* Who is left waits a summer, if he is real. An invented man nobody signs
+     goes overseas and is gone. */
+  L.league.pool = left.filter((e) => !e.g).map((e) => { e.fa = (e.fa || 0) + 1; delete e.from; return e; }).slice(0, 60);
+}
+
+/* ── trades ── */
+
+/* What a club is doing: the best eight are trying to win now, the worst nine
+   are building for later, the middle is a bit of both. */
+function clubModes(L) {
+  const by = CLUBS.slice().sort((a, b) => clubNet(L, b) - clubNet(L, a)), m = {};
+  by.forEach((c, i) => { m[c] = i < 8 ? 'win' : i >= 21 ? 'rebuild' : 'mid'; });
+  return m;
+}
+const vBase = (o) => Math.pow(Math.max(0, o - 58), 1.7) / 10;
+/* Where he will be in two years, on the same curves devMan uses. */
+function futOvr(e, Y) {
+  const a = Y - e.b;
+  let o = e.c;
+  for (let k = 1; k <= 2; k++) { const x = a + k; o += x <= 27 ? Math.max(0, (e.pot || o) - o) * (LG_GROW[x] || 0.08) : -(LG_DECLINE[x] != null ? LG_DECLINE[x] : 4.7); }
+  return o;
+}
+/* WHAT A MAN IS WORTH TO A CLUB. Now against later, weighted by what the club
+   is doing, less what he is overpaid for the years left on his deal. So a
+   contender pays for a veteran a rebuilding club would give away, and a
+   rookie on a cheap deal is worth more than his overall says. */
+function vMan(L, e, Y, mode) {
+  if (MEMO) { const m = MEMO.v.get(e); if (m && m[mode] != null) return m[mode]; }
+  const v = vManRaw(L, e, Y, mode);
+  if (MEMO) { const m = MEMO.v.get(e) || {}; m[mode] = v; MEMO.v.set(e, m); }
+  return v;
+}
+function vManRaw(L, e, Y, mode) {
+  const a = Y - e.b, now = vBase(e.c), fut = vBase(futOvr(e, Y));
+  const w = mode === 'win' ? 0.8 : mode === 'rebuild' ? 0.2 : 0.55;
+  let v = now * w + fut * (1 - w);
+  if (mode === 'rebuild' && a >= 29) v *= 0.6;
+  if (mode === 'win' && a <= 21) v *= 0.85;
+  const left = Math.max(1, (e.k || Y) - Y + 1);
+  v -= (payY(L, e, Y) - dealPay(L, e.c, a, Y)) * left * 0.09;
+  return v;
+}
+/* What a pick is worth: the ceiling its likely slot brings, less for a draft
+   further out, more to a club that is rebuilding. */
+function vPick(L, pk, Y, mode) {
+  const n = Math.max(1, pk.d - Y + 1);
+  let v = pk.r === 2 ? 0.35 : Math.max(1, vBase(potAt(pickSlot(L, pk, Y)) + 1) * 0.75);
+  v *= Math.pow(0.9, n - 1);
+  return v * (mode === 'rebuild' ? 1.35 : mode === 'win' ? 0.75 : 1);
+}
+const nickPoss = (c) => { const n = nick(c); return /s$/.test(n) ? n + '\'' : n + '\'s'; };
+/* "a 2029 first-round pick", "the Kings' 2028 second-round pick", or for three
+   or more, "three first-round picks and a second-round pick". */
+function pickWords(picks, sender) {
+  if (!picks.length) return [];
+  const rd = (pk) => (pk.r === 1 ? 'first' : 'second') + '-round pick';
+  if (picks.length >= 3) {
+    const f = picks.filter((p) => p.r === 1).length, s = picks.length - f;
+    const part = (n, w) => (n === 1 ? 'a ' + w + '-round pick' : NUMW[n] + ' ' + w + '-round picks');
+    return [f ? part(f, 'first') : null, s ? part(s, 'second') : null].filter(Boolean);
+  }
+  return picks.slice().sort((a, b) => a.r - b.r || a.d - b.d).map((pk) => (pk.o === sender ? 'a ' + pk.d + ' ' : 'the ' + nickPoss(pk.o) + ' ' + pk.d + ' ') + rd(pk));
+}
+function assetWords(men, picks, sender) {
+  const m = men.slice().sort((a, b) => b.c - a.c).map((e) => e.n);
+  return listNames(m.concat(pickWords(picks, sender)));
+}
+/* The headline the way a newsroom writes it. */
+function tradeText(L, s, sMen, sPicks, b, bMen, bPicks, how) {
+  const got = bMen.length || bPicks.length ? ' for ' + assetWords(bMen, bPicks, b) : how === 'dump' ? ' to clear cap space' : ' for cash considerations';
+  return 'The ' + nick(s) + ' have traded ' + assetWords(sMen, sPicks, s) + ' to the ' + nick(b) + got + '.';
+}
+/* A PACKAGE for T, from club b to club s. b's best man is never in it. The
+   salaries match the way the league's rules make them: a club over the cap
+   takes back no more than 125 percent of what it sends, plus a little. b adds
+   what s values most for what it costs b, until s says yes, and b only does
+   the deal if it thinks it won it too. */
+function buildPackage(L, R, Y, b, s, T, modes, moved, lim) {
+  lim = lim || {};
+  const ms = modes[s], mb = modes[b], cap = capFor(Y);
+  const want = vMan(L, T, Y, ms) * 1.06 + 0.3;
+  const tSal = payY(L, T, Y);
+  const payB = payroll(L, R, b, Y), payS = payroll(L, R, s, Y);
+  const best = R[b].slice().sort((x, y) => y.c - x.c)[0];
+  const men = R[b].filter((e) => e !== best && e !== T && !moved.has(e) && e.nt !== Y);
+  const picks = picksOf(L, b, Y);
+  const give = [], gp = [];
+  let outSal = 0;
+  const needOut = payB + tSal > cap ? (tSal - 0.25) / 1.25 : 0;
+  const maxIn = (sal) => payS - tSal + sal <= cap || sal <= 1.25 * tSal + 0.25;
+  const vs = () => give.reduce((a, e) => a + vMan(L, e, Y, ms), 0) + gp.reduce((a, p) => a + vPick(L, p, Y, ms), 0);
+  const vb = () => give.reduce((a, e) => a + vMan(L, e, Y, mb), 0) + gp.reduce((a, p) => a + vPick(L, p, Y, mb), 0);
+  const maxMen = lim.men || 2, maxPicks = lim.picks != null ? lim.picks : 3;
+  /* The salary first, in as few bodies as it takes: the biggest salaries b
+     can spare, a man it values at less than half of what it is getting. */
+  const tv = vMan(L, T, Y, mb);
+  const filler = men.filter((e) => vMan(L, e, Y, mb) < tv * 0.5).sort((x, y) => payY(L, y, Y) - payY(L, x, Y));
+  for (const e of filler) {
+    if (outSal >= needOut || give.length >= maxMen) break;
+    if (!maxIn(outSal + payY(L, e, Y))) continue;
+    give.push(e); outSal += payY(L, e, Y);
+  }
+  if (outSal < needOut) return null;
+  /* Then the value, the best trade of value for cost first. */
+  for (let k = 0; k < 9 && vs() < want; k++) {
+    let pickA = null, pv = 0;
+    for (const e of men) {
+      if (give.indexOf(e) >= 0 || give.length >= maxMen || !maxIn(outSal + payY(L, e, Y))) continue;
+      const a = vMan(L, e, Y, ms);
+      if (a < 0.3) continue;
+      const v = a / Math.max(0.2, vMan(L, e, Y, mb)) + Math.min(a, want - vs()) * 0.05;
+      if (v > pv) { pv = v; pickA = { e }; }
+    }
+    for (const p of picks) {
+      if (gp.indexOf(p) >= 0 || gp.length >= maxPicks) continue;
+      const a = vPick(L, p, Y, ms);
+      const v = a / Math.max(0.2, vPick(L, p, Y, mb)) + Math.min(a, want - vs()) * 0.05;
+      if (v > pv) { pv = v; pickA = { p }; }
+    }
+    if (!pickA) break;
+    if (pickA.e) { give.push(pickA.e); outSal += payY(L, pickA.e, Y); } else gp.push(pickA.p);
+  }
+  if (vs() < want) return null;
+  /* b only says yes to a deal it thinks it won. */
+  const tToB = T.you ? vMan(L, T, Y, mb) : vMan(L, T, Y, mb);
+  if (tToB < vb() * 0.92) return null;
+  /* Nobody sends away a man he just took, and a club still fields thirteen. */
+  if (R[b].length - give.length + 1 < 12) return null;
+  return { men: give, picks: gp };
+}
+/* Do the deal: men and picks change hands, and both clubs go on the log. */
+function doTrade(L, R, Y, s, sMen, sPicks, b, bMen, bPicks, moved) {
+  const F = fo(L);
+  F.picks = F.picks || {};
+  for (const e of sMen) { if (!e.you) moveMan(R, s, e, b); moved.add(e); }
+  for (const e of bMen) { moveMan(R, b, e, s); moved.add(e); }
+  for (const p of sPicks) F.picks[pickKey(p.d, p.r, p.o)] = b;
+  for (const p of bPicks) F.picks[pickKey(p.d, p.r, p.o)] = s;
+  if (sPicks.length || bPicks.length) F.pv = (F.pv || 0) + 1;
+  memoDrop(s); memoDrop(b);
+  /* A club past fifteen waives its last man. */
+  for (const c of [s, b]) {
+    while (R[c].length > 15) {
+      const w = R[c].filter((e) => !moved.has(e)).sort((x, y) => x.c - y.c)[0] || R[c].slice().sort((x, y) => x.c - y.c)[0];
+      R[c].splice(R[c].indexOf(w), 1);
+      if (!w.g) (L.league.pool = L.league.pool || []).push(w);
+    }
+  }
+}
+function logTx(L, Y, kind, t, clubs, x) {
+  const F = fo(L);
+  F.tx = F.tx || [];
+  const r = { y: Y, k: kind, t, c: clubs };
+  /* Who moved, and when in the year, for the checks that hold a man to one
+     move a window. */
+  if (x && x.m) r.m = x.m;
+  if (x && x.win) r.w = x.win;
+  F.tx.push(r);
+  if (F.tx.length > 160) F.tx.splice(0, F.tx.length - 160);
+}
+/* THE LEAGUE'S TRADES, a summer's or a deadline's. Each one is a story the
+   real league tells every year:
+     a contender buys a veteran from a club that is selling;
+     a club over the tax pays somebody with picks to take a contract;
+     two clubs swap players who fit the other better;
+     and now and then a star on a losing club is moved for a haul.
+   `skip` keeps a club out (yours, at the deadline, which has its own). */
+function leagueTrades(L, R, Y, kind, rng, moved, news, skip) {
+  const modes = clubModes(L), cap = capFor(Y);
+  const target = kind === 'summer' ? 4 + Math.floor(rng() * 5) : 3 + Math.floor(rng() * 4);
+  const ok = (c) => c !== skip;
+  const can = (e) => !moved.has(e) && e.nt !== Y;
+  const bestOf = (c) => R[c].slice().sort((x, y) => y.c - x.c)[0];
+  let done = 0;
+  const deal = (s, T, b, how, lim) => {
+    if (!T || !b || s === b || !ok(s) || !ok(b)) return false;
+    let pkg, sMen = [T], sPicks = [];
+    if (how === 'dump') {
+      /* The taker sends a cheap body or nothing; the dumping club adds picks
+         until the taker thinks it is worth the money. */
+      const tb = vMan(L, T, Y, modes[b]);
+      const mine = picksOf(L, s, Y).sort((x, y) => vPick(L, y, Y, modes[b]) - vPick(L, x, Y, modes[b]));
+      let v = tb;
+      for (const p of mine) { if (v >= 0.4 || sPicks.length >= 2) break; sPicks.push(p); v += vPick(L, p, Y, modes[b]); }
+      if (v < 0.4) return false;
+      if (payroll(L, R, b, Y) + payY(L, T, Y) > cap * 1.05) return false;
+      pkg = { men: [], picks: [] };
+    } else {
+      pkg = buildPackage(L, R, Y, b, s, T, modes, moved, lim);
+      if (!pkg) return false;
+    }
+    const t = tradeText(L, s, sMen, sPicks, b, pkg.men, pkg.picks, how);
+    doTrade(L, R, Y, s, sMen, sPicks, b, pkg.men, pkg.picks, moved);
+    const w = Math.max(show(T.c), ...pkg.men.map((e) => show(e.c))) - 76 + pkg.picks.length * 0.6 + (how === 'star' ? 6 : 0);
+    news.push({ w, k: 'trade', c: s, to: b, t, how, m: sMen.concat(pkg.men).map((e) => e.n), win: kind });
+    done++;
+    return true;
+  };
+  /* The star, once at most, and not every year. A man rated 86 or more, in his
+     prime, on a club going nowhere, to whoever can pay. Never a kid. */
+  if (rng() < (kind === 'summer' ? 0.4 : 0.05)) {
+    const stars = [];
+    const young = kind === 'summer' ? 25 : 27;
+    for (const c of CLUBS) if (ok(c) && modes[c] !== 'win') for (const e of R[c]) if (can(e) && show(e.c) >= 86 && Y - e.b >= young && Y - e.b <= 31) stars.push([c, e]);
+    if (stars.length) {
+      const [s, T] = pick(rng, stars);
+      const buyers = CLUBS.filter((c) => c !== s && ok(c)).sort(() => rng() - 0.5).slice(0, 12);
+      for (const b of buyers) if (deal(s, T, b, 'star', { men: 3, picks: 4 })) break;
+    }
+  }
+  for (let t = 0; t < 45 && done < target; t++) {
+    const u = rng();
+    const how = kind === 'summer' ? (u < 0.35 ? 'vet' : u < 0.55 ? 'dump' : 'swap') : (u < 0.55 ? 'vet' : u < 0.7 ? 'dump' : 'swap');
+    if (how === 'vet') {
+      const sellers = CLUBS.filter((c) => ok(c) && (modes[c] === 'rebuild' || (modes[c] === 'mid' && rng() < 0.4)));
+      const s = pick(rng, sellers);
+      if (!s) continue;
+      /* A veteran, not a franchise: the stars move in the star story above. */
+      const vets = R[s].filter((e) => can(e) && Y - e.b >= 27 && show(e.c) >= 77 && show(e.c) <= (kind === 'summer' ? 87 : 85) && (modes[s] === 'rebuild' || e !== bestOf(s)));
+      const T = vets.length ? weighted(rng, vets, (e) => e.c - 60) : null;
+      if (!T) continue;
+      const buyers = CLUBS.filter((c) => c !== s && ok(c) && modes[c] !== 'rebuild' && R[c].filter((x) => x.c > T.c).length < 7)
+        .sort((a, b) => (bestAtPos(R, a, T.pos) - bestAtPos(R, b, T.pos)) + (rng() - 0.5) * 6);
+      for (const b of buyers.slice(0, 4)) if (deal(s, T, b, 'vet')) break;
+    } else if (how === 'dump') {
+      const over = CLUBS.filter((c) => ok(c) && payroll(L, R, c, Y) > cap * 1.2);
+      const s = pick(rng, over);
+      if (!s) continue;
+      const bad = R[s].filter((e) => can(e) && (e.k || 0) > Y && payY(L, e, Y) - dealPay(L, e.c, Y - e.b, Y) >= 4 && e !== bestOf(s));
+      const T = pick(rng, bad);
+      if (!T) continue;
+      const takers = CLUBS.filter((c) => c !== s && ok(c) && R[c].length < 15 && payroll(L, R, c, Y) + payY(L, T, Y) <= cap * 1.05);
+      const b = pick(rng, takers);
+      if (b) deal(s, T, b, 'dump');
+    } else {
+      const s = pick(rng, CLUBS.filter(ok));
+      const pool = R[s].filter((e) => can(e) && show(e.c) >= 74 && show(e.c) <= 84 && Y - e.b <= 31 && e !== bestOf(s));
+      const T = pick(rng, pool);
+      if (!T) continue;
+      const b = pick(rng, CLUBS.filter((c) => c !== s && ok(c) && bestAtPos(R, c, T.pos) < T.c));
+      if (b) deal(s, T, b, 'swap', { men: 2, picks: 1 });
+    }
+  }
+  return done;
+}
+
+/* ── the summer ── */
+
+/* THE SUMMER, in the order the league runs it: everybody a year older, the
+   retirements, the draft, the deals that end, free agency, the trades, and
+   then every club trims or fills to thirteen to fifteen. */
+function officeSummer(L, R, Y, beats, quiet) {
+  const lg = L.league, F = fo(L), mine = L.stage === 'nba' && L.team;
+  const rng = E.createSeededRNG(E.hashSeed(String(L.seed) + ':' + Y + ':office'));
+  const news = [], moved = new Set();
+  seasonWins(L, Y - 1);
+  const pool = (lg.pool || []);
+  for (const c of CLUBS) for (const e of R[c]) { initMan(L, e, Y - 1); devMan(L, e, Y); }
+  for (const e of pool) { initMan(L, e, Y - 1); devMan(L, e, Y); }
+  const rs = lg.rs || 0;
+  /* Retirements. Nobody leaves before the season he was signed for. */
+  if (!rs || Y > rs) {
+    for (const c of CLUBS) for (const e of R[c].slice()) {
+      if (manRng(L, e, 'retire', Y)() >= retireP(e, Y, false)) continue;
+      R[c].splice(R[c].indexOf(e), 1);
+      const s = show(e.cp != null ? e.cp : e.c), yrs = e.dy ? Y - e.dy : null;
+      if (s >= 80 || (yrs && yrs >= 14)) news.push({ w: s - 76 + (yrs ? yrs * 0.2 : 0), k: 'retire', c, t: e.n + ' retires' + (yrs && yrs >= 6 ? ' after ' + yrs + ' seasons' : ' at ' + (Y - 1 - e.b)) + '.' });
+    }
+    lg.pool = pool.filter((e) => manRng(L, e, 'retire', Y)() >= retireP(e, Y, true));
+  }
+  const taken = new Set();
+  for (const c of CLUBS) for (const e of R[c]) taken.add(e.n);
+  for (const e of lg.pool || []) taken.add(e.n);
+  if (rs && Y - 1 >= rs) leagueDraft(L, R, Y, news, taken);
+  const fas = (!rs || Y > rs) ? resignings(L, R, Y, news) : [];
+  memoOpen();
+  try {
+    freeAgency(L, R, Y, fas, moved, news);
+    leagueTrades(L, R, Y, 'summer', rng, moved, news, null);
+  } finally { memoClose(); }
+  /* Every club carries thirteen to fifteen. Past fifteen it waives its worst
+     man it did not just add; short, it signs the best man left, and only
+     invents a journeyman when nobody real is out there. */
+  for (const c of CLUBS) {
+    while (R[c].length > 15) {
+      const w = R[c].filter((e) => !moved.has(e) && e.nt !== Y).sort((x, y) => x.c - y.c)[0] || R[c].slice().sort((x, y) => x.c - y.c)[0];
+      R[c].splice(R[c].indexOf(w), 1);
+      if (!w.g) lg.pool.push(w);
+    }
+  }
+  lg.pool.sort((x, y) => y.c - x.c);
+  for (const c of CLUBS.slice().sort((x, y) => R[x].length - R[y].length)) {
+    while (R[c].length < 14 && lg.pool.length && show(lg.pool[0].c) >= 70) {
+      const e = lg.pool.shift();
+      e.k = Y; e.sal = round1(capFor(Y) * MIN_PCT); delete e.pay; delete e.fa;
+      R[c].push(e); moved.add(e);
+    }
+    while (R[c].length < 13) {
+      const r = E.createSeededRNG(E.hashSeed(String(L.seed) + ':vet:' + c + ':' + Y + ':' + R[c].length));
+      const n = freshName(L, 'vet:' + c + ':' + Y + ':' + R[c].length, taken);
+      const age = 25 + Math.floor(r() * 7), o = round1(56 + r() * 6);
+      R[c].push({ n, pos: thinPos(R[c], pick(r, R_POS)), b: Y - age, w: 0, g: 1, d: Y - 3, c: o, cy: Y, cp: o, pot: o, k: Y, sal: round1(capFor(Y) * MIN_PCT) });
+    }
+  }
+  lg.pool = lg.pool.slice(0, 60);
+  for (const c of CLUBS) for (const e of R[c]) delete e.nt;
+  /* The news: the biggest stories, and anything that touches your club. */
+  news.sort((x, y) => y.w - x.w);
+  const ours = (x) => mine && (x.c === L.team || x.to === L.team || x.from === L.team);
+  const told = news.filter((x) => ours(x) && !x.quiet).slice(0, 3);
+  for (const x of news.filter((y) => !y.quiet).slice(0, 2)) if (told.indexOf(x) < 0) told.push(x);
+  /* Every move goes on the transaction log; the biggest and yours make the
+     front page. */
+  if (!quiet) for (const x of news) if (!x.quiet) logTx(L, Y, x.k, x.t, [x.c, x.to].filter(Boolean), x);
+  const loud = news.filter((x) => !x.quiet);
+  for (const x of quiet ? [] : loud.slice(0, 8).concat(loud.filter(ours))) {
+    if (x.done) continue;
+    x.done = 1;
+    feed(L, x.k === 'trade' ? 'trade' : x.k === 'fa' ? 'fa' : x.k === 'draft' ? 'draft' : x.k === 'retire' ? 'retire' : 'move', x.t);
+  }
+  if (!quiet && beats && L.stage === 'nba') for (const x of told) {
+    const o = ours(x);
+    beats.push({ kind: 'news', text: (o ? 'Your club: ' : 'Around the league: ') + lowFirst(x.t), tone: '' });
+    if (o) logIt(L, x.t, '');
+  }
+}
+const lowFirst = (t) => (/^The /.test(t) ? 't' + t.slice(1) : t);
+
+/* ── the deadline ── */
+
+/* THE LEAGUE'S DEADLINE. Contenders buy, sellers sell, and a club over the
+   tax pays somebody to take a contract. Your club has its own (deadlineClub).
+   A club that got better plays better the rest of the way. */
+function officeDeadline(L, beats, rng) {
+  const R = rostNow(L), Y = L.year, F = fo(L);
+  if (!R || !F) return;
+  const before = {};
+  for (const c of CLUBS) before[c] = rawOvr(R, c, Y);
+  const news = [], moved = new Set();
+  memoOpen();
+  try { leagueTrades(L, R, Y, 'deadline', rng, moved, news, L.team); } finally { memoClose(); }
+  renet(L, R, Y, before);
+  news.sort((a, b) => b.w - a.w);
+  news.forEach((x, i) => {
+    feed(L, 'trade', x.t);
+    logTx(L, Y, 'trade', x.t, [x.c, x.to], x);
+    if (i < 2) beats.push({ kind: 'news', text: 'Deadline deal: ' + lowFirst(x.t), tone: '' });
+  });
+}
+/* A club's strength off its rotation, the way rosterNets reads it. */
+function rawOvr(R, c, Y) {
+  const m = R[c].map((e) => manOvr(e, Y)).sort((a, b) => b - a);
+  let v = 0;
+  NET_WT.forEach((w, k) => { v += w * (m[k] != null ? m[k] : 60); });
+  return v;
+}
+/* After a deadline, a club's net moves by what its roster gained, on the
+   scale the summer's nets were drawn on. */
+function renet(L, R, Y, before) {
+  const sd = (fo(L).nz && fo(L).nz.sd) || 2;
+  for (const c of CLUBS) {
+    const d = rawOvr(R, c, Y) - before[c];
+    if (Math.abs(d) > 0.01) L.league.net[c] = round1(clubNet(L, c) + d / sd * 4.6);
+  }
+}
+/* Last season's standings, by conference, best first, for the News tab. */
+function leagueTable(L) {
+  const F = fo(L);
+  if (!F || !F.rec) return null;
+  const ys = Object.keys(F.rec).map(Number).sort((a, b) => b - a);
+  const y = ys.find((x) => x < L.year || (L.phase === 'off' && x === L.year));
+  if (y == null) return null;
+  const W = F.rec[y], out = { y, E: [], W: [] };
+  for (const c of CLUBS) out[confOf(c) === 'East' ? 'E' : 'W'].push([c, W[c], 82 - W[c]]);
+  out.E.sort((a, b) => b[1] - a[1]); out.W.sort((a, b) => b[1] - a[1]);
+  return out;
+}
+/* The transaction log, newest first. */
+const transactions = (L) => ((fo(L) && fo(L).tx) || []).slice().reverse();
+/* Club c's picks, said the way a GM would. */
+function picksText(L, c) {
+  const F = fo(L);
+  if (!F) return '';
+  const d0 = L.year;
+  const P = picksOf(L, c, d0).sort((a, b) => a.d - b.d || a.r - b.r);
+  const out = P.map((p) => p.d + ' ' + (p.r === 1 ? '1st' : '2nd') + (p.o !== c ? ' (' + p.o + ')' : ''));
+  const gone = [];
+  for (let d = d0; d <= d0 + 3; d++) for (const r of [1]) if (pickOwner(F, d, r, c) !== c) gone.push(d + ' 1st to ' + pickOwner(F, d, r, c));
+  return { have: out, owe: gone };
+}
 /* Who is on club c in the current year, best first. */
 /* EVERY PLAYER HAS AN OVERALL, ON YOUR SCALE. A man's worth is what he
    produces a season (win shares, measured off his real seasons and aged),
@@ -1056,7 +1835,9 @@ function ovrOfMan(e, w) {
 function payOf(L, e, Y, w) {
   if (e.pay && Y <= (e.s || 0)) return e.pay;
   if (e.pay && !e.o && Y <= ((L.league && L.league.rs) || 0)) return e.pay;
-  return marketPay(L, show(ovrOfMan(e, w)), Y - e.b);
+  /* A deal he signed pays what it says until it ends. */
+  if (e.sal != null && e.k != null && Y <= e.k) return e.sal;
+  return marketPay(L, show(e.cy != null ? manOvr(e, Y) : ovrOfMan(e, w)), Y - e.b);
 }
 /* The 2026-27 market, read off the real salaries against the real ratings
    (the median pay at each overall): a minimum deal in the low 70s, about $11M
@@ -1068,13 +1849,20 @@ function marketPay(L, o, age) {
   for (let k = 1; k < PAY_AT.length; k++) if (o <= PAY_AT[k][0]) { const [a, va] = PAY_AT[k - 1], [b, vb] = PAY_AT[k]; v = va + (Math.max(o, a) - a) / (b - a) * (vb - va); break; }
   if (age >= 35) v = Math.min(v, 12);
   const y = L.year || 2027;
-  return round1(v * (capFor(y) / capFor(2027)));
+  /* Nobody is paid more than the max: 35 percent of the cap. */
+  return round1(Math.min(v * (capFor(y) / capFor(2027)), capFor(y) * 0.35));
 }
 function matesOf(L, c) {
   const lg = L.league;
   const Y = L.year;
   const R = rostNow(L);
-  if (R && R[c]) return R[c].filter((e) => !rostGone(L, e, Y)).map((e) => { const w = rostCurW(e, Y); return { n: e.n, pos: e.pos, age: Y - e.b, w, ovr: ovrOfMan(e, w), real: e.g ? 0 : 1, pay: payOf(L, e, Y, w) }; }).sort((a, b) => b.w - a.w);
+  if (R && R[c]) return R[c].filter((e) => !rostGone(L, e, Y)).map((e) => {
+    const w = rostCurW(e, Y);
+    const m = { n: e.n, pos: e.pos, age: Y - e.b, w, ovr: e.cy != null ? round1(manOvr(e, Y)) : ovrOfMan(e, w), real: e.g ? 0 : 1, pay: payOf(L, e, Y, w) };
+    if (e.k != null) m.yrs = Math.max(0, e.k - Y + 1);
+    if (e.pk) m.pk = e.pk;
+    return m;
+  }).sort((a, b) => b.ovr - a.ovr || b.w - a.w);
   const out = [];
   const base = lg.roster && lg.roster[c];
   if (base) {
@@ -2013,7 +2801,7 @@ function rotationOf(L) {
      starter puts you in the five, at whatever minutes he plays you. */
   if (role.starter && at > 4) at = 4;
   const youStart = at < 5;
-  const me = { n: L.name, pos: L.pos, age: L.age, you: true, min: mine, pts: null, w: 0, ovr: ovrOf(L), pay: L.contract ? L.contract.salary : null };
+  const me = { n: L.name, pos: L.pos, age: L.age, you: true, min: mine, pts: null, w: 0, ovr: ovrOf(L), pay: L.contract ? L.contract.salary : null, yrs: L.contract ? L.contract.years : null };
   const epOf = (m) => { const ln = lines[m.n]; return ln && ln[5] ? String(ln[5]).split(';') : null; };
   const cands = mates.map((m) => ({ v: Math.max(0.1, (m.ovr || mateOvr(m.w)) - 55), pos: m.pos, ep: epOf(m), m }));
   if (youStart) cands.unshift({ v: 1000, pos: L.pos, ep: null, force: true, m: me });
@@ -2030,7 +2818,7 @@ function rotationOf(L) {
     /* Points: last season's rate for a man the data has, otherwise one off
        his value; at the minutes he is getting now. */
     const rate = ln && ln[0] > 0 ? ln[1] / ln[0] : 0.18 + Math.max(0, m.w) * 0.035;
-    return { n: m.n, pos: m.pos, age: m.age, real: m.real, ovr: m.ovr, pay: m.pay, min, pts: min > 0 ? round1(rate * min) : 0, slot };
+    return { n: m.n, pos: m.pos, age: m.age, real: m.real, ovr: m.ovr, pay: m.pay, yrs: m.yrs, min, pts: min > 0 ? round1(rate * min) : 0, slot };
   };
   const rows = new Map();
   starters.filter((x) => x.m !== me).sort((a, b) => b.m.ovr - a.m.ovr || b.m.w - a.m.w).forEach((x, k, arr) => rows.set(x.m, row(x.m, k, x.slot)));
@@ -2661,12 +3449,12 @@ function queueMoment(L, chunk) {
    key is the shot (or the stop) and W or L is the box score. */
 const DUEL_TEXT = {
   buzzer: { MW: 'At the horn! The bench empties onto the floor.', ML: 'You hit it to force overtime. They pull away in the extra five.',
-    mW: 'Off the back iron. {mate} carries you in overtime.', mL: 'Off the back iron. That\'s the ballgame.' },
-  kick: { MW: 'You draw two and find {mate}. Splash. Ballgame.', ML: 'You find {mate}. He buries it. They still win in overtime.',
+    mW: 'Off the back iron. {dmate} carries you in overtime.', mL: 'Off the back iron. That\'s the ballgame.' },
+  kick: { MW: 'You draw two and find {dmate}. Splash. Ballgame.', ML: 'You find {dmate}. He buries it. They still win in overtime.',
     mW: 'The kick-out sails. You win it in overtime anyway.', mL: 'The kick-out sails. Ballgame for them.' },
   ft: { 2: { W: 'Two for two. Ice.', L: 'Two for two. Then they score at the horn.' },
     1: { W: 'One of two. You win it in overtime. The miss nags all night.', L: 'One of two. They win it in overtime.' },
-    0: { W: 'Both off the rim. {mate} tips the second one in at the horn.', L: 'Both clank off the rim. The other bench loves it.' } },
+    0: { W: 'Both off the rim. {dmate} tips the second one in at the horn.', L: 'Both clank off the rim. The other bench loves it.' } },
   poster: { MW: 'Right on top of him. That one goes on a wall. A win.', ML: 'Right on top of him. Best moment of a bad night.',
     mW: 'He holds his ground. Offensive foul. You win anyway.', mL: 'He holds his ground. Offensive foul. A long night.' },
   layup: { MW: 'Two points. Nobody posts it. A win.', ML: 'Two points. Nobody posts it. A loss.', mW: 'It rolls off. You win anyway.', mL: 'It rolls off. A loss.' },
@@ -2674,14 +3462,14 @@ const DUEL_TEXT = {
     mW: 'A step late. And one. You win anyway.', mL: 'A step late. And one. A loss.' },
   letgo: { W: 'Two points for them. Nobody notices. A win.', L: 'Two points for them. Nobody notices. A loss.' },
   stop: { MW: 'You stay in front. He misses at the horn. Ballgame.', ML: 'You force the miss. They tip it in at the horn.',
-    mW: 'He gets to his spot and scores. {mate} answers at the other end. A win.', mL: 'He gets to his spot and buries it.' },
+    mW: 'He gets to his spot and scores. {dmate} answers at the other end. A win.', mL: 'He gets to his spot and buries it.' },
   double: { MW: 'The double forces it out. They miss. Ballgame.', ML: 'The double forces it out. The open man hits.',
-    mW: 'They find the open man. {mate} answers at the other end.', mL: 'They find the open man. He hits.' },
+    mW: 'They find the open man. {dmate} answers at the other end.', mL: 'They find the open man. He hits.' },
 };
 function duelLine(L, card, key, made, won) {
   const t = DUEL_TEXT[key];
   const raw = typeof made === 'number' ? t[made][won ? 'W' : 'L'] : made == null ? t[won ? 'W' : 'L'] : t[(made ? 'M' : 'm') + (won ? 'W' : 'L')];
-  return raw.replace(/\{mate\}/g, (card.ctx && card.ctx.mate) || 'A teammate');
+  return raw.replace(/\{dmate\}/g, (card.ctx && card.ctx.mate) || 'A teammate');
 }
 function momentResolve(L, card, i, rng, touch, touches) {
   const m = MOMENTS[card.ctx.m], o = m.opts(L)[i], opp = nick(card.ctx.opp);
@@ -2780,16 +3568,16 @@ function clutchCard(L, cur, home) {
 /* The last possession of a duel game, told by what you did and how it went. */
 const G7_TEXT = {
   shot: { MW: 'Good! Series over. You\'ll watch that one for the rest of your life.', ML: 'Good! Then they go the length of the floor in 1.4 seconds. Series over the wrong way.',
-    mW: 'No good. {mate} flies in and tips it home at the horn. Series!', mL: 'No good. The whole building goes quiet.' },
-  pass: { MW: 'You draw two and find {mate}. Splash. Series!', ML: 'You find {mate}. He buries it. They answer at the horn.',
-    mW: 'The pass is late. {mate} forces it up and it rolls in. Series!', mL: 'The pass is late. The shot clock beats him. Series over.' },
+    mW: 'No good. {dmate} flies in and tips it home at the horn. Series!', mL: 'No good. The whole building goes quiet.' },
+  pass: { MW: 'You draw two and find {dmate}. Splash. Series!', ML: 'You find {dmate}. He buries it. They answer at the horn.',
+    mW: 'The pass is late. {dmate} forces it up and it rolls in. Series!', mL: 'The pass is late. The shot clock beats him. Series over.' },
 };
 /* The same, for a single game: a tournament has no series to win. */
 const AM_TEXT = {
   shot: { MW: 'Good! You\'ll remember that one for the rest of your life.', ML: 'Good! Then they go the length of the floor and score at the horn.',
-    mW: 'No good. {mate} flies in and tips it home at the horn.', mL: 'No good. You sit on the floor for a long time.' },
-  pass: { MW: 'You draw two and find {mate}. Splash. Ballgame.', ML: 'You find {mate}. He buries it. They answer at the horn.',
-    mW: 'The pass is late. {mate} forces it up and it rolls in.', mL: 'The pass is late. The horn beats him.' },
+    mW: 'No good. {dmate} flies in and tips it home at the horn.', mL: 'No good. You sit on the floor for a long time.' },
+  pass: { MW: 'You draw two and find {dmate}. Splash. Ballgame.', ML: 'You find {dmate}. He buries it. They answer at the horn.',
+    mW: 'The pass is late. {dmate} forces it up and it rolls in.', mL: 'The pass is late. The horn beats him.' },
 };
 /* Your possession moves the game's odds, it does not set them. */
 function duelGame(L, base, made, rng, card, i, beats, label) {
@@ -2801,7 +3589,7 @@ function duelGame(L, base, made, rng, card, i, beats, label) {
   }
   if (i === 3 && mate) relate(L, 'tm', made ? 16 : 8, 'You trusted him with the last possession of ' + label + '.', mate);
   else if (!made && won && mate) relate(L, 'tm', 10, 'He saved you in ' + label + '.', mate);
-  const text = (label === 'Game 7' ? G7_TEXT : AM_TEXT)[i === 3 ? 'pass' : 'shot'][(made ? 'M' : 'm') + (won ? 'W' : 'L')].replace(/\{mate\}/g, mate || 'A teammate');
+  const text = (label === 'Game 7' ? G7_TEXT : AM_TEXT)[i === 3 ? 'pass' : 'shot'][(made ? 'M' : 'm') + (won ? 'W' : 'L')].replace(/\{dmate\}/g, mate || 'A teammate');
   return { won, text };
 }
 // ─── the offseason ──────────────────────────────────────────────────────────
@@ -4436,6 +5224,7 @@ function moveMan(R, from, e, to) {
 /* When you are traded, somebody comes back: the man on the club taking you
    whose worth is nearest yours, from anywhere but the top of their roster. */
 function swapBack(L, from, to, rng) {
+  if (fo(L)) { const b = swapBackFO(L, from, to, rng); if (b) return b; }
   const R = rostNow(L);
   if (!R || !R[to] || !R[to].length) return null;
   const Y = L.year, mine = youW(L);
@@ -4467,6 +5256,7 @@ function forSale(R, c, Y, moved) {
 function deadlineLeague(L, beats, rng) {
   const R = rostNow(L);
   if (!R) return;
+  if (fo(L)) { officeDeadline(L, beats, rng); return; }
   const Y = L.year;
   const ranked = CLUBS.slice().sort((a, b) => winPct(L, b) - winPct(L, a));
   const buyers = ranked.slice(0, 9).filter((c) => c !== L.team);
@@ -4497,6 +5287,7 @@ function deadlineLeague(L, beats, rng) {
 function deadlineClub(L, beats, rng) {
   const R = rostNow(L), s = L.season;
   if (!R || !s) return null;
+  if (fo(L)) return deadlineClubFO(L, beats, rng);
   const Y = L.year, c = L.team, pct = winPct(L, c), net = clubNet(L, c);
   const mode = (pct >= 0.6 || (pct >= 0.54 && net >= 2)) ? 'buy' : pct <= 0.42 ? 'sell' : 'hold';
   s.deadline = { mode };
@@ -4545,6 +5336,96 @@ function deadlineClub(L, beats, rng) {
     }
   }
   return mode;
+}
+/* YOUR CLUB AT THE DEADLINE, on the front office's model. A contender buys a
+   veteran from a club that is selling, and pays in young players and picks;
+   a losing club sells its veteran to a contender for the same. Either way it
+   is a man you know by name, and the headline says what went each way. */
+function deadlineClubFO(L, beats, rng) {
+  const R = rostNow(L), s = L.season, Y = L.year, c = L.team, pct = winPct(L, c), net = clubNet(L, c);
+  const mode = (pct >= 0.6 || (pct >= 0.54 && net >= 2)) ? 'buy' : pct <= 0.42 ? 'sell' : 'hold';
+  s.deadline = { mode };
+  const modes = clubModes(L), moved = new Set(), before = {};
+  for (const x of CLUBS) before[x] = rawOvr(R, x, Y);
+  const bestOf = (x) => R[x].slice().sort((a, b) => b.c - a.c)[0];
+  let done = null;
+  if (mode === 'buy' && rng() < 0.35) {
+    modes[c] = 'win';
+    const pos = R_POS.slice().sort((a, b) => needAt(L, c, b) - needAt(L, c, a))[0];
+    const cands = [];
+    for (const x of CLUBS) if (x !== c && modes[x] !== 'win') for (const e of R[x]) if (Y - e.b >= 26 && show(e.c) >= 77 && show(e.c) <= 86 && e !== bestOf(x)) cands.push([x, e, e.c * (e.pos === pos ? 1.15 : 1) + rng() * 3]);
+    cands.sort((a, b) => b[2] - a[2]);
+    for (const [x, e] of cands.slice(0, 6)) {
+      const pkg = buildPackage(L, R, Y, c, x, e, modes, moved);
+      if (!pkg) continue;
+      const t = tradeText(L, x, [e], [], c, pkg.men, pkg.picks);
+      doTrade(L, R, Y, x, [e], [], c, pkg.men, pkg.picks, moved);
+      done = { t, got: e, tone: 'good', men: [e.n].concat(pkg.men.map((x) => x.n)) };
+      s.deadline.got = e.n;
+      break;
+    }
+  } else if (mode === 'sell' && rng() < 0.55) {
+    modes[c] = 'rebuild';
+    const vets = R[c].filter((e) => Y - e.b >= 27 && show(e.c) >= 77 && show(e.c) <= 87 && e !== bestOf(c)).sort((a, b) => b.c - a.c);
+    const buyers = CLUBS.filter((x) => x !== c && modes[x] === 'win').sort(() => rng() - 0.5);
+    for (const T of vets.slice(0, 2)) {
+      for (const b of buyers) {
+        const pkg = buildPackage(L, R, Y, b, c, T, modes, moved);
+        if (!pkg) continue;
+        const t = tradeText(L, c, [T], [], b, pkg.men, pkg.picks);
+        doTrade(L, R, Y, c, [T], [], b, pkg.men, pkg.picks, moved);
+        done = { t, lost: T, tone: '', men: [T.n].concat(pkg.men.map((x) => x.n)) };
+        s.deadline.lost = T.n;
+        break;
+      }
+      if (done) break;
+    }
+  }
+  renet(L, R, Y, before);
+  if (!done) return mode;
+  feed(L, 'trade', done.t);
+  logTx(L, Y, 'trade', done.t, [c], { win: 'deadline', m: done.men });
+  logIt(L, done.t, done.tone);
+  beats.push({ kind: 'club_trade', text: 'Deadline: ' + lowFirst(done.t), tone: done.tone });
+  if (done.got) {
+    if (done.got.pos === L.pos && rostCurW(done.got, Y) > youW(L)) {
+      bump(L, { min: -3, morale: -2 });
+      beats.push({ kind: 'role', text: 'He plays your position, and plays it well. Your minutes take a hit.', tone: 'bad' });
+    } else bump(L, { morale: 3 });
+  } else if (done.lost.pos === L.pos || (NEXT_POS[L.pos] || []).indexOf(done.lost.pos) >= 0) {
+    bump(L, { min: 3 });
+    beats.push({ kind: 'role', text: 'His minutes are yours now.', tone: 'good' });
+  }
+  return mode;
+}
+/* WHEN YOU ARE TRADED, the club taking you pays for you the way it would pay
+   for anybody: a package it thinks is fair, young players and picks to a
+   club that is rebuilding, salary that matches. The headline names it all. */
+function swapBackFO(L, from, to, rng) {
+  const R = rostNow(L), Y = L.year;
+  if (!R || !R[to] || !R[from]) return null;
+  const ct = L.contract;
+  const T = { n: L.name, you: 1, c: effOvr(L), b: Y - L.age, pot: Math.max(effOvr(L), L.pot || 0), pos: L.pos,
+    k: Y + Math.max(0, (ct ? ct.years : 1) - 1), sal: ct ? ct.salary : round1(capFor(Y) * MIN_PCT) };
+  const modes = clubModes(L), moved = new Set(), before = {};
+  for (const x of CLUBS) before[x] = rawOvr(R, x, Y);
+  let pkg = buildPackage(L, R, Y, to, from, T, modes, moved);
+  if (!pkg) return null;
+  /* Nobody here is traded for picks alone: a man comes back. */
+  if (!pkg.men.length) {
+    const best = R[to].slice().sort((a, b) => b.c - a.c)[0];
+    const one = R[to].filter((e) => e !== best).sort((a, b) => vMan(L, a, Y, modes[to]) - vMan(L, b, Y, modes[to]))[0];
+    if (!one) return null;
+    pkg = { men: [one], picks: pkg.picks.slice(0, 1) };
+  }
+  const t = tradeText(L, from, [T], [], to, pkg.men, pkg.picks);
+  doTrade(L, R, Y, from, [T], [], to, pkg.men, pkg.picks, moved);
+  renet(L, R, Y, before);
+  feed(L, 'trade', t);
+  logTx(L, Y, 'trade', t, [from, to], { m: pkg.men.map((e) => e.n), win: 'you' });
+  const words = assetWords(pkg.men, pkg.picks, to);
+  if (L.season) L.season.dlBack = words;
+  return { n: words, men: pkg.men.map((e) => e.n) };
 }
 /* The clubs that would take you: a contender with a hole at your position,
    and a club where you would start. */
@@ -5384,6 +6265,8 @@ const activeFigs = (L) => figs(L).filter((f) => !f.gone);
 /* A summer in the league: the stars age, some move, the old ones retire and a
    rookie arrives on the worst club. Read in the summer the age changes. */
 function figYear(L) {
+  /* The league office runs the real league; the invented stars stand still. */
+  if (fo(L)) return;
   const rng = figRng(L, 'y' + L.year);
   for (const f of activeFigs(L)) {
     const a = L.year - f.b;
@@ -5400,8 +6283,16 @@ function figYear(L) {
 function mvpRace(L) {
   const rng = figRng(L, 'race' + L.year);
   /* Voters tire of the same winner, so a run of MVPs is hard to keep. */
-  const out = activeFigs(L).map((f) => ({ n: f.n, club: f.club, sc: figOvr(f, L.year) + clubNet(L, f.club) * 0.5 + norm(rng) * 2.6
+  let out = activeFigs(L).map((f) => ({ n: f.n, club: f.club, sc: figOvr(f, L.year) + clubNet(L, f.club) * 0.5 + norm(rng) * 2.6
     - (f.won || []).filter((y) => L.year - y <= 4).length * 2.4 }));
+  /* With the league office the race is the league's real best players, on
+     the rosters as they stand, and the invented stars sit it out. */
+  const R = fo(L) && rostNow(L);
+  if (R) {
+    const won = fo(L).mvps || {};
+    out = [];
+    for (const c of CLUBS) for (const e of R[c]) if (e.c >= 78) out.push({ n: e.n, club: c, sc: e.c + clubNet(L, c) * 0.5 + norm(rng) * 2.6 - (won[e.n] || []).filter((y) => L.year - y <= 4).length * 2.4 });
+  }
   const s = L.season;
   if (s && s.gp >= 20 && !isAm(L)) {
     const pg = perGame(s);
@@ -5413,7 +6304,11 @@ function mvpRace(L) {
 function leagueAwards(L, mine) {
   if (!storyOn(L)) return;
   const race = mvpRace(L).filter((x) => !x.you);
-  if (mine.indexOf('mvp') < 0 && race.length) {
+  if (mine.indexOf('mvp') < 0 && race.length && fo(L) && rostOf(L)) {
+    const M = fo(L).mvps || (fo(L).mvps = {}), w = M[race[0].n] || (M[race[0].n] = []);
+    w.push(L.year);
+    feed(L, 'award', race[0].n + ' wins the MVP.' + (w.length > 1 ? ' His ' + (ORD_WORD[w.length] || ordinal(w.length)) + '.' : ''));
+  } else if (mine.indexOf('mvp') < 0 && race.length) {
     const f = activeFigs(L).find((x) => x.n === race[0].n);
     if (f) { f.mvp++; (f.won = f.won || []).push(L.year); feed(L, 'award', f.n + ' wins the MVP.' + (f.mvp > 1 ? ' His ' + (ORD_WORD[f.mvp] || ordinal(f.mvp)) + '.' : '')); }
   }
@@ -6444,7 +7339,7 @@ function colYear(L) {
 function landOnToday(L) {
   const lg = L.league, target = lg.rs || (lg.latest || 2026) + 1;
   const d = target - L.year;
-  delete lg.rost; delete lg.rostY; delete lg.pool;
+  delete lg.rost; delete lg.rostY; delete lg.pool; delete lg.fo;
   if (!d) return;
   const sh = (v) => (Number.isFinite(v) && v > 1900 ? v + d : v);
   L.year += d;
@@ -8441,7 +9336,7 @@ function chooseAm(L, card, i, opt, rng, beats, touch) {
         const d = duelGame(L, t.cur.p, made, rng, card, i, beats, 'the ' + rname);
         if (made) { bump(L, { fame: 5 }); if (d.won) { L.am.winners = (L.am.winners || 0) + 1; clutchHit(L, beats); } }
         bump(L, { morale: (d.won ? 6 : -6) + (made ? 2 : -2) });
-        logIt(L, rname + ': ' + (made ? (d.won ? 'hit the winner.' : 'hit the shot. They answered.') : d.won ? 'missed it. A teammate saved it.' : 'missed the last shot.'), d.won ? 'gold' : 'bad');
+        logIt(L, rname + ': ' + (made ? (d.won ? 'hit the winner.' : 'hit the shot. They answered.') : d.won ? 'missed it. ' + ((card.ctx && card.ctx.mate) || 'The bench') + ' saved it.' : 'missed the last shot.'), d.won ? 'gold' : 'bad');
         endTourneyGame(L, t, t.cur, d.won, beats);
         t.cur = null;
         runTourney(L, beats);
@@ -8637,7 +9532,7 @@ function choose(L, i, extra) {
         if (made) { bump(L, { fame: 6 }); remember(L, 'g7.made', true); if (won) { L.flags.g7 = (L.flags.g7 || 0) + 1; clutchHit(L, beats); } }
         bump(L, { fame: won ? 4 : 0, morale: (won ? 8 : -8) + (made ? 3 : -3) });
         text = d.text; tone = made ? 'gold' : 'bad';
-        logIt(L, 'Game 7 against the ' + nick(cur.opp) + ': ' + (made ? (won ? 'hit the winner.' : 'hit the shot. They answered.') : won ? 'missed it. A teammate saved it.' : 'missed the last shot.'), won ? 'gold' : 'bad');
+        logIt(L, 'Game 7 against the ' + nick(cur.opp) + ': ' + (made ? (won ? 'hit the winner.' : 'hit the shot. They answered.') : won ? 'missed it. ' + ((card.ctx && card.ctx.mate) || 'The bench') + ' saved it.' : 'missed the last shot.'), won ? 'gold' : 'bad');
         endSeries(L, beats);
         break;
       }
@@ -8916,6 +9811,8 @@ function closeSeason(L, beats) {
   L.history.push(Object.assign({ y: s.year, age: L.age, t: s.team, ovr: ovrOf(L), w: s.w, l: s.l, seed: s.seed || null,
     po: path, aw: s.awards.slice(), sal: s.salary || 0, role: s.role ? s.role.label : '' }, pg, storyOn(L) ? { mvpBy: s.mvp || '' } : {}));
   L.seasonsDone++;
+  /* The final standings, with your club's real record in them, for the draft. */
+  if (storyOn(L) && fo(L)) { delete fo(L).rec[s.year]; seasonWins(L, s.year); }
   /* A reputation is what you have done lately. It drifts back toward the
      middle every season, so a career of quotes is a persona and one quote
      from eight years ago is not. */
@@ -9405,6 +10302,7 @@ const publicAPI = {
   CONF, CLUBS, confOf, POS, POS_NAME, RATINGS, RATING_NAME, RATING_SHORT, WEIGHTS,
   ARCHES, ARCH_KEYS, POS_ARCHES, archesFor, archBase, POS_SIZE, wtFor, wtRange, sizeOf, sizeTilt, heightText, BACKGROUNDS, BG_KEYS, AGENTS, AWARD_NAME, ROUNDS, VERDICTS, EVENTS,
   perfOf, coachStyle, COACH_STYLES, needAt, coachTalkCard, tradeDeadline, youW, weakSpot,
+  picksText, leagueTable, transactions, clubModes,
   seedLeague, normaliseNets, newLife, rotationOf, bestFive, fitAt, rostOf, rostNow, randomName, overall, ovrOf, step, choose, nextLabel,
   view, perGame, totals, legacy, legacyScore, clubNet, clubTier, rotationBar,
   roleOf, lineMeans, capFor, marketSalary, projectedPick, draftOrder, money, ordinal,
