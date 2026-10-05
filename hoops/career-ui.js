@@ -199,12 +199,39 @@ var CSS = [
 '.cr-ct-h{background:none;padding-top:0;padding-bottom:2px;font:800 10px var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;color:var(--k-ink-3);}',
 '.cr-ct-r.you{color:var(--k-ink);font-weight:700;box-shadow:inset 3px 0 0 var(--k-accent);}',
 '.cr-ct-r.win b,.cr-ct-r.win span+span+span{color:var(--k-gold);}',
-'.cr-card .k-eyebrow{color:var(--k-accent);}',
-'.cr-card .k-h1{font-size:28px;margin-bottom:8px;}',
+/* THE CALL. A decision is the one thing on this screen the game waits on, so
+   it does not wear the feed's panel. It is a lit card of its own: an orange
+   frame and glow, a band naming where you are (the locker room, your bank
+   app) and when, a title in the display face, and each answer a raised tile
+   with a numbered key, a line saying what the choice is really about, and an
+   arrow. A clutch card is the same card in gold. */
+'.cr-card{--cr-edge:var(--k-accent);--cr-edge-ink:var(--k-accent-ink);position:relative;padding:0;overflow:hidden;',
+'  background:radial-gradient(120% 70% at 50% 0%,rgba(255,122,26,.16),rgba(255,122,26,0) 60%),linear-gradient(180deg,#1c1424,#120f1d 55%,#0d0c17);',
+'  box-shadow:0 0 0 2px var(--cr-edge),0 0 0 4px #05070d,0 0 28px rgba(255,122,26,.28),0 14px 30px rgba(3,5,10,.6);}',
+'.cr-card.clutch{--cr-edge:var(--k-gold);--cr-edge-ink:#1a1303;background:radial-gradient(120% 70% at 50% 0%,rgba(255,206,64,.2),rgba(255,206,64,0) 60%),linear-gradient(180deg,#221c10,#141019 60%,#0d0c17);',
+'  box-shadow:0 0 0 2px var(--cr-edge),0 0 0 4px #05070d,0 0 30px rgba(255,206,64,.3),0 14px 30px rgba(3,5,10,.6);}',
+'.cr-grip{display:none;}',
+'.cr-band{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--cr-edge);color:var(--cr-edge-ink);',
+'  font:400 9px/1.2 var(--k-f-pixel);letter-spacing:.06em;text-transform:uppercase;}',
+'.cr-band .k-icon,.cr-band svg{flex:none;}',
+'.cr-band .cr-scene{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+'.cr-band .cr-when{margin-left:auto;flex:none;font:800 10px var(--k-f-text);letter-spacing:.14em;opacity:.75;}',
+'.cr-cbody{padding:14px 16px 16px;}',
+'.cr-card .k-h1{font-size:30px;line-height:1.02;margin:0 0 8px;color:#fff;text-shadow:0 2px 0 #05070d;}',
 '#cr-card-h:focus{outline:none;}',
-'.cr-card.clutch{background:linear-gradient(180deg,#2a2412,var(--k-panel) 70%);}',
-'.cr-card.clutch .k-eyebrow{color:var(--k-gold);}',
-'.cr-choice{min-height:56px;}',
+'.cr-card .cr-cbody > p{margin:0 0 12px;color:#d9dcef;font-size:15px;line-height:1.5;}',
+'.cr-card .k-opts{gap:8px;counter-reset:none;}',
+'.cr-choice{position:relative;min-height:58px;padding:11px 40px 11px 12px;align-items:center;background:linear-gradient(180deg,#232c4c,#1a2140);',
+'  box-shadow:inset 0 0 0 2px #34416f,inset 0 -4px 0 rgba(0,0,0,.28);transition:box-shadow var(--k-m-snap),background var(--k-m-snap),transform var(--k-m-snap);}',
+'.cr-choice .k-key{width:28px;height:28px;font-size:11px;margin:0;background:var(--cr-edge,var(--k-accent));color:var(--cr-edge-ink,var(--k-accent-ink));box-shadow:0 3px 0 #05070d;}',
+'.cr-choice .cr-ol{font:700 16px/1.25 var(--k-f-text);color:#fff;}',
+'.cr-choice small{font:600 12.5px/1.35 var(--k-f-text);color:#a9b2d6;margin-top:2px;}',
+'.cr-choice::after{content:"";position:absolute;right:14px;top:50%;width:9px;height:9px;margin-top:-5px;border:solid var(--cr-edge,var(--k-accent));border-width:3px 3px 0 0;transform:rotate(45deg);opacity:.85;}',
+'.cr-choice:hover,.cr-choice.is-hover,.cr-choice:focus-visible{background:linear-gradient(180deg,#2b3660,#202a4f);box-shadow:inset 0 0 0 2px var(--cr-edge,var(--k-accent)),inset 0 -4px 0 rgba(0,0,0,.28);outline:none;}',
+'.cr-choice:active,.cr-choice.is-pressed{transform:translateY(2px);box-shadow:inset 0 0 0 2px var(--cr-edge,var(--k-accent));}',
+'.cr-card .k-opts li{animation:cr-opt-in 260ms var(--k-e-move) both;}',
+'.cr-card .k-opts li:nth-child(2){animation-delay:50ms;}.cr-card .k-opts li:nth-child(3){animation-delay:100ms;}.cr-card .k-opts li:nth-child(4){animation-delay:150ms;}.cr-card .k-opts li:nth-child(n+5){animation-delay:200ms;}',
+'@keyframes cr-opt-in{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}',
 /* THE DECISION TRAY. On a phone the card on top is docked to the bottom of the
    screen, always in the same place, with the feed behind it as context. It is
    the same element as the inline card, so every reader of #cr-card and
@@ -213,22 +240,25 @@ var CSS = [
    measured height (--cr-tray) so nothing in the column hides behind it. */
 '@media (max-width:719px){',
 '  #s-car .cr-card{position:fixed;left:0;right:0;bottom:0;z-index:20;margin:0;max-height:45vh;max-height:45dvh;overflow-y:auto;overscroll-behavior:contain;',
-'    padding:12px 14px calc(12px + env(safe-area-inset-bottom,0px));background:var(--k-panel);',
-'    box-shadow:0 -3px 0 0 var(--cr-edge,var(--k-accent)),0 -6px 0 0 #05070d,0 -18px 30px rgba(3,5,10,.55);animation:none;}',
-'  #s-car .cr-card.clutch{--cr-edge:var(--k-gold);}',
-'  #s-car .cr-card .k-eyebrow{margin-bottom:4px;}',
-'  #s-car .cr-card .k-h1{font-size:22px;margin-bottom:6px;}',
-'  #s-car .cr-card > p{margin:0 0 10px;font-size:14px;line-height:1.45;}',
-'  #s-car .cr-card > p.cr-clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}',
-'  #s-car .cr-card .k-opts{gap:6px;}',
-'  #s-car .cr-card .cr-choice{min-height:50px;}',
+'    padding:0 0 env(safe-area-inset-bottom,0px);animation:none;',
+'    box-shadow:0 -2px 0 0 var(--cr-edge),0 -4px 0 0 #05070d,0 -16px 34px rgba(255,122,26,.22),0 -24px 40px rgba(3,5,10,.7);}',
+'  #s-car .cr-card.clutch{box-shadow:0 -2px 0 0 var(--cr-edge),0 -4px 0 0 #05070d,0 -16px 34px rgba(255,206,64,.25),0 -24px 40px rgba(3,5,10,.7);}',
+'  #s-car .cr-grip{display:block;position:absolute;top:5px;left:50%;width:34px;height:4px;margin-left:-17px;background:var(--cr-edge-ink);opacity:.45;}',
+'  #s-car .cr-band{padding:13px 14px 7px;}',
+'  #s-car .cr-cbody{padding:11px 14px 12px;}',
+'  #s-car .cr-card .k-h1{font-size:24px;margin-bottom:6px;}',
+'  #s-car .cr-card .cr-cbody > p{margin:0 0 10px;font-size:14px;line-height:1.45;}',
+'  #s-car .cr-card .cr-cbody > p.cr-clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}',
+'  #s-car .cr-card .k-opts{gap:7px;}',
+'  #s-car .cr-card .cr-choice{min-height:52px;padding-top:9px;padding-bottom:9px;}',
+'  #s-car .cr-card .cr-choice .cr-ol{font-size:15px;}',
+/* the feed behind the tray dims as it reaches it, so the card reads as on top */
+'  #s-car.cr-has-tray::before{content:"";position:fixed;left:0;right:0;bottom:var(--cr-tray,0px);height:84px;z-index:19;pointer-events:none;background:linear-gradient(180deg,rgba(5,7,13,0),rgba(5,7,13,.78));}',
 '  #s-car .cr-tray-rise{animation:cr-tray-rise 200ms var(--k-e-move) both;}',
 '  #s-car .cr-tray-swap > *{animation:cr-tray-swap 180ms ease-out both;}',
 '  #s-car.cr-has-tray .cr-main{padding-bottom:calc(var(--cr-tray,0px) + 12px);}',
 '  #s-car.screen.active{animation-name:cr-scrin;}',
 '}',
-'.cr-wait{display:inline-block;margin-left:auto;padding:2px 6px;font:800 9px var(--k-f-text);letter-spacing:.14em;text-transform:uppercase;color:#05070d;background:var(--cr-edge,var(--k-accent));}',
-'.cr-card .k-eyebrow{display:flex;align-items:center;gap:6px;}',
 '.cr-more{margin:-4px 0 10px;padding:4px 0;background:none;border:0;color:var(--k-accent);font:800 11px var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;cursor:pointer;}',
 '.cr-more[hidden]{display:none;}',
 '@keyframes cr-tray-rise{from{transform:translateY(100%);}to{transform:none;}}',
@@ -242,7 +272,7 @@ var CSS = [
 '.cr-rows > summary b{color:var(--k-accent);font:800 10px var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;margin-left:6px;}',
 '.cr-rows[open] > summary b.op{display:none;}.cr-rows:not([open]) > summary b.cl{display:none;}',
 '.cr-rows > summary .up{color:var(--k-good);}.cr-rows > summary .down{color:var(--k-bad);}',
-'@media (prefers-reduced-motion:reduce){#s-car .cr-tray-rise,#s-car .cr-tray-swap > *{animation:none;}}',
+'@media (prefers-reduced-motion:reduce){#s-car .cr-tray-rise,#s-car .cr-tray-swap > *,.cr-card .k-opts li{animation:none;}}',
 '.cr-acts{display:flex;gap:4px;flex-wrap:wrap;margin:0;}',
 '.cr-acts .k-btn{flex:1 1 0;min-width:120px;font-size:12.5px;padding:10px;}',
 /* the action the thumb reaches: pinned to the bottom of the column */
@@ -1025,7 +1055,7 @@ function cardHtml(L, c, fresh){
   var cls = c.kind === 'clutch' ? ' clutch k-gold' : c.kind === 'fa' ? ' fa' : '';
   var opts = c.options.map(function(o, i){
     return '<li><button class="k-opt cr-choice" data-i="' + i + '"' + (i < 9 ? ' aria-keyshortcuts="' + (i + 1) + '"' : '') + '>'
-      + '<span class="k-key" aria-hidden="true">' + (i + 1) + '</span><span>' + esc(o.label) + (o.hint ? '<small>' + esc(o.hint) + '</small>' : '') + '</span></button></li>';
+      + '<span class="k-key" aria-hidden="true">' + (i + 1) + '</span><span><span class="cr-ol">' + esc(o.label) + '</span>' + (o.hint ? '<small>' + esc(o.hint) + '</small>' : '') + '</span></button></li>';
   }).join('');
   /* On a phone the card is the tray: it rises once when a decision arrives
      and fades its contents when one replaces another, and never moves when a
@@ -1034,13 +1064,24 @@ function cardHtml(L, c, fresh){
   if (trayMode()) motion = !trayKey ? ' cr-tray-rise' : trayKey !== key ? ' cr-tray-swap' : '';
   else if (fresh) motion = ' k-in';
   trayKey = key;
-  var wait = c.eyebrow && c.eyebrow !== 'Your call' ? '<span class="cr-wait">Your call</span>' : '<span class="cr-wait">Waiting on you</span>';
+  /* The band: where you are, then when. A card with no place of its own says
+     the date where the place would be. */
+  var when = c.eyebrow || 'Your call';
+  var scene = c.scene ? c.scene : when;
+  var icon = c.kind === 'clutch' ? 'ball' : sceneIcon(scene);
   return '<div class="k-panel k-decision cr-card' + cls + motion + '" id="cr-card" role="group" aria-labelledby="cr-card-h">'
-    + '<div class="k-eyebrow">' + K.iconHtml(c.kind === 'clutch' ? 'ball' : 'whistle', 2) + esc(c.eyebrow || 'Your call') + wait + '</div>'
-    + '<h3 class="k-h1" id="cr-card-h">' + esc(c.title) + '</h3>'
+    + '<span class="cr-grip" aria-hidden="true"></span>'
+    + '<div class="cr-band">' + K.iconHtml(icon, 2) + '<span class="cr-scene">' + esc(scene) + '</span>' + (c.scene ? '<span class="cr-when">' + esc(when) + '</span>' : '') + '</div>'
+    + '<div class="cr-cbody"><h3 class="k-h1" id="cr-card-h">' + esc(c.title) + '</h3>'
     + (c.text ? '<p class="cr-clamp" id="cr-card-p">' + esc(c.text) + '</p><button type="button" class="cr-more" id="cr-card-more" hidden>More</button>' : '')
-    + '<ol class="k-opts">' + opts + '</ol></div>';
+    + '<ol class="k-opts">' + opts + '</ol></div></div>';
 }
+/* An icon for the place, read off the words in it. */
+var SCENE_ICONS = [[/plane|road|flight|hotel|airport|bus/i, 'plane'], [/home|house|kitchen|mom|family|couch|living/i, 'home'],
+  [/bank|agent|office|contract|money|sponsor|deal|bill/i, 'cash'], [/media|press|mic|podcast|interview|studio|camera|tv|show/i, 'mic'],
+  [/trainer|doctor|hospital|rehab|medical|treatment|surgery/i, 'heart'], [/draft|stage|green room/i, 'star'],
+  [/phone|text|dm|group chat|feed|timeline/i, 'share'], [/shoe|sneaker|store|mall/i, 'shoe'], [/trophy|award|banquet|parade|hall/i, 'trophy']];
+function sceneIcon(s){ for (var i = 0; i < SCENE_ICONS.length; i++) if (SCENE_ICONS[i][0].test(s || '')) return SCENE_ICONS[i][1]; return 'whistle'; }
 /* The tray is a phone layout: a wide screen has room, so the card stays in
    the column. */
 var trayKey = null;
