@@ -3166,6 +3166,29 @@ window.GA_ID='G-L29P5MRWKE';
     padding:calc(20px + env(safe-area-inset-top, 0px)) max(18px, calc((100% - 600px)/2)) calc(26px + env(safe-area-inset-bottom, 0px))}
   body.ovopen{overflow:hidden}   /* lock the page behind an open overlay */
   .ov h3{font-family:var(--display); font-weight:400; font-size:26px; color:var(--gold); margin:6px 0 12px; text-transform:uppercase}
+  /* THE MENU: groups of compact rows in the body face (the display face shouted every row); columns on a wide screen */
+  .mn-g{margin:0 0 16px; break-inside:avoid}
+  .mn-h{font:800 11px/1 var(--body); letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin:0 0 7px 4px}
+  .mn-card{border:1px solid rgba(255,255,255,.09); border-radius:14px; background:rgba(255,255,255,.035); overflow:hidden}
+  .mn-it{appearance:none; display:flex; align-items:center; gap:12px; width:100%; min-height:52px; padding:9px 14px; margin:0; background:none; border:0;
+    border-top:1px solid rgba(255,255,255,.065); color:var(--oncard); text-align:left; cursor:pointer; font:inherit; -webkit-tap-highlight-color:transparent}
+  .mn-card>.mn-it:first-child{border-top:0}
+  .mn-it:hover{background:rgba(255,255,255,.05)} .mn-it:active{background:rgba(255,255,255,.08)}
+  .mn-it:focus-visible{outline:2px solid var(--gold); outline-offset:-2px}
+  .mn-ic{width:24px; flex:0 0 auto; text-align:center; font-size:18px; line-height:1; display:flex; align-items:center; justify-content:center}
+  .mn-tx{flex:1 1 auto; min-width:0}
+  .mn-t{display:block; font:800 14.5px/1.2 var(--body); color:var(--oncard)}
+  .mn-s{display:block; font:600 12px/1.3 var(--body); color:var(--muted); margin-top:2px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+  .mn-b{flex:0 0 auto; font:900 10.5px/1 var(--body); padding:4px 8px; border-radius:999px; background:var(--gold); color:#241a05; white-space:nowrap}
+  .mn-ch{color:var(--muted); flex:0 0 auto; font-size:18px; line-height:1}
+  .mn-card .mn-news{margin:0; border-top:1px solid rgba(255,255,255,.065); border-radius:0}
+  .mn-links{display:flex; flex-wrap:wrap; gap:4px 16px; padding:2px 4px 0}
+  .mn-links button{appearance:none; background:none; border:0; padding:6px 0; color:#cfe0d4; font:700 13px/1.2 var(--body); cursor:pointer;
+    text-decoration:underline; text-decoration-color:rgba(255,255,255,.25); text-underline-offset:3px}
+  .mn-links button:hover{color:var(--gold)}
+  .ov-menu .mn-close{max-width:420px; margin:6px auto 0}
+  @media (min-width:700px){ .ov-menu .mnu{column-count:2; column-gap:16px} .ov-menu .mn-g{display:inline-block; width:100%} }
+  @media (min-width:1000px){ .ov-menu .mnu{column-count:3; column-gap:18px} .ov-menu .mn-close{display:none} }
   .ov ol{margin:0 0 14px; padding-left:18px; color:#dbe6ee} .ov li{margin:7px 0}
   /* CS356c: fixed (not absolute) so the top Close stays pinned + tappable even when a long overlay
      (e.g. Trophy Room) is scrolled down; z-index above the overlay's own scrolling content.
@@ -14276,79 +14299,86 @@ function overlayHoleShots(screen){
 }
 // top-left ≡ menu: real navigation, reachable from every screen without losing your place (it's just
 // an overlay, closing it, or picking an item, always returns/goes to that screen's normal state).
-function menuRow(icon,label,sub,fn){
-  const row=$(`<button class="btn ghost" style="display:flex;align-items:center;gap:12px;text-align:left;padding:11px 13px;margin-bottom:7px"><span style="font-size:19px;flex:0 0 auto;width:24px;text-align:center">${icon}</span><span style="flex:1;min-width:0"><span style="display:block;font-weight:800;font-size:14px;color:var(--oncard)">${esc(label)}</span>${sub?`<span style="display:block;font-size:11.5px;color:var(--muted);margin-top:1px;font-weight:600">${esc(sub)}</span>`:''}</span><span style="color:var(--muted);flex:0 0 auto">›</span></button>`);
-  row.onclick=fn; return row;
+// THE MENU (owner, Oct 2026: "way too much going on"). It was nineteen full-width buttons in the display face,
+// one under another, on a 600px strip. Now it is grouped by what you came to do, each group one card of
+// compact rows in the body face, and on a wide screen the groups sit side by side in columns.
+function mnItem(icon,label,sub,fn,badge){
+  const b=$(`<button class="mn-it"><span class="mn-ic">${icon}</span><span class="mn-tx"><span class="mn-t">${esc(label)}</span>${sub?`<span class="mn-s">${esc(sub)}</span>`:''}</span>${badge?`<span class="mn-b">${esc(String(badge))}</span>`:''}<span class="mn-ch" aria-hidden="true">›</span></button>`);
+  b.onclick=fn; return b;
 }
-// CS252: a menu toggle row (Sound / Haptics) - flips a device-local pref and re-renders the open menu.
-function menuToggle(icon,label,sub,key,def){
-  const on=LS.get(key,def);
-  const row=$(`<button class="btn ghost" role="switch" aria-checked="${on?'true':'false'}" style="display:flex;align-items:center;gap:12px;text-align:left;padding:11px 13px;margin-bottom:7px"><span style="font-size:19px;flex:0 0 auto;width:24px;text-align:center">${icon}</span><span style="flex:1;min-width:0"><span style="display:block;font-weight:800;font-size:14px;color:var(--oncard)">${esc(label)}</span>${sub?`<span style="display:block;font-size:11.5px;color:var(--muted);margin-top:1px;font-weight:600">${esc(sub)}</span>`:''}</span><span class="mtog ${on?'on':''}"><span class="mtog-k"></span></span></button>`);
-  row.onclick=()=>{ const nv=!on; LS.set(key,nv);
+function mnSwitch(icon,label,sub,on,flip){
+  const b=$(`<button class="mn-it" role="switch" aria-checked="${on?'true':'false'}"><span class="mn-ic">${icon}</span><span class="mn-tx"><span class="mn-t">${esc(label)}</span>${sub?`<span class="mn-s">${esc(sub)}</span>`:''}</span><span class="mtog ${on?'on':''}"><span class="mtog-k"></span></span></button>`);
+  b.onclick=flip; return b;
+}
+// a device-local on/off pref (Sound, Haptics)
+function mnPref(icon,label,sub,key,def){ const on=LS.get(key,def);
+  return mnSwitch(icon,label,sub,on,()=>{ const nv=!on; LS.set(key,nv);
     if(nv && key==='bag_sfx_sound') sfx('hole');   // confirmation beep when enabling sound (the click is a user gesture, so audio unlocks)
     if(nv && key==='bag_sfx_haptic') buzz(25);
-    render(); };
-  return row;
-}
+    render(); }); }
+function mnGroup(title,items){ const g=$(`<section class="mn-g"><div class="mn-h">${esc(title)}</div><div class="mn-card"></div></section>`);
+  const c=g.querySelector('.mn-card'); items.filter(Boolean).forEach(it=>c.appendChild(it)); return g; }
 function overlayMenu(screen){
   const signedIn=sbSignedIn();
   const go=(fn)=>()=>{ S.overlay=null; fn(); render(); };
-  const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Menu">
+  const ov=$(`<div class="ov ov-wide ov-menu" role="dialog" aria-modal="true" aria-label="Menu">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
-    <h3>Menu</h3></div>`);
-  const play=$(`<div style="margin-bottom:16px"></div>`);
-  play.appendChild($(`<div class="small muted" style="letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin-bottom:8px">Play</div>`));
-  play.appendChild(menuRow('🏠','Home','Title screen',go(()=>{S.screen='title';})));
-  play.appendChild(menuRow('📖','How to Play','Career mode & daily challenge',go(openRules)));
-  play.appendChild(menuRow('🧭','Guided Tour','A walkthrough of the home screen and the tabs',()=>{ S.overlay=null; try{ track('tour_replay',{from:'menu'}); }catch(e){} replayTour(); }));
-  { const n=newsUnseenCount();
-    play.appendChild(menuRow('✨','What\'s New', n?(n+' new feature'+(n>1?'s':'')+' since you last looked'):'Everything that has landed in Career Mode',()=>{ S.overlay=null; openWhatsNew(); })); }
-  // Online moved off the bottom bar (Tour Pass took its slot), so it lives here + on the home strip.
-  play.appendChild(menuRow(ic('globe'),'Play Online','1v1 & foursomes head-to-head',()=>{ S.overlay=null; render(); openH2H(); }));
-  if(wheelEnabled()) play.appendChild(menuRow('🎡','Prize Wheel',(()=>{ if(!signedIn) return 'Sign in to spin'; const a=wheelAvail(); return a>0?(a+' spin'+(a>1?'s':'')+' ready'):'Next free spin at midnight ET'; })(),()=>{ S.overlay=null; render(); openWheel(); }));
-  play.appendChild(menuRow('🏆','Leaderboard','Season & career rankings',go(()=>{S.overlay='leaderboard';})));
-  if(tourHistory().length) play.appendChild(menuRow('📰','The Tour','Rules in force & tour news',go(()=>{S.overlay='tournews';})));
-  play.appendChild(menuRow('🎯','Challenges',signedIn?(repTier().tier.name+' · daily & weekly quests'):'Sign in to earn Tour Rep & rewards',go(()=>{S.overlay='challenges';})));
-  if(passEnabled()) play.appendChild(menuRow('🎟️','Tour Pass',(()=>{ const ssn=passSeason(); if(signedIn){ const s=passState(),cl=passClaimable(); return 'Season '+ssn.n+' · Tier '+passTierAt(s.xp)+'/'+PASS_TIERS+(cl>0?' · '+cl+' to claim':''); } return 'Season '+ssn.n+' · 60-day reward track'; })(),go(()=>{S.overlay='tourpass';})));
-  play.appendChild(menuRow('🏅','Profile',signedIn?'Your trophies, titles & stats':'Sign in to unlock your record',go(()=>{S.overlay='record';})));
-  play.appendChild(menuRow('⛳','Course Records','Today\'s board & all-time bests',go(()=>{S.overlay='courserecords';})));
-  play.appendChild(menuRow('🎫','Course Passport',`Your best grade at all ${DAILY_KEYS.length} courses`,go(()=>{S.overlay='passport';})));
-  if(SHOP_ENABLED) play.appendChild(menuRow(ic('cart'),'Pro Shop', signedIn?('Coins: '+coinFmt(coinBalance())+' · gear & boosts'):'Sign in to earn coins & gear',go(()=>{S.overlay='shop';})));
-  if(SHOP_ENABLED&&signedIn) play.appendChild(menuRow('🧾','Coin History','Where your coins came from & went',go(()=>{ S.coinlogReturn=null; S.overlay='coinlog'; })));
-  ov.appendChild(play);
-  const acct=$(`<div style="margin-bottom:16px"></div>`);
-  acct.appendChild($(`<div class="small muted" style="letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin-bottom:8px">Account</div>`));
-  acct.appendChild(menuRow(signedIn?'👤':'🔑',signedIn?(sbUsername||'Your account'):'Sign in',signedIn?(sbEmail()||'Signed in'):'Save your career & post to the leaderboards',go(()=>{ if(signedIn){S.overlay='record';} else {S.overlay='account';S.acctMode='signin';S.acctErr='';} })));
-  acct.appendChild(menuRow('🎁','Invite a Friend','Share your link. You BOTH get a free pack',()=>{ S.overlay=null; render(); referralShare(); }));
-  acct.appendChild(menuRow('↺','Reset','Retire your current golfer & start over',go(()=>{S.overlay='confirmReset';})));
-  if(signedIn) acct.appendChild(menuRow('↩','Sign Out','End your session on this device',()=>{ S.overlay=null; sbSignOut().then(()=>{ S.screen='title'; render(); toast('Signed out'); }); }));
+    <h3>Menu</h3><div class="mnu"></div></div>`);
+  const mnu=ov.querySelector('.mnu');
+  // PLAY: where a round starts
+  const wheelSub=(()=>{ if(!signedIn) return 'Sign in to spin'; const a=wheelAvail(); return a>0?(a+' spin'+(a>1?'s':'')+' ready'):'Next free spin at midnight ET'; })();
+  mnu.appendChild(mnGroup('Play',[
+    mnItem('🏠','Home','The title screen',go(()=>{S.screen='title';})),
+    mnItem(ic('globe'),'Play Online','1v1 and foursomes',()=>{ S.overlay=null; render(); openH2H(); }),
+    wheelEnabled()?mnItem('🎡','Prize Wheel',wheelSub,()=>{ S.overlay=null; render(); openWheel(); },(signedIn&&wheelAvail()>0)?wheelAvail():''):null ]));
+  // PROGRESS: what you are working towards
+  let passSub='', passBadge='';
+  if(passEnabled()){ const ssn=passSeason();
+    if(signedIn){ const st=passState(), cl=passClaimable(); passSub='Season '+ssn.n+' · tier '+passTierAt(st.xp)+'/'+PASS_TIERS; if(cl>0) passBadge=cl+' to claim'; }
+    else passSub='Season '+ssn.n+' · '+PASS_TIERS+' tiers of rewards'; }
+  mnu.appendChild(mnGroup('Progress',[
+    passEnabled()?mnItem('🎟️','Tour Pass',passSub,go(()=>{S.overlay='tourpass';}),passBadge):null,
+    mnItem('🎯','Challenges',signedIn?(repTier().tier.name+' · daily quests'):'Sign in to earn Tour Rep',go(()=>{S.overlay='challenges';})),
+    mnItem('🏅','Profile',signedIn?'Trophies, titles and stats':'Sign in to keep your record',go(()=>{S.overlay='record';})) ]));
+  // RECORDS: how you compare
+  mnu.appendChild(mnGroup('Records',[
+    mnItem('🏆','Leaderboard','Season and career rankings',go(()=>{S.overlay='leaderboard';})),
+    mnItem('⛳','Course Records','Today\'s board and best rounds',go(()=>{S.overlay='courserecords';})),
+    mnItem('🎫','Course Passport',`Your grade at all ${DAILY_KEYS.length} courses`,go(()=>{S.overlay='passport';})),
+    tourHistory().length?mnItem('📰','The Tour','Rules in force and tour news',go(()=>{S.overlay='tournews';})):null ]));
+  // SHOP
+  if(SHOP_ENABLED) mnu.appendChild(mnGroup('Shop',[
+    mnItem(ic('cart'),'Pro Shop',signedIn?('Coins: '+coinFmt(coinBalance())):'Sign in to earn coins and gear',go(()=>{S.overlay='shop';})),
+    signedIn?mnItem('🧾','Coin History','Every coin in and out',go(()=>{ S.coinlogReturn=null; S.overlay='coinlog'; })):null ]));
+  // HELP
+  const nNew=newsUnseenCount();
+  mnu.appendChild(mnGroup('Help',[
+    mnItem('📖','How to Play','Career mode and the Daily',go(openRules)),
+    mnItem('🧭','Guided Tour','Around the home screen',()=>{ S.overlay=null; try{ track('tour_replay',{from:'menu'}); }catch(e){} replayTour(); }),
+    mnItem('✨','What\'s New',nNew?'Since you last looked':'Everything that has landed',()=>{ S.overlay=null; openWhatsNew(); },nNew?nNew+' new':'') ]));
+  // ACCOUNT
+  const acct=mnGroup('Account',[
+    mnItem(signedIn?'👤':'🔑',signedIn?(sbUsername||'Your account'):'Sign in',signedIn?(sbEmail()||'Signed in'):'Save your career',go(()=>{ if(signedIn){S.overlay='record';} else {S.overlay='account';S.acctMode='signin';S.acctErr='';} })),
+    mnItem('🎁','Invite a Friend','You both get a free pack',()=>{ S.overlay=null; render(); referralShare(); }),
+    mnItem('↺','Reset','Start over with a new golfer',go(()=>{S.overlay='confirmReset';})),
+    signedIn?mnItem('↩','Sign Out','On this device',()=>{ S.overlay=null; sbSignOut().then(()=>{ S.screen='title'; render(); toast('Signed out'); }); }):null ]);
   // the release newsletter box, /assets/newsletter.js. Absent script, absent box.
-  if(signedIn&&sb&&window.RTG_NEWS) acct.appendChild(RTG_NEWS.el({source:'golf',getToken:()=>sb.auth.getSession().then(r=>(r&&r.data&&r.data.session&&r.data.session.access_token)||null)}));
-  ov.appendChild(acct);
-  // CS252: Settings - sound + haptics toggles (device-local, default on)
-  const settings=$(`<div style="margin-bottom:16px"></div>`);
-  settings.appendChild($(`<div class="small muted" style="letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin-bottom:8px">Settings</div>`));
-  // (the retro/illustrated hole-art toggle was removed: the pixel view is the only style now)
-  // CS444: play major & Summer Games finals hole-by-hole (off = they sim; a contention Moment still fires)
+  if(signedIn&&sb&&window.RTG_NEWS){ const nb=RTG_NEWS.el({source:'golf',getToken:()=>sb.auth.getSession().then(r=>(r&&r.data&&r.data.session&&r.data.session.access_token)||null)}); if(nb){ nb.classList.add('mn-news'); acct.appendChild(nb); } }
+  mnu.appendChild(acct);
+  // SETTINGS: device-local switches
   { const on=marqueeFinalsPref()==='1';
-    const row=$(`<button class="btn ghost" role="switch" aria-checked="${on?'true':'false'}" style="display:flex;align-items:center;gap:12px;text-align:left;padding:11px 13px;margin-bottom:7px"><span style="font-size:19px;flex:0 0 auto;width:24px;text-align:center">🏆</span><span style="flex:1;min-width:0"><span style="display:block;font-weight:800;font-size:14px;color:var(--oncard)">Play marquee finals</span><span style="display:block;font-size:11.5px;color:var(--muted);margin-top:1px;font-weight:600">Play major &amp; Summer Games final rounds hole-by-hole</span></span><span class="mtog ${on?'on':''}"><span class="mtog-k"></span></span></button>`);
-    row.onclick=()=>{ setMarqueeFinals(!on); render(); };
-    settings.appendChild(row); }
-  settings.appendChild(menuToggle('🔊','Sound','Holed putts, wins & streaks','bag_sfx_sound',true));
-  settings.appendChild(menuToggle('📳','Haptics','Vibration on key moments · Android only (iOS blocks web vibration)','bag_sfx_haptic',true));
-  // Dev-only: opt into in-progress paid features (Tour Pass, etc.) before public launch. Hidden from everyone else.
-  ov.appendChild(settings);
-  const info=$(`<div style="margin-bottom:6px"></div>`);
-  info.appendChild($(`<div class="small muted" style="letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin-bottom:8px">About</div>`));
-  info.appendChild(menuRow('ℹ️','About','Who\'s behind Run The Tour',go(()=>{S.overlay='about';})));
-  info.appendChild(menuRow('🔒','Privacy','What we collect, and why',go(()=>{S.overlay='privacy';})));
-  info.appendChild(menuRow('📜','Terms','Terms of use',go(()=>{S.overlay='terms';})));
-  info.appendChild(menuRow('💬','Send Feedback','Report a bug or share an idea',go(()=>{ fbReset(); })));
-  info.appendChild(menuRow('▣','Add to Home Screen','Install as an app',()=>{ S.overlay=null; render(); installApp(); }));
-  ov.appendChild(info);
-  ov.appendChild($(`<button class="btn red">Close</button>`));
+    mnu.appendChild(mnGroup('Settings',[
+      mnSwitch('🏆','Play marquee finals','Majors and Summer Games',on,()=>{ setMarqueeFinals(!on); render(); }),
+      mnPref('🔊','Sound','Putts, wins and streaks','bag_sfx_sound',true),
+      mnPref('📳','Haptics','Android only','bag_sfx_haptic',true) ])); }
+  // ABOUT: small links, not five more rows
+  const about=$(`<section class="mn-g"><div class="mn-h">About</div><div class="mn-links"></div></section>`), al=about.querySelector('.mn-links');
+  [['About',go(()=>{S.overlay='about';})],['Privacy',go(()=>{S.overlay='privacy';})],['Terms',go(()=>{S.overlay='terms';})],
+   ['Send Feedback',go(()=>{ fbReset(); })],['Add to Home Screen',()=>{ S.overlay=null; render(); installApp(); }]].forEach(([t,fn])=>{ const b=$(`<button>${esc(t)}</button>`); b.onclick=fn; al.appendChild(b); });
+  mnu.appendChild(about);
+  ov.appendChild($(`<button class="btn red mn-close">Close</button>`));
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
-  ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
+  ov.querySelector('.mn-close').onclick=()=>{S.overlay=null;render();};
   screen.appendChild(ov);
 }
 /* ---- Player feedback: an in-app "Send Feedback" form (bugs / ideas / anything).
@@ -26882,6 +26912,9 @@ const NEWS_DATE3='8/27/26';
 const NEWS_DATE4='10/1/26';
 const NEWS_DATE5='10/5/26';
 const NEWS_ENTRIES=[
+  {id:'menu-grouped', date:NEWS_DATE5, cat:'tour', icon:'📖', title:'A tidier menu',
+   blurb:'The menu is grouped now: Play, Progress, Records, Shop, Help, Account and Settings. On a computer the groups sit side by side. A badge shows when a spin or a pass reward is waiting.',
+   where:'The ≡ button at the top of any screen.'},
   {id:'pass-pumpkin', date:NEWS_DATE5, cat:'tour', icon:'🎃', title:'Finish the pass, become a Pumpkin Head',
    blurb:'Tier 60 on the Pro lane now pays the Pumpkin Head skin. It reskins your whole golfer: a carved, lit pumpkin for a head and a scarecrow body. The Will-o\'-Wisp Aura still comes with it.',
    where:'The Tour Pass. Wear it from the Closet under Effects, Skins.'},
