@@ -35,7 +35,9 @@ window.__H = {
   own(n){ var d=dropById('spooky'), s=coinState(); d.items.forEach(function(ci,i){ var k=cosKey(ci[0],ci[1]); if(i<n) s.owned[k]=1; else delete s.owned[k]; }); coinSave(s); return dropProgress(d); },
   find(n){ LS.set(spkFoundKey(), SEASON_DECOR.spooky.eggs.slice(0,n)); return spkFoundCount(); },
   state(){ return {live:hlLive(), claimable:hlClaimable(), bal:coinBalance(), steps:HL_STEPS.map(function(s){ return s.id+':'+(hlStepClaimed(s)?'claimed':hlStepReady(s)?'ready':'no'); }),
-    dropClaimed:dropRewardClaimed('spooky')}; },
+    dropClaimed:dropRewardClaimed('spooky'), zombie:cosOwned('body','zombie')}; },
+  claimedV1(){ var s=coinState(); delete s.owned[dropClaimKey('spooky')]; delete s.owned['bd:zombie']; s.owned['drc:spooky']=1; coinSave(s); return dropClaimable(dropById('spooky')); },
+  zombieRender(){ var L=Object.assign({},DEFLOOK,{body:'zombie'}); var a=avLook(L), c=pxGolferCanvas(L); return {skin:a.skinHex, eye:a.pupilHex, w:c.width, plain:avLook(DEFLOOK).skinHex}; },
   card(){ var l=homeModeList().map(function(m){ return m.id; }); var c=l.indexOf('haunted')>=0?hauntedCard().textContent.replace(/\\s+/g,' '):null; return {ids:l, card:c}; },
   page(){ var d=document.createElement('div'); document.body.appendChild(d); S.overlay='haunted'; overlayHaunted(d);
     var o={ shown:!!d.querySelector('.hl-ov'), claimBar:!!d.querySelector('[data-hlall]'), stepBtns:d.querySelectorAll('[data-hlstep]').length,
@@ -102,6 +104,17 @@ try {
   balB = st.bal; await E('claimAll');
   st = await E('state');
   ok('claiming takes the step and the collection reward (5,000 + 100,000)', st.dropClaimed && st.bal - balB === 105000 && st.claimable === 0, { delta: st.bal - balB, st });
+
+  ok('the collection reward includes the Zombie skin', st.zombie === true, st);
+
+  head('a reward that grows is claimed once more, without the coins');
+  const v1 = await E('claimedV1');
+  ok('a player who claimed before the Zombie skin was added can claim again', v1 === true, v1);
+  st = await E('state'); balB = st.bal; await E('claimAll');
+  st = await E('state');
+  ok('that claim grants the Zombie skin and pays no coins twice', st.zombie && st.dropClaimed && st.bal === balB && st.claimable === 0, { delta: st.bal - balB, st });
+  const ZR = await E('zombieRender');
+  ok('the Zombie skin repaints the golfer: green skin, glowing eyes', ZR.skin === '#8fa872' && ZR.eye === '#d6ff3a' && ZR.plain !== ZR.skin && ZR.w > 0, ZR);
 
   head('hints');
   const H = await E('hints');

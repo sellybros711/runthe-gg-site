@@ -11583,7 +11583,7 @@ const FREE_COSMETICS={
   'ht:teal':1,'ht:navy':1,'ht:gold':1,'ht:white':1,'ht:purple':1,'ht:black':1,
   'sp:none':1,'hp:none':1,'pt:stone':1,'so:white':1,
   'hw:none':1,'hw:cap':1,'hw:visor':1,'ew:none':1,'fx:none':1,'tp:none':1,'lg:none':1,
-  'cl:driver':1,'bl:none':1,'ct:none':1,
+  'cl:driver':1,'bl:none':1,'ct:none':1,'bd:none':1,
   'np:classic':1,'cb:club':1};   // player-card defaults: the Classic plate + Clubhouse background are free   // CS356g: base hats + no-shades are free; bucket/flat/shades are shop unlocks · sets: the Starter set + "no ball" + "no cleats" stay free
 const COS_CATS=[ {k:'shirt',pk:'sh',lookKey:'polo',name:'Shirt color'}, {k:'pat',pk:'sp',lookKey:'shirtPat',name:'Shirt pattern'},
   {k:'hat',pk:'ht',lookKey:'hat',name:'Hat color'}, {k:'pants',pk:'pt',lookKey:'pants',name:'Trousers'}, {k:'shoes',pk:'so',lookKey:'shoes',name:'Shoe color'},
@@ -11591,7 +11591,8 @@ const COS_CATS=[ {k:'shirt',pk:'sh',lookKey:'polo',name:'Shirt color'}, {k:'pat'
   {k:'top',pk:'tp',lookKey:'top',name:'Outerwear'}, {k:'leg',pk:'lg',lookKey:'leg',name:'Legwear'},
   {k:'club',pk:'cl',lookKey:'club',name:'Clubs'},   // CS414: favorite club is now a cosmetic (basics free, vintage/legendary paid)
   {k:'ball',pk:'bl',lookKey:'ball',name:'Balls'}, {k:'cleats',pk:'ct',lookKey:'cleats',name:'Cleats'},
-  {k:'plate',pk:'np',lookKey:'plate',name:'Nameplate'}, {k:'cardbg',pk:'cb',lookKey:'cardbg',name:'Card Background'} ];   // player-card cosmetics
+  {k:'plate',pk:'np',lookKey:'plate',name:'Nameplate'}, {k:'cardbg',pk:'cb',lookKey:'cardbg',name:'Card Background'},
+  {k:'body',pk:'bd',lookKey:'body',name:'Skin'} ];   // full-body skins: collection rewards only, from Haunted Links (Oct 2026) on   // player-card cosmetics
 function cosPk(cat){ const c=COS_CATS.find(x=>x.k===cat); return c?c.pk:cat; }
 function cosKey(cat,id){ return cosPk(cat)+':'+id; }
 // PACK-SYSTEM: direct-buy prices go up (x PACK_HIKE) the day packs launch, so packs are the value
@@ -11615,6 +11616,7 @@ function cosmeticPriceBase(cat,id){
   if(cat==='ball'){ if(id==='none') return 0; return (PXBALL_BY[id]?PXBALL_BY[id].price:0); }   // CS414: featherie epic, comet legendary
   if(cat==='cleats'){ return {rocket:30000,golden:20000,sunday:13000,neon:12000,saddle:6000,phantom:30000,bone:20000,rungames:13000}[id]||0; }   // CS414: Rocket Cleats legendary
   if(cat==='plate')  return (id==='sunsplash'||id==='harvesttable'||id==='graveyard')?18000:0;       // player cards: only the seasonal piece is priced (epic, pack pull); the rest are EARNED
+  if(cat==='body')   return 0;   // full-body skins are collection rewards, never sold or in packs
   if(cat==='cardbg') return 0;   // card backgrounds are free-default / EARNED / collection-reward, never directly bought
   return 0;
 }
@@ -11809,6 +11811,7 @@ function cosmeticItems(cat){
   if(cat==='hw')    return [{id:'none',name:'No Hat',hw:1},{id:'cap',name:'Ball Cap',hw:1},{id:'visor',name:'Visor',hw:1},{id:'bucket',name:'Bucket Hat',hw:1,hist:'Rainy-day links staple'},{id:'flat',name:'Flat Cap',hw:1,hist:'Early-1900s golf classic'},{id:'cowboy',name:'Cowboy Hat',hw:1,hist:'Yeehaw off the tee'},{id:'wizard',name:'Wizard Hat',hw:1,hist:'Magic on the greens'},{id:'crown',name:'Champion Crown',hw:1,hist:'Rule the leaderboard'},{id:'party',name:'Party Hat',hw:1,hist:'Every round is a celebration'},{id:'tophat',name:'Top Hat',hw:1,hist:'Dapper on the fairway'},{id:'propeller',name:'Propeller Beanie',hw:1,hist:'Pure fun'},{id:'headband',name:'Sweatband',hw:1,hist:'Clutch under pressure'},{id:'beanie',name:'Knit Beanie',hw:1,hist:'Cold-morning warmup'},{id:'fedora',name:'Fedora',hw:1,hist:'Old-school cool'},{id:'sombrero',name:'Sombrero',hw:1,hist:'Sun-drenched swagger'},{id:'halo',name:'Halo',hw:1,hist:'Angel of the greens'},{id:'viking',name:'Viking Helmet',hw:1,hist:'Conquer the course'},{id:'chef',name:'Chef Hat',hw:1,hist:'Cooking up birdies'},{id:'beret',name:'Beret',hw:1,hist:'Artist of the short game'},{id:'headphones',name:'Headphones',hw:1,hist:'In the zone'},{id:'flatbrim',name:'Snapback',hw:1,hist:'Flat-brim flex'},{id:'santa',name:'Santa Hat',hw:1,hist:'Season\u2019s greetings'},{id:'safari',name:'Safari Hat',hw:1,hist:'On expedition'},{id:'tweed',name:'Tweed Cap',hw:1,hist:'Old-money links tweed'},{id:'straw',name:'Straw Boater',hw:1,hist:'Roaring-20s summer golf'},{id:'laurel',name:'Laurel Wreath',hw:1,hist:'Crown of champions'},{id:'backwards',name:'Backwards Cap',hw:1,hist:'Rally-cap energy'},{id:'pirate',name:'Pirate Tricorn',hw:1,hist:'X marks the pin'},{id:'grad',name:'Graduation Cap',hw:1,hist:'Top of the class'},{id:'witch',name:'Witch Hat',hw:1,hist:'Brews birdies at midnight'},{id:'reaperhood',name:'Reaper Hood',hw:1,hist:'Comes for every pin'},{id:'elf',name:'Elf Hat',hw:1,hist:'Workshop-approved'},{id:'antlers',name:'Antlers',hw:1,hist:'Leading the sleigh'},{id:'football',name:'Football Helmet',hw:1,hist:'Built for contact'},{id:'floppy',name:'Sun Floppy Hat',hw:1,hist:'Beach-day shade'},{id:'knight',name:'Knight\u2019s Helm',hw:1,hist:'Armored up the fairway'},{id:'turkey',name:'Turkey Hat',hw:1,hist:'Seconds, anyone?'},{id:'harvestbeanie',name:'Harvest Knit',hw:1,hist:'Season 2 Tour Pass'},{id:'scarecrow',name:'Scarecrow Hat',hw:1,hist:'Season 2 Tour Pass'},{id:'horns',name:'Devil Horns',hw:1,hist:'Season 2 Tour Pass'},{id:'pilgrim',name:'Pilgrim Hat',hw:1,hist:'Season 2 Tour Pass'}];
   if(cat==='ew')    return [{id:'none',name:'None',ew:1},{id:'shades',name:'Shooter Shades',ew:1,hist:'Ice-cold Sunday stare'},{id:'heart',name:'Heart Shades',ew:1,hist:'Crowd charmer'},{id:'star',name:'Star Shades',ew:1,hist:'Superstar swagger'},{id:'threed',name:'3D Glasses',ew:1,hist:'See the line in 3D'},{id:'monocle',name:'Monocle',ew:1,hist:'Distinguished gentleman'},{id:'aviators',name:'Aviators',ew:1,hist:'Top-gun style'},{id:'round',name:'Round Glasses',ew:1,hist:'Retro intellectual'},{id:'goggles',name:'Ski Goggles',ew:1,hist:'Downhill focus'},{id:'eyepatch',name:'Eye Patch',ew:1,hist:'Pirate of the fairways'},{id:'visorband',name:'Shield Shades',ew:1,hist:'Wraparound cool'},{id:'prismshades',name:'Prism Shades',ew:1,hist:'Refract the sun'},{id:'goldshades',name:'Gilded Shades',ew:1,hist:'24-karat stare'},{id:'beach',name:'Beach Shades',ew:1,hist:'Boardwalk cool'},{id:'eyeblack',name:'Eye Black',ew:1,hist:'Game face on'},{id:'wayfarer',name:'Wayfarers',ew:1,hist:'Timeless clubhouse classic'},{id:'sport',name:'Sport Wraps',ew:1,hist:'Built for the wind'},{id:'cateye',name:'Cat-Eye Glasses',ew:1,hist:'Vintage flair'},{id:'readers',name:'Half-Rim Readers',ew:1,hist:'Reading every break'},{id:'rose',name:'Rose-Tinted Glasses',ew:1,hist:'Every round looks great'},{id:'steampunk',name:'Brass Goggles',ew:1,hist:'Inventor of the stinger'},{id:'cyber',name:'Cyber Visor',ew:1,hist:'Scanning the fairway'},{id:'patriot',name:'Patriot Shades',ew:1,hist:'Playing for the flag'},{id:'groucho',name:'Disguise Glasses',ew:1,hist:'Incognito round'},{id:'diamond',name:'Diamond Shades',ew:1,hist:'Ice in the veins'},{id:'ghoulglow',name:'Ghoul Glow Specs',ew:1,hist:'Season 2 Tour Pass'}];
   if(cat==='fx')    return [{id:'none',name:'None',fx:'none'}].concat(PXFX.map(function(f){ return {id:f.id,name:f.name,fx:f.id,hist:f.hist,col:f.col}; }));   // CS410
+  if(cat==='body')  return [{id:'none',name:'No Skin',body:1},{id:'zombie',name:'Zombie',body:1,hist:'Haunted Links collection reward'}];
   if(cat==='top')   return [{id:'none',name:'None',top:1},{id:'cardigan',name:'Cardigan',top:1,hist:'Old-school knit'},{id:'blazer',name:'Champion\'s Blazer',top:1,hist:'Draped on the winner'},{id:'cape',name:'Vampire Cape',top:1,hist:'Out for blood on Sunday'},{id:'shacket',name:'Corduroy Shacket',top:1,hist:'Season 2 Tour Pass'},{id:'duckfloatie',name:'Rubber Ducky Floatie',top:1,reward:1,hist:'Own the whole Summer Smash collection. The only way to float.'}];   // CS411
   if(cat==='leg')   return [{id:'none',name:'None',leg:1},{id:'plusfours',name:'Plus-Fours',leg:1,hist:'Knickerbockers & argyle socks'}];   // CS411
   if(cat==='club')  return CLUBS.map(function(c){ return {id:c.id,name:c.name,club:1,hist:c.hist||'',rar:c.rar}; });   // one club, one list
@@ -15546,7 +15549,7 @@ function scrSetup(){
   const LOOKCATS=[['skin','Skin'],['hair','Hair'],['style','Style'],['hand','Hand']];
   const APPAREL=[['shirt','Shirt'],['pat','Pattern'],['hat','Hat'],['hw','Headwear'],['ew','Eyewear'],['pants','Trousers'],['shoes','Shoes'],['top','Outerwear'],['leg','Legwear']];   // headwear + eyewear are apparel (owner)
   const GEAR=[['club','Clubs'],['ball','Balls'],['cleats','Cleats']];
-  const EFFECTS=[['fx','Aura']];
+  const EFFECTS=[['fx','Aura'],['body','Skins']];
   // ITEM 09: a guest can NAME their golfer. The name is theirs alone - it is stored on the guest-scoped
   // key and no guest submission path carries it (a guest season posts server-hardcoded as 'Guest Player',
   // the daily boards + course records are sign-in gated, a guest streak posts as 'Guest'), so naming can
@@ -15745,6 +15748,22 @@ function avMixHex(a,b,t){ const A=avHexRgb(a),B=avHexRgb(b);
 function avTanTone(tone,age){ const yrs=Math.max(0,Math.min(AGE_TAN_YEARS,age-AGE_TAN_START));
   const add=AGE_TAN_MAX*(yrs/AGE_TAN_YEARS)*(1-Math.max(0,Math.min(100,tone))/100);
   return Math.max(0,Math.min(100,tone+add)); }
+// Full-body skins. A skin is colours the resolver hands every renderer, plus the torn-cloth pattern the HD
+// golfer paints over the shirt (rags: x,y on the 44x56 grid, answering a hex or null for the shirt itself).
+const BODY_SKINS={
+  zombie:{ skin:'#8fa872', hair:'#2e2c22', grime:'#5a5444', eye:'#d6ff3a', mouth:'#3a1420', pants:'#4e4a3c',
+    // the tears are placed by hand: a symmetric hole reads as a badge rather than as torn cloth
+    rags:(x,y,skin)=>{ const k=x+','+y;
+      if(ZOMBIE_TEAR[k]) return skin; if(ZOMBIE_FRAY[k]) return '#2e241a';
+      if(y>=35 && (x===15||x===16||x===24||x===28||x===29) && (x+y)%2===0) return skin;   // the hem, torn into strips
+      const bx=x-25, by=y-27; if(bx*bx+by*by<3 && (x+y)%3) return '#6a2424';    // old blood at the shoulder
+      if((x===21&&y===34)||(x===27&&y===30)||(x===16&&y===33)) return '#3a2618'; return null; } } };   // dirt
+const ZOMBIE_TEAR={'18,27':1,'17,28':1,'18,28':1,'19,28':1,'17,29':1,'18,29':1,'19,29':1,'20,29':1,'18,30':1,'19,30':1,'20,30':1,'19,31':1,
+  '26,32':1,'27,33':1,'26,34':1};
+const ZOMBIE_FRAY={'19,27':1,'16,29':1,'21,30':1,'17,30':1,'20,31':1,'27,32':1,'25,33':1};
+// trouser colour for every golfer renderer: a skin brings its own
+function pantsHexOf(look){ const b=look&&look.body&&BODY_SKINS[look.body]; if(b) return b.pants;
+  return ((typeof PANTS!=='undefined'&&PANTS.find(x=>x.id===((look&&look.pants)||'stone')))||{a:'#c7bfa8'}).a; }
 function avLook(L){L=L||DEFLOOK;
   const sk=SKINS.find(x=>x.id===L.skin)||SKINS[1], hr=HAIRS.find(x=>x.id===L.hair)||HAIRS[1], po=findShirt(L.polo);
   let skinHex=(L.skinTone!=null)?skinRampHex(L.skinTone):sk.m;                    // CS427: continuous tone slider
@@ -15757,6 +15776,13 @@ function avLook(L){L=L||DEFLOOK;
   const tanned=age>AGE_TAN_START;
   if(tanned) skinHex=skinRampHex(avTanTone(skinToneOf(L),age));
   const aged=(gT>0||tanned);
+  // FULL-BODY SKIN (owner, Oct 2026: a skin for completing a collection, Haunted Links first). It reskins
+  // the body every renderer draws from this resolver: skin, hair, shirt and the face. Gear stays wearable.
+  if(L.body==='zombie'){ const z=BODY_SKINS.zombie;
+    return{ gender:g, skinHex:z.skin, hairHex:z.hair, hairBaseHex:z.hair, hairTempleHex:z.hair, age:age, greyC:0, greyT:0,
+      shirtHex:avMixHex(po.m,z.grime,.6), hatHex:ht.m, shoesHex:avMixHex(shoeCol(so),z.grime,.5), shirtPat:sp, hatPat:hp,
+      body:'zombie', pupilHex:z.eye, mouthHex:z.mouth,
+      key:g+'_zombie_'+po.id+'_'+(L.hat||po.id)+'_'+sp+'_'+hp+'_'+so }; }
   return{ gender:g, skinHex:skinHex, hairHex:(gC>0?avMixHex(hr.m,AGE_GREY_HEX,gC):hr.m),
     hairBaseHex:hr.m, hairTempleHex:(gT>0?avMixHex(hr.m,AGE_GREY_HEX,gT):hr.m),
     age:age, greyC:gC, greyT:gT,
@@ -17410,8 +17436,8 @@ function render(o){ const av=o.av, s=build(o), px=o.px||7, only=o.only||'';
     gold:ramp('#d6a640'), strap:ramp('#3a3f4a'), mirror:['#4b2a7a','#5f4bb0','#5c8fd6','#7fc3ec','#bfe9fb'],
     jacket:ramp((o.topPal&&o.topPal.blazer&&o.topPal.blazer['1'])||'#7a1f2b'), tie:ramp('#243040'), jbutton:ramp('#d8b24a') };
   const lace=mix(R.shoe[1],'#000000',.25), skinR=R.skin;
-  const fixed={ pupil:mix(hairRamp(av.hairBaseHex||av.hairHex)[0],'#1a1018',.6), brow:hairRamp(av.hairHex)[0], lace,
-    blush:mix(skinR[2],'#e0586a',.22), mouth:mix(skinR[1],'#7a2a34',.30), glint:'#fff6d8' };
+  const fixed={ pupil:av.pupilHex||mix(hairRamp(av.hairBaseHex||av.hairHex)[0],'#1a1018',.6), brow:hairRamp(av.hairHex)[0], lace,
+    blush:av.body?mix(skinR[2],'#4a5a3a',.3):mix(skinR[2],'#e0586a',.22), mouth:av.mouthHex||mix(skinR[1],'#7a2a34',.30), glint:'#fff6d8' };
   const hairR=new Map();
   const rampOf=(c,x,y)=>{ const m=c.m;
     if(m==='hair'){ const hx=o.hairAt?o.hairAt(y):av.hairHex; let r=hairR.get(hx); if(!r){ r=hairRamp(hx); hairR.set(hx,r); } return r; }
@@ -17443,7 +17469,7 @@ return { render, renderMap, ramp, mix };
 })();
 function pxGolferCanvas(look,opts){
   look=look||S.look||DEFLOOK; const av=avLook(look);
-  const pantsHex=((typeof PANTS!=='undefined'&&PANTS.find(x=>x.id===(look.pants||'stone')))||{a:'#c7bfa8'}).a;
+  const pantsHex=pantsHexOf(look), bodySkin=(look.body&&BODY_SKINS[look.body])||null;
   const style=(look.hairStyle&&PXG_HAIR[look.hairStyle])?look.hairStyle:'short';
   const capOn=look.cap!==false;
   const hatStyle=(look.hatStyle==='visor')?'visor':((look.hatStyle&&PXG_HATS[look.hatStyle])?look.hatStyle:'cap');
@@ -17454,7 +17480,7 @@ function pxGolferCanvas(look,opts){
   const legw=(look.leg&&PXG_LEGS[look.leg])?look.leg:'';
   const ball=(look.ball&&PXG_BALL[look.ball])?look.ball:'';
   const cleats=(look.cleats&&PXG_CLEATS[look.cleats])?look.cleats:'';
-  const key='hd|'+av.key+'|st'+style+'|cap'+(capOn?hatStyle:'0')+'|pn'+(look.pants||'stone')+'|pt'+pat+'|ew'+shades+'|cl'+club+'|tp'+top+'|lg'+legw+'|bl'+ball+'|ct'+cleats+(look.lefty?'L':'R')+((opts&&opts.noClub)?'|nc':'')+((opts&&opts.noBall)?'|nb':'')+((opts&&opts.only)?'|o'+opts.only:'');
+  const key='hd|'+av.key+(bodySkin?'|bd'+look.body:'')+'|st'+style+'|cap'+(capOn?hatStyle:'0')+'|pn'+(look.pants||'stone')+'|pt'+pat+'|ew'+shades+'|cl'+club+'|tp'+top+'|lg'+legw+'|bl'+ball+'|ct'+cleats+(look.lefty?'L':'R')+((opts&&opts.noClub)?'|nc':'')+((opts&&opts.noBall)?'|nb':'')+((opts&&opts.only)?'|o'+opts.only:'');
   let cached=_pxCanvas.get(key); if(cached) return cached;
   const P=Object.assign({ k:PXG_FIX.k, l:PXG_FIX.l, g:PXG_FIX.g, n:PXG_FIX.n, G:PXG_FIX.G, H:PXG_FIX.H, F:PXG_FIX.F, E:'#20242c', S:'#e8ebf0' }, PXG_NOV);
   // shirt patterns: a FIXED pattern is its own colours, a normal one is a tonal accent of the shirt
@@ -17463,6 +17489,7 @@ function pxGolferCanvas(look,opts){
     if(pd.fixed){ const cols=pd.cols||[]; patFn=(x,y)=>cols[pd.f(x,y)|0]||cols[0]||null; }
     else { const light=pxLum(av.shirtHex)>0.55, a1=pxShade(av.shirtHex, light?-52:46), a2=pxShade(av.shirtHex, light?-90:82);
       patFn=(x,y)=>{ const a=pd.f(x,y); return a?(a===2?a2:a1):null; }; } }
+  if(bodySkin&&bodySkin.rags){ const under=patFn; patFn=(x,y)=>bodySkin.rags(x,y,av.skinHex)||(under?under(x,y):null); }   // a skin's rags over any pattern
   // ITEM 20: hair greys from the temples up, per row, so there is no line across the head
   const hairAt=(av.greyT>0)?(y=>{ const f=Math.max(0,Math.min(1,(y-AGE_TEMPLE_Y0)/(AGE_TEMPLE_Y1-AGE_TEMPLE_Y0)));
     return avMixHex(av.hairBaseHex,AGE_GREY_HEX,av.greyC+(av.greyT-av.greyC)*f); }):null;
@@ -17499,7 +17526,7 @@ function paintFloatieBand(ctx, BODY, px){
 }
 function pxDir8Canvas(look, dir, poseKey){
   look=look||S.look||DEFLOOK; const av=avLook(look);
-  const pantsHex=((typeof PANTS!=='undefined'&&PANTS.find(x=>x.id===(look.pants||'stone')))||{a:'#c7bfa8'}).a;
+  const pantsHex=pantsHexOf(look);
   const capOn=look.cap!==false;
   const pat=(look.shirtPat&&PXPAT_BY[look.shirtPat])?look.shirtPat:'';
   // CS491: an OVERLAY hat (novelty / visor / backwards) replaces the baked cap: the head shows hair and the
@@ -17637,7 +17664,7 @@ function pxSwingStampHat(ctx, body, hatStyle, px, opts){
 
 function pxSw4Canvas(look, dir, poseKey){
   look=look||S.look||DEFLOOK; const av=avLook(look);
-  const pantsHex=((typeof PANTS!=='undefined'&&PANTS.find(x=>x.id===(look.pants||'stone')))||{a:'#c7bfa8'}).a;
+  const pantsHex=pantsHexOf(look);
   const capOn=look.cap!==false, noCap=!capOn;
   const pat=(look.shirtPat&&PXPAT_BY[look.shirtPat])?look.shirtPat:'';
   // CS483v: worn accessories on the swing golfer so it matches the profile golfer - novelty HATS (stamped),
@@ -17814,7 +17841,7 @@ const _pxSwing=new Map();
 // render all stroke frames (full swing 3 / chip 2 / putt 2) for a look, cached, palette-swapped
 function pxStrokeURLs(look){
   look=look||S.look||DEFLOOK; const av=avLook(look);
-  const pantsHex=((typeof PANTS!=='undefined'&&PANTS.find(x=>x.id===(look.pants||'stone')))||{a:'#c7bfa8'}).a;
+  const pantsHex=pantsHexOf(look);
   // CS483u: the swing/TourTracer golfer renders the SHIRT PATTERN. CS485: also renders HEADWEAR styles +
   // OUTERWEAR / LEGWEAR / CLEATS, so every outfit item shows in TourTracer (not just the base colors).
   const pat=(look.shirtPat&&PXPAT_BY[look.shirtPat])?look.shirtPat:'';
@@ -26738,6 +26765,9 @@ const NEWS_DATE3='8/27/26';
 const NEWS_DATE4='10/1/26';
 const NEWS_DATE5='10/5/26';
 const NEWS_ENTRIES=[
+  {id:'haunted-zombie', date:NEWS_DATE5, cat:'tour', icon:'🎃', title:'Complete Haunted Links, become a Zombie',
+   blurb:'Collect all 14 pieces to unlock the Zombie skin. It reskins your whole golfer. Already completed it? Claim again for the skin.',
+   where:'The Haunted Links page. Wear it from the Closet under Effects, Skins.'},
   {id:'s2-launch', date:NEWS_DATE5, cat:'tour', icon:'🎟️', title:'Season 2: Hallows & Harvest',
    blurb:`A new Tour Pass season, live until Dec 3. ${PASS_TIERS} fresh tiers. Halloween and Thanksgiving pieces on the Pro lane, ending with the Will-o'-Wisp Aura.`,
    where:'The Tour Pass card on the home screen.'},
@@ -36522,6 +36552,7 @@ function cosIsEquipped(cat,id){
   if(cat==='club') return (S.look.club||'driver')===id;   // the single equipped club
   if(cat==='plate')  return (S.look.plate||'classic')===id;
   if(cat==='cardbg') return (S.look.cardbg||'club')===id;
+  if(cat==='body') return (S.look.body||'none')===id;
   if(cat==='hat') return (S.look.hat||S.look.polo)===id;
   const c=COS_CATS.find(x=>x.k===cat); return c?S.look[c.lookKey]===id:false;
 }
@@ -36695,6 +36726,7 @@ function cosThumbHTML(cat,o){
      : (cat==='cleats') ? pxCleatsThumb(o.id)
      : (cat==='pat') ? pxPatThumb(o.id)
      : (cat==='hw'||cat==='ew'||cat==='top'||cat==='leg') ? pxItemThumb(cat,o.id)
+     : (cat==='body') ? `<span class="sthumb px" style="padding:0;overflow:hidden;background:#0c1f16"><img src="${pxGolferURL(Object.assign({},S.look||DEFLOOK,{body:o.id==='none'?'':o.id}))}" alt="" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated"></span>`
      : (cat==='cardbg') ? `<span class="sthumb" style="padding:0;overflow:hidden"><img src="${pxCardBgURL(o.id)}" alt="" style="width:100%;height:100%;object-fit:cover;image-rendering:pixelated"></span>`
      : (cat==='plate') ? `<span class="sthumb color" style="${plateCss(o.id)};display:flex;align-items:center;justify-content:center"><span style="font-weight:900;font-size:8.5px;letter-spacing:.06em">NAME</span></span>`
      : (cat==='hat' && o.pat===undefined) ? pxCapThumb(o.id)
@@ -37098,7 +37130,7 @@ const DROPS=[
   blurb:'Sun\'s out. Floppy hats, sunset fades and beach shades, live for the hottest stretch of the year. Complete it to unlock the Endless Summer card backdrop, the Rubber Ducky Floatie and 100,000 coins.',
   items:[['pat','pineapple'],['pat','sunset'],['pat','aloha'],['hw','floppy'],['ew','beach'],['ball','flamingo'],['fx','heatwave'],['club','poolnoodle'],['plate','sunsplash']]},
  {id:'spooky', name:'Haunted Links', kicker:'October Only', accent:'#e07a1f', window:[[10,1],[10,31]],
-  blurb:'Witch hats, a reaper\'s hood, mummy wraps and a coffin for a driver. Complete it to unlock the Haunted Hollow card backdrop and 100,000 coins. Returns every October.',
+  blurb:'Witch hats, a reaper\'s hood, mummy wraps and a coffin for a driver. Complete it to unlock the Zombie skin, the Haunted Hollow card backdrop and 100,000 coins. Returns every October.',
   items:[['hw','witch'],['pat','skeleton'],['pat','pumpkinpatch'],['ball','ghost'],['fx','ecto'],['top','cape'],['cleats','phantom'],
    ['hw','reaperhood'],['pat','mummywrap'],['ball','eyeball'],['club','coffin'],['fx','cauldron'],['cleats','bone'],['plate','graveyard']]},
  {id:'winter', name:'Winter Classic', kicker:'Holiday Collection', accent:'#9fdcff', window:[[12,1],[12,31]],
@@ -38001,7 +38033,8 @@ const DROP_REWARDS={
     {cat:'cardbg', id:'endlesssummer',name:'Endless Summer Backdrop'} ]},
   drop2: { coins:100000, items:[
     {cat:'cardbg', id:'mythicvault',  name:'The Mythic Vault Backdrop'} ]},
-  spooky:{ coins:100000, fromSeason:2, items:[
+  spooky:{ coins:100000, fromSeason:2, v:2, items:[
+    {cat:'body',   id:'zombie',       name:'Zombie Skin'},
     {cat:'cardbg', id:'hauntedhollow',name:'Haunted Hollow Backdrop'} ]},
   harvest:{ coins:100000, items:[
     {cat:'cardbg', id:'cornfield',    name:'Cornfield Sunset Backdrop'} ]},
@@ -38014,17 +38047,22 @@ function cosRewardOnly(cat,id){ return !!rewardDrop(cat,id); }
 // granted ONLY by the player tapping CLAIM (the banner goes gold + glows), no delayed auto-celebration.
 // The claim is recorded with a synced flag (owned['drc:<drop>']) so the coins can't be re-claimed, but a
 // player who already completed a collection BEFORE the reward was expanded sees CLAIM once for the upgrade.
-function dropRewardClaimed(did){ try{ return !!coinState().owned['drc:'+did]; }catch(e){ return false; } }
+// A reward that grows later carries v: the claim key gains ':v<n>', so a player who claimed the first version
+// sees CLAIM once more for what was added. The coins are paid on the first claim only ('drc:<drop>').
+function dropClaimKey(did){ const r=DROP_REWARDS[did]; return 'drc:'+did+((r&&r.v>1)?':v'+r.v:''); }
+function dropRewardClaimed(did){ try{ return !!coinState().owned[dropClaimKey(did)]; }catch(e){ return false; } }
 function dropClaimable(d){ if(!sbSignedIn()||!d) return false; const r=dropReward(d); if(!r||dropRewardClaimed(d.id)) return false;
   const pr=dropProgress(d); return pr.own>=pr.tot; }
 function anyDropClaimable(){ try{ for(const k in DROP_REWARDS){ if(dropClaimable(dropById(k))) return true; } }catch(e){} return false; }
 function claimDropReward(did){ const d=dropById(did), r=dropReward(d); if(!dropClaimable(d)) return;
   const s=coinState();
   (r.items||[]).forEach(it=>{ s.owned[cosKey(it.cat,it.id)]=1; try{ markItemSeen&&markItemSeen(cosKey(it.cat,it.id)); }catch(e){} });
-  s.owned['drc:'+did]=1; coinSave(s);
-  if(r.coins) addBonusCoins(r.coins, {silent:true});   // celebration shows the coins
-  track('drop_reward_claimed',{drop:did,coins:r.coins||0});
-  celebrateDropReward(d,r); }
+  const paidBefore=!!s.owned['drc:'+did];
+  s.owned['drc:'+did]=1; s.owned[dropClaimKey(did)]=1; coinSave(s);
+  const coins=paidBefore?0:(r.coins||0);
+  if(coins) addBonusCoins(coins, {silent:true});   // celebration shows the coins
+  track('drop_reward_claimed',{drop:did,coins:coins,v:r.v||1});
+  celebrateDropReward(d,paidBefore?Object.assign({},r,{coins:0}):r); }
 function checkDropRewards(){ if(!sbSignedIn()) return; try{
   for(const did in DROP_REWARDS){ const d=dropById(did); if(!dropClaimable(d)) continue;
     const seen=LS.get(acctKey('bag_dropnotice'),{})||{}; if(seen[did]) continue;
@@ -38049,8 +38087,8 @@ function celebrateDropReward(d,r){
       <span style="width:40px;height:40px;flex:0 0 auto;display:flex;align-items:center;justify-content:center">${ic('coins',{size:'36px'})}</span>
       <div style="text-align:left"><div style="font-family:var(--display);font-size:18px;color:#ffd45e;line-height:1.05">+${coinFmt(r.coins)} coins</div>
       <div class="small muted" style="font-size:10px">Cash bonus</div></div></div>`:'';
-  const ov=$(`<div id="dropreward-ov" style="position:fixed;inset:0;z-index:60;background:radial-gradient(ellipse at 50% 30%,rgba(255,157,58,.28),rgba(4,14,9,.97) 70%);display:flex;align-items:center;justify-content:center;padding:20px">
-    <div style="max-width:420px;text-align:center">
+  const ov=$(`<div id="dropreward-ov" style="position:fixed;inset:0;z-index:60;background:radial-gradient(ellipse at 50% 30%,rgba(255,157,58,.28),rgba(4,14,9,.97) 70%);display:flex;overflow-y:auto;padding:20px">
+    <div style="max-width:420px;text-align:center;margin:auto">
       <div class="tag" style="color:${d.accent};border-color:${d.accent}">${esc(d.name)}</div>
       <h2 style="font-family:var(--display);font-size:30px;margin:10px 0 2px;color:var(--gold)">COLLECTION COMPLETE!</h2>
       <div class="small" style="color:var(--oncard);margin-bottom:8px">You collected all ${d.items.length} ${esc(d.name)} items</div>
@@ -40780,7 +40818,7 @@ const PENDING_SEASONS_KEY='bag_pending_seasons';
 // CS393: a minimal golfer-appearance snapshot for the public boards - only the keys the pixel figure reads
 // (drops _ts/acc/caddie/country/title, which don't affect the rendered golfer). Keeps the payload tiny.
 function lookForBoard(look){ const L=look||S.look||DEFLOOK; const o={};
-  ['skin','skinTone','hair','hairStyle','polo','pants','shoes','cap','hatStyle','hat','shirtPat','hatPat','eyewear','club','top','leg','fx','ball','cleats','lefty','gender','plate','cardbg'].forEach(k=>{ if(L[k]!==undefined) o[k]=L[k]; });
+  ['skin','skinTone','hair','hairStyle','polo','pants','shoes','cap','hatStyle','hat','shirtPat','hatPat','eyewear','club','top','leg','fx','ball','cleats','lefty','gender','plate','cardbg','body'].forEach(k=>{ if(L[k]!==undefined) o[k]=L[k]; });
   // ITEM 20: carry the golfer's AGE, so a board shows a rookie and a grey-templed veteran as what they are.
   try{ if(!S.daily && typeof playerAge==='function'){ const a=playerAge(); if(a>0) o.age=a; } }catch(e){}
   try{ if(!look){ const sc=passStampsCode(); if(sc) o.stamps=sc; } }catch(e){}   // your own Tour Pass stamps, shown on your card to other players

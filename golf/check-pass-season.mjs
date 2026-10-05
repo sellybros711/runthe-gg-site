@@ -286,7 +286,7 @@ try {
   head('drops and their rewards');
   for (const d of await E('drops')) {
     ok(`${d.id}: every item exists and is priced`, d.items.every(i => i.listed && i.base > 0), d.items.filter(i => !(i.listed && i.base > 0)));
-    ok(`${d.id}: completing it pays a listed backdrop and coins`, d.reward.length > 0 && d.reward.every(r => r.listed && r.bg) && d.coins > 0, d.reward);
+    ok(`${d.id}: completing it pays a listed backdrop and coins`, d.reward.every(r => r.listed) && d.reward.some(r => r.bg) && d.coins > 0, d.reward);
   }
 
   head('October');
