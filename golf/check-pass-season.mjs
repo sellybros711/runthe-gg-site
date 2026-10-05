@@ -118,6 +118,7 @@ window.__P = {
   mergeHist(a,b){ return mergePassHist(a,b); },
   stamps(){ return {list:passStamps(), code:passStampsCode(), html:passStampsHTML(), decoded:passStampsDecode(passStampsCode()), look:lookForBoard().stamps||null}; },
   card(){ var d=document.createElement('div'); d.innerHTML=playerCardHTML({self:true, name:'Rig', look:S.look||DEFLOOK, rep:'Amateur'}); var st=d.querySelector('.pcstamps'); return st?st.textContent:null; },
+  curveNow(){ return PASS_CURVE_V; },
   otherCard(code){ var d=document.createElement('div'); d.innerHTML=playerCardHTML({self:false, uid:'x', name:'Other', look:Object.assign({},DEFLOOK,{stamps:code}), rep:'Amateur'}); var st=d.querySelector('.pcstamps'); return st?st.textContent:null; },
   event(){ return {now:(passEventNow()||{}).id||null, mult:passEventMult(), soon:(passEventSoon(3)||{e:{}}).e.id||null, line:passEventLine().replace(/<[^>]+>/g,''), chip:passEventChip().replace(/<[^>]+>/g,'')}; },
   addXp(n, boost){ try{ var w=wheelState(); w.boostUntil=boost?Date.now()+600000:0; wheelSave(w); }catch(e){}
@@ -384,7 +385,7 @@ try {
   await E('histReset');
   SS = await E('staleSeason', 1, 20);
   ok('tier 20 in Season 1 is recorded and earns nothing', SS.hist['1'] === 20 && (await E('stamps')).list.length === 0, SS.hist);
-  H = await E('histFrom', { season: 1, xp: await E('xpAt', 72), curveV: 5 });
+  H = await E('histFrom', { season: 1, xp: await E('xpAt', 72), curveV: await E('curveNow') });
   ok('a Season 1 track arriving from the cloud counts too, overtime included', H['1'] === 72, H);
   H = await E('histFrom', { season: 1, xp: 10, curveV: 4 });
   ok('a smaller one never lowers it', H['1'] === 72, H);
@@ -393,10 +394,13 @@ try {
   // a real Season 1 track in the cloud is on the v4 curve, and its overtime has to survive the v5 conversion
   await E('histReset');
   H = await E('histFrom', { season: 1, xp: V4_60 + 12 * 1500, curveV: 4 });
-  ok('a v4 Season 1 track at overtime tier 72 still reads 72 on v5', H['1'] === 72, H);
+  ok('a v4 Season 1 track at overtime tier 72 still reads 72 on the current curve', H['1'] === 72, H);
   await E('histReset');
   H = await E('histFrom', { season: 1, xp: V4(35) + 20, curveV: 4 });
-  ok('a v4 Season 1 track at tier 35 still reads 35 on v5', H['1'] === 35, H);
+  ok('a v4 Season 1 track at tier 35 still reads 35 on the current curve', H['1'] === 35, H);
+  await E('histReset');
+  H = await E('histFrom', { season: 1, xp: Math.round(300 * 60 + 10.1 * 1770) + 12 * 1500, curveV: 5 });
+  ok('a v5 Season 1 track (overtime 1,500 a tier) at tier 72 still reads 72', H['1'] === 72, H);
   await E('histFrom', { season: 1, xp: V4_60 + 12 * 1500, curveV: 4 });
   ok('another player\'s stamps come off their look', (await E('otherCard', '1:35,2:90')) === 'S1S2★★★', await E('otherCard', '1:35,2:90'));
   ok('a garbled look shows nothing rather than breaking the card', (await E('otherCard', 'nonsense')) === null);

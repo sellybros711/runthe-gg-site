@@ -10089,8 +10089,17 @@ function passProActive(){ return sbSignedIn() && (dailyPassActive() || devMode()
 // tier 1 costs 300 and tier 60 costs 896, so a strong season is about a tier all season long. With
 // PASS_XP_RATE halved (0.6 to 0.3, owner: "cut the xp players earn in half") and Daily rounds past the 3rd paying no Pass XP, a steady player
 // (the Daily and a season a day) reaches about tier 50 by day 60, and finishing all 60 takes more than that.
-const PASS_CURVE_V=5;                                        // bump to re-convert everyone's XP onto a new curve
-const PASS_C0=300, PASS_C1=10.1, PASS_C2=0;                    // cost(t) = C0 + C1*(t-1) + C2*(t-1)^2, climb-shape knobs
+//
+// v6 (owner, Oct 5 2026: "1,200 XP from a decent season", against tiers of about 400). Two causes. Sponsor
+// briefs paid the Track at the full rate rather than PASS_XP_SEASON, and they were most of a season's XP:
+// they pay the season rate now. And the tiers were too cheap. v6 is the same flat shape at 2.3x the size:
+// tier 1 costs 800, tier 60 costs 2,000, about 84,000 XP in all, and overtime tiers cost 2,000 so none is
+// cheaper than tier 60. A decent season (about 600 XP once briefs pay the season rate) is most of a tier
+// early and under a third of one late. Measured in check-pass-curve.mjs, double XP weekends included:
+// three seasons and three Daily rounds a day finishes around day 37, two a day around day 54, and one
+// season and one round a day reaches about tier 39 by day 60.
+const PASS_CURVE_V=6;                                        // bump to re-convert everyone's XP onto a new curve
+const PASS_C0=800, PASS_C1=20.338, PASS_C2=0;                   // cost(t) = C0 + C1*(t-1) + C2*(t-1)^2, climb-shape knobs
 function passTierCost(t){ const k=t-1; return PASS_C0 + PASS_C1*k + PASS_C2*k*k; }
 var _passCum=null;                                           // cumulative XP per tier, memoized (the UI walks every tier per render)
 function passXpForTier(t){
@@ -10104,16 +10113,19 @@ const PASS_CURVES={ 1:{cost:t=>140+(t-1)*11,                 tiers:50},
                     2:{cost:t=>150+7*(t-1)+0.8*(t-1)*(t-1),  tiers:50},
                     3:{cost:t=>90+2*(t-1)+0.10*(t-1)*(t-1),  tiers:60},
                     4:{cost:t=>95+2*(t-1)+0.38*(t-1)*(t-1),  tiers:60},
-                    5:{cost:t=>passTierCost(t),              tiers:60} };
+                    5:{cost:t=>300+10.1*(t-1),                tiers:60},
+                    6:{cost:t=>passTierCost(t),              tiers:60} };
 // One-time migration onto the current curve. Preserves the player's exact TIER and their fractional progress
 // into the next one, so nobody loses visible progress or re-locks a reward, only the shape of what's AHEAD
 // changes. Converting from v2 LOWERS the raw XP number (v3 is a much smaller scale); the tier is what matters.
 function passConvertCurve(s){
   const from=PASS_CURVES[s.curveV|0]||PASS_CURVES[1], oldT=from.tiers;
   let cum=[0],x=0; for(let i=1;i<=oldT;i++){ x+=from.cost(i); cum.push(x); }
-  // Overtime (past tier 60) costs the same flat PASS_OT_COST on every 60-tier curve, so it carries across
-  // as XP above the old tier 60. Without this a Season 1 track at overtime tier 72 converted to tier 60.
-  if(oldT===PASS_TIERS && s.xp>cum[oldT]){ s.xp=Math.round(passXpForTier(PASS_TIERS)+(s.xp-cum[oldT])); s.curveV=PASS_CURVE_V; return s; }
+  // Overtime (past tier 60) carries across as overtime tiers: XP above the old tier 60 divided by what an
+  // overtime tier cost then (PASS_OT_OLD through v5), times what it costs now. Without this a Season 1 track
+  // at overtime tier 72 converted to tier 60.
+  if(oldT===PASS_TIERS && s.xp>cum[oldT]){ const otOld=(s.curveV|0)>=6?PASS_OT_COST:PASS_OT_OLD;
+    s.xp=Math.round(passXpForTier(PASS_TIERS)+(s.xp-cum[oldT])/otOld*PASS_OT_COST); s.curveV=PASS_CURVE_V; return s; }
   let t=0; while(t<oldT && s.xp>=cum[t+1]) t++;
   const b=cum[t], n=t<oldT?cum[t+1]:b;
   const frac=(t<oldT && n>b) ? Math.max(0,Math.min(0.999,(s.xp-b)/(n-b))) : 0;
@@ -10458,7 +10470,7 @@ const PASS_SYSTEMS_FROM=2;                                     // the first seas
 function passSystemsOn(){ return passEnabled() && passSeason().n>=PASS_SYSTEMS_FROM; }
 // The tier the SCREENS count: overtime once the systems are on, the plain 60 before.
 function passTierShown(xp){ return passSystemsOn()?passTierX(xp):passTierAt(xp); }
-const PASS_OT_MAX=90, PASS_OT_COST=1500;                       // overtime: tiers 61-90, flat cost each
+const PASS_OT_MAX=90, PASS_OT_COST=2000;  /* was 1500 through curve v5 (PASS_OT_OLD) */ const PASS_OT_OLD=1500;                       // overtime: tiers 61-90, flat cost each
 const PASS_STAMP_TIER=30, PASS_MARKS=[70,80,90];               // a season's stamp, and the prestige marks on it
 function passTierX(xp){ const t=passTierAt(xp); if(t<PASS_TIERS) return t;
   return Math.min(PASS_OT_MAX, PASS_TIERS+Math.floor(Math.max(0,xp-passXpForTier(PASS_TIERS))/PASS_OT_COST)); }
@@ -24675,8 +24687,10 @@ function tickBriefs(){
       b.state='done'; b.at=S.evtIndex;
       const rw=b.reward||{};
       if(rw.amt) addFx({k:'skill', skill:b.boost, amt:rw.amt, ev:rw.ev, label:b.brand});
-      // quiet: this brief reports its own payout below, with the amount ACTUALLY paid (multipliers and all)
-      if(rw.coins) try{ b._paid=awardPlayCoins(rw.coins, b.brand+' brief', undefined, true)||rw.coins; }catch(e){ b._paid=rw.coins; }
+      // quiet: this brief reports its own payout below, with the amount ACTUALLY paid (multipliers and all).
+      // PASS_XP_SEASON: a brief is part of a career season, which is repeatable (and settles in a simmed one
+      // too), so it feeds the Track at the season rate. At the full rate briefs were most of a season's XP.
+      if(rw.coins) try{ b._paid=awardPlayCoins(rw.coins, b.brand+' brief', PASS_XP_SEASON, true)||rw.coins; }catch(e){ b._paid=rw.coins; }
       S.season.briefsDone=S.season.briefsDone||{};
       S.season.briefsDone[b.slot]=(S.season.briefsDone[b.slot]||0)+1;
       try{ careerStory().feed.unshift({year:S.year||1, evt:'Sponsor', text:`Delivered on a ${b.brand} brief`}); }catch(e){}
@@ -26739,7 +26753,7 @@ const NEWS_ENTRIES=[
    blurb:'Seven new pieces: a Reaper Hood, Mummy Wrap, the Eyeball, Coffin Clubs, Cauldron Smoke, Bone Cleats and a Graveyard card. A new step at 10 pieces pays 5,000 coins.',
    where:'The Haunted Links page and the Pro Shop.'},
   {id:'s2-steady', date:NEWS_DATE5, cat:'tour', icon:'📅', title:'A steadier Tour Pass',
-   blurb:'Tiers now cost about the same all season, so one strong season is about a tier. Pass XP from play is cut in half. Daily rounds past your third each day pay coins but no Pass XP.',
+   blurb:'Tiers cost much more now, so a decent season is most of a tier early on and under a third of one late. Pass XP from play is cut in half. Daily rounds past your third each day pay coins but no Pass XP.',
    where:'The Tour Pass.'},
   {id:'s2-dress', date:NEWS_DATE5, cat:'tour', icon:'🍂', title:'The pass dresses for the season',
    blurb:'Bats and pumpkins through October. Falling leaves in November.',
