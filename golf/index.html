@@ -59,6 +59,8 @@
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
+<!-- The Putting Green: a tester preview. It draws nothing until puttOn() opens it (see PUTT_TESTERS). -->
+<script defer src="putt/putt.js?v=1"></script>
 <!-- Google Consent Mode v2 defaults. Advertising storage is denied until the certified CMP (loaded by
      the AdSense tag below) records the user's choice; the CMP then updates these signals automatically,
      including tightening analytics where local law requires it. Analytics storage defaults to granted so
@@ -1247,6 +1249,7 @@ window.GA_ID='G-L29P5MRWKE';
   .gcard:active{transform:translateY(1px)}
   .gc-blue{background:linear-gradient(158deg,#5f90f2,#3a63c8 60%,#3053b4); color:#f1f6ff; --chip:rgba(4,12,30,.3)}
   .gc-teal{background:linear-gradient(158deg,#20bda9,#0a877a 60%,#07736a); color:#eafff9; --chip:rgba(2,20,16,.28)}
+  .gc-putt{background:radial-gradient(80% 120% at 100% 0%,rgba(241,208,74,.28),transparent 60%),linear-gradient(158deg,#2f8a4a,#145a30 60%,#0c3d21); color:#f2fff6; --chip:rgba(0,0,0,.3); border:1px solid rgba(241,208,74,.4)}
   .gc-amber{background:linear-gradient(158deg,#f6c463,#ec9a25 60%,#df7d1c); color:#24170a; --chip:rgba(20,14,6,.15)}
   .gc-purple{background:linear-gradient(158deg,#b07ef0,#8149cf 58%,#6d38bd); color:#f5edff; --chip:rgba(24,8,42,.32)}
   .gc-gold{background:var(--gold-grad-d); color:#24170a; --chip:rgba(20,14,6,.16)}
@@ -14730,6 +14733,7 @@ function homeModeList(){
   else                    list.push({id:'career', act:true,  pri:3, make:()=>careerHeroCard(true)});
   list.push({id:'online', act:true, pri:4, make:(o)=>onlineModeCard(o)});
   if(passEnabled())       list.push({id:'pass', act:true, pri:9, hero:false, make:()=>tourPassCard()});
+  try{ if(puttOn()) list.push({id:'putt', act:true, pri:9, hero:false, make:()=>puttCard()}); }catch(e){}
   try{ if(hlLive()) list.push({id:'haunted', act:true, pri:9, hero:false, make:()=>hauntedCard()}); }catch(e){}
   try{ if(wcLive()) list.push({id:'winter', act:true, pri:9, hero:false, make:()=>winterCard()}); }catch(e){}
   if(spotlightLiveToday()){ let sact=true; try{ sact=spotAttemptsLeft(monthlySpotlight(todayKey()).mk)>0; }catch(e){}
@@ -21888,6 +21892,39 @@ function cutscenesOn(){
     if(localStorage.getItem('bag_cs_force')==='1') return true;   // local override, used by the tests
     return sbSignedIn() && CS_TESTERS.indexOf((sbUsername||'').toLowerCase())>=0;
   }catch(e){ return false; }
+}
+/* ---- THE PUTTING GREEN (golf/putt/putt.js): a game you PLAY, on the real greens and on themed
+   mini-golf courses. NOT LAUNCHED. The door is drawn for the tester accounts and nobody else, by
+   the same server-attributed username the cutscene gate reads; there is deliberately no local
+   override, because a localStorage flag is a switch any visitor can flip from the console.
+   To LAUNCH: set PUTT_LIVE to true. The module draws nothing until it is opened, so the script tag
+   costs everybody else one cached download and no screen. -------------------------------------- */
+var PUTT_LIVE=false;
+const PUTT_API=1;                                         // the putt.js API this page was written against
+var PUTT_TESTERS=['csel8','runnyj','malikwillislover'];      // tester accounts (lowercased usernames)
+function puttOn(){
+  try{
+    if(!(window.RTT_PUTT && window.RTT_PUTT.API_VERSION===PUTT_API)) return false;   // a blocked or stale module draws no door
+    if(PUTT_LIVE) return true;
+    return sbSignedIn() && PUTT_TESTERS.indexOf((sbUsername||'').toLowerCase())>=0;
+  }catch(e){ return false; }
+}
+// everything the module reads off the game, so the greens are the game's own greens
+function puttHost(){
+  return { courses:DAILY_COURSES, keys:DAILY_KEYS, dHash:dHash, hvGeom:hvGeom, hvBiome:hvBiome,
+    todayKey:todayKey, dailyCourseKey:dailyCourseKey,
+    sfx:function(n){ try{ sfx(n); }catch(e){} }, buzz:function(p){ try{ buzz(p); }catch(e){} },
+    golfer:function(){ return pxGolferCanvas(S.look,{noBall:true}); },
+    onClose:function(){ try{ render(); }catch(e){} } };
+}
+function openPutt(){ if(!puttOn()) return; try{ track('putt_open'); }catch(e){} window.RTT_PUTT.open(puttHost()); }
+function puttCard(){
+  const c=$(`<button class="gcard gc-putt" aria-label="Putting Green, tester preview">
+    <div class="gc-top"><div style="min-width:0"><div class="gc-kick">⛳ Tester preview</div><div class="gc-title">Putting Green</div></div><span class="gc-badge">TEST</span></div>
+    <div class="gc-mid">Putt the real greens yourself, or play today's themed mini golf hole.</div>
+    <div class="gc-row"><span class="gc-go">Play ▸</span></div></button>`);
+  c.onclick=openPutt;
+  return c;
 }
 // The invented press. Nothing here is a real outlet or a real person.
 var CS_OUTLETS={

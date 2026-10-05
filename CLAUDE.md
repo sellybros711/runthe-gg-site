@@ -19097,6 +19097,33 @@ song a curator wrote up, and nothing else. `data_drift.mjs` enforces that,
 failing any refresh where a derived value moved for a song whose own history
 did not.
 
+## The Putting Green, a Run The Tour tester preview
+
+```
+node golf/putt/check-putt.mjs             physics, the real greens, every themed hole, 21 dailies, the page
+node golf/putt/check-putt.mjs --quick     physics, the real greens and the page
+```
+
+`golf/putt/putt.js` is a game you PLAY inside Run The Tour: Tour Greens (nine putts on a course's
+real greens), a themed Daily Hole and eight themed nine-hole mini golf courses. `golf/putt/DESIGN.md`
+is the analysis of the mini golf games it learns from and what is still to do.
+
+**IT IS NOT LAUNCHED.** The home card is drawn by `puttOn()` in `golf/index.html` for the
+`PUTT_TESTERS` usernames and nobody else, read off the server-attributed `sbUsername`. There is no
+localStorage override, on purpose: a flag in the browser is a switch any visitor can flip. Setting
+`PUTT_LIVE` to true is the launch. The module loads for everybody (`putt/putt.js?v=`, so the
+cachebust check holds it) and draws nothing until `open()`.
+
+**The greens are the game's own.** `fromHost()` reads `hvGeom` (size, outline, pins, bunkers,
+water), `hvBiome` (colours) and the fictional venue name through `puttHost()`. Slope is built per
+course from `fit.put` and the green words in its blurb. Never put a real course name on screen.
+
+**The physics decides, and the checker plays it.** Stimp is a deceleration, slope is 5/7 g sin,
+and the cup catches a ball that falls far enough before its centre leaves the hole. Every themed
+hole and every daily the check walks is solved to par by a search, and no shot may leave the course
+or roll for ever. The first run found a ball resting on a rail being called out, because the
+material grid is a quarter foot: OUT is only believed once the exact polygon agrees.
+
 ## The release newsletter
 
 ```
