@@ -38,6 +38,7 @@ const PROBE = ROOT + '/golf/__test_pass.html';
 let bad = 0;
 const ok = (n, p, x) => { if (!p) bad++;
   console.log((p ? '  ok   ' : ' FAIL  ') + n + (x !== undefined ? '   ' + JSON.stringify(x).slice(0, 260) : '')); };
+const V4 = (t) => { let x = 0; for (let i = 1; i <= t; i++) x += 95 + 2 * (i - 1) + 0.38 * (i - 1) * (i - 1); return Math.round(x); }, V4_60 = V4(60);
 const head = (t) => console.log('\n' + t + '\n' + '-'.repeat(t.length));
 
 const HOOK = `
@@ -120,9 +121,7 @@ window.__P = {
   otherCard(code){ var d=document.createElement('div'); d.innerHTML=playerCardHTML({self:false, uid:'x', name:'Other', look:Object.assign({},DEFLOOK,{stamps:code}), rep:'Amateur'}); var st=d.querySelector('.pcstamps'); return st?st.textContent:null; },
   event(){ return {now:(passEventNow()||{}).id||null, mult:passEventMult(), soon:(passEventSoon(3)||{e:{}}).e.id||null, line:passEventLine().replace(/<[^>]+>/g,''), chip:passEventChip().replace(/<[^>]+>/g,'')}; },
   addXp(n, boost){ try{ var w=wheelState(); w.boostUntil=boost?Date.now()+600000:0; wheelSave(w); }catch(e){}
-    // the season pace (check-pass-pace.mjs) is not this file's subject: give the award room under it, or a
-    // day-1 test that adds a dozen tiers would see them banked rather than on the track
-    var s=passState(), before=s.xp; s.grand=Math.max(+s.grand||0, before+n*8); passSave(s);
+    var before=passState().xp;
     passAddXp(n); var after=passState().xp; S._passPop=null; return after-before; },
   eventNote(){ var got=[]; var t0=window.toast; window.toast=function(h){ got.push(String(h).replace(/<[^>]+>/g,' ')); };
     try{ Object.keys(localStorage).forEach(function(k){ if(k.indexOf('bag_passev_')>=0) localStorage.removeItem(k); }); }catch(e){}
@@ -385,12 +384,20 @@ try {
   await E('histReset');
   SS = await E('staleSeason', 1, 20);
   ok('tier 20 in Season 1 is recorded and earns nothing', SS.hist['1'] === 20 && (await E('stamps')).list.length === 0, SS.hist);
-  H = await E('histFrom', { season: 1, xp: await E('xpAt', 72), curveV: 4 });
+  H = await E('histFrom', { season: 1, xp: await E('xpAt', 72), curveV: 5 });
   ok('a Season 1 track arriving from the cloud counts too, overtime included', H['1'] === 72, H);
   H = await E('histFrom', { season: 1, xp: 10, curveV: 4 });
   ok('a smaller one never lowers it', H['1'] === 72, H);
   ok('the merge keeps each season\'s best and drops junk', JSON.stringify(await E('mergeHist', { 1: 35, 2: 10 }, { 1: 20, 2: 44, x: 5, 3: 400 })) === JSON.stringify({ 1: 35, 2: 44, 3: 90 }), await E('mergeHist', { 1: 35, 2: 10 }, { 1: 20, 2: 44, x: 5, 3: 400 }));
   ok('Season 1 at 72 shows one mark', (await E('card')) === 'S1★', await E('card'));
+  // a real Season 1 track in the cloud is on the v4 curve, and its overtime has to survive the v5 conversion
+  await E('histReset');
+  H = await E('histFrom', { season: 1, xp: V4_60 + 12 * 1500, curveV: 4 });
+  ok('a v4 Season 1 track at overtime tier 72 still reads 72 on v5', H['1'] === 72, H);
+  await E('histReset');
+  H = await E('histFrom', { season: 1, xp: V4(35) + 20, curveV: 4 });
+  ok('a v4 Season 1 track at tier 35 still reads 35 on v5', H['1'] === 35, H);
+  await E('histFrom', { season: 1, xp: V4_60 + 12 * 1500, curveV: 4 });
   ok('another player\'s stamps come off their look', (await E('otherCard', '1:35,2:90')) === 'S1S2★★★', await E('otherCard', '1:35,2:90'));
   ok('a garbled look shows nothing rather than breaking the card', (await E('otherCard', 'nonsense')) === null);
 
@@ -529,7 +536,7 @@ try {
   ok('a season marked as having Pro settles both lanes at once, skipping what was claimed', ST2.paid['1'] === 14 && !ST2.ledger['1'].free.includes(3) && ST2.ledger['1'].prem.length === 7, ST2);
   // a device that never saw Season 1 locally: its track arrives from the cloud
   await E('settleReset');
-  AR = await E('archiveFrom', { season: 1, xp: await E('xpAt', 12), curveV: 4, claimed: { free: [1], prem: [] } });
+  AR = await E('archiveFrom', { season: 1, xp: V4(12) + 5, curveV: 4, claimed: { free: [1], prem: [] } });
   ok('a Season 1 track that arrives in a cloud pull is archived too', AR['1'] && (await E('settle')).paid['1'] === 11);
   ok('an in-progress season is never archived', !(await E('archiveFrom', { season: 2, xp: 999, curveV: 4 }))['2']);
   const MA = await E('mergeArchive', { 1: { season: 1, xp: 100, pro: false, curveV: 4, claimed: { free: [1, 2], prem: [] } } }, { 1: { season: 1, xp: 300, pro: true, curveV: 4, claimed: { free: [3], prem: [1] } } });
