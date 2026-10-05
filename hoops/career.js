@@ -4515,7 +4515,7 @@ function trainingCard(L) {
   return {
     id: 'training', kind: 'event', key: 'training', scene: 'The off-season',
     eyebrow: 'Summer of ' + (L.year - 1), title: 'Where are you spending the summer?',
-    text: 'You\'re ' + L.age + '. Overall ' + ovT(L, ovrOf(L)) + '. Health ' + L.m.health + '.',
+    text: 'You\'re ' + L.age + ', and ' + bodyFeel(L) + '.',
     options: [
       { label: 'Live in the shooting gym', hint: 'Shooting, plus some IQ' },
       { label: 'Hit the weight room', hint: 'Athleticism, finishing, rebounding' },
@@ -4543,6 +4543,8 @@ const TRAIN = [
    points before the age and luck scaling), so the balance bands do not move.
    Picking the same program three summers running pays less, and says so. */
 const BIGS = { PF: 1, C: 1 };
+/* How the body feels, said rather than printed: the meter is on the card. */
+const bodyFeel = (L) => L.m.health >= 85 ? 'your body feels great' : L.m.health >= 60 ? 'your body feels fine' : L.m.health >= 35 ? 'your body is still sore' : 'your body needs a real break';
 const SUMMER = {
   shoot: { l: 'Live in the shooting gym', h: 'Shooting, plus some IQ', fx: { sho: 2, iq: 1 },
     s: ['Five hundred makes a day. The form\'s yours now.', 'A shooting coach rebuilds your release. Weird at first, then right.', 'You chart every shot all summer. The numbers climb.'] },
@@ -4625,7 +4627,7 @@ function summerCard(L) {
   return {
     id: 'training', kind: 'event', key: 'training', scene: 'The off-season',
     eyebrow: 'Summer of ' + (L.year - 1), title: f[0],
-    text: f[1] + ' Overall ' + ovT(L, ovrOf(L)) + '. Health ' + L.m.health + '.',
+    text: f[1] + ' ' + bodyFeel(L)[0].toUpperCase() + bodyFeel(L).slice(1) + '.',
     ctx: { ks },
     options: ks.map((k) => ({ label: SUMMER[k].l, hint: SUMMER[k].h })),
   };
@@ -8360,12 +8362,12 @@ function choose(L, i, extra) {
       const r = rng();
       if (i === 0) {
         const fit = (L.rt.ath + L.rt.sho) / 2;
-        if (r < clamp(0.3 + (fit - 55) * 0.012, 0.15, 0.85)) { L.flags.stock = (L.flags.stock || 0) + 3; text = 'You test off the charts. Your phone blows up.'; tone = 'good'; }
-        else { L.flags.stock = (L.flags.stock || 0) - 2.5; text = 'Average numbers. A few teams cool on you.'; tone = 'bad'; }
+        if (r < clamp(0.3 + (fit - 55) * 0.012, 0.15, 0.85)) { L.flags.stock = (L.flags.stock || 0) + 3; text = 'You test off the charts. By dinner your agent\'s phone won\'t stop.'; tone = 'good'; }
+        else { L.flags.stock = (L.flags.stock || 0) - 2.5; text = 'Nothing jumps off the sheet. A few teams cool on you.'; tone = 'bad'; }
       } else if (i === 1) {
-        if (r < clamp(0.35 + (L.rt.sho - 55) * 0.015, 0.1, 0.9)) { L.flags.stock = (L.flags.stock || 0) + 1.8; text = 'Forty-one of fifty. The room goes quiet.'; tone = 'good'; }
-        else { L.flags.stock = (L.flags.stock || 0) - 1; text = 'Cold day. It happens. It gets noticed.'; tone = 'bad'; }
-      } else { text = 'You stay home. Your stock does not move.'; }
+        if (r < clamp(0.35 + (L.rt.sho - 55) * 0.015, 0.1, 0.9)) { L.flags.stock = (L.flags.stock || 0) + 1.8; text = 'Forty-one of fifty. The scouts stop talking.'; tone = 'good'; }
+        else { L.flags.stock = (L.flags.stock || 0) - 1; text = 'Cold day. It happens, and somebody writes it down.'; tone = 'bad'; }
+      } else { text = 'You stay home. Your stock doesn\'t move.'; }
       L.pending.unshift(workoutCard(L));
       if (storyOn(L)) queueEvents(L, 'predraft', 1 + (rng() < 0.4 ? 1 : 0));
       break;
@@ -8376,9 +8378,9 @@ function choose(L, i, extra) {
       const proj = projectedPick(L);
       if (theirs < proj - 4) {
         if (rng() < 0.45) { L.flags.stock = (L.flags.stock || 0) + 2; L.flags.promise = { club: c, slot: theirs }; text = 'You blow them away. They promise to take you at ' + ordinal(theirs) + '.'; tone = 'gold'; }
-        else { text = 'Good workout. They want somebody else at ' + ordinal(theirs) + '.'; }
+        else { text = 'Good workout, but they\'ve got somebody else in mind at ' + ordinal(theirs) + '.'; }
       } else {
-        L.flags.promise = { club: c, slot: theirs }; text = 'They love you. Promise made: if you are there, you are theirs.'; tone = 'good';
+        L.flags.promise = { club: c, slot: theirs }; text = 'They love you. If you\'re still there, you\'re theirs.'; tone = 'good';
       }
       L.pending.unshift(agentCard(L));
       break;
@@ -8398,7 +8400,7 @@ function choose(L, i, extra) {
           L.flags.overseas = (L.flags.overseas || 0) + 1;
           L.contract = { years: 1, total: 1, salary: 0.8, kind: 'overseas', start: L.year };
           L.phase = 'drafted';
-          text = 'A one-year deal in Europe. Real money. Real minutes.';
+          text = 'A one-year deal in Europe. Real money, real minutes.';
           logIt(L, 'Signed overseas after going undrafted.', '');
           break;
         }
@@ -8424,7 +8426,7 @@ function choose(L, i, extra) {
       if (card.ctx && card.ctx.story) L.contract.tw = 1;
       joinTeam(L, opt.club, false);
       L.draft = { pick: null, round: null, team: opt.club };
-      text = L.contract.tw ? 'Two-way deal with the ' + E.teamName(opt.club) + '. Most nights you are in the G League. Prove it.'
+      text = L.contract.tw ? 'Two-way deal with the ' + E.teamName(opt.club) + '. Most nights you\'ll be in the G League. Prove you belong.'
         : 'Two-way deal with the ' + E.teamName(opt.club) + '. Prove it.'; tone = 'good';
       logIt(L, text, 'good');
       L.phase = 'drafted';
@@ -8439,8 +8441,8 @@ function choose(L, i, extra) {
         const d = {};
         for (const k in t) d[k] = Math.round(t[k] * young * (0.7 + rng() * 0.6));
         bump(L, d);
-        text = 'A good summer. It shows in the first week of camp.'; tone = 'good';
-      } else { bump(L, { health: 18 }); L.flags.restYears = (L.flags.restYears || 0) + 1; text = 'Fully rested. You feel twenty-two.'; tone = 'good'; }
+        text = 'A good summer. It shows the first week of camp.'; tone = 'good';
+      } else { bump(L, { health: 18 }); L.flags.restYears = (L.flags.restYears || 0) + 1; text = 'You actually rest. You feel twenty-two again.'; tone = 'good'; }
       break;
     }
     case 'injury': {
@@ -8449,15 +8451,15 @@ function choose(L, i, extra) {
       if (inj) {
         if (card.ctx.major && storyOn(L)) remember(L, 'inj.major', L.age);
         if (card.ctx.major) {
-          if (i === 0) { inj.until = inj.from + g; bump(L, { ath: -2, health: -8 }); text = 'Surgery goes well. The rehab is long.'; }
+          if (i === 0) { inj.until = inj.from + g; bump(L, { ath: -2, health: -8 }); text = 'The surgery goes well. Now comes the long part.'; }
           else if (i === 1) {
-            if (rng() < 0.55) { inj.until = inj.from + Math.round(g * 0.6); bump(L, { health: -6 }); text = 'Back early. It holds.'; tone = 'good'; }
-            else { inj.until = inj.from + Math.round(g * 1.3); bump(L, { ath: -4, health: -14, dur: -6 }); text = 'It does not hold. Now you need the surgery anyway.'; tone = 'bad'; }
-          } else { bump(L, { cash: -Math.min(0.6, L.cash * 0.2) }); inj.until = inj.from + Math.round(g * 0.85); bump(L, { ath: -1 }); text = 'The specialist finds a better way. Out a little less.'; tone = 'good'; }
+            if (rng() < 0.55) { inj.until = inj.from + Math.round(g * 0.6); bump(L, { health: -6 }); text = 'You\'re back early, and it holds.'; tone = 'good'; }
+            else { inj.until = inj.from + Math.round(g * 1.3); bump(L, { ath: -4, health: -14, dur: -6 }); text = 'It doesn\'t hold. Now you need the surgery anyway.'; tone = 'bad'; }
+          } else { bump(L, { cash: -Math.min(0.6, L.cash * 0.2) }); inj.until = inj.from + Math.round(g * 0.85); bump(L, { ath: -1 }); text = 'The specialist finds a better plan. You\'re back a little sooner.'; tone = 'good'; }
         } else if (i === 0) {
-          if (rng() < 0.6) { inj.until = inj.from + Math.ceil(g / 2); bump(L, { trust: 4 }); text = 'Back in half the time. Tough.'; tone = 'good'; }
-          else { inj.until = inj.from + g + 6; bump(L, { health: -8 }); text = 'Aggravated it. Out longer.'; tone = 'bad'; }
-        } else { inj.until = inj.from + g; bump(L, { health: 6 }); text = 'You rest it. It heals right.'; }
+          if (rng() < 0.6) { inj.until = inj.from + Math.ceil(g / 2); bump(L, { trust: 4 }); text = 'Back in half the time. Your teammates notice.'; tone = 'good'; }
+          else { inj.until = inj.from + g + 6; bump(L, { health: -8 }); text = 'You make it worse. Now you\'re out longer.'; tone = 'bad'; }
+        } else { inj.until = inj.from + g; bump(L, { health: 6 }); text = 'You give it time. It heals right.'; }
         inj.pendingDecision = false;
         const missed = inj.until - inj.from;
         logIt(L, 'Out ' + missed + ' games with a ' + inj.kind + '.', 'bad');
@@ -8466,14 +8468,14 @@ function choose(L, i, extra) {
     }
     case 'allstar': {
       if (i === 0) {
-        if (rng() < clamp((L.rt.ath - 60) * 0.025, 0.05, 0.85)) { L.flags.dunk = (L.flags.dunk || 0) + 1; bump(L, { fame: 10 }); text = 'You jump over a car. Dunk contest champion.'; tone = 'gold'; }
-        else { bump(L, { fame: 2 }); text = 'Two misses on your best dunk. The judges are kind.'; }
+        if (rng() < clamp((L.rt.ath - 60) * 0.025, 0.05, 0.85)) { L.flags.dunk = (L.flags.dunk || 0) + 1; bump(L, { fame: 10 }); text = 'You jump over a car. The building loses it. Dunk champ.'; tone = 'gold'; }
+        else { bump(L, { fame: 2 }); text = 'You miss your best dunk twice. The judges are kind.'; }
         contest = contestField(L, 'dunk', tone === 'gold');
       } else if (i === 1) {
-        if (rng() < clamp((L.rt.sho - 65) * 0.025, 0.05, 0.85)) { L.flags.threes = (L.flags.threes || 0) + 1; bump(L, { fame: 8 }); text = 'The money ball rack. Three-point champion.'; tone = 'gold'; }
-        else { bump(L, { fame: 2 }); text = 'Out in the first round. You laugh it off.'; }
+        if (rng() < clamp((L.rt.sho - 65) * 0.025, 0.05, 0.85)) { L.flags.threes = (L.flags.threes || 0) + 1; bump(L, { fame: 8 }); text = 'You drain the whole money-ball rack. Three-point champ.'; tone = 'gold'; }
+        else { bump(L, { fame: 2 }); text = 'Out in the first round. You laugh it off with the guys.'; }
         contest = contestField(L, 'three', tone === 'gold');
-      } else { bump(L, { health: 6 }); text = 'Sunday only. Fresh for the second half.'; }
+      } else { bump(L, { health: 6 }); text = 'You skip Saturday. Fresh legs for the second half.'; }
       logIt(L, text, tone);
       // the field is display, so a career from before it keeps its log as it was
       if (contest && storyOn(L)) logIt(L, contestLine(contest), tone);
@@ -8485,8 +8487,8 @@ function choose(L, i, extra) {
       made = rng() < touched(o.p, touch);
       cur.waiting = false;
       cur.games.push(made ? 1 : 0);
-      if (made) { cur.w = 4; L.flags.g7 = (L.flags.g7 || 0) + 1; clutchHit(L, beats); if (storyOn(L)) remember(L, 'g7.made', true); bump(L, { fame: 10, morale: 10 }); text = 'Good! Series over. You will be watching that one for the rest of your life.'; tone = 'gold'; }
-      else { cur.l = 4; bump(L, { morale: -10 }); text = 'No good. The building goes silent.'; tone = 'bad'; }
+      if (made) { cur.w = 4; L.flags.g7 = (L.flags.g7 || 0) + 1; clutchHit(L, beats); if (storyOn(L)) remember(L, 'g7.made', true); bump(L, { fame: 10, morale: 10 }); text = 'Good! Series over. You\'ll be watching that one for the rest of your life.'; tone = 'gold'; }
+      else { cur.l = 4; bump(L, { morale: -10 }); text = 'No good. The whole building goes quiet.'; tone = 'bad'; }
       logIt(L, 'Game 7 against the ' + nick(cur.opp) + ': ' + (made ? 'hit the winner.' : 'missed the last shot.'), made ? 'gold' : 'bad');
       endSeries(L, beats);
       break;
@@ -8503,7 +8505,7 @@ function choose(L, i, extra) {
         text = 'Signed. ' + yrs + ' years, ' + money(card.ctx.sal) + ' a year.'; tone = 'gold';
         logIt(L, 'Signed an extension: ' + yrs + ' years, ' + money(card.ctx.sal) + ' a year.', 'gold');
         bump(L, { morale: 6, trust: 6 });
-      } else { text = 'You bet on yourself.'; bump(L, { fame: 2 }); }
+      } else { text = 'You bet on yourself. Next summer, the price goes up.'; bump(L, { fame: 2 }); }
       break;
     }
     case 'fa': {
@@ -8523,7 +8525,7 @@ function choose(L, i, extra) {
         L.final = legacy(L);
         L.final.path = path;
         L.final.after = AFTER_PATHS.find((p) => p[0] === path)[1] + '.';
-        text = 'A new chapter.'; tone = 'gold';
+        text = 'New city, new chapter.'; tone = 'gold';
         if (!dealNamed(L, 'post', 'ep_' + path)) finishLife(L, '');
         break;
       }
@@ -8537,7 +8539,7 @@ function choose(L, i, extra) {
     }
     case 'retire': {
       if (i === 1) { L.pending = []; retire(L, beats); text = 'You walk away.'; tone = 'gold'; }
-      else { text = 'One more.'; bump(L, { morale: 3 }); }
+      else { text = 'One more year. Let\'s go.'; bump(L, { morale: 3 }); }
       break;
     }
     case 'nooffer': {
@@ -8547,17 +8549,17 @@ function choose(L, i, extra) {
         if (storyOn(L) && L.history.length && !recall(L, 'route.detour.left')) remember(L, 'route.detour.left', true);
         L.team = null;
         L.contract = { years: 1, total: 1, salary: 0.8, kind: 'overseas', start: L.year + 1 };
-        text = 'A year in Europe. Big minutes. A second chance.';
+        text = 'A year in Europe. Big minutes and a second chance.';
         logIt(L, 'Signed overseas for a year.', '');
       }
       break;
     }
-    case 'goal': L.season.goal = card.ctx.ks[i]; L.season.goalWho = card.ctx.who || null; text = pick(rng, ['Locked in. April will tell.', 'Said out loud. No taking it back.', 'Written down. Now go get it.']); break;
+    case 'goal': L.season.goal = card.ctx.ks[i]; L.season.goalWho = card.ctx.who || null; text = pick(rng, ['Locked in. April will tell.', 'You said it out loud. No taking it back.', 'It\'s written down. Now go get it.']); break;
     case 'deadline': text = chooseDeadline(L, card, i, rng); tone = L.team !== card.ctx.from ? 'gold' : ''; break;
     case 'coach_talk': text = chooseCoachTalk(L, card, i, rng); break;
     case 'coach_review': text = chooseCoachReview(L, i, rng); break;
     case 'nickname':
-      if (i === 0) { L.nick = card.ctx.nm; logIt(L, 'They call you ' + L.nick + '.', 'gold'); feed(L, 'nick', L.name + ' has a name now: ' + L.nick + '.'); text = 'It sticks. Kids at camp call you it.'; tone = 'gold'; }
+      if (i === 0) { L.nick = card.ctx.nm; logIt(L, 'They call you ' + L.nick + '.', 'gold'); feed(L, 'nick', L.name + ' has a name now: ' + L.nick + '.'); text = 'It sticks. By summer, kids at camp are calling you it.'; tone = 'gold'; }
       else { text = 'They mostly drop it.'; }
       break;
     case 'build_sig': case 'build_arch': case 'build_pos':
