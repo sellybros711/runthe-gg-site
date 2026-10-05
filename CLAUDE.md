@@ -12018,7 +12018,7 @@ foreshortened toward the camera, not an arm held out sideways.
 
 **THE PLAYABLE MOMENT IS A TOUCH, AND THE ENGINE STILL ROLLS.** The meter turns a
 press into a number from -1 to 1 and `C.choose(L, i, { touch })` moves that
-shot's odds by at most `TOUCH` (0.12), with the card's own seeded draw. So a
+shot's odds by at most `TOUCH` (0.12, or `TOUCH_DUEL` 0.2 on a duel career), with the card's own seeded draw. So a
 perfect release can rim out, a better release can only turn a miss into a make
 (section 2 answers the same card at -1, 0 and 1 from clones), and a touch of
 nought is the card it always was, byte for byte (section 1). Scenes off passes
@@ -12031,12 +12031,76 @@ for. A moment changes no record (the stretch is already played); it moves fame,
 morale and a count in `L.flags`. A card needs two options, so free throws have
 a second (let them ice you).
 
-**ONLY THE INVENTED ARE DRAWN, AND THE COURT KEEPS IT.** You, your rival and the
-commissioner (generated) are drawn. The man you guard on a stop is a real
-opponent, so he is the rig's outline filled flat in his club's colour: a shadow
-with no face. The tale of the tape compares you with your rival, never a real
-player. The score bug shows teams and the clock and no score, because the
-engine settles a game on odds, not points.
+**ONLY THE INVENTED ARE DRAWN, AND THE COURT KEEPS IT.** You, your rival, the
+commissioner and your invented teammates are drawn as people. Anybody on a real
+roster (the man you guard, the closeout, the big you dunk on) is the same 3D rig
+in his club's kit with `faceless` set in `B.paint`: a bald slate head, no face,
+no beard, no band. The rig and the light, nothing that reads as a likeness. The
+tale of the tape compares you with your rival, never a real player. The score
+bug shows teams and the clock and no score, because the engine settles a game on
+odds, not points; on a duel career it ends on `Final · W` or `Final · L`.
+
+#### The rebuild of the court: the game is the team's, the moment is yours
+
+```
+node hoops/check-moments.mjs     section 3b holds the duel rules, 6 plays every moment with repeated presses
+```
+
+Asked for by the owner: the animations and cutscenes were repetitive and a little
+too easy, the decision decided the game, and everything should be in the 3D
+pixel model style.
+
+**A DUEL CAREER** (`L.opt.duel`, set by `newLife` on a story career only, never by
+`migrate`, so the story-off replay stays byte identical) separates the two
+things a moment used to fuse:
+
+| | decided by | moves |
+|---|---|---|
+| the game | the team: a regular-season night is a real game from the stretch's box (`ctx.g`, `ctx.won`), a Game 7 or a tournament tie is the clubs' odds moved by `DUEL_SWING` (0.3) on what you did | the record, the series |
+| the moment | you: the shot, the read, who you trusted | fame, morale, coach trust, a teammate's relationship, memory |
+
+So a made shot can lose (they answer at the horn) and a miss can win (an
+invented teammate, named on the card as `ctx.mate`, tips it in), and the text
+(`DUEL_TEXT`, `G7_TEXT`, `AM_TEXT`) and the scenes (`g7_make_lost`,
+`g7_miss_won`) say both. **A buzzer shot only counts as a winner** (the flag,
+`clutchHit`) when the game was won.
+
+**THE DEFENSE SHOWS A LOOK** on Game 7 and a tournament tie (`LOOKS`: drop,
+switch, chase, double). The card's text and the analyst say it, the court draws
+it, and one of the four plays beats it (`READ_GOOD` +0.12) while one plays into
+it (`READ_BAD` -0.08). Reading it right earns the coach's trust whatever the
+result. check-moments asserts reading the look pays.
+
+**THE COURT (court.js API 2) HAS TWO KINDS OF PRESS:**
+
+- **The meter** for a shot: a pendulum, slowest at the ends and fastest through
+  the green, with a gold core (`touchOf`: core 1, green edge 0.5, -1 at the far
+  end). The green is narrower (`zoneFor` 0.035 to 0.115) and drifts with nerves
+  (low morale raises them, the clutch trait lowers them). A step-back, a
+  fadeaway and a heave swing faster; a catch-and-shoot is easier. A drive is two
+  presses (the gather, then the rise), and two free throws are two presses
+  handed over as `{ touches }`, each shot reported back in `res.shots`.
+- **The read** for a stop, a chase-down and a pass (`reactTouch`): press when he
+  really goes. Jabs and hesitations are fakes and pressing on one is biting
+  (-0.8). The lamp lights 160ms AFTER the real move, so reading the court beats
+  reacting to the lamp. A rating buys a little time, never the read.
+
+Every press shows how it went (Perfect, Good, Early, Late, Bit on the fake).
+
+**VARIETY IS SEEDED** off the card's key and the option (`spec.seed`), so a moment
+shown twice is the same picture: jumpers are a pull-up, a catch-and-shoot, a
+step-back, a fadeaway or a heave from the logo; a closeout contests late on a
+good release; drives are a dunk, a layup or a poster that knocks the big down;
+five celebrations and three ways to hurt; a road game is played in the other
+building's colours; a made shot under pressure is replayed slower between
+letterbox bars; the booth's lines are pools (`CALLS`, `INTRO`).
+
+**EVERYTHING IS THE 3D STYLE.** `B.prop` sphere traces the ball (four spin frames),
+the rim (two halves, so the ball drops between them), a trophy, a podium and a
+ring box with the player's ramps and outline. The court floor is painted per
+size in court.js (`courtFloor`): boards on the wood ramp, the lane under the
+rim in the home colour, the lines in perspective, the back in shadow, a pool of
+light where the play is and a faint reflection of whoever stands on it.
 
 **THE TICKER IS THE ENGINE'S GAMES.** `playChunk` writes `L.season.box`, one row
 a game (opponent, home, result, your line), drawing nothing from the rng, so

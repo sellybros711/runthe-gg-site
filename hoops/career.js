@@ -1349,6 +1349,10 @@ function newLife(opts) {
     mem: {}, people: {}, traits: rollTraits(seed), opt: { legend: o.legend !== false, moments: o.moments !== false },
   };
   if (o.story !== false) L.opt.story = STORY_VERSION;
+  /* A DUEL CAREER: the game is the team's and the moment is yours (see
+     duelOn). Only a story career gets it, so the story-off replay of 1,000
+     careers stays byte identical, and migrate never sets it. */
+  if (o.story !== false && o.duel !== false) L.opt.duel = 1;
   /* Last season's lines, for the rotation screen and the Saturday contests. */
   if (L.opt.story && league.lines) L.league.lines = league.lines;
   /* The season the rosters are real for, and who coaches each club then. A
@@ -2606,6 +2610,22 @@ const MOMENTS = {
       { label: 'Send the double team', hint: 'Make someone else beat you', p: 0.5 },
     ] },
 };
+/* A DUEL CAREER separates the two things a moment used to fuse. THE GAME IS
+   THE TEAM'S: a regular season night is a real game out of the stretch the
+   engine already played, so its result is the box score's, and a Game 7 is
+   decided by the two clubs' odds, moved by what you did with the last
+   possession rather than settled by it. THE MOMENT IS YOURS: whether the shot
+   went down, whether you read the defense, who you trusted with the ball, and
+   that is what moves fame, morale, your coach and your teammates. So a made
+   shot can still lose, a miss can still win, and the screen says both.
+
+   Only careers started with it (L.opt.duel, set by newLife on a story
+   career). A save from before plays the cards the way its engine did. */
+const duelOn = (L) => !!(L.opt && L.opt.duel);
+const DUEL_SWING = 0.3;
+/* The night's teammate: invented, named when the card is dealt, so the man
+   who saves you is the man the card promised. */
+function duelMate(L, tag) { const m = lockerOf(L); return m[Math.floor(rngAt(L, 'mate:' + tag)() * m.length)].n; }
 function queueMoment(L, chunk) {
   if (!L.opt || !L.opt.moments || !L.season || !L.team) return;
   const s = L.season, role = s.role || roleOf(L);
@@ -2615,33 +2635,85 @@ function queueMoment(L, chunk) {
   if (rng() >= MOMENT_P) return;
   const id = weighted(rng, Object.keys(MOMENTS), (k) => MOMENTS[k].w(L));
   if (!id) return;
-  const m = MOMENTS[id], opp = CLUBS.filter((c) => c !== L.team)[Math.floor(rng() * (CLUBS.length - 1))];
+  const m = MOMENTS[id];
+  let opp = CLUBS.filter((c) => c !== L.team)[Math.floor(rng() * (CLUBS.length - 1))];
   const opts = m.opts(L);
+  const ctx = { m: id, opp, plays: opts.map((o) => o.play || null) };
+  /* A duel night is one of the games you played in this stretch, so the
+     opponent and the result are that game's. Drawn on its own stream: the
+     card's own draws are untouched. */
+  if (duelOn(L) && s.box && s.box.length) {
+    const mine = s.box.filter((r) => r[4] >= 0);
+    if (mine.length) {
+      const row = mine[Math.floor(rngAt(L, 'momgame:' + chunk)() * mine.length)];
+      opp = ctx.opp = row[1]; ctx.won = row[3] ? 1 : 0; ctx.g = row[0]; ctx.home = row[2];
+      ctx.mate = duelMate(L, 'mom:' + chunk);
+    }
+  }
   L.pending.push({
     id: 'moment', kind: 'moment', key: 'moment:' + L.year + ':' + chunk,
-    eyebrow: 'A night against the ' + nick(opp), scene: m.scene, title: m.title, text: m.text(L, nick(opp)),
-    ctx: { m: id, opp, plays: opts.map((o) => o.play || null) },
+    eyebrow: (ctx.g ? 'Game ' + ctx.g + ' · ' : 'A night against the ') + (ctx.g ? (ctx.home ? 'vs ' : 'at ') : '') + nick(opp), scene: m.scene, title: m.title, text: m.text(L, nick(opp)),
+    ctx,
     options: opts.map((o) => ({ label: o.label, hint: o.hint })),
   });
 }
-function momentResolve(L, card, i, rng, touch) {
+/* What a duel night says, by what you did and how the game went. The made
+   key is the shot (or the stop) and W or L is the box score. */
+const DUEL_TEXT = {
+  buzzer: { MW: 'At the horn! The bench empties onto the floor.', ML: 'You hit it to force overtime. They pull away in the extra five.',
+    mW: 'Off the back iron. {mate} carries you in overtime.', mL: 'Off the back iron. That\'s the ballgame.' },
+  kick: { MW: 'You draw two and find {mate}. Splash. Ballgame.', ML: 'You find {mate}. He buries it. They still win in overtime.',
+    mW: 'The kick-out sails. You win it in overtime anyway.', mL: 'The kick-out sails. Ballgame for them.' },
+  ft: { 2: { W: 'Two for two. Ice.', L: 'Two for two. Then they score at the horn.' },
+    1: { W: 'One of two. You win it in overtime. The miss nags all night.', L: 'One of two. They win it in overtime.' },
+    0: { W: 'Both off the rim. {mate} tips the second one in at the horn.', L: 'Both clank off the rim. The other bench loves it.' } },
+  poster: { MW: 'Right on top of him. That one goes on a wall. A win.', ML: 'Right on top of him. Best moment of a bad night.',
+    mW: 'He holds his ground. Offensive foul. You win anyway.', mL: 'He holds his ground. Offensive foul. A long night.' },
+  layup: { MW: 'Two points. Nobody posts it. A win.', ML: 'Two points. Nobody posts it. A loss.', mW: 'It rolls off. You win anyway.', mL: 'It rolls off. A loss.' },
+  block: { MW: 'Pinned to the glass. He never saw you. A win.', ML: 'Pinned to the glass. It\'s the clip of a loss.',
+    mW: 'A step late. And one. You win anyway.', mL: 'A step late. And one. A loss.' },
+  letgo: { W: 'Two points for them. Nobody notices. A win.', L: 'Two points for them. Nobody notices. A loss.' },
+  stop: { MW: 'You stay in front. He misses at the horn. Ballgame.', ML: 'You force the miss. They tip it in at the horn.',
+    mW: 'He gets to his spot and scores. {mate} answers at the other end. A win.', mL: 'He gets to his spot and buries it.' },
+  double: { MW: 'The double forces it out. They miss. Ballgame.', ML: 'The double forces it out. The open man hits.',
+    mW: 'They find the open man. {mate} answers at the other end.', mL: 'They find the open man. He hits.' },
+};
+function duelLine(L, card, key, made, won) {
+  const t = DUEL_TEXT[key];
+  const raw = typeof made === 'number' ? t[made][won ? 'W' : 'L'] : made == null ? t[won ? 'W' : 'L'] : t[(made ? 'M' : 'm') + (won ? 'W' : 'L')];
+  return raw.replace(/\{mate\}/g, (card.ctx && card.ctx.mate) || 'A teammate');
+}
+function momentResolve(L, card, i, rng, touch, touches) {
   const m = MOMENTS[card.ctx.m], o = m.opts(L)[i], opp = nick(card.ctx.opp);
-  const f = L.flags;
+  const f = L.flags, duel = duelOn(L) && card.ctx.won != null, won = !!card.ctx.won;
+  const mate = card.ctx.mate;
   if (card.ctx.m === 'ft') {
-    const p = touched(o.p, touch);
-    const n = (rng() < p ? 1 : 0) + (rng() < p ? 1 : 0);
+    const p1 = touched(o.p, touches ? touches[0] : touch, L), p2 = touched(o.p, touches ? touches[1] : touch, L);
+    const s1 = rng() < p1, s2 = rng() < p2, n = (s1 ? 1 : 0) + (s2 ? 1 : 0);
+    if (duel) {
+      if (n === 2) { f.ftIce = (f.ftIce || 0) + 1; bump(L, { fame: 3, morale: 6 }); logIt(L, 'Two free throws with the game on them against the ' + opp + '.', 'gold'); }
+      else if (n === 1) bump(L, { morale: -2 });
+      else { bump(L, { morale: -6 }); logIt(L, 'Missed two at the line against the ' + opp + '.', 'bad'); if (won && mate) relate(L, 'tm', 10, 'He bailed you out at the line.', mate); }
+      return { text: duelLine(L, card, 'ft', n, won), tone: n === 2 ? 'gold' : n === 0 ? 'bad' : '', made: n, won, shots: [s1, s2] };
+    }
     if (n === 2) { f.ftIce = (f.ftIce || 0) + 1; bump(L, { fame: 3, morale: 6 }); logIt(L, 'Two free throws to beat the ' + opp + '.', 'gold'); return { text: 'Two for two. Ice.', tone: 'gold', made: 2 }; }
     if (n === 1) { bump(L, { morale: -2 }); return { text: 'One of two. You win it in overtime, but the miss nags all night.', tone: '', made: 1 }; }
     bump(L, { morale: -6 }); logIt(L, 'Missed two at the line against the ' + opp + '.', 'bad');
     return { text: 'Both clank off the rim. The other bench is loving it.', tone: 'bad', made: 0 };
   }
   if (!o.play) {
-    if (card.ctx.m === 'block') return { text: 'Two points for them. Nobody notices.', tone: '', made: false };
+    if (card.ctx.m === 'block') return duel ? { text: duelLine(L, card, 'letgo', null, won), tone: '', made: false, won } : { text: 'Two points for them. Nobody notices.', tone: '', made: false };
     const ok = rng() < o.p;
+    if (duel) {
+      const key = { buzzer: 'kick', poster: 'layup', stop: 'double' }[card.ctx.m];
+      bump(L, ok ? { trust: 2 } : { morale: -1 });
+      if (card.ctx.m === 'buzzer' && mate) relate(L, 'tm', ok ? 10 : 4, ok ? 'You gave him the last shot and he hit it.' : 'You gave him the last shot.', mate);
+      return { text: duelLine(L, card, key, ok, won), tone: ok ? 'good' : '', made: ok, won };
+    }
     bump(L, ok ? { trust: 2 } : { morale: -1 });
     return { text: ok ? 'The right play, and it works.' : "The right play. It just doesn't work.", tone: ok ? 'good' : '', made: ok };
   }
-  const made = rng() < touched(o.p + (card.ctx.m === 'buzzer' ? clutchBonus(L) : 0), touch);
+  const made = rng() < touched(o.p + (card.ctx.m === 'buzzer' ? clutchBonus(L) : 0), touch, L);
   const T = {
     buzzer: made ? ['At the horn! The bench empties onto the floor.', 'buzzer'] : ['Off the back iron. Overtime, and the night slips away.', null],
     poster: made ? ["Right on top of him. That one's going on a wall.", 'posters'] : ['He holds his ground. Offensive foul.', null],
@@ -2649,38 +2721,89 @@ function momentResolve(L, card, i, rng, touch) {
     stop: made ? ['You stay in front. He misses at the horn. Ballgame.', 'stops'] : ['He gets to his spot and buries it.', null],
   }[card.ctx.m];
   if (made) {
-    f[T[1]] = (f[T[1]] || 0) + 1;
-    if (card.ctx.m === 'buzzer') clutchHit(L);
+    /* A shot at the horn only counts as a winner when the game was won. */
+    if (!duel || won || card.ctx.m !== 'buzzer') f[T[1]] = (f[T[1]] || 0) + 1;
+    if (card.ctx.m === 'buzzer' && (!duel || won)) clutchHit(L);
     bump(L, { fame: card.ctx.m === 'buzzer' || card.ctx.m === 'poster' ? 4 : 3, morale: 5 });
-    logIt(L, { buzzer: 'Hit a shot at the horn against the ' + opp + '.', poster: 'Dunked on a ' + opp + ' big.', block: 'A chase-down block against the ' + opp + '.', stop: 'Got the last stop against the ' + opp + '.' }[card.ctx.m], 'gold');
-  } else bump(L, { morale: -3 });
+    logIt(L, { buzzer: duel && !won ? 'Forced overtime at the horn against the ' + opp + '.' : 'Hit a shot at the horn against the ' + opp + '.', poster: 'Dunked on a ' + opp + ' big.', block: 'A chase-down block against the ' + opp + '.', stop: 'Got the last stop against the ' + opp + '.' }[card.ctx.m], 'gold');
+  } else {
+    bump(L, { morale: -3 });
+    if (duel && won && mate && (card.ctx.m === 'buzzer' || card.ctx.m === 'stop')) relate(L, 'tm', 8, 'He saved the night you missed.', mate);
+  }
+  if (duel) return { text: duelLine(L, card, card.ctx.m, made, won), tone: made ? 'gold' : 'bad', made, won };
   return { text: T[0], tone: made ? 'gold' : 'bad', made };
 }
 
 /* GAME 7 IS YOURS. Tied, the ball, the last shot. The odds of each choice come
    off the rating it asks for, so a shooter should shoot and a passer should
    find the open man, and the screen reads the rating in words (feel())
-   rather than printing the odds. */
-function clutchOptions(L) {
+   rather than printing the odds.
+
+   ON A DUEL CAREER THE DEFENSE SHOWS YOU SOMETHING, and reading it is the
+   decision. The look is said in the card's text and drawn on the court, one
+   choice beats it and one plays into it. The ratings still matter, so a
+   shooter facing a double team has to decide whether he trusts his stroke
+   more than the read. */
+const LOOKS = {
+  drop: { best: 0, worst: 1, t: 'Their big drops back into the paint and waits.' },
+  switch: { best: 1, worst: 2, t: 'They switch their center onto you.' },
+  chase: { best: 2, worst: 0, t: 'Their best defender is glued to you behind the arc.' },
+  double: { best: 3, worst: 1, t: 'They send two at you the moment you catch it.' },
+};
+const LOOK_IDS = Object.keys(LOOKS);
+const READ_GOOD = 0.12, READ_BAD = 0.08;
+function readBonus(look, i) { const k = LOOKS[look]; return !k ? 0 : i === k.best ? READ_GOOD : i === k.worst ? -READ_BAD : 0; }
+function clutchOptions(L, look) {
   const r = L.rt, net = clubNet(L, L.team), cb = clutchBonus(L);
   return [
-    { label: 'Pull up for three', rate: 'sho', p: clamp(0.2 + (r.sho - 50) * 0.0065, 0.12, 0.55) + cb + sigBonus(L, 'sho') },
-    { label: 'Drive to the rim', rate: 'fin', p: clamp(0.26 + ((r.fin + r.ath) / 2 - 50) * 0.0058, 0.15, 0.58) + cb + sigBonus(L, 'fin') },
-    { label: 'Hit the mid-range fadeaway', rate: 'iq', p: clamp(0.25 + ((r.sho + r.iq) / 2 - 50) * 0.0052, 0.15, 0.55) + cb + sigBonus(L, 'iq') },
-    { label: 'Find the open man', rate: 'pla', p: clamp(0.27 + (r.pla - 50) * 0.0045 + net * 0.006, 0.15, 0.55) + cb + sigBonus(L, 'pla') },
+    { label: 'Pull up for three', rate: 'sho', p: clamp(0.2 + (r.sho - 50) * 0.0065, 0.12, 0.55) + cb + sigBonus(L, 'sho') + readBonus(look, 0) },
+    { label: 'Drive to the rim', rate: 'fin', p: clamp(0.26 + ((r.fin + r.ath) / 2 - 50) * 0.0058, 0.15, 0.58) + cb + sigBonus(L, 'fin') + readBonus(look, 1) },
+    { label: 'Hit the mid-range fadeaway', rate: 'iq', p: clamp(0.25 + ((r.sho + r.iq) / 2 - 50) * 0.0052, 0.15, 0.55) + cb + sigBonus(L, 'iq') + readBonus(look, 2) },
+    { label: 'Find the open man', rate: 'pla', p: clamp(0.27 + (r.pla - 50) * 0.0045 + net * 0.006, 0.15, 0.55) + cb + sigBonus(L, 'pla') + readBonus(look, 3) },
   ];
 }
+function defenseLook(L, key) { return duelOn(L) ? LOOK_IDS[Math.floor(rngAt(L, 'look:' + key)() * LOOK_IDS.length)] : null; }
 function clutchCard(L, cur, home) {
-  const opts = clutchOptions(L);
+  const key = 'clutch:' + cur.round;
+  const look = defenseLook(L, key + ':' + L.year);
+  const opts = clutchOptions(L, look);
+  const ctx = { round: cur.round, opp: cur.opp, home };
+  if (look) { ctx.look = look; ctx.mate = duelMate(L, key); }
   return {
-    id: 'clutch', kind: 'clutch', key: 'clutch:' + cur.round,
+    id: 'clutch', kind: 'clutch', key,
     eyebrow: 'Game 7 · ' + ROUNDS[cur.round], scene: 'Game 7', title: "Tied, nine seconds, your ball. What's the play?",
-    text: (home ? "The home crowd's on its feet" : "A road crowd's trying to rattle you") + ' against the ' + nick(cur.opp) + '. Everybody knows who gets it.',
-    ctx: { round: cur.round, opp: cur.opp, home },
+    text: (home ? "The home crowd's on its feet" : "A road crowd's trying to rattle you") + ' against the ' + nick(cur.opp) + '. ' + (look ? LOOKS[look].t : 'Everybody knows who gets it.'),
+    ctx,
     options: opts.map((o) => ({ label: o.label, hint: feel(L.rt[o.rate], "That's your shot", 'A fair look', 'Not your strength') })),
   };
 }
-
+/* The last possession of a duel game, told by what you did and how it went. */
+const G7_TEXT = {
+  shot: { MW: 'Good! Series over. You\'ll watch that one for the rest of your life.', ML: 'Good! Then they go the length of the floor in 1.4 seconds. Series over the wrong way.',
+    mW: 'No good. {mate} flies in and tips it home at the horn. Series!', mL: 'No good. The whole building goes quiet.' },
+  pass: { MW: 'You draw two and find {mate}. Splash. Series!', ML: 'You find {mate}. He buries it. They answer at the horn.',
+    mW: 'The pass is late. {mate} forces it up and it rolls in. Series!', mL: 'The pass is late. The shot clock beats him. Series over.' },
+};
+/* The same, for a single game: a tournament has no series to win. */
+const AM_TEXT = {
+  shot: { MW: 'Good! You\'ll remember that one for the rest of your life.', ML: 'Good! Then they go the length of the floor and score at the horn.',
+    mW: 'No good. {mate} flies in and tips it home at the horn.', mL: 'No good. You sit on the floor for a long time.' },
+  pass: { MW: 'You draw two and find {mate}. Splash. Ballgame.', ML: 'You find {mate}. He buries it. They answer at the horn.',
+    mW: 'The pass is late. {mate} forces it up and it rolls in.', mL: 'The pass is late. The horn beats him.' },
+};
+/* Your possession moves the game's odds, it does not set them. */
+function duelGame(L, base, made, rng, card, i, beats, label) {
+  const won = rng() < clamp(base + (made ? DUEL_SWING : -DUEL_SWING), 0.06, 0.94);
+  const look = card.ctx.look, mate = card.ctx.mate;
+  if (look) {
+    if (i === LOOKS[look].best) { bump(L, { trust: 3 }); remember(L, 'read.' + look, true); }
+    else if (i === LOOKS[look].worst) bump(L, { trust: -2 });
+  }
+  if (i === 3 && mate) relate(L, 'tm', made ? 16 : 8, 'You trusted him with the last possession of ' + label + '.', mate);
+  else if (!made && won && mate) relate(L, 'tm', 10, 'He saved you in ' + label + '.', mate);
+  const text = (label === 'Game 7' ? G7_TEXT : AM_TEXT)[i === 3 ? 'pass' : 'shot'][(made ? 'M' : 'm') + (won ? 'W' : 'L')].replace(/\{mate\}/g, mate || 'A teammate');
+  return { won, text };
+}
 // ─── the offseason ──────────────────────────────────────────────────────────
 
 /* How a year changes the body. Growth closes a share of the gap to potential,
@@ -5864,6 +5987,7 @@ function runTourney(L, beats) {
     const g = { r: t.r, opp, seed: oSeed, net: oNet, pts };
     if (playing && role.starter && !t.clutched && Math.abs(u - p) < 0.07) {
       t.clutched = true;
+      if (duelOn(L)) g.p = round1(p * 100) / 100;
       t.waiting = true;
       t.cur = g;
       L.pending.push(amClutchCard(L, t, g));
@@ -5894,13 +6018,17 @@ function endTourneyGame(L, t, g, won, beats) {
 }
 function amClutchCard(L, t, g) {
   const names = t.kind === 'hs' ? HS_ROUNDS : NCAA_ROUNDS;
-  const opts = clutchOptions(L);
+  const key = 'amclutch:' + t.kind + ':' + g.r;
+  const look = defenseLook(L, key + ':' + L.year);
+  const opts = clutchOptions(L, look);
+  const ctx = { r: g.r };
+  if (look) { ctx.look = look; ctx.mate = duelMate(L, key); }
   return {
-    id: 'amclutch', kind: 'clutch', key: 'amclutch:' + t.kind + ':' + g.r, scene: t.kind === 'hs' ? 'The home gym' : 'March Madness',
+    id: 'amclutch', kind: 'clutch', key, scene: t.kind === 'hs' ? 'The home gym' : 'March Madness',
     eyebrow: names[g.r] + ' · ' + (g.seed ? g.seed + ' seed ' : '') + g.opp,
     title: 'Tied. Six seconds. Your ball.',
-    text: (t.kind === 'hs' ? 'The whole town\'s packed into the gym.' : 'It\'s March, and every bracket in the country is watching.') + ' What\'s the play?',
-    ctx: { r: g.r },
+    text: (t.kind === 'hs' ? 'The whole town\'s packed into the gym.' : 'It\'s March, and every bracket in the country is watching.') + ' ' + (look ? LOOKS[look].t : 'What\'s the play?'),
+    ctx,
     options: opts.map((o) => ({ label: o.label, hint: RATING_NAME[o.rate] + ' ' + ovT(L, L.rt[o.rate]) + '.' })),
   };
 }
@@ -8304,10 +8432,22 @@ function chooseAm(L, card, i, opt, rng, beats, touch) {
       return { text: 'You pull your name out. You stay.', tone: '' };
     }
     case 'amclutch': {
-      const o = clutchOptions(L)[i];
+      const o = clutchOptions(L, card.ctx && card.ctx.look)[i];
       const s = L.season, t = s.tourney;
-      const made = rng() < touched(o.p, touch);
+      const made = rng() < touched(o.p, touch, L);
       t.waiting = false;
+      if (duelOn(L) && t.cur && t.cur.p != null) {
+        const rname = (t.kind === 'hs' ? HS_ROUNDS : NCAA_ROUNDS)[t.cur.r];
+        const d = duelGame(L, t.cur.p, made, rng, card, i, beats, 'the ' + rname);
+        if (made) { bump(L, { fame: 5 }); if (d.won) { L.am.winners = (L.am.winners || 0) + 1; clutchHit(L, beats); } }
+        bump(L, { morale: (d.won ? 6 : -6) + (made ? 2 : -2) });
+        logIt(L, rname + ': ' + (made ? (d.won ? 'hit the winner.' : 'hit the shot. They answered.') : d.won ? 'missed it. A teammate saved it.' : 'missed the last shot.'), d.won ? 'gold' : 'bad');
+        endTourneyGame(L, t, t.cur, d.won, beats);
+        t.cur = null;
+        runTourney(L, beats);
+        if (t.done) closeAm(L, beats);
+        return { text: d.text, tone: made ? 'gold' : 'bad', made, won: d.won };
+      }
       if (made) { L.am.winners = (L.am.winners || 0) + 1; bump(L, { fame: 6, morale: 8 }); clutchHit(L, beats); }
       else bump(L, { morale: -8 });
       const tx = made ? 'Good! You are going to remember that one for the rest of your life.' : 'No good. You sit on the floor for a long time.';
@@ -8342,21 +8482,24 @@ function newRoad(L, rng) {
    and the shot is still the engine's own seeded draw. A career played with the
    scenes off passes no touch, which is a touch of nought: the odds the card
    always had. */
-const TOUCH = 0.12;
-function touched(p, touch) { return touch ? clamp(p + touch * TOUCH, 0.05, 0.9) : p; }
+const TOUCH = 0.12, TOUCH_DUEL = 0.2;
+function touched(p, touch, L) { return touch ? clamp(p + touch * (L && duelOn(L) ? TOUCH_DUEL : TOUCH), 0.05, 0.9) : p; }
 function choose(L, i, extra) {
   const card = L.pending[0];
   if (!card) return null;
   const opt = card.options[i];
   if (!opt) return null;
   const touch = extra && Number.isFinite(+extra.touch) ? clamp(+extra.touch, -1, 1) : 0;
+  /* Two free throws are two presses. Without them, both shots take the one touch. */
+  const touches = extra && Array.isArray(extra.touches) && extra.touches.length === 2 && extra.touches.every((t) => Number.isFinite(+t))
+    ? extra.touches.map((t) => clamp(+t, -1, 1)) : null;
   const rng = rngAt(L, 'pick:' + card.key + ':' + i);
   TRADED = null;
   const before = snapshot(L);
-  let text = '', tone = '', beats = [], made = null, contest = null;
+  let text = '', tone = '', beats = [], made = null, won = null, shots = null, contest = null;
   L.pending.shift();
   const road = card.id === 'presser' ? choosePresser(L, card, opt, rng) : chooseAm(L, card, i, opt, rng, beats, touch);
-  if (road) { text = road.text; tone = road.tone; if (road.made != null) made = road.made; } else switch (card.id) {
+  if (road) { text = road.text; tone = road.tone; if (road.made != null) made = road.made; if (road.won != null) won = road.won; } else switch (card.id) {
     case 'combine': {
       if (card.ctx && card.ctx.story) { ({ text, tone } = chooseCombine(L, i, rng)); break; }
       const r = rng();
@@ -8482,10 +8625,22 @@ function choose(L, i, extra) {
       break;
     }
     case 'clutch': {
-      const o = clutchOptions(L)[i];
+      const o = clutchOptions(L, card.ctx && card.ctx.look)[i];
       const cur = L.season.po.cur;
-      made = rng() < touched(o.p, touch);
+      made = rng() < touched(o.p, touch, L);
       cur.waiting = false;
+      if (duelOn(L) && card.ctx && card.ctx.look) {
+        const d = duelGame(L, seriesP(L, L.team, cur.opp, !!card.ctx.home), made, rng, card, i, beats, 'Game 7');
+        won = d.won;
+        cur.games.push(won ? 1 : 0);
+        if (won) cur.w = 4; else cur.l = 4;
+        if (made) { bump(L, { fame: 6 }); remember(L, 'g7.made', true); if (won) { L.flags.g7 = (L.flags.g7 || 0) + 1; clutchHit(L, beats); } }
+        bump(L, { fame: won ? 4 : 0, morale: (won ? 8 : -8) + (made ? 3 : -3) });
+        text = d.text; tone = made ? 'gold' : 'bad';
+        logIt(L, 'Game 7 against the ' + nick(cur.opp) + ': ' + (made ? (won ? 'hit the winner.' : 'hit the shot. They answered.') : won ? 'missed it. A teammate saved it.' : 'missed the last shot.'), won ? 'gold' : 'bad');
+        endSeries(L, beats);
+        break;
+      }
       cur.games.push(made ? 1 : 0);
       if (made) { cur.w = 4; L.flags.g7 = (L.flags.g7 || 0) + 1; clutchHit(L, beats); if (storyOn(L)) remember(L, 'g7.made', true); bump(L, { fame: 10, morale: 10 }); text = 'Good! Series over. You\'ll be watching that one for the rest of your life.'; tone = 'gold'; }
       else { cur.l = 4; bump(L, { morale: -10 }); text = 'No good. The whole building goes quiet.'; tone = 'bad'; }
@@ -8494,8 +8649,10 @@ function choose(L, i, extra) {
       break;
     }
     case 'moment': {
-      const r = momentResolve(L, card, i, rng, touch);
+      const r = momentResolve(L, card, i, rng, touch, touches);
       text = r.text; tone = r.tone; made = r.made;
+      if (r.won != null) won = r.won;
+      if (r.shots) shots = r.shots;
       break;
     }
     case 'extension': {
@@ -8586,6 +8743,8 @@ function choose(L, i, extra) {
   const res = { card, picked: i, label: opt.label, text, tone, diff: diffOf(before, after), beats };
   if (contest) res.contest = contest;
   if (made != null) res.made = made;
+  if (won != null) res.won = won;
+  if (shots) res.shots = shots;
   L.last = { title: card.title, label: opt.label, text, tone, diff: res.diff };
   return res;
 }

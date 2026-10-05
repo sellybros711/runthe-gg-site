@@ -405,9 +405,12 @@ var SCENES = {
   ],
   title: [
     { who: 'vance', room: 'arena', pic: 'me', pose: 'up', loud: true, confetti: true, shot: 'title', board: 'CHAMPIONS',
-      tx: function(c){ return 'The ' + c.nick + ' are champions! ' + c.last + ' is on the scorer\'s table with both arms up.'; } },
+      tx: vary([function(c){ return 'The ' + c.nick + ' are champions! ' + c.last + ' is on the scorer\'s table with both arms up.'; },
+        function(c){ return 'It\'s over! The ' + c.nick + ' win the title! ' + c.last + ' is sprinting toward the corner and nobody can catch him.'; },
+        function(c){ return 'Champions! Confetti everywhere. ' + c.last + ' drops to the floor and just lies there, smiling at the rafters.'; }]) },
     { who: 'bell', room: 'arena', pic: 'me', pose: 'trophy', confetti: true, board: 'CHAMPIONS',
-      tx: function(c){ return c.fmvp ? 'Finals MVP too. He has not let go of the trophy and nobody is asking him to.' : 'The trophy comes down the line. ' + c.last + ' holds it like it might leave.'; } },
+      tx: function(c){ return c.fmvp ? vary(['Finals MVP too. He has not let go of the trophy and nobody is asking him to.', 'Finals MVP. He holds the little trophy up next to the big one for the cameras.'])(c)
+        : vary(['The trophy comes down the line. ' + c.last + ' holds it like it might leave.', 'Somebody hands ' + c.last + ' the trophy. He kisses it and hands it straight back to the vets.', c.last + ' finds his family in the crowd and points at them with the trophy.'])(c); } },
   ],
   ring2: [
     { who: 'vance', room: 'arena', pic: 'me', pose: 'trophy', loud: true, confetti: true, shot: 'title', board: 'CHAMPIONS',
@@ -415,24 +418,43 @@ var SCENES = {
   ],
   finals_loss: [
     { who: 'vance', room: 'arena', pic: 'me', pose: 'stand', board: 'FINAL',
-      tx: function(c){ return 'The other bench pours onto the floor. ' + c.last + ' stands at half court and watches them celebrate.'; } },
+      tx: vary([function(c){ return 'The other bench pours onto the floor. ' + c.last + ' stands at half court and watches them celebrate.'; },
+        function(c){ return c.last + ' shakes every hand on the other side, then walks off without looking back.'; },
+        function(c){ return 'Two wins short. ' + c.last + ' sits on the bench with a towel over his head until the arena empties out.'; }]) },
   ],
   g7_make: [
+    { who: 'vance', room: 'arena', pic: 'me', pose: 'up', loud: true, board: function(c){ return c.single ? 'WINNERS' : 'GAME 7'; },
+      tx: function(c){ return c.single ? vary(['BANG! At the buzzer! They advance!', 'Rises, fires... GOT IT! Ballgame!', 'He did it! Survive and advance!'])(c) : vary(['BANG! At the buzzer! Series over!', 'Rises, fires... GOT IT! Ballgame! Series!', 'For the series... GOOD! Pandemonium!'])(c); } },
+    { who: 'hollis', room: 'studio', pic: null, tx: vary([function(c){ return 'Every kid in a driveway counts down from three. ' + c.last + ' just did it for real.'; },
+      function(c){ return 'They knew it was going to him. He knew they knew. Didn\'t matter.'; },
+      function(c){ return 'Pressure is a privilege. ' + c.last + ' just cashed it in.'; }]) },
+  ],
+  g7_make_lost: [
     { who: 'vance', room: 'arena', pic: 'me', pose: 'up', loud: true, board: 'GAME 7',
-      tx: vary(['BANG! At the buzzer! Series over!', 'Rises, fires... GOT IT! Ballgame! Series!']) },
-    { who: 'hollis', room: 'studio', pic: null, tx: function(c){ return 'Every kid in a driveway counts down from three. ' + c.last + ' just did it for real.'; } },
+      tx: vary(['GOT IT! He hit it! ...Wait. They are pushing it up the floor.', 'Rises, fires, GOOD! And the other bench is already sprinting.']) },
+    { who: 'vance', room: 'arena', pic: 'me', pose: 'stand', board: 'FINAL',
+      tx: function(c){ return 'At the horn, from the other end. ' + c.last + ' did his job. It wasn\'t enough.'; } },
+    { who: 'hollis', room: 'studio', pic: null, tx: function(c){ return 'Nobody will remember the shot he made. He will. That one is his.'; } },
+  ],
+  g7_miss_won: [
+    { who: 'vance', room: 'arena', pic: 'me', pose: 'stand', board: 'GAME 7',
+      tx: function(c){ return 'Off the rim! Loose ball! ' + (c.mate ? c.mate.split(' ').pop() : 'A teammate') + ' flies in... TIPS IT IN AT THE HORN!'; } },
+    { who: 'bell', room: 'arena', pic: 'me', pose: 'up', loud: true, board: 'WINNERS',
+      tx: function(c){ return c.last + ' is the first one to reach ' + (c.mate ? c.mate.split(' ')[0] : 'him') + '. He missed the shot. He will buy dinner for a year.'; } },
   ],
   g7_miss: [
     { who: 'vance', room: 'arena', pic: 'me', pose: 'stand', board: 'GAME 7',
       tx: 'Off the rim. The horn. The building goes quiet all at once.' },
-    { who: 'coach', room: 'locker', pic: 'me', pose: 'stand', tx: 'I would give you that shot again tomorrow. Every time.' },
+    { who: 'coach', room: 'locker', pic: 'me', pose: 'stand', tx: vary(['I would give you that shot again tomorrow. Every time.', 'Look at me. That was the right shot. Some nights it doesn\'t fall.', 'We don\'t get here without you. Remember that before you remember the miss.']) },
   ],
   mvp: [
     { who: 'hollis', room: 'studio', pic: null, tx: function(c){ return 'It is official. ' + c.name + ' is the Most Valuable Player.'; } },
     { who: 'sato', room: 'draft', pic: 'me', pose: 'trophy', shot: 'award', tx: function(c){ return c.line ? c.line + ' a night. The numbers made the case. The tape closed it.' : 'The numbers made the case. The tape closed it.'; } },
   ],
   allstar: [
-    { who: 'hollis', room: 'arena', pic: 'me', pose: 'ball', shot: 'allstar', loud: true, board: 'ALL-STAR', tx: function(c){ return 'First All-Star nod for ' + c.name + '. The coaches saw it before the fans did.'; } },
+    { who: 'hollis', room: 'arena', pic: 'me', pose: 'ball', shot: 'allstar', loud: true, board: 'ALL-STAR', tx: vary([function(c){ return 'First All-Star nod for ' + c.name + '. The coaches saw it before the fans did.'; },
+      function(c){ return c.name + ' is an All-Star. He found out in the trainer\'s room and called home before he called anybody else.'; },
+      function(c){ return 'First All-Star weekend for ' + c.last + '. He is going to need a bigger suitcase.'; }]) },
   ],
   ncaa: [
     { who: 'vance', room: 'arena', pic: 'me', pose: 'up', loud: true, confetti: true, shot: 'title', board: 'NATIONAL CHAMPS',
@@ -513,7 +535,9 @@ var SCENES = {
     { who: 'sato', room: 'studio', pic: 'me', pose: 'ball', tx: function(c){ return c.text + ' Only a few have been there.'; } },
   ],
   retire: [
-    { who: 'kim', room: 'press', pic: 'me', pose: 'suit', tx: function(c){ return c.name + ' steps to the podium in a suit and no jersey. Everybody knows why.'; } },
+    { who: 'kim', room: 'press', pic: 'me', pose: 'suit', tx: vary([function(c){ return c.name + ' steps to the podium in a suit and no jersey. Everybody knows why.'; },
+      function(c){ return 'Every seat is taken. ' + c.last + ' taps the microphone twice and smiles. He has been rehearsing this one.'; },
+      function(c){ return c.last + ' walks out with a cup of coffee and a piece of paper he never looks at.'; }]) },
     { who: 'hollis', room: 'studio', pic: null, tx: function(c){ return c.verdict ? 'The word around the league: ' + c.verdict.toLowerCase() + '.' : 'An era ends.'; } },
   ],
   hall: [
@@ -549,11 +573,16 @@ var SCENES = {
 /* What is said before a decision is put to you. */
 var CARD_INTROS = {
   presser: function(card, c){ return [{ who: c.level === 'College' ? 'greer' : 'kim', room: 'press', pic: 'me', pose: card.topic === 'draft' ? 'cap' : card.topic === 'title' || card.topic === 'mvp' ? 'trophy' : 'stand',
-    tx: card.topic === 'finals_loss' ? 'The microphones are on. Nobody wants to go first.' : 'The microphones are on. Here we go.' }]; },
+    tx: card.topic === 'finals_loss' ? vary(['The microphones are on. Nobody wants to go first.', 'A long pause. Somebody in the back clears his throat.', 'He sits down. Puts the cap on backwards. Waits.'])
+      : vary(['The microphones are on. Here we go.', 'Twenty cameras, one chair. He sits down.', 'The room goes quiet when he walks in.', 'Somebody shouts his name. Then the questions start.']) }]; },
   clutch: function(card, c){ return [{ who: 'vance', room: 'arena', pic: 'me', pose: 'ball', loud: true, board: 'GAME 7',
-    tx: function(){ return 'Game 7. Tied. Seven seconds left. The ball is in ' + c.last + '\'s hands and nobody in the building is sitting down.'; } }]; },
+    tx: vary([function(){ return 'Game 7. Tied. Nine seconds left. The ball is in ' + c.last + '\'s hands and nobody in the building is sitting down.'; },
+      function(){ return 'Timeout. Game 7, all square. Everybody in the building knows where this ball is going.'; },
+      function(){ return 'Nine seconds. Season on the line. ' + c.last + ' takes the inbound and looks up at the clock.'; }]) },
+    { who: 'hollis', room: 'arena', pic: 'me', pose: 'ball', loud: true, board: 'GAME 7', tx: function(){ return LOOK_SAY[card.ctx && card.ctx.look] || 'Watch the defense. They will show you something.'; } }]; },
   amclutch: function(card, c){ return [{ who: c.level === 'High school' ? 'greer' : 'vance', room: c.level === 'High school' ? 'gym' : 'arena', pic: 'me', pose: 'ball', loud: true,
-    board: 'TIED', tx: function(){ return 'Tied. Last possession. Everybody knows who is getting the ball.'; } }]; },
+    board: 'TIED', tx: vary(['Tied. Last possession. Everybody knows who is getting the ball.', 'All square, six seconds. The student section is on its feet.', 'Last shot. Win or go home.']) },
+    { who: c.level === 'High school' ? 'greer' : 'hollis', room: c.level === 'High school' ? 'gym' : 'arena', pic: 'me', pose: 'ball', board: 'TIED', tx: function(){ return LOOK_SAY[card.ctx && card.ctx.look] || 'Here it comes.'; } }]; },
   offers: function(card, c){ return [{ who: 'greer', room: 'gym', pic: 'me', pose: 'stand', tx: 'The offers are on the table. Every coach in the gym is pretending not to look at you.' }]; },
   commit: function(card, c){ return [{ who: 'greer', room: 'gym', pic: 'me', pose: 'stand', tx: 'Decision day. The hats are on the table. The cameras are rolling.' }]; },
   signing: function(card, c){ return [{ who: 'greer', room: 'gym', pic: 'me', pose: 'stand', tx: 'Signing day. The pen is right there.' }]; },
@@ -563,6 +592,14 @@ var CARD_INTROS = {
 CARD_INTROS.moment = function(card, c){ return [{ who: 'vance', room: 'arena', pic: 'me', pose: 'ball', loud: true, board: 'LIVE',
   tx: card.text || 'It comes down to this.' }]; };
 var PRESENTABLE = Object.keys(CARD_INTROS);
+/* What the analyst sees in the defense on a duel career's last possession:
+   the read the card asks for, said in the booth's words. */
+var LOOK_SAY = {
+  drop: 'Look at their big. He is way back in the paint. That is daring him to shoot it.',
+  switch: 'They just switched their center onto him. A big man, on an island, out there.',
+  chase: 'Their best defender is all over him beyond the arc. No room to breathe out there.',
+  double: 'Here comes the double team. Somebody is going to be wide open.',
+};
 
 /* ─── playable moments (hoops/court.js) ─────────────────────────────────
    A Game 7 option, a tournament tie and every moment card is played on the
@@ -570,6 +607,25 @@ var PRESENTABLE = Object.keys(CARD_INTROS);
    on the meter is a touch handed to the engine with it, and what the court
    shows next is what the engine said. */
 var PLAY_CLOCK = { buzzer: ['Q4', '0:04'], ft: ['Q4', '0:02'], stop: ['Q4', '0:12'], poster: ['Q3', '4:51'], block: ['Q3', '1:38'] };
+/* What the booth says, several ways, picked by the moment's seed. */
+var CALLS = {
+  three: [['BANG! From way downtown!', 'Rises, fires... GOT IT!', 'Splash! Nothing but nylon!'], ['Off the rim.', 'Rattles out.', 'Front iron.']],
+  mid: [['Fadeaway... GOT IT!', 'Pull-up, money!', 'Over the top. Good!'], ['Short.', 'In and out!', 'Too strong.']],
+  drive: [['HAMMER DOWN!', 'Throws it DOWN!', 'Finishes through contact!'], ['Rolls off.', 'Can\'t finish!', 'Hangs on the rim and out.']],
+  pass: [['The open man... YES!', 'Found him! Splash!', 'What a pass!'], ['Off the rim.', 'Rushed it.', 'Can\'t get it to go.']],
+  buzzer: [['At the horn! BANG!', 'He got it off... GOOD!', 'Answer the bell! At the buzzer!'], ['Off the back iron.', 'No good at the horn.', 'Long. That\'s the buzzer.']],
+  ft: [['Two for two. Ice.', 'Both down. Cold blooded.'], ['Both off.', 'Two misses. Ouch.']],
+  poster: [['ON HIS HEAD!', 'Posterized!', 'Put him in the frame!'], ['Offensive foul.', 'He took the charge.']],
+  block: [['PINNED!', 'Get that outta here!', 'Off the glass, block!'], ['A step late.', 'And one.']],
+  stop: [['STOP! Ballgame!', 'Locked up!', 'Big-time defense!'], ['He buries it.', 'Too quick. Bucket.']],
+};
+var INTRO = {
+  three: ['Clock running.', 'Ball\'s in his hands.', 'Here\'s the look.'], mid: ['Clock running.', 'Isolation up top.', 'Working the elbow.'],
+  drive: ['Clock running.', 'He sees a lane.', 'Attack mode.'], pass: ['Clock running.', 'Eyes up.', 'They are loading up on him.'],
+  buzzer: ['Four seconds.', 'Nobody\'s sitting.', 'Last shot.'], ft: ['Two shots.', 'Two shots. Quiet in here.', 'The whole building is waving.'],
+  poster: ['Fast break!', 'Off and running!', 'He\'s got a head of steam.'], stop: ['Here he comes.', 'Clear out. One on one.', 'Get a stop.'],
+  block: ['Breakaway!', 'He\'s gone. Or is he?', 'Turnover. Run!'],
+};
 function playSpec(card, n, c){
   var CT = window.RTF_COURT;
   if (!CT) return null;
@@ -585,21 +641,30 @@ function playSpec(card, n, c){
     if (RM) { rating = RM[0]; rn = RM[1]; }
   }
   if (!kind) return null;
-  var opp = card.ctx && card.ctx.opp, ok = opp && E.clubSkin ? E.clubSkin(opp) : null;
+  var cx = card.ctx || {};
+  var opp = cx.opp, ok = opp && E.clubSkin ? E.clubSkin(opp) : null;
   var clock = card.id === 'moment' ? PLAY_CLOCK[kind] || ['Q4', '0:09'] : card.id === 'clutch' ? ['Q4', '0:09'] : ['Q4', '0:07'];
   var home = c.team ? c.team : (c.school || 'HOME').replace(/[^A-Za-z ]/g, '').split(' ').map(function(w){ return w[0]; }).join('').slice(0, 3).toUpperCase();
   var room = c.level === 'College' ? 'col' : c.level === 'High school' ? 'hs' : c.level === 'Pro' ? 'gl' : 'nba';
-  var calls = {
-    three: ['BANG! At the buzzer!', 'Off the rim.'], mid: ['Fadeaway... GOT IT!', 'Short.'], drive: ['HAMMER DOWN!', 'Rolls off.'], pass: ['The open man... YES!', 'Off the rim.'],
-    buzzer: ['At the horn! BANG!', 'Off the back iron.'], ft: ['Two for two. Ice.', 'Both off.'], poster: ['ON HIS HEAD!', 'Offensive foul.'], block: ['PINNED!', 'A step late.'], stop: ['STOP! Ballgame!', 'He buries it.'],
-  }[kind];
-  return { kind: kind, rating: rating || 60, rateName: rn, room: room, c1: c.c1, c2: c.c2, oc: ok ? ok.primary : '#3a4566', confetti: card.id !== 'moment',
+  var seed = (L.seed || '') + ':' + card.key + ':' + n;
+  var vs = B.hash(seed);
+  var calls = CALLS[kind] || CALLS.mid;
+  /* a road game is played in the other building, in their colours */
+  var road = cx.home === 0 || cx.home === false;
+  var mate = cx.mate ? { look: B.lookFor('mate:' + cx.mate), num: String(B.hash(cx.mate) % 40 + 1), name: cx.mate } : null;
+  var pressure = card.id === 'moment' ? 0.4 : 1;
+  var morale = L.m ? L.m.morale : 60;
+  var nerves = clamp01(pressure * (1 - (morale - 40) / 70) - (C.hasTrait && C.hasTrait(L, 'clutch') ? 0.35 : 0));
+  return { kind: kind, rating: rating || 60, rateName: rn, room: room, c1: c.c1, c2: c.c2, oc: ok ? ok.primary : '#3a4566', oc2: ok ? ok.secondary : '#c9ccd6',
+    roomC1: road && ok ? ok.primary : c.c1, roomC2: road && ok ? ok.secondary : c.c2,
+    confetti: card.id !== 'moment', seed: seed, look: cx.look || null, mate: mate, nerves: nerves,
     me: { look: c.look, c1: c.c1, c2: c.c2, num: c.num, age: c.age },
     bug: { home: home || 'YOU', away: opp || 'OPP', period: clock[0], clock: clock[1] },
-    pressure: card.id === 'moment' ? 0.4 : 1,
-    intro: kind === 'stop' || kind === 'block' ? 'Here he comes.' : kind === 'ft' ? 'Two shots.' : 'Clock running.',
+    pressure: pressure,
+    intro: (INTRO[kind] || INTRO.mid)[vs % 3],
     makeCall: calls[0], missCall: calls[1], halfCall: 'One of two.' };
 }
+function clamp01(v){ return v < 0 ? 0 : v > 1 ? 1 : v; }
 
 /* The fans, after you answer. Three posts, picked by the tone and the seed. */
 var FEED = {
@@ -665,6 +730,15 @@ function pickScene(res, L){
   if (res.card && (res.card.id === 'clutch' || res.card.id === 'amclutch')) {
     var made = res.tone === 'gold';
     var champ = has('champ');
+    /* a duel career: the shot and the game are two answers */
+    if (res.won != null) {
+      var pre = made ? (res.won ? 'g7_make' : 'g7_make_lost') : (res.won ? 'g7_miss_won' : 'g7_miss');
+      var gx = { mate: res.card.ctx && res.card.ctx.mate, single: res.card.id === 'amclutch' };
+      if (champ && res.card.id === 'clutch') return { id: champ.ring > 1 ? 'ring2' : 'title', pre: pre, x: { ring: champ.ring, fmvp: champ.fmvp, mate: gx.mate, single: false } };
+      if (champ && champ.level === 'ncaa') return { id: 'ncaa', pre: pre, x: gx };
+      if (champ && champ.level === 'hs') return { id: 'state', pre: pre, x: gx };
+      return { id: pre, x: gx };
+    }
     if (champ && res.card.id === 'clutch') return { id: champ.ring > 1 ? 'ring2' : 'title', pre: made ? 'g7_make' : null, x: { ring: champ.ring, fmvp: champ.fmvp } };
     if (champ && champ.level === 'ncaa') return { id: 'ncaa', pre: made ? 'g7_make' : null };
     if (champ && champ.level === 'hs') return { id: 'state', pre: made ? 'g7_make' : null };
@@ -902,9 +976,10 @@ function play(beats, ctx, opts){
     var res = null;
     moment = window.RTF_COURT.moment(host, Object.assign({ ctlHost: body }, spec), {
       resolve: function(q){
-        res = opts.choose ? opts.choose(n, { touch: q }) : null;
+        var ex = typeof q === 'object' && q ? { touch: q.touch, touches: q.touches } : { touch: q };
+        res = opts.choose ? opts.choose(n, ex) : null;
         var m = res ? res.made : false;
-        return { made: m == null ? res && res.tone === 'gold' : m };
+        return { made: m == null ? res && res.tone === 'gold' : m, won: res ? res.won : undefined, shots: res ? res.shots : undefined };
       },
       done: function(){
         playing = false;

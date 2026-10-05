@@ -114,6 +114,45 @@ section('3. moments are for careers started since they existed');
   ok(n > 60 && two === n, `moments come up (${n} in 60 careers) and every one offers a real choice (${two})`);
 }
 
+section('3b. a duel career: the game is the team\'s, the moment is yours');
+{
+  ok(C.newLife({ seed: 'd0', start: 'draft' }).opt.duel === 1, 'a new story career is a duel career');
+  ok(!C.newLife({ seed: 'd0', start: 'draft', story: false }).opt.duel, 'a story-off career is not (the replay of 1,000 careers stays byte identical)');
+  let nights = 0, match = 0, g7 = { MW: 0, ML: 0, mW: 0, mL: 0 }, read = { best: 0, bestN: 0, worst: 0, worstN: 0 }, looks = 0;
+  for (let k = 0; k < 500 && (nights < 120 || g7.ML + g7.mW < 20); k++) {
+    const L = C.newLife({ seed: 'dl' + k, start: k % 4 ? 'draft' : 'hs' });
+    let g = 0;
+    while (!L.retired && g++ < 3000) {
+      const c = L.pending[0];
+      if (!c) { C.step(L); continue; }
+      if (c.id === 'moment' && c.ctx.won != null) {
+        nights++;
+        const row = (L.season.box || []).find((r) => r[0] === c.ctx.g);
+        if (row && row[1] === c.ctx.opp && (row[3] ? 1 : 0) === c.ctx.won) match++;
+      }
+      if ((c.id === 'clutch' || c.id === 'amclutch') && c.ctx.look) {
+        looks++;
+        /* the same card, answered with the read and against it, from clones */
+        const LK = { drop: [0, 1], switch: [1, 2], chase: [2, 0], double: [3, 1] }[c.ctx.look];
+        for (let r = 0; r < 6; r++) {
+          const a = clone(L), b = clone(L);
+          a.seed += ':r' + r; b.seed += ':r' + r;
+          const ra = C.choose(a, LK[0]), rb = C.choose(b, LK[1]);
+          read.bestN++; read.best += ra.made ? 1 : 0; read.worstN++; read.worst += rb.made ? 1 : 0;
+        }
+        const res = C.choose(L, (L.steps + k) % 4);
+        g7[(res.made ? 'M' : 'm') + (res.won ? 'W' : 'L')]++;
+        continue;
+      }
+      C.choose(L, (L.steps * 3 + k) % c.options.length);
+    }
+  }
+  ok(nights >= 60 && match === nights, `a regular-season moment is a real game from the stretch, its opponent and result the box score's (${match}/${nights})`);
+  ok(looks >= 30, `the defense shows a look on Game 7 and tournament clutch cards (${looks})`);
+  ok(read.best / read.bestN > read.worst / read.worstN + 0.1, `reading the look pays: ${(read.best / read.bestN * 100).toFixed(0)}% against ${(read.worst / read.worstN * 100).toFixed(0)}% playing into it`);
+  ok(g7.ML > 0 && g7.mW > 0 && g7.MW > g7.ML && g7.mL > g7.mW, `a made shot can still lose and a miss can still win, and the shot still matters (${JSON.stringify(g7)})`);
+}
+
 section('4. the ticker is the games the engine played');
 {
   const L = C.newLife({ seed: 'tick', start: 'draft' });
@@ -205,10 +244,18 @@ async function browser() {
         let asked = 0, t0 = performance.now();
         const m = window.RTF_COURT.moment(host, { kind, rating: 72, rateName: 'Shooting', room: 'nba', c1: ME.c1, c2: ME.c2, oc: '#C8102E', me: ME,
           bug: { home: 'MIL', away: 'CHI', clock: '0:07' }, intro: 'Here we go.', makeCall: 'Yes!', missCall: 'No.' },
-          { resolve: (q) => { asked++; window.lastQ = q; return { made: kind === 'ft' ? 1 : asked % 2 === 1 }; }, done: () => { const ms = performance.now() - t0; m.stop(); done({ asked, ms, q: window.lastQ }); } });
-        const go = host.querySelector('.ct-go'), rc = go.getBoundingClientRect();
-        window.goBox = { top: rc.top, bottom: rc.bottom, vis: !!go.offsetParent };
-        setTimeout(() => go.click(), 350);
+          { resolve: (q) => { asked++; window.lastQ = typeof q === 'object' ? q.touch : q; return { made: kind === 'ft' ? 1 : asked % 2 === 1 }; }, done: () => { const ms = performance.now() - t0; clearInterval(window.__iv); m.stop(); done({ asked, ms, q: window.lastQ }); } });
+        /* a moment can ask for more than one press (two free throws, the
+           gather and the rise): press whenever the controls are armed */
+        let box = null;
+        const iv = setInterval(() => {
+          const ctl = host.querySelector('.ct-ctl[data-armed]');
+          if (!ctl) return;
+          const go = ctl.querySelector('.ct-go'), rc = go.getBoundingClientRect();
+          if (!box) box = window.goBox = { top: rc.top, bottom: rc.bottom, vis: !!go.offsetParent };
+          if (!ctl.dataset.hit) { ctl.dataset.hit = '1'; setTimeout(() => { go.click(); delete ctl.dataset.hit; }, 450); }
+        }, 120);
+        window.__iv = iv;
       }), { kind, ME });
       const box = await page.evaluate(() => window.goBox);
       res.push({ kind, ...r, box });
@@ -216,7 +263,7 @@ async function browser() {
     ok(res.every((r) => r.asked === 1), `${w}x${h}${reduced ? ' reduced' : ''}: every moment asks the engine exactly once (${res.map((r) => r.kind + ':' + r.asked).join(' ')})`);
     ok(res.every((r) => r.box.vis && r.box.top >= 0 && r.box.bottom <= h), `the meter's button is on the screen (${res.filter((r) => !(r.box.vis && r.box.bottom <= h)).map((r) => r.kind).join(', ') || 'all'})`);
     ok(res.every((r) => r.q >= -1 && r.q <= 1), 'the touch handed over is between -1 and 1');
-    ok(res.every((r) => r.ms < (reduced ? 9000 : 14000)), `and each is over in a few seconds (${Math.max(...res.map((r) => Math.round(r.ms)))}ms at most)`);
+    ok(res.every((r) => r.ms < (reduced ? 12000 : 16000)), `and each is over in a few seconds (${Math.max(...res.map((r) => Math.round(r.ms)))}ms at most)`);
     ok(boom.length === 0, `no page errors (${boom.join(' | ') || 'none'})`);
     await ctx.close();
   }
@@ -235,6 +282,13 @@ async function browser() {
     ok(t.mono, 'closer to the middle is never worse');
     ok(t.wide, 'a better rating is a wider green');
     ok(t.min >= -1 && t.max <= 1, 'the touch never leaves -1 to 1');
+    const r = await page.evaluate(() => { const RT = window.RTF_COURT.reactTouch, T = window.RTF_COURT.touchOf, Z = window.RTF_COURT.zoneFor(70);
+      const ms = []; for (let m = 0; m <= 1200; m += 10) ms.push(RT(m, 70));
+      return { bite: RT(-50, 99), fast: RT(150, 60), late: RT(900, 99), mono: ms.every((v, i) => i === 0 || v <= ms[i - 1] + 1e-9), better: RT(330, 90) > RT(330, 50), core: T(0.5 + Z * 0.29, Z), off: T(0.5 + Z + 0.03, Z) };
+    });
+    ok(r.bite < 0 && r.fast === 1 && r.late < 0, `a read: pressing before the move is a bite, a quick one perfect, a late one negative (${r.bite}, ${r.fast}, ${r.late})`);
+    ok(r.mono && r.better, 'slower is never better, and a better rating buys a little time');
+    ok(r.core === 1 && r.off < 0.5 && r.off > 0, `the gold core is perfect and a release just outside the green is worth little (${r.core}, ${r.off.toFixed(2)})`);
     await ctx.close();
   }
 
