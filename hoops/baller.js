@@ -42,7 +42,14 @@ var BEARDS = [['none', 'Clean'], ['stubble', 'Stubble'], ['goatee', 'Goatee'], [
 var BANDS = [['none', 'None'], ['white', 'White'], ['black', 'Black'], ['club', 'Team'], ['red', 'Red']];
 var SLEEVES = [['none', 'None'], ['white', 'White'], ['black', 'Black'], ['club', 'Team']];
 var SHOES = [['white', 'White'], ['black', 'Black'], ['club', 'Team'], ['red', 'Red'], ['gold', 'Gold']];
-var BUILDS = [['lean', 'Lean'], ['standard', 'Standard'], ['strong', 'Strong']];
+var BUILDS = [['lean', 'Lean'], ['standard', 'Standard'], ['strong', 'Muscular']];
+/* How each build is put together, read by the skeleton, the model and
+   handAt alike. bw widens the shoulders and chest, am thickens the limbs, dl
+   is the deltoid's radius. Standard and Lean are a basketball body: long and
+   narrow. Only Muscular carries the broad shoulders and the round delts. The
+   id stays 'strong' because it is in saves; only the label changed. */
+var BODY = { lean: { bw: -1.5, am: -0.42, dl: 1.75 }, standard: { bw: -0.95, am: -0.26, dl: 2.0 }, strong: { bw: 0.1, am: 0.06, dl: 2.6 } };
+function bodyOf(b){ return BODY[b] || BODY.standard; }
 var FIXED = { white: '#f2f2f0', black: '#1d1f24', red: '#d13a32', gold: '#e8b33c' };
 
 function ids(list){ return list.map(function(x){ return x[0]; }); }
@@ -342,8 +349,7 @@ function skeleton(f, bw, am, breath){
 /* ── the model for one pose and one look ── */
 function build(L, o, J){
   var suit = o.suit, cap = o.cap, pose = o.pose;
-  var bw = L.build === 'lean' ? -0.6 : L.build === 'strong' ? 0.8 : 0;
-  var am = L.build === 'lean' ? -0.15 : L.build === 'strong' ? 0.3 : 0;
+  var BD = bodyOf(L.build), bw = BD.bw, am = BD.am;
   var P = [];
   /* n: the part's name, g: which piece of the body it is (lines are drawn
      between pieces, never inside one), m: its material, or a function of
@@ -389,22 +395,21 @@ function build(L, o, J){
   if (!suit) {
     var torsoMat = function(p){
       var dx = Math.abs(p[0] - CX), y = p[1] - (C0[1] - 29.2), front = p[2] > 0.6;
-      var arm = 6.6 + bw * 0.8;
-      /* the tank: straps over the shoulders, a scoop neck, open armholes */
-      var strapIn = 3.4, strapOut = 6.0 + bw * 0.4;
-      if (y < 25.6 && (dx < strapIn || dx > strapOut)) return 'skin';
-      if (front && dx < strapIn + 0.2 && y < 27.6 - dx * 0.25) return 'skin';
-      if (dx > arm && y < 31.2) return 'skin';
-      if ((y < 26.4 && (dx < strapIn + 0.8 || dx > strapOut - 0.8)) || (front && dx < strapIn + 1.0 && y < 28.4 - dx * 0.25) || (dx > arm - 0.8 && y < 32)) return 'trim';
-      /* the number on the chest */
-      if (front && o.num !== '') {
-        var num = o.num, x0 = num.length === 2 ? CX - 5 : CX - 2, ny = 28.0;
-        var gx = Math.floor(p[0] - x0), gy = Math.floor(y - ny);
-        if (gy >= 0 && gy < 6) for (var d = 0; d < num.length; d++) {
-          var dg = DIGITS[num[d]], cx2 = gx - d * 6;
-          if (dg && cx2 >= 0 && cx2 < 4 && dg[gy][cx2] === '1') return { m: 'ink', t: gy === 0 ? 3 : null };
-        }
-      }
+      /* the tank, cut the way a real one is: a round scoop at the neck, two
+         narrow straps, deep round armholes, each opening edged in one even
+         band of the second colour. Nothing is trimmed but an edge. */
+      var edge = cR[0], strapIn = 3.0, strapOut = Math.min(5.8, edge - 1.4);
+      /* the neck: deeper in front than behind */
+      var nd = front ? 2.6 : 0.8, nw = 3.0;
+      var neck = function(w){ var t = dx / w; return t < 1 ? 24.6 + nd * (1 - t * t) : -1; };
+      if (y < neck(nw)) return 'skin';
+      if (y < neck(nw + 0.9) + 0.85) return 'trim';
+      /* the armholes: an ellipse cut out of each side, under the strap */
+      var ax = edge + 0.8, rx = ax - strapOut, ry = 6.2, ay = 25.0;
+      var ae = Math.pow((dx - ax) / rx, 2) + Math.pow((y - ay) / ry, 2);
+      if (y < 25.4 && dx > strapIn) { if (dx > strapOut) return 'skin'; }
+      if (ae < 1) return 'skin';
+      if (ae < 1.42) return 'trim';
       return 'jersey';
     };
     add('torso', 'torso', torsoMat, torsoF, [CX, 33 + J.dip, 0], 11);
@@ -444,7 +449,7 @@ function build(L, o, J){
     var A = J.arm[s], sleeved = !suit && o.sleeve && s === 1;
     var mat = suit ? 'jacket' : sleeved ? 'sleeve' : 'skin';
     var r0 = (suit ? 2.6 : 2.2) + am, r1 = (suit ? 2.2 : 1.85) + am * 0.8, r2 = (suit ? 1.95 : 1.5) + am * 0.6;
-    if (!suit) add('delt' + s, 'arm' + s, sleeved ? 'sleeve' : 'skin', sph([A.sh[0] - s * 0.5, A.sh[1] + 0.9, 0], 2.55 + am), A.sh, 3.5);
+    if (!suit) add('delt' + s, 'arm' + s, sleeved ? 'sleeve' : 'skin', sph([A.sh[0] - s * 0.5, A.sh[1] + 0.9, 0], BD.dl), A.sh, 3.5);
     var armF = uni([cone(A.sh, A.el, r0, r1), cone(A.el, A.wr, r1, r2)]);
     add('arm' + s, 'arm' + s, suit ? function(p){
       var t = Math.hypot(p[0] - A.wr[0], p[1] - A.wr[1], p[2] - A.wr[2]);
@@ -604,8 +609,7 @@ function paint(look, opts){
   var c1 = o.c1 || '#2b3242', c2 = o.c2 || '#c9ccd6';
   if (contrast(c1, c2) < 1.4) c2 = inkOn(c1);
   var age = +o.age || 0;
-  var bw = L.build === 'lean' ? -0.6 : L.build === 'strong' ? 0.8 : 0;
-  var am = L.build === 'lean' ? -0.15 : L.build === 'strong' ? 0.3 : 0;
+  var BD = bodyOf(L.build), bw = BD.bw, am = BD.am;
   var f = AN || STILL[pose] || STILL.stand;
   var J = skeleton(f, bw, am, o.frame === 1 && !AN);
   var bandHex = L.band === 'none' ? null : L.band === 'club' ? c2 : FIXED[L.band];
@@ -669,6 +673,21 @@ function paint(look, opts){
     edits.push([x5, y5, sh ? r5[Math.max(0, Math.min(t5 - 1, 1))] : r5[Math.max(0, Math.min(t5 - 1, 2))]]); }
   edits.forEach(function(ed){ out[ed[1]][ed[0]] = ed[2]; });
 
+  /* The number is stamped on the screen, after the light, the way a sprite
+     artist letters a jersey. Mapped onto the model in world cells, the
+     camera's pitch dropped whole rows of a digit and a 2 came out broken. It
+     only lands on jersey cloth, takes the cloth's own tone, and so bends with
+     the chest and hides behind an arm in front of it. */
+  if (num !== '' && !suit) {
+    var BD2 = bodyOf(L.build), nv = toView([CX, J.chest[1] + 3.4, 4.4 + BD2.bw * 0.3]);
+    var nw2 = num.length * 5 - 1, nx0 = Math.round(nv[0] - nw2 / 2), ny0 = Math.round(nv[1] - 3);
+    for (var dI = 0; dI < num.length; dI++) { var DG = DIGITS[num[dI]]; if (!DG) continue;
+      for (var gy = 0; gy < 6; gy++) for (var gx = 0; gx < 4; gx++) { if (DG[gy][gx] !== '1') continue;
+        var px = nx0 + dI * 5 + gx, py = ny0 + gy, hc_ = g(px, py);
+        if (!hc_ || model[hc_.i].n !== 'torso' || M[py][px] !== 'jersey') continue;
+        out[py][px] = R.ink[Math.max(1, Math.min(T[py][px], 3))]; } }
+  }
+
   /* the face, on the head: dot eyes, brows, a nose, a mouth, a little blush.
      Placed off the head's own centre on screen, so it moves with a crouch. */
   var hv = toView([J.head[0], J.head[1], J.head[2] + 6.8]);
@@ -695,8 +714,7 @@ function paint(look, opts){
 /* Where a hand is on screen, in sprite cells, for a moving frame. */
 function handOf(pose, s, build){
   var f = ANIM[pose]; if (!f) return null;
-  var bw = build === 'lean' ? -0.6 : build === 'strong' ? 0.8 : 0;
-  var v = toView(skeleton(f, bw, 0, false).arm[s == null ? 1 : s].hand);
+  var v = toView(skeleton(f, bodyOf(build).bw, 0, false).arm[s == null ? 1 : s].hand);
   return [v[0], v[1]];
 }
 
