@@ -664,7 +664,7 @@ var LEVELS = [
   { par:3, f:function(T){ var H = lvH(rectP(8, 38), [0, -2.5], [0, -34.5]); bumps(H, T, [[-1.8, -9], [1.8, -15], [-1.8, -21], [1.8, -27]]); return H; } },
   { par:3, f:function(T){ var H = lvH(rectP(11, 28), [0, -2.5], [3, -24]); H.comps.push({ k:'crown', x:0, y:-14, rx:6, ry:9, a:0.3 }); flatAt(H, 3, -24); return H; } },
   { par:3, f:function(T){ var H = lvH([[-4, 0], [4, 0], [4, -26], [-18, -26], [-18, -18], [-4, -18]], [0, -2.5], [-14.5, -22]); H.comps.push({ k:'mound', x:0, y:-11, s:2.4, a:0.2 }); zoneC(H, M.SAND, -9, -24.2, 1.3); return H; } },
-  { par:4, sig:true, f:function(T){ var H = lvH([[-4, 0], [4, 0], [4, -12], [18, -12], [18, -42], [8, -42], [8, -20], [-4, -20]], [0, -2.5], [13, -38.5]);
+  { par:3, sig:true, f:function(T){ var H = lvH([[-4, 0], [4, 0], [4, -12], [18, -12], [18, -42], [8, -42], [8, -20], [-4, -20]], [0, -2.5], [13, -38.5]);
     zoneC(H, M.SAND, 15.2, -25, 1.6); H.comps.push({ k:'ramp', x0:13, y0:-28, ux:0, uy:-1, len:5, a:0.42 }); bumps(H, T, [[1.6, -9], [11, -16.5]]); flatAt(H, 13, -38.5); return H; } },
   // ---- 2 HAUNTED HOLLOW: windmills and tunnels
   { par:3, f:function(T){ var H = lvH(rectP(9, 36), [0, -2.5], [0, -32.5]); millAt(H, T, -20, 4.5, 1.3); return H; } },
@@ -707,7 +707,7 @@ var LEVELS = [
   { par:3, f:function(T){ var H = lvH(rectP(14, 40), [0, -2.5], [-4, -36]); addBlock(H, -7, -12, 3, -14, T.block); addBlock(H, -3, -24, 7, -26, T.block); belt(H, -6.4, -14.6, 6.4, -23.4, -3.5, 0); return H; } },
   { par:3, f:function(T){ var H = lvH(rectP(10, 40), [0, -2.5], [0, -36]); zoneR(H, M.WATER, -5, -12, -3.6, -30); zoneR(H, M.WATER, 3.6, -12, 5, -30);
     H.comps.push({ k:'mound', x:0, y:-11, s:2.2, a:0.22 }); H.comps.push({ k:'mound', x:0, y:-19, s:2.2, a:0.22 }); H.comps.push({ k:'mound', x:0, y:-27, s:2.2, a:0.22 }); return H; } },
-  { par:4, sig:true, f:function(T){ var H = lvH(rectP(14, 52), [0, -2.5], [0, -48]); zoneR(H, M.WATER, -7, -12, 7, -16); zoneR(H, M.GREEN, -5.5, -12, -3, -16);
+  { par:3, sig:true, f:function(T){ var H = lvH(rectP(14, 52), [0, -2.5], [0, -48]); zoneR(H, M.WATER, -7, -12, 7, -16); zoneR(H, M.GREEN, -5.5, -12, -3, -16);
     belt(H, -7, -22, 7, -26, 4.5, 0); H.comps.push({ k:'ramp', x0:0, y0:-30, ux:0, uy:-1, len:5, a:0.45 }); zoneC(H, M.WATER, -4.5, -41, 2); zoneC(H, M.WATER, 4.5, -41, 2); flatAt(H, 0, -48); return H; } },
   // ---- 5 TOUR WEEK: real greens, read like a pro, and bounce pads
   { par:3, real:{ ft:12, k:3 } },
@@ -719,10 +719,16 @@ var LEVELS = [
   { par:3, real:{ ft:24, k:27 } },
   { par:3, f:function(T){ var H = lvH(rectP(12, 34), [0, -2.5], [3, -30]); H.comps.push({ k:'plane', gx:0.02, gy:0 }); H.comps.push({ k:'ridge', x:0, y:-24, nx:0, ny:-1, w:1.5, a:0.35 }); pads(H, [[-4, -18], [4, -10]]); flatAt(H, 3, -30); return H; } },
   { par:3, real:{ ft:28, k:35 } },
-  { par:4, sig:true, f:function(T){ var H = lvH(rectP(16, 42), [0, -2.5], [0, -28]); zoneR(H, M.WATER, -8, -10, 8, -36); zoneC(H, M.GREEN, 0, -28, 3.8); zoneR(H, M.GREEN, -1.2, -10, 1.2, -25);
+  { par:3, sig:true, f:function(T){ var H = lvH(rectP(16, 42), [0, -2.5], [0, -28]); zoneR(H, M.WATER, -8, -10, 8, -36); zoneC(H, M.GREEN, 0, -28, 3.8); zoneR(H, M.GREEN, -1.2, -10, 1.2, -25);
     pads(H, [[-5, -30, 0.8], [5, -30, 0.8]]); H.comps.push({ k:'mound', x:0, y:-28, s:2.6, a:-0.1 }); return H; } }
 ];
-function levelName(n){ var L = LEVELS[n - 1], W = WORLDS[Math.floor((n - 1) / 10)]; return (THEMES[W.theme].holes || [])[(n - 1) % 10] || ('Hole ' + n); }
+var TOUR_NAMES = [
+  'First Tee', 'Pace', 'The Slope', 'Bank Shot', 'Sand Trap', 'Twin Bunkers', 'Bumper Alley', 'The Crown', 'Dogleg Left', 'Clubhouse Classic',
+  'The Mill', 'Crypt Tunnel', 'Two Doors', 'Bat Wing', 'Grave Dirt', 'Mill and Bank', 'Coffin Corner', 'Warp Pipe', 'Double Mill', 'Crypt Keeper’s Cup',
+  'First Freeze', 'Sliding Gift', 'The Gate', 'Ice Lane', 'Sleigh Ride', 'Two Gates', 'Snowball Fight', 'Frozen Pond', 'Chimney', 'The North Pole',
+  'Low Tide', 'Boardwalk', 'Conveyor', 'Tide Pool', 'Belt Return', 'Ramp Jump', 'Island Hop', 'Crab Walk', 'Surf’s Up', 'Lighthouse Point',
+  'Tour Pin I', 'Bounce House', 'Tour Pin II', 'Pinball', 'Tour Pin III', 'Pad Bank', 'Tour Pin IV', 'Grandstand', 'Tour Pin V', 'Island Green'];
+function levelName(n){ return TOUR_NAMES[n - 1] || ('Hole ' + n); }
 function worldOf(n){ return WORLDS[Math.floor((n - 1) / 10)]; }
 // the desc a Tour level plays as: the same shape the daily and the themed holes use, so the 3D cache keys work
 function tourDesc(n, host){
