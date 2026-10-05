@@ -390,8 +390,23 @@
        buttons and nothing else, and End Game sits on the grass to its
        right rather than inside it. */
     body.ingame .screen > .meter-wrap{align-self:flex-start;
-      max-width:calc(100% - 150px);border-radius:var(--r-sm);
-      background:rgba(8,16,26,.66);}
+      max-width:calc(100% - 150px);
+      border-radius:var(--r-sm);background:rgba(8,16,26,.66);}
+  }
+  /* AND ON A DESKTOP IT STOPS SHORT OF THE MIDDLE. The camera holds the
+     column the ball can land in, and a deck reaching into that column is a
+     deck the camera has to frame above, which on a laptop is the room the
+     pitcher's head needed (see `deckOverKeep`). The pitching row was 560
+     wide at 1366 against a column starting at 553, so it was paid for by
+     seven pixels of overlap. Half the window less 150 clears the column on
+     every desktop measured from 1024 up, and a deck in the column is what
+     sent a 1100 window back a whole step with bars at its sides. It wraps
+     instead, which costs height at the LEFT, where nothing the camera holds
+     is standing. Not under 1000, because a sideways phone is a short window
+     and a narrower row wraps into a tower: its End Game went 7 pixels off
+     the bottom. */
+  @media (min-aspect-ratio: 3/4) and (min-width: 1000px){
+    body.ingame .screen > .meter-wrap{max-width:calc(50% - 150px);}
   }
   /* THE END GAME ROW STAYS IN THE FLOW ON A TALL WINDOW, and it was pinned to
      the corner here for one commit. The way out of a game really was off the
@@ -769,6 +784,8 @@
     font-weight:700;color:#0f2237;background:rgba(255,252,242,.94);
     border:var(--bd);}
   .arena .corner.park .lbl{color:var(--gold);font-size:11px;font-weight:900;letter-spacing:.2em;}
+  .arena .corner.park{transition:opacity .25s;}
+  .arena.platecam .corner.park{opacity:0;}
   .arena .corner.tl{top:8px;left:8px;text-align:left;}
   .arena .corner.tr{top:8px;right:8px;text-align:right;}
   .arena .corner.bl{bottom:8px;left:8px;text-align:left;}
@@ -11077,7 +11094,49 @@ function plateKeepX() {
   }
   return PLATE_KEEP_X_CACHE;
 }
-const PLATE_KEEP_Y = [152, 198];
+/* The zone's own keep, as the lowest block the crop must still show above
+   the deck. The top of the keep is the pitcher, below. */
+const PLATE_KEEP_BOTTOM = 198;
+/* THE PITCHER IS IN THE KEEP TOO, and for a long time he was not. The box
+   above held the zone and the ball and nothing else, so on a laptop window
+   the camera centred on the zone and started at or below the pitcher's
+   head: a player batting saw a pair of legs on the mound and a park sign
+   where his face should be. Reported as wanting to see the pitcher's face
+   and arm, and the man throwing the ball is the other half of a pitch.
+
+   It is the top of his drawing plus the room the FRESH chip takes over his
+   head, derived from the plate scene rather than written, for the same
+   reason the box above is: a hand-written 51 beside a mound that moves is
+   two copies of one answer. It yields to the zone (see the order of the
+   clamps in `fitFieldCanvas`), because the zone is the game and the man
+   who throws into it is context. */
+let PLATE_KEEP_TOP_CACHE = null;
+function plateKeepTop() {
+  if (PLATE_KEEP_TOP_CACHE == null) {
+    const P = plateGeom();
+    PLATE_KEEP_TOP_CACHE = Math.floor((P.moundY - HERO_DRAW_H * P.pitSc - 18) / PIX);
+  }
+  return PLATE_KEEP_TOP_CACHE;
+}
+/* HOW MUCH OF THE DECK STANDS IN FRONT OF WHAT THE PLATE CAMERA HOLDS, in
+   blocks. `deckCoverBlocks` asks how far the deck reaches UP the arena and
+   says nothing about how far ACROSS it reaches, and on a wide window the
+   swing row is a box at the bottom LEFT: on a 1366 laptop it ends at x 483
+   and the ball's whole range starts at 553. Reserving its height anyway
+   cost the camera 11 blocks it needed for the pitcher's head. So the deck
+   counts only where it really overlaps the column the keep box holds. */
+function deckOverKeep(box, scale, sx, sw, deck) {
+  if (!deck) return 0;
+  const m = document.querySelector('.meter-wrap');
+  if (!m || !m.offsetParent) return deck;
+  const dpr = window.devicePixelRatio || 1;
+  const ab = box.getBoundingClientRect(), mb = m.getBoundingClientRect();
+  const per = scale / dpr;
+  const left = ab.left + (ab.width - sw * per) / 2;
+  const kx = plateKeepX();
+  const c0 = left + (kx[0] - sx) * per, c1 = left + (kx[1] - sx) * per;
+  return (mb.right <= c0 || mb.left >= c1) ? 0 : deck;
+}
 
 function fitFieldCanvas(cv) {
   const box = cv.parentElement;
@@ -11087,6 +11146,11 @@ function fitFieldCanvas(cv) {
   const dpr = window.devicePixelRatio || 1;
   const wBlocks = FIELD_W / PIX, hBlocks = FIELD_H / PIX;
   const plate = plateViewActive(State.game);
+  /* The park's sign hangs at the top centre, which on the plate camera is
+     the pitcher's head. It says where the game is, which the wide camera
+     between pitches says just as well, so it steps aside while a pitch is
+     up rather than sitting on the face of the man throwing it. */
+  box.classList.toggle('platecam', !!plate);
   /* The scale is a whole number of DEVICE pixels per world block. Cover
      takes the larger of the two ratios so nothing is letterboxed and the
      overflow becomes crop; contain takes the smaller, which is the wide
@@ -11107,14 +11171,44 @@ function fitFieldCanvas(cv) {
      foul lines, both corners and the whole wall are still in frame,
      because the world carries margin around the park. */
   const rw = (bw * dpr) / wBlocks, rh = (bh * dpr) / hBlocks;
-  const scale = Math.max(2, Math.ceil(plate ? Math.max(rw, rh) : Math.min(rw, rh)));
+  let scale = Math.max(2, Math.ceil(plate ? Math.max(rw, rh) : Math.min(rw, rh)));
+  /* THE PLATE CAMERA STEPS BACK when the window is too short to hold the
+     pitcher and the zone at once. Cover is what fills a window, and on a
+     wide, short one it fills the width at a scale where the height holds
+     about 130 blocks against the 150 from the pitcher's head to the zone's
+     keep. One whole step back is a smaller picture with both men in it,
+     and a picture that cuts off the man throwing the ball is not a closer
+     one, it is a broken one. On a 21:9 window the step goes past the
+     world's own width and leaves bars at the sides. That is the wide
+     camera's answer on the same window too, and it is the honest trade:
+     a band of colour beside the park against the face of the pitcher. */
+  const [fx, fy] = plate ? plateFocus() : FIELD_FOCUS.wide;
+  const frame = (s) => {
+    const fw = Math.max(1, Math.min(wBlocks, Math.floor((bw * dpr) / s)));
+    const fh = Math.max(1, Math.min(hBlocks, Math.floor((bh * dpr) / s)));
+    let fsx = Math.round(fx / PIX - fw / 2);
+    if (plate) { const kx = plateKeepX(); fsx = Math.max(Math.min(fsx, kx[0]), kx[1] - fw); }
+    fsx = clamp(fsx, 0, Math.max(0, wBlocks - fw));
+    const deck = deckCoverBlocks(box, s);
+    return { fw, fh, fsx, deck, hold: plate ? deckOverKeep(box, s, fsx, fw, deck) : deck };
+  };
+  let F = frame(scale);
+  if (plate) {
+    /* The step asks for his HEAD, not for the room over it that the
+       placement below asks for: a 1366 laptop holds the head with blocks
+       to spare and the chip by none, and stepping back for the chip alone
+       would put bars beside a picture that was already right. */
+    const P = plateGeom();
+    const need = PLATE_KEEP_BOTTOM - Math.floor((P.moundY - HERO_DRAW_H * P.pitSc) / PIX);
+    while (scale > 2 && F.fh - F.hold < need) {
+      scale--; F = frame(scale);
+    }
+  }
   /* The bitmap is the arena, trimmed to a whole number of blocks so the
      source rectangle lands exactly. That leaves under one block of the
      arena uncovered, which is at most a couple of CSS pixels of the
      letterbox colour the arena is painted in anyway. */
-  const sw = Math.max(1, Math.min(wBlocks, Math.floor((bw * dpr) / scale)));
-  const sh = Math.max(1, Math.min(hBlocks, Math.floor((bh * dpr) / scale)));
-  const [fx, fy] = plate ? plateFocus() : FIELD_FOCUS.wide;
+  const sw = F.fw, sh = F.fh;
   /* Put the focus in the middle of what is shown, then refuse to read past
      the edge of the world: a clamp rather than a centre, because a centred
      crop of the plate view puts the batter half out of frame. */
@@ -11129,20 +11223,22 @@ function fitFieldCanvas(cv) {
      on whether the pitch picker is up, and a number here would be right for
      one of those two states. `offsetTop` is integer and cheap; this runs
      every frame and writes almost never. */
-  const deck = deckCoverBlocks(box, scale);
-  let sx = Math.round(fx / PIX - sw / 2);
-  let sy = Math.round(fy / PIX - (sh - deck) / 2);
-  /* Then refuse to cut the zone. Pulled toward it from either side, and the
-     pull is harmless on a wide screen because the crop already holds it. */
+  const deck = F.deck;
+  /* The sideways pull toward the keep box and the world's edge are already
+     in `frame`, because the deck test above needs to know where the column
+     lands. Vertically the camera centres on the band the deck leaves OVER
+     THE KEEP COLUMN, which is `F.hold` and not the deck's whole height. */
+  const sx = F.fsx;
+  let sy = Math.round(fy / PIX - (sh - F.hold) / 2);
+  /* Then refuse to cut the zone, and short of that the pitcher. The pitcher
+     goes first so the zone, applied last, wins whenever the two cannot both
+     be held. */
   if (plate) {
-    const kx = plateKeepX();
-    sx = Math.max(Math.min(sx, kx[0]), kx[1] - sw);
-    sy = Math.max(Math.min(sy, PLATE_KEEP_Y[0]),
-                  PLATE_KEEP_Y[1] - Math.max(1, sh - deck));
+    sy = Math.max(Math.min(sy, plateKeepTop()),
+                  PLATE_KEEP_BOTTOM - Math.max(1, sh - F.hold));
   }
   /* And refuse to read past the edge of the world, which is last because it
      is the only one of the three that cannot be argued with. */
-  sx = clamp(sx, 0, Math.max(0, wBlocks - sw));
   sy = clamp(sy, 0, Math.max(0, hBlocks - sh));
   /* The camera is settled. The last question is how many pixels the PAGE
      has to draw it at, and the browser makes up the difference by a whole
@@ -11429,7 +11525,7 @@ function startFieldLoop() {
 
            PIX STAYS 3 AND IS STILL THE UNIT, which is what keeps this a
            branch rather than a second game. Every constant on the camera
-           is counted in blocks (the crop, `PLATE_KEEP_Y`, `deckCoverBlocks`,
+           is counted in blocks (the crop, `PLATE_KEEP_BOTTOM`, `deckCoverBlocks`,
            `zoneLineMin`, `snapB`), and all of them are about where things
            are and how big, never about whether a block is visible as one.
            Drawing the same geometry at a finer grain does not move any of

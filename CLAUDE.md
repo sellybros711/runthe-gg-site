@@ -8401,6 +8401,38 @@ them nothing they do not know. `check-firstpitch` reads it off the drawing calls
 (a ring of 11 with a dot of 2 at its centre) in both halves, so a check that never
 sees the pitcher's target drawn cannot pass by accident.
 
+#### The pitcher is in the keep, and the deck only counts where it covers the column
+
+Reported from a laptop with a screenshot: a pair of legs on the mound, the park's
+sign where the face should be, and no arm. The keep box held the zone and the ball
+and nothing above them, so the camera centred on the zone, and a short wide window
+started at or below the pitcher's head. Measured at 1366x768 the crop began 55
+logical pixels under his head. The zone checks were green the whole time, because
+the zone was never what was missing.
+
+**Three changes, and each one was needed:**
+
+- **`plateKeepTop()` is the top of his drawing plus room for the FRESH chip**,
+  read off `plateGeom`. It is clamped BEFORE the zone's bottom keep, so the zone
+  still wins when the two cannot both be held.
+- **`deckOverKeep` counts the deck only where it stands in front of the column the
+  ball can land in.** On a wide window the swing row is a box at the bottom left,
+  and reserving its whole height cost the camera the 11 blocks the head needed. On
+  a desktop the deck is held to half the window less 150 (from 1000 wide), so the
+  pitching row wraps at the left instead of reaching the column. Under 1000 it is
+  not held, because a sideways phone's End Game went 7 pixels off the window.
+- **The camera steps back one whole scale when the head still does not fit.** On a
+  21:9 window that leaves bars at the sides, which is the wide camera's answer on
+  the same window. The step asks for the head and not for the chip, or a 1366
+  laptop would get bars for a picture that was already right.
+
+**The park sign steps aside on the plate camera.** It hangs top centre, which is
+the pitcher's face. The wide camera between pitches still shows it.
+
+`check-firstpitch`'s "the pitcher is in the picture" reads the head, the feet and
+the sign off the glass on nine screens in both halves. Against the page before the
+fix it fails ten claims.
+
 #### There are two batter's boxes and the camera only ever framed one
 
 Reported as nothing, because a screenshot of it looks fine about a quarter of the
