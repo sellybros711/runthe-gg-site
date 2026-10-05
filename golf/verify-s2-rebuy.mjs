@@ -61,6 +61,9 @@ window.__R = {
   trackBuy(){ this.invoked=[]; var d=document.createElement('div'); document.body.appendChild(d); S.overlay='tourpass'; overlayTourPass(d);
     var b=d.querySelector('[data-buypass]'); var t=b?b.innerText.replace(/\\s+/g,' '):null; if(b) b.click(); d.remove(); S.overlay=null;
     return {button:t, invoked:this.invoked.slice()}; },
+  heroBuy(){ this.invoked=[]; var d=document.createElement('div'); document.body.appendChild(d); S.overlay='tourpass'; overlayTourPass(d);
+    var h=d.querySelector('.tps-hero'), t=h&&h.querySelector('.tps-title'), kick=t?t.textContent:''; if(h) h.click(); d.remove(); S.overlay=null;
+    return {kick:kick.slice(0,80), invoked:this.invoked.slice()}; },
   storeBuy(){ this.invoked=[]; var n=bucketShopNode('pass'); document.body.appendChild(n);
     var b=[].slice.call(n.querySelectorAll('button')).find(function(x){ return /Pass/.test(x.textContent)&&x.textContent.indexOf('14.99')>=0; });
     var t=b?b.textContent.replace(/\\s+/g,' '):null; if(b) b.click(); n.remove(); return {button:t, invoked:this.invoked.slice()}; },
@@ -112,6 +115,8 @@ try {
     const T = await E('trackBuy');
     ok('the track shows a buy button', !!T.button, T);
     ok('...which starts checkout for the Tour Pass and nothing else', T.invoked.length === 1 && T.invoked[0].fn === 'create-checkout' && T.invoked[0].body.package_id === 'tourpass', T.invoked);
+    const GH = await E('heroBuy');
+    ok('pressing the Go Pro card itself starts the same checkout', /Go Pro/i.test(GH.kick) && GH.invoked.length === 1 && GH.invoked[0].body.package_id === 'tourpass', GH);
     const SB = await E('storeBuy');
     ok('the store sells the Season 2 pass at $14.99', !!SB.button && /Season 2/.test(SB.button), SB.button);
     ok('...and starts the same checkout', SB.invoked.length === 1 && SB.invoked[0].body.package_id === 'tourpass', SB.invoked);
