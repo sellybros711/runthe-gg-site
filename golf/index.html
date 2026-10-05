@@ -11043,7 +11043,7 @@ const PXBALL=[
   // DROPS: Legendary Drop 2 + seasonal themed balls
   {id:'obsidian', name:'Obsidian Ball', hist:'Forged in volcanic glass', price:18000, col:'#241b30', tracer:{g:'rgba(90,63,138,.55)', c:'#c9b0ff'}},
   {id:'flamingo', name:'Flamingo Ball', hist:'Poolside plumage',         price:12000, col:'#ff7fa8', tracer:{g:'rgba(255,127,168,.5)', c:'#ffd4e2'}},
-  {id:'ghost',    name:'Ghost Ball',    hist:'Now you see it...',        price:13000, col:'#eef2f6', tracer:{g:'rgba(238,242,246,.45)', c:'#ffffff'}},
+  {id:'ghost',    name:'Pumpkin Ball',  hist:'Picked fresh from the patch', price:13000, col:'#ee8420', tracer:{g:'rgba(238,132,32,.5)', c:'#ffd08a'}},   // was the Ghost Ball; the id stays so owners keep it
   {id:'eyeball',  name:'Eyeball',       hist:'Keeps an eye on the pin',  price:13000, col:'#f4f0ea', tracer:{g:'rgba(208,48,58,.45)',   c:'#fff0f0'}},
   {id:'snowball', name:'Snowball',      hist:'Packed fresh every tee',   price:12000, col:'#eaf6ff', tracer:{g:'rgba(234,246,255,.5)', c:'#ffffff'}},
   {id:'pigskin',  name:'Pigskin',       hist:'Built for the big game',   price:16000, col:'#7a4a22', tracer:{g:'rgba(122,74,34,.5)',  c:'#d8b48a'}},
@@ -15911,7 +15911,7 @@ const CLUBS=[
  {id:'diamond',name:'Diamond Clubs',tag:'Diamond',rar:'legendary',kind:'pack',b:{dist:1,acc:1,app:1,sht:1,put:1,clu:1},hist:'Flawless from driver to putter'},
  {id:'glizzy',name:'Glizzy Clubs',tag:'Glizzy',rar:'legendary',kind:'pack',b:{sht:2,scr:1,clu:2},hist:'A hot dog on a bun with mustard. Unbothered'},
  {id:'poolnoodle',name:'Pool Noodle Clubs',tag:'Pool Noodle',rar:'epic',kind:'pack',b:{scr:2,clu:2},hist:'A full set of foam. Somehow it works'},
- {id:'coffin',name:'Coffin Clubs',tag:'Coffin',rar:'epic',kind:'pack',b:{dist:3,scr:1},hist:'Buries the competition'},
+ {id:'coffin',name:'Scythe Clubs',tag:'Scythe',rar:'epic',kind:'pack',b:{dist:3,scr:1},hist:'Reaps the whole field'},   // was Coffin Clubs; the id stays so owners keep it
  // Season 2 Tour Pass exclusives. Style only: a pass piece carries no stat boost, so the pass never sells power.
  {id:'broomstick',name:'Broomstick Clubs',tag:'Broomstick',rar:'epic',kind:'pass',b:{},hist:'Season 2 Tour Pass'},
  {id:'pitchfork',name:'Pitchfork Clubs',tag:'Pitchfork',rar:'epic',kind:'pass',b:{},hist:'Season 2 Tour Pass'}];
@@ -16957,10 +16957,15 @@ PXG_HERITAGE_HAT_PAL.reaperhood={'1':'#1c1824','2':'#0a080e','3':'#3a3448','4':'
 // Eyeball: a white ball with a green iris that looks at you, and a few red veins
 PXG_BALL.eyeball=pxgRows([[47,35,'oooo'],[48,34,'ohCCvo'],[49,34,'oCiiCo'],[50,34,'vCipCo'],[51,34,'oCCCso'],[52,35,'oovo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
 PXG_BALL_PAL.eyeball={o:'#8a7a78',C:'#f4f0ea',h:'#ffffff',s:'#d8cfc4',v:'#d0303a',i:'#2f9a5a',p:'#0a0a0e',T:'#e8ebf0'};
-// Coffin Clubs: the driver's shaft with a little coffin for a head, a gold cross on the lid
-PXG_CLUBS.coffin=pxgRows([[40,34,'l'],[41,35,'l'],[42,35,'l'],[43,36,'l'],[44,36,'l'],[45,37,'l'],[46,37,'l'],[47,38,'l'],[48,39,'l'],[49,39,'l'],[50,40,'l'],
-  [51,36,'kkkkk'],[52,35,'kWWXWWk'],[53,35,'kwXXXwk'],[54,35,'kWWXWWk'],[55,36,'kkkkk']]);
-PXG_CLUB_PAL.coffin={k:'#140a06',W:'#4a2812',w:'#341c0c',X:'#e6c25a'};
+// Scythe Clubs (were Coffin Clubs, owner Oct 2026; the id stays 'coffin' so owners keep them): a wooden
+// snath with an iron collar and a long curved blade sweeping back along the ground
+PXG_CLUBS.coffin=pxgRows([[40,34,'W'],[41,35,'W'],[42,35,'w'],[43,36,'W'],[44,36,'W'],[45,37,'W'],[46,37,'w'],[47,38,'W'],
+  [48,29,'kSSSSSSSSG'],[49,27,'kSLLLLLLLLk'],[50,26,'kLLkk'],[51,26,'kk']]);
+PXG_CLUB_PAL.coffin={W:'#6a4424',w:'#4a2e16',G:'#3a3f48',S:'#6e7682',L:'#f2f6fa',k:'#14161c'};
+// Pumpkin Ball (was the Ghost Ball, owner Oct 2026; the id stays 'ghost'): ribbed orange with a stem and a
+// leaf, no face, so it reads apart from the Tour Pass Jack-o'-Lantern
+PXG_BALL.ghost=pxgRows([[46,36,'gl'],[47,35,'oggo'],[48,34,'ohrCro'],[49,34,'oCrCro'],[50,34,'oCrCro'],[51,34,'osrsro'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
+PXG_BALL_PAL.ghost={o:'#8a3a0a',C:'#ee8420',h:'#ffbe68',s:'#c25c10',r:'#a8480c',g:'#4a6a22',l:'#6aa83a',T:'#e8ebf0'};
 // Bone Cleats: black uppers with the foot's bones laid over them in white
 PXG_CLEATS.bone=pxgRows([[52,15,'DDD'],[52,25,'DDD'],[53,13,'DDDDbDbDb'],[53,23,'DDDDbDbDb'],[54,13,'DbbbbbbbD'],[54,23,'DbbbbbbbD'],
   [55,13,'kkkkkkkkk'],[55,23,'kkkkkkkkk']]);
@@ -26765,6 +26770,9 @@ const NEWS_DATE3='8/27/26';
 const NEWS_DATE4='10/1/26';
 const NEWS_DATE5='10/5/26';
 const NEWS_ENTRIES=[
+  {id:'haunted-swap', date:NEWS_DATE5, cat:'tour', icon:'🎃', title:'Scythe Clubs and the Pumpkin Ball',
+   blurb:'Two Haunted Links pieces got new looks. Coffin Clubs are now Scythe Clubs. The Ghost Ball is now a Pumpkin Ball. Own them already? They changed with you.',
+   where:'The Haunted Links page.'},
   {id:'haunted-zombie', date:NEWS_DATE5, cat:'tour', icon:'🎃', title:'Complete Haunted Links, become a Zombie',
    blurb:'Collect all 14 pieces to unlock the Zombie skin. It reskins your whole golfer. Already completed it? Claim again for the skin.',
    where:'The Haunted Links page. Wear it from the Closet under Effects, Skins.'},
@@ -26781,7 +26789,7 @@ const NEWS_ENTRIES=[
    blurb:'The drop and the hunt, in one place. Steps along the way pay coins. Every hidden thing has a hint.',
    where:'The Haunted Links card on the home screen.'},
   {id:'haunted-14', date:NEWS_DATE5, cat:'tour', icon:'🎃', title:'Haunted Links doubles to 14 pieces',
-   blurb:'Seven new pieces: a Reaper Hood, Mummy Wrap, the Eyeball, Coffin Clubs, Cauldron Smoke, Bone Cleats and a Graveyard card. A new step at 10 pieces pays 5,000 coins.',
+   blurb:'Seven new pieces: a Reaper Hood, Mummy Wrap, the Eyeball, Scythe Clubs, Cauldron Smoke, Bone Cleats and a Graveyard card. A new step at 10 pieces pays 5,000 coins.',
    where:'The Haunted Links page and the Pro Shop.'},
   {id:'s2-steady', date:NEWS_DATE5, cat:'tour', icon:'📅', title:'A steadier Tour Pass',
    blurb:'Tiers cost much more. Pass XP from play is cut in half. Seasons simmed to the end and Daily rounds past your third each day pay coins but no Pass XP.',
@@ -37130,7 +37138,7 @@ const DROPS=[
   blurb:'Sun\'s out. Floppy hats, sunset fades and beach shades, live for the hottest stretch of the year. Complete it to unlock the Endless Summer card backdrop, the Rubber Ducky Floatie and 100,000 coins.',
   items:[['pat','pineapple'],['pat','sunset'],['pat','aloha'],['hw','floppy'],['ew','beach'],['ball','flamingo'],['fx','heatwave'],['club','poolnoodle'],['plate','sunsplash']]},
  {id:'spooky', name:'Haunted Links', kicker:'October Only', accent:'#e07a1f', window:[[10,1],[10,31]],
-  blurb:'Witch hats, a reaper\'s hood, mummy wraps and a coffin for a driver. Complete it to unlock the Zombie skin, the Haunted Hollow card backdrop and 100,000 coins. Returns every October.',
+  blurb:'Witch hats, a reaper\'s hood, mummy wraps and a scythe for a driver. Complete it to unlock the Zombie skin, the Haunted Hollow card backdrop and 100,000 coins. Returns every October.',
   items:[['hw','witch'],['pat','skeleton'],['pat','pumpkinpatch'],['ball','ghost'],['fx','ecto'],['top','cape'],['cleats','phantom'],
    ['hw','reaperhood'],['pat','mummywrap'],['ball','eyeball'],['club','coffin'],['fx','cauldron'],['cleats','bone'],['plate','graveyard']]},
  {id:'winter', name:'Winter Classic', kicker:'Holiday Collection', accent:'#9fdcff', window:[[12,1],[12,31]],
@@ -37435,7 +37443,7 @@ function overlaySpookySzn(screen){
       <div class="spk-kick">October only</div>
       <div class="spk-ttl">HAUNTED LINKS</div>
       <div class="spk-sub">IS HERE</div>
-      <p class="spk-lede">The haunted drop is live until ${ends}. Witch hats, a reaper\'s hood, mummy wraps and a coffin for a driver.</p>
+      <p class="spk-lede">The haunted drop is live until ${ends}. Witch hats, a reaper\'s hood, mummy wraps and a scythe for a driver.</p>
       <div class="spk-items">${items}</div>
       <div class="spk-rew">${rewTxt}</div>
       <div class="spk-hint">${SEASON_DECOR.spooky.eggs.length} spooky things are hiding around the game. Find them all for the ${esc(SEASON_DECOR.spooky.prize.name)} and ${coinFmt(SEASON_DECOR.spooky.coins)} coins.</div>
