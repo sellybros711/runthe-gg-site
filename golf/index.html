@@ -829,6 +829,14 @@ window.GA_ID='G-L29P5MRWKE';
   /* CS483m: violet share button - distinct from the scorecard's green(birdie)/amber(bogey)/red score colors */
   .btn.violet{background:linear-gradient(180deg,#a78bfa,#7048d6); color:#f4eeff; box-shadow:0 8px 20px -8px rgba(90,55,175,.72), inset 0 1px 0 rgba(255,255,255,.3)}
   .btn.violet:active{transform:translateY(2px)}
+  /* the Season 2 Tour Pass look, for any overlay about the pass: night sky, season accent, purple for Pro */
+  .ov.tpskin{--tp-acc:#e0762a;--tp-acc2:#ffb35a;--tp-pro:#a66bff;--muted:#b9abcb;background:#100919;
+    background-image:radial-gradient(110% 55% at 50% -8%,rgba(224,118,42,.24),transparent 62%),radial-gradient(90% 60% at 100% 45%,rgba(130,70,220,.18),transparent 70%),linear-gradient(180deg,#170d29 0%,#110a1d 55%,#0b0713 100%)}
+  .tphead{background:linear-gradient(180deg,#ffe0a0 0%,#f5a04a 55%,var(--tp-acc,#e0762a) 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+  .btn.tpgo{background:linear-gradient(160deg,#ffc27a,var(--tp-acc,#e0762a) 50%,#b0561a);color:#2a1204;border:0;
+    box-shadow:0 8px 24px -8px rgba(224,118,42,.75),inset 0 1px 0 rgba(255,255,255,.45)}
+  .btn.tpgo .sub{color:rgba(42,18,4,.78)}
+  .btn.tpgo:active{transform:translateY(2px)}
   /* featured button (a neat/new feature we want to stand out) + a "NEW" corner sticker */
   .btn.feat{position:relative; animation:featPulse 2.4s ease-in-out infinite}
   @keyframes featPulse{0%,100%{box-shadow:0 8px 20px -8px rgba(90,55,175,.72), 0 0 0 1px rgba(167,139,250,.45), inset 0 1px 0 rgba(255,255,255,.3)}
@@ -5819,14 +5827,14 @@ function overlayPurchased(screen){
   var inner='';
   if(p.kind==='pass'){
     var ssn=passSeason();
-    inner='<div class="tag" style="color:#a24be0;border-color:#a24be0;margin:0 auto">🎟️ Tour Pass</div>'
-      +'<h3 style="margin:14px 0 4px;font-size:26px">'+esc(passThemeName())+' is ACTIVE!</h3>'
+    inner='<div class="tag" style="color:'+passAcc2()+';border-color:'+passAcc2()+';margin:0 auto">🎟️ Season '+ssn.n+' Tour Pass</div>'
+      +'<h3 class="tphead" style="margin:14px 0 4px;font-size:30px">'+esc(passThemeName())+' is ACTIVE!</h3>'
       +'<p class="lede" style="max-width:420px;margin:0 auto 12px">Yours for the rest of Season '+ssn.n+' ('+ssn.daysLeft+' day'+(ssn.daysLeft>1?'s':'')+' left).</p>'
       +'<div style="display:flex;flex-direction:column;gap:6px;margin:0 auto 14px;max-width:320px;text-align:left">'
       +[['🎟️','PRO lane of the Season '+ssn.n+' Tour Pass track unlocked'],['♾️','Unlimited Daily Challenge plays'],['🪙','+'+coinFmt(TOURPASS.coins)+' coins, already in your wallet'],['🎁',TOURPASS.packs+' seasonal packs, waiting in Pro Shop → Packs'],['⭐',PASS_REWARD_MULT+'× coins from every mode, starting now']]
         .map(function(x){ return '<div class="small" style="display:flex;gap:8px;align-items:center;color:#eaf5ee"><span style="flex:0 0 auto">'+x[0]+'</span><span>'+esc(x[1])+'</span></div>'; }).join('')
       +'</div>'
-      +'<button class="btn goldfill act" style="max-width:360px;margin:0 auto 8px">Open your packs ▸</button>';
+      +'<button class="btn tpgo act" style="max-width:360px;margin:0 auto 8px">Open your packs ▸</button>';
   } else if(p.kind==='tokens'){
     inner='<div class="tag" style="color:#5bcfe8;border-color:#5bcfe8;margin:0 auto">🎫 Daily Tokens</div>'
       +'<h3 style="margin:14px 0 4px;font-size:26px">+'+p.n+' Daily Token'+(p.n>1?'s':'')+'!</h3>'
@@ -5854,7 +5862,7 @@ function overlayPurchased(screen){
       +(b&&b.packTier?'<div class="scout" style="max-width:360px;margin:0 auto 12px;text-align:center;border-color:'+b.col+'"><b style="color:'+b.col+'">🎁 +'+b.packN+' '+packTierLabel(b.packTier)+' pack'+(b.packN>1?'s':'')+' included</b><div class="small muted" style="margin-top:2px">Already added · Pro Shop → Packs</div></div>':'')
       +'<button class="btn goldfill act" style="max-width:360px;margin:0 auto 8px">'+(b&&b.packTier?'Open your pack'+(b.packN>1?'s':'')+' ▸':'Spend them ▸')+'</button>';
   }
-  var ov=$('<div class="ov" role="dialog" aria-modal="true" style="text-align:center">'
+  var ov=$('<div class="ov'+(p.kind==='pass'?' tpskin':'')+'" role="dialog" aria-modal="true" style="text-align:center'+(p.kind==='pass'?';--tp-acc:'+passAcc():'')+'">'
     +'<button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>'
     +'<div style="font:800 11px var(--body);letter-spacing:.2em;text-transform:uppercase;color:#35d6a0;margin-bottom:10px">✓ Purchase complete</div>'
     +inner
@@ -9907,7 +9915,7 @@ function awardPlayCoins(n, label, xpMult, quiet){ if(!sbSignedIn()||!(n>0)) retu
   addBonusCoins(n,{silent:true,nolog:true});
   coinLog(n, label?String(label).replace(/<[^>]*>/g,''):'Played & earned');
   passAddXp(base*PASS_XP_RATE*(xpMult==null?1:xpMult));   // Tour Pass: every play faucet feeds the Track
-  const passTag=passBonus?' <span class="small" style="color:#a24be0">· Tour Pass ×'+mult+'</span>':'';
+  const passTag=passBonus?' <span class="small" style="color:'+passAcc2()+'">· Tour Pass ×'+mult+'</span>':'';
   if(quiet){ /* the caller owns the row */ }
   else if(wkOn()) wkNote('coins', '<b style="color:#ffd45e">+'+coinFmt(n)+' coins</b>'+(label?' <span class="muted">'+esc(String(label))+'</span>':'')+passTag, 1);
   else try{ toast('<b style="color:#ffd45e">+'+coinFmt(n)+' coins</b>'+(label?' · '+label:'')+passTag+'<br><span class="small" style="color:#8fe0c4">Hit the Pro Shop or rip a pack ▸</span>', 3400); }catch(e){}
@@ -10116,7 +10124,7 @@ const PASS_SEASONS={
       excl:{ prem:{ 20:{cat:'plate',id:'passplate',name:'Tour Pass Plate'}, 60:{cat:'fx',id:'passcrown',name:'Tour Champion Aura'} } } },
   // Oct 5 - Dec 3 2026. One pass, one list: twenty-one Halloween and Thanksgiving pieces on the Pro lane,
   // capped by a ghost light over a cold field. Four of them replace a Pro pack (`swap`).
-  2:{ name:'Hallows & Harvest', accent:'#e0762a',
+  2:{ name:'Hallows & Harvest', accent:'#e0762a', accent2:'#ffb35a',
       capstone:{fx:'wisp', plate:'pass2plate'},
       launch:{ tag:'🎃 Hallows & Harvest', lede:'Twenty-one Halloween and Thanksgiving pieces, all on one track.' },
       // Pro tiers whose pack is traded for the exclusive at that tier (owner, Oct 2026). The Jack-o'-Lantern
@@ -10165,6 +10173,9 @@ const PASS_SEASONS={
 // shows before it starts. Turn it on for a season whose next one should be teased.
 const PASS_NEXT_TEASE=false;
 function passSeasonDef(n){ n=n||passSeason().n; return PASS_SEASONS[n]||{name:'Tour Pass', accent:'#a24be0', capstone:null, items:{}, add:{}}; }
+// the live season's colours, for every surface that talks about the pass (the hub sets the same on its page)
+function passAcc(n){ return passSeasonDef(n).accent||'#e0762a'; }
+function passAcc2(n){ const d=passSeasonDef(n); return d.accent2||d.accent||'#ffb35a'; }
 function passTierReward(t, lane, n){
   const def=passSeasonDef(n), base=passBaseReward(t, lane);
   if(def.legacy) return base;
@@ -10417,7 +10428,7 @@ function passChalProgress(metric, n){ if(!passSystemsOn()||!sbSignedIn()||!(n>0)
   newly.forEach(c=>{ w.done[c.id]=1; });
   LS.set(acctKey('bag_passchal'),w); if(typeof cloudPush==='function') cloudPush();
   newly.forEach(c=>{ passAddXp(c.xp); try{ track('pass_chal_done',{id:c.id, season:w.season}); }catch(e){}
-    try{ toast('<b style="color:#c9a0ff">🎟️ Pass challenge done</b> · +'+coinFmt(Math.round(c.xp*passEventMult()*passXpMult()))+' Pass XP<br><span class="small">'+esc(c.label)+'</span>', 3600); }catch(e){} });
+    try{ toast('<b style="color:'+passAcc2()+'">🎟️ Pass challenge done</b> · +'+coinFmt(Math.round(c.xp*passEventMult()*passXpMult()))+' Pass XP<br><span class="small">'+esc(c.label)+'</span>', 3600); }catch(e){} });
   return newly; }
 // Once per holiday window per account: say it has started, so nobody plays the weekend without knowing.
 function maybePassEventNote(){ if(!passEnabled()||!sbSignedIn()) return; const e=passEventNow(); if(!e) return;
@@ -10437,7 +10448,7 @@ function passChalHTML(){ if(!passSystemsOn()||!sbSignedIn()) return '';
   const head=th?`${th.emoji} ${esc(th.name)}`:'🎟️ Pass Challenges';
   // Title and count on one line, the rules on their own line under it: squeezed beside a long title the
   // rules wrapped into the title on a phone.
-  return `<div class="wg-panel pchal${done>=set.length?' done':''}"${th?' style="border-color:rgba(255,179,90,.55)"':''}><div class="wg-hd" style="margin-bottom:3px"><span${th?' style="color:#ffb35a"':' style="color:#c9a0ff"'}>${head}</span><span class="wg-v">${done}/${set.length}</span></div><div class="small muted" style="margin:0 0 7px">Pays Pass XP only. New ones every Thursday.</div>${rows}</div>`; }
+  return `<div class="wg-panel pchal${done>=set.length?' done':''}"${th?' style="border-color:rgba(255,179,90,.55)"':''}><div class="wg-hd" style="margin-bottom:3px"><span style="color:${th?'#ffb35a':passAcc2()}">${head}</span><span class="wg-v">${done}/${set.length}</span></div><div class="small muted" style="margin:0 0 7px">Pays Pass XP only. New ones every Thursday.</div>${rows}</div>`; }
 /* ═══════════════ DAILY PRIZE WHEEL ═══════════════════════════════════════════════════════════
    One free spin a day (resets at ET midnight with the daily challenge), plus BANKED spins earned
    from Tour Pass tiers and a player's first purchase. The headline prizes are the two TIMED
@@ -10744,7 +10755,7 @@ function overlayWheel(app){
       foot.appendChild($(`<div class="scout" style="max-width:340px;margin:0 auto">Next free spin in <b style="color:#ff7ab8">${dCd('hm')}</b></div>`));
       foot.appendChild($(`<div class="small muted" style="margin-top:8px;max-width:340px;margin-left:auto;margin-right:auto">Earn more spins on the Tour Pass track.</div>`));
     }
-    if(xpBoostActive()) foot.appendChild($(`<div class="small" style="margin-top:10px;color:#c9a0ff;font-weight:800">⚡ 2× Tour Pass XP active · <span class="xpb-val">${fmtBoost(xpBoostMs())}</span> left</div>`));
+    if(xpBoostActive()) foot.appendChild($(`<div class="small" style="margin-top:10px;color:${passAcc2()};font-weight:800">⚡ 2× Tour Pass XP active · <span class="xpb-val">${fmtBoost(xpBoostMs())}</span> left</div>`));
     // the chase: what the next Tour Rep rank turns this wheel into
     const up=wheelNextUpgrade();
     if(up) foot.appendChild($(`<div class="scout" style="max-width:340px;margin:12px auto 0;text-align:left">
@@ -36288,10 +36299,10 @@ function overlayPassClaim(screen){
   if(a.spins>0) cells.push(passRewardCell({spin:{n:a.spins}}));
   if(a.coins>0) cells.push(passRewardCell({coins:a.coins}));
   const grid=cells.map(c=>`<div class="tp-cell claimed" style="border-color:rgba(241,208,74,.35)">${c}</div>`).join('');
-  const ov=$(`<div class="ov tpov" role="dialog" aria-modal="true" style="text-align:center">
+  const ov=$(`<div class="ov tpov tpskin" role="dialog" aria-modal="true" style="text-align:center;--tp-acc:${passAcc()};--tp-acc2:${passAcc2()}">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
-    <div class="tag" style="color:var(--gold);border-color:var(--gold);margin:0 auto">🎟️ Tour Pass</div>
-    <h3 style="margin:12px 0 2px">${a.settled?`Season ${a.settled.join(' and ')} rewards delivered`:`${a.n} reward${a.n===1?'':'s'} claimed!`}</h3>
+    <div class="tag" style="color:var(--tp-acc2);border-color:var(--tp-acc2);margin:0 auto">🎟️ Season ${passSeason().n} Tour Pass</div>
+    <h3 class="tphead" style="margin:12px 0 2px;font-size:28px">${a.settled?`Season ${a.settled.join(' and ')} rewards delivered`:`${a.n} reward${a.n===1?'':'s'} claimed!`}</h3>
     <p class="lede" style="margin:0 auto 14px;max-width:420px">${a.settled?`You reached these tiers and never claimed them. The season ended, so we claimed them for you: ${a.n} reward${a.n===1?'':'s'}.`:'Everything from the tiers you reached, straight into your account.'}</p>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;max-width:440px;margin:0 auto 14px">${grid}</div>
     ${a.coins>0?`<div style="font-family:var(--display);font-size:20px;color:#ffd45e;margin:0 0 4px"><span style="width:20px;height:20px;display:inline-block;vertical-align:-3px">${ic('coin',{size:'20px'})}</span> +${coinFmt(a.coins)} coins total</div>`:''}
@@ -37790,36 +37801,51 @@ function welcomePackPending(){ return !!S._welcomePop; }
 --------------------------------------------------------------------------- */
 function passLevelStyleOnce(){ if(document.getElementById('plcss')) return;
   const st=document.createElement('style'); st.id='plcss'; st.textContent=`
-  /* owner: bigger, vertically centered in the middle of the screen, purple (not gold) */
+  /* owner: bigger, vertically centered in the middle of the screen. Season 2 (Oct 2026): the hub's look,
+     night sky with the season accent for progress and purple for the Pro lane. */
   .plov{text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:100%}
   .pl-inner{width:100%;max-width:520px;margin:0 auto}
-  .pl-kick{font:800 12px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:#c9a0ff;margin-bottom:5px}
-  .plov .pl-title{font-family:var(--display);font-size:clamp(34px,9vw,50px);line-height:1.05;margin:0 0 3px;color:#e8d9ff}
+  .pl-kick{font:900 12px/1 var(--body);letter-spacing:.22em;text-transform:uppercase;color:var(--tp-acc2);margin-bottom:6px}
+  .plov .pl-title{font-family:var(--display);font-size:clamp(36px,9.5vw,54px);line-height:1.05;margin:0 0 4px;filter:drop-shadow(0 6px 22px rgba(224,118,42,.35))}
   .pl-sub{font-size:14.5px;color:var(--muted);margin:0 0 22px}
   .pl-rail{display:flex;align-items:center;gap:13px;max-width:500px;margin:0 auto}
-  .pl-lv{flex:0 0 auto;width:66px;height:66px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    border:2px solid rgba(255,255,255,.16);background:rgba(0,0,0,.3);transition:all .35s ease}
-  .pl-lv b{font:900 24px/1 var(--body);color:#fff}
-  .pl-lv span{font:800 8.5px/1 var(--body);letter-spacing:.12em;color:var(--muted);margin-top:3px}
-  .pl-lv.on{border-color:#b085ff;background:linear-gradient(180deg,rgba(162,110,255,.34),rgba(162,110,255,.12));box-shadow:0 0 22px rgba(162,110,255,.5)}
-  .pl-lv.on b{color:#d8c2ff}
-  .pl-bar{position:relative;flex:1 1 auto;height:24px;border-radius:13px;background:rgba(255,255,255,.1);overflow:hidden;
-    border:1px solid rgba(255,255,255,.08)}
-  .pl-fill{height:100%;width:0;background:linear-gradient(90deg,#7048d6,#a78bfa,#d9c6ff);box-shadow:0 0 14px rgba(162,110,255,.55)}
+  .pl-lv{flex:0 0 auto;width:68px;height:68px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    border:2px solid rgba(255,255,255,.14);background:rgba(20,10,34,.7);transition:all .35s ease}
+  .pl-lv b{font:900 25px/1 var(--body);color:#fff}
+  .pl-lv span{font:900 8.5px/1 var(--body);letter-spacing:.14em;color:var(--muted);margin-top:3px}
+  .pl-lv.on{border-color:var(--tp-acc2);background:radial-gradient(circle at 50% 30%,rgba(255,179,90,.38),rgba(224,118,42,.16) 70%);box-shadow:0 0 0 4px rgba(224,118,42,.16),0 0 26px rgba(224,118,42,.55)}
+  .pl-lv.on b{color:#ffe7c4}
+  .pl-lv.on span{color:var(--tp-acc2)}
+  .pl-bar{position:relative;flex:1 1 auto;height:24px;border-radius:13px;background:rgba(255,255,255,.08);overflow:hidden;
+    border:1px solid rgba(255,255,255,.1)}
+  .pl-fill{height:100%;width:0;background:linear-gradient(90deg,var(--tp-acc),var(--tp-acc2) 70%,#ffe488);box-shadow:0 0 14px rgba(255,160,70,.6)}
   .pl-bar em{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:800 12px/1 var(--body);
-    font-style:normal;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.7)}
-  .pl-gain{margin:16px 0 0;font:900 18px/1.2 var(--body);color:#c9a0ff;min-height:20px}
+    font-style:normal;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.75)}
+  .pl-gain{margin:16px 0 0;font:900 19px/1.2 var(--body);color:var(--tp-acc2);min-height:20px}
   .pl-rw{margin:18px auto 0;max-width:500px;text-align:left}
-  .pl-rw h4{font:800 11px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
-  .pl-row{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:10px;background:rgba(255,255,255,.05);
-    border:1px solid rgba(255,255,255,.07);margin-bottom:7px}
-  .pl-row.pro{border-color:rgba(162,75,224,.5);background:rgba(162,75,224,.12)}
-  .pl-row .pl-t{flex:0 0 auto;font:900 11px/1 var(--body);color:#c9a0ff;min-width:38px}
+  .pl-rw h4{font:900 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--tp-acc2);margin:0 0 8px}
+  .pl-row{display:flex;align-items:center;gap:11px;padding:8px 11px;border-radius:12px;background:rgba(20,10,34,.62);
+    border:1px solid rgba(255,179,90,.22);margin-bottom:7px}
+  .pl-row.pro{border-color:rgba(166,107,255,.5);background:linear-gradient(90deg,rgba(166,107,255,.18),rgba(20,10,34,.62))}
+  .pl-row .pl-t{flex:0 0 auto;font:900 11px/1 var(--body);color:var(--tp-acc2);min-width:44px;display:flex;flex-direction:column;gap:4px}
+  .pl-row .pl-t i{font-style:normal;align-self:flex-start;font:900 8px/1 var(--body);letter-spacing:.12em;padding:3px 5px;border-radius:5px;background:linear-gradient(180deg,#c08bff,#7048d6);color:#fff}
   .pl-row.pro .pl-t{color:#d8c2ff}
-  .pl-row .pl-d{flex:1 1 auto;min-width:0;font-size:13.5px;color:var(--oncard)}
-  .pl-lock{margin-top:8px;font-size:11.5px;color:#c9a0ff}
+  .pl-row.stamp{border-color:rgba(255,212,94,.5);background:linear-gradient(90deg,rgba(255,212,94,.14),rgba(20,10,34,.62))}
+  .pl-row.stamp .pl-t{color:#ffd45e}
+  .pl-row .pl-ic{flex:0 0 auto;width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .pl-row .pl-ic img,.pl-row .pl-ic svg,.pl-row .pl-ic .sthumb{max-width:28px;max-height:28px;display:block}
+  .pl-row .pl-d{flex:1 1 auto;min-width:0;font-size:13.5px;color:#f3e9ff;font-weight:700}
+  .pl-lock{margin-top:8px;font-size:11.5px;color:#d8c2ff}
   @media (prefers-reduced-motion:reduce){ .pl-fill{transition:none!important} .pl-lv{transition:none!important} }`;
   document.head.appendChild(st); }
+// the little picture at the front of an "Unlocked" row: the item itself, else the pack, else what it pays
+function plRewardIcon(r){ try{
+  if(r.cos){ const co=(r.cos.cat==='fx'&&PXFX_BY[r.cos.id])?PXFX_BY[r.cos.id].col:null; return cosThumbHTML(r.cos.cat,{id:r.cos.id,col:co}); }
+  if(r.pack) return `<img src="${pxPackURL(r.pack.tier)}" alt="">`;
+  if(r.shard){ const rr=ACC_RARITY[r.shard.r]; return `<b style="color:${rr.c};font-size:16px">◆</b>`; }
+  if(r.spin) return '<span style="font-size:18px">🎡</span>';
+  if(r.coins) return `<span style="width:22px;height:22px;display:block">${ic('coin',{size:'22px'})}</span>`;
+  }catch(e){} return '<span style="font-size:16px">🎟️</span>'; }
 // one line per reward on a tier, e.g. "Tour pack · 1,500 coins"
 function passRewardLine(r){
   const bits=[];
@@ -37836,10 +37862,10 @@ function overlayPassLevel(screen){
   // Tiers here are EXTENDED (passTierX): past 60 they are overtime tiers, which pay no reward but can earn a mark.
   const pro=passProActive(), gained=Math.max(0,pl.tier1-pl.tier0), TOPX=PASS_OT_MAX, cap=passXpForTierX(TOPX);
   const std=Math.max(0,Math.min(PASS_TIERS,pl.tier1)-pl.tier0), ev=pl.event?passEvents().find(e=>e.id===pl.event):null;
-  const ov=$(`<div class="ov plov" role="dialog" aria-modal="true" aria-label="Tour Pass level up"></div>`);
+  const ov=$(`<div class="ov plov tpskin" role="dialog" aria-modal="true" aria-label="Tour Pass level up" style="--tp-acc:${passAcc()};--tp-acc2:${passAcc2()}"></div>`);
   const inner=$(`<div class="pl-inner"></div>`); const ovAppend=ov.appendChild.bind(ov); ov.appendChild=(n)=>inner.appendChild(n);
   ov.appendChild($(`<div><div class="pl-kick">Tour Pass · Season ${passSeason().n}${pl.tier1>PASS_TIERS?' · Overtime':''}</div>
-    <h3 class="pl-title">${pl.tier1>PASS_TIERS?'Overtime tier':'Tier'} ${pl.tier1} reached</h3>
+    <h3 class="pl-title tphead">${pl.tier1>PASS_TIERS?'Overtime tier':'Tier'} ${pl.tier1} reached</h3>
     <p class="pl-sub">${gained>1?gained+' tiers climbed this time':'You levelled up the Track'}</p></div>`));
   // the rail: level you were on (left) → bar → the next level (right)
   const rail=$(`<div class="pl-rail">
@@ -37852,18 +37878,20 @@ function overlayPassLevel(screen){
   // what those tiers unlocked (free always; pro too when they hold the pass, else a nudge)
   const rw=$(`<div class="pl-rw"><h4>Unlocked</h4></div>`);
   for(let t=pl.tier0+1;t<=Math.min(PASS_TIERS,pl.tier1);t++){
-    rw.appendChild($(`<div class="pl-row"><span class="pl-t">T${t}</span><span class="pl-d">${esc(passRewardLine(passTierReward(t,'free')))}</span></div>`));
-    if(pro) rw.appendChild($(`<div class="pl-row pro"><span class="pl-t">T${t} PRO</span><span class="pl-d">${esc(passRewardLine(passTierReward(t,'prem')))}</span></div>`));
-    if(t===PASS_STAMP_TIER) rw.appendChild($(`<div class="pl-row pro"><span class="pl-t">T${t}</span><span class="pl-d">Season ${passSeason().n} stamp, on your nameplate for good</span></div>`));
+    const rf=passTierReward(t,'free');
+    rw.appendChild($(`<div class="pl-row"><span class="pl-t">T${t}</span><span class="pl-ic">${plRewardIcon(rf)}</span><span class="pl-d">${esc(passRewardLine(rf))}</span></div>`));
+    if(pro){ const rp=passTierReward(t,'prem');
+      rw.appendChild($(`<div class="pl-row pro"><span class="pl-t">T${t}<i>PRO</i></span><span class="pl-ic">${plRewardIcon(rp)}</span><span class="pl-d">${esc(passRewardLine(rp))}</span></div>`)); }
+    if(t===PASS_STAMP_TIER) rw.appendChild($(`<div class="pl-row stamp"><span class="pl-t">T${t}</span><span class="pl-ic"><span style="font-size:17px">🏅</span></span><span class="pl-d">Season ${passSeason().n} stamp, on your nameplate for good</span></div>`));
   }
   if(pl.tier1>PASS_TIERS){ const o0=Math.max(PASS_TIERS+1,pl.tier0+1);
-    rw.appendChild($(`<div class="pl-row"><span class="pl-t">OT</span><span class="pl-d">${o0===pl.tier1?'Overtime tier '+pl.tier1:'Overtime tiers '+o0+' to '+pl.tier1} of ${TOPX}</span></div>`));
-    PASS_MARKS.forEach((m,i)=>{ if(pl.tier0<m && pl.tier1>=m) rw.appendChild($(`<div class="pl-row pro"><span class="pl-t">T${m}</span><span class="pl-d">${'★'.repeat(i+1)} Prestige mark on your Season ${passSeason().n} stamp</span></div>`)); }); }
+    rw.appendChild($(`<div class="pl-row"><span class="pl-t">OT</span><span class="pl-ic"><span style="font-size:16px">⏩</span></span><span class="pl-d">${o0===pl.tier1?'Overtime tier '+pl.tier1:'Overtime tiers '+o0+' to '+pl.tier1} of ${TOPX}</span></div>`));
+    PASS_MARKS.forEach((m,i)=>{ if(pl.tier0<m && pl.tier1>=m) rw.appendChild($(`<div class="pl-row stamp"><span class="pl-t">T${m}</span><span class="pl-ic"><b style="color:#ffd45e;font-size:16px">★</b></span><span class="pl-d">${'★'.repeat(i+1)} Prestige mark on your Season ${passSeason().n} stamp</span></div>`)); }); }
   if(!pro && TOURPASS_ENABLED && std>0) rw.appendChild($(`<div class="pl-lock">The PRO rewards on ${gained>1?'these tiers':'this tier'} are waiting too. Grab the Tour Pass to unlock them.</div>`));
   ov.appendChild(rw);
   const _cl=passClaimable();
-  const go=$(_cl>0?`<button class="btn violet" style="margin-top:18px">Collect in the Tour Pass ▸<span class="sub">${_cl} reward${_cl===1?'':'s'} ready to claim</span></button>`
-                  :`<button class="btn violet" style="margin-top:18px">View the Track ▸</button>`);
+  const go=$(_cl>0?`<button class="btn tpgo" style="margin-top:18px">Collect in the Tour Pass ▸<span class="sub">${_cl} reward${_cl===1?'':'s'} ready to claim</span></button>`
+                  :`<button class="btn tpgo" style="margin-top:18px">View the Track ▸</button>`);
   go.onclick=()=>{ S.passLevel=null; S.overlay='tourpass'; track('tourpass_levelup_go'); render(); };
   ov.appendChild(go);
   const later=$(`<button class="btn ghost" style="margin-top:8px">Later</button>`);
@@ -37881,7 +37909,7 @@ function overlayPassLevel(screen){
     const b=passXpForTierX(t), n=passXpForTierX(t+1); return Math.round(Math.min(xp,cap)-b)+' / '+(n-b)+' XP'; };
   const setStop=(t)=>{ lv.querySelector('b').textContent=t; nx.querySelector('b').textContent=Math.min(TOPX,t+1); };
   const rest=()=>{ setStop(pl.tier1); fill.style.transition='width .6s ease'; fill.style.width=pctInto(pl.xp1,pl.tier1)+'%';
-    lab.textContent=label(pl.xp1,pl.tier1); lv.classList.add('on'); if(gEl) gEl.innerHTML=emojifyIcons('+'+coinFmt(Math.round(pl.xp1-pl.xp0))+' XP'+(pl.boost?' <span style="color:#c9a0ff">(2× boost ⚡)</span>':'')+(ev?' <span style="color:#ffb35a">('+ev.emoji+' '+(ev.mult||2)+'× '+esc(ev.name)+')</span>':'')+' · Tier '+pl.tier0+' → '+pl.tier1); };
+    lab.textContent=label(pl.xp1,pl.tier1); lv.classList.add('on'); if(gEl) gEl.innerHTML=emojifyIcons('+'+coinFmt(Math.round(pl.xp1-pl.xp0))+' XP'+(pl.boost?' <span style="color:#ffe488">(2× boost ⚡)</span>':'')+(ev?' <span style="color:#ffb35a">('+ev.emoji+' '+(ev.mult||2)+'× '+esc(ev.name)+')</span>':'')+' · Tier '+pl.tier0+' → '+pl.tier1); };
   // pace it so one level feels weighty but a big climb doesn't drag (the whole run stays ~4s)
   const FILL=Math.max(260, Math.round(850/Math.max(1,Math.sqrt(gained)))), HOLD=Math.max(120, Math.round(FILL*0.29));
   if(reduce){ rest(); return; }
@@ -37964,7 +37992,7 @@ function maybePassRewards(){ try{
   try{ cloudPush(); }catch(e){}
   if(boost>0){ try{ toast('<span style="color:#a24be0;font-weight:800">🎟️ Season 1 boost applied</span><br><span class="small">Jumped to tier '+PASS_S1_BOOST_TIERS+'. '+passClaimable()+' rewards ready to claim.</span>', 6000); }catch(e){} }
   var pkNm=''; try{ pkNm=packType(tier).name; }catch(e){}
-  try{ toast('<span style="color:#a24be0;font-weight:800">🎟️ '+esc(passThemeName())+' active!</span><br><span class="small">PRO lane unlocked, unlimited daily plays &amp; '+PASS_REWARD_MULT+'× rewards'+(n>0?', plus '+n+' FREE '+esc(pkNm||'pack')+(n>1?'s':'')+' (Pro Shop → Packs)':'')+'.</span>', 6000); }catch(e){}
+  try{ toast('<span style="color:'+passAcc2()+';font-weight:800">🎟️ '+esc(passThemeName())+' active!</span><br><span class="small">PRO lane unlocked, unlimited daily plays &amp; '+PASS_REWARD_MULT+'× rewards'+(n>0?', plus '+n+' FREE '+esc(pkNm||'pack')+(n>1?'s':'')+' (Pro Shop → Packs)':'')+'.</span>', 6000); }catch(e){}
 }catch(e){} }
 // Coin-bucket BONUS PACKS (Large +1 Tour / XL +1 Champion / Mega +3 Champion): advertised on the store
 // card, granted HERE client-side (packs are a client-side store: the webhook only credits coins). Reads
@@ -38805,10 +38833,10 @@ function bucketShopNode(focus){
   var wrap=$('<div style="padding:6px 2px 4px"></div>');
   // ---- Tour Pass (60-day season: THE one pass sold) ----
   if(TOURPASS_ENABLED && showPass){
-    var passCol='#a24be0', active=dailyPassActive(), ssn=passSeason();
-    wrap.appendChild($('<div class="small muted" style="text-transform:uppercase;letter-spacing:.14em;font-weight:800;text-align:center;margin:22px 0 2px;color:'+passCol+'">Tour Pass</div>'));
-    var pc=$('<div class="'+(active?'':'packcard-glow')+'" style="--pkg:'+passCol+'aa;max-width:400px;margin:8px auto 0;padding:14px;border-radius:16px;background:linear-gradient(165deg,'+passCol+'22,#0c1f16);border:2px solid '+passCol+';'+(active?'box-shadow:0 0 18px '+passCol+'66':'')+'"></div>');
-    pc.appendChild($('<div style="font-family:var(--display);font-size:22px;color:'+passCol+';text-align:center">'+esc(passThemeName())+'</div>'));
+    var passCol=passAcc(), passCol2=passAcc2(), active=dailyPassActive(), ssn=passSeason();
+    wrap.appendChild($('<div class="small muted" style="text-transform:uppercase;letter-spacing:.14em;font-weight:800;text-align:center;margin:22px 0 2px;color:'+passCol2+'">Season '+ssn.n+' Tour Pass</div>'));
+    var pc=$('<div class="'+(active?'':'packcard-glow')+'" style="--pkg:'+passCol+'aa;max-width:400px;margin:8px auto 0;padding:14px;border-radius:16px;background:radial-gradient(120% 70% at 50% -10%,'+passCol+'40,transparent 62%),linear-gradient(165deg,#1d1030,#110a1d);border:2px solid '+passCol+';'+(active?'box-shadow:0 0 18px '+passCol+'66':'')+'"></div>');
+    pc.appendChild($('<div class="tphead" style="font-family:var(--display);font-size:24px;text-align:center;--tp-acc:'+passCol+'">'+esc(passThemeName())+'</div>'));
     pc.appendChild($('<div class="small" style="text-align:center;color:#cfe6d8;margin:2px 0 8px">A 60-day season pass · '+ssn.daysLeft+' day'+(ssn.daysLeft>1?'s':'')+' left in Season '+ssn.n+'</div>'));
     var perks=$('<div style="display:flex;flex-direction:column;gap:5px;margin:0 auto;max-width:300px"></div>');
     [['🎟️','Unlocks the PRO lane of the Season '+ssn.n+' Tour Pass track'],['♾️','Unlimited daily plays at any course'],['🪙','+'+coinFmt(TOURPASS.coins)+' coins, instantly'],['🎁',TOURPASS.packs+' seasonal packs'],['⭐','Earn '+PASS_REWARD_MULT+'× coins from every mode'],['🕒','Fast sim: the quickest pace in Career Mode']].forEach(function(p){
@@ -38819,7 +38847,7 @@ function bucketShopNode(focus){
       pc.appendChild($('<div style="margin-top:11px;text-align:center;font:900 14px var(--body);color:#35d6a0;background:rgba(53,214,160,.12);border:1px solid rgba(53,214,160,.4);border-radius:12px;padding:9px">✓ Active · PRO lane, unlimited plays &amp; '+PASS_REWARD_MULT+'× rewards</div>'));
       pc.appendChild($('<div class="small muted" style="text-align:center;margin-top:6px">Yours for the rest of Season '+ssn.n+' ('+ssn.daysLeft+' day'+(ssn.daysLeft>1?'s':'')+' left). The Season '+(ssn.n+1)+' pass goes on sale when the new season starts.</div>'));
     } else {
-      var pbuy=$('<button class="btn" style="width:100%;margin:11px 0 0;background:'+passCol+';color:#fff;font-weight:900;font-size:16px">Get the Season '+ssn.n+' Pass · $'+TOURPASS.usd.toFixed(2)+'</button>');
+      var pbuy=$('<button class="btn tpgo" style="width:100%;margin:11px 0 0;font-weight:900;font-size:16px;--tp-acc:'+passCol+'">Get the Season '+ssn.n+' Pass · $'+TOURPASS.usd.toFixed(2)+'</button>');
       pbuy.onclick=function(){ beginPassPurchase(); };
       pc.appendChild(pbuy);
     }
@@ -39018,7 +39046,7 @@ function overlayShop(screen){
       <button class="btn ghost x2 shop-x" aria-label="Close">✕</button></div>
     ${(['apparel','accessories','effects','bag','owned','drops'].indexOf(sec)>=0)?`<div class="shop-preview">${avatarFullHTML()}</div>`:''}
     <div class="segrow shopseg" role="tablist" aria-label="Pro Shop sections">
-      ${TOURPASS_ENABLED?`<button data-sec="tourpass" class="${sec==='tourpass'?'on':''}" style="color:${sec==='tourpass'?'':'#c98bf0'}">🎟️ Tour Pass</button>`:''}
+      ${TOURPASS_ENABLED?`<button data-sec="tourpass" class="${sec==='tourpass'?'on':''}" style="color:${sec==='tourpass'?'':passAcc2()}">🎟️ Tour Pass</button>`:''}
       ${TOKENS_ENABLED?`<button data-sec="tokens" class="${sec==='tokens'?'on':''}" style="color:${sec==='tokens'?'':'#7fdcef'}">Tokens</button>`:''}
       ${packsOn()?`<button data-sec="packs" class="${sec==='packs'?'on':''}">Packs</button>`:''}
       ${packsOn()?`<button data-sec="shards" class="${sec==='shards'?'on':''}">◆ Shards</button>`:''}
