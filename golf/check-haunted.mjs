@@ -40,7 +40,7 @@ window.__H = {
   page(){ var d=document.createElement('div'); document.body.appendChild(d); S.overlay='haunted'; overlayHaunted(d);
     var o={ shown:!!d.querySelector('.hl-ov'), claimBar:!!d.querySelector('[data-hlall]'), stepBtns:d.querySelectorAll('[data-hlstep]').length,
       dropBtn:!!d.querySelector('[data-hldrop]'), finds:d.querySelectorAll('.hl-f').length, gos:[].map.call(d.querySelectorAll('[data-hlgo]'),function(b){ return b.getAttribute('data-hlgo'); }),
-      items:d.querySelectorAll('.hl-it').length, lit:d.querySelectorAll('.hl-it.yes').length, txt:d.textContent.replace(/\\s+/g,' ') };
+      items:d.querySelectorAll('.dc').length, lit:d.querySelectorAll('.dc.own').length, txt:d.textContent.replace(/\\s+/g,' ') };
     d.remove(); S.overlay=null; return o; },
   claimAll(){ var t0=window.toast; window.toast=function(){}; var c=hlClaimAll(); window.toast=t0;
     var ov=document.getElementById('dropreward-ov'); if(ov) ov.remove(); return c; },
