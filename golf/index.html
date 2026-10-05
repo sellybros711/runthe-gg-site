@@ -37340,6 +37340,62 @@ function overlaySpookySzn(screen){
   screen.appendChild(ov);
 }
 
+/* ═══════════════ DROP CARDS: a drop's pieces, shown the way they are worn ══════════════════════════
+   Owner (Oct 2026): the event pages showed a drop as seven tiny shop thumbnails, and the ones not yet owned
+   were greyed to near black, so a player could not see what they were chasing. A drop card puts the piece on
+   a lit stage instead: worn by the player's own golfer (hats, eyewear, patterns, outerwear, auras), or drawn
+   large where a figure would make it a speck (a ball, cleats, a club). Each card names the piece and wears its
+   rarity's colour. An owned piece gets a check; one still to get keeps its colour and gets a lock. */
+const DC_WORN={hw:'hatStyle', ew:'eyewear', pat:'shirtPat', top:'top', fx:'fx', leg:'leg'};
+// how close the stage frames the golfer, by what it is showing off: scale and the point it zooms toward
+const DC_ZOOM={hw:[1.75,'50% 4%'], ew:[2.1,'50% 12%'], pat:[1.45,'50% 38%'], top:[1.25,'50% 34%'], fx:[1.15,'50% 70%'], leg:[1.35,'50% 80%']};
+function dcLook(cat,id){ const base=Object.assign({}, DEFLOOK, (typeof S!=='undefined'&&S.look)||{});
+  // strip what would compete with the piece, then put it on
+  Object.assign(base,{fx:'',top:'',shirtPat:'',eyewear:'',leg:'',cleats:'',cap:true,hatStyle:'cap'});
+  base[DC_WORN[cat]]=id; if(cat==='hw') base.cap=true; return base; }
+function dcCols(n){ return n<=7?n:Math.ceil(n/2); }
+function dcRarity(cat,id){ try{ const r=packRarityOf(cosmeticPriceBase(cat,id)); return ACC_RARITY[r]?r:'epic'; }catch(e){ return 'epic'; } }
+function dropCardHTML(cat,id,acc){ dcStyleOnce();
+  let o={id:id}; try{ o=(cosmeticItems(cat)||[]).find(x=>x.id===id)||o; }catch(e){}
+  const own=cosOwned(cat,id), rr=dcRarity(cat,id), rc=ACC_RARITY[rr].c;
+  let art='';
+  if(DC_WORN[cat]){ const z=DC_ZOOM[cat]||[1,'50% 50%'];
+    art=`<div class="dc-art" style="transform:scale(${z[0]});transform-origin:${z[1]}">${pxFigureHTML(dcLook(cat,id),120)}</div>`; }
+  else { const co=(cat==='fx'&&PXFX_BY[id])?PXFX_BY[id].col:null; art=`<div class="dc-big dc-${cat}">${cosThumbHTML(cat,Object.assign({},o,{col:co||o.col}))}</div>`; }
+  return `<div class="dc${own?' own':''}" style="--rc:${rc};--acc:${acc||'#ff9a3a'}" title="${esc(o.name||id)}">
+    <div class="dc-st"><i class="dc-glow"></i><i class="dc-floor"></i>${art}</div>
+    <div class="dc-nm">${esc(o.name||id)}</div>
+    <div class="dc-rr">${ACC_RARITY[rr].label}</div>
+    ${own?'<span class="dc-ck" aria-label="Owned">✓</span>':'<span class="dc-lk" aria-label="Not owned yet"><svg viewBox="0 0 12 14" width="10" height="12"><path d="M3.2 6V4.3a2.8 2.8 0 0 1 5.6 0V6" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="1.2" y="6" width="9.6" height="7.2" rx="1.6" fill="currentColor"/></svg></span>'}</div>`; }
+let _dccss=false;
+function dcStyleOnce(){ if(_dccss) return; _dccss=true; const st=document.createElement('style'); st.textContent=`
+  .dc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+  /* a wide screen holds a set in one row, or two even rows when it is bigger than seven */
+  @media(min-width:560px){ .dc-grid{grid-template-columns:repeat(var(--dc-n,6),1fr)} }
+  .dc{position:relative;border-radius:14px;padding:5px 5px 7px;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(0,0,0,.25));
+    border:1.5px solid color-mix(in srgb,var(--rc) 45%,transparent);box-shadow:inset 0 1px 0 rgba(255,255,255,.08);text-align:center;min-width:0}
+  .dc-st{position:relative;aspect-ratio:4/5;border-radius:10px;overflow:hidden;
+    background:radial-gradient(90% 70% at 50% 30%,color-mix(in srgb,var(--rc) 30%,#1b1028),#0d0817 78%)}
+  .dc-glow{position:absolute;left:50%;top:38%;width:90%;height:70%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(closest-side,color-mix(in srgb,var(--rc) 45%,transparent),transparent);opacity:.7}
+  .dc-floor{position:absolute;left:18%;right:18%;bottom:5%;height:9%;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.55),transparent)}
+  .dc-art{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6%}
+  .dc-art .pxfxwrap{display:inline-block;height:92%}
+  .dc-art img.pxfigsm{height:92%!important;width:auto!important}
+  .dc-art .pxfxwrap img.pxfigsm{height:100%!important}
+  .dc-big{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+  .dc-big .sthumb{width:74%!important;height:auto!important;aspect-ratio:1;background:none!important;border:0!important;box-shadow:none!important;padding:0}
+  .dc-big .sthumb img{width:100%;height:100%;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 6px 10px rgba(0,0,0,.55))}
+  .dc-big.dc-ball .sthumb{width:58%!important}
+  .dc-nm{margin-top:6px;font:800 11px/1.15 var(--body);color:#fff;min-height:2.3em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .dc-rr{font:900 8px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--rc);margin-top:3px}
+  .dc-ck,.dc-lk{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:900 11px/1 var(--body)}
+  .dc-ck{background:var(--acc);color:#1d0d02;box-shadow:0 0 0 2px #120a1c,0 0 12px var(--acc)}
+  .dc-lk{background:#2a1f3e;color:#e8dcff;box-shadow:0 0 0 2px #120a1c}
+  .dc.own{border-color:var(--acc);box-shadow:0 0 18px -6px var(--acc),inset 0 1px 0 rgba(255,255,255,.12)}
+  .dc:not(.own) .dc-art,.dc:not(.own) .dc-big{filter:saturate(.75) brightness(.82)}
+  .dc:not(.own) .dc-nm{color:#d8cfe6}`;
+  document.head.appendChild(st); }
+
 /* ═══════════════ HAUNTED LINKS: the October event page ═══════════════════════════════════════════
    Owner (Oct 2026): the drop and the hunt are one event, so they get one page and one name. It shows
    both meters, pays a little on the way (HL_STEPS), and keeps the two big rewards where they were: the
@@ -37474,8 +37530,7 @@ function overlayHaunted(screen){
       <span class="th">${cfg.prize?rewardThumbHTML(cfg.prize.cat,cfg.prize.id):coinIc}</span>
       <span class="w"><b>${esc(cfg.prize?cfg.prize.name:'Hunt prize')}</b><span>+ ${coinFmt(cfg.coins)} coins · find all ${hn}</span></span>
       <span class="st">${prizeDone?'✓ CLAIMED':hf+'/'+hn}</span></div>`;
-  const items=(d?d.items:[]).map(ci=>{ let th=''; try{ const o=(cosmeticItems(ci[0])||[]).find(x=>x.id===ci[1])||{id:ci[1]}; th=cosThumbHTML(ci[0],o); }catch(e){}
-    return `<div class="hl-it ${cosOwned(ci[0],ci[1])?'yes':'no'}"><div>${th}</div></div>`; }).join('');
+  const items=(d?d.items:[]).map(ci=>dropCardHTML(ci[0],ci[1],'#ff9a3a')).join('');
   const finds=cfg.eggs.map(id=>{ const got=found.indexOf(id)>=0, go=!got&&HL_GO[id];
     const inner=got?`<span class="sp">${spkEl(HL_SPRITE[id]||'ghost',30)}</span><span class="w">Found ${esc(cfg.found[id]||'it')}</span>`
       :`<span class="sp">?</span><span class="w">${esc(HL_HINTS[id]||'Somewhere in the game')}</span>${go?'<span class="go">GO ▸</span>':''}`;
@@ -37491,7 +37546,7 @@ function overlayHaunted(screen){
     ${cl>0?`<button class="hl-claim" data-hlall><span class="hl-cpk">${spkEl('pumpkin',34)}</span><span><b>${cl} reward${cl===1?'':'s'} ready</b><span class="s">Tap to claim ${cl===1?'it':'them all'}</span></span><span class="go">Claim ▸</span></button>`:''}
     <div class="hl-sec drop"><div class="hl-sh"><span class="k">THE DROP</span><b>${dc.own} of ${dc.tot}</b></div>
       <p class="hl-sub">Seven pieces, from Haunted Links packs and the Pro Shop.</p>
-      <div class="hl-items">${items}</div>
+      <div class="dc-grid" style="--dc-n:${dcCols(d?d.items.length:7)}">${items}</div>
       <div class="hl-track"><div class="hl-fill" style="width:${dc.tot?Math.round(100*dc.own/dc.tot):0}%"></div></div>
       <div class="hl-steps">${HL_STEPS.filter(s=>s.meter==='drop').map(stepRow).join('')}${dropFinal}</div>
       <button class="hl-shop" data-hlshop>Shop the drop ▸</button></div>
@@ -37731,8 +37786,7 @@ function overlayWinter(screen){
       <p class="wc-sub">Eight nights of gelt, Dec ${WC_HNK_FROM} to ${WC_HNK_FROM+WC_HNK_NIGHTS-1}. Light each candle by Dec ${WC_HNK_LAST}. Every gift spins the dreidel: gimel doubles it, hei adds half. Night 8 adds a pack.${pro?' Pro doubles the gelt.':''}</p>
       <div class="wc-men" aria-hidden="true">${cds}</div><div class="wc-base"></div>
       ${d<WC_HNK_FROM?'':`<div class="wc-nights">${nights}</div>`}</div>`; }
-  const dr=wcDrop(), items=(dr?dr.items:[]).map(ci=>{ let th=''; try{ const o=(cosmeticItems(ci[0])||[]).find(x=>x.id===ci[1])||{id:ci[1]}; th=cosThumbHTML(ci[0],o); }catch(e){}
-    return `<div class="wc-it ${cosOwned(ci[0],ci[1])?'yes':'no'}">${th}</div>`; }).join('');
+  const dr=wcDrop(), items=(dr?dr.items:[]).map(ci=>dropCardHTML(ci[0],ci[1],'#ffd56e')).join('');
   const dp=dr?dropProgress(dr):{own:0,tot:0};
   const ov=$(`<div class="ov wc-ov" role="dialog" aria-modal="true" aria-label="Winter Classic">${snow}
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
@@ -37747,7 +37801,7 @@ function overlayWinter(screen){
       <div class="wc-legend"><span><b>★</b> right answer, prize doubled</span><span><b>✓</b> opened</span><span>Missed doors open until Dec 31</span></div></div>
     ${hnk}
     ${dr?`<div class="wc-sec"><div class="wc-sh"><span class="k">THE DROP</span><b>${dp.own} of ${dp.tot}</b></div>
-      <p class="wc-sub">${esc(dr.blurb||'')}</p><div class="wc-items">${items}</div>
+      <p class="wc-sub">${esc(dr.blurb||'')}</p><div class="dc-grid" style="--dc-n:${dcCols(dr.items.length)}">${items}</div>
       <button class="wc-shop" data-wcshop>Shop the drop ▸</button></div>`:''}
     <div class="wc-note">${signed?'Each door and each night pays once per account.':'Sign in to open doors and light candles. Each one pays once per account.'}</div>
     <button class="btn red" style="margin-top:14px">Close</button></div>`);
