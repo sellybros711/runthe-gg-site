@@ -10035,7 +10035,7 @@ function passCountdown(n, now){
   var ms=Math.max(0, passSeasonEndMs(n) - (now||Date.now())), s=Math.floor(ms/1000);
   return {d:Math.floor(s/86400), h:Math.floor(s/3600)%24, m:Math.floor(s/60)%60, s:s%60, ms:ms};
 }
-const PASS_XP_RATE=0.51;                                      // Pass XP per BASE coin earned: the key climb-speed knob
+const PASS_XP_RATE=0.3;                                       // Pass XP per BASE coin earned: the key climb-speed knob
 const PASS_XP_SEASON=0.4;                                    // a career season feeds the Track at 40% (it's repeatable at will; the daily is capped)
 const PASS_PRO_MULT=1.25;                                    // Pro holders earn 1.25× coins from play (reuses passRewardMult)
 function passDayNum(){ const t=todayKey(), y=Math.floor(t/10000), mo=Math.floor(t/100)%100, d=t%100; return Math.floor(Date.UTC(y,mo-1,d)/86400000); }
@@ -10046,9 +10046,9 @@ function passState(){ let s=LS.get(acctKey('bag_tourpass'),null); const cur=pass
   if(!s.claimed||typeof s.claimed!=='object') s.claimed={free:[],prem:[]};
   if(!Array.isArray(s.claimed.free)) s.claimed.free=[]; if(!Array.isArray(s.claimed.prem)) s.claimed.prem=[];
   s.xp=Math.max(0,+s.xp||0); s.pro=!!s.pro;
-  // the day-pace bank (live for a few hours on Oct 5) comes back onto the track once, at the new 15% lower rate.
+  // the day-pace bank (live for a few hours on Oct 5) comes back onto the track once, at the new half rate.
   // It is v4 XP, so it lands before the curve conversion. paceV 2 merges as a max, so no device pays it twice.
-  if(s.paceV!==2){ if(+s.bank>0 && (s.curveV|0)===4) s.xp+=Math.round(s.bank*0.85); delete s.bank; delete s.grand; s.paceV=2; passSave(s); }
+  if(s.paceV!==2){ if(+s.bank>0 && (s.curveV|0)===4) s.xp+=Math.round(s.bank*0.5); delete s.bank; delete s.grand; s.paceV=2; passSave(s); }
   if(s.curveV!==PASS_CURVE_V){ passConvertCurve(s); passSave(s); }   // one-time re-map onto the current XP curve
   passHistFromState(s);   // no-op unless this season's best tier went up (Season 1's stamp lands here before Oct 5)
   // `pro` was the retired coin unlock. It now means "this account had Pro at some point THIS season", which
@@ -10085,12 +10085,12 @@ function passProActive(){ return sbSignedIn() && (dailyPassActive() || devMode()
 // around tier 35 by day 60, and the 3-seasons-a-day grinder needs 22 days instead of 5.
 //
 // v5 (owner, Oct 5 2026: seven tiers from one career season). v4's first tiers cost 95 XP, so a strong
-// season bought six or seven of them, while the last cost 1,535. v5 is nearly flat for the same 35,898 XP:
-// tier 1 costs 380 and tier 60 costs 817, so a strong season is a tier or two all season long. With
-// PASS_XP_RATE down 15% (0.6 to 0.51) and Daily rounds past the 3rd paying no Pass XP, a steady player
-// (the Daily and a season a day) finishes around day 50 of the 60.
+// season bought six or seven of them, while the last cost 1,535. v5 is nearly flat for the same ~35,900 XP:
+// tier 1 costs 300 and tier 60 costs 896, so a strong season is about a tier all season long. With
+// PASS_XP_RATE halved (0.6 to 0.3, owner: "cut the xp players earn in half") and Daily rounds past the 3rd paying no Pass XP, a steady player
+// (the Daily and a season a day) reaches about tier 50 by day 60, and finishing all 60 takes more than that.
 const PASS_CURVE_V=5;                                        // bump to re-convert everyone's XP onto a new curve
-const PASS_C0=380, PASS_C1=7.4, PASS_C2=0;                     // cost(t) = C0 + C1*(t-1) + C2*(t-1)^2, climb-shape knobs
+const PASS_C0=300, PASS_C1=10.1, PASS_C2=0;                    // cost(t) = C0 + C1*(t-1) + C2*(t-1)^2, climb-shape knobs
 function passTierCost(t){ const k=t-1; return PASS_C0 + PASS_C1*k + PASS_C2*k*k; }
 var _passCum=null;                                           // cumulative XP per tier, memoized (the UI walks every tier per render)
 function passXpForTier(t){
@@ -10123,7 +10123,7 @@ function passConvertCurve(s){
 }
 function passTierAt(xp){ let t=0; while(t<PASS_TIERS && xp>=passXpForTier(t+1)) t++; return t; }
 /* NO DAILY PACE (owner, Oct 5 2026: "Why do we have a daily limit on xp?"). A calendar pace shipped for a few
-   hours that day and came out again. What slows the pass down instead: an even curve (v5, below), a 15% lower
+   hours that day and came out again. What slows the pass down instead: an even curve (v5, below), a halved
    PASS_XP_RATE, and DAILY_XP_ROUNDS (Daily rounds past the 3rd each day pay coins but no Pass XP, so the
    Tour Pass's unlimited plays cannot be farmed for tiers). XP banked while the pace was live is folded into
    the track once, at the new rate, in passState (paceV 2). */
@@ -26739,7 +26739,7 @@ const NEWS_ENTRIES=[
    blurb:'Seven new pieces: a Reaper Hood, Mummy Wrap, the Eyeball, Coffin Clubs, Cauldron Smoke, Bone Cleats and a Graveyard card. A new step at 10 pieces pays 5,000 coins.',
    where:'The Haunted Links page and the Pro Shop.'},
   {id:'s2-steady', date:NEWS_DATE5, cat:'tour', icon:'📅', title:'A steadier Tour Pass',
-   blurb:'Tiers now cost about the same all season, so one strong season is a tier or two. Pass XP from play is 15% lower. Daily rounds past your third each day pay coins but no Pass XP.',
+   blurb:'Tiers now cost about the same all season, so one strong season is about a tier. Pass XP from play is cut in half. Daily rounds past your third each day pay coins but no Pass XP.',
    where:'The Tour Pass.'},
   {id:'s2-dress', date:NEWS_DATE5, cat:'tour', icon:'🍂', title:'The pass dresses for the season',
    blurb:'Bats and pumpkins through October. Falling leaves in November.',

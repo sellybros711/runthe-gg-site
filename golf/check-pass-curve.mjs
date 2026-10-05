@@ -8,8 +8,9 @@
  *   REPLAYS   Daily rounds 1 to 3 pay Pass XP; round 4 on (unlimited plays, tokens) pays coins and no XP
  *   MIGRATION a v4 player keeps their tier; XP banked while the day pace was live comes back once, at the
  *             new rate, and a second device holding the old bank cannot pay it again
- *   PACE      a steady player (a 2,000 coin career season and three 220 coin Daily rounds a day) finishes
- *             around day 50 of 60, a casual one (a 1,200 coin season and one Daily round) does not
+ *   PACE      with play XP halved (owner), a steady player (a 2,000 coin career season and three 220 coin
+ *             Daily rounds a day) reaches about tier 50 by day 60, a casual one (a 1,200 coin season and one
+ *             Daily round) about tier 30
  */
 import { chromium } from 'playwright';
 
@@ -46,7 +47,7 @@ try {
     const v4 = (t) => { let x = 0; for (let i = 1; i <= t; i++) x += 95 + 2 * (i - 1) + 0.38 * (i - 1) * (i - 1); return Math.round(x); };
     const v4tier = (xp) => { let t = 0; while (t < 60 && xp >= v4(t + 1)) t++; return t; };
     fresh({ season: 2, xp: 718, bank: 1000, grand: 600, paceV: 1, curveV: 4, pro: false, claimed: { free: [], prem: [] } });
-    let s = passState(); out.mig = { tier: passTierAt(s.xp), want: v4tier(718 + 850), bank: s.bank, grand: s.grand, paceV: s.paceV, curveV: s.curveV };
+    let s = passState(); out.mig = { tier: passTierAt(s.xp), want: v4tier(718 + 500), bank: s.bank, grand: s.grand, paceV: s.paceV, curveV: s.curveV };
     const after = passState().xp; out.mig.again = passState().xp === after;
     const old = { season: 2, xp: 718, bank: 1000, paceV: 1, curveV: 4, pro: false, claimed: { free: [], prem: [] } };
     const m = mergeTourPass(passState(), old); LS.set(acctKey('bag_tourpass'), m); out.mig.merged = passState().xp === after;
@@ -64,8 +65,8 @@ try {
     todayKey = real; return out;
   });
   head('the curve');
-  ok(`v5, about the same total (${R.curve.total}), tier 1 at ${R.curve.t1} and tier 60 at ${R.curve.t60}`, R.curve.v === 5 && Math.abs(R.curve.total - 35920) < 200 && R.curve.t1 >= 300 && R.curve.t60 < 2.5 * R.curve.t1, R.curve);
-  ok('play XP is 15% lower', R.curve.rate === 0.51, R.curve.rate);
+  ok(`v5, about the same total (${R.curve.total}), tier 1 at ${R.curve.t1} and tier 60 at ${R.curve.t60}`, R.curve.v === 5 && Math.abs(R.curve.total - 35920) < 200 && R.curve.t1 >= 280 && R.curve.t60 < 3.5 * R.curve.t1, R.curve);
+  ok('play XP is half what it was (0.6 to 0.3)', R.curve.rate === 0.3, R.curve.rate);
   ok('a strong career season (3,000 coins) is a tier or two, not seven', R.strongSeason >= 1 && R.strongSeason <= 2, R.strongSeason);
   head('no daily limit');
   ok('a 20,000 XP award on day 1 lands on the track in full', R.big === 20000, R.big);
@@ -73,11 +74,11 @@ try {
   ok('rounds 1 to 3 pay Pass XP, round 4 on does not', R.replay.join() === 'true,true,true,false,false', R.replay);
   ok('a round that pays no Pass XP still pays its coins', R.coinsOnly.coins > 0 && R.coinsOnly.xp === 0, R.coinsOnly);
   head('migration');
-  ok('a v4 player keeps their tier, with the old bank added at 85%', R.mig.tier === R.mig.want && R.mig.bank === undefined && R.mig.grand === undefined && R.mig.paceV === 2 && R.mig.curveV === 5, R.mig);
+  ok('a v4 player keeps their tier, with the old bank added at half', R.mig.tier === R.mig.want && R.mig.bank === undefined && R.mig.grand === undefined && R.mig.paceV === 2 && R.mig.curveV === 5, R.mig);
   ok('the bank is paid once, even when an old device syncs it back', R.mig.again && R.mig.merged, R.mig);
   ok('tier 30 on v4 is tier 30 on v5', R.conv30 === 30, R.conv30);
   head('the pace');
-  ok('a steady player finishes around day 50', R.steady.done >= 44 && R.steady.done <= 56, R.steady);
+  ok('a steady player does not finish, and reaches about tier 50 by day 60', R.steady.done === null && R.steady.tier >= 45 && R.steady.tier <= 56, R.steady);
   ok('a casual player is still climbing at the end', R.casual.done === null && R.casual.tier >= 20, R.casual);
   head('page errors');
   ok('none', errs.length === 0, errs.slice(0, 3));
