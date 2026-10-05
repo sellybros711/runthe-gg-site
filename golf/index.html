@@ -10082,6 +10082,8 @@ function passState(){ let s=LS.get(acctKey('bag_tourpass'),null); const cur=pass
   // It is v4 XP, so it lands before the curve conversion. paceV 2 merges as a max, so no device pays it twice.
   if(s.paceV!==2){ if(+s.bank>0 && (s.curveV|0)===4) s.xp+=Math.round(s.bank*0.5); delete s.bank; delete s.grand; s.paceV=2; passSave(s); }
   if(s.curveV!==PASS_CURVE_V){ passConvertCurve(s); passSave(s); }   // one-time re-map onto the current XP curve
+  // the Pumpkin Head skin joined Season 2's tier 60 after it opened: whoever claimed that tier before gets it too
+  if(s.season===2 && s.claimed.prem.indexOf(60)>=0){ try{ const cs=coinState(); if(!cs.owned['bd:pumpkinhead']){ cs.owned['bd:pumpkinhead']=1; coinSave(cs); } }catch(e){} }
   passHistFromState(s);   // no-op unless this season's best tier went up (Season 1's stamp lands here before Oct 5)
   // `pro` was the retired coin unlock. It now means "this account had Pro at some point THIS season", which
   // is what season-end settlement asks about once the entitlement itself has rolled over. The cloud merge
@@ -10232,13 +10234,13 @@ const PASS_SEASONS={
       capstone:{fx:'passcrown', plate:'passplate'},
       freeKind:'Summer Smash collectibles',
       excl:{ prem:{ 20:{cat:'plate',id:'passplate',name:'Tour Pass Plate'}, 60:{cat:'fx',id:'passcrown',name:'Tour Champion Aura'} } } },
-  // Oct 5 - Dec 3 2026. One pass, one list: twenty-one Halloween and Thanksgiving pieces on the Pro lane,
+  // Oct 5 - Dec 3 2026. One pass, one list: twenty-two Halloween and Thanksgiving pieces on the Pro lane,
   // capped by a ghost light over a cold field. Four of them replace a Pro pack (`swap`).
   2:{ name:'Hallows & Harvest', accent:'#e0762a', accent2:'#ffb35a',
       // the pass's dress (ET day keys, inclusive): Halloween through October, then the harvest to the season's end
       themes:[ {id:'halloween', from:20261004, to:20261031}, {id:'harvest', from:20261101, to:20261203} ],
-      capstone:{fx:'wisp', plate:'pass2plate'},
-      launch:{ tag:'🎃 Hallows & Harvest', lede:'Twenty-one Halloween and Thanksgiving pieces, all on one track.' },
+      capstone:{fx:'wisp', plate:'pass2plate', body:'pumpkinhead'},
+      launch:{ tag:'🎃 Hallows & Harvest', lede:'Twenty-two Halloween and Thanksgiving pieces, all on one track.' },
       // Pro tiers whose pack is traded for the exclusive at that tier (owner, Oct 2026). The Jack-o'-Lantern
       // Ball and the Pilgrim Hat moved up one tier to make room at 10 and 45.
       swap:{ prem:[10,45,48,53] },
@@ -10279,7 +10281,8 @@ const PASS_SEASONS={
               48:{cat:'cleats',id:'hayride',name:'Hayride Boots'},
               50:{cat:'cardbg',id:'hallowseve',name:'Hallows Eve Backdrop'},
               53:{cat:'club',id:'pitchfork',name:'Pitchfork Clubs'},
-              60:{cat:'fx',id:'wisp',name:'Will-o\'-Wisp Aura'} } },
+              // the capstone is two exclusives (owner, Oct 2026: an aura alone was not enough for running the whole pass)
+              60:{cat:'body',id:'pumpkinhead',name:'Pumpkin Head Skin', also:{cat:'fx',id:'wisp',name:'Will-o\'-Wisp Aura'}} } },
 };
 // Show the next season's items in a season's last 14 days. OFF (owner, Sep 2026): nothing about Season 2
 // shows before it starts. Turn it on for a season whose next one should be teased.
@@ -10330,7 +10333,7 @@ function passTierReward(t, lane, n){
   if(extra) Object.assign(r, extra);
   if((((def.swap||{})[lane])||[]).indexOf(t)>=0 && def.items && def.items[t]) delete r.pack;   // traded for the exclusive below
   if(!r.coins && !r.pack && !r.shard && !r.spin) r.coins=passDefaultReward(t, lane).coins;
-  if(lane==='prem' && def.items && def.items[t]) r.cos=def.items[t];
+  if(lane==='prem' && def.items && def.items[t]){ r.cos=def.items[t]; if(def.items[t].also) r.cos2=def.items[t].also; }   // cos2: a second exclusive on one tier
   return r;
 }
 // Which season's track an item belongs to, or null. Season 1's exclusives are listed by hand because its
@@ -10340,7 +10343,8 @@ function passItemOf(cat,id){
   if(!_passItems){ _passItems={};
     Object.keys(PASS_SEASONS).forEach(function(n){ const d=PASS_SEASONS[n], lanes=d.legacy?(d.excl||{}):{prem:d.items};
       ['free','prem'].forEach(function(lane){ const m=lanes[lane]||{};
-        Object.keys(m).forEach(function(t){ _passItems[m[t].cat+'|'+m[t].id]={season:+n, lane:lane, tier:+t}; }); }); }); }
+        Object.keys(m).forEach(function(t){ _passItems[m[t].cat+'|'+m[t].id]={season:+n, lane:lane, tier:+t};
+          if(m[t].also) _passItems[m[t].also.cat+'|'+m[t].also.id]={season:+n, lane:lane, tier:+t}; }); }); }); }
   return _passItems[cat+'|'+id]||null;
 }
 function passClaim(tier, lane){
@@ -10356,7 +10360,7 @@ function passGrantReward(r){ if(!r) return;
   if(r.coins) addBonusCoins(r.coins,{silent:true});
   if(r.shard) shardEarn(r.shard.r, r.shard.n);
   if(r.pack)  grantFreePack(r.pack.n||1, {tier:r.pack.tier, silent:true});
-  if(r.cos){ const cs=coinState(); cs.owned[cosKey(r.cos.cat,r.cos.id)]=1; coinSave(cs); }
+  if(r.cos){ const cs=coinState(); cs.owned[cosKey(r.cos.cat,r.cos.id)]=1; if(r.cos2) cs.owned[cosKey(r.cos2.cat,r.cos2.id)]=1; coinSave(cs); }
   if(r.spin)  grantWheelSpin(r.spin.n||1, {silent:true}); }
 /* SEASON-END SETTLEMENT (owner, Sep 2026). A tier a player REACHED and never claimed used to be lost when
    the season rolled over. Now it is delivered: every reached, unclaimed tier on the free lane, and on the
@@ -10443,7 +10447,7 @@ function passClaimAgg(list){ const agg={n:list.length, coins:0, packs:{}, shards
     if(r.pack){ agg.packs[r.pack.tier]=(agg.packs[r.pack.tier]||0)+(r.pack.n||1); }
     if(r.shard){ agg.shards[r.shard.r]=(agg.shards[r.shard.r]||0)+(r.shard.n||1); }
     if(r.spin) agg.spins+=(r.spin.n||1);
-    if(r.cos) agg.cos.push(r.cos); });
+    if(r.cos) agg.cos.push(r.cos); if(r.cos2) agg.cos.push(r.cos2); });
   return agg; }
 function passClaimable(){ if(!sbSignedIn()) return 0; const s=passState(), t=passTierAt(s.xp), pro=passProActive(); let n=0;
   for(let i=1;i<=t;i++){ if(s.claimed.free.indexOf(i)<0) n++; if(pro && s.claimed.prem.indexOf(i)<0) n++; } return n; }
@@ -11879,7 +11883,7 @@ function cosmeticItems(cat){
   if(cat==='hw')    return [{id:'none',name:'No Hat',hw:1},{id:'cap',name:'Ball Cap',hw:1},{id:'visor',name:'Visor',hw:1},{id:'bucket',name:'Bucket Hat',hw:1,hist:'Rainy-day links staple'},{id:'flat',name:'Flat Cap',hw:1,hist:'Early-1900s golf classic'},{id:'cowboy',name:'Cowboy Hat',hw:1,hist:'Yeehaw off the tee'},{id:'wizard',name:'Wizard Hat',hw:1,hist:'Magic on the greens'},{id:'crown',name:'Champion Crown',hw:1,hist:'Rule the leaderboard'},{id:'party',name:'Party Hat',hw:1,hist:'Every round is a celebration'},{id:'tophat',name:'Top Hat',hw:1,hist:'Dapper on the fairway'},{id:'propeller',name:'Propeller Beanie',hw:1,hist:'Pure fun'},{id:'headband',name:'Sweatband',hw:1,hist:'Clutch under pressure'},{id:'beanie',name:'Knit Beanie',hw:1,hist:'Cold-morning warmup'},{id:'fedora',name:'Fedora',hw:1,hist:'Old-school cool'},{id:'sombrero',name:'Sombrero',hw:1,hist:'Sun-drenched swagger'},{id:'halo',name:'Halo',hw:1,hist:'Angel of the greens'},{id:'viking',name:'Viking Helmet',hw:1,hist:'Conquer the course'},{id:'chef',name:'Chef Hat',hw:1,hist:'Cooking up birdies'},{id:'beret',name:'Beret',hw:1,hist:'Artist of the short game'},{id:'headphones',name:'Headphones',hw:1,hist:'In the zone'},{id:'flatbrim',name:'Snapback',hw:1,hist:'Flat-brim flex'},{id:'santa',name:'Santa Hat',hw:1,hist:'Season\u2019s greetings'},{id:'safari',name:'Safari Hat',hw:1,hist:'On expedition'},{id:'tweed',name:'Tweed Cap',hw:1,hist:'Old-money links tweed'},{id:'straw',name:'Straw Boater',hw:1,hist:'Roaring-20s summer golf'},{id:'laurel',name:'Laurel Wreath',hw:1,hist:'Crown of champions'},{id:'backwards',name:'Backwards Cap',hw:1,hist:'Rally-cap energy'},{id:'pirate',name:'Pirate Tricorn',hw:1,hist:'X marks the pin'},{id:'grad',name:'Graduation Cap',hw:1,hist:'Top of the class'},{id:'witch',name:'Witch Hat',hw:1,hist:'Brews birdies at midnight'},{id:'reaperhood',name:'Reaper Hood',hw:1,hist:'Comes for every pin'},{id:'elf',name:'Elf Hat',hw:1,hist:'Workshop-approved'},{id:'antlers',name:'Antlers',hw:1,hist:'Leading the sleigh'},{id:'football',name:'Football Helmet',hw:1,hist:'Built for contact'},{id:'floppy',name:'Sun Floppy Hat',hw:1,hist:'Beach-day shade'},{id:'knight',name:'Knight\u2019s Helm',hw:1,hist:'Armored up the fairway'},{id:'turkey',name:'Turkey Hat',hw:1,hist:'Seconds, anyone?'},{id:'harvestbeanie',name:'Harvest Knit',hw:1,hist:'Season 2 Tour Pass'},{id:'scarecrow',name:'Scarecrow Hat',hw:1,hist:'Season 2 Tour Pass'},{id:'horns',name:'Devil Horns',hw:1,hist:'Season 2 Tour Pass'},{id:'pilgrim',name:'Pilgrim Hat',hw:1,hist:'Season 2 Tour Pass'}];
   if(cat==='ew')    return [{id:'none',name:'None',ew:1},{id:'shades',name:'Shooter Shades',ew:1,hist:'Ice-cold Sunday stare'},{id:'heart',name:'Heart Shades',ew:1,hist:'Crowd charmer'},{id:'star',name:'Star Shades',ew:1,hist:'Superstar swagger'},{id:'threed',name:'3D Glasses',ew:1,hist:'See the line in 3D'},{id:'monocle',name:'Monocle',ew:1,hist:'Distinguished gentleman'},{id:'aviators',name:'Aviators',ew:1,hist:'Top-gun style'},{id:'round',name:'Round Glasses',ew:1,hist:'Retro intellectual'},{id:'goggles',name:'Ski Goggles',ew:1,hist:'Downhill focus'},{id:'eyepatch',name:'Eye Patch',ew:1,hist:'Pirate of the fairways'},{id:'visorband',name:'Shield Shades',ew:1,hist:'Wraparound cool'},{id:'prismshades',name:'Prism Shades',ew:1,hist:'Refract the sun'},{id:'goldshades',name:'Gilded Shades',ew:1,hist:'24-karat stare'},{id:'beach',name:'Beach Shades',ew:1,hist:'Boardwalk cool'},{id:'eyeblack',name:'Eye Black',ew:1,hist:'Game face on'},{id:'wayfarer',name:'Wayfarers',ew:1,hist:'Timeless clubhouse classic'},{id:'sport',name:'Sport Wraps',ew:1,hist:'Built for the wind'},{id:'cateye',name:'Cat-Eye Glasses',ew:1,hist:'Vintage flair'},{id:'readers',name:'Half-Rim Readers',ew:1,hist:'Reading every break'},{id:'rose',name:'Rose-Tinted Glasses',ew:1,hist:'Every round looks great'},{id:'steampunk',name:'Brass Goggles',ew:1,hist:'Inventor of the stinger'},{id:'cyber',name:'Cyber Visor',ew:1,hist:'Scanning the fairway'},{id:'patriot',name:'Patriot Shades',ew:1,hist:'Playing for the flag'},{id:'groucho',name:'Disguise Glasses',ew:1,hist:'Incognito round'},{id:'diamond',name:'Diamond Shades',ew:1,hist:'Ice in the veins'},{id:'ghoulglow',name:'Ghoul Glow Specs',ew:1,hist:'Season 2 Tour Pass'}];
   if(cat==='fx')    return [{id:'none',name:'None',fx:'none'}].concat(PXFX.map(function(f){ return {id:f.id,name:f.name,fx:f.id,hist:f.hist,col:f.col}; }));   // CS410
-  if(cat==='body')  return [{id:'none',name:'No Skin',body:1},{id:'zombie',name:'Zombie',body:1,hist:'Haunted Links collection reward'}];
+  if(cat==='body')  return [{id:'none',name:'No Skin',body:1},{id:'zombie',name:'Zombie',body:1,hist:'Haunted Links collection reward'},{id:'pumpkinhead',name:'Pumpkin Head',body:1,hist:'Season 2 Tour Pass, tier 60'}];
   if(cat==='top')   return [{id:'none',name:'None',top:1},{id:'cardigan',name:'Cardigan',top:1,hist:'Old-school knit'},{id:'blazer',name:'Champion\'s Blazer',top:1,hist:'Draped on the winner'},{id:'cape',name:'Vampire Cape',top:1,hist:'Out for blood on Sunday'},{id:'shacket',name:'Corduroy Shacket',top:1,hist:'Season 2 Tour Pass'},{id:'duckfloatie',name:'Rubber Ducky Floatie',top:1,reward:1,hist:'Own the whole Summer Smash collection. The only way to float.'}];   // CS411
   if(cat==='leg')   return [{id:'none',name:'None',leg:1},{id:'plusfours',name:'Plus-Fours',leg:1,hist:'Knickerbockers & argyle socks'}];   // CS411
   if(cat==='club')  return CLUBS.map(function(c){ return {id:c.id,name:c.name,club:1,hist:c.hist||'',rar:c.rar}; });   // one club, one list
@@ -15819,6 +15823,13 @@ function avTanTone(tone,age){ const yrs=Math.max(0,Math.min(AGE_TAN_YEARS,age-AG
 // Full-body skins. A skin is colours the resolver hands every renderer, plus the torn-cloth pattern the HD
 // golfer paints over the shirt (rags: x,y on the 44x56 grid, answering a hex or null for the shirt itself).
 const BODY_SKINS={
+  // PUMPKIN HEAD (owner, Oct 2026): the Season 2 Tour Pass capstone. A carved, lit jack-o'-lantern for a head on
+  // a scarecrow: straw arms, a patched shirt, burlap trousers. `head` tells the HD renderer to draw the pumpkin;
+  // `skin` is the pumpkin's orange, so the small sprites (the swing, the course) still read as an orange head.
+  pumpkinhead:{ skin:'#e8801f', hair:'#3f5a1e', grime:'#7a5a34', eye:'#ffd23a', mouth:'#ffd23a', pants:'#6b5434', head:'pumpkin', straw:'#d8b04e',
+    rags:(x,y)=>{ if(x>=25&&x<=28&&y>=30&&y<=33) return ((x===25||x===28)&&(y===30||y===33))?'#5a4428':'#a8844e';   // a burlap patch, stitched at the corners
+      if(x>=11&&x<=13&&y>=26&&y<=28) return (x+y)%2?'#7a2a2a':'#9c3a2e';                                           // a red check patch on the sleeve
+      if(y===35&&(x===16||x===18||x===27)) return '#5a4428'; return null; } },
   zombie:{ skin:'#8fa872', hair:'#2e2c22', grime:'#5a5444', eye:'#d6ff3a', mouth:'#3a1420', pants:'#4e4a3c',
     // the tears are placed by hand: a symmetric hole reads as a badge rather than as torn cloth
     rags:(x,y,skin)=>{ const k=x+','+y;
@@ -15846,6 +15857,11 @@ function avLook(L){L=L||DEFLOOK;
   const aged=(gT>0||tanned);
   // FULL-BODY SKIN (owner, Oct 2026: a skin for completing a collection, Haunted Links first). It reskins
   // the body every renderer draws from this resolver: skin, hair, shirt and the face. Gear stays wearable.
+  if(L.body==='pumpkinhead'){ const z=BODY_SKINS.pumpkinhead;
+    return{ gender:g, skinHex:z.skin, hairHex:z.hair, hairBaseHex:z.hair, hairTempleHex:z.hair, age:age, greyC:0, greyT:0,
+      shirtHex:avMixHex(po.m,z.grime,.3), hatHex:ht.m, shoesHex:avMixHex(shoeCol(so),z.grime,.55), shirtPat:sp, hatPat:hp,
+      body:'pumpkinhead', pupilHex:z.eye, mouthHex:z.mouth,
+      key:g+'_pumpkinhead_'+po.id+'_'+(L.hat||po.id)+'_'+sp+'_'+hp+'_'+so }; }
   if(L.body==='zombie'){ const z=BODY_SKINS.zombie;
     return{ gender:g, skinHex:z.skin, hairHex:z.hair, hairBaseHex:z.hair, hairTempleHex:z.hair, age:age, greyC:0, greyT:0,
       shirtHex:avMixHex(po.m,z.grime,.6), hatHex:ht.m, shoesHex:avMixHex(shoeCol(so),z.grime,.5), shirtPat:sp, hatPat:hp,
@@ -17334,7 +17350,8 @@ function build(o){ const s=new Sprite();
     return P[ch]?{m:'x:'+P[ch]}:null; };
 
   // long hair hangs behind the shoulders, so it goes first
-  if(hairHD&&longHair){ const back=[[14.2,11],[17,11],[17.5,26],[15.5,30],[13.2,28]];
+  const pk=o.head==='pumpkin';   // a Pumpkin Head skin: the head, ears, face and hair become a carved pumpkin
+  if(!pk&&hairHD&&longHair){ const back=[[14.2,11],[17,11],[17.5,26],[15.5,30],[13.2,28]];
     s.fill(or(poly(back),poly(mir(back))),{m:'hair',n:nCylV(C,9.5,-.1),gloss:1,bias:-.14}); }
   // legs and shoes. The shoes sit on rows 50 to 55, where the authored cleats and the club expect them.
   const leg=[[14.6,38.5],[22.2,38.5],[21.6,52.4],[15.2,52.4]];
@@ -17374,19 +17391,22 @@ function build(o){ const s=new Sprite();
   // arms and hands go IN FRONT of any outerwear: the grip is in front of the body
   if(blazer){ s.tag='top'; s.fill(or(poly(slv),seg(12.6,28,19.2,37.4,2.2)),{m:'jacket',n:nCylSeg(12.6,26,19.2,37.4,2.6)});
     s.fill(or(poly(mir(slv)),seg(32.4,28,25.8,37.4,2.2)),{m:'jacket',n:nCylSeg(32.4,26,25.8,37.4,2.6)}); s.tag=''; }
-  else { s.fill(seg(12.4,30.6,19.6,38.6,1.9),{m:'skin',n:nCylSeg(12.4,30.6,19.6,38.6,1.9)}); s.fill(seg(32.6,30.6,25.4,38.6,1.9),{m:'skin',n:nCylSeg(32.6,30.6,25.4,38.6,1.9)}); }
-  s.fill(rect(19,19,25,23),{m:'skin',n:nCylV(C,4,0)},{under:1,dt:-1});   // neck, under the collar
+  else { const am=pk?'straw':'skin'; s.fill(seg(12.4,30.6,19.6,38.6,1.9),{m:am,n:nCylSeg(12.4,30.6,19.6,38.6,1.9)}); s.fill(seg(32.6,30.6,25.4,38.6,1.9),{m:am,n:nCylSeg(32.6,30.6,25.4,38.6,1.9)});
+    if(pk){ [[13,31],[15,33],[17,35],[31,31],[29,33],[27,35]].forEach(([x,y])=>s.nudge(x,y,-1));                 // straw strands along the arms
+      [[10,31],[11,32],[34,31],[33,32],[9,30],[35,30]].forEach(([x,y])=>s.set(x,y,'straw',3,{noCast:1})); } }   // and straw poking out of the cuffs
+  s.fill(rect(19,19,25,23),{m:pk?'straw':'skin',n:nCylV(C,4,0)},{under:1,dt:-1});   // neck, under the collar
   // the lead hand is gloved and on top of the grip, the trail hand below it
   s.fill(ell(22.4,38.9,3.3,2.4),{m:'glove',n:nEll(22.0,38.3,3.6,2.9)});
-  s.fill(ell(22.6,41.4,2.9,2.0),{m:'skin',n:nEll(22.2,40.9,3.2,2.6)});
+  s.fill(ell(22.6,41.4,2.9,2.0),{m:pk?'straw':'skin',n:nEll(22.2,40.9,3.2,2.6)});
   s.set(21,39,'glove',1); s.set(23,39,'glove',1);
   // head, ears and face
+  const NC={noCast:1};
+  if(pk) pumpkinHead(); else {
   const headM=or(and(ell(C,14,7.9,8.4),(x,y)=>y<15.5),poly([[14.8,15],[30.2,15],[29.6,18.2],[26.4,21.2],[18.6,21.2],[15.4,18.2]]));
   const headN=nEll(C,15.6,9.6,11.5);
   s.fill(or(ell(14.6,15.6,1.3,1.9),ell(30.4,15.6,1.3,1.9)),{m:'skin',n:nEll(C,15,9.6,7)});
   s.fill(headM,{m:'skin',n:headN,bias:.06});
   s.tone(14,16,1); s.tone(30,16,0);
-  const NC={noCast:1};
   const face=()=>{ s.set(19,15,'pupil',0,NC); s.set(19,16,'pupil',0,NC); s.set(25,15,'pupil',0,NC); s.set(25,16,'pupil',0,NC);   // dot eyes
     s.set(18,13,'brow',0,NC); s.set(19,13,'brow',0,NC); s.set(25,13,'brow',0,NC); s.set(26,13,'brow',0,NC);
     s.tone(23,17,1); s.tone(23,18,1);
@@ -17422,6 +17442,21 @@ function build(o){ const s=new Sprite();
     const map=(o.capOn&&!openTop)?(o.hairMaps.hat[style]||o.hairMaps.hat.short):o.hairMaps.full[style];
     importMap(s,map,roleBase(null,true),{n:nEll(C,10.5,9.5,9),gloss:1,bias:-.14});
   }
+  }
+  // The pumpkin: wider than a head, ribbed, with a stem (under any hat, which is drawn next) and a carved face
+  // lit from inside. The face is fixed tones, so the light never shades the glow.
+  function pumpkinHead(){ const LIT={noCast:1,nl:1,noEdge:1};
+    const pm=ell(C,14.4,10.4,7.9), base=nEll(C,14.4,10.8,8.8);
+    s.fill(pm,{m:'pumpkin',n:(x,y)=>{ const r=base(x,y); return [r[0]+0.28*Math.sin((x-C)*0.95),r[1],r[2]]; },gloss:1});
+    for(const rx of [16,19,26,29]) for(let y=8;y<=21;y++){ if(pm(rx+.5,y+.5)) s.nudge(rx,y,-1); }   // the ribs
+    s.fill(poly([[21.4,7.4],[23.8,7.4],[24.6,4.2],[26.2,3.0],[25.4,2.2],[23.2,3.4],[21.8,5.6]]),{m:'stem',n:nFlat(-.4,-.5,.75)});
+    const glow=(x,y,t)=>s.set(x,y,'carve',t,LIT);
+    // set a row low on purpose: the brim of a cap comes down to row 13 and must not cover the eyes
+    [[18,13,2],[17,14,2],[18,14,3],[19,14,2],[27,13,2],[26,14,2],[27,14,3],[28,14,2]].forEach(a=>glow(...a));   // the eyes
+    glow(22,16,2); glow(23,16,2);                                                                          // the nose
+    for(let x=16;x<=29;x++) glow(x,18,(x===18||x===22||x===26)?1:3);                                       // the grin, with teeth
+    for(let x=17;x<=28;x++) if(x!==20&&x!==24) glow(x,19,x%3?2:3);
+    glow(19,20,2); glow(22,20,2); glow(25,20,2); }
   // hats
   s.tag='hat';
   if(hs==='cap'){
@@ -17506,7 +17541,8 @@ function render(o){ const av=o.av, s=build(o), px=o.px||7, only=o.only||'';
     sole:ramp('#e8e2d4'), hat:ramp(hatHex), patch:ramp(lum(hatHex)>.6?'#1b2b4a':'#f1ede2'), patchmark:ramp(lum(hatHex)>.6?'#f4f1e6':'#1b2b4a'),
     hatbtn:ramp(mix(hatHex,'#000000',.18)), band:ramp('#2a2f3b'), belt:ramp('#2a2420'), button:ramp('#f4f1ea'),
     glove:ramp('#f7f8f5',{spread:.8}), dlens:['#040508','#08090e','#0e1018','#2e3d58','#56708f'], frame:ramp('#26272d'),
-    gold:ramp('#d6a640'), strap:ramp('#3a3f4a'), mirror:['#4b2a7a','#5f4bb0','#5c8fd6','#7fc3ec','#bfe9fb'],
+    gold:ramp('#d6a640'), strap:ramp('#3a3f4a'), pumpkin:ramp(av.skinHex), stem:ramp('#4a6a22'), straw:ramp(o.straw||'#d8b04e'),
+    carve:['#8a3a08','#e0761a','#ffb02e','#ffe066','#fff6c4'], mirror:['#4b2a7a','#5f4bb0','#5c8fd6','#7fc3ec','#bfe9fb'],
     jacket:ramp((o.topPal&&o.topPal.blazer&&o.topPal.blazer['1'])||'#7a1f2b'), tie:ramp('#243040'), jbutton:ramp('#d8b24a') };
   const lace=mix(R.shoe[1],'#000000',.25), skinR=R.skin;
   const fixed={ pupil:av.pupilHex||mix(hairRamp(av.hairBaseHex||av.hairHex)[0],'#1a1018',.6), brow:hairRamp(av.hairHex)[0], lace,
@@ -17567,6 +17603,7 @@ function pxGolferCanvas(look,opts){
   const hairAt=(av.greyT>0)?(y=>{ const f=Math.max(0,Math.min(1,(y-AGE_TEMPLE_Y0)/(AGE_TEMPLE_Y1-AGE_TEMPLE_Y0)));
     return avMixHex(av.hairBaseHex,AGE_GREY_HEX,av.greyC+(av.greyT-av.greyC)*f); }):null;
   const cv=PXHD.render({ av, pants:pantsHex, style, capOn, hatStyle, openTop:!!PXG_HAT_OPEN[hatStyle], pat:patFn, hairAt,
+    head:(bodySkin&&bodySkin.head)||'', straw:(bodySkin&&bodySkin.straw)||'',
     shades, top, leg:legw, cleats, lefty:!!look.lefty, P,
     hairMaps:{full:PXG_HAIR, hat:PXG_HAIR_HAT}, hats:PXG_HATS, heritage:PXG_HERITAGE_HAT_PAL, eyewear:PXG_EYEWEAR,
     tops:PXG_TOPS, topPal:PXG_TOP_PAL, legs:legw?PXG_LEGS[legw]:null, legPal:legw?PXG_LEG_PAL[legw]:null,
@@ -26845,6 +26882,9 @@ const NEWS_DATE3='8/27/26';
 const NEWS_DATE4='10/1/26';
 const NEWS_DATE5='10/5/26';
 const NEWS_ENTRIES=[
+  {id:'pass-pumpkin', date:NEWS_DATE5, cat:'tour', icon:'🎃', title:'Finish the pass, become a Pumpkin Head',
+   blurb:'Tier 60 on the Pro lane now pays the Pumpkin Head skin. It reskins your whole golfer: a carved, lit pumpkin for a head and a scarecrow body. The Will-o\'-Wisp Aura still comes with it.',
+   where:'The Tour Pass. Wear it from the Closet under Effects, Skins.'},
   {id:'auras-redrawn', date:NEWS_DATE5, cat:'tour', icon:'✨', title:'Every aura, redrawn',
    blurb:'Auras now glow behind your golfer, with real particles and a ring at the feet on the legendaries. No more flashing when a screen refreshes. Leaderboard rows show them too.',
    where:'Wear one from the Closet under Effects, Aura.'},
@@ -26855,7 +26895,7 @@ const NEWS_ENTRIES=[
    blurb:'Collect all 14 pieces to unlock the Zombie skin. It reskins your whole golfer. Already completed it? Claim again for the skin.',
    where:'The Haunted Links page. Wear it from the Closet under Effects, Skins.'},
   {id:'s2-launch', date:NEWS_DATE5, cat:'tour', icon:'🎟️', title:'Season 2: Hallows & Harvest',
-   blurb:`A new Tour Pass season, live until Dec 3. ${PASS_TIERS} fresh tiers. Halloween and Thanksgiving pieces on the Pro lane, ending with the Will-o'-Wisp Aura.`,
+   blurb:`A new Tour Pass season, live until Dec 3. ${PASS_TIERS} fresh tiers. Halloween and Thanksgiving pieces on the Pro lane. Finish it for the Pumpkin Head skin and the Will-o'-Wisp Aura.`,
    where:'The Tour Pass card on the home screen.'},
   {id:'s2-hub', date:NEWS_DATE5, cat:'tour', icon:'🏆', title:'The Tour Pass, rebuilt',
    blurb:'One screen for the whole season. Your tier ring, what\'s next, the exclusives coming up, and one tap to claim it all. Past the last tier, Overtime keeps counting.',
@@ -36031,7 +36071,7 @@ function overlayPassport(screen){
   screen.appendChild(ov);
 }
 /* ---- TOUR PASS UI ---- */
-function passRewardLabel(r){ const p=[]; if(r.coins) p.push(coinFmt(r.coins)+' coins'); if(r.shard) p.push('◆ '+r.shard.n+' '+r.shard.r+' shard'+(r.shard.n>1?'s':'')); if(r.pack) p.push(packType(r.pack.tier).name); if(r.cos) p.push(r.cos.name); return p.join(' · '); }
+function passRewardLabel(r){ const p=[]; if(r.coins) p.push(coinFmt(r.coins)+' coins'); if(r.shard) p.push('◆ '+r.shard.n+' '+r.shard.r+' shard'+(r.shard.n>1?'s':'')); if(r.pack) p.push(packType(r.pack.tier).name); if(r.cos) p.push(r.cos.name); if(r.cos2) p.push(r.cos2.name); return p.join(' · '); }
 function passRewardCell(r){
   let inner='';
   if(r.cos){ const co=(r.cos.cat==='fx'&&PXFX_BY[r.cos.id])?PXFX_BY[r.cos.id].col:null; inner=`<div class="prc-thumb">${cosThumbHTML(r.cos.cat,{id:r.cos.id,col:co})}</div><span class="prc-lab">${esc(r.cos.name)}</span>`; }
@@ -36040,6 +36080,7 @@ function passRewardCell(r){
   else if(r.spin){ inner=`<span class="prc-ic" style="color:#ff7ab8;font-size:22px">🎡</span><span class="prc-lab" style="color:#ff7ab8">${r.spin.n>1?r.spin.n+'× ':''}Wheel spin${r.spin.n>1?'s':''}</span>`; }
   else if(r.coins){ inner=`<span class="prc-ic" style="width:24px;height:24px">${ic('coin',{size:'24px'})}</span><span class="prc-lab" style="color:#ffd45e">${coinFmt(r.coins)}</span>`; }
   // Season 2 puts cosmetics on tiers that also carry a pack or a shard, so those show as extras too.
+  if(r.cos2) inner+=`<span class="prc-extra" style="color:var(--gold)">+ ${esc(r.cos2.name)}</span>`;
   if(r.cos && r.pack) inner+=`<span class="prc-extra" style="color:${packType(r.pack.tier).col}">+ ${esc(packType(r.pack.tier).short)} pack</span>`;
   if(r.shard && (r.cos||r.pack)){ const rr=ACC_RARITY[r.shard.r]; inner+=`<span class="prc-extra" style="color:${rr.c}">◆${r.shard.n} ${rr.label}</span>`; }
   if(r.spin && (r.cos||r.pack||r.shard)) inner+=`<span class="prc-extra" style="color:#ff7ab8">🎡 ${r.spin.n>1?'×'+r.spin.n:'spin'}</span>`;
@@ -36302,12 +36343,13 @@ function passLootSummary(lane){
     if(r.pack)  a.packs[r.pack.tier]=(a.packs[r.pack.tier]||0)+(r.pack.n||1);
     if(r.shard) a.shards[r.shard.r]=(a.shards[r.shard.r]||0)+(r.shard.n||1);
     if(r.spin)  a.spins+=(r.spin.n||1);
+    if(r.cos2)  a.cos.push(r.cos2);   // the second exclusive first, so a tier's headline item (the skin at 60) is the one listed last
     if(r.cos)   a.cos.push(r.cos); }
   return a;
 }
 // The player's own golfer in THIS season's capstone, for the sales hero. A season with no capstone
 // authored shows the golfer as they are rather than borrowing another season's exclusive.
-function passCapstoneLook(){ const c=passSeasonDef().capstone||{}; const o={}; if(c.fx) o.fx=c.fx; if(c.plate) o.plate=c.plate;
+function passCapstoneLook(){ const c=passSeasonDef().capstone||{}; const o={}; if(c.fx) o.fx=c.fx; if(c.plate) o.plate=c.plate; if(c.body) o.body=c.body;
   return Object.assign({}, S.look||DEFLOOK, o); }
 // The Pro lane's headline exclusives by name, read off the season table so the pitch cannot promise last
 // season's aura. Past two items it becomes a count, since eleven names is a paragraph rather than a pitch.
@@ -36442,7 +36484,7 @@ function overlayTourPass(screen){
       <div class="tp-nlanes"><div class="tp-nslot free"><span class="tp-nl">FREE</span>${passRewardCell(passTierReward(nt,'free'))}</div>
       <div class="tp-nslot prem${pro?'':' lk'}"><span class="tp-nl">PRO${pro?'':' · LOCKED'}</span>${passRewardCell(passTierReward(nt,'prem'))}</div></div></div>`)); }
   // Every exclusive still ahead, nearest first. Tapping one takes you to its tier on the track.
-  const feat=[]; for(let t=tier+1;t<=PASS_TIERS;t++) ['free','prem'].forEach(l=>{ const r=passTierReward(t,l); if(r.cos) feat.push({t:t,lane:l,c:r.cos}); });
+  const feat=[]; for(let t=tier+1;t<=PASS_TIERS;t++) ['free','prem'].forEach(l=>{ const r=passTierReward(t,l); if(r.cos) feat.push({t:t,lane:l,c:r.cos}); if(r.cos2) feat.push({t:t,lane:l,c:r.cos2}); });
   if(feat.length) hub.appendChild($(`<div class="tp-feat"><div class="tp-fh">COMING UP<span>${feat.length} exclusive${feat.length===1?'':'s'} to unlock</span></div>
     <div class="tp-frow">${feat.slice(0,12).map(f=>`<button class="tp-fi" data-goto="${f.t}" style="--rc:${passCosCol(f.c)}">${f.lane==='prem'&&!pro?'<span class="tp-fpro">PRO</span>':''}
       <span class="tp-fth">${passCosThumb(f.c)}</span><span class="tp-fn">${esc(f.c.name)}</span><span class="tp-ft">TIER ${f.t}</span></button>`).join('')}</div></div>`));
@@ -38489,6 +38531,7 @@ function passRewardLine(r){
   const bits=[];
   if(r.pack) bits.push((r.pack.n>1?r.pack.n+'× ':'')+packType(r.pack.tier).name);
   if(r.cos)  bits.push(r.cos.name);
+  if(r.cos2) bits.push(r.cos2.name);
   if(r.shard) bits.push((r.shard.n||1)+'× '+r.shard.r+' shard');
   if(r.spin)  bits.push((r.spin.n||1)+'× Prize Wheel spin');
   if(r.coins) bits.push(coinFmt(r.coins)+' coins');
