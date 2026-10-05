@@ -38232,8 +38232,10 @@ function passLevelStyleOnce(){ if(document.getElementById('plcss')) return;
   const st=document.createElement('style'); st.id='plcss'; st.textContent=`
   /* owner: bigger, vertically centered in the middle of the screen. Season 2 (Oct 2026): the hub's look,
      night sky with the season accent for progress and purple for the Pro lane. */
-  .plov{text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:100%}
-  .pl-inner{width:100%;max-width:520px;margin:0 auto}
+  /* centred with margin:auto and not justify-content: a flex column that centres its content pushes the top
+     of anything taller than the screen above the scroll area, and a big jump lists dozens of tiers */
+  .plov{text-align:center;display:flex;flex-direction:column}
+  .pl-inner{width:100%;max-width:520px;margin:auto}
   .pl-kick{font:900 12px/1 var(--body);letter-spacing:.22em;text-transform:uppercase;color:var(--tp-acc2);margin-bottom:6px}
   .plov .pl-title{font-family:var(--display);font-size:clamp(36px,9.5vw,54px);line-height:1.05;margin:0 0 4px;filter:drop-shadow(0 6px 22px rgba(224,118,42,.35))}
   .pl-sub{font-size:14.5px;color:var(--muted);margin:0 0 22px}
