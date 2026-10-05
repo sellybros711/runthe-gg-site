@@ -35744,9 +35744,10 @@ function passStyleOnce(){ if(_tpcss) return; _tpcss=true; const st=document.crea
     background:linear-gradient(180deg,#15452b 0%,#0d2c1a 58%,#081f12 100%);
     border-bottom:1px solid rgba(241,208,74,.3);box-shadow:0 14px 30px -18px #000}
   .tp-hin{max-width:560px;margin:0 auto}
-  .tp-htop{display:flex;align-items:center;gap:9px;padding-right:104px;min-height:26px}
+  .tp-htop{display:flex;align-items:center;gap:9px;min-height:26px}
   .tp-kick{font:900 12.5px/1 var(--body);letter-spacing:.2em;color:#c9adff}
-  .tp-ssn{font:900 10px/1 var(--body);letter-spacing:.16em;color:rgba(255,255,255,.5)}
+  .tp-ssnbig{font-family:var(--display);font-style:italic;font-size:30px;line-height:1.05;color:#ff9d55;letter-spacing:.01em;padding-right:104px;white-space:nowrap;margin-bottom:6px}
+  .tp-new{background:linear-gradient(180deg,#e8823a,#a5450f);color:#fff;font:900 10px/1 var(--body);letter-spacing:.13em;padding:5px 9px;border-radius:6px}
   .tp-pro{background:linear-gradient(180deg,#c08bff,#7048d6);color:#fff;font:900 10px/1 var(--body);letter-spacing:.13em;padding:5px 9px;border-radius:6px;box-shadow:0 5px 14px -5px rgba(160,90,255,.9)}
   .tp-trow{display:flex;align-items:flex-end;gap:14px;margin-top:11px}
   .tp-tblock{flex:0 0 auto}
@@ -36016,7 +36017,8 @@ function overlayTourPass(screen){
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button></div>`);
   // Full-bleed sticky season bar: spans the whole screen width, with the tier + progress reading as one unit.
   ov.appendChild($(`<div class="tp-head"><div class="tp-hin">
-    <div class="tp-htop"><span class="tp-kick">TOUR PASS</span><span class="tp-ssn">SEASON ${ssn.n}</span>${pro?'<span class="tp-pro">PRO</span>':''}</div>
+    <div class="tp-ssnbig">Season ${ssn.n}</div>
+    <div class="tp-htop"><span class="tp-kick">TOUR PASS</span>${ssn.day<=14?'<span class="tp-new">NEW SEASON</span>':''}${pro?'<span class="tp-pro">PRO</span>':''}</div>
     <div class="tp-trow">
       <div class="tp-tblock"><span class="tp-tlab">${ot?'OVERTIME':'TIER'}</span><div class="tp-tbig"><b>${tx}</b><i>/${top}</i></div></div>
       <div class="tp-prog">
@@ -36130,7 +36132,7 @@ function setupPassScrollCue(ov, target, jump){
 }
 // Home-screen Tour Pass card (a mode card in the .stack)
 function tourPassCard(){
-  const ssn=passSeason(); let mid, badge=`<span class="gc-badge">S${ssn.n}</span>`;
+  const ssn=passSeason(); let mid, badge='';   // the season is the card's top line, so no S<n> chip
   if(sbSignedIn()){ const s=passState(), tier=passTierAt(s.xp), cl=passClaimable();
     // enhancement 1/2: lead with what's WAITING, and make the badge impossible to miss when it is
     mid=cl>0
@@ -36140,7 +36142,7 @@ function tourPassCard(){
   } else mid=`Earn XP in every mode · climb ${PASS_TIERS} tiers of rewards`;
   const boostChip=(xpBoostActive()?xpBoostChip():'')+passEventChip();
   const card=$(`<button class="gcard gc-pass" aria-label="Tour Pass season ${ssn.n}">
-    <div class="gc-top"><div style="min-width:0"><div class="gc-kick">🎟️ Season Pass</div><div class="gc-title">Tour Pass</div></div>${badge}</div>
+    <div class="gc-top"><div style="min-width:0"><div class="gc-kick">🎟️ Season ${ssn.n}</div><div class="gc-title">Tour Pass</div></div>${badge}</div>
     <div class="gc-mid">${mid}</div>
     <div class="gc-row">${boostChip}<span class="gc-go">${sbSignedIn()?'View the Track ▸':'Play ▸'}</span></div>
   </button>`);
