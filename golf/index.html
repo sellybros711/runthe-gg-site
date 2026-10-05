@@ -10979,6 +10979,7 @@ const PXFX=[
   {id:'celestial',name:'Celestial Aura',hist:'Written in the stars',    price:30000, col:'#b088ff', tracer:{g:'rgba(176,136,255,.6)',  c:'#efe8ff'}},
   {id:'heatwave', name:'Heatwave',     hist:'Summer scorcher',          price:18000, col:'#ff6a3a', tracer:{g:'rgba(255,106,58,.55)',  c:'#ffd8c0'}},
   {id:'ecto',     name:'Ecto Aura',    hist:'Something spooky follows', price:18000, col:'#7dff5a', tracer:{g:'rgba(125,255,90,.55)',  c:'#e8ffd8'}},
+  {id:'cauldron', name:'Cauldron Smoke',hist:'Something is bubbling over',price:18000, col:'#9a6ad8', tracer:{g:'rgba(154,106,216,.55)', c:'#e4d4ff'}},
   {id:'stadium',  name:'Stadium Lights',hist:'Big-game glow',           price:18000, col:'#e8f2ff', tracer:{g:'rgba(232,242,255,.55)', c:'#ffffff'}},
   {id:'rungames', name:'Run The Games Aura',hist:'The house glow, in signature green', price:30000, col:'#80ff76', tracer:{g:'rgba(128,255,118,.55)', c:'#e6ffe0'}},
   // SEASON 2 (Hallows & Harvest). Falling Leaves is the Harvest Classic drop aura; the other two are Tour
@@ -11005,6 +11006,7 @@ const PXFX_PARTS={
   void:    {t:'drift',g:'●', cols:['#8a54d0','#5a2f8f'], n:6},
   heatwave:{t:'rise', g:'✧', cols:['#ff9a5a','#ff6a3a'], n:6, dur:2.2},
   ecto:    {t:'drift',g:'✧', cols:['#a8ff8a','#7dff5a'], n:6},
+  cauldron:{t:'rise', g:'●', cols:['#b89ae8','#7ae89a','#8a6ac8'], n:9, dur:2.8},
   stadium: {t:'blink',g:'✦', cols:['#ffffff','#e8f2ff'], n:7},
   rungames:{t:'rise', g:'✦', cols:['#c8ffc0','#80ff76'], n:6, dur:2.6},
   // SEASON 2: bats and leaves are shapes no font draws reliably, so the glyph is an inline SVG filled
@@ -11038,6 +11040,7 @@ const PXBALL=[
   {id:'obsidian', name:'Obsidian Ball', hist:'Forged in volcanic glass', price:18000, col:'#241b30', tracer:{g:'rgba(90,63,138,.55)', c:'#c9b0ff'}},
   {id:'flamingo', name:'Flamingo Ball', hist:'Poolside plumage',         price:12000, col:'#ff7fa8', tracer:{g:'rgba(255,127,168,.5)', c:'#ffd4e2'}},
   {id:'ghost',    name:'Ghost Ball',    hist:'Now you see it...',        price:13000, col:'#eef2f6', tracer:{g:'rgba(238,242,246,.45)', c:'#ffffff'}},
+  {id:'eyeball',  name:'Eyeball',       hist:'Keeps an eye on the pin',  price:13000, col:'#f4f0ea', tracer:{g:'rgba(208,48,58,.45)',   c:'#fff0f0'}},
   {id:'snowball', name:'Snowball',      hist:'Packed fresh every tee',   price:12000, col:'#eaf6ff', tracer:{g:'rgba(234,246,255,.5)', c:'#ffffff'}},
   {id:'pigskin',  name:'Pigskin',       hist:'Built for the big game',   price:16000, col:'#7a4a22', tracer:{g:'rgba(122,74,34,.5)',  c:'#d8b48a'}},
   {id:'rungames', name:'Run The Games Ball',hist:'House colors, straight down the middle', price:20000, col:'#5bcfe8', tracer:{g:'rgba(91,207,232,.55)', c:'#e0f7ff'}},
@@ -11066,6 +11069,7 @@ const PLATES=[
   {id:'pass2plate',  name:'Hallows & Harvest', hist:'Season 2 Tour Pass'},
   {id:'hayride',     name:'Hayride',           hist:'Season 2 Tour Pass'},
   {id:'harvesttable',name:'Harvest Table',     hist:'Harvest Classic exclusive'},
+  {id:'graveyard',   name:'Graveyard',         hist:'Haunted Links exclusive'},
 ];
 const PLATE_STYLE={
   passplate:   {c1:'#3a2a6e',c2:'#1a1140',tx:'#ffd447',bd:'#a78bfa'},
@@ -11080,6 +11084,7 @@ const PLATE_STYLE={
   pass2plate:  {c1:'#3a1a4e',c2:'#140a1e',tx:'#ff9d3a',bd:'#9a4ad8'},
   hayride:     {c1:'#d9b15a',c2:'#8a6424',tx:'#2a1606',bd:'#efd58a'},
   harvesttable:{c1:'#8a3a14',c2:'#4a1a08',tx:'#f5c86a',bd:'#e0762a'},
+  graveyard:   {c1:'#2c3a34',c2:'#0c1410',tx:'#b8f0b0',bd:'#7dff5a'},
 };
 function plateCss(id){ const p=PLATE_STYLE[id]||PLATE_STYLE.classic; return 'background:linear-gradient(180deg,'+p.c1+','+p.c2+');border:1px solid '+p.bd+';color:'+p.tx; }
 const CARDBGS=[
@@ -11597,15 +11602,15 @@ function cosmeticPriceBase(cat,id){
   if(cat==='hat'){ const cs=COSMETIC_SHIRTS.find(s=>s.id===id); return (cs&&cs.earn)?0:4000; }   // hat colors share the shirt color list, same flat price
   if(cat==='pants') return 4000;   // ALL colors one flat price (owner)
   if(cat==='shoes') return 4000;
-  if(cat==='hw'){ if(id==='cap'||id==='visor'||id==='none') return 0; return {turkey:20000,witch:20000,elf:12000,antlers:18000,football:18000,floppy:12000,knight:30000,bucket:11000,flat:11000,headband:6000,cowboy:14000,tophat:16000,party:9000,propeller:12000,wizard:20000,crown:30000,beanie:8000,fedora:15000,sombrero:13000,halo:40000,viking:22000,chef:10000,beret:9000,headphones:18000,flatbrim:11000,santa:12000,safari:13000,tweed:16000,straw:16000,laurel:30000,backwards:12000,pirate:20000,grad:13000}[id]||12000; }   // CS411 tweed/straw = epic · CS418 laurel legendary
+  if(cat==='hw'){ if(id==='cap'||id==='visor'||id==='none') return 0; return {turkey:20000,witch:20000,reaperhood:30000,elf:12000,antlers:18000,football:18000,floppy:12000,knight:30000,bucket:11000,flat:11000,headband:6000,cowboy:14000,tophat:16000,party:9000,propeller:12000,wizard:20000,crown:30000,beanie:8000,fedora:15000,sombrero:13000,halo:40000,viking:22000,chef:10000,beret:9000,headphones:18000,flatbrim:11000,santa:12000,safari:13000,tweed:16000,straw:16000,laurel:30000,backwards:12000,pirate:20000,grad:13000}[id]||12000; }   // CS411 tweed/straw = epic · CS418 laurel legendary
   if(cat==='ew'){ if(id==='none') return 0; return {goldshades:16000,beach:12000,eyeblack:9000,shades:10000,heart:9000,star:12000,threed:8000,monocle:15000,aviators:12000,round:9000,goggles:11000,eyepatch:10000,visorband:8000,prismshades:30000,wayfarer:10000,sport:12000,cateye:10000,readers:8000,rose:9000,steampunk:18000,cyber:20000,patriot:16000,groucho:16000,diamond:30000}[id]||10000; }   // CS418 prism shades legendary
   if(cat==='fx'){ if(id==='none') return 0; return (PXFX_BY[id]?PXFX_BY[id].price:0); }   // CS410: effect auras (epic/legendary)
   if(cat==='top'){ if(id==='none'||cosRewardOnly(cat,id)) return 0; return {cardigan:16000,blazer:30000,cape:30000}[id]||16000; }   // CS411 blazer legendary
   if(cat==='leg'){ if(id==='none') return 0; return {plusfours:16000}[id]||16000; }
   if(cat==='club'){ const c=CLUBS_BY[id]; if(!c||c.kind==='free') return 0; return CLUB_SEL[c.rar]||0; }   // stock free; store+pack priced by rarity (selector → packRarityOf → RARITY_PRICE)
   if(cat==='ball'){ if(id==='none') return 0; return (PXBALL_BY[id]?PXBALL_BY[id].price:0); }   // CS414: featherie epic, comet legendary
-  if(cat==='cleats'){ return {rocket:30000,golden:20000,sunday:13000,neon:12000,saddle:6000,phantom:30000,rungames:13000}[id]||0; }   // CS414: Rocket Cleats legendary
-  if(cat==='plate')  return (id==='sunsplash'||id==='harvesttable')?18000:0;       // player cards: only the seasonal piece is priced (epic, pack pull); the rest are EARNED
+  if(cat==='cleats'){ return {rocket:30000,golden:20000,sunday:13000,neon:12000,saddle:6000,phantom:30000,bone:20000,rungames:13000}[id]||0; }   // CS414: Rocket Cleats legendary
+  if(cat==='plate')  return (id==='sunsplash'||id==='harvesttable'||id==='graveyard')?18000:0;       // player cards: only the seasonal piece is priced (epic, pack pull); the rest are EARNED
   if(cat==='cardbg') return 0;   // card backgrounds are free-default / EARNED / collection-reward, never directly bought
   return 0;
 }
@@ -11692,7 +11697,7 @@ const COS_BOOST={
   'cl:persimmon':{dist:3,acc:1}, 'cl:blade':{put:3}, 'cl:excalibur':{dist:5,acc:1}, 'cl:wand':{put:5}, 'cl:hockey':{put:4,scr:1},
   'cl:scepter':{put:4,app:1}, 'cl:candycane':{put:3,clu:1}, 'cl:onyxdriver':{dist:5}, 'cl:emeraldirons':{app:5},
   'cl:frostdriver':{dist:3,acc:1}, 'cl:rubywedge':{sht:3,bnk:1,dist:-1}, 'cl:sapphireputter':{put:3,clu:1},
-  'cl:voidputter':{put:4,scr:1}, 'cl:rosewood':{dist:2,app:2}, 'cl:scramblewedge':{scr:4,sht:1}, 'cl:golden':{dist:2,app:2,put:2}, 'cl:platinum':{acc:2,app:2,put:2}, 'cl:diamond':{dist:1,acc:1,app:1,sht:1,put:1,clu:1}, 'cl:glizzy':{sht:2,scr:1,clu:2}, 'cl:poolnoodle':{scr:2,clu:2}
+  'cl:voidputter':{put:4,scr:1}, 'cl:rosewood':{dist:2,app:2}, 'cl:scramblewedge':{scr:4,sht:1}, 'cl:golden':{dist:2,app:2,put:2}, 'cl:platinum':{acc:2,app:2,put:2}, 'cl:diamond':{dist:1,acc:1,app:1,sht:1,put:1,clu:1}, 'cl:glizzy':{sht:2,scr:1,clu:2}, 'cl:coffin':{dist:3,scr:1}, 'cl:poolnoodle':{scr:2,clu:2}
 };
 function cosBoost(cat,id){ return COS_BOOST[cosKey(cat,id)]||null; }
 // the WORN, OWNED, boost-carrying cosmetics right now - the single source of truth the boost math AND the
@@ -11797,14 +11802,14 @@ function cosmeticItems(cat){
   if(cat==='pat')   return [{id:'none',name:'None',pat:'none'}].concat(PXPAT.map(p=>({id:p.id,name:p.name,pat:p.id,hist:p.hist})));
   if(cat==='pants') return PANTS.map(o=>({id:o.id,name:cosTitle(o.id),col:o.a}));
   if(cat==='shoes') return SHOES.map(o=>({id:o.id,name:cosTitle(o.id),col:o.a}));
-  if(cat==='hw')    return [{id:'none',name:'No Hat',hw:1},{id:'cap',name:'Ball Cap',hw:1},{id:'visor',name:'Visor',hw:1},{id:'bucket',name:'Bucket Hat',hw:1,hist:'Rainy-day links staple'},{id:'flat',name:'Flat Cap',hw:1,hist:'Early-1900s golf classic'},{id:'cowboy',name:'Cowboy Hat',hw:1,hist:'Yeehaw off the tee'},{id:'wizard',name:'Wizard Hat',hw:1,hist:'Magic on the greens'},{id:'crown',name:'Champion Crown',hw:1,hist:'Rule the leaderboard'},{id:'party',name:'Party Hat',hw:1,hist:'Every round is a celebration'},{id:'tophat',name:'Top Hat',hw:1,hist:'Dapper on the fairway'},{id:'propeller',name:'Propeller Beanie',hw:1,hist:'Pure fun'},{id:'headband',name:'Sweatband',hw:1,hist:'Clutch under pressure'},{id:'beanie',name:'Knit Beanie',hw:1,hist:'Cold-morning warmup'},{id:'fedora',name:'Fedora',hw:1,hist:'Old-school cool'},{id:'sombrero',name:'Sombrero',hw:1,hist:'Sun-drenched swagger'},{id:'halo',name:'Halo',hw:1,hist:'Angel of the greens'},{id:'viking',name:'Viking Helmet',hw:1,hist:'Conquer the course'},{id:'chef',name:'Chef Hat',hw:1,hist:'Cooking up birdies'},{id:'beret',name:'Beret',hw:1,hist:'Artist of the short game'},{id:'headphones',name:'Headphones',hw:1,hist:'In the zone'},{id:'flatbrim',name:'Snapback',hw:1,hist:'Flat-brim flex'},{id:'santa',name:'Santa Hat',hw:1,hist:'Season\u2019s greetings'},{id:'safari',name:'Safari Hat',hw:1,hist:'On expedition'},{id:'tweed',name:'Tweed Cap',hw:1,hist:'Old-money links tweed'},{id:'straw',name:'Straw Boater',hw:1,hist:'Roaring-20s summer golf'},{id:'laurel',name:'Laurel Wreath',hw:1,hist:'Crown of champions'},{id:'backwards',name:'Backwards Cap',hw:1,hist:'Rally-cap energy'},{id:'pirate',name:'Pirate Tricorn',hw:1,hist:'X marks the pin'},{id:'grad',name:'Graduation Cap',hw:1,hist:'Top of the class'},{id:'witch',name:'Witch Hat',hw:1,hist:'Brews birdies at midnight'},{id:'elf',name:'Elf Hat',hw:1,hist:'Workshop-approved'},{id:'antlers',name:'Antlers',hw:1,hist:'Leading the sleigh'},{id:'football',name:'Football Helmet',hw:1,hist:'Built for contact'},{id:'floppy',name:'Sun Floppy Hat',hw:1,hist:'Beach-day shade'},{id:'knight',name:'Knight\u2019s Helm',hw:1,hist:'Armored up the fairway'},{id:'turkey',name:'Turkey Hat',hw:1,hist:'Seconds, anyone?'},{id:'harvestbeanie',name:'Harvest Knit',hw:1,hist:'Season 2 Tour Pass'},{id:'scarecrow',name:'Scarecrow Hat',hw:1,hist:'Season 2 Tour Pass'},{id:'horns',name:'Devil Horns',hw:1,hist:'Season 2 Tour Pass'},{id:'pilgrim',name:'Pilgrim Hat',hw:1,hist:'Season 2 Tour Pass'}];
+  if(cat==='hw')    return [{id:'none',name:'No Hat',hw:1},{id:'cap',name:'Ball Cap',hw:1},{id:'visor',name:'Visor',hw:1},{id:'bucket',name:'Bucket Hat',hw:1,hist:'Rainy-day links staple'},{id:'flat',name:'Flat Cap',hw:1,hist:'Early-1900s golf classic'},{id:'cowboy',name:'Cowboy Hat',hw:1,hist:'Yeehaw off the tee'},{id:'wizard',name:'Wizard Hat',hw:1,hist:'Magic on the greens'},{id:'crown',name:'Champion Crown',hw:1,hist:'Rule the leaderboard'},{id:'party',name:'Party Hat',hw:1,hist:'Every round is a celebration'},{id:'tophat',name:'Top Hat',hw:1,hist:'Dapper on the fairway'},{id:'propeller',name:'Propeller Beanie',hw:1,hist:'Pure fun'},{id:'headband',name:'Sweatband',hw:1,hist:'Clutch under pressure'},{id:'beanie',name:'Knit Beanie',hw:1,hist:'Cold-morning warmup'},{id:'fedora',name:'Fedora',hw:1,hist:'Old-school cool'},{id:'sombrero',name:'Sombrero',hw:1,hist:'Sun-drenched swagger'},{id:'halo',name:'Halo',hw:1,hist:'Angel of the greens'},{id:'viking',name:'Viking Helmet',hw:1,hist:'Conquer the course'},{id:'chef',name:'Chef Hat',hw:1,hist:'Cooking up birdies'},{id:'beret',name:'Beret',hw:1,hist:'Artist of the short game'},{id:'headphones',name:'Headphones',hw:1,hist:'In the zone'},{id:'flatbrim',name:'Snapback',hw:1,hist:'Flat-brim flex'},{id:'santa',name:'Santa Hat',hw:1,hist:'Season\u2019s greetings'},{id:'safari',name:'Safari Hat',hw:1,hist:'On expedition'},{id:'tweed',name:'Tweed Cap',hw:1,hist:'Old-money links tweed'},{id:'straw',name:'Straw Boater',hw:1,hist:'Roaring-20s summer golf'},{id:'laurel',name:'Laurel Wreath',hw:1,hist:'Crown of champions'},{id:'backwards',name:'Backwards Cap',hw:1,hist:'Rally-cap energy'},{id:'pirate',name:'Pirate Tricorn',hw:1,hist:'X marks the pin'},{id:'grad',name:'Graduation Cap',hw:1,hist:'Top of the class'},{id:'witch',name:'Witch Hat',hw:1,hist:'Brews birdies at midnight'},{id:'reaperhood',name:'Reaper Hood',hw:1,hist:'Comes for every pin'},{id:'elf',name:'Elf Hat',hw:1,hist:'Workshop-approved'},{id:'antlers',name:'Antlers',hw:1,hist:'Leading the sleigh'},{id:'football',name:'Football Helmet',hw:1,hist:'Built for contact'},{id:'floppy',name:'Sun Floppy Hat',hw:1,hist:'Beach-day shade'},{id:'knight',name:'Knight\u2019s Helm',hw:1,hist:'Armored up the fairway'},{id:'turkey',name:'Turkey Hat',hw:1,hist:'Seconds, anyone?'},{id:'harvestbeanie',name:'Harvest Knit',hw:1,hist:'Season 2 Tour Pass'},{id:'scarecrow',name:'Scarecrow Hat',hw:1,hist:'Season 2 Tour Pass'},{id:'horns',name:'Devil Horns',hw:1,hist:'Season 2 Tour Pass'},{id:'pilgrim',name:'Pilgrim Hat',hw:1,hist:'Season 2 Tour Pass'}];
   if(cat==='ew')    return [{id:'none',name:'None',ew:1},{id:'shades',name:'Shooter Shades',ew:1,hist:'Ice-cold Sunday stare'},{id:'heart',name:'Heart Shades',ew:1,hist:'Crowd charmer'},{id:'star',name:'Star Shades',ew:1,hist:'Superstar swagger'},{id:'threed',name:'3D Glasses',ew:1,hist:'See the line in 3D'},{id:'monocle',name:'Monocle',ew:1,hist:'Distinguished gentleman'},{id:'aviators',name:'Aviators',ew:1,hist:'Top-gun style'},{id:'round',name:'Round Glasses',ew:1,hist:'Retro intellectual'},{id:'goggles',name:'Ski Goggles',ew:1,hist:'Downhill focus'},{id:'eyepatch',name:'Eye Patch',ew:1,hist:'Pirate of the fairways'},{id:'visorband',name:'Shield Shades',ew:1,hist:'Wraparound cool'},{id:'prismshades',name:'Prism Shades',ew:1,hist:'Refract the sun'},{id:'goldshades',name:'Gilded Shades',ew:1,hist:'24-karat stare'},{id:'beach',name:'Beach Shades',ew:1,hist:'Boardwalk cool'},{id:'eyeblack',name:'Eye Black',ew:1,hist:'Game face on'},{id:'wayfarer',name:'Wayfarers',ew:1,hist:'Timeless clubhouse classic'},{id:'sport',name:'Sport Wraps',ew:1,hist:'Built for the wind'},{id:'cateye',name:'Cat-Eye Glasses',ew:1,hist:'Vintage flair'},{id:'readers',name:'Half-Rim Readers',ew:1,hist:'Reading every break'},{id:'rose',name:'Rose-Tinted Glasses',ew:1,hist:'Every round looks great'},{id:'steampunk',name:'Brass Goggles',ew:1,hist:'Inventor of the stinger'},{id:'cyber',name:'Cyber Visor',ew:1,hist:'Scanning the fairway'},{id:'patriot',name:'Patriot Shades',ew:1,hist:'Playing for the flag'},{id:'groucho',name:'Disguise Glasses',ew:1,hist:'Incognito round'},{id:'diamond',name:'Diamond Shades',ew:1,hist:'Ice in the veins'},{id:'ghoulglow',name:'Ghoul Glow Specs',ew:1,hist:'Season 2 Tour Pass'}];
   if(cat==='fx')    return [{id:'none',name:'None',fx:'none'}].concat(PXFX.map(function(f){ return {id:f.id,name:f.name,fx:f.id,hist:f.hist,col:f.col}; }));   // CS410
   if(cat==='top')   return [{id:'none',name:'None',top:1},{id:'cardigan',name:'Cardigan',top:1,hist:'Old-school knit'},{id:'blazer',name:'Champion\'s Blazer',top:1,hist:'Draped on the winner'},{id:'cape',name:'Vampire Cape',top:1,hist:'Out for blood on Sunday'},{id:'shacket',name:'Corduroy Shacket',top:1,hist:'Season 2 Tour Pass'},{id:'duckfloatie',name:'Rubber Ducky Floatie',top:1,reward:1,hist:'Own the whole Summer Smash collection. The only way to float.'}];   // CS411
   if(cat==='leg')   return [{id:'none',name:'None',leg:1},{id:'plusfours',name:'Plus-Fours',leg:1,hist:'Knickerbockers & argyle socks'}];   // CS411
   if(cat==='club')  return CLUBS.map(function(c){ return {id:c.id,name:c.name,club:1,hist:c.hist||'',rar:c.rar}; });   // one club, one list
   if(cat==='ball')  return [{id:'none',name:'None',ball:1}].concat(PXBALL.map(function(o){ return {id:o.id,name:o.name,ball:1,hist:o.hist,col:o.col}; }));   // CS414
-  if(cat==='cleats') return [{id:'none',name:'None',cleats:1},{id:'saddle',name:'Saddle Shoes',cleats:1,hist:'Classic two-tone clubhouse style'},{id:'sunday',name:'Sunday Kicks',cleats:1,hist:'Fresh sneakers for the final round'},{id:'neon',name:'Neon Trainers',cleats:1,hist:'Loud on the fairway'},{id:'golden',name:'Golden Spikes',cleats:1,hist:'Walk the walk'},{id:'rocket',name:'Rocket Cleats',cleats:1,hist:'Blast off the tee box'},{id:'phantom',name:'Phantom Cleats',cleats:1,hist:'Silent steps, loud scores'},{id:'hayride',name:'Hayride Boots',cleats:1,hist:'Season 2 Tour Pass'},{id:'rungames',name:'Run The Games Cleats',cleats:1,hist:'House kit, green flash, navy sole'}];   // CS414
+  if(cat==='cleats') return [{id:'none',name:'None',cleats:1},{id:'saddle',name:'Saddle Shoes',cleats:1,hist:'Classic two-tone clubhouse style'},{id:'sunday',name:'Sunday Kicks',cleats:1,hist:'Fresh sneakers for the final round'},{id:'neon',name:'Neon Trainers',cleats:1,hist:'Loud on the fairway'},{id:'golden',name:'Golden Spikes',cleats:1,hist:'Walk the walk'},{id:'rocket',name:'Rocket Cleats',cleats:1,hist:'Blast off the tee box'},{id:'phantom',name:'Phantom Cleats',cleats:1,hist:'Silent steps, loud scores'},{id:'bone',name:'Bone Cleats',cleats:1,hist:'Walks out of the graveyard'},{id:'hayride',name:'Hayride Boots',cleats:1,hist:'Season 2 Tour Pass'},{id:'rungames',name:'Run The Games Cleats',cleats:1,hist:'House kit, green flash, navy sole'}];   // CS414
   if(cat==='plate')  return PLATES.map(o=>({id:o.id,name:o.name,plate:1,hist:o.hist}));
   if(cat==='cardbg') return CARDBGS.map(o=>({id:o.id,name:o.name,cardbg:1,hist:o.hist}));
   return [];
@@ -15876,6 +15881,7 @@ const CLUBS=[
  {id:'diamond',name:'Diamond Clubs',tag:'Diamond',rar:'legendary',kind:'pack',b:{dist:1,acc:1,app:1,sht:1,put:1,clu:1},hist:'Flawless from driver to putter'},
  {id:'glizzy',name:'Glizzy Clubs',tag:'Glizzy',rar:'legendary',kind:'pack',b:{sht:2,scr:1,clu:2},hist:'A hot dog on a bun with mustard. Unbothered'},
  {id:'poolnoodle',name:'Pool Noodle Clubs',tag:'Pool Noodle',rar:'epic',kind:'pack',b:{scr:2,clu:2},hist:'A full set of foam. Somehow it works'},
+ {id:'coffin',name:'Coffin Clubs',tag:'Coffin',rar:'epic',kind:'pack',b:{dist:3,scr:1},hist:'Buries the competition'},
  // Season 2 Tour Pass exclusives. Style only: a pass piece carries no stat boost, so the pass never sells power.
  {id:'broomstick',name:'Broomstick Clubs',tag:'Broomstick',rar:'epic',kind:'pass',b:{},hist:'Season 2 Tour Pass'},
  {id:'pitchfork',name:'Pitchfork Clubs',tag:'Pitchfork',rar:'epic',kind:'pass',b:{},hist:'Season 2 Tour Pass'}];
@@ -16907,6 +16913,28 @@ Object.assign(PXG_BALL, PXG_S2_BALL); Object.assign(PXG_BALL_PAL, PXG_S2_BALL_PA
 // The Spooky Szn hunt prize (owner, Oct 2026): a black cat with two ears and yellow eyes. Never sold.
 PXG_BALL.blackcat=pxgRows([[46,35,'o..o'],[47,35,'oooo'],[48,34,'ohCCCo'],[49,34,'oyCCyo'],[50,34,'oCnnCo'],[51,34,'oCCCso'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
 PXG_BALL_PAL.blackcat={o:'#08060c',C:'#2a2433',h:'#5e5470',s:'#16121c',y:'#ffd23a',n:'#e87a9a',T:'#e8ebf0'};
+// Haunted Links grew from seven pieces to fourteen (owner, Oct 2026). Sparse rows like the Season 2 pieces.
+// Grim Reaper Hood: a deep cowl that hangs past the ears to a collar under the chin, the face left in its
+// shadow. It is not an open hat, so the hair underneath is clipped like any hood.
+PXG_HATS.reaperhood=pxgRows([
+  [1,22,'1'],[2,20,'31112'],[3,19,'3111112'],[4,18,'311111112'],[5,17,'31111111112'],[6,16,'3111111111112'],
+  [7,15,'311111111111112'],[8,14,'31111111111111112'],[9,14,'31111111111111112'],[10,13,'3111111111111111112'],
+  [11,13,'3111111111111111112'],[12,13,'3111544444444451112'],[13,13,'3115444444444445112'],[14,13,'3115444444444445112'],
+  [15,13,'3115'],[15,28,'5112'],[16,13,'3115'],[16,28,'5112'],[17,13,'3115'],[17,28,'5112'],[18,13,'3115'],[18,28,'5112'],
+  [19,13,'3115'],[19,28,'5112'],[20,13,'31115'],[20,27,'51112'],[21,12,'311115'],[21,27,'511112'],[22,11,'3111115'],[22,27,'5111112'],
+  [23,10,'31111115555555511111112'],[24,10,'31111111111611111111112'],[25,10,'32222222222222222222222'],[26,11,'22..222..222..222..22']]);
+PXG_HERITAGE_HAT_PAL.reaperhood={'1':'#1c1824','2':'#0a080e','3':'#3a3448','4':'#06050a','5':'#2a2434','6':'#e8e2cc'};
+// Eyeball: a white ball with a green iris that looks at you, and a few red veins
+PXG_BALL.eyeball=pxgRows([[47,35,'oooo'],[48,34,'ohCCvo'],[49,34,'oCiiCo'],[50,34,'vCipCo'],[51,34,'oCCCso'],[52,35,'oovo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
+PXG_BALL_PAL.eyeball={o:'#8a7a78',C:'#f4f0ea',h:'#ffffff',s:'#d8cfc4',v:'#d0303a',i:'#2f9a5a',p:'#0a0a0e',T:'#e8ebf0'};
+// Coffin Clubs: the driver's shaft with a little coffin for a head, a gold cross on the lid
+PXG_CLUBS.coffin=pxgRows([[40,34,'l'],[41,35,'l'],[42,35,'l'],[43,36,'l'],[44,36,'l'],[45,37,'l'],[46,37,'l'],[47,38,'l'],[48,39,'l'],[49,39,'l'],[50,40,'l'],
+  [51,36,'kkkkk'],[52,35,'kWWXWWk'],[53,35,'kwXXXwk'],[54,35,'kWWXWWk'],[55,36,'kkkkk']]);
+PXG_CLUB_PAL.coffin={k:'#140a06',W:'#4a2812',w:'#341c0c',X:'#e6c25a'};
+// Bone Cleats: black uppers with the foot's bones laid over them in white
+PXG_CLEATS.bone=pxgRows([[52,15,'DDD'],[52,25,'DDD'],[53,13,'DDDDbDbDb'],[53,23,'DDDDbDbDb'],[54,13,'DbbbbbbbD'],[54,23,'DbbbbbbbD'],
+  [55,13,'kkkkkkkkk'],[55,23,'kkkkkkkkk']]);
+PXG_CLEATS_PAL.bone={D:'#2c2834',b:'#ece6d4',k:'#0e0c10'};
 // The four Season 2 pieces that replaced a Pro pack (owner, Oct 2026). Authored like every club: grip at
 // (34,40), shaft down and right, the head on the ground. pxClubAddress re-poses it into the hands.
 PXG_CLUBS.broomstick=pxgRows([[40,34,'W'],[41,35,'W'],[42,35,'W'],[43,36,'W'],[44,36,'w'],[45,37,'W'],[46,37,'W'],[47,38,'R'],
@@ -16975,6 +17003,8 @@ const PXPAT=[
  {id:'runes',      name:'Ancient Runes',    price:30000, hist:'Etched with old power',    fixed:true, cols:['#161022','#221838','#f1d04a','#c884ff'], f:(x,y)=>{ const p=5, cx=x%p, cy=y%p, col=Math.floor(x/p)+Math.floor(y/p), g=(col%2===0)?2:3; if(cx===1) return g; if((cx===2&&cy===1)||(cx===3&&cy===2)||(cx===2&&cy===3)) return g; return 0; } },
  {id:'pineapple',  name:'Pineapple Print',  price:16000, hist:'Poolside classic',         fixed:true, cols:['#f0c23a','#c98d1e','#3f8f4a'], f:(x,y)=>{ const d=Math.abs((x%6)-3)+Math.abs((y%6)-3); return d<1?2:((d===3)?1:0); } },
  {id:'sunset',     name:'Sunset Fade',      price:12000, hist:'Golden-hour glow',         fixed:true, cols:['#f7c34a','#f0784a','#c33d63','#5a2d6e'], f:(x,y)=> (y<27?0:(y<31?1:(y<35?2:3))) },
+
+ {id:'mummywrap',  name:'Mummy Wrap',       price:18000, hist:'Fresh from the tomb',      fixed:true, cols:['#e6dcc0','#b8a684','#8a7a5a','#2a2018'], f:(x,y)=>{ const k=y+Math.floor(x/5), b=Math.floor(k/4), r=k%4; if(r===0) return ((x+b*5)%9<2)?3:1; if(r===3&&(x*7+b*3)%13===0) return 2; return 0; } },
  {id:'skeleton',   name:'Skeleton Ribs',    price:18000, hist:'X-ray physique',           fixed:true, cols:['#14141c','#e8ecf2'], f:(x,y)=>{ if(x>=21&&x<=22) return 1; return (y%4<1 && x>=16&&x<=28)?1:0; } },
  {id:'pumpkinpatch',name:'Pumpkin Patch',   price:12000, hist:'October harvest',          fixed:true, cols:['#2a1f14','#e07a1f','#3f7a3a','#b05512'], f:(x,y)=>{ const xx=(x+(Math.floor(y/6)%2?3:0))%6, yy=y%6; if(xx>=1&&xx<=3&&yy>=2&&yy<=4) return (xx===2)?3:1; if(xx===2&&yy===1) return 2; return 0; } },
  {id:'uglysweater',name:'Holiday Sweater',  price:18000, hist:'Festive knit chaos',       fixed:true, cols:['#a02030','#f0f0e8','#2f6b3f'], f:(x,y)=>{ const b=y%9; if(b<2) return (Math.abs(((x+y)%6)-3)<2)?1:0; if(b<3) return 0; if(b<6) return ((x%4===1)&&b===4)?2:0; if(b<7) return 1; return 0; } },
@@ -26710,10 +26740,16 @@ const NEWS_ENTRIES=[
   {id:'s2-chal', date:NEWS_DATE5, cat:'tour', icon:'🎯', title:'Pass challenges and double XP',
    blurb:'New pass challenges every week. They pay Pass XP. Halloween and Thanksgiving weekends pay double XP in every mode.',
    where:'The Tour Pass.'},
-  {id:'haunted-page', date:NEWS_DATE5, cat:'tour', icon:'🕸️', title:'Haunted Links gets its own page',
+  {id:'haunted-page', date:NEWS_DATE5, cat:'tour', icon:'🎃', title:'Haunted Links gets its own page',
    blurb:'The drop and the hunt, in one place. Steps along the way pay coins. Every hidden thing has a hint.',
    where:'The Haunted Links card on the home screen.'},
-  {id:'s2-dress', date:NEWS_DATE5, cat:'tour', icon:'🦇', title:'The pass dresses for the season',
+  {id:'haunted-14', date:NEWS_DATE5, cat:'tour', icon:'🎃', title:'Haunted Links doubles to 14 pieces',
+   blurb:'Seven new pieces: a Reaper Hood, Mummy Wrap, the Eyeball, Coffin Clubs, Cauldron Smoke, Bone Cleats and a Graveyard card. A new step at 10 pieces pays 5,000 coins.',
+   where:'The Haunted Links page and the Pro Shop.'},
+  {id:'s2-pace', date:NEWS_DATE5, cat:'tour', icon:'📅', title:'The Tour Pass lasts the season',
+   blurb:'The track opens a day at a time, so all 60 tiers take about 50 days. XP past today\'s pace is banked. It unlocks on later days and none of it is lost.',
+   where:'The Tour Pass.'},
+  {id:'s2-dress', date:NEWS_DATE5, cat:'tour', icon:'🍂', title:'The pass dresses for the season',
    blurb:'Bats and pumpkins through October. Falling leaves in November.',
    where:'The Tour Pass.'},
   {id:'spooky-szn', date:NEWS_DATE4, cat:'tour', icon:'🎃', title:'Haunted Links is here',
@@ -37054,8 +37090,9 @@ const DROPS=[
   blurb:'Sun\'s out. Floppy hats, sunset fades and beach shades, live for the hottest stretch of the year. Complete it to unlock the Endless Summer card backdrop, the Rubber Ducky Floatie and 100,000 coins.',
   items:[['pat','pineapple'],['pat','sunset'],['pat','aloha'],['hw','floppy'],['ew','beach'],['ball','flamingo'],['fx','heatwave'],['club','poolnoodle'],['plate','sunsplash']]},
  {id:'spooky', name:'Haunted Links', kicker:'October Only', accent:'#e07a1f', window:[[10,1],[10,31]],
-  blurb:'Witch hats, skeleton ribs and a cape with a taste for blood. Complete it to unlock the Haunted Hollow card backdrop and 100,000 coins. Returns every October.',
-  items:[['hw','witch'],['pat','skeleton'],['pat','pumpkinpatch'],['ball','ghost'],['fx','ecto'],['top','cape'],['cleats','phantom']]},
+  blurb:'Witch hats, a reaper\'s hood, mummy wraps and a coffin for a driver. Complete it to unlock the Haunted Hollow card backdrop and 100,000 coins. Returns every October.',
+  items:[['hw','witch'],['pat','skeleton'],['pat','pumpkinpatch'],['ball','ghost'],['fx','ecto'],['top','cape'],['cleats','phantom'],
+   ['hw','reaperhood'],['pat','mummywrap'],['ball','eyeball'],['club','coffin'],['fx','cauldron'],['cleats','bone'],['plate','graveyard']]},
  {id:'winter', name:'Winter Classic', kicker:'Holiday Collection', accent:'#9fdcff', window:[[12,1],[12,31]],
   blurb:'Elf hats, holiday knits and a candy-cane putter. The season\'s most festive set, every December.',
   items:[['hw','elf'],['hw','antlers'],['hw','santa'],['hw','beanie'],['ew','goggles'],['pat','uglysweater'],['ball','snowball'],['ball','frost'],['club','candycane'],['club','frostdriver']]},
@@ -37358,7 +37395,7 @@ function overlaySpookySzn(screen){
       <div class="spk-kick">October only</div>
       <div class="spk-ttl">HAUNTED LINKS</div>
       <div class="spk-sub">IS HERE</div>
-      <p class="spk-lede">The haunted drop is live until ${ends}. Witch hats, skeleton ribs and a cape with a taste for blood.</p>
+      <p class="spk-lede">The haunted drop is live until ${ends}. Witch hats, a reaper\'s hood, mummy wraps and a coffin for a driver.</p>
       <div class="spk-items">${items}</div>
       <div class="spk-rew">${rewTxt}</div>
       <div class="spk-hint">${SEASON_DECOR.spooky.eggs.length} spooky things are hiding around the game. Find them all for the ${esc(SEASON_DECOR.spooky.prize.name)} and ${coinFmt(SEASON_DECOR.spooky.coins)} coins.</div>
@@ -37437,6 +37474,7 @@ function dcStyleOnce(){ if(_dccss) return; _dccss=true; const st=document.create
 const HL_STEPS=[
   {id:'drop3', meter:'drop', n:3, coins:1500},
   {id:'drop5', meter:'drop', n:5, coins:3000},
+  {id:'drop10', meter:'drop', n:10, coins:5000},   // the drop doubled to fourteen pieces (Oct 2026), so it pays once more on the way
   {id:'hunt5', meter:'hunt', n:5, coins:500}];
 // where each hidden thing lives, said vaguely enough that finding it is still a find
 const HL_HINTS={ homespider:'Hanging over the home screen', homeghost:'Peeking out on the home screen', homebat:'Flying past the home screen',
@@ -37576,7 +37614,7 @@ function overlayHaunted(screen){
       <div class="hl-chips"><span class="hl-chip hot">⏳ ${dl} DAY${dl===1?'':'S'} LEFT</span><span class="hl-chip">FREE TO PLAY</span></div></div>
     ${cl>0?`<button class="hl-claim" data-hlall><span class="hl-cpk">${spkEl('pumpkin',34)}</span><span><b>${cl} reward${cl===1?'':'s'} ready</b><span class="s">Tap to claim ${cl===1?'it':'them all'}</span></span><span class="go">Claim ▸</span></button>`:''}
     <div class="hl-sec drop"><div class="hl-sh"><span class="k">THE DROP</span><b>${dc.own} of ${dc.tot}</b></div>
-      <p class="hl-sub">Seven pieces, from Haunted Links packs and the Pro Shop.</p>
+      <p class="hl-sub">${dc.tot} pieces, from Haunted Links packs and the Pro Shop.</p>
       <div class="dc-grid" style="--dc-n:${dcCols(d?d.items.length:7)}">${items}</div>
       <div class="hl-track"><div class="hl-fill" style="width:${dc.tot?Math.round(100*dc.own/dc.tot):0}%"></div></div>
       <div class="hl-steps">${HL_STEPS.filter(s=>s.meter==='drop').map(stepRow).join('')}${dropFinal}</div>
@@ -37786,7 +37824,7 @@ function winterCard(){ wcStyleOnce();
   const mid=d<=WC_LAST_DOOR?(wcGot('d',Math.min(d,WC_LAST_DOOR))?`Door ${Math.min(d,WC_LAST_DOOR)} opened · ${wcDoorsOpened()} of ${WC_LAST_DOOR} so far`:`Door ${d} is waiting${d===WC_LAST_DOOR?': the big one':''}`)
     :`${wcDoorsOpened()} of ${WC_LAST_DOOR} doors opened`;
   const card=$(`<button class="gcard gc-winter" aria-label="Winter Classic event">
-    <div class="gc-top"><div style="min-width:0"><div class="gc-kick">🎄 December event</div><div class="gc-title">Winter Classic</div></div>${badge}</div>
+    <div class="gc-top"><div style="min-width:0"><div class="gc-kick">🎁 December event</div><div class="gc-title">Winter Classic</div></div>${badge}</div>
     <div class="gc-mid">${mid}${hk?` · Hanukkah night ${Math.min(WC_HNK_NIGHTS,d-WC_HNK_FROM+1)}`:''}</div>
     <div class="gc-row"><span class="gc-go">${n>0?'Open it ▸':'Open the event ▸'}</span></div></button>`);
   card.onclick=()=>{ try{ track('winter_card'); }catch(e){} S.overlay='winter'; render(); };
@@ -37800,8 +37838,8 @@ function overlayWinter(screen){
   const lights=`<div class="wc-lights" aria-hidden="true">${['#e8404e','#ffd56e','#5fd38a','#6fb8e8','#e8404e','#ffd56e','#5fd38a','#6fb8e8','#e8404e','#ffd56e','#5fd38a'].map((c,i)=>`<i style="--c:${c};--dl:${(i%4)*.4}s"></i>`).join('')}</div>`;
   const doors=[...Array(WC_LAST_DOOR)].map((_,i)=>{ const n=i+1, got=wcGot('d',n), open=wcDoorOpen(n), xmas=n===WC_LAST_DOOR;
     if(got) return `<button class="wc-door done${xmas?' xmas':''}" aria-label="Door ${n}, opened" disabled>${n}<span class="ck${got===2?' star':''}">${got===2?'★':'✓'}</span></button>`;
-    if(!open) return `<button class="wc-door lock${xmas?' xmas':''}" aria-label="Door ${n}, opens Dec ${n}" disabled>${xmas?'<span class="bow">🎀</span>':''}${n}<small>DEC ${n}</small></button>`;
-    return `<button class="wc-door ${n===d?'today':'late'}${xmas?' xmas':''}" data-wcdoor="${n}" aria-label="Door ${n}, open it">${xmas?'<span class="bow">🎀</span>':''}${n}<small>${n===d?'TODAY':'OPEN'}</small></button>`; }).join('');
+    if(!open) return `<button class="wc-door lock${xmas?' xmas':''}" aria-label="Door ${n}, opens Dec ${n}" disabled>${xmas?'<span class="bow">🎁</span>':''}${n}<small>DEC ${n}</small></button>`;
+    return `<button class="wc-door ${n===d?'today':'late'}${xmas?' xmas':''}" data-wcdoor="${n}" aria-label="Door ${n}, open it">${xmas?'<span class="bow">🎁</span>':''}${n}<small>${n===d?'TODAY':'OPEN'}</small></button>`; }).join('');
   const nowPrize=wcDoorPrize(Math.min(Math.max(d,1),WC_LAST_DOOR),pro), xPrize=wcDoorPrize(WC_LAST_DOOR,false), xPro=wcDoorPrize(WC_LAST_DOOR,true);
   // Hanukkah, from Dec 4 to Dec 12
   let hnk='';
@@ -37847,7 +37885,7 @@ function overlayWinter(screen){
 // the question card, over the calendar
 function wcAsk(ov,n){ const q=wcQuestion(n), base=wcDoorPrize(n,passProActive());
   const box=$(`<div class="wc-q" role="dialog" aria-modal="true" aria-label="Door ${n}"><div class="wc-qc">
-    <div class="wc-qk">${n===WC_LAST_DOOR?'🎄 CHRISTMAS DOOR':'DOOR '+n}</div>
+    <div class="wc-qk">${n===WC_LAST_DOOR?'🎁 CHRISTMAS DOOR':'DOOR '+n}</div>
     <div class="wc-qq">${esc(q.q)}</div>
     <div class="wc-qp">Prize: <b>${esc(wcPrizeTxt(base))}</b>. Get it right to double it.</div>
     ${q.opts.map((o,i)=>`<button class="wc-opt" data-i="${i}">${esc(o.txt)}</button>`).join('')}

@@ -69,16 +69,16 @@ try {
   ok('the event is live', st.live === true, st);
   let C = await E('card');
   ok('the home screen carries a Haunted Links card beside the Tour Pass', C.ids.includes('haunted') && C.ids.includes('pass') && /Haunted Links/.test(C.card), C);
-  ok('...that counts both meters', /Drop 0\/7/.test(C.card) && /Hunt 0\/10/.test(C.card), C.card);
+  ok('...that counts both meters', /Drop 0\/14/.test(C.card) && /Hunt 0\/10/.test(C.card), C.card);
   const P0 = await E('page');
-  ok('the page shows all 7 drop pieces and all 10 hidden things', P0.shown && P0.items === 7 && P0.finds === 10, P0);
+  ok('the page shows all 14 drop pieces and all 10 hidden things', P0.shown && P0.items === 14 && P0.finds === 10, P0);
   ok('with nothing done, nothing is claimable', !P0.claimBar && P0.stepBtns === 0 && !P0.dropBtn, P0);
   ok('it names both big rewards', /Haunted Hollow/.test(P0.txt) && /Black Cat Ball/.test(P0.txt), P0.txt.slice(0, 200));
 
   head('the steps on the way pay once');
   await E('own', 3); await E('find', 5);
   st = await E('state');
-  ok('3 items and 5 finds make two steps ready', st.claimable === 2 && st.steps.join() === 'drop3:ready,drop5:no,hunt5:ready', st);
+  ok('3 items and 5 finds make two steps ready', st.claimable === 2 && st.steps.join() === 'drop3:ready,drop5:no,drop10:no,hunt5:ready', st);
   const P1 = await E('page');
   ok('the page offers the claim bar and both step buttons', P1.claimBar && P1.stepBtns === 2 && P1.lit === 3, P1);
   C = await E('card');
@@ -86,16 +86,22 @@ try {
   const bal0 = st.bal; const got = await E('claimAll');
   st = await E('state');
   ok('claiming all pays 1,500 + 500 coins', got === 2000 && st.bal - bal0 === 2000, { got, delta: st.bal - bal0 });
-  ok('...and marks both claimed', st.steps.join() === 'drop3:claimed,drop5:no,hunt5:claimed' && st.claimable === 0, st);
+  ok('...and marks both claimed', st.steps.join() === 'drop3:claimed,drop5:no,drop10:no,hunt5:claimed' && st.claimable === 0, st);
   ok('claiming again pays nothing', (await E('claimAll')) === 0 && (await E('state')).bal === st.bal);
 
   head('the drop\'s own reward is still the drop\'s');
   await E('own', 7);
   st = await E('state');
-  ok('all 7 pieces make the 5-piece step and the collection reward ready', st.claimable === 2 && st.steps[1] === 'drop5:ready', st);
-  const balB = st.bal; await E('claimAll');
+  ok('7 pieces make the 5-piece step ready, and not the 10-piece step or the collection', st.claimable === 1 && st.steps[1] === 'drop5:ready' && st.steps[2] === 'drop10:no', st);
+  let balB = st.bal; await E('claimAll');
   st = await E('state');
-  ok('claiming takes the step and the collection reward (3,000 + 100,000)', st.dropClaimed && st.bal - balB === 103000 && st.claimable === 0, { delta: st.bal - balB, st });
+  ok('claiming it pays 3,000', st.bal - balB === 3000 && !st.dropClaimed, { delta: st.bal - balB });
+  await E('own', 14);
+  st = await E('state');
+  ok('all 14 pieces make the 10-piece step and the collection reward ready', st.claimable === 2 && st.steps[2] === 'drop10:ready', st);
+  balB = st.bal; await E('claimAll');
+  st = await E('state');
+  ok('claiming takes the step and the collection reward (5,000 + 100,000)', st.dropClaimed && st.bal - balB === 105000 && st.claimable === 0, { delta: st.bal - balB, st });
 
   head('hints');
   const H = await E('hints');
