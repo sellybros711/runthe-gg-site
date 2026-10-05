@@ -11496,20 +11496,31 @@ colours he plays in (`C.colorsOf`) and his own number, greys from 33, and has si
 ball, up, trophy, suit, cap). `img()` returns two frames and one page-wide timer swaps them (the
 breath); reduced motion gets one frame.
 
-**It is built like a sprite, and the first version was not.** That one painted rectangles in
-flat colours and ringed them in black: a box torso, two-pixel arms, a square head. The owner
-called it poorly made, and it was. The rebuild is the mythiball rig's technique:
-- Every part is a shape with a surface normal. A limb is a tapered tube, the head and torso are
-  row tables, a hand is an ellipse. The light comes from the upper left, and a cell's level on
-  its part's five-colour ramp is how much it faces that light.
-- The ramps turn hue: shadows cool, highlights warm. Skin passes `soft`, which turns its shadows
-  only slightly red and drops chroma. Without that a pale face in shade reads as sunburnt.
-- Cloth (the jersey, the shorts, the jacket) is shaded across and hardly at all top to bottom,
-  with `lift` below zero. Shaded like a sphere, it bands diagonally.
-- A part in front puts a line on the part behind it, which is how an arm reads against a chest.
-- The outline is a dark shade of whatever it borders, lighter on the lit side. It is never a
-  black ring.
-- The jersey's piping is found, not drawn. It is any jersey cell touching skin.
+**It is a small 3D model, painted the way Run The Tour paints its golfer.** Asked for by the
+owner off the golf game's 3D pixel golfer: use exactly that style, in every animation and on the
+profile and Look screens. Two earlier versions came before it (flat rectangles in a black ring,
+then a 2D rig of shaded tubes), and both are gone. Now:
+- **The body is volumes posed in three dimensions**: a head and ears, a chest and waist blended
+  into one torso, limbs as round cones, hands, shoes clipped flat at the floor, and every
+  hairstyle as a volume over the head (`build` in baller.js). The camera looks down about 12
+  degrees, and every pixel is sphere traced into the model to find the part it lands on and the
+  way that surface faces.
+- **Then the golf game's paint step, copied rather than imitated** (PXHD in golf/index.html): five
+  step ramps that go cool in shadow and warm in the light (skin goes red-violet), one light from the
+  top left, a contact shadow under a part with another in front of it, an inner contour on the front
+  part where it crosses one behind, a soft outline one pixel INSIDE the silhouette in the part's own
+  shadow colour (no dark outer ring), dot eyes, brows and a little blush. `ramp`, `skinRamp` and
+  `hairRamp` are PXHD's numbers.
+- **A frame is the same model with its joints moved.** The `SETS` angle tables did not change. An
+  arm is two angles from straight down, and a foreshortened forearm is turned toward the camera,
+  not drawn shorter. **A limb that crosses the body comes forward by how far across it reaches**:
+  left flat, the shot's gather went into the chest and the hands on the head went behind the hair,
+  and check-moments named both.
+- **Materials are functions of where a ray lands**, which is how the tank's straps and armholes, the
+  number, the striped crew socks, the laces and the suit's lapels sit on round shapes.
+- About 13ms a paint once warm. Every screen caches the result (`url`, court.js's canvases).
+
+check-sprite was re-recorded for it, and its header says why.
 
 The figure is a little over four heads tall, the sports sprite's proportion.
 
