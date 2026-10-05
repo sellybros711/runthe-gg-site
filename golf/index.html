@@ -12109,6 +12109,7 @@ function render(){
     if(S.overlay==='seasonlaunch') overlaySeasonLaunch(app);
     if(S.overlay==='s1end') overlayS1End(app);
     if(S.overlay==='spookyszn') overlaySpookySzn(app);
+    if(S.overlay==='haunted') overlayHaunted(app);
     if(S.overlay==='arcadead') overlayArcadeAd(app);
     if(S.overlay==='purchased') overlayPurchased(app);
     if(S.overlay==='coinlog') overlayCoinLog(app);
@@ -14591,6 +14592,7 @@ function homeModeList(){
   else                    list.push({id:'career', act:true,  pri:3, make:()=>careerHeroCard(true)});
   list.push({id:'online', act:true, pri:4, make:(o)=>onlineModeCard(o)});
   if(passEnabled())       list.push({id:'pass', act:true, pri:9, hero:false, make:()=>tourPassCard()});
+  try{ if(hlLive()) list.push({id:'haunted', act:true, pri:9, hero:false, make:()=>hauntedCard()}); }catch(e){}
   if(spotlightLiveToday()){ let sact=true; try{ sact=spotAttemptsLeft(monthlySpotlight(todayKey()).mk)>0; }catch(e){}
     list.push({id:'spot', act:sact, pri:5, make:()=>spotlightHeroCard()}); }
   return list;
@@ -37211,12 +37213,186 @@ function overlaySpookySzn(screen){
       <div class="spk-items">${items}</div>
       <div class="spk-rew">${rewTxt}</div>
       <div class="spk-hint">${SEASON_DECOR.spooky.eggs.length} spooky things are hiding around the game. Find them all for the ${esc(SEASON_DECOR.spooky.prize.name)} and ${coinFmt(SEASON_DECOR.spooky.coins)} coins.</div>
-      <button class="spk-go">Shop the drop</button>
+      <button class="spk-go">Open the event</button>
       <button class="spk-later">Later</button>
     </div></div>`);
   const close=()=>{ S.overlay=null; S._spkShown=false; render(); };
   ov.querySelector('.spk-x').onclick=close; ov.querySelector('.spk-later').onclick=close;
-  ov.querySelector('.spk-go').onclick=()=>{ try{ track('spooky_popup_shop'); }catch(e){} S._spkShown=false; S.overlay='shop'; S.shopSec='drops'; S.shopDrop='spooky'; render(); };
+  ov.querySelector('.spk-go').onclick=()=>{ try{ track('spooky_popup_event'); }catch(e){} S._spkShown=false; S.overlay='haunted'; render(); };
+  screen.appendChild(ov);
+}
+
+/* ═══════════════ HAUNTED LINKS: the October event page ═══════════════════════════════════════════
+   Owner (Oct 2026): the drop and the hunt are one event, so they get one page and one name. It shows
+   both meters, pays a little on the way (HL_STEPS), and keeps the two big rewards where they were: the
+   drop's collection reward is still claimDropReward('spooky'), and the hunt's prize is still paid by
+   spkTryReward(). Nothing here is for sale.
+   A step's claim is a synced owned flag ('hl:<year>:<id>'), so it pays once per account whatever device
+   it is claimed on. Hunt finds are still counted per device (spkFound), as they always were. */
+const HL_STEPS=[
+  {id:'drop3', meter:'drop', n:3, coins:1500},
+  {id:'drop5', meter:'drop', n:5, coins:3000},
+  {id:'hunt5', meter:'hunt', n:5, coins:500}];
+// where each hidden thing lives, said vaguely enough that finding it is still a find
+const HL_HINTS={ homespider:'Hanging over the home screen', homeghost:'Peeking out on the home screen', homebat:'Flying past the home screen',
+  shopspider:'Dangling under the Pro Shop tabs', previewghost:'In a mirror in the Pro Shop', passbat:'Perched on the Tour Pass',
+  boardghost:'Lurking on the leaderboard', newscat:'Napping in What\'s New', seasonpumpkin:'Sitting on a career season', dailyspider:'Hanging over a Daily round' };
+const HL_SPRITE={ homespider:'spider', shopspider:'spider', dailyspider:'spider', homeghost:'ghost', previewghost:'ghost', boardghost:'ghost',
+  homebat:'bat', passbat:'bat', newscat:'cat', seasonpumpkin:'pumpkin' };
+// a hint that names a screen you can open from here takes you there
+const HL_GO={ homespider:'home', homeghost:'home', homebat:'home', shopspider:'shop', previewghost:'shop', passbat:'tourpass', boardghost:'leaderboard', newscat:'whatsnew' };
+function hlLive(){ return decorLive()==='spooky'; }
+function hlDrop(){ return dropById('spooky'); }
+function hlDropCount(){ const d=hlDrop(); return d?dropProgress(d):{own:0,tot:0}; }
+function hlStepKey(st){ return 'hl:'+decorYear()+':'+st.id; }
+function hlStepClaimed(st){ try{ return !!coinState().owned[hlStepKey(st)]; }catch(e){ return false; } }
+function hlMeter(m){ return m==='drop'?hlDropCount().own:spkFoundCount(); }
+function hlStepReady(st){ return sbSignedIn() && !hlStepClaimed(st) && hlMeter(st.meter)>=st.n; }
+// everything the page can pay right now: the steps, plus the drop's own collection reward
+function hlClaimable(){ let n=HL_STEPS.filter(hlStepReady).length; try{ if(dropClaimable(hlDrop())) n++; }catch(e){} return n; }
+function hlClaimStep(st){ if(!hlStepReady(st)) return 0; const s=coinState(); s.owned[hlStepKey(st)]=1; coinSave(s);
+  addBonusCoins(st.coins,{silent:true}); try{ track('haunted_step',{id:st.id,coins:st.coins}); }catch(e){} return st.coins; }
+function hlClaimAll(){ let coins=0; HL_STEPS.forEach(st=>{ coins+=hlClaimStep(st); });
+  let drop=false; try{ if(dropClaimable(hlDrop())){ claimDropReward('spooky'); drop=true; } }catch(e){}
+  if(coins>0 && !drop){ try{ sfx('win'); buzz([12,40,12]); }catch(e){} toast('<b style="color:#ffd45e">+'+coinFmt(coins)+' coins</b> from Haunted Links',3200); }
+  return coins; }
+function hlDaysLeft(){ const d=hlDrop(); if(!d||!d.window) return 0; const now=new Date(), e=d.window[1];
+  const end=new Date(now.getFullYear(), e[0]-1, e[1]); const t=new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.max(0, Math.round((end-t)/86400000)+1); }
+let _hlcss=false;
+function hlStyleOnce(){ if(_hlcss) return; _hlcss=true; const st=document.createElement('style'); st.textContent=`
+  .gc-haunted{background:radial-gradient(70% 110% at 100% 0%,rgba(125,255,90,.30),transparent 60%),radial-gradient(80% 120% at 0% 100%,rgba(255,138,42,.45),transparent 65%),linear-gradient(158deg,#3a1650,#1d0b2a 60%,#0e0716); color:#fff0e0; --chip:rgba(0,0,0,.35);border:1px solid rgba(255,154,58,.35)}
+  .gc-haunted .gc-title{color:#ffcf96;text-shadow:0 0 14px rgba(255,120,30,.55)}
+  .gc-haunted .gc-kick{color:#9dff7c}
+  .gc-haunted .gc-badge.claim{background:#7dff5a;color:#14280a}
+  .ov.hl-ov{--hl-o:#ff9a3a;--hl-g:#7dff5a;--muted:#c2b3cf;background:#0d0814;background-image:radial-gradient(100% 45% at 50% -5%,rgba(255,138,42,.28),transparent 65%),radial-gradient(80% 50% at 0% 60%,rgba(125,255,90,.08),transparent 70%),linear-gradient(180deg,#1a0d24,#0f0817 60%,#09060e);background-attachment:fixed;overflow-x:hidden}
+  .hl-ov .x{z-index:8;position:absolute;top:14px;right:14px}   /* scrolls away with the hero, so it never sits on a claim button */
+  .hl-hero{position:relative;max-width:600px;margin:6px auto 0;padding:26px 16px 18px;text-align:center;overflow:hidden;border-radius:20px;
+    background:radial-gradient(70% 90% at 50% 0%,rgba(255,138,42,.32),transparent 70%),linear-gradient(180deg,#24102f,#140a1d);border:1px solid rgba(255,154,58,.45);box-shadow:0 18px 40px -24px rgba(255,120,30,.8)}
+  .hl-moon{position:absolute;top:58px;right:-14px;width:84px;opacity:.5;pointer-events:none}
+  .hl-hero .spk-hang{position:absolute;top:0}
+  .hl-kick{font:900 10.5px/1 var(--body);letter-spacing:.22em;color:var(--hl-o)}
+  .hl-ttl{position:relative;z-index:1;font-family:var(--display);font-size:clamp(40px,12vw,58px);line-height:.92;margin:8px 0 6px;color:#ffe2b8;text-shadow:0 0 6px #ff8a2a,0 0 22px rgba(255,120,30,.6),0 4px 0 #6a2a0a}
+  .hl-lede{font:700 12.5px/1.4 var(--body);color:#e6d9ef;margin:4px auto 0;max-width:420px}
+  .hl-chips{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+  .hl-chip{font:900 10px/1 var(--body);letter-spacing:.1em;padding:6px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.07);color:#f1e6f7}
+  .hl-chip.hot{border-color:var(--hl-o);color:var(--hl-o);background:rgba(255,154,58,.12)}
+  .hl-claim{position:relative;display:flex;align-items:center;gap:12px;width:100%;max-width:600px;margin:12px auto 0;border:0;cursor:pointer;text-align:left;overflow:hidden;padding:13px 14px;border-radius:16px;
+    background:linear-gradient(180deg,#9dff7c,#3fc22a);color:#0f2206;box-shadow:0 12px 30px -14px rgba(125,255,90,.95),inset 0 1px 0 rgba(255,255,255,.5);animation:hlGlow 2.2s ease-in-out infinite}
+  @keyframes hlGlow{0%,100%{box-shadow:0 12px 30px -14px rgba(125,255,90,.8)}50%{box-shadow:0 14px 36px -10px rgba(125,255,90,1)}}
+  .hl-claim .hl-cpk{flex:0 0 auto;animation:tpBob 1.4s ease-in-out infinite}
+  .hl-claim b{display:block;font:900 17px/1.05 var(--body)} .hl-claim span.s{font:800 11px/1.2 var(--body);opacity:.75}
+  .hl-claim .go{margin-left:auto;flex:0 0 auto;font:900 12px/1 var(--body);background:#0f2206;color:#9dff7c;border-radius:10px;padding:9px 12px}
+  .hl-sec{max-width:600px;margin:16px auto 0;padding:14px;border-radius:18px;border:1px solid rgba(255,255,255,.12);background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015))}
+  .hl-sec.hunt{border-color:rgba(125,255,90,.3)}
+  .hl-sh{display:flex;align-items:baseline;gap:8px}
+  .hl-sh .k{font:900 11px/1 var(--body);letter-spacing:.2em;color:var(--hl-o)} .hl-sec.hunt .hl-sh .k{color:var(--hl-g)}
+  .hl-sh b{margin-left:auto;font:900 14px/1 var(--body);color:#fff}
+  .hl-sub{font:700 11.5px/1.35 var(--body);color:var(--muted);margin:6px 0 0}
+  .hl-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:8px;margin-top:12px}
+  .hl-it{position:relative;aspect-ratio:1;border-radius:12px;border:1.5px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;padding:8px}
+  .hl-it>div{width:100%;height:100%} .hl-it .sthumb,.hl-it img,.hl-it canvas,.hl-it svg{width:100%;height:100%;display:block;object-fit:contain}
+  .hl-it.no>div{opacity:.28;filter:grayscale(1) brightness(.6)}
+  .hl-it.yes{border-color:var(--hl-o);box-shadow:0 0 16px -6px rgba(255,154,58,.9);background:radial-gradient(80% 80% at 50% 40%,rgba(255,154,58,.25),rgba(0,0,0,.2))}
+  .hl-it.yes:after{content:'✓';position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:900 10px/1 var(--body);background:var(--hl-o);color:#2a1205}
+  .hl-track{position:relative;margin:16px 4px 6px;height:10px;border-radius:6px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.1)}
+  .hl-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,#c2531a,var(--hl-o));box-shadow:0 0 12px rgba(255,154,58,.6)}
+  .hl-sec.hunt .hl-fill{background:linear-gradient(90deg,#2fa21e,var(--hl-g));box-shadow:0 0 12px rgba(125,255,90,.55)}
+  .hl-steps{display:grid;gap:8px;margin-top:12px}
+  .hl-step{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.2)}
+  .hl-step .n{flex:0 0 auto;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:900 13px/1 var(--body);background:#24152f;border:2px solid rgba(255,255,255,.18);color:#fff}
+  .hl-step .w{flex:1;min-width:0} .hl-step .w b{display:block;font:900 12.5px/1.2 var(--body);color:#fff} .hl-step .w span{font:700 10.5px/1.3 var(--body);color:var(--muted)}
+  .hl-step .th{flex:0 0 auto;width:34px;height:34px} .hl-step .th .sthumb,.hl-step .th img,.hl-step .th canvas,.hl-step .th svg{width:100%;height:100%;object-fit:contain}
+  .hl-step .st{flex:0 0 auto;font:900 10px/1 var(--body);letter-spacing:.06em;padding:7px 10px;border-radius:8px;background:rgba(255,255,255,.07);color:var(--muted);white-space:nowrap}
+  .hl-step.done .st{background:rgba(125,255,90,.16);color:var(--hl-g)}
+  .hl-step.ready{border-color:var(--hl-g);background:rgba(125,255,90,.08)}
+  .hl-step.ready .n{background:var(--hl-g);border-color:#d6ffc9;color:#0f2206}
+  .hl-step.done .n{background:rgba(125,255,90,.25);border-color:rgba(125,255,90,.5)}
+  .hl-step button.st{border:0;cursor:pointer;background:linear-gradient(180deg,#9dff7c,#3fc22a);color:#0f2206}
+  .hl-finds{display:grid;gap:7px;margin-top:12px}
+  .hl-f{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.2);color:inherit;text-align:left;width:100%;font:inherit}
+  .hl-f .sp{flex:0 0 auto;width:34px;height:34px;display:flex;align-items:center;justify-content:center}
+  .hl-f .sp img{max-width:34px;max-height:34px}
+  .hl-f.no .sp{font:900 18px/1 var(--body);color:rgba(255,255,255,.35);border-radius:50%;background:rgba(255,255,255,.06)}
+  .hl-f .w{flex:1;min-width:0;font:800 12px/1.3 var(--body);color:#efe6f4}
+  .hl-f.yes{border-color:rgba(125,255,90,.35);background:rgba(125,255,90,.07)}
+  .hl-f.yes .w{color:var(--hl-g)}
+  .hl-f .go{flex:0 0 auto;font:900 10px/1 var(--body);letter-spacing:.06em;color:var(--hl-o)}
+  button.hl-f{cursor:pointer}
+  .hl-shop{display:block;width:100%;margin-top:12px;border:0;cursor:pointer;border-radius:12px;padding:12px;font:900 14px/1 var(--body);letter-spacing:.06em;background:linear-gradient(180deg,#ffb15a,#e46f12);color:#2a1205}
+  .hl-note{max-width:600px;margin:12px auto 0;text-align:center;font:700 11px/1.4 var(--body);color:var(--muted)}
+  @media (prefers-reduced-motion:reduce){ .hl-claim,.hl-claim .hl-cpk{animation:none} }`;
+  document.head.appendChild(st); }
+// the home-screen card, beside the Tour Pass card, for as long as the event runs
+function hauntedCard(){ hlStyleOnce();
+  const dc=hlDropCount(), hf=spkFoundCount(), hn=SEASON_DECOR.spooky.eggs.length, cl=hlClaimable(), dl=hlDaysLeft();
+  const badge=cl>0?`<span class="gc-badge claim">${cl} to claim</span>`:`<span class="gc-badge">${dl}D LEFT</span>`;
+  const card=$(`<button class="gcard gc-haunted" aria-label="Haunted Links event">
+    <div class="gc-top"><div style="min-width:0"><div class="gc-kick">🎃 October event</div><div class="gc-title">Haunted Links</div></div>${badge}</div>
+    <div class="gc-mid">Drop ${dc.own}/${dc.tot} collected · Hunt ${hf}/${hn} found</div>
+    <div class="gc-row"><span class="gc-go">${cl>0?'Claim rewards ▸':'Open the event ▸'}</span></div></button>`);
+  card.onclick=()=>{ try{ track('haunted_card'); }catch(e){} S.overlay='haunted'; render(); };
+  return card; }
+function overlayHaunted(screen){
+  if(!hlLive()){ S.overlay=null; return; }
+  spkStyleOnce(); hlStyleOnce();
+  const d=hlDrop(), r=dropReward(d), dc=hlDropCount(), cfg=SEASON_DECOR.spooky, hn=cfg.eggs.length, found=spkFound(), hf=spkFoundCount();
+  const cl=hlClaimable(), dl=hlDaysLeft(), signed=sbSignedIn(), M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const ends=d&&d.window?M[d.window[1][0]-1]+' '+d.window[1][1]:'';
+  const coinIc=`<span style="width:30px;height:30px;display:block">${ic('coin',{size:'30px'})}</span>`;
+  const stepRow=(st)=>{ const got=hlMeter(st.meter), done=hlStepClaimed(st), ready=hlStepReady(st);
+    return `<div class="hl-step${done?' done':ready?' ready':''}"><span class="n">${st.n}</span><span class="th">${coinIc}</span>
+      <span class="w"><b>${coinFmt(st.coins)} coins</b><span>${st.meter==='drop'?st.n+' items collected':st.n+' things found'}</span></span>
+      ${done?'<span class="st">✓ CLAIMED</span>':ready?`<button class="st" data-hlstep="${st.id}">CLAIM</button>`:`<span class="st">${Math.min(got,st.n)}/${st.n}</span>`}</div>`; };
+  // the drop's own reward, last on its list
+  const dropDone=dropRewardClaimed('spooky'), dropReady=signed&&dropClaimable(d);
+  const dropFinal=r?`<div class="hl-step${dropDone?' done':dropReady?' ready':''}"><span class="n">${dc.tot}</span>
+      <span class="th">${(r.items||[])[0]?rewardThumbHTML(r.items[0].cat,r.items[0].id):coinIc}</span>
+      <span class="w"><b>${esc((r.items||[]).map(x=>x.name).join(' + ')||'Collection reward')}</b><span>${r.coins?'+ '+coinFmt(r.coins)+' coins · ':''}the whole drop</span></span>
+      ${dropDone?'<span class="st">✓ CLAIMED</span>':dropReady?'<button class="st" data-hldrop>CLAIM</button>':`<span class="st">${dc.own}/${dc.tot}</span>`}</div>`:'';
+  // the hunt's prize, paid on its own the moment the last thing is found (spkTryReward)
+  const own=coinState().owned, prizeDone=!!(cfg.prize&&own[cosKey(cfg.prize.cat,cfg.prize.id)]);
+  const huntFinal=`<div class="hl-step${prizeDone?' done':''}"><span class="n">${hn}</span>
+      <span class="th">${cfg.prize?rewardThumbHTML(cfg.prize.cat,cfg.prize.id):coinIc}</span>
+      <span class="w"><b>${esc(cfg.prize?cfg.prize.name:'Hunt prize')}</b><span>+ ${coinFmt(cfg.coins)} coins · find all ${hn}</span></span>
+      <span class="st">${prizeDone?'✓ CLAIMED':hf+'/'+hn}</span></div>`;
+  const items=(d?d.items:[]).map(ci=>{ let th=''; try{ const o=(cosmeticItems(ci[0])||[]).find(x=>x.id===ci[1])||{id:ci[1]}; th=cosThumbHTML(ci[0],o); }catch(e){}
+    return `<div class="hl-it ${cosOwned(ci[0],ci[1])?'yes':'no'}"><div>${th}</div></div>`; }).join('');
+  const finds=cfg.eggs.map(id=>{ const got=found.indexOf(id)>=0, go=!got&&HL_GO[id];
+    const inner=got?`<span class="sp">${spkEl(HL_SPRITE[id]||'ghost',30)}</span><span class="w">Found ${esc(cfg.found[id]||'it')}</span>`
+      :`<span class="sp">?</span><span class="w">${esc(HL_HINTS[id]||'Somewhere in the game')}</span>${go?'<span class="go">GO ▸</span>':''}`;
+    return go?`<button class="hl-f no" data-hlgo="${go}">${inner}</button>`:`<div class="hl-f ${got?'yes':'no'}">${inner}</div>`; }).join('');
+  const hang=(left,len,h,delay)=>`<div class="spk-hang" style="left:${left};animation-delay:${delay}s"><div class="silk" style="height:${len}px"></div><div class="bob" style="animation-delay:${delay}s">${spkEl('spider',h)}</div></div>`;
+  const ov=$(`<div class="ov hl-ov" role="dialog" aria-modal="true" aria-label="Haunted Links">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <div class="hl-hero"><img class="hl-moon" src="${spkMoonURL()}" alt="">${decorReduced()?'':hang('7%',40,26,.4)}
+      <div class="hl-kick">OCTOBER EVENT</div>
+      <div class="hl-ttl">HAUNTED LINKS</div>
+      <p class="hl-lede">Collect the drop. Find what is hiding. It all ends ${ends}.</p>
+      <div class="hl-chips"><span class="hl-chip hot">⏳ ${dl} DAY${dl===1?'':'S'} LEFT</span><span class="hl-chip">FREE TO PLAY</span></div></div>
+    ${cl>0?`<button class="hl-claim" data-hlall><span class="hl-cpk">${spkEl('pumpkin',34)}</span><span><b>${cl} reward${cl===1?'':'s'} ready</b><span class="s">Tap to claim ${cl===1?'it':'them all'}</span></span><span class="go">Claim ▸</span></button>`:''}
+    <div class="hl-sec drop"><div class="hl-sh"><span class="k">THE DROP</span><b>${dc.own} of ${dc.tot}</b></div>
+      <p class="hl-sub">Seven pieces, from Haunted Links packs and the Pro Shop.</p>
+      <div class="hl-items">${items}</div>
+      <div class="hl-track"><div class="hl-fill" style="width:${dc.tot?Math.round(100*dc.own/dc.tot):0}%"></div></div>
+      <div class="hl-steps">${HL_STEPS.filter(s=>s.meter==='drop').map(stepRow).join('')}${dropFinal}</div>
+      <button class="hl-shop" data-hlshop>Shop the drop ▸</button></div>
+    <div class="hl-sec hunt"><div class="hl-sh"><span class="k">THE HUNT</span><b>${hf} of ${hn}</b></div>
+      <p class="hl-sub">${hn} spooky things are hiding around the game. Tap one when you see it.</p>
+      <div class="hl-track"><div class="hl-fill" style="width:${Math.round(100*hf/hn)}%"></div></div>
+      <div class="hl-steps">${HL_STEPS.filter(s=>s.meter==='hunt').map(stepRow).join('')}${huntFinal}</div>
+      <div class="hl-finds">${finds}</div></div>
+    <div class="hl-note">${signed?'Hunt finds are saved on this device.':'Sign in to claim rewards. Hunt finds are saved on this device.'}</div>
+    <button class="btn red" style="margin-top:14px">Close</button></div>`);
+  const close=()=>{ S.overlay=null; render(); };
+  ov.querySelectorAll('.x,.red').forEach(el=>el.onclick=close);
+  const all=ov.querySelector('[data-hlall]'); if(all) all.onclick=()=>{ if(!signed){ S.overlay='account'; S.acctMode='signin'; S.acctErr=''; render(); return; } hlClaimAll(); render(); };
+  ov.querySelectorAll('[data-hlstep]').forEach(b=>b.onclick=()=>{ const st=HL_STEPS.find(x=>x.id===b.getAttribute('data-hlstep')); const c=st?hlClaimStep(st):0;
+    if(c){ try{ sfx('holeGood'); buzz(12); }catch(e){} toast('<b style="color:#ffd45e">+'+coinFmt(c)+' coins</b> from Haunted Links',3000); } render(); });
+  const dr=ov.querySelector('[data-hldrop]'); if(dr) dr.onclick=()=>{ claimDropReward('spooky'); render(); };
+  const sh=ov.querySelector('[data-hlshop]'); if(sh) sh.onclick=()=>{ try{ track('haunted_shop'); }catch(e){} S.overlay='shop'; S.shopSec='drops'; S.shopDrop='spooky'; render(); };
+  ov.querySelectorAll('[data-hlgo]').forEach(b=>b.onclick=()=>{ const g=b.getAttribute('data-hlgo');
+    if(g==='home'){ S.overlay=null; S.screen='title'; } else if(g==='shop'){ S.overlay='shop'; S.shopSec='apparel'; } else S.overlay=g; render(); });
   screen.appendChild(ov);
 }
 
