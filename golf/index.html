@@ -24690,7 +24690,8 @@ function tickBriefs(){
       // quiet: this brief reports its own payout below, with the amount ACTUALLY paid (multipliers and all).
       // PASS_XP_SEASON: a brief is part of a career season, which is repeatable (and settles in a simmed one
       // too), so it feeds the Track at the season rate. At the full rate briefs were most of a season's XP.
-      if(rw.coins) try{ b._paid=awardPlayCoins(rw.coins, b.brand+' brief', PASS_XP_SEASON, true)||rw.coins; }catch(e){ b._paid=rw.coins; }
+      // A brief settled after Skip to end feeds it nothing, like the simmed season itself.
+      if(rw.coins) try{ b._paid=awardPlayCoins(rw.coins, b.brand+' brief', (S.season&&S.season.skipped)?0:PASS_XP_SEASON, true)||rw.coins; }catch(e){ b._paid=rw.coins; }
       S.season.briefsDone=S.season.briefsDone||{};
       S.season.briefsDone[b.slot]=(S.season.briefsDone[b.slot]||0)+1;
       try{ careerStory().feed.unshift({year:S.year||1, evt:'Sponsor', text:`Delivered on a ${b.brand} brief`}); }catch(e){}
@@ -26753,7 +26754,7 @@ const NEWS_ENTRIES=[
    blurb:'Seven new pieces: a Reaper Hood, Mummy Wrap, the Eyeball, Coffin Clubs, Cauldron Smoke, Bone Cleats and a Graveyard card. A new step at 10 pieces pays 5,000 coins.',
    where:'The Haunted Links page and the Pro Shop.'},
   {id:'s2-steady', date:NEWS_DATE5, cat:'tour', icon:'📅', title:'A steadier Tour Pass',
-   blurb:'Tiers cost much more now, so a decent season is most of a tier early on and under a third of one late. Pass XP from play is cut in half. Daily rounds past your third each day pay coins but no Pass XP.',
+   blurb:'Tiers cost much more. Pass XP from play is cut in half. Seasons simmed to the end and Daily rounds past your third each day pay coins but no Pass XP.',
    where:'The Tour Pass.'},
   {id:'s2-dress', date:NEWS_DATE5, cat:'tour', icon:'🍂', title:'The pass dresses for the season',
    blurb:'Bats and pumpkins through October. Falling leaves in November.',
@@ -29163,9 +29164,11 @@ function scrSummary(){
       const amt=base+bonus.total;
       let credited=0;
       if(amt>0){ _coinsSuppressToast=false;
-        let label = skipped?'season simmed to the end':('season'+(t.wins?(' · '+t.wins+' win'+(t.wins>1?'s':'')):''));
+        let label = skipped?'season simmed to the end · no Pass XP':('season'+(t.wins?(' · '+t.wins+' win'+(t.wins>1?'s':'')):''));
         if(bonus.parts.length) label += ' · ' + bonus.parts.join(' · ');
-        credited=awardPlayCoins(amt, label, PASS_XP_SEASON)||0; }   // seasons feed the Tour Pass at a reduced rate (repeatable faucet)
+        // a played season feeds the Tour Pass at a reduced rate (repeatable faucet); a simmed one (Skip to end)
+        // feeds it nothing (owner, Oct 5: players run 20 to 30 seasons a day). Coins are unchanged.
+        credited=awardPlayCoins(amt, label, skipped?0:PASS_XP_SEASON)||0; }
       if(S.season) S.season.coinsEarned=credited;   // shown on the Earnings recap tab (owner)
       track('season_coins',{year:S.year||1,amt,base,bonus:bonus.total,skipped,wins:t.wins,majors:t.majors,moneyRank});
     }
