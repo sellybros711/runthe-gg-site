@@ -10045,6 +10045,8 @@ function passState(){ let s=LS.get(acctKey('bag_tourpass'),null); const cur=pass
   if(!Array.isArray(s.claimed.free)) s.claimed.free=[]; if(!Array.isArray(s.claimed.prem)) s.claimed.prem=[];
   s.xp=Math.max(0,+s.xp||0); s.pro=!!s.pro;
   if(s.curveV!==PASS_CURVE_V){ passConvertCurve(s); passSave(s); }   // one-time re-map onto the current XP curve
+  if(s.paceV!==1){ s.paceV=1; if(s.xp>0) s.grand=Math.max(+s.grand||0, s.xp); passSave(s); }   // climbed before the pace: keep it
+  if(passDrain(s)) passSave(s);   // a new day opens more of the track
   passHistFromState(s);   // no-op unless this season's best tier went up (Season 1's stamp lands here before Oct 5)
   // `pro` was the retired coin unlock. It now means "this account had Pro at some point THIS season", which
   // is what season-end settlement asks about once the entitlement itself has rolled over. The cloud merge
@@ -10107,6 +10109,29 @@ function passConvertCurve(s){
   s.curveV=PASS_CURVE_V; return s;
 }
 function passTierAt(xp){ let t=0; while(t<PASS_TIERS && xp>=passXpForTier(t+1)) t++; return t; }
+/* THE SEASON PACE (owner, Oct 2026: "on average a player gets to day 50ish before they run out").
+   The curve was tuned for a capped faucet, and Pro's unlimited Daily turned it into one that is not: replaying
+   the Daily earned about 12,000 XP an hour, so a Pro player could clear all 60 tiers in an afternoon. The fix
+   is a pace, not a lower payout. The track opens the full 60 tiers' XP spread over PASS_PACE_DAYS days, and
+   anything earned past today's opening is BANKED rather than lost: it unlocks as the days pass. So:
+     - nobody, however much they play, finishes before about day 50;
+     - a committed player (the Daily, a career season, the weekly challenges: roughly 750 to 800 XP a day on
+       the faucets measured for curve v4) earns at or near the pace and finishes around day 46 to 50;
+     - a player who misses days loses nothing, because their bank and the open pace both wait for them;
+     - a double XP weekend counts its days twice toward the pace, so it still moves a player who is at pace;
+     - Overtime is not paced: once the 60 tiers are open (day 50) the pace lifts entirely.
+   `grand` keeps anybody who climbed before the pace existed exactly where they were. */
+const PASS_PACE_DAYS=50;
+function passPaceDays(){ const ssn=passSeason(); let d=ssn.day;
+  try{ const t=todayKey(); passEvents().forEach(e=>{ if(t>=e.from) d+=passDk(Math.min(e.to,t))-passDk(e.from)+1; }); }catch(e){}
+  return d; }
+function passPacePerDay(){ return Math.round(passXpForTier(PASS_TIERS)/PASS_PACE_DAYS); }
+function passAllow(s){ const total=passXpForTier(PASS_TIERS), a=passPacePerDay()*passPaceDays();
+  if(a>=total) return Infinity; return Math.max(a, +(s&&s.grand)||0); }
+function passBank(s){ return Math.max(0, Math.round(+((s||passState()).bank)||0)); }
+// move banked XP onto the track as far as today's pace allows; true if anything moved
+function passDrain(s){ const b=passBank(s); if(!b) return false; const room=passAllow(s)-s.xp; if(!(room>0)) return false;
+  const mv=Math.min(b, room===Infinity?b:Math.floor(room)); if(mv<=0) return false; s.xp+=mv; s.bank=b-mv; return true; }
 function passAddXp(n){ if(!passEnabled()||!sbSignedIn()||!(n>0)) return; const s=passState(), before=passTierShown(s.xp);
   if(!S._passPop) S._passPop={xp0:s.xp, tier0:before};   // first award of this round/season - the popup animates from here
   // Prize-Wheel 2x XP boost: the one chokepoint every XP faucet funnels through, so a boost doubles
@@ -10114,7 +10139,11 @@ function passAddXp(n){ if(!passEnabled()||!sbSignedIn()||!(n>0)) return; const s
   const wm=(typeof passXpMult==='function')?passXpMult():1, em=passEventMult(), mult=wm*em;
   if(wm>1) S._passPop.boost=true;                        // the level-up popup calls it out
   if(em>1){ const ev=passEventNow(); if(ev) S._passPop.event=ev.id; }
-  s.xp+=Math.round(n*mult); passSave(s); passHistNote(s.season, passTierX(s.xp)); }
+  const add=Math.round(n*mult), room=Math.max(0, passAllow(s)-s.xp), take=room===Infinity?add:Math.min(add, Math.floor(room));
+  s.xp+=take; if(add>take){ s.bank=passBank(s)+(add-take);
+    // say so once a day, the first time the pace is reached, so banked XP never looks like XP that vanished
+    try{ const k=todayKey(); if(S._passBankToast!==k){ S._passBankToast=k; toast('<b style="color:'+passAcc2()+'">🎟️ Today\'s Tour Pass pace reached</b><br><span class="small">Extra XP is banked. It unlocks as the season goes.</span>', 4200); } }catch(e){} }
+  passSave(s); passHistNote(s.season, passTierX(s.xp)); }
 // Owner: a proper level-up moment after a season / daily / h2h round, not a toast mid-play. Deferred the
 // same way as the welcome gift: passAddXp only records the climb, and the result screens flush it once
 // they're safely on screen. Only fires when a TIER was actually gained.
@@ -10396,10 +10425,10 @@ function mergeTourPass(local, server){
   // versions differ, take the already-CONVERTED side wholesale; only compare xp when they agree.
   const lv=+local.curveV||0, sv=+server.curveV||0;
   if(lv!==sv){ const w=lv>sv?local:server, o=lv>sv?server:local;
-    return { season:w.season, xp:+w.xp||0, pro:!!(w.pro||o.pro), proS:(w.proS==='S'+w.season||o.proS==='S'+w.season)?'S'+w.season:'', curveV:Math.max(lv,sv),
+    return { season:w.season, xp:+w.xp||0, bank:Math.max(+w.bank||0,+o.bank||0), grand:Math.max(+w.grand||0,+o.grand||0), paceV:Math.max(+w.paceV||0,+o.paceV||0), pro:!!(w.pro||o.pro), proS:(w.proS==='S'+w.season||o.proS==='S'+w.season)?'S'+w.season:'', curveV:Math.max(lv,sv),
       claimed:{ free:uni(w.claimed&&w.claimed.free, o.claimed&&o.claimed.free),
                 prem:uni(w.claimed&&w.claimed.prem, o.claimed&&o.claimed.prem) } }; }
-  return { season:local.season, xp:Math.max(+local.xp||0,+server.xp||0), pro:!!(local.pro||server.pro),
+  return { season:local.season, xp:Math.max(+local.xp||0,+server.xp||0), bank:Math.max(+local.bank||0,+server.bank||0), grand:Math.max(+local.grand||0,+server.grand||0), paceV:Math.max(+local.paceV||0,+server.paceV||0), pro:!!(local.pro||server.pro),
     proS:(local.proS==='S'+local.season||server.proS==='S'+local.season)?'S'+local.season:'',
     curveV:Math.max(lv,sv),
     claimed:{ free:uni(local.claimed&&local.claimed.free, server.claimed&&server.claimed.free),
@@ -35901,6 +35930,7 @@ function passStyleOnce(){ if(_tpcss) return; _tpcss=true; const st=document.crea
   .tp-xp{font:800 11px/1 var(--body);color:rgba(255,255,255,.88)}
   .tp-days{font:800 10.5px/1 var(--body);color:var(--tp-acc2);white-space:nowrap}
   .tp-meta{font:700 10.5px/1.3 var(--body);color:var(--muted);margin-top:7px}
+  .tp-bank{font:800 10.5px/1.35 var(--body);color:#d8c2ff;margin-top:7px}
   .tp-ev{font:700 11.5px/1.35 var(--body);color:#ffcf96;margin-top:7px;padding:6px 9px;border-radius:9px;background:rgba(255,140,40,.12);border:1px solid rgba(255,179,90,.35)}
   .tp-ev b{color:#ffb35a}
   .tp-body{max-width:600px;margin:14px auto 0}
@@ -36241,6 +36271,7 @@ function overlayTourPass(screen){
       <div class="tp-bar"><div class="tp-fill" style="width:${pct}%"></div></div>
       <div class="tp-xprow"><span class="tp-xp">${tx<top?into+' / '+need+' XP to Tier '+(tx+1):'EVERY TIER REACHED'}</span><span class="tp-days">${ssn.daysLeft} day${ssn.daysLeft===1?'':'s'} left</span></div></div>
     ${evLine?`<div class="tp-ev">${evLine}</div>`:''}
+    ${passBank(s)>0?`<div class="tp-bank">🔒 ${coinFmt(passBank(s))} XP banked. It unlocks as the season goes (${coinFmt(passPacePerDay())} a day).</div>`:''}
   </div></div>`));
   // ---- the hub above the track: what you can take now, what is next, and what is worth chasing ----
   const hub=$(`<div class="tp-body"></div>`);
