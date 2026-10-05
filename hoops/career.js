@@ -1288,7 +1288,7 @@ function sayAll(L, beats) {
   for (const c of L.pending.slice(0, 1)) {
     if (c.named) continue;
     c.named = 1;
-    c.title = say(L, c.title); c.text = say(L, c.text); c.eyebrow = say(L, c.eyebrow);
+    c.title = say(L, c.title); c.text = say(L, c.text); c.eyebrow = say(L, c.eyebrow); if (c.scene) c.scene = say(L, c.scene);
     for (const o of c.options || []) { o.label = say(L, o.label); if (o.hint) o.hint = say(L, o.hint); }
   }
   for (const b of beats || []) if (b && b.text) b.text = say(L, b.text);
@@ -4757,8 +4757,11 @@ function dealCard(L, phase, ev) {
     id: ev.id, kind: 'event', key: phase + ':' + ev.id,
     eyebrow: storyOn(L) ? calendar(L, phase) : SUMMERY[phase] ? 'The summer' : 'This season',
     title: typeof ev.title === 'function' ? ev.title(L) : ev.title, text: ev.text(L),
-    options: ev.options.map((o) => ({ label: o.label })),
+    options: ev.options.map((o) => (o.hint ? { label: o.label, hint: o.hint } : { label: o.label })),
   };
+  /* Where it happens (the locker room, the agent's office), said above the
+     title the way a broadcast puts a place on screen. */
+  if (ev.tag) card.scene = typeof ev.tag === 'function' ? ev.tag(L) : ev.tag;
   if (storyOn(L) && ev.cb) { const c = callback(L, ev.cb); if (c) card.text = c + ' ' + card.text; }
   L.pending.push(card);
 }
@@ -6652,8 +6655,8 @@ function compileStory(id, sp, kind) {
     phases, req: Object.assign({ story: true }, sp.req || {}), when: sp.when, weight: (sp.w == null ? 2 : sp.w) * (sp.legend ? LEGEND_W : 1),
     rarity: sp.rar || 'common', once: true, legend: !!sp.legend, tags: sp.tags ? sp.tags.split(' ') : [],
     stage: am ? 'am' : phases[0] === 'post' ? 'post' : 'nba', cb: sp.cb, authored: true,
-    title: sp.t, text: typeof sp.x === 'function' ? sp.x : () => sp.x,
-    options: sp.o.map((o) => ({ label: o.l, run: (L, r) => runOpt(L, r, o) })),
+    title: sp.t, text: typeof sp.x === 'function' ? sp.x : () => sp.x, tag: sp.tag,
+    options: sp.o.map((o) => ({ label: o.l, hint: o.sub, run: (L, r) => runOpt(L, r, o) })),
   };
   EVENT_REL[id] = sp.o.map((o) => o.rel || []);
   return ev;
