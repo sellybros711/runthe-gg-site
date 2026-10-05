@@ -3,7 +3,8 @@
  *   (nohup python3 -m http.server 8099 &)
  *   node golf/check-pass-pace.mjs
  *
- *   PACE      the track opens the 60 tiers' XP spread over 50 days; a double XP weekend counts its days twice
+ *   PACE      the track opens the 60 TIERS over 50 days, 1.2 a day, so day one is worth the same climb as day 49;
+ *             a double XP weekend counts its days twice
  *   BANK      XP earned past today's pace is banked and unlocks on later days, never lost
  *   GRINDER   a player earning far more than the pace finishes on day 48 to 50, not on day 1
  *   COMMITTED a player earning about 780 XP a day finishes in the high 40s
@@ -34,14 +35,15 @@ try {
     try { toast = function () {}; } catch (e) {}
     const real = todayKey;
     const keyOf = (day) => { const d = new Date(Date.UTC(2026, 9, 4 + day)); return d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate(); };
-    const total = passXpForTier(PASS_TIERS), out = { total, perDay: passPacePerDay() };
+    const total = passXpForTier(PASS_TIERS), out = { total };
+    out.open = [1, 2, 10, 25].map((d) => { todayKey = () => keyOf(d); return passTierAt(passAllow({})); });
     const play = (perDay, days, pre) => {
       try { localStorage.clear(); } catch (e) {}
       if (pre) { todayKey = () => keyOf(1); LS.set(acctKey('bag_tourpass'), { season: 2, xp: pre, pro: false, curveV: PASS_CURVE_V, claimed: { free: [], prem: [] } }); }
-      let done = null, tiers = [];
+      let done = null, tiers = [], prev = passTierAt(passState().xp), maxDay = 0;
       for (let d = 1; d <= days; d++) { todayKey = () => keyOf(d); S._passPop = null; passAddXp(perDay / PASS_XP_RATE * PASS_XP_RATE);
-        const s = passState(); tiers.push(passTierAt(s.xp)); if (done == null && passTierAt(s.xp) >= PASS_TIERS) done = d; }
-      const s = passState(); return { done, tier: passTierAt(s.xp), bank: passBank(s), xp: s.xp, t1: tiers[0], t10: tiers[9] };
+        const s = passState(), t = passTierAt(s.xp); tiers.push(t); if (d < 50) maxDay = Math.max(maxDay, t - prev); prev = t; if (done == null && t >= PASS_TIERS) done = d; }
+      const s = passState(); return { done, tier: passTierAt(s.xp), bank: passBank(s), xp: s.xp, t1: tiers[0], t10: tiers[9], maxDay };
     };
     // passAddXp applies the holiday multiplier itself, so "perDay" is what the player earns before it
     out.grinder = play(6000, 60);
@@ -50,8 +52,8 @@ try {
     // banking: one huge day, then nothing; it must all arrive by the time the pace opens
     try { localStorage.clear(); } catch (e) {}
     todayKey = () => keyOf(1); S._passPop = null; passAddXp(20000);
-    let s = passState(); out.day1 = { xp: s.xp, bank: passBank(s), sum: s.xp + passBank(s) };
-    todayKey = () => keyOf(2); s = passState(); out.day2 = { xp: s.xp, bank: passBank(s), sum: s.xp + passBank(s) };
+    let s = passState(); out.day1 = { xp: s.xp, want: Math.round(passXpAtTier(1.2)), bank: passBank(s), sum: s.xp + passBank(s) };
+    todayKey = () => keyOf(2); s = passState(); out.day2 = { xp: s.xp, want: Math.round(passXpAtTier(2.4)), bank: passBank(s), sum: s.xp + passBank(s) };
     todayKey = () => keyOf(60); s = passState(); out.day60 = { xp: s.xp, bank: passBank(s) };
     // a double XP weekend opens extra pace: Oct 31 is day 27, the event began Oct 30
     todayKey = () => keyOf(27); out.paceDaysOct31 = passPaceDays();
@@ -66,15 +68,15 @@ try {
     return out;
   });
   head('the pace');
-  ok(`the track opens ${R.perDay} XP a day, the whole season's ${R.total} over 50 days`, Math.abs(R.perDay * 50 - R.total) < 60, R);
+  ok('the track opens about 1.2 tiers a day: tier 1 on day 1, 2 on day 2, 12 on day 10, 30 on day 25', R.open.join() === '1,2,12,30', R.open);
   ok('a double XP weekend counts its days twice', R.paceDaysOct31 === 27 + 2 && R.paceDaysOct29 === 25, { oct31: R.paceDaysOct31, oct29: R.paceDaysOct29 });
   head('who finishes when');
-  ok('a grinder (6,000 XP a day) finishes on day 46 to 50, not on day 1', R.grinder.done >= 46 && R.grinder.done <= 50 && R.grinder.t1 <= 7, R.grinder);
+  ok('a grinder (6,000 XP a day) finishes in the high 40s (the double XP weekends count twice), with one tier on day 1 and never more than 3 in a day', R.grinder.done >= 46 && R.grinder.done <= 50 && R.grinder.t1 === 1 && R.grinder.maxDay <= 3, R.grinder);
   ok('a committed player (780 XP a day) finishes in the mid to high 40s', R.committed.done >= 44 && R.committed.done <= 52, R.committed);
   ok('a casual player (350 XP a day) is still climbing at the end, with nothing banked', R.casual.done === null && R.casual.tier >= 30 && R.casual.bank === 0, R.casual);
   head('nothing is lost');
-  ok('a huge first day is capped at the pace and the rest is banked', R.day1.xp === R.perDay && R.day1.sum === 20000, R.day1);
-  ok('the next day opens more of it', R.day2.xp === 2 * R.perDay && R.day2.sum === 20000, R.day2);
+  ok('a huge first day is capped at the pace and the rest is banked', R.day1.xp === R.day1.want && R.day1.sum === 20000, R.day1);
+  ok('the next day opens more of it', R.day2.xp === R.day2.want && R.day2.sum === 20000, R.day2);
   ok('once the pace is fully open the bank is empty', R.day60.bank === 0 && R.day60.xp === 20000, R.day60);
   ok('progress made before the pace is kept', R.floor.xp === 2000, R.floor);
   ok('Overtime is not paced', R.ot.allow && R.ot.bank === 0, R.ot);
