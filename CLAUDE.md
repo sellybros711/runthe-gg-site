@@ -11522,6 +11522,14 @@ then a 2D rig of shaded tubes), and both are gone. Now:
 
 check-sprite was re-recorded for it, and its header says why.
 
+**ONLY MUSCULAR IS BROAD.** The owner found the first 3D players too buff. `BODY` in baller.js is
+one table read by the skeleton, the model and `handAt`: Lean and Standard are long and narrow (small
+delts, thin arms), and Muscular (id `strong`, kept because it is in saves) carries the broad
+shoulders. **The jersey number is stamped on the screen**, after the light, onto jersey cloth only,
+because mapped onto the model in world cells the camera's pitch dropped whole rows of a digit. The
+tank is a round scoop, narrow straps and round armholes, each edged in one even band of the second
+colour. The lower body was asked to stay as it is.
+
 The figure is a little over four heads tall, the sports sprite's proportion.
 
 **`paint(look, { parts: true })` hands back part names instead of colours**, and only
