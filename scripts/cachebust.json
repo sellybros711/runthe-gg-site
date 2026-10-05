@@ -49,8 +49,8 @@
       "sha": "664dc7fc25eaef66"
     },
     "/arcade/flags.js": {
-      "v": "3",
-      "sha": "36556aec6d4058cf"
+      "v": "4",
+      "sha": "fa27ecfa748cd741"
     },
     "/arcade/fame.js": {
       "v": "2",
@@ -301,8 +301,8 @@
       "sha": "664dc7fc25eaef66"
     },
     "/arcade/flags.js": {
-      "v": "3",
-      "sha": "36556aec6d4058cf"
+      "v": "4",
+      "sha": "fa27ecfa748cd741"
     },
     "/arcade/fame.js": {
       "v": "2",
@@ -621,8 +621,8 @@
       "sha": "664dc7fc25eaef66"
     },
     "/arcade/flags.js": {
-      "v": "3",
-      "sha": "36556aec6d4058cf"
+      "v": "4",
+      "sha": "fa27ecfa748cd741"
     },
     "/arcade/fame.js": {
       "v": "2",
@@ -803,8 +803,8 @@
       "sha": "664dc7fc25eaef66"
     },
     "/arcade/flags.js": {
-      "v": "3",
-      "sha": "36556aec6d4058cf"
+      "v": "4",
+      "sha": "fa27ecfa748cd741"
     },
     "/arcade/rosters.js": {
       "v": "5",
@@ -973,8 +973,8 @@
       "sha": "664dc7fc25eaef66"
     },
     "/arcade/flags.js": {
-      "v": "3",
-      "sha": "36556aec6d4058cf"
+      "v": "4",
+      "sha": "fa27ecfa748cd741"
     },
     "/arcade/fame.js": {
       "v": "2",
@@ -1405,8 +1405,8 @@
       "sha": "664dc7fc25eaef66"
     },
     "/arcade/flags.js": {
-      "v": "3",
-      "sha": "36556aec6d4058cf"
+      "v": "4",
+      "sha": "fa27ecfa748cd741"
     },
     "/arcade/fame.js": {
       "v": "2",
@@ -1712,6 +1712,10 @@
       "v": "1",
       "sha": "e5a73154c06c0e0a"
     },
+    "/arcade/flags.js": {
+      "v": "4",
+      "sha": "fa27ecfa748cd741"
+    },
     "/arcade/icons.js": {
       "v": "3",
       "sha": "96ddcdb15ea90ca2"
@@ -1931,8 +1935,8 @@
       "sha": "c51a588b3f3d2559"
     },
     "/arcade/flags.js": {
-      "v": "3",
-      "sha": "36556aec6d4058cf"
+      "v": "4",
+      "sha": "fa27ecfa748cd741"
     },
     "/arcade/sportegories-data.js": {
       "v": "48",
@@ -2005,8 +2009,8 @@
       "sha": "664dc7fc25eaef66"
     },
     "/arcade/flags.js": {
-      "v": "3",
-      "sha": "36556aec6d4058cf"
+      "v": "4",
+      "sha": "fa27ecfa748cd741"
     },
     "/arcade/rosters.js": {
       "v": "5",

@@ -68,10 +68,19 @@ const server = await new Promise((res) => {
 });
 const browser = await chromium.launch(EXE ? { executablePath: EXE } : {});
 
-async function open(game, flags) {
+async function open(game, flags, at) {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
-  await ctx.addInitScript(() => { try { localStorage.setItem('runthegrid_pro', '1'); } catch (e) {} });
+  // A card holder, signed in, past the first-visit cards: the shape
+  // scripts/lib/arcade-harness.mjs gives its 'card' tier. Roll Call is a card
+  // game, and a guest meets the sign-in sheet over the start button.
+  await ctx.addInitScript((g) => { try {
+    localStorage.setItem('runthegrid_pro', '1');
+    localStorage.setItem('sb-jcrrxqfpdelrmvjuihnm-auth-token', JSON.stringify({ access_token: 'harness', user: { id: '00000000-0000-4000-8000-000000000001' } }));
+    localStorage.setItem('rtg:howto:' + g, '1'); localStorage.setItem('rtg:howto2:' + g, '1');
+  } catch (e) {} }, game);
   const page = await ctx.newPage();
+  // A fixed day, when the claim is about one board. Timers still run.
+  if (at) await page.clock.setFixedTime(new Date(at + 'T12:00:00'));
   for (const pat of ['**cdn.jsdelivr.net**', '**supabase.co**', '**googlesyndication.com**', '**googletagmanager.com**',
                      '**google-analytics.com**', '**doubleclick.net**', '**fonts.googleapis.com**', '**fonts.gstatic.com**']) {
     await page.route(pat, (r) => r.abort());
@@ -185,6 +194,60 @@ console.log('\n4. Number Game, flag current');
   else if (r.newest - r.oldest > 1) fail('a stint that ended in ' + r.oldest + ' is asked beside one that runs to ' + r.newest);
   else ok(r.n + ' cards, every one a current player on a current number: ' + r.first.join(' | '));
   await close();
+}
+
+/* ---- 5. Roll Call: the whole NBA roster is the board --------------------- */
+/* The report: the 2009-10 Mavericks board printed eight famous names, and
+   DeShawn Stevenson, who started for that team, could only be a deep cut.
+   The day that board is dealt is looked up in the deck, so this does not
+   depend on today's date, and the clock is fixed to it. */
+console.log('\n5. Roll Call, flag fullroster');
+{
+  const T = {}; new Function('window', readFileSync(path.join(ROOT, 'arcade/teammates.js'), 'utf8'))(T);
+  const D = T.RTG_TEAMMATES, ti = D.teams.indexOf('Dallas Mavericks');
+  const at = D.roll.findIndex((r) => r[0] === ti && r[1] === 2010);
+  if (at < 0) fail('the 2009-10 Mavericks are no longer in the Roll Call deck; pick another NBA board for this check');
+  else {
+    const day = new Date(Date.parse('2026-07-22T00:00:00Z') + at * 864e5).toISOString().slice(0, 10);
+    const R = {}; new Function('window', readFileSync(path.join(ROOT, 'arcade/rosters/nba-2010.js'), 'utf8'))(R);
+    const P = R.RTG_ROSTERS_NBA_2010, roster = P.r[P.teams.indexOf('Dallas Mavericks')][2010].map((x) => P.names[x[0]]);
+    for (const [flags, full] of [['fullroster', true], ['-fullroster', false]]) {
+      const { page, close } = await open('rollcall', flags, day);
+      await page.waitForFunction(() => /\d+ names to find/.test((document.getElementById('setupBlurb') || {}).textContent || ''));
+      await page.waitForTimeout(600);
+      // the first-visit rules card sits over the page until it is dismissed
+      if (await page.$('#rtgpgGo')) { await page.click('#rtgpgGo'); await page.waitForTimeout(500); }
+      if (await page.$eval('#panelPlay', (el) => !el.classList.contains('on')).catch(() => true)) await page.click('#startBtn');
+      await page.waitForSelector('#slots .slot');
+      const slots = await page.$$eval('#slots .slot', (els) => els.length);
+      await page.fill('#ask', 'DeShawn Stevenson');
+      await page.press('#ask', 'Enter');
+      await page.waitForTimeout(300);
+      const got = await page.$$eval('#slots .slot.got', (els) => els.map((e) => ({ n: e.querySelector('.nm').textContent, deep: e.classList.contains('deep'), no: e.querySelector('.no').textContent })));
+      const st = got.find((g) => g.n === 'DeShawn Stevenson');
+      if (full) {
+        if (slots !== roster.length) fail('the board has ' + slots + ' blanks and the roster ' + roster.length + ' names');
+        else if (!st || st.deep) fail('DeShawn Stevenson is ' + (st ? 'a deep cut' : 'refused') + ' on a full-roster board');
+        else ok(day + ' Mavericks 2009-10: all ' + slots + ' men on the roster are blanks, and Stevenson fills his (' + st.no + ')');
+        // and the end of the board names every man missed, roster rows too
+        const errs = []; page.on('pageerror', (e) => errs.push(String(e)));
+        await page.click('#doneBtn');
+        await page.waitForTimeout(400);
+        const end = await page.evaluate(() => ({ of: document.getElementById('mOf').textContent,
+          blank: [...document.querySelectorAll('#slots .slot.missed .nm')].filter((n) => !n.textContent.trim() || /·/.test(n.textContent)).length,
+          missed: document.querySelectorAll('#slots .slot.missed').length }));
+        if (+end.of !== roster.length) fail('the result says ' + end.of + ' on the board, not ' + roster.length);
+        else if (end.blank || end.missed !== roster.length - 1) fail('the reveal left ' + end.blank + ' blanks unnamed (' + end.missed + ' missed)');
+        else if (errs.length) fail('the end of the board threw: ' + errs[0]);
+        else ok('the end of the board names all ' + end.missed + ' men missed, and the result is out of ' + end.of);
+      } else {
+        if (slots >= roster.length) fail('with the flag off the board is still the whole roster');
+        else if (!st || !st.deep) fail('with the flag off Stevenson is no longer the deep cut he was');
+        else ok('with the flag off the board is the ' + slots + ' it was and Stevenson is a deep cut');
+      }
+      await close();
+    }
+  }
 }
 
 await browser.close();

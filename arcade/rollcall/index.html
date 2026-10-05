@@ -257,12 +257,12 @@ window.GA_ID='G-L29P5MRWKE';
   <li>Use full names. Don’t stress the spelling. The typeahead finds him from a few letters.</li>
   <li>Right player, wrong season? That’s not a miss. We tell you and you keep going.</li>
   <li>A wrong name doesn’t cost you anything but time.</li>
-  <li>Got a guy who was on that roster but isn’t one of the blanks? He still counts as a deep cut. The blanks are the famous guys, not the whole team.</li>
+  <li>Got a guy who was on that roster but isn’t one of the blanks? He still counts as a deep cut.</li>
 </ul>
 <h3>One roster a day</h3>
 <p>A new team and season drop at midnight your time. Everybody gets the same one. Finish a day and your streak keeps going. Roll Call is an Arcade Card game. A free RunThe.GG account gets one play of it, once ever. The Daily Crossword, Sportegories, Alma Mater and Career Path are free every day, no account needed. The Card opens all twelve with no limit, plus the <a href="/arcade/archive/">Archive</a> of every past day. Five of the games also have NBA, NFL and MLB editions.</p>
 <h3>How we pick the blanks</h3>
-<p>Rosters run deep and most guys on them are forgettable. So the blanks are only players a sports fan would probably know, pulled from real jersey records. That’s why a board is 8 or 10 names, not 53. Naming half of them is a good day. We also have the whole roster behind the board. So a 12th man off the bench gets checked against the real roster and counts as a deep cut.</p>
+<p>An NBA board is the whole roster. Every man who played for that team that season is a blank. Football and baseball rosters run 40 to 100 deep, so those boards only print the players a fan would probably know. That’s 8 or 10 names. Anyone else on the roster gets checked against it and counts as a deep cut. Naming half the board is a good day.</p>
 <h3>Tips</h3>
 <ul>
   <li>Being wrong only costs you time. Type every name that pops into your head. Don’t second-guess it.</li>
@@ -295,6 +295,7 @@ window.GA_ID='G-L29P5MRWKE';
 <div class="toast" id="toast"></div>
 
 <script src="/arcade/franchise.js?v=1"></script>
+<script src="/arcade/flags.js?v=4"></script>
 <script src="/arcade/icons.js?v=3"></script>
 <script src="/arcade/day.js?v=3"></script>
 <script src="/arcade/dayroll.js?v=2"></script>
@@ -359,12 +360,18 @@ window.GA_ID='G-L29P5MRWKE';
       (BY_NAME[k] = BY_NAME[k] || []).push(i);
     });
   }
-  function nameOf(i){ return D.players[i][0]; }
-  function stintsOf(i){ return D.players[i][3]; }
+  /* A slot is a player index into the teammates file, or, on a full-roster
+     board (flag 'fullroster'), 'r:<name>|<number>' for a man the roster page
+     lists and the teammates file does not. Both read through these two. */
+  function isRow(i){ return typeof i==='string' && i.slice(0,2)==='r:'; }
+  function rowParts(i){ var s=i.slice(2), at=s.lastIndexOf('|'); return [s.slice(0,at), +s.slice(at+1)]; }
+  function nameOf(i){ return isRow(i) ? rowParts(i)[0] : D.players[i][0]; }
+  function stintsOf(i){ return isRow(i) ? [] : D.players[i][3]; }
   /* The jersey number he wore there that year, for the reveal. A player can
      hold two numbers at one club across two spells, so it is read off the
      stint that actually covers the season, never off the player. */
   function numberAt(i, team, year){
+    if(isRow(i)){ var n=rowParts(i)[1]; return (isNaN(n)||n<0) ? null : n; }
     var st = stintsOf(i);
     for(var k=0;k<st.length;k++){
       if(st[k][0]===team && st[k][1]<=year && year<=st[k][2] && st[k][3]>=0) return st[k][3];
@@ -471,6 +478,31 @@ window.GA_ID='G-L29P5MRWKE';
     return { team: row[0], year: row[1], ids: row[2].slice() };
   }
 
+  /* FLAG 'fullroster': the whole roster is the board. Reported by the owner
+     off a 2009-10 Mavericks board of eight famous names: DeShawn Stevenson
+     played real minutes for that team and could only ever be a deep cut,
+     because he was never one of the blanks. On an NBA board every man the
+     season's roster page lists is a blank now, the curated names first. The
+     league's other rosters run 37 to 119 names a season, which is a
+     different game, so those boards are unchanged. Read per board day, so an
+     archived day before the switch is the board it always was. */
+  function flagOn(n){ try{ return !!(window.RTGFlags && RTGFlags.on(n, pdate())); }catch(e){ return false; } }
+  function fullOn(b){ return !!b && sportOf(b)==='NBA' && flagOn('fullroster'); }
+  function widen(b){
+    if(!fullOn(b) || b.wide) return b;
+    var rows = rosterFor(b);
+    if(!rows || !rows.length) return b;
+    var have={};
+    b.ids.forEach(function(id){ have[norm(nameOf(id))]=1; have[loose(nameOf(id))]=1; });
+    rows.forEach(function(r){
+      if(have[norm(r[0])] || have[loose(r[0])]) return;
+      have[norm(r[0])]=1;
+      b.ids.push('r:'+r[0]+'|'+(r[1]==null?-1:r[1]));
+    });
+    b.wide=true;
+    return b;
+  }
+
   // ---------- state ----------
   var found = {}, foundN = 0, timer=null, left=SECONDS, done=false, startedAt=0;
 
@@ -513,7 +545,10 @@ window.GA_ID='G-L29P5MRWKE';
     $('bestLine').textContent = bits.join(' · ');
     // Pull today's league shard now, while they are reading the setup screen,
     // so the answer key is in hand before the ninety seconds start.
-    loadShard(b, function(){});
+    loadShard(b, function(){
+      widen(b);
+      $('setupBlurb').textContent = '90 seconds. ' + b.ids.length + ' names to find.';
+    });
   }
   function clubOf(b){ return eraName(b); }
   /* AN NBA SEASON HAS TWO YEARS IN ITS NAME AND WE WERE ONLY PRINTING ONE.
@@ -627,6 +662,20 @@ window.GA_ID='G-L29P5MRWKE';
        at some point. This is the branch that now takes Tiago Splitter and
        refuses Boris Diaw. */
     var row = onRoster(k, raw);
+    if(row && board.wide){
+      for(var w=0; w<board.ids.length; w++){
+        var bid=board.ids[w];
+        if(!isRow(bid) || nameOf(bid)!==row[0]) continue;
+        if(found[bid]){ message('You already got ' + sentence(row[0]), 'warn'); return; }
+        found[bid]=1; foundN++; saveResume();
+        fillSlot(w, bid);
+        $('tallyN').textContent=foundN;
+        message(sentence(row[0]) + ' Yes!', 'good');
+        sfx('good');
+        if(foundN>=board.ids.length){ finish(true); }
+        return;
+      }
+    }
     if(row){
       addExtra(row[0], 'roster', row[1]);
       message(sentence(row[0]) + ' Deep cut! That counts.', 'good');
@@ -707,6 +756,16 @@ window.GA_ID='G-L29P5MRWKE';
     }
     var b = pickBoard(daily, pdate());
     if(!b){ toast('Couldn’t build a board'); return; }
+    // A full-roster board is dealt from the roster page, so wait for it:
+    // everybody has to be asked the same names. A page that fails to load
+    // leaves the board as it always was.
+    if(fullOn(b) && !b.wide && !b.waited){
+      b.waited=true;
+      return loadShard(b, function(){ startWith(widen(b), daily); });
+    }
+    startWith(widen(b), daily);
+  }
+  function startWith(b, daily){
     board=b; isDaily=daily; found={}; foundN=0; done=false; left=SECONDS; startedAt=Date.now();
     extra=[]; checking=false;
     // Normally already in hand from the setup screen; this covers a replay or
@@ -732,6 +791,11 @@ window.GA_ID='G-L29P5MRWKE';
   function resumeBoard(r){
     var b = pickBoard(true, pdate());
     if(!b || b.team!==r.team || b.year!==r.year){ clearResume(); return; }
+    if(fullOn(b) && !rosterFor(b) && !r.waited){
+      r.waited=true;
+      return loadShard(b, function(){ resumeBoard(r); });
+    }
+    widen(b);
     board=b; isDaily=true; attemptFirst=true; done=false; found={}; foundN=0; extra=[]; checking=false;
     ENDS = +r.ends || Date.now(); startedAt = ENDS - SECONDS*1000;
     buildRoster();

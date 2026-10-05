@@ -51,6 +51,10 @@
     // Guess the Player, Alma Mater and Number Game deal current players only.
     // Eight tries to find any player in baseball history was the report.
     current:   { since: '2026-10-06', pct: 0, daily: true },
+    // Roll Call, NBA boards: every man on that season's roster is a blank,
+    // not only the famous eight. DeShawn Stevenson started for the 2009-10
+    // Mavericks and could only ever be a deep cut.
+    fullroster: { since: '2026-10-06', pct: 0, daily: true },
     // Phase 3: a guest's finished run goes on the daily board under a
     // generated name, through an anonymous session (board.js). Needs
     // supabase/132_arcade_guest_board.sql and "Allow anonymous sign-ins" in the
