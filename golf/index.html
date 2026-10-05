@@ -35822,6 +35822,11 @@ function passStyleOnce(){ if(_tpcss) return; _tpcss=true; const st=document.crea
   .tp-claim{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);border:0;border-radius:8px;padding:7px 17px;font:900 11px/1 var(--body);letter-spacing:.03em;background:linear-gradient(180deg,#ffd447,#eba61f);color:#241a05;cursor:pointer;box-shadow:0 5px 14px -5px rgba(241,208,74,.95)}
   .tp-cell.prem .tp-claim{background:linear-gradient(180deg,#c08bff,#7048d6);color:#fff;box-shadow:0 5px 14px -5px rgba(160,90,255,.95)}
   /* ---------- Tour Pass sales surfaces (signed-out page + the Go Pro pitch) ---------- */
+  .tps-gopro{cursor:pointer;transition:transform .12s ease,box-shadow .2s ease}
+  .tps-gopro:hover{box-shadow:0 0 0 2px rgba(241,208,74,.55),0 0 34px -10px rgba(241,208,74,.6)}
+  .tps-gopro:active{transform:translateY(1px)}
+  .tps-gopro:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+  .tps-chip.tps-gobuy{background:var(--gold-grad);color:#20160a;border-color:transparent;font-weight:900}
   .tps-ribbon{position:relative;max-width:540px;margin:30px auto 0;padding:11px 34px;text-align:center;color:#fff;
     font:900 12.5px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;
     background:linear-gradient(180deg,#c06bff,#7a2fd0);
@@ -36039,7 +36044,8 @@ function overlayTourPass(screen){
       // the perk stack, then an unmissable price.
       const look=passCapstoneLook();
       let locked=0; for(let i=1;i<=tier;i++) if(s.claimed.prem.indexOf(i)<0) locked++;   // Pro rewards already banked up on tiers you have reached
-      cta.appendChild($(`<div class="tps-hero" style="margin-top:2px">
+      // The whole card is a way to buy: "Go Pro" reads as a button, so pressing it has to do what it says.
+      cta.appendChild($(`<div class="tps-hero tps-gopro" data-gopro role="button" tabindex="0" aria-label="Go Pro: buy the Season ${ssn.n} Tour Pass" style="margin-top:2px">
         <div class="tps-rays"></div>${passSparkHTML()}
         <div class="tps-hero-in">
           <div class="tps-fig">${pxFigureHTML(look,116)}</div>
@@ -36049,7 +36055,7 @@ function overlayTourPass(screen){
             <p class="tps-sub">${locked>0?`<b style="color:var(--gold)">${locked} Pro reward${locked===1?'':'s'} are already waiting</b> on tiers you have reached. `:''}Unlock all ${PASS_TIERS} Pro rewards and ${esc(passProExclusivesTxt())} for the rest of Season ${ssn.n}.</p>
           </div>
         </div>
-        <div class="tps-chips"><span class="tps-chip hot">⏳ ${ssn.daysLeft} DAY${ssn.daysLeft===1?'':'S'} LEFT</span><span class="tps-chip">SEASON EXCLUSIVE</span></div></div>`));
+        <div class="tps-chips"><span class="tps-chip hot">⏳ ${ssn.daysLeft} DAY${ssn.daysLeft===1?'':'S'} LEFT</span><span class="tps-chip">SEASON EXCLUSIVE</span><span class="tps-chip tps-gobuy">GO PRO · $${TOURPASS.usd.toFixed(2)} ▸</span></div></div>`));
       cta.appendChild($(`<div class="tps-sec" style="margin-top:12px"><div class="tps-h">EVERYTHING IN THE PRO LANE</div><div class="tps-loot">${passLootTilesHTML('prem')}</div></div>`));
       cta.appendChild($(`<div class="tps-sec" style="margin-top:12px"><div class="tps-perks">${passPerksHTML()}</div></div>`));
       cta.appendChild($(`<div class="tps-cta" style="margin-top:14px">${passBuyButtonHTML('Unlock the PRO lane')}</div>`));
@@ -36103,6 +36109,8 @@ function overlayTourPass(screen){
   ov.appendChild($(`<button class="btn red">Close</button>`));
   ov.querySelectorAll('.x,.red').forEach(el=>el.onclick=()=>{clearPassScrollCue();S.overlay=null;render();});
   const bp=ov.querySelector('[data-buypass]'); if(bp) bp.onclick=()=>{ beginPassPurchase(); };
+  const gp=ov.querySelector('[data-gopro]'); if(gp){ gp.onclick=()=>{ beginPassPurchase(); };
+    gp.onkeydown=(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); beginPassPurchase(); } }; }
   const ca=ov.querySelector('[data-claimall]'); if(ca) ca.onclick=()=>{ const got=passClaimAll(); if(got.length){ S.passClaimSummary=passClaimAgg(got); S.overlay='passclaim'; render(); } };
   ov.querySelectorAll('[data-claim]').forEach(b=>b.onclick=()=>{ const rr=passClaim(+b.getAttribute('data-claim'), b.getAttribute('data-lane')); if(rr.ok){ toast('<span style="color:var(--gold);font-weight:800">Claimed!</span> '+passRewardLabel(rr.reward),3200); render(); } else toast(rr.msg); });
   screen.appendChild(ov);
