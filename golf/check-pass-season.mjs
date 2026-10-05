@@ -131,6 +131,18 @@ window.__P = {
     if(metric==='dailyUnder'||metric==='packsOpened') passChalProgress(metric,n); else questWeekly(metric,n);
     window.toast=t0; S._passPop=null; return passState().xp-s0; },
   mergeChal(a,b){ return mergePassChal(a,b); },
+  /* a tab left open across a season change: the wallet still holds last season's pass */
+  stale(){ var w=_walletCache, n=passSeason().n, out={season:n};
+    try{ localStorage.removeItem(acctKey('bag_tourpass')); localStorage.removeItem(acctKey('bag_pass')); }catch(e){}
+    _walletCache=Object.assign({},w,{passActive:true, passPeriod:'S'+(n-1)});
+    out.active=dailyPassActive(); out.pro=passProActive(); var s=passState(); out.mark=!!s.pro; out.markS=s.proS||'';
+    out.claimable=passClaimable();
+    _walletCache=Object.assign({},w,{passActive:false, passPeriod:''});
+    out.hadOldMark=passHadPro(n,{pro:true}); out.hadS1Mark=passHadPro(1,{pro:true}); out.hadNewMark=passHadPro(n,{pro:true,proS:'S'+n});
+    _walletCache=Object.assign({},w,{passActive:true, passPeriod:'S'+n});
+    out.liveActive=dailyPassActive(); var s2=passState(); out.liveMarkS=s2.proS||'';
+    out.merged=mergeTourPass({season:n,xp:0,pro:true,curveV:PASS_CURVE_V,claimed:{free:[],prem:[]}}, {season:n,xp:0,pro:true,proS:'S'+n,curveV:PASS_CURVE_V,claimed:{free:[],prem:[]}}).proS;
+    _walletCache=w; try{ localStorage.removeItem(acctKey('bag_tourpass')); }catch(e){} return out; },
   /* ---- the Oct 5 gate, saved seasonal packs, season-end settlement ---- */
   gate(){ return {on:passSystemsOn(), chal:passChalSet().length, chalHTML:passChalHTML(), stamps:passStampsHTML({1:40}), code:passStampsCode(),
     spookyLive:packTierLive('spooky'), spookyDrop:!!dropReward(dropById('spooky')), live:liveSeasonalPackId(), tease:PASS_NEXT_TEASE}; },
@@ -519,6 +531,16 @@ try {
   const ML = await E('mergeSettled', { 1: { free: [1, 2], prem: [] } }, { 1: { free: [2, 3], prem: [4] }, x: { free: [9] } });
   ok('the ledger merges as a union, so no device pays a tier twice', JSON.stringify(ML) === JSON.stringify({ 1: { free: [1, 2, 3], prem: [4] } }), ML);
   await E('settleReset');
+
+  head('a season change under an open tab: last season\'s pass is not this season\'s');
+  await at('2026-10-06T16:00:00Z');
+  const STW = await E('stale');
+  ok('a wallet still holding the Season 1 pass reads as no pass in Season 2', STW.season === 2 && STW.active === false && STW.pro === false, STW);
+  ok('...so the Season 2 track is not marked Pro', STW.mark === false && STW.markS === '', STW);
+  ok('a bare Pro mark on a Season 2+ track no longer settles the Pro lane', STW.hadOldMark === false && STW.hadNewMark === true, STW);
+  ok('...while Season 1 still settles off the mark it always had', STW.hadS1Mark === true, STW);
+  ok('a Season 2 buyer is Pro and the track is stamped with the season', STW.liveActive === true && STW.liveMarkS === 'S2', STW);
+  ok('the cloud merge carries the season stamp', STW.merged === 'S2', STW);
 
   head('page errors');
   ok('none', errs.length === 0, errs.slice(0, 3));

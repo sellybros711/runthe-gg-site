@@ -47,7 +47,7 @@ window.__DP = {
       order:function(){ return {limit:never}; }, limit:never}; }}; }, rpc:never };
     // the wallet the pass lives in. 'loading' leaves it null, which is the state of a cold load.
     _walletCache = kind==='loading' ? null
-      : {paid:0, lifePurchased:0, lifeGranted:0, tokens:0, passActive:(kind==='pass'), passPeriod:'S1'};
+      : {paid:0, lifePurchased:0, lifeGranted:0, tokens:0, passActive:(kind==='pass'), passPeriod:'S'+passSeason().n};
     window.__DP._dev=(kind==='dev');
     if(used>0){ LS.set(acctKey('bag_daily'), {date:todayKey(), attempts:used,
       best:{day:todayKey(), course:S.dailyCourse||dailyCourseKey(todayKey()), total:-2, par:72, ovr:80}, result:null}); }
