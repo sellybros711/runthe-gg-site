@@ -1593,42 +1593,42 @@ function combineClubs(L) {
 /* Questions a front office asks, about you. A question the road gave you a
    reason to be asked comes first. */
 const CMB_Q = [
-  { id: 'weak', when: () => true, q: 'What is the worst part of your game?',
-    a: [['Name it, and how you are fixing it', { culture: 2, grit: 1 }, [0, 3], 'He nods. "Nobody says that." He writes for a while.'],
-      ['Say defense, then talk about effort', { grit: 2 }, [0, 1], 'Safe. He has heard it before. He likes the effort part.'],
-      ['Say you do not have one', { swagger: 2, culture: -2 }, [3, -2], 'He laughs. You cannot tell which way.']] },
+  { id: 'weak', when: () => true, q: "What's the worst part of your game?",
+    a: [["Name it, and how you're fixing it", { culture: 2, grit: 1 }, [0, 3], 'He nods. "Nobody ever says that." Then he writes for a while.', 'Honest, and it shows work'],
+      ['Say defense, then talk effort', { grit: 2 }, [0, 1], "Safe. He's heard it a hundred times, but he likes the effort part.", 'The safe answer'],
+      ["Tell him you don't have one", { swagger: 2, culture: -2 }, [3, -2], "He laughs. You honestly can't tell which way.", 'Confidence, or arrogance']] },
   { id: 'injury', when: (L) => !!(recall(L, 'inj.col') || recall(L, 'inj.hs')), q: 'Tell us about the injury.',
-    a: [['Walk them through the rehab', { culture: 2, grit: 1 }, [0, 3], 'You know every week of it. Their doctor smiles.'],
-      ['Say it is behind you', { swagger: 1 }, [1, 0], 'He wants more than that. He writes "medical" and underlines it.'],
-      ['Offer to run for them right now', { grit: 2 }, [1, 1], 'You do sprints in dress shoes. They believe you.']] },
-  { id: 'transfer', when: (L) => !!recall(L, 'route.portal'), q: 'Why did you transfer?',
-    a: [['Minutes. You needed the ball', { swagger: 2 }, [1, -1], 'Honest. A little sharp. He likes sharp.'],
-      ['The fit was wrong. You own it', { culture: 2 }, [0, 3], 'No blame on anybody. He circles something.'],
-      ['Your old coach left', { grit: 1 }, [0, 1], 'He knows the story. It checks out.']] },
+    a: [['Walk them through the rehab', { culture: 2, grit: 1 }, [0, 3], 'You know every week of it cold. Their team doctor smiles.', 'Show them the work'],
+      ["Say it's all behind you", { swagger: 1 }, [1, 0], 'He wants more than that. He writes "medical" and underlines it.', 'Short and sweet'],
+      ['Offer to run for them right now', { grit: 2 }, [1, 1], 'You run sprints in dress shoes. They believe you.', 'Prove it on the spot']] },
+  { id: 'transfer', when: (L) => !!recall(L, 'route.portal'), q: "Why'd you transfer?",
+    a: [['Minutes. You needed the ball', { swagger: 2 }, [1, -1], 'Honest, and a little sharp. He likes sharp.', 'Blunt and hungry'],
+      ['The fit was wrong. Own it', { culture: 2 }, [0, 3], 'You blame nobody. He circles something on his pad.', 'Take the high road'],
+      ['Your old coach left', { grit: 1 }, [0, 1], 'He knows the story already. It checks out.', 'Just the facts']] },
   { id: 'path', when: (L) => !!(recall(L, 'route.gl') || recall(L, 'route.intl') || recall(L, 'route.gap')), q: 'You skipped college. Why?',
-    a: [['To be a pro sooner', { swagger: 2, grit: 1 }, [2, 0], 'He likes the hunger.'],
-      ['Family needed the money', { culture: 2 }, [1, 3], 'The room goes quiet. Then warm.'],
-      ['To play against men', { grit: 2 }, [1, 1], 'He asks about the grown men. You have stories.']] },
+    a: [['To get paid sooner', { swagger: 2, grit: 1 }, [2, 0], 'He likes the hunger. You can see it on his face.', "You're in a hurry"],
+      ['Your family needed the money', { culture: 2 }, [1, 3], 'The room goes quiet. Then it goes warm.', 'Tell the real story'],
+      ['To play against grown men', { grit: 2 }, [1, 1], "He asks about the grown men. You've got stories.", 'Tough enough already']] },
   { id: 'nobody', when: (L) => !!(recall(L, 'route.juco') || recall(L, 'route.walkon') || recall(L, 'route.rec')), q: 'Nobody recruited you. Why should we?',
-    a: [['Because nobody recruited you', { grit: 3 }, [1, 2], 'He writes "chip" and underlines it twice.'],
-      ['Show them your numbers', { culture: 1 }, [0, 1], 'The numbers are real. He knows it.'],
-      ['Say they missed, not you', { swagger: 2 }, [2, -1], 'Bold. He grins at the GM beside him.']] },
+    a: [['Because nobody recruited you', { grit: 3 }, [1, 2], 'He writes "chip" and underlines it twice.', 'Play the chip'],
+      ['Show them your numbers', { culture: 1 }, [0, 1], 'The numbers are real, and he knows it.', 'Let the stats talk'],
+      ['Say they missed, not you', { swagger: 2 }, [2, -1], 'Bold. He grins at the scout beside him.', 'Swing big']] },
   { id: 'bench', when: () => true, q: 'Would you come off the bench for us?',
-    a: [['Whatever the team needs', { culture: 3 }, [0, 3], 'The right answer. You meant it, too.'],
-      ['For a year. Then you start', { swagger: 1, grit: 1 }, [1, 1], 'He likes the clock in your head.'],
-      ['No. You are a starter', { swagger: 2, culture: -2 }, [3, -2], 'He respects it. His coach will not.']] },
-  { id: 'circle', when: () => true, q: 'Who is in your circle?',
-    a: [['Family. Same people as always', { culture: 2 }, [1, 2], 'He asks about your mom. You talk for ten minutes.'],
-      ['Your trainer and your agent', { grit: 1 }, [0, 1], 'Professional. He nods.'],
-      ['A lot of people', { swagger: 1, culture: -1 }, [2, -1], 'He asks how many. You count. He stops you.']] },
+    a: [['Whatever the team needs', { culture: 3 }, [0, 3], 'The right answer, and you actually meant it.', 'Team first'],
+      ['For a year. Then you start', { swagger: 1, grit: 1 }, [1, 1], "He likes that there's a clock in your head.", 'Patient, with a deadline'],
+      ["No. You're a starter", { swagger: 2, culture: -2 }, [3, -2], "He respects it. His coach won't.", 'Bet on yourself']] },
+  { id: 'circle', when: () => true, q: "Who's in your circle?",
+    a: [['Family. Same people as always', { culture: 2 }, [1, 2], 'He asks about your mom. You talk for ten minutes.', 'Keep it small'],
+      ['Your trainer and your agent', { grit: 1 }, [0, 1], 'Professional. He nods and moves on.', 'All business'],
+      ['A lot of people', { swagger: 1, culture: -1 }, [2, -1], 'He asks how many. You start counting. He stops you.', 'Big crew, big questions']] },
   { id: 'weird', when: () => true, q: 'If you were a shoe, which one?',
-    a: [['A work boot', { grit: 3 }, [1, 1], 'He loves it. It goes on a sticky note.'],
-      ['Your own signature shoe', { swagger: 3 }, [3, -1], 'He laughs. "Ambitious."'],
-      ['Ask why he wants to know', { culture: 1 }, [0, 1], '"Nobody asks that." He tells you. It is a test of nothing.']] },
-  { id: 'film', when: () => true, q: 'Here is your worst game. Walk us through it.',
-    a: [['Break down every mistake', { culture: 2, grit: 1 }, [0, 3], 'You find two they had not noticed.'],
-      ['Point out what the refs missed', { swagger: 1, culture: -2 }, [1, -3], 'He turns the screen off a little early.'],
-      ['Ask for your best game instead', { swagger: 2 }, [2, -1], 'He puts it on. You talk over all of it.']] },
+    a: [['A work boot', { grit: 3 }, [1, 1], 'He loves it. It goes straight on a sticky note.', 'Blue collar'],
+      ['Your own signature shoe', { swagger: 3 }, [3, -1], 'He laughs. "Ambitious."', 'Dream out loud'],
+      ['Ask why he wants to know', { culture: 1 }, [0, 1], '"Nobody asks that." He explains. It\'s a test of nothing.', 'Turn it around']] },
+  { id: 'film', when: () => true, q: "Here's your worst game. Walk us through it.",
+    a: [['Break down every mistake', { culture: 2, grit: 1 }, [0, 3], "You spot two mistakes they hadn't even noticed.", 'Own every rep'],
+      ['Point out what the refs missed', { swagger: 1, culture: -2 }, [1, -3], 'He turns the screen off a little early.', 'Spread the blame'],
+      ['Ask for your best game instead', { swagger: 2 }, [2, -1], 'He puts it on. You talk over all of it.', 'Change the channel']] },
 ];
 function interviewCard(L, clubs, n) {
   const c = clubs[n];
@@ -1640,9 +1640,9 @@ function interviewCard(L, clubs, n) {
   used.push(q.id);
   const gm = personName(L, 'gm:' + c);
   return {
-    id: 'interview', kind: 'event', key: 'interview:' + q.id, eyebrow: 'Combine interviews', title: 'The ' + nick(c) + ' want twenty minutes.',
-    text: gm + ' runs the room. "' + q.q + '"', ctx: { club: c, q: q.id, n, clubs },
-    options: q.a.map((x) => ({ label: x[0] })),
+    id: 'interview', kind: 'event', key: 'interview:' + q.id, eyebrow: 'Combine interviews', scene: 'Interview room', title: 'Twenty minutes with the ' + nick(c),
+    text: gm + ' shuts the door and leans in. "' + q.q + '"', ctx: { club: c, q: q.id, n, clubs },
+    options: q.a.map((x) => ({ label: x[0], hint: x[4] })),
   };
 }
 function pworkoutCard(L) {
@@ -1650,34 +1650,34 @@ function pworkoutCard(L) {
   const clubs = (L.flags.cmbClubs || []).slice().sort((a, b) => (I[b] || 0) - (I[a] || 0));
   const c = clubs[0] || combineClubs(L)[0];
   return {
-    id: 'pworkout', kind: 'event', key: 'pworkout', eyebrow: 'Private workout', title: 'The ' + nick(c) + ' fly you in.',
-    text: 'Their coaches, their gym, one afternoon. What do you show them?', ctx: { club: c },
+    id: 'pworkout', kind: 'event', key: 'pworkout', eyebrow: 'Private workout', scene: 'Team facility', title: 'The ' + nick(c) + ' fly you in. What do you show?',
+    text: 'Their gym, their coaches, one afternoon. A trainer tosses you a ball: "Whenever you\'re ready."', ctx: { club: c },
     options: [
-      { label: 'Go one on one with another prospect', hint: 'Win and they remember it. Lose and they remember that.' },
-      { label: 'Run their sets with the coaches', hint: 'Show them you learn fast.' },
-      { label: 'Shoot until they say stop', hint: 'The jumper does the talking.' },
+      { label: 'Go one on one with a prospect', hint: 'Win big or lose loud' },
+      { label: 'Run their sets with the coaches', hint: 'Show you learn fast' },
+      { label: 'Shoot until they say stop', hint: 'Let the jumper talk' },
     ],
   };
 }
 function combineCard(L) {
   if (storyOn(L)) return {
-    id: 'combine', kind: 'event', key: 'combine', eyebrow: 'Draft combine', title: 'Testing day.',
-    text: 'Every team is in the gym. Scouts with stopwatches. How do you play it?', ctx: { story: 1 },
+    id: 'combine', kind: 'event', key: 'combine', eyebrow: 'Draft combine', scene: 'Testing day', title: 'Every team is watching. How much do you show?',
+    text: 'Thirty front offices, a wall of stopwatches. A scout clicks his pen: "Whenever you\'re ready."', ctx: { story: 1 },
     options: [
-      { label: 'Test everything', hint: 'Sprints, vertical, agility. Your body is on display.' },
-      { label: 'Shoot and run the drills', hint: 'Show your skill, skip the sprints.' },
-      { label: 'Play in the scrimmages', hint: 'Five on five against the class. Anything can happen.' },
-      { label: 'Sit out. Let the tape talk', hint: 'Nothing gained. Some teams wonder why.' },
+      { label: 'Test everything', hint: 'Your body on full display' },
+      { label: 'Shoot and run the drills', hint: 'Skill over speed' },
+      { label: 'Play in the scrimmages', hint: 'Anything goes, five on five' },
+      { label: 'Sit out and let the tape talk', hint: 'Safe, but teams wonder why' },
     ],
   };
   return {
     id: 'combine', kind: 'event', key: 'combine',
-    eyebrow: 'Draft combine', title: 'The scouts are in the gym.',
-    text: 'Every team is here. What do you show them?',
+    eyebrow: 'Draft combine', scene: 'Testing day', title: 'Scouts everywhere. What do you show them?',
+    text: "Every team's here, clipboards out. You get one first impression.",
     options: [
-      { label: 'Do everything', hint: 'Test, shoot and scrimmage. Risky if you are not ready.' },
-      { label: 'Shoot only', hint: 'Show the one thing you do best.' },
-      { label: 'Skip it', hint: 'Let the tape speak. Nobody learns anything new.' },
+      { label: 'Do everything', hint: "Big upside, if you're ready" },
+      { label: 'Shoot only', hint: 'Show your best thing' },
+      { label: 'Skip it', hint: 'Let the tape speak' },
     ],
   };
 }
@@ -1691,19 +1691,20 @@ function workoutCard(L) {
   const clubs = picks.map((x) => x.club);
   return {
     id: 'workout', kind: 'event', key: 'workout',
-    eyebrow: 'Private workouts', title: 'Three teams want you in.',
-    text: 'You have time for one. The board has you going around ' + ordinal(proj) + '.',
+    eyebrow: 'Private workouts', scene: 'Your phone', title: 'Three teams want a workout. Who gets it?',
+    text: "You've only got time for one. The board has you going around " + ordinal(proj) + '.',
     ctx: { clubs, proj },
     options: picks.map((x) => ({ label: 'The ' + nick(x.club),
-      hint: 'They pick ' + ordinal(x.slot) + '. ' + clubTier(clubNet(L, x.club)) + '. Coach ' + coachName(L, x.club) + '.', club: x.club, slot: x.slot })),
+      hint: 'They pick ' + ordinal(x.slot) + '. ' + clubTier(clubNet(L, x.club)) + '.', club: x.club, slot: x.slot })),
   };
 }
+const AGENT_HINT = { power: 'Biggest deals, biggest cut', boutique: 'Smaller cut, knows your family', cousin: "Free, and he's never done this" };
 function agentCard(L) {
   return {
     id: 'agent', kind: 'event', key: 'agent',
-    eyebrow: 'Representation', title: 'Who negotiates for you?',
-    text: 'Pick once. They do every deal you sign.',
-    options: Object.keys(AGENTS).map((k) => ({ label: agentNameFor(L, k), hint: AGENTS[k].name + '. ' + AGENTS[k].blurb, agent: k })),
+    eyebrow: 'Representation', scene: 'Home', title: "Who's going to do your deals?",
+    text: 'Three pitches in three days. Pick once: whoever you sign handles every contract from here.',
+    options: Object.keys(AGENTS).map((k) => ({ label: 'Sign with ' + agentNameFor(L, k), hint: AGENT_HINT[k], agent: k })),
   };
 }
 /* A rookie deal, off the slot. Pick 1 is about seven percent of the cap and the
@@ -1721,20 +1722,20 @@ function chooseCombine(L, i, rng) {
   let text, tone = '';
   const ath = L.rt.ath + (Number.isFinite(L.ht) ? 0 : 0);
   if (i === 0) {
-    if (r < clamp(0.25 + (ath - 55) * 0.014, 0.1, 0.85)) { stockUp(L, 2.4); text = 'Top five in the vertical and the lane agility. The phone starts ringing.'; tone = 'good'; }
-    else if (r < 0.75) { stockUp(L, 0.3); text = 'Solid numbers. Nothing anybody talks about.'; }
-    else { stockUp(L, -2); text = 'Slow in the sprints. A few teams cool on you.'; tone = 'bad'; }
+    if (r < clamp(0.25 + (ath - 55) * 0.014, 0.1, 0.85)) { stockUp(L, 2.4); text = "Top five in the vertical and the lane agility. Your agent's phone starts ringing."; tone = 'good'; }
+    else if (r < 0.75) { stockUp(L, 0.3); text = "Solid numbers. Nothing anybody's talking about."; }
+    else { stockUp(L, -2); text = "You're slow in the sprints. A few teams cool on you."; tone = 'bad'; }
   } else if (i === 1) {
     const sk = (L.rt.sho + L.rt.fin) / 2;
     if (r < clamp(0.3 + (sk - 55) * 0.014, 0.1, 0.85)) { stockUp(L, 1.6); text = 'Forty-one of fifty off the move. The room goes quiet.'; tone = 'good'; }
-    else { stockUp(L, -0.8); text = 'A cold day in the drills. It gets noticed.'; tone = 'bad'; }
+    else { stockUp(L, -0.8); text = 'A cold day in the drills. Somebody notices.'; tone = 'bad'; }
   } else if (i === 2) {
     const o = ovrOf(L) + (L.rt.iq - 60) * 0.2;
-    if (r < clamp(0.2 + (o - 60) * 0.02, 0.08, 0.8)) { stockUp(L, 3); bump(L, { fame: 3 }); text = 'You own the scrimmage. Two GMs leave their seats to call home.'; tone = 'gold'; }
+    if (r < clamp(0.2 + (o - 60) * 0.02, 0.08, 0.8)) { stockUp(L, 3); bump(L, { fame: 3 }); text = 'You own the scrimmage. Two GMs step out to call home.'; tone = 'gold'; }
     else if (r < 0.7) { stockUp(L, 0.4); text = 'A good game in a sloppy scrimmage. Nobody learns much.'; }
-    else { stockUp(L, -2.6); text = 'Four turnovers in the first half. It is on every highlight show.'; tone = 'bad'; }
+    else { stockUp(L, -2.6); text = "Four turnovers in the first half. It's on every highlight show."; tone = 'bad'; }
   } else {
-    stockUp(L, L.m.fame >= 45 ? 0 : -0.6); text = L.m.fame >= 45 ? 'You stay home. Your stock does not move.' : 'You stay home. A few teams wonder what you are hiding.';
+    stockUp(L, L.m.fame >= 45 ? 0 : -0.6); text = L.m.fame >= 45 ? "You stay home. Your stock doesn't move." : "You stay home. A few teams wonder what you're hiding.";
   }
   L.flags.cmbTest = i;
   const clubs = combineClubs(L);
@@ -1755,7 +1756,7 @@ function chooseInterview(L, card, i, rng) {
   const clubs = card.ctx.clubs;
   if (card.ctx.n + 1 < 2 && clubs[card.ctx.n + 1]) L.pending.unshift(interviewCard(L, clubs, card.ctx.n + 1));
   else L.pending.unshift(pworkoutCard(L));
-  const how = d >= 3 ? ' You can tell they loved it.' : d <= 0 ? ' You can tell it did not land.' : '';
+  const how = d >= 3 ? ' They loved it.' : d <= 0 ? " It didn't land." : '';
   return { text: a[3] + how, tone: d >= 3 ? 'good' : d <= 0 ? 'bad' : '' };
 }
 function choosePworkout(L, card, i, rng) {
@@ -1764,13 +1765,13 @@ function choosePworkout(L, card, i, rng) {
   let text, tone = '';
   if (i === 0) {
     if (r < clamp(0.25 + (ovrOf(L) - 60) * 0.02, 0.1, 0.8)) { I[c] = (I[c] || 0) + 4; stockUp(L, 1.2); text = 'You win the one on one, eleven to six. Their GM stops pretending to text.'; tone = 'good'; }
-    else { I[c] = (I[c] || 0) - 1; stockUp(L, -0.6); text = 'The other kid wins it. You go home quiet.'; tone = 'bad'; }
+    else { I[c] = (I[c] || 0) - 1; stockUp(L, -0.6); text = "The other kid wins it. You're quiet the whole flight home."; tone = 'bad'; }
   } else if (i === 1) {
-    if (r < clamp(0.35 + (L.rt.iq - 60) * 0.02, 0.15, 0.85)) { I[c] = (I[c] || 0) + 3; text = 'You run their whole playbook by the end of the day. Their coach asks for your number.'; tone = 'good'; }
-    else { I[c] = (I[c] || 0) + 1; text = 'You get lost in one set. They are patient about it.'; }
+    if (r < clamp(0.35 + (L.rt.iq - 60) * 0.02, 0.15, 0.85)) { I[c] = (I[c] || 0) + 3; text = 'You know their whole playbook by sundown. Their coach asks for your number.'; tone = 'good'; }
+    else { I[c] = (I[c] || 0) + 1; text = "You get lost in one set. They're patient about it."; }
   } else {
-    if (r < clamp(0.3 + (L.rt.sho - 60) * 0.02, 0.1, 0.85)) { I[c] = (I[c] || 0) + 2; stockUp(L, 0.8); text = 'Eighty-two of a hundred. They stop counting at sixty.'; tone = 'good'; }
-    else { I[c] = (I[c] || 0) + 0; text = 'A streaky day. They have seen better shooters this week.'; }
+    if (r < clamp(0.3 + (L.rt.sho - 60) * 0.02, 0.1, 0.85)) { I[c] = (I[c] || 0) + 2; stockUp(L, 0.8); text = 'Eighty-two of a hundred. They stopped counting at sixty.'; tone = 'good'; }
+    else { I[c] = (I[c] || 0) + 0; text = "A streaky day. They've seen better shooters this week."; }
   }
   L.pending.unshift(agentCard(L));
   return { text, tone };
@@ -1835,18 +1836,19 @@ function runDraft(L, beats) {
       remember(L, 'route.undrafted', true);
       L.pending.push({
         id: 'undrafted', kind: 'event', key: 'undrafted', eyebrow: 'After the draft',
-        title: 'Your phone is ringing.', text: 'Three clubs want you on their Summer League team. No promises.',
+        scene: 'Your phone', title: 'Sixty names, none yours. Now who calls?',
+        text: 'Three clubs want you for Summer League. {agent:first} is blunt: "It\'s a tryout, not a deal."',
         ctx: { story: 1 },
-        options: three.map((c) => ({ label: 'Summer League with the ' + nick(c), hint: clubTier(clubNet(L, c)) + '. Earn a two-way deal.', club: c }))
-          .concat([{ label: 'Take the money overseas', hint: 'A real contract in Europe. Come back later.' }]),
+        options: three.map((c) => ({ label: 'Play Summer League for the ' + nick(c), hint: clubTier(clubNet(L, c)) + ', two-way on the line', club: c }))
+          .concat([{ label: 'Take the money overseas', hint: 'Real money now, NBA later' }]),
       });
       return;
     }
     L.pending.push({
       id: 'undrafted', kind: 'event', key: 'undrafted', eyebrow: 'After the draft',
-      title: 'Your phone is ringing.',
-      text: 'Three clubs offer a two-way deal. Pick one.',
-      options: three.map((c) => ({ label: 'The ' + nick(c), hint: clubTier(clubNet(L, c)) + '.', club: c })),
+      scene: 'Your phone', title: 'Undrafted. Then the phone rings.',
+      text: 'Three clubs offer you a two-way deal. Pick the one that fits.',
+      options: three.map((c) => ({ label: 'Sign a two-way with the ' + nick(c), hint: clubTier(clubNet(L, c)), club: c })),
     });
     return;
   }
@@ -2103,17 +2105,17 @@ function rollInjury(L, chunk, beats) {
   const g = major ? 30 + Math.floor(rng() * 26) : 10 + Math.floor(rng() * 12);
   s.injury = { from, until: from + g, kind, pendingDecision: true };
   L.pending.push({
-    id: 'injury', kind: 'event', key: 'injury:' + chunk, eyebrow: 'Injury report',
-    title: 'It is a ' + kind + '.',
-    text: 'Dr. {doctor:last} says ' + g + ' games. You have a say in how.',
+    id: 'injury', kind: 'event', key: 'injury:' + chunk, eyebrow: 'Injury report', scene: "The trainer's room",
+    title: "It's a " + kind + '. Now what?',
+    text: 'Dr. {doctor:last} holds up the scan: "' + g + ' games, give or take. How we get there is your call."',
     ctx: { g, major },
     options: major ? [
-      { label: 'Surgery now', hint: 'Out the full stretch. Come back whole.' },
-      { label: 'Rehab and rush back', hint: 'Back sooner. It may not hold.' },
-      { label: 'Fly to a specialist', hint: 'Costs money. Better odds either way.' },
+      { label: 'Get the surgery now', hint: 'Out longer, back whole' },
+      { label: 'Rehab it and rush back', hint: 'Sooner, but it might not hold' },
+      { label: 'Fly to a specialist', hint: 'Pricey, but better odds' },
     ] : [
-      { label: 'Play through it', hint: 'Back in half the time. Risky.' },
-      { label: 'Take the full time', hint: 'Rest it right.' },
+      { label: 'Play through it', hint: 'Half the time, real risk' },
+      { label: 'Take the full time off', hint: 'Do it right' },
     ],
   });
 }
@@ -2293,12 +2295,12 @@ function allStarCheck(L, beats) {
   beats.push({ kind: 'award', text: line, tone: 'gold', award: 'star', n });
   logIt(L, line, 'gold');
   L.pending.push({
-    id: 'allstar', kind: 'event', key: 'allstar', eyebrow: 'All-Star Weekend', title: 'They want you Saturday night too.',
-    text: 'One event, or none. Your call.',
+    id: 'allstar', kind: 'event', key: 'allstar', eyebrow: 'All-Star Weekend', scene: 'Your phone', title: 'All-Star Saturday too. Are you in?',
+    text: "The league wants you in a contest as well as Sunday's game. One event, or none.",
     options: [
-      { label: 'Dunk contest', hint: 'Athleticism ' + ovT(L, L.rt.ath) + '.' },
-      { label: 'Three-point contest', hint: 'Shooting ' + ovT(L, L.rt.sho) + '.' },
-      { label: 'Rest your legs', hint: 'Sunday is enough.' },
+      { label: 'Enter the dunk contest', hint: feel(L.rt.ath, 'Your bounce is real', 'You can get up', 'Not exactly your thing') },
+      { label: 'Enter the three-point contest', hint: feel(L.rt.sho, 'Your stroke is pure', 'A streaky shooter', 'Not exactly your thing') },
+      { label: 'Rest your legs', hint: "Sunday's plenty" },
     ],
   });
 }
@@ -2569,36 +2571,39 @@ function endSeries(L, beats) {
    engine that wrote it would have (check-saves), and a new card is a press
    the old engine never asked for. */
 const MOMENT_P = 0.16;
+/* A rating read as a feeling, for a hint: the card tells you whether this is
+   your shot without printing a number. */
+const feel = (v, hi, mid, lo) => v >= 70 ? hi : v >= 55 ? mid : lo;
 const MOMENTS = {
-  buzzer: { w: () => 2, title: 'The ball, the clock, the horn.',
-    text: (L, o) => 'Tied with the ' + o + '. Four seconds. It comes to you.',
+  buzzer: { w: () => 2, scene: 'Crunch time', title: 'Tied, four seconds left. Who takes it?',
+    text: (L, o) => 'Tied with the ' + o + '. The play breaks down and the ball finds you.',
     opts: (L) => [
-      { label: 'Take the shot', hint: 'Shooting ' + ovT(L, L.rt.sho) + '.', p: clamp(0.3 + (L.rt.sho - 50) * 0.006, 0.15, 0.62), play: 'buzzer' },
-      { label: 'Drive and kick', hint: 'Find somebody.', p: 0.38 },
+      { label: 'Take the shot yourself', hint: feel(L.rt.sho, 'Your stroke, your moment', 'Could go either way', 'Not really your shot'), p: clamp(0.3 + (L.rt.sho - 50) * 0.006, 0.15, 0.62), play: 'buzzer' },
+      { label: 'Drive and kick it out', hint: 'Find the open man', p: 0.38 },
     ] },
-  ft: { w: () => 2, title: 'Two shots. Down one.',
-    text: (L, o) => 'Fouled with two seconds left against the ' + o + '. The building is trying to get in your head.',
+  ft: { w: () => 2, scene: 'Free throw line', title: 'Down one, two free throws',
+    text: (L, o) => 'Fouled with two seconds left against the ' + o + ". The whole building's trying to get in your head.",
     opts: (L) => [
-      { label: 'Step to the line', hint: 'Shooting ' + ovT(L, L.rt.sho) + '.', p: clamp(0.6 + (L.rt.sho - 50) * 0.006 + (L.rt.iq - 50) * 0.002, 0.42, 0.95), play: 'ft' },
-      { label: 'Let them ice you', hint: 'Two timeouts. Long walk.', p: clamp(0.56 + (L.rt.sho - 50) * 0.006 + (L.rt.iq - 50) * 0.004, 0.4, 0.93) },
+      { label: 'Step right to the line', hint: feel(L.rt.sho, 'Your stroke is automatic', 'Breathe and shoot', 'Hope your form holds'), p: clamp(0.6 + (L.rt.sho - 50) * 0.006 + (L.rt.iq - 50) * 0.002, 0.42, 0.95), play: 'ft' },
+      { label: 'Let them ice you', hint: 'Two timeouts, a long wait', p: clamp(0.56 + (L.rt.sho - 50) * 0.006 + (L.rt.iq - 50) * 0.004, 0.4, 0.93) },
     ] },
-  poster: { w: (L) => L.rt.ath >= 68 ? 1.5 : 0, title: 'One man between you and the rim.',
-    text: (L, o) => 'A runout against the ' + o + '. Their big has planted himself in the lane.',
+  poster: { w: (L) => L.rt.ath >= 68 ? 1.5 : 0, scene: 'Fast break', title: 'One man between you and the rim',
+    text: (L, o) => 'A runout against the ' + o + ". Their big's planted in the lane, daring you.",
     opts: (L) => [
-      { label: 'Rise up', hint: 'Athleticism ' + ovT(L, L.rt.ath) + '.', p: clamp(0.34 + ((L.rt.ath + L.rt.fin) / 2 - 60) * 0.008, 0.2, 0.75), play: 'poster' },
-      { label: 'Lay it in', hint: 'Two points is two points.', p: 0.8 },
+      { label: 'Rise up and dunk on him', hint: feel((L.rt.ath + L.rt.fin) / 2, "You've got the bounce", "It's a coin flip", 'Big ask for your legs'), p: clamp(0.34 + ((L.rt.ath + L.rt.fin) / 2 - 60) * 0.008, 0.2, 0.75), play: 'poster' },
+      { label: 'Lay it in', hint: 'Two points is two points', p: 0.8 },
     ] },
-  block: { w: (L) => L.rt.def >= 64 && L.rt.ath >= 60 ? 1.5 : 0, title: 'He thinks he is gone.',
-    text: (L, o) => 'A steal at the other end and a ' + o + ' guard is all alone. You are four steps behind him.',
+  block: { w: (L) => L.rt.def >= 64 && L.rt.ath >= 60 ? 1.5 : 0, scene: 'Fast break', title: "He thinks he's gone. Chase him?",
+    text: (L, o) => 'A steal at the other end and a ' + o + " guard's all alone. You're four steps behind.",
     opts: (L) => [
-      { label: 'Chase him down', hint: 'Defense ' + ovT(L, L.rt.def) + '.', p: clamp(0.3 + ((L.rt.def + L.rt.ath) / 2 - 60) * 0.009, 0.15, 0.7), play: 'block' },
-      { label: 'Let it go', hint: 'Save your legs.', p: 0 },
+      { label: 'Chase him down', hint: feel((L.rt.def + L.rt.ath) / 2, 'Your legs say go', 'Worth a shot', "You probably won't catch him"), p: clamp(0.3 + ((L.rt.def + L.rt.ath) / 2 - 60) * 0.009, 0.15, 0.7), play: 'block' },
+      { label: 'Let it go', hint: 'Save your legs', p: 0 },
     ] },
-  stop: { w: (L) => L.rt.def >= 58 ? 1.5 : 0, title: 'Up one. Last possession.',
-    text: (L, o) => 'The ' + o + ' clear out a side for their best scorer. You ask for the assignment.',
+  stop: { w: (L) => L.rt.def >= 58 ? 1.5 : 0, scene: 'Crunch time', title: 'Up one, last possession. Who guards him?',
+    text: (L, o) => 'The ' + o + ' clear out a side for their best scorer. You want the assignment.',
     opts: (L) => [
-      { label: 'Guard him', hint: 'Defense ' + ovT(L, L.rt.def) + '.', p: clamp(0.36 + (L.rt.def - 55) * 0.008, 0.2, 0.75), play: 'stop' },
-      { label: 'Send the double', hint: 'Make somebody else beat you.', p: 0.5 },
+      { label: 'Guard him yourself', hint: feel(L.rt.def, 'Lock him up', 'Battle and pray', "It's a tough matchup"), p: clamp(0.36 + (L.rt.def - 55) * 0.008, 0.2, 0.75), play: 'stop' },
+      { label: 'Send the double team', hint: 'Make someone else beat you', p: 0.5 },
     ] },
 };
 function queueMoment(L, chunk) {
@@ -2614,7 +2619,7 @@ function queueMoment(L, chunk) {
   const opts = m.opts(L);
   L.pending.push({
     id: 'moment', kind: 'moment', key: 'moment:' + L.year + ':' + chunk,
-    eyebrow: 'A night against the ' + nick(opp), title: m.title, text: m.text(L, nick(opp)),
+    eyebrow: 'A night against the ' + nick(opp), scene: m.scene, title: m.title, text: m.text(L, nick(opp)),
     ctx: { m: id, opp, plays: opts.map((o) => o.play || null) },
     options: opts.map((o) => ({ label: o.label, hint: o.hint })),
   });
@@ -2626,22 +2631,22 @@ function momentResolve(L, card, i, rng, touch) {
     const p = touched(o.p, touch);
     const n = (rng() < p ? 1 : 0) + (rng() < p ? 1 : 0);
     if (n === 2) { f.ftIce = (f.ftIce || 0) + 1; bump(L, { fame: 3, morale: 6 }); logIt(L, 'Two free throws to beat the ' + opp + '.', 'gold'); return { text: 'Two for two. Ice.', tone: 'gold', made: 2 }; }
-    if (n === 1) { bump(L, { morale: -2 }); return { text: 'One of two. Overtime. You win it there, but you think about the miss all night.', tone: '', made: 1 }; }
+    if (n === 1) { bump(L, { morale: -2 }); return { text: 'One of two. You win it in overtime, but the miss nags all night.', tone: '', made: 1 }; }
     bump(L, { morale: -6 }); logIt(L, 'Missed two at the line against the ' + opp + '.', 'bad');
-    return { text: 'Both off the rim. The other bench is loving it.', tone: 'bad', made: 0 };
+    return { text: 'Both clank off the rim. The other bench is loving it.', tone: 'bad', made: 0 };
   }
   if (!o.play) {
     if (card.ctx.m === 'block') return { text: 'Two points for them. Nobody notices.', tone: '', made: false };
     const ok = rng() < o.p;
     bump(L, ok ? { trust: 2 } : { morale: -1 });
-    return { text: ok ? 'The right play. It works.' : 'The right play. It does not work.', tone: ok ? 'good' : '', made: ok };
+    return { text: ok ? 'The right play, and it works.' : "The right play. It just doesn't work.", tone: ok ? 'good' : '', made: ok };
   }
   const made = rng() < touched(o.p + (card.ctx.m === 'buzzer' ? clutchBonus(L) : 0), touch);
   const T = {
-    buzzer: made ? ['At the horn! The bench empties onto the floor.', 'buzzer'] : ['Off the back iron. Overtime, and the night goes the other way.', null],
-    poster: made ? ['Right on top of him. That one is going on a wall.', 'posters'] : ['He stands his ground. Offensive foul.', null],
+    buzzer: made ? ['At the horn! The bench empties onto the floor.', 'buzzer'] : ['Off the back iron. Overtime, and the night slips away.', null],
+    poster: made ? ["Right on top of him. That one's going on a wall.", 'posters'] : ['He holds his ground. Offensive foul.', null],
     block: made ? ['Pinned to the glass. He never saw you coming.', 'chasedowns'] : ['A step late. And one.', null],
-    stop: made ? ['You stay in front. A tough miss at the horn. Ballgame.', 'stops'] : ['He gets to his spot and buries it.', null],
+    stop: made ? ['You stay in front. He misses at the horn. Ballgame.', 'stops'] : ['He gets to his spot and buries it.', null],
   }[card.ctx.m];
   if (made) {
     f[T[1]] = (f[T[1]] || 0) + 1;
@@ -2654,13 +2659,14 @@ function momentResolve(L, card, i, rng, touch) {
 
 /* GAME 7 IS YOURS. Tied, the ball, the last shot. The odds of each choice come
    off the rating it asks for, so a shooter should shoot and a passer should
-   find the open man, and the screen shows the rating rather than the odds. */
+   find the open man, and the screen reads the rating in words (feel())
+   rather than printing the odds. */
 function clutchOptions(L) {
   const r = L.rt, net = clubNet(L, L.team), cb = clutchBonus(L);
   return [
-    { label: 'Pull-up three', rate: 'sho', p: clamp(0.2 + (r.sho - 50) * 0.0065, 0.12, 0.55) + cb + sigBonus(L, 'sho') },
+    { label: 'Pull up for three', rate: 'sho', p: clamp(0.2 + (r.sho - 50) * 0.0065, 0.12, 0.55) + cb + sigBonus(L, 'sho') },
     { label: 'Drive to the rim', rate: 'fin', p: clamp(0.26 + ((r.fin + r.ath) / 2 - 50) * 0.0058, 0.15, 0.58) + cb + sigBonus(L, 'fin') },
-    { label: 'Mid-range fadeaway', rate: 'iq', p: clamp(0.25 + ((r.sho + r.iq) / 2 - 50) * 0.0052, 0.15, 0.55) + cb + sigBonus(L, 'iq') },
+    { label: 'Hit the mid-range fadeaway', rate: 'iq', p: clamp(0.25 + ((r.sho + r.iq) / 2 - 50) * 0.0052, 0.15, 0.55) + cb + sigBonus(L, 'iq') },
     { label: 'Find the open man', rate: 'pla', p: clamp(0.27 + (r.pla - 50) * 0.0045 + net * 0.006, 0.15, 0.55) + cb + sigBonus(L, 'pla') },
   ];
 }
@@ -2668,10 +2674,10 @@ function clutchCard(L, cur, home) {
   const opts = clutchOptions(L);
   return {
     id: 'clutch', kind: 'clutch', key: 'clutch:' + cur.round,
-    eyebrow: 'Game 7 · ' + ROUNDS[cur.round], title: 'Tied. Nine seconds. Your ball.',
-    text: (home ? 'Home crowd on its feet' : 'A road crowd trying to rattle you') + ' against the ' + nick(cur.opp) + '. What is the play?',
+    eyebrow: 'Game 7 · ' + ROUNDS[cur.round], scene: 'Game 7', title: "Tied, nine seconds, your ball. What's the play?",
+    text: (home ? "The home crowd's on its feet" : "A road crowd's trying to rattle you") + ' against the ' + nick(cur.opp) + '. Everybody knows who gets it.',
     ctx: { round: cur.round, opp: cur.opp, home },
-    options: opts.map((o) => ({ label: o.label, hint: RATING_NAME[o.rate] + ' ' + ovT(L, L.rt[o.rate]) + '.' })),
+    options: opts.map((o) => ({ label: o.label, hint: feel(L.rt[o.rate], "That's your shot", 'A fair look', 'Not your strength') })),
   };
 }
 
@@ -2882,12 +2888,12 @@ function faCard(L, list, why) {
   return {
     id: 'fa', kind: 'fa', key: 'fa:' + (why || ''),
     eyebrow: why === 'rfa' ? 'Restricted free agency' : 'Free agency',
-    title: list.length === 1 ? 'One offer on the table.' : list.length + ' offers on the table.',
-    text: 'Money, minutes or a ring. Rarely all three.',
+    scene: "Agent's office", title: list.length === 1 ? 'One team called. One offer.' : wordNum(list.length) + ' offers. Where do you sign?',
+    text: 'Money, minutes or a ring. {agent:first} slides the list over: "You rarely get all three."',
     ctx: { offers: list },
     options: list.map((f) => ({
-      label: 'The ' + nick(f.club) + (f.own ? ' (re-sign)' : ''),
-      hint: f.years + ' yrs · ' + money(f.salary) + ' a year · ' + f.role + ' · ' + f.tier + '.',
+      label: (f.own ? 'Re-sign with the ' : 'Sign with the ') + nick(f.club),
+      hint: f.years + ' years, ' + money(f.salary) + ' a year · ' + f.role + ' · ' + f.tier,
       club: f.club,
     })),
   };
@@ -2895,11 +2901,11 @@ function faCard(L, list, why) {
 function retireCard(L) {
   return {
     id: 'retire', kind: 'event', key: 'retire',
-    eyebrow: 'The summer', title: 'Is it time?',
-    text: 'You are ' + L.age + '. Your overall is ' + ovT(L, ovrOf(L)) + '. The body has an opinion.',
+    eyebrow: 'The summer', scene: 'Home', title: 'Is it time to hang them up?',
+    text: "You're " + L.age + '. Your overall is ' + ovT(L, ovrOf(L)) + ". Your knees have an opinion, and it isn't quiet.",
     options: [
-      { label: 'One more season', hint: 'Find out what is left.' },
-      { label: 'Retire', hint: 'Walk away on your own terms.' },
+      { label: 'Play one more season', hint: "See what's left" },
+      { label: 'Retire', hint: 'Go out on your own terms' },
     ],
   };
 }
@@ -2927,26 +2933,26 @@ function offseason(L, beats) {
   if (c && c.years === 1 && c.kind === 'rookie' && o >= 66) {
     const sal = round1(marketSalary(L, o + 2) * 0.97);
     L.pending.push({
-      id: 'extension', kind: 'event', key: 'ext', eyebrow: 'Rookie extension',
-      title: 'The ' + nick(L.team) + ' want to lock you up.',
-      text: 'Five years at ' + money(sal) + ' a year, starting next season.',
+      id: 'extension', kind: 'event', key: 'ext', eyebrow: 'Rookie extension', scene: "GM's office",
+      title: 'The ' + nick(L.team) + ' want to lock you up. Sign?',
+      text: '{gm} slides the paper across the desk: "Five years, ' + money(sal) + ' a year. Starts next season."',
       ctx: { sal },
       options: [
-        { label: 'Sign it', hint: 'Security. Five years.' },
-        { label: 'Bet on yourself', hint: 'Play it out. Restricted free agency next summer.' },
+        { label: 'Sign the extension', hint: 'Security for five years' },
+        { label: 'Bet on yourself', hint: 'Restricted free agency next summer' },
       ],
     });
   } else if (c && c.years === 1 && c.kind !== 'rookie' && o >= 72 && L.age <= 31 && !L.flags.extAsked) {
     const sal = round1(marketSalary(L, o + 1));
     L.flags.extAsked = true;
     L.pending.push({
-      id: 'extension', kind: 'event', key: 'vext', eyebrow: 'Extension offer',
-      title: 'The ' + nick(L.team) + ' offer an extension.',
-      text: 'Four years at ' + money(sal) + ' a year. Or test the market next summer.',
+      id: 'extension', kind: 'event', key: 'vext', eyebrow: 'Extension offer', scene: "GM's office",
+      title: 'The ' + nick(L.team) + ' want four more years. Sign?',
+      text: '{gm} wants a deal before the market opens. Four years at ' + money(sal) + ' a year.',
       ctx: { sal, years: 4 },
       options: [
-        { label: 'Sign it', hint: 'Stay put. Get paid.' },
-        { label: 'Test the market', hint: 'Free agency next summer.' },
+        { label: 'Sign the extension', hint: 'Stay put, get paid' },
+        { label: 'Test the market', hint: 'Free agency next summer' },
       ],
     });
   }
@@ -2957,11 +2963,11 @@ function offseason(L, beats) {
     if (!list.length) {
       L.pending.push({
         id: 'nooffer', kind: 'event', key: 'nooffer', eyebrow: 'Free agency',
-        title: 'Nobody called.',
-        text: 'Your overall is ' + ovT(L, o) + '. The league has moved on.',
+        scene: 'Your phone', title: 'Free agency opens. Nobody calls.',
+        text: 'Your overall is ' + ovT(L, o) + ". {agent:first} has tried every team. The league's moved on.",
         options: [
-          { label: 'Retire', hint: 'It was a career.' },
-          { label: 'Play overseas', hint: 'A year away, then try again.' },
+          { label: 'Retire', hint: 'It was a real career' },
+          { label: 'Play overseas', hint: 'A year away, then try again' },
         ],
       });
     } else {
@@ -3125,33 +3131,33 @@ const TONES = {
 const TONE_SAY = {
   humble: ['The clip goes around. People like you more for it.', 'Nobody writes a headline about it. The locker room notices.'],
   team: ['Your teammates repost it. The room is tight.', '{coach} plays it in the film session. Twice.'],
-  confident: ['It plays well. You sound like somebody who belongs.', 'A good quote. It runs all day.'],
+  confident: ['It plays well. You sound like you belong.', 'A good quote. It runs all day.'],
   loyal: ['The city puts it on a T-shirt by morning.', 'Season ticket renewals jump. Team owner {owner} sends flowers.'],
-  showman: ['It is on every show by lunch. You are a lot of fun.', 'A meme by midnight. Your follower count doubles.'],
-  fiery: ['The fans love the fire. The other team saves the clip.', 'It is the quote of the week. Everybody has a take.'],
+  showman: ["It's on every show by lunch. You're a lot of fun.", 'A meme by midnight. Your follower count doubles.'],
+  fiery: ['The fans love the fire. The other team saves the clip.', "It's the quote of the week. Everybody has a take."],
   cold: ['Four words and you walk off. The league takes you seriously.', 'No smile. No soundbite. Scouts call it focus.'],
   cocky: ['Bold. It backs itself up, for now.', 'Half the league is angry. The other half is watching.'],
 };
-const TONE_BAD = ['It does not land. {topp} pins it to his locker.', 'It reads worse in print. {tvet} is quiet with you for a week.'];
+const TONE_BAD = ["It doesn't land. {topp} pins it to his locker.", 'It reads worse in print. {tvet} goes quiet on you for a week.'];
 
 /* The topics, with the question and the answers. An answer is the words you
    say and the tone they are said in. */
 const PRESSERS = {
-  draft: { title: 'The podium. A dozen microphones.', text: 'First question: what does this team get in you?',
-    ans: [['humble', 'A worker. I will earn everything.'], ['showman', 'A show. Buy your tickets now.'],
-      ['cocky', 'The best player in this draft.'], ['cold', 'Put me on the floor. That is my answer.']] },
-  mvp: { title: 'The trophy is heavy. So is the room.', text: 'Why you, this year?',
-    ans: [['team', 'My teammates made this easy.'], ['confident', 'I earned every vote.'],
-      ['cocky', 'It was not close.'], ['showman', 'Wait until next year.']] },
-  title: { title: 'Confetti in your hair. A podium on the floor.', text: 'What does this one mean?',
+  draft: { scene: 'Draft stage', title: 'A dozen microphones. How do you sound?', text: 'Your new hat is still crooked. A reporter leans in: "What does this team get in you?"',
+    ans: [['humble', "A worker. I'll earn everything."], ['showman', 'A show. Buy your tickets now.'],
+      ['cocky', 'The best player in this draft.'], ['cold', "Put me on the floor. That's my answer."]] },
+  mvp: { scene: 'Press room', title: 'MVP. The trophy is heavy. So is the room.', text: 'Every seat is taken. First question, from the back: "Why you, this year?"',
+    ans: [['team', 'My teammates made this easy.'], ['confident', 'I earned every single vote.'],
+      ['cocky', "It wasn't close."], ['showman', 'Wait until next year.']] },
+  title: { scene: 'The podium', title: 'Champions. What do you say?', text: 'Confetti in your hair, a cap on backwards. A microphone pushes through: "What does this one mean?"',
     ans: [['team', 'This is about every guy in that room.'], ['loyal', 'This city deserved it.'],
       ['cocky', 'Told you. Write it down.'], ['cold', 'We expected this. On to the next one.']] },
-  finals_loss: { title: 'The locker room is quiet. The cameras are not.', text: 'What happened out there?',
-    ans: [['humble', 'They were better. Credit them.'], ['fiery', 'We will be back. Mark it.'],
-      ['team', 'On me. Not my teammates.'], ['cold', 'Next question.']] },
-  ncaa: { title: 'One shining moment. Then the microphones.', text: 'What is next for you?',
+  finals_loss: { scene: 'Locker room', title: "The room's quiet. The cameras aren't.", text: 'Ten minutes after the buzzer, still in your jersey. A reporter asks: "What happened out there?"',
+    ans: [['humble', 'They were better. Credit them.'], ['fiery', "We'll be back. Mark it."],
+      ['team', "That's on me. Not my teammates."], ['cold', 'Next question.']] },
+  ncaa: { scene: 'The podium', title: 'National champs. Then the microphones.', text: 'A piece of the net around your neck. A reporter shouts: "What\'s next for you?"',
     ans: [['team', 'Enjoying this with my guys.'], ['loyal', 'This school made me.'],
-      ['confident', 'The league. I am ready.'], ['cocky', 'Best player in the country. Any questions?']] },
+      ['confident', "The league. I'm ready."], ['cocky', 'Best player in the country. Any questions?']] },
 };
 const PRESS_EYEBROW = { draft: 'Draft night', mvp: 'MVP press conference', title: 'Champions', finals_loss: 'After the Finals', ncaa: 'National champions' };
 
@@ -3202,7 +3208,7 @@ function presserCard(L, topic) {
   const p = PRESSERS[topic];
   return {
     id: 'presser', kind: 'presser', key: 'presser:' + topic + ':' + L.year, topic,
-    eyebrow: PRESS_EYEBROW[topic], title: p.title, text: p.text,
+    eyebrow: PRESS_EYEBROW[topic], scene: p.scene, title: p.title, text: p.text,
     options: p.ans.map((a) => ({ label: a[1], tone: a[0], hint: TONES[a[0]].name })),
   };
 }
