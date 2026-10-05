@@ -26,6 +26,7 @@
 import { readFileSync, writeFileSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { candidates, groups, classify, pairKey } from './sportegories-people.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const R = (p) => readFileSync(path.join(ROOT, p), 'utf8');
@@ -382,11 +383,17 @@ try {
  * Nothing threw. Each record is a valid record. The only symptom is a right
  * answer refused, and only for whichever name the player happened to use.
  *
- * Deliberately an explicit list, like FRANCHISE below. A nickname dictionary
- * finds these pairs and also finds Carl and Carlton Davis, who are two men.
- * scripts/check-sportegories.mjs reports likely new pairs without failing,
- * because a roster name the bot pulls in tonight is not a reason to stop the
- * daily build.
+ * It was an explicit list of nine pairs, and the reports kept coming, one
+ * player at a time, because the list was never the cause. A sweep of the whole
+ * file found about 160 men held as two or three records, nearly all of them
+ * from three mechanical causes: the rosters write "Deebo Samuel Sr." where
+ * every other source writes the bare name, the corpus lists forty stars twice,
+ * and an edge rusher is a Linebacker in one source and a Defensive Lineman in
+ * another. So a RULE now finds them (scripts/sportegories-people.mjs) and the
+ * json beside it holds only the calls a rule cannot make: a nickname, a new
+ * surname, and the look-alikes who really are two men. check-sportegories.mjs
+ * runs the same rule and fails on a related pair nobody has decided, which
+ * stops the nightly rebuild and leaves yesterday's file on the site.
  *
  * THE RECORDS ARE PAIRED HERE AND JOINED IN THE GAME, NOT MERGED HERE. Merging
  * them in this file moved the category picker: one fewer record shifts the
@@ -395,37 +402,10 @@ try {
  * records ship exactly as before and `same` names the pairs. sportegories.js
  * gives each half the union of both when it loads, which changes what an
  * answer proves and never which board a day gets. */
-const ONE_PERSON = [
-  ['NBA', 'Penny Hardaway', 'Anfernee Hardaway'],
-  ['NFL', 'Michael Vick', 'Mike Vick'],
-  ['NFL', 'Patrick Surtain II', 'Pat Surtain II'],
-  ['NFL', 'Sauce Gardner', 'Ahmad Gardner'],
-  ['NFL', 'Trent Brown', 'Trenton Brown'],
-  ['NFL', 'Olu Fashanu', 'Olumuyiwa Fashanu'],
-  ['NFL', 'Foye Oluokun', 'Foyesade Oluokun'],
-  ['NFL', 'Jacob Martin', 'Jake Martin'],
-  ['MLB', 'Tris Speaker', 'Tristram Speaker']
-];
-const folded = [];
-for (const [sport, name, other] of ONE_PERSON) {
-  const keep = (pool.get(sport + '|' + nkFull(name)) || []);
-  const goneKey = sport + '|' + nkFull(other), gone = pool.get(goneKey) || [];
-  // The same man shares a club with himself. Pick the pair that does, so a
-  // namesake in either bucket is never the one paired. Club names are not
-  // unified yet at this point (FRANCHISE runs later), so Tris Speaker's
-  // Indians and Tristram Speaker's Guardians do not match: when each name is
-  // one man and their decades overlap, that is enough for a listed pair.
-  let a = null, b = null;
-  for (const x of keep) for (const y of gone) {
-    if (!a && x.t.some((t) => y.t.includes(t))) { a = x; b = y; }
-  }
-  if (!a && keep.length === 1 && gone.length === 1 && keep[0].decade.some((d) => gone[0].decade.includes(d))) {
-    a = keep[0]; b = gone[0];
-  }
-  if (!a) { if (keep.length && gone.length) console.warn('one person: ' + name + ' and ' + other + ' share no club, left apart'); continue; }
-  folded.push([a, b]);
-}
-if (folded.length) console.log('one person, two names: ' + folded.length + ' pairs joined');
+/* The list and the rule live in scripts/sportegories-people.{json,mjs}, and
+   the pairing runs after FRANCHISE below, so a club two sources name
+   differently (Tris Speaker's Indians and Guardians) still counts as shared. */
+const PEOPLE = JSON.parse(R('scripts/sportegories-people.json'));
 /* THE HALL OF FAME IS ONE FACT IN TWO PLACES, and the category reads only one.
    "Hall of Famer" tests the award list, but the curated corpus records an
    induction as the hof flag, so Ben Wallace, Wayne Gretzky, Sue Bird and every
@@ -615,6 +595,39 @@ for (const p of PLAYERS) {
   const seen = new Set();
   p.t = p.t.map(franchise).filter((t) => t && !seen.has(t) && seen.add(t));
 }
+
+/* ------------------------------------------- one man, every record joined
+ *
+ * Every pair the rule calls 'auto' (the same written name, a suffix or a
+ * middle name aside, sharing a club in a shared decade, nothing contradicting)
+ * plus every pair the json lists as `same`, gathered into groups: a man can be
+ * three records. Nothing is merged, for the reason ONE MAN, TWO NAMES gives above;
+ * the game joins each group when it loads. */
+const shape = (p) => ({ name: p.name, sport: p.sport, pos: p.pos, t: p.t, col: p.col, dec: p.decade });
+const SHAPES = PLAYERS.map(shape);
+const APART = new Set(PEOPLE.apart.map(([sp, a, b]) => pairKey(sp, a, b)));
+const joins = [];
+let autoN = 0;
+for (const [i, j, v] of candidates(SHAPES)) {
+  if (v !== 'auto') continue;
+  if (APART.has(pairKey(PLAYERS[i].sport, PLAYERS[i].name, PLAYERS[j].name))) continue;
+  joins.push([i, j]); autoN++;
+}
+const byName = new Map();
+PLAYERS.forEach((p, i) => { const k = p.sport + '|' + nkFull(p.name); (byName.get(k) || byName.set(k, []).get(k)).push(i); });
+for (const [sport, name, other] of PEOPLE.same) {
+  const A = byName.get(sport + '|' + nkFull(name)) || [], B = byName.get(sport + '|' + nkFull(other)) || [];
+  // The same man shares a club with himself. Pick the pair that does, so a
+  // namesake in either bucket is never the one joined; when each name is one
+  // record and their decades overlap, that is enough for a listed pair.
+  let hit = null;
+  for (const i of A) for (const j of B) if (!hit && SHAPES[i].t.some((t) => SHAPES[j].t.includes(t))) hit = [i, j];
+  if (!hit && A.length === 1 && B.length === 1 && SHAPES[A[0]].dec.some((d) => SHAPES[B[0]].dec.includes(d))) hit = [A[0], B[0]];
+  if (!hit) { if (A.length && B.length) console.warn('one person: ' + name + ' and ' + other + ' share no club, left apart'); continue; }
+  joins.push(hit);
+}
+const PERSONS = groups(PLAYERS.length, joins);
+console.log('one man, several records: ' + PERSONS.length + ' joined (' + autoN + ' by the rule, ' + (joins.length - autoN) + ' from the list)');
 
 // --------------------------------------------------------- lookup tables
 const uniq = (arr) => [...new Set(arr.filter(Boolean))].sort();
@@ -978,9 +991,10 @@ const payload = {
      second copy to drift. */
   alias: FRANCHISE,
   players: compact,
-  /* [shown, other]: two records that are one man (see ONE_PERSON). The game
-     joins them when it loads, so either name proves every fact of either. */
-  same: folded.map(([a, b]) => [PLAYERS.indexOf(a), PLAYERS.indexOf(b)]).filter(([a, b]) => a >= 0 && b >= 0),
+  /* [first, other]: records that are one man (see ONE MAN, TWO NAMES). A group of
+     three is two pairs sharing a first record. The game joins each group when
+     it loads, so any name proves every fact of all of them. */
+  same: PERSONS.flatMap((g) => g.slice(1).map((j) => [g[0], j])),
   cats: CATS.map((c) => ({ i: c.i, l: c.l, p: c.p, g: c.g, n: c.n, t: c.t, s: c.s })),
   viab: viability,
   letters: PLAYABLE,

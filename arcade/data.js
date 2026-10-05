@@ -180,12 +180,28 @@
    * First occurrence wins (entities.js is seeded first, so the curated
    * spelling is kept); a dropped dupe donates its teams so no stint is lost.
    * ---------------------------------------------------------------- */
+  /* A NICKNAME OR A NEW SURNAME IS THE SAME MAN, and the corpus held six of
+     them twice: Michael Vick beside Mike Vick, Penny beside Anfernee
+     Hardaway, Sauce beside Ahmad Gardner, Chad Johnson beside Chad
+     Ochocinco, Steve Smith Sr. beside Steve Smith, Larry Johnson beside
+     Larry D. Johnson. Each half held part of him (Michael Vick had the star
+     flag, Mike Vick had Virginia Tech), so a game could deal him twice or
+     mark the other name wrong. scripts/check-namesakes.mjs runs the rule in
+     scripts/sportegories-people.mjs over this corpus and fails on a pair that
+     is not folded here or listed as two men in sportegories-people.json. */
   var ALIAS = {
     'NBA|Jimmy Butler III': 'Jimmy Butler',
     'NFL|Robert Griffin': 'Robert Griffin III',
     'NFL|Odell Beckham': 'Odell Beckham Jr.',
-    'MLB|Nolan Ryan Jr.': 'Nolan Ryan'
+    'MLB|Nolan Ryan Jr.': 'Nolan Ryan',
+    'NBA|Anfernee Hardaway': 'Penny Hardaway',
+    'NBA|Larry D. Johnson': 'Larry Johnson',
+    'NFL|Mike Vick': 'Michael Vick',
+    'NFL|Ahmad Gardner': 'Sauce Gardner',
+    'NFL|Chad Ochocinco': 'Chad Johnson',
+    'NFL|Steve Smith': 'Steve Smith Sr.'
   };
+  var FILL = ['col', 'hs', 'hp', 'ns', 'dp', 'pos', 'decade'];
   (function dedupePeople(){
     function dkey(e){
       var nm = ALIAS[e.sport + '|' + e.name] || e.name;
@@ -204,6 +220,20 @@
           if (!Array.isArray(prev.t)) prev.t = [];
           e.t.forEach(function(tm){ if (prev.t.indexOf(tm) === -1) prev.t.push(tm); });
         }
+        // and every fact the kept spelling lacks: Penny Hardaway's record had
+        // no college, Anfernee Hardaway's had Memphis.
+        FILL.forEach(function(f){
+          var v = prev[f], w = e[f];
+          var empty = v === undefined || v === null || v === '' || (Array.isArray(v) && !v.length);
+          if (empty && w !== undefined && w !== null && w !== '') prev[f] = w;
+        });
+        if (Array.isArray(e.aw) && e.aw.length){
+          if (!Array.isArray(prev.aw)) prev.aw = [];
+          e.aw.forEach(function(a){ if (prev.aw.indexOf(a) === -1) prev.aw.push(a); });
+        }
+        if (e.star) prev.star = true;
+        if ((e.f || 0) > (prev.f || 0)) prev.f = e.f;
+        if (e.hof) prev.hof = e.hof;
         continue;   // drop the duplicate spelling
       }
       seen[k] = e; kept.push(e);

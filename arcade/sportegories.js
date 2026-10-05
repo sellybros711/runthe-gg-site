@@ -74,31 +74,44 @@
       var k = p.first + '|' + p.last;
       (BY_KEY[k] = BY_KEY[k] || []).push(p.idx);
     });
-    /* A man the sources spell two ways is two records, each holding half of
-       him (scripts/build-sportegories.mjs, ONE_PERSON). Penny Hardaway had
-       the All-Star years and Anfernee Hardaway had Memphis, so each name
-       failed a category the other passed. Joined here, at load, so the board
-       a day gets never moves: each half carries the union of both, either
-       name finds both, and naming him twice is a duplicate. */
+    /* A man the sources write two ways is two records, each holding part of
+       him (scripts/sportegories-people.mjs says how they are found). Penny
+       Hardaway had the All-Star years and Anfernee Hardaway had Memphis, so
+       each name failed a category the other passed. Joined here, at load, so
+       the board a day gets never moves: every record carries the union of
+       all of them, any name finds them all, and naming him twice is a
+       duplicate. A man can be three records (the corpus twice and a roster
+       row), so the pairs are gathered into groups first; joined pair by pair,
+       the first record would miss the third one's facts. */
+    var up = {};
+    var find = function (i) { while (up[i] != null && up[i] !== i) i = up[i]; return i; };
     (D.same || []).forEach(function (pr) {
-      var a = P[pr[0]], b = P[pr[1]]; if (!a || !b) return;
-      var u = function (x, y) { var o = x.slice(); y.forEach(function (v) { if (o.indexOf(v) < 0) o.push(v); }); return o; };
-      var teams = u(a.teams, b.teams), aw = u(a.aw, b.aw);
-      [a, b].forEach(function (p, k) {
-        var q = k ? a : b;
+      if (!P[pr[0]] || !P[pr[1]]) return;
+      var ra = find(pr[0]), rb = find(pr[1]);
+      if (ra !== rb) { var lo = Math.min(ra, rb); up[ra] = lo; up[rb] = lo; }
+    });
+    var group = {};
+    Object.keys(up).forEach(function (k) { var r = find(+k); (group[r] = group[r] || []).indexOf(+k) < 0 && group[r].push(+k); });
+    Object.keys(group).forEach(function (r) {
+      var g = group[r].map(function (i) { return P[i]; });
+      var u = function (lists) { var o = []; lists.forEach(function (l) { (l || []).forEach(function (v) { if (o.indexOf(v) < 0) o.push(v); }); }); return o; };
+      var teams = u(g.map(function (p) { return p.teams; })), aw = u(g.map(function (p) { return p.aw; }));
+      var first = function (f) { for (var i = 0; i < g.length; i++) if (g[i][f]) return g[i][f]; return g[0][f]; };
+      var col = first('col'), pos = first('pos'), rpos = first('rpos'), st = first('st');
+      var bits = 0, act = 0, f = 0;
+      g.forEach(function (p) { bits |= p.decBits; act = act || p.act; f = Math.max(f, p.f || 0); });
+      var person = Math.min.apply(null, g.map(function (p) { return p.idx; }));
+      g.forEach(function (p) {
         p.teams = teams; p.aw = aw;
-        if (!p.col) p.col = q.col;
-        if (!p.pos) p.pos = q.pos;
-        if (!p.rpos) p.rpos = q.rpos;
-        if (!p.st) p.st = q.st;
-        p.decBits = a.decBits | b.decBits;
-        p.act = a.act || b.act;
-        p.f = Math.max(a.f || 0, b.f || 0);
-        p.person = a.idx;
+        if (!p.col) p.col = col;
+        if (!p.pos) p.pos = pos;
+        if (!p.rpos) p.rpos = rpos;
+        if (!p.st) p.st = st;
+        p.decBits = bits; p.act = act; p.f = f; p.person = person;
       });
-      [a, b].forEach(function (p, k) {
-        var ids = BY_KEY[p.first + '|' + p.last], o = k ? a : b;
-        if (ids.indexOf(o.idx) < 0) ids.push(o.idx);
+      g.forEach(function (p) {
+        var ids = BY_KEY[p.first + '|' + p.last];
+        g.forEach(function (o) { if (ids.indexOf(o.idx) < 0) ids.push(o.idx); });
       });
     });
   }

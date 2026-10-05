@@ -26,6 +26,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { createContext, runInContext } from 'node:vm';
+import { candidates, groups, pairKey, norm as pkNorm } from './sportegories-people.mjs';
 
 let bad = 0;
 const fail = (m) => { console.error('  FAIL ' + m); bad++; };
@@ -373,59 +374,73 @@ console.log('\n8) the tips describe the game as it is');
      every club, every award and the college. Both names have to pass it and
      land inside the pair, or the join is only half done. */
   const same = D.same || [];
-  if (same.length < 8) fail('only ' + same.length + ' pairs shipped; the pairing is not running');
-  let pairs = 0;
-  for (const [i, j] of same) {
-    const A = D.players[i], B = D.players[j];
-    if (!A || !B) { fail('a pair points at a record that does not exist: ' + i + ', ' + j); continue; }
+  if (same.length < 100) fail('only ' + same.length + ' pairs shipped; the pairing is not running');
+  const PG = groups(D.players.length, same);
+  const groupOf = new Map();
+  PG.forEach((g, n) => g.forEach((i) => groupOf.set(i, n)));
+  let men = 0;
+  for (const g of PG) {
+    const recs = g.map((i) => D.players[i]);
+    if (recs.some((r) => !r)) { fail('a pair points at a record that does not exist: ' + g.join(', ')); continue; }
+    /* One college: a man who went to one school written two ways ("NC State",
+       "North Carolina State") holds each spelling on its own record, and a
+       real category names one of them. */
     const all = [];
-    for (const p of [A, B]) {
+    for (const p of recs) {
       for (const t of p[3]) all.push({ k: 'team', v: D.teams[t] });
       for (const a of p[5]) all.push({ k: 'award', v: D.awards[a] });
-      if (p[4] >= 0) all.push({ k: 'col', v: D.cols[p[4]] });
     }
+    const withCol = recs.find((p) => p[4] >= 0);
+    if (withCol) all.push({ k: 'col', v: D.cols[withCol[4]] });
     const at = D.cats.length;
     D.cats.push({ i: at, l: 'probe', p: { all } });
-    const res = [A[0], B[0]].map((n) => S.check({ letter: atLetter(n), cats: [{ i: at }] }, 0, n, {}));
+    const names = [...new Set(recs.map((r) => r[0]))];
+    const res = names.map((n) => S.check({ letter: atLetter(n), cats: [{ i: at }] }, 0, n, {}));
     // and naming him twice is one answer, whichever name came first
     const first = res[0].ok ? { [res[0].player.idx]: 1 } : {};
-    const again = S.check({ letter: atLetter(B[0]), cats: [{ i: at }] }, 0, B[0], first);
+    const again = S.check({ letter: atLetter(names[names.length - 1]), cats: [{ i: at }] }, 0, names[names.length - 1], first);
     D.cats.pop();
-    const miss = res.map((r, k) => (!r.ok || (r.player.idx !== i && r.player.idx !== j)) ? [A[0], B[0]][k] + ' (' + (r.reason || 'other record') + ')' : null).filter(Boolean);
-    if (miss.length) fail(A[0] + ' / ' + B[0] + ': ' + miss.join(', '));
-    else if (again.reason !== 'dup') fail(A[0] + ' then ' + B[0] + ' scores twice (' + (again.reason || 'ok') + ')');
-    else pairs++;
+    const miss = res.map((r, k) => (!r.ok || !g.includes(r.player.idx)) ? names[k] + ' (' + (r.reason || 'other record') + ')' : null).filter(Boolean);
+    if (miss.length) fail(names.join(' / ') + ': ' + miss.join(', '));
+    else if (again.reason !== 'dup') fail(names.join(' then ') + ' scores twice (' + (again.reason || 'ok') + ')');
+    else men++;
   }
-  if (pairs) ok(pairs + ' pairs answer to both names with every club, award and college of one man, once');
+  if (men) ok(men + ' men held as several records answer to every name with every club, award and college of one man, once');
 
-  /* Likely new pairs, reported and never failed. A roster name the bot pulls
-     in tonight is not a reason to stop the daily build, and a nickname match
-     also finds Carl and Carlton Davis, who are two men. Read the list and add
-     a real pair to ONE_PERSON in scripts/build-sportegories.mjs. */
-  const NICK = [['mike', 'michael'], ['pat', 'patrick'], ['penny', 'anfernee'], ['sauce', 'ahmad'],
-    ['tris', 'tristram'], ['trent', 'trenton'], ['jake', 'jacob'], ['olu', 'olumuyiwa'], ['foye', 'foyesade'],
-    ['magic', 'earvin'], ['chris', 'christopher'], ['matt', 'matthew'], ['tom', 'thomas'], ['bill', 'william'],
-    ['bob', 'robert'], ['jim', 'james'], ['joe', 'joseph'], ['dan', 'daniel'], ['dave', 'david'],
-    ['tony', 'anthony'], ['steve', 'stephen'], ['ken', 'kenneth'], ['nick', 'nicholas'], ['alex', 'alexander'],
-    ['ben', 'benjamin'], ['sam', 'samuel'], ['ed', 'edward'], ['rick', 'richard'], ['greg', 'gregory'],
-    ['josh', 'joshua'], ['zach', 'zachary'], ['andy', 'andrew'], ['larry', 'lawrence'], ['ron', 'ronald'],
-    ['jeff', 'jeffrey'], ['tim', 'timothy'], ['cam', 'cameron'], ['nate', 'nathan']];
-  const nick = (a, b) => NICK.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
-  const tk = (n) => n.replace(/ (Jr\.|Sr\.|II|III|IV)$/, '').split(/\s+/).map(norm).filter(Boolean);
-  const byLast = new Map();
-  D.players.forEach((p, i) => { const t = tk(p[0]); const k = p[1] + '|' + t[t.length - 1]; (byLast.get(k) || byLast.set(k, []).get(k)).push(i); });
-  const held = new Set(same.flatMap(([i, j]) => [i + '|' + j, j + '|' + i]));
-  const maybe = [];
-  for (const ids of byLast.values()) for (const a of ids) for (const b of ids) {
-    if (a >= b) continue;
-    const A = D.players[a], B = D.players[b], ta = tk(A[0]), tb = tk(B[0]);
-    if (ta[0] === tb[0] || !nick(ta[0], tb[0])) continue;
-    if (!(A[6] & B[6]) || !A[3].some((t) => B[3].includes(t))) continue;
-    if (held.has(a + '|' + b)) continue;
-    maybe.push(D.sports[A[1]] + ' ' + A[0] + ' / ' + B[0]);
+  /* NOBODY IS LEFT AS TWO RECORDS. The same rule the builder pairs with
+     (scripts/sportegories-people.mjs), run over the file that ships. A
+     related pair has to be joined, or decided as two men in
+     scripts/sportegories-people.json. This used to print a note and pass,
+     and the reports kept arriving one player at a time; it fails now, which
+     stops the nightly rebuild and keeps yesterday's file on the site until a
+     person makes the call. */
+  const decs = (bits) => { const o = []; for (let b = 0; b < 16; b++) if (bits & (1 << b)) o.push(D.dec0 + b * 10); return o; };
+  const SH = D.players.map((p) => ({ name: p[0], sport: D.sports[p[1]], pos: p[2] >= 0 ? D.pos[p[2]] : null,
+    t: p[3].map((t) => D.teams[t]), col: p[4] >= 0 ? D.cols[p[4]] : null, dec: decs(p[6]) }));
+  const PEOPLE = JSON.parse(readFileSync('scripts/sportegories-people.json', 'utf8'));
+  const SAME = new Set(PEOPLE.same.map(([sp, a, b]) => pairKey(sp, a, b)));
+  const APART = new Set(PEOPLE.apart.map(([sp, a, b]) => pairKey(sp, a, b)));
+  const joined = (i, j) => groupOf.has(i) && groupOf.get(i) === groupOf.get(j);
+  const open = [], split = [];
+  let autoN = 0, askN = 0;
+  for (const [i, j, v] of candidates(SH)) {
+    const A = SH[i], B = SH[j], key = pairKey(A.sport, A.name, B.name), label = A.sport + ' ' + A.name + ' / ' + B.name;
+    if (APART.has(key)) { if (joined(i, j)) fail(label + ' is listed as two men and joined'); continue; }
+    if (v === 'auto') { autoN++; if (!joined(i, j)) split.push(label); }
+    else if (v === 'ask') { askN++; if (!SAME.has(key)) open.push(label); else if (!joined(i, j)) split.push(label + ' (listed)'); }
   }
-  if (maybe.length) console.log('  note ' + maybe.length + ' possible second spellings to read: ' + maybe.slice(0, 10).join(' | '));
-  else ok('no unlisted nickname pairs share a club and a decade');
+  if (split.length) fail(split.length + ' records of one man are not joined: ' + split.slice(0, 12).join(' | '));
+  else ok(autoN + ' same-name pairs and ' + askN + ' listed pairs are all joined');
+  if (open.length) fail(open.length + ' related names nobody has decided, add each to `same` or `apart` in scripts/sportegories-people.json: ' + open.slice(0, 12).join(' | '));
+  else ok('no related pair of names is left undecided');
+  // and the list itself has not gone stale: every `same` pair is still joined
+  const byNm = new Map();
+  SH.forEach((r, i) => { const k = r.sport + '|' + pkNorm(r.name); (byNm.get(k) || byNm.set(k, []).get(k)).push(i); });
+  for (const [sp, a, b] of PEOPLE.same) {
+    const A = byNm.get(sp + '|' + pkNorm(a)) || [], B = byNm.get(sp + '|' + pkNorm(b)) || [];
+    if (!A.length || !B.length) continue;      // one half has left the file; nothing to join
+    if (!A.some((i) => B.some((j) => joined(i, j)))) fail(sp + ' ' + a + ' / ' + b + ' is listed as one man and not joined');
+  }
 }
 
 if (bad) { console.error('\n' + bad + ' problem' + (bad === 1 ? '' : 's')); process.exit(1); }

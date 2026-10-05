@@ -443,7 +443,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/cluebank.js?v=3"></script>
 <script src="/arcade/primary.js?v=35"></script>
 <script src="/arcade/franchise.js?v=1"></script>
-<script src="/arcade/data.js?v=8"></script>
+<script src="/arcade/data.js?v=9"></script>
 <script src="/arcade/flags.js?v=4"></script>
 <script src="/arcade/rosters.js?v=5"></script>
 <script src="/arcade/teamcolors.js?v=2"></script>
@@ -653,6 +653,7 @@ window.GA_ID='G-L29P5MRWKE';
   pickTarget();
   /* Read-only view for scripts/check-current.mjs: who can be the answer and who can be guessed. */
   window.__rtgGuess = function(){ return { current:CURRENT, sport:SPORT, target:TARGET&&TARGET.name, decade:TARGET&&TARGET.decade, pool:POOL.length, rosterOnly:((POOL.filter(function(e){ return /^ros:/.test(e.id); })[0])||{}).name||null, guessable:(function(){ var c={}; GUESSABLE.forEach(function(e){ c[e.sport]=(c[e.sport]||0)+1; }); return c; })(), targets:TARGETS.map(function(e){ return e.sport+'|'+e.name; }) }; };
+  window.__rtgGuessHas = function(names){ return names.filter(function(n){ return GUESSABLE.some(function(e){ return e.name===n; }); }); };
   if(CURRENT){ try{ var eraEl=document.getElementById('eraLine'); if(eraEl) eraEl.textContent='from today\'s rosters'; }catch(e){} }
 
   // ---- comparison ----

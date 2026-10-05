@@ -150,9 +150,16 @@ console.log('\n3. Guess the Player, flag current');
   if (!a.g.current) fail('the flag did not reach the page');
   else if (a.gone) fail(a.gone + ' of ' + a.total + ' possible answers are not on a roster today');
   else {
-    // Same sport on both sides: the two pages can draw different sports.
-    const narrow = Object.keys(b.guessable).filter((sp) => !((a.g.guessable[sp] || 0) < b.guessable[sp]));
-    if (narrow.length) fail('the guess pool did not narrow for ' + narrow.join(', ') + ': ' + JSON.stringify(a.g.guessable) + ' against ' + JSON.stringify(b.guessable));
+    /* A count is the wrong claim: the current list adds every rostered
+       player the corpus never had, so for the NBA it can land on the same
+       size as the all-time one by coincidence (581 and 581). What the flag
+       promises is that a retired name is not offered as a guess. */
+    const RETIRED = ['Michael Jordan', 'Larry Bird', 'Tom Brady', 'Peyton Manning', 'Derek Jeter', 'Babe Ruth'];
+    const hasOn = await on.page.evaluate((n) => window.__rtgGuessHas(n), RETIRED);
+    const hasOff = await off.page.evaluate((n) => window.__rtgGuessHas(n), RETIRED);
+    // and the all-time list really does offer them, or this proves nothing
+    if (hasOff.length < 4) fail('the all-time guess list offers only ' + hasOff.length + ' of the retired names this asks about');
+    else if (hasOn.length) fail('the current guess list still offers retired players: ' + hasOn.join(', '));
     else ok('answer ' + a.g.target + '; ' + a.total + ' possible answers, all on a roster; guessable ' + JSON.stringify(a.g.guessable) + ' against ' + JSON.stringify(b.guessable) + ' any era');
   }
   if (!/^A current /.test(a.lead.trim())) fail('the lead still reads ' + JSON.stringify(a.lead.trim().slice(0, 60)));
