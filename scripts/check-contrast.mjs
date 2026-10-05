@@ -239,8 +239,59 @@ for (const p of PAGES) {
   }
   process.stdout.write('\n');
 }
+/* THE RESULT SHEET ON A DESKTOP. Every game sized it for a phone, and the
+   owner asked for it wider on a wide screen. gamehead.js widens the sheet
+   holding Play again from 900px. Measured here, with the sheet opened the
+   way a game opens it, plus the one row that broke when it
+   grew: the crossword's full-width `.modal .btn` turned every Solve pill in
+   "Play another game" into a bar and squeezed the game's name to nothing. */
+const narrow = [];
+for (const p of PAGES) {
+  if (!p) continue;
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  await ctx.addInitScript(() => { try { localStorage.setItem('runthegrid_pro', '1'); } catch (e) {} });
+  const page = await ctx.newPage();
+  for (const pat of ['**cdn.jsdelivr.net**', '**supabase.co**', '**googlesyndication.com**', '**googletagmanager.com**',
+                     '**google-analytics.com**', '**doubleclick.net**', '**fonts.googleapis.com**', '**fonts.gstatic.com**']) {
+    await page.route(pat, (r) => r.abort());
+  }
+  try { await page.goto('http://localhost:' + PORT + '/arcade/' + p, { waitUntil: 'domcontentloaded', timeout: 15000 }); }
+  catch (e) { await ctx.close(); continue; }
+  await page.waitForTimeout(1200);
+  const r = await page.evaluate(() => {
+    const b = document.querySelector('#mAgain, #resAgain');
+    if (!b) return null;
+    const sh = b.closest('.sheet, .modal');
+    if (!sh) return null;
+    // Opened the way a game opens it: the `hidden` class and attribute come
+    // off, which is also what funnel.js watches for before it ranks buttons.
+    for (let n = b; n && n !== document.body; n = n.parentElement) {
+      n.removeAttribute('hidden'); n.classList.remove('hidden');
+      const cs = getComputedStyle(n);
+      if (cs.display === 'none') n.style.setProperty('display', 'block', 'important');
+      if (cs.visibility === 'hidden') n.style.setProperty('visibility', 'visible', 'important');
+    }
+    return true;
+  });
+  if (!r) { await ctx.close(); continue; }
+  await page.waitForTimeout(400);
+  const m = await page.evaluate(() => {
+    const sh = document.querySelector('#mAgain, #resAgain').closest('.sheet, .modal');
+    const names = [...sh.querySelectorAll('.rtgrs-go .nm')].map((n) => n.getBoundingClientRect().width);
+    return { w: Math.round(sh.getBoundingClientRect().width), name: names.length ? Math.round(Math.min(...names)) : null };
+  });
+  await ctx.close();
+  if (m.w < 560) narrow.push(p + ' result sheet is ' + m.w + 'px wide on a 1440 screen');
+  if (m.name != null && m.name < 60) narrow.push(p + ' "Play another game" name is ' + m.name + 'px wide');
+}
+
 await browser.close();
 server.close();
+if (narrow.length) {
+  console.log(narrow.length + ' result sheet problem(s) on a desktop:');
+  narrow.forEach((n) => console.log('  ' + n));
+  process.exit(1);
+}
 if (!worst.length) {
   console.log('contrast ok: ' + PAGES.length + ' pages, both themes, no text on a fill below its WCAG threshold');
   process.exit(0);

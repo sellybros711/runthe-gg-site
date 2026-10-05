@@ -122,7 +122,11 @@
       '.rtgrs-go .nm{flex:1;min-width:0;font-size:13.5px;font-weight:900;color:var(--ink,#F4F7FB);',
       '  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
       '.rtgrs-go .btn{flex:0 0 auto;font:900 11.5px var(--f,system-ui);letter-spacing:.04em;border-radius:999px;',
-      '  padding:7px 14px;background:var(--gc);color:var(--onAccent,#160B02);}',
+      '  padding:7px 14px;background:var(--gc);color:var(--onAccent,#160B02);',
+      /* Its own size and edges. The crossword styles every `.modal .btn` at
+         full width, which made each Solve pill a 100% bar and squeezed the
+         game's name beside it to nothing. */
+      '  width:auto;min-width:0;margin:0;border:0;box-shadow:none;}',
       '.rtgrs-go:hover .btn{filter:brightness(1.08);}',
       '@media (max-width:380px){.rtgrs-go .nm{font-size:12.5px;} .rtgrs-go .btn{padding:6px 11px;font-size:11px;}}'
     ].join('');
