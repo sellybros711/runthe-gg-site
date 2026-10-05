@@ -28,6 +28,13 @@
  * the golf game's paint step (PXHD), so every one of the 960 moved. That is
  * the whole drawing redone rather than a pixel drifting, and from here on the
  * hashes guard the new drawing exactly as they guarded the old one.
+ *
+ * RE-RECORDED A THIRD TIME, ON PURPOSE, because the owner found the players
+ * too buff and the jersey poor. Lean and Standard got narrower shoulders,
+ * smaller delts and thinner arms; only Muscular (the 'strong' id) keeps the
+ * broad build. The tank was recut (a round scoop, narrow straps, round
+ * armholes, one even trim band) and its number is stamped on the screen so no
+ * digit loses a row. The lower body was asked to stay and did not change.
  */
 import fs from 'node:fs';
 import path from 'node:path';

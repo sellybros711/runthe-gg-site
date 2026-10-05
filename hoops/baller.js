@@ -42,7 +42,15 @@ var BEARDS = [['none', 'Clean'], ['stubble', 'Stubble'], ['goatee', 'Goatee'], [
 var BANDS = [['none', 'None'], ['white', 'White'], ['black', 'Black'], ['club', 'Team'], ['red', 'Red']];
 var SLEEVES = [['none', 'None'], ['white', 'White'], ['black', 'Black'], ['club', 'Team']];
 var SHOES = [['white', 'White'], ['black', 'Black'], ['club', 'Team'], ['red', 'Red'], ['gold', 'Gold']];
-var BUILDS = [['lean', 'Lean'], ['standard', 'Standard'], ['strong', 'Strong']];
+var BUILDS = [['lean', 'Lean'], ['standard', 'Standard'], ['strong', 'Muscular']];
+/* How each build is put together, read by the skeleton, the model and
+   handAt alike. bw widens the shoulders and chest, am thickens the limbs, dl
+   is the deltoid's radius. Standard and Lean are a basketball body: long and
+   narrow. Only Muscular carries the broad shoulders and the round delts. The
+   id stays 'strong' because it is in saves; only the label changed. */
+var BODY = { lean: { bw: -1.5, am: -0.42, dl: 1.75 }, standard: { bw: -0.95, am: -0.26, dl: 2.0 }, strong: { bw: 0.1, am: 0.06, dl: 2.6 } };
+function bodyOf(b){ return BODY[b] || BODY.standard; }
+var FACELESS = '#4a5266';
 var FIXED = { white: '#f2f2f0', black: '#1d1f24', red: '#d13a32', gold: '#e8b33c' };
 
 function ids(list){ return list.map(function(x){ return x[0]; }); }
@@ -342,8 +350,7 @@ function skeleton(f, bw, am, breath){
 /* ── the model for one pose and one look ── */
 function build(L, o, J){
   var suit = o.suit, cap = o.cap, pose = o.pose;
-  var bw = L.build === 'lean' ? -0.6 : L.build === 'strong' ? 0.8 : 0;
-  var am = L.build === 'lean' ? -0.15 : L.build === 'strong' ? 0.3 : 0;
+  var BD = bodyOf(L.build), bw = BD.bw, am = BD.am;
   var P = [];
   /* n: the part's name, g: which piece of the body it is (lines are drawn
      between pieces, never inside one), m: its material, or a function of
@@ -389,22 +396,21 @@ function build(L, o, J){
   if (!suit) {
     var torsoMat = function(p){
       var dx = Math.abs(p[0] - CX), y = p[1] - (C0[1] - 29.2), front = p[2] > 0.6;
-      var arm = 6.6 + bw * 0.8;
-      /* the tank: straps over the shoulders, a scoop neck, open armholes */
-      var strapIn = 3.4, strapOut = 6.0 + bw * 0.4;
-      if (y < 25.6 && (dx < strapIn || dx > strapOut)) return 'skin';
-      if (front && dx < strapIn + 0.2 && y < 27.6 - dx * 0.25) return 'skin';
-      if (dx > arm && y < 31.2) return 'skin';
-      if ((y < 26.4 && (dx < strapIn + 0.8 || dx > strapOut - 0.8)) || (front && dx < strapIn + 1.0 && y < 28.4 - dx * 0.25) || (dx > arm - 0.8 && y < 32)) return 'trim';
-      /* the number on the chest */
-      if (front && o.num !== '') {
-        var num = o.num, x0 = num.length === 2 ? CX - 5 : CX - 2, ny = 28.0;
-        var gx = Math.floor(p[0] - x0), gy = Math.floor(y - ny);
-        if (gy >= 0 && gy < 6) for (var d = 0; d < num.length; d++) {
-          var dg = DIGITS[num[d]], cx2 = gx - d * 6;
-          if (dg && cx2 >= 0 && cx2 < 4 && dg[gy][cx2] === '1') return { m: 'ink', t: gy === 0 ? 3 : null };
-        }
-      }
+      /* the tank, cut the way a real one is: a round scoop at the neck, two
+         narrow straps, deep round armholes, each opening edged in one even
+         band of the second colour. Nothing is trimmed but an edge. */
+      var edge = cR[0], strapIn = 3.0, strapOut = Math.min(5.8, edge - 1.4);
+      /* the neck: deeper in front than behind */
+      var nd = front ? 2.6 : 0.8, nw = 3.0;
+      var neck = function(w){ var t = dx / w; return t < 1 ? 24.6 + nd * (1 - t * t) : -1; };
+      if (y < neck(nw)) return 'skin';
+      if (y < neck(nw + 0.9) + 0.85) return 'trim';
+      /* the armholes: an ellipse cut out of each side, under the strap */
+      var ax = edge + 0.8, rx = ax - strapOut, ry = 6.2, ay = 25.0;
+      var ae = Math.pow((dx - ax) / rx, 2) + Math.pow((y - ay) / ry, 2);
+      if (y < 25.4 && dx > strapIn) { if (dx > strapOut) return 'skin'; }
+      if (ae < 1) return 'skin';
+      if (ae < 1.42) return 'trim';
       return 'jersey';
     };
     add('torso', 'torso', torsoMat, torsoF, [CX, 33 + J.dip, 0], 11);
@@ -444,7 +450,7 @@ function build(L, o, J){
     var A = J.arm[s], sleeved = !suit && o.sleeve && s === 1;
     var mat = suit ? 'jacket' : sleeved ? 'sleeve' : 'skin';
     var r0 = (suit ? 2.6 : 2.2) + am, r1 = (suit ? 2.2 : 1.85) + am * 0.8, r2 = (suit ? 1.95 : 1.5) + am * 0.6;
-    if (!suit) add('delt' + s, 'arm' + s, sleeved ? 'sleeve' : 'skin', sph([A.sh[0] - s * 0.5, A.sh[1] + 0.9, 0], 2.55 + am), A.sh, 3.5);
+    if (!suit) add('delt' + s, 'arm' + s, sleeved ? 'sleeve' : 'skin', sph([A.sh[0] - s * 0.5, A.sh[1] + 0.9, 0], BD.dl), A.sh, 3.5);
     var armF = uni([cone(A.sh, A.el, r0, r1), cone(A.el, A.wr, r1, r2)]);
     add('arm' + s, 'arm' + s, suit ? function(p){
       var t = Math.hypot(p[0] - A.wr[0], p[1] - A.wr[1], p[2] - A.wr[2]);
@@ -597,6 +603,10 @@ function toneOf(c, part, dt){
      parts    hand back the part in every cell instead of a colour */
 function paint(look, opts){
   var L = normal(look), o = opts || {};
+  /* A REAL PLAYER IS DRAWN IN HIS CLUB'S KIT AND WITH NO FACE: a bald slate
+     head, no beard, no band, nothing that could be read as a likeness. It is
+     the rig and the light, so he stands in the same 3D style as you. */
+  if (o.faceless) L = Object.assign({}, L, { hair: 'bald', beard: 'none', band: 'none', sleeve: 'none' });
   var pose = o.pose || 'stand';
   var AN = ANIM[pose] || null;
   var suit = pose === 'suit' || pose === 'cap' || !!(AN && (o.dress === 'suit' || o.dress === 'cap'));
@@ -604,8 +614,7 @@ function paint(look, opts){
   var c1 = o.c1 || '#2b3242', c2 = o.c2 || '#c9ccd6';
   if (contrast(c1, c2) < 1.4) c2 = inkOn(c1);
   var age = +o.age || 0;
-  var bw = L.build === 'lean' ? -0.6 : L.build === 'strong' ? 0.8 : 0;
-  var am = L.build === 'lean' ? -0.15 : L.build === 'strong' ? 0.3 : 0;
+  var BD = bodyOf(L.build), bw = BD.bw, am = BD.am;
   var f = AN || STILL[pose] || STILL.stand;
   var J = skeleton(f, bw, am, o.frame === 1 && !AN);
   var bandHex = L.band === 'none' ? null : L.band === 'club' ? c2 : FIXED[L.band];
@@ -623,6 +632,7 @@ function paint(look, opts){
   var natural = L.bc >= 0 ? HAIR_COLORS[L.bc][1] : L.hc >= 5 ? HAIR_COLORS[L.hc === 5 ? 4 : 1][1] : HAIR_COLORS[L.hc][1];
   var beardHex = mix(natural, '#000000', 0.12);
   if (age >= 33) beardHex = mix(beardHex, '#c9c9c4', Math.min(0.7, (age - 32) / 12));
+  if (o.faceless) skinHex = FACELESS;
   var SK = skinRamp(skinHex), HRm = hairRamp(hairHex);
   var shoeHex = suit ? '#1c1f27' : L.shoes === 'club' ? c1 : FIXED[L.shoes];
   var R = {
@@ -669,6 +679,22 @@ function paint(look, opts){
     edits.push([x5, y5, sh ? r5[Math.max(0, Math.min(t5 - 1, 1))] : r5[Math.max(0, Math.min(t5 - 1, 2))]]); }
   edits.forEach(function(ed){ out[ed[1]][ed[0]] = ed[2]; });
 
+  /* The number is stamped on the screen, after the light, the way a sprite
+     artist letters a jersey. Mapped onto the model in world cells, the
+     camera's pitch dropped whole rows of a digit and a 2 came out broken. It
+     only lands on jersey cloth, takes the cloth's own tone, and so bends with
+     the chest and hides behind an arm in front of it. */
+  if (num !== '' && !suit) {
+    var BD2 = bodyOf(L.build), nv = toView([CX, J.chest[1] + 3.4, 4.4 + BD2.bw * 0.3]);
+    var nw2 = num.length * 5 - 1, nx0 = Math.round(nv[0] - nw2 / 2), ny0 = Math.round(nv[1] - 3);
+    for (var dI = 0; dI < num.length; dI++) { var DG = DIGITS[num[dI]]; if (!DG) continue;
+      for (var gy = 0; gy < 6; gy++) for (var gx = 0; gx < 4; gx++) { if (DG[gy][gx] !== '1') continue;
+        var px = nx0 + dI * 5 + gx, py = ny0 + gy, hc_ = g(px, py);
+        if (!hc_ || model[hc_.i].n !== 'torso' || M[py][px] !== 'jersey') continue;
+        out[py][px] = R.ink[Math.max(1, Math.min(T[py][px], 3))]; } }
+  }
+
+  if (o.faceless) return out;
   /* the face, on the head: dot eyes, brows, a nose, a mouth, a little blush.
      Placed off the head's own centre on screen, so it moves with a crouch. */
   var hv = toView([J.head[0], J.head[1], J.head[2] + 6.8]);
@@ -695,15 +721,104 @@ function paint(look, opts){
 /* Where a hand is on screen, in sprite cells, for a moving frame. */
 function handOf(pose, s, build){
   var f = ANIM[pose]; if (!f) return null;
-  var bw = build === 'lean' ? -0.6 : build === 'strong' ? 0.8 : 0;
-  var v = toView(skeleton(f, bw, 0, false).arm[s == null ? 1 : s].hand);
+  var v = toView(skeleton(f, bodyOf(build).bw, 0, false).arm[s == null ? 1 : s].hand);
   return [v[0], v[1]];
+}
+
+/* ─── props, in the same light ───────────────────────────────────────────
+   The ball, the rim, a trophy, a podium, a ring box: the things on the court
+   and the stage are sphere traced and painted with the same ramps as the
+   player, so a ceremony is one picture rather than a man pasted onto flat
+   boxes. A prop is its own little world on its own grid, seen from the same
+   camera (12 degrees down, light from the top left). */
+function torus(c, R, r){ return function(p){ var q = Math.hypot(p[0] - c[0], p[2] - c[2]) - R; return Math.hypot(q, p[1] - c[1]) - r; }; }
+function torusV(c, R, r){ return function(p){ var q = Math.hypot(p[0] - c[0], p[1] - c[1]) - R; return Math.hypot(q, p[2] - c[2]) - r; }; }
+function propModel(kind, o){
+  var P = [], add = function(n, m, f, c, r, x){ var q = { n: n, g: n, m: m, f: f, c: c, r: r }; for (var k in x || {}) q[k] = x[k]; P.push(q); };
+  if (kind === 'ball') {
+    var R = o.r || 4.6, c = [o.w / 2, o.h / 2, 0], a = (o.spin || 0) * Math.PI / 4;
+    add('ball', function(p){
+      var x = (p[0] - c[0]) / R, y = (p[1] - c[1]) / R, z = p[2] / R;
+      var u = x * Math.cos(a) - y * Math.sin(a), v = x * Math.sin(a) + y * Math.cos(a);
+      if (Math.abs(u) < 0.11 || Math.abs(v) < 0.11 || Math.abs(Math.hypot(u - 0.95, z) - 0.62) < 0.09 || Math.abs(Math.hypot(u + 0.95, z) - 0.62) < 0.09) return { m: 'seam', dt: -1 };
+      return 'ball';
+    }, sph(c, R), c, R + 0.2, { gloss: 1 });
+  } else if (kind === 'trophy') {
+    var cx = o.w / 2;
+    add('ball', function(p){ var x = p[0] - cx, y = p[1] - 3.6; return Math.abs(x) < 0.45 || Math.abs(y) < 0.45 || Math.abs(Math.hypot(x - 3.2, y) - 2.1) < 0.4 ? { m: 'goldd' } : 'tball'; }, sph([cx, 3.6, 0], 3.3), [cx, 3.6, 0], 3.5, { gloss: 1 });
+    add('net', function(p){ return (Math.floor(p[0] * 1.2) + Math.floor(p[1] * 1.2)) % 2 ? { m: 'gold', dt: -1 } : 'gold'; }, cone([cx, 7.2, 0], [cx, 13.4, 0], 4.6, 1.2), [cx, 10.3, 0], 5.4, { gloss: 2 });
+    add('lip', 'gold', torus([cx, 7.0, 0], 4.2, 0.6), [cx, 7, 0], 5, { gloss: 2 });
+    add('stem', 'gold', cone([cx, 13.4, 0], [cx, 17.6, 0], 1.0, 1.7), [cx, 15.5, 0], 2.8, { gloss: 2 });
+    add('base', 'goldd', rbox([cx, 19.2, 0], [4.4, 1.6, 3.0], 0.5), [cx, 19.2, 0], 5.2);
+  } else if (kind === 'podium') {
+    var px = o.w / 2;
+    add('top', 'wood', rbox([px, 3.6, 0], [9.6, 1.4, 4.6], 0.6), [px, 3.6, 0], 10.8);
+    add('body', function(p){ return Math.abs(p[0] - px) < 4.2 && p[1] > 9 && p[1] < 15 && p[2] > 2 ? 'logo' : 'pod'; }, rbox([px, 15.6, 0], [8.2, 11.0, 3.6], 0.5), [px, 15.6, 0], 13.5);
+    add('mic', 'metal', cone([px + 3.2, -0.6, 2.0], [px + 3.2, 2.6, 2.0], 0.5, 0.6), [px + 3.2, 1, 2], 2.4);
+    add('mich', 'micb', sph([px + 3.2, -1.6, 2.0], 1.1), [px + 3.2, -1.6, 2], 1.3);
+  } else if (kind === 'ring') {
+    var rx = o.w / 2;
+    add('box', 'box', rbox([rx, 8.0, 0], [5.0, 2.6, 3.6], 0.6), [rx, 8, 0], 6.5);
+    add('ring', 'gold', torusV([rx, 3.4, 0.4], 2.5, 0.95), [rx, 3.4, 0.4], 3.6, { gloss: 2 });
+    add('gem', 'gem', sph([rx, 0.9, 1.0], 1.2), [rx, 0.9, 1.0], 1.4, { gloss: 2 });
+  } else if (kind === 'rim') {
+    var hx = o.w / 2, keep = o.half === 'front' ? function(p){ return -p[2]; } : function(p){ return p[2]; };
+    add('rim', 'rim', cut(torus([hx, 2, 0], 6.4, 0.85), keep), [hx, 2, 0], 7.4, { gloss: 1 });
+  }
+  return P;
+}
+var PROP_INK = { ball: '#e2762a', seam: '#3a1606', tball: '#e8b33c', gold: '#e3a92f', goldd: '#a8761c', wood: '#8a5a32', metal: '#b8bec8', micb: '#2a2e38', box: '#2a1d14', gem: '#9fe3ff', rim: '#e2551d' };
+var PROP_SIZE = { ball: [11, 11], trophy: [14, 22], podium: [24, 28], ring: [13, 13], rim: [17, 6] };
+function prop(kind, opts){
+  var o = Object.assign({}, opts || {}), sz = PROP_SIZE[kind] || [12, 12];
+  o.w = o.w || sz[0]; o.h = o.h || sz[1];
+  var P = propModel(kind, o), w = o.w, h = o.h, cy = h / 2;
+  var view = function(p){ var y = p[1] - cy; return [p[0], cy + y * CP + p[2] * SN, -y * SN + p[2] * CP]; };
+  var world = function(q){ var y = q[1] - cy, z = q[2]; return [q[0], cy + y * CP - z * SN, y * SN + z * CP]; };
+  var ink = Object.assign({}, PROP_INK, { pod: o.c1 || '#1a2445', logo: o.c2 || '#c9ccd6' }, o.ink || {});
+  var hit = [];
+  for (var y = 0; y < h; y++) { var row = []; for (var x = 0; x < w; x++) {
+    var sx = x + 0.5, sy = y + 0.5, t = 30, found = -1, wp = null;
+    for (var k = 0; k < 90 && t > -30; k++) {
+      var q = world([sx, sy, t]), d = 1e9, at = -1;
+      for (var j = 0; j < P.length; j++) { var v = P[j].f(q); if (v < d) { d = v; at = j; } }
+      if (d < 0.02) { found = at; wp = q; break; }
+      t -= Math.max(d * 0.85, 0.03);
+    }
+    if (found < 0) { row.push(null); continue; }
+    var f = P[found].f, e = 0.07;
+    var n = [f([wp[0] + e, wp[1], wp[2]]) - f([wp[0] - e, wp[1], wp[2]]), f([wp[0], wp[1] + e, wp[2]]) - f([wp[0], wp[1] - e, wp[2]]), f([wp[0], wp[1], wp[2] + e]) - f([wp[0], wp[1], wp[2] - e])];
+    var nl = Math.hypot(n[0], n[1], n[2]) || 1; n = [n[0] / nl, n[1] / nl, n[2] / nl];
+    var c = { n: [n[0], n[1] * CP + n[2] * SN, -n[1] * SN + n[2] * CP] };
+    var part = P[found], mm = typeof part.m === 'function' ? part.m(wp) : part.m;
+    if (typeof mm === 'string') mm = { m: mm };
+    row.push({ i: found, t: toneOf(c, part, mm.dt), m: mm.m });
+  } hit.push(row); }
+  var out = hit.map(function(r){ return r.map(function(c){ return c ? ramp(ink[c.m] || '#888888')[c.t] : null; }); });
+  /* the soft outline, inside the silhouette, as on the player */
+  var g = function(x, y){ return y >= 0 && y < h && x >= 0 && x < w ? hit[y][x] : null; };
+  var ed = [];
+  for (var y2 = 0; y2 < h; y2++) for (var x2 = 0; x2 < w; x2++) { var c2 = hit[y2][x2]; if (!c2) continue;
+    if (!g(x2, y2 + 1) || !g(x2 + 1, y2)) ed.push([x2, y2, ramp(ink[c2.m] || '#888888')[Math.max(0, Math.min(c2.t - 1, 1))]]);
+    else if (g(x2, y2 + 1).i !== c2.i && Math.abs(g(x2, y2 + 1).t - c2.t) > 1) ed.push([x2, y2, ramp(ink[c2.m] || '#888888')[Math.max(0, c2.t - 1)]]); }
+  ed.forEach(function(e2){ out[e2[1]][e2[0]] = e2[2]; });
+  return { w: w, h: h, grid: out };
+}
+var PCACHE = {};
+function propCanvas(kind, opts){
+  var k = kind + JSON.stringify(opts || {});
+  if (PCACHE[k]) return PCACHE[k];
+  var pr = prop(kind, opts), cv = document.createElement('canvas');
+  cv.width = pr.w; cv.height = pr.h;
+  var cx = cv.getContext('2d');
+  for (var y = 0; y < pr.h; y++) for (var x = 0; x < pr.w; x++) { var col = pr.grid[y][x]; if (col) { cx.fillStyle = col; cx.fillRect(x, y, 1, 1); } }
+  return (PCACHE[k] = cv);
 }
 
 /* ─── to the screen ───────────────────────────────────────────────────── */
 
 var CACHE = {}, KEYS = [];
-function keyOf(look, o){ return JSON.stringify([normal(look), o.c1, o.c2, o.num, o.pose, o.age >= 33 ? o.age : 0, o.frame || 0, o.scale || 4, !!o.shadow, o.dress || '']); }
+function keyOf(look, o){ return JSON.stringify([normal(look), o.c1, o.c2, o.num, o.pose, o.age >= 33 ? o.age : 0, o.frame || 0, o.scale || 4, !!o.shadow, o.dress || '', o.faceless ? 1 : 0]); }
 
 function canvas(look, opts){
   var o = opts || {};
@@ -769,6 +884,7 @@ var API = {
   SETS: Object.keys(SETS).reduce(function(m, k){ m[k] = SETS[k].length; return m; }, {}), isFrame: function(p){ return !!ANIM[p]; },
   DEFAULT: DEFAULT, normal: normal, lookFor: lookFor, hash: hash, inkOn: inkOn, contrast: contrast,
   paint: paint, canvas: canvas, url: url, img: img, breathe: breathe,
+  prop: prop, propCanvas: propCanvas, ramp: ramp, PROPS: Object.keys(PROP_SIZE),
 };
 if (typeof module !== 'undefined' && module.exports) module.exports = API;
 if (typeof window !== 'undefined') { window.RTF_BALLER = API; breathe(); }
