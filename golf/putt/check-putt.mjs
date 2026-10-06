@@ -297,6 +297,11 @@ if (!args.includes('--no-browser')){
     claim(th.got.indexOf(th.want) >= 0, `the Daily Hole wears today's theme (${th.got})`);
     await pg.click('[data-daily]'); await pg.waitForSelector('.pt-stage canvas');
     await pg.waitForTimeout(300);
+    // THE DAILY HOLE IS TIMED: the clock is on screen, it runs, and a finished daily keeps its time
+    const ck = await pg.evaluate(() => document.querySelector('[data-dclock]') && document.querySelector('[data-dclock]').textContent);
+    await pg.waitForTimeout(400);
+    const ck2 = await pg.evaluate(() => document.querySelector('[data-dclock]') && document.querySelector('[data-dclock]').textContent);
+    claim(ck && ck2 && ck !== ck2 && /^\d+:\d\d\.\d$/.test(ck2), `the Daily Hole shows a running clock (${ck} then ${ck2})`);
     const box = await pg.locator('.pt-stage canvas').boundingBox();
     const before = await pg.evaluate(() => window.RTT_PUTT._state().play.ball.slice());
     await pg.mouse.move(box.x + box.width / 2, box.y + box.height * 0.5); await pg.mouse.down();
@@ -304,6 +309,10 @@ if (!args.includes('--no-browser')){
     await pg.waitForFunction(() => { const P = window.RTT_PUTT._state().play; return P.state !== 'roll' && P.strokes >= 1; }, null, { timeout:30000 });
     const after = await pg.evaluate(() => { const P = window.RTT_PUTT._state().play; return { ball:P.ball, strokes:P.strokes, state:P.state }; });
     claim(after.strokes >= 1 && (after.state === 'done' || Math.hypot(after.ball[0] - before[0], after.ball[1] - before[1]) > 1), `a pull back and release putts the ball (${after.strokes} stroke, ${after.state})`);
+    const dres = await pg.evaluate(() => { const S = window.RTT_PUTT._state(), P = S.play, C = P.C; P.t0 = performance.now() - 12345; P.strokes = 2; P.state = 'done';
+      Object.keys(localStorage).filter(x => x.indexOf('bag_ppt_v1') === 0).forEach(k0 => { const s0 = JSON.parse(localStorage.getItem(k0)); s0.daily = {}; localStorage.setItem(k0, JSON.stringify(s0)); });
+      window.RTT_PUTT._dailyFinish(2, C.par, Math.round(performance.now() - P.t0)); const d = Object.keys(localStorage).filter(x => x.indexOf('bag_ppt_v1') === 0).map(k => Object.values(JSON.parse(localStorage.getItem(k)).daily || {}).find(v => v.done)).find(Boolean); return { ms:d && d.ms, txt:document.body.innerText }; });
+    claim(dres.ms >= 12345 && dres.ms < 14000 && /0:12\.\d/.test(dres.txt), `a finished daily keeps its time and the result shows it (${dres.ms} ms)`);
     claim(await pg.evaluate(() => homeModeList().map(m => m.id).indexOf('putt') === 1), 'the Putt Putt Tour card comes second, right after Play 18');
     // ---- THE TOUR'S RULES, through the page. Each life is real: a fresh record for a fresh account.
     await pg.evaluate(() => { const st = window.RTT_PUTT._state(); if (st && st.play && st.play.strokes) { st.round.mode = 'x'; } document.querySelector('.pt-ov') && window.RTT_PUTT.close(); sbUser = { id:'chk' }; localStorage.removeItem('bag_ppt_v1@chk'); openPutt(); });
@@ -313,6 +322,13 @@ if (!args.includes('--no-browser')){
     const land = await pg.evaluate(() => [...document.querySelectorAll('.pp-band')].map(b => { const c = b.querySelector('.pp-land'); if (!c) return null;
       const x = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; const cols = new Set(); for (let i = 0; i < x.length; i += 4 * 37) cols.add(x[i] << 16 | x[i + 1] << 8 | x[i + 2]);
       return { cols:cols.size, exact:Math.abs(c.offsetWidth - c.width * 2) < 1 && Math.abs(c.offsetHeight - c.height * 2) < 1, covers:c.offsetWidth >= b.offsetWidth && c.offsetHeight >= b.offsetHeight }; }));
+    // LEVEL 1 SITS CLEAR OF THE TABS AND THE WORLD CHIP. Scrolled to the bottom, the first badge and the
+    // label under it must not touch either; a player sent a screenshot of level 1 under the tabs.
+    const clash = await pg.evaluate(() => { const m = document.querySelector('.pp-map'); m.scrollTop = m.scrollHeight;
+      const r = el => el.getBoundingClientRect(), b = r(document.querySelector('[data-lv="1"]')), lab = document.querySelector('[data-lv="1"] span'), lb = lab ? r(lab) : b;
+      const bot = Math.max(b.bottom, lb.bottom), hits = ['.pp-tabs', '.pp-wchip'].filter(q => { const t = r(document.querySelector(q)); return t.height && bot > t.top && b.top < t.bottom && b.right > t.left && b.left < t.right; });
+      return hits; });
+    claim(clash.length === 0, 'scrolled to the bottom, level 1 clears the tabs and the world chip' + (clash.length ? ': under ' + clash.join(', ') : ''));
     claim(land.every(l => l && l.cols > 60 && l.exact && l.covers), `every world on the map is painted as a landscape of its own, at exactly 2x, covering its band (${land.map(l => l ? l.cols : 'none').join(', ')} colours)`);
     const rec = () => pg.evaluate(() => JSON.parse(localStorage.getItem('bag_ppt_v1@chk') || '{}'));
     // a putt at a power, straight at the cup unless an aim is given (a hole with something in the way is aced round it)

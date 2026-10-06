@@ -1385,7 +1385,7 @@ var CSS = '\
 .pp-dside{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:5px}.pp-hub .pp-daily .pp-dside .g{background:#f08a24;color:#2a1606;border-radius:12px;padding:11px 18px;font-size:16px;font-weight:900}.pp-dside .rw{font-size:10.5px;font-weight:900;color:#ffd45e;white-space:nowrap}\
 @media (min-width:900px){.pp-hdr{padding:18px 28px 40px;gap:14px}.pp-av{width:52px;height:52px}.pp-hdr .pp-h,.pp-hdr .pp-h svg{width:30px;height:26px}.pp-hclock{font-size:15px}.pp-cpill{font-size:19px;padding:8px 16px}.pp-cpill:before{width:16px;height:16px}.pp-cx{width:46px;height:46px;font-size:20px}\
   .pp-hub .pp-daily{top:84px;max-width:640px;padding:16px 18px;gap:18px;border-radius:22px}.pp-dtile{width:72px}.pp-dtile .dy{font-size:38px}.pp-dk b{font-size:13px}.pp-hub .pp-daily .t{font-size:32px}.pp-hub .pp-daily .m,.pp-dends{font-size:15px}.pp-hub .pp-daily .pp-dside .g{font-size:20px;padding:14px 26px}.pp-dside .rw{font-size:13px}\
-  .pp-wchip{left:28px;bottom:24px;font-size:15px;padding:10px 18px}.pp-oolb{max-width:560px;gap:14px}.pp-oolb .pp-big{font-size:84px}}.pp-tabs{position:absolute;z-index:2;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 12px);white-space:nowrap;display:flex;gap:4px;padding:4px;border-radius:999px;background:rgba(10,18,26,.88);border:1px solid rgba(255,255,255,.14)}.pp-tabs button{border:0;border-radius:999px;padding:8px 13px;font:inherit;font-size:12px;font-weight:900;letter-spacing:.04em;background:transparent;color:#cfd8e3;cursor:pointer}.pp-tabs button.on{background:#F1D04A;color:#10241a}.pp-tabs i{font-style:normal;color:#ffd45e}.pp-tabs .on i{color:#7a4d00}.pp-tabs s{text-decoration:none;font-size:11px;margin-left:2px}.pp-mem .pp-map{background:#120c1e}.pp-memsh .pp-card{border:2px solid #f08a24;background:linear-gradient(160deg,#2c1d46,#160f28)}.pp-memsh .k{color:#ffd45e;font-weight:900;font-size:11px;letter-spacing:.12em}.pp-memrw{margin:10px 0;font-size:13px;line-height:1.5;color:#e9e1ff}.pp-memrw b{color:#ffd45e}@media (max-width:899px){.pp-hub .pp-wchip{bottom:calc(env(safe-area-inset-bottom,0px) + 64px)}}@media (min-width:900px){.pp-tabs{bottom:22px}.pp-tabs button{font-size:15px;padding:11px 18px}}.pp-strk{display:flex;align-items:center;gap:6px;background:rgba(10,18,26,.82);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:6px 12px;font-weight:900;font-size:13px;color:#fff}'
+  .pp-wchip{left:28px;bottom:24px;font-size:15px;padding:10px 18px}.pp-oolb{max-width:560px;gap:14px}.pp-oolb .pp-big{font-size:84px}}.pp-tabs{position:absolute;z-index:2;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 12px);white-space:nowrap;display:flex;gap:4px;padding:4px;border-radius:999px;background:rgba(10,18,26,.88);border:1px solid rgba(255,255,255,.14)}.pp-tabs button{border:0;border-radius:999px;padding:8px 13px;font:inherit;font-size:12px;font-weight:900;letter-spacing:.04em;background:transparent;color:#cfd8e3;cursor:pointer}.pp-tabs button.on{background:#F1D04A;color:#10241a}.pp-tabs i{font-style:normal;color:#ffd45e}.pp-tabs .on i{color:#7a4d00}.pp-tabs s{text-decoration:none;font-size:11px;margin-left:2px}.pp-mem .pp-map{background:#120c1e}.pp-memsh .pp-card{border:2px solid #f08a24;background:linear-gradient(160deg,#2c1d46,#160f28)}.pp-memsh .k{color:#ffd45e;font-weight:900;font-size:11px;letter-spacing:.12em}.pp-memrw{margin:10px 0;font-size:13px;line-height:1.5;color:#e9e1ff}.pp-memrw b{color:#ffd45e}@media (max-width:899px){.pp-hub .pp-wchip{bottom:calc(env(safe-area-inset-bottom,0px) + 64px)}}@media (min-width:900px){.pp-tabs{bottom:22px}.pp-tabs button{font-size:15px;padding:11px 18px}}.pp-clock{display:flex;align-items:center;gap:5px;margin-left:auto;background:rgba(10,18,26,.85);border:1px solid #f08a24;border-radius:999px;padding:5px 11px;font-weight:900;font-size:14px;color:#fff;font-variant-numeric:tabular-nums}.pp-clock i{width:8px;height:8px;border-radius:50%;background:#f08a24;animation:ppblink 1s steps(2) infinite}@keyframes ppblink{50%{opacity:.25}}.pp-dres .sc .pp-tm{margin-left:14px}.pp-strk{display:flex;align-items:center;gap:6px;background:rgba(10,18,26,.82);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:6px 12px;font-weight:900;font-size:13px;color:#fff}'
 
 var S = null;   // the open game, or null
 function el(html){ var d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstChild; }
@@ -1510,7 +1510,7 @@ function showHub(tid){
       <span class="pp-dtile" style="--dt:' + dT.acc + '"><span class="mo">' + monthDay(dk).split(' ')[0] + '</span><span class="dy">' + (+dk.slice(8, 10)) + '</span></span>\
       <span class="pp-dmid"><span class="pp-dk"><b>Daily Challenge</b>' + (st.streak.n > 1 ? '<i class="pp-dstreak">' + st.streak.n + ' day streak</i>' : '') + '</span>\
         <span class="t">' + esc(dh.name) + '</span>\
-        <span class="m">' + (drec && drec.done ? 'You shot ' + drec.s + ' (par ' + drec.par + ')' : esc(dT.name) + ' · par ' + buildHole(dh).par + ' · one scored try') + '</span>\
+        <span class="m">' + (drec && drec.done ? 'You shot ' + drec.s + ' (par ' + drec.par + ')' + (drec.ms != null ? ' in ' + clockTxt(drec.ms) : '') : esc(dT.name) + ' · par ' + buildHole(dh).par + ' · timed, one try') + '</span>\
         <span class="pp-dends">' + (drec && drec.done ? 'Next hole in ' : 'Ends in ') + '<b data-dcount>' + hms(msToNextDay()) + '</b></span></span>\
       <span class="pp-dside"><span class="g">' + (drec && drec.done ? 'Result' : 'Play') + '</span><span class="rw">' + (drec && drec.done ? 'Played' : '+' + COIN_DAILY + ' coins') + '</span></span></button>' +
     '<div class="pp-wchip" data-wchip></div>' +
@@ -1546,7 +1546,7 @@ function membersSheet(){
    ground. The golfer stands on the level being played and the map opens scrolled to it. */
 function drawMap(st, TR){
   TR = TR || tourOf(S.tour); var tp = st.tours[TR.id], K = TR.per || PER, WS = TR.worlds;
-  var box = S.ov.querySelector('[data-map]'), N = TR.levels.length, STEP = 92, PADB = 70, WH = 64, H = N * STEP + WS.length * WH + PADB + 60, W = 340;
+  var box = S.ov.querySelector('[data-map]'), N = TR.levels.length, STEP = 92, PADB = 190, WH = 64, H = N * STEP + WS.length * WH + PADB + 60, W = 340;
   var pos = []; for (var n = 1; n <= N; n++){ var w = Math.floor((n - 1) / K), y = H - PADB - (n - 1) * STEP - w * WH, x = W / 2 + Math.sin((n - 1) * 0.9) * 105; pos.push([x, y]); }
   var bands = WS.map(function(Wd, w){ var T = THEMES[Wd.theme], top = pos[Math.min(N, w * K + K) - 1][1] - STEP / 2 - WH, bot = w === 0 ? H : pos[w * K][1] + STEP / 2;
     return '<div class="pp-band" data-w="' + w + '" style="top:' + top + 'px;height:' + (bot - top) + 'px;background:linear-gradient(180deg,' + T.bg2 + ',' + T.bg + ')"></div>\
@@ -1646,7 +1646,7 @@ function leaveHole(){
   if (R && R.mode === 'ppt' && P && P.strokes > 0 && P.state !== 'done'){
     return confirmSheet('Leave this hole?', 'You have putted, so leaving costs a life.', 'Leave · lose a life', function(){ var st = pload(); loseLife(st); showHub(); }); }
   if (R && R.mode === 'pdaily' && P && P.strokes > 0 && P.state !== 'done'){
-    return confirmSheet('Leave the Daily Hole?', 'You get one scored try a day. Leaving now scores it as a pick up.', 'Leave and score it', function(){ dailyFinish(P.C.par + 3, P.C.par); }); }
+    return confirmSheet('Leave the Daily Hole?', 'You get one scored try a day. Leaving now scores it as a pick up.', 'Leave and score it', function(){ dailyFinish(P.C.par + 3, P.C.par, null); }); }
   showHub();
 }
 function restartHole(){
@@ -1709,10 +1709,22 @@ function worldComplete(n, s, par, got, tid){
 }
 
 /* ----------------------------------------------------------------------------- the Daily Hole */
-function dailyFinish(s, par){
+/* THE DAILY HOLE IS TIMED. Everybody plays the same hole, so strokes alone put most of the field on
+   one score. The clock starts on the first frame the hole is drawn (not on the first putt, or a player
+   could study it for free) and stops when the ball drops. Fewer strokes still win; the time breaks the
+   tie. A pick up has no time. */
+function dailyMs(P){ return P.t0 ? Math.round(performance.now() - P.t0) : null; }
+function clockTxt(ms){ if (ms == null) return ''; var t = Math.floor(ms / 100), m = Math.floor(t / 600), sec = Math.floor(t / 10) % 60; return m + ':' + (sec < 10 ? '0' : '') + sec + '.' + (t % 10); }
+function dailyClock(P){
+  if (!P.t0) P.t0 = performance.now();
+  if (P.state === 'done') return;
+  var el = S.clockEl && S.clockEl.isConnected ? S.clockEl : (S.clockEl = S.ov.querySelector('[data-dclock]'));
+  if (!el) return; var txt = clockTxt(performance.now() - P.t0); if (el.textContent !== txt) el.textContent = txt;
+}
+function dailyFinish(s, par, ms){
   var st = pload(), dk = S.round.day, rec = st.daily[dk];
   if (rec && rec.done) return dailyResult();
-  st.daily[dk] = { s:s, par:par, done:1 };
+  st.daily[dk] = { s:s, par:par, ms:ms == null ? null : ms, done:1 };
   var got = COIN_DAILY + (s < par ? COIN_DAILY_PAR : 0);
   // the streak counts days played in a row, on the game's own calendar
   var y = new Date(Date.parse(dk + 'T12:00:00Z') - 86400000).toISOString().slice(0, 10);
@@ -1729,14 +1741,14 @@ function dailyResult(got){
   cancelAnimationFrame(S.raf); S.screen = 'card';
   S.ov.innerHTML = hdr('<span class="pp-strk">Streak ' + (st.streak.n || 1) + '</span>') + '<div class="pt-menu" style="padding-top:4px">\
     <div class="pp-dres"><div class="k">Daily Hole · ' + monthDay(dk) + '</div><div class="nm">' + esc(dh.name) + '</div><div class="m" style="opacity:.8">' + esc(T.name) + '</div><span class="th" data-th></span>\
-      <div class="sc"><b>' + rec.s + '</b><span>' + (rec.s === 1 ? 'stroke' : 'strokes') + '<br>par ' + rec.par + '</span></div>\
+      <div class="sc"><b>' + rec.s + '</b><span>' + (rec.s === 1 ? 'stroke' : 'strokes') + '<br>par ' + rec.par + '</span>' + (rec.ms != null ? '<b class="pp-tm">' + clockTxt(rec.ms) + '</b><span>time</span>' : '') + '</div>\
       <div class="m" style="color:#ffd9a8;font-weight:800">' + esc(label) + (rec.s < rec.par ? ' · beat par' : '') + (st.streak.best > 1 ? ' · best streak ' + st.streak.best : '') + '</div>' + (got ? '<div class="pp-coins">+' + got + ' coins</div>' : '') + '</div>\
-    <div class="pt-card" style="cursor:default"><div class="k">Leaderboard</div><div class="m">The shared Daily Hole board needs the server ledger, which is not built yet. Your own result is saved.</div></div>\
+    <div class="pt-card" style="cursor:default"><div class="k">Leaderboard</div><div class="m">Fewest strokes wins and the clock breaks a tie. The shared board needs the server ledger, which is not built yet. Your own result is saved.</div></div>\
     <button class="pt-go" data-share style="background:#12a08f;color:#fff;padding:14px">Share</button><button class="pt-bt" data-menu style="padding:13px">Map</button>\
     <div class="m" style="text-align:center;color:#a9a3c9">Played. Next Daily Hole in ' + hm(msToNextDay()) + '.</div></div>';
   setTimeout(function(){ if (S && S.screen === 'card') thumb(S.ov.querySelector('[data-th]'), dh, 'd' + dk); }, 30);
   S.ov.querySelector('[data-x]').onclick = showHub; S.ov.querySelector('[data-menu]').onclick = showHub;
-  S.ov.querySelector('[data-share]').onclick = function(e){ var txt = 'Run The Tour · Putt Putt Tour Daily Hole ' + dk + '\n' + T.name + ': ' + dh.name + '\n' + label + ' (' + rec.s + ', par ' + rec.par + ')\nrunthe.gg/golf';
+  S.ov.querySelector('[data-share]').onclick = function(e){ var txt = 'Run The Tour · Putt Putt Tour Daily Hole ' + dk + '\n' + T.name + ': ' + dh.name + '\n' + label + ' (' + rec.s + ', par ' + rec.par + ')' + (rec.ms != null ? ' in ' + clockTxt(rec.ms) : '') + '\nrunthe.gg/golf';
     try{ navigator.clipboard.writeText(txt); e.currentTarget.textContent = 'Copied'; }catch(err){} };
 }
 
@@ -1807,6 +1819,7 @@ function playHole(){
     '<div class="pt-hint" data-hint></div><button class="pt-bt" data-ov hidden aria-label="See the whole hole">Overview</button><button class="pt-bt" data-restart aria-label="Restart the hole">↺</button></div>';
   if (R.mode === 'ppt'){ var tp = S.ov.querySelector('.pt-top'), u = golferUrl(); tp.classList.add('pp-play'); var bx = tp.querySelector('[data-x]'); bx.textContent = '✕'; bx.setAttribute('aria-label', 'Leave the hole');
     bx.insertAdjacentHTML('afterend', '<i class="pp-av" style="' + (u ? 'background-image:url(' + u + ')' : '') + '"></i><span class="pp-hearts">' + hearts(pload()) + '</span>'); }
+  if (R.mode === 'pdaily'){ var tb = S.ov.querySelector('.pt-top'); if (tb) tb.insertAdjacentHTML('beforeend', '<span class="pp-clock" aria-label="Time"><i></i><b data-dclock>0:00.0</b></span>'); S.clockEl = null; }
   S.ov.querySelector('[data-x]').onclick = function(){ leaveHole(); };
   S.ov.querySelector('[data-restart]').onclick = function(){ restartHole(); };
   var ovb = S.ov.querySelector('[data-ov]'); ovb.onclick = function(){ if (!S.play) return; S.play.overview = !S.play.overview; ovb.classList.toggle('on', S.play.overview); S.play.camNow = null; };
@@ -1944,6 +1957,7 @@ function frame(){
   S.raf = requestAnimationFrame(frame);
   var P = S.play, C = P.C, ctx = S.cv.getContext('2d'), W = S.cv.width, H = S.cv.height, now = gnow() / 1000, clock = now - P.clock0;
   v3Tick();
+  if (S.round.mode === 'pdaily') dailyClock(P);
   // where the ball is: at rest, or partway along the putt it is playing back
   var bx = P.ball[0], by = P.ball[1], falling = 0, bz = 0, hidden = false;
   if (P.state === 'roll'){
@@ -2194,7 +2208,7 @@ function drawGolfer(ctx, P, cam){
 function holeOut(picked){
   var P = S.play, R = S.round, C = P.C, s = picked ? P.cap : P.strokes, par = C.par;
   if (R.mode === 'ppt'){ P.state = 'done'; return tourOut(true); }
-  if (R.mode === 'pdaily'){ P.state = 'done'; return dailyFinish(s, par); }
+  if (R.mode === 'pdaily'){ P.state = 'done'; return dailyFinish(s, par, picked ? null : dailyMs(P)); }
   R.cards.push({ s:s, p:par, n:(R.i + 1), name:C.kind === 'real' ? C.sub : (R.holes[R.i].name || C.name) });
   var label = picked ? 'Picked up' : (C.kind === 'real' ? (s === 1 ? 'One putt' : s === 2 ? 'Two putts' : s + ' putts') : scoreName(s, par));
   if (!picked && s <= par - 1) try{ S.host.sfx && S.host.sfx('holeGood'); }catch(e){}
@@ -2235,6 +2249,7 @@ function scorecard(){
 }
 RTT_PUTT.open = open; RTT_PUTT.close = close; RTT_PUTT.paintCourse = paintCourse; RTT_PUTT.SKIN = SKIN;
 RTT_PUTT._state = function(){ return S; };
+RTT_PUTT._dailyFinish = function(s, par, ms){ return dailyFinish(s, par, ms); };
 // the checker's door straight onto a Tour level. Nothing on the page calls it.
 RTT_PUTT._level = function(n, tid){ if (S) startLevel(n, tid || 'main'); };
 // a hole built from a function, for trying out a layout in the browser: RTT_PUTT._try(function(T){ return H; }, 'clubhouse')
@@ -2245,7 +2260,7 @@ RTT_PUTT.COINS = { hole:COIN_HOLE, sig:COIN_SIG, ace:COIN_ACE, world:COIN_WORLD,
 RTT_PUTT.summary = function(host){ HOSTX = host || HOSTX; var st = pload(), dk = today(), dh = dailyHole(dk), rec = st.daily[dk];
   var tm = st.tours.main, lv = Math.min(tm.lv, LEVELS.length);
   return { lv:lv, levels:LEVELS.length, world:worldOf(lv, 'main').name, members:membersOpen(), lives:st.lives, max:livesMax(), refillAt:st.refillAt || null,
-    daily:{ name:dh.name, theme:THEMES[dh.theme].name, kick:THEMES[dh.theme].kick, done:!!(rec && rec.done), s:rec && rec.s, par:rec && rec.par }, nextMs:msToNextDay() }; };
+    daily:{ name:dh.name, theme:THEMES[dh.theme].name, kick:THEMES[dh.theme].kick, done:!!(rec && rec.done), s:rec && rec.s, par:rec && rec.par, ms:rec && rec.ms }, nextMs:msToNextDay() }; };
 // the checker's door: start a round at a given hole. Nothing on the page calls it.
 RTT_PUTT._go = function(mode, arg, i){ if (!S) return; startRound(mode, arg); if (i){ S.round.i = i; playHole(); } };
 
