@@ -1959,24 +1959,54 @@ function mateBy(L, tag) {
   const r = rngAt(L, 'mate:' + tag);
   return list[Math.floor(r() * list.length)].n;
 }
-/* ─── the invented locker room ─────────────────────────────────────────────
-   REAL PEOPLE STAY ON THE COURT. The players and coaches off the data appear in
-   games, rosters, trades, awards, hirings and firings, and nowhere else: never
-   in a quote, a feud, a night out or a podcast. The drama a locker room makes
-   has to belong to somebody, so every club carries three invented players, seeded
-   per career, club and three-season era, who turn over the way a real bench does.
-   {tm} and {tm2} are two of them, {tvet} the veteran, {trook} the rookie and {tco}
-   the other scorer. {topp} is an invented player on another club. check-career
-   section 5c fails on a real token in any event that is not about basketball. */
+/* ─── the locker room ──────────────────────────────────────────────────────
+   On a story career in the league, the locker room is the REAL one: {tvet} is
+   the oldest man on your club, {trook} the youngest, {tco} the best of the rest,
+   and {tm} and {tm2} two of those three. {topp} is a real player on another club
+   and a feud's {foe} is one too. The owner's call (2026-10): invented names in
+   a feud or a fight were too hard to follow. Who is in the room is read off
+   today's rosters at the moment the card is drawn, so a traded or retired man
+   is never named. Everywhere else (high school, college, overseas, a career
+   from before the story engine) there is no real roster to read, so every club
+   carries three invented players, seeded per career, club and three-season era,
+   who turn over the way a real bench does. */
 const LOCKER_ROLES = [['vet', 31, 4], ['rook', 20, 2], ['co', 25, 3]];
+function realLocker(L, club) {
+  if (!storyOn(L) || L.stage !== 'nba' || CLUBS.indexOf(club) < 0) return null;
+  const m = matesOf(L, club).filter((x) => x.n);
+  if (m.length < 3) return null;
+  const left = m.slice();
+  const take = (f) => { const i = left.indexOf(f(left)); return left.splice(i, 1)[0]; };
+  const vet = take((a) => a.reduce((b, x) => x.age > b.age ? x : b));
+  const rook = take((a) => a.reduce((b, x) => x.age < b.age ? x : b));
+  const co = left[0];
+  return [['vet', vet], ['rook', rook], ['co', co]].map((x) => ({ n: x[1].n, role: x[0], age: x[1].age, real: x[1].real ? 1 : 0 }));
+}
 function lockerOf(L, club) {
   club = club || L.team || (L.am && (L.am.college || (L.am.hs && L.am.hs.name))) || 'am';
+  const real = realLocker(L, club);
+  if (real) return real;
   return LOCKER_ROLES.map(function(x, i) {
     const era = Math.floor((L.year + i) / 3);
     const key = 'lk:' + club + ':' + x[0] + ':' + era;
     const r = rngAt({ seed: L.seed, year: 0 }, key);
     return { n: personName(L, key), role: x[0], age: x[1] + Math.floor(r() * x[2]) };
   });
+}
+/* A real player on another club, for a story card about somebody across the
+   league: one of the top four on a club drawn off the key, the same
+   conference twice as often, because that is who you see four times. */
+function realOpp(L, key) {
+  if (!storyOn(L) || L.stage !== 'nba') return null;
+  const r = rngAt(L, 'ropp:' + key);
+  const conf = L.team ? confOf(L.team) : 'East';
+  const pool = CLUBS.filter((c) => c !== L.team && (confOf(c) === conf || r() < 0.5));
+  for (let i = 0; i < 4 && pool.length; i++) {
+    const c = pool.splice(Math.floor(r() * pool.length), 1)[0];
+    const m = matesOf(L, c).slice(0, 4).filter((x) => x.n);
+    if (m.length) return m[Math.floor(r() * m.length)].n;
+  }
+  return null;
 }
 function lockerBy(L, tag) {
   const m = lockerOf(L);
@@ -2055,7 +2085,7 @@ function peopleKey(L, k) {
     case 'tvet': return lockerOf(L)[0].n;
     case 'trook': return lockerOf(L)[1].n;
     case 'tco': return lockerOf(L)[2].n;
-    case 'topp': return personName(L, 'topp:' + L.steps);
+    case 'topp': return realOpp(L, 'topp:' + L.steps) || personName(L, 'topp:' + L.steps);
     case 'rival': return L.rival ? L.rival.name : CAST.dre;
     case 'foe': return arcData(L, 'feud').n || personName(L, 'foe');
     case 'oldvet': return arcData(L, 'mentor').n || personName(L, 'oldvet');
@@ -3449,6 +3479,8 @@ const DUEL_SWING = 0.3;
 /* The night's teammate: invented, named when the card is dealt, so the man
    who saves you is the man the card promised. */
 function duelMate(L, tag) { const m = lockerOf(L); return m[Math.floor(rngAt(L, 'mate:' + tag)() * m.length)].n; }
+/* A real teammate is drawn faceless on the court, like every real man there. */
+function mateIsReal(L) { return lockerOf(L)[0].real != null; }
 function queueMoment(L, chunk) {
   if (!L.opt || !L.opt.moments || !L.season || !L.team) return;
   const s = L.season, role = s.role || roleOf(L);
@@ -3470,7 +3502,7 @@ function queueMoment(L, chunk) {
     if (mine.length) {
       const row = mine[Math.floor(rngAt(L, 'momgame:' + chunk)() * mine.length)];
       opp = ctx.opp = row[1]; ctx.won = row[3] ? 1 : 0; ctx.g = row[0]; ctx.home = row[2];
-      ctx.mate = duelMate(L, 'mom:' + chunk);
+      ctx.mate = duelMate(L, 'mom:' + chunk); if (mateIsReal(L)) ctx.mateReal = 1;
     }
   }
   L.pending.push({
@@ -3591,7 +3623,7 @@ function clutchCard(L, cur, home) {
   const look = defenseLook(L, key + ':' + L.year);
   const opts = clutchOptions(L, look);
   const ctx = { round: cur.round, opp: cur.opp, home };
-  if (look) { ctx.look = look; ctx.mate = duelMate(L, key); }
+  if (look) { ctx.look = look; ctx.mate = duelMate(L, key); if (mateIsReal(L)) ctx.mateReal = 1; }
   return {
     id: 'clutch', kind: 'clutch', key,
     eyebrow: 'Game 7 · ' + ROUNDS[cur.round], scene: 'Game 7', title: "Tied, nine seconds, your ball. What's the play?",
@@ -4780,10 +4812,11 @@ const EVENTS = {
       { label: 'Call him tomorrow', hint: 'You need sleep', run: (L) => { relate(L, 'bff', -5); return 'You forget. He doesn\'t mention it.'; } },
     ],
   },
-  /* The setup of the feud arc. An invented player, named once and kept. */
+  /* The setup of the feud arc. A real player on another club in the league
+     (an invented one before it), named once and kept. */
   feud_start: {
     phases: ['early', 'mid'], req: { story: true, seasons: [1, null], fame: [25, null], minutes: [18, null] }, weight: 1.2, rarity: 'uncommon',
-    queue: (L) => arcStart(L, 'feud', null, 'early', 1, { n: personName(L, 'foe:' + L.year) }),
+    queue: (L) => arcStart(L, 'feud', null, 'early', 1, { n: realOpp(L, 'foe:' + L.year) || personName(L, 'foe:' + L.year) }),
     tag: 'Your phone',
     title: '{foe} calls you soft',
     text: () => 'He said it on his podcast, by name. The clip is in your phone forty times.',
@@ -6969,7 +7002,7 @@ function amClutchCard(L, t, g) {
   const look = defenseLook(L, key + ':' + L.year);
   const opts = clutchOptions(L, look);
   const ctx = { r: g.r };
-  if (look) { ctx.look = look; ctx.mate = duelMate(L, key); }
+  if (look) { ctx.look = look; ctx.mate = duelMate(L, key); if (mateIsReal(L)) ctx.mateReal = 1; }
   return {
     id: 'amclutch', kind: 'clutch', key, scene: t.kind === 'hs' ? 'The home gym' : 'March Madness',
     eyebrow: names[g.r] + ' · ' + (g.seed ? g.seed + ' seed ' : '') + g.opp,

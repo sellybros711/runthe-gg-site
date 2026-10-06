@@ -328,7 +328,7 @@ section('5. real players and coaches by name, everybody else generated');
    NBA event may only use one if BASKETBALL_ONLY lists it, with the reason.
    The source is scanned too, because the press room and the between-card
    actions are strings outside the event pool. */
-section('5c. real people stay on the court');
+section('5c. real people: on the court, and in the room on a story career');
 {
   const real = new RegExp('\\{(' + C.REAL_TOKENS.join('|') + ')(:\\w+)?\\}', 'g');
   const bad = [];
@@ -359,9 +359,28 @@ section('5c. real people stay on the court');
   /* The invented locker room: three a club, named, never a real player. */
   const L = C.newLife({ seed: 'locker', league });
   L.team = 'BOS';
+  L.opt.story = 0; /* a career from before the story engine: no real room to read */
   const lk = C.lockerOf(L);
   const realNames = new Set(ROWS.map((r) => r.n || r.name));
-  ok(lk.length === 3 && lk.every((m) => m.n && !realNames.has(m.n)), `every club carries three invented teammates (${lk.map((m) => m.n).join(', ')})`);
+  ok(lk.length === 3 && lk.every((m) => m.n && !realNames.has(m.n)), `off a story career, every club carries three invented teammates (${lk.map((m) => m.n).join(', ')})`);
+  /* A story career in the league reads the REAL room instead (the owner's
+     call, 2026-10): the oldest man, the youngest, and the best of the rest,
+     all on the club's roster right now, and {topp} a real man elsewhere. */
+  {
+    const S = C.newLife({ seed: 'locker-real', league, story: true });
+    S.stage = 'nba'; S.team = 'BOS';
+    if (C.storyOn(S)) {
+      const rk = C.lockerOf(S);
+      const room = new Set(C.matesOf(S, 'BOS').map((m) => m.n));
+      ok(rk.length === 3 && rk.every((m) => room.has(m.n)) && new Set(rk.map((m) => m.n)).size === 3, `a story career's locker room is three different men on its own roster (${rk.map((m) => m.n).join(', ')})`);
+      ok(rk[0].age >= Math.max(rk[1].age, rk[2].age) && rk[1].age <= rk[2].age, 'the veteran is the oldest of them and the rookie the youngest');
+      const op = C.say(S, '{topp}');
+      const elsewhere = C.CLUBS.filter((c) => c !== 'BOS').some((c) => C.matesOf(S, c).some((m) => m.n === op));
+      ok(elsewhere && !room.has(op), `{topp} is a real man on another club (${op})`);
+      S.stage = 'col';
+      ok(C.lockerOf(S).every((m) => m.real == null), 'off the league the room is invented again');
+    } else ok(false, 'a new career is a story career');
+  }
   ok(Object.values(C.CAST).every((n) => !realNames.has(n)), 'nobody in the recurring cast shares a name with a real player');
   const said = C.say(L, '{tm} {tm2} {tvet} {trook} {tco} {topp} {beat} {critic} {fan} {friend} {trainer}');
   ok(!/\{/.test(said), `every invented token resolves (${said})`);

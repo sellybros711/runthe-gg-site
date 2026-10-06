@@ -710,11 +710,11 @@ function moment(host, spec, cb){
   var rating = spec.rating || 60, pressure = spec.pressure || 0;
   var rn = (spec.rateName || 'Touch') + ' ' + (rating | 0);
   /* the people on the floor: a defender in the other kit, with no face, and
-     an invented teammate in yours */
+     a teammate in yours (faceless too when he is a real man) */
   var oppLook = B.lookFor('opp:' + (spec.oc || '') + ':' + (spec.seed || ''));
   var opp = { look: oppLook, c1: spec.oc || '#3a4566', c2: spec.oc2 || '#c9ccd6', num: '', age: 26, faceless: true };
   var opp2 = { look: B.lookFor('opp2:' + (spec.seed || '')), c1: opp.c1, c2: opp.c2, num: '', age: 27, faceless: true };
-  var mate = spec.mate && spec.mate.look ? { look: spec.mate.look, c1: spec.c1, c2: spec.c2, num: spec.mate.num || '', age: 26 } : null;
+  var mate = spec.mate && spec.mate.look ? { look: spec.mate.look, c1: spec.c1, c2: spec.c2, num: spec.mate.num || '', age: 26, faceless: !!spec.mate.faceless } : null;
   var celebrate = pickOf(R, mate ? ['roar', 'flex', 'point', 'chest', 'shimmy'] : ['roar', 'flex', 'point', 'shimmy']);
   var hurt = pickOf(R, ['head', 'hips', 'knees']);
   var rx = function(){ return st.rim[0]; }, x0 = function(){ return st.rim[0] + (variant === 'heave' ? -98 : M.at); };
