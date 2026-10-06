@@ -1011,7 +1011,19 @@ var CSS = '\
 .pp-dres .sc{grid-column:1/3;display:flex;align-items:center;gap:12px;margin-top:6px}.pp-dres .sc b{font-family:var(--display,inherit);font-size:64px;line-height:1;color:#F1D04A;font-weight:400}.pp-dres .sc span{font-size:15px;line-height:1.25}.pp-dres .m{grid-column:1/3}\
 .pt-top.pp-play{gap:8px;background:linear-gradient(#0a1420,#0e1c2a);border-bottom-color:rgba(255,255,255,.1)}.pp-play .pt-x{width:32px;height:32px;border-radius:50%;padding:0;font-size:14px}.pp-play .pp-av{width:30px;height:30px}.pp-play .pt-sc{display:none}.pp-play .pp-hearts{gap:2px}.pp-play .pp-h,.pp-play .pp-h svg{width:15px;height:13px}\
 .pp-play .pt-hd b{font-size:14px;color:#fbf2e0}.pp-play .pt-hd span{display:inline-block;max-width:100%;box-sizing:border-box;margin-top:3px;background:#F1D04A;color:#1c1606;font-weight:900;border-radius:999px;padding:2px 9px;font-size:11px}\
-.pt-ov>.pp-hdr{position:relative;background:none}.pp-strk{display:flex;align-items:center;gap:6px;background:rgba(10,18,26,.82);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:6px 12px;font-weight:900;font-size:13px;color:#fff}'
+.pt-ov>.pp-hdr{position:relative;background:none}\
+.pp-sizer{position:relative;overflow:hidden}.pp-sizer .pp-world{position:absolute;left:50%;top:0;margin:0;transform-origin:top center}\
+.pp-hub .pp-daily{display:flex;align-items:center;gap:12px;padding:12px 12px 12px 12px;border:0!important;background:linear-gradient(135deg,#3a1f63,#1c1438 60%)!important;box-shadow:0 0 0 2px #f08a24,0 10px 26px rgba(0,0,0,.45);overflow:hidden}\
+.pp-hub .pp-daily:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(115deg,rgba(255,255,255,.035) 0 14px,transparent 14px 28px);pointer-events:none}\
+.pp-dtile{flex:0 0 auto;width:54px;border-radius:10px;overflow:hidden;background:#fbf2e0;color:#1c1606;text-align:center;box-shadow:0 3px 0 rgba(0,0,0,.35)}.pp-dtile .mo{display:block;background:var(--dt,#f08a24);color:#fff;font-size:11px;font-weight:900;letter-spacing:.14em;padding:3px 0}.pp-dtile .dy{display:block;font-family:var(--display,inherit);font-size:28px;line-height:1.1;padding:2px 0 4px}\
+.pp-dmid{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;text-align:left}.pp-dk{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.pp-dk b{font-size:11px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:#f08a24}\
+.pp-dstreak{font-style:normal;font-size:10.5px;font-weight:900;background:rgba(240,138,36,.2);color:#ffb06a;border-radius:999px;padding:2px 7px}\
+.pp-hub .pp-daily .t{font-family:var(--display,inherit);font-size:22px;line-height:1.05;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pp-hub .pp-daily .m{font-size:12px;color:#d6cdf0;opacity:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\
+.pp-dends{font-size:12px;color:#d6cdf0}.pp-dends b{font-variant-numeric:tabular-nums;color:#fff;font-weight:900;letter-spacing:.02em}\
+.pp-dside{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:5px}.pp-hub .pp-daily .pp-dside .g{background:#f08a24;color:#2a1606;border-radius:12px;padding:11px 18px;font-size:16px;font-weight:900}.pp-dside .rw{font-size:10.5px;font-weight:900;color:#ffd45e;white-space:nowrap}\
+@media (min-width:900px){.pp-hdr{padding:18px 28px 40px;gap:14px}.pp-av{width:52px;height:52px}.pp-hdr .pp-h,.pp-hdr .pp-h svg{width:30px;height:26px}.pp-hclock{font-size:15px}.pp-cpill{font-size:19px;padding:8px 16px}.pp-cpill:before{width:16px;height:16px}.pp-cx{width:46px;height:46px;font-size:20px}\
+  .pp-hub .pp-daily{top:84px;max-width:640px;padding:16px 18px;gap:18px;border-radius:22px}.pp-dtile{width:72px}.pp-dtile .dy{font-size:38px}.pp-dk b{font-size:13px}.pp-hub .pp-daily .t{font-size:32px}.pp-hub .pp-daily .m,.pp-dends{font-size:15px}.pp-hub .pp-daily .pp-dside .g{font-size:20px;padding:14px 26px}.pp-dside .rw{font-size:13px}\
+  .pp-wchip{left:28px;bottom:24px;font-size:15px;padding:10px 18px}.pp-oolb{max-width:560px;gap:14px}.pp-oolb .pp-big{font-size:84px}}.pp-strk{display:flex;align-items:center;gap:6px;background:rgba(10,18,26,.82);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:6px 12px;font-weight:900;font-size:13px;color:#fff}'
 
 var S = null;   // the open game, or null
 function el(html){ var d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstChild; }
@@ -1108,16 +1120,22 @@ function showHub(){
   cancelAnimationFrame(S.raf); S.screen = 'menu'; S.play = null; clearInterval(S.tick);
   var st = pload(), dk = today(), dh = dailyHole(dk), dT = THEMES[dh.theme], drec = st.daily[dk];
   S.ov.innerHTML = '<div class="pp-hub"><div class="pp-map" data-map></div>' + hdr() +
-    '<button class="pp-daily" data-daily><span class="th" data-th></span>\
-      <span class="k">Daily Hole · ' + esc(dT.name) + '</span><span class="t">' + esc(dh.name) + '</span>\
-      <span class="m">' + (drec && drec.done ? 'Done · ' + drec.s + ' (par ' + drec.par + ') · next in ' + hm(msToNextDay()) : 'Not played · next in ' + hm(msToNextDay())) + (st.streak.n > 1 ? ' · Streak ' + st.streak.n : '') + '</span>\
-      <span class="g">' + (drec && drec.done ? 'Result' : 'Play') + '</span></button><div class="pp-wchip" data-wchip></div></div>';
+    '<button class="pp-daily" data-daily aria-label="Daily Challenge: ' + esc(dh.name) + '">\
+      <span class="pp-dtile" style="--dt:' + dT.acc + '"><span class="mo">' + monthDay(dk).split(' ')[0] + '</span><span class="dy">' + (+dk.slice(8, 10)) + '</span></span>\
+      <span class="pp-dmid"><span class="pp-dk"><b>Daily Challenge</b>' + (st.streak.n > 1 ? '<i class="pp-dstreak">' + st.streak.n + ' day streak</i>' : '') + '</span>\
+        <span class="t">' + esc(dh.name) + '</span>\
+        <span class="m">' + (drec && drec.done ? 'You shot ' + drec.s + ' (par ' + drec.par + ')' : esc(dT.name) + ' · par ' + buildHole(dh).par + ' · one scored try') + '</span>\
+        <span class="pp-dends">' + (drec && drec.done ? 'Next hole in ' : 'Ends in ') + '<b data-dcount>' + hms(msToNextDay()) + '</b></span></span>\
+      <span class="pp-dside"><span class="g">' + (drec && drec.done ? 'Result' : 'Play') + '</span><span class="rw">' + (drec && drec.done ? 'Played' : '+' + COIN_DAILY + ' coins') + '</span></span></button>' +
+    '<div class="pp-wchip" data-wchip></div></div>';
   S.ov.querySelector('[data-x]').onclick = close;
   S.ov.querySelector('[data-daily]').onclick = function(){ if (drec && drec.done) dailyResult(); else startDaily(); };
   drawMap(st);
-  setTimeout(function(){ if (S && S.screen === 'menu') thumb(S.ov.querySelector('[data-th]'), dh, 'd' + dk); }, 60);
   var clk = S.ov.querySelector('[data-clock]');
+  var dc = S.ov.querySelector('[data-dcount]'), dkNow = dk;
   var tick = function(){ var s2 = pload(); clk.textContent = s2.refillAt ? hms(s2.refillAt - Date.now()) : '';
+    if (today() !== dkNow) return showHub();   // a new Daily Challenge has arrived
+    if (dc) dc.textContent = hms(msToNextDay());
     var h = S.ov.querySelector('[data-hearts]'); if (h) h.innerHTML = hearts(s2); };
   tick(); S.tick = setInterval(function(){ if (!S || S.screen !== 'menu') return clearInterval(S && S.tick); tick(); }, 1000);
 }
@@ -1135,18 +1153,22 @@ function drawMap(st){
     return '<button class="' + cls + '" data-lv="' + n + '" style="left:' + p[0] + 'px;top:' + p[1] + 'px" aria-label="Level ' + n + (open ? '' : ', locked') + '">' +
       '<b>' + n + '</b>' + (cur ? '<span>Par ' + L.par + '</span>' : best != null ? '<span>' + (ace ? '1 ACE' : best) + '</span>' : '') + (L.sig ? '<i>★</i>' : '') + '</button>'; }).join('');
   var cp = pos[Math.min(N, st.lv) - 1];
-  box.innerHTML = '<div class="pp-world" style="height:' + H + 'px;width:' + W + 'px">' + bands +
+  /* THE MAP FILLS THE SCREEN. The world is drawn 340 wide with 200 of landscape either side, and on a
+     wider screen the whole thing is scaled up until the landscape reaches both edges, so a desktop is
+     the same picture larger rather than a phone's picture in a dark frame. */
+  var k = Math.max(1, (box.clientWidth || 390) / (W + 380)); S.mapK = k;
+  box.innerHTML = '<div class="pp-sizer" style="height:' + Math.ceil(H * k) + 'px"><div class="pp-world" style="height:' + H + 'px;width:' + W + 'px;transform:translateX(-50%) scale(' + k + ')">' + bands +
     '<svg class="pp-path" width="' + W + '" height="' + H + '"><path d="' + d + '"/></svg>' + badges +
-    '<div class="pp-me" style="left:' + (cp[0] > W / 2 + 50 ? cp[0] - 76 : cp[0] + 34) + 'px;top:' + (cp[1] + 22) + 'px">' + golferImg('pp-meimg') + '</div></div>';
+    '<div class="pp-me" style="left:' + (cp[0] > W / 2 + 50 ? cp[0] - 76 : cp[0] + 34) + 'px;top:' + (cp[1] + 22) + 'px">' + golferImg('pp-meimg') + '</div></div></div>';
   box.querySelectorAll('[data-lv]').forEach(function(b){ b.onclick = function(){ var n = +b.getAttribute('data-lv'); if (n > pload().lv) return toastHub('Beat level ' + (n - 1) + ' under par to open it.'); startLevel(n); }; });
   // the chip in the corner names the world in view and how much of it is beaten
   var chip = S.ov.querySelector('[data-wchip]'), lastW = -1;
-  function wchip(){ if (!chip) return; var mid = box.scrollTop + box.clientHeight * 0.55, w = 0;
-    for (var k = 0; k < WORLDS.length; k++) if (mid < pos[k * 10][1] + STEP / 2 + 1) w = k;
+  function wchip(){ if (!chip) return; var mid = (box.scrollTop + box.clientHeight * 0.55) / k, w = 0;
+    for (var wi = 0; wi < WORLDS.length; wi++) if (mid < pos[wi * 10][1] + STEP / 2 + 1) w = wi;
     if (w === lastW) return; lastW = w; var done = 0; for (var q = w * 10 + 1; q <= w * 10 + 10; q++) if (st.best[q] != null) done++;
     chip.textContent = 'World ' + (w + 1) + ' · ' + done + ' of 10'; }
   box.addEventListener('scroll', wchip, { passive:true });
-  requestAnimationFrame(function(){ box.scrollTop = Math.max(0, cp[1] - box.clientHeight * 0.6); wchip(); });
+  requestAnimationFrame(function(){ box.scrollTop = Math.max(0, cp[1] * k - box.clientHeight * 0.6); wchip(); });
   mapArt(box, pos);
 }
 /* EACH WORLD ON THE MAP IS A PLACE OF ITS OWN THEME, painted by mapland.js the way the mockups were:
@@ -1166,7 +1188,7 @@ function mapArt(box, pos){
       var top = parseFloat(band.style.top), bh = band.offsetHeight, bw = band.offsetWidth, cw = Math.ceil(bw / 2), ch = Math.ceil(bh / 2), key = w + ':' + cw + 'x' + ch;
       if (MAPART[key] === undefined){
         var pts = pos.map(function(p){ return [(p[0] + PADX) / 2, (p[1] - top) / 2]; });
-        var view = Math.min(box.clientWidth || 390, bw), vx0 = Math.round((bw - view) / 4) + 6, vx1 = Math.round((bw + view) / 4) - 6;
+        var view = Math.min((box.clientWidth || 390) / (S.mapK || 1), bw), vx0 = Math.round((bw - view) / 4) + 6, vx1 = Math.round((bw + view) / 4) - 6;
         try{ MAPART[key] = ML.make(WORLDS[w].theme, cw, ch, pts, { seed:11 + w * 17, vx0:vx0, vx1:vx1 }); }catch(e){ MAPART[key] = null; }
       }
       var src = MAPART[key];
@@ -1371,7 +1393,7 @@ function playHole(){
   var R = S.round, d = R.holes[R.i], C = buildHole(d);
   S.screen = 'play';
   S.play = { C:C, ball:C.tee.slice(), prev:C.tee.slice(), strokes:0, state:'aim', aimAng:Math.atan2(C.cup[1] - C.tee[1], C.cup[0] - C.tee[0]),
-    target:C.cup.slice(), firstFt:Math.hypot(C.cup[0] - C.tee[0], C.cup[1] - C.tee[1]), pow:0, trail:null, read:C.kind === 'real', clock0:performance.now() / 1000, art:null, v3:null, cam:null, cap:R.mode === 'ppt' ? C.par : (C.kind === 'real' ? 5 : C.par + 3) };
+    target:C.cup.slice(), firstFt:Math.hypot(C.cup[0] - C.tee[0], C.cup[1] - C.tee[1]), pow:0, trail:null, read:C.kind === 'real', clock0:gnow() / 1000, art:null, v3:null, cam:null, cap:R.mode === 'ppt' ? C.par : (C.kind === 'real' ? 5 : C.par + 3) };
   var cached = !d.real && v3Ok() && ((S.v3c && S.v3c[v3Key(d)]) || (S.v3job && S.v3job.k === v3Key(d) && v3Get(d, C)));
   if (cached) S.play.v3 = cached; else if (d.real || !v3Ok()) S.play.art = paintCourse(C);
   var sub = tourSub(R, C, S.play), title = R.mode === 'ppt' ? (C.kind === 'real' ? 'Tour Pin · ' + C.name : levelName(R.lv)) : R.title;
@@ -1488,12 +1510,18 @@ function onKey(e){
   else if (e.key === 'ArrowUp' || e.key === 'ArrowDown'){ e.preventDefault(); P.pow = clamp(P.pow + (e.key === 'ArrowUp' ? 1 : -1) * 0.01 * fine, 0, 1); }
   else if ((e.key === ' ' || e.key === 'Enter') && P.pow > 0.02){ e.preventDefault(); strike(); }
 }
+/* THE GAME RUNS A LITTLE FASTER THAN LIFE. The physics is real feet and real seconds, so a 20 ft putt
+   takes as long to watch as it would on a green, which felt slow on a phone. The whole course clock (the
+   ball's playback and every moving piece with it) runs at PLAY_RATE, so the ball rolls faster without one
+   number in the physics changing: the solver, the pars and every replay stay exactly as they were. */
+var PLAY_RATE = 1.45;
+function gnow(){ return performance.now() * PLAY_RATE; }
 function maxFt(C){ return C.kind === 'real' ? 60 : 42; }
 function strike(){
   var P = S.play, C = P.C, ft = P.pow * maxFt(C), v = speedFor(C, ft), a = C.kind === 'real' ? Math.atan2(P.target[1] - P.ball[1], P.target[0] - P.ball[0]) : P.aimAng;
-  var t0 = performance.now() / 1000 - P.clock0;
+  var t0 = gnow() / 1000 - P.clock0;
   P.shot = simulate(C, P.ball[0], P.ball[1], Math.cos(a) * v, Math.sin(a) * v, t0);
-  P.shotStart = performance.now(); P.shotAng = a; P.strokes++; P.state = 'roll'; P.pow = 0; P.evI = 0; P.prev = P.ball.slice(); P.lastFt = ft;
+  P.shotStart = gnow(); P.shotAng = a; P.strokes++; P.state = 'roll'; P.pow = 0; P.evI = 0; P.prev = P.ball.slice(); P.lastFt = ft;
   P.trail = P.shot.pts; hud();
 }
 function sound(k){ var h = S.host;
@@ -1503,12 +1531,12 @@ function sound(k){ var h = S.host;
 function frame(){
   if (!S || S.screen !== 'play') return;
   S.raf = requestAnimationFrame(frame);
-  var P = S.play, C = P.C, ctx = S.cv.getContext('2d'), W = S.cv.width, H = S.cv.height, now = performance.now() / 1000, clock = now - P.clock0;
+  var P = S.play, C = P.C, ctx = S.cv.getContext('2d'), W = S.cv.width, H = S.cv.height, now = gnow() / 1000, clock = now - P.clock0;
   v3Tick();
   // where the ball is: at rest, or partway along the putt it is playing back
   var bx = P.ball[0], by = P.ball[1], falling = 0;
   if (P.state === 'roll'){
-    var el2 = (performance.now() - P.shotStart) / 1000, pts = P.shot.pts, i = 0;
+    var el2 = (gnow() - P.shotStart) / 1000, pts = P.shot.pts, i = 0;
     while (i < pts.length - 1 && pts[i + 1][2] <= el2) i++;
     var a = pts[i], b = pts[Math.min(pts.length - 1, i + 1)], f = b[2] > a[2] ? clamp((el2 - a[2]) / (b[2] - a[2]), 0, 1) : 1;
     if (b[3]) f = 0;
@@ -1539,7 +1567,7 @@ function frame(){
   if (P.trail && P.state === 'aim') drawTrail(ctx, cam, P.trail);
   if (P.state === 'aim') drawAim(ctx, P, cam);
   // the golfer stands at the ball while aiming, and holds the follow through a moment once it is struck
-  if ((P.state === 'aim' && !(P.intro && performance.now() - P.intro < 1300)) || (P.state === 'roll' && performance.now() - P.shotStart < 900)) drawGolfer(ctx, P, cam);
+  if ((P.state === 'aim' && !(P.intro && performance.now() - P.intro < 1300)) || (P.state === 'roll' && (gnow() - P.shotStart) / PLAY_RATE < 900)) drawGolfer(ctx, P, cam);
   drawBall(ctx, cam, bx, by, falling);
   readChip(P, bx, by);
 }

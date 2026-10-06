@@ -315,7 +315,7 @@ if (!args.includes('--no-browser')){
     // the daily wears today's theme, read off the game's own day key
     await pg.evaluate(() => openPutt());
     await pg.waitForSelector('.pt-ov [data-daily]');
-    const th = await pg.evaluate(() => { const k = String(todayKey()), iso = k.slice(0, 4) + '-' + k.slice(4, 6) + '-' + k.slice(6, 8); return { want:window.RTT_PUTT.THEMES[window.RTT_PUTT.themeForDay(iso)].name, got:document.querySelector('[data-daily] .k').textContent }; });
+    const th = await pg.evaluate(() => { const k = String(todayKey()), iso = k.slice(0, 4) + '-' + k.slice(4, 6) + '-' + k.slice(6, 8); return { want:window.RTT_PUTT.THEMES[window.RTT_PUTT.themeForDay(iso)].name, got:document.querySelector('[data-daily] .m').textContent }; });
     claim(th.got.indexOf(th.want) >= 0, `the Daily Hole wears today's theme (${th.got})`);
     await pg.click('[data-daily]'); await pg.waitForSelector('.pt-stage canvas');
     await pg.waitForTimeout(300);
