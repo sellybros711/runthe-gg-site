@@ -1133,8 +1133,8 @@ var LEVELS = [
   // Fault Line: over the fault, under two rocks, with rails on the lava, two putts.
   { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -40)], [0, -2.5], [-2, -36]); H.comps.push({ k:'ridge', x:0, y:-16, nx:1, ny:0, w:1.6, a:0.45 }); slider(H, T, -22, -4, 4, 2.4, 0.2); slider(H, T, -28, 4, -4, 2.0, 0.6);
     zoneR(H, M.WATER, -6, -10, -4.6, -32); zoneR(H, M.WATER, 4.6, -10, 6, -32); blk(H, T, -4.9, -10, -4.6, -32); blk(H, T, 4.6, -10, 4.9, -32); return H; } },
-  // Tiki Torches: zig and zag past the lava, two putts. The secret: a tube in the dead end right of the first wall comes up at the cup.
-  { par:3, f:function(T){ var H = hole([rm(-7, 0, 7, -38)], [-4.5, -2.5], [4.5, -34]); blk(H, T, -7, -10, 2.5, -11.4); blk(H, T, -2.5, -20, 7, -21.4); blk(H, T, -7, -29, 2.5, -30.4);
+  // Tiki Torches: zig and zag past the lava, three putts. The secret: a tube in the dead end right of the first wall comes up at the cup.
+  { par:4, f:function(T){ var H = hole([rm(-7, 0, 7, -38)], [-4.5, -2.5], [4.5, -34]); blk(H, T, -7, -10, 2.5, -11.4); blk(H, T, -2.5, -20, 7, -21.4); blk(H, T, -7, -29, 2.5, -30.4);
     bumps(H, T, [[4.8, -15.5, 0.6], [-4.8, -25, 0.6]]); zoneR(H, M.WATER, -7, -12.4, -2.5, -16); zoneR(H, M.WATER, 2.5, -22.4, 7, -26); zoneR(H, M.WATER, -7, -31.4, -2.5, -34.5);
     pipe(H, T, 6.1, -8.6, 4.5, -32.6, 0, -1, 0.9, 0, 0.2); secret(H, 5.3, -7.8, 6.9, -9.4); return H; } },
   // Pyroclast: through the loop, over the lava jump and the curbed bridge, three putts.
