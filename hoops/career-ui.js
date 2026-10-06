@@ -341,6 +341,20 @@ var CSS = [
 '.cr-feed li:first-child{border-top:0;}',
 '.cr-feed .src{display:block;font:800 9px var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;color:var(--k-ink-3);margin-bottom:2px;}',
 '.cr-feed li.debate{color:var(--k-ink-2);font-style:italic;}',
+'.cr-fold{margin:0 0 12px;border:1px solid rgba(143,160,214,.18);padding:8px 10px;}',
+'.cr-fold summary{cursor:pointer;font:800 11px var(--k-f-text);letter-spacing:.1em;text-transform:uppercase;color:var(--k-ink-2);}',
+'.cr-fold[open] summary{margin-bottom:8px;}',
+'.cr-st2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}',
+'.cr-st-h{font:800 10px var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;color:var(--k-ink-3);}',
+'.cr-st{list-style:none;margin:4px 0 0;padding:0;font-size:12.5px;}',
+'.cr-st li{display:flex;justify-content:space-between;gap:6px;padding:2px 0;color:var(--k-ink-2);border-top:1px solid rgba(143,160,214,.08);}',
+'.cr-st li:nth-child(6),.cr-st li:nth-child(10){border-top-color:rgba(143,160,214,.35);}',
+'.cr-st li span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+'.cr-st .v{font-variant-numeric:tabular-nums;}',
+'.cr-st li.you,.cr-tx li.you{color:var(--k-ink);font-weight:700;}',
+'.cr-tx{max-height:340px;}',
+'.cr-picks{line-height:1.6;}',
+'.cr-picks .owe{color:var(--k-ink-3);}',
 '.cr-race{width:100%;margin:0 0 12px;}',
 '.cr-race tr.you td{color:var(--k-gold);font-weight:800;}',
 '.cr-known{display:flex;flex-wrap:wrap;gap:6px;padding:0 var(--k-s-4) 12px;background:var(--k-panel);}',
@@ -1236,11 +1250,19 @@ function teamHtml(L){
     var sep = i === 5 ? '<li class="cr-rot-sep" aria-hidden="true">Bench</li>' : '';
     var at = x.slot && x.slot !== x.pos ? x.pos + ', playing ' + x.slot : x.pos || '';
     return sep + '<li class="cr-rot-r' + (x.you ? ' you' : '') + (x.min <= 0 ? ' dnp' : '') + '"><span class="n">' + (x.slot || i + 1) + '</span>'
-      + '<span class="who"><b>' + esc(x.you ? x.n + ' (you)' : x.n) + '</b><small>' + esc(at) + ' · ' + x.age + ' · ' + esc(x.role) + '</small></span>'
+      + '<span class="who"><b>' + esc(x.you ? x.n + ' (you)' : x.n) + '</b><small>' + esc(at) + ' · ' + x.age + (x.pg ? ' · Pot ' + x.pg : '') + (x.yrs != null ? ' · ' + (x.yrs <= 1 ? 'expiring' : x.yrs + ' yrs') : '') + ' · ' + esc(x.role) + '</small></span>'
       + '<span class="v ovr">' + (x.ovr != null ? C.show(x.ovr) : '-') + '</span><span class="v pay">' + (x.pay ? money(x.pay) : '-') + '</span><span class="v">' + (x.min > 0 ? x.min : '-') + '</span><span class="v">' + pts + '</span></li>';
   }).join('');
   return head + '<p class="k-small cr-rot-line">' + line + '</p>'
-    + '<ol class="cr-rot" aria-label="Rotation"><li class="cr-rot-h" aria-hidden="true"><span class="n"></span><span class="who">Starters</span><span class="v">Ovr</span><span class="v pay">Pay</span><span class="v">Min</span><span class="v">Pts</span></li>' + rows + '</ol>';
+    + '<ol class="cr-rot" aria-label="Rotation"><li class="cr-rot-h" aria-hidden="true"><span class="n"></span><span class="who">Starters</span><span class="v">Ovr</span><span class="v pay">Pay</span><span class="v">Min</span><span class="v">Pts</span></li>' + rows + '</ol>'
+    + picksHtml(L, R.club);
+}
+/* The club's draft picks, four drafts out, and the firsts it has traded away. */
+function picksHtml(L, c){
+  var P = C.picksText ? C.picksText(L, c) : null;
+  if (!P || !P.have) return '';
+  return '<h3 class="cr-sub">Draft picks</h3><p class="k-small cr-picks">' + (P.have.length ? esc(P.have.join(' · ')) : 'None left.')
+    + (P.owe.length ? '<br><span class="owe">Owed: ' + esc(P.owe.join(' · ')) + '</span>' : '') + '</p>';
 }
 /* The people a career has met, closest and furthest first. */
 function peopleHtml(L){
@@ -1278,10 +1300,27 @@ function newsHtml(L){
     out += '<h3 class="cr-sub" style="margin-top:0">MVP ladder · the break</h3><table class="k-table cr-race"><tbody>'
       + s.race.map(function(x){ return '<tr class="' + (x.you ? 'you' : '') + '"><td>' + x.rank + '</td><td>' + esc(x.n) + '</td><td>' + esc(x.club ? E.TEAM_NAMES[x.club] || x.club : '') + '</td></tr>'; }).join('') + '</tbody></table>';
   }
+  out += leagueHtml(L);
   var F = (L.feed || []).slice().reverse().slice(0, 60);
   if (!F.length) return out + '<p class="k-small">Nothing written about you yet.</p>';
   return out + '<ul class="cr-feed">' + F.map(function(f){ return '<li class="' + (f.k === 'debate' ? 'debate' : '') + '"><span class="src">' + esc(f.s) + ' · ' + f.y + '</span>' + esc(f.t) + '</li>'; }).join('') + '</ul>';
 }
+/* The league office: last season's standings and every move, folded so the
+   news still leads. */
+function leagueHtml(L){
+  if (!C.leagueTable) return '';
+  var out = '', st = C.leagueTable(L), tx = C.transactions(L);
+  if (st) {
+    var col = function(name, list){ return '<div><b class="cr-st-h">' + name + '</b><ol class="cr-st">' + list.map(function(r){
+      return '<li class="' + (r[0] === L.team ? 'you' : '') + '"><span>' + esc(E.TEAM_NAMES[r[0]] || r[0]) + '</span><span class="v">' + r[1] + '-' + r[2] + '</span></li>'; }).join('') + '</ol></div>'; };
+    out += '<details class="cr-fold"><summary>Standings · ' + (st.y - 1) + '-' + String(st.y).slice(2) + '</summary><div class="cr-st2">' + col('East', st.E) + col('West', st.W) + '</div></details>';
+  }
+  if (tx.length) out += '<details class="cr-fold"><summary>Transactions · ' + tx.length + '</summary><ul class="cr-feed cr-tx">' + tx.slice(0, 60).map(function(x){
+    var mine = L.team && x.c && x.c.indexOf(L.team) >= 0;
+    return '<li class="' + (mine ? 'you' : '') + '"><span class="src">' + esc(TX_KIND[x.k] || 'Move') + ' · ' + x.y + '</span>' + esc(x.t) + '</li>'; }).join('') + '</ul></details>';
+  return out;
+}
+var TX_KIND = { trade: 'Trade', fa: 'Free agency', deal: 'Re-signed', draft: 'Draft', retire: 'Retired' };
 function td(l, v, cls){ return '<td data-l="' + l + '"' + (cls ? ' class="' + cls + '"' : '') + '>' + v + '</td>'; }
 function seasonsTable(L){
   var am = amTable(L.amHist || []);
@@ -1681,7 +1720,7 @@ function collegeOf(L){
    everything. The news flags only stop a headline twice and are left. */
 function trimLeague(lg){
   var o = {};
-  for (var k in lg) if (k !== 'news' && k !== 'rost' && k !== 'rostY' && k !== 'lines' && k !== 'pool' && k !== 'fa') o[k] = lg[k];
+  for (var k in lg) if (k !== 'news' && k !== 'rost' && k !== 'rostY' && k !== 'lines' && k !== 'pool' && k !== 'fa' && k !== 'fo') o[k] = lg[k];
   if (o.figs) o.figs = o.figs.filter(function(f){ return !f.gone; });
   if (o.champs) { var ks = Object.keys(o.champs).sort().slice(-40), c = {}; ks.forEach(function(y){ c[y] = o.champs[y]; }); o.champs = c; }
   return JSON.parse(JSON.stringify(o));
