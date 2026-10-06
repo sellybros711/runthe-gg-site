@@ -227,6 +227,15 @@ var CSS = [
 '.cr-choice .cr-ol{font:700 16px/1.25 var(--k-f-text);color:#fff;}',
 '.cr-choice small{font:600 12.5px/1.35 var(--k-f-text);color:#a9b2d6;margin-top:2px;}',
 '.cr-choice::after{content:"";position:absolute;right:14px;top:50%;width:9px;height:9px;margin-top:-5px;border:solid var(--cr-edge,var(--k-accent));border-width:3px 3px 0 0;transform:rotate(45deg);opacity:.85;}',
+'.cr-hasros{display:flex;gap:4px;align-items:stretch;}',
+'.cr-hasros .cr-choice{flex:1 1 auto;min-width:0;padding-right:12px;}',
+'.cr-hasros .cr-choice::after{display:none;}',
+'.cr-ros{flex:0 0 62px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:6px 4px;border:0;background:linear-gradient(180deg,#232c4c,#1a2140);color:var(--k-ink-2);font:700 10px/1 var(--k-f-text);letter-spacing:.06em;text-transform:uppercase;cursor:pointer;}',
+'.cr-ros:hover,.cr-ros:focus-visible{color:#fff;box-shadow:inset 0 0 0 2px var(--cr-edge,var(--k-accent));outline:none;}',
+'.cr-rot-ros li{grid-template-columns:2.2em minmax(0,1fr) 2.4em 3.6em;}',
+'.cr-ros-h{padding-left:12px;}',
+'.cr-ros-deal{margin:-6px 0 10px;color:var(--k-ink-2);}',
+'#cr-sheet .cr-rot-ros{max-height:52vh;overflow:auto;}',
 '.cr-choice:hover,.cr-choice.is-hover,.cr-choice:focus-visible{background:linear-gradient(180deg,#2b3660,#202a4f);box-shadow:inset 0 0 0 2px var(--cr-edge,var(--k-accent)),inset 0 -4px 0 rgba(0,0,0,.28);outline:none;}',
 '.cr-choice:active,.cr-choice.is-pressed{transform:translateY(2px);box-shadow:inset 0 0 0 2px var(--cr-edge,var(--k-accent));}',
 '.cr-card .k-opts li{animation:cr-opt-in 260ms var(--k-e-move) both;}',
@@ -1068,8 +1077,11 @@ function thirdFact(L){
 function cardHtml(L, c, fresh){
   var cls = c.kind === 'clutch' ? ' clutch k-gold' : c.kind === 'fa' ? ' fa' : '';
   var opts = c.options.map(function(o, i){
-    return '<li><button class="k-opt cr-choice" data-i="' + i + '"' + (i < 9 ? ' aria-keyshortcuts="' + (i + 1) + '"' : '') + '>'
-      + '<span class="k-key" aria-hidden="true">' + (i + 1) + '</span><span><span class="cr-ol">' + esc(o.label) + '</span>' + (o.hint ? '<small>' + esc(o.hint) + '</small>' : '') + '</span></button></li>';
+    /* An answer that is a club carries a second, smaller button: the club's
+       roster, so a man can see who he would be playing with before he signs. */
+    var ros = o.club && C.clubView ? '<button type="button" class="cr-ros" data-ros="' + i + '" aria-label="See the ' + esc(o.club) + ' roster">' + K.iconHtml('clip', 2) + '<span>Roster</span></button>' : '';
+    return '<li' + (ros ? ' class="cr-hasros"' : '') + '><button class="k-opt cr-choice" data-i="' + i + '"' + (i < 9 ? ' aria-keyshortcuts="' + (i + 1) + '"' : '') + '>'
+      + '<span class="k-key" aria-hidden="true">' + (i + 1) + '</span><span><span class="cr-ol">' + esc(o.label) + '</span>' + (o.hint ? '<small>' + esc(o.hint) + '</small>' : '') + '</span></button>' + ros + '</li>';
   }).join('');
   /* On a phone the card is the tray: it rises once when a decision arrives
      and fades its contents when one replaces another, and never moves when a
@@ -1445,6 +1457,9 @@ function wireLife(L, d){
   root.querySelectorAll('.cr-choice').forEach(function(b){
     b.onclick = function(){ doChoose(+b.getAttribute('data-i')); };
   });
+  root.querySelectorAll('[data-ros]').forEach(function(b){
+    b.onclick = function(){ openRoster(+b.getAttribute('data-ros')); };
+  });
   root.querySelectorAll('[data-act]').forEach(function(b){ b.onclick = function(){ doAct(b.getAttribute('data-act')); }; });
   root.querySelectorAll('[data-tab]').forEach(function(b){ b.onclick = function(){ tab = b.getAttribute('data-tab'); render(); var t = root.querySelector('[data-tab="' + tab + '"]'); if (t) t.focus(); }; });
   var off = $('cr-off');
@@ -1693,6 +1708,30 @@ function openOff(){
     + '<button class="k-btn k-sec k-block" id="cr-sheet-x" style="margin-top:12px">Close</button>', 'Off the court');
   var sh = $('cr-sheet');
   sh.querySelectorAll('[data-oact]').forEach(function(b){ b.onclick = function(){ doAct(b.getAttribute('data-oact')); }; });
+  $('cr-sheet-x').onclick = closeOff;
+}
+/* A CLUB'S ROSTER, from a card that offers it: who is there, best first,
+   with you placed where your overall puts you, and the same answer as the
+   card one press away. */
+function openRoster(i){
+  var L = store().cur, c = L && L.pending && L.pending[0], o = c && c.options[i];
+  if (!o || !o.club) return;
+  var V = C.clubView(L, o.club);
+  if (!V) return;
+  var ord = function(n){ var v = n % 100, x = ['th', 'st', 'nd', 'rd']; return n + (x[(v - 20) % 10] || x[v] || x[0]); };
+  var rows = V.list.map(function(m){
+    return '<li><span class="n">' + esc(m.pos || '') + '</span><span class="who"><b>' + esc(m.n) + '</b><small>' + m.age + (m.pg ? ' · Pot ' + m.pg : '') + (m.yrs != null ? ' · ' + (m.yrs <= 1 ? 'expiring' : m.yrs + ' yrs') : '') + '</small></span>'
+      + '<span class="v ovr">' + C.show(m.ovr) + '</span><span class="v pay">' + (m.pay ? money(m.pay) : '-') + '</span></li>';
+  });
+  var you = '<li class="you"><span class="n">' + esc(L.pos || '') + '</span><span class="who"><b>' + esc(L.name) + ' (you)</b><small>' + L.age + '</small></span><span class="v ovr">' + C.show(V.me) + '</span><span class="v pay">' + (o.hint && /\$[\d.]+M/.test(o.hint) ? o.hint.match(/\$[\d.]+M/)[0] : '-') + '</span></li>';
+  rows.splice(Math.min(V.at - 1, rows.length), 0, you);
+  var k = skin(V.club);
+  openSheet('<h3 class="k-h1 cr-ros-h" style="border-left:6px solid ' + k.primary + '">' + esc(teamName(V.club)) + '</h3>'
+    + '<p class="cash">' + esc(V.tier) + (V.coach ? ' · Coach ' + esc(V.coach) : '') + '. You would be their ' + (V.at === 1 ? '<b>best</b> player' : '<b>' + ord(V.at) + '</b> best player') + '.</p>'
+    + (o.hint ? '<p class="k-small cr-ros-deal">' + esc(o.hint) + '</p>' : '')
+    + '<ol class="cr-rot cr-rot-ros" aria-label="Roster"><li class="cr-rot-h" aria-hidden="true"><span class="n"></span><span class="who">Player</span><span class="v">Ovr</span><span class="v pay">Pay</span></li>' + rows.join('') + '</ol>'
+    + '<div class="cr-btnrow" style="margin:14px 0 0"><button class="k-btn" id="cr-ros-go" type="button">' + esc(o.label) + '</button><button class="k-btn k-sec" id="cr-sheet-x" type="button">Back</button></div>', teamName(V.club) + ' roster');
+  $('cr-ros-go').onclick = function(){ closeOff(); doChoose(i); };
   $('cr-sheet-x').onclick = closeOff;
 }
 function closeOff(){

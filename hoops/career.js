@@ -3862,6 +3862,17 @@ function offerFor(L, c, years, salary, own) {
   const capSal = round1(capFor(L.year) * maxPct(L) * AGENTS[L.agent].sal);
   return { club: c, years, salary: Math.min(salary, capSal), own: !!own, role, tier: clubTier(net) };
 }
+/* A CLUB, AS A MAN WEIGHING AN OFFER SEES IT: who is on it, best first, and
+   where he would land among them. Read off matesOf, the same roster the Team
+   tab shows, so the sheet and the season you then play are one answer. Draws
+   nothing from a career's random streams. */
+function clubView(L, c) {
+  if (!c || !L.league || !L.league.net) return null;
+  const list = matesOf(L, c).filter((m) => m.n !== L.name).slice(0, 15);
+  const me = L.stage === 'nba' ? effOvr(L) : ovrOf(L);
+  const ahead = list.filter((m) => m.ovr > me).length;
+  return { club: c, name: nick(c), tier: clubTier(clubNet(L, c)), coach: L.stage === 'nba' ? coachName(L, c) : '', list, at: ahead + 1, me };
+}
 function faCard(L, list, why) {
   return {
     id: 'fa', kind: 'fa', key: 'fa:' + (why || ''),
@@ -10660,7 +10671,7 @@ const publicAPI = {
   ARCHES, ARCH_KEYS, POS_ARCHES, archesFor, archBase, POS_SIZE, wtFor, wtRange, sizeOf, sizeTilt, heightText, BACKGROUNDS, BG_KEYS, AGENTS, AWARD_NAME, ROUNDS, VERDICTS, EVENTS,
   perfOf, coachStyle, COACH_STYLES, needAt, coachTalkCard, tradeDeadline, youW, weakSpot,
   picksText, leagueTable, transactions, clubModes, TEAM_EV, TEAM_KINDS,
-  seedLeague, normaliseNets, newLife, rotationOf, bestFive, fitAt, rostOf, rostNow, randomName, overall, ovrOf, step, choose, nextLabel,
+  seedLeague, normaliseNets, newLife, rotationOf, clubView, bestFive, fitAt, rostOf, rostNow, randomName, overall, ovrOf, step, choose, nextLabel,
   view, perGame, totals, legacy, legacyScore, clubNet, clubTier, rotationBar,
   roleOf, lineMeans, capFor, marketSalary, projectedPick, draftOrder, money, ordinal,
   clutchOptions, offers, ACTS, actsOpen, act, retireNow, lifeOf, lifeLine, sonsOf, rivalOn, featSummary, boardSummary, verdictOf,

@@ -11248,6 +11248,14 @@ here knows a man's next contract, so a later year is an estimate by design.
 answer outlived a change a reload would have seen, which check-career's reload test caught the
 moment ratings went to one decimal.
 
+**A CLUB ON A CARD OPENS ITS ROSTER.** Any answer carrying `club` (free agency, a
+two-way, Summer League, the deadline) gets a Roster button beside it. It opens
+`clubView(L, c)`: that club's players off `matesOf` (the Team tab's roster, so the
+sheet and the season agree), the tier, the coach, and where your overall would rank
+you. The sheet's own button is the same answer as the card's. `clubView` draws from
+no random stream. check-career's page walk opens one on a stand-in offer and signs
+from the first real one.
+
 **THE CAROUSEL** (`coachCarousel`, run from `driftLeague` every summer, the road years too):
 a club fires on how it played (your club on the record you actually played, and never after a
 title), a coach past 71 may retire, an interim is likely replaced, and the hire is weighted

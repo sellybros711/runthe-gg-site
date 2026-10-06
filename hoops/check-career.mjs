@@ -1414,6 +1414,7 @@ async function browser() {
 
   /* Play it out, pressing the first choice or the next button, reading the
      glass for a field that printed as nothing. */
+  let rosAsked = false, rosSigned = false;
   let presses = 0, junk = [], reloaded = false, offOpened = false, resumed = null, keyed = false, docked = false, offFold = [], cardsSeen = 0, tall = false, trayed = false, trayBad = [];
   const stagesSeen = {};
   while (presses++ < 900) {
@@ -1519,6 +1520,45 @@ async function browser() {
       ok(d !== 'fixed', `on a desktop the card stays in the column (${d})`);
       await page.setViewportSize({ width: 390, height: 844 });
       await page.evaluate(() => RTF_CAREER_UI.paintPress({ beats: [], result: null }));
+    }
+    /* A CLUB ON A CARD OPENS ITS ROSTER. Asked once on a stood-in offer at
+       the NBA stage (the card a walk meets is a coin toss), and then on the
+       first real card that carries one, where Sign from the sheet answers it. */
+    if (!rosAsked && st.card && st.stage === 'nba') {
+      rosAsked = true;
+      const r = await page.evaluate(() => {
+        const L = RTF_CAREER_UI.state().cur;
+        L.pending.unshift({ id: 'rostest', kind: 'fa', key: 'rostest', eyebrow: 'Free agency', scene: "Agent's office", title: 'Two offers. Where do you sign?',
+          options: [{ label: 'Sign with the Rockets', hint: '4 years, $34M a year · Starter · Contender', club: 'HOU' }, { label: 'Sign with the Jazz', hint: '4 years, $32M a year · Starter · Rebuilding', club: 'UTA' }] });
+        RTF_CAREER_UI.paintPress({ beats: [], result: null });
+        const btns = document.querySelectorAll('#cr-card [data-ros]').length;
+        document.querySelector('#cr-card [data-ros="1"]').click();
+        const sh = document.querySelector('#cr-sheet'), open = !sh.hidden;
+        const rows = sh.querySelectorAll('.cr-rot-ros li:not(.cr-rot-h)').length, you = sh.querySelectorAll('.cr-rot-ros li.you').length;
+        const h = (sh.querySelector('h3') || {}).textContent || '', go = (sh.querySelector('#cr-ros-go') || {}).textContent || '';
+        const junk = /\bundefined\b|\bNaN\b/.test(sh.innerText);
+        const ch = document.querySelector('#cr-card .cr-choice').getBoundingClientRect(), rb = document.querySelector('#cr-card [data-ros]').getBoundingClientRect();
+        sh.querySelector('#cr-sheet-x').click();
+        const shut = sh.hidden, still = L.pending[0].key === 'rostest';
+        L.pending.shift(); RTF_CAREER_UI.paintPress({ beats: [], result: null });
+        return { btns, open, rows, you, h, go, junk, shut, still, side: rb.left >= ch.right - 1 && rb.height >= 40 };
+      });
+      ok(r.btns === 2 && r.side, `every club answer carries a Roster button beside it, big enough to press (${r.btns})`);
+      ok(r.open && /Jazz/.test(r.h) && r.rows >= 10 && r.you === 1 && !r.junk, `Roster opens that club's players with you placed among them (${r.h}, ${r.rows} rows)`);
+      ok(r.go === 'Sign with the Jazz', `the sheet's own button is the same answer ("${r.go}")`);
+      ok(r.shut && r.still, 'Back closes it and the decision is still waiting');
+    }
+    if (rosAsked && !rosSigned && st.card) {
+      const real = await page.$('#cr-card [data-ros]');
+      if (real) {
+        rosSigned = true;
+        await real.click();
+        await page.waitForSelector('#cr-sheet:not([hidden]) #cr-ros-go');
+        await page.click('#cr-ros-go');
+        const after = await page.evaluate(() => { const s = RTF_CAREER_UI.state(); return { card: s.cur && s.cur.pending[0] ? s.cur.pending[0].key : null, shut: document.querySelector('#cr-sheet').hidden }; });
+        ok(after.shut && after.card !== st.card, `Sign from a real ${st.card} roster answers the card (${st.card} to ${after.card})`);
+        continue;
+      }
     }
     if (!keyed && st.card && st.steps >= 3) {
       keyed = true;
