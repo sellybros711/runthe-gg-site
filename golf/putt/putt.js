@@ -46,7 +46,7 @@ var V_MAX = 15;             // ft/s
 var ART = 0.25;             // ft per art pixel: the pixel grid the greens are painted on
 
 // materials, in the order a painter would lay them
-var M = { OUT:0, GREEN:1, FRINGE:2, ROUGH:3, SAND:4, WATER:5, ICE:6, MUD:7, BELT:8 };
+var M = { OUT:0, GREEN:1, FRINGE:2, ROUGH:3, SAND:4, WATER:5, ICE:6, MUD:7, BELT:8, FLOW:9 };
 // what each surface rolls like, as a stimp reading (GREEN is the course's own)
 var MAT_STIMP = { 2:3.0, 3:1.2, 4:0.3, 6:34, 7:1.4, 8:9 };
 var MINI_SAND_STIMP = 1.3;   // a mini golf sand trap slows a ball hard but can be putted out of; a real bunker (0.3) cannot
@@ -62,6 +62,58 @@ function inPoly(P, x, y){ var c = false; for (var i = 0, j = P.length - 1; i < P
   if (((a[1] > y) !== (b[1] > y)) && (x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0])) c = !c; } return c; }
 function segDist(px, py, ax, ay, bx, by){ var ex = bx - ax, ey = by - ay, l2 = ex * ex + ey * ey || 1e-9;
   var t = clamp(((px - ax) * ex + (py - ay) * ey) / l2, 0, 1), qx = ax + ex * t, qy = ay + ey * t; return Math.hypot(px - qx, py - qy); }
+
+/* A HOLE CAN BE SEVERAL ROOMS. H.polys is a list of polygons (or {pts, z}) whose union is the course:
+   rooms, a river's channel, a bridge deck. Where two overlap the rail between them is open, so a
+   channel that runs into a room is a mouth rather than a wall. The rail is the union's outline. */
+function polyPts(p){ return p.pts || p; }
+function inAny(PS, x, y){ for (var i = 0; i < PS.length; i++) if (inPoly(PS[i], x, y)) return i; return -1; }
+function nearEdge(P, x, y, tol){ for (var e = 0; e < P.length; e++){ var a = P[e], b = P[(e + 1) % P.length]; if (segDist(x, y, a[0], a[1], b[0], b[1]) < tol) return true; } return false; }
+function unionEdges(PS){
+  var out = [], step = 0.125;
+  PS.forEach(function(P, pi){ for (var e = 0; e < P.length; e++){
+    var a = P[e], b = P[(e + 1) % P.length], L = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.max(1, Math.ceil(L / step)), run = null;
+    var cut = function(r){ out.push([a[0] + (b[0] - a[0]) * r[0], a[1] + (b[1] - a[1]) * r[0], a[0] + (b[0] - a[0]) * r[1], a[1] + (b[1] - a[1]) * r[1]]); };
+    for (var k = 0; k < n; k++){ var t0 = k / n, t1 = (k + 1) / n, tm = (t0 + t1) / 2, mx = a[0] + (b[0] - a[0]) * tm, my = a[1] + (b[1] - a[1]) * tm, inside = false;
+      for (var q = 0; q < PS.length && !inside; q++) if (q !== pi && (inPoly(PS[q], mx, my) || nearEdge(PS[q], mx, my, 0.02))) inside = true;
+      if (!inside){ if (run) run[1] = t1; else run = [t0, t1]; } else if (run){ cut(run); run = null; } }
+    if (run) cut(run); } });
+  return out;
+}
+function edgeDist(E, x, y){ var d = 1e9; for (var i = 0; i < E.length; i++){ var w = E[i], v = segDist(x, y, w[0], w[1], w[2], w[3]); if (v < d) d = v; } return d; }
+/* A RIVER is a polyline with a width and a current. The ball that rolls into its mouth is carried down
+   it at the current's speed and poured out of its far end. Its channel is a room like any other, so
+   the banks are the rail and the mouth is wherever it meets a room. */
+function prepRiver(r){
+  var P = r.pts, segs = [], L = 0;
+  for (var i = 0; i < P.length - 1; i++){ var ax = P[i][0], ay = P[i][1], bx = P[i + 1][0], by = P[i + 1][1], l = Math.hypot(bx - ax, by - ay) || 1e-6;
+    segs.push({ ax:ax, ay:ay, bx:bx, by:by, l:l, s0:L, tx:(bx - ax) / l, ty:(by - ay) / l }); L += l; }
+  r.segs = segs; r.L = L; r.w = r.w || 1.6; r.vc = r.vc || 6; r.z0 = r.z0 || 0; r.z1 = r.z1 == null ? r.z0 : r.z1;
+  // the channel: the polyline offset half a width each side, mitred at the joints, run a little past each end into the rooms it joins
+  var left = [], right = [], ext = 0.6, hw = r.w / 2;
+  for (var j = 0; j < P.length; j++){
+    var a = segs[Math.max(0, j - 1)], b = segs[Math.min(segs.length - 1, j)], nx = -(a.ty + b.ty), ny = (a.tx + b.tx), nl = Math.hypot(nx, ny) || 1;
+    nx /= nl; ny /= nl; var cs = Math.max(0.35, nx * -b.ty + ny * b.tx), k = hw / cs, x = P[j][0], y = P[j][1];
+    if (j === 0){ x -= b.tx * ext; y -= b.ty * ext; } if (j === P.length - 1){ x += a.tx * ext; y += a.ty * ext; }
+    left.push([x + nx * k, y + ny * k]); right.push([x - nx * k, y - ny * k]); }
+  r.poly = left.concat(right.reverse());
+  return r;
+}
+function riverAt(C, x, y){ var R = C.rivers; if (!R) return null;
+  for (var i = 0; i < R.length; i++){ var r = R[i], best = null, bd = 1e9;
+    for (var k = 0; k < r.segs.length; k++){ var g = r.segs[k], t = clamp(((x - g.ax) * g.tx + (y - g.ay) * g.ty) / g.l, 0, 1), qx = g.ax + g.tx * g.l * t, qy = g.ay + g.ty * g.l * t, d = Math.hypot(x - qx, y - qy);
+      if (d < bd){ bd = d; best = { r:r, g:g, s:g.s0 + g.l * t, t:t, lat:(-(x - qx) * g.ty + (y - qy) * g.tx), qx:qx, qy:qy }; } }
+    if (best && bd <= r.w / 2 && best.s > 0.001 && best.s < r.L - 0.001){ best.tx = best.g.tx; best.ty = best.g.ty; return best; } }
+  return null; }
+// a drawbridge: up (water under it) or down (a deck to roll over), on a clock
+function bridgeAt(C, x, y){ var B = C.bridges; for (var i = 0; i < B.length; i++){ var b = B[i]; if (x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1) return b; } return null; }
+function bridgeDown(b, tt){ var f = ((tt / b.period + (b.phase || 0)) % 1 + 1) % 1; return f < (b.duty == null ? 0.5 : b.duty); }
+// how far the bridge is lifted, 0 down to 1 up, for the picture: it swings over a quarter second either side of the change
+function bridgeLift(b, tt){ var f = ((tt / b.period + (b.phase || 0)) % 1 + 1) % 1, du = b.duty == null ? 0.5 : b.duty, e = 0.35 / b.period;
+  if (f < du) return f > du - e ? 0 : f < e ? 1 - f / e : 0; return clamp((f - du) / e, 0, 1); }
+function turnAt(C, x, y){ var T = C.turns; for (var i = 0; i < T.length; i++){ var u = T[i]; if (Math.hypot(x - u.x, y - u.y) < u.r) return u; } return null; }
+// the speed a loop of radius r needs at its entry for the ball to stay on the track over the top
+function loopNeed(L){ return L.vmin || Math.sqrt(3.4 * G * L.r); }
 
 /* ================================================================================= the surface */
 /* A green is a sum of shapes, in feet of height:
@@ -188,14 +240,32 @@ function simulate(C, x, y, vx, vy, t0){
   var s = { x:x, y:y, vx:vx, vy:vy }, out = { pts:[[x, y, 0]], holed:false, water:false, out:false, rest:null, ev:[], t:0 };
   var z = 0, zv = 0, over = false, cr = C.cupR, cx = C.cup[0], cy = C.cup[1], t = 0, n = 0, port = -1;
   var rx = x, ry = y;   // where the ball was half a second ago, for the pinned-against-a-rail rest below
-  var walls = C.walls, bums = C.bumpers, movs = C.movers, ports = C.portals;
+  var walls = C.walls, bums = C.bumpers, movs = C.movers, ports = C.portals, loops = C.loops || [], ramps = C.ramps || [];
+  var lastPiece = null;   // the loop or ramp just ridden, so it cannot fire twice on the way out of it
+  // a stretch of a set piece, played out: each point is [x, y, dt from now, z above the surface]
+  function ride(path){ var t1 = t, k = 0; for (var q = 0; q < path.length; q++){ var pp = path[q]; t1 = t + pp[2]; out.pts.push([pp[0], pp[1], t1, 0, pp[3] || 0]); } t = t1; n = 0; }
+  function landAt(xx, yy, tt){ var mm = C.mats.at(xx, yy); if (mm === M.OUT) mm = C.matFn(xx, yy); if (C.bridges.length){ var bb = bridgeAt(C, xx, yy); if (bb) mm = bridgeDown(bb, tt) ? M.GREEN : M.WATER; } return mm; }
   for (;;){
     var m = C.mats.at(s.x, s.y);
     /* The grid is a quarter foot and a ball resting on a rail has its centre 0.07 ft inside it, so the
        nearest grid point can be outside. OUT is only believed once the exact shape agrees. */
     if (m === M.OUT) m = C.matFn(s.x, s.y);
+    if (C.bridges.length){ var brg = bridgeAt(C, s.x, s.y); if (brg) m = bridgeDown(brg, t0 + t) ? M.GREEN : M.WATER; }
     if (m === M.WATER){ out.water = true; out.ev.push([t, 'water']); break; }
     if (m === M.OUT){ out.out = true; out.ev.push([t, 'out']); break; }
+    var px0 = s.x, py0 = s.y, rv = m === M.FLOW ? riverAt(C, s.x, s.y) : null, disc = (!rv && C.turns.length) ? turnAt(C, s.x, s.y) : null;
+    if (rv){
+      // in the river the current has the ball: it is turned to the flow and brought to its speed, and held off the banks
+      var kq = Math.min(1, DT / 0.22), tvx = rv.tx * rv.r.vc, tvy = rv.ty * rv.r.vc;
+      s.vx += (tvx - s.vx) * kq; s.vy += (tvy - s.vy) * kq;
+      s.vx += rv.ty * rv.lat * 5 * DT; s.vy -= rv.tx * rv.lat * 5 * DT;
+    } else if (disc){
+      // a turntable: friction works against the ball's speed RELATIVE to the disc, and the spin flings it outward
+      var dvx0 = -disc.omega * (s.y - disc.y), dvy0 = disc.omega * (s.x - disc.x), rlx = s.vx - dvx0, rly = s.vy - dvy0, rls = Math.hypot(rlx, rly), afd = fricOf(C, M.GREEN);
+      if (rls > 1e-9){ var dd = Math.min(rls, afd * DT); rlx -= rlx / rls * dd; rly -= rly / rls * dd; }
+      var ocx = s.x - disc.x, ocy = s.y - disc.y;
+      s.vx = rlx + dvx0 + disc.omega * disc.omega * ocx * 0.55 * DT; s.vy = rly + dvy0 + disc.omega * disc.omega * ocy * 0.55 * DT;
+    } else {
     var gx = C.field.gx(s.x, s.y), gy = C.field.gy(s.x, s.y);
     var ax = -ROLL * G * gx, ay = -ROLL * G * gy, sp = Math.hypot(s.vx, s.vy), af = fricOf(C, m);
     if (m === M.BELT){ var bl = beltAt(C, s.x, s.y); if (bl){ ax += bl.ax; ay += bl.ay; } }
@@ -206,7 +276,43 @@ function simulate(C, x, y, vx, vy, t0){
       // friction can stop a ball, never send it backwards
       if (sl <= af && dvx * dvx + dvy * dvy >= sp * sp){ s.vx = 0; s.vy = 0; } else { s.vx += dvx; s.vy += dvy; } }
     s.vx += ax * DT; s.vy += ay * DT;
+    }
     s.x += s.vx * DT; s.y += s.vy * DT;
+    var rode = false;
+    // a loop: crossed at its entry going forward, the ball goes up and round if it is quick enough, and rolls back out if not
+    for (var li = 0; li < loops.length && !rode; li++){ var L = loops[li]; if (L === lastPiece) continue;
+      var a0 = (px0 - L.x) * L.dx + (py0 - L.y) * L.dy, a1 = (s.x - L.x) * L.dx + (s.y - L.y) * L.dy, sd = -(s.x - L.x) * L.dy + (s.y - L.y) * L.dx, vf = s.vx * L.dx + s.vy * L.dy;
+      if (a0 < 0 && a1 >= 0 && Math.abs(sd) < L.w / 2 && vf > 0){
+        var v0 = Math.hypot(s.vx, s.vy), need = loopNeed(L), K7 = 10 / 7 * G * L.r, path = [], tl = 0, th = 0, sx = -L.dy, sy = L.dx, off = L.off || 0;
+        var vth = function(a){ return Math.sqrt(Math.max(v0 * v0 - K7 * (1 - Math.cos(a)), need * need * 0.12)); };
+        if (v0 >= need){
+          for (th = 0; th < 2 * Math.PI; ){ var stp = Math.min(2 * Math.PI - th, vth(th) / L.r / 60); th += stp; tl += 1 / 60;
+            path.push([L.x + L.dx * L.r * Math.sin(th) + sx * off * th / (2 * Math.PI), L.y + L.dy * L.r * Math.sin(th) + sy * off * th / (2 * Math.PI), tl, L.r * (1 - Math.cos(th))]); }
+          ride(path); s.x = L.x + sx * off + L.dx * 0.05; s.y = L.y + sy * off + L.dy * 0.05; var ve = v0 * 0.9; s.vx = L.dx * ve; s.vy = L.dy * ve; out.ev.push([t, 'loop']);
+        } else {
+          var thm = Math.min(Math.acos(clamp(1 - v0 * v0 / K7, -1, 1)), Math.PI * 0.8), up = [];
+          for (th = 0; th < thm; ){ var st2 = Math.max(0.04, vth(th) / L.r / 60); th = Math.min(thm, th + st2); up.push(th); }
+          var seq = up.concat(up.slice().reverse()); seq.forEach(function(a){ tl += 1 / 60; path.push([L.x + L.dx * L.r * Math.sin(a), L.y + L.dy * L.r * Math.sin(a), tl, L.r * (1 - Math.cos(a))]); });
+          ride(path); s.x = L.x - L.dx * 0.05; s.y = L.y - L.dy * 0.05; s.vx = -L.dx * v0 * 0.7; s.vy = -L.dy * v0 * 0.7; out.ev.push([t, 'loopback']);
+        }
+        lastPiece = L; rode = true; } }
+    // a ramp: over its lip the ball flies, and where it lands decides whether it made it
+    for (var ri = 0; ri < ramps.length && !rode; ri++){ var Rp = ramps[ri]; if (Rp === lastPiece) continue;
+      var b0 = (px0 - Rp.x) * Rp.dx + (py0 - Rp.y) * Rp.dy, b1 = (s.x - Rp.x) * Rp.dx + (s.y - Rp.y) * Rp.dy, sd2 = -(s.x - Rp.x) * Rp.dy + (s.y - Rp.y) * Rp.dx, vf2 = s.vx * Rp.dx + s.vy * Rp.dy;
+      if (b0 < 0 && b1 >= 0 && Math.abs(sd2) < Rp.w / 2 && vf2 > 0){
+        var vin = Math.hypot(s.vx, s.vy), hgt = Rp.h || 0.4, vl2 = vin * vin - 2 * ROLL * G * hgt;
+        if (vl2 < 1){ s.x = px0; s.y = py0; s.vx = -s.vx * 0.5; s.vy = -s.vy * 0.5; out.ev.push([t, 'rampback']); rode = true; break; }
+        var vl = Math.sqrt(vl2), an = (Rp.ang || 24) * Math.PI / 180, ux = s.vx / vin, uy = s.vy / vin, vh = vl * Math.cos(an), vz = vl * Math.sin(an);
+        var tf = (vz + Math.sqrt(vz * vz + 2 * G * hgt)) / G, fp = [], tk = 0;
+        for (tk = 1 / 60; tk < tf; tk += 1 / 60) fp.push([Rp.x + ux * vh * tk, Rp.y + uy * vh * tk, tk, hgt + vz * tk - G * tk * tk / 2]);
+        var lx = Rp.x + ux * vh * tf, ly = Rp.y + uy * vh * tf; fp.push([lx, ly, tf, 0]);
+        ride(fp); s.x = lx; s.y = ly; out.ev.push([t, 'land']);
+        var lm = landAt(lx, ly, t0 + t);
+        if (lm === M.WATER){ out.water = true; out.ev.push([t, 'water']); lastPiece = Rp; return finishOut(); }
+        if (lm === M.OUT){ out.out = true; out.ev.push([t, 'out']); lastPiece = Rp; return finishOut(); }
+        s.vx = ux * vh * 0.72; s.vy = uy * vh * 0.72; lastPiece = Rp; rode = true; } }
+    if (rode){ px0 = s.x; py0 = s.y; continue; }
+    if (lastPiece && Math.hypot(s.x - lastPiece.x, s.y - lastPiece.y) > 2.5) lastPiece = null;
     var hit = false, i;
     for (i = 0; i < walls.length; i++){ var w = walls[i]; if (hitSeg(s, w[0], w[1], w[2], w[3], w[4], w[5])) hit = true; }
     for (i = 0; i < bums.length; i++){ var bm = bums[i]; if (hitCircle(s, bm.x, bm.y, bm.r, bm.e)){ hit = true; if (bm.e > 1){ var vv = Math.hypot(s.vx, s.vy); if (vv > V_MAX){ s.vx *= V_MAX / vv; s.vy *= V_MAX / vv; } } } }
@@ -224,7 +330,10 @@ function simulate(C, x, y, vx, vy, t0){
     // a tunnel carries the ball to its exit, still rolling
     for (i = 0; i < ports.length; i++){ var p = ports[i];
       if (port !== i && Math.hypot(s.x - p.ax, s.y - p.ay) < p.r){
-        var v = Math.max(2.4, Math.hypot(s.vx, s.vy) * 0.9); s.x = p.bx; s.y = p.by; s.vx = p.dx * v; s.vy = p.dy * v;
+        var vin2 = Math.hypot(s.vx, s.vy); if (p.vcap && vin2 > p.vcap) continue;   // a drop hole a quick ball skips over
+        var v = Math.max(p.minV || 2.4, vin2 * (p.keep || 0.9));
+        if (p.dur){ out.pts.push([p.ax, p.ay, t, 2]); t += p.dur; n = 0; }   // inside the pipe: out of sight for the trip
+        s.x = p.bx; s.y = p.by; s.vx = p.dx * v; s.vy = p.dy * v;
         port = i; out.ev.push([t, 'tunnel']); out.pts.push([s.x, s.y, t, 1]); break; } }
     if (port >= 0 && Math.hypot(s.x - ports[port].bx, s.y - ports[port].by) > 1.2) port = -1;
     // the cup: over the hole the ball falls, and it is in once it has fallen far enough to catch the far lip
@@ -247,16 +356,20 @@ function simulate(C, x, y, vx, vy, t0){
        slope pushes, the rail cancels it, and it sits still while the slope says it should roll. So a
        slow ball that has gone nowhere in half a second has come to rest. Measured, without this the
        bowl, the volcano and the tiers each kept a few putts "rolling" to MAX_T. */
-    if (n % 240 === 0){ if (!over && Math.hypot(s.vx, s.vy) < 4 * STOP_V && Math.hypot(s.x - rx, s.y - ry) < 0.02) break; rx = s.x; ry = s.y; }
+    if (n % 240 === 0){ if (!over && !rv && !disc && Math.hypot(s.vx, s.vy) < 4 * STOP_V && Math.hypot(s.x - rx, s.y - ry) < 0.02) break; rx = s.x; ry = s.y; }
     if (t > MAX_T) break;
   }
-  out.t = t; out.rest = [s.x, s.y]; out.pts.push([s.x, s.y, t]);
-  return out;
+  return finishOut();
+  function finishOut(){ out.t = t; out.rest = [s.x, s.y]; out.pts.push([s.x, s.y, t]); return out; }
 }
 
 /* ============================================================================ a course, assembled */
 function finishCourse(C){
   C.walls = C.walls || []; C.bumpers = C.bumpers || []; C.movers = C.movers || []; C.portals = C.portals || []; C.belts = C.belts || [];
+  C.loops = C.loops || []; C.ramps = C.ramps || []; C.rivers = C.rivers || []; C.bridges = C.bridges || []; C.turns = C.turns || [];
+  if (!C.polys) C.polys = C.poly ? [C.poly] : []; if (!C.allPts) C.allPts = C.polys.reduce(function(a, p){ return a.concat(p); }, []);
+  if (!C.edges) C.edges = C.polys.length > 1 ? unionEdges(C.polys) : C.polys.length ? polyWalls(C.polys[0], 0, 0).map(function(w){ return [w[0], w[1], w[2], w[3]]; }) : [];
+  if (!C.tierAt) C.tierAt = function(){ return 0; };
   C.field = makeField(C.bounds, C.comps || [], C.flats || []);
   C.mats = makeMats(C.bounds, C.matFn);
   return C;
@@ -557,18 +670,36 @@ function buildMini(tplName, seed, themeId, label, extra){
 // a hole laid out in feet (H) made into a course the physics and both painters can use
 function courseFromH(H, tplName, seed, themeId, label){
   var T = THEMES[themeId] || THEMES.haunted;
-  var xs = H.poly.map(function(p){ return p[0]; }), ys = H.poly.map(function(p){ return p[1]; });
+  var rivers = (H.rivers || []).map(prepRiver);
+  // the rooms, every river's channel and every bridge deck are the course; their union's outline is the rail
+  var rooms = H.polys ? H.polys.map(function(p){ return { pts:polyPts(p), z:p.z || 0 }; }) : [{ pts:H.poly, z:0 }];
+  var PS = rooms.map(function(r){ return r.pts; }).concat(rivers.map(function(r){ return r.poly; }));
+  var all = PS.reduce(function(a, p){ return a.concat(p); }, []), xs = all.map(function(p){ return p[0]; }), ys = all.map(function(p){ return p[1]; });
   var pad = 6, b = [Math.min.apply(null, xs) - pad, Math.min.apply(null, ys) - pad, Math.max.apply(null, xs) + pad, Math.max.apply(null, ys) + pad];
-  var C = { kind:'mini', tpl:tplName, theme:themeId, T:T, name:label || tplName, bounds:b, poly:H.poly, comps:H.comps, flats:H.flats,
+  var edges = PS.length > 1 ? unionEdges(PS) : polyWalls(PS[0], 0, 0).map(function(w){ return [w[0], w[1], w[2], w[3]]; });
+  var bridges = (H.bridges || []).map(function(z){ return { x0:Math.min(z.x0, z.x1), y0:Math.min(z.y0, z.y1), x1:Math.max(z.x0, z.x1), y1:Math.max(z.y0, z.y1), period:z.period || 4, phase:z.phase || 0, duty:z.duty == null ? 0.5 : z.duty, hinge:z.hinge || 'n' }; });
+  var C = { kind:'mini', tpl:tplName, theme:themeId, T:T, name:label || tplName, bounds:b, poly:PS[0], polys:PS, allPts:all, edges:edges, rooms:rooms, comps:H.comps, flats:H.flats,
     stimp:H.stimp || (themeId === 'winter' ? 9.5 : 9), cup:H.cup, cupR:CUP_R_MINI, tee:H.tee, par:H.par,
-    walls:polyWalls(H.poly, 0, 0.72).concat(H.walls), bumpers:H.bumpers, blocks:H.blocks, movers:H.movers, portals:H.portals, zones:H.zones, mill:H.mill, seed:seed,
+    walls:edges.map(function(e){ return [e[0], e[1], e[2], e[3], 0, 0.72]; }).concat(H.walls), bumpers:H.bumpers, blocks:H.blocks, movers:H.movers, portals:H.portals, zones:H.zones, mill:H.mill, seed:seed,
+    loops:(H.loops || []).map(function(L){ var l = Math.hypot(L.dx, L.dy) || 1; return { x:L.x, y:L.y, dx:L.dx / l, dy:L.dy / l, r:L.r || 0.75, w:L.w || 1.4, off:L.off || 0, vmin:L.vmin }; }),
+    ramps:(H.ramps || []).map(function(R){ var l = Math.hypot(R.dx, R.dy) || 1; return { x:R.x, y:R.y, dx:R.dx / l, dy:R.dy / l, w:R.w || 2, h:R.h || 0.4, ang:R.ang || 24, len:R.len || 1.6 }; }),
+    rivers:rivers, bridges:bridges, turns:(H.turns || []).map(function(u){ return { x:u.x, y:u.y, r:u.r || 2, omega:u.omega || 1.2 }; }),
     belts:(H.belts || []).map(function(z){ return { x0:Math.min(z.x0, z.x1), y0:Math.min(z.y0, z.y1), x1:Math.max(z.x0, z.x1), y1:Math.max(z.y0, z.y1), ax:z.ax, ay:z.ay }; }) };
   C.matFn = function(x, y){
-    if (!inPoly(H.poly, x, y)) return M.OUT;
+    if (inAny(PS, x, y) < 0) return M.OUT;
     var m = M.GREEN;
+    if (rivers.length && riverAt(C, x, y)) m = M.FLOW;
     for (var i = 0; i < H.zones.length; i++){ var z = H.zones[i];
       if (z.t === 'rect' ? (x >= Math.min(z.x0, z.x1) && x <= Math.max(z.x0, z.x1) && y >= Math.min(z.y0, z.y1) && y <= Math.max(z.y0, z.y1)) : Math.hypot(x - z.x, y - z.y) <= z.r) m = z.m; }
+    for (var k = 0; k < bridges.length; k++){ var bb = bridges[k]; if (x >= bb.x0 && x <= bb.x1 && y >= bb.y0 && y <= bb.y1) m = M.WATER; }   // the water under a bridge
     return m;
+  };
+  /* A ROOM CAN SIT HIGHER OR LOWER than the next, for the picture only. The physics reads the green's
+     own gentle slope; the drop between two rooms is crossed by a river, a pipe or a ramp, never rolled. */
+  C.tierAt = function(x, y){
+    if (rivers.length){ var rv = riverAt(C, x, y); if (rv) return rv.r.z0 + (rv.r.z1 - rv.r.z0) * clamp(rv.s / rv.r.L, 0, 1); }
+    var z = null; for (var i = 0; i < rooms.length; i++) if (inPoly(rooms[i].pts, x, y)) z = z == null ? rooms[i].z : Math.max(z, rooms[i].z);
+    return z || 0;
   };
   C.props = decorFor(C, T, mulberry(seed ^ 0x51ed));
   finishCourse(C);
@@ -602,8 +733,7 @@ function decorFor(C, T, r){
   var out = [], b = C.bounds, tries = 0;
   while (out.length < 14 && tries++ < 400){
     var x = b[0] + r() * (b[2] - b[0]), y = b[1] + r() * (b[3] - b[1]), s = 1.4 + r() * 1.4;
-    var near = false; for (var i = 0; i < C.poly.length && !near; i++){ var a = C.poly[i], c = C.poly[(i + 1) % C.poly.length]; if (segDist(x, y, a[0], a[1], c[0], c[1]) < s + 0.9) near = true; }
-    if (near || inPoly(C.poly, x, y)) continue;
+    if (edgeDist(C.edges, x, y) < s + 0.9 || inAny(C.polys, x, y) >= 0) continue;
     if (out.some(function(o){ return Math.hypot(o.x - x, o.y - y) < (o.s + s) * 0.8; })) continue;
     out.push({ x:x, y:y, s:s, k:T.decor[Math.floor(r() * T.decor.length)] });
   }
@@ -745,7 +875,8 @@ function buildLevel(n){
   var H = f(T); H.par = L.par; if (W.theme === 'winter') H.stimp = 9.5;
   return courseFromH(H, 'lv' + n, hstr('ppt:' + n), W.theme, levelName(n));
 }
-function buildFrom(desc){ if (desc.tour) return buildLevel(desc.tour); return buildMini(desc.tpl, desc.seed, desc.theme, desc.name, desc.extra || 0); }
+function buildFrom(desc){ if (desc.custom){ var Hc = desc.custom(THEMES[desc.theme]); Hc.par = Hc.par || 3; return courseFromH(Hc, desc.tpl, desc.seed, desc.theme, desc.name); }
+  if (desc.tour) return buildLevel(desc.tour); return buildMini(desc.tpl, desc.seed, desc.theme, desc.name, desc.extra || 0); }
 
 function scoreName(strokes, par){
   if (strokes === 1) return 'Hole in one';
@@ -845,7 +976,7 @@ var SKIN = {
   coffin:function(u, v){ var w = 0.55 + (v < -0.4 ? (v + 1) * 0.6 : 0.36 - (v + 0.4) * 0.28); if (Math.abs(u) > w || Math.abs(v) > 0.95) return null; if (Math.abs(u) > w - 0.14 || Math.abs(v) > 0.82) return '#2a1810';
     if ((Math.abs(u) < 0.07 && v > -0.6 && v < 0.2) || (Math.abs(v + 0.35) < 0.07 && Math.abs(u) < 0.25)) return '#c9a227'; return '#5a3a24'; }
 };
-RTT_PUTT.SKIN = SKIN;   // hole3d.js builds a bumper's 3D shape from the same skin the flat painter uses
+RTT_PUTT.SKIN = SKIN; RTT_PUTT.riverAt = riverAt; RTT_PUTT.bridgeDown = bridgeDown; RTT_PUTT.bridgeLift = bridgeLift; RTT_PUTT.inAny = inAny; RTT_PUTT.edgeDist = edgeDist;   // hole3d.js builds a bumper's 3D shape from the same skin the flat painter uses
 function moverCol(k, T){ return rgb(k === 'blade' ? T.spinner : T.wallLo); }
 
 function paintCourse(C){
@@ -871,6 +1002,7 @@ function paintCourse(C){
     else if (m === M.WATER){ c = real ? (((i * 3 + j * 5) % 23 === 0) ? pal.ripple : pal.water) : ((((i + (j >> 1) * 3) % 17) === 0) ? pal.haz2 : pal.haz); }
     else if (m === M.ICE){ c = (((i + j) % 11) < 2) ? pal.haz2 : pal.haz; }
     else if (m === M.MUD){ c = n < 0.22 ? shade(pal.slow, -0.18) : pal.slow; }
+    else if (m === M.FLOW){ c = (((i * 3 + j * 5) % 17) < 3) ? [95, 179, 230] : [47, 134, 200]; }
     else if (m === M.BELT){ c = ((((C.belts[0] && Math.abs(C.belts[0].ay) > Math.abs(C.belts[0].ax)) ? j : i) % 6) < 3) ? [58, 63, 72] : [90, 97, 108]; }
     else c = pal.out;
     put(o, c);
@@ -889,7 +1021,7 @@ function paintCourse(C){
     // the rail: a band just outside the carpet, lit along its inner edge, inked along its outer one
     for (var j3 = 0; j3 < ny; j3++) for (var i3 = 0; i3 < nx; i3++){
       var x3 = b[0] + i3 * ART, y3 = b[1] + j3 * ART, inside = mats.A[j3 * nx + i3] !== M.OUT;
-      var d = 1e9; for (var e = 0; e < C.poly.length; e++){ var p = C.poly[e], q = C.poly[(e + 1) % C.poly.length]; d = Math.min(d, segDist(x3, y3, p[0], p[1], q[0], q[1])); }
+      var d = edgeDist(C.edges, x3, y3);
       var o3 = (j3 * nx + i3) * 4;
       if (!inside && d < 0.75) put(o3, d < 0.22 ? pal.wallHi : d > 0.6 ? pal.ink : pal.wall);
       else if (inside && d < 0.45) put(o3, shade([D[o3], D[o3 + 1], D[o3 + 2]], -0.18));
@@ -1399,11 +1531,12 @@ function playHole(){
   var sub = tourSub(R, C, S.play), title = R.mode === 'ppt' ? (C.kind === 'real' ? 'Tour Pin · ' + C.name : levelName(R.lv)) : R.title;
   S.ov.innerHTML = top(title, sub, '') + '<div class="pt-stage"><canvas></canvas><div class="pt-read" hidden></div></div>\
     <div class="pt-bar">' + (C.kind === 'real' ? '<button class="pt-bt" data-l aria-label="Aim left">◂</button><button class="pt-bt" data-r aria-label="Aim right">▸</button>' : '') +
-    '<div class="pt-hint" data-hint></div><button class="pt-bt" data-restart aria-label="Restart the hole">↺</button></div>';
+    '<div class="pt-hint" data-hint></div><button class="pt-bt" data-ov hidden aria-label="See the whole hole">Overview</button><button class="pt-bt" data-restart aria-label="Restart the hole">↺</button></div>';
   if (R.mode === 'ppt'){ var tp = S.ov.querySelector('.pt-top'), u = golferUrl(); tp.classList.add('pp-play'); var bx = tp.querySelector('[data-x]'); bx.textContent = '✕'; bx.setAttribute('aria-label', 'Leave the hole');
     bx.insertAdjacentHTML('afterend', '<i class="pp-av" style="' + (u ? 'background-image:url(' + u + ')' : '') + '"></i><span class="pp-hearts">' + hearts(pload()) + '</span>'); }
   S.ov.querySelector('[data-x]').onclick = function(){ leaveHole(); };
   S.ov.querySelector('[data-restart]').onclick = function(){ restartHole(); };
+  var ovb = S.ov.querySelector('[data-ov]'); ovb.onclick = function(){ if (!S.play) return; S.play.overview = !S.play.overview; ovb.classList.toggle('on', S.play.overview); S.play.camNow = null; };
   var nudge = function(s){ return function(){ aimNudge(s * 0.0035); }; };
   if (C.kind === 'real'){ holdRepeat(S.ov.querySelector('[data-l]'), nudge(-1)); holdRepeat(S.ov.querySelector('[data-r]'), nudge(1)); }
   S.cv = S.ov.querySelector('canvas'); S.stage = S.ov.querySelector('.pt-stage');
@@ -1447,13 +1580,18 @@ function camFor(P){
   var C = P.C, W = S.cv.width, H = S.cv.height, b = C.bounds, dpr = S.dpr;
   if (P.v3){
     // the course and a little of its land fill the stage, at a whole number of screen pixels per art pixel
-    var V = P.v3, xs = C.poly.map(function(p){ return p[0]; }), ys = C.poly.map(function(p){ return p[1]; });
+    var V = P.v3, xs = C.allPts.map(function(p){ return p[0]; }), ys = C.allPts.map(function(p){ return p[1]; });
     var x0 = Math.min.apply(null, xs) - 6.5, x1 = Math.max.apply(null, xs) + 6.5, y0 = Math.min.apply(null, ys) - 5, y1 = Math.max.apply(null, ys) + 3, zc = 0.35;   // room for the land round it, which is half the point
     var a0 = V.pr(x0, y0, zc + 1.2), a1 = V.pr(x1, y1, zc);
-    var kk = Math.max(1, Math.floor(Math.min(W / (a1[0] - a0[0]), H / (a1[1] - a0[1]))));
+    var fitK = Math.max(1, Math.floor(Math.min(W / (a1[0] - a0[0]), H / (a1[1] - a0[1])))), widK = Math.max(1, Math.floor(W / (a1[0] - a0[0])));
+    /* A HOLE TALLER THAN THE SCREEN IS FOLLOWED. It opens on the whole hole for a moment, so the route is
+       read, then the camera comes in to fill the width and rides with the ball. Overview puts it back. */
+    var follow = widK > fitK && (a1[1] - a0[1]) * widK > H * 1.08 && !P.overview && !(P.intro3 && performance.now() - P.intro3 < 1800);
+    var kk = follow ? Math.min(widK, Math.max(fitK + 1, Math.floor(fitK * 2.2))) : fitK;
     var cxA = (a0[0] + a1[0]) / 2, cyA = (a0[1] + a1[1]) / 2, ox = Math.round(W / 2 - cxA * kk), oy = Math.round(H / 2 - cyA * kk), iw = V.cv.width * kk, ih = V.cv.height * kk;
+    if (follow && P.view){ var vp = V.pr(P.view[0], P.view[1], V.zAt(P.view[0], P.view[1]) + (P.view[2] || 0)); ox = Math.round(W / 2 - vp[0] * kk); oy = Math.round(H * 0.58 - vp[1] * kk); }
     ox = iw >= W ? clamp(ox, W - iw, 0) : Math.round((W - iw) / 2); oy = ih >= H ? clamp(oy, H - ih, 0) : Math.round((H - ih) / 2);
-    return { v3:V, k:kk, ox:ox, oy:oy, s:kk / ART };
+    return { v3:V, k:kk, ox:ox, oy:oy, s:kk / ART, follow:follow, canFollow:widK > fitK && (a1[1] - a0[1]) * widK > H * 1.08 };
   }
   if (C.kind !== 'real'){
     var s = Math.min(W / (b[2] - b[0] - 4), H / (b[3] - b[1] - 4));
@@ -1534,13 +1672,13 @@ function frame(){
   var P = S.play, C = P.C, ctx = S.cv.getContext('2d'), W = S.cv.width, H = S.cv.height, now = gnow() / 1000, clock = now - P.clock0;
   v3Tick();
   // where the ball is: at rest, or partway along the putt it is playing back
-  var bx = P.ball[0], by = P.ball[1], falling = 0;
+  var bx = P.ball[0], by = P.ball[1], falling = 0, bz = 0, hidden = false;
   if (P.state === 'roll'){
     var el2 = (gnow() - P.shotStart) / 1000, pts = P.shot.pts, i = 0;
     while (i < pts.length - 1 && pts[i + 1][2] <= el2) i++;
     var a = pts[i], b = pts[Math.min(pts.length - 1, i + 1)], f = b[2] > a[2] ? clamp((el2 - a[2]) / (b[2] - a[2]), 0, 1) : 1;
     if (b[3]) f = 0;
-    bx = a[0] + (b[0] - a[0]) * f; by = a[1] + (b[1] - a[1]) * f;
+    bx = a[0] + (b[0] - a[0]) * f; by = a[1] + (b[1] - a[1]) * f; bz = (a[4] || 0) + ((b[4] || 0) - (a[4] || 0)) * f; hidden = a[3] === 2 && el2 < b[2];
     while (P.evI < P.shot.ev.length && P.shot.ev[P.evI][0] <= el2){ sound(P.shot.ev[P.evI][1]); P.evI++; }
     if (P.shot.holed && el2 > P.shot.t) falling = clamp((el2 - P.shot.t) / 0.25, 0, 1);
     if (el2 > P.shot.t + (P.shot.holed ? 0.3 : 0.15)) settle();
@@ -1548,13 +1686,16 @@ function frame(){
   // the camera eases toward its target rather than jumping
   /* A real green opens on the WHOLE green, its shape and its bunkers, the way the hole view shows it,
      and then settles in on the putt: the flyover a broadcast does before a player stands over it. */
-  var tgt = camFor(P);
+  P.view = [bx, by, bz]; var tgt = camFor(P);
   if (!P.camNow && C.kind === 'real'){ var bb = C.bounds, sw = Math.min(S.cv.width / (C.spec.rx * 2.5), S.cv.height / (C.spec.ry * 2.5));
     P.camNow = { s:sw, cx:0, cy:0 }; P.intro = performance.now(); }
-  if (!P.camNow || C.kind !== 'real') P.camNow = tgt;   // a mini hole holds still: the whole hole is the shot
+  if (!P.intro3) P.intro3 = performance.now();
+  if (tgt.follow && P.camNow && P.camNow.v3 && P.camNow.k === tgt.k){ var ez = P.state === 'roll' ? 0.2 : 0.14; P.camNow = { v3:tgt.v3, k:tgt.k, s:tgt.s, follow:true, canFollow:true, ox:Math.round(P.camNow.ox + (tgt.ox - P.camNow.ox) * ez), oy:Math.round(P.camNow.oy + (tgt.oy - P.camNow.oy) * ez) }; }
+  else if (!P.camNow || C.kind !== 'real') P.camNow = tgt;   // a mini hole holds still: the whole hole is the shot
   else if (P.state === 'aim'){ var c0 = P.camNow, e = (P.intro && performance.now() - P.intro < 1500) ? (performance.now() - P.intro < 700 ? 0 : 0.05) : 0.16; P.camNow = { s:c0.s + (tgt.s - c0.s) * e, cx:c0.cx + (tgt.cx - c0.cx) * e, cy:c0.cy + (tgt.cy - c0.cy) * e };
     if (Math.abs(P.camNow.s - tgt.s) < 0.02) P.camNow.s = tgt.s; }
   var cam = P.camNow;
+  if (cam.canFollow && !P.ovShown){ P.ovShown = true; var ob = S.ov.querySelector('[data-ov]'); if (ob) ob.hidden = false; }
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = false;
   var bg = C.kind === 'real' ? ((C.biome && C.biome.base) || '#5f8a30') : C.T.bg; ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
   if (cam.v3) ctx.drawImage(cam.v3.cv, cam.ox, cam.oy, cam.v3.cv.width * cam.k, cam.v3.cv.height * cam.k);
@@ -1562,13 +1703,14 @@ function frame(){
     ctx.drawImage(P.art, Math.round(o[0]), Math.round(o[1]), Math.round(P.art.width * k), Math.round(P.art.height * k)); }
   if (C.movers.length) (cam.v3 ? drawMovers3 : drawMovers)(ctx, C, cam, clock);
   if (cam.v3 && cam.v3.mill) drawSails(ctx, C, cam, clock);
+  drawPieces(ctx, C, cam, clock);
   drawRead(ctx, C, cam, performance.now() / 1000);
   drawCup(ctx, C, cam, Math.hypot(bx - C.cup[0], by - C.cup[1]));
   if (P.trail && P.state === 'aim') drawTrail(ctx, cam, P.trail);
   if (P.state === 'aim') drawAim(ctx, P, cam);
   // the golfer stands at the ball while aiming, and holds the follow through a moment once it is struck
   if ((P.state === 'aim' && !(P.intro && performance.now() - P.intro < 1300)) || (P.state === 'roll' && (gnow() - P.shotStart) / PLAY_RATE < 900)) drawGolfer(ctx, P, cam);
-  drawBall(ctx, cam, bx, by, falling);
+  if (!hidden) drawBall(ctx, cam, bx, by, falling, bz);
   readChip(P, bx, by);
 }
 function settle(){
@@ -1650,6 +1792,41 @@ function drawSails(ctx, C, cam, t){
    it is shows as how FAST the chevrons drift, never as a colour: they are all the same pale ink, light
    enough to sit on the carpet rather than over it. A flat cell carries nothing. Each chevron fades in
    and out over its own loop, from a phase off its cell, so the field never pulses in step. */
+/* THE MOVING PARTS OF THE SET PIECES, drawn every frame over the hole through the same projection as
+   the ball: a river's current, a drawbridge's deck, a turntable's spin. In the flat picture a loop and a
+   ramp are drawn here too; in 3D they are part of the scene hole3d.js built. */
+function drawPieces(ctx, C, cam, clock){
+  var d = S.dpr;
+  C.rivers.forEach(function(r){
+    // streaks riding the current, spaced along the channel and moving at its speed
+    var sp = 1.1, ph = (clock * r.vc) % sp; ctx.strokeStyle = 'rgba(255,255,255,.45)'; ctx.lineWidth = Math.max(1.5, cam.s * 0.08); ctx.lineCap = 'round';
+    for (var lane = -1; lane <= 1; lane++){ var lo = lane * r.w * 0.25;
+      for (var sv = ph + (lane & 1) * 0.5; sv < r.L; sv += sp){ var g = null; for (var k = 0; k < r.segs.length; k++){ if (sv >= r.segs[k].s0 && sv <= r.segs[k].s0 + r.segs[k].l){ g = r.segs[k]; break; } } if (!g) continue;
+        var u = sv - g.s0, x0 = g.ax + g.tx * u - g.ty * lo, y0 = g.ay + g.ty * u + g.tx * lo, a = w2s(cam, x0, y0), b = w2s(cam, x0 + g.tx * 0.35, y0 + g.ty * 0.35);
+        ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); } } });
+  C.turns.forEach(function(u){
+    var pts = [], th = clock * u.omega; for (var a = 0; a <= 32; a++){ var ang = a / 32 * 2 * Math.PI; pts.push(w2s(cam, u.x + Math.cos(ang) * u.r, u.y + Math.sin(ang) * u.r)); }
+    ctx.fillStyle = 'rgba(20,24,30,.55)'; ctx.beginPath(); pts.forEach(function(p, i){ i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.fill();
+    for (var q = 0; q < 8; q++){ var a0 = th + q * Math.PI / 4, a1 = a0 + Math.PI / 8, c0 = w2s(cam, u.x, u.y), p0 = w2s(cam, u.x + Math.cos(a0) * u.r, u.y + Math.sin(a0) * u.r), p1 = w2s(cam, u.x + Math.cos(a1) * u.r, u.y + Math.sin(a1) * u.r);
+      ctx.fillStyle = q % 2 ? (C.T.wallHi || '#ffd36a') : (C.T.wall || '#e5483a'); ctx.globalAlpha = 0.75; ctx.beginPath(); ctx.moveTo(c0[0], c0[1]); ctx.lineTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.closePath(); ctx.fill(); }
+    ctx.globalAlpha = 1; var cc = w2s(cam, u.x, u.y); ctx.fillStyle = '#f5f0e0'; ctx.beginPath(); ctx.arc(cc[0], cc[1], Math.max(3 * d, cam.s * 0.25), 0, 6.29); ctx.fill(); });
+  C.bridges.forEach(function(b){
+    var lift = bridgeLift(b, clock), z0 = cam.v3 ? cam.v3.zAt((b.x0 + b.x1) / 2, b.y0 - 0.6) : 0, ang = lift * Math.PI / 2;
+    // the deck swings up about its hinge edge
+    var hn = b.hinge === 's', hy = hn ? b.y1 : b.y0, Ld = b.y1 - b.y0, yy = function(f){ return hy + (hn ? -1 : 1) * Ld * f * Math.cos(ang); }, zz = function(f){ return z0 + Ld * f * Math.sin(ang); };
+    var c = [w2s(cam, b.x0, yy(0), zz(0)), w2s(cam, b.x1, yy(0), zz(0)), w2s(cam, b.x1, yy(1), zz(1)), w2s(cam, b.x0, yy(1), zz(1))];
+    if (!cam.v3){ var k = 1 - lift; c = [w2s(cam, b.x0, hy), w2s(cam, b.x1, hy), w2s(cam, b.x1, hy + (hn ? -1 : 1) * Ld * k), w2s(cam, b.x0, hy + (hn ? -1 : 1) * Ld * k)]; }
+    ctx.fillStyle = '#8a6a44'; ctx.strokeStyle = '#3b2a18'; ctx.lineWidth = Math.max(1.5, d * 1.2);
+    ctx.beginPath(); ctx.moveTo(c[0][0], c[0][1]); for (var q = 1; q < 4; q++) ctx.lineTo(c[q][0], c[q][1]); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = 'rgba(59,42,24,.6)'; for (var pl = 1; pl < 5; pl++){ var f = pl / 5, a = [c[0][0] + (c[3][0] - c[0][0]) * f, c[0][1] + (c[3][1] - c[0][1]) * f], e = [c[1][0] + (c[2][0] - c[1][0]) * f, c[1][1] + (c[2][1] - c[1][1]) * f];
+      ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(e[0], e[1]); ctx.stroke(); } });
+  if (!cam.v3){
+    C.ramps.forEach(function(rp){ var hw = rp.w / 2, sx = -rp.dy, sy = rp.dx, L = rp.len, q = [[rp.x + sx * hw, rp.y + sy * hw], [rp.x - sx * hw, rp.y - sy * hw], [rp.x - sx * hw - rp.dx * L, rp.y - sy * hw - rp.dy * L], [rp.x + sx * hw - rp.dx * L, rp.y + sy * hw - rp.dy * L]].map(function(p){ return w2s(cam, p[0], p[1]); });
+      ctx.fillStyle = C.T.wallHi; ctx.beginPath(); q.forEach(function(p, i){ i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.closePath(); ctx.fill(); });
+    C.loops.forEach(function(lp){ var r = lp.r, a = w2s(cam, lp.x - lp.dx * r, lp.y - lp.dy * r), b = w2s(cam, lp.x + lp.dx * r, lp.y + lp.dy * r);
+      ctx.strokeStyle = C.T.wall; ctx.lineWidth = Math.max(4, cam.s * 0.5); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); });
+  }
+}
 function drawRead(ctx, C, cam, t){
   var step = C.kind === 'real' ? 3 : 2, b = C.bounds, s = cam.s, lw = Math.max(1.2, s * 0.07);
   ctx.strokeStyle = 'rgb(255,255,255)'; ctx.lineWidth = lw; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
@@ -1679,13 +1856,14 @@ function drawCup(ctx, C, cam, dBall){
   ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(p[0], p[1] - hgt); ctx.lineTo(p[0] + 15 * S.dpr, p[1] - hgt + 5 * S.dpr); ctx.lineTo(p[0], p[1] - hgt + 10 * S.dpr); ctx.closePath(); ctx.fill();
   ctx.globalAlpha = 1;
 }
-function drawBall(ctx, cam, x, y, fall){
+function drawBall(ctx, cam, x, y, fall, bz){
   var p = w2s(cam, x, y), r = Math.max(BALL_R * cam.s, 3.6 * S.dpr) * (1 - fall * 0.55);
   if (fall >= 1) return;
-  if (cam.v3){   // in 3D the ball sits ON the carpet: its shadow on the ground, the ball a radius up
-    ctx.fillStyle = 'rgba(0,0,0,.32)'; ctx.beginPath(); ctx.ellipse(p[0] + r * 0.3, p[1] + r * 0.1, r * 1.05, r * 0.6, 0, 0, 6.29); ctx.fill();
+  if (cam.v3){   // in 3D the ball sits ON the carpet: its shadow on the ground, the ball a radius up (and higher in a loop or a jump)
+    ctx.fillStyle = 'rgba(0,0,0,' + (bz ? 0.18 : 0.32) + ')'; ctx.beginPath(); ctx.ellipse(p[0] + r * 0.3, p[1] + r * 0.1, r * 1.05, r * 0.6, 0, 0, 6.29); ctx.fill();
+    if (bz){ p = w2s(cam, x, y, cam.v3.zAt(x, y) + bz); }
     p = [p[0], p[1] - r * cam.v3.ce * (1 - fall)];
-  } else { ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.arc(p[0] + r * 0.35, p[1] + r * 0.4, r, 0, 6.29); ctx.fill(); }
+  } else { ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.arc(p[0] + r * 0.35, p[1] + r * 0.4, r, 0, 6.29); ctx.fill(); if (bz) p = [p[0], p[1] - bz * cam.s * 0.8]; }
   ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, 6.29); ctx.fill();
   ctx.strokeStyle = 'rgba(30,40,30,.55)'; ctx.lineWidth = Math.max(1, S.dpr * 0.8); ctx.stroke();
   ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.beginPath(); ctx.arc(p[0] - r * 0.3, p[1] - r * 0.3, r * 0.3, 0, 6.29); ctx.fill();
@@ -1786,6 +1964,9 @@ RTT_PUTT.open = open; RTT_PUTT.close = close; RTT_PUTT.paintCourse = paintCourse
 RTT_PUTT._state = function(){ return S; };
 // the checker's door straight onto a Tour level. Nothing on the page calls it.
 RTT_PUTT._level = function(n){ if (S) startLevel(n); };
+// a hole built from a function, for trying out a layout in the browser: RTT_PUTT._try(function(T){ return H; }, 'clubhouse')
+RTT_PUTT._try = function(fn, theme, name){ if (!S) return; var d = { custom:fn, tpl:'try' + Date.now(), seed:7, theme:theme || 'clubhouse', name:name || 'Try out' }; S.round = { mode:'try', i:0, cards:[], holes:[d], title:d.name, kick:'Try out' }; playHole(); };
+RTT_PUTT.lvH = lvH; RTT_PUTT.rectP = rectP; RTT_PUTT.buildFrom = buildFrom;
 RTT_PUTT.COINS = { hole:COIN_HOLE, sig:COIN_SIG, ace:COIN_ACE, world:COIN_WORLD, daily:COIN_DAILY, dailyPar:COIN_DAILY_PAR };
 // what the home screen card shows: today's Daily Hole, your level and your lives
 RTT_PUTT.summary = function(host){ HOSTX = host || HOSTX; var st = pload(), dk = today(), dh = dailyHole(dk), rec = st.daily[dk];

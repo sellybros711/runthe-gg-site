@@ -39,7 +39,8 @@ function* steps(C, opt){
   var P = window.RTT_PUTT, M = P.M, ART = P.ART, SK = P.SKIN, PX = window.PXHD, LAND = window.RTT_PUTT_LAND;
   var T = C.T, F = C.field, elev = opt.elev || 42;
   var D2R = Math.PI / 180, se = Math.sin(elev * D2R), ce = Math.cos(elev * D2R);
-  var pxs = C.poly.map(function(p){ return p[0]; }), pys = C.poly.map(function(p){ return p[1]; });
+  var AP = C.allPts || C.poly, pxs = AP.map(function(p){ return p[0]; }), pys = AP.map(function(p){ return p[1]; });
+  var TZ = C.tierAt || function(){ return 0; };
   var b = [Math.min.apply(null, pxs) - 11, Math.min.apply(null, pys) - 15, Math.max.apply(null, pxs) + 11, Math.max.apply(null, pys) + 5];
   var K = opt.k || 2, zMax = 14;
   // a tall phone wants a tall picture: grow the land north and south until it has the stage's shape, so a wide hole never sits on a bare band
@@ -61,10 +62,15 @@ function* steps(C, opt){
   // ---- the distance to the rail, worked out once on the ground grid rather than at every question
   var st = ART / 2, GX = Math.round((b[2] - b[0]) / st) + 1, GY = Math.round((b[3] - b[1]) / st) + 1;
   var SD = new Float32Array(GX * GY), Q = C.poly;
-  function sdExact(x, y){ var d = 1e9;
+  // the signed distance to the course's outline: the union of its rooms, so a mouth between two is open
+  var PS = C.polys || [Q], ED = C.edges;
+  function sdExact(x, y){ if (ED && P.edgeDist) return (P.inAny(PS, x, y) >= 0 ? -1 : 1) * P.edgeDist(ED, x, y);
+    var d = 1e9;
     for (var e = 0; e < Q.length; e++){ var p = Q[e], q = Q[(e + 1) % Q.length], ex = q[0] - p[0], ey = q[1] - p[1], l2 = ex * ex + ey * ey || 1e-9,
       t = Math.max(0, Math.min(1, ((x - p[0]) * ex + (y - p[1]) * ey) / l2)), dx = x - p[0] - ex * t, dy = y - p[1] - ey * t, dd = dx * dx + dy * dy; if (dd < d) d = dd; }
     return (P.inPoly(Q, x, y) ? -1 : 1) * Math.sqrt(d); }
+  // a rail stands on whichever room it borders: the highest tier within a short reach of it
+  function railTier(x, y){ var z = TZ(x, y); for (var a = 0; a < 8; a++){ var ang = a * Math.PI / 4, v = TZ(x + Math.cos(ang) * 0.75, y + Math.sin(ang) * 0.75); if (v > z) z = v; } return z; }
   // exact every 8th point; between them read it off the coarse grid, unless it is near the rail where it has to be exact
   var CS = 8, CX = Math.ceil(GX / CS) + 1, CY = Math.ceil(GY / CS) + 1, CD = new Float32Array(CX * CY);
   for (var cj = 0; cj < CY; cj++) for (var ci = 0; ci < CX; ci++) CD[cj * CX + ci] = sdExact(b[0] + ci * CS * st, b[1] + cj * CS * st);
@@ -81,14 +87,14 @@ function* steps(C, opt){
   var inB = function(x, y){ return x >= C.bounds[0] && y >= C.bounds[1] && x <= C.bounds[2] && y <= C.bounds[3]; };
   var LD = LAND ? LAND.make(C, b, clearAt, (C.seed | 0) || 7) : null;
   yield;
-  var surf = function(x, y){ var m = inB(x, y) ? C.mats.at(x, y) : M.OUT; if (m === M.WATER || m === M.ICE) return CARP - 0.22; return CARP + F.h(x, y) * K; };
+  var surf = function(x, y){ var m = inB(x, y) ? C.mats.at(x, y) : M.OUT, tz = TZ(x, y); if (m === M.WATER || m === M.ICE) return CARP - 0.22 + tz; if (m === M.FLOW) return CARP - 0.16 + tz; return CARP + F.h(x, y) * K + tz; };
 
   // ---- the ground, the carpet and the rail, as one height field
   var GZ = new Float32Array(GX * GY), GM = new Array(GX * GY), GE = new Array(GX * GY);
   for (j = 0; j < GY; j++){ for (i = 0; i < GX; i++){
     x = b[0] + i * st; y = b[1] + j * st; var k0 = j * GX + i, m = inB(x, y) ? C.mats.at(x, y) : M.OUT;
-    if (m !== M.OUT){ GZ[k0] = (m === M.WATER || m === M.ICE) ? CARP - 0.22 : CARP + F.h(x, y) * K; GM[k0] = m; continue; }
-    if (Math.abs(SD[k0]) < RW){ GZ[k0] = RAIL; GM[k0] = 'rail'; continue; }
+    if (m !== M.OUT){ var tz0 = TZ(x, y); GZ[k0] = ((m === M.WATER || m === M.ICE) ? CARP - 0.22 : m === M.FLOW ? CARP - 0.16 : CARP + F.h(x, y) * K) + tz0; GM[k0] = m; continue; }
+    if (Math.abs(SD[k0]) < RW){ GZ[k0] = RAIL + railTier(x, y); GM[k0] = 'rail'; continue; }
     if (LD){ var r = LD.mat(x, y); GZ[k0] = LD.h(x, y); GM[k0] = 't:' + r[0]; GE[k0] = r[1]; }
     else { GZ[k0] = 0; GM[k0] = 'ground'; }
   } if ((j & 15) === 15) yield; }
@@ -100,7 +106,7 @@ function* steps(C, opt){
     var terr = typeof mm === 'string' && mm.charAt(0) === 't';
     var flat = (mm === 'rail' || mm === 'ground') ? 0 : 1, gn = terr ? (LD.gain || 1) : 1, n = camN(-zx * flat * gn, -zy * flat * gn, 1);
     var ti = Math.floor((x - b[0]) / ART), tj = Math.floor((y - b[1]) / ART);
-    var key = terr ? mm : mm === 'rail' ? 'rail' : mm === 'ground' ? 'ground' : mm === M.WATER ? 'haz' : mm === M.ICE ? 'ice' : mm === M.MUD ? 'slow' : mm === M.SAND ? 'sand' : mm === M.BELT ? 'belt' : 'carpet';
+    var key = terr ? mm : mm === 'rail' ? 'rail' : mm === 'ground' ? 'ground' : mm === M.WATER ? 'haz' : mm === M.ICE ? 'ice' : mm === M.MUD ? 'slow' : mm === M.SAND ? 'sand' : mm === M.BELT ? 'belt' : mm === M.FLOW ? 'flow' : 'carpet';
     var ex2 = { ti:ti, tj:tj, dt:key === 'ground' ? -1 : 0, nl:terr };
     if (GE[kk]) for (var qq in GE[kk]) ex2[qq] = GE[kk][qq];
     splat(x, y, z, key, n, ex2);
@@ -160,7 +166,7 @@ function* steps(C, opt){
   // ---- the hole's own pieces
   var LATHE = { pumpkin:1, ghost:1, pine:1, snowman:1, egg:1, snowball:1, beachball:1, pie:1, potgold:1, umbrella:1, clover:0, star:0 };
   var LIFT = { bat:1.4, ghost:0.5 };
-  function base(x, y){ return CARP + F.h(x, y) * K; }
+  function base(x, y){ return CARP + F.h(x, y) * K + TZ(x, y); }
   function skinCol(name){ var fn = SK[name] || SK.stone, n = {}, best = null, bn = 0;
     for (var v = -0.8; v <= 0.8; v += 0.2) for (var u = -0.8; u <= 0.8; u += 0.2){ var c = fn(u, v); if (c){ n[c] = (n[c] || 0) + 1; if (n[c] > bn){ bn = n[c]; best = c; } } }
     return best || T.wallLo; }
@@ -185,6 +191,23 @@ function* steps(C, opt){
     solid(pt.bx - 1.3, pt.by - 1.3, zb - 0.05, pt.bx + 1.3, pt.by + 1.3, zb + 1.3, function(x, y, z){ var ax = x - pt.bx, ay = y - pt.by, along = ax * dx + ay * dy, side = -ax * dy + ay * dx, t = z - zb;
       if (along > 0.15 || along < -0.75) return null; var rr = Math.hypot(side, t); if (rr > 1.05 || rr < 0.72 || t < 0) return null; return col; });
   });
+  // a ramp: a wedge rising to its lip, striped like a kicker
+  (C.ramps || []).forEach(function(rp){ var zb = base(rp.x - rp.dx * 0.3, rp.y - rp.dy * 0.3), L = rp.len, hw = rp.w / 2, hh = rp.h;
+    var xs4 = [rp.x, rp.x - rp.dx * L], ys4 = [rp.y, rp.y - rp.dy * L];
+    solid(Math.min(xs4[0], xs4[1]) - hw - 0.3, Math.min(ys4[0], ys4[1]) - hw - 0.3, zb - 0.05, Math.max(xs4[0], xs4[1]) + hw + 0.3, Math.max(ys4[0], ys4[1]) + hw + 0.3, zb + hh + 0.05, function(x, y, z){
+      var a = (x - rp.x) * rp.dx + (y - rp.y) * rp.dy, sd = -(x - rp.x) * rp.dy + (y - rp.y) * rp.dx; if (a > 0 || a < -L || Math.abs(sd) > hw) return null;
+      var top = hh * (1 + a / L); if (z - zb > top) return null; if (z - zb < top - 0.12) return '#5b4a3a';
+      return (Math.floor((sd + hw) * 1.6) % 2) ? '#f4efe2' : (T.kicker || '#e5483a'); }); });
+  // a loop: a ring of track standing on its edge, with a foot either side
+  (C.loops || []).forEach(function(lp){ var zb = base(lp.x, lp.y), r = lp.r + 0.14, sx = -lp.dy, sy = lp.dx, off = lp.off || 0, LC = T.loopCol || ['#e5483a', '#ff9a6a', '#7a2018'];
+    vox(lp.x - r - 1.2, lp.y - r - 1.2, zb - 0.1, lp.x + r + 1.2, lp.y + r + 1.2, zb + 2 * r + 0.4, function(set){
+      for (var a = 0; a < 64; a++){ var t0 = a / 64 * 2 * Math.PI, t1 = (a + 1) / 64 * 2 * Math.PI, d0 = off * t0 / (2 * Math.PI), d1 = off * t1 / (2 * Math.PI);
+        var p0 = [lp.x + lp.dx * r * Math.sin(t0) + sx * d0, lp.y + lp.dy * r * Math.sin(t0) + sy * d0, zb + r * (1 - Math.cos(t0)) - 0.1], p1 = [lp.x + lp.dx * r * Math.sin(t1) + sx * d1, lp.y + lp.dy * r * Math.sin(t1) + sy * d1, zb + r * (1 - Math.cos(t1)) - 0.1];
+        tube(set, p0[0] + sx * 0.36, p0[1] + sy * 0.36, p0[2], p1[0] + sx * 0.36, p1[1] + sy * 0.36, p1[2], 0.15, 0.15, a % 8 < 4 ? LC[1] : LC[0]);
+        tube(set, p0[0] - sx * 0.36, p0[1] - sy * 0.36, p0[2], p1[0] - sx * 0.36, p1[1] - sy * 0.36, p1[2], 0.15, 0.15, a % 8 < 4 ? LC[1] : LC[0]);
+        if (a % 4 === 0) tube(set, p0[0] + sx * 0.36, p0[1] + sy * 0.36, p0[2], p0[0] - sx * 0.36, p0[1] - sy * 0.36, p0[2], 0.08, 0.08, '#f4efe2'); }
+      tube(set, lp.x + sx * (0.36 + off / 2), lp.y + sy * (0.36 + off / 2), zb + 2 * r - 0.1, lp.x + sx * (1.0 + off / 2), lp.y + sy * (1.0 + off / 2), zb, 0.11, 0.15, LC[2]);
+      tube(set, lp.x - sx * 0.36, lp.y - sy * 0.36, zb + 2 * r - 0.1, lp.x - sx * 1.0, lp.y - sy * 1.0, zb, 0.11, 0.15, LC[2]); }); });
   var mill = null;
   if (C.mill){ var mx = C.mill.x, my = C.mill.y - 0.4, mzb = CARP + 1.5, Ht = 4.2;
     solid(mx - 1.9, my - 1.3, mzb, mx + 1.9, my + 1.3, mzb + Ht + 1.6, function(x, y, z){ var t = (z - mzb) / Ht, dx = Math.abs(x - mx), dy = Math.abs(y - my);
@@ -213,6 +236,7 @@ function* steps(C, opt){
     if (m === 'rail') return R(T.wall);
     if (m === 'haz') return R(((x + (y >> 1) * 3) % 13) === 0 ? T.hazCol2 : T.hazCol);
     if (m === 'ice') return R(T.hazCol); if (m === 'slow') return R(T.slowCol);
+    if (m === 'flow'){ var rc = T.river || ['#2f86c8', '#5fb3e6']; return R(((x * 3 + y * 5) % 17) < 3 ? rc[1] : rc[0]); }
     if (m === 'sand') return R(n < 0.14 ? '#d9c48a' : '#ecdba4');
     if (m === 'belt'){ var bl = C.belts && C.belts[0], horiz = !bl || Math.abs(bl.ax) >= Math.abs(bl.ay), q = horiz ? (c.ti || x) : (c.tj || y); return R((((q % 6) + 6) % 6) < 3 ? '#3a3f48' : '#5a616c'); }
     if (m.charAt(0) === 'x') return R(m.slice(2));

@@ -23,7 +23,7 @@ window.RTT_PUTT_LAND = (function(){
     for (var i = 0; i <= n; i++){ var t = i / n, w = Math.sin(t * Math.PI) * (vn(t * 2.3, seed, seed) - 0.5) * 2 * amp; pts.push([a[0] + dx * t + nx * w, a[1] + dy * t + ny * w]); } return pts; }
 
   function make(C, E, clearAt, seed){
-    var xs = C.poly.map(function(p){ return p[0]; }), ys = C.poly.map(function(p){ return p[1]; });
+    var AP = C.allPts || C.poly, xs = AP.map(function(p){ return p[0]; }), ys = AP.map(function(p){ return p[1]; });
     var P0 = [Math.min.apply(null, xs), Math.min.apply(null, ys)], P1 = [Math.max.apply(null, xs), Math.max.apply(null, ys)], cx = (P0[0] + P1[0]) / 2, cy = (P0[1] + P1[1]) / 2;
     var used = [];
     // how far each half foot of ground is from the nearest thing already placed, less its radius,
