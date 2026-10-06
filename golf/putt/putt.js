@@ -190,7 +190,23 @@ function beltAt(C, x, y){ var B = C.belts; if (!B) return null;
 function speedFor(C, ft){ return Math.min(V_MAX, Math.sqrt(2 * fricOf(C, M.GREEN) * Math.max(0, ft))); }
 function feetFor(C, v){ return v * v / (2 * fricOf(C, M.GREEN)); }
 
+/* THE WINDMILL'S SAILS ARE WHAT BLOCK ITS DOOR. They turn in an upright plane just in front of the
+   door, and each one sweeps down to the carpet as it passes the bottom. Where a sail crosses the height
+   of the ball's middle it is a bar across the doorway, and the rest of the time there is nothing there.
+   So the blocker is exactly the sail the picture draws (drawSails reads the same angle), never a second
+   flat windmill lying on the carpet. Geometry, in the plane of the sails (x across, z up from the hub):
+   a sail runs q0 = 0.35..r along its arm and q1 = -0.08..sw across it. */
+function bladeSpan(o, t){
+  var th = o.phase + o.omega * t, zc = BALL_R - o.hz, lo = 1e9, hi = -1e9;
+  for (var a = 0; a < 4; a++){ var ang = th + a * Math.PI / 2, ca = Math.cos(ang), sa = Math.sin(ang);
+    var q = [[0.35, -0.08], [o.r, -0.08], [o.r, o.sw], [0.35, o.sw]].map(function(v){ return [ca * v[0] - sa * v[1], sa * v[0] + ca * v[1]]; });
+    for (var e = 0; e < 4; e++){ var p0 = q[e], p1 = q[(e + 1) % 4];
+      if ((p0[1] - zc) * (p1[1] - zc) > 0 || p0[1] === p1[1]) continue;
+      var x = p0[0] + (p1[0] - p0[0]) * (zc - p0[1]) / (p1[1] - p0[1]); if (x < lo) lo = x; if (x > hi) hi = x; } }
+  return hi > lo ? [o.x + lo, o.x + hi] : null;
+}
 function moverAt(o, t){
+  if (o.k === 'blade'){ var sp = bladeSpan(o, t); return sp ? [[sp[0], o.y, sp[1], o.y]] : []; }
   if (o.k === 'spin'){
     var segs = [], th = o.phase + o.omega * t;
     for (var a = 0; a < o.arms; a++){ var ang = th + a * 2 * Math.PI / o.arms, c = Math.cos(ang), s = Math.sin(ang);
@@ -203,6 +219,7 @@ function moverAt(o, t){
   return [[cx - hx, cy - hy, cx + hx, cy + hy]];
 }
 function moverVel(o, t, qx, qy){
+  if (o.k === 'blade') return [o.omega * o.hz, 0];   // the foot of a sail, swinging past the bottom
   if (o.k === 'spin') return [-o.omega * (qy - o.y), o.omega * (qx - o.x)];
   var ph = 2 * Math.PI * (t / o.period + o.phase), df = 0.5 * Math.sin(ph) * 2 * Math.PI / o.period;
   return [(o.bx - o.ax) * df, (o.by - o.ay) * df];
@@ -610,7 +627,7 @@ var TEMPLATES = {
     var hw = 4.5, L = 34 + r() * 3, H = T_common(), y0 = -20, y1 = -23.5;
     H.poly = [[-hw, 0], [hw, 0], [hw, -L], [-hw, -L]]; H.tee = [0, -2.5]; H.cup = [(r() - 0.5) * 4, -L + 3.5]; H.par = 3;
     addBlock(H, -hw, y0, -1.1, y1, T.block); addBlock(H, 1.1, y0, hw, y1, T.block);
-    H.movers.push({ k:'spin', x:0, y:y0 + 2.2, len:2.3, hub:0.32, arms:4, w:0.32, omega:(r() < 0.5 ? 1 : -1) * (1.15 + r() * 0.5), phase:r() * 6.28, skin:T.spinner });
+    millDoor(H, 0, y0, (r() < 0.5 ? 1 : -1) * (1.15 + r() * 0.5), r() * 6.28);
     H.mill = { x:0, y:(y0 + y1) / 2 };
     return H;
   },
@@ -679,7 +696,7 @@ function buildMini(tplName, seed, themeId, label, extra){
     H.bumpers.forEach(function(b){ b.x = -b.x; });
     H.blocks = H.blocks.map(function(b){ return { x0:-b.x1, y0:b.y0, x1:-b.x0, y1:b.y1, skin:b.skin }; });
     H.walls = []; H.blocks.forEach(function(b){ H.walls = H.walls.concat(rectWalls(b, 0.6)); });
-    H.movers.forEach(function(m){ if (m.k === 'spin'){ m.x = -m.x; m.omega = -m.omega; m.phase = Math.PI - m.phase; } else { m.ax = -m.ax; m.bx = -m.bx; } });
+    H.movers.forEach(function(m){ if (m.k === 'spin' || m.k === 'blade'){ m.x = -m.x; m.omega = -m.omega; m.phase = Math.PI - m.phase; } else { m.ax = -m.ax; m.bx = -m.bx; } });
     H.portals.forEach(function(p){ p.ax = -p.ax; p.bx = -p.bx; p.dx = -p.dx; });
     H.zones.forEach(function(z){ if (z.t === 'rect'){ var a = -z.x1, b = -z.x0; z.x0 = a; z.x1 = b; } else z.x = -z.x; });
     H.comps.forEach(function(c){ if ('x' in c) c.x = -c.x; if ('gx' in c) c.gx = -c.gx; if ('x0' in c) c.x0 = -c.x0; if ('ux' in c) c.ux = -c.ux; if ('nx' in c) c.nx = -c.nx; });
@@ -739,7 +756,7 @@ function ornament(H, r, T, n){
     if (Math.hypot(x - H.tee[0], y - H.tee[1]) < 4.5 || Math.hypot(x - H.cup[0], y - H.cup[1]) < 4) return false;
     if (H.bumpers.some(function(b){ return Math.hypot(b.x - x, b.y - y) < b.r + need + 1.6; })) return false;
     if (H.blocks.some(function(b){ return x > b.x0 - need - 1.4 && x < b.x1 + need + 1.4 && y > b.y0 - need - 1.4 && y < b.y1 + need + 1.4; })) return false;
-    if (H.movers.some(function(m){ return m.k === 'spin' ? Math.hypot(m.x - x, m.y - y) < m.len + need + 0.9 : segDist(x, y, m.ax, m.ay, m.bx, m.by) < m.len / 2 + need + 0.9; })) return false;
+    if (H.movers.some(function(m){ return m.k === 'blade' ? Math.hypot(m.x - x, m.y - y) < 4.5 + need : m.k === 'spin' ? Math.hypot(m.x - x, m.y - y) < m.len + need + 0.9 : segDist(x, y, m.ax, m.ay, m.bx, m.by) < m.len / 2 + need + 0.9; })) return false;
     if (H.portals.some(function(p){ return Math.hypot(p.ax - x, p.ay - y) < 2.2 + need || Math.hypot(p.bx - x, p.by - y) < 2.2 + need; })) return false;
     if (H.zones.some(function(z){ return z.t === 'rect' ? (x > Math.min(z.x0, z.x1) - 1 && x < Math.max(z.x0, z.x1) + 1 && y > Math.min(z.y0, z.y1) - 1 && y < Math.max(z.y0, z.y1) + 1) : Math.hypot(x - z.x, y - z.y) < z.r + 1; })) return false;
     return true;
@@ -765,7 +782,7 @@ function themedCourse(themeId){
   var T = THEMES[themeId];
   return COURSE_ORDER.map(function(tpl, i){ return { tpl:tpl, seed:hstr('course:' + themeId + ':' + i), theme:themeId, name:T.holes[i], n:i + 1 }; });
 }
-function dailyHole(dayKey){
+function dailyShape(dayKey){
   var th = themeForDay(dayKey), seed = hstr('daily:' + dayKey), r = mulberry(seed);
   // the shapes go round in a shuffled cycle, the way the game deals its daily courses, so two days
   // running are never the same shape of hole
@@ -774,6 +791,26 @@ function dailyHole(dayKey){
   for (var i = cyc.length - 1; i > 0; i--){ var j = Math.floor(cr() * (i + 1)), t = cyc[i]; cyc[i] = cyc[j]; cyc[j] = t; }
   var tpl = cyc[((dn % L) + L) % L], T = THEMES[th];
   return { tpl:tpl, seed:seed, theme:th, name:T.holes[Math.floor(r() * T.holes.length)], day:dayKey, extra:2 };
+}
+/* THE DAILY HOLE IS A TOUR HOLE IN THE DAY'S CLOTHES. The simple shapes above made one score for the
+   whole field, so the daily now deals one of the Putt Putt Tour's set piece holes from worlds 2 to 5
+   (loops, rivers, pipes, jumps, drawbridges), dressed in the calendar's theme. Its par is the tour's,
+   which is the solver's, so it is hard and it is fair: the recorded route in routes.json beats it.
+   The holes go round in a shuffled cycle, so no hole comes back until all of them have been dealt.
+   A layout reads its theme for colours and skins only (no tour hole asks the theme anything about
+   its physics), so the route that beats it on the tour beats it in any clothes. */
+var DAILY_FROM = 19, DAILY_TO = 90;
+function dailyLevel(dayKey){
+  var dn = Math.floor(Date.UTC(+dayKey.slice(0, 4), +dayKey.slice(5, 7) - 1, +dayKey.slice(8, 10)) / 86400000), L = DAILY_TO - DAILY_FROM + 1;
+  var cyc = []; for (var n = DAILY_FROM; n <= DAILY_TO; n++) cyc.push(n);
+  var cr = mulberry(hstr('dlycycle:' + Math.floor(dn / L)));
+  for (var i = cyc.length - 1; i > 0; i--){ var j = Math.floor(cr() * (i + 1)), t = cyc[i]; cyc[i] = cyc[j]; cyc[j] = t; }
+  return cyc[((dn % L) + L) % L];
+}
+// the day's theme, seed and hole name still come from the calendar deal above
+function dailyHole(dayKey){
+  var d = dailyShape(dayKey), n = dailyLevel(dayKey);
+  return { tour:n, tid:'main', daily:1, tpl:'dly' + n, seed:d.seed, theme:d.theme, name:d.name, day:dayKey };
 }
 /* ================================================================= THE PUTT PUTT TOURS: 90 + 18 HOLES */
 /* TWO TOURS. The Putt Putt Tour is everybody's: five worlds of eighteen, played strictly in order, on
@@ -815,7 +852,13 @@ function pen(H, T, cx, cy){ var open = cx > 0 ? -1 : 1;
   if (open > 0) blk(H, T, cx - 1.6, cy + 1.75, cx - 1.1, cy - 1.75); else blk(H, T, cx + 1.1, cy + 1.75, cx + 1.6, cy - 1.75); }
 function millAt(H, T, y0, hw, omega, xc){ xc = xc || 0;
   addBlock(H, xc - hw, y0, xc - 1.1, y0 - 3.5, T.block); addBlock(H, xc + 1.1, y0, xc + hw, y0 - 3.5, T.block);
-  H.movers.push({ k:'spin', x:xc, y:y0 + 2.2, len:2.3, hub:0.32, arms:4, w:0.32, omega:omega, phase:0.7, skin:T.spinner }); H.mill = { x:xc, y:y0 - 1.75 }; }
+  millDoor(H, xc, y0, omega, 0.7); H.mill = { x:xc, y:y0 - 1.75 }; }
+/* The door of a windmill: the sails across its mouth (a 'blade', see bladeSpan) and a conveyor through
+   the house. The tunnel is under the tower and out of sight, so a ball that died in there would be a
+   ball nobody can see to putt; the belt carries it out of the back the way it was going. */
+function millDoor(H, xc, y0, omega, phase){
+  H.movers.push({ k:'blade', x:xc, y:y0 + 0.35, r:3.75, hz:3.81, sw:0.9, w:0.3, omega:omega * 0.6, phase:phase });
+  belt(H, xc - 1.1, y0, xc + 1.1, y0 - 3.6, 0, -6); }
 // a free spinner with no tower: a blade turning on the carpet
 function spinner(H, T, x, y, len, omega, arms){ H.movers.push({ k:'spin', x:x, y:y, len:len || 2.2, hub:0.3, arms:arms || 2, w:0.3, omega:omega, phase:0.3, skin:T.spinner }); }
 // a gate: a bar across a gap in a wall that slides into the wall and back on a clock. dir +1 opens into the wall on the right.
@@ -1057,13 +1100,13 @@ function worldOf(n, tid){ var TR = tourOf(tid); return TR.worlds[Math.floor((n -
 // the desc a Tour level plays as: the same shape the daily and the themed holes use, so the 3D cache keys work
 function tourDesc(n, host, tid){ var TR = tourOf(tid), W = worldOf(n, tid);
   return { tour:n, tid:TR.id, tpl:TR.tag + n, seed:hstr((TR.id === 'main' ? 'ppt:' : TR.id + ':') + n), theme:W.theme, name:levelName(n, tid) }; }
-function buildLevel(n, tid){
-  var TR = tourOf(tid), L = TR.levels[n - 1], W = worldOf(n, tid), T = THEMES[W.theme];
+function buildLevel(n, tid, theme, name){
+  var TR = tourOf(tid), L = TR.levels[n - 1], W = worldOf(n, tid), th = theme || W.theme, T = THEMES[th];
   var H = L.f(T); H.par = L.par;
-  return courseFromH(H, TR.tag + n, hstr((TR.id === 'main' ? 'ppt:' : TR.id + ':') + n), W.theme, levelName(n, tid));
+  return courseFromH(H, TR.tag + n, hstr((TR.id === 'main' ? 'ppt:' : TR.id + ':') + n), th, name || levelName(n, tid));
 }
 function buildFrom(desc){ if (desc.custom){ var Hc = desc.custom(THEMES[desc.theme]); Hc.par = Hc.par || 3; return courseFromH(Hc, desc.tpl, desc.seed, desc.theme, desc.name); }
-  if (desc.tour) return buildLevel(desc.tour, desc.tid); return buildMini(desc.tpl, desc.seed, desc.theme, desc.name, desc.extra || 0); }
+  if (desc.tour) return desc.daily ? buildLevel(desc.tour, desc.tid, desc.theme, desc.name) : buildLevel(desc.tour, desc.tid); return buildMini(desc.tpl, desc.seed, desc.theme, desc.name, desc.extra || 0); }
 
 function scoreName(strokes, par){
   if (strokes === 1) return 'Hole in one';
@@ -1080,7 +1123,7 @@ var RTT_PUTT = {
   simulate:simulate, speedFor:speedFor, feetFor:feetFor, fricOf:fricOf, moverAt:moverAt,
   makeField:makeField, finishCourse:finishCourse, inPoly:inPoly,
   greenCharacter:greenCharacter, buildReal:buildReal, spotFor:spotFor, fromHost:fromHost,
-  CAL_THEMES:CAL_THEMES, buildMini:buildMini, buildFrom:buildFrom, LEVELS:LEVELS, WORLDS:WORLDS, TOURS:TOURS, PER:PER, buildLevel:buildLevel, worldOf:worldOf, lvHelpers:{ hole:hole, rm:rm, pg:pg }, tourDesc:tourDesc, levelName:levelName, themedCourse:themedCourse, dailyHole:dailyHole, themeForDay:themeForDay, scoreName:scoreName
+  CAL_THEMES:CAL_THEMES, buildMini:buildMini, buildFrom:buildFrom, LEVELS:LEVELS, WORLDS:WORLDS, TOURS:TOURS, PER:PER, buildLevel:buildLevel, worldOf:worldOf, lvHelpers:{ hole:hole, rm:rm, pg:pg }, tourDesc:tourDesc, levelName:levelName, themedCourse:themedCourse, dailyHole:dailyHole, dailyLevel:dailyLevel, themeForDay:themeForDay, scoreName:scoreName
 };
 /* ================================================================================ THE PICTURE */
 /* Everything static is painted ONCE, onto a pixel grid of ART feet per pixel (the same grid the
@@ -2053,6 +2096,7 @@ function bar3(ctx, cam, s, w, h, top, side, ink){
 function drawMovers3(ctx, C, cam, t){
   var T = C.T;
   C.movers.forEach(function(m){
+    if (m.k === 'blade') return;   // the sails drawn on the windmill are this blocker
     var segs = moverAt(m, t), w = Math.max(m.w * cam.s, 3), h = m.k === 'spin' ? 0.45 : 0.6;
     segs.sort(function(a, b){ return (a[1] + a[3]) - (b[1] + b[3]); });   // the far blade first
     segs.forEach(function(s){ bar3(ctx, cam, s, w, h, m.k === 'spin' ? T.spinner : T.wall, m.k === 'spin' ? '#3a2a1a' : T.wallLo, T.ink); });
@@ -2062,10 +2106,10 @@ function drawMovers3(ctx, C, cam, t){
 }
 // the windmill's sails turn with its paddles, on the face of the tower
 function drawSails(ctx, C, cam, t){
-  var M3 = cam.v3.mill, sp = null; C.movers.forEach(function(m){ if (m.k === 'spin' && !sp) sp = m; });
-  var th = sp ? sp.phase + sp.omega * t * 0.6 : t * 0.7, T = C.T;
+  var M3 = cam.v3.mill, sp = null; C.movers.forEach(function(m){ if (m.k === 'blade' && !sp) sp = m; });
+  var th = sp ? sp.phase + sp.omega * t : t * 0.7, T = C.T, SW = M3.w || 0.85;
   for (var a = 0; a < 4; a++){
-    var ang = th + a * Math.PI / 2, ca = Math.cos(ang), sa = Math.sin(ang), pts = [[0.35, -0.08], [M3.r, -0.08], [M3.r, 0.85], [0.6, 0.85]].map(function(q){
+    var ang = th + a * Math.PI / 2, ca = Math.cos(ang), sa = Math.sin(ang), pts = [[0.35, -0.08], [M3.r, -0.08], [M3.r, SW], [0.35, SW]].map(function(q){
       return w2s(cam, M3.x + ca * q[0] - sa * q[1], M3.y, M3.z + sa * q[0] + ca * q[1]); });
     ctx.fillStyle = '#efe6cf'; ctx.strokeStyle = '#4a2c14'; ctx.lineWidth = Math.max(1.5, cam.s * 0.07);
     ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (var i = 1; i < 4; i++) ctx.lineTo(pts[i][0], pts[i][1]); ctx.closePath(); ctx.fill(); ctx.stroke();
@@ -2147,9 +2191,16 @@ function drawBall(ctx, cam, x, y, fall, bz){
   var p = w2s(cam, x, y), r = Math.max(BALL_R * cam.s, 3.6 * S.dpr) * (1 - fall * 0.55);
   if (fall >= 1) return;
   if (cam.v3){   // in 3D the ball sits ON the carpet: its shadow on the ground, the ball a radius up (and higher in a loop or a jump)
-    ctx.fillStyle = 'rgba(0,0,0,' + (bz ? 0.18 : 0.32) + ')'; ctx.beginPath(); ctx.ellipse(p[0] + r * 0.3, p[1] + r * 0.1, r * 1.05, r * 0.6, 0, 0, 6.29); ctx.fill();
+    var V = cam.v3, zb = V.zAt(x, y) + (bz || 0), behind = V.hid && V.hid(x, y, zb + BALL_R * 2) && V.hid(x, y, zb + BALL_R);
+    if (!behind) ctx.fillStyle = 'rgba(0,0,0,' + (bz ? 0.18 : 0.32) + ')', ctx.beginPath(), ctx.ellipse(p[0] + r * 0.3, p[1] + r * 0.1, r * 1.05, r * 0.6, 0, 0, 6.29), ctx.fill();
     if (bz){ p = w2s(cam, x, y, cam.v3.zAt(x, y) + bz); }
     p = [p[0], p[1] - r * cam.v3.ce * (1 - fall)];
+    /* BEHIND SOMETHING, THE BALL IS BEHIND IT. Painted over everything, a ball behind a block or the
+       windmill house looked like it was sitting on top of it. Hidden, it is drawn as a faint outline
+       through whatever is in front, so it can still be found. */
+    if (behind){
+      ctx.save(); ctx.globalAlpha = 0.55; ctx.setLineDash([Math.max(2, r * 0.6), Math.max(2, r * 0.45)]);
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(1.5, S.dpr * 1.2); ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, 6.29); ctx.stroke(); ctx.restore(); return; }
   } else { ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.arc(p[0] + r * 0.35, p[1] + r * 0.4, r, 0, 6.29); ctx.fill(); if (bz) p = [p[0], p[1] - bz * cam.s * 0.8]; }
   ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, 6.29); ctx.fill();
   ctx.strokeStyle = 'rgba(30,40,30,.55)'; ctx.lineWidth = Math.max(1, S.dpr * 0.8); ctx.stroke();
@@ -2182,7 +2233,15 @@ function drawAim(ctx, P, cam){
   }
 }
 function imgOf(url){ S.imgs = S.imgs || {}; var im = S.imgs[url]; if (!im){ im = new Image(); im.src = url; S.imgs[url] = im; var ks = Object.keys(S.imgs); if (ks.length > 40) delete S.imgs[ks[0]]; } return im; }
+/* The golfer stands beside the ball, so when the ball is behind something he is behind it too: drawn
+   faint rather than standing on the roof of the windmill house or the top of a block. */
 function drawGolfer(ctx, P, cam){
+  var V = cam.v3, at0 = P.state === 'aim' ? P.ball : P.prev;
+  if (V && V.hid){ var z0 = V.zAt(at0[0], at0[1]);
+    if (V.hid(at0[0], at0[1], z0 + 0.3) || V.hid(at0[0] + 0.6, at0[1], z0 + 0.8) || V.hid(at0[0] - 0.6, at0[1], z0 + 0.8)){ ctx.save(); ctx.globalAlpha = 0.4; drawGolfer0(ctx, P, cam); ctx.restore(); return; } }
+  drawGolfer0(ctx, P, cam);
+}
+function drawGolfer0(ctx, P, cam){
   var h = S.host, at = P.state === 'aim' ? P.ball : P.prev, ang = P.state === 'aim' ? (P.C.kind === 'real' ? Math.atan2(P.target[1] - P.ball[1], P.target[0] - P.ball[0]) : P.aimAng) : P.shotAng;
   // the 3D modelled golfer (golfer3d.js through the page), side-on to the putt, putter on the ball:
   // address while aiming, the take back while a pull is held, the through once it is struck

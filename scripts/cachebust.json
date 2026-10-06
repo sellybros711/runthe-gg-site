@@ -2515,16 +2515,16 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "12",
-      "sha": "4a612b87fc680485"
+      "v": "13",
+      "sha": "fea09cf1bffebfab"
     },
     "putt/land.js": {
       "v": "4",
       "sha": "1d1850570f4f0bbf"
     },
     "putt/hole3d.js": {
-      "v": "4",
-      "sha": "18c76dc2d4e78799"
+      "v": "5",
+      "sha": "20f2069ee692ce93"
     },
     "putt/mapland.js": {
       "v": "2",

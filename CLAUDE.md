@@ -19437,6 +19437,25 @@ data, and the Daily Hole result screen says the board is not there yet.
 `MINI_SAND_STIMP`, slow but playable; a real green's bunker still stops a ball dead. Timed gates are a
 `slide` mover across a gap in a wall.
 
+**THE DAILY HOLE IS A TOUR HOLE IN THE DAY'S CLOTHES, AND IT IS TIMED.** The old dailies were simple
+shapes that put the whole field on one score. `dailyHole()` now deals one of the main tour's holes from
+worlds 2 to 5 (`dailyLevel`, a shuffled 72 day cycle, so no hole comes back until all have been dealt),
+dressed in the calendar's theme. Par is the tour's, and the tour's recorded route beats it in any theme,
+because no tour hole reads its theme for anything but colour; `check-putt` replays it for each day. The
+clock runs from the first frame the hole is drawn to the drop, is kept with the score, and breaks ties.
+
+**THE WINDMILL'S SAILS ARE THE BLOCKER** (`blade` in `moverAt`, see `bladeSpan`). It used to be a flat
+four arm spinner lying on the carpet in front of the house, which read as a second windmill, with the
+sails on the tower only decoration. Now the sails turn in an upright plane just in front of the door,
+sweep down to the carpet, and wherever a sail crosses the height of the ball's middle it is a bar across
+the doorway. `drawSails` reads the same angle, so what blocks the ball is exactly what is drawn. A
+conveyor runs through the tunnel under the house (`millDoor`), because a ball that died in there was
+out of sight and the golfer stood on the roof to putt it.
+
+**A BALL BEHIND SOMETHING IS BEHIND IT.** `hole3d.js` hands back `hid(x, y, z)` off the depth the
+picture was painted with, so a ball behind a block, a rail or the house is drawn as a faint dashed
+outline instead of painted on top of it, and the golfer beside it is drawn faint.
+
 **IT IS NOT LAUNCHED.** The home card, second in the list right after Play 18, is drawn by `puttOn()`
 in `golf/index.html` for the `PUTT_TESTERS` usernames and nobody else, read off the server-attributed
 `sbUsername`. There is no localStorage override, on purpose: a flag in the browser is a switch any

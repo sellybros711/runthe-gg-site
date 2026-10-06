@@ -233,8 +233,23 @@ if (!QUICK){
     const d = new Date(day0.getTime() + i * 86400000), key = d.toISOString().slice(0, 10), desc = P.dailyHole(key);
     themesSeen.add(desc.theme);
     claim(desc.theme === P.themeForDay(key), `${key} is ${desc.theme}`);
-    checkHole(P.buildFrom(desc), `${key} ${desc.name} (${desc.tpl}, ${desc.theme})`);
+    // THE DAILY IS A TOUR HOLE IN THE DAY'S CLOTHES, and the tour's own route beats it in them
+    const C = P.buildFrom(desc), line = ROUTES['main:' + desc.tour], why = line ? replayRoute(C, line) : 'no route';
+    claim(desc.tour >= 19 && desc.tour <= 90 && C.T === P.THEMES[desc.theme] && C.par === P.TOURS.main.levels[desc.tour - 1].par && !why && line.length < C.par,
+      `${key} ${desc.name}: tour hole ${desc.tour} dressed as ${desc.theme}, par ${C.par}, beaten in ${line ? line.length : '?'} by its route` + (why ? ': ' + why : ''));
   }
+  const dealt = new Set(), c0 = Math.floor(Date.UTC(2026, 9, 6) / 86400000 / 72) * 72;
+  for (let i = 0; i < 72; i++) dealt.add(P.dailyLevel(new Date((c0 + i) * 86400000).toISOString().slice(0, 10)));
+  claim(dealt.size === 72, `one cycle of 72 days deals all 72 tour holes from worlds 2 to 5, each once (${dealt.size})`);
+  // THE WINDMILL'S SAILS BLOCK ITS DOOR, AND NOTHING DIES UNDER THE HOUSE. A ball that stopped in the
+  // tunnel was out of sight under the tower, and the golfer was drawn standing on the roof to putt it.
+  { const C = P.buildLevel(4, 'main'), bl = C.movers.find(m => m.k === 'blade');
+    let open = 0, n = 0; for (let t = 0; t < 20; t += 0.02){ n++; if (!P.moverAt(bl, t).length) open++; }
+    claim(!!bl && !C.movers.some(m => m.k === 'spin') && open / n > 0.3 && open / n < 0.85, `the Windmill's door is blocked by its own sails, open ${Math.round(open / n * 100)}% of the time, with no flat spinner on the carpet`);
+    let inside = 0, tot = 0;
+    for (let t0 = 0; t0 < 6; t0 += 0.25) for (const ft of [15, 16, 17, 18, 19, 20, 21, 22]){ const r = P.simulate(C, C.tee[0], C.tee[1], 0, -P.speedFor(C, ft), t0); tot++;
+      const e = r.pts[r.pts.length - 1]; if (Math.abs(e[0]) < 1.1 && e[1] < bl.y - 0.35 && e[1] > bl.y - 3.85) inside++; }
+    claim(inside === 0, `${tot} putts at the door at every pace and moment: none comes to rest inside the house (${inside})`); }
   const yr = new Set(); for (let i = 0; i < 365; i++){ const d = new Date(day0.getTime() + i * 86400000); yr.add(P.themeForDay(d.toISOString().slice(0, 10))); }
   claim(yr.size === P.CAL_THEMES.length && P.CAL_THEMES.every(t => yr.has(t)), `a year of dailies wears every calendar theme (${[...yr].join(', ')})`);
   claim(P.themeForDay('2026-10-31') === 'haunted' && P.themeForDay('2026-11-26') === 'harvest' && P.themeForDay('2026-12-25') === 'winter', 'Halloween is haunted, Thanksgiving is harvest, Christmas is winter');

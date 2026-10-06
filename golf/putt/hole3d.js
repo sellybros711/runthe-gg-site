@@ -216,7 +216,9 @@ function* steps(C, opt){
       if (y - my > hd - 0.25 && dx < 0.42 && t < 0.32) return T.ink;
       if (y - my > hd - 0.25 && dx < 0.32 && Math.abs(t - 0.6) < 0.07) return '#ffd36a';
       return (Math.floor((z - mzb) * 2.5) % 2) ? T.wall : T.wallHi; });
-    mill = { x:mx, y:my + 1.25, z:mzb + Ht * 0.78, r:3.2 };
+    // the sails turn in front of the door and sweep down to the carpet: they are what blocks it (putt.js 'blade')
+    var bl = (C.movers || []).filter(function(m){ return m.k === 'blade'; })[0];
+    mill = bl ? { x:bl.x, y:bl.y, z:CARP + bl.hz, r:bl.r, w:bl.sw } : { x:mx, y:my + 1.25, z:mzb + Ht * 0.78, r:3.2 };
   }
 
   for (var jb = 0; jb < JOBS.length; jb++){ JOBS[jb](); yield; }
@@ -261,6 +263,11 @@ function* steps(C, opt){
       if (clearAt(wx, wy) > 0.4 && fv > 0.62 && (fv > 0.7 || ((fx + fy) & 2))) ctx.fillRect(fx, fy, 2, 2); }
     ctx.globalAlpha = 1; }
   if (LD && LD.after) LD.after(ctx, { pr:pr, W:W, H:Hh - y0, b:b, ART:ART, se:se, oy:oy - y0 });
-  return { cv:cv, pr:pr, un:un, zAt:surf, mill:mill, se:se, ce:ce, K:K, carp:CARP };
+  /* WHETHER SOMETHING STANDS IN FRONT OF A POINT. The picture keeps how near the camera each pixel's
+     surface is, so a point on the hole is hidden when the scene at its pixel is nearer than it: a ball
+     behind a block, a wall or the windmill house is behind it, not painted over it. */
+  var hid = function(x, y, z){ var sx = Math.floor((x - b[0]) / ART), sy = Math.floor(y * se / ART - z * ce / ART + oy);
+    if (sx < 0 || sy < 0 || sx >= W || sy >= Hh) return false; return Z[sy * W + sx] > y * ce + z * se + 0.2; };
+  return { cv:cv, pr:pr, un:un, zAt:surf, hid:hid, mill:mill, se:se, ce:ce, K:K, carp:CARP };
 }
 })();
