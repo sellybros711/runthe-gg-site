@@ -728,7 +728,7 @@ function playSpec(card, n, c){
   var calls = CALLS[kind] || CALLS.mid;
   /* a road game is played in the other building, in their colours */
   var road = cx.home === 0 || cx.home === false;
-  var mate = cx.mate ? { look: B.lookFor('mate:' + cx.mate), num: String(B.hash(cx.mate) % 40 + 1), name: cx.mate } : null;
+  var mate = cx.mate ? { look: B.lookFor('mate:' + cx.mate), num: String(B.hash(cx.mate) % 40 + 1), name: cx.mate, faceless: !!cx.mateReal } : null;
   var pressure = card.id === 'moment' ? 0.4 : 1;
   var morale = L.m ? L.m.morale : 60;
   var nerves = clamp01(pressure * (1 - (morale - 40) / 70) - (C.hasTrait && C.hasTrait(L, 'clutch') ? 0.35 : 0));
