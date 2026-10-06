@@ -562,7 +562,11 @@ section('10. the press room, the persona, the look');
      knows. A topic nothing reaches is a microphone nobody ever stands at. */
   const topics = {};
   let tonesOk = true, pressN = 0;
-  for (let i = 0; i < 260; i++) {
+  /* An MVP is one career in fifty or so, so a fixed sample is a coin toss on
+     whether that podium is reached. The claim is that every topic CAN be held,
+     so it searches until each one has been, past the first 260. */
+  const allHeld = () => Object.keys(C.PRESSERS).every((t) => topics[t]);
+  for (let i = 0; i < 900 && (i < 260 || !allHeld()); i++) {
     play('press' + i, ['first', 'last', 'random'][i % 3], { start: i % 2 ? 'hs' : 'draft' }, (L) => {
       const c = L.pending[0];
       if (c && c.id === 'presser') {
