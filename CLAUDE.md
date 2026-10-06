@@ -11248,6 +11248,14 @@ here knows a man's next contract, so a later year is an estimate by design.
 answer outlived a change a reload would have seen, which check-career's reload test caught the
 moment ratings went to one decimal.
 
+**A CLUB ON A CARD OPENS ITS ROSTER.** Any answer carrying `club` (free agency, a
+two-way, Summer League, the deadline) gets a Roster button beside it. It opens
+`clubView(L, c)`: that club's players off `matesOf` (the Team tab's roster, so the
+sheet and the season agree), the tier, the coach, and where your overall would rank
+you. The sheet's own button is the same answer as the card's. `clubView` draws from
+no random stream. check-career's page walk opens one on a stand-in offer and signs
+from the first real one.
+
 **THE CAROUSEL** (`coachCarousel`, run from `driftLeague` every summer, the road years too):
 a club fires on how it played (your club on the record you actually played, and never after a
 title), a coach past 71 may retire, an interim is likely replaced, and the hire is weighted
@@ -11817,14 +11825,23 @@ never reaches into the draft game's variables. `hoops/design/style-guide.html`
 renders every part. A screen needing something the kit lacks adds it to the kit
 and the guide first. The three fonts are self-hosted in `hoops/fonts/`.
 
-**REAL PEOPLE STAY ON THE COURT.** A real player or coach appears in games,
-rosters, trades, awards, hirings and firings, and never in a quote, a feud, a
-night out or a podcast. Every club carries three invented teammates
-(`lockerOf`: `{tm}`, `{tm2}`, `{tvet}`, `{trook}`, `{tco}`), `{topp}` is an
-invented player elsewhere, and the recurring cast (`CAST`) has fixed names.
-`REAL_TOKENS` names the tokens that resolve to a real person, and an NBA event
-may use one only if `BASKETBALL_ONLY` lists it with the reason. check-career
-section 5c fails otherwise, and scans the copy outside the pools too.
+**REAL PEOPLE ARE IN THE STORY TOO, ON A STORY CAREER IN THE LEAGUE.** This
+reverses the rule this paragraph used to hold (real players and coaches on the
+court only, never in a quote, a feud or a fight). The owner's call (2026-10): a
+feud with an invented name was boring and hard to follow. On a story career in
+the NBA, `lockerOf` reads the REAL room off today's rosters (`realLocker`):
+`{tvet}` is the oldest man on your club, `{trook}` the youngest, `{tco}` the best
+of the rest, `{tm}` and `{tm2}` two of those. `{topp}` and a feud's `{foe}` are a
+real man in another club's top four (`realOpp`). They are read when the card is
+drawn, so a traded or retired man is never named. **Off the league (high school,
+college, overseas) and on a career from before the story engine there is no real
+room**, so the three invented players a club are still there, and the story-off
+replay stays byte identical. A real teammate in a moment is drawn faceless
+(`ctx.mateReal`), the same as every real man on the court. The broadcasters, the
+agents, GMs, owners and family stay invented, and `CAST` keeps fixed names.
+`REAL_TOKENS` and `BASKETBALL_ONLY` still hold the tokens that name the
+coaches and the data's stars to basketball cards; check-career 5c asserts the
+real room is three different men on the roster and `{topp}` a man elsewhere.
 
 **A SAVE IS VERSIONED AND MIGRATED.** `LIFE_VERSION` is 2. `migrate()` runs on
 every load, is idempotent, and never moves a number the sim reads, which is
@@ -12241,6 +12258,21 @@ good release; drives are a dunk, a layup or a poster that knocks the big down;
 five celebrations and three ways to hurt; a road game is played in the other
 building's colours; a made shot under pressure is replayed slower between
 letterbox bars; the booth's lines are pools (`CALLS`, `INTRO`).
+
+**THREE MORE MOMENTS, AND MORE WAYS INTO EVERY ONE.** A story career can be dealt a
+post-up (`post`: a hook, a turnaround or a drop step, mostly for a PF or C), an
+alley-oop (`lob`: a read, go up when the passer lets it fly and not on his pump
+fake) and jumping a passing lane (`steal`: a read, he looks you off before he
+throws it). Drives add a eurostep and a reverse, and there are eight
+celebrations. Before the call, a moment opens one of several ways
+(`MOMENT_SETUP` in scenes.js: a timeout huddle, the studio's read, the
+sideline), about one in four straight to the call. The huddle is told, never
+quoted, because the coach is real. **The new cards are drawn only on a story
+career**: everything else draws from `MOMENT_OLD`, the old key list, so the
+story-off replay picks the same card off the same number. Appending keys with
+a weight of nought is not enough, because `weighted` falls through to the last
+key when rounding leaves a sliver over. check-moments plays every kind and
+variant to the end, half as makes and half as misses.
 
 **EVERYTHING IS THE 3D STYLE.** `B.prop` sphere traces the ball (four spin frames),
 the rim (two halves, so the ball drops between them), a trophy, a podium and a

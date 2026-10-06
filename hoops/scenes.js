@@ -589,8 +589,26 @@ var CARD_INTROS = {
   declare: function(card, c){ return [{ who: 'hollis', room: 'studio', pic: 'me', pose: 'stand', tx: function(){ return 'The deadline is here. Does ' + c.last + ' stay, or is he gone?'; } }]; },
   after: function(card, c){ return [{ who: 'kim', room: 'press', pic: 'me', pose: 'suit', tx: 'One last question. What comes next?' }]; },
 };
-CARD_INTROS.moment = function(card, c){ return [{ who: 'vance', room: 'arena', pic: 'me', pose: 'ball', loud: true, board: 'LIVE',
-  tx: card.text || 'It comes down to this.' }]; };
+/* A MOMENT IS SET UP SEVERAL WAYS, so a fifth buzzer-beater does not open
+   like the first: a timeout huddle, the studio's read, the sideline, or the
+   crowd, picked off the card's own key, then the call. The coach is never
+   quoted, because he is real: the huddle is told, not said. */
+var MOMENT_SETUP = {
+  huddle: function(k){ return { who: 'narr', room: 'arena', pic: 'me', pose: 'stand', name: 'Timeout', role: 'The bench',
+    tx: { buzzer: 'A whiteboard, five guys, one play. Every arrow on it ends with you.', stop: 'The coach draws one name on the board. Yours.', post: 'The play is simple. Get it to you on the block. Go to work.', ft: 'Nobody says a word to you. That is the plan.' }[k] || 'One play drawn up. Everybody knows who it is for.' }; },
+  studio: function(k){ return { who: 'hollis', room: 'studio', pic: null,
+    tx: { post: 'He has had his way down low all night. Watch the block.', lob: 'When this team runs, look up. Somebody is going to the rim.', steal: 'They have run that swing pass all night. Somebody is going to jump it.', block: 'Never give up on a play. Watch the trailer.', poster: 'Their big man wants to take a charge. Bold.', stop: 'Their best scorer wants the last shot. Who guards him?' }[k] || 'This is the moment you play for.' }; },
+  sideline: function(k){ return { who: 'bell', room: 'arena', pic: 'me', pose: 'ball', board: 'LIVE',
+    tx: { ft: 'They are waving everything they have behind that basket.', buzzer: 'Both benches are on their feet. Nobody is sitting.', lob: 'He told me before the game he wanted to get up tonight.', steal: 'He was in the film room until midnight this week.' }[k] || 'You can feel it down here. The floor is shaking.' }; },
+};
+var MOMENT_SETUPS = { buzzer: ['huddle', 'sideline', 'studio'], ft: ['huddle', 'sideline'], stop: ['huddle', 'studio'], post: ['huddle', 'studio'], poster: ['studio'], block: ['studio'], lob: ['studio', 'sideline'], steal: ['studio', 'sideline'] };
+CARD_INTROS.moment = function(card, c){
+  var k = card.ctx && card.ctx.m, ways = MOMENT_SETUPS[k] || [], h = B.hash(String(card.key || '') + ':setup');
+  var live = { who: 'vance', room: 'arena', pic: 'me', pose: 'ball', loud: true, board: 'LIVE', tx: card.text || 'It comes down to this.' };
+  /* About one moment in four goes straight to the call. */
+  if (!ways.length || h % 4 === 0) return [live];
+  return [MOMENT_SETUP[ways[h % ways.length]](k), live];
+};
 /* YOUR CLUB'S MOMENTS (the tm_ cards in career.js). The engine wrote down
    what the summer, the deadline or the season did to your club, and the card
    it dealt is set up here before it is put to you: the office, the empty
@@ -683,25 +701,35 @@ var LOOK_SAY = {
    court rather than read: the choice is still the engine's card, the press
    on the meter is a touch handed to the engine with it, and what the court
    shows next is what the engine said. */
-var PLAY_CLOCK = { buzzer: ['Q4', '0:04'], ft: ['Q4', '0:02'], stop: ['Q4', '0:12'], poster: ['Q3', '4:51'], block: ['Q3', '1:38'] };
+var PLAY_CLOCK = { buzzer: ['Q4', '0:04'], ft: ['Q4', '0:02'], stop: ['Q4', '0:12'], poster: ['Q3', '4:51'], block: ['Q3', '1:38'], post: ['Q4', '0:21'], lob: ['Q2', '3:17'], steal: ['Q4', '1:05'] };
 /* What the booth says, several ways, picked by the moment's seed. */
 var CALLS = {
-  three: [['BANG! From way downtown!', 'Rises, fires... GOT IT!', 'Splash! Nothing but nylon!'], ['Off the rim.', 'Rattles out.', 'Front iron.']],
-  mid: [['Fadeaway... GOT IT!', 'Pull-up, money!', 'Over the top. Good!'], ['Short.', 'In and out!', 'Too strong.']],
-  drive: [['HAMMER DOWN!', 'Throws it DOWN!', 'Finishes through contact!'], ['Rolls off.', 'Can\'t finish!', 'Hangs on the rim and out.']],
-  pass: [['The open man... YES!', 'Found him! Splash!', 'What a pass!'], ['Off the rim.', 'Rushed it.', 'Can\'t get it to go.']],
-  buzzer: [['At the horn! BANG!', 'He got it off... GOOD!', 'Answer the bell! At the buzzer!'], ['Off the back iron.', 'No good at the horn.', 'Long. That\'s the buzzer.']],
-  ft: [['Two for two. Ice.', 'Both down. Cold blooded.'], ['Both off.', 'Two misses. Ouch.']],
-  poster: [['ON HIS HEAD!', 'Posterized!', 'Put him in the frame!'], ['Offensive foul.', 'He took the charge.']],
-  block: [['PINNED!', 'Get that outta here!', 'Off the glass, block!'], ['A step late.', 'And one.']],
-  stop: [['STOP! Ballgame!', 'Locked up!', 'Big-time defense!'], ['He buries it.', 'Too quick. Bucket.']],
+  three: [['BANG! From way downtown!', 'Rises, fires... GOT IT!', 'Splash! Nothing but nylon!', 'From the parking lot! Good!', 'Cash money from deep!'], ['Off the rim.', 'Rattles out.', 'Front iron.', 'Halfway down and out!', 'Long. Off the back.']],
+  mid: [['Fadeaway... GOT IT!', 'Pull-up, money!', 'Over the top. Good!', 'Elbow jumper. Wet!', 'Shoulder fake, rise... yes!'], ['Short.', 'In and out!', 'Too strong.', 'Off the side of the rim.', 'Rimmed out.']],
+  drive: [['HAMMER DOWN!', 'Throws it DOWN!', 'Finishes through contact!', 'Euro step... and the finish!', 'Under and up the other side! Reverse!'], ['Rolls off.', 'Can\'t finish!', 'Hangs on the rim and out.', 'Spun it too hard.', 'Off the glass and out.']],
+  pass: [['The open man... YES!', 'Found him! Splash!', 'What a pass!', 'Threaded the needle!', 'Look-away dime! Bucket!'], ['Off the rim.', 'Rushed it.', 'Can\'t get it to go.', 'Wide open, and he misses.', 'Good pass. No finish.']],
+  buzzer: [['At the horn! BANG!', 'He got it off... GOOD!', 'Answer the bell! At the buzzer!', 'Red light. Ball in. Ballgame!', 'BUZZER BEATER!'], ['Off the back iron.', 'No good at the horn.', 'Long. That\'s the buzzer.', 'Short at the horn.', 'Rims out. Overtime.']],
+  ft: [['Two for two. Ice.', 'Both down. Cold blooded.', 'Nothing but net. Twice.', 'Ice water in the veins.'], ['Both off.', 'Two misses. Ouch.', 'Front rim. Both of them.', 'The building got to him.']],
+  poster: [['ON HIS HEAD!', 'Posterized!', 'Put him in the frame!', 'Oh, he did NOT just do that!', 'That one goes on a wall!'], ['Offensive foul.', 'He took the charge.', 'Stonewalled at the rim.', 'Charge. Big man held his spot.']],
+  block: [['PINNED!', 'Get that outta here!', 'Off the glass, block!', 'From behind! Swatted!', 'Not in this house!'], ['A step late.', 'And one.', 'Couldn\'t get there.', 'Foul on the way up.']],
+  stop: [['STOP! Ballgame!', 'Locked up!', 'Big-time defense!', 'Stayed in front! No good!', 'Shut the door!'], ['He buries it.', 'Too quick. Bucket.', 'Got a step and scored.', 'Contested, and it goes!']],
+  post: [['Baby hook... GOOD!', 'Drop step, two hands!', 'Turnaround, money!', 'Bullied him! Bucket!', 'Old-school post move. Good!'], ['Rolls around and out.', 'He held his ground.', 'Off the front of the rim.', 'Too much traffic.', 'Blocked at the rim!']],
+  lob: [['ALLEY-OOP!', 'From the clouds!', 'Caught it at the top of the square!', 'Lob city! Slam!', 'Threw it up, he threw it down!'], ['Too high!', 'Mistimed it.', 'Out of bounds.', 'Off his fingertips.', 'Overthrown.']],
+  steal: [['Picked off! He\'s gone!', 'Read it the whole way!', 'Jumped the lane! Slam!', 'Pick six! Coast to coast!', 'Saw it coming! Steal!'], ['Bit on the look.', 'Backdoor! Easy two.', 'Gambled and lost.', 'Too early on the jump.', 'Back cut. Layup.']],
 };
 var INTRO = {
-  three: ['Clock running.', 'Ball\'s in his hands.', 'Here\'s the look.'], mid: ['Clock running.', 'Isolation up top.', 'Working the elbow.'],
-  drive: ['Clock running.', 'He sees a lane.', 'Attack mode.'], pass: ['Clock running.', 'Eyes up.', 'They are loading up on him.'],
-  buzzer: ['Four seconds.', 'Nobody\'s sitting.', 'Last shot.'], ft: ['Two shots.', 'Two shots. Quiet in here.', 'The whole building is waving.'],
-  poster: ['Fast break!', 'Off and running!', 'He\'s got a head of steam.'], stop: ['Here he comes.', 'Clear out. One on one.', 'Get a stop.'],
-  block: ['Breakaway!', 'He\'s gone. Or is he?', 'Turnover. Run!'],
+  three: ['Clock running.', 'Ball\'s in his hands.', 'Here\'s the look.', 'Coming off the screen.', 'Room to breathe out there.'],
+  mid: ['Clock running.', 'Isolation up top.', 'Working the elbow.', 'One on one at the elbow.', 'Cleared out a side.'],
+  drive: ['Clock running.', 'He sees a lane.', 'Attack mode.', 'Downhill.', 'Heading for the rim.'],
+  pass: ['Clock running.', 'Eyes up.', 'They are loading up on him.', 'Two coming at him.', 'Somebody is open.'],
+  buzzer: ['Four seconds.', 'Nobody\'s sitting.', 'Last shot.', 'Inbound. Clock starts on the catch.', 'This is it.'],
+  ft: ['Two shots.', 'Two shots. Quiet in here.', 'The whole building is waving.', 'They called timeout to ice him.', 'Deep breath.'],
+  poster: ['Fast break!', 'Off and running!', 'He\'s got a head of steam.', 'One man back.', 'Runout!'],
+  stop: ['Here he comes.', 'Clear out. One on one.', 'Get a stop.', 'Their best scorer has it.', 'Everybody on their feet.'],
+  block: ['Breakaway!', 'He\'s gone. Or is he?', 'Turnover. Run!', 'Somebody chase him!', 'Wide-open layup coming.'],
+  post: ['Fed on the block.', 'Down low.', 'Back to the basket.', 'Posting up.', 'Deep position.'],
+  lob: ['Two on one!', 'Running the floor!', 'Look up!', 'Fast break, he\'s got company.', 'Somebody is flying in.'],
+  steal: ['They swing it around.', 'Same set again.', 'Eyes on the passer.', 'Watch the swing pass.', 'He has seen this before.'],
 };
 function playSpec(card, n, c){
   var CT = window.RTF_COURT;
@@ -714,7 +742,7 @@ function playSpec(card, n, c){
     rating = R[0]; rn = R[1];
   } else if (card.id === 'moment') {
     kind = card.ctx && card.ctx.plays ? card.ctx.plays[n] : null;
-    var RM = { buzzer: [rt.sho, 'Shooting'], ft: [rt.sho, 'Shooting'], poster: [rt.ath, 'Athleticism'], block: [rt.def, 'Defense'], stop: [rt.def, 'Defense'] }[kind];
+    var RM = { buzzer: [rt.sho, 'Shooting'], ft: [rt.sho, 'Shooting'], poster: [rt.ath, 'Athleticism'], block: [rt.def, 'Defense'], stop: [rt.def, 'Defense'], post: [Math.round(((rt.fin || 60) + (rt.iq || 60)) / 2), 'Post moves'], lob: [rt.ath, 'Athleticism'], steal: [Math.round(((rt.def || 60) + (rt.iq || 60)) / 2), 'Defense'] }[kind];
     if (RM) { rating = RM[0]; rn = RM[1]; }
   }
   if (!kind) return null;
@@ -728,7 +756,7 @@ function playSpec(card, n, c){
   var calls = CALLS[kind] || CALLS.mid;
   /* a road game is played in the other building, in their colours */
   var road = cx.home === 0 || cx.home === false;
-  var mate = cx.mate ? { look: B.lookFor('mate:' + cx.mate), num: String(B.hash(cx.mate) % 40 + 1), name: cx.mate } : null;
+  var mate = cx.mate ? { look: B.lookFor('mate:' + cx.mate), num: String(B.hash(cx.mate) % 40 + 1), name: cx.mate, faceless: !!cx.mateReal } : null;
   var pressure = card.id === 'moment' ? 0.4 : 1;
   var morale = L.m ? L.m.morale : 60;
   var nerves = clamp01(pressure * (1 - (morale - 40) / 70) - (C.hasTrait && C.hasTrait(L, 'clutch') ? 0.35 : 0));
@@ -738,7 +766,7 @@ function playSpec(card, n, c){
     me: { look: c.look, c1: c.c1, c2: c.c2, num: c.num, age: c.age },
     bug: { home: home || 'YOU', away: opp || 'OPP', period: clock[0], clock: clock[1] },
     pressure: pressure,
-    intro: (INTRO[kind] || INTRO.mid)[vs % 3],
+    intro: (INTRO[kind] || INTRO.mid)[vs % (INTRO[kind] || INTRO.mid).length],
     makeCall: calls[0], missCall: calls[1], halfCall: 'One of two.' };
 }
 function clamp01(v){ return v < 0 ? 0 : v > 1 ? 1 : v; }

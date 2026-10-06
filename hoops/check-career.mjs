@@ -328,7 +328,7 @@ section('5. real players and coaches by name, everybody else generated');
    NBA event may only use one if BASKETBALL_ONLY lists it, with the reason.
    The source is scanned too, because the press room and the between-card
    actions are strings outside the event pool. */
-section('5c. real people stay on the court');
+section('5c. real people: on the court, and in the room on a story career');
 {
   const real = new RegExp('\\{(' + C.REAL_TOKENS.join('|') + ')(:\\w+)?\\}', 'g');
   const bad = [];
@@ -359,9 +359,28 @@ section('5c. real people stay on the court');
   /* The invented locker room: three a club, named, never a real player. */
   const L = C.newLife({ seed: 'locker', league });
   L.team = 'BOS';
+  L.opt.story = 0; /* a career from before the story engine: no real room to read */
   const lk = C.lockerOf(L);
   const realNames = new Set(ROWS.map((r) => r.n || r.name));
-  ok(lk.length === 3 && lk.every((m) => m.n && !realNames.has(m.n)), `every club carries three invented teammates (${lk.map((m) => m.n).join(', ')})`);
+  ok(lk.length === 3 && lk.every((m) => m.n && !realNames.has(m.n)), `off a story career, every club carries three invented teammates (${lk.map((m) => m.n).join(', ')})`);
+  /* A story career in the league reads the REAL room instead (the owner's
+     call, 2026-10): the oldest man, the youngest, and the best of the rest,
+     all on the club's roster right now, and {topp} a real man elsewhere. */
+  {
+    const S = C.newLife({ seed: 'locker-real', league, story: true });
+    S.stage = 'nba'; S.team = 'BOS';
+    if (C.storyOn(S)) {
+      const rk = C.lockerOf(S);
+      const room = new Set(C.matesOf(S, 'BOS').map((m) => m.n));
+      ok(rk.length === 3 && rk.every((m) => room.has(m.n)) && new Set(rk.map((m) => m.n)).size === 3, `a story career's locker room is three different men on its own roster (${rk.map((m) => m.n).join(', ')})`);
+      ok(rk[0].age >= Math.max(rk[1].age, rk[2].age) && rk[1].age <= rk[2].age, 'the veteran is the oldest of them and the rookie the youngest');
+      const op = C.say(S, '{topp}');
+      const elsewhere = C.CLUBS.filter((c) => c !== 'BOS').some((c) => C.matesOf(S, c).some((m) => m.n === op));
+      ok(elsewhere && !room.has(op), `{topp} is a real man on another club (${op})`);
+      S.stage = 'col';
+      ok(C.lockerOf(S).every((m) => m.real == null), 'off the league the room is invented again');
+    } else ok(false, 'a new career is a story career');
+  }
   ok(Object.values(C.CAST).every((n) => !realNames.has(n)), 'nobody in the recurring cast shares a name with a real player');
   const said = C.say(L, '{tm} {tm2} {tvet} {trook} {tco} {topp} {beat} {critic} {fan} {friend} {trainer}');
   ok(!/\{/.test(said), `every invented token resolves (${said})`);
@@ -543,7 +562,11 @@ section('10. the press room, the persona, the look');
      knows. A topic nothing reaches is a microphone nobody ever stands at. */
   const topics = {};
   let tonesOk = true, pressN = 0;
-  for (let i = 0; i < 260; i++) {
+  /* An MVP is one career in fifty or so, so a fixed sample is a coin toss on
+     whether that podium is reached. The claim is that every topic CAN be held,
+     so it searches until each one has been, past the first 260. */
+  const allHeld = () => Object.keys(C.PRESSERS).every((t) => topics[t]);
+  for (let i = 0; i < 900 && (i < 260 || !allHeld()); i++) {
     play('press' + i, ['first', 'last', 'random'][i % 3], { start: i % 2 ? 'hs' : 'draft' }, (L) => {
       const c = L.pending[0];
       if (c && c.id === 'presser') {
@@ -1395,6 +1418,7 @@ async function browser() {
 
   /* Play it out, pressing the first choice or the next button, reading the
      glass for a field that printed as nothing. */
+  let rosAsked = false, rosSigned = false;
   let presses = 0, junk = [], reloaded = false, offOpened = false, resumed = null, keyed = false, docked = false, offFold = [], cardsSeen = 0, tall = false, trayed = false, trayBad = [];
   const stagesSeen = {};
   while (presses++ < 900) {
@@ -1500,6 +1524,45 @@ async function browser() {
       ok(d !== 'fixed', `on a desktop the card stays in the column (${d})`);
       await page.setViewportSize({ width: 390, height: 844 });
       await page.evaluate(() => RTF_CAREER_UI.paintPress({ beats: [], result: null }));
+    }
+    /* A CLUB ON A CARD OPENS ITS ROSTER. Asked once on a stood-in offer at
+       the NBA stage (the card a walk meets is a coin toss), and then on the
+       first real card that carries one, where Sign from the sheet answers it. */
+    if (!rosAsked && st.card && st.stage === 'nba') {
+      rosAsked = true;
+      const r = await page.evaluate(() => {
+        const L = RTF_CAREER_UI.state().cur;
+        L.pending.unshift({ id: 'rostest', kind: 'fa', key: 'rostest', eyebrow: 'Free agency', scene: "Agent's office", title: 'Two offers. Where do you sign?',
+          options: [{ label: 'Sign with the Rockets', hint: '4 years, $34M a year · Starter · Contender', club: 'HOU' }, { label: 'Sign with the Jazz', hint: '4 years, $32M a year · Starter · Rebuilding', club: 'UTA' }] });
+        RTF_CAREER_UI.paintPress({ beats: [], result: null });
+        const btns = document.querySelectorAll('#cr-card [data-ros]').length;
+        document.querySelector('#cr-card [data-ros="1"]').click();
+        const sh = document.querySelector('#cr-sheet'), open = !sh.hidden;
+        const rows = sh.querySelectorAll('.cr-rot-ros li:not(.cr-rot-h)').length, you = sh.querySelectorAll('.cr-rot-ros li.you').length;
+        const h = (sh.querySelector('h3') || {}).textContent || '', go = (sh.querySelector('#cr-ros-go') || {}).textContent || '';
+        const junk = /\bundefined\b|\bNaN\b/.test(sh.innerText);
+        const ch = document.querySelector('#cr-card .cr-choice').getBoundingClientRect(), rb = document.querySelector('#cr-card [data-ros]').getBoundingClientRect();
+        sh.querySelector('#cr-sheet-x').click();
+        const shut = sh.hidden, still = L.pending[0].key === 'rostest';
+        L.pending.shift(); RTF_CAREER_UI.paintPress({ beats: [], result: null });
+        return { btns, open, rows, you, h, go, junk, shut, still, side: rb.left >= ch.right - 1 && rb.height >= 40 };
+      });
+      ok(r.btns === 2 && r.side, `every club answer carries a Roster button beside it, big enough to press (${r.btns})`);
+      ok(r.open && /Jazz/.test(r.h) && r.rows >= 10 && r.you === 1 && !r.junk, `Roster opens that club's players with you placed among them (${r.h}, ${r.rows} rows)`);
+      ok(r.go === 'Sign with the Jazz', `the sheet's own button is the same answer ("${r.go}")`);
+      ok(r.shut && r.still, 'Back closes it and the decision is still waiting');
+    }
+    if (rosAsked && !rosSigned && st.card) {
+      const real = await page.$('#cr-card [data-ros]');
+      if (real) {
+        rosSigned = true;
+        await real.click();
+        await page.waitForSelector('#cr-sheet:not([hidden]) #cr-ros-go');
+        await page.click('#cr-ros-go');
+        const after = await page.evaluate(() => { const s = RTF_CAREER_UI.state(); return { card: s.cur && s.cur.pending[0] ? s.cur.pending[0].key : null, shut: document.querySelector('#cr-sheet').hidden }; });
+        ok(after.shut && after.card !== st.card, `Sign from a real ${st.card} roster answers the card (${st.card} to ${after.card})`);
+        continue;
+      }
     }
     if (!keyed && st.card && st.steps >= 3) {
       keyed = true;

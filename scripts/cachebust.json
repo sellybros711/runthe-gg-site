@@ -2553,8 +2553,8 @@
       "sha": "fbf8ac8bab981947"
     },
     "../court.js": {
-      "v": "2",
-      "sha": "3e06f49818711946"
+      "v": "4",
+      "sha": "f1d026b690a52453"
     },
     "../ticker.js": {
       "v": "1",
@@ -2583,8 +2583,8 @@
       "sha": "814d6471760c59b4"
     },
     "career.js": {
-      "v": "35",
-      "sha": "4f5025cf029fa801"
+      "v": "38",
+      "sha": "865deecfe3be9bac"
     },
     "baller.js": {
       "v": "7",
@@ -2623,20 +2623,20 @@
       "sha": "fbf8ac8bab981947"
     },
     "court.js": {
-      "v": "2",
-      "sha": "3e06f49818711946"
+      "v": "4",
+      "sha": "f1d026b690a52453"
     },
     "ticker.js": {
       "v": "1",
       "sha": "430851c9fed6fd89"
     },
     "scenes.js": {
-      "v": "10",
-      "sha": "240a4c83095c43a5"
+      "v": "12",
+      "sha": "0e6651c952f3149d"
     },
     "career-ui.js": {
-      "v": "37",
-      "sha": "5e405ae919105b3e"
+      "v": "39",
+      "sha": "87be14d38b5a4097"
     },
     "data/players.json": {
       "v": "5",
