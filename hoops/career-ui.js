@@ -1250,7 +1250,7 @@ function teamHtml(L){
     var sep = i === 5 ? '<li class="cr-rot-sep" aria-hidden="true">Bench</li>' : '';
     var at = x.slot && x.slot !== x.pos ? x.pos + ', playing ' + x.slot : x.pos || '';
     return sep + '<li class="cr-rot-r' + (x.you ? ' you' : '') + (x.min <= 0 ? ' dnp' : '') + '"><span class="n">' + (x.slot || i + 1) + '</span>'
-      + '<span class="who"><b>' + esc(x.you ? x.n + ' (you)' : x.n) + '</b><small>' + esc(at) + ' · ' + x.age + (x.yrs != null ? ' · ' + (x.yrs <= 1 ? 'expiring' : x.yrs + ' yrs') : '') + ' · ' + esc(x.role) + '</small></span>'
+      + '<span class="who"><b>' + esc(x.you ? x.n + ' (you)' : x.n) + '</b><small>' + esc(at) + ' · ' + x.age + (x.pg ? ' · Pot ' + x.pg : '') + (x.yrs != null ? ' · ' + (x.yrs <= 1 ? 'expiring' : x.yrs + ' yrs') : '') + ' · ' + esc(x.role) + '</small></span>'
       + '<span class="v ovr">' + (x.ovr != null ? C.show(x.ovr) : '-') + '</span><span class="v pay">' + (x.pay ? money(x.pay) : '-') + '</span><span class="v">' + (x.min > 0 ? x.min : '-') + '</span><span class="v">' + pts + '</span></li>';
   }).join('');
   return head + '<p class="k-small cr-rot-line">' + line + '</p>'

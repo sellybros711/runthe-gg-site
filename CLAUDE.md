@@ -11407,12 +11407,26 @@ way NBA 2K's franchise mode does, in miniature, on every story career (`officeSu
 
 **A MAN IS HIS OVERALL, AND IT MOVES A YEAR AT A TIME.** Each man carries `c` (this season's
 overall on the model's scale), `cp` (last season's), `cy`, and `pot`, a ceiling of his own.
-`devMan` grows a young man a share of the gap to his ceiling each year (`LG_GROW`, more at 19
-than at 26), with a stall now and then and a breakout that raises the ceiling. From 28 he
-declines (`LG_DECLINE`), slowly at first and three to four points a year by 35, a star a little
-slower, each man on his own arc, and any year can cost a few points to an injury. Seeded per
-man and season, so a reload sees the same league. **Worth is read off the overall** (`wFromOvr`),
-so minutes, the five and club strength did not change shape.
+`devMan` grows a young man a share of the gap to his ceiling each year (`LG_GROW`, a quarter of
+it at 19 to 21, tapering to almost nothing at 29), with a stall now and then and a breakout that
+raises the ceiling. From 30 he declines (`LG_DECLINE`), under a point a year at first and three
+to four by 35, a star a little slower, each man on his own arc, and any year can cost a few points
+to an injury. Seeded per man and season, so a reload sees the same league. **Worth is read off
+the overall** (`wFromOvr`), so minutes, the five and club strength did not change shape.
+
+**A CAREER PEAKS AT 27 TO 29, AND THAT IS MEASURED, NOT SET.** Reported by the owner: today's
+young stars never reached what they were projected to, and five to ten years in invented players
+ran the league. The ceiling was the cause. `potFor` gave every young man the same headroom
+whatever he already was, so a 21 year old already rated a star was handed the room a role player
+gets, and he stopped short. The ceiling is now read against his peers: `LG_ROOM` is how much a
+man of that age still grows, `LG_PEER` is a typical man of that age, and a man above his peers
+gets more room (`0.2 * (c - peer)`), with a spread (`LG_SPREAD`) so two careers never grow him the
+same. **He does not always reach it**: growth is a share of the gap with noise, a stall year
+costs most of a summer, and the cap of nine points a year holds. Measured over a dozen careers in
+12g: the median career peaks at 28, a young real player graded A gains a median of 9 points over
+his start, and the best twenty in the league are 90% real at year five and 65% at year eight.
+**`potGrade`** turns the ceiling into a scout's grade on the 2K scale (A+ is a 96 ceiling, D under
+72), and the Team tab prints it beside any man 25 or younger, you included.
 
 **RETIREMENT IS A DECISION, NOT AN AGE** (`retireP`): it rises with age and falls with how good
 he still is. A 90 at 37 plays on, a 72 at 32 is done, nobody under 30 walks away, and a man
@@ -11481,6 +11495,49 @@ jumps. `landOnToday` drops the office with the rosters, and a son's league build
 **It is about 1.7 times as slow per career as the league it replaced**, which is the trade
 windows. `MEMO` holds payrolls, values and depth for a window and forgets a club the moment its
 roster changes; without it a career was 2.5 times as slow.
+
+#### The career answers what your club does
+
+```
+node hoops/check-career.mjs           section 12h: every club card is dealt, about one a season
+```
+
+Reported by the owner: the world around the player did not react. A teammate could be traded, a
+star could arrive at your position and the club could start a rebuild, and the career went on
+dealing the same random cards. Now the office writes down what happened to YOUR club
+(`teamNote`, into `L.flags.tw`), and the next card slot deals one card about it, ahead of
+anything random, the way a due arc is (`teamDue`, called from `queueEvents`).
+
+| what happened | written by | dealt |
+|---|---|---|
+| a teammate rated 80 or more left, by trade, signing or retirement | `teamSummerWatch` | September |
+| a star (83 or more) arrived | `teamSummerWatch` | September |
+| your club drafted in the top twelve at your spot or next to it | `teamSummerWatch` | September |
+| your club turned to a rebuild (you 25 or older) or went all in | `teamModeWatch`, against last camp | September |
+| your club bought or sold at the deadline | `deadlineClubFO` | February |
+| a hot or cold December, the top seed or a play-in race at the break | `teamSeasonWatch` | December, February |
+
+The season ones fire at most every other year and about two times in three, so they read as a
+moment. **Each situation has two or three cards (`TEAM_KINDS`) and the one dealt is the one this
+career has seen least**, so a second rebuild does not read like the first. Answers move the
+season (`win`, `usage`, `min`), the meters, and the people (`{gm}`, `{tvet}`, `{beat}`,
+`{agent}`); asking out of a rebuild or a sell-off sets `tradeAsk`, which the deadline and the
+summer already honour. Measured: about 1.1 club cards a season, each replacing a random card
+rather than adding one.
+
+**They move the reputation too** (`EVENT_REP` rows for every `tm_` card), because what you say
+when a star arrives or the club sells is said in public. Without them the Villain persona went
+dark in check-career: the club cards took the slots of the everyday cards that carried it.
+
+**The names in these cards are the men who moved, which is basketball**: the trade, the signing,
+the draft. Everybody who talks is invented. A lottery pick is always an invented man, because
+every draft after today's is ours. **Each card plays as a cutscene** when scenes are on: its intro
+is in `TEAM_INTROS` in scenes.js (the GM's office, the empty locker, the introduction, the
+players-only meeting), registered into `CARD_INTROS`, so the decision is asked inside it.
+
+The cards live in `TEAM_EV`, apart from the random pools, so the sweep that asks every random
+event to fire does not ask for them; 12h does, and check-story holds their copy to the same
+limits as everything else.
 
 #### The road: high school, college, and the draft it ends at
 

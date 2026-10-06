@@ -1069,8 +1069,37 @@ function uniqueNames(L, R, Y) {
  * sal: what it pays) and in L.league.fo (pick ownership, standings, the
  * transaction log). A career saved before this upgrades the first time it
  * reads its rosters, from the numbers it had, so nobody jumps. */
-const LG_GROW = { 19: 0.3, 20: 0.28, 21: 0.26, 22: 0.24, 23: 0.22, 24: 0.2, 25: 0.17, 26: 0.13, 27: 0.08 };
-const LG_DECLINE = { 28: 0.3, 29: 0.6, 30: 1, 31: 1.5, 32: 2, 33: 2.6, 34: 3.1, 35: 3.5, 36: 3.9, 37: 4.3 };
+/* THE NBA AGE CURVE. Players improve into their mid twenties, peak from 27
+   to 29, hold about a season past that, and decline from 30, faster every
+   year after 33 (the aging studies on box plus-minus and win shares all land
+   there: the peak is 27 and the plateau runs to 29 or 30). LG_GROW is the
+   share of the gap to his ceiling a man closes in a year; LG_DECLINE is what
+   a season costs once he is past it, in overall points. */
+const LG_GROW = { 19: 0.26, 20: 0.26, 21: 0.25, 22: 0.24, 23: 0.22, 24: 0.2, 25: 0.18, 26: 0.16, 27: 0.12, 28: 0.07, 29: 0.03 };
+const LG_DECLINE = { 29: 0, 30: 0.4, 31: 0.9, 32: 1.5, 33: 2.1, 34: 2.7, 35: 3.2, 36: 3.7, 37: 4.1 };
+/* POTENTIAL. What a man of this age and this rating usually becomes: the
+   younger he is the more room he has, and a player who is already good for
+   his age grows more than one who is not (the stars at 21 are the stars at
+   27). Each career draws its own version of every ceiling, so the same
+   twenty-year-old becomes an All-NBA player in one career and a starter in
+   the next. LG_ROOM is the mean room left at each age, LG_PEER the overall a
+   typical rotation player has at that age, both on the model's scale. */
+const LG_ROOM = { 18: 15, 19: 14, 20: 12.5, 21: 11, 22: 9.5, 23: 8, 24: 6.5, 25: 4.5, 26: 3, 27: 1.5 };
+const LG_PEER = { 18: 62, 19: 63, 20: 64, 21: 65, 22: 66.5, 23: 68, 24: 69, 25: 70, 26: 71, 27: 71.5 };
+const LG_SPREAD = { 18: 4.5, 19: 4.2, 20: 3.8, 21: 3.4, 22: 3, 23: 2.6, 24: 2.1, 25: 1.6, 26: 1.2, 27: 0.8 };
+function potFor(c, a, r) {
+  if (a >= 28) return c;
+  const room = LG_ROOM[a] != null ? LG_ROOM[a] : 15, peer = LG_PEER[a] != null ? LG_PEER[a] : 62;
+  const head = Math.max(0, room + 0.2 * (c - peer) + norm(r) * (LG_SPREAD[a] || 4.5));
+  /* devMan closes most of the gap, not all of it, so the ceiling sits a
+     little past where the mean career ends up. */
+  return round1(Math.min(99, c + head / 0.88));
+}
+/* The grade a scout gives that ceiling, on the 2K scale a player reads. */
+function potGrade(pot) {
+  const v = show(pot);
+  return v >= 96 ? 'A+' : v >= 93 ? 'A' : v >= 90 ? 'A-' : v >= 87 ? 'B+' : v >= 84 ? 'B' : v >= 81 ? 'B-' : v >= 78 ? 'C+' : v >= 75 ? 'C' : v >= 72 ? 'C-' : 'D';
+}
 const LG_RETIRE = { 31: 0.01, 32: 0.02, 33: 0.04, 34: 0.07, 35: 0.11, 36: 0.17, 37: 0.25, 38: 0.35, 39: 0.47, 40: 0.6 };
 const LOTTO = [140, 140, 140, 125, 105, 90, 75, 60, 45, 30, 20, 15, 10, 5];
 const NUMW = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven'];
@@ -1112,7 +1141,7 @@ function initMan(L, e, B) {
   e.c = round1(ovrOfMan(e, oldCurW(e, B)));
   e.cy = B; e.cp = e.c;
   const r = manRng(L, e, 'pot', 0), a = B - e.b;
-  if (e.pot == null) e.pot = round1(Math.min(97, e.c + Math.max(0, 27 - a) * (0.4 + 2.9 * Math.pow(r(), 1.3))));
+  if (e.pot == null) e.pot = Math.max(e.c, potFor(e.c, a, r));
   if (e.k == null) {
     const u = r(), s = show(e.c);
     let yrs = a <= 22 ? 1 + Math.floor(u * 3) : u < 0.28 ? 0 : u < 0.58 ? 1 : u < 0.82 ? 2 : 3;
@@ -1132,15 +1161,16 @@ function initMan(L, e, B) {
 function devMan(L, e, Y) {
   while (e.cy < Y) {
     const y = e.cy + 1, a = y - e.b, r = manRng(L, e, 'dev', y), c = e.c;
-    let d;
-    if (a <= 27) {
-      const rate = LG_GROW[a] != null ? LG_GROW[a] : 0.3;
-      let g = Math.max(0, e.pot - c) * rate;
+    let d = 0;
+    if (a <= 29) {
+      const rate = LG_GROW[a] != null ? LG_GROW[a] : a < 19 ? 0.26 : 0;
+      let g = Math.max(0, (e.pot || c) - c) * rate;
       if (r() < 0.07) g *= 0.3;
-      d = g + norm(r) * (a <= 24 ? 1.7 : 1.2);
-      if (a <= 25 && r() < 0.05) { const j = 3 + r() * 3; d += j; e.pot = round1(Math.min(99, e.pot + j)); }
-    } else {
-      const dec = (LG_DECLINE[a] != null ? LG_DECLINE[a] : 4.7) * (1 - 0.35 * realArc(e)) * (c >= 80 ? 0.8 : 1);
+      d = g + norm(r) * (a <= 24 ? 1.5 : 1);
+      if (a <= 25 && r() < 0.04) { const j = 2 + r() * 3; d += j; e.pot = round1(Math.min(99, (e.pot || c) + j)); }
+    }
+    if (a >= 30) {
+      const dec = (LG_DECLINE[a] != null ? LG_DECLINE[a] : 4.5) * (1 - 0.35 * realArc(e)) * (c >= 80 ? 0.8 : 1);
       d = -dec + norm(r) * 1.1;
     }
     if (r() < (a >= 30 ? 0.04 + (a - 30) * 0.01 : 0.025)) d -= 2 + r() * 4;
@@ -1233,12 +1263,12 @@ function draftClass(L, D, taken) {
   const AGES = [19, 19, 19, 19, 20, 20, 20, 21, 21, 22, 22];
   for (let k = 0; k < 64; k++) {
     const age = pick(rng, AGES);
-    let pot = 55.5 + 31 * depth * Math.pow(rng(), 3.2);
+    let pot = 55.5 + 29 * depth * Math.pow(rng(), 3.4);
     const c = pot - Math.max(3, (27 - age) * 1.95 + norm(rng) * 1.5);
     out.push({ age, pot, c, pos: pick(rng, R_POS) });
   }
   out.sort((a, b) => b.pot - a.pot);
-  if (rng() < 0.04) { out[0].pot = Math.min(97, out[0].pot + 6); out[0].c += 3; }
+  if (rng() < 0.03) { out[0].pot = Math.min(97, out[0].pot + 6); out[0].c += 3; }
   for (const p of out) {
     p.grade = p.pot * 0.75 + p.c * 0.25 + norm(rng) * 3.5;
     p.n = freshName(L, 'prospect:' + D + ':' + p.grade.toFixed(3), taken);
@@ -1403,7 +1433,7 @@ const vBase = (o) => Math.pow(Math.max(0, o - 58), 1.7) / 10;
 function futOvr(e, Y) {
   const a = Y - e.b;
   let o = e.c;
-  for (let k = 1; k <= 2; k++) { const x = a + k; o += x <= 27 ? Math.max(0, (e.pot || o) - o) * (LG_GROW[x] || 0.08) : -(LG_DECLINE[x] != null ? LG_DECLINE[x] : 4.7); }
+  for (let k = 1; k <= 2; k++) { const x = a + k; o += x <= 29 ? Math.max(0, (e.pot || o) - o) * (LG_GROW[x] || 0) : -(LG_DECLINE[x] != null ? LG_DECLINE[x] : 4.5); }
   return o;
 }
 /* WHAT A MAN IS WORTH TO A CLUB. Now against later, weighted by what the club
@@ -1643,6 +1673,8 @@ function officeSummer(L, R, Y, beats, quiet) {
   const pool = (lg.pool || []);
   for (const c of CLUBS) for (const e of R[c]) { initMan(L, e, Y - 1); devMan(L, e, Y); }
   for (const e of pool) { initMan(L, e, Y - 1); devMan(L, e, Y); }
+  /* Your club as it was, so the career can answer what the summer did to it. */
+  const was = mine && !quiet && storyOn(L) && R[mine] ? R[mine].map((e) => ({ n: e.n, c: e.c, pos: e.pos })) : null;
   const rs = lg.rs || 0;
   /* Retirements. Nobody leaves before the season he was signed for. */
   if (!rs || Y > rs) {
@@ -1690,6 +1722,7 @@ function officeSummer(L, R, Y, beats, quiet) {
   }
   lg.pool = lg.pool.slice(0, 60);
   for (const c of CLUBS) for (const e of R[c]) delete e.nt;
+  if (was) teamSummerWatch(L, R, Y, was, news);
   /* The news: the biggest stories, and anything that touches your club. */
   news.sort((x, y) => y.w - x.w);
   const ours = (x) => mine && (x.c === L.team || x.to === L.team || x.from === L.team);
@@ -1861,6 +1894,8 @@ function matesOf(L, c) {
     const m = { n: e.n, pos: e.pos, age: Y - e.b, w, ovr: e.cy != null ? round1(manOvr(e, Y)) : ovrOfMan(e, w), real: e.g ? 0 : 1, pay: payOf(L, e, Y, w) };
     if (e.k != null) m.yrs = Math.max(0, e.k - Y + 1);
     if (e.pk) m.pk = e.pk;
+    /* A young man's ceiling, as a grade (potGrade). Past 25 it is who he is. */
+    if (e.pot != null && Y - e.b <= 25) m.pg = potGrade(Math.max(e.pot, m.ovr));
     return m;
   }).sort((a, b) => b.ovr - a.ovr || b.w - a.w);
   const out = [];
@@ -2801,7 +2836,7 @@ function rotationOf(L) {
      starter puts you in the five, at whatever minutes he plays you. */
   if (role.starter && at > 4) at = 4;
   const youStart = at < 5;
-  const me = { n: L.name, pos: L.pos, age: L.age, you: true, min: mine, pts: null, w: 0, ovr: ovrOf(L), pay: L.contract ? L.contract.salary : null, yrs: L.contract ? L.contract.years : null };
+  const me = { n: L.name, pos: L.pos, age: L.age, you: true, min: mine, pts: null, w: 0, ovr: ovrOf(L), pay: L.contract ? L.contract.salary : null, yrs: L.contract ? L.contract.years : null, pg: L.age <= 25 && L.pot ? potGrade(Math.max(L.pot, ovrOf(L))) : null };
   const epOf = (m) => { const ln = lines[m.n]; return ln && ln[5] ? String(ln[5]).split(';') : null; };
   const cands = mates.map((m) => ({ v: Math.max(0.1, (m.ovr || mateOvr(m.w)) - 55), pos: m.pos, ep: epOf(m), m }));
   if (youStart) cands.unshift({ v: 1000, pos: L.pos, ep: null, force: true, m: me });
@@ -2818,7 +2853,7 @@ function rotationOf(L) {
     /* Points: last season's rate for a man the data has, otherwise one off
        his value; at the minutes he is getting now. */
     const rate = ln && ln[0] > 0 ? ln[1] / ln[0] : 0.18 + Math.max(0, m.w) * 0.035;
-    return { n: m.n, pos: m.pos, age: m.age, real: m.real, ovr: m.ovr, pay: m.pay, yrs: m.yrs, min, pts: min > 0 ? round1(rate * min) : 0, slot };
+    return { n: m.n, pos: m.pos, age: m.age, real: m.real, ovr: m.ovr, pay: m.pay, yrs: m.yrs, pg: m.pg, min, pts: min > 0 ? round1(rate * min) : 0, slot };
   };
   const rows = new Map();
   starters.filter((x) => x.m !== me).sort((a, b) => b.m.ovr - a.m.ovr || b.m.w - a.m.w).forEach((x, k, arr) => rows.set(x.m, row(x.m, k, x.slot)));
@@ -4084,6 +4119,16 @@ function moveRep(L, fans, resp) {
    rather than on each option, so the event text above stays a story and this
    stays one place to read the reputation off. */
 const EVENT_REP = {
+  /* Your club's moments are public too: what you say when a star arrives or
+     the club sells is said in front of everybody. */
+  tm_lost_camp: [[0, 1], [1, 2], [-1, 1]], tm_lost_media: [[-2, 2], [3, -1], [-1, 1]], tm_retire_locker: [[1, 3], [0, 1], [1, 1]],
+  tm_star_practice: [[1, 2], [-2, -2], [1, 2]], tm_star_presser: [[2, 1], [1, 2], [-3, -2]],
+  tm_rook_camp: [[2, 3], [0, 2], [-1, -2]], tm_rook_drill: [[2, -1], [1, 3], [-2, -2]],
+  tm_rebuild_office: [[3, 2], [-4, -2], [0, 1]], tm_rebuild_media: [[4, 1], [-1, 0], [-3, -1]], tm_allin_office: [[2, 1], [-1, -2], [0, 2]],
+  tm_dl_buy: [[0, 2], [1, 2], [0, 0]], tm_dl_sell_room: [[1, 2], [-1, -1], [0, -1]], tm_dl_sell_phone: [[-3, -2], [3, 2], [0, 0]],
+  tm_hot_start: [[1, 0], [0, 2], [2, -2]], tm_hot_target: [[2, -1], [-2, 1], [0, 2]],
+  tm_cold_room: [[1, 3], [-1, -2], [-2, -2]], tm_cold_meeting: [[1, 2], [0, 2], [-2, -3]],
+  tm_top_seed: [[1, 0], [-1, 1], [0, 2]], tm_race_meeting: [[1, 2], [0, 1], [0, 2]], tm_race_film: [[2, -1], [0, 2], [-2, -2]],
   hot_streak: [[-2, -3], [2, 4], [-2, 2]],
   stuck: [[0, 3], [2, -3], [0, 1]],
   film_session: [[0, 3], [0, -3], [1, 0]],
@@ -5374,7 +5419,7 @@ function deadlineClubFO(L, beats, rng) {
         if (!pkg) continue;
         const t = tradeText(L, c, [T], [], b, pkg.men, pkg.picks);
         doTrade(L, R, Y, c, [T], [], b, pkg.men, pkg.picks, moved);
-        done = { t, lost: T, tone: '', men: [T.n].concat(pkg.men.map((x) => x.n)) };
+        done = { t, lost: T, to: b, tone: '', men: [T.n].concat(pkg.men.map((x) => x.n)) };
         s.deadline.lost = T.n;
         break;
       }
@@ -5387,6 +5432,8 @@ function deadlineClubFO(L, beats, rng) {
   logTx(L, Y, 'trade', done.t, [c], { win: 'deadline', m: done.men });
   logIt(L, done.t, done.tone);
   beats.push({ kind: 'club_trade', text: 'Deadline: ' + lowFirst(done.t), tone: done.tone });
+  if (done.got) teamNote(L, { y: Y, ph: 'mid', t: c, k: 'dl_buy', n: done.got.n, p: 6 });
+  else teamNote(L, { y: Y, ph: 'mid', t: c, k: 'dl_sell', n: done.lost.n, to: done.to, p: 6 });
   if (done.got) {
     if (done.got.pos === L.pos && rostCurW(done.got, Y) > youW(L)) {
       bump(L, { min: -3, morale: -2 });
@@ -5847,6 +5894,11 @@ function queueEvents(L, phase, n, pool) {
     /* Two arcs can be due in one slot (an April with a farewell and a
        label to answer); both are dealt, each taking a place. */
     for (const id of due.slice(0, 2)) { dealCard(L, phase, ARC_EVENTS[id]); n = Math.max(0, n - 1); }
+  }
+  /* Then whatever your club gave the career to answer (teamDue). */
+  if (storyOn(L) && pool !== AM_ALL) {
+    const tid = teamDue(L, phase);
+    if (tid) { dealCard(L, phase, TEAM_EV[tid]); (evSeen(L)[tid] = evSeen(L)[tid] || []).push(L.year); n = Math.max(0, n - 1); }
   }
   for (let k = 0; k < n; k++) {
     const ids = Object.keys(pool).filter((id) => eligible(L, pool[id], phase, used, once));
@@ -7811,7 +7863,7 @@ function storyFixed(specs) {
   defineEvents(pool, 'story');
   for (const id in pool) { pool[id].pool = 'post'; STORY_EV[id] = pool[id]; }
 }
-const evById = (id) => EVENTS[id] || AM_EVENTS[id] || ARC_EVENTS[id] || STORY_EV[id];
+const evById = (id) => EVENTS[id] || AM_EVENTS[id] || ARC_EVENTS[id] || STORY_EV[id] || TEAM_EV[id];
 /* Deal one named card now, if it is open. */
 function dealNamed(L, slot, id) {
   const ev = evById(id);
@@ -7820,6 +7872,278 @@ function dealNamed(L, slot, id) {
   if (storyOn(L)) (evSeen(L)[id] = evSeen(L)[id] || []).push(L.year);
   return true;
 }
+
+// ─── your club, and how the career answers it ───────────────────────────────
+
+/* THE CAREER ANSWERS WHAT YOUR CLUB DOES. The league office moves men every
+   summer and every February, and until now a teammate could be traded away,
+   a star could arrive at your position and a club could start a rebuild
+   without the career noticing. So the office writes down what happened to
+   your club (teamNote), and the next card slot deals one card about it,
+   ahead of anything random, the way a due arc is.
+   What it can write down:
+     summer (dealt at camp)  a teammate gone, a star arrived, a lottery pick at
+                             your spot, the club turning to a rebuild or going all in
+     deadline (February)     your club bought, or sold
+     the season itself       a hot or cold December, a play-in race or the top
+                             seed at the break
+   The real names in these cards are the trade, the signing and the draft, which
+   is basketball. Everybody who talks is invented: {gm}, {tvet}, {beat}.
+   Each situation has two or three cards and the one dealt is the one this
+   career has seen least, so a second rebuild does not read like the first.
+   A story career only: nothing here is written or dealt on a migrated save. */
+function teamNote(L, it) {
+  if (!storyOn(L)) return;
+  const q = L.flags.tw = (L.flags.tw || []).filter((x) => x.y >= L.year - 1);
+  q.push(it);
+}
+/* After the summer: compare your club with the club you had. */
+function teamSummerWatch(L, R, Y, was, news) {
+  const t = L.team, h = L.history[L.history.length - 1], now = R[t] || [];
+  const here = new Set(now.map((e) => e.n)), had = new Set(was.map((e) => e.n));
+  const whereIs = (n) => { for (const c of CLUBS) if (R[c].some((e) => e.n === n)) return c; return null; };
+  /* A teammate gone. Only if he was one: a club you just joined lost nobody of yours. */
+  if (h && h.t === t) {
+    const gone = was.filter((e) => !here.has(e.n) && show(e.c) >= 80).sort((a, b) => b.c - a.c)[0];
+    if (gone) {
+      const to = whereIs(gone.n);
+      const tr = news.find((x) => x.k === 'trade' && x.m && x.m.indexOf(gone.n) >= 0);
+      teamNote(L, { y: Y, ph: 'pre', t, k: to ? 'lost' : 'lost_retire', how: to ? (tr ? 'trade' : 'fa') : 'retire', n: gone.n, to, pos: gone.pos, p: show(gone.c) - 70 });
+    }
+  }
+  const news1 = now.filter((e) => !had.has(e.n));
+  const star = news1.filter((e) => !e.pk && show(e.c) >= 83).sort((a, b) => b.c - a.c)[0];
+  if (star) {
+    const tr = news.find((x) => x.m && x.m.indexOf(star.n) >= 0);
+    teamNote(L, { y: Y, ph: 'pre', t, k: 'star', n: star.n, c: star.c, pos: star.pos, how: tr && tr.k === 'trade' ? 'trade' : 'fa', p: show(star.c) - 66 });
+  }
+  const near = [L.pos].concat(NEXT_POS[L.pos] || []);
+  const rook = news1.filter((e) => e.pk && e.d === Y && near.indexOf(e.pos) >= 0)
+    .map((e) => ({ e, p: +String(e.pk).split('#')[1] || 99 })).filter((x) => x.p <= 12).sort((a, b) => a.p - b.p)[0];
+  if (rook) teamNote(L, { y: Y, ph: 'pre', t, k: 'rook', n: rook.e.n, pk: rook.p, same: rook.e.pos === L.pos, p: 14 - rook.p * 0.5 });
+}
+/* What the club is doing, read at camp against last camp. */
+function teamModeWatch(L) {
+  const t = L.team, m = clubModes(L)[t], prev = L.flags.twMode;
+  L.flags.twMode = { y: L.year, t, m };
+  if (!prev || prev.t !== t || prev.y !== L.year - 1 || prev.m === m) return null;
+  if (m === 'rebuild' && L.age >= 25) return { y: L.year, ph: 'pre', t, k: 'rebuild', p: 4 };
+  if (m === 'win' && prev.m !== 'win') return { y: L.year, ph: 'pre', t, k: 'allin', p: 3 };
+  return null;
+}
+/* Where the club stands in its conference right now, best first. */
+function confRank(L) {
+  const t = L.team, conf = CONF[confOf(t)];
+  return conf.slice().sort((a, b) => winPct(L, b) - winPct(L, a)).indexOf(t) + 1;
+}
+/* What the season itself says, when the office said nothing. Each of these
+   comes round at most every other year, so it reads as a moment. */
+function teamSeasonWatch(L, phase) {
+  const s = L.season, t = L.team;
+  if (!s || !s.g || rngAt(L, 'twsea:' + phase)() >= 0.65) return null;
+  const seen = (k) => TEAM_KINDS[k].some((id) => { const h = (L.evlog || {})[id]; return h && h.length && L.year - h[h.length - 1] < 2; });
+  const pct = s.w / s.g;
+  if (phase === 'early') {
+    if (pct >= 0.68 && !seen('hot')) return { k: 'hot' };
+    if (pct <= 0.33 && !seen('cold')) return { k: 'cold' };
+  }
+  if (phase === 'mid') {
+    const r = confRank(L);
+    if (r === 1 && !seen('top')) return { k: 'top', rank: r };
+    if (r >= 7 && r <= 11 && !seen('race')) return { k: 'race', rank: r };
+  }
+  return null;
+}
+/* The card for this slot, if your club gave the career something to answer. */
+function teamDue(L, phase) {
+  if (!storyOn(L) || L.stage !== 'nba' || !L.team) return null;
+  const t = L.team;
+  const q = (L.flags.tw || []).filter((x) => x.y === L.year && x.ph === phase && x.t === t).sort((a, b) => b.p - a.p);
+  let it = q[0] || null;
+  if (phase === 'pre') { const m = teamModeWatch(L); if (!it && m) it = m; }
+  if (!it) it = teamSeasonWatch(L, phase);
+  L.flags.tw = (L.flags.tw || []).filter((x) => !(x.y === L.year && x.ph === phase));
+  if (!it) return null;
+  const ids = TEAM_KINDS[it.k];
+  const r = rngAt(L, 'tw:' + phase);
+  const n = (id) => ((L.evlog || {})[id] || []).length;
+  const low = Math.min.apply(null, ids.map(n));
+  const pickIds = ids.filter((id) => n(id) === low);
+  L.flags.twNow = Object.assign({ y: L.year }, it);
+  return pickIds[Math.floor(r() * pickIds.length)];
+}
+const twNow = (L) => L.flags.twNow || {};
+const twClub = (L) => nick(L.team);
+const twRec = (L) => L.season ? L.season.w + '-' + L.season.l : '';
+const TEAM_EV = {};
+const TEAM_KINDS = {
+  lost: ['tm_lost_camp', 'tm_lost_media'],
+  lost_retire: ['tm_retire_locker'],
+  star: ['tm_star_practice', 'tm_star_presser'],
+  rook: ['tm_rook_camp', 'tm_rook_drill'],
+  rebuild: ['tm_rebuild_office', 'tm_rebuild_media'],
+  allin: ['tm_allin_office'],
+  dl_buy: ['tm_dl_buy'],
+  dl_sell: ['tm_dl_sell_room', 'tm_dl_sell_phone'],
+  hot: ['tm_hot_start', 'tm_hot_target'],
+  cold: ['tm_cold_room', 'tm_cold_meeting'],
+  top: ['tm_top_seed'],
+  race: ['tm_race_meeting', 'tm_race_film'],
+};
+const lostHow = (L) => { const x = twNow(L); return x.how === 'trade' ? 'was traded to the ' + nick(x.to) : 'signed with the ' + nick(x.to); };
+const starClash = (L) => twNow(L).pos === L.pos;
+(function () {
+  const pool = {
+    /* A teammate gone. */
+    tm_lost_camp: { at: 'pre', tag: 'Training camp',
+      t: (L) => twNow(L).n + ' is gone',
+      x: (L) => twNow(L).n + ' ' + lostHow(L) + ' this summer. His locker is empty at camp.',
+      o: [O('Ask {gm} what the plan is', null, '', { sub: 'Get an answer', rel: [['gm', 3, 'You asked about the summer.']],
+        do: (L) => { bump(L, { trust: 2 }); return clubModes(L)[L.team] === 'rebuild' ? 'He says the future matters more. You hear what he means.' : 'He says the pieces fit better now. You believe about half of it.'; } }),
+      O('Fill the hole yourself', { usage: 0.02, morale: 2, trust: 2 }, "You tell the room you've got it. The ball finds you more.", { sub: 'More on your plate' }),
+      O('Let it sting', { morale: -3, eth: 3 }, 'You were close. You go to work instead.', { sub: 'Say nothing' })] },
+    tm_lost_media: { at: 'pre', tag: 'Media day',
+      t: () => 'Asked about the move',
+      x: (L) => '{beat} wants your reaction. ' + twNow(L).n + ' ' + lostHow(L) + '. The cameras are rolling.',
+      o: [O('Back the front office', { trust: 4 }, '{gm} watches the clip twice. He likes it.', { sub: 'Company line', rel: [['gm', 6, 'You backed the summer on camera.']] }),
+        O('Admit it hurts', { fame: 2, morale: -1 }, 'Honest answer. It runs on every show that night.', { sub: 'Say the true thing', rel: [['beat', 5, 'You gave him a real answer.']] }),
+        O('Talk about this season', { eth: 2 }, 'You steer it back to basketball. {beat} gets nothing.', { sub: 'Move on', rel: [['beat', -3]] })] },
+    tm_retire_locker: { at: 'pre', tag: 'The locker room',
+      t: (L) => 'Camp without ' + twNow(L).n,
+      x: (L) => twNow(L).n + ' retired this summer. The room needs a new voice.',
+      o: [O('Be that voice', { trust: 5, eth: 2, morale: -1 }, 'You talk first at the first meeting. Nobody laughs.', { sub: 'Lead', p: (L) => 0.35 + L.m.trust / 200,
+        no: { fx: { trust: -2 }, s: 'You try. It comes out stiff. {tvet} picks it up.' } }),
+        O('Let {tvet} lead', { morale: 2 }, '{tvet} has done this before. You learn how.', { sub: 'Watch and learn', rel: [['tvet', 6, 'You let him run the room.']] }),
+        O('Lead with your play', { usage: 0.01, eth: 2 }, 'You say nothing and score twenty in the scrimmage.', { sub: 'No speeches' })] },
+    /* A star arrives. */
+    tm_star_practice: { at: 'pre', tag: 'First practice',
+      t: (L) => twNow(L).n + ' is your teammate',
+      x: (L) => 'The ' + twClub(L) + ' ' + (twNow(L).how === 'trade' ? 'traded for ' : 'signed ') + twNow(L).n + '. ' + (starClash(L) ? 'He plays your spot.' : 'Two stars. One ball.'),
+      o: [O('Hand him the keys', { usage: -0.03, win: 0.6, trust: 3 }, 'You let him run it. The offense hums. Your shots dip.', { sub: 'Defer' }),
+        O('Make it your team', null, '', { sub: 'Claim the ball',
+          do: (L) => { if (ovrOf(L) >= (twNow(L).c || 0) - 1) { bump(L, { usage: 0.02, fame: 2 }); return 'You take the last shot in every drill. He gets the message.'; } bump(L, { morale: -4, win: -0.3, min: -1 }); return "It gets awkward by October. {tvet} has to step in."; } }),
+        O('Work out together', { win: 0.4, morale: 2 }, 'Three weeks in the gym. You already know where he wants it.', { sub: 'Build it early' })] },
+    tm_star_presser: { at: 'pre', tag: 'The introduction',
+      t: () => 'Whose team is it?',
+      x: (L) => twNow(L).n + ' is introduced in a ' + twClub(L) + ' jersey. The first question is about you.',
+      o: [O('Say it is his team', { fame: -1, win: 0.4, trust: 3 }, 'Humble. The fans eat it up. So does the locker room.', { sub: 'Make him welcome' }),
+        O('Say it is ours', { win: 0.3, trust: 2, morale: 1 }, 'The right answer. {beat} still writes "two alphas."', { sub: 'Split it' }),
+        O('Say nothing changes', { fame: 2, usage: 0.01 }, 'It reads as a shot across the bow. Talk radio loves it.', { sub: 'Hold your ground', rel: [['beat', 3]] })] },
+    /* A lottery pick at your position. He is invented: the draft after today's is ours. */
+    tm_rook_camp: { at: 'pre', tag: 'Training camp',
+      t: (L) => 'The kid is here',
+      x: (L) => 'The ' + twClub(L) + ' took ' + twNow(L).n + ' ' + ordinal(twNow(L).pk) + ' overall. ' + (twNow(L).same ? 'He plays your position.' : 'He plays next to you, or instead of you.'),
+      o: [O('Take him under your wing', { trust: 4, morale: 2 }, "He follows you to every workout. He's good. Really good.", { sub: 'Mentor him', set: 'mentored.rookie' }),
+        O('Make him earn it', { eth: 3, min: 1 }, 'You win every drill at camp. He notices. So does the staff.', { sub: 'Raise the bar' }),
+        O('Ask {gm} about your role', null, '', { sub: 'Straight question', rel: [['gm', -3, 'You asked if the kid has your job.']],
+          do: (L) => { bump(L, { trust: -2 }); return L.contract && L.contract.years <= 1 ? 'He says the kid is the future. You hear the rest.' : 'He says you start. For now.'; } })] },
+    tm_rook_drill: { at: 'pre', tag: 'One on one',
+      t: (L) => twNow(L).n + ' wants you',
+      x: (L) => 'The ' + ordinal(twNow(L).pk) + ' pick asks to guard you in the last drill of camp. Everybody stops to watch.',
+      o: [O('Cook him', null, '', { sub: 'Welcome to the league', p: (L) => 0.55 + (ovrOf(L) - 70) * 0.02,
+        fx: { fame: 1, morale: 3, trust: 2 }, s: 'Three straight buckets. The bench loses it. He asks for more.',
+        no: { fx: { morale: -4, fame: 1 }, s: 'He gets two stops. The clip is on his agent\'s page by dinner.' } }),
+        O('Teach him something', { trust: 3, eth: 2 }, 'You stop the drill and show him the footwork. The coaches love it.', { sub: 'Slow it down', set: 'mentored.rookie' }),
+        O('Pass', { morale: -1 }, "You say you're saving it for the season. The room hears something else.", { sub: 'Not today' })] },
+    /* The club turns. */
+    tm_rebuild_office: { at: 'pre', tag: "{gm}'s office",
+      t: () => 'The rebuild is official',
+      x: (L) => 'The ' + twClub(L) + ' are going young. {gm} wants to know if you are in.',
+      o: [O('Commit to the build', { trust: 6, morale: -2, eth: 2 }, 'He shakes your hand. The kids are yours to raise.', { sub: 'Be the culture', set: 'rebuild.stayed', rel: [['gm', 8, 'You stayed for the rebuild.']] }),
+        O('Ask to be moved', null, '', { sub: 'Win somewhere else', rel: [['gm', -10, 'You asked out of the rebuild.']],
+          do: (L) => { L.flags.tradeAsk = true; bump(L, { trust: -8, fame: 2 }); return 'He nods slowly. Word leaks by the weekend.'; } }),
+        O('Ask for a timeline', { trust: 1 }, "He says two years. You've heard that before.", { sub: 'Hear him out' })] },
+    tm_rebuild_media: { at: 'pre', tag: 'Media day',
+      t: () => 'Are you part of the future?',
+      x: (L) => 'The ' + twClub(L) + ' sold off this summer. {beat} asks if you are next.',
+      o: [O('I want to be here', { trust: 4, fame: 1 }, 'The fans love it. {gm} sends a text: appreciate that.', { sub: 'Loyal', rel: [['gm', 5, 'You said you wanted to stay.']] }),
+        O("That's above my pay grade", { eth: 1 }, 'A shrug. It reads like a man keeping his options open.', { sub: 'Shrug' }),
+        O('I want to win', null, '', { sub: 'Say it out loud', rel: [['gm', -6, 'You said you want to win, on camera.']],
+          do: (L) => { bump(L, { fame: 3, trust: -4 }); if (L.contract && L.contract.years >= 2) L.flags.tradeAsk = true; return 'Every outlet runs it. Your phone does not stop.'; } })] },
+    tm_allin_office: { at: 'pre', tag: "{gm}'s office",
+      t: () => 'The front office goes all in',
+      x: (L) => '{gm} says this is a title team. Anything less than a deep run is a failure.',
+      o: [O('Embrace it', { fame: 2, win: 0.3, morale: -1 }, 'You say it out loud at media day. The bar is set.', { sub: 'Want the pressure' }),
+        O('Ask for a bigger role', null, '', { sub: 'Push for minutes', p: (L) => 0.3 + L.m.trust / 150,
+          fx: { min: 2, usage: 0.01 }, s: 'He agrees. Contenders play their best players.',
+          no: { fx: { trust: -3 }, s: 'He says the role is the role. Win and it grows.' } }),
+        O('Stay in your lane', { trust: 3, win: 0.2 }, 'Do your job. That is what a title team needs.', { sub: 'Do your job' })] },
+    /* The deadline. */
+    tm_dl_buy: { at: 'mid', tag: 'Deadline day',
+      t: (L) => twNow(L).n + ' joins the push',
+      x: (L) => 'The ' + twClub(L) + ' bought at the deadline. ' + twNow(L).n + ' shows up for shootaround.',
+      o: [O('Walk him through the playbook', { win: 0.5, trust: 2 }, 'You sit with him on the plane. He knows every set by Friday.', { sub: 'Speed it up' }),
+        O('Give him your shots', { usage: -0.02, win: 0.6 }, 'He hits his first four. The math works.', { sub: 'Make room' }),
+        O('Keep doing your thing', { morale: 1 }, 'Nothing changes for you. That is the point.', { sub: 'Stay steady' })] },
+    tm_dl_sell_room: { at: 'mid', tag: 'The locker room',
+      t: () => 'The sell-off',
+      x: (L) => twNow(L).n + ' was traded to the ' + nick(twNow(L).to) + '. The ' + twClub(L) + ' are selling.',
+      o: [O('Rally who is left', { win: 0.4, trust: 3, morale: -1 }, 'You tell the room the season is not over. They believe you, for a week.', { sub: 'Lead' }),
+        O('Ask {gm} if you are next', null, '', { sub: 'Know where you stand', rel: [['gm', -2, 'You asked if you were next.']],
+          do: (L) => { bump(L, { trust: -1 }); return L.age >= 28 ? 'He does not say no. That is an answer.' : 'He says no. You are the one they are building around.'; } }),
+        O('Get your minutes', { min: 2, usage: 0.01 }, 'Somebody has to take those shots. It is you.', { sub: 'Opportunity' })] },
+    tm_dl_sell_phone: { at: 'mid', tag: 'Your phone',
+      t: () => '{agent} has a question',
+      x: (L) => twNow(L).n + ' is gone and the ' + twClub(L) + ' are selling. {agent} asks if you want out this summer.',
+      o: [O('Yes, find me a winner', null, '', { sub: 'Start the process', rel: [['agent', 4, 'You told him to find you a winner.']],
+        do: (L) => { if (L.contract && L.contract.years >= 2) { L.flags.tradeAsk = true; bump(L, { trust: -5 }); return 'He makes calls. Quietly, for now.'; } bump(L, { morale: 2 }); return "You're a free agent anyway. He starts a list."; } }),
+        O('No, I finish what I started', { trust: 4, eth: 2 }, 'He says okay. He also says think about it.', { sub: 'Stay' }),
+        O('Ask what he hears', { morale: -1 }, 'Two contenders called about you. Nobody hung up.', { sub: 'Information' })] },
+    /* The season talks back. */
+    tm_hot_start: { at: 'early', tag: 'National TV',
+      t: (L) => twRec(L) + ' and rolling',
+      x: (L) => 'The ' + twClub(L) + ' are the story of the first month. National TV adds two of your games.',
+      o: [O('Enjoy it', { morale: 4, fame: 2 }, 'You let yourself smile. Winning is fun.', { sub: 'Soak it in' }),
+        O('Say it means nothing yet', { trust: 3, eth: 2 }, '{beat} calls it boring. The coaches call it right.', { sub: 'Stay hungry' }),
+        O('Talk about a title', { fame: 3, win: 0.2, morale: -1 }, 'The headline writes itself. So does the pressure.', { sub: 'Go big', rel: [['beat', 4]] })] },
+    tm_hot_target: { at: 'early', tag: 'The road',
+      t: () => 'Everybody wants you now',
+      x: (L) => twRec(L) + '. Every road crowd is sold out. Every opponent saves its best for you.',
+      o: [O('Love the target', { fame: 2, morale: 2, health: -2 }, 'Big games every night. Your legs feel it.', { sub: 'Bring it' }),
+        O('Rest when you can', { health: 4, win: -0.2 }, 'You sit a back to back. The crowd boos. Your knees thank you.', { sub: 'Long season' }),
+        O('Keep the room locked in', { win: 0.3, trust: 2 }, 'No newspapers in the locker room. It works.', { sub: 'Focus' })] },
+    tm_cold_room: { at: 'early', tag: 'The locker room',
+      t: (L) => twRec(L) + ' in December',
+      x: (L) => 'The building is quiet. {beat} asks if this group can turn it around.',
+      o: [O('Take the blame', { trust: 5, fame: 1, morale: -2 }, 'You put it on yourself. The room respects it.', { sub: 'On me' }),
+        O('Call out the effort', null, '', { sub: 'Say it plainly', p: (L) => 0.3 + L.m.trust / 160,
+          fx: { win: 0.6, fame: 2 }, s: 'It stings. They play harder the next night, and the night after.',
+          no: { fx: { trust: -6, morale: -3 }, s: '{tvet} takes it personally. The room splits.', rel: [['tvet', -10, 'You called out the room.']] } }),
+        O('Ask {gm} about changes', null, '', { sub: 'What is the plan', rel: [['gm', -2]],
+          do: (L) => { bump(L, { trust: -2 }); return 'He says nothing is off the table. That includes you.'; } })] },
+    tm_cold_meeting: { at: 'early', tag: 'Players only',
+      t: () => '{tvet} calls a meeting',
+      x: (L) => 'No coaches. Just the players, at ' + twRec(L) + '. Everybody looks at you.',
+      o: [O('Speak first', null, '', { sub: 'Say what everyone is thinking', p: (L) => 0.4 + (L.m.trust - 50) / 150,
+        fx: { win: 0.7, trust: 4 }, s: 'You say it straight. They win five of the next seven.',
+        no: { fx: { morale: -3 }, s: 'It comes out wrong. Two guys leave early.' } }),
+        O('Back {tvet}', { win: 0.3, trust: 2 }, 'He runs it. You nod at the right times. It helps.', { sub: 'Support him', rel: [['tvet', 6, 'You backed his meeting.']] }),
+        O('Skip it', { morale: -2 }, 'You say you have treatment. Nobody believes you.', { sub: 'Not your style', rel: [['tvet', -8, 'You skipped the players-only meeting.']] })] },
+    tm_top_seed: { at: 'mid', tag: 'The All-Star break',
+      t: (L) => 'First in the ' + confOf(L.team),
+      x: (L) => 'The ' + twClub(L) + ' have the best record in the ' + confOf(L.team) + '. Every night is somebody\'s playoff game now.',
+      o: [O('Keep the foot down', { win: 0.3, health: -3 }, 'You play every minute like it is May. It costs you something.', { sub: 'Win them all' }),
+        O('Save the legs', { health: 5, win: -0.2 }, 'You sit two back to backs. The seed holds anyway.', { sub: 'It is about April' }),
+        O('Stay humble', { trust: 3, morale: 1 }, 'Nobody hangs a banner in February. You say that a lot.', { sub: 'Nothing won yet' })] },
+    tm_race_meeting: { at: 'mid', tag: 'Team meeting',
+      t: (L) => ordinal(twNow(L).rank) + ' in the ' + confOf(L.team),
+      x: (L) => 'The play-in line is right there. {tvet} wants the room together after practice.',
+      o: [O('Speak first', null, '', { sub: 'Set the tone', p: (L) => 0.45 + (L.m.trust - 50) / 140,
+        fx: { win: 0.8, morale: 3, trust: 2 }, s: 'Short and loud. They go on a run.',
+        no: { fx: { win: -0.2, morale: -2 }, s: 'It falls flat. You lose the next two.' } }),
+        O('Let {tvet} run it', { win: 0.4 }, 'He has been here before. The room listens.', { sub: 'Trust the vet', rel: [['tvet', 8, 'You let him run the meeting.']] }),
+        O('Just go to work', { eth: 3, win: 0.2 }, 'Extra film, every night. You lead by showing up early.', { sub: 'No speeches' })] },
+    tm_race_film: { at: 'mid', tag: 'The film room',
+      t: () => 'Every game is a playoff game',
+      x: (L) => 'The ' + twClub(L) + ' sit ' + ordinal(twNow(L).rank) + '. The staff wants you on the ball more down the stretch.',
+      o: [O('Take it', { usage: 0.03, win: 0.4, health: -2 }, 'The ball is yours late in games. So is the blame.', { sub: 'Put it on you' }),
+        O('Spread it around', { win: 0.3, trust: 2 }, 'Five guys touch it every trip. It is ugly. It works.', { sub: 'Share it' }),
+        O('Ask for rest days', { health: 4, trust: -3 }, 'They say no. Not now. The race is the season.', { sub: 'Long view' })] },
+  };
+  for (const id in pool) TEAM_EV[id] = compileStory(id, pool[id]);
+  defineEvents(TEAM_EV, 'team');
+  for (const id in TEAM_EV) TEAM_EV[id].pool = 'team';
+})();
 
 /* The new prerequisites a route, an origin or a career shape is read off. */
 const amOf = (L) => L.am || {};
@@ -9625,7 +9949,7 @@ function choose(L, i, extra) {
         const names = relNames(L, card.id, i);
         text = o.run(L, rng) || '';
         applyRel(L, names);
-        const rp = EVENTS[card.id] && EVENT_REP[card.id] && EVENT_REP[card.id][i];
+        const rp = (EVENTS[card.id] || TEAM_EV[card.id]) && EVENT_REP[card.id] && EVENT_REP[card.id][i];
         if (rp) moveRep(L, rp[0], rp[1]);
       }
     }
@@ -10302,7 +10626,7 @@ const publicAPI = {
   CONF, CLUBS, confOf, POS, POS_NAME, RATINGS, RATING_NAME, RATING_SHORT, WEIGHTS,
   ARCHES, ARCH_KEYS, POS_ARCHES, archesFor, archBase, POS_SIZE, wtFor, wtRange, sizeOf, sizeTilt, heightText, BACKGROUNDS, BG_KEYS, AGENTS, AWARD_NAME, ROUNDS, VERDICTS, EVENTS,
   perfOf, coachStyle, COACH_STYLES, needAt, coachTalkCard, tradeDeadline, youW, weakSpot,
-  picksText, leagueTable, transactions, clubModes,
+  picksText, leagueTable, transactions, clubModes, TEAM_EV, TEAM_KINDS,
   seedLeague, normaliseNets, newLife, rotationOf, bestFive, fitAt, rostOf, rostNow, randomName, overall, ovrOf, step, choose, nextLabel,
   view, perGame, totals, legacy, legacyScore, clubNet, clubTier, rotationBar,
   roleOf, lineMeans, capFor, marketSalary, projectedPick, draftOrder, money, ordinal,
