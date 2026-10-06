@@ -85,7 +85,7 @@ section('2. a better release only ever turns a miss into a make');
   }
   ok(cards >= 100, `enough shots to say so (${cards})`);
   ok(order.every(Boolean), `never a make at -1 that misses at +1 (${order.filter((x) => !x).length} out of order)`);
-  const want = ['clutch', 'amclutch', 'buzzer', 'ft', 'poster', 'block', 'stop'];
+  const want = ['clutch', 'amclutch', 'buzzer', 'ft', 'poster', 'block', 'stop', 'post', 'lob', 'steal'];
   ok(want.every((w) => kinds[w]), `every playable card came up (${Object.keys(kinds).join(', ')})`);
 }
 
@@ -235,16 +235,20 @@ async function browser() {
   section('6. every moment plays to the end, on a phone and a desktop');
   for (const [w, h, reduced] of [[390, 640, false], [1280, 720, false], [390, 640, true]]) {
     const { ctx, page, boom } = await open(w, h, reduced);
-    const kinds = ['three', 'mid', 'drive', 'pass', 'buzzer', 'ft', 'poster', 'stop', 'block'];
+    const kinds = ['three', 'mid', 'drive', 'pass', 'buzzer', 'ft', 'poster', 'stop', 'block', 'post', 'lob', 'steal', 'drive:euro', 'drive:reverse', 'post:hook', 'post:turn', 'post:dropstep'];
     const res = [];
-    for (const kind of kinds) {
-      const r = await page.evaluate(({ kind, ME }) => new Promise((done) => {
+    for (const [ki, kind] of kinds.entries()) {
+      /* half the moments are played as a make and half as a miss, the other
+         way round on the second screen, so both endings of each are drawn */
+      const flip = (ki + (w > 400 ? 1 : 0)) % 2 === 1;
+      const r = await page.evaluate(({ kind, ME, flip }) => new Promise((done) => {
         const host = document.getElementById('h');
         host.innerHTML = '';
         let asked = 0, t0 = performance.now();
-        const m = window.RTF_COURT.moment(host, { kind, rating: 72, rateName: 'Shooting', room: 'nba', c1: ME.c1, c2: ME.c2, oc: '#C8102E', me: ME,
+        const [k0, variant] = kind.split(':');
+        const m = window.RTF_COURT.moment(host, { kind: k0, variant, rating: 72, rateName: 'Shooting', room: 'nba', c1: ME.c1, c2: ME.c2, oc: '#C8102E', me: ME,
           bug: { home: 'MIL', away: 'CHI', clock: '0:07' }, intro: 'Here we go.', makeCall: 'Yes!', missCall: 'No.' },
-          { resolve: (q) => { asked++; window.lastQ = typeof q === 'object' ? q.touch : q; return { made: kind === 'ft' ? 1 : asked % 2 === 1 }; }, done: () => { const ms = performance.now() - t0; clearInterval(window.__iv); m.stop(); done({ asked, ms, q: window.lastQ }); } });
+          { resolve: (q) => { asked++; window.lastQ = typeof q === 'object' ? q.touch : q; return { made: kind === 'ft' ? 1 : flip ? false : asked % 2 === 1 }; }, done: () => { const ms = performance.now() - t0; clearInterval(window.__iv); m.stop(); done({ asked, ms, q: window.lastQ }); } });
         /* a moment can ask for more than one press (two free throws, the
            gather and the rise): press whenever the controls are armed */
         let box = null;
@@ -256,7 +260,7 @@ async function browser() {
           if (!ctl.dataset.hit) { ctl.dataset.hit = '1'; setTimeout(() => { go.click(); delete ctl.dataset.hit; }, 450); }
         }, 120);
         window.__iv = iv;
-      }), { kind, ME });
+      }), { kind, ME, flip });
       const box = await page.evaluate(() => window.goBox);
       res.push({ kind, ...r, box });
     }

@@ -12259,6 +12259,21 @@ five celebrations and three ways to hurt; a road game is played in the other
 building's colours; a made shot under pressure is replayed slower between
 letterbox bars; the booth's lines are pools (`CALLS`, `INTRO`).
 
+**THREE MORE MOMENTS, AND MORE WAYS INTO EVERY ONE.** A story career can be dealt a
+post-up (`post`: a hook, a turnaround or a drop step, mostly for a PF or C), an
+alley-oop (`lob`: a read, go up when the passer lets it fly and not on his pump
+fake) and jumping a passing lane (`steal`: a read, he looks you off before he
+throws it). Drives add a eurostep and a reverse, and there are eight
+celebrations. Before the call, a moment opens one of several ways
+(`MOMENT_SETUP` in scenes.js: a timeout huddle, the studio's read, the
+sideline), about one in four straight to the call. The huddle is told, never
+quoted, because the coach is real. **The new cards are drawn only on a story
+career**: everything else draws from `MOMENT_OLD`, the old key list, so the
+story-off replay picks the same card off the same number. Appending keys with
+a weight of nought is not enough, because `weighted` falls through to the last
+key when rounding leaves a sliver over. check-moments plays every kind and
+variant to the end, half as makes and half as misses.
+
 **EVERYTHING IS THE 3D STYLE.** `B.prop` sphere traces the ball (four spin frames),
 the rim (two halves, so the ball drops between them), a trophy, a podium and a
 ring box with the player's ramps and outline. The court floor is painted per

@@ -2553,8 +2553,8 @@
       "sha": "fbf8ac8bab981947"
     },
     "../court.js": {
-      "v": "3",
-      "sha": "64a9e538c239c879"
+      "v": "4",
+      "sha": "f1d026b690a52453"
     },
     "../ticker.js": {
       "v": "1",
@@ -2583,8 +2583,8 @@
       "sha": "814d6471760c59b4"
     },
     "career.js": {
-      "v": "37",
-      "sha": "c86baa0a42cb305c"
+      "v": "38",
+      "sha": "865deecfe3be9bac"
     },
     "baller.js": {
       "v": "7",
@@ -2623,16 +2623,16 @@
       "sha": "fbf8ac8bab981947"
     },
     "court.js": {
-      "v": "3",
-      "sha": "64a9e538c239c879"
+      "v": "4",
+      "sha": "f1d026b690a52453"
     },
     "ticker.js": {
       "v": "1",
       "sha": "430851c9fed6fd89"
     },
     "scenes.js": {
-      "v": "11",
-      "sha": "665d9c72121cf860"
+      "v": "12",
+      "sha": "0e6651c952f3149d"
     },
     "career-ui.js": {
       "v": "39",

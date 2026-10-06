@@ -527,6 +527,9 @@ var CLIPS = {
       point: function(t){ return { p: t < 5 ? 'cheer1' : 'cheer2', j: t < 4 ? 2 : 0, flip: t > 9 }; },
       shimmy: function(t){ return { p: Math.floor(t / 2) % 2 ? 'cheer1' : 'cheer3', j: 0 }; },
       chest: function(t){ return { p: t < 6 ? 'cheer0' : 'cheer1', j: t > 5 && t < 11 ? [3, 7, 9, 7, 3][t - 6] : 0, dx: t < 6 ? t * 1.5 : 9 }; },
+      shush: function(t){ return { p: t < 12 ? 'cheer2' : 'stand', j: 0, flip: t > 3 && t < 12 }; },
+      stare: function(t){ return { p: t < 4 ? 'cheer0' : 'stand', j: t < 3 ? [0, 3, 5][t] : 0, flip: t > 6 }; },
+      salute: function(t){ return { p: t < 7 ? 'cheer1' : 'cheer3', j: t < 5 ? [0, 4, 8, 6, 2][t] : 0, dx: -Math.min(6, t) }; },
       head: function(t){ return { p: t < 9 ? 'sad1' : 'sad0', j: 0 }; },
       hips: function(){ return { p: 'sad0', j: 0 }; },
       knees: function(t){ return { p: t < 5 ? 'sad1' : 'sad2', j: 0 }; },
@@ -669,13 +672,16 @@ function controls(spec, st){
 var MOMENTS = {
   three: { at: -70, act: 'jumper', v: ['pullup', 'catch', 'stepback'] },
   mid: { at: -46, act: 'jumper', v: ['fade', 'pullup', 'stepback'] },
-  drive: { at: -82, act: 'drive', v: ['dunk', 'layup', 'dunk'] },
+  drive: { at: -82, act: 'drive', v: ['dunk', 'layup', 'dunk', 'euro', 'reverse'] },
   pass: { at: -66, act: 'pass', v: ['corner', 'cut'] },
   buzzer: { at: -74, act: 'jumper', v: ['heave', 'stepback', 'pullup', 'catch'] },
   ft: { at: -54, act: 'ft', v: ['ft'] },
   poster: { at: -82, act: 'drive', v: ['poster'] },
   stop: { at: -30, act: 'stop', v: ['iso', 'iso'] },
   block: { at: -40, act: 'block', v: ['chase'] },
+  post: { at: -58, act: 'post', v: ['hook', 'turn', 'dropstep'] },
+  lob: { at: -70, act: 'lob', v: ['oop', 'oop'] },
+  steal: { at: -62, act: 'steal', v: ['lane', 'lane'] },
 };
 var VARIANTS = MOMENTS;
 /* Which moment a Game 7 option is. */
@@ -715,7 +721,7 @@ function moment(host, spec, cb){
   var opp = { look: oppLook, c1: spec.oc || '#3a4566', c2: spec.oc2 || '#c9ccd6', num: '', age: 26, faceless: true };
   var opp2 = { look: B.lookFor('opp2:' + (spec.seed || '')), c1: opp.c1, c2: opp.c2, num: '', age: 27, faceless: true };
   var mate = spec.mate && spec.mate.look ? { look: spec.mate.look, c1: spec.c1, c2: spec.c2, num: spec.mate.num || '', age: 26, faceless: !!spec.mate.faceless } : null;
-  var celebrate = pickOf(R, mate ? ['roar', 'flex', 'point', 'chest', 'shimmy'] : ['roar', 'flex', 'point', 'shimmy']);
+  var celebrate = pickOf(R, mate ? ['roar', 'flex', 'point', 'chest', 'shimmy', 'shush', 'stare', 'salute'] : ['roar', 'flex', 'point', 'shimmy', 'shush', 'stare', 'salute']);
   var hurt = pickOf(R, ['head', 'hips', 'knees']);
   var rx = function(){ return st.rim[0]; }, x0 = function(){ return st.rim[0] + (variant === 'heave' ? -98 : M.at); };
   S.crowd(3, 2.4);
@@ -803,7 +809,7 @@ function moment(host, spec, cb){
   /* ── a drive: the gather, then the rise. A dunk, a layup or a poster ── */
   function drive(){
     var x = x0(), end = rx() - 26;
-    var poster = variant === 'poster', layup = variant === 'layup';
+    var poster = variant === 'poster', euro = variant === 'euro', rev = variant === 'reverse', layup = variant === 'layup' || euro || rev;
     var bigX = rx() - 16;
     var big = function(pose, jump, dx){ return { who: opp2, x: bigX + (dx || 0), y: st.playY - 1, pose: pose, jump: jump || 0, flip: true, z: -1 }; };
     var onball = function(t, x1){ return { who: opp, x: x1 + 12, y: st.playY - 2, pose: cyc('walk', t, 2), flip: true, z: -2 }; };
@@ -812,7 +818,9 @@ function moment(host, spec, cb){
     var zone = zoneFor(rating);
     ctl.meter({ zone: zone * 1.1, speed: 0.85 + pressure * 0.25, nerves: spec.nerves || 0, rn: rn, tip: 'The gather. Time your last step', btn: 'Gather' }, function(q1){
       st.play({ len: 8, loop: false, at: function(t){
-        var p = cyc('dribble', t, 2), xx = lerp(x, end - 8, t / 7), a = { who: 'me', x: xx, y: st.playY, pose: t < 7 ? p : 'dunk0' };
+        /* a eurostep goes one way and then the other on the last two steps */
+        var side = euro && t >= 4 ? (t < 6 ? 3 : -3) : 0;
+        var p = cyc('dribble', t, 2), xx = lerp(x, end - 8, t / 7), a = { who: 'me', x: xx, y: st.playY + side, pose: t < 7 ? p : 'dunk0' };
         var acts = [a].concat(poster ? [big('block0')] : [onball(t, lerp(x, end - 14, t / 7))]);
         return { actors: acts, ball: t < 7 ? dribbleBall(st, a, build, t) : { x: hand('dunk0', a, build)[0], y: hand('dunk0', a, build)[1] }, loud: 3, dust: t === 7 ? [{ x: xx, y: st.playY, t: 3 }] : null, focus: xx };
       }, cues: { 0: 'squeak', 4: 'bounce' } }, function(){
@@ -829,14 +837,15 @@ function moment(host, spec, cb){
       var top = layup ? 24 : 40, jumps = layup ? [0, 0, 6, 12, 18, 22, 24, 24, 22, 18] : [0, 0, 0, 10, 22, 32, 38, 40, 40, 40];
       var list = [
         { len: 10, at: function(t){
-          var xx = lerp(end - 8, end, Math.min(1, t / 6));
-          var a = { who: 'me', x: xx, y: st.playY, pose: seq[t], jump: jumps[t] };
+          /* a reverse goes under the rim and finishes on the far side */
+          var xx = rev ? lerp(end - 8, st.rim[0] + 7, Math.min(1, t / 7)) : lerp(end - 8, end, Math.min(1, t / 6));
+          var a = { who: 'me', x: xx, y: st.playY, pose: seq[t], jump: jumps[t], flip: rev && t > 4 };
           var hn = hand(seq[t], a, build);
           var acts = [a].concat(poster ? [big(t > 4 ? 'block1' : 'block0', t > 4 ? (t - 4) * 4 : 0)] : []);
           return { actors: acts, ball: { x: hn[0] - 1, y: hn[1] - 2 }, loud: 3, focus: xx };
         }, cues: { 2: 'squeak' } },
         function(){ return made
-          ? (layup ? CLIPS.result(st, true, function(t){ return [{ who: 'me', x: end, y: st.playY, pose: 'shot4', jump: Math.max(0, top - t * 6) }]; })
+          ? (layup ? CLIPS.result(st, true, function(t){ return [{ who: 'me', x: rev ? st.rim[0] + 7 : end, y: st.playY, pose: 'shot4', jump: Math.max(0, top - t * 6), flip: rev }]; })
             : { len: 14, key: 3, at: function(t){
               var a = { who: 'me', x: end, y: st.playY, pose: t < 8 ? 'dunk4' : 'shot4', jump: t < 8 ? top : Math.max(0, top - (t - 7) * 12) };
               var acts = [a].concat(poster ? [big(t < 3 ? 'block1' : 'sad2', t < 3 ? 6 : 0, -Math.min(10, t * 2))] : []);
@@ -848,7 +857,7 @@ function moment(host, spec, cb){
           }, cues: { 1: 'thud', 3: 'whistle' } }
             : CLIPS.result(st, false, function(t){ return [{ who: 'me', x: end, y: st.playY, pose: 'shot4', jump: Math.max(0, top - t * 10) }]; }); },
       ];
-      st.run(withReplay(list, made && !layup, function(){ return list[0]; }), function(){ finish(made, callFor(made), end); });
+      st.run(withReplay(list, made && (!layup || euro || rev), function(){ return list[0]; }), function(){ finish(made, callFor(made), rev ? st.rim[0] + 7 : end); });
     }
   }
 
@@ -981,7 +990,125 @@ function moment(host, spec, cb){
     });
   }
 
-  ({ jumper: jumper, drive: drive, ft: ft, pass: pass, stop: stop, block: block })[M.act]();
+
+  /* ── the post: back him down, then a hook, a turnaround or a drop step ── */
+  function post(){
+    var x0p = rx() - 58, mx = x0p;
+    var D = function(xx, pose, jump){ return { who: opp, x: xx + 9, y: st.playY - 1, pose: pose || 'block0', jump: jump || 0, flip: true, z: -1 }; };
+    st.play(Object.assign({ len: 36, loop: true, at: function(t){
+      /* each bump gains a little ground, up to the edge of the paint */
+      mx = Math.min(rx() - 42, mx + (t % 6 === 0 ? 1.5 : 0));
+      var a = { who: 'me', x: mx, y: st.playY, pose: cyc('dribble', t, 2), flip: true };
+      return { actors: [a, D(mx, t % 6 < 2 ? 'block1' : 'block0')], ball: dribbleBall(st, a, build, t), loud: 2, focus: mx, dust: t % 6 === 0 ? [{ x: mx + 5, y: st.playY, t: 2 }] : null };
+    }, cues: { 0: 'thud', 12: 'thud', 24: 'thud' } }, { call: spec.intro || '' }));
+    var zone = zoneFor(rating) * (variant === 'hook' ? 1.1 : 1);
+    var speed = 0.9 + pressure * 0.3 + (variant === 'turn' ? 0.15 : variant === 'dropstep' ? 0.08 : 0);
+    var tip = { hook: 'Hook shot. Release at the top', turn: 'Turnaround. Quicker meter', dropstep: 'Drop step. Time the spin' }[variant];
+    ctl.meter({ zone: zone, speed: speed, nerves: spec.nerves || 0, rn: rn, tip: tip, btn: variant === 'dropstep' ? 'Spin' : 'Shoot' }, function(q){
+      var res = resolve(q), made = !!res.made;
+      var sx = mx, list = [];
+      if (variant === 'dropstep') {
+        var end = rx() - 22;
+        list.push({ len: 6, at: function(t){ var xx = lerp(sx, end, t / 5), a = { who: 'me', x: xx, y: st.playY + (t < 3 ? 2 : 0), pose: cyc('walk', t, 1), flip: t < 2 }; var hn = hand(a.pose, a, build); return { actors: [a, D(sx, 'block0')], ball: { x: hn[0], y: hn[1] }, loud: 3, focus: xx }; }, cues: { 0: 'squeak' } });
+        list.push({ len: 8, at: function(t){ var seq = ['dunk0', 'dunk1', 'dunk2', 'dunk2', 'dunk3', 'dunk3', 'dunk3', 'dunk3'], a = { who: 'me', x: end, y: st.playY, pose: seq[t], jump: [0, 4, 12, 22, 28, 30, 30, 30][t] }, hn = hand(seq[t], a, build); return { actors: [a, D(sx, t > 2 ? 'block1' : 'block0', t > 2 ? (t - 2) * 3 : 0)], ball: { x: hn[0], y: hn[1] - 1 }, loud: 3, focus: end }; } });
+        list.push(function(){ return CLIPS.result(st, made, function(t){ return [{ who: 'me', x: end, y: st.playY, pose: made ? 'dunk4' : 'shot4', jump: Math.max(0, 30 - t * 8) }, D(sx, 'stand')]; }); });
+        st.run(withReplay(list, made, function(){ return list[1]; }), function(){ finish(made, callFor(made), end); });
+        return;
+      }
+      var drift = variant === 'turn' ? 5 : 0;
+      list.push(CLIPS.rise(st, sx, build, function(t){ return [D(sx, t > 2 ? 'block1' : 'block0', t > 2 ? (t - 2) * 3 : 0)]; }, drift));
+      var from = function(){ var a = { who: 'me', x: sx - drift, y: st.playY, pose: 'shot2', jump: 10 }, f = hand('shot2', a, build); return [f[0], f[1] - 2]; };
+      var fly = function(t){ return [{ who: 'me', x: sx - drift, y: st.playY, pose: t < 5 ? 'shot3' : 'shot4', jump: Math.max(0, 10 - t * 2) }, D(sx, 'block2', Math.max(0, 9 - t * 3))]; };
+      list.push(function(){ return CLIPS.flight(st, from(), made, fly, 11, variant === 'hook' ? 1.3 : 0.9); });
+      list.push(function(){ return CLIPS.result(st, made, function(){ return [{ who: 'me', x: sx - drift, y: st.playY, pose: 'shot4' }, D(sx, 'stand')]; }); });
+      st.run(withReplay(list, made, function(){ return CLIPS.flight(st, from(), made, fly, 11, variant === 'hook' ? 1.3 : 0.9); }), function(){ finish(made, callFor(made), sx - drift); });
+    });
+  }
+
+  /* ── the lob: run the lane, go up the moment he lets it go ── */
+  function lob(){
+    var m = mate || { look: B.lookFor('mate:' + (spec.seed || '')), c1: spec.c1, c2: spec.c2, num: '', age: 26 };
+    var L8 = { mx: rx() - 100, me: rx() - 72, thrown: 0, pump: 0 };
+    var back = { who: opp, x: rx() - 34, y: st.playY - 2, pose: 'block0', flip: true, z: -1 };
+    st.play(Object.assign({ len: 60, at: function(t){
+      L8.mx = Math.min(rx() - 82, L8.mx + 0.6); L8.me = Math.min(rx() - 40, L8.me + 0.7);
+      var mm = { who: m, x: L8.mx, y: st.playY + 3, pose: L8.pump ? 'shot1' : cyc('dribble', t, 1), z: 1 };
+      var me = { who: 'me', x: L8.me, y: st.playY - 1, pose: cyc('walk', t, 1), z: -1 };
+      return { actors: [mm, me, back], ball: L8.pump ? { x: hand('shot1', mm, 'standard')[0], y: hand('shot1', mm, 'standard')[1] } : dribbleBall(st, mm, 'standard', t), loud: 2, focus: (L8.mx + L8.me) / 2 };
+    } }, { call: spec.intro || '' }));
+    var at = 900 + Math.floor(R() * 700), fakes = pressure >= 0.3 ? [Math.floor(at * 0.5)] : [];
+    ctl.react({ at: at, fakes: fakes, rating: rating, rn: rn, tip: 'Go up when he lets it fly. Not on the pump', btn: 'Go up', wait: 'Run the lane',
+      onFake: function(){ L8.pump = 1; st.say('Pump fake...'); setTimeout(function(){ L8.pump = 0; st.say(''); }, 300); },
+      onCue: function(){ L8.thrown = 1; S.cue('slap'); } }, function(q){
+      var res = resolve(q), made = !!res.made;
+      var mx = L8.mx, x1 = L8.me, end = rx() - 14;
+      var from = [mx + 6, st.playY - 40];
+      st.run([
+        { len: 10, at: function(t){
+          var u = t / 9, me = { who: 'me', x: lerp(x1, end, u), y: st.playY - 1, pose: t < 5 ? cyc('walk', t, 1) : made ? 'dunk2' : 'dunk1', jump: t < 5 ? 0 : (t - 4) * (made ? 9 : 6), z: -1 };
+          var b = arc(from, [st.rim[0] - 4, st.rim[1] - 14], 26, u);
+          return { actors: [{ who: m, x: mx, y: st.playY + 3, pose: 'shot4', z: 1 }, me, Object.assign({}, back, { pose: 'block1', jump: t > 6 ? 4 : 0 })], ball: { x: b[0], y: b[1], spin: t }, loud: 3, focus: (mx + end) / 2 };
+        }, cues: { 3: 'squeak' } },
+        function(){ return made
+          ? { len: 14, key: 2, at: function(t){
+            var a = { who: 'me', x: end, y: st.playY - 1, pose: t < 7 ? 'dunk4' : 'shot4', jump: t < 7 ? 45 : Math.max(0, 45 - (t - 6) * 12), z: -1 };
+            return { actors: [{ who: m, x: mx, y: st.playY + 3, pose: 'cheer1', z: 1 }, a, back], ball: t < 6 ? { x: st.rim[0], y: st.rim[1] + 3 + t * 3, behind: t < 3 } : { x: st.rim[0] - (t - 5) * 2, y: st.playY - 3 }, net: t < 2 ? 1 : t < 4 ? 2 : 0, rimShake: t < 6 ? t + 1 : 0, loud: 3, flash: true, focus: end };
+          }, cues: { 0: 'thud', 1: 'swish', 10: 'bounce' } }
+          : { len: 12, key: 3, at: function(t){
+            var a = { who: 'me', x: end, y: st.playY - 1, pose: t < 4 ? 'dunk1' : 'sad1', jump: Math.max(0, 30 - t * 7), z: -1 };
+            var b = arc([st.rim[0] - 4, st.rim[1] - 14], [st.rim[0] + 40, st.playY - 4], 10, t / 11);
+            return { actors: [{ who: m, x: mx, y: st.playY + 3, pose: 'stand', z: 1 }, a, back], ball: { x: b[0], y: b[1], spin: t }, loud: 1, focus: end };
+          }, cues: { 11: 'bounce' } }; },
+      ], function(){ finish(made, callFor(made), end); });
+    });
+  }
+
+  /* ── the passing lane: they swing it, he looks you off, then he throws it ── */
+  function steal(){
+    var px = rx() - 92, wx = rx() - 26, mx0 = rx() - 60;
+    var S8 = { look: 0, pass: 0, t: 0 };
+    var passer = function(pose){ return { who: opp, x: px, y: st.playY + 2, pose: pose, flip: false }; };
+    var wing = function(pose, dx){ return { who: opp2, x: wx + (dx || 0), y: st.playY - 3, pose: pose || 'stand', flip: true, z: -1 }; };
+    st.play(Object.assign({ len: 24, loop: true, at: function(t){
+      var p = passer(S8.look ? 'shake1' : cyc('dribble', t, 2));
+      var me = { who: 'me', x: mx0 + Math.sin(t / 4) * 2, y: st.playY, pose: 'block0', flip: true };
+      return { actors: [p, me, wing('stand')], ball: S8.look ? { x: hand('shake1', p, 'standard')[0], y: hand('shake1', p, 'standard')[1] } : dribbleBall(st, p, 'standard', t), loud: 2, focus: (px + wx) / 2 };
+    } }, { call: spec.intro || '' }));
+    var fakes = [], n = 1 + Math.floor(R() * 2);
+    for (var i = 0; i < n; i++) fakes.push(600 + i * 560 + Math.floor(R() * 200));
+    var at = fakes[fakes.length - 1] + 560 + Math.floor(R() * 400);
+    ctl.react({ at: at, fakes: fakes, rating: rating, rn: rn, tip: 'He looks you off. Jump it when the ball leaves his hand', btn: 'Jump it', wait: 'Read his eyes',
+      onFake: function(){ S8.look = 1; setTimeout(function(){ S8.look = 0; }, 280); },
+      onCue: function(){ S8.pass = 1; S.cue('slap'); } }, function(q){
+      var res = resolve(q), made = !!res.made;
+      var mid = (px + wx) / 2, end = rx() - 22;
+      if (made) {
+        st.run([
+          { len: 6, at: function(t){
+            var u = t / 5, me = { who: 'me', x: lerp(mx0, mid, u), y: st.playY + 1, pose: t < 4 ? cyc('walk', t, 1) : 'block1', jump: t > 3 ? 4 : 0 };
+            return { actors: [passer('shot4'), me, wing('up')], ball: { x: lerp(px + 6, mid, u), y: st.playY - 22 + Math.sin(u * Math.PI) * -3, spin: t }, loud: 3, focus: mid };
+          }, cues: { 5: 'slap' } },
+          { len: 14, at: function(t){
+            var xx = lerp(mid, end, t / 13), a = { who: 'me', x: xx, y: st.playY, pose: cyc('dribble', t, 1) };
+            return { actors: [passer('stand'), a, wing('sad0')], ball: dribbleBall(st, a, build, t), loud: 3, focus: xx, dust: t === 0 ? [{ x: mid, y: st.playY, t: 3 }] : null };
+          }, cues: { 0: 'roar', 4: 'bounce', 10: 'bounce' } },
+          { len: 8, at: function(t){ var seq = ['dunk0', 'dunk1', 'dunk2', 'dunk2', 'dunk3', 'dunk3', 'dunk3', 'dunk3'], a = { who: 'me', x: end, y: st.playY, pose: seq[t], jump: [0, 6, 16, 28, 36, 38, 38, 38][t] }, hn = hand(seq[t], a, build); return { actors: [a, passer('stand'), wing('sad0', -6)], ball: { x: hn[0], y: hn[1] - 1 }, loud: 3, focus: end }; } },
+          function(){ return { len: 12, key: 2, at: function(t){ var a = { who: 'me', x: end, y: st.playY, pose: t < 6 ? 'dunk4' : 'shot4', jump: t < 6 ? 38 : Math.max(0, 38 - (t - 5) * 12) }; return { actors: [a, passer('stand'), wing('sad0', -6)], ball: t < 6 ? { x: st.rim[0], y: st.rim[1] + 3 + t * 3, behind: t < 3 } : { x: st.rim[0] - (t - 5) * 2, y: st.playY - 3 }, net: t < 2 ? 1 : t < 4 ? 2 : 0, rimShake: t < 6 ? t + 1 : 0, loud: 3, flash: true, focus: end }; }, cues: { 0: 'thud', 1: 'swish' } }; },
+        ], function(){ finish(true, callFor(true), end); });
+      } else {
+        st.run([
+          { len: 10, at: function(t){
+            var u = t / 9, me = { who: 'me', x: lerp(mx0, mid - 6, Math.min(1, u * 1.5)), y: st.playY + 1, pose: t < 5 ? 'block1' : 'sad1', jump: t < 4 ? 3 : 0 };
+            var w = wing(t < 4 ? 'stand' : cyc('walk', t, 1), t < 4 ? 0 : -(t - 3) * 2);
+            return { actors: [passer('shot4'), me, w], ball: { x: lerp(px + 6, wx - 10, u), y: st.playY - 30 - Math.sin(u * Math.PI) * 10, spin: t }, loud: 2, focus: (px + wx) / 2 };
+          }, cues: { 0: 'slap' } },
+          function(){ return CLIPS.result(st, true, function(){ return [passer('stand'), { who: opp2, x: wx - 8, y: st.playY - 3, pose: 'shot4', flip: true, z: -1 }, { who: 'me', x: mid - 6, y: st.playY + 1, pose: 'sad0' }]; }); },
+        ], function(){ finish(false, callFor(false), mid - 6); });
+      }
+    });
+  }
+
+  ({ jumper: jumper, drive: drive, ft: ft, pass: pass, stop: stop, block: block, post: post, lob: lob, steal: steal })[M.act]();
 
   return { stop: function(){ document.removeEventListener('keydown', onKey, true); ctl.stop(); st.stop(); }, press: function(){ ctl.press(); }, armed: function(){ return ctl.armed(); }, stage: st, variant: variant, touchOf: touchOf };
 }

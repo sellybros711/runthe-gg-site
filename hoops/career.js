@@ -3462,7 +3462,31 @@ const MOMENTS = {
       { label: 'Guard him yourself', hint: feel(L.rt.def, 'Lock him up', 'Battle and pray', "It's a tough matchup"), p: clamp(0.36 + (L.rt.def - 55) * 0.008, 0.2, 0.75), play: 'stop' },
       { label: 'Send the double team', hint: 'Make someone else beat you', p: 0.5 },
     ] },
+  /* Three more, for story careers only (see MOMENT_OLD below): the block, the
+     lob and the passing lane, so a big man, a leaper and a defender each have
+     nights that are theirs. */
+  post: { w: (L) => L.pos === 'C' || L.pos === 'PF' ? 1.6 : L.pos === 'SF' ? 0.4 : 0, scene: 'The low block', title: 'Down one. You have him on the block.',
+    text: (L, o) => 'They feed you on the left block against the ' + o + '. His back is to the rim and so is yours.',
+    opts: (L) => [
+      { label: 'Back him down and score', hint: feel((L.rt.fin + L.rt.iq) / 2, 'Your spot on the floor', 'Worth a try', 'Not your game'), p: clamp(0.34 + ((L.rt.fin + L.rt.iq) / 2 - 60) * 0.008, 0.18, 0.72), play: 'post' },
+      { label: 'Kick it out to a shooter', hint: 'Make them pick', p: 0.4 },
+    ] },
+  lob: { w: (L) => L.rt.ath >= 66 ? 1.4 : 0, scene: 'Fast break', title: 'Two on one. He is looking up for you.',
+    text: (L, o) => 'A runout against the ' + o + '. One defender back, and the rim is wide open above him.',
+    opts: (L) => [
+      { label: 'Call for the lob', hint: feel(L.rt.ath, 'You live up there', 'Time it right', 'Long way up'), p: clamp(0.36 + (L.rt.ath - 62) * 0.009, 0.2, 0.78), play: 'lob' },
+      { label: 'Let him lay it in', hint: 'Two easy points', p: 0.82 },
+    ] },
+  steal: { w: (L) => L.rt.def >= 60 ? 1.2 : 0, scene: 'Defense', title: 'You know this play. Jump it?',
+    text: (L, o) => 'The ' + o + ' run the same swing pass you watched on film all week.',
+    opts: (L) => [
+      { label: 'Jump the passing lane', hint: feel((L.rt.def + L.rt.iq) / 2, 'You have seen it coming', 'A gamble', 'Risky for you'), p: clamp(0.3 + ((L.rt.def + L.rt.iq) / 2 - 58) * 0.009, 0.15, 0.7), play: 'steal' },
+      { label: 'Stay in your stance', hint: 'Play it straight', p: 0.5 },
+    ] },
 };
+/* The list a career that is not a story career draws from, unchanged, so the
+   story-off replay draws the same card off the same number. */
+const MOMENT_OLD = ['buzzer', 'ft', 'poster', 'block', 'stop'];
 /* A DUEL CAREER separates the two things a moment used to fuse. THE GAME IS
    THE TEAM'S: a regular season night is a real game out of the stretch the
    engine already played, so its result is the box score's, and a Game 7 is
@@ -3488,7 +3512,7 @@ function queueMoment(L, chunk) {
   if (s.injury && s.g >= s.injury.from && s.g < s.injury.until) return;
   const rng = rngAt(L, 'moment:' + chunk);
   if (rng() >= MOMENT_P) return;
-  const id = weighted(rng, Object.keys(MOMENTS), (k) => MOMENTS[k].w(L));
+  const id = weighted(rng, storyOn(L) ? Object.keys(MOMENTS) : MOMENT_OLD, (k) => MOMENTS[k].w(L));
   if (!id) return;
   const m = MOMENTS[id];
   let opp = CLUBS.filter((c) => c !== L.team)[Math.floor(rng() * (CLUBS.length - 1))];
@@ -3528,6 +3552,16 @@ const DUEL_TEXT = {
   block: { MW: 'Pinned to the glass. He never saw you. A win.', ML: 'Pinned to the glass. It\'s the clip of a loss.',
     mW: 'A step late. And one. You win anyway.', mL: 'A step late. And one. A loss.' },
   letgo: { W: 'Two points for them. Nobody notices. A win.', L: 'Two points for them. Nobody notices. A loss.' },
+  post: { MW: 'Drop step, two hands, and one. A win.', ML: 'You bully him for two. They answer at the horn.',
+    mW: 'He holds his ground and it rolls off. {dmate} cleans it up. A win.', mL: 'He holds his ground and it rolls off. A loss.' },
+  kickout: { MW: 'Kick out to {dmate}. Splash. A win.', ML: 'Kick out to {dmate}. He hits. A loss anyway.',
+    mW: 'The kick-out clanks. You win it later.', mL: 'The kick-out clanks. A loss.' },
+  lob: { MW: 'Caught it at the top of the square. A win.', ML: 'Caught it at the top of the square. Best play of a loss.',
+    mW: 'Mistimed. It sails out of bounds. A win anyway.', mL: 'Mistimed. It sails out of bounds. A loss.' },
+  layin: { MW: '{dmate} lays it in. Easy two. A win.', ML: '{dmate} lays it in. Easy two. A loss.', mW: 'He misses the layup. You win anyway.', mL: 'He misses the layup. A loss.' },
+  steal: { MW: 'Picked off. Coast to coast. A win.', ML: 'Picked off and slammed home. They still win it.',
+    mW: 'You bite. Backdoor layup for them. You win anyway.', mL: 'You bite. Backdoor layup for them. A loss.' },
+  stance: { MW: 'You stay home. They miss. A win.', ML: 'You stay home. They score anyway. A loss.', mW: 'They score over you. You win anyway.', mL: 'They score over you. A loss.' },
   stop: { MW: 'You stay in front. He misses at the horn. Ballgame.', ML: 'You force the miss. They tip it in at the horn.',
     mW: 'He gets to his spot and scores. {dmate} answers at the other end. A win.', mL: 'He gets to his spot and buries it.' },
   double: { MW: 'The double forces it out. They miss. Ballgame.', ML: 'The double forces it out. The open man hits.',
@@ -3560,7 +3594,7 @@ function momentResolve(L, card, i, rng, touch, touches) {
     if (card.ctx.m === 'block') return duel ? { text: duelLine(L, card, 'letgo', null, won), tone: '', made: false, won } : { text: 'Two points for them. Nobody notices.', tone: '', made: false };
     const ok = rng() < o.p;
     if (duel) {
-      const key = { buzzer: 'kick', poster: 'layup', stop: 'double' }[card.ctx.m];
+      const key = { buzzer: 'kick', poster: 'layup', stop: 'double', post: 'kickout', lob: 'layin', steal: 'stance' }[card.ctx.m];
       bump(L, ok ? { trust: 2 } : { morale: -1 });
       if (card.ctx.m === 'buzzer' && mate) relate(L, 'tm', ok ? 10 : 4, ok ? 'You gave him the last shot and he hit it.' : 'You gave him the last shot.', mate);
       return { text: duelLine(L, card, key, ok, won), tone: ok ? 'good' : '', made: ok, won };
@@ -3574,16 +3608,21 @@ function momentResolve(L, card, i, rng, touch, touches) {
     poster: made ? ["Right on top of him. That one's going on a wall.", 'posters'] : ['He holds his ground. Offensive foul.', null],
     block: made ? ['Pinned to the glass. He never saw you coming.', 'chasedowns'] : ['A step late. And one.', null],
     stop: made ? ['You stay in front. He misses at the horn. Ballgame.', 'stops'] : ['He gets to his spot and buries it.', null],
+    post: made ? ['Drop step, two hands. He never had a chance.', 'posts'] : ['He holds his ground and it rolls off.', null],
+    lob: made ? ['Caught it at the top of the square. The bench loses it.', 'lobs'] : ['Mistimed. It sails out of bounds.', null],
+    steal: made ? ['Picked off. Coast to coast for the slam.', 'steals'] : ['You bite. Backdoor layup for them.', null],
   }[card.ctx.m];
   if (made) {
     /* A shot at the horn only counts as a winner when the game was won. */
     if (!duel || won || card.ctx.m !== 'buzzer') f[T[1]] = (f[T[1]] || 0) + 1;
     if (card.ctx.m === 'buzzer' && (!duel || won)) clutchHit(L);
-    bump(L, { fame: card.ctx.m === 'buzzer' || card.ctx.m === 'poster' ? 4 : 3, morale: 5 });
-    logIt(L, { buzzer: duel && !won ? 'Forced overtime at the horn against the ' + opp + '.' : 'Hit a shot at the horn against the ' + opp + '.', poster: 'Dunked on a ' + opp + ' big.', block: 'A chase-down block against the ' + opp + '.', stop: 'Got the last stop against the ' + opp + '.' }[card.ctx.m], 'gold');
+    if (card.ctx.m === 'lob' && mate) relate(L, 'tm', 6, 'He threw you the lob.', mate);
+    bump(L, { fame: card.ctx.m === 'buzzer' || card.ctx.m === 'poster' || card.ctx.m === 'lob' ? 4 : 3, morale: 5 });
+    logIt(L, { buzzer: duel && !won ? 'Forced overtime at the horn against the ' + opp + '.' : 'Hit a shot at the horn against the ' + opp + '.', poster: 'Dunked on a ' + opp + ' big.', block: 'A chase-down block against the ' + opp + '.', stop: 'Got the last stop against the ' + opp + '.',
+      post: 'Scored on the block against the ' + opp + '.', lob: 'Threw down a lob against the ' + opp + '.', steal: 'Jumped the lane and took it the distance against the ' + opp + '.' }[card.ctx.m], 'gold');
   } else {
     bump(L, { morale: -3 });
-    if (duel && won && mate && (card.ctx.m === 'buzzer' || card.ctx.m === 'stop')) relate(L, 'tm', 8, 'He saved the night you missed.', mate);
+    if (duel && won && mate && (card.ctx.m === 'buzzer' || card.ctx.m === 'stop' || card.ctx.m === 'post')) relate(L, 'tm', 8, 'He saved the night you missed.', mate);
   }
   if (duel) return { text: duelLine(L, card, card.ctx.m, made, won), tone: made ? 'gold' : 'bad', made, won };
   return { text: T[0], tone: made ? 'gold' : 'bad', made };
