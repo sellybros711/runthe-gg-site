@@ -1087,8 +1087,8 @@ var LEVELS = [
     jump(H, 0, -44, 0, -1, 2.2, 10, { h:0.9, ang:40 }); bumps(H, T, [[-2, -52, 0.6], [3.4, -8.6, 0.5]]); flatAt(H, 1.5, -56);
     pipe(H, T, 4.2, -10.4, 2, -38.4, 0, -1, 0.9, 0, 0.6); secret(H, 3.4, -9.6, 5, -11.2); return H; } },
   // ---- 5 VOLCANO ISLAND: lava on every side, lava jumps, hot springs and everything at once. Basalt rails line the lanes the obvious line takes, so the lava punishes a bad choice rather than a degree of aim.
-  // Lava Lane: up the railed lane, round the rock, putt out. The secret: a lava tube in the nook beside the tee comes up at the cup.
-  { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -36)], [0, -2.5], [1, -32]); zoneR(H, M.WATER, -6, -10, -1.6, -28); zoneR(H, M.WATER, 1.6, -10, 6, -28); blk(H, T, -1.9, -10, -1.6, -28); blk(H, T, 1.6, -10, 1.9, -28); blk(H, T, -1.6, -18, -0.2, -19.2);
+  // Lava Lane: up the railed lane, through the chicane, putt out. The secret: a lava tube in the nook beside the tee comes up at the cup.
+  { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -36)], [0, -2.5], [1, -32]); zoneR(H, M.WATER, -6, -10, -1.6, -28); zoneR(H, M.WATER, 1.6, -10, 6, -28); blk(H, T, -1.9, -10, -1.6, -28); blk(H, T, 1.6, -10, 1.9, -28); blk(H, T, -1.6, -18, 0.3, -19.2); blk(H, T, -0.3, -23, 1.6, -24.2);
     pipe(H, T, -5.2, -7.6, 1, -30.6, 0, -1, 0.9, 0, 0.2); secret(H, -6, -6.8, -4.4, -8.4); bumps(H, T, [[-3.6, -7.2, 0.5]]); return H; } },
   // Hot Spring: down the spring to the lower terrace; a basalt rail keeps the lava pool off the line; putt out. The secret: the vent in the corner of the top terrace comes out at the cup.
   { par:3, f:function(T){ var H = hole([rm(-10, 0, -2, -12), rm(-4, -24, 8, -38, -1.8)], [-6, -2.5], [4, -34]); river(H, [[-6, -11.5], [-6, -16], [-1, -19], [2, -24.5]], 1.8, 7, 0, -1.8); zoneR(H, M.WATER, -4, -30, 0.5, -38); blk(H, T, 0.5, -30, 0.8, -38); bumps(H, T, [[4.5, -28.5, 0.65]]);
