@@ -591,6 +591,83 @@ var CARD_INTROS = {
 };
 CARD_INTROS.moment = function(card, c){ return [{ who: 'vance', room: 'arena', pic: 'me', pose: 'ball', loud: true, board: 'LIVE',
   tx: card.text || 'It comes down to this.' }]; };
+/* YOUR CLUB'S MOMENTS (the tm_ cards in career.js). The engine wrote down
+   what the summer, the deadline or the season did to your club, and the card
+   it dealt is set up here before it is put to you: the office, the empty
+   locker, the introduction, the meeting. The names of the men who moved are
+   the trade and the signing; everybody who speaks is invented. */
+var tw = function(c){ return (c.L.flags && c.L.flags.twNow) || {}; };
+var gmOf = function(c){ return C.say(c.L, '{gm}'); };
+var vetOf = function(c){ return C.say(c.L, '{tvet}'); };
+var gmBeat = function(room, tx){ return { who: 'narr', room: room || 'office', pic: 'me', pose: 'suit', name: gmOf, role: function(c){ return 'General manager, ' + c.nick; }, tx: tx }; };
+var vetBeat = function(room, tx, pose){ return { who: 'narr', room: room || 'locker', pic: 'me', pose: pose || 'stand', name: vetOf, role: function(c){ return 'Veteran, ' + c.nick; }, tx: tx }; };
+var recOf = function(c){ var s = c.L.season; return s ? s.w + '-' + s.l : ''; };
+var TEAM_INTROS = {
+  tm_lost_camp: function(card, c){ return [
+    { who: 'narr', room: 'locker', pic: null, name: 'Training camp', role: function(){ return 'Day one'; },
+      tx: vary([function(){ return 'The nameplate is gone. The hook where ' + tw(c).n + ' hung his jacket is empty.'; },
+        function(){ return 'Somebody already moved a rookie into ' + tw(c).n + '\'s old locker. It looks wrong.'; }]) },
+    { who: 'bell', room: 'gym', pic: 'me', pose: 'stand', tx: function(){ return tw(c).n + ' is a ' + E.TEAM_NAMES[tw(c).to] + ' now. The ' + c.nick + ' are a different team.'; } }]; },
+  tm_lost_media: function(card, c){ return [
+    { who: 'kim', room: 'press', pic: 'me', pose: 'suit', tx: vary(['Media day. Every question so far has been about who is not here.', 'Bright lights, a sponsor wall, and one question everybody wants answered.']) }]; },
+  tm_retire_locker: function(card, c){ return [
+    { who: 'narr', room: 'locker', pic: null, name: 'The locker room', role: 'First week',
+      tx: function(){ return 'For years ' + tw(c).n + ' talked first. Now the room is quiet, waiting for somebody.'; } },
+    vetBeat('locker', 'Somebody has to say it. Might as well be you.')]; },
+  tm_star_practice: function(card, c){ return [
+    { who: 'whit', room: 'studio', pic: null, tx: function(){ return 'The ' + c.nick + ' just landed ' + tw(c).n + '. Somebody\'s touches are going down.'; } },
+    { who: 'narr', room: 'gym', pic: 'me', pose: 'ball', name: 'First practice', role: function(){ return c.teamName; },
+      tx: vary([function(){ return tw(c).n + ' walks in. The whole gym stops for a second, then pretends it didn\'t.'; },
+        function(){ return 'Scrimmage, first five. ' + tw(c).n + ' calls for the ball on the first trip.'; }]) }]; },
+  tm_star_presser: function(card, c){ return [
+    { who: 'kim', room: 'press', pic: null, tx: function(){ return 'New jersey, new number, a podium full of microphones. ' + tw(c).n + ' is a ' + c.nick.replace(/s$/, '') + '.'; } },
+    { who: 'hollis', room: 'studio', pic: 'me', pose: 'suit', tx: function(){ return 'Here is the question nobody up there will ask. Whose team is it? Ask ' + c.last + '.'; } }]; },
+  tm_rook_camp: function(card, c){ return [
+    { who: 'sato', room: 'studio', pic: null, tx: function(){ return C.ordinal(tw(c).pk) + ' pick. ' + tw(c).n + '. The ' + c.nick + ' drafted for the future, and the future plays your spot.'; } },
+    { who: 'narr', room: 'gym', pic: 'me', pose: 'stand', name: 'Training camp', role: 'Rookies report',
+      tx: function(){ return 'He is nineteen, six foot something, and he keeps looking at you.'; } }]; },
+  tm_rook_drill: function(card, c){ return [
+    { who: 'narr', room: 'gym', pic: 'me', pose: 'ball', name: 'Last drill of camp', role: 'One on one',
+      tx: function(){ return tw(c).n + ' points at you. The whole gym says oooh.'; } }]; },
+  tm_rebuild_office: function(card, c){ return [
+    gmBeat('office', vary(['Shut the door. Sit down. I want to be straight with you.', 'We looked at the books. We looked at the West and the East. We are starting over.'])),
+    gmBeat('office', 'Picks, kids, cap space. Two years of it, maybe three. I need to know where you are.')]; },
+  tm_rebuild_media: function(card, c){ return [
+    { who: 'whit', room: 'studio', pic: null, tx: function(){ return 'The ' + c.nick + ' sold everything not nailed down this summer. Is ' + c.last + ' nailed down?'; } }]; },
+  tm_allin_office: function(card, c){ return [
+    gmBeat('office', vary(['We spent. We traded picks we will miss. This is the year.', 'Ownership signed off on the tax bill. That is how serious this is.'])),
+    { who: 'sato', room: 'studio', pic: null, tx: function(){ return 'The ' + c.nick + ' are all in. The window is now, and windows close.'; } }]; },
+  tm_dl_buy: function(card, c){ return [
+    { who: 'bell', room: 'studio', pic: null, board: 'DEADLINE', tx: function(){ return 'Breaking. The ' + c.nick + ' add ' + tw(c).n + '. They are going for it.'; } },
+    { who: 'narr', room: 'gym', pic: 'me', pose: 'ball', name: 'Shootaround', role: 'The next morning',
+      tx: function(){ return tw(c).n + ' walks in still wearing his old warmups. Somebody hands him a reversible.'; } }]; },
+  tm_dl_sell_room: function(card, c){ return [
+    { who: 'bell', room: 'studio', pic: null, board: 'DEADLINE', tx: function(){ return 'The ' + c.nick + ' are sellers. ' + tw(c).n + ' is headed to the ' + E.TEAM_NAMES[tw(c).to] + '.'; } },
+    vetBeat('locker', 'Half the guys on the bus this morning won\'t be on it tonight. That is the job.')]; },
+  tm_dl_sell_phone: function(card, c){ return [
+    { who: 'narr', room: 'hotel', pic: 'me', pose: 'stand', name: function(){ return C.say(c.L, '{agent}'); }, role: 'Your agent',
+      tx: vary(['You see the news? They are blowing it up. We should talk.', 'Two teams called me today. About you. Thought you should know.']) }]; },
+  tm_hot_start: function(card, c){ return [
+    { who: 'vance', room: 'arena', pic: 'me', pose: 'up', loud: true, board: recOf, tx: vary([function(){ return 'Another one! The ' + c.nick + ' just keep rolling!'; }, function(){ return recOf(c) + '! Who saw this coming?'; }]) },
+    { who: 'hollis', room: 'studio', pic: null, tx: 'Nobody had them here. Now everybody does.' }]; },
+  tm_hot_target: function(card, c){ return [
+    { who: 'vance', room: 'arena', pic: 'me', pose: 'ball', board: recOf, tx: 'Sold out on the road again. The home team is playing like it is May.' }]; },
+  tm_cold_room: function(card, c){ return [
+    { who: 'vance', room: 'arena', pic: 'me', pose: 'stand', board: recOf, tx: vary(['Another loss. The boos started in the third quarter.', 'Empty seats in the upper deck. It is December.']) },
+    { who: 'kim', room: 'press', pic: 'me', pose: 'suit', tx: 'The postgame podium. Everybody wants to know what is wrong.' }]; },
+  tm_cold_meeting: function(card, c){ return [
+    vetBeat('locker', vary(['Coaches out. Door shut. We are going to talk.', 'Nobody leaves until we figure this out.']))]; },
+  tm_top_seed: function(card, c){ return [
+    { who: 'sato', room: 'studio', pic: null, board: recOf, tx: function(){ return 'At the break, the best record in the ' + C.confOf(c.L.team) + ' belongs to the ' + c.nick + '.'; } },
+    { who: 'hollis', room: 'studio', pic: 'me', pose: 'stand', tx: 'Great. Now every team in the league circles your name.' }]; },
+  tm_race_meeting: function(card, c){ return [
+    { who: 'sato', room: 'studio', pic: null, board: recOf, tx: function(){ return 'The race for the last spots is a mess. The ' + c.nick + ' are right in it.'; } },
+    vetBeat('locker', 'Thirty games left. Every one of them is a playoff game. Let us talk.')]; },
+  tm_race_film: function(card, c){ return [
+    { who: 'narr', room: 'office', pic: 'me', pose: 'stand', name: 'The film room', role: 'After practice',
+      tx: 'Clip after clip of the last two minutes. Every one ends with the ball in the wrong hands.' }]; },
+};
+for (var tid in TEAM_INTROS) CARD_INTROS[tid] = TEAM_INTROS[tid];
 var PRESENTABLE = Object.keys(CARD_INTROS);
 /* What the analyst sees in the defense on a duel career's last possession:
    the read the card asks for, said in the booth's words. */
