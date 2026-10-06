@@ -11008,7 +11008,7 @@ four in; now under 1% and 9%. Past that the share is real men retiring, which no
 A club that gained talent gains a
 little net rating (a share of the change, the league kept centred). Moves go to the feed, and
 anything touching your club to the beats and the log. A reader that jumps years plays the
-missed summers quietly (`rostNow`). The rosters are not kept on a Hall card (`trimLeague` drops
+missed summers quietly (`rostNow`). The rosters and the league office are not kept on a Hall card (`trimLeague` drops
 them, with `lines`): a son's league rebuilds them, which is right, because the 2026 men have
 aged out by then.
 
@@ -11248,6 +11248,14 @@ here knows a man's next contract, so a later year is an estimate by design.
 answer outlived a change a reload would have seen, which check-career's reload test caught the
 moment ratings went to one decimal.
 
+**A CLUB ON A CARD OPENS ITS ROSTER.** Any answer carrying `club` (free agency, a
+two-way, Summer League, the deadline) gets a Roster button beside it. It opens
+`clubView(L, c)`: that club's players off `matesOf` (the Team tab's roster, so the
+sheet and the season agree), the tier, the coach, and where your overall would rank
+you. The sheet's own button is the same answer as the card's. `clubView` draws from
+no random stream. check-career's page walk opens one on a stand-in offer and signs
+from the first real one.
+
 **THE CAROUSEL** (`coachCarousel`, run from `driftLeague` every summer, the road years too):
 a club fires on how it played (your club on the record you actually played, and never after a
 title), a coach past 71 may retire, an interim is likely replaced, and the hire is weighted
@@ -11392,6 +11400,153 @@ so the dock can carry `#b-career` from boot on a phone; Classic's Start stays in
 card. The first-visit guide names five modes with Career first and points at the docked
 button. `check-home`'s budget went 2.5 to 2.9 screens for it (2.40, 2.79 and 1.95 measured).
 
+#### The league office: everybody ages, retires, signs, gets drafted and gets traded
+
+```
+node hoops/check-career.mjs           section 12g holds the league's shape over a dozen careers
+```
+
+Reported by the owner: players did not progress or regress at a natural rate, role players
+lasted to 37 doing nothing, trades were one man for one man with no picks, and a headline read
+"X to the Pacers". Measured first, over careers played to the end: 15% of the league was 35 or
+older, a 2K 70 still on a roster at 37, invented players peaking at 23. The league now runs the
+way NBA 2K's franchise mode does, in miniature, on every story career (`officeSummer`,
+`officeDeadline` in career.js).
+
+**A MAN IS HIS OVERALL, AND IT MOVES A YEAR AT A TIME.** Each man carries `c` (this season's
+overall on the model's scale), `cp` (last season's), `cy`, and `pot`, a ceiling of his own.
+`devMan` grows a young man a share of the gap to his ceiling each year (`LG_GROW`, a quarter of
+it at 19 to 21, tapering to almost nothing at 29), with a stall now and then and a breakout that
+raises the ceiling. From 30 he declines (`LG_DECLINE`), under a point a year at first and three
+to four by 35, a star a little slower, each man on his own arc, and any year can cost a few points
+to an injury. Seeded per man and season, so a reload sees the same league. **Worth is read off
+the overall** (`wFromOvr`), so minutes, the five and club strength did not change shape.
+
+**A CAREER PEAKS AT 27 TO 29, AND THAT IS MEASURED, NOT SET.** Reported by the owner: today's
+young stars never reached what they were projected to, and five to ten years in invented players
+ran the league. The ceiling was the cause. `potFor` gave every young man the same headroom
+whatever he already was, so a 21 year old already rated a star was handed the room a role player
+gets, and he stopped short. The ceiling is now read against his peers: `LG_ROOM` is how much a
+man of that age still grows, `LG_PEER` is a typical man of that age, and a man above his peers
+gets more room (`0.2 * (c - peer)`), with a spread (`LG_SPREAD`) so two careers never grow him the
+same. **He does not always reach it**: growth is a share of the gap with noise, a stall year
+costs most of a summer, and the cap of nine points a year holds. Measured over a dozen careers in
+12g: the median career peaks at 28, a young real player graded A gains a median of 9 points over
+his start, and the best twenty in the league are 90% real at year five and 65% at year eight.
+**`potGrade`** turns the ceiling into a scout's grade on the 2K scale (A+ is a 96 ceiling, D under
+72), and the Team tab prints it beside any man 25 or younger, you included.
+
+**RETIREMENT IS A DECISION, NOT AN AGE** (`retireP`): it rises with age and falls with how good
+he still is. A 90 at 37 plays on, a 72 at 32 is done, nobody under 30 walks away, and a man
+past 34 who has fallen off a rotation is out. A man nobody signs waits in the pool and retires
+from it. Measured: about 1.5 to 3% of the league is 35 or older (the real league runs about 3),
+and the median career ends at 34.
+
+**CONTRACTS.** Every man has `k` (the last season of his deal) and `sal`. A real man's 2026-27
+salary is the real one and runs on until his seeded end year. When a deal ends his club keeps
+him or lets him go (`resignings`: a star nearly always, a fading veteran rarely, a club over
+the tax less often). **Free agency** (`freeAgency`) signs the best man first, where a spot he
+would start at, money under the apron, a contender for a veteran and his old club add up. A
+signed salary never passes the max, 35 percent of the cap.
+
+**THE DRAFT** (`leagueDraft`), every June from the 2027 draft on: last season's standings
+(`seasonWins`, your club's real record in them), the lottery on the NBA's odds for the top four,
+two rounds, an invented class of 64 drawn so the top pick becomes a star most years and the
+second round is long shots, and scouts who draft the ceiling and get it wrong. A first-round
+pick signs a four-year rookie deal; a second-rounder makes the roster only if he beats the last
+man on it. **The class is tuned so the league keeps its stars**: 12.7% of the league at 85 and
+up on day one, about 11% ten years on. Move the class and that check moves with it.
+
+**PICKS ARE ASSETS.** `fo.picks` maps a pick (`draft:round:original club`) to whoever holds it,
+four drafts out. `picksOf` answers who holds what, from an index rebuilt when a pick changes
+hands (`fo.pv`).
+
+**TRADES ARE PACKAGES** (`leagueTrades`, `buildPackage`). A club is winning, in the middle or
+rebuilding (`clubModes`), and values a man (`vMan`) as now against two years from now, weighted
+by that, less what he is overpaid for the years left; a pick (`vPick`) by the slot it is likely
+to land and how far out it is. Four stories, the ones the real league tells:
+
+| | |
+|---|---|
+| a contender buys a veteran | from a club selling, for young players and picks |
+| a salary dump | a club over the tax pays somebody with picks to take a contract |
+| a swap | two clubs trade men who fit the other better |
+| a star | once in a while, a star on a club going nowhere, for a haul |
+
+Salaries match the way the rules make them (a club over the cap takes back no more than 125
+percent plus a little), a club's best man is never in a package, at most two men go out in an
+ordinary deal and three for a star, and the buyer only says yes to a deal it thinks it won.
+Measured: about 70% of trades carry picks.
+
+**THE HEADLINE IS THE NEWSROOM'S**: "The Pacers have traded Bennedict Mathurin, Jarace Walker
+and a 2029 first-round pick to the Pelicans for Zion Williamson." `pickWords` says a pick the
+way a reporter does ("the Kings' 2028 second-round pick", "three first-round picks and a
+second-round pick"). Your club at the deadline (`deadlineClubFO`) and your own trade
+(`swapBackFO`) go through the same engine, so when you are traded the package that comes back
+for you is named, picks and all, and the scene says it.
+
+**Everything goes on the transaction log** (`fo.tx`, the last 160, each with who moved and in
+which window), the biggest stories and anything touching your club make the feed, and the News
+tab folds in last season's standings and the transactions. The Team tab shows each man's years
+left and the club's picks, and which firsts it owes.
+
+**THE MVP RACE IS THE REAL LEAGUE NOW.** The ladder at the break and the MVP when you do not
+win it were nine invented stars (`figs`) floating outside the rosters, with moves of their own
+that contradicted the transaction log. With the office the race is every man rated 78 or more
+on the rosters as they stand (`mvpRace`, with `fo.mvps` for the voters' fatigue), and the
+invented stars stand still (`figYear` returns). Your own MVP is decided where it always was.
+
+**A save from before the office upgrades the first time it reads its rosters** (`rostOf`): every
+man is put on the new model from what the old one said he was worth that season, so nobody
+jumps. `landOnToday` drops the office with the rosters, and a son's league builds its own.
+
+**It is about 1.7 times as slow per career as the league it replaced**, which is the trade
+windows. `MEMO` holds payrolls, values and depth for a window and forgets a club the moment its
+roster changes; without it a career was 2.5 times as slow.
+
+#### The career answers what your club does
+
+```
+node hoops/check-career.mjs           section 12h: every club card is dealt, about one a season
+```
+
+Reported by the owner: the world around the player did not react. A teammate could be traded, a
+star could arrive at your position and the club could start a rebuild, and the career went on
+dealing the same random cards. Now the office writes down what happened to YOUR club
+(`teamNote`, into `L.flags.tw`), and the next card slot deals one card about it, ahead of
+anything random, the way a due arc is (`teamDue`, called from `queueEvents`).
+
+| what happened | written by | dealt |
+|---|---|---|
+| a teammate rated 80 or more left, by trade, signing or retirement | `teamSummerWatch` | September |
+| a star (83 or more) arrived | `teamSummerWatch` | September |
+| your club drafted in the top twelve at your spot or next to it | `teamSummerWatch` | September |
+| your club turned to a rebuild (you 25 or older) or went all in | `teamModeWatch`, against last camp | September |
+| your club bought or sold at the deadline | `deadlineClubFO` | February |
+| a hot or cold December, the top seed or a play-in race at the break | `teamSeasonWatch` | December, February |
+
+The season ones fire at most every other year and about two times in three, so they read as a
+moment. **Each situation has two or three cards (`TEAM_KINDS`) and the one dealt is the one this
+career has seen least**, so a second rebuild does not read like the first. Answers move the
+season (`win`, `usage`, `min`), the meters, and the people (`{gm}`, `{tvet}`, `{beat}`,
+`{agent}`); asking out of a rebuild or a sell-off sets `tradeAsk`, which the deadline and the
+summer already honour. Measured: about 1.1 club cards a season, each replacing a random card
+rather than adding one.
+
+**They move the reputation too** (`EVENT_REP` rows for every `tm_` card), because what you say
+when a star arrives or the club sells is said in public. Without them the Villain persona went
+dark in check-career: the club cards took the slots of the everyday cards that carried it.
+
+**The names in these cards are the men who moved, which is basketball**: the trade, the signing,
+the draft. Everybody who talks is invented. A lottery pick is always an invented man, because
+every draft after today's is ours. **Each card plays as a cutscene** when scenes are on: its intro
+is in `TEAM_INTROS` in scenes.js (the GM's office, the empty locker, the introduction, the
+players-only meeting), registered into `CARD_INTROS`, so the decision is asked inside it.
+
+The cards live in `TEAM_EV`, apart from the random pools, so the sweep that asks every random
+event to fire does not ask for them; 12h does, and check-story holds their copy to the same
+limits as everything else.
+
 #### The road: high school, college, and the draft it ends at
 
 `newLife({ start: 'hs' })` begins as a fifteen year old sophomore, and it is the builder's
@@ -11496,20 +11651,39 @@ colours he plays in (`C.colorsOf`) and his own number, greys from 33, and has si
 ball, up, trophy, suit, cap). `img()` returns two frames and one page-wide timer swaps them (the
 breath); reduced motion gets one frame.
 
-**It is built like a sprite, and the first version was not.** That one painted rectangles in
-flat colours and ringed them in black: a box torso, two-pixel arms, a square head. The owner
-called it poorly made, and it was. The rebuild is the mythiball rig's technique:
-- Every part is a shape with a surface normal. A limb is a tapered tube, the head and torso are
-  row tables, a hand is an ellipse. The light comes from the upper left, and a cell's level on
-  its part's five-colour ramp is how much it faces that light.
-- The ramps turn hue: shadows cool, highlights warm. Skin passes `soft`, which turns its shadows
-  only slightly red and drops chroma. Without that a pale face in shade reads as sunburnt.
-- Cloth (the jersey, the shorts, the jacket) is shaded across and hardly at all top to bottom,
-  with `lift` below zero. Shaded like a sphere, it bands diagonally.
-- A part in front puts a line on the part behind it, which is how an arm reads against a chest.
-- The outline is a dark shade of whatever it borders, lighter on the lit side. It is never a
-  black ring.
-- The jersey's piping is found, not drawn. It is any jersey cell touching skin.
+**It is a small 3D model, painted the way Run The Tour paints its golfer.** Asked for by the
+owner off the golf game's 3D pixel golfer: use exactly that style, in every animation and on the
+profile and Look screens. Two earlier versions came before it (flat rectangles in a black ring,
+then a 2D rig of shaded tubes), and both are gone. Now:
+- **The body is volumes posed in three dimensions**: a head and ears, a chest and waist blended
+  into one torso, limbs as round cones, hands, shoes clipped flat at the floor, and every
+  hairstyle as a volume over the head (`build` in baller.js). The camera looks down about 12
+  degrees, and every pixel is sphere traced into the model to find the part it lands on and the
+  way that surface faces.
+- **Then the golf game's paint step, copied rather than imitated** (PXHD in golf/index.html): five
+  step ramps that go cool in shadow and warm in the light (skin goes red-violet), one light from the
+  top left, a contact shadow under a part with another in front of it, an inner contour on the front
+  part where it crosses one behind, a soft outline one pixel INSIDE the silhouette in the part's own
+  shadow colour (no dark outer ring), dot eyes, brows and a little blush. `ramp`, `skinRamp` and
+  `hairRamp` are PXHD's numbers.
+- **A frame is the same model with its joints moved.** The `SETS` angle tables did not change. An
+  arm is two angles from straight down, and a foreshortened forearm is turned toward the camera,
+  not drawn shorter. **A limb that crosses the body comes forward by how far across it reaches**:
+  left flat, the shot's gather went into the chest and the hands on the head went behind the hair,
+  and check-moments named both.
+- **Materials are functions of where a ray lands**, which is how the tank's straps and armholes, the
+  number, the striped crew socks, the laces and the suit's lapels sit on round shapes.
+- About 13ms a paint once warm. Every screen caches the result (`url`, court.js's canvases).
+
+check-sprite was re-recorded for it, and its header says why.
+
+**ONLY MUSCULAR IS BROAD.** The owner found the first 3D players too buff. `BODY` in baller.js is
+one table read by the skeleton, the model and `handAt`: Lean and Standard are long and narrow (small
+delts, thin arms), and Muscular (id `strong`, kept because it is in saves) carries the broad
+shoulders. **The jersey number is stamped on the screen**, after the light, onto jersey cloth only,
+because mapped onto the model in world cells the camera's pitch dropped whole rows of a digit. The
+tank is a round scoop, narrow straps and round armholes, each edged in one even band of the second
+colour. The lower body was asked to stay as it is.
 
 The figure is a little over four heads tall, the sports sprite's proportion.
 
@@ -11651,14 +11825,23 @@ never reaches into the draft game's variables. `hoops/design/style-guide.html`
 renders every part. A screen needing something the kit lacks adds it to the kit
 and the guide first. The three fonts are self-hosted in `hoops/fonts/`.
 
-**REAL PEOPLE STAY ON THE COURT.** A real player or coach appears in games,
-rosters, trades, awards, hirings and firings, and never in a quote, a feud, a
-night out or a podcast. Every club carries three invented teammates
-(`lockerOf`: `{tm}`, `{tm2}`, `{tvet}`, `{trook}`, `{tco}`), `{topp}` is an
-invented player elsewhere, and the recurring cast (`CAST`) has fixed names.
-`REAL_TOKENS` names the tokens that resolve to a real person, and an NBA event
-may use one only if `BASKETBALL_ONLY` lists it with the reason. check-career
-section 5c fails otherwise, and scans the copy outside the pools too.
+**REAL PEOPLE ARE IN THE STORY TOO, ON A STORY CAREER IN THE LEAGUE.** This
+reverses the rule this paragraph used to hold (real players and coaches on the
+court only, never in a quote, a feud or a fight). The owner's call (2026-10): a
+feud with an invented name was boring and hard to follow. On a story career in
+the NBA, `lockerOf` reads the REAL room off today's rosters (`realLocker`):
+`{tvet}` is the oldest man on your club, `{trook}` the youngest, `{tco}` the best
+of the rest, `{tm}` and `{tm2}` two of those. `{topp}` and a feud's `{foe}` are a
+real man in another club's top four (`realOpp`). They are read when the card is
+drawn, so a traded or retired man is never named. **Off the league (high school,
+college, overseas) and on a career from before the story engine there is no real
+room**, so the three invented players a club are still there, and the story-off
+replay stays byte identical. A real teammate in a moment is drawn faceless
+(`ctx.mateReal`), the same as every real man on the court. The broadcasters, the
+agents, GMs, owners and family stay invented, and `CAST` keeps fixed names.
+`REAL_TOKENS` and `BASKETBALL_ONLY` still hold the tokens that name the
+coaches and the data's stars to basketball cards; check-career 5c asserts the
+real room is three different men on the roster and `{topp}` a man elsewhere.
 
 **A SAVE IS VERSIONED AND MIGRATED.** `LIFE_VERSION` is 2. `migrate()` runs on
 every load, is idempotent, and never moves a number the sim reads, which is
@@ -11693,6 +11876,18 @@ in it are easy to undo by accident:
   below the fold. check-career paints the tallest receipt over a real card
   (`RTF_CAREER_UI.paintPress`, the checker's alone) rather than hoping a random
   career deals one, and checks every card's first answer, not a sample.
+- **On a phone the card on top is a tray docked to the bottom of the screen**
+  (under 720px). It is the same `#cr-card` element, made `position:fixed` by a
+  media query, so every reader of `.cr-choice` is untouched. It is capped at 45%
+  of the screen and scrolls inside itself past that, because a tray that covers
+  half the screen is a modal again. `fitTray()` pads the column by the tray's
+  measured height (`--cr-tray`), a long setup folds behind More, and the moved
+  rows of a receipt fold to one line. It rises once when a card arrives and
+  fades when one replaces another. The career screen enters on opacity alone,
+  because a transformed ancestor would pin a fixed tray to the screen rather
+  than the window. check-career's tray arm asserts the dock, the cap, every
+  answer reachable without scrolling the page, the padding and no step button,
+  at 390x844 and 360x640, and that a desktop keeps the card in the column.
 - **Focus goes where the next thing is** after a keyboard press (the card's
   heading or the next button), never on a mouse press, never with a scroll. A
   number key answers the card on top; a sheet or a scene being open stops it.
@@ -11701,6 +11896,50 @@ Four meters, not five: the fifth in PLAN.md waits for the story engine (Phase C)
 to have something real to measure. The leaderboard's Career tab keeps the
 game's shared board chrome, because restyling one tab of seven is a seam inside
 the board rather than one removed at its door.
+
+#### The cards before and after a season are read off the season (story careers)
+
+Reported by the owner: the pre and post season prompts were very repetitive.
+Measured over sixty careers, they were. Every September dealt the same training
+card with the same five answers and the same goal card in the same voice. Every
+April went to the same four cards (the playoff assignment, the exit interview, a
+hamstring, a guarantee), because almost nothing else could be dealt between game
+82 and the first playoff game.
+
+- **The summer card** (`summerCard`) opens on what last season was (a title, a
+  Finals loss, a first round exit, a new city, a contract year, a season of missed
+  games) and offers four of sixteen programs (`SUMMER`). Some come only to a career
+  they fit: post work for a big, national team camp at 78 and up, Summer League in
+  the first three years, rehab after a short season. A program offered last summer
+  is less likely to come round. Each is worth what one of the old five was, so
+  balance does not move; the same program three summers running pays 0.6 and says
+  so. The card id is still `training`, and an old card without `ctx.ks` resolves
+  the old way.
+- **The goal card** has eighteen goals and six people who ask (`GOAL_ASK`): the GM,
+  the agent, the beat writer, the trainer, your mom, or the mirror. Nobody asks two
+  Septembers running, the card says whether you hit last year's, and in April the
+  person who asked answers (`GOAL_SAID`) and the relationship moves.
+- **Thirty five new cards** (`apr_*`, `sep_*`, `jun_*`), each once a career and
+  each read off where the season stands: the top seed, an underdog, the play-in,
+  your first playoffs, a missed season, a parade, the other team's parade, a
+  holdout, a captaincy, a new number in a new city. April went from four cards to
+  about twenty sharing it.
+
+**Two things the simulator caught.** The thirty five cards share their slots with
+the legend layer, so the share of careers meeting a legend card fell from 34% to
+30%, on the floor; `LEGEND_W` went 1 to 1.4 and it reads 37.7%. And the sixth man
+route and the "great sixth man" ending asked for a season with the role "Sixth
+man", which nothing wrote: the story roles were Franchise player, Starter,
+Rotation, End of bench. The first man off the bench (20 minutes or more, sixth or
+better on the club) is labelled that now, and three such seasons earn the ending
+as they already earned the route. The old sweep had met the ending exactly once
+in 1,000 careers, by a Sixth Man award.
+
+**`late` is after game 82.** An April card that talks about the last home game in
+the future tense is wrong; three were rewritten for that before shipping.
+
+`replay-careers --story off` is byte identical over 1,000 careers: everything here
+is behind `storyOn`.
 
 #### Phase E: Pro starts in high school, a free career starts from a generated road
 
@@ -11943,7 +12182,7 @@ foreshortened toward the camera, not an arm held out sideways.
 
 **THE PLAYABLE MOMENT IS A TOUCH, AND THE ENGINE STILL ROLLS.** The meter turns a
 press into a number from -1 to 1 and `C.choose(L, i, { touch })` moves that
-shot's odds by at most `TOUCH` (0.12), with the card's own seeded draw. So a
+shot's odds by at most `TOUCH` (0.12, or `TOUCH_DUEL` 0.2 on a duel career), with the card's own seeded draw. So a
 perfect release can rim out, a better release can only turn a miss into a make
 (section 2 answers the same card at -1, 0 and 1 from clones), and a touch of
 nought is the card it always was, byte for byte (section 1). Scenes off passes
@@ -11956,12 +12195,91 @@ for. A moment changes no record (the stretch is already played); it moves fame,
 morale and a count in `L.flags`. A card needs two options, so free throws have
 a second (let them ice you).
 
-**ONLY THE INVENTED ARE DRAWN, AND THE COURT KEEPS IT.** You, your rival and the
-commissioner (generated) are drawn. The man you guard on a stop is a real
-opponent, so he is the rig's outline filled flat in his club's colour: a shadow
-with no face. The tale of the tape compares you with your rival, never a real
-player. The score bug shows teams and the clock and no score, because the
-engine settles a game on odds, not points.
+**ONLY THE INVENTED ARE DRAWN, AND THE COURT KEEPS IT.** You, your rival, the
+commissioner and your invented teammates are drawn as people. Anybody on a real
+roster (the man you guard, the closeout, the big you dunk on) is the same 3D rig
+in his club's kit with `faceless` set in `B.paint`: a bald slate head, no face,
+no beard, no band. The rig and the light, nothing that reads as a likeness. The
+tale of the tape compares you with your rival, never a real player. The score
+bug shows teams and the clock and no score, because the engine settles a game on
+odds, not points; on a duel career it ends on `Final · W` or `Final · L`.
+
+#### The rebuild of the court: the game is the team's, the moment is yours
+
+```
+node hoops/check-moments.mjs     section 3b holds the duel rules, 6 plays every moment with repeated presses
+```
+
+Asked for by the owner: the animations and cutscenes were repetitive and a little
+too easy, the decision decided the game, and everything should be in the 3D
+pixel model style.
+
+**A DUEL CAREER** (`L.opt.duel`, set by `newLife` on a story career only, never by
+`migrate`, so the story-off replay stays byte identical) separates the two
+things a moment used to fuse:
+
+| | decided by | moves |
+|---|---|---|
+| the game | the team: a regular-season night is a real game from the stretch's box (`ctx.g`, `ctx.won`), a Game 7 or a tournament tie is the clubs' odds moved by `DUEL_SWING` (0.3) on what you did | the record, the series |
+| the moment | you: the shot, the read, who you trusted | fame, morale, coach trust, a teammate's relationship, memory |
+
+So a made shot can lose (they answer at the horn) and a miss can win (an
+invented teammate, named on the card as `ctx.mate`, tips it in), and the text
+(`DUEL_TEXT`, `G7_TEXT`, `AM_TEXT`) and the scenes (`g7_make_lost`,
+`g7_miss_won`) say both. **A buzzer shot only counts as a winner** (the flag,
+`clutchHit`) when the game was won.
+
+**THE DEFENSE SHOWS A LOOK** on Game 7 and a tournament tie (`LOOKS`: drop,
+switch, chase, double). The card's text and the analyst say it, the court draws
+it, and one of the four plays beats it (`READ_GOOD` +0.12) while one plays into
+it (`READ_BAD` -0.08). Reading it right earns the coach's trust whatever the
+result. check-moments asserts reading the look pays.
+
+**THE COURT (court.js API 2) HAS TWO KINDS OF PRESS:**
+
+- **The meter** for a shot: a pendulum, slowest at the ends and fastest through
+  the green, with a gold core (`touchOf`: core 1, green edge 0.5, -1 at the far
+  end). The green is narrower (`zoneFor` 0.035 to 0.115) and drifts with nerves
+  (low morale raises them, the clutch trait lowers them). A step-back, a
+  fadeaway and a heave swing faster; a catch-and-shoot is easier. A drive is two
+  presses (the gather, then the rise), and two free throws are two presses
+  handed over as `{ touches }`, each shot reported back in `res.shots`.
+- **The read** for a stop, a chase-down and a pass (`reactTouch`): press when he
+  really goes. Jabs and hesitations are fakes and pressing on one is biting
+  (-0.8). The lamp lights 160ms AFTER the real move, so reading the court beats
+  reacting to the lamp. A rating buys a little time, never the read.
+
+Every press shows how it went (Perfect, Good, Early, Late, Bit on the fake).
+
+**VARIETY IS SEEDED** off the card's key and the option (`spec.seed`), so a moment
+shown twice is the same picture: jumpers are a pull-up, a catch-and-shoot, a
+step-back, a fadeaway or a heave from the logo; a closeout contests late on a
+good release; drives are a dunk, a layup or a poster that knocks the big down;
+five celebrations and three ways to hurt; a road game is played in the other
+building's colours; a made shot under pressure is replayed slower between
+letterbox bars; the booth's lines are pools (`CALLS`, `INTRO`).
+
+**THREE MORE MOMENTS, AND MORE WAYS INTO EVERY ONE.** A story career can be dealt a
+post-up (`post`: a hook, a turnaround or a drop step, mostly for a PF or C), an
+alley-oop (`lob`: a read, go up when the passer lets it fly and not on his pump
+fake) and jumping a passing lane (`steal`: a read, he looks you off before he
+throws it). Drives add a eurostep and a reverse, and there are eight
+celebrations. Before the call, a moment opens one of several ways
+(`MOMENT_SETUP` in scenes.js: a timeout huddle, the studio's read, the
+sideline), about one in four straight to the call. The huddle is told, never
+quoted, because the coach is real. **The new cards are drawn only on a story
+career**: everything else draws from `MOMENT_OLD`, the old key list, so the
+story-off replay picks the same card off the same number. Appending keys with
+a weight of nought is not enough, because `weighted` falls through to the last
+key when rounding leaves a sliver over. check-moments plays every kind and
+variant to the end, half as makes and half as misses.
+
+**EVERYTHING IS THE 3D STYLE.** `B.prop` sphere traces the ball (four spin frames),
+the rim (two halves, so the ball drops between them), a trophy, a podium and a
+ring box with the player's ramps and outline. The court floor is painted per
+size in court.js (`courtFloor`): boards on the wood ramp, the lane under the
+rim in the home colour, the lines in perspective, the back in shadow, a pool of
+light where the play is and a faint reflection of whoever stands on it.
 
 **THE TICKER IS THE ENGINE'S GAMES.** `playChunk` writes `L.season.box`, one row
 a game (opponent, home, result, your line), drawing nothing from the rng, so
@@ -19040,6 +19358,198 @@ but its ceiling is pinned, so adding a show touches the rows it adds plus any
 song a curator wrote up, and nothing else. `data_drift.mjs` enforces that,
 failing any refresh where a derived value moved for a song whose own history
 did not.
+
+## Putt Putt Tour, a Run The Tour tester preview
+
+```
+node golf/putt/check-putt.mjs               physics, real greens, both tours replayed under par, dailies, the page
+node golf/putt/check-putt.mjs --quick       physics, the real greens and the page
+node golf/putt/solve.mjs --tour main        search every hole for the par it should carry (the best part of an hour)
+node golf/putt/solve.mjs --tour members --only 3,7 --write    re-solve edited holes and record their routes
+```
+
+`golf/putt/putt.js` is a mini golf game you PLAY inside Run The Tour. It opens on a hub: the Daily
+Challenge on top, and under it the Tour map, a winding path up through the worlds. `golf/putt/DESIGN.md`
+is the analysis of the mini golf games it learns from. **It replaced the Putting Green menu**, which the
+owner said was not what was being built.
+
+**TWO TOURS, tabs at the foot of the map** (`TOURS` in putt.js, the owner's design):
+
+| | who | holes | worlds |
+|---|---|---|---|
+| Putt Putt Tour (`main`) | everybody | 90 | The Clubhouse, Lost Temple, Pirate Cove, Canyon Mine, Volcano Island, 18 each |
+| Members Tour (`members`) | Tour Pass holders | 18 | Hallows Night and Harvest Moon, nine each: the season's own holes, the hardest in the game |
+
+**The main tour wears none of the calendar themes**, which belong to the passes and the dailies, and the
+check asserts it. The last hole of each world is the signature hole. **Every hole has an obstacle, a
+puzzle or a moving part**, and par climbs world by world; both are asserted. The set pieces the holes
+are built from are in the engine: loops (an entry speed and a chute that feeds it), rivers (a `FLOW`
+material that carries the ball), pipes (`dur`, `vcap` a fast ball skips, `keep` above 1 is a cannon),
+ramp jumps over water, drawbridges on a clock, turntables, sliders, gates, spinners, conveyors, bounce pads.
+
+**The Members Tour is shut without a pass** (`host.passActive()`): the tab carries a lock and opens a
+sheet about the Tour Pass, never a coin price. A tester gets a preview button (`S.memPreview`). It pays
+more a hole and carries rewards only members can earn (`PAY.members`).
+
+**THE RULE, ONE PER HOLE.** Under par beats the hole and opens the next. Exactly par loses nothing and
+goes again. Over par takes a life, and it is decided the moment par strokes are used with the ball out,
+so nobody putts out a lost hole (`settle()` calls `tourOut(false)`). Quitting or restarting after the
+first putt costs a life too. 3 lives, 6 with a Tour Pass; the last one starts a 24 hour clock. Lives are
+sold for money only (the refill sheet shows $0.99 and says the checkout opens at launch; a tester gets a
+free refill). Lives, the daily, its streak and the rewards are shared by both tours; progress is per tour
+(record version 2, migrated from the 50 level tour). The Daily Challenge never costs a life: one scored
+try a day, 40 coins to play, 40 more under par, and a streak.
+
+**Par is the solver's, and it means beatable without luck.** `solve.mjs` searches each hole and only
+counts a holing putt whose neighbours (a degree of aim, most of a foot of pace, a beat either side on a
+moving hole) mostly hole too. Par is that route plus one, never under 3. **The search takes the best part
+of an hour, so CI does not run it**: it records every route in `golf/putt/routes.json`, and the check
+REPLAYS them, which takes seconds and proves the same thing. Change a hole and its route stops replaying,
+so the check fails until `solve.mjs --only N --write` is run again. Write the par it prints into `LEVELS`.
+
+**The search is ranked by walking distance to the cup, and that map was quietly wrong.** It was a
+Float32Array read back against a 64 bit heap entry, so a cell's own distance looked stale on the way out
+of the heap and the spread stopped. On a long hole every place the ball could rest read as unreachable,
+the search ranked them all equal, and it reported a perfectly playable signature hole as impossible.
+It is a Float64Array now. A solver that says Infinity is a claim about the solver first.
+
+**A route is recorded at full precision.** The first routes rounded the aim to five places and the strike
+time to a thousandth of a second, and on a hole with a mill or a spinner that is a different putt: three
+members routes stopped dropping on replay. Nothing about the hole had changed.
+
+**The Members Tour's cups sit in a pen** (`pen()`), three blocks open on one side toward the middle of
+the room, so the ball has to be brought round beside the cup and played in sideways. **The first pen opened
+on the far side and cost nothing**: a ball bounced off the end wall rolled straight back into it, so the
+solver still beat most holes in two. Opened sideways, Graveyard Gate went from two putts to three.
+
+**The main tour pays exactly 20,000 coins**, 4,000 a world: 80 a hole and 280 for the signature hole the
+first time it is beaten, 20 for a first ace, and 2,000 for finishing the world. Replays pay nothing. They
+go through the page's `addBonusCoins`, so a Tour Pass multiplier does not apply. The signature, world, ace
+and streak rewards are recorded by name in the Tour record and are not wearable yet.
+
+**Where it is kept, said plainly.** The Tour record (`bag_ppt_v1`, account-scoped through the page's
+`acctKey`) is in the browser. The mockup's server ledger (lives on server time, a tester table the score
+calls check, a shared Daily Hole board) is not built, so a tester could reset a clock by clearing site
+data, and the Daily Hole result screen says the board is not there yet.
+
+**Two hazards were added to the engine for it**: conveyors (`M.BELT`, a zone with a push in
+`C.belts`) and bounce pads (a bumper with `e` over 1, capped at `V_MAX`). Mini golf sand is
+`MINI_SAND_STIMP`, slow but playable; a real green's bunker still stops a ball dead. Timed gates are a
+`slide` mover across a gap in a wall.
+
+**THE DAILY HOLE IS A TOUR HOLE IN THE DAY'S CLOTHES, AND IT IS TIMED.** The old dailies were simple
+shapes that put the whole field on one score. `dailyHole()` now deals one of the main tour's holes from
+worlds 2 to 5 (`dailyLevel`, a shuffled 72 day cycle, so no hole comes back until all have been dealt),
+dressed in the calendar's theme. Par is the tour's, and the tour's recorded route beats it in any theme,
+because no tour hole reads its theme for anything but colour; `check-putt` replays it for each day. The
+clock runs from the first frame the hole is drawn to the drop, is kept with the score, and breaks ties.
+
+**THE WINDMILL'S SAILS ARE THE BLOCKER** (`blade` in `moverAt`, see `bladeSpan`). It used to be a flat
+four arm spinner lying on the carpet in front of the house, which read as a second windmill, with the
+sails on the tower only decoration. Now the sails turn in an upright plane just in front of the door,
+sweep down to the carpet, and wherever a sail crosses the height of the ball's middle it is a bar across
+the doorway. `drawSails` reads the same angle, so what blocks the ball is exactly what is drawn. A
+conveyor runs through the tunnel under the house (`millDoor`), because a ball that died in there was
+out of sight and the golfer stood on the roof to putt it.
+
+**A BALL BEHIND SOMETHING IS BEHIND IT.** `hole3d.js` hands back `hid(x, y, z)` off the depth the
+picture was painted with, so a ball behind a block, a rail or the house is drawn as a faint dashed
+outline instead of painted on top of it, and the golfer beside it is drawn faint.
+
+**IT IS NOT LAUNCHED.** The home card, second in the list right after Play 18, is drawn by `puttOn()`
+in `golf/index.html` for the `PUTT_TESTERS` usernames and nobody else, read off the server-attributed
+`sbUsername`. There is no localStorage override, on purpose: a flag in the browser is a switch any
+visitor can flip. Setting `PUTT_LIVE` to true is the launch. The module loads for everybody
+(`putt/putt.js?v=`, so the cachebust check holds it) and draws nothing until `open()`.
+
+**A PLAIN SCRIPT'S TOP LEVEL FUNCTION IS A GLOBAL.** `hole3d.js` once declared `render()` unwrapped,
+which replaced the game's own screen painter for everybody, and the whole site stopped responding.
+Every file here is inside one function wrapper and publishes one global. `check-putt.mjs` asserts the
+game still draws its home screen with every module loaded.
+
+**The greens are the game's own.** `fromHost()` reads `hvGeom` (size, outline, pins, bunkers,
+water), `hvBiome` (colours) and the fictional venue name through `puttHost()`. Slope is built per
+course from `fit.put` and the green words in its blurb. Never put a real course name on screen.
+
+**The physics decides, and the checker plays it.** Stimp is a deceleration, slope is 5/7 g sin,
+and the cup catches a ball that falls far enough before its centre leaves the hole. Every Tour
+hole, every calendar theme's holes and every daily the check walks is solved by a search, and no shot may leave the course
+or roll for ever. The first run found a ball resting on a rail being called out, because the
+material grid is a quarter foot: OUT is only believed once the exact polygon agrees.
+
+### A mini golf hole is a small 3D scene, and the land round it is a built place
+
+`golf/putt/hole3d.js` draws a themed hole the way the golfer is drawn: a height field and voxel solids,
+painted by PXHD. `golf/putt/land.js` builds the land a hole sits in, one composed place per theme (a
+clubhouse with its practice green, a stepped temple in the jungle, a pirate cove with a ship at anchor, a mine in the canyon wall, a volcano with its lava, a tournament grandstand, a churchyard, a farm, a cabin in the pines, a garden, a glen with a round tower, a tulip field, a night fair, a
+shore with a lighthouse), owner's rule: a fictional landscape, never a scatter of stickers. A real green
+stays on the flat painter.
+
+- **It draws only what stands still.** The ball, the cup, the aim, the windmill's paddles and sails and the
+  sliders are drawn every frame through the projection `render()` hands back (`pr`, `zAt`), so they sit on
+  the picture. `w2s` takes the 3D camera, and a screen drag becomes a direction on the hole through
+  `scrDir`, because up the screen is further than it looks.
+- **Nothing tall goes in front of the course.** Trees and buildings stand behind it and beside it; in front
+  go low things. `furnish()` fills whatever ground the screen asks for, so a wide hole on a tall phone is
+  not left on a bare band (`opt.aspect` grows the land to the stage's shape).
+- **It never holds a frame.** A hole renders once, and the next hole renders ahead while this one is
+  played, through `slices()`: a few milliseconds a frame, never while the ball rolls or a pull back is
+  held. Measured at 2x CPU throttle, play stays at 60 fps median while it works. Only the first hole of a
+  round waits, behind "Setting up the hole".
+- **The golfer is the 3D modelled one**, `golfer3d.js`'s putting stroke through `puttHost().golfer3`, side-on
+  to the line with the putter on the ball: address while aiming, the take back while a pull is held, the
+  through for a moment once it is struck. It is sized off its own figure height (`fig`) and anchored on its
+  own ball cell. The flat profile golfer is only the fallback for a page without the 3D golfer.
+- **A blocked or stale module, or a render that throws, draws the hole flat.** `check-putt.mjs` asserts
+  that, plus every themed hole with no unknown material, open carpet landing on carpet in the picture, and
+  the sliced render matching the one-shot render pixel for pixel.
+
+## Run The Tour's course golfer is the profile golfer, drawn from a 3D model
+
+```
+node golf/check-golfer3d.mjs        every look, every aim, every shot, and who sees it (server on :8099)
+```
+
+`golf/golfer3d.js` plays the tracer's shot with the player's own golfer: a small posed 3D model whose every
+cell is handed to the profile renderer's own `paint()` (PXHD in `golf/index.html`). So the light, the colour
+ramps, the contact shadows and the soft outline are the profile picture's, and the model only says what is in
+each cell and which way it faces. One model covers every aim (snapped to eight), both hands, and the full
+swing, chip and putt. The golfer stands side-on to the line like a real golfer.
+
+**It is live for everybody**, asked through `g3dOn()`. `G3D_LIVE = false` is the kill switch, which puts it
+back to the `G3D_TESTERS` accounts alone. A blocked or stale module falls back
+to the old sprites, which are untouched. `PXHD.Sprite` takes a size now, and the 44 by 56 profile grid is the
+default, so every profile picture is byte for byte what it was. Measured on 40 looks against the old file.
+
+**Every item in the store is drawn on it, and the hats and glasses come out of one rule.** A hat or a pair of
+glasses is built from the profile picture's OWN art, so each wears exactly its own colours and a new one needs
+no code. Each row of the front art is spun round the head's up axis (`hull()`): the run through the middle of a
+row is a solid slice (a crown, a cone, a brim), a row with a hole in the middle is a band round the head (a
+wreath, a hood round the face), and a piece standing off on its own (antlers, horns) is a flat cut-out. Glasses
+are a thin layer on the face, with arms run back over the ears. `HAT3D` holds the few that need telling apart:
+the halo is a ring, headphones and antlers are flat, the pirate hat is narrow front to back, the mortarboard is
+square. The tops, plus fours, cleats and every novelty club (scepter, candy cane, sword, wand, hockey stick,
+hot dog, pool noodle, coffin, broom, pitchfork) are modelled. A recoloured club kit draws the club the shot
+uses in the kit's finish; a novelty club is the novelty for every shot, so a scepter putts too.
+
+Three things in that art were wrong for 3D and nothing threw:
+
+- **Face and hair pixels under a brim were spun into the hat**, as tan centres on every brim hat. Skin and
+  hair characters are left out; the model's own head is underneath.
+- **The profile head is shorter than the model's**, so the head poked through the crown of a low hat. A
+  closed hat is domed over the top in its crown's colour, and a band is never narrower than the head.
+- **The top hat's art carries a stray strip at row 55**, hidden behind the body on the profile. In 3D it lay
+  on the grass. Nothing below the shoulders is read, and `check-golfer3d.mjs` asserts no item leaves a piece
+  apart from the golfer, which reintroducing the strip fails at every aim.
+
+**The figure's size is read off the head, never the top pixel**, because the page sizes the golfer by it and
+a witch hat would otherwise shrink him. The canvas is 94 tall for the same hats. `check-golfer3d.mjs` draws
+every hat, glasses, top, legwear, cleats, club, body skin and hair one at a time, from four sides, and asserts
+each changes the picture, paints no unknown material, keeps the size and stays on the canvas.
+
+Drawing a set costs about 20ms on a desktop and 60 to 100ms on a throttled phone, once per look, aim and kind
+of shot, and the other seven aims are drawn while the page is idle. A hull is marched only inside its own box
+and only in front of what is already in the cell.
 
 ## The release newsletter
 

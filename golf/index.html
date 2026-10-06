@@ -59,6 +59,14 @@
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
+<!-- The Putting Green: a tester preview. It draws nothing until puttOn() opens it (see PUTT_TESTERS). -->
+<script defer src="putt/putt.js?v=13"></script>
+<script defer src="putt/land.js?v=4"></script>
+<script defer src="putt/hole3d.js?v=5"></script>
+<script defer src="putt/mapland.js?v=2"></script>
+<!-- The course golfer in the profile style, asked through g3dOn(). -->
+<script defer src="golfer3d.js?v=2"></script>
+<script defer src="tracer3d.js?v=1"></script>
 <!-- Google Consent Mode v2 defaults. Advertising storage is denied until the certified CMP (loaded by
      the AdSense tag below) records the user's choice; the CMP then updates these signals automatically,
      including tightening analytics where local law requires it. Analytics storage defaults to granted so
@@ -1248,6 +1256,7 @@ window.GA_ID='G-L29P5MRWKE';
   .gcard:active{transform:translateY(1px)}
   .gc-blue{background:linear-gradient(158deg,#5f90f2,#3a63c8 60%,#3053b4); color:#f1f6ff; --chip:rgba(4,12,30,.3)}
   .gc-teal{background:linear-gradient(158deg,#20bda9,#0a877a 60%,#07736a); color:#eafff9; --chip:rgba(2,20,16,.28)}
+  .gc-putt{background:radial-gradient(80% 120% at 100% 0%,rgba(241,208,74,.28),transparent 60%),linear-gradient(158deg,#2f8a4a,#145a30 60%,#0c3d21); color:#f2fff6; --chip:rgba(0,0,0,.3); border:1px solid rgba(241,208,74,.4)}
   .gc-amber{background:linear-gradient(158deg,#f6c463,#ec9a25 60%,#df7d1c); color:#24170a; --chip:rgba(20,14,6,.15)}
   .gc-purple{background:linear-gradient(158deg,#b07ef0,#8149cf 58%,#6d38bd); color:#f5edff; --chip:rgba(24,8,42,.32)}
   .gc-gold{background:var(--gold-grad-d); color:#24170a; --chip:rgba(20,14,6,.16)}
@@ -14831,6 +14840,8 @@ function homeModeList(){
   else if(ri)             list.push({id:'career', act:true,  pri:1, make:()=>resumeDraftCard(ri)});
   else                    list.push({id:'career', act:true,  pri:3, make:()=>careerHeroCard(true)});
   list.push({id:'online', act:true, pri:4, make:(o)=>onlineModeCard(o)});
+  // Putt Putt Tour: testers only until launch, and right after Play 18 so it is the first card in the rail
+  try{ if(puttOn()) list.splice(1,0,{id:'putt', act:true, pri:9, hero:false, make:()=>puttCard()}); }catch(e){}
   if(passEnabled())       list.push({id:'pass', act:true, pri:9, hero:false, make:()=>tourPassCard()});
   try{ if(hlLive()) list.push({id:'haunted', act:true, pri:9, hero:false, make:()=>hauntedCard()}); }catch(e){}
   try{ if(wcLive()) list.push({id:'winter', act:true, pri:9, hero:false, make:()=>winterCard()}); }catch(e){}
@@ -17289,15 +17300,16 @@ function hairRamp(hex){ const l=lum(hex); const r=ramp(hex,{spread:l<.2?.55:1}).
   if(l<.2){ r[3]=mix(hex,'#8a7a9a',.28); r[4]=mix(hex,'#b8aac8',.45); } return r; }
 
 // ---- the canvas of parts ----
-function Sprite(){ this.g=[]; for(let y=0;y<H;y++) this.g.push(new Array(W).fill(null)); this.z=0; }
-Sprite.prototype.fill=function(mask,part,opt){ opt=opt||{}; const z=++this.z;
+// w,h default to the profile grid. The course golfer (golfer3d.js) asks for a larger one.
+function Sprite(w,h){ this.W=w||W; this.H=h||H; this.g=[]; for(let y=0;y<this.H;y++) this.g.push(new Array(this.W).fill(null)); this.z=0; }
+Sprite.prototype.fill=function(mask,part,opt){ opt=opt||{}; const z=++this.z, W=this.W, H=this.H;
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){ if(!mask(x+.5,y+.5,x,y)) continue;
     if(opt.under && this.g[y][x]) continue;
     this.g[y][x]=Object.assign({tag:this.tag},part,{t:opt.t!=null?opt.t:null,dt:opt.dt||0,z}); } };
-Sprite.prototype.set=function(x,y,m,t,extra){ if(x<0||y<0||x>=W||y>=H) return; this.g[y][x]=Object.assign({m,t,z:++this.z,dt:0,tag:this.tag},extra||{}); };
+Sprite.prototype.set=function(x,y,m,t,extra){ if(x<0||y<0||x>=this.W||y>=this.H) return; this.g[y][x]=Object.assign({m,t,z:++this.z,dt:0,tag:this.tag},extra||{}); };
 Sprite.prototype.tone=function(x,y,t){ const c=this.g[y]&&this.g[y][x]; if(c) c.t=t; };
 Sprite.prototype.nudge=function(x,y,d){ const c=this.g[y]&&this.g[y][x]; if(c) c.dt=(c.dt||0)+d; };
-Sprite.prototype.clear=function(mask){ for(let y=0;y<H;y++)for(let x=0;x<W;x++) if(mask(x+.5,y+.5,x,y)) this.g[y][x]=null; };
+Sprite.prototype.clear=function(mask){ const W=this.W, H=this.H; for(let y=0;y<H;y++)for(let x=0;x<W;x++) if(mask(x+.5,y+.5,x,y)) this.g[y][x]=null; };
 const ell=(cx,cy,rx,ry)=>(x,y)=>((x-cx)/rx)**2+((y-cy)/ry)**2<=1;
 const rect=(x0,y0,x1,y1)=>(x,y,ix,iy)=>ix>=x0&&ix<=x1&&iy>=y0&&iy<=y1;
 const poly=pts=>(x,y)=>{let c=false;for(let i=0,j=pts.length-1;i<pts.length;j=i++){const[xi,yi]=pts[i],[xj,yj]=pts[j];
@@ -17323,7 +17335,7 @@ function toneOf(c,x,y){ if(c.t!=null) return c.t;
 
 // Paint: tones, contact shadows, the inner contour where one part overlaps another, and the soft
 // outline one pixel INSIDE the silhouette in the part's own shadow colour (owner: no dark outer ring).
-Sprite.prototype.paint=function(ctx,px,rampOf,only){ const g=this.g, T=[];
+Sprite.prototype.paint=function(ctx,px,rampOf,only){ const g=this.g, T=[], W=this.W, H=this.H;
   for(let y=0;y<H;y++){ T.push([]); for(let x=0;x<W;x++){ const c=g[y][x]; T[y].push(c?toneOf(c,x,y):-1); } }
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){ const c=g[y][x]; if(!c||c.t!=null||c.noAO) continue;
     for(const[dx,dy]of[[0,-1],[1,0],[-1,0]]){ const o=g[y+dy]&&g[y+dy][x+dx];
@@ -17604,7 +17616,7 @@ function renderMap(map,colOf,o){ o=o||{}; const s=new Sprite(), px=o.px||6, skip
   const cv=document.createElement('canvas'); cv.width=(x1-x0+1)*px; cv.height=(y1-y0+1)*px;
   cv.getContext('2d').drawImage(full,x0*px,y0*px,cv.width,cv.height,0,0,cv.width,cv.height);
   return cv; }
-return { render, renderMap, ramp, mix };
+return { render, renderMap, ramp, mix, Sprite, skinRamp, hairRamp, lum };   // the last four: golfer3d.js
 })();
 function pxGolferCanvas(look,opts){
   look=look||S.look||DEFLOOK; const av=avLook(look);
@@ -18080,9 +18092,13 @@ function hvSwingMarkup(g,p,look){
   // CS502-anim / CS506: the righty golfer uses the new 4-direction SW4 poses for the FULL swing AND for
   // chip/putt (same perfected body, small chip/putt motion) snapped to the aim; lefty keeps the pxDir8
   // system for now. N=up S=down E=right W=left.
-  const useSw4 = !look.lefty;
+  // The 3D course golfer (golfer3d.js): the player's own golfer in the profile style, standing
+  // side-on to the real aim. It replaces both sprite sets below when it is on, lefties included.
+  const g3 = g3dOn() ? g3dSet(look, vx, vy, kind) : null;
+  const useSw4 = !g3 && !look.lefty;
   let set, dir, anch;
-  if(useSw4){
+  if(g3){ anch=g3.ball; }
+  else if(useSw4){
     dir = sw4For(vx, vy);
     try{ set=pxSw4(look,dir); }catch(e){ return ''; }
     anch = PXG_SW4_ANCH[dir] || [12,18];
@@ -18092,24 +18108,25 @@ function hvSwingMarkup(g,p,look){
     try{ set=pxDir8(look,dir); }catch(e){ return ''; }
     anch = dir8Anchor(dir, kind, !!look.lefty);
   }
-  const frames=set[kind]||set.full; if(!frames||!frames[0]) return '';
+  const frames=g3?g3.urls:(set[kind]||set.full); if(!frames||!frames[0]) return '';
   const clsBase = kind==='full'?['sw0','sw1','sw2','sw3']
     : (kind==='chip'?['sw0','sw1','sw2','sw3']   // CS508: chip reuses the full-swing animation (smaller top)
     : ['pt0','pt1','pt2']);                       // CS508: 3-frame putt stroke
   const cam=hvCamFor2(g,p);
   // SW4 canvases carry SW4_HR headroom rows above the grid (tall stamped hats); the body keeps its exact
   // size/anchor - only the image box grows upward, so the hat can extend above the head.
-  const W=PXG_DIR8_W, H=PXG_DIR8_H+(useSw4?SW4_HR:0);
+  const W=g3?g3.W:PXG_DIR8_W, H=g3?g3.H:PXG_DIR8_H+(useSw4?SW4_HR:0);
   if(useSw4) anch=[anch[0], anch[1]+SW4_HR];
   // putt plays under the tight green close-up → size to that frame; full/chip use a fixed small size.
   // putt plays under the tight green close-up → size to that frame; a HOLE-OUT now zooms too (hvCamFor2),
   // so scale to that camera as well or the golfer would balloon; a normal full/chip shot keeps the fixed size.
-  const bodyGH = kind==='putt' ? Math.max(13, Math.min(21, cam[3]*0.16))
-    : (cam[3] < HV_H ? Math.max(15, Math.min(22, cam[3]*0.15)) : 22);
-  const GH = bodyGH*H/PXG_DIR8_H;
+  const bodyGH = kind==='putt' ? HV_PUTT_FIG : hvFigH(cam);   // the ball sets the scale on the green (hvBallGround)
+  // the 3D golfer is sized so its FIGURE is as tall as the old sprite's figure (24 of its 26 rows)
+  const GH = g3 ? bodyGH*(24/PXG_DIR8_H)*H/g3.fig : bodyGH*H/PXG_DIR8_H;
   const GW=GH*W/H;
   const x0=A[0]-GW*(anch[0]/W), y0=A[1]-GH*(anch[1]/H);   // place the ball-anchor at the shot origin A; NO rotation
-  const img=(u,cls)=>`<image class="hvsw ${cls}" href="${u}" x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${GW.toFixed(1)}" height="${GH.toFixed(1)}" preserveAspectRatio="none"/>`;
+  const figDrawn=(g3?GH*g3.fig/H:bodyGH*24/PXG_DIR8_H).toFixed(2);   // the figure as drawn, which golf/check-tracer3d.mjs holds the ball to
+  const img=(u,cls)=>`<image class="hvsw ${cls}" data-fig="${figDrawn}" href="${u}" x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${GW.toFixed(1)}" height="${GH.toFixed(1)}" preserveAspectRatio="none"/>`;
   // Holed beat: the stroke is over - hold the finish frame statically so a re-render can't re-fire the swing.
   const holdStatic = (S.screen==='dailyround' && S.dailyHolePause);
   const imgs = holdStatic
@@ -18163,21 +18180,21 @@ function hvAddressGolfer(hole, holeIdx, courseKey, look){
   if(!HV_SWING) return '';
   const shots=(hole&&hole.shots)||[]; if(!shots.length || !shots[0].k) return '';
   look=look||S.look||DEFLOOK;
-  const useSw4=!look.lefty;   // CS502-anim: righty uses the new N (up-the-hole) address; lefty keeps pxDir8
+  const g3=g3dOn()?g3dSet(look,0,-1,'full'):null;   // the 3D golfer addresses it facing up the hole too
+  const useSw4=!g3&&!look.lefty;   // CS502-anim: righty uses the new N (up-the-hole) address; lefty keeps pxDir8
   const dir=useSw4?'N':'W';
-  let set; try{ set=useSw4?pxSw4(look,dir):pxDir8(look,dir); }catch(e){ return ''; }
-  if(!set) return '';
+  let set; if(!g3){ try{ set=useSw4?pxSw4(look,dir):pxDir8(look,dir); }catch(e){ return ''; } if(!set) return ''; }
   const seedN=(dHash(courseKey||'x')^Math.imul((holeIdx|0)+1,0x9e3779b1))>>>0;
   let g, plots;
   if(hole._hv && hole._hv.g && hole._hv.plots && hole._hv.plots.length){ g=hole._hv.g; plots=hole._hv.plots; }
   else { g=hvGeom(seedN, hole.par, hole.yards||hole.yd||400, courseKey, holeIdx); plots=hvPlots(g, shots, seedN); }
   const p0=plots[0]; if(!p0 || !p0.rest) return '';
   const A=hvProj(g, p0.rest[0], p0.rest[1]);   // the drive's resting spot = where the approach is played from
-  const addr=set.full&&set.full[0];            // address frame (frame 0 of the full swing)
+  const addr=g3?g3.urls[0]:(set.full&&set.full[0]);   // address frame (frame 0 of the full swing)
   if(!addr) return '';
-  const W=PXG_DIR8_W, H=PXG_DIR8_H+(useSw4?SW4_HR:0);
-  const GH=22*H/PXG_DIR8_H, GW=GH*W/H;
-  let anch=(useSw4?(PXG_SW4_ANCH.N||[12,18]):dir8Anchor('N','full', !!look.lefty));
+  const W=g3?g3.W:PXG_DIR8_W, H=g3?g3.H:PXG_DIR8_H+(useSw4?SW4_HR:0);
+  const FG=hvFigH(null), GH=g3?FG*(24/PXG_DIR8_H)*H/g3.fig:FG*H/PXG_DIR8_H, GW=GH*W/H;
+  let anch=g3?g3.ball:(useSw4?(PXG_SW4_ANCH.N||[12,18]):dir8Anchor('N','full', !!look.lefty));
   if(useSw4) anch=[anch[0], anch[1]+SW4_HR];
   const x0=A[0]-GW*(anch[0]/W), y0=A[1]-GH*(anch[1]/H);   // stands over the ball facing up the hole (no rotation)
   return `<g class="hvswing hvsw-full"><image class="hvsw hvsw-static" href="${addr}" x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${GW.toFixed(1)}" height="${GH.toFixed(1)}" preserveAspectRatio="none"/></g>`;
@@ -22030,6 +22047,84 @@ function cutscenesOn(){
     if(localStorage.getItem('bag_cs_force')==='1') return true;   // local override, used by the tests
     return sbSignedIn() && CS_TESTERS.indexOf((sbUsername||'').toLowerCase())>=0;
   }catch(e){ return false; }
+}
+/* ---- THE PUTTING GREEN (golf/putt/putt.js): a game you PLAY, on the real greens and on themed
+   mini-golf courses. NOT LAUNCHED. The door is drawn for the tester accounts and nobody else, by
+   the same server-attributed username the cutscene gate reads; there is deliberately no local
+   override, because a localStorage flag is a switch any visitor can flip from the console.
+   To LAUNCH: set PUTT_LIVE to true. The module draws nothing until it is opened, so the script tag
+   costs everybody else one cached download and no screen. -------------------------------------- */
+var PUTT_LIVE=false;
+const PUTT_API=1;                                         // the putt.js API this page was written against
+var PUTT_TESTERS=['csel8','runnyj','malikwillislover'];      // tester accounts (lowercased usernames)
+/* ---- THE 3D COURSE GOLFER (golf/golfer3d.js): the tracer's golfer in the profile style. Live for everybody.
+   G3D_LIVE=false is the kill switch, which puts it back to the G3D_TESTERS accounts only. A blocked or stale
+   module, or a draw that throws, falls back to the old sprites. ---- */
+var G3D_LIVE=true;
+var G3D_TESTERS=['csel8','runnyj','malikwillislover'];   // tester accounts (lowercased usernames)
+const G3D_API=1;                                          // the golfer3d.js API this page was written against
+/* ---- THE 3D COURSE (golf/tracer3d.js): Tour Tracer's tile with volume and light, in the golfer's style.
+   Live for everybody. T3D_LIVE=false is the kill switch, back to the tester list. A blocked or stale module, or a draw that
+   throws, falls back to the flat tile, so nobody is ever shown a blank hole. ---- */
+var T3D_LIVE=true;
+var T3D_TESTERS=['csel8','runnyj','malikwillislover'];   // tester accounts (lowercased usernames)
+const T3D_API=1;                                          // the tracer3d.js API this page was written against
+function t3dOn(){
+  try{
+    if(!(window.RTT_T3D && window.RTT_T3D.API_VERSION===T3D_API && window.PXHD)) return false;
+    if(T3D_LIVE) return true;
+    return sbSignedIn() && T3D_TESTERS.indexOf((sbUsername||'').toLowerCase())>=0;
+  }catch(e){ return false; }
+}
+function g3dOn(){
+  try{
+    if(!(window.RTT_G3D && window.RTT_G3D.API_VERSION===G3D_API)) return false;
+    if(G3D_LIVE) return true;
+    return sbSignedIn() && G3D_TESTERS.indexOf((sbUsername||'').toLowerCase())>=0;
+  }catch(e){ return false; }
+}
+// screen vector -> the golfer's frames. 0 degrees is up the screen.
+function g3dSet(look,vx,vy,kind){
+  try{ const a=Math.atan2(vx,-vy)*180/Math.PI; const r=window.RTT_G3D.set(look,a,kind); window.RTT_G3D.warm(look,kind); return r; }
+  catch(e){ return null; }
+}
+function puttOn(){
+  try{
+    if(!(window.RTT_PUTT && window.RTT_PUTT.API_VERSION===PUTT_API)) return false;   // a blocked or stale module draws no door
+    if(PUTT_LIVE) return true;
+    return sbSignedIn() && PUTT_TESTERS.indexOf((sbUsername||'').toLowerCase())>=0;
+  }catch(e){ return false; }
+}
+// everything the module reads off the game, so the greens are the game's own greens
+function puttHost(){
+  return { courses:DAILY_COURSES, keys:DAILY_KEYS, dHash:dHash, hvGeom:hvGeom, hvBiome:hvBiome,
+    todayKey:todayKey, dailyCourseKey:dailyCourseKey,
+    sfx:function(n){ try{ sfx(n); }catch(e){} }, buzz:function(p){ try{ buzz(p); }catch(e){} },
+    golfer:function(){ return pxGolferCanvas(S.look,{noBall:true}); },
+    // the 3D modelled golfer the tracer plays with, standing side-on to the putt: address, take back, through
+    golfer3:function(vx,vy){ return g3dOn()?g3dSet(S.look,vx,vy,'putt'):null; },
+    // the Tour's record is kept per account, coins land in the game's own wallet, a Tour Pass means 6 lives
+    storeKey:function(k){ return acctKey(k); },
+    coins:function(n,label){ try{ addBonusCoins(n,{label:label}); }catch(e){} },
+    balance:function(){ try{ return coinBalance(); }catch(e){ return 0; } },
+    passActive:function(){ try{ return dailyPassActive(); }catch(e){ return false; } },
+    tester:function(){ return sbSignedIn() && PUTT_TESTERS.indexOf((sbUsername||'').toLowerCase())>=0; },
+    onClose:function(){ try{ render(); }catch(e){} } };
+}
+function openPutt(){ if(!puttOn()) return; try{ track('putt_open'); }catch(e){} window.RTT_PUTT.open(puttHost()); }
+// The Putt Putt Tour card: today's Daily Hole, your place on the 90 hole tour, and your lives.
+function puttCard(){
+  let m=null; try{ m=window.RTT_PUTT.summary(puttHost()); }catch(e){}
+  if(!m) m={lv:1,levels:90,world:'The Clubhouse',lives:3,max:3,daily:{name:'Daily Hole',done:false}};
+  const hearts=Array.from({length:Math.max(m.max,m.lives)},(_,i)=>`<span style="color:${i<m.lives?'#ff4d6d':'rgba(255,255,255,.25)'}">♥</span>`).join('');
+  const dl=m.daily.done?`<span style="color:#7ee2a8">Daily Hole done · ${m.daily.s} (par ${m.daily.par})</span>`:`Daily Hole · ${esc(m.daily.name)}`;
+  const out=m.lives<=0;
+  const c=$(`<button class="gcard gc-putt" aria-label="Putt Putt Tour, tester preview">
+    <div class="gc-top"><div style="min-width:0"><div class="gc-kick">⛳ Tester preview</div><div class="gc-title">Putt Putt Tour</div></div><span class="gc-badge">LV ${m.lv}</span></div>
+    <div class="gc-mid">${dl}<br>${esc(m.world)} · ${hearts}${out&&m.refillAt?` <span class="small">full in ${Math.ceil((m.refillAt-Date.now())/3600000)}h</span>`:''}</div>
+    <div class="gc-row"><span class="gc-go">${out?'Refill ▸':'Play ▸'}</span></div></button>`);
+  c.onclick=openPutt;
+  return c;
 }
 // The invented press. Nothing here is a real outlet or a real person.
 var CS_OUTLETS={
@@ -30984,6 +31079,21 @@ function hvSetCam(){ HV_EXL=hvViewEx(); HV_CAML=[-HV_EXL,0,HV_W+2*HV_EXL,HV_H]; 
 // camera scales them together and the ratio stays realistic at every zoom (no more ball-bigger-than-hole).
 const HV_CUP_RX=1.82, HV_CUP_RY=1.28, HV_GBALL=0.86;   // smaller hole + ball, realistic ratio (owner)
 const HV_GROUND=2.05, HV_AIRPEAK=7.8;   // CS355b: smaller on-ground ball (in scale with the golfer); air size unchanged
+/* THE BALL IS SIZED FROM THE GOLFER, one ratio on every camera (owner: "the ball is always at the correct scale
+   based on the player size"). It used to be three separate numbers: a ground ball of 2.05 shrunk by a viewBox
+   factor, 2.0 on a zoomed frame, and 0.86 on the green beside a golfer sized from the camera. Measured, the
+   ball ran from 4% to 9% of the golfer's height depending on which frame was up.
+   Now: off the green the ball's radius is HV_BALL_FIG of the golfer's figure height for that camera (hvFigH,
+   the same height the golfer is drawn at). On the green the ball keeps HV_GBALL, its realistic size against the
+   cup, and the golfer putting it is sized FROM the ball (HV_PUTT_FIG) rather than from the camera. In flight
+   the ball still grows toward the camera by the same multiple it always did. */
+const HV_BALL_FIG=0.06;                               // ball radius per unit of golfer figure height
+const HV_PUTT_FIG=HV_GBALL/HV_BALL_FIG;               // the golfer's figure height when the ball is on the green
+const HV_AIR_GROW=HV_AIRPEAK/HV_GROUND-1;             // how much bigger the ball reads at the top of its flight
+function hvFigH(cam){ const h=cam&&cam[3]?cam[3]:HV_H; return h<HV_H?Math.max(15,Math.min(22,h*0.15)):22; }
+function hvBallGround(cam){ return HV_BALL_FIG*hvFigH(cam); }
+function hvBallVB(){ try{ const sv=document.getElementById('hv-svg'); const vb=sv?(sv.getAttribute('viewBox')||'').split(' ').map(Number):null;
+  return hvBallGround(vb&&vb.length===4&&vb[3]>0?vb:null); }catch(e){ return hvBallGround(null); } }
 // ---- per-course FLAGS: every course flies its own flag (color + optional accent stripe), like real
 // life. Marquee venues get a hand-picked look; everything else is deterministically derived from the
 // course-key hash, so each course has a consistent, unique flag.
@@ -32391,7 +32501,7 @@ const hvDetailCam=(camTarget,live)=>{
 function pxTerrainURL(g, seedN, B, opts){
   opts=opts||{};
   const cam=opts.cam||HV_CAM, GW=opts.gw||210, GH=opts.gh||254;
-  const key=(seedN>>>0)+':'+GW+'x'+GH+':'+Math.round(cam[0])+','+Math.round(cam[1])+','+Math.round(cam[2])+','+Math.round(cam[3]);
+  const T3=t3dOn(), key=(seedN>>>0)+':'+GW+'x'+GH+(T3?':3d':'')+':'+Math.round(cam[0])+','+Math.round(cam[1])+','+Math.round(cam[2])+','+Math.round(cam[3]);
   if(_pxCache.has(key)) return _pxCache.get(key);
   if(_pxCache.size>80) _pxCache.clear();
   const SC=3, seed=seedN>>>0;
@@ -32584,12 +32694,12 @@ function pxTerrainURL(g, seedN, B, opts){
     if(kind==='barrel'||kind==='scrub'||kind==='ocotillo'){ const cc=pk(cact),r=Math.max(2,Math.round(R*0.7)); edisc(px,py,r,r,cc,shade(cc,16),shade(cc,-14)); return; }
     const isA=hvHash(seed,tries*11,7)<(B.autumnP||0.12); const cc=shade(isA?pk(autumn):pk(tg),tvar);
     disc(px,py,R,cc,shade(cc,28),shade(cc,-22)); for(let k=0;k<Math.round(R*0.4);k++)put(px,py+R-1+k,trunk); };
-  const drawBush=(px,py,tries)=>{const base=(wooded?pk_(tg,tries):pk_(dune,tries));const tone=Math.round((vnoise(px*0.05,py*0.05)-0.5)*20);const cc=shade(base,tone),hi=shade(cc,20),lo=shade(cc,-16);
+  const drawBush2=(px,py,tries)=>{const base=(wooded?pk_(tg,tries):pk_(dune,tries));const tone=Math.round((vnoise(px*0.05,py*0.05)-0.5)*20);const cc=shade(base,tone),hi=shade(cc,20),lo=shade(cc,-16);
     if(!okRough(px,py))return;
     if(os>1){ const r=Math.max(1,Math.round(1.7*os)); cshadow(px,py,r); edisc(px,py,r,Math.max(1,Math.round(r*0.8)),cc,hi,lo); return; }
     cshadow(px,py,1);
     put(px,py,cc);put(px-1,py,cc);put(px+1,py,cc);put(px,py-1,hi);put(px-1,py-1,lo);put(px+1,py-1,cc);if(hvHash(seed,tries*3,17)<0.5)put(px+2,py,lo);};
-  const drawTree=(px,py,tries)=>{ if(os>1) return drawTreeS(px,py,tries); const kind=pickK(hvHash(seed,tries,5)),pk=a=>a[(hvHash(seed,tries*7,6)*a.length)|0];
+  const drawTree2=(px,py,tries)=>{ if(os>1) return drawTreeS(px,py,tries); const kind=pickK(hvHash(seed,tries,5)),pk=a=>a[(hvHash(seed,tries*7,6)*a.length)|0];
     const tvar=Math.round((vnoise(px*0.035+7,py*0.035)-0.5)*24);
     if(kind==='pine'||kind==='cypress'){const cc=shade(pk(pine),tvar),hi=shade(cc,26),lo=shade(cc,-16);cshadow(px,py,4);
       put(px,py-7,hi);put(px,py-6,cc);put(px-1,py-5,cc);put(px,py-5,hi);put(px+1,py-5,cc);
@@ -32609,6 +32719,9 @@ function pxTerrainURL(g, seedN, B, opts){
     else if(kind==='flower'){if(vnoise(px*0.032+80,py*0.032+15)<0.66)return;const fc=pk(flower);put(px,py,fc);put(px+1,py,fc);put(px,py-1,fc);}
     else{const isA=hvHash(seed,tries*11,7)<(B.autumnP||0.12);const cc=shade(isA?pk(autumn):pk(tg),tvar);const big=hvHash(seed,tries*13,14)<0.08;const r=(big?6:3)+((hvHash(seed,tries*5,8)*3)|0);cshadow(px,py,r);disc(px,py,r,cc,shade(cc,28),shade(cc,-22));if(big)disc(px+1,py-1,r-1,shade(cc,10),shade(cc,30),shade(cc,-16));for(let k=0;k<Math.max(1,Math.round(r*0.4));k++)put(px,py+r-1+k,trunk);}
   };
+  // In 3D (golf/tracer3d.js) the scenery is RECORDED here and stood up as solids after the grade; flat, it
+  // is stamped straight into the tile as it always was.
+  const REC=[], drawTree=(px,py,t)=>T3?REC.push([0,px,py,t]):drawTree2(px,py,t), drawBush=(px,py,t)=>T3?REC.push([1,px,py,t]):drawBush2(px,py,t);
   const BUFFER = Math.round(9*os);
   const step= Math.max(2, Math.round((wooded?4:5)*os));
   const bushBand=Math.round(3*os), rampW=(wooded?0.2:0.14)/os, groveF=0.045/os;
@@ -32682,7 +32795,12 @@ function pxTerrainURL(g, seedN, B, opts){
   // green so no terrain pixel ever renders pure black. Trees/sand/water/ocean always keep a channel >40, so
   // this can't wash the scenery - it only catches the over-darkened green.
   for(let i=0;i<D.length;i+=4){ if(D[i]<22&&D[i+1]<42&&D[i+2]<22){ if(D[i]<16)D[i]=16; if(D[i+1]<34)D[i+1]=34; if(D[i+2]<12)D[i+2]=12; } }
-  ctx.putImageData(img,0,0);
+  let done3d=false;
+  if(T3){ try{ done3d=window.RTT_T3D.render({GW,GH,T,XY,DIST,D,REC,os,seed,B,ctx,cam,ID:{RO,DE,FW,GR,FR,SA,WA,TE,OC,FC},links,desert,wooded,C,
+      P:{tg,pine,autumn,cact,trunk,gorse,dune,flower},pickK,hvHash,vnoise,oceanSide,oedge,oBeach}); }
+    catch(e){ console.warn('3D course failed, using the flat tile', e); }
+    if(!done3d) for(const r of REC) (r[0]?drawBush2:drawTree2)(r[1],r[2],r[3]); }   // the flat scenery, stamped late
+  if(!done3d) ctx.putImageData(img,0,0);
   const out=document.createElement('canvas');out.width=GW*SC;out.height=GH*SC;
   const o=out.getContext('2d');o.imageSmoothingEnabled=false;o.drawImage(cv,0,0,out.width,out.height);
   const url=out.toDataURL('image/png'); _pxCache.set(key,url); return url;
@@ -32895,7 +33013,7 @@ function hvLiveShot(g,p,small,pcol,cam){
   const glow=pcol?`${pcol}88`:(tr?tr.g:'rgba(241,208,74,.45)');
   const core=tr?tr.c:'#ffffff';
   const onGreen=(p.k==='putt'||p.k==='hole');
-  const ballR=onGreen?HV_GBALL:(small?2.0:HV_GROUND);   // on the green the ball is a fixed, realistic fraction of the cup
+  const ballR=onGreen?HV_GBALL:hvBallGround(cam);   // on the green the ball is a fixed, realistic fraction of the cup; elsewhere it follows the golfer
   let s='';
   if(!pcol) s+=hvPuttRead(g,p,cam);         // ITEM 15: the read, sized and parked against the live camera
   if(!pcol) s+=hvSwingMarkup(g,p,S.look);   // CS355: the created golfer plays the shot (single-ball; excludes H2H multi-ball, which passes pcol). NOT gated on `small` so it still shows on the putt close-up.
@@ -32943,8 +33061,8 @@ function hvStatHTML(s, holed, who, pcol){
 }
 /* ---- the animator: real-ball physics feel (launch/hang/curve/land/bounce/roll).
    p = the plot being played, pPrev = the previous step's plot (drives the camera-from box).
-   The ball SHRINKS as the camera zooms into the green (bScale reads the live viewBox) so it
-   stops swallowing the putting surface on the close-up. ---- */
+   The ball is sized from the golfer on the live camera (hvBallVB, which reads the viewBox), so it keeps
+   its scale against the player as the camera zooms. ---- */
 let _hvA={key:null, raf:0, done:false};
 // TRACER REVAMP: which hole / which shot the window last drew, so a NEW hole can cross-fade in and a
 // freshly-finished shot's marker can pop in, while the many same-state re-renders stay perfectly still.
@@ -32980,10 +33098,8 @@ function hvSettle(g,p){
   hvRevealPaths(p); hvRevealDist();
   if(!p) return;
   const b=document.getElementById('hv-ball'); if(!b) return;
-  const sv=document.getElementById('hv-svg');
-  let bs=1; if(sv){ const w=parseFloat((sv.getAttribute('viewBox')||'').split(' ')[2])||HV_W; bs=Math.max(0.42,Math.min(1,(w/HV_W)*1.55)); }
   const R=hvProj(g,p.rest[0],p.rest[1]);
-  const rr=p.hole?0:((p.k==='putt'||p.k==='hole'||p.onGreen)?HV_GBALL:(HV_GROUND*bs));
+  const rr=p.hole?0:((p.k==='putt'||p.k==='hole'||p.onGreen)?HV_GBALL:hvBallVB());
   b.setAttribute('cx',R[0]); b.setAttribute('cy',R[1]); b.setAttribute('r',(+rr).toFixed(2)); b.setAttribute('opacity','1');
   hvRestShadow(g,p);
 }
@@ -32993,9 +33109,6 @@ function hvKick(key, g, p, pPrev, reduce, opts){
   if(!p) return;
   opts=opts||{};
   const q=(id)=>document.getElementById(id);
-  const bScale=()=>{ const sv=q('hv-svg'); if(!sv) return 1;
-    const w=parseFloat((sv.getAttribute('viewBox')||'').split(' ')[2])||HV_W;
-    return Math.max(0.42, Math.min(1, (w/HV_W)*1.55)); };
   const setFinal=()=>{ const t=q('hv-trace'),r=q('hv-roll'),b=q('hv-ball'),pf=q('hv-puff'),sv=q('hv-svg'),tg=q('hv-traceg'),to=q('hv-traceo'),tip=q('hv-tip');
     if(t){t.style.strokeDasharray='none';t.style.strokeDashoffset='0';}
     if(tg){tg.style.strokeDasharray='none';tg.style.strokeDashoffset='0';}
@@ -33004,7 +33117,7 @@ function hvKick(key, g, p, pPrev, reduce, opts){
     if(r){r.style.strokeDasharray=(p.k==='pen')?'3 4':'none';r.style.strokeDashoffset='0';}
     if(sv) sv.setAttribute('viewBox', hvCamFor2(g,p).join(' '));   // reduced-motion users still get the right camera
     if(b){ const R=hvProj(g,p.rest[0],p.rest[1]); b.setAttribute('cx',R[0]);b.setAttribute('cy',R[1]);
-      const rr=p.hole?0:((p.k==='putt'||p.k==='hole'||p.onGreen)?HV_GBALL:(HV_GROUND*bScale())); b.setAttribute('r',(+rr).toFixed(2)); }   // a ball resting ON the green (any shot) is the small green size, not the big ground ball
+      const rr=p.hole?0:((p.k==='putt'||p.k==='hole'||p.onGreen)?HV_GBALL:(hvBallVB())); b.setAttribute('r',(+rr).toFixed(2)); }   // a ball resting ON the green (any shot) is the small green size, not the big ground ball
     hvRestShadow(g,p); if(pf) pf.setAttribute('opacity','0'); hvRevealDist(); _hvA.done=true; };
   const tipOff=()=>{ const tp=q('hv-tip'); if(tp) tp.setAttribute('opacity','0'); };
   // How big the ball is SITTING AT A GIVEN SPOT. On the putting surface it is the fixed green size
@@ -33013,8 +33126,8 @@ function hvKick(key, g, p, pPrev, reduce, opts){
   // without a single source of truth a ball at rest on the green INFLATED the moment the next shot's
   // animation began (measured 0.86 -> 1.28 in one frame under the hole-out camera). Every phase now
   // interpolates between these sizes, so the ball only ever changes size for a reason.
-  const restR=(pl)=>!pl ? HV_GROUND*bScale()
-    : (pl.hole?0 : ((pl.k==='putt'||pl.k==='hole'||pl.onGreen)?HV_GBALL:HV_GROUND*bScale()));
+  const restR=(pl)=>!pl ? hvBallVB()
+    : (pl.hole?0 : ((pl.k==='putt'||pl.k==='hole'||pl.onGreen)?HV_GBALL:hvBallVB()));
   if(reduce){ setFinal(); return; }
   const isFly=(p.k==='tee'||p.k==='app'||p.k==='adv'||p.k==='chip');
   // CS355: hold the ball at address while the golfer swings; it leaves at impact (chip is a quicker stroke)
@@ -33055,14 +33168,14 @@ function hvKick(key, g, p, pPrev, reduce, opts){
       const elF=el-swingMs;   // CS355: the golfer swings for swingMs, then the ball launches at impact
       // the ball at address is the size it was lying at, and grows into the size it will land at, so
       // launch and touchdown are both continuous with the shot either side of them
-      const r0=restR(pPrev||null), rL=p.onGreen?HV_GBALL:HV_GROUND*bScale();
+      const r0=restR(pPrev||null), rL=p.onGreen?HV_GBALL:hvBallVB();
       if(elF<0){ ball.setAttribute('cx',A[0].toFixed(1)); ball.setAttribute('cy',A[1].toFixed(1)); ball.setAttribute('r',r0.toFixed(2)); _hvA.raf=requestAnimationFrame(frame); return; }
       if(elF<=flyMs){
         const t=elF/flyMs, te=t<0.5?2*t*t:1-Math.pow(-2*t+2,2)/2;   // fast off the club, hangs, dives
         const bp=hvBez3(A,C[0],C[1],B,te), x=bp[0], y=bp[1];        // ITEM 16: ride the shaped tracer
         const h=4*te*(1-te)*(p.k==='tee'?1:(p.k==='chip'?0.45:0.75))*Math.min(1,p.dist/240+0.35);
         const base=r0+(rL-r0)*te;
-        ball.setAttribute('cx',x.toFixed(1)); ball.setAttribute('cy',y.toFixed(1)); ball.setAttribute('r',(base+h*(HV_AIRPEAK-HV_GROUND)*bScale()).toFixed(2));
+        ball.setAttribute('cx',x.toFixed(1)); ball.setAttribute('cy',y.toFixed(1)); ball.setAttribute('r',(base+h*hvBallVB()*HV_AIR_GROW).toFixed(2));   // grows from the golfer-scale ball, by the same multiple as before
         if(sh){ sh.setAttribute('cx',(x+2+h*7).toFixed(1)); sh.setAttribute('cy',(y+2+h*6).toFixed(1)); sh.setAttribute('opacity',(0.42*Math.min(1,h*3)).toFixed(2)); sh.setAttribute('rx',(3-h*1.2).toFixed(2)); sh.setAttribute('ry',(1.6-h*0.5).toFixed(2)); }
         if(trace){ const off=traceLen*(1-te); trace.style.strokeDashoffset=off;
           const tg=q('hv-traceg'); if(tg) tg.style.strokeDashoffset=off;
@@ -33090,7 +33203,7 @@ function hvKick(key, g, p, pPrev, reduce, opts){
         // so touchdown and the settle either side of it are both continuous (a ball landing on the green
         // used to step 2.05 -> 0.98 in a single frame, which read as a snap rather than a settle)
         const rEnd=p.hole?rL:restR(p);
-        ball.setAttribute('cx',x.toFixed(1)); ball.setAttribute('cy',(y-hop*8).toFixed(1)); ball.setAttribute('r',(rL+(rEnd-rL)*te+hop*(p.onGreen?1.6:2.4*bScale())).toFixed(2));
+        ball.setAttribute('cx',x.toFixed(1)); ball.setAttribute('cy',(y-hop*8).toFixed(1)); ball.setAttribute('r',(rL+(rEnd-rL)*te+hop*(p.onGreen?1.6:2.4*hvBallVB()/HV_GROUND)).toFixed(2));
         if(sh) sh.setAttribute('opacity',(hop>0.02?0.22:(p.onGreen?0:0.16)).toFixed(2)), sh.setAttribute('cx',(x+1.3).toFixed(1)), sh.setAttribute('cy',(y+1.3).toFixed(1)), sh.setAttribute('rx','2.6'), sh.setAttribute('ry','1.25');
         const pf=q('hv-puff'), pt=(elF-flyMs)/300;   // touchdown puff ring at the landing spot
         if(pf){ if(pt<=1){ pf.setAttribute('cx',B[0]);pf.setAttribute('cy',B[1]);pf.setAttribute('r',(2+pt*7).toFixed(1));pf.setAttribute('opacity',(0.5*(1-pt)).toFixed(2)); } else pf.setAttribute('opacity','0'); }
@@ -33108,7 +33221,7 @@ function hvKick(key, g, p, pPrev, reduce, opts){
       } else { setFinal(); _hvA.raf=0; return; }
     } else if(p.k==='pen'){
       const t=Math.min(1,el/penMs);
-      ball.setAttribute('cx',R[0]); ball.setAttribute('cy',(R[1]-(1-t)*8).toFixed(1)); ball.setAttribute('r',(HV_GROUND*bScale()).toFixed(2));
+      ball.setAttribute('cx',R[0]); ball.setAttribute('cy',(R[1]-(1-t)*8).toFixed(1)); ball.setAttribute('r',(hvBallVB()).toFixed(2));
       ball.setAttribute('opacity',t.toFixed(2));
       if(t>=1){ ball.setAttribute('opacity','1'); setFinal(); _hvA.raf=0; return; }
     } else {   // putt / hole-out: wait for the camera, then a pure roll with decel, then the drop

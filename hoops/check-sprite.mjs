@@ -22,6 +22,19 @@
  * one of the 88 that did not is a bald look, and the only bald ones that did
  * move wear a cap, where bald used to be drawn as a buzz cut. That is the
  * proof the pass touched hair and nothing else.
+ *
+ * RE-RECORDED A SECOND TIME, ON PURPOSE, for the 3D model the owner asked
+ * for: the player is now Run The Tour's style, a posable 3D model put through
+ * the golf game's paint step (PXHD), so every one of the 960 moved. That is
+ * the whole drawing redone rather than a pixel drifting, and from here on the
+ * hashes guard the new drawing exactly as they guarded the old one.
+ *
+ * RE-RECORDED A THIRD TIME, ON PURPOSE, because the owner found the players
+ * too buff and the jersey poor. Lean and Standard got narrower shoulders,
+ * smaller delts and thinner arms; only Muscular (the 'strong' id) keeps the
+ * broad build. The tank was recut (a round scoop, narrow straps, round
+ * armholes, one even trim band) and its number is stamped on the screen so no
+ * digit loses a row. The lower body was asked to stay and did not change.
  */
 import fs from 'node:fs';
 import path from 'node:path';

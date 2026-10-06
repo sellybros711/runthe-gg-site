@@ -1,0 +1,47 @@
+name: Putting Green checks
+
+# The Run The Tour putting game (golf/putt), a tester preview. Every themed hole
+# and two weeks of Daily Holes are PLAYED by a solver to par, both tours' 108
+# holes are beaten under par by replaying the routes golf/putt/solve.mjs recorded
+# in routes.json (the search itself is an hour, so it is not run here), the real greens
+# are built off the page's own hvGeom in a browser, and the tester gate is
+# asserted shut for everybody else. Every themed hole is drawn in 3D (hole3d.js,
+# land.js) and its projection checked against the picture. The course golfer has its own workflow
+# (golfer3d-check.yml). Runs locally, unchanged:
+#
+#   node golf/putt/check-putt.mjs
+#
+# No secrets, no deploy.
+
+on:
+  pull_request:
+    paths:
+      - 'golf/putt/**'
+      - 'golf/index.html'
+      - '.github/workflows/putt-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'golf/putt/**'
+      - 'golf/index.html'
+      - '.github/workflows/putt-check.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: putt-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.47.2
+          npx playwright install --with-deps chromium
+      - name: The physics, the greens, every hole played to par
+        run: node golf/putt/check-putt.mjs --days 14
