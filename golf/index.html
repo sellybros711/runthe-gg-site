@@ -14330,6 +14330,11 @@ function mnGroup(title,items){ const g=$(`<section class="mn-g"><div class="mn-h
 function overlayMenu(screen){
   const signedIn=sbSignedIn();
   const go=(fn)=>()=>{ S.overlay=null; fn(); render(); };
+  // Hand straight over to something that may open an overlay of its own (the wheel, or the sign-in sheet
+  // Play Online falls back to). No render in between: rendering with no overlay pops the Back-button
+  // guard with history.back(), and that popstate lands AFTER the next overlay opens and closes it, which
+  // dropped the player on the home screen. Render here only if nothing else did.
+  const hop=(open)=>()=>{ S.overlay=null; open(); if(!S.overlay) render(); };
   const ov=$(`<div class="ov ov-wide ov-menu" role="dialog" aria-modal="true" aria-label="Menu">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>Menu</h3><div class="mnu"></div></div>`);
@@ -14338,8 +14343,8 @@ function overlayMenu(screen){
   const wheelSub=(()=>{ if(!signedIn) return 'Sign in to spin'; const a=wheelAvail(); return a>0?(a+' spin'+(a>1?'s':'')+' ready'):'Next free spin at midnight ET'; })();
   mnu.appendChild(mnGroup('Play',[
     mnItem('🏠','Home','The title screen',go(()=>{S.screen='title';})),
-    mnItem(ic('globe'),'Play Online','1v1 and foursomes',()=>{ S.overlay=null; render(); openH2H(); }),
-    wheelEnabled()?mnItem('🎡','Prize Wheel',wheelSub,()=>{ S.overlay=null; render(); openWheel(); },(signedIn&&wheelAvail()>0)?wheelAvail():''):null ]));
+    mnItem(ic('globe'),'Play Online','1v1 and foursomes',hop(openH2H)),
+    wheelEnabled()?mnItem('🎡','Prize Wheel',wheelSub,hop(openWheel),(signedIn&&wheelAvail()>0)?wheelAvail():''):null ]));
   // PROGRESS: what you are working towards
   let passSub='', passBadge='';
   if(passEnabled()){ const ssn=passSeason();
