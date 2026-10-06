@@ -1110,8 +1110,8 @@ var LEVELS = [
   // Magma Loop: through the loop, between the lava pools, putt out.
   { par:3, f:function(T){ var H = hole([rm(-4, 0, 4, -11), pg([[-4, -11], [4, -11], [0.8, -14.6], [-0.8, -14.6]]), rm(-0.8, -14.5, 0.8, -19), rm(-5, -18.9, 5, -36)], [0, -2.5], [-2.5, -32]);
     loopAt(H, 0, -16.8, 0, -1, 0.8, 1.6); zoneR(H, M.WATER, -5, -22, -1.2, -26); zoneR(H, M.WATER, 1.2, -22, 5, -26); zoneR(H, M.WATER, 1.5, -26, 5, -36); blk(H, T, 1.2, -26, 1.5, -36); return H; } },
-  // Obsidian Bridges: two bridges on two clocks, curbs on both channels, three putts.
-  { par:4, f:function(T){ var H = hole([rm(-5, 0, 5, -12), rm(-5, -11.9, 5, -15.6), rm(-5, -15.5, 5, -24), rm(-5, -23.9, 5, -27.6), rm(-5, -27.5, 5, -38)], [0, -2.5], [3, -34]);
+  // Obsidian Bridges: two bridges on two clocks, curbs on both channels, two putts.
+  { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -12), rm(-5, -11.9, 5, -15.6), rm(-5, -15.5, 5, -24), rm(-5, -23.9, 5, -27.6), rm(-5, -27.5, 5, -38)], [0, -2.5], [3, -34]);
     zoneR(H, M.WATER, -5, -12, 5, -15.5); drawb(H, -1.2, -12, 1.2, -15.5, 2.6, 0, 0.5); zoneR(H, M.WATER, -5, -24, 5, -27.5); drawb(H, 1.8, -24, 4.2, -27.5, 2.4, 0.35, 0.5); bumps(H, T, [[1.5, -20, 0.6]]);
     blk(H, T, -5, -11.4, -1.2, -12); blk(H, T, 1.2, -11.4, 5, -12); blk(H, T, -5, -23.4, 1.8, -24); blk(H, T, 4.2, -23.4, 5, -24); return H; } },
   // Eruption: under three spinning rocks, rails along the lava, two putts.
