@@ -709,5 +709,159 @@ window.RTT_PUTT_LAND = (function(){
     };
   };
 
+  /* ---------------- LOST TEMPLE: a stepped pyramid in the jungle behind the hole, a jade pool, broken columns, a paved way */
+  BUILD.temple = function(L){
+    var C = L.C, P1 = L.P1, seed = L.seed, clearAt = L.clearAt, spot = L.spot, spotRect = L.spotRect, north = L.north;
+    var pyr = spotRect(11, 9, function(x, y){ return north(x, y) * 1.4 - Math.abs(x - L.cx) * 0.25; });
+    var pool = spot(2.3, function(x, y){ return Math.abs(x - L.cx) * 0.5 - Math.abs(y - L.cy) * 0.2; });
+    var path = pyr ? L.route([pyr.x, pyr.y + pyr.d / 2 + 0.3], [C.tee[0], P1[1] + 1.4], seed + 4, 1.2) : null;
+    if (pyr) L.used.push({ x:pyr.x, y:pyr.y + pyr.d / 2 + 1.6, r:1.8 });
+    var dPa = L.dist(path); function onPath(x, y){ return dPa(x, y) < 0.75; }
+    var cols = []; for (var i = 0; i < 6; i++){ var c = spot(0.5, function(x, y){ return -Math.abs(clearAt(x, y) - 2.4) * 0.6 + hash(x * 3 | 0, y * 3 | 0, seed + i); }, function(x, y){ return !onPath(x, y); }); if (c) cols.push(c); }
+    var trees = []; for (i = 0; i < 12; i++){ var t = spot(1.6, function(x, y){ return north(x, y) * 0.6 + L.side(x) * 3 + Math.min(L.far(x, y), 5) * 0.4; }, function(x, y){ return !onPath(x, y); }); if (t) trees.push(t); }
+    function poolD(x, y){ return pool ? 1 - Math.hypot((x - pool.x) / pool.r, (y - pool.y) / (pool.r * 0.75)) + (fbm(x * 0.6, y * 0.6, seed + 9) - 0.5) * 0.3 : -1; }
+    var LEAF = ['#1f5a2a', '#2a6b33', '#174a22'];
+    return {
+      h:function(x, y){ var z = (fbm(x * 0.06, y * 0.06, seed) - 0.45) * 2.2 * sm(1.5, 7, clearAt(x, y)), p = poolD(x, y); if (p > 0) return -0.3; if (p > -0.2) z = Math.min(z, 0.05); if (onPath(x, y)) z = z * 0.3 + 0.04; return z; },
+      mat:function(x, y){ var p = poolD(x, y); if (p > 0) return ['jade', { dep:p }]; if (p > -0.12) return ['ledge']; if (onPath(x, y)) return ['paving']; return ['moss']; },
+      build:function(B){
+        if (pyr){ var X = pyr.x, Y = pyr.y, zb = B.gz(X, Y), W = pyr.w, D = pyr.d, steps = 4, sh = 1.05;   // four tiers, a stair up the front, a shrine on top
+          B.solid(X - W / 2, Y - D / 2, zb - 0.1, X + W / 2, Y + D / 2, zb + steps * sh + 2.2, function(px, py, pz){ var dx = Math.abs(px - X), dy = py - Y, t = pz - zb;
+            var k = Math.floor(t / sh); if (k < steps){ var hw = W / 2 - k * 1.05, hd = D / 2 - k * 0.85; if (dx > hw || Math.abs(dy) > hd) return null;
+              if (dy > 0 && dx < 0.85) return (Math.floor(t * 4) % 2) ? '#c9bf94' : '#b3a97e';
+              if (t % sh > sh - 0.12) return '#7b7354'; if (hash(px * 3 | 0, pz * 3 | 0, seed + 5) < 0.18) return '#4f7a3a';
+              return (Math.floor(px * 1.6 + (Math.floor(t * 2) % 2) * 0.5) % 2) ? '#a69c72' : '#958b63'; }
+            var tt = t - steps * sh; if (dx > 1.3 || Math.abs(dy) > 1.1 || tt > 2) return null;
+            if (dy > 0.95 && dx < 0.45 && tt < 1.2) return '#141008'; if (tt > 1.6) return tt > 1.85 ? '#c9a227' : '#6f6a4e'; return dx > 1.1 ? '#8f8766' : '#a69c72'; }); }
+        cols.forEach(function(c, i){ var zb = B.gz(c.x, c.y), H = hash(i, seed, 7) < 0.4 ? 1 + hash(i, seed, 8) : 2.6;
+          B.solid(c.x - 0.5, c.y - 0.5, zb - 0.05, c.x + 0.5, c.y + 0.5, zb + H + 0.25, function(px, py, pz){ var r = Math.hypot(px - c.x, py - c.y), t = pz - zb;
+            if (t > H){ return H > 2 && Math.abs(px - c.x) < 0.45 && Math.abs(py - c.y) < 0.45 ? '#bdb38a' : null; } if (r > 0.33) return null;
+            if (hash(pz * 4 | 0, i, seed + 2) < 0.2) return '#4f7a3a'; return (Math.floor(Math.atan2(py - c.y, px - c.x) * 2.5 + 8) % 2) ? '#c2b88e' : '#ada37a'; }); });
+        trees.forEach(function(t, i){ broadTree(B, t.x, t.y, 4.6 + hash(i, seed, 7) * 1.8, '#4a3626', LEAF, i + seed); });
+      },
+      fill:{ on:['moss'], trees:0.55, lows:0.35, tree:function(B, x, y, i){ broadTree(B, x, y, 4.2 + hash(i, seed, 31) * 1.8, '#4a3626', LEAF, i + seed * 11); },
+        low:function(B, x, y, i){ var k = hash(i, seed, 32); if (k < 0.6) bush(B, x, y, 0.5, ['#2f7d32', '#43a047', '#1f5a2a']); else rockAt(B, x, y, 0.4, ['#a69c72', '#4f7a3a']); } },
+      gain:1.3, fog:function(x, y){ return fbm(x * 0.11 + y * 0.02, y * 0.17, seed + 21); }, fogCol:'#bfe8c8',
+      mats:{ moss:['#2f5a2a', '#376632', '#3e5a2c', 0.18], paving:['#a69c72', '#b3a97e', '#8f8766', 0.3, function(c, R, h3){ return R(((c.ti >> 1) + (c.tj >> 1)) % 2 ? '#a69c72' : (h3(c.ti, c.tj, 2) < 0.2 ? '#4f7a3a' : '#958b63')); }],
+        ledge:['#8f8766', '#a69c72', '#7b7354', 0.3], jade:['#2fb58f', '#7fe0c0', '#1f8a6c', 0.05, function(c, R){ return R((c.dep || 0) < 0.25 ? '#5fd8b2' : (((c.ti * 3 + c.tj * 5) % 19) === 0 ? '#7fe0c0' : '#2fb58f')); }] }
+    };
+  };
+
+  /* ---------------- PIRATE COVE: the cove behind the hole with a ship at anchor, a dock, palms, barrels and a chest on the sand */
+  BUILD.pirate = function(L){
+    var C = L.C, E = L.E, P0 = L.P0, P1 = L.P1, seed = L.seed, clearAt = L.clearAt, spot = L.spot;
+    function shoreY(x){ return P0[1] - 1.4 - (vn(x * 0.12, 1, seed) - 0.5) * 2.6; }
+    function sea(x, y){ return shoreY(x) - y; }
+    var shipX = L.cx + (hash(seed, 2, 3) < 0.5 ? -1 : 1) * Math.min(7, (E[2] - E[0]) * 0.18), shipY = Math.max(E[1] + 2.4, shoreY(shipX) - 5.2);
+    var dockX = shipX + (shipX < L.cx ? 5.5 : -5.5);
+    L.used.push({ x:shipX, y:shipY, r:5 }); L.used.push({ x:dockX, y:(shoreY(dockX) + E[1]) / 2, r:1.4 });
+    var palms = []; for (var i = 0; i < 8; i++){ var p = spot(1, function(x, y){ return L.side(x) * 4 - Math.abs(y - shoreY(x) - 3.5) * 0.6 + hash(x * 2 | 0, y * 2 | 0, seed + i); }, function(x, y){ return sea(x, y) < -1.5; }); if (p) palms.push(p); }
+    var props = []; for (i = 0; i < 5; i++){ var q = spot(0.7, function(x, y){ return -Math.abs(clearAt(x, y) - 2.2) * 0.8 + hash(x * 3 | 0, y * 3 | 0, seed + 9 + i); }, function(x, y){ return sea(x, y) < -1.2; }); if (q) props.push(q); }
+    function palm(B, x, y, H, k){ var zb = B.gz(x, y), lean = (hash(k, seed, 4) - 0.5) * 1.2, top = [x + lean, y - 0.3, zb + H];
+      B.vox(x - 3.2, y - 2.8, zb, x + 3.2, y + 2.6, zb + H + 0.8, function(set){ for (var s = 0; s < 8; s++){ var t0 = s / 8, t1 = (s + 1) / 8; B.tube(set, x + lean * t0 * t0, y - 0.3 * t0, zb + H * t0, x + lean * t1 * t1, y - 0.3 * t1, zb + H * t1, 0.2 - t0 * 0.06, 0.2 - t1 * 0.06, s % 2 ? '#8a6a3e' : '#7a5c34'); }
+        for (var f = 0; f < 7; f++){ var a = f / 7 * 6.28 + k, fx = Math.cos(a), fy = Math.sin(a) * 0.7; for (var al = 0; al < 2.5; al += set.st){ var sag = 0.35 - al * al * 0.22, wd = 0.37 * (1 - al / 2.7); for (var o = -wd; o <= wd; o += set.st) set(top[0] + fx * al - fy * o, top[1] + fy * al + fx * o, top[2] + sag, al > 1.5 ? '#3f9a46' : '#2f8139'); } } }, B.ART); }
+    return {
+      h:function(x, y){ var s = sea(x, y); if (s > 0) return -0.2 - Math.min(0.4, s * 0.1); return (fbm(x * 0.09, y * 0.12, seed + 2) - 0.4) * 1.2 * sm(1.2, 5, clearAt(x, y)) * sm(0, 2, -s - 0.6); },
+      mat:function(x, y){ var s = sea(x, y); if (s > 0) return s < 0.35 ? ['foam'] : ['sea', { dep:s }]; if (s > -0.9) return ['wet']; return ['sand']; },
+      build:function(B){
+        (function(){ var X = shipX, Y = shipY, Lh = 4.8, Wh = 1.5, zw = -0.25;   // the ship at anchor: a hull, a deck, two masts, sails and her flag
+          B.solid(X - Lh - 0.6, Y - Wh - 0.4, zw - 0.4, X + Lh + 0.6, Y + Wh + 0.4, zw + 9.2, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zw;
+            var u = dx / Lh, hw = Wh * Math.sqrt(Math.max(0, 1 - Math.pow(Math.max(0, Math.abs(u) - 0.35) / 0.65, 2)));
+            if (t < 1.5){ if (Math.abs(u) > 1 || Math.abs(dy) > hw * (0.7 + t / 5)) return null; if (t > 1.32) return '#c9a227'; if (Math.abs(t - 0.9) < 0.08) return '#2a1810'; if (Math.abs(t - 0.9) < 0.3 && Math.abs((dx % 1.1 + 1.1) % 1.1 - 0.55) < 0.14 && dy > hw * 0.6) return '#111'; return (Math.floor(t * 4) % 2) ? '#6b4426' : '#5a3818'; }
+            if (t < 1.65) return (Math.abs(u) < 0.95 && Math.abs(dy) < hw) ? '#a0703c' : null;
+            for (var m = -1; m <= 1; m += 2){ var mx = X + m * 1.6, mt = m < 0 ? 7.6 : 8.6; if (Math.hypot(px - mx, py - Y) < 0.12 && t < mt) return '#4a2c16';
+              var sw = 1.6 - (t - 2.4) * 0.05; if (Math.abs(py - Y) < 0.08 && Math.abs(px - mx) < sw && t > 2.4 && t < mt - 1){ var band = Math.floor((t - 2.4) / 1.05); return band % 2 ? '#f4efe2' : '#e3d8bd'; } }
+            if (t > 8.6 && t < 9.2 && px > X + 1.6 && px < X + 2.6 && Math.abs(py - Y) < 0.06) return (Math.hypot(px - X - 2.05, t - 8.9) < 0.14) ? '#f4efe2' : '#111';
+            return null; }); })();
+        (function(){ var x = dockX, y0 = shoreY(x) + 0.6, y1 = Math.max(E[1] + 0.6, shipY + 1), zt = 0.5;   // the dock out to the ship
+          B.solid(x - 0.9, y1, -0.6, x + 0.9, y0, zt + 0.9, function(px, py, pz){ var dx = px - x;
+            if (Math.abs(dx) < 0.8 && pz > zt - 0.12 && pz < zt) return (Math.floor(py * 3) % 2) ? '#9a6a3e' : '#86592f';
+            if (Math.abs(Math.abs(dx) - 0.7) < 0.09 && ((py % 1.6 + 1.6) % 1.6) < 0.18 && pz < zt + 0.7) return '#4a2c16'; return null; }); })();
+        palms.forEach(function(p, i){ palm(B, p.x, p.y, 4 + hash(i, seed, 3) * 1.8, i + seed); });
+        props.forEach(function(p, i){ var zb = B.gz(p.x, p.y), k = i % 3;
+          if (k === 0) B.solid(p.x - 0.45, p.y - 0.45, zb, p.x + 0.45, p.y + 0.45, zb + 1, function(px, py, pz){ var r = Math.hypot(px - p.x, py - p.y), t = pz - zb, R = 0.38 + Math.sin(t / 0.95 * 3.14) * 0.06; if (r > R || t > 0.95) return null; return (Math.abs(t - 0.2) < 0.05 || Math.abs(t - 0.75) < 0.05) ? '#3d3a3a' : (Math.floor(Math.atan2(py - p.y, px - p.x) * 3 + 9) % 2 ? '#9a6236' : '#b07440'); });
+          else if (k === 1) B.solid(p.x - 0.6, p.y - 0.4, zb, p.x + 0.6, p.y + 0.4, zb + 0.9, function(px, py, pz){ var dx = px - p.x, dy = py - p.y, t = pz - zb; if (Math.abs(dx) > 0.55 || Math.abs(dy) > 0.35) return null;
+            if (t > 0.5 && Math.hypot(dy, t - 0.5) > 0.36) return null; if (Math.abs(t - 0.5) < 0.04 || Math.abs(Math.abs(dx) - 0.35) < 0.05) return '#c9a227'; return t > 0.5 ? '#7a4a24' : '#8f5a2c'; });
+          else B.solid(p.x - 0.8, p.y - 0.5, zb, p.x + 0.8, p.y + 0.5, zb + 0.8, function(px, py, pz){ var dx = px - p.x, dy = py - p.y, t = pz - zb;
+            if (Math.abs(dy) < 0.12 && t > 0.25 && t < 0.55 && dx > -0.7 && dx < 0.5) return Math.hypot(dy, t - 0.4) < 0.12 ? '#45454c' : null; if (dx > 0.45 && dx < 0.7 && Math.hypot(dy, t - 0.4) < 0.22) return '#2c2c30';
+            if (Math.abs(Math.abs(dy) - 0.3) < 0.07 && Math.hypot(dx + 0.3, t - 0.25) < 0.25) return '#5a3818'; return null; }); });
+      },
+      fill:{ on:['sand'], trees:0.28, lows:0.25, tree:function(B, x, y, i){ palm(B, x, y, 3.8 + hash(i, seed, 21) * 1.6, i * 3 + seed); },
+        low:function(B, x, y, i){ var k = hash(i, seed, 23); if (k < 0.5) rockAt(B, x, y, 0.38, ['#7d756c', '#8e867b']); else bush(B, x, y, 0.4, ['#3f9a46', '#2f8139', '#a8c25a']); } },
+      bg:'#1677b5', gain:2.6,
+      mats:{ sand:['#e9d08f', '#f1dca4', '#d9bd7c', 0.14], wet:['#c9ae74', '#d2b882', '#b99d64', 0.1], foam:['#eef8f8', '#ffffff', '#d6eeee', 0.2],
+        sea:['#1a86c4', '#5ec0e8', '#136a9e', 0.05, function(c, R){ var d = c.dep || 0; return R(d < 1.2 ? '#5ec0e8' : d < 3.5 ? '#1a86c4' : '#136a9e'); }] }
+    };
+  };
+
+  /* ---------------- CANYON MINE: red mesas behind the hole, the mine's mouth in the rock, a rail line with a cart, cacti and boulders */
+  BUILD.canyon = function(L){
+    var C = L.C, E = L.E, P0 = L.P0, P1 = L.P1, seed = L.seed, clearAt = L.clearAt, spot = L.spot, spotRect = L.spotRect, north = L.north;
+    var mine = spotRect(5, 3, function(x, y){ return north(x, y) * 1.4 - Math.abs(x - L.cx) * 0.3; });
+    function cliffY(x){ return (mine ? mine.y - 0.4 : P0[1] - 3.5) - (vn(x * 0.15, 3, seed) - 0.5) * 2.4; }
+    var rail = mine ? L.route([mine.x, mine.y + mine.d / 2 + 0.2], [mine.x + (mine.x < L.cx ? -9 : 9), P1[1] + 2], seed + 6, 0.6) : null;
+    if (mine) L.used.push({ x:mine.x, y:mine.y + 2.2, r:1.8 });
+    var dR = L.dist(rail); function onRail(x, y){ return dR(x, y) < 0.55; }
+    var cart = rail && rail.length > 3 ? rail[3] : null; if (cart) L.used.push({ x:cart[0], y:cart[1], r:1 });
+    var cacti = []; for (var i = 0; i < 9; i++){ var c = spot(0.7, function(x, y){ return L.side(x) * 2 + Math.min(L.far(x, y), 5) * 0.4 + hash(x * 2 | 0, y * 2 | 0, seed + i); }, function(x, y){ return !onRail(x, y) && y > cliffY(x) + 1.5; }); if (c) cacti.push(c); }
+    function cactus(B, x, y, H, k){ var zb = B.gz(x, y);
+      B.vox(x - 1.2, y - 0.5, zb, x + 1.2, y + 0.5, zb + H + 0.3, function(set){ B.tube(set, x, y, zb, x, y, zb + H, 0.28, 0.24, '#2f7034');
+        var hs = [0.45, 0.62]; for (var a = 0; a < 2; a++){ var s = a ? 1 : -1, hz = zb + H * hs[a]; B.tube(set, x, y, hz, x + s * 0.7, y, hz, 0.17, 0.17, '#2f7034'); B.tube(set, x + s * 0.7, y, hz, x + s * 0.7, y, hz + H * 0.32, 0.17, 0.15, '#3f8a3e'); }
+        B.blob(set, x, y, zb + H, 0.24, 0.24, 0.18, hash(k, seed, 5) < 0.4 ? '#ff7aa8' : '#3f8a3e'); }, B.ART); }
+    return {
+      h:function(x, y){ var cy = cliffY(x), z = (fbm(x * 0.07, y * 0.07, seed) - 0.45) * 1.6 * sm(1.5, 7, clearAt(x, y)); var k = sm(0.8, 3, clearAt(x, y)); if (y < cy) return (3.6 + (fbm(x * 0.2, y * 0.2, seed + 3) - 0.5) * 0.8 + Math.min(2.5, (cy - y) * 0.25)) * k; if (y < cy + 1.2) return z + (cy + 1.2 - y) * 3 * k; if (onRail(x, y)) return z * 0.4; return z; },
+      mat:function(x, y){ var cy = cliffY(x); if (y < cy + 1.2) return ['rock', { z:cy - y }]; if (onRail(x, y)) return dR(x, y) < 0.3 ? ['rail'] : ['ballast']; return ['dirt']; },
+      build:function(B){
+        if (mine){ var X = mine.x, Y = mine.y + 0.9, zb = B.gz(X, Y + 0.6);   // timber frame round the mouth of the mine
+          B.solid(X - 1.8, Y - 0.6, zb - 0.1, X + 1.8, Y + 0.6, zb + 3.2, function(px, py, pz){ var dx = Math.abs(px - X), t = pz - zb; if (Math.abs(py - Y) > 0.5) return null;
+            if (dx < 1.05 && t < 2.3) return py - Y < 0.2 ? '#120c08' : null; if (dx < 1.45 && t > 2.3 && t < 2.75) return '#8a5a30'; if (dx > 1.05 && dx < 1.45 && t < 2.75) return '#7a4a24';
+            if (dx < 0.8 && t > 2.75 && t < 3.1) return Math.abs(px - X) < 0.75 ? '#e9d8a6' : null; return null; });
+          B.solid(X - 0.5, Y + 0.5, zb + 2.6, X + 0.5, Y + 0.7, zb + 3, function(px, py, pz){ return '#e9d8a6'; }); }
+        if (cart){ var cx = cart[0], cy2 = cart[1], cz = B.gz(cx, cy2);
+          B.solid(cx - 0.8, cy2 - 0.6, cz, cx + 0.8, cy2 + 0.6, cz + 1.2, function(px, py, pz){ var dx = px - cx, dy = py - cy2, t = pz - cz;
+            if (t < 0.3) return (Math.abs(Math.abs(dy) - 0.4) < 0.12 && Math.abs(Math.abs(dx) - 0.45) < 0.22) ? '#2a2a2e' : null; if (Math.abs(dx) > 0.7 || Math.abs(dy) > 0.5) return null;
+            if (t > 0.95) return (Math.abs(dx) < 0.6 && Math.abs(dy) < 0.4) ? (hash(px * 9 | 0, py * 9 | 0, 3) < 0.3 ? '#c9a227' : '#6a5e52') : '#3d3a3a'; return (Math.abs(t - 0.62) < 0.05) ? '#3d3a3a' : '#8a5432'; }); }
+        cacti.forEach(function(c, i){ cactus(B, c.x, c.y, 1.4 + hash(i, seed, 9) * 1.2, i); });
+      },
+      fill:{ on:['dirt'], trees:0.12, lows:0.32, tree:function(B, x, y, i){ cactus(B, x, y, 1.3 + hash(i, seed, 41) * 1.1, i + 50); },
+        low:function(B, x, y, i){ var k = hash(i, seed, 43); if (k < 0.55) rockAt(B, x, y, 0.42, ['#b8693e', '#9a5534']); else bush(B, x, y, 0.35, ['#8a8a4a', '#6f7a3a', '#a0a05a']); } },
+      gain:1.6,
+      mats:{ dirt:['#c27a4a', '#cc8656', '#b26c3e', 0.18], ballast:['#7a6a5a', '#8a7a6a', '#6a5a4a', 0.4], rail:['#5a4a3a', '#8a8a90', '#4a3a2a', 0.0, function(c, R){ return R((c.tj % 3) === 0 ? '#6a4a2a' : ((c.ti % 4) === 0 ? '#9a9aa2' : '#7a6a5a')); }],
+        rock:['#a95a35', '#c27a4a', '#8a4428', 0.2, function(c, R){ var z = c.z || 0; return R(((Math.floor(z * 2.2 + c.ti * 0.05) % 3) + 3) % 3 === 0 ? '#c9874e' : (((Math.floor(z * 2.2) % 2) + 2) % 2 ? '#a95a35' : '#93492b')); }] }
+    };
+  };
+
+  /* ---------------- VOLCANO ISLAND: the volcano behind the hole with lava running off it, black sand, lava pools, palms and tiki torches */
+  BUILD.volcano = function(L){
+    var C = L.C, E = L.E, P0 = L.P0, P1 = L.P1, seed = L.seed, clearAt = L.clearAt, spot = L.spot, north = L.north;
+    var vx = L.cx + (hash(seed, 5, 1) - 0.5) * 6, vy = E[1] + 1, vr = Math.max(3, Math.min(9, P0[1] - E[1] - 1));
+    function cone(x, y){ var d = Math.hypot((x - vx) / 1.15, (y - vy) * 1.1); return Math.max(0, vr - d); }
+    var pools = []; for (var i = 0; i < 3; i++){ var p = spot(1.3, function(x, y){ return Math.abs(x - L.cx) * 0.4 + hash(x * 2 | 0, y * 2 | 0, seed + i) * 2; }, function(x, y){ return cone(x, y) < 0.5; }); if (p) pools.push(p); }
+    var torches = []; for (i = 0; i < 6; i++){ var t = spot(0.4, function(x, y){ return -Math.abs(clearAt(x, y) - 1.9) * 1.2 + hash(x * 3 | 0, y * 3 | 0, seed + 20 + i); }, function(x, y){ return cone(x, y) < 0.3; }); if (t) torches.push(t); }
+    var palms = []; for (i = 0; i < 7; i++){ var q = spot(1, function(x, y){ return L.side(x) * 4 + Math.min(L.far(x, y), 5) * 0.3 + hash(x * 2 | 0, y * 2 | 0, seed + 40 + i); }, function(x, y){ return cone(x, y) < 0.3; }); if (q) palms.push(q); }
+    function poolD(x, y){ var m = -1; pools.forEach(function(p){ m = Math.max(m, 1 - Math.hypot((x - p.x) / p.r, (y - p.y) / (p.r * 0.75)) + (fbm(x * 0.7, y * 0.7, seed + 9) - 0.5) * 0.3); }); return m; }
+    function stream(x, y){ var off = (vn(y * 0.25, 2, seed) - 0.5) * 2.2; return cone(x, y) > 0.8 && Math.abs(x - vx - off) < 0.35 + cone(x, y) * 0.03 && y > vy; }
+    function palm(B, x, y, H, k){ var zb = B.gz(x, y), lean = (hash(k, seed, 4) - 0.5) * 1.2, top = [x + lean, y - 0.3, zb + H];
+      B.vox(x - 3.2, y - 2.8, zb, x + 3.2, y + 2.6, zb + H + 0.8, function(set){ for (var s = 0; s < 8; s++){ var t0 = s / 8, t1 = (s + 1) / 8; B.tube(set, x + lean * t0 * t0, y - 0.3 * t0, zb + H * t0, x + lean * t1 * t1, y - 0.3 * t1, zb + H * t1, 0.2 - t0 * 0.06, 0.2 - t1 * 0.06, s % 2 ? '#5a4a3a' : '#4a3a2a'); }
+        for (var f = 0; f < 7; f++){ var a = f / 7 * 6.28 + k, fx = Math.cos(a), fy = Math.sin(a) * 0.7; for (var al = 0; al < 2.4; al += set.st){ var sag = 0.35 - al * al * 0.22, wd = 0.36 * (1 - al / 2.6); for (var o = -wd; o <= wd; o += set.st) set(top[0] + fx * al - fy * o, top[1] + fy * al + fx * o, top[2] + sag, al > 1.5 ? '#3a8a3e' : '#2a6f32'); } } }, B.ART); }
+    return {
+      h:function(x, y){ var c = cone(x, y), z = (fbm(x * 0.07, y * 0.07, seed) - 0.45) * 1.4 * sm(1.5, 7, clearAt(x, y)); if (c > 0) z += (Math.min(c, vr - 1.6) * 0.95 - (c > vr - 1.6 ? (c - vr + 1.6) * 1.2 : 0)) * sm(1, 4, clearAt(x, y)); if (poolD(x, y) > 0) return -0.15; return z; },
+      mat:function(x, y){ var c = cone(x, y); if (c > vr - 1.4) return ['crater']; if (stream(x, y)) return ['lava']; if (c > 0.4) return ['basalt', { c:c }]; if (poolD(x, y) > 0) return ['lava']; if (poolD(x, y) > -0.15) return ['crust']; return ['ash']; },
+      build:function(B){
+        torches.forEach(function(t){ var zb = B.gz(t.x, t.y); B.solid(t.x - 0.25, t.y - 0.25, zb, t.x + 0.25, t.y + 0.25, zb + 2, function(px, py, pz){ var r = Math.hypot(px - t.x, py - t.y), tt = pz - zb;
+          if (tt < 1.45) return r < 0.07 ? '#5a3818' : null; if (tt < 1.62) return r < 0.14 ? '#3d2614' : null; return r < 0.15 * (1 - (tt - 1.62) / 0.38) ? (tt > 1.8 ? '#ffd25a' : '#ff7a1a') : null; }); });
+        palms.forEach(function(p, i){ palm(B, p.x, p.y, 3.8 + hash(i, seed, 3) * 1.6, i + seed); });
+      },
+      after:function(ctx, V){ ctx.globalAlpha = 0.12; ctx.fillStyle = '#ff6a1a';   // the glow over the crater and the lava
+        var q = V.pr(vx, vy, vr * 0.95); ctx.beginPath(); ctx.arc(q[0], q[1], 26, 0, 6.28); ctx.fill(); ctx.globalAlpha = 1; },
+      fill:{ on:['ash'], trees:0.22, lows:0.3, tree:function(B, x, y, i){ palm(B, x, y, 3.6 + hash(i, seed, 51) * 1.5, i * 5 + seed); },
+        low:function(B, x, y, i){ var k = hash(i, seed, 53); if (k < 0.65) rockAt(B, x, y, 0.42, ['#332c30', '#4a4246']); else bush(B, x, y, 0.38, ['#2a6f32', '#3a8a3e', '#1f5a28']); } },
+      bg:'#1f1a1d', gain:1.2,
+      mats:{ ash:['#3a3236', '#433a3f', '#2e272b', 0.2], crust:['#2a2124', '#5a2a18', '#1f1a1d', 0.25], basalt:['#2e292e', '#3a343a', '#232023', 0.25],
+        lava:['#ff6a1a', '#ffd25a', '#e04a10', 0.06, function(c, R, h3){ return R(h3(c.ti, c.tj, 7) < 0.12 ? '#ffd25a' : (((c.ti + c.tj * 2) % 9) === 0 ? '#ff9a3a' : '#ff6a1a')); }],
+        crater:['#5a1a08', '#ff6a1a', '#3a1206', 0.3, function(c, R, h3){ return R(h3(c.ti, c.tj, 9) < 0.35 ? '#ff6a1a' : '#5a1a08'); }] }
+    };
+  };
+
   return { make:make };
 })();

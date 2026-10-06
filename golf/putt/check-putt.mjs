@@ -4,6 +4,7 @@
  *   node golf/putt/check-putt.mjs               physics, the real greens, every themed hole, 21 dailies
  *   node golf/putt/check-putt.mjs --days 120    more dailies (a season is a few minutes)
  *   node golf/putt/check-putt.mjs --quick       physics and the real greens only
+ *   node golf/putt/solve.mjs --tour main        what par each Tour hole should carry (the search this replays)
  *
  * A mini-golf hole nobody can make in par renders perfectly. So does one a ball can roll out of
  * through a wall, and one where the ball never stops. None of the three throws, so each hole is
@@ -15,13 +16,13 @@
 import { createRequire } from 'node:module';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import { replay as replayRoute } from './solve.mjs';
 const require = createRequire(import.meta.url);
 const P = require('./putt.js');
 const M = P.M;
 const args = process.argv.slice(2);
 const QUICK = args.includes('--quick');
 const DAYS = +(args[args.indexOf('--days') + 1] || 21) || 21;
-const TOURPAR = args.includes('--tour-par');   // only the Tour's par report: skip everything else
 
 let fails = 0;
 const ok = m => console.log('  ok  ', m);
@@ -32,7 +33,7 @@ const head = s => console.log('\n' + s);
 /* ============================================================================ 1. THE PHYSICS */
 head('1. THE PHYSICS');
 const flat = (stimp, comps) => P.finishCourse({ bounds:[-60, -60, 60, 60], comps:comps || [], stimp, cup:[0, -58], cupR:P.CUP_R, matFn:() => M.GREEN });
-for (const s of (TOURPAR ? [] : [9, 11, 13.5])){
+for (const s of [9, 11, 13.5]){
   const C = flat(s), r = P.simulate(C, 0, 40, 0, -P.V_STIMP, 0);
   claim(Math.abs((40 - r.rest[1]) - s) < 0.05, `a ball released at 6 ft/s rolls the stimp reading (${s} ft): ${(40 - r.rest[1]).toFixed(2)}`);
 }
@@ -97,7 +98,7 @@ function fakeSpec(k, idx){
     pins:[[0, ry * 0.5], [0, -ry * 0.5], [-rx * 0.5, 0], [rx * 0.5, 0]], character:P.greenCharacter(COURSES[k]) };
 }
 let pinsFlat = 0, pinsAll = 0, spotsOk = 0, spotsAll = 0, oneputts = 0, tried = 0, worst = 0, worstAt = '';
-const pick = TOURPAR ? [] : keys;
+const pick = keys;
 for (const k of pick){
   for (let h = 0; h < 2; h++){
     const spec = fakeSpec(k, h);
@@ -177,48 +178,10 @@ function solve(C, cap){
   return { strokes:Infinity, aces, total };
 }
 /* THE TOUR'S RULE IS UNDER PAR, so a Tour hole is only fair if a skilled player can get round in
-   par - 1 without needing luck. "Without luck" is measured: a holing putt only counts if the putts
-   either side of it (a degree of aim, most of a foot of pace, and a beat either way on a moving hole)
-   mostly hole too. A line that only works to the pixel is not a route. */
-function robustHole(C, x, y, ang, ft, t0){
-  const D = 0.9 * Math.PI / 180, F = 0.8, nb = [[D, 0, 0], [-D, 0, 0], [0, F, 0], [0, -F, 0]];
-  if (C.movers.length) nb.push([0, 0, 0.12], [0, 0, -0.12]);
-  let ok = 0; for (const [da, df, dt] of nb) if (playShot(C, x, y, ang + da, ft + df, t0 + dt).holed) ok++;
-  return ok >= nb.length - 1;
-}
-function solveRobust(C, cap){
-  const geo = geodesic(C), t0s = C.movers.length ? [0, 0.5, 1.0, 1.5, 2.0, 2.6] : [0];
-  let frontier = [{ x:C.tee[0], y:C.tee[1], t:0 }], total = 0;
-  for (let s = 1; s <= cap; s++){
-    const next = [];
-    for (const f of frontier){
-      const fine = s > 1, base = Math.atan2(C.cup[1] - f.y, C.cup[0] - f.x);
-      for (const t0 of t0s){
-        const angs = [];
-        if (fine) for (let a = -1.2; a <= 1.2; a += 0.012) angs.push(base + a);
-        for (let a = 0; a < 360; a += fine ? 4 : 2) angs.push(a * Math.PI / 180);
-        for (const ang of angs) for (let ft = 2; ft <= 42; ft += 1){
-          const r = playShot(C, f.x, f.y, ang, ft, t0 + f.t); total++;
-          if (r.holed){ if (robustHole(C, f.x, f.y, ang, ft, t0 + f.t)) return { strokes:s, total, line:[f.x, f.y, ang, ft, t0 + f.t] }; continue; }
-          if (r.water || r.out) continue;
-          next.push({ x:r.rest[0], y:r.rest[1], t:f.t + r.t + 2, d:geo(r.rest[0], r.rest[1]) });
-        }
-      }
-    }
-    next.sort((a, b) => a.d - b.d);
-    const keep = []; for (const n of next){ if (keep.length >= 6) break; if (keep.every(k => Math.hypot(k.x - n.x, k.y - n.y) > 1.2)) keep.push(n); }
-    frontier = keep;
-  }
-  return { strokes:Infinity, total };
-}
-if (args.includes('--tour-par')){
-  // prints what par each Tour hole should carry: the robust route plus one, never under 3
-  for (let n = 1; n <= P.LEVELS.length; n++){ if (P.LEVELS[n - 1].real) continue;
-    if (args.includes('--only') && !args.slice(args.indexOf('--only') + 1)[0].split(',').map(Number).includes(n)) continue;
-    const C = P.buildLevel(n), r = solveRobust(C, 4), want = Math.max(3, r.strokes + 1);
-    console.log(String(n).padStart(2), (P.levelName(n)).padEnd(22), 'robust', r.strokes, 'par now', P.LEVELS[n - 1].par, want === P.LEVELS[n - 1].par ? '' : '  WANT ' + want, '(' + r.total + ' shots)'); }
-  process.exit(0);
-}
+   par - 1 without luck. solve.mjs searches for that line (a holing putt only counts if the putts either
+   side of it mostly hole too) and records it in routes.json; this file REPLAYS it, which takes seconds
+   rather than the best part of an hour. A hole edited since its route was found fails here until
+   `node golf/putt/solve.mjs --tour main --only N --write` is run again. */
 function checkHole(C, label){
   claim(C.mats.at(C.tee[0], C.tee[1]) === M.GREEN && C.mats.at(C.cup[0], C.cup[1]) === M.GREEN, `${label}: the tee and the cup are on the carpet`);
   const r = solve(C, C.par);
@@ -234,20 +197,35 @@ if (!QUICK){
     for (const d of holes){ const C = P.buildFrom(d); par += C.par; checkHole(C, `${P.THEMES[th].name} ${d.n} ${d.name} (${d.tpl})`); }
     claim(par >= 20 && par <= 28, `${P.THEMES[th].name} plays to a par of ${par}`);
   }
-  head('3b. THE PUTT PUTT TOUR: EVERY HOLE BEATEN UNDER PAR, WITHOUT LUCK');
-  const W = P.WORLDS, Lv = P.LEVELS, Cn = P.COINS || {};
-  claim(Lv.length === 50 && W.length === 5, `50 levels in ${W.length} worlds`);
-  claim(Lv.every((L, i) => !!L.sig === ((i + 1) % 10 === 0)), 'every tenth hole, and only it, is a signature hole');
-  const shapes = new Set();
-  for (let n = 1; n <= Lv.length; n++){ const L = Lv[n - 1]; if (L.real) continue;
-    const C = P.buildLevel(n), key = JSON.stringify(C.poly.map(p => p.map(v => Math.round(v * 2)))) + C.bumpers.length + C.blocks.length + C.movers.length + C.zones.length + C.portals.length;
-    shapes.add(key);
-    claim(C.mats.at(C.tee[0], C.tee[1]) === M.GREEN && C.mats.at(C.cup[0], C.cup[1]) === M.GREEN, `${n} ${P.levelName(n)}: tee and cup on the carpet`);
-    const r = solveRobust(C, L.par - 1);
-    claim(r.strokes <= L.par - 1, `${n} ${P.levelName(n)}: beaten in ${r.strokes === Infinity ? 'more than ' + (L.par - 1) : r.strokes} with room for error (par ${L.par})`); }
-  claim(shapes.size === Lv.filter(L => !L.real).length, `no two holes share a layout (${shapes.size} distinct)`);
-  const perWorld = 9 * Cn.hole + Cn.sig + 10 * Cn.ace + Cn.world;
-  claim(perWorld * 5 === 20000, `the Tour pays exactly 20,000 coins (${perWorld} a world)`);
+  head('3b. BOTH TOURS: EVERY HOLE BEATEN UNDER PAR, WITHOUT LUCK, BY ITS RECORDED ROUTE');
+  const ROUTES = JSON.parse(fs.readFileSync(new URL('./routes.json', import.meta.url), 'utf8'));
+  const TM = P.TOURS.main, TB = P.TOURS.members, Cn = P.PAY;
+  claim(TM.levels.length === 90 && TM.worlds.length === 5 && TM.per === 18, `the main tour is 90 holes in ${TM.worlds.length} worlds of ${TM.per}`);
+  claim(TB.levels.length === 18 && TB.worlds.length === 2 && TB.per === 9 && TB.members, `the Members Tour is 18 holes in ${TB.worlds.length} worlds of ${TB.per}`);
+  claim(TM.worlds.every(W => P.CAL_THEMES.indexOf(W.theme) < 0), 'the main tour wears none of the calendar themes, which belong to the passes (' + TM.worlds.map(W => W.theme).join(', ') + ')');
+  for (const TR of [TM, TB]){
+    claim(TR.levels.every((L, i) => !!L.sig === ((i + 1) % TR.per === 0)), `${TR.name}: the last hole of each world, and only it, is a signature hole`);
+    claim(TR.levels.every((L, i) => i === 0 || L.par >= 3), `${TR.name}: no par under 3`);
+    const shapes = new Set();
+    for (let n = 1; n <= TR.levels.length; n++){ const L = TR.levels[n - 1], C = P.buildLevel(n, TR.id), name = `${TR.id} ${n} ${P.levelName(n, TR.id)}`;
+      shapes.add(JSON.stringify((C.polys || [C.poly]).map(q => q.map(p => p.map(v => Math.round(v * 2))))) + C.cup.join() + C.bumpers.length + C.blocks.length + C.movers.length + C.zones.length + C.portals.length + C.loops.length + C.ramps.length);
+      // EVERY HOLE HAS SOMETHING IN IT: an obstacle, a puzzle or a moving part, never bare carpet
+      const kit = C.bumpers.length + C.blocks.length + C.movers.length + C.portals.length + C.loops.length + C.ramps.length + C.bridges.length + C.turns.length + (C.belts || []).length + (C.mill ? 1 : 0) + C.zones.length;
+      claim(kit > 0, `${name}: has an obstacle`);
+      claim(C.mats.at(C.tee[0], C.tee[1]) === M.GREEN && C.mats.at(C.cup[0], C.cup[1]) === M.GREEN, `${name}: tee and cup on the carpet`);
+      const line = ROUTES[TR.id + ':' + n], why = line ? replayRoute(C, line) : 'no route recorded';
+      claim(!why && line.length <= L.par - 1, `${name}: beaten in ${line ? line.length : '?'} (par ${L.par}) by its recorded route, with room for error` + (why ? ': ' + why : '')); }
+    claim(shapes.size === TR.levels.length, `${TR.name}: no two holes share a layout (${shapes.size} distinct)`);
+    // HARDER AS IT GOES: each world packs more into a hole than the one before, and asks for more putts
+    const per = (fn) => TR.worlds.map((W, w) => { let t = 0; for (let n = w * TR.per + 1; n <= (w + 1) * TR.per; n++) t += fn(n); return t / TR.per; });
+    const kitAvg = per(n => { const C = P.buildLevel(n, TR.id); return C.bumpers.length + C.blocks.length + C.movers.length + C.portals.length + C.loops.length + C.ramps.length + C.bridges.length + C.turns.length + (C.belts || []).length + (C.mill ? 1 : 0) + C.zones.length; });
+    const parAvg = per(n => TR.levels[n - 1].par);
+    claim(kitAvg.every((a, w) => !w || a > kitAvg[w - 1]), `${TR.name}: more set pieces a hole world by world (${kitAvg.map(a => a.toFixed(2)).join(', ')})`);
+    claim(parAvg[parAvg.length - 1] > parAvg[0], `${TR.name}: the last world asks for more putts than the first (par ${parAvg.map(a => a.toFixed(2)).join(', ')})`);
+  }
+  const mw = TM.levels.filter(L => !L.sig).length / 5 * Cn.main.hole + Cn.main.sig + TM.per * Cn.main.ace + Cn.main.world;
+  claim(mw * 5 === 20000, `the main tour pays exactly 20,000 coins (${mw} a world)`);
+  claim(Cn.members.exclusive && Cn.members.hole > Cn.main.hole && Cn.members.sig > Cn.main.sig && /Members only/.test(Cn.members.finish), 'the Members Tour pays more a hole and carries rewards only members can earn');
   head(`4. ${DAYS} DAILY HOLES FROM TODAY`);
   const day0 = new Date(Date.UTC(2026, 9, 1));
   const themesSeen = new Set();
@@ -258,7 +236,7 @@ if (!QUICK){
     checkHole(P.buildFrom(desc), `${key} ${desc.name} (${desc.tpl}, ${desc.theme})`);
   }
   const yr = new Set(); for (let i = 0; i < 365; i++){ const d = new Date(day0.getTime() + i * 86400000); yr.add(P.themeForDay(d.toISOString().slice(0, 10))); }
-  claim(yr.size === Object.keys(P.THEMES).length, `a year of dailies wears every theme (${[...yr].join(', ')})`);
+  claim(yr.size === P.CAL_THEMES.length && P.CAL_THEMES.every(t => yr.has(t)), `a year of dailies wears every calendar theme (${[...yr].join(', ')})`);
   claim(P.themeForDay('2026-10-31') === 'haunted' && P.themeForDay('2026-11-26') === 'harvest' && P.themeForDay('2026-12-25') === 'winter', 'Halloween is haunted, Thanksgiving is harvest, Christmas is winter');
   head('5. NOTHING ESCAPES, NOTHING ROLLS FOR EVER');
   claim(escapes === 0, `no shot left the course through a wall (${escapes})`);
@@ -330,15 +308,16 @@ if (!args.includes('--no-browser')){
     // ---- THE TOUR'S RULES, through the page. Each life is real: a fresh record for a fresh account.
     await pg.evaluate(() => { const st = window.RTT_PUTT._state(); if (st && st.play && st.play.strokes) { st.round.mode = 'x'; } document.querySelector('.pt-ov') && window.RTT_PUTT.close(); sbUser = { id:'chk' }; localStorage.removeItem('bag_ppt_v1@chk'); openPutt(); });
     await pg.waitForSelector('.pp-map [data-lv="1"]');
-    claim(await pg.evaluate(() => document.querySelectorAll('.pp-lv').length === 50 && document.querySelectorAll('.pp-lv.lock').length === 49 && document.querySelectorAll('.pp-lv.sig').length === 5), 'the map shows 50 levels, five signature holes, and only level 1 open');
+    claim(await pg.evaluate(() => document.querySelectorAll('.pp-lv').length === 90 && document.querySelectorAll('.pp-lv.lock').length === 89 && document.querySelectorAll('.pp-lv.sig').length === 5), 'the map shows 90 levels, five signature holes, and only level 1 open');
     await pg.waitForFunction(() => document.querySelectorAll('.pp-land').length === 5, null, { timeout:15000 }).catch(() => {});
     const land = await pg.evaluate(() => [...document.querySelectorAll('.pp-band')].map(b => { const c = b.querySelector('.pp-land'); if (!c) return null;
       const x = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; const cols = new Set(); for (let i = 0; i < x.length; i += 4 * 37) cols.add(x[i] << 16 | x[i + 1] << 8 | x[i + 2]);
       return { cols:cols.size, exact:Math.abs(c.offsetWidth - c.width * 2) < 1 && Math.abs(c.offsetHeight - c.height * 2) < 1, covers:c.offsetWidth >= b.offsetWidth && c.offsetHeight >= b.offsetHeight }; }));
     claim(land.every(l => l && l.cols > 60 && l.exact && l.covers), `every world on the map is painted as a landscape of its own, at exactly 2x, covering its band (${land.map(l => l ? l.cols : 'none').join(', ')} colours)`);
     const rec = () => pg.evaluate(() => JSON.parse(localStorage.getItem('bag_ppt_v1@chk') || '{}'));
-    const putt = async (pow) => { await pg.waitForFunction(() => { const P = window.RTT_PUTT._state().play; return P && P.state === 'aim' && (P.v3 || P.art); }, null, { timeout:60000 });
-      await pg.evaluate(p => { const P = window.RTT_PUTT._state().play; P.pow = p; P.aimAng = Math.atan2(P.C.cup[1] - P.ball[1], P.C.cup[0] - P.ball[0]); }, pow);
+    // a putt at a power, straight at the cup unless an aim is given (a hole with something in the way is aced round it)
+    const putt = async (pow, ang) => { await pg.waitForFunction(() => { const P = window.RTT_PUTT._state().play; return P && P.state === 'aim' && (P.v3 || P.art); }, null, { timeout:60000 });
+      await pg.evaluate(([p, a]) => { const P = window.RTT_PUTT._state().play; P.pow = p; P.aimAng = a != null ? a : Math.atan2(P.C.cup[1] - P.ball[1], P.C.cup[0] - P.ball[0]); }, [pow, ang == null ? null : ang]);
       await pg.keyboard.press('Space'); await pg.waitForFunction(() => { const P = window.RTT_PUTT._state().play; return !P || P.state !== 'roll'; }, null, { timeout:30000 }); };
     await pg.click('[data-lv="1"]');
     claim(await pg.evaluate(() => /Hole 1-1 · Par 3 · 2 left to beat par/.test(document.querySelector('.pt-hd span').textContent)), 'a Tour hole says how many strokes are left to beat par');
@@ -346,12 +325,16 @@ if (!args.includes('--no-browser')){
     await pg.waitForSelector('.pp-pop');
     claim(/Over par/.test(await pg.textContent('.pp-pop')) && (await rec()).lives === 2, 'over par ends the hole the moment par strokes are gone, and takes a life');
     await pg.click('.pp-pop [data-a="again"]');
-    const pw = await pg.evaluate(() => { const P = window.RTT_PUTT._state().play, C = P.C; for (let p = 0.3; p < 0.7; p += 0.005){ const v = window.RTT_PUTT.speedFor(C, p * 42), a = Math.atan2(C.cup[1] - P.ball[1], C.cup[0] - P.ball[0]); if (window.RTT_PUTT.simulate(C, P.ball[0], P.ball[1], Math.cos(a) * v, Math.sin(a) * v, 0).holed) return p; } return null; });
-    await putt(pw); await pg.waitForSelector('.pp-pop');
+    const [pw, pa] = await pg.evaluate(() => { const P = window.RTT_PUTT._state().play, C = P.C, a0 = Math.atan2(C.cup[1] - P.ball[1], C.cup[0] - P.ball[0]);
+      for (let da = 0; da <= 0.6; da += 0.004) for (const a of [a0 + da, a0 - da]) for (let p = 0.1; p < 1; p += 0.005){ const v = window.RTT_PUTT.speedFor(C, p * 42); if (window.RTT_PUTT.simulate(C, P.ball[0], P.ball[1], Math.cos(a) * v, Math.sin(a) * v, 0).holed) return [p, a]; } return [null, null]; });
+    claim(pw != null, 'the first hole can be aced');
+    await putt(pw, pa); await pg.waitForSelector('.pp-pop');
     const r1 = await rec();
-    claim(/HOLE IN ONE/.test(await pg.textContent('.pp-pop')) && r1.lv === 2 && r1.ace[1] && r1.lives === 2, 'under par beats the hole, opens the next, and an ace is marked gold');
+    const pop1 = await pg.textContent('.pp-pop');
+    const t1 = (r1.tours || {}).main || {};
+    claim(r1.v === 2 && /HOLE IN ONE/.test(pop1) && t1.lv === 2 && t1.ace && t1.ace[1] && r1.lives === 2, 'under par beats the hole, opens the next, and an ace is marked gold (in the main tour\'s own record)');
     await pg.click('.pp-pop [data-a="again"]');
-    await putt(pw); await pg.waitForSelector('.pp-pop');
+    await putt(pw, pa); await pg.waitForSelector('.pp-pop');
     claim(/Coins land the first time only/.test(await pg.textContent('.pp-pop')), 'a replay pays nothing');
     // two more over pars: the last life goes, the 24 hour clock starts, and the sheet offers a refill for money and nothing for coins
     await pg.click('.pp-pop [data-a="next"]');
@@ -361,10 +344,14 @@ if (!args.includes('--no-browser')){
     claim(r2.lives === 0 && Math.abs(r2.refillAt - Date.now() - 24 * 3600e3) < 120e3 && /\$0\.99/.test(await pg.textContent('.pp-sheet')) && !/coin/i.test(await pg.textContent('.pp-sheet')), 'out of lives: a 24 hour clock, a money refill, no coin price');
     await pg.click('.pp-sheet [data-free]'); await pg.waitForSelector('.pp-map');
     claim((await rec()).lives === 3, 'a tester can refill for free while the checkout is not built');
-    // a Tour Pin plays on a real green
-    await pg.evaluate(() => window.RTT_PUTT._level(41)); await pg.waitForSelector('.pt-stage canvas'); await pg.waitForTimeout(300);
-    const tg = await pg.evaluate(() => { const P = window.RTT_PUTT._state().play; return { kind:P.C.kind, par:P.C.par, on:P.C.mats.at(P.ball[0], P.ball[1]) === window.RTT_PUTT.M.GREEN, name:document.querySelector('.pt-hd b').textContent }; });
-    claim(tg.kind === 'real' && tg.on && tg.par === 3, `a Tour Pin opens on a real green with the ball on it (${tg.name})`);
+    // THE MEMBERS TOUR IS THE TOUR PASS HOLDER'S: shut without a pass, a sheet that sells nothing for coins,
+    // and a tester can look inside without one
+    await pg.click('.pp-tabs [data-tab="members"]'); await pg.waitForSelector('.pp-memsh');
+    const ms = await pg.textContent('.pp-memsh');
+    claim(/Members only/.test(await pg.evaluate(() => JSON.stringify(window.RTT_PUTT.PAY.members))) && /Get Tour Pass/.test(ms) && !/\d+ coins? to (buy|unlock)/i.test(ms) && await pg.evaluate(() => !document.querySelector('.pp-mem .pp-lv')), 'without a pass the Members tab opens a sheet about the Tour Pass, not the holes');
+    await pg.click('.pp-memsh [data-prev]'); await pg.waitForSelector('.pp-mem .pp-map [data-lv="1"]');
+    claim(await pg.evaluate(() => document.querySelectorAll('.pp-lv').length === 18 && document.querySelectorAll('.pp-lv.sig').length === 2), 'a tester previews the Members Tour: 18 holes, two signature holes');
+    await pg.click('.pp-tabs [data-tab="main"]'); await pg.waitForSelector('.pp-map [data-lv="90"]');
     await pg.keyboard.press('Escape'); await pg.keyboard.press('Escape');
     claim(await pg.evaluate(() => !document.querySelector('.pt-ov') && document.body.style.overflow !== 'hidden'), 'Escape twice closes it and gives the page its scroll back');
     // ---- THE 3D HOLE (hole3d.js, land.js): every themed hole, its picture and its projection
@@ -372,7 +359,7 @@ if (!args.includes('--no-browser')){
       if (!D3) return null;
       const ramp = h => window.PXHD.ramp(h);
       const all = []; for (const th of P.CAL_THEMES) P.themedCourse(th).forEach((d, i) => all.push([th, d, i]));
-      for (let n = 1; n <= P.LEVELS.length; n++) if (!P.LEVELS[n - 1].real) all.push(['tour' + n, P.tourDesc(n), 0]);
+      for (const tid of ['main', 'members']) for (let n = 1; n <= P.TOURS[tid].levels.length; n++) all.push([tid + n, P.tourDesc(n, null, tid), 0]);
       all.forEach(([th, d, i]) => {
         const C = P.buildFrom(d), t0 = performance.now(), R = D3.render(C, { aspect:2 }); out.ms.push(performance.now() - t0); out.n++;
         const cx = R.cv.getContext('2d'), W = R.cv.width, H = R.cv.height, px = cx.getImageData(0, 0, W, H).data;
@@ -382,14 +369,20 @@ if (!args.includes('--no-browser')){
         const ok = new Set(ramp(C.T.carpet).concat(ramp(C.T.carpet2))), hex = (r, g, b) => '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
         const clear = (x, y) => (C.bumpers || []).every(u => Math.hypot(u.x - x, u.y - y) > u.r + 1.4) && (C.blocks || []).every(r => x < r.x0 - 1.2 || x > r.x1 + 1.2 || y < r.y0 - 3 || y > r.y1 + 3)
           && (C.movers || []).every(m => m.k !== 'spin' || Math.hypot(m.x - x, m.y - y) > m.len + 1) && (C.portals || []).every(p => Math.hypot(p.ax - x, p.ay - y) > 2 && Math.hypot(p.bx - x, p.by - y) > 2.5)
-          && (!C.mill || (Math.hypot(C.mill.x - x, C.mill.y - y) > 7 && !(Math.abs(C.mill.x - x) < 3 && y < C.mill.y && y > C.mill.y - 11)));   // the tower stands 7 ft tall, so it covers the carpet behind it in the picture
-        let tried = 0, bad = 0;
+          && (!C.mill || (Math.hypot(C.mill.x - x, C.mill.y - y) > 7 && !(Math.abs(C.mill.x - x) < 3 && y < C.mill.y && y > C.mill.y - 11)))
+          // a ramp's lip and kicker stand up off the carpet, a loop stands over its chute, and a river is drawn
+          // with its banks: what is behind them in the picture is the set piece, not carpet
+          && (C.ramps || []).every(R => { const u = (x - R.x) * R.dx + (y - R.y) * R.dy, v = -(x - R.x) * R.dy + (y - R.y) * R.dx; return u < -(R.len || 1.8) - 2.5 || u > 1 || Math.abs(v) > R.w / 2 + 1; })
+          && (C.loops || []).every(L => Math.hypot(L.x - x, L.y - y) > L.r + 3)
+          && (C.rivers || []).every(rv => (rv.pts || rv.path || []).every((q, k, A) => { if (!k) return true; const a = A[k - 1], dx = q[0] - a[0], dy = q[1] - a[1], l2 = dx * dx + dy * dy || 1, t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / l2)); return Math.hypot(x - a[0] - dx * t, y - a[1] - dy * t) > (rv.w || 1.8) / 2 + 1.6; }));   // the tower stands 7 ft tall, so it covers the carpet behind it in the picture
+        let tried = 0, bad = 0; globalThis.__badAt = null;
         for (let y = C.bounds[1]; y < C.bounds[3]; y += 1.7) for (let x = C.bounds[0]; x < C.bounds[2]; x += 1.3){
           if (C.mats.at(x, y) !== P.M.GREEN || !clear(x, y)) continue; let edge = false; for (const [dx, dy] of [[0.9, 0], [-0.9, 0], [0, 0.9], [0, -0.9]]) if (C.mats.at(x + dx, y + dy) !== P.M.GREEN) edge = true; if (edge) continue;
           // the near rail stands between the camera and the strip just behind it, and a belt is drawn as a belt
-          if (C.mats.at(x, y + 2.2) !== P.M.GREEN || (C.belts || []).some(z => x > z.x0 - 0.9 && x < z.x1 + 0.9 && y > z.y0 - 0.9 && y < z.y1 + 0.9)) continue;
-          const q = R.pr(x, y, R.zAt(x, y)), i2 = (Math.floor(q[1]) * W + Math.floor(q[0])) * 4; tried++; if (!ok.has(hex(px[i2], px[i2 + 1], px[i2 + 2]))) bad++; }
-        if (!tried || bad > tried * 0.04) out.off.push(th + ' ' + (i + 1) + ': ' + bad + ' of ' + tried);
+          // and a sunken room's near wall is taller by the drop, so it hides more
+          const drop = Math.max(0, -R.zAt(x, y)); if (C.mats.at(x, y + 2.2) !== P.M.GREEN || C.mats.at(x, y + 2.2 + drop * 1.4) !== P.M.GREEN || (C.belts || []).some(z => x > z.x0 - 0.9 && x < z.x1 + 0.9 && y > z.y0 - 0.9 && y < z.y1 + 0.9)) continue;
+          const q = R.pr(x, y, R.zAt(x, y)), i2 = (Math.floor(q[1]) * W + Math.floor(q[0])) * 4; tried++; if (!ok.has(hex(px[i2], px[i2 + 1], px[i2 + 2]))){ bad++; (globalThis.__badAt = globalThis.__badAt || []).push(x.toFixed(1) + ',' + y.toFixed(1)); } }
+        if (!tried || bad > tried * 0.04) out.off.push(th + ' ' + (i + 1) + ': ' + bad + ' of ' + tried + (globalThis.__badAt ? ' at ' + globalThis.__badAt.join(' ') : ''));
         // the land round it is built, not bare: a good share of the picture outside the course is something other than the plain ground
         if (i === 0) out.land.push(th);
       });
@@ -403,7 +396,7 @@ if (!args.includes('--no-browser')){
       return out; });
     claim(!!v3, 'the 3D hole module loaded');
     if (v3){
-      claim(v3.n === 72 + 45 && v3.magenta.length === 0, `all ${v3.n} themed and Tour holes draw in 3D with no unknown material` + (v3.magenta.length ? ': ' + v3.magenta.slice(0, 4).join('; ') : ''));
+      claim(v3.n === 72 + 90 + 18 && v3.magenta.length === 0, `all ${v3.n} themed and Tour holes draw in 3D with no unknown material` + (v3.magenta.length ? ': ' + v3.magenta.slice(0, 4).join('; ') : ''));
       claim(v3.off.length === 0, 'the projection puts open carpet on carpet in every picture, so the ball rolls on what is drawn' + (v3.off.length ? ': ' + v3.off.slice(0, 4).join('; ') : ''));
       claim(v3.sliceDiff === 0 && v3.slices > 20, `rendered a little at a time (${v3.slices} steps) it is the same picture, pixel for pixel` + (v3.sliceDiff ? ': ' + v3.sliceDiff + ' differ' : ''));
       claim(v3.med < 600, `a hole renders in ${v3.med}ms at the median (${v3.max}ms the slowest), on this machine`);

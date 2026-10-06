@@ -19330,35 +19330,69 @@ did not.
 ## Putt Putt Tour, a Run The Tour tester preview
 
 ```
-node golf/putt/check-putt.mjs               physics, real greens, all 50 Tour holes beaten under par, dailies, the page
+node golf/putt/check-putt.mjs               physics, real greens, both tours replayed under par, dailies, the page
 node golf/putt/check-putt.mjs --quick       physics, the real greens and the page
-node golf/putt/check-putt.mjs --tour-par    what par each Tour hole should carry, off the solver
+node golf/putt/solve.mjs --tour main        search every hole for the par it should carry (the best part of an hour)
+node golf/putt/solve.mjs --tour members --only 3,7 --write    re-solve edited holes and record their routes
 ```
 
 `golf/putt/putt.js` is a mini golf game you PLAY inside Run The Tour. It opens on a hub: the Daily
-Hole on top, and under it the Tour map, a winding path of 50 levels in five worlds of ten (The
-Clubhouse, Haunted Hollow, Frostbite Pines, Seashell Shores, Tour Week). Every tenth level is a
-signature hole. `golf/putt/DESIGN.md` is the analysis of the mini golf games it learns from. **It
-replaced the Putting Green menu** (Tour Greens and eight themed courses), which the owner said was
-not what was being built. The real greens live on as Tour Week's Tour Pin levels.
+Challenge on top, and under it the Tour map, a winding path up through the worlds. `golf/putt/DESIGN.md`
+is the analysis of the mini golf games it learns from. **It replaced the Putting Green menu**, which the
+owner said was not what was being built.
+
+**TWO TOURS, tabs at the foot of the map** (`TOURS` in putt.js, the owner's design):
+
+| | who | holes | worlds |
+|---|---|---|---|
+| Putt Putt Tour (`main`) | everybody | 90 | The Clubhouse, Lost Temple, Pirate Cove, Canyon Mine, Volcano Island, 18 each |
+| Members Tour (`members`) | Tour Pass holders | 18 | Hallows Night and Harvest Moon, nine each: the season's own holes, the hardest in the game |
+
+**The main tour wears none of the calendar themes**, which belong to the passes and the dailies, and the
+check asserts it. The last hole of each world is the signature hole. **Every hole has an obstacle, a
+puzzle or a moving part**, and par climbs world by world; both are asserted. The set pieces the holes
+are built from are in the engine: loops (an entry speed and a chute that feeds it), rivers (a `FLOW`
+material that carries the ball), pipes (`dur`, `vcap` a fast ball skips, `keep` above 1 is a cannon),
+ramp jumps over water, drawbridges on a clock, turntables, sliders, gates, spinners, conveyors, bounce pads.
+
+**The Members Tour is shut without a pass** (`host.passActive()`): the tab carries a lock and opens a
+sheet about the Tour Pass, never a coin price. A tester gets a preview button (`S.memPreview`). It pays
+more a hole and carries rewards only members can earn (`PAY.members`).
 
 **THE RULE, ONE PER HOLE.** Under par beats the hole and opens the next. Exactly par loses nothing and
 goes again. Over par takes a life, and it is decided the moment par strokes are used with the ball out,
 so nobody putts out a lost hole (`settle()` calls `tourOut(false)`). Quitting or restarting after the
 first putt costs a life too. 3 lives, 6 with a Tour Pass; the last one starts a 24 hour clock. Lives are
 sold for money only (the refill sheet shows $0.99 and says the checkout opens at launch; a tester gets a
-free refill). The Daily Hole never costs a life: one scored try a day, 40 coins to play, 40 more under
-par, and a streak.
+free refill). Lives, the daily, its streak and the rewards are shared by both tours; progress is per tour
+(record version 2, migrated from the 50 level tour). The Daily Challenge never costs a life: one scored
+try a day, 40 coins to play, 40 more under par, and a streak.
 
-**Par is the solver's, and it means beatable without luck.** `solveRobust` in the checker only counts a
-holing putt whose neighbours (a degree of aim, most of a foot of pace, a beat either side on a moving
-hole) mostly hole too. `--tour-par` prints the par each level should carry: the robust route plus one,
-never under 3. The full run asserts every level is beaten in par minus one that way, and that no two
-holes share a layout. Change a layout, re-run `--tour-par`, write the par into `LEVELS`.
+**Par is the solver's, and it means beatable without luck.** `solve.mjs` searches each hole and only
+counts a holing putt whose neighbours (a degree of aim, most of a foot of pace, a beat either side on a
+moving hole) mostly hole too. Par is that route plus one, never under 3. **The search takes the best part
+of an hour, so CI does not run it**: it records every route in `golf/putt/routes.json`, and the check
+REPLAYS them, which takes seconds and proves the same thing. Change a hole and its route stops replaying,
+so the check fails until `solve.mjs --only N --write` is run again. Write the par it prints into `LEVELS`.
 
-**The coins are exactly 20,000**, 4,000 a world: 120 a hole and 520 for the signature hole the first
-time it is beaten, 40 for a first ace, and 2,000 for finishing the world. Replays pay nothing. They go
-through the page's `addBonusCoins`, so a Tour Pass multiplier does not apply. The signature, world, ace
+**The search is ranked by walking distance to the cup, and that map was quietly wrong.** It was a
+Float32Array read back against a 64 bit heap entry, so a cell's own distance looked stale on the way out
+of the heap and the spread stopped. On a long hole every place the ball could rest read as unreachable,
+the search ranked them all equal, and it reported a perfectly playable signature hole as impossible.
+It is a Float64Array now. A solver that says Infinity is a claim about the solver first.
+
+**A route is recorded at full precision.** The first routes rounded the aim to five places and the strike
+time to a thousandth of a second, and on a hole with a mill or a spinner that is a different putt: three
+members routes stopped dropping on replay. Nothing about the hole had changed.
+
+**The Members Tour's cups sit in a pen** (`pen()`), three blocks open on one side toward the middle of
+the room, so the ball has to be brought round beside the cup and played in sideways. **The first pen opened
+on the far side and cost nothing**: a ball bounced off the end wall rolled straight back into it, so the
+solver still beat most holes in two. Opened sideways, Graveyard Gate went from two putts to three.
+
+**The main tour pays exactly 20,000 coins**, 4,000 a world: 80 a hole and 280 for the signature hole the
+first time it is beaten, 20 for a first ace, and 2,000 for finishing the world. Replays pay nothing. They
+go through the page's `addBonusCoins`, so a Tour Pass multiplier does not apply. The signature, world, ace
 and streak rewards are recorded by name in the Tour record and are not wearable yet.
 
 **Where it is kept, said plainly.** The Tour record (`bag_ppt_v1`, account-scoped through the page's
@@ -19396,7 +19430,7 @@ material grid is a quarter foot: OUT is only believed once the exact polygon agr
 
 `golf/putt/hole3d.js` draws a themed hole the way the golfer is drawn: a height field and voxel solids,
 painted by PXHD. `golf/putt/land.js` builds the land a hole sits in, one composed place per theme (a
-clubhouse with its practice green, a tournament grandstand and leaderboard, a churchyard, a farm, a cabin in the pines, a garden, a glen with a round tower, a tulip field, a night fair, a
+clubhouse with its practice green, a stepped temple in the jungle, a pirate cove with a ship at anchor, a mine in the canyon wall, a volcano with its lava, a tournament grandstand, a churchyard, a farm, a cabin in the pines, a garden, a glen with a round tower, a tulip field, a night fair, a
 shore with a lighthouse), owner's rule: a fictional landscape, never a scatter of stickers. A real green
 stays on the flat painter.
 

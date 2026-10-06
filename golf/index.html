@@ -60,10 +60,10 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- The Putting Green: a tester preview. It draws nothing until puttOn() opens it (see PUTT_TESTERS). -->
-<script defer src="putt/putt.js?v=10"></script>
-<script defer src="putt/land.js?v=3"></script>
+<script defer src="putt/putt.js?v=11"></script>
+<script defer src="putt/land.js?v=4"></script>
 <script defer src="putt/hole3d.js?v=4"></script>
-<script defer src="putt/mapland.js?v=1"></script>
+<script defer src="putt/mapland.js?v=2"></script>
 <!-- The course golfer in the profile style, asked through g3dOn(). -->
 <script defer src="golfer3d.js?v=2"></script>
 <script defer src="tracer3d.js?v=1"></script>
@@ -22112,10 +22112,10 @@ function puttHost(){
     onClose:function(){ try{ render(); }catch(e){} } };
 }
 function openPutt(){ if(!puttOn()) return; try{ track('putt_open'); }catch(e){} window.RTT_PUTT.open(puttHost()); }
-// The Putt Putt Tour card: today's Daily Hole, your place on the 50 level ladder, and your lives.
+// The Putt Putt Tour card: today's Daily Hole, your place on the 90 hole tour, and your lives.
 function puttCard(){
   let m=null; try{ m=window.RTT_PUTT.summary(puttHost()); }catch(e){}
-  if(!m) m={lv:1,levels:50,world:'The Clubhouse',lives:3,max:3,daily:{name:'Daily Hole',done:false}};
+  if(!m) m={lv:1,levels:90,world:'The Clubhouse',lives:3,max:3,daily:{name:'Daily Hole',done:false}};
   const hearts=Array.from({length:Math.max(m.max,m.lives)},(_,i)=>`<span style="color:${i<m.lives?'#ff4d6d':'rgba(255,255,255,.25)'}">♥</span>`).join('');
   const dl=m.daily.done?`<span style="color:#7ee2a8">Daily Hole done · ${m.daily.s} (par ${m.daily.par})</span>`:`Daily Hole · ${esc(m.daily.name)}`;
   const out=m.lives<=0;
