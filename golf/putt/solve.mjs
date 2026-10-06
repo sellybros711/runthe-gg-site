@@ -143,7 +143,13 @@ if (isMainThread && process.argv[1] && process.argv[1].endsWith('solve.mjs')){
   const out = {}, ROUTES = new URL('./routes.json', import.meta.url);
   let pending = ns.slice(), live = 0, done = 0;
   // each hole is written the moment it is solved, so a run that is stopped keeps what it found
-  const save = n => { const all = fs.existsSync(ROUTES) ? JSON.parse(fs.readFileSync(ROUTES, 'utf8')) : {}, m = out[n];
+  // two solves can run at once (a long signature hole on one tour, a batch on the other), so the read and
+  // write of routes.json happen under a lock directory, or one run writes back a copy missing the other's holes
+  const LOCK = new URL('./routes.lock', import.meta.url);
+  const locked = fn => { for (let i = 0; i < 400; i++){ try { fs.mkdirSync(LOCK); break; } catch (e){ const t = Date.now() + 25; while (Date.now() < t); } }
+    try { fn(); } finally { try { fs.rmdirSync(LOCK); } catch (e){} } };
+  const save = n => locked(() => saveNow(n));
+  const saveNow = n => { const all = fs.existsSync(ROUTES) ? JSON.parse(fs.readFileSync(ROUTES, 'utf8')) : {}, m = out[n];
     if (m && m.line) all[tour + ':' + n] = m.line; else delete all[tour + ':' + n];
     if (m && m.sc) all[tour + ':' + n + ':sc'] = m.sc; else delete all[tour + ':' + n + ':sc'];
     const keys = Object.keys(all).sort((a, b) => a.split(':')[0].localeCompare(b.split(':')[0]) || (+a.split(':')[1] - +b.split(':')[1]) || a.length - b.length);
