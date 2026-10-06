@@ -59,6 +59,9 @@ export function geodesic(C){
   return (x, y) => { const o = near(x, y); return o < 0 ? 1e9 : D[o]; };
 }
 export function shot(C, x, y, ang, ft, t0){ const v = P.speedFor(C, ft); return P.simulate(C, x, y, Math.cos(ang) * v, Math.sin(ang) * v, t0); }
+/* does this putt go through one of the hole's secrets (see secret() in putt.js) */
+export function touches(C, r){ const Z = C.secret || []; if (!Z.length) return false;
+  return r.pts.some(p => Z.some(z => p[0] >= z.x0 && p[0] <= z.x1 && p[1] >= z.y0 && p[1] <= z.y1)); }
 // a holing putt only counts if the putts either side of it mostly hole too
 export function robust(C, x, y, ang, ft, t0){
   const D = 0.9 * Math.PI / 180, F = 0.8, nb = [[D, 0, 0], [-D, 0, 0], [0, F, 0], [0, -F, 0]];
@@ -67,7 +70,7 @@ export function robust(C, x, y, ang, ft, t0){
   return ok >= nb.length - 1;
 }
 /* the fewest strokes with room for error, up to cap, and the line that does it */
-export function solve(C, cap, stats){
+export function solve(C, cap, stats, avoid){
   // strike moments on a moving hole: a step that is not a fraction of any common period, so a windmill
   // turning once a second is not met at the same two phases over and over
   // the line is kept at full precision: on a moving hole a rounded strike time or aim is a different putt
@@ -78,11 +81,12 @@ export function solve(C, cap, stats){
     for (const f of frontier){
       const fine = s > 1, base = Math.atan2(C.cup[1] - f.y, C.cup[0] - f.x), angs = [];
       if (fine) for (let a = -1.0; a <= 1.0; a += 0.014) angs.push(base + a);
-      for (let a = 0; a < 360; a += fine ? 5 : 2) angs.push(a * Math.PI / 180);
+      for (let a = 0; a < 360; a += fine ? 5 : (timed(C) ? 2 : 1)) angs.push(a * Math.PI / 180);
       for (const dt of T0){ const t0 = f.t + dt;
         for (const ang of angs) for (let ft = 2; ft <= 44; ft += 1){
           const r = shot(C, f.x, f.y, ang, ft, t0); total++;
           if (stats){ if (r.out) stats.out++; if (r.t > 23.9) stats.stuck++; }
+          if (avoid && touches(C, r)) continue;
           if (r.holed){ if (robust(C, f.x, f.y, ang, ft, t0)) return { strokes:s, total, line:f.line.concat([[ang, ft, t0]]) }; continue; }
           if (r.water || r.out) continue;
           const key = Math.round(r.rest[0] * 3) + ',' + Math.round(r.rest[1] * 3) + ',' + (timed(C) ? Math.round(r.t) : 0); if (seen.has(key)) continue; seen.add(key);
@@ -99,9 +103,11 @@ export function solve(C, cap, stats){
 }
 /* replay a recorded route: every putt in it rests where the next is struck, nothing goes in the water
    or out, the last one drops, and it has room for error. Returns null if it holds, or why it does not. */
-export function replay(C, line){
-  let x = C.tee[0], y = C.tee[1];
+export function replay(C, line, want){
+  let x = C.tee[0], y = C.tee[1], hit = false;
   for (let i = 0; i < line.length; i++){ const [ang, ft, t0] = line[i], r = shot(C, x, y, ang, ft, t0);
+    if (touches(C, r)){ if (want === 'obvious') return `putt ${i + 1} goes through the secret`; hit = true; }
+    if (want === 'secret' && i === line.length - 1 && r.holed && !hit) return 'it never goes through the secret';
     if (r.water || r.out) return `putt ${i + 1} goes ${r.water ? 'in the water' : 'out'}`;
     if (i === line.length - 1){ if (!r.holed) return `putt ${i + 1} does not drop`; if (!robust(C, x, y, ang, ft, t0)) return `putt ${i + 1} drops but only to the pixel`; return null; }
     if (r.holed) return `putt ${i + 1} drops early`;
@@ -124,21 +130,29 @@ if (isMainThread && process.argv[1] && process.argv[1].endsWith('solve.mjs')){
       while (live < jobs && pending.length){ const n = pending.shift(); live++;
         const w = new Worker(new URL(import.meta.url), { workerData:{ tour, n, cap } });
         w.on('message', m => { out[n] = m; done++; const L = TR.levels[n - 1], want = Math.max(3, m.strokes + 1);
-          console.log(String(n).padStart(3), P.levelName(n, tour).padEnd(24), 'robust', m.strokes, 'par now', L.par, want === L.par ? '' : '  WANT ' + want, `(${m.total} shots, ${m.secs}s)`); });
+          const scTxt = (P.buildLevel(n, tour).secret || []).length ? (m.sc ? `  shortcut ${m.sc.length}` : '  SHORTCUT NOT FOUND') : '';
+          console.log(String(n).padStart(3), P.levelName(n, tour).padEnd(24), 'obvious', m.strokes, 'par now', L.par, want === L.par ? '' : '  WANT ' + want, scTxt, m.onReal ? '  REAL COURSE: ' + m.onReal : '', `(${m.total} shots, ${m.secs}s)`); });
         w.on('error', e => { console.log(n, 'ERROR', e.message); });
         w.on('exit', () => { live--; go(); }); } };
     go(); });
   console.log(`\n${done} holes in ${Math.round((Date.now() - t0) / 1000)}s`);
   if (args.includes('--write')){
     const all = fs.existsSync(ROUTES) ? JSON.parse(fs.readFileSync(ROUTES, 'utf8')) : {};
-    for (const n of ns){ const m = out[n]; if (m && m.line) all[tour + ':' + n] = m.line; else delete all[tour + ':' + n]; }
+    for (const n of ns){ const m = out[n]; if (m && m.line) all[tour + ':' + n] = m.line; else delete all[tour + ':' + n];
+      if (m && m.sc) all[tour + ':' + n + ':sc'] = m.sc; else delete all[tour + ':' + n + ':sc']; }
     const keys = Object.keys(all).sort((a, b) => a.split(':')[0].localeCompare(b.split(':')[0]) || (+a.split(':')[1] - +b.split(':')[1]));
     fs.writeFileSync(ROUTES, '{\n' + keys.map(k => '  ' + JSON.stringify(k) + ':' + JSON.stringify(all[k])).join(',\n') + '\n}\n');
     console.log('wrote', ROUTES.pathname);
   }
 } else if (!isMainThread){
   const { tour, n, cap } = workerData, C = P.buildLevel(n, tour), L = P.TOURS[tour].levels[n - 1], t = Date.now();
+  /* THE OBVIOUS ROUTE is the best line that never goes through the hole's secret, and it sets par. A
+     hole with a secret is searched again free, one stroke short of the obvious route, and that line has to
+     be found (and so has to use the secret). */
+  const avoid = (C.secret || []).length > 0;
   // search one stroke past par - 1, so a hole that is too hard says by how much
-  const r = solve(C, cap || Math.max(L.par, 3));
-  parentPort.postMessage({ strokes:r.strokes, total:r.total, line:r.line || null, secs:Math.round((Date.now() - t) / 1000) });
+  const r = solve(C, cap || Math.max(L.par, 3), null, avoid);
+  const s = avoid && r.line && r.strokes > 1 ? solve(C, r.strokes - 1) : null;
+  const onReal = null;
+  parentPort.postMessage({ strokes:r.strokes, total:r.total + (s ? s.total : 0), line:r.line || null, sc:s && s.line ? s.line : null, onReal, secs:Math.round((Date.now() - t) / 1000) });
 }

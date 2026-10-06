@@ -17,6 +17,7 @@ import { createRequire } from 'node:module';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import { replay as replayRoute } from './solve.mjs';
+import { hazardRates } from './fair.mjs';
 const require = createRequire(import.meta.url);
 const P = require('./putt.js');
 const M = P.M;
@@ -206,15 +207,25 @@ if (!QUICK){
   for (const TR of [TM, TB]){
     claim(TR.levels.every((L, i) => !!L.sig === ((i + 1) % TR.per === 0)), `${TR.name}: the last hole of each world, and only it, is a signature hole`);
     claim(TR.levels.every((L, i) => i === 0 || L.par >= 3), `${TR.name}: no par under 3`);
-    const shapes = new Set();
+    const shapes = new Set(), secrets = {}, wet = [];
     for (let n = 1; n <= TR.levels.length; n++){ const L = TR.levels[n - 1], C = P.buildLevel(n, TR.id), name = `${TR.id} ${n} ${P.levelName(n, TR.id)}`;
       shapes.add(JSON.stringify((C.polys || [C.poly]).map(q => q.map(p => p.map(v => Math.round(v * 2))))) + C.cup.join() + C.bumpers.length + C.blocks.length + C.movers.length + C.zones.length + C.portals.length + C.loops.length + C.ramps.length);
       // EVERY HOLE HAS SOMETHING IN IT: an obstacle, a puzzle or a moving part, never bare carpet
       const kit = C.bumpers.length + C.blocks.length + C.movers.length + C.portals.length + C.loops.length + C.ramps.length + C.bridges.length + C.turns.length + (C.belts || []).length + (C.mill ? 1 : 0) + C.zones.length;
       claim(kit > 0, `${name}: has an obstacle`);
       claim(C.mats.at(C.tee[0], C.tee[1]) === M.GREEN && C.mats.at(C.cup[0], C.cup[1]) === M.GREEN, `${name}: tee and cup on the carpet`);
-      const line = ROUTES[TR.id + ':' + n], why = line ? replayRoute(C, line) : 'no route recorded';
-      claim(!why && line.length <= L.par - 1, `${name}: beaten in ${line ? line.length : '?'} (par ${L.par}) by its recorded route, with room for error` + (why ? ': ' + why : '')); }
+      /* THE OBVIOUS ROUTE never goes through the hole's secret, and it is a birdie: par is that route
+         plus one. A hole with a secret also carries the secret route, which has to be strictly shorter
+         and has to use it, so the hole that rewards looking harder really does pay in strokes. */
+      const line = ROUTES[TR.id + ':' + n], why = line ? replayRoute(C, line, 'obvious') : 'no route recorded';
+      claim(!why && (line.length === L.par - 1 || (L.par === 3 && line.length === 1)), `${name}: the obvious route is a birdie: ${line ? line.length : '?'} putts against par ${L.par}, with room for error` + (why ? ': ' + why : ''));
+      if ((C.secret || []).length){ secrets[n] = 1; const sl = ROUTES[TR.id + ':' + n + ':sc'], sw = sl ? replayRoute(C, sl, 'secret') : 'no secret route recorded';
+        claim(!sw && line && sl.length < line.length, `${name}: the secret line is shorter: ${sl ? sl.length : '?'} putts against ${line ? line.length : '?'}` + (sw ? ': ' + sw : '')); }
+      // A PERSON IS A COUPLE OF DEGREES OFF. No putt on the obvious route may put that person in the water or off the course more than a third of the time
+      if (line && !why){ const hz = hazardRates(C, line, 80), worst = Math.max(...hz); wet.push(worst); claim(worst <= 0.34, `${name}: a slightly off putt on the obvious route stays dry (${hz.map(h => Math.round(h * 100) + '%').join(' ')})`); } }
+    claim(TR.worlds.every((W, w) => { let k = 0; for (let n = w * TR.per + 1; n <= (w + 1) * TR.per; n++) k += secrets[n] || 0; return k * 3 >= TR.per; }), `${TR.name}: at least a third of every world's holes hide a secret line (${Object.keys(secrets).length} in all)`);
+    const wm = wet.reduce((a, b) => a + b, 0) / Math.max(1, wet.length);
+    claim(wm <= 0.1, `${TR.name}: on average the worst putt of a hole goes wet or out ${Math.round(wm * 100)}% of the time for a slightly off player`);
     claim(shapes.size === TR.levels.length, `${TR.name}: no two holes share a layout (${shapes.size} distinct)`);
     // HARDER AS IT GOES: each world packs more into a hole than the one before, and asks for more putts
     const per = (fn) => TR.worlds.map((W, w) => { let t = 0; for (let n = w * TR.per + 1; n <= (w + 1) * TR.per; n++) t += fn(n); return t / TR.per; });
