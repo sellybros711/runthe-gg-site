@@ -132,6 +132,20 @@ section('4. the copy is short');
       if (words(o.label) > 7) long.push(id + ' label "' + o.label + '"');
       for (const m of o.run.toString().matchAll(/return '([^']+)'/g)) if (words(m[1]) > 16) long.push(id + ' result ' + words(m[1]) + ': ' + m[1].slice(0, 40));
     }
+    /* A second take is held to the same limits as the card it stands in for. */
+    for (const t of ev.takes || []) {
+      const tt = typeof t.title === 'function' ? t.title(L) : t.title;
+      let tx = ''; try { tx = t.text(L); } catch (e) { tx = ''; }
+      if (words(tt) > 10) long.push(id + ' take title ' + words(tt));
+      if (words(tx) > 22) long.push(id + ' take text ' + words(tx));
+      if ((String(tx).match(/[.!?](\s|$)/g) || []).length > 3) long.push(id + ' take text has more than three sentences');
+      for (const o of t.options) {
+        if (words(o.label) > 7) long.push(id + ' take label "' + o.label + '"');
+        if (!o.hint || words(o.hint) > 6 || o.hint === o.label) long.push(id + ' take "' + o.label + '" hint');
+        if (!Array.isArray(o.rep)) long.push(id + ' take "' + o.label + '" carries no reputation');
+        for (const m of o.run.toString().matchAll(/return '([^']+)'/g)) if (words(m[1]) > 16) long.push(id + ' take result ' + words(m[1]) + ': ' + m[1].slice(0, 40));
+      }
+    }
   }
   ok(long.length === 0, `titles under 11 words, card text under 23 and three sentences, answers under 8, results under 17 (${long.slice(0, 5).join('; ') || 'all'})`);
   /* Run The Tour's shape: a place over the title, and a line under every
@@ -304,6 +318,58 @@ section('12. Phase D: origins, routes, endings, epilogues and the legend switch'
   ok(real.length === 0, `no Phase D card puts a real player or coach in a story (${real.slice(0, 4).join(', ') || 'none'})`);
   ok(Object.keys(AUTH).length >= 150, `Phase D wrote the content it claims (${Object.keys(AUTH).length} cards)`);
   void L;
+}
+
+section('14. the game narrates, and a card that comes back comes back different');
+{
+  /* The narrator's line, the second takes and the varied system cards are a
+     story career's alone. Played here as a player meets them: the line is
+     short, true to the moment, never unfilled, and not on every card; a card
+     dealt again in one career never repeats the take it was last dealt in;
+     every take is met somewhere; and a career from before the story engine
+     sees none of it. */
+  const DASH = new RegExp('[' + String.fromCharCode(8211, 8212) + ']');
+  const runs = [];
+  for (let i = 0; i < 40; i++) runs.push(play('narr' + i, i % 2 ? 'hs' : 'draft'));
+  let cards = 0, led = 0, bad = [], longLead = [];
+  const takeSeen = {}, takeN = {}, repeatSame = [], titles = {};
+  for (const x of runs) {
+    const last = {};
+    for (const k of x.cards) {
+      const c = k.c;
+      cards++;
+      if (c.lead) {
+        led++;
+        if (/\{[a-z0-9]+(?::\w+)?\}|undefined|NaN/.test(c.lead) || DASH.test(c.lead)) bad.push(c.id + ': ' + c.lead);
+        if (words(c.lead) > 16) longLead.push(c.lead);
+      }
+      if (c.take != null) {
+        (takeSeen[c.id] = takeSeen[c.id] || new Set()).add(c.take); takeN[c.id] = (takeN[c.id] || 0) + 1;
+        if (last[c.id] != null && last[c.id] === c.take) repeatSame.push(c.id);
+        last[c.id] = c.take;
+      } else if (C.EVENTS[c.id] && C.EVENTS[c.id].takes || C.AM_EVENTS[c.id] && C.AM_EVENTS[c.id].takes) {
+        (takeSeen[c.id] = takeSeen[c.id] || new Set()).add(0); takeN[c.id] = (takeN[c.id] || 0) + 1;
+        if (last[c.id] === 0) repeatSame.push(c.id);
+        last[c.id] = 0;
+      }
+      (titles[c.id] = titles[c.id] || new Set()).add(c.title.replace(/\d+/g, '#'));
+    }
+  }
+  const share = led / cards;
+  ok(share > 0.15 && share < 0.6, `the narrator speaks on some cards and not all of them (${(share * 100).toFixed(0)}% of ${cards})`);
+  ok(!bad.length, `every narrator line is filled in and carries no dash (${bad.slice(0, 3).join(' | ') || 'all'})`);
+  ok(!longLead.length, `every narrator line is sixteen words or less (${longLead.slice(0, 2).join(' | ') || 'all'})`);
+  ok(!repeatSame.length, `a card dealt again in one career never comes back as the same take (${repeatSame.slice(0, 4).join(', ') || 'none'})`);
+  const withTakes = [...Object.keys(C.EVENTS), ...Object.keys(C.AM_EVENTS)].filter((id) => (C.EVENTS[id] || C.AM_EVENTS[id]).takes);
+  const dark = [];
+  for (const id of withTakes) { const n = ((C.EVENTS[id] || C.AM_EVENTS[id]).takes.length) + 1; const s = takeSeen[id]; if (s && takeN[id] >= 4 && s.size < Math.min(n, 2)) dark.push(id); }
+  ok(withTakes.length >= 25 && !dark.length, `${withTakes.length} cards carry other takes, and each one dealt four times or more here showed more than one (${dark.join(', ') || 'all'})`);
+  const one = ['clutch', 'retire', 'injury', 'coach_review'].filter((id) => titles[id] && titles[id].size < 2);
+  ok(!one.length, `the system cards are put more than one way (${['clutch', 'retire', 'injury', 'coach_review'].map((id) => id + ' ' + (titles[id] ? titles[id].size : 0)).join(', ')})`);
+  /* Off a story career: none of it. */
+  let offLead = 0, offTake = 0;
+  for (let i = 0; i < 6; i++) for (const k of play('narroff' + i, i % 2 ? 'hs' : 'draft', null, { story: false }).cards) { if (k.c.lead) offLead++; if (k.c.take != null || k.c.varied) offTake++; }
+  ok(!offLead && !offTake, `a career from before the story engine hears no narrator and sees no take (${offLead} lines, ${offTake} takes)`);
 }
 
 section('13. the road ends in today\'s league');

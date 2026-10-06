@@ -350,7 +350,7 @@ section('5c. real people: on the court, and in the room on a story career');
   const outside = [];
   let inPool = false, depth = 0;
   src.forEach((line, i) => {
-    if (/^const (EVENTS|AM_EVENTS|ARC_EVENTS) = \{/.test(line)) { inPool = true; depth = 0; }
+    if (/^const (EVENTS|AM_EVENTS|ARC_EVENTS|TAKES) = \{/.test(line)) { inPool = true; depth = 0; }
     if (inPool) { depth += (line.match(/\{/g) || []).length - (line.match(/\}/g) || []).length; if (depth <= 0 && /^\};/.test(line)) inPool = false; return; }
     if (real.test(line) && !okLine.some((r) => r.test(line))) outside.push(i + 1);
     real.lastIndex = 0;

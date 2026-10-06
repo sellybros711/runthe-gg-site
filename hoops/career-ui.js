@@ -220,6 +220,8 @@ var CSS = [
 '.cr-card .k-h1{font-size:30px;line-height:1.02;margin:0 0 8px;color:#fff;text-shadow:0 2px 0 #05070d;}',
 '#cr-card-h:focus{outline:none;}',
 '.cr-card .cr-cbody > p{margin:0 0 12px;color:#d9dcef;font-size:15px;line-height:1.5;}',
+/* The narrator: one line in the game's own voice, above the title. */
+'.cr-card .cr-cbody > p.cr-lead{margin:0 0 6px;color:#ffb36b;font-size:13px;line-height:1.4;font-style:italic;}',
 '.cr-card .k-opts{gap:8px;counter-reset:none;}',
 '.cr-choice{position:relative;min-height:58px;padding:11px 40px 11px 12px;align-items:center;background:linear-gradient(180deg,#232c4c,#1a2140);',
 '  box-shadow:inset 0 0 0 2px #34416f,inset 0 -4px 0 rgba(0,0,0,.28);transition:box-shadow var(--k-m-snap),background var(--k-m-snap),transform var(--k-m-snap);}',
@@ -257,6 +259,7 @@ var CSS = [
 '  #s-car .cr-cbody{padding:11px 14px 12px;}',
 '  #s-car .cr-card .k-h1{font-size:24px;margin-bottom:6px;}',
 '  #s-car .cr-card .cr-cbody > p{margin:0 0 10px;font-size:14px;line-height:1.45;}',
+'  #s-car .cr-card .cr-cbody > p.cr-lead{margin:0 0 4px;font-size:12.5px;line-height:1.35;}',
 '  #s-car .cr-card .cr-cbody > p.cr-clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}',
 '  #s-car .cr-card .k-opts{gap:7px;}',
 '  #s-car .cr-card .cr-choice{min-height:52px;padding-top:9px;padding-bottom:9px;}',
@@ -1098,7 +1101,7 @@ function cardHtml(L, c, fresh){
   return '<div class="k-panel k-decision cr-card' + cls + motion + '" id="cr-card" role="group" aria-labelledby="cr-card-h">'
     + '<span class="cr-grip" aria-hidden="true"></span>'
     + '<div class="cr-band">' + K.iconHtml(icon, 2) + '<span class="cr-scene">' + esc(scene) + '</span>' + (c.scene ? '<span class="cr-when">' + esc(when) + '</span>' : '') + '</div>'
-    + '<div class="cr-cbody"><h3 class="k-h1" id="cr-card-h">' + esc(c.title) + '</h3>'
+    + '<div class="cr-cbody">' + (c.lead ? '<p class="cr-lead" id="cr-card-lead">' + esc(c.lead) + '</p>' : '') + '<h3 class="k-h1" id="cr-card-h">' + esc(c.title) + '</h3>'
     + (c.text ? '<p class="cr-clamp" id="cr-card-p">' + esc(c.text) + '</p><button type="button" class="cr-more" id="cr-card-more" hidden>More</button>' : '')
     + '<ol class="k-opts">' + opts + '</ol></div></div>';
 }

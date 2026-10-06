@@ -2141,6 +2141,9 @@ function sayAll(L, beats) {
   for (const c of L.pending.slice(0, 1)) {
     if (c.named) continue;
     c.named = 1;
+    varyCard(L, c);
+    narrate(L, c);
+    if (c.lead) c.lead = say(L, c.lead);
     c.title = say(L, c.title); c.text = say(L, c.text); c.eyebrow = say(L, c.eyebrow); if (c.scene) c.scene = say(L, c.scene);
     for (const o of c.options || []) { o.label = say(L, o.label); if (o.hint) o.hint = say(L, o.hint); }
   }
@@ -5959,8 +5962,28 @@ function dealCard(L, phase, ev) {
   /* Where it happens (the locker room, the agent's office), said above the
      title the way a broadcast puts a place on screen. */
   if (ev.tag) card.scene = typeof ev.tag === 'function' ? ev.tag(L) : ev.tag;
+  const tk = takeOf(L, ev);
+  if (tk) {
+    const t = ev.takes[tk - 1];
+    card.take = tk;
+    card.title = typeof t.title === 'function' ? t.title(L) : t.title;
+    card.text = t.text(L);
+    card.options = t.options.map((o) => ({ label: o.label, hint: o.hint }));
+    if (t.tag) card.scene = t.tag;
+  }
   if (storyOn(L) && ev.cb) { const c = callback(L, ev.cb); if (c) card.text = c + ' ' + card.text; }
   L.pending.push(card);
+}
+/* Which take of a card this is: nought is the card as written. A story
+   career starts on a take of its own (seeded off the career, not the year)
+   and steps on one each time the card comes back, so a repeat is never the
+   same scene twice in a row. Off a story career there are no takes. */
+function takeOf(L, ev) {
+  if (!storyOn(L) || !ev.takes || !ev.takes.length) return 0;
+  const k = ev.takes.length + 1;
+  const base = Math.abs(E.hashSeed(String(L.seed) + ':take:' + ev.id)) % k;
+  const n = ((L.evlog || {})[ev.id] || []).length;
+  return (base + Math.max(0, n - 1)) % k;
 }
 function queueEvents(L, phase, n, pool) {
   pool = pool || EVENTS;
@@ -5998,6 +6021,173 @@ function queueEvents(L, phase, n, pool) {
     if (storyOn(L)) (evSeen(L)[id] = evSeen(L)[id] || []).push(L.year);
     dealCard(L, phase, pool[id]);
   }
+}
+
+// ─── the narrator ───────────────────────────────────────────────────────────
+
+/* THE GAME TALKS TO YOU. A card on a story career can open with one line in
+   the narrator's voice, read off where the life actually is at the moment
+   the card comes up: your record, your age, your minutes, your city, your
+   money, who is home waiting. It is said when the card reaches the top of
+   the stack (sayAll), never when it is dealt, because a December card dealt
+   behind two others should still know the December it lands in.
+   Every line is a fact the career holds, so the narrator can only ever say
+   true things. A line is said at most once a season and comes back no sooner
+   than NARR_GAP seasons later, and not every card gets one, so the voice
+   reads as a voice rather than as a caption on everything. It draws only
+   from its own seeded stream and moves nothing the season reads. */
+const NARR_GAP = 3;
+const NARR_SKIP = { retire: 1, nooffer: 1, moment: 1, clutch: 1, amclutch: 1, after: 1, combine: 1, interview: 1, pworkout: 1, workout: 1, agent: 1 };
+const nbaSeasons = (L) => (L.history || []).length;
+const clubRec = (L) => { const s = L.season; return s && !s.amateur && L.team && s.g >= 20 ? s : null; };
+const ringCount = (L) => (L.history || []).filter((h) => (h.aw || []).indexOf('champ') >= 0).length;
+/* [id, applies, line]. Lines are short and say one thing. A place name for a
+   program takes a singular verb; a club's nickname is plural. */
+const NARR_NBA = [
+  ['rookie1', (L) => nbaSeasons(L) === 0 && L.phase !== 'off', () => 'Your first NBA season. You still check the schedule twice.'],
+  ['rookie2', (L) => nbaSeasons(L) === 0 && L.phase !== 'off', () => 'Rookie year. You still get lost in the tunnels under the arena.'],
+  ['rookie3', (L) => nbaSeasons(L) === 0 && L.phase !== 'off', () => 'A year ago you were a prospect. Now your name is on a locker.'],
+  ['year2', (L) => nbaSeasons(L) === 1, () => 'Year two. The league has film on you now.'],
+  ['cyear', (L) => L.contract && L.contract.years === 1 && !SUMMERY[L.phase], () => 'Contract year. Every box score is a job interview.'],
+  ['hot', (L) => { const s = clubRec(L); return s && s.w - s.l >= 10; }, (L) => { const s = clubRec(L); return 'The ' + nick(L.team) + ' are ' + s.w + '-' + s.l + '. The city is starting to believe.'; }],
+  ['hot2', (L) => { const s = clubRec(L); return s && s.w - s.l >= 16; }, (L) => { const s = clubRec(L); return s.w + '-' + s.l + '. People are printing playoff tickets in their heads.'; }],
+  ['cold', (L) => { const s = clubRec(L); return s && s.l - s.w >= 10; }, (L) => { const s = clubRec(L); return 'The ' + nick(L.team) + ' are ' + s.w + '-' + s.l + '. The upper deck has plenty of room.'; }],
+  ['cold2', (L) => { const s = clubRec(L); return s && s.l - s.w >= 16; }, (L) => { const s = clubRec(L); return s.w + '-' + s.l + '. The fans have started talking about the draft lottery.'; }],
+  ['mid', (L) => { const s = clubRec(L); return s && Math.abs(s.w - s.l) <= 4; }, (L) => { const s = clubRec(L); return s.w + '-' + s.l + '. Stuck in the middle of the standings, like half the league.'; }],
+  ['bench', (L) => L.season && L.season.role && L.season.role.min < 15 && !L.season.amateur, (L) => Math.round(L.season.role.min) + ' minutes a night. You know every seat on that bench.'],
+  ['bench2', (L) => L.season && L.season.role && L.season.role.min < 15 && !L.season.amateur, () => 'You warm up like a starter and sit like a fan.'],
+  ['six', (L) => L.season && L.season.role && L.season.role.label === 'Sixth man', () => 'First man off the bench. The building gets loud when you check in.'],
+  ['starter', (L) => L.season && L.season.role && L.season.role.starter && nbaSeasons(L) <= 3, (L) => 'You start for the ' + nick(L.team) + '. Not long ago that was a dream.'],
+  ['franchise', (L) => L.season && L.season.role && L.season.role.label === 'Franchise player', (L) => 'The ' + nick(L.team) + ' go as you go. Everybody in the building knows it.'],
+  ['newclub', (L) => L.team && nbaSeasons(L) >= 1 && L.history[L.history.length - 1].t !== L.team && !SUMMERY[L.phase], () => 'New city, new locker, new parking spot. Same you.'],
+  ['hurt', (L) => L.season && !L.season.amateur && L.season.out >= 8, (L) => 'You\'ve missed ' + L.season.out + ' games this year. The trainer knows your coffee order.'],
+  ['star1', (L) => (L.flags.allstars || 0) === 1, () => 'You\'re an All-Star now. People expect things.'],
+  ['starN', (L) => (L.flags.allstars || 0) >= 3, (L) => wordNum(L.flags.allstars) + ' All-Star games. Kids in the stands wear your number.'],
+  ['ring', (L) => ringCount(L) === 1, () => 'You have a ring. Nobody can ever take that back.'],
+  ['rings', (L) => ringCount(L) >= 2, (L) => wordNum(ringCount(L)) + ' rings. You wear none of them. You just know where they are.'],
+  ['noring', (L) => nbaSeasons(L) >= 8 && !ringCount(L), (L) => wordNum(nbaSeasons(L)) + ' seasons and no ring. You think about it more than you say.'],
+  ['thirty', (L) => L.age >= 30 && L.age <= 32, () => 'Thirty came faster than anybody warned you.'],
+  ['old', (L) => L.age >= 33, (L) => 'You\'re ' + L.age + '. Mornings take a little longer than they used to.'],
+  ['old2', (L) => L.age >= 34, () => 'The rookies call you sir. Some of them mean it.'],
+  ['vet', (L) => nbaSeasons(L) >= 10 && !SUMMERY[L.phase], (L) => 'Season ' + (nbaSeasons(L) + 1) + '. You\'ve watched a lot of rookies come and go.'],
+  ['famous', (L) => L.m.fame >= 70, () => 'Strangers say your name at the airport now.'],
+  ['famous2', (L) => L.m.fame >= 85, () => 'Your face is on a billboard downtown. You drive the long way home.'],
+  ['unknown', (L) => L.m.fame <= 15 && nbaSeasons(L) >= 2, () => 'Most fans still couldn\'t pick you out of a lineup.'],
+  ['low', (L) => L.m.morale <= 35, () => 'Lately the game feels more like a job.'],
+  ['high', (L) => L.m.morale >= 85, () => 'You love this game right now, and it shows.'],
+  ['trusted', (L) => L.m.trust >= 80, () => 'The coaches trust you. It took a while.'],
+  ['rich', (L) => L.cash >= 25, () => 'You\'ve made more money than your family ever saw. You still check prices.'],
+  ['broke', (L) => L.cash < 1 && nbaSeasons(L) >= 3, () => 'The checks are smaller than people think, and they go fast.'],
+  ['married', (L) => lifeOf(L).rel === 'married', () => '{partner:first} still asks how practice went, and still listens.'],
+  ['kids', (L) => lifeOf(L).kids >= 1, (L) => lifeOf(L).kids === 1 ? 'There\'s a car seat in your back seat now.' : 'Your kids think you\'re famous for a different reason every week.'],
+  ['single', (L) => lifeOf(L).rel === 'single' && L.age >= 27, () => 'Your mom still asks if you\'re seeing anybody.'],
+  ['sep', (L) => L.phase === 'pre' || L.phase === 'off', () => 'Summer. The phone is quieter. The gym isn\'t.'],
+  ['sep2', (L) => L.phase === 'pre' || L.phase === 'off', () => 'Everybody shows up to camp in the best shape of their life. Supposedly.'],
+  ['dec', (L) => L.phase === 'early', () => 'December. The road trips get long and the nights get longer.'],
+  ['feb', (L) => L.phase === 'mid', () => 'February. Half the league is counting days to the break.'],
+  ['apr', (L) => L.phase === 'late', () => 'April. The regular season is in the books. Now it gets real.'],
+  ['rival', (L) => rivalOn(L) && nbaSeasons(L) >= 2, () => 'Somewhere, {rival} is checking your box score too.'],
+];
+const NARR_AM = [
+  ['hs1', (L) => L.am.level === 'hs', (L) => 'You\'re ' + L.age + '. On Friday nights, half of ' + L.am.town + ' comes out.'],
+  ['hs2', (L) => L.am.level === 'hs', () => 'Homework, practice, film, sleep. Then do it again.'],
+  ['hs3', (L) => L.am.level === 'hs', (L) => 'The ' + (L.am.hs && L.am.hs.name || 'school') + ' gym smells like popcorn and floor wax. It feels like home.'],
+  ['hsrank', (L) => L.am.level === 'hs' && L.am.rank && L.am.rank <= 100, (L) => '#' + L.am.rank + ' in the class. College coaches sit in the bleachers now.'],
+  ['hsnone', (L) => L.am.level === 'hs' && (!L.am.rank || L.am.rank > 300), () => 'Nobody is ranking you yet. That\'s fine. Nobody was watching them either.'],
+  ['col1', (L) => L.am.level === 'col' && L.am.cyear === 1, (L) => 'Freshman year at ' + L.am.college + '. Six a.m. lifts and a sold-out building on game night.'],
+  ['col2', (L) => L.am.level === 'col' && L.am.cyear >= 2, (L) => CYEAR[L.am.cyear][0].toUpperCase() + CYEAR[L.am.cyear].slice(1) + ' year at ' + L.am.college + '. You know every shortcut on campus now.'],
+  ['colscout', (L) => L.am.level === 'col' && (L.am.stock || 0) >= 70, () => 'There are NBA scouts behind the bench now. You try not to look.'],
+  ['colclass', (L) => L.am.level === 'col', () => 'You have an eight a.m. class and a road game on Thursday. Something has to give.'],
+];
+/* THE SAME PROMPT, TOLD MORE THAN ONE WAY. A story career meets the system
+   cards over and over: a Game 7, an injury report, the summer you decide
+   whether to keep playing. Their answers stay exactly what they are (the
+   rules read them by position), and what changes is how the game puts the
+   question to you. Every version keeps the facts the original states (the
+   games out, your age, the money). Seeded per card off its own stream, so a
+   reload shows the same words. */
+const capFirst = (x) => x ? x[0].toUpperCase() + x.slice(1) : x;
+const VARY = {
+  clutch: (L, c, r) => {
+    const x = c.ctx || {};
+    const n = nick(x.opp);
+    const crowd = x.home ? pick(r, ['The home crowd\'s on its feet against the ' + n + '.', 'Your building is shaking. The ' + n + ' look rattled.', 'Twenty thousand of your fans, and the ' + n + ' in the way.'])
+      : pick(r, ['A road crowd\'s trying to rattle you against the ' + n + '.', 'The ' + n + ' fans boo every touch you take.', 'Their building is so loud you can\'t hear the huddle.']);
+    c.title = pick(r, ['Tied, nine seconds, your ball. What\'s the play?', 'Game 7. Tie game. The ball is yours.', 'Tie game, season on the line. Your call.', 'Nine seconds. Tied. Everybody knows who gets it.']);
+    c.text = crowd + ' ' + (x.look ? LOOKS[x.look].t : pick(r, ['Everybody knows who gets it.', 'The whole season comes down to this.', 'The bench is already on its feet.']));
+  },
+  injury: (L, c, r) => {
+    const m = /^It's a (.+)\. Now what\?$/.exec(c.title);
+    if (!m) return;
+    const kind = m[1], g = c.ctx.g;
+    c.title = pick(r, ['It\'s a ' + kind + '. Now what?', 'The scan says ' + kind + '.', capFirst(kind) + '. How do you handle it?', 'You felt it go. It\'s a ' + kind + '.']);
+    c.text = pick(r, [
+      'Dr. {doctor:last} holds up the scan: "' + g + ' games, give or take. How we get there is your call."',
+      '{trainer} reads you the report. About ' + g + ' games. Your body, your call.',
+      'Dr. {doctor:last} says about ' + g + ' games. "Less if you\'re lucky. More if you\'re not."',
+    ]);
+  },
+  retire: (L, c, r) => {
+    const o = ovT(L, ovrOf(L));
+    c.title = pick(r, ['Is it time to hang them up?', 'One more year, or the last one?', 'Your body has been talking. Do you listen?', 'Quiet summer. Time to decide.']);
+    c.text = pick(r, [
+      'You\'re ' + L.age + '. Your overall is ' + o + '. Your knees have an opinion, and it isn\'t quiet.',
+      'You\'re ' + L.age + ' and still rated ' + o + '. The game is slower. So are you, a little.',
+      L.age + ' years old. Overall ' + o + '. You catch yourself thinking about mornings with no alarm.',
+    ]);
+  },
+  allstar: (L, c, r) => {
+    c.title = pick(r, ['All-Star Saturday too. Are you in?', 'The league wants you on Saturday night too', 'Dunk contest, three-point contest or a nap?']);
+    c.text = pick(r, ['The league wants you in a contest as well as Sunday\'s game. One event, or none.',
+      'Sunday is the game. Saturday is the show. They want you in one contest, or none.',
+      'Your phone has the invitation. One contest on Saturday, or a quiet night before Sunday.']);
+  },
+  extension: (L, c, r) => {
+    const sal = money(c.ctx.sal);
+    if (c.key === 'ext') c.text = pick(r, ['{gm} slides the paper across the desk: "Five years, ' + sal + ' a year. Starts next season."',
+      '"Five years at ' + sal + ' a year," {gm} says. "Starts next season. I\'d like it signed today."',
+      '{agent:first} calls first: "Five years at ' + sal + ' a year. We could wait for more. Or not."']);
+    else c.text = pick(r, ['{gm} wants a deal before the market opens. Four years at ' + sal + ' a year.',
+      'Four years, ' + sal + ' a year, before anybody else can call. {gm} wants an answer this week.',
+      '{agent:first} says the offer is fair. Four years at ' + sal + ' a year. The market might be fairer.']);
+  },
+  coach_review: (L, c, r) => {
+    const m = /^(.+?) doesn't sugarcoat it\. (.+? won't cut it)\. He wants the minutes earned\.$/.exec(c.text);
+    if (!m) return;
+    c.title = pick(r, ['Why\'d you cut my minutes?', 'Your minutes are down. You want to know why.', 'You ask the question every bench player asks']);
+    c.text = pick(r, [c.text, m[1] + ' keeps it short. ' + m[2] + '. Earn them back.', m[2] + '. That\'s the whole explanation from ' + m[1] + '.']);
+  },
+  hs_summer: (L, c, r) => { c.title = pick(r, ['Where are you spending the summer?', 'School\'s out. Where do you get better?', 'Three months off. How do you spend them?']); },
+  declare: (L, c, r) => { c.title = pick(r, ['Stay in school, or go pro?', 'The NBA, or one more year?', 'Your name, or your college\'s?']); },
+};
+/* And how a few of them end. */
+const VARY_RES = {
+  retire_more: ['One more year. Let\'s go.', 'One more. You start running hills on Monday.', 'You tell your family one more. Nobody is surprised.'],
+  inj_rest: ['You give it time. It heals right.', 'You do every boring rehab drill. It heals clean.', 'Two weeks of ice and patience. It holds.'],
+};
+function varyRes(L, card, k, text) {
+  if (!storyOn(L) || !VARY_RES[k]) return text;
+  return pick(rngAt(L, 'vres:' + card.key + ':' + (L.steps || 0)), VARY_RES[k]);
+}
+function varyCard(L, card) {
+  if (!storyOn(L) || card.varied || !VARY[card.id] || card.kind === 'clutch' && card.id !== 'clutch') return;
+  card.varied = 1;
+  VARY[card.id](L, card, rngAt(L, 'vary:' + card.key + ':' + (L.steps || 0)));
+}
+function narrate(L, card) {
+  if (!storyOn(L) || !card || card.lead != null || NARR_SKIP[card.id] || NARR_SKIP[card.kind]) return;
+  const n = L.narr || (L.narr = { y: 0, k: 0, u: {} });
+  if (n.y !== L.year) { n.y = L.year; n.k = 0; }
+  const rng = rngAt(L, 'narr:' + card.key + ':' + (L.steps || 0));
+  /* The first card of a moment gets the voice more often than the ones
+     stacked behind it, and a season hears it about a dozen times at most. */
+  if (n.k >= 12 || rng() > (L.pending[0] === card && L.pending.length === 1 ? 0.75 : 0.45)) { card.lead = ''; return; }
+  const list = isAm(L) ? (L.am ? NARR_AM : []) : NARR_NBA;
+  const open = list.filter(([id, ok]) => { const u = n.u[id]; if (u != null && L.year - u < NARR_GAP) return false; try { return !!ok(L); } catch (e) { return false; } });
+  if (!open.length) { card.lead = ''; return; }
+  const [id, , line] = open[Math.floor(rng() * open.length)];
+  n.u[id] = L.year; n.k++;
+  card.lead = line(L);
 }
 
 // ─── continuity ─────────────────────────────────────────────────────────────
@@ -6257,8 +6447,14 @@ const HOT_PICKS = { ref_heat: 0, heckler: 0, teammate_fight: 0, arc_feud_2: 0, o
 const SPEND_PICKS = { wedding: 0, body_care: 0, charity: 0, investment: 0, family_money: 0 };
 function watchPick(L, id, i, beats) {
   if (!storyOn(L)) return;
-  if (SPEND_PICKS[id] === i) tw(L).spent = (tw(L).spent || 0) + 1;
-  if (HOT_PICKS[id] === i) { const n = tw(L).hot = (tw(L).hot || 0) + 1; if (n >= 2) reveal(L, 'hothead', 'Two blowups. People have noticed.', beats); }
+  if (SPEND_PICKS[id] === i) watchMark(L, 'spend', beats);
+  if (HOT_PICKS[id] === i) watchMark(L, 'hot', beats);
+}
+/* A second take names what its answer says about you on the answer itself
+   (`watch`), because the tables above are indexed by the card as written. */
+function watchMark(L, kind, beats) {
+  if (kind === 'spend') tw(L).spent = (tw(L).spent || 0) + 1;
+  if (kind === 'hot') { const n = tw(L).hot = (tw(L).hot || 0) + 1; if (n >= 2) reveal(L, 'hothead', 'Two blowups. People have noticed.', beats); }
 }
 /* Season-level reveals, read when a season closes. */
 function traitSeason(L, beats) {
@@ -7484,6 +7680,8 @@ function landOnToday(L) {
   for (const k in L.mem || {}) L.mem[k].y = sh(L.mem[k].y);
   for (const k in L.arcs || {}) { const a = L.arcs[k]; a.y = sh(a.y); a.at = sh(a.at); }
   for (const k in L.evlog || {}) L.evlog[k] = L.evlog[k].map(sh);
+  /* The narrator's own calendar (which line was said which season). */
+  if (L.narr) { L.narr.y = sh(L.narr.y); for (const k in L.narr.u) L.narr.u[k] = sh(L.narr.u[k]); }
   for (const k in L.people || {}) { const p = L.people[k]; p.met = sh(p.met); for (const n of p.notes || []) n[0] = sh(n[0]); }
   for (const k in L.traits || {}) L.traits[k].known = sh(L.traits[k].known);
   if (L.flags.offUsed) L.flags.offUsed.y = sh(L.flags.offUsed.y);
@@ -7757,6 +7955,367 @@ const AM_EVENTS = {
 };
 defineEvents(EVENTS, 'nba');
 defineEvents(AM_EVENTS, 'am');
+
+/* SECOND AND THIRD TAKES. The everyday cards come back on a story career (a
+   slump, a night out, a hamstring), and a card that comes back word for
+   word with the same three answers reads as the game running out of things
+   to say. So each one carries other takes: the same moment in the season, a
+   different situation and different choices. Which take a career sees is
+   seeded per career and steps on each time the card comes back, so the
+   second slump is never the first slump again, and two careers start on
+   different takes. A take's answer carries its own reputation (`rep`, as
+   [fans, respect]) because EVENT_REP is indexed by the base card's answers. */
+const TAKES = {
+  night_out: [
+    { tag: 'Hotel lobby', title: 'A road trip. A rapper wants you at his show.',
+      text: () => 'He follows you online and sent four tickets to the hotel. Shootaround is at nine.',
+      options: [
+        { label: 'Go, and bring {tm}', hint: 'Make a memory', rep: [2, -1], run: (L, r) => { if (ok(r, 0.6)) { bump(L, { morale: 8, fame: 4, health: -2 }); return 'You end up on stage for one song. Shootaround hurts. Worth it.'; } bump(L, { morale: 5, fame: 3, health: -4, trust: -5 }); return 'You make shootaround with four minutes to spare. The staff noticed.'; } },
+        { label: 'Give the tickets to the staff', hint: 'Buy some goodwill', rep: [0, 2], run: (L) => { bump(L, { trust: 4, morale: 1 }); return 'The equipment guys go. They talk about it for a month.'; } },
+        { label: 'Room service and film', hint: 'Boring wins', rep: [0, 1], run: (L) => { bump(L, { iq: 1, health: 2 }); return 'You watch their pick and roll until midnight. You eat it alive.'; } },
+      ] },
+    { tag: 'Your phone', title: 'Your old friends are in town for the weekend',
+      text: () => 'They drove six hours to see you play. Now they want to see the city with you.',
+      options: [
+        { label: 'Show them the whole city', hint: 'They came for you', rep: [2, 0], run: (L, r) => { if (ok(r, 0.6)) { bump(L, { morale: 9, health: -3 }); return 'Like high school again. You play tired and happy.'; } bump(L, { morale: 5, health: -5, trust: -4 }); return 'Too much, too late. You play like it, and it shows.'; } },
+        { label: 'Dinner at your place', hint: 'Home by eleven', rep: [1, 1], run: (L) => { bump(L, { morale: 6 }); return 'You cook. It\'s terrible. Nobody cares.'; } },
+        { label: 'Tickets, then bed', hint: 'Game day comes first', rep: [-1, 1], run: (L) => { bump(L, { morale: -1, health: 2 }); return 'They get great seats and a quick hug. They get it. Mostly.'; } },
+      ] },
+  ],
+  slump: [
+    { tag: 'Shooting gym', title: 'A shooting coach says he can fix you',
+      text: () => 'He\'s worked with three All-Stars and wants to rebuild your release. Midseason.',
+      options: [
+        { label: 'Rebuild the jumper now', hint: 'Short pain, long gain', rep: [0, 1], run: (L, r) => { bump(L, { perf: -0.4 }); if (ok(r, 0.6)) { bump(L, { sho: 3 }); return 'Ugly for three weeks. Then it\'s the prettiest shot you\'ve had.'; } bump(L, { morale: -4 }); return 'Two releases now, and neither one goes in.'; } },
+        { label: 'Small tweaks only', hint: 'Don\'t break it', rep: [0, 1], run: (L) => { bump(L, { sho: 1, morale: 2 }); return 'He moves your guide hand an inch. It helps more than it should.'; } },
+        { label: 'Thanks, but no', hint: 'It\'ll come back', rep: [0, 0], run: (L, r) => { if (ok(r, 0.5)) { bump(L, { morale: 4 }); return 'It comes back on its own, like they always say.'; } bump(L, { morale: -5 }); return 'It doesn\'t come back. Not this season.'; } },
+      ] },
+    { tag: 'Barbershop', title: 'Everybody has advice about your slump',
+      text: () => 'Your barber, your uncle and a guy at the gas station. They all say it\'s your legs.',
+      options: [
+        { label: 'Take a full day off', hint: 'Rest the legs', rep: [0, 0], run: (L) => { bump(L, { health: 5, morale: 3, perf: 0.2 }); return 'No ball for a day. Your legs come back first. The shot follows.'; } },
+        { label: 'Watch every miss on film', hint: 'Find the real reason', rep: [0, 2], run: (L) => { bump(L, { iq: 2, perf: 0.3 }); return 'Your elbow is drifting. Your barber was wrong. Fixed.'; } },
+        { label: 'Change your shoes', hint: 'Superstition counts', rep: [1, -1], run: (L, r) => { if (ok(r, 0.5)) { bump(L, { morale: 6, fame: 2 }); return 'Old pair from college. You go off for 30. They stay.'; } bump(L, { morale: -2 }); return 'Same bricks, different shoes.'; } },
+      ] },
+  ],
+  hot_streak: [
+    { tag: 'Locker room', title: 'You\'re cooking. {tm} wants the ball too.',
+      text: (L) => streakLine(L) + ' In the huddle, {tm} says he\'s open every trip.',
+      options: [
+        { label: 'Keep shooting. It\'s your night.', hint: 'Ride the heat', rep: [1, -1], run: (L, r) => { if (ok(r, 0.55)) { bump(L, { fame: 6, morale: 4 }); return 'You keep shooting and they keep falling. {tm} gets over it.'; } bump(L, { trust: -4, win: -0.2 }); return 'You force two and miss both. {tm} stops talking to you.'; } },
+        { label: 'Use the heat to find him', hint: 'They\'re all watching you', rep: [1, 3], run: (L) => { bump(L, { pla: 1, trust: 5, win: 0.3 }); return 'Two defenders jump at you. {tm} gets a layup and a hug.'; } },
+        { label: 'Ask {coach} to draw one up', hint: 'His call, not yours', rep: [0, 2], run: (L) => { bump(L, { trust: 6 }); return '{coach} draws two plays. One for you, one for {tm}. Both work.'; } },
+      ] },
+    { tag: 'Postgame', title: 'Hot streak. A sneaker company calls.',
+      text: (L) => streakLine(L) + ' Now a shoe company wants a signature colorway, starting tomorrow.',
+      options: [
+        { label: 'Wear them right away', hint: 'Strike while it\'s hot', rep: [3, -1], run: (L, r) => { if (ok(r, 0.5)) { bump(L, { fame: 7, cash: 0.3 }); return 'New shoes, same shot. The pair sells out in a day.'; } bump(L, { fame: 3, morale: -3, cash: 0.3 }); return 'New shoes, new blisters. The streak ends on the road.'; } },
+        { label: 'After the season', hint: 'Don\'t touch the feet', rep: [0, 2], run: (L) => { bump(L, { morale: 2, cash: 0.1 }); return 'They wait. You keep the old pair and the streak.'; } },
+        { label: 'Put your mom in the ad', hint: 'Family first', rep: [3, 1], run: (L) => { bump(L, { fame: 4, morale: 5, cash: 0.2 }); return 'Your mom steals the whole commercial. Nobody is surprised.'; } },
+      ] },
+  ],
+  film_session: [
+    { tag: 'Film room', title: 'The film says you take bad shots',
+      text: () => '{coach} pulls up every contested twenty footer you took this month. There are a lot of them.',
+      options: [
+        { label: 'Promise better shots', hint: 'Fix the diet', rep: [0, 2], run: (L) => { bump(L, { iq: 1, perf: 0.3, trust: 4 }); return 'Fewer shots, better ones. Your efficiency jumps.'; } },
+        { label: 'Say the offense stalls', hint: 'Somebody has to shoot', rep: [0, -1], run: (L, r) => { if (ok(r, 0.45)) { bump(L, { trust: 2 }); return 'He watches it again. He adds a set for the end of the clock.'; } bump(L, { trust: -7 }); return 'He doesn\'t buy it. The room gets quiet.'; } },
+        { label: 'Ask for the clips', hint: 'Study it alone', rep: [0, 2], run: (L) => { bump(L, { iq: 2, eth: 3 }); return 'You watch all forty clips at home. Twice.'; } },
+      ] },
+    { tag: 'Film room', title: 'Film session, and you look great',
+      text: () => '{coach} runs your defense on {topp} back as the example. The young guys are taking notes.',
+      options: [
+        { label: 'Walk them through it', hint: 'Teach the room', rep: [0, 3], run: (L) => { bump(L, { trust: 5, def: 1 }); return 'You explain every step. {trook} asks for more after practice.'; } },
+        { label: 'Crack a joke and move on', hint: 'Stay humble', rep: [1, 1], run: (L) => { bump(L, { morale: 3 }); return 'The room laughs. You get praised and nobody hates you for it.'; } },
+        { label: 'Ask what you did wrong', hint: 'Never satisfied', rep: [0, 2], run: (L) => { bump(L, { iq: 1, eth: 2 }); return '{coach} finds one thing. You fix it by Friday.'; } },
+      ] },
+  ],
+  buzzer: [
+    { tag: 'Last possession', title: 'Tie game. Three seconds. Inbounds play.',
+      text: () => 'You\'re taking the ball out. The play is drawn up for {tco}. He\'s covered.',
+      options: [
+        { label: 'Throw the lob anyway', hint: 'Trust the play', rep: [0, 2], run: (L, r) => { if (ok(r, 0.45)) { bump(L, { pla: 1, trust: 4, win: 0.2 }); return 'He goes up over two. Lob, dunk, horn. Pandemonium.'; } bump(L, { win: -0.2 }); return 'Tipped away. Overtime, and you lose it.'; } },
+        { label: 'Hit {tm} and get it back', hint: 'Make it yourself', rep: [1, 0], run: (L, r) => { if (ok(r, 0.45)) { bump(L, { fame: 5, morale: 5, win: 0.2 }); return 'Give and go, falling jumper, good. You end up under the pile.'; } bump(L, { morale: -3 }); return 'Your shot hits the back iron. On to overtime, and a loss.'; } },
+        { label: 'Call timeout', hint: 'Reset it', rep: [0, 1], run: (L, r) => { if (ok(r, 0.5)) { bump(L, { iq: 1, trust: 3, win: 0.2 }); return 'New play. Wide open corner three. Win.'; } return 'New play, same coverage. Overtime. You lose by two.'; } },
+      ] },
+    { tag: 'Last possession', title: 'Down two, five seconds. You have the ball.',
+      text: () => 'Their best defender is on you. The bench is already standing up.',
+      options: [
+        { label: 'Go for three and the win', hint: 'All or nothing', rep: [2, 0], run: (L, r) => { if (ok(r, 0.38)) { bump(L, { fame: 7, morale: 7, win: 0.3 }); return 'Off the dribble, over the top, good. You run straight to the tunnel.'; } bump(L, { morale: -4 }); return 'Short. Front rim. A long flight home.'; } },
+        { label: 'Drive for the tie', hint: 'Play for overtime', rep: [0, 2], run: (L, r) => { if (ok(r, 0.55)) { bump(L, { morale: 4, win: 0.15 }); return 'Layup off the glass. You win it in overtime.'; } bump(L, { morale: -2 }); return 'Blocked at the rim. No call. No time.'; } },
+        { label: 'Hunt the foul', hint: 'Make them decide', rep: [-1, 1], run: (L, r) => { if (ok(r, 0.5)) { bump(L, { iq: 1, win: 0.15 }); return 'Two shots, no time. Both good. You win in overtime.'; } bump(L, { morale: -3 }); return 'No whistle. The crowd boos you all the way to the bench.'; } },
+      ] },
+  ],
+  injury_tweak: [
+    { tag: 'Training room', title: 'Your back locks up on the team bus',
+      text: () => '{trainer} gets you off the bus first and onto the table. Tip-off is in three hours.',
+      options: [
+        { label: 'Get loose and play', hint: 'It always loosens up', rep: [1, 1], run: (L, r) => { if (ok(r, 0.6)) { bump(L, { trust: 3 }); return 'Heat, stretching and a lot of tape. You play 30 minutes.'; } bump(L, { health: -9 }); return 'It tightens up in the second quarter. You miss two weeks.'; } },
+        { label: 'Sit tonight only', hint: 'One game, not ten', rep: [0, 1], run: (L) => { bump(L, { health: 3, rest: 1 }); return 'One night in street clothes. You\'re fine by Friday.'; } },
+        { label: 'Try the acupuncture guy', hint: 'Something new', rep: [1, 0], run: (L, r) => { if (ok(r, 0.6)) { bump(L, { health: 6 }); return 'Forty needles. You get off the table like a new person.'; } bump(L, { health: 1, morale: -2 }); return 'Forty needles, same back.'; } },
+      ] },
+    { tag: 'Training room', title: 'You rolled your ankle in the third quarter',
+      text: () => 'You finished the game on it. Now it\'s the size of a softball.',
+      options: [
+        { label: 'Ice, tape, play tomorrow', hint: 'Tough it out', rep: [2, 1], run: (L, r) => { if (ok(r, 0.5)) { bump(L, { trust: 4 }); return 'You limp in warmups and score 18. {trainer} can\'t believe it.'; } bump(L, { health: -8 }); return 'It turns in the first half. Now it\'s three weeks.'; } },
+        { label: 'Brace it for a week', hint: 'Play smart', rep: [0, 1], run: (L) => { bump(L, { health: 3, perf: -0.1 }); return 'Slower for a week, then all the way back.'; } },
+        { label: 'Sit until it\'s right', hint: 'Long view', rep: [-1, 1], run: (L) => { bump(L, { health: 6, rest: 2, morale: -2 }); return 'Two weeks on the bench. It never bothers you again.'; } },
+      ] },
+  ],
+  ref_heat: [
+    { tag: 'Free throw line', title: '{ref} just gave you a technical',
+      text: () => 'You said one word, quietly, walking away. The crowd heard the whistle. Next one, you\'re gone.',
+      options: [
+        { label: 'Ask him what you said', hint: 'Politely. Really politely.', rep: [0, 1], run: (L, r) => { if (ok(r, 0.5)) { bump(L, { trust: 2 }); return 'He tells you. It was a bad word. You both nod.'; } bump(L, { morale: -2 }); return 'He walks away. You keep your mouth shut.'; } },
+        { label: 'Use it as fuel', hint: 'Channel it', rep: [2, 0], run: (L, r) => { if (ok(r, 0.55)) { bump(L, { fame: 3, morale: 4, win: 0.2 }); return 'Twelve straight points. You stare at nobody in particular.'; } bump(L, { trust: -4 }); return 'Too much fuel. You force everything and sit the fourth.'; } },
+        { label: 'Let {tvet} talk to him', hint: 'Let the vet handle it', rep: [0, 2], run: (L) => { bump(L, { trust: 3 }); return '{tvet} and {ref} go back years. Somehow, the calls even out.'; } },
+      ] },
+    { tag: 'Locker room', title: 'The league fined you for criticizing refs',
+      text: () => 'Twenty-five thousand dollars for one honest sentence after the game. The league office wants to talk.',
+      options: [
+        { label: 'Pay it and apologize', hint: 'Keep the peace', rep: [-1, 2], run: (L) => { bump(L, { cash: -0.03, trust: 2 }); return 'Check, statement, done. It\'s gone by tomorrow.'; } },
+        { label: 'Say it again', hint: 'Double down', rep: [3, -2], watch: 'hot', run: (L) => { bump(L, { cash: -0.05, fame: 5, trust: -4 }); return 'Fifty thousand this time. Every player in the league likes your post.'; } },
+        { label: 'Donate the same amount', hint: 'Make it a story', rep: [3, 2], run: (L) => { bump(L, { cash: -0.06, fame: 4, morale: 3 }); return 'You match the fine for a youth league. The story flips.'; } },
+      ] },
+  ],
+  playoff_eve: [
+    { tag: 'Practice', title: 'The playoffs start Saturday. {coach} has a plan.',
+      text: () => 'He wants to shrink the rotation to eight. You\'re one of the eight. {tm2} isn\'t.',
+      options: [
+        { label: 'Back {coach}', hint: 'Win now', rep: [0, 2], run: (L) => { bump(L, { min: 2, trust: 5 }); return 'More minutes for you. {tm2} takes it like a pro.'; } },
+        { label: 'Speak up for {tm2}', hint: 'Loyalty', rep: [1, 2], run: (L, r) => { if (ok(r, 0.4)) { bump(L, { trust: 2, win: 0.2 }); return '{coach} keeps him in. He hits a big shot in Game 2.'; } bump(L, { trust: -3 }); return '{coach} thanks you and doesn\'t change a thing.'; } },
+        { label: 'Just get your legs ready', hint: 'Not your call', rep: [0, 1], run: (L) => { bump(L, { health: 4 }); return 'Ice baths and sleep. You feel twenty again.'; } },
+      ] },
+    { tag: 'Your home', title: 'Playoff tickets. Everybody wants them.',
+      text: () => 'Forty texts by noon. Your family, friends from home and people you haven\'t heard from in years.',
+      options: [
+        { label: 'Buy a whole section', hint: 'Everybody comes', rep: [3, 0], watch: 'spend', run: (L) => { bump(L, { cash: -0.1, morale: 6 }); return 'Thirty people in your colors behind the bench. Worth it.'; } },
+        { label: 'Family only', hint: 'Keep it tight', rep: [0, 1], run: (L) => { bump(L, { morale: 3 }); return 'Six seats. You see your mom before every free throw.'; } },
+        { label: 'Turn the phone off', hint: 'Lock in', rep: [-1, 2], run: (L) => { bump(L, { morale: -1, perf: 0.2 }); return 'Phone in a drawer until the series is done.'; } },
+      ] },
+  ],
+  exit_interview: [
+    { tag: 'GM\'s office', title: 'Exit interview. {gm} has a question.',
+      text: () => '"If you could change one thing about this roster," he says, "what is it?" He waits.',
+      options: [
+        { label: 'Get me a real point guard', hint: 'Name the need', rep: [0, 2], run: (L) => { bump(L, { trust: 2 }); return 'He writes it down. You see a point guard rumor by June.'; } },
+        { label: 'Nothing. We\'re close.', hint: 'Keep the group', rep: [1, 1], run: (L) => { bump(L, { morale: 3 }); return 'He smiles. You both know close isn\'t a plan.'; } },
+        { label: 'Ask what he\'d change', hint: 'Turn it around', rep: [0, 1], run: (L) => { bump(L, { iq: 1 }); return 'He says your defense. That\'s your summer.'; } },
+      ] },
+    { tag: 'Practice gym', title: 'Last day of the season. Clean out your locker.',
+      text: () => 'Cameras by the door, a trash bag for your stuff, and the coaching staff wants five minutes.',
+      options: [
+        { label: 'Ask for a summer plan', hint: 'Give me homework', rep: [0, 2], run: (L) => { bump(L, { eth: 4, trust: 4 }); return 'They give you a list. You start it Monday.'; } },
+        { label: 'Talk to the cameras', hint: 'Say goodbye to the fans', rep: [3, 0], run: (L) => { bump(L, { fame: 4 }); return 'Two minutes about next year. The city liked it.'; } },
+        { label: 'Out the back door', hint: 'Season\'s over', rep: [-1, 0], run: (L) => { bump(L, { morale: 2 }); return 'You\'re on a beach by Thursday.'; } },
+      ] },
+  ],
+  meet_someone: [
+    { tag: 'Coffee shop', title: 'The barista wrote something on your cup',
+      text: () => 'It\'s not your name. It\'s a phone number and "nice game last season." {partner:first}, it says.',
+      options: [
+        { label: 'Text them tonight', hint: 'Why not', rep: [0, 0], run: (L, r) => { if (ok(r, 0.7)) { const f = lifeOf(L); f.rel = 'dating'; f.since = L.year; bump(L, { morale: 8 }); logIt(L, 'Met {partner}.', 'good'); relate(L, 'partner', 30, 'A number on a coffee cup.'); return 'Dinner Friday. Then dinner Sunday. You\'re seeing somebody.'; } bump(L, { morale: -2 }); lifeOf(L).pn = (lifeOf(L).pn || 0) + 1; return 'Two texts, then nothing. It happens.'; } },
+        { label: 'Leave a big tip', hint: 'Stay mysterious', rep: [0, 0], run: (L) => { bump(L, { morale: 2 }); return 'You leave fifty dollars and a smile. Maybe next time.'; } },
+      ] },
+    { tag: 'Charity event', title: 'You get seated next to somebody funny',
+      text: () => '{partner:first} runs the youth program you\'re here for. They roast your free throws all night.',
+      options: [
+        { label: 'Ask them to dinner', hint: 'Take your shot', rep: [0, 0], run: (L, r) => { if (ok(r, 0.7)) { const f = lifeOf(L); f.rel = 'dating'; f.since = L.year; bump(L, { morale: 8 }); logIt(L, 'Met {partner}.', 'good'); relate(L, 'partner', 30, 'Roasted your free throws.'); return 'They say yes, then roast your restaurant choice. You\'re in trouble.'; } bump(L, { morale: -2 }); lifeOf(L).pn = (lifeOf(L).pn || 0) + 1; return 'They\'re seeing somebody. They still roast you on the way out.'; } },
+        { label: 'Volunteer at the program', hint: 'Show up first', rep: [2, 2], run: (L) => { bump(L, { morale: 4, fame: 1 }); return 'You run a Saturday clinic. You see them there. Slow and steady.'; } },
+      ] },
+  ],
+  family_money: [
+    { tag: 'Your phone', title: 'Your uncle wants you to co-sign a loan',
+      text: () => 'A food truck. He has a menu, a truck picked out and your signature on a line.',
+      options: [
+        { label: 'Sign it', hint: 'Family is family', rep: [1, 0], run: (L, r) => { if (ok(r, 0.5)) { bump(L, { morale: 5 }); return 'The truck does fine. The brisket is great.'; } bump(L, { cash: -0.3, morale: -4 }); return 'The truck closes in eight months. You pay the loan.'; } },
+        { label: 'Buy him the truck outright', hint: 'No strings', rep: [2, 0], watch: 'spend', run: (L) => { bump(L, { cash: -0.15, morale: 4 }); return 'He names a sandwich after you. It\'s too spicy.'; } },
+        { label: 'Send him to your money guy', hint: 'Make it business', rep: [0, 2], run: (L) => { bump(L, { cash: 0.02 }); L.flags.savvy = true; return 'Your advisor finds him a small business loan. No signature needed.'; } },
+      ] },
+    { tag: 'Mom\'s house', title: '{mom:first} wants to retire. Can you help?',
+      text: () => 'She\'s worked the same job for twenty-two years. She\'d never ask. Your aunt told you.',
+      options: [
+        { label: 'Retire her this week', hint: 'You promised once', rep: [3, 2], watch: 'spend', run: (L) => { bump(L, { cash: -0.4, morale: 10 }); logIt(L, 'Retired your mom.', 'good'); return 'You tell her at dinner. She cries. You cry. Your aunt films it.'; } },
+        { label: 'Set up a monthly check', hint: 'Steady, not sudden', rep: [1, 2], run: (L) => { bump(L, { cash: -0.2, morale: 6 }); return 'She keeps working two days a week. She says it\'s for the gossip.'; } },
+        { label: 'After the next contract', hint: 'Not yet', rep: [-1, 0], run: (L) => { bump(L, { morale: -3 }); return 'She says it\'s fine. You hear that it isn\'t.'; } },
+      ] },
+  ],
+  teammate_touches: [
+    { tag: 'Team bus', title: '{tco} is unhappy, and it\'s getting loud',
+      text: () => 'He told {beat} the offense runs through one guy. That guy is you.',
+      options: [
+        { label: 'Call him out in the room', hint: 'Settle it now', rep: [-1, 1], watch: 'hot', run: (L, r) => { if (ok(r, 0.45)) { bump(L, { trust: 4, win: 0.3 }); return 'Loud meeting. Better practice. You both play harder.'; } bump(L, { morale: -5, win: -0.4 }); return 'It gets worse. The room splits down the middle.'; } },
+        { label: 'Set him up early tonight', hint: 'Get him going', rep: [1, 2], run: (L) => { bump(L, { pla: 1, win: 0.4, usage: -0.01 }); return 'Three straight looks in the first quarter. He\'s smiling by halftime.'; } },
+        { label: 'Let the staff handle it', hint: 'Above your pay grade', rep: [0, 0], run: (L) => { bump(L, { trust: 2, morale: -1 }); return 'The staff handles it. Mostly.'; } },
+      ] },
+  ],
+  stuck: [
+    { tag: 'Agent\'s office', title: 'You\'re buried on the bench. {agent} has ideas.',
+      text: () => 'Ten minutes a night. {agent} says he can make some calls, or you can wait it out.',
+      options: [
+        { label: 'Make the calls', hint: 'Find minutes elsewhere', rep: [0, -1], run: (L) => { L.flags.tradeAsk = true; bump(L, { trust: -8, morale: 3 }); return 'Your name is in trade talks by Friday. On purpose this time.'; } },
+        { label: 'Stay and win practice', hint: 'Earn it here', rep: [0, 3], run: (L, r) => { bump(L, { eth: 4 }); if (ok(r, 0.5)) { bump(L, { min: 5, trust: 8 }); return 'You win every drill for three weeks. {coach} puts you in.'; } bump(L, { trust: 3 }); return 'Still waiting. But the coaches see you.'; } },
+        { label: 'Become the best teammate', hint: 'Be the guy everybody likes', rep: [1, 2], run: (L) => { bump(L, { trust: 6, morale: 2 }); return 'You run the bench celebrations. You play when it counts.'; } },
+      ] },
+  ],
+  trade_rumor: [
+    { tag: 'Your phone', title: 'A reporter says you\'re available',
+      text: () => 'One tweet, and now every mock trade has your name in it. {gm} hasn\'t called.',
+      options: [
+        { label: 'Call {gm} yourself', hint: 'Get the truth', rep: [0, 2], run: (L) => { bump(L, { trust: 4 }); return 'He says it\'s noise. He sounds like he means it.'; } },
+        { label: 'Post your gym session', hint: 'Business as usual', rep: [2, 0], run: (L) => { bump(L, { fame: 3, morale: 2 }); return 'Five a.m. lift. Ten thousand likes. You never mention it.'; } },
+        { label: 'Like the tweet', hint: 'Chaos', rep: [3, -3], watch: 'hot', run: (L) => { bump(L, { fame: 6, trust: -8 }); return 'You unlike it in two minutes. The screenshot lives forever.'; } },
+      ] },
+  ],
+  coach_bench: [
+    { tag: 'Coach\'s office', title: '{coach} wants to start {trook} over you',
+      text: () => 'The rookie needs reps, the club needs to see him, and you\'re the one he\'d replace.',
+      options: [
+        { label: 'Mentor the kid', hint: 'Be the vet', rep: [1, 3], run: (L) => { bump(L, { trust: 9, min: -3 }); return 'You teach {trook} your tricks. He says thank you in every interview.'; } },
+        { label: 'Win the job in practice', hint: 'Make it hard', rep: [0, 1], run: (L, r) => { if (ok(r, 0.45)) { bump(L, { trust: 2 }); return 'You go at him all week. You keep the job, for now.'; } bump(L, { min: -4, morale: -4 }); return 'He goes at you right back. He starts.'; } },
+        { label: 'Ask about a trade', hint: 'See what\'s out there', rep: [0, -2], run: (L) => { L.flags.tradeAsk = true; bump(L, { trust: -10 }); return '{agent} starts dialing. {coach} looks hurt.'; } },
+      ] },
+  ],
+  teammate_fight: [
+    { tag: 'Practice', title: 'Two teammates are fighting. You\'re closest.',
+      text: () => '{tm} and {tm2} are on the floor. The assistants are across the gym.',
+      options: [
+        { label: 'Pull them apart', hint: 'Step in', rep: [1, 3], run: (L, r) => { if (ok(r, 0.7)) { bump(L, { trust: 6 }); return 'You end it. Both of them thank you later, separately.'; } bump(L, { health: -4, trust: 4 }); return 'You end it and catch an elbow. Worth it.'; } },
+        { label: 'Get {coach}', hint: 'Not your fight', rep: [0, 1], run: (L) => { bump(L, { trust: 1 }); return 'He breaks it up and runs everybody for an hour. Including you.'; } },
+        { label: 'Talk to both after', hint: 'Fix the real problem', rep: [0, 2], run: (L) => { bump(L, { trust: 4, win: 0.3 }); return 'It was about a parking spot. You solve it with a calendar.'; } },
+      ] },
+  ],
+  online_beef: [
+    { tag: 'Your phone', title: 'A TV analyst says you\'re a bad defender',
+      text: () => 'He made a whole segment about it, with slow-motion clips. Your mom texts: "He\'s wrong."',
+      options: [
+        { label: 'Invite him to practice', hint: 'Come see for yourself', rep: [2, 2], run: (L) => { bump(L, { fame: 4, def: 1 }); return 'He shows up. You lock him up in a pickup game. Great TV.'; } },
+        { label: 'Lock up somebody Friday', hint: 'Show him', rep: [1, 2], run: (L, r) => { if (ok(r, 0.5)) { bump(L, { def: 1, fame: 3 }); return 'You hold {topp} to nine. The analyst gives you credit. Barely.'; } bump(L, { morale: -3 }); return '{topp} scores 31. The analyst runs it back.'; } },
+        { label: 'Post a meme', hint: 'Keep it light', rep: [2, -1], run: (L) => { bump(L, { fame: 3 }); return 'The meme gets more views than his segment.'; } },
+      ] },
+  ],
+  local_ad: [
+    { tag: 'Your phone', title: 'A local pizza chain wants you in an ad',
+      text: () => 'Ninety seconds, a fake mustache and a slice named after you. Real money, real embarrassing.',
+      options: [
+        { label: 'Wear the mustache', hint: 'Commit to the bit', rep: [3, -1], run: (L) => { bump(L, { cash: 0.12, fame: 4 }); return 'The ad runs every timeout. Kids yell your slice at you.'; } },
+        { label: 'No mustache', hint: 'A little dignity', rep: [1, 0], run: (L) => { bump(L, { cash: 0.08, fame: 1 }); return 'Normal ad, normal money. Nobody remembers it.'; } },
+        { label: 'Donate the fee', hint: 'Give it away', rep: [2, 1], run: (L) => { bump(L, { fame: 2, morale: 3 }); return 'Your fee pays for a youth league season. Good press too.'; } },
+      ] },
+  ],
+  playoff_guarantee: [
+    { tag: 'Locker room', title: 'Their star said they\'ll beat you in five',
+      text: () => 'He said it calmly, on camera. Every reporter in your locker wants an answer.',
+      options: [
+        { label: 'Say it\'ll go seven', hint: 'Respectful, and sharp', rep: [1, 2], run: (L) => { bump(L, { trust: 2, morale: 2 }); return 'Nice line. It\'s on every bulletin board in the building.'; } },
+        { label: 'Say four', hint: 'Sweep talk', rep: [3, -2], run: (L, r) => { if (ok(r, 0.4)) { bump(L, { fame: 6, morale: 6 }); return 'Bold. Your teammates are fired up.'; } bump(L, { fame: 4, morale: -4 }); return 'Bold. He reads it before Game 1 and smiles.'; } },
+        { label: 'Laugh and walk out', hint: 'Not worth it', rep: [0, 1], run: (L) => { bump(L, { morale: 1 }); return 'The laugh becomes a gif. That works too.'; } },
+      ] },
+  ],
+  media_day: [
+    { tag: 'Media day', title: 'Media day photos. They want a pose.',
+      text: () => 'The photographer has a smoke machine and a lot of ideas. You get one shot.',
+      options: [
+        { label: 'Arms crossed, no smile', hint: 'Classic', rep: [0, 2], run: (L) => { bump(L, { fame: 2 }); return 'You look like a superhero. Or a bouncer.'; } },
+        { label: 'Something ridiculous', hint: 'Give them a moment', rep: [3, -1], run: (L) => { bump(L, { fame: 5, morale: 3 }); return 'It becomes the photo of media day. You regret nothing.'; } },
+        { label: 'Pose with {trook}', hint: 'Make the rookie famous', rep: [2, 2], run: (L) => { bump(L, { trust: 3, fame: 2 }); return 'The rookie looks terrified. The internet loves it.'; } },
+      ] },
+  ],
+  load_mgmt: [
+    { tag: 'Training room', title: 'The sports science staff has your numbers',
+      text: () => 'Your sprint speed is down five percent. They want to cut practice in half.',
+      options: [
+        { label: 'Follow the numbers', hint: 'Trust the data', rep: [-1, 1], run: (L) => { bump(L, { health: 6, rest: 2, trust: 2 }); return 'Shorter practices. You feel faster by March.'; } },
+        { label: 'Practice full anyway', hint: 'Sweat is sweat', rep: [1, 0], run: (L, r) => { if (ok(r, 0.5)) { bump(L, { eth: 3 }); return 'You feel fine. The numbers even out.'; } bump(L, { health: -6 }); return 'Your legs are gone by February. The numbers were right.'; } },
+        { label: 'Hire your own trainer', hint: 'Second opinion', rep: [0, 1], run: (L) => { bump(L, { cash: -0.05, health: 4 }); return 'Different plan, same answer: rest more. You listen this time.'; } },
+      ] },
+  ],
+  charity: [
+    { tag: 'Community center', title: 'A kid\'s letter reaches your locker',
+      text: () => 'He\'s ten. He says he watches you every night, and his team doesn\'t have uniforms.',
+      options: [
+        { label: 'Buy the whole team gear', hint: 'Easy yes', rep: [2, 1], watch: 'spend', run: (L) => { bump(L, { cash: -0.02, morale: 5, fame: 2 }); return 'Twelve kids in matching shoes. They send a team photo.'; } },
+        { label: 'Show up at their game', hint: 'Be there', rep: [3, 2], run: (L) => { bump(L, { morale: 7, fame: 3 }); return 'They lose by twenty. They don\'t care. You were there.'; } },
+        { label: 'Write him back', hint: 'Something personal', rep: [1, 1], run: (L) => { bump(L, { morale: 3 }); return 'One page, handwritten. His mom says it\'s framed.'; } },
+      ] },
+  ],
+  investment: [
+    { tag: 'Agent\'s office', title: '{agent} found an investment for you',
+      text: () => 'A stake in a minor league soccer team. "Boring," he says. "That\'s the point."',
+      options: [
+        { label: 'Buy in', hint: 'Slow money', rep: [0, 1], watch: 'spend', run: (L, r) => { bump(L, { cash: -0.3 }); if (ok(r, 0.7)) { bump(L, { cash: 0.5 }); return 'The team gets a new stadium. Your stake doubles.'; } return 'It stays boring. The money just sits there.'; } },
+        { label: 'Buy a restaurant instead', hint: 'Something you like', rep: [2, 0], watch: 'spend', run: (L, r) => { bump(L, { cash: -0.3, fame: 2 }); if (ok(r, 0.4)) { bump(L, { cash: 0.4 }); return 'The wings are famous. You eat for free forever.'; } return 'Great food, bad lease. It closes in a year.'; } },
+        { label: 'Index funds', hint: 'Set it and forget it', rep: [0, 1], run: (L) => { bump(L, { cash: 0.05 }); L.flags.savvy = true; return 'You never think about it. It grows anyway.'; } },
+      ] },
+  ],
+  heckler: [
+    { tag: 'Courtside', title: 'A fan has a sign about you',
+      text: () => 'It\'s a cardboard cutout of your worst airball, life size. It\'s honestly well made.',
+      options: [
+        { label: 'Sign it after the game', hint: 'Win them over', rep: [3, 2], run: (L) => { bump(L, { fame: 4, morale: 3 }); return 'You sign it, "Still got paid." The fan frames it.'; } },
+        { label: 'Score 30 in front of it', hint: 'Answer with buckets', rep: [2, 1], run: (L, r) => { if (ok(r, 0.5)) { bump(L, { fame: 4, morale: 4 }); return 'You point at it after every make. The fan leaves early.'; } bump(L, { morale: -3 }); return 'Two more airballs. The fan has new material.'; } },
+        { label: 'Ignore it', hint: 'Eyes on the rim', rep: [0, 1], run: (L) => { bump(L, { morale: 1 }); return 'You never look. The sign gets less funny every quarter.'; } },
+      ] },
+  ],
+  christmas: [
+    { tag: 'Christmas morning', title: 'Christmas Day game. Who flies in?',
+      text: () => 'You play at noon. The whole family wants to come, and you have one hotel room left.',
+      options: [
+        { label: 'Fly in everybody', hint: 'Book the floor', rep: [2, 0], run: (L) => { bump(L, { cash: -0.05, morale: 8 }); return 'Twelve people, one giant breakfast. You play your best game of the year.'; } },
+        { label: 'Just your parents', hint: 'Keep it calm', rep: [0, 1], run: (L) => { bump(L, { morale: 5 }); return 'Quiet morning, loud afternoon. Your dad cheers like it\'s Game 7.'; } },
+        { label: 'Video call after', hint: 'Focus first', rep: [-1, 1], run: (L) => { bump(L, { perf: 0.2, morale: -2 }); return 'You play well. Opening presents on a laptop is not the same.'; } },
+      ] },
+  ],
+  contract_year: [
+    { tag: 'Agent\'s office', title: 'Contract year. {agent} has a number.',
+      text: () => 'He thinks a great season is worth twice what you make. A bad one is worth half.',
+      options: [
+        { label: 'Don\'t tell me numbers', hint: 'Just play', rep: [0, 2], run: (L) => { bump(L, { morale: 4 }); return 'He stops talking money. You start sleeping better.'; } },
+        { label: 'Put it on my mirror', hint: 'Daily motivation', rep: [1, -1], run: (L) => { bump(L, { eth: 4, usage: 0.02, morale: -2 }); return 'You see the number every morning. You shoot more. You stress more.'; } },
+        { label: 'Talk extension now', hint: 'Lock in security', rep: [0, 1], run: (L, r) => { if (ok(r, 0.4)) { bump(L, { morale: 5 }); return 'The front office is interested. They\'ll talk in the summer.'; } bump(L, { morale: -3 }); return 'They\'d rather wait. So now you wait too.'; } },
+      ] },
+  ],
+  grades: [
+    { tag: 'Library', title: 'A big exam lands on tournament week',
+      text: () => 'Chemistry final Thursday. Road game Friday. {coach} says grades come first, and means it.',
+      options: [
+        { label: 'Study on the bus', hint: 'Do both', rep: [0, 2], run: (L, r) => { if (ok(r, 0.6)) { bump(L, { iq: 1, eth: 2 }); return 'B-plus and twenty points. Same week.'; } bump(L, { morale: -3 }); return 'C-minus. You\'re still eligible. Barely.'; } },
+        { label: 'Ask for a makeup exam', hint: 'Work the system', rep: [0, 0], run: (L, r) => { if (ok(r, 0.5)) { bump(L, { morale: 2 }); return 'The professor says yes. You take it Monday.'; } bump(L, { trust: -3 }); return 'The professor says no, and tells the athletic department.'; } },
+        { label: 'Skip the game to study', hint: 'Grades first', rep: [0, 2], run: (L) => { bump(L, { iq: 1, trust: 3, morale: -2 }); return 'You miss the game. You ace the test. Your mom is thrilled.'; } },
+      ] },
+  ],
+  rival_school: [
+    { tag: 'The gym', title: 'Rivalry night. Their fans made shirts about you.',
+      text: () => 'Your face, a crown and the word "overrated." Half their student section is wearing one.',
+      options: [
+        { label: 'Wear one in warmups', hint: 'Steal the joke', rep: [3, 0], run: (L) => { bump(L, { fame: 4, morale: 4 }); return 'Even their students laugh. Then you drop 28.'; } },
+        { label: 'Play angry', hint: 'Make them pay', rep: [1, 1], run: (L, r) => { if (ok(r, 0.55)) { bump(L, { fame: 3, morale: 5 }); return 'Thirty points and a quiet student section.'; } bump(L, { morale: -4 }); return 'You press. Six for twenty. The shirts were right tonight.'; } },
+        { label: 'Lock up {prepstar}', hint: 'Win the matchup', rep: [0, 2], run: (L) => { bump(L, { def: 1, trust: 3 }); return 'Nine points on fifteen shots. The scouts write that down.'; } },
+      ] },
+  ],
+  nba_scouts: [
+    { tag: 'Practice gym', title: 'An NBA scout wants five minutes',
+      text: () => '{scout} catches you after practice. "Off the record. Tell me what you\'re working on."',
+      options: [
+        { label: 'Tell him the truth', hint: 'Show self-awareness', rep: [0, 2], run: (L) => { bump(L, { iq: 1, trust: 3 }); return 'He nods and writes "coachable." That word matters.'; } },
+        { label: 'Say you have no weaknesses', hint: 'Confidence', rep: [2, -1], run: (L, r) => { if (ok(r, 0.4)) { bump(L, { fame: 3 }); return 'He laughs. He likes the confidence.'; } bump(L, { trust: -2 }); return 'He writes something down and doesn\'t say what.'; } },
+        { label: 'Ask what they need', hint: 'Interview him back', rep: [0, 2], run: (L) => { bump(L, { iq: 2 }); return 'He says shooting. You know what you\'re doing this summer.'; } },
+      ] },
+  ],
+  nil_deal: [
+    { tag: 'Your phone', title: 'A car company wants you in an NIL ad',
+      text: () => 'A free car for a year and two posts a month. Your teammates walk to class.',
+      options: [
+        { label: 'Take it, drive the guys', hint: 'Share the ride', rep: [2, 1], run: (L) => { bump(L, { cash: 0.05, trust: 3, fame: 2 }); return 'You become the team taxi. Everybody likes you more.'; } },
+        { label: 'Take the cash instead', hint: 'Money, not a car', rep: [0, 0], run: (L) => { bump(L, { cash: 0.08 }); return 'They pay you instead. You buy your mom a dishwasher.'; } },
+        { label: 'Pass on it', hint: 'Keep it simple', rep: [0, 1], run: (L) => { bump(L, { morale: 1 }); return 'You keep walking. It\'s good for your legs anyway.'; } },
+      ] },
+  ],
+};
+
+/* Hang each take on its card. A take for a card that does not exist is a
+   typo, and it throws here rather than going quiet. */
+for (const id in TAKES) { const ev = EVENTS[id] || AM_EVENTS[id]; if (!ev) throw new Error('take for unknown event ' + id); ev.takes = TAKES[id]; }
 
 /* THE ARCS. Each node is dealt by dueArcs() in its own slot, never at random,
    and each run() moves the arc on (arcGo) or settles it (arcEnd). Setups live
@@ -9904,7 +10463,7 @@ function choose(L, i, extra) {
         } else if (i === 0) {
           if (rng() < 0.6) { inj.until = inj.from + Math.ceil(g / 2); bump(L, { trust: 4 }); text = 'Back in half the time. Your teammates notice.'; tone = 'good'; }
           else { inj.until = inj.from + g + 6; bump(L, { health: -8 }); text = 'You make it worse. Now you\'re out longer.'; tone = 'bad'; }
-        } else { inj.until = inj.from + g; bump(L, { health: 6 }); text = 'You give it time. It heals right.'; }
+        } else { inj.until = inj.from + g; bump(L, { health: 6 }); text = varyRes(L, card, 'inj_rest', 'You give it time. It heals right.'); }
         inj.pendingDecision = false;
         const missed = inj.until - inj.from;
         logIt(L, 'Out ' + missed + ' games with a ' + inj.kind + '.', 'bad');
@@ -9998,7 +10557,7 @@ function choose(L, i, extra) {
     }
     case 'retire': {
       if (i === 1) { L.pending = []; retire(L, beats); text = 'You walk away.'; tone = 'gold'; }
-      else { text = 'One more year. Let\'s go.'; bump(L, { morale: 3 }); }
+      else { text = varyRes(L, card, 'retire_more', 'One more year. Let\'s go.'); bump(L, { morale: 3 }); }
       break;
     }
     case 'nooffer': {
@@ -10026,8 +10585,14 @@ function choose(L, i, extra) {
       break;
     default: {
       const ev = evById(card.id);
-      watchPick(L, card.id, i, beats);
-      if (ev) {
+      if (!card.take) watchPick(L, card.id, i, beats);
+      if (ev && card.take && ev.takes && ev.takes[card.take - 1]) {
+        /* A take runs its own answers and carries its own reputation. */
+        const o = ev.takes[card.take - 1].options[i];
+        text = o.run(L, rng) || '';
+        if (o.rep) moveRep(L, o.rep[0], o.rep[1]);
+        if (o.watch && storyOn(L)) watchMark(L, o.watch, beats);
+      } else if (ev) {
         const o = ev.options[i];
         const names = relNames(L, card.id, i);
         text = o.run(L, rng) || '';

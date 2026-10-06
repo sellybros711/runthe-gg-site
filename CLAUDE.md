@@ -11941,6 +11941,39 @@ the future tense is wrong; three were rewritten for that before shipping.
 `replay-careers --story off` is byte identical over 1,000 careers: everything here
 is behind `storyOn`.
 
+#### The game narrates, and a card that comes back comes back different (story careers)
+
+```
+node hoops/check-story.mjs     section 14
+```
+
+Asked for by the owner: the decisions repeat, and the copy should sound like a game
+narrating your life. Measured first: a career deals about 124 cards, and the summer
+plan, the goal, Game 7, the injury report, retirement and the coach's review fill most
+of them. Three changes, all behind `storyOn`, so `replay-careers --story off` is byte
+identical (proved over 1,000 careers).
+
+- **The narrator.** `narrate()` gives a card one line in the game's own voice
+  (`card.lead`, drawn above the title), read off where the life is when the card
+  reaches the top of the stack: the record, your age, minutes, money, family, city,
+  rings. About a third of cards get one, a season hears at most twelve, and a line
+  comes back no sooner than `NARR_GAP` seasons. It is said in `sayAll`, never at deal
+  time, so a card dealt behind two others still knows the month it lands in. Every
+  line is a fact the career holds.
+- **Second takes.** `TAKES` hangs other versions on thirty recurring cards: the same
+  moment in the season, a different situation and different choices. `takeOf()` starts
+  each career on a take seeded off the career and steps one on every time the card
+  comes back, so a repeat is never the scene it was last time. A take's answer carries
+  its own reputation (`rep`) and trait signal (`watch`), because `EVENT_REP`,
+  `EVENT_REL` and the spend/hothead tables are indexed by the card as written. A take
+  for a card that does not exist throws at load. Without `watch` the spender trait went
+  dark in check-story.
+- **System cards put more than one way.** `VARY` rewrites the title and text of Game 7,
+  the injury report, retirement, the All-Star contests, extensions, the coach's review,
+  the high school summer and the draft decision, keeping every fact (games out, age,
+  money). The answers never change, because the rules read them by position.
+  `VARY_RES` does the same for two endings.
+
 #### Phase E: Pro starts in high school, a free career starts from a generated road
 
 ```
