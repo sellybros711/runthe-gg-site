@@ -1377,12 +1377,11 @@ function playHole(){
   var sub = tourSub(R, C, S.play), title = R.mode === 'ppt' ? (C.kind === 'real' ? 'Tour Pin · ' + C.name : levelName(R.lv)) : R.title;
   S.ov.innerHTML = top(title, sub, '') + '<div class="pt-stage"><canvas></canvas><div class="pt-read" hidden></div></div>\
     <div class="pt-bar">' + (C.kind === 'real' ? '<button class="pt-bt" data-l aria-label="Aim left">◂</button><button class="pt-bt" data-r aria-label="Aim right">▸</button>' : '') +
-    '<div class="pt-hint" data-hint></div><button class="pt-bt" data-restart aria-label="Restart the hole">↺</button><button class="pt-bt' + (S.play.read ? ' on' : '') + '" data-read>Read</button></div>';
+    '<div class="pt-hint" data-hint></div><button class="pt-bt" data-restart aria-label="Restart the hole">↺</button></div>';
   if (R.mode === 'ppt'){ var tp = S.ov.querySelector('.pt-top'), u = golferUrl(); tp.classList.add('pp-play'); var bx = tp.querySelector('[data-x]'); bx.textContent = '✕'; bx.setAttribute('aria-label', 'Leave the hole');
     bx.insertAdjacentHTML('afterend', '<i class="pp-av" style="' + (u ? 'background-image:url(' + u + ')' : '') + '"></i><span class="pp-hearts">' + hearts(pload()) + '</span>'); }
   S.ov.querySelector('[data-x]').onclick = function(){ leaveHole(); };
   S.ov.querySelector('[data-restart]').onclick = function(){ restartHole(); };
-  S.ov.querySelector('[data-read]').onclick = function(e){ S.play.read = !S.play.read; e.currentTarget.classList.toggle('on', S.play.read); };
   var nudge = function(s){ return function(){ aimNudge(s * 0.0035); }; };
   if (C.kind === 'real'){ holdRepeat(S.ov.querySelector('[data-l]'), nudge(-1)); holdRepeat(S.ov.querySelector('[data-r]'), nudge(1)); }
   S.cv = S.ov.querySelector('canvas'); S.stage = S.ov.querySelector('.pt-stage');
@@ -1535,7 +1534,7 @@ function frame(){
     ctx.drawImage(P.art, Math.round(o[0]), Math.round(o[1]), Math.round(P.art.width * k), Math.round(P.art.height * k)); }
   if (C.movers.length) (cam.v3 ? drawMovers3 : drawMovers)(ctx, C, cam, clock);
   if (cam.v3 && cam.v3.mill) drawSails(ctx, C, cam, clock);
-  if (P.read) drawRead(ctx, C, cam);
+  drawRead(ctx, C, cam, performance.now() / 1000);
   drawCup(ctx, C, cam, Math.hypot(bx - C.cup[0], by - C.cup[1]));
   if (P.trail && P.state === 'aim') drawTrail(ctx, cam, P.trail);
   if (P.state === 'aim') drawAim(ctx, P, cam);
@@ -1618,20 +1617,26 @@ function drawSails(ctx, C, cam, t){
   }
   var hb = w2s(cam, M3.x, M3.y, M3.z); ctx.fillStyle = T.ink; ctx.beginPath(); ctx.arc(hb[0], hb[1], Math.max(3, cam.s * 0.32), 0, 6.29); ctx.fill();
 }
-function drawRead(ctx, C, cam){
-  var step = C.kind === 'real' ? 3 : 2, b = C.bounds, s = cam.s;
+/* THE READ IS ALWAYS ON THE GREEN, AND IT MOVES. Each cell of the green carries one soft chevron that
+   drifts downhill along the fall line, so the green reads the way water would run off it. How steep
+   it is shows as how FAST the chevrons drift, never as a colour: they are all the same pale ink, light
+   enough to sit on the carpet rather than over it. A flat cell carries nothing. Each chevron fades in
+   and out over its own loop, from a phase off its cell, so the field never pulses in step. */
+function drawRead(ctx, C, cam, t){
+  var step = C.kind === 'real' ? 3 : 2, b = C.bounds, s = cam.s, lw = Math.max(1.2, s * 0.07);
+  ctx.strokeStyle = 'rgb(255,255,255)'; ctx.lineWidth = lw; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   for (var y = b[1] + step / 2; y < b[3]; y += step) for (var x = b[0] + step / 2; x < b[2]; x += step){
     var m = C.mats.at(x, y); if (m !== M.GREEN && m !== M.FRINGE) continue;
     var gx = C.field.gx(x, y), gy = C.field.gy(x, y), g = Math.hypot(gx, gy); if (g < 0.003) continue;
     var p = w2s(cam, x, y); if (p[0] < -20 || p[1] < -20 || p[0] > S.cv.width + 20 || p[1] > S.cv.height + 20) continue;
-    var Lw = Math.min(step * 0.42, 0.6 + g * 22), wx = -gx / g, wy = -gy / g, pa = w2s(cam, x - wx * Lw / 2, y - wy * Lw / 2), pb = w2s(cam, x + wx * Lw / 2, y + wy * Lw / 2);
-    var L = Math.hypot(pb[0] - pa[0], pb[1] - pa[1]) || 1, ux = (pb[0] - pa[0]) / L, uy = (pb[1] - pa[1]) / L;
-    var col = g < 0.015 ? 'rgba(160,220,255,.75)' : g < 0.03 ? 'rgba(255,240,140,.85)' : 'rgba(255,120,90,.9)';
-    ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = Math.max(1.2, s * 0.06);
-    ctx.beginPath(); ctx.moveTo(pa[0], pa[1]); ctx.lineTo(pb[0], pb[1]); ctx.stroke();
-    var hx = pb[0], hy = pb[1], hs = Math.max(3, L * 0.32);
-    ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(hx - ux * hs - uy * hs * 0.6, hy - uy * hs + ux * hs * 0.6); ctx.lineTo(hx - ux * hs + uy * hs * 0.6, hy - uy * hs - ux * hs * 0.6); ctx.closePath(); ctx.fill();
+    var wx = -gx / g, wy = -gy / g, spd = clamp(g * 30, 0.12, 1.8), ph = (t * spd + hash3(Math.round(x * 4), Math.round(y * 4), 21)) % 1;
+    var off = (ph - 0.5) * step * 0.8, cx = x + wx * off, cy = y + wy * off;
+    if (C.mats.at(cx, cy) !== m && C.mats.at(cx, cy) !== M.GREEN) continue;
+    var hs = step * 0.17, tip = w2s(cam, cx + wx * hs, cy + wy * hs), l = w2s(cam, cx - wx * hs - wy * hs, cy - wy * hs + wx * hs), r = w2s(cam, cx - wx * hs + wy * hs, cy - wy * hs - wx * hs);
+    ctx.globalAlpha = 0.34 * Math.sin(ph * Math.PI);
+    ctx.beginPath(); ctx.moveTo(l[0], l[1]); ctx.lineTo(tip[0], tip[1]); ctx.lineTo(r[0], r[1]); ctx.stroke();
   }
+  ctx.globalAlpha = 1;
 }
 function drawCup(ctx, C, cam, dBall){
   var p = w2s(cam, C.cup[0], C.cup[1]), r = Math.max(C.cupR * cam.s, 5.5 * S.dpr), sq = cam.v3 ? cam.v3.se : 0.92;
