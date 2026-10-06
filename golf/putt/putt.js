@@ -1040,8 +1040,8 @@ var LEVELS = [
     blk(H, T, -5, -10.4, -3.8, -11); blk(H, T, -1.2, -10.4, 5, -11); blk(H, T, -5, -21.4, 1.2, -22); blk(H, T, 3.8, -21.4, 5, -22); return H; } },
   // Lagoon Run: ride the current to the beach, putt out past the barrel.
   { par:3, f:function(T){ var H = hole([rm(-12, 0, -4, -10), rm(-6, -28, 6, -40, -0.8)], [-8, -2.5], [0, -36]); river(H, [[-8, -9.5], [-8, -16], [0, -20], [8, -16], [8, -24], [3, -28.5]], 2, 7, 0, -0.8); zoneR(H, M.WATER, -6, -28, -2, -32); bumps(H, T, [[2, -33, 0.6]]); return H; } },
-  // Mutiny: two booms and two gates, two putts. The secret: a crack where the first gate's wall meets the right rail, and the rail beyond it sends the ball through the second gate.
-  { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -42)], [0, -2.5], [0, -38]); slider(H, T, -10, -3.2, 3.2, 2.4, 0); blk(H, T, -5, -18, -1.2, -19.2); blk(H, T, 1.2, -18, 4.1, -19.2); gateAt(H, T, -18.6, -1.2, 1.2, 3, 0.2, 1); secret(H, 4.1, -18, 5, -19.2);
+  // Mutiny: two booms and two gates, two putts. The secret: the powder chute in the right corner by the tee runs under the whole deck and comes up in front of the cup.
+  { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -42)], [0, -2.5], [0, -38]); slider(H, T, -10, -3.2, 3.2, 2.4, 0); blk(H, T, -5, -18, -1.2, -19.2); blk(H, T, 1.2, -18, 5, -19.2); gateAt(H, T, -18.6, -1.2, 1.2, 3, 0.2, 1); pipe(H, T, 4.2, -6, 0, -36.6, 0, -1, 0.9, 0, 0.2); secret(H, 3.4, -5.2, 5, -6.8);
     slider(H, T, -26, 3.2, -3.2, 2.0, 0.4); gateWall(H, T, -32, -5, 5, 1, 3.4, 3.4, 0.7, -1); bowl(H, 0, -38); return H; } },
   // Double Jump: two short hops over the lagoon, putt out.
   { par:3, f:function(T){ var H = hole([rm(-4, 0, 4, -10), rm(-4, -9.9, 4, -12.1), rm(-4, -12, 4, -16), rm(-4, -15.9, 4, -18.3), rm(-4, -18.2, 4, -32)], [0, -2.5], [-1.5, -28]);
