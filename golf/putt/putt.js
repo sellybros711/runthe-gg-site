@@ -946,11 +946,11 @@ var LEVELS = [
   // Loop the Pond: through the loop, over the drawbridge (the curb keeps a stray ball out of the moat), putt out.
   { par:3, f:function(T){ var H = hole([rm(-4, 0, 4, -10), pg([[-4, -10], [4, -10], [0.8, -13.5], [-0.8, -13.5]]), rm(-0.8, -13.4, 0.8, -17), rm(-5, -16.9, 5, -26), rm(-5, -25.9, 5, -28.6), rm(-5, -28.5, 5, -40)], [0, -2.5], [2, -36]);
     loopAt(H, 0, -15, 0, -1, 0.65, 1.6); zoneR(H, M.WATER, -5, -26, 5, -28.5); drawb(H, -1.4, -26, 1.4, -28.5, 3, 0.2, 0.55); blk(H, T, -5, -25.3, -1.4, -25.9); blk(H, T, 1.4, -25.3, 5, -25.9); return H; } },
-  // Clubhouse Classic: the big pipe, the windmill, the drawbridge. The secret: the small pipe tucked behind the bumper skips the windmill and the moat.
+  // Clubhouse Classic: the big pipe, the windmill, the drawbridge, then round the end of the last wall. The secret: the small pipe tucked behind the bumper skips the windmill and the moat.
   { par:4, sig:true, f:function(T){ var H = hole([rm(-5, 0, 5, -12), rm(-6, -16, 6, -34, 0.6), rm(-6, -33.9, 6, -36.6, 0.6), rm(-6, -36.5, 6, -48, 0.6)], [0, -2.5], [-2, -44]);
     pipe(H, T, -3, -9, -3, -17.6, 0, -1, 0.8, 0, 0.2); pipe(H, T, 0.4, -9, 0, -1.2, 0, 1, 0.8); bumps(H, T, [[2.6, -8.4, 0.5]]); millAt(H, T, -28, 6, 1.3); zoneR(H, M.WATER, -6, -34, 6, -36.5); drawb(H, -1.4, -34, 1.4, -36.5, 3.6, 0.5, 0.55);
     blk(H, T, -6, -33.3, -1.4, -33.9); blk(H, T, 1.4, -33.3, 6, -33.9);
-    pipe(H, T, 3.8, -10.4, 3, -37.4, 0, -1, 0.9, 0, 0.55); secret(H, 3, -9.6, 4.6, -11.2); flatAt(H, -2, -44); return H; } },
+    pipe(H, T, 3.8, -10.4, 3, -37.4, 0, -1, 0.9, 0, 0.55); secret(H, 3, -9.6, 4.6, -11.2); blk(H, T, -6, -39.4, 1.8, -40); flatAt(H, -2, -44); return H; } },
   // ---- 2 LOST TEMPLE: jade rivers, stone doors, turning floors and the vines
   // Temple Steps: up the steps between the pillars, two putts. The secret: a serpent's mouth at the foot of the steps, in the right corner, comes out under the cup.
   { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -34)], [0, -2.5], [0, -30]); H.comps.push({ k:'ramp', x0:0, y0:-11, ux:0, uy:-1, len:5, a:0.5 }); bumps(H, T, [[-2.2, -20], [2.2, -23.5], [-1.2, -26.6, 0.55]]); flatAt(H, 0, -30);
@@ -1056,7 +1056,7 @@ var LEVELS = [
     pipe(H, T, 4.2, -10.6, 0, -42, 0, -1, 0.6, 0, 0.6); secret(H, 3.4, -9.8, 5, -11.4); return H; } },
   // ---- 4 CANYON MINE: mine carts, shafts down a level, rail loops and the flood channel
   // Boom Town: pick a way through the boulders, two putts. The secret: the dynamite shaft behind the crate by the tee comes up at the cup.
-  { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -34)], [0, -2.5], [2, -30]); pipe(H, T, 4.9, -6.6, 2, -28.6, 0, -1, 0.8, 0, 0.2); secret(H, 4.1, -5.8, 5.7, -7.4); bumps(H, T, [[3.7, -5.6, 0.5], [-1.4, -11, 0.85], [2.2, -15, 0.8], [-2.6, -19.5, 0.8], [1, -23.5, 0.8], [3.4, -27.4, 0.6], [1.5, -26.6, 0.6]]); zoneR(H, M.MUD, -6, -26, -1, -30); H.comps.push({ k:'plane', gx:-0.015, gy:0 }); return H; } },
+  { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -34)], [0, -2.5], [2, -30]); pipe(H, T, 4.9, -6.6, 2, -28.6, 0, -1, 0.8, 0, 0.2); secret(H, 4.1, -5.8, 5.7, -7.4); bumps(H, T, [[3.7, -5.6, 0.5], [-1.4, -11, 0.85], [2.2, -15, 0.8], [-2.6, -19.5, 0.8], [1, -23.5, 0.8], [3.4, -27.4, 0.6], [1.5, -26.6, 0.6], [3.3, -30.3, 0.55]]); zoneR(H, M.MUD, -6, -26, -1, -30); H.comps.push({ k:'plane', gx:-0.015, gy:0 }); return H; } },
   { par:3, f:function(T){ var H = hole([rm(-4.5, 0, 4.5, -36)], [0, -2.5], [0, -32]); blk(H, T, -4.5, -15, -1.4, -16.4); blk(H, T, 1.4, -15, 4.5, -16.4); slider(H, T, -15.7, -2.8, 2.8, 2.4, 0, 1.6); zoneR(H, M.MUD, -4.5, -22, 4.5, -24); zoneR(H, M.GREEN, -1, -22, 1, -24); return H; } },
   { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -14), rm(-7, -18, 7, -34, -2)], [0, -2.5], [-3, -30]); pipe(H, T, 2.8, -11.5, 4.5, -19.6, 0, -1, 1.1); pipe(H, T, -2.8, -11.5, -3, -28.6, 0, -1, 0.8, 0, 0.2); secret(H, -3.6, -10.7, -2, -12.3); blk(H, T, -7, -24, 3, -25.4); zoneC(H, M.MUD, 1.2, -29.5, 1.1); return H; } },
   { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -34)], [-3, -2.5], [3, -30]); belt(H, -6, -10, 6, -14, 0, 4); belt(H, -6, -20, 6, -24, 0, -4); bumps(H, T, [[0, -17, 0.7], [4.6, -27.4, 0.6]]); return H; } },
