@@ -677,7 +677,7 @@ var LEVELS = [
   { par:3, f:function(T){ var H = lvH([[-12, 0], [-4, 0], [-4, -20], [4, -20], [4, 0], [12, 0], [12, -28], [-12, -28]], [-8, -2.5], [8, -4.5]); bumps(H, T, [[0, -24.2, 0.9]]); return H; } },
   { par:3, f:function(T){ var H = lvH(rectP(13, 32), [0, -2.5], [4, -29]); addBlock(H, 1.0, -21, 1.6, -32, T.block); addBlock(H, 1.0, -21, 6.5, -21.6, T.block);
     portal(H, T, -3, -24, 4, -23.1, 0, -1); bumps(H, T, [[-2.6, -12]]); return H; } },
-  { par:3, f:function(T){ var H = lvH(rectP(9, 44), [0, -2.5], [0, -40.5]); millAt(H, T, -12, 4.5, 1.4); millAt(H, T, -28, 4.5, -1.1); return H; } },
+  { par:4, f:function(T){ var H = lvH(rectP(9, 44), [0, -2.5], [0, -40.5]); millAt(H, T, -12, 4.5, 1.4); millAt(H, T, -28, 4.5, -1.1); return H; } },
   { par:4, sig:true, f:function(T){ var H = lvH(rectP(13, 54), [0, -2.5], [0, -50.5]); addBlock(H, -6.5, -14, 6.5, -15.5, T.block);
     portal(H, T, -3.5, -12.3, -5.2, -17.7, 0, -1); portal(H, T, 3.5, -12.3, 2.2, -17.7, 0, -1);
     addBlock(H, -6.5, -30, -1.1, -33.5, T.block); addBlock(H, 1.1, -30, 6.5, -33.5, T.block);
@@ -694,7 +694,7 @@ var LEVELS = [
   { par:3, f:function(T){ var H = lvH(rectP(11, 36), [0, -2.5], [0, -32]); slider(H, T, -12, -3.8, 3.8, 2.8, 0); slider(H, T, -24, 3.8, -3.8, 3.6, 0.5); bumps(H, T, [[-3.3, -18], [3.3, -18]]); return H; } },
   { par:3, f:function(T){ var H = lvH(rectP(13, 30), [0, -2.5], [0, -25]); zoneR(H, M.ICE, -6.5, -14, 6.5, -20); bumps(H, T, [[-4.4, -22.5], [4.4, -22.5]]); return H; } },
   { par:3, f:function(T){ var H = lvH(rectP(13, 34), [0, -2.5], [-3, -30]); addBlock(H, -6.5, -18, 6.5, -19.5, T.block); portal(H, T, -3, -16.3, 3, -21.6, 0, -1); zoneR(H, M.ICE, 0.5, -23, 5.5, -28); return H; } },
-  { par:4, sig:true, f:function(T){ var H = lvH(rectP(11, 52), [0, -2.5], [0, -48.5]); addBlock(H, -5.5, -12, -1.2, -13.5, T.block); addBlock(H, 1.2, -12, 5.5, -13.5, T.block); gateAt(H, T, -12.75, -1.2, 1.2, 3.2, 0, 1);
+  { par:3, sig:true, f:function(T){ var H = lvH(rectP(11, 52), [0, -2.5], [0, -48.5]); addBlock(H, -5.5, -12, -1.2, -13.5, T.block); addBlock(H, 1.2, -12, 5.5, -13.5, T.block); gateAt(H, T, -12.75, -1.2, 1.2, 3.2, 0, 1);
     slider(H, T, -22, -4, 4, 3.4, 0.25); zoneR(H, M.ICE, -5.5, -29, 5.5, -34); addBlock(H, -5.5, -39, 0.4, -40.5, T.block); addBlock(H, 2.8, -39, 5.5, -40.5, T.block); gateAt(H, T, -39.75, 0.4, 2.8, 3.8, 0.6, -1); flatAt(H, 0, -48.5); return H; } },
   // ---- 4 SEASHELL SHORES: water, ramps and conveyors
   { par:3, f:function(T){ var H = lvH(rectP(12, 34), [0, -2.5], [0, -29.5]); zoneR(H, M.WATER, -6, -15, 6, -19); zoneR(H, M.GREEN, -1.3, -15, 1.3, -19); return H; } },
@@ -957,8 +957,8 @@ var CSS = '\
 .pp-daily{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 10px;margin:10px 12px 8px;padding:12px 14px;border-radius:16px;border:2px solid;text-align:left;font:inherit;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.35)}\
 .pp-daily .k{grid-column:1;font-size:10.5px;letter-spacing:.14em;font-weight:900;text-transform:uppercase;opacity:.85}.pp-daily .t{grid-column:1;font-family:var(--display,inherit);font-size:21px;line-height:1.1}\
 .pp-daily .m{grid-column:1;font-size:12px;opacity:.9}.pp-daily .g{grid-column:2;grid-row:1/4;font-weight:900;font-size:14px;background:#F1D04A;color:#10241a;border-radius:11px;padding:10px 14px}\
-.pp-map{position:relative;flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;border-top:1px solid rgba(241,208,74,.25)}\
-.pp-world{position:relative;margin:0 auto}.pp-band{position:absolute;left:-200px;right:-200px;background-size:cover;background-position:center;background-repeat:no-repeat;image-rendering:pixelated}\
+.pp-map{position:relative;flex:1;min-height:0;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;border-top:1px solid rgba(241,208,74,.25)}\
+.pp-world{position:relative;margin:0 auto}.pp-band{position:absolute;left:-200px;right:-200px;background-size:cover;background-position:center;background-repeat:no-repeat;overflow:hidden}.pp-land{position:absolute;left:0;top:0;image-rendering:pixelated;display:block}\
 .pp-wname{position:absolute;left:0;right:0;text-align:center;pointer-events:none;text-shadow:0 2px 0 rgba(0,0,0,.55),0 0 8px rgba(0,0,0,.5)}.pp-wname b{display:block;font-family:var(--display,inherit);font-size:18px;letter-spacing:.02em}.pp-wname span{font-size:11px;font-weight:800;opacity:.8}\
 .pp-path{position:absolute;left:0;top:0;pointer-events:none}.pp-path path{fill:none;stroke:rgba(255,255,255,.75);stroke-width:5;stroke-dasharray:2 11;stroke-linecap:round}\
 .pp-lv{position:absolute;transform:translate(-50%,-50%);width:50px;height:50px;border-radius:50%;border:3px solid #10241a;background:#F1D04A;color:#10241a;font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 4px 0 rgba(0,0,0,.35);padding:0}\
@@ -1089,26 +1089,33 @@ function drawMap(st){
     '<div class="pp-me" style="left:' + cp[0] + 'px;top:' + (cp[1] - 34) + 'px">' + golferImg('pp-meimg') + '</div></div>';
   box.querySelectorAll('[data-lv]').forEach(function(b){ b.onclick = function(){ var n = +b.getAttribute('data-lv'); if (n > pload().lv) return toastHub('Beat level ' + (n - 1) + ' under par to open it.'); startLevel(n); }; });
   requestAnimationFrame(function(){ box.scrollTop = Math.max(0, cp[1] - box.clientHeight * 0.6); });
-  mapArt(box);
+  mapArt(box, pos);
 }
-/* EACH WORLD'S GROUND ON THE MAP IS THAT WORLD'S OWN LAND, the same 3D place its holes sit in, rendered
-   once a visit a world at a time between frames and laid under the path. Owner's rule for the level
-   screen as much as for the holes: a built place, never a scatter of stickers. A blocked 3D module
-   leaves the plain colour bands. */
+/* EACH WORLD ON THE MAP IS A PLACE OF ITS OWN THEME, painted by mapland.js the way the mockups were:
+   one continuous landscape a world tall (a haunted wood with a river and a chapel, a snowed-in pine
+   valley, a beach, a clubhouse lawn, a tournament park), with the trail through the badges worn into
+   it. Owner's rule: a built place, never a scatter of stickers and never a hole cropped and faded.
+   One cell is two CSS pixels, so the picture is drawn at exactly 2x. Painted a world a frame,
+   cached for the visit. A blocked module leaves the plain colour bands. */
 var MAPART = {};
-function mapArt(box){
-  if (!v3Ok()) return;
-  var w = 0;
+function mapArt(box, pos){
+  var ML = window.RTT_PUTT_MAPLAND; if (!ML) return;
+  var w = 0, PADX = 200;
   (function next(){
     if (!S || S.screen !== 'menu' || w >= WORLDS.length) return;
     var band = box.querySelector('.pp-band[data-w="' + w + '"]');
     if (band){
-      if (MAPART[w] === undefined){ try{ var R = window.RTT_PUTT_3D.render(buildLevel(w * 10 + (w === 4 ? 2 : 1)), { aspect:1.7 }); MAPART[w] = { u:R.cv.toDataURL(), w:R.cv.width, h:R.cv.height }; }catch(e){ MAPART[w] = null; } }
-      if (MAPART[w]){ var T = THEMES[WORLDS[w].theme];
-        band.style.backgroundImage = 'radial-gradient(closest-side,rgba(0,0,0,0) 55%,' + T.bg + ' 98%),url(' + MAPART[w].u + '),linear-gradient(' + T.bg + ',' + T.bg + ')';
-        var iw = MAPART[w].w * 2 + 'px ' + MAPART[w].h * 2 + 'px'; band.style.backgroundSize = iw + ',' + iw + ',100% 100%'; band.style.backgroundRepeat = 'no-repeat'; band.style.backgroundPosition = 'center 38%'; }
+      var top = parseFloat(band.style.top), bh = band.offsetHeight, bw = band.offsetWidth, cw = Math.ceil(bw / 2), ch = Math.ceil(bh / 2), key = w + ':' + cw + 'x' + ch;
+      if (MAPART[key] === undefined){
+        var pts = pos.map(function(p){ return [(p[0] + PADX) / 2, (p[1] - top) / 2]; });
+        var view = Math.min(box.clientWidth || 390, bw), vx0 = Math.round((bw - view) / 4) + 6, vx1 = Math.round((bw + view) / 4) - 6;
+        try{ MAPART[key] = ML.make(WORLDS[w].theme, cw, ch, pts, { seed:11 + w * 17, vx0:vx0, vx1:vx1 }); }catch(e){ MAPART[key] = null; }
+      }
+      var src = MAPART[key];
+      if (src){ var cv = document.createElement('canvas'); cv.width = src.width; cv.height = src.height; cv.getContext('2d').drawImage(src, 0, 0);
+        cv.className = 'pp-land'; cv.style.width = src.width * 2 + 'px'; cv.style.height = src.height * 2 + 'px'; band.style.background = 'none'; band.appendChild(cv); }
     }
-    w++; setTimeout(next, 30);
+    w++; setTimeout(next, 16);
   })();
 }
 function toastHub(msg){ var t = S.ov.querySelector('.pp-toast'); if (!t){ t = el('<div class="pp-toast"></div>'); S.ov.appendChild(t); } t.textContent = msg; t.classList.add('on'); clearTimeout(S.tt); S.tt = setTimeout(function(){ t.classList.remove('on'); }, 1800); }

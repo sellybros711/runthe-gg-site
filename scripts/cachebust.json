@@ -2515,8 +2515,8 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "5",
-      "sha": "30a5de24f8ee13c1"
+      "v": "6",
+      "sha": "d4847b274d7d211b"
     },
     "putt/land.js": {
       "v": "2",
@@ -2525,6 +2525,10 @@
     "putt/hole3d.js": {
       "v": "3",
       "sha": "c010317b6bd44812"
+    },
+    "putt/mapland.js": {
+      "v": "1",
+      "sha": "c02743e1671fb99e"
     },
     "golfer3d.js": {
       "v": "2",
