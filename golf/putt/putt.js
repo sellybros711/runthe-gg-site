@@ -909,7 +909,7 @@ var LEVELS = [
     secret(H, 5.5, -23.4, 14, -24); bowl(H, 12, -19); return H; } },
   // The Windmill: round either side of the house, two putts. The secret: through the door, if the sails let you.
   { par:3, f:function(T){ var H = hole([rm(-7, 0, 7, -38)], [0, -2.5], [0, -33]);
-    millAt(H, T, -18, 4.5, 1.3); secret(H, -1.1, -18, 1.1, -21.5); bumps(H, T, [[-2.8, -28.5, 0.5], [2.8, -28.5, 0.5]]); return H; } },
+    millAt(H, T, -18, 4.5, 1.3); secret(H, -1.1, -18, 1.1, -21.5); bumps(H, T, [[-2.8, -28.5, 0.5], [2.8, -28.5, 0.5]]); bowl(H, 0, -33, 1.4, 0.12); return H; } },
   // Sand Bar: blast it through the sand and putt out. The secret: off the right wall the ball crosses the trap on the one strip of carpet left in it.
   { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -30)], [0, -2.5], [-1.5, -25]); zoneR(H, M.SAND, -5, -14, 5, -17); zoneR(H, M.GREEN, 2.6, -14, 4.6, -17); secret(H, 2.6, -14, 4.6, -17); bumps(H, T, [[-3.2, -21, 0.55]]); bowl(H, -1.5, -25); return H; } },
   // Pipe Dream: the big pipe climbs to the top room, then putt out; the left one is a dud back to the tee. The secret: the little pipe in the corner, behind the bumper, comes out lined up with the cup.
@@ -920,22 +920,22 @@ var LEVELS = [
   { par:3, f:function(T){ var H = hole([rm(-4.5, 0, 4.5, -34)], [0, -2.5], [0, -30]); blk(H, T, -4.5, -14, -1.2, -15.2); blk(H, T, 1.2, -14, 3.5, -15.2);
     secret(H, 3.5, -14, 4.5, -15.2); slider(H, T, -14.6, -2.6, 2.6, 2.8, 0, 1.8); bumps(H, T, [[-2.5, -24, 0.5], [0, -23, 0.6]]); bowl(H, 0, -30); return H; } },
   // Causeway: up the railed causeway to the island, then putt out. The secret: the kicker in front of the water skips the ball straight onto the island.
-  { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -28)], [0, -2.5], [0, -18.2]); zoneR(H, M.WATER, -6, -11, 6, -25.5); zoneC(H, M.GREEN, 0, -18.2, 3); zoneR(H, M.GREEN, 2.2, -11, 4.4, -17);
-    blk(H, T, 1.9, -11, 2.2, -16.2); blk(H, T, 4.4, -11, 4.7, -16.6); jump(H, -0.6, -10.9, 0, -1, 0.05, 2.2, { m:M.GREEN, h:0.6, ang:34 }); secret(H, -1.7, -10.3, 0.5, -11); bowl(H, 0, -18.2, 1.4, 0.12); return H; } },
+  { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -28)], [0, -2.5], [0, -17]); zoneR(H, M.WATER, -6, -11.06, 6, -25.5); zoneC(H, M.GREEN, 0, -17, 3); zoneR(H, M.GREEN, 2.2, -11, 4.4, -17);
+    blk(H, T, 1.9, -11, 2.2, -16.2); blk(H, T, 4.4, -11, 4.7, -16.6); jump(H, -0.6, -11, 0, -1, 0.05, 2.2, { m:M.GREEN, h:0.9, ang:40 }); secret(H, -1.7, -10.3, 0.5, -11); bowl(H, 0, -17, 1.4, 0.12); blk(H, T, -1.8, -18.9, 1.8, -19.3); return H; } },
   // The Kicker: over the pond off the kicker, then putt round the rock.
   { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -12), rm(-5, -11.9, 5, -15.1), rm(-5, -15, 5, -30)], [0, -2.5], [-2, -26]); jump(H, 0, -12, 0, -1, 3, 10, { w:3.2 }); bumps(H, T, [[-1.2, -21.4, 0.65]]); return H; } },
   // First Loop: through the loop and putt out round the bumper.
   { par:3, f:function(T){ var H = hole([rm(-4, 0, 4, -12), pg([[-4, -12], [4, -12], [0.8, -15.6], [-0.8, -15.6]]), rm(-0.8, -15.5, 0.8, -19.5), rm(-4, -19.4, 4, -34)], [0, -2.5], [-2.2, -30]);
     loopAt(H, 0, -17.5, 0, -1, 0.6, 1.6); bumps(H, T, [[-0.6, -27.6, 0.55]]); return H; } },
-  // Two Gates: time two gates, then putt out. The secret: a crack at the right end of the first wall, and off the rail beyond it the ball is lined up with the second gate.
-  { par:3, f:function(T){ var H = hole([rm(-4.5, 0, 4.5, -40)], [0, -2.5], [0, -36]); blk(H, T, -4.5, -13, -1.2, -14.2); blk(H, T, 1.2, -13, 3.6, -14.2); gateAt(H, T, -13.6, -1.2, 1.2, 3.2, 0, 1);
-    secret(H, 3.6, -13, 4.5, -14.2); gateWall(H, T, -26, -4.5, 4.5, 1.2, 3.4, 3.8, 0.4, -1); bowl(H, 0, -36); return H; } },
+  // Two Gates: time two gates, then putt out into the bowl.
+  { par:3, f:function(T){ var H = hole([rm(-4.5, 0, 4.5, -40)], [0, -2.5], [0, -36]); blk(H, T, -4.5, -13, -1.2, -14.2); blk(H, T, 1.2, -13, 4.5, -14.2); gateAt(H, T, -13.6, -1.2, 1.2, 3.2, 0, 1);
+    gateWall(H, T, -26, -4.5, 4.5, 1.2, 3.4, 3.8, 0.4, -1); bowl(H, 0, -36); return H; } },
   // Conveyor: across the belt aiming off its push, then putt out. The secret: let the belt have it. It dumps the ball in a chute at the far end, and the chute comes out at the cup.
   { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -34)], [0, -2.5], [-3, -29]); belt(H, -6, -14, 6, -19, 5, 0); bumps(H, T, [[2.4, -24, 0.7]]);
     pipe(H, T, 5.3, -16.5, -3, -25.4, 0, -1, 0.9, 0, 0.4); secret(H, 4.5, -15.6, 6, -17.4); return H; } },
-  // Drawbridge: a curb guards the moat, so only the bridge gets you across; time it and putt out. The secret: a gap at the left end of the curb hides a kicker over the moat.
+  // Drawbridge: a curb guards the moat, so only the bridge gets you across; time it and putt out round the bumper.
   { par:3, f:function(T){ var H = hole([rm(-4, 0, 4, -14), rm(-4, -13.9, 4, -17.1), rm(-4, -17, 4, -32)], [0, -2.5], [2.6, -29]); zoneR(H, M.WATER, -4, -14, 4, -17); drawb(H, -1.4, -14, 1.4, -17, 3.4, 0, 0.55); bumps(H, T, [[2.0, -23.4, 0.6]]); bowl(H, 2.6, -29);
-    blk(H, T, 1.4, -13.3, 4, -13.9); blk(H, T, -2.8, -13.3, -1.4, -13.9); jump(H, -3.4, -13.9, 0, -1, 0.05, 1.2, { m:M.GREEN, w:1.2 }); secret(H, -4, -13.3, -2.8, -13.95); return H; } },
+    blk(H, T, 1.4, -13.3, 4, -13.9); blk(H, T, -4, -13.3, -1.4, -13.9); return H; } },
   // Spin Cycle: through the turning floor and putt out.
   { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -32)], [0, -2.5], [-2, -28]); disc(H, 0, -16, 2.6, 1.3); blk(H, T, -6, -15, -2.9, -17); blk(H, T, 2.9, -15, 6, -17); bumps(H, T, [[0.2, -24.6, 0.5]]); return H; } },
   // The Creek: ride the creek down to the lower green and putt out. The secret: the creek keeps its speed, so feed it hard and it carries to the cup.
@@ -948,7 +948,7 @@ var LEVELS = [
     loopAt(H, 0, -15, 0, -1, 0.65, 1.6); zoneR(H, M.WATER, -5, -26, 5, -28.5); drawb(H, -1.4, -26, 1.4, -28.5, 3, 0.2, 0.55); blk(H, T, -5, -25.3, -1.4, -25.9); blk(H, T, 1.4, -25.3, 5, -25.9); return H; } },
   // Clubhouse Classic: the big pipe, the windmill, the drawbridge. The secret: the small pipe tucked behind the bumper skips the windmill and the moat.
   { par:4, sig:true, f:function(T){ var H = hole([rm(-5, 0, 5, -12), rm(-6, -16, 6, -34, 0.6), rm(-6, -33.9, 6, -36.6, 0.6), rm(-6, -36.5, 6, -48, 0.6)], [0, -2.5], [-2, -44]);
-    pipe(H, T, -3, -9, -3, -17.6, 0, -1, 0.8); pipe(H, T, 0.4, -9, 0, -1.2, 0, 1, 0.8); bumps(H, T, [[2.6, -8.4, 0.5]]); millAt(H, T, -28, 6, 1.3); zoneR(H, M.WATER, -6, -34, 6, -36.5); drawb(H, -1.4, -34, 1.4, -36.5, 3.6, 0.5, 0.55);
+    pipe(H, T, -3, -9, -3, -17.6, 0, -1, 0.8, 0, 0.2); pipe(H, T, 0.4, -9, 0, -1.2, 0, 1, 0.8); bumps(H, T, [[2.6, -8.4, 0.5]]); millAt(H, T, -28, 6, 1.3); zoneR(H, M.WATER, -6, -34, 6, -36.5); drawb(H, -1.4, -34, 1.4, -36.5, 3.6, 0.5, 0.55);
     blk(H, T, -6, -33.3, -1.4, -33.9); blk(H, T, 1.4, -33.3, 6, -33.9);
     pipe(H, T, 3.8, -10.4, 3, -37.4, 0, -1, 0.9, 0, 0.55); secret(H, 3, -9.6, 4.6, -11.2); flatAt(H, -2, -44); return H; } },
   // ---- 2 LOST TEMPLE: jade rivers, stone doors, turning floors and the vines
