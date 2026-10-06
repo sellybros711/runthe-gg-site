@@ -72,6 +72,16 @@ export function robust(C, x, y, ang, ft, t0){
   let ok = 0; for (const [da, df, dt] of nb) if (shot(C, x, y, ang + da, ft + df, t0 + dt).holed) ok++;
   return ok >= nb.length - 1;
 }
+/* a putt that leaves the ball short of the cup is only a good one to plan on if a person's ordinary miss
+   (a degree and a half of aim, most of a foot of pace, a beat early or late on a moving hole) does not put it
+   in the water or off the course. Without this the search happily times a drawbridge to the last frame it is
+   down, and the route it records is one a player goes wet on half the time. */
+export function safe(C, x, y, ang, ft, t0){
+  const D = 1.5 * Math.PI / 180, F = Math.max(0.8, ft * 0.08), nb = [[D, 0, 0], [-D, 0, 0], [0, F, 0], [0, -F, 0]];
+  if (timed(C)) nb.push([0, 0, 0.15], [0, 0, -0.15]);
+  for (const [da, df, dt] of nb){ const r = shot(C, x, y, ang + da, Math.min(44, Math.max(2, ft + df)), t0 + dt); if (r.water || r.out) return false; }
+  return true;
+}
 /* the fewest strokes with room for error, up to cap, and the line that does it */
 export function solve(C, cap, stats, avoid){
   // strike moments on a moving hole: a step that is not a fraction of any common period, so a windmill
@@ -80,7 +90,7 @@ export function solve(C, cap, stats, avoid){
   const geo = geodesic(C, avoid), T0 = timed(C) ? [0, 0.35, 0.7, 1.05, 1.4, 1.75, 2.1] : [0];
   let frontier = [{ x:C.tee[0], y:C.tee[1], t:0, line:[] }], total = 0;
   for (let s = 1; s <= cap; s++){
-    const next = [], seen = new Set();
+    const byKey = new Map();
     for (const f of frontier){
       const fine = s > 1, base = Math.atan2(C.cup[1] - f.y, C.cup[0] - f.x), angs = [];
       if (fine) for (let a = -1.0; a <= 1.0; a += 0.014) angs.push(base + a);
@@ -92,13 +102,18 @@ export function solve(C, cap, stats, avoid){
           if (avoid && touches(C, r)) continue;
           if (r.holed){ if (robust(C, f.x, f.y, ang, ft, t0)) return { strokes:s, total, line:f.line.concat([[ang, ft, t0]]) }; continue; }
           if (r.water || r.out) continue;
-          const key = Math.round(r.rest[0] * 3) + ',' + Math.round(r.rest[1] * 3) + ',' + (timed(C) ? Math.round(r.t) : 0); if (seen.has(key)) continue; seen.add(key);
-          next.push({ x:r.rest[0], y:r.rest[1], t:t0 + r.t + 2, d:geo(r.rest[0], r.rest[1]), line:f.line.concat([[ang, ft, t0]]) });
+          // a few ways of reaching each place are kept, so the safe one is still there when the first was not
+          const key = Math.round(r.rest[0] * 3) + ',' + Math.round(r.rest[1] * 3) + ',' + (timed(C) ? Math.round(r.t) : 0);
+          let g = byKey.get(key); if (!g){ g = []; byKey.set(key, g); } if (g.length >= 4) continue;
+          g.push({ x:r.rest[0], y:r.rest[1], t:t0 + r.t + 2, d:geo(r.rest[0], r.rest[1]), line:f.line.concat([[ang, ft, t0]]), from:f, shot:[ang, ft, t0] });
         }
       }
     }
-    next.sort((a, b) => a.d - b.d);
-    const keep = []; for (const n of next){ if (keep.length >= 6) break; if (keep.every(k => Math.hypot(k.x - n.x, k.y - n.y) > 1.2)) keep.push(n); }
+    const groups = [...byKey.values()].sort((a, b) => a[0].d - b[0].d), keep = [], risky = [];
+    for (const g of groups){ if (keep.length >= 6) break; const n0 = g[0]; if (!keep.every(k => Math.hypot(k.x - n0.x, k.y - n0.y) > 1.2)) continue;
+      const n = g.find(c => safe(C, c.from.x, c.from.y, c.shot[0], c.shot[1], c.shot[2])); if (n) keep.push(n); else if (risky.length < 6) risky.push(n0); }
+    // nowhere safe to go: fall back to the risky places, so a hole with no safe line still reports one
+    for (const n of risky){ if (keep.length >= 6) break; keep.push(n); }
     frontier = keep;
     if (process.env.PUTT_TRACE) console.log('  after', s, 'the best places:', keep.map(k => `(${k.x.toFixed(1)},${k.y.toFixed(1)}) ${k.d.toFixed(1)}ft`).join('  '));
   }
