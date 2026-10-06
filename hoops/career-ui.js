@@ -240,6 +240,11 @@ var CSS = [
 '#cr-sheet .cr-rot-ros{max-height:52vh;overflow:auto;}',
 '.cr-choice:hover,.cr-choice.is-hover,.cr-choice:focus-visible{background:linear-gradient(180deg,#2b3660,#202a4f);box-shadow:inset 0 0 0 2px var(--cr-edge,var(--k-accent)),inset 0 -4px 0 rgba(0,0,0,.28);outline:none;}',
 '.cr-choice:active,.cr-choice.is-pressed{transform:translateY(2px);box-shadow:inset 0 0 0 2px var(--cr-edge,var(--k-accent));}',
+/* The answers of a card that has just arrived fade up from .55 while they are
+   armed (see arm()). Opacity only, so nothing moves under the thumb. */
+'#s-car .cr-arming{opacity:.55;cursor:default;}',
+'#s-car .cr-choice,#s-car #cr-next{transition:opacity .22s ease-out;}',
+'@media (prefers-reduced-motion:reduce){#s-car .cr-choice,#s-car #cr-next{transition:none;}}',
 '.cr-card .k-opts li{animation:cr-opt-in 260ms var(--k-e-move) both;}',
 '.cr-card .k-opts li:nth-child(2){animation-delay:50ms;}.cr-card .k-opts li:nth-child(3){animation-delay:100ms;}.cr-card .k-opts li:nth-child(4){animation-delay:150ms;}.cr-card .k-opts li:nth-child(n+5){animation-delay:200ms;}',
 '@keyframes cr-opt-in{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}',
@@ -496,6 +501,30 @@ var CSS = [
 '.cr-name input:focus{outline:2px solid var(--k-gold);outline-offset:3px;}',
 '.cr-name .cr-num{flex:0 0 64px;text-align:center;font-family:var(--k-f-pixel);font-size:14px;}',
 '.cr-name .k-btn{margin:2px;min-height:46px;}',
+'.cr-arc{margin:0 0 14px;padding:12px;background:var(--k-panel-2);}',
+'.cr-archead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 8px;}',
+'.cr-archead b{white-space:nowrap;font-family:var(--k-f-pixel);font-size:10px;letter-spacing:.06em;color:var(--k-ink);text-transform:uppercase;}',
+'.cr-archead span{font:600 11.5px var(--k-f-text);color:var(--k-ink-3);text-align:right;}',
+'.cr-arcbars{display:flex;align-items:flex-end;gap:2px;height:96px;padding-top:18px;border-bottom:1px solid var(--k-ink-3);}',
+'.cr-arcb{position:relative;flex:1 1 0;min-width:0;height:100%;display:flex;align-items:flex-end;padding:0;border:0;background:transparent;cursor:pointer;}',
+'.cr-arcb span{display:block;width:100%;background:#e8660f;border-radius:4px 4px 0 0;}',
+'.cr-arcb.am span{background:#5b8fe6;}',
+'.cr-arcb:hover span,.cr-arcb:focus-visible span,.cr-arcb.on span{box-shadow:0 0 0 2px var(--k-ink);}',
+'.cr-arcb:focus-visible{outline:none;}',
+'.cr-arcb em{position:absolute;left:50%;transform:translateX(-50%);top:-17px;font:normal 9px var(--k-f-pixel);color:var(--k-ink);white-space:nowrap;pointer-events:none;}',
+'.cr-arcb .cr-arcring{position:absolute;left:50%;width:9px;height:9px;margin-left:-5px;top:-4px;border:2px solid var(--k-ink);border-radius:50%;pointer-events:none;}',
+'.cr-arcb.pk .cr-arcring{top:-28px;}',
+'.cr-arcx{display:flex;justify-content:space-between;margin-top:4px;font:600 11px var(--k-f-text);color:var(--k-ink-3);}',
+'.cr-arcleg{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;font:600 11.5px var(--k-f-text);color:var(--k-ink-2);}',
+'.cr-arcleg:empty{display:none;}',
+'.cr-arcleg i{display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px;background:#e8660f;border-radius:2px;}',
+'.cr-arcleg i.am{background:#5b8fe6;}',
+'.cr-arcleg i.ring{background:transparent;border:2px solid var(--k-ink);border-radius:50%;}',
+'.cr-arccap{margin:8px 0 0;font:600 13px/1.4 var(--k-f-text);color:var(--k-ink);min-height:1.4em;}',
+'.cr-namehint{margin:6px 2px 0;min-height:1.35em;font:600 12.5px/1.4 var(--k-f-text);color:var(--k-ink-3);}',
+'.cr-namehint.bad{color:var(--k-warn);}',
+'.cr-namefix{display:inline-block;margin:4px 0 0;padding:4px 8px;border:0;font:800 12px var(--k-f-text);color:var(--k-accent-ink);background:var(--k-accent);cursor:pointer;}',
+'.cr-namefix:focus-visible{outline:2px solid var(--k-gold);outline-offset:2px;}',
 '.cr-chips{display:flex;gap:4px;flex-wrap:wrap;}',
 '.cr-size{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}',
 '.cr-step{display:grid;grid-template-columns:auto 1fr auto;grid-template-rows:auto auto;align-items:center;gap:4px 6px;}',
@@ -902,9 +931,10 @@ function buildView(){
     + (form.parent ? ori : '')
     + tabs
     + pane('player', '<span class="lab k-label">Name and number</span>'
-      + '<div class="cr-name"><input id="cr-name" maxlength="28" value="' + esc(form.name) + '" aria-label="Player name" autocomplete="off">'
+      + '<div class="cr-name"><input id="cr-name" maxlength="28" value="' + esc(form.name) + '" aria-label="Player name" aria-describedby="cr-namehint" placeholder="Blank picks one for you" autocomplete="off">'
       + '<input id="cr-num" class="cr-num" inputmode="numeric" maxlength="2" value="' + form.num + '" aria-label="Jersey number">'
       + '<button class="k-btn k-sec" id="cr-dice" type="button" aria-label="New random name">New</button></div>'
+      + '<p class="cr-namehint" id="cr-namehint" aria-live="polite">' + nameHint(form.name) + '</p>'
       + '<span class="lab k-label">Position</span><div class="cr-chips" id="cr-pos" role="group" aria-label="Position">' + pos + '</div>'
       + sizeHtml()
       + '<span class="lab k-label">Your game as a ' + esc(C.POS_NAME[form.pos].toLowerCase()) + '</span><div class="cr-opts cr-pick" id="cr-arch">' + arch + '</div>'
@@ -920,11 +950,38 @@ function buildView(){
     + '<button class="k-btn k-block k-big" id="cr-go">' + goText + '</button></div>'
     + '</div>';
 }
+/* THE NAME IS SAID BEFORE THE CAREER STARTS, not found missing at the end.
+   The Career board takes a name made of letters, spaces, an apostrophe, a
+   stop or a hyphen (C.boardName, which is the board's own rule), and files
+   anything else as no name. The builder used to take whatever was typed and
+   say nothing, so "Big Mike 23" played a whole career and then was nobody
+   on the board. A blank name is fine and is picked at random, so the line
+   says that too. The press offers the cleaned name rather than refusing. */
+function nameHint(v){
+  var n = String(v || '').replace(/\s+/g, ' ').trim();
+  if (!n) return 'Leave it blank and we pick a name.';
+  if (!C.boardName || C.boardName(n)) return '';
+  var c = C.cleanName ? C.cleanName(n) : '';
+  return 'The Career board takes letters, spaces, periods, hyphens and apostrophes. This name will not show there.'
+    + (c && C.boardName(c) ? ' <button class="cr-namefix" type="button" data-fix="' + esc(c) + '">Use ' + esc(c) + '</button>' : '');
+}
+function paintNameHint(){
+  var h = $('cr-namehint');
+  if (!h) return;
+  var html = form ? nameHint(form.name) : '';
+  if (h.innerHTML !== html) { h.innerHTML = html; wireNameHint(); }
+  h.classList.toggle('bad', !!form && !!String(form.name || '').trim() && !!C.boardName && !C.boardName(String(form.name).replace(/\s+/g, ' ').trim()));
+}
+function wireNameHint(){
+  var f = document.querySelector('#cr-namehint .cr-namefix');
+  if (f) f.onclick = function(){ form.name = f.getAttribute('data-fix'); var nm = $('cr-name'); if (nm) nm.value = form.name; paintNameHint(); };
+}
 var bstep = 'player';
 function wireBuild(){
   var root = $('s-car');
   var nm = $('cr-name'), nu = $('cr-num');
-  if (nm) nm.oninput = function(){ form.name = nm.value; };
+  if (nm) nm.oninput = function(){ form.name = nm.value; paintNameHint(); };
+  paintNameHint();
   if (nu) nu.oninput = function(){ var v = nu.value.replace(/\D/g, '').slice(0, 2); nu.value = v; form.num = v === '' ? 0 : +v; };
   $('cr-dice').onclick = function(){ var s = String(Math.floor(Math.random() * 1e9)); form.seed = s; form.name = C.randomName(s); render(); };
   root.querySelectorAll('[data-pos]').forEach(function(b){ b.onclick = function(){ setPos(b.getAttribute('data-pos')); render(); }; });
@@ -1337,15 +1394,60 @@ function leagueHtml(L){
 }
 var TX_KIND = { trade: 'Trade', fa: 'Free agency', deal: 'Re-signed', draft: 'Draft', retire: 'Retired' };
 function td(l, v, cls){ return '<td data-l="' + l + '"' + (cls ? ' class="' + cls + '"' : '') + '>' + v + '</td>'; }
+/* YOUR ARC. The Seasons tab was a table, which answers any one season and
+   hides the shape of a career: when it took off, when it peaked, how long it
+   held. So above the table every season played is one column, oldest on the
+   left, as tall as the overall you finished it at, on a zero baseline so a
+   column twice as tall is twice the number. Before the league is blue and the
+   NBA is orange (validated against this panel for colour blindness), the peak
+   wears its number, and a title season carries a ring above it: a SHAPE, so
+   no fact here rests on colour alone. Every column is a button, and a tap
+   says which season it was in the line under the strip. The table stays,
+   because it is the readable view of the same numbers. Drawn from history
+   the career already keeps, so it moves nothing the season reads. */
+function arcHtml(L){
+  var cols = (L.amHist || []).map(function(h){
+    return { y: h.y, am: true, o: C.show(h.ovr), who: h.school, pts: h.pts, ring: /champion/i.test(h.finish || '') };
+  }).concat((L.history || []).map(function(h){
+    return { y: h.y, am: false, o: C.show(h.ovr), who: h.t ? E.TEAM_NAMES[h.t] || h.t : '', pts: h.pts, ring: h.po === 'Champion' };
+  })).filter(function(c){ return c.o != null && !isNaN(c.o); });
+  if (cols.length < 2) return '';
+  var peak = 0;
+  cols.forEach(function(c, i){ if (c.o > cols[peak].o) peak = i; });
+  var both = cols.some(function(c){ return c.am; }) && cols.some(function(c){ return !c.am; });
+  var bars = cols.map(function(c, i){
+    var cap = seasonTag(c.y) + ' · ' + (c.who || '') + ' · ' + c.o + ' OVR · ' + c.pts + ' a night' + (c.ring ? ' · Champion' : '') + (i === peak ? ' · Your peak' : '');
+    return '<button type="button" class="cr-arcb' + (c.am ? ' am' : '') + (i === peak ? ' pk' : '') + '" data-arc-cap="' + esc(cap) + '" aria-label="' + esc(cap) + '">'
+      + (i === peak ? '<em>' + c.o + '</em>' : '') + (c.ring ? '<i class="cr-arcring" aria-hidden="true"></i>' : '')
+      + '<span style="height:' + Math.max(4, Math.min(100, c.o)).toFixed(0) + '%"></span></button>';
+  }).join('');
+  var first = cols[0], last = cols[cols.length - 1];
+  return '<div class="cr-arc"><div class="cr-archead"><b>Your arc</b><span>Overall by season. Tap one.</span></div>'
+    + '<div class="cr-arcbars" role="group" aria-label="Overall each season">' + bars + '</div>'
+    + '<div class="cr-arcx"><span>' + seasonTag(first.y) + '</span><span>' + seasonTag(last.y) + '</span></div>'
+    + '<div class="cr-arcleg">' + (both ? '<span><i class="am"></i>Before the league</span><span><i></i>NBA</span>' : '')
+    + (cols.some(function(c){ return c.ring; }) ? '<span><i class="ring"></i>Title</span>' : '') + '</div>'
+    + '<p class="cr-arccap" aria-live="polite">Peak: ' + cols[peak].o + ' in ' + seasonTag(cols[peak].y) + (cols[peak].who ? ', ' + esc(cols[peak].who) : '') + '.</p></div>';
+}
+document.addEventListener('click', function(e){
+  var b = e.target && e.target.closest && e.target.closest('.cr-arcb');
+  if (!b) return;
+  var wrap = b.closest('.cr-arc'), cap = wrap && wrap.querySelector('.cr-arccap');
+  if (!cap) return;
+  wrap.querySelectorAll('.cr-arcb.on').forEach(function(x){ x.classList.remove('on'); });
+  b.classList.add('on');
+  cap.textContent = b.getAttribute('data-arc-cap') + '.';
+});
 function seasonsTable(L){
   var am = amTable(L.amHist || []);
-  if (!L.history.length) return am || '<p class="k-small">No seasons yet.</p>';
+  var arc = arcHtml(L);
+  if (!L.history.length) return am ? arc + am : '<p class="k-small">No seasons yet.</p>';
   var rows = L.history.slice().reverse().map(function(h){
     return '<tr class="' + (h.po === 'Champion' ? 'champ is-best' : '') + '">' + td('Season', seasonTag(h.y)) + td('Team', esc(h.t ? E.TEAM_NAMES[h.t] || h.t : '-'), 'cr-wide')
       + td('OVR', C.show(h.ovr)) + td('GP', h.gp) + td('PTS', h.pts) + td('REB', h.reb) + td('AST', h.ast)
       + td('Record', h.w + '-' + h.l) + td('Finish', esc(h.po), 'cr-wide') + '</tr>';
   }).join('');
-  return '<div class="cr-tblw k-tablewrap"><table class="k-table cr-tbl"><thead><tr><th>Season</th><th>Team</th><th>OVR</th><th>GP</th><th>PTS</th><th>REB</th><th>AST</th><th>Record</th><th>Finish</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+  return arc + '<div class="cr-tblw k-tablewrap"><table class="k-table cr-tbl"><thead><tr><th>Season</th><th>Team</th><th>OVR</th><th>GP</th><th>PTS</th><th>REB</th><th>AST</th><th>Record</th><th>Finish</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
     + (am ? '<h3 class="cr-sub">Before the league</h3>' + am : '');
 }
 /* High school, college and a pro year, newest first. */
@@ -1498,7 +1600,10 @@ function openRetire(L){
    Never while typing, while a sheet is open or while a scene is playing. */
 var kbd = false;
 function onKey(e){
-  if (!onScreen() || e.ctrlKey || e.metaKey || e.altKey) return;
+  /* A held key repeats, and every repeat used to answer the next card: one
+     second of holding 1 answered both combine interviews, the workout and
+     the agent before any of them was on screen. A key answers once per press. */
+  if (e.repeat || !onScreen() || e.ctrlKey || e.metaKey || e.altKey) return;
   var t = e.target, tn = t && t.tagName;
   if (tn === 'INPUT' || tn === 'TEXTAREA' || tn === 'SELECT') return;
   var sh = $('cr-sheet');
@@ -1529,6 +1634,30 @@ function refocus(was){
   if (t.id === 'cr-card-h') t.setAttribute('tabindex', '-1');
   try { t.focus({ preventScroll: true }); } catch (e) { t.focus(); }
 }
+/* A NEW CARD ARRIVES UNDER THE SAME THUMB. On a phone the card on top is a
+   tray docked to the bottom of the screen, so the next card's first answer is
+   drawn exactly where the last one was pressed, in the same frame. A quick
+   double tap (about 110ms between taps) answered the next card unseen on a
+   quarter of cards, and a double tap on Next played two stretches of the
+   season. So after a TOUCH or MOUSE press the fresh answers and the Next
+   button are disabled for ARM_MS: long enough to swallow the second tap of a
+   double tap, short enough that nobody reading reaches it. Disabled rather than
+   a timestamp the click handler checks, because a disabled button is what a
+   person can see (it fades in) and what an automated click waits on. A
+   keyboard press is not armed: focus moves to the next card's heading, and
+   the held key is the repeat check in onKey. */
+var ARM_MS = 320, armT = 0;
+function arm(){
+  var root = $('s-car');
+  if (!root) return;
+  var els = root.querySelectorAll('.cr-choice, #cr-next');
+  if (!els.length) return;
+  els.forEach(function(b){ b.disabled = true; b.classList.add('cr-arming'); });
+  clearTimeout(armT);
+  armT = setTimeout(function(){
+    els.forEach(function(b){ b.disabled = false; b.classList.remove('cr-arming'); });
+  }, ARM_MS);
+}
 function kbdFocus(){ var a = document.activeElement, r = $('s-car'); return !!(a && r && r.contains(a) && a.matches && a.matches(':focus-visible')); }
 function doStep(){
   var L = store().cur;
@@ -1547,10 +1676,10 @@ function doStep(){
   /* A stretch of games goes by on the live ticker first, then whatever
      moment it produced is told. */
   if (stage.tick && TK && SC && SC.on()) {
-    TK.play(stage.tick, { done: function(){ if (!scene(res)) { scrollStage(); refocus(kb); } } });
+    TK.play(stage.tick, { done: function(){ if (!scene(res)) { scrollStage(); refocus(kb); if (!kb) arm(); } } });
     return;
   }
-  if (!scene(res)) { scrollStage(); refocus(kb); }
+  if (!scene(res)) { scrollStage(); refocus(kb); if (!kb) arm(); }
 }
 function doChoose(i){
   var L = store().cur;
@@ -1563,7 +1692,7 @@ function doChoose(i){
   if (L.retired) return finish();
   save();
   render();
-  if (!scene(res)) { scrollStage(); refocus(kb); }
+  if (!scene(res)) { scrollStage(); refocus(kb); if (!kb) arm(); }
 }
 
 /* ─── scenes (hoops/scenes.js) ───────────────────────────────────────────

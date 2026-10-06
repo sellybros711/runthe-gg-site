@@ -11891,6 +11891,28 @@ in it are easy to undo by accident:
 - **Focus goes where the next thing is** after a keyboard press (the card's
   heading or the next button), never on a mouse press, never with a scroll. A
   number key answers the card on top; a sheet or a scene being open stops it.
+- **One press answers one card.** The tray draws the next card's first answer
+  under the same thumb in the same frame, so a double tap (about 110ms apart)
+  answered the next card unseen on a quarter of cards, a double tap on Next
+  played two stretches, and a HELD number key answered four cards in a second
+  (both combine interviews, the workout and the agent). After a touch or mouse
+  press `arm()` disables the fresh answers and Next for `ARM_MS` (320ms) and
+  fades them up; a key press is not armed, and `onKey` ignores `e.repeat`.
+  Disabled rather than a timestamp, because Playwright's `click` waits on it.
+  **A walker that presses with `element.click()` inside `evaluate` does not**,
+  and burned its whole press budget on armed buttons the first time: wait out
+  a disabled button, never count it.
+- **The name is judged while it is typed.** `C.boardName` is the Career board's
+  own name rule (130's `p_player` check) and `boardSummary` reads it, so the
+  builder and the board cannot disagree. A name the board will drop ("Big Mike
+  23", any emoji) is said under the field with a one-tap cleaned name
+  (`C.cleanName`); a blank one says it will be picked.
+- **The Seasons tab opens on Your arc**: a column a season, oldest left, as
+  tall as the overall it ended at on a zero baseline. Before the league is
+  `#5b8fe6` and the NBA `#e8660f` (both validated against the panel for colour
+  blindness), the peak carries its number, a title season a ring (a shape, so
+  nothing rests on colour). Each column is a button and a tap names the season.
+  The table stays under it as the readable view of the same numbers.
 
 Four meters, not five: the fifth in PLAN.md waits for the story engine (Phase C)
 to have something real to measure. The leaderboard's Career tab keeps the

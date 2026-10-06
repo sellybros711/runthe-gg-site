@@ -1407,6 +1407,16 @@ async function browser() {
   await page.click('[data-start="hs"]');
   ok(!(await page.$('#cr-roadbox')) && !(await page.$('[data-bg]')), 'with Pro, a high school start shows no generated road');
   await page.click('[data-bstep="player"]');
+  /* THE NAME IS SAID BEFORE THE CAREER STARTS. The board drops a name with a
+     digit or an emoji, and the builder used to take it and say nothing. Blank
+     says a name is picked; a bad one says so and offers the cleaned name. */
+  await page.fill('#cr-name', '');
+  ok(/pick a name/i.test(await page.$eval('#cr-namehint', (e) => e.textContent)), 'a blank name says one is picked for you');
+  await page.fill('#cr-name', 'Big Mike 23');
+  const nh = await page.$eval('#cr-namehint', (e) => ({ bad: e.classList.contains('bad'), fix: (e.querySelector('.cr-namefix') || {}).textContent || '' }));
+  ok(nh.bad && nh.fix === 'Use Big Mike', `a name the board drops is flagged with a fix ("${nh.fix}")`);
+  await page.click('.cr-namefix');
+  ok((await page.$eval('#cr-name', (e) => e.value)) === 'Big Mike' && !(await page.$eval('#cr-namehint', (e) => e.textContent)), 'the fix fills the field and the warning goes');
   await page.fill('#cr-name', 'Checker McTest');
   await page.click('#cr-go');
   const made = await page.evaluate(() => RTF_CAREER_UI.state().cur);
@@ -1415,10 +1425,33 @@ async function browser() {
   ok(made && made.look && made.look.beard === 'full' && made.look.bc === 6, `the facial hair color is the career's (${made && JSON.stringify(made.look)})`);
   const third = await page.evaluate(() => (document.querySelectorAll('.cr-fact .k')[2] || {}).textContent || '');
   ok(/ranking/i.test(third), `a sophomore is told his ranking, not his bank (${third})`);
+  /* ONE PRESS, ONE CARD. A held number key repeats, and a double tap lands
+     its second tap on the next card, which the tray draws under the same
+     thumb. Both used to answer cards nobody had read. Counted at C.choose. */
+  {
+    await page.evaluate(() => { const C = window.RTF_CAREER, o = C.choose; window.__chN = 0; window.__chO = o; C.choose = function(){ window.__chN++; return o.apply(this, arguments); }; });
+    const toCard = async () => { for (let i = 0; i < 80; i++) { if (await page.evaluate(() => !!RTF_CAREER_UI.state().cur.pending.length)) return true; await page.click('#cr-next'); } return false; };
+    if (await toCard()) {
+      await page.waitForTimeout(400);
+      await page.evaluate(() => { window.__chN = 0; for (let k = 0; k < 4; k++) document.dispatchEvent(new KeyboardEvent('keydown', { key: '1', repeat: k > 0, bubbles: true })); });
+      ok((await page.evaluate(() => window.__chN)) === 1, 'a held number key answers one card, not every card behind it');
+    }
+    let dbl = 0, tries = 0;
+    for (let t = 0; t < 8; t++) {
+      if (!(await toCard())) break;
+      await page.waitForTimeout(400);
+      const r = await page.$eval('.cr-choice[data-i="0"]', (e) => { const q = e.getBoundingClientRect(); return { x: q.x + q.width / 2, y: q.y + q.height / 2 }; });
+      await page.evaluate(() => { window.__chN = 0; });
+      await page.mouse.click(r.x, r.y); await page.waitForTimeout(110); await page.mouse.click(r.x, r.y); await page.waitForTimeout(250);
+      tries++; if ((await page.evaluate(() => window.__chN)) > 1) dbl++;
+    }
+    ok(tries >= 4 && dbl === 0, `a double tap answers one card (${dbl} of ${tries} answered two)`);
+    await page.evaluate(() => { window.RTF_CAREER.choose = window.__chO; });
+  }
 
   /* Play it out, pressing the first choice or the next button, reading the
      glass for a field that printed as nothing. */
-  let rosAsked = false, rosSigned = false;
+  let rosAsked = false, rosSigned = false, arcSeen = false;
   let presses = 0, junk = [], reloaded = false, offOpened = false, resumed = null, keyed = false, docked = false, offFold = [], cardsSeen = 0, tall = false, trayed = false, trayBad = [];
   const stagesSeen = {};
   while (presses++ < 900) {
@@ -1442,6 +1475,25 @@ async function browser() {
       await page.waitForSelector('#s-car.active');
       resumed = await page.evaluate(() => { const s = RTF_CAREER_UI.state(); return s.cur && s.cur.pending[0] ? s.cur.pending[0].key : null; });
       ok(resumed === st.card, `a reload lands on the same card (${st.card} against ${resumed})`);
+    }
+    /* Once: the Seasons tab draws the arc, a column a season, the peak
+       labelled, and a tap names the season in words. */
+    if (!arcSeen && !st.card) {
+      const a = await page.evaluate(() => {
+        const L = RTF_CAREER_UI.state().cur, n = (L.amHist || []).length + L.history.length;
+        if (n < 3) return null;
+        const t = document.querySelector('[data-tab="seasons"]'); if (!t) return null; t.click();
+        const arc = document.querySelector('.cr-arc'); if (!arc) return { n, cols: 0 };
+        const b = arc.querySelectorAll('.cr-arcb'); b[0].click();
+        const out = { n, cols: b.length, peak: arc.querySelectorAll('.cr-arcb.pk em').length, cap: arc.querySelector('.cr-arccap').textContent, wide: arc.scrollWidth > arc.clientWidth };
+        const s0 = document.querySelector('[data-tab="log"]'); if (s0) s0.click();
+        return out;
+      });
+      if (a) {
+        arcSeen = true;
+        ok(a.cols === a.n && a.peak === 1 && !a.wide, `the arc draws a column a season with one peak, inside its box (${a.cols} of ${a.n})`);
+        ok(/OVR/.test(a.cap) && !/undefined|NaN/.test(a.cap), `a tap on a column says which season it was ("${a.cap}")`);
+      }
     }
     /* Once: the off-the-court sheet opens and an action lands. */
     if (!offOpened && st.steps >= 6 && !st.card) {
@@ -1643,6 +1695,7 @@ async function browser() {
   await vaultWalk(fin);
   ok(boom.length === 0, `no page errors (${boom.join(' | ') || 'none'})`);
   console.log(`  ${presses} presses to retirement`);
+  ok(arcSeen, 'the walk reached a career long enough to read the arc');
   await scenesWalk(b, serve);
   await b.close();
 
@@ -1820,7 +1873,12 @@ async function scenesWalk(b, serve) {
       }
       continue;
     }
-    const r = await page.evaluate(() => { const c = document.querySelector('.cr-choice'); if (c) { c.click(); return 'c'; } const n = document.querySelector('#cr-next'); if (n) { n.click(); return 'n'; } return 'x'; });
+    /* A card or Next button that has just arrived is ARMED (disabled for a
+       moment so a double tap cannot answer it unseen). element.click() does
+       nothing on a disabled button, so the walk waits it out rather than
+       spending a press on it, and does not count the wait. */
+    const r = await page.evaluate(() => { const c = document.querySelector('.cr-choice') || document.querySelector('#cr-next'); if (!c) return 'x'; if (c.disabled) return 'w'; c.click(); return c.id === 'cr-next' ? 'n' : 'c'; });
+    if (r === 'w') { presses--; await page.waitForTimeout(120); continue; }
     if (r === 'x') { lastX = await page.evaluate(() => ({ html: document.body.innerText.slice(0, 300), scov: !!document.querySelector('#scov:not([hidden])'), tk: !!document.querySelector('#tkov:not([hidden])'), court: !!document.querySelector('.sc-court') })); break; }
   }
   if (lastX || presses >= 1400) console.log('  walk ended:', presses, JSON.stringify(lastX));

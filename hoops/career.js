@@ -10950,6 +10950,17 @@ function act(L, id) {
 
 // ─── public ─────────────────────────────────────────────────────────────────
 
+/* The one copy of the Career board's name rule (130's p_player check): a
+   letter, then letters, spaces, an apostrophe, a stop or a hyphen, 28 at most.
+   The builder asks it while the name is typed, so a name the board will drop
+   is said before the career starts rather than discovered at retirement.
+   cleanName is what the builder offers instead: the same letters with
+   everything the rule refuses taken out. */
+const NAME_RULE = /^[\p{L}][\p{L} .'-]{0,27}$/u;
+function boardName(n) { return NAME_RULE.test(String(n || '')); }
+function cleanName(n) {
+  return String(n || '').replace(/[^\p{L} .'-]/gu, '').replace(/^[^\p{L}]+/u, '').replace(/\s+/g, ' ').trim().slice(0, 28).trim();
+}
 function view(L) {
   const s = L.season;
   return {
@@ -11003,7 +11014,7 @@ function boardSummary(L) {
     /* The board refuses a name that is not letters, spaces, an apostrophe, a
        stop or a hyphen, so one that is not goes as no name rather than taking
        the whole career off the board. */
-    name: /^[\p{L}][\p{L} .'-]{0,27}$/u.test(L.name || '') ? L.name : null,
+    name: boardName(L.name) ? L.name : null,
     pos: L.pos, num: L.num,
     road: (L.amHist || []).length > 0, college: lastSchool(L),
     pick: (L.draft && L.draft.pick) || 0,
@@ -11278,7 +11289,7 @@ const publicAPI = {
   seedLeague, normaliseNets, newLife, rotationOf, clubView, bestFive, fitAt, rostOf, rostNow, randomName, overall, ovrOf, step, choose, nextLabel,
   view, perGame, totals, legacy, legacyScore, clubNet, clubTier, rotationBar,
   roleOf, lineMeans, capFor, marketSalary, projectedPick, draftOrder, money, ordinal,
-  clutchOptions, offers, ACTS, actsOpen, act, retireNow, lifeOf, lifeLine, sonsOf, rivalOn, featSummary, boardSummary, verdictOf,
+  clutchOptions, offers, ACTS, actsOpen, act, retireNow, lifeOf, lifeLine, sonsOf, rivalOn, featSummary, boardSummary, boardName, cleanName, verdictOf,
   SCHOOLS, SCHOOL_BY, TIER_NAME, AM_EVENTS, HS_ROUNDS, NCAA_ROUNDS, GRADE, CYEAR, AGE_HS,
   isAm, colorsOf, roadView, nationalRank, rankText, starsOf, draftTalk, collegeOffers, schoolNet,
   LOOK_KEYS, cleanLook, setLook, TONES, PRESSERS, PERSONAS, EVENT_REP, repOf, personaOf, presserCard,
