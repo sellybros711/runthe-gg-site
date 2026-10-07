@@ -182,7 +182,9 @@ function* steps(C, opt){
   if (LD) LD.build(B);
   (C.bumpers || []).forEach(function(u){ prop(u.x, u.y, u.r * 1.05, u.skin, base(u.x, u.y) - 0.1); });
   (C.blocks || []).forEach(function(rc){ var fn = SK[rc.skin] || SK.stone, h = 1.5, zb = CARP;
-    solid(rc.x0, rc.y0, zb, rc.x1, rc.y1, zb + h, function(x, y, z){ var u = ((x - rc.x0) / (rc.x1 - rc.x0)) * 2 - 1, v = 1 - 2 * (z - zb) / h; return fn(u * 0.7, v * 0.9) || fn(0, 0.4) || T.wallLo; }); });
+    solid(rc.x0, rc.y0, zb, rc.x1, rc.y1, zb + h, function(x, y, z){ var u = ((x - rc.x0) / (rc.x1 - rc.x0)) * 2 - 1, v = 1 - 2 * (z - zb) / h;
+      if (rc.rot){ var q = rc.rot, dx = x - q.cx, dy = y - q.cy, a = dx * q.c + dy * q.s; if (Math.abs(a) > q.hl || Math.abs(-dx * q.s + dy * q.c) > q.hw) return null; u = a / q.hl; }   // a bank board: only the voxels inside the turned board
+      return fn(u * 0.7, v * 0.9) || fn(0, 0.4) || T.wallLo; }); });
   // a tunnel: a raised collar round the mouth the ball rolls into, and an arch where it comes out
   (C.portals || []).forEach(function(pt){ var col = skinCol(pt.skin), za = base(pt.ax, pt.ay), zb = base(pt.bx, pt.by), r0 = pt.r || 0.75;
     solid(pt.ax - r0 - 0.4, pt.ay - r0 - 0.4, za - 0.05, pt.ax + r0 + 0.4, pt.ay + r0 + 0.4, za + 0.55, function(x, y, z){ var d = Math.hypot(x - pt.ax, y - pt.ay), t = z - za;

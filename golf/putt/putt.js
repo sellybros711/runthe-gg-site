@@ -603,6 +603,16 @@ function themeForDay(dayKey){
    and the cup toward the top. Par is the template's and the checker plays every hole to it. */
 function T_common(r){ return { comps:[], flats:[], walls:[], bumpers:[], blocks:[], movers:[], portals:[], zones:[], props:[] }; }
 function addBlock(H, x0, y0, x1, y1, skin){ var r = { x0:Math.min(x0, x1), y0:Math.min(y0, y1), x1:Math.max(x0, x1), y1:Math.max(y0, y1), skin:skin }; H.blocks.push(r); H.walls = H.walls.concat(rectWalls(r, 0.6)); return r; }
+// a bank board: a block laid at an angle between two points, th thick. Classic mini golf banks off
+// these, so they are a block like any other (skin, height, shadow) with its bounding box in x0..y1 for
+// anything that only needs to keep clear of it, and rot for everything that asks whether a point is IN it.
+function addBoard(H, ax, ay, bx, by, th, skin){ var L = Math.hypot(bx - ax, by - ay) || 1, c = (bx - ax) / L, sn = (by - ay) / L, hw = (th || 0.36) / 2, nx = -sn * hw, ny = c * hw;
+  var P = [[ax + nx, ay + ny], [bx + nx, by + ny], [bx - nx, by - ny], [ax - nx, ay - ny]], xs = P.map(function(q){ return q[0]; }), ys = P.map(function(q){ return q[1]; });
+  var r = { x0:Math.min.apply(null, xs), y0:Math.min.apply(null, ys), x1:Math.max.apply(null, xs), y1:Math.max.apply(null, ys), skin:skin, rot:{ cx:(ax + bx) / 2, cy:(ay + by) / 2, c:c, s:sn, hl:L / 2, hw:hw } };
+  H.blocks.push(r); H.walls = H.walls.concat(polyWalls(P, 0, 0.6)); return r; }
+// is a point inside a block, grown by pad: the one answer for straight blocks and bank boards alike
+function inBlock(r, x, y, pad){ pad = pad || 0; if (!r.rot) return x > r.x0 - pad && x < r.x1 + pad && y > r.y0 - pad && y < r.y1 + pad;
+  var q = r.rot, dx = x - q.cx, dy = y - q.cy; return Math.abs(dx * q.c + dy * q.s) < q.hl + pad && Math.abs(-dx * q.s + dy * q.c) < q.hw + pad; }
 function addBumper(H, x, y, r, skin){ H.bumpers.push({ x:x, y:y, r:r, e:0.82, skin:skin }); }
 var TEMPLATES = {
   straight:function(r, T){
@@ -850,6 +860,7 @@ function pads(H, list){ list.forEach(function(b){ H.bumpers.push({ x:b[0], y:b[1
 function zoneR(H, m, x0, y0, x1, y1){ H.zones.push({ t:'rect', x0:x0, y0:y0, x1:x1, y1:y1, m:m }); }
 function zoneC(H, m, x, y, r){ H.zones.push({ t:'circle', x:x, y:y, r:r, m:m }); }
 function blk(H, T, x0, y0, x1, y1){ return addBlock(H, x0, y0, x1, y1, T.block); }
+function board(H, T, ax, ay, bx, by, th){ return addBoard(H, ax, ay, bx, by, th, T.block); }
 // a pen round the cup, open on one side toward the middle of the room: the ball has to be brought round
 // beside the cup and played in sideways. Open on the far side instead, a ball bounced off the end wall
 // rolled straight back in, and the pen cost nothing.
@@ -904,32 +915,31 @@ function secret(H, x0, y0, x1, y1){ (H.secret = H.secret || []).push({ x0:Math.m
 /* par is filled in by the solver (golf/putt/solve.mjs) and written here */
 var LEVELS = [
   // ---- 1 THE CLUBHOUSE: aim and pace through the classics, and the first secret lines
-  // First Tee: the bumper hides the cup from the tee, so it is two putts round it. The secret: the side walls. A bank off either one comes in past the bumper.
-  { par:3, f:function(T){ var H = hole([rm(-4, 0, 4, -26)], [0, -2.5], [0, -22.5]); bumps(H, T, [[0, -19.4, 0.8], [-2.7, -6.5, 0.5], [2.7, -6.5, 0.5]]);
-    secret(H, -4, -8, -3.5, -17); secret(H, 3.5, -8, 4, -17); return H; } },
-  // The Slope: play the break round the sand, two putts. The secret: everything rolls left, and on the low side there is a drain that comes up by the cup.
-  { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -30)], [-1.5, -2.5], [2.5, -26]); H.comps.push({ k:'plane', gx:0.028, gy:0 }); zoneC(H, M.SAND, -1, -16, 2); bumps(H, T, [[2.2, -14]]); flatAt(H, 2.5, -26);
-    pipe(H, T, -4.2, -9.5, 2.5, -24.6, 0, -1, 0.8, 0, 0.3); secret(H, -5, -8.6, -3.3, -10.4); return H; } },
-  // Bank Shot: two putts, to the corner and round it. The secret: off the top wall the bank cuts the corner.
-  { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -24), rm(4.9, -14, 16, -24)], [-3, -2.5], [12, -19]); bumps(H, T, [[12.5, -15.4, 0.55]]); H.comps.push({ k:'plane', gx:-0.008, gy:0 });
-    secret(H, 5.5, -23.4, 14, -24); bowl(H, 12, -19); return H; } },
-  // The Windmill: round either side of the house, two putts. The secret: through the door, if the sails let you.
-  { par:3, f:function(T){ var H = hole([rm(-7, 0, 7, -38)], [0, -2.5], [0, -33]);
+  // First Tee: the classic dogleg. The cup is round the corner, and a bank board across the outside corner turns a putt up the leg toward it. The secret: off the board with pace, the ball runs the far rail and drops.
+  { par:3, f:function(T){ var H = hole([rm(-3, 0, 3, -20.1), rm(-3, -14, 14, -20)], [0, -2.5], [11, -17]); board(H, T, -3, -16, 1, -20.1, 0.4); bumps(H, T, [[7.4, -15.2, 0.55]]); bowl(H, 11, -17); return H; } },
+  // The Slope: a skewed lane on a hill. Play the break round the sand, two putts. The secret: everything rolls left, and on the low side there is a drain that comes up by the cup.
+  { par:3, f:function(T){ var H = hole([pg([[-5, 0], [5, 0], [6.5, -30], [-3.5, -30]])], [-1.5, -2.5], [2.5, -26]); H.comps.push({ k:'plane', gx:0.028, gy:0 }); zoneC(H, M.SAND, -1, -16, 2); bumps(H, T, [[2.2, -14]]); flatAt(H, 2.5, -26);
+    pipe(H, T, -3.6, -9.5, 2.5, -24.6, 0, -1, 0.8, 0, 0.3); secret(H, -4.6, -8.6, -2.7, -10.4); return H; } },
+  // Bank Shot: the diamond. A block sits square in the middle, so the line is off one of the angled walls and up to the top point. The secret: one clean bank, off the wall and into the bowl.
+  { par:3, f:function(T){ var H = hole([pg([[-2, 0], [2, 0], [8, -12], [2, -24], [-2, -24], [-8, -12]])], [0, -2.5], [0, -21.4]); blk(H, T, -2.6, -11.4, 2.6, -12.6); bumps(H, T, [[0, -17.4, 0.5]]); bowl(H, 0, -21.4); return H; } },
+  // The Windmill: the apron narrows to the house the way every windmill hole does. Round either side, two putts. The secret: through the door, if the sails let you.
+  { par:3, f:function(T){ var H = hole([pg([[-4, 0], [4, 0], [7, -11], [7, -38], [-7, -38], [-7, -11]])], [0, -2.5], [0, -33]);
     millAt(H, T, -18, 4.5, 1.3); secret(H, -1.1, -18, 1.1, -21.5); bumps(H, T, [[-2.8, -28.5, 0.5], [2.8, -28.5, 0.5]]); bowl(H, 0, -33, 1.4, 0.12); return H; } },
-  // Sand Bar: blast it through the sand and putt out. The secret: off the right wall the ball crosses the trap on the one strip of carpet left in it.
-  { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -30)], [0, -2.5], [-1.5, -25]); zoneR(H, M.SAND, -5, -14, 5, -17); zoneR(H, M.GREEN, 2.6, -14, 4.6, -17); secret(H, 2.6, -14, 4.6, -17); bumps(H, T, [[-3.2, -21, 0.55]]); bowl(H, -1.5, -25); return H; } },
+  // Sand Bar: blast it through the sand and putt out; a board across the far corner sends a long one back to the cup. The secret: off the right wall the ball crosses the trap on the one strip of carpet left in it.
+  { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -30)], [0, -2.5], [-1.5, -25]); zoneR(H, M.SAND, -5, -14, 5, -17); zoneR(H, M.GREEN, 2.6, -14, 4.6, -17); secret(H, 2.6, -14, 4.6, -17); bumps(H, T, [[-3.2, -21, 0.55]]);
+    board(H, T, 1.4, -30, 5, -26.4); bowl(H, -1.5, -25); return H; } },
   // Pipe Dream: the big pipe climbs to the top room, then putt out; the left one is a dud back to the tee. The secret: the little pipe in the corner, behind the bumper, comes out lined up with the cup.
   { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -16), rm(-5, -20, 5, -34, 0.6)], [0, -2.5], [-2.5, -30]);
     pipe(H, T, 0, -12.5, 3.4, -21.4, 0, -1, 0.8); pipe(H, T, -3.2, -12.5, 0, -1.2, 0, 1, 0.8); bumps(H, T, [[2.1, -12.6, 0.5]]);
     pipe(H, T, 3.6, -14.6, -2.5, -21.4, 0, -1, 0.8, 0, 0.62); secret(H, 2.8, -13.8, 4.4, -15.4); return H; } },
-  // Slide Rule: time the slider through the wall, then putt out. The secret: there is a crack where the wall meets the right rail, and off the rail beyond it the ball comes back to the cup.
-  { par:3, f:function(T){ var H = hole([rm(-4.5, 0, 4.5, -34)], [0, -2.5], [0, -30]); blk(H, T, -4.5, -14, -1.2, -15.2); blk(H, T, 1.2, -14, 3.5, -15.2);
-    secret(H, 3.5, -14, 4.5, -15.2); slider(H, T, -14.6, -2.6, 2.6, 2.8, 0, 1.8); bumps(H, T, [[-2.5, -24, 0.5], [0, -23, 0.6]]); bowl(H, 0, -30); return H; } },
+  // Slide Rule: time the slider through the wall, and past it two boards make a V that funnels the ball to the cup.
+  { par:3, f:function(T){ var H = hole([rm(-4.5, 0, 4.5, -34)], [0, -2.5], [0, -30.4]); blk(H, T, -4.5, -14, -1.2, -15.2); blk(H, T, 1.2, -14, 4.5, -15.2);
+    slider(H, T, -14.6, -2.6, 2.6, 2.8, 0, 1.8); board(H, T, -4.5, -21, -1.3, -27.4); board(H, T, 4.5, -21, 1.3, -27.4); bumps(H, T, [[0, -21.6, 0.5]]); return H; } },
   // Causeway: up the railed causeway to the island, then putt out. The secret: the kicker in front of the water skips the ball straight onto the island.
   { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -28)], [0, -2.5], [0, -17]); zoneR(H, M.WATER, -6, -11.06, 6, -25.5); zoneC(H, M.GREEN, 0, -17, 3); zoneR(H, M.GREEN, 2.2, -11, 4.4, -17);
     blk(H, T, 1.9, -11, 2.2, -16.2); blk(H, T, 4.4, -11, 4.7, -16.6); jump(H, -0.6, -11, 0, -1, 0.05, 2.2, { m:M.GREEN, h:0.9, ang:40 }); secret(H, -1.7, -10.3, 0.5, -11); bowl(H, 0, -17, 1.4, 0.12); blk(H, T, -1.8, -18.9, 1.8, -19.3); return H; } },
-  // The Kicker: over the pond off the kicker, then putt round the rock.
-  { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -12), rm(-5, -11.9, 5, -15.1), rm(-5, -15, 5, -30)], [0, -2.5], [-2, -26]); jump(H, 0, -12, 0, -1, 3, 10, { w:3.2 }); bumps(H, T, [[-1.2, -21.4, 0.65]]); return H; } },
+  // The Kicker: over the pond off the kicker into the landing court, whose cut corners bank a long jump back in. Then putt round the rock.
+  { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -12), rm(-5, -11.9, 5, -15.1), pg([[-5, -15], [5, -15], [5, -26], [1, -30], [-1, -30], [-5, -26]])], [0, -2.5], [-1.8, -26]); jump(H, 0, -12, 0, -1, 3, 10, { w:3.2 }); bumps(H, T, [[-1.2, -21.4, 0.65]]); return H; } },
   // First Loop: through the loop and putt out round the bumper.
   { par:3, f:function(T){ var H = hole([rm(-4, 0, 4, -12), pg([[-4, -12], [4, -12], [0.8, -15.6], [-0.8, -15.6]]), rm(-0.8, -15.5, 0.8, -19.5), rm(-4, -19.4, 4, -34)], [0, -2.5], [-2.2, -30]);
     loopAt(H, 0, -17.5, 0, -1, 0.6, 1.6); bumps(H, T, [[-0.6, -27.6, 0.55]]); return H; } },
@@ -943,8 +953,9 @@ var LEVELS = [
   // Drawbridge: a curb guards the moat, so only the bridge gets you across; time it and putt out round the bumper.
   { par:3, f:function(T){ var H = hole([rm(-4, 0, 4, -14), rm(-4, -13.9, 4, -17.1), rm(-4, -17, 4, -32)], [0, -2.5], [2.6, -29]); zoneR(H, M.WATER, -4, -14, 4, -17); drawb(H, -1.4, -14, 1.4, -17, 3.4, 0, 0.55); bumps(H, T, [[2.0, -23.4, 0.6]]); bowl(H, 2.6, -29);
     blk(H, T, 1.4, -13.3, 4, -13.9); blk(H, T, -4, -13.3, -1.4, -13.9); return H; } },
-  // Spin Cycle: through the turning floor and putt out.
-  { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -32)], [0, -2.5], [-2, -28]); disc(H, 0, -16, 2.6, 1.3); blk(H, T, -6, -15, -2.9, -17); blk(H, T, 2.9, -15, 6, -17); bumps(H, T, [[0.2, -24.6, 0.5]]); return H; } },
+  // Spin Cycle: an octagon round the turning floor. Through the floor, or off the angled walls round it, and putt out.
+  { par:3, f:function(T){ var H = hole([rm(-4, 0, 4, -9.1), pg([[-4, -9], [4, -9], [7, -12], [7, -20], [4, -23], [-4, -23], [-7, -20], [-7, -12]]), rm(-4, -22.9, 4, -32)], [0, -2.5], [-2, -28.5]);
+    disc(H, 0, -16, 2.6, 1.3); bumps(H, T, [[0.2, -25.6, 0.5], [0, -10.6, 0.5]]); return H; } },
   // The Creek: ride the creek down to the lower green and putt out. The secret: the creek keeps its speed, so feed it hard and it carries to the cup.
   { par:3, f:function(T){ var H = hole([rm(2, 0, 10, -14), rm(-9, -25, 1, -38, -1.5)], [6, -2.5], [-4, -34]); river(H, [[6, -13], [6, -18], [1, -22], [-4, -22], [-4, -26]], 1.8, 6, 0, -1.5); bumps(H, T, [[6, -8, 0.7], [-2.6, -30.5, 0.5]]); return H; } },
   // Double Mill: round two windmills by the side lanes, two putts. The secret: through both doors.
@@ -1117,8 +1128,8 @@ var LEVELS = [
   // Magma Loop: through the loop, between the lava pools, putt out.
   { par:3, f:function(T){ var H = hole([rm(-4, 0, 4, -11), pg([[-4, -11], [4, -11], [0.8, -14.6], [-0.8, -14.6]]), rm(-0.8, -14.5, 0.8, -19), rm(-5, -18.9, 5, -36)], [0, -2.5], [-2.5, -32]);
     loopAt(H, 0, -16.8, 0, -1, 0.8, 1.6); zoneR(H, M.WATER, -5, -22, -1.2, -26); zoneR(H, M.WATER, 1.2, -22, 5, -26); zoneR(H, M.WATER, 1.5, -26, 5, -36); blk(H, T, 1.2, -26, 1.5, -36); return H; } },
-  // Obsidian Bridges: two bridges on two clocks, curbs on both channels, three putts.
-  { par:4, f:function(T){ var H = hole([rm(-5, 0, 5, -12), rm(-5, -11.9, 5, -15.6), rm(-5, -15.5, 5, -24), rm(-5, -23.9, 5, -27.6), rm(-5, -27.5, 5, -38)], [0, -2.5], [3, -34]);
+  // Obsidian Bridges: two bridges on two clocks, curbs on both channels, two putts.
+  { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -12), rm(-5, -11.9, 5, -15.6), rm(-5, -15.5, 5, -24), rm(-5, -23.9, 5, -27.6), rm(-5, -27.5, 5, -38)], [0, -2.5], [3, -34]);
     zoneR(H, M.WATER, -5, -12, 5, -15.5); drawb(H, -1.2, -12, 1.2, -15.5, 2.6, 0, 0.5); zoneR(H, M.WATER, -5, -24, 5, -27.5); drawb(H, 1.8, -24, 4.2, -27.5, 2.4, 0.35, 0.5); bumps(H, T, [[1.5, -20, 0.6]]);
     blk(H, T, -5, -11.4, -1.2, -12); blk(H, T, 1.2, -11.4, 5, -12); blk(H, T, -5, -23.4, 1.8, -24); blk(H, T, 4.2, -23.4, 5, -24); return H; } },
   // Eruption: under three spinning rocks, rails along the lava, two putts.
@@ -1253,7 +1264,7 @@ var RTT_PUTT = {
   M:M, BALL_R:BALL_R, CUP_R:CUP_R, CUP_R_MINI:CUP_R_MINI, V_MAX:V_MAX, V_STIMP:V_STIMP, ART:ART,
   THEMES:THEMES, TEMPLATES:TEMPLATES, COURSE_ORDER:COURSE_ORDER, DAILY_POOL:DAILY_POOL,
   hstr:hstr, mulberry:mulberry, hash3:hash3,
-  simulate:simulate, speedFor:speedFor, feetFor:feetFor, fricOf:fricOf, moverAt:moverAt,
+  simulate:simulate, speedFor:speedFor, feetFor:feetFor, inBlock:inBlock, fricOf:fricOf, moverAt:moverAt,
   makeField:makeField, finishCourse:finishCourse, inPoly:inPoly,
   greenCharacter:greenCharacter, buildReal:buildReal, spotFor:spotFor, fromHost:fromHost,
   CAL_THEMES:CAL_THEMES, buildMini:buildMini, buildFrom:buildFrom, LEVELS:LEVELS, WORLDS:WORLDS, TOURS:TOURS, PER:PER, buildLevel:buildLevel, worldOf:worldOf, lvHelpers:{ hole:hole, rm:rm, pg:pg }, tourDesc:tourDesc, levelName:levelName, themedCourse:themedCourse, dailyHole:dailyHole, dailyLevel:dailyLevel, themeForDay:themeForDay, scoreName:scoreName
@@ -1434,7 +1445,7 @@ function paintCourse(C){
     }
     // shadows first, then the objects that cast them
     var objs = [];
-    (C.blocks || []).forEach(function(r){ objs.push({ x0:r.x0, y0:r.y0, x1:r.x1, y1:r.y1, skin:r.skin, rect:1 }); });
+    (C.blocks || []).forEach(function(r){ objs.push({ x0:r.x0, y0:r.y0, x1:r.x1, y1:r.y1, skin:r.skin, rect:1, rot:r.rot }); });
     (C.bumpers || []).forEach(function(u){ objs.push({ x0:u.x - u.r, y0:u.y - u.r, x1:u.x + u.r, y1:u.y + u.r, skin:u.skin }); });
     (C.portals || []).forEach(function(p){ objs.push({ x0:p.ax - 1.05, y0:p.ay - 1.05, x1:p.ax + 1.05, y1:p.ay + 1.05, skin:p.skin, port:1 }); objs.push({ x0:p.bx - 0.75, y0:p.by - 0.6, x1:p.bx + 0.75, y1:p.by + 0.6, skin:'exit' }); });
     (C.props || []).forEach(function(p){ objs.push({ x0:p.x - p.s, y0:p.y - p.s, x1:p.x + p.s, y1:p.y + p.s, skin:p.k, prop:1 }); });
@@ -1447,6 +1458,7 @@ function paintCourse(C){
     var i0 = Math.floor((ob.x0 + off - b[0]) / ART), i1 = Math.ceil((ob.x1 + off - b[0]) / ART), j0 = Math.floor((ob.y0 + off - b[1]) / ART), j1 = Math.ceil((ob.y1 + off - b[1]) / ART);
     for (var jj = Math.max(0, j0); jj <= Math.min(ny - 1, j1); jj++) for (var ii = Math.max(0, i0); ii <= Math.min(nx - 1, i1); ii++){
       var xx = b[0] + ii * ART - off, yy = b[1] + jj * ART - off, u = ((xx - ob.x0) / (ob.x1 - ob.x0)) * 2 - 1, v = ((yy - ob.y0) / (ob.y1 - ob.y0)) * 2 - 1;
+      if (ob.rot){ var q = ob.rot, ddx = xx - q.cx, ddy = yy - q.cy; u = (ddx * q.c + ddy * q.s) / q.hl; v = (-ddx * q.s + ddy * q.c) / q.hw; if (Math.abs(u) > 1 || Math.abs(v) > 1) continue; }
       if (ob.rect && !SKIN[ob.skin]){ continue; }
       var col = fn(u, v); if (!col) continue;
       var oo = (jj * nx + ii) * 4;

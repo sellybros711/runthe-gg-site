@@ -19447,6 +19447,18 @@ definitions. Hole code still reads the old numbers. Moving `PACE` re-times every
 all of them with `--write` and replay. Two Gates is one bar shuttling between two doors, so one door is
 always open and the puzzle is reading which.
 
+**A bank board is a block laid at an angle** (`board(H, T, ax, ay, bx, by, th)`, `addBoard`), so a hole
+can use the angles classic mini golf is built on: a dogleg's outside corner cut by a board, a V of two
+boards funnelling to the cup, a diamond room whose walls bank round a centre block. It keeps its bounding
+box in `x0..y1` for anything that only needs to keep clear of it, and `rot` for everything that asks
+whether a point is IN it. **`inBlock(r, x, y, pad)` is that one answer**: the solver's and the check's
+walking-distance maps read it, because a long diagonal board's bounding box would wall off half the room
+and the solver would report a playable hole as impossible. The 3D painter and the flat painter turn
+their skin into the board's own frame. Angled walls round the course itself are just room polygons
+(`pg`), which already worked. The Clubhouse holes were reshaped this way (a dogleg, a skewed slope, a
+diamond, a windmill apron, a V funnel, a hexagonal landing court, an octagon round the turntable);
+angled boards guiding onto the drawbridge were tried and made it harsher, so that hole kept its curbs.
+
 **Every hole has an obvious line and many have a secret one, and par is set off the OBVIOUS one.**
 Reported by the owner: some holes had no logical way to a birdie, the ball went in the water too often,
 and every hole read as having one answer. So:

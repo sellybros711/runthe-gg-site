@@ -36,7 +36,7 @@ export function geodesic(C, avoid){
   const Z = avoid ? (C.secret || []) : [], inZ = (x, y) => Z.some(z => x >= z.x0 - 0.3 && x <= z.x1 + 0.3 && y >= z.y0 - 0.3 && y <= z.y1 + 0.3);
   const res = 0.5, b = C.bounds, nx = Math.ceil((b[2] - b[0]) / res) + 1, ny = Math.ceil((b[3] - b[1]) / res) + 1;
   const pass = new Uint8Array(nx * ny), D = new Float64Array(nx * ny).fill(1e9);   // 64 bit: a heap entry read back against a 32 bit copy of itself looks stale, and the search stops spreading
-  const solid = (x, y) => C.blocks.some(r => x > r.x0 - 0.1 && x < r.x1 + 0.1 && y > r.y0 - 0.1 && y < r.y1 + 0.1) || C.bumpers.some(u => Math.hypot(x - u.x, y - u.y) < u.r + 0.1);
+  const solid = (x, y) => C.blocks.some(r => P.inBlock(r, x, y, 0.1)) || C.bumpers.some(u => Math.hypot(x - u.x, y - u.y) < u.r + 0.1);
   const deck = (x, y) => C.bridges.some(r => x >= r.x0 && x <= r.x1 && y >= r.y0 && y <= r.y1);
   for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++){ const x = b[0] + i * res, y = b[1] + j * res, m = C.mats.at(x, y);
     pass[j * nx + i] = ((m !== M.OUT && m !== M.WATER) || deck(x, y)) && !solid(x, y) && !inZ(x, y) ? 1 : 0; }
