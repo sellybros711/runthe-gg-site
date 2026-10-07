@@ -543,6 +543,32 @@ section('8. three hundred careers from high school, and where they land');
   ok(mvp < 0.07, `an MVP from the road is as rare as from draft night (${(mvp * 100).toFixed(1)}%)`);
   ok(hof > 0.08 && hof < 0.42 && star > 0.15 && star < 0.5, 'the Hall and All-Star rates sit in the same bands');
   ok(drafted > 0.8 && drafted < 1, `most of them are drafted, not all (${(drafted * 100).toFixed(0)}%)`);
+  /* A COLLEGE SUMMER IS NOT A PRO SUMMER. The summer card was the league's and
+     colYear deals it too, so a freshman read "Your first summer as a pro" over
+     Summer League. Reported by a player. Every summer card a college year deals
+     is read, and the pro words and pro programs may not be on it. */
+  {
+    const PRO = /\bpro\b|camp opens|summer league|national team|private skills|slows the decline/i;
+    let colCards = 0, proCards = 0, nbaCards = 0;
+    const leaks = [];
+    for (let i = 0; i < 40; i++) {
+      const L = C.newLife({ seed: 'colsum:' + i, start: 'hs', league, pos: C.POS[i % 5] });
+      let g = 0;
+      while (!L.retired && g++ < 3000 && L.history.length < 2) {
+        if (L.pending.length) {
+          const c = L.pending[0];
+          if (c.id === 'training') {
+            const words = [c.title, c.text].concat(c.options.map((o) => o.label + ' ' + (o.hint || ''))).join(' | ');
+            if (!L.team) { colCards++; if (PRO.test(words)) leaks.push(L.age + ': ' + words.slice(0, 120)); }
+            else { nbaCards++; if (/summer league|first summer as a pro/i.test(words)) proCards++; }
+          }
+          C.choose(L, i % Math.max(1, c.options.length));
+        } else C.step(L);
+      }
+    }
+    ok(colCards > 20 && leaks.length === 0, `a college summer card says nothing about the pros (${colCards} read, ${leaks.length} leaked${leaks[0] ? ': ' + leaks[0] : ''})`);
+    ok(nbaCards > 20 && proCards > 0, `and the league's summer card still does (${proCards} of ${nbaCards})`);
+  }
   /* And the road round-trips through JSON like the league half does. */
   const a = play('road:det', 'random', { start: 'hs', pos: 'PG', arch: 'floor' }).L;
   let M = C.newLife({ seed: 'road:det', start: 'hs', pos: 'PG', arch: 'floor', league }), g = 0;

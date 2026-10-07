@@ -5691,8 +5691,9 @@ const SUMMER = {
     s: ['Two-hand passes off the dribble until you dream about them.', 'You learn to see the weak side before it opens.', 'Fifty pick and rolls a day. Now you read them all.'] },
   defense: { l: 'Go to defensive camp', h: 'Defense, plus some athleticism', fx: { def: 2, ath: 1 },
     s: ['Slides until your legs shake. Now you stay in front.', 'They teach you to guard without fouling. Mostly.', 'You come back a step quicker and a lot meaner.'] },
-  rest: { l: 'Rest and recover', h: 'Health. Slows the decline.', rest: 1,
-    s: ['Fully rested. You feel twenty-two again.', 'Two months of sleep and fishing. The knees say thanks.', 'No basketball until August. Your body forgives you.'] },
+  rest: { l: 'Rest and recover', h: 'Health. Slows the decline.', rest: 1, hy: 'Health, and fresh legs in the fall',
+    s: ['Fully rested. You feel twenty-two again.', 'Two months of sleep and fishing. The knees say thanks.', 'No basketball until August. Your body forgives you.'],
+    sy: ['Two months off your feet. You come back bouncy.', 'Sleep, home cooking, no gym. Your legs feel brand new.', 'No basketball until August. You miss it, which is the point.'] },
   post: { l: 'Post work with a retired big', h: 'Finishing, plus some rebounding', fx: { fin: 2, reb: 1 }, when: (L) => !!BIGS[L.pos] || L.pos === 'SF',
     s: ['Drop step, up and under, repeat. He\'s sixty and still beats you.', 'He teaches you to seal early. The paint feels smaller.', 'Old man moves. They work on young men.'] },
   film: { l: 'Live in the film room', h: 'IQ, plus some playmaking', fx: { iq: 2, pla: 1 },
@@ -5729,8 +5730,23 @@ const SUMMER_FRAME = {
   old: ['Another summer, and your body has opinions', 'Mornings take longer to get going. The game still feels good.'],
   plain: [['Where are you spending the summer?', 'Camp\'s two months away.'], ['Eight weeks until camp', 'The gym\'s empty in July. You could be in it.'],
     ['It\'s the off-season', 'Everybody else is on a boat. What are you doing?']],
+  col1: ['Your first summer on campus', 'Summer classes and open gym. Nobody on the roster has seen you play yet.'],
+  colNew: ['New school, new gym', 'Nobody here has seen you practice yet.'],
+  colBack: [['Back on campus for the summer', 'Last season is on film. The staff wants more.'], ['Summer on campus', 'Classes in the morning. The gym is open all afternoon.']],
 };
+/* COLLEGE GETS ITS OWN SUMMER. The card below was written for the league, and
+   a college year deals it too (colYear), so a freshman was told it was his
+   first summer as a pro and offered Summer League. A player read it at 18. */
+const inCollege = (L) => !L.team && typeof L.phase === 'string' && L.phase.indexOf('col') === 0;
+const COL_SKIP = { summer_lg: 1, national: 1, private: 1 };
+function colFrame(L) {
+  const prev = (L.amHist || []).filter((x) => x.lvl === 'NCAA').pop();
+  if (!prev) return SUMMER_FRAME.col1;
+  if (L.am && L.am.college && prev.school && prev.school !== L.am.college) return SUMMER_FRAME.colNew;
+  return pick(figRng(L, 'sframe:' + L.year), SUMMER_FRAME.colBack);
+}
 function summerFrame(L) {
+  if (inCollege(L)) return colFrame(L);
   const H = L.history, h = H[H.length - 1], c = L.contract;
   if (!h) return SUMMER_FRAME.first;
   if (h.t && L.team && h.t !== L.team) return SUMMER_FRAME.moved;
@@ -5748,10 +5764,11 @@ function summerKeys(L) {
   const H = L.history, h = H[H.length - 1];
   const r = figRng(L, 'summer:' + L.year);
   const out = [];
-  if (h && h.gp < 55) out.push('rehab');
+  if (h && h.gp < 55 && !inCollege(L)) out.push('rehab');
   if (L.m.health < 70 || L.age >= 31) out.push('rest');
   const last = (L.flags.summerOff || []);
-  const rest = Object.keys(SUMMER).filter((k) => k !== 'rehab' && out.indexOf(k) < 0 && (!SUMMER[k].when || SUMMER[k].when(L)));
+  const col = inCollege(L);
+  const rest = Object.keys(SUMMER).filter((k) => k !== 'rehab' && out.indexOf(k) < 0 && !(col && COL_SKIP[k]) && (!SUMMER[k].when || SUMMER[k].when(L)));
   while (out.length < 4 && rest.length) {
     const k = weighted(r, rest, (x) => (last.indexOf(x) >= 0 ? 0.35 : 1) * (x === 'rest' ? 0.6 : 1));
     out.push(k); rest.splice(rest.indexOf(k), 1);
@@ -5766,7 +5783,7 @@ function summerCard(L) {
     eyebrow: 'Summer of ' + (L.year - 1), title: f[0],
     text: f[1] + ' ' + bodyFeel(L)[0].toUpperCase() + bodyFeel(L).slice(1) + '.',
     ctx: { ks },
-    options: ks.map((k) => ({ label: SUMMER[k].l, hint: SUMMER[k].h })),
+    options: ks.map((k) => ({ label: SUMMER[k].l, hint: SUMMER[k].hy && L.age <= 24 ? SUMMER[k].hy : SUMMER[k].h })),
   };
 }
 function summerChoose(L, k, rng) {
@@ -5788,7 +5805,7 @@ function summerChoose(L, k, rng) {
   bump(L, d);
   if (P.who) relate(L, P.who, 6, 'You spent a summer at home.');
   if (storyOn(L)) remember(L, 'summer.' + k, true);
-  let t = pick(rng, P.s);
+  let t = pick(rng, P.sy && L.age <= 24 ? P.sy : P.s);
   if (runs >= 3) t = 'Same summer, third year running. Your body knows the drills. It learns less.';
   else if (click) t += ' Then something clicks in July.';
   return t;
