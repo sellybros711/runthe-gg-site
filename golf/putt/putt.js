@@ -205,6 +205,12 @@ function bladeSpan(o, t){
       var x = p0[0] + (p1[0] - p0[0]) * (zc - p0[1]) / (p1[1] - p0[1]); if (x < lo) lo = x; if (x > hi) hi = x; } }
   return hi > lo ? [o.x + lo, o.x + hi] : null;
 }
+// Everything that moves runs at PACE of the speed its hole was written at. Players found the
+// sliders, gates, spinners, sails, bridges and turntables far too quick at the written speeds, so
+// the slowdown is applied once, here and in the compile, rather than in ninety hole definitions.
+// Changing it re-times every moving hole: re-solve them (solve.mjs --write) and replay.
+var PACE = 0.6;
+function paced(o){ var c = {}; for (var k in o) c[k] = o[k]; if (c.period) c.period /= PACE; if (c.omega) c.omega *= PACE; return c; }
 function moverAt(o, t){
   if (o.k === 'blade'){ var sp = bladeSpan(o, t); return sp ? [[sp[0], o.y, sp[1], o.y]] : []; }
   if (o.k === 'spin'){
@@ -716,13 +722,13 @@ function courseFromH(H, tplName, seed, themeId, label){
   var all = PS.reduce(function(a, p){ return a.concat(p); }, []), xs = all.map(function(p){ return p[0]; }), ys = all.map(function(p){ return p[1]; });
   var pad = 6, b = [Math.min.apply(null, xs) - pad, Math.min.apply(null, ys) - pad, Math.max.apply(null, xs) + pad, Math.max.apply(null, ys) + pad];
   var edges = PS.length > 1 ? unionEdges(PS) : polyWalls(PS[0], 0, 0).map(function(w){ return [w[0], w[1], w[2], w[3]]; });
-  var bridges = (H.bridges || []).map(function(z){ return { x0:Math.min(z.x0, z.x1), y0:Math.min(z.y0, z.y1), x1:Math.max(z.x0, z.x1), y1:Math.max(z.y0, z.y1), period:z.period || 4, phase:z.phase || 0, duty:z.duty == null ? 0.5 : z.duty, hinge:z.hinge || 'n' }; });
+  var bridges = (H.bridges || []).map(function(z){ return { x0:Math.min(z.x0, z.x1), y0:Math.min(z.y0, z.y1), x1:Math.max(z.x0, z.x1), y1:Math.max(z.y0, z.y1), period:(z.period || 4) / PACE, phase:z.phase || 0, duty:z.duty == null ? 0.5 : z.duty, hinge:z.hinge || 'n' }; });
   var C = { kind:'mini', tpl:tplName, theme:themeId, T:T, name:label || tplName, bounds:b, poly:PS[0], polys:PS, allPts:all, edges:edges, rooms:rooms, comps:H.comps, flats:H.flats,
     stimp:H.stimp || (themeId === 'winter' ? 9.5 : 9), cup:H.cup, cupR:CUP_R_MINI, tee:H.tee, par:H.par,
-    walls:edges.map(function(e){ return [e[0], e[1], e[2], e[3], 0, 0.72]; }).concat(H.walls), bumpers:H.bumpers, blocks:H.blocks, movers:H.movers, portals:H.portals, zones:H.zones, mill:H.mill, seed:seed,
+    walls:edges.map(function(e){ return [e[0], e[1], e[2], e[3], 0, 0.72]; }).concat(H.walls), bumpers:H.bumpers, blocks:H.blocks, movers:H.movers.map(paced), portals:H.portals, zones:H.zones, mill:H.mill, seed:seed,
     secret:H.secret || [], loops:(H.loops || []).map(function(L){ var l = Math.hypot(L.dx, L.dy) || 1; return { x:L.x, y:L.y, dx:L.dx / l, dy:L.dy / l, r:L.r || 0.75, w:L.w || 1.4, off:L.off || 0, vmin:L.vmin }; }),
     ramps:(H.ramps || []).map(function(R){ var l = Math.hypot(R.dx, R.dy) || 1; return { x:R.x, y:R.y, dx:R.dx / l, dy:R.dy / l, w:R.w || 2, h:R.h || 0.4, ang:R.ang || 24, len:R.len || 1.6 }; }),
-    rivers:rivers, bridges:bridges, turns:(H.turns || []).map(function(u){ return { x:u.x, y:u.y, r:u.r || 2, omega:u.omega || 1.2 }; }),
+    rivers:rivers, bridges:bridges, turns:(H.turns || []).map(function(u){ return { x:u.x, y:u.y, r:u.r || 2, omega:(u.omega || 1.2) * PACE }; }),
     belts:(H.belts || []).map(function(z){ return { x0:Math.min(z.x0, z.x1), y0:Math.min(z.y0, z.y1), x1:Math.max(z.x0, z.x1), y1:Math.max(z.y0, z.y1), ax:z.ax, ay:z.ay }; }) };
   C.matFn = function(x, y){
     if (inAny(PS, x, y) < 0) return M.OUT;
@@ -927,9 +933,9 @@ var LEVELS = [
   // First Loop: through the loop and putt out round the bumper.
   { par:3, f:function(T){ var H = hole([rm(-4, 0, 4, -12), pg([[-4, -12], [4, -12], [0.8, -15.6], [-0.8, -15.6]]), rm(-0.8, -15.5, 0.8, -19.5), rm(-4, -19.4, 4, -34)], [0, -2.5], [-2.2, -30]);
     loopAt(H, 0, -17.5, 0, -1, 0.6, 1.6); bumps(H, T, [[-0.6, -27.6, 0.55]]); return H; } },
-  // Two Gates: time two gates, then putt out into the bowl.
-  { par:3, f:function(T){ var H = hole([rm(-4.5, 0, 4.5, -40)], [0, -2.5], [0, -36]); blk(H, T, -4.5, -13, -1.2, -14.2); blk(H, T, 1.2, -13, 4.5, -14.2); gateAt(H, T, -13.6, -1.2, 1.2, 3.2, 0, 1);
-    gateWall(H, T, -26, -4.5, 4.5, 1.2, 3.4, 3.8, 0.4, -1); bowl(H, 0, -36); return H; } },
+  // Two Gates: one bar shuttles between two doors, so one is always open. Read which, putt through it, then putt out between the bumpers.
+  { par:3, f:function(T){ var H = hole([rm(-4.5, 0, 4.5, -36)], [0, -2.5], [0, -31]); blk(H, T, -4.5, -14, -3, -15.2); blk(H, T, -1, -14, 1, -15.2); blk(H, T, 3, -14, 4.5, -15.2);
+    slider(H, T, -14.6, -2, 2, 3.6, 0, 2.3); bumps(H, T, [[-1.5, -24.5, 0.55], [1.5, -24.5, 0.55]]); bowl(H, 0, -31); return H; } },
   // Conveyor: across the belt aiming off its push, then putt out. The secret: let the belt have it. It dumps the ball in a chute at the far end, and the chute comes out at the cup.
   { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -34)], [0, -2.5], [-3, -29]); belt(H, -6, -14, 6, -19, 5, 0); bumps(H, T, [[2.4, -24, 0.7]]);
     pipe(H, T, 5.3, -16.5, -3, -25.4, 0, -1, 0.9, 0, 0.4); secret(H, 4.5, -15.6, 6, -17.4); return H; } },

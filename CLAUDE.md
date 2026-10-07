@@ -19440,6 +19440,13 @@ of an hour, so CI does not run it**: it records every route in `golf/putt/routes
 REPLAYS them, which takes seconds and proves the same thing. Change a hole and its route stops replaying,
 so the check fails until `solve.mjs --only N --write` is run again. Write the par it prints into `LEVELS`.
 
+**Everything that moves runs at `PACE` (0.6) of the speed its hole was written at.** Players found the
+sliders, gates, spinners, sails, drawbridges and turntables far too quick, so the slowdown is applied once
+in the compile (`paced()`, the bridges' period, the turntables' omega) rather than in ninety hole
+definitions. Hole code still reads the old numbers. Moving `PACE` re-times every moving hole, so re-solve
+all of them with `--write` and replay. Two Gates is one bar shuttling between two doors, so one door is
+always open and the puzzle is reading which.
+
 **Every hole has an obvious line and many have a secret one, and par is set off the OBVIOUS one.**
 Reported by the owner: some holes had no logical way to a birdie, the ball went in the water too often,
 and every hole read as having one answer. So:
