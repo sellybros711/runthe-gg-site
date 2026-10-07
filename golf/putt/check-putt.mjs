@@ -134,7 +134,7 @@ claim(oneputts === tried, `every 8 footer can be holed (${oneputts}/${tried})`);
 function geodesic(C){
   const res = 0.5, b = C.bounds, nx = Math.ceil((b[2] - b[0]) / res) + 1, ny = Math.ceil((b[3] - b[1]) / res) + 1;
   const pass = new Uint8Array(nx * ny), D = new Float32Array(nx * ny).fill(1e9);
-  const solid = (x, y) => C.blocks.some(r => x > r.x0 - 0.1 && x < r.x1 + 0.1 && y > r.y0 - 0.1 && y < r.y1 + 0.1) || C.bumpers.some(u => Math.hypot(x - u.x, y - u.y) < u.r + 0.1);
+  const solid = (x, y) => C.blocks.some(r => P.inBlock(r, x, y, 0.1)) || C.bumpers.some(u => Math.hypot(x - u.x, y - u.y) < u.r + 0.1);
   for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++){ const x = b[0] + i * res, y = b[1] + j * res, m = C.mats.at(x, y);
     pass[j * nx + i] = (m !== M.OUT && m !== M.WATER && !solid(x, y)) ? 1 : 0; }
   const idx = (x, y) => Math.round((y - b[1]) / res) * nx + Math.round((x - b[0]) / res);
