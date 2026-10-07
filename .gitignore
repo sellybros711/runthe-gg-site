@@ -38,3 +38,4 @@ __pycache__/
 # would land in every commit that touched the sprite table.
 mythiball/index.html.prev
 wrestling/sim/last-run.json
+golf/putt/routes.lock

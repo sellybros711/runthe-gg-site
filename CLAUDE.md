@@ -19462,6 +19462,28 @@ of an hour, so CI does not run it**: it records every route in `golf/putt/routes
 REPLAYS them, which takes seconds and proves the same thing. Change a hole and its route stops replaying,
 so the check fails until `solve.mjs --only N --write` is run again. Write the par it prints into `LEVELS`.
 
+**Every hole has an obvious line and many have a secret one, and par is set off the OBVIOUS one.**
+Reported by the owner: some holes had no logical way to a birdie, the ball went in the water too often,
+and every hole read as having one answer. So:
+
+- **Par is the obvious route plus one** (or 3 when the obvious line is an ace). Playing the hole the way
+  it looks earns a birdie, so a player who reads it right always has a winnable path.
+- **A secret line is one stroke shorter** and is marked with `secret(H, x0, y0, x1, y1)`: a zone only the
+  hidden route passes through (a slit in a wall, a door that looks like a dead end, a bank off a side
+  wall). The solver searches twice: once AVOIDING every secret zone (that sets par) and once free (that
+  must find a line one shorter, through a zone). `routes.json` keeps both, as `main:n` and `main:n:sc`.
+  At least a third of every world's holes carry one. Finding it says SECRET LINE FOUND on the result.
+- **A long putt can never be robust on its own**, because a degree of aim is wider than the cup at 30
+  feet. So a secret ace needs a funnel: a pipe that exits about 1.4 ft short of the cup with `keep` 0.2
+  (its minimum exit speed rolls about that far), or a `bowl()`, a shallow hollow round the cup.
+- **Water and the edges have curbs.** Thin `blk()` rails along a pond or a drop, with gaps only where a
+  bridge or a ramp is meant to be used, give a player something to aim at. `fair.mjs` plays each hole's
+  route with a person's error (2 degrees, 8% pace, 0.12 s) and reports how often it goes wet or out; the
+  check holds every hole under 34% and each tour's mean under 10%.
+
+The map's level buttons wear their world (a golf ball, a carved stone, a doubloon, a plank sign, basalt,
+a tombstone, a pumpkin), and the hub takes the world's colours off `data-wt`.
+
 **The search is ranked by walking distance to the cup, and that map was quietly wrong.** It was a
 Float32Array read back against a 64 bit heap entry, so a cell's own distance looked stale on the way out
 of the heap and the spread stopped. On a long hole every place the ball could rest read as unreachable,
