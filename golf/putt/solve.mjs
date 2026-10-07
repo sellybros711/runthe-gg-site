@@ -119,6 +119,26 @@ export function solve(C, cap, stats, avoid){
   }
   return { strokes:Infinity, total };
 }
+/* THREE STARS IS TWO UNDER PAR, so on a par 3 it is the ace, and it has to be a putt a player can make.
+   The search from the tee above steps a degree and a foot at a time and only keeps a putt that holes ON
+   that grid, which misses most aces: a bank that drops is a window under a degree wide. So this sweeps
+   the same fan, keeps every putt that passes within two feet of the cup, and searches finely round the
+   closest of them. A putt only counts if robust() passes, the room for error every recorded putt gets. */
+export function aceSearch(C){
+  const TM = timed(C), T0 = TM ? [0, 0.3, 0.6, 0.9, 1.2, 1.5, 1.8, 2.1, 2.4, 2.7] : [0], [cx, cy] = C.cup, tx = C.tee[0], ty = C.tee[1];
+  const near = r => { let m = 1e9; for (const p of r.pts){ const d = Math.hypot(p[0] - cx, p[1] - cy); if (d < m) m = d; } return m; };
+  const cand = []; let total = 0;
+  for (const t0 of T0) for (let d = 0; d < 360; d++) for (let ft = 2; ft <= 44; ft++){ const a = d * Math.PI / 180, r = shot(C, tx, ty, a, ft, t0); total++;
+    if (r.water || r.out) continue; const m = r.holed ? 0 : near(r); if (m < 2) cand.push([m, a, ft, t0]); }
+  cand.sort((p, q) => p[0] - q[0]);
+  const seen = [];
+  for (const [, a0, f0, t0] of cand.slice(0, 80)){
+    if (seen.some(q => Math.abs(q[0] - a0) < 0.03 && Math.abs(q[1] - f0) < 2 && q[2] === t0)) continue; seen.push([a0, f0, t0]);
+    for (const dt of TM ? [-0.2, -0.1, 0, 0.1, 0.2] : [0]) for (let da = -1.5; da <= 1.5; da += 0.15) for (let df = -1.5; df <= 1.5; df += 0.25){
+      const a = a0 + da * Math.PI / 180, ft = Math.min(44, f0 + df), t = Math.max(0, t0 + dt); total++;
+      if (shot(C, tx, ty, a, ft, t).holed && robust(C, tx, ty, a, ft, t)) return { strokes:1, total, line:[[a, ft, t]] }; } }
+  return { strokes:Infinity, total };
+}
 /* replay a recorded route: every putt in it rests where the next is struck, nothing goes in the water
    or out, the last one drops, and it has room for error. Returns null if it holds, or why it does not. */
 export function replay(C, line, want){
@@ -152,6 +172,7 @@ if (isMainThread && process.argv[1] && process.argv[1].endsWith('solve.mjs')){
   const saveNow = n => { const all = fs.existsSync(ROUTES) ? JSON.parse(fs.readFileSync(ROUTES, 'utf8')) : {}, m = out[n];
     if (m && m.line) all[tour + ':' + n] = m.line; else delete all[tour + ':' + n];
     if (m && m.sc) all[tour + ':' + n + ':sc'] = m.sc; else delete all[tour + ':' + n + ':sc'];
+    if (m && m.three) all[tour + ':' + n + ':3'] = m.three; else delete all[tour + ':' + n + ':3'];
     const keys = Object.keys(all).sort((a, b) => a.split(':')[0].localeCompare(b.split(':')[0]) || (+a.split(':')[1] - +b.split(':')[1]) || a.length - b.length);
     fs.writeFileSync(ROUTES, '{\n' + keys.map(k => '  ' + JSON.stringify(k) + ':' + JSON.stringify(all[k])).join(',\n') + '\n}\n'); };
   const t0 = Date.now();
@@ -161,7 +182,9 @@ if (isMainThread && process.argv[1] && process.argv[1].endsWith('solve.mjs')){
         const w = new Worker(new URL(import.meta.url), { workerData:{ tour, n, cap } });
         w.on('message', m => { out[n] = m; done++; if (args.includes('--write')) save(n); const L = TR.levels[n - 1], want = Math.max(3, m.strokes + 1);
           const scTxt = (P.buildLevel(n, tour).secret || []).length ? (m.sc ? `  shortcut ${m.sc.length}` : '  SHORTCUT NOT FOUND') : '';
-          console.log(String(n).padStart(3), P.levelName(n, tour).padEnd(24), 'obvious', m.strokes, 'par now', L.par, want === L.par ? '' : '  WANT ' + want, scTxt, m.onReal ? '  REAL COURSE: ' + m.onReal : '', `(${m.total} shots, ${m.secs}s)`); });
+          const tw = Math.max(1, want - 2), best3 = Math.min(m.strokes, m.sc ? m.sc.length : Infinity, m.three ? 1 : Infinity);
+          const thTxt = best3 <= tw ? `  3 stars in ${best3}` : '  3 STARS NOT FOUND';
+          console.log(String(n).padStart(3), P.levelName(n, tour).padEnd(24), 'obvious', m.strokes, 'par now', L.par, want === L.par ? '' : '  WANT ' + want, scTxt, thTxt, m.onReal ? '  REAL COURSE: ' + m.onReal : '', `(${m.total} shots, ${m.secs}s)`); });
         w.on('error', e => { console.log(n, 'ERROR', e.message); });
         w.on('exit', () => { live--; go(); }); } };
     go(); });
@@ -176,6 +199,10 @@ if (isMainThread && process.argv[1] && process.argv[1].endsWith('solve.mjs')){
   // search one stroke past par - 1, so a hole that is too hard says by how much
   const r = solve(C, cap || Math.max(L.par, 3), null, avoid);
   const s = avoid && r.line && r.strokes > 1 ? solve(C, r.strokes - 1) : null;
+  /* THREE STARS: two under the par this hole should carry. A par 3 the search did not already ace gets
+     the fine ace search, recorded as :3; a longer hole has to make it on its secret line. */
+  const par = Math.max(3, r.strokes + 1), best = Math.min(r.strokes, s && s.line ? s.line.length : Infinity);
+  const a = par === 3 && best > 1 ? aceSearch(C) : null;
   const onReal = null;
-  parentPort.postMessage({ strokes:r.strokes, total:r.total + (s ? s.total : 0), line:r.line || null, sc:s && s.line ? s.line : null, onReal, secs:Math.round((Date.now() - t) / 1000) });
+  parentPort.postMessage({ strokes:r.strokes, total:r.total + (s ? s.total : 0) + (a ? a.total : 0), line:r.line || null, sc:s && s.line ? s.line : null, three:a && a.line ? a.line : null, onReal, secs:Math.round((Date.now() - t) / 1000) });
 }

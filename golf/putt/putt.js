@@ -1241,26 +1241,26 @@ var LAB_WORLDS = [ { id:'lab', name:'The Lab', theme:'clubhouse', blurb:'Prototy
 var LAB_LEVELS = [
   // Redan: the green falls away from front right to back left, and a bunker guards the straight line. Play out right and let the slope feed it down to the cup.
   { par:3, f:function(T){ var H = hole([pg([[-6, 0], [6, 0], [7, -26], [-6, -28]])], [2.5, -2.5], [-2, -23.6]); H.comps.push({ k:'plane', gx:0.03, gy:0.004 });
-    zoneR(H, M.SAND, -6, -18.6, 0.6, -21); bumps(H, T, [[4.8, -12, 0.55]]); return H; } },
-  // The Cape: a dogleg round a pond. The more of the corner you bite off, the shorter the hole, and the closer to the water.
-  { par:3, f:function(T){ var H = hole([rm(-7, 0, 1, -26), rm(-7, -15, 14, -26)], [-3, -2.5], [10.5, -20.5]); zoneC(H, M.WATER, 1.6, -14.2, 3.6);
-    board(H, T, -7, -20, -2, -26); bumps(H, T, [[6, -23.6, 0.55]]); bowl(H, 10.5, -20.5, 1.3, 0.08); return H; } },
+    zoneR(H, M.SAND, -6, -18.6, 0.6, -21); bumps(H, T, [[4.8, -12, 0.55]]); bowl(H, -2, -23.6, 1.7, 0.12); return H; } },
+  // The Cape: a dogleg round a pond. Bite off the corner over the water, or go up the left and bank off the angled board for the ace.
+  { par:3, f:function(T){ var H = hole([rm(-7, 0, 1, -26), rm(-7, -15, 14, -26)], [-3, -2.5], [8.5, -22.4]); zoneC(H, M.WATER, 1.6, -14.2, 3.6);
+    board(H, T, -7.2, -20.7, -1.8, -25.3); bumps(H, T, [[5.4, -17.4, 0.55]]); bowl(H, 8.5, -22.4, 1.7, 0.12); return H; } },
   // Biarritz: a deep swale across the middle. Too soft and it stays in the hollow; firm enough and it climbs out onto the back plateau.
   { par:3, f:function(T){ var H = hole([rm(-4.5, 0, 4.5, -34)], [0, -2.5], [-2.2, -29.8]);
     H.comps.push({ k:'ridge', x:0, y:-12, nx:0, ny:-1, w:1.3, a:-0.5 }, { k:'ridge', x:0, y:-19.5, nx:0, ny:-1, w:1.3, a:0.5 });
-    bumps(H, T, [[-2.4, -15.8, 0.6], [2.6, -15.8, 0.6]]); blk(H, T, -4.5, -25.6, 0.6, -26.8); return H; } },
-  // Half Pipe: up the lane, round a banked bowl, and back down the other side to the cup. Firm enough to ride the bank and climb out.
-  { par:3, f:function(T){ var H = hole([rm(-6.5, 0, 6.5, -31)], [-3.6, -2.5], [3.6, -6]); blk(H, T, -0.8, 0, 0.8, -18);
-    H.comps.push({ k:'crown', x:0, y:-24, rx:5.2, ry:5.2, a:-0.34 }); bumps(H, T, [[0, -24, 0.55]]); return H; } },
-  // The Switch: the door in the wall is shut. Roll over the plate and it opens for a few seconds; the line has to find the plate on its way.
-  { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -32)], [2.5, -2.5], [-2.5, -27.5]); blk(H, T, -6, -18, -3.9, -19.2); blk(H, T, -1.1, -18, 6, -19.2);
-    switchDoor(H, T, -18.6, -3.9, -1.1, 5.1, -5.9, 3.5); bumps(H, T, [[-4.4, -11, 0.6], [2.6, -24, 0.6]]); return H; } },
+    bumps(H, T, [[-2.4, -15.8, 0.6], [2.6, -15.8, 0.6]]); blk(H, T, -4.5, -25.6, 0.6, -26.8); bowl(H, -2.2, -29.8, 2.0, 0.14); return H; } },
+  // Hairpin: up the left lane, off two angled boards at the top, and back down the right lane to the cup. The classic two-bank ace.
+  { par:3, f:function(T){ var H = hole([rm(-6.5, 0, 6.5, -20)], [-3.6, -2.5], [2.6, -9.5]); blk(H, T, -0.8, 0, 0.8, -10);
+    board(H, T, -6.5, -13.5, -0.5, -19.5); board(H, T, 0.5, -19.5, 6.5, -13.5); bumps(H, T, [[0, -13, 0.55]]); bowl(H, 2.6, -9.5, 1.7, 0.12); return H; } },
+  // The Switch: the door in the wall is shut. Roll over the plate and it opens for a few seconds; the line has to find the plate on its way, and the ace banks off the right wall to do it.
+  { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -32)], [2.5, -2.5], [-4.2, -27.5]); blk(H, T, -6, -18, -1.4, -19.2); blk(H, T, 1.4, -18, 6, -19.2);
+    switchDoor(H, T, -18.6, -1.4, 1.4, 5.1, -5.9, 3.5); bumps(H, T, [[-4.4, -11, 0.6], [2.6, -24, 0.6]]); bowl(H, -4.2, -27.5, 1.7, 0.12); return H; } },
   // The Drop: three tiers. Down the first step, along the middle terrace to its open end, and down again to the cup.
   { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -36)], [-3, -2.5], [-3, -32]);
     H.comps.push({ k:'ridge', x:0, y:-10, nx:0, ny:-1, w:0.9, a:-0.6 }, { k:'ridge', x:0, y:-24, nx:0, ny:-1, w:0.9, a:-0.6 });
-    blk(H, T, -6, -17, 2.2, -18.2); bumps(H, T, [[4, -21, 0.55]]); board(H, T, 1, -36, 6, -31); bowl(H, -3, -32, 1.2, 0.07); return H; } }
+    blk(H, T, -6, -17, 2.2, -18.2); bumps(H, T, [[4, -21, 0.55]]); board(H, T, 1, -36, 6, -31); bowl(H, -3, -32, 1.7, 0.12); return H; } }
 ];
-var LAB_NAMES = ['Redan', 'The Cape', 'Biarritz', 'Half Pipe', 'The Switch', 'The Drop'];
+var LAB_NAMES = ['Redan', 'The Cape', 'Biarritz', 'Hairpin', 'The Switch', 'The Drop'];
 var MEMBER_NAMES = ['Graveyard Gate', 'Coffin Drop', 'Witch’s Loop', 'Bat Belfry', 'Haunted Floors', 'Brew River', 'Crypt Doors', 'Headless Leaps', 'Hallows Night',
   'Hayride', 'Bog Hop', 'Corn Maze', 'The Mill Race', 'Pie Plate Spin', 'Turkey Trot', 'Log Flume', 'Scarecrow Alley', 'Harvest Moon'];
 var TOUR_NAMES = [
@@ -1679,7 +1679,7 @@ function top(title, sub, right){
 /* ============================================================================ THE TOUR, PLAYED */
 /* The mode opens on the Tour map with the Daily Hole on top. The rules, in full:
      par or better  the hole is cleared and the next one in the world opens (coins the first time only).
-                    It earns stars: 1 for par, 2 under par, 3 for an ace, and the best score is kept.
+                    It earns stars: 1 for par, 2 under par, 3 for two under (an ace on a par 3), best kept.
      a new world    opens at two thirds of the stars the last one holds (36 of 54, 18 of 27 on the
                     Members Tour). See starsOf and frontier.
      over par       a life goes and the hole restarts. It is decided the moment par strokes are used
@@ -1740,8 +1740,12 @@ function labOpen(){ try{ var h = hostOf(); return !!(h.tester && h.tester()); }c
 /* STARS. Par clears a hole, so most holes can simply be good to play, and birdies come from reading
    them well rather than from hunting a trapdoor. A world gates the next at two thirds of its stars:
    a birdie on every hole, or aces making up for pars. Neither 54 nor 52 of 54: either one is an ace
-   on nearly every hole, which is partly luck, so it would be a wall. A perfect world is the chase. */
-function starsOf(s, par){ return s == null ? 0 : s === 1 ? 3 : s < par ? 2 : s === par ? 1 : 0; }
+   on nearly every hole, which is partly luck, so it would be a wall. A perfect world is the chase.
+   THREE STARS IS TWO UNDER PAR, which on a par 3 is the ace. It is never a score nobody can make:
+   solve.mjs records a route for it on every hole (an ace, or the secret line on a longer hole) and
+   check-putt replays them all, with the same room for error a birdie putt gets. */
+function starsOf(s, par){ return s == null ? 0 : s <= Math.max(1, par - 2) ? 3 : s < par ? 2 : s === par ? 1 : 0; }
+function threeLine(par){ return par <= 3 ? 'ace it' : 'finish in ' + (par - 2); }
 function worldStars(tp, TR, w){ var K = TR.per || PER, t = 0; for (var n = w * K + 1; n <= Math.min(TR.levels.length, w * K + K); n++) t += starsOf(tp.best[n], TR.levels[n - 1].par); return t; }
 function worldMax(TR, w){ var K = TR.per || PER; return Math.min(K, TR.levels.length - w * K) * 3; }
 function worldGate(TR, w){ return Math.ceil(worldMax(TR, w) * 2 / 3); }
@@ -1964,7 +1968,7 @@ function tourOut(holed){
     var openLine = n >= N ? 'That is the whole ' + esc(TR.name) + '.' : nextOpen ? (wasLv <= n ? 'Level ' + (n + 1) + ' is open.' : '') :
       (TR.members ? esc(TR.worlds[gw + 1].name) : 'World ' + (gw + 2)) + ' opens at ' + gate + ' stars. You have ' + have + ' of ' + worldMax(TR, gw) + '.';
     return popup('<div class="k">' + (sec ? 'SECRET LINE FOUND' : s === 1 ? 'HOLE IN ONE' : s < par ? 'UNDER PAR' : 'PAR') + '</div><div class="t">' + esc(scoreName(s, par)) + '</div>\
-      <div class="pp-stars">' + starRow(stars) + '</div>' + (stars > had && !first ? '<div class="s">New best on this hole.</div>' : stars < 3 ? '<div class="s">' + (stars === 1 ? 'Beat par for 2 stars, ace it for 3.' : 'Ace it for 3 stars.') + '</div>' : '') + '\
+      <div class="pp-stars">' + starRow(stars) + '</div>' + (stars > had && !first ? '<div class="s">New best on this hole.</div>' : stars < 3 ? '<div class="s">' + (stars === 1 ? 'Beat par for 2 stars, ' + threeLine(par) + ' for 3.' : threeLine(par).replace(/^./, function(c){ return c.toUpperCase(); }) + ' for 3 stars.') + '</div>' : '') + '\
       <div class="pp-nums"><span><b>' + s + '</b>Strokes</span><span><b>' + par + '</b>Par</span><span><b>' + fmtPar(s - par) + '</b>To par</span></div>' +
       (got ? '<div class="pp-coins">+' + got + ' coins</div>' : '<div class="s">Coins land the first time only.</div>') + lines.map(function(t){ return '<div class="s">' + esc(t) + '</div>'; }).join('') +
       (openLine ? '<div class="s">' + openLine + '</div>' : '') +

@@ -211,6 +211,13 @@ if (!QUICK){
   }
   head('3b. BOTH TOURS: EVERY HOLE BEATEN UNDER PAR, WITHOUT LUCK, BY ITS RECORDED ROUTE');
   const ROUTES = JSON.parse(fs.readFileSync(new URL('./routes.json', import.meta.url), 'utf8'));
+  /* THREE STARS HAS TO BE MAKEABLE. It is two under par, so on a par 3 it is the ace. Of the routes a
+     hole carries (the obvious one, the secret one, and the ace the solver looks for apart, :3), one has
+     to reach three stars and replay with the room for error every recorded putt gets. A star a player
+     can see and never earn is the unearnable badge in a different coat. */
+  const threeStars = (TR, n, C, L) => { const want = Math.max(1, L.par - 2);
+    const ok = ['', ':sc', ':3'].map(k => ROUTES[TR.id + ':' + n + k]).filter(l => l && l.length <= want).find(l => !replayRoute(C, l));
+    claim(!!ok && P.starsOf(ok.length, L.par) === 3, `${TR.id} ${n} ${P.levelName(n, TR.id)}: three stars (${want === 1 ? 'an ace' : want + ' strokes'}) has a route that replays with room for error`); };
   const TM = P.TOURS.main, TB = P.TOURS.members, Cn = P.PAY;
   claim(TM.levels.length === 90 && TM.worlds.length === 5 && TM.per === 18, `the main tour is 90 holes in ${TM.worlds.length} worlds of ${TM.per}`);
   claim(TB.levels.length === 18 && TB.worlds.length === 2 && TB.per === 9 && TB.members, `the Members Tour is 18 holes in ${TB.worlds.length} worlds of ${TB.per}`);
@@ -255,10 +262,11 @@ if (!QUICK){
     for (let n = 1; n <= TL.levels.length; n++){ const L = TL.levels[n - 1], C = P.buildLevel(n, 'lab'), name = `lab ${n} ${P.levelName(n, 'lab')}`;
       const line = ROUTES['lab:' + n], why = line ? replayRoute(C, line, 'obvious') : 'no route recorded';
       claim(!why && (line.length === L.par - 1 || (L.par === 3 && line.length === 1)), `${name}: the obvious route is a birdie: ${line ? line.length : '?'} putts against par ${L.par}` + (why ? ': ' + why : ''));
-      if (line && !why){ const hz = hazardRates(C, line, 80), worst = Math.max(...hz); claim(worst <= 0.34, `${name}: a slightly off putt stays dry (${hz.map(h => Math.round(h * 100) + '%').join(' ')})`); } }
+      if (line && !why){ const hz = hazardRates(C, line, 80), worst = Math.max(...hz); claim(worst <= 0.34, `${name}: a slightly off putt stays dry (${hz.map(h => Math.round(h * 100) + '%').join(' ')})`); }
+      threeStars(TL, n, C, L); }
     // THE SWITCH: shut until the plate is rolled over, and the recorded route rolls over it
     const C = P.buildLevel(5, 'lab'), dr = C.movers.find(m => m.k === 'door'), v = P.speedFor(C, 30);
-    const blind = P.simulate(C, C.tee[0], C.tee[1], (-2.5 - C.tee[0]) / 16.9 * v, (-18.8 - C.tee[1]) / 16.9 * v, 0);
+    const bl = Math.hypot(0 - C.tee[0], -18.8 - C.tee[1]), blind = P.simulate(C, C.tee[0], C.tee[1], (0 - C.tee[0]) / bl * v, (-18.8 - C.tee[1]) / bl * v, 0);
     claim(!!dr && blind.pts.every(p => p[1] > -19.3) && !blind.ev.some(e => e[1] === 'plate'), 'the Switch door holds a putt that never touched its plate');
     const sl = ROUTES['lab:5'], f = sl && sl[0], sv = f && P.speedFor(C, f[1]), first = f && P.simulate(C, C.tee[0], C.tee[1], Math.cos(f[0]) * sv, Math.sin(f[0]) * sv, f[2]);
     claim(!!first && first.ev.some(e => e[1] === 'plate') && first.pts.some(p => p[1] < -19.3), 'the Switch route rolls over the plate and through the door it opened'); }

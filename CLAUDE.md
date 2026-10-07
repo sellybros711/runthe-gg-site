@@ -19446,6 +19446,17 @@ ramp jumps over water, drawbridges on a clock, turntables, sliders, gates, spinn
 sheet about the Tour Pass, never a coin price. A tester gets a preview button (`S.memPreview`). It pays
 more a hole and carries rewards only members can earn (`PAY.members`).
 
+**THREE STARS IS ALWAYS MAKEABLE.** It is two under par (`starsOf`), so on a par 3 it is the ace and
+on a longer hole it is the secret line. Asked for by the owner: if three stars needs a hole in one, a hole
+in one has to be really possible. The solver's grid steps a degree and a foot and only keeps a putt that
+holes ON the grid, which misses most aces (a bank that drops is a window under a degree wide), so
+`aceSearch` keeps every putt that passes within two feet of the cup and searches finely round the
+closest. It records the ace as `tour:n:3`, and check-putt asks every Lab hole (the tours are being reworked to
+follow) for a route to three stars that
+replays with `robust()`'s room for error, the same as a birdie putt. A long ace needs a reason to drop:
+a dish round the cup (`bowl`) and a bank that sends the ball down the line. Most aces are firm, 35 to 44
+feet on the meter.
+
 **A third tab, the Lab, is for testers only** (`TOURS.lab`, `labOpen()` asks `host.tester()`): six
 prototype holes judged here before any idea touches the ninety. Three classic golf templates on the carpet
 (Redan, Cape, Biarritz) and three mechanics the tour does not have yet: a banked half pipe (a `crown`
@@ -19460,7 +19471,7 @@ and the clock. The press is written onto the mover (`_p`, on the hole's own cloc
 it, so the door the player sees is the door the physics used.
 
 **THE RULE IS STARS.** Par or better clears a hole and opens the next one in its world: 1 star for par,
-2 under par, 3 for an ace, best kept. A world opens the next at two thirds of its stars (`worldGate`:
+2 under par, 3 for two under (an ace on a par 3), best kept. A world opens the next at two thirds of its stars (`worldGate`:
 36 of 54, 18 of 27 on the Members Tour), which is a birdie on every hole or aces covering pars. 54 or 52
 of 54 was asked about and refused: either is an ace on nearly every hole, and an ace is partly luck, so
 it would be a wall. `frontier()` is the one answer to what is open, and it never drops below the
