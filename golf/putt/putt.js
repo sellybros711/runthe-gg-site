@@ -933,9 +933,10 @@ var LEVELS = [
   // First Loop: through the loop and putt out round the bumper.
   { par:3, f:function(T){ var H = hole([rm(-4, 0, 4, -12), pg([[-4, -12], [4, -12], [0.8, -15.6], [-0.8, -15.6]]), rm(-0.8, -15.5, 0.8, -19.5), rm(-4, -19.4, 4, -34)], [0, -2.5], [-2.2, -30]);
     loopAt(H, 0, -17.5, 0, -1, 0.6, 1.6); bumps(H, T, [[-0.6, -27.6, 0.55]]); return H; } },
-  // Two Gates: one bar shuttles between two doors, so one is always open. Read which, putt through it, then putt out between the bumpers.
-  { par:3, f:function(T){ var H = hole([rm(-4.5, 0, 4.5, -36)], [0, -2.5], [0, -31]); blk(H, T, -4.5, -14, -3, -15.2); blk(H, T, -1, -14, 1, -15.2); blk(H, T, 3, -14, 4.5, -15.2);
-    slider(H, T, -14.6, -2, 2, 3.6, 0, 2.3); bumps(H, T, [[-1.5, -24.5, 0.55], [1.5, -24.5, 0.55]]); bowl(H, 0, -31); return H; } },
+  // Two Gates: one bar shuttles between two side doors, so one is always open. Past the doors a long block hides the cup, and the angled corners bank the ball round it.
+  { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -20.1), pg([[-5, -20], [5, -20], [5, -27], [2, -33], [-2, -33], [-5, -27]])], [0, -2.5], [0, -30.6]);
+    blk(H, T, -5, -14, -4.6, -15.2); blk(H, T, -2.4, -14, 2.4, -15.2); blk(H, T, 4.6, -14, 5, -15.2);
+    slider(H, T, -14.6, -3.5, 3.5, 3.6, 0, 2.3); blk(H, T, -2.6, -23.4, 2.6, -24.4); bowl(H, 0, -30.6); return H; } },
   // Conveyor: across the belt aiming off its push, then putt out. The secret: let the belt have it. It dumps the ball in a chute at the far end, and the chute comes out at the cup.
   { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -34)], [0, -2.5], [-3, -29]); belt(H, -6, -14, 6, -19, 5, 0); bumps(H, T, [[2.4, -24, 0.7]]);
     pipe(H, T, 5.3, -16.5, -3, -25.4, 0, -1, 0.9, 0, 0.4); secret(H, 4.5, -15.6, 6, -17.4); return H; } },
