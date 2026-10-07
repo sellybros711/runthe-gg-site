@@ -19446,8 +19446,12 @@ ramp jumps over water, drawbridges on a clock, turntables, sliders, gates, spinn
 sheet about the Tour Pass, never a coin price. A tester gets a preview button (`S.memPreview`). It pays
 more a hole and carries rewards only members can earn (`PAY.members`).
 
-**THE RULE, ONE PER HOLE.** Under par beats the hole and opens the next. Exactly par loses nothing and
-goes again. Over par takes a life, and it is decided the moment par strokes are used with the ball out,
+**THE RULE IS STARS.** Par or better clears a hole and opens the next one in its world: 1 star for par,
+2 under par, 3 for an ace, best kept. A world opens the next at two thirds of its stars (`worldGate`:
+36 of 54, 18 of 27 on the Members Tour), which is a birdie on every hole or aces covering pars. 54 or 52
+of 54 was asked about and refused: either is an ace on nearly every hole, and an ace is partly luck, so
+it would be a wall. `frontier()` is the one answer to what is open, and it never drops below the
+record's stored `lv`, so nobody loses a hole they had reached. Over par takes a life, and it is decided the moment par strokes are used with the ball out,
 so nobody putts out a lost hole (`settle()` calls `tourOut(false)`). Quitting or restarting after the
 first putt costs a life too. 3 lives, 6 with a Tour Pass; the last one starts a 24 hour clock. Lives are
 sold for money only (the refill sheet shows $0.99 and says the checkout opens at launch; a tester gets a

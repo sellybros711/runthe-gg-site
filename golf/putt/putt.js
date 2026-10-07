@@ -1264,7 +1264,7 @@ var RTT_PUTT = {
   M:M, BALL_R:BALL_R, CUP_R:CUP_R, CUP_R_MINI:CUP_R_MINI, V_MAX:V_MAX, V_STIMP:V_STIMP, ART:ART,
   THEMES:THEMES, TEMPLATES:TEMPLATES, COURSE_ORDER:COURSE_ORDER, DAILY_POOL:DAILY_POOL,
   hstr:hstr, mulberry:mulberry, hash3:hash3,
-  simulate:simulate, speedFor:speedFor, feetFor:feetFor, inBlock:inBlock, fricOf:fricOf, moverAt:moverAt,
+  simulate:simulate, speedFor:speedFor, feetFor:feetFor, inBlock:inBlock, starsOf:starsOf, frontier:frontier, worldGate:worldGate, worldStars:worldStars, fricOf:fricOf, moverAt:moverAt,
   makeField:makeField, finishCourse:finishCourse, inPoly:inPoly,
   greenCharacter:greenCharacter, buildReal:buildReal, spotFor:spotFor, fromHost:fromHost,
   CAL_THEMES:CAL_THEMES, buildMini:buildMini, buildFrom:buildFrom, LEVELS:LEVELS, WORLDS:WORLDS, TOURS:TOURS, PER:PER, buildLevel:buildLevel, worldOf:worldOf, lvHelpers:{ hole:hole, rm:rm, pg:pg }, tourDesc:tourDesc, levelName:levelName, themedCourse:themedCourse, dailyHole:dailyHole, dailyLevel:dailyLevel, themeForDay:themeForDay, scoreName:scoreName
@@ -1513,7 +1513,7 @@ var CSS = '\
 .pp-path{position:absolute;left:0;top:0;pointer-events:none}.pp-path path{fill:none;stroke:rgba(255,255,255,.75);stroke-width:5;stroke-dasharray:2 11;stroke-linecap:round}\
 .pp-lv{position:absolute;transform:translate(-50%,-50%);width:50px;height:50px;border-radius:50%;border:3px solid #10241a;background:#F1D04A;color:#10241a;font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 4px 0 rgba(0,0,0,.35);padding:0}\
 .pp-lv b{font-family:var(--display,inherit);font-size:19px;line-height:1}.pp-lv span{font-size:10px;font-weight:900;line-height:1;opacity:.8}\
-.pp-lv.done{background:#fff7d6}.pp-lv.ace{background:linear-gradient(160deg,#ffe680,#d9a514);border-color:#7a5200}.pp-lv.lock{background:#5a6b62;color:#c9d6cf;border-color:#2a3530;box-shadow:none}\
+.pp-lv.done{background:#fff7d6}.pp-lv span.st{color:#ffd24a;letter-spacing:.06em}.pp-stars{font-size:30px;color:#ffd24a;letter-spacing:.12em;text-shadow:0 2px 0 rgba(0,0,0,.45);margin:4px 0 2px}.pp-lv.ace{background:linear-gradient(160deg,#ffe680,#d9a514);border-color:#7a5200}.pp-lv.lock{background:#5a6b62;color:#c9d6cf;border-color:#2a3530;box-shadow:none}\
 .pp-lv.sig{width:62px;height:62px}.pp-lv i{position:absolute;top:-12px;right:-6px;font-style:normal;font-size:17px;color:#ffd45e;text-shadow:0 1px 0 #000}\
 .pp-lv.cur{outline:4px solid #fff;animation:ppPulse 1.4s ease-in-out infinite}@keyframes ppPulse{50%{outline-color:rgba(255,255,255,.35)}}\
 .pp-me{position:absolute;transform:translate(-50%,-100%);pointer-events:none}.pp-meimg{display:block;height:56px;image-rendering:pixelated}\
@@ -1635,9 +1635,11 @@ function top(title, sub, right){
 
 /* ============================================================================ THE TOUR, PLAYED */
 /* The mode opens on the Tour map with the Daily Hole on top. The rules, in full:
-     under par   the hole is beaten and the next one opens (coins the first time only)
-     exactly par nothing lost, nothing won: go again
-     over par    a life goes and the hole restarts. It is decided the moment par strokes are used
+     par or better  the hole is cleared and the next one in the world opens (coins the first time only).
+                    It earns stars: 1 for par, 2 under par, 3 for an ace, and the best score is kept.
+     a new world    opens at two thirds of the stars the last one holds (36 of 54, 18 of 27 on the
+                    Members Tour). See starsOf and frontier.
+     over par       a life goes and the hole restarts. It is decided the moment par strokes are used
                  with the ball still out, so nobody putts out a hole that is already lost.
    Quitting after the first putt costs a life too. The Daily Hole never costs one.
    3 lives, 6 with a Tour Pass. When the last one goes a 24 hour clock starts and fills them.
@@ -1670,7 +1672,7 @@ function pkey(){ try{ var h = hostOf(); return h.storeKey ? h.storeKey('bag_ppt_
    but its place on a ladder that no longer exists: those holes are gone, so it starts at hole 1. */
 function pload(){ var st = null; try{ st = JSON.parse(localStorage.getItem(pkey())); }catch(e){} st = st || {};
   if (st.v !== 2){ st.tours = {}; delete st.lv; delete st.best; delete st.ace; delete st.paid; delete st.wpaid; st.v = 2; }
-  st.tours = st.tours || {}; Object.keys(TOURS).forEach(function(k){ var t = st.tours[k] = st.tours[k] || {}; t.lv = t.lv || 1; t.best = t.best || {}; t.ace = t.ace || {}; t.paid = t.paid || {}; t.wpaid = t.wpaid || {}; });
+  st.tours = st.tours || {}; Object.keys(TOURS).forEach(function(k){ var t = st.tours[k] = st.tours[k] || {}; t.lv = t.lv || 1; t.best = t.best || {}; t.ace = t.ace || {}; t.paid = t.paid || {}; t.wpaid = t.wpaid || {}; t.lv = frontier(t, TOURS[k]); });
   st.daily = st.daily || {}; st.rewards = st.rewards || []; st.streak = st.streak || { n:0, last:null, best:0 };
   if (st.lives == null) st.lives = livesMax();
   if (st.refillAt && Date.now() >= st.refillAt){ st.lives = livesMax(); st.refillAt = null; psave(st); }
@@ -1689,6 +1691,20 @@ function aceCount(st){ var n = 0; Object.keys(st.tours).forEach(function(k){ n +
 // the Members Tour is the Tour Pass holder's. A tester can preview it, said so on the screen.
 function membersOpen(){ try{ var h = hostOf(); return !!(h.passActive && h.passActive()); }catch(e){ return false; } }
 function membersPreview(){ return !!(S && S.memPreview); }
+/* STARS. Par clears a hole, so most holes can simply be good to play, and birdies come from reading
+   them well rather than from hunting a trapdoor. A world gates the next at two thirds of its stars:
+   a birdie on every hole, or aces making up for pars. Neither 54 nor 52 of 54: either one is an ace
+   on nearly every hole, which is partly luck, so it would be a wall. A perfect world is the chase. */
+function starsOf(s, par){ return s == null ? 0 : s === 1 ? 3 : s < par ? 2 : s === par ? 1 : 0; }
+function worldStars(tp, TR, w){ var K = TR.per || PER, t = 0; for (var n = w * K + 1; n <= Math.min(TR.levels.length, w * K + K); n++) t += starsOf(tp.best[n], TR.levels[n - 1].par); return t; }
+function worldMax(TR, w){ var K = TR.per || PER; return Math.min(K, TR.levels.length - w * K) * 3; }
+function worldGate(TR, w){ return Math.ceil(worldMax(TR, w) * 2 / 3); }
+/* the highest hole open: walk the cleared holes, and stop at the end of a world short of its gate.
+   Never lower than what the record already had open, so nobody is locked out of a hole they reached. */
+function frontier(tp, TR){ var K = TR.per || PER, N = TR.levels.length, n = 1;
+  while (n < N && tp.best[n] != null && (n % K || worldStars(tp, TR, n / K - 1) >= worldGate(TR, n / K - 1))) n++;
+  return Math.max(tp.lv || 1, n); }
+function starRow(k, of){ of = of || 3; var o = ''; for (var i = 0; i < of; i++) o += i < k ? '★' : '☆'; return o; }
 function grant(st, name){ if (name && st.rewards.indexOf(name) < 0) st.rewards.push(name); }
 
 var HEART_PX = ['0110110', '1111111', '1111111', '0111110', '0011100', '0001000'];
@@ -1771,7 +1787,7 @@ function drawMap(st, TR){
   var badges = pos.map(function(p, i){ var n = i + 1, L = TR.levels[i], best = tp.best[n], open = n <= tp.lv, cur = n === tp.lv, ace = !!tp.ace[n];
     var cls = 'pp-lv wt-' + WS[Math.min(WS.length - 1, Math.floor(i / K))].theme + (L.sig ? ' sig' : '') + (open ? '' : ' lock') + (cur ? ' cur' : '') + (best != null ? ' done' : '') + (ace ? ' ace' : '');
     return '<button class="' + cls + '" data-lv="' + n + '" style="left:' + p[0] + 'px;top:' + p[1] + 'px" aria-label="Level ' + n + (open ? '' : ', locked') + '">' +
-      '<b>' + n + '</b>' + (cur ? '<span>Par ' + L.par + '</span>' : best != null ? '<span>' + (ace ? '1 ACE' : best) + '</span>' : '') + (L.sig ? '<i>★</i>' : '') + '</button>'; }).join('');
+      '<b>' + n + '</b>' + (cur ? '<span>Par ' + L.par + '</span>' : best != null ? '<span class="st">' + starRow(starsOf(best, L.par)) + '</span>' : '') + (L.sig ? '<i>★</i>' : '') + '</button>'; }).join('');
   var cp = pos[Math.min(N, tp.lv) - 1];
   /* THE MAP FILLS THE SCREEN. The world is drawn 340 wide with 200 of landscape either side, and on a
      wider screen the whole thing is scaled up until the landscape reaches both edges, so a desktop is
@@ -1780,13 +1796,13 @@ function drawMap(st, TR){
   box.innerHTML = '<div class="pp-sizer" style="height:' + Math.ceil(H * k) + 'px"><div class="pp-world" style="height:' + H + 'px;width:' + W + 'px;transform:translateX(-50%) scale(' + k + ')">' + bands +
     '<svg class="pp-path" width="' + W + '" height="' + H + '"><path d="' + d + '"/></svg>' + badges +
     '<div class="pp-me" style="left:' + (cp[0] > W / 2 + 50 ? cp[0] - 76 : cp[0] + 34) + 'px;top:' + (cp[1] + 22) + 'px">' + golferImg('pp-meimg') + '</div></div></div>';
-  box.querySelectorAll('[data-lv]').forEach(function(b){ b.onclick = function(){ var n = +b.getAttribute('data-lv'); if (n > pload().tours[TR.id].lv) return toastHub('Beat level ' + (n - 1) + ' under par to open it.'); startLevel(n, TR.id); }; });
+  box.querySelectorAll('[data-lv]').forEach(function(b){ b.onclick = function(){ var n = +b.getAttribute('data-lv'); var tq = pload().tours[TR.id]; if (n > tq.lv){ var pw = Math.floor((n - 2) / K);
+      return toastHub((n - 1) % K === 0 && tq.best[n - 1] != null ? (TR.members ? WS[pw + 1].name : 'World ' + (pw + 2)) + ' opens at ' + worldGate(TR, pw) + ' stars. You have ' + worldStars(tq, TR, pw) + '.' : 'Clear level ' + (n - 1) + ' at par or better to open it.'); } startLevel(n, TR.id); }; });
   // the chip in the corner names the world in view and how much of it is beaten
   var chip = S.ov.querySelector('[data-wchip]'), lastW = -1;
   function wchip(){ if (!chip) return; var mid = (box.scrollTop + box.clientHeight * 0.55) / k, w = 0;
     for (var wi = 0; wi < WS.length; wi++) if (mid < pos[wi * K][1] + STEP / 2 + 1) w = wi;
-    if (w === lastW) return; lastW = w; var hub = S.ov.querySelector('.pp-hub'); if (hub) hub.setAttribute('data-wt', WS[w].theme); var done = 0, of = Math.min(K, N - w * K); for (var q = w * K + 1; q <= w * K + of; q++) if (tp.best[q] != null) done++;
-    chip.textContent = (TR.members && !membersOpen() ? 'Preview · ' : '') + (TR.members ? WS[w].name : 'World ' + (w + 1)) + ' · ' + done + ' of ' + of; }
+    if (w === lastW) return; lastW = w; var hub = S.ov.querySelector('.pp-hub'); if (hub) hub.setAttribute('data-wt', WS[w].theme);     chip.textContent = (TR.members && !membersOpen() ? 'Preview · ' : '') + (TR.members ? WS[w].name : 'World ' + (w + 1)) + ' · ' + worldStars(tp, TR, w) + '/' + worldMax(TR, w) + ' ★'; }
   box.addEventListener('scroll', wchip, { passive:true });
   requestAnimationFrame(function(){ box.scrollTop = Math.max(0, cp[1] * k - box.clientHeight * 0.6); wchip(); });
   mapArt(box, pos, TR);
@@ -1852,7 +1868,7 @@ function startDaily(){
 }
 // what the bar under the title says during a hole
 function tourSub(R, C, P){
-  if (R.mode === 'ppt'){ var left = C.par - 1 - P.strokes; return 'Hole ' + wl(R.lv, R.tid) + ' · Par ' + C.par + ' · ' + (left > 0 ? left + ' left to beat par' : 'Sink it for par'); }
+  if (R.mode === 'ppt'){ var left = C.par - P.strokes; return 'Hole ' + wl(R.lv, R.tid) + ' · Par ' + C.par + ' · ' + (left > 1 ? left + ' strokes left' : 'Last stroke'); }
   if (R.mode === 'pdaily') return R.kick + ' · Daily Hole · Par ' + C.par;
   return (C.kind === 'real' ? C.sub : (R.kick || '')) + ' · Par ' + C.par;
 }
@@ -1882,10 +1898,11 @@ function popup(html, wire, kind){ var pop = el('<div class="pt-pop pp-pop' + (ki
 function tourOut(holed){
   var P = S.play, R = S.round, C = P.C, n = R.lv, tid = R.tid || 'main', TR = tourOf(tid), PY = PAY[TR.id], K = TR.per || PER, N = TR.levels.length;
   var s = P.strokes, par = C.par, st = pload(), tp = st.tours[TR.id];
-  if (holed && s < par){
-    var first = tp.best[n] == null, lines = [];
+  if (holed && s <= par){
+    var first = tp.best[n] == null, lines = [], had = starsOf(tp.best[n], par), wasLv = tp.lv;
     tp.best[n] = first ? s : Math.min(tp.best[n], s);
-    if (n === tp.lv && n < N) tp.lv = n + 1;
+    tp.lv = frontier(tp, TR);
+    var stars = starsOf(s, par), gw = Math.floor((n - 1) / K);
     var got = 0;
     if (!tp.paid[n]){ tp.paid[n] = 1; got += TR.levels[n - 1].sig ? PY.sig : PY.hole; }
     if (s === 1 && !tp.ace[n]){ tp.ace[n] = 1; got += PY.ace; var ac = aceCount(st); if (ACE_REWARD[ac]){ grant(st, ACE_REWARD[ac]); lines.push('New: ' + ACE_REWARD[ac]); } }
@@ -1895,17 +1912,16 @@ function tourOut(holed){
     try{ S.host.sfx && S.host.sfx('holeGood'); }catch(e){}
     if (worldDone) return worldComplete(n, s, par, got, tid);
     var sec = !!P.foundSecret; if (sec){ tp.secret = tp.secret || {}; if (!tp.secret[n]){ tp.secret[n] = 1; psave(st); } }
-    return popup('<div class="k">' + (sec ? 'SECRET LINE FOUND' : s === 1 ? 'HOLE IN ONE' : 'HOLE BEATEN') + '</div><div class="t">' + esc(scoreName(s, par)) + '</div>\
+    var nextOpen = n < N && tp.lv > n, have = worldStars(tp, TR, gw), gate = worldGate(TR, gw);
+    var openLine = n >= N ? 'That is the whole ' + esc(TR.name) + '.' : nextOpen ? (wasLv <= n ? 'Level ' + (n + 1) + ' is open.' : '') :
+      (TR.members ? esc(TR.worlds[gw + 1].name) : 'World ' + (gw + 2)) + ' opens at ' + gate + ' stars. You have ' + have + ' of ' + worldMax(TR, gw) + '.';
+    return popup('<div class="k">' + (sec ? 'SECRET LINE FOUND' : s === 1 ? 'HOLE IN ONE' : s < par ? 'UNDER PAR' : 'PAR') + '</div><div class="t">' + esc(scoreName(s, par)) + '</div>\
+      <div class="pp-stars">' + starRow(stars) + '</div>' + (stars > had && !first ? '<div class="s">New best on this hole.</div>' : stars < 3 ? '<div class="s">' + (stars === 1 ? 'Beat par for 2 stars, ace it for 3.' : 'Ace it for 3 stars.') + '</div>' : '') + '\
       <div class="pp-nums"><span><b>' + s + '</b>Strokes</span><span><b>' + par + '</b>Par</span><span><b>' + fmtPar(s - par) + '</b>To par</span></div>' +
       (got ? '<div class="pp-coins">+' + got + ' coins</div>' : '<div class="s">Coins land the first time only.</div>') + lines.map(function(t){ return '<div class="s">' + esc(t) + '</div>'; }).join('') +
-      (n < N ? '<div class="s">Level ' + (n + 1) + ' is open.</div>' : '<div class="s">That is the whole ' + esc(TR.name) + '.</div>') +
-      '<div class="row"><button class="pt-bt" data-a="again">Replay</button>' + (n < N ? '<button class="pt-go" data-a="next">Next hole</button>' : '<button class="pt-go" data-a="map">Map</button>') + '</div>',
+      (openLine ? '<div class="s">' + openLine + '</div>' : '') +
+      '<div class="row"><button class="pt-bt" data-a="again">Replay</button>' + (nextOpen ? '<button class="pt-go" data-a="next">Next hole</button>' : '<button class="pt-go" data-a="map">Map</button>') + '</div>',
       { again:function(){ startLevel(n, tid); }, next:function(){ startLevel(n + 1, tid); }, map:function(){ showHub(tid); } });
-  }
-  if (holed && s === par){
-    return popup('<div class="k">LEVEL ' + n + '</div><div class="t">Par</div><div class="s">No life lost. You need one under to move on.</div>\
-      <div class="pp-nums"><span><b>' + s + '</b>Strokes</span><span><b>' + par + '</b>Par</span></div><div class="row"><button class="pt-bt" data-a="map">Map</button><button class="pt-go" data-a="again">Go again</button></div>',
-      { map:function(){ showHub(tid); }, again:function(){ startLevel(n, tid); } }, 'par');
   }
   // over par: the moment par strokes are gone with the ball still out
   loseLife(st);
@@ -1915,13 +1931,16 @@ function tourOut(holed){
     { map:function(){ showHub(tid); }, again:function(){ if (pload().lives > 0) startLevel(n, tid); else { showHub(tid); outOfLives(); } } }, 'over');
 }
 function worldComplete(n, s, par, got, tid){
-  var TR = tourOf(tid), PY = PAY[TR.id], K = TR.per || PER, w = Math.floor((n - 1) / K), Wd = TR.worlds[w], nx = TR.worlds[w + 1], last = n === TR.levels.length;
+  var TR = tourOf(tid), PY = PAY[TR.id], K = TR.per || PER, w = Math.floor((n - 1) / K), Wd = TR.worlds[w], last = n === TR.levels.length;
+  var tp = pload().tours[TR.id], have = worldStars(tp, TR, w), gate = worldGate(TR, w), nx = TR.worlds[w + 1], shut = nx && tp.lv <= n;
   return popup('<div class="k">' + (TR.members ? '★ ' + esc(Wd.name.toUpperCase()) + ' COMPLETE' : 'WORLD ' + (w + 1) + ' COMPLETE') + '</div><div class="t">' + esc(Wd.name) + '</div><div class="s">Signature hole beaten in ' + s + ' (par ' + par + ').</div>\
     <div class="pp-reward">New · ' + esc(PY.sigReward[w]) + '<br>New · ' + esc(PY.worldReward[w]) + (PY.finish && last ? '<br>New · ' + esc(PY.finish) : '') + '</div>\
     <div class="pp-coins">+' + got + ' coins · +' + PY.world.toLocaleString() + ' ' + (TR.members ? 'members' : 'world') + ' bonus</div>' +
-    (nx ? '<div class="s">' + (TR.members ? esc(nx.name) : 'World ' + (w + 2) + ', ' + esc(nx.name) + ',') + ' is open.</div>' : '<div class="s">You have finished the ' + esc(TR.name) + '.</div>') +
+    '<div class="pp-stars">' + have + ' of ' + worldMax(TR, w) + ' ★</div>' +
+    (shut ? '<div class="s">' + (TR.members ? esc(nx.name) : 'World ' + (w + 2)) + ' opens at ' + gate + ' stars. Replay holes to earn ' + (gate - have) + ' more.</div>' :
+     nx ? '<div class="s">' + (TR.members ? esc(nx.name) : 'World ' + (w + 2) + ', ' + esc(nx.name) + ',') + ' is open.</div>' : '<div class="s">You have finished the ' + esc(TR.name) + '.</div>') +
     '<div class="s pp-fine">Rewards are saved to your Tour record. They become wearable at launch.</div>\
-    <div class="row"><button class="pt-bt" data-a="map">Map</button>' + (nx ? '<button class="pt-go" data-a="next">Next ' + (TR.members ? 'hole' : 'world') + ' ▸</button>' : '') + '</div>',
+    <div class="row"><button class="pt-bt" data-a="map">Map</button>' + (nx && !shut ? '<button class="pt-go" data-a="next">Next ' + (TR.members ? 'hole' : 'world') + ' ▸</button>' : '') + '</div>',
     { map:function(){ showHub(tid); }, next:function(){ startLevel(n + 1, tid); } });
 }
 

@@ -55,6 +55,17 @@ for (const s of [9, 11, 13.5]){
   claim(Math.hypot(rs2.rest[0], rs2.rest[1]) > 1, 'a ball set down on a 12% slope rolls away');
   const gent = flat(11, [{ k:'plane', gx:0, gy:0.03 }]), rs3 = P.simulate(gent, 0, 0, 0, 0, 0);
   claim(Math.hypot(rs3.rest[0], rs3.rest[1]) < 0.01, 'a ball set down on a 3% slope stays');
+  // STARS: par clears a hole (1), under par 2, an ace 3, and a world opens the next at two thirds of its stars
+  { const TR = P.TOURS.main, tp = { lv:1, best:{} };
+    claim(P.starsOf(4, 3) === 0 && P.starsOf(3, 3) === 1 && P.starsOf(2, 3) === 2 && P.starsOf(1, 3) === 3 && P.starsOf(1, 2) === 3, 'stars: over par 0, par 1, under par 2, an ace 3');
+    for (let n = 1; n <= 17; n++) tp.best[n] = TR.levels[n - 1].par;
+    claim(P.frontier(tp, TR) === 18, 'par on every hole walks a world up to its last hole');
+    tp.best[18] = TR.levels[17].par;
+    claim(P.worldGate(TR, 0) === 36 && P.frontier(tp, TR) === 18, 'a world of pars (18 stars) does not open the next: it opens at 36 of 54');
+    for (let n = 1; n <= 18; n++) tp.best[n] = TR.levels[n - 1].par - 1;
+    claim(P.worldStars(tp, TR, 0) === 36 && P.frontier(tp, TR) === 19, 'a birdie on every hole is exactly the 36 that opens world 2');
+    claim(P.worldGate(P.TOURS.members, 0) === 18, 'the Members Tour gates its nine hole worlds at 18 of 27');
+    claim(P.frontier({ lv:40, best:{} }, TR) === 40, 'a record never loses a hole it already had open'); }
 }
 {
   const C = P.finishCourse({ bounds:[-20, -20, 20, 20], comps:[], stimp:11, cup:[0, 0], cupR:P.CUP_R, matFn:() => M.GREEN });
@@ -363,7 +374,7 @@ if (!args.includes('--no-browser')){
       await pg.evaluate(([p, a]) => { const P = window.RTT_PUTT._state().play; P.pow = p; P.aimAng = a != null ? a : Math.atan2(P.C.cup[1] - P.ball[1], P.C.cup[0] - P.ball[0]); }, [pow, ang == null ? null : ang]);
       await pg.keyboard.press('Space'); await pg.waitForFunction(() => { const P = window.RTT_PUTT._state().play; return !P || P.state !== 'roll'; }, null, { timeout:30000 }); };
     await pg.click('[data-lv="1"]');
-    claim(await pg.evaluate(() => /Hole 1-1 · Par 3 · 2 left to beat par/.test(document.querySelector('.pt-hd span').textContent)), 'a Tour hole says how many strokes are left to beat par');
+    claim(await pg.evaluate(() => /Hole 1-1 · Par 3 · 3 strokes left/.test(document.querySelector('.pt-hd span').textContent)), 'a Tour hole says how many strokes are left');
     for (let k = 0; k < 3; k++) await putt(0.04);
     await pg.waitForSelector('.pp-pop');
     claim(/Over par/.test(await pg.textContent('.pp-pop')) && (await rec()).lives === 2, 'over par ends the hole the moment par strokes are gone, and takes a life');
