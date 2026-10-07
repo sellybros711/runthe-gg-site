@@ -213,6 +213,8 @@ var PACE = 0.6;
 function paced(o){ var c = {}; for (var k in o) c[k] = o[k]; if (c.period) c.period /= PACE; if (c.omega) c.omega *= PACE; return c; }
 function moverAt(o, t){
   if (o.k === 'blade'){ var sp = bladeSpan(o, t); return sp ? [[sp[0], o.y, sp[1], o.y]] : []; }
+  if (o.k === 'door'){ var fo = doorOpen(o, t), dx2 = o.ax + (o.bx - o.ax) * fo, dy2 = o.ay + (o.by - o.ay) * fo, hx2 = Math.cos(o.ang) * o.len / 2, hy2 = Math.sin(o.ang) * o.len / 2;
+    return [[dx2 - hx2, dy2 - hy2, dx2 + hx2, dy2 + hy2]]; }
   if (o.k === 'spin'){
     var segs = [], th = o.phase + o.omega * t;
     for (var a = 0; a < o.arms; a++){ var ang = th + a * 2 * Math.PI / o.arms, c = Math.cos(ang), s = Math.sin(ang);
@@ -224,7 +226,13 @@ function moverAt(o, t){
   var cx = o.ax + (o.bx - o.ax) * f, cy = o.ay + (o.by - o.ay) * f, hx = Math.cos(o.ang) * o.len / 2, hy = Math.sin(o.ang) * o.len / 2;
   return [[cx - hx, cy - hy, cx + hx, cy + hy]];
 }
+/* A DOOR ON A SWITCH. A bar shut across a gap until the ball rolls over its plate; then it slides open,
+   stays open for hold seconds, and shuts. The plate is pressed by THIS putt or not at all (simulate
+   clears it at the start of every putt), so the puzzle is always one stroke: find the line that runs
+   over the plate on its way to the door. _p is the moment it was pressed, on the hole's own clock. */
+function doorOpen(o, t){ if (o._p == null) return 0; var d = t - o._p; return d < 0 ? 0 : d < 0.3 ? d / 0.3 : d < o.hold ? 1 : d < o.hold + 0.5 ? 1 - (d - o.hold) / 0.5 : 0; }
 function moverVel(o, t, qx, qy){
+  if (o.k === 'door') return [0, 0];
   if (o.k === 'blade') return [o.omega * o.hz, 0];   // the foot of a sail, swinging past the bottom
   if (o.k === 'spin') return [-o.omega * (qy - o.y), o.omega * (qx - o.x)];
   var ph = 2 * Math.PI * (t / o.period + o.phase), df = 0.5 * Math.sin(ph) * 2 * Math.PI / o.period;
@@ -267,6 +275,7 @@ function simulate(C, x, y, vx, vy, t0){
   var rx = x, ry = y;   // where the ball was half a second ago, for the pinned-against-a-rail rest below
   var walls = C.walls, bums = C.bumpers, movs = C.movers, ports = C.portals, loops = C.loops || [], ramps = C.ramps || [];
   var lastPiece = null;   // the loop or ramp just ridden, so it cannot fire twice on the way out of it
+  for (var di = 0; di < movs.length; di++) if (movs[di].k === 'door') movs[di]._p = null;
   // a stretch of a set piece, played out: each point is [x, y, dt from now, z above the surface]
   function ride(path){ var t1 = t, k = 0; for (var q = 0; q < path.length; q++){ var pp = path[q]; t1 = t + pp[2]; out.pts.push([pp[0], pp[1], t1, 0, pp[3] || 0]); } t = t1; n = 0; }
   function landAt(xx, yy, tt){ var mm = C.mats.at(xx, yy); if (mm === M.OUT) mm = C.matFn(xx, yy); if (C.bridges.length && mm === M.WATER){ var bb = bridgeAt(C, xx, yy, 0.2); if (bb) mm = bridgeDown(bb, tt) ? M.GREEN : M.WATER; } return mm; }
@@ -352,6 +361,7 @@ function simulate(C, x, y, vx, vy, t0){
         if (hitSeg(s, sg[0], sg[1], sg[2], sg[3], mo.w / 2, 0.7, vb[0], vb[1])) hit = true; }
       if (mo.k === 'spin' && hitCircle(s, mo.x, mo.y, mo.hub, 0.6)) hit = true; }
     if (hit) out.ev.push([t, 'wall']);
+    for (i = 0; i < movs.length; i++){ var dr = movs[i]; if (dr.k === 'door' && dr._p == null && Math.hypot(s.x - dr.px, s.y - dr.py) < dr.pr){ dr._p = t0 + t; out.ev.push([t, 'plate']); } }
     // a tunnel carries the ball to its exit, still rolling
     for (i = 0; i < ports.length; i++){ var p = ports[i];
       if (port !== i && Math.hypot(s.x - p.ax, s.y - p.ay) < p.r){
@@ -712,7 +722,7 @@ function buildMini(tplName, seed, themeId, label, extra){
     H.bumpers.forEach(function(b){ b.x = -b.x; });
     H.blocks = H.blocks.map(function(b){ return { x0:-b.x1, y0:b.y0, x1:-b.x0, y1:b.y1, skin:b.skin }; });
     H.walls = []; H.blocks.forEach(function(b){ H.walls = H.walls.concat(rectWalls(b, 0.6)); });
-    H.movers.forEach(function(m){ if (m.k === 'spin' || m.k === 'blade'){ m.x = -m.x; m.omega = -m.omega; m.phase = Math.PI - m.phase; } else { m.ax = -m.ax; m.bx = -m.bx; } });
+    H.movers.forEach(function(m){ if (m.k === 'spin' || m.k === 'blade'){ m.x = -m.x; m.omega = -m.omega; m.phase = Math.PI - m.phase; } else { m.ax = -m.ax; m.bx = -m.bx; if (m.k === 'door') m.px = -m.px; } });
     H.portals.forEach(function(p){ p.ax = -p.ax; p.bx = -p.bx; p.dx = -p.dx; });
     H.zones.forEach(function(z){ if (z.t === 'rect'){ var a = -z.x1, b = -z.x0; z.x0 = a; z.x1 = b; } else z.x = -z.x; });
     H.comps.forEach(function(c){ if ('x' in c) c.x = -c.x; if ('gx' in c) c.gx = -c.gx; if ('x0' in c) c.x0 = -c.x0; if ('ux' in c) c.ux = -c.ux; if ('nx' in c) c.nx = -c.nx; });
@@ -881,6 +891,9 @@ function spinner(H, T, x, y, len, omega, arms){ H.movers.push({ k:'spin', x:x, y
 // a gate: a bar across a gap in a wall that slides into the wall and back on a clock. dir +1 opens into the wall on the right.
 function gateAt(H, T, y, gx0, gx1, period, phase, dir){ var w = gx1 - gx0, cx = (gx0 + gx1) / 2; dir = dir || 1;
   H.movers.push({ k:'slide', ax:cx, ay:y, bx:cx + dir * (w + 0.4), by:y, len:w + 0.3, ang:0, w:0.42, period:period, phase:phase || 0, skin:T.slider }); }
+// a door on a switch (see doorOpen): shut across a gap in a wall until the ball rolls over its plate at (px, py)
+function switchDoor(H, T, y, gx0, gx1, px, py, hold){ var w = gx1 - gx0, cx = (gx0 + gx1) / 2;
+  H.movers.push({ k:'door', ax:cx, ay:y, bx:cx + w + 0.4, by:y, len:w + 0.3, ang:0, w:0.42, px:px, py:py, pr:0.7, hold:hold || 3.5, skin:T.slider }); }
 // a wall across the course with one gap in it, and a gate in the gap
 function gateWall(H, T, y, x0, x1, gx0, gx1, period, phase, dir){ blk(H, T, x0, y, gx0, y - 1.2); blk(H, T, gx1, y, x1, y - 1.2); gateAt(H, T, y - 0.6, gx0, gx1, period, phase, dir); }
 function slider(H, T, y, x0, x1, period, phase, len){ H.movers.push({ k:'slide', ax:x0, ay:y, bx:x1, by:y, len:len || 2.4, ang:0, w:0.5, period:period, phase:phase || 0, skin:T.slider }); }
@@ -1219,6 +1232,35 @@ var MEMBER_LEVELS = [
     loopAt(H, 0, -47.6, 0, -1, 0.85, 1.6); zoneR(H, M.MUD, -6, -50.2, 6, -52); jump(H, 0, -56, 0, -1, 2.2, 12, { h:0.9, ang:40 }); disc(H, 0, -64, 2.2, 1.8); flatAt(H, 0, -68); bumps(H, T, [[1, -8.6, 0.5]]);
     pipe(H, T, -0.4, -10.6, 2.5, -36, 0, -1, 0.9, 0, 0.5); secret(H, -1.2, -9.8, 0.4, -11.4); return H; } }
 ];
+/* THE LAB: a tester-only test world of six prototype holes, before any of it touches the ninety. Three
+   are classic golf architecture brought to the carpet (the Redan's kick, the Cape's bite, the Biarritz
+   swale) and three are mechanics the tour does not have yet (a banked half pipe, a door on a switch, a
+   drop down three tiers). It pays nothing and costs no lives: it is for judging layouts, not for
+   progress. Only a tester sees its tab. */
+var LAB_WORLDS = [ { id:'lab', name:'The Lab', theme:'clubhouse', blurb:'Prototype holes, testers only.', haz:['Template holes', 'New mechanics'] } ];
+var LAB_LEVELS = [
+  // Redan: the green falls away from front right to back left, and a bunker guards the straight line. Play out right and let the slope feed it down to the cup.
+  { par:3, f:function(T){ var H = hole([pg([[-6, 0], [6, 0], [7, -26], [-6, -28]])], [2.5, -2.5], [-2, -23.6]); H.comps.push({ k:'plane', gx:0.03, gy:0.004 });
+    zoneR(H, M.SAND, -6, -18.6, 0.6, -21); bumps(H, T, [[4.8, -12, 0.55]]); return H; } },
+  // The Cape: a dogleg round a pond. The more of the corner you bite off, the shorter the hole, and the closer to the water.
+  { par:3, f:function(T){ var H = hole([rm(-7, 0, 1, -26), rm(-7, -15, 14, -26)], [-3, -2.5], [10.5, -20.5]); zoneC(H, M.WATER, 1.6, -14.2, 3.6);
+    board(H, T, -7, -20, -2, -26); bumps(H, T, [[6, -23.6, 0.55]]); bowl(H, 10.5, -20.5, 1.3, 0.08); return H; } },
+  // Biarritz: a deep swale across the middle. Too soft and it stays in the hollow; firm enough and it climbs out onto the back plateau.
+  { par:3, f:function(T){ var H = hole([rm(-4.5, 0, 4.5, -34)], [0, -2.5], [-2.2, -29.8]);
+    H.comps.push({ k:'ridge', x:0, y:-12, nx:0, ny:-1, w:1.3, a:-0.5 }, { k:'ridge', x:0, y:-19.5, nx:0, ny:-1, w:1.3, a:0.5 });
+    bumps(H, T, [[-2.4, -15.8, 0.6], [2.6, -15.8, 0.6]]); blk(H, T, -4.5, -25.6, 0.6, -26.8); return H; } },
+  // Half Pipe: up the lane, round a banked bowl, and back down the other side to the cup. Firm enough to ride the bank and climb out.
+  { par:3, f:function(T){ var H = hole([rm(-6.5, 0, 6.5, -31)], [-3.6, -2.5], [3.6, -6]); blk(H, T, -0.8, 0, 0.8, -18);
+    H.comps.push({ k:'crown', x:0, y:-24, rx:5.2, ry:5.2, a:-0.34 }); bumps(H, T, [[0, -24, 0.55]]); return H; } },
+  // The Switch: the door in the wall is shut. Roll over the plate and it opens for a few seconds; the line has to find the plate on its way.
+  { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -32)], [2.5, -2.5], [-2.5, -27.5]); blk(H, T, -6, -18, -3.9, -19.2); blk(H, T, -1.1, -18, 6, -19.2);
+    switchDoor(H, T, -18.6, -3.9, -1.1, 5.1, -5.9, 3.5); bumps(H, T, [[-4.4, -11, 0.6], [2.6, -24, 0.6]]); return H; } },
+  // The Drop: three tiers. Down the first step, along the middle terrace to its open end, and down again to the cup.
+  { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -36)], [-3, -2.5], [-3, -32]);
+    H.comps.push({ k:'ridge', x:0, y:-10, nx:0, ny:-1, w:0.9, a:-0.6 }, { k:'ridge', x:0, y:-24, nx:0, ny:-1, w:0.9, a:-0.6 });
+    blk(H, T, -6, -17, 2.2, -18.2); bumps(H, T, [[4, -21, 0.55]]); board(H, T, 1, -36, 6, -31); bowl(H, -3, -32, 1.2, 0.07); return H; } }
+];
+var LAB_NAMES = ['Redan', 'The Cape', 'Biarritz', 'Half Pipe', 'The Switch', 'The Drop'];
 var MEMBER_NAMES = ['Graveyard Gate', 'Coffin Drop', 'Witch’s Loop', 'Bat Belfry', 'Haunted Floors', 'Brew River', 'Crypt Doors', 'Headless Leaps', 'Hallows Night',
   'Hayride', 'Bog Hop', 'Corn Maze', 'The Mill Race', 'Pie Plate Spin', 'Turkey Trot', 'Log Flume', 'Scarecrow Alley', 'Harvest Moon'];
 var TOUR_NAMES = [
@@ -1236,7 +1278,8 @@ var TOUR_NAMES = [
    Tour is one world of eighteen in two halves, on the season's theme, and pays the most on the site. */
 var TOURS = {
   main:{ id:'main', name:'Putt Putt Tour', worlds:WORLDS, levels:LEVELS, names:TOUR_NAMES, tag:'lv', per:PER },
-  members:{ id:'members', name:'Members Tour', season:'Hallows & Harvest', worlds:MEMBER_WORLDS, levels:MEMBER_LEVELS, names:MEMBER_NAMES, tag:'mb', per:9, members:true }
+  members:{ id:'members', name:'Members Tour', season:'Hallows & Harvest', worlds:MEMBER_WORLDS, levels:MEMBER_LEVELS, names:MEMBER_NAMES, tag:'mb', per:9, members:true },
+  lab:{ id:'lab', name:'The Lab', worlds:LAB_WORLDS, levels:LAB_LEVELS, names:LAB_NAMES, tag:'lb', per:6, lab:true }
 };
 function tourOf(id){ return TOURS[id] || TOURS.main; }
 function levelName(n, tid){ var TR = tourOf(tid); return TR.names[n - 1] || ('Hole ' + n); }
@@ -1658,7 +1701,8 @@ var PAY = {
     worldReward:['Clubhouse Polo', 'Explorer Hat', 'Treasure Trail', 'Gold Nugget Ball', 'Eruption Celebration'] },
   members:{ hole:300, sig:1200, ace:60, world:2500, exclusive:true,
     sigReward:['Hallows Crown (Members only)', 'Harvest Moon Putter (Members only)'],
-    worldReward:['Phantom Trail (Members only)', 'Golden Leaf Ball (Members only)'], finish:'Members Champion Jacket (Members only)' }
+    worldReward:['Phantom Trail (Members only)', 'Golden Leaf Ball (Members only)'], finish:'Members Champion Jacket (Members only)' },
+  lab:{ hole:0, sig:0, ace:0, world:0, sigReward:[], worldReward:[] }
 };
 var COIN_HOLE = PAY.main.hole, COIN_SIG = PAY.main.sig, COIN_ACE = PAY.main.ace, COIN_WORLD = PAY.main.world, COIN_DAILY = 40, COIN_DAILY_PAR = 40;
 var LIFE_MS = 24 * 3600 * 1000;
@@ -1672,7 +1716,7 @@ function pkey(){ try{ var h = hostOf(); return h.storeKey ? h.storeKey('bag_ppt_
    but its place on a ladder that no longer exists: those holes are gone, so it starts at hole 1. */
 function pload(){ var st = null; try{ st = JSON.parse(localStorage.getItem(pkey())); }catch(e){} st = st || {};
   if (st.v !== 2){ st.tours = {}; delete st.lv; delete st.best; delete st.ace; delete st.paid; delete st.wpaid; st.v = 2; }
-  st.tours = st.tours || {}; Object.keys(TOURS).forEach(function(k){ var t = st.tours[k] = st.tours[k] || {}; t.lv = t.lv || 1; t.best = t.best || {}; t.ace = t.ace || {}; t.paid = t.paid || {}; t.wpaid = t.wpaid || {}; t.lv = frontier(t, TOURS[k]); });
+  st.tours = st.tours || {}; Object.keys(TOURS).forEach(function(k){ var t = st.tours[k] = st.tours[k] || {}; t.lv = t.lv || 1; t.best = t.best || {}; t.ace = t.ace || {}; t.paid = t.paid || {}; t.wpaid = t.wpaid || {}; t.lv = TOURS[k].lab ? TOURS[k].levels.length : frontier(t, TOURS[k]); });
   st.daily = st.daily || {}; st.rewards = st.rewards || []; st.streak = st.streak || { n:0, last:null, best:0 };
   if (st.lives == null) st.lives = livesMax();
   if (st.refillAt && Date.now() >= st.refillAt){ st.lives = livesMax(); st.refillAt = null; psave(st); }
@@ -1686,11 +1730,13 @@ function hm(ms){ var m = Math.max(0, Math.round(ms / 60000)); return Math.floor(
 // how long until the game's day turns over (Eastern midnight), which is when the next Daily Hole arrives
 function msToNextDay(){ try{ var now = new Date(), et = new Date(now.toLocaleString('en-US', { timeZone:'America/New_York' })), nx = new Date(et); nx.setHours(24, 0, 0, 0); return nx - et; }catch(e){ return 0; } }
 function perOf(tid){ return tourOf(tid).per || PER; }
-function wl(n, tid){ var k = perOf(tid); return (tourOf(tid).members ? 'M' : '') + (Math.floor((n - 1) / k) + 1) + '-' + ((n - 1) % k + 1); }
+function wl(n, tid){ var k = perOf(tid); return (tourOf(tid).members ? 'M' : tourOf(tid).lab ? 'L' : '') + (Math.floor((n - 1) / k) + 1) + '-' + ((n - 1) % k + 1); }
 function aceCount(st){ var n = 0; Object.keys(st.tours).forEach(function(k){ n += Object.keys(st.tours[k].ace).length; }); return n; }
 // the Members Tour is the Tour Pass holder's. A tester can preview it, said so on the screen.
 function membersOpen(){ try{ var h = hostOf(); return !!(h.passActive && h.passActive()); }catch(e){ return false; } }
 function membersPreview(){ return !!(S && S.memPreview); }
+// the Lab is a tester's only: its tab is not drawn for anybody else
+function labOpen(){ try{ var h = hostOf(); return !!(h.tester && h.tester()); }catch(e){ return false; } }
 /* STARS. Par clears a hole, so most holes can simply be good to play, and birdies come from reading
    them well rather than from hunting a trapdoor. A world gates the next at two thirds of its stars:
    a birdie on every hole, or aces making up for pars. Neither 54 nor 52 of 54: either one is an ace
@@ -1735,6 +1781,7 @@ function showHub(tid){
   // which tour the map shows: the one asked for, else the one last looked at; the Members Tour only when it is open
   if (tid) S.tour = tid; if (!S.tour) S.tour = st.view || 'main';
   if (S.tour === 'members' && !membersOpen() && !membersPreview()) S.tour = 'main';
+  if (S.tour === 'lab' && !labOpen()) S.tour = 'main';
   st.view = S.tour; psave(st);
   var TR = tourOf(S.tour), mem = !!TR.members;
   S.ov.innerHTML = '<div class="pp-hub' + (mem ? ' pp-mem' : '') + '"><div class="pp-map" data-map></div>' + hdr() +
@@ -1746,7 +1793,7 @@ function showHub(tid){
         <span class="pp-dends">' + (drec && drec.done ? 'Next hole in ' : 'Ends in ') + '<b data-dcount>' + hms(msToNextDay()) + '</b></span></span>\
       <span class="pp-dside"><span class="g">' + (drec && drec.done ? 'Result' : 'Play') + '</span><span class="rw">' + (drec && drec.done ? 'Played' : '+' + COIN_DAILY + ' coins') + '</span></span></button>' +
     '<div class="pp-wchip" data-wchip></div>' +
-    '<div class="pp-tabs" role="tablist"><button data-tab="main" class="' + (mem ? '' : 'on') + '" role="tab">Putt Putt Tour</button><button data-tab="members" class="' + (mem ? 'on' : '') + '" role="tab"><i>★</i> Members' + (membersOpen() ? '' : ' <s>🔒</s>') + '</button></div>' + '</div>';
+    '<div class="pp-tabs" role="tablist"><button data-tab="main" class="' + (mem || TR.lab ? '' : 'on') + '" role="tab">Putt Putt Tour</button><button data-tab="members" class="' + (mem ? 'on' : '') + '" role="tab"><i>★</i> Members' + (membersOpen() ? '' : ' <s>🔒</s>') + '</button>' + (labOpen() ? '<button data-tab="lab" class="' + (TR.lab ? 'on' : '') + '" role="tab">Lab</button>' : '') + '</div>' + '</div>';
   S.ov.querySelector('[data-x]').onclick = close;
   S.ov.querySelector('[data-daily]').onclick = function(){ if (drec && drec.done) dailyResult(); else startDaily(); };
   S.ov.querySelectorAll('[data-tab]').forEach(function(b){ b.onclick = function(){ var t = b.getAttribute('data-tab'); if (t === S.tour) return;
@@ -1856,7 +1903,8 @@ function outOfLives(){
 function startLevel(n, tid){
   var st = pload(); tid = tid || S.tour || 'main';
   if (tourOf(tid).members && !membersOpen() && !membersPreview()) return membersSheet();
-  if (st.lives <= 0) return outOfLives();
+  if (tourOf(tid).lab && !labOpen()) return showHub('main');
+  if (st.lives <= 0 && !tourOf(tid).lab) return outOfLives();
   var d = tourDesc(n, S.host, tid);
   S.round = { mode:'ppt', lv:n, tid:tid, i:0, cards:[], holes:[d], title:levelName(n, tid) };
   playHole();
@@ -1875,7 +1923,7 @@ function tourSub(R, C, P){
 // leaving a hole: free before the first putt, a life after it on the Tour
 function leaveHole(){
   var P = S.play, R = S.round;
-  if (R && R.mode === 'ppt' && P && P.strokes > 0 && P.state !== 'done'){
+  if (R && R.mode === 'ppt' && R.tid !== 'lab' && P && P.strokes > 0 && P.state !== 'done'){
     return confirmSheet('Leave this hole?', 'You have putted, so leaving costs a life.', 'Leave · lose a life', function(){ var st = pload(); loseLife(st); showHub(); }); }
   if (R && R.mode === 'pdaily' && P && P.strokes > 0 && P.state !== 'done'){
     return confirmSheet('Leave the Daily Hole?', 'You get one scored try a day. Leaving now scores it as a pick up.', 'Leave and score it', function(){ dailyFinish(P.C.par + 3, P.C.par, null); }); }
@@ -1883,7 +1931,7 @@ function leaveHole(){
 }
 function restartHole(){
   var P = S.play, R = S.round;
-  if (R.mode === 'ppt' && P.strokes > 0 && P.state !== 'done') return confirmSheet('Restart?', 'You have putted, so a restart costs a life.', 'Restart · lose a life', function(){ var st = pload(); loseLife(st); if (st.lives <= 0) return showHub(), outOfLives(); playHole(); });
+  if (R.mode === 'ppt' && R.tid !== 'lab' && P.strokes > 0 && P.state !== 'done') return confirmSheet('Restart?', 'You have putted, so a restart costs a life.', 'Restart · lose a life', function(){ var st = pload(); loseLife(st); if (st.lives <= 0) return showHub(), outOfLives(); playHole(); });
   if (R.mode === 'pdaily' && P.strokes > 0) return toast('One scored try a day. Finish this one.');
   playHole();
 }
@@ -1924,6 +1972,8 @@ function tourOut(holed){
       { again:function(){ startLevel(n, tid); }, next:function(){ startLevel(n + 1, tid); }, map:function(){ showHub(tid); } });
   }
   // over par: the moment par strokes are gone with the ball still out
+  if (TR.lab) return popup('<div class="k">OUT OF STROKES</div><div class="t">Over par</div><div class="s">' + par + ' strokes used and still not down. The Lab costs no lives.</div>\
+    <div class="row"><button class="pt-bt" data-a="map">Map</button><button class="pt-go" data-a="again">Try again</button></div>', { map:function(){ showHub(tid); }, again:function(){ startLevel(n, tid); } }, 'over');
   loseLife(st);
   return popup('<div class="k">OUT OF STROKES</div><div class="t">Over par</div><div class="s">' + par + ' strokes used and still not down.</div>\
     <div class="pp-lives">' + hearts(st) + '</div><div class="s">' + (st.lives ? st.lives + (st.lives === 1 ? ' life' : ' lives') + ' left' : 'That was your last life.') + '</div>\
@@ -2268,8 +2318,13 @@ function readChip(P, bx, by){
 }
 
 /* drawing ---------------------------------------------------------------------------------- */
+// a door's plate on the carpet: lit while the door it opens is open
+function drawPlate(ctx, cam, m, t, z){ var c = w2s(cam, m.px, m.py, z), r = m.pr * cam.s, on = doorOpen(m, t) > 0;
+  ctx.fillStyle = '#1d1d1d'; ctx.beginPath(); ctx.ellipse(c[0], c[1], r + 2, (r + 2) * (z == null ? 1 : 0.62), 0, 0, 6.29); ctx.fill();
+  ctx.fillStyle = on ? '#ffd23f' : '#c0392b'; ctx.beginPath(); ctx.ellipse(c[0], c[1], r, r * (z == null ? 1 : 0.62), 0, 0, 6.29); ctx.fill(); }
 function drawMovers(ctx, C, cam, t){
   var T = C.T;
+  C.movers.forEach(function(m){ if (m.k === 'door') drawPlate(ctx, cam, m, t); });
   C.movers.forEach(function(m){
     var segs = moverAt(m, t), w = Math.max(m.w * cam.s, 3);
     segs.forEach(function(s){
@@ -2292,6 +2347,7 @@ function bar3(ctx, cam, s, w, h, top, side, ink){
 }
 function drawMovers3(ctx, C, cam, t){
   var T = C.T;
+  C.movers.forEach(function(m){ if (m.k === 'door') drawPlate(ctx, cam, m, t, cam.v3.zAt(m.px, m.py)); });
   C.movers.forEach(function(m){
     if (m.k === 'blade') return;   // the sails drawn on the windmill are this blocker
     var segs = moverAt(m, t), w = Math.max(m.w * cam.s, 3), h = m.k === 'spin' ? 0.45 : 0.6;

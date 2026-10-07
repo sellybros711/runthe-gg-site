@@ -19446,6 +19446,19 @@ ramp jumps over water, drawbridges on a clock, turntables, sliders, gates, spinn
 sheet about the Tour Pass, never a coin price. A tester gets a preview button (`S.memPreview`). It pays
 more a hole and carries rewards only members can earn (`PAY.members`).
 
+**A third tab, the Lab, is for testers only** (`TOURS.lab`, `labOpen()` asks `host.tester()`): six
+prototype holes judged here before any idea touches the ninety. Three classic golf templates on the carpet
+(Redan, Cape, Biarritz) and three mechanics the tour does not have yet: a banked half pipe (a `crown`
+bowl), a door on a switch, and a drop down three tiers (two steep `ridge` steps). The Lab pays nothing
+(`PAY.lab`), costs no lives, and every hole is open. Its routes are in `routes.json` as `lab:N` and
+check-putt replays them under the same birdie and dryness rules as the tours.
+
+**A door on a switch is a mover of kind `door`** (`switchDoor`, `doorOpen`): shut across a gap until the
+ball rolls over its plate, then open for `hold` seconds. The plate is pressed by THIS putt or not at
+all, because `simulate` clears every door at the start of a putt, so the solver's state stays the ball
+and the clock. The press is written onto the mover (`_p`, on the hole's own clock) and the painters read
+it, so the door the player sees is the door the physics used.
+
 **THE RULE IS STARS.** Par or better clears a hole and opens the next one in its world: 1 star for par,
 2 under par, 3 for an ace, best kept. A world opens the next at two thirds of its stars (`worldGate`:
 36 of 54, 18 of 27 on the Members Tour), which is a birdie on every hole or aces covering pars. 54 or 52

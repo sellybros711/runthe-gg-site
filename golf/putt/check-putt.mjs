@@ -246,6 +246,22 @@ if (!QUICK){
     claim(kitAvg.every((a, w) => !w || a > kitAvg[w - 1]), `${TR.name}: more set pieces a hole world by world (${kitAvg.map(a => a.toFixed(2)).join(', ')})`);
     claim(parAvg[parAvg.length - 1] > parAvg[0], `${TR.name}: the last world asks for more putts than the first (par ${parAvg.map(a => a.toFixed(2)).join(', ')})`);
   }
+  /* THE LAB: the tester-only prototype world. Same rule as the tours (the obvious route is a birdie
+     with room for error, a slightly off putt stays dry), and it pays nothing, so it can never be a
+     way round the tour's economy. */
+  { const TL = P.TOURS.lab;
+    claim(TL && TL.lab && TL.levels.length === 6 && TL.worlds.length === 1 && TL.per === 6, 'the Lab is one world of six prototype holes');
+    claim(['hole', 'sig', 'ace', 'world'].every(k => Cn.lab[k] === 0), 'the Lab pays nothing');
+    for (let n = 1; n <= TL.levels.length; n++){ const L = TL.levels[n - 1], C = P.buildLevel(n, 'lab'), name = `lab ${n} ${P.levelName(n, 'lab')}`;
+      const line = ROUTES['lab:' + n], why = line ? replayRoute(C, line, 'obvious') : 'no route recorded';
+      claim(!why && (line.length === L.par - 1 || (L.par === 3 && line.length === 1)), `${name}: the obvious route is a birdie: ${line ? line.length : '?'} putts against par ${L.par}` + (why ? ': ' + why : ''));
+      if (line && !why){ const hz = hazardRates(C, line, 80), worst = Math.max(...hz); claim(worst <= 0.34, `${name}: a slightly off putt stays dry (${hz.map(h => Math.round(h * 100) + '%').join(' ')})`); } }
+    // THE SWITCH: shut until the plate is rolled over, and the recorded route rolls over it
+    const C = P.buildLevel(5, 'lab'), dr = C.movers.find(m => m.k === 'door'), v = P.speedFor(C, 30);
+    const blind = P.simulate(C, C.tee[0], C.tee[1], (-2.5 - C.tee[0]) / 16.9 * v, (-18.8 - C.tee[1]) / 16.9 * v, 0);
+    claim(!!dr && blind.pts.every(p => p[1] > -19.3) && !blind.ev.some(e => e[1] === 'plate'), 'the Switch door holds a putt that never touched its plate');
+    const sl = ROUTES['lab:5'], f = sl && sl[0], sv = f && P.speedFor(C, f[1]), first = f && P.simulate(C, C.tee[0], C.tee[1], Math.cos(f[0]) * sv, Math.sin(f[0]) * sv, f[2]);
+    claim(!!first && first.ev.some(e => e[1] === 'plate') && first.pts.some(p => p[1] < -19.3), 'the Switch route rolls over the plate and through the door it opened'); }
   const mw = TM.levels.filter(L => !L.sig).length / 5 * Cn.main.hole + Cn.main.sig + TM.per * Cn.main.ace + Cn.main.world;
   claim(mw * 5 === 20000, `the main tour pays exactly 20,000 coins (${mw} a world)`);
   claim(Cn.members.exclusive && Cn.members.hole > Cn.main.hole && Cn.members.sig > Cn.main.sig && /Members only/.test(Cn.members.finish), 'the Members Tour pays more a hole and carries rewards only members can earn');
