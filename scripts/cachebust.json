@@ -2402,6 +2402,10 @@
       "v": "4",
       "sha": "c73d604954092eb8"
     },
+    "/assets/simspeed.js": {
+      "v": "1",
+      "sha": "e3e8281d17288b69"
+    },
     "/cfb/commish/clock.js": {
       "v": "4",
       "sha": "d19df33aadff5118"
@@ -2489,6 +2493,10 @@
     "/assets/fieldcast.js": {
       "v": "4",
       "sha": "c73d604954092eb8"
+    },
+    "/assets/simspeed.js": {
+      "v": "1",
+      "sha": "e3e8281d17288b69"
     },
     "auth.js": {
       "v": "8",

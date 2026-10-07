@@ -2975,6 +2975,24 @@ null. Reduced motion gets no slides and no ambient loop.
 room. `check-fullteam.mjs` measures the boss board's calls and Continue against a phone, which is
 the layout that extra height could have broken, and it is green.
 
+### A Speed button slows every broadcast, in both football games
+
+Reported by players: the playoff games went by too fast to follow. `/assets/simspeed.js` is
+one device setting (`rtg_simspeed_v1`, shared by both pages because they share an origin):
+Normal, Slow (1.6x as long) and Slower (2.4x). Every `<button data-simspeed>` is the control,
+and it sits beside Sim to the end on the playoff broadcast and the bowl screen in both games,
+and beside Sim the rest on the NFL live board.
+
+**It is applied in two places and nowhere else.** `buildTimeline` builds each segment through
+`paced()`, whose `ms` is a getter that multiplies by `simMul()` the FIRST time it is read, which
+is the moment the segment starts. So a change lands on the next segment and never halfway
+through one: read every frame, a slower setting would wind the clock back, and the field reads a
+clock going backwards as a new game. The live board multiplies each duration by `simMul()` AFTER
+`bossPace`'s floors, so Slow is really slower on a Wild Card that is already sitting on them.
+
+**Normal is exactly 1**, so every timed check here measures the shipped pace. A blocked or stale
+`simspeed.js` reads as Normal.
+
 ### The boss battle, and the one screen that checks itself
 
 ```
