@@ -239,6 +239,7 @@ if (!QUICK){
       claim(!why && (line.length === L.par - 1 || (L.par === 3 && line.length === 1)), `${name}: the obvious route is a birdie: ${line ? line.length : '?'} putts against par ${L.par}, with room for error` + (why ? ': ' + why : ''));
       if ((C.secret || []).length){ secrets[n] = 1; const sl = ROUTES[TR.id + ':' + n + ':sc'], sw = sl ? replayRoute(C, sl, 'secret') : 'no secret route recorded';
         claim(!sw && line && sl.length < line.length, `${name}: the secret line is shorter: ${sl ? sl.length : '?'} putts against ${line ? line.length : '?'}` + (sw ? ': ' + sw : '')); }
+      threeStars(TR, n, C, L);
       // A PERSON IS A COUPLE OF DEGREES OFF. No putt on the obvious route may put that person in the water or off the course more than a third of the time
       if (line && !why){ const hz = hazardRates(C, line, 80), worst = Math.max(...hz); wet.push(worst); claim(worst <= 0.34, `${name}: a slightly off putt on the obvious route stays dry (${hz.map(h => Math.round(h * 100) + '%').join(' ')})`); } }
     claim(TR.worlds.every((W, w) => { let k = 0; for (let n = w * TR.per + 1; n <= (w + 1) * TR.per; n++) k += secrets[n] || 0; return k * 3 >= TR.per; }), `${TR.name}: at least a third of every world's holes hide a secret line (${Object.keys(secrets).length} in all)`);

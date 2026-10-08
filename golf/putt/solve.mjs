@@ -202,7 +202,11 @@ if (isMainThread && process.argv[1] && process.argv[1].endsWith('solve.mjs')){
   /* THREE STARS: two under the par this hole should carry. A par 3 the search did not already ace gets
      the fine ace search, recorded as :3; a longer hole has to make it on its secret line. */
   const par = Math.max(3, r.strokes + 1), best = Math.min(r.strokes, s && s.line ? s.line.length : Infinity);
-  const a = par === 3 && best > 1 ? aceSearch(C) : null;
+  // PUTT_ACE_SEEDS names a JSON file of lines found earlier ({"main:7":[[ang, ft, t0]]}): a seed that still drops
+  // with room for error is taken as it is, so a re-solve after a small change does not search the fan again
+  const seeds = process.env.PUTT_ACE_SEEDS ? JSON.parse(fs.readFileSync(process.env.PUTT_ACE_SEEDS, 'utf8')) : {}, sd = seeds[tour + ':' + n];
+  const seeded = sd && sd.length === 1 && !replay(C, sd) ? { strokes:1, total:0, line:sd } : null;
+  const a = par === 3 && best > 1 ? (seeded || aceSearch(C)) : null;
   const onReal = null;
   parentPort.postMessage({ strokes:r.strokes, total:r.total + (s ? s.total : 0) + (a ? a.total : 0), line:r.line || null, sc:s && s.line ? s.line : null, three:a && a.line ? a.line : null, onReal, secs:Math.round((Date.now() - t) / 1000) });
 }

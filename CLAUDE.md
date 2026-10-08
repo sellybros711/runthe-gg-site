@@ -19469,11 +19469,22 @@ on a longer hole it is the secret line. Asked for by the owner: if three stars n
 in one has to be really possible. The solver's grid steps a degree and a foot and only keeps a putt that
 holes ON the grid, which misses most aces (a bank that drops is a window under a degree wide), so
 `aceSearch` keeps every putt that passes within two feet of the cup and searches finely round the
-closest. It records the ace as `tour:n:3`, and check-putt asks every Lab hole (the tours are being reworked to
-follow) for a route to three stars that
-replays with `robust()`'s room for error, the same as a birdie putt. A long ace needs a reason to drop:
-a dish round the cup (`bowl`) and a bank that sends the ball down the line. Most aces are firm, 35 to 44
-feet on the meter.
+closest. It records the ace as `tour:n:3`, and check-putt asks every hole on all three tours for a route
+to three stars that replays with `robust()`'s room for error, the same as a birdie putt. A long ace needs a
+reason to drop: a dish round the cup (`bowl`) and a bank that sends the ball down the line. Most aces are
+firm, 35 to 44 feet on the meter. `PUTT_ACE_SEEDS` hands the solver a known ace line per hole, which it
+keeps only if it replays, so a re-solve does not search an hour for a line already found.
+
+Four things made the tour aces real, and each is a rule for the next hole:
+
+- **A river or a loop delivers the ball the same way every time**, so its ace has to come from timing: a
+  gate, slider or spinner between the delivery and the cup turns "always the same miss" into a window.
+- **Two jumps in one putt cannot be done** (a landing keeps 0.72 of the speed), and some holes have no
+  straight line at all. Those carry a secret tunnel from a corner of the tee box, behind a bumper, that
+  comes up just short of the cup (`keep` 0.2 rolls about 1.4 ft). Easy once found, which is what a secret is.
+- **A long straight ace needs capture width.** A degree at 36 ft is half a foot off line. A flat backstop
+  board just behind the cup with a 2.2 dish catches both sides; a V backstop sends them off sideways.
+- **A par 4 or longer reaches three stars only by its secret line**, so every one of them carries one.
 
 **A third tab, the Lab, is for testers only** (`TOURS.lab`, `labOpen()` asks `host.tester()`): six
 prototype holes judged here before any idea touches the ninety. Three classic golf templates on the carpet
