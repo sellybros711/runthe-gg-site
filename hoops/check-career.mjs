@@ -1485,7 +1485,7 @@ async function browser() {
       const s = RTF_CAREER_UI.state();
       const t = document.querySelector('#s-car').innerText;
       return { cur: !!s.cur, last: !!s.last, junk: /\bundefined\b|\bNaN\b|\[object/.test(t), steps: s.cur ? s.cur.steps : 0, stage: s.cur && s.cur.stage,
-        card: s.cur && s.cur.pending[0] ? s.cur.pending[0].key : null };
+        card: s.cur && s.cur.pending[0] ? s.cur.pending[0].key : null, cid: s.cur && s.cur.pending[0] ? s.cur.pending[0].id : null };
     });
     if (st.junk && junk.length < 3) junk.push('press ' + presses);
     if (st.stage) stagesSeen[st.stage] = 1;
@@ -1664,7 +1664,10 @@ async function browser() {
         ok(wide <= 0, `nothing scrolls sideways on a phone (${wide}px)`);
       }
     }
-    const c = await page.$('.cr-choice');
+    /* The walk files its career to the board, so it turns the bookie down:
+       a yes can end in a lifetime ban, and a banned career is off the board
+       (check-story holds that half). */
+    const c = st.cid === 'wp_bet' ? (await page.$$('.cr-choice'))[1] : await page.$('.cr-choice');
     if (c) {
       /* A card the game is waiting on is on the screen, not below the fold. */
       /* Every card, all of the first answer, not a sample: what pushed one

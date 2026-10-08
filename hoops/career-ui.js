@@ -474,7 +474,7 @@ var CSS = [
 '.cr-shn{font:800 11px var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;color:var(--k-ink-2);}',
 '.cr-shc{font:400 9px var(--k-f-pixel);color:var(--k-gold);white-space:nowrap;}',
 '.cr-shbar{flex:1 1 60px;height:6px;}',
-'.cr-back .k-ico{transform:scaleX(-1);}',
+'.cr-back .k-ico{}',
 '@media (max-width:359px){.cr-top .k-h1{font-size:24px;}}',
 '.cr-vgrid{list-style:none;margin:6px 0 14px;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;}',
 '.cr-vgrid li{display:flex;align-items:center;gap:8px;min-height:40px;padding:6px 8px;font:700 12.5px/1.25 var(--k-f-text);background:var(--k-panel-2);box-shadow:0 0 0 2px var(--k-frame);}',
@@ -1264,7 +1264,7 @@ var TIPS = {
   fame: ['Fame', 'How big your name is. It drives endorsements, All-Star votes and what the media asks you.'],
   trust: ['Coach', 'How much your coach believes in you. It decides your minutes and your role.'],
 };
-var METER_ICON = { health: 'heart', morale: 'face', fame: 'star', trust: 'clip', cash: 'cash' };
+var METER_ICON = { health: 'heart', morale: 'face', fame: 'star', trust: 'whistle', cash: 'cash' };
 
 function idCard(L){
   var v = C.view(L), k = C.colorsOf(L);
@@ -1302,18 +1302,22 @@ function idCard(L){
    for a screen reader), the signature move and the skill badges. */
 /* Traits, the signature move and the skill badges are icons too, read the
    same way the awards are: tap one for its name. */
-var TRAIT_ICON = { clutch: ['star', '#ffd166'], coachable: ['whistle', '#b8c3e6'], injuryProne: ['heart', '#ff6b6b'], lateBloomer: ['sprout', '#3ecf8e'],
-  lockerVoice: ['mic', '#ffd166'], gymRat: ['ball', '#e2762a'], hothead: ['flame', '#ff6b6b'], bigStage: ['crown', '#ffd166'], ironMan: ['shield', '#c9d2e3'],
-  filmJunkie: ['clip', '#7fb2ff'], spender: ['cash', '#ff6b6b'], saver: ['cash', '#3ecf8e'], showman: ['star', '#ff7a1a'], loyal: ['home', '#c98b4e'], mercenary: ['cash', '#ffd166'] };
-var BADGE_ICON = { deadeye: ['ball', '#ffd166'], floorgen: ['arrow', '#7fb2ff'], lockdown: ['shield', '#7fb2ff'], glass: ['up', '#3ecf8e'], finisher: ['flame', '#ff7a1a'],
-  flight: ['plane', '#7fb2ff'], brain: ['clip', '#ffd166'], bucket: ['ball', '#ff7a1a'], dimes: ['share', '#3ecf8e'], boards: ['down', '#3ecf8e'] };
+/* Every trait and badge has a picture of its own, drawn for what it means
+   (career-kit.js ICON16): a buzzer clock for Clutch, a piggy bank for the
+   Saver, a backboard for the Glass cleaner, a ball on the rise for Board man.
+   Two of them sharing one picture is two things a player cannot tell apart. */
+var TRAIT_ICON = { clutch: ['clock', '#f4f1e8'], coachable: ['whistle', '#c9d2e3'], injuryProne: ['bandage', '#e9c39b'], lateBloomer: ['sprout', '#3ecf8e'],
+  lockerVoice: ['megaphone', '#ff7a1a'], gymRat: ['dumbbell', '#8f9bb8'], hothead: ['angry', '#e5483f'], bigStage: ['spotlight', '#fff1a8'], ironMan: ['anvil', '#8f9bb8'],
+  filmJunkie: ['film', '#c9d2e3'], spender: ['bag', '#e5483f'], saver: ['piggy', '#f29ab0'], showman: ['tophat', '#9b7bea'], loyal: ['home', '#c98b4e'], mercenary: ['moneybag', '#c9a15a'] };
+var BADGE_ICON = { deadeye: ['target', '#e5483f'], floorgen: ['play', '#1e8c5b'], lockdown: ['lock', '#ffc94a'], glass: ['board', '#cfe4ff'], finisher: ['dunk', '#e2762a'],
+  flight: ['wings', '#7fb2ff'], brain: ['bulb', '#fff1a8'], bucket: ['bucket', '#c9d2e3'], dimes: ['dime', '#e2762a'], boards: ['grab', '#e2762a'] };
 function iconTile(ic, name, cls){
   return '<button type="button" class="cr-awi ' + (cls || '') + '" style="--ic:' + (ic[1] || '#b8c3e6') + '" data-aw="' + esc(name) + '" title="' + esc(name) + '" aria-label="' + esc(name) + '">' + (K.badgeHtml ? K.badgeHtml(ic[0], ic[1]) : K.iconHtml(ic[0], 6, ic[1])) + '</button>';
 }
 function knownHtml(L){
   var out = [];
   (C.TRAITS || []).forEach(function(k){ var t = L.traits && L.traits[k]; if (t && t.known) out.push(iconTile(TRAIT_ICON[k] || ['star', '#ffd166'], C.TRAIT_NAME[k] + (t.why ? '. ' + t.why : ''), 'cr-awi-pro')); });
-  if (L.sig) out.push(iconTile(['arrow', '#ff7a1a'], 'Signature move: ' + L.sig.name, 'cr-awi-col'));
+  if (L.sig) out.push(iconTile(['bolt', '#ffc94a'], 'Signature move: ' + L.sig.name, 'cr-awi-col'));
   (C.badgeList ? C.badgeList(L) : []).forEach(function(b){ out.push(iconTile(BADGE_ICON[b.k] || ['medal', '#b8c3e6'], 'Badge: ' + b.name, 'cr-awi-hs')); });
   return out.length ? '<div class="cr-known cr-aw" aria-label="Known for"><span class="cr-awgrid">' + out.join('') + '</span><span class="cr-awcap" aria-live="polite">Tap one to see what it is.</span></div>' : '';
 }
@@ -1524,7 +1528,7 @@ function tabsHtml(L){
   else if (tab === 'legacy') body = legacyHtml(L);
   else if (tab === 'news') body = newsHtml(L);
   else body = trophies(L);
-  var TI = { log: 'clip', team: 'ball', seasons: 'up', trophies: 'trophy', people: 'face', legacy: 'crown', news: 'mic' };
+  var TI = { log: 'clip', team: 'shirt', seasons: 'chart', trophies: 'trophy', people: 'people', legacy: 'crown', news: 'paper' };
   var t = function(id, name){ var on = tab === id; return '<button class="k-tab k-itab" role="tab" aria-selected="' + on + '" data-tab="' + id + '">' + K.iconHtml(TI[id], 2) + '<span>' + name + '</span></button>'; };
   return '<div class="k-panel cr-sec cr-tabsec"><div class="k-tabs k-itabs cr-tabs" role="tablist">' + t('log', 'Story') + (L.opt && L.opt.story && C.rotationOf && C.rotationOf(L) ? t('team', 'Team') : '') + t('seasons', 'Seasons') + t('trophies', 'Trophies')
     + (L.opt && L.opt.story ? t('people', 'People') + t('legacy', 'Legacy') + t('news', 'News') : '') + '</div>'
@@ -1702,12 +1706,12 @@ function awardCounts(L){
    so each award is its picture, colored for its tier, with a count in the
    corner. Tap one and its name shows under the shelf. */
 var AW_ICON = {
-  champ: ['trophy', '#ffd166'], mvp: ['crown', '#ffd166'], fmvp: ['crown', '#ff9f43'], an1: ['medal', '#ffd166'],
-  an2: ['medal', '#c9d2e3'], an3: ['medal', '#d08a4a'], dpoy: ['shield', '#ffd166'], star: ['star', '#ffd166'],
-  roy: ['sprout', '#3ecf8e'], '6moy': ['six', '#ffd166'], mip: ['up', '#3ecf8e'], scor: ['flame', '#ff7a1a'],
-  ad1: ['shield', '#c9d2e3'], ad2: ['shield', '#d08a4a'], olympic: ['globe', '#ffd166'],
-  c_champ: ['trophy', '#7fb2ff'], c_npoy: ['crown', '#7fb2ff'], c_mop: ['star', '#7fb2ff'], c_aa1: ['medal', '#7fb2ff'],
-  c_aa2: ['medal', '#9fb6d8'], c_f4: ['net', '#f4f1e8'], c_fr: ['sprout', '#7fb2ff'], c_cpoy: ['crown', '#9fb6d8'], c_allconf: ['medal', '#5fc4c4'],
+  champ: ['trophy', '#ffc94a'], mvp: ['crown', '#ffc94a'], fmvp: ['starcup', '#ffc94a'], an1: ['med1', '#ffc94a'],
+  an2: ['med2', '#c9d2e3'], an3: ['med3', '#d08a4a'], dpoy: ['shield', '#7fb2ff'], star: ['star', '#ffc94a'],
+  roy: ['sprout', '#3ecf8e'], '6moy': ['six', '#ffc94a'], mip: ['chart', '#3ecf8e'], scor: ['flame', '#ff7a1a'],
+  ad1: ['shield', '#c9d2e3'], ad2: ['shield', '#d08a4a'], olympic: ['torch', '#ffc94a'],
+  c_champ: ['trophy', '#7fb2ff'], c_npoy: ['crown', '#7fb2ff'], c_mop: ['star', '#7fb2ff'], c_aa1: ['med1', '#7fb2ff'],
+  c_aa2: ['med2', '#9fb6d8'], c_f4: ['net', '#e2762a'], c_fr: ['sprout', '#7fb2ff'], c_cpoy: ['crown', '#9fb6d8'], c_allconf: ['medal', '#5fc4c4'],
   hs_state: ['trophy', '#d08a4a'], hs_mrbb: ['crown', '#3ecf8e'], hs_aag: ['star', '#3ecf8e'], hs_allstate: ['medal', '#3ecf8e'],
 };
 function awardTags(aw){
@@ -2193,6 +2197,7 @@ function finish(){
   render();
   window.scrollTo(0, 0);
   if (sum) fileCareer(card, sum);
+  else if (!easy && L.flags && L.flags.banned && L.history.length) { card.board = { banned: true }; save(); paintPlace(card); }
   ceremony(L, card);
 }
 /* The career ends on a stage: the Hall of Fame for a Hall of Famer, the
@@ -2242,6 +2247,7 @@ function paintPlace(card){
   if (!el || store().last !== card) return;
   var b = card.board;
   if (!b) { el.hidden = true; return; }
+  if (b.banned) { el.hidden = false; el.innerHTML = '<span>Banned for life. Not on the Career board.</span>'; return; }
   if (b.off) {
     el.hidden = false;
     el.innerHTML = '<span>' + (b.migration ? 'The Career board is not set up on this site yet.' : 'Career board not reachable right now. This career still counts here.') + '</span>';
@@ -2463,7 +2469,7 @@ function vaultView(){
   var st = store(), n = vaultCount(st);
   var t = function(id, name){ var on = vtab === id; return '<button class="k-tab" role="tab" aria-selected="' + on + '" data-vtab="' + id + '">' + name + '</button>'; };
   var body = vtab === 'careers' ? careersHtml(st) : vtab === 'family' ? familyHtml(st) : endingsHtml(st);
-  return '<div class="cr-top"><div class="cr-topl"><h2 class="k-h1">The Vault</h2><div class="cr-hud"><b>' + Math.round(100 * n.have / Math.max(1, n.all)) + '% found</b><span>Every ending you have reached</span></div></div><div class="cr-topbtns">' + ib('cr-vback', 'arrow', 'Back', { cls: 'cr-back' }) + ib('cr-home', 'home', 'Home', { attr: 'aria-label="Home"' }) + '</div></div>'
+  return '<div class="cr-top"><div class="cr-topl"><h2 class="k-h1">The Vault</h2><div class="cr-hud"><b>' + Math.round(100 * n.have / Math.max(1, n.all)) + '% found</b><span>Every ending you have reached</span></div></div><div class="cr-topbtns">' + ib('cr-vback', 'back', 'Back', { cls: 'cr-back' }) + ib('cr-home', 'home', 'Home', { attr: 'aria-label="Home"' }) + '</div></div>'
     + '<div class="k-panel k-tight cr-vsum"><span class="k-num">' + n.have + '</span><span>of ' + n.all + ' found</span>'
     + '<span class="cr-vbar" aria-hidden="true"><i style="width:' + Math.round(100 * n.have / Math.max(1, n.all)) + '%"></i></span>'
     + '<span class="k-small">' + st.arc.length + (st.arc.length === 1 ? ' career played' : ' careers played') + '</span></div>'

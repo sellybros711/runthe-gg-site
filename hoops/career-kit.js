@@ -545,6 +545,156 @@ var ICONS_L = {
   net: ['ooooooooooo', 'ohhbbbbbbso', 'ooooooooooo', '.owkwkwkwo.', '.okwkwkwko.', '..owkwkwo..', '..okwkwko..', '...owkwo...', '...okwko...', '....owo....', '....ooo....'],
   ball: ['...ooooo...', '..ohbkbbo..', '.ohbbkbbbo.', 'ohkbbkbbkso', 'obbkbkbkbso', 'okkkkkkkkko', 'obbkbkbkbso', 'osbkbkbkbso', '.osbbkbbso.', '..osbkbso..', '...ooooo...'],
 };
+/* THE ICONS ARE DRAWN, NOT TYPED. Seven and eleven cell letter grids could
+   not say what a badge was: Board man came out as a red dagger, morale as a
+   die, the Sixth Man award as a Cyrillic letter. Every icon is now a few
+   shapes on a sixteen cell grid (circles, boxes, polygons, strokes, arcs and
+   a 3x5 pixel font for numbers), rasterized cell by cell, lit from the top
+   left on each material's own ramp and outlined once around the whole
+   silhouette, so every icon is lit like the sprite. One drawing serves both
+   sizes: 16px in a line of text, 48px on a tile. */
+var MAT = {
+  w: '#f4f1e8', k: '#1b2033', g: '#ffc94a', o: '#e2762a', r: '#e5483f', u: '#3f74d8', s: '#c9d2e3', i: '#8f9bb8',
+  n: '#8a5a2b', p: '#d39a6a', m: '#3ecf8e', d: '#1e8c5b', c: '#7fe0ff', y: '#fff1a8', q: '#f29ab0', t: '#e9c39b', a: '#3a4062',
+  e: '#2c3a5c', l: '#cfe4ff',
+};
+var FLAT = { k: 1, a: 1 };
+var DIG = {
+  '1': ['.#.', '##.', '.#.', '.#.', '###'], '2': ['##.', '..#', '.#.', '#..', '###'], '3': ['##.', '..#', '.#.', '..#', '##.'],
+  '6': ['###', '#..', '###', '#.#', '###'], '$': ['.##', '#..', '.#.', '..#', '##.'], '+': ['...', '.#.', '###', '.#.', '...'],
+};
+function starPts(cx, cy, ro, ri){ var p = []; for (var i = 0; i < 10; i++){ var a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? ri : ro; p.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]); } return p; }
+function inPoly(p, x, y){ var c = false; for (var i = 0, j = p.length - 1; i < p.length; j = i++){ var a = p[i], b = p[j]; if ((a[1] > y) !== (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]) c = !c; } return c; }
+function segD(x, y, x1, y1, x2, y2){ var dx = x2 - x1, dy = y2 - y1, t = ((x - x1) * dx + (y - y1) * dy) / (dx * dx + dy * dy || 1); t = Math.max(0, Math.min(1, t)); var ex = x1 + t * dx - x, ey = y1 + t * dy - y; return Math.sqrt(ex * ex + ey * ey); }
+function hit(op, x, y){
+  var t = op[0];
+  if (t === 'C') { var dx = x - op[1], dy = y - op[2]; return dx * dx + dy * dy <= op[3] * op[3]; }
+  if (t === 'E') { var ex = (x - op[1]) / op[3], ey = (y - op[2]) / op[4]; return ex * ex + ey * ey <= 1; }
+  if (t === 'R') return x >= op[1] && x <= op[1] + op[3] && y >= op[2] && y <= op[2] + op[4];
+  if (t === 'P') return inPoly(op[1], x, y);
+  if (t === 'L') return segD(x, y, op[1], op[2], op[3], op[4]) <= op[5] / 2;
+  if (t === 'A') { var ax = x - op[1], ay = y - op[2], d = Math.sqrt(ax * ax + ay * ay); if (Math.abs(d - op[3]) > op[4] / 2) return false;
+    var ang = Math.atan2(ay, ax) * 180 / Math.PI; if (ang < 0) ang += 360; var a0 = ((op[5] % 360) + 360) % 360, a1 = ((op[6] % 360) + 360) % 360;
+    if (op[6] - op[5] >= 360) return true; return a0 <= a1 ? ang >= a0 && ang <= a1 : ang >= a0 || ang <= a1; }
+  return false;
+}
+/* A medal: a ribbon in two colours and a disc, with a number when it has one. */
+function medalOps(n, ribA, ribB){
+  var o = [['P', [[3.5, 1], [6.8, 1], [9, 7.5], [6, 7.5]], ribA || 'r'], ['P', [[12.5, 1], [9.2, 1], [7, 7.5], [10, 7.5]], ribB || 'u'], ['C', 8, 10.4, 4.8, 'b']];
+  if (n) o.push(['B', 7, 8, DIG[n], 'k']); else o.push(['P', starPts(8, 10.6, 2.8, 1.2), 'w']);
+  return o;
+}
+function trophyOps(){
+  return [['P', [[3, 2.2], [13, 2.2], [12.3, 6.5], [10.2, 9], [5.8, 9], [3.7, 6.5]], 'b'], ['A', 3.4, 5, 2.3, 1.2, 90, 270, 'b'], ['A', 12.6, 5, 2.3, 1.2, -90, 90, 'b'],
+    ['R', 7, 8.8, 2, 2.6, 'b'], ['R', 4.6, 11.2, 6.8, 1.6, 'b'], ['R', 3.6, 12.8, 8.8, 2, 'n']];
+}
+function ballSeams(cx, cy, r){
+  var t = r > 5 ? 0.75 : 0.6;
+  return [['L', cx, cy - r + 0.6, cx, cy + r - 0.6, t, 'k'], ['L', cx - r + 0.6, cy, cx + r - 0.6, cy, t, 'k'], ['A', cx - r * 1.35, cy, r * 1.05, t, -42, 42, 'k'], ['A', cx + r * 1.35, cy, r * 1.05, t, 138, 222, 'k']];
+}
+function tankOps(m){ return [['P', [[3.8, 1.5], [6.2, 1.5], [8, 3.8], [9.8, 1.5], [12.2, 1.5], [12.4, 5.5], [13.6, 7], [13.4, 14.8], [2.6, 14.8], [2.4, 7], [3.6, 5.5]], m || 'b']]; }
+var ICON16 = {
+  heart: { b: '#e5483f', ops: [['C', 5.4, 6, 3.4, 'b'], ['C', 10.6, 6, 3.4, 'b'], ['P', [[2.1, 7.2], [13.9, 7.2], [8, 14]], 'b']] },
+  face: { b: '#ffc94a', ops: [['C', 8, 8, 6.4, 'b'], ['E', 5.7, 6.3, 0.9, 1.4, 'k'], ['E', 10.3, 6.3, 0.9, 1.4, 'k'], ['A', 8, 8.4, 3.7, 1.3, 25, 155, 'k']] },
+  star: { b: '#ffc94a', ops: [['P', starPts(8, 8.6, 7.2, 3.1), 'b']] },
+  clip: { b: '#8a5a2b', ops: [['R', 2.8, 2.6, 10.4, 12.6, 'b'], ['R', 4.2, 4.4, 7.6, 9.6, 'w'], ['R', 5.5, 1.4, 5, 2.8, 'i'], ['L', 5.6, 7, 10.4, 7, 0.9, 'k'], ['L', 5.6, 9.4, 10.4, 9.4, 0.9, 'k'], ['L', 5.6, 11.8, 8.8, 11.8, 0.9, 'k']] },
+  cash: { b: '#3ecf8e', ops: [['R', 1.2, 3.8, 13.6, 8.6, 'b'], ['R', 2.6, 5.2, 10.8, 5.8, 'd'], ['C', 8, 8.1, 2.4, 'b'], ['B', 6.5, 5.6, DIG.$, 'w']] },
+  ball: { b: '#e2762a', ops: [['C', 8, 8, 6.6, 'b']].concat(ballSeams(8, 8, 6.6)) },
+  trophy: { b: '#ffc94a', ops: trophyOps() },
+  starcup: { b: '#ffc94a', ops: trophyOps().concat([['P', starPts(8, 5.2, 2.6, 1.1), 'w']]) },
+  medal: { b: '#ffc94a', ops: medalOps() },
+  med1: { b: '#ffc94a', ops: medalOps('1') },
+  med2: { b: '#c9d2e3', ops: medalOps('2') },
+  med3: { b: '#d08a4a', ops: medalOps('3') },
+  arrow: { b: '#ff7a1a', ops: [['P', [[1.6, 6], [8.6, 6], [8.6, 2.4], [14.6, 8], [8.6, 13.6], [8.6, 10], [1.6, 10]], 'b']] },
+  back: { b: '#b8c3e6', ops: [['P', [[14.4, 6], [7.4, 6], [7.4, 2.4], [1.4, 8], [7.4, 13.6], [7.4, 10], [14.4, 10]], 'b']] },
+  up: { b: '#3ecf8e', ops: [['P', [[8, 1.4], [14.4, 8], [10.4, 8], [10.4, 14.6], [5.6, 14.6], [5.6, 8], [1.6, 8]], 'b']] },
+  down: { b: '#ff6b6b', ops: [['P', [[8, 14.6], [14.4, 8], [10.4, 8], [10.4, 1.4], [5.6, 1.4], [5.6, 8], [1.6, 8]], 'b']] },
+  chart: { b: '#3ecf8e', ops: [['R', 1.6, 10, 3.2, 4.6, 'b'], ['R', 6.4, 6.8, 3.2, 7.8, 'b'], ['R', 11.2, 3, 3.2, 11.6, 'b'], ['R', 1, 14.2, 14, 1, 'w']] },
+  lock: { b: '#ffc94a', ops: [['A', 8, 6.4, 3.4, 1.7, 180, 360, 'i'], ['R', 4.6, 6, 1.7, 2, 'i'], ['R', 9.7, 6, 1.7, 2, 'i'], ['R', 2.8, 7.4, 10.4, 7.6, 'b'], ['C', 8, 10.4, 1.3, 'k'], ['R', 7.4, 10.6, 1.2, 2.6, 'k']] },
+  check: { b: '#3ecf8e', ops: [['L', 2.6, 8.6, 6.2, 12.2, 2.6, 'b'], ['L', 6.2, 12.2, 13.6, 3.8, 2.6, 'b']] },
+  mic: { b: '#c9d2e3', ops: [['L', 8, 9.5, 8, 13.4, 1.8, 'a'], ['R', 4.8, 13.2, 6.4, 1.6, 'a'], ['E', 8, 5.6, 3.4, 4.2, 'b'], ['L', 5.4, 4.4, 10.6, 4.4, 0.7, 'k'], ['L', 5, 6.4, 11, 6.4, 0.7, 'k'], ['R', 6, 9.4, 4, 1.2, 'i']] },
+  megaphone: { b: '#ff7a1a', ops: [['R', 4.6, 9.4, 2, 4.4, 'a'], ['P', [[1.6, 6.2], [5.6, 6.2], [13, 2.2], [13, 13.8], [5.6, 9.8], [1.6, 9.8]], 'b'], ['R', 12.4, 2.2, 1.8, 11.6, 'w']] },
+  shoe: { b: '#ff7a1a', ops: [['P', [[1.6, 4.4], [6, 4.4], [7.4, 7.6], [12.4, 8.6], [14.6, 10.6], [14.6, 12.4], [1.6, 12.4]], 'b'], ['R', 1.4, 11.8, 13.4, 2.4, 'w'], ['L', 6.6, 6.4, 8.6, 9, 0.8, 'w'], ['L', 8.4, 6.8, 10.2, 9.2, 0.8, 'w']] },
+  wings: { b: '#ff7a1a', ops: [['P', [[7.6, 9.6], [0.2, 4.6], [0.6, 2.4], [2.6, 3.4], [2.4, 0.6], [4.8, 2.2], [5.4, 0.2], [7.4, 2.8], [8.6, 1.6], [9.6, 7.6]], 'w'], ['L', 2.8, 5, 7.6, 8.6, 0.7, 'l'], ['L', 5.2, 3.6, 8.4, 7.6, 0.7, 'l'], ['P', [[6.4, 8], [9.6, 8], [10.6, 10], [13.4, 10.6], [15.2, 12], [15.2, 13.4], [6.4, 13.4]], 'b'], ['R', 6.2, 12.8, 9.2, 2, 'w'], ['L', 9.4, 9, 10.6, 10.6, 0.8, 'w']] },
+  ring: { b: '#ffc94a', ops: [['A', 8, 10.2, 3.8, 2, 0, 360, 'b'], ['P', [[8, 1.2], [11.2, 4.2], [8, 7.2], [4.8, 4.2]], 'c']] },
+  whistle: { b: '#c9d2e3', ops: [['A', 3.4, 4.6, 2.4, 0.9, 120, 300, 'r'], ['C', 6, 9.6, 4.4, 'b'], ['R', 7.6, 5.6, 7, 3.8, 'b'], ['C', 6, 9.6, 1.5, 'k']] },
+  home: { b: '#c98b4e', ops: [['R', 3.2, 7.4, 9.6, 7.4, 'b'], ['P', [[1, 8.6], [8, 1.6], [15, 8.6]], 'r'], ['R', 7, 10.4, 2.4, 4.4, 'a'], ['R', 4.4, 9, 1.8, 1.8, 'y'], ['R', 10.2, 9, 1.8, 1.8, 'y']] },
+  sound: { b: '#ffc94a', ops: [['P', [[1.6, 6], [4.6, 6], [8.6, 2.4], [8.6, 13.6], [4.6, 10], [1.6, 10]], 'b'], ['A', 8.6, 8, 3, 1.1, -50, 50, 'b'], ['A', 8.6, 8, 5.6, 1.1, -50, 50, 'b']] },
+  mute: { b: '#8fa0d6', ops: [['P', [[1.6, 6], [4.6, 6], [8.6, 2.4], [8.6, 13.6], [4.6, 10], [1.6, 10]], 'b'], ['L', 10.4, 5.6, 14.6, 10.4, 1.4, 'r'], ['L', 14.6, 5.6, 10.4, 10.4, 1.4, 'r']] },
+  vault: { b: '#8f9bb8', ops: [['R', 1.4, 1.6, 13.2, 12, 'b'], ['R', 2.8, 3, 10.4, 9.2, 'e'], ['C', 7.2, 7.6, 3.2, 's'], ['C', 7.2, 7.6, 1.2, 'a'], ['L', 7.2, 4.4, 7.2, 5.4, 0.8, 'a'], ['L', 4, 7.6, 5, 7.6, 0.8, 'a'], ['L', 12, 5.4, 12, 9.8, 1.4, 'g'], ['R', 2.6, 13.6, 2.4, 1.8, 'a'], ['R', 11, 13.6, 2.4, 1.8, 'a']] },
+  tree: { b: '#3ecf8e', ops: [['R', 7, 9, 2, 5.8, 'n'], ['C', 8, 5.4, 4.6, 'b'], ['C', 4.6, 8.4, 3, 'b'], ['C', 11.4, 8.4, 3, 'b']] },
+  share: { b: '#ff7a1a', ops: [['R', 1.8, 5.8, 9.4, 9, 'i'], ['R', 3.2, 7.2, 6.6, 6.2, 'e'], ['L', 5.6, 11, 12, 4.6, 1.8, 'b'], ['P', [[8.6, 1.4], [14.6, 1.4], [14.6, 7.4]], 'b']] },
+  crown: { b: '#ffc94a', ops: [['P', [[1.6, 13.4], [1.6, 4.6], [5, 8.6], [8, 2.6], [11, 8.6], [14.4, 4.6], [14.4, 13.4]], 'b'], ['R', 1.6, 11, 12.8, 2.4, 'w'], ['C', 8, 12.2, 0.9, 'r'], ['C', 4.6, 12.2, 0.8, 'u'], ['C', 11.4, 12.2, 0.8, 'u']] },
+  shield: { b: '#7fb2ff', ops: [['P', [[2.2, 1.8], [13.8, 1.8], [13.8, 8], [8, 14.8], [2.2, 8]], 'b'], ['P', starPts(8, 7, 3.4, 1.4), 'w']] },
+  sprout: { b: '#3ecf8e', ops: [['P', [[3.6, 10], [12.4, 10], [11.2, 15], [4.8, 15]], 'n'], ['L', 8, 10, 8, 6, 1.2, 'b'], ['P', [[8, 7], [2.4, 2.8], [1.8, 5.2], [5, 7.6]], 'b'], ['P', [[8, 6], [13.6, 1.8], [14.2, 4.4], [11, 6.8]], 'b']] },
+  flame: { b: '#ff7a1a', ops: [['P', [[8, 0.8], [11.4, 4.6], [13.4, 8.8], [12.8, 12.4], [10.2, 14.8], [5.8, 14.8], [3.2, 12.4], [2.8, 8.8], [4.8, 5.6], [6, 7.6], [6.8, 4.4]], 'b'], ['P', [[8, 6.6], [10.4, 9.8], [10.4, 12.6], [8, 13.8], [5.6, 12.6], [5.6, 9.8]], 'g'], ['E', 8, 11.8, 1.3, 1.6, 'w']] },
+  globe: { b: '#3f74d8', ops: [['C', 8, 8, 6.6, 'b'], ['P', [[4, 3.6], [8, 3], [8.4, 6], [6, 8.6], [3.4, 7.4]], 'm'], ['P', [[9.6, 8.4], [13.6, 8.8], [12.4, 12.4], [9.4, 13]], 'm']] },
+  torch: { b: '#ffc94a', ops: [['P', [[5.4, 9.4], [10.6, 9.4], [9.4, 15.2], [6.6, 15.2]], 'b'], ['R', 3.8, 7.8, 8.4, 2.2, 'b'], ['P', [[8, 0.4], [11.8, 4], [12, 7.8], [4, 7.8], [4.2, 4], [6.2, 4.6]], 'o'], ['P', [[8, 3.4], [10, 5.6], [9.8, 7.8], [6.2, 7.8], [6, 5.6]], 'y']] },
+  net: { b: '#e2762a', ops: [['L', 3.2, 5, 5.4, 14.2, 0.8, 'w'], ['L', 6.2, 5, 7, 14.2, 0.8, 'w'], ['L', 9.8, 5, 9, 14.2, 0.8, 'w'], ['L', 12.8, 5, 10.6, 14.2, 0.8, 'w'], ['L', 3.8, 8.6, 12.2, 8.6, 0.8, 'w'], ['L', 4.8, 11.8, 11.2, 11.8, 0.8, 'w'], ['R', 1.2, 2.6, 13.6, 2.6, 'b']] },
+  shirt: { b: '#7fb2ff', ops: tankOps() },
+  six: { b: '#ffc94a', ops: tankOps().concat([['B', 5, 5, DIG['6'], 'k', 2]]) },
+  film: { b: '#c9d2e3', ops: [['L', 11, 12, 15, 15, 1.8, 'a'], ['C', 7.4, 7.4, 6.4, 'b'], ['C', 7.4, 3.9, 1.4, null], ['C', 10.9, 7.4, 1.4, null], ['C', 7.4, 10.9, 1.4, null], ['C', 3.9, 7.4, 1.4, null], ['C', 7.4, 7.4, 1, 'k']] },
+  target: { b: '#e5483f', ops: [['C', 8, 8, 6.6, 'b'], ['C', 8, 8, 4.7, 'w'], ['C', 8, 8, 2.8, 'b'], ['C', 8, 8, 1, 'w']] },
+  play: { b: '#1e8c5b', ops: [['R', 1.6, 1.6, 12.8, 12.8, 'b'], ['L', 3.6, 3.6, 6.6, 6.6, 1, 'w'], ['L', 6.6, 3.6, 3.6, 6.6, 1, 'w'], ['A', 11, 11, 1.9, 1, 0, 360, 'w'], ['L', 6.4, 8, 9.4, 9.8, 0.9, 'g'], ['P', [[9.8, 8.4], [10.6, 10.8], [8.4, 10.6]], 'g']] },
+  board: { b: '#cfe4ff', ops: [['R', 1.4, 1.2, 13.2, 8.4, 'b'], ['R', 5, 4, 6, 4, 'r'], ['R', 6, 4.9, 4, 2.2, 'b'], ['L', 5.2, 11, 6.6, 15, 0.8, 'w'], ['L', 10.8, 11, 9.4, 15, 0.8, 'w'], ['L', 8, 11, 8, 15, 0.8, 'w'], ['R', 4.2, 9.6, 7.6, 1.6, 'o']] },
+  dunk: { b: '#e2762a', ops: [['L', 5.6, 11, 7.2, 15.2, 0.8, 'w'], ['L', 12.4, 11, 10.8, 15.2, 0.8, 'w'], ['L', 9, 11, 9, 15.2, 0.8, 'w'], ['L', 6.2, 13.2, 11.8, 13.2, 0.7, 'w'], ['L', 0.6, 0.8, 3.6, 3, 1, 'g'], ['L', 0.4, 4.6, 3, 5.8, 1, 'g'], ['L', 3.8, 0.2, 5.2, 1.6, 1, 'g'], ['C', 9.2, 5.6, 4.4, 'b']].concat(ballSeams(9.2, 5.6, 4.4), [['R', 2.4, 9.4, 13.2, 1.9, 'r']]) },
+  brain: { b: '#f29ab0', ops: [['E', 5.6, 8, 4.4, 5.6, 'b'], ['E', 10.4, 8, 4.4, 5.6, 'b'], ['L', 8, 2.8, 8, 13.2, 0.8, 'k'], ['A', 5.4, 6, 2, 0.8, 200, 340, 'k'], ['A', 10.6, 6, 2, 0.8, 200, 340, 'k'], ['A', 5.4, 10.6, 2, 0.8, 20, 160, 'k'], ['A', 10.6, 10.6, 2, 0.8, 20, 160, 'k']] },
+  bucket: { b: '#c9d2e3', ops: [['A', 8, 7.6, 6, 1, 180, 360, 'a'], ['C', 8, 5.2, 4, 'o']].concat(ballSeams(8, 5.2, 4), [['P', [[2.2, 7.4], [13.8, 7.4], [12.2, 15], [3.8, 15]], 'b'], ['R', 2.2, 7.2, 11.6, 1.6, 'i']]) },
+  dime: { b: '#e2762a', ops: [['L', 1.4, 4.6, 5.6, 4.6, 1, 'w'], ['L', 0.8, 8, 5.2, 8, 1, 'w'], ['L', 1.4, 11.4, 5.6, 11.4, 1, 'w'], ['C', 10.2, 8, 5, 'b']].concat(ballSeams(10.2, 8, 5)) },
+  grab: { b: '#e2762a', ops: [['C', 6.4, 9.8, 5.2, 'b']].concat(ballSeams(6.4, 9.8, 5.2), [['P', [[12.6, 0.8], [15.6, 4.6], [13.8, 4.6], [13.8, 9.4], [11.4, 9.4], [11.4, 4.6], [9.6, 4.6]], 'm']]) },
+  clock: { b: '#f4f1e8', ops: [['R', 6.6, 0.8, 2.8, 1.8, 'r'], ['C', 8, 9, 6.2, 'b'], ['L', 8, 9, 8, 4.6, 1.1, 'k'], ['L', 8, 9, 11, 10.6, 1.1, 'k'], ['C', 8, 9, 0.9, 'r']] },
+  bandage: { b: '#e9c39b', ops: [['P', [[1.6, 10.6], [10.6, 1.6], [14.4, 5.4], [5.4, 14.4]], 'b'], ['P', [[5.4, 8], [8, 5.4], [10.6, 8], [8, 10.6]], 'w'], ['C', 3.8, 10.6, 0.5, 'n'], ['C', 5.4, 12.2, 0.5, 'n'], ['C', 10.6, 3.8, 0.5, 'n'], ['C', 12.2, 5.4, 0.5, 'n']] },
+  dumbbell: { b: '#8f9bb8', ops: [['L', 3, 8, 13, 8, 1.6, 'a'], ['R', 1.2, 3.8, 2.8, 8.4, 'b'], ['R', 12, 3.8, 2.8, 8.4, 'b'], ['R', 4, 5, 1.8, 6, 'b'], ['R', 10.2, 5, 1.8, 6, 'b']] },
+  angry: { b: '#e5483f', ops: [['C', 3, 2.6, 1.5, 'w'], ['C', 13, 2.6, 1.5, 'w'], ['C', 8, 9.2, 5.8, 'b'], ['L', 4.8, 6.8, 7.4, 8, 1.1, 'k'], ['L', 11.2, 6.8, 8.6, 8, 1.1, 'k'], ['C', 6, 9.4, 0.8, 'k'], ['C', 10, 9.4, 0.8, 'k'], ['A', 8, 14.4, 3, 1.1, 210, 330, 'k']] },
+  spotlight: { b: '#fff1a8', ops: [['P', [[3.6, 4.8], [6.4, 3.6], [14.4, 12.4], [5.6, 14]], 'b'], ['E', 9.8, 13, 5.8, 1.9, 'w'], ['R', 0.6, 14.2, 15, 1.6, 'n'], ['P', [[0.4, 2.4], [4.6, 0.4], [6.8, 4.2], [2.6, 6.2]], 'i'], ['L', 3.2, 5.4, 6.6, 3.8, 1, 'y']] },
+  bulb: { b: '#fff1a8', ops: [['C', 8, 6.4, 5.4, 'b'], ['R', 5.6, 10.6, 4.8, 2.2, 's'], ['R', 6.2, 12.8, 3.6, 1.6, 'i'], ['R', 7, 14.2, 2, 1, 'a'], ['A', 8, 7.6, 1.8, 0.8, 180, 360, 'n'], ['L', 6.2, 7.6, 7, 10.4, 0.7, 'n'], ['L', 9.8, 7.6, 9, 10.4, 0.7, 'n']] },
+  anvil: { b: '#8f9bb8', ops: [['P', [[0.4, 4.4], [4.2, 3.2], [14.8, 3.2], [14.8, 6.6], [11.2, 7.6], [10.2, 10.4], [13, 12.2], [13, 14.8], [3.4, 14.8], [3.4, 12.2], [6.2, 10.4], [5.6, 7.6], [4, 6.4], [0.4, 5]], 'b'], ['R', 4.4, 3.2, 10.4, 1, 's']] },
+  bag: { b: '#e5483f', ops: [['A', 8, 6, 2.8, 1.1, 180, 360, 'a'], ['R', 2.8, 5.6, 10.4, 9.4, 'b'], ['B', 6.5, 7.8, DIG.$, 'w']] },
+  piggy: { b: '#f29ab0', ops: [['P', [[4, 4.6], [5.6, 2.2], [6.8, 5]], 'b'], ['E', 7.6, 9, 6, 4.6, 'b'], ['E', 13.4, 9, 1.6, 1.8, 'q'], ['R', 3.6, 12.4, 1.8, 2.6, 'b'], ['R', 9.6, 12.4, 1.8, 2.6, 'b'], ['C', 10.6, 7.6, 0.7, 'k'], ['R', 6, 4.6, 3.2, 0.9, 'k'], ['C', 7.6, 2.4, 1.6, 'g']] },
+  tophat: { b: '#3a4062', ops: [['E', 8, 12.6, 7, 2, 'b'], ['R', 4.2, 2, 7.6, 10.4, 'b'], ['R', 4.2, 8.8, 7.6, 1.8, 'r']] },
+  moneybag: { b: '#c9a15a', ops: [['P', [[4.6, 1.6], [11.4, 1.6], [9.6, 4.6], [6.4, 4.6]], 'b'], ['C', 8, 10, 5.4, 'b'], ['R', 6.2, 4, 3.6, 2.6, 'b'], ['R', 5.6, 4.6, 4.8, 1.1, 'k'], ['B', 6.5, 7.8, DIG.$, 'd']] },
+  bolt: { b: '#ffc94a', ops: [['P', [[9.4, 0.8], [2.8, 9], [7.4, 9], [5.8, 15.2], [13.2, 6.4], [8.6, 6.4], [11, 0.8]], 'b']] },
+  people: { b: '#7fb2ff', ops: [['C', 5.2, 4.6, 2.6, 'p'], ['E', 5.2, 12.4, 4.2, 4, 'b'], ['C', 11, 5.2, 2.4, 'p'], ['E', 11, 12.8, 3.8, 3.6, 'm']] },
+  paper: { b: '#f4f1e8', ops: [['R', 1.6, 2.2, 12.8, 12, 'b'], ['R', 3, 3.6, 10, 2, 'k'], ['R', 3, 7, 4.4, 4.4, 'i'], ['L', 8.6, 7.6, 13, 7.6, 0.8, 'k'], ['L', 8.6, 9.6, 13, 9.6, 0.8, 'k'], ['L', 3, 12.8, 13, 12.8, 0.8, 'k']] },
+};
+function icon16(name, color){
+  var d = ICON16[name]; if (!d) return null;
+  var base = color || d.b;
+  return cached('i16:' + name + ':' + base, function(cv){
+    var N = 16, SS = 4, grid = [];
+    for (var y = 0; y < N; y++){ grid.push([]); for (var x = 0; x < N; x++) grid[y].push(null); }
+    d.ops.forEach(function(op){
+      if (op[0] === 'B') { var bx = Math.round(op[1]), by = Math.round(op[2]), sc = op[5] || 1; op[3].forEach(function(row, j){ for (var i = 0; i < row.length; i++) if (row[i] === '#') for (var v = 0; v < sc; v++) for (var u = 0; u < sc; u++) if (grid[by + j * sc + v]) grid[by + j * sc + v][bx + i * sc + u] = op[4]; }); return; }
+      var m = op[op.length - 1];
+      for (var y = 0; y < N; y++) for (var x = 0; x < N; x++){
+        var n = 0;
+        for (var j = 0; j < SS; j++) for (var i = 0; i < SS; i++) if (hit(op, x + (i + 0.5) / SS, y + (j + 0.5) / SS)) n++;
+        if (n * 2 >= SS * SS) grid[y][x] = m;
+      }
+    });
+    cv.width = N; cv.height = N;
+    var c = cv.getContext('2d'), RM = {};
+    var col = function(m){ return m === 'b' ? base : MAT[m] || base; };
+    var at = function(x, y){ return y >= 0 && y < N && x >= 0 && x < N ? grid[y][x] : null; };
+    for (var y = 0; y < N; y++) for (var x = 0; x < N; x++){
+      var m = grid[y][x];
+      if (m) {
+        var hx = col(m);
+        if (FLAT[m]) { c.fillStyle = hx; c.fillRect(x, y, 1, 1); continue; }
+        var R = RM[hx] || (RM[hx] = ramp(hx));
+        /* A seam or a line drawn on a shape is part of it: the light follows
+           the shape's own edge, not every line across it. */
+        var diff = function(q){ return q !== m && !FLAT[q]; };
+        var up = diff(at(x, y - 1)), dn = diff(at(x, y + 1)), lf = diff(at(x - 1, y)), rt = diff(at(x + 1, y));
+        c.fillStyle = up && lf ? R[4] : up || lf ? R[3] : dn && rt ? R[0] : dn || rt ? R[1] : R[2];
+        c.fillRect(x, y, 1, 1);
+      } else if (at(x - 1, y) || at(x + 1, y) || at(x, y - 1) || at(x, y + 1)) {
+        c.fillStyle = '#070912'; c.fillRect(x, y, 1, 1);
+      }
+    }
+  });
+}
 function icon(name, color, big){
   var g = (big && ICONS_L[name]) || ICONS[name]; if (!g) return null;
   var base = color || ICON_BASE[name] || '#b8c3e6';
@@ -565,10 +715,13 @@ function img(asset, scale, cls, alt){
   var s = Math.max(1, Math.round(scale || 2));
   return '<img class="k-px' + (cls ? ' ' + cls : '') + '" src="' + asset.url + '" width="' + asset.w * s + '" height="' + asset.h * s + '" alt="' + (alt || '') + '"' + (alt ? '' : ' aria-hidden="true"') + ' draggable="false">';
 }
-function iconHtml(name, scale, color, alt){ return img(icon(name, color), scale || 2, 'k-ico', alt); }
+function iconHtml(name, scale, color, alt){
+  if (ICON16[name]) return img(icon16(name, color), Math.max(1, Math.round((scale || 2) * 7 / 16)), 'k-ico k-i16', alt);
+  return img(icon(name, color), scale || 2, 'k-ico', alt);
+}
 /* A tile icon: the eleven cell drawing at 4x where there is one, the seven
    cell one at 6x where there is not, so both come out about 44px. */
-function badgeHtml(name, color, alt){ return ICONS_L[name] ? img(icon(name, color, true), 4, 'k-ico', alt) : img(icon(name, color), 6, 'k-ico', alt); }
+function badgeHtml(name, color, alt){ if (ICON16[name]) return img(icon16(name, color), 3, 'k-ico', alt); return ICONS_L[name] ? img(icon(name, color, true), 4, 'k-ico', alt) : img(icon(name, color), 6, 'k-ico', alt); }
 
 /* ─── the stylesheet ───────────────────────────────────────────────────── */
 
@@ -967,7 +1120,7 @@ function dialog(scrim, opts){
 var API = {
   API_VERSION: API_VERSION, T: T, CSS: CSS,
   mix: mix, contrast: contrast, ramp: ramp, teamVars: teamVars, theme: theme,
-  crowd: crowd, wood: wood, brick: brick, room: room, icon: icon, img: img, iconHtml: iconHtml, badgeHtml: badgeHtml, ICONS_L: Object.keys(ICONS_L), ICONS: Object.keys(ICONS),
+  crowd: crowd, wood: wood, brick: brick, room: room, icon: icon, img: img, iconHtml: iconHtml, badgeHtml: badgeHtml, ICONS_L: Object.keys(ICONS_L), ICONS: Object.keys(ICONS), ICON16: Object.keys(ICON16), icon16: icon16,
   pips: pips, bar: bar, tickerHtml: tickerHtml, wireTips: wireTips, countUp: countUp, toast: toast, wipe: wipe, dialog: dialog, reduced: reduced, inject: inject,
 };
 if (typeof module !== 'undefined' && module.exports) module.exports = API;

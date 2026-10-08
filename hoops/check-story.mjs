@@ -46,7 +46,7 @@ function play(seed, start, pickFn, more) {
   while (!L.retired && g++ < 4000) {
     if (L.pending.length) {
       const c = L.pending[0];
-      cards.push({ c: clone(c), year: L.year, am: !!(L.am && L.stage !== 'nba'), cont: C.continuity(L, c) });
+      cards.push({ c: clone(c), year: L.year, am: !!(L.am && L.stage !== 'nba'), cont: C.continuity(L, c), sd: L.seasonsDone, sl: !!(((L.evlog || {}).sl_first_game || []).length || (L.mem && L.mem['route.undrafted'])) });
       C.choose(L, pickFn ? pickFn(c, r) : Math.floor(r() * c.options.length));
     } else C.step(L);
   }
@@ -405,10 +405,72 @@ section('15. nothing reads the same twice: the summer, the goal and the answers'
   ok(sum > 100 && sumFact / sum > 0.4, `the summer card says something true about the season it follows (${sumFact} of ${sum})`);
   ok(!longSum.length, `the summer card is 22 words or less (${longSum.slice(0, 2).join(' | ') || 'all'})`);
   ok(back > 20 && named / back > 0.8, `last year's goal is named when it is brought up (${named} of ${back})`);
+  /* SUMMER LEAGUE "AGAIN" NEEDS A FIRST TIME. A player was offered Play
+     Summer League again in his first summer as a pro. A rookie is offered it
+     plain, and not at all if this summer already sent him to Vegas; from his
+     second summer it says again. */
+  let rookAgain = 0, rookTwice = 0, rookPlain = 0, laterAgain = 0;
+  for (let i = 0; i < 80; i++) {
+    const x = play('slg' + i, i % 2 ? 'hs' : 'draft');
+    for (const k of x.cards) {
+      if (k.c.id !== 'training' || k.am) continue;
+      const L0 = k.c.options.map((o) => o.label).join('|');
+      if (k.sd === 0) { if (/Summer League again|Vegas again/.test(L0)) rookAgain++; if (k.sl && /Summer League|Vegas/.test(L0)) rookTwice++; if (/Play Summer League(?! again)/.test(L0)) rookPlain++; }
+      else if (k.sd <= 2 && /Summer League again|Vegas again/.test(L0)) laterAgain++;
+    }
+  }
+  ok(!rookAgain, `a rookie is never offered Summer League "again" (${rookAgain})`);
+  ok(!rookTwice, `a rookie already sent to Vegas this summer is not offered it again (${rookTwice})`);
+  ok(rookPlain > 0 && laterAgain > 0, `the first summer offers it plain and a later one says again (${rookPlain} plain, ${laterAgain} again)`);
   /* A story career only: an old save reads exactly what it always read. */
   let offVu = 0;
   for (let i = 0; i < 4; i++) { const x = play('freshoff' + i, 'draft', null, { story: false }); if (x.L && x.L.vu) offVu++; }
   ok(!offVu, `a career from before the story engine keeps no memory of what it read (${offVu})`);
+}
+
+section('16. the bracket is the one the engine played');
+{
+  /* The playoff screen draws the whole bracket off bracketOf. Every series
+     of yours on it has to be the one you played, against the club you
+     played, and the club it crowns has to be the champion the league
+     records. A bracket worked out again later must not crown anybody else. */
+  let seasons = 0, played = 0, wrong = [], crowned = 0, piSeen = 0, open4 = 0;
+  for (let i = 0; i < 14; i++) {
+    const L = C.newLife({ seed: 'bracket' + i, league, start: 'draft' });
+    let g = 0;
+    while (!L.retired && g++ < 3000) {
+      const ph = L.phase;
+      if (L.pending.length) C.choose(L, 0); else C.step(L);
+      if (ph === 'off' || L.phase !== 'off' || L.stage !== 'nba' || !L.season || !L.season.po) continue;
+      seasons++;
+      const s = L.season, po = s.po, bk = C.bracketOf(L);
+      if (!bk) { wrong.push(s.year + ' no bracket'); continue; }
+      if (bk.piWent) piSeen++;
+      for (const r of po.results) {
+        played++;
+        const x = r.round < 3 ? (bk.conf[bk.cf][r.round] || []).find((y) => y.you) : bk.finals;
+        const opp = x ? (x.a === bk.team ? x.b : x.a) : null;
+        if (opp !== r.opp) wrong.push(s.year + ' round ' + r.round + ': ' + opp + ' on the bracket, ' + r.opp + ' played');
+        else if (x.w !== (r.won ? bk.team : r.opp)) wrong.push(s.year + ' round ' + r.round + ' has the wrong winner');
+      }
+      for (const cf of ['East', 'West']) for (const row of bk.conf[cf]) for (const x of row) if (x.w == null || Math.max(x.sa, x.sb) !== 4) open4++;
+      if (bk.finals.w == null || Math.max(bk.finals.sa, bk.finals.sb) !== 4) open4++;
+      if (bk.champ === L.league.champs[s.year]) crowned++;
+      else wrong.push(s.year + ' crowns ' + bk.champ + ', the league records ' + L.league.champs[s.year]);
+    }
+  }
+  ok(seasons >= 100 && played >= 60, `the sweep files seasons and plays series (${seasons} seasons, ${played} series)`);
+  ok(piSeen > 0, `it meets a play-in (${piSeen})`);
+  ok(!wrong.length, `every series of yours on the bracket is the one you played (${wrong.slice(0, 3).join(' | ') || 'all'})`);
+  ok(!open4, `every series on a filed bracket is finished at four wins (${open4} open)`);
+  ok(crowned === seasons, `the bracket crowns the champion the league records (${crowned} of ${seasons})`);
+  /* A career banned for life is off the board: the board reads its verdict
+     off the score and would call it a Journeyman. */
+  const ban = C.newLife({ seed: 'banned', league, start: 'draft' });
+  for (let g = 0; g < 400 && ban.history.length < 2; g++) { if (ban.pending.length) C.choose(ban, 0); else C.step(ban); }
+  const filed = !!C.boardSummary(ban);
+  ban.flags.banned = true;
+  ok(filed && C.boardSummary(ban) === null, `a career banned for life is not filed to the board (${filed ? 'filed before the ban' : 'never filed'})`);
 }
 
 section('13. the road ends in today\'s league');

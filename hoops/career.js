@@ -3274,8 +3274,9 @@ function playoffImpact(L) {
   if (s.injury && s.injury.until > GAMES + 4) return 0;
   return impact(L, playMin) + s.mods.win + (trait(L, 'bigStage') ? 0.8 : 0);
 }
-/* A series that does not involve you, in one go. */
-function simSeries(L, a, b, rng, aHome) {
+/* A series that does not involve you, in one go. The score comes back too,
+   for the bracket; the draws are the same either way. */
+function simSeriesScore(L, a, b, rng, aHome) {
   let wa = 0, wb = 0, g = 0;
   const homes = [1, 1, 0, 0, 1, 0, 1];
   while (wa < 4 && wb < 4) {
@@ -3283,21 +3284,34 @@ function simSeries(L, a, b, rng, aHome) {
     if (rng() < seriesP(L, a, b, !!h)) wa++; else wb++;
     g++;
   }
-  return wa === 4 ? a : b;
+  return { w: wa === 4 ? a : b, wa, wb };
 }
+function simSeries(L, a, b, rng, aHome) { return simSeriesScore(L, a, b, rng, aHome).w; }
 /* One conference's bracket, given its eight seeds, with the player's own
    series left out (`skip` is the club whose series is played elsewhere). */
 const PAIRS = [[0, 7], [3, 4], [2, 5], [1, 6]];
 
-function playPlayIn(L, beats) {
-  const s = L.season, po = s.po;
-  const rng = rngAt(L, 'playin');
-  const tab = s.table[po.cf];
+/* One conference's play-in: 7 v 8, 9 v 10, then the loser of the first
+   against the winner of the second. Three draws, always in that order. */
+function playInGames(L, cf, rng) {
+  const tab = L.season.table[cf];
   const seven = tab[6], eight = tab[7], nine = tab[8], ten = tab[9];
   const game = (a, b) => rng() < seriesP(L, a, b, true) ? a : b;
   const w78 = game(seven, eight), l78 = w78 === seven ? eight : seven;
   const w910 = game(nine, ten);
   const last = game(l78, w910);
+  return { w78, l78, w910, last, field: tab.slice(0, 6).concat([w78, last]),
+    games: [{ a: seven, b: eight, w: w78, k: '7v8' }, { a: nine, b: ten, w: w910, k: '9v10' }, { a: l78, b: w910, w: last, k: 'last' }] };
+}
+function playPlayIn(L, beats) {
+  const s = L.season, po = s.po;
+  const tab = s.table[po.cf];
+  const seven = tab[6], eight = tab[7], nine = tab[8], ten = tab[9];
+  const P = playInGames(L, po.cf, rngAt(L, 'playin'));
+  const { w78, l78, w910, last } = P;
+  /* A story career keeps what happened, so the bracket can show it later
+     against the same clubs, whatever has changed since. */
+  if (storyOn(L)) { po.pi = P.games; po.field[po.cf] = P.field; }
   const into = L.team === w78 ? 7 : L.team === last ? 8 : 0;
   const lines = [];
   if (L.team === seven || L.team === eight) lines.push(L.team === w78 ? 'Won the 7 v 8 game.' : 'Lost the 7 v 8 game.');
@@ -3311,18 +3325,11 @@ function playPlayIn(L, beats) {
   }
   po.seed = into;
   /* The bracket's seeds 7 and 8 are whoever came through. */
-  const field = tab.slice(0, 6).concat([w78, last]);
-  po.field[po.cf] = field;
+  po.field[po.cf] = P.field;
   po.round = 0;
   logIt(L, 'Through the play-in as the ' + into + ' seed.', 'good');
 }
-function seedField(L, cf, rng) {
-  const tab = L.season.table[cf];
-  const seven = tab[6], eight = tab[7], nine = tab[8], ten = tab[9];
-  const game = (a, b) => rng() < seriesP(L, a, b, true) ? a : b;
-  const w78 = game(seven, eight), l78 = w78 === seven ? eight : seven;
-  return tab.slice(0, 6).concat([w78, game(l78, game(nine, ten))]);
-}
+function seedField(L, cf, rng) { return playInGames(L, cf, rng).field; }
 /* Walk the bracket to the round you are in and return your opponent. */
 function opponentFor(L) {
   const s = L.season, po = s.po;
@@ -3350,6 +3357,89 @@ function opponentFor(L) {
   const other = po.cf === 'East' ? 'West' : 'East';
   const [a, b] = alive[other][0];
   return simSeries(L, a, b, rngAt(L, 'srs:' + other + ':cf'), true);
+}
+
+/* The whole bracket, both conferences and the Finals, for the screen and for
+   the champion. It decides nothing about your run: your series come off
+   po.results and po.cur, and every other series is the one opponentFor
+   already played (same seeded key, same order) or the one it would have
+   played. Rounds after you go out are played with keys of their own.
+   Draws nothing from any stream the career keeps. */
+function bracketOf(L) {
+  const s = L.season, po = s && s.po;
+  if (!po || !s.table || !L.team) return null;
+  /* Kept once the season is filed, because the summer moves club strength
+     and a bracket worked out again in July would crown somebody else. */
+  if (po.bk) return po.bk;
+  /* The club you played the season for, which the summer can have changed. */
+  const me = s.team || L.team, own = po.cf || confOf(me);
+  const mine = (po.results || []).slice();
+  if (po.cur) mine.push({ round: po.cur.round, opp: po.cur.opp, w: po.cur.w, l: po.cur.l, won: null, games: po.cur.games.slice(), live: true });
+  const myAt = (r) => mine.find((x) => x.round === r);
+  const pi = {}, field = {}, pf = po.field || {};
+  const piWent = s.seed >= 7 && s.seed <= 10;
+  const brng = rngAt(L, 'bracket');
+  for (const cf of ['East', 'West']) {
+    if (cf === own && piWent) {
+      const P = po.pi ? { games: po.pi, field: pf[cf] } : playInGames(L, cf, rngAt(L, 'playin'));
+      pi[cf] = P.games;
+      field[cf] = pf[cf] || P.field;
+    } else {
+      const P = playInGames(L, cf, brng);
+      pi[cf] = P.games;
+      field[cf] = pf[cf] || P.field;
+    }
+  }
+  const seedOf = {};
+  for (const cf of ['East', 'West']) {
+    const tab = s.table[cf];
+    tab.forEach((c, i) => { seedOf[c] = i + 1; });
+    field[cf].forEach((c, i) => { if (i >= 6) seedOf[c] = i + 1; });
+  }
+  const recs = s.recs || {};
+  const conf = {}, champs = {};
+  for (const cf of ['East', 'West']) {
+    let seats = PAIRS.map(([a, b]) => [field[cf][a], field[cf][b]]);
+    const rounds = [];
+    for (let r = 0; r < 3; r++) {
+      const row = seats.map(([a, b]) => {
+        if (a == null || b == null) return { a, b, sa: 0, sb: 0, w: null };
+        if (a === me || b === me) {
+          const m = myAt(r);
+          if (!m) return { a, b, sa: 0, sb: 0, w: null, you: true };
+          const ma = a === me ? m.w : m.l, mb = a === me ? m.l : m.w;
+          const w = m.live ? null : (m.won ? me : m.opp);
+          return { a, b, sa: ma, sb: mb, w, you: true, live: !!m.live };
+        }
+        const key = r < 2 ? 'srs:' + cf + ':' + r + ':' + a + b : 'srs:' + cf + ':cf';
+        const x = simSeriesScore(L, a, b, rngAt(L, key), true);
+        return { a, b, sa: x.wa, sb: x.wb, w: x.w };
+      });
+      rounds.push(row);
+      seats = [];
+      for (let i = 0; i < row.length; i += 2) seats.push([row[i].w, row[i + 1] ? row[i + 1].w : null]);
+      if (r === 2) champs[cf] = row[0].w;
+    }
+    conf[cf] = rounds;
+  }
+  const fa = champs.West, fb = champs.East;
+  let finals = { a: fa, b: fb, sa: 0, sb: 0, w: null };
+  if (fa != null && fb != null) {
+    if (fa === me || fb === me) {
+      const m = myAt(3);
+      if (m) {
+        const ma = fa === me ? m.w : m.l, mb = fa === me ? m.l : m.w;
+        finals = { a: fa, b: fb, sa: ma, sb: mb, w: m.live ? null : (m.won ? me : m.opp), you: true, live: !!m.live };
+      } else finals.you = true;
+    } else {
+      const aHome = ((recs[fa] || {}).w || 0) >= ((recs[fb] || {}).w || 0);
+      const x = simSeriesScore(L, fa, fb, rngAt(L, 'srs:finals'), aHome);
+      finals = { a: fa, b: fb, sa: x.wa, sb: x.wb, w: x.w };
+    }
+  }
+  /* How far your run went: the last round you played, or -1 for none. */
+  const last = mine.length ? mine[mine.length - 1].round : -1;
+  return { year: s.year, team: me, cf: own, seed: s.seed, pi, piWent, field, seedOf, conf, finals, champ: finals.w, mine: last, out: !!po.out, missed: s.seed > 10 };
 }
 
 function playRound(L, beats) {
@@ -5710,7 +5800,12 @@ const SUMMER = {
     s: ['Invite-only runs in a closed gym. You hold your own.', 'Five games a day. Somebody films one and it\'s everywhere.', 'You steal a move from a guy who never made the league.'] },
   national: { l: 'Go to national team camp', h: 'Defense, shooting, and a spotlight', fx: { def: 1, sho: 1, iq: 1 }, m: { fame: 3 }, when: (L) => ovrOf(L) >= 78,
     s: ['Three weeks with the best in the world. You fit right in.', 'You guard stars every day. It shows.', 'The camp\'s a tryout. You make the cut.'] },
-  summer_lg: { l: 'Play Summer League again', h: 'Reps, and the staff notices', fx: { pla: 1, sho: 1, fin: 1 }, m: { trust: 4 }, when: (L) => L.seasonsDone <= 2,
+  /* A rookie has not played Summer League yet unless this summer already
+     sent him (the tryout after an undrafted night, or the Vegas card dealt on
+     draft night), so "again" is only offered from his second summer, and his
+     first offers it plain. */
+  summer_lg: { l: 'Play Summer League again', l0: 'Play Summer League', h0: 'Vegas in July. The staff notices', h: 'Reps, and the staff notices', fx: { pla: 1, sho: 1, fin: 1 }, m: { trust: 4 },
+    when: (L) => L.seasonsDone <= 2 && !(L.seasonsDone === 0 && (recall(L, 'route.undrafted') || ((L.evlog || {}).sl_first_game || []).length)),
     s: ['Thirty a night in Vegas. The front office sees every game.', 'You run the team. Nobody else touches it late.', 'MVP in an empty gym. It still counts.'] },
   home: { l: 'Train back home', h: 'Good for the soul. Some shooting.', fx: { sho: 1, ath: 1 }, m: { morale: 6 }, who: 'mom',
     s: ['Your old gym, your old hoop. {mom} brings lunch.', 'You run hills behind your high school. Kids watch from the fence.', 'Home cooking and an empty gym. Best summer in years.'] },
@@ -5867,7 +5962,7 @@ function summerCard(L) {
     eyebrow: 'Summer of ' + (L.year - 1), title: f[0],
     text: f[1],
     ctx: { ks },
-    options: ks.map((k) => ({ label: SUMMER[k].l, hint: SUMMER[k].hy && L.age <= 24 ? SUMMER[k].hy : SUMMER[k].h })),
+    options: ks.map((k) => { const P = SUMMER[k], rook = P.l0 && L.seasonsDone === 0; return { label: rook ? P.l0 : P.l, hint: rook ? P.h0 : P.hy && L.age <= 24 ? P.hy : P.h }; }),
   };
 }
 function summerChoose(L, k, rng) {
@@ -6953,10 +7048,13 @@ function leagueChamp(L, beats) {
   if (!storyOn(L) || !L.season || !L.team) return;
   const s = L.season, po = s.po || {};
   let club;
+  const bk = bracketOf(L);
+  if (bk) po.bk = bk;
   if (po.champ) club = L.team;
   else {
     const fin = (po.results || []).find((r) => r.round === 3);
     if (fin) club = fin.opp;
+    else if (bk && bk.champ) club = bk.champ;
     else {
       const rng = figRng(L, 'champ' + L.year);
       club = weighted(rng, CLUBS.filter((c) => c !== L.team), (c) => Math.exp(clubNet(L, c) * 0.45));
@@ -11422,6 +11520,9 @@ function lastSchool(L) {
    did not earn. Only a career that reached the league is filed. */
 function boardSummary(L) {
   if (!L || !L.history || !L.history.length) return null;
+  /* A career banned for life is off the wall, and off the board with it: the
+     board reads a verdict off the score, and would call it a Journeyman. */
+  if (L.flags && L.flags.banned) return null;
   const f = L.final || legacy(L), T = f.totals;
   const clubs = [];
   for (const h of L.history) if (h.t && clubs.indexOf(h.t) < 0) clubs.push(h.t);
@@ -11709,7 +11810,7 @@ const publicAPI = {
   roleOf, lineMeans, capFor, marketSalary, projectedPick, draftOrder, money, ordinal,
   clutchOptions, offers, ACTS, actsOpen, act, retireNow, lifeOf, lifeLine, sonsOf, rivalOn, featSummary, boardSummary, boardName, cleanName, verdictOf,
   SCHOOLS, SCHOOL_BY, TIER_NAME, AM_EVENTS, HS_ROUNDS, NCAA_ROUNDS, GRADE, CYEAR, AGE_HS,
-  isAm, colorsOf, roadView, nationalRank, rankText, starsOf, draftTalk, collegeOffers, schoolNet,
+  isAm, colorsOf, bracketOf, roadView, nationalRank, rankText, starsOf, draftTalk, collegeOffers, schoolNet,
   LOOK_KEYS, cleanLook, setLook, TONES, PRESSERS, PERSONAS, EVENT_REP, repOf, personaOf, presserCard,
   COACHES_NOW, COACH_POOL, COACH_NAMES, PEOPLE_M, PEOPLE_F, PEOPLE_X, PEOPLE_LAST, FIRST, LAST, RIVAL_FIRST, RIVAL_LAST,
   coachState, coachOf, coachName, coachCarousel, myCoach, matesOf, mateOvr, show, showInv, marketPay, withRatings, clubOvr, myMates, personName, peopleKey, say, CLUBS,
