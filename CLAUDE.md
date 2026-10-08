@@ -12014,6 +12014,28 @@ identical (proved over 1,000 careers).
   money). The answers never change, because the rules read them by position.
   `VARY_RES` does the same for two endings.
 
+#### Wild paths, and the one card that can end a career (story careers)
+
+```
+node hoops/check-story.mjs     every wild card's copy, and both arcs written to end two ways
+```
+
+Asked for by the owner: a bookie asks whether he should bet your under tonight, and a yes can
+bring the FBI. Eight cards under `WILD PATHS` in career.js, each once a career and rare: the
+bet, a burger chain, a fourth division soccer club, a coin with your face on it, a seat on a
+rocket, a rap album, a wrestling show and a burner account. The burger and the soccer club are
+two-node arcs (a year later it booms or it doesn't). Everybody in them is invented: the bookie is
+`CAST.bookie`, Nicky Two Phones.
+
+**THE BET IS THE ONE CARD THAT CAN END A CAREER.** A yes starts the `bet` arc, and that summer two
+men in suits knock (`arc_bet_2`). Lawyering up beats it half the time; telling everything means a
+suspension 70% of the time. A loss sets `L.flags.banned`, and `newYear` retires the career before
+the next camp: "Banned for life at 27." A banned career keeps its numbers, files no Hall tier
+(`H_TIER`), has no retired jersey, reads `Banned for life` as its verdict and as an outcome
+(`lo_banned`), and is offered only business, Hollywood, the podcast or home afterward
+(`BAN_PATHS`). Everything reads `L.flags.banned`, which only a story card sets, so the story-off
+replay is untouched.
+
 #### Phase E: Pro starts in high school, a free career starts from a generated road
 
 ```

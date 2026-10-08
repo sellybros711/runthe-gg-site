@@ -2034,7 +2034,7 @@ const BASKETBALL_ONLY = {
 const CAST = {
   beat: 'Kelvin Shaw', critic: 'Bram Talbot', fan: 'Big Lou Petrakis', trainer: 'Nadia Ferro',
   shoeexec: 'Grant Hollis', aau: 'Ed Vickers', friend: 'Tavian Price', press: 'June Kimura', pbp: 'Rocco Vance',
-  shadyagent: 'Sonny Rial', straightagent: 'Maya Okonkwo', ellis: 'Old Man Ellis', lazlo: 'Victor Lazlo', dre: 'Dre Calloway',
+  shadyagent: 'Sonny Rial', straightagent: 'Maya Okonkwo', ellis: 'Old Man Ellis', lazlo: 'Victor Lazlo', dre: 'Dre Calloway', bookie: 'Nicky Two Phones',
 };
 function agentNameFor(L, k) {
   return k === 'cousin' ? kinName(L, 'cousin', 'm') : personName(L, 'agent:' + k, k === 'power' ? 'm' : 'f');
@@ -2092,7 +2092,7 @@ function peopleKey(L, k) {
     case 'campkid': return arcData(L, 'gym').kid || personName(L, 'campkid');
     case 'school2': return arcData(L, 'prep').school || 'State';
     case 'bff': { const b = bestMate(L); return b ? b.n : lockerOf(L)[0].n; }
-    case 'beat': case 'critic': case 'fan': case 'shoeexec': case 'aau': case 'press': case 'pbp': case 'ellis': case 'lazlo': return CAST[k];
+    case 'beat': case 'critic': case 'fan': case 'shoeexec': case 'aau': case 'press': case 'pbp': case 'ellis': case 'lazlo': case 'bookie': return CAST[k];
     case 'sonny': return CAST.shadyagent;
     case 'maya': return CAST.straightagent;
     case 'dre': return CAST.dre;
@@ -4106,7 +4106,9 @@ function legacy(L) {
   for (const c in by) if (by[c] >= 7 && score >= 36 && (!jersey || by[c] > by[jersey])) jersey = c;
   const r = L.rival;
   const rival = r ? { name: r.name, pts: r.pts, star: r.star, mvp: r.mvp, rings: r.rings, beat: L.flags.rivalWins || 0 } : null;
+  if (L.flags.banned) jersey = null;
   const out = { totals: T, score, verdict: v[1], blurb: v[2], jersey, rival, life: lifeLine(L) };
+  if (L.flags.banned) { out.verdict = 'Banned for life'; out.blurb = 'The numbers are real. The league took them off the wall.'; }
   /* A story career is remembered for more than its numbers: what it was
      called, what the league learned about it, and the moments it kept. */
   if (storyOn(L)) {
@@ -6268,7 +6270,7 @@ const ROLE_OF = {
   friend: 'Friend from home', beat: 'Beat writer', critic: 'TV critic', trainer: 'Trainer', hscoach: 'High school coach',
   roommate: 'College roommate', foe: 'Nemesis', oldvet: 'Old teammate', campkid: 'Kid from your camp', shoeexec: 'Shoe executive', fan: 'Superfan',
   sonny: 'Agent', maya: 'Agent', dre: 'Rival from camp', aau: 'AAU coach', ellis: 'Streetball legend', lazlo: 'Owner', father: 'Dad',
-  rookie2: 'Teammate', costar: 'Co-star',
+  rookie2: 'Teammate', costar: 'Co-star', bookie: 'Bookie',
 };
 function meet(L, tok, name) {
   const n = name || peopleKey(L, tok);
@@ -8917,6 +8919,7 @@ const OUTCOMES = {
   lo_villain: 'The villain who was right', lo_elder: 'Beloved elder statesman', lo_sixth: 'The great sixth man',
   lo_stopper: 'The stopper', lo_overseas: 'A cup of coffee, then a legend abroad', lo_never: 'Never made the league',
   lo_glue: 'The glue guy with the rings', lo_hometown: 'Hometown hero', lo_superteam: 'The one who built it',
+  lo_banned: 'Banned for life',
 };
 const SECRETS = {
   sx_full_circle: 'Full circle', sx_father_son: 'Passed the old man', sx_curse: 'The curse breaker',
@@ -8968,6 +8971,7 @@ function outcomesOf(L, T, score, tier, jersey) {
   const home = homeClub(L);
   if (home && H.filter((h) => h.t === home).length >= Math.max(5, H.length / 2)) out.push('lo_hometown');
   if (routeOn(L, 'superteam') && T.rings) out.push('lo_superteam');
+  if (L.flags.banned) out.push('lo_banned');
   return out;
 }
 function secretOf(L, T, tier, jersey) {
@@ -8994,7 +8998,7 @@ function endingOf(L, T, score, jersey) {
     secret: sx, secretName: sx ? SECRETS[sx] : null, routes: routesOf(L).map((k) => ROUTES[k][0]),
   };
 }
-const H_TIER = (L, score, T) => L.history.length ? hofTier(L, score, T) : 'hof_none';
+const H_TIER = (L, score, T) => L.history.length && !L.flags.banned ? hofTier(L, score, T) : 'hof_none';
 
 // ─── after basketball ───────────────────────────────────────────────────────
 
@@ -9019,7 +9023,8 @@ const AFTER_PATHS = [
 ];
 function storyAfterCard(L) {
   const rng = E.createSeededRNG(E.hashSeed(L.seed + ':after'));
-  const open = AFTER_PATHS.filter((p) => p[0] !== 'family' && p[3](L)).sort(() => rng() - 0.5).slice(0, 4);
+  const ban = !!L.flags.banned;
+  const open = AFTER_PATHS.filter((p) => p[0] !== 'family' && (ban ? BAN_PATHS[p[0]] && (p[0] === 'podcast' || p[3](L)) : p[3](L))).sort(() => rng() - 0.5).slice(0, 4);
   open.push(AFTER_PATHS[AFTER_PATHS.length - 1]);
   return {
     id: 'after', kind: 'event', key: 'after', eyebrow: 'After basketball', scene: 'Home', title: 'What comes next?',
@@ -10005,6 +10010,98 @@ storyArcs({
       O('Be grateful for it', { sho: -2, morale: 6 }, 'One season like that is more than most players ever get.', { sub: 'Cherish what happened', end: ['comet', 'grateful'] })] },
 });
 
+/* WILD PATHS. Asked for by the owner: decisions with a little chaos in them,
+   good and bad, starting from a bookie asking whether to bet your under.
+   Every person in them is invented. Each is dealt once a career, rare enough
+   to land as a story somebody tells rather than as a weekly event.
+   THE BET CAN END A CAREER, and that is the one place a card does: a ban is
+   flagged in the summer (L.flags.banned) and newYear retires the career
+   before the next camp. A banned career files no Hall tier, keeps its numbers,
+   and is offered only the lives after basketball a banned player could have. */
+const BAN_PATHS = { business: 1, actor: 1, podcast: 1, family: 1 };
+function banIt(L) {
+  L.flags.banned = L.year;
+  remember(L, 'bet.banned', true);
+  bump(L, { fame: -12, trust: -30, morale: -10 });
+  logIt(L, 'Banned for life by the league over a bet on your own game.', 'bad');
+}
+function burgerVerdict(L, r) {
+  if (ok(r, 0.5)) { arcEnd(L, 'burger', 'won'); bump(L, { cash: 7, fame: 3 }); return 'A national chain buys you out for triple. Your mom gets a lifetime card.'; }
+  arcEnd(L, 'burger', 'lost'); bump(L, { cash: 0.5, fame: -2, morale: -3 });
+  return 'A health inspector, a viral video, forty closed doors. You lose most of it.';
+}
+function soccerVerdict(L, r) {
+  if (ok(r, 0.45)) { arcEnd(L, 'soccer', 'won'); bump(L, { cash: 3, fame: 6, morale: 8 }); return 'They score in the ninetieth minute. You cry into a scarf.'; }
+  arcEnd(L, 'soccer', 'lost'); bump(L, { morale: 3 });
+  return 'A late goal goes the wrong way. The pub sings your name anyway.';
+}
+story({
+  wp_bet: { at: 'early mid', req: { team: true, seasons: [1, null] }, w: 0.22, rar: 'rare',
+    tag: 'Your phone', t: '{bookie:first} wants to know about tonight', x: '{bookie} is a friend of {friend:first}\'s. He texts at noon: should he bet your under tonight?',
+    o: [O('Tell him yes', { cash: 0.25 }, 'You score six. Somebody across town buys a boat.', { sub: 'Easy money', set: 'bet.yes',
+      start: ['bet', 'arc_bet_2', 'off', 0], rel: [['bookie', 15, 'You told him to bet your under.']] }),
+      O('Tell him to lose your number', { morale: 1 }, 'You block him. You sleep fine.', { sub: 'Not a chance', rel: [['bookie', -15, 'You told him to lose your number.']] }),
+      O('Call league security', { trust: 4, fame: 2 }, '{bookie:first} is arrested in March. {commish} thanks you by name.', { sub: 'Report it', set: 'bet.reported',
+        rel: [['bookie', -40, 'You reported him.'], ['friend', -10, 'You reported his guy.']] })] },
+  wp_burger: { at: 'off', req: { seasons: [2, null], fame: [30, null] }, when: (L) => L.cash >= 4, w: 2.2, rar: 'uncommon',
+    tag: 'Your agent', t: 'A burger chain wants your name on a sandwich', x: 'Triple patty, hot honey, your number on the box. Or you could buy in.',
+    o: [O('Eat one on camera', { fame: 4, cash: 0.4, health: -2 }, 'You eat two. The clip outdraws your best game.', { sub: 'Be the face' }),
+      O('Buy forty locations', { cash: -3 }, 'You own forty restaurants now. Your mom wants a tour.', { sub: 'Be the owner', set: 'biz.burger', start: ['burger', 'arc_burger_2', 'off', 1] }),
+      O('Pass', { health: 1 }, 'You stay on the meal plan. {trainer:first} is proud of you.', { sub: 'Stay lean' })] },
+  wp_soccer: { at: 'off', req: { seasons: [3, null] }, when: (L) => L.cash >= 8, w: 1.6, rar: 'rare',
+    tag: 'An English pub', t: 'A fourth division soccer club is for sale', x: 'Three thousand seats, a leaky roof, a hundred years of losing. The fans already love you.',
+    o: [O('Buy it', { cash: -5, fame: 3 }, 'You own a soccer club. You still don\'t understand offside.', { sub: 'Why not', set: 'biz.soccer', start: ['soccer', 'arc_soccer_2', 'off', 1] }),
+      O('Send a signed jersey instead', { morale: 2 }, 'They hang it in the pub, next to the dartboard.', { sub: 'Support from afar' })] },
+  wp_coin: { at: 'off', req: { seasons: [1, null] }, w: 0.9, rar: 'uncommon',
+    tag: 'A Miami yacht', t: 'A coin with your face on it', x: 'A man in sunglasses wants to launch a coin. Your face, your name, his math.',
+    o: [O('Launch it', null, '', { sub: 'To the moon', set: 'biz.coin', p: 0.3,
+      fx: { cash: 5, fame: 3 }, s: 'It moons. You sell at the top, mostly by accident.',
+      no: { fx: { cash: -2, fame: -4, trust: -3 }, s: 'It goes to zero in nine days. Fans want refunds.' } }),
+      O('Ask how it works', { morale: 1 }, 'He can\'t explain it. The coin launches without you and dies.', { sub: 'Read the fine print' }),
+      O('Report him', { trust: 2, fame: 1 }, 'He is indicted by spring. You were right.', { sub: 'Smell a scam' })] },
+  wp_rocket: { at: 'off', req: { seasons: [3, null], fame: [50, null] }, w: 1.6, rar: 'rare',
+    tag: 'The launch pad', t: 'A billionaire has one seat left on his rocket', x: 'Eleven minutes at the edge of space, one week before camp. {trainer:first} has opinions.',
+    o: [O('Go to space', { fame: 8, morale: 6, health: -2 }, 'You spin a ball in zero gravity. Four hundred million views.', { sub: 'Once in a lifetime', set: 'fun.space' }),
+      O('Stay on the ground', { health: 2 }, 'You watch the launch from the gym. Somebody else dunks in space.', { sub: 'Protect the legs' })] },
+  wp_album: { at: 'off', req: { seasons: [1, null] }, w: 0.9, rar: 'uncommon',
+    tag: 'Midnight studio', t: 'A producer wants to make your rap album', x: 'Twelve tracks, two features, a cover shot at the free throw line.',
+    o: [O('Drop the album', null, '', { sub: 'Go all in', set: 'fun.album', p: (L) => 0.25 + L.m.fame / 200,
+      fx: { fame: 6, cash: 1 }, s: 'It goes gold. Your teammates know every word.',
+      no: { fx: { fame: 2, morale: -4 }, s: 'Critics destroy it. The locker room plays it ironically. Constantly.' } }),
+      O('Make one song for your mom', { morale: 4 }, 'She plays it at every family dinner. Twice.', { sub: 'Keep it small' }),
+      O('Stick to basketball', { morale: 1 }, 'The producer finds a quarterback instead.', { sub: 'Not your lane' })] },
+  wp_wrestle: { at: 'off', req: { seasons: [2, null], fame: [35, null] }, w: 1.6, rar: 'rare',
+    tag: 'Pro wrestling', t: 'A wrestling show wants you in the ring', x: 'One night, sixty thousand fans. The script has you hitting a man with a folding chair.',
+    o: [O('Take the chair shot', { fame: 7, health: -3 }, 'The building loses its mind. Your knee files a complaint.', { sub: 'Commit to the bit', set: 'fun.wrestle' }),
+      O('Sit ringside', { fame: 3, morale: 3 }, 'A wrestler throws water on you. Best night of your summer.', { sub: 'Watch up close' }),
+      O('Say no', { trust: 2 }, '{gm} sends a thank you text. Nothing else.', { sub: 'Protect the body' })] },
+  wp_burner: { at: 'mid', req: { seasons: [2, null], fame: [30, null] }, w: 0.6, rar: 'uncommon',
+    tag: 'The internet', t: 'Somebody found your burner account', x: 'An account with nine followers has defended you four hundred times. The internet thinks it\'s you.',
+    o: [O('Deny everything', null, '', { sub: 'Not me', p: 0.5,
+      fx: { fame: 1 }, s: 'The story dies by Friday. You log off. For now.',
+      no: { fx: { fame: -3, trust: -2 }, s: 'It posts again during your press conference.' } }),
+      O('Own it', { fame: 4, morale: 2 }, 'You change the bio to "yes, it\'s me." Ten million followers by dinner.', { sub: 'Lean in' }),
+      O('Delete it', { morale: -1 }, 'It disappears. The screenshots don\'t.', { sub: 'Make it go away' })] },
+});
+storyArcs({
+  arc_bet_2: { at: 'off', stage: 'nba',
+    tag: 'Your front door', t: 'Two men in suits. FBI.', x: 'Seven in the morning. They have your texts with {bookie:first}. They want to talk.',
+    o: [O('Lawyer up and say nothing', null, '', { sub: 'Fight it', p: 0.5,
+      fx: { fame: -4, trust: -6 }, s: 'The case stalls on a technicality. You keep your job. Barely.', end: ['bet', 'escaped'],
+      no: { s: 'The texts are enough. {commish} bans you for life.', end: ['bet', 'banned'], do: (L) => { banIt(L); } } }),
+      O('Tell them everything', null, '', { sub: 'Cooperate', p: 0.7,
+        fx: { fame: -8, trust: -10, cash: -1 }, s: 'A long suspension and a fine. Your career survives.', end: ['bet', 'suspended'],
+        no: { s: 'They believe you. {commish} bans you for life anyway.', end: ['bet', 'banned'], do: (L) => { banIt(L); } } })] },
+  arc_burger_2: { at: 'off', stage: 'nba',
+    tag: 'The board meeting', t: 'The burger chain, a year later', x: 'Forty locations, one year in. {agent:first} has the numbers in a folder.',
+    o: [O('Open the folder', null, '', { sub: 'Face the numbers', do: burgerVerdict }),
+      O('Let {agent:first} read it out', null, '', { sub: 'Brace yourself', do: burgerVerdict })] },
+  arc_soccer_2: { at: 'off', stage: 'nba',
+    tag: 'Matchday', t: 'Your soccer club\'s biggest day', x: 'Last game of the season. Win, and they go up a division.',
+    o: [O('Fly over and watch', { morale: 2 }, '', { sub: 'Be in the stands', do: soccerVerdict }),
+      O('Watch on your phone', null, '', { sub: 'Hide in the locker room', do: soccerVerdict })] },
+});
+
 /* APRIL, SEPTEMBER AND THE SUMMER. A sweep of sixty careers found the same
    four cards winning every April (the playoff assignment, the exit interview,
    a hamstring, a guarantee), because almost nothing else could be dealt
@@ -10862,6 +10959,7 @@ function overseasYear(L, beats) {
   } else L.pending.push(faCard(L, list, 'back'));
 }
 function newYear(L, beats) {
+  if (storyOn(L) && L.flags.banned) { retire(L, beats, 'Banned for life at ' + L.age + '.'); return; }
   L.age++;
   L.year++;
   if (L.season) L.season = null;
