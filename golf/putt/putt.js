@@ -1505,6 +1505,8 @@ var CSS = '\
 .pt-bt.on{background:#F1D04A;color:#10241a;border-color:#F1D04A}.pt-hint{flex:1;min-width:0;font-size:12px;color:#9fbfae;line-height:1.3}\
 .pt-read{position:absolute;left:10px;top:10px;padding:6px 9px;border-radius:9px;background:rgba(6,18,12,.82);border:1px solid rgba(241,208,74,.45);font-size:12px;font-weight:800;color:#F1D04A;pointer-events:none;font-variant-numeric:tabular-nums}\
 .pt-read span{display:block;color:#cfe0d8;font-weight:700;font-size:11px}\
+.pt-stars{position:absolute;right:10px;top:10px;padding:5px 8px;border-radius:9px;background:rgba(6,18,12,.82);border:1px solid rgba(241,208,74,.45);pointer-events:none;font-variant-numeric:tabular-nums;font-size:12px;font-weight:800;color:#fff;line-height:1.35}\
+.pt-stars div{display:flex;justify-content:space-between;gap:10px}.pt-stars i{font-style:normal;color:#F1D04A;letter-spacing:1px}.pt-stars span{display:block;text-align:center;color:#cfe0d8;font-size:10px;font-weight:700}\
 .pt-pop{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);min-width:240px;max-width:88%;text-align:center;padding:18px 18px 14px;border-radius:16px;background:rgba(8,22,15,.94);border:2px solid #F1D04A;box-shadow:0 12px 40px rgba(0,0,0,.5)}\
 .pt-pop .k{font-size:11px;letter-spacing:.14em;color:#9fbfae;font-weight:800}.pt-pop .t{font-family:var(--display,inherit);font-size:34px;color:#F1D04A;line-height:1.05;margin:4px 0}.pt-pop .s{font-size:13px;color:#cfe0d8;margin-bottom:12px}\
 .pt-pop .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}.pt-go{background:#F1D04A;color:#10241a;border:0;border-radius:11px;padding:11px 16px;font:inherit;font-weight:900;font-size:14px;cursor:pointer}\
@@ -1725,6 +1727,15 @@ function labOpen(){ try{ var h = hostOf(); return !!(h.tester && h.tester()); }c
    can earn. threeOf is the one answer: the stars, the result card and check-putt all ask it. */
 function threeOf(par, three){ return three || Math.max(1, par - 2); }
 function starsOf(s, par, three){ var t = threeOf(par, three); return s == null ? 0 : s <= t ? 3 : s < par ? 2 : s === par ? 1 : 0; }
+/* What each star costs on this hole, in the top right of the stage. Read off starsOf's own rule, so a
+   hole whose three stars is a birdie shows no separate two star line. */
+function starTargets(par, three){
+  var t = threeOf(par, three), rows = [[3, t]];
+  if (t < par - 1) rows.push([2, par - 1]);
+  rows.push([1, par]);
+  return '<div class="pt-stars" aria-label="Strokes for each star">' + rows.map(function(r){
+    return '<div><i>' + '★★★'.slice(0, r[0]) + '</i><b>' + r[1] + '</b></div>'; }).join('') + '<span>strokes</span></div>';
+}
 function threeLine(par, three){ var t = threeOf(par, three); return t === 1 ? 'ace it' : 'finish in ' + t; }
 function worldStars(tp, TR, w){ var K = TR.per || PER, t = 0; for (var n = w * K + 1; n <= Math.min(TR.levels.length, w * K + K); n++) t += starsOf(tp.best[n], TR.levels[n - 1].par, TR.levels[n - 1].three); return t; }
 function worldMax(TR, w){ var K = TR.per || PER; return Math.min(K, TR.levels.length - w * K) * 3; }
@@ -2095,6 +2106,7 @@ function playHole(){
   var ovb = S.ov.querySelector('[data-ov]'); ovb.onclick = function(){ if (!S.play) return; S.play.overview = !S.play.overview; ovb.classList.toggle('on', S.play.overview); S.play.camNow = null; };
   var nudge = function(s){ return function(){ aimNudge(s * 0.0035); }; };
   if (C.kind === 'real'){ holdRepeat(S.ov.querySelector('[data-l]'), nudge(-1)); holdRepeat(S.ov.querySelector('[data-r]'), nudge(1)); }
+  if (R.mode === 'ppt' && C.kind !== 'real'){ var TL = tourOf(R.tid || 'main').levels[R.lv - 1]; S.ov.querySelector('.pt-stage').insertAdjacentHTML('beforeend', starTargets(C.par, TL && TL.three)); }
   S.cv = S.ov.querySelector('canvas'); S.stage = S.ov.querySelector('.pt-stage');
   bindInput(S.cv);
   S.onResize && window.removeEventListener('resize', S.onResize);
@@ -2310,7 +2322,7 @@ function readChip(P, bx, by){
   if (P.state !== 'aim'){ r.hidden = true; return; }
   var ft = Math.hypot(C.cup[0] - bx, C.cup[1] - by), dh = (C.field.h(C.cup[0], C.cup[1]) - C.field.h(bx, by)) * 12;
   var g = Math.hypot(C.field.gx(bx, by), C.field.gy(bx, by)) * 100;
-  var pw = P.pow > 0 ? ' · pace ' + Math.round(P.pow * maxFt(C)) + ' ft' : '';
+  var pw = P.pow > 0 && C.kind === 'real' ? ' · pace ' + Math.round(P.pow * maxFt(C)) + ' ft' : '';
   var main = (ft < 1 ? Math.round(ft * 12) + ' in' : Math.round(ft) + ' ft') + pw;
   var sub = Math.abs(dh) < 0.6 ? 'Level' : (Math.abs(dh) >= 12 ? (Math.abs(dh) / 12).toFixed(1) + ' ft ' : Math.round(Math.abs(dh)) + ' in ') + (dh > 0 ? 'uphill' : 'downhill');
   if (C.kind === 'real') sub += ' · ' + g.toFixed(1) + '% at the ball · stimp ' + C.stimp.toFixed(1);
@@ -2464,6 +2476,11 @@ function drawTrail(ctx, cam, pts){
   ctx.fillStyle = 'rgba(255,255,255,.28)';
   for (var i = 0; i < pts.length; i += 4){ var p = w2s(cam, pts[i][0], pts[i][1]); ctx.fillRect(p[0] - S.dpr, p[1] - S.dpr, 2 * S.dpr, 2 * S.dpr); }
 }
+/* The aim line's length in feet, off the putter tier the player runs in the main game (Stock 0 to
+   Signature 3). A page with no bag answers Stock. */
+var AIM_FEET = [5, 7, 9, 11];
+function aimFeet(){ var t = 0; try{ t = S.host && S.host.putter ? S.host.putter() | 0 : 0; }catch(e){ t = 0; }
+  return AIM_FEET[Math.max(0, Math.min(3, t))]; }
 function drawAim(ctx, P, cam){
   var C = P.C, b = w2s(cam, P.ball[0], P.ball[1]), d = S.dpr;
   if (C.kind === 'real'){
@@ -2474,27 +2491,16 @@ function drawAim(ctx, P, cam){
     ctx.beginPath(); ctx.moveTo(t[0] - 16 * d, t[1]); ctx.lineTo(t[0] - 6 * d, t[1]); ctx.moveTo(t[0] + 6 * d, t[1]); ctx.lineTo(t[0] + 16 * d, t[1]);
     ctx.moveTo(t[0], t[1] - 16 * d); ctx.lineTo(t[0], t[1] - 6 * d); ctx.moveTo(t[0], t[1] + 6 * d); ctx.lineTo(t[0], t[1] + 16 * d); ctx.stroke();
   } else {
-    /* DIRECTION AND POWER ARE TWO SEPARATE THINGS ON SCREEN, the way a pool game lays them out. The
-       guide line is always the same length, so it only ever says where the ball is going; it used to
-       grow with the pull and read as a power bar. Power is the cue drawn back behind the ball and the
-       meter on the side of the screen. */
-    var ux = Math.cos(P.aimAng), uy = Math.sin(P.aimAng), GL = 9, e = w2s(cam, P.ball[0] + ux * GL, P.ball[1] + uy * GL);
-    var ax = e[0] - b[0], ay = e[1] - b[1], aL = Math.hypot(ax, ay) || 1, nx = ax / aL, ny = ay / aL, s0 = 7 * d;
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.lineWidth = 4.5 * d;
-    ctx.beginPath(); ctx.moveTo(b[0] + nx * s0, b[1] + ny * s0); ctx.lineTo(e[0], e[1]); ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,255,255,.95)'; ctx.lineWidth = 2.2 * d;
-    ctx.beginPath(); ctx.moveTo(b[0] + nx * s0, b[1] + ny * s0); ctx.lineTo(e[0], e[1]); ctx.stroke();
-    var hl = 11 * d, hw = 6 * d;   // the arrowhead
-    ctx.fillStyle = '#fff'; ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.lineWidth = 1.5 * d;
-    ctx.beginPath(); ctx.moveTo(e[0] + nx * hl * 0.6, e[1] + ny * hl * 0.6); ctx.lineTo(e[0] - nx * hl * 0.4 - ny * hw, e[1] - ny * hl * 0.4 + nx * hw);
-    ctx.lineTo(e[0] - nx * hl * 0.4 + ny * hw, e[1] - ny * hl * 0.4 - nx * hw); ctx.closePath(); ctx.stroke(); ctx.fill();
-    // the cue, pulled back behind the ball by the power
-    var gap = 6 * d + P.pow * 46 * d, cl = 54 * d, c0 = [b[0] - nx * gap, b[1] - ny * gap], c1 = [c0[0] - nx * cl, c0[1] - ny * cl];
-    ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.lineWidth = 6 * d; ctx.beginPath(); ctx.moveTo(c0[0], c0[1]); ctx.lineTo(c1[0], c1[1]); ctx.stroke();
-    var cg = ctx.createLinearGradient(c0[0], c0[1], c1[0], c1[1]); cg.addColorStop(0, '#f3ead2'); cg.addColorStop(0.12, '#f3ead2'); cg.addColorStop(0.13, '#c99a5b'); cg.addColorStop(1, '#6b4321');
-    ctx.strokeStyle = cg; ctx.lineWidth = 3.6 * d; ctx.beginPath(); ctx.moveTo(c0[0], c0[1]); ctx.lineTo(c1[0], c1[1]); ctx.stroke();
-    ctx.lineCap = 'butt';
+    /* DIRECTION AND POWER ARE TWO SEPARATE THINGS ON SCREEN. The white dots only say where the ball is
+       going: they are one size and one spacing and never change with the pull, which used to make them
+       read as a power bar. Power is the meter on the side of the screen and nothing else. How far the
+       dots reach is the putter in the bag: a better putter shows more of the line. */
+    var ux = Math.cos(P.aimAng), uy = Math.sin(P.aimAng), GL = aimFeet(), step = 0.75;
+    for (var f = step; f <= GL + 1e-6; f += step){
+      var q = w2s(cam, P.ball[0] + ux * f, P.ball[1] + uy * f);
+      ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.beginPath(); ctx.arc(q[0], q[1], 3 * d, 0, 6.29); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.95)'; ctx.beginPath(); ctx.arc(q[0], q[1], 2 * d, 0, 6.29); ctx.fill();
+    }
   }
   if (P.pow > 0 || S.held) drawPowerMeter(ctx, P.pow);
 }
@@ -2590,7 +2596,7 @@ RTT_PUTT._dailyFinish = function(s, par, ms){ return dailyFinish(s, par, ms); };
 RTT_PUTT._level = function(n, tid){ if (S) startLevel(n, tid || 'main'); };
 // a hole built from a function, for trying out a layout in the browser: RTT_PUTT._try(function(T){ return H; }, 'clubhouse')
 RTT_PUTT._try = function(fn, theme, name){ if (!S) return; var d = { custom:fn, tpl:'try' + Date.now(), seed:7, theme:theme || 'clubhouse', name:name || 'Try out' }; S.round = { mode:'try', i:0, cards:[], holes:[d], title:d.name, kick:'Try out' }; playHole(); };
-RTT_PUTT.lvH = lvH; RTT_PUTT.rectP = rectP; RTT_PUTT.buildFrom = buildFrom;
+RTT_PUTT.starsOf = starsOf; RTT_PUTT.tourOf = tourOf; RTT_PUTT.lvH = lvH; RTT_PUTT.rectP = rectP; RTT_PUTT.buildFrom = buildFrom;
 RTT_PUTT.COINS = { hole:COIN_HOLE, sig:COIN_SIG, ace:COIN_ACE, world:COIN_WORLD, daily:COIN_DAILY, dailyPar:COIN_DAILY_PAR }; RTT_PUTT.PAY = PAY;
 // what the home screen card shows: today's Daily Hole, your level and your lives
 RTT_PUTT.summary = function(host){ HOSTX = host || HOSTX; var st = pload(), dk = today(), dh = dailyHole(dk), rec = st.daily[dk];

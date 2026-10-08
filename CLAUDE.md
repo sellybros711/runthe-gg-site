@@ -19765,9 +19765,13 @@ stays on the flat painter.
 - **A landscape screen never zooms in.** A hole taller than a portrait phone is followed (it opens on the whole
   hole, then the camera rides the ball, and Overview puts it back); on a desktop the whole hole already reads, so
   `camFor` keeps it there and draws no Overview button. check-putt asserts it at 1280x760.
-- **Direction and power are two things on screen**, the way a pool game lays them out: a fixed length arrow from
-  the ball says where it goes, the cue drawn back behind the ball and the POWER meter on the right say how hard.
-  The old dotted line grew with the pull and read as a power bar.
+- **Direction and power are two things on screen.** The white dots say where the ball goes and nothing else:
+  one size, one spacing, and they never change with the pull (they used to grow with it and read as a power
+  bar). How far they reach is the putter tier the player runs in the main game (`host.putter()`, Stock 0 to
+  Signature 3, `AIM_FEET` 5 to 11 ft). Power is the POWER meter on the right alone, so the read chip drops its
+  pace figure on a mini golf hole. A pool cue was tried and the owner took it out.
+- **The top right of a Tour hole says what each star costs** (`starTargets`), read off `threeOf` and par, so a
+  hole whose three stars is a birdie shows no separate two star row.
 - **A pull back may leave the window.** Positions are read off `clientX` against the canvas, the move and release
   are heard on the window, and a release that never arrives (a blur, a cancel, a lost capture, a move with no
   button down) is read as a release, so the putt goes. check-putt drives the blur.

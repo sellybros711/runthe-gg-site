@@ -60,7 +60,7 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- The Putting Green: a tester preview. It draws nothing until puttOn() opens it (see PUTT_TESTERS). -->
-<script defer src="putt/putt.js?v=25"></script>
+<script defer src="putt/putt.js?v=26"></script>
 <script defer src="putt/land.js?v=4"></script>
 <script defer src="putt/hole3d.js?v=7"></script>
 <script defer src="putt/mapland.js?v=2"></script>
@@ -22108,6 +22108,8 @@ function puttHost(){
     coins:function(n,label){ try{ addBonusCoins(n,{label:label}); }catch(e){} },
     balance:function(){ try{ return coinBalance(); }catch(e){ return 0; } },
     passActive:function(){ try{ return dailyPassActive(); }catch(e){ return false; } },
+    // the putter tier the player runs (Stock 0 to Signature 3): how far the aim dots reach
+    putter:function(){ try{ return bagActiveTier('putter'); }catch(e){ return 0; } },
     tester:function(){ return sbSignedIn() && PUTT_TESTERS.indexOf((sbUsername||'').toLowerCase())>=0; },
     onClose:function(){ try{ render(); }catch(e){} } };
 }

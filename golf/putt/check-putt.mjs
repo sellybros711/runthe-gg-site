@@ -503,6 +503,11 @@ if (!args.includes('--no-browser')){
     await pg.setViewportSize({ width:1280, height:760 }); await pg.waitForTimeout(2600);
     const land3 = await pg.evaluate(() => { const S = window.RTT_PUTT._state(), c = S.play.camNow || {}; return { wide:S.cv.width > S.cv.height, follow:!!c.follow }; });
     claim(land3.wide && !land3.follow, `a landscape screen keeps the whole hole in view (${JSON.stringify(land3)})`);
+    // the top right says what each star costs, and every row is true by the stars rule itself
+    const tgt = await pg.evaluate(() => { const T = window.RTT_PUTT, S = T._state(), L = T.tourOf('main').levels[S.round.lv - 1], par = S.play.C.par;
+      const rows = [...document.querySelectorAll('.pt-stars div')].map(d => [d.querySelector('i').textContent.length, +d.querySelector('b').textContent]);
+      return { par, rows, ok:rows.length >= 2 && rows.every(r => T.starsOf(r[1], par, L.three) === r[0]) && rows[rows.length - 1][1] === par && rows[0][0] === 3 }; });
+    claim(tgt.ok, `a Tour hole shows the strokes each star costs, and each row matches the stars rule (${JSON.stringify(tgt)})`);
     await pg.setViewportSize({ width:390, height:844 }); await pg.waitForTimeout(300);
     await pg.evaluate(() => { const D3 = window.RTT_PUTT_3D; window.__keep = D3.render; D3.render = () => { throw new Error('probe'); }; window.RTT_PUTT._state().v3c = {}; window.RTT_PUTT._state().v3job = null; window.RTT_PUTT._level(34); });
     await pg.waitForFunction(() => { const P = window.RTT_PUTT._state().play; return P && (P.v3 || P.art); }, null, { timeout:60000 });
