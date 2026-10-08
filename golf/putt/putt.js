@@ -2141,13 +2141,16 @@ function camFor(P){
     var a0 = V.pr(x0, y0, zc + 1.2), a1 = V.pr(x1, y1, zc);
     var fitK = Math.max(1, Math.floor(Math.min(W / (a1[0] - a0[0]), H / (a1[1] - a0[1])))), widK = Math.max(1, Math.floor(W / (a1[0] - a0[0])));
     /* A HOLE TALLER THAN THE SCREEN IS FOLLOWED. It opens on the whole hole for a moment, so the route is
-       read, then the camera comes in to fill the width and rides with the ball. Overview puts it back. */
-    var follow = widK > fitK && (a1[1] - a0[1]) * widK > H * 1.08 && !P.overview && !(P.intro3 && performance.now() - P.intro3 < 1800);
+       read, then the camera comes in to fill the width and rides with the ball. Overview puts it back.
+       ONLY ON A PORTRAIT SCREEN. On a landscape one (a desktop) the whole hole already fits at a size that
+       reads, and zooming in a moment after it opens took the hole away from the player who was reading it. */
+    var canFollow = H > W && widK > fitK && (a1[1] - a0[1]) * widK > H * 1.08;
+    var follow = canFollow && !P.overview && !(P.intro3 && performance.now() - P.intro3 < 1800);
     var kk = follow ? Math.min(widK, Math.max(fitK + 1, Math.floor(fitK * 2.2))) : fitK;
     var cxA = (a0[0] + a1[0]) / 2, cyA = (a0[1] + a1[1]) / 2, ox = Math.round(W / 2 - cxA * kk), oy = Math.round(H / 2 - cyA * kk), iw = V.cv.width * kk, ih = V.cv.height * kk;
     if (follow && P.view){ var vp = V.pr(P.view[0], P.view[1], V.zAt(P.view[0], P.view[1]) + (P.view[2] || 0)); ox = Math.round(W / 2 - vp[0] * kk); oy = Math.round(H * 0.58 - vp[1] * kk); }
     ox = iw >= W ? clamp(ox, W - iw, 0) : Math.round((W - iw) / 2); oy = ih >= H ? clamp(oy, H - ih, 0) : Math.round((H - ih) / 2);
-    return { v3:V, k:kk, ox:ox, oy:oy, s:kk / ART, follow:follow, canFollow:widK > fitK && (a1[1] - a0[1]) * widK > H * 1.08 };
+    return { v3:V, k:kk, ox:ox, oy:oy, s:kk / ART, follow:follow, canFollow:canFollow };
   }
   if (C.kind !== 'real'){
     var s = Math.min(W / (b[2] - b[0] - 4), H / (b[3] - b[1] - 4));
@@ -2170,29 +2173,43 @@ function s2w(c, X, Y){
 function scrDir(c, dx, dy){ return c && c.v3 ? Math.atan2(dy / c.v3.se, dx) : Math.atan2(dy, dx); }
 
 /* ---------------------------------------------------------------------------------- the input */
+/* A PULL BACK MAY LEAVE THE CANVAS AND THE WINDOW. Positions come from clientX against the canvas's own
+   rectangle (offsetX is relative to whatever is under the pointer once it leaves), the move and the
+   release are heard on the window as well as the canvas, and a release we never hear (let go outside the
+   browser, a cancel, a lost capture, the window losing focus) is read as a release, so the putt goes. */
 function bindInput(cv){
   var drag = null;
+  function at(e){ var r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * S.dpr, (e.clientY - r.top) * S.dpr]; }
+  function end(fire){
+    var P = S.play, d = drag; drag = null; S.held = false;
+    window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('blur', blur);
+    if (!P || !d || P.state !== 'aim') return;
+    if (fire && d.k === 'pow' && P.pow > 0.02) strike(); else if (d.k === 'pow') P.pow = 0;
+  }
+  function move(e){
+    var P = S.play; if (!drag || !P) return;
+    if (e.pointerType === 'mouse' && e.buttons === 0){ end(true); return; }   // let go somewhere we never heard
+    var p = at(e), X = p[0], Y = p[1], c = P.camNow || camFor(P);
+    if (drag.k === 'aim'){ var w = s2w(c, X + drag.dx, Y + drag.dy); P.target = w; P.aimAng = Math.atan2(w[1] - P.ball[1], w[0] - P.ball[0]); return; }
+    var dx = drag.x0 - X, dy = drag.y0 - Y, L = Math.hypot(dx, dy), maxL = Math.min(S.cv.height * 0.42, 300 * S.dpr);
+    P.pow = clamp(L / maxL, 0, 1);
+    if (P.C.kind !== 'real' && L > 6 * S.dpr) P.aimAng = scrDir(c, dx, dy);
+  }
+  function up(){ if (drag) end(true); }
+  function blur(){ if (drag) end(true); }
   cv.onpointerdown = function(e){
-    var P = S.play; if (!P || P.state !== 'aim') return; cv.setPointerCapture(e.pointerId); S.held = true;
-    var X = e.offsetX * S.dpr, Y = e.offsetY * S.dpr, c = P.camNow || camFor(P);
+    var P = S.play; if (!P || P.state !== 'aim') return; try { cv.setPointerCapture(e.pointerId); } catch (_){} S.held = true;
+    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up); window.addEventListener('blur', blur);
+    var p0 = at(e), X = p0[0], Y = p0[1], c = P.camNow || camFor(P);
     if (P.C.kind === 'real'){
       var t = w2s(c, P.target[0], P.target[1]);
       if (Math.hypot(X - t[0], Y - t[1]) < 34 * S.dpr){ drag = { k:'aim', dx:t[0] - X, dy:t[1] - Y }; return; }
     }
     drag = { k:'pow', x0:X, y0:Y }; P.pow = 0;
   };
-  cv.onpointermove = function(e){
-    var P = S.play; if (!drag || !P) return;
-    var X = e.offsetX * S.dpr, Y = e.offsetY * S.dpr, c = P.camNow || camFor(P);
-    if (drag.k === 'aim'){ var w = s2w(c, X + drag.dx, Y + drag.dy); P.target = w; P.aimAng = Math.atan2(w[1] - P.ball[1], w[0] - P.ball[0]); return; }
-    var dx = drag.x0 - X, dy = drag.y0 - Y, L = Math.hypot(dx, dy), maxL = Math.min(S.cv.height * 0.42, 300 * S.dpr);
-    P.pow = clamp(L / maxL, 0, 1);
-    if (P.C.kind !== 'real' && L > 6 * S.dpr) P.aimAng = scrDir(c, dx, dy);
-  };
-  cv.onpointerup = cv.onpointercancel = function(e){
-    var P = S.play, d = drag; drag = null; S.held = false; if (!P || !d) return;
-    if (d.k === 'pow' && P.pow > 0.02 && e.type === 'pointerup') strike(); else P.pow = 0;
-  };
+  cv.onpointermove = move;
+  cv.onpointerup = up;
+  cv.onpointercancel = cv.onlostpointercapture = function(){ if (drag) end(true); };
 }
 function onKey(e){
   if (!S) return;
@@ -2457,17 +2474,40 @@ function drawAim(ctx, P, cam){
     ctx.beginPath(); ctx.moveTo(t[0] - 16 * d, t[1]); ctx.lineTo(t[0] - 6 * d, t[1]); ctx.moveTo(t[0] + 6 * d, t[1]); ctx.lineTo(t[0] + 16 * d, t[1]);
     ctx.moveTo(t[0], t[1] - 16 * d); ctx.lineTo(t[0], t[1] - 6 * d); ctx.moveTo(t[0], t[1] + 6 * d); ctx.lineTo(t[0], t[1] + 16 * d); ctx.stroke();
   } else {
-    var Lw = 2 + P.pow * 12, ux = Math.cos(P.aimAng), uy = Math.sin(P.aimAng);
-    ctx.fillStyle = 'rgba(255,255,255,.85)';
-    for (var s = 10 * d; s < Lw * cam.s; s += 9 * d){ var q = w2s(cam, P.ball[0] + ux * s / cam.s, P.ball[1] + uy * s / cam.s); ctx.beginPath(); ctx.arc(q[0], q[1], 1.8 * d, 0, 6.29); ctx.fill(); }
+    /* DIRECTION AND POWER ARE TWO SEPARATE THINGS ON SCREEN, the way a pool game lays them out. The
+       guide line is always the same length, so it only ever says where the ball is going; it used to
+       grow with the pull and read as a power bar. Power is the cue drawn back behind the ball and the
+       meter on the side of the screen. */
+    var ux = Math.cos(P.aimAng), uy = Math.sin(P.aimAng), GL = 9, e = w2s(cam, P.ball[0] + ux * GL, P.ball[1] + uy * GL);
+    var ax = e[0] - b[0], ay = e[1] - b[1], aL = Math.hypot(ax, ay) || 1, nx = ax / aL, ny = ay / aL, s0 = 7 * d;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.lineWidth = 4.5 * d;
+    ctx.beginPath(); ctx.moveTo(b[0] + nx * s0, b[1] + ny * s0); ctx.lineTo(e[0], e[1]); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,.95)'; ctx.lineWidth = 2.2 * d;
+    ctx.beginPath(); ctx.moveTo(b[0] + nx * s0, b[1] + ny * s0); ctx.lineTo(e[0], e[1]); ctx.stroke();
+    var hl = 11 * d, hw = 6 * d;   // the arrowhead
+    ctx.fillStyle = '#fff'; ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.lineWidth = 1.5 * d;
+    ctx.beginPath(); ctx.moveTo(e[0] + nx * hl * 0.6, e[1] + ny * hl * 0.6); ctx.lineTo(e[0] - nx * hl * 0.4 - ny * hw, e[1] - ny * hl * 0.4 + nx * hw);
+    ctx.lineTo(e[0] - nx * hl * 0.4 + ny * hw, e[1] - ny * hl * 0.4 - nx * hw); ctx.closePath(); ctx.stroke(); ctx.fill();
+    // the cue, pulled back behind the ball by the power
+    var gap = 6 * d + P.pow * 46 * d, cl = 54 * d, c0 = [b[0] - nx * gap, b[1] - ny * gap], c1 = [c0[0] - nx * cl, c0[1] - ny * cl];
+    ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.lineWidth = 6 * d; ctx.beginPath(); ctx.moveTo(c0[0], c0[1]); ctx.lineTo(c1[0], c1[1]); ctx.stroke();
+    var cg = ctx.createLinearGradient(c0[0], c0[1], c1[0], c1[1]); cg.addColorStop(0, '#f3ead2'); cg.addColorStop(0.12, '#f3ead2'); cg.addColorStop(0.13, '#c99a5b'); cg.addColorStop(1, '#6b4321');
+    ctx.strokeStyle = cg; ctx.lineWidth = 3.6 * d; ctx.beginPath(); ctx.moveTo(c0[0], c0[1]); ctx.lineTo(c1[0], c1[1]); ctx.stroke();
+    ctx.lineCap = 'butt';
   }
-  if (P.pow > 0){
-    // the pace, as a meter that fills toward red: the further back, the harder
-    var w = 46 * d, h = 7 * d, x = b[0] - w / 2, y = b[1] + 16 * d;
-    ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(x - d, y - d, w + 2 * d, h + 2 * d);
-    var g = ctx.createLinearGradient(x, 0, x + w, 0); g.addColorStop(0, '#7ee081'); g.addColorStop(0.6, '#F1D04A'); g.addColorStop(1, '#ff5a3c');
-    ctx.fillStyle = g; ctx.fillRect(x, y, w * P.pow, h);
-  }
+  if (P.pow > 0 || S.held) drawPowerMeter(ctx, P.pow);
+}
+/* The power meter stands on the right edge of the stage, big enough to read at a glance, with the
+   percentage on it: green to yellow to red from the bottom up. */
+function drawPowerMeter(ctx, pow){
+  var d = S.dpr, W = S.cv.width, H = S.cv.height, h = Math.min(220 * d, H * 0.5), w = 16 * d, x = W - w - 18 * d, y = (H - h) / 2;
+  ctx.fillStyle = 'rgba(0,0,0,.62)'; ctx.fillRect(x - 3 * d, y - 3 * d, w + 6 * d, h + 6 * d);
+  var g = ctx.createLinearGradient(0, y + h, 0, y); g.addColorStop(0, '#7ee081'); g.addColorStop(0.6, '#F1D04A'); g.addColorStop(1, '#ff5a3c');
+  ctx.fillStyle = g; ctx.fillRect(x, y + h * (1 - pow), w, h * pow);
+  ctx.fillStyle = 'rgba(255,255,255,.35)'; for (var i = 1; i < 4; i++) ctx.fillRect(x, y + h * i / 4, w, d);
+  ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '700 ' + Math.round(10 * d) + 'px system-ui,sans-serif';
+  ctx.fillText('POWER', x + w / 2, y - 9 * d); ctx.fillText(Math.round(pow * 100) + '%', x + w / 2, y + h + 18 * d); ctx.textAlign = 'start';
 }
 function imgOf(url){ S.imgs = S.imgs || {}; var im = S.imgs[url]; if (!im){ im = new Image(); im.src = url; S.imgs[url] = im; var ks = Object.keys(S.imgs); if (ks.length > 40) delete S.imgs[ks[0]]; } return im; }
 /* The golfer stands beside the ball, so when the ball is behind something he is behind it too: drawn

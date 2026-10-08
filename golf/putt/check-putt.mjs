@@ -372,11 +372,22 @@ if (!args.includes('--no-browser')){
     claim(ck && ck2 && ck !== ck2 && /^\d+:\d\d\.\d$/.test(ck2), `the Daily Hole shows a running clock (${ck} then ${ck2})`);
     const box = await pg.locator('.pt-stage canvas').boundingBox();
     const before = await pg.evaluate(() => window.RTT_PUTT._state().play.ball.slice());
+    // A RELEASE NOBODY HEARS STILL PUTTS: pulled back past the window's edge and let go outside the browser,
+    // the page sees the window lose focus and never a pointerup. Read as a release, or the game freezes.
     await pg.mouse.move(box.x + box.width / 2, box.y + box.height * 0.5); await pg.mouse.down();
-    await pg.mouse.move(box.x + box.width / 2, box.y + box.height * 0.5 + 120, { steps:6 }); await pg.mouse.up();
+    await pg.mouse.move(box.x + box.width / 2, box.y + box.height * 0.5 + 120, { steps:6 });
+    await pg.evaluate(() => window.dispatchEvent(new Event('blur')));
     await pg.waitForFunction(() => { const P = window.RTT_PUTT._state().play; return P.state !== 'roll' && P.strokes >= 1; }, null, { timeout:30000 });
     const after = await pg.evaluate(() => { const P = window.RTT_PUTT._state().play; return { ball:P.ball, strokes:P.strokes, state:P.state }; });
-    claim(after.strokes >= 1 && (after.state === 'done' || Math.hypot(after.ball[0] - before[0], after.ball[1] - before[1]) > 1), `a pull back and release putts the ball (${after.strokes} stroke, ${after.state})`);
+    await pg.mouse.up();
+    claim(after.strokes >= 1 && (after.state === 'done' || Math.hypot(after.ball[0] - before[0], after.ball[1] - before[1]) > 1), `a pull back let go outside the window still putts the ball (${after.strokes} stroke, ${after.state})`);
+    if (after.state === 'aim'){
+      await pg.mouse.move(box.x + box.width / 2, box.y + box.height * 0.5); await pg.mouse.down();
+      await pg.mouse.move(box.x + box.width / 2, box.y + box.height * 0.5 + 120, { steps:6 }); await pg.mouse.up();
+      await pg.waitForFunction(n => { const P = window.RTT_PUTT._state().play; return P.state !== 'roll' && (P.strokes > n || P.state === 'done'); }, after.strokes, { timeout:30000 });
+      claim(await pg.evaluate(n => window.RTT_PUTT._state().play.strokes > n, after.strokes), 'a pull back and release putts the ball');
+    }
+    // A DESKTOP NEVER ZOOMS IN: the whole hole stays on screen, and Overview has nothing to put back
     const dres = await pg.evaluate(() => { const S = window.RTT_PUTT._state(), P = S.play, C = P.C; P.t0 = performance.now() - 12345; P.strokes = 2; P.state = 'done';
       Object.keys(localStorage).filter(x => x.indexOf('bag_ppt_v1') === 0).forEach(k0 => { const s0 = JSON.parse(localStorage.getItem(k0)); s0.daily = {}; localStorage.setItem(k0, JSON.stringify(s0)); });
       window.RTT_PUTT._dailyFinish(2, C.par, Math.round(performance.now() - P.t0)); const d = Object.keys(localStorage).filter(x => x.indexOf('bag_ppt_v1') === 0).map(k => Object.values(JSON.parse(localStorage.getItem(k)).daily || {}).find(v => v.done)).find(Boolean); return { ms:d && d.ms, txt:document.body.innerText }; });
@@ -489,6 +500,10 @@ if (!args.includes('--no-browser')){
     await pg.evaluate(() => { if (!document.querySelector('.pt-ov')) openPutt(); window.RTT_PUTT._level(23); });
     await pg.waitForFunction(() => { const P = window.RTT_PUTT._state().play; return P && (P.v3 || P.art); }, null, { timeout:60000 });
     claim(await pg.evaluate(() => !!window.RTT_PUTT._state().play.v3), 'a Tour hole plays in 3D');
+    await pg.setViewportSize({ width:1280, height:760 }); await pg.waitForTimeout(2600);
+    const land3 = await pg.evaluate(() => { const S = window.RTT_PUTT._state(), c = S.play.camNow || {}; return { wide:S.cv.width > S.cv.height, follow:!!c.follow }; });
+    claim(land3.wide && !land3.follow, `a landscape screen keeps the whole hole in view (${JSON.stringify(land3)})`);
+    await pg.setViewportSize({ width:390, height:844 }); await pg.waitForTimeout(300);
     await pg.evaluate(() => { const D3 = window.RTT_PUTT_3D; window.__keep = D3.render; D3.render = () => { throw new Error('probe'); }; window.RTT_PUTT._state().v3c = {}; window.RTT_PUTT._state().v3job = null; window.RTT_PUTT._level(34); });
     await pg.waitForFunction(() => { const P = window.RTT_PUTT._state().play; return P && (P.v3 || P.art); }, null, { timeout:60000 });
     claim(await pg.evaluate(() => { const P = window.RTT_PUTT._state().play; return !P.v3 && !!P.art; }), 'a 3D render that throws falls back to the flat hole');

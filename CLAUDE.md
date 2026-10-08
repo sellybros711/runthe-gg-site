@@ -19725,6 +19725,15 @@ stays on the flat painter.
 - **Nothing tall goes in front of the course.** Trees and buildings stand behind it and beside it; in front
   go low things. `furnish()` fills whatever ground the screen asks for, so a wide hole on a tall phone is
   not left on a bare band (`opt.aspect` grows the land to the stage's shape).
+- **A landscape screen never zooms in.** A hole taller than a portrait phone is followed (it opens on the whole
+  hole, then the camera rides the ball, and Overview puts it back); on a desktop the whole hole already reads, so
+  `camFor` keeps it there and draws no Overview button. check-putt asserts it at 1280x760.
+- **Direction and power are two things on screen**, the way a pool game lays them out: a fixed length arrow from
+  the ball says where it goes, the cue drawn back behind the ball and the POWER meter on the right say how hard.
+  The old dotted line grew with the pull and read as a power bar.
+- **A pull back may leave the window.** Positions are read off `clientX` against the canvas, the move and release
+  are heard on the window, and a release that never arrives (a blur, a cancel, a lost capture, a move with no
+  button down) is read as a release, so the putt goes. check-putt drives the blur.
 - **It never holds a frame.** A hole renders once, and the next hole renders ahead while this one is
   played, through `slices()`: a few milliseconds a frame, never while the ball rolls or a pull back is
   held. Measured at 2x CPU throttle, play stays at 60 fps median while it works. Only the first hole of a
