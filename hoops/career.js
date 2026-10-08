@@ -5798,7 +5798,7 @@ const SUMMER_SAY = {
   moved: [['New city, new gym', 'A new locker, a new name on it', 'Your first summer in new colors', 'Starting over somewhere new'],
     ['Nobody here has seen you practice yet.', 'You don\'t know where anything is yet.', 'New coach, new playbook, new teammates.', 'The fans here only know your highlights.']],
   hurt: [['The summer after the injury', 'Back from the injury?', 'Everybody\'s watching the leg', 'A summer about your body'],
-    ['You missed too many games. Everybody\'s watching the leg.', 'The doctors cleared you. The doubters didn\'t.', 'You spent the spring in the training room.', 'Half a season lost. The other half was rusty.']],
+    ['You missed too many games. Everybody\'s watching the leg.', 'You got cleared to play. The doubters didn\'t clear you.', 'You spent the spring in the training room.', 'Half a season lost. The other half was rusty.']],
   contract: [['Your contract year starts now', 'Last year of the deal', 'Play well, get paid', 'The money year'],
     ['Play well and you write the next deal.', 'Every game this year is an audition.', '{agent:first} already has a spreadsheet.', 'This season sets your next five years.']],
   old: [['Another summer, and your body has opinions', 'Summer at ' + 'your age', 'The young guys call you sir', 'How much is left?'],
@@ -6233,7 +6233,7 @@ const VARY = {
     const ex = (L.flags.clutchSeen || 0);
     L.flags.clutchSeen = ex + 1;
     const memo = ex === 0 ? 'Your first one of these.' : (tw(L).winners || 0) > 0 ? 'You\'ve hit one of these before.' : 'You haven\'t hit one of these yet.';
-    c.title = freshPick(L, 'v:clutch:t', ['Tied, nine seconds, your ball. What\'s the play?', 'Game 7. Tie game. The ball is yours.', 'Tie game, season on the line. Your call.', 'Nine seconds. Tied. Everybody knows who gets it.', 'The season comes down to one possession', 'Timeout. Tied. {coach:last} looks at you.'], r);
+    c.title = freshPick(L, 'v:clutch:t', ['Tied, nine seconds, your ball. What\'s the play?', 'Game 7. Tie game. The ball is yours.', 'Tie game, season on the line. Your call.', 'Nine seconds. Tied. Everybody knows who gets it.', 'The season comes down to one possession', 'Timeout. Tied. The whole bench looks at you.'], r);
     c.text = crowd + ' ' + (x.look ? LOOKS[x.look].t : freshPick(L, 'v:clutch:x', ['Everybody knows who gets it.', 'The whole season comes down to this.', 'The bench is already on its feet.', memo], r));
   },
   amclutch: (L, c, r) => {
@@ -6241,7 +6241,7 @@ const VARY = {
     c.title = freshPick(L, 'v:am:t', ['Tied. Six seconds. Your ball.', 'Six seconds and the ball is yours', 'Tie game. Everybody looks at you.', 'One possession for the whole season'], r);
     const crowd = hs ? freshPick(L, 'v:am:hs', ['The whole town\'s packed into the gym.', 'Your old elementary teachers are in the bleachers.', 'The student section is chanting your name.'], r)
       : freshPick(L, 'v:am:col', ['It\'s March, and every bracket in the country is watching.', 'CBS has the camera right in your face.', 'Your college band is losing its mind.'], r);
-    c.text = crowd + ' ' + (x.look ? LOOKS[x.look].t : freshPick(L, 'v:am:x', ['What\'s the play?', '{coach:last} draws it up for you.', 'Nobody on the bench is sitting.'], r));
+    c.text = crowd + ' ' + (x.look ? LOOKS[x.look].t : freshPick(L, 'v:am:x', ['What\'s the play?', 'The play is drawn up for you.', 'Nobody on the bench is sitting.'], r));
   },
   injury: (L, c, r) => {
     const m = /^It's a (.+)\. Now what\?$/.exec(c.title);
@@ -10349,7 +10349,7 @@ story({
   wp_burger: { at: 'off', req: { seasons: [2, null], fame: [30, null] }, when: (L) => L.cash >= 4, w: 2.2, rar: 'uncommon',
     tag: 'Your agent', t: 'A burger chain wants your name on a sandwich', x: 'Triple patty, hot honey, your number on the box. Or you could buy in.',
     o: [O('Eat one on camera', { fame: 4, cash: 0.4, health: -2 }, 'You eat two. The clip outdraws your best game.', { sub: 'Be the face' }),
-      O('Buy forty locations', { cash: -3 }, 'You own forty restaurants now. Your mom wants a tour.', { sub: 'Be the owner', set: 'biz.burger', start: ['burger', 'arc_burger_2', 'off', 1] }),
+      O('Buy forty locations', { cash: -3 }, 'You own forty restaurants now. Your mom wants a tour.', { sub: 'Own the whole chain', set: 'biz.burger', start: ['burger', 'arc_burger_2', 'off', 1] }),
       O('Pass', { health: 1 }, 'You stay on the meal plan. {trainer:first} is proud of you.', { sub: 'Stay lean' })] },
   wp_soccer: { at: 'off', req: { seasons: [3, null] }, when: (L) => L.cash >= 8, w: 1.6, rar: 'rare',
     tag: 'An English pub', t: 'A fourth division soccer club is for sale', x: 'Three thousand seats, a leaky roof, a hundred years of losing. The fans already love you.',
