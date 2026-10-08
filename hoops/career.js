@@ -5710,7 +5710,12 @@ const SUMMER = {
     s: ['Invite-only runs in a closed gym. You hold your own.', 'Five games a day. Somebody films one and it\'s everywhere.', 'You steal a move from a guy who never made the league.'] },
   national: { l: 'Go to national team camp', h: 'Defense, shooting, and a spotlight', fx: { def: 1, sho: 1, iq: 1 }, m: { fame: 3 }, when: (L) => ovrOf(L) >= 78,
     s: ['Three weeks with the best in the world. You fit right in.', 'You guard stars every day. It shows.', 'The camp\'s a tryout. You make the cut.'] },
-  summer_lg: { l: 'Play Summer League again', h: 'Reps, and the staff notices', fx: { pla: 1, sho: 1, fin: 1 }, m: { trust: 4 }, when: (L) => L.seasonsDone <= 2,
+  /* A rookie has not played Summer League yet unless this summer already
+     sent him (the tryout after an undrafted night, or the Vegas card dealt on
+     draft night), so "again" is only offered from his second summer, and his
+     first offers it plain. */
+  summer_lg: { l: 'Play Summer League again', l0: 'Play Summer League', h0: 'Vegas in July. The staff notices', h: 'Reps, and the staff notices', fx: { pla: 1, sho: 1, fin: 1 }, m: { trust: 4 },
+    when: (L) => L.seasonsDone <= 2 && !(L.seasonsDone === 0 && (recall(L, 'route.undrafted') || ((L.evlog || {}).sl_first_game || []).length)),
     s: ['Thirty a night in Vegas. The front office sees every game.', 'You run the team. Nobody else touches it late.', 'MVP in an empty gym. It still counts.'] },
   home: { l: 'Train back home', h: 'Good for the soul. Some shooting.', fx: { sho: 1, ath: 1 }, m: { morale: 6 }, who: 'mom',
     s: ['Your old gym, your old hoop. {mom} brings lunch.', 'You run hills behind your high school. Kids watch from the fence.', 'Home cooking and an empty gym. Best summer in years.'] },
@@ -5867,7 +5872,7 @@ function summerCard(L) {
     eyebrow: 'Summer of ' + (L.year - 1), title: f[0],
     text: f[1],
     ctx: { ks },
-    options: ks.map((k) => ({ label: SUMMER[k].l, hint: SUMMER[k].hy && L.age <= 24 ? SUMMER[k].hy : SUMMER[k].h })),
+    options: ks.map((k) => { const P = SUMMER[k], rook = P.l0 && L.seasonsDone === 0; return { label: rook ? P.l0 : P.l, hint: rook ? P.h0 : P.hy && L.age <= 24 ? P.hy : P.h }; }),
   };
 }
 function summerChoose(L, k, rng) {

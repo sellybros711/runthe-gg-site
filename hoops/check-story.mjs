@@ -46,7 +46,7 @@ function play(seed, start, pickFn, more) {
   while (!L.retired && g++ < 4000) {
     if (L.pending.length) {
       const c = L.pending[0];
-      cards.push({ c: clone(c), year: L.year, am: !!(L.am && L.stage !== 'nba'), cont: C.continuity(L, c) });
+      cards.push({ c: clone(c), year: L.year, am: !!(L.am && L.stage !== 'nba'), cont: C.continuity(L, c), sd: L.seasonsDone, sl: !!(((L.evlog || {}).sl_first_game || []).length || (L.mem && L.mem['route.undrafted'])) });
       C.choose(L, pickFn ? pickFn(c, r) : Math.floor(r() * c.options.length));
     } else C.step(L);
   }
@@ -405,6 +405,23 @@ section('15. nothing reads the same twice: the summer, the goal and the answers'
   ok(sum > 100 && sumFact / sum > 0.4, `the summer card says something true about the season it follows (${sumFact} of ${sum})`);
   ok(!longSum.length, `the summer card is 22 words or less (${longSum.slice(0, 2).join(' | ') || 'all'})`);
   ok(back > 20 && named / back > 0.8, `last year's goal is named when it is brought up (${named} of ${back})`);
+  /* SUMMER LEAGUE "AGAIN" NEEDS A FIRST TIME. A player was offered Play
+     Summer League again in his first summer as a pro. A rookie is offered it
+     plain, and not at all if this summer already sent him to Vegas; from his
+     second summer it says again. */
+  let rookAgain = 0, rookTwice = 0, rookPlain = 0, laterAgain = 0;
+  for (let i = 0; i < 80; i++) {
+    const x = play('slg' + i, i % 2 ? 'hs' : 'draft');
+    for (const k of x.cards) {
+      if (k.c.id !== 'training' || k.am) continue;
+      const L0 = k.c.options.map((o) => o.label).join('|');
+      if (k.sd === 0) { if (/Summer League again|Vegas again/.test(L0)) rookAgain++; if (k.sl && /Summer League|Vegas/.test(L0)) rookTwice++; if (/Play Summer League(?! again)/.test(L0)) rookPlain++; }
+      else if (k.sd <= 2 && /Summer League again|Vegas again/.test(L0)) laterAgain++;
+    }
+  }
+  ok(!rookAgain, `a rookie is never offered Summer League "again" (${rookAgain})`);
+  ok(!rookTwice, `a rookie already sent to Vegas this summer is not offered it again (${rookTwice})`);
+  ok(rookPlain > 0 && laterAgain > 0, `the first summer offers it plain and a later one says again (${rookPlain} plain, ${laterAgain} again)`);
   /* A story career only: an old save reads exactly what it always read. */
   let offVu = 0;
   for (let i = 0; i < 4; i++) { const x = play('freshoff' + i, 'draft', null, { story: false }); if (x.L && x.L.vu) offVu++; }
