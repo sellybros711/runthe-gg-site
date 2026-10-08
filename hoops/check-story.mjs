@@ -428,6 +428,51 @@ section('15. nothing reads the same twice: the summer, the goal and the answers'
   ok(!offVu, `a career from before the story engine keeps no memory of what it read (${offVu})`);
 }
 
+section('16. the bracket is the one the engine played');
+{
+  /* The playoff screen draws the whole bracket off bracketOf. Every series
+     of yours on it has to be the one you played, against the club you
+     played, and the club it crowns has to be the champion the league
+     records. A bracket worked out again later must not crown anybody else. */
+  let seasons = 0, played = 0, wrong = [], crowned = 0, piSeen = 0, open4 = 0;
+  for (let i = 0; i < 14; i++) {
+    const L = C.newLife({ seed: 'bracket' + i, league, start: 'draft' });
+    let g = 0;
+    while (!L.retired && g++ < 3000) {
+      const ph = L.phase;
+      if (L.pending.length) C.choose(L, 0); else C.step(L);
+      if (ph === 'off' || L.phase !== 'off' || L.stage !== 'nba' || !L.season || !L.season.po) continue;
+      seasons++;
+      const s = L.season, po = s.po, bk = C.bracketOf(L);
+      if (!bk) { wrong.push(s.year + ' no bracket'); continue; }
+      if (bk.piWent) piSeen++;
+      for (const r of po.results) {
+        played++;
+        const x = r.round < 3 ? (bk.conf[bk.cf][r.round] || []).find((y) => y.you) : bk.finals;
+        const opp = x ? (x.a === bk.team ? x.b : x.a) : null;
+        if (opp !== r.opp) wrong.push(s.year + ' round ' + r.round + ': ' + opp + ' on the bracket, ' + r.opp + ' played');
+        else if (x.w !== (r.won ? bk.team : r.opp)) wrong.push(s.year + ' round ' + r.round + ' has the wrong winner');
+      }
+      for (const cf of ['East', 'West']) for (const row of bk.conf[cf]) for (const x of row) if (x.w == null || Math.max(x.sa, x.sb) !== 4) open4++;
+      if (bk.finals.w == null || Math.max(bk.finals.sa, bk.finals.sb) !== 4) open4++;
+      if (bk.champ === L.league.champs[s.year]) crowned++;
+      else wrong.push(s.year + ' crowns ' + bk.champ + ', the league records ' + L.league.champs[s.year]);
+    }
+  }
+  ok(seasons >= 100 && played >= 60, `the sweep files seasons and plays series (${seasons} seasons, ${played} series)`);
+  ok(piSeen > 0, `it meets a play-in (${piSeen})`);
+  ok(!wrong.length, `every series of yours on the bracket is the one you played (${wrong.slice(0, 3).join(' | ') || 'all'})`);
+  ok(!open4, `every series on a filed bracket is finished at four wins (${open4} open)`);
+  ok(crowned === seasons, `the bracket crowns the champion the league records (${crowned} of ${seasons})`);
+  /* A career banned for life is off the board: the board reads its verdict
+     off the score and would call it a Journeyman. */
+  const ban = C.newLife({ seed: 'banned', league, start: 'draft' });
+  for (let g = 0; g < 400 && ban.history.length < 2; g++) { if (ban.pending.length) C.choose(ban, 0); else C.step(ban); }
+  const filed = !!C.boardSummary(ban);
+  ban.flags.banned = true;
+  ok(filed && C.boardSummary(ban) === null, `a career banned for life is not filed to the board (${filed ? 'filed before the ban' : 'never filed'})`);
+}
+
 section('13. the road ends in today\'s league');
 {
   /* A high school career is dated back so the usual draft is the real one,

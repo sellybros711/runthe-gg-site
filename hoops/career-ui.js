@@ -2193,6 +2193,7 @@ function finish(){
   render();
   window.scrollTo(0, 0);
   if (sum) fileCareer(card, sum);
+  else if (!easy && L.flags && L.flags.banned && L.history.length) { card.board = { banned: true }; save(); paintPlace(card); }
   ceremony(L, card);
 }
 /* The career ends on a stage: the Hall of Fame for a Hall of Famer, the
@@ -2242,6 +2243,7 @@ function paintPlace(card){
   if (!el || store().last !== card) return;
   var b = card.board;
   if (!b) { el.hidden = true; return; }
+  if (b.banned) { el.hidden = false; el.innerHTML = '<span>Banned for life. Not on the Career board.</span>'; return; }
   if (b.off) {
     el.hidden = false;
     el.innerHTML = '<span>' + (b.migration ? 'The Career board is not set up on this site yet.' : 'Career board not reachable right now. This career still counts here.') + '</span>';

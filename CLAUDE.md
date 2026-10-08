@@ -12431,6 +12431,43 @@ on it plays as an overlay before the step's scene; with scenes off, and after,
 a finished strip sits UNDER the card, never above it, because anything above a
 card pushes its answers off a phone's screen (check-career section 7).
 
+#### October is a broadcast, and the Finals are gold
+
+```
+node hoops/check-story.mjs     section 16: the bracket is the one the engine played
+```
+
+Asked for by the owner: the play-in gets a simulation, the playoffs show the full
+bracket and animate it, your series feels bigger than the season, and the Finals
+bigger than the playoffs, in gold. Four boards in `ticker.js`, in rising order:
+
+| board | when | what it is |
+|---|---|---|
+| `rs` | a stretch of the season | the plain scoreboard, unchanged |
+| `pi` | the press that leaves the season for a 7 to 10 seed | your conference's three play-in games, a beat before each of yours, the other conference beside |
+| `po` | a playoff round | your series on a board of its own (team plates, the series score, seven game cells with home and away), a beat before any game that can end it, then the rest of the round filling in on the whole bracket |
+| `rest` | the press that files a season you went out of, or missed | the rest of the bracket round by round, the Finals in gold, the champion |
+
+**THE BRACKET IS THE ENGINE'S, read off `bracketOf(L)`.** Your series come off
+`po.results` and `po.cur`. Every other series is the one `opponentFor` already played,
+with the same seeded key (`srs:cf:r:ab`, `srs:cf:cf`) in the same order, or one it would
+have played (`srs:finals`). `playInGames` and `simSeriesScore` hand back the scores with
+the same draws `seedField` and `simSeries` always made, which is why the story-off replay
+is byte identical.
+
+**A FILED BRACKET IS KEPT, `po.bk`.** The summer moves club strength, so a bracket worked
+out again in July crowned somebody else in three seasons of 649. `leagueChamp` stores it
+and crowns its champion (story careers only), so the screen and `league.champs` agree.
+A story career also keeps its own play-in (`po.pi`) for the same reason.
+
+**A career banned for life is off the Career board** (`boardSummary` answers null). The
+board reads a verdict off the score and would call it a Journeyman beside a Hall card
+reading Banned for life. Found when the champion change sent check-career's walk down
+the bookie's road; the walk now turns the bookie down so it still files a career.
+
+**The class prefix is `tk` on purpose.** `.sb` and `.tk-top` are already the draft
+game's (modes-ui.js), and the first draft inherited a rounded border from one of them.
+
 **THREE THINGS THAT BIT, worth not repeating:**
 
 - A ceremony layer and a moment layer share `.sc-court`; a ceremony is also
