@@ -12014,6 +12014,76 @@ identical (proved over 1,000 careers).
   money). The answers never change, because the rules read them by position.
   `VARY_RES` does the same for two endings.
 
+#### Nothing reads the same twice (story careers)
+
+```
+node hoops/check-story.mjs     section 15
+```
+
+Measured first: a career deals about 124 cards, and **11.5 repeated their exact text, 10.9
+their exact set of answers and 18.6 their exact title**. The summer card (one a season) and the
+goal card (one a season) did most of it, then Game 7, the All-Star invitation, retirement,
+injuries and your club's cards. After this pass: 1.8, 1.9 and 2.9.
+
+- **`fresh(L, key, n, rng)` is the one picker.** It remembers what it dealt for a key
+  (`L.vu`) and deals a line this career has not read, starting over only once every line has
+  been read, never on the one it just used. Every variation below goes through it.
+- **The summer is read off the season it follows** (`summerSay`): the situation
+  (`summerSit`, the old frame's rules) picks a pool of openings, one true fact about your year is
+  added when it fits (`SUMMER_FACTS`: scoring up or down, the record, the All-Star nod, the box
+  line, years with the club, rings), and the body line reads health and age (`BODY_SAY`). Held
+  to 22 words.
+- **The goal card has voices** (`GOAL_ASK`, several titles and texts per asker) and **names
+  last year's goal** (`BACK_SAY`). A goal you hit is not offered again the next September.
+- **The same question is not asked in the same words.** `OPT_ALT` rewords the answers of the
+  recurring cards, keyed by card and canonical label, because the rules read an answer by its
+  place on the card and never by its words. `TITLE_ALT` rewords titles, `MOMENT_SAY` the
+  in-game moments, and `VARY` (now fresh) the system cards.
+- **`{tm}` in an answer is a real teammate**, so it is only offered in the league.
+
+`varyCard` marks every story card `varied`, so the check that a career from before the story
+engine sees no take also asserts it keeps no `L.vu`. The story-off replay is byte identical.
+
+#### The Career menus (hoops/career-ui.js, on the kit)
+
+- **The top bar** is the title, one line under it saying where you are (the season and game,
+  or the summer, then the club and record; the builder says which step), and square pixel
+  buttons that each wear their word (`k-ib`: Look, Scenes, Sound, Home; Vault and Back
+  elsewhere). The ids did not change.
+- **The player card's facts are a spec sheet** (`k-spec`: Age, Role, Coach, Contract,
+  Chasing), so the eye finds a contract without reading the coach's name first.
+- **The tabs are one row of icon tabs** (`k-itabs`) that scrolls sideways on a phone, brings
+  the chosen tab into view and fades the right edge while there is more. Seven text tabs were
+  three rows.
+- **The Hall card puts Share and New career right under the verdict**, and folds Your story and
+  Season by season (`k-fold`). It went from about 4,500px to 1,600 on a 390 phone.
+- **The Vault's shelves fold** with a count and a bar each, found endings first, and a shelf
+  with nothing on it and more than ten locks starts shut.
+
+All four new parts are in `career-kit.js` and the style guide's Menu parts section.
+
+#### Wild paths, and the one card that can end a career (story careers)
+
+```
+node hoops/check-story.mjs     every wild card's copy, and both arcs written to end two ways
+```
+
+Asked for by the owner: a bookie asks whether he should bet your under tonight, and a yes can
+bring the FBI. Eight cards under `WILD PATHS` in career.js, each once a career and rare: the
+bet, a burger chain, a fourth division soccer club, a coin with your face on it, a seat on a
+rocket, a rap album, a wrestling show and a burner account. The burger and the soccer club are
+two-node arcs (a year later it booms or it doesn't). Everybody in them is invented: the bookie is
+`CAST.bookie`, Nicky Two Phones.
+
+**THE BET IS THE ONE CARD THAT CAN END A CAREER.** A yes starts the `bet` arc, and that summer two
+men in suits knock (`arc_bet_2`). Lawyering up beats it half the time; telling everything means a
+suspension 70% of the time. A loss sets `L.flags.banned`, and `newYear` retires the career before
+the next camp: "Banned for life at 27." A banned career keeps its numbers, files no Hall tier
+(`H_TIER`), has no retired jersey, reads `Banned for life` as its verdict and as an outcome
+(`lo_banned`), and is offered only business, Hollywood, the podcast or home afterward
+(`BAN_PATHS`). Everything reads `L.flags.banned`, which only a story card sets, so the story-off
+replay is untouched.
+
 #### Phase E: Pro starts in high school, a free career starts from a generated road
 
 ```

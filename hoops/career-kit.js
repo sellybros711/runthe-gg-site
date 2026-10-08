@@ -517,6 +517,8 @@ var ICONS = {
   globe: ['..ooo..', '.ohbbo.', 'ohkbkbo', 'obbkbbo', 'obkbkbo', '.osbso.', '..ooo..'],
   six: ['.ooooo.', 'obbbbo.', 'obo....', 'obbbbo.', 'obo.obo', 'obbbbbo', '.ooooo.'],
   net: ['ooooooo', 'ohbbbbo', '.okwko.', '.owkwo.', '..okw..', '..owo..', '...o...'],
+  shirt: ['oo...oo', 'ohoooho', 'obbbbbo', '.obbbo.', '.obbbo.', '.obsbo.', '.ooooo.'],
+  film: ['ooooooo', 'okbbbko', 'obhbbbo', 'okbbbko', 'obbbbso', 'okbbbko', 'ooooooo'],
 };
 var ICON_BASE = {
   heart: '#e5483f', face: '#f2b632', star: '#ffd166', clip: '#7fb2ff', cash: '#3ecf8e', ball: '#e2762a',
@@ -524,6 +526,7 @@ var ICON_BASE = {
   check: '#3ecf8e', mic: '#b8c3e6', sound: '#ffd166', mute: '#8fa0d6', shoe: '#ff7a1a', ring: '#ffd166', whistle: '#b8c3e6', plane: '#7fb2ff', home: '#c98b4e',
   vault: '#b8c3e6', tree: '#3ecf8e', share: '#ff7a1a',
   crown: '#ffd166', shield: '#7fb2ff', sprout: '#3ecf8e', flame: '#ff7a1a', globe: '#7fb2ff', six: '#b8c3e6', net: '#f4f1e8',
+  shirt: '#7fb2ff', film: '#b8c3e6',
 };
 /* The big icons: the same letters on an eleven cell grid, for the trophy and
    badge tiles. At seven cells the outline ring is most of a medal, and a
@@ -648,6 +651,34 @@ var CSS = [
 
 /* Tabs. */
 '.k-tabs{display:flex;gap:2px;border-bottom:2px solid var(--k-frame);}',
+/* An icon button that wears its word under it; icon tabs that scroll in one row; a labelled spec sheet; a fold. */
+'.k-ib{position:relative;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;width:46px;height:46px;padding:6px 0 4px;border:0;cursor:pointer;',
+'  background:linear-gradient(180deg,#232c4c,#1a2140);color:var(--k-ink-2);box-shadow:inset 0 0 0 2px #34416f,inset 0 -3px 0 rgba(0,0,0,.3);font:800 8.5px/1 var(--k-f-text);letter-spacing:.08em;text-transform:uppercase;}',
+'.k-ib:hover,.k-ib:focus-visible{color:#fff;box-shadow:inset 0 0 0 2px var(--k-accent),inset 0 -3px 0 rgba(0,0,0,.3);outline:none;}',
+'.k-ib:active{transform:translateY(2px);}',
+'.k-ib i{position:absolute;top:4px;right:4px;width:6px;height:6px;background:#5b6584;}',
+'.k-ib[aria-pressed="true"] i{background:#3ecf8e;box-shadow:0 0 6px #3ecf8e;}',
+'.k-ib[aria-pressed="false"]{opacity:.8;}',
+'@media (max-width:359px){.k-ib{width:40px;}}',
+'.k-spec{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 12px;margin:0;}',
+'.k-spec > div{min-width:0;padding:6px 8px;background:rgba(143,160,214,.07);box-shadow:inset 2px 0 0 var(--k-team,#34416f);}',
+'.k-spec dt{font:800 9.5px/1.2 var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;color:var(--k-ink-3);}',
+'.k-spec dd{margin:3px 0 0;font:700 13px/1.3 var(--k-f-text);color:var(--k-ink);overflow-wrap:anywhere;}',
+'.k-itabs.k-tabs{display:flex;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;gap:2px;margin:-4px -4px 12px;padding:0 4px;}',
+'.k-itabs::-webkit-scrollbar{display:none;}',
+'.k-itabs .k-itab{flex:1 0 auto;min-width:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:9px 8px 10px;font-size:10px;letter-spacing:.1em;}',
+'.k-itabs .k-itab .k-icon,.k-itabs .k-itab svg,.k-itabs .k-itab img{opacity:.55;transition:opacity var(--k-m-snap),transform var(--k-m-snap);}',
+'.k-itabs .k-itab[aria-selected="true"] .k-icon,.k-itabs .k-itab[aria-selected="true"] svg,.k-itabs .k-itab[aria-selected="true"] img{opacity:1;transform:translateY(-1px);}',
+'.k-itabs .k-itab[aria-selected="true"]{background:linear-gradient(180deg,rgba(255,122,26,0),rgba(255,122,26,.12));}',
+'.k-fold{margin:0 0 12px;border:1px solid rgba(143,160,214,.18);padding:8px 10px;}',
+'.k-fold summary{cursor:pointer;font:800 11px var(--k-f-text);letter-spacing:.1em;text-transform:uppercase;color:var(--k-ink-2);}',
+'.k-fold[open] summary{margin-bottom:8px;}',
+'.k-fold > summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;margin:0;}',
+'.k-fold > summary::-webkit-details-marker{display:none;}',
+'.k-fold > summary::after{content:"+";margin-left:8px;font:400 12px var(--k-f-pixel);color:var(--k-accent);}',
+'.k-fold[open] > summary::after{content:"-";}',
+'.k-fold[open] > summary{margin-bottom:10px;}',
+'.k-foldn{margin-left:auto;font:700 11px var(--k-f-text);letter-spacing:.04em;text-transform:none;color:var(--k-ink-3);}',
 '.k-tab{flex:1;min-height:44px;border:0;background:transparent;color:var(--k-ink-3);font:800 12px var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;cursor:pointer;position:relative;}',
 '.k-tab:hover,.k-tab.is-hover{color:var(--k-ink);}',
 '.k-tab[aria-selected="true"]{color:var(--k-ink);}',

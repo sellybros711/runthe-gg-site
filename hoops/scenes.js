@@ -686,6 +686,18 @@ var TEAM_INTROS = {
       tx: 'Clip after clip of the last two minutes. Every one ends with the ball in the wrong hands.' }]; },
 };
 for (var tid in TEAM_INTROS) CARD_INTROS[tid] = TEAM_INTROS[tid];
+/* The wild paths (career.js, WILD PATHS). Every person here is invented. */
+CARD_INTROS.wp_bet = function(card, c){ return [
+  { who: 'narr', room: 'hotel', pic: 'me', pose: 'stand', name: 'Your phone', role: 'Game day, noon',
+    tx: vary(['Your phone buzzes on the nightstand. The contact says Nicky. Just Nicky.', 'A text from a number you never should have saved. Three dots, then a question.']) }]; };
+CARD_INTROS.arc_bet_2 = function(card, c){ return [
+  { who: 'narr', room: 'home', pic: 'me', pose: 'stand', name: 'Your front door', role: '7:02 in the morning',
+    tx: vary(['Two knocks. Then two more. Nobody you know knocks like that.', 'A dark sedan in the driveway. Two men, two badges, one folder.']) }]; };
+CARD_INTROS.wp_rocket = function(card, c){ return [
+  { who: 'whit', room: 'studio', pic: null, tx: function(){ return 'You heard it here first. ' + c.last + ' might be the first hooper in space.'; } }]; };
+CARD_INTROS.wp_wrestle = function(card, c){ return [
+  { who: 'narr', room: 'arena', pic: 'me', pose: 'stand', name: 'Pro wrestling', role: 'Backstage', board: 'LIVE',
+    tx: 'Pyro, a fog machine, and a man in a cape asking if you are ready to bleed. Kidding. Mostly.' }]; };
 var PRESENTABLE = Object.keys(CARD_INTROS);
 /* What the analyst sees in the defense on a duel career's last possession:
    the read the card asks for, said in the booth's words. */

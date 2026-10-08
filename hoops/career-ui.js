@@ -129,13 +129,16 @@ var CSS = [
 '.cr-grid{display:block;}',
 '@media (min-width:920px){.cr-grid{display:grid;grid-template-columns:minmax(0,400px) minmax(0,1fr);gap:20px;align-items:start;}',
 '  .cr-side{position:sticky;top:64px;}}',
-'.cr-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:2px 0 10px;}',
-'.cr-top .k-h1{font-size:28px;}',
-'.cr-topbtns{display:flex;gap:2px;flex-wrap:wrap;justify-content:flex-end;}',
+/* THE TOP BAR. The title, where you are in one line under it, and four square
+   pixel buttons each wearing its word. */
+'.cr-top{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px 10px;margin:2px 0 12px;}',
+'.cr-topl{display:contents;}',
+'.cr-top .cr-hud{grid-column:1/-1;grid-row:2;margin-top:0;}',
+'.cr-top .k-h1{font-size:28px;line-height:1;margin:0;}',
+'.cr-hud{display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline;margin-top:5px;font:700 11.5px/1.25 var(--k-f-text);color:var(--k-ink-2);}',
+'.cr-hud b{font:400 9px/1.3 var(--k-f-pixel);color:var(--k-accent);letter-spacing:.04em;text-transform:uppercase;}',
+'.cr-topbtns{display:flex;gap:4px;flex-wrap:nowrap;justify-content:flex-end;flex:none;}',
 '.cr-topbtns .k-btn{min-height:40px;padding:8px 10px;font-size:12px;}',
-'.cr-topbtns .cr-scn i{display:inline-block;width:8px;height:8px;margin-left:7px;background:#5b6584;}',
-'.cr-topbtns .cr-scn[aria-pressed="true"] i{background:#3ecf8e;box-shadow:0 0 6px #3ecf8e;}',
-'.cr-topbtns .cr-snd{padding:8px 9px;display:inline-flex;align-items:center;justify-content:center;min-width:40px;}',
 '.cr-sec{margin:0 0 14px;}',
 '.cr-sec > .k-eyebrow{margin:0 0 8px;}',
 /* the identity card */
@@ -146,8 +149,7 @@ var CSS = [
 '.cr-id .k-id .k-hero{font-size:30px;line-height:.95;overflow-wrap:anywhere;}',
 '.cr-id .k-id .k-tag{white-space:normal;line-height:1.5;text-align:left;}',
 '.cr-id .cr-lines{display:grid;gap:3px;padding:10px var(--k-s-4) 0;background:var(--k-panel);}',
-'.cr-id .cr-sub2{display:block;font:600 13px/1.4 var(--k-f-text);color:var(--k-ink-2);}',
-'.cr-id .cr-sub2:first-child{color:var(--k-ink);font-weight:700;}',
+'.cr-id .cr-nick{margin:0 0 6px;font:400 10px/1.4 var(--k-f-pixel);color:var(--k-gold);letter-spacing:.04em;}',
 '.cr-id .k-strip{gap:8px;border-top:0;}',
 '.cr-id .cr-lines + .k-strip{padding-top:10px;}',
 '.cr-id .k-stage + .cr-lines{border-top:3px solid var(--k-frame);}',
@@ -312,6 +314,10 @@ var CSS = [
 '.cr-rt .k-row.is-key span:first-child:after{content:"";display:inline-block;width:5px;height:5px;margin-left:6px;vertical-align:2px;background:var(--k-good);}',
 '.cr-tabs{margin:0 0 12px;}',
 '.cr-tabs .k-tab{min-width:0;font-size:11px;letter-spacing:.08em;}',
+/* ONE ROW OF TABS, each an icon over its word. Seven tabs were three rows of
+   text on a phone; one row scrolls sideways and reads like a game menu. */
+'.cr-tabsec{position:relative;}',
+'.cr-tabsec.k-more-r::after{content:"";position:absolute;top:14px;right:14px;width:28px;height:52px;pointer-events:none;background:linear-gradient(90deg,rgba(17,22,40,0),var(--k-panel));}',
 /* the rotation: one row a player, names give way before numbers do */
 '.cr-rot{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:2px;}',
 '.cr-rot li{display:grid;grid-template-columns:2em minmax(0,1fr) 2.4em 3.4em 2.8em 2.8em;gap:8px;align-items:center;padding:6px 8px;background:rgba(143,160,214,.07);font-size:13px;color:var(--k-ink-2);}',
@@ -329,7 +335,7 @@ var CSS = [
 '.cr-rot li.cr-rot-sep{display:block;}',
 '.cr-rot-line{margin:10px 0 0;}',
 /* six tabs are two rows of three on a phone */
-'@media (max-width:519px){.cr-tabs.k-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));}}',
+'@media (max-width:519px){.cr-tabs.k-tabs:not(.k-itabs){display:grid;grid-template-columns:repeat(3,minmax(0,1fr));}}',
 /* the people around you: a name, who they are, a meter that runs both ways */
 '.cr-ppl{list-style:none;margin:0;padding:0;}',
 '.cr-ppl li{display:grid;grid-template-columns:minmax(0,1fr) 96px;gap:4px 12px;padding:9px 0;border-top:1px solid rgba(143,160,214,.12);}',
@@ -358,9 +364,6 @@ var CSS = [
 '.cr-feed li:first-child{border-top:0;}',
 '.cr-feed .src{display:block;font:800 9px var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;color:var(--k-ink-3);margin-bottom:2px;}',
 '.cr-feed li.debate{color:var(--k-ink-2);font-style:italic;}',
-'.cr-fold{margin:0 0 12px;border:1px solid rgba(143,160,214,.18);padding:8px 10px;}',
-'.cr-fold summary{cursor:pointer;font:800 11px var(--k-f-text);letter-spacing:.1em;text-transform:uppercase;color:var(--k-ink-2);}',
-'.cr-fold[open] summary{margin-bottom:8px;}',
 '.cr-st2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}',
 '.cr-st-h{font:800 10px var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;color:var(--k-ink-3);}',
 '.cr-st{list-style:none;margin:4px 0 0;padding:0;font-size:12.5px;}',
@@ -459,6 +462,20 @@ var CSS = [
 '.cr-vsum .k-num{font-size:26px;color:var(--k-gold);}',
 '.cr-vbar{flex:1 1 140px;height:10px;background:var(--k-panel-3);box-shadow:0 0 0 2px var(--k-frame);}',
 '.cr-vbar i{display:block;height:100%;background:var(--k-gold);transform-origin:left;}',
+/* A long section of the Hall card is a fold, so the verdict and the buttons
+   are the first screen and the season table is one tap away. */
+/* the Vault's shelves: a name, a count and a bar, folded when empty and long */
+'.cr-shelf{margin:0 0 6px;}',
+'.cr-shelf > summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;padding:10px 2px;border-top:2px solid var(--k-frame);}',
+'.cr-shelf:first-child > summary{border-top:0;}',
+'.cr-shelf > summary::-webkit-details-marker{display:none;}',
+'.cr-shelf > summary::after{content:"+";font:400 11px var(--k-f-pixel);color:var(--k-accent);}',
+'.cr-shelf[open] > summary::after{content:"-";}',
+'.cr-shn{font:800 11px var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;color:var(--k-ink-2);}',
+'.cr-shc{font:400 9px var(--k-f-pixel);color:var(--k-gold);white-space:nowrap;}',
+'.cr-shbar{flex:1 1 60px;height:6px;}',
+'.cr-back .k-ico{transform:scaleX(-1);}',
+'@media (max-width:359px){.cr-top .k-h1{font-size:24px;}}',
 '.cr-vgrid{list-style:none;margin:6px 0 14px;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;}',
 '.cr-vgrid li{display:flex;align-items:center;gap:8px;min-height:40px;padding:6px 8px;font:700 12.5px/1.25 var(--k-f-text);background:var(--k-panel-2);box-shadow:0 0 0 2px var(--k-frame);}',
 '.cr-vgrid li.got{color:var(--k-ink);box-shadow:0 0 0 2px var(--k-gold);}',
@@ -604,6 +621,207 @@ var CSS = [
 'img.rtf-baller{image-rendering:pixelated;image-rendering:crisp-edges;}',
 '.ch-cur .rtf-baller{flex:0 0 auto;height:80px;width:auto;margin:-8px 0 -10px -2px;}',
 '@media (prefers-reduced-motion:reduce){.cr-beats.k-in li{animation:none;}}',
+'/* ═══ THE VISUAL LEAP ═══════════════════════════════════════════════════════',
+'   Every Career screen stands in the same arena: a fixed backdrop lit in the',
+'   club of colours, menu panels with a lit top edge and a hard pixel drop, a',
+'   header strip on every section, LED scoreboards for the numbers that change,',
+'   cartridge tabs, a timeline for the story, a trophy case for the awards, a',
+'   ceremony for the Hall card, a plaque wall for the Vault and a podium for',
+'   the builder. Pixel only: hard edges, stepped shadows, no blur on a frame. */',
+'#s-car.active::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;',
+'  background:radial-gradient(90% 55% at 50% -8%,color-mix(in srgb,var(--k-team-ring) 38%,transparent),transparent 72%),',
+'  radial-gradient(70% 45% at 100% 105%,rgba(255,122,26,.10),transparent 70%),',
+'  repeating-linear-gradient(0deg,rgba(255,255,255,.018) 0 2px,transparent 2px 4px),',
+'  linear-gradient(180deg,#0d1226 0%,#090c19 55%,#06080f 100%);}',
+'#s-car{position:relative;}',
+'/* the top bar: a title plate with the club colour under it */',
+'#s-car .cr-top{position:relative;padding:4px 0 12px;margin-bottom:14px;}',
+'#s-car .cr-top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:linear-gradient(90deg,var(--k-team-ring) 0 34%,var(--k-accent) 34% 46%,transparent 46%),repeating-linear-gradient(90deg,rgba(143,160,214,.28) 0 4px,transparent 4px 8px);}',
+'#s-car .cr-top .k-h1{font-size:34px;letter-spacing:.02em;color:#fff;text-shadow:3px 3px 0 color-mix(in srgb,var(--k-team-1) 70%,#05070d),0 0 18px color-mix(in srgb,var(--k-team-ring) 40%,transparent);}',
+'#s-car .cr-hud{gap:6px;}',
+'#s-car .cr-hud b{padding:4px 7px;background:#05070d;color:#ffb347;text-shadow:0 0 6px rgba(255,150,40,.6);box-shadow:inset 0 0 0 2px #2a1a08;}',
+'#s-car .cr-hud span{padding:3px 7px;background:rgba(143,160,214,.10);color:var(--k-ink);box-shadow:inset 0 0 0 2px rgba(143,160,214,.16);}',
+'#s-car .k-ib{background:linear-gradient(180deg,#2a3560,#1a2142 60%,#141a33);box-shadow:inset 0 0 0 2px #3a4777,inset 0 2px 0 rgba(255,255,255,.12),0 3px 0 #05070d;}',
+'#s-car .k-ib:hover,#s-car .k-ib:focus-visible{box-shadow:inset 0 0 0 2px var(--k-accent),inset 0 2px 0 rgba(255,255,255,.12),0 3px 0 #05070d;}',
+'/* menu panels: a lit top edge, a darker foot and a hard pixel drop */',
+'#s-car .k-panel:where(:not(.cr-card)),#cr-sheet .k-sheet{background:linear-gradient(180deg,#171e3a 0%,#11162b 46%,#0e1225 100%);}',
+'#s-car .k-panel:where(:not(.cr-card)){box-shadow:0 calc(var(--k-px)*-1) 0 0 var(--k-frame),0 var(--k-px) 0 0 var(--k-frame),calc(var(--k-px)*-1) 0 0 0 var(--k-frame),var(--k-px) 0 0 0 var(--k-frame),inset 0 2px 0 rgba(255,255,255,.07),0 calc(var(--k-px) + 5px) 0 0 rgba(3,5,10,.75);margin-bottom:18px;}',
+'#s-car .k-panel:where(:not(.cr-card)).k-team{box-shadow:0 calc(var(--k-px)*-1) 0 0 var(--k-team-ring),0 var(--k-px) 0 0 var(--k-team-ring),calc(var(--k-px)*-1) 0 0 0 var(--k-team-ring),var(--k-px) 0 0 0 var(--k-team-ring),inset 0 2px 0 rgba(255,255,255,.07),0 calc(var(--k-px) + 5px) 0 0 rgba(3,5,10,.75);}',
+'#s-car .k-panel:where(:not(.cr-card)).k-gold{box-shadow:0 calc(var(--k-px)*-1) 0 0 var(--k-gold),0 var(--k-px) 0 0 var(--k-gold),calc(var(--k-px)*-1) 0 0 0 var(--k-gold),var(--k-px) 0 0 0 var(--k-gold),inset 0 2px 0 rgba(255,236,170,.12),0 calc(var(--k-px) + 5px) 0 0 rgba(3,5,10,.75),0 0 26px rgba(255,209,102,.16);}',
+'/* a section of heading is a strip across the top of its panel */',
+'#s-car .cr-sec > .k-eyebrow,#s-car details.cr-sec > summary.k-eyebrow{margin:calc(var(--k-s-4)*-1) calc(var(--k-s-4)*-1) 12px;padding:10px 14px 10px 16px;min-height:40px;',
+'  background:linear-gradient(90deg,color-mix(in srgb,var(--k-team-ring) 28%,#0a0e1c),#0a0e1c 70%);box-shadow:inset 4px 0 0 var(--k-team-ring),inset 0 -2px 0 rgba(143,160,214,.14);color:#fff;font-size:9px;letter-spacing:.08em;}',
+'#s-car details.cr-sec:not([open]) > summary.k-eyebrow{margin-bottom:calc(var(--k-s-4)*-1);}',
+'#s-car .k-panel.k-tight.cr-sec > .k-eyebrow{margin:calc(var(--k-s-3)*-1) calc(var(--k-s-3)*-1) 10px;}',
+'#s-car .cr-rtsum{color:#ffb347;font-weight:800;}',
+'/* THE HERO: a player select card. The club of number stands huge behind him,',
+'   the club\'s stripes run behind his name, and the overall is a shield. */',
+'#s-car .cr-id{background:#0b0f1f;}',
+'#s-car .cr-id .k-stage{height:262px;}',
+'@media (max-width:519px){#s-car .cr-id .k-stage{height:236px;}}',
+'#s-car .cr-bignum{position:absolute;left:30%;bottom:-34px;transform:translateX(-50%);font:400 230px/1 var(--k-f-display);letter-spacing:-.02em;color:color-mix(in srgb,var(--k-team-1) 30%,transparent);-webkit-text-stroke:2px color-mix(in srgb,var(--k-team-ring) 45%,transparent);opacity:.9;pointer-events:none;user-select:none;}',
+'@media (max-width:519px){#s-car .cr-bignum{font-size:200px;bottom:-30px;}}',
+'#s-car .cr-stripes{position:absolute;right:-40px;top:0;bottom:0;width:62%;pointer-events:none;opacity:.5;',
+'  background:repeating-linear-gradient(112deg,transparent 0 22px,color-mix(in srgb,var(--k-team-1) 70%,transparent) 22px 40px,transparent 40px 46px,color-mix(in srgb,var(--k-team-2) 45%,transparent) 46px 52px);',
+'  -webkit-mask:linear-gradient(90deg,transparent,#000 40%);mask:linear-gradient(90deg,transparent,#000 40%);}',
+'#s-car .cr-id .k-scrim-r{background:linear-gradient(270deg,rgba(5,7,13,.86) 0,rgba(5,7,13,.5) 38%,rgba(5,7,13,0) 64%);}',
+'#s-car .cr-id .k-id .k-hero{font-size:36px;color:#fff;text-shadow:3px 3px 0 color-mix(in srgb,var(--k-team-1) 80%,#05070d),5px 5px 0 #05070d;}',
+'@media (max-width:519px){#s-car .cr-id .k-id .k-hero{font-size:31px;}}',
+'#s-car .cr-shield{right:14px;bottom:16px;width:86px;padding:11px 0 10px;text-align:center;background:linear-gradient(180deg,color-mix(in srgb,var(--k-team-1) 80%,#000),#070a14);',
+'  box-shadow:0 -3px 0 0 var(--k-gold),0 3px 0 0 var(--k-gold),-3px 0 0 0 var(--k-gold),3px 0 0 0 var(--k-gold),0 8px 0 0 #05070d,0 0 22px rgba(255,209,102,.25);}',
+'#s-car .cr-shield::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:rgba(255,255,255,.28);}',
+'#s-car .cr-id .cr-shield .k-num{font-size:30px;color:#fff;text-shadow:3px 3px 0 #05070d;}',
+'#s-car .cr-id .cr-shield .k-pix{display:block;margin-top:5px;color:var(--k-gold);}',
+'#s-car .cr-id .cr-lines{background:linear-gradient(180deg,#0e1328,#11162b);padding-top:12px;}',
+'#s-car .k-spec > div{background:#090c18;box-shadow:inset 3px 0 0 var(--k-team-ring),inset 0 0 0 1px rgba(143,160,214,.12);padding:7px 9px;}',
+'#s-car .k-spec dt{font:400 7px/1.4 var(--k-f-pixel);letter-spacing:.06em;color:color-mix(in srgb,var(--k-team-ink) 80%,#fff);}',
+'#s-car .k-spec dd{font-size:14px;margin-top:4px;}',
+'#s-car .cr-id .k-strip{background:#0e1226;}',
+'/* THE HUD: four bars in a 2 by 2, an icon, the word, the number, and ten',
+'   bevelled cells, the way a fighting game shows a life bar. */',
+'#s-car .cr-meters.k-meters{grid-template-columns:1fr 1fr;gap:8px;padding:10px;background:linear-gradient(180deg,#0c1124,#090d1c);}',
+'#s-car .cr-meters .k-meter{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"ic mk mv" "pp pp pp";align-items:center;gap:6px 8px;padding:8px 10px 9px;cursor:pointer;',
+'  background:rgba(255,255,255,.025);box-shadow:inset 0 0 0 2px rgba(143,160,214,.14),inset 0 -3px 0 rgba(0,0,0,.3);}',
+'#s-car .cr-meters .k-meter > .k-ico{grid-area:ic;}',
+'#s-car .cr-meters .k-mk{grid-area:mk;font-size:8px;color:var(--k-ink-2);text-align:left;}',
+'#s-car .cr-meters .k-mv{grid-area:mv;font-size:12px;color:#fff;}',
+'#s-car .cr-meters .k-pips{grid-area:pp;display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:2px;padding:2px;background:#05070d;}',
+'#s-car .cr-meters .k-pips i{width:auto;height:11px;background:#1a2038;box-shadow:inset 0 -2px 0 rgba(0,0,0,.35);}',
+'#s-car .cr-meters .k-pips i.on{background:var(--k-pip);box-shadow:inset 0 2px 0 rgba(255,255,255,.35),inset 0 -2px 0 rgba(0,0,0,.3);}',
+'/* THE SCOREBOARD: the record, the line and the bank in lit digits */',
+'#s-car .cr-fact{position:relative;padding:10px 10px 11px;background:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1.4px) 0 0/4px 4px,#05070d;',
+'  box-shadow:0 -2px 0 0 #2a3150,0 2px 0 0 #2a3150,-2px 0 0 0 #2a3150,2px 0 0 0 #2a3150,inset 0 0 0 2px #000,0 6px 0 rgba(3,5,10,.7);}',
+'#s-car .cr-fact .k{font:400 7px/1.4 var(--k-f-pixel);letter-spacing:.06em;color:var(--k-ink-3);}',
+'#s-car .cr-fact b{font-size:15px;color:#ffb347;text-shadow:0 0 8px rgba(255,140,40,.7),0 0 1px #ffd9a6;margin:9px 0 6px;}',
+'#s-car .cr-fact small{color:var(--k-ink-2);}',
+'/* the story so far: a timeline */',
+'#s-car .cr-beats{position:relative;padding:8px 6px 8px 4px;}',
+'#s-car .cr-beats li{border-top:0;padding:7px 10px 7px 34px;}',
+'#s-car .cr-beats li::after{content:"";position:absolute;left:15px;top:0;bottom:0;width:2px;background:rgba(143,160,214,.22);}',
+'#s-car .cr-beats li:first-child::after{top:16px;}#s-car .cr-beats li:last-child::after{bottom:auto;height:16px;}',
+'#s-car .cr-beats li:only-child::after{display:none;}',
+'#s-car .cr-beats li:before{left:11px;top:12px;width:10px;height:10px;z-index:1;box-shadow:0 0 0 3px #11162b;}',
+'/* the action at the thumb: a lit arcade button */',
+'#s-car .cr-dock{background:linear-gradient(180deg,rgba(7,9,18,0),#070912 40%);}',
+'#s-car .k-btn:not(.k-sec):not(.k-quiet):not(:disabled){background:linear-gradient(180deg,#ffa04d 0%,#ff7a1a 45%,#f26a0c 100%);text-shadow:0 1px 0 rgba(255,255,255,.35);}',
+'#s-car .cr-next{overflow:hidden;font-size:18px;letter-spacing:.1em;}',
+'#s-car .cr-next::after{content:"";position:absolute;top:0;bottom:0;left:-40%;width:24%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);animation:cr-shine 3.6s ease-in-out infinite;}',
+'@keyframes cr-shine{0%,62%{left:-40%;}100%{left:130%;}}',
+'@media (prefers-reduced-motion:reduce){#s-car .cr-next::after{display:none;}}',
+'#s-car .k-btn.k-sec{background:linear-gradient(180deg,#26305a,#1a2142);}',
+'/* cartridge tabs */',
+'#s-car .cr-tabsec{padding-top:0;}',
+'#s-car .cr-tabsec .k-itabs{margin:0 calc(var(--k-s-4)*-1) 14px;padding:8px 8px 0;gap:4px;background:#080b16;border-bottom:3px solid var(--k-team-ring);}',
+'#s-car .k-itabs .k-itab{flex:1 0 auto;min-width:66px;color:var(--k-ink-3);background:linear-gradient(180deg,#1b2242,#131934);box-shadow:inset 0 0 0 2px #262f57,inset 0 2px 0 rgba(255,255,255,.06);}',
+'#s-car .k-itabs .k-itab:hover{color:#fff;}',
+'#s-car .k-itabs .k-itab[aria-selected="true"]{color:#fff;background:linear-gradient(180deg,#34437a,#222c55);box-shadow:inset 0 3px 0 var(--k-team-ring),inset 0 0 0 2px #3c4b85;}',
+'#s-car .k-itabs .k-itab[aria-selected="true"]::after{display:none;}',
+'#s-car .cr-tabsec.k-more-r::after{top:8px;background:linear-gradient(90deg,rgba(8,11,22,0),#080b16);}',
+'/* the Story tab: a timeline of years */',
+'#s-car .cr-log li{border-top:0;padding:8px 6px;margin:0 0 3px;background:rgba(255,255,255,.025);box-shadow:inset 3px 0 0 rgba(143,160,214,.2);}',
+'#s-car .cr-log li.gold{box-shadow:inset 3px 0 0 var(--k-gold);background:rgba(255,209,102,.06);}',
+'#s-car .cr-log li.good{box-shadow:inset 3px 0 0 var(--k-good);}',
+'#s-car .cr-log li.bad{box-shadow:inset 3px 0 0 var(--k-bad);}',
+'#s-car .cr-log li .yr{flex:0 0 46px;padding:3px 0;text-align:center;line-height:1.4;background:#05070d;color:#ffb347;align-self:flex-start;}',
+'/* seasons: the arc on a grid, and every season a card */',
+'#s-car .cr-arc{background:#080b16;box-shadow:inset 0 0 0 2px rgba(143,160,214,.14);}',
+'#s-car .cr-arcbars{background:repeating-linear-gradient(0deg,rgba(143,160,214,.10) 0 1px,transparent 1px 25%);border-bottom:2px solid var(--k-ink-3);}',
+'#s-car .cr-arcb span{border-radius:0;background:linear-gradient(180deg,#ff9a3d,#e8660f 70%,#b04a06);box-shadow:inset 2px 0 0 rgba(255,255,255,.18);}',
+'#s-car .cr-arcb.am span{background:linear-gradient(180deg,#8db3f2,#5b8fe6 70%,#3a64b0);}',
+'#s-car .cr-arcb.pk span{box-shadow:inset 2px 0 0 rgba(255,255,255,.18),0 0 0 2px var(--k-gold);}',
+'#s-car .cr-arcb em{color:var(--k-gold);}',
+'@media (max-width:519px){',
+'  #s-car .cr-tbl tr{margin:0 0 6px;padding:10px 10px;border-bottom:0;background:rgba(255,255,255,.03);box-shadow:inset 3px 0 0 var(--k-team-ring),inset 0 0 0 1px rgba(143,160,214,.1);}',
+'  #s-car .cr-tbl tr.champ{box-shadow:inset 3px 0 0 var(--k-gold),inset 0 0 0 1px rgba(255,209,102,.35);background:rgba(255,209,102,.05);}',
+'  #s-car .cr-tbl td:before{font:400 7px/1.6 var(--k-f-pixel);letter-spacing:.04em;}',
+'  #s-car .cr-tbl td{color:var(--k-ink);font-weight:600;}',
+'}',
+'/* LED tiles: the totals, the legacy row, the rotation head */',
+'#s-car .cr-tot div,#s-car .cr-leg div{background:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1.4px) 0 0/4px 4px,#05070d;box-shadow:inset 0 0 0 2px #232a47;}',
+'#s-car .cr-tot b,#s-car .cr-leg b{color:#ffb347;text-shadow:0 0 8px rgba(255,140,40,.6);}',
+'/* the team: an overall wears its tier */',
+'#s-car .cr-rot li.cr-rot-r{background:rgba(255,255,255,.03);box-shadow:inset 0 0 0 1px rgba(143,160,214,.08);}',
+'#s-car .cr-rot li.you{background:rgba(255,140,40,.12);box-shadow:inset 3px 0 0 var(--k-accent),inset 0 0 0 1px rgba(255,140,40,.3);}',
+'#s-car .cr-rot .v.ovr{justify-self:end;min-width:30px;padding:4px 0;text-align:center;font-size:10px;color:#05070d;background:#8fa0d6;box-shadow:inset 0 -2px 0 rgba(0,0,0,.25);}',
+'#s-car .cr-rot .v.ovr.tier-a{background:#ffd166;}#s-car .cr-rot .v.ovr.tier-b{background:#3ecf8e;}#s-car .cr-rot .v.ovr.tier-c{background:#7fb2ff;}',
+'#s-car .cr-rot li.cr-rot-sep{margin-top:6px;color:var(--k-gold);}',
+'/* the trophy case: icons on lit shelves behind glass */',
+'#s-car .cr-aw:not(.cr-awrow):not(.cr-known){padding:10px 10px 6px;background:linear-gradient(180deg,rgba(120,170,255,.05),rgba(0,0,0,0) 40%),#070a14;box-shadow:inset 0 0 0 2px #2a2214,inset 0 0 0 4px #4a3520;}',
+'#s-car .cr-aw:not(.cr-awrow):not(.cr-known) .cr-awgrid{padding-bottom:2px;background:repeating-linear-gradient(180deg,transparent 0 55px,#8a5c34 55px 58px,#5a3a1e 58px 62px);}',
+'#s-car .cr-awi{box-shadow:inset 0 2px 0 rgba(255,255,255,.08);}',
+'#s-car .cr-awcap{color:var(--k-gold);font-weight:700;}',
+'/* the people: a face for every name */',
+'#s-car .cr-ppl li{grid-template-columns:36px minmax(0,1fr) 92px;align-items:center;padding:10px 0;}',
+'#s-car .cr-ppl .note{grid-column:2/-1;}',
+'#s-car .cr-ava{width:36px;height:36px;display:grid;place-items:center;font:400 10px var(--k-f-pixel);color:#fff;background:linear-gradient(180deg,#3a4677,#26305a);box-shadow:inset 0 0 0 2px #4a5c99,inset 0 -3px 0 rgba(0,0,0,.3);}',
+'#s-car .cr-ava.good{background:linear-gradient(180deg,#2f8a63,#1d5c42);box-shadow:inset 0 0 0 2px #3ecf8e,inset 0 -3px 0 rgba(0,0,0,.3);}',
+'#s-car .cr-ava.bad{background:linear-gradient(180deg,#8a3434,#5c1f1f);box-shadow:inset 0 0 0 2px #ff6b6b,inset 0 -3px 0 rgba(0,0,0,.3);}',
+'/* the news: every item a clipping */',
+'#s-car .cr-feed li{border-top:0;margin:0 0 6px;padding:9px 11px;background:rgba(255,255,255,.03);box-shadow:inset 0 0 0 1px rgba(143,160,214,.1);}',
+'#s-car .cr-feed .src{display:table;margin:0 0 5px;padding:3px 6px;font:400 7px/1.4 var(--k-f-pixel);color:#05070d;background:var(--k-trust);}',
+'#s-car .cr-feed li.you{box-shadow:inset 3px 0 0 var(--k-accent),inset 0 0 0 1px rgba(255,140,40,.25);}',
+'#s-car .cr-list li{border-top:0;margin:0 0 3px;padding:7px 8px;background:rgba(255,255,255,.025);}',
+'#s-car .cr-list li .yr{padding:2px 4px;background:#05070d;color:#ffb347;text-align:center;margin-right:8px;}',
+'#s-car .cr-sub{display:flex;align-items:center;gap:8px;color:#fff;font:400 9px/1.5 var(--k-f-pixel);letter-spacing:.06em;}',
+'#s-car .cr-sub::after{content:"";flex:1;height:2px;background:repeating-linear-gradient(90deg,rgba(143,160,214,.3) 0 4px,transparent 4px 8px);}',
+'/* THE HALL CARD: a ceremony. Gold rays turn behind him, the verdict is cast',
+'   in gold and his name is on a ribbon. */',
+'#s-car .cr-final{background:#07091a;}',
+'#s-car .cr-rays{position:absolute;left:50%;top:-180px;width:720px;height:720px;margin-left:-360px;pointer-events:none;opacity:.32;',
+'  background:repeating-conic-gradient(from 0deg,rgba(255,209,102,.55) 0 6deg,transparent 6deg 18deg);',
+'  -webkit-mask:radial-gradient(circle,#000 0,#000 18%,transparent 58%);mask:radial-gradient(circle,#000 0,#000 18%,transparent 58%);animation:cr-spin 60s linear infinite;}',
+'#s-car .k-panel.k-team .cr-rays{background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--k-team-ring) 70%,transparent) 0 6deg,transparent 6deg 18deg);opacity:.26;}',
+'@keyframes cr-spin{to{transform:rotate(360deg);}}',
+'@media (prefers-reduced-motion:reduce){#s-car .cr-rays{animation:none;}}',
+'#s-car .cr-final .cr-hin{background:linear-gradient(180deg,rgba(5,7,13,.1),rgba(5,7,13,.78) 50%,#0b0f22);}',
+'#s-car .cr-final .eye{display:inline-block;padding:6px 10px;background:#05070d;box-shadow:inset 0 0 0 2px var(--k-gold);color:var(--k-gold);}',
+'#s-car .cr-final .v{font-size:54px;color:#fff3c4;text-shadow:3px 3px 0 #8a5a00,6px 6px 0 #05070d,0 0 26px rgba(255,209,102,.45);}',
+'#s-car .k-panel.k-team .cr-final .v,#s-car .cr-final.k-team .v{color:#fff;text-shadow:3px 3px 0 color-mix(in srgb,var(--k-team-1) 80%,#05070d),6px 6px 0 #05070d,0 0 22px color-mix(in srgb,var(--k-team-ring) 50%,transparent);}',
+'#s-car .cr-final .nm span{display:inline-block;padding:7px 18px;color:var(--k-team-on);background:var(--k-team-1);box-shadow:inset 0 0 0 2px rgba(0,0,0,.25);',
+'  clip-path:polygon(0 0,100% 0,96% 50%,100% 100%,0 100%,4% 50%);}',
+'#s-car .cr-final .rtf-baller{filter:drop-shadow(0 8px 0 rgba(5,7,13,.6)) drop-shadow(0 0 16px rgba(255,209,102,.25));}',
+'#s-car .cr-final p.cr-col{display:inline-block;margin:8px 4px 0;padding:5px 10px;font-size:13.5px;background:rgba(255,255,255,.05);box-shadow:inset 0 0 0 1px rgba(143,160,214,.2);}',
+'#s-car .cr-epi p{position:relative;margin:0 0 8px;padding:10px 12px 10px 14px;background:#090c18;box-shadow:inset 3px 0 0 var(--k-gold),inset 0 0 0 1px rgba(255,209,102,.15);}',
+'#s-car .cr-epi .k{font:400 7px/1.6 var(--k-f-pixel);color:var(--k-gold);letter-spacing:.06em;margin-bottom:5px;}',
+'#s-car #cr-share{font-size:17px;min-height:56px;}',
+'/* THE VAULT: a plaque wall. What you found is cast in gold; what you have',
+'   not is a dark empty slot with a lock in it. */',
+'#s-car .cr-vsum{padding:14px 16px;background:radial-gradient(120% 140% at 0% 0%,rgba(255,209,102,.14),transparent 60%),#0b0f22;}',
+'#s-car .cr-vsum .k-num{font-size:34px;text-shadow:3px 3px 0 #6a4600,0 0 14px rgba(255,209,102,.4);}',
+'#s-car .cr-vbar{height:14px;background:#05070d;box-shadow:0 0 0 2px #3a3018;}',
+'#s-car .cr-vbar i{background:repeating-linear-gradient(90deg,#ffd166 0 6px,#e8b440 6px 8px);box-shadow:inset 0 2px 0 rgba(255,255,255,.35);}',
+'#s-car .cr-shbar{height:8px;}',
+'#s-car .cr-shelf > summary{padding:12px 4px 12px 10px;border-top:0;margin-top:6px;background:linear-gradient(90deg,rgba(255,209,102,.07),transparent 70%);box-shadow:inset 3px 0 0 var(--k-gold);}',
+'#s-car .cr-vgrid{padding:10px 8px 12px;background:#070912;box-shadow:inset 0 -6px 0 #4a2f18,inset 0 -8px 0 #6b4526;}',
+'#s-car .cr-sec > .cr-tabs:not(.k-itabs){margin:0 calc(var(--k-s-4)*-1) 14px;margin-top:calc(var(--k-s-4)*-1);padding:8px 8px 0;gap:4px;background:#080b16;border-bottom:3px solid var(--k-gold);}',
+'#s-car .cr-sec > .cr-tabs:not(.k-itabs) .k-tab{color:var(--k-ink-3);background:linear-gradient(180deg,#1b2242,#131934);box-shadow:inset 0 0 0 2px #262f57;}',
+'#s-car .cr-sec > .cr-tabs:not(.k-itabs) .k-tab[aria-selected="true"]{color:#fff;background:linear-gradient(180deg,#4a3c14,#2a210a);box-shadow:inset 0 3px 0 var(--k-gold),inset 0 0 0 2px #5c4a18;}',
+'#s-car .cr-sec > .cr-tabs:not(.k-itabs) .k-tab[aria-selected="true"]::after{display:none;}',
+'#s-car .cr-vgrid li{min-height:42px;}',
+'#s-car .cr-vgrid li.got{color:#fff3c4;background:linear-gradient(180deg,#5c4614,#3a2c0c 60%,#2a2008);box-shadow:inset 0 0 0 2px var(--k-gold),inset 0 2px 0 rgba(255,236,170,.4),0 3px 0 #05070d;text-shadow:0 1px 0 #000;}',
+'#s-car .cr-vgrid li.no{color:#58628a;background:#05070d;box-shadow:inset 0 3px 0 rgba(0,0,0,.6),inset 0 0 0 2px #1a2036;}',
+'#s-car .cr-vgrid li.no .k-ico{opacity:.5;}',
+'#s-car .cr-aentry{padding:8px 6px;margin:0 0 4px;background:rgba(255,255,255,.025);box-shadow:inset 0 0 0 1px rgba(143,160,214,.1);}',
+'/* THE BUILDER: a player select screen. He stands on a lit podium, and the',
+'   four steps are a track you move along. */',
+'#s-car .cr-build .cr-pfig{background:#05070d;box-shadow:inset 0 0 0 2px var(--k-team-ring),0 4px 0 #05070d;}',
+'#s-car .cr-build .cr-pfig::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(60% 50% at 50% 0%,rgba(255,236,196,.28),transparent 70%);}',
+'#s-car .cr-build .cr-pfig::after{content:"";position:absolute;left:12%;right:12%;bottom:2px;height:12px;z-index:0;background:radial-gradient(50% 50% at 50% 50%,color-mix(in srgb,var(--k-team-ring) 70%,transparent),transparent 72%);}',
+'#s-car .cr-build .cr-pfig .rtf-baller{z-index:2;}',
+'#s-car .cr-build .cr-povr .k-num{color:#fff;text-shadow:3px 3px 0 color-mix(in srgb,var(--k-team-1) 80%,#05070d);}',
+'#s-car .cr-steps{position:relative;gap:6px;padding:4px 0 8px;}',
+'#s-car .cr-stab{position:relative;background:linear-gradient(180deg,#1b2242,#131934);box-shadow:inset 0 0 0 2px #262f57,0 3px 0 #05070d;}',
+'#s-car .cr-stab i{display:inline-grid;place-items:center;width:18px;height:18px;background:#05070d;color:var(--k-ink-2);}',
+'#s-car .cr-stab.on{color:#160b02;background:linear-gradient(180deg,#ffe08c,#ffd166 60%,#e8b440);box-shadow:inset 0 0 0 2px #fff0bf,0 3px 0 #6a4600;}',
+'#s-car .cr-stab.on i{background:#160b02;color:#ffd166;}',
+'#s-car .cr-opt{background:linear-gradient(180deg,#1d2546,#151b36);}',
+'#s-car .cr-opt.on{background:linear-gradient(180deg,#3a3014,#241d0c);}',
+'#s-car .cr-build .lab{display:flex;align-items:center;gap:8px;font:400 8px/1.5 var(--k-f-pixel);color:#fff;letter-spacing:.06em;}',
+'#s-car .cr-build .lab::after{content:"";flex:1;height:2px;background:repeating-linear-gradient(90deg,rgba(143,160,214,.3) 0 4px,transparent 4px 8px);}',
+'#s-car .cr-name input{background:#05070d;}',
+'#s-car .cr-cta{background:linear-gradient(180deg,rgba(7,9,18,0),#070912 40%);}',
+'/* sheets wear the same plate */',
+'#cr-sheet .k-sheet{box-shadow:0 -3px 0 0 var(--k-team-ring),inset 0 2px 0 rgba(255,255,255,.06);}',
 ].join('\n');
 (function(){
   if (document.getElementById('cr-css')) return;
@@ -917,9 +1135,9 @@ function buildView(){
   var pane = function(id, html){ return '<div class="cr-pane" role="tabpanel" data-pane="' + id + '"' + (id === bstep ? '' : ' hidden') + '>' + html + '</div>'; };
   var next = steps[si + 1];
   var goText = road ? (pro ? 'Start your sophomore year' : 'Get Pro to start in high school') : 'Go to the draft combine';
-  return '<div class="cr-top"><h2 class="k-h1">' + (form.parent ? 'Your son' : 'New career') + '</h2><div class="cr-topbtns">'
+  return '<div class="cr-top"><div class="cr-topl"><h2 class="k-h1">' + (form.parent ? 'Your son' : 'New career') + '</h2><div class="cr-hud"><b>Step ' + (si + 1) + ' of ' + steps.length + '</b><span>' + esc(steps[si][1]) + '</span></div></div><div class="cr-topbtns">'
     + (form.parent ? '<button class="k-btn k-quiet" id="cr-noson" type="button">Not a son</button>' : '')
-    + '<button class="k-btn k-quiet" id="cr-vault" type="button">' + K.iconHtml('vault', 2) + ' Vault</button><button class="k-btn k-quiet" id="cr-home">Home</button></div></div>'
+    + ib('cr-vault', 'vault', 'Vault') + ib('cr-home', 'home', 'Home', { attr: 'aria-label="Home"' }) + '</div></div>'
     + '<div class="k-panel cr-build">'
     /* On the Look step the figure is drawn at twice the size and framed on the
        head and shoulders, because hair is what is being chosen there. */
@@ -1054,26 +1272,30 @@ function idCard(L){
   var rv = C.roadView(L);
   var club = rv ? rv.what + (rv.level === 'High school' ? ' at ' + rv.where : '')
     : L.team ? teamName(L.team) : (L.draft && !L.draft.team ? 'Undrafted' : 'Draft prospect');
-  var lines = [];
-  if (L.nick) lines.push('"' + L.nick + '"');
-  lines.push('Age ' + L.age + (v.role ? ' · ' + v.role.label : ''));
-  if (rv) lines.push(rv.sub);
-  if ((L.team || rv) && v.coach) lines.push('Coach ' + v.coach);
-  if (!rv && ct && ct.kind !== 'overseas') lines.push(money(ct.salary) + ' a year · ' + ct.years + (ct.years === 1 ? ' year left' : ' years left'));
-  if (L.season && L.season.goal && C.GOALS[L.season.goal]) lines.push('Chasing: ' + C.GOALS[L.season.goal][0].toLowerCase());
+  /* A spec sheet rather than loose lines: each fact has a label, so the eye
+     finds the contract without reading the coach's name first. */
+  var spec = [];
+  spec.push(['Age', String(L.age)]);
+  if (v.role) spec.push(['Role', v.role.label]);
+  if (rv) spec.push(['Level', rv.sub]);
+  if ((L.team || rv) && v.coach) spec.push(['Coach', v.coach]);
+  if (!rv && ct && ct.kind !== 'overseas') spec.push(['Contract', money(ct.salary) + ' · ' + ct.years + (ct.years === 1 ? ' yr left' : ' yrs left')]);
+  if (L.season && L.season.goal && C.GOALS[L.season.goal]) spec.push(['Chasing', C.GOALS[L.season.goal][0]]);
   var cs = C.challengeOf ? C.challengeOf(L) : null;
-  if (cs) lines.push('Challenge: ' + cs.name + ' · ' + (cs.met ? 'Done' : cs.out ? 'Out of reach' : cs.prog));
-  if (L.opt && L.opt.diff) lines.push(C.DIFFS[L.opt.diff].name + ' difficulty');
+  if (cs) spec.push(['Challenge', cs.name + ' · ' + (cs.met ? 'Done' : cs.out ? 'Out of reach' : cs.prog)]);
+  if (L.opt && L.opt.diff) spec.push(['Difficulty', C.DIFFS[L.opt.diff].name]);
   var per = C.personaOf ? C.personaOf(L) : '';
   var strip = tag(L.pos + ' · ' + C.ARCHES[L.arch].name, 'k-team') + tag('#' + L.num + (L.ht ? ' · ' + C.heightText(L.ht) + ' ' + L.wt : ''))
     + (per && per !== 'Still writing it' ? '<span class="k-tag k-gold cr-persona" title="How the league sees you">' + esc(per) + '</span>' : '');
   return '<div class="k-panel k-team k-card-player cr-id">'
     + '<div class="k-stage"><div class="k-set">' + setArt(stageKind(L), k.primary, k.secondary, L.seed) + '</div>'
+    + '<div class="cr-bignum" aria-hidden="true">' + esc(String(L.num)) + '</div><div class="cr-stripes" aria-hidden="true"></div>'
     + '<div class="k-teamwash"></div><div class="k-scrim-r"></div>'
     + '<div class="k-actor">' + portrait(L, { pose: L.team || rv ? 'ball' : 'stand', scale: 3 }) + '</div>'
     + '<div class="k-id"><h3 class="k-hero">' + esc(L.name) + '</h3>' + tag(club, 'k-team')
-    + '</div><div class="k-ovr"><span class="k-num" id="cr-ovr">' + C.show(v.ovr) + '</span><span class="k-pix">OVR</span></div></div>'
-    + '<div class="cr-lines">' + lines.map(function(t){ return '<span class="cr-sub2">' + esc(t) + '</span>'; }).join('') + '</div>'
+    + '</div><div class="k-ovr cr-shield"><span class="k-num" id="cr-ovr">' + C.show(v.ovr) + '</span><span class="k-pix">OVR</span></div></div>'
+    + '<div class="cr-lines">' + (L.nick ? '<p class="cr-nick">"' + esc(L.nick) + '"</p>' : '')
+    + '<dl class="k-spec cr-spec">' + spec.map(function(x){ return '<div><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl></div>'
     + '<div class="k-strip">' + strip + '</div>' + knownHtml(L) + '</div>';
 }
 /* What the career has shown: revealed traits (with the reason on hover and
@@ -1302,8 +1524,9 @@ function tabsHtml(L){
   else if (tab === 'legacy') body = legacyHtml(L);
   else if (tab === 'news') body = newsHtml(L);
   else body = trophies(L);
-  var t = function(id, name){ var on = tab === id; return '<button class="k-tab" role="tab" aria-selected="' + on + '" data-tab="' + id + '">' + name + '</button>'; };
-  return '<div class="k-panel cr-sec"><div class="k-tabs cr-tabs" role="tablist">' + t('log', 'Story') + (L.opt && L.opt.story && C.rotationOf && C.rotationOf(L) ? t('team', 'Team') : '') + t('seasons', 'Seasons') + t('trophies', 'Trophies')
+  var TI = { log: 'clip', team: 'ball', seasons: 'up', trophies: 'trophy', people: 'face', legacy: 'crown', news: 'mic' };
+  var t = function(id, name){ var on = tab === id; return '<button class="k-tab k-itab" role="tab" aria-selected="' + on + '" data-tab="' + id + '">' + K.iconHtml(TI[id], 2) + '<span>' + name + '</span></button>'; };
+  return '<div class="k-panel cr-sec cr-tabsec"><div class="k-tabs k-itabs cr-tabs" role="tablist">' + t('log', 'Story') + (L.opt && L.opt.story && C.rotationOf && C.rotationOf(L) ? t('team', 'Team') : '') + t('seasons', 'Seasons') + t('trophies', 'Trophies')
     + (L.opt && L.opt.story ? t('people', 'People') + t('legacy', 'Legacy') + t('news', 'News') : '') + '</div>'
     + '<div role="tabpanel">' + body + '</div></div>';
 }
@@ -1323,12 +1546,14 @@ function teamHtml(L){
     var at = x.slot && x.slot !== x.pos ? x.pos + ', playing ' + x.slot : x.pos || '';
     return sep + '<li class="cr-rot-r' + (x.you ? ' you' : '') + (x.min <= 0 ? ' dnp' : '') + '"><span class="n">' + (x.slot || i + 1) + '</span>'
       + '<span class="who"><b>' + esc(x.you ? x.n + ' (you)' : x.n) + '</b><small>' + esc(at) + ' · ' + x.age + (x.pg ? ' · Pot ' + x.pg : '') + (x.yrs != null ? ' · ' + (x.yrs <= 1 ? 'expiring' : x.yrs + ' yrs') : '') + ' · ' + esc(x.role) + '</small></span>'
-      + '<span class="v ovr">' + (x.ovr != null ? C.show(x.ovr) : '-') + '</span><span class="v pay">' + (x.pay ? money(x.pay) : '-') + '</span><span class="v">' + (x.min > 0 ? x.min : '-') + '</span><span class="v">' + pts + '</span></li>';
+      + '<span class="v ovr' + (x.ovr != null ? ' ' + ovrTier(C.show(x.ovr)) : '') + '">' + (x.ovr != null ? C.show(x.ovr) : '-') + '</span><span class="v pay">' + (x.pay ? money(x.pay) : '-') + '</span><span class="v">' + (x.min > 0 ? x.min : '-') + '</span><span class="v">' + pts + '</span></li>';
   }).join('');
   return head + '<p class="k-small cr-rot-line">' + line + '</p>'
     + '<ol class="cr-rot" aria-label="Rotation"><li class="cr-rot-h" aria-hidden="true"><span class="n"></span><span class="who">Starters</span><span class="v">Ovr</span><span class="v pay">Pay</span><span class="v">Min</span><span class="v">Pts</span></li>' + rows + '</ol>'
     + picksHtml(L, R.club);
 }
+/* An overall wears its tier, the way a ratings card colours it. */
+function ovrTier(o){ return o >= 90 ? 'tier-a' : o >= 84 ? 'tier-b' : o >= 78 ? 'tier-c' : 'tier-d'; }
 /* The club's draft picks, four drafts out, and the firsts it has traded away. */
 function picksHtml(L, c){
   var P = C.picksText ? C.picksText(L, c) : null;
@@ -1344,7 +1569,8 @@ function peopleHtml(L){
   return '<ul class="cr-ppl">' + P.slice(0, 24).map(function(p){
     var w = Math.min(50, Math.abs(p.rel) / 2), last = p.notes && p.notes.length ? p.notes[p.notes.length - 1] : null;
     var word = p.rel >= 60 ? 'Close' : p.rel >= 20 ? 'Good' : p.rel > -20 ? 'Fine' : p.rel > -60 ? 'Cold' : 'Bad blood';
-    return '<li><div><b>' + esc(p.n) + '</b><small>' + esc(p.role) + ' · since ' + p.met + '</small></div>'
+    var ini = String(p.n).split(/\s+/).map(function(w){ return w.charAt(0); }).join('').slice(0, 2).toUpperCase();
+    return '<li><span class="cr-ava ' + (p.rel >= 20 ? 'good' : p.rel <= -20 ? 'bad' : '') + '" aria-hidden="true">' + esc(ini) + '</span><div><b>' + esc(p.n) + '</b><small>' + esc(p.role) + ' · since ' + p.met + '</small></div>'
       + '<div class="cr-rel" role="img" aria-label="' + esc(word) + ', ' + p.rel + '"><i class="' + (p.rel >= 0 ? 'up' : 'dn') + '" style="width:' + w + '%"></i></div>'
       + (last ? '<div class="note">' + last[0] + ': ' + esc(last[1]) + '</div>' : '') + '</li>';
   }).join('') + '</ul>';
@@ -1385,9 +1611,9 @@ function leagueHtml(L){
   if (st) {
     var col = function(name, list){ return '<div><b class="cr-st-h">' + name + '</b><ol class="cr-st">' + list.map(function(r){
       return '<li class="' + (r[0] === L.team ? 'you' : '') + '"><span>' + esc(E.TEAM_NAMES[r[0]] || r[0]) + '</span><span class="v">' + r[1] + '-' + r[2] + '</span></li>'; }).join('') + '</ol></div>'; };
-    out += '<details class="cr-fold"><summary>Standings · ' + (st.y - 1) + '-' + String(st.y).slice(2) + '</summary><div class="cr-st2">' + col('East', st.E) + col('West', st.W) + '</div></details>';
+    out += '<details class="k-fold"><summary>Standings · ' + (st.y - 1) + '-' + String(st.y).slice(2) + '</summary><div class="cr-st2">' + col('East', st.E) + col('West', st.W) + '</div></details>';
   }
-  if (tx.length) out += '<details class="cr-fold"><summary>Transactions · ' + tx.length + '</summary><ul class="cr-feed cr-tx">' + tx.slice(0, 60).map(function(x){
+  if (tx.length) out += '<details class="k-fold"><summary>Transactions · ' + tx.length + '</summary><ul class="cr-feed cr-tx">' + tx.slice(0, 60).map(function(x){
     var mine = L.team && x.c && x.c.indexOf(L.team) >= 0;
     return '<li class="' + (mine ? 'you' : '') + '"><span class="src">' + esc(TX_KIND[x.k] || 'Move') + ' · ' + x.y + '</span>' + esc(x.t) + '</li>'; }).join('') + '</ul></details>';
   return out;
@@ -1533,13 +1759,27 @@ function rivalHtml(L){
     + '</tbody></table>';
 }
 
+/* A pixel icon button with its word under it: four of them fit beside the
+   title on a phone, and nobody has to guess what a square does. */
+function ib(id, icon, word, more){
+  return '<button class="k-ib cr-ib' + (more && more.cls ? ' ' + more.cls : '') + '" id="' + id + '" type="button"' + (more && more.attr ? ' ' + more.attr : '') + '>'
+    + K.iconHtml(icon, 2) + '<span>' + esc(word) + '</span>' + (more && more.dot ? '<i aria-hidden="true"></i>' : '') + '</button>';
+}
+/* WHERE YOU ARE, in one line under the title: the season and the game, or
+   the summer, then the club and its record. */
+function hud(L){
+  var s = L.season, rv = C.roadView(L);
+  var when = s ? seasonTag(s.year) + (s.g ? ' · Game ' + s.g : ' · Preseason') : L.year ? 'Summer ' + (L.year - 1) : '';
+  var where = rv ? rv.what : L.team ? (E.TEAM_NAMES && E.TEAM_NAMES[L.team] ? teamName(L.team).split(' ').slice(-1)[0] : teamName(L.team)) + (s ? ' ' + s.w + '-' + s.l : '') : 'Draft prospect';
+  return '<div class="cr-hud"><b>' + esc(when) + '</b><span>' + esc(where) + '</span></div>';
+}
 function lifeView(L, d){
-  var SC = window.RTF_SCENES;
-  return '<div class="cr-top"><h2 class="k-h1">Career</h2><div class="cr-topbtns">'
-    + (window.RTF_BALLER ? '<button class="k-btn k-quiet" id="cr-lookbtn" type="button">Look</button>' : '')
-    + (SC ? '<button class="k-btn k-quiet cr-scn" id="cr-scenes" type="button" aria-pressed="' + SC.on() + '" title="Scenes ' + (SC.on() ? 'on' : 'off') + '">Scenes<i aria-hidden="true"></i></button>' : '')
-    + (SC && window.RTF_SOUND ? '<button class="k-btn k-quiet cr-snd" id="cr-sound" type="button" aria-pressed="' + window.RTF_SOUND.on() + '" aria-label="Sound in scenes, ' + (window.RTF_SOUND.on() ? 'on' : 'off') + '" title="Sound in scenes">' + K.iconHtml(window.RTF_SOUND.on() ? 'sound' : 'mute', 2) + '</button>' : '')
-    + '<button class="k-btn k-quiet cr-home cr-snd" id="cr-home" type="button" aria-label="Home" title="Home">' + K.iconHtml('home', 2) + '</button></div></div>'
+  var SC = window.RTF_SCENES, SN = window.RTF_SOUND;
+  return '<div class="cr-top"><div class="cr-topl"><h2 class="k-h1">Career</h2>' + hud(L) + '</div><div class="cr-topbtns">'
+    + (window.RTF_BALLER ? ib('cr-lookbtn', 'shirt', 'Look') : '')
+    + (SC ? ib('cr-scenes', 'film', 'Scenes', { cls: 'cr-scn', dot: 1, attr: 'aria-pressed="' + SC.on() + '" title="Scenes ' + (SC.on() ? 'on' : 'off') + '"' }) : '')
+    + (SC && SN ? ib('cr-sound', SN.on() ? 'sound' : 'mute', SN.on() ? 'Sound' : 'Muted', { cls: 'cr-snd', attr: 'aria-pressed="' + SN.on() + '" aria-label="Sound in scenes, ' + (SN.on() ? 'on' : 'off') + '"' }) : '')
+    + ib('cr-home', 'home', 'Home', { cls: 'cr-home', attr: 'aria-label="Home"' }) + '</div></div>'
     + '<div class="cr-grid"><div class="cr-side">' + idCard(L) + meters(L, d) + '</div>'
     + '<div class="cr-main">' + stageHtml(L, !!d) + facts(L) + ratingsHtml(L, d) + tabsHtml(L)
     + (L.phase === 'after' ? '' : '<button class="k-btn k-quiet k-block" id="cr-quit">Retire now</button>')
@@ -1567,6 +1807,15 @@ function wireLife(L, d){
   });
   root.querySelectorAll('[data-act]').forEach(function(b){ b.onclick = function(){ doAct(b.getAttribute('data-act')); }; });
   root.querySelectorAll('[data-tab]').forEach(function(b){ b.onclick = function(){ tab = b.getAttribute('data-tab'); render(); var t = root.querySelector('[data-tab="' + tab + '"]'); if (t) t.focus(); }; });
+  /* The tab row scrolls sideways on a phone: the chosen tab is brought into it,
+     and a fade on the right says there is more while there is. */
+  var strip = root.querySelector('.k-itabs');
+  if (strip) {
+    var on = strip.querySelector('[aria-selected="true"]'), sec = strip.parentNode;
+    if (on && on.offsetLeft + on.offsetWidth > strip.clientWidth) strip.scrollLeft = on.offsetLeft - 8;
+    var edge = function(){ sec.classList.toggle('k-more-r', strip.scrollLeft + strip.clientWidth < strip.scrollWidth - 4); };
+    strip.onscroll = edge; edge();
+  }
   var off = $('cr-off');
   if (off) off.onclick = openOff;
   var q = $('cr-quit');
@@ -2048,13 +2297,13 @@ function finalView(card){
   var aw = card.awards && card.awards.length ? '<div class="cr-aw">' + awardTags(card.awards) + '</div>' : '';
   var hist = { history: card.history || [], amHist: card.amHist || [] };
   var B = window.RTF_BALLER;
-  return '<div class="cr-top"><h2 class="k-h1">Career over</h2><div class="cr-topbtns"><button class="k-btn k-quiet" id="cr-vault2" type="button">' + K.iconHtml('vault', 2) + ' Vault</button><button class="k-btn k-quiet cr-home" id="cr-home">Home</button></div></div>'
+  return '<div class="cr-top"><div class="cr-topl"><h2 class="k-h1">Career over</h2><div class="cr-hud"><b>' + card.from + '-' + card.to + '</b><span>' + esc(card.name) + '</span></div></div><div class="cr-topbtns">' + ib('cr-vault2', 'vault', 'Vault') + ib('cr-home', 'home', 'Home', { cls: 'cr-home', attr: 'aria-label="Home"' }) + '</div></div>'
     + (card.parent ? '<p class="cr-gen">' + K.iconHtml('tree', 2) + ' Generation ' + (card.gen || 2) + '</p>' : '')
     + '<div class="k-panel ' + (hof ? 'k-gold' : 'k-team') + ' cr-final">'
-    + '<div class="cr-hset">' + setArt('nba', hof ? '#a8761c' : card.c1, hof ? '#ffd166' : card.c2, 'hall' + card.name) + '</div><div class="cr-hin">'
+    + '<div class="cr-hset">' + setArt('nba', hof ? '#a8761c' : card.c1, hof ? '#ffd166' : card.c2, 'hall' + card.name) + '</div><div class="cr-rays" aria-hidden="true"></div><div class="cr-hin">'
     + (B && card.look ? B.img(card.look, { c1: card.c1, c2: card.c2, num: card.num, age: card.age, pose: card.totals && card.totals.rings ? 'trophy' : 'suit', scale: 3 }) : '')
     + '<div class="eye">' + (hof ? 'The Hall of Fame' : 'The verdict') + '</div><div class="v">' + esc(card.verdict) + '</div>'
-    + '<div class="nm">' + esc(card.name) + ' · #' + esc(String(card.num)) + ' · ' + card.from + '-' + card.to + '</div>'
+    + '<div class="nm"><span>' + esc(card.name) + ' · #' + esc(String(card.num)) + ' · ' + card.from + '-' + card.to + '</span></div>'
     + '<p>' + esc(card.blurb) + '</p>'
     + (card.nick ? '<p class="cr-col">They called you ' + esc(card.nick) + '.</p>' : '')
     + (card.persona && card.persona !== 'Still writing it' ? '<p class="cr-col">The league knew you as: ' + esc(card.persona) + '.</p>' : '')
@@ -2062,6 +2311,8 @@ function finalView(card){
     + (card.jersey ? '<p class="cr-col">Your #' + esc(String(card.num)) + ' hangs in the rafters for the ' + esc(E.TEAM_NAMES[card.jersey] || card.jersey) + '.</p>' : '')
     + totalsHtml(T, '<div><b>' + (T.pts / gp).toFixed(1) + '</b><span>A game</span></div><div><b>' + T.seasons + '</b><span>' + (T.seasons === 1 ? 'Season' : 'Seasons') + '</span></div>')
     + aw + '</div></div>'
+    + '<div class="cr-btnrow"><button class="k-btn" id="cr-share">Share it</button><button class="k-btn k-sec" id="cr-again">New career</button></div>'
+    + (canFather(card) ? '<button class="k-btn k-sec k-block cr-sonbtn" id="cr-son" type="button">' + K.iconHtml('tree', 2) + ' Play as your son' + (proOpen() ? '' : ' <span class="k-tag k-gold cr-pro">Pro</span>') + '</button>' : '')
     + (card.after || card.rival || card.life || card.ending ? '<div class="k-panel cr-sec cr-epi">'
       + (card.ending && card.ending.secretName ? '<p class="cr-secret"><span class="k">A secret ending</span>' + esc(card.ending.secretName) + '</p>' : '')
       + (card.ending ? '<p><span class="k">The Hall</span>' + esc(card.ending.tierName) + '</p>' : '')
@@ -2080,10 +2331,8 @@ function finalView(card){
     + (card.ch && C.CHALLENGES && C.CHALLENGES[card.ch.id] ? '<div class="k-panel k-tight ' + (card.ch.met ? 'k-gold' : '') + ' cr-chres"><div class="k-eyebrow">' + K.iconHtml(card.ch.met ? 'check' : 'lock', 2) + 'Challenge · ' + esc(C.CHALLENGES[card.ch.id].name) + '</div><p>' + (card.ch.met ? 'Met. It is in the Vault.' : 'Not met. ' + esc(C.CHALLENGES[card.ch.id].blurb)) + '</p></div>' : '')
     + (card.diff === 'easy' ? '<p class="k-small cr-easy">Played on Easy. Not on the Career board and no badges.</p>' : '')
     + foundHtml(card)
-    + '<div class="cr-btnrow"><button class="k-btn" id="cr-share">Share it</button><button class="k-btn k-sec" id="cr-again">New career</button></div>'
-    + (canFather(card) ? '<button class="k-btn k-sec k-block cr-sonbtn" id="cr-son" type="button">' + K.iconHtml('tree', 2) + ' Play as your son' + (proOpen() ? '' : ' <span class="k-tag k-gold cr-pro">Pro</span>') + '</button>' : '')
     + storyHtml(card.story)
-    + '<div class="k-panel cr-sec"><div class="k-eyebrow">' + K.iconHtml('clip', 2) + 'Season by season</div>' + seasonsTable(hist) + '</div>';
+    + '<details class="k-panel cr-sec k-fold"><summary class="k-eyebrow">' + K.iconHtml('up', 2) + 'Season by season<span class="k-foldn">' + T.seasons + '</span></summary>' + seasonsTable(hist) + '</details>';
 }
 function shareText(card){
   var T = card.totals;
@@ -2171,8 +2420,8 @@ function wireFinal(card){
 /* The written story, one heading a chapter. */
 function storyHtml(story){
   if (!story || !story.length) return '';
-  return '<div class="k-panel cr-sec cr-story"><div class="k-eyebrow">' + K.iconHtml('clip', 2) + 'Your story</div>'
-    + story.map(function(x){ return '<h3 class="cr-sub">' + esc(x.h) + '</h3><p>' + esc(x.p) + '</p>'; }).join('') + '</div>';
+  return '<details class="k-panel cr-sec cr-story k-fold"><summary class="k-eyebrow">' + K.iconHtml('clip', 2) + 'Your story<span class="k-foldn">' + story.length + ' chapters</span></summary>'
+    + story.map(function(x){ return '<h3 class="cr-sub">' + esc(x.h) + '</h3><p>' + esc(x.p) + '</p>'; }).join('') + '</details>';
 }
 /* What this career put in the Vault for the first time. */
 function foundHtml(card){
@@ -2214,7 +2463,7 @@ function vaultView(){
   var st = store(), n = vaultCount(st);
   var t = function(id, name){ var on = vtab === id; return '<button class="k-tab" role="tab" aria-selected="' + on + '" data-vtab="' + id + '">' + name + '</button>'; };
   var body = vtab === 'careers' ? careersHtml(st) : vtab === 'family' ? familyHtml(st) : endingsHtml(st);
-  return '<div class="cr-top"><h2 class="k-h1">The Vault</h2><div class="cr-topbtns"><button class="k-btn k-quiet" id="cr-vback" type="button">Back</button><button class="k-btn k-quiet" id="cr-home" type="button">Home</button></div></div>'
+  return '<div class="cr-top"><div class="cr-topl"><h2 class="k-h1">The Vault</h2><div class="cr-hud"><b>' + Math.round(100 * n.have / Math.max(1, n.all)) + '% found</b><span>Every ending you have reached</span></div></div><div class="cr-topbtns">' + ib('cr-vback', 'arrow', 'Back', { cls: 'cr-back' }) + ib('cr-home', 'home', 'Home', { attr: 'aria-label="Home"' }) + '</div></div>'
     + '<div class="k-panel k-tight cr-vsum"><span class="k-num">' + n.have + '</span><span>of ' + n.all + ' found</span>'
     + '<span class="cr-vbar" aria-hidden="true"><i style="width:' + Math.round(100 * n.have / Math.max(1, n.all)) + '%"></i></span>'
     + '<span class="k-small">' + st.arc.length + (st.arc.length === 1 ? ' career played' : ' careers played') + '</span></div>'
@@ -2224,11 +2473,17 @@ function vaultView(){
 function endingsHtml(st){
   return vaultShelves().map(function(sh){
     var have = sh.ids.filter(function(id){ return st.vault[sh.k + ':' + id]; }).length;
-    return '<h3 class="cr-sub">' + esc(sh.name) + ' · ' + have + ' of ' + sh.ids.length + '</h3><ul class="cr-vgrid">' + sh.ids.map(function(id){
+    /* A shelf is a fold with its own bar: open while it has something on it
+       or is short, so the first look is what you found, not a wall of locks. */
+    var open = have > 0 || (sh.ids.length <= 10 && !sh.secret);
+    /* What you found comes first on its shelf. */
+    var ids = sh.ids.filter(function(id){ return st.vault[sh.k + ':' + id]; }).concat(sh.ids.filter(function(id){ return !st.vault[sh.k + ':' + id]; }));
+    return '<details class="cr-shelf"' + (open ? ' open' : '') + '><summary><span class="cr-shn">' + esc(sh.name) + '</span><span class="cr-shc">' + have + ' / ' + sh.ids.length + '</span>'
+      + '<span class="cr-vbar cr-shbar" aria-hidden="true"><i style="width:' + Math.round(100 * have / Math.max(1, sh.ids.length)) + '%"></i></span></summary><ul class="cr-vgrid">' + ids.map(function(id){
       var got = !!st.vault[sh.k + ':' + id], nm = vaultName(sh.k + ':' + id);
       return '<li class="' + (got ? 'got' : 'no') + '">' + K.iconHtml(got ? (sh.k === 's' ? 'star' : 'check') : 'lock', 1)
         + '<span>' + (got || !sh.secret ? esc(nm) : 'Secret') + '</span>' + (got ? '' : '<span class="sr-only"> (not found yet)</span>') + '</li>';
-    }).join('') + '</ul>';
+    }).join('') + '</ul></details>';
   }).join('');
 }
 function fullCard(id){ var h = store().hof || []; for (var i = 0; i < h.length; i++) if (cardId(h[i]) === id) return h[i]; return null; }

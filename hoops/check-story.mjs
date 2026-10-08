@@ -372,6 +372,45 @@ section('14. the game narrates, and a card that comes back comes back different'
   ok(!offLead && !offTake, `a career from before the story engine hears no narrator and sees no take (${offLead} lines, ${offTake} takes)`);
 }
 
+section('15. nothing reads the same twice: the summer, the goal and the answers');
+{
+  /* A card that comes back every season (the summer, the goal, Game 7, an
+     injury, a free agency) is the most read copy in the game, so it is the
+     copy most able to feel like a loop. What is held: across a career the
+     exact same card text, the exact same set of answers and the exact same
+     title come back rarely, the summer reads off the season it follows, and
+     last year's goal is named rather than gestured at. Measured before this
+     pass: 11.5 repeated texts, 10.9 repeated answer sets and 18.6 repeated
+     titles a career. */
+  const N = 40;
+  let rt = 0, ro = 0, rti = 0, sum = 0, sumFact = 0, named = 0, back = 0, longSum = [];
+  for (let i = 0; i < N; i++) {
+    const x = play('fresh' + i, i % 2 ? 'hs' : 'draft');
+    const T = {}, O = {}, Ti = {};
+    for (const k of x.cards) {
+      const c = k.c, op = c.options.map((o) => o.label).join('/');
+      if (T[c.text]) rt++; if (O[op]) ro++; if (Ti[c.title]) rti++;
+      T[c.text] = O[op] = Ti[c.title] = 1;
+      if (c.id === 'training' && !/college|campus|school/i.test(c.title + c.text)) {
+        sum++;
+        if (/\d/.test(c.text) || /All-Star|ring|year \d|bench|rotation/.test(c.text)) sumFact++;
+        if (words(c.text) > 22) longSum.push(c.text);
+      }
+      if (c.id === 'goal' && /Last year/.test(c.text)) { back++; if (/Last year(?:'s goal is still on the wall)?:? ?(?:you said )?[a-z]/.test(c.text) && !/hit yours|missed yours/.test(c.text)) named++; }
+    }
+  }
+  ok(rt / N < 4, `a career rarely reads the same card text twice (${(rt / N).toFixed(1)} a career)`);
+  ok(ro / N < 4, `a career rarely meets the same set of answers twice (${(ro / N).toFixed(1)} a career)`);
+  ok(rti / N < 6, `a career rarely reads the same title twice (${(rti / N).toFixed(1)} a career)`);
+  ok(sum > 100 && sumFact / sum > 0.4, `the summer card says something true about the season it follows (${sumFact} of ${sum})`);
+  ok(!longSum.length, `the summer card is 22 words or less (${longSum.slice(0, 2).join(' | ') || 'all'})`);
+  ok(back > 20 && named / back > 0.8, `last year's goal is named when it is brought up (${named} of ${back})`);
+  /* A story career only: an old save reads exactly what it always read. */
+  let offVu = 0;
+  for (let i = 0; i < 4; i++) { const x = play('freshoff' + i, 'draft', null, { story: false }); if (x.L && x.L.vu) offVu++; }
+  ok(!offVu, `a career from before the story engine keeps no memory of what it read (${offVu})`);
+}
+
 section('13. the road ends in today\'s league');
 {
   /* A high school career is dated back so the usual draft is the real one,
