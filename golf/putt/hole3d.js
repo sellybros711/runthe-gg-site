@@ -185,14 +185,6 @@ function* steps(C, opt){
     solid(rc.x0, rc.y0, zb, rc.x1, rc.y1, zb + h, function(x, y, z){ var u = ((x - rc.x0) / (rc.x1 - rc.x0)) * 2 - 1, v = 1 - 2 * (z - zb) / h;
       if (rc.rot){ var q = rc.rot, dx = x - q.cx, dy = y - q.cy, a = dx * q.c + dy * q.s; if (Math.abs(a) > q.hl || Math.abs(-dx * q.s + dy * q.c) > q.hw) return null; u = a / q.hl; }   // a bank board: only the voxels inside the turned board
       return fn(u * 0.7, v * 0.9) || fn(0, 0.4) || T.wallLo; }); });
-  // a tunnel: a raised collar round the mouth the ball rolls into, and an arch where it comes out
-  (C.portals || []).forEach(function(pt){ var col = skinCol(pt.skin), za = base(pt.ax, pt.ay), zb = base(pt.bx, pt.by), r0 = pt.r || 0.75;
-    solid(pt.ax - r0 - 0.4, pt.ay - r0 - 0.4, za - 0.05, pt.ax + r0 + 0.4, pt.ay + r0 + 0.4, za + 0.55, function(x, y, z){ var d = Math.hypot(x - pt.ax, y - pt.ay), t = z - za;
-      if (d > r0 + 0.35 || d < r0 - 0.05) return null; return t < 0.45 - Math.abs(d - r0 - 0.15) * 1.2 ? col : null; });
-    var dx = pt.dx || 0, dy = pt.dy || -1;
-    solid(pt.bx - 1.3, pt.by - 1.3, zb - 0.05, pt.bx + 1.3, pt.by + 1.3, zb + 1.3, function(x, y, z){ var ax = x - pt.bx, ay = y - pt.by, along = ax * dx + ay * dy, side = -ax * dy + ay * dx, t = z - zb;
-      if (along > 0.15 || along < -0.75) return null; var rr = Math.hypot(side, t); if (rr > 1.05 || rr < 0.72 || t < 0) return null; return col; });
-  });
   // a ramp: a wedge rising to its lip, striped like a kicker
   (C.ramps || []).forEach(function(rp){ var zb = base(rp.x - rp.dx * 0.3, rp.y - rp.dy * 0.3), L = rp.len, hw = rp.w / 2, hh = rp.h;
     var xs4 = [rp.x, rp.x - rp.dx * L], ys4 = [rp.y, rp.y - rp.dy * L];

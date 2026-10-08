@@ -19488,7 +19488,7 @@ Four things made the tour aces real, and each is a rule for the next hole:
   straight line a pipe from a corner of the tee box that came up beside the cup. The owner's verdict: it
   hands you the ace, and it looks wrong. Two tiers are joined by an open ramp lane (`climb`, a ridge the
   ball has to be struck firmly enough to climb), a long hole's secret is a kicker ramp in plain sight
-  (`kicker`), and the themed templates lost their tunnel hole too.
+  (`kicker`), and the tunnel is gone from the engine: no template, helper, physics or drawing is left.
 - **An ace is built, not searched for.** `node golf/putt/ace.mjs <tour> <n>` is the fast method: take the
   real putt that passes nearest the cup and put a backstop board and a dish exactly where that ball
   arrives, or, where nothing passes near, put a bank board where the obvious first putt stops, angled

@@ -271,9 +271,9 @@ function hitCircle(s, cx, cy, r, e){
    the windmills read: the same putt at the same moment always meets the same blade. */
 function simulate(C, x, y, vx, vy, t0){
   var s = { x:x, y:y, vx:vx, vy:vy }, out = { pts:[[x, y, 0]], holed:false, water:false, out:false, rest:null, ev:[], t:0 };
-  var z = 0, zv = 0, over = false, cr = C.cupR, cx = C.cup[0], cy = C.cup[1], t = 0, n = 0, port = -1;
+  var z = 0, zv = 0, over = false, cr = C.cupR, cx = C.cup[0], cy = C.cup[1], t = 0, n = 0;
   var rx = x, ry = y;   // where the ball was half a second ago, for the pinned-against-a-rail rest below
-  var walls = C.walls, bums = C.bumpers, movs = C.movers, ports = C.portals, loops = C.loops || [], ramps = C.ramps || [];
+  var walls = C.walls, bums = C.bumpers, movs = C.movers, loops = C.loops || [], ramps = C.ramps || [];
   var lastPiece = null;   // the loop or ramp just ridden, so it cannot fire twice on the way out of it
   for (var di = 0; di < movs.length; di++) if (movs[di].k === 'door') movs[di]._p = null;
   // a stretch of a set piece, played out: each point is [x, y, dt from now, z above the surface]
@@ -362,15 +362,6 @@ function simulate(C, x, y, vx, vy, t0){
       if (mo.k === 'spin' && hitCircle(s, mo.x, mo.y, mo.hub, 0.6)) hit = true; }
     if (hit) out.ev.push([t, 'wall']);
     for (i = 0; i < movs.length; i++){ var dr = movs[i]; if (dr.k === 'door' && dr._p == null && Math.hypot(s.x - dr.px, s.y - dr.py) < dr.pr){ dr._p = t0 + t; out.ev.push([t, 'plate']); } }
-    // a tunnel carries the ball to its exit, still rolling
-    for (i = 0; i < ports.length; i++){ var p = ports[i];
-      if (port !== i && Math.hypot(s.x - p.ax, s.y - p.ay) < p.r){
-        var vin2 = Math.hypot(s.vx, s.vy); if (p.vcap && vin2 > p.vcap) continue;   // a drop hole a quick ball skips over
-        var v = Math.max(p.minV || 2.4, vin2 * (p.keep || 0.9));
-        if (p.dur){ out.pts.push([p.ax, p.ay, t, 2]); t += p.dur; n = 0; }   // inside the pipe: out of sight for the trip
-        s.x = p.bx; s.y = p.by; s.vx = p.dx * v; s.vy = p.dy * v;
-        port = i; out.ev.push([t, 'tunnel']); out.pts.push([s.x, s.y, t, 1]); break; } }
-    if (port >= 0 && Math.hypot(s.x - ports[port].bx, s.y - ports[port].by) > 1.2) port = -1;
     // the cup: over the hole the ball falls, and it is in once it has fallen far enough to catch the far lip
     var dx = s.x - cx, dy = s.y - cy, d = Math.hypot(dx, dy);
     if (d < cr){
@@ -525,72 +516,72 @@ function fromHost(host, courseKey, holeIdx){
 var THEMES = {
   haunted:{ name:'Haunted Hollow', kick:'Halloween', bg:'#1d1630', bg2:'#2a2142', carpet:'#3f7d3a', carpet2:'#38713a', wall:'#e8761f', wallHi:'#ffad55', wallLo:'#8a3d0c', ink:'#0e0a16',
     haz:'water', hazCol:'#7ed321', hazCol2:'#b6f05a', hazName:'Witch’s brew', slow:'mud', slowCol:'#5d4634', slowName:'Grave dirt',
-    bumper:'pumpkin', block:'tomb', spinner:'#d9d4c7', slider:'coffin', tunnel:'coffin', flag:'#ff7a1a',
+    bumper:'pumpkin', block:'tomb', spinner:'#d9d4c7', slider:'coffin', flag:'#ff7a1a',
     decor:['tomb', 'bat', 'ghost', 'deadtree', 'pumpkin'], acc:'#ff9a3a',
     holes:['Pumpkin Patch', 'Crypt Corner', 'Bat Cave', 'The Haunted Mill', 'Witch’s Brew', 'Graveyard Shift', 'Coffin Run', 'Cauldron Crater', 'Headless Hollow'] },
   harvest:{ name:'Harvest Hills', kick:'Thanksgiving', bg:'#8a6a34', bg2:'#9c7a3c', carpet:'#6f9d3b', carpet2:'#668f37', wall:'#8b4a1e', wallHi:'#b86b34', wallLo:'#5a2e10', ink:'#2b1606',
     haz:'water', hazCol:'#9b1b30', hazCol2:'#c8344d', hazName:'Cranberry bog', slow:'mud', slowCol:'#e2bf45', slowName:'Corn crib',
-    bumper:'pie', block:'hay', spinner:'#f2e6c9', slider:'hay', tunnel:'log', flag:'#c8344d',
+    bumper:'pie', block:'hay', spinner:'#f2e6c9', slider:'hay', flag:'#c8344d',
     decor:['corn', 'hay', 'leaves', 'turkey', 'pumpkin'], acc:'#f2a93b',
     holes:['First Furrow', 'Hayride', 'Gobbler’s Gap', 'The Old Mill', 'Cranberry Bog', 'Cornrows', 'Hollow Log', 'Pie Plate', 'The Big Feast'] },
   winter:{ light:true, name:'Frostbite Pines', kick:'Holidays', bg:'#e8f1fa', bg2:'#d7e6f4', carpet:'#2f7d5b', carpet2:'#2a7253', wall:'#d62f2f', wallHi:'#ff6a6a', wallLo:'#8e1717', ink:'#1a2a3a',
     haz:'ice', hazCol:'#bfe6ff', hazCol2:'#ecf8ff', hazName:'Frozen pond', slow:'mud', slowCol:'#ffffff', slowName:'Snowdrift',
-    bumper:'snowball', block:'gift', spinner:'#ffffff', slider:'gift', tunnel:'chimney', flag:'#d62f2f',
+    bumper:'snowball', block:'gift', spinner:'#ffffff', slider:'gift', flag:'#d62f2f',
     decor:['pine', 'snowman', 'gift', 'cane'], acc:'#7fd0ff',
     holes:['First Flake', 'Candy Cane Lane', 'Chimney Drop', 'The Toy Mill', 'Frozen Pond', 'Sleigh Ride', 'Down the Chimney', 'Snow Globe', 'The North Pole'] },
   sweetheart:{ light:true, name:'Sweetheart Greens', kick:'Valentine’s', bg:'#ffd3e2', bg2:'#ffc2d6', carpet:'#d9487a', carpet2:'#cc3f70', wall:'#ffffff', wallHi:'#ffffff', wallLo:'#e9a0b8', ink:'#5a1030',
     haz:'water', hazCol:'#5b2f1d', hazCol2:'#7b4630', hazName:'Chocolate fountain', slow:'mud', slowCol:'#f7c7da', slowName:'Sprinkles',
-    bumper:'heart', block:'candybox', spinner:'#ffe3ee', slider:'candybox', tunnel:'heartdoor', flag:'#ff2d6f',
+    bumper:'heart', block:'candybox', spinner:'#ffe3ee', slider:'candybox', flag:'#ff2d6f',
     decor:['heart', 'rose', 'candy'], acc:'#ff6f9f',
     holes:['First Date', 'Love Letter', 'Heartbeat', 'The Tunnel of Love', 'Chocolate River', 'Rose Garden', 'Cupid’s Arrow', 'Heart of Gold', 'Happily Ever After'] },
   shamrock:{ name:'Shamrock Glen', kick:'St. Patrick’s', bg:'#1d4d27', bg2:'#245c30', carpet:'#5cb84c', carpet2:'#53aa45', wall:'#e2b23b', wallHi:'#ffd968', wallLo:'#8a6612', ink:'#0c2412',
     haz:'water', hazCol:'#3fa7e0', hazCol2:'#8fd3ff', hazName:'Rainbow pool', slow:'mud', slowCol:'#f2c94c', slowName:'Gold coins',
-    bumper:'clover', block:'stone', spinner:'#ffd968', slider:'stone', tunnel:'stone', flag:'#2fa84f',
+    bumper:'clover', block:'stone', spinner:'#ffd968', slider:'stone', flag:'#2fa84f',
     decor:['clover', 'potgold', 'rainbow'], acc:'#ffd968',
     holes:['Four Leaf', 'Lucky Bounce', 'The Glen', 'The Stone Mill', 'Rainbow’s End', 'Clover Field', 'Fairy Ring', 'Pot of Gold', 'Luck of the Draw'] },
   spring:{ light:true, name:'Bloom Gardens', kick:'Spring', bg:'#a4d98a', bg2:'#93cc79', carpet:'#4fa356', carpet2:'#47974e', wall:'#f4a7c0', wallHi:'#ffd0df', wallLo:'#b8607f', ink:'#24401f',
     haz:'water', hazCol:'#5fbfff', hazCol2:'#a8e0ff', hazName:'Lily pond', slow:'mud', slowCol:'#9a7048', slowName:'Flower bed',
-    bumper:'egg', block:'planter', spinner:'#fff6d5', slider:'planter', tunnel:'burrow', flag:'#ffd23f',
+    bumper:'egg', block:'planter', spinner:'#fff6d5', slider:'planter', flag:'#ffd23f',
     decor:['flower', 'egg', 'bunny'], acc:'#ffd23f',
     holes:['First Bloom', 'Tulip Row', 'Bunny Hop', 'The Garden Mill', 'Lily Pond', 'Egg Hunt', 'Rabbit Hole', 'Bird Bath', 'Full Bloom'] },
   firework:{ name:'Firecracker Fairways', kick:'Summer nights', bg:'#121d3a', bg2:'#18264a', carpet:'#2e7d32', carpet2:'#2a722e', wall:'#e53935', wallHi:'#ff7a77', wallLo:'#8c1414', ink:'#060b18',
     haz:'water', hazCol:'#1e7fd8', hazCol2:'#5fb4ff', hazName:'Reflecting pool', slow:'mud', slowCol:'#d8c49b', slowName:'Picnic blanket',
-    bumper:'star', block:'crate', spinner:'#ffffff', slider:'crate', tunnel:'pipe', flag:'#ffffff',
+    bumper:'star', block:'crate', spinner:'#ffffff', slider:'crate', flag:'#ffffff',
     decor:['burst', 'flagpole', 'star'], acc:'#ffd23f',
     holes:['The Fuse', 'Sparkler', 'Bottle Rocket', 'The Pinwheel', 'Reflecting Pool', 'Grand Stand', 'The Launch Tube', 'Big Bang', 'The Finale'] },
   clubhouse:{ light:true, name:'The Clubhouse', kick:'World 1', bg:'#7fb35e', bg2:'#73a754', carpet:'#2f8f4e', carpet2:'#2a8246', wall:'#f4efe2', wallHi:'#ffffff', wallLo:'#a99c7c', ink:'#1d3524',
     haz:'water', hazCol:'#3f9fe0', hazCol2:'#9fd6f7', hazName:'Practice pond', slow:'mud', slowCol:'#e9d8a6', slowName:'Sand',
-    bumper:'stone', block:'hay', spinner:'#ffffff', slider:'crate', tunnel:'pipe', flag:'#e53935',
+    bumper:'stone', block:'hay', spinner:'#ffffff', slider:'crate', flag:'#e53935',
     decor:['flower', 'flagpole'], acc:'#F1D04A',
     holes:['First Tee', 'Pace', 'The Slope', 'Bank Shot', 'Sand Trap', 'Twin Bunkers', 'Bumper Alley', 'The Crown', 'Dogleg Left', 'Clubhouse Classic'] },
   tour:{ name:'Tour Week', kick:'World 5', bg:'#2f6b3a', bg2:'#2a6034', carpet:'#3aa05a', carpet2:'#349150', wall:'#1d2a44', wallHi:'#3a4d73', wallLo:'#0f1626', ink:'#0a1020',
     haz:'water', hazCol:'#2f8fd8', hazCol2:'#8fd0ff', hazName:'The lake', slow:'mud', slowCol:'#efe2b8', slowName:'Bunker',
-    bumper:'pad', block:'crate', spinner:'#ffffff', slider:'crate', tunnel:'pipe', flag:'#F1D04A',
+    bumper:'pad', block:'crate', spinner:'#ffffff', slider:'crate', flag:'#F1D04A',
     decor:['flagpole', 'star'], acc:'#F1D04A',
     holes:['Tour Pin', 'Bounce House', 'Tour Pin', 'Pinball', 'Tour Pin', 'Pad Bank', 'Tour Pin', 'Grandstand', 'Tour Pin', 'Island Green'] },
   temple:{ name:'Lost Temple', kick:'World 2', bg:'#2c4a24', bg2:'#355a2b', carpet:'#3f9a4a', carpet2:'#398c43', wall:'#b9ae84', wallHi:'#ddd3a8', wallLo:'#6f6a4e', ink:'#16200f',
     haz:'water', hazCol:'#2fb58f', hazCol2:'#7fe0c0', hazName:'Jade pool', slow:'mud', slowCol:'#6b5232', slowName:'Vines',
-    bumper:'idol', block:'ruin', spinner:'#d8b648', slider:'ruin', tunnel:'door', flag:'#c9a227',
+    bumper:'idol', block:'ruin', spinner:'#d8b648', slider:'ruin', flag:'#c9a227',
     decor:['fern', 'idol', 'ruin'], acc:'#37e0a0', river:['#1f9a78', '#5fd8b2'], kicker:'#c9a227', loopCol:['#c9a227', '#f1d77a', '#6f5a1a'],
     holes:[] },
   pirate:{ light:true, name:'Pirate Cove', kick:'World 3', bg:'#e6cf8c', bg2:'#dcc27a', carpet:'#1f9a7d', carpet2:'#1b8d72', wall:'#6b4426', wallHi:'#9a6a3e', wallLo:'#3d2614', ink:'#1d2a30',
     haz:'water', hazCol:'#1a86c4', hazCol2:'#7fd0f5', hazName:'The lagoon', slow:'mud', slowCol:'#f3dfa0', slowName:'Soft sand',
-    bumper:'barrel', block:'chest', spinner:'#f2e6c9', slider:'plank', tunnel:'cannon', flag:'#1d1d1d',
+    bumper:'barrel', block:'chest', spinner:'#f2e6c9', slider:'plank', flag:'#1d1d1d',
     decor:['palm', 'barrel', 'anchor', 'chest'], acc:'#ff5a3c', river:['#1677b5', '#6cc6f0'], kicker:'#1d1d1d', loopCol:['#6b4426', '#c9a227', '#3d2614'],
     holes:[] },
   canyon:{ name:'Canyon Mine', kick:'World 4', bg:'#a95a35', bg2:'#b8693e', carpet:'#3d8f4c', carpet2:'#378245', wall:'#6e4a2a', wallHi:'#9a6e44', wallLo:'#3d2814', ink:'#2a140a',
     haz:'water', hazCol:'#3a6f86', hazCol2:'#7fb0c4', hazName:'Flooded shaft', slow:'mud', slowCol:'#c79a6a', slowName:'Gravel',
-    bumper:'boulder', block:'crate', spinner:'#c9a227', slider:'cart', tunnel:'shaft', flag:'#ffb347',
+    bumper:'boulder', block:'crate', spinner:'#c9a227', slider:'cart', flag:'#ffb347',
     decor:['cactus', 'boulder', 'cart', 'lantern'], acc:'#ffb347', river:['#5a8a9a', '#a8d0dc'], kicker:'#ffb347', loopCol:['#8a8a90', '#c9c9cf', '#3d3a3a'],
     holes:[] },
   volcano:{ name:'Volcano Island', kick:'World 5', bg:'#1f1a1d', bg2:'#2a2427', carpet:'#2f8f4e', carpet2:'#2a8246', wall:'#3a3236', wallHi:'#5c5258', wallLo:'#141113', ink:'#0a0809',
     haz:'water', hazCol:'#ff6a1a', hazCol2:'#ffd25a', hazName:'Lava', slow:'mud', slowCol:'#6a6066', slowName:'Ash',
-    bumper:'lavarock', block:'basalt', spinner:'#ff8a2a', slider:'basalt', tunnel:'vent', flag:'#ff6a1a',
+    bumper:'lavarock', block:'basalt', spinner:'#ff8a2a', slider:'basalt', flag:'#ff6a1a',
     decor:['tiki', 'palm', 'lavarock'], acc:'#ff8a2a', river:['#1f8fb8', '#7fd8f0'], kicker:'#ff6a1a', loopCol:['#ff6a1a', '#ffd25a', '#5a1a08'],
     holes:[] },
   beach:{ light:true, name:'Seashell Shores', kick:'Summer', bg:'#f1dc9c', bg2:'#e8d08a', carpet:'#1ea77d', carpet2:'#1b9a73', wall:'#ffffff', wallHi:'#ffffff', wallLo:'#9fd8e6', ink:'#1b3a4a',
     haz:'water', hazCol:'#22a7e0', hazCol2:'#8fdcff', hazName:'Tide pool', slow:'mud', slowCol:'#f5e2a5', slowName:'Soft sand',
-    bumper:'beachball', block:'castle', spinner:'#ffd23f', slider:'surfboard', tunnel:'shell', flag:'#ff5a3c',
+    bumper:'beachball', block:'castle', spinner:'#ffd23f', slider:'surfboard', flag:'#ff5a3c',
     decor:['palm', 'umbrella', 'crab', 'castle'], acc:'#ff5a3c',
     holes:['Low Tide', 'Sandcastle', 'Crab Walk', 'The Lighthouse', 'Tide Pool', 'Boardwalk', 'Shell Game', 'Surf’s Up', 'Sunset'] }
 };
@@ -675,16 +666,6 @@ var TEMPLATES = {
     addBumper(H, (r() < 0.5 ? -1 : 1) * 2.2, -8, 0.7, T.bumper);
     return H;
   },
-  tunnels:function(r, T){
-    var hw = 6.5, L = 34, H = T_common(), yd = -17, flip = r() < 0.5 ? -1 : 1;
-    H.poly = [[-hw, 0], [hw, 0], [hw, -L], [-hw, -L]]; H.tee = [0, -2.5]; H.cup = [flip * 2.8, -28 - r() * 2]; H.par = 2;
-    addBlock(H, -hw, yd, hw, yd - 1.5, T.block);
-    // two tunnels: one comes out near the cup, the other in the far corner
-    H.portals.push({ ax:flip * 3.5, ay:yd + 1.6, r:0.75, bx:flip * 3.0, by:yd - 2.6, dx:0, dy:-1, skin:T.tunnel });
-    H.portals.push({ ax:-flip * 3.5, ay:yd + 1.6, r:0.75, bx:-flip * 5.2, by:yd - 2.6, dx:0, dy:-1, skin:T.tunnel });
-    addBumper(H, 0, -9, 0.8, T.bumper);
-    return H;
-  },
   volcano:function(r, T){
     var hw = 6, L = 26, H = T_common(), cy = -17.5;
     H.poly = [[-hw, 0], [hw, 0], [hw, -L], [-hw, -L]]; H.tee = [0, -2.5]; H.cup = [0, cy]; H.par = 3;
@@ -723,7 +704,6 @@ function buildMini(tplName, seed, themeId, label, extra){
     H.blocks = H.blocks.map(function(b){ return { x0:-b.x1, y0:b.y0, x1:-b.x0, y1:b.y1, skin:b.skin }; });
     H.walls = []; H.blocks.forEach(function(b){ H.walls = H.walls.concat(rectWalls(b, 0.6)); });
     H.movers.forEach(function(m){ if (m.k === 'spin' || m.k === 'blade'){ m.x = -m.x; m.omega = -m.omega; m.phase = Math.PI - m.phase; } else { m.ax = -m.ax; m.bx = -m.bx; if (m.k === 'door') m.px = -m.px; } });
-    H.portals.forEach(function(p){ p.ax = -p.ax; p.bx = -p.bx; p.dx = -p.dx; });
     H.zones.forEach(function(z){ if (z.t === 'rect'){ var a = -z.x1, b = -z.x0; z.x0 = a; z.x1 = b; } else z.x = -z.x; });
     H.comps.forEach(function(c){ if ('x' in c) c.x = -c.x; if ('gx' in c) c.gx = -c.gx; if ('x0' in c) c.x0 = -c.x0; if ('ux' in c) c.ux = -c.ux; if ('nx' in c) c.nx = -c.nx; });
     H.flats.forEach(function(f){ f.x = -f.x; });
@@ -783,7 +763,6 @@ function ornament(H, r, T, n){
     if (H.bumpers.some(function(b){ return Math.hypot(b.x - x, b.y - y) < b.r + need + 1.6; })) return false;
     if (H.blocks.some(function(b){ return x > b.x0 - need - 1.4 && x < b.x1 + need + 1.4 && y > b.y0 - need - 1.4 && y < b.y1 + need + 1.4; })) return false;
     if (H.movers.some(function(m){ return m.k === 'blade' ? Math.hypot(m.x - x, m.y - y) < 4.5 + need : m.k === 'spin' ? Math.hypot(m.x - x, m.y - y) < m.len + need + 0.9 : segDist(x, y, m.ax, m.ay, m.bx, m.by) < m.len / 2 + need + 0.9; })) return false;
-    if (H.portals.some(function(p){ return Math.hypot(p.ax - x, p.ay - y) < 2.2 + need || Math.hypot(p.bx - x, p.by - y) < 2.2 + need; })) return false;
     if (H.zones.some(function(z){ return z.t === 'rect' ? (x > Math.min(z.x0, z.x1) - 1 && x < Math.max(z.x0, z.x1) + 1 && y > Math.min(z.y0, z.y1) - 1 && y < Math.max(z.y0, z.y1) + 1) : Math.hypot(x - z.x, y - z.y) < z.r + 1; })) return false;
     return true;
   };
@@ -854,7 +833,7 @@ var PER = 18;
 var WORLDS = [
   { id:'clubhouse', name:'The Clubhouse', theme:'clubhouse', blurb:'Practice greens behind the clubhouse.', haz:['Windmills', 'Loops', 'Drawbridges'] },
   { id:'temple', name:'Lost Temple', theme:'temple', blurb:'Jade rivers, stone doors and turning floors.', haz:['Rivers', 'Doors', 'Turning floors'] },
-  { id:'pirate', name:'Pirate Cove', theme:'pirate', blurb:'Gangplanks on a clock, cannons and the lagoon.', haz:['Gangplanks', 'Cannons', 'Jumps'] },
+  { id:'pirate', name:'Pirate Cove', theme:'pirate', blurb:'Gangplanks on a clock, barrels and the lagoon.', haz:['Gangplanks', 'Barrels', 'Jumps'] },
   { id:'canyon', name:'Canyon Mine', theme:'canyon', blurb:'Mine carts, shafts and the flood channel.', haz:['Mine carts', 'Shafts', 'Rail loops'] },
   { id:'volcano', name:'Volcano Island', theme:'volcano', blurb:'Lava on every side. Jump it, ride it, or go round.', haz:['Lava', 'Lava jumps', 'Everything'] }
 ];
@@ -898,9 +877,6 @@ function switchDoor(H, T, y, gx0, gx1, px, py, hold){ var w = gx1 - gx0, cx = (g
 function gateWall(H, T, y, x0, x1, gx0, gx1, period, phase, dir){ blk(H, T, x0, y, gx0, y - 1.2); blk(H, T, gx1, y, x1, y - 1.2); gateAt(H, T, y - 0.6, gx0, gx1, period, phase, dir); }
 function slider(H, T, y, x0, x1, period, phase, len){ H.movers.push({ k:'slide', ax:x0, ay:y, bx:x1, by:y, len:len || 2.4, ang:0, w:0.5, period:period, phase:phase || 0, skin:T.slider }); }
 function vslider(H, T, x, y0, y1, period, phase, len){ H.movers.push({ k:'slide', ax:x, ay:y0, bx:x, by:y1, len:len || 2.4, ang:Math.PI / 2, w:0.5, period:period, phase:phase || 0, skin:T.slider }); }
-function portal(H, T, ax, ay, bx, by, dx, dy){ H.portals.push({ ax:ax, ay:ay, r:0.75, bx:bx, by:by, dx:dx, dy:dy, skin:T.tunnel }); }
-// a pipe: in at one mouth, out of sight for the trip, out of the other still rolling. vcap: a ball quicker than this skips the mouth
-function pipe(H, T, ax, ay, bx, by, dx, dy, dur, vcap, keep){ H.portals.push({ ax:ax, ay:ay, r:0.72, bx:bx, by:by, dx:dx, dy:dy, dur:dur || 0.8, vcap:vcap || 0, keep:keep || 0.85, skin:T.tunnel }); }
 function belt(H, x0, y0, x1, y1, ax, ay){ H.belts = H.belts || []; H.belts.push({ x0:x0, y0:y0, x1:x1, y1:y1, ax:ax, ay:ay }); zoneR(H, M.BELT, x0, y0, x1, y1); }
 function flatAt(H, x, y){ H.flats.push({ x:x, y:y, s:0.8, keep:0.2 }); }
 // a loop of track in a corridor: entered at (x, y) heading (dx, dy). Quick enough and the ball goes over the top; slow and it rolls back
@@ -1042,7 +1018,7 @@ var LEVELS = [
   { par:3, three:2, sig:true, f:function(T){ var H = hole([rm(-5, 0, 5, -12), rm(-7, -16, 3, -26, 0.8), rm(4, -32, 14, -38, -1.2), pg([[6, -38], [12, -38], [9.8, -41.6], [8.2, -41.6]], -1.2), rm(8.2, -41.5, 9.8, -45.5, -1.2), rm(3, -45.4, 15, -58, -1.2)], [0, -2.5], [9, -54]);
     climb(H, -3.5, -12, -16, 2.4, 0.3); disc(H, -2, -21, 2.2, 1.3); river(H, [[1.5, -24.5], [5, -26], [8, -29], [8, -33]], 1.7, 6.5, 0.8, -1.2);
     loopAt(H, 9, -43.5, 0, -1, 0.75, 1.6); bumps(H, T, [[6, -50, 0.6]]); flatAt(H, 9, -54); return H; } },
-  // ---- 3 PIRATE COVE: gangplanks on a clock, cannons, jumps over the lagoon
+  // ---- 3 PIRATE COVE: gangplanks on a clock, barrels, jumps over the lagoon
   // Gangplank: a curb guards the moat, so time the plank and putt out.
   { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -13), rm(-5, -12.9, 5, -16.6), rm(-5, -16.5, 5, -32)], [0, -2.5], [2, -28]); zoneR(H, M.WATER, -5, -13, 5, -16.5); drawb(H, -1.3, -13, 1.3, -16.5, 3.4, 0, 0.55); bumps(H, T, [[-2.5, -22, 0.7], [-3.1, -7.4, 0.5]]);
     blk(H, T, -5, -12.4, -1.3, -13); blk(H, T, 1.3, -12.4, 5, -13); return H; } },
@@ -1335,7 +1311,7 @@ function shade(c, k){ return k >= 0 ? mix(c, [255, 255, 255], k) : mix(c, [0, 0,
 function ell(u, v, a, b){ return u * u / (a * a) + v * v / (b * b); }
 
 /* SKINS. Each draws an object in a unit box (u right, v down, both -1..1) and answers a colour or
-   nothing. A bumper, a block, a tunnel mouth and a piece of scenery are all one of these, which is
+   nothing. A bumper, a block and a piece of scenery are all one of these, which is
    what lets a theme be nothing but a list of names. */
 var SKIN = {
   pumpkin:function(u, v){ if (v < -0.72 && v > -1 && Math.abs(u + v * 0.15) < 0.13) return '#3d6b1f'; var e = ell(u, v + 0.08, 0.98, 0.84); if (e > 1) return null; if (e > 0.74) return '#8a3d0c';
@@ -1366,12 +1342,10 @@ var SKIN = {
     if (b && v < -0.42 && Math.abs(Math.abs(u) - 0.16) < 0.06) return '#1a2a3a'; return u < -0.2 ? '#ffffff' : '#e3eef8'; },
   cane:function(u, v){ var hook = v < -0.35 && Math.abs(Math.hypot(u - 0.25, v + 0.35) - 0.35) < 0.13 && u > -0.12 - 0.0; var st = Math.abs(u + 0.1) < 0.13 && v >= -0.35 && v < 0.95; if (!hook && !st) return null;
     return (Math.floor((u + v) * 5 + 10) % 2) ? '#d62f2f' : '#ffffff'; },
-  chimney:function(u, v){ if (Math.abs(u) > 0.92 || Math.abs(v) > 0.92) return null; if (Math.abs(u) < 0.55 && Math.abs(v) < 0.55) return '#1a1010'; return ((Math.floor((v + 1) * 4) % 2) ? (Math.floor((u + 1) * 3) % 2) : (Math.floor((u + 1.33) * 3) % 2)) ? '#a83a2a' : '#c4523e'; },
   heart:function(u, v){ var x = u * 1.15, y = -v * 1.15 + 0.15, k = x * x + y * y - 1; if (k * k * k - x * x * y * y * y > 0) return null; return (u < -0.2 && v < -0.1) ? '#ff8ab0' : '#ff2d6f'; },
   rose:function(u, v){ if (Math.abs(u) < 0.08 && v > 0.1) return '#3f8a3a'; if (ell(u - 0.22, v - 0.45, 0.22, 0.1) < 1) return '#4fa34a'; var e = ell(u, v + 0.3, 0.5, 0.48); if (e > 1) return null; return (Math.floor(e * 4) % 2) ? '#c2185b' : '#e91e63'; },
   candy:function(u, v){ if (ell(u, v, 0.5, 0.5) < 1) return (Math.floor((u - v) * 4 + 8) % 2) ? '#ff6f9f' : '#ffffff'; if (Math.abs(v) < 0.42 - (1 - Math.abs(u)) * 0.2 && Math.abs(u) < 0.98) return '#ffb3cc'; return null; },
   candybox:function(u, v){ var x = u * 1.1, y = -v * 1.1 + 0.1, k = x * x + y * y - 1; if (k * k * k - x * x * y * y * y > 0) return null; if (k > -0.22) return '#8e0f3a'; return (Math.floor((u + 1) * 5) % 2) ? '#d81b60' : '#c2185b'; },
-  heartdoor:function(u, v){ var s = SKIN.heart(u, v); return s ? (ell(u, v + 0.05, 0.42, 0.42) < 1 ? '#3b0b1f' : s) : null; },
   clover:function(u, v){ if (Math.abs(u - (v - 0.2) * 0.3) < 0.08 && v > 0.2) return '#2a6b2a'; var l = ell(u, v + 0.42, 0.34, 0.34) < 1 || ell(u - 0.38, v + 0.02, 0.34, 0.34) < 1 || ell(u + 0.38, v + 0.02, 0.34, 0.34) < 1;
     return l ? (u < 0 ? '#5fd35f' : '#3fae3f') : null; },
   potgold:function(u, v){ if (v < -0.2 && ell(u, v + 0.45, 0.62, 0.32) < 1) return ((u * 7 + v * 3 | 0) % 2) ? '#ffd968' : '#e2b23b'; var e = ell(u, v - 0.2, 0.82, 0.65); if (e > 1) return null; return u < -0.3 ? '#3a3a3a' : '#1c1c1c'; },
@@ -1382,17 +1356,14 @@ var SKIN = {
   flower:function(u, v){ if (Math.abs(u) < 0.08 && v > 0.15) return '#3f8a3a'; var r = Math.hypot(u, v + 0.2); if (r < 0.18) return '#ffd23f'; var a = Math.atan2(v + 0.2, u); if (r < 0.55 + 0.18 * Math.cos(a * 5)) return '#f48fb1'; return null; },
   bunny:function(u, v){ var ear = ell(u + 0.2, v + 0.6, 0.12, 0.35) < 1 || ell(u - 0.2, v + 0.6, 0.12, 0.35) < 1, head = ell(u, v + 0.05, 0.42, 0.36) < 1, body = ell(u, v + 0.62 - 1.2, 0.55, 0.42) < 1;
     if (!(ear || head || body)) return null; if (head && Math.abs(v + 0.08) < 0.06 && Math.abs(Math.abs(u) - 0.16) < 0.06) return '#222'; return u < 0 ? '#ffffff' : '#e9e4ef'; },
-  burrow:function(u, v){ var e = ell(u, v, 0.92, 0.82); if (e > 1) return null; if (e < 0.42) return '#2a1a10'; return e > 0.78 ? '#6b4a2a' : '#8a6438'; },
   star:function(u, v){ var a = Math.atan2(v, u) + Math.PI / 2, r = Math.hypot(u, v), k = Math.cos(Math.PI / 5) / Math.cos((a % (2 * Math.PI / 5) + 2 * Math.PI / 5) % (2 * Math.PI / 5) - Math.PI / 5);
     if (r > 0.98 * (0.5 + 0.5 * Math.abs(Math.cos(a * 2.5)))) return null; return u < -0.1 ? '#ffffff' : '#e3e8ff'; },
   burst:function(u, v){ var r = Math.hypot(u, v), a = Math.atan2(v, u); if (r > 0.98) return null; if (r < 0.14) return '#ffffff'; if (Math.abs(((a / (Math.PI / 6)) % 1)) < 0.18 && ((r * 7 | 0) % 2)) return ['#ff5252', '#ffd23f', '#64b5f6'][(a * 2 + 9 | 0) % 3]; return null; },
   flagpole:function(u, v){ if (Math.abs(u + 0.5) < 0.07 && v > -0.95) return '#cfd8dc'; if (u > -0.45 && u < 0.85 && v > -0.95 && v < -0.15) return (u < 0.15 && v < -0.55) ? ((u * 14 + v * 14 | 0) % 2 ? '#ffffff' : '#1e3a8a') : (((v + 1) * 9 | 0) % 2 ? '#e53935' : '#ffffff'); return null; },
   crate:function(u, v){ if (Math.abs(u) > 0.9 || Math.abs(v) > 0.9) return null; if (Math.abs(u) > 0.76 || Math.abs(v) > 0.76 || Math.abs(u - v) < 0.12) return '#7a4a24'; return '#c08a4a'; },
-  pipe:function(u, v){ var e = ell(u, v, 0.92, 0.92); if (e > 1) return null; if (e < 0.4) return '#0a0e18'; return e > 0.78 ? '#455a64' : '#78909c'; },
   beachball:function(u, v){ var e = ell(u, v, 0.92, 0.92); if (e > 1) return null; if (e > 0.85) return '#9e9e9e'; if (Math.hypot(u, v) < 0.16) return '#ffffff'; var a = Math.atan2(v, u); return ['#ff5a3c', '#ffffff', '#2196f3', '#ffffff', '#ffd23f', '#ffffff'][Math.floor((a + Math.PI) / (Math.PI / 3)) % 6]; },
   castle:function(u, v){ if (Math.abs(u) > 0.9 || v > 0.9) return null; if (v < -0.55 && (Math.floor((u + 1) * 3.5) % 2)) return null; if (v < -0.95) return null; if (Math.abs(u) < 0.2 && v > 0.3) return '#a07a40'; return u < -0.3 ? '#f7e3a8' : '#e2c27a'; },
   surfboard:function(u, v){ var e = ell(u, v, 0.98, 0.42); if (e > 1) return null; if (Math.abs(v) < 0.07) return '#ff5a3c'; return '#ffd23f'; },
-  shell:function(u, v){ var e = ell(u, v, 0.92, 0.82); if (e > 1 || v > 0.6) return null; if (e < 0.35 && v > -0.2) return '#2a1a10'; return (Math.floor((Math.atan2(v - 0.6, u) + 3.2) * 4) % 2) ? '#ffcdb2' : '#f4a582'; },
   palm:function(u, v){ var tr = Math.abs(u - v * 0.15) < 0.1 && v > -0.4; if (tr) return ((v * 10 | 0) % 2) ? '#8a6438' : '#a07a40';
     var a = Math.atan2(v + 0.55, u), r = Math.hypot(u, v + 0.55); if (r < 0.95 && Math.abs(((a / (Math.PI / 3)) % 1) - 0.5) < 0.22 - r * 0.12) return r < 0.4 ? '#2e7d32' : '#43a047'; return null; },
   umbrella:function(u, v){ var e = ell(u, v, 0.95, 0.95); if (e > 1) return null; if (Math.hypot(u, v) < 0.1) return '#ffffff'; return (Math.floor((Math.atan2(v, u) + 3.2) / (Math.PI / 4)) % 2) ? '#ff5a3c' : '#ffffff'; },
@@ -1415,34 +1386,30 @@ var SKIN = {
     if (v > -0.1 && Math.abs(u) < 0.42 || r < 0.42) return '#141008'; if (r < 0.58 && v < 0) return '#c9a227'; return (Math.floor((v + 1) * 4) + Math.floor((u + 1) * 2)) % 2 ? '#a69c72' : '#968c63'; },
   fern:function(u, v){ var a = Math.atan2(v - 0.7, u), r = Math.hypot(u, v - 0.7); if (r > 1.5 || v > 0.9) return null;
     var lf = Math.abs(((a / (Math.PI / 5)) % 1 + 1) % 1 - 0.5); if (lf > 0.3 - r * 0.12) return null; return r < 0.6 ? '#2e7d32' : (r < 1.1 ? '#43a047' : '#66bb6a'); },
-  // ---- Pirate Cove: a barrel, a cannon, a treasure chest, an anchor, a gangplank
+  // ---- Pirate Cove: a barrel, a treasure chest, an anchor, a gangplank
   barrel:function(u, v){ var w = 0.78 - v * v * 0.18; if (Math.abs(u) > w || Math.abs(v) > 0.92) return null; if (Math.abs(Math.abs(v) - 0.55) < 0.08 || Math.abs(v) > 0.84) return '#3d3a3a';
     return (Math.floor((u + 1) * 4.5) % 2) ? '#9a6236' : '#b07440'; },
-  cannon:function(u, v){ var e = ell(u, v, 0.92, 0.92); if (e > 1) return null; if (e < 0.32) return '#0a0a0c'; if (e < 0.55) return '#2c2c30'; return e > 0.85 ? '#1a1a1e' : '#45454c'; },
   chest:function(u, v){ if (Math.abs(u) > 0.92 || Math.abs(v) > 0.8) return null; if (v < -0.2 && Math.hypot(u, v + 0.2) > 0.95) return null;
     if (Math.abs(v + 0.15) < 0.07 || Math.abs(Math.abs(u) - 0.55) < 0.07) return '#c9a227'; if (Math.abs(u) < 0.12 && Math.abs(v) < 0.18) return '#f1d04a'; return v < -0.15 ? '#7a4a24' : '#8f5a2c'; },
   anchor:function(u, v){ var r = Math.hypot(u, v + 0.65); if (r < 0.2 && r > 0.1) return '#3d4450';
     if (Math.abs(u) < 0.1 && v > -0.5 && v < 0.7) return '#4f5866'; if (Math.abs(v + 0.25) < 0.08 && Math.abs(u) < 0.45) return '#4f5866';
     var a = Math.hypot(u, v - 0.1); if (v > 0.25 && Math.abs(a - 0.68) < 0.11) return '#4f5866'; return null; },
   plank:function(u, v){ if (Math.abs(u) > 0.95 || Math.abs(v) > 0.55) return null; if (Math.abs(v) > 0.44 || Math.abs(u - 0.1) < 0.04) return '#5e3818'; return ((u * 7 | 0) % 3) ? '#a0703c' : '#8a5e30'; },
-  // ---- Canyon Mine: a boulder, a mine cart, a lantern, a shaft mouth, a cactus
+  // ---- Canyon Mine: a boulder, a mine cart, a lantern, a cactus
   boulder:function(u, v){ var e = ell(u, v * 1.08, 0.94, 0.86) + Math.sin(Math.atan2(v, u) * 5) * 0.05; if (e > 1) return null; if (e > 0.82) return '#6e3a22';
     return (u + v < -0.45) ? '#d0875a' : ((Math.floor((u + 1) * 3) + Math.floor((v + 1) * 3)) % 4 === 0 ? '#9a5534' : '#b8693e'); },
   cart:function(u, v){ if (Math.abs(u) > 0.92 || v > 0.92 || v < -0.6) return null; if (v > 0.55){ var wr = Math.hypot(Math.abs(u) - 0.5, v - 0.7); return wr < 0.22 ? (wr < 0.09 ? '#c9a227' : '#2a2a2e') : null; }
     if (Math.abs(u) > 0.84 - (v + 0.6) * 0.1 || v < -0.48) return '#3d3a3a'; if (v < -0.2) return ((u * 9 | 0) % 2) ? '#8a7a6a' : '#6a5e52'; return ((u * 5 | 0) % 2) ? '#8a5432' : '#7a4a2a'; },
   lantern:function(u, v){ if (Math.abs(u) > 0.6 || Math.abs(v) > 0.95) return null; if (v < -0.7) return Math.abs(u) < 0.2 ? '#2a2a2e' : null;
     if (Math.abs(v) > 0.55 || Math.abs(u) > 0.48) return '#2a2a2e'; return Math.hypot(u, v) < 0.3 ? '#fff3a8' : '#ffb347'; },
-  shaft:function(u, v){ if (Math.abs(u) > 0.92 || Math.abs(v) > 0.9) return null; if (v > -0.55 && Math.abs(u) < 0.55) return '#120c08';
-    if (Math.abs(Math.abs(u) - 0.72) < 0.14 || (v < -0.55 && v > -0.85)) return '#8a5a30'; return null; },
   cactus:function(u, v){ var tr = Math.abs(u) < 0.2 && v > -0.92, l = Math.abs(u + 0.5) < 0.14 && v > -0.5 && v < 0.1, r2 = Math.abs(u - 0.5) < 0.14 && v > -0.7 && v < -0.1;
     var lb = v > 0 && v < 0.18 && u > -0.6 && u < 0, rb = v > -0.2 && v < -0.05 && u > 0 && u < 0.6; if (!(tr || l || r2 || lb || rb)) return null;
     if (tr && v < -0.86) return '#ff7aa8'; return ((u * 12 | 0) % 2) ? '#3f8a3e' : '#2f7034'; },
-  // ---- Volcano Island: a lava rock, a basalt block, a steam vent, a tiki
+  // ---- Volcano Island: a lava rock, a basalt block, a tiki
   lavarock:function(u, v){ var e = ell(u, v, 0.92, 0.84) + Math.sin(Math.atan2(v, u) * 6) * 0.06; if (e > 1) return null;
     var crack = Math.abs(Math.sin(u * 7 + v * 3)) < 0.12 && e < 0.8; if (crack) return '#ff7a1a'; return (u + v < -0.5) ? '#4a4246' : (e > 0.8 ? '#1f1a1d' : '#332c30'); },
   basalt:function(u, v){ if (Math.abs(u) > 0.92 || Math.abs(v) > 0.9) return null; var col = Math.floor((u + 1) * 3.5), top = -0.9 + (col % 2) * 0.12;
     if (v < top) return null; if (((u + 1) * 3.5) % 1 < 0.09) return '#141113'; if (v < top + 0.12) return '#57505a'; return col % 2 ? '#2e292e' : '#3a343a'; },
-  vent:function(u, v){ var e = ell(u, v, 0.92, 0.92); if (e > 1) return null; if (e < 0.3) return '#ff8a2a'; if (e < 0.5) return '#7a2a10'; return e > 0.85 ? '#1f1a1d' : '#3a3236'; },
   tiki:function(u, v){ if (Math.abs(u) > 0.55 || Math.abs(v) > 0.95) return null; if (v < -0.75) return Math.abs(u) < 0.45 ? '#3f8a3e' : null;
     if (Math.abs(v + 0.35) < 0.1 && Math.abs(Math.abs(u) - 0.22) < 0.1) return '#f1d04a'; if (Math.abs(v - 0.15) < 0.08 && Math.abs(u) < 0.3) return '#2a1a10';
     if (Math.abs(v - 0.5) < 0.05) return '#5a3818'; return u < -0.15 ? '#a0703c' : '#8a5e30'; }
@@ -1501,14 +1468,13 @@ function paintCourse(C){
     var objs = [];
     (C.blocks || []).forEach(function(r){ objs.push({ x0:r.x0, y0:r.y0, x1:r.x1, y1:r.y1, skin:r.skin, rect:1, rot:r.rot }); });
     (C.bumpers || []).forEach(function(u){ objs.push({ x0:u.x - u.r, y0:u.y - u.r, x1:u.x + u.r, y1:u.y + u.r, skin:u.skin }); });
-    (C.portals || []).forEach(function(p){ objs.push({ x0:p.ax - 1.05, y0:p.ay - 1.05, x1:p.ax + 1.05, y1:p.ay + 1.05, skin:p.skin, port:1 }); objs.push({ x0:p.bx - 0.75, y0:p.by - 0.6, x1:p.bx + 0.75, y1:p.by + 0.6, skin:'exit' }); });
     (C.props || []).forEach(function(p){ objs.push({ x0:p.x - p.s, y0:p.y - p.s, x1:p.x + p.s, y1:p.y + p.s, skin:p.k, prop:1 }); });
     var sh = 0.3;
     objs.forEach(function(ob){ paintSkin(ob, sh); });
     objs.forEach(function(ob){ paintSkin(ob, 0); });
   }
   function paintSkin(ob, off){
-    var fn = ob.skin === 'exit' ? function(u, v){ return (v < 0.2 && ell(u, v - 0.2, 0.9, 0.9) < 1) ? '#0b0b10' : null; } : (SKIN[ob.skin] || SKIN.stone);
+    var fn = (SKIN[ob.skin] || SKIN.stone);
     var i0 = Math.floor((ob.x0 + off - b[0]) / ART), i1 = Math.ceil((ob.x1 + off - b[0]) / ART), j0 = Math.floor((ob.y0 + off - b[1]) / ART), j1 = Math.ceil((ob.y1 + off - b[1]) / ART);
     for (var jj = Math.max(0, j0); jj <= Math.min(ny - 1, j1); jj++) for (var ii = Math.max(0, i0); ii <= Math.min(nx - 1, i1); ii++){
       var xx = b[0] + ii * ART - off, yy = b[1] + jj * ART - off, u = ((xx - ob.x0) / (ob.x1 - ob.x0)) * 2 - 1, v = ((yy - ob.y0) / (ob.y1 - ob.y0)) * 2 - 1;
@@ -1518,7 +1484,6 @@ function paintCourse(C){
       var oo = (jj * nx + ii) * 4;
       if (off){ put(oo, shade([D[oo], D[oo + 1], D[oo + 2]], -0.32)); continue; }
       put(oo, rgb(col));
-      if (ob.port && ell(u, v, 0.5, 0.5) < 1) put(oo, rgb('#0b0b10'));
     }
   }
   ctx.putImageData(img, 0, 0);
