@@ -5777,13 +5777,95 @@ function summerKeys(L) {
   }
   return out;
 }
+/* THE SUMMER IS READ OFF THE SEASON THAT JUST ENDED. Every situation has a
+   pool of openings, a fact about your own year is added when one fits, and the
+   line about your body reads your health and your age. fresh() deals the next
+   line nobody has read, so the same kind of summer never reads the same way
+   twice. The situation is summerFrame's; this only says it. */
+const SUMMER_SAY = {
+  first: [['Your first summer as a pro', 'Rookie summer', 'Eight weeks to your first camp', 'You made it. Now what?'],
+    ['Camp opens in eight weeks. Nobody knows your name yet.', 'The vets are on vacation. You have a gym key.', 'Your first check cleared. The work starts now.', 'Nobody in the league has seen you play for real.']],
+  champ: [['A short summer, and a ring', 'Champions. Now do it again.', 'The parade was last week', 'Everybody wants a piece of you'],
+    ['You won it in June. Camp\'s in ten weeks.', 'The ring fits. The target on your back is new.', 'Every team in the league is coming for you now.', 'Three talk shows this week. Zero workouts.']],
+  finals: [['Two wins short', 'So close it hurts', 'The Finals loss won\'t leave', 'You can still see Game 6'],
+    ['The Finals loss is still on every highlight show.', 'You watched the other team hold the trophy.', 'Two more wins. You think about it daily.', 'You lost the last game of the season. Everybody else stopped earlier.']],
+  deep: [['A long run, a short summer', 'Conference finals hangover', 'One round from the Finals', 'You played into late May'],
+    ['Your legs are tired. Your name\'s louder.', 'You got close enough to smell it.', 'Ten weeks off. Your body wants twenty.', 'The run made you famous. It also made you sore.']],
+  out: [['Out in the first round', 'One round and done', 'Bounced early', 'A first round exit'],
+    ['Everybody saw the series. Everybody has advice.', 'Four losses in a week. You watched the rest from home.', 'The series is still on loop in your head.', 'You made the playoffs. You did not stay long.']],
+  missed: [['A long summer', 'No playoffs this year', 'April came and went', 'You watched the playoffs from home'],
+    ['No playoffs. The phone\'s been quiet since April.', 'Your season ended with the regular season.', 'The lottery is the only thing your club made.', 'Four months until anything counts again.']],
+  moved: [['New city, new gym', 'A new locker, a new name on it', 'Your first summer in new colors', 'Starting over somewhere new'],
+    ['Nobody here has seen you practice yet.', 'You don\'t know where anything is yet.', 'New coach, new playbook, new teammates.', 'The fans here only know your highlights.']],
+  hurt: [['The summer after the injury', 'Back from the injury?', 'Everybody\'s watching the leg', 'A summer about your body'],
+    ['You missed too many games. Everybody\'s watching the leg.', 'The doctors cleared you. The doubters didn\'t.', 'You spent the spring in the training room.', 'Half a season lost. The other half was rusty.']],
+  contract: [['Your contract year starts now', 'Last year of the deal', 'Play well, get paid', 'The money year'],
+    ['Play well and you write the next deal.', 'Every game this year is an audition.', '{agent:first} already has a spreadsheet.', 'This season sets your next five years.']],
+  old: [['Another summer, and your body has opinions', 'Summer at ' + 'your age', 'The young guys call you sir', 'How much is left?'],
+    ['Mornings take longer to get going. The game still feels good.', 'Recovery takes two days now. It used to take one.', 'You still love it. Your knees love it less.', 'Half your draft class is coaching now.']],
+  plain: [['Where are you spending the summer?', 'Eight weeks until camp', 'It\'s the off-season', 'A quiet summer'],
+    ['Camp\'s two months away.', 'The gym\'s empty in July. You could be in it.', 'Everybody else is on a boat. What are you doing?', 'Nobody is watching. That is the point.']],
+};
+function summerSit(L) {
+  if (inCollege(L)) return null;
+  const H = L.history, h = H[H.length - 1], c = L.contract;
+  if (!h) return 'first';
+  if (h.t && L.team && h.t !== L.team) return 'moved';
+  if (h.gp < 55) return 'hurt';
+  if (h.po === 'Champion') return 'champ';
+  if (h.po === 'Finals') return 'finals';
+  if (h.po === 'CF') return 'deep';
+  if (c && c.years === 1 && c.kind !== 'rookie' && L.age <= 32) return 'contract';
+  if (L.age >= 33) return 'old';
+  if (h.po === 'R1') return 'out';
+  if (h.po === 'Missed' || h.po === 'Play-in') return 'missed';
+  return 'plain';
+}
+/* One true thing about the year you just had. */
+const SUMMER_FACTS = [
+  ['up', (L, h, p) => p && h.pts - p.pts >= 2.5, (L, h, p) => 'You went from ' + p.pts + ' to ' + h.pts + ' a night.'],
+  ['down', (L, h, p) => p && p.pts - h.pts >= 2.5, (L, h) => 'Your scoring slipped to ' + h.pts + ' a night.'],
+  ['rec', (L, h) => !!h.t && h.w + h.l > 0, (L, h) => 'The ' + nick(h.t) + ' went ' + h.w + '-' + h.l + '.'],
+  ['star', (L, h) => (h.aw || []).indexOf('allstar') >= 0 || (h.aw || []).indexOf('star') >= 0, () => 'You were an All-Star.'],
+  ['line', (L, h) => h.pts >= 8, (L, h) => h.pts + ' points, ' + h.reb + ' boards, ' + h.ast + ' assists.'],
+  ['yrs', (L) => yearsWith(L) >= 3, (L) => 'That was year ' + yearsWith(L) + ' with this club.'],
+  ['bench', (L, h) => h.role === 'End of bench' || h.role === 'Rotation', (L, h) => 'You were ' + (h.role === 'Rotation' ? 'a rotation player' : 'at the end of the bench') + '.'],
+  ['rings', (L, h) => totals(L).rings >= 1 && h.po !== 'Champion', (L) => { const n = totals(L).rings; return n === 1 ? 'You have one ring. One is not enough.' : 'You have ' + n + ' rings. You want another.'; }],
+];
+function yearsWith(L) { let n = 0; for (let i = L.history.length - 1; i >= 0 && L.history[i].t === L.history[L.history.length - 1].t; i--) n++; return n; }
+const BODY_SAY = [
+  [(L) => L.m.health >= 85 && L.age >= 31, ['Nothing hurts, which is new.', 'Your knees are quiet for once.', 'You feel younger than your birthday.']],
+  [(L) => L.m.health >= 85, ['Your body feels great.', 'You feel bouncy.', 'Nothing hurts. Enjoy it.', 'Your legs feel brand new.']],
+  [(L) => L.m.health >= 60, ['Your body feels fine.', 'A few aches. Nothing a summer can\'t fix.', 'Mostly healthy. Mostly.', 'Sore, but the good kind.']],
+  [(L) => L.m.health >= 35, ['Your body is still sore.', 'You\'re still icing twice a day.', 'Something still twinges on the stairs.']],
+  [() => true, ['Your body needs a real break.', 'Everything hurts.', 'The trainer says rest, and says it loudly.']],
+];
+const words = (t) => String(t).split(/\s+/).filter(Boolean).length;
+function summerSay(L) {
+  const sit = summerSit(L);
+  if (!sit) { const f = summerFrame(L); return [f[0], f[1] + ' ' + bodyFeel(L)[0].toUpperCase() + bodyFeel(L).slice(1) + '.']; }
+  const r = rngAt(L, 'ssay:' + L.year), P = SUMMER_SAY[sit];
+  const title = sit === 'old' ? freshPick(L, 'st:old', P[0], r).replace('your age', String(L.age)) : freshPick(L, 'st:' + sit, P[0], r);
+  let text = freshPick(L, 'sx:' + sit, P[1], r);
+  const H = L.history, h = H[H.length - 1], p = H[H.length - 2];
+  if (h) {
+    const open = SUMMER_FACTS.filter((f) => { try { return f[1](L, h, p); } catch (e) { return false; } });
+    if (open.length) {
+      const f = open[fresh(L, 'sf', open.length, r)];
+      const line = f[2](L, h, p);
+      if (words(text) + words(line) <= 14) text += ' ' + line;
+    }
+  }
+  const B = BODY_SAY.find((b) => b[0](L))[1];
+  return [title, text + ' ' + freshPick(L, 'sb:' + B[0], B, r)];
+}
 function summerCard(L) {
-  const ks = summerKeys(L), f = summerFrame(L);
+  const ks = summerKeys(L), f = summerSay(L);
   L.flags.summerOff = ks;
   return {
     id: 'training', kind: 'event', key: 'training', scene: 'The off-season',
     eyebrow: 'Summer of ' + (L.year - 1), title: f[0],
-    text: f[1] + ' ' + bodyFeel(L)[0].toUpperCase() + bodyFeel(L).slice(1) + '.',
+    text: f[1],
     ctx: { ks },
     options: ks.map((k) => ({ label: SUMMER[k].l, hint: SUMMER[k].hy && L.age <= 24 ? SUMMER[k].hy : SUMMER[k].h })),
   };
@@ -6126,72 +6208,274 @@ const NARR_AM = [
    games out, your age, the money). Seeded per card off its own stream, so a
    reload shows the same words. */
 const capFirst = (x) => x ? x[0].toUpperCase() + x.slice(1) : x;
+/* A LINE NOBODY HAS READ YET. fresh() picks from a list and remembers what it
+   picked for that key, so a card that comes back comes back with the next
+   line rather than a random draw that may be last year's again. Once every
+   line has been read it starts over, never on the one it used last. A story
+   career only: the memory rides on the save as L.vu. */
+function fresh(L, key, n, rng) {
+  const V = L.vu || (L.vu = {});
+  let used = V[key] || [];
+  if (used.length >= n) used = used.slice(-1);
+  const open = [];
+  for (let i = 0; i < n; i++) if (used.indexOf(i) < 0) open.push(i);
+  const i = open.length ? open[Math.floor(rng() * open.length)] : 0;
+  V[key] = used.concat(i);
+  return i;
+}
+function freshPick(L, key, list, rng) { return list[fresh(L, key, list.length, rng)]; }
 const VARY = {
   clutch: (L, c, r) => {
     const x = c.ctx || {};
     const n = nick(x.opp);
-    const crowd = x.home ? pick(r, ['The home crowd\'s on its feet against the ' + n + '.', 'Your building is shaking. The ' + n + ' look rattled.', 'Twenty thousand of your fans, and the ' + n + ' in the way.'])
-      : pick(r, ['A road crowd\'s trying to rattle you against the ' + n + '.', 'The ' + n + ' fans boo every touch you take.', 'Their building is so loud you can\'t hear the huddle.']);
-    c.title = pick(r, ['Tied, nine seconds, your ball. What\'s the play?', 'Game 7. Tie game. The ball is yours.', 'Tie game, season on the line. Your call.', 'Nine seconds. Tied. Everybody knows who gets it.']);
-    c.text = crowd + ' ' + (x.look ? LOOKS[x.look].t : pick(r, ['Everybody knows who gets it.', 'The whole season comes down to this.', 'The bench is already on its feet.']));
+    const crowd = x.home ? freshPick(L, 'v:clutch:home', ['The home crowd\'s on its feet against the ' + n + '.', 'Your building is shaking. The ' + n + ' look rattled.', 'Twenty thousand of your fans, and the ' + n + ' in the way.', 'Towels spinning everywhere. The ' + n + ' call timeout.', 'Your arena hasn\'t sat down in ten minutes.'], r)
+      : freshPick(L, 'v:clutch:road', ['A road crowd\'s trying to rattle you against the ' + n + '.', 'The ' + n + ' fans boo every touch you take.', 'Their building is so loud you can\'t hear the huddle.', 'Somebody behind the bench yells your mom\'s name.', 'Twenty thousand ' + n + ' fans want you to miss.'], r);
+    const ex = (L.flags.clutchSeen || 0);
+    L.flags.clutchSeen = ex + 1;
+    const memo = ex === 0 ? 'Your first one of these.' : (tw(L).winners || 0) > 0 ? 'You\'ve hit one of these before.' : 'You haven\'t hit one of these yet.';
+    c.title = freshPick(L, 'v:clutch:t', ['Tied, nine seconds, your ball. What\'s the play?', 'Game 7. Tie game. The ball is yours.', 'Tie game, season on the line. Your call.', 'Nine seconds. Tied. Everybody knows who gets it.', 'The season comes down to one possession', 'Timeout. Tied. {coach:last} looks at you.'], r);
+    c.text = crowd + ' ' + (x.look ? LOOKS[x.look].t : freshPick(L, 'v:clutch:x', ['Everybody knows who gets it.', 'The whole season comes down to this.', 'The bench is already on its feet.', memo], r));
+  },
+  amclutch: (L, c, r) => {
+    const x = c.ctx || {}, hs = /home gym/.test(c.scene || '');
+    c.title = freshPick(L, 'v:am:t', ['Tied. Six seconds. Your ball.', 'Six seconds and the ball is yours', 'Tie game. Everybody looks at you.', 'One possession for the whole season'], r);
+    const crowd = hs ? freshPick(L, 'v:am:hs', ['The whole town\'s packed into the gym.', 'Your old elementary teachers are in the bleachers.', 'The student section is chanting your name.'], r)
+      : freshPick(L, 'v:am:col', ['It\'s March, and every bracket in the country is watching.', 'CBS has the camera right in your face.', 'Your college band is losing its mind.'], r);
+    c.text = crowd + ' ' + (x.look ? LOOKS[x.look].t : freshPick(L, 'v:am:x', ['What\'s the play?', '{coach:last} draws it up for you.', 'Nobody on the bench is sitting.'], r));
   },
   injury: (L, c, r) => {
     const m = /^It's a (.+)\. Now what\?$/.exec(c.title);
     if (!m) return;
     const kind = m[1], g = c.ctx.g;
-    c.title = pick(r, ['It\'s a ' + kind + '. Now what?', 'The scan says ' + kind + '.', capFirst(kind) + '. How do you handle it?', 'You felt it go. It\'s a ' + kind + '.']);
-    c.text = pick(r, [
+    const when = L.season && L.season.w + L.season.l > 0 ? ' The ' + nick(L.team) + ' are ' + L.season.w + '-' + L.season.l + '.' : '';
+    c.title = freshPick(L, 'v:inj:t', ['It\'s a ' + kind + '. Now what?', 'The scan says ' + kind + '.', capFirst(kind) + '. How do you handle it?', 'You felt it go. It\'s a ' + kind + '.', 'Bad news from the MRI'], r);
+    c.text = freshPick(L, 'v:inj:x', [
       'Dr. {doctor:last} holds up the scan: "' + g + ' games, give or take. How we get there is your call."',
       '{trainer} reads you the report. About ' + g + ' games. Your body, your call.',
       'Dr. {doctor:last} says about ' + g + ' games. "Less if you\'re lucky. More if you\'re not."',
-    ]);
+      'A ' + kind + '. ' + g + ' games, maybe.' + when,
+    ], r);
   },
   retire: (L, c, r) => {
-    const o = ovT(L, ovrOf(L));
-    c.title = pick(r, ['Is it time to hang them up?', 'One more year, or the last one?', 'Your body has been talking. Do you listen?', 'Quiet summer. Time to decide.']);
-    c.text = pick(r, [
+    const o = ovT(L, ovrOf(L)), T = totals(L);
+    const rings = T.rings ? (T.rings === 1 ? 'One ring.' : T.rings + ' rings.') : 'No ring yet.';
+    c.title = freshPick(L, 'v:ret:t', ['Is it time to hang them up?', 'One more year, or the last one?', 'Your body has been talking. Do you listen?', 'Quiet summer. Time to decide.', 'Year ' + (T.seasons + 1) + ', or the end?'], r);
+    c.text = freshPick(L, 'v:ret:x', [
       'You\'re ' + L.age + '. Your overall is ' + o + '. Your knees have an opinion, and it isn\'t quiet.',
       'You\'re ' + L.age + ' and still rated ' + o + '. The game is slower. So are you, a little.',
       L.age + ' years old. Overall ' + o + '. You catch yourself thinking about mornings with no alarm.',
-    ]);
+      T.seasons + ' seasons. ' + Math.round(T.pts).toLocaleString('en-US') + ' points. ' + rings,
+    ], r);
   },
   allstar: (L, c, r) => {
-    c.title = pick(r, ['All-Star Saturday too. Are you in?', 'The league wants you on Saturday night too', 'Dunk contest, three-point contest or a nap?']);
-    c.text = pick(r, ['The league wants you in a contest as well as Sunday\'s game. One event, or none.',
+    const n = L.flags.allstars || 1;
+    c.title = freshPick(L, 'v:as:t', ['All-Star Saturday too. Are you in?', 'The league wants you on Saturday night too', 'Dunk contest, three-point contest or a nap?', n > 1 ? 'All-Star number ' + n + '. Saturday too?' : 'Your first All-Star weekend'], r);
+    c.text = freshPick(L, 'v:as:x', ['The league wants you in a contest as well as Sunday\'s game. One event, or none.',
       'Sunday is the game. Saturday is the show. They want you in one contest, or none.',
-      'Your phone has the invitation. One contest on Saturday, or a quiet night before Sunday.']);
+      'Your phone has the invitation. One contest on Saturday, or a quiet night before Sunday.',
+      'The ' + nick(L.team) + ' would love the publicity. Your legs would love a night off.'], r);
   },
   extension: (L, c, r) => {
     const sal = money(c.ctx.sal);
-    if (c.key === 'ext') c.text = pick(r, ['{gm} slides the paper across the desk: "Five years, ' + sal + ' a year. Starts next season."',
+    if (c.key === 'ext') c.text = freshPick(L, 'v:ext:r', ['{gm} slides the paper across the desk: "Five years, ' + sal + ' a year. Starts next season."',
       '"Five years at ' + sal + ' a year," {gm} says. "Starts next season. I\'d like it signed today."',
-      '{agent:first} calls first: "Five years at ' + sal + ' a year. We could wait for more. Or not."']);
-    else c.text = pick(r, ['{gm} wants a deal before the market opens. Four years at ' + sal + ' a year.',
+      '{agent:first} calls first: "Five years at ' + sal + ' a year. We could wait for more. Or not."'], r);
+    else c.text = freshPick(L, 'v:ext:v', ['{gm} wants a deal before the market opens. Four years at ' + sal + ' a year.',
       'Four years, ' + sal + ' a year, before anybody else can call. {gm} wants an answer this week.',
-      '{agent:first} says the offer is fair. Four years at ' + sal + ' a year. The market might be fairer.']);
+      '{agent:first} says the offer is fair. Four years at ' + sal + ' a year. The market might be fairer.'], r);
   },
   coach_review: (L, c, r) => {
     const m = /^(.+?) doesn't sugarcoat it\. (.+? won't cut it)\. He wants the minutes earned\.$/.exec(c.text);
     if (!m) return;
-    c.title = pick(r, ['Why\'d you cut my minutes?', 'Your minutes are down. You want to know why.', 'You ask the question every bench player asks']);
-    c.text = pick(r, [c.text, m[1] + ' keeps it short. ' + m[2] + '. Earn them back.', m[2] + '. That\'s the whole explanation from ' + m[1] + '.']);
+    c.title = freshPick(L, 'v:cr:t', ['Why\'d you cut my minutes?', 'Your minutes are down. You want to know why.', 'You ask the question every bench player asks', 'A closed door, and a hard question'], r);
+    c.text = freshPick(L, 'v:cr:x', [c.text, m[1] + ' keeps it short. ' + m[2] + '. Earn them back.', m[2] + '. That\'s the whole explanation from ' + m[1] + '.'], r);
   },
-  hs_summer: (L, c, r) => { c.title = pick(r, ['Where are you spending the summer?', 'School\'s out. Where do you get better?', 'Three months off. How do you spend them?']); },
-  declare: (L, c, r) => { c.title = pick(r, ['Stay in school, or go pro?', 'The NBA, or one more year?', 'Your name, or your college\'s?']); },
+  hs_summer: (L, c, r) => { c.title = freshPick(L, 'v:hss:t', ['Where are you spending the summer?', 'School\'s out. Where do you get better?', 'Three months off. How do you spend them?', 'The summer before ' + (GRADE[L.am && L.am.grade] || 'next') + ' year'], r); },
+  declare: (L, c, r) => { c.title = freshPick(L, 'v:dec:t', ['Stay in school, or go pro?', 'The NBA, or one more year?', 'Your name, or your college\'s?', 'Draft night is calling'], r); },
+  nickname: (L, c, r) => {
+    const nm = c.ctx.nm;
+    c.text = freshPick(L, 'v:nick:x', ['{pbp} said it once on a late call. Now the whole arena says it.', 'A fan holds up a sign that says ' + nm + '. Then a hundred do.', 'It started on a podcast. Now it\'s on T-shirts.'], r);
+  },
 };
 /* And how a few of them end. */
 const VARY_RES = {
-  retire_more: ['One more year. Let\'s go.', 'One more. You start running hills on Monday.', 'You tell your family one more. Nobody is surprised.'],
-  inj_rest: ['You give it time. It heals right.', 'You do every boring rehab drill. It heals clean.', 'Two weeks of ice and patience. It holds.'],
+  retire_more: ['One more year. Let\'s go.', 'One more. You start running hills on Monday.', 'You tell your family one more. Nobody is surprised.', 'One more. You book the trainer for June.'],
+  inj_rest: ['You give it time. It heals right.', 'You do every boring rehab drill. It heals clean.', 'Two weeks of ice and patience. It holds.', 'Pool work and sleep. It comes back strong.'],
 };
 function varyRes(L, card, k, text) {
   if (!storyOn(L) || !VARY_RES[k]) return text;
-  return pick(rngAt(L, 'vres:' + card.key + ':' + (L.steps || 0)), VARY_RES[k]);
+  return freshPick(L, 'vr:' + k, VARY_RES[k], rngAt(L, 'vres:' + card.key + ':' + (L.steps || 0)));
+}
+/* THE SAME QUESTION IS NOT ASKED IN THE SAME WORDS. A card that comes back
+   every season (the summer, the goal, Game 7, an injury) keeps what each
+   answer DOES, because the rules read the answer by its place on the card,
+   and changes how it is put. The canonical label is the key; fresh() deals
+   the next wording this career has not read. A story career only. */
+const OPT_ALT = {
+  clutch: {
+    'Pull up for three': ['Pull up from deep', 'Step back for three', 'Let it fly from the wing'],
+    'Drive to the rim': ['Attack the basket', 'Get downhill', 'Take it to the cup'],
+    'Hit the mid-range fadeaway': ['Fade from the elbow', 'Go to your mid-range spot', 'Turn and fade baseline'],
+    'Find the open man': ['Draw two and kick it', 'Find {tm:first} open', 'Trust the extra pass'],
+  },
+  amclutch: {
+    'Pull up for three': ['Pull up from deep', 'Step back for three'],
+    'Drive to the rim': ['Attack the basket', 'Get downhill'],
+    'Hit the mid-range fadeaway': ['Fade from the elbow', 'Turn and fade baseline'],
+    'Find the open man': ['Draw two and kick it', 'Trust the extra pass'],
+  },
+  allstar: {
+    'Enter the dunk contest': ['Sign up for the dunk contest', 'Go for the dunk title', 'Jump over something'],
+    'Enter the three-point contest': ['Shoot in the three-point contest', 'Take the money-ball racks', 'Enter the shootout'],
+    'Rest your legs': ['Sit out Saturday', 'Save it for Sunday', 'Watch from courtside'],
+  },
+  retire: {
+    'Play one more season': ['Run it back one more year', 'Give it one more go', 'Not yet. One more.'],
+    Retire: ['Hang them up', 'Walk away now', 'Call it a career'],
+  },
+  injury: {
+    'Play through it': ['Tape it and play', 'Gut it out', 'Get back out there'],
+    'Take the full time off': ['Rest it properly', 'Give it the full time', 'Sit until it heals'],
+    'Get the surgery now': ['Have the surgery', 'Fix it right now'],
+    'Rehab it and rush back': ['Rehab and hurry back', 'Push the timeline'],
+    'Fly to a specialist': ['See the best doctor alive', 'Get a second opinion'],
+  },
+  nickname: { 'Own it': ['Wear it proudly', 'Put it on a shirt'], 'Ask them to drop it': ['Shut it down', 'Tell them no thanks'] },
+  extension: {
+    'Sign the extension': ['Sign it today', 'Put pen to paper', 'Take the security'],
+    'Bet on yourself': ['Wait and bet on you', 'Go for more next year'],
+    'Test the market': ['See what\'s out there', 'Hit free agency'],
+  },
+  hs_summer: {
+    'Play the shoe circuit': ['Hit the travel circuit', 'Chase the big events'],
+    'See a skills trainer daily': ['Work with a skills coach', 'Daily skill sessions'],
+    'Run with your high school team': ['Open gym with your guys', 'Stay and run with the team'],
+    'Rest and grow': ['Rest and let your body grow', 'Sleep, eat, stretch, repeat'],
+  },
+  training: {
+    'Live in the shooting gym': ['Shoot until your arms quit', 'Rebuild your jumper'],
+    'Hit the weight room': ['Add real muscle', 'Live under a squat rack'],
+    'Go to point guard school': ['Learn to run an offense', 'Study the pick and roll'],
+    'Go to defensive camp': ['Learn to lock people up', 'Slide drills all summer'],
+    'Rest and recover': ['Shut it down until August', 'Sleep, fish, recover'],
+    'Post work with a retired big': ['Learn old man post moves', 'Footwork with an old center'],
+    'Live in the film room': ['Watch three hundred hours of tape', 'Study every coverage'],
+    'Box for your footwork': ['Train with a boxer', 'Jump rope and footwork'],
+    'Do yoga and mobility work': ['Hot yoga, five days a week', 'Mobility and stretching'],
+    'Train at altitude': ['Go up into the mountains', 'Thin air, long runs'],
+    'Run pickup with pros': ['Invite-only pickup runs', 'Hoop with other pros'],
+    'Go to national team camp': ['Try out for the national team', 'Camp with the best'],
+    'Play Summer League again': ['Run Summer League again', 'Go to Vegas again'],
+    'Train back home': ['Go home and work', 'Your old gym, your old hoop'],
+    'Hire a private skills coach': ['Pay for a private coach', 'Hire an All-Star\'s trainer'],
+    'Do the rehab right': ['Rehab it the boring way', 'Every rehab drill, twice'],
+  },
+  goal: {
+    'Make the playoffs': ['Get to April', 'Play in the postseason'],
+    'Make the All-Star team': ['Be an All-Star', 'Play in February\'s big game'],
+    'Average 20 a night': ['Score 20 a game', 'Be a 20-point scorer'],
+    'Average 30 a night': ['Score 30 a game', 'Lead the league in points'],
+    'Stay healthy for 75 games': ['Play 75 games', 'Never miss a game'],
+    'Win the title': ['Win the ring', 'Bring home the trophy'],
+    'Win a starting job': ['Start every night', 'Be in the starting five'],
+    'Win the MVP': ['Be the league\'s MVP', 'Win the big one'],
+    'Win 50 games': ['Fifty wins', 'Win half a hundred'],
+    'Win a playoff series': ['Get out of round one', 'Win a round in May'],
+  },
+  moment: {
+    'Take the shot yourself': ['Take it yourself', 'Call your own number'],
+    'Drive and kick it out': ['Drive and dish', 'Collapse it and kick'],
+    'Step right to the line': ['Walk straight to the line', 'Shoot them right away'],
+    'Let them ice you': ['Let them call timeout', 'Sit through the freeze'],
+    'Rise up and dunk on him': ['Put him on a poster', 'Take off and finish'],
+    'Lay it in': ['Just lay it up', 'Take the easy two'],
+    'Chase him down': ['Run him down', 'Go for the chase-down'],
+    'Let it go': ['Let him have it', 'Save your legs'],
+  },
+  tm_lost_media: {
+    'Back the front office': ['Trust the front office', 'Give the company answer'],
+    'Admit it hurts': ['Say you\'ll miss him', 'Be honest about it'],
+    'Talk about this season': ['Change the subject', 'Talk about your team'],
+  },
+  tm_lost_camp: { 'Fill the hole yourself': ['Step into his role', 'Take his shots'], 'Let it sting': ['Feel it, then work', 'Carry it quietly'] },
+  tm_top_seed: { 'Keep the foot down': ['Keep pushing every night', 'Chase every win'], 'Save the legs': ['Rest for April', 'Pick your nights'], 'Stay humble': ['Say nothing is won', 'Keep it quiet'] },
+  tm_dl_buy: { 'Give him your shots': ['Make room for him', 'Hand him some touches'], 'Keep doing your thing': ['Change nothing', 'Stay the course'] },
+  tm_race_film: { 'Take it': ['Put it on your shoulders', 'Take the ball late'] },
+  tm_hot_target: { 'Love the target': ['Welcome every big night', 'Want their best shot'] },
+  rival_trash: { 'Answer on the court': ['Let the scoreboard talk', 'Answer him next game'], 'Say nothing': ['Ignore him', 'Stay above it'] },
+};
+/* A title that comes back twice in one career is put another way. Each entry
+   is the other ways to say the card's own title; a function reads the card. */
+const TITLE_ALT = {
+  tm_lost_media: [() => 'Cameras want your take', () => 'Media day, and one question', (L) => 'The move, on the record'],
+  tm_lost_camp: [() => 'An empty locker at camp', () => 'One fewer voice in the room'],
+  tm_race_film: [() => 'The stretch run starts now', () => 'The staff wants more from you'],
+  tm_hot_target: [() => 'Every crowd sold out', () => 'You\'re the game everybody circles'],
+  tm_top_seed: [(L) => 'The best record in the ' + confOf(L.team), () => 'Top of the standings at the break'],
+  tm_dl_sell_room: [() => 'Selling at the deadline', () => 'Another teammate traded'],
+  tm_dl_buy: [() => 'A deadline reinforcement', () => 'New guy at shootaround'],
+  rival_trash: [() => 'Your rival has a podcast take', () => 'He\'s talking about you again', () => 'Rival, microphone, trouble'],
+  nickname: [(L, c) => 'The arena chants "' + c.ctx.nm + '"', (L, c) => '"' + c.ctx.nm + '" is catching on'],
+  fa: [() => 'Free agency is open', () => 'Your phone is ringing. Pick one.', () => 'Who gets your next contract?'],
+  portal: [() => 'The portal is calling', () => 'Pick a new school'],
+  summer_league: [() => 'A summer run in the city', () => 'Pro-am, or a quiet summer?'],
+  mixtape: [() => 'You went viral', () => 'Your highlights are everywhere'],
+  build_arch: [() => 'The scouting reports changed', () => 'A new kind of player?'],
+  coach_talk: [() => 'A minute with the coach', () => 'Your turn in the coach\'s office'],
+};
+const MOMENT_SAY = {
+  buzzer: [['Tied, four seconds left. Who takes it?', 'Four seconds. Tied. Your ball.', 'The play broke. The ball found you.'],
+    [(o) => 'Tied with the ' + o + '. The play breaks down and the ball finds you.', (o) => 'The ' + o + ' switch everything. Four seconds, and you have it.', (o) => 'Tie game against the ' + o + '. Your number gets called.']],
+  ft: [['Down one, two free throws', 'Two shots to win it', 'The line, down one'],
+    [(o) => 'Fouled with two seconds left against the ' + o + '. The whole building\'s trying to get in your head.', (o) => 'Down one to the ' + o + '. Two free throws. Make both.', (o) => 'The ' + o + ' fans are waving everything they own behind the basket.']],
+  poster: [['One man between you and the rim', 'A runout, and one big in the way', 'He\'s daring you'],
+    [(o) => 'A runout against the ' + o + '. Their big\'s planted in the lane, daring you.', (o) => 'You beat everybody down the floor. One ' + o + ' big is waiting.', (o) => 'Open floor against the ' + o + '. Their center wants the charge.']],
+  block: [['He thinks he\'s gone. Chase him?', 'A breakaway the other way', 'Four steps behind'],
+    [(o) => 'A steal at the other end and a ' + o + ' guard\'s all alone. You\'re four steps behind.', (o) => 'Turnover. A ' + o + ' guard is gone. Can you catch him?', (o) => 'The ' + o + ' bench stands up for the easy two. You\'re still running.']],
+  stop: [['Up one, last possession. Who guards him?', 'One stop to win it', 'Their best scorer, last possession'],
+    [(o) => 'The ' + o + ' clear out a side for their best scorer. You want the assignment.', (o) => 'One stop beats the ' + o + '. Their star is calling for it.', (o) => 'The ' + o + ' run it through their best man. Who takes him?']],
+  post: [['Down one. You have him on the block.', 'Last shot from the block', 'A mismatch inside'],
+    [(o) => 'They feed you on the left block against the ' + o + '. His back is to the rim and so is yours.', (o) => 'You sealed a smaller ' + o + ' defender. The ball is coming.', (o) => 'The ' + o + ' switched. You have a guard on your back.']],
+  lob: [['Two on one. He is looking up for you.', 'The rim is open above him', 'A lob is there'],
+    [(o) => 'A runout against the ' + o + '. One defender back, and the rim is wide open above him.', (o) => 'Two on one against the ' + o + '. Your guard looks up at you.', (o) => 'The ' + o + ' defender turns his head. The lob is open.']],
+  steal: [['You know this play. Jump it?', 'You saw this on film', 'The same swing pass again'],
+    [(o) => 'The ' + o + ' run the same swing pass you watched on film all week.', (o) => 'You know the ' + o + ' play before they run it.', (o) => 'The ' + o + ' point guard stares down his man. Again.']],
+};
+VARY.moment = (L, c, r) => {
+  const P = MOMENT_SAY[c.ctx && c.ctx.m];
+  if (!P) return;
+  const o = nick(c.ctx.opp);
+  c.title = freshPick(L, 'v:mo:t:' + c.ctx.m, P[0], r);
+  c.text = freshPick(L, 'v:mo:x:' + c.ctx.m, P[1], r)(o);
+};
+VARY.fa = (L, c, r) => {
+  if (!/^Money, minutes or a ring/.test(c.text || '')) return;
+  c.text = freshPick(L, 'v:fa:x', [c.text, '{agent:first} lays the offers out: money, minutes, a ring. Pick two.', 'Every offer says it wants you. Only one means it.', 'You\'re ' + L.age + '. {agent:first} says this deal decides a lot.'], r);
+};
+function varyTitle(L, card, r) {
+  const A = TITLE_ALT[card.id];
+  if (!A) return;
+  const list = [() => card.title].concat(A);
+  card.title = freshPick(L, 't:' + card.id, list, r)(L, card);
+}
+function varyOpts(L, card, r) {
+  const T = OPT_ALT[card.id];
+  if (!T) return;
+  for (const o of card.options || []) {
+    const alts = T[o.label];
+    if (!alts) continue;
+    /* {tm} is a real teammate: only on a story career in the league. */
+    const list = [o.label].concat(alts.filter((a) => a.indexOf('{tm') < 0 || (!!L.team && !isAm(L))));
+    o.label = freshPick(L, 'o:' + card.id + ':' + o.label, list, r);
+  }
 }
 function varyCard(L, card) {
-  if (!storyOn(L) || card.varied || !VARY[card.id] || card.kind === 'clutch' && card.id !== 'clutch') return;
+  if (!storyOn(L) || card.varied) return;
   card.varied = 1;
-  VARY[card.id](L, card, rngAt(L, 'vary:' + card.key + ':' + (L.steps || 0)));
+  const r = rngAt(L, 'vary:' + card.key + ':' + (L.steps || 0));
+  if (VARY[card.id]) VARY[card.id](L, card, r);
+  else varyTitle(L, card, rngAt(L, 'vtit:' + card.key + ':' + (L.steps || 0)));
+  varyOpts(L, card, rngAt(L, 'vopt:' + card.key + ':' + (L.steps || 0)));
 }
 function narrate(L, card) {
   if (!storyOn(L) || !card || card.lead != null || NARR_SKIP[card.id] || NARR_SKIP[card.kind]) return;
@@ -6838,27 +7122,46 @@ const GOAL_HINT = {
    from whoever would be asking that year, and they remember in April. A
    person is not asked two Septembers running. */
 const GOAL_ASK = {
-  gm: ['What\'s the goal this year?', '{gm} leans back: "Give me one thing. I\'m holding you to it in April."', (L) => !!L.team],
-  agent: ['A bonus clause needs filling in', '{agent} slides the contract over: "Hit this and the next deal gets easier."', (L) => !!L.contract && L.contract.years <= 2],
-  beat: ['Going on the record?', '{beat} has the recorder out: "One goal. It runs in Sunday\'s paper."', (L) => L.m.fame >= 30],
-  trainer: ['WHY?', '{trainer} writes one word on the whiteboard and waits for your answer.', () => true],
-  mom: ['What\'s this year about, baby?', 'Your mom asks over Sunday dinner. She\'ll ask again in April.', () => true],
-  self: ['One goal on the mirror', 'Nobody else will see it. You will, every single morning.', () => true],
+  gm: [['What\'s the goal this year?', '{gm} wants one number from you', 'Your GM wants a promise', 'One goal, on {gm}\'s desk'],
+    ['{gm} leans back: "Give me one thing. I\'m holding you to it in April."', '{gm} has a legal pad out. "One goal. Write it down."', '"Tell me what this year is," {gm} says. "Then go do it."', '{gm} taps the whiteboard: "Your name goes up there. With a goal."'], (L) => !!L.team],
+  agent: [['A bonus clause needs filling in', '{agent:first} has a bonus clause', 'The bonus is yours to name', 'What\'s the incentive this year?'],
+    ['{agent} slides the contract over: "Hit this and the next deal gets easier."', '"Pick the clause," {agent:first} says. "I\'ll sell it to them."', '{agent:first} calls from an airport: "One incentive. Make it one you hit."'], (L) => !!L.contract && L.contract.years <= 2],
+  beat: [['Going on the record?', '{beat} wants a quote for Sunday', 'A goal, in print', 'The preseason interview'],
+    ['{beat} has the recorder out: "One goal. It runs in Sunday\'s paper."', '{beat} asks the question every reader wants answered.', '"What would make this year a success?" {beat} asks. The recorder blinks.'], (L) => L.m.fame >= 30],
+  trainer: [['WHY?', 'The whiteboard question', '{trainer:first} wants a reason', 'One word on the board'],
+    ['{trainer} writes one word on the whiteboard and waits for your answer.', '{trainer} won\'t start the workout until you say it.', 'Six in the morning. {trainer:first} asks what all this is for.'], () => true],
+  mom: [['What\'s this year about, baby?', 'Your mom has a question', 'Sunday dinner, and a question', 'Mom wants to know the plan'],
+    ['Your mom asks over Sunday dinner. She\'ll ask again in April.', 'Your mom puts the fork down. "So what\'s this year for?"', 'Your mom calls, like every Sunday. This time she wants a goal.'], () => true],
+  self: [['One goal on the mirror', 'A note to yourself', 'Nobody has to know', 'Your phone\'s lock screen'],
+    ['Nobody else will see it. You will, every single morning.', 'You write it on tape and stick it on the mirror.', 'You set it as your lock screen. You\'ll see it fifty times a day.'], () => true],
+};
+const BACK_SAY = {
+  met: ['Last year you said {g}. You did.', 'Last year: {g}. Done.', 'You hit last year\'s: {g}.'],
+  miss: ['Last year you said {g}. You didn\'t.', 'Last year: {g}. Not even close.', 'Last year\'s goal is still on the wall: {g}.'],
 };
 function goalCard(L) {
   if (!storyOn(L) || !L.team || !L.season || L.season.goal) return;
   const fit = Object.keys(GOALS).filter((k) => GOALS[k][2](L));
   if (fit.length < 2) return;
   const rng = figRng(L, 'goal' + L.year);
-  const ks = fit.sort(() => rng() - 0.5).slice(0, 3);
   const prev = (L.goals || []).length ? L.goals[L.goals.length - 1] : null;
+  /* Last year's goal is offered again only if it was missed: a goal you hit
+     is a goal you have outgrown. */
+  const ks = fit.filter((k) => !(prev && prev.met && prev.k === k)).sort(() => rng() - 0.5).slice(0, 3);
+  if (ks.length < 2) return;
   const whos = Object.keys(GOAL_ASK).filter((w) => GOAL_ASK[w][2](L) && !(prev && prev.who === w));
   const who = pick(figRng(L, 'goalwho' + L.year), whos);
-  const A = GOAL_ASK[who];
-  /* Last April is part of the question. */
-  const back = prev && prev.y === L.year - 1 ? (prev.met ? ' Last year you hit yours.' : ' Last year you missed yours.') : '';
-  L.pending.push({ id: 'goal', kind: 'event', key: 'goal:' + L.year, scene: who === 'self' ? 'Home' : who === 'gm' ? 'GM\'s office' : who === 'agent' ? 'Agent\'s office' : who === 'beat' ? 'Media day' : who === 'trainer' ? 'The weight room' : 'Sunday dinner', eyebrow: calendar(L, 'pre'), title: A[0],
-    text: A[1] + back, ctx: { ks, who }, options: ks.map((k) => ({ label: GOALS[k][0], hint: GOAL_HINT[k] })) });
+  const A = GOAL_ASK[who], r = rngAt(L, 'gsay:' + L.year);
+  /* Last April is part of the question, and it is named. */
+  let back = '';
+  if (prev && prev.y === L.year - 1 && GOALS[prev.k]) {
+    const g = GOALS[prev.k][0][0].toLowerCase() + GOALS[prev.k][0].slice(1);
+    back = ' ' + freshPick(L, 'gb:' + (prev.met ? 'met' : 'miss'), BACK_SAY[prev.met ? 'met' : 'miss'], r).replace('{g}', g);
+  }
+  let text = freshPick(L, 'gx:' + who, A[1], r);
+  if (words(text) + words(back) > 22) back = prev.met ? ' You hit last year\'s.' : ' You missed last year\'s.';
+  L.pending.push({ id: 'goal', kind: 'event', key: 'goal:' + L.year, scene: who === 'self' ? 'Home' : who === 'gm' ? 'GM\'s office' : who === 'agent' ? 'Agent\'s office' : who === 'beat' ? 'Media day' : who === 'trainer' ? 'The weight room' : 'Sunday dinner', eyebrow: calendar(L, 'pre'), title: freshPick(L, 'gt:' + who, A[0], r),
+    text: text + back, ctx: { ks, who }, options: ks.map((k) => ({ label: GOALS[k][0], hint: GOAL_HINT[k] })) });
 }
 const GOAL_SAID = {
   gm: ['{gm} brings it up at the exit meeting, grinning.', '{gm} brings it up at the exit meeting. He isn\'t grinning.'],

@@ -28,7 +28,7 @@
   .sg-room .lab{position:absolute;left:8px;top:8px;}
   .sg-demo-wipe{position:relative;height:60px;overflow:hidden;background:var(--k-panel);}
 </style>
-<script src="../career-kit.js?v=6"></script>
+<script src="../career-kit.js?v=7"></script>
 </head>
 <body>
 <main class="sg k-root" id="sg">
@@ -81,6 +81,23 @@
         <button class="k-tab" role="tab" aria-selected="true">Story</button><button class="k-tab is-hover" role="tab" aria-selected="false">Seasons</button><button class="k-tab" role="tab" aria-selected="false">Trophies</button><button class="k-tab is-focus" role="tab" aria-selected="false">Vault</button>
       </div>
     </div>
+  </section>
+
+  <section>
+    <h2>Menu parts</h2>
+    <p class="sg-note">The top bar's icon buttons (each wears its word; a dot says on or off), the one-row icon tabs that scroll sideways on a phone, the labelled spec sheet on the player card, and a fold for anything long.</p>
+    <div class="k-panel">
+      <div style="display:flex;gap:4px" id="sg-ib"></div>
+      <div class="k-tabs k-itabs" role="tablist" style="margin-top:16px" id="sg-itabs"></div>
+      <dl class="k-spec" style="margin-top:12px"><div><dt>Age</dt><dd>24</dd></div><div><dt>Role</dt><dd>Starter</dd></div><div><dt>Coach</dt><dd>Doug Ferris</dd></div><div><dt>Contract</dt><dd>$21M · 3 yrs left</dd></div></dl>
+      <details class="k-fold" style="margin-top:12px"><summary class="k-eyebrow">Season by season<span class="k-foldn">7</span></summary><p class="k-small">Folded content.</p></details>
+    </div>
+    <script>
+      (function(){ var K = window.RTF_KIT;
+        document.getElementById('sg-ib').innerHTML = [['shirt','Look'],['film','Scenes'],['sound','Sound'],['home','Home']].map(function(x, i){ return '<button class="k-ib"' + (i === 1 ? ' aria-pressed="true"' : '') + '>' + K.iconHtml(x[0], 2) + '<span>' + x[1] + '</span>' + (i === 1 ? '<i></i>' : '') + '</button>'; }).join('');
+        document.getElementById('sg-itabs').innerHTML = [['clip','Story'],['ball','Team'],['up','Seasons'],['trophy','Trophies'],['face','People'],['crown','Legacy'],['mic','News']].map(function(x, i){ return '<button class="k-tab k-itab" role="tab" aria-selected="' + (i === 0) + '">' + K.iconHtml(x[0], 2) + '<span>' + x[1] + '</span></button>'; }).join('');
+      })();
+    </script>
   </section>
 
   <section>

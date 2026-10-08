@@ -129,13 +129,16 @@ var CSS = [
 '.cr-grid{display:block;}',
 '@media (min-width:920px){.cr-grid{display:grid;grid-template-columns:minmax(0,400px) minmax(0,1fr);gap:20px;align-items:start;}',
 '  .cr-side{position:sticky;top:64px;}}',
-'.cr-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:2px 0 10px;}',
-'.cr-top .k-h1{font-size:28px;}',
-'.cr-topbtns{display:flex;gap:2px;flex-wrap:wrap;justify-content:flex-end;}',
+/* THE TOP BAR. The title, where you are in one line under it, and four square
+   pixel buttons each wearing its word. */
+'.cr-top{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px 10px;margin:2px 0 12px;}',
+'.cr-topl{display:contents;}',
+'.cr-top .cr-hud{grid-column:1/-1;grid-row:2;margin-top:0;}',
+'.cr-top .k-h1{font-size:28px;line-height:1;margin:0;}',
+'.cr-hud{display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline;margin-top:5px;font:700 11.5px/1.25 var(--k-f-text);color:var(--k-ink-2);}',
+'.cr-hud b{font:400 9px/1.3 var(--k-f-pixel);color:var(--k-accent);letter-spacing:.04em;text-transform:uppercase;}',
+'.cr-topbtns{display:flex;gap:4px;flex-wrap:nowrap;justify-content:flex-end;flex:none;}',
 '.cr-topbtns .k-btn{min-height:40px;padding:8px 10px;font-size:12px;}',
-'.cr-topbtns .cr-scn i{display:inline-block;width:8px;height:8px;margin-left:7px;background:#5b6584;}',
-'.cr-topbtns .cr-scn[aria-pressed="true"] i{background:#3ecf8e;box-shadow:0 0 6px #3ecf8e;}',
-'.cr-topbtns .cr-snd{padding:8px 9px;display:inline-flex;align-items:center;justify-content:center;min-width:40px;}',
 '.cr-sec{margin:0 0 14px;}',
 '.cr-sec > .k-eyebrow{margin:0 0 8px;}',
 /* the identity card */
@@ -146,8 +149,7 @@ var CSS = [
 '.cr-id .k-id .k-hero{font-size:30px;line-height:.95;overflow-wrap:anywhere;}',
 '.cr-id .k-id .k-tag{white-space:normal;line-height:1.5;text-align:left;}',
 '.cr-id .cr-lines{display:grid;gap:3px;padding:10px var(--k-s-4) 0;background:var(--k-panel);}',
-'.cr-id .cr-sub2{display:block;font:600 13px/1.4 var(--k-f-text);color:var(--k-ink-2);}',
-'.cr-id .cr-sub2:first-child{color:var(--k-ink);font-weight:700;}',
+'.cr-id .cr-nick{margin:0 0 6px;font:400 10px/1.4 var(--k-f-pixel);color:var(--k-gold);letter-spacing:.04em;}',
 '.cr-id .k-strip{gap:8px;border-top:0;}',
 '.cr-id .cr-lines + .k-strip{padding-top:10px;}',
 '.cr-id .k-stage + .cr-lines{border-top:3px solid var(--k-frame);}',
@@ -312,6 +314,10 @@ var CSS = [
 '.cr-rt .k-row.is-key span:first-child:after{content:"";display:inline-block;width:5px;height:5px;margin-left:6px;vertical-align:2px;background:var(--k-good);}',
 '.cr-tabs{margin:0 0 12px;}',
 '.cr-tabs .k-tab{min-width:0;font-size:11px;letter-spacing:.08em;}',
+/* ONE ROW OF TABS, each an icon over its word. Seven tabs were three rows of
+   text on a phone; one row scrolls sideways and reads like a game menu. */
+'.cr-tabsec{position:relative;}',
+'.cr-tabsec.k-more-r::after{content:"";position:absolute;top:14px;right:14px;width:28px;height:52px;pointer-events:none;background:linear-gradient(90deg,rgba(17,22,40,0),var(--k-panel));}',
 /* the rotation: one row a player, names give way before numbers do */
 '.cr-rot{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:2px;}',
 '.cr-rot li{display:grid;grid-template-columns:2em minmax(0,1fr) 2.4em 3.4em 2.8em 2.8em;gap:8px;align-items:center;padding:6px 8px;background:rgba(143,160,214,.07);font-size:13px;color:var(--k-ink-2);}',
@@ -329,7 +335,7 @@ var CSS = [
 '.cr-rot li.cr-rot-sep{display:block;}',
 '.cr-rot-line{margin:10px 0 0;}',
 /* six tabs are two rows of three on a phone */
-'@media (max-width:519px){.cr-tabs.k-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));}}',
+'@media (max-width:519px){.cr-tabs.k-tabs:not(.k-itabs){display:grid;grid-template-columns:repeat(3,minmax(0,1fr));}}',
 /* the people around you: a name, who they are, a meter that runs both ways */
 '.cr-ppl{list-style:none;margin:0;padding:0;}',
 '.cr-ppl li{display:grid;grid-template-columns:minmax(0,1fr) 96px;gap:4px 12px;padding:9px 0;border-top:1px solid rgba(143,160,214,.12);}',
@@ -358,9 +364,6 @@ var CSS = [
 '.cr-feed li:first-child{border-top:0;}',
 '.cr-feed .src{display:block;font:800 9px var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;color:var(--k-ink-3);margin-bottom:2px;}',
 '.cr-feed li.debate{color:var(--k-ink-2);font-style:italic;}',
-'.cr-fold{margin:0 0 12px;border:1px solid rgba(143,160,214,.18);padding:8px 10px;}',
-'.cr-fold summary{cursor:pointer;font:800 11px var(--k-f-text);letter-spacing:.1em;text-transform:uppercase;color:var(--k-ink-2);}',
-'.cr-fold[open] summary{margin-bottom:8px;}',
 '.cr-st2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}',
 '.cr-st-h{font:800 10px var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;color:var(--k-ink-3);}',
 '.cr-st{list-style:none;margin:4px 0 0;padding:0;font-size:12.5px;}',
@@ -459,6 +462,20 @@ var CSS = [
 '.cr-vsum .k-num{font-size:26px;color:var(--k-gold);}',
 '.cr-vbar{flex:1 1 140px;height:10px;background:var(--k-panel-3);box-shadow:0 0 0 2px var(--k-frame);}',
 '.cr-vbar i{display:block;height:100%;background:var(--k-gold);transform-origin:left;}',
+/* A long section of the Hall card is a fold, so the verdict and the buttons
+   are the first screen and the season table is one tap away. */
+/* the Vault's shelves: a name, a count and a bar, folded when empty and long */
+'.cr-shelf{margin:0 0 6px;}',
+'.cr-shelf > summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;padding:10px 2px;border-top:2px solid var(--k-frame);}',
+'.cr-shelf:first-child > summary{border-top:0;}',
+'.cr-shelf > summary::-webkit-details-marker{display:none;}',
+'.cr-shelf > summary::after{content:"+";font:400 11px var(--k-f-pixel);color:var(--k-accent);}',
+'.cr-shelf[open] > summary::after{content:"-";}',
+'.cr-shn{font:800 11px var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;color:var(--k-ink-2);}',
+'.cr-shc{font:400 9px var(--k-f-pixel);color:var(--k-gold);}',
+'.cr-shbar{flex:1 1 60px;height:6px;}',
+'.cr-back .k-ico{transform:scaleX(-1);}',
+'@media (max-width:359px){.cr-top .k-h1{font-size:24px;}}',
 '.cr-vgrid{list-style:none;margin:6px 0 14px;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;}',
 '.cr-vgrid li{display:flex;align-items:center;gap:8px;min-height:40px;padding:6px 8px;font:700 12.5px/1.25 var(--k-f-text);background:var(--k-panel-2);box-shadow:0 0 0 2px var(--k-frame);}',
 '.cr-vgrid li.got{color:var(--k-ink);box-shadow:0 0 0 2px var(--k-gold);}',
@@ -917,9 +934,9 @@ function buildView(){
   var pane = function(id, html){ return '<div class="cr-pane" role="tabpanel" data-pane="' + id + '"' + (id === bstep ? '' : ' hidden') + '>' + html + '</div>'; };
   var next = steps[si + 1];
   var goText = road ? (pro ? 'Start your sophomore year' : 'Get Pro to start in high school') : 'Go to the draft combine';
-  return '<div class="cr-top"><h2 class="k-h1">' + (form.parent ? 'Your son' : 'New career') + '</h2><div class="cr-topbtns">'
+  return '<div class="cr-top"><div class="cr-topl"><h2 class="k-h1">' + (form.parent ? 'Your son' : 'New career') + '</h2><div class="cr-hud"><b>Step ' + (si + 1) + ' of ' + steps.length + '</b><span>' + esc(steps[si][1]) + '</span></div></div><div class="cr-topbtns">'
     + (form.parent ? '<button class="k-btn k-quiet" id="cr-noson" type="button">Not a son</button>' : '')
-    + '<button class="k-btn k-quiet" id="cr-vault" type="button">' + K.iconHtml('vault', 2) + ' Vault</button><button class="k-btn k-quiet" id="cr-home">Home</button></div></div>'
+    + ib('cr-vault', 'vault', 'Vault') + ib('cr-home', 'home', 'Home', { attr: 'aria-label="Home"' }) + '</div></div>'
     + '<div class="k-panel cr-build">'
     /* On the Look step the figure is drawn at twice the size and framed on the
        head and shoulders, because hair is what is being chosen there. */
@@ -1054,16 +1071,18 @@ function idCard(L){
   var rv = C.roadView(L);
   var club = rv ? rv.what + (rv.level === 'High school' ? ' at ' + rv.where : '')
     : L.team ? teamName(L.team) : (L.draft && !L.draft.team ? 'Undrafted' : 'Draft prospect');
-  var lines = [];
-  if (L.nick) lines.push('"' + L.nick + '"');
-  lines.push('Age ' + L.age + (v.role ? ' · ' + v.role.label : ''));
-  if (rv) lines.push(rv.sub);
-  if ((L.team || rv) && v.coach) lines.push('Coach ' + v.coach);
-  if (!rv && ct && ct.kind !== 'overseas') lines.push(money(ct.salary) + ' a year · ' + ct.years + (ct.years === 1 ? ' year left' : ' years left'));
-  if (L.season && L.season.goal && C.GOALS[L.season.goal]) lines.push('Chasing: ' + C.GOALS[L.season.goal][0].toLowerCase());
+  /* A spec sheet rather than loose lines: each fact has a label, so the eye
+     finds the contract without reading the coach's name first. */
+  var spec = [];
+  spec.push(['Age', String(L.age)]);
+  if (v.role) spec.push(['Role', v.role.label]);
+  if (rv) spec.push(['Level', rv.sub]);
+  if ((L.team || rv) && v.coach) spec.push(['Coach', v.coach]);
+  if (!rv && ct && ct.kind !== 'overseas') spec.push(['Contract', money(ct.salary) + ' · ' + ct.years + (ct.years === 1 ? ' yr left' : ' yrs left')]);
+  if (L.season && L.season.goal && C.GOALS[L.season.goal]) spec.push(['Chasing', C.GOALS[L.season.goal][0]]);
   var cs = C.challengeOf ? C.challengeOf(L) : null;
-  if (cs) lines.push('Challenge: ' + cs.name + ' · ' + (cs.met ? 'Done' : cs.out ? 'Out of reach' : cs.prog));
-  if (L.opt && L.opt.diff) lines.push(C.DIFFS[L.opt.diff].name + ' difficulty');
+  if (cs) spec.push(['Challenge', cs.name + ' · ' + (cs.met ? 'Done' : cs.out ? 'Out of reach' : cs.prog)]);
+  if (L.opt && L.opt.diff) spec.push(['Difficulty', C.DIFFS[L.opt.diff].name]);
   var per = C.personaOf ? C.personaOf(L) : '';
   var strip = tag(L.pos + ' · ' + C.ARCHES[L.arch].name, 'k-team') + tag('#' + L.num + (L.ht ? ' · ' + C.heightText(L.ht) + ' ' + L.wt : ''))
     + (per && per !== 'Still writing it' ? '<span class="k-tag k-gold cr-persona" title="How the league sees you">' + esc(per) + '</span>' : '');
@@ -1073,7 +1092,8 @@ function idCard(L){
     + '<div class="k-actor">' + portrait(L, { pose: L.team || rv ? 'ball' : 'stand', scale: 3 }) + '</div>'
     + '<div class="k-id"><h3 class="k-hero">' + esc(L.name) + '</h3>' + tag(club, 'k-team')
     + '</div><div class="k-ovr"><span class="k-num" id="cr-ovr">' + C.show(v.ovr) + '</span><span class="k-pix">OVR</span></div></div>'
-    + '<div class="cr-lines">' + lines.map(function(t){ return '<span class="cr-sub2">' + esc(t) + '</span>'; }).join('') + '</div>'
+    + '<div class="cr-lines">' + (L.nick ? '<p class="cr-nick">"' + esc(L.nick) + '"</p>' : '')
+    + '<dl class="k-spec cr-spec">' + spec.map(function(x){ return '<div><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl></div>'
     + '<div class="k-strip">' + strip + '</div>' + knownHtml(L) + '</div>';
 }
 /* What the career has shown: revealed traits (with the reason on hover and
@@ -1302,8 +1322,9 @@ function tabsHtml(L){
   else if (tab === 'legacy') body = legacyHtml(L);
   else if (tab === 'news') body = newsHtml(L);
   else body = trophies(L);
-  var t = function(id, name){ var on = tab === id; return '<button class="k-tab" role="tab" aria-selected="' + on + '" data-tab="' + id + '">' + name + '</button>'; };
-  return '<div class="k-panel cr-sec"><div class="k-tabs cr-tabs" role="tablist">' + t('log', 'Story') + (L.opt && L.opt.story && C.rotationOf && C.rotationOf(L) ? t('team', 'Team') : '') + t('seasons', 'Seasons') + t('trophies', 'Trophies')
+  var TI = { log: 'clip', team: 'ball', seasons: 'up', trophies: 'trophy', people: 'face', legacy: 'crown', news: 'mic' };
+  var t = function(id, name){ var on = tab === id; return '<button class="k-tab k-itab" role="tab" aria-selected="' + on + '" data-tab="' + id + '">' + K.iconHtml(TI[id], 2) + '<span>' + name + '</span></button>'; };
+  return '<div class="k-panel cr-sec cr-tabsec"><div class="k-tabs k-itabs cr-tabs" role="tablist">' + t('log', 'Story') + (L.opt && L.opt.story && C.rotationOf && C.rotationOf(L) ? t('team', 'Team') : '') + t('seasons', 'Seasons') + t('trophies', 'Trophies')
     + (L.opt && L.opt.story ? t('people', 'People') + t('legacy', 'Legacy') + t('news', 'News') : '') + '</div>'
     + '<div role="tabpanel">' + body + '</div></div>';
 }
@@ -1385,9 +1406,9 @@ function leagueHtml(L){
   if (st) {
     var col = function(name, list){ return '<div><b class="cr-st-h">' + name + '</b><ol class="cr-st">' + list.map(function(r){
       return '<li class="' + (r[0] === L.team ? 'you' : '') + '"><span>' + esc(E.TEAM_NAMES[r[0]] || r[0]) + '</span><span class="v">' + r[1] + '-' + r[2] + '</span></li>'; }).join('') + '</ol></div>'; };
-    out += '<details class="cr-fold"><summary>Standings · ' + (st.y - 1) + '-' + String(st.y).slice(2) + '</summary><div class="cr-st2">' + col('East', st.E) + col('West', st.W) + '</div></details>';
+    out += '<details class="k-fold"><summary>Standings · ' + (st.y - 1) + '-' + String(st.y).slice(2) + '</summary><div class="cr-st2">' + col('East', st.E) + col('West', st.W) + '</div></details>';
   }
-  if (tx.length) out += '<details class="cr-fold"><summary>Transactions · ' + tx.length + '</summary><ul class="cr-feed cr-tx">' + tx.slice(0, 60).map(function(x){
+  if (tx.length) out += '<details class="k-fold"><summary>Transactions · ' + tx.length + '</summary><ul class="cr-feed cr-tx">' + tx.slice(0, 60).map(function(x){
     var mine = L.team && x.c && x.c.indexOf(L.team) >= 0;
     return '<li class="' + (mine ? 'you' : '') + '"><span class="src">' + esc(TX_KIND[x.k] || 'Move') + ' · ' + x.y + '</span>' + esc(x.t) + '</li>'; }).join('') + '</ul></details>';
   return out;
@@ -1533,13 +1554,27 @@ function rivalHtml(L){
     + '</tbody></table>';
 }
 
+/* A pixel icon button with its word under it: four of them fit beside the
+   title on a phone, and nobody has to guess what a square does. */
+function ib(id, icon, word, more){
+  return '<button class="k-ib cr-ib' + (more && more.cls ? ' ' + more.cls : '') + '" id="' + id + '" type="button"' + (more && more.attr ? ' ' + more.attr : '') + '>'
+    + K.iconHtml(icon, 2) + '<span>' + esc(word) + '</span>' + (more && more.dot ? '<i aria-hidden="true"></i>' : '') + '</button>';
+}
+/* WHERE YOU ARE, in one line under the title: the season and the game, or
+   the summer, then the club and its record. */
+function hud(L){
+  var s = L.season, rv = C.roadView(L);
+  var when = s ? seasonTag(s.year) + (s.g ? ' · Game ' + s.g : ' · Preseason') : L.year ? 'Summer ' + (L.year - 1) : '';
+  var where = rv ? rv.what : L.team ? (E.TEAM_NAMES && E.TEAM_NAMES[L.team] ? teamName(L.team).split(' ').slice(-1)[0] : teamName(L.team)) + (s ? ' ' + s.w + '-' + s.l : '') : 'Draft prospect';
+  return '<div class="cr-hud"><b>' + esc(when) + '</b><span>' + esc(where) + '</span></div>';
+}
 function lifeView(L, d){
-  var SC = window.RTF_SCENES;
-  return '<div class="cr-top"><h2 class="k-h1">Career</h2><div class="cr-topbtns">'
-    + (window.RTF_BALLER ? '<button class="k-btn k-quiet" id="cr-lookbtn" type="button">Look</button>' : '')
-    + (SC ? '<button class="k-btn k-quiet cr-scn" id="cr-scenes" type="button" aria-pressed="' + SC.on() + '" title="Scenes ' + (SC.on() ? 'on' : 'off') + '">Scenes<i aria-hidden="true"></i></button>' : '')
-    + (SC && window.RTF_SOUND ? '<button class="k-btn k-quiet cr-snd" id="cr-sound" type="button" aria-pressed="' + window.RTF_SOUND.on() + '" aria-label="Sound in scenes, ' + (window.RTF_SOUND.on() ? 'on' : 'off') + '" title="Sound in scenes">' + K.iconHtml(window.RTF_SOUND.on() ? 'sound' : 'mute', 2) + '</button>' : '')
-    + '<button class="k-btn k-quiet cr-home cr-snd" id="cr-home" type="button" aria-label="Home" title="Home">' + K.iconHtml('home', 2) + '</button></div></div>'
+  var SC = window.RTF_SCENES, SN = window.RTF_SOUND;
+  return '<div class="cr-top"><div class="cr-topl"><h2 class="k-h1">Career</h2>' + hud(L) + '</div><div class="cr-topbtns">'
+    + (window.RTF_BALLER ? ib('cr-lookbtn', 'shirt', 'Look') : '')
+    + (SC ? ib('cr-scenes', 'film', 'Scenes', { cls: 'cr-scn', dot: 1, attr: 'aria-pressed="' + SC.on() + '" title="Scenes ' + (SC.on() ? 'on' : 'off') + '"' }) : '')
+    + (SC && SN ? ib('cr-sound', SN.on() ? 'sound' : 'mute', SN.on() ? 'Sound' : 'Muted', { cls: 'cr-snd', attr: 'aria-pressed="' + SN.on() + '" aria-label="Sound in scenes, ' + (SN.on() ? 'on' : 'off') + '"' }) : '')
+    + ib('cr-home', 'home', 'Home', { cls: 'cr-home', attr: 'aria-label="Home"' }) + '</div></div>'
     + '<div class="cr-grid"><div class="cr-side">' + idCard(L) + meters(L, d) + '</div>'
     + '<div class="cr-main">' + stageHtml(L, !!d) + facts(L) + ratingsHtml(L, d) + tabsHtml(L)
     + (L.phase === 'after' ? '' : '<button class="k-btn k-quiet k-block" id="cr-quit">Retire now</button>')
@@ -1567,6 +1602,15 @@ function wireLife(L, d){
   });
   root.querySelectorAll('[data-act]').forEach(function(b){ b.onclick = function(){ doAct(b.getAttribute('data-act')); }; });
   root.querySelectorAll('[data-tab]').forEach(function(b){ b.onclick = function(){ tab = b.getAttribute('data-tab'); render(); var t = root.querySelector('[data-tab="' + tab + '"]'); if (t) t.focus(); }; });
+  /* The tab row scrolls sideways on a phone: the chosen tab is brought into it,
+     and a fade on the right says there is more while there is. */
+  var strip = root.querySelector('.k-itabs');
+  if (strip) {
+    var on = strip.querySelector('[aria-selected="true"]'), sec = strip.parentNode;
+    if (on && on.offsetLeft + on.offsetWidth > strip.clientWidth) strip.scrollLeft = on.offsetLeft - 8;
+    var edge = function(){ sec.classList.toggle('k-more-r', strip.scrollLeft + strip.clientWidth < strip.scrollWidth - 4); };
+    strip.onscroll = edge; edge();
+  }
   var off = $('cr-off');
   if (off) off.onclick = openOff;
   var q = $('cr-quit');
@@ -2048,7 +2092,7 @@ function finalView(card){
   var aw = card.awards && card.awards.length ? '<div class="cr-aw">' + awardTags(card.awards) + '</div>' : '';
   var hist = { history: card.history || [], amHist: card.amHist || [] };
   var B = window.RTF_BALLER;
-  return '<div class="cr-top"><h2 class="k-h1">Career over</h2><div class="cr-topbtns"><button class="k-btn k-quiet" id="cr-vault2" type="button">' + K.iconHtml('vault', 2) + ' Vault</button><button class="k-btn k-quiet cr-home" id="cr-home">Home</button></div></div>'
+  return '<div class="cr-top"><div class="cr-topl"><h2 class="k-h1">Career over</h2><div class="cr-hud"><b>' + card.from + '-' + card.to + '</b><span>' + esc(card.name) + '</span></div></div><div class="cr-topbtns">' + ib('cr-vault2', 'vault', 'Vault') + ib('cr-home', 'home', 'Home', { cls: 'cr-home', attr: 'aria-label="Home"' }) + '</div></div>'
     + (card.parent ? '<p class="cr-gen">' + K.iconHtml('tree', 2) + ' Generation ' + (card.gen || 2) + '</p>' : '')
     + '<div class="k-panel ' + (hof ? 'k-gold' : 'k-team') + ' cr-final">'
     + '<div class="cr-hset">' + setArt('nba', hof ? '#a8761c' : card.c1, hof ? '#ffd166' : card.c2, 'hall' + card.name) + '</div><div class="cr-hin">'
@@ -2062,6 +2106,8 @@ function finalView(card){
     + (card.jersey ? '<p class="cr-col">Your #' + esc(String(card.num)) + ' hangs in the rafters for the ' + esc(E.TEAM_NAMES[card.jersey] || card.jersey) + '.</p>' : '')
     + totalsHtml(T, '<div><b>' + (T.pts / gp).toFixed(1) + '</b><span>A game</span></div><div><b>' + T.seasons + '</b><span>' + (T.seasons === 1 ? 'Season' : 'Seasons') + '</span></div>')
     + aw + '</div></div>'
+    + '<div class="cr-btnrow"><button class="k-btn" id="cr-share">Share it</button><button class="k-btn k-sec" id="cr-again">New career</button></div>'
+    + (canFather(card) ? '<button class="k-btn k-sec k-block cr-sonbtn" id="cr-son" type="button">' + K.iconHtml('tree', 2) + ' Play as your son' + (proOpen() ? '' : ' <span class="k-tag k-gold cr-pro">Pro</span>') + '</button>' : '')
     + (card.after || card.rival || card.life || card.ending ? '<div class="k-panel cr-sec cr-epi">'
       + (card.ending && card.ending.secretName ? '<p class="cr-secret"><span class="k">A secret ending</span>' + esc(card.ending.secretName) + '</p>' : '')
       + (card.ending ? '<p><span class="k">The Hall</span>' + esc(card.ending.tierName) + '</p>' : '')
@@ -2080,10 +2126,8 @@ function finalView(card){
     + (card.ch && C.CHALLENGES && C.CHALLENGES[card.ch.id] ? '<div class="k-panel k-tight ' + (card.ch.met ? 'k-gold' : '') + ' cr-chres"><div class="k-eyebrow">' + K.iconHtml(card.ch.met ? 'check' : 'lock', 2) + 'Challenge · ' + esc(C.CHALLENGES[card.ch.id].name) + '</div><p>' + (card.ch.met ? 'Met. It is in the Vault.' : 'Not met. ' + esc(C.CHALLENGES[card.ch.id].blurb)) + '</p></div>' : '')
     + (card.diff === 'easy' ? '<p class="k-small cr-easy">Played on Easy. Not on the Career board and no badges.</p>' : '')
     + foundHtml(card)
-    + '<div class="cr-btnrow"><button class="k-btn" id="cr-share">Share it</button><button class="k-btn k-sec" id="cr-again">New career</button></div>'
-    + (canFather(card) ? '<button class="k-btn k-sec k-block cr-sonbtn" id="cr-son" type="button">' + K.iconHtml('tree', 2) + ' Play as your son' + (proOpen() ? '' : ' <span class="k-tag k-gold cr-pro">Pro</span>') + '</button>' : '')
     + storyHtml(card.story)
-    + '<div class="k-panel cr-sec"><div class="k-eyebrow">' + K.iconHtml('clip', 2) + 'Season by season</div>' + seasonsTable(hist) + '</div>';
+    + '<details class="k-panel cr-sec k-fold"><summary class="k-eyebrow">' + K.iconHtml('up', 2) + 'Season by season<span class="k-foldn">' + T.seasons + '</span></summary>' + seasonsTable(hist) + '</details>';
 }
 function shareText(card){
   var T = card.totals;
@@ -2171,8 +2215,8 @@ function wireFinal(card){
 /* The written story, one heading a chapter. */
 function storyHtml(story){
   if (!story || !story.length) return '';
-  return '<div class="k-panel cr-sec cr-story"><div class="k-eyebrow">' + K.iconHtml('clip', 2) + 'Your story</div>'
-    + story.map(function(x){ return '<h3 class="cr-sub">' + esc(x.h) + '</h3><p>' + esc(x.p) + '</p>'; }).join('') + '</div>';
+  return '<details class="k-panel cr-sec cr-story k-fold"><summary class="k-eyebrow">' + K.iconHtml('clip', 2) + 'Your story<span class="k-foldn">' + story.length + ' chapters</span></summary>'
+    + story.map(function(x){ return '<h3 class="cr-sub">' + esc(x.h) + '</h3><p>' + esc(x.p) + '</p>'; }).join('') + '</details>';
 }
 /* What this career put in the Vault for the first time. */
 function foundHtml(card){
@@ -2214,7 +2258,7 @@ function vaultView(){
   var st = store(), n = vaultCount(st);
   var t = function(id, name){ var on = vtab === id; return '<button class="k-tab" role="tab" aria-selected="' + on + '" data-vtab="' + id + '">' + name + '</button>'; };
   var body = vtab === 'careers' ? careersHtml(st) : vtab === 'family' ? familyHtml(st) : endingsHtml(st);
-  return '<div class="cr-top"><h2 class="k-h1">The Vault</h2><div class="cr-topbtns"><button class="k-btn k-quiet" id="cr-vback" type="button">Back</button><button class="k-btn k-quiet" id="cr-home" type="button">Home</button></div></div>'
+  return '<div class="cr-top"><div class="cr-topl"><h2 class="k-h1">The Vault</h2><div class="cr-hud"><b>' + Math.round(100 * n.have / Math.max(1, n.all)) + '% found</b><span>Every ending you have reached</span></div></div><div class="cr-topbtns">' + ib('cr-vback', 'arrow', 'Back', { cls: 'cr-back' }) + ib('cr-home', 'home', 'Home', { attr: 'aria-label="Home"' }) + '</div></div>'
     + '<div class="k-panel k-tight cr-vsum"><span class="k-num">' + n.have + '</span><span>of ' + n.all + ' found</span>'
     + '<span class="cr-vbar" aria-hidden="true"><i style="width:' + Math.round(100 * n.have / Math.max(1, n.all)) + '%"></i></span>'
     + '<span class="k-small">' + st.arc.length + (st.arc.length === 1 ? ' career played' : ' careers played') + '</span></div>'
@@ -2224,11 +2268,17 @@ function vaultView(){
 function endingsHtml(st){
   return vaultShelves().map(function(sh){
     var have = sh.ids.filter(function(id){ return st.vault[sh.k + ':' + id]; }).length;
-    return '<h3 class="cr-sub">' + esc(sh.name) + ' · ' + have + ' of ' + sh.ids.length + '</h3><ul class="cr-vgrid">' + sh.ids.map(function(id){
+    /* A shelf is a fold with its own bar: open while it has something on it
+       or is short, so the first look is what you found, not a wall of locks. */
+    var open = have > 0 || (sh.ids.length <= 10 && !sh.secret);
+    /* What you found comes first on its shelf. */
+    var ids = sh.ids.filter(function(id){ return st.vault[sh.k + ':' + id]; }).concat(sh.ids.filter(function(id){ return !st.vault[sh.k + ':' + id]; }));
+    return '<details class="cr-shelf"' + (open ? ' open' : '') + '><summary><span class="cr-shn">' + esc(sh.name) + '</span><span class="cr-shc">' + have + ' / ' + sh.ids.length + '</span>'
+      + '<span class="cr-vbar cr-shbar" aria-hidden="true"><i style="width:' + Math.round(100 * have / Math.max(1, sh.ids.length)) + '%"></i></span></summary><ul class="cr-vgrid">' + ids.map(function(id){
       var got = !!st.vault[sh.k + ':' + id], nm = vaultName(sh.k + ':' + id);
       return '<li class="' + (got ? 'got' : 'no') + '">' + K.iconHtml(got ? (sh.k === 's' ? 'star' : 'check') : 'lock', 1)
         + '<span>' + (got || !sh.secret ? esc(nm) : 'Secret') + '</span>' + (got ? '' : '<span class="sr-only"> (not found yet)</span>') + '</li>';
-    }).join('') + '</ul>';
+    }).join('') + '</ul></details>';
   }).join('');
 }
 function fullCard(id){ var h = store().hof || []; for (var i = 0; i < h.length; i++) if (cardId(h[i]) === id) return h[i]; return null; }
