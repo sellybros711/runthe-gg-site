@@ -19457,7 +19457,7 @@ owner said was not what was being built.
 check asserts it. The last hole of each world is the signature hole. **Every hole has an obstacle, a
 puzzle or a moving part**, and par climbs world by world; both are asserted. The set pieces the holes
 are built from are in the engine: loops (an entry speed and a chute that feeds it), rivers (a `FLOW`
-material that carries the ball), pipes (`dur`, `vcap` a fast ball skips, `keep` above 1 is a cannon),
+material that carries the ball), ramp lanes up or down a tier (`climb`), kickers (`kicker`),
 ramp jumps over water, drawbridges on a clock, turntables, sliders, gates, spinners, conveyors, bounce pads.
 
 **The Members Tour is shut without a pass** (`host.passActive()`): the tab carries a lock and opens a
@@ -19465,7 +19465,10 @@ sheet about the Tour Pass, never a coin price. A tester gets a preview button (`
 more a hole and carries rewards only members can earn (`PAY.members`).
 
 **THREE STARS IS ALWAYS MAKEABLE.** It is two under par (`starsOf`), so on a par 3 it is the ace and
-on a longer hole it is the secret line. Asked for by the owner: if three stars needs a hole in one, a hole
+on a longer hole it is the secret line, unless the hole carries its own target (`three`, read through
+`threeOf`). A hole whose design cannot be aced fairly carries `three` as a birdie: two jumps in a row,
+two tiers with a slow ramp between them, a moat on a clock. check-putt refuses a `three` that is not
+exactly par minus one. Asked for by the owner: if three stars needs a hole in one, a hole
 in one has to be really possible. The solver's grid steps a degree and a foot and only keeps a putt that
 holes ON the grid, which misses most aces (a bank that drops is a window under a degree wide), so
 `aceSearch` keeps every putt that passes within two feet of the cup and searches finely round the
@@ -19480,11 +19483,20 @@ Four things made the tour aces real, and each is a rule for the next hole:
 - **A river or a loop delivers the ball the same way every time**, so its ace has to come from timing: a
   gate, slider or spinner between the delivery and the cup turns "always the same miss" into a window.
 - **Two jumps in one putt cannot be done** (a landing keeps 0.72 of the speed), and some holes have no
-  straight line at all. Those carry a secret tunnel from a corner of the tee box, behind a bumper, that
-  comes up just short of the cup (`keep` 0.2 rolls about 1.4 ft). Easy once found, which is what a secret is.
+  straight line at all. Those carry a birdie target (`three`) rather than a trick.
+- **THERE ARE NO TUNNELS, and check-putt fails on one.** The first version gave every hole without a
+  straight line a pipe from a corner of the tee box that came up beside the cup. The owner's verdict: it
+  hands you the ace, and it looks wrong. Two tiers are joined by an open ramp lane (`climb`, a ridge the
+  ball has to be struck firmly enough to climb), a long hole's secret is a kicker ramp in plain sight
+  (`kicker`), and the themed templates lost their tunnel hole too.
+- **An ace is built, not searched for.** `node golf/putt/ace.mjs <tour> <n>` is the fast method: take the
+  real putt that passes nearest the cup and put a backstop board and a dish exactly where that ball
+  arrives, or, where nothing passes near, put a bank board where the obvious first putt stops, angled
+  by the mirror rule toward the cup. Then verify the one line with `robust()`. That is seconds a hole
+  where the blind fan search was minutes.
 - **A long straight ace needs capture width.** A degree at 36 ft is half a foot off line. A flat backstop
   board just behind the cup with a 2.2 dish catches both sides; a V backstop sends them off sideways.
-- **A par 4 or longer reaches three stars only by its secret line**, so every one of them carries one.
+- **A par 4 or longer reaches three stars only by its secret line**, or carries a birdie `three`.
 
 **A third tab, the Lab, is for testers only** (`TOURS.lab`, `labOpen()` asks `host.tester()`): six
 prototype holes judged here before any idea touches the ninety. Three classic golf templates on the carpet
@@ -19545,13 +19557,11 @@ and every hole read as having one answer. So:
 - **Par is the obvious route plus one** (or 3 when the obvious line is an ace). Playing the hole the way
   it looks earns a birdie, so a player who reads it right always has a winnable path.
 - **A secret line is one stroke shorter** and is marked with `secret(H, x0, y0, x1, y1)`: a zone only the
-  hidden route passes through (a slit in a wall, a door that looks like a dead end, a bank off a side
-  wall). The solver searches twice: once AVOIDING every secret zone (that sets par) and once free (that
+  hidden route passes through (a slit in a wall, a kicker ramp, a bank off a side wall). The solver searches twice: once AVOIDING every secret zone (that sets par) and once free (that
   must find a line one shorter, through a zone). `routes.json` keeps both, as `main:n` and `main:n:sc`.
-  At least a third of every world's holes carry one. Finding it says SECRET LINE FOUND on the result.
+  Every world carries at least one. Finding it says SECRET LINE FOUND on the result.
 - **A long putt can never be robust on its own**, because a degree of aim is wider than the cup at 30
-  feet. So a secret ace needs a funnel: a pipe that exits about 1.4 ft short of the cup with `keep` 0.2
-  (its minimum exit speed rolls about that far), or a `bowl()`, a shallow hollow round the cup.
+  feet. So an ace needs a funnel: a `bowl()`, a shallow hollow round the cup, and usually a backstop board.
 - **Water and the edges have curbs.** Thin `blk()` rails along a pond or a drop, with gaps only where a
   bridge or a ramp is meant to be used, give a player something to aim at. `fair.mjs` plays each hole's
   route with a person's error (2 degrees, 8% pace, 0.12 s) and reports how often it goes wet or out; the

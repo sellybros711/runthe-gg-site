@@ -63,7 +63,7 @@ for (const s of [9, 11, 13.5]){
     tp.best[18] = TR.levels[17].par;
     claim(P.worldGate(TR, 0) === 36 && P.frontier(tp, TR) === 18, 'a world of pars (18 stars) does not open the next: it opens at 36 of 54');
     for (let n = 1; n <= 18; n++) tp.best[n] = TR.levels[n - 1].par - 1;
-    claim(P.worldStars(tp, TR, 0) === 36 && P.frontier(tp, TR) === 19, 'a birdie on every hole is exactly the 36 that opens world 2');
+    { const own = TR.levels.slice(0, 18).filter(L => L.three).length; claim(P.worldStars(tp, TR, 0) === 36 + own && P.frontier(tp, TR) === 19, `a birdie on every hole opens world 2 (36 stars, plus one for each of the ${own} holes whose own three-star target is the birdie)`); }
     claim(P.worldGate(P.TOURS.members, 0) === 18, 'the Members Tour gates its nine hole worlds at 18 of 27');
     claim(P.frontier({ lv:40, best:{} }, TR) === 40, 'a record never loses a hole it already had open'); }
 }
@@ -215,9 +215,9 @@ if (!QUICK){
      hole carries (the obvious one, the secret one, and the ace the solver looks for apart, :3), one has
      to reach three stars and replay with the room for error every recorded putt gets. A star a player
      can see and never earn is the unearnable badge in a different coat. */
-  const threeStars = (TR, n, C, L) => { const want = Math.max(1, L.par - 2);
+  const threeStars = (TR, n, C, L) => { const want = P.threeOf(L.par, L.three);
     const ok = ['', ':sc', ':3'].map(k => ROUTES[TR.id + ':' + n + k]).filter(l => l && l.length <= want).find(l => !replayRoute(C, l));
-    claim(!!ok && P.starsOf(ok.length, L.par) === 3, `${TR.id} ${n} ${P.levelName(n, TR.id)}: three stars (${want === 1 ? 'an ace' : want + ' strokes'}) has a route that replays with room for error`); };
+    claim(!!ok && P.starsOf(ok.length, L.par, L.three) === 3, `${TR.id} ${n} ${P.levelName(n, TR.id)}: three stars (${want === 1 ? 'an ace' : want + ' strokes'}) has a route that replays with room for error`); };
   const TM = P.TOURS.main, TB = P.TOURS.members, Cn = P.PAY;
   claim(TM.levels.length === 90 && TM.worlds.length === 5 && TM.per === 18, `the main tour is 90 holes in ${TM.worlds.length} worlds of ${TM.per}`);
   claim(TB.levels.length === 18 && TB.worlds.length === 2 && TB.per === 9 && TB.members, `the Members Tour is 18 holes in ${TB.worlds.length} worlds of ${TB.per}`);
@@ -242,7 +242,12 @@ if (!QUICK){
       threeStars(TR, n, C, L);
       // A PERSON IS A COUPLE OF DEGREES OFF. No putt on the obvious route may put that person in the water or off the course more than a third of the time
       if (line && !why){ const hz = hazardRates(C, line, 80), worst = Math.max(...hz); wet.push(worst); claim(worst <= 0.34, `${name}: a slightly off putt on the obvious route stays dry (${hz.map(h => Math.round(h * 100) + '%').join(' ')})`); } }
-    claim(TR.worlds.every((W, w) => { let k = 0; for (let n = w * TR.per + 1; n <= (w + 1) * TR.per; n++) k += secrets[n] || 0; return k * 3 >= TR.per; }), `${TR.name}: at least a third of every world's holes hide a secret line (${Object.keys(secrets).length} in all)`);
+    /* NO TUNNELS. A pipe that carried the ball out of sight to a spot beside the cup handed out aces and
+       read as a trick, so the tours have none: tiers are joined by a ramp lane (climb) or a jump, and a long
+       hole's secret is a kicker in plain sight. Every world still hides at least one secret line. */
+    claim(TR.worlds.every((W, w) => { let k = 0; for (let n = w * TR.per + 1; n <= (w + 1) * TR.per; n++) k += secrets[n] || 0; return k >= 1; }), `${TR.name}: every world hides at least one secret line (${Object.keys(secrets).length} in all)`);
+    { const tun = []; for (let n = 1; n <= TR.levels.length; n++) if (P.buildLevel(n, TR.id).portals.length) tun.push(n); claim(!tun.length, `${TR.name}: no hole carries a tunnel` + (tun.length ? ' (' + tun.join(', ') + ')' : '')); }
+    { const bad = TR.levels.map((L, i) => L.three && L.three !== L.par - 1 ? i + 1 : 0).filter(Boolean); claim(!bad.length, `${TR.name}: a hole's own three-star target is a birdie, never easier` + (bad.length ? ' (' + bad.join(', ') + ')' : '')); }
     const wm = wet.reduce((a, b) => a + b, 0) / Math.max(1, wet.length);
     claim(wm <= 0.1, `${TR.name}: on average the worst putt of a hole goes wet or out ${Math.round(wm * 100)}% of the time for a slightly off player`);
     claim(shapes.size === TR.levels.length, `${TR.name}: no two holes share a layout (${shapes.size} distinct)`);
@@ -446,7 +451,7 @@ if (!args.includes('--no-browser')){
         if (mg) out.magenta.push(th + ' ' + (i + 1) + ': ' + mg);
         // a point on open carpet, projected, lands on carpet in the picture
         const ok = new Set(ramp(C.T.carpet).concat(ramp(C.T.carpet2))), hex = (r, g, b) => '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
-        const clear = (x, y) => (C.bumpers || []).every(u => Math.hypot(u.x - x, u.y - y) > u.r + 1.4) && (C.blocks || []).every(r => x < r.x0 - 1.2 || x > r.x1 + 1.2 || y < r.y0 - 3 || y > r.y1 + 3)
+        const clear = (x, y) => (C.bumpers || []).every(u => Math.hypot(u.x - x, u.y - y) > u.r + 1.4) && (C.blocks || []).every(r => x < r.x0 - 1.2 || x > r.x1 + 1.2 || y < r.y0 - 3 - Math.max(0, -R.zAt(x, y)) * 1.4 || y > r.y1 + 3)
           && (C.movers || []).every(m => m.k !== 'spin' || Math.hypot(m.x - x, m.y - y) > m.len + 1) && (C.portals || []).every(p => Math.hypot(p.ax - x, p.ay - y) > 2 && Math.hypot(p.bx - x, p.by - y) > 2.5)
           && (!C.mill || (Math.hypot(C.mill.x - x, C.mill.y - y) > 7 && !(Math.abs(C.mill.x - x) < 3 && y < C.mill.y && y > C.mill.y - 11)))
           // a ramp's lip and kicker stand up off the carpet, a loop stands over its chute, and a river is drawn

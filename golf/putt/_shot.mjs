@@ -1,0 +1,12 @@
+import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs'; import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path';
+const ROOT='/home/user/runthe-gg-site/', OUT=process.argv[2], holes=process.argv.slice(3);
+const T={'.html':'text/html','.js':'text/javascript','.json':'application/json','.png':'image/png','.css':'text/css'};
+const srv=http.createServer((q,r)=>{let f=path.join(ROOT,decodeURIComponent(q.url.split('?')[0]));if(f.endsWith('/'))f+='index.html';fs.readFile(f,(e,d)=>{if(e){r.writeHead(404);r.end();return;}r.writeHead(200,{'content-type':T[path.extname(f)]||'application/octet-stream'});r.end(d);});});
+await new Promise(r=>srv.listen(0,r)); const base='http://127.0.0.1:'+srv.address().port;
+const b=await chromium.launch(), pg=await b.newPage({viewport:{width:1400,height:900}});
+await pg.route(/^https?:\/\/(?!127\.0\.0\.1)/,r=>r.abort());
+await pg.goto(base+'/golf/',{waitUntil:'domcontentloaded'});
+await pg.waitForFunction(()=>window.RTT_PUTT&&window.RTT_PUTT_3D&&window.PXHD,null,{timeout:30000});
+const urls=await pg.evaluate((hs)=>hs.map(k=>{const [t,n]=k.split(':');const C=window.RTT_PUTT.buildLevel(+n,t);const v=window.RTT_PUTT_3D.render(C,{aspect:0.75});return v.cv.toDataURL('image/png');}),holes);
+urls.forEach((u,i)=>fs.writeFileSync(OUT+'_'+holes[i].replace(':','_')+'.png',Buffer.from(u.split(',')[1],'base64')));
+await b.close(); srv.close(); console.log('ok');

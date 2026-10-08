@@ -182,7 +182,7 @@ if (isMainThread && process.argv[1] && process.argv[1].endsWith('solve.mjs')){
         const w = new Worker(new URL(import.meta.url), { workerData:{ tour, n, cap } });
         w.on('message', m => { out[n] = m; done++; if (args.includes('--write')) save(n); const L = TR.levels[n - 1], want = Math.max(3, m.strokes + 1);
           const scTxt = (P.buildLevel(n, tour).secret || []).length ? (m.sc ? `  shortcut ${m.sc.length}` : '  SHORTCUT NOT FOUND') : '';
-          const tw = Math.max(1, want - 2), best3 = Math.min(m.strokes, m.sc ? m.sc.length : Infinity, m.three ? 1 : Infinity);
+          const tw = P.threeOf(want, L.three), best3 = Math.min(m.strokes, m.sc ? m.sc.length : Infinity, m.three ? 1 : Infinity);
           const thTxt = best3 <= tw ? `  3 stars in ${best3}` : '  3 STARS NOT FOUND';
           console.log(String(n).padStart(3), P.levelName(n, tour).padEnd(24), 'obvious', m.strokes, 'par now', L.par, want === L.par ? '' : '  WANT ' + want, scTxt, thTxt, m.onReal ? '  REAL COURSE: ' + m.onReal : '', `(${m.total} shots, ${m.secs}s)`); });
         w.on('error', e => { console.log(n, 'ERROR', e.message); });
@@ -206,7 +206,7 @@ if (isMainThread && process.argv[1] && process.argv[1].endsWith('solve.mjs')){
   // with room for error is taken as it is, so a re-solve after a small change does not search the fan again
   const seeds = process.env.PUTT_ACE_SEEDS ? JSON.parse(fs.readFileSync(process.env.PUTT_ACE_SEEDS, 'utf8')) : {}, sd = seeds[tour + ':' + n];
   const seeded = sd && sd.length === 1 && !replay(C, sd) ? { strokes:1, total:0, line:sd } : null;
-  const a = par === 3 && best > 1 ? (seeded || aceSearch(C)) : null;
+  const a = par === 3 && best > 1 && !L.three ? (seeded || aceSearch(C)) : null;
   const onReal = null;
   parentPort.postMessage({ strokes:r.strokes, total:r.total + (s ? s.total : 0) + (a ? a.total : 0), line:r.line || null, sc:s && s.line ? s.line : null, three:a && a.line ? a.line : null, onReal, secs:Math.round((Date.now() - t) / 1000) });
 }
