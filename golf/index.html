@@ -60,7 +60,7 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- The Putting Green: a tester preview. It draws nothing until puttOn() opens it (see PUTT_TESTERS). -->
-<script defer src="putt/putt.js?v=26"></script>
+<script defer src="putt/putt.js?v=28"></script>
 <script defer src="putt/land.js?v=4"></script>
 <script defer src="putt/hole3d.js?v=7"></script>
 <script defer src="putt/mapland.js?v=2"></script>
@@ -1256,7 +1256,11 @@ window.GA_ID='G-L29P5MRWKE';
   .gcard:active{transform:translateY(1px)}
   .gc-blue{background:linear-gradient(158deg,#5f90f2,#3a63c8 60%,#3053b4); color:#f1f6ff; --chip:rgba(4,12,30,.3)}
   .gc-teal{background:linear-gradient(158deg,#20bda9,#0a877a 60%,#07736a); color:#eafff9; --chip:rgba(2,20,16,.28)}
-  .gc-putt{background:radial-gradient(80% 120% at 100% 0%,rgba(241,208,74,.28),transparent 60%),linear-gradient(158deg,#2f8a4a,#145a30 60%,#0c3d21); color:#f2fff6; --chip:rgba(0,0,0,.3); border:1px solid rgba(241,208,74,.4)}
+  .gc-putt{background:#1b2a1e; color:#fff; --chip:rgba(0,0,0,.45); border:1px solid rgba(241,208,74,.4); isolation:isolate}
+  .gc-putt .gc-art{position:absolute; inset:0; width:100%; height:100%; z-index:-2; object-fit:cover; object-position:50% 0; image-rendering:pixelated}
+  .gc-putt::before{content:''; position:absolute; inset:0; z-index:-1; background:linear-gradient(90deg,rgba(0,0,0,.62),rgba(0,0,0,.34) 55%,rgba(0,0,0,.05))}
+  .gc-putt .gc-title,.gc-putt .gc-mid,.gc-putt .gc-kick{text-shadow:0 1px 2px rgba(0,0,0,.7)}
+  .gc-putt .gc-go{box-shadow:0 2px 6px rgba(0,0,0,.4)}
   .gc-amber{background:linear-gradient(158deg,#f6c463,#ec9a25 60%,#df7d1c); color:#24170a; --chip:rgba(20,14,6,.15)}
   .gc-purple{background:linear-gradient(158deg,#b07ef0,#8149cf 58%,#6d38bd); color:#f5edff; --chip:rgba(24,8,42,.32)}
   .gc-gold{background:var(--gold-grad-d); color:#24170a; --chip:rgba(20,14,6,.16)}
@@ -22121,7 +22125,8 @@ function puttCard(){
   const hearts=Array.from({length:Math.max(m.max,m.lives)},(_,i)=>`<span style="color:${i<m.lives?'#ff4d6d':'rgba(255,255,255,.25)'}">♥</span>`).join('');
   const dl=m.daily.done?`<span style="color:#7ee2a8">Daily Hole done · ${m.daily.s} (par ${m.daily.par})</span>`:`Daily Hole · ${esc(m.daily.name)}`;
   const out=m.lives<=0;
-  const c=$(`<button class="gcard gc-putt" aria-label="Putt Putt Tour, tester preview">
+  let art=''; try{ art=window.RTT_PUTT.cardArt(m.theme); }catch(e){}
+  const c=$(`<button class="gcard gc-putt" aria-label="Putt Putt Tour, tester preview">${art}
     <div class="gc-top"><div style="min-width:0"><div class="gc-kick">⛳ Tester preview</div><div class="gc-title">Putt Putt Tour</div></div><span class="gc-badge">LV ${m.lv}</span></div>
     <div class="gc-mid">${dl}<br>${esc(m.world)} · ${hearts}${out&&m.refillAt?` <span class="small">full in ${Math.ceil((m.refillAt-Date.now())/3600000)}h</span>`:''}</div>
     <div class="gc-row"><span class="gc-go">${out?'Refill ▸':'Play ▸'}</span></div></button>`);

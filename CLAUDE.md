@@ -19619,10 +19619,11 @@ and the clock. The press is written onto the mover (`_p`, on the hole's own cloc
 it, so the door the player sees is the door the physics used.
 
 **THE RULE IS STARS.** Par or better clears a hole and opens the next one in its world: 1 star for par,
-2 under par, 3 for two under (an ace on a par 3), best kept. A world opens the next at two thirds of its stars (`worldGate`:
-36 of 54, 18 of 27 on the Members Tour), which is a birdie on every hole or aces covering pars. 54 or 52
-of 54 was asked about and refused: either is an ace on nearly every hole, and an ace is partly luck, so
-it would be a wall. `frontier()` is the one answer to what is open, and it never drops below the
+2 under par, 3 for two under (an ace on a par 3), best kept. The worlds open on a RUNNING TOTAL, the owner's call: 45 stars a
+world (`worldGate`: 45 opens world 2, 90 world 3, and so on; 22 a world on the Members Tour), counted across
+every world so far (`starsThrough`), so a player stuck on one world can earn the stars back in another. It
+used to be two thirds of each world on its own (36 of 54). A perfect world is still never required: 54 a
+world would be an ace on every hole, and an ace is partly luck. `frontier()` is the one answer to what is open, and it never drops below the
 record's stored `lv`, so nobody loses a hole they had reached. Over par takes a life, and it is decided the moment par strokes are used with the ball out,
 so nobody putts out a lost hole (`settle()` calls `tourOut(false)`). Quitting or restarting after the
 first putt costs a life too. 3 lives, 6 with a Tour Pass; the last one starts a 24 hour clock. Lives are
@@ -19691,6 +19692,11 @@ members routes stopped dropping on replay. Nothing about the hole had changed.
 the room, so the ball has to be brought round beside the cup and played in sideways. **The first pen opened
 on the far side and cost nothing**: a ball bounced off the end wall rolled straight back into it, so the
 solver still beat most holes in two. Opened sideways, Graveyard Gate went from two putts to three.
+
+**The home card wears the world you are in** (`RTT_PUTT.cardArt(theme)`, read off `summary().theme`): the top band
+of that world's signature hole, cut from the game's own render by `node golf/putt/build-cards.mjs` into
+`golf/putt/cards/`, so it is the same pixel art as the courses. A dark wash keeps the text readable. Re-run
+it after changing `land.js` or a signature hole, and bump `CARD_V`.
 
 **The main tour pays exactly 20,000 coins**, 4,000 a world: 80 a hole and 280 for the signature hole the
 first time it is beaten, 20 for a first ace, and 2,000 for finishing the world. Replays pay nothing. They

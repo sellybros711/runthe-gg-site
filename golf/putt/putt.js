@@ -1294,7 +1294,7 @@ var RTT_PUTT = {
   M:M, BALL_R:BALL_R, CUP_R:CUP_R, CUP_R_MINI:CUP_R_MINI, V_MAX:V_MAX, V_STIMP:V_STIMP, ART:ART,
   THEMES:THEMES, TEMPLATES:TEMPLATES, COURSE_ORDER:COURSE_ORDER, DAILY_POOL:DAILY_POOL,
   hstr:hstr, mulberry:mulberry, hash3:hash3,
-  simulate:simulate, speedFor:speedFor, feetFor:feetFor, inBlock:inBlock, starsOf:starsOf, threeOf:threeOf, frontier:frontier, worldGate:worldGate, worldStars:worldStars, fricOf:fricOf, moverAt:moverAt,
+  simulate:simulate, speedFor:speedFor, feetFor:feetFor, inBlock:inBlock, starsOf:starsOf, threeOf:threeOf, frontier:frontier, worldGate:worldGate, worldStars:worldStars, starsThrough:starsThrough, fricOf:fricOf, moverAt:moverAt,
   makeField:makeField, finishCourse:finishCourse, inPoly:inPoly,
   greenCharacter:greenCharacter, buildReal:buildReal, spotFor:spotFor, fromHost:fromHost,
   CAL_THEMES:CAL_THEMES, buildMini:buildMini, buildFrom:buildFrom, LEVELS:LEVELS, WORLDS:WORLDS, TOURS:TOURS, PER:PER, buildLevel:buildLevel, worldOf:worldOf, lvHelpers:{ hole:hole, rm:rm, pg:pg }, lvKit:{ bowl:bowl, board:board, blk:blk, bumps:bumps, climb:climb, secret:secret }, tourDesc:tourDesc, levelName:levelName, themedCourse:themedCourse, dailyHole:dailyHole, dailyLevel:dailyLevel, themeForDay:themeForDay, scoreName:scoreName
@@ -1658,8 +1658,8 @@ function top(title, sub, right){
 /* The mode opens on the Tour map with the Daily Hole on top. The rules, in full:
      par or better  the hole is cleared and the next one in the world opens (coins the first time only).
                     It earns stars: 1 for par, 2 under par, 3 for two under (an ace on a par 3), best kept.
-     a new world    opens at two thirds of the stars the last one holds (36 of 54, 18 of 27 on the
-                    Members Tour). See starsOf and frontier.
+     a new world    opens at a running total: 45 stars a world (22 on the Members Tour), counted across
+                    every world so far, so 90 opens world 3 however they are spread. See worldGate.
      over par       a life goes and the hole restarts. It is decided the moment par strokes are used
                  with the ball still out, so nobody putts out a hole that is already lost.
    Quitting after the first putt costs a life too. The Daily Hole never costs one.
@@ -1716,9 +1716,9 @@ function membersPreview(){ return !!(S && S.memPreview); }
 // the Lab is a tester's only: its tab is not drawn for anybody else
 function labOpen(){ try{ var h = hostOf(); return !!(h.tester && h.tester()); }catch(e){ return false; } }
 /* STARS. Par clears a hole, so most holes can simply be good to play, and birdies come from reading
-   them well rather than from hunting a trapdoor. A world gates the next at two thirds of its stars:
-   a birdie on every hole, or aces making up for pars. Neither 54 nor 52 of 54: either one is an ace
-   on nearly every hole, which is partly luck, so it would be a wall. A perfect world is the chase.
+   them well rather than from hunting a trapdoor. The gate is the owner's: 45 stars a world, as a
+   running total, so a player stuck on one world can earn the stars back in another. 54 a world would
+   be an ace on every hole, which is partly luck, so it would be a wall. A perfect world is the chase.
    THREE STARS IS TWO UNDER PAR, which on a par 3 is the ace. It is never a score nobody can make:
    solve.mjs records a route for it on every hole (an ace, or the secret line on a longer hole) and
    check-putt replays them all, with the same room for error a birdie putt gets. */
@@ -1739,11 +1739,14 @@ function starTargets(par, three){
 function threeLine(par, three){ var t = threeOf(par, three); return t === 1 ? 'ace it' : 'finish in ' + t; }
 function worldStars(tp, TR, w){ var K = TR.per || PER, t = 0; for (var n = w * K + 1; n <= Math.min(TR.levels.length, w * K + K); n++) t += starsOf(tp.best[n], TR.levels[n - 1].par, TR.levels[n - 1].three); return t; }
 function worldMax(TR, w){ var K = TR.per || PER; return Math.min(K, TR.levels.length - w * K) * 3; }
-function worldGate(TR, w){ return Math.ceil(worldMax(TR, w) * 2 / 3); }
+/* The gate is CUMULATIVE: a world opens the next at five sixths of a world's stars (45 of 54, 22 of 27),
+   counted across every world so far, so 90 opens world 3 however the stars are spread. */
+function worldGate(TR, w){ var g = 0; for (var i = 0; i <= w; i++) g += Math.floor(worldMax(TR, i) * 5 / 6); return g; }
+function starsThrough(tp, TR, w){ var t = 0; for (var i = 0; i <= w; i++) t += worldStars(tp, TR, i); return t; }
 /* the highest hole open: walk the cleared holes, and stop at the end of a world short of its gate.
    Never lower than what the record already had open, so nobody is locked out of a hole they reached. */
 function frontier(tp, TR){ var K = TR.per || PER, N = TR.levels.length, n = 1;
-  while (n < N && tp.best[n] != null && (n % K || worldStars(tp, TR, n / K - 1) >= worldGate(TR, n / K - 1))) n++;
+  while (n < N && tp.best[n] != null && (n % K || starsThrough(tp, TR, n / K - 1) >= worldGate(TR, n / K - 1))) n++;
   return Math.max(tp.lv || 1, n); }
 function starRow(k, of){ of = of || 3; var o = ''; for (var i = 0; i < of; i++) o += i < k ? '★' : '☆'; return o; }
 function grant(st, name){ if (name && st.rewards.indexOf(name) < 0) st.rewards.push(name); }
@@ -1839,7 +1842,7 @@ function drawMap(st, TR){
     '<svg class="pp-path" width="' + W + '" height="' + H + '"><path d="' + d + '"/></svg>' + badges +
     '<div class="pp-me" style="left:' + (cp[0] > W / 2 + 50 ? cp[0] - 76 : cp[0] + 34) + 'px;top:' + (cp[1] + 22) + 'px">' + golferImg('pp-meimg') + '</div></div></div>';
   box.querySelectorAll('[data-lv]').forEach(function(b){ b.onclick = function(){ var n = +b.getAttribute('data-lv'); var tq = pload().tours[TR.id]; if (n > tq.lv){ var pw = Math.floor((n - 2) / K);
-      return toastHub((n - 1) % K === 0 && tq.best[n - 1] != null ? (TR.members ? WS[pw + 1].name : 'World ' + (pw + 2)) + ' opens at ' + worldGate(TR, pw) + ' stars. You have ' + worldStars(tq, TR, pw) + '.' : 'Clear level ' + (n - 1) + ' at par or better to open it.'); } startLevel(n, TR.id); }; });
+      return toastHub((n - 1) % K === 0 && tq.best[n - 1] != null ? (TR.members ? WS[pw + 1].name : 'World ' + (pw + 2)) + ' opens at ' + worldGate(TR, pw) + ' total stars. You have ' + starsThrough(tq, TR, pw) + '.' : 'Clear level ' + (n - 1) + ' at par or better to open it.'); } startLevel(n, TR.id); }; });
   // the chip in the corner names the world in view and how much of it is beaten
   var chip = S.ov.querySelector('[data-wchip]'), lastW = -1;
   function wchip(){ if (!chip) return; var mid = (box.scrollTop + box.clientHeight * 0.55) / k, w = 0;
@@ -1955,9 +1958,9 @@ function tourOut(holed){
     try{ S.host.sfx && S.host.sfx('holeGood'); }catch(e){}
     if (worldDone) return worldComplete(n, s, par, got, tid);
     var sec = !!P.foundSecret; if (sec){ tp.secret = tp.secret || {}; if (!tp.secret[n]){ tp.secret[n] = 1; psave(st); } }
-    var nextOpen = n < N && tp.lv > n, have = worldStars(tp, TR, gw), gate = worldGate(TR, gw);
+    var nextOpen = n < N && tp.lv > n, have = starsThrough(tp, TR, gw), gate = worldGate(TR, gw);
     var openLine = n >= N ? 'That is the whole ' + esc(TR.name) + '.' : nextOpen ? (wasLv <= n ? 'Level ' + (n + 1) + ' is open.' : '') :
-      (TR.members ? esc(TR.worlds[gw + 1].name) : 'World ' + (gw + 2)) + ' opens at ' + gate + ' stars. You have ' + have + ' of ' + worldMax(TR, gw) + '.';
+      (TR.members ? esc(TR.worlds[gw + 1].name) : 'World ' + (gw + 2)) + ' opens at ' + gate + ' total stars. You have ' + have + '.';
     return popup('<div class="k">' + (sec ? 'SECRET LINE FOUND' : s === 1 ? 'HOLE IN ONE' : s < par ? 'UNDER PAR' : 'PAR') + '</div><div class="t">' + esc(scoreName(s, par)) + '</div>\
       <div class="pp-stars">' + starRow(stars) + '</div>' + (stars > had && !first ? '<div class="s">New best on this hole.</div>' : stars < 3 ? '<div class="s">' + (stars === 1 ? (threeOf(par, th) >= par - 1 ? 'Beat par for 3 stars.' : 'Beat par for 2 stars, ' + threeLine(par, th) + ' for 3.') : threeLine(par, th).replace(/^./, function(c){ return c.toUpperCase(); }) + ' for 3 stars.') + '</div>' : '') + '\
       <div class="pp-nums"><span><b>' + s + '</b>Strokes</span><span><b>' + par + '</b>Par</span><span><b>' + fmtPar(s - par) + '</b>To par</span></div>' +
@@ -1977,12 +1980,12 @@ function tourOut(holed){
 }
 function worldComplete(n, s, par, got, tid){
   var TR = tourOf(tid), PY = PAY[TR.id], K = TR.per || PER, w = Math.floor((n - 1) / K), Wd = TR.worlds[w], last = n === TR.levels.length;
-  var tp = pload().tours[TR.id], have = worldStars(tp, TR, w), gate = worldGate(TR, w), nx = TR.worlds[w + 1], shut = nx && tp.lv <= n;
+  var tp = pload().tours[TR.id], have = worldStars(tp, TR, w), total = starsThrough(tp, TR, w), gate = worldGate(TR, w), nx = TR.worlds[w + 1], shut = nx && tp.lv <= n;
   return popup('<div class="k">' + (TR.members ? '★ ' + esc(Wd.name.toUpperCase()) + ' COMPLETE' : 'WORLD ' + (w + 1) + ' COMPLETE') + '</div><div class="t">' + esc(Wd.name) + '</div><div class="s">Signature hole beaten in ' + s + ' (par ' + par + ').</div>\
     <div class="pp-reward">New · ' + esc(PY.sigReward[w]) + '<br>New · ' + esc(PY.worldReward[w]) + (PY.finish && last ? '<br>New · ' + esc(PY.finish) : '') + '</div>\
     <div class="pp-coins">+' + got + ' coins · +' + PY.world.toLocaleString() + ' ' + (TR.members ? 'members' : 'world') + ' bonus</div>' +
     '<div class="pp-stars">' + have + ' of ' + worldMax(TR, w) + ' ★</div>' +
-    (shut ? '<div class="s">' + (TR.members ? esc(nx.name) : 'World ' + (w + 2)) + ' opens at ' + gate + ' stars. Replay holes to earn ' + (gate - have) + ' more.</div>' :
+    (shut ? '<div class="s">' + (TR.members ? esc(nx.name) : 'World ' + (w + 2)) + ' opens at ' + gate + ' total stars. You have ' + total + '. Replay holes to earn ' + (gate - total) + ' more.</div>' :
      nx ? '<div class="s">' + (TR.members ? esc(nx.name) : 'World ' + (w + 2) + ', ' + esc(nx.name) + ',') + ' is open.</div>' : '<div class="s">You have finished the ' + esc(TR.name) + '.</div>') +
     '<div class="s pp-fine">Rewards are saved to your Tour record. They become wearable at launch.</div>\
     <div class="row"><button class="pt-bt" data-a="map">Map</button>' + (nx && !shut ? '<button class="pt-go" data-a="next">Next ' + (TR.members ? 'hole' : 'world') + ' ▸</button>' : '') + '</div>',
@@ -2597,11 +2600,16 @@ RTT_PUTT._level = function(n, tid){ if (S) startLevel(n, tid || 'main'); };
 // a hole built from a function, for trying out a layout in the browser: RTT_PUTT._try(function(T){ return H; }, 'clubhouse')
 RTT_PUTT._try = function(fn, theme, name){ if (!S) return; var d = { custom:fn, tpl:'try' + Date.now(), seed:7, theme:theme || 'clubhouse', name:name || 'Try out' }; S.round = { mode:'try', i:0, cards:[], holes:[d], title:d.name, kick:'Try out' }; playHole(); };
 RTT_PUTT.starsOf = starsOf; RTT_PUTT.tourOf = tourOf; RTT_PUTT.lvH = lvH; RTT_PUTT.rectP = rectP; RTT_PUTT.buildFrom = buildFrom;
+/* The home card wears the world you are in: the top band of that world's signature hole, cut from the
+   game's own render by build-cards.mjs, so it is the same pixel art as the courses. */
+var CARD_ART = { clubhouse:1, temple:1, pirate:1, canyon:1, volcano:1 }, CARD_V = 1;
+RTT_PUTT.cardArt = function(theme){ var t = CARD_ART[theme] ? theme : 'clubhouse';
+  return '<img class="gc-art" src="putt/cards/' + t + '.png?v=' + CARD_V + '" alt="" aria-hidden="true">'; };
 RTT_PUTT.COINS = { hole:COIN_HOLE, sig:COIN_SIG, ace:COIN_ACE, world:COIN_WORLD, daily:COIN_DAILY, dailyPar:COIN_DAILY_PAR }; RTT_PUTT.PAY = PAY;
 // what the home screen card shows: today's Daily Hole, your level and your lives
 RTT_PUTT.summary = function(host){ HOSTX = host || HOSTX; var st = pload(), dk = today(), dh = dailyHole(dk), rec = st.daily[dk];
   var tm = st.tours.main, lv = Math.min(tm.lv, LEVELS.length);
-  return { lv:lv, levels:LEVELS.length, world:worldOf(lv, 'main').name, members:membersOpen(), lives:st.lives, max:livesMax(), refillAt:st.refillAt || null,
+  return { lv:lv, levels:LEVELS.length, world:worldOf(lv, 'main').name, theme:worldOf(lv, 'main').theme, members:membersOpen(), lives:st.lives, max:livesMax(), refillAt:st.refillAt || null,
     daily:{ name:dh.name, theme:THEMES[dh.theme].name, kick:THEMES[dh.theme].kick, done:!!(rec && rec.done), s:rec && rec.s, par:rec && rec.par, ms:rec && rec.ms }, nextMs:msToNextDay() }; };
 // the checker's door: start a round at a given hole. Nothing on the page calls it.
 RTT_PUTT._go = function(mode, arg, i){ if (!S) return; startRound(mode, arg); if (i){ S.round.i = i; playHole(); } };
