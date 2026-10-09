@@ -1,0 +1,216 @@
+{
+  "_doc": "Ten sample Stumpire prompts for testers. at_bat is where each one fits the difficulty ramp. wildcard and arguable are editor choices. These are SAMPLES on a SYNTHETIC search_avg fixture; do not publish them to real players.",
+  "prompts": [
+    {
+      "id": "mlb-gold-glove",
+      "at_bat": 1,
+      "text": "A Gold Glove winner",
+      "league": "MLB",
+      "type": "athlete",
+      "years": [
+        1957,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "Gold Glove"
+        }
+      ],
+      "wildcard": "mlb-ichiro-suzuki-2000"
+    },
+    {
+      "id": "nfl-wr-pro-bowl",
+      "at_bat": 2,
+      "text": "A wide receiver who made a Pro Bowl",
+      "league": "NFL",
+      "type": "athlete",
+      "years": [
+        1970,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "Pro Bowl"
+        },
+        {
+          "k": "pos",
+          "v": "Wide Receiver"
+        }
+      ],
+      "wildcard": "nfl-tim-brown-1980"
+    },
+    {
+      "id": "nfl-rb-pro-bowl",
+      "at_bat": 2,
+      "text": "A running back who made a Pro Bowl",
+      "league": "NFL",
+      "type": "athlete",
+      "years": [
+        1970,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "Pro Bowl"
+        },
+        {
+          "k": "pos",
+          "v": "Running Back"
+        }
+      ],
+      "wildcard": "nfl-terrell-davis-1990"
+    },
+    {
+      "id": "nba-all-star-4-teams",
+      "at_bat": 2,
+      "text": "An NBA All-Star who played for four or more teams",
+      "league": "NBA",
+      "type": "athlete",
+      "years": [
+        1960,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "NBA All-Star"
+        },
+        {
+          "k": "teams",
+          "min": 4
+        }
+      ],
+      "wildcard": "nba-dennis-rodman-1980"
+    },
+    {
+      "id": "nba-hall-of-fame",
+      "at_bat": 3,
+      "text": "An NBA Hall of Famer",
+      "league": "NBA",
+      "type": "athlete",
+      "years": [
+        1960,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "Hall of Fame"
+        }
+      ],
+      "wildcard": "nba-nate-thurmond-1960"
+    },
+    {
+      "id": "mlb-mvp",
+      "at_bat": 3,
+      "text": "An MLB MVP",
+      "league": "MLB",
+      "type": "athlete",
+      "years": [
+        1956,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "MLB MVP"
+        }
+      ],
+      "wildcard": "mlb-stan-musial-1940"
+    },
+    {
+      "id": "nba-pg-all-star",
+      "at_bat": 4,
+      "text": "A point guard who made an All-Star team",
+      "league": "NBA",
+      "type": "athlete",
+      "years": [
+        1960,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "NBA All-Star"
+        },
+        {
+          "k": "pos",
+          "v": "Point Guard"
+        }
+      ],
+      "wildcard": "nba-steve-nash-1990",
+      "arguable": [
+        "nba-james-harden-2000"
+      ]
+    },
+    {
+      "id": "mlb-cy-young",
+      "at_bat": 4,
+      "text": "A Cy Young winner",
+      "league": "MLB",
+      "type": "athlete",
+      "years": [
+        1956,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "Cy Young"
+        }
+      ],
+      "wildcard": "mlb-steve-carlton-1960"
+    },
+    {
+      "id": "nfl-te-pro-bowl",
+      "at_bat": 5,
+      "text": "A tight end who made a Pro Bowl",
+      "league": "NFL",
+      "type": "athlete",
+      "years": [
+        1970,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "Pro Bowl"
+        },
+        {
+          "k": "pos",
+          "v": "Tight End"
+        }
+      ],
+      "wildcard": "nfl-ozzie-newsome-1970"
+    },
+    {
+      "id": "nfl-no-super-bowl",
+      "at_bat": 1,
+      "text": "An NFL team that has never won a Super Bowl",
+      "league": "NFL",
+      "type": "team",
+      "set": true,
+      "years": [
+        1967,
+        2025
+      ],
+      "where": [
+        {
+          "k": "titles",
+          "max": 0
+        }
+      ],
+      "wildcard": "team-nfl-browns"
+    }
+  ],
+  "test_slate": [
+    "mlb-gold-glove",
+    "nfl-rb-pro-bowl",
+    "nba-hall-of-fame",
+    "nba-pg-all-star",
+    "nfl-te-pro-bowl"
+  ]
+}

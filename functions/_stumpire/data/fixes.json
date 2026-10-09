@@ -1,0 +1,11 @@
+{
+  "_doc": "Facts the source index is missing, added at build time. Each one is a known, checkable fact about a real person. This is where an upheld challenge lands when the fix is a missing award rather than an alias. Keys are 'Name|LEAGUE'.",
+  "awards": {
+    "Nikola Jokic|NBA": ["NBA All-Star"],
+    "Johnny Unitas|NFL": ["Pro Bowl"],
+    "Bart Starr|NFL": ["Pro Bowl"],
+    "Gale Sayers|NFL": ["Pro Bowl"],
+    "Mike Ditka|NFL": ["Pro Bowl"],
+    "Cooper Kupp|NFL": ["Pro Bowl"]
+  }
+}

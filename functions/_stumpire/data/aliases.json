@@ -1,0 +1,260 @@
+{
+  "_doc": "Hand alias table for Stumpire. Keys are 'Name|LEAGUE' as the dataset writes them (add '|1990' with a first decade when two people share a name). Values are other things people type for that person: nicknames, initials, former or maiden names. 'merge' folds a second record of the SAME person into the first. Grow this from the replay script's failure list.",
+  "merge": [
+    {
+      "keep": "Chad Johnson|NFL",
+      "drop": "Chad Ochocinco|NFL"
+    }
+  ],
+  "aliases": {
+    "Kareem Abdul-Jabbar|NBA": [
+      "Lew Alcindor",
+      "Kareem",
+      "Cap"
+    ],
+    "Metta World Peace|NBA": [
+      "Ron Artest",
+      "Metta Sandiford-Artest",
+      "Ron-Ron"
+    ],
+    "Chad Johnson|NFL": [
+      "Chad Ochocinco",
+      "Ochocinco",
+      "Ocho Cinco",
+      "Ocho"
+    ],
+    "Giancarlo Stanton|MLB": [
+      "Mike Stanton"
+    ],
+    "B.J. Upton|MLB": [
+      "Melvin Upton",
+      "Melvin Upton Jr.",
+      "BJ Upton"
+    ],
+    "Michael Jordan|NBA": [
+      "MJ",
+      "Air Jordan",
+      "His Airness"
+    ],
+    "LeBron James|NBA": [
+      "LBJ",
+      "King James",
+      "Bron"
+    ],
+    "Shaquille O'Neal|NBA": [
+      "Shaq",
+      "Diesel",
+      "Big Aristotle"
+    ],
+    "Kevin Durant|NBA": [
+      "KD",
+      "Durantula"
+    ],
+    "Kobe Bryant|NBA": [
+      "Black Mamba",
+      "Mamba"
+    ],
+    "Stephen Curry|NBA": [
+      "Steph Curry",
+      "Steph",
+      "Chef Curry"
+    ],
+    "Magic Johnson|NBA": [
+      "Earvin Johnson",
+      "Magic"
+    ],
+    "Giannis Antetokounmpo|NBA": [
+      "Giannis",
+      "Greek Freak"
+    ],
+    "Nikola Jokic|NBA": [
+      "Joker",
+      "Jokic"
+    ],
+    "Dwyane Wade|NBA": [
+      "D-Wade",
+      "Flash",
+      "Dwayne Wade"
+    ],
+    "Allen Iverson|NBA": [
+      "AI",
+      "The Answer"
+    ],
+    "Tim Duncan|NBA": [
+      "Big Fundamental"
+    ],
+    "Karl Malone|NBA": [
+      "The Mailman"
+    ],
+    "Charles Barkley|NBA": [
+      "Sir Charles",
+      "Chuck"
+    ],
+    "Julius Erving|NBA": [
+      "Dr. J",
+      "Doctor J"
+    ],
+    "Anfernee Hardaway|NBA": [
+      "Penny Hardaway",
+      "Penny"
+    ],
+    "Penny Hardaway|NBA": [
+      "Anfernee Hardaway"
+    ],
+    "Dirk Nowitzki|NBA": [
+      "Dirk"
+    ],
+    "Wilt Chamberlain|NBA": [
+      "Wilt the Stilt",
+      "Wilt"
+    ],
+    "Hakeem Olajuwon|NBA": [
+      "Akeem Olajuwon",
+      "The Dream"
+    ],
+    "Tom Brady|NFL": [
+      "TB12",
+      "Brady"
+    ],
+    "Patrick Mahomes|NFL": [
+      "Mahomes"
+    ],
+    "Calvin Johnson|NFL": [
+      "Megatron"
+    ],
+    "Deion Sanders|NFL": [
+      "Prime Time",
+      "Neon Deion",
+      "Coach Prime"
+    ],
+    "Walter Payton|NFL": [
+      "Sweetness"
+    ],
+    "Jerome Bettis|NFL": [
+      "The Bus"
+    ],
+    "Rob Gronkowski|NFL": [
+      "Gronk"
+    ],
+    "Marshawn Lynch|NFL": [
+      "Beast Mode"
+    ],
+    "Odell Beckham Jr.|NFL": [
+      "OBJ",
+      "Odell Beckham"
+    ],
+    "Joe Greene|NFL": [
+      "Mean Joe Greene"
+    ],
+    "LaDainian Tomlinson|NFL": [
+      "LT",
+      "LaDanian Tomlinson"
+    ],
+    "Lawrence Taylor|NFL": [
+      "LT",
+      "L.T."
+    ],
+    "Christian McCaffrey|NFL": [
+      "CMC"
+    ],
+    "Adam Jones|NFL": [
+      "Pacman Jones",
+      "Pacman"
+    ],
+    "Babe Ruth|MLB": [
+      "The Bambino",
+      "Sultan of Swat",
+      "George Herman Ruth",
+      "George Ruth"
+    ],
+    "Ken Griffey Jr.|MLB": [
+      "Junior",
+      "The Kid",
+      "Griffey"
+    ],
+    "Alex Rodriguez|MLB": [
+      "A-Rod",
+      "ARod"
+    ],
+    "David Ortiz|MLB": [
+      "Big Papi",
+      "Papi"
+    ],
+    "Ivan Rodriguez|MLB": [
+      "Pudge Rodriguez",
+      "Pudge"
+    ],
+    "Carlton Fisk|MLB": [
+      "Pudge Fisk",
+      "Pudge"
+    ],
+    "Mike Trout|MLB": [
+      "Millville Meteor"
+    ],
+    "Shohei Ohtani|MLB": [
+      "Shotime",
+      "Ohtani"
+    ],
+    "Aaron Judge|MLB": [
+      "All Rise"
+    ],
+    "Derek Jeter|MLB": [
+      "The Captain",
+      "Captain Clutch"
+    ],
+    "Mariano Rivera|MLB": [
+      "Mo Rivera",
+      "Mo",
+      "Sandman"
+    ],
+    "Randy Johnson|MLB": [
+      "Big Unit"
+    ],
+    "Albert Pujols|MLB": [
+      "The Machine"
+    ],
+    "Mookie Betts|MLB": [
+      "Markus Lynn Betts"
+    ],
+    "Hank Aaron|MLB": [
+      "Hammerin Hank",
+      "Henry Aaron"
+    ],
+    "Ted Williams|MLB": [
+      "Teddy Ballgame",
+      "Splendid Splinter"
+    ],
+    "Joe DiMaggio|MLB": [
+      "Joltin Joe",
+      "Yankee Clipper"
+    ],
+    "Lou Gehrig|MLB": [
+      "Iron Horse"
+    ],
+    "Cal Ripken Jr.|MLB": [
+      "Iron Man",
+      "Cal Ripken"
+    ],
+    "Pete Rose|MLB": [
+      "Charlie Hustle"
+    ],
+    "Roger Clemens|MLB": [
+      "Rocket",
+      "The Rocket"
+    ],
+    "Fernando Valenzuela|MLB": [
+      "El Toro",
+      "Fernando"
+    ],
+    "Yogi Berra|MLB": [
+      "Lawrence Berra"
+    ],
+    "Vladimir Guerrero Jr.|MLB": [
+      "Vlad Jr.",
+      "Vladdy"
+    ],
+    "Juan Gonzalez|MLB": [
+      "Igor"
+    ]
+  }
+}
