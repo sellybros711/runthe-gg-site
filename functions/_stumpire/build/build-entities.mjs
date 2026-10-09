@@ -93,7 +93,8 @@ const nicknames = {};
 for (const p of corpus) {
   if (p.entity_type !== 'player' || !LEAGUES.includes(p.sport)) continue;
   const nk = (p.attributes && p.attributes.nicknames) || [];
-  if (nk.length) nicknames[p.display_name + '|' + p.sport] = nk;
+  if (nk.length) (nicknames[p.display_name + '|' + p.sport] = nicknames[p.display_name + '|' + p.sport] || [])
+    .push({ nk, dc: (p.attributes && p.attributes.decades_active) || [] });
 }
 const dropped = new Set((hand.merge || []).map(m => m.drop));
 const decadesOf = bits => {
@@ -184,9 +185,16 @@ for (const [b, list] of Object.entries(groups)) {
 /* Aliases: curated nicknames, then the hand table. */
 const byNameLeague = {};
 for (const p of players) (byNameLeague[p.n + '|' + p.s] = byNameLeague[p.n + '|' + p.s] || []).push(p);
-for (const [k, list] of Object.entries(nicknames)) {
-  const ps = byNameLeague[k];
-  if (ps && ps.length === 1) ps[0].a.push(...list);
+/* A namesake takes the nickname only if the curated record's decades pick
+   him out (Frank Thomas the 1990s first baseman is The Big Hurt). */
+for (const [k, recs] of Object.entries(nicknames)) {
+  const ps = byNameLeague[k] || [];
+  for (const rec of recs) {
+    let hit = ps;
+    if (hit.length > 1) hit = ps.filter(p => rec.dc.length && p.dc.some(d => rec.dc.includes(d)));
+    if (hit.length > 1) hit = hit.filter(p => rec.dc.includes(p.dc[0]));
+    if (hit.length === 1) hit[0].a.push(...rec.nk);
+  }
 }
 const missingHand = [];
 for (const [k, list] of Object.entries(hand.aliases || {})) {

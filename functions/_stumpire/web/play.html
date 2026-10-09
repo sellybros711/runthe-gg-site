@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Stumpire | Run The Arcade</title>
+<style>
+  :root{--bg:#0f1420;--card:#18202f;--ink:#eef2f8;--mut:#9aa7bd;--line:#2a3448;--safe:#3ecf8e;--out:#ff6b6b;--strike:#ffc94d;--np:#8fb3ff}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  main{max-width:560px;margin:0 auto;padding:16px}
+  header{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px}
+  header a{color:var(--mut);text-decoration:none;font-size:14px}
+  h1{font-size:22px;margin:0}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .stat{font-variant-numeric:tabular-nums;color:var(--mut);font-size:14px}
+  .stat b{color:var(--ink)}
+  #ump{display:flex;align-items:center;gap:12px}
+  #ump .shape{width:56px;height:56px;border-radius:50%;background:#2b3a55;border:3px solid #4a5f86;flex:none}
+  #ump .says{color:var(--mut);font-size:14px}
+  .prompt{font-size:20px;font-weight:700;margin:6px 0}
+  .tell{color:var(--mut);font-size:14px}
+  .clock{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums}
+  .clock.low{color:var(--out)}
+  input[type=text]{width:100%;font-size:17px;padding:12px;border-radius:10px;border:1px solid var(--line);background:#0c111b;color:var(--ink)}
+  button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:#24304a;color:var(--ink);padding:10px 14px}
+  button.go{background:#2f6fed;border-color:#2f6fed;font-weight:700}
+  button:disabled{opacity:.5;cursor:default}
+  #sugg{list-style:none;margin:6px 0 0;padding:0}
+  #sugg button{width:100%;text-align:left;display:flex;justify-content:space-between;gap:8px;margin-top:4px;background:#121a29}
+  #sugg small,.opt small{color:var(--mut)}
+  .ruling{font-size:20px;font-weight:800;letter-spacing:.04em}
+  .SAFE{color:var(--safe)}.OUT{color:var(--out)}.STRIKE{color:var(--strike)}.NO_PITCH{color:var(--np)}
+  .called{color:var(--mut);font-size:14px}
+  .dots span{display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid var(--mut);margin-right:4px}
+  .dots span.on{background:var(--strike);border-color:var(--strike)}
+  .dots.outs span.on{background:var(--out);border-color:var(--out)}
+  #picker{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;padding:16px}
+  #picker .sheet{background:var(--card);border-radius:14px;padding:14px;width:100%;max-width:560px}
+  .opt{width:100%;text-align:left;margin-top:6px;display:flex;justify-content:space-between}
+  pre.share{white-space:pre-wrap;background:#0c111b;padding:12px;border-radius:10px;font-size:18px}
+  ol.hist{padding-left:20px;margin:6px 0}
+  ol.hist li{margin-bottom:8px}
+  .mut{color:var(--mut);font-size:14px}
+  .hide{display:none}
+</style>
+</head>
+<body>
+<main>
+  <header><h1>Stumpire</h1><a href="/arcade/">Run The Arcade</a></header>
+
+  <div class="card" id="ump"><div class="shape" aria-hidden="true"></div><div><b>The Stumpire</b><div class="says" id="umpSays">Loading.</div></div></div>
+
+  <div class="card" id="gate">Loading.</div>
+
+  <div class="card hide" id="board">
+    <div class="row">
+      <span class="stat">Slate <b id="slNo">#</b></span>
+      <span class="stat">At-bat <b id="abNo">1</b> of 5</span>
+      <span class="stat">Bases <b id="bases">0</b>/20</span>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <span class="stat">Outs</span><span class="dots outs" id="outs"></span>
+      <span class="stat">Strikes</span><span class="dots" id="strikes"></span>
+    </div>
+  </div>
+
+  <div class="card hide" id="atbat">
+    <div class="row" style="justify-content:space-between">
+      <span class="mut" id="league"></span>
+      <span class="clock" id="clock">30</span>
+    </div>
+    <div class="prompt" id="prompt"></div>
+    <div class="tell" id="tell"></div>
+    <div class="mut" id="maxTier"></div>
+    <div style="margin-top:10px"><input type="text" id="answer" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Name a player or team" maxlength="60"></div>
+    <ul id="sugg"></ul>
+    <div class="row" style="margin-top:8px"><button class="go" id="swing">Swing</button></div>
+  </div>
+
+  <div class="card hide" id="ruling"></div>
+
+  <div class="card hide" id="next"><button class="go" id="nextBtn">Play ball</button></div>
+
+  <div class="card hide" id="over"></div>
+
+  <div class="card hide" id="historyCard"><b>The box score</b><ol class="hist" id="history"></ol></div>
+</main>
+
+<div id="picker" role="dialog" aria-modal="true" aria-labelledby="pickTitle">
+  <div class="sheet"><b id="pickTitle">Which one do you mean?</b><div class="mut">The clock is stopped while you choose.</div><div id="pickOpts"></div>
+  <div class="row" style="margin-top:8px"><button id="pickCancel">None of these</button></div></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="/arcade/auth.js?v=4"></script>
+<script>
+(function () {
+  'use strict';
+  /* The animated Stumpire drops in here later. Everything that should make
+     him react writes these two fields through setUmp(); nothing reads them
+     but the placeholder below. mood: idle | smug | shocked | annoyed | confused
+     state: waiting | pitching | ruling | over */
+  var stumpire = { mood: 'idle', state: 'waiting' };
+  var LINES = { idle: 'Step in when you are ready.', smug: 'Called it.', shocked: 'Did not see that coming.',
+    annoyed: 'Strike.', confused: 'Never heard of him.', waiting: 'Step in when you are ready.' };
+  function setUmp(mood, state, line) {
+    stumpire.mood = mood; if (state) stumpire.state = state;
+    $('umpSays').textContent = line || LINES[mood] || '';
+    $('ump').dataset.mood = mood; $('ump').dataset.state = stumpire.state;
+  }
+  window.STUMPIRE_CHARACTER = stumpire;
+
+  function $(id) { return document.getElementById(id); }
+  function show(id, on) { $(id).classList.toggle('hide', !on); }
+  var A = window.RTG_AUTH;
+  var GUEST_KEY = 'stumpire_guest_v1';
+  function guestId() {
+    var g = null;
+    try { g = localStorage.getItem(GUEST_KEY); } catch (e) {}
+    if (!g) { g = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2)); try { localStorage.setItem(GUEST_KEY, g); } catch (e) {} }
+    return g;
+  }
+  function api(method, path, body) {
+    var h = { 'Content-Type': 'application/json', 'X-Stumpire-Guest': guestId() };
+    var t = A && A.token && A.token();
+    if (t) h.Authorization = 'Bearer ' + t;
+    return fetch('/api/stumpire/' + path, { method: method, headers: h, body: body ? JSON.stringify(body) : undefined })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { j._status = r.status; return j; }); });
+  }
+
+  var S = null, clockTimer = null, deadline = 0, paused = false, busy = false, lastTier = 4;
+  var TIER = ['Out', 'Single', 'Double', 'Triple', 'Home run'];
+
+  function dots(el, n, max) { var h = ''; for (var i = 0; i < max; i++) h += '<span class="' + (i < n ? 'on' : '') + '"></span>'; $(el).innerHTML = h; }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+
+  function render(v) {
+    S = v;
+    show('gate', false); show('board', true);
+    $('slNo').textContent = '#' + v.slate.no;
+    $('abNo').textContent = Math.min(v.atBat + 1, v.total);
+    $('bases').textContent = v.summary.bases;
+    dots('outs', v.outs, 3);
+    var cur = v.current;
+    dots('strikes', cur ? cur.strikes : 0, 3);
+    renderHistory(v);
+    if (v.over) return renderOver(v);
+    show('over', false);
+    if (cur.status === 'live') {
+      show('next', false); show('atbat', true);
+      $('league').textContent = cur.league + (cur.type === 'team' ? ' · teams' : '');
+      $('prompt').textContent = cur.prompt;
+      $('tell').textContent = 'The Stumpire has called ' + cur.calledCount + ' answers. One of them: ' + cur.tell + '.';
+      lastTier = cur.maxTier;
+      $('maxTier').textContent = cur.strikes ? 'Best hit left: ' + TIER[cur.maxTier] + '.' : '';
+      startClock(cur.remainingMs, cur.paused);
+      setUmp(stumpire.mood === 'idle' ? 'idle' : stumpire.mood, 'pitching');
+      setTimeout(function () { $('answer').focus(); }, 0);
+    } else {
+      stopClock(); show('atbat', false); show('next', true);
+      $('nextBtn').textContent = v.atBat === 0 ? 'Play ball' : 'Next at-bat';
+      setUmp(stumpire.mood, 'waiting');
+    }
+  }
+
+  function renderHistory(v) {
+    if (!v.history.length) { show('historyCard', false); return; }
+    show('historyCard', true);
+    $('history').innerHTML = v.history.map(function (h) {
+      var what = h.ruling === 'SAFE' ? TIER[h.tier] : (h.strikeout ? 'Struck out' : 'Out');
+      return '<li><b>' + esc(h.prompt) + '</b><br>' + esc(h.answer || 'No answer') + ': <span class="' + h.ruling + '">' + what + '</span>' +
+        '<div class="called">Called: ' + esc(h.called.join(', ')) + '</div>' +
+        (v.over ? '<button data-ch="' + h.atBat + '">Challenge the call</button>' : '') + '</li>';
+    }).join('');
+  }
+
+  function renderOver(v) {
+    stopClock(); show('atbat', false); show('next', false);
+    setUmp(v.won ? 'shocked' : 'smug', 'over', v.won ? 'You got me. Five at-bats.' : 'Three outs. See you tomorrow.');
+    api('GET', 'result').then(function (r) {
+      var s = r.summary || v.summary;
+      var html = '<div class="ruling">' + (v.won ? 'Game won' : 'Game over') + '</div>' +
+        '<p>' + s.bases + ' of 20 bases. ' + s.outs + (s.outs === 1 ? ' out' : ' outs') + '. ' + s.strikes + (s.strikes === 1 ? ' strike.' : ' strikes.') + (s.cycle ? ' You hit for the cycle.' : '') + '</p>' +
+        '<pre class="share" id="shareText">' + esc(r.share || v.share) + '</pre><button class="go" id="copy">Copy result</button>';
+      if (r.crowd) html += '<p class="mut">What everyone else said, for fun only:</p>' + r.crowd.map(function (c, i) {
+        return c.length ? '<div class="mut">At-bat ' + (i + 1) + ': ' + c.map(function (x) { return esc(x.name) + ' ' + x.pct + '%'; }).join(', ') + '</div>' : '';
+      }).join('');
+      $('over').innerHTML = html; show('over', true);
+      $('copy').onclick = function () { try { navigator.clipboard.writeText($('shareText').textContent); $('copy').textContent = 'Copied'; } catch (e) {} };
+    });
+  }
+
+  function startClock(ms, isPaused) {
+    stopClock(); paused = !!isPaused; deadline = Date.now() + ms; tick();
+    clockTimer = setInterval(tick, 250);
+  }
+  function stopClock() { if (clockTimer) clearInterval(clockTimer); clockTimer = null; }
+  function tick() {
+    if (paused) return;
+    var left = Math.max(0, deadline - Date.now());
+    $('clock').textContent = Math.ceil(left / 1000);
+    $('clock').classList.toggle('low', left < 10000);
+    if (left <= 0 && !busy) { stopClock(); submit({ timeout: true }); }
+  }
+
+  function ruling(r) {
+    var head = r.ruling === 'SAFE' ? 'SAFE. ' + TIER[r.tier] + '.' : r.ruling === 'OUT' ? 'OUT. Called it.'
+      : r.ruling === 'STRIKE' ? (r.strikeout ? 'STRIKE THREE. Out.' : 'STRIKE.') + (r.expired ? ' The clock ran out.' : r.reason === 'invalid' ? ' That does not fit.' : '')
+      : 'NO PITCH. ' + (r.reason === 'already_tried' ? 'You tried that one.' : r.reason === 'too_many' ? 'Too many players by that name. Add more.' : r.reason === 'clock_running' ? 'Keep swinging.' : 'No player or team by that name. Try again.');
+    var cls = r.ruling;
+    var html = '<div class="ruling ' + cls + '">' + esc(head) + '</div>';
+    if (r.answer) html += '<div>' + esc(r.answer.name) + ' <span class="mut">' + esc(r.answer.tag) + '</span></div>';
+    if (r.reveal) html += '<div class="called">The Stumpire called: ' + esc(r.reveal.called.join(', ')) + '</div>';
+    $('ruling').innerHTML = html; show('ruling', true);
+    if (r.ruling === 'SAFE') setUmp(r.tier >= 3 ? 'shocked' : 'idle', 'ruling', r.tier >= 3 ? 'Did not see that coming.' : 'Fine. Take your base.');
+    else if (r.ruling === 'OUT') setUmp('smug', 'ruling');
+    else if (r.ruling === 'STRIKE') setUmp('annoyed', 'ruling', r.strikeout ? 'Strike three.' : 'Strike.');
+    else setUmp('confused', 'ruling');
+  }
+
+  function submit(body) {
+    if (busy) return; busy = true;
+    $('swing').disabled = true;
+    api('POST', 'answer', body).then(function (r) {
+      busy = false; $('swing').disabled = false;
+      if (r._status === 409 && r.error === 'conflict') return load();
+      if (r._status !== 200) { $('ruling').innerHTML = '<div class="mut">Something went wrong. Try again.</div>'; show('ruling', true); return; }
+      if (r.ruling === 'PICKER') return openPicker(r.picker);
+      closePicker();
+      ruling(r);
+      $('answer').value = ''; $('sugg').innerHTML = '';
+      render(r.state);
+    }, function () { busy = false; $('swing').disabled = false; });
+  }
+
+  function openPicker(opts) {
+    paused = true;
+    $('pickOpts').innerHTML = opts.map(function (o) { return '<button class="opt" data-id="' + esc(o.id) + '"><span>' + esc(o.name) + '</span><small>' + esc(o.tag) + '</small></button>'; }).join('');
+    $('picker').style.display = 'flex';
+  }
+  function closePicker() { $('picker').style.display = 'none'; }
+  $('pickOpts').addEventListener('click', function (e) { var b = e.target.closest('button[data-id]'); if (b) submit({ entityId: b.dataset.id }); });
+  $('pickCancel').onclick = function () { closePicker(); load(); };
+
+  var sTimer = null, sSeq = 0;
+  $('answer').addEventListener('input', function () {
+    clearTimeout(sTimer);
+    var q = $('answer').value;
+    if (q.trim().length < 2) { $('sugg').innerHTML = ''; return; }
+    sTimer = setTimeout(function () {
+      var my = ++sSeq;
+      api('GET', 'search?q=' + encodeURIComponent(q)).then(function (r) {
+        if (my !== sSeq) return;
+        $('sugg').innerHTML = (r.results || []).map(function (o) { return '<li><button data-id="' + esc(o.id) + '"><span>' + esc(o.name) + '</span><small>' + esc(o.tag) + '</small></button></li>'; }).join('');
+      });
+    }, 120);
+  });
+  $('sugg').addEventListener('click', function (e) { var b = e.target.closest('button[data-id]'); if (b) submit({ entityId: b.dataset.id }); });
+  $('answer').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); submit({ text: $('answer').value }); } });
+  $('swing').onclick = function () { submit({ text: $('answer').value }); };
+  $('nextBtn').onclick = function () {
+    show('ruling', false);
+    api('POST', 'pitch').then(function (v) { if (v._status === 200) render(v); });
+  };
+  $('history').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-ch]'); if (!b) return;
+    var note = prompt('What did the Stumpire get wrong? (optional)') || '';
+    api('POST', 'challenge', { atBat: Number(b.dataset.ch), note: note }).then(function (r) {
+      b.disabled = true; b.textContent = r._status === 200 ? 'Challenge sent' : r.error === 'already_challenged' ? 'Already challenged' : 'Could not send';
+    });
+  });
+
+  function load() {
+    api('GET', 'today').then(function (v) {
+      if (v._status === 404) { $('gate').textContent = 'Page not found.'; return; }
+      if (v.noSlate) { $('gate').textContent = 'No slate today. Check back tomorrow.'; setUmp('idle', 'waiting', 'Day off.'); return; }
+      render(v);
+    });
+  }
+
+  function start() {
+    var signed = A && A.state && A.state().signedIn;
+    api('GET', 'me').then(function () {
+      if (signed) { try { var g = localStorage.getItem(GUEST_KEY); if (g) api('POST', 'claim', { guestId: g }); } catch (e) {} }
+      load();
+    });
+  }
+  if (A && A.boot && A.boot()) {
+    var started = false;
+    A.onChange(function (s) { if (s.resolved && !started) { started = true; start(); } });
+    setTimeout(function () { if (!started) { started = true; start(); } }, 2500);
+  } else start();
+})();
+</script>
+</body>
+</html>

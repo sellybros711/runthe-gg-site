@@ -32,13 +32,16 @@ export function grade(rows, k = CONFIG.BLEND_K) {
 
 export function calledCount(atBatIndex) { return CONFIG.CALLED_BY_AT_BAT[atBatIndex]; }
 
-/* Top N-1 by expected share plus the editor's wildcard. */
+/* Top N-1 by expected share plus the editor's wildcard. An ARGUABLE answer is
+   never called: it is in the set on the benefit of the doubt, and calling it
+   would turn that doubt into an out. */
 export function calledList(graded, atBatIndex, wildcardId) {
   const n = calledCount(atBatIndex);
-  const top = graded.slice(0, n - 1).map(r => r.id);
+  const top = graded.filter(r => !r.arguable).slice(0, n - 1).map(r => r.id);
   const problems = [];
   if (!wildcardId) problems.push('choose a wildcard for the called list');
   else if (!graded.some(r => r.id === wildcardId)) problems.push('the wildcard is not a valid answer');
+  else if (graded.some(r => r.id === wildcardId && r.arguable)) problems.push('the wildcard cannot be an arguable answer');
   else if (top.includes(wildcardId)) problems.push('the wildcard is already in the top ' + (n - 1));
   const ids = problems.length ? top : [...top, wildcardId];
   const coverage = graded.filter(r => ids.includes(r.id)).reduce((s, r) => s + r.expected, 0);
