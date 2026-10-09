@@ -53,22 +53,27 @@ test('only fields complete for the prompt years may be used', () => {
   assert.ok(coverageProblems(q({ years: null })).length);
 });
 
-test('all ten seed prompts pass at their at-bat, and the test slate publishes', () => {
-  assert.equal(SEED.prompts.length, 10);
-  for (const d of SEED.prompts) {
-    const p = previewPrompt(d, d.at_bat - 1, SA);
-    assert.deepEqual(p.check.errors, [], d.id);
+test('every pool prompt fits an at-bat, and a month of daily slates all publish', async () => {
+  const { slotFit, chooseSlate } = await import('../daily.js');
+  const fit = slotFit(SEED.prompts, SA, '2026-10-09');
+  for (const d of SEED.prompts) assert.ok(fit.some(f => f.includes(d)), d.id + ' fits no at-bat');
+  assert.equal(new Set(SEED.prompts.map(p => p.league)).size, 3);
+  const recent = new Set();
+  for (let k = 0; k < 30; k++) {
+    const date = new Date(Date.parse('2026-10-09T12:00:00Z') + k * 86400000).toISOString().slice(0, 10);
+    const r = chooseSlate(SEED.prompts, SA, date, recent);
+    assert.ok(r.ok, date + ': ' + (r.errors || []).join('; '));
+    assert.deepEqual(checkSlate(r.defs), []);
+    r.defs.forEach(d => recent.add(d.id));
+    assert.deepEqual(chooseSlate(SEED.prompts, SA, date, new Set()).defs.map(d => d.id), chooseSlate(SEED.prompts, SA, date, new Set()).defs.map(d => d.id), 'a date always gives the same slate');
   }
-  const defs = SEED.test_slate.map(id => SEED.prompts.find(p => p.id === id));
-  const b = buildSlate(defs, SA);
-  assert.ok(b.ok, b.errors.join('; '));
-  const leagues = new Set(SEED.prompts.map(p => p.league));
-  assert.equal(leagues.size, 3);
 });
 
 test('publishing is blocked on a broken rule', () => {
   const d = { ...SEED.prompts.find(p => p.id === 'nfl-te-pro-bowl'), wildcard: null };
   assert.ok(previewPrompt(d, 4, SA).check.errors.some(e => /wildcard/.test(e)));
-  const defs = SEED.test_slate.map(id => SEED.prompts.find(p => p.id === id));
-  assert.equal(buildSlate([defs[0], defs[0], defs[2], defs[3], defs[4]], SA).ok, false);
+  const one = SEED.prompts.find(p => p.id === 'mlb-gold-glove');
+  assert.equal(buildSlate([one, one, one, one, one], SA).ok, false);
+  const nfl = SEED.prompts.find(p => p.id === 'nfl-cowboys-2000');
+  assert.ok(previewPrompt({ ...nfl, years: [1980, 2025] }, 0, SA).check.errors.some(e => /1995/.test(e)), 'an NFL prompt before 1995 is refused');
 });

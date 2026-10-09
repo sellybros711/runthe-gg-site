@@ -80,16 +80,25 @@ export function coverageProblems(q) {
     if (!c) problems.push('the award ' + a + ' is not complete enough to author against');
     else if (from < c.from) problems.push('the award ' + a + ' is only complete from ' + c.from);
   }
+  const lc = (CONFIG.LEAGUE_COVERAGE || {})[q.league] || {};
   for (const f of fields) {
-    const c = CONFIG.FIELD_COVERAGE[f];
+    const c = f in lc ? lc[f] : CONFIG.FIELD_COVERAGE[f];
     if (!c) problems.push(f + ' is not complete enough to author against');
     else if (from < c.from) problems.push(f + ' is only complete from ' + c.from + ' and the prompt starts at ' + from);
   }
   return problems;
 }
 
+/* A player's career touches the prompt's years if any decade he played in
+   overlaps them. Teams are not filtered by years. */
+function inYears(e, q) {
+  if (e.k !== 'p' || !Array.isArray(q.years)) return true;
+  const lo = Math.floor(q.years[0] / 10) * 10, hi = q.years[1];
+  return (e.dc || []).some(d => d >= lo && d <= hi);
+}
+
 /* Every entity the query accepts. */
 export function validSet(q, list = store().list) {
   const want = q.type === 'team' ? 't' : 'p';
-  return list.filter(e => e.s === q.league && e.k === want && (q.where || []).every(p => test(e, p)));
+  return list.filter(e => e.s === q.league && e.k === want && inYears(e, q) && (q.where || []).every(p => test(e, p)));
 }

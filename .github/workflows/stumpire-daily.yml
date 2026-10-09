@@ -1,0 +1,111 @@
+name: "Stumpire: set up and publish the daily slates"
+
+# Everything Stumpire needs to be playable, run on merge and then every night:
+#
+#   1. Apply supabase/133_stumpire.sql. It is idempotent, so running it nightly
+#      costs nothing and means the database can never be behind the code.
+#   2. Seed the tester list, ONLY while the table is empty, so a tester an admin
+#      removes stays removed. csel8 is the admin; the other four are the same
+#      accounts every other game here comps (football/dynasty-access.js).
+#   3. Import real search interest (five years of Wikipedia pageviews). The
+#      dev sandbox cannot reach Wikimedia; a runner can. Cached per month.
+#   4. Publish today and the next two days from the prompt pool (the file's
+#      prompts plus any authored in the admin tool), avoiding prompts used in
+#      the last six days. A date that already has a slate is skipped, so a
+#      re-run never moves a published grade, and two days of slack means one
+#      missed night leaves nobody without a game.
+#   5. Read the slates back, and commit search_avg.json if it moved (monthly)
+#      so the admin tool's preview grades with the same numbers.
+
+on:
+  schedule:
+    - cron: '17 3 * * *'      # about 11pm Eastern
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/133_stumpire.sql'
+      - 'functions/_stumpire/prompts/**'
+      - 'functions/_stumpire/daily.js'
+      - 'functions/_stumpire/publish.js'
+      - '.github/workflows/stumpire-daily.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stumpire-daily
+  cancel-in-progress: false
+
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install psql
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client >/dev/null && psql --version
+
+      - name: Apply the migration
+        run: |
+          test -n "$SUPABASE_DB_URL" || { echo "::error::SUPABASE_DB_URL is not set"; exit 1; }
+          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -1 -q -f supabase/133_stumpire.sql
+
+      - name: Seed testers (only if there are none)
+        run: |
+          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -q -c "
+            insert into stumpire_testers (user_id, role, note)
+            select id, case when lower(username) = 'csel8' then 'admin' else 'tester' end, 'seeded'
+              from profiles
+             where lower(username) in ('csel8','runnyj','malikwillislover','slimeyb3','jordantest')
+               and not exists (select 1 from stumpire_testers)
+            on conflict (user_id) do nothing;"
+          psql "$SUPABASE_DB_URL" -c "select p.username, t.role from stumpire_testers t left join profiles p on p.id = t.user_id order by t.role, p.username;"
+
+      - name: Month
+        id: month
+        run: echo "m=$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        with:
+          path: functions/_stumpire/build/.cache
+          key: stumpire-wiki-${{ steps.month.outputs.m }}
+          restore-keys: stumpire-wiki-
+
+      # A Wikimedia outage must not leave tomorrow without a game: on failure
+      # the committed file is used, whatever it is, and the log says which.
+      - name: Import search interest
+        continue-on-error: true
+        run: node functions/_stumpire/build/import-search.mjs --source wikipedia --concurrency 8
+      - name: Which search data
+        run: node -e "const f=require('./functions/_stumpire/data/search_avg.json');console.log('search_avg source:',f.source,Object.keys(f.values).length,'values')"
+
+      - name: Read recent and authored prompts
+        run: |
+          psql "$SUPABASE_DB_URL" -tA -c "select coalesce(json_agg(distinct p), '[]') from stumpire_slates s, unnest(s.prompt_ids) p where s.slate_date >= current_date - 6" > /tmp/recent.json
+          psql "$SUPABASE_DB_URL" -tA -c "select coalesce(json_agg(jsonb_build_object('id', id, 'text', text, 'league', league, 'type', type, 'wildcard', coalesce(wildcard, 'auto'), 'arguable', arguable) || query), '[]') from stumpire_prompts where status <> 'retired'" > /tmp/extra.json
+          echo "recent: $(cat /tmp/recent.json)"
+          node -e "console.log('authored prompts in the table:', require('/tmp/extra.json').length)"
+
+      - name: Publish today and the next two days
+        run: |
+          TODAY=$(TZ=America/New_York date +%F)
+          node functions/_stumpire/build/seed-slate.mjs --sql --days 3 --date "$TODAY" --recent /tmp/recent.json --extra /tmp/extra.json > /tmp/publish.sql
+          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -q -f /tmp/publish.sql
+
+      - name: Read back
+        run: psql "$SUPABASE_DB_URL" -c "select slate_date, slate_no, prompt_ids, (select count(*) from stumpire_prompt_answers a where a.slate_date = s.slate_date) as answers from stumpire_slates s where slate_date >= current_date - 1 order by 1;"
+
+      - name: Commit search_avg.json if it moved
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add functions/_stumpire/data/search_avg.json
+          if git diff --cached --quiet; then echo "search data unchanged"; exit 0; fi
+          git commit -q -m "Stumpire: refresh search_avg from Wikipedia pageviews"
+          for i in 1 2 3 4; do git pull -q --rebase origin main && git push -q origin HEAD:main && exit 0; sleep $((2**i)); done
+          exit 1

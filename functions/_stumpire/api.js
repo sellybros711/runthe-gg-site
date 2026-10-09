@@ -263,11 +263,11 @@ async function admin(route, req, deps, now) {
       if (defs.length !== CONFIG.AT_BATS || defs.some(d => !d)) return bad('pick five saved prompts');
       const obs = {};
       for (const d of defs) obs[d.id] = await db.observed(d.id).catch(() => ({}));
-      const built = buildSlate(defs, sa, id => obs[id] || {});
+      const built = buildSlate(defs, sa, id => obs[id] || {}, { seed: date, autoWildcard: true });
       if (!built.ok) return ok({ published: false, errors: built.errors });
       const rows = [];
       built.prompts.forEach((p, i) => frozenRows(p).forEach(r => rows.push({ ...r, at_bat: i, prompt_id: p.def.id })));
-      await db.publish(date, slateNumber(date), defs, rows, req.uid);
+      await db.publish(date, slateNumber(date), built.defs, rows, req.uid);
       return ok({ published: true, date, no: slateNumber(date), rows: rows.length });
     }
     case 'GET admin/challenges': return ok({ challenges: await db.challenges() });

@@ -96,6 +96,15 @@ export const CONFIG = Object.freeze({
      build/audit-fields.mjs. */
   AWARD_COVERAGE: Object.freeze({
     'MLB All-Star': null
+  }),
+
+  /* Per league, where the field-wide rows are too generous. The NFL side of
+     the index keeps scraped players from 1995 only (before that, only the
+     curated stars are in it), so an NFL prompt reaching earlier would strike
+     real answers. A prompt's years also filter its valid set: a player is only
+     valid if his career touches them, so the prompt text must say the era. */
+  LEAGUE_COVERAGE: Object.freeze({
+    NFL: Object.freeze({ team: { from: 1995 }, pos: { from: 1995 }, teams: { from: 1995 }, award: { from: 1995 }, decade: { from: 1995 }, act: { from: 2024 } })
   })
 });
 

@@ -32,25 +32,31 @@ after the at-bat ends, and no valid answer is ever sent before it is earned.
 
 ## Turning it on
 
-1. Run `supabase/133_stumpire.sql` in the Supabase SQL editor.
-2. Set `STUMPIRE_COOKIE_SECRET` (any long random string) in the Pages
-   environment beside `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE` and
-   `SUPABASE_ANON`. Without it the page shells are a 404 for everybody.
-3. Make yourself the first admin:
-   ```sql
-   insert into stumpire_testers (user_id, role) select id, 'admin' from profiles where username = 'YOU';
-   ```
-4. Seed the ten sample prompts and publish a test slate for today:
-   ```
-   node functions/_stumpire/build/seed-slate.mjs --sql | psql "$SUPABASE_DB_URL"
-   node functions/_stumpire/build/seed-slate.mjs --sql --date 2026-10-11 | psql "$SUPABASE_DB_URL"
-   ```
-   It refuses a date that already has a slate, so a re-run never moves a grade.
-5. Open `/arcade/` signed in. The Stumpire tile appears for testers; it also
-   sets the signed cookie the page shells need. Admin: `/arcade/stumpire/admin`.
+It runs itself. `.github/workflows/stumpire-daily.yml` fires when this lands on
+main and every night after (about 11pm Eastern), using the repo's
+`SUPABASE_DB_URL` secret:
 
-Testers are rows, so adding or removing one needs no deploy (the admin page, or
-SQL). `stumpire_settings.mode` is `off` (admins only), `testers`, or `public`.
+1. applies `supabase/133_stumpire.sql` (idempotent);
+2. seeds the testers, only while the table is empty: `csel8` as admin,
+   `runnyj`, `malikwillislover`, `slimeyb3` and `jordantest` as testers;
+3. imports real search interest (Wikipedia pageviews, cached per month);
+4. publishes today and the next two days from the prompt pool, skipping any
+   date already published and avoiding prompts used in the last six days;
+5. commits `search_avg.json` when it moved, so the admin preview agrees.
+
+Nothing to set in Cloudflare: the page cookie is keyed off the service role
+secret the site already has (`STUMPIRE_COOKIE_SECRET` overrides it if set).
+
+To play: sign in at `/arcade/` with a tester account. The Stumpire tile
+appears (this also sets the cookie the page needs); tap it. Admin:
+`/arcade/stumpire/admin`. Testers are rows, so add or remove one from the
+admin page or with SQL; the nightly run never re-adds a removed tester.
+
+The pool is `prompts/seed.json` plus anything saved in the admin tool (the
+table's copy wins for the same id). `wildcard: "auto"` picks the wildcard
+from just past the called list, seeded by the date; write an entity id to pin
+one. Every prompt states its era, because a prompt's years filter its valid
+set, and NFL prompts start in 1995 or later (`CONFIG.LEAGUE_COVERAGE`).
 
 ## Scripts
 
@@ -58,7 +64,7 @@ SQL). `stumpire_settings.mode` is `off` (admins only), `testers`, or `public`.
 node functions/_stumpire/build/build-entities.mjs     rebuild data/entities.json (reports lost ids)
 node functions/_stumpire/build/import-search.mjs --source fixture|wikipedia|csv [--spot google.csv]
 node functions/_stumpire/build/audit-fields.mjs       where an award can be trusted
-node functions/_stumpire/build/seed-slate.mjs [--sql] [--date YYYY-MM-DD]
+node functions/_stumpire/build/seed-slate.mjs [--sql] [--date YYYY-MM-DD] [--days N] [--recent used.json] [--extra prompts.json]
 node functions/_stumpire/build/replay-sportegories.mjs --file answers.csv | --live | --fixture
 node functions/_stumpire/build/pages.mjs              after editing web/*.html
 node functions/_stumpire/build/dev-server.mjs         local play against the in-memory store (?as=tester|admin|nobody)
@@ -80,12 +86,13 @@ regressions, not the launch number.
 
 ## Data, honestly
 
-- **`search_avg` is a synthetic fixture today.** Wikimedia is refused by the
-  dev sandbox, so `.github/workflows/stumpire-search.yml` runs the real import
-  on a runner and uploads the file for review. Seed slates graded on the
-  fixture are for testers only. The fixture is flatter than real interest, so
-  most seed called lists sit under the 35% coverage band (a warning, shown in
-  the authoring tool).
+- **`search_avg` in the repo starts as a synthetic fixture.** Wikimedia is
+  refused by the dev sandbox, so the nightly workflow imports the real
+  pageviews on a runner before it publishes, follows redirects, skips
+  disambiguation pages, and gives anybody with no article the 1st percentile
+  of those found. If Wikimedia is down that night, the committed file is used
+  and the log says which. Two players sharing a name whose plain title is a
+  disambiguation page fall through to it and share its numbers.
 - **Award coverage was measured, not assumed** (`audit-fields.mjs`). MLB
   All-Star is missing for 106 of 266 MVPs, Cy Young winners and Hall of Famers
   since 1940 (Jeter, A-Rod, Judge), so it is blocked in

@@ -6,7 +6,7 @@
  * gets the site's own 404 page with a 404 status.
  */
 import { supabaseDb } from '../../_stumpire/db-supabase.js';
-import { verify, readCookie } from '../../_stumpire/cookie.js';
+import { verify, readCookie, secretOf } from '../../_stumpire/cookie.js';
 import { PLAY_PAGE, ADMIN_PAGE } from '../../_stumpire/pages.js';
 
 export async function onRequest(context) {
@@ -17,7 +17,7 @@ export async function onRequest(context) {
   try {
     if (page && env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE) {
       const db = supabaseDb(env);
-      const uid = await verify(env.STUMPIRE_COOKIE_SECRET, readCookie(request), Date.now());
+      const uid = await verify(secretOf(env), readCookie(request), Date.now());
       access = uid ? await db.access(uid) : ((await db.mode()) === 'public' ? 'player' : null);
     }
   } catch (e) { access = null; }

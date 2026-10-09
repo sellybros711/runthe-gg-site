@@ -5,11 +5,11 @@
  * functions/_stumpire/api.js decides everything. Non-testers get a 404 on
  * every path. GET me also sets the page gate's cookie for a tester.
  *
- * Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE, SUPABASE_ANON, STUMPIRE_COOKIE_SECRET.
+ * Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE, SUPABASE_ANON (STUMPIRE_COOKIE_SECRET optional).
  */
 import { verifyUser } from '../stripe/_verify.js';
 import { supabaseDb } from '../../_stumpire/db-supabase.js';
-import { sign, setCookie } from '../../_stumpire/cookie.js';
+import { sign, setCookie, secretOf } from '../../_stumpire/cookie.js';
 
 /* EVERY PAGES FUNCTION IS ONE WORKER. A static import of the engine would
    evaluate its 2MB dataset on the cold start of every endpoint on the site,
@@ -38,8 +38,8 @@ export async function onRequest(context) {
     uid, guestId: /^[A-Za-z0-9-]{8,64}$/.test(guest) ? guest : null
   }, { db: supabaseDb(env), now: () => Date.now(), searchAvg: () => search });
   const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
-  if (path === 'me' && res.status === 200 && uid && env.STUMPIRE_COOKIE_SECRET) {
-    headers['Set-Cookie'] = setCookie(await sign(env.STUMPIRE_COOKIE_SECRET, uid, Date.now()));
+  if (path === 'me' && res.status === 200 && uid && secretOf(env)) {
+    headers['Set-Cookie'] = setCookie(await sign(secretOf(env), uid, Date.now()));
   }
   return new Response(JSON.stringify(res.body), { status: res.status, headers });
 }

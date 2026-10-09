@@ -3,7 +3,10 @@
  * the token) hands a tester a signed, short-lived cookie naming their user
  * id. The page function checks the signature AND asks the database again, so
  * a tester removed from the table loses the page on their next load.
- * Without STUMPIRE_COOKIE_SECRET nothing verifies and every page is a 404. */
+ * The key is STUMPIRE_COOKIE_SECRET when that is set, and otherwise one
+ * derived from SUPABASE_SERVICE_ROLE, which the site already holds as a
+ * secret: nothing to configure, and nobody without the service key can mint
+ * a cookie. With neither, nothing verifies and every page is a 404. */
 const enc = new TextEncoder();
 const b64u = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
@@ -13,6 +16,12 @@ async function hmac(secret, msg) {
 }
 
 export const COOKIE = 'stmp';
+
+export function secretOf(env) {
+  if (!env) return null;
+  if (env.STUMPIRE_COOKIE_SECRET) return env.STUMPIRE_COOKIE_SECRET;
+  return env.SUPABASE_SERVICE_ROLE ? 'stumpire-cookie-v1|' + env.SUPABASE_SERVICE_ROLE : null;
+}
 export const TTL_S = 12 * 3600;
 
 export async function sign(secret, uid, nowMs) {

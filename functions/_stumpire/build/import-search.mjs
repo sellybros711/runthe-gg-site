@@ -57,32 +57,83 @@ export const sources = {
   },
 
   async wikipedia(list, opts) {
+    /* 1. Resolve every candidate title in batches of 50: redirects followed
+          (a redirect's own pageviews are near zero, so "Michael Jordan
+          (basketball)" must count as the real article), and disambiguation
+          pages skipped.
+       2. Average the canonical article's monthly views over 60 months.
+       3. Somebody with no article gets the 1st percentile of everyone who has
+          one: obscure, but read off the data rather than typed. */
     const DIS = { NFL: ' (American football)', NBA: ' (basketball)', MLB: ' (baseball)' };
+    const UA = { 'User-Agent': 'RunTheArcade/1.0 (https://runthe.gg; stumpire search_avg import)' };
     const end = new Date(); end.setUTCDate(1);
     const start = new Date(end); start.setUTCFullYear(end.getUTCFullYear() - 5);
     const ym = d => d.toISOString().slice(0, 7).replace('-', '') + '0100';
-    const cacheDir = path.join(HERE, '.cache'); fs.mkdirSync(cacheDir, { recursive: true });
-    const out = {};
-    async function views(title) {
-      const f = path.join(cacheDir, 'wp-' + Buffer.from(title).toString('base64url') + '.json');
+    const month = end.toISOString().slice(0, 7);
+    const cacheDir = opts.cacheDir || path.join(HERE, '.cache'); fs.mkdirSync(cacheDir, { recursive: true });
+    const cached = async (name, fn) => {
+      const f = path.join(cacheDir, name);
       if (fs.existsSync(f)) return JSON.parse(fs.readFileSync(f, 'utf8'));
-      const url = 'https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/'
-        + encodeURIComponent(title.replace(/ /g, '_')) + '/monthly/' + ym(start) + '/' + ym(end);
-      const r = await fetch(url, { headers: { 'User-Agent': 'RunTheArcade/1.0 (https://runthe.gg; stumpire search_avg import)' } });
-      const v = r.ok ? (await r.json()).items.map(i => i.views) : null;
-      fs.writeFileSync(f, JSON.stringify(v));
-      return v;
-    }
-    let done = 0;
-    for (const e of list) {
-      const titles = e.k === 't' ? [e.n] : [e.n + DIS[e.s], e.n];
-      for (const t of titles) {
-        const v = await views(t).catch(() => null);
-        if (v && v.length) { out[e.id] = Math.round(v.reduce((s, x) => s + x, 0) / v.length); break; }
+      const v = await fn(); fs.writeFileSync(f, JSON.stringify(v)); return v;
+    };
+    const get = async (url, tries = 4) => {
+      for (let i = 0; ; i++) {
+        try { const r = await fetch(url, { headers: UA }); if (r.status === 404) return null; if (r.ok) return r.json(); if (i >= tries) return null; }
+        catch (e) { if (i >= tries) return null; }
+        await new Promise(r => setTimeout(r, 500 * 2 ** i));
       }
-      if (++done % 200 === 0) console.log('  ' + done + '/' + list.length);
-      if (opts.delay) await new Promise(r => setTimeout(r, opts.delay));
+    };
+    const cands = new Map();
+    for (const e of list) cands.set(e.id, e.k === 't' ? [e.n] : [e.n + DIS[e.s], e.n]);
+    const titles = [...new Set([...cands.values()].flat())];
+    const info = {};   // asked title -> { title, missing, dis }
+    for (let i = 0; i < titles.length; i += 50) {
+      const batch = titles.slice(i, i + 50);
+      const key = 'q-' + Buffer.from(batch.join('|')).toString('base64url').slice(0, 80) + '-' + batch.length + '.json';
+      const j = await cached(key, () => get('https://en.wikipedia.org/w/api.php?action=query&format=json&redirects=1&prop=pageprops&ppprop=disambiguation&titles=' + encodeURIComponent(batch.join('|'))));
+      if (!j || !j.query) continue;
+      const map = {};
+      for (const n of j.query.normalized || []) map[n.from] = n.to;
+      const redir = {};
+      for (const r of j.query.redirects || []) redir[r.from] = r.to;
+      const pages = {};
+      for (const pg of Object.values(j.query.pages || {})) pages[pg.title] = pg;
+      for (const t of batch) {
+        let f = map[t] || t; f = redir[f] || f;
+        const pg = pages[f];
+        info[t] = { title: f, missing: !pg || 'missing' in pg || 'invalid' in pg, dis: !!(pg && pg.pageprops && 'disambiguation' in pg.pageprops) };
+      }
+      if ((i / 50) % 20 === 0) console.log('  titles ' + Math.min(i + 50, titles.length) + '/' + titles.length);
     }
+    const chosen = new Map();
+    for (const [id, cs] of cands) {
+      const c = cs.map(t => info[t]).find(x => x && !x.missing && !x.dis);
+      if (c) chosen.set(id, c.title);
+    }
+    const views = {};
+    const uniq = [...new Set(chosen.values())];
+    let next = 0, done = 0;
+    async function worker() {
+      while (next < uniq.length) {
+        const t = uniq[next++];
+        const v = await cached('v-' + month + '-' + Buffer.from(t).toString('base64url') + '.json', async () => {
+          const j = await get('https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/'
+            + encodeURIComponent(t.replace(/ /g, '_')) + '/monthly/' + ym(start) + '/' + ym(end));
+          return j && j.items ? j.items.map(x => x.views) : null;
+        });
+        if (v && v.length) views[t] = v.reduce((a, b) => a + b, 0) / v.length;
+        if (++done % 500 === 0) console.log('  pageviews ' + done + '/' + uniq.length);
+      }
+    }
+    await Promise.all(Array.from({ length: opts.concurrency || 8 }, worker));
+    const out = {};
+    const found = [];
+    for (const [id, t] of chosen) if (views[t] > 0) { out[id] = Math.round(views[t]); found.push(views[t]); }
+    found.sort((a, b) => a - b);
+    const floor = Math.max(1, Math.round(found[Math.floor(found.length * 0.01)] || 1));
+    const missing = list.filter(e => !(e.id in out));
+    for (const e of missing) out[e.id] = floor;
+    console.log('  ' + found.length + ' with an article, ' + missing.length + ' at the floor of ' + floor);
     return out;
   },
 
@@ -115,9 +166,9 @@ if (isMain) {
   let list = store().list;
   if (arg('league')) list = list.filter(e => e.s === arg('league'));
   if (arg('limit')) list = list.slice(0, Number(arg('limit')));
-  const values = await sources[src](list, { file: arg('file'), delay: Number(arg('delay', 0)) });
+  const values = await sources[src](list, { file: arg('file'), concurrency: Number(arg('concurrency', 8)) });
   let prev = {};
-  if (src !== 'fixture' && fs.existsSync(OUT)) { try { const p = JSON.parse(fs.readFileSync(OUT, 'utf8')); if (p.source === src) prev = p.values; } catch (e) {} }
+  if (src !== 'fixture' && arg('league') && fs.existsSync(OUT)) { try { const p = JSON.parse(fs.readFileSync(OUT, 'utf8')); if (p.source === src) prev = p.values; } catch (e) {} }
   const merged = Object.assign({}, prev, values);
   const sorted = Object.fromEntries(Object.keys(merged).sort().map(k => [k, merged[k]]));
   fs.writeFileSync(OUT, JSON.stringify({ source: src, synthetic: src === 'fixture', window: '60 months', values: sorted }, null, 0));

@@ -174,7 +174,8 @@ test('admin preview and publish refuse a broken slate and freeze a good one', as
   const { call } = await setup();
   const pv = (await call('POST', 'admin/preview', 'admin', { prompt: { id: 'x', text: 'x', league: 'NBA', type: 'athlete', years: [1990, 2025], where: [{ k: 'award', v: 'NBA MVP' }] }, atBat: 0 })).body;
   assert.ok(pv.errors.length, 'NBA MVP has too few answers for at-bat 1');
-  const ids = ['mlb-gold-glove', 'nfl-rb-pro-bowl', 'nba-hall-of-fame', 'nba-pg-all-star', 'nfl-te-pro-bowl'];
+  const { slateFor } = await import('../build/seed-slate.mjs');
+  const ids = slateFor('2026-10-11').defs.map(d => d.id);
   const bad = (await call('POST', 'admin/publish', 'admin', { date: '2026-10-11', promptIds: [ids[0], ids[0], ids[2], ids[3], ids[4]] })).body;
   assert.equal(bad.published, false);
   const okp = (await call('POST', 'admin/publish', 'admin', { date: '2026-10-11', promptIds: ids })).body;
