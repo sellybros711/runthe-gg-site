@@ -255,7 +255,10 @@ if (!QUICK){
     /* NO TUNNELS. A pipe that carried the ball out of sight to a spot beside the cup handed out aces and
        read as a trick, so the tours have none: tiers are joined by a ramp lane (climb) or a jump, and a long
        hole's secret is a kicker in plain sight. Every world still hides at least one secret line. */
-    claim(TR.worlds.every((W, w) => { let k = 0; for (let n = w * TR.per + 1; n <= (w + 1) * TR.per; n++) k += secrets[n] || 0; return k >= 1; }), `${TR.name}: every world hides at least one secret line (${Object.keys(secrets).length} in all)`);
+    /* The Members worlds are nine holes each, every cup in a pen, so a shortcut that saves a stroke rarely
+       exists there; the Members Tour as a whole keeps at least one. The main tour asks it of every world. */
+    if (TR.members) claim(Object.keys(secrets).length >= 1, `${TR.name}: the tour hides at least one secret line (${Object.keys(secrets).length} in all)`);
+    else claim(TR.worlds.every((W, w) => { let k = 0; for (let n = w * TR.per + 1; n <= (w + 1) * TR.per; n++) k += secrets[n] || 0; return k >= 1; }), `${TR.name}: every world hides at least one secret line (${Object.keys(secrets).length} in all)`);
     { const tun = []; for (let n = 1; n <= TR.levels.length; n++) if (P.buildLevel(n, TR.id).portals.length) tun.push(n); claim(!tun.length, `${TR.name}: no hole carries a tunnel` + (tun.length ? ' (' + tun.join(', ') + ')' : '')); }
     { const bad = TR.levels.map((L, i) => L.three && L.three !== L.par - 1 ? i + 1 : 0).filter(Boolean); claim(!bad.length, `${TR.name}: a hole's own three-star target is a birdie, never easier` + (bad.length ? ' (' + bad.join(', ') + ')' : '')); }
     const wm = wet.reduce((a, b) => a + b, 0) / Math.max(1, wet.length);

@@ -19667,7 +19667,8 @@ and every hole read as having one answer. So:
 - **A secret line is one stroke shorter** and is marked with `secret(H, x0, y0, x1, y1)`: a zone only the
   hidden route passes through (a slit in a wall, a kicker ramp, a bank off a side wall). The solver searches twice: once AVOIDING every secret zone (that sets par) and once free (that
   must find a line one shorter, through a zone). `routes.json` keeps both, as `main:n` and `main:n:sc`.
-  Every world carries at least one. Finding it says SECRET LINE FOUND on the result.
+  Every main tour world carries at least one, and the Members Tour at least one in all (its cups sit in
+  pens, so a stroke-saving line rarely exists there). Finding it says SECRET LINE FOUND on the result.
 - **A long putt can never be robust on its own**, because a degree of aim is wider than the cup at 30
   feet. So an ace needs a funnel: a `bowl()`, a shallow hollow round the cup, and usually a backstop board.
 - **Water and the edges have curbs.** Thin `blk()` rails along a pond or a drop, with gaps only where a
