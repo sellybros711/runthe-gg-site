@@ -8,10 +8,20 @@
  * Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE, SUPABASE_ANON, STUMPIRE_COOKIE_SECRET.
  */
 import { verifyUser } from '../stripe/_verify.js';
-import { handle } from '../../_stumpire/api.js';
 import { supabaseDb } from '../../_stumpire/db-supabase.js';
 import { sign, setCookie } from '../../_stumpire/cookie.js';
-import SEARCH from '../../_stumpire/data/search_avg.json' with { type: 'json' };
+
+/* EVERY PAGES FUNCTION IS ONE WORKER. A static import of the engine would
+   evaluate its 2MB dataset on the cold start of every endpoint on the site,
+   the Stripe webhook included. Loaded on first use, only Stumpire pays. */
+let ENGINE = null;
+async function engine() {
+  if (!ENGINE) {
+    const [api, search] = await Promise.all([import('../../_stumpire/api.js'), import('../../_stumpire/data/search_avg.json', { with: { type: 'json' } })]);
+    ENGINE = { handle: api.handle, search: (search.default || search).values };
+  }
+  return ENGINE;
+}
 
 export async function onRequest(context) {
   const { request, env, params } = context;
@@ -21,11 +31,12 @@ export async function onRequest(context) {
   let body = null;
   if (request.method !== 'GET') { try { body = await request.json(); } catch (e) { body = {}; } }
   const uid = await verifyUser(env, request);
+  const { handle, search } = await engine();
   const guest = (request.headers.get('X-Stumpire-Guest') || '').slice(0, 64);
   const res = await handle({
     method: request.method, path, query: Object.fromEntries(url.searchParams), body,
     uid, guestId: /^[A-Za-z0-9-]{8,64}$/.test(guest) ? guest : null
-  }, { db: supabaseDb(env), now: () => Date.now(), searchAvg: () => SEARCH.values });
+  }, { db: supabaseDb(env), now: () => Date.now(), searchAvg: () => search });
   const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
   if (path === 'me' && res.status === 200 && uid && env.STUMPIRE_COOKIE_SECRET) {
     headers['Set-Cookie'] = setCookie(await sign(env.STUMPIRE_COOKIE_SECRET, uid, Date.now()));

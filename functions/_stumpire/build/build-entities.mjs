@@ -22,7 +22,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
-import { key, slug } from '../normalize.js';
+import { key, slug, fold, sortedKey, tokens } from '../normalize.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../../..');
@@ -212,7 +212,18 @@ for (const [k, aw] of Object.entries(fixes.awards || {})) {
 }
 for (const p of players) p.a = [...new Set(p.a)].filter(x => key(x) && key(x) !== key(p.n));
 
+/* The matcher's keys, computed here so a cold Worker does not spend a tenth
+   of a second normalizing nine thousand names. x: [folded name, key, sorted
+   key, surname]. xa: [folded alias, alias key] per alias. xt: a team's city
+   plus nickname key. test/entities.test.mjs holds these to normalize.js. */
+function precompute(e) {
+  const t = tokens(e.n);
+  e.x = [fold(e.n), key(e.n), sortedKey(e.n), e.k === 'p' && t.length > 1 ? t[t.length - 1] : ''];
+  e.xa = (e.a || []).map(a => [fold(a), key(a)]);
+  if (e.k === 't' && e.city && e.nick) e.xt = key(e.city + ' ' + e.nick);
+}
 const all = [...players, ...teams].sort((a, b) => a.id < b.id ? -1 : 1);
+all.forEach(precompute);
 const ids = new Set();
 for (const e of all) { if (ids.has(e.id)) throw new Error('duplicate id ' + e.id); ids.add(e.id); }
 

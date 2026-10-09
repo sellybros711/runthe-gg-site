@@ -17,7 +17,7 @@
  * tell the player the answer before the ruling.
  */
 import { CONFIG } from './config.js';
-import { key, sortedKey, tokens, fold, similarity, trigrams, suffixOf } from './normalize.js';
+import { key, sortedKey, tokens, fold, similarity, suffixOf } from './normalize.js';
 import { store, get, brief } from './entities.js';
 
 let IDX = null;
@@ -30,29 +30,49 @@ function push(map, k, id) {
   if (!a.includes(id)) a.push(id);
 }
 
+/* Two indexes, built when first needed, so a request that only reads the
+   board pays for neither. The exact maps are cheap. The fuzzy one buckets
+   every key by its first letter and its length, which is all the blocking an
+   edit distance this small needs: a typo rarely hits the first letter, and a
+   key two edits away is at most two characters longer or shorter. */
 export function buildIndex(list) {
   const names = new Map(), aliases = new Map(), sorted = new Map(), sur = new Map();
-  const keys = [];              // [key, id] for fuzzy
-  const grams = new Map();      // trigram -> indexes into keys
-  const search = [];            // typeahead rows
-  const addFuzzy = (k, id) => {
-    const i = keys.length; keys.push([k, id]);
-    for (const g of trigrams(k)) { let a = grams.get(g); if (!a) grams.set(g, a = []); a.push(i); }
-  };
+  const search = [];
   for (const e of list) {
-    const forms = [e.n];
-    if (e.k === 't') {
-      if (e.city && e.nick) forms.push(e.city + ' ' + e.nick);
-    }
-    for (const f of forms) { push(names, key(f), e.id); addFuzzy(key(f), e.id); }
-    for (const a of (e.a || [])) { push(aliases, key(a), e.id); addFuzzy(key(a), e.id); }
-    push(sorted, sortedKey(e.n), e.id);
-    if (e.k === 'p') { const t = tokens(e.n); if (t.length > 1) push(sur, t[t.length - 1], e.id); }
-    search.push({ id: e.id, name: e.n, f: fold(e.n), k: key(e.n),
-      alt: (e.a || []).map(a => ({ f: fold(a), k: key(a) })) });
+    const x = e.x || [fold(e.n), key(e.n), sortedKey(e.n), e.k === 'p' ? (tokens(e.n).length > 1 ? tokens(e.n).slice(-1)[0] : '') : ''];
+    const xa = e.xa || (e.a || []).map(a => [fold(a), key(a)]);
+    push(names, x[1], e.id);
+    if (e.xt) push(names, e.xt, e.id);
+    for (const [, k] of xa) push(aliases, k, e.id);
+    push(sorted, x[2], e.id);
+    if (x[3]) push(sur, x[3], e.id);
+    search.push({ id: e.id, name: e.n, f: x[0], k: x[1], alt: xa.map(([f, k]) => ({ f, k })) });
   }
   search.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : (a.id < b.id ? -1 : 1)));
-  return { names, aliases, sorted, sur, keys, grams, search };
+  return { names, aliases, sorted, sur, search, fuzzy: null };
+}
+
+function fuzzyIndex(I) {
+  if (I.fuzzy) return I.fuzzy;
+  const buckets = new Map();   // first letter + length -> [[key, id]]
+  const add = (k, id) => { if (!k) return; const b = k[0] + k.length; let a = buckets.get(b); if (!a) buckets.set(b, a = []); a.push([k, id]); };
+  for (const [k, ids] of I.names) for (const id of ids) add(k, id);
+  for (const [k, ids] of I.aliases) for (const id of ids) add(k, id);
+  return (I.fuzzy = buckets);
+}
+
+function fuzzyCandidates(I, k) {
+  const B = fuzzyIndex(I);
+  const out = [];
+  const maxEd = Math.floor(k.length * (1 - CONFIG.FUZZY_MIN)) + 1;
+  for (const first of [k[0], k[1]]) {
+    for (let len = k.length - maxEd; len <= k.length + maxEd; len++) {
+      const a = first ? B.get(first + len) : null;
+      if (a) out.push(...a);
+    }
+    if (first === k[0] && out.some(([kk]) => similarity(k, kk) >= CONFIG.FUZZY_MIN)) break;
+  }
+  return out;
 }
 
 function idx() {
@@ -114,15 +134,9 @@ export function resolve(input, ctx = {}) {
     if (hit && hit.length) { const d = decide(hit, 'surname', ctx); if (d && d.status !== 'nopitch') return d; }
   }
 
-  // Fuzzy: block on shared trigrams, score with edit distance.
-  const g = trigrams(k);
-  const counts = new Map();
-  for (const t of g) for (const i of (I.grams.get(t) || [])) counts.set(i, (counts.get(i) || 0) + 1);
-  const need = Math.max(1, Math.floor(g.size * 0.3));
+  // Fuzzy: bucket by first letter (or second, for a slip on the first) and length.
   const best = new Map();
-  for (const [i, c] of counts) {
-    if (c < need) continue;
-    const [kk, id] = I.keys[i];
+  for (const [kk, id] of fuzzyCandidates(I, k)) {
     const sc = similarity(k, kk);
     if (sc >= CONFIG.FUZZY_MIN && sc > (best.get(id) || 0)) best.set(id, sc);
   }

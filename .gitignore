@@ -39,3 +39,4 @@ __pycache__/
 mythiball/index.html.prev
 wrestling/sim/last-run.json
 golf/putt/routes.lock
+functions/_stumpire/build/.cache/

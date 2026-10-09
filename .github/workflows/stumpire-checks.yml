@@ -1,0 +1,67 @@
+name: Stumpire checks
+
+# Stumpire is testers only. These checks hold its rules: the matcher, the
+# scoring and depth bands, the blend, the strike tier drop, the ramp and slate
+# validators, the tester gate on every route, and the Sportegories replay on
+# the synthetic fixture (a floor on regressions, not the launch number).
+
+on:
+  pull_request:
+    paths:
+      - 'functions/_stumpire/**'
+      - 'functions/api/stumpire/**'
+      - 'functions/arcade/stumpire/**'
+      - 'supabase/133_stumpire.sql'
+      - 'supabase/test/stumpire_*.sql'
+      - '.github/workflows/stumpire-checks.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'functions/_stumpire/**'
+      - 'functions/api/stumpire/**'
+      - 'functions/arcade/stumpire/**'
+      - 'supabase/133_stumpire.sql'
+      - 'supabase/test/stumpire_*.sql'
+      - '.github/workflows/stumpire-checks.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: stumpire-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Unit tests
+        run: node --test functions/_stumpire/test/*.test.mjs
+      - name: Sportegories replay (synthetic fixture)
+        run: node functions/_stumpire/build/replay-sportegories.mjs --fixture --strict --show 20
+      - name: The seed slate passes every rule
+        run: node functions/_stumpire/build/seed-slate.mjs
+      # The migration, applied twice (it must be idempotent), then its checks.
+      # Any line that does not start " ok " fails the step.
+      - name: Migration against Postgres 16
+        run: |
+          createdb stump
+          psql -q -d stump -c 'create role authenticated' -c 'create role anon'
+          psql -q -d stump -f supabase/test/stumpire_base.sql
+          psql -q -d stump -v ON_ERROR_STOP=1 -f supabase/133_stumpire.sql
+          psql -q -d stump -v ON_ERROR_STOP=1 -f supabase/133_stumpire.sql
+          psql -q -d stump -f supabase/test/stumpire_test.sql | tee out.txt
+          ! grep -v '^ ok ' out.txt | grep -q .
