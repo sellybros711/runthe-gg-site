@@ -2502,21 +2502,21 @@ function drawGlow(ctx, C, cam, t){
   var burst = clamp(1 - t / 1.4, 0, 1), rest = 0.45 + 0.15 * Math.sin(t * 3.2), lift = Math.min(1, t / 0.35);
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
   // the pool of light on the ground round the cup
-  var pr = r0 * (2.6 + 3.4 * lift), g = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], pr);
+  var pr = r0 * (1.5 + 1.1 * lift), g = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], pr);
   g.addColorStop(0, c(0.75 * burst + 0.4 * rest)); g.addColorStop(0.45, c(0.3 * burst + 0.16 * rest)); g.addColorStop(1, c(0));
   ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(p[0], p[1], pr, pr * sq, 0, 0, 6.29); ctx.fill();
   // the column of light rising out of the hole
-  var ch = (60 + 40 * lift) * d * (0.55 + 0.45 * burst), cw = r0 * 1.5, cg = ctx.createLinearGradient(0, p[1], 0, p[1] - ch);
+  var ch = (16 + 10 * lift) * d * (0.55 + 0.45 * burst), cw = r0 * 0.95, cg = ctx.createLinearGradient(0, p[1], 0, p[1] - ch);
   cg.addColorStop(0, c(0.65 * burst + 0.22 * rest)); cg.addColorStop(1, c(0));
   ctx.fillStyle = cg; ctx.beginPath(); ctx.moveTo(p[0] - cw * 0.7, p[1]); ctx.lineTo(p[0] - cw, p[1] - ch); ctx.lineTo(p[0] + cw, p[1] - ch); ctx.lineTo(p[0] + cw * 0.7, p[1]); ctx.closePath(); ctx.fill();
   // rays fanning out in the first moment
-  if (burst > 0){ ctx.strokeStyle = c(0.55 * burst); ctx.lineWidth = Math.max(1.5, 2 * d); ctx.lineCap = 'round';
-    for (var i = 0; i < 10; i++){ var an = i / 10 * 6.283 + 0.3, r1 = r0 * (1.3 + 2 * lift), r2 = r0 * (2.2 + 5.5 * lift * burst + 2 * (1 - burst));
+  if (burst > 0){ ctx.strokeStyle = c(0.55 * burst); ctx.lineWidth = Math.max(1, 1.2 * d); ctx.lineCap = 'round';
+    for (var i = 0; i < 8; i++){ var an = i / 8 * 6.283 + 0.3, r1 = r0 * (1.2 + 0.4 * lift), r2 = r0 * (1.6 + 1.4 * lift * burst + 0.4 * (1 - burst));
       ctx.beginPath(); ctx.moveTo(p[0] + Math.cos(an) * r1, p[1] + Math.sin(an) * r1 * sq); ctx.lineTo(p[0] + Math.cos(an) * r2, p[1] + Math.sin(an) * r2 * sq); ctx.stroke(); } }
   // sparks drifting up and out
-  for (var k = 0; k < 14; k++){ var sd = (k * 97.13) % 1, lt = (t * (0.55 + sd * 0.5) + k / 14) % 1.6, ka = clamp(1 - lt / 1.6, 0, 1) * (t < 2.5 ? 1 : 0.5);
-    if (ka <= 0) continue; var ax = Math.cos(k * 2.4) * r0 * (0.6 + lt * 2.2), ay = -lt * 55 * d;
-    ctx.fillStyle = c(ka); var sz = Math.max(1.5, (1.4 + sd * 1.6) * d); ctx.fillRect(Math.round(p[0] + ax - sz / 2), Math.round(p[1] + ay - sz / 2), sz, sz); }
+  for (var k = 0; k < 8; k++){ var sd = (k * 97.13) % 1, lt = (t * (0.55 + sd * 0.5) + k / 8) % 1.6, ka = clamp(1 - lt / 1.6, 0, 1) * (t < 2.5 ? 1 : 0.5);
+    if (ka <= 0) continue; var ax = Math.cos(k * 2.4) * r0 * (0.4 + lt * 0.8), ay = -lt * 16 * d;
+    ctx.fillStyle = c(ka); var sz = Math.max(1, (0.9 + sd * 0.8) * d); ctx.fillRect(Math.round(p[0] + ax - sz / 2), Math.round(p[1] + ay - sz / 2), sz, sz); }
   // the cup itself, lit from inside
   ctx.fillStyle = c(0.5 * burst + 0.3 * rest); ctx.beginPath(); ctx.ellipse(p[0], p[1], r0 * 0.85, r0 * 0.85 * sq, 0, 0, 6.29); ctx.fill();
   ctx.restore();
