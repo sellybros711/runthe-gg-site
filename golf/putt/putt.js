@@ -337,9 +337,12 @@ function simulate(C, x, y, vx, vy, t0){
         var vin = Math.hypot(s.vx, s.vy), hgt = Rp.h || 0.4, vl2 = vin * vin - 2 * ROLL * G * hgt;
         if (vl2 < 1){ s.x = px0; s.y = py0; s.vx = -s.vx * 0.5; s.vy = -s.vy * 0.5; out.ev.push([t, 'rampback']); rode = true; break; }
         var vl = Math.sqrt(vl2), an = (Rp.ang || 24) * Math.PI / 180, ux = s.vx / vin, uy = s.vy / vin, vh = vl * Math.cos(an), vz = vl * Math.sin(an);
+        /* the flight leaves the lip where the ball crossed it, never from the lip's middle: started from the
+           middle, a ball that hit the ramp off-centre jumped sideways the instant it took off */
+        var lx0 = Rp.x - Rp.dy * sd2, ly0 = Rp.y + Rp.dx * sd2;
         var tf = (vz + Math.sqrt(vz * vz + 2 * G * hgt)) / G, fp = [], tk = 0;
-        for (tk = 1 / 60; tk < tf; tk += 1 / 60) fp.push([Rp.x + ux * vh * tk, Rp.y + uy * vh * tk, tk, hgt + vz * tk - G * tk * tk / 2]);
-        var lx = Rp.x + ux * vh * tf, ly = Rp.y + uy * vh * tf; fp.push([lx, ly, tf, 0]);
+        for (tk = 1 / 60; tk < tf; tk += 1 / 60) fp.push([lx0 + ux * vh * tk, ly0 + uy * vh * tk, tk, hgt + vz * tk - G * tk * tk / 2]);
+        var lx = lx0 + ux * vh * tf, ly = ly0 + uy * vh * tf; fp.push([lx, ly, tf, 0]);
         ride(fp); s.x = lx; s.y = ly; out.ev.push([t, 'land']);
         var lm = landAt(lx, ly, t0 + t);
         if (lm === M.WATER){ out.water = true; out.ev.push([t, 'water']); lastPiece = Rp; return finishOut(); }
@@ -927,9 +930,9 @@ var LEVELS = [
     board(H, T, 4.56, -27.37, 1.01, -27.98, 0.35); bowl(H, 2.5, -26, 2.2, 0.15); return H; } },
   // Bank Shot: the diamond. A block sits square in the middle, so the line is off one of the angled walls and up to the top point.
   { par:3, f:function(T){ var H = hole([pg([[-2, 0], [2, 0], [8, -12], [2, -24], [-2, -24], [-8, -12]])], [0, -2.5], [0, -21.4]); blk(H, T, -2.6, -11.4, 2.6, -12.6); bumps(H, T, [[0, -17.4, 0.5]]); bowl(H, 0, -21.4); return H; } },
-  // The Windmill: the apron narrows to the house the way every windmill hole does. Round either side, two putts. The secret: through the door, if the sails let you.
+  // The Windmill: the apron narrows to the house the way every windmill hole does. The hay reaches the rails, so the only way past is through the door, when the sails let you.
   { par:3, f:function(T){ var H = hole([pg([[-4, 0], [4, 0], [7, -11], [7, -38], [-7, -38], [-7, -11]])], [0, -2.5], [0, -33]);
-    millAt(H, T, -18, 4.5, 1.3); secret(H, -1.1, -18, 1.1, -21.5); bumps(H, T, [[-2.8, -28.5, 0.5], [2.8, -28.5, 0.5]]); bowl(H, 0, -33, 1.4, 0.12); return H; } },
+    millAt(H, T, -18, 7, 1.3); bumps(H, T, [[-2.8, -28.5, 0.5], [2.8, -28.5, 0.5]]); bowl(H, 0, -33, 1.4, 0.12); return H; } },
   // Sand Bar: blast it through the sand and putt out; a board across the far corner sends a long one back to the cup. The secret: off the right wall the ball crosses the trap on the one strip of carpet left in it.
   { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -30)], [0, -2.5], [-1.5, -25]); zoneR(H, M.SAND, -5, -14, 5, -17); zoneR(H, M.GREEN, 2.6, -14, 4.6, -17); secret(H, 2.6, -14, 4.6, -17); bumps(H, T, [[-3.2, -21, 0.55]]);
     board(H, T, 1.4, -30, 5, -26.4); bowl(H, -1.5, -25); return H; } },
@@ -962,9 +965,9 @@ var LEVELS = [
     disc(H, 0, -16, 2.6, 1.3); bumps(H, T, [[0.2, -25.6, 0.5], [0, -10.6, 0.5]]); return H; } },
   // The Creek: ride the creek down to the lower green and putt out.
   { par:3, f:function(T){ var H = hole([rm(2, 0, 10, -14), rm(-9, -25, 1, -38, -1.5)], [6, -2.5], [-4, -34]); river(H, [[6, -13], [6, -18], [1, -22], [-4, -22], [-4, -26]], 1.8, 6, 0, -1.5); bumps(H, T, [[6, -8, 0.7], [-2.6, -30.5, 0.5]]); return H; } },
-  // Double Mill: round two windmills by the side lanes, two putts. The secret: through both doors.
+  // Double Mill: two windmills wall to wall, so the only way through is each door in turn, timed against its sails.
   { par:3, f:function(T){ var H = hole([rm(-7, 0, 7, -46)], [0, -2.5], [0, -42]);
-    millAt(H, T, -12, 4.5, 1.4); millAt(H, T, -28, 4.5, -1.1); secret(H, -1.1, -12, 1.1, -15.5); secret(H, -1.1, -28, 1.1, -31.5); bumps(H, T, [[-2.8, -38.5, 0.5], [2.8, -38.5, 0.5]]); return H; } },
+    millAt(H, T, -12, 7, 1.4); millAt(H, T, -28, 7, -1.1); bumps(H, T, [[-2.8, -38.5, 0.5], [2.8, -38.5, 0.5]]); return H; } },
   // Loop the Pond: through the loop, over the drawbridge (the curb keeps a stray ball out of the moat), putt out.
   { par:3, f:function(T){ var H = hole([rm(-4, 0, 4, -10), pg([[-4, -10], [4, -10], [0.8, -13.5], [-0.8, -13.5]]), rm(-0.8, -13.4, 0.8, -17), rm(-5, -16.9, 5, -26), rm(-5, -25.9, 5, -28.6), rm(-5, -28.5, 5, -40)], [0, -2.5], [0.3, -35.8]);
     loopAt(H, 0, -15, 0, -1, 0.65, 1.6); zoneR(H, M.WATER, -5, -26, 5, -28.5); drawb(H, -1.4, -26, 1.4, -28.5, 3, 0.2, 0.55); blk(H, T, -5, -25.3, -1.4, -25.9); blk(H, T, 1.4, -25.3, 5, -25.9); bowl(H, 0.3, -35.8, 1.8, 0.13); return H; } },
@@ -1186,7 +1189,7 @@ var MEMBER_LEVELS = [
     gateWall(H, T, -22, -5, 5, 1.2, 3.2, 2.4, 0.3, -1); zoneR(H, M.WATER, -5, -27, -1, -31); blk(H, T, -1, -27, -0.7, -31); blk(H, T, -5, -26.7, -0.7, -27); bumps(H, T, [[0.4, -29, 0.6]]); pen(H, T, 2.5, -34);
     bumps(H, T, [[-2.9, -8.8, 0.5]]); return H; } },
   { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -14), rm(-7, -18, 7, -40, -1.6)], [0, -2.5], [0, -36]); climb(H, -3.4, -14, -18, 2.2);
-    millAt(H, T, -28, 4.5, 1.6); secret(H, -1.1, -28, 1.1, -31.5); zoneR(H, M.WATER, -7, -22, -5, -26); zoneR(H, M.WATER, 1, -22, 7, -26); bowl(H, 0, -36, 1.3, 0.12); board(H, T, 1.8, -37.7, -1.8, -37.7, 0.35); bowl(H, 0, -36, 2.2, 0.15); return H; } },
+    millAt(H, T, -28, 7, 1.6); zoneR(H, M.WATER, -7, -22, -5, -26); zoneR(H, M.WATER, 1, -22, 7, -26); bowl(H, 0, -36, 1.3, 0.12); board(H, T, 1.8, -37.7, -1.8, -37.7, 0.35); bowl(H, 0, -36, 2.2, 0.15); return H; } },
   { par:3, three:2, f:function(T){ var H = hole([rm(-4, 0, 4, -10), pg([[-4, -10], [4, -10], [0.8, -13.6], [-0.8, -13.6]]), rm(-0.8, -13.5, 0.8, -17.8), rm(-5, -17.7, 5, -40)], [0, -2.5], [0, -36]);
     loopAt(H, 0, -15.6, 0, -1, 0.8, 1.6); zoneR(H, M.WATER, -5, -22, 5, -32); zoneR(H, M.GREEN, -0.7, -22, 0.7, -32); slider(H, T, -27, -2.2, 2.2, 2.2, 0.3, 1.2); pen(H, T, 0, -36); bowl(H, 0, -36, 1.3, 0.12); return H; } },
   { par:3, three:2, f:function(T){ var H = hole([rm(-4, 0, 4, -42)], [0, -2.5], [0, -38]); spinner(H, T, 0, -11, 2, 2.0, 2); spinner(H, T, 0, -19, 2, -2.2, 3); spinner(H, T, 0, -27, 2, 2.4, 2);
@@ -1688,8 +1691,8 @@ function top(title, sub, right){
 /* The mode opens on the Tour map with the Daily Hole on top. The rules, in full:
      par or better  the hole is cleared and the next one in the world opens (coins the first time only).
                     It earns stars: 1 for par, 2 under par, 3 for two under (an ace on a par 3), best kept.
-     a new world    opens at a running total: 45 stars a world (22 on the Members Tour), counted across
-                    every world so far, so 90 opens world 3 however they are spread. See worldGate.
+     a new world    opens at a running total: 40 stars a world (20 on the Members Tour), counted across
+                    every world so far, so 80 opens world 3 however they are spread. See worldGate.
      over par       a life goes and the hole restarts. It is decided the moment par strokes are used
                  with the ball still out, so nobody putts out a hole that is already lost.
    Quitting after the first putt costs a life too. The Daily Hole never costs one.
@@ -1746,7 +1749,7 @@ function membersPreview(){ return !!(S && S.memPreview); }
 // the Lab is a tester's only: its tab is not drawn for anybody else
 function labOpen(){ try{ var h = hostOf(); return !!(h.tester && h.tester()); }catch(e){ return false; } }
 /* STARS. Par clears a hole, so most holes can simply be good to play, and birdies come from reading
-   them well rather than from hunting a trapdoor. The gate is the owner's: 45 stars a world, as a
+   them well rather than from hunting a trapdoor. The gate is the owner's: 40 stars for every world, as a
    running total, so a player stuck on one world can earn the stars back in another. 54 a world would
    be an ace on every hole, which is partly luck, so it would be a wall. A perfect world is the chase.
    THREE STARS IS TWO UNDER PAR, which on a par 3 is the ace. It is never a score nobody can make:
@@ -1769,9 +1772,9 @@ function starTargets(par, three){
 function threeLine(par, three){ var t = threeOf(par, three); return t === 1 ? 'ace it' : 'finish in ' + t; }
 function worldStars(tp, TR, w){ var K = TR.per || PER, t = 0; for (var n = w * K + 1; n <= Math.min(TR.levels.length, w * K + K); n++) t += starsOf(tp.best[n], TR.levels[n - 1].par, TR.levels[n - 1].three); return t; }
 function worldMax(TR, w){ var K = TR.per || PER; return Math.min(K, TR.levels.length - w * K) * 3; }
-/* The gate is CUMULATIVE: a world opens the next at five sixths of a world's stars (45 of 54, 22 of 27),
-   counted across every world so far, so 90 opens world 3 however the stars are spread. */
-function worldGate(TR, w){ var g = 0; for (var i = 0; i <= w; i++) g += Math.floor(worldMax(TR, i) * 5 / 6); return g; }
+/* The gate is CUMULATIVE: 40 stars for every world unlocked (40 of a world's 54, 20 of 27 on the Members
+   Tour), counted across every world so far, so 80 opens world 3 however the stars are spread. */
+function worldGate(TR, w){ var g = 0; for (var i = 0; i <= w; i++) g += Math.round(worldMax(TR, i) * 40 / 54); return g; }
 function starsThrough(tp, TR, w){ var t = 0; for (var i = 0; i <= w; i++) t += worldStars(tp, TR, i); return t; }
 /* the highest hole open: walk the cleared holes, and stop at the end of a world short of its gate.
    Never lower than what the record already had open, so nobody is locked out of a hole they reached. */
