@@ -1093,7 +1093,7 @@ function play(beats, ctx, opts){
     var res = null;
     moment = window.RTF_COURT.moment(host, Object.assign({ ctlHost: body }, spec), {
       resolve: function(q){
-        var ex = typeof q === 'object' && q ? { touch: q.touch, touches: q.touches } : { touch: q };
+        var ex = typeof q === 'object' && q ? { touch: q.touch, touches: q.touches, green: q.green, greens: q.greens } : { touch: q };
         res = opts.choose ? opts.choose(n, ex) : null;
         var m = res ? res.made : false;
         return { made: m == null ? res && res.tone === 'gold' : m, won: res ? res.won : undefined, shots: res ? res.shots : undefined };
