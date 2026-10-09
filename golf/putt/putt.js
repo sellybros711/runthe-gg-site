@@ -930,9 +930,9 @@ var LEVELS = [
     board(H, T, 4.56, -27.37, 1.01, -27.98, 0.35); bowl(H, 2.5, -26, 2.2, 0.15); return H; } },
   // Bank Shot: the diamond. A block sits square in the middle, so the line is off one of the angled walls and up to the top point.
   { par:3, f:function(T){ var H = hole([pg([[-2, 0], [2, 0], [8, -12], [2, -24], [-2, -24], [-8, -12]])], [0, -2.5], [0, -21.4]); blk(H, T, -2.6, -11.4, 2.6, -12.6); bumps(H, T, [[0, -17.4, 0.5]]); bowl(H, 0, -21.4); return H; } },
-  // The Windmill: the apron narrows to the house the way every windmill hole does. Round either side, two putts. The secret: through the door, if the sails let you.
+  // The Windmill: the apron narrows to the house the way every windmill hole does. The hay reaches the rails, so the only way past is through the door, when the sails let you.
   { par:3, f:function(T){ var H = hole([pg([[-4, 0], [4, 0], [7, -11], [7, -38], [-7, -38], [-7, -11]])], [0, -2.5], [0, -33]);
-    millAt(H, T, -18, 4.5, 1.3); secret(H, -1.1, -18, 1.1, -21.5); bumps(H, T, [[-2.8, -28.5, 0.5], [2.8, -28.5, 0.5]]); bowl(H, 0, -33, 1.4, 0.12); return H; } },
+    millAt(H, T, -18, 7, 1.3); bumps(H, T, [[-2.8, -28.5, 0.5], [2.8, -28.5, 0.5]]); bowl(H, 0, -33, 1.4, 0.12); return H; } },
   // Sand Bar: blast it through the sand and putt out; a board across the far corner sends a long one back to the cup. The secret: off the right wall the ball crosses the trap on the one strip of carpet left in it.
   { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -30)], [0, -2.5], [-1.5, -25]); zoneR(H, M.SAND, -5, -14, 5, -17); zoneR(H, M.GREEN, 2.6, -14, 4.6, -17); secret(H, 2.6, -14, 4.6, -17); bumps(H, T, [[-3.2, -21, 0.55]]);
     board(H, T, 1.4, -30, 5, -26.4); bowl(H, -1.5, -25); return H; } },
@@ -965,9 +965,9 @@ var LEVELS = [
     disc(H, 0, -16, 2.6, 1.3); bumps(H, T, [[0.2, -25.6, 0.5], [0, -10.6, 0.5]]); return H; } },
   // The Creek: ride the creek down to the lower green and putt out.
   { par:3, f:function(T){ var H = hole([rm(2, 0, 10, -14), rm(-9, -25, 1, -38, -1.5)], [6, -2.5], [-4, -34]); river(H, [[6, -13], [6, -18], [1, -22], [-4, -22], [-4, -26]], 1.8, 6, 0, -1.5); bumps(H, T, [[6, -8, 0.7], [-2.6, -30.5, 0.5]]); return H; } },
-  // Double Mill: round two windmills by the side lanes, two putts. The secret: through both doors.
+  // Double Mill: two windmills wall to wall, so the only way through is each door in turn, timed against its sails.
   { par:3, f:function(T){ var H = hole([rm(-7, 0, 7, -46)], [0, -2.5], [0, -42]);
-    millAt(H, T, -12, 4.5, 1.4); millAt(H, T, -28, 4.5, -1.1); secret(H, -1.1, -12, 1.1, -15.5); secret(H, -1.1, -28, 1.1, -31.5); bumps(H, T, [[-2.8, -38.5, 0.5], [2.8, -38.5, 0.5]]); return H; } },
+    millAt(H, T, -12, 7, 1.4); millAt(H, T, -28, 7, -1.1); bumps(H, T, [[-2.8, -38.5, 0.5], [2.8, -38.5, 0.5]]); return H; } },
   // Loop the Pond: through the loop, over the drawbridge (the curb keeps a stray ball out of the moat), putt out.
   { par:3, f:function(T){ var H = hole([rm(-4, 0, 4, -10), pg([[-4, -10], [4, -10], [0.8, -13.5], [-0.8, -13.5]]), rm(-0.8, -13.4, 0.8, -17), rm(-5, -16.9, 5, -26), rm(-5, -25.9, 5, -28.6), rm(-5, -28.5, 5, -40)], [0, -2.5], [0.3, -35.8]);
     loopAt(H, 0, -15, 0, -1, 0.65, 1.6); zoneR(H, M.WATER, -5, -26, 5, -28.5); drawb(H, -1.4, -26, 1.4, -28.5, 3, 0.2, 0.55); blk(H, T, -5, -25.3, -1.4, -25.9); blk(H, T, 1.4, -25.3, 5, -25.9); bowl(H, 0.3, -35.8, 1.8, 0.13); return H; } },
@@ -1189,7 +1189,7 @@ var MEMBER_LEVELS = [
     gateWall(H, T, -22, -5, 5, 1.2, 3.2, 2.4, 0.3, -1); zoneR(H, M.WATER, -5, -27, -1, -31); blk(H, T, -1, -27, -0.7, -31); blk(H, T, -5, -26.7, -0.7, -27); bumps(H, T, [[0.4, -29, 0.6]]); pen(H, T, 2.5, -34);
     bumps(H, T, [[-2.9, -8.8, 0.5]]); return H; } },
   { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -14), rm(-7, -18, 7, -40, -1.6)], [0, -2.5], [0, -36]); climb(H, -3.4, -14, -18, 2.2);
-    millAt(H, T, -28, 4.5, 1.6); secret(H, -1.1, -28, 1.1, -31.5); zoneR(H, M.WATER, -7, -22, -5, -26); zoneR(H, M.WATER, 1, -22, 7, -26); bowl(H, 0, -36, 1.3, 0.12); board(H, T, 1.8, -37.7, -1.8, -37.7, 0.35); bowl(H, 0, -36, 2.2, 0.15); return H; } },
+    millAt(H, T, -28, 7, 1.6); zoneR(H, M.WATER, -7, -22, -5, -26); zoneR(H, M.WATER, 1, -22, 7, -26); bowl(H, 0, -36, 1.3, 0.12); board(H, T, 1.8, -37.7, -1.8, -37.7, 0.35); bowl(H, 0, -36, 2.2, 0.15); return H; } },
   { par:3, three:2, f:function(T){ var H = hole([rm(-4, 0, 4, -10), pg([[-4, -10], [4, -10], [0.8, -13.6], [-0.8, -13.6]]), rm(-0.8, -13.5, 0.8, -17.8), rm(-5, -17.7, 5, -40)], [0, -2.5], [0, -36]);
     loopAt(H, 0, -15.6, 0, -1, 0.8, 1.6); zoneR(H, M.WATER, -5, -22, 5, -32); zoneR(H, M.GREEN, -0.7, -22, 0.7, -32); slider(H, T, -27, -2.2, 2.2, 2.2, 0.3, 1.2); pen(H, T, 0, -36); bowl(H, 0, -36, 1.3, 0.12); return H; } },
   { par:3, three:2, f:function(T){ var H = hole([rm(-4, 0, 4, -42)], [0, -2.5], [0, -38]); spinner(H, T, 0, -11, 2, 2.0, 2); spinner(H, T, 0, -19, 2, -2.2, 3); spinner(H, T, 0, -27, 2, 2.4, 2);
