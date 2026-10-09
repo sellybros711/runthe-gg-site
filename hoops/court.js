@@ -100,6 +100,31 @@ var CSS = [
 '.ct-go{border:0;border-radius:0;min-height:52px;font-family:var(--k-f-display,var(--display,Impact));font-size:22px;letter-spacing:.06em;text-transform:uppercase;color:#05070d;background:#ffd166;box-shadow:0 -3px 0 0 #05070d,0 3px 0 0 #05070d,-3px 0 0 0 #05070d,3px 0 0 0 #05070d,inset 0 -4px 0 0 #c99a2e;cursor:pointer;}',
 '.ct-go:focus-visible{outline:3px solid #fff;outline-offset:4px;}',
 '.ct-go:active{transform:translateY(2px);box-shadow:0 -3px 0 0 #05070d,0 3px 0 0 #05070d,-3px 0 0 0 #05070d,3px 0 0 0 #05070d,inset 0 -1px 0 0 #c99a2e;}',
+/* the hold meter: a fill that climbs while you hold, the green near the top */
+'.ct-fill{position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(150,170,255,.38);box-shadow:inset -4px 0 0 0 #fff;pointer-events:none;}',
+'.ct-bar.hold{height:22px;}',
+'.ct-bar.hold .ct-zone{opacity:.9;}',
+'.ct-bar.hold .ct-cur{display:none;}',
+'.ct-bar.held .ct-fill{background:rgba(190,205,255,.5);}',
+/* the launch bar: layup band, rim line, dunk window, help */
+'.ct-band{position:absolute;top:0;bottom:0;pointer-events:none;}',
+'.ct-band.soft{background:#24406e;box-shadow:inset 0 3px 0 0 #3d63a3;}',
+'.ct-band.dunk{background:#3ecf8e;box-shadow:inset 0 3px 0 0 #8ff0c2,inset 0 -3px 0 0 #1e8c5b;}',
+'.ct-band.top{background:#ffd166;box-shadow:inset 0 3px 0 0 #fff1b8,inset 0 -3px 0 0 #c99a2e;}',
+'.ct-band.help{background:repeating-linear-gradient(135deg,#c8102e 0 6px,#7a0a1c 6px 12px);}',
+'.ct-bar.launch{margin-bottom:12px;}',
+'.ct-tag{position:absolute;top:calc(100% + 4px);font-family:var(--k-f-pixel,"Press Start 2P",monospace);font-size:7px;text-transform:uppercase;color:#cdd6f4;transform:translateX(-50%);white-space:nowrap;text-shadow:1px 1px 0 #05070d;pointer-events:none;}',
+'.ct-tag.r{color:#ff8a7a;}',
+/* the lanes: two doors, the eyes and the hands */
+'.ct-lanes{display:grid;grid-template-columns:1fr 1fr;gap:10px;}',
+'.ct-lanes[hidden]{display:none;}',
+'.ct-lane{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:64px;font-size:18px;}',
+'.ct-lane small{font-family:var(--k-f-pixel,"Press Start 2P",monospace);font-size:7px;letter-spacing:.04em;min-height:9px;color:#5a4410;}',
+'.ct-lane.eyes{background:#f2e3b6;}',
+'.ct-lane.eyes small{color:#05070d;}',
+'.ct-lane.hands{background:#8ff0c2;box-shadow:0 -3px 0 0 #05070d,0 3px 0 0 #05070d,-3px 0 0 0 #05070d,3px 0 0 0 #05070d,inset 0 -4px 0 0 #1e8c5b;}',
+'.ct-go.holding{transform:translateY(2px);background:#ffe29a;}',
+'.ct-go{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}',
 '.ct-hint{font-size:12px;text-align:center;color:rgba(255,255,255,.7);text-shadow:1px 1px 0 #05070d;}',
 '.ct-l3{position:absolute;left:8px;bottom:8px;z-index:4;display:flex;align-items:stretch;max-width:calc(100% - 16px);background:#05070d;box-shadow:0 -2px 0 0 var(--c1),0 2px 0 0 var(--c1),-2px 0 0 0 var(--c1),2px 0 0 0 var(--c1);animation:ctL3 .35s steps(4) both;}',
 '.ct-l3[hidden]{display:none;}',
@@ -574,38 +599,99 @@ function reactTouch(ms, rating){
 }
 function grade(q){ return q >= 0.97 ? ['Perfect', 'p'] : q >= 0.4 ? ['Good', 'g'] : q >= 0 ? ['Off', 'b'] : ['Way off', 'b']; }
 
+/* THE HOLD. A shot is held, not tapped: the fill climbs while you hold and
+   the ball goes when you let go, so the release is a release, the way the
+   shot meter works in the games people know. It speeds up as it climbs, the
+   way a jumper does at the top. The green sits near the top and is as wide as
+   the rating says; the gold core inside it is a green light. Early is short,
+   late is long, and held to the end it is a brick. */
+var HOLD_C = 0.78;
+function holdPos(u){ return u <= 0 ? 0 : u >= 1 ? 1 : Math.pow(u, 1.3); }
+function holdTouch(pos, zone, center){
+  var c = center == null ? HOLD_C : center, d = Math.abs(pos - c);
+  if (pos >= 1) return -1;
+  if (d <= zone + 0.06) return touchOf(pos, zone, c);
+  var room = pos < c ? c - zone - 0.06 : 1 - c - zone - 0.06;
+  return clamp(-(d - zone - 0.06) / Math.max(0.01, room), -1, 0);
+}
+/* THE LAUNCH. A dunk is not a jumper. Hold to load your legs: let go too soon
+   and you only get high enough to lay it in, wait for the rim line and you
+   throw it down, and the longer you wait the harder it goes. But the help is
+   coming, and if he gets there first you are met at the rim. Bounce lowers
+   the rim line and buys time; a big already under the rim takes it away. */
+function launchLines(rating, pressure, poster){
+  var R = clamp(0.62 - (rating - 60) * 0.004, 0.46, 0.74);
+  var H = clamp(R + 0.17 + (rating - 60) * 0.0025 - (pressure || 0) * 0.04 - (poster ? 0.04 : 0), R + 0.08, 0.96);
+  return { R: R, H: H, top: R + 0.72 * (H - R) };
+}
+function launchTouch(p, R, H){
+  if (p >= H || p >= 1) return -0.9;
+  if (p < 0.18) return -0.5;
+  if (p < R) return Math.round((0.05 + 0.3 * (p - 0.18) / (R - 0.18)) * 100) / 100;
+  var v = (p - R) / (H - R);
+  return v >= 0.72 ? 1 : Math.round((0.6 + 0.4 * v / 0.72) * 100) / 100;
+}
+/* THE LANE. Two men he can throw to. His eyes go one way and the other; a
+   look is not a pass, and biting on one leaves your man open. The man he is
+   really going to shows his hands a beat before the ball leaves, which is the
+   read: jump it then and it is yours. After the throw it is a race, and a
+   guess before any of it is a gamble. */
+function laneWindow(rating){ return clamp(300 + (rating - 60) * 5, 200, 480); }
+function laneTouch(pick, target, phase, glance, ms, rating){
+  if (phase === 'thrown') return pick === target ? reactTouch(ms, rating) : -0.9;
+  if (phase === 'hands') return pick === target ? 1 : -0.9;
+  if (pick === target) return 0.15;
+  return pick === glance ? -0.8 : -0.9;
+}
+
 function controls(spec, st){
   var ctl = document.createElement('div');
   ctl.className = 'ct-ctl';
   ctl.innerHTML = '<div class="ct-lab"><span class="ct-rn"></span><span class="ct-tip"></span></div>'
-    + '<div class="ct-bar" role="presentation"><i class="ct-zone"><i class="ct-perf"></i></i><i class="ct-cur"></i></div>'
+    + '<div class="ct-bar" role="presentation"><i class="ct-zone"><i class="ct-perf"></i></i><i class="ct-marks"></i><i class="ct-fill"></i><i class="ct-cur"></i></div>'
     + '<div class="ct-cue" hidden><i></i><span>Read him</span><i></i></div>'
     + '<button class="ct-go" type="button">Go</button>'
+    + '<div class="ct-lanes" hidden><button class="ct-go ct-lane ct-l1" type="button" data-lane="1"><span></span><small></small></button></div>'
     + '<div class="ct-hint">Tap, or press Space</div>';
   ctl.hidden = true;
   if (spec.ctlHost) { ctl.classList.add('ct-ctl-in'); spec.ctlHost.appendChild(ctl); } else st.el.appendChild(ctl);
-  var bar = ctl.querySelector('.ct-bar'), zEl = ctl.querySelector('.ct-zone'), cEl = ctl.querySelector('.ct-cur'), go = ctl.querySelector('.ct-go');
+  var bar = ctl.querySelector('.ct-bar'), zEl = ctl.querySelector('.ct-zone'), cEl = ctl.querySelector('.ct-cur'), go = ctl.querySelector('.ct-go:not(.ct-l1)');
+  var fEl = ctl.querySelector('.ct-fill'), marks = ctl.querySelector('.ct-marks'), hint = ctl.querySelector('.ct-hint');
+  var lanesEl = ctl.querySelector('.ct-lanes'), l1 = ctl.querySelector('.ct-l1');
   var cue = ctl.querySelector('.ct-cue'), cueTx = cue.querySelector('span');
-  var cur = null, raf = 0, timers = [];
+  var cur = null, raf = 0, timers = [], downAt = 0;
   function clear(){ cancelAnimationFrame(raf); timers.forEach(clearTimeout); timers = []; }
-  function label(rn, tip, btn){ ctl.querySelector('.ct-rn').textContent = rn || ''; ctl.querySelector('.ct-tip').textContent = tip || ''; go.textContent = btn || 'Go'; }
-  function finish(q, words, tone){
+  /* back to a plain bar and one button, whatever the last control was */
+  function reset(){
+    bar.className = 'ct-bar'; marks.innerHTML = ''; fEl.style.width = '0';
+    zEl.hidden = false; cEl.hidden = false;
+    lanesEl.hidden = true; go.classList.remove('ct-lane', 'eyes', 'hands', 'holding'); l1.classList.remove('eyes', 'hands');
+    if (go.parentNode !== ctl) { ctl.insertBefore(go, lanesEl); go.innerHTML = 'Go'; }
+    delete go.dataset.lane;
+  }
+  function label(rn, tip, btn, how){
+    ctl.querySelector('.ct-rn').textContent = rn || ''; ctl.querySelector('.ct-tip').textContent = tip || '';
+    go.textContent = btn || 'Go'; hint.textContent = how || 'Tap, or press Space';
+  }
+  function finish(q, words, tone, info){
     if (!cur) return;
     var done = cur.done; cur = null; clear();
+    reset();
     ctl.hidden = true; ctl.removeAttribute('data-armed');
     st.say('');
     st.feedback(words, tone);
     if (tone === 'p') S.cue('perfect');
-    done(Math.round(q * 100) / 100);
+    done(Math.round(q * 100) / 100, info || {});
   }
+  function arm(kind){ ctl.hidden = false; ctl.setAttribute('data-armed', kind); }
   var api = {
     el: ctl,
     /* o: { zone, speed (passes a second), nerves 0..1, rn, tip, btn } */
     meter: function(o, done){
-      clear();
+      clear(); reset();
       cur = { kind: 'meter', done: done };
       label(o.rn, o.tip || 'Stop it in the gold', o.btn);
-      bar.hidden = false; cue.hidden = true; ctl.hidden = false; ctl.setAttribute('data-armed', 'meter');
+      bar.hidden = false; cue.hidden = true; arm('meter');
       var zone = o.zone, center = 0.5, phase = 0, pos = 0, last = 0, t0 = 0;
       var w = Math.PI * (o.speed || 1);
       var place = function(){ zEl.style.left = ((center - zone) * 100) + '%'; zEl.style.width = (zone * 200) + '%'; cEl.style.left = (pos * 100) + '%'; };
@@ -631,13 +717,132 @@ function controls(spec, st){
         raf = requestAnimationFrame(sw);
       });
     },
+    /* o: { zone, speed, nerves, rn, tip, btn, onHold(dur) }. Hold, let go. */
+    hold: function(o, done){
+      clear(); reset();
+      cur = { kind: 'hold', done: done };
+      label(o.rn, o.tip || 'Hold, let go in the green', o.btn || 'Shoot', 'Hold the button or Space. Let go in the green');
+      bar.hidden = false; bar.classList.add('hold'); cue.hidden = true; arm('hold');
+      var zone = o.zone, c = HOLD_C, center = c, pos = 0, held = false, t0 = performance.now(), tH = 0;
+      var dur = (REDUCED ? 1.6 : 1) * 0.95 / (o.speed || 1);
+      var place = function(){ zEl.style.left = ((center - zone) * 100) + '%'; zEl.style.width = (zone * 200) + '%'; fEl.style.width = (pos * 100) + '%'; };
+      place();
+      cur.start = function(){
+        if (held) return;
+        held = true; tH = performance.now();
+        bar.classList.add('held'); go.classList.add('holding');
+        if (o.onHold) o.onHold(dur);
+      };
+      cur.release = function(){
+        if (!held || !cur) return;
+        var q = holdTouch(pos, zone, center), d = pos - center, gr = grade(q), words;
+        if (pos >= 1) words = 'Held too long';
+        else if (gr[1] === 'p') words = 'Green';
+        else words = (gr[1] === 'g' ? 'Good, ' : '') + (d < 0 ? 'early' : 'late');
+        words = words.charAt(0).toUpperCase() + words.slice(1);
+        finish(q, words, gr[1], { green: q >= 1, pos: pos });
+      };
+      cur.press = function(forced){ if (forced != null) return finish(forced, 'Shot clock', 'b'); cur.start(); cur.release(); };
+      raf = requestAnimationFrame(function fl(now){
+        if (!cur) return;
+        if (held) {
+          var u = (now - tH) / 1000 / dur;
+          pos = holdPos(u);
+          if (!REDUCED) center = c + (o.nerves || 0) * 0.04 * Math.sin((now - t0) / 1000 * 3.1);
+          place();
+          if (u >= 1 && now - tH > dur * 1000 + 180) { pos = 1; cur.release(); return; }
+        } else if (now - t0 > 6500) { cur.press(-0.7); return; }
+        raf = requestAnimationFrame(fl);
+      });
+    },
+    /* o: { rating, pressure, poster, rn, tip, btn, onHold(dur), onTick(pos, help 0..1) } */
+    launch: function(o, done){
+      clear(); reset();
+      cur = { kind: 'launch', done: done };
+      var Ln = launchLines(o.rating || 60, o.pressure || 0, o.poster), R = Ln.R, H = Ln.H;
+      label(o.rn, o.tip || 'Load up. Let go before the help gets there', o.btn || 'Load up', 'Hold to load your legs. Let go to take off');
+      bar.hidden = false; bar.classList.add('hold', 'launch'); zEl.hidden = true; cue.hidden = true; arm('launch');
+      var band = function(cls, a, b){ return '<i class="ct-band ' + cls + '" style="left:' + (a * 100) + '%;width:' + ((b - a) * 100) + '%"></i>'; };
+      var tag = function(x, t, cls){ return '<i class="ct-tag ' + (cls || '') + '" style="left:' + (x * 100) + '%">' + t + '</i>'; };
+      marks.innerHTML = band('soft', 0.18, R) + band('dunk', R, Ln.top) + band('top', Ln.top, H) + band('help', H, 1)
+        + tag((0.18 + R) / 2, 'Layup') + tag((R + H) / 2, 'Dunk') + tag((H + 1) / 2, 'Help', 'r');
+      var pos = 0, held = false, t0 = performance.now(), tH = 0, dur = (REDUCED ? 1.7 : 1) * 1.15;
+      cur.start = function(){
+        if (held) return;
+        held = true; tH = performance.now(); bar.classList.add('held'); go.classList.add('holding');
+        if (o.onHold) o.onHold(dur);
+      };
+      cur.release = function(){
+        if (!held || !cur) return;
+        var q = launchTouch(pos, R, H);
+        var style = pos >= H || pos >= 1 ? 'met' : pos >= R ? 'dunk' : 'layup';
+        var words = style === 'met' ? 'Met at the rim' : pos < 0.18 ? 'No lift' : style === 'layup' ? 'Laid it up' : q >= 1 ? (o.poster ? 'Posterized' : 'Threw it down') : 'Dunked it';
+        finish(q, words, q >= 0.97 ? 'p' : q >= 0.4 ? 'g' : 'b', { green: q >= 1, style: style, pos: pos });
+      };
+      cur.press = function(forced){ if (forced != null) return finish(forced, 'Too slow', 'b', { style: 'met' }); cur.start(); cur.release(); };
+      raf = requestAnimationFrame(function ld(now){
+        if (!cur) return;
+        if (held) {
+          pos = Math.min(1, (now - tH) / 1000 / dur);
+          fEl.style.width = (pos * 100) + '%';
+          if (o.onTick) o.onTick(pos, Math.min(1, pos / H));
+          if (pos >= 1) { cur.release(); return; }
+        } else if (now - t0 > 6500) { cur.press(-0.7); return; }
+        raf = requestAnimationFrame(ld);
+      });
+    },
+    /* o: { names [a, b], target 0|1, glances [{ at, lane }], throwAt (ms),
+       rating, rn, tip, wait, onGlance(lane), onHands(lane), onThrow(lane) } */
+    lanes: function(o, done){
+      clear(); reset();
+      cur = { kind: 'lanes', done: done };
+      label(o.rn, o.tip || 'Jump the lane he throws to', '', 'Tap a lane, or press 1 or 2');
+      bar.hidden = true; cue.hidden = false; cue.classList.remove('now'); cueTx.textContent = o.wait || 'Read his eyes';
+      lanesEl.hidden = false; lanesEl.insertBefore(go, l1); go.classList.add('ct-lane'); go.dataset.lane = '0';
+      var btns = [go, l1];
+      btns.forEach(function(b, i){ b.innerHTML = '<span>' + esc(o.names[i]) + '</span><small></small>'; });
+      var say = function(i, cls, t){ var b = btns[i]; b.classList.remove('eyes', 'hands'); if (cls) b.classList.add(cls); b.querySelector('small').textContent = t || ''; };
+      arm('lanes');
+      var t0 = performance.now(), phase = 'read', glance = -1, thrownAt = 0, tgt = o.target;
+      var win = (REDUCED ? 1.6 : 1) * laneWindow(o.rating || 60), throwAt = o.throwAt;
+      (o.glances || []).forEach(function(g){
+        if (g.at >= throwAt - win) return;
+        timers.push(setTimeout(function(){
+          if (phase !== 'read') return;
+          if (glance >= 0) say(glance);
+          glance = g.lane; say(g.lane, 'eyes', 'His eyes');
+          if (o.onGlance) o.onGlance(g.lane);
+          timers.push(setTimeout(function(){ if (phase === 'read' && glance === g.lane) { say(g.lane); glance = -1; if (o.onGlance) o.onGlance(-1); } }, 300));
+        }, g.at));
+      });
+      timers.push(setTimeout(function(){
+        phase = 'hands'; if (glance >= 0 && glance !== tgt) say(glance); glance = tgt;
+        say(tgt, 'hands', 'Calling for it');
+        if (o.onHands) o.onHands(tgt);
+      }, throwAt - win));
+      timers.push(setTimeout(function(){
+        phase = 'thrown'; thrownAt = performance.now();
+        cue.classList.add('now'); cueTx.textContent = 'Thrown';
+        if (o.onThrow) o.onThrow(tgt);
+        timers.push(setTimeout(function(){ if (cur) finish(-0.7, 'Too late', 'b', { lane: -1 }); }, 1100));
+      }, throwAt));
+      cur.pick = function(i){
+        if (i !== 0 && i !== 1) return;
+        var ms = phase === 'thrown' ? performance.now() - thrownAt + (REDUCED ? -200 : 0) : 0;
+        var q = laneTouch(i, tgt, phase, glance, ms, o.rating || 60);
+        var words = i !== tgt ? (phase === 'read' && i === glance ? 'Bit on the look' : 'Wrong lane')
+          : phase === 'read' ? 'Lucky gamble' : phase === 'hands' ? 'Jumped the lane' : q >= 0.97 ? 'Picked it' : q >= 0.4 ? 'Got a hand on it' : 'A step late';
+        finish(q, words, q >= 0.97 ? 'p' : q >= 0.4 ? 'g' : 'b', { lane: i });
+      };
+      cur.press = function(i){ cur.pick(i == null ? 0 : i); };
+    },
     /* o: { at (ms to the real move), fakes [ms], rating, rn, tip, btn, onFake(i), onCue() } */
     react: function(o, done){
-      clear();
+      clear(); reset();
       cur = { kind: 'react', done: done };
       label(o.rn, o.tip || 'Press when he goes', o.btn);
       bar.hidden = true; cue.hidden = false; cue.classList.remove('now'); cueTx.textContent = o.wait || 'Read him';
-      ctl.hidden = false; ctl.setAttribute('data-armed', 'react');
+      arm('react');
       var t0 = performance.now(), cueAt = null, faked = 0;
       (o.fakes || []).forEach(function(ms, i){ timers.push(setTimeout(function(){ faked++; if (o.onFake) o.onFake(i); S.cue('squeak'); }, ms)); });
       timers.push(setTimeout(function(){
@@ -656,12 +861,41 @@ function controls(spec, st){
         finish(q, gr[1] === 'p' ? 'Perfect read' : gr[1] === 'g' ? 'Good read' : 'Late', gr[1]);
       };
     },
-    press: function(){ if (cur && cur.press) cur.press(); },
+    /* the press goes down: a hold starts, a lane is picked, a tap is a tap */
+    down: function(lane){
+      if (!cur) return;
+      if (cur.start) cur.start();
+      else if (cur.pick) { if (lane != null) cur.pick(lane); }
+      else if (cur.press) cur.press();
+    },
+    /* the press comes up: a hold lets go. Nothing else waits for it */
+    up: function(){ if (cur && cur.release) cur.release(); },
+    /* a press with no hold in it (a synthetic click, a stage tap) */
+    press: function(lane){
+      if (!cur) return;
+      if (cur.pick) return cur.pick(lane == null ? 0 : lane);
+      if (cur.start) { cur.start(); cur.release(); return; }
+      if (cur.press) cur.press();
+    },
     armed: function(){ return !!cur; },
-    stop: function(){ clear(); cur = null; if (ctl.parentNode) ctl.parentNode.removeChild(ctl); },
+    kind: function(){ return cur ? cur.kind : null; },
+    stop: function(){ clear(); cur = null; window.removeEventListener('pointerup', onUp, true); window.removeEventListener('pointercancel', onUp, true); window.removeEventListener('blur', onUp); if (ctl.parentNode) ctl.parentNode.removeChild(ctl); },
   };
-  go.onclick = function(e){ e.stopPropagation(); api.press(); };
-  st.el.addEventListener('click', function(e){ if (cur) { e.stopPropagation(); api.press(); } });
+  /* A hold is a pointer held anywhere it started: the release is heard on the
+     window, so a thumb that slides off the button still lets go, and losing
+     the window (a call, a tab switch) lets go too rather than holding for ever. */
+  function onUp(){ api.up(); }
+  window.addEventListener('pointerup', onUp, true);
+  window.addEventListener('pointercancel', onUp, true);
+  window.addEventListener('blur', onUp);
+  function bindBtn(b, lane){
+    b.addEventListener('pointerdown', function(e){ if (!cur) return; e.preventDefault(); e.stopPropagation(); downAt = performance.now(); api.down(lane == null ? (b.dataset.lane != null ? +b.dataset.lane : null) : lane); });
+    b.addEventListener('click', function(e){ e.stopPropagation(); if (performance.now() - downAt < 1500) return; api.press(b.dataset.lane != null ? +b.dataset.lane : null); });
+    b.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+  }
+  bindBtn(go); bindBtn(l1, 1);
+  st.el.addEventListener('pointerdown', function(e){ if (!cur || cur.pick) return; e.preventDefault(); downAt = performance.now(); api.down(null); });
+  st.el.addEventListener('click', function(e){ if (!cur || cur.pick) return; e.stopPropagation(); if (performance.now() - downAt < 1500) return; api.press(null); });
   return api;
 }
 
@@ -707,11 +941,23 @@ function moment(host, spec, cb){
     bugFin = function(won){ var c = bug.querySelector('.clk'); c.className = 'fin ' + (won ? 'w' : 'l'); c.textContent = 'Final · ' + (won ? 'W' : 'L'); };
   }
   var ctl = controls(spec, st);
+  /* Space or Enter is the button: held for a hold, pressed for a tap. 1 and 2,
+     or the arrows, pick a lane. A held key repeats, and a repeat is not a press. */
   function onKey(e){
     if (!ctl.armed()) return;
-    if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); ctl.press(); }
+    var lane = e.key === '1' || e.key === 'ArrowLeft' ? 0 : e.key === '2' || e.key === 'ArrowRight' ? 1 : null;
+    if (e.key === ' ' || e.key === 'Enter' || lane != null) {
+      e.preventDefault(); e.stopPropagation();
+      if (e.repeat) return;
+      if (ctl.kind() === 'lanes') { if (lane != null) ctl.down(lane); }
+      else if (lane == null) ctl.down(null);
+    }
+  }
+  function onKeyUp(e){
+    if (e.key === ' ' || e.key === 'Enter') { if (ctl.armed()) { e.preventDefault(); e.stopPropagation(); } ctl.up(); }
   }
   document.addEventListener('keydown', onKey, true);
+  document.addEventListener('keyup', onKeyUp, true);
   function calls(x){ return Array.isArray(x) ? pickOf(R, x) : x; }
   var rating = spec.rating || 60, pressure = spec.pressure || 0;
   var rn = (spec.rateName || 'Touch') + ' ' + (rating | 0);
@@ -726,7 +972,7 @@ function moment(host, spec, cb){
   var rx = function(){ return st.rim[0]; }, x0 = function(){ return st.rim[0] + (variant === 'heave' ? -98 : M.at); };
   S.crowd(3, 2.4);
 
-  var outcome = null;
+  var outcome = null, timersD = [];
   function resolve(arg){
     var res = cb.resolve ? cb.resolve(arg) : { made: (typeof arg === 'number' ? arg : arg.touch) > 0 };
     outcome = res || { made: false };
@@ -744,7 +990,7 @@ function moment(host, spec, cb){
     st.run(list, function(){
       if (won != null && bugFin) bugFin(won);
       st.say(call, true);
-      setTimeout(function(){ document.removeEventListener('keydown', onKey, true); if (cb.done) cb.done(made); }, REDUCED ? 600 : 1400);
+      setTimeout(function(){ document.removeEventListener('keydown', onKey, true); document.removeEventListener('keyup', onKeyUp, true); if (cb.done) cb.done(made); }, REDUCED ? 600 : 1400);
     });
   }
   /* A made shot at the horn is shown again, slower, between letterbox bars. */
@@ -763,9 +1009,22 @@ function moment(host, spec, cb){
     var hi = variant === 'heave' ? 1.35 : 1;
     var speed = 0.9 + pressure * 0.3 + (variant === 'stepback' ? 0.18 : variant === 'heave' ? 0.3 : variant === 'catch' ? -0.12 : variant === 'fade' ? 0.1 : 0);
     var zone = zoneFor(rating) * (variant === 'catch' ? 1.15 : variant === 'heave' ? 0.7 : 1);
-    var tip = { pullup: 'Pull up. Stop it in the gold', catch: 'Catch and shoot', stepback: 'Step back. Quicker meter', fade: 'Fade away. Quicker meter', heave: 'From the logo. Small green' }[variant];
+    var tip = { pullup: 'Pull up. Let go at the top', catch: 'Catch and shoot. Bigger green', stepback: 'Step back. Faster meter', fade: 'Fade away. Faster meter', heave: 'From the logo. Tiny green' }[variant];
+    /* You hold and he rises: the meter and the jump are one motion, so letting
+       go at the top of the green is letting go at the top of the jump. */
+    var heldRise = false, step = variant === 'stepback', drift = variant === 'fade' ? 7 : 0;
+    function riseClip(dur){
+      var n = Math.max(5, Math.round(dur * 12)), seq = ['shot0', 'shot0', 'shot1', 'shot1', 'shot2', 'shot2'], jmp = [0, 0, 3, 6, 9, 10];
+      return { len: n, at: function(t){
+        var u = t / (n - 1), v = step ? Math.max(0, (u - 0.35) / 0.65) : u, k = Math.min(5, Math.floor(v * 6));
+        var walking = step && u < 0.35, xx = (step ? x - Math.min(8, u / 0.35 * 8) : x) - drift * v;
+        var a = { who: 'me', x: xx, y: st.playY, pose: walking ? cyc('walk', t, 1) : seq[k], jump: walking ? (t === 2 ? 2 : 0) : jmp[k] };
+        var hn = hand(a.pose, a, build);
+        return { actors: [a, D(k > 2 ? 'block1' : 'block0', k > 2 ? (k - 2) * 3 : 0)], ball: { x: hn[0], y: hn[1] - 2 }, loud: 3, focus: x };
+      }, cues: { 0: 'squeak' } };
+    }
     function arm(){
-      ctl.meter({ zone: zone, speed: speed, nerves: spec.nerves || 0, rn: rn, tip: tip, btn: 'Release' }, shoot);
+      ctl.hold({ zone: zone, speed: speed, nerves: spec.nerves || 0, rn: rn, tip: tip, btn: 'Shoot', onHold: function(dur){ heldRise = true; st.play(riseClip(dur)); } }, shoot);
     }
     if (variant === 'catch' && mate) {
       st.play({ len: 12, at: function(t){
@@ -782,18 +1041,17 @@ function moment(host, spec, cb){
       st.play(Object.assign(CLIPS.dribble(st, x, build, null, function(){ return [D('block0')]; }), { call: spec.intro || '' }));
       arm();
     }
-    function shoot(q){
-      var res = resolve(q), made = !!res.made;
-      var sx = x;
+    function shoot(q, info){
+      var res = resolve({ touch: q, green: !!(info && info.green) }), made = !!res.made;
+      var sx = heldRise && step ? x - 8 : x;
       var moves = [];
-      if (variant === 'stepback') {
+      if (variant === 'stepback' && !heldRise) {
         moves.push({ len: 5, at: function(t){ var a = { who: 'me', x: x - t * 2, y: st.playY, pose: cyc('walk', t, 1), jump: t === 2 ? 2 : 0 }; var hn = hand(a.pose, a, build); return { actors: [a, D('block0')], ball: { x: hn[0], y: hn[1] }, loud: 3, focus: x }; }, cues: { 0: 'squeak' } });
         sx = x - 8;
       }
-      var drift = variant === 'fade' ? 7 : 0;
       /* a good release beats the closeout; a bad one gets a hand in its face */
       var late = q >= 0.6 ? 3 : 0;
-      moves.push(CLIPS.rise(st, sx, build, function(t){ var ju = Math.max(0, t - late); return [D(ju > 1 ? 'block1' : 'block0', [0, 0, 4, 9, 13, 15][ju] || 0)]; }, drift));
+      if (!heldRise) moves.push(CLIPS.rise(st, sx, build, function(t){ var ju = Math.max(0, t - late); return [D(ju > 1 ? 'block1' : 'block0', [0, 0, 4, 9, 13, 15][ju] || 0)]; }, drift));
       var from = function(){ var a = { who: 'me', x: sx - drift, y: st.playY, pose: 'shot2', jump: 10 }, f = hand('shot2', a, build); return [f[0], f[1] - 2]; };
       var flyActors = function(t){ return [{ who: 'me', x: sx - drift - (drift ? Math.min(4, t) : 0), y: st.playY, pose: t < 5 ? 'shot3' : 'shot4', jump: Math.max(0, 10 - t * 2) }, D(t < 4 ? 'block2' : 'stand', Math.max(0, 15 - t * 4))]; };
       var flen = variant === 'heave' ? 20 : spec.kind === 'three' || spec.kind === 'buzzer' ? 16 : 13;
@@ -816,7 +1074,16 @@ function moment(host, spec, cb){
     var extra = function(t){ return poster ? [big('block0')] : [onball(t, x)]; };
     st.play(Object.assign(CLIPS.dribble(st, x, build, null, extra), { call: spec.intro || '' }));
     var zone = zoneFor(rating);
-    ctl.meter({ zone: zone * 1.1, speed: 0.85 + pressure * 0.25, nerves: spec.nerves || 0, rn: rn, tip: 'The gather. Time your last step', btn: 'Gather' }, function(q1){
+    /* where the help is (0 at the far block, 1 at the rim) and how loaded the legs are */
+    var help = 0, load = 0, loading = false, dunker = !layup;
+    var helpX = function(){ return poster ? bigX : lerp(bigX + 34, bigX, help); };
+    var defend = function(t){
+      if (poster) return [big(help >= 0.85 ? 'block1' : 'block0', help >= 0.85 ? Math.round((help - 0.85) * 60) : 0)];
+      return dunker ? [onball(t, end - 18), { who: opp2, x: helpX(), y: st.playY - 1, pose: help > 0.05 ? cyc('walk', t, 1) : 'stand', jump: help >= 0.92 ? 8 : 0, flip: true, z: -1 }] : [onball(t, end - 14)];
+    };
+    /* the approach plays itself: what you decide is the finish */
+    timersD.push(setTimeout(function(){
+      if (st.dead) return;
       st.play({ len: 8, loop: false, at: function(t){
         /* a eurostep goes one way and then the other on the last two steps */
         var side = euro && t >= 4 ? (t < 6 ? 3 : -3) : 0;
@@ -824,15 +1091,28 @@ function moment(host, spec, cb){
         var acts = [a].concat(poster ? [big('block0')] : [onball(t, lerp(x, end - 14, t / 7))]);
         return { actors: acts, ball: t < 7 ? dribbleBall(st, a, build, t) : { x: hand('dunk0', a, build)[0], y: hand('dunk0', a, build)[1] }, loud: 3, dust: t === 7 ? [{ x: xx, y: st.playY, t: 3 }] : null, focus: xx };
       }, cues: { 0: 'squeak', 4: 'bounce' } }, function(){
-        st.play({ len: 2, loop: true, at: function(){ var a = { who: 'me', x: end - 8, y: st.playY, pose: 'dunk1' }, h = hand('dunk1', a, build); return { actors: [a].concat(poster ? [big('block0')] : [onball(0, end - 14)]), ball: { x: h[0], y: h[1] }, loud: 3, focus: end }; } });
-        ctl.meter({ zone: zone * 0.9, speed: 1.2 + pressure * 0.3, nerves: spec.nerves || 0, rn: rn, tip: 'Now rise. Faster meter', btn: poster ? 'Rise up' : 'Take off' }, function(q2){
-          var q = Math.min(q1, q2) < -0.5 ? Math.min(q1, q2) : 0.4 * q1 + 0.6 * q2;
-          finishDrive(q);
-        });
+        st.play({ len: 4, loop: true, at: function(t){
+          var pose = loading ? (load < 0.45 ? 'dunk0' : 'dunk1') : 'dunk0';
+          var a = { who: 'me', x: end - 8, y: st.playY + (loading ? 1 : 0), pose: pose }, h = hand(pose, a, build);
+          return { actors: [a].concat(defend(t)), ball: { x: h[0], y: h[1] }, loud: 3, focus: end };
+        } });
+        if (dunker) {
+          ctl.launch({ rating: rating, pressure: pressure, poster: poster, rn: rn, tip: poster ? 'He is under the rim. Load up, beat him up' : 'Load up. Beat the help to the rim', btn: poster ? 'Rise up' : 'Load up',
+            onHold: function(){ loading = true; S.cue('squeak'); },
+            onTick: function(p, h){ load = p; help = h; } }, function(q, info){ finishDrive(q, info); });
+        } else {
+          ctl.hold({ zone: zone * 1.05, speed: 0.95 + pressure * 0.25, nerves: spec.nerves || 0, rn: rn, tip: euro ? 'Euro step. Let go at the top' : rev ? 'Reverse. Let go under the rim' : 'Layup. Let go at the top', btn: 'Finish' }, function(q, info){ finishDrive(q, info); });
+        }
       });
-    });
-    function finishDrive(q){
-      var res = resolve(q), made = !!res.made;
+    }, REDUCED ? 300 : 900));
+    function finishDrive(q, info){
+      info = info || {};
+      var res = resolve({ touch: q, green: !!info.green }), made = !!res.made;
+      /* a dunk you did not load for is laid in, and one met at the rim is
+         either blocked or scooped around him */
+      if (dunker && (info.style === 'layup' || (info.style === 'met' && made))) layup = true;
+      if (dunker && info.style === 'met' && !made) poster = true;
+      if (!poster && !layup) bigX = helpX();
       var seq = layup ? ['shot0', 'shot1', 'shot1', 'shot2', 'shot2', 'shot2', 'shot3', 'shot3', 'shot3', 'shot4'] : ['dunk0', 'dunk1', 'dunk1', 'dunk2', 'dunk2', 'dunk2', 'dunk2', 'dunk3', 'dunk3', 'dunk3'];
       var top = layup ? 24 : 40, jumps = layup ? [0, 0, 6, 12, 18, 22, 24, 24, 22, 18] : [0, 0, 0, 10, 22, 32, 38, 40, 40, 40];
       var list = [
@@ -867,13 +1147,15 @@ function moment(host, spec, cb){
     var crowd = function(t){ return { loud: 2, flash: t % 9 < 2 }; };
     st.play(Object.assign({ len: 24, loop: true, at: function(t){ var p = cyc('dribble', t, 3), a = { who: 'me', x: x, y: st.playY, pose: p }; return Object.assign({ actors: [a], ball: dribbleBall(st, a, build, t), focus: x }, crowd(t)); }, cues: { 4: 'bounce', 16: 'bounce' } }, { call: spec.intro || '' }));
     var zone = zoneFor(rating) * 1.1, speed = 0.8 + pressure * 0.3;
-    ctl.meter({ zone: zone, speed: speed, nerves: spec.nerves || 0, rn: rn, tip: 'First shot', btn: 'Shoot' }, function(a){
+    /* at the line he only sets and lets go: the jump is drawn after both */
+    var setUp = function(dur){ var n = Math.max(4, Math.round(dur * 12)); st.play({ len: n, at: function(t){ var p = t < n / 2 ? 'shot0' : 'shot1', a = { who: 'me', x: x, y: st.playY, pose: p }, hn = hand(p, a, build); return Object.assign({ actors: [a], ball: { x: hn[0], y: hn[1] - 2 }, focus: x }, crowd(t)); } }); };
+    ctl.hold({ zone: zone, speed: speed, nerves: spec.nerves || 0, rn: rn, tip: 'First shot', btn: 'Shoot', onHold: setUp }, function(a, ia){
       st.say('Breathe.');
       setTimeout(function(){
         if (st.dead) return;
         st.say('');
-        ctl.meter({ zone: zone, speed: speed + 0.12, nerves: Math.min(1, (spec.nerves || 0) + 0.25), rn: rn, tip: 'Second shot', btn: 'Shoot' }, function(b){
-          var res = resolve({ touch: (a + b) / 2, touches: [a, b] });
+        ctl.hold({ zone: zone, speed: speed + 0.12, nerves: Math.min(1, (spec.nerves || 0) + 0.25), rn: rn, tip: 'Second shot', btn: 'Shoot', onHold: setUp }, function(b, ib){
+          var res = resolve({ touch: (a + b) / 2, touches: [a, b], greens: [!!ia.green, !!ib.green] });
           var n = typeof res.made === 'number' ? res.made : res.made ? 2 : 0;
           var shots = res.shots || (n === 2 ? [true, true] : n === 1 ? [true, false] : [false, false]);
           var seq = [];
@@ -1003,9 +1285,15 @@ function moment(host, spec, cb){
     }, cues: { 0: 'thud', 12: 'thud', 24: 'thud' } }, { call: spec.intro || '' }));
     var zone = zoneFor(rating) * (variant === 'hook' ? 1.1 : 1);
     var speed = 0.9 + pressure * 0.3 + (variant === 'turn' ? 0.15 : variant === 'dropstep' ? 0.08 : 0);
-    var tip = { hook: 'Hook shot. Release at the top', turn: 'Turnaround. Quicker meter', dropstep: 'Drop step. Time the spin' }[variant];
-    ctl.meter({ zone: zone, speed: speed, nerves: spec.nerves || 0, rn: rn, tip: tip, btn: variant === 'dropstep' ? 'Spin' : 'Shoot' }, function(q){
-      var res = resolve(q), made = !!res.made;
+    var tip = { hook: 'Hook shot. Let go at the top', turn: 'Turnaround. Faster meter', dropstep: 'Drop step. Hold to spin, let go to rise' }[variant];
+    var heldRise = false;
+    ctl.hold({ zone: zone, speed: speed, nerves: spec.nerves || 0, rn: rn, tip: tip, btn: variant === 'dropstep' ? 'Spin' : 'Shoot', onHold: function(dur){
+      if (variant === 'dropstep') return;
+      heldRise = true;
+      var n = Math.max(5, Math.round(dur * 12)), dr = variant === 'turn' ? 5 : 0, seq = ['shot0', 'shot0', 'shot1', 'shot1', 'shot2', 'shot2'], jmp = [0, 0, 3, 6, 9, 10];
+      st.play({ len: n, at: function(t){ var k = Math.min(5, Math.floor(t / (n - 1) * 6)), a = { who: 'me', x: mx - dr * t / (n - 1), y: st.playY, pose: seq[k], jump: jmp[k] }, hn = hand(seq[k], a, build); return { actors: [a, D(mx, k > 2 ? 'block1' : 'block0', k > 2 ? (k - 2) * 3 : 0)], ball: { x: hn[0], y: hn[1] - 2 }, loud: 3, focus: mx }; }, cues: { 0: 'squeak' } });
+    } }, function(q, info){
+      var res = resolve({ touch: q, green: !!(info && info.green) }), made = !!res.made;
       var sx = mx, list = [];
       if (variant === 'dropstep') {
         var end = rx() - 22;
@@ -1016,7 +1304,7 @@ function moment(host, spec, cb){
         return;
       }
       var drift = variant === 'turn' ? 5 : 0;
-      list.push(CLIPS.rise(st, sx, build, function(t){ return [D(sx, t > 2 ? 'block1' : 'block0', t > 2 ? (t - 2) * 3 : 0)]; }, drift));
+      if (!heldRise) list.push(CLIPS.rise(st, sx, build, function(t){ return [D(sx, t > 2 ? 'block1' : 'block0', t > 2 ? (t - 2) * 3 : 0)]; }, drift));
       var from = function(){ var a = { who: 'me', x: sx - drift, y: st.playY, pose: 'shot2', jump: 10 }, f = hand('shot2', a, build); return [f[0], f[1] - 2]; };
       var fly = function(t){ return [{ who: 'me', x: sx - drift, y: st.playY, pose: t < 5 ? 'shot3' : 'shot4', jump: Math.max(0, 10 - t * 2) }, D(sx, 'block2', Math.max(0, 9 - t * 3))]; };
       list.push(function(){ return CLIPS.flight(st, from(), made, fly, 11, variant === 'hook' ? 1.3 : 0.9); });
@@ -1063,54 +1351,68 @@ function moment(host, spec, cb){
     });
   }
 
-  /* ── the passing lane: they swing it, he looks you off, then he throws it ── */
+  /* ── the passing lane: two men he can throw to. His eyes go both ways; the
+     one he is really going to shows his hands a beat early. Jump that lane ── */
   function steal(){
-    var px = rx() - 92, wx = rx() - 26, mx0 = rx() - 60;
-    var S8 = { look: 0, pass: 0, t: 0 };
-    var passer = function(pose){ return { who: opp, x: px, y: st.playY + 2, pose: pose, flip: false }; };
-    var wing = function(pose, dx){ return { who: opp2, x: wx + (dx || 0), y: st.playY - 3, pose: pose || 'stand', flip: true, z: -1 }; };
+    var px = rx() - 96, mx0 = rx() - 62;
+    var spots = [{ x: rx() - 40, y: st.playY - 6, z: -1, name: 'Wing' }, { x: rx() - 12, y: st.playY + 5, z: 2, name: 'Corner' }];
+    var tgt = R() < 0.5 ? 0 : 1;
+    var S8 = { look: -1, hands: -1 };
+    var recv = [opp2, { look: B.lookFor('opp3:' + (spec.seed || '')), c1: opp.c1, c2: opp.c2, num: '', age: 25, faceless: true }];
+    var passer = function(pose){ return { who: opp, x: px, y: st.playY + 1, pose: pose }; };
+    var man = function(i, pose, dx){ var sp = spots[i]; return { who: recv[i], x: sp.x + (dx || 0), y: sp.y, pose: pose || 'stand', flip: true, z: sp.z }; };
+    var mid = function(i){ return [lerp(px, spots[i].x, 0.55), lerp(st.playY, spots[i].y, 0.55)]; };
     st.play(Object.assign({ len: 24, loop: true, at: function(t){
-      var p = passer(S8.look ? 'shake1' : cyc('dribble', t, 2));
-      var me = { who: 'me', x: mx0 + Math.sin(t / 4) * 2, y: st.playY, pose: 'block0', flip: true };
-      return { actors: [p, me, wing('stand')], ball: S8.look ? { x: hand('shake1', p, 'standard')[0], y: hand('shake1', p, 'standard')[1] } : dribbleBall(st, p, 'standard', t), loud: 2, focus: (px + wx) / 2 };
+      var eyes = S8.look >= 0 || S8.hands >= 0;
+      var p = passer(eyes ? 'shake1' : cyc('dribble', t, 2));
+      var me = { who: 'me', x: mx0 + Math.sin(t / 4) * 1.5, y: st.playY, pose: 'block0', flip: true };
+      var ms = [0, 1].map(function(i){ return man(i, S8.hands === i ? 'up' : 'stand', S8.hands === i ? 0 : Math.sin((t + i * 7) / 3)); });
+      var hn = hand('shake1', p, 'standard'), ball = eyes ? { x: hn[0], y: hn[1] } : dribbleBall(st, p, 'standard', t);
+      /* once it is thrown it is in the air toward his man, and you are racing it */
+      if (S8.tt) { var u = Math.min(0.9, (performance.now() - S8.tt) / 900), sp = spots[tgt]; ball = { x: lerp(hn[0], sp.x - 6, u), y: lerp(hn[1], sp.y - 30, u) - Math.sin(u * Math.PI) * 8, spin: t }; }
+      return { actors: [p, me].concat(ms), ball: ball, loud: 2, focus: (px + spots[1].x) / 2 };
     } }, { call: spec.intro || '' }));
-    var fakes = [], n = 1 + Math.floor(R() * 2);
-    for (var i = 0; i < n; i++) fakes.push(600 + i * 560 + Math.floor(R() * 200));
-    var at = fakes[fakes.length - 1] + 560 + Math.floor(R() * 400);
-    ctl.react({ at: at, fakes: fakes, rating: rating, rn: rn, tip: 'He looks you off. Jump it when the ball leaves his hand', btn: 'Jump it', wait: 'Read his eyes',
-      onFake: function(){ S8.look = 1; setTimeout(function(){ S8.look = 0; }, 280); },
-      onCue: function(){ S8.pass = 1; S.cue('slap'); } }, function(q){
-      var res = resolve(q), made = !!res.made;
-      var mid = (px + wx) / 2, end = rx() - 22;
+    /* he looks one way and the other, then he finds his man */
+    var glances = [], n = (pressure >= 1 ? 2 : 1) + Math.floor(R() * 2), lane = R() < 0.5 ? 0 : 1, t = 450;
+    for (var i = 0; i < n; i++) { glances.push({ at: t, lane: lane }); t += 520 + Math.floor(R() * 160); lane = R() < 0.7 ? 1 - lane : lane; }
+    var throwAt = t + laneWindow(rating) + 120 + Math.floor(R() * 300);
+    ctl.lanes({ names: [spots[0].name, spots[1].name], target: tgt, glances: glances, throwAt: throwAt, rating: rating, rn: rn,
+      tip: 'Eyes lie. Jump the man who shows his hands', wait: 'Read his eyes',
+      onGlance: function(l){ S8.look = l; if (l >= 0) S.cue('squeak'); },
+      onHands: function(l){ S8.look = -1; S8.hands = l; },
+      onThrow: function(){ S8.tt = performance.now(); S.cue('slap'); } }, function(q, info){
+      var res = resolve({ touch: q }), made = !!res.made;
+      var pick = info && info.lane >= 0 ? info.lane : tgt, end = rx() - 22, m = mid(tgt), w = mid(pick);
       if (made) {
         st.run([
           { len: 6, at: function(t){
-            var u = t / 5, me = { who: 'me', x: lerp(mx0, mid, u), y: st.playY + 1, pose: t < 4 ? cyc('walk', t, 1) : 'block1', jump: t > 3 ? 4 : 0 };
-            return { actors: [passer('shot4'), me, wing('up')], ball: { x: lerp(px + 6, mid, u), y: st.playY - 22 + Math.sin(u * Math.PI) * -3, spin: t }, loud: 3, focus: mid };
+            var u = t / 5, me = { who: 'me', x: lerp(mx0, m[0], u), y: lerp(st.playY, m[1], u), pose: t < 4 ? cyc('walk', t, 1) : 'block1', jump: t > 3 ? 4 : 0 };
+            return { actors: [passer('shot4'), me, man(tgt, 'up'), man(1 - tgt, 'stand')], ball: { x: lerp(px + 6, m[0], u), y: lerp(st.playY - 24, m[1] - 22, u), spin: t }, loud: 3, focus: m[0] };
           }, cues: { 5: 'slap' } },
           { len: 14, at: function(t){
-            var xx = lerp(mid, end, t / 13), a = { who: 'me', x: xx, y: st.playY, pose: cyc('dribble', t, 1) };
-            return { actors: [passer('stand'), a, wing('sad0')], ball: dribbleBall(st, a, build, t), loud: 3, focus: xx, dust: t === 0 ? [{ x: mid, y: st.playY, t: 3 }] : null };
+            var xx = lerp(m[0], end, t / 13), a = { who: 'me', x: xx, y: lerp(m[1], st.playY, t / 13), pose: cyc('dribble', t, 1) };
+            return { actors: [passer('stand'), a, man(tgt, 'sad0'), man(1 - tgt, 'stand')], ball: dribbleBall(st, a, build, t), loud: 3, focus: xx, dust: t === 0 ? [{ x: m[0], y: m[1], t: 3 }] : null };
           }, cues: { 0: 'roar', 4: 'bounce', 10: 'bounce' } },
-          { len: 8, at: function(t){ var seq = ['dunk0', 'dunk1', 'dunk2', 'dunk2', 'dunk3', 'dunk3', 'dunk3', 'dunk3'], a = { who: 'me', x: end, y: st.playY, pose: seq[t], jump: [0, 6, 16, 28, 36, 38, 38, 38][t] }, hn = hand(seq[t], a, build); return { actors: [a, passer('stand'), wing('sad0', -6)], ball: { x: hn[0], y: hn[1] - 1 }, loud: 3, focus: end }; } },
-          function(){ return { len: 12, key: 2, at: function(t){ var a = { who: 'me', x: end, y: st.playY, pose: t < 6 ? 'dunk4' : 'shot4', jump: t < 6 ? 38 : Math.max(0, 38 - (t - 5) * 12) }; return { actors: [a, passer('stand'), wing('sad0', -6)], ball: t < 6 ? { x: st.rim[0], y: st.rim[1] + 3 + t * 3, behind: t < 3 } : { x: st.rim[0] - (t - 5) * 2, y: st.playY - 3 }, net: t < 2 ? 1 : t < 4 ? 2 : 0, rimShake: t < 6 ? t + 1 : 0, loud: 3, flash: true, focus: end }; }, cues: { 0: 'thud', 1: 'swish' } }; },
+          { len: 8, at: function(t){ var seq = ['dunk0', 'dunk1', 'dunk2', 'dunk2', 'dunk3', 'dunk3', 'dunk3', 'dunk3'], a = { who: 'me', x: end, y: st.playY, pose: seq[t], jump: [0, 6, 16, 28, 36, 38, 38, 38][t] }, hn = hand(seq[t], a, build); return { actors: [a, passer('stand'), man(tgt, 'sad0', -6)], ball: { x: hn[0], y: hn[1] - 1 }, loud: 3, focus: end }; } },
+          function(){ return { len: 12, key: 2, at: function(t){ var a = { who: 'me', x: end, y: st.playY, pose: t < 6 ? 'dunk4' : 'shot4', jump: t < 6 ? 38 : Math.max(0, 38 - (t - 5) * 12) }; return { actors: [a, passer('stand'), man(tgt, 'sad0', -6)], ball: t < 6 ? { x: st.rim[0], y: st.rim[1] + 3 + t * 3, behind: t < 3 } : { x: st.rim[0] - (t - 5) * 2, y: st.playY - 3 }, net: t < 2 ? 1 : t < 4 ? 2 : 0, rimShake: t < 6 ? t + 1 : 0, loud: 3, flash: true, focus: end }; }, cues: { 0: 'thud', 1: 'swish' } }; },
         ], function(){ finish(true, callFor(true), end); });
       } else {
+        /* you went where he did not throw, or got there a step late */
         st.run([
           { len: 10, at: function(t){
-            var u = t / 9, me = { who: 'me', x: lerp(mx0, mid - 6, Math.min(1, u * 1.5)), y: st.playY + 1, pose: t < 5 ? 'block1' : 'sad1', jump: t < 4 ? 3 : 0 };
-            var w = wing(t < 4 ? 'stand' : cyc('walk', t, 1), t < 4 ? 0 : -(t - 3) * 2);
-            return { actors: [passer('shot4'), me, w], ball: { x: lerp(px + 6, wx - 10, u), y: st.playY - 30 - Math.sin(u * Math.PI) * 10, spin: t }, loud: 2, focus: (px + wx) / 2 };
+            var u = t / 9, me = { who: 'me', x: lerp(mx0, w[0] - 4, Math.min(1, u * 1.5)), y: lerp(st.playY, w[1], Math.min(1, u * 1.5)), pose: t < 5 ? 'block1' : 'sad1', jump: t < 4 ? 3 : 0 };
+            var sp = spots[tgt];
+            return { actors: [passer('shot4'), me, man(tgt, t < 6 ? 'up' : 'stand'), man(1 - tgt, 'stand')], ball: { x: lerp(px + 6, sp.x - 6, u), y: lerp(st.playY - 30, sp.y - 30, u) - Math.sin(u * Math.PI) * 10, spin: t }, loud: 2, focus: (px + sp.x) / 2 };
           }, cues: { 0: 'slap' } },
-          function(){ return CLIPS.result(st, true, function(){ return [passer('stand'), { who: opp2, x: wx - 8, y: st.playY - 3, pose: 'shot4', flip: true, z: -1 }, { who: 'me', x: mid - 6, y: st.playY + 1, pose: 'sad0' }]; }); },
-        ], function(){ finish(false, callFor(false), mid - 6); });
+          function(){ return CLIPS.result(st, true, function(){ return [passer('stand'), man(tgt, 'shot4'), man(1 - tgt, 'stand'), { who: 'me', x: w[0] - 4, y: w[1], pose: 'sad0' }]; }); },
+        ], function(){ finish(false, callFor(false), w[0] - 4); });
       }
     });
   }
 
   ({ jumper: jumper, drive: drive, ft: ft, pass: pass, stop: stop, block: block, post: post, lob: lob, steal: steal })[M.act]();
 
-  return { stop: function(){ document.removeEventListener('keydown', onKey, true); ctl.stop(); st.stop(); }, press: function(){ ctl.press(); }, armed: function(){ return ctl.armed(); }, stage: st, variant: variant, touchOf: touchOf };
+  return { stop: function(){ timersD.forEach(clearTimeout); document.removeEventListener('keydown', onKey, true); document.removeEventListener('keyup', onKeyUp, true); ctl.stop(); st.stop(); }, press: function(lane){ ctl.press(lane); }, down: function(lane){ ctl.down(lane); }, up: function(){ ctl.up(); }, armed: function(){ return ctl.armed(); }, kind: function(){ return ctl.kind(); }, stage: st, variant: variant, touchOf: touchOf };
 }
 
 // ─── the ceremonies ──────────────────────────────────────────────────────────
@@ -1229,5 +1531,5 @@ function ceremony(host, name, c, opts){
   return { stop: st.stop, stage: st };
 }
 
-window.RTF_COURT = { API_VERSION: 2, stage: stage, moment: moment, ceremony: ceremony, CEREMONY: CEREMONY, CLIPS: CLIPS, MOMENTS: MOMENTS, VARIANTS: VARIANTS, CLUTCH_KIND: CLUTCH_KIND, touchOf: touchOf, reactTouch: reactTouch, zoneFor: zoneFor };
+window.RTF_COURT = { API_VERSION: 2, holdTouch: holdTouch, launchTouch: launchTouch, launchLines: launchLines, laneTouch: laneTouch, laneWindow: laneWindow, HOLD_C: HOLD_C, stage: stage, moment: moment, ceremony: ceremony, CEREMONY: CEREMONY, CLIPS: CLIPS, MOMENTS: MOMENTS, VARIANTS: VARIANTS, CLUTCH_KIND: CLUTCH_KIND, touchOf: touchOf, reactTouch: reactTouch, zoneFor: zoneFor };
 })();

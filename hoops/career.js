@@ -3670,7 +3670,7 @@ function momentResolve(L, card, i, rng, touch, touches) {
   const f = L.flags, duel = duelOn(L) && card.ctx.won != null, won = !!card.ctx.won;
   const mate = card.ctx.mate;
   if (card.ctx.m === 'ft') {
-    const p1 = touched(o.p, touches ? touches[0] : touch, L), p2 = touched(o.p, touches ? touches[1] : touch, L);
+    const p1 = touched(o.p, touches ? touches[0] : touch, L, touches ? 0 : null), p2 = touched(o.p, touches ? touches[1] : touch, L, touches ? 1 : null);
     const s1 = rng() < p1, s2 = rng() < p2, n = (s1 ? 1 : 0) + (s2 ? 1 : 0);
     if (duel) {
       if (n === 2) { f.ftIce = (f.ftIce || 0) + 1; bump(L, { fame: 3, morale: 6 }); logIt(L, 'Two free throws with the game on them against the ' + opp + '.', 'gold'); }
@@ -10859,7 +10859,17 @@ function newRoad(L, rng) {
    scenes off passes no touch, which is a touch of nought: the odds the card
    always had. */
 const TOUCH = 0.12, TOUCH_DUEL = 0.2;
-function touched(p, touch, L) { return touch ? clamp(p + touch * (L && duelOn(L) ? TOUCH_DUEL : TOUCH), 0.05, 0.9) : p; }
+/* A GREEN RELEASE GOES IN. extra.green is the court saying the release landed
+   in the gold core of a shot meter (or a dunk loaded to the edge of the help),
+   which is a touch of exactly 1. That is a make, the way a green release is in
+   the games people know: the one place the press decides the shot outright
+   rather than nudging it. The draw is still made, so the stream does not move.
+   Only the court sets it, only on a shot, and a touch of nought never does. */
+let GREEN = null;
+function touched(p, touch, L, k) {
+  if (touch >= 1 && GREEN && (k == null ? GREEN.one : GREEN.ft && GREEN.ft[k])) return 1;
+  return touch ? clamp(p + touch * (L && duelOn(L) ? TOUCH_DUEL : TOUCH), 0.05, 0.9) : p;
+}
 function choose(L, i, extra) {
   const card = L.pending[0];
   if (!card) return null;
@@ -10871,6 +10881,7 @@ function choose(L, i, extra) {
     ? extra.touches.map((t) => clamp(+t, -1, 1)) : null;
   const rng = rngAt(L, 'pick:' + card.key + ':' + i);
   TRADED = null;
+  GREEN = extra && (extra.green === true || Array.isArray(extra.greens)) ? { one: extra.green === true && touch >= 1, ft: Array.isArray(extra.greens) ? extra.greens.map((g, j) => g === true && touches && touches[j] >= 1) : null } : null;
   const before = snapshot(L);
   let text = '', tone = '', beats = [], made = null, won = null, shots = null, contest = null;
   L.pending.shift();

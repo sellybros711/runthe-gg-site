@@ -12378,21 +12378,62 @@ it, and one of the four plays beats it (`READ_GOOD` +0.12) while one plays into
 it (`READ_BAD` -0.08). Reading it right earns the coach's trust whatever the
 result. check-moments asserts reading the look pays.
 
-**THE COURT (court.js API 2) HAS TWO KINDS OF PRESS:**
+**THE COURT (court.js API 2) HAS FOUR KINDS OF PRESS**, one a job, because a
+dunk is not a jumper and a steal is not a stop. Asked for by the owner: shots
+should be held and let go like NBA 2K's meter, and the dunk and the passing lane
+should be their own mini games.
 
-- **The meter** for a shot: a pendulum, slowest at the ends and fastest through
-  the green, with a gold core (`touchOf`: core 1, green edge 0.5, -1 at the far
-  end). The green is narrower (`zoneFor` 0.035 to 0.115) and drifts with nerves
-  (low morale raises them, the clutch trait lowers them). A step-back, a
-  fadeaway and a heave swing faster; a catch-and-shoot is easier. A drive is two
-  presses (the gather, then the rise), and two free throws are two presses
-  handed over as `{ touches }`, each shot reported back in `res.shots`.
-- **The read** for a stop, a chase-down and a pass (`reactTouch`): press when he
-  really goes. Jabs and hesitations are fakes and pressing on one is biting
-  (-0.8). The lamp lights 160ms AFTER the real move, so reading the court beats
-  reacting to the lamp. A rating buys a little time, never the read.
+| control | used by | what you do |
+|---|---|---|
+| `hold` | jumpers, free throws, the post, layups | hold, the fill climbs, let go in the green |
+| `launch` | dunks and posters | hold to load your legs, let go between the rim line and the help |
+| `lanes` | jumping the passing lane | two lane buttons; jump the man who shows his hands |
+| `react` | the stop, the chase-down, the pass, the lob | press when he really goes |
 
-Every press shows how it went (Perfect, Good, Early, Late, Bit on the fake).
+- **The hold** (`holdTouch`, `HOLD_C` 0.78). The fill speeds up as it climbs and
+  the green sits near the top, as wide as `zoneFor` says (a better shooter has a
+  bigger green; a heave or a step-back shrinks it, a catch-and-shoot grows it,
+  nerves wobble it). **The shooter rises while you hold**, so letting go at the
+  top of the green is letting go at the top of the jump: the moment plays the
+  rise itself and skips `CLIPS.rise` after. Held to the end is a brick (-1).
+  Two free throws are two holds, each judged on its own (`touches`, `greens`).
+- **The launch** (`launchLines`, `launchTouch`). Not a timing window but a
+  trade: let go before the rim line and it is a safe layup (0.05 to 0.35, drawn
+  as a layup), past it a dunk (0.6 up), and the closer to the help the harder it
+  goes (1 in the last 28% of the window). If the help gets there first you are
+  met at the rim (-0.9, drawn as a block when it misses). Bounce lowers the rim
+  line and widens the window; a big already under the rim takes time away.
+- **The lanes** (`laneTouch`, `laneWindow`). His eyes flick between two men and
+  the lane button says so ("His eyes"); the man he is really throwing to shows
+  his hands a beat before the ball leaves ("Calling for it"), and that window is
+  longer for a better defender. Jump him then and it is a pick (1). After the
+  throw it is a race (`reactTouch`). Jumping on his eyes alone, or the wrong man,
+  leaves your man open (-0.8, -0.9). A guess that happens to be right is 0.15,
+  so reading always beats gambling.
+- **The read** (`reactTouch`) is unchanged: press when he really goes, a fake
+  is a bite, the lamp is 160ms late on purpose.
+
+**A GREEN RELEASE GOES IN.** A hold let go in the gold core, or a launch loaded to
+the edge of the help, sends `{ touch: 1, green: true }`, and `touched()` in
+career.js returns a make for it (`GREEN`, set per `choose`). That is the 2K rule
+and the one place a press decides a shot outright rather than nudging it by
+`TOUCH`. It is safe because only the court sets it, only for a touch of exactly
+1, only on a shot (never a read), the draw is still made so the stream does not
+move, and the simulator sends nothing. Section 2b asserts every green is a make
+and that green with a lesser touch moves nothing.
+
+**PRESSING IS A POINTER, NOT A CLICK.** `pointerdown` on the button (or the court)
+starts a hold, the release is heard on the window (`pointerup`, `pointercancel`
+and `blur`), so a thumb that slides off still lets go and a phone call never
+leaves a shot held for ever. Space and Enter hold too, a repeated keydown is not
+a press, and 1, 2 and the arrows pick a lane. A bare `click` with no pointerdown
+before it (a walker's `element.click()`) is a press and an instant release, so
+every checker that clicks `.ct-go` still finishes a moment. **The first
+`.ct-go` in the control must be the visible one**: the second lane button lives
+after it in the DOM, or a walker's `querySelector('.ct-go')` finds a hidden
+button and waits for ever.
+
+Every press shows how it went (Green, Good, Early, Late, Laid it up, Met at the rim, Jumped the lane, Bit on the look).
 
 **VARIETY IS SEEDED** off the card's key and the option (`spec.seed`), so a moment
 shown twice is the same picture: jumpers are a pull-up, a catch-and-shoot, a
