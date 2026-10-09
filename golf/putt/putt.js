@@ -1535,6 +1535,30 @@ var CSS = '\
 .pp-map{position:relative;flex:1;min-height:0;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;border-top:1px solid rgba(241,208,74,.25)}\
 .pp-world{position:relative;margin:0 auto}.pp-band{position:absolute;left:-200px;right:-200px;background-size:cover;background-position:center;background-repeat:no-repeat;overflow:hidden}.pp-land{position:absolute;left:0;top:0;image-rendering:pixelated;display:block}\
 .pp-wname{position:absolute;left:0;right:0;text-align:center;pointer-events:none;text-shadow:0 2px 0 rgba(0,0,0,.55),0 0 8px rgba(0,0,0,.5)}.pp-wname b{display:block;font-family:var(--display,inherit);font-size:18px;letter-spacing:.02em}.pp-wname span{font-size:11px;font-weight:800;opacity:.8}\
+/* EVERY WORLD HAS ITS OWN WORDMARK. A kicker on a ribbon, the name set in the type of that world and\
+   metal, and the set pieces under it. Each is CSS on real text (so it stays text) and keeps to the\
+   faces the page already loads: Anton, Cinzel and Barlow. The name is filled with a gradient and its\
+   depth is a stack of drop shadows, because a text shadow would paint over a clipped gradient. */\
+.pp-wname.wm{z-index:1;text-shadow:none;display:flex;flex-direction:column;align-items:center;gap:3px}\
+.wm i{font-style:normal;font-family:"Barlow Semi Condensed",sans-serif;font-weight:800;font-size:9px;letter-spacing:.26em;text-transform:uppercase;padding:2px 10px 2px 12px;border-radius:3px;color:#fff;background:#1d3a26;box-shadow:0 2px 0 rgba(0,0,0,.35)}\
+.wm b{display:block;font-size:30px;line-height:1;letter-spacing:.01em;padding:0 6px;-webkit-background-clip:text;background-clip:text;color:transparent;white-space:nowrap}\
+.wm span{display:inline-block;font-family:"Barlow Semi Condensed",sans-serif;font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;opacity:1;padding:2px 8px;border-radius:999px;background:rgba(0,0,0,.42);color:#fff}\
+.wm-clubhouse i{background:#1f5a32;color:#f7f1dc;border:1px solid #c9a227}\
+.wm-clubhouse b{font-family:Cinzel,serif;font-weight:700;font-size:27px;letter-spacing:.06em;background-image:linear-gradient(180deg,#fffdf3 0 45%,#efe2b8 55%,#d9c48a);-webkit-text-stroke:.6px #1d4a2a;filter:drop-shadow(0 1.5px 0 #1d4a2a) drop-shadow(0 1.5px 0 #163a21) drop-shadow(0 3px 3px rgba(0,0,0,.45))}\
+.wm-lab i{background:#25344a;color:#9fe4ff}\
+.wm-lab b{font-family:"Barlow Semi Condensed",sans-serif;font-weight:800;font-size:30px;letter-spacing:.04em;text-transform:uppercase;background-image:linear-gradient(180deg,#e9fbff,#7fd6f5);-webkit-text-stroke:.6px #14304a;filter:drop-shadow(0 2px 0 #14304a) drop-shadow(0 3px 3px rgba(0,0,0,.45))}\
+.wm-temple i{background:#1c5c46;color:#bff5dd;border:1px solid #6fd3a8}\
+.wm-temple b{font-family:Cinzel,serif;font-weight:700;font-size:28px;letter-spacing:.14em;text-transform:uppercase;background-image:linear-gradient(180deg,#f1e7bf,#cdbd85 52%,#9c8b57 53%,#c2b27a);-webkit-text-stroke:.7px #3a3420;filter:drop-shadow(0 1px 0 #5e5536) drop-shadow(0 1px 0 #4a432a) drop-shadow(0 1px 0 #3a3420) drop-shadow(0 3px 3px rgba(0,0,0,.55))}\
+.wm-pirate i{background:#2b1a0d;color:#ffd23f;border:1px solid #ffd23f}\
+.wm-pirate b{font-family:Cinzel,serif;font-weight:700;font-size:31px;letter-spacing:.03em;transform:rotate(-3deg);background-image:linear-gradient(180deg,#fff6c4,#ffd23f 45%,#d08a12 60%,#ffcf45);-webkit-text-stroke:.8px #3d2010;filter:drop-shadow(0 2px 0 #5a3214) drop-shadow(0 2px 0 #3d2010) drop-shadow(0 4px 4px rgba(0,0,0,.5))}\
+.wm-canyon i{background:#3d2010;color:#ffcf8a;border:1px solid #ffb347}\
+.wm-canyon b{font-family:Anton,Impact,sans-serif;font-size:34px;letter-spacing:.05em;text-transform:uppercase;background-image:linear-gradient(180deg,#fff0b0,#ffb347 50%,#d9621a);-webkit-text-stroke:.8px #3a1606;filter:drop-shadow(1.5px 1.5px 0 #7a3410) drop-shadow(1.5px 1.5px 0 #5a250a) drop-shadow(1.5px 1.5px 0 #3a1606) drop-shadow(0 4px 4px rgba(0,0,0,.5))}\
+.wm-volcano i{background:#2a0d06;color:#ffb347;border:1px solid #ff6a1a}\
+.wm-volcano b{font-family:Anton,Impact,sans-serif;font-size:34px;letter-spacing:.04em;text-transform:uppercase;background-image:linear-gradient(180deg,#fff7c2,#ffd23f 30%,#ff7a1a 62%,#c8240c);-webkit-text-stroke:.8px #2a0905;filter:drop-shadow(0 2px 0 #2a0905) drop-shadow(0 0 6px rgba(255,90,20,.85)) drop-shadow(0 0 14px rgba(255,60,10,.5))}\
+.wm-hallows i{background:#2a1846;color:#ffad55;border:1px solid #ff8a1f}\
+.wm-hallows b{font-family:Cinzel,serif;font-weight:700;font-size:29px;letter-spacing:.08em;background-image:linear-gradient(180deg,#ffe0b0,#ff8a1f 55%,#c2410c);-webkit-text-stroke:.7px #1a0e2c;filter:drop-shadow(0 2px 0 #1a0e2c) drop-shadow(0 0 8px rgba(160,90,255,.75)) drop-shadow(0 0 16px rgba(120,60,220,.45))}\
+.wm-harvest i{background:#4a2a10;color:#ffd27a;border:1px solid #e0912a}\
+.wm-harvest b{font-family:Cinzel,serif;font-weight:700;font-size:29px;letter-spacing:.05em;background-image:linear-gradient(180deg,#fff0c2,#f4a63a 50%,#b85a16);-webkit-text-stroke:.7px #3a1d08;filter:drop-shadow(0 2px 0 #6b3a14) drop-shadow(0 2px 0 #3a1d08) drop-shadow(0 4px 4px rgba(0,0,0,.45))}\
 .pp-path{position:absolute;left:0;top:0;pointer-events:none}.pp-path path{fill:none;stroke:rgba(255,255,255,.75);stroke-width:5;stroke-dasharray:2 11;stroke-linecap:round}\
 .pp-lv{position:absolute;transform:translate(-50%,-50%);width:50px;height:50px;border-radius:50%;border:3px solid #10241a;background:#F1D04A;color:#10241a;font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 4px 0 rgba(0,0,0,.35);padding:0}\
 .pp-lv b{font-family:var(--display,inherit);font-size:19px;line-height:1}.pp-lv span{font-size:10px;font-weight:900;line-height:1;opacity:.8}\
@@ -1625,6 +1649,8 @@ var CSS = '\
 .pp-hub[data-wt=harvest]{--wa:#f2a93b;--wi:#2b1606;--wb1:#7a4a1e;--wb2:#3a220c;--wt:rgba(52,32,12,.92)}\
 .pp-hub[data-wt] .pp-daily{background:linear-gradient(135deg,var(--wb1),var(--wb2) 62%)!important;box-shadow:0 0 0 2px var(--wa),0 10px 26px rgba(0,0,0,.45);transition:background .4s,box-shadow .4s}\
 .pp-hub[data-wt] .pp-daily .pp-dside .g{background:var(--wa);color:var(--wi)}.pp-hub[data-wt] .pp-dk b{color:var(--wa)}.pp-hub[data-wt] .pp-dside .rw{color:var(--wa)}\
+/* ON A WIDE SCREEN THE DAILY STANDS TO THE SIDE. The map sits in the middle of the window with landscape either side, so the card docks in that landscape, top left, rather than across the levels. On a phone it stays on top, where there is no side to put it. */\
+@media (max-width:899px){.pp-hub .pp-daily.mini{right:auto;max-width:none;padding:6px 8px;gap:8px;border-radius:14px}.pp-hub .pp-daily.mini .pp-dmid{display:none}.pp-hub .pp-daily.mini .pp-dtile{width:34px}.pp-hub .pp-daily.mini .pp-dtile .mo{font-size:8px;padding:1px 0}.pp-hub .pp-daily.mini .pp-dtile .dy{font-size:18px}.pp-hub .pp-daily.mini .pp-dside .g{padding:7px 12px;font-size:13px}.pp-hub .pp-daily.mini .pp-dside .rw{display:none}}@media (min-width:900px){.pp-hub .pp-daily{left:24px;right:auto;top:100px;width:clamp(220px,26vw,300px);max-width:none;margin:0;flex-direction:column;align-items:stretch;text-align:center;gap:12px;padding:20px 18px 18px}.pp-hub .pp-daily .pp-dtile{align-self:center}.pp-hub .pp-dmid{align-items:center;text-align:center;gap:4px}.pp-hub .pp-dk{justify-content:center}.pp-hub .pp-daily .t{white-space:normal;font-size:clamp(24px,2.6vw,30px)}.pp-hub .pp-daily .m{white-space:normal}.pp-hub .pp-daily .pp-dside{align-items:stretch}.pp-hub .pp-daily .pp-dside .g{text-align:center}}\
 .pp-hub[data-wt] .pp-tabs,.pp-hub[data-wt] .pp-wchip{background:var(--wt);border-color:color-mix(in srgb,var(--wa) 45%,transparent)}.pp-hub[data-wt] .pp-tabs button.on{background:var(--wa);color:var(--wi)}.pp-hub[data-wt] .pp-wchip{color:#fff;box-shadow:inset 3px 0 0 var(--wa)}\
 .pp-hub[data-wt] .pp-cpill,.pp-hub[data-wt] .pp-cx{background:var(--wt)}.pp-hub[data-wt] .pp-av{border-color:var(--wa)}'
 
@@ -1827,11 +1853,11 @@ function membersSheet(){
    ground. The golfer stands on the level being played and the map opens scrolled to it. */
 function drawMap(st, TR){
   TR = TR || tourOf(S.tour); var tp = st.tours[TR.id], K = TR.per || PER, WS = TR.worlds;
-  var box = S.ov.querySelector('[data-map]'), N = TR.levels.length, STEP = 92, PADB = 190, WH = 64, H = N * STEP + WS.length * WH + PADB + 60, W = 340;
+  var box = S.ov.querySelector('[data-map]'), N = TR.levels.length, STEP = 92, PADB = 190, WH = 104, H = N * STEP + WS.length * WH + PADB + 60, W = 340;
   var pos = []; for (var n = 1; n <= N; n++){ var w = Math.floor((n - 1) / K), y = H - PADB - (n - 1) * STEP - w * WH, x = W / 2 + Math.sin((n - 1) * 0.9) * 105; pos.push([x, y]); }
   var bands = WS.map(function(Wd, w){ var T = THEMES[Wd.theme], top = pos[Math.min(N, w * K + K) - 1][1] - STEP / 2 - WH, bot = w === 0 ? H : pos[w * K][1] + STEP / 2;
     return '<div class="pp-band" data-w="' + w + '" style="top:' + top + 'px;height:' + (bot - top) + 'px;background:linear-gradient(180deg,' + T.bg2 + ',' + T.bg + ')"></div>\
-      <div class="pp-wname" style="top:' + (top + 10) + 'px;color:' + (T.light ? T.ink : '#fff') + '"><b>' + (TR.members ? '★ ' : 'World ' + (w + 1) + ' · ') + esc(Wd.name) + '</b><span>' + esc(Wd.haz.join(' · ')) + '</span></div>'; }).join('');
+      <div class="pp-wname wm wm-' + Wd.id + '" style="top:' + (top + 8) + 'px"><i>' + (TR.id === 'lab' ? 'Testers only' : TR.members ? 'Members Tour' : 'World ' + (w + 1)) + '</i><b>' + esc(Wd.name) + '</b><span>' + esc(Wd.haz.join(' · ')) + '</span></div>'; }).join('');
   var d = pos.map(function(p, i){ return (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' ');
   var badges = pos.map(function(p, i){ var n = i + 1, L = TR.levels[i], best = tp.best[n], open = n <= tp.lv, cur = n === tp.lv, ace = !!tp.ace[n];
     var cls = 'pp-lv wt-' + WS[Math.min(WS.length - 1, Math.floor(i / K))].theme + (L.sig ? ' sig' : '') + (open ? '' : ' lock') + (cur ? ' cur' : '') + (best != null ? ' done' : '') + (ace ? ' ace' : '');
@@ -1853,7 +1879,11 @@ function drawMap(st, TR){
     for (var wi = 0; wi < WS.length; wi++) if (mid < pos[wi * K][1] + STEP / 2 + 1) w = wi;
     if (w === lastW) return; lastW = w; var hub = S.ov.querySelector('.pp-hub'); if (hub) hub.setAttribute('data-wt', WS[w].theme);     chip.textContent = (TR.members && !membersOpen() ? 'Preview · ' : '') + (TR.members ? WS[w].name : 'World ' + (w + 1)) + ' · ' + worldStars(tp, TR, w) + '/' + worldMax(TR, w) + ' ★'; }
   box.addEventListener('scroll', wchip, { passive:true });
-  requestAnimationFrame(function(){ box.scrollTop = Math.max(0, cp[1] * k - box.clientHeight * 0.6); wchip(); });
+  /* ON A PHONE THE DAILY FOLDS TO A CHIP ONCE THE MAP IS SCROLLED, so it never sits over a level for
+     long; back where the map opened, it is the full card again. A wide screen docks it to the side. */
+  var dcard = S.ov.querySelector('.pp-daily'), home0 = null;
+  box.addEventListener('scroll', function(){ if (!dcard || home0 == null) return; dcard.classList.toggle('mini', Math.abs(box.scrollTop - home0) > 40); }, { passive:true });
+  requestAnimationFrame(function(){ box.scrollTop = Math.max(0, cp[1] * k - box.clientHeight * 0.6); home0 = box.scrollTop; wchip(); });
   mapArt(box, pos, TR);
 }
 /* EACH WORLD ON THE MAP IS A PLACE OF ITS OWN THEME, painted by mapland.js the way the mockups were:
