@@ -337,9 +337,12 @@ function simulate(C, x, y, vx, vy, t0){
         var vin = Math.hypot(s.vx, s.vy), hgt = Rp.h || 0.4, vl2 = vin * vin - 2 * ROLL * G * hgt;
         if (vl2 < 1){ s.x = px0; s.y = py0; s.vx = -s.vx * 0.5; s.vy = -s.vy * 0.5; out.ev.push([t, 'rampback']); rode = true; break; }
         var vl = Math.sqrt(vl2), an = (Rp.ang || 24) * Math.PI / 180, ux = s.vx / vin, uy = s.vy / vin, vh = vl * Math.cos(an), vz = vl * Math.sin(an);
+        /* the flight leaves the lip where the ball crossed it, never from the lip's middle: started from the
+           middle, a ball that hit the ramp off-centre jumped sideways the instant it took off */
+        var lx0 = Rp.x - Rp.dy * sd2, ly0 = Rp.y + Rp.dx * sd2;
         var tf = (vz + Math.sqrt(vz * vz + 2 * G * hgt)) / G, fp = [], tk = 0;
-        for (tk = 1 / 60; tk < tf; tk += 1 / 60) fp.push([Rp.x + ux * vh * tk, Rp.y + uy * vh * tk, tk, hgt + vz * tk - G * tk * tk / 2]);
-        var lx = Rp.x + ux * vh * tf, ly = Rp.y + uy * vh * tf; fp.push([lx, ly, tf, 0]);
+        for (tk = 1 / 60; tk < tf; tk += 1 / 60) fp.push([lx0 + ux * vh * tk, ly0 + uy * vh * tk, tk, hgt + vz * tk - G * tk * tk / 2]);
+        var lx = lx0 + ux * vh * tf, ly = ly0 + uy * vh * tf; fp.push([lx, ly, tf, 0]);
         ride(fp); s.x = lx; s.y = ly; out.ev.push([t, 'land']);
         var lm = landAt(lx, ly, t0 + t);
         if (lm === M.WATER){ out.water = true; out.ev.push([t, 'water']); lastPiece = Rp; return finishOut(); }
@@ -1658,8 +1661,8 @@ function top(title, sub, right){
 /* The mode opens on the Tour map with the Daily Hole on top. The rules, in full:
      par or better  the hole is cleared and the next one in the world opens (coins the first time only).
                     It earns stars: 1 for par, 2 under par, 3 for two under (an ace on a par 3), best kept.
-     a new world    opens at a running total: 45 stars a world (22 on the Members Tour), counted across
-                    every world so far, so 90 opens world 3 however they are spread. See worldGate.
+     a new world    opens at a running total: 40 stars a world (20 on the Members Tour), counted across
+                    every world so far, so 80 opens world 3 however they are spread. See worldGate.
      over par       a life goes and the hole restarts. It is decided the moment par strokes are used
                  with the ball still out, so nobody putts out a hole that is already lost.
    Quitting after the first putt costs a life too. The Daily Hole never costs one.
@@ -1716,7 +1719,7 @@ function membersPreview(){ return !!(S && S.memPreview); }
 // the Lab is a tester's only: its tab is not drawn for anybody else
 function labOpen(){ try{ var h = hostOf(); return !!(h.tester && h.tester()); }catch(e){ return false; } }
 /* STARS. Par clears a hole, so most holes can simply be good to play, and birdies come from reading
-   them well rather than from hunting a trapdoor. The gate is the owner's: 45 stars a world, as a
+   them well rather than from hunting a trapdoor. The gate is the owner's: 40 stars for every world, as a
    running total, so a player stuck on one world can earn the stars back in another. 54 a world would
    be an ace on every hole, which is partly luck, so it would be a wall. A perfect world is the chase.
    THREE STARS IS TWO UNDER PAR, which on a par 3 is the ace. It is never a score nobody can make:
@@ -1739,9 +1742,9 @@ function starTargets(par, three){
 function threeLine(par, three){ var t = threeOf(par, three); return t === 1 ? 'ace it' : 'finish in ' + t; }
 function worldStars(tp, TR, w){ var K = TR.per || PER, t = 0; for (var n = w * K + 1; n <= Math.min(TR.levels.length, w * K + K); n++) t += starsOf(tp.best[n], TR.levels[n - 1].par, TR.levels[n - 1].three); return t; }
 function worldMax(TR, w){ var K = TR.per || PER; return Math.min(K, TR.levels.length - w * K) * 3; }
-/* The gate is CUMULATIVE: a world opens the next at five sixths of a world's stars (45 of 54, 22 of 27),
-   counted across every world so far, so 90 opens world 3 however the stars are spread. */
-function worldGate(TR, w){ var g = 0; for (var i = 0; i <= w; i++) g += Math.floor(worldMax(TR, i) * 5 / 6); return g; }
+/* The gate is CUMULATIVE: 40 stars for every world unlocked (40 of a world's 54, 20 of 27 on the Members
+   Tour), counted across every world so far, so 80 opens world 3 however the stars are spread. */
+function worldGate(TR, w){ var g = 0; for (var i = 0; i <= w; i++) g += Math.round(worldMax(TR, i) * 40 / 54); return g; }
 function starsThrough(tp, TR, w){ var t = 0; for (var i = 0; i <= w; i++) t += worldStars(tp, TR, i); return t; }
 /* the highest hole open: walk the cleared holes, and stop at the end of a world short of its gate.
    Never lower than what the record already had open, so nobody is locked out of a hole they reached. */

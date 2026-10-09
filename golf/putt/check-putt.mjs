@@ -55,22 +55,26 @@ for (const s of [9, 11, 13.5]){
   claim(Math.hypot(rs2.rest[0], rs2.rest[1]) > 1, 'a ball set down on a 12% slope rolls away');
   const gent = flat(11, [{ k:'plane', gx:0, gy:0.03 }]), rs3 = P.simulate(gent, 0, 0, 0, 0, 0);
   claim(Math.hypot(rs3.rest[0], rs3.rest[1]) < 0.01, 'a ball set down on a 3% slope stays');
-  // STARS: par clears a hole (1), under par 2, an ace 3, and the worlds open on a running total of 45 a world
+  // STARS: par clears a hole (1), under par 2, an ace 3, and the worlds open on a running total of 40 a world
   { const TR = P.TOURS.main, tp = { lv:1, best:{} };
     claim(P.starsOf(4, 3) === 0 && P.starsOf(3, 3) === 1 && P.starsOf(2, 3) === 2 && P.starsOf(1, 3) === 3 && P.starsOf(1, 2) === 3, 'stars: over par 0, par 1, under par 2, an ace 3');
     for (let n = 1; n <= 17; n++) tp.best[n] = TR.levels[n - 1].par;
     claim(P.frontier(tp, TR) === 18, 'par on every hole walks a world up to its last hole');
     tp.best[18] = TR.levels[17].par;
-    claim(P.worldGate(TR, 0) === 45 && P.worldGate(TR, 1) === 90 && P.frontier(tp, TR) === 18, 'a world of pars (18 stars) does not open the next: world 2 opens at 45 stars and world 3 at 90');
+    claim(P.worldGate(TR, 0) === 40 && P.worldGate(TR, 1) === 80 && P.frontier(tp, TR) === 18, 'a world of pars (18 stars) does not open the next: world 2 opens at 40 stars and world 3 at 80');
     for (let n = 1; n <= 18; n++) tp.best[n] = 1;
     claim(P.starsThrough(tp, TR, 0) === 54 && P.frontier(tp, TR) === 19, 'a perfect world 1 (54 stars) opens world 2');
     for (let n = 19; n <= 36; n++) tp.best[n] = TR.levels[n - 1].par;
     claim(P.starsThrough(tp, TR, 1) === 72 && P.frontier(tp, TR) === 36, '72 stars across two worlds does not open world 3');
+    { const t2 = { lv:1, best:{} }; for (let n = 1; n <= 18; n++) t2.best[n] = n <= 4 ? 1 : TR.levels[n - 1].par;
+      const s0 = P.starsThrough(t2, TR, 0); claim(s0 === 26 && P.frontier(t2, TR) === 18, 'world 1 at 26 stars does not open world 2');
+      for (let n = 5; n <= 11; n++) t2.best[n] = 1;
+      claim(P.starsThrough(t2, TR, 0) === 40 && P.frontier(t2, TR) === 19, 'exactly 40 stars opens world 2'); }
     for (let n = 19; n <= 36; n++) tp.best[n] = 1;
     claim(P.frontier(tp, TR) === 37, 'stars spread however a player likes: 108 across two worlds opens world 3');
     for (let n = 28; n <= 36; n++) tp.best[n] = TR.levels[n - 1].par;
-    claim(P.worldStars(tp, TR, 1) === 36 && P.starsThrough(tp, TR, 1) === 90 && P.frontier(tp, TR) === 37, 'the running total is what is asked: 54 and 36 open world 3 though world 2 alone is under 45');
-    claim(P.worldGate(P.TOURS.members, 0) === 22 && P.worldGate(P.TOURS.members, 1) === 44, 'the Members Tour gates its nine hole worlds at 22 a world');
+    claim(P.worldStars(tp, TR, 1) === 36 && P.starsThrough(tp, TR, 1) === 90 && P.frontier(tp, TR) === 37, 'the running total is what is asked: 54 and 36 open world 3 though world 2 alone is under 40');
+    claim(P.worldGate(P.TOURS.members, 0) === 20 && P.worldGate(P.TOURS.members, 1) === 40, 'the Members Tour gates its nine hole worlds at 20 a world');
     claim(P.frontier({ lv:40, best:{} }, TR) === 40, 'a record never loses a hole it already had open'); }
 }
 {
