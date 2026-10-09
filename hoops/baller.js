@@ -909,7 +909,11 @@ function keyOf(look, o){ return JSON.stringify([normal(look), o.c1, o.c2, o.num,
 function resFor(o){
   if (o.res) return Math.max(1, Math.min(4, Math.round(+o.res)));
   var s = Math.max(1, Math.round(o.scale || 4));
-  return s <= 3 ? s : s % 3 === 0 ? 3 : s % 2 === 0 ? 2 : s <= 5 ? s : 1;
+  /* paint() traces at most 4 fine pixels a cell, and a scale it does not
+     divide would leave seams, so 5, 7 and the rest draw at 1. Asking paint
+     for 5 handed back a 4x grid and canvas() read past its end: the share
+     card threw. */
+  return s <= 3 ? s : s % 3 === 0 ? 3 : s % 2 === 0 ? 2 : 1;
 }
 
 function canvas(look, opts){
