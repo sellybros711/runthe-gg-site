@@ -11703,7 +11703,26 @@ because mapped onto the model in world cells the camera's pitch dropped whole ro
 tank is a round scoop, narrow straps and round armholes, each edged in one even band of the second
 colour. The lower body was asked to stay as it is.
 
-The figure is a little over four heads tall, the sports sprite's proportion.
+**HEIGHT AND WEIGHT ARE DRAWN.** Asked for by the owner: every player looked the same whatever his
+size. `metrics(look)` in baller.js turns `ht` (inches) and `wt` (pounds) into the body: legs grow
+faster than the torso with height (`h^1.35` against `h^0.85`, measured off 6'7" as `BASE_HT`), and
+girth is weight against `typicalWt(ht)` (career.js's own `wtFor`), so 250 lb reads heavy at 6'2" and
+lean at 7'2". The head is scaled as a unit (`HEAD_K`), so it is about a sixth of a 7 footer. A look
+with no `ht` is drawn at the default size, which is what check-sprite's hashes hold.
+
+- **Two readers hand the size over and both are needed**: career-ui's `withSize` puts `L.ht` and
+  `L.wt` on the look every Career screen draws, and scenes.js's `ctxOf` does the same for a cutscene.
+  court.js passes the whole look to `handAt`, because a taller man's hands are somewhere else.
+- **The builder has sliders**, between the minus and plus buttons. Dragging repaints only the
+  preview on a frame (`sizeLive`), and a release does the full render. Moving height moves the weight
+  slider's range in the same frame, or a 7'4" is briefly held at a 6'9" weight.
+- **A big portrait is traced finer** (`resFor`: 2x over 120px), so a face reads at the size it is
+  shown. The court sprites stay at 1x, because there are ten of them a frame.
+- **check-moments section 5 sweeps 6'0" to 7'4" and both weight extremes**, and asserts no frame
+  touches the grid's edge. The tallest man's raised arms are what binds; the arm length is capped
+  against the shoulder height for that reason.
+
+The figure is about six heads tall at the default size.
 
 **`paint(look, { parts: true })` hands back part names instead of colours**, and only
 check-career asks for it. Section 10 proves four things over forty looks and six poses: no part

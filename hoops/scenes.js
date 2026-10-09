@@ -307,7 +307,7 @@ function ctxOf(L, extra){
   var team = L.team || (L.draft && L.draft.team) || null;
   var rv = C.roadView ? C.roadView(L) : null;
   var c = {
-    L: L, name: L.name, last: last(L.name), num: L.num, look: L.look || B.lookFor(L.seed), age: L.age,
+    L: L, name: L.name, last: last(L.name), num: L.num, look: L.ht > 0 ? Object.assign({}, L.look || B.lookFor(L.seed), { ht: L.ht, wt: L.wt }) : L.look || B.lookFor(L.seed), age: L.age,
     c1: k.primary, c2: k.secondary, year: L.year, team: team,
     teamName: team ? E.teamName(team) : '', nick: team ? (E.TEAM_NAMES[team] || team) : '',
     school: L.am && L.am.college ? L.am.college : (L.am && L.am.hs ? L.am.hs.name : ''),
