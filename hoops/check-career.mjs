@@ -1721,7 +1721,9 @@ async function browser() {
   /* The career is a slot on the account: the key is in cloud.js's list. */
   const cl = await page.evaluate(() => window.RTF_CLOUD && window.RTF_CLOUD.MODE_KEYS['rtf.life.v1']);
   ok(cl === 'life', `the career is a slot on the shelf (${cl})`);
-  await vaultWalk(fin);
+  /* A walk that never reached retirement has no Hall card, and a crash here
+     would hide every failure above it. */
+  if (fin.hof) await vaultWalk(fin); else ok(false, 'the Vault walk needs a finished career, and the walk never filed one');
   ok(boom.length === 0, `no page errors (${boom.join(' | ') || 'none'})`);
   console.log(`  ${presses} presses to retirement`);
   ok(arcSeen, 'the walk reached a career long enough to read the arc');
