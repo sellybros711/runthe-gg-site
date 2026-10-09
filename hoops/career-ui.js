@@ -544,8 +544,10 @@ var CSS = [
 '.cr-namefix:focus-visible{outline:2px solid var(--k-gold);outline-offset:2px;}',
 '.cr-chips{display:flex;gap:4px;flex-wrap:wrap;}',
 '.cr-size{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}',
-'.cr-step{display:grid;grid-template-columns:auto 1fr auto;grid-template-rows:auto auto;align-items:center;gap:4px 6px;}',
-'.cr-step .k-label{grid-column:1/-1;}',
+'.cr-step{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto auto;align-items:center;gap:4px 6px;}',
+'.cr-step .k-label{grid-column:1/-1;display:flex;justify-content:space-between;align-items:baseline;gap:6px;}',
+'.cr-step .k-label output{font:700 14px var(--k-f-text);text-transform:none;letter-spacing:0;color:var(--k-ink);font-variant-numeric:tabular-nums;}',
+'.cr-range{width:100%;min-width:0;height:28px;margin:0;accent-color:var(--k-accent);cursor:pointer;}',
 '.cr-step .k-btn{min-width:40px;min-height:44px;padding:0;font-size:20px;}',
 '.cr-step output{text-align:center;white-space:nowrap;font:700 16px var(--k-f-text);font-variant-numeric:tabular-nums;color:var(--k-ink);}',
 '.cr-chips .k-chip{flex:1 1 0;min-width:52px;}',
@@ -841,8 +843,14 @@ function skin(code){
    before looks existed. baller.js is the only reader of what is in it. */
 function lookOf(L){
   var B = window.RTF_BALLER;
-  if (L && L.look && Object.keys(L.look).length) return L.look;
-  return B ? B.lookFor(L ? L.seed : 'x') : {};
+  var look = L && L.look && Object.keys(L.look).length ? L.look : B ? B.lookFor(L ? L.seed : 'x') : {};
+  /* his height and weight are the body's: they ride on the look when drawn,
+     never in the saved look (cleanLook keeps the look to small numbers) */
+  return withSize(look, L);
+}
+function withSize(look, L){
+  if (!L || !(L.ht > 0)) return look;
+  return Object.assign({}, look, { ht: L.ht, wt: L.wt });
 }
 /* The player, drawn, in whatever he is wearing right now. Falls back to the
    jersey below if baller.js did not load, so the card is never empty. */
@@ -1074,16 +1082,42 @@ var chOpen = false;
    saying what the size buys and costs. */
 function sizeHtml(){
   var z = C.POS_SIZE[form.pos], r = C.wtRange(form.ht);
-  var step = function(id, label, val, lo, hi, dn, up){
-    return '<div class="cr-step" role="group" aria-label="' + label + '"><span class="k-label">' + label + '</span>'
-      + '<button type="button" class="k-btn k-sec" data-size="' + dn + '"' + (lo ? ' disabled' : '') + ' aria-label="' + label + ' down">-</button>'
-      + '<output id="' + id + '" aria-live="polite">' + val + '</output>'
-      + '<button type="button" class="k-btn k-sec" data-size="' + up + '"' + (hi ? ' disabled' : '') + ' aria-label="' + label + ' up">+</button></div>';
+  /* A SLIDER BETWEEN THE TWO BUTTONS. Drag it and the player in the preview
+     grows, shrinks, fills out and thins as you go (sizeLive redraws only the
+     figure, so the drag is never interrupted); let go and the rest of the
+     screen catches up. The buttons are the fine step and the keyboard's. */
+  var step = function(id, key, label, val, lo, hi, min, max, inc, now){
+    return '<div class="cr-step" role="group" aria-label="' + label + '"><span class="k-label">' + label + ' <output id="' + id + '" aria-live="polite">' + val + '</output></span>'
+      + '<button type="button" class="k-btn k-sec" data-size="' + key + ':-' + inc + '"' + (lo ? ' disabled' : '') + ' aria-label="' + label + ' down">-</button>'
+      + '<input type="range" class="cr-range" data-range="' + key + '" min="' + min + '" max="' + max + '" step="' + inc + '" value="' + now + '" aria-label="' + label + '">'
+      + '<button type="button" class="k-btn k-sec" data-size="' + key + ':' + inc + '"' + (hi ? ' disabled' : '') + ' aria-label="' + label + ' up">+</button></div>';
   };
   return '<span class="lab k-label">Height and weight</span><div class="cr-size">'
-    + step('cr-ht', 'Height', C.heightText(form.ht), form.ht <= z.ht[0], form.ht >= z.ht[1], 'ht:-1', 'ht:1')
-    + step('cr-wt', 'Weight', form.wt + ' lb', form.wt <= r[0], form.wt >= r[1], 'wt:-5', 'wt:5')
+    + step('cr-ht', 'ht', 'Height', C.heightText(form.ht), form.ht <= z.ht[0], form.ht >= z.ht[1], z.ht[0], z.ht[1], 1, form.ht)
+    + step('cr-wt', 'wt', 'Weight', form.wt + ' lb', form.wt <= r[0], form.wt >= r[1], r[0], r[1], 5, form.wt)
     + '</div><p class="cr-town" id="cr-sizeline">' + esc(sizeLine()) + '</p>';
+}
+/* While a slider moves: the numbers, the weight range (a taller man carries
+   more), the line under them and the figure, and nothing else. */
+var sizeRaf = 0;
+function sizeLive(){
+  if (sizeRaf) return;
+  sizeRaf = requestAnimationFrame(function(){
+    sizeRaf = 0;
+    var root = $('s-car'); if (!root) return;
+    var r = C.wtRange(form.ht), ht = $('cr-ht'), wt = $('cr-wt'), line = $('cr-sizeline');
+    if (ht) ht.textContent = C.heightText(form.ht);
+    if (wt) wt.textContent = form.wt + ' lb';
+    var ws = root.querySelector('[data-range="wt"]');
+    if (ws) { ws.min = r[0]; ws.max = r[1]; ws.value = form.wt; }
+    if (line) line.textContent = sizeLine();
+    var B = window.RTF_BALLER, fig = root.querySelector('.cr-pfig .rtf-baller'), L = PV.L;
+    if (B && fig && L) {
+      var k = C.colorsOf(L), tmp = document.createElement('div');
+      tmp.innerHTML = B.img(withSize(C.cleanLook(form.look), { ht: form.ht, wt: form.wt }), { c1: k.primary, c2: k.secondary, num: form.num, pose: bstep === 'look' ? 'stand' : 'ball', scale: bstep === 'look' ? 4 : 2, still: true });
+      if (tmp.firstChild) fig.parentNode.replaceChild(tmp.firstChild, fig);
+    }
+  });
 }
 function buildView(){
   if (!form) { form = freshForm(); bstep = 'player'; }
@@ -1209,6 +1243,21 @@ function wireBuild(){
     else { var r = C.wtRange(form.ht); form.wt = Math.max(r[0], Math.min(r[1], form.wt + +p[1])); }
     render();
   }; });
+  root.querySelectorAll('[data-range]').forEach(function(sl){
+    sl.oninput = function(){
+      var v = +sl.value, r;
+      if (sl.getAttribute('data-range') === 'ht') {
+        form.ht = v; fitWt();
+        /* a taller man carries more: the weight slider's range moves now, not
+           a frame later, or a quick drag lands outside it */
+        r = C.wtRange(form.ht);
+        var ws = root.querySelector('[data-range="wt"]');
+        if (ws) { ws.min = r[0]; ws.max = r[1]; ws.value = form.wt; }
+      } else { r = C.wtRange(form.ht); form.wt = Math.max(r[0], Math.min(r[1], v)); }
+      sizeLive();
+    };
+    sl.onchange = function(){ render(); var again = $('s-car').querySelector('[data-range="' + sl.getAttribute('data-range') + '"]'); if (again) again.focus({ preventScroll: true }); };
+  });
   root.querySelectorAll('[data-arch]').forEach(function(b){ b.onclick = function(){ form.arch = b.getAttribute('data-arch'); render(); }; });
   root.querySelectorAll('[data-origin]').forEach(function(b){ b.onclick = function(){ form.origin = b.getAttribute('data-origin'); render(); }; });
   root.querySelectorAll('[data-diff]').forEach(function(b){ b.onclick = function(){ form.diff = b.getAttribute('data-diff'); render(); }; });

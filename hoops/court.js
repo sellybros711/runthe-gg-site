@@ -697,7 +697,8 @@ function moment(host, spec, cb){
   var R = rngOf(spec.seed || spec.kind);
   var variant = spec.variant || pickOf(R, M.v);
   var st = stage(host, { pad: spec.ctlHost ? 0 : 140, room: spec.room || 'nba', hoop: true, c1: spec.c1, c2: spec.c2, roomC1: spec.roomC1, roomC2: spec.roomC2, oc: spec.oc, me: spec.me, confetti: spec.confetti });
-  var el = st.el, build = spec.me && spec.me.look ? B.normal(spec.me.look).build : 'standard';
+  /* build is his whole look, so the hand the ball goes to is a tall man's hand */
+  var el = st.el, build = spec.me && spec.me.look ? spec.me.look : 'standard';
   var bugFin = null;
   if (spec.bug) {
     var bug = document.createElement('div');

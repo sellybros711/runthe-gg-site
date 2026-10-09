@@ -176,6 +176,11 @@ section('5. every moving frame is the rig, inside the grid');
   const edge = new Set(), missing = new Set(), flat = new Set();
   for (let i = 0; i < 30; i++) {
     const lk = B.lookFor('fr' + i);
+    /* every height from 6'0" to 7'4", at both ends of the weight range a man
+       that tall may carry, and the tallest hair on the tallest man */
+    lk.ht = 72 + (i % 5) * 4;
+    lk.wt = Math.round((195 + (lk.ht - 75) * 8) / 5) * 5 + [-30, 40, 0, -30, 40][i % 5];
+    if (i % 5 === 4 && i % 2) lk.hair = 'afro';
     for (const build of ['lean', 'standard', 'strong']) {
       lk.build = build;
       for (const set in B.SETS) for (let f = 0; f < B.SETS[set]; f++) for (const dress of ['', 'suit', 'cap']) {
