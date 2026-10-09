@@ -1303,7 +1303,9 @@ window.GA_ID='G-L29P5MRWKE';
   /* ══ HOME ENHANCEMENTS (owner picks 1,2,3,4,5,7,8,9 off the layout-options doc) ══ */
   /* 4+5: a returning player gets their own golfer + name instead of the marketing hero */
   .homehdr{display:flex; align-items:center; gap:13px; max-width:520px; margin:0 auto; text-align:left}
-  .hh-fig{flex:0 0 auto; width:52px; height:66px; display:flex; align-items:flex-end; justify-content:center}
+  .hh-fig{flex:0 0 auto; width:52px; height:66px; display:flex; align-items:flex-end; justify-content:center; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:transform .12s}
+  .hh-fig:active{transform:scale(.94)}
+  .hh-fig:focus-visible{outline:2px solid var(--gold); outline-offset:3px; border-radius:8px}
   .hh-fig img{max-width:100%; max-height:100%; image-rendering:pixelated}
   .hh-txt{min-width:0; flex:1}
   .hh-hi{font:800 10px/1 var(--body); letter-spacing:.2em; text-transform:uppercase; color:var(--teal); opacity:.95}
@@ -15171,13 +15173,17 @@ function homePlayerHeader(){
     if((lt.majors||0)>0) chips.push(`<span class="hh-chip"><b>${lt.majors}</b> major${lt.majors===1?'':'s'}</span>`);
   }catch(e){}
   const box=$(`<div class="homehdr">
-    <div class="hh-fig" style="position:relative">${pxFigureHTML(S.look,66)}${decorLive()==='spooky'?(spkStyleOnce(),'<span class="spk-hhpk">'+spkEl('pumpkin',22)+'</span>'):''}</div>
+    <div class="hh-fig" role="button" tabindex="0" aria-label="Open your closet" title="Open your closet" style="position:relative">${pxFigureHTML(S.look,66)}${decorLive()==='spooky'?(spkStyleOnce(),'<span class="spk-hhpk">'+spkEl('pumpkin',22)+'</span>'):''}</div>
     <div class="hh-txt">
       <div class="hh-hi">Welcome back</div>
       <div class="hh-name">${esc(nm)}</div>
       ${chips.length?`<div class="hh-chips">${chips.join('')}</div>`:''}
     </div>
   </div>`);
+  /* tapping your golfer opens the closet, the same door the shop's closet button uses */
+  const fig=box.querySelector('.hh-fig');
+  if(fig){ const go=()=>{ track('home_open_closet'); S.shopPreview=null; S.overlay=null; S.setupEdit=true; S.setupReturn={screen:'title',overlay:null}; S.screen='setup'; S.setupCat='shirt'; render(); };
+    fig.onclick=go; fig.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(); } }; }
   return box;
 }
 function scrTitle(){
