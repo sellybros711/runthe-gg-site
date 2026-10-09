@@ -588,6 +588,10 @@ var THEMES = {
     decor:['palm', 'umbrella', 'crab', 'castle'], acc:'#ff5a3c',
     holes:['Low Tide', 'Sandcastle', 'Crab Walk', 'The Lighthouse', 'Tide Pool', 'Boardwalk', 'Shell Game', 'Surf’s Up', 'Sunset'] }
 };
+/* the light that comes up out of the cup when the ball drops, one colour a theme (the real greens use gold) */
+var GLOW = { haunted:'#ff8a1f', harvest:'#ffc23d', winter:'#9fe4ff', sweetheart:'#ff5c9a', shamrock:'#7dff7a', spring:'#ffd6ec',
+  firework:'#ff4fd8', clubhouse:'#fff2b0', tour:'#f1d04a', temple:'#7dffd2', pirate:'#ffd23f', canyon:'#ffb347', volcano:'#ff5a1a', beach:'#5ce1ff' };
+Object.keys(GLOW).forEach(function(k){ if (THEMES[k]) THEMES[k].glow = GLOW[k]; });
 // the themes the calendar hands the Daily Hole (the Clubhouse and Tour Week are Tour worlds only)
 var CAL_THEMES = ['haunted', 'harvest', 'winter', 'sweetheart', 'shamrock', 'spring', 'firework', 'beach'];
 // what theme a calendar day wears (Eastern date, MM-DD)
@@ -2276,7 +2280,7 @@ function frame(){
     if (b[3]) f = 0;
     bx = a[0] + (b[0] - a[0]) * f; by = a[1] + (b[1] - a[1]) * f; bz = (a[4] || 0) + ((b[4] || 0) - (a[4] || 0)) * f; hidden = a[3] === 2 && el2 < b[2];
     while (P.evI < P.shot.ev.length && P.shot.ev[P.evI][0] <= el2){ sound(P.shot.ev[P.evI][1]); P.evI++; }
-    if (P.shot.holed && el2 > P.shot.t) falling = clamp((el2 - P.shot.t) / 0.25, 0, 1);
+    if (P.shot.holed && el2 > P.shot.t){ falling = clamp((el2 - P.shot.t) / 0.25, 0, 1); if (!P.glowAt) P.glowAt = performance.now(); }
     if (el2 > P.shot.t + (P.shot.holed ? 0.3 : 0.15)) settle();
   }
   // the camera eases toward its target rather than jumping
@@ -2302,6 +2306,7 @@ function frame(){
   drawPieces(ctx, C, cam, clock);
   drawRead(ctx, C, cam, performance.now() / 1000);
   drawCup(ctx, C, cam, Math.hypot(bx - C.cup[0], by - C.cup[1]));
+  if (P.glowAt) drawGlow(ctx, C, cam, (performance.now() - P.glowAt) / 1000);
   if (P.trail && P.state === 'aim') drawTrail(ctx, cam, P.trail);
   if (P.state === 'aim') drawAim(ctx, P, cam);
   // the golfer stands at the ball while aiming, and holds the follow through a moment once it is struck
@@ -2458,6 +2463,36 @@ function drawCup(ctx, C, cam, dBall){
   ctx.strokeStyle = '#f5f5f0'; ctx.lineWidth = 2 * S.dpr; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(p[0], p[1] - hgt); ctx.stroke();
   ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(p[0], p[1] - hgt); ctx.lineTo(p[0] + 15 * S.dpr, p[1] - hgt + 5 * S.dpr); ctx.lineTo(p[0], p[1] - hgt + 10 * S.dpr); ctx.closePath(); ctx.fill();
   ctx.globalAlpha = 1;
+}
+/* A HOLED BALL LIGHTS THE CUP. A burst of the theme's colour comes up out of the hole: a flash, a column of
+   light, rays and sparks rising, and then a soft glow that stays under the result card. It is drawn after
+   the cup and before the golfer, so it sits on the course rather than over everything. */
+function drawGlow(ctx, C, cam, t){
+  var col = C.kind === 'real' ? '#F1D04A' : ((C.T && C.T.glow) || (C.T && C.T.flag) || '#fff2b0');
+  var p = w2s(cam, C.cup[0], C.cup[1]), d = S.dpr, sq = cam.v3 ? cam.v3.se : 0.92, r0 = Math.max(C.cupR * cam.s, 5.5 * d);
+  var rgb = [parseInt(col.slice(1, 3), 16), parseInt(col.slice(3, 5), 16), parseInt(col.slice(5, 7), 16)];
+  var c = function(a){ return 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + Math.max(0, Math.min(1, a)) + ')'; };
+  var burst = clamp(1 - t / 1.4, 0, 1), rest = 0.45 + 0.15 * Math.sin(t * 3.2), lift = Math.min(1, t / 0.35);
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  // the pool of light on the ground round the cup
+  var pr = r0 * (2.6 + 3.4 * lift), g = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], pr);
+  g.addColorStop(0, c(0.75 * burst + 0.4 * rest)); g.addColorStop(0.45, c(0.3 * burst + 0.16 * rest)); g.addColorStop(1, c(0));
+  ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(p[0], p[1], pr, pr * sq, 0, 0, 6.29); ctx.fill();
+  // the column of light rising out of the hole
+  var ch = (60 + 40 * lift) * d * (0.55 + 0.45 * burst), cw = r0 * 1.5, cg = ctx.createLinearGradient(0, p[1], 0, p[1] - ch);
+  cg.addColorStop(0, c(0.65 * burst + 0.22 * rest)); cg.addColorStop(1, c(0));
+  ctx.fillStyle = cg; ctx.beginPath(); ctx.moveTo(p[0] - cw * 0.7, p[1]); ctx.lineTo(p[0] - cw, p[1] - ch); ctx.lineTo(p[0] + cw, p[1] - ch); ctx.lineTo(p[0] + cw * 0.7, p[1]); ctx.closePath(); ctx.fill();
+  // rays fanning out in the first moment
+  if (burst > 0){ ctx.strokeStyle = c(0.55 * burst); ctx.lineWidth = Math.max(1.5, 2 * d); ctx.lineCap = 'round';
+    for (var i = 0; i < 10; i++){ var an = i / 10 * 6.283 + 0.3, r1 = r0 * (1.3 + 2 * lift), r2 = r0 * (2.2 + 5.5 * lift * burst + 2 * (1 - burst));
+      ctx.beginPath(); ctx.moveTo(p[0] + Math.cos(an) * r1, p[1] + Math.sin(an) * r1 * sq); ctx.lineTo(p[0] + Math.cos(an) * r2, p[1] + Math.sin(an) * r2 * sq); ctx.stroke(); } }
+  // sparks drifting up and out
+  for (var k = 0; k < 14; k++){ var sd = (k * 97.13) % 1, lt = (t * (0.55 + sd * 0.5) + k / 14) % 1.6, ka = clamp(1 - lt / 1.6, 0, 1) * (t < 2.5 ? 1 : 0.5);
+    if (ka <= 0) continue; var ax = Math.cos(k * 2.4) * r0 * (0.6 + lt * 2.2), ay = -lt * 55 * d;
+    ctx.fillStyle = c(ka); var sz = Math.max(1.5, (1.4 + sd * 1.6) * d); ctx.fillRect(Math.round(p[0] + ax - sz / 2), Math.round(p[1] + ay - sz / 2), sz, sz); }
+  // the cup itself, lit from inside
+  ctx.fillStyle = c(0.5 * burst + 0.3 * rest); ctx.beginPath(); ctx.ellipse(p[0], p[1], r0 * 0.85, r0 * 0.85 * sq, 0, 0, 6.29); ctx.fill();
+  ctx.restore();
 }
 function drawBall(ctx, cam, x, y, fall, bz){
   var p = w2s(cam, x, y), r = Math.max(BALL_R * cam.s, 3.6 * S.dpr) * (1 - fall * 0.55);
