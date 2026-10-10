@@ -30,6 +30,32 @@ The client holds no rules. It shows what the server sends: the prompt, the
 called count and the tell for the current at-bat only. The called list arrives
 after the at-bat ends, and no valid answer is ever sent before it is earned.
 
+## The Stumpire score
+
+`game.js` (`SCORE`, `boxScore`) is the one place it is worked out; the share
+line, the board and the screen all read it.
+
+| | points |
+|---|---|
+| each total base | 10 |
+| each hit | 5 |
+| each home run | 10 more |
+| each run | 15 |
+| each strikeout | minus 10 |
+
+Runs are scored the simple baseball way: runners move up as many bases as the
+hit is worth, and a called out moves nobody. The base runners on the field are
+these runners. A perfect day (five home runs) is 350; the score never goes
+below 0. The board ranks by score, then total bases, then fewer outs, then
+fewer strikes. `supabase/134_stumpire_score.sql` stores it on the play row
+(`stumpire_save_play_v2`); against a database without 134 the save falls back
+to the 133 function and the board falls back to total bases.
+
+`GET board` is the day's finished, signed in games, best first. `GET result`
+adds the player's streak (days in a row with a finished game, alive through
+yesterday), their rank and the size of the field. A ruled answer carries
+`rarity`, the percent of fans the model expects to give it.
+
 ## Turning it on
 
 It runs itself. `.github/workflows/stumpire-daily.yml` fires when this lands on

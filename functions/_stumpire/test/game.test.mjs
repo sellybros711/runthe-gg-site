@@ -110,7 +110,33 @@ test('an at-bat cannot be answered before it starts or replayed after', () => {
 test('share line and tie-breaks', () => {
   const st = live();
   say(st, 's4'); G.start(st, 0); say(st, 'c1'); G.start(st, 0); say(st, 'bad'); say(st, 's2');
-  assert.equal(G.shareLine(st), 'Stumpire #9\n4️⃣ ❌ 2️⃣ ⬜ ⬜\n6/20 · 1 out · 1 strike');
+  assert.equal(G.shareLine(st), 'Stumpire #9\n4️⃣ ❌ 2️⃣ ⬜ ⬜\nScore 95 · 1 R · 2 H · 1 HR · 0 K');
   const a = { bases: 10, outs: 1, strikes: 2 }, b = { bases: 10, outs: 1, strikes: 0 }, c = { bases: 12, outs: 2, strikes: 5 };
   assert.deepEqual([a, b, c].sort(G.compareResults), [c, b, a]);
+  const d = { score: 120, bases: 8, outs: 2, strikes: 0 }, e = { score: 95, bases: 12, outs: 0, strikes: 0 };
+  assert.deepEqual([e, d].sort(G.compareResults), [d, e], 'the score ranks first');
+});
+
+test('the Stumpire score: runs move with the hit, every part counts', () => {
+  const box = tiers => {
+    const st = G.newPlay('2026-10-09', 9);
+    st.ab = tiers.map(t => t === 'K' ? { s: 'done', strikes: 3, r: { ruling: 'OUT', strikeout: true } }
+      : t === 0 ? { s: 'done', strikes: 0, r: { ruling: 'OUT' } } : { s: 'done', strikes: 0, r: { ruling: 'SAFE', tier: t } });
+    return G.boxScore(st);
+  };
+  let b = box([1, 1, 1, 1]);
+  assert.deepEqual([b.hits, b.tb, b.runs, b.hr, b.k], [4, 4, 1, 0, 0], 'four singles: the bases loaded, then one in');
+  assert.equal(b.score, 40 + 20 + 15);
+  b = box([2, 1]);
+  assert.equal(b.runs, 0, 'a double then a single: the runner holds at third');
+  b = box([3, 1]);
+  assert.equal(b.runs, 1, 'a triple then a single: he scores');
+  b = box([4, 4, 4, 4, 4]);
+  assert.deepEqual([b.hr, b.runs, b.score], [5, 5, 350], 'five home runs is the perfect day');
+  b = box([1, 0, 1]);
+  assert.deepEqual([b.runs, b.onBase], [0, [1, 1, 0]], 'a called out moves nobody');
+  b = box(['K', 'K', 0]);
+  assert.equal(b.score, 0, 'never below zero');
+  b = box([1, 'K', 1, 0, 1]);
+  assert.deepEqual([b.k, b.runs, b.score], [1, 0, 30 + 15 - 10]);
 });

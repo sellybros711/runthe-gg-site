@@ -105,6 +105,26 @@
   ol.hist li{margin-bottom:8px}
   .mut{color:var(--mut);font-size:14px}
   .final{font-size:22px;font-weight:900}
+  .bigscore{display:flex;align-items:baseline;gap:10px;margin:4px 0 8px}
+  .bigscore b{font-size:54px;line-height:1;font-weight:900;color:var(--led);text-shadow:0 0 14px rgba(255,190,70,.35);font-variant-numeric:tabular-nums}
+  .bigscore span{color:var(--mut);font-weight:800;letter-spacing:.1em;text-transform:uppercase;font-size:12px}
+  .linescore{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:6px 0 10px}
+  .linescore div{background:#0b101a;border:1px solid var(--line);border-radius:7px;text-align:center;padding:6px 2px;font-weight:900}
+  .linescore small{display:block;color:var(--mut);font-size:10px;font-weight:700;letter-spacing:.08em}
+  .linescore .h{color:var(--safe)}.linescore .o{color:var(--out)}
+  table.calc{width:100%;border-collapse:collapse;font-size:14px;margin-bottom:10px}
+  table.calc td{padding:3px 0;border-bottom:1px solid var(--line)}
+  table.calc td:last-child{text-align:right;font-weight:800;font-variant-numeric:tabular-nums}
+  table.calc tr.tot td{border-bottom:0;font-size:16px;color:var(--led)}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+  .chip{background:#0b101a;border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:13px;font-weight:700}
+  .row2{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+  ol.board{list-style:none;padding:0;margin:6px 0 0}
+  ol.board li{display:flex;justify-content:space-between;gap:8px;padding:6px 8px;border-radius:7px;font-size:14px}
+  ol.board li:nth-child(odd){background:#0f1624}
+  ol.board li.me{outline:2px solid var(--led)}
+  ol.board .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  ol.board .sc{font-weight:900;font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
@@ -118,7 +138,8 @@
     <div class="jt-row hide" id="board">
       <span class="grp">Slate <b id="slNo"></b></span>
       <span class="grp">AB <b id="abNo">1</b>/5</span>
-      <span class="grp">Bases <b id="bases">0</b>/20</span>
+      <span class="grp">Score <b id="score">0</b></span>
+      <span class="grp">R <b id="runs">0</b></span>
       <span class="grp">S<span class="dots" id="strikes"></span></span>
       <span class="grp">O<span class="dots outs" id="outs"></span></span>
     </div>
@@ -662,16 +683,18 @@
         setTimeout(function () {
           commit();
           if (rul === 'OUT') {
-            setUmp('smug', null, outLine()); chain([['out', 1500]]); sfx('call'); sfx('groan');
+            setUmp('smug', null, outLine() + (r.rarity != null ? ' ' + r.rarity + '% of fans say that.' : '')); chain([['out', 1500]]); sfx('call'); sfx('groan');
             excite = 0.05;
           } else if (tier >= 4) {
-            setUmp('shocked', null, pick(LINES.hit[4])); ump.mask = 'off';
+            setUmp('shocked', null, pick(LINES.hit[4]) + rare(r)); ump.mask = 'off';
             ump.maskFly = { x: GEO.ump.x, y: GEO.ump.y - 104 * UZ, vx: -40 + Math.random() * 80, vy: -90, rot: 0, landed: false };
             chain([['shocked', 2600], ['stand', 400]]);
             jfxLater('HOME RUN', 1200); sfx('organ'); fireworksShow(6); excite = 1; sfx('crowd', 1);
           } else {
-            setUmp(tier === 3 ? 'shocked' : tier === 2 ? 'confused' : 'annoyed', null, pick(LINES.hit[tier]));
+            setUmp(tier === 3 ? 'shocked' : tier === 2 ? 'confused' : 'annoyed', null, pick(LINES.hit[tier]) + rare(r));
             chain([['safe', 1500]]);
+            var scored = lastRuns(r);
+            if (scored) jfxLater(scored === 1 ? 'RUN SCORES' : scored + ' RUNS SCORE', 1500);
             excite = 0.3 + tier * 0.17; sfx('crowd', excite);
           }
         }, dur);
@@ -693,6 +716,16 @@
     }, atPlate);
   }
   function outLine() { return pick(LINES.out); }
+  /* How common the answer was, said the way he would say it. */
+  function rare(r) {
+    if (r.rarity == null) return '';
+    if (r.rarity < 1) return ' Not one fan in a hundred goes there.';
+    return ' Only ' + r.rarity + '% of fans say that.';
+  }
+  function lastRuns(r) {
+    var box = r.state && r.state.box, i = r.state ? r.state.atBat - 1 : -1;
+    return box && box[i] && box[i].runs ? box[i].runs : 0;
+  }
   function jfxLater(t, ms) { setTimeout(function () { jfx(t); }, ms); }
 
   /* ---- base runners, for show: the bases a hit is worth move the men on ---- */
@@ -917,6 +950,7 @@
     'Each at-bat is a prompt. Say an answer I called and you are OUT.',
     'Say a real one I missed and you are SAFE. The deeper the cut, the farther it flies.',
     'A wrong answer is a strike. Each strike takes away your best hit. Three and you are out.',
+    'Your score counts total bases, hits, home runs and runs. Strikeouts cost you.',
     'Thirty seconds a swing. Three outs ends the game. Play ball when you are ready.'];
   function seenIntro() { try { return localStorage.getItem(INTRO_KEY) === '1'; } catch (e) { return true; } }
   function intro() { introStep = -1; introNext(); }
@@ -924,7 +958,7 @@
     clearTimeout(introTimer);
     introStep++;
     if (introStep >= INTRO.length) { introStep = -1; try { localStorage.setItem(INTRO_KEY, '1'); } catch (e) {} return; }
-    var poses = ['cross', 'point', 'safe', 'strike', 'stand'], moods = ['smug', 'idle', 'happy', 'annoyed', 'smug'];
+    var poses = ['cross', 'point', 'safe', 'strike', 'point', 'stand'], moods = ['smug', 'idle', 'happy', 'annoyed', 'idle', 'smug'];
     setUmp(moods[introStep], 'waiting', INTRO[introStep] + (introStep < INTRO.length - 1 ? ' (tap)' : ''));
     hold(poses[introStep], 2600);
     introTimer = setTimeout(introNext, 4200);
@@ -944,7 +978,7 @@
     show('gate', false); show('board', true);
     $('slNo').textContent = '#' + v.slate.no;
     $('abNo').textContent = Math.min(v.atBat + 1, v.total);
-    $('bases').textContent = v.summary.bases;
+    $('score').textContent = v.summary.score || 0; $('runs').textContent = v.summary.runs || 0;
     dots('outs', v.outs, 3);
     var cur = v.current;
     dots('strikes', cur ? cur.strikes : 0, 3);
@@ -999,24 +1033,85 @@
 
   var overShown = false;
   function renderOver(v) {
-    stopClock(); show('atbat', false); show('next', false); $('sugg').innerHTML = ''; sSeq++;
-    $('league').textContent = 'Final'; $('prompt').textContent = (v.won ? 'You beat the Stumpire. ' : 'Ballgame. ') + v.summary.bases + ' of 20 bases.'; fitPrompt();
+    stopClock(); show('atbat', false); show('next', false); show('reveal', false); $('sugg').innerHTML = ''; sSeq++;
+    $('clock').textContent = ''; $('league').textContent = 'Final'; $('prompt').textContent = (v.won ? 'You beat the Stumpire. ' : 'Ballgame. ') + v.summary.bases + ' of 20 bases.'; fitPrompt();
     var first = !overShown; overShown = true;
     setTimeout(function () {
       if (v.won) { setUmp('shocked', 'over', pick(LINES.win)); ump.base = 'shocked'; fireworksShow(8); excite = 1; sfx('organ'); }
       else { setUmp('smug', 'over', pick(LINES.lose)); ump.base = 'cross'; }
     }, first && liveKey ? 2200 : 0);
     api('GET', 'result').then(function (r) {
-      var s = r.summary || v.summary;
-      var html = '<div class="final ' + (v.won ? 'SAFE' : 'OUT') + '">' + (v.won ? 'Game won' : 'Game over') + '</div>' +
-        '<p>' + s.bases + ' of 20 bases. ' + s.outs + (s.outs === 1 ? ' out' : ' outs') + '. ' + s.strikes + (s.strikes === 1 ? ' strike.' : ' strikes.') + (s.cycle ? ' You hit for the cycle.' : '') + '</p>' +
-        '<pre class="share" id="shareText">' + esc(r.share || v.share) + '</pre><button class="go" id="copy">Copy result</button>';
-      if (r.crowd) html += '<p class="mut">What everyone else said, for fun only:</p>' + r.crowd.map(function (c, i) {
+      var sm = r.summary || v.summary, box = r.box || v.box || [];
+      var cells = box.map(function (b, i) {
+        if (!b) return '<div><small>AB ' + (i + 1) + '</small>-</div>';
+        var t = b.hit ? ['', '1B', '2B', '3B', 'HR'][b.hit] : b.out;
+        return '<div class="' + (b.hit ? 'h' : 'o') + '"><small>AB ' + (i + 1) + '</small>' + t + (b.runs ? ' +' + b.runs : '') + '</div>';
+      }).join('');
+      var tb = sm.bases, calc = [['Total bases', tb, 10], ['Hits', sm.hits || 0, 5], ['Home runs', sm.hr || 0, 10], ['Runs', sm.runs || 0, 15], ['Strikeouts', sm.k || 0, -10]];
+      var html = '<div class="final ' + (v.won ? 'SAFE' : 'OUT') + '">' + (v.won ? 'You beat the Stumpire' : 'Ballgame') + '</div>' +
+        '<div class="bigscore"><b>' + (sm.score || 0) + '</b><span>Stumpire score</span></div>' +
+        '<div class="linescore">' + cells + '</div>' +
+        '<table class="calc">' + calc.map(function (c) { return '<tr><td>' + c[0] + ' ' + c[1] + ' x ' + c[2] + '</td><td>' + (c[1] * c[2]) + '</td></tr>'; }).join('') +
+        '<tr class="tot"><td>Score</td><td>' + (sm.score || 0) + '</td></tr></table>' +
+        '<div class="chips">' + (r.streak ? '<span class="chip">Streak: ' + r.streak + (r.streak === 1 ? ' day' : ' days') + '</span>' : '') +
+        (r.rank ? '<span class="chip">Today: ' + ordinal(r.rank) + ' of ' + r.field + '</span>' : '') + (sm.cycle ? '<span class="chip">Hit for the cycle</span>' : '') + '</div>' +
+        '<pre class="share" id="shareText">' + esc(r.share || v.share) + '</pre>' +
+        '<div class="row2"><button class="go" id="shareImg">Share card</button><button id="copy">Copy result</button></div>' +
+        '<div id="boardBox"></div>';
+      if (r.crowd && r.crowd.some(function (c) { return c.length; })) html += '<p class="mut">What everyone else said, for fun only:</p>' + r.crowd.map(function (c, i) {
         return c.length ? '<div class="mut">At-bat ' + (i + 1) + ': ' + c.map(function (x) { return esc(x.name) + ' ' + x.pct + '%'; }).join(', ') + '</div>' : '';
       }).join('');
       $('over').innerHTML = html; show('over', true);
+      $('prompt').textContent = 'Final. Score ' + (sm.score || 0) + '. ' + (sm.runs || 0) + ' R, ' + (sm.hits || 0) + ' H, ' + (sm.hr || 0) + ' HR.'; fitPrompt();
       $('copy').onclick = function () { try { navigator.clipboard.writeText($('shareText').textContent); $('copy').textContent = 'Copied'; } catch (e) {} };
+      $('shareImg').onclick = function () { shareCard(sm, box, r.share || v.share, r.streak); };
+      api('GET', 'board').then(function (bd) {
+        if (!bd || !bd.top || !bd.top.length) return;
+        $('boardBox').innerHTML = '<div class="cardlbl" style="margin-top:6px">Today\'s board</div><ol class="board">' + bd.top.map(function (e) {
+          return '<li class="' + (e.me ? 'me' : '') + '"><span class="nm">' + e.rank + '. ' + esc(e.name) + '</span><span class="sc">' + e.score + '</span></li>';
+        }).join('') + '</ol>';
+      });
     });
+  }
+  function ordinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+
+  /* THE SHARE CARD. The ballpark's own art, drawn at a quarter size and
+     blown up on whole pixels, with crisp type laid over it. */
+  function shareCard(sm, box, text, streak) {
+    var N = 1080, L = 270, art = document.createElement('canvas'); art.width = L; art.height = L;
+    var a = art.getContext('2d'), keep = C; C = a; a.imageSmoothingEnabled = false;
+    var sky = a.createLinearGradient(0, 0, 0, L); sky.addColorStop(0, '#03050d'); sky.addColorStop(1, '#1d1a44');
+    a.fillStyle = sky; a.fillRect(0, 0, L, L);
+    for (var i = 0; i < 60; i++) R(hash(i * 31) % L, hash(i * 17 + 3) % 120, 1, 1, '#c9d6ff');
+    for (var y = 150; y < 200; y += 5) for (var x = 2; x < L; x += 4) R(x, y + 1, 3, 3, ['#e0402f', '#f2f2f2', '#2f6fed', '#ffcf5a', '#3ecf8e'][hash(x + y * 31) % 5]);
+    R(0, 200, L, 8, '#0e4430'); R(0, 200, L, 2, '#1f6e48'); R(0, 208, L, 62, '#2f7a39');
+    a.drawImage(UMPC, 150, 138, 160, 132);
+    R(14, 14, L - 28, 112, '#1a1d24'); R(16, 16, L - 32, 108, '#07080a');
+    C = keep;
+    var c = document.createElement('canvas'); c.width = N; c.height = N;
+    var x2 = c.getContext('2d'); x2.imageSmoothingEnabled = false; x2.drawImage(art, 0, 0, N, N);
+    x2.textAlign = 'left'; x2.fillStyle = '#ffcf5a'; x2.shadowColor = 'rgba(255,190,70,.6)'; x2.shadowBlur = 18;
+    x2.font = '900 52px system-ui, sans-serif'; x2.fillText('STUMPIRE #' + (S0 ? S0.slate.no : ''), 100, 150);
+    x2.font = '900 190px system-ui, sans-serif'; x2.fillText(String(sm.score || 0), 96, 350);
+    x2.shadowBlur = 0; x2.fillStyle = '#ffe9b0'; x2.font = '800 40px system-ui, sans-serif';
+    x2.fillText((sm.runs || 0) + ' R   ' + (sm.hits || 0) + ' H   ' + (sm.hr || 0) + ' HR   ' + (sm.k || 0) + ' K', 104, 430);
+    box.forEach(function (b, i) {
+      var bx = 64 + i * 118, by = 870;
+      x2.fillStyle = 'rgba(7,8,10,.85)'; x2.fillRect(bx, by, 104, 104);
+      x2.fillStyle = !b ? '#56607a' : b.hit ? '#3ecf8e' : '#ff6b6b'; x2.font = '900 44px system-ui, sans-serif'; x2.textAlign = 'center';
+      x2.fillText(!b ? '-' : b.hit ? ['', '1B', '2B', '3B', 'HR'][b.hit] : b.out, bx + 52, by + 66);
+    });
+    x2.textAlign = 'left'; x2.fillStyle = '#ffffff'; x2.font = '700 34px system-ui, sans-serif';
+    x2.fillText(streak > 1 ? streak + ' day streak' : 'Can you stump him?', 64, 1040);
+    c.toBlob(function (blob) {
+      if (!blob) return;
+      var file = null;
+      try { file = new File([blob], 'stumpire.png', { type: 'image/png' }); } catch (e) {}
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], text: text }).catch(function () {}); return; }
+      var url = URL.createObjectURL(blob), link = document.createElement('a');
+      link.href = url; link.download = 'stumpire.png'; document.body.appendChild(link); link.click(); link.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    }, 'image/png');
   }
 
   function startClock(ms, isPaused) {
@@ -1038,7 +1133,7 @@
   var ruleTimer = null;
   function ruling(r) {
     var word = r.ruling === 'SAFE' ? 'SAFE' : r.ruling === 'OUT' ? 'OUT' : r.ruling === 'STRIKE' ? (r.strikeout ? 'STRIKE THREE' : 'STRIKE') : 'NO PITCH';
-    var sub = r.ruling === 'SAFE' ? TIER[r.tier] + ' · ' + feet(r) + ' ft' : r.ruling === 'OUT' ? 'Called it.'
+    var sub = r.ruling === 'SAFE' ? TIER[r.tier] + ' · ' + feet(r) + ' ft' + (r.rarity != null ? ' · ' + r.rarity + '% of fans' : '') : r.ruling === 'OUT' ? 'Called it.'
       : r.ruling === 'STRIKE' ? (r.strikeout ? 'You are out.' : r.expired ? 'The clock ran out.' : r.reason === 'invalid' ? 'That does not fit.' : '')
       : (r.reason === 'already_tried' ? 'You tried that one.' : r.reason === 'too_many' ? 'Too many players by that name. Add more.' : r.reason === 'clock_running' ? 'Keep swinging.' : 'No player or team by that name. Try again.');
     var html = '<div class="ruling ' + r.ruling + '">' + esc(word) + '</div>';

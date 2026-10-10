@@ -36,9 +36,16 @@ export function memoryDb(opts = {}) {
     async savePlay(id, version, state, sm) {
       const p = S.plays.find(p => p.id === id);
       if (!p || p.version !== version) return null;
-      p.state = clone(state); p.version++; Object.assign(p, { bases: sm.bases, outs: sm.outs, strikes: sm.strikes, over: sm.over, won: sm.won });
+      p.state = clone(state); p.version++; Object.assign(p, { bases: sm.bases, outs: sm.outs, strikes: sm.strikes, over: sm.over, won: sm.won, score: sm.score || 0, runs: sm.runs || 0, hits: sm.hits || 0, hr: sm.hr || 0, ks: sm.k || 0, updated_at: p.updated_at || Date.now() });
       return p.version;
     },
+    async board(date) {
+      const name = uid => [...S.users.entries()].find(([, id]) => id === uid)?.[0] || null;
+      return S.plays.filter(p => p.slate_date === date && p.over && p.user_id)
+        .sort((a, b) => (b.score - a.score) || (b.bases - a.bases) || (a.outs - b.outs) || (a.strikes - b.strikes) || (a.updated_at - b.updated_at))
+        .map(p => ({ user_id: p.user_id, username: name(p.user_id), score: p.score, bases: p.bases, outs: p.outs, strikes: p.strikes, runs: p.runs, hits: p.hits, hr: p.hr, ks: p.ks }));
+    },
+    async playedDates(uid) { return S.plays.filter(p => p.user_id === uid && p.over).map(p => p.slate_date).sort().reverse(); },
     async log(e) { S.log.push({ id: S.seq++, ...e }); },
     async lastLog(playId, atBat) { return [...S.log].reverse().find(l => l.play_id === playId && l.at_bat === atBat) || null; },
     async review(e) { S.review.push({ id: S.seq++, status: 'open', ...e }); },

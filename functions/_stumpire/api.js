@@ -41,6 +41,7 @@ export async function handle(req, deps) {
       case 'POST pitch': return await pitch(req, deps, now);
       case 'POST answer': return await answerRoute(req, deps, now);
       case 'GET result': return await result(req, deps, now);
+      case 'GET board': return ok(await board(req, deps, now));
       case 'POST challenge': return await challenge(req, deps, now);
       case 'POST claim': return await claim(req, deps);
     }
@@ -94,7 +95,7 @@ async function view(db, s, play, now) {
   const st = play.state;
   const out = {
     slate: { date: s.slate_date, no: s.slate_no }, total: CONFIG.AT_BATS, clockMs: CONFIG.CLOCK_MS,
-    atBat: st.i, outs: st.outs, over: st.over, won: st.won, summary: G.summary(st), history: []
+    atBat: st.i, outs: st.outs, over: st.over, won: st.won, summary: G.summary(st), box: G.boxScore(st).line, history: []
   };
   for (let i = 0; i < st.ab.length; i++) {
     const a = st.ab[i];
@@ -170,6 +171,12 @@ async function answerRoute(req, deps, now) {
     strikeout: !!res.strikeout, expired: !!res.expired, reason: res.reason || null };
   if (res.picker) out.picker = res.picker;
   if (res.match) out.answer = brief(get(res.match));
+  /* How common the answer was: the share of fans the model expects to give
+     it. Sent only once the at-bat has ruled on it, never before. */
+  if (res.match && (res.ruling === 'SAFE' || res.ruling === 'OUT')) {
+    const row = sl.rows.find(r => r.entity_id === res.match);
+    if (row) out.rarity = Math.round(1000 * (row.expected_share || 0)) / 10;
+  }
   if (res.atBatOver) out.reveal = { called: calledNames(sl.rows) };
   out.state = await view(deps.db, s, play, now);
   return ok(out);
@@ -190,7 +197,34 @@ async function result(req, deps, now) {
     const total = counts.reduce((t, c) => t + c.n, 0);
     crowd.push(counts.sort((a, b) => b.n - a.n).slice(0, 5).map(c => ({ name: (get(c.entity_id) || {}).n || c.entity_id, pct: total ? Math.round(100 * c.n / total) : 0 })));
   }
-  return ok({ ...v, final: true, share: G.shareLine(play.state), crowd });
+  const extra = { share: G.shareLine(play.state), crowd };
+  if (req.uid) {
+    extra.streak = streakFrom(await deps.db.playedDates(req.uid).catch(() => []), date);
+    const b = await board(req, deps, now, date);
+    extra.rank = b.me ? b.me.rank : null; extra.field = b.total;
+  }
+  return ok({ ...v, final: true, ...extra });
+}
+
+/* Days in a row with a finished game, through today, or through yesterday
+   when today is still to play. */
+export function streakFrom(dates, today) {
+  const set = new Set(dates);
+  const day = d => new Date(Date.parse(d + 'T12:00:00Z'));
+  const iso = d => d.toISOString().slice(0, 10);
+  let cur = day(today);
+  if (!set.has(iso(cur))) cur = new Date(cur.getTime() - 864e5);
+  let n = 0;
+  while (set.has(iso(cur))) { n++; cur = new Date(cur.getTime() - 864e5); }
+  return n;
+}
+
+/* The day's board: finished, signed in games only, best score first. */
+async function board(req, deps, now, dateIn) {
+  const date = dateIn || (req.query && req.query.date) || slateDate(now);
+  const rows = await deps.db.board(date).catch(() => []);
+  const ranked = rows.map((r, i) => ({ rank: i + 1, name: r.username || 'Player', score: r.score || 0, bases: r.bases, runs: r.runs || 0, hits: r.hits || 0, hr: r.hr || 0, k: r.ks || 0, me: !!req.uid && r.user_id === req.uid }));
+  return { date, total: ranked.length, top: ranked.slice(0, 20), me: ranked.find(r => r.me) || null };
 }
 
 async function challenge(req, deps, now) {

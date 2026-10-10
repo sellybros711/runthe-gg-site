@@ -33,8 +33,26 @@ export function supabaseDb(env) {
     },
     async playById(id) { const r = await req('GET', 'stumpire_plays?id=eq.' + id + '&select=id,state,version'); return r[0] || null; },
     async savePlay(id, version, state, sm) {
-      return rpc('stumpire_save_play', { p_id: id, p_version: version, p_state: state, p_bases: sm.bases, p_outs: sm.outs,
-        p_strikes: sm.strikes, p_over: sm.over, p_won: sm.won });
+      const base = { p_id: id, p_version: version, p_state: state, p_bases: sm.bases, p_outs: sm.outs, p_strikes: sm.strikes, p_over: sm.over, p_won: sm.won };
+      /* The score columns come with 134. A database still on 133 has no _v2,
+         and the save must not fail over a leaderboard column. */
+      try { return await rpc('stumpire_save_play_v2', { ...base, p_score: sm.score || 0, p_runs: sm.runs || 0, p_hits: sm.hits || 0, p_hr: sm.hr || 0, p_ks: sm.k || 0 }); }
+      catch (e) { if (e.status === 404 || e.pg === 'PGRST202' || e.pg === '42883') return rpc('stumpire_save_play', base); throw e; }
+    },
+    /* Every finished, signed in play for a day, best first. Testers only for
+       now, so the whole day fits in one read. */
+    async board(date) {
+      let rows;
+      try { rows = await req('GET', 'stumpire_plays?slate_date=eq.' + q(date) + '&over=eq.true&user_id=not.is.null&select=user_id,score,bases,outs,strikes,runs,hits,hr,ks,updated_at&order=score.desc,bases.desc,outs.asc,strikes.asc,updated_at.asc&limit=500'); }
+      catch (e) { rows = await req('GET', 'stumpire_plays?slate_date=eq.' + q(date) + '&over=eq.true&user_id=not.is.null&select=user_id,bases,outs,strikes,updated_at&order=bases.desc,outs.asc,strikes.asc,updated_at.asc&limit=500'); }
+      if (!rows.length) return [];
+      const p = await req('GET', 'profiles?select=id,username&id=in.(' + [...new Set(rows.map(r => r.user_id))].join(',') + ')');
+      const by = Object.fromEntries(p.map(x => [x.id, x.username]));
+      return rows.map(r => ({ ...r, username: by[r.user_id] || null }));
+    },
+    async playedDates(uid) {
+      const r = await req('GET', 'stumpire_plays?user_id=eq.' + q(uid) + '&over=eq.true&select=slate_date&order=slate_date.desc&limit=120');
+      return r.map(x => x.slate_date);
     },
     async log(e) { await req('POST', 'stumpire_answer_log', e, { Prefer: 'return=minimal' }); },
     async lastLog(playId, atBat) {

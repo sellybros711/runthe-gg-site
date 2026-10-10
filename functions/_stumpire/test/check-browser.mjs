@@ -89,7 +89,15 @@ try {
     }
     await page.waitForSelector('#over:not(.hide) pre.share', { timeout: 5000 }).catch(() => null);
     const share = await page.textContent('#shareText').catch(() => '');
-    claim(/^Stumpire #\d+\n.+\n\d+\/20 · \d outs? · \d+ strikes?$/.test(share.trim()), w + ': the game ends on a share line');
+    claim(/^Stumpire #\d+\n.+\nScore \d+ · \d+ R · \d+ H · \d+ HR · \d+ K$/.test(share.trim()), w + ': the game ends on a share line');
+    claim(/^\d+$/.test((await page.textContent('#over .bigscore b')).trim()), w + ': the postgame shows the Stumpire score');
+    claim((await page.$$('#over .linescore div')).length === 5, w + ': and a line score of five at-bats');
+    await page.waitForSelector('#boardBox li.me', { timeout: 5000 }).catch(() => null);
+    claim(!!(await page.$('#boardBox li.me')), w + ': the day\'s board lists the player');
+    const dl = page.waitForEvent('download', { timeout: 8000 }).catch(() => null);
+    await page.click('#shareImg');
+    const got = await dl;
+    claim(!!got && /stumpire\.png$/.test(got.suggestedFilename()), w + ': the share card is a PNG');
     claim((await page.$$('#history li')).length >= 3, w + ': the box score lists the at-bats with their called lists');
     claim(await page.$eval('#ump', e => !!e.dataset.mood && !!e.dataset.state), w + ': the Stumpire hook carries a mood and a state');
     const scrollW = await page.evaluate(() => document.documentElement.scrollWidth);
