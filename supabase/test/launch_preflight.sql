@@ -616,7 +616,17 @@ check_rows(sort, migration, what, breaks, ok) as (
       'a won Stumpire challenge is remembered for the next slate',
       'Challenges still rule, but nothing is remembered. The same answer strikes again next time.',
       (select count(*) > 0 from has_table where name = 'stumpire_rulings')
-      and (select count(*) > 0 from trg where name = 'stumpire_rulings_keep_admin'))
+      and (select count(*) > 0 from trg where name = 'stumpire_rulings_keep_admin')),
+
+  -- PUTT PUTT LIVES ON SERVER TIME. Without it the page falls back to lives kept in
+  -- the Tour record, which a cleared browser or a wound clock can refill. Nothing throws.
+  (52, '138_putt_lives',
+      'Putt Putt Tour lives are kept on the server, on its clock',
+      'Lives still work, kept on the device. Clearing site data can refill them.',
+      (select count(*) > 0 from col where tbl = 'putt_lives' and name = 'refill_at')
+      and (select count(*) > 0 from proc where name = 'putt_lives_state')
+      and (select count(*) > 0 from proc where name = 'putt_lives_spend')
+      and (select count(*) > 0 from proc where name = 'putt_lives_refill'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on
