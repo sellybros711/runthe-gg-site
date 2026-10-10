@@ -1903,10 +1903,8 @@ function top(title, sub, right){
    Quitting after the first putt costs a life too. The Daily Hole never costs one.
    3 lives, 6 with a Tour Pass. When the last one goes a 24 hour clock starts and fills them.
 
-   WHAT IS KEPT WHERE, said plainly: everything here is kept in this browser, per account, through
-   the page's own account-scoped key. The mockup's server ledger (lives on server time, a tester table
-   the score calls check, the Daily Hole board) is not built yet, so for now a tester could reset a
-   clock by clearing site data. Nobody but a tester can open the mode at all. */
+   WHAT IS KEPT WHERE: a signed in player's record is on ps_saves and their lives on putt_lives (134),
+   on the server's clock. A guest's are in this browser. The Daily Hole board is not built yet. */
 /* WHAT THE TOURS PAY. The Putt Putt Tour pays 4,000 coins a world, every ace included: 80 a hole and 280
    for the signature hole the first time it is beaten, 20 for a first ace, 2,000 for finishing a world. That
    was 20,000 for the first five worlds, and each world added since pays the same 4,000. The Members Tour pays the most on the site for the fewest
@@ -1951,7 +1949,7 @@ function pload(){ var st = null, key = pkey(); try{ st = JSON.parse(localStorage
   st.tours = st.tours || {}; Object.keys(TOURS).forEach(function(k){ var t = st.tours[k] = st.tours[k] || {}; t.lv = t.lv || 1; t.best = t.best || {}; t.ace = t.ace || {}; t.paid = t.paid || {}; t.wpaid = t.wpaid || {}; t.lv = TOURS[k].lab ? TOURS[k].levels.length : frontier(t, TOURS[k]); });
   st.daily = st.daily || {}; st.rewards = st.rewards || []; st.streak = st.streak || { n:0, last:null, best:0 };
   if (st.lives == null) st.lives = livesMax();
-  if (st.refillAt && Date.now() >= st.refillAt){ st.lives = livesMax(); st.refillAt = null; st.lt = Date.now(); psave(st); }
+  if (st.refillAt && Date.now() >= st.refillAt && !st.lsrv){ st.lives = livesMax(); st.refillAt = null; st.lt = Date.now(); psave(st); }
   return st; }
 function psave(st){ try{ localStorage.setItem(pkey(), JSON.stringify(st)); }catch(e){} cloudPush(); }
 /* THE RECORD IS THE ACCOUNT'S, ON THE SERVER. A signed in player's record goes up to ps_saves (103, game
@@ -1975,7 +1973,7 @@ function cloudProg(st){ var n = 0, c = function(o){ return Object.keys(o || {}).
   return n + c(st.daily) + (st.rewards || []).length; }
 // fold a copy of the record into this one: everything earned is kept, lives come from the newer copy
 function cloudMerge(st, g){ if (!g || g.v !== 2 || !g.tours) return st;
-  if ((g.lt || 0) > (st.lt || 0)){ st.lives = g.lives; st.refillAt = g.refillAt || null; st.lt = g.lt; }
+  if (!st.lsrv && (g.lt || 0) > (st.lt || 0)){ st.lives = g.lives; st.refillAt = g.refillAt || null; st.lt = g.lt; }
   if (g.streak && g.streak.last && (!st.streak || !st.streak.last || g.streak.last > st.streak.last)) st.streak = Object.assign({}, g.streak, { best:Math.max((st.streak && st.streak.best) || 0, g.streak.best || 0) });
   return pmerge(st, g); }
 function cloudRow(d){ var r = Array.isArray(d) ? d[0] : d; return r && typeof r === 'object' ? r : null; }
@@ -2001,7 +1999,23 @@ function cloudPull(){ var uid = cloudUid(); if (!uid) return Promise.resolve(fal
     if (r && r.payload) cloudMerge(cur, r.payload);
     try{ localStorage.setItem(pkey(), JSON.stringify(cur)); }catch(e){}
     CLOUD.uid = uid; cloudPush();
-    return before !== JSON.stringify(cur.tours) + cur.lives; }, function(){ return false; }); }
+    return livesSync().then(function(){ var now = pload(); return before !== JSON.stringify(now.tours) + now.lives; }); }, function(){ return false; }); }
+/* LIVES ARE THE SERVER'S, ON ITS CLOCK (134_putt_lives.sql). The Tour record above cannot hold them: its
+   rule is progress, and lives go down. So a signed in player's lives come from putt_lives_state, a life is
+   taken by putt_lives_spend, and the 24 hour clock is the server's now(). Once the server has answered for
+   an account (st.lsrv) the device never refills on its own clock and a merged copy never moves them.
+   The first answer seeds the row from the lives this browser had, so nobody is handed a fresh three.
+   A database without 134 answers null, and the lives stay on the device as they were. */
+function livesApply(uid, r){ r = cloudRow(r); if (!r || r.lives == null || cloudUid() !== uid) return false;
+  var st = pload(), was = st.lives + '|' + st.refillAt;
+  st.lives = +r.lives; st.refillAt = r.refill_at ? Date.parse(r.refill_at) : null; st.lt = Date.now(); st.lsrv = true;
+  try{ localStorage.setItem(pkey(), JSON.stringify(st)); }catch(e){}
+  return was !== st.lives + '|' + st.refillAt; }
+function livesCall(fn, extra){ var uid = cloudUid(); if (!uid) return Promise.resolve(false);
+  var p = null; try{ p = hostOf().rpc(fn, Object.assign({ p_max:livesMax() }, extra || {})); }catch(e){ p = null; }
+  if (!p || !p.then) return Promise.resolve(false);
+  return p.then(function(d){ return livesApply(uid, d); }, function(){ return false; }); }
+function livesSync(){ var st = pload(); return livesCall('putt_lives_state', { p_lives:st.lives }); }
 /* A GUEST PLAYS THE FIRST FEW HOLES FREE and is then asked to sign in to go on, so their progress has an
    account to live on. What they played signed out is claimed by the account on the way in (pload). The
    Daily Hole stays open to everybody. A host that cannot say who is signed in gates nobody. */
@@ -2017,7 +2031,7 @@ function guestSheet(){
   sh.querySelector('[data-up]').onclick = function(){ go('signup'); };
   sh.querySelector('[data-n]').onclick = function(){ sh.remove(); }; }
 function livesMax(){ try{ var h = hostOf(); return h.passActive && h.passActive() ? 6 : 3; }catch(e){ return 3; } }
-function loseLife(st){ st.lives = Math.max(0, (st.lives == null ? livesMax() : st.lives) - 1); if (st.lives === 0 && !st.refillAt) st.refillAt = Date.now() + LIFE_MS; st.lt = Date.now(); psave(st); }
+function loseLife(st){ st.lives = Math.max(0, (st.lives == null ? livesMax() : st.lives) - 1); if (st.lives === 0 && !st.refillAt) st.refillAt = Date.now() + LIFE_MS; st.lt = Date.now(); psave(st); livesCall('putt_lives_spend'); }
 function coins(n, label){ try{ if (S.host.coins) S.host.coins(n, label); }catch(e){} }
 function hms(ms){ ms = Math.max(0, ms); var s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return h + ':' + (m < 10 ? '0' : '') + m + ':' + (x < 10 ? '0' : '') + x; }
 function hm(ms){ var m = Math.max(0, Math.round(ms / 60000)); return Math.floor(m / 60) + 'h ' + (m % 60) + 'm'; }
@@ -2211,10 +2225,10 @@ function outOfLives(){
     (S.host.tester && S.host.tester() ? '<button class="pt-bt pp-wide" data-free>Tester refill · free</button>' : '') +
     '<button class="pt-bt pp-wide" data-wait>Wait it out</button><div class="m">The Daily Hole never uses a life.</div></div></div>');
   S.ov.appendChild(sh);
-  var c = sh.querySelector('[data-c]'), iv = setInterval(function(){ if (!sh.isConnected) return clearInterval(iv); var s2 = pload(); if (!s2.refillAt){ clearInterval(iv); sh.remove(); showHub(); return; } c.textContent = hms(s2.refillAt - Date.now()); }, 1000);
+  var c = sh.querySelector('[data-c]'), iv = setInterval(function(){ if (!sh.isConnected) return clearInterval(iv); var s2 = pload(); if (!s2.refillAt){ clearInterval(iv); sh.remove(); showHub(); return; } if (s2.lsrv && Date.now() >= s2.refillAt && !sh._ask){ sh._ask = 1; livesSync().then(function(){ sh._ask = 0; }); } c.textContent = hms(s2.refillAt - Date.now()); }, 1000);
   sh.querySelector('[data-wait]').onclick = function(){ sh.remove(); };
   sh.querySelector('[data-x]').onclick = function(){ sh.remove(); };
-  var fr = sh.querySelector('[data-free]'); if (fr) fr.onclick = function(){ var s2 = pload(); s2.lives = livesMax(); s2.refillAt = null; s2.lt = Date.now(); psave(s2); sh.remove(); showHub(); };
+  var fr = sh.querySelector('[data-free]'); if (fr) fr.onclick = function(){ var s2 = pload(); s2.lives = livesMax(); s2.refillAt = null; s2.lt = Date.now(); psave(s2); livesCall('putt_lives_refill'); sh.remove(); showHub(); };
 }
 
 /* ---------------------------------------------------------------------------- a Tour level */

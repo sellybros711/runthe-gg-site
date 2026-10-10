@@ -19739,8 +19739,17 @@ The page writes localStorage first and never waits on the network. The host hand
   three times running.
 - **Every call fails soft.** null is no opinion and the local record stands.
 
-What is still not on the server: lives are not on server time, so clearing site data before the first sync
-of a session can refill them, and the Daily Hole has no shared board.
+**Lives are on the server, on its clock** (`supabase/134_putt_lives.sql`, deployed by hand). The Tour record
+cannot hold them, because its rule is progress and lives go down. So a signed in player's lives come from
+`putt_lives_state`, a life is taken by `putt_lives_spend`, and the 24 hour clock is the server's `now()`. Once
+the server has answered for an account (`st.lsrv`) the device never refills on its own clock and a merged
+copy never moves them. The first answer seeds the row from the lives the browser had, so nobody is handed a
+fresh three. **A database without 134 answers null and lives stay on the device**, as before; preflight row
+44 asks for it. The tester refill is `putt_lives_refill`, which carries its own copy of `PUTT_TESTERS`: keep
+the two lists in step. The Tour Pass max (6) is the page's word, because the golf wallet is not in this repo;
+a forged 6 buys three lives once and never shortens a clock. A guest's lives stay on the device.
+
+What is still not on the server: the Daily Hole has no shared board.
 
 **A guest plays the first five Tour holes free** (`GUEST_HOLES`). Hole 6 opens a sheet asking them to sign
 in or create an account, and its buttons close the mode and open the page's account sheet. The Daily Hole

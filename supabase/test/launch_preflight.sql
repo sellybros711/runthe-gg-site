@@ -590,7 +590,17 @@ check_rows(sort, migration, what, breaks, ok) as (
       'an unnamed account gets a generated name on the arcade boards',
       'Unnamed accounts all show as "Player" and cannot find their own row.',
       (select count(*) > 0 from proc where name = 'arcade_generated_name')
-      and (select count(*) > 0 from trg where name = 'grid_runs_fill_name'))
+      and (select count(*) > 0 from trg where name = 'grid_runs_fill_name')),
+
+  -- PUTT PUTT LIVES ON SERVER TIME. Without it the page falls back to lives kept in
+  -- the Tour record, which a cleared browser or a wound clock can refill. Nothing throws.
+  (44, '134_putt_lives',
+      'Putt Putt Tour lives are kept on the server, on its clock',
+      'Lives still work, kept on the device. Clearing site data can refill them.',
+      (select count(*) > 0 from col where tbl = 'putt_lives' and name = 'refill_at')
+      and (select count(*) > 0 from proc where name = 'putt_lives_state')
+      and (select count(*) > 0 from proc where name = 'putt_lives_spend')
+      and (select count(*) > 0 from proc where name = 'putt_lives_refill'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

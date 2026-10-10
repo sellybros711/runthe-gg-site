@@ -439,6 +439,28 @@ if (!args.includes('--no-browser')){
       return { open, lives:local.lives, gets:calls.filter(c => c === 'ps_save_get').length, puts:calls.filter(c => c === 'ps_save_put').length, ace:!!after.tours.main.ace[7], srvLv:srv.payload.tours.main.lv, srvLives:srv.payload.lives }; });
     claim(cld.open >= 30 && cld.lives === 1 && cld.gets >= 1, `a fresh browser takes the account's place and lives from the server (${cld.open} open, ${cld.lives} lives)`);
     claim(cld.ace && cld.srvLv >= 30 && cld.puts >= 2 && cld.srvLives === 0, `a save the server refuses is merged with what it holds and sent again (ace kept ${cld.ace}, server at hole ${cld.srvLv} with ${cld.srvLives} lives)`);
+    // LIVES ARE THE SERVER'S (134). A fresh browser takes the server's lives, a lost life is spent there, and a
+    // device clock wound past the refill does not fill them: only the server's answer does.
+    const lvs = await pg.evaluate(async () => { const sb0 = sb, calls = [], row = { lives:0, refill_at:new Date(Date.now() + 3600e3).toISOString() };
+      sb = { rpc(fn, a){ calls.push(fn);
+        if (fn === 'putt_lives_state') return Promise.resolve({ data:[{ lives:row.lives, refill_at:row.refill_at, max_lives:3 }], error:null });
+        if (fn === 'putt_lives_spend'){ row.lives = Math.max(0, row.lives - 1); return Promise.resolve({ data:[{ lives:row.lives, refill_at:row.refill_at, max_lives:3 }], error:null }); }
+        if (fn === 'ps_save_get') return Promise.resolve({ data:[], error:null });
+        if (fn === 'ps_save_put') return Promise.resolve({ data:[{ ok:true }], error:null });
+        return Promise.resolve({ data:null, error:{ message:'no' } }); } };
+      sbUser = { id:'lvs' }; localStorage.removeItem('bag_ppt_v1@lvs'); openPutt();
+      for (let t = 0; t < 100 && !calls.includes('putt_lives_state'); t++) await new Promise(r => setTimeout(r, 50));
+      await new Promise(r => setTimeout(r, 100));
+      const k = 'bag_ppt_v1@lvs', a = JSON.parse(localStorage.getItem(k) || '{}');
+      a.refillAt = Date.now() - 1000; localStorage.setItem(k, JSON.stringify(a));
+      const wound = window.RTT_PUTT.summary(puttHost()).lives;
+      row.lives = 2; await window.RTT_PUTT.sync(puttHost()); window.RTT_PUTT._lose();
+      for (let t = 0; t < 40 && !calls.includes('putt_lives_spend'); t++) await new Promise(r => setTimeout(r, 50));
+      await new Promise(r => setTimeout(r, 100));
+      const after = JSON.parse(localStorage.getItem(k)); window.RTT_PUTT.close(); sb = sb0;
+      return { first:a.lives, wound, spent:calls.includes('putt_lives_spend'), after:after.lives, srv:row.lives }; });
+    claim(lvs.first === 0 && lvs.wound === 0, `a fresh browser takes the server's lives, and a wound clock does not refill them (${lvs.first}, then ${lvs.wound})`);
+    claim(lvs.spent && lvs.srv === 1 && lvs.after === 1, `a lost life is spent on the server (server ${lvs.srv}, browser ${lvs.after})`);
     // A GUEST PLAYS THE FIRST FEW HOLES FREE, then is asked to sign in. The Daily Hole stays open.
     const gst = await pg.evaluate(async () => { const best = {}; for (let n = 1; n <= 8; n++) best[n] = 2;
       localStorage.setItem('bag_ppt_v1', JSON.stringify({ v:2, tours:{ main:{ lv:9, best, ace:{}, paid:{}, wpaid:{} } } })); sbUser = null; window.RTT_PUTT.open(puttHost());
