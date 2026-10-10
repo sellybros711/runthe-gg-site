@@ -71,18 +71,20 @@ try {
     claim(pickBox && pickBox.y + pickBox.height <= h, w + ': the picker options are on screen');
     await page.click('#pickOpts button >> text=Ken Griffey Jr.');
     await page.waitForFunction(() => document.getElementById('picker').style.display === 'none');
+    await page.waitForSelector('#ruling:not(.hide) .ruling');
     const r1 = await page.textContent('#ruling');
     claim(/SAFE|OUT|STRIKE/.test(r1), w + ': a pick from the picker is ruled (' + r1.split('.')[0] + ')');
 
     // Play the rest through the typeahead, tapping the first suggestion.
-    for (let guard = 0; guard < 30; guard++) {
+    for (let guard = 0; guard < 80; guard++) {
       if (await page.isVisible('#over:not(.hide)')) break;
       if (await page.isVisible('#next:not(.hide)')) { await page.click('#nextBtn'); await page.waitForFunction(() => !document.getElementById('atbat').classList.contains('hide')); continue; }
+      if (!(await page.isVisible('#answer'))) { await page.waitForTimeout(300); continue; }
       await page.fill('#answer', ['derek je', 'jerome bet', 'magic joh', 'steve na', 'tony gonz'][guard % 5]);
       await page.waitForSelector('#sugg button', { timeout: 3000 }).catch(() => null);
       const names = await page.$$eval('#sugg button span:first-child', b => b.map(x => x.textContent));
       if (names.length) claim(names.join() === [...names].sort().join(), w + ': typeahead is alphabetical');
-      if (names.length) await page.click('#sugg button'); else await page.press('#answer', 'Enter');
+      if (names.length && await page.isVisible('#sugg button')) await page.click('#sugg button', { timeout: 3000 }).catch(() => null); else if (await page.isVisible('#answer')) await page.press('#answer', 'Enter');
       await page.waitForTimeout(200);
     }
     await page.waitForSelector('#over:not(.hide) pre.share', { timeout: 5000 }).catch(() => null);
