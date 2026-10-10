@@ -66,11 +66,27 @@ function eraProblem(e, q) {
   return null;
 }
 
-/* Same position (or the position above it) or a shared team with somebody who fits. */
-function plausibleFor(e, correct) {
-  const pp = posParent(), pos = x => pp[x.pos] || x.pos;
-  return correct.some(c => (c.pos && e.pos && pos(c) === pos(e)) || (c.tm || []).some(t => (e.tm || []).includes(t)));
+/* A coarse position group, the unit a fan reasons in: nobody thinks a
+   shortstop might have won the Cy Young, and nobody needs to.  */
+const NFL_GROUP = { 'Quarterback': 'QB', 'Running Back': 'RB', 'Fullback': 'RB', 'Wide Receiver': 'WR', 'Tight End': 'TE',
+  'Center': 'OL', 'Guard': 'OL', 'Offensive Lineman': 'OL', 'Offensive Tackle': 'OL',
+  'Defensive End': 'DL', 'Defensive Tackle': 'DL', 'Defensive Lineman': 'DL', 'Linebacker': 'LB',
+  'Cornerback': 'DB', 'Safety': 'DB', 'Defensive Back': 'DB', 'Kicker': 'K', 'Place Kicker': 'K', 'Punter': 'K', 'Long Snapper': 'K' };
+export function posGroup(e) {
+  if (!e.pos) return null;
+  if (e.s === 'MLB') return /Pitcher/.test(e.pos) ? 'P' : 'H';
+  if (e.s === 'NFL') return NFL_GROUP[e.pos] || e.pos;
+  return posParent()[e.pos] || e.pos;
 }
+
+/* A decoy is plausible when its position group is a real share of the
+   people who fit. A shared team used to count too, and almost everybody
+   shares a team with somebody, so it meant nothing. */
+function plausibleGroups(correct) {
+  const n = {}; for (const c of correct) { const g = posGroup(c); if (g) n[g] = (n[g] || 0) + 1; }
+  return new Set(Object.keys(n).filter(g => n[g] >= correct.length * C.PLAUSIBLE_GROUP_MIN));
+}
+function plausibleFor(e, groups) { return groups.has(posGroup(e)); }
 
 export function validatePrompt(def) {
   const errors = [], notes = [];
@@ -78,9 +94,11 @@ export function validatePrompt(def) {
   if (!def || typeof def.title !== 'string' || !/^Hit every \S/.test(def.title) || def.title.length > 70)
     errors.push('The title must start "Hit every" and be at most 70 characters.');
   if (!q || !['NFL', 'NBA', 'MLB'].includes(q.league) || q.type !== 'athlete') { errors.push('The query needs league NFL, NBA or MLB and type athlete.'); return { ok: false, errors, notes }; }
+  // a query that cannot run stops here; a bad title is reported with everything else
+  const before = errors.length;
   try { for (const p of coverageProblems(q)) errors.push('Coverage: ' + p + '.'); }
   catch (e) { errors.push('The query does not parse: ' + e.message + '.'); return { ok: false, errors, notes }; }
-  if (errors.length) return { ok: false, errors, notes };
+  if (errors.length > before) return { ok: false, errors, notes };
   let valid;
   try { valid = new Set(validSet(q).map(e => e.id)); } catch (e) { errors.push('The query does not run: ' + e.message + '.'); return { ok: false, errors, notes }; }
 
@@ -98,6 +116,8 @@ export function validatePrompt(def) {
       if (kind === 'Correct' && !valid.has(id)) { errors.push('Correct ' + fmt(e) + ' does not fit the query.'); continue; }
       if (kind === 'Decoy') {
         if (valid.has(id) || (q.where || []).every(p => test(e, p))) { errors.push('Decoy ' + fmt(e) + ' fits the query.'); continue; }
+        if ((e.f || 0) < C.DECOY_FAME_MIN) { errors.push('Decoy ' + fmt(e) + ' is not famous enough to be a fair wrong answer (fame ' + (e.f || 0) + '): a decoy nobody has heard of tests luck, not knowledge.'); continue; }
+        if (e.act) { errors.push('Decoy ' + fmt(e) + ' is still active: a season the data does not have yet could make them a winner.'); continue; }
         const era = eraProblem(e, q);
         if (era) { errors.push('Decoy ' + fmt(e) + ' is borderline: ' + era + '.'); continue; }
         const gaps = decoyGaps(e, q);
@@ -111,10 +131,11 @@ export function validatePrompt(def) {
   const decoys = check(def.decoys, 'Decoy');
   const ck = new Set(correct.map(e => nameKey(e.n)));
   for (const d of decoys) if (ck.has(nameKey(d.n))) errors.push('Decoy ' + fmt(d) + ' shares a name with a correct card.');
-  const plausible = decoys.filter(d => plausibleFor(d, correct));
+  const groups = plausibleGroups(correct);
+  const plausible = decoys.filter(d => plausibleFor(d, groups));
   if (correct.length < C.MIN_CORRECT) errors.push('Needs at least ' + C.MIN_CORRECT + ' correct cards that pass every check, has ' + correct.length + '.');
   if (decoys.length < C.MIN_DECOYS) errors.push('Needs at least ' + C.MIN_DECOYS + ' decoys that pass every check, has ' + decoys.length + '.');
-  if (plausible.length < C.MIN_PLAUSIBLE) errors.push('Needs at least ' + C.MIN_PLAUSIBLE + ' plausible decoys (same position or team as a correct card), has ' + plausible.length + '.');
+  if (plausible.length < C.MIN_PLAUSIBLE) errors.push('Needs at least ' + C.MIN_PLAUSIBLE + ' plausible decoys (a position group that wins this, ' + [...groups].join(', ') + '), has ' + plausible.length + '.');
   notes.push(valid.size + ' athletes in the dataset fit this query.');
   return { ok: errors.length === 0, errors, notes, counts: { correct: correct.length, decoys: decoys.length, plausible: plausible.length, fit: valid.size },
     plausible: plausible.map(e => e.id) };
@@ -124,7 +145,7 @@ export function validatePrompt(def) {
    and approve. Correct cards are the best known that fit; decoys are the best
    known that pass every decoy check, plausible ones first. */
 export const TEMPLATES = [
-  { title: 'Hit every Cy Young winner', query: { league: 'MLB', type: 'athlete', years: [1956, 2025], where: [{ k: 'award', v: 'Cy Young' }] }, decoyPos: 'Pitcher' },
+  { title: 'Hit every Cy Young winner', query: { league: 'MLB', type: 'athlete', years: [1956, 2025], where: [{ k: 'award', v: 'Cy Young' }] } },
   { title: 'Hit every MLB MVP', query: { league: 'MLB', type: 'athlete', years: [1956, 2025], where: [{ k: 'award', v: 'MLB MVP' }] } },
   { title: 'Hit every World Series MVP', query: { league: 'MLB', type: 'athlete', years: [1956, 2025], where: [{ k: 'award', v: 'World Series MVP' }] } },
   { title: 'Hit every NBA MVP', query: { league: 'NBA', type: 'athlete', years: [1956, 2025], where: [{ k: 'award', v: 'NBA MVP' }] } },
@@ -143,10 +164,15 @@ export function draftPrompt(t) {
   const fitting = validSet(q).filter(e => nameCount(e) === 1 && (e.f || 0) >= C.FAME_MIN).sort((a, b) => (b.f || 0) - (a.f || 0) || lookups(b) - lookups(a) || a.n.localeCompare(b.n));
   const correct = fitting.slice(0, 18);
   const fitIds = new Set(validSet(q).map(e => e.id));
-  const pool = store().list.filter(e => e.k === 'p' && e.s === q.league && !fitIds.has(e.id) && nameCount(e) === 1 && (e.f || 0) >= C.FAME_MIN
+  const groups = plausibleGroups(correct);
+  const pool = store().list.filter(e => e.k === 'p' && e.s === q.league && !e.act && !fitIds.has(e.id) && nameCount(e) === 1 && (e.f || 0) >= C.DECOY_FAME_MIN
     && !eraProblem(e, q) && !decoyGaps(e, q).length && !(q.where || []).every(p => test(e, p)));
-  pool.sort((a, b) => (plausibleFor(b, correct) - plausibleFor(a, correct)) || (b.f || 0) - (a.f || 0) || lookups(b) - lookups(a) || a.n.localeCompare(b.n));
-  const decoys = pool.slice(0, 26);
+  pool.sort((a, b) => (b.f || 0) - (a.f || 0) || lookups(b) - lookups(a) || a.n.localeCompare(b.n));
+  // mostly real questions, plus famous players from elsewhere on the field
+  // for the early rounds to ramp from (see PLAUSIBLE_SHARE)
+  const pl = pool.filter(e => plausibleFor(e, groups)), other = pool.filter(e => !plausibleFor(e, groups));
+  const decoys = [...pl.slice(0, 18), ...other.slice(0, 8)];
+  if (decoys.length < 26) decoys.push(...pl.slice(18, 18 + 26 - decoys.length));
   const def = { id: 'whack-' + SLUG(t.title), title: t.title, query: q, correct: correct.map(e => e.id), decoys: decoys.map(e => e.id) };
   return { def, report: validatePrompt(def) };
 }

@@ -1,11 +1,143 @@
 {
   "_doc": "Facts the source index is missing, added at build time. Each one is a known, checkable fact about a real person. This is where an upheld challenge lands when the fix is a missing award rather than an alias. Keys are 'Name|LEAGUE'.",
   "awards": {
-    "Nikola Jokic|NBA": ["NBA All-Star"],
-    "Johnny Unitas|NFL": ["Pro Bowl"],
-    "Bart Starr|NFL": ["Pro Bowl"],
-    "Gale Sayers|NFL": ["Pro Bowl"],
-    "Mike Ditka|NFL": ["Pro Bowl"],
-    "Cooper Kupp|NFL": ["Pro Bowl"]
+    "Nikola Jokic|NBA": [
+      "NBA All-Star"
+    ],
+    "Johnny Unitas|NFL": [
+      "Pro Bowl"
+    ],
+    "Bart Starr|NFL": [
+      "Pro Bowl"
+    ],
+    "Gale Sayers|NFL": [
+      "Pro Bowl"
+    ],
+    "Mike Ditka|NFL": [
+      "Pro Bowl"
+    ],
+    "Cooper Kupp|NFL": [
+      "Pro Bowl"
+    ],
+    "Lefty Grove|MLB": [
+      "MLB MVP"
+    ],
+    "Jimmie Foxx|MLB": [
+      "MLB MVP"
+    ],
+    "Mickey Cochrane|MLB": [
+      "MLB MVP"
+    ],
+    "Hank Greenberg|MLB": [
+      "MLB MVP"
+    ],
+    "Charlie Gehringer|MLB": [
+      "MLB MVP"
+    ],
+    "Joe Gordon|MLB": [
+      "MLB MVP"
+    ],
+    "Spud Chandler|MLB": [
+      "MLB MVP"
+    ],
+    "Hal Newhouser|MLB": [
+      "MLB MVP"
+    ],
+    "Lou Boudreau|MLB": [
+      "MLB MVP"
+    ],
+    "Phil Rizzuto|MLB": [
+      "MLB MVP"
+    ],
+    "Al Rosen|MLB": [
+      "MLB MVP"
+    ],
+    "Jackie Jensen|MLB": [
+      "MLB MVP"
+    ],
+    "Nellie Fox|MLB": [
+      "MLB MVP"
+    ],
+    "Roger Maris|MLB": [
+      "MLB MVP"
+    ],
+    "Brooks Robinson|MLB": [
+      "MLB MVP"
+    ],
+    "Zoilo Versalles|MLB": [
+      "MLB MVP"
+    ],
+    "Denny McLain|MLB": [
+      "MLB MVP"
+    ],
+    "Harmon Killebrew|MLB": [
+      "MLB MVP"
+    ],
+    "Boog Powell|MLB": [
+      "MLB MVP"
+    ],
+    "Vida Blue|MLB": [
+      "MLB MVP"
+    ],
+    "Dick Allen|MLB": [
+      "MLB MVP"
+    ],
+    "Jeff Burroughs|MLB": [
+      "MLB MVP"
+    ],
+    "Fred Lynn|MLB": [
+      "MLB MVP"
+    ],
+    "Thurman Munson|MLB": [
+      "MLB MVP"
+    ],
+    "Rod Carew|MLB": [
+      "MLB MVP"
+    ],
+    "Jim Rice|MLB": [
+      "MLB MVP"
+    ],
+    "Don Baylor|MLB": [
+      "MLB MVP"
+    ],
+    "Robin Yount|MLB": [
+      "MLB MVP"
+    ],
+    "Roger Clemens|MLB": [
+      "MLB MVP"
+    ],
+    "George Bell|MLB": [
+      "MLB MVP"
+    ],
+    "Jose Canseco|MLB": [
+      "MLB MVP"
+    ],
+    "Mo Vaughn|MLB": [
+      "MLB MVP"
+    ],
+    "Juan Gonzalez|MLB": [
+      "MLB MVP"
+    ],
+    "Jason Giambi|MLB": [
+      "MLB MVP"
+    ],
+    "Ichiro Suzuki|MLB": [
+      "MLB MVP"
+    ],
+    "Miguel Tejada|MLB": [
+      "MLB MVP"
+    ],
+    "Justin Morneau|MLB": [
+      "MLB MVP"
+    ],
+    "Fergie Jenkins|MLB": [
+      "Cy Young"
+    ],
+    "Joe Dumars|NBA": [
+      "Finals MVP"
+    ],
+    "Ja'Marr Chase|NFL": [
+      "Offensive Rookie of the Year"
+    ]
   }
 }

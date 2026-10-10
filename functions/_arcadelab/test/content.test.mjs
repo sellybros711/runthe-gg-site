@@ -34,6 +34,26 @@ test('the validator rejects a borderline decoy, and says why', () => {
   assert.ok(has(r3, /Bob Cousy.*fits the query/), r3.errors.join(' | '));
 });
 
+test('a decoy must be famous, retired, and plausible means the same position group', () => {
+  const add = id => { const d = mvp(); d.decoys = [...d.decoys, id]; return W.validatePrompt(d); };
+  // still active: a season the data does not have yet could make him a winner
+  assert.ok(has(add('nba-anthony-edwards-2010'), /Anthony Edwards.*still active/));
+  const cy = W.draftPrompt(W.TEMPLATES.find(t => t.title === 'Hit every Cy Young winner'));
+  const sb = W.draftPrompt(W.TEMPLATES.find(t => t.title === 'Hit every Super Bowl MVP'));
+  // a college name nobody knows as a pro is not a fair wrong answer
+  const leak = { ...sb.def, decoys: [...sb.def.decoys, 'nfl-chris-leak-2000'] };
+  assert.ok(has(W.validatePrompt(leak), /Chris Leak.*not famous enough/));
+  // a pitcher is a real question for the Cy Young; a shortstop is not
+  assert.ok(cy.report.plausible.includes('mlb-mariano-rivera-1990'));
+  assert.ok(cy.def.decoys.includes('mlb-derek-jeter-1990') && !cy.report.plausible.includes('mlb-derek-jeter-1990'));
+  // every draft keeps some famous players from elsewhere for the early rounds to ramp from
+  const mlb = W.draftPrompt(W.TEMPLATES.find(t => t.title === 'Hit every MLB MVP'));
+  assert.ok(mlb.report.counts.decoys > mlb.report.counts.plausible);
+  // the AL MVPs the source index was missing (functions/_stumpire/data/fixes.json)
+  assert.ok(get('mlb-ichiro-suzuki-2000').aw.includes('MLB MVP'));
+  assert.ok(!mlb.def.decoys.includes('mlb-ichiro-suzuki-2000'));
+});
+
 test('the validator rejects a shared name, a stat filter and a wrong correct card', () => {
   const d = mvp(); d.query = { league: 'MLB', type: 'athlete', years: [1990, 2025], where: [{ k: 'award', v: 'MLB MVP' }] };
   d.correct = ['mlb-adam-jones-2000']; d.decoys = [];

@@ -89,13 +89,42 @@ all in the admin page:
 What the Whack validator refuses: a field the dataset does not hold for the
 prompt's years (Stumpire's coverage table, so career stats never), a correct
 card that fails the query, a decoy that passes it, any name shared with
-another record, anybody obscure, a decoy whose career may predate the data, a
+another record, anybody obscure, a decoy below fame tier 4 (tier 3 is mostly
+college names), a decoy who is still active (a season the data does not have
+yet could make him a winner), a decoy whose career may predate the data, a
 decoy missing the field it fails on, a famous decoy with no awards on record,
-a decoy within 15% of a numeric line, and too few cards. The Drop Board
-validator holds every value to the record and refuses a missing value, a
-wrong one, an unreadable one, a stat for anybody who may still be active, a
-career in leagues whose records are partial, and a label that is not the
-athlete's name.
+a decoy within 15% of a numeric line, and too few cards.
+
+A decoy is "plausible" when it plays a position group that wins the prompt
+(15% of the winners or more): a pitcher for the Cy Young, a QB or a back for
+the NFL MVP. `PLAUSIBLE_SHARE` ramps that share of the decoys 0.4, 0.65, 0.85
+across the three rounds, and a draft keeps eight famous players from elsewhere
+on the field for the early rounds to draw from. A shared team used to count as
+plausible too, and almost everybody shares a team with somebody.
+
+The Drop Board validator holds every value to the record and refuses a
+missing value, a wrong one, an unreadable one, a stat for anybody who may
+still be active, a career with any club in a league whose records are partial
+(Satchel Paige's record carries Negro League wins), a label that is not the
+athlete's name, and a surname alone when another well known player in the
+league wears it. There is no sacks theme: the record rounds half sacks, wrongly
+for some. Each theme drafts `VARIANTS` boards, one athlete from each of seven
+value bands, so a theme that comes round again is not the same seven names.
+
+### Publishing a run of days without an editor
+
+```
+node functions/_arcadelab/build/publish-days.mjs 2026-10-10 30 > supabase/136_arcade_lab_publish_days.sql
+```
+
+It re-validates every draft, approves them as Claude's, and publishes each day
+exactly as the admin page would. A published day is never touched again; a
+prompt only Claude has drafted is refreshed on a re-run. The audit that went
+into the first run: every award winner list the templates read was checked
+against the record, and 40 missing facts (37 AL MVPs, Fergie Jenkins' Cy
+Young, Joe Dumars' Finals MVP, Ja'Marr Chase's Offensive Rookie of the Year)
+went into `functions/_stumpire/data/fixes.json`. Without them the MLB MVP
+prompt dealt Ichiro and Clemens as decoys.
 
 Players can report a card from the result screen ("Something here was wrong");
 reports land in `arcade_reports` and the admin page.

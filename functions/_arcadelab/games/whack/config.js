@@ -20,9 +20,12 @@ export const CONFIG = Object.freeze({
 
   /* How many of the cards are right, per round. */
   CORRECT_SHARE: Object.freeze([0.55, 0.48, 0.40]),
-  /* In round 3 this share of the decoys look plausible: the same position or
-     team as somebody who fits. */
-  PLAUSIBLE_SHARE: 0.7,
+  /* The share of decoys, per round, drawn from a position group that wins
+     the prompt (a pitcher for the Cy Young, a QB for the NFL MVP). The rest
+     are famous players from elsewhere on the field. Round 1 gives a few
+     free reads; round 3 is almost all real questions. */
+  PLAUSIBLE_SHARE: Object.freeze([0.4, 0.65, 0.85]),
+  PLAUSIBLE_GROUP_MIN: 0.15,     // a position group is plausible when this share of the winners play it
 
   /* Points. A correct hit is BASE times the combo multiplier. */
   BASE: 10,
@@ -38,7 +41,8 @@ export const CONFIG = Object.freeze({
   MIN_DECOYS: 14,
   MIN_PLAUSIBLE: 5,
   NEAR_MISS: 0.15,               // a decoy within 15% of a numeric threshold is borderline
-  FAME_MIN: 2,                   // dataset fame (f, 0..5) a card's athlete needs to be fair to ask about
+  FAME_MIN: 2,                   // dataset fame (f, 0..5) a correct card's athlete needs to be fair to ask about
+  DECOY_FAME_MIN: 4,             // and a decoy's: tier 3 is mostly college names nobody would know as a pro
 
   MAX_INPUTS: 400
 });

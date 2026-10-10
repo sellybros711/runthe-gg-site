@@ -47,7 +47,7 @@ export function schedule(seed, cfg) {
       const prog = (ri * C.ROUND_FRAMES + (t - start)) / (C.ROUNDS * C.ROUND_FRAMES);
       const up = Math.round(ease(C.UP_START, C.UP_END, prog));
       const isOk = r() < C.CORRECT_SHARE[ri];
-      const card = isOk ? nextOk() : (ri === C.ROUNDS - 1 && r() < C.PLAUSIBLE_SHARE ? nextPlaus() : nextPlain());
+      const card = isOk ? nextOk() : (r() < C.PLAUSIBLE_SHARE[ri] ? nextPlaus() : nextPlain());
       // a free hole, never the one just used
       const free = [];
       for (let h = 0; h < C.HOLES; h++) if (holeFree[h] <= t && h !== last) free.push(h);
