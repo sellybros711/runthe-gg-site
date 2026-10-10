@@ -142,6 +142,29 @@ prompt dealt Ichiro and Clemens as decoys.
 Players can report a card from the result screen ("Something here was wrong");
 reports land in `arcade_reports` and the admin page.
 
+## The cabinet: what makes it feel like an arcade
+
+Every game shares one presentation layer, and **none of it can reach a
+score.** The server replays the input log against `sim.js`; everything below
+is drawn on the wall clock over whatever the view painted.
+
+| | where | what |
+|---|---|---|
+| the cabinet | `web/shell.html` | dark carpet, a lit bezel round the stage, scanlines, LED counters, chasing bulbs on the marquee. `--led` per game in `THEMES` |
+| sound | `shared/kit.js` `makeSound` | one bus through a compressor; `play(name, { pitch })`, so a combo climbs |
+| juice | `shared/app.js` `makeFx`, as `env.fx` | `shake`, `flash`, `burst`, `confetti`, `text`, `ring`, all in screen points |
+| the host | `env.host.say(text)` | a callout bubble beside the host |
+| the count-in | `countIn` in `app.js` | 3, 2, 1, GO before a daily. Nothing is running yet, so no input lands and the clock has not started. Practice starts on the tap |
+| your best | `arcade_lab_best_<game>` in localStorage | the HI counter, NEW HIGH SCORE mid-run and on the result |
+| the result | `rollUp` | the score counts up like a ticket counter; the board is a high score table |
+
+**Under reduced motion** there is no shake, no flash and no count-up, and a
+burst is a few sparks that fade where they are.
+
+**A view's own `now` shadows the helper.** Three renders keep a local timer
+for keyboard charging; it is `tw` now, because a local `const now` in
+`render()` hid the view's `now()` helper and Hoop Shoot threw on every frame.
+
 ## Gems
 
 A cosmetic currency with **no cash value**, never redeemable for money. One

@@ -11,7 +11,8 @@ const ZONE_COL = { '1B': '#22B07D', '2B': '#d9a51c', '3B': '#e07a2a', HR: '#E053
 function makeView(env) {
   const cv = env.canvas, cx = env.ctx;
   let W = 1, H = 1, DPR = 1, KX = 1, KY = 1, BOTTOM = 0, boardImg = null, st = null;
-  let aim = null, keyAngle = 0;
+  let aim = null, keyAngle = 0, trail = [], hitFx = null, hrRun = 0;
+  const T0 = performance.now(), now = () => performance.now();
   const keys = { left: false, right: false, charging: false, chargeT: 0 };
   const FAR = 345;
   const sOf = y => 1 - 0.36 * Math.max(0, Math.min(1, y / FAR));
@@ -33,7 +34,9 @@ function makeView(env) {
     const off = document.createElement('canvas'); off.width = W * DPR; off.height = H * DPR;
     const g = off.getContext('2d'); g.scale(DPR, DPR);
     const L = st.layout;
-    g.fillStyle = '#d9d5cc'; quad(g, rect(-C.BOARD_HALF - 8, C.BOARD_FRONT - 8, C.BOARD_HALF + 8, C.BOARD_BACK + 6)); g.fill();
+    // the cabinet: a dark wood surround with a brass trim
+    g.fillStyle = '#3a2213'; quad(g, rect(-C.BOARD_HALF - 8, C.BOARD_FRONT - 8, C.BOARD_HALF + 8, C.BOARD_BACK + 6)); g.fill();
+    g.strokeStyle = '#d9a51c'; g.lineWidth = 2; quad(g, rect(-C.BOARD_HALF - 6, C.BOARD_FRONT - 6, C.BOARD_HALF + 6, C.BOARD_BACK + 4)); g.stroke();
     g.fillStyle = '#20231f'; quad(g, rect(-C.BOARD_HALF, C.BOARD_FRONT, C.BOARD_HALF, C.BOARD_BACK)); g.fill();
     const lane = g.createLinearGradient(0, SY(0), 0, SY(C.LIP_Y));
     lane.addColorStop(0, '#c99a62'); lane.addColorStop(1, '#a87a46');
@@ -60,6 +63,49 @@ function makeView(env) {
     const hy = st.day.hot === '1B' ? L.ring.y + (r1 + r2) / 2 : st.day.hot === '2B' ? L.ring.y + (r2 + r3) / 2 : L.ring.y + r3 + 4;
     g.fillStyle = '#ffe680'; lbl('HOT +1', L.ring.x, Math.min(hy, L.ring.y + r1 - 4), 10);
     boardImg = off;
+  }
+
+  /* The arcade behind the lane: dark, with a neon glow up each side. */
+  function cabinet() {
+    const g = cx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#1a1030'); g.addColorStop(1, '#0a0714');
+    cx.fillStyle = g; cx.fillRect(0, 0, W, H);
+    const gl = cx.createRadialGradient(W / 2, SY(C.BOARD_BACK - 20), 10, W / 2, SY(C.BOARD_BACK - 20), W * 0.7);
+    gl.addColorStop(0, 'rgba(224,83,61,.22)'); gl.addColorStop(1, 'rgba(224,83,61,0)');
+    cx.fillStyle = gl; cx.fillRect(0, 0, W, H);
+  }
+  /* Bulbs down both rails. They chase while you aim and go wild on a homer. */
+  function bulbs() {
+    const t = (now() - T0) / 1000, wild = hitFx && hitFx.zone === 'HR' && now() - hitFx.t < 1600;
+    const n = 9;
+    for (const side of [-1, 1]) for (let i = 0; i < n; i++) {
+      const y = -10 + i * (C.LIP_Y + 8) / (n - 1), x = side * (C.LANE_HALF + 11);
+      const on = wild ? ((t * 14 + i) | 0) % 2 === 0 : ((t * 5 - i) | 0) % 3 === 0;
+      const r = 2.3 * sOf(y) * KX * 0.55;
+      cx.fillStyle = on ? (wild ? '#ff4fa3' : '#ffd23f') : 'rgba(255,210,63,.18)';
+      cx.beginPath(); cx.arc(SX(x, y), SY(y), Math.max(1.6, r), 0, Math.PI * 2); cx.fill();
+      if (on && !env.RM) { cx.globalAlpha = 0.25; cx.beginPath(); cx.arc(SX(x, y), SY(y), Math.max(4, r * 3), 0, Math.PI * 2); cx.fill(); cx.globalAlpha = 1; }
+    }
+  }
+  /* The ring a ball landed in lights up, and blinks for a homer. */
+  function ringFlash() {
+    if (!hitFx) return;
+    const age = now() - hitFx.t; if (age > 1100) { hitFx = null; return; }
+    const L = st.layout, k = 1 - age / 1100, blink = env.RM || ((age / 90) | 0) % 2 === 0;
+    cx.save(); cx.lineWidth = 4; cx.shadowBlur = env.RM ? 0 : 18;
+    const col = ZONE_COL[hitFx.zone] === '#141414' ? '#ffffff' : ZONE_COL[hitFx.zone];
+    cx.strokeStyle = col; cx.shadowColor = col; cx.globalAlpha = k * (blink ? 1 : 0.4);
+    if (hitFx.zone === 'HR' && hitFx.pocket) { const c = S.pocketAt(hitFx.pocket, st.frame); quad(cx, circlePts(c.x, c.y, C.POCKET_R + 3, 32)); cx.stroke(); }
+    else if (hitFx.zone !== 'F') { const i = { '1B': 0, '2B': 1, '3B': 2 }[hitFx.zone]; quad(cx, circlePts(L.ring.x, L.ring.y, L.ring.r[i])); cx.stroke(); }
+    cx.restore();
+  }
+  function drawTrail() {
+    for (let i = 0; i < trail.length; i++) {
+      const p = trail[i], s = sOf(p.y), r = 3.6 * KX * s * (0.35 + 0.65 * i / trail.length);
+      cx.globalAlpha = 0.08 + 0.32 * i / trail.length; cx.fillStyle = '#ffe9a8';
+      cx.beginPath(); cx.arc(SX(p.x, p.y), SY(p.y) - p.z * KY * 0.9 * s, r, 0, Math.PI * 2); cx.fill();
+    }
+    cx.globalAlpha = 1;
   }
 
   function drawPockets(frame) {
@@ -91,16 +137,19 @@ function makeView(env) {
     const a = aim ? aim.a : keyAngle, p = aim ? aim.p : keys.chargeT;
     if (!aim && !keys.charging && !keys.left && !keys.right) return;
     const len = 40 + p * (C.LIP_Y - 30);
-    cx.fillStyle = 'rgba(20,20,20,.55)';
+    cx.fillStyle = p > 0.85 ? '#ff6b57' : '#ffe680';
     for (let d = 10; d < len; d += 9) {
       const x = d * Math.sin(a), y = d * Math.cos(a);
       if (Math.abs(x) > C.LANE_HALF) break;
       cx.beginPath(); cx.arc(SX(x, y), SY(y), 2.1 * sOf(y), 0, Math.PI * 2); cx.fill();
     }
     const mx = W - 22, mh = H * 0.3, my = H - mh - 16;
-    cx.fillStyle = 'rgba(20,20,20,.12)'; cx.fillRect(mx, my, 12, mh);
-    cx.fillStyle = p > 0.85 ? '#E0533D' : '#22B07D'; cx.fillRect(mx, my + mh * (1 - p), 12, mh * p);
-    cx.strokeStyle = '#141414'; cx.lineWidth = 1.5; cx.strokeRect(mx, my, 12, mh);
+    cx.fillStyle = 'rgba(255,255,255,.08)'; cx.fillRect(mx, my, 12, mh);
+    const pg = cx.createLinearGradient(0, my + mh, 0, my);
+    pg.addColorStop(0, '#22B07D'); pg.addColorStop(0.6, '#ffd23f'); pg.addColorStop(1, '#E0533D');
+    cx.fillStyle = pg; cx.fillRect(mx, my + mh * (1 - p), 12, mh * p);
+    cx.strokeStyle = 'rgba(255,255,255,.6)'; cx.lineWidth = 1.5; cx.strokeRect(mx, my, 12, mh);
+    cx.fillStyle = '#fff'; cx.font = '800 10px Outfit, sans-serif'; cx.textAlign = 'center'; cx.fillText('PWR', mx + 6, my - 7);
   }
 
   function drawDebug() {
@@ -168,37 +217,64 @@ function makeView(env) {
       BOTTOM = H * 0.9; KY = (H * 0.84) / proj(FAR); boardImg = null;
     },
     snap: s => ({ x: s.x, y: s.y, z: s.z, ball: s.ball }),
-    onStart(s) { st = s; boardImg = null; aim = null; keyAngle = 0; env.hint(s.ball === 0 && s.phase === 'ready' ? 'Touch the lane, pull back, let go' : ''); env.host.set('idle'); },
+    onStart(s) { st = s; boardImg = null; aim = null; keyAngle = 0; trail = []; hitFx = null; hrRun = 0; env.hint(s.ball === 0 && s.phase === 'ready' ? 'Touch the lane, pull back, let go' : ''); env.host.set('idle'); },
     onInput() { env.sound.play('roll'); env.haptics.buzz(12); env.hint(''); env.host.set(st.ball >= 7 ? 'nervous' : 'idle', 'watching'); },
     onPause() { aim = null; keys.charging = false; },
     onEvent(e) {
-      if (e.type === 'launch') env.sound.play('launch');
-      else if (e.type === 'land') { env.sound.play('land'); env.haptics.buzz(20); }
-      else if (e.type === 'rail') env.sound.play('rail');
+      const X0 = SX(st.x, st.y), Y0 = SY(st.y);
+      if (e.type === 'launch') { env.sound.play('launch'); env.sound.play('whoosh'); }
+      else if (e.type === 'land') { env.sound.play('land'); env.haptics.buzz(20); env.fx.ring(X0, Y0, 'rgba(255,255,255,.7)', 26); env.fx.shake(2.5, 140); }
+      else if (e.type === 'rail') { env.sound.play('rail'); env.fx.burst(X0, Y0, { n: 6, colors: ['#ffd23f', '#fff'], speed: 120, life: 300, size: 2, gravity: 0 }); }
       else if (e.type === 'result') {
+        const pk = e.zone === 'HR' ? st.layout.pockets.slice().sort((a, b) => {
+          const A = S.pocketAt(a, st.frame), B = S.pocketAt(b, st.frame);
+          return Math.hypot(A.x - st.x, A.y - st.y) - Math.hypot(B.x - st.x, B.y - st.y);
+        })[0] : null;
+        hitFx = { zone: e.zone, t: now(), pocket: pk };
         env.pop(ZONE_NAME[e.zone] + (e.hot ? ' +1' : ''), ZONE_COL[e.zone]);
-        if (e.zone === 'HR') { env.sound.play('big'); env.haptics.buzz([30, 40, 60]); env.host.set('hype', 'homer'); }
-        else if (e.zone === 'F') { env.sound.play('foul'); env.host.set('disappointed', 'foul'); }
-        else { env.sound.play('good'); env.host.set(e.zone === '3B' ? 'celebrate' : 'idle', 'hit'); }
-      } else if (e.type === 'next') env.host.set(e.ball >= 7 ? 'nervous' : 'idle', 'ready');
+        if (e.bases) env.fx.text(X0, Y0 - 20, '+' + e.bases, '#ffe680', 26);
+        if (e.zone === 'HR') {
+          hrRun++;
+          env.sound.play('big'); env.sound.play('cheer'); env.haptics.buzz([30, 40, 60]); env.host.set('hype', 'homer');
+          env.fx.shake(9, 420); env.fx.flash('#E0533D', 260, 0.35); env.fx.confetti(70);
+          env.fx.burst(X0, Y0, { n: 40, speed: 320, colors: ['#E0533D', '#ffd23f', '#fff'] });
+          env.host.say(hrRun >= 3 ? 'Unstoppable!' : hrRun === 2 ? 'Back to back!' : 'Gone!');
+        } else if (e.zone === 'F') { hrRun = 0; env.sound.play('foul'); env.sound.play('groan'); env.host.set('disappointed', 'foul'); env.fx.shake(4, 220); env.host.say(['Foul ball.', 'Off the board!', 'Shake it off.'][e.ball % 3]); }
+        else {
+          hrRun = 0; env.sound.play('good', { pitch: e.zone === '3B' ? 1.25 : e.zone === '2B' ? 1.12 : 1 }); env.host.set(e.zone === '3B' ? 'celebrate' : 'idle', 'hit');
+          env.fx.burst(X0, Y0, { n: e.zone === '3B' ? 26 : 14, speed: 200, colors: [ZONE_COL[e.zone], '#fff', '#ffd23f'] });
+          if (e.zone === '3B') env.host.say('Triple!');
+        }
+      } else if (e.type === 'next') {
+        trail = [];
+        env.host.set(e.ball >= 7 ? 'nervous' : 'idle', 'ready');
+        if (e.ball === C.BALLS - 1) { env.pop('LAST BALL', '#ff4fa3'); env.host.say('Make it count!'); }
+      }
     },
-    onOver(s) { env.host.set(s.score >= 24 ? 'celebrate' : s.score <= 11 ? 'disappointed' : 'idle', 'over'); },
+    onOver(s) { env.host.set(s.score >= 24 ? 'celebrate' : s.score <= 11 ? 'disappointed' : 'idle', 'over'); if (S.detail(s).cycle) { env.fx.confetti(80); env.host.say('The cycle!'); } },
     hud(s) {
       return '<div class="stat"><b>' + s.score + '</b><span>Bases</span></div>' +
         '<div class="stat"><b id="hBall">' + Math.min(C.BALLS, s.ball + 1) + '/' + C.BALLS + '</b><span>Ball</span></div>' + diamond();
     },
     render(alpha, s, prev) {
-      cx.fillStyle = '#EFEDE8'; cx.fillRect(0, 0, W, H);
+      cabinet();
       if (!st) return;
       // the keyboard aims and charges on the wall clock; only the final angle and power are an input
-      const now = performance.now(), dt = lastR ? Math.min(0.05, (now - lastR) / 1000) : 0; lastR = now;
+      const tw = performance.now(), dt = lastR ? Math.min(0.05, (tw - lastR) / 1000) : 0; lastR = tw;
       if (keys.charging && ready()) keys.chargeT = Math.min(1, keys.chargeT + dt / 1.3);
       if (ready()) { if (keys.left) keyAngle = Math.max(-C.MAX_ANGLE, keyAngle - 0.36 * dt); if (keys.right) keyAngle = Math.min(C.MAX_ANGLE, keyAngle + 0.36 * dt); }
       if (!boardImg) drawBoard();
       cx.drawImage(boardImg, 0, 0, W, H);
+      bulbs();
       drawPockets(st.frame);
+      ringFlash();
       const p = prev && prev.ball === st.ball ? prev : null;
       const ix = p ? p.x + (st.x - p.x) * alpha : st.x, iy = p ? p.y + (st.y - p.y) * alpha : st.y, iz = p ? p.z + (st.z - p.z) * alpha : st.z;
+      if (st.phase !== 'ready' && st.phase !== 'over' && !env.RM) {
+        const lt = trail[trail.length - 1];
+        if (!lt || Math.hypot(lt.x - ix, lt.y - iy) > 2) { trail.push({ x: ix, y: iy, z: iz }); if (trail.length > 14) trail.shift(); }
+        drawTrail();
+      }
       if (st.phase !== 'over') drawBall(ix, iy, iz);
       if (st.phase === 'ready') drawAim();
       if (env.DEBUG) drawDebug();
