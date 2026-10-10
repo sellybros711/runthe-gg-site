@@ -12111,8 +12111,8 @@ node hoops/check-career.mjs                    section 11 (the engine), section 
 ```
 
 The owner's calls, 2026-10-02: no daily seeded career; playing the road from high
-school and the family tree are **Run The Floor Pro** (`rtf_premium`, the $9.99
-Endless already sells). A guest or free account starts on draft night from a
+school and the family tree are **Run The Floor Pro** (`rtf_premium`, the $14.99 a
+year Endless already sells). A guest or free account starts on draft night from a
 pre-NBA life generated for them, a new one every career.
 
 **THE GENERATED ROAD IS THE REAL ROAD.** `C.generateRoad(opts)` is
@@ -12889,6 +12889,15 @@ locker room ten times. The ten best known show first and the rest are a tap away
 Every pass is final and the shot clock is ten passes. An undo turns it into a
 map to be searched at leisure.
 
+**The years are hidden, and easy mode costs a pass.** A teammate tile shows only his name.
+The button under the last group ("Too hard? Use a pass to reveal the years each player played
+for that team") sets `st.easy`, which adds one to `passesOf()` for the clock, the verdict, the
+share and the board, and shows each man's seasons with THAT club (`clubYears`), not his career.
+It is not offered when spending it would end the clock. The server counts it too:
+`supabase/134_hoops_passes_easy.sql` gives `rtf_submit_passes` a `p_easy` argument, and
+`board.js` sends it only when it is true, so a normal chain files against 116 unchanged and an
+easy chain is refused there rather than filed a pass short. Deploy 134 by hand; preflight row 44.
+
 **The two ends wear pixel portraits, and they are silhouettes on purpose.** There
 is no licensed art, and a face drawn from a hash would put a guess about a real
 person's hair, build and skin on him, wrong about most of them. So `portrait()`
@@ -12970,7 +12979,7 @@ server, and the link is built off the SENDER's own page rather than a written-ou
 the www-against-apex reason in the Stripe section. It is read once on boot and on `hashchange`,
 then cleared, so a reload after finishing goes to the front page.
 
-**IT IS RUN THE FLOOR PRO**, $9.99 once, the `floor-pro` bundle granting `rtf_premium`
+**IT IS RUN THE FLOOR PRO**, $14.99 a year and renewing, the `floor-pro` bundle granting `rtf_premium`
 (`supabase/123_hoops_pro.sql`, go-live order in `functions/api/stripe/README.md`). Same shape
 as Diamond Pro: one checkout, one webhook, and the page asks `premium_products()` through
 `hoops/auth.js`. `endlessOpen()` in `modes-ui.js` is the one gate. There is no server meter,
@@ -18927,12 +18936,11 @@ are never counted and never sold. The Stripe steps are in
 
 #### It was $9.99 once and is now a yearly subscription
 
-**Run The Floor Pro (basketball) stays $9.99 once, and that is the owner's decision
-(2026-09), not a price the move above forgot.** The instruction was to change every
-$9.99 on the site, and basketball was then kept as it is. `hoops/modes-ui.js` and
-`hoops/how-to-play.html` are right to say $9.99 and "never renews". A sweep for $9.99
-should leave them alone, and the Large Bucket in Run The Tour is a third, unrelated
-$9.99.
+**Run The Floor Pro (basketball) is $14.99 a year too**, the owner's call (2026-10),
+made before it ever went on sale (it was planned at $9.99 once). The catalog row carries
+`recurring: true`, so it takes exactly the path below, and the Pro sheet in
+`hoops/modes-ui.js` writes `PRO_PRICE` with `PRO_TERM` and offers Manage billing to an
+owner. The Large Bucket in Run The Tour is an unrelated $9.99.
 
 ```
 node scripts/stripe/check-recurring.mjs   the checkout and webhook, driven, no network

@@ -590,7 +590,14 @@ check_rows(sort, migration, what, breaks, ok) as (
       'an unnamed account gets a generated name on the arcade boards',
       'Unnamed accounts all show as "Player" and cannot find their own row.',
       (select count(*) > 0 from proc where name = 'arcade_generated_name')
-      and (select count(*) > 0 from trg where name = 'grid_runs_fill_name'))
+      and (select count(*) > 0 from trg where name = 'grid_runs_fill_name')),
+
+  -- SIX PASSES EASY MODE. Without it a normal chain still files, and a chain
+  -- solved in easy mode is refused, so it never reaches the board at all.
+  (44, '134_hoops_passes_easy',
+      'a Six Passes chain played in easy mode is filed with its extra pass',
+      'Chains that used easy mode do not reach the Six Passes board.',
+      (select count(*) > 0 from proc where name = 'rtf_submit_passes' and args like '%p_easy%'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

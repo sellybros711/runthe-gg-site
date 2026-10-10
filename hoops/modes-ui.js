@@ -380,6 +380,7 @@ var CSS = [
   '.td-pro{display:block;margin:8px auto 0;background:none;border:0;color:#f2c14e;font:inherit;font-weight:800;font-size:13px;',
   'cursor:pointer;padding:2px 6px;}',
   '.td-pro .pro-tag{font-style:normal;margin:0 4px 0 0;}',
+  '.mw-pro.mw-shut{cursor:pointer;}',
   '.pro-tag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#1b1405;',
   'background:#f2c14e;border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:1px;}',
   '#pro-sheet[hidden]{display:none;}',
@@ -745,6 +746,10 @@ var CSS = [
   '.ps-mate:hover:not(:disabled){filter:none;border-color:var(--gold);}',
   '.ps-mate.used{opacity:.35;}',
   '.ps-gh em{font-style:normal;color:var(--dim);margin-left:4px;}',
+  '.ps-easy{grid-column:1/-1;background:#14192a;border:1px dashed var(--gold);border-radius:10px;padding:12px 14px;',
+  '  color:var(--gold);font-family:var(--body);font-weight:800;font-size:13px;line-height:1.35;cursor:pointer;text-align:center;}',
+  '.ps-easy:hover{background:#2a2412;}',
+  '.ps-score .ps-easytag{display:block;margin-top:4px;font-size:10px;letter-spacing:.06em;color:var(--gold);}',
   '.ps-more{background:none;border:1px dashed #3a4666;border-radius:8px;padding:6px 10px;color:var(--mut);',
   '  font-family:var(--body);font-weight:800;font-size:12px;cursor:pointer;}',
   '.ps-mate.tgt{border-color:var(--gold);background:#2a2412;box-shadow:0 0 0 1px var(--gold) inset;animation:mxPulse 1.4s infinite;}',
@@ -1532,7 +1537,11 @@ function today(){ return P.dayNumberOf(P.easternISO()); }
    with no store behind it is a wall. A friend's link never asks. */
 var PRO_LIVE = true;
 var PRO_BUNDLE = 'floor-pro';
-var PRO_PRICE = '$9.99';
+/* $14.99 A YEAR, renewing (the owner's call, 2026-10). PRO_TERM rides beside the
+   price wherever it is shown, because a price with no term on a subscription
+   reads as once. */
+var PRO_PRICE = '$14.99';
+var PRO_TERM = ' a year';
 var proOwned = false;
 /* TESTER ACCOUNTS ARE COMPED PRO, the owner's call. Usernames as the board
    prints them (matched lowercased, because set_username keeps the casing
@@ -2455,7 +2464,24 @@ function psStreak(){
   while (days[d] && days[d].done && days[d].solved) { n++; d--; }
   return n;
 }
-function passesOf(st){ return st.chain.length - 1; }
+/* EASY MODE IS ONE PASS OF THE SHOT CLOCK, spent once, and it counts
+   everywhere a pass is counted: the clock, the verdict, the share and the
+   board (134). A chain is still its hops; this is the number it scores. */
+function passesOf(st){ return st.chain.length - 1 + (st.easy ? 1 : 0); }
+/* The seasons a man played for one club, as ranges: "1976-80, 1984". */
+function clubYears(id, code){
+  var ys = (graph().seasonsOf[id] || []).map(function(ts){ return tsParts(ts); })
+    .filter(function(t){ return t.code === code; })
+    .map(function(t){ return t.season; }).sort(function(a, b){ return a - b; });
+  var out = [], i = 0;
+  while (i < ys.length) {
+    var j = i;
+    while (j + 1 < ys.length && ys[j + 1] === ys[j] + 1) j++;
+    out.push(ys[i] === ys[j] ? String(ys[i]) : ys[i] + '-' + String(ys[j]).slice(-2));
+    i = j + 1;
+  }
+  return out.join(', ');
+}
 function spanTxt(id){ var sp = graph().span[id]; return sp[0] === sp[1] ? String(sp[0]) : sp[0] + '-' + sp[1]; }
 
 /* THE TIMELINE: 1974 to today, each man a point at the middle of his career,
@@ -2601,18 +2627,35 @@ function psPickerHtml(st){
     var list = open ? mates : mates.slice(0, 10);
     var skin = E.clubSkin(stint.code);
     var yrs = stint.from === stint.to ? String(stint.from) : stint.from + '-' + String(stint.to).slice(-2);
-    h += '<div class="ps-grp"><div class="ps-gh" style="--c-acc:' + skin.accent + '">' + jersey(stint.code, 2)
+    h += '<div class="ps-grp" data-code="' + esc(stint.code) + '"><div class="ps-gh" style="--c-acc:' + skin.accent + '">' + jersey(stint.code, 2)
       + '<span>' + esc(E.teamName(stint.code)) + ' <em>' + yrs + '</em></span></div><div class="ps-mates">';
     list.forEach(function(id){
       shown++;
       h += '<button class="ps-mate' + (used[id] ? ' used' : '') + (id === psPuzzle().to ? ' tgt' : '') + '" data-id="' + esc(id) + '"'
-        + (used[id] ? ' disabled' : '') + '>' + esc(g.nameOf[id]) + '<small>' + spanTxt(id) + '</small></button>';
+        + (used[id] ? ' disabled' : '') + '>' + esc(g.nameOf[id])
+        + (st.easy ? '<small>' + clubYears(id, stint.code) + '</small>' : '') + '</button>';
     });
     if (!open) h += '<button class="ps-more" data-stint="' + esc(key) + '">+' + (mates.length - 10) + ' more</button>';
     h += '</div></div>';
   });
   if (!shown) h = '<p class="fx-hint">Nobody by that name played with him.</p>';
+  /* The years are hidden by default, which is the puzzle: you have to know
+     when a man played. The offer is under the last group, and it is not made
+     when spending a pass would end the clock. */
+  else if (!st.easy && passesOf(st) < M.PS.CLOCK - 1) {
+    h += '<button class="ps-easy" id="ps-easy">Too hard? Use a pass to reveal the years each player played for that team</button>';
+  }
   return h;
+}
+
+/* Easy mode: one pass off the clock, the years on for the rest of the puzzle. */
+function psEasy(){
+  var st = psState();
+  if (st.done || st.easy || passesOf(st) >= M.PS.CLOCK - 1) return;
+  st.easy = true;
+  st.at = Date.now();
+  psKeep(st);
+  psRender(false);
 }
 
 function psPass(to){
@@ -2681,7 +2724,8 @@ function psDoneHtml(st){
     + '<div class="ps-head">' + head + '</div>'
     + (st.solved ? '<div class="ps-stars" aria-label="' + Math.max(0, 3 - Math.max(0, over)) + ' of 3">' + stars + '</div>' : '')
     + '</div><div class="ps-score"><b>' + (st.solved ? n : 'X') + '</b><span>'
-    + (st.solved ? (n === 1 ? 'pass' : 'passes') + ' · par ' + pz.par : 'Never got there') + '</span></div></div>'
+    + (st.solved ? (n === 1 ? 'pass' : 'passes') + ' · par ' + pz.par : 'Never got there') + '</span>'
+    + (st.easy ? '<span class="ps-easytag">Easy mode: one pass for the years</span>' : '') + '</div></div>'
     + psLane(st)
     + '<p class="mx-say ps-best">' + (st.solved && over <= 0 ? 'No shorter way exists.' : 'A shortest chain: ' + bestHtml + '.') + '</p>'
     + (psEnd ? '' : '<div id="ps-place" class="fx-place"></div>')
@@ -2706,7 +2750,7 @@ function psShareText(st){
   line += st.solved ? '🎯' : '❌';
   return 'Run The Floor · Six Passes ' + (M.isEndless(pz.day) ? (pz.custom ? 'Custom' : 'Endless') : '#' + pz.day) + '\n'
     + surname(g.nameOf[pz.from]) + ' to ' + surname(g.nameOf[pz.to]) + '\n'
-    + line + ' ' + (st.solved ? plural(n, 'pass', 'passes') + ' (par ' + pz.par + ')' : 'shot clock') + '\n'
+    + line + ' ' + (st.solved ? plural(n, 'pass', 'passes') + ' (par ' + pz.par + ')' : 'shot clock') + (st.easy ? ' · easy mode' : '') + '\n'
     + 'Real teammates only. Can you do it in fewer?\n' + (pz.custom ? linkTo('pass=' + pz.from + '.' + pz.to) : P.SHARE_URL);
 }
 
@@ -2742,6 +2786,7 @@ function psRender(animate){
         wire();
       };
     });
+    var ez = $('ps-easy'); if (ez) ez.onclick = psEasy;
   };
   wire();
   var q = $('ps-q');
@@ -2936,7 +2981,7 @@ function proTileHtml(){
   return '<span class="mt-tag">Pro · No daily limit</span><b class="mt-name">Endless</b>'
     + '<div class="td-end"><span>Endless</span><button id="td-efx"' + lk + '>Fix History</button><button id="td-eps"' + lk + '>Six Passes</button></div>'
     + '<div class="td-end"><span>Build</span><button id="td-pfx"' + lk + '>Any team</button><button id="td-pps"' + lk + '>Two players</button></div>'
-    + (endlessOpen() ? '' : '<button class="td-pro" id="td-pro"><i class="pro-tag">Pro</i> Unlock both for ' + PRO_PRICE + '</button>');
+    + (endlessOpen() ? '' : '<button class="td-pro" id="td-pro"><i class="pro-tag">Pro</i> Unlock both for ' + PRO_PRICE + PRO_TERM + '</button>');
 }
 /* How many of today's two puzzles are still open, for the strip's heading. */
 function dailiesLeft(){
@@ -2965,6 +3010,19 @@ function renderHome(){
   var pf = $('td-pfx'); if (pf) pf.onclick = fxOpenPicker;
   var pp = $('td-pps'); if (pp) pp.onclick = psOpenPicker;
   var tp = $('td-pro'); if (tp) tp.onclick = function(){ openPro(null); };
+  /* LOCKED, THE WHOLE CARD IS THE OFFER, asked for by the owner: a press anywhere on
+     it opens the Pro sheet. The chips keep their own presses (they open the same
+     sheet without Pro, and their mode with it), so this only takes the rest of the
+     card. Unlocked the card has nothing of its own to open. */
+  var mp = $('mw-pro');
+  if (mp) {
+    var shut = !endlessOpen();
+    mp.classList.toggle('mw-shut', shut);
+    mp.onclick = shut ? function(ev){ if (!ev.target.closest('button')) openPro(null); } : null;
+    if (shut) { mp.setAttribute('role', 'button'); mp.tabIndex = 0;
+      mp.onkeydown = function(ev){ if (ev.target === mp && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); openPro(null); } }; }
+    else { mp.removeAttribute('role'); mp.removeAttribute('tabindex'); mp.onkeydown = null; }
+  }
   if (window.RTF_CAREER_UI) window.RTF_CAREER_UI.renderHero();
 }
 
@@ -3034,7 +3092,7 @@ function fxFillPlace(r){
 
 function psSubmit(pz, st){
   if (st.boardId) return Promise.resolve(st.boardId);
-  return BB().submitPasses(pz.day, st.chain, pz.par, st.solved).then(function(id){
+  return BB().submitPasses(pz.day, st.chain, pz.par, st.solved, !!st.easy).then(function(id){
     if (id) { st.boardId = id; psKeep(st); rememberGuest(id); }
     return id;
   });
@@ -3149,7 +3207,8 @@ function mbPassesMore(row){
       + (i ? '' : '<em>Start</em>') + '</li>';
   }).join('') + '</ol>'
     + '<p class="bd-team-foot">' + (row.solved ? plural(row.passes, 'pass', 'passes') + ' against a par of ' + row.par
-      : 'The shot clock ran out after ' + plural(Math.max(0, chain.length - 1), 'pass', 'passes')) + '.</p>';
+      : 'The shot clock ran out after ' + plural(Math.max(0, row.passes || chain.length - 1), 'pass', 'passes')) + '.'
+      + (row.passes > chain.length - 1 ? ' One was spent on easy mode.' : '') + '</p>';
 }
 function mbConquestMore(row){
   var d = data(), men = Array.isArray(row.cq_roster) ? row.cq_roster : [];
@@ -3224,7 +3283,10 @@ function paintPro(why, kind){
     h += '<p class="mx-say">' + (proOwned ? 'Endless puzzles, build your own, high school careers and the family tree are open. On every device you sign in on.'
       : 'Your payment went through. Pro is on its way to your account and usually lands in a few seconds.') + '</p>';
   } else if (proOwned) {
-    h += '<p class="mx-say">Endless puzzles, build your own, high school careers and the family tree are open. Thanks for backing the game.</p>';
+    h += '<p class="mx-say">Endless puzzles, build your own, high school careers and the family tree are open. Thanks for backing the game.</p>'
+      + '<button class="ghost" id="pro-bill">Manage billing</button>'
+      + '<p class="pro-err" id="pro-err" hidden></p>'
+      + '<p class="fx-hint" style="text-align:center">Change your card or cancel in Stripe. Pro stays on until the end of the year you paid for.</p>';
   } else {
     var signed = signedAcct();
     h += '<p class="mx-say">' + (why === 'endless' ? 'Out of puzzles for today? Pro keeps them coming.'
@@ -3238,15 +3300,17 @@ function paintPro(why, kind){
       + '<li><b>Rebuild any team</b>Any club, any year, champions too. Four trade windows to win it.</li>'
       + '<li><b>Make a puzzle</b>Pick any two players and send the link. Friends play it free.</li>'
       + '</ul>'
-      + '<div class="pro-price"><b>' + PRO_PRICE + '</b><span>once. Yours for good.</span></div>'
-      + '<button class="pro-buy" id="pro-buy">' + (signed ? 'Get Pro for ' + PRO_PRICE : 'Sign in to get Pro') + '</button>'
+      + '<div class="pro-price"><b>' + PRO_PRICE + '</b><span>a year. Cancel any time.</span></div>'
+      + '<button class="pro-buy" id="pro-buy">' + (signed ? 'Get Pro for ' + PRO_PRICE + PRO_TERM : 'Sign in to get Pro') + '</button>'
       + '<p class="pro-err" id="pro-err" hidden></p>'
       + '<p class="fx-hint" style="text-align:center">' + (signed
-        ? 'One payment through Stripe. Nothing renews. Classic, Conquest, the dailies and Career from draft night stay free.'
+        ? 'Paid through Stripe. Renews each year until you cancel. Classic, Conquest, the dailies and Career from draft night stay free.'
         : 'Pro belongs to your RunThe.GG account, so it follows you to every device. The dailies and Career from draft night stay free.') + '</p>';
   }
   sh.innerHTML = h + '</div>';
   sh.querySelectorAll('[data-pro-x]').forEach(function(b){ b.onclick = closePro; });
+  var bill = $('pro-bill');
+  if (bill) bill.onclick = function(){ openBilling(bill); };
   var buy = $('pro-buy');
   if (buy) buy.onclick = function(){
     if (!signedAcct()) { closePro(); if (P.openProfile) P.openProfile(); return; }
@@ -3271,13 +3335,36 @@ function buyPro(btn){
       if (d && d.url) { location.href = d.url; return; }
       if (d && d.error === 'already_owned') proRefresh(true);
       btn.disabled = false;
-      btn.textContent = 'Get Pro for ' + PRO_PRICE;
+      btn.textContent = 'Get Pro for ' + PRO_PRICE + PRO_TERM;
       if (err) {
         err.hidden = false;
         err.textContent = d && d.error === 'stripe_not_configured' ? 'Pro is not on sale yet. Try again soon.'
           : d && d.error === 'already_owned' ? 'This account already has Pro.'
           : d && d.error === 'unauthorized' ? 'Sign in again, then try once more.'
           : 'Checkout did not open. Try again.';
+      }
+    });
+}
+/* The Stripe Customer Portal, where a subscription is changed or cancelled.
+   A comped tester has no customer, and is told so rather than shown an error. */
+function openBilling(btn){
+  var a = P.auth(), t = a && a.token ? a.token() : null;
+  if (!t) { closePro(); if (P.openProfile) P.openProfile(); return; }
+  var err = $('pro-err'); if (err) err.hidden = true;
+  var label = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Opening billing...';
+  fetch('/api/stripe/portal', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
+    body: JSON.stringify({ return_path: '/hoops/' })
+  }).then(function(r){ return r.json().catch(function(){ return {}; }); })
+    .catch(function(){ return {}; })
+    .then(function(d){
+      if (d && d.url) { location.href = d.url; return; }
+      btn.disabled = false; btn.textContent = label;
+      if (err) {
+        err.hidden = false;
+        err.textContent = d && d.error === 'no_customer' ? 'There is no billing on this account to show.' : 'Billing did not open. Try again.';
       }
     });
 }

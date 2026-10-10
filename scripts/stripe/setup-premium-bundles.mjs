@@ -71,15 +71,19 @@ const CATALOG = [
       metadata: { site_bundle: 'diamond-pro' },
     },
   },
-  /* $9.99, one-time, the owner's decision (2026-09). Basketball's own tier:
-   * endless puzzles and picked ones. The dailies stay free. */
+  /* $14.99 A YEAR, recurring, the owner's decision (2026-10); it was planned at
+   * $9.99 once and never went on sale that way. Basketball's own tier: endless
+   * puzzles, picked ones, the high school road and the family tree. The dailies
+   * stay free. A new lookup key, because a Price cannot change from one-time to
+   * recurring. */
   {
-    lookupKey: 'rtf_pro_once',
+    lookupKey: 'rtf_pro_year',
     envVar: 'STRIPE_PRICE_RTF_PRO',
-    amountCents: 999,
+    amountCents: 1499,
+    interval: 'year',
     product: {
       name: 'Run The Floor Pro',
-      description: 'Endless Fix History and Six Passes. Rebuild any team from any year. Make any two player puzzle and send it to friends. One purchase, yours for good.',
+      description: 'Endless Fix History and Six Passes. Rebuild any team from any year. Make any two player puzzle and send it to friends. Play your career from high school. Renews yearly until cancelled.',
       metadata: { site_bundle: 'floor-pro' },
     },
   },
