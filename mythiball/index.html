@@ -1233,6 +1233,20 @@
   .bigplay:focus-visible{outline:3px solid var(--line);outline-offset:4px;}
   /* The play mark is drawn, not a glyph: a triangle out of borders sits on
      the baseline the same way in every font this page might fall back to. */
+  .btn.special{background:linear-gradient(180deg,#ffd45a,#f0a020);color:#3a2200;
+    border-color:#8a5a00;font-weight:800;}
+  body.ingame .controls .btn.special{padding:7px 12px;font-size:12px;letter-spacing:.06em;}
+  .controls .btn.special.selected,.btn.special.selected{background:linear-gradient(180deg,#ff7a3a,#d83a1a);color:#fff;
+    box-shadow:0 0 0 3px rgba(255,200,60,.55),var(--shadow);}
+  .quickplay{display:flex;flex-direction:column;align-items:center;gap:2px;width:100%;
+    margin-top:8px;background:var(--panel);color:var(--navy);cursor:pointer;
+    border:2px solid var(--navy);border-radius:var(--r);box-shadow:var(--shadow);
+    padding:9px 14px;font-family:inherit;}
+  .quickplay b{font-family:var(--font-display);font-size:15px;font-weight:800;
+    letter-spacing:.06em;text-transform:uppercase;}
+  .quickplay span{font-size:11px;letter-spacing:.04em;color:var(--text-dim);}
+  .quickplay:hover{background:#fff;}
+  .quickplay:active{transform:translateY(1px);box-shadow:var(--shadow-press);}
   .bp-mark{width:0;height:0;border-style:solid;border-width:9px 0 9px 15px;
     border-color:transparent transparent transparent #fff6ea;flex:0 0 auto;}
 
@@ -2071,6 +2085,7 @@
     body:not(.ingame) *{transition-duration:0s !important;}
     body:not(.ingame) :is(.hmode,.park-card,.charcard,.potg,.award){transform:none !important;}
   }
+body.onmenu #btn-home{visibility:hidden}
 </style>
 </head>
 <body>
@@ -3105,8 +3120,10 @@ const DEFAULT_STYLE = { swing:0, patience:0, jitter:0, label:'Balanced' };
    games sit in the middle so a one off is neither trivial nor brutal. */
 function opponentSharpness() {
   if (State.mode === 'season' && State.season) {
-    const played = State.season.results.length;   /* 0..6 going in */
-    return clamp(played / 8 + leagueEdge(), 0, 1);
+    /* 0..len-1 going in. Divided by one more than the length so the last
+       game of any season sits where game seven of seven always did. */
+    const played = State.season.results.length;
+    return clamp(played / (seasonGames(State.season) + 1) + leagueEdge(), 0, 1);
   }
   if (State.mode === 'playoff') {
     return clamp((State.game && State.game.round === 'final' ? 1.0 : 0.85) + leagueEdge(), 0, 1);
@@ -5037,6 +5054,8 @@ function savePrefs() {
       coach_bat: !!PREFS.coach_bat,
       coach_pitch: !!PREFS.coach_pitch,
       rosterSort: PREFS.rosterSort || 'name',
+      lastTeam: Array.isArray(State.team) && State.team.length === 9 ? State.team : PREFS.lastTeam,
+      seasonLen: State.seasonLen || PREFS.seasonLen,
       progress: PROGRESS,
     }));
   } catch (e) {}
@@ -5684,6 +5703,7 @@ const State = {
   season: loadSeason(),
   franchise: null,   /* set from the season below, or by founding one */
   cup: loadCup(),
+  seasonLen: [7, 12, 17].includes(PREFS.seasonLen) ? PREFS.seasonLen : 7,
 };
 
 /* Mute toggle in the header. Also warms the audio context up on the
@@ -6003,6 +6023,9 @@ function render() {
      phone one: there is no canvas to fill the window with. */
   document.body.classList.toggle('inroom', s === 'menu' && !ROOMFILL.matches);
   document.body.classList.toggle('roomfill', ROOMFILL.matches);
+  /* A Main Menu button on the main menu is a button that goes nowhere. It
+     keeps its box (visibility, not display) so the header does not jump. */
+  document.body.classList.toggle('onmenu', s === 'menu');
   if (s === 'menu') renderMenu();
   else if (s === 'roster') renderRoster();
   else if (s === 'settings') renderSettings();
@@ -6244,7 +6267,7 @@ function pressPortrait(key, w, h) {
    screen: {foe} lost by {margin} and {star} did it is a line about YOUR
    game, and the same sentence with the numbers taken out is filler.
 
-     {team} {foe} {you} {them} {margin} {star} {rec} {gameNo} {park}
+     {team} {foe} {you} {them} {margin} {star} {rec} {gameNo} {gameLen} {park}
 
    Each pool mixes two registers deliberately. Half of these are things a
    real radio host would say about a real ballgame. The other half are what
@@ -6281,7 +6304,7 @@ const PRESS = {
       ["sherlock", "{team} sit at {rec}. That record tells me three things, and two of them are about their pitching."],
       ["longjohn", "History with this one: {rivalNote}. Records get short memories. Clubhouses do not."],
       ["medusa", "I looked it up. {rivalNote}. Somebody should read that out loud before first pitch."],
-      ["longjohn", "Game {gameNo} of seven. {foe} today. {team} are {rec} and the schedule does not get kinder."],
+      ["longjohn", "Game {gameNo} of {gameLen}. {foe} today. {team} are {rec} and the schedule does not get kinder."],
       ["humpty", "I am told this is a big one. Every one of them has been a big one. My shell is not what it was."],
       ["witch", "The omens today are mixed. There was a crow. There is always a crow. I may be overreading the crow."],
       ["medusa", "{foe} have been talking. Loudly. I would advise them not to look directly at anything for a while."],
@@ -6299,7 +6322,7 @@ const PRESS = {
       ["krampus", "{foe} again. And {rivalNote}. I do hope somebody in that clubhouse has been counting."],
       ["krampus", "I love this round. Somebody goes home sad, and I get to watch it happen from a very good seat."],
       ["witch", "I have stopped reading the omens. At this stage the omens read YOU."],
-      ["ringmaster", "ELIMINATION. My favourite word. Say it with the teeth."],
+      ["ringmaster", "ELIMINATION. My favorite word. Say it with the teeth."],
     ],
     final: [
       ["longjohn", "The final. {team} and {foe}. Whatever you were doing, stop it and watch this."],
@@ -6353,7 +6376,7 @@ const PRESS = {
     comebackWin: [
       ["longjohn", "{team} trailed and won it {you} to {them}. That is the kind of night that turns a season sideways."],
       ["ringmaster", "THEY WERE DEAD. I DECLARED THEM DEAD ON AIR. I WOULD LIKE TO RETRACT THAT."],
-      ["lupin", "A comeback. My favourite genre. You let them believe they have it, and then you simply take it."],
+      ["lupin", "A comeback. My favorite genre. You let them believe they have it, and then you simply take it."],
       ["ichabod", "I had already filed the loss. I have never unfiled anything so fast in my life."],
     ],
     rival: [
@@ -6512,6 +6535,7 @@ function pressCtx(extra) {
     city: (State.franchise && State.franchise.city) || null,
     rec: rec ? `${rec.w}-${rec.l}` : '0-0',
     gameNo: S ? S.results.length + 1 : 1,
+    gameLen: S ? seasonGames(S) : 7,
     lastTag: S && S.press && S.press.lastTag,
     rivalNote: State.opponent ? pressRival(State.opponent.name) : null,
   }, extra || {});
@@ -6685,7 +6709,7 @@ const CITIES = [
   { n:'Thistledown',   blurb:'Small, green, and entirely too pleased with itself.' },
   { n:'Ironvale',      blurb:'Foundry town. They boo their own club on principle.' },
   { n:'Copperkettle',  blurb:'Famous for pie. Tolerant of a losing season.' },
-  { n:'Lantern Point', blurb:'A lighthouse beyond centre field. It is in play.' },
+  { n:'Lantern Point', blurb:'A lighthouse beyond center field. It is in play.' },
   { n:'Bramblewick',   blurb:'The hedges around the park have never been cut.' },
   { n:'Chimney Rock',  blurb:'Thin air, tall sky, and a very long walk to the park.' },
   { n:'Mudlark Flats', blurb:'Floods every spring. They play anyway.' },
@@ -6697,7 +6721,7 @@ const NICKNAMES = [
 ];
 const KITS = [
   { n:'Firebrick',  a:'#cf3229', b:'#14283f' },
-  { n:'Harbour',    a:'#1566ae', b:'#f2e3bb' },
+  { n:'Harbor',     a:'#1566ae', b:'#f2e3bb' },
   { n:'Clover',     a:'#1b8a4a', b:'#f8e9c0' },
   { n:'Mustard',    a:'#d8a017', b:'#2a2a34' },
   { n:'Plum',       a:'#6b4296', b:'#f3e6cf' },
@@ -6721,7 +6745,7 @@ const PARKS = {
   },
   cavern: {
     name:'Cavern Park', hr:0.68, xbh:1.28, crowd:0,
-    blurb:'Four hundred and thirty to dead centre. Balls die out there and doubles live.',
+    blurb:'Four hundred and thirty to dead center. Balls die out there and doubles live.',
     effect:'Home runs -32% · extra base hits +28%',
     theme:{ sky:'#8fd0e8', wall:'#22643a', wallLine:'#f8f0d2', marker:'#fffaf0',
             track:'#b8945e', grass:'#2f8a44',
@@ -6835,6 +6859,19 @@ function renderFranchise() {
     return row;
   };
 
+  /* Season length, first, because it is the one choice that decides how
+     long the rest of this takes. */
+  const lenCard = el('div','card');
+  lenCard.appendChild(el('h3', null, 'Season length'));
+  const curLen = seasonGames({ len: State.seasonLen });
+  lenCard.appendChild(chipRow(
+    SEASON_LENGTHS.map(L => ({ label: L.label + ' · ' + L.n, v: L.n })),
+    (it) => it.v === curLen,
+    (it) => { State.seasonLen = it.v; savePrefs(); }));
+  const curL = SEASON_LENGTHS.find(L => L.n === curLen);
+  lenCard.appendChild(el('p', null, curL ? curL.note + ' Top four of eighteen make the playoffs.' : ''));
+  s.appendChild(lenCard);
+
   /* City */
   const cityCard = el('div','card');
   cityCard.appendChild(el('h3', null, 'City'));
@@ -6868,7 +6905,7 @@ function renderFranchise() {
 
   /* Colours */
   const kitCard = el('div','card');
-  kitCard.appendChild(el('h3', null, 'Colours'));
+  kitCard.appendChild(el('h3', null, 'Colors'));
   const kitRow = el('div','toggle-row');
   KITS.forEach((k, i) => {
     const t = el('div','toggle', k.n);
@@ -6889,7 +6926,7 @@ function renderFranchise() {
   const parkCard = el('div','card');
   parkCard.appendChild(el('h3', null, 'Home park'));
   parkCard.appendChild(el('p', null,
-    'You play four of your seven at home. The factor applies to BOTH clubs '
+    'You play half your games at home. The factor applies to BOTH clubs '
     + 'while you are there, because it is the field and not the team.'));
   const pg = el('div','park-grid');
   for (const key of PARK_KEYS) {
@@ -7106,11 +7143,11 @@ function clubhouseThings() {
     { id: 'season', ...ROOM.slots.season, sign: 'FRANCHISE',
       label: seasonOn ? 'Resume Franchise' : 'Start Franchise',
       note: seasonOn
-        ? `Year ${State.season.year || 1}, ${rec.w}-${rec.l}, game ${State.season.results.length + 1} of 7.`
+        ? `Year ${State.season.year || 1}, ${rec.w}-${rec.l}, game ${State.season.results.length + 1} of ${seasonGames(State.season)}.`
         : 'Found a club and run it. Pull and earn players, then draft them in or roll with what you have.',
       blurb: seasonOn
-        ? `Year ${State.season.year || 1} · ${rec.w}-${rec.l}, game ${State.season.results.length + 1} of 7`
-        : 'Run a club for seven games',
+        ? `Year ${State.season.year || 1} · ${rec.w}-${rec.l}, game ${State.season.results.length + 1} of ${seasonGames(State.season)}`
+        : 'Found a club and run it year after year',
       art: { w: 176, h: 168 },
       draw: drawLineupBoard,
       go: () => {
@@ -7187,7 +7224,7 @@ function drawLineupBoard(ctx, t) {
   roomText(ctx, (c) => {
     c.fillStyle = CLUB.cream;
     c.font = 'bold 13px monospace'; c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.fillText('7 GAMES', t.x + t.w / 2, t.y + 21);
+    c.fillText(State.season ? seasonGames(State.season) + ' GAMES' : 'SEASON', t.x + t.w / 2, t.y + 21);
   });
   for (let i = 0; i < 7; i++) {
     const ly = t.y + 42 + i * 16;
@@ -8227,11 +8264,11 @@ function franchisePanel(things) {
     line.appendChild(el('b', null, 'Year ' + (State.season.year || 1)));
     line.appendChild(el('i', null, rec.w + '-' + rec.l));
     line.appendChild(el('span', null, State.season.playoffs
-      ? 'Playoffs' : 'Game ' + (gp + 1) + ' of 7'));
+      ? 'Playoffs' : 'Game ' + (gp + 1) + ' of ' + seasonGames(State.season)));
     wrap.appendChild(line);
   } else {
     wrap.appendChild(el('div', 'fr-stat empty',
-      'No franchise running. Pick a club and take it through seven.'));
+      'Found a club, draft your nine, and chase the pennant. Your players remember every season.'));
   }
   const b = el('button', 'bigplay');
   b.type = 'button';
@@ -8239,7 +8276,42 @@ function franchisePanel(things) {
     + '<span class="bp-txt">' + (on ? 'Continue franchise' : 'Start a franchise') + '</span>';
   b.onclick = t.go;
   wrap.appendChild(b);
+  /* THE FASTEST WAY ONTO THE FIELD. Every other door went through a
+     sixty-eight card draft and a settings page first, so somebody who
+     came to swing a bat met a spreadsheet. Quick game takes your last
+     nine (or deals a fair one) and is at the plate in one press. */
+  const q = el('button', 'quickplay');
+  q.type = 'button';
+  q.id = 'b-quick';
+  q.innerHTML = '<b>Quick game</b><span>' + (lastNineOk() ? 'Your last nine' : 'A fair nine, dealt')
+    + ' · straight to the plate</span>';
+  q.onclick = quickGame;
+  wrap.appendChild(q);
   return wrap;
+}
+
+/* The nine Randomize deals: random men, best arm first, because the first
+   pick starts on the mound and a coin toss there is a miserable first game. */
+function randomNine() {
+  const bag = DRAFTABLE().filter(c => isUnlocked(c.k)).sort(() => Math.random() - 0.5);
+  const nine = bag.slice(0, 9);
+  let ace = 0;
+  for (let i = 1; i < nine.length; i++) if ((nine[i].pit | 0) > (nine[ace].pit | 0)) ace = i;
+  if (ace) { const a = nine[ace]; nine.splice(ace, 1); nine.unshift(a); }
+  return nine.map(c => c.k);
+}
+function lastNine() { return Array.isArray(State.team) && State.team.length === 9 ? State.team : PREFS.lastTeam; }
+function lastNineOk() {
+  const t = lastNine();
+  return Array.isArray(t) && t.length === 9 && new Set(t).size === 9
+    && t.every(k => ROSTER_BY_KEY[k] && isUnlocked(k));
+}
+function quickGame() {
+  State.mode = 'exhibition';
+  State.team = lastNineOk() ? lastNine().slice() : randomNine();
+  if (!State.teamName) State.teamName = 'Your Team';
+  State.opponent = randomOpponent(null);
+  startGame({ mode: 'exhibition' });
 }
 
 /* THE MODE TILES, built from the same `clubhouseThings()` the room hangs on
@@ -8870,12 +8942,7 @@ function renderRoster() {
      choice, and the note above the grid tells them what it costs. */
   rand.onclick = () => {
     picked.clear();
-    const bag = DRAFTABLE().filter(c => isUnlocked(c.k)).sort(() => Math.random() - 0.5);
-    const nine = bag.slice(0, 9);
-    let ace = 0;
-    for (let i = 1; i < nine.length; i++) if ((nine[i].pit | 0) > (nine[ace].pit | 0)) ace = i;
-    if (ace) { const a = nine[ace]; nine.splice(ace, 1); nine.unshift(a); }
-    nine.forEach(c => picked.add(c.k));
+    randomNine().forEach(k => picked.add(k));
     redraw();
     /* Same auto advance as the ninth click: nine is nine. */
     setTimeout(() => {
@@ -9033,16 +9100,33 @@ function randomOpponent(exclude) {
   const pool = OPPONENTS.filter(o => !exclude || o.name !== exclude);
   return pool[Math.floor(Math.random() * pool.length)];
 }
-function buildSchedule() {
+/* HOW LONG A SEASON IS. Seven games was the whole franchise for as long as
+   it existed, and a franchise you finish in an afternoon is a long
+   exhibition. So the length is chosen when the club is founded and carried
+   from year to year: Quick is the old seven, Standard is twelve, and Full
+   is seventeen, which is every other club in the league exactly once.
+   A saved season from before this has no length and is the seven it was. */
+const SEASON_LENGTHS = [
+  { n: 7,  label: 'Quick',    note: '7 games. An afternoon.' },
+  { n: 12, label: 'Standard', note: '12 games. A real pennant race.' },
+  { n: 17, label: 'Full',     note: '17 games. Every club in the league, once.' },
+];
+function seasonGames(S) {
+  const n = S && S.len | 0;
+  return n >= 1 && n <= 17 ? n : 7;
+}
+function buildSchedule(n) {
   const bag = [...OPPONENTS].sort(() => Math.random() - 0.5);
-  return bag.slice(0,7).map(o => o.name);
+  return bag.slice(0, n || 7).map(o => o.name);
 }
 /* Four of the seven at home, alternating from the opener, so the park you
    chose is the one you see most. Before this every season game was played
    on the road: youHome was never passed and the franchise had a home park
    it never once played in. */
-function buildHomeDates() {
-  return [true, false, true, false, true, false, true];
+function buildHomeDates(n) {
+  const out = [];
+  for (let i = 0; i < (n || 7); i++) out.push(i % 2 === 0);
+  return out;
 }
 function opponentByName(name) {
   return OPPONENTS.find(o => o.name === name);
@@ -9480,17 +9564,20 @@ function startSeason(carry) {
     State.teamName = carry.teamName;
     State.innings = carry.innings;
     State.difficulty = carry.difficulty;
+    State.seasonLen = seasonGames(carry);
   }
+  const len = seasonGames({ len: State.seasonLen });
   State.season = {
     year: yr,
+    len,
     history: book,
     team: State.team,
     teamName: State.teamName,
     franchise: State.franchise || randomFranchise(),
-    homeAt: buildHomeDates(),
+    homeAt: buildHomeDates(len),
     innings: State.innings,
     difficulty: State.difficulty,
-    schedule: buildSchedule(),
+    schedule: buildSchedule(len),
     results: [],
     playoffs: null,
     playerStats: { hr:0, so:0, sb:0, hits:0, ab:0, d:0, t:0, r:0, rbi:0, bb:0 },
@@ -9535,7 +9622,7 @@ function seasonLine(S) {
    your record always shows the same number of games played as your own. */
 function buildLeagueSchedule(mySchedule) {
   const rounds = [];
-  for (let r = 0; r < 7; r++) {
+  for (let r = 0; r < mySchedule.length; r++) {
     const pool = OPPONENTS.map(o => o.name).filter(n => n !== mySchedule[r]);
     for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -9566,6 +9653,17 @@ function simulateLeagueGame(a, b) {
   const ls = Math.floor(Math.random() * 5);                 /* 0-4 */
   const ws = ls + 1 + Math.floor(Math.random() * 6);        /* by 1-6 */
   return { winner, loser, ws, ls };
+}
+/* Your game, simmed: the league's own logistic on the rating gap, with a
+   small home edge, and a scoreline drawn the same way. */
+function simMyGame(S, foe, home) {
+  const ra = teamRating(S.team || []) + (home ? 1.5 : -1.5);
+  const rb = teamRating((foe && foe.roster) || []);
+  const p = 1 / (1 + Math.exp(-(ra - rb) / 6));
+  const win = Math.random() < p;
+  const ls = Math.floor(Math.random() * 5);
+  const ws = ls + 1 + Math.floor(Math.random() * 6);
+  return { win, you: win ? ws : ls, them: win ? ls : ws };
 }
 /* Advance the league through one round. Guarded on leagueDone so a double
    call, a reload part way through, or a replayed save cannot run the same
@@ -9669,11 +9767,12 @@ function finishLine(S) {
    games and the table cannot assume seven. Counted from the rounds not yet
    played, which is what clinching and elimination need. */
 function gamesLeft(S, row) {
-  if (row.you) return Math.max(0, 7 - S.results.length);
+  const len = seasonGames(S);
+  if (row.you) return Math.max(0, len - S.results.length);
   const done = S.leagueDone | 0;
-  if (!S.leagueSchedule) return Math.max(0, 7 - done);
+  if (!S.leagueSchedule) return Math.max(0, len - done);
   let n = 0;
-  for (let r = done; r < 7; r++) {
+  for (let r = done; r < len; r++) {
     if (S.schedule[r] === row.name) { n++; continue; }
     if ((S.leagueSchedule[r] || []).some(p => p[0] === row.name || p[1] === row.name)) n++;
   }
@@ -9766,7 +9865,7 @@ function migrateSeason(S) {
     S.franchise = Object.assign(randomFranchise(), { nickname: S.teamName || 'Nine' });
     S.franchise.parkName = PARKS[S.franchise.park].name;
   }
-  if (!S.homeAt) S.homeAt = buildHomeDates();
+  if (!S.homeAt) S.homeAt = buildHomeDates(seasonGames(S));
   if (!S.year) S.year = 1;
   if (!S.history) S.history = [];
   /* A season drafted before a character left the roster. Repaired here so
@@ -9838,19 +9937,21 @@ function renderSeasonHub() {
   } else if (S.playoffs) {
     /* This used to say "Playoffs." to a team that was not in them. */
     banner.innerHTML = `<b>Season over.</b> ${finishLine(S)} The top four play on without you.`;
+  } else if (games >= seasonGames(S)) {
+    banner.innerHTML = `<b>Regular season over.</b> ${finishLine(S)}`;
   } else {
-    banner.innerHTML = `<b>Regular season.</b> ${rec.w}-${rec.l} through ${games} game${games===1?'':'s'} of 7.`
+    banner.innerHTML = `<b>Regular season.</b> ${rec.w}-${rec.l} through ${games} game${games===1?'':'s'} of ${seasonGames(S)}.`
       + (games ? ' ' + lineLine(S) : '');
   }
   s.appendChild(banner);
 
   if (!S.playoffs) {
     const nextCard = el('div','card');
-    if (games < 7) {
+    if (games < seasonGames(S)) {
       const next = opponentByName(S.schedule[games]);
       nextCard.appendChild(el('h3', null, 'Next game'));
       const style = TEAM_STYLE[next.name] || DEFAULT_STYLE;
-      const sharp = clamp(games / 8, 0, 1);
+      const sharp = clamp(games / (seasonGames(S) + 1), 0, 1);
       const atHome = !!(S.homeAt && S.homeAt[games]);
       nextCard.appendChild(el('p', null,
         `${atHome ? 'vs' : 'at'} ${next.name} · ${style.label} · ${sharpnessLabel(sharp)}`
@@ -9868,11 +9969,28 @@ function renderSeasonHub() {
         State.opponent = next;
         State.mode = 'season';
         const home = !!(S.homeAt && S.homeAt[games]);
-        const slot = games === 0 ? 'first' : (games === 6 ? 'finale' : 'mid');
+        const slot = games === 0 ? 'first' : (games === seasonGames(S) - 1 ? 'finale' : 'mid');
         pressPlay('pregame', pressCtx({ slot }),
                   () => startGame({ mode:'season', youHome: home }));
       };
       nextCard.appendChild(play);
+      /* SIM IT. A seventeen game season is a commitment, and the one game a
+         player does not feel like playing should not stop the whole season.
+         The result comes off the same rating gap the rest of the league
+         plays on, with your home park's crowd behind you at home. Nothing
+         is earned from it: no coins, no unlock progress, no stats, so it is
+         never the quick way to anything. */
+      const sim = el('button','btn ghost','Sim This Game');
+      sim.id = 'b-simgame';
+      sim.onclick = () => {
+        const r = simMyGame(S, next, atHome);
+        S.results.push({ opponent: next.name, win: r.win, you: r.you, them: r.them, simmed: true });
+        advanceLeague(S, S.results.length - 1, next.name, r.win, r.you, r.them);
+        saveSeason(S);
+        toast(`<b>${r.win ? 'Won' : 'Lost'} ${r.you}-${r.them}</b> ${atHome ? 'vs' : 'at'} ${next.name} (simmed)`);
+        render();
+      };
+      nextCard.appendChild(sim);
     } else {
       const fin = seasonFinish(S);
       nextCard.appendChild(el('h3', null, 'Regular season complete'));
@@ -9947,6 +10065,7 @@ function renderSeasonHub() {
     const res = r
       ? (r.win ? '<span style="color:var(--gold)">W</span>' : '<span style="color:var(--red)">L</span>')
         + ` ${r.you} to ${r.them}` + (r.forfeit ? ' <span style="color:var(--text-dim)">(abandoned)</span>' : '')
+        + (r.simmed ? ' <span style="color:var(--text-dim)">(sim)</span>' : '')
       : isNext ? '<span class="mark">next</span>' : '';
     tr.innerHTML = `<td>${i+1}</td><td>${atHome ? 'vs' : 'at'} ${name}</td><td>${park}</td><td>${res}</td>`;
     tb.appendChild(tr);
@@ -10367,6 +10486,95 @@ function statBump(k, key, by) {
   if (!g || !g.stats || !k) return;
   if (!g.stats[key]) g.stats[key] = {};
   g.stats[key][k] = (g.stats[key][k] || 0) + (by == null ? 1 : by);
+  /* A hit by YOUR bat charges the star meter; a home run charges it twice. */
+  if ((key === 'hits' || key === 'hr') && playerIsBattingSafe()) starAdd(1);
+}
+
+/* ============================================================================
+   STAR POWER. The one thing every Backyard Baseball player remembers is the
+   power-up: you earned it by playing well and you spent it on the moment
+   that mattered. This game had nothing like it, so playing well bought
+   nothing in the game you were playing.
+
+   Three stars fill the meter. Your hits earn them (a home run earns two)
+   and so do your strikeouts on the mound. A full meter offers ONE special
+   on whichever side you are on:
+
+     Moon Shot   batting: the timing window is wider and a squared ball is
+                 far likelier to leave the yard. Spent on the swing, hit or
+                 miss, so it is a choice about WHICH pitch.
+     Fireball    pitching: the next pitch is very hard to square up. Spent
+                 on the throw.
+
+   THE OTHER DUGOUT NEVER GETS ONE. Every rate the CPU is calibrated to
+   (calibrate.mjs, check-skill.mjs) is measured with no special armed, so
+   those numbers do not move. What a special changes is a handful of plate
+   appearances a game that the player chose. Per game: the meter starts
+   empty every first pitch.
+   ============================================================================ */
+const STAR_NEED = 3;
+const MOON_SWEET = 1.6, MOON_HR = 2.4, MOON_XBH = 1.4;
+const FIRE_SWEET = 0.6, FIRE_CONTACT = 0.5;
+function playerIsBattingSafe() {
+  try { return !!(State.game && playerIsBatting()); } catch (e) { return false; }
+}
+function starReady(g) { return !!g && (g.star | 0) >= STAR_NEED; }
+function starAdd(n) {
+  try {
+    const g = State.game;
+    if (!g || g.over) return;
+    const was = starReady(g);
+    g.star = Math.min(STAR_NEED, (g.star | 0) + n);
+    if (!was && starReady(g)) {
+      toast('<b>&#9733; Star power ready</b> · ' + (playerIsBatting() ? 'Moon Shot' : 'Fireball'));
+      Sound.play('cheer');
+    }
+    refreshSpecialButton();
+    const hs = document.getElementById('hud-side');
+    if (hs) hs.textContent = hudSideText();
+  } catch (e) { /* bookkeeping never breaks a game */ }
+}
+function starSpend() {
+  const g = State.game;
+  if (!g) return;
+  g.star = 0; g.special = null;
+  refreshSpecialButton();
+  const hs = document.getElementById('hud-side');
+  if (hs) hs.textContent = hudSideText();
+}
+function starPips(g) {
+  const n = g ? (g.star | 0) : 0;
+  return '\u2605'.repeat(n) + '\u2606'.repeat(Math.max(0, STAR_NEED - n));
+}
+/* The button sits in the controls row beside Steal and Mound, and like them
+   it is only there when it means something. */
+function refreshSpecialButton() {
+  const btn = document.getElementById('special-btn');
+  if (!btn) return;
+  const g = State.game;
+  /* Asked every frame from the paint loop, so it writes only on a change. */
+  const set = (disp, text, sel) => {
+    if (btn.style.display !== disp) btn.style.display = disp;
+    if (text != null && btn.textContent !== text) btn.textContent = text;
+    if (btn.classList.contains('selected') !== sel) btn.classList.toggle('selected', sel);
+  };
+  if (!g || g.over || g.play || !starReady(g)) return set('none', null, false);
+  const bat = playerIsBatting();
+  /* An armed special belongs to the side that armed it. A half inning
+     ending in between disarms it rather than handing a Moon Shot to the
+     mound. The star stays: it was not spent. */
+  if (g.special && (g.special === 'moon') !== bat) g.special = null;
+  const name = bat ? 'Moon Shot' : 'Fireball';
+  set('', g.special ? `\u2605 ${name} · armed` : `\u2605 ${name}`, !!g.special);
+}
+function toggleSpecial(e) {
+  if (e) e.stopPropagation();
+  const g = State.game;
+  if (!g || !starReady(g) || g.play || g.over) return;
+  const kind = playerIsBatting() ? 'moon' : 'fire';
+  g.special = g.special ? null : kind;
+  if (g.special) showCallout(kind === 'moon' ? 'MOON SHOT ARMED' : 'FIREBALL ARMED', 'homer');
+  refreshSpecialButton();
 }
 /* EVERY OUT IS SOMEBODY'S OUT. `g.outs++` was written at six sites and
    none of them told the pitcher, so there was no innings pitched and
@@ -12297,6 +12505,12 @@ function throwPitch(chosenPt, chosenZone, opts) {
     swung: false,
     hit: false,
   };
+  /* A Fireball is spent on the throw it rides. */
+  if (!playerIsBatting() && g.special === 'fire') {
+    g.pitch.fire = true;
+    starSpend();
+    addLog(`${pitcher.n} lets a Fireball go.`, true);
+  }
   refreshHud();
   runPitchAnimation();
   /* Their runner may go on this pitch. Same play as your own steal. */
@@ -12742,10 +12956,18 @@ function resolveSwing(cursorT, aim) {
      so the difficulty setting (which sets that width) finally matters.
      Since the plate camera it is also keyed to WHERE the bat was: see
      swingGeometry. */
+  /* Star power. A Moon Shot is spent on this swing (not on a bunt, which is
+     not what anybody armed it for); a Fireball was spent on the throw and
+     rides the pitch. */
+  const moon = playerIsBatting() && g.special === 'moon' && mode !== 'bunt';
+  if (moon) { starSpend(); addLog(`${batter.n} swings for the moon.`, true); }
+  const fire = !playerIsBatting() && !!p.fire;
   const geo = swingGeometry(cursorT, swungAt, p, ctx, mode,
-    playerIsBatting() ? diff.sweetWidth : CPU_SWEET[State.difficulty]);
+    playerIsBatting() ? diff.sweetWidth * (moon ? MOON_SWEET : 1)
+                      : CPU_SWEET[State.difficulty] * (fire ? FIRE_SWEET : 1));
   const half = geo.half, perfectDist = geo.perfectDist;
   let contact = geo.contact;
+  if (fire) contact *= FIRE_CONTACT;
   let inZone = geo.inZone;
   /* Near misses foul the ball off; wide misses whiff. Contact hitters get
      a slightly wider foul band, which is what CON feels like in play. */
@@ -12869,6 +13091,7 @@ function resolveSwing(cursorT, aim) {
   let xbhChance = (BAT.XBH_BASE + BAT.XBH_Q * contact) * (0.55 + powForRoll / 150);
   if (mode === 'power') { hrChance *= 1.75; xbhChance *= 1.45; }
   if (mode === 'contact') { hrChance *= 0.45; xbhChance *= 0.8; }
+  if (moon) { hrChance *= MOON_HR; xbhChance *= MOON_XBH; }
   /* The park, for both clubs, only while you are at home. */
   const pf = parkFactors();
   hrChance *= pf.hr;
@@ -15363,6 +15586,7 @@ function recordOut(reason, isStrikeout) {
        as for a first pitch ball was the quietest reward in the game. */
     if (!playerIsBatting()) {
       g.yourK = (g.yourK | 0) + 1;
+      starAdd(1);
       /* Whose strikeout it is, kept per arm. The Golden Arm award used to
          hand the game's whole count to batters[0], which was the same man
          all game until the bullpen existed and is the wrong man the moment
@@ -16697,7 +16921,7 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
         }
         if (pts.length > 1) {
           ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-          for (const [edge, col] of [[true, '10,20,30'], [false, '255,255,255']]) {
+          for (const [edge, col] of [[true, '10,20,30'], [false, pitch.fire ? '255,130,30' : '255,255,255']]) {
             for (let k = 1; k < pts.length; k++) {
               const [ax, ay] = pts[k - 1], [bx2, by2, br, bu] = pts[k];
               ctx.strokeStyle = `rgba(${col},${(edge ? 0.30 : 0.60) * (0.08 + 0.92 * bu)})`;
@@ -16709,7 +16933,13 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
       }
       ctx.fillStyle = 'rgba(0,0,0,.25)';
       ctx.beginPath(); ctx.arc(bp.x + 1.5, bp.y + 1.5, bp.r, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#fbfaf4';
+      /* A Fireball burns: a glow round it and a hot core, so the pitch the
+         player spent a meter on looks like it. */
+      if (pitch.fire) {
+        ctx.fillStyle = 'rgba(255,120,30,.35)';
+        ctx.beginPath(); ctx.arc(bp.x, bp.y, bp.r * 1.9, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.fillStyle = pitch.fire ? '#ffb347' : '#fbfaf4';
       ctx.beginPath(); ctx.arc(bp.x, bp.y, bp.r, 0, Math.PI * 2); ctx.fill();
       /* The dark ring every drawn thing in this game wears, and the pair
          of seams that make it a baseball rather than a light. */
@@ -18780,6 +19010,13 @@ function renderGame() {
   };
   stealRow.appendChild(sendBtn);
 
+  /* Star power: Moon Shot at the plate, Fireball on the mound. */
+  const spBtn = el('button','btn special','Special');
+  spBtn.id = 'special-btn';
+  spBtn.style.display = 'none';
+  spBtn.onclick = toggleSpecial;
+  stealRow.appendChild(spBtn);
+
   s.appendChild(stealRow);
 
   const atbat = el('div','atbat');
@@ -19263,7 +19500,7 @@ function hudInningText(g) {
   return `${g.half === 'top' ? 'Top' : 'Bottom'} ${g.inning} of ${g.innings}${extra}`;
 }
 function hudSideText() {
-  return playerIsBatting() ? 'You bat' : 'You pitch';
+  return (playerIsBatting() ? 'You bat ' : 'You pitch ') + starPips(State.game);
 }
 /* Long on a desk, short on a phone: the same numbers, both spelled. */
 function hudCountText(g) {
@@ -19369,6 +19606,7 @@ function refreshReleaseButton() {
 function refreshStealButton() {
   refreshSendButton();
   refreshPenButton();
+  refreshSpecialButton();
   const btn = document.getElementById('steal-btn');
   if (!btn) return;
   const g = State.game;
@@ -20263,12 +20501,22 @@ function renderHowTo() {
     + `A lead of ${MERCY_RUNS} from the second last inning on ends the game early `
     + '(mercy rule). If the home team takes the lead in the bottom of the last '
     + 'inning the game ends on the spot: a walk-off.</p>'
+    + '<h3>Star power</h3>'
+    + '<p>Play well and you earn a special. Every hit by your bats fills a star '
+    + '(a home run fills two), and so does every strikeout your pitcher throws. '
+    + 'Three stars and a gold button appears beside Steal and Mound.</p>'
+    + '<p><b>Moon Shot</b> (batting): a much wider timing window, and a squared '
+    + 'ball is far likelier to leave the yard. It is spent on your next swing, hit '
+    + 'or miss, so pick your pitch. <b>Fireball</b> (pitching): the next pitch is '
+    + 'very hard to square up. Tap the button again to put it away. The meter '
+    + 'starts empty every game, and the other dugout never gets one.</p>'
     + '<h3>Exhibition</h3>'
     + '<p>One game against a random club, about ten minutes at five innings. '
     + 'Nothing is saved and nothing counts, except coins and unlock progress.</p>'
     + '<h3>Season</h3>'
-    + '<p>Found a club (city, name, colours, home park), pick nine, and play seven '
-    + 'games, four of them at home. Every club has its own park and its own batting '
+    + '<p>Found a club (city, name, colors, home park), pick a season length '
+    + '(Quick is 7 games, Standard 12, Full 17), pick nine, and play it out, '
+    + 'half of it at home. Every club has its own park and its own batting '
     + 'personality: some hack at everything, some are patient. The other sixteen '
     + 'clubs play each other on the days you play, so the standings move with you.</p>'
     + '<p>The <b>top four</b> make a single elimination bracket. Ties break on head '

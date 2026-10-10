@@ -6005,6 +6005,39 @@ proved by mutation, with a misspelt landmark and a deleted `far`.
 stands rather than on them. At 0.18 the lavender castle vanished into a pale
 blue sky, which a screenshot said and no guard can.
 
+### Star power, season length, Quick game and Sim
+
+Asked for as making MythiBall play like the Backyard Baseball it is modeled on.
+Four additions, each small in code and large in what a player feels.
+
+**STAR POWER IS THE POWER-UP.** Three stars fill a per-game meter: a hit by your
+bats is one (a home run is two, through `statBump`), and a strikeout your pitcher
+throws is one (`recordOut`). Full, a gold button appears in the controls row
+beside Steal and Mound: **Moon Shot** at the plate (timing window x`MOON_SWEET`,
+home runs x`MOON_HR`, extra bases x`MOON_XBH`, spent on the next swing hit or
+miss, never on a bunt) and **Fireball** on the mound (the CPU's window x`FIRE_SWEET`
+and its contact x`FIRE_CONTACT`, spent on the throw, drawn orange). The meter
+reads in the inning chip (`hudSideText`).
+
+**THE CPU NEVER GETS ONE**, which is what keeps every calibrated rate here honest:
+`calibrate.mjs`, `check-skill.mjs` and `whiff.mjs` all measure with nothing armed.
+An armed special belongs to the side that armed it, so a half inning ending in
+between disarms it without spending the stars. `refreshSpecialButton` is asked
+from the paint loop every frame and writes only on a change.
+
+**A SEASON IS 7, 12 OR 17 GAMES** (`SEASON_LENGTHS`), chosen on the founding
+screen and carried year to year on `S.len`. `seasonGames(S)` is the one answer and
+every count reads it: the schedule, the home dates (alternating), the league's
+rounds, games left, the sharpness ramp (`played / (len + 1)`, so the last game of
+any length sits where game seven of seven did), the hub and the menu. A save with
+no `len` is the seven it always was. Full is every other club exactly once.
+
+**Quick game** (`#b-quick` under the franchise button, both menus) takes the last
+nine (`PREFS.lastTeam`) or deals one with `randomNine()`, Randomize's own rule, and
+is at the plate in one press. **Sim This Game** on the season hub resolves a game
+off the league's own rating logistic (`simMyGame`, a small home edge) and earns
+nothing: no coins, no unlocks, no stats. The row is marked `(sim)`.
+
 ### The collection: ten to start, packs for the middle, feats for the best
 
 ```

@@ -402,7 +402,7 @@ if (!opponentsMatch) {
 
     /* Every slot the templates use has to be one something actually sets:
        pressCtx builds the common ones and the call sites add the rest. */
-    const known = new Set(['team','foe','park','rec','gameNo','lastTag','rivalNote',
+    const known = new Set(['team','foe','park','rec','gameNo','gameLen','lastTag','rivalNote',
                            'you','them','margin','star','starKey','won','slot','ask']);
     const slots = [...new Set([...body.matchAll(/\{(\w+)\}/g)].map(m => m[1]))];
     const orphan = slots.filter(k => !known.has(k));
