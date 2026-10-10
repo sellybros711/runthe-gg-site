@@ -410,6 +410,15 @@ if (!args.includes('--no-browser')){
     await pg.evaluate(() => { const st = window.RTT_PUTT._state(); if (st && st.play && st.play.strokes) { st.round.mode = 'x'; } document.querySelector('.pt-ov') && window.RTT_PUTT.close(); sbUser = { id:'chk' }; localStorage.removeItem('bag_ppt_v1@chk'); openPutt(); });
     await pg.waitForSelector('.pp-map [data-lv="1"]');
     claim(await pg.evaluate(() => document.querySelectorAll('.pp-lv').length === 90 && document.querySelectorAll('.pp-lv.lock').length === 89 && document.querySelectorAll('.pp-lv.sig').length === 5), 'the map shows 90 levels, five signature holes, and only level 1 open');
+    // A RECORD SAVED SIGNED OUT IS CLAIMED, NEVER LOST. A player reached hole 18 and came back to hole 1, because
+    // the record is keyed by account and a session that opened before sign-in resolved played under the bare key.
+    const mrg = await pg.evaluate(async () => { window.RTT_PUTT.close(); const best = {}; for (let n = 1; n <= 17; n++) best[n] = 2;
+      localStorage.setItem('bag_ppt_v1', JSON.stringify({ v:2, tours:{ main:{ lv:18, best, ace:{}, paid:{}, wpaid:{} } } })); sbUser = { id:'mrg' }; localStorage.removeItem('bag_ppt_v1@mrg'); openPutt();
+      for (let t = 0; t < 100 && !document.querySelector('.pp-map [data-lv="1"]'); t++) await new Promise(r => setTimeout(r, 50));
+      const open = document.querySelectorAll('.pp-lv:not(.lock)').length, bare = localStorage.getItem('bag_ppt_v1'); window.RTT_PUTT.close();
+      sbUser = { id:'chk' }; localStorage.removeItem('bag_ppt_v1@chk'); openPutt(); return { open, bare }; });
+    await pg.waitForSelector('.pp-map [data-lv="1"]');
+    claim(mrg.open >= 18 && mrg.bare === null, `a signed-in account claims the holes played signed out (${mrg.open} open, bare key ${mrg.bare === null ? 'cleared' : 'left'})`);
     await pg.waitForFunction(() => document.querySelectorAll('.pp-land').length === 5, null, { timeout:15000 }).catch(() => {});
     const land = await pg.evaluate(() => [...document.querySelectorAll('.pp-band')].map(b => { const c = b.querySelector('.pp-land'); if (!c) return null;
       const x = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; const cols = new Set(); for (let i = 0; i < x.length; i += 4 * 37) cols.add(x[i] << 16 | x[i + 1] << 8 | x[i + 2]);
