@@ -260,10 +260,15 @@ section('5. every moving frame is the rig, inside the grid');
         }
         for (const [need, re] of [['head', /^head$/], ['hand', /hand$/], ['shoe', /^shoe$/]]) if (![...names].some((n) => re.test(n))) missing.add(pose + ' ' + need);
         const cols = new Set(); B.paint(lk, { pose, dress, c1: '#552583', c2: '#FDB927', num: 23 }).forEach((r) => r.forEach((c) => { if (c) cols.add(c); }));
-        /* 20 and not 22 since the 3D model: the golf game's paint step is five
-           tones a material, so a bald man with no beard in his club's shoes
-           really does wear fewer materials, at 20 or 21. Flat is a handful. */
-        if (cols.size < 20) flat.add(pose);
+        /* 18 and not 20 since the player was redrawn as an athlete: the face
+           lost its eye whites and its blush, two colours that were never
+           shading, and a bald man with no beard in his club's shoes, legs
+           tucked in a dunk, shows his sock in about four pixels. He measured
+           19. A count was only ever a stand-in for shading, so the claim
+           itself is asked as well, below: the jersey is lit in at least three
+           of its five tones. Flat is a handful. */
+        if (cols.size < 18) flat.add(pose);
+        if (!dress) { const J = new Set(B.ramp('#552583')), seen = new Set(); B.paint(lk, { pose, c1: '#552583', c2: '#FDB927', num: 23 }).forEach((r) => r.forEach((c) => { if (J.has(c)) seen.add(c); })); if (seen.size < 3) flat.add(pose + ' jersey'); }
       }
     }
   }
