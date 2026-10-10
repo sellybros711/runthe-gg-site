@@ -19625,7 +19625,7 @@ owner said was not what was being built.
 
 | | who | holes | worlds |
 |---|---|---|---|
-| Putt Putt Tour (`main`) | everybody | 90 | The Clubhouse, Lost Temple, Pirate Cove, Canyon Mine, Volcano Island, 18 each |
+| Putt Putt Tour (`main`) | everybody | 144 | The Clubhouse, Lost Temple, Pirate Cove, Canyon Mine, Volcano Island, Frozen Peak, Sky Islands, Neon Arcade, 18 each |
 | Members Tour (`members`) | Tour Pass holders | 18 | Hallows Night and Harvest Moon, nine each: the season's own holes, the hardest in the game |
 
 **The main tour wears none of the calendar themes**, which belong to the passes and the dailies, and the
@@ -19635,6 +19635,25 @@ are built from are in the engine: loops (an entry speed and a chute that feeds i
 material that carries the ball), ramp lanes up or down a tier (`climb`), kickers (`kicker`),
 ramp jumps over water, drawbridges on a clock, turntables, sliders, gates, spinners, conveyors, bounce pads.
 
+
+**THE TOUR GROWS A WORLD AT A TIME, about 50 holes a week** (the owner's pace). Worlds 6 to 8 went in
+together as holes 91 to 144. What a new world needs, all of it in one commit:
+
+| where | what |
+|---|---|
+| `putt.js` | a `THEMES` entry (`iceCol`/`iceCol2` paint `M.ICE` apart from the hazard), its skins in `SKIN`, a `GLOW`, the `WORLDS` row, its 18 `LEVELS`, 18 `TOUR_NAMES`, the `.wm-`, `.wt-` and `data-wt` CSS, `CARD_ART`, and a `sigReward`/`worldReward` each |
+| `land.js`, `mapland.js` | `BUILD.<theme>` for the land round a hole, `PAL` and `WORLD.<theme>` for the map |
+| `build-cards.mjs` | the signature hole the home card is cut from |
+| `routes.json` | `solve.mjs --tour main --only <the 18> --write`, then each `par` set to what it prints (`three` where it says 3 STARS NOT FOUND) |
+
+**A new world has to carry more set pieces a hole than the one before it** (check-putt asserts it, thin
+rails excluded), so a world adds a mechanic on top of the old ones rather than replacing them. Frozen Peak
+brings ice (`M.ICE`, a quarter of the carpet's grip, so the pace is read off where the ice ends), Sky
+Islands wind (belts) and the drop (the hazard painted as cloud), Neon Arcade every machine on a clock.
+**Ice makes aces easy**: a bank onto ice slides on with room for error, so the first draft of Frozen Peak
+had four holes acable from the tee. Put a bumper on the line the ice opens up, and re-solve.
+**A skin name is global**: the winter theme already had `snowman`, and a second `snowman` in `SKIN`
+silently replaces the first for every theme that uses it.
 **The Members Tour is shut without a pass** (`host.passActive()`): the tab carries a lock and opens a
 sheet about the Tour Pass, never a coin price. A tester gets a preview button (`S.memPreview`). It pays
 more a hole and carries rewards only members can earn (`PAY.members`).
@@ -19767,7 +19786,7 @@ of that world's signature hole, cut from the game's own render by `node golf/put
 `golf/putt/cards/`, so it is the same pixel art as the courses. A dark wash keeps the text readable. Re-run
 it after changing `land.js` or a signature hole, and bump `CARD_V`.
 
-**The main tour pays exactly 20,000 coins**, 4,000 a world: 80 a hole and 280 for the signature hole the
+**The main tour pays 4,000 coins a world** (32,000 over eight worlds): 80 a hole and 280 for the signature hole the
 first time it is beaten, 20 for a first ace, and 2,000 for finishing the world. Replays pay nothing. They
 go through the page's `addBonusCoins`, so a Tour Pass multiplier does not apply. The signature, world, ace
 and streak rewards are recorded by name in the Tour record and are not wearable yet.
@@ -19776,6 +19795,13 @@ and streak rewards are recorded by name in the Tour record and are not wearable 
 `acctKey`) is in the browser. The mockup's server ledger (lives on server time, a tester table the score
 calls check, a shared Daily Hole board) is not built, so a tester could reset a clock by clearing site
 data, and the Daily Hole result screen says the board is not there yet.
+
+**A record saved signed out is claimed by the account, never lost** (`pmerge` in `pload`). The key is
+`bag_ppt_v1@<id>` once the page knows who is playing and the bare key before that, so a session that
+opened before sign-in resolved played under the bare key. A player reached hole 18 and came back to
+hole 1. A signed-in load folds the bare record in (furthest hole, best score per hole, aces, payouts)
+and clears it. Another account's record is never folded in. A different browser or device still starts
+over, because nothing here is on a server.
 
 **Two hazards were added to the engine for it**: conveyors (`M.BELT`, a zone with a push in
 `C.belts`) and bounce pads (a bumper with `e` over 1, capped at `V_MAX`). Mini golf sand is
