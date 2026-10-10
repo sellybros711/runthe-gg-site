@@ -9851,6 +9851,54 @@ four. The batting how-to and both sets of coach notes say so; the how-to also
 lost "watch the target ring", which a batter has not been shown since the
 target went pitcher-only.
 
+#### The player's defence could not turn two, and now the throw is a choice
+
+`startThrowWindow` threw to first and nowhere else. So with a man on first a
+double play only ever happened TO the player (the CPU defence's roll in
+`scheduleContactPlay`, about 0.40) and never FOR them. Nothing threw; the
+player's grounders with a man on first were simply always one out.
+
+The press now says where, the batting control's grammar (where and when in one
+press). First is always offered. **Second** ("TURN TWO") is offered with a man
+on first and fewer than two out; **home** with the bases loaded and fewer than
+two out. The offered bags wear a ring and a label on the field
+(`drawThrowTargets`, through the camera like the catch ring), and a press near
+one throws there (`throwBaseAt`, generous radius, anything else is first).
+Keys: Space or 1 first, 2 second, 4 or H home.
+
+**The bar's usual place is over home plate**, so with the bases loaded the one
+target that adds was hidden under it, on a phone and a desktop. With home
+offered the bar goes to the top of the picture, at the first of two heights
+that covers no offered bag (90 CSS pixels down clears a desktop's sign and
+scoreboard; on a phone that lands on second, so it goes to the stands). Found by
+screenshot; the verify section now asserts no offered bag is under the bar.
+
+`throwOutcome` is the rule, pure:
+
+| | green | gold | yellow | else |
+|---|---|---|---|---|
+| first | out (`greenHalf`) | | infield single | error |
+| second | double play (`dpHalf`) | force at second, batter safe | everybody safe | error |
+| home | | force at home, run cut down | everybody safe, run scores | error |
+
+`leadHalf` is first's green times `LEAD_GREEN` (0.8), and `dpHalf` is that again
+times 0.6 less the batter's speed, so between `leadHalf` and `greenHalf` first
+is the out and second is nothing: the choice has a cost. Sized so hands about
+55ms off turn about two in three and somebody new about one in four. Letting
+the bar run out is still a single, whatever was offered. `applyForceOut` is the
+force and the fielder's choice: an at bat, no hit.
+
+**Two hand-off timers had no identity check.** `resolveThrow` and
+`resolveCatch` each cleared "the current play" a second later, so a new game
+started inside that second lost its first play to the old game's timer. Found
+because the second drive in the verify section opened no window at all. Both
+fire into their own play or not at all now.
+
+`verify-rules` "the throw goes where you send it" drives the real window with
+the real keys: a double play on the ideal, Space still the sure out with the
+runner moving up, the force at home leaving them loaded with no run, and with
+two out only first offered.
+
 #### A swing that misses half the time is not a backyard game
 
 ```

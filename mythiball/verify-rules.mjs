@@ -2789,6 +2789,84 @@ async function main() {
       await pg.close();
     }
 
+    /* ---- the throw goes where you send it ---- */
+    {
+      console.log('the throw goes where you send it');
+      /* THE PLAYER'S DEFENCE COULD NOT TURN TWO. The throw window threw to
+         first and nowhere else, so a double play only ever happened to the
+         player, off a roll in scheduleContactPlay, and never for them. The
+         press now says where: first, second (turn two) or home (bases loaded).
+         Driven through the real window and the real keys. */
+      const { pg, errors } = await fresh(browser);
+      const pure = await pg.evaluate(() => {
+        const win = { ideal: 0.55, greenHalf: 0.08, yellowHalf: 0.14, leadHalf: 0.064, dpHalf: 0.04 };
+        const at = (b, d) => throwOutcome(win, b, 0.55 + d);
+        const spots = { targets: [{ base: 0 }, { base: 1 }], spots: [{ base: 0, x: 100, y: 100 }, { base: 1, x: 300, y: 100 }] };
+        return {
+          first: [at(0, 0), at(0, 0.10), at(0, 0.12), at(0, 0.3)],
+          second: [at(1, 0), at(1, 0.05), at(1, 0.07), at(1, 0.3)],
+          home: [at(3, 0), at(3, 0.07), at(3, 0.3)],
+          pick: [throwBaseAt(spots, [298, 104]), throwBaseAt(spots, [3000, 3000]), throwBaseAt(spots, null)],
+        };
+      });
+      ok(JSON.stringify(pure.first) === '["out","single","single","error"]', 'first: green out, yellow single, else error', JSON.stringify(pure.first));
+      ok(JSON.stringify(pure.second) === '["dp","force2","fc","error"]',
+         'second: a double play at the heart, a force in the gold, nobody out in the yellow', JSON.stringify(pure.second));
+      ok(JSON.stringify(pure.home) === '["forceHome","fc","error"]', 'home: the run cut down, or everybody safe', JSON.stringify(pure.home));
+      ok(JSON.stringify(pure.pick) === '[1,0,0]', 'a press near a bag throws there, anywhere else throws to first', JSON.stringify(pure.pick));
+
+      const drive = (bases, outs, key) => pg.evaluate(async ([bases, outs, key]) => {
+        State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
+        State.opponent = OPPONENTS[0]; State.innings = 9; State.mode = 'exhibition';
+        startGame({ mode: 'exhibition', youHome: true });   /* you field the top */
+        await new Promise(r => setTimeout(r, 700));
+        const g = State.game;
+        endAtBatCleanup(); g.pitch = null;
+        g.half = 'top'; g.inning = 2; g.outs = outs;
+        const pool = g.away.batters;
+        g.bases = bases.map((b, i) => b ? pool[(i + 3) % pool.length] : null);
+        const before = { away: g.away.score, names: g.bases.map(b => b && b.k) };
+        scheduleThrowMinigame('ground out', currentBatter());
+        const t0 = performance.now();
+        while (!(g.play && g.play.throwActive) && performance.now() - t0 < 4000) await new Promise(r => setTimeout(r, 20));
+        const win = g.play && g.play.throwWindow;
+        if (!win) return { opened: false };
+        const offered = win.targets.map(x => x.base);
+        await new Promise(r => setTimeout(r, 60));   /* a frame, so the bags are drawn */
+        const drawn = (win.spots || []).length;
+        const br = win.barRect;
+        const covered = (win.spots || []).filter(sp => br && sp.x > br.x && sp.x < br.x + br.w
+          && sp.y > br.y && sp.y < br.y + br.h).map(sp => sp.base);
+        win.startedAt = performance.now() - win.ideal * win.duration;   /* the press lands on the ideal */
+        document.dispatchEvent(new KeyboardEvent('keydown', { code: key, bubbles: true }));
+        return { opened: true, offered, drawn, covered, outs: g.outs, bases: g.bases.map(b => b && b.k),
+                 scored: g.away.score - before.away, before: before.names };
+      }, [bases, outs, key]);
+
+      const dp = await drive([1, 0, 0], 0, 'Digit2');
+      ok(dp.opened && JSON.stringify(dp.offered) === '[0,1]', 'a man on first: first and second are offered', JSON.stringify(dp));
+      ok(dp.drawn === 2, 'and both bags are marked on the field', JSON.stringify(dp));
+      ok(dp.outs === 2 && dp.bases.every(b => !b), 'turning two on the ideal is two outs and empty bases', JSON.stringify(dp));
+
+      const first = await drive([1, 0, 0], 0, 'Space');
+      ok(first.outs === 1 && first.bases[1] === first.before[0] && !first.bases[0],
+         'Space still takes the sure out at first, and the runner moves up', JSON.stringify(first));
+
+      const home = await drive([1, 1, 1], 1, 'Digit4');
+      ok(JSON.stringify(home.offered) === '[0,1,3]', 'bases loaded: home is offered too', JSON.stringify(home));
+      /* The bar's usual place is over home plate, which is the one target
+         the bases loaded add. */
+      ok(home.covered.length === 0, 'and no offered bag is under the throw bar', JSON.stringify(home));
+      ok(home.outs === 2 && home.scored === 0 && home.bases.every(Boolean),
+         'the force at home cuts the run down and leaves them loaded', JSON.stringify(home));
+
+      const two = await drive([1, 0, 0], 2, 'Digit2');
+      ok(JSON.stringify(two.offered) === '[0]' && two.outs === 3,
+         'with two out there is nothing to turn: the press is the third out at first', JSON.stringify(two));
+      ok(errors.length === 0, 'no page errors', errors.join(' | '));
+      await pg.close();
+    }
+
     /* ---- the club remembers ---- */
     {
       console.log('the club remembers');

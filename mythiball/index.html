@@ -11739,6 +11739,9 @@ const COACH = COARSE ? {
     + '<b>green</b> to finish a throw or make a catch. Let it run out and the batter '
     + 'reaches, nothing worse. A <b>ring</b> on a deep fly is a robbery. Time it and '
     + 'his hit becomes an out. Miss that one and nothing is lost at all.',
+    '<b>Turn two.</b> With a man on first, the bags you can throw to light up. '
+    + 'Press on a bag to throw there. Second is two outs if you nail it, and none '
+    + 'if you are late. First is the sure one.',
   ],
 } : {
   bat: [
@@ -11768,6 +11771,9 @@ const COACH = COARSE ? {
     + '<b>green</b> to finish a throw or make a catch. Let it run out and the batter '
     + 'reaches, nothing worse. A <b>ring</b> on a deep fly is a robbery. Time it and '
     + 'his hit becomes an out. Miss that one and nothing is lost at all.',
+    '<b>Turn two.</b> With a man on first, the bags you can throw to light up. '
+    + 'Press on a bag to throw there. Second is two outs if you nail it, and none '
+    + 'if you are late. First is the sure one.',
   ],
 };
 function coachDue(kind) { return PREFS.coach !== false && !PREFS['coach_' + kind]; }
@@ -14828,6 +14834,77 @@ function scheduleThrowMinigame(kind, batter, info) {
   }, Math.round(g.play.sim.meetAt * 1000) + HITSTOP_MS);
 }
 
+/* How much narrower the green is on a throw to a lead runner than on the
+   throw to first: a pivot, a runner bearing down, and less time. */
+const LEAD_GREEN = 0.8;
+/* What a throw does, given where it went and when it was let go. Pure, for
+   the suite. Not reacting stays a single, which is the expiry's rule and
+   is decided before this is asked.
+
+     first   green out at first, yellow infield single, else an error
+     second  inner green a double play, green the force at second (batter
+             safe), yellow everybody safe, else an error
+     home    green the force at the plate (the run is cut down), yellow
+             everybody safe and the run scores, else an error
+
+   Going for two is worth more and asks more: its green is narrower than
+   first's, and the yellow that is a hit at first is nobody out at second. */
+function throwOutcome(win, base, t) {
+  const d = Math.abs(t - win.ideal);
+  if (base === 0) {
+    if (d <= win.greenHalf) return 'out';
+    return d <= win.yellowHalf ? 'single' : 'error';
+  }
+  if (base === 1 && d <= win.dpHalf) return 'dp';
+  if (d <= win.leadHalf) return base === 1 ? 'force2' : 'forceHome';
+  return d <= win.yellowHalf ? 'fc' : 'error';
+}
+/* Which bag a press was aimed at: the nearest offered one, if the press
+   was near enough to mean it, else first. Generous on purpose: this is a
+   thumb on a moving picture, and a miss lands on the sure out. */
+function throwBaseAt(win, pt) {
+  if (!pt || !win.spots || win.targets.length < 2) return 0;
+  let best = 0, bestD = Infinity;
+  for (const sp of win.spots) {
+    const d = Math.hypot(pt[0] - sp.x, pt[1] - sp.y);
+    if (d < bestD) { bestD = d; best = sp.base; }
+  }
+  return bestD <= hudPx(70, 44) ? best : 0;
+}
+/* A FORCE OUT ON A LEAD RUNNER. Everybody on the unbroken chain from first
+   moves up a bag, the man forced into `base` is out instead (1 is second,
+   3 is home), and the batter is on first. A fielder's choice, so an at bat
+   and no hit. With `noOut` it is everybody safe, which is what a late
+   throw to the lead bag buys. */
+function applyForceOut(batter, base, noOut) {
+  const g = State.game;
+  statBump(batter.k, 'ab');
+  noteForm(batter.k, false);
+  let top = 0;
+  while (top < 2 && g.bases[top + 1]) top++;
+  const nb = g.bases.slice();
+  const victim = noOut ? null : g.bases[base - 1];
+  const crossed = [];
+  for (let i = top; i >= 0; i--) {
+    const r = nb[i];
+    nb[i] = null;
+    if (!r || r === victim) continue;
+    if (i + 1 > 2) crossed.push(r);
+    else nb[i + 1] = r;
+  }
+  if (victim) {
+    addOuts(1);
+    if (g.play) {
+      (g.play.outAt || (g.play.outAt = new Map())).set(victim, base);
+      if (base === 3) g.play.plateOut = { runner: victim, at: performance.now() };
+    }
+  }
+  if (g.outs >= 3) { g.bases = [null, null, null]; return; }
+  nb[0] = batter;
+  g.bases = nb;
+  if (crossed.length) scoreRuns(crossed.length, { rbi: batter.k, scorers: crossed.map(c => c.k) });
+}
+
 function startThrowWindow(kind, batter) {
   const g = State.game;
   if (!g || !g.play) return;
@@ -14836,6 +14913,16 @@ function startThrowWindow(kind, batter) {
   const ft = currentFieldingTeam();
   const infield = [2, 3, 4, 5].map(p => fielderAt(ft, p)).filter(Boolean);
   const avgDef = infield.reduce((a, c) => a + c.def, 0) / (infield.length || 1);
+  /* WHERE THE THROW GOES IS THE PLAYER'S CALL. This window used to throw
+     to first and nowhere else, so with a man on first the defence the
+     player ran could never turn two: only the CPU's did, off a roll in
+     scheduleContactPlay. Now the bags that have a force on them are
+     offered, and the tap that throws the ball also says where, which is
+     the batting control's own grammar (where and when in one press).
+     First is the sure out and what Space and a tap anywhere else throw. */
+  const targets = [{ base: 0, label: '1ST' }];
+  if (g.bases[0] && g.outs < 2) targets.push({ base: 1, label: 'TURN TWO' });
+  if (g.bases[0] && g.bases[1] && g.bases[2] && g.outs < 2) targets.push({ base: 3, label: 'HOME' });
   const window = {
     ideal: 0.55 + (Math.random() - 0.5) * 0.2,   /* wobbly target each throw */
     greenHalf: 0.06 + (avgDef - 50) / 800,
@@ -14843,11 +14930,23 @@ function startThrowWindow(kind, batter) {
     duration: 1600,
     startedAt: performance.now(),
     resolved: false,
+    targets,
+    /* Filled by the draw pass each frame: where each bag is on the canvas,
+       so a press is read against the picture the player is looking at. */
+    spots: null,
   };
+  /* The lead runner is a harder out than the batter: a pivot, a man bearing
+     down, a shorter clock. So a throw anywhere but first has a narrower
+     green, and turning two narrower again, by how fast the batter is. */
+  window.leadHalf = window.greenHalf * LEAD_GREEN;
+  /* Sized so a competent fielder (hands about 55ms off) turns about two in
+     three and somebody new about one in four, against the CPU defence's
+     roll of 0.40 and the real game's half. A fast batter beats the relay. */
+  window.dpHalf = window.leadHalf * clamp(0.6 - (ratingOr(batter && batter.spd, 60) - 60) / 150, 0.25, 0.8);
   g.play.throwActive = true;
   g.play.throwWindow = window;
 
-  const finish = (t) => {
+  const finish = (t, base) => {
     if (window.resolved) return;
     window.resolved = true;
     /* The play can be torn down while this window is open: the game ends,
@@ -14875,23 +14974,22 @@ function startThrowWindow(kind, batter) {
        It is also the first ten minutes of the game. A player who does not
        yet know this window exists gave up an error on every routine
        ground ball, which is most of them. */
-    let outcome;
-    if (t < 0) outcome = 'single';
-    else {
-      const d = Math.abs(t - window.ideal);
-      if (d <= window.greenHalf) outcome = 'out';
-      else if (d <= window.yellowHalf) outcome = 'single';
-      else outcome = 'error';
-    }
+    if (window.targets.every(x => x.base !== base)) base = 0;
+    window.base = base;
+    const outcome = t < 0 ? 'single' : throwOutcome(window, base, t);
     resolveThrow(outcome, kind, batter);
   };
+  const now = () => clamp((performance.now() - window.startedAt) / window.duration, 0, 1);
   const onClick = (e) => {
     if (window.resolved) return;
-    const t = clamp((performance.now() - window.startedAt) / window.duration, 0, 1);
-    finish(t);
+    finish(now(), throwBaseAt(window, fieldPointFromEvent(e)));
   };
   const onKey = (e) => {
-    if (e.code === 'Space') { e.preventDefault(); onClick(e); }
+    const base = e.code === 'Space' || e.code === 'Digit1' ? 0
+      : e.code === 'Digit2' ? 1 : (e.code === 'Digit4' || e.code === 'KeyH') ? 3 : null;
+    if (base == null) return;
+    e.preventDefault();
+    if (!window.resolved) finish(now(), base);
   };
   document.addEventListener('keydown', onKey);
   document.addEventListener('click', onClick, true);
@@ -14907,7 +15005,19 @@ function resolveThrow(outcome, kind, batter) {
   let arriveMs = 900;
   if (g.play.sim) {
     const nowT = (performance.now() - g.play.sim.t0) / 1000;
-    const th = simAddThrow(g.play.sim, 0, outcome === 'out' ? 'out' : outcome === 'error' ? 'wild' : 'late', nowT);
+    const toBase = outcome === 'dp' || outcome === 'force2' ? 1
+      : outcome === 'forceHome' ? 3 : (g.play.throwWindow && g.play.throwWindow.base) || 0;
+    const clean = outcome === 'out' || outcome === 'dp' || outcome === 'force2' || outcome === 'forceHome';
+    let th = simAddThrow(g.play.sim, toBase, clean ? 'out' : outcome === 'error' ? 'wild' : 'late', nowT);
+    /* The relay: second to first, for the second out. */
+    if (th && outcome === 'dp') {
+      const relay = simThrow(SIM_BASE_UV[1], SIM_BASE_UV[0], th.arrive + 0.18);
+      relay.base = 0; relay.mode = 'out';
+      g.play.sim.throws.push(relay);
+      g.play.sim.deadAt = relay.arrive + 0.3;
+      g.play.sim.end = Math.max(g.play.sim.end, g.play.sim.deadAt + 0.4);
+      th = relay;
+    }
     if (th) arriveMs = Math.max(200, Math.round((th.arrive - nowT) * 1000));
     const cp = g.play.sim.closePlay;
     if (cp && cp.at > nowT) {
@@ -14919,6 +15029,20 @@ function resolveThrow(outcome, kind, batter) {
   if (outcome === 'out') {
     applyOutMutation('ground out', batter);
     showCallout('OUT AT FIRST', 'hit');
+  } else if (outcome === 'dp') {
+    applyDoublePlayMutation(batter);
+    showCallout('TWO! DOUBLE PLAY', 'hit');
+  } else if (outcome === 'force2' || outcome === 'forceHome') {
+    const home = outcome === 'forceHome';
+    const lead = g.bases[home ? 2 : 0];
+    applyForceOut(batter, home ? 3 : 1);
+    addLog(`${lead ? lead.n : 'The runner'} forced at ${home ? 'the plate' : 'second'}. ${batter.n} safe at first. ${g.outs} out.`);
+    showCallout(home ? 'OUT AT HOME' : 'FORCE AT SECOND', 'hit');
+  } else if (outcome === 'fc') {
+    applyForceOut(batter, 0, true);
+    addLog(`Late throw. Everybody safe. Fielder's choice.`);
+    showCallout('EVERYBODY SAFE', 'strike');
+    Sound.play('aww');
   } else if (outcome === 'single') {
     /* Batter reaches on a slow play; runners advance one. */
     addLog(`${batter.n} beats the throw. Infield single.`);
@@ -14945,11 +15069,18 @@ function resolveThrow(outcome, kind, batter) {
   /* Complete the play: clear the animation state and advance to the next
      batter (or end the half). Without this the game freezes right here,
      which is exactly what shipped once. */
-  const wasOut = outcome === 'out';
+  /* A force or a fielder's choice can bring a run home, and a run in the
+     bottom of the last is a walk off, which only the hit door asks about. */
+  const wasOut = outcome === 'out' || outcome === 'dp';
+  /* IT FIRES INTO ITS OWN PLAY OR NOT AT ALL. It used to ask only whether
+     there was a game, so a new game started inside this second had its
+     first play torn down and an out recorded against it. The fly and
+     robbery windows learned this rule; this timer never had it. */
+  const thisPlay = g.play;
   setTimeout(() => {
-    if (!State.game) return;
-    if (State.game.play) State.game.tail = State.game.play.sim;
-    State.game.play = null;
+    if (State.game !== g || g.play !== thisPlay) return;
+    g.tail = g.play.sim;
+    g.play = null;
     if (wasOut) afterOutTransition();
     else afterHitTransition('single');
   }, arriveMs + 500);
@@ -15183,10 +15314,12 @@ function resolveCatch(outcome, kind, batter, landingX, landingY) {
   /* Complete the play: same freeze guard as the throw minigame. */
   const wasOut = outcome === 'catch';
   const hitKind = outcome === 'single' ? 'single' : 'triple';
+  /* Into its own play, like the throw's hand-off. */
+  const thisPlay = g.play;
   setTimeout(() => {
-    if (!State.game) return;
-    if (State.game.play) State.game.tail = State.game.play.sim;
-    State.game.play = null;
+    if (State.game !== g || g.play !== thisPlay) return;
+    g.tail = g.play.sim;
+    g.play = null;
     if (wasOut) afterOutTransition();
     else afterHitTransition(hitKind);
   }, 900);
@@ -17979,6 +18112,7 @@ function drawScreenPass(ctx, w, h, g, theme, cam, cx, cy, r, chipY) {
   if (g && g.play && g.play.throwActive && g.play.throwWindow) {
     const win = g.play.throwWindow;
     const t = clamp((performance.now() - win.startedAt) / win.duration, 0, 1);
+    if (win.targets && win.targets.length > 1) drawThrowTargets(ctx, w, h, cam, win);
     drawThrowBar(ctx, w, h, cx, win, t);
   }
 
@@ -18060,8 +18194,51 @@ function drawCatchRing(ctx, lx, ly, t) {
    logical size or whatever gives it `minCss` on this screen, whichever is
    more, the same way the ball has a floor. */
 function hudPx(px, minCss) { return Math.max(px, (minCss || 11) / (FIELD_VIEW || 1)); }
+/* THE BAGS YOU CAN THROW TO, marked where they are. Each offered bag gets
+   a gold ring and its name, and the ring's size is floored in CSS pixels
+   for a thumb. The positions go through the camera like the catch ring's
+   spot, and are kept on the window so a press is read against them. */
+function drawThrowTargets(ctx, w, h, cam, win) {
+  const G = fieldGeom();
+  const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 160);
+  const r = hudPx(22, 16);
+  win.spots = [];
+  for (const tg of win.targets) {
+    const [bx, by] = simProject(G, SIM_BASE_UV[tg.base][0], SIM_BASE_UV[tg.base][1]);
+    const [x, y] = camPt(cam, w, h, bx, by);
+    win.spots.push({ base: tg.base, x, y });
+    ctx.save();
+    ctx.lineWidth = Math.max(3, hudPx(3, 2.5));
+    ctx.strokeStyle = 'rgba(11,16,21,.85)';
+    ctx.beginPath(); ctx.arc(x, y, r + 2, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = tg.base === 0 ? 'rgba(255,255,255,.9)' : `rgba(244,194,90,${0.65 + 0.35 * pulse})`;
+    ctx.beginPath(); ctx.arc(x, y, r + (tg.base === 0 ? 0 : pulse * 3), 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+    hud(ctx, (c) => {
+      const fs = hudPx(11, 10);
+      c.font = `bold ${fs}px monospace`;
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      const ty = y - r - fs;
+      c.lineWidth = Math.max(3, fs * 0.3);
+      c.strokeStyle = 'rgba(11,16,21,.9)';
+      c.strokeText(tg.label, x, ty);
+      c.fillStyle = tg.base === 0 ? '#ffffff' : '#f4c25a';
+      c.fillText(tg.label, x, ty);
+    });
+  }
+}
 function drawThrowBar(ctx, w, h, cx, win, t) {
-  const barW = w * 0.5;
+  /* WITH HOME OFFERED THE BAR GOES TO THE TOP OF THE PICTURE. Its usual
+     place is the bottom, which is exactly where home plate is: measured on
+     a phone and a desktop, the HOME ring sat under the bar, so the one
+     target the bases loaded add was the one nobody could see. Up top it
+     sits in the stands, 90 CSS pixels down so the sign and the scoreboard
+     keep their room, and no wider than 44% of what is on screen so it
+     clears the scoreboard on the right. */
+  const homeUp = !!(win.targets && win.targets.some(x => x.base === 3));
+  const visW = FIELD_CAM.sw * PIX;
+  const barW = homeUp ? Math.min(w * 0.5, visW * 0.44) : w * 0.5;
   const barX = cx - barW/2;
   /* Tall enough to hit with a thumb: 22 logical is ten CSS pixels on a
      phone, and the cursor inside it a hairline. */
@@ -18075,8 +18252,20 @@ function drawThrowBar(ctx, w, h, cx, win, t) {
      rather than assumed, so the bar sits on the deck's top edge when
      there is one and where it always was when there is not. */
   const deckTop = (FIELD_CAM.sy + FIELD_CAM.sh - (FIELD_CAM.deck || 0)) * PIX;
-  const barY = Math.min(h * 0.90, deckTop - barH - fs - 26);
-  /* Background */
+  /* And it may cover NO target. On a phone the crop starts just above
+     second, so 90 CSS pixels down sits on the second base ring: then it
+     goes to the very top of the picture, which on a phone is the stands
+     and on a desktop is where the sign is, hence the order. */
+  let barY = Math.min(h * 0.90, deckTop - barH - fs - 26);
+  if (homeUp) {
+    const top = FIELD_CAM.sy * PIX, v = FIELD_VIEW || 1, rr = hudPx(22, 16) + hudPx(11, 10) * 2;
+    const covers = (y) => (win.spots || []).some(sp =>
+      sp.x > barX - 6 - rr && sp.x < barX + barW + 6 + rr &&
+      sp.y > y - 6 - rr && sp.y < y + barH + fs + 22 + rr);
+    barY = [top + 90 / v, top + 8 / v].find(y => !covers(y)) ?? top + 90 / v;
+  }
+  /* Background. Its box is kept on the window for the suite. */
+  win.barRect = { x: barX - 6, y: barY - 6, w: barW + 12, h: barH + fs + 22 };
   ctx.fillStyle = 'rgba(11,16,21,.92)';
   ctx.fillRect(barX - 6, barY - 6, barW + 12, barH + fs + 22);
   /* Yellow zone */
@@ -18087,6 +18276,17 @@ function drawThrowBar(ctx, w, h, cx, win, t) {
   ctx.fillStyle = 'rgba(91,176,131,.72)';
   ctx.fillRect(barX + (win.ideal - win.greenHalf) * barW, barY,
                win.greenHalf * 2 * barW, barH);
+  /* With a lead runner to get, the narrower greens sit inside first's:
+     the gold band is an out on the lead runner, and its bright core on a
+     throw to second is the double play. */
+  if (win.targets && win.targets.length > 1) {
+    ctx.fillStyle = 'rgba(244,194,90,.85)';
+    ctx.fillRect(barX + (win.ideal - win.leadHalf) * barW, barY + barH * 0.25,
+                 win.leadHalf * 2 * barW, barH * 0.5);
+    ctx.fillStyle = '#fff6d8';
+    ctx.fillRect(barX + (win.ideal - win.dpHalf) * barW, barY + barH * 0.38,
+                 win.dpHalf * 2 * barW, barH * 0.24);
+  }
   /* Cursor */
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(barX + t * barW - 2, barY - 3, 4, barH + 6);
@@ -18096,7 +18296,10 @@ function drawThrowBar(ctx, w, h, cx, win, t) {
     c.font = `bold ${fs}px monospace`;
     c.textAlign = 'center';
     c.textBaseline = 'middle';
-    c.fillText('THROW TO FIRST · SPACE OR CLICK', cx, barY + barH + fs * 0.5 + 6);
+    const multi = win.targets && win.targets.length > 1;
+    c.fillText(!multi ? (COARSE ? 'THROW TO FIRST · TAP' : 'THROW TO FIRST · SPACE OR CLICK')
+      : COARSE ? 'TAP A BAG TO THROW THERE' : 'CLICK A BAG · SPACE THROWS TO FIRST',
+      cx, barY + barH + fs * 0.5 + 6);
   });
 }
 
@@ -20206,7 +20409,13 @@ function renderHowTo() {
     + 'press Space in the green for the out. Yellow lets the batter beat the throw '
     + 'for an infield single. Press badly out of time and it is a throwing error, '
     + 'and every runner takes an extra base. Let the bar run out and the fielder '
-    + 'simply holds the ball. The batter reaches and nobody else moves up.</p>');
+    + 'simply holds the ball. The batter reaches and nobody else moves up.</p>'
+    + '<p><b>Choose the base.</b> With a runner on first and fewer than two out, '
+    + 'the bags you can throw to light up. Tap or click a bag to throw there, or '
+    + 'press 1, 2 or 4. Space throws to first. First is the sure out. Second '
+    + 'turns two, but the green is smaller: the white heart of it is a double '
+    + 'play, the gold is the force at second, and yellow gets nobody. With the '
+    + 'bases loaded, home cuts down the run.</p>');
   field.appendChild(howtoThrow());
   add(field,
       '<p><b>Fly balls:</b> a ring shrinks over the landing spot. Click or press '
