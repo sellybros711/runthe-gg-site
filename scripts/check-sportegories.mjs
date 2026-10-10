@@ -462,7 +462,13 @@ console.log('\n10. NBA career totals');
     ['10,000+ NBA points', 'Luol Deng', 'yes'],             // 13,394
     ['15,000+ NBA points', 'Richard Hamilton', 'yes'],      // 15,708
     ['10,000+ NBA points', 'Ben Wallace', 'no'],            // 6,254
-    ['10,000+ NBA points', 'Shane Battier', 'no']           // 8,408
+    ['10,000+ NBA points', 'Shane Battier', 'no'],          // 8,408
+    ['15,000+ NBA points', 'Walt Frazier', 'yes'],          // 15,581, five seasons before 1973-74
+    ['10,000+ NBA points', 'Nate Archibald', 'yes'],        // 16,481, "Tiny" to Basketball-Reference
+    ['20,000+ NBA points', 'Bob Pettit', 'yes'],            // 20,880, hand-entered
+    ['15,000+ NBA points', 'Carlos Boozer', 'no'],          // the hand list had 12,842; it is 14,000
+    ['10,000+ NBA points', 'Carlos Boozer', 'yes'],
+    ['10,000+ NBA points', 'AJ Dybantsa', 'no']             // a rookie
   ];
   for (const [l, n, want] of CASES) {
     const got = judge(l, n);
@@ -471,6 +477,42 @@ console.log('\n10. NBA career totals');
   const have = (D.dst || []).length, nba = D.players.filter((p) => D.sports[p[1]] === 'NBA').length;
   if (have < 0.75 * nba) fail('only ' + have + ' of ' + nba + ' NBA players have career totals');
   else ok(have + ' of ' + nba + ' NBA players have career totals, and ' + CASES.length + ' real careers land on the right side of the line');
+}
+
+/* ---- 11. a stat category on the board has the stat for everybody ------- */
+console.log('\n11. stat categories on the board, flag fullstats');
+{
+  /* The owner's rule: a category we put up cannot be missing the answer.
+     So a year of boards from the day the flag starts, and for every stat
+     category on any of them, every recognizable player of that sport has to
+     hold the number (curated, summed, or hand-entered). And the boards are
+     still whole: taking categories away must not leave a day short. */
+  const fb = { console, Math, String, Object, Array, JSON, Date, RegExp };
+  fb.self = fb; fb.window = fb; fb.globalThis = fb;
+  createContext(fb);
+  runInContext(readFileSync('arcade/flags.js', 'utf8'), fb);
+  runInContext(readFileSync('arcade/sportegories.js', 'utf8'), fb);
+  const F = fb.RTG_SPORTEGORIES; F.setData(JSON.parse(JSON.stringify(D)));
+  const PL = F.players();
+  const known = (sport, k) => PL.filter((p) => p.sport === sport && (p.f || 0) >= D.fameMin && !(p.st && p.st[k] != null));
+  const d0 = Date.UTC(2026, 9, 11);
+  const seen = new Set(); let short = 0, days = 0;
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(d0 + i * 864e5).toISOString().slice(0, 10);
+    const b = F.daily(d); days++;
+    if (!b || !b.cats || b.cats.length < F.CATS_PER) { short++; continue; }
+    for (const c of b.cats) { const def = D.cats[c.i]; if (def && !F.sureCat(def)) seen.add('NOT SURE ' + def.l); else if (def && JSON.stringify(def.p).includes('"stat"')) seen.add(def.l); }
+  }
+  if (short) fail(short + ' of ' + days + ' boards came out short of ' + F.CATS_PER + ' categories');
+  const notSure = [...seen].filter((x) => x.startsWith('NOT SURE'));
+  if (notSure.length) fail('stat categories with partial data on the board: ' + notSure.join(', '));
+  for (const k of Object.keys(F.STAT_SURE)) {
+    const sport = k.startsWith('nba') ? 'NBA' : k.startsWith('mlb') ? 'MLB' : 'NFL';
+    const miss = known(sport, k);
+    if (miss.length) fail(miss.length + ' recognizable ' + sport + ' players have no ' + k + ': ' + miss.slice(0, 12).map((p) => p.name).join(', '));
+    else ok('every recognizable ' + sport + ' player has ' + k);
+  }
+  if (!short && !notSure.length) ok(days + ' boards whole, and the only stat categories on them are complete: ' + [...seen].join(', '));
 }
 
 if (bad) { console.error('\n' + bad + ' problem' + (bad === 1 ? '' : 's')); process.exit(1); }

@@ -101,7 +101,9 @@ const last = (d) => (d && d.length ? Math.max(...d) : 0);
 console.log('\n1. Career Path, flag eras');
 {
   for (const sp of ['all']) {
-    const { page, close } = await open('career', 'eras');
+    // `current` is on for everybody from 2026-10-06 and would deal the
+    // modern pool on both sides, so the eras gate is asked with it off
+    const { page, close } = await open('career', 'eras,-current');
     const deal = await page.evaluate(() => window.__rtgDeal(30).map((r) => ({ n: r.target.name, d: r.target.decade || [] })));
     const steps = await page.evaluate(() => window.RTGFame.ERA_STEPS);
     const early = deal.filter((r, k) => {
@@ -113,7 +115,7 @@ console.log('\n1. Career Path, flag eras');
     else ok('the first ' + steps[0][0] + ' cards reached the ' + steps[0][1] + 's, the next to ' + steps[1][0] + ' the ' + steps[1][1] + 's: ' + deal.slice(0, 4).map((r) => r.n).join(', ') + ' ...');
     await close();
     // and the gate is what did it: with the flag off the opening is not held
-    const off = await open('career', '-eras');
+    const off = await open('career', '-eras,-current');
     const offDeal = await off.page.evaluate(() => window.__rtgDeal(30).map((r) => r.target.name));
     if (JSON.stringify(offDeal) === JSON.stringify(deal.map((r) => r.n))) fail('the deal is the same with the flag off: the gate does nothing');
     else ok('with the flag off the day deals as it did');

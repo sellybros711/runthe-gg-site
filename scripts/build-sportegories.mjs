@@ -457,6 +457,7 @@ for (const rec of [...pool.values()].flat()) {
  * `same` is: the per-letter counts that pick each day's board are built from
  * the records, and a new stat on 1,000 players would move boards already
  * played. The game reads `dst` when it judges an answer. */
+let NBA_LAST = 0;                  // the last season in the file, by the year it ends
 const NBA_TOT = (() => {
   let rows;
   try { rows = Object.values(JSON.parse(R('hoops/data/players.json'))); } catch (e) { console.warn('skip hoops/data/players.json: ' + e.message); return new Map(); }
@@ -464,15 +465,27 @@ const NBA_TOT = (() => {
   for (const r of rows) {
     if (!r || !r.i || !r.n) continue;
     const g = +r.g || 0;
-    const t = byId.get(r.i) || { name: r.n, first: 9999, last: 0, pts: 0, reb: 0, ast: 0, blk: 0, stl: 0 };
+    const t = byId.get(r.i) || { id: r.i, name: r.n, first: 9999, last: 0, pts: 0, reb: 0, ast: 0, blk: 0, stl: 0, seasons: new Set(), dr: null, top: 0 };
     t.first = Math.min(t.first, r.s); t.last = Math.max(t.last, r.s);
+    t.seasons.add(r.s); if (r.dr) t.dr = r.dr; t.top = Math.max(t.top, +r.pts || 0);
+    if (r.s > (t.lastS || 0)) { t.lastS = r.s; t.lastPpg = +r.pts || 0; } else if (r.s === t.lastS) t.lastPpg = Math.max(t.lastPpg, +r.pts || 0);
     for (const k of ['pts', 'reb', 'ast', 'blk', 'stl']) t[k] += (+r[k] || 0) * g;
     byId.set(r.i, t);
   }
   const DATA_FIRST = Math.min(...rows.map((r) => r.s || 9999));
+  NBA_LAST = Math.max(...rows.map((r) => r.s || 0));
   const byName = new Map();
   for (const t of byId.values()) {
     t.full = t.first > DATA_FIRST ? 1 : 0;          // the whole career is in the file
+    /* How far short the sum can be. A season under 20 games or 12 minutes is
+       not in the file, and it shows as a hole: a year missing between his
+       first and last, or a first season later than the year after his draft.
+       With no hole, what can still be missing is one short spell at a second
+       club in a trade year, a few hundred points at most. */
+    let holes = 0;
+    for (let y = t.first + 1; y < t.last; y++) if (!t.seasons.has(y)) holes++;
+    if (t.dr && t.dr >= DATA_FIRST && t.first > t.dr + 1) holes++;
+    t.margin = holes ? Math.max(1000, Math.round(holes * 20 * t.top)) : 400;
     for (const k of new Set([nkFull(t.name), nkFull(t.name.replace(/\s+(jr|sr|ii|iii|iv|v)\.?$/i, ''))])) {
       (byName.get(k) || byName.set(k, []).get(k)).push(t);
     }
@@ -480,10 +493,56 @@ const NBA_TOT = (() => {
   return byName;
 })();
 const NBA_STAT = { pts: 'nba_points', reb: 'nba_rebounds', ast: 'nba_assists', blk: 'nba_blocks', stl: 'nba_steals' };
+/* Names Basketball-Reference writes differently from our sources. Two ids
+   means we cannot tell which of two namesakes he is, so the larger total is
+   used, which can still deny a line both of them fall well short of. */
+const HOOPS_ALIAS = {
+  'Nate Archibald': ['architi01'], 'Tyrone Bogues': ['boguemu01'], 'John Hotrod Williams': ['williho01'],
+  'Eddie A. Johnson': ['johnsed03'], 'Charles J Jones': ['jonesch01', 'jonesch02']
+};
+/* Careers the season file cannot hold, because all or part of them came
+   before 1973-74: Basketball-Reference's NBA-only career points (no ABA, no
+   NBL), entered by hand, so they are exact and judged like a curated stat.
+   George Mikan is his BAA and NBA total, Dolph Schayes his NBA total; both
+   sit on the same side of every line either way. */
+const NBA_HISTORIC_POINTS = {
+  'Bob Cousy': 16960, 'George Mikan': 10156, 'Bob Pettit': 20880, 'Dolph Schayes': 18438,
+  'Hal Greer': 21586, 'Sam Jones': 15411, 'Tom Heinsohn': 12194, 'Bill Sharman': 12665,
+  'Walt Frazier': 15581, 'Wes Unseld': 10624, 'Rick Barry': 18395, 'Dave Bing': 18327,
+  'Spencer Haywood': 14592, 'Nate Thurmond': 14437, 'Jerry Lucas': 14053, 'Chet Walker': 18831,
+  'Nate Archibald': 16481
+};
+const HOOPS_BY_ID = (() => {
+  const m = new Map();
+  for (const list of NBA_TOT.values()) for (const t of list) m.set(t.id, t);
+  return m;
+})();
+const NBA_STAT_KEYS = Object.values(NBA_STAT);
 function nbaTotals(rec) {
+  const hist = NBA_HISTORIC_POINTS[rec.name];
+  if (hist != null) return { nba_points: hist, _x: 1 };
+  const alias = HOOPS_ALIAS[rec.name];
+  if (alias) {
+    const ts = alias.map((id) => HOOPS_BY_ID.get(id)).filter(Boolean);
+    if (!ts.length) return null;
+    const o = {};
+    for (const [k, stat] of Object.entries(NBA_STAT)) o[stat] = Math.round(Math.max(...ts.map((t) => t[k])));
+    o._f = ts.every((t) => t.full) ? 1 : 0;
+    return o;
+  }
   const keys = new Set([nkFull(rec.name), nkFull(rec.name.replace(/\s+(jr|sr|ii|iii|iv|v)\.?$/i, ''))]);
   let cands = [];
   for (const k of keys) for (const t of (NBA_TOT.get(k) || [])) if (!cands.includes(t)) cands.push(t);
+  /* A rookie: on a roster this season, a career only in the 2020s, and in no
+     season of the file under any name (no decade at all is a draft pick
+     with no season yet: Darryn Peterson). The file runs through the season just
+     played, so he has not played a full NBA season, and every line here is
+     in the thousands. */
+  if (!cands.length && rec.act && rec.decade.every((d) => d >= 2020)) {
+    const o = { _f: 1, _r: 1 };
+    for (const stat of NBA_STAT_KEYS) o[stat] = 0;
+    return o;
+  }
   // two men, one name: keep the one whose seasons fall in this record's decades
   if (cands.length > 1 && rec.decade.length) {
     cands = cands.filter((t) => rec.decade.some((d) => d <= t.last && d + 9 >= t.first - 1));
@@ -492,6 +551,20 @@ function nbaTotals(rec) {
   const t = cands[0], o = {};
   for (const [k, stat] of Object.entries(NBA_STAT)) o[stat] = Math.round(t[k]);
   o._f = t.full;
+  /* the points he can be short by: the file's holes. A man still playing
+     also adds to it all season, which the game works out on the day (_p is
+     his scoring rate last season, see NBA_SEASON below). */
+  o._m = t.margin;
+  if (rec.act && t.last === NBA_LAST) o._p = Math.round(t.lastPpg * 10) / 10;
+  /* The hand list is wrong in places the season file is not: Luol Deng at
+     15,208 points (13,394), Chris Webber at 9,123 rebounds (8,124), Marcus
+     Camby at 2,564 blocks (2,331). Every disagreement checked went the
+     season file's way, so where a whole career is in the file and a curated
+     number is more than 3% off it, the game judges by the file. */
+  if (t.full && rec.st) {
+    const off = NBA_STAT_KEYS.filter((k) => rec.st[k] != null && Math.abs(rec.st[k] - o[k]) > 0.03 * rec.st[k]);
+    if (off.length) o._o = off;
+  }
   return o;
 }
 
@@ -1060,6 +1133,8 @@ const payload = {
      season file, for judging answers only (see NBA CAREER TOTALS above).
      _f is 1 when the whole career is in that file. */
   dst: PLAYERS.map((p, i) => (p.sport === 'NBA' ? [i, nbaTotals(p)] : null)).filter((x) => x && x[1]),
+  // the season the NBA totals run through (2026 is 2025-26)
+  nbaThrough: NBA_LAST,
   cats: CATS.map((c) => ({ i: c.i, l: c.l, p: c.p, g: c.g, n: c.n, t: c.t, s: c.s })),
   viab: viability,
   letters: PLAYABLE,

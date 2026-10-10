@@ -81,14 +81,19 @@
        the whole career is in the file and well short of it. Dikembe Mutombo's
        11,706 is what "10,000+ NBA points" was missing. Applied before the
        join below, so every name of a man gets them. */
+    /* _x: an exact career total entered by hand (before 1973-74), judged
+       like any curated stat. _o: curated numbers the season file shows are
+       wrong (Luol Deng's 15,208 points are 13,394), replaced by the file's. */
     (D.dst || []).forEach(function (row) {
       var p = P[row[0]], o = row[1]; if (!p || !o) return;
       Object.keys(o).forEach(function (k) {
-        if (k === '_f') return;
+        if (k.charAt(0) === '_') return;
         p.st = p.st || {};
-        if (p.st[k] != null) return;
+        if (p.st[k] != null && !(o._o && o._o.indexOf(k) >= 0)) return;
         p.st[k] = o[k];
-        (p.dst = p.dst || {})[k] = o._f ? 2 : 1;   // 2: the whole career is counted
+        if (!o._x) (p.dst = p.dst || {})[k] = o._f ? 2 : 1;   // 2: the whole career is counted
+        if (o._m != null) p.dstM = o._m;
+        if (o._p != null) p.dstP = o._p;
       });
     });
     /* A man the sources write two ways is two records, each holding part of
@@ -114,7 +119,19 @@
       var u = function (lists) { var o = []; lists.forEach(function (l) { (l || []).forEach(function (v) { if (o.indexOf(v) < 0) o.push(v); }); }); return o; };
       var teams = u(g.map(function (p) { return p.teams; })), aw = u(g.map(function (p) { return p.aw; }));
       var first = function (f) { for (var i = 0; i < g.length; i++) if (g[i][f]) return g[i][f]; return g[0][f]; };
-      var col = first('col'), pos = first('pos'), rpos = first('rpos'), st = first('st');
+      var col = first('col'), pos = first('pos'), rpos = first('rpos');
+      // every stat any of the records holds, and whether it was summed
+      var st = null, dst = null;
+      g.forEach(function (p) {
+        Object.keys(p.st || {}).forEach(function (k) {
+          if (p.st[k] == null) return;
+          st = st || {};
+          if (st[k] == null || (dst && dst[k] && !(p.dst && p.dst[k]))) {
+            st[k] = p.st[k];
+            if (p.dst && p.dst[k]) (dst = dst || {})[k] = p.dst[k]; else if (dst) delete dst[k];
+          }
+        });
+      });
       var bits = 0, act = 0, f = 0;
       g.forEach(function (p) { bits |= p.decBits; act = act || p.act; f = Math.max(f, p.f || 0); });
       var person = Math.min.apply(null, g.map(function (p) { return p.idx; }));
@@ -123,7 +140,10 @@
         if (!p.col) p.col = col;
         if (!p.pos) p.pos = pos;
         if (!p.rpos) p.rpos = rpos;
-        if (!p.st) p.st = st;
+        if (st) p.st = st;
+        p.dst = dst;
+        if (dst) p.dstM = Math.max.apply(null, g.map(function (q) { return q.dstM || 0; }));
+        g.forEach(function (q) { if (q.dstP != null) p.dstP = Math.max(p.dstP || 0, q.dstP); });
         p.decBits = bits; p.act = act; p.f = f; p.person = person;
       });
       g.forEach(function (p) {
@@ -203,6 +223,18 @@
    *
    * Award and stat lists are confirm-only even when present: ours are
    * incomplete, so a missing Pro Bowl is not evidence it never happened. */
+  /* What a man still playing can have added since the totals were summed:
+     the games played so far this season (a season opens about 21 October and
+     its 82 games run to mid April), at his rate last season plus five. Zero
+     before the opener, so the day after a refresh he is judged like anyone. */
+  function seasonSoFar(p, stat) {
+    if (p.dstP == null || !D.nbaThrough) return 0;
+    var open = Date.UTC(D.nbaThrough, 9, 21), now = Date.now();
+    if (now <= open) return 0;
+    var games = Math.min(82, Math.ceil((now - open) / 864e5 * 82 / 174));
+    var rate = stat === 'nba_points' ? p.dstP + 5 : 15;
+    return Math.round(games * rate);
+  }
   function evalTri(p, pr) {
     if (pr.all) {
       var unknown = false;
@@ -252,9 +284,17 @@
       case 'stat':
         if (!p.st || p.st[pr.v] == null) return null;
         if (p.st[pr.v] >= pr.min) return true;
-        // a summed total under-counts (short seasons and pre-1974 years are
-        // missing), so it denies only a full career a tenth or more short
-        if (p.dst && p.dst[pr.v]) return (p.dst[pr.v] === 2 && p.st[pr.v] < pr.min * 0.9) ? false : null;
+        /* A summed total under-counts: a season under 20 games or 12 minutes
+           is not in the file (Michael Jordan's 18 games in 1986 and 17 in
+           1995 are 860 points), and a man still playing adds to it all
+           season. The build says how far short each one can be (dstM): 400
+           for a career with no hole in it, more for one with a hole, and a
+           season's worth more for a man still playing. Short by more than
+           that is a real no; inside it, nobody can say. */
+        if (p.dst && p.dst[pr.v]) {
+          var m = (p.dstM != null ? p.dstM : Math.min(1000, pr.min * 0.1)) + seasonSoFar(p, pr.v);
+          return (p.dst[pr.v] === 2 && p.st[pr.v] < pr.min - m) ? false : null;
+        }
         return false;
       case 'draft1':   return p.dp1 ? true : null;
       default:         return null;
@@ -402,7 +442,29 @@
     return L;
   }
 
-  function build(seed, forcedLetter, broad) {
+  /* Flag 'fullstats' (flags.js). A stat category goes on a board only if we
+     hold that stat for every player a fan could name for it. The owner's
+     rule, after "10,000+ NBA points" could not verify Dikembe Mutombo: a
+     category we put up cannot be missing the answer. NBA points are summed
+     from every season (and hand-entered before 1973-74); the MLB and NFL
+     stats are still career leaders only (181 of 1,134 recognizable hitters
+     have a hit total), so their categories stay off the board until that
+     data is whole. Answers to them still score in practice and archives. */
+  var STAT_SURE = { nba_points: 1 };
+  function statsOf(pr, out) {
+    out = out || [];
+    if (!pr) return out;
+    if (pr.k === 'stat') out.push(pr.v);
+    (pr.all || []).forEach(function (q) { statsOf(q, out); });
+    return out;
+  }
+  function sureCat(c) { return statsOf(c.p).every(function (k) { return STAT_SURE[k]; }); }
+  function sureOn(dateStr) {
+    var F = (typeof self !== 'undefined' ? self : this).RTGFlags;
+    try { return !!(F && F.on && F.on('fullstats', dateStr)); } catch (e) { return false; }
+  }
+
+  function build(seed, forcedLetter, broad, sure) {
     if (!data()) return null;
     var r = rng(seed);
     var pick = (D.letters || []).filter(function (L) { return (D.byLetter[L] || []).length >= LETTER_MIN_CATS; });
@@ -418,6 +480,7 @@
     }
     var avail = viableFor(L);
     if (broad) avail = avail.filter(function (c) { return !RETIRED.test(c.l); });
+    if (sure) avail = avail.filter(sureCat);
     var out = [], used = {}, byTag = {}, bySport = {};
     function freeSport(c) { return (bySport[c.s || 'ANY'] || 0) < (SPORT_CAP[c.s || 'ANY'] || 3); }
     function draw(opts) {                       // weighted by sport AND breadth
@@ -487,8 +550,8 @@
     }
     return lab;
   }
-  function daily(dateStr) { return build(hash('sportegories:' + dateStr), letterForDate(dateStr), broadOn(dateStr)); }
-  function practice(seed) { return build(hash('sportegories:practice:' + (seed == null ? Math.floor(Math.random() * 1e9) : seed)), null, broadOn()); }
+  function daily(dateStr) { return build(hash('sportegories:' + dateStr), letterForDate(dateStr), broadOn(dateStr), sureOn(dateStr)); }
+  function practice(seed) { return build(hash('sportegories:practice:' + (seed == null ? Math.floor(Math.random() * 1e9) : seed)), null, broadOn(), sureOn()); }
 
   // ---------- grading ----------
   /* Returns:
@@ -618,6 +681,6 @@
     daily: daily, practice: practice, build: build, wheelLetters: wheelLetters,
     check: check, suggest: suggest, answersFor: answersFor, score: scoreOf,
     letterHits: letterHits,
-    test: test, evalTri: evalTri, rarityOf: rarityOf, CATS_PER: CATS_PER
+    test: test, evalTri: evalTri, rarityOf: rarityOf, CATS_PER: CATS_PER, STAT_SURE: STAT_SURE, sureCat: sureCat, players: function () { return P; }
   };
 });

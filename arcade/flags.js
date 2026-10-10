@@ -57,6 +57,11 @@
     // not only the famous eight. DeShawn Stevenson started for the 2009-10
     // Mavericks and could only ever be a deep cut.
     fullroster: { since: '2026-10-06', pct: 0, daily: true },
+    // Sportegories: a stat category goes on a board only when we hold that
+    // stat for every player a fan could name (sportegories.js STAT_SURE).
+    // "10,000+ NBA points" could not verify Dikembe Mutombo. From the day
+    // after it shipped, so the board in play that day does not move.
+    fullstats: { since: '2026-10-11', pct: 0, daily: true },
     // Phase 3: a guest's finished run goes on the daily board under a
     // generated name, through an anonymous session (board.js). Needs
     // supabase/132_arcade_guest_board.sql and "Allow anonymous sign-ins" in the
