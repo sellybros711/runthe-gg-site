@@ -44,6 +44,15 @@
  * with a thin side trim. That reverses the third pass's lower body rule at the
  * owner's later request. A look with no ht or wt is drawn at the default size,
  * which is what these hashes hold.
+ *
+ * RE-RECORDED A FIFTH TIME, ON PURPOSE, because the owner said the player did
+ * not look human: the eyes read as creepy and the body as a doll. The head is
+ * smaller (HEAD_K 0.78 to 0.57), taller than it is wide and sits on a neck;
+ * the body is longer to fill the room that freed; the shoulders are square
+ * and the torso tapers to a narrow waist instead of a barrel; the shorts no
+ * longer flare past the shoulders; an arm has a bicep and a forearm and a
+ * smaller hand; a leg has a calf. The face lost its white bars and blush and
+ * is a brow, a socket shadow, a small dark eye, a nose shadow and a mouth.
  */
 import fs from 'node:fs';
 import path from 'node:path';

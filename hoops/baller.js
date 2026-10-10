@@ -326,7 +326,7 @@ var STILL = {
   cap: fr([10, 5], [10, 5]),
   up: fr([148, 176], [148, 176]),
   trophy: fr([16, -84, 1, 0.5], [16, -84, 1, 0.5]),
-  ball: fr([22, 38, 1, 0.75], [12, 6]),
+  ball: fr([17, 38, 1, 0.75], [12, 6]),
 };
 
 /* ── the body, from his height and weight ──
@@ -343,13 +343,13 @@ var STILL = {
        (typicalWt is career.js's wtFor). Over it, the chest, the waist, the
        thighs and the arms fill out, and the waist most; under it, all of it
        thins. Build (lean, standard, muscular) is still the shoulders. */
-var BASE_HT = 79, HEAD_K = 0.78;
+var BASE_HT = 79, HEAD_K = 0.57;
 function typicalWt(ht){ return Math.round((195 + (ht - 75) * 8) / 5) * 5; }
 function metrics(L){
   var ht = (L && L.ht) || BASE_HT, wt = (L && L.wt) || typicalWt(ht), h = ht / BASE_HT;
   var gw = Math.max(-3, Math.min(4, (wt - typicalWt(ht)) / 10));
-  var legs = 23.5 * Math.pow(h, 1.35), torso = 16 * Math.pow(h, 0.85);
-  return { ht: ht, wt: wt, h: h, gw: gw, legs: legs, torso: torso, ts: torso / 19, ls: legs / 20.4, sw: 1 + (h - 1) * 0.55, k: HEAD_K };
+  var legs = 25.6 * Math.pow(h, 1.35), torso = 17.2 * Math.pow(h, 0.85);
+  return { ht: ht, wt: wt, h: h, gw: gw, legs: legs, torso: torso, ts: torso / 19, ls: legs / 22.2, sw: 1 + (h - 1) * 0.55, k: HEAD_K };
 }
 
 /* The skeleton for a pose, in world cells (x right, y down, z toward the
@@ -360,7 +360,7 @@ function skeleton(f, bw, am, breath, MX){
   var dip = f.dip || 0, sp = f.sp || 0, up = typeof breath === 'number' ? breath : breath ? 1 : 0, ts = MX.ts, sw = MX.sw, g = MX.gw;
   var hipY = GY - MX.legs, neckY = hipY - MX.torso, ankY = GY - 4.0;
   var J = { dip: dip, MX: MX };
-  J.head = [CX, neckY - 8.2 * MX.k + dip + up, 0.6 * MX.k];
+  J.head = [CX, neckY - 9.9 * MX.k + dip + up, 0.4 * MX.k];
   J.neck = [CX, neckY + dip + up, 0];
   J.chest = [CX, neckY + 7.2 * ts + dip + up, 0];
   J.waist = [CX, neckY + 15.6 * ts + dip, 0];
@@ -372,7 +372,7 @@ function skeleton(f, bw, am, breath, MX){
   as = Math.min(as, (shY - 2.2) / 19.0);
   [-1, 1].forEach(function(s){
     var p = f.a[String(s)] || DOWN;
-    var sh = [CX + s * ((7.9 + bw * 0.8) * sw + Math.max(0, g) * 0.3 - Math.max(0, -g) * 0.15), shY + dip + up, 0];
+    var sh = [CX + s * ((8.2 + bw * 0.8) * sw + Math.max(0, g) * 0.3 - Math.max(0, -g) * 0.15), shY + dip + up, 0];
     var r1 = p[0] * Math.PI / 180, r2 = p[1] * Math.PI / 180;
     var f1 = p[2] == null ? 1 : p[2], f2 = p[3] == null ? 1 : p[3];
     var L1 = 7.6 * as, L2 = 7.0 * as;
@@ -401,6 +401,10 @@ function skeleton(f, bw, am, breath, MX){
   return J;
 }
 
+/* where a held ball's centre sits across: just outside the hand, and never
+   so far out that a heavy man's ball leaves the grid */
+function heldX(hx){ return Math.min(hx + 1.4, W - 1.6 - 3.7); }
+
 /* ── the model for one pose and one look ── */
 function build(L, o, J){
   var suit = o.suit, cap = o.cap, pose = o.pose;
@@ -412,7 +416,7 @@ function build(L, o, J){
      where it was hit, f: the shape, b: a bounding sphere for culling */
   var add = function(n, g, m, f, c, r, x){ var p = { n: n, g: g, m: m, f: f, c: c, r: r }; for (var k in x || {}) p[k] = x[k]; P.push(p); return p; };
   var H = J.head, hx = H[0], hy = H[1], hz = H[2];
-  var HR = [8.1, 8.5, 7.6];
+  var HR = [7.3, 8.6, 7.6];
   var local = function(p){ return [p[0] - hx, p[1] - hy, p[2] - hz]; };
 
   /* legs: skin and socks under the shorts, or trousers */
@@ -425,7 +429,12 @@ function build(L, o, J){
         if (y > 53.4) return y < 54.2 ? 'sock' : y < 54.9 ? 'jersey' : y < 55.6 ? 'trim' : 'sock';
         return 'skin';
       };
-      add('leg' + s, 'leg' + s, legMat, uni([cone(G.hip, G.kn, Math.max(1.6, 2.6 + am + g * 0.36), Math.max(1.5, 2.3 + am + g * 0.22)), cone(G.kn, G.ank, Math.max(1.4, 2.3 + am + g * 0.16), Math.max(1.2, 1.75 + am * 0.5 + g * 0.08))]), G.kn, 10 * ls);
+      /* a calf: the shin swells behind, a third of the way down, and the
+         ankle is narrow. A straight cone reads as a pipe. */
+      var cr = Math.max(1.4, 2.3 + am + g * 0.16), ca = [G.kn[0] + (G.ank[0] - G.kn[0]) * 0.32, G.kn[1] + (G.ank[1] - G.kn[1]) * 0.32, G.kn[2] + (G.ank[2] - G.kn[2]) * 0.32 - 0.5];
+      var legF = uni([cone(G.hip, G.kn, Math.max(1.6, 2.6 + am + g * 0.36), Math.max(1.5, 2.1 + am + g * 0.22)), cone(G.kn, G.ank, cr * 0.9, Math.max(1.0, 1.45 + am * 0.5 + g * 0.08))]);
+      var calfF = ell(ca, [cr * 1.08, 3.2 * ls, cr * 1.1]);
+      add('leg' + s, 'leg' + s, legMat, function(p){ return smin(legF(p), calfF(p), 1.4); }, G.kn, 10 * ls);
     } else {
       add('trouser' + s, 'leg' + s, 'trouser', uni([cone([G.hip[0], G.hip[1] - 2, 0], G.kn, 3.4 + g * 0.25, 3.0 + g * 0.15), cone(G.kn, G.ank, 3.0 + g * 0.1, 2.7)]), G.kn, 12 * ls);
     }
@@ -446,7 +455,7 @@ function build(L, o, J){
   /* the torso: a chest and a waist, one smooth body */
   /* the chest and the waist fill out with weight, the waist (and the belly
      in front of it) most */
-  var cR = [(7.8 + bw) * sw + g * 0.48, 6.6 * ts, 4.5 + bw * 0.3 + g * 0.42], wR = [(6.9 + bw * 0.6) * sw + g * 0.72, 5.0 * ts, 4.1 + Math.max(0, g) * 0.8 + Math.min(0, g) * 0.3];
+  var cR = [(8.3 + bw) * sw + g * 0.48, 6.4 * ts, 4.5 + bw * 0.3 + g * 0.42], wR = [(5.7 + bw * 0.5) * sw + g * 0.72, 5.2 * ts, 3.9 + Math.max(0, g) * 0.8 + Math.min(0, g) * 0.3];
   var C0 = J.chest, W0 = J.waist;
   var torsoF = function(p){ return smin(ell(C0, cR)(p), ell(W0, wR)(p), 2.2); };
   var bodyN = function(p){ return p; };
@@ -474,7 +483,7 @@ function build(L, o, J){
     /* the shorts: wide and long, cut into two legs at the seat, and as long
        on a tall man as on a short one, to just above the knee */
     var sy0 = W0[1] - 0.2, sd = 3.6 * ts, sl = 7.0 * ls;
-    var shW = (7.7 + bw * 0.5) * sw + g * 0.6, lr0 = 4.1 + g * 0.36, lr1 = 3.6 + g * 0.24;
+    var shW = (6.6 + bw * 0.4) * sw + g * 0.6, lr0 = 3.7 + g * 0.36, lr1 = 3.3 + g * 0.24;
     var shortsF = uni([ell([CX, sy0 + 2.6 * ts, 0], [shW, 4.2 * ts, 4.8 + Math.max(0, g) * 0.45]),
       cone([CX - 3.7 * sw, sy0 + 3.0 * ts, 0], [J.leg[-1].kn[0] + 0.4, sy0 + sd + sl, J.leg[-1].kn[2] * 0.6], lr0, lr1),
       cone([CX + 3.7 * sw, sy0 + 3.0 * ts, 0], [J.leg[1].kn[0] - 0.4, sy0 + sd + sl, J.leg[1].kn[2] * 0.6], lr0, lr1)]);
@@ -513,17 +522,22 @@ function build(L, o, J){
     var mat = suit ? 'jacket' : sleeved ? 'sleeve' : 'skin';
     var r0 = Math.max(1.4, (suit ? 2.6 : 2.2) + am + g * 0.24), r1 = Math.max(1.25, (suit ? 2.2 : 1.85) + am * 0.8 + g * 0.17), r2 = Math.max(1.05, (suit ? 1.95 : 1.5) + am * 0.6 + g * 0.08);
     if (!suit) add('delt' + s, 'arm' + s, sleeved ? 'sleeve' : 'skin', sph([A.sh[0] - s * 0.5, A.sh[1] + 0.9, 0], BD.dl + g * 0.12), A.sh, 3.5);
-    var armF = uni([cone(A.sh, A.el, r0, r1), cone(A.el, A.wr, r1, r2)]);
+    /* an arm has a shape: the bicep swells a third of the way down, the
+       forearm is thickest just under the elbow and narrows to the wrist */
+    var bi = [A.sh[0] + (A.el[0] - A.sh[0]) * 0.42, A.sh[1] + (A.el[1] - A.sh[1]) * 0.42, A.sh[2] + (A.el[2] - A.sh[2]) * 0.42];
+    var fo = [A.el[0] + (A.wr[0] - A.el[0]) * 0.25, A.el[1] + (A.wr[1] - A.el[1]) * 0.25, A.el[2] + (A.wr[2] - A.el[2]) * 0.25];
+    var armF = suit ? uni([cone(A.sh, A.el, r0, r1), cone(A.el, A.wr, r1, r2)])
+      : function(p){ return smin(smin(cone(A.sh, A.el, r0 * 0.96, r1 * 0.9)(p), ell(bi, [r0 * 1.0, r0 * 1.5, r0 * 1.0])(p), 2.4), smin(cone(A.el, A.wr, r1 * 0.96, r2 * 0.8)(p), ell(fo, [r1 * 1.02, r1 * 1.6, r1 * 1.0])(p), 2.0), 0.8); };
     add('arm' + s, 'arm' + s, suit ? function(p){
       var t = Math.hypot(p[0] - A.wr[0], p[1] - A.wr[1], p[2] - A.wr[2]);
       return t < 1.3 ? 'cuff' : 'jacket';
     } : mat, armF, A.el, 10);
-    add('hand' + s, 'arm' + s, 'skin', ell(A.hand, [1.9, 2.15, 1.75]), A.hand, 3, { hand: s });
+    add('hand' + s, 'arm' + s, 'skin', ell(A.hand, [1.55, 2.0, 1.4]), A.hand, 3, { hand: s });
   });
 
   /* what he is holding */
   if (pose === 'ball') {
-    var hd = J.arm[1].hand, bc = [hd[0] + 1.4, hd[1] + 3.2, hd[2] + 1.0];
+    var hd = J.arm[1].hand, bc = [heldX(hd[0]), hd[1] + 3.2, hd[2] + 1.0];
     add('ball', 'ball', function(p){
       var u = p[0] - bc[0], v = p[1] - bc[1], w = p[2] - bc[2];
       if (Math.abs(v + u * 0.1) < 0.45 || Math.abs(u - v * 0.15) < 0.45 || Math.abs(Math.hypot(u + 5.2, v) - 3.9) < 0.42) return { m: 'ball', t: 0 };
@@ -786,22 +800,29 @@ function paint(look, opts){
   var onHead = function(x, y){ var c = g(x, y); return c && model[c.i].n === 'head'; };
   var put = function(x, y, col){ if (onHead(x, y)) out[y][x] = col; };
   var block = function(x, y, w, h, col){ for (var yy = 0; yy < h; yy++) for (var xx = 0; xx < w; xx++) put(x + xx, y + yy, col); };
-  var pupil = mix(HRm[0], '#1a1018', 0.6), brow = L.hair === 'bald' || L.hc === 5 ? SK[0] : HRm[0];
-  var ew = res >= 2 ? Math.max(1, Math.round(res * 0.6)) : 1, eh = Math.max(2, Math.round(1.6 * fs));
+  /* THE FACE IS A PLAYER'S, NOT A DOLL'S. It used to be a white bar beside a
+     dark one for each eye, set wide in a round face, with pink blush under
+     them: a toy. Now: a brow, a row of shadow under it where the socket is,
+     a small dark eye that is wider than it is tall, a nose that is only its
+     shadow side (the light is from the top left), and a mouth. No whites and
+     no blush. At the court's size (res 1) it is two dark cells and a mouth. */
+  var pupil = mix(SK[0], '#120a0c', 0.55), brow = L.hair === 'bald' || L.hc === 5 ? mix(SK[0], '#120a0c', 0.25) : mix(HRm[0], '#120a0c', 0.2);
+  var ew = res >= 3 ? 2 : 1, eh = res >= 3 ? 2 : 1, ey = fy;
   [-1, 1].forEach(function(sd){
-    var ex = fx + sd * R_(2.6) - (sd < 0 ? ew : 0);
-    /* a blink is the lid: one row of shadow where the eye was */
-    if (o.blink) block(ex, fy + Math.floor(eh / 2) - 1, ew + (res >= 2 ? 1 : 0), 1, SK[0]);
-    else {
-      if (res >= 2) block(ex, fy - Math.floor(eh / 2), ew + 1, eh, mix(SK[3], '#ffffff', 0.55));
-      block(sd < 0 ? ex : ex + 1, fy - Math.floor(eh / 2), ew, eh, pupil);
+    var ex = fx + sd * R_(2.5) - (sd < 0 ? ew : 0);
+    if (res >= 2) {
+      block(ex - (sd < 0 ? 1 : 0), ey - 2, ew + 1, 1, brow);
+      block(ex - (sd < 0 ? 1 : 0), ey - 1, ew + 1, 1, SK[1]);
     }
-    block(ex - (sd < 0 ? 1 : 0), fy - Math.floor(eh / 2) - Math.max(1, R_(1.6)), ew + 1 + (res >= 2 ? 1 : 0), Math.max(1, Math.round(res * 0.5)), brow);
+    /* a blink is the lid: the eye's row in shadow */
+    if (o.blink) block(ex, ey + eh - 1, ew, 1, SK[0]);
+    else block(ex, ey, ew, eh, pupil);
   });
-  block(fx - Math.max(0, Math.round(res * 0.5) - 1), fy + R_(1.6), Math.max(1, Math.round(res * 0.6)), Math.max(1, R_(1.2)), SK[1]);
-  block(fx - R_(1.4), fy + R_(3.6), R_(2.8) || 2, Math.max(1, Math.round(res * 0.6)), mix(SK[1], '#7a2a34', 0.30));
-  block(fx - R_(4.4), fy + R_(2.4), Math.max(1, res - 0), Math.max(1, res - 1), mix(SK[2], '#e0586a', 0.22));
-  block(fx + R_(4.0), fy + R_(2.4), Math.max(1, res - 0), Math.max(1, res - 1), mix(SK[2], '#e0586a', 0.22));
+  if (res >= 2) {
+    block(fx + 1, ey + R_(1.0), 1, Math.max(1, R_(1.5)), SK[1]);
+    block(fx, ey + R_(1.0) + Math.max(1, R_(1.5)), 2, 1, SK[0]);
+  }
+  block(fx - R_(1.3), ey + R_(3.4), Math.max(2, R_(2.6)), 1, mix(SK[0], '#4a1820', 0.35));
   if (L.beard === 'stubble') for (var y6 = fy + R_(2); y6 <= fy + R_(8); y6++) for (var x6 = fx - R_(7); x6 <= fx + R_(7); x6++) {
     var ad6 = Math.abs(x6 + 0.5 - fx);
     if (!onHead(x6, y6) || (y6 < fy + R_(4) && ad6 < R_(5)) || (Math.abs(y6 - fy - R_(3.6)) < Math.max(1, res * 0.5) && ad6 < R_(2.5))) continue;
@@ -1027,7 +1048,7 @@ var reducedNow = function(){ return typeof window !== 'undefined' && window.matc
    same offset the 'ball' pose holds it at */
 function heldBall(pose, L, res){
   var f = ANIM[pose], MX = metrics(L), J = skeleton(f, bodyOf(L.build).bw, 0, false, MX);
-  var hd = J.arm[1].hand, w = [hd[0] + 1.4, hd[1] + 3.2, hd[2] + 1.0], v = toView(w);
+  var hd = J.arm[1].hand, w = [heldX(hd[0]), hd[1] + 3.2, hd[2] + 1.0], v = toView(w);
   var fl = toView([w[0], GY - 3.7, w[2]]);
   return { x: v[0] * res, y: v[1] * res, fy: fl[1] * res, gy: toView([w[0], GY, w[2]])[1] * res };
 }
