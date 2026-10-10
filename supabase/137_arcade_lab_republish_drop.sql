@@ -109,3 +109,18 @@ delete from public.arcade_slates s where s.game_id = 'drop-board' and s.date_key
 insert into public.arcade_slates (game_id, date_key, payload, source_ids) values ('drop-board', '2026-11-08', '{"themeId":"drop-nfl_passtd-v2","title":"Career touchdown passes","theme":{"title":"Career touchdown passes","slots":[{"label":"Colin Kaepernick","value":72},{"label":"Sammy Baugh","value":187},{"label":"Steve Young","value":232},{"label":"Tony Romo","value":248},{"label":"Warren Moon","value":291},{"label":"Eli Manning","value":366},{"label":"Peyton Manning","value":539}]}}'::jsonb, array['drop-nfl_passtd-v2']) on conflict do nothing;
 update public.arcade_prompts set status = 'rejected', updated_at = now() where game_id = 'drop-board' and drafted_by = 'claude' and id not in ('drop-mlb_hr', 'drop-mlb_hits', 'drop-mlb_sb', 'drop-mlb_wins', 'drop-mlb_strikeouts', 'drop-nba_points', 'drop-nba_rebounds', 'drop-nba_assists', 'drop-nfl_passtd', 'drop-nfl_rushyds', 'drop-nfl_recyds', 'drop-mlb_hr-v1', 'drop-mlb_hits-v1', 'drop-mlb_sb-v1', 'drop-mlb_wins-v1', 'drop-mlb_strikeouts-v1', 'drop-nba_points-v1', 'drop-nba_rebounds-v1', 'drop-nba_assists-v1', 'drop-nfl_passtd-v1', 'drop-nfl_rushyds-v1', 'drop-nfl_recyds-v1', 'drop-mlb_hr-v2', 'drop-mlb_hits-v2', 'drop-mlb_sb-v2', 'drop-mlb_wins-v2', 'drop-mlb_strikeouts-v2', 'drop-nba_points-v2', 'drop-nba_rebounds-v2', 'drop-nfl_passtd-v2', 'drop-nfl_rushyds-v2', 'drop-nfl_recyds-v2', 'drop-mlb_hr-v3', 'drop-mlb_hits-v3', 'drop-mlb_sb-v3', 'drop-mlb_wins-v3', 'drop-mlb_strikeouts-v3', 'drop-nba_points-v3', 'drop-nba_rebounds-v3', 'drop-nfl_passtd-v3', 'drop-nfl_rushyds-v3', 'drop-nfl_recyds-v3');
 alter table public.arcade_slates enable trigger arcade_slates_frozen;
+
+-- ADDED BY HAND, not by publish-days.mjs: keep it if this file is regenerated.
+-- Testers and nobody else: every Arcade Lab game on the testers flag, whatever
+-- an admin left it at, and the file refuses to commit if one is anything else.
+update public.arcade_lab_flags set mode = 'testers', updated_at = now()
+ where flag in ('arcade_roll_ball', 'arcade_field_goal_flick', 'arcade_hoop_shoot',
+                'arcade_whack_right_player', 'arcade_drop_board', 'arcade_pinball')
+   and mode <> 'testers';
+do $$ begin
+  if (select count(*) from public.arcade_lab_flags
+       where flag in ('arcade_roll_ball', 'arcade_field_goal_flick', 'arcade_hoop_shoot',
+                      'arcade_whack_right_player', 'arcade_drop_board', 'arcade_pinball')
+         and mode = 'testers') <> 6
+  then raise exception 'an Arcade Lab flag is missing or not testers'; end if;
+end $$;
