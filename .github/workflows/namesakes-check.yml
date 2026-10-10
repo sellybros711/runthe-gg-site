@@ -23,6 +23,8 @@ on:
       - 'arcade/supplement.js'
       - 'arcade/match/entities.js'
       - 'scripts/check-namesakes.mjs'
+      - 'scripts/sportegories-people.mjs'
+      - 'scripts/sportegories-people.json'
       - '.github/workflows/namesakes-check.yml'
   push:
     branches: [main]
@@ -32,6 +34,8 @@ on:
       - 'arcade/supplement.js'
       - 'arcade/match/entities.js'
       - 'scripts/check-namesakes.mjs'
+      - 'scripts/sportegories-people.mjs'
+      - 'scripts/sportegories-people.json'
       - '.github/workflows/namesakes-check.yml'
   workflow_dispatch: {}
 

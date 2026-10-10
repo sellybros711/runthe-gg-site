@@ -273,8 +273,12 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .statgrid .box{background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:12px 4px;}
 .statgrid .v{font-family:var(--pix); font-size:18px; font-weight:800; color:var(--newsT);}
 .statgrid .k{font-size:9px; letter-spacing:1px; color:var(--mut); text-transform:uppercase; margin-top:4px; font-weight:700;}
-.modal .btn{width:100%; border:0; border-radius:12px; padding:13px; font-family:var(--pix); font-weight:800; font-size:14px;
-  letter-spacing:.5px; margin-top:8px; box-shadow:var(--shadow); color:var(--ink);}
+.modal .btn{width:100%; border:1px solid var(--line2); border-radius:12px; padding:13px; font-family:var(--pix); font-weight:800; font-size:14px;
+  letter-spacing:.5px; margin-top:8px; box-shadow:var(--shadow); color:var(--ink); background:var(--card);}
+/* A FILL OF ITS OWN. funnel.js takes `gold` off Play again when it promotes
+   the next game, and this rule had no background, so the button fell back to
+   the browser's light grey under white ink: white on white in dark mode. */
+.modal .btn.gold{border-color:transparent;}
 .modal .btn.gold{background:var(--btnP); color:var(--btnP-ink); box-shadow:0 12px 24px -14px var(--btnP);}
 .modal .btn.spent{background:var(--panel2); color:var(--mut); border:1px solid var(--line2); box-shadow:none; cursor:default; opacity:1;}
 .modal .btn.ghost{background:var(--card); border:1px solid var(--line2); color:var(--ink); box-shadow:none;}
@@ -410,7 +414,7 @@ window.GA_ID='G-L29P5MRWKE';
 </script>
 <script src="/arcade/tokens.js?v=15"></script>
 <script src="/arcade/metrics.js?v=3"></script>
-<script src="/arcade/gamehead.js?v=3"></script>
+<script src="/arcade/gamehead.js?v=4"></script>
 </head>
 <body>
 <div class="wrap">
@@ -580,9 +584,9 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/cluebank.js?v=3"></script>
 <script src="/arcade/primary.js?v=40"></script>
 <script src="/arcade/franchise.js?v=1"></script>
-<script src="/arcade/data.js?v=8"></script>
-<script src="/arcade/flags.js?v=2"></script>
-<script src="/arcade/fame.js?v=1"></script>
+<script src="/arcade/data.js?v=9"></script>
+<script src="/arcade/flags.js?v=8"></script>
+<script src="/arcade/fame.js?v=2"></script>
 <script src="gen.js?v=15"></script>
 <script src="data/mini-words.js?v=1"></script>
 <script src="mini.js?v=1"></script>
@@ -591,7 +595,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/funnel.js?v=14"></script>
 <script src="/arcade/share.js?v=11"></script>
 <script src="/arcade/resultart.js?v=5"></script>
-<script src="/arcade/resultstats.js?v=3"></script>
+<script src="/arcade/resultstats.js?v=4"></script>
 <script src="/arcade/review.js?v=1" defer></script>
 <script src="/arcade/challenge.js?v=4"></script>
 <script src="/arcade/modal-a11y.js?v=2"></script>
@@ -599,7 +603,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/dayroll.js?v=2"></script>
 <script src="/arcade/archive.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=24"></script>
+<script src="/arcade/board.js?v=25"></script>
 <script src="/arcade/leaderboard.js?v=16"></script>
 <script src="/arcade/alltime.js?v=4"></script>
 <script src="/arcade/auth.js?v=4"></script>

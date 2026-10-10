@@ -41,6 +41,7 @@ export async function handle(req, deps) {
       case 'POST pitch': return await pitch(req, deps, now);
       case 'POST answer': return await answerRoute(req, deps, now);
       case 'GET result': return await result(req, deps, now);
+      case 'GET board': return ok(await board(req, deps, now));
       case 'POST challenge': return await challenge(req, deps, now);
       case 'POST claim': return await claim(req, deps);
     }
@@ -63,6 +64,16 @@ async function loadSlate(db, date) {
 async function slateFor(db, s, atBat) {
   // The engine only needs the prompt being played. Rows are frozen.
   const rows = await db.answers(s.slate_date, atBat);
+  /* PLUS WHAT A CHALLENGE ALREADY WON. An upheld challenge is remembered per
+     prompt (136), so the next slate that deals the same prompt takes the
+     answer too, as the benefit-of-the-doubt single the upholding gave it. A
+     database without 136 has no rulings and nothing changes. */
+  for (const id of await remembered(db, s.prompt_ids[atBat])) {
+    if (rows.some(r => r.entity_id === id)) continue;
+    const e = get(id);
+    if (e) rows.push({ slate_date: s.slate_date, at_bat: atBat, prompt_id: s.prompt_ids[atBat], entity_id: id, name: e.n,
+      tier: 1, called: false, arguable: false, expected_share: 0, remembered: true });
+  }
   const map = new Map(rows.map(r => [r.entity_id, r]));
   const prompts = [];
   prompts[atBat] = { id: s.prompt_ids[atBat], league: s.leagues[atBat], type: s.types[atBat], rows: map };
@@ -94,7 +105,7 @@ async function view(db, s, play, now) {
   const st = play.state;
   const out = {
     slate: { date: s.slate_date, no: s.slate_no }, total: CONFIG.AT_BATS, clockMs: CONFIG.CLOCK_MS,
-    atBat: st.i, outs: st.outs, over: st.over, won: st.won, summary: G.summary(st), history: []
+    atBat: st.i, outs: st.outs, over: st.over, won: st.won, summary: G.summary(st), box: G.boxScore(st).line, history: []
   };
   for (let i = 0; i < st.ab.length; i++) {
     const a = st.ab[i];
@@ -170,6 +181,12 @@ async function answerRoute(req, deps, now) {
     strikeout: !!res.strikeout, expired: !!res.expired, reason: res.reason || null };
   if (res.picker) out.picker = res.picker;
   if (res.match) out.answer = brief(get(res.match));
+  /* How common the answer was: the share of fans the model expects to give
+     it. Sent only once the at-bat has ruled on it, never before. */
+  if (res.match && (res.ruling === 'SAFE' || res.ruling === 'OUT')) {
+    const row = sl.rows.find(r => r.entity_id === res.match);
+    if (row) out.rarity = Math.round(1000 * (row.expected_share || 0)) / 10;
+  }
   if (res.atBatOver) out.reveal = { called: calledNames(sl.rows) };
   out.state = await view(deps.db, s, play, now);
   return ok(out);
@@ -190,7 +207,48 @@ async function result(req, deps, now) {
     const total = counts.reduce((t, c) => t + c.n, 0);
     crowd.push(counts.sort((a, b) => b.n - a.n).slice(0, 5).map(c => ({ name: (get(c.entity_id) || {}).n || c.entity_id, pct: total ? Math.round(100 * c.n / total) : 0 })));
   }
-  return ok({ ...v, final: true, share: G.shareLine(play.state), crowd });
+  const extra = { share: G.shareLine(play.state), crowd };
+  if (req.uid) {
+    extra.streak = streakFrom(await deps.db.playedDates(req.uid).catch(() => []), date);
+    const b = await board(req, deps, now, date);
+    extra.rank = b.me ? b.me.rank : null; extra.field = b.total;
+  }
+  return ok({ ...v, final: true, ...extra });
+}
+
+/* Days in a row with a finished game, through today, or through yesterday
+   when today is still to play. */
+export function streakFrom(dates, today) {
+  const set = new Set(dates);
+  const day = d => new Date(Date.parse(d + 'T12:00:00Z'));
+  const iso = d => d.toISOString().slice(0, 10);
+  let cur = day(today);
+  if (!set.has(iso(cur))) cur = new Date(cur.getTime() - 864e5);
+  let n = 0;
+  while (set.has(iso(cur))) { n++; cur = new Date(cur.getTime() - 864e5); }
+  return n;
+}
+
+/* The day's board: finished, signed in games only, best score first. */
+async function board(req, deps, now, dateIn) {
+  const date = dateIn || (req.query && req.query.date) || slateDate(now);
+  const rows = await deps.db.board(date).catch(() => []);
+  const ranked = rows.map((r, i) => ({ rank: i + 1, name: r.username || 'Player', score: r.score || 0, bases: r.bases, runs: r.runs || 0, hits: r.hits || 0, hr: r.hr || 0, k: r.ks || 0, me: !!req.uid && r.user_id === req.uid }));
+  return { date, total: ranked.length, top: ranked.slice(0, 20), me: ranked.find(r => r.me) || null };
+}
+
+async function remembered(db, promptId) {
+  if (!db.rulings) return [];
+  try { return (await db.rulings(promptId)) || []; } catch (e) { return []; }
+}
+
+/* The prompt's query, from the saved prompts or the seed pool. */
+async function promptDef(deps, id) {
+  const saved = await deps.db.prompts().catch(() => []);
+  const hit = saved.find(p => p.id === id);
+  if (hit) return hit;
+  const seed = deps.seedPrompts ? await deps.seedPrompts() : [];
+  return (seed || []).find(p => p.id === id) || null;
 }
 
 async function challenge(req, deps, now) {
@@ -211,7 +269,46 @@ async function challenge(req, deps, now) {
     note: b.note ? String(b.note).slice(0, 280) : null
   });
   if (!row) return bad('already_challenged', 409);
-  return ok({ challenge: { id: row.id, status: 'open' } });
+  const settled = await settleLive(row, deps, now);
+  const out = { challenge: { id: row.id, status: settled.status }, msg: settled.msg };
+  if (settled.status !== 'open') out.state = await view(deps.db, s, await loadPlay(req, deps.db, date, false, s), now);
+  return ok(out);
+}
+
+/* A CHALLENGE IS RULED THE MOMENT IT IS MADE, when it can be. Only a strike
+   is a factual claim about a known player (the slate did not list him), so
+   only a strike is looked up; an out on a called answer is the game's own
+   rule and waits for the admin like any challenge the record cannot settle.
+   Memory first: a ruling an admin made, or one this prompt already had for
+   this player, is applied without asking Wikidata again. CONFIG.LIVE_CHALLENGE
+   is the switch. */
+async function settleLive(c, deps, now) {
+  const open = { status: 'open', msg: 'Challenge sent. The umpire will look at the tape.' };
+  const on = deps.liveChallenge != null ? deps.liveChallenge : CONFIG.LIVE_CHALLENGE;   // tests turn it off
+  if (!on || !c.entity_id || !/STRIKE/.test(c.ruling)) return open;
+  const { db } = deps;
+  const e = get(c.entity_id);
+  if (!e) return open;
+  let prior = null;
+  if (db.ruling) { try { prior = await db.ruling(c.prompt_id, e.id); } catch (err) { prior = null; } }
+  let r = null;
+  if (prior && (prior.source === 'admin' || prior.verdict === 'upheld' ||
+      now - Date.parse(prior.updated_at || prior.created_at || 0) < CONFIG.DENIED_TTL_DAYS * 864e5)) {
+    r = prior.verdict === 'upheld'
+      ? { verdict: 'upheld', msg: 'Overturned. ' + e.n + ' fits. We already had this one.' }
+      : { verdict: 'denied', msg: 'The call stands. We already checked this one.' };
+  } else if (deps.liveCheck) {
+    const def = await promptDef(deps, c.prompt_id);
+    try { r = await deps.liveCheck(e, def); } catch (err) { r = null; }
+    if (r && (r.verdict === 'upheld' || r.verdict === 'denied') && db.putRuling) {
+      try { await db.putRuling({ prompt_id: c.prompt_id, entity_id: e.id, name: e.n, verdict: r.verdict, source: 'wikidata', qid: r.qid || null, wd_name: r.wdName || null }); } catch (err) {}
+    }
+  }
+  if (!r || (r.verdict !== 'upheld' && r.verdict !== 'denied')) return { status: 'open', msg: (r && r.msg) || open.msg };
+  const note = 'auto: ' + (prior ? 'remembered' : 'wikidata' + (r.qid ? ' ' + r.qid : ''));
+  if (r.verdict === 'upheld') await uphold(db, c, e.id);
+  await db.resolveChallenge(c.id, r.verdict, null, note);
+  return { status: r.verdict, msg: r.msg };
 }
 
 async function claim(req, deps) {
@@ -286,35 +383,40 @@ async function admin(route, req, deps, now) {
      taken off the board, and a game it ended is reopened.
    The alias or missing fact itself is fixed in the repo (data/aliases.json,
    data/fixes.json) and rebuilt, which the resolution text records. */
+async function uphold(db, c, entity) {
+  const play = await db.playById(c.play_id);
+  const st = play.state, ab = st.ab[c.at_bat];
+  const e = entity ? get(entity) : null;
+  let frozen = null;
+  if (e) {
+    const rows = await db.answers(c.slate_date, c.at_bat);
+    frozen = rows.find(r => r.entity_id === e.id) || null;
+    if (!frozen) await db.acceptAnswer(c.slate_date, c.at_bat, c.prompt_id, e.id, e.n);
+  }
+  const wasOut = ab.s === 'done' && ab.r.ruling === 'OUT';
+  ab.strikes = Math.max(0, (ab.strikes || 0) - 1);
+  const tier = Math.max(1, Math.min(frozen && !frozen.called ? frozen.tier : 1, G.maxTier(ab.strikes)));
+  if (ab.s === 'done') {
+    ab.r = { ruling: 'SAFE', tier, id: e ? e.id : ab.r.id, name: e ? e.n : ab.r.name, restored: true };
+    if (wasOut) st.outs = Math.max(0, st.outs - 1);
+    if (st.over && st.outs < CONFIG.OUTS_TO_END && st.i < CONFIG.AT_BATS) { st.over = false; st.won = false; }
+    if (st.over) st.won = st.i >= CONFIG.AT_BATS && st.outs < CONFIG.OUTS_TO_END;
+  }
+  await save(db, play, st);
+}
+
 async function resolveChallenge(req, deps, now) {
   const { db } = deps;
   const b = req.body || {};
   const c = await db.challenge(Number(b.id));
   if (!c || c.status !== 'open') return bad('no_open_challenge', 404);
   const upheld = !!b.upheld;
-  if (upheld) {
-    const play = await db.playById(c.play_id);
-    const s = await loadSlate(db, c.slate_date);
-    const st = play.state, ab = st.ab[c.at_bat];
-    const entity = b.entityId || c.entity_id;
-    const e = entity ? get(entity) : null;
-    let frozen = null;
-    if (e) {
-      const rows = await db.answers(c.slate_date, c.at_bat);
-      frozen = rows.find(r => r.entity_id === e.id) || null;
-      if (!frozen) await db.acceptAnswer(c.slate_date, c.at_bat, c.prompt_id, e.id, e.n);
-    }
-    const wasOut = ab.s === 'done' && ab.r.ruling === 'OUT';
-    ab.strikes = Math.max(0, (ab.strikes || 0) - 1);
-    const tier = Math.max(1, Math.min(frozen && !frozen.called ? frozen.tier : 1, G.maxTier(ab.strikes)));
-    if (ab.s === 'done') {
-      ab.r = { ruling: 'SAFE', tier, id: e ? e.id : ab.r.id, name: e ? e.n : ab.r.name, restored: true };
-      if (wasOut) st.outs = Math.max(0, st.outs - 1);
-      if (st.over && st.outs < CONFIG.OUTS_TO_END && st.i < CONFIG.AT_BATS) { st.over = false; st.won = false; }
-      if (st.over) st.won = st.i >= CONFIG.AT_BATS && st.outs < CONFIG.OUTS_TO_END;
-    }
-    await save(db, play, st);
-    void s;
+  if (upheld) await uphold(db, c, b.entityId || c.entity_id);
+  /* An admin's ruling is remembered too, as final: the live check never
+     overturns it on a later slate. */
+  if (c.entity_id && db.putRuling && /STRIKE/.test(c.ruling)) {
+    const e = get(b.entityId || c.entity_id);
+    if (e) { try { await db.putRuling({ prompt_id: c.prompt_id, entity_id: e.id, name: e.n, verdict: upheld ? 'upheld' : 'denied', source: 'admin' }); } catch (err) {} }
   }
   await db.resolveChallenge(c.id, upheld ? 'upheld' : 'denied', req.uid, b.resolution ? String(b.resolution).slice(0, 280) : null);
   return ok({ id: c.id, status: upheld ? 'upheld' : 'denied' });

@@ -81,6 +81,7 @@ test('a whole game: rulings, reveal, result, share line', async () => {
   const deep = p0.graded.find(r => r.tier === 4);
   r = (await call('POST', 'answer', 'tester', { entityId: deep.id })).body;
   assert.equal(r.ruling, 'SAFE'); assert.equal(r.tier, 3);
+  assert.equal(typeof r.rarity, 'number', 'a ruled answer says how common it was');
   assert.deepEqual(r.reveal.called.slice().sort(), p0.graded.filter(x => x.called).map(x => x.name).sort(), 'the called list arrives after the at-bat');
   // at-bat 2: a called answer is an out
   await call('POST', 'pitch', 'tester');
@@ -102,7 +103,13 @@ test('a whole game: rulings, reveal, result, share line', async () => {
   const res = (await call('GET', 'result', 'tester')).body;
   assert.equal(res.final, true);
   assert.equal(res.summary.bases, 5);
-  assert.match(res.share, /^Stumpire #\d+\n3️⃣ ❌ ❌ 1️⃣ 1️⃣\n5\/20 · 2 outs · 4 strikes$/);
+  assert.match(res.share, /^Stumpire #\d+\n3️⃣ ❌ ❌ 1️⃣ 1️⃣\nScore 70 · 1 R · 3 H · 0 HR · 1 K$/);
+  assert.equal(res.summary.score, 70); assert.equal(res.summary.runs, 1);
+  assert.deepEqual(res.box.map(b => b.hit || b.out), [3, 'OUT', 'K', 1, 1]);
+  assert.equal(res.streak, 1, 'a finished game today is a streak of one');
+  assert.equal(res.rank, 1); assert.equal(res.field, 1);
+  const bd = (await call('GET', 'board', 'tester')).body;
+  assert.equal(bd.top[0].score, 70); assert.ok(bd.top[0].me); assert.equal(bd.me.rank, 1);
   assert.equal(res.crowd.length, 5);
   assert.equal((await call('POST', 'answer', 'tester', { text: 'x' })).status, 409, 'a finished game takes no more answers');
 });
@@ -194,4 +201,12 @@ test('the page cookie is signed, expires, and refuses tampering', async () => {
   assert.equal(await verify('s3cret', c.replace('u-1', 'u-2'), T0), null);
   assert.equal(await verify('s3cret', c, T0 + 13 * 3600 * 1000), null);
   assert.equal(await verify(undefined, c, T0), null, 'no secret, no page');
+});
+
+test('a streak counts days in a row, alive through yesterday', async () => {
+  const { streakFrom } = await import('../api.js');
+  assert.equal(streakFrom(['2026-10-10', '2026-10-09', '2026-10-08', '2026-10-06'], '2026-10-10'), 3);
+  assert.equal(streakFrom(['2026-10-09', '2026-10-08'], '2026-10-10'), 2, 'today not yet played');
+  assert.equal(streakFrom(['2026-10-07'], '2026-10-10'), 0);
+  assert.equal(streakFrom(['2026-11-01', '2026-10-31'], '2026-11-01'), 2, 'across a month');
 });

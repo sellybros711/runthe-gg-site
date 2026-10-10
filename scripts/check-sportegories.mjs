@@ -26,6 +26,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { createContext, runInContext } from 'node:vm';
+import { candidates, groups, pairKey, norm as pkNorm } from './sportegories-people.mjs';
 
 let bad = 0;
 const fail = (m) => { console.error('  FAIL ' + m); bad++; };
@@ -122,6 +123,14 @@ console.log('\n3) no "Active" category suggests a player it does not call active
   for (const rec of D.players) {
     const k = D.sports[rec[1]] + '|' + norm(rec[0]);
     byName.set(k, (byName.get(k) || false) || !!(rec[7] & 1));
+  }
+  // One man held under two names is active under both (section 9): the game
+  // joins the pair at load, so Ahmad Gardner is as active as Sauce Gardner.
+  for (const [i, j] of D.same || []) {
+    const a = D.players[i], b = D.players[j]; if (!a || !b) continue;
+    const ka = D.sports[a[1]] + '|' + norm(a[0]), kb = D.sports[b[1]] + '|' + norm(b[0]);
+    const on = byName.get(ka) || byName.get(kb);
+    byName.set(ka, on); byName.set(kb, on);
   }
   let offers = 0;
   const wrong = [];
@@ -331,6 +340,179 @@ console.log('\n8) the tips describe the game as it is');
       else ok('and the only thing that closes a row is grade(), at the end');
     }
   }
+}
+
+/* ---- 9. one man, two names, one record -------------------------------- */
+/* A player typed "Anfernee Hardaway" into "NBA All-Star who played for the
+   Orlando Magic" and was told we could not verify it. The data held him twice:
+   "Penny Hardaway" with his All-Star years and no college, "Anfernee Hardaway"
+   with Memphis and no awards. Each name failed a category the other passed.
+   ONE_PERSON in the builder ships such pairs as `same`, and the game joins
+   them at load. This asks the GAME, through check(), that both
+   names land on one record carrying the facts each half used to hold. */
+{
+  console.log('\n9. one man, two names, one record');
+  const atLetter = (name) => name.trim().split(/\s+/)[0][0];
+  const ask = (label, name) => {
+    const at = D.cats.findIndex((c) => c.l === label);
+    if (at < 0) return null;
+    return S.check({ letter: atLetter(name), cats: [{ i: D.cats[at].i }] }, 0, name, {});
+  };
+  // The report, by the name the player used, on the category it was filed on.
+  for (const [label, name] of [
+    ['NBA All-Star who played for the Orlando Magic', 'Anfernee Hardaway'],
+    ['NBA All-Star who played for the Orlando Magic', 'Penny Hardaway'],
+    ['Played college at Memphis', 'Penny Hardaway'],
+    ['Played college at Memphis', 'Anfernee Hardaway']
+  ]) {
+    const r = ask(label, name);
+    if (!r) fail('the category "' + label + '" no longer exists');
+    else if (!r.ok) fail(name + ' is refused by "' + label + '" (' + r.reason + ')');
+    else ok(name + ' fits "' + label + '"');
+  }
+  /* Every listed pair, through a category built from BOTH records' facts:
+     every club, every award and the college. Both names have to pass it and
+     land inside the pair, or the join is only half done. */
+  const same = D.same || [];
+  if (same.length < 100) fail('only ' + same.length + ' pairs shipped; the pairing is not running');
+  const PG = groups(D.players.length, same);
+  const groupOf = new Map();
+  PG.forEach((g, n) => g.forEach((i) => groupOf.set(i, n)));
+  let men = 0;
+  for (const g of PG) {
+    const recs = g.map((i) => D.players[i]);
+    if (recs.some((r) => !r)) { fail('a pair points at a record that does not exist: ' + g.join(', ')); continue; }
+    /* One college: a man who went to one school written two ways ("NC State",
+       "North Carolina State") holds each spelling on its own record, and a
+       real category names one of them. */
+    const all = [];
+    for (const p of recs) {
+      for (const t of p[3]) all.push({ k: 'team', v: D.teams[t] });
+      for (const a of p[5]) all.push({ k: 'award', v: D.awards[a] });
+    }
+    const withCol = recs.find((p) => p[4] >= 0);
+    if (withCol) all.push({ k: 'col', v: D.cols[withCol[4]] });
+    const at = D.cats.length;
+    D.cats.push({ i: at, l: 'probe', p: { all } });
+    const names = [...new Set(recs.map((r) => r[0]))];
+    const res = names.map((n) => S.check({ letter: atLetter(n), cats: [{ i: at }] }, 0, n, {}));
+    // and naming him twice is one answer, whichever name came first
+    const first = res[0].ok ? { [res[0].player.idx]: 1 } : {};
+    const again = S.check({ letter: atLetter(names[names.length - 1]), cats: [{ i: at }] }, 0, names[names.length - 1], first);
+    D.cats.pop();
+    const miss = res.map((r, k) => (!r.ok || !g.includes(r.player.idx)) ? names[k] + ' (' + (r.reason || 'other record') + ')' : null).filter(Boolean);
+    if (miss.length) fail(names.join(' / ') + ': ' + miss.join(', '));
+    else if (again.reason !== 'dup') fail(names.join(' then ') + ' scores twice (' + (again.reason || 'ok') + ')');
+    else men++;
+  }
+  if (men) ok(men + ' men held as several records answer to every name with every club, award and college of one man, once');
+
+  /* NOBODY IS LEFT AS TWO RECORDS. The same rule the builder pairs with
+     (scripts/sportegories-people.mjs), run over the file that ships. A
+     related pair has to be joined, or decided as two men in
+     scripts/sportegories-people.json. This used to print a note and pass,
+     and the reports kept arriving one player at a time; it fails now, which
+     stops the nightly rebuild and keeps yesterday's file on the site until a
+     person makes the call. */
+  const decs = (bits) => { const o = []; for (let b = 0; b < 16; b++) if (bits & (1 << b)) o.push(D.dec0 + b * 10); return o; };
+  const SH = D.players.map((p) => ({ name: p[0], sport: D.sports[p[1]], pos: p[2] >= 0 ? D.pos[p[2]] : null,
+    t: p[3].map((t) => D.teams[t]), col: p[4] >= 0 ? D.cols[p[4]] : null, dec: decs(p[6]) }));
+  const PEOPLE = JSON.parse(readFileSync('scripts/sportegories-people.json', 'utf8'));
+  const SAME = new Set(PEOPLE.same.map(([sp, a, b]) => pairKey(sp, a, b)));
+  const APART = new Set(PEOPLE.apart.map(([sp, a, b]) => pairKey(sp, a, b)));
+  const joined = (i, j) => groupOf.has(i) && groupOf.get(i) === groupOf.get(j);
+  const open = [], split = [];
+  let autoN = 0, askN = 0;
+  for (const [i, j, v] of candidates(SH)) {
+    const A = SH[i], B = SH[j], key = pairKey(A.sport, A.name, B.name), label = A.sport + ' ' + A.name + ' / ' + B.name;
+    if (APART.has(key)) { if (joined(i, j)) fail(label + ' is listed as two men and joined'); continue; }
+    if (v === 'auto') { autoN++; if (!joined(i, j)) split.push(label); }
+    else if (v === 'ask') { askN++; if (!SAME.has(key)) open.push(label); else if (!joined(i, j)) split.push(label + ' (listed)'); }
+  }
+  if (split.length) fail(split.length + ' records of one man are not joined: ' + split.slice(0, 12).join(' | '));
+  else ok(autoN + ' same-name pairs and ' + askN + ' listed pairs are all joined');
+  if (open.length) fail(open.length + ' related names nobody has decided, add each to `same` or `apart` in scripts/sportegories-people.json: ' + open.slice(0, 12).join(' | '));
+  else ok('no related pair of names is left undecided');
+  // and the list itself has not gone stale: every `same` pair is still joined
+  const byNm = new Map();
+  SH.forEach((r, i) => { const k = r.sport + '|' + pkNorm(r.name); (byNm.get(k) || byNm.set(k, []).get(k)).push(i); });
+  for (const [sp, a, b] of PEOPLE.same) {
+    const A = byNm.get(sp + '|' + pkNorm(a)) || [], B = byNm.get(sp + '|' + pkNorm(b)) || [];
+    if (!A.length || !B.length) continue;      // one half has left the file; nothing to join
+    if (!A.some((i) => B.some((j) => joined(i, j)))) fail(sp + ' ' + a + ' / ' + b + ' is listed as one man and not joined');
+  }
+}
+
+/* ---- 10. a stat line is known for everybody, not only the leaders ------ */
+console.log('\n10. NBA career totals');
+{
+  /* "10,000+ NBA points" told a player Dikembe Mutombo (11,729) could not be
+     verified, because the only NBA stats were a hand list of 77 career
+     leaders. The totals are summed from the hoops season file now. Real
+     careers, both sides of each line, none of them on the leaders' list. */
+  const cat = (l) => D.cats.find((c) => c.l === l);
+  const judge = (l, name) => {
+    const c = cat(l); if (!c) return 'no category';
+    const r = S.check({ letter: name[0], cats: [{ i: c.i }] }, 0, name, {});
+    return r.ok ? 'yes' : (r.reason === 'category' ? 'no' : 'unknown');
+  };
+  const CASES = [
+    ['10,000+ NBA points', 'Dikembe Mutombo', 'yes'],      // 11,729
+    ['10,000+ NBA points', 'Kyle Korver', 'yes'],           // 10,212
+    ['10,000+ NBA points', 'Luol Deng', 'yes'],             // 13,394
+    ['15,000+ NBA points', 'Richard Hamilton', 'yes'],      // 15,708
+    ['10,000+ NBA points', 'Ben Wallace', 'no'],            // 6,254
+    ['10,000+ NBA points', 'Shane Battier', 'no'],          // 8,408
+    ['15,000+ NBA points', 'Walt Frazier', 'yes'],          // 15,581, five seasons before 1973-74
+    ['10,000+ NBA points', 'Nate Archibald', 'yes'],        // 16,481, "Tiny" to Basketball-Reference
+    ['20,000+ NBA points', 'Bob Pettit', 'yes'],            // 20,880, hand-entered
+    ['15,000+ NBA points', 'Carlos Boozer', 'no'],          // the hand list had 12,842; it is 14,000
+    ['10,000+ NBA points', 'Carlos Boozer', 'yes'],
+    ['10,000+ NBA points', 'AJ Dybantsa', 'no']             // a rookie
+  ];
+  for (const [l, n, want] of CASES) {
+    const got = judge(l, n);
+    if (got !== want) fail(n + ' in "' + l + '": ' + got + ', should be ' + want);
+  }
+  const have = (D.dst || []).length, nba = D.players.filter((p) => D.sports[p[1]] === 'NBA').length;
+  if (have < 0.75 * nba) fail('only ' + have + ' of ' + nba + ' NBA players have career totals');
+  else ok(have + ' of ' + nba + ' NBA players have career totals, and ' + CASES.length + ' real careers land on the right side of the line');
+}
+
+/* ---- 11. a stat category on the board has the stat for everybody ------- */
+console.log('\n11. stat categories on the board, flag fullstats');
+{
+  /* The owner's rule: a category we put up cannot be missing the answer.
+     So a year of boards from the day the flag starts, and for every stat
+     category on any of them, every recognizable player of that sport has to
+     hold the number (curated, summed, or hand-entered). And the boards are
+     still whole: taking categories away must not leave a day short. */
+  const fb = { console, Math, String, Object, Array, JSON, Date, RegExp };
+  fb.self = fb; fb.window = fb; fb.globalThis = fb;
+  createContext(fb);
+  runInContext(readFileSync('arcade/flags.js', 'utf8'), fb);
+  runInContext(readFileSync('arcade/sportegories.js', 'utf8'), fb);
+  const F = fb.RTG_SPORTEGORIES; F.setData(JSON.parse(JSON.stringify(D)));
+  const PL = F.players();
+  const known = (sport, k) => PL.filter((p) => p.sport === sport && (p.f || 0) >= D.fameMin && !(p.st && p.st[k] != null));
+  const d0 = Date.UTC(2026, 9, 11);
+  const seen = new Set(); let short = 0, days = 0;
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(d0 + i * 864e5).toISOString().slice(0, 10);
+    const b = F.daily(d); days++;
+    if (!b || !b.cats || b.cats.length < F.CATS_PER) { short++; continue; }
+    for (const c of b.cats) { const def = D.cats[c.i]; if (def && !F.sureCat(def)) seen.add('NOT SURE ' + def.l); else if (def && JSON.stringify(def.p).includes('"stat"')) seen.add(def.l); }
+  }
+  if (short) fail(short + ' of ' + days + ' boards came out short of ' + F.CATS_PER + ' categories');
+  const notSure = [...seen].filter((x) => x.startsWith('NOT SURE'));
+  if (notSure.length) fail('stat categories with partial data on the board: ' + notSure.join(', '));
+  for (const k of Object.keys(F.STAT_SURE)) {
+    const sport = k.startsWith('nba') ? 'NBA' : k.startsWith('mlb') ? 'MLB' : 'NFL';
+    const miss = known(sport, k);
+    if (miss.length) fail(miss.length + ' recognizable ' + sport + ' players have no ' + k + ': ' + miss.slice(0, 12).map((p) => p.name).join(', '));
+    else ok('every recognizable ' + sport + ' player has ' + k);
+  }
+  if (!short && !notSure.length) ok(days + ' boards whole, and the only stat categories on them are complete: ' + [...seen].join(', '));
 }
 
 if (bad) { console.error('\n' + bad + ' problem' + (bad === 1 ? '' : 's')); process.exit(1); }

@@ -25,10 +25,37 @@ only after the API confirms a tester.
 | `../api/stumpire/[[path]].js` | `/api/stumpire/*` |
 | `../arcade/stumpire/[[path]].js` | `/arcade/stumpire/` and `/arcade/stumpire/admin` |
 | `supabase/133_stumpire.sql` | tables, the gate, publish, the freeze trigger |
+| `livecheck.js`, `supabase/136_stumpire_rulings.sql` | a challenged strike ruled live, and the rulings remembered |
 
 The client holds no rules. It shows what the server sends: the prompt, the
 called count and the tell for the current at-bat only. The called list arrives
 after the at-bat ends, and no valid answer is ever sent before it is earned.
+
+## The Stumpire score
+
+`game.js` (`SCORE`, `boxScore`) is the one place it is worked out; the share
+line, the board and the screen all read it.
+
+| | points |
+|---|---|
+| each total base | 10 |
+| each hit | 5 |
+| each home run | 10 more |
+| each run | 15 |
+| each strikeout | minus 10 |
+
+Runs are scored the simple baseball way: runners move up as many bases as the
+hit is worth, and a called out moves nobody. The base runners on the field are
+these runners. A perfect day (five home runs) is 350; the score never goes
+below 0. The board ranks by score, then total bases, then fewer outs, then
+fewer strikes. `supabase/134_stumpire_score.sql` stores it on the play row
+(`stumpire_save_play_v2`); against a database without 134 the save falls back
+to the 133 function and the board falls back to total bases.
+
+`GET board` is the day's finished, signed in games, best first. `GET result`
+adds the player's streak (days in a row with a finished game, alive through
+yesterday), their rank and the size of the field. A ruled answer carries
+`rarity`, the percent of fans the model expects to give it.
 
 ## Turning it on
 
@@ -113,6 +140,22 @@ regressions, not the launch number.
 - Re-entering an answer already struck in the same at-bat is a NO PITCH, not a
   second strike.
 - An arguable answer is never called, and a wildcard cannot be arguable.
+- **A challenge on a strike is ruled the moment it is made** (`livecheck.js`,
+  `CONFIG.LIVE_CHALLENGE`). A strike is always a real player the slate did not
+  list, so the server looks him up on Wikidata and judges the prompt's query
+  with Sportegories' reading of the record (the two games share one
+  vocabulary). The record confirms it: upheld at once, exactly as below. The
+  record contradicts it (another league, outside the prompt's years, a
+  position he never played): denied at once. The record cannot settle it,
+  which is most award prompts because Wikidata lists a fraction of the Pro
+  Bowls and All-Star games: it stays open for the admin. A challenge on a
+  called out never goes live.
+- **Rulings are remembered** in `stumpire_rulings` (136), one per prompt and
+  player. An upheld one puts the player on every later slate that deals the
+  prompt, as a single, with no challenge; a denial answers a repeat at once and
+  is asked again after 30 days. An admin's resolution is saved as final and the
+  live check never overturns it. Without 136 challenges still rule live and
+  nothing is remembered.
 - An upheld challenge: the answer joins today's slate as a benefit-of-the-doubt
   single for later players (`stumpire_accept_answer`, the one insert the freeze
   trigger allows), and the challenger's at-bat loses one strike and becomes a

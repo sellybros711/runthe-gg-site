@@ -1,0 +1,23 @@
+{
+  "_read_me": "Calls scripts/sportegories-people.mjs cannot make on its own. `same`: two names, one man, joined in the game (a nickname, a new surname). `apart`: names the rule finds related, two men. A suffix or a second record under one name needs no line here: the rule joins it. check-sportegories.mjs fails on any related pair that is in neither list.",
+  "same": [
+    ["NBA", "Penny Hardaway", "Anfernee Hardaway"],
+    ["NFL", "Michael Vick", "Mike Vick"],
+    ["NFL", "Matthew Judon", "Matt Judon"],
+    ["NFL", "Patrick Surtain II", "Pat Surtain II"],
+    ["NFL", "Sauce Gardner", "Ahmad Gardner"],
+    ["NFL", "Trent Brown", "Trenton Brown"],
+    ["NFL", "Olu Fashanu", "Olumuyiwa Fashanu"],
+    ["NFL", "Foye Oluokun", "Foyesade Oluokun"],
+    ["NFL", "Jacob Martin", "Jake Martin"],
+    ["NFL", "Marquise Brown", "Hollywood Brown"],
+    ["NFL", "Chauncey Gardner-Johnson", "C.J. Gardner-Johnson"],
+    ["NFL", "Obo Okoronkwo", "Ogbo Okoronkwo"],
+    ["NFL", "Chad Johnson", "Chad Ochocinco"],
+    ["MLB", "Tris Speaker", "Tristram Speaker"]
+  ],
+  "apart": [
+    ["NFL", "A.J. Terrell Jr.", "Avieon Terrell", "brothers, both Clemson corners"],
+    ["MLB", "Joe Gordon", "Joe Sewell", "two infielders who both played for Cleveland and the Yankees"]
+  ]
+}
