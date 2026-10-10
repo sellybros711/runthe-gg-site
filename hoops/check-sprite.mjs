@@ -53,6 +53,11 @@
  * longer flare past the shoulders; an arm has a bicep and a forearm and a
  * smaller hand; a leg has a calf. The face lost its white bars and blush and
  * is a brow, a socket shadow, a small dark eye, a nose shadow and a mouth.
+ *
+ * RE-RECORDED A SIXTH TIME, ON PURPOSE, because the owner found the shoulders
+ * too bulbous. The deltoid is smaller and sits lower, the bicep swells less and
+ * half way down rather than a third, the upper arm is thinner where it meets
+ * the shoulder, and the shoulders and chest are a little narrower.
  */
 import fs from 'node:fs';
 import path from 'node:path';

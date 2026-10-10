@@ -48,7 +48,7 @@ var BUILDS = [['lean', 'Lean'], ['standard', 'Standard'], ['strong', 'Muscular']
    is the deltoid's radius. Standard and Lean are a basketball body: long and
    narrow. Only Muscular carries the broad shoulders and the round delts. The
    id stays 'strong' because it is in saves; only the label changed. */
-var BODY = { lean: { bw: -1.5, am: -0.42, dl: 1.75 }, standard: { bw: -0.95, am: -0.26, dl: 2.0 }, strong: { bw: 0.1, am: 0.06, dl: 2.6 } };
+var BODY = { lean: { bw: -1.5, am: -0.42, dl: 1.45 }, standard: { bw: -0.95, am: -0.26, dl: 1.65 }, strong: { bw: 0.1, am: 0.06, dl: 2.2 } };
 function bodyOf(b){ return BODY[b] || BODY.standard; }
 var FACELESS = '#4a5266';
 var FIXED = { white: '#f2f2f0', black: '#1d1f24', red: '#d13a32', gold: '#e8b33c' };
@@ -372,7 +372,7 @@ function skeleton(f, bw, am, breath, MX){
   as = Math.min(as, (shY - 2.2) / 19.0);
   [-1, 1].forEach(function(s){
     var p = f.a[String(s)] || DOWN;
-    var sh = [CX + s * ((8.2 + bw * 0.8) * sw + Math.max(0, g) * 0.3 - Math.max(0, -g) * 0.15), shY + dip + up, 0];
+    var sh = [CX + s * ((7.8 + bw * 0.8) * sw + Math.max(0, g) * 0.3 - Math.max(0, -g) * 0.15), shY + dip + up, 0];
     var r1 = p[0] * Math.PI / 180, r2 = p[1] * Math.PI / 180;
     var f1 = p[2] == null ? 1 : p[2], f2 = p[3] == null ? 1 : p[3];
     var L1 = 7.6 * as, L2 = 7.0 * as;
@@ -455,7 +455,7 @@ function build(L, o, J){
   /* the torso: a chest and a waist, one smooth body */
   /* the chest and the waist fill out with weight, the waist (and the belly
      in front of it) most */
-  var cR = [(8.3 + bw) * sw + g * 0.48, 6.4 * ts, 4.5 + bw * 0.3 + g * 0.42], wR = [(5.7 + bw * 0.5) * sw + g * 0.72, 5.2 * ts, 3.9 + Math.max(0, g) * 0.8 + Math.min(0, g) * 0.3];
+  var cR = [(8.0 + bw) * sw + g * 0.48, 6.4 * ts, 4.5 + bw * 0.3 + g * 0.42], wR = [(5.7 + bw * 0.5) * sw + g * 0.72, 5.2 * ts, 3.9 + Math.max(0, g) * 0.8 + Math.min(0, g) * 0.3];
   var C0 = J.chest, W0 = J.waist;
   var torsoF = function(p){ return smin(ell(C0, cR)(p), ell(W0, wR)(p), 2.2); };
   var bodyN = function(p){ return p; };
@@ -521,13 +521,13 @@ function build(L, o, J){
     var A = J.arm[s], sleeved = !suit && o.sleeve && s === 1;
     var mat = suit ? 'jacket' : sleeved ? 'sleeve' : 'skin';
     var r0 = Math.max(1.4, (suit ? 2.6 : 2.2) + am + g * 0.24), r1 = Math.max(1.25, (suit ? 2.2 : 1.85) + am * 0.8 + g * 0.17), r2 = Math.max(1.05, (suit ? 1.95 : 1.5) + am * 0.6 + g * 0.08);
-    if (!suit) add('delt' + s, 'arm' + s, sleeved ? 'sleeve' : 'skin', sph([A.sh[0] - s * 0.5, A.sh[1] + 0.9, 0], BD.dl + g * 0.12), A.sh, 3.5);
-    /* an arm has a shape: the bicep swells a third of the way down, the
+    if (!suit) add('delt' + s, 'arm' + s, sleeved ? 'sleeve' : 'skin', sph([A.sh[0] - s * 0.9, A.sh[1] + 1.3, 0], BD.dl + g * 0.12), A.sh, 3.5);
+    /* an arm has a shape: the bicep swells half way down, a little, so the shoulder stays narrow, the
        forearm is thickest just under the elbow and narrows to the wrist */
-    var bi = [A.sh[0] + (A.el[0] - A.sh[0]) * 0.42, A.sh[1] + (A.el[1] - A.sh[1]) * 0.42, A.sh[2] + (A.el[2] - A.sh[2]) * 0.42];
+    var bi = [A.sh[0] + (A.el[0] - A.sh[0]) * 0.5, A.sh[1] + (A.el[1] - A.sh[1]) * 0.5, A.sh[2] + (A.el[2] - A.sh[2]) * 0.5];
     var fo = [A.el[0] + (A.wr[0] - A.el[0]) * 0.25, A.el[1] + (A.wr[1] - A.el[1]) * 0.25, A.el[2] + (A.wr[2] - A.el[2]) * 0.25];
     var armF = suit ? uni([cone(A.sh, A.el, r0, r1), cone(A.el, A.wr, r1, r2)])
-      : function(p){ return smin(smin(cone(A.sh, A.el, r0 * 0.96, r1 * 0.9)(p), ell(bi, [r0 * 1.0, r0 * 1.5, r0 * 1.0])(p), 2.4), smin(cone(A.el, A.wr, r1 * 0.96, r2 * 0.8)(p), ell(fo, [r1 * 1.02, r1 * 1.6, r1 * 1.0])(p), 2.0), 0.8); };
+      : function(p){ return smin(smin(cone(A.sh, A.el, r0 * 0.8, r1 * 0.9)(p), ell(bi, [r0 * 0.92, r0 * 1.3, r0 * 0.92])(p), 1.4), smin(cone(A.el, A.wr, r1 * 0.96, r2 * 0.8)(p), ell(fo, [r1 * 1.02, r1 * 1.6, r1 * 1.0])(p), 2.0), 0.8); };
     add('arm' + s, 'arm' + s, suit ? function(p){
       var t = Math.hypot(p[0] - A.wr[0], p[1] - A.wr[1], p[2] - A.wr[2]);
       return t < 1.3 ? 'cuff' : 'jacket';
