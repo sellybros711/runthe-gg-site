@@ -419,6 +419,40 @@ if (!args.includes('--no-browser')){
       sbUser = { id:'chk' }; localStorage.removeItem('bag_ppt_v1@chk'); openPutt(); return { open, bare }; });
     await pg.waitForSelector('.pp-map [data-lv="1"]');
     claim(mrg.open >= 18 && mrg.bare === null, `a signed-in account claims the holes played signed out (${mrg.open} open, bare key ${mrg.bare === null ? 'cleared' : 'left'})`);
+    // THE RECORD IS THE ACCOUNT'S. A stand-in server keeps 103's progress rule, and no request leaves the page.
+    // A fresh browser for an account the server knows starts at the server's hole with the server's lives.
+    const cld = await pg.evaluate(async () => { window.RTT_PUTT.close(); const store = {}, calls = [], sb0 = sb;
+      const best = {}; for (let n = 1; n <= 29; n++) best[n] = 3;
+      store.tour = { progress:30, payload:{ v:2, lt:Date.now() - 60000, lives:1, refillAt:null, tours:{ main:{ lv:30, best, ace:{}, paid:{}, wpaid:{} } }, daily:{}, rewards:[] } };
+      sb = { rpc(fn, a){ calls.push(fn); const cur = store[a.p_slot];
+        if (fn === 'ps_save_get') return Promise.resolve({ data:cur ? [{ slot:a.p_slot, progress:cur.progress, payload:cur.payload }] : [], error:null });
+        if (fn === 'ps_save_put'){ if (cur && cur.progress > a.p_progress) return Promise.resolve({ data:[{ ok:false, slot:a.p_slot, progress:cur.progress, payload:cur.payload }], error:null });
+          store[a.p_slot] = { progress:a.p_progress, payload:JSON.parse(JSON.stringify(a.p_payload)) }; return Promise.resolve({ data:[{ ok:true, slot:a.p_slot, progress:a.p_progress, payload:a.p_payload }], error:null }); }
+        return Promise.resolve({ data:null, error:{ message:'no' } }); } };
+      sbUser = { id:'cld' }; localStorage.removeItem('bag_ppt_v1@cld'); openPutt();
+      for (let t = 0; t < 100 && document.querySelectorAll('.pp-lv:not(.lock)').length < 30; t++) await new Promise(r => setTimeout(r, 50));
+      const open = document.querySelectorAll('.pp-lv:not(.lock)').length, local = JSON.parse(localStorage.getItem('bag_ppt_v1@cld') || '{}');
+      // a stale copy pushed from another device is refused, merged and sent again, so nothing is lost on either side
+      store.tour.payload.tours.main.ace = { 7:1 }; store.tour.progress += 1; window.RTT_PUTT._lose();
+      for (let t = 0; t < 60 && !(store.tour.payload.tours.main.lv >= 30 && JSON.parse(localStorage.getItem('bag_ppt_v1@cld')).tours.main.ace[7]); t++) await new Promise(r => setTimeout(r, 50));
+      const after = JSON.parse(localStorage.getItem('bag_ppt_v1@cld')), srv = store.tour; window.RTT_PUTT.close(); sb = sb0;
+      return { open, lives:local.lives, gets:calls.filter(c => c === 'ps_save_get').length, puts:calls.filter(c => c === 'ps_save_put').length, ace:!!after.tours.main.ace[7], srvLv:srv.payload.tours.main.lv, srvLives:srv.payload.lives }; });
+    claim(cld.open >= 30 && cld.lives === 1 && cld.gets >= 1, `a fresh browser takes the account's place and lives from the server (${cld.open} open, ${cld.lives} lives)`);
+    claim(cld.ace && cld.srvLv >= 30 && cld.puts >= 2 && cld.srvLives === 0, `a save the server refuses is merged with what it holds and sent again (ace kept ${cld.ace}, server at hole ${cld.srvLv} with ${cld.srvLives} lives)`);
+    // A GUEST PLAYS THE FIRST FEW HOLES FREE, then is asked to sign in. The Daily Hole stays open.
+    const gst = await pg.evaluate(async () => { const best = {}; for (let n = 1; n <= 8; n++) best[n] = 2;
+      localStorage.setItem('bag_ppt_v1', JSON.stringify({ v:2, tours:{ main:{ lv:9, best, ace:{}, paid:{}, wpaid:{} } } })); sbUser = null; window.RTT_PUTT.open(puttHost());
+      for (let t = 0; t < 100 && !document.querySelector('.pp-map [data-lv="6"]'); t++) await new Promise(r => setTimeout(r, 50));
+      document.querySelector('.pp-map [data-lv="6"]').click(); const sheet = !!document.querySelector('.pp-sheet [data-in]'), txt = sheet ? document.querySelector('.pp-sheet').innerText : '';
+      document.querySelector('.pp-sheet [data-n]').click(); document.querySelector('.pp-map [data-lv="5"]').click();
+      const played = window.RTT_PUTT._state().screen === 'play' && !document.querySelector('.pp-sheet');
+      window.RTT_PUTT.close(); window.RTT_PUTT.open(puttHost());
+      for (let t = 0; t < 100 && !document.querySelector('.pp-map [data-lv="6"]'); t++) await new Promise(r => setTimeout(r, 50));
+      document.querySelector('.pp-map [data-lv="6"]').click(); document.querySelector('.pp-sheet [data-in]').click();
+      const toAcct = !document.querySelector('.pt-ov') && S.overlay === 'account' && S.acctMode === 'signin'; S.overlay = null; render();
+      localStorage.removeItem('bag_ppt_v1'); sbUser = { id:'chk' }; localStorage.removeItem('bag_ppt_v1@chk'); openPutt(); return { sheet, txt, played, toAcct }; });
+    await pg.waitForSelector('.pp-map [data-lv="1"]');
+    claim(gst.sheet && /Sign in to keep going/.test(gst.txt) && gst.played && gst.toAcct, `a guest plays holes 1 to 5 free, hole 6 asks them to sign in, and the button opens the sign in sheet (sheet ${gst.sheet}, hole 5 played ${gst.played}, sign in ${gst.toAcct})`);
     await pg.waitForFunction(() => document.querySelectorAll('.pp-land').length === 8, null, { timeout:15000 }).catch(() => {});
     const land = await pg.evaluate(() => [...document.querySelectorAll('.pp-band')].map(b => { const c = b.querySelector('.pp-land'); if (!c) return null;
       const x = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; const cols = new Set(); for (let i = 0; i < x.length; i += 4 * 37) cols.add(x[i] << 16 | x[i + 1] << 8 | x[i + 2]);
