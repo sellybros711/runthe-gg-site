@@ -1748,6 +1748,8 @@ window.GA_ID='G-L29P5MRWKE';
     font-weight:600;cursor:pointer;padding:8px 12px;transition:color .15s}
   .btn-text:hover{color:var(--ink)}
   .btn-text:active{color:var(--ink);transform:translateY(1px)}
+  /* The Speed button beside Sim to the end on a broadcast (assets/simspeed.js). */
+  .btn-text.spd{margin-left:18px}
   .btn-text:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:6px}
 
   /* ── next panel ─────────────────────────────────────────────── */
@@ -3701,6 +3703,7 @@ or endorsed by the NCAA, the CFP or any school.
     <div class="polog" id="po-log"></div>
     <div style="margin-top:14px;text-align:center">
       <button class="btn-text" id="b-po-fast">Sim to the end</button>
+      <button class="btn-text spd" data-simspeed>Speed: Normal</button>
     </div>
   </div>
 
@@ -3729,6 +3732,7 @@ or endorsed by the NCAA, the CFP or any school.
     <div class="polog" id="bowl-log"></div>
     <div style="margin-top:14px;text-align:center" id="bowl-fastwrap">
       <button class="btn-text" id="b-bowl-fast">See result</button>
+      <button class="btn-text spd" data-simspeed>Speed: Normal</button>
     </div>
 
     <div id="bowl-result" hidden>
@@ -4042,6 +4046,7 @@ or endorsed by the NCAA, the CFP or any school.
 <!-- The broadcast field every game is played out on, shared with the NFL game. drawDriveChart
      hands its drives here and keeps its own body as the fallback. -->
 <script src="/assets/fieldcast.js?v=4"></script>
+<script src="/assets/simspeed.js?v=1"></script>
 <!-- THE FREE TIER'S CLOCK, WHICH THIS PAGE ONLY READS. It is the mode's module and the
      mode is still the thing that decides: seasonWall() spends a season and reads the
      server's answer, because only the server can settle it. All this page wants is to know
@@ -10223,6 +10228,19 @@ function kickDistances(script,drives,seedStr){
   return out;
 }
 
+/* HOW FAST IT PLAYS. Players said the playoffs went by too fast to follow, so a Speed button
+   on every broadcast screen stretches this pace (assets/simspeed.js, one setting for both
+   football games). Each segment reads the multiplier ONCE, the first time its length is asked
+   for, which is the moment it starts playing. So a change lands on the next segment and never
+   halfway through one: re-read every frame, a slower setting would wind the clock back, and
+   the field reads a clock going backwards as a new game. */
+const simMul=()=>(window.RTG_SPEED&&RTG_SPEED.mul)?RTG_SPEED.mul():1;
+function paced(seg,base){
+  seg.base=base;
+  Object.defineProperty(seg,'ms',{enumerable:true,
+    get(){ if(this._ms==null) this._ms=this.base*simMul(); return this._ms; }});
+  return seg;
+}
 function buildTimeline(script,pace){
   const segs=[];
   /* THE SCORE'S PLACE IN THE SCRIPT, carried through onto the segment. The timeline is built
@@ -10234,12 +10252,12 @@ function buildTimeline(script,pace){
   for(let q=1;q<=4;q++){
     let from=900;
     for(const e of script.filter(x=>x.q===q)){
-      segs.push({kind:'run',q,from,to:e.sec,ms:Math.max(200,(from-e.sec)/900*pace.quarterMs)});
-      segs.push({kind:'score',q,e,i:idx.get(e),ms:pace.hold});
+      segs.push(paced({kind:'run',q,from,to:e.sec},Math.max(200,(from-e.sec)/900*pace.quarterMs)));
+      segs.push(paced({kind:'score',q,e,i:idx.get(e)},pace.hold));
       from=e.sec;
     }
-    segs.push({kind:'run',q,from,to:0,ms:Math.max(200,from/900*pace.quarterMs)});
-    if(q<4) segs.push({kind:'break',q,ms:q===2?pace.half:pace.qbreak});
+    segs.push(paced({kind:'run',q,from,to:0},Math.max(200,from/900*pace.quarterMs)));
+    if(q<4) segs.push(paced({kind:'break',q},q===2?pace.half:pace.qbreak));
   }
   return segs;
 }

@@ -129,13 +129,16 @@ var CSS = [
 '.cr-grid{display:block;}',
 '@media (min-width:920px){.cr-grid{display:grid;grid-template-columns:minmax(0,400px) minmax(0,1fr);gap:20px;align-items:start;}',
 '  .cr-side{position:sticky;top:64px;}}',
-'.cr-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:2px 0 10px;}',
-'.cr-top .k-h1{font-size:28px;}',
-'.cr-topbtns{display:flex;gap:2px;flex-wrap:wrap;justify-content:flex-end;}',
+/* THE TOP BAR. The title, where you are in one line under it, and four square
+   pixel buttons each wearing its word. */
+'.cr-top{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px 10px;margin:2px 0 12px;}',
+'.cr-topl{display:contents;}',
+'.cr-top .cr-hud{grid-column:1/-1;grid-row:2;margin-top:0;}',
+'.cr-top .k-h1{font-size:28px;line-height:1;margin:0;}',
+'.cr-hud{display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline;margin-top:5px;font:700 11.5px/1.25 var(--k-f-text);color:var(--k-ink-2);}',
+'.cr-hud b{font:400 9px/1.3 var(--k-f-pixel);color:var(--k-accent);letter-spacing:.04em;text-transform:uppercase;}',
+'.cr-topbtns{display:flex;gap:4px;flex-wrap:nowrap;justify-content:flex-end;flex:none;}',
 '.cr-topbtns .k-btn{min-height:40px;padding:8px 10px;font-size:12px;}',
-'.cr-topbtns .cr-scn i{display:inline-block;width:8px;height:8px;margin-left:7px;background:#5b6584;}',
-'.cr-topbtns .cr-scn[aria-pressed="true"] i{background:#3ecf8e;box-shadow:0 0 6px #3ecf8e;}',
-'.cr-topbtns .cr-snd{padding:8px 9px;display:inline-flex;align-items:center;justify-content:center;min-width:40px;}',
 '.cr-sec{margin:0 0 14px;}',
 '.cr-sec > .k-eyebrow{margin:0 0 8px;}',
 /* the identity card */
@@ -146,8 +149,7 @@ var CSS = [
 '.cr-id .k-id .k-hero{font-size:30px;line-height:.95;overflow-wrap:anywhere;}',
 '.cr-id .k-id .k-tag{white-space:normal;line-height:1.5;text-align:left;}',
 '.cr-id .cr-lines{display:grid;gap:3px;padding:10px var(--k-s-4) 0;background:var(--k-panel);}',
-'.cr-id .cr-sub2{display:block;font:600 13px/1.4 var(--k-f-text);color:var(--k-ink-2);}',
-'.cr-id .cr-sub2:first-child{color:var(--k-ink);font-weight:700;}',
+'.cr-id .cr-nick{margin:0 0 6px;font:400 10px/1.4 var(--k-f-pixel);color:var(--k-gold);letter-spacing:.04em;}',
 '.cr-id .k-strip{gap:8px;border-top:0;}',
 '.cr-id .cr-lines + .k-strip{padding-top:10px;}',
 '.cr-id .k-stage + .cr-lines{border-top:3px solid var(--k-frame);}',
@@ -199,12 +201,55 @@ var CSS = [
 '.cr-ct-h{background:none;padding-top:0;padding-bottom:2px;font:800 10px var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;color:var(--k-ink-3);}',
 '.cr-ct-r.you{color:var(--k-ink);font-weight:700;box-shadow:inset 3px 0 0 var(--k-accent);}',
 '.cr-ct-r.win b,.cr-ct-r.win span+span+span{color:var(--k-gold);}',
-'.cr-card .k-eyebrow{color:var(--k-accent);}',
-'.cr-card .k-h1{font-size:28px;margin-bottom:8px;}',
+/* THE CALL. A decision is the one thing on this screen the game waits on, so
+   it does not wear the feed's panel. It is a lit card of its own: an orange
+   frame and glow, a band naming where you are (the locker room, your bank
+   app) and when, a title in the display face, and each answer a raised tile
+   with a numbered key, a line saying what the choice is really about, and an
+   arrow. A clutch card is the same card in gold. */
+'.cr-card{--cr-edge:var(--k-accent);--cr-edge-ink:var(--k-accent-ink);position:relative;padding:0;overflow:hidden;',
+'  background:radial-gradient(120% 70% at 50% 0%,rgba(255,122,26,.16),rgba(255,122,26,0) 60%),linear-gradient(180deg,#1c1424,#120f1d 55%,#0d0c17);',
+'  box-shadow:0 0 0 2px var(--cr-edge),0 0 0 4px #05070d,0 0 28px rgba(255,122,26,.28),0 14px 30px rgba(3,5,10,.6);}',
+'.cr-card.clutch{--cr-edge:var(--k-gold);--cr-edge-ink:#1a1303;background:radial-gradient(120% 70% at 50% 0%,rgba(255,206,64,.2),rgba(255,206,64,0) 60%),linear-gradient(180deg,#221c10,#141019 60%,#0d0c17);',
+'  box-shadow:0 0 0 2px var(--cr-edge),0 0 0 4px #05070d,0 0 30px rgba(255,206,64,.3),0 14px 30px rgba(3,5,10,.6);}',
+'.cr-grip{display:none;}',
+'.cr-band{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--cr-edge);color:var(--cr-edge-ink);',
+'  font:400 9px/1.2 var(--k-f-pixel);letter-spacing:.06em;text-transform:uppercase;}',
+'.cr-band .k-icon,.cr-band svg{flex:none;}',
+'.cr-band .cr-scene{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+'.cr-band .cr-when{margin-left:auto;flex:none;font:800 10px var(--k-f-text);letter-spacing:.14em;opacity:.75;}',
+'.cr-cbody{padding:14px 16px 16px;}',
+'.cr-card .k-h1{font-size:30px;line-height:1.02;margin:0 0 8px;color:#fff;text-shadow:0 2px 0 #05070d;}',
 '#cr-card-h:focus{outline:none;}',
-'.cr-card.clutch{background:linear-gradient(180deg,#2a2412,var(--k-panel) 70%);}',
-'.cr-card.clutch .k-eyebrow{color:var(--k-gold);}',
-'.cr-choice{min-height:56px;}',
+'.cr-card .cr-cbody > p{margin:0 0 12px;color:#d9dcef;font-size:15px;line-height:1.5;}',
+/* The narrator: one line in the game's own voice, above the title. */
+'.cr-card .cr-cbody > p.cr-lead{margin:0 0 6px;color:#ffb36b;font-size:13px;line-height:1.4;font-style:italic;}',
+'.cr-card .k-opts{gap:8px;counter-reset:none;}',
+'.cr-choice{position:relative;min-height:58px;padding:11px 40px 11px 12px;align-items:center;background:linear-gradient(180deg,#232c4c,#1a2140);',
+'  box-shadow:inset 0 0 0 2px #34416f,inset 0 -4px 0 rgba(0,0,0,.28);transition:box-shadow var(--k-m-snap),background var(--k-m-snap),transform var(--k-m-snap);}',
+'.cr-choice .k-key{width:28px;height:28px;font-size:11px;margin:0;background:var(--cr-edge,var(--k-accent));color:var(--cr-edge-ink,var(--k-accent-ink));box-shadow:0 3px 0 #05070d;}',
+'.cr-choice .cr-ol{font:700 16px/1.25 var(--k-f-text);color:#fff;}',
+'.cr-choice small{font:600 12.5px/1.35 var(--k-f-text);color:#a9b2d6;margin-top:2px;}',
+'.cr-choice::after{content:"";position:absolute;right:14px;top:50%;width:9px;height:9px;margin-top:-5px;border:solid var(--cr-edge,var(--k-accent));border-width:3px 3px 0 0;transform:rotate(45deg);opacity:.85;}',
+'.cr-hasros{display:flex;gap:4px;align-items:stretch;}',
+'.cr-hasros .cr-choice{flex:1 1 auto;min-width:0;padding-right:12px;}',
+'.cr-hasros .cr-choice::after{display:none;}',
+'.cr-ros{flex:0 0 62px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:6px 4px;border:0;background:linear-gradient(180deg,#232c4c,#1a2140);color:var(--k-ink-2);font:700 10px/1 var(--k-f-text);letter-spacing:.06em;text-transform:uppercase;cursor:pointer;}',
+'.cr-ros:hover,.cr-ros:focus-visible{color:#fff;box-shadow:inset 0 0 0 2px var(--cr-edge,var(--k-accent));outline:none;}',
+'.cr-rot-ros li{grid-template-columns:2.2em minmax(0,1fr) 2.4em 3.6em;}',
+'.cr-ros-h{padding-left:12px;}',
+'.cr-ros-deal{margin:-6px 0 10px;color:var(--k-ink-2);}',
+'#cr-sheet .cr-rot-ros{max-height:52vh;overflow:auto;}',
+'.cr-choice:hover,.cr-choice.is-hover,.cr-choice:focus-visible{background:linear-gradient(180deg,#2b3660,#202a4f);box-shadow:inset 0 0 0 2px var(--cr-edge,var(--k-accent)),inset 0 -4px 0 rgba(0,0,0,.28);outline:none;}',
+'.cr-choice:active,.cr-choice.is-pressed{transform:translateY(2px);box-shadow:inset 0 0 0 2px var(--cr-edge,var(--k-accent));}',
+/* The answers of a card that has just arrived fade up from .55 while they are
+   armed (see arm()). Opacity only, so nothing moves under the thumb. */
+'#s-car .cr-arming{opacity:.55;cursor:default;}',
+'#s-car .cr-choice,#s-car #cr-next{transition:opacity .22s ease-out;}',
+'@media (prefers-reduced-motion:reduce){#s-car .cr-choice,#s-car #cr-next{transition:none;}}',
+'.cr-card .k-opts li{animation:cr-opt-in 260ms var(--k-e-move) both;}',
+'.cr-card .k-opts li:nth-child(2){animation-delay:50ms;}.cr-card .k-opts li:nth-child(3){animation-delay:100ms;}.cr-card .k-opts li:nth-child(4){animation-delay:150ms;}.cr-card .k-opts li:nth-child(n+5){animation-delay:200ms;}',
+'@keyframes cr-opt-in{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}',
 /* THE DECISION TRAY. On a phone the card on top is docked to the bottom of the
    screen, always in the same place, with the feed behind it as context. It is
    the same element as the inline card, so every reader of #cr-card and
@@ -213,22 +258,26 @@ var CSS = [
    measured height (--cr-tray) so nothing in the column hides behind it. */
 '@media (max-width:719px){',
 '  #s-car .cr-card{position:fixed;left:0;right:0;bottom:0;z-index:20;margin:0;max-height:45vh;max-height:45dvh;overflow-y:auto;overscroll-behavior:contain;',
-'    padding:12px 14px calc(12px + env(safe-area-inset-bottom,0px));background:var(--k-panel);',
-'    box-shadow:0 -3px 0 0 var(--cr-edge,var(--k-accent)),0 -6px 0 0 #05070d,0 -18px 30px rgba(3,5,10,.55);animation:none;}',
-'  #s-car .cr-card.clutch{--cr-edge:var(--k-gold);}',
-'  #s-car .cr-card .k-eyebrow{margin-bottom:4px;}',
-'  #s-car .cr-card .k-h1{font-size:22px;margin-bottom:6px;}',
-'  #s-car .cr-card > p{margin:0 0 10px;font-size:14px;line-height:1.45;}',
-'  #s-car .cr-card > p.cr-clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}',
-'  #s-car .cr-card .k-opts{gap:6px;}',
-'  #s-car .cr-card .cr-choice{min-height:50px;}',
+'    padding:0 0 env(safe-area-inset-bottom,0px);animation:none;',
+'    box-shadow:0 -2px 0 0 var(--cr-edge),0 -4px 0 0 #05070d,0 -16px 34px rgba(255,122,26,.22),0 -24px 40px rgba(3,5,10,.7);}',
+'  #s-car .cr-card.clutch{box-shadow:0 -2px 0 0 var(--cr-edge),0 -4px 0 0 #05070d,0 -16px 34px rgba(255,206,64,.25),0 -24px 40px rgba(3,5,10,.7);}',
+'  #s-car .cr-grip{display:block;position:absolute;top:5px;left:50%;width:34px;height:4px;margin-left:-17px;background:var(--cr-edge-ink);opacity:.45;}',
+'  #s-car .cr-band{padding:13px 14px 7px;}',
+'  #s-car .cr-cbody{padding:11px 14px 12px;}',
+'  #s-car .cr-card .k-h1{font-size:24px;margin-bottom:6px;}',
+'  #s-car .cr-card .cr-cbody > p{margin:0 0 10px;font-size:14px;line-height:1.45;}',
+'  #s-car .cr-card .cr-cbody > p.cr-lead{margin:0 0 4px;font-size:12.5px;line-height:1.35;}',
+'  #s-car .cr-card .cr-cbody > p.cr-clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}',
+'  #s-car .cr-card .k-opts{gap:7px;}',
+'  #s-car .cr-card .cr-choice{min-height:52px;padding-top:9px;padding-bottom:9px;}',
+'  #s-car .cr-card .cr-choice .cr-ol{font-size:15px;}',
+/* the feed behind the tray dims as it reaches it, so the card reads as on top */
+'  #s-car.cr-has-tray::before{content:"";position:fixed;left:0;right:0;bottom:var(--cr-tray,0px);height:84px;z-index:19;pointer-events:none;background:linear-gradient(180deg,rgba(5,7,13,0),rgba(5,7,13,.78));}',
 '  #s-car .cr-tray-rise{animation:cr-tray-rise 200ms var(--k-e-move) both;}',
 '  #s-car .cr-tray-swap > *{animation:cr-tray-swap 180ms ease-out both;}',
 '  #s-car.cr-has-tray .cr-main{padding-bottom:calc(var(--cr-tray,0px) + 12px);}',
 '  #s-car.screen.active{animation-name:cr-scrin;}',
 '}',
-'.cr-wait{display:inline-block;margin-left:auto;padding:2px 6px;font:800 9px var(--k-f-text);letter-spacing:.14em;text-transform:uppercase;color:#05070d;background:var(--cr-edge,var(--k-accent));}',
-'.cr-card .k-eyebrow{display:flex;align-items:center;gap:6px;}',
 '.cr-more{margin:-4px 0 10px;padding:4px 0;background:none;border:0;color:var(--k-accent);font:800 11px var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;cursor:pointer;}',
 '.cr-more[hidden]{display:none;}',
 '@keyframes cr-tray-rise{from{transform:translateY(100%);}to{transform:none;}}',
@@ -242,7 +291,7 @@ var CSS = [
 '.cr-rows > summary b{color:var(--k-accent);font:800 10px var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;margin-left:6px;}',
 '.cr-rows[open] > summary b.op{display:none;}.cr-rows:not([open]) > summary b.cl{display:none;}',
 '.cr-rows > summary .up{color:var(--k-good);}.cr-rows > summary .down{color:var(--k-bad);}',
-'@media (prefers-reduced-motion:reduce){#s-car .cr-tray-rise,#s-car .cr-tray-swap > *{animation:none;}}',
+'@media (prefers-reduced-motion:reduce){#s-car .cr-tray-rise,#s-car .cr-tray-swap > *,.cr-card .k-opts li{animation:none;}}',
 '.cr-acts{display:flex;gap:4px;flex-wrap:wrap;margin:0;}',
 '.cr-acts .k-btn{flex:1 1 0;min-width:120px;font-size:12.5px;padding:10px;}',
 /* the action the thumb reaches: pinned to the bottom of the column */
@@ -265,6 +314,10 @@ var CSS = [
 '.cr-rt .k-row.is-key span:first-child:after{content:"";display:inline-block;width:5px;height:5px;margin-left:6px;vertical-align:2px;background:var(--k-good);}',
 '.cr-tabs{margin:0 0 12px;}',
 '.cr-tabs .k-tab{min-width:0;font-size:11px;letter-spacing:.08em;}',
+/* ONE ROW OF TABS, each an icon over its word. Seven tabs were three rows of
+   text on a phone; one row scrolls sideways and reads like a game menu. */
+'.cr-tabsec{position:relative;}',
+'.cr-tabsec.k-more-r::after{content:"";position:absolute;top:14px;right:14px;width:28px;height:52px;pointer-events:none;background:linear-gradient(90deg,rgba(17,22,40,0),var(--k-panel));}',
 /* the rotation: one row a player, names give way before numbers do */
 '.cr-rot{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:2px;}',
 '.cr-rot li{display:grid;grid-template-columns:2em minmax(0,1fr) 2.4em 3.4em 2.8em 2.8em;gap:8px;align-items:center;padding:6px 8px;background:rgba(143,160,214,.07);font-size:13px;color:var(--k-ink-2);}',
@@ -282,7 +335,7 @@ var CSS = [
 '.cr-rot li.cr-rot-sep{display:block;}',
 '.cr-rot-line{margin:10px 0 0;}',
 /* six tabs are two rows of three on a phone */
-'@media (max-width:519px){.cr-tabs.k-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));}}',
+'@media (max-width:519px){.cr-tabs.k-tabs:not(.k-itabs){display:grid;grid-template-columns:repeat(3,minmax(0,1fr));}}',
 /* the people around you: a name, who they are, a meter that runs both ways */
 '.cr-ppl{list-style:none;margin:0;padding:0;}',
 '.cr-ppl li{display:grid;grid-template-columns:minmax(0,1fr) 96px;gap:4px 12px;padding:9px 0;border-top:1px solid rgba(143,160,214,.12);}',
@@ -311,6 +364,17 @@ var CSS = [
 '.cr-feed li:first-child{border-top:0;}',
 '.cr-feed .src{display:block;font:800 9px var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;color:var(--k-ink-3);margin-bottom:2px;}',
 '.cr-feed li.debate{color:var(--k-ink-2);font-style:italic;}',
+'.cr-st2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}',
+'.cr-st-h{font:800 10px var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;color:var(--k-ink-3);}',
+'.cr-st{list-style:none;margin:4px 0 0;padding:0;font-size:12.5px;}',
+'.cr-st li{display:flex;justify-content:space-between;gap:6px;padding:2px 0;color:var(--k-ink-2);border-top:1px solid rgba(143,160,214,.08);}',
+'.cr-st li:nth-child(6),.cr-st li:nth-child(10){border-top-color:rgba(143,160,214,.35);}',
+'.cr-st li span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+'.cr-st .v{font-variant-numeric:tabular-nums;}',
+'.cr-st li.you,.cr-tx li.you{color:var(--k-ink);font-weight:700;}',
+'.cr-tx{max-height:340px;}',
+'.cr-picks{line-height:1.6;}',
+'.cr-picks .owe{color:var(--k-ink-3);}',
 '.cr-race{width:100%;margin:0 0 12px;}',
 '.cr-race tr.you td{color:var(--k-gold);font-weight:800;}',
 '.cr-known{display:flex;flex-wrap:wrap;gap:6px;padding:0 var(--k-s-4) 12px;background:var(--k-panel);}',
@@ -398,6 +462,20 @@ var CSS = [
 '.cr-vsum .k-num{font-size:26px;color:var(--k-gold);}',
 '.cr-vbar{flex:1 1 140px;height:10px;background:var(--k-panel-3);box-shadow:0 0 0 2px var(--k-frame);}',
 '.cr-vbar i{display:block;height:100%;background:var(--k-gold);transform-origin:left;}',
+/* A long section of the Hall card is a fold, so the verdict and the buttons
+   are the first screen and the season table is one tap away. */
+/* the Vault's shelves: a name, a count and a bar, folded when empty and long */
+'.cr-shelf{margin:0 0 6px;}',
+'.cr-shelf > summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;padding:10px 2px;border-top:2px solid var(--k-frame);}',
+'.cr-shelf:first-child > summary{border-top:0;}',
+'.cr-shelf > summary::-webkit-details-marker{display:none;}',
+'.cr-shelf > summary::after{content:"+";font:400 11px var(--k-f-pixel);color:var(--k-accent);}',
+'.cr-shelf[open] > summary::after{content:"-";}',
+'.cr-shn{font:800 11px var(--k-f-text);letter-spacing:.12em;text-transform:uppercase;color:var(--k-ink-2);}',
+'.cr-shc{font:400 9px var(--k-f-pixel);color:var(--k-gold);white-space:nowrap;}',
+'.cr-shbar{flex:1 1 60px;height:6px;}',
+'.cr-back .k-ico{}',
+'@media (max-width:359px){.cr-top .k-h1{font-size:24px;}}',
 '.cr-vgrid{list-style:none;margin:6px 0 14px;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;}',
 '.cr-vgrid li{display:flex;align-items:center;gap:8px;min-height:40px;padding:6px 8px;font:700 12.5px/1.25 var(--k-f-text);background:var(--k-panel-2);box-shadow:0 0 0 2px var(--k-frame);}',
 '.cr-vgrid li.got{color:var(--k-ink);box-shadow:0 0 0 2px var(--k-gold);}',
@@ -440,10 +518,36 @@ var CSS = [
 '.cr-name input:focus{outline:2px solid var(--k-gold);outline-offset:3px;}',
 '.cr-name .cr-num{flex:0 0 64px;text-align:center;font-family:var(--k-f-pixel);font-size:14px;}',
 '.cr-name .k-btn{margin:2px;min-height:46px;}',
+'.cr-arc{margin:0 0 14px;padding:12px;background:var(--k-panel-2);}',
+'.cr-archead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 8px;}',
+'.cr-archead b{white-space:nowrap;font-family:var(--k-f-pixel);font-size:10px;letter-spacing:.06em;color:var(--k-ink);text-transform:uppercase;}',
+'.cr-archead span{font:600 11.5px var(--k-f-text);color:var(--k-ink-3);text-align:right;}',
+'.cr-arcbars{display:flex;align-items:flex-end;gap:2px;height:96px;padding-top:18px;border-bottom:1px solid var(--k-ink-3);}',
+'.cr-arcb{position:relative;flex:1 1 0;min-width:0;height:100%;display:flex;align-items:flex-end;padding:0;border:0;background:transparent;cursor:pointer;}',
+'.cr-arcb span{display:block;width:100%;background:#e8660f;border-radius:4px 4px 0 0;}',
+'.cr-arcb.am span{background:#5b8fe6;}',
+'.cr-arcb:hover span,.cr-arcb:focus-visible span,.cr-arcb.on span{box-shadow:0 0 0 2px var(--k-ink);}',
+'.cr-arcb:focus-visible{outline:none;}',
+'.cr-arcb em{position:absolute;left:50%;transform:translateX(-50%);top:-17px;font:normal 9px var(--k-f-pixel);color:var(--k-ink);white-space:nowrap;pointer-events:none;}',
+'.cr-arcb .cr-arcring{position:absolute;left:50%;width:9px;height:9px;margin-left:-5px;top:-4px;border:2px solid var(--k-ink);border-radius:50%;pointer-events:none;}',
+'.cr-arcb.pk .cr-arcring{top:-28px;}',
+'.cr-arcx{display:flex;justify-content:space-between;margin-top:4px;font:600 11px var(--k-f-text);color:var(--k-ink-3);}',
+'.cr-arcleg{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;font:600 11.5px var(--k-f-text);color:var(--k-ink-2);}',
+'.cr-arcleg:empty{display:none;}',
+'.cr-arcleg i{display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px;background:#e8660f;border-radius:2px;}',
+'.cr-arcleg i.am{background:#5b8fe6;}',
+'.cr-arcleg i.ring{background:transparent;border:2px solid var(--k-ink);border-radius:50%;}',
+'.cr-arccap{margin:8px 0 0;font:600 13px/1.4 var(--k-f-text);color:var(--k-ink);min-height:1.4em;}',
+'.cr-namehint{margin:6px 2px 0;min-height:1.35em;font:600 12.5px/1.4 var(--k-f-text);color:var(--k-ink-3);}',
+'.cr-namehint.bad{color:var(--k-warn);}',
+'.cr-namefix{display:inline-block;margin:4px 0 0;padding:4px 8px;border:0;font:800 12px var(--k-f-text);color:var(--k-accent-ink);background:var(--k-accent);cursor:pointer;}',
+'.cr-namefix:focus-visible{outline:2px solid var(--k-gold);outline-offset:2px;}',
 '.cr-chips{display:flex;gap:4px;flex-wrap:wrap;}',
 '.cr-size{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}',
-'.cr-step{display:grid;grid-template-columns:auto 1fr auto;grid-template-rows:auto auto;align-items:center;gap:4px 6px;}',
-'.cr-step .k-label{grid-column:1/-1;}',
+'.cr-step{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto auto;align-items:center;gap:4px 6px;}',
+'.cr-step .k-label{grid-column:1/-1;display:flex;justify-content:space-between;align-items:baseline;gap:6px;}',
+'.cr-step .k-label output{font:700 14px var(--k-f-text);text-transform:none;letter-spacing:0;color:var(--k-ink);font-variant-numeric:tabular-nums;}',
+'.cr-range{width:100%;min-width:0;height:28px;margin:0;accent-color:var(--k-accent);cursor:pointer;}',
 '.cr-step .k-btn{min-width:40px;min-height:44px;padding:0;font-size:20px;}',
 '.cr-step output{text-align:center;white-space:nowrap;font:700 16px var(--k-f-text);font-variant-numeric:tabular-nums;color:var(--k-ink);}',
 '.cr-chips .k-chip{flex:1 1 0;min-width:52px;}',
@@ -519,6 +623,207 @@ var CSS = [
 'img.rtf-baller{image-rendering:pixelated;image-rendering:crisp-edges;}',
 '.ch-cur .rtf-baller{flex:0 0 auto;height:80px;width:auto;margin:-8px 0 -10px -2px;}',
 '@media (prefers-reduced-motion:reduce){.cr-beats.k-in li{animation:none;}}',
+'/* ═══ THE VISUAL LEAP ═══════════════════════════════════════════════════════',
+'   Every Career screen stands in the same arena: a fixed backdrop lit in the',
+'   club of colours, menu panels with a lit top edge and a hard pixel drop, a',
+'   header strip on every section, LED scoreboards for the numbers that change,',
+'   cartridge tabs, a timeline for the story, a trophy case for the awards, a',
+'   ceremony for the Hall card, a plaque wall for the Vault and a podium for',
+'   the builder. Pixel only: hard edges, stepped shadows, no blur on a frame. */',
+'#s-car.active::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;',
+'  background:radial-gradient(90% 55% at 50% -8%,color-mix(in srgb,var(--k-team-ring) 38%,transparent),transparent 72%),',
+'  radial-gradient(70% 45% at 100% 105%,rgba(255,122,26,.10),transparent 70%),',
+'  repeating-linear-gradient(0deg,rgba(255,255,255,.018) 0 2px,transparent 2px 4px),',
+'  linear-gradient(180deg,#0d1226 0%,#090c19 55%,#06080f 100%);}',
+'#s-car{position:relative;}',
+'/* the top bar: a title plate with the club colour under it */',
+'#s-car .cr-top{position:relative;padding:4px 0 12px;margin-bottom:14px;}',
+'#s-car .cr-top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:linear-gradient(90deg,var(--k-team-ring) 0 34%,var(--k-accent) 34% 46%,transparent 46%),repeating-linear-gradient(90deg,rgba(143,160,214,.28) 0 4px,transparent 4px 8px);}',
+'#s-car .cr-top .k-h1{font-size:34px;letter-spacing:.02em;color:#fff;text-shadow:3px 3px 0 color-mix(in srgb,var(--k-team-1) 70%,#05070d),0 0 18px color-mix(in srgb,var(--k-team-ring) 40%,transparent);}',
+'#s-car .cr-hud{gap:6px;}',
+'#s-car .cr-hud b{padding:4px 7px;background:#05070d;color:#ffb347;text-shadow:0 0 6px rgba(255,150,40,.6);box-shadow:inset 0 0 0 2px #2a1a08;}',
+'#s-car .cr-hud span{padding:3px 7px;background:rgba(143,160,214,.10);color:var(--k-ink);box-shadow:inset 0 0 0 2px rgba(143,160,214,.16);}',
+'#s-car .k-ib{background:linear-gradient(180deg,#2a3560,#1a2142 60%,#141a33);box-shadow:inset 0 0 0 2px #3a4777,inset 0 2px 0 rgba(255,255,255,.12),0 3px 0 #05070d;}',
+'#s-car .k-ib:hover,#s-car .k-ib:focus-visible{box-shadow:inset 0 0 0 2px var(--k-accent),inset 0 2px 0 rgba(255,255,255,.12),0 3px 0 #05070d;}',
+'/* menu panels: a lit top edge, a darker foot and a hard pixel drop */',
+'#s-car .k-panel:where(:not(.cr-card)),#cr-sheet .k-sheet{background:linear-gradient(180deg,#171e3a 0%,#11162b 46%,#0e1225 100%);}',
+'#s-car .k-panel:where(:not(.cr-card)){box-shadow:0 calc(var(--k-px)*-1) 0 0 var(--k-frame),0 var(--k-px) 0 0 var(--k-frame),calc(var(--k-px)*-1) 0 0 0 var(--k-frame),var(--k-px) 0 0 0 var(--k-frame),inset 0 2px 0 rgba(255,255,255,.07),0 calc(var(--k-px) + 5px) 0 0 rgba(3,5,10,.75);margin-bottom:18px;}',
+'#s-car .k-panel:where(:not(.cr-card)).k-team{box-shadow:0 calc(var(--k-px)*-1) 0 0 var(--k-team-ring),0 var(--k-px) 0 0 var(--k-team-ring),calc(var(--k-px)*-1) 0 0 0 var(--k-team-ring),var(--k-px) 0 0 0 var(--k-team-ring),inset 0 2px 0 rgba(255,255,255,.07),0 calc(var(--k-px) + 5px) 0 0 rgba(3,5,10,.75);}',
+'#s-car .k-panel:where(:not(.cr-card)).k-gold{box-shadow:0 calc(var(--k-px)*-1) 0 0 var(--k-gold),0 var(--k-px) 0 0 var(--k-gold),calc(var(--k-px)*-1) 0 0 0 var(--k-gold),var(--k-px) 0 0 0 var(--k-gold),inset 0 2px 0 rgba(255,236,170,.12),0 calc(var(--k-px) + 5px) 0 0 rgba(3,5,10,.75),0 0 26px rgba(255,209,102,.16);}',
+'/* a section of heading is a strip across the top of its panel */',
+'#s-car .cr-sec > .k-eyebrow,#s-car details.cr-sec > summary.k-eyebrow{margin:calc(var(--k-s-4)*-1) calc(var(--k-s-4)*-1) 12px;padding:10px 14px 10px 16px;min-height:40px;',
+'  background:linear-gradient(90deg,color-mix(in srgb,var(--k-team-ring) 28%,#0a0e1c),#0a0e1c 70%);box-shadow:inset 4px 0 0 var(--k-team-ring),inset 0 -2px 0 rgba(143,160,214,.14);color:#fff;font-size:9px;letter-spacing:.08em;}',
+'#s-car details.cr-sec:not([open]) > summary.k-eyebrow{margin-bottom:calc(var(--k-s-4)*-1);}',
+'#s-car .k-panel.k-tight.cr-sec > .k-eyebrow{margin:calc(var(--k-s-3)*-1) calc(var(--k-s-3)*-1) 10px;}',
+'#s-car .cr-rtsum{color:#ffb347;font-weight:800;}',
+'/* THE HERO: a player select card. The club of number stands huge behind him,',
+'   the club\'s stripes run behind his name, and the overall is a shield. */',
+'#s-car .cr-id{background:#0b0f1f;}',
+'#s-car .cr-id .k-stage{height:262px;}',
+'@media (max-width:519px){#s-car .cr-id .k-stage{height:236px;}}',
+'#s-car .cr-bignum{position:absolute;left:30%;bottom:-34px;transform:translateX(-50%);font:400 230px/1 var(--k-f-display);letter-spacing:-.02em;color:color-mix(in srgb,var(--k-team-1) 30%,transparent);-webkit-text-stroke:2px color-mix(in srgb,var(--k-team-ring) 45%,transparent);opacity:.9;pointer-events:none;user-select:none;}',
+'@media (max-width:519px){#s-car .cr-bignum{font-size:200px;bottom:-30px;}}',
+'#s-car .cr-stripes{position:absolute;right:-40px;top:0;bottom:0;width:62%;pointer-events:none;opacity:.5;',
+'  background:repeating-linear-gradient(112deg,transparent 0 22px,color-mix(in srgb,var(--k-team-1) 70%,transparent) 22px 40px,transparent 40px 46px,color-mix(in srgb,var(--k-team-2) 45%,transparent) 46px 52px);',
+'  -webkit-mask:linear-gradient(90deg,transparent,#000 40%);mask:linear-gradient(90deg,transparent,#000 40%);}',
+'#s-car .cr-id .k-scrim-r{background:linear-gradient(270deg,rgba(5,7,13,.86) 0,rgba(5,7,13,.5) 38%,rgba(5,7,13,0) 64%);}',
+'#s-car .cr-id .k-id .k-hero{font-size:36px;color:#fff;text-shadow:3px 3px 0 color-mix(in srgb,var(--k-team-1) 80%,#05070d),5px 5px 0 #05070d;}',
+'@media (max-width:519px){#s-car .cr-id .k-id .k-hero{font-size:31px;}}',
+'#s-car .cr-shield{right:14px;bottom:16px;width:86px;padding:11px 0 10px;text-align:center;background:linear-gradient(180deg,color-mix(in srgb,var(--k-team-1) 80%,#000),#070a14);',
+'  box-shadow:0 -3px 0 0 var(--k-gold),0 3px 0 0 var(--k-gold),-3px 0 0 0 var(--k-gold),3px 0 0 0 var(--k-gold),0 8px 0 0 #05070d,0 0 22px rgba(255,209,102,.25);}',
+'#s-car .cr-shield::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:rgba(255,255,255,.28);}',
+'#s-car .cr-id .cr-shield .k-num{font-size:30px;color:#fff;text-shadow:3px 3px 0 #05070d;}',
+'#s-car .cr-id .cr-shield .k-pix{display:block;margin-top:5px;color:var(--k-gold);}',
+'#s-car .cr-id .cr-lines{background:linear-gradient(180deg,#0e1328,#11162b);padding-top:12px;}',
+'#s-car .k-spec > div{background:#090c18;box-shadow:inset 3px 0 0 var(--k-team-ring),inset 0 0 0 1px rgba(143,160,214,.12);padding:7px 9px;}',
+'#s-car .k-spec dt{font:400 7px/1.4 var(--k-f-pixel);letter-spacing:.06em;color:color-mix(in srgb,var(--k-team-ink) 80%,#fff);}',
+'#s-car .k-spec dd{font-size:14px;margin-top:4px;}',
+'#s-car .cr-id .k-strip{background:#0e1226;}',
+'/* THE HUD: four bars in a 2 by 2, an icon, the word, the number, and ten',
+'   bevelled cells, the way a fighting game shows a life bar. */',
+'#s-car .cr-meters.k-meters{grid-template-columns:1fr 1fr;gap:8px;padding:10px;background:linear-gradient(180deg,#0c1124,#090d1c);}',
+'#s-car .cr-meters .k-meter{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"ic mk mv" "pp pp pp";align-items:center;gap:6px 8px;padding:8px 10px 9px;cursor:pointer;',
+'  background:rgba(255,255,255,.025);box-shadow:inset 0 0 0 2px rgba(143,160,214,.14),inset 0 -3px 0 rgba(0,0,0,.3);}',
+'#s-car .cr-meters .k-meter > .k-ico{grid-area:ic;}',
+'#s-car .cr-meters .k-mk{grid-area:mk;font-size:8px;color:var(--k-ink-2);text-align:left;}',
+'#s-car .cr-meters .k-mv{grid-area:mv;font-size:12px;color:#fff;}',
+'#s-car .cr-meters .k-pips{grid-area:pp;display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:2px;padding:2px;background:#05070d;}',
+'#s-car .cr-meters .k-pips i{width:auto;height:11px;background:#1a2038;box-shadow:inset 0 -2px 0 rgba(0,0,0,.35);}',
+'#s-car .cr-meters .k-pips i.on{background:var(--k-pip);box-shadow:inset 0 2px 0 rgba(255,255,255,.35),inset 0 -2px 0 rgba(0,0,0,.3);}',
+'/* THE SCOREBOARD: the record, the line and the bank in lit digits */',
+'#s-car .cr-fact{position:relative;padding:10px 10px 11px;background:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1.4px) 0 0/4px 4px,#05070d;',
+'  box-shadow:0 -2px 0 0 #2a3150,0 2px 0 0 #2a3150,-2px 0 0 0 #2a3150,2px 0 0 0 #2a3150,inset 0 0 0 2px #000,0 6px 0 rgba(3,5,10,.7);}',
+'#s-car .cr-fact .k{font:400 7px/1.4 var(--k-f-pixel);letter-spacing:.06em;color:var(--k-ink-3);}',
+'#s-car .cr-fact b{font-size:15px;color:#ffb347;text-shadow:0 0 8px rgba(255,140,40,.7),0 0 1px #ffd9a6;margin:9px 0 6px;}',
+'#s-car .cr-fact small{color:var(--k-ink-2);}',
+'/* the story so far: a timeline */',
+'#s-car .cr-beats{position:relative;padding:8px 6px 8px 4px;}',
+'#s-car .cr-beats li{border-top:0;padding:7px 10px 7px 34px;}',
+'#s-car .cr-beats li::after{content:"";position:absolute;left:15px;top:0;bottom:0;width:2px;background:rgba(143,160,214,.22);}',
+'#s-car .cr-beats li:first-child::after{top:16px;}#s-car .cr-beats li:last-child::after{bottom:auto;height:16px;}',
+'#s-car .cr-beats li:only-child::after{display:none;}',
+'#s-car .cr-beats li:before{left:11px;top:12px;width:10px;height:10px;z-index:1;box-shadow:0 0 0 3px #11162b;}',
+'/* the action at the thumb: a lit arcade button */',
+'#s-car .cr-dock{background:linear-gradient(180deg,rgba(7,9,18,0),#070912 40%);}',
+'#s-car .k-btn:not(.k-sec):not(.k-quiet):not(:disabled){background:linear-gradient(180deg,#ffa04d 0%,#ff7a1a 45%,#f26a0c 100%);text-shadow:0 1px 0 rgba(255,255,255,.35);}',
+'#s-car .cr-next{overflow:hidden;font-size:18px;letter-spacing:.1em;}',
+'#s-car .cr-next::after{content:"";position:absolute;top:0;bottom:0;left:-40%;width:24%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);animation:cr-shine 3.6s ease-in-out infinite;}',
+'@keyframes cr-shine{0%,62%{left:-40%;}100%{left:130%;}}',
+'@media (prefers-reduced-motion:reduce){#s-car .cr-next::after{display:none;}}',
+'#s-car .k-btn.k-sec{background:linear-gradient(180deg,#26305a,#1a2142);}',
+'/* cartridge tabs */',
+'#s-car .cr-tabsec{padding-top:0;}',
+'#s-car .cr-tabsec .k-itabs{margin:0 calc(var(--k-s-4)*-1) 14px;padding:8px 8px 0;gap:4px;background:#080b16;border-bottom:3px solid var(--k-team-ring);}',
+'#s-car .k-itabs .k-itab{flex:1 0 auto;min-width:66px;color:var(--k-ink-3);background:linear-gradient(180deg,#1b2242,#131934);box-shadow:inset 0 0 0 2px #262f57,inset 0 2px 0 rgba(255,255,255,.06);}',
+'#s-car .k-itabs .k-itab:hover{color:#fff;}',
+'#s-car .k-itabs .k-itab[aria-selected="true"]{color:#fff;background:linear-gradient(180deg,#34437a,#222c55);box-shadow:inset 0 3px 0 var(--k-team-ring),inset 0 0 0 2px #3c4b85;}',
+'#s-car .k-itabs .k-itab[aria-selected="true"]::after{display:none;}',
+'#s-car .cr-tabsec.k-more-r::after{top:8px;background:linear-gradient(90deg,rgba(8,11,22,0),#080b16);}',
+'/* the Story tab: a timeline of years */',
+'#s-car .cr-log li{border-top:0;padding:8px 6px;margin:0 0 3px;background:rgba(255,255,255,.025);box-shadow:inset 3px 0 0 rgba(143,160,214,.2);}',
+'#s-car .cr-log li.gold{box-shadow:inset 3px 0 0 var(--k-gold);background:rgba(255,209,102,.06);}',
+'#s-car .cr-log li.good{box-shadow:inset 3px 0 0 var(--k-good);}',
+'#s-car .cr-log li.bad{box-shadow:inset 3px 0 0 var(--k-bad);}',
+'#s-car .cr-log li .yr{flex:0 0 46px;padding:3px 0;text-align:center;line-height:1.4;background:#05070d;color:#ffb347;align-self:flex-start;}',
+'/* seasons: the arc on a grid, and every season a card */',
+'#s-car .cr-arc{background:#080b16;box-shadow:inset 0 0 0 2px rgba(143,160,214,.14);}',
+'#s-car .cr-arcbars{background:repeating-linear-gradient(0deg,rgba(143,160,214,.10) 0 1px,transparent 1px 25%);border-bottom:2px solid var(--k-ink-3);}',
+'#s-car .cr-arcb span{border-radius:0;background:linear-gradient(180deg,#ff9a3d,#e8660f 70%,#b04a06);box-shadow:inset 2px 0 0 rgba(255,255,255,.18);}',
+'#s-car .cr-arcb.am span{background:linear-gradient(180deg,#8db3f2,#5b8fe6 70%,#3a64b0);}',
+'#s-car .cr-arcb.pk span{box-shadow:inset 2px 0 0 rgba(255,255,255,.18),0 0 0 2px var(--k-gold);}',
+'#s-car .cr-arcb em{color:var(--k-gold);}',
+'@media (max-width:519px){',
+'  #s-car .cr-tbl tr{margin:0 0 6px;padding:10px 10px;border-bottom:0;background:rgba(255,255,255,.03);box-shadow:inset 3px 0 0 var(--k-team-ring),inset 0 0 0 1px rgba(143,160,214,.1);}',
+'  #s-car .cr-tbl tr.champ{box-shadow:inset 3px 0 0 var(--k-gold),inset 0 0 0 1px rgba(255,209,102,.35);background:rgba(255,209,102,.05);}',
+'  #s-car .cr-tbl td:before{font:400 7px/1.6 var(--k-f-pixel);letter-spacing:.04em;}',
+'  #s-car .cr-tbl td{color:var(--k-ink);font-weight:600;}',
+'}',
+'/* LED tiles: the totals, the legacy row, the rotation head */',
+'#s-car .cr-tot div,#s-car .cr-leg div{background:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1.4px) 0 0/4px 4px,#05070d;box-shadow:inset 0 0 0 2px #232a47;}',
+'#s-car .cr-tot b,#s-car .cr-leg b{color:#ffb347;text-shadow:0 0 8px rgba(255,140,40,.6);}',
+'/* the team: an overall wears its tier */',
+'#s-car .cr-rot li.cr-rot-r{background:rgba(255,255,255,.03);box-shadow:inset 0 0 0 1px rgba(143,160,214,.08);}',
+'#s-car .cr-rot li.you{background:rgba(255,140,40,.12);box-shadow:inset 3px 0 0 var(--k-accent),inset 0 0 0 1px rgba(255,140,40,.3);}',
+'#s-car .cr-rot .v.ovr{justify-self:end;min-width:30px;padding:4px 0;text-align:center;font-size:10px;color:#05070d;background:#8fa0d6;box-shadow:inset 0 -2px 0 rgba(0,0,0,.25);}',
+'#s-car .cr-rot .v.ovr.tier-a{background:#ffd166;}#s-car .cr-rot .v.ovr.tier-b{background:#3ecf8e;}#s-car .cr-rot .v.ovr.tier-c{background:#7fb2ff;}',
+'#s-car .cr-rot li.cr-rot-sep{margin-top:6px;color:var(--k-gold);}',
+'/* the trophy case: icons on lit shelves behind glass */',
+'#s-car .cr-aw:not(.cr-awrow):not(.cr-known){padding:10px 10px 6px;background:linear-gradient(180deg,rgba(120,170,255,.05),rgba(0,0,0,0) 40%),#070a14;box-shadow:inset 0 0 0 2px #2a2214,inset 0 0 0 4px #4a3520;}',
+'#s-car .cr-aw:not(.cr-awrow):not(.cr-known) .cr-awgrid{padding-bottom:2px;background:repeating-linear-gradient(180deg,transparent 0 55px,#8a5c34 55px 58px,#5a3a1e 58px 62px);}',
+'#s-car .cr-awi{box-shadow:inset 0 2px 0 rgba(255,255,255,.08);}',
+'#s-car .cr-awcap{color:var(--k-gold);font-weight:700;}',
+'/* the people: a face for every name */',
+'#s-car .cr-ppl li{grid-template-columns:36px minmax(0,1fr) 92px;align-items:center;padding:10px 0;}',
+'#s-car .cr-ppl .note{grid-column:2/-1;}',
+'#s-car .cr-ava{width:36px;height:36px;display:grid;place-items:center;font:400 10px var(--k-f-pixel);color:#fff;background:linear-gradient(180deg,#3a4677,#26305a);box-shadow:inset 0 0 0 2px #4a5c99,inset 0 -3px 0 rgba(0,0,0,.3);}',
+'#s-car .cr-ava.good{background:linear-gradient(180deg,#2f8a63,#1d5c42);box-shadow:inset 0 0 0 2px #3ecf8e,inset 0 -3px 0 rgba(0,0,0,.3);}',
+'#s-car .cr-ava.bad{background:linear-gradient(180deg,#8a3434,#5c1f1f);box-shadow:inset 0 0 0 2px #ff6b6b,inset 0 -3px 0 rgba(0,0,0,.3);}',
+'/* the news: every item a clipping */',
+'#s-car .cr-feed li{border-top:0;margin:0 0 6px;padding:9px 11px;background:rgba(255,255,255,.03);box-shadow:inset 0 0 0 1px rgba(143,160,214,.1);}',
+'#s-car .cr-feed .src{display:table;margin:0 0 5px;padding:3px 6px;font:400 7px/1.4 var(--k-f-pixel);color:#05070d;background:var(--k-trust);}',
+'#s-car .cr-feed li.you{box-shadow:inset 3px 0 0 var(--k-accent),inset 0 0 0 1px rgba(255,140,40,.25);}',
+'#s-car .cr-list li{border-top:0;margin:0 0 3px;padding:7px 8px;background:rgba(255,255,255,.025);}',
+'#s-car .cr-list li .yr{padding:2px 4px;background:#05070d;color:#ffb347;text-align:center;margin-right:8px;}',
+'#s-car .cr-sub{display:flex;align-items:center;gap:8px;color:#fff;font:400 9px/1.5 var(--k-f-pixel);letter-spacing:.06em;}',
+'#s-car .cr-sub::after{content:"";flex:1;height:2px;background:repeating-linear-gradient(90deg,rgba(143,160,214,.3) 0 4px,transparent 4px 8px);}',
+'/* THE HALL CARD: a ceremony. Gold rays turn behind him, the verdict is cast',
+'   in gold and his name is on a ribbon. */',
+'#s-car .cr-final{background:#07091a;}',
+'#s-car .cr-rays{position:absolute;left:50%;top:-180px;width:720px;height:720px;margin-left:-360px;pointer-events:none;opacity:.32;',
+'  background:repeating-conic-gradient(from 0deg,rgba(255,209,102,.55) 0 6deg,transparent 6deg 18deg);',
+'  -webkit-mask:radial-gradient(circle,#000 0,#000 18%,transparent 58%);mask:radial-gradient(circle,#000 0,#000 18%,transparent 58%);animation:cr-spin 60s linear infinite;}',
+'#s-car .k-panel.k-team .cr-rays{background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--k-team-ring) 70%,transparent) 0 6deg,transparent 6deg 18deg);opacity:.26;}',
+'@keyframes cr-spin{to{transform:rotate(360deg);}}',
+'@media (prefers-reduced-motion:reduce){#s-car .cr-rays{animation:none;}}',
+'#s-car .cr-final .cr-hin{background:linear-gradient(180deg,rgba(5,7,13,.1),rgba(5,7,13,.78) 50%,#0b0f22);}',
+'#s-car .cr-final .eye{display:inline-block;padding:6px 10px;background:#05070d;box-shadow:inset 0 0 0 2px var(--k-gold);color:var(--k-gold);}',
+'#s-car .cr-final .v{font-size:54px;color:#fff3c4;text-shadow:3px 3px 0 #8a5a00,6px 6px 0 #05070d,0 0 26px rgba(255,209,102,.45);}',
+'#s-car .k-panel.k-team .cr-final .v,#s-car .cr-final.k-team .v{color:#fff;text-shadow:3px 3px 0 color-mix(in srgb,var(--k-team-1) 80%,#05070d),6px 6px 0 #05070d,0 0 22px color-mix(in srgb,var(--k-team-ring) 50%,transparent);}',
+'#s-car .cr-final .nm span{display:inline-block;padding:7px 18px;color:var(--k-team-on);background:var(--k-team-1);box-shadow:inset 0 0 0 2px rgba(0,0,0,.25);',
+'  clip-path:polygon(0 0,100% 0,96% 50%,100% 100%,0 100%,4% 50%);}',
+'#s-car .cr-final .rtf-baller{filter:drop-shadow(0 8px 0 rgba(5,7,13,.6)) drop-shadow(0 0 16px rgba(255,209,102,.25));}',
+'#s-car .cr-final p.cr-col{display:inline-block;margin:8px 4px 0;padding:5px 10px;font-size:13.5px;background:rgba(255,255,255,.05);box-shadow:inset 0 0 0 1px rgba(143,160,214,.2);}',
+'#s-car .cr-epi p{position:relative;margin:0 0 8px;padding:10px 12px 10px 14px;background:#090c18;box-shadow:inset 3px 0 0 var(--k-gold),inset 0 0 0 1px rgba(255,209,102,.15);}',
+'#s-car .cr-epi .k{font:400 7px/1.6 var(--k-f-pixel);color:var(--k-gold);letter-spacing:.06em;margin-bottom:5px;}',
+'#s-car #cr-share{font-size:17px;min-height:56px;}',
+'/* THE VAULT: a plaque wall. What you found is cast in gold; what you have',
+'   not is a dark empty slot with a lock in it. */',
+'#s-car .cr-vsum{padding:14px 16px;background:radial-gradient(120% 140% at 0% 0%,rgba(255,209,102,.14),transparent 60%),#0b0f22;}',
+'#s-car .cr-vsum .k-num{font-size:34px;text-shadow:3px 3px 0 #6a4600,0 0 14px rgba(255,209,102,.4);}',
+'#s-car .cr-vbar{height:14px;background:#05070d;box-shadow:0 0 0 2px #3a3018;}',
+'#s-car .cr-vbar i{background:repeating-linear-gradient(90deg,#ffd166 0 6px,#e8b440 6px 8px);box-shadow:inset 0 2px 0 rgba(255,255,255,.35);}',
+'#s-car .cr-shbar{height:8px;}',
+'#s-car .cr-shelf > summary{padding:12px 4px 12px 10px;border-top:0;margin-top:6px;background:linear-gradient(90deg,rgba(255,209,102,.07),transparent 70%);box-shadow:inset 3px 0 0 var(--k-gold);}',
+'#s-car .cr-vgrid{padding:10px 8px 12px;background:#070912;box-shadow:inset 0 -6px 0 #4a2f18,inset 0 -8px 0 #6b4526;}',
+'#s-car .cr-sec > .cr-tabs:not(.k-itabs){margin:0 calc(var(--k-s-4)*-1) 14px;margin-top:calc(var(--k-s-4)*-1);padding:8px 8px 0;gap:4px;background:#080b16;border-bottom:3px solid var(--k-gold);}',
+'#s-car .cr-sec > .cr-tabs:not(.k-itabs) .k-tab{color:var(--k-ink-3);background:linear-gradient(180deg,#1b2242,#131934);box-shadow:inset 0 0 0 2px #262f57;}',
+'#s-car .cr-sec > .cr-tabs:not(.k-itabs) .k-tab[aria-selected="true"]{color:#fff;background:linear-gradient(180deg,#4a3c14,#2a210a);box-shadow:inset 0 3px 0 var(--k-gold),inset 0 0 0 2px #5c4a18;}',
+'#s-car .cr-sec > .cr-tabs:not(.k-itabs) .k-tab[aria-selected="true"]::after{display:none;}',
+'#s-car .cr-vgrid li{min-height:42px;}',
+'#s-car .cr-vgrid li.got{color:#fff3c4;background:linear-gradient(180deg,#5c4614,#3a2c0c 60%,#2a2008);box-shadow:inset 0 0 0 2px var(--k-gold),inset 0 2px 0 rgba(255,236,170,.4),0 3px 0 #05070d;text-shadow:0 1px 0 #000;}',
+'#s-car .cr-vgrid li.no{color:#58628a;background:#05070d;box-shadow:inset 0 3px 0 rgba(0,0,0,.6),inset 0 0 0 2px #1a2036;}',
+'#s-car .cr-vgrid li.no .k-ico{opacity:.5;}',
+'#s-car .cr-aentry{padding:8px 6px;margin:0 0 4px;background:rgba(255,255,255,.025);box-shadow:inset 0 0 0 1px rgba(143,160,214,.1);}',
+'/* THE BUILDER: a player select screen. He stands on a lit podium, and the',
+'   four steps are a track you move along. */',
+'#s-car .cr-build .cr-pfig{background:#05070d;box-shadow:inset 0 0 0 2px var(--k-team-ring),0 4px 0 #05070d;}',
+'#s-car .cr-build .cr-pfig::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(60% 50% at 50% 0%,rgba(255,236,196,.28),transparent 70%);}',
+'#s-car .cr-build .cr-pfig::after{content:"";position:absolute;left:12%;right:12%;bottom:2px;height:12px;z-index:0;background:radial-gradient(50% 50% at 50% 50%,color-mix(in srgb,var(--k-team-ring) 70%,transparent),transparent 72%);}',
+'#s-car .cr-build .cr-pfig .rtf-baller{z-index:2;}',
+'#s-car .cr-build .cr-povr .k-num{color:#fff;text-shadow:3px 3px 0 color-mix(in srgb,var(--k-team-1) 80%,#05070d);}',
+'#s-car .cr-steps{position:relative;gap:6px;padding:4px 0 8px;}',
+'#s-car .cr-stab{position:relative;background:linear-gradient(180deg,#1b2242,#131934);box-shadow:inset 0 0 0 2px #262f57,0 3px 0 #05070d;}',
+'#s-car .cr-stab i{display:inline-grid;place-items:center;width:18px;height:18px;background:#05070d;color:var(--k-ink-2);}',
+'#s-car .cr-stab.on{color:#160b02;background:linear-gradient(180deg,#ffe08c,#ffd166 60%,#e8b440);box-shadow:inset 0 0 0 2px #fff0bf,0 3px 0 #6a4600;}',
+'#s-car .cr-stab.on i{background:#160b02;color:#ffd166;}',
+'#s-car .cr-opt{background:linear-gradient(180deg,#1d2546,#151b36);}',
+'#s-car .cr-opt.on{background:linear-gradient(180deg,#3a3014,#241d0c);}',
+'#s-car .cr-build .lab{display:flex;align-items:center;gap:8px;font:400 8px/1.5 var(--k-f-pixel);color:#fff;letter-spacing:.06em;}',
+'#s-car .cr-build .lab::after{content:"";flex:1;height:2px;background:repeating-linear-gradient(90deg,rgba(143,160,214,.3) 0 4px,transparent 4px 8px);}',
+'#s-car .cr-name input{background:#05070d;}',
+'#s-car .cr-cta{background:linear-gradient(180deg,rgba(7,9,18,0),#070912 40%);}',
+'/* sheets wear the same plate */',
+'#cr-sheet .k-sheet{box-shadow:0 -3px 0 0 var(--k-team-ring),inset 0 2px 0 rgba(255,255,255,.06);}',
 ].join('\n');
 (function(){
   if (document.getElementById('cr-css')) return;
@@ -538,8 +843,14 @@ function skin(code){
    before looks existed. baller.js is the only reader of what is in it. */
 function lookOf(L){
   var B = window.RTF_BALLER;
-  if (L && L.look && Object.keys(L.look).length) return L.look;
-  return B ? B.lookFor(L ? L.seed : 'x') : {};
+  var look = L && L.look && Object.keys(L.look).length ? L.look : B ? B.lookFor(L ? L.seed : 'x') : {};
+  /* his height and weight are the body's: they ride on the look when drawn,
+     never in the saved look (cleanLook keeps the look to small numbers) */
+  return withSize(look, L);
+}
+function withSize(look, L){
+  if (!L || !(L.ht > 0)) return look;
+  return Object.assign({}, look, { ht: L.ht, wt: L.wt });
 }
 /* The player, drawn, in whatever he is wearing right now. Falls back to the
    jersey below if baller.js did not load, so the card is never empty. */
@@ -771,16 +1082,42 @@ var chOpen = false;
    saying what the size buys and costs. */
 function sizeHtml(){
   var z = C.POS_SIZE[form.pos], r = C.wtRange(form.ht);
-  var step = function(id, label, val, lo, hi, dn, up){
-    return '<div class="cr-step" role="group" aria-label="' + label + '"><span class="k-label">' + label + '</span>'
-      + '<button type="button" class="k-btn k-sec" data-size="' + dn + '"' + (lo ? ' disabled' : '') + ' aria-label="' + label + ' down">-</button>'
-      + '<output id="' + id + '" aria-live="polite">' + val + '</output>'
-      + '<button type="button" class="k-btn k-sec" data-size="' + up + '"' + (hi ? ' disabled' : '') + ' aria-label="' + label + ' up">+</button></div>';
+  /* A SLIDER BETWEEN THE TWO BUTTONS. Drag it and the player in the preview
+     grows, shrinks, fills out and thins as you go (sizeLive redraws only the
+     figure, so the drag is never interrupted); let go and the rest of the
+     screen catches up. The buttons are the fine step and the keyboard's. */
+  var step = function(id, key, label, val, lo, hi, min, max, inc, now){
+    return '<div class="cr-step" role="group" aria-label="' + label + '"><span class="k-label">' + label + ' <output id="' + id + '" aria-live="polite">' + val + '</output></span>'
+      + '<button type="button" class="k-btn k-sec" data-size="' + key + ':-' + inc + '"' + (lo ? ' disabled' : '') + ' aria-label="' + label + ' down">-</button>'
+      + '<input type="range" class="cr-range" data-range="' + key + '" min="' + min + '" max="' + max + '" step="' + inc + '" value="' + now + '" aria-label="' + label + '">'
+      + '<button type="button" class="k-btn k-sec" data-size="' + key + ':' + inc + '"' + (hi ? ' disabled' : '') + ' aria-label="' + label + ' up">+</button></div>';
   };
   return '<span class="lab k-label">Height and weight</span><div class="cr-size">'
-    + step('cr-ht', 'Height', C.heightText(form.ht), form.ht <= z.ht[0], form.ht >= z.ht[1], 'ht:-1', 'ht:1')
-    + step('cr-wt', 'Weight', form.wt + ' lb', form.wt <= r[0], form.wt >= r[1], 'wt:-5', 'wt:5')
+    + step('cr-ht', 'ht', 'Height', C.heightText(form.ht), form.ht <= z.ht[0], form.ht >= z.ht[1], z.ht[0], z.ht[1], 1, form.ht)
+    + step('cr-wt', 'wt', 'Weight', form.wt + ' lb', form.wt <= r[0], form.wt >= r[1], r[0], r[1], 5, form.wt)
     + '</div><p class="cr-town" id="cr-sizeline">' + esc(sizeLine()) + '</p>';
+}
+/* While a slider moves: the numbers, the weight range (a taller man carries
+   more), the line under them and the figure, and nothing else. */
+var sizeRaf = 0;
+function sizeLive(){
+  if (sizeRaf) return;
+  sizeRaf = requestAnimationFrame(function(){
+    sizeRaf = 0;
+    var root = $('s-car'); if (!root) return;
+    var r = C.wtRange(form.ht), ht = $('cr-ht'), wt = $('cr-wt'), line = $('cr-sizeline');
+    if (ht) ht.textContent = C.heightText(form.ht);
+    if (wt) wt.textContent = form.wt + ' lb';
+    var ws = root.querySelector('[data-range="wt"]');
+    if (ws) { ws.min = r[0]; ws.max = r[1]; ws.value = form.wt; }
+    if (line) line.textContent = sizeLine();
+    var B = window.RTF_BALLER, fig = root.querySelector('.cr-pfig .rtf-baller'), L = PV.L;
+    if (B && fig && L) {
+      var k = C.colorsOf(L), tmp = document.createElement('div');
+      tmp.innerHTML = B.img(withSize(C.cleanLook(form.look), { ht: form.ht, wt: form.wt }), { c1: k.primary, c2: k.secondary, num: form.num, pose: bstep === 'look' ? 'stand' : 'ball', scale: bstep === 'look' ? 4 : 2, still: true });
+      if (tmp.firstChild) fig.parentNode.replaceChild(tmp.firstChild, fig);
+    }
+  });
 }
 function buildView(){
   if (!form) { form = freshForm(); bstep = 'player'; }
@@ -832,9 +1169,9 @@ function buildView(){
   var pane = function(id, html){ return '<div class="cr-pane" role="tabpanel" data-pane="' + id + '"' + (id === bstep ? '' : ' hidden') + '>' + html + '</div>'; };
   var next = steps[si + 1];
   var goText = road ? (pro ? 'Start your sophomore year' : 'Get Pro to start in high school') : 'Go to the draft combine';
-  return '<div class="cr-top"><h2 class="k-h1">' + (form.parent ? 'Your son' : 'New career') + '</h2><div class="cr-topbtns">'
+  return '<div class="cr-top"><div class="cr-topl"><h2 class="k-h1">' + (form.parent ? 'Your son' : 'New career') + '</h2><div class="cr-hud"><b>Step ' + (si + 1) + ' of ' + steps.length + '</b><span>' + esc(steps[si][1]) + '</span></div></div><div class="cr-topbtns">'
     + (form.parent ? '<button class="k-btn k-quiet" id="cr-noson" type="button">Not a son</button>' : '')
-    + '<button class="k-btn k-quiet" id="cr-vault" type="button">' + K.iconHtml('vault', 2) + ' Vault</button><button class="k-btn k-quiet" id="cr-home">Home</button></div></div>'
+    + ib('cr-vault', 'vault', 'Vault') + ib('cr-home', 'home', 'Home', { attr: 'aria-label="Home"' }) + '</div></div>'
     + '<div class="k-panel cr-build">'
     /* On the Look step the figure is drawn at twice the size and framed on the
        head and shoulders, because hair is what is being chosen there. */
@@ -846,9 +1183,10 @@ function buildView(){
     + (form.parent ? ori : '')
     + tabs
     + pane('player', '<span class="lab k-label">Name and number</span>'
-      + '<div class="cr-name"><input id="cr-name" maxlength="28" value="' + esc(form.name) + '" aria-label="Player name" autocomplete="off">'
+      + '<div class="cr-name"><input id="cr-name" maxlength="28" value="' + esc(form.name) + '" aria-label="Player name" aria-describedby="cr-namehint" placeholder="Blank picks one for you" autocomplete="off">'
       + '<input id="cr-num" class="cr-num" inputmode="numeric" maxlength="2" value="' + form.num + '" aria-label="Jersey number">'
       + '<button class="k-btn k-sec" id="cr-dice" type="button" aria-label="New random name">New</button></div>'
+      + '<p class="cr-namehint" id="cr-namehint" aria-live="polite">' + nameHint(form.name) + '</p>'
       + '<span class="lab k-label">Position</span><div class="cr-chips" id="cr-pos" role="group" aria-label="Position">' + pos + '</div>'
       + sizeHtml()
       + '<span class="lab k-label">Your game as a ' + esc(C.POS_NAME[form.pos].toLowerCase()) + '</span><div class="cr-opts cr-pick" id="cr-arch">' + arch + '</div>'
@@ -864,11 +1202,38 @@ function buildView(){
     + '<button class="k-btn k-block k-big" id="cr-go">' + goText + '</button></div>'
     + '</div>';
 }
+/* THE NAME IS SAID BEFORE THE CAREER STARTS, not found missing at the end.
+   The Career board takes a name made of letters, spaces, an apostrophe, a
+   stop or a hyphen (C.boardName, which is the board's own rule), and files
+   anything else as no name. The builder used to take whatever was typed and
+   say nothing, so "Big Mike 23" played a whole career and then was nobody
+   on the board. A blank name is fine and is picked at random, so the line
+   says that too. The press offers the cleaned name rather than refusing. */
+function nameHint(v){
+  var n = String(v || '').replace(/\s+/g, ' ').trim();
+  if (!n) return 'Leave it blank and we pick a name.';
+  if (!C.boardName || C.boardName(n)) return '';
+  var c = C.cleanName ? C.cleanName(n) : '';
+  return 'The Career board takes letters, spaces, periods, hyphens and apostrophes. This name will not show there.'
+    + (c && C.boardName(c) ? ' <button class="cr-namefix" type="button" data-fix="' + esc(c) + '">Use ' + esc(c) + '</button>' : '');
+}
+function paintNameHint(){
+  var h = $('cr-namehint');
+  if (!h) return;
+  var html = form ? nameHint(form.name) : '';
+  if (h.innerHTML !== html) { h.innerHTML = html; wireNameHint(); }
+  h.classList.toggle('bad', !!form && !!String(form.name || '').trim() && !!C.boardName && !C.boardName(String(form.name).replace(/\s+/g, ' ').trim()));
+}
+function wireNameHint(){
+  var f = document.querySelector('#cr-namehint .cr-namefix');
+  if (f) f.onclick = function(){ form.name = f.getAttribute('data-fix'); var nm = $('cr-name'); if (nm) nm.value = form.name; paintNameHint(); };
+}
 var bstep = 'player';
 function wireBuild(){
   var root = $('s-car');
   var nm = $('cr-name'), nu = $('cr-num');
-  if (nm) nm.oninput = function(){ form.name = nm.value; };
+  if (nm) nm.oninput = function(){ form.name = nm.value; paintNameHint(); };
+  paintNameHint();
   if (nu) nu.oninput = function(){ var v = nu.value.replace(/\D/g, '').slice(0, 2); nu.value = v; form.num = v === '' ? 0 : +v; };
   $('cr-dice').onclick = function(){ var s = String(Math.floor(Math.random() * 1e9)); form.seed = s; form.name = C.randomName(s); render(); };
   root.querySelectorAll('[data-pos]').forEach(function(b){ b.onclick = function(){ setPos(b.getAttribute('data-pos')); render(); }; });
@@ -878,6 +1243,21 @@ function wireBuild(){
     else { var r = C.wtRange(form.ht); form.wt = Math.max(r[0], Math.min(r[1], form.wt + +p[1])); }
     render();
   }; });
+  root.querySelectorAll('[data-range]').forEach(function(sl){
+    sl.oninput = function(){
+      var v = +sl.value, r;
+      if (sl.getAttribute('data-range') === 'ht') {
+        form.ht = v; fitWt();
+        /* a taller man carries more: the weight slider's range moves now, not
+           a frame later, or a quick drag lands outside it */
+        r = C.wtRange(form.ht);
+        var ws = root.querySelector('[data-range="wt"]');
+        if (ws) { ws.min = r[0]; ws.max = r[1]; ws.value = form.wt; }
+      } else { r = C.wtRange(form.ht); form.wt = Math.max(r[0], Math.min(r[1], v)); }
+      sizeLive();
+    };
+    sl.onchange = function(){ render(); var again = $('s-car').querySelector('[data-range="' + sl.getAttribute('data-range') + '"]'); if (again) again.focus({ preventScroll: true }); };
+  });
   root.querySelectorAll('[data-arch]').forEach(function(b){ b.onclick = function(){ form.arch = b.getAttribute('data-arch'); render(); }; });
   root.querySelectorAll('[data-origin]').forEach(function(b){ b.onclick = function(){ form.origin = b.getAttribute('data-origin'); render(); }; });
   root.querySelectorAll('[data-diff]').forEach(function(b){ b.onclick = function(){ form.diff = b.getAttribute('data-diff'); render(); }; });
@@ -933,7 +1313,7 @@ var TIPS = {
   fame: ['Fame', 'How big your name is. It drives endorsements, All-Star votes and what the media asks you.'],
   trust: ['Coach', 'How much your coach believes in you. It decides your minutes and your role.'],
 };
-var METER_ICON = { health: 'heart', morale: 'face', fame: 'star', trust: 'clip', cash: 'cash' };
+var METER_ICON = { health: 'heart', morale: 'face', fame: 'star', trust: 'whistle', cash: 'cash' };
 
 function idCard(L){
   var v = C.view(L), k = C.colorsOf(L);
@@ -941,44 +1321,52 @@ function idCard(L){
   var rv = C.roadView(L);
   var club = rv ? rv.what + (rv.level === 'High school' ? ' at ' + rv.where : '')
     : L.team ? teamName(L.team) : (L.draft && !L.draft.team ? 'Undrafted' : 'Draft prospect');
-  var lines = [];
-  if (L.nick) lines.push('"' + L.nick + '"');
-  lines.push('Age ' + L.age + (v.role ? ' · ' + v.role.label : ''));
-  if (rv) lines.push(rv.sub);
-  if ((L.team || rv) && v.coach) lines.push('Coach ' + v.coach);
-  if (!rv && ct && ct.kind !== 'overseas') lines.push(money(ct.salary) + ' a year · ' + ct.years + (ct.years === 1 ? ' year left' : ' years left'));
-  if (L.season && L.season.goal && C.GOALS[L.season.goal]) lines.push('Chasing: ' + C.GOALS[L.season.goal][0].toLowerCase());
+  /* A spec sheet rather than loose lines: each fact has a label, so the eye
+     finds the contract without reading the coach's name first. */
+  var spec = [];
+  spec.push(['Age', String(L.age)]);
+  if (v.role) spec.push(['Role', v.role.label]);
+  if (rv) spec.push(['Level', rv.sub]);
+  if ((L.team || rv) && v.coach) spec.push(['Coach', v.coach]);
+  if (!rv && ct && ct.kind !== 'overseas') spec.push(['Contract', money(ct.salary) + ' · ' + ct.years + (ct.years === 1 ? ' yr left' : ' yrs left')]);
+  if (L.season && L.season.goal && C.GOALS[L.season.goal]) spec.push(['Chasing', C.GOALS[L.season.goal][0]]);
   var cs = C.challengeOf ? C.challengeOf(L) : null;
-  if (cs) lines.push('Challenge: ' + cs.name + ' · ' + (cs.met ? 'Done' : cs.out ? 'Out of reach' : cs.prog));
-  if (L.opt && L.opt.diff) lines.push(C.DIFFS[L.opt.diff].name + ' difficulty');
+  if (cs) spec.push(['Challenge', cs.name + ' · ' + (cs.met ? 'Done' : cs.out ? 'Out of reach' : cs.prog)]);
+  if (L.opt && L.opt.diff) spec.push(['Difficulty', C.DIFFS[L.opt.diff].name]);
   var per = C.personaOf ? C.personaOf(L) : '';
   var strip = tag(L.pos + ' · ' + C.ARCHES[L.arch].name, 'k-team') + tag('#' + L.num + (L.ht ? ' · ' + C.heightText(L.ht) + ' ' + L.wt : ''))
     + (per && per !== 'Still writing it' ? '<span class="k-tag k-gold cr-persona" title="How the league sees you">' + esc(per) + '</span>' : '');
   return '<div class="k-panel k-team k-card-player cr-id">'
     + '<div class="k-stage"><div class="k-set">' + setArt(stageKind(L), k.primary, k.secondary, L.seed) + '</div>'
+    + '<div class="cr-bignum" aria-hidden="true">' + esc(String(L.num)) + '</div><div class="cr-stripes" aria-hidden="true"></div>'
     + '<div class="k-teamwash"></div><div class="k-scrim-r"></div>'
     + '<div class="k-actor">' + portrait(L, { pose: L.team || rv ? 'ball' : 'stand', scale: 3 }) + '</div>'
     + '<div class="k-id"><h3 class="k-hero">' + esc(L.name) + '</h3>' + tag(club, 'k-team')
-    + '</div><div class="k-ovr"><span class="k-num" id="cr-ovr">' + C.show(v.ovr) + '</span><span class="k-pix">OVR</span></div></div>'
-    + '<div class="cr-lines">' + lines.map(function(t){ return '<span class="cr-sub2">' + esc(t) + '</span>'; }).join('') + '</div>'
+    + '</div><div class="k-ovr cr-shield"><span class="k-num" id="cr-ovr">' + C.show(v.ovr) + '</span><span class="k-pix">OVR</span></div></div>'
+    + '<div class="cr-lines">' + (L.nick ? '<p class="cr-nick">"' + esc(L.nick) + '"</p>' : '')
+    + '<dl class="k-spec cr-spec">' + spec.map(function(x){ return '<div><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl></div>'
     + '<div class="k-strip">' + strip + '</div>' + knownHtml(L) + '</div>';
 }
 /* What the career has shown: revealed traits (with the reason on hover and
    for a screen reader), the signature move and the skill badges. */
 /* Traits, the signature move and the skill badges are icons too, read the
    same way the awards are: tap one for its name. */
-var TRAIT_ICON = { clutch: ['star', '#ffd166'], coachable: ['whistle', '#b8c3e6'], injuryProne: ['heart', '#ff6b6b'], lateBloomer: ['sprout', '#3ecf8e'],
-  lockerVoice: ['mic', '#ffd166'], gymRat: ['ball', '#e2762a'], hothead: ['flame', '#ff6b6b'], bigStage: ['crown', '#ffd166'], ironMan: ['shield', '#c9d2e3'],
-  filmJunkie: ['clip', '#7fb2ff'], spender: ['cash', '#ff6b6b'], saver: ['cash', '#3ecf8e'], showman: ['star', '#ff7a1a'], loyal: ['home', '#c98b4e'], mercenary: ['cash', '#ffd166'] };
-var BADGE_ICON = { deadeye: ['ball', '#ffd166'], floorgen: ['arrow', '#7fb2ff'], lockdown: ['shield', '#7fb2ff'], glass: ['up', '#3ecf8e'], finisher: ['flame', '#ff7a1a'],
-  flight: ['plane', '#7fb2ff'], brain: ['clip', '#ffd166'], bucket: ['ball', '#ff7a1a'], dimes: ['share', '#3ecf8e'], boards: ['down', '#3ecf8e'] };
+/* Every trait and badge has a picture of its own, drawn for what it means
+   (career-kit.js ICON16): a buzzer clock for Clutch, a piggy bank for the
+   Saver, a backboard for the Glass cleaner, a ball on the rise for Board man.
+   Two of them sharing one picture is two things a player cannot tell apart. */
+var TRAIT_ICON = { clutch: ['clock', '#f4f1e8'], coachable: ['whistle', '#c9d2e3'], injuryProne: ['bandage', '#e9c39b'], lateBloomer: ['sprout', '#3ecf8e'],
+  lockerVoice: ['megaphone', '#ff7a1a'], gymRat: ['dumbbell', '#8f9bb8'], hothead: ['angry', '#e5483f'], bigStage: ['spotlight', '#fff1a8'], ironMan: ['anvil', '#8f9bb8'],
+  filmJunkie: ['film', '#c9d2e3'], spender: ['bag', '#e5483f'], saver: ['piggy', '#f29ab0'], showman: ['tophat', '#9b7bea'], loyal: ['home', '#c98b4e'], mercenary: ['moneybag', '#c9a15a'] };
+var BADGE_ICON = { deadeye: ['target', '#e5483f'], floorgen: ['play', '#1e8c5b'], lockdown: ['lock', '#ffc94a'], glass: ['board', '#cfe4ff'], finisher: ['dunk', '#e2762a'],
+  flight: ['wings', '#7fb2ff'], brain: ['bulb', '#fff1a8'], bucket: ['bucket', '#c9d2e3'], dimes: ['dime', '#e2762a'], boards: ['grab', '#e2762a'] };
 function iconTile(ic, name, cls){
   return '<button type="button" class="cr-awi ' + (cls || '') + '" style="--ic:' + (ic[1] || '#b8c3e6') + '" data-aw="' + esc(name) + '" title="' + esc(name) + '" aria-label="' + esc(name) + '">' + (K.badgeHtml ? K.badgeHtml(ic[0], ic[1]) : K.iconHtml(ic[0], 6, ic[1])) + '</button>';
 }
 function knownHtml(L){
   var out = [];
   (C.TRAITS || []).forEach(function(k){ var t = L.traits && L.traits[k]; if (t && t.known) out.push(iconTile(TRAIT_ICON[k] || ['star', '#ffd166'], C.TRAIT_NAME[k] + (t.why ? '. ' + t.why : ''), 'cr-awi-pro')); });
-  if (L.sig) out.push(iconTile(['arrow', '#ff7a1a'], 'Signature move: ' + L.sig.name, 'cr-awi-col'));
+  if (L.sig) out.push(iconTile(['bolt', '#ffc94a'], 'Signature move: ' + L.sig.name, 'cr-awi-col'));
   (C.badgeList ? C.badgeList(L) : []).forEach(function(b){ out.push(iconTile(BADGE_ICON[b.k] || ['medal', '#b8c3e6'], 'Badge: ' + b.name, 'cr-awi-hs')); });
   return out.length ? '<div class="cr-known cr-aw" aria-label="Known for"><span class="cr-awgrid">' + out.join('') + '</span><span class="cr-awcap" aria-live="polite">Tap one to see what it is.</span></div>' : '';
 }
@@ -1024,8 +1412,11 @@ function thirdFact(L){
 function cardHtml(L, c, fresh){
   var cls = c.kind === 'clutch' ? ' clutch k-gold' : c.kind === 'fa' ? ' fa' : '';
   var opts = c.options.map(function(o, i){
-    return '<li><button class="k-opt cr-choice" data-i="' + i + '"' + (i < 9 ? ' aria-keyshortcuts="' + (i + 1) + '"' : '') + '>'
-      + '<span class="k-key" aria-hidden="true">' + (i + 1) + '</span><span>' + esc(o.label) + (o.hint ? '<small>' + esc(o.hint) + '</small>' : '') + '</span></button></li>';
+    /* An answer that is a club carries a second, smaller button: the club's
+       roster, so a man can see who he would be playing with before he signs. */
+    var ros = o.club && C.clubView ? '<button type="button" class="cr-ros" data-ros="' + i + '" aria-label="See the ' + esc(o.club) + ' roster">' + K.iconHtml('clip', 2) + '<span>Roster</span></button>' : '';
+    return '<li' + (ros ? ' class="cr-hasros"' : '') + '><button class="k-opt cr-choice" data-i="' + i + '"' + (i < 9 ? ' aria-keyshortcuts="' + (i + 1) + '"' : '') + '>'
+      + '<span class="k-key" aria-hidden="true">' + (i + 1) + '</span><span><span class="cr-ol">' + esc(o.label) + '</span>' + (o.hint ? '<small>' + esc(o.hint) + '</small>' : '') + '</span></button>' + ros + '</li>';
   }).join('');
   /* On a phone the card is the tray: it rises once when a decision arrives
      and fades its contents when one replaces another, and never moves when a
@@ -1034,13 +1425,24 @@ function cardHtml(L, c, fresh){
   if (trayMode()) motion = !trayKey ? ' cr-tray-rise' : trayKey !== key ? ' cr-tray-swap' : '';
   else if (fresh) motion = ' k-in';
   trayKey = key;
-  var wait = c.eyebrow && c.eyebrow !== 'Your call' ? '<span class="cr-wait">Your call</span>' : '<span class="cr-wait">Waiting on you</span>';
+  /* The band: where you are, then when. A card with no place of its own says
+     the date where the place would be. */
+  var when = c.eyebrow || 'Your call';
+  var scene = c.scene ? c.scene : when;
+  var icon = c.kind === 'clutch' ? 'ball' : sceneIcon(scene);
   return '<div class="k-panel k-decision cr-card' + cls + motion + '" id="cr-card" role="group" aria-labelledby="cr-card-h">'
-    + '<div class="k-eyebrow">' + K.iconHtml(c.kind === 'clutch' ? 'ball' : 'whistle', 2) + esc(c.eyebrow || 'Your call') + wait + '</div>'
-    + '<h3 class="k-h1" id="cr-card-h">' + esc(c.title) + '</h3>'
+    + '<span class="cr-grip" aria-hidden="true"></span>'
+    + '<div class="cr-band">' + K.iconHtml(icon, 2) + '<span class="cr-scene">' + esc(scene) + '</span>' + (c.scene ? '<span class="cr-when">' + esc(when) + '</span>' : '') + '</div>'
+    + '<div class="cr-cbody">' + (c.lead ? '<p class="cr-lead" id="cr-card-lead">' + esc(c.lead) + '</p>' : '') + '<h3 class="k-h1" id="cr-card-h">' + esc(c.title) + '</h3>'
     + (c.text ? '<p class="cr-clamp" id="cr-card-p">' + esc(c.text) + '</p><button type="button" class="cr-more" id="cr-card-more" hidden>More</button>' : '')
-    + '<ol class="k-opts">' + opts + '</ol></div>';
+    + '<ol class="k-opts">' + opts + '</ol></div></div>';
 }
+/* An icon for the place, read off the words in it. */
+var SCENE_ICONS = [[/plane|road|flight|hotel|airport|bus/i, 'plane'], [/home|house|kitchen|mom|family|couch|living/i, 'home'],
+  [/bank|agent|office|contract|money|sponsor|deal|bill/i, 'cash'], [/media|press|mic|podcast|interview|studio|camera|tv|show/i, 'mic'],
+  [/trainer|doctor|hospital|rehab|medical|treatment|surgery/i, 'heart'], [/draft|stage|green room/i, 'star'],
+  [/phone|text|dm|group chat|feed|timeline/i, 'share'], [/shoe|sneaker|store|mall/i, 'shoe'], [/trophy|award|banquet|parade|hall/i, 'trophy']];
+function sceneIcon(s){ for (var i = 0; i < SCENE_ICONS.length; i++) if (SCENE_ICONS[i][0].test(s || '')) return SCENE_ICONS[i][1]; return 'whistle'; }
 /* The tray is a phone layout: a wide screen has room, so the card stays in
    the column. */
 var trayKey = null;
@@ -1175,8 +1577,9 @@ function tabsHtml(L){
   else if (tab === 'legacy') body = legacyHtml(L);
   else if (tab === 'news') body = newsHtml(L);
   else body = trophies(L);
-  var t = function(id, name){ var on = tab === id; return '<button class="k-tab" role="tab" aria-selected="' + on + '" data-tab="' + id + '">' + name + '</button>'; };
-  return '<div class="k-panel cr-sec"><div class="k-tabs cr-tabs" role="tablist">' + t('log', 'Story') + (L.opt && L.opt.story && C.rotationOf && C.rotationOf(L) ? t('team', 'Team') : '') + t('seasons', 'Seasons') + t('trophies', 'Trophies')
+  var TI = { log: 'clip', team: 'shirt', seasons: 'chart', trophies: 'trophy', people: 'people', legacy: 'crown', news: 'paper' };
+  var t = function(id, name){ var on = tab === id; return '<button class="k-tab k-itab" role="tab" aria-selected="' + on + '" data-tab="' + id + '">' + K.iconHtml(TI[id], 2) + '<span>' + name + '</span></button>'; };
+  return '<div class="k-panel cr-sec cr-tabsec"><div class="k-tabs k-itabs cr-tabs" role="tablist">' + t('log', 'Story') + (L.opt && L.opt.story && C.rotationOf && C.rotationOf(L) ? t('team', 'Team') : '') + t('seasons', 'Seasons') + t('trophies', 'Trophies')
     + (L.opt && L.opt.story ? t('people', 'People') + t('legacy', 'Legacy') + t('news', 'News') : '') + '</div>'
     + '<div role="tabpanel">' + body + '</div></div>';
 }
@@ -1195,11 +1598,21 @@ function teamHtml(L){
     var sep = i === 5 ? '<li class="cr-rot-sep" aria-hidden="true">Bench</li>' : '';
     var at = x.slot && x.slot !== x.pos ? x.pos + ', playing ' + x.slot : x.pos || '';
     return sep + '<li class="cr-rot-r' + (x.you ? ' you' : '') + (x.min <= 0 ? ' dnp' : '') + '"><span class="n">' + (x.slot || i + 1) + '</span>'
-      + '<span class="who"><b>' + esc(x.you ? x.n + ' (you)' : x.n) + '</b><small>' + esc(at) + ' · ' + x.age + ' · ' + esc(x.role) + '</small></span>'
-      + '<span class="v ovr">' + (x.ovr != null ? C.show(x.ovr) : '-') + '</span><span class="v pay">' + (x.pay ? money(x.pay) : '-') + '</span><span class="v">' + (x.min > 0 ? x.min : '-') + '</span><span class="v">' + pts + '</span></li>';
+      + '<span class="who"><b>' + esc(x.you ? x.n + ' (you)' : x.n) + '</b><small>' + esc(at) + ' · ' + x.age + (x.pg ? ' · Pot ' + x.pg : '') + (x.yrs != null ? ' · ' + (x.yrs <= 1 ? 'expiring' : x.yrs + ' yrs') : '') + ' · ' + esc(x.role) + '</small></span>'
+      + '<span class="v ovr' + (x.ovr != null ? ' ' + ovrTier(C.show(x.ovr)) : '') + '">' + (x.ovr != null ? C.show(x.ovr) : '-') + '</span><span class="v pay">' + (x.pay ? money(x.pay) : '-') + '</span><span class="v">' + (x.min > 0 ? x.min : '-') + '</span><span class="v">' + pts + '</span></li>';
   }).join('');
   return head + '<p class="k-small cr-rot-line">' + line + '</p>'
-    + '<ol class="cr-rot" aria-label="Rotation"><li class="cr-rot-h" aria-hidden="true"><span class="n"></span><span class="who">Starters</span><span class="v">Ovr</span><span class="v pay">Pay</span><span class="v">Min</span><span class="v">Pts</span></li>' + rows + '</ol>';
+    + '<ol class="cr-rot" aria-label="Rotation"><li class="cr-rot-h" aria-hidden="true"><span class="n"></span><span class="who">Starters</span><span class="v">Ovr</span><span class="v pay">Pay</span><span class="v">Min</span><span class="v">Pts</span></li>' + rows + '</ol>'
+    + picksHtml(L, R.club);
+}
+/* An overall wears its tier, the way a ratings card colours it. */
+function ovrTier(o){ return o >= 90 ? 'tier-a' : o >= 84 ? 'tier-b' : o >= 78 ? 'tier-c' : 'tier-d'; }
+/* The club's draft picks, four drafts out, and the firsts it has traded away. */
+function picksHtml(L, c){
+  var P = C.picksText ? C.picksText(L, c) : null;
+  if (!P || !P.have) return '';
+  return '<h3 class="cr-sub">Draft picks</h3><p class="k-small cr-picks">' + (P.have.length ? esc(P.have.join(' · ')) : 'None left.')
+    + (P.owe.length ? '<br><span class="owe">Owed: ' + esc(P.owe.join(' · ')) + '</span>' : '') + '</p>';
 }
 /* The people a career has met, closest and furthest first. */
 function peopleHtml(L){
@@ -1209,7 +1622,8 @@ function peopleHtml(L){
   return '<ul class="cr-ppl">' + P.slice(0, 24).map(function(p){
     var w = Math.min(50, Math.abs(p.rel) / 2), last = p.notes && p.notes.length ? p.notes[p.notes.length - 1] : null;
     var word = p.rel >= 60 ? 'Close' : p.rel >= 20 ? 'Good' : p.rel > -20 ? 'Fine' : p.rel > -60 ? 'Cold' : 'Bad blood';
-    return '<li><div><b>' + esc(p.n) + '</b><small>' + esc(p.role) + ' · since ' + p.met + '</small></div>'
+    var ini = String(p.n).split(/\s+/).map(function(w){ return w.charAt(0); }).join('').slice(0, 2).toUpperCase();
+    return '<li><span class="cr-ava ' + (p.rel >= 20 ? 'good' : p.rel <= -20 ? 'bad' : '') + '" aria-hidden="true">' + esc(ini) + '</span><div><b>' + esc(p.n) + '</b><small>' + esc(p.role) + ' · since ' + p.met + '</small></div>'
       + '<div class="cr-rel" role="img" aria-label="' + esc(word) + ', ' + p.rel + '"><i class="' + (p.rel >= 0 ? 'up' : 'dn') + '" style="width:' + w + '%"></i></div>'
       + (last ? '<div class="note">' + last[0] + ': ' + esc(last[1]) + '</div>' : '') + '</li>';
   }).join('') + '</ul>';
@@ -1237,20 +1651,82 @@ function newsHtml(L){
     out += '<h3 class="cr-sub" style="margin-top:0">MVP ladder · the break</h3><table class="k-table cr-race"><tbody>'
       + s.race.map(function(x){ return '<tr class="' + (x.you ? 'you' : '') + '"><td>' + x.rank + '</td><td>' + esc(x.n) + '</td><td>' + esc(x.club ? E.TEAM_NAMES[x.club] || x.club : '') + '</td></tr>'; }).join('') + '</tbody></table>';
   }
+  out += leagueHtml(L);
   var F = (L.feed || []).slice().reverse().slice(0, 60);
   if (!F.length) return out + '<p class="k-small">Nothing written about you yet.</p>';
   return out + '<ul class="cr-feed">' + F.map(function(f){ return '<li class="' + (f.k === 'debate' ? 'debate' : '') + '"><span class="src">' + esc(f.s) + ' · ' + f.y + '</span>' + esc(f.t) + '</li>'; }).join('') + '</ul>';
 }
+/* The league office: last season's standings and every move, folded so the
+   news still leads. */
+function leagueHtml(L){
+  if (!C.leagueTable) return '';
+  var out = '', st = C.leagueTable(L), tx = C.transactions(L);
+  if (st) {
+    var col = function(name, list){ return '<div><b class="cr-st-h">' + name + '</b><ol class="cr-st">' + list.map(function(r){
+      return '<li class="' + (r[0] === L.team ? 'you' : '') + '"><span>' + esc(E.TEAM_NAMES[r[0]] || r[0]) + '</span><span class="v">' + r[1] + '-' + r[2] + '</span></li>'; }).join('') + '</ol></div>'; };
+    out += '<details class="k-fold"><summary>Standings · ' + (st.y - 1) + '-' + String(st.y).slice(2) + '</summary><div class="cr-st2">' + col('East', st.E) + col('West', st.W) + '</div></details>';
+  }
+  if (tx.length) out += '<details class="k-fold"><summary>Transactions · ' + tx.length + '</summary><ul class="cr-feed cr-tx">' + tx.slice(0, 60).map(function(x){
+    var mine = L.team && x.c && x.c.indexOf(L.team) >= 0;
+    return '<li class="' + (mine ? 'you' : '') + '"><span class="src">' + esc(TX_KIND[x.k] || 'Move') + ' · ' + x.y + '</span>' + esc(x.t) + '</li>'; }).join('') + '</ul></details>';
+  return out;
+}
+var TX_KIND = { trade: 'Trade', fa: 'Free agency', deal: 'Re-signed', draft: 'Draft', retire: 'Retired' };
 function td(l, v, cls){ return '<td data-l="' + l + '"' + (cls ? ' class="' + cls + '"' : '') + '>' + v + '</td>'; }
+/* YOUR ARC. The Seasons tab was a table, which answers any one season and
+   hides the shape of a career: when it took off, when it peaked, how long it
+   held. So above the table every season played is one column, oldest on the
+   left, as tall as the overall you finished it at, on a zero baseline so a
+   column twice as tall is twice the number. Before the league is blue and the
+   NBA is orange (validated against this panel for colour blindness), the peak
+   wears its number, and a title season carries a ring above it: a SHAPE, so
+   no fact here rests on colour alone. Every column is a button, and a tap
+   says which season it was in the line under the strip. The table stays,
+   because it is the readable view of the same numbers. Drawn from history
+   the career already keeps, so it moves nothing the season reads. */
+function arcHtml(L){
+  var cols = (L.amHist || []).map(function(h){
+    return { y: h.y, am: true, o: C.show(h.ovr), who: h.school, pts: h.pts, ring: /champion/i.test(h.finish || '') };
+  }).concat((L.history || []).map(function(h){
+    return { y: h.y, am: false, o: C.show(h.ovr), who: h.t ? E.TEAM_NAMES[h.t] || h.t : '', pts: h.pts, ring: h.po === 'Champion' };
+  })).filter(function(c){ return c.o != null && !isNaN(c.o); });
+  if (cols.length < 2) return '';
+  var peak = 0;
+  cols.forEach(function(c, i){ if (c.o > cols[peak].o) peak = i; });
+  var both = cols.some(function(c){ return c.am; }) && cols.some(function(c){ return !c.am; });
+  var bars = cols.map(function(c, i){
+    var cap = seasonTag(c.y) + ' · ' + (c.who || '') + ' · ' + c.o + ' OVR · ' + c.pts + ' a night' + (c.ring ? ' · Champion' : '') + (i === peak ? ' · Your peak' : '');
+    return '<button type="button" class="cr-arcb' + (c.am ? ' am' : '') + (i === peak ? ' pk' : '') + '" data-arc-cap="' + esc(cap) + '" aria-label="' + esc(cap) + '">'
+      + (i === peak ? '<em>' + c.o + '</em>' : '') + (c.ring ? '<i class="cr-arcring" aria-hidden="true"></i>' : '')
+      + '<span style="height:' + Math.max(4, Math.min(100, c.o)).toFixed(0) + '%"></span></button>';
+  }).join('');
+  var first = cols[0], last = cols[cols.length - 1];
+  return '<div class="cr-arc"><div class="cr-archead"><b>Your arc</b><span>Overall by season. Tap one.</span></div>'
+    + '<div class="cr-arcbars" role="group" aria-label="Overall each season">' + bars + '</div>'
+    + '<div class="cr-arcx"><span>' + seasonTag(first.y) + '</span><span>' + seasonTag(last.y) + '</span></div>'
+    + '<div class="cr-arcleg">' + (both ? '<span><i class="am"></i>Before the league</span><span><i></i>NBA</span>' : '')
+    + (cols.some(function(c){ return c.ring; }) ? '<span><i class="ring"></i>Title</span>' : '') + '</div>'
+    + '<p class="cr-arccap" aria-live="polite">Peak: ' + cols[peak].o + ' in ' + seasonTag(cols[peak].y) + (cols[peak].who ? ', ' + esc(cols[peak].who) : '') + '.</p></div>';
+}
+document.addEventListener('click', function(e){
+  var b = e.target && e.target.closest && e.target.closest('.cr-arcb');
+  if (!b) return;
+  var wrap = b.closest('.cr-arc'), cap = wrap && wrap.querySelector('.cr-arccap');
+  if (!cap) return;
+  wrap.querySelectorAll('.cr-arcb.on').forEach(function(x){ x.classList.remove('on'); });
+  b.classList.add('on');
+  cap.textContent = b.getAttribute('data-arc-cap') + '.';
+});
 function seasonsTable(L){
   var am = amTable(L.amHist || []);
-  if (!L.history.length) return am || '<p class="k-small">No seasons yet.</p>';
+  var arc = arcHtml(L);
+  if (!L.history.length) return am ? arc + am : '<p class="k-small">No seasons yet.</p>';
   var rows = L.history.slice().reverse().map(function(h){
     return '<tr class="' + (h.po === 'Champion' ? 'champ is-best' : '') + '">' + td('Season', seasonTag(h.y)) + td('Team', esc(h.t ? E.TEAM_NAMES[h.t] || h.t : '-'), 'cr-wide')
       + td('OVR', C.show(h.ovr)) + td('GP', h.gp) + td('PTS', h.pts) + td('REB', h.reb) + td('AST', h.ast)
       + td('Record', h.w + '-' + h.l) + td('Finish', esc(h.po), 'cr-wide') + '</tr>';
   }).join('');
-  return '<div class="cr-tblw k-tablewrap"><table class="k-table cr-tbl"><thead><tr><th>Season</th><th>Team</th><th>OVR</th><th>GP</th><th>PTS</th><th>REB</th><th>AST</th><th>Record</th><th>Finish</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+  return arc + '<div class="cr-tblw k-tablewrap"><table class="k-table cr-tbl"><thead><tr><th>Season</th><th>Team</th><th>OVR</th><th>GP</th><th>PTS</th><th>REB</th><th>AST</th><th>Record</th><th>Finish</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
     + (am ? '<h3 class="cr-sub">Before the league</h3>' + am : '');
 }
 /* High school, college and a pro year, newest first. */
@@ -1279,12 +1755,12 @@ function awardCounts(L){
    so each award is its picture, colored for its tier, with a count in the
    corner. Tap one and its name shows under the shelf. */
 var AW_ICON = {
-  champ: ['trophy', '#ffd166'], mvp: ['crown', '#ffd166'], fmvp: ['crown', '#ff9f43'], an1: ['medal', '#ffd166'],
-  an2: ['medal', '#c9d2e3'], an3: ['medal', '#d08a4a'], dpoy: ['shield', '#ffd166'], star: ['star', '#ffd166'],
-  roy: ['sprout', '#3ecf8e'], '6moy': ['six', '#ffd166'], mip: ['up', '#3ecf8e'], scor: ['flame', '#ff7a1a'],
-  ad1: ['shield', '#c9d2e3'], ad2: ['shield', '#d08a4a'], olympic: ['globe', '#ffd166'],
-  c_champ: ['trophy', '#7fb2ff'], c_npoy: ['crown', '#7fb2ff'], c_mop: ['star', '#7fb2ff'], c_aa1: ['medal', '#7fb2ff'],
-  c_aa2: ['medal', '#9fb6d8'], c_f4: ['net', '#f4f1e8'], c_fr: ['sprout', '#7fb2ff'], c_cpoy: ['crown', '#9fb6d8'], c_allconf: ['medal', '#5fc4c4'],
+  champ: ['trophy', '#ffc94a'], mvp: ['crown', '#ffc94a'], fmvp: ['starcup', '#ffc94a'], an1: ['med1', '#ffc94a'],
+  an2: ['med2', '#c9d2e3'], an3: ['med3', '#d08a4a'], dpoy: ['shield', '#7fb2ff'], star: ['star', '#ffc94a'],
+  roy: ['sprout', '#3ecf8e'], '6moy': ['six', '#ffc94a'], mip: ['chart', '#3ecf8e'], scor: ['flame', '#ff7a1a'],
+  ad1: ['shield', '#c9d2e3'], ad2: ['shield', '#d08a4a'], olympic: ['torch', '#ffc94a'],
+  c_champ: ['trophy', '#7fb2ff'], c_npoy: ['crown', '#7fb2ff'], c_mop: ['star', '#7fb2ff'], c_aa1: ['med1', '#7fb2ff'],
+  c_aa2: ['med2', '#9fb6d8'], c_f4: ['net', '#e2762a'], c_fr: ['sprout', '#7fb2ff'], c_cpoy: ['crown', '#9fb6d8'], c_allconf: ['medal', '#5fc4c4'],
   hs_state: ['trophy', '#d08a4a'], hs_mrbb: ['crown', '#3ecf8e'], hs_aag: ['star', '#3ecf8e'], hs_allstate: ['medal', '#3ecf8e'],
 };
 function awardTags(aw){
@@ -1336,13 +1812,27 @@ function rivalHtml(L){
     + '</tbody></table>';
 }
 
+/* A pixel icon button with its word under it: four of them fit beside the
+   title on a phone, and nobody has to guess what a square does. */
+function ib(id, icon, word, more){
+  return '<button class="k-ib cr-ib' + (more && more.cls ? ' ' + more.cls : '') + '" id="' + id + '" type="button"' + (more && more.attr ? ' ' + more.attr : '') + '>'
+    + K.iconHtml(icon, 2) + '<span>' + esc(word) + '</span>' + (more && more.dot ? '<i aria-hidden="true"></i>' : '') + '</button>';
+}
+/* WHERE YOU ARE, in one line under the title: the season and the game, or
+   the summer, then the club and its record. */
+function hud(L){
+  var s = L.season, rv = C.roadView(L);
+  var when = s ? seasonTag(s.year) + (s.g ? ' · Game ' + s.g : ' · Preseason') : L.year ? 'Summer ' + (L.year - 1) : '';
+  var where = rv ? rv.what : L.team ? (E.TEAM_NAMES && E.TEAM_NAMES[L.team] ? teamName(L.team).split(' ').slice(-1)[0] : teamName(L.team)) + (s ? ' ' + s.w + '-' + s.l : '') : 'Draft prospect';
+  return '<div class="cr-hud"><b>' + esc(when) + '</b><span>' + esc(where) + '</span></div>';
+}
 function lifeView(L, d){
-  var SC = window.RTF_SCENES;
-  return '<div class="cr-top"><h2 class="k-h1">Career</h2><div class="cr-topbtns">'
-    + (window.RTF_BALLER ? '<button class="k-btn k-quiet" id="cr-lookbtn" type="button">Look</button>' : '')
-    + (SC ? '<button class="k-btn k-quiet cr-scn" id="cr-scenes" type="button" aria-pressed="' + SC.on() + '" title="Scenes ' + (SC.on() ? 'on' : 'off') + '">Scenes<i aria-hidden="true"></i></button>' : '')
-    + (SC && window.RTF_SOUND ? '<button class="k-btn k-quiet cr-snd" id="cr-sound" type="button" aria-pressed="' + window.RTF_SOUND.on() + '" aria-label="Sound in scenes, ' + (window.RTF_SOUND.on() ? 'on' : 'off') + '" title="Sound in scenes">' + K.iconHtml(window.RTF_SOUND.on() ? 'sound' : 'mute', 2) + '</button>' : '')
-    + '<button class="k-btn k-quiet cr-home cr-snd" id="cr-home" type="button" aria-label="Home" title="Home">' + K.iconHtml('home', 2) + '</button></div></div>'
+  var SC = window.RTF_SCENES, SN = window.RTF_SOUND;
+  return '<div class="cr-top"><div class="cr-topl"><h2 class="k-h1">Career</h2>' + hud(L) + '</div><div class="cr-topbtns">'
+    + (window.RTF_BALLER ? ib('cr-lookbtn', 'shirt', 'Look') : '')
+    + (SC ? ib('cr-scenes', 'film', 'Scenes', { cls: 'cr-scn', dot: 1, attr: 'aria-pressed="' + SC.on() + '" title="Scenes ' + (SC.on() ? 'on' : 'off') + '"' }) : '')
+    + (SC && SN ? ib('cr-sound', SN.on() ? 'sound' : 'mute', SN.on() ? 'Sound' : 'Muted', { cls: 'cr-snd', attr: 'aria-pressed="' + SN.on() + '" aria-label="Sound in scenes, ' + (SN.on() ? 'on' : 'off') + '"' }) : '')
+    + ib('cr-home', 'home', 'Home', { cls: 'cr-home', attr: 'aria-label="Home"' }) + '</div></div>'
     + '<div class="cr-grid"><div class="cr-side">' + idCard(L) + meters(L, d) + '</div>'
     + '<div class="cr-main">' + stageHtml(L, !!d) + facts(L) + ratingsHtml(L, d) + tabsHtml(L)
     + (L.phase === 'after' ? '' : '<button class="k-btn k-quiet k-block" id="cr-quit">Retire now</button>')
@@ -1365,8 +1855,20 @@ function wireLife(L, d){
   root.querySelectorAll('.cr-choice').forEach(function(b){
     b.onclick = function(){ doChoose(+b.getAttribute('data-i')); };
   });
+  root.querySelectorAll('[data-ros]').forEach(function(b){
+    b.onclick = function(){ openRoster(+b.getAttribute('data-ros')); };
+  });
   root.querySelectorAll('[data-act]').forEach(function(b){ b.onclick = function(){ doAct(b.getAttribute('data-act')); }; });
   root.querySelectorAll('[data-tab]').forEach(function(b){ b.onclick = function(){ tab = b.getAttribute('data-tab'); render(); var t = root.querySelector('[data-tab="' + tab + '"]'); if (t) t.focus(); }; });
+  /* The tab row scrolls sideways on a phone: the chosen tab is brought into it,
+     and a fade on the right says there is more while there is. */
+  var strip = root.querySelector('.k-itabs');
+  if (strip) {
+    var on = strip.querySelector('[aria-selected="true"]'), sec = strip.parentNode;
+    if (on && on.offsetLeft + on.offsetWidth > strip.clientWidth) strip.scrollLeft = on.offsetLeft - 8;
+    var edge = function(){ sec.classList.toggle('k-more-r', strip.scrollLeft + strip.clientWidth < strip.scrollWidth - 4); };
+    strip.onscroll = edge; edge();
+  }
   var off = $('cr-off');
   if (off) off.onclick = openOff;
   var q = $('cr-quit');
@@ -1400,7 +1902,10 @@ function openRetire(L){
    Never while typing, while a sheet is open or while a scene is playing. */
 var kbd = false;
 function onKey(e){
-  if (!onScreen() || e.ctrlKey || e.metaKey || e.altKey) return;
+  /* A held key repeats, and every repeat used to answer the next card: one
+     second of holding 1 answered both combine interviews, the workout and
+     the agent before any of them was on screen. A key answers once per press. */
+  if (e.repeat || !onScreen() || e.ctrlKey || e.metaKey || e.altKey) return;
   var t = e.target, tn = t && t.tagName;
   if (tn === 'INPUT' || tn === 'TEXTAREA' || tn === 'SELECT') return;
   var sh = $('cr-sheet');
@@ -1431,6 +1936,30 @@ function refocus(was){
   if (t.id === 'cr-card-h') t.setAttribute('tabindex', '-1');
   try { t.focus({ preventScroll: true }); } catch (e) { t.focus(); }
 }
+/* A NEW CARD ARRIVES UNDER THE SAME THUMB. On a phone the card on top is a
+   tray docked to the bottom of the screen, so the next card's first answer is
+   drawn exactly where the last one was pressed, in the same frame. A quick
+   double tap (about 110ms between taps) answered the next card unseen on a
+   quarter of cards, and a double tap on Next played two stretches of the
+   season. So after a TOUCH or MOUSE press the fresh answers and the Next
+   button are disabled for ARM_MS: long enough to swallow the second tap of a
+   double tap, short enough that nobody reading reaches it. Disabled rather than
+   a timestamp the click handler checks, because a disabled button is what a
+   person can see (it fades in) and what an automated click waits on. A
+   keyboard press is not armed: focus moves to the next card's heading, and
+   the held key is the repeat check in onKey. */
+var ARM_MS = 320, armT = 0;
+function arm(){
+  var root = $('s-car');
+  if (!root) return;
+  var els = root.querySelectorAll('.cr-choice, #cr-next');
+  if (!els.length) return;
+  els.forEach(function(b){ b.disabled = true; b.classList.add('cr-arming'); });
+  clearTimeout(armT);
+  armT = setTimeout(function(){
+    els.forEach(function(b){ b.disabled = false; b.classList.remove('cr-arming'); });
+  }, ARM_MS);
+}
 function kbdFocus(){ var a = document.activeElement, r = $('s-car'); return !!(a && r && r.contains(a) && a.matches && a.matches(':focus-visible')); }
 function doStep(){
   var L = store().cur;
@@ -1449,10 +1978,10 @@ function doStep(){
   /* A stretch of games goes by on the live ticker first, then whatever
      moment it produced is told. */
   if (stage.tick && TK && SC && SC.on()) {
-    TK.play(stage.tick, { done: function(){ if (!scene(res)) { scrollStage(); refocus(kb); } } });
+    TK.play(stage.tick, { done: function(){ if (!scene(res)) { scrollStage(); refocus(kb); if (!kb) arm(); } } });
     return;
   }
-  if (!scene(res)) { scrollStage(); refocus(kb); }
+  if (!scene(res)) { scrollStage(); refocus(kb); if (!kb) arm(); }
 }
 function doChoose(i){
   var L = store().cur;
@@ -1465,7 +1994,7 @@ function doChoose(i){
   if (L.retired) return finish();
   save();
   render();
-  if (!scene(res)) { scrollStage(); refocus(kb); }
+  if (!scene(res)) { scrollStage(); refocus(kb); if (!kb) arm(); }
 }
 
 /* ─── scenes (hoops/scenes.js) ───────────────────────────────────────────
@@ -1615,6 +2144,30 @@ function openOff(){
   sh.querySelectorAll('[data-oact]').forEach(function(b){ b.onclick = function(){ doAct(b.getAttribute('data-oact')); }; });
   $('cr-sheet-x').onclick = closeOff;
 }
+/* A CLUB'S ROSTER, from a card that offers it: who is there, best first,
+   with you placed where your overall puts you, and the same answer as the
+   card one press away. */
+function openRoster(i){
+  var L = store().cur, c = L && L.pending && L.pending[0], o = c && c.options[i];
+  if (!o || !o.club) return;
+  var V = C.clubView(L, o.club);
+  if (!V) return;
+  var ord = function(n){ var v = n % 100, x = ['th', 'st', 'nd', 'rd']; return n + (x[(v - 20) % 10] || x[v] || x[0]); };
+  var rows = V.list.map(function(m){
+    return '<li><span class="n">' + esc(m.pos || '') + '</span><span class="who"><b>' + esc(m.n) + '</b><small>' + m.age + (m.pg ? ' · Pot ' + m.pg : '') + (m.yrs != null ? ' · ' + (m.yrs <= 1 ? 'expiring' : m.yrs + ' yrs') : '') + '</small></span>'
+      + '<span class="v ovr">' + C.show(m.ovr) + '</span><span class="v pay">' + (m.pay ? money(m.pay) : '-') + '</span></li>';
+  });
+  var you = '<li class="you"><span class="n">' + esc(L.pos || '') + '</span><span class="who"><b>' + esc(L.name) + ' (you)</b><small>' + L.age + '</small></span><span class="v ovr">' + C.show(V.me) + '</span><span class="v pay">' + (o.hint && /\$[\d.]+M/.test(o.hint) ? o.hint.match(/\$[\d.]+M/)[0] : '-') + '</span></li>';
+  rows.splice(Math.min(V.at - 1, rows.length), 0, you);
+  var k = skin(V.club);
+  openSheet('<h3 class="k-h1 cr-ros-h" style="border-left:6px solid ' + k.primary + '">' + esc(teamName(V.club)) + '</h3>'
+    + '<p class="cash">' + esc(V.tier) + (V.coach ? ' · Coach ' + esc(V.coach) : '') + '. You would be their ' + (V.at === 1 ? '<b>best</b> player' : '<b>' + ord(V.at) + '</b> best player') + '.</p>'
+    + (o.hint ? '<p class="k-small cr-ros-deal">' + esc(o.hint) + '</p>' : '')
+    + '<ol class="cr-rot cr-rot-ros" aria-label="Roster"><li class="cr-rot-h" aria-hidden="true"><span class="n"></span><span class="who">Player</span><span class="v">Ovr</span><span class="v pay">Pay</span></li>' + rows.join('') + '</ol>'
+    + '<div class="cr-btnrow" style="margin:14px 0 0"><button class="k-btn" id="cr-ros-go" type="button">' + esc(o.label) + '</button><button class="k-btn k-sec" id="cr-sheet-x" type="button">Back</button></div>', teamName(V.club) + ' roster');
+  $('cr-ros-go').onclick = function(){ closeOff(); doChoose(i); };
+  $('cr-sheet-x').onclick = closeOff;
+}
 function closeOff(){
   if (dlg) { var d = dlg; dlg = null; d.close(); return; }
   var sh = $('cr-sheet'); if (sh) sh.hidden = true;
@@ -1640,7 +2193,7 @@ function collegeOf(L){
    everything. The news flags only stop a headline twice and are left. */
 function trimLeague(lg){
   var o = {};
-  for (var k in lg) if (k !== 'news' && k !== 'rost' && k !== 'rostY' && k !== 'lines' && k !== 'pool' && k !== 'fa') o[k] = lg[k];
+  for (var k in lg) if (k !== 'news' && k !== 'rost' && k !== 'rostY' && k !== 'lines' && k !== 'pool' && k !== 'fa' && k !== 'fo') o[k] = lg[k];
   if (o.figs) o.figs = o.figs.filter(function(f){ return !f.gone; });
   if (o.champs) { var ks = Object.keys(o.champs).sort().slice(-40), c = {}; ks.forEach(function(y){ c[y] = o.champs[y]; }); o.champs = c; }
   return JSON.parse(JSON.stringify(o));
@@ -1693,6 +2246,7 @@ function finish(){
   render();
   window.scrollTo(0, 0);
   if (sum) fileCareer(card, sum);
+  else if (!easy && L.flags && L.flags.banned && L.history.length) { card.board = { banned: true }; save(); paintPlace(card); }
   ceremony(L, card);
 }
 /* The career ends on a stage: the Hall of Fame for a Hall of Famer, the
@@ -1742,6 +2296,7 @@ function paintPlace(card){
   if (!el || store().last !== card) return;
   var b = card.board;
   if (!b) { el.hidden = true; return; }
+  if (b.banned) { el.hidden = false; el.innerHTML = '<span>Banned for life. Not on the Career board.</span>'; return; }
   if (b.off) {
     el.hidden = false;
     el.innerHTML = '<span>' + (b.migration ? 'The Career board is not set up on this site yet.' : 'Career board not reachable right now. This career still counts here.') + '</span>';
@@ -1797,13 +2352,13 @@ function finalView(card){
   var aw = card.awards && card.awards.length ? '<div class="cr-aw">' + awardTags(card.awards) + '</div>' : '';
   var hist = { history: card.history || [], amHist: card.amHist || [] };
   var B = window.RTF_BALLER;
-  return '<div class="cr-top"><h2 class="k-h1">Career over</h2><div class="cr-topbtns"><button class="k-btn k-quiet" id="cr-vault2" type="button">' + K.iconHtml('vault', 2) + ' Vault</button><button class="k-btn k-quiet cr-home" id="cr-home">Home</button></div></div>'
+  return '<div class="cr-top"><div class="cr-topl"><h2 class="k-h1">Career over</h2><div class="cr-hud"><b>' + card.from + '-' + card.to + '</b><span>' + esc(card.name) + '</span></div></div><div class="cr-topbtns">' + ib('cr-vault2', 'vault', 'Vault') + ib('cr-home', 'home', 'Home', { cls: 'cr-home', attr: 'aria-label="Home"' }) + '</div></div>'
     + (card.parent ? '<p class="cr-gen">' + K.iconHtml('tree', 2) + ' Generation ' + (card.gen || 2) + '</p>' : '')
     + '<div class="k-panel ' + (hof ? 'k-gold' : 'k-team') + ' cr-final">'
-    + '<div class="cr-hset">' + setArt('nba', hof ? '#a8761c' : card.c1, hof ? '#ffd166' : card.c2, 'hall' + card.name) + '</div><div class="cr-hin">'
+    + '<div class="cr-hset">' + setArt('nba', hof ? '#a8761c' : card.c1, hof ? '#ffd166' : card.c2, 'hall' + card.name) + '</div><div class="cr-rays" aria-hidden="true"></div><div class="cr-hin">'
     + (B && card.look ? B.img(card.look, { c1: card.c1, c2: card.c2, num: card.num, age: card.age, pose: card.totals && card.totals.rings ? 'trophy' : 'suit', scale: 3 }) : '')
     + '<div class="eye">' + (hof ? 'The Hall of Fame' : 'The verdict') + '</div><div class="v">' + esc(card.verdict) + '</div>'
-    + '<div class="nm">' + esc(card.name) + ' · #' + esc(String(card.num)) + ' · ' + card.from + '-' + card.to + '</div>'
+    + '<div class="nm"><span>' + esc(card.name) + ' · #' + esc(String(card.num)) + ' · ' + card.from + '-' + card.to + '</span></div>'
     + '<p>' + esc(card.blurb) + '</p>'
     + (card.nick ? '<p class="cr-col">They called you ' + esc(card.nick) + '.</p>' : '')
     + (card.persona && card.persona !== 'Still writing it' ? '<p class="cr-col">The league knew you as: ' + esc(card.persona) + '.</p>' : '')
@@ -1811,6 +2366,8 @@ function finalView(card){
     + (card.jersey ? '<p class="cr-col">Your #' + esc(String(card.num)) + ' hangs in the rafters for the ' + esc(E.TEAM_NAMES[card.jersey] || card.jersey) + '.</p>' : '')
     + totalsHtml(T, '<div><b>' + (T.pts / gp).toFixed(1) + '</b><span>A game</span></div><div><b>' + T.seasons + '</b><span>' + (T.seasons === 1 ? 'Season' : 'Seasons') + '</span></div>')
     + aw + '</div></div>'
+    + '<div class="cr-btnrow"><button class="k-btn" id="cr-share">Share it</button><button class="k-btn k-sec" id="cr-again">New career</button></div>'
+    + (canFather(card) ? '<button class="k-btn k-sec k-block cr-sonbtn" id="cr-son" type="button">' + K.iconHtml('tree', 2) + ' Play as your son' + (proOpen() ? '' : ' <span class="k-tag k-gold cr-pro">Pro</span>') + '</button>' : '')
     + (card.after || card.rival || card.life || card.ending ? '<div class="k-panel cr-sec cr-epi">'
       + (card.ending && card.ending.secretName ? '<p class="cr-secret"><span class="k">A secret ending</span>' + esc(card.ending.secretName) + '</p>' : '')
       + (card.ending ? '<p><span class="k">The Hall</span>' + esc(card.ending.tierName) + '</p>' : '')
@@ -1829,10 +2386,8 @@ function finalView(card){
     + (card.ch && C.CHALLENGES && C.CHALLENGES[card.ch.id] ? '<div class="k-panel k-tight ' + (card.ch.met ? 'k-gold' : '') + ' cr-chres"><div class="k-eyebrow">' + K.iconHtml(card.ch.met ? 'check' : 'lock', 2) + 'Challenge · ' + esc(C.CHALLENGES[card.ch.id].name) + '</div><p>' + (card.ch.met ? 'Met. It is in the Vault.' : 'Not met. ' + esc(C.CHALLENGES[card.ch.id].blurb)) + '</p></div>' : '')
     + (card.diff === 'easy' ? '<p class="k-small cr-easy">Played on Easy. Not on the Career board and no badges.</p>' : '')
     + foundHtml(card)
-    + '<div class="cr-btnrow"><button class="k-btn" id="cr-share">Share it</button><button class="k-btn k-sec" id="cr-again">New career</button></div>'
-    + (canFather(card) ? '<button class="k-btn k-sec k-block cr-sonbtn" id="cr-son" type="button">' + K.iconHtml('tree', 2) + ' Play as your son' + (proOpen() ? '' : ' <span class="k-tag k-gold cr-pro">Pro</span>') + '</button>' : '')
     + storyHtml(card.story)
-    + '<div class="k-panel cr-sec"><div class="k-eyebrow">' + K.iconHtml('clip', 2) + 'Season by season</div>' + seasonsTable(hist) + '</div>';
+    + '<details class="k-panel cr-sec k-fold"><summary class="k-eyebrow">' + K.iconHtml('up', 2) + 'Season by season<span class="k-foldn">' + T.seasons + '</span></summary>' + seasonsTable(hist) + '</details>';
 }
 function shareText(card){
   var T = card.totals;
@@ -1920,8 +2475,8 @@ function wireFinal(card){
 /* The written story, one heading a chapter. */
 function storyHtml(story){
   if (!story || !story.length) return '';
-  return '<div class="k-panel cr-sec cr-story"><div class="k-eyebrow">' + K.iconHtml('clip', 2) + 'Your story</div>'
-    + story.map(function(x){ return '<h3 class="cr-sub">' + esc(x.h) + '</h3><p>' + esc(x.p) + '</p>'; }).join('') + '</div>';
+  return '<details class="k-panel cr-sec cr-story k-fold"><summary class="k-eyebrow">' + K.iconHtml('clip', 2) + 'Your story<span class="k-foldn">' + story.length + ' chapters</span></summary>'
+    + story.map(function(x){ return '<h3 class="cr-sub">' + esc(x.h) + '</h3><p>' + esc(x.p) + '</p>'; }).join('') + '</details>';
 }
 /* What this career put in the Vault for the first time. */
 function foundHtml(card){
@@ -1963,7 +2518,7 @@ function vaultView(){
   var st = store(), n = vaultCount(st);
   var t = function(id, name){ var on = vtab === id; return '<button class="k-tab" role="tab" aria-selected="' + on + '" data-vtab="' + id + '">' + name + '</button>'; };
   var body = vtab === 'careers' ? careersHtml(st) : vtab === 'family' ? familyHtml(st) : endingsHtml(st);
-  return '<div class="cr-top"><h2 class="k-h1">The Vault</h2><div class="cr-topbtns"><button class="k-btn k-quiet" id="cr-vback" type="button">Back</button><button class="k-btn k-quiet" id="cr-home" type="button">Home</button></div></div>'
+  return '<div class="cr-top"><div class="cr-topl"><h2 class="k-h1">The Vault</h2><div class="cr-hud"><b>' + Math.round(100 * n.have / Math.max(1, n.all)) + '% found</b><span>Every ending you have reached</span></div></div><div class="cr-topbtns">' + ib('cr-vback', 'back', 'Back', { cls: 'cr-back' }) + ib('cr-home', 'home', 'Home', { attr: 'aria-label="Home"' }) + '</div></div>'
     + '<div class="k-panel k-tight cr-vsum"><span class="k-num">' + n.have + '</span><span>of ' + n.all + ' found</span>'
     + '<span class="cr-vbar" aria-hidden="true"><i style="width:' + Math.round(100 * n.have / Math.max(1, n.all)) + '%"></i></span>'
     + '<span class="k-small">' + st.arc.length + (st.arc.length === 1 ? ' career played' : ' careers played') + '</span></div>'
@@ -1973,11 +2528,17 @@ function vaultView(){
 function endingsHtml(st){
   return vaultShelves().map(function(sh){
     var have = sh.ids.filter(function(id){ return st.vault[sh.k + ':' + id]; }).length;
-    return '<h3 class="cr-sub">' + esc(sh.name) + ' · ' + have + ' of ' + sh.ids.length + '</h3><ul class="cr-vgrid">' + sh.ids.map(function(id){
+    /* A shelf is a fold with its own bar: open while it has something on it
+       or is short, so the first look is what you found, not a wall of locks. */
+    var open = have > 0 || (sh.ids.length <= 10 && !sh.secret);
+    /* What you found comes first on its shelf. */
+    var ids = sh.ids.filter(function(id){ return st.vault[sh.k + ':' + id]; }).concat(sh.ids.filter(function(id){ return !st.vault[sh.k + ':' + id]; }));
+    return '<details class="cr-shelf"' + (open ? ' open' : '') + '><summary><span class="cr-shn">' + esc(sh.name) + '</span><span class="cr-shc">' + have + ' / ' + sh.ids.length + '</span>'
+      + '<span class="cr-vbar cr-shbar" aria-hidden="true"><i style="width:' + Math.round(100 * have / Math.max(1, sh.ids.length)) + '%"></i></span></summary><ul class="cr-vgrid">' + ids.map(function(id){
       var got = !!st.vault[sh.k + ':' + id], nm = vaultName(sh.k + ':' + id);
       return '<li class="' + (got ? 'got' : 'no') + '">' + K.iconHtml(got ? (sh.k === 's' ? 'star' : 'check') : 'lock', 1)
         + '<span>' + (got || !sh.secret ? esc(nm) : 'Secret') + '</span>' + (got ? '' : '<span class="sr-only"> (not found yet)</span>') + '</li>';
-    }).join('') + '</ul>';
+    }).join('') + '</ul></details>';
   }).join('');
 }
 function fullCard(id){ var h = store().hof || []; for (var i = 0; i < h.length; i++) if (cardId(h[i]) === id) return h[i]; return null; }

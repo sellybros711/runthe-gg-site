@@ -1,0 +1,1276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Stumpire | Run The Arcade</title>
+<style>
+  :root{--bg:#070b14;--card:#141b2b;--ink:#eef2f8;--mut:#9aa7bd;--line:#26314a;--safe:#3ecf8e;--out:#ff6b6b;--strike:#ffc94d;--np:#8fb3ff;--led:#ffcf5a}
+  *{box-sizing:border-box}
+  html,body{background:var(--bg)}
+  body{margin:0;color:var(--ink);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .top{max-width:1000px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px}
+  .top h1{font-size:19px;margin:0;font-weight:900;letter-spacing:.02em}
+  .top .r{display:flex;gap:12px;align-items:center}
+  .top a{color:var(--mut);text-decoration:none;font-size:14px;white-space:nowrap}
+  @media (max-width:520px){.top .r{gap:8px}.top .long{display:none}}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  .top button{white-space:nowrap;font:inherit;font-size:13px;color:var(--mut);background:none;border:1px solid var(--line);border-radius:999px;padding:4px 10px;cursor:pointer}
+
+  /* THE BALLPARK. The canvas is drawn at a whole number of device pixels per
+     scene pixel, so the art stays crisp. Everything a player reads (the
+     prompt, the count, the clock, the Stumpire's words) is real text laid
+     over the picture, never pixels in the canvas. */
+  #stage{position:relative;max-width:1000px;margin:0 auto;overflow:hidden;line-height:0;background:#04060f}
+  #scene{display:block;margin:0 auto;image-rendering:pixelated;image-rendering:crisp-edges}
+  #jumbo{position:absolute;line-height:1.2;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;
+    padding:5px 8px;color:var(--led);background:#07080a radial-gradient(circle,rgba(255,207,90,.07) 1px,transparent 1.4px) 0 0/3px 3px;
+    text-shadow:0 0 6px rgba(255,190,70,.55);font-weight:800}
+  .jt-row{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+  .jt-row b{color:#fff3cf}
+  #league{opacity:.85}
+  .pclock{display:flex;align-items:center;gap:5px}
+  #clock{font-size:18px;color:#fff3cf;font-variant-numeric:tabular-nums;min-width:2ch;text-align:right}
+  #clock.low{color:#ff5a4f;animation:blink .5s steps(2) infinite}
+  @keyframes blink{50%{opacity:.35}}
+  #prompt{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;font-size:18px;color:#ffe9b0;padding:2px 0}
+  #prompt.reveal{animation:reveal .7s steps(10) both}
+  @keyframes reveal{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+  #board .grp{display:flex;align-items:center;gap:4px}
+  .dots span{display:inline-block;width:8px;height:8px;border-radius:50%;background:#2a2410;margin-left:2px;box-shadow:inset 0 0 0 1px #4a3d18}
+  .dots span.on{background:var(--strike);box-shadow:0 0 6px var(--strike)}
+  .dots.outs span.on{background:#ff5a4f;box-shadow:0 0 6px #ff5a4f}
+  #jfx{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:#07080a;font-size:30px;font-weight:900;letter-spacing:.06em;color:#fff3cf}
+  #jfx.go{display:flex;animation:jfx 1.9s steps(1) both}
+  @keyframes jfx{0%,20%,40%,60%,80%{color:#fff3cf}10%,30%,50%,70%{color:#ff7a3d}100%{opacity:0}}
+
+  #ump{position:absolute;line-height:1.25;max-width:min(62%,300px);background:#fffaf0;color:#1b1f2a;border-radius:12px;padding:7px 10px 8px;
+    font-size:14px;box-shadow:0 4px 0 rgba(0,0,0,.35);transform-origin:0 100%;opacity:0;transition:opacity .2s}
+  #ump.on{opacity:1}
+  #ump::after{content:"";position:absolute;left:-7px;bottom:10px;border:7px solid transparent;border-right-color:#fffaf0;border-left:0}
+  #ump .who{font-size:10px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#9a3b2c}
+  #umpSays{font-weight:600;min-height:1.25em}
+
+  /* The call goes up on the big board, where a ballpark puts it. */
+  #ruling{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none;
+    background:#07080a radial-gradient(circle,rgba(255,207,90,.07) 1px,transparent 1.4px) 0 0/3px 3px;line-height:1.05;padding:2px 8px}
+  #ruling.hide{display:none}
+  #ruling .ruling{font-size:clamp(26px,6.5vw,46px);font-weight:900;font-style:italic;letter-spacing:.04em;text-shadow:0 0 10px currentColor;animation:slam .45s cubic-bezier(.2,1.6,.4,1) both}
+  #ruling .plate{margin-top:6px;display:flex;flex-direction:column;align-items:center;gap:5px;animation:rise .35s .15s ease-out both}
+  #ruling .who2{font-size:15px;font-weight:900;color:#fff3cf;letter-spacing:.02em}
+  #ruling .prow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center}
+  .tchip{font-size:12px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;padding:3px 10px 3px;border-radius:4px;color:#07080a;
+    clip-path:polygon(6px 0,100% 0,calc(100% - 6px) 100%,0 100%);text-shadow:none}
+  .tchip.t1{background:#3ecf8e}.tchip.t2{background:#45c7e6}.tchip.t3{background:#ffcf5a}
+  .tchip.t4{background:linear-gradient(90deg,#ff7a3d,#ffcf5a,#ff7a3d);background-size:200% 100%;animation:shine 1.2s linear infinite}
+  .tchip.tout{background:#ff6b6b}
+  @keyframes shine{to{background-position:-200% 0}}
+  .fans{display:flex;align-items:center;gap:6px;color:#ffe9b0}
+  .fans .bulbs{display:flex;gap:3px}
+  .fans i{width:7px;height:7px;border-radius:50%;background:#2a2410;box-shadow:inset 0 0 0 1px #4a3d18}
+  .fans i.on{background:#3ecf8e;box-shadow:0 0 6px #3ecf8e;animation:bulb .25s both}
+  .fans.hot i.on{background:#ff6b6b;box-shadow:0 0 6px #ff6b6b}
+  .fans b{font-size:16px;font-weight:900;color:#fff3cf;font-variant-numeric:tabular-nums}
+  .fans em{font-style:normal;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;opacity:.75}
+  @media (min-width:700px){#ruling .who2{font-size:19px}.tchip{font-size:15px;padding:4px 14px}.fans i{width:9px;height:9px}.fans b{font-size:21px}.fans em{font-size:12px}}
+  @keyframes bulb{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:scale(1)}}
+  @keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  #ruling .sub{margin-top:4px;font-size:13px;font-weight:800;color:#ffe9b0;letter-spacing:.04em}
+  #ruling.fade{transition:opacity .5s;opacity:0}
+  @keyframes slam{from{transform:scale(2.4) rotate(-6deg);opacity:0}to{transform:scale(1) rotate(-2deg);opacity:1}}
+  .SAFE{color:var(--safe)}.OUT{color:var(--out)}.STRIKE{color:var(--strike)}.NO_PITCH{color:var(--np)}
+
+  #hud{max-width:1000px;margin:0 auto;padding:10px 12px 18px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+  .hide{display:none}
+  #atbat{position:sticky;bottom:8px;z-index:5;box-shadow:0 -6px 24px rgba(0,0,0,.45)}
+  .tell{color:var(--mut);font-size:14px}
+  .swingrow{display:flex;gap:8px;margin-top:8px}
+  input[type=text]{flex:1;min-width:0;font-size:17px;padding:12px;border-radius:10px;border:1px solid var(--line);background:#0b101a;color:var(--ink)}
+  input[type=text]:focus{outline:2px solid #2f6fed;outline-offset:0}
+  button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:#24304a;color:var(--ink);padding:10px 14px}
+  button.go{background:#e0402f;border-color:#e0402f;font-weight:800;letter-spacing:.02em}
+  button.big{width:100%;font-size:19px;padding:14px}
+  button:disabled{opacity:.5;cursor:default}
+  #sugg{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:4px}
+  #sugg button{width:100%;text-align:left;display:flex;justify-content:space-between;gap:8px;background:#0f1624}
+  #sugg small,.opt small{color:var(--mut)}
+  #maxTier{color:var(--strike);font-size:13px}
+  .abtop{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .clk2{font-size:22px;font-weight:900;font-variant-numeric:tabular-nums;color:var(--led);min-width:3ch;text-align:right}
+  .clk2.low{color:var(--out);animation:blink .5s steps(2) infinite}
+  .cardlbl{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin-bottom:4px}
+  .cards{display:flex;flex-wrap:wrap;gap:6px}
+  .ccard{min-width:74px;padding:6px 9px;border-radius:7px;font-size:13px;font-weight:700;text-align:center;background:#f3ead2;color:#2a1d10;border:1px solid #c9b88a;box-shadow:0 2px 0 rgba(0,0,0,.35)}
+  .ccard.down{background:repeating-linear-gradient(45deg,#7a1f2b 0 6px,#8f2834 6px 12px);color:#f3ead2;border-color:#5a141e}
+  .ccard.flip{animation:flip .5s ease both}
+  .ccard.hit{background:#ff6b6b;color:#1b0b0b;border-color:#ff6b6b}
+  @keyframes flip{0%{transform:rotateY(90deg)}100%{transform:rotateY(0)}}
+  #power{display:flex;gap:4px;margin-top:8px;align-items:center}
+  #power .lbl{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin-right:4px}
+  #power span.seg{flex:1;text-align:center;font-size:12px;font-weight:900;padding:4px 0;border-radius:5px;background:#1f2738;color:#56607a;transition:all .3s}
+  #power span.seg.on{background:#3ecf8e;color:#06140d}
+  #power span.seg.on.peak{background:#ffcf5a;color:#1d1505}
+  #power span.seg.lost{text-decoration:line-through}
+  #ump{cursor:pointer}
+
+  .called{color:var(--mut);font-size:14px}
+  #picker{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;padding:16px;z-index:20}
+  #picker .sheet{background:var(--card);border-radius:14px;padding:14px;width:100%;max-width:560px}
+  .opt{width:100%;text-align:left;margin-top:6px;display:flex;justify-content:space-between}
+  pre.share{white-space:pre-wrap;background:#0b101a;padding:12px;border-radius:10px;font-size:18px}
+  ol.hist{padding-left:20px;margin:6px 0}
+  ol.hist li{margin-bottom:8px}
+  .mut{color:var(--mut);font-size:14px}
+  .final{font-size:22px;font-weight:900}
+  .bigscore{display:flex;align-items:baseline;gap:10px;margin:4px 0 8px}
+  .bigscore b{font-size:54px;line-height:1;font-weight:900;color:var(--led);text-shadow:0 0 14px rgba(255,190,70,.35);font-variant-numeric:tabular-nums}
+  .bigscore span{color:var(--mut);font-weight:800;letter-spacing:.1em;text-transform:uppercase;font-size:12px}
+  .linescore{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:6px 0 10px}
+  .linescore div{background:#0b101a;border:1px solid var(--line);border-radius:7px;text-align:center;padding:6px 2px;font-weight:900}
+  .linescore small{display:block;color:var(--mut);font-size:10px;font-weight:700;letter-spacing:.08em}
+  .linescore .h{color:var(--safe)}.linescore .o{color:var(--out)}
+  table.calc{width:100%;border-collapse:collapse;font-size:14px;margin-bottom:10px}
+  table.calc td{padding:3px 0;border-bottom:1px solid var(--line)}
+  table.calc td:last-child{text-align:right;font-weight:800;font-variant-numeric:tabular-nums}
+  table.calc tr.tot td{border-bottom:0;font-size:16px;color:var(--led)}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+  .chip{background:#0b101a;border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:13px;font-weight:700}
+  .row2{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+  ol.board{list-style:none;padding:0;margin:6px 0 0}
+  ol.board li{display:flex;justify-content:space-between;gap:8px;padding:6px 8px;border-radius:7px;font-size:14px}
+  ol.board li:nth-child(odd){background:#0f1624}
+  ol.board li.me{outline:2px solid var(--led)}
+  ol.board .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  ol.board .sc{font-weight:900;font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<div class="top"><h1>Stumpire</h1><div class="r"><button id="howto" type="button">Rules</button><button id="snd" type="button">Sound on</button><a href="/arcade/"><span class="long">Run The </span>Arcade</a></div></div>
+
+<div id="stage">
+  <canvas id="scene" aria-label="The ballpark. The Stumpire is behind the plate."></canvas>
+  <div id="jumbo">
+    <div class="jt-row"><span id="league">Stumpire Park</span><span class="pclock">Clock <span id="clock">30</span></span></div>
+    <div id="prompt">Loading the slate.</div>
+    <div class="jt-row hide" id="board">
+      <span class="grp">Slate <b id="slNo"></b></span>
+      <span class="grp">AB <b id="abNo">1</b>/5</span>
+      <span class="grp">Score <b id="score">0</b></span>
+      <span class="grp">R <b id="runs">0</b></span>
+      <span class="grp">S<span class="dots" id="strikes"></span></span>
+      <span class="grp">O<span class="dots outs" id="outs"></span></span>
+    </div>
+    <div id="ruling" class="hide"></div>
+    <div id="jfx"></div>
+  </div>
+  <div id="ump" data-mood="idle" data-state="waiting"><div class="who">The Stumpire</div><div id="umpSays"></div></div>
+</div>
+
+<div id="hud">
+  <div class="panel" id="gate">Loading.</div>
+  <div class="panel hide" id="next"><button class="go big" id="nextBtn">Play ball</button></div>
+  <div class="panel hide" id="atbat">
+    <div class="abtop"><div><div class="cardlbl">His card</div><div class="cards" id="pocket"></div></div><div class="clk2" id="clock2">30</div></div>
+    <div id="power"><span class="lbl">Best hit</span><span class="seg">1B</span><span class="seg">2B</span><span class="seg">3B</span><span class="seg">HR</span></div>
+    <div class="sr" id="tell"></div>
+    <div class="sr" id="maxTier"></div>
+    <div class="swingrow"><input type="text" id="answer" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Name a player or team" maxlength="60"><button class="go" id="swing">Swing</button></div>
+    <ul id="sugg"></ul>
+  </div>
+  <div class="panel hide" id="reveal"></div>
+  <div class="panel hide" id="over"></div>
+  <div class="panel hide" id="historyCard"><b>The box score</b><ol class="hist" id="history"></ol></div>
+</div>
+
+<div id="picker" role="dialog" aria-modal="true" aria-labelledby="pickTitle">
+  <div class="sheet"><b id="pickTitle">Which one do you mean?</b><div class="mut">The clock is stopped while you choose.</div><div id="pickOpts"></div>
+  <div class="row" style="margin-top:8px"><button id="pickCancel">None of these</button></div></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="/arcade/auth.js?v=4"></script>
+<script>
+(function () {
+  'use strict';
+  function $(id) { return document.getElementById(id); }
+  function show(id, on) { $(id).classList.toggle('hide', !on); }
+  function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+  var A = window.RTG_AUTH;
+  var REDUCE = false;
+  try { REDUCE = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+
+  /* ================================================================
+     SOUND. Everything is synthesized, so there is nothing to download.
+     ================================================================ */
+  var SND_KEY = 'stumpire_sound_v1', soundOn = true, AC = null, NOISE = null;
+  try { soundOn = localStorage.getItem(SND_KEY) !== '0'; } catch (e) {}
+  function paintSnd() { $('snd').textContent = soundOn ? 'Sound on' : 'Sound off'; $('snd').setAttribute('aria-pressed', soundOn ? 'true' : 'false'); }
+  paintSnd();
+  $('snd').onclick = function () { soundOn = !soundOn; try { localStorage.setItem(SND_KEY, soundOn ? '1' : '0'); } catch (e) {} paintSnd(); if (soundOn) sfx('blip'); };
+  function ac() {
+    if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
+    if (AC.state === 'suspended') AC.resume();
+    return AC;
+  }
+  function noiseBuf(a) {
+    if (NOISE) return NOISE;
+    var b = a.createBuffer(1, a.sampleRate * 2, a.sampleRate), d = b.getChannelData(0);
+    for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    return (NOISE = b);
+  }
+  function burst(dur, f, q, vol, type, delay) {
+    var a = ac(); if (!a) return;
+    var t = a.currentTime + (delay || 0);
+    var s = a.createBufferSource(); s.buffer = noiseBuf(a);
+    var fl = a.createBiquadFilter(); fl.type = type || 'bandpass'; fl.frequency.value = f; fl.Q.value = q || 1;
+    var gn = a.createGain(); gn.gain.setValueAtTime(0.0001, t);
+    gn.gain.exponentialRampToValueAtTime(vol, t + Math.min(0.03, dur / 4));
+    gn.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.connect(fl); fl.connect(gn); gn.connect(a.destination); s.start(t, Math.random()); s.stop(t + dur + 0.05);
+  }
+  function tone(f0, f1, dur, vol, type, delay) {
+    var a = ac(); if (!a) return;
+    var t = a.currentTime + (delay || 0);
+    var o = a.createOscillator(); o.type = type || 'square';
+    o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    var gn = a.createGain(); gn.gain.setValueAtTime(0.0001, t);
+    gn.gain.exponentialRampToValueAtTime(vol, t + 0.01); gn.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(gn); gn.connect(a.destination); o.start(t); o.stop(t + dur + 0.05);
+  }
+  var SFX = {
+    crack: function () { burst(0.08, 2800, 0.9, 0.9); tone(1200, 300, 0.05, 0.25, 'square'); },
+    pop: function () { burst(0.12, 260, 0.8, 1, 'lowpass'); },
+    whoosh: function () { burst(0.2, 900, 0.5, 0.3); },
+    crowd: function (lv) { burst(1.4 + lv * 1.6, 800, 0.35, 0.08 + lv * 0.16); },
+    groan: function () { tone(240, 130, 0.7, 0.05, 'sawtooth'); burst(0.9, 400, 0.4, 0.06); },
+    organ: function () { [392, 523, 659, 784, 659, 784].forEach(function (f, i) { tone(f, f, 0.14, 0.07, 'square', i * 0.12); }); },
+    call: function () { tone(300, 160, 0.38, 0.1, 'sawtooth'); tone(150, 90, 0.38, 0.08, 'square'); },
+    huh: function () { tone(180, 320, 0.25, 0.08, 'sawtooth'); },
+    blip: function () { tone(880, 880, 0.04, 0.05, 'square'); },
+    tick: function () { tone(1500, 1500, 0.02, 0.03, 'square'); },
+    boom: function () { burst(0.7, 140, 0.6, 0.7, 'lowpass'); }
+  };
+  function sfx(n, a) { if (!soundOn || !SFX[n]) return; try { SFX[n](a); } catch (e) {} }
+
+  /* ================================================================
+     THE SCENE. One logical pixel grid, H tall, as wide as the screen
+     allows. Static ground is drawn once per layout into BG; the people,
+     the ball, the crowd and the fireworks are drawn every frame.
+     ================================================================ */
+  var cv = $('scene'), g = cv.getContext('2d');
+  var BG = document.createElement('canvas'), bg = BG.getContext('2d');
+  var W = 320, H = 240, S = 2, U = 1, OFFX = 0, NOW = 0, LAST = 0;
+  var GEO = {}, FANS = [], STARS = [], UZ = 1;
+  var UMPC = document.createElement('canvas'); UMPC.width = 160; UMPC.height = 132; var umpg = UMPC.getContext('2d');
+
+  function layout() {
+    var cssW = $('stage').clientWidth || window.innerWidth;
+    var dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+    var target = Math.max(250, Math.min(cssW * 0.95, window.innerHeight * 0.6, 600));
+    S = Math.max(1, Math.round(target * dpr / H));
+    W = Math.max(200, Math.floor(cssW * dpr / S));
+    cv.width = W * S; cv.height = H * S;
+    U = S / dpr;
+    cv.style.width = (W * U) + 'px'; cv.style.height = (H * U) + 'px';
+    OFFX = Math.max(0, (cssW - W * U) / 2);
+    geometry(); paintBG(); placeOverlays();
+  }
+
+  function geometry() {
+    var hz = 124, jw = Math.min(W - 22, 310), jh = W < 300 ? 78 : 66;
+    GEO = {
+      hz: hz, standTop: 36, standBot: hz - 10,
+      jumbo: { x: Math.round((W - jw) / 2), y: 5, w: jw, h: jh },
+      plate: { x: Math.round(W * 0.46), y: 208 },
+      mound: { x: Math.round(W * 0.6), y: 150 },
+      b1: { x: Math.round(W * 0.88), y: 168 },
+      b2: { x: Math.round(W * 0.64), y: 136 },
+      b3: { x: Math.round(W * 0.24), y: 160 },
+      ump: { x: 0, y: 238 }
+    };
+    UZ = W >= 380 ? 2 : 1;
+    GEO.ump.x = Math.max(32 * UZ, Math.round(W * 0.13));
+    GEO.catcher = { x: GEO.plate.x + 3, y: 226 };
+    GEO.batter = { x: GEO.plate.x - 14, y: 208 };
+    GEO.base = [GEO.plate, GEO.b1, GEO.b2, GEO.b3, GEO.plate];
+    var home = [[0.46, 142, 0.27], [0.78, 147, 0.27], [0.2, 131, 0.21], [0.6, 128, 0.2], [0.93, 133, 0.21]];
+    fielders = home.map(function (h) { var x = Math.round(W * h[0]); return { hx: x, hy: h[1], x: x, y: h[1], k: h[2], tx: x, ty: h[1], pose: mkPose(FP.ready), hold: null, run: 0 }; });
+    pitcher.x = GEO.mound.x; pitcher.y = GEO.mound.y - 1;
+    FANS = []; STARS = [];
+    var j = GEO.jumbo, palette = ['#e0402f', '#f2f2f2', '#2f6fed', '#ffcf5a', '#3ecf8e', '#d46bd8', '#ff8a3d', '#8fb3ff'];
+    var skins = ['#f1c7a0', '#d9a27a', '#b47a52', '#7d4f33', '#5a3825'];
+    for (var y = GEO.standTop + 4; y < GEO.standBot - 2; y += 5) {
+      for (var x = 2 + ((y / 5) % 2) * 2; x < W - 2; x += 4 + (hash(x * 7 + y) % 2)) {
+        if (x > j.x - 3 && x < j.x + j.w + 3 && y < j.y + j.h + 3) continue;
+        if (hash(x * 13 + y * 3) % 9 === 0) continue;
+        FANS.push({ x: x, y: y, c: palette[hash(x + y * 31) % palette.length], s: skins[hash(x * 3 + y) % skins.length], ph: (hash(x * y + 5) % 100) / 16 });
+      }
+    }
+    for (var i = 0; i < 40; i++) STARS.push({ x: hash(i * 97) % W, y: hash(i * 61 + 3) % (GEO.standTop - 4), t: hash(i * 7) % 5 });
+  }
+  function hash(n) { n = Math.imul((n | 0) ^ 0x9e3779b9, 0x85ebca6b); n ^= n >>> 13; n = Math.imul(n, 0xc2b2ae35); n ^= n >>> 16; return n >>> 0; }
+
+  function placeOverlays() {
+    var j = GEO.jumbo, jb = $('jumbo');
+    jb.style.left = (OFFX + (j.x + 3) * U) + 'px'; jb.style.top = ((j.y + 3) * U) + 'px';
+    jb.style.width = ((j.w - 6) * U) + 'px'; jb.style.height = ((j.h - 6) * U) + 'px';
+    var u = $('ump');
+    u.style.left = (OFFX + (GEO.ump.x + 18 * UZ) * U) + 'px';
+    u.style.bottom = ((H - (GEO.ump.y - (UZ > 1 ? 70 : 84) * UZ)) * U) + 'px';
+    fitPrompt();
+  }
+  function fitPrompt() {
+    var p = $('prompt');
+    for (var f = 22; f >= 11; f--) { p.style.fontSize = f + 'px'; if (p.scrollHeight <= p.clientHeight + 1) break; }
+  }
+
+  /* ---- pixel primitives, in logical pixels ---- */
+  var C = g;
+  function R(x, y, w, h, c) { C.fillStyle = c; C.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); }
+  function ell(x, y, rx, ry, c, half) {
+    C.fillStyle = c;
+    for (var dy = -ry; dy <= (half ? 0 : ry); dy++) { var hw = Math.round(rx * Math.sqrt(Math.max(0, 1 - (dy * dy) / (ry * ry + 0.01)))); C.fillRect(Math.round(x - hw), Math.round(y + dy), hw * 2 + 1, 1); }
+  }
+  function seg(x0, y0, x1, y1, t, c) {
+    C.fillStyle = c; var n = Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0))) || 1, h = t / 2;
+    for (var i = 0; i <= n; i++) C.fillRect(Math.round(x0 + (x1 - x0) * i / n - h), Math.round(y0 + (y1 - y0) * i / n - h), Math.max(1, Math.round(t)), Math.max(1, Math.round(t)));
+  }
+  function poly(pts, c) {
+    var lo = Infinity, hi = -Infinity; pts.forEach(function (p) { lo = Math.min(lo, p.y); hi = Math.max(hi, p.y); });
+    C.fillStyle = c;
+    for (var y = Math.ceil(lo); y <= Math.floor(hi); y++) {
+      var xs = [];
+      for (var i = 0; i < pts.length; i++) { var a = pts[i], b = pts[(i + 1) % pts.length]; if ((a.y <= y && b.y > y) || (b.y <= y && a.y > y)) xs.push(a.x + (y - a.y) * (b.x - a.x) / (b.y - a.y)); }
+      xs.sort(function (m, n) { return m - n; });
+      for (var k = 0; k + 1 < xs.length; k += 2) C.fillRect(Math.round(xs[k]), y, Math.max(1, Math.round(xs[k + 1]) - Math.round(xs[k])), 1);
+    }
+  }
+  function P(x, y) { return { x: x, y: y }; }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+
+  /* ---- the static ballpark ---- */
+  function paintBG() {
+    BG.width = W; BG.height = H; C = bg; bg.imageSmoothingEnabled = false;
+    var hz = GEO.hz, st = GEO.standTop;
+    var sky = bg.createLinearGradient(0, 0, 0, st + 10); sky.addColorStop(0, '#03050d'); sky.addColorStop(1, '#1d1a44');
+    bg.fillStyle = sky; bg.fillRect(0, 0, W, H);
+    // light towers and their glow
+    [[7, 1], [W - 8, -1]].forEach(function (t) {
+      var gl = bg.createRadialGradient(t[0], 12, 2, t[0], 12, 70); gl.addColorStop(0, 'rgba(255,240,200,.35)'); gl.addColorStop(1, 'rgba(255,240,200,0)');
+      bg.fillStyle = gl; bg.fillRect(t[0] - 70, 0, 140, 90);
+      R(t[0] - 1, 14, 3, GEO.standBot - 14, '#2a2f3d');
+      R(t[0] - 9, 6, 18, 10, '#1a1d26');
+      for (var cx = 0; cx < 4; cx++) for (var cy = 0; cy < 2; cy++) R(t[0] - 8 + cx * 4, 7 + cy * 4, 3, 3, '#fff6d8');
+    });
+    // upper deck facade with a ribbon board
+    R(0, st - 6, W, 6, '#262c47'); R(0, st - 4, W, 2, '#0b0e18');
+    for (var x = 0; x < W; x += 3) R(x, st - 4, 1, 1, x % 9 ? '#5a4a1e' : '#ffcf5a');
+    // stands, row by row
+    for (var y = st; y < GEO.standBot; y += 5) { R(0, y, W, 5, (y / 5) % 2 ? '#141a31' : '#181f3a'); R(0, y + 4, W, 1, '#0d1123'); }
+    // aisles
+    for (x = 40; x < W; x += 80) R(x, st, 3, GEO.standBot - st, '#0f1426');
+    // jumbotron structure
+    var j = GEO.jumbo;
+    R(j.x + 14, j.y + j.h, 4, GEO.standBot - j.y - j.h, '#1d212b'); R(j.x + j.w - 18, j.y + j.h, 4, GEO.standBot - j.y - j.h, '#1d212b');
+    R(j.x - 3, j.y - 3, j.w + 6, j.h + 6, '#1a1d24'); R(j.x - 1, j.y - 1, j.w + 2, j.h + 2, '#0a0b0e');
+    // outfield wall with ad panels
+    R(0, hz - 11, W, 1, '#e3c34a'); R(0, hz - 10, W, 10, '#0e4430'); R(0, hz - 10, W, 2, '#1f6e48');
+    var ads = ['#e0402f', '#2f6fed', '#ffcf5a', '#f2f2f2'];
+    for (x = 12, y = 0; x < W - 30; x += 58, y++) { R(x, hz - 7, 34, 5, ads[y % 4]); R(x + 3, hz - 5, 28, 1, 'rgba(0,0,0,.35)'); }
+    R(0, hz, W, 5, '#7b5233'); R(0, hz, W, 1, '#5e3e25');
+    // grass with mowing bands that widen toward the camera
+    var yy = hz + 5, band = 4, i = 0;
+    while (yy < H) { R(0, yy, W, band, i % 2 ? '#2f7a39' : '#2a6f34'); yy += band; band = Math.round(band * 1.18) + 1; i++; }
+    // infield
+    var pl = GEO.plate, b1 = GEO.b1, b2 = GEO.b2, b3 = GEO.b3, md = GEO.mound;
+    poly([P(b3.x - 14, b3.y - 2), P(lerp(b3.x, b2.x, 0.5) - 6, lerp(b3.y, b2.y, 0.5) - 12), P(b2.x, b2.y - 9),
+      P(lerp(b2.x, b1.x, 0.5) + 6, lerp(b2.y, b1.y, 0.5) - 12), P(b1.x + 14, b1.y - 2), P(b1.x + 6, b1.y + 6), P(pl.x + 16, pl.y + 10), P(pl.x - 16, pl.y + 10), P(b3.x - 6, b3.y + 6)], '#a8693c');
+    var cx0 = (pl.x + b1.x + b2.x + b3.x) / 4, cy0 = (pl.y + b1.y + b2.y + b3.y) / 4;
+    function inn(b, f) { return P(lerp(b.x, cx0, f), lerp(b.y, cy0, f)); }
+    poly([inn(b3, 0.2), inn(b2, 0.25), inn(b1, 0.2), inn(pl, 0.32)], '#2e7a38');
+    ell(pl.x, pl.y + 2, 24, 9, '#a8693c');
+    ell(md.x, md.y, 13, 5, '#b57446'); R(md.x - 3, md.y - 1, 6, 1, '#f4f4f4');
+    // chalk
+    function chalk(a, b) { seg(a.x, a.y, b.x, b.y, 1, '#f2f2ea'); }
+    function ext(a, b) { var t = (hz + 5 - a.y) / (b.y - a.y); return P(a.x + (b.x - a.x) * t, hz + 5); }
+    chalk(pl, ext(pl, b1)); chalk(pl, ext(pl, b3));
+    [b1, b2, b3].forEach(function (b) { R(b.x - 2, b.y - 1, 5, 2, '#f7f7f2'); });
+    R(pl.x - 3, pl.y - 1, 7, 2, '#ffffff'); R(pl.x - 2, pl.y + 1, 5, 1, '#ffffff');
+    function box(x0) { R(x0, pl.y - 5, 8, 1, '#e8e8e0'); R(x0, pl.y + 5, 8, 1, '#e8e8e0'); R(x0, pl.y - 5, 1, 11, '#e8e8e0'); R(x0 + 7, pl.y - 5, 1, 11, '#e8e8e0'); }
+    box(pl.x - 14); box(pl.x + 7);
+    C = g;
+  }
+
+  /* ================================================================
+     PEOPLE. One front-facing figure with jointed arms and legs. Arm
+     angles are in degrees: 0 hangs down, 90 is straight out to that
+     side, 180 is straight up, negative swings across the chest.
+     ================================================================ */
+  var D = Math.PI / 180;
+  function mkPose(p) { var o = {}; for (var k in p) o[k] = p[k]; return o; }
+  function dir(a, side) { return { x: side * Math.sin(a * D), y: Math.cos(a * D) }; }
+  function ik(sx, sy, tx, ty, a, b, bend) {
+    var dx = tx - sx, dy = ty - sy, d = Math.min(Math.hypot(dx, dy), a + b - 0.01) || 0.01;
+    var ang = Math.atan2(dy, dx), A2 = Math.acos(Math.max(-1, Math.min(1, (a * a + d * d - b * b) / (2 * a * d))));
+    return { x: sx + Math.cos(ang + bend * A2) * a, y: sy + Math.sin(ang + bend * A2) * a };
+  }
+
+  function person(o) {
+    var k = o.k, p = o.pose, c = p.crouch || 0, lean = (p.lean || 0) * k, X = o.x, Y = o.y;
+    var hipY = Y - 30 * k + c * 12 * k;
+    var lt = Math.max(1, 6 * k), at = Math.max(1, 5 * k), stride = p.stride || 0;
+    var col = o.col;
+    for (var s = -1; s <= 1; s += 2) {
+      var hip = P(X + s * 6 * k, hipY);
+      var lift = stride * s > 0 ? Math.abs(stride) * 3 * k : 0;
+      var foot = P(X + s * (6 + 5 * c + (p.spread || 0)) * k + stride * s * 4 * k, Y - 2 * k - lift);
+      var knee = P((hip.x + foot.x) / 2 + s * (1 + 10 * c) * k, (hip.y + foot.y) / 2);
+      seg(hip.x, hip.y, knee.x, knee.y, lt, col.pants); seg(knee.x, knee.y, foot.x, foot.y, lt, col.pants);
+      R(foot.x - 4 * k + s * k, Y - 3 * k - lift, 8 * k, 3 * k, col.shoe);
+    }
+    var tw = 24 * k * (o.wide || 1), th = 26 * k, tx = X + lean - tw / 2, ty = hipY - th;
+    R(tx + 2 * k, ty, tw - 4 * k, th, col.shirt); R(tx, ty + 3 * k, tw, th - 3 * k, col.shirt);
+    if (o.belly) R(tx - 2 * k, ty + th * 0.45, tw + 4 * k, th * 0.45, col.shirt);
+    R(tx, hipY - 2 * k, tw, 2 * k, col.belt || '#111');
+    if (o.torso) o.torso(tx, ty, tw, th, k);
+    var hx = X + lean + (p.headX || 0) * k, hr = 11 * k, hy = ty - hr + 1 * k;
+    R(hx - 3 * k, ty - 3 * k, 6 * k, 4 * k, col.skin2 || col.skin);
+    var sy = ty + 4 * k, hands = [];
+    var drawArm = function (s) {
+      var sx = X + lean + s * (tw / 2 - 1 * k), up = s < 0 ? p.lu : p.ru, fo = s < 0 ? p.lf : p.rf, el, hd;
+      var tgt = s < 0 ? p.lT : p.rT;
+      if (tgt) { hd = P(X + lean + tgt.x * k, sy + tgt.y * k); el = ik(sx, sy, hd.x, hd.y, 13 * k, 12 * k, s > 0 ? 1 : -1); }
+      else { var d1 = dir(up || 0, s), d2 = dir(fo || 0, s); el = P(sx + d1.x * 13 * k, sy + d1.y * 13 * k); hd = P(el.x + d2.x * 12 * k, el.y + d2.y * 12 * k); }
+      seg(sx, sy, el.x, el.y, at, col.sleeve || col.shirt); seg(el.x, el.y, hd.x, hd.y, at, col.arm || col.skin);
+      if (o.hand) o.hand(s, hd, k); else R(hd.x - 2 * k, hd.y - 2 * k, 4 * k, 4 * k, col.skin);
+      hands.push(hd);
+    };
+    var armsFirst = o.armsBehindHead;
+    if (armsFirst) { drawArm(-1); drawArm(1); }
+    o.head(hx, hy, hr, k);
+    if (!armsFirst) { drawArm(-1); drawArm(1); }
+    return { hands: hands, head: P(hx, hy), sy: sy };
+  }
+
+  function capHead(col, back, helmet) {
+    return function (hx, hy, r, k) {
+      ell(hx, hy, r, r, col.skin);
+      ell(hx, hy - 2 * k, r + 0.5, r * 0.85, col.cap, true);
+      if (helmet) R(hx - r, hy - 2 * k, 2 * k, 5 * k, col.cap);
+      if (back) { ell(hx, hy, r, r, col.cap); return; }
+      R(hx - r - 1 * k, hy - 2 * k, 2 * r + 2 * k, 2 * k, col.cap);
+      R(hx - 4 * k, hy + 1 * k, 2 * k, 2 * k, '#14161c'); R(hx + 2 * k, hy + 1 * k, 2 * k, 2 * k, '#14161c');
+    };
+  }
+
+  /* ================================================================
+     THE STUMPIRE. A barrel of a man in navy, chest protector, black
+     cap, a mask he lowers for the pitch and lifts for the call, and a
+     mustache that does half his talking.
+     ================================================================ */
+  var UMP_COL = { shirt: '#22305a', pants: '#8b93a3', shoe: '#0e0f12', skin: '#eab48c', skin2: '#d39672', belt: '#0e0f12', arm: '#eab48c', sleeve: '#22305a' };
+  var UP = {
+    crouch: { lu: 12, lf: -4, ru: 12, rf: -4, crouch: 1, lean: 0, spread: 2 },
+    set: { lu: 18, lf: -6, ru: 18, rf: -6, crouch: 1.2, lean: 0, spread: 3 },
+    stand: { lu: 6, lf: 2, ru: 6, rf: 2, crouch: 0, lean: 0, spread: 0 },
+    strike: { lu: 55, lf: 165, ru: 92, rf: 92, crouch: 0.35, lean: 3, spread: 4 },
+    ringA: { lu: 6, lf: 2, ru: 125, rf: 175, crouch: 0.2, lean: 0, spread: 3 },
+    ringB: { lu: 10, lf: 2, ru: 98, rf: 70, crouch: 0.5, lean: 4, spread: 5 },
+    out: { lu: 6, lf: 2, ru: 160, rf: 178, crouch: 0.1, lean: 0, spread: 1 },
+    safe: { lu: 92, lf: 92, ru: 92, rf: 92, crouch: 0.45, lean: 0, spread: 5 },
+    timeA: { lu: 160, lf: 172, ru: 160, rf: 172, crouch: 0, lean: 0, spread: 2 },
+    timeB: { lu: 140, lf: 205, ru: 140, rf: 205, crouch: 0, lean: 0, spread: 2 },
+    shrug: { lu: 55, lf: 140, ru: 55, rf: 140, crouch: 0, lean: 0, spread: 1 },
+    cross: { lu: 22, lf: -95, ru: 22, rf: -100, crouch: 0, lean: 0, spread: 2 },
+    shocked: { lu: 130, lf: 165, ru: 130, rf: 165, crouch: 0, lean: -2, spread: 3 },
+    watch: { lu: 6, lf: 2, ru: 35, rf: -130, crouch: 0.1, lean: 0, spread: 1, headX: 1 },
+    think: { lu: 22, lf: -95, ru: -10, rf: -160, crouch: 0.2, lean: 2, spread: 2 },
+    cap: { lu: 6, lf: 2, ru: 125, rf: -150, crouch: 0.1, lean: 0, spread: 1 },
+    point: { lu: 6, lf: 2, ru: 140, rf: 140, crouch: 0, lean: 2, spread: 2 },
+    wave: { lu: 6, lf: 2, ru: 150, rf: 200, crouch: 0, lean: 0, spread: 1 }
+  };
+  var FACES = {
+    idle: { eye: 'open', brow: 'flat', mouth: 'line' },
+    smug: { eye: 'half', brow: 'smug', mouth: 'grin' },
+    shocked: { eye: 'wide', brow: 'up', mouth: 'o' },
+    annoyed: { eye: 'squint', brow: 'angry', mouth: 'yell' },
+    confused: { eye: 'open', brow: 'worried', mouth: 'frown', look: -1 },
+    focus: { eye: 'squint', brow: 'angry', mouth: 'line' },
+    impatient: { eye: 'half', brow: 'angry', mouth: 'frown' },
+    happy: { eye: 'open', brow: 'up', mouth: 'grin' }
+  };
+  var BROWS = { flat: [0, 0, 0, 0], angry: [-1, -1, 0, 1], up: [-2, -2, -2, -2], worried: [1, 0, -1, -2], smug: [0, 0, 0, 0] };
+
+  var ump = { cur: mkPose(UP.stand), base: 'stand', hold: null, mood: 'idle', state: 'waiting', mask: 'up', maskFly: null,
+    blinkAt: 2500, blinkTo: 0, talkTo: 0, lastType: -1e9, nextFidget: 6000, bob: 0 };
+  var stumpire = { mood: 'idle', state: 'waiting' };
+  window.STUMPIRE_CHARACTER = stumpire;
+
+  function umpFace(hx, hy, r, k) {
+    var f = FACES[ump.mood] || FACES.idle, talking = NOW < ump.talkTo;
+    var eye = NOW < ump.blinkTo ? 'closed' : f.eye, look = f.look == null ? 1 : f.look;
+    var mouth = f.mouth;
+    if (talking && Math.floor(NOW / 95) % 2 === 0) mouth = mouth === 'yell' || mouth === 'o' ? mouth : 'talk';
+    R(hx - r - 1, hy - 3, 2, 6, '#d39672'); R(hx + r - 1, hy - 3, 2, 6, '#d39672');
+    ell(hx, hy, r, r + 1, '#eab48c');
+    R(hx - 9, hy + 5, 18, 5, '#eab48c'); R(hx - 7, hy + 10, 14, 2, '#d39672');
+    // eyes
+    [-4, 4].forEach(function (ex0, i) {
+      var ex = hx + ex0, ey = hy - 1;
+      if (eye === 'closed') R(ex - 2, ey, 4, 1, '#5a3a2a');
+      else if (eye === 'squint') R(ex - 2, ey, 4, 1, '#141414');
+      else if (eye === 'wide') { R(ex - 2, ey - 2, 4, 4, '#f6f6f6'); R(ex - 1 + (look > 0 ? 1 : 0), ey - 1, 1, 2, '#141414'); }
+      else if (eye === 'half') { R(ex - 1, ey, 3, 2, '#f6f6f6'); R(ex - 1 + (look > 0 ? 1 : 0), ey + 1, 2, 1, '#141414'); R(ex - 2, ey - 1, 4, 1, '#c98a66'); }
+      else { R(ex - 1, ey - 1, 3, 3, '#f6f6f6'); R(ex - 1 + (look > 0 ? 1 : 0), ey, 2, 2, '#141414'); }
+      var b = BROWS[f.brow] || BROWS.flat, yb = hy - 5;
+      if (f.brow === 'smug' && i === 1) b = [-2, -2, -2, -1];
+      for (var c = 0; c < 4; c++) { var bx = i === 0 ? ex - 3 + c : ex + 2 - c; R(bx, yb + b[c], 1, 2, '#c9c9c9'); }
+    });
+    R(hx - 9, hy + 2, 2, 2, '#e98a7a'); R(hx + 7, hy + 2, 2, 2, '#e98a7a');
+    R(hx - 1, hy, 3, 4, '#d9786a'); R(hx, hy, 1, 1, '#f2a28e');
+    // the mustache
+    R(hx - 6, hy + 4, 12, 2, '#d8d8d8'); R(hx - 8, hy + 5, 3, 2, '#d8d8d8'); R(hx + 5, hy + 5, 3, 2, '#d8d8d8'); R(hx - 5, hy + 5, 10, 1, '#acacac');
+    var my = hy + 7;
+    if (mouth === 'line') R(hx - 2, my, 4, 1, '#5a1c1c');
+    else if (mouth === 'talk') { R(hx - 2, my, 4, 2, '#3a0d10'); R(hx - 1, my + 1, 2, 1, '#c4485a'); }
+    else if (mouth === 'yell') { R(hx - 3, my, 6, 4, '#3a0d10'); R(hx - 2, my + 2, 4, 2, '#c4485a'); }
+    else if (mouth === 'o') { R(hx - 2, my, 4, 4, '#3a0d10'); R(hx - 1, my + 1, 2, 2, '#1c0507'); }
+    else if (mouth === 'grin') { R(hx - 3, my, 6, 1, '#5a1c1c'); R(hx - 4, my - 1, 1, 1, '#5a1c1c'); R(hx + 3, my - 1, 1, 1, '#5a1c1c'); }
+    else if (mouth === 'frown') { R(hx - 2, my + 1, 4, 1, '#5a1c1c'); R(hx - 3, my + 2, 1, 1, '#5a1c1c'); R(hx + 2, my + 2, 1, 1, '#5a1c1c'); }
+    // the cap
+    ell(hx, hy - 7, r + 1, 7, '#16181f', true); R(hx - r - 2, hy - 8, 2 * r + 4, 2, '#0b0c10'); R(hx - r - 1, hy - 8, 2 * r + 2, 1, '#2c303b');
+    R(hx - 1, hy - 12, 2, 2, '#ffcf5a');
+    if (ump.mask === 'up') { R(hx - 8, hy - 18, 16, 4, '#2a2e37'); for (var bx = hx - 7; bx < hx + 8; bx += 3) R(bx, hy - 17, 1, 3, '#6a707c'); R(hx - 8, hy - 18, 16, 1, '#8a6a45'); }
+    if (ump.mask === 'down') {
+      R(hx - 10, hy - 6, 20, 2, '#7a5a3a'); R(hx - 10, hy - 6, 2, 17, '#7a5a3a'); R(hx + 8, hy - 6, 2, 17, '#7a5a3a'); R(hx - 9, hy + 10, 18, 2, '#7a5a3a');
+      for (var yy = hy - 3; yy < hy + 10; yy += 4) R(hx - 8, yy, 16, 1, '#30343d');
+      R(hx - 1, hy - 4, 2, 14, '#30343d');
+    }
+  }
+  function umpTorso(tx, ty, tw, th) {
+    R(tx + 4, ty + 3, tw - 8, th - 8, '#15161b');
+    for (var y = ty + 6; y < ty + th - 6; y += 4) R(tx + 5, y, tw - 10, 1, '#3a3d46');
+    R(tx + 2, ty + 1, 5, 4, '#15161b'); R(tx + tw - 7, ty + 1, 5, 4, '#15161b');
+    R(tx + tw - 3, ty + th - 9, 6, 6, '#1a2547'); R(tx + tw - 2, ty + th - 9, 4, 1, '#2d3d6e');
+  }
+
+  /* ---- the rest of the cast ---- */
+  var PP = { // pitcher
+    set: { lu: 15, lf: -120, ru: 15, rf: -120, crouch: 0.1 },
+    rub: { lu: 15, lf: -100, ru: 25, rf: -125, crouch: 0 },
+    windup: { lu: 165, lf: 180, ru: 165, rf: 180, crouch: 0 },
+    kick: { lu: 80, lf: 40, ru: 120, rf: 160, crouch: 0.4, lean: -2 },
+    release: { lu: 30, lf: -40, ru: 60, rf: 20, crouch: 0.5, lean: 3 }
+  };
+  var FP = { ready: { lu: 30, lf: 20, ru: 30, rf: 20, crouch: 0.6 }, catch: { lu: 150, lf: 172, ru: 150, rf: 172, crouch: 0 }, run: { lu: 40, lf: 120, ru: 40, rf: 120, crouch: 0.2 } };
+  var PIT_COL = { shirt: '#c9ced8', pants: '#c9ced8', shoe: '#14161c', skin: '#d9a27a', cap: '#7a1f2b', belt: '#22252e' };
+  var BAT_COL = { shirt: '#f4f4f4', pants: '#f4f4f4', shoe: '#14161c', skin: '#b47a52', cap: '#c8322a', belt: '#c8322a', sleeve: '#c8322a' };
+  var CAT_COL = { shirt: '#3a3f4c', pants: '#c9ced8', shoe: '#14161c', skin: '#e0b08a', cap: '#7a1f2b', belt: '#22252e' };
+  var FLD_COL = { shirt: '#c9ced8', pants: '#c9ced8', shoe: '#14161c', skin: '#c58b62', cap: '#7a1f2b', belt: '#22252e' };
+  var RUN_COL = { shirt: '#f4f4f4', pants: '#f4f4f4', shoe: '#14161c', skin: '#e3b28e', cap: '#c8322a', belt: '#c8322a' };
+  var pitcher = { x: 0, y: 0, cur: mkPose(PP.set), pose: 'set' };
+  var batter = { cur: mkPose({ crouch: 0.35, spread: 4 }), swingAt: -1e9, swing: false, enterAt: -1e9, flinchAt: -1e9 };
+  var catcher = { cur: mkPose({ crouch: 1.1, spread: 4, lu: 20, lf: -10, rT: { x: 9, y: 2 } }), popAt: -1e9 };
+  var fielders = [], runners = [], ball = null, parts = [], excite = 0, CUR_MAX = 4;
+
+  function tween(cur, tgt, dt, tau) {
+    var f = 1 - Math.exp(-dt / (tau || 70));
+    for (var k in tgt) {
+      if (typeof tgt[k] === 'number') cur[k] = (cur[k] == null ? tgt[k] : cur[k] + (tgt[k] - cur[k]) * f);
+      else cur[k] = tgt[k];
+    }
+    for (var j in cur) if (!(j in tgt) && typeof cur[j] === 'number' && j !== 'stride') cur[j] += (0 - cur[j]) * f;
+  }
+
+  /* ---- the Stumpire's behaviour ---- */
+  function umpPoseNow() {
+    if (ump.hold && NOW < ump.hold.until) return ump.hold.pose;
+    if (ump.hold && ump.hold.then) { var t = ump.hold.then; ump.hold = null; t(); if (ump.hold) return ump.hold.pose; }
+    ump.hold = null;
+    if (ump.state === 'pitching') {
+      if (NOW - ump.lastType < 1300) return 'think';
+      if (clockLeft() < 10000 && clockLeft() > 0 && !paused) return 'watch';
+      if (NOW > ump.nextFidget) { ump.nextFidget = NOW + 6000 + Math.random() * 6000; hold(pick(['cap', 'watch', 'stand']), 1300); return ump.hold.pose; }
+      return 'crouch';
+    }
+    return ump.base;
+  }
+  function hold(pose, ms, then) { ump.hold = { pose: pose, until: NOW + ms, then: then || null }; }
+  function chain(steps) { // [[pose, ms], ...]
+    var i = 0;
+    (function nx() { if (i >= steps.length) return; var s = steps[i++]; hold(s[0], s[1], nx); })();
+  }
+
+  var sayTimer = null;
+  function say(text) {
+    var el = $('umpSays'); clearInterval(sayTimer); $('ump').classList.add('on');
+    if (!text) { el.textContent = ''; return; }
+    if (REDUCE) { el.textContent = text; ump.talkTo = NOW + 500; return; }
+    var i = 0; el.textContent = ''; ump.talkTo = NOW + text.length * 16 + 250;
+    sayTimer = setInterval(function () { i += 2; el.textContent = text.slice(0, i); if (i >= text.length) clearInterval(sayTimer); }, 30);
+  }
+  /* The hook the old placeholder exposed, kept: mood and state live on
+     window.STUMPIRE_CHARACTER and as data attributes on #ump. */
+  function setUmp(mood, state, line) {
+    ump.mood = stumpire.mood = mood;
+    if (state) { ump.state = stumpire.state = state; ump.base = state === 'over' ? ump.base : 'stand'; }
+    $('ump').dataset.mood = mood; $('ump').dataset.state = ump.state;
+    if (line !== undefined) say(line);
+  }
+
+  var LINES = {
+    hello: ['My ballpark. My rules. I already called the obvious ones.', 'Step in. I know what you are going to say.', 'Five at-bats. Three outs and I go home happy.'],
+    between: ['Next batter.', 'Take a breath. Then step in.', 'I am not going anywhere.'],
+    strike: ['Steee-rike!', 'Not even close. Strike.', 'Swing and a miss!', 'That does not fit. Strike.'],
+    clock: ['Clock ran out. Strike.', 'Too slow. Strike.', 'You were thinking. I was counting.'],
+    strikeout: ['Strike three! Grab some pine.', 'Ring him up! You are out.', 'Strike three. Sit down.'],
+    out: ['Called it! You are OUT.', 'Saw that coming a mile away. Out!', 'Too obvious. OUT.', 'In my pocket. Out!'],
+    hit: [null, ['Fine. Take your base.', 'A single. I will allow it.', 'Huh. Did not call that one.'],
+      ['Off the wall. Two bases.', 'Did not see that one. Double.', 'Hmm. Take two.'],
+      ['Now THAT is deep. Three bags.', 'A triple? Who taught you that?', 'Way down the line. Triple.'],
+      ['WHAT? Never saw it coming!', 'Gone! Who even remembers him?', 'Out of the park. I need a minute.']],
+    nopitch: { already_tried: ['You tried that one. Time!'], too_many: ['Too many by that name. Give me more.'], clock_running: ['Keep swinging.'],
+      none: ['Time! Never heard of him.', 'Who? Try again.', 'Not on my list of humans. Again.'] },
+    tick: ['Tick tock.', 'Clock is running, slugger.', 'Any day now.'],
+    win: ['You got me. All five. I need a lie down.'],
+    lose: ['Three outs. I win again. See you tomorrow.', 'That is the ballgame. Same time tomorrow?']
+  };
+
+  /* ---- what plays when a swing is resolved ---- */
+  var BASEPATH_SPEED = 1.7;
+  function windup(isTimeout) {
+    ump.mask = 'down'; hold('set', 4000);
+    pitcher.pose = 'windup';
+    if (!isTimeout) batter.load = true;
+  }
+  function cancelWindup() { pitcher.pose = 'set'; batter.load = false; ump.mask = 'up'; ump.hold = null; }
+
+  function pitchBall(contact, done) {
+    var m = GEO.mound, c = GEO.catcher;
+    pitcher.pose = 'kick';
+    setTimeout(function () { pitcher.pose = 'release'; sfx('whoosh'); }, 120);
+    setTimeout(function () { pitcher.pose = 'set'; }, 900);
+    var t0 = NOW + 150, dur = 360;
+    ball = { kind: 'pitch', t0: t0, dur: dur, x0: m.x + 4, y0: m.y - 22, x1: c.x + 8, y1: c.y - 18, contactAt: contact ? 0.82 : 2, done: done };
+  }
+  function launch(tier, kind) {
+    var hz = GEO.hz, pl = GEO.plate, x1, y1, apex, dur, fi = -1;
+    if (kind === 'out') { fi = pick([0, 1, 3]); x1 = fielders[fi].hx; y1 = fielders[fi].hy - 4; apex = 80; dur = 1400; }
+    else if (tier === 1) { x1 = W * (0.4 + Math.random() * 0.25); y1 = hz + 16; apex = 28; dur = 850; }
+    else if (tier === 2) { x1 = Math.random() < 0.5 ? W * 0.14 : W * 0.86; y1 = hz + 7; apex = 45; dur = 1050; }
+    else if (tier === 3) { x1 = Math.random() < 0.5 ? W * 0.05 : W * 0.95; y1 = hz + 2; apex = 55; dur = 1250; }
+    else { x1 = W * (0.3 + Math.random() * 0.4); y1 = GEO.standTop + 16 + Math.random() * 30; apex = 95; dur = 1500; }
+    ball = { kind: kind, tier: tier, t0: NOW, dur: dur, x0: pl.x + 2, y0: pl.y - 16, x1: x1, y1: y1, apex: apex, fi: fi };
+    // the nearest fielder chases it (or camps under it)
+    var best = fi;
+    if (best < 0 && tier < 4) { var bd = 1e9; fielders.forEach(function (f, i) { var d = Math.hypot(f.hx - x1, f.hy - y1); if (d < bd) { bd = d; best = i; } }); }
+    if (best >= 0) { fielders[best].tx = x1; fielders[best].ty = Math.max(y1, GEO.hz + 4); fielders[best].chasing = true; ball.fielder = best; }
+    if (kind === 'out') setTimeout(function () { if (fielders[fi]) fielders[fi].hold = { pose: 'catch', until: NOW + 900 }; }, dur - 500);
+    return dur;
+  }
+
+  function ballPos(b, t) {
+    var x = lerp(b.x0, b.x1, t), gy = lerp(b.y0, b.y1, t), h = (b.apex || 0) * 4 * t * (1 - t);
+    return { x: x, y: gy - h, gy: gy, h: h };
+  }
+
+  /* THE CALL WAITS FOR THE BALL. Contact is a crack and a ball in the air;
+     whether it carries, and how far, is only said when it comes down. A pop
+     up climbs just as high as a home run does, so the crowd rises for both. */
+  function playRuling(r, isTimeout, commit) {
+    var rul = r.ruling, tier = r.tier || 0;
+    if (rul === 'NO_PITCH') {
+      cancelWindup(); commit();
+      setUmp('confused', null, pick(LINES.nopitch[r.reason] || LINES.nopitch.none));
+      chain([['timeA', 220], ['timeB', 220], ['timeA', 220], ['timeB', 220], ['shrug', 900]]);
+      sfx('huh');
+      return;
+    }
+    var contact = rul === 'SAFE' || rul === 'OUT';
+    pitchBall(contact, null);
+    if (!isTimeout) setTimeout(function () { batter.swingAt = NOW; batter.load = false; sfx('whoosh'); }, 330);
+    else { batter.load = false; batter.flinchAt = NOW + 400; }
+    var atPlate = 150 + 360 * (contact ? 0.82 : 1);
+    setTimeout(function () {
+      if (contact) {
+        sfx('crack'); excite = Math.max(excite, 0.15);
+        var dur = launch(tier, rul === 'OUT' ? 'out' : 'hit');
+        ump.mask = 'up'; ump.mood = stumpire.mood = 'focus'; hold('stand', dur + 200);
+        if (rul === 'SAFE') setTimeout(function () { advanceRunners(tier); }, 300);
+        setTimeout(function () {
+          commit();
+          if (rul === 'OUT') {
+            setUmp('smug', null, outLine() + (r.rarity != null ? ' ' + r.rarity + '% of fans say that.' : '')); chain([['out', 1500]]); sfx('call'); sfx('groan');
+            excite = 0.05;
+          } else if (tier >= 4) {
+            setUmp('shocked', null, pick(LINES.hit[4]) + rare(r)); ump.mask = 'off';
+            ump.maskFly = { x: GEO.ump.x, y: GEO.ump.y - 104 * UZ, vx: -40 + Math.random() * 80, vy: -90, rot: 0, landed: false };
+            chain([['shocked', 2600], ['stand', 400]]);
+            jfxLater('HOME RUN', 1200); sfx('organ'); fireworksShow(6); excite = 1; sfx('crowd', 1);
+          } else {
+            setUmp(tier === 3 ? 'shocked' : tier === 2 ? 'confused' : 'annoyed', null, pick(LINES.hit[tier]) + rare(r));
+            chain([['safe', 1500]]);
+            var scored = lastRuns(r);
+            if (scored) jfxLater(scored === 1 ? 'RUN SCORES' : scored + ' RUNS SCORE', 1500);
+            excite = 0.3 + tier * 0.17; sfx('crowd', excite);
+          }
+        }, dur);
+      } else {
+        commit();
+        catcher.popAt = NOW; sfx('pop'); ump.mask = 'up';
+        if (r.strikeout) {
+          setUmp('annoyed', null, pick(LINES.strikeout));
+          chain([['ringA', 260], ['ringB', 700], ['ringA', 200], ['ringB', 600], ['stand', 300]]);
+          sfx('call'); setTimeout(function () { sfx('groan'); }, 300);
+        } else {
+          var mt = r.state && r.state.current ? r.state.current.maxTier : 4;
+          var cost = mt < 4 ? ' Best you get now is a ' + TIER[mt].toLowerCase() + '.' : '';
+          setUmp('annoyed', null, pick(r.expired ? LINES.clock : LINES.strike) + cost);
+          if (r.expired) chain([['point', 700], ['strike', 1100]]); else chain([['strike', 1300]]);
+          sfx('call');
+        }
+      }
+    }, atPlate);
+  }
+  function outLine() { return pick(LINES.out); }
+  /* How common the answer was, said the way he would say it. */
+  function rare(r) {
+    if (r.rarity == null) return '';
+    if (r.rarity < 1) return ' Not one fan in a hundred goes there.';
+    return ' Only ' + r.rarity + '% of fans say that.';
+  }
+  function lastRuns(r) {
+    var box = r.state && r.state.box, i = r.state ? r.state.atBat - 1 : -1;
+    return box && box[i] && box[i].runs ? box[i].runs : 0;
+  }
+  function jfxLater(t, ms) { setTimeout(function () { jfx(t); }, ms); }
+
+  /* ---- base runners, for show: the bases a hit is worth move the men on ---- */
+  function occFrom(history) {
+    var occ = [0, 0, 0];
+    (history || []).forEach(function (h) {
+      if (h.ruling !== 'SAFE') return;
+      var t = h.tier, n = [0, 0, 0];
+      for (var i = 2; i >= 0; i--) if (occ[i] && i + t < 3) n[i + t] = 1;
+      if (t < 4) n[t - 1] = 1;
+      occ = n;
+    });
+    return occ;
+  }
+  function syncRunners(history) {
+    if (runners.some(function (r) { return r.b !== r.tb; })) return;
+    var occ = occFrom(history);
+    runners = [];
+    occ.forEach(function (o, i) { if (o) runners.push({ b: i + 1, tb: i + 1 }); });
+  }
+  function advanceRunners(t) {
+    runners.forEach(function (r) { r.tb = r.b + t; });
+    runners.push({ b: 0, tb: Math.min(4, t) });
+  }
+  function basePos(b) {
+    var i = Math.min(3, Math.floor(b)), f = b - i, a = GEO.base[i], c = GEO.base[i + 1];
+    return P(lerp(a.x, c.x, f), lerp(a.y, c.y, f));
+  }
+
+  /* ---- fireworks and dust ---- */
+  function burstFx(x, y, col, n, sp) {
+    for (var i = 0; i < n; i++) { var a = Math.random() * 6.283, v = (0.4 + Math.random()) * sp; parts.push({ x: x, y: y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1, c: col, g: 30 }); }
+  }
+  function fireworksShow(n) {
+    if (REDUCE) return;
+    for (var i = 0; i < n; i++) (function (i) {
+      setTimeout(function () {
+        var j = GEO.jumbo, x = i % 2 ? j.x + j.w + 10 + Math.random() * 12 : j.x - 10 - Math.random() * 12, y = 14 + Math.random() * 30;
+        burstFx(Math.max(4, Math.min(W - 4, x)), y, pick(['#ffcf5a', '#e0402f', '#8fb3ff', '#3ecf8e', '#ffffff']), 36, 46); sfx('boom');
+      }, i * 380);
+    })(i);
+  }
+  function jfx(text) {
+    if (!text) return;
+    var el = $('jfx'); el.textContent = text; el.classList.remove('go'); void el.offsetWidth; el.classList.add('go');
+  }
+
+  /* ---- every frame ---- */
+  function frame(ts) {
+    var dt = Math.min(50, ts - (LAST || ts)); LAST = ts; NOW = ts;
+    update(dt); draw();
+    requestAnimationFrame(frame);
+  }
+
+  function update(dt) {
+    var up = UP[umpPoseNow()] || UP.stand;
+    tween(ump.cur, up, dt, 65);
+    if (NOW > ump.blinkAt) { ump.blinkTo = NOW + 120; ump.blinkAt = NOW + 2200 + Math.random() * 3200; }
+    if (ump.maskFly) {
+      var mf = ump.maskFly;
+      if (!mf.landed) { mf.vy += 260 * dt / 1000; mf.x += mf.vx * dt / 1000; mf.y += mf.vy * dt / 1000; mf.rot += dt / 60; if (mf.y > GEO.ump.y - 4) { mf.y = GEO.ump.y - 4; mf.landed = NOW; } }
+      else if (NOW - mf.landed > 1800) { ump.maskFly = null; ump.mask = 'up'; }
+    }
+    // pitcher
+    tween(pitcher.cur, PP[pitcher.pose] || PP.set, dt, 80);
+    // batter: hands follow a grip point through the swing
+    var sw = (NOW - batter.swingAt) / 420;
+    var grip, ang;
+    if (sw >= 0 && sw < 1.6) {
+      var s = Math.min(1, sw);
+      if (s < 0.45) { var u = s / 0.45; grip = { x: lerp(10, 2, u), y: lerp(-6, 12, u) }; ang = lerp(-2.1, 0.15, u); }
+      else { var w = (s - 0.45) / 0.55; grip = { x: lerp(2, -12, w), y: lerp(12, -6, w) }; ang = lerp(0.15, 3.9, w); }
+      batter.trail = s > 0.2 && s < 0.75;
+    } else {
+      var wag = batter.load ? Math.sin(NOW / 70) * 1.5 : Math.sin(NOW / 400) * 1;
+      grip = { x: 10 + (batter.load ? 2 : 0), y: -6 + wag * 0.5 }; ang = -2.1 + wag * 0.08; batter.trail = false;
+    }
+    batter.grip = grip; batter.ang = ang;
+    // catcher's mitt jolt
+    var pop = Math.max(0, 1 - (NOW - catcher.popAt) / 180);
+    catcher.cur.rT = { x: 9, y: 2 + pop * 3 };
+    // fielders
+    fielders.forEach(function (f, i) {
+      if (!f.chasing && i >= 2) f.ty = f.hy + (4 - CUR_MAX) * 3;
+      var dx = f.tx - f.x, dy = f.ty - f.y, d = Math.hypot(dx, dy), sp = 40 * dt / 1000;
+      if (d > 0.5) { f.x += dx / d * Math.min(sp, d); f.y += dy / d * Math.min(sp, d); f.run += dt; }
+      else if (!f.chasing && f.hold == null) f.run = 0;
+      var tgt = f.hold && NOW < f.hold.until ? FP[f.hold.pose] : (d > 0.5 ? FP.run : FP.ready);
+      if (f.hold && NOW >= f.hold.until) f.hold = null;
+      tween(f.pose, tgt, dt, 90);
+      f.pose.stride = d > 0.5 ? Math.sin(f.run / 70) : 0;
+    });
+    // runners
+    runners.forEach(function (r) { if (r.b < r.tb) { r.b = Math.min(r.tb, r.b + BASEPATH_SPEED * dt / 1000); r.run = (r.run || 0) + dt; } });
+    runners = runners.filter(function (r) { if (r.b >= 4) { excite = Math.max(excite, 0.5); sfx('blip'); return false; } return true; });
+    // ball
+    if (ball && ball.kind !== 'pitch' && !ball.landed) {
+      var tf = Math.max(0, Math.min(1, (NOW - ball.t0) / ball.dur));
+      excite = Math.max(excite, Math.min(0.7, ballPos(ball, tf).h / 120));
+    }
+    if (ball) {
+      var t = (NOW - ball.t0) / ball.dur;
+      if (ball.kind === 'pitch' && t >= ball.contactAt) { ball = null; }
+      else if (ball.kind === 'pitch' && t >= 1) { ball = null; }
+      else if (ball.kind !== 'pitch' && t >= 1) {
+        if (!ball.landed) {
+          ball.landed = NOW;
+          var bp = ballPos(ball, 1);
+          if (ball.kind === 'hit' && ball.tier < 4) burstFx(bp.x, bp.gy, '#c99a6a', 10, 14);
+          if (ball.kind === 'hit' && ball.tier >= 4) burstFx(bp.x, bp.y, '#ffffff', 14, 20);
+          if (ball.kind === 'out') sfx('pop');
+        }
+        if (NOW - ball.landed > (ball.kind === 'out' ? 200 : 1300)) {
+          if (ball.fielder != null) { var f = fielders[ball.fielder]; f.chasing = false; f.tx = f.hx; f.ty = f.hy; }
+          ball = null;
+        }
+      }
+    }
+    excite *= Math.exp(-dt / 1600);
+    parts.forEach(function (p) { p.x += p.vx * dt / 1000; p.y += p.vy * dt / 1000; p.vy += p.g * dt / 1000; p.life -= dt / 1300; });
+    parts = parts.filter(function (p) { return p.life > 0; });
+  }
+
+  function draw() {
+    g.setTransform(S, 0, 0, S, 0, 0); g.imageSmoothingEnabled = false; C = g;
+    g.drawImage(BG, 0, 0);
+    // stars twinkle
+    STARS.forEach(function (s) { if ((Math.floor(NOW / 700) + s.t) % 5) R(s.x, s.y, 1, 1, '#c9d6ff'); });
+    // the crowd
+    var ex = excite, jump = ex > 0.25;
+    for (var i = 0; i < FANS.length; i++) {
+      var f = FANS[i], b = jump ? Math.round(Math.max(0, Math.sin(NOW / 90 + f.ph)) * ex * 3) : (Math.sin(NOW / 900 + f.ph) > 0.97 ? 1 : 0);
+      R(f.x, f.y + 1 - b, 3, 3, f.c); R(f.x + 1, f.y - 1 - b, 2, 2, f.s);
+      if (jump && ex > 0.5 && (i % 3 === 0)) { R(f.x - 1, f.y - 2 - b, 1, 2, f.s); R(f.x + 3, f.y - 2 - b, 1, 2, f.s); }
+    }
+    // a fence that comes in: every strike takes a base off the longest hit
+    if (CUR_MAX < 4 && ump.state === 'pitching') {
+      var fy = GEO.hz + 4 + (4 - CUR_MAX) * 6;
+      for (var fx = 0; fx < W; fx += 4) R(fx, fy, 2, 1, '#ff8a3d');
+      for (fx = 10; fx < W; fx += 40) { R(fx, fy - 5, 1, 5, '#e8e8e0'); R(fx + 1, fy - 5, 4, 2, '#ff8a3d'); }
+    }
+    // marquee bulbs round the board
+    var j = GEO.jumbo, step = Math.floor(NOW / 140);
+    for (var x = j.x - 2, n = 0; x < j.x + j.w + 2; x += 4, n++) { var on = (n + step) % 3 === 0 ? '#ffd36b' : '#4a3d18'; R(x, j.y - 3, 2, 1, on); R(x, j.y + j.h + 2, 2, 1, (n + step + 1) % 3 === 0 ? '#ffd36b' : '#4a3d18'); }
+    // figures, back to front
+    var cast = [];
+    fielders.forEach(function (f) { cast.push({ y: f.y, fn: function () { person({ x: f.x, y: f.y, k: f.k, pose: f.pose, col: FLD_COL, head: capHead(FLD_COL) }); } }); });
+    runners.forEach(function (r) { var bp = basePos(r.b); cast.push({ y: bp.y, fn: function () { person({ x: bp.x, y: bp.y, k: 0.32, pose: { lu: 40, lf: 120, ru: 40, rf: 120, crouch: 0.2, lean: 2, stride: r.b < r.tb ? Math.sin((r.run || 0) / 70) : 0 }, col: RUN_COL, head: capHead(RUN_COL, false, true) }); } }); });
+    cast.push({ y: pitcher.y, fn: function () { person({ x: pitcher.x, y: pitcher.y, k: 0.38, pose: pitcher.cur, col: PIT_COL, head: capHead(PIT_COL), hand: function (s, hd, k) { if (s < 0) ell(hd.x, hd.y, 2, 2, '#6b3f1f'); else R(hd.x - 1, hd.y - 1, 2, 2, PIT_COL.skin); } }); } });
+    cast.sort(function (a, b) { return a.y - b.y; }).forEach(function (c) { c.fn(); });
+    // ball shadow
+    var bpos = null;
+    if (ball) {
+      var t = Math.min(1, (NOW - ball.t0) / ball.dur);
+      if (t >= 0) {
+        if (ball.kind === 'pitch') { bpos = { x: lerp(ball.x0, ball.x1, t), y: lerp(ball.y0, ball.y1, t) - Math.sin(t * Math.PI) * 4, gy: lerp(ball.y0 + 22, ball.y1 + 18, t), sz: t < 0.4 ? 1 : t < 0.8 ? 2 : 3 }; }
+        else { var bp = ballPos(ball, t); bpos = { x: bp.x, y: bp.y, gy: bp.gy, sz: bp.gy > 190 ? 3 : bp.gy > 150 ? 2 : 1, noShadow: ball.tier >= 4 && bp.gy < GEO.hz }; }
+        if (!bpos.noShadow && bpos.gy > GEO.hz) R(bpos.x - 1, bpos.gy, bpos.sz + 1, 1, 'rgba(0,0,0,.35)');
+      }
+    }
+    // the batter
+    var bx = GEO.batter.x - Math.max(0, 1 - (NOW - batter.enterAt) / 600) * 40;
+    var bfig = person({ x: bx, y: GEO.batter.y, k: 0.58, pose: { crouch: 0.35, spread: 4, lT: batter.grip, rT: { x: batter.grip.x + 2, y: batter.grip.y + 1 } }, col: BAT_COL, head: capHead(BAT_COL, false, true) });
+    var gx = (bfig.hands[0].x + bfig.hands[1].x) / 2, gy = (bfig.hands[0].y + bfig.hands[1].y) / 2;
+    if (batter.trail) { for (var a = batter.ang - 1.2; a < batter.ang; a += 0.15) R(gx + Math.cos(a) * 15, gy + Math.sin(a) * 15, 2, 2, 'rgba(255,255,255,.25)'); }
+    seg(gx, gy, gx + Math.cos(batter.ang) * 9, gy + Math.sin(batter.ang) * 9, 2, '#c89a5a');
+    seg(gx + Math.cos(batter.ang) * 9, gy + Math.sin(batter.ang) * 9, gx + Math.cos(batter.ang) * 16, gy + Math.sin(batter.ang) * 16, 3, '#d8aa66');
+    // the catcher, back to us
+    person({ x: GEO.catcher.x, y: GEO.catcher.y, k: 0.46, pose: catcher.cur, col: CAT_COL, head: capHead(CAT_COL, true), hand: function (s, hd, k) { if (s > 0) ell(hd.x, hd.y, 3, 3, '#6b3f1f'); else R(hd.x - 1, hd.y - 1, 2, 2, CAT_COL.skin); } });
+    if (bpos) { R(bpos.x - (bpos.sz >> 1), bpos.y - (bpos.sz >> 1), bpos.sz, bpos.sz, '#ffffff'); if (bpos.sz >= 3) R(bpos.x - 1, bpos.y, 1, 1, '#d23a3a'); }
+    // THE STUMPIRE
+    var breathe = Math.sin(NOW / 650) > 0.6 ? 1 : 0;
+    /* He is drawn at one scale into his own canvas, then placed at UZ times
+       that: on a wide screen he stands in the foreground twice as big. */
+    umpg.setTransform(1, 0, 0, 1, 0, 0); umpg.clearRect(0, 0, 160, 132); umpg.imageSmoothingEnabled = false; C = umpg;
+    person({ x: 80, y: 130, k: 1, pose: ump.cur, col: UMP_COL, belly: true, wide: 1.12, torso: umpTorso, head: function (hx, hy, r) { umpFace(Math.round(hx), Math.round(hy) + breathe, r); },
+      armsBehindHead: false, hand: function (s, hd) { R(hd.x - 2, hd.y - 2, 5, 5, '#eab48c'); R(hd.x - 2, hd.y + 2, 5, 1, '#d39672'); } });
+    C = g; g.drawImage(UMPC, GEO.ump.x - 80 * UZ, GEO.ump.y - 130 * UZ, 160 * UZ, 132 * UZ);
+    if (ump.maskFly) { var mf = ump.maskFly, rr = Math.round(mf.rot) % 2; var z = UZ; R(mf.x - (rr ? 4 : 8) * z, mf.y - (rr ? 8 : 4) * z, (rr ? 8 : 16) * z, (rr ? 16 : 8) * z, '#7a5a3a'); R(mf.x - 3 * z, mf.y - 3 * z, 6 * z, 6 * z, '#30343d'); }
+    // fireworks, dust
+    parts.forEach(function (p) { R(p.x, p.y, 1, 1, p.c); if (p.life > 0.6) R(p.x - p.vx * 0.03, p.y - p.vy * 0.03, 1, 1, p.c); });
+  }
+
+  /* ================================================================
+     THE GAME. Unchanged rules: the server decides everything.
+     ================================================================ */
+  var GUEST_KEY = 'stumpire_guest_v1';
+  function guestId() {
+    var gid = null;
+    try { gid = localStorage.getItem(GUEST_KEY); } catch (e) {}
+    if (!gid) { gid = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2)); try { localStorage.setItem(GUEST_KEY, gid); } catch (e) {} }
+    return gid;
+  }
+  function api(method, path, body) {
+    var h = { 'Content-Type': 'application/json', 'X-Stumpire-Guest': guestId() };
+    var t = A && A.token && A.token();
+    if (t) h.Authorization = 'Bearer ' + t;
+    return fetch('/api/stumpire/' + path, { method: method, headers: h, body: body ? JSON.stringify(body) : undefined })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { j._status = r.status; return j; }); });
+  }
+
+  var TOUCH = false;
+  try { TOUCH = window.matchMedia('(pointer: coarse)').matches; } catch (e) {}
+  /* What he says when an at-bat starts depends on how the day is going. */
+  function context(v) {
+    var last = v.history[v.history.length - 1];
+    if (v.atBat === v.total - 1 && v.outs < 3) return ' Last at-bat. Do not choke.';
+    if (v.outs === 2) return ' Two outs. One more and I go home happy.';
+    if (last && last.ruling === 'OUT' && !last.strikeout) return ' I saw your last one coming too.';
+    if (last && last.ruling === 'SAFE' && last.tier >= 3) return ' Lucky. Do it again.';
+    if (v.summary.bases >= 8) return ' You are hitting me hard today.';
+    return ' Name one I did not.';
+  }
+
+  var INTRO_KEY = 'stumpire_intro_v1', introStep = -1, introTimer = null;
+  var INTRO = ['I am the Stumpire. I call the obvious answers before you step in.',
+    'Each at-bat is a prompt. Say an answer I called and you are OUT.',
+    'Say a real one I missed and you are SAFE. The deeper the cut, the farther it flies.',
+    'A wrong answer is a strike. Each strike takes away your best hit. Three and you are out.',
+    'Your score counts total bases, hits, home runs and runs. Strikeouts cost you.',
+    'Thirty seconds a swing. Three outs ends the game. Play ball when you are ready.'];
+  function seenIntro() { try { return localStorage.getItem(INTRO_KEY) === '1'; } catch (e) { return true; } }
+  function intro() { introStep = -1; introNext(); }
+  function introNext() {
+    clearTimeout(introTimer);
+    introStep++;
+    if (introStep >= INTRO.length) { introStep = -1; try { localStorage.setItem(INTRO_KEY, '1'); } catch (e) {} return; }
+    var poses = ['cross', 'point', 'safe', 'strike', 'point', 'stand'], moods = ['smug', 'idle', 'happy', 'annoyed', 'idle', 'smug'];
+    setUmp(moods[introStep], 'waiting', INTRO[introStep] + (introStep < INTRO.length - 1 ? ' (tap)' : ''));
+    hold(poses[introStep], 2600);
+    introTimer = setTimeout(introNext, 4200);
+  }
+  $('ump').addEventListener('click', function () { if (introStep >= 0) introNext(); });
+  $('howto').onclick = function () { intro(); $('stage').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+
+  var S0 = null, clockTimer = null, deadline = 0, paused = false, busy = false, liveKey = null, lowSaid = false, greeted = false, tickSec = -1;
+  var TIER = ['Out', 'Single', 'Double', 'Triple', 'Home run'];
+  function clockLeft() { return clockTimer ? Math.max(0, deadline - Date.now()) : -1; }
+
+  function dots(el, n, max) { var h = ''; for (var i = 0; i < max; i++) h += '<span class="' + (i < n ? 'on' : '') + '"></span>'; $(el).innerHTML = h; }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+
+  function render(v) {
+    S0 = v;
+    show('gate', false); show('board', true);
+    $('slNo').textContent = '#' + v.slate.no;
+    $('abNo').textContent = Math.min(v.atBat + 1, v.total);
+    $('score').textContent = v.summary.score || 0; $('runs').textContent = v.summary.runs || 0;
+    dots('outs', v.outs, 3);
+    var cur = v.current;
+    dots('strikes', cur ? cur.strikes : 0, 3);
+    renderHistory(v);
+    syncRunners(v.history);
+    if (v.over) return renderOver(v);
+    show('over', false);
+    if (cur.status === 'live') {
+      show('next', false); show('atbat', true);
+      $('league').textContent = cur.league + (cur.type === 'team' ? ' · teams' : '');
+      var key = v.slate.no + ':' + v.atBat;
+      if ($('prompt').textContent !== cur.prompt) { $('prompt').textContent = cur.prompt; $('prompt').classList.remove('reveal'); void $('prompt').offsetWidth; $('prompt').classList.add('reveal'); fitPrompt(); }
+      $('tell').textContent = 'The Stumpire has called ' + cur.calledCount + ' answers. One of them: ' + cur.tell + '.';
+      $('maxTier').textContent = cur.strikes ? 'Best hit left: ' + TIER[cur.maxTier] + '.' : '';
+      CUR_MAX = cur.maxTier;
+      Array.prototype.forEach.call($('power').querySelectorAll('.seg'), function (el, i) {
+        el.classList.toggle('on', i < cur.maxTier); el.classList.toggle('peak', i === cur.maxTier - 1); el.classList.toggle('lost', i >= cur.maxTier);
+      });
+      var cards = '';
+      for (var ci = 0; ci < cur.calledCount; ci++) cards += ci === 0 ? '<span class="ccard">' + esc(cur.tell) + '</span>' : '<span class="ccard down">?</span>';
+      $('pocket').innerHTML = cards;
+      startClock(cur.remainingMs, cur.paused);
+      if (key !== liveKey) {
+        liveKey = key; lowSaid = false;
+        batter.enterAt = NOW; pitcher.pose = 'rub'; setTimeout(function () { pitcher.pose = 'set'; }, 900);
+        setUmp('smug', 'pitching', 'I called ' + cur.calledCount + '. One of them is ' + cur.tell + '.' + context(v));
+        ump.nextFidget = NOW + 7000;
+      } else if (ump.state !== 'pitching') { ump.state = stumpire.state = 'pitching'; $('ump').dataset.state = 'pitching'; }
+      if (!TOUCH) setTimeout(function () { $('answer').focus(); }, 0);
+    } else {
+      stopClock(); show('atbat', false); show('next', true); $('sugg').innerHTML = ''; sSeq++;
+      $('nextBtn').textContent = v.atBat === 0 ? 'Play ball' : 'Next at-bat';
+      $('league').textContent = 'Stumpire Park';
+      if (v.atBat === 0) $('prompt').textContent = 'Slate ' + v.slate.no + '. Five at-bats. Three outs ends it.';
+      fitPrompt();
+      CUR_MAX = 4;
+      if (!greeted) { greeted = true; if (v.atBat === 0 && !v.history.length && !seenIntro()) intro(); else setUmp('smug', 'waiting', pick(LINES.hello)); }
+      else if (ump.state === 'pitching') { ump.state = stumpire.state = 'waiting'; $('ump').dataset.state = 'waiting'; }
+    }
+  }
+
+  function renderHistory(v) {
+    if (!v.history.length) { show('historyCard', false); return; }
+    show('historyCard', true);
+    $('history').innerHTML = v.history.map(function (h) {
+      var what = h.ruling === 'SAFE' ? TIER[h.tier] : (h.strikeout ? 'Struck out' : 'Out');
+      return '<li><b>' + esc(h.prompt) + '</b><br>' + esc(h.answer || 'No answer') + ': <span class="' + h.ruling + '">' + what + '</span>' +
+        '<div class="called">Called: ' + esc(h.called.join(', ')) + '</div>' +
+        (v.over ? '<button data-ch="' + h.atBat + '">Challenge the call</button>' : '') + '</li>';
+    }).join('');
+  }
+
+  var overShown = false;
+  function renderOver(v) {
+    stopClock(); show('atbat', false); show('next', false); show('reveal', false); $('sugg').innerHTML = ''; sSeq++;
+    $('clock').textContent = ''; $('league').textContent = 'Final'; $('prompt').textContent = (v.won ? 'You beat the Stumpire. ' : 'Ballgame. ') + v.summary.bases + ' of 20 bases.'; fitPrompt();
+    var first = !overShown; overShown = true;
+    setTimeout(function () {
+      if (v.won) { setUmp('shocked', 'over', pick(LINES.win)); ump.base = 'shocked'; fireworksShow(8); excite = 1; sfx('organ'); }
+      else { setUmp('smug', 'over', pick(LINES.lose)); ump.base = 'cross'; }
+    }, first && liveKey ? 2200 : 0);
+    api('GET', 'result').then(function (r) {
+      var sm = r.summary || v.summary, box = r.box || v.box || [];
+      var cells = box.map(function (b, i) {
+        if (!b) return '<div><small>AB ' + (i + 1) + '</small>-</div>';
+        var t = b.hit ? ['', '1B', '2B', '3B', 'HR'][b.hit] : b.out;
+        return '<div class="' + (b.hit ? 'h' : 'o') + '"><small>AB ' + (i + 1) + '</small>' + t + (b.runs ? ' +' + b.runs : '') + '</div>';
+      }).join('');
+      var tb = sm.bases, calc = [['Total bases', tb, 10], ['Hits', sm.hits || 0, 5], ['Home runs', sm.hr || 0, 10], ['Runs', sm.runs || 0, 15], ['Strikeouts', sm.k || 0, -10]];
+      var html = '<div class="final ' + (v.won ? 'SAFE' : 'OUT') + '">' + (v.won ? 'You beat the Stumpire' : 'Ballgame') + '</div>' +
+        '<div class="bigscore"><b>' + (sm.score || 0) + '</b><span>Stumpire score</span></div>' +
+        '<div class="linescore">' + cells + '</div>' +
+        '<table class="calc">' + calc.map(function (c) { return '<tr><td>' + c[0] + ' ' + c[1] + ' x ' + c[2] + '</td><td>' + (c[1] * c[2]) + '</td></tr>'; }).join('') +
+        '<tr class="tot"><td>Score</td><td>' + (sm.score || 0) + '</td></tr></table>' +
+        '<div class="chips">' + (r.streak ? '<span class="chip">Streak: ' + r.streak + (r.streak === 1 ? ' day' : ' days') + '</span>' : '') +
+        (r.rank ? '<span class="chip">Today: ' + ordinal(r.rank) + ' of ' + r.field + '</span>' : '') + (sm.cycle ? '<span class="chip">Hit for the cycle</span>' : '') + '</div>' +
+        '<pre class="share" id="shareText">' + esc(r.share || v.share) + '</pre>' +
+        '<div class="row2"><button class="go" id="shareImg">Share card</button><button id="copy">Copy result</button></div>' +
+        '<div id="boardBox"></div>';
+      if (r.crowd && r.crowd.some(function (c) { return c.length; })) html += '<p class="mut">What everyone else said, for fun only:</p>' + r.crowd.map(function (c, i) {
+        return c.length ? '<div class="mut">At-bat ' + (i + 1) + ': ' + c.map(function (x) { return esc(x.name) + ' ' + x.pct + '%'; }).join(', ') + '</div>' : '';
+      }).join('');
+      $('over').innerHTML = html; show('over', true);
+      $('prompt').textContent = 'Final. Score ' + (sm.score || 0) + '. ' + (sm.runs || 0) + ' R, ' + (sm.hits || 0) + ' H, ' + (sm.hr || 0) + ' HR.'; fitPrompt();
+      $('copy').onclick = function () { try { navigator.clipboard.writeText($('shareText').textContent); $('copy').textContent = 'Copied'; } catch (e) {} };
+      $('shareImg').onclick = function () { shareCard(sm, box, r.share || v.share, r.streak); };
+      api('GET', 'board').then(function (bd) {
+        if (!bd || !bd.top || !bd.top.length) return;
+        $('boardBox').innerHTML = '<div class="cardlbl" style="margin-top:6px">Today\'s board</div><ol class="board">' + bd.top.map(function (e) {
+          return '<li class="' + (e.me ? 'me' : '') + '"><span class="nm">' + e.rank + '. ' + esc(e.name) + '</span><span class="sc">' + e.score + '</span></li>';
+        }).join('') + '</ol>';
+      });
+    });
+  }
+  function ordinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+
+  /* THE SHARE CARD. The ballpark's own art, drawn at a quarter size and
+     blown up on whole pixels, with crisp type laid over it. */
+  function shareCard(sm, box, text, streak) {
+    var N = 1080, L = 270, art = document.createElement('canvas'); art.width = L; art.height = L;
+    var a = art.getContext('2d'), keep = C; C = a; a.imageSmoothingEnabled = false;
+    var sky = a.createLinearGradient(0, 0, 0, L); sky.addColorStop(0, '#03050d'); sky.addColorStop(1, '#1d1a44');
+    a.fillStyle = sky; a.fillRect(0, 0, L, L);
+    for (var i = 0; i < 60; i++) R(hash(i * 31) % L, hash(i * 17 + 3) % 120, 1, 1, '#c9d6ff');
+    for (var y = 150; y < 200; y += 5) for (var x = 2; x < L; x += 4) R(x, y + 1, 3, 3, ['#e0402f', '#f2f2f2', '#2f6fed', '#ffcf5a', '#3ecf8e'][hash(x + y * 31) % 5]);
+    R(0, 200, L, 8, '#0e4430'); R(0, 200, L, 2, '#1f6e48'); R(0, 208, L, 62, '#2f7a39');
+    a.drawImage(UMPC, 150, 138, 160, 132);
+    R(14, 14, L - 28, 112, '#1a1d24'); R(16, 16, L - 32, 108, '#07080a');
+    C = keep;
+    var c = document.createElement('canvas'); c.width = N; c.height = N;
+    var x2 = c.getContext('2d'); x2.imageSmoothingEnabled = false; x2.drawImage(art, 0, 0, N, N);
+    x2.textAlign = 'left'; x2.fillStyle = '#ffcf5a'; x2.shadowColor = 'rgba(255,190,70,.6)'; x2.shadowBlur = 18;
+    x2.font = '900 52px system-ui, sans-serif'; x2.fillText('STUMPIRE #' + (S0 ? S0.slate.no : ''), 100, 150);
+    x2.font = '900 190px system-ui, sans-serif'; x2.fillText(String(sm.score || 0), 96, 350);
+    x2.shadowBlur = 0; x2.fillStyle = '#ffe9b0'; x2.font = '800 40px system-ui, sans-serif';
+    x2.fillText((sm.runs || 0) + ' R   ' + (sm.hits || 0) + ' H   ' + (sm.hr || 0) + ' HR   ' + (sm.k || 0) + ' K', 104, 430);
+    box.forEach(function (b, i) {
+      var bx = 64 + i * 118, by = 870;
+      x2.fillStyle = 'rgba(7,8,10,.85)'; x2.fillRect(bx, by, 104, 104);
+      x2.fillStyle = !b ? '#56607a' : b.hit ? '#3ecf8e' : '#ff6b6b'; x2.font = '900 44px system-ui, sans-serif'; x2.textAlign = 'center';
+      x2.fillText(!b ? '-' : b.hit ? ['', '1B', '2B', '3B', 'HR'][b.hit] : b.out, bx + 52, by + 66);
+    });
+    x2.textAlign = 'left'; x2.fillStyle = '#ffffff'; x2.font = '700 34px system-ui, sans-serif';
+    x2.fillText(streak > 1 ? streak + ' day streak' : 'Can you stump him?', 64, 1040);
+    c.toBlob(function (blob) {
+      if (!blob) return;
+      var file = null;
+      try { file = new File([blob], 'stumpire.png', { type: 'image/png' }); } catch (e) {}
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], text: text }).catch(function () {}); return; }
+      var url = URL.createObjectURL(blob), link = document.createElement('a');
+      link.href = url; link.download = 'stumpire.png'; document.body.appendChild(link); link.click(); link.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    }, 'image/png');
+  }
+
+  function startClock(ms, isPaused) {
+    stopClock(); paused = !!isPaused; deadline = Date.now() + ms; tick();
+    clockTimer = setInterval(tick, 250);
+  }
+  function stopClock() { if (clockTimer) clearInterval(clockTimer); clockTimer = null; $('clock').classList.remove('low'); $('clock2').classList.remove('low'); }
+  function tick() {
+    if (paused) return;
+    var left = Math.max(0, deadline - Date.now()), sec = Math.ceil(left / 1000);
+    $('clock').textContent = sec; $('clock2').textContent = sec;
+    $('clock').classList.toggle('low', left < 10000); $('clock2').classList.toggle('low', left < 10000);
+    if (left < 2600 && left > 0 && !busy && pitcher.pose === 'set') { pitcher.pose = 'windup'; ump.mask = 'down'; }
+    if (left < 10000 && left > 0 && sec !== tickSec) { tickSec = sec; sfx('tick'); }
+    if (left < 10000 && !lowSaid && !busy && left > 0) { lowSaid = true; setUmp('impatient', null, pick(LINES.tick)); }
+    if (left <= 0 && !busy) { stopClock(); submit({ timeout: true }); }
+  }
+
+  var ruleTimer = null;
+  /* The graphic under a call: who it was, a badge for the hit, and a row of
+     ten bulbs for how many fans say that name. Fewer lit is a deeper cut. */
+  function plate(r) {
+    var safe = r.ruling === 'SAFE', pct = r.rarity;
+    var badge = safe ? '<span class="tchip t' + r.tier + '">' + ['', 'Single', 'Double', 'Triple', 'Home run'][r.tier] + '</span>' : '<span class="tchip tout">Called</span>';
+    var fans = '';
+    if (pct != null) {
+      var lit = Math.max(1, Math.min(10, Math.ceil(pct / 10))), bulbs = '';
+      for (var i = 0; i < 10; i++) bulbs += '<i class="' + (i < lit ? 'on' : '') + '" style="animation-delay:' + (0.25 + i * 0.05) + 's"></i>';
+      fans = '<span class="fans ' + (safe ? '' : 'hot') + '"><span class="bulbs">' + bulbs + '</span><b>' + (pct < 1 ? '&lt;1' : pct) + '%</b><em>of fans</em></span>';
+    }
+    return '<div class="plate"><div class="who2">' + esc(r.answer ? r.answer.name : '') + '</div><div class="prow">' + badge + fans + '</div></div>';
+  }
+  function ruling(r) {
+    var word = r.ruling === 'SAFE' ? 'SAFE' : r.ruling === 'OUT' ? 'OUT' : r.ruling === 'STRIKE' ? (r.strikeout ? 'STRIKE THREE' : 'STRIKE') : 'NO PITCH';
+    var sub = r.ruling === 'SAFE' ? '' : r.ruling === 'OUT' ? 'Called it.'
+      : r.ruling === 'STRIKE' ? (r.strikeout ? 'You are out.' : r.expired ? 'The clock ran out.' : r.reason === 'invalid' ? 'That does not fit.' : '')
+      : (r.reason === 'already_tried' ? 'You tried that one.' : r.reason === 'too_many' ? 'Too many players by that name. Add more.' : r.reason === 'clock_running' ? 'Keep swinging.' : 'No player or team by that name. Try again.');
+    var html = '<div class="ruling ' + r.ruling + '">' + esc(word) + '</div>';
+    if (r.ruling === 'SAFE' || (r.ruling === 'OUT' && r.answer)) html += plate(r);
+    else html += '<div class="sub">' + (r.answer ? esc(r.answer.name) + ' · ' : '') + esc(sub) + '</div>';
+    var el = $('ruling'); el.innerHTML = html; el.classList.remove('hide', 'fade');
+    clearTimeout(ruleTimer); ruleTimer = setTimeout(function () { el.classList.add('fade'); }, 2600);
+    if (r.reveal) {
+      var mine = r.answer ? r.answer.name : '';
+      $('reveal').innerHTML = '<div class="cardlbl">His card, turned over</div><div class="cards">' + r.reveal.called.map(function (n, i) {
+        return '<span class="ccard flip' + (n === mine ? ' hit' : '') + '" style="animation-delay:' + (i * 0.12) + 's">' + esc(n) + '</span>';
+      }).join('') + '</div>';
+      show('reveal', true);
+    }
+    else if (r.ruling !== 'NO_PITCH' && r.ruling !== 'STRIKE') show('reveal', false);
+  }
+
+  function submit(body) {
+    if (busy) return; busy = true;
+    $('swing').disabled = true;
+    var started = NOW, isTimeout = !!body.timeout;
+    if (TOUCH) { try { $('answer').blur(); } catch (e) {} $('stage').scrollIntoView({ behavior: REDUCE ? 'auto' : 'smooth', block: 'start' }); }
+    $('ruling').classList.add('hide');
+    windup(isTimeout);
+    api('POST', 'answer', body).then(function (r) {
+      function release() { busy = false; $('swing').disabled = false; }
+      if (r._status === 409 && r.error === 'conflict') { release(); cancelWindup(); return load(); }
+      if (r._status !== 200) { release(); cancelWindup(); $('ruling').innerHTML = '<div class="sub">Something went wrong. Try again.</div>'; $('ruling').classList.remove('hide', 'fade'); return; }
+      if (r.ruling === 'PICKER') { release(); cancelWindup(); setUmp('confused', null, 'Which one? Take your time. The clock is stopped.'); hold('think', 2000); return openPicker(r.picker); }
+      closePicker();
+      setTimeout(function () {
+        playRuling(r, isTimeout, function () {
+          ruling(r);
+          $('answer').value = ''; $('sugg').innerHTML = '';
+          render(r.state);
+          release();
+        });
+      }, Math.max(0, 300 - (NOW - started)));
+    }, function () { busy = false; $('swing').disabled = false; cancelWindup(); });
+  }
+
+  function openPicker(opts) {
+    paused = true;
+    $('pickOpts').innerHTML = opts.map(function (o) { return '<button class="opt" data-id="' + esc(o.id) + '"><span>' + esc(o.name) + '</span><small>' + esc(o.tag) + '</small></button>'; }).join('');
+    $('picker').style.display = 'flex';
+  }
+  function closePicker() { $('picker').style.display = 'none'; }
+  $('pickOpts').addEventListener('click', function (e) { var b = e.target.closest('button[data-id]'); if (b) submit({ entityId: b.dataset.id }); });
+  $('pickCancel').onclick = function () { closePicker(); load(); };
+
+  var sTimer = null, sSeq = 0;
+  $('answer').addEventListener('input', function () {
+    ump.lastType = NOW;
+    if (ump.state === 'pitching' && ump.mood !== 'focus' && !(ump.hold && NOW < ump.hold.until)) { ump.mood = stumpire.mood = 'focus'; $('ump').dataset.mood = 'focus'; }
+    clearTimeout(sTimer);
+    var q = $('answer').value;
+    if (q.trim().length < 2) { $('sugg').innerHTML = ''; return; }
+    sTimer = setTimeout(function () {
+      var my = ++sSeq;
+      api('GET', 'search?q=' + encodeURIComponent(q)).then(function (r) {
+        if (my !== sSeq || busy || $('atbat').classList.contains('hide')) return;
+        $('sugg').innerHTML = (r.results || []).map(function (o) { return '<li><button data-id="' + esc(o.id) + '"><span>' + esc(o.name) + '</span><small>' + esc(o.tag) + '</small></button></li>'; }).join('');
+      });
+    }, 120);
+  });
+  $('sugg').addEventListener('click', function (e) { var b = e.target.closest('button[data-id]'); if (b) submit({ entityId: b.dataset.id }); });
+  $('answer').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); submit({ text: $('answer').value }); } });
+  $('swing').onclick = function () { submit({ text: $('answer').value }); };
+  $('nextBtn').onclick = function () {
+    if (introStep >= 0) { clearTimeout(introTimer); introStep = -1; try { localStorage.setItem(INTRO_KEY, '1'); } catch (e) {} }
+    $('ruling').classList.add('hide'); show('reveal', false); sfx('blip');
+    api('POST', 'pitch').then(function (v) { if (v._status === 200) render(v); });
+  };
+  $('history').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-ch]'); if (!b) return;
+    var note = prompt('What did the Stumpire get wrong? (optional)') || '';
+    api('POST', 'challenge', { atBat: Number(b.dataset.ch), note: note }).then(function (r) {
+      b.disabled = true; b.textContent = r._status === 200 ? 'Challenge sent' : r.error === 'already_challenged' ? 'Already challenged' : 'Could not send';
+      if (r._status === 200) setUmp('impatient', null, 'A challenge? Fine. I will look at the tape.');
+    });
+  });
+
+  function load() {
+    api('GET', 'today').then(function (v) {
+      if (v._status === 404) { $('gate').textContent = 'Page not found.'; return; }
+      if (v.noSlate) { $('gate').textContent = 'No slate today. Check back tomorrow.'; setUmp('idle', 'waiting', 'Day off. Come back tomorrow.'); return; }
+      render(v);
+    });
+  }
+
+  function start() {
+    var signed = A && A.state && A.state().signedIn;
+    api('GET', 'me').then(function () {
+      if (signed) { try { var gid = localStorage.getItem(GUEST_KEY); if (gid) api('POST', 'claim', { guestId: gid }); } catch (e) {} }
+      load();
+    });
+  }
+
+  var rz = null;
+  window.addEventListener('resize', function () { clearTimeout(rz); rz = setTimeout(layout, 120); });
+  layout();
+  requestAnimationFrame(frame);
+  setUmp('idle', 'waiting', '');
+
+  if (A && A.boot && A.boot()) {
+    var started = false;
+    A.onChange(function (s) { if (s.resolved && !started) { started = true; start(); } });
+    setTimeout(function () { if (!started) { started = true; start(); } }, 2500);
+  } else start();
+})();
+</script>
+</body>
+</html>

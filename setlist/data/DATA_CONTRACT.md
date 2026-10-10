@@ -18,10 +18,10 @@ node scripts/setlist/ingest_band.mjs        # → setlist/data/goose.csv
 node scripts/setlist/ingest_band.mjs --probe   # check the API before trusting a run
 ```
 
-As of the last run: **7733 performances · 673 shows · 368 songs**, 2014-2026.
+As of the last run: **7747 performances · 674 shows · 368 songs**, 2014-2026.
 A run that lands far below that is a bad run, not a smaller band — see below.
 
-The show table from the same run: **857 shows · 673 with a setlist · 16 still to
+The show table from the same run: **858 shows · 674 with a setlist · 16 still to
 play**. The gap between those first two figures is not an error. It is announced
 dates that were never played, plus shows nobody has transcribed.
 

@@ -1,0 +1,679 @@
+{
+  "_doc": "The Stumpire prompt pool. build/daily.mjs picks five a day that pass every rule for their at-bat, avoiding prompts used in the last two weeks. wildcard 'auto' lets the publisher pick the wildcard from just past the called list, seeded by the date; an editor pins one by writing an entity id. Every prompt states its era, because a prompt's years filter its valid set.",
+  "prompts": [
+    {
+      "id": "mlb-gold-glove",
+      "text": "A Gold Glove winner",
+      "league": "MLB",
+      "type": "athlete",
+      "years": [
+        1957,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "Gold Glove"
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "mlb-silver-slugger",
+      "text": "A Silver Slugger winner",
+      "league": "MLB",
+      "type": "athlete",
+      "years": [
+        1980,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "Silver Slugger"
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "nba-all-star",
+      "text": "An NBA All-Star",
+      "league": "NBA",
+      "type": "athlete",
+      "years": [
+        1956,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "NBA All-Star"
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "nfl-lb-pro-bowl",
+      "text": "A Pro Bowl linebacker who played after 1995",
+      "league": "NFL",
+      "type": "athlete",
+      "years": [
+        1995,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "Pro Bowl"
+        },
+        {
+          "k": "pos",
+          "v": "Linebacker"
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "nfl-cb-pro-bowl",
+      "text": "A Pro Bowl cornerback who played after 1995",
+      "league": "NFL",
+      "type": "athlete",
+      "years": [
+        1995,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "Pro Bowl"
+        },
+        {
+          "k": "pos",
+          "v": "Cornerback"
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "nfl-ol-pro-bowl",
+      "text": "A Pro Bowl offensive lineman who played after 1995",
+      "league": "NFL",
+      "type": "athlete",
+      "years": [
+        1995,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "Pro Bowl"
+        },
+        {
+          "k": "pos",
+          "v": "Offensive Lineman"
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "nfl-cowboys-2000",
+      "text": "A Dallas Cowboy who played after 2000",
+      "league": "NFL",
+      "type": "athlete",
+      "years": [
+        2000,
+        2025
+      ],
+      "where": [
+        {
+          "k": "team",
+          "v": "team-nfl-cowboys"
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "nfl-packers-2000",
+      "text": "A Green Bay Packer who played after 2000",
+      "league": "NFL",
+      "type": "athlete",
+      "years": [
+        2000,
+        2025
+      ],
+      "where": [
+        {
+          "k": "team",
+          "v": "team-nfl-packers"
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "nfl-patriots-2000",
+      "text": "A New England Patriot who played after 2000",
+      "league": "NFL",
+      "type": "athlete",
+      "years": [
+        2000,
+        2025
+      ],
+      "where": [
+        {
+          "k": "team",
+          "v": "team-nfl-patriots"
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "nfl-steelers-2000",
+      "text": "A Pittsburgh Steeler who played after 2000",
+      "league": "NFL",
+      "type": "athlete",
+      "years": [
+        2000,
+        2025
+      ],
+      "where": [
+        {
+          "k": "team",
+          "v": "team-nfl-steelers"
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "nfl-qb-pro-bowl",
+      "text": "A Pro Bowl quarterback who played after 1995",
+      "league": "NFL",
+      "type": "athlete",
+      "years": [
+        1995,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "Pro Bowl"
+        },
+        {
+          "k": "pos",
+          "v": "Quarterback"
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "nfl-wr-pro-bowl",
+      "text": "A Pro Bowl wide receiver who played after 1995",
+      "league": "NFL",
+      "type": "athlete",
+      "years": [
+        1995,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "Pro Bowl"
+        },
+        {
+          "k": "pos",
+          "v": "Wide Receiver"
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "nfl-rb-pro-bowl",
+      "text": "A Pro Bowl running back who played after 1995",
+      "league": "NFL",
+      "type": "athlete",
+      "years": [
+        1995,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "Pro Bowl"
+        },
+        {
+          "k": "pos",
+          "v": "Running Back"
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "nfl-te-pro-bowl",
+      "text": "A Pro Bowl tight end who played after 1995",
+      "league": "NFL",
+      "type": "athlete",
+      "years": [
+        1995,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "Pro Bowl"
+        },
+        {
+          "k": "pos",
+          "v": "Tight End"
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "nfl-s-pro-bowl",
+      "text": "A Pro Bowl safety who played after 1995",
+      "league": "NFL",
+      "type": "athlete",
+      "years": [
+        1995,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "Pro Bowl"
+        },
+        {
+          "k": "pos",
+          "v": "Safety"
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "nfl-journeyman-pro-bowl",
+      "text": "A Pro Bowler who played for five or more teams, after 1995",
+      "league": "NFL",
+      "type": "athlete",
+      "years": [
+        1995,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "Pro Bowl"
+        },
+        {
+          "k": "teams",
+          "min": 5
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "nba-all-star-4-teams",
+      "text": "An NBA All-Star who played for four or more teams",
+      "league": "NBA",
+      "type": "athlete",
+      "years": [
+        1956,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "NBA All-Star"
+        },
+        {
+          "k": "teams",
+          "min": 4
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "mlb-rookie-of-the-year",
+      "text": "An MLB Rookie of the Year",
+      "league": "MLB",
+      "type": "athlete",
+      "years": [
+        1956,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "Rookie of the Year"
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "mlb-of-gold-glove",
+      "text": "An outfielder who won a Gold Glove",
+      "league": "MLB",
+      "type": "athlete",
+      "years": [
+        1957,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "Gold Glove"
+        },
+        {
+          "k": "pos",
+          "v": "Outfielder"
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "nba-hall-of-fame",
+      "text": "An NBA Hall of Famer",
+      "league": "NBA",
+      "type": "athlete",
+      "years": [
+        1956,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "Hall of Fame"
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "mlb-mvp",
+      "text": "An MLB MVP who played after 1956",
+      "league": "MLB",
+      "type": "athlete",
+      "years": [
+        1956,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "MLB MVP"
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "mlb-cy-young",
+      "text": "A Cy Young winner",
+      "league": "MLB",
+      "type": "athlete",
+      "years": [
+        1956,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "Cy Young"
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "nba-pg-all-star",
+      "text": "A point guard who made an All-Star team",
+      "league": "NBA",
+      "type": "athlete",
+      "years": [
+        1956,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "NBA All-Star"
+        },
+        {
+          "k": "pos",
+          "v": "Point Guard"
+        }
+      ],
+      "wildcard": "auto",
+      "arguable": [
+        "nba-james-harden-2000"
+      ]
+    },
+    {
+      "id": "nba-c-all-star",
+      "text": "A center who made an All-Star team",
+      "league": "NBA",
+      "type": "athlete",
+      "years": [
+        1956,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "NBA All-Star"
+        },
+        {
+          "k": "pos",
+          "v": "Center"
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "nba-pf-all-star",
+      "text": "A power forward who made an All-Star team",
+      "league": "NBA",
+      "type": "athlete",
+      "years": [
+        1956,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "NBA All-Star"
+        },
+        {
+          "k": "pos",
+          "v": "Power Forward"
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "nba-roy",
+      "text": "An NBA Rookie of the Year",
+      "league": "NBA",
+      "type": "athlete",
+      "years": [
+        1956,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "Rookie of the Year"
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "nba-celtics-all-star",
+      "text": "A Celtic who made an All-Star team",
+      "league": "NBA",
+      "type": "athlete",
+      "years": [
+        1956,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "NBA All-Star"
+        },
+        {
+          "k": "team",
+          "v": "team-nba-celtics"
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "nba-lakers-all-star",
+      "text": "A Laker who made an All-Star team",
+      "league": "NBA",
+      "type": "athlete",
+      "years": [
+        1956,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "NBA All-Star"
+        },
+        {
+          "k": "team",
+          "v": "team-nba-lakers"
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "mlb-ws-mvp",
+      "text": "A World Series MVP",
+      "league": "MLB",
+      "type": "athlete",
+      "years": [
+        1956,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "World Series MVP"
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "mlb-ss-gold-glove",
+      "text": "A shortstop who won a Gold Glove",
+      "league": "MLB",
+      "type": "athlete",
+      "years": [
+        1957,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "Gold Glove"
+        },
+        {
+          "k": "pos",
+          "v": "Shortstop"
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "mlb-1b-silver-slugger",
+      "text": "A first baseman who won a Silver Slugger",
+      "league": "MLB",
+      "type": "athlete",
+      "years": [
+        1980,
+        2025
+      ],
+      "where": [
+        {
+          "k": "award",
+          "v": "Silver Slugger"
+        },
+        {
+          "k": "pos",
+          "v": "First Baseman"
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "nfl-no-super-bowl",
+      "text": "An NFL team that has never won a Super Bowl",
+      "league": "NFL",
+      "type": "team",
+      "set": true,
+      "years": [
+        1967,
+        2025
+      ],
+      "where": [
+        {
+          "k": "titles",
+          "max": 0
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "nba-one-title-or-none",
+      "text": "An NBA team with one title or none",
+      "league": "NBA",
+      "type": "team",
+      "set": true,
+      "years": [
+        1947,
+        2025
+      ],
+      "where": [
+        {
+          "k": "titles",
+          "max": 1
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "mlb-two-titles-or-fewer",
+      "text": "An MLB team with two World Series titles or fewer",
+      "league": "MLB",
+      "type": "team",
+      "set": true,
+      "years": [
+        1903,
+        2025
+      ],
+      "where": [
+        {
+          "k": "titles",
+          "max": 2
+        }
+      ],
+      "wildcard": "auto"
+    },
+    {
+      "id": "nfl-two-plus-titles",
+      "text": "An NFL team with two or more Super Bowl wins",
+      "league": "NFL",
+      "type": "team",
+      "set": true,
+      "years": [
+        1967,
+        2025
+      ],
+      "where": [
+        {
+          "k": "titles",
+          "min": 2
+        }
+      ],
+      "wildcard": "auto"
+    }
+  ]
+}

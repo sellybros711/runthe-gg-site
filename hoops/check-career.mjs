@@ -328,7 +328,7 @@ section('5. real players and coaches by name, everybody else generated');
    NBA event may only use one if BASKETBALL_ONLY lists it, with the reason.
    The source is scanned too, because the press room and the between-card
    actions are strings outside the event pool. */
-section('5c. real people stay on the court');
+section('5c. real people: on the court, and in the room on a story career');
 {
   const real = new RegExp('\\{(' + C.REAL_TOKENS.join('|') + ')(:\\w+)?\\}', 'g');
   const bad = [];
@@ -350,7 +350,7 @@ section('5c. real people stay on the court');
   const outside = [];
   let inPool = false, depth = 0;
   src.forEach((line, i) => {
-    if (/^const (EVENTS|AM_EVENTS|ARC_EVENTS) = \{/.test(line)) { inPool = true; depth = 0; }
+    if (/^const (EVENTS|AM_EVENTS|ARC_EVENTS|TAKES) = \{/.test(line)) { inPool = true; depth = 0; }
     if (inPool) { depth += (line.match(/\{/g) || []).length - (line.match(/\}/g) || []).length; if (depth <= 0 && /^\};/.test(line)) inPool = false; return; }
     if (real.test(line) && !okLine.some((r) => r.test(line))) outside.push(i + 1);
     real.lastIndex = 0;
@@ -359,9 +359,28 @@ section('5c. real people stay on the court');
   /* The invented locker room: three a club, named, never a real player. */
   const L = C.newLife({ seed: 'locker', league });
   L.team = 'BOS';
+  L.opt.story = 0; /* a career from before the story engine: no real room to read */
   const lk = C.lockerOf(L);
   const realNames = new Set(ROWS.map((r) => r.n || r.name));
-  ok(lk.length === 3 && lk.every((m) => m.n && !realNames.has(m.n)), `every club carries three invented teammates (${lk.map((m) => m.n).join(', ')})`);
+  ok(lk.length === 3 && lk.every((m) => m.n && !realNames.has(m.n)), `off a story career, every club carries three invented teammates (${lk.map((m) => m.n).join(', ')})`);
+  /* A story career in the league reads the REAL room instead (the owner's
+     call, 2026-10): the oldest man, the youngest, and the best of the rest,
+     all on the club's roster right now, and {topp} a real man elsewhere. */
+  {
+    const S = C.newLife({ seed: 'locker-real', league, story: true });
+    S.stage = 'nba'; S.team = 'BOS';
+    if (C.storyOn(S)) {
+      const rk = C.lockerOf(S);
+      const room = new Set(C.matesOf(S, 'BOS').map((m) => m.n));
+      ok(rk.length === 3 && rk.every((m) => room.has(m.n)) && new Set(rk.map((m) => m.n)).size === 3, `a story career's locker room is three different men on its own roster (${rk.map((m) => m.n).join(', ')})`);
+      ok(rk[0].age >= Math.max(rk[1].age, rk[2].age) && rk[1].age <= rk[2].age, 'the veteran is the oldest of them and the rookie the youngest');
+      const op = C.say(S, '{topp}');
+      const elsewhere = C.CLUBS.filter((c) => c !== 'BOS').some((c) => C.matesOf(S, c).some((m) => m.n === op));
+      ok(elsewhere && !room.has(op), `{topp} is a real man on another club (${op})`);
+      S.stage = 'col';
+      ok(C.lockerOf(S).every((m) => m.real == null), 'off the league the room is invented again');
+    } else ok(false, 'a new career is a story career');
+  }
   ok(Object.values(C.CAST).every((n) => !realNames.has(n)), 'nobody in the recurring cast shares a name with a real player');
   const said = C.say(L, '{tm} {tm2} {tvet} {trook} {tco} {topp} {beat} {critic} {fan} {friend} {trainer}');
   ok(!/\{/.test(said), `every invented token resolves (${said})`);
@@ -524,6 +543,32 @@ section('8. three hundred careers from high school, and where they land');
   ok(mvp < 0.07, `an MVP from the road is as rare as from draft night (${(mvp * 100).toFixed(1)}%)`);
   ok(hof > 0.08 && hof < 0.42 && star > 0.15 && star < 0.5, 'the Hall and All-Star rates sit in the same bands');
   ok(drafted > 0.8 && drafted < 1, `most of them are drafted, not all (${(drafted * 100).toFixed(0)}%)`);
+  /* A COLLEGE SUMMER IS NOT A PRO SUMMER. The summer card was the league's and
+     colYear deals it too, so a freshman read "Your first summer as a pro" over
+     Summer League. Reported by a player. Every summer card a college year deals
+     is read, and the pro words and pro programs may not be on it. */
+  {
+    const PRO = /\bpro\b|camp opens|summer league|national team|private skills|slows the decline/i;
+    let colCards = 0, proCards = 0, nbaCards = 0;
+    const leaks = [];
+    for (let i = 0; i < 40; i++) {
+      const L = C.newLife({ seed: 'colsum:' + i, start: 'hs', league, pos: C.POS[i % 5] });
+      let g = 0;
+      while (!L.retired && g++ < 3000 && L.history.length < 2) {
+        if (L.pending.length) {
+          const c = L.pending[0];
+          if (c.id === 'training') {
+            const words = [c.title, c.text].concat(c.options.map((o) => o.label + ' ' + (o.hint || ''))).join(' | ');
+            if (!L.team) { colCards++; if (PRO.test(words)) leaks.push(L.age + ': ' + words.slice(0, 120)); }
+            else { nbaCards++; if (/summer league|first summer as a pro/i.test(words)) proCards++; }
+          }
+          C.choose(L, i % Math.max(1, c.options.length));
+        } else C.step(L);
+      }
+    }
+    ok(colCards > 20 && leaks.length === 0, `a college summer card says nothing about the pros (${colCards} read, ${leaks.length} leaked${leaks[0] ? ': ' + leaks[0] : ''})`);
+    ok(nbaCards > 20 && proCards > 0, `and the league's summer card still does (${proCards} of ${nbaCards})`);
+  }
   /* And the road round-trips through JSON like the league half does. */
   const a = play('road:det', 'random', { start: 'hs', pos: 'PG', arch: 'floor' }).L;
   let M = C.newLife({ seed: 'road:det', start: 'hs', pos: 'PG', arch: 'floor', league }), g = 0;
@@ -543,7 +588,11 @@ section('10. the press room, the persona, the look');
      knows. A topic nothing reaches is a microphone nobody ever stands at. */
   const topics = {};
   let tonesOk = true, pressN = 0;
-  for (let i = 0; i < 260; i++) {
+  /* An MVP is one career in fifty or so, so a fixed sample is a coin toss on
+     whether that podium is reached. The claim is that every topic CAN be held,
+     so it searches until each one has been, past the first 260. */
+  const allHeld = () => Object.keys(C.PRESSERS).every((t) => topics[t]);
+  for (let i = 0; i < 900 && (i < 260 || !allHeld()); i++) {
     play('press' + i, ['first', 'last', 'random'][i % 3], { start: i % 2 ? 'hs' : 'draft' }, (L) => {
       const c = L.pending[0];
       if (c && c.id === 'presser') {
@@ -608,7 +657,7 @@ section('10. the press room, the persona, the look');
   });
   const missing = C.PERSONAS.flat().filter((p) => !all[p]);
   ok(missing.length === 0, `all nine personas are reachable (${missing.join(', ') || 'all nine'})`);
-  ok(Object.keys(C.EVENT_REP).every((id) => C.EVENTS[id] && C.EVENTS[id].options.length === C.EVENT_REP[id].length),
+  ok(Object.keys(C.EVENT_REP).every((id) => (C.EVENTS[id] || C.TEAM_EV[id]) && (C.EVENTS[id] || C.TEAM_EV[id]).options.length === C.EVENT_REP[id].length),
     'every reputation row names a real event and one entry per option');
   /* The look: a whitelist of short plain values, and the drawing's own
      fallback for anything it does not know. */
@@ -842,7 +891,8 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
   }
   /* The deadline and the coach, over careers played three ways. */
   let dl = 0, traded = 0, swap = 0, stars = 0, badName = 0, talks = 0, focusPaid = 0, focusSet = 0, up = 0, cut = 0;
-  let dupNames = 0, bigSummer = 0, bigSkill = 0, summers = 0, legsFirst = 0, legsN = 0, posTalk = 0, posFar = 0, notFive = 0, fiveChecks = 0;
+  let dlDeals = 0, badHead = [];
+  let dupNames = 0, bigSummer = 0, bigSkill = 0, summers = 0, legsFirst = 0, legsN = 0, posTalk = 0, posFar = 0, notFive = 0, fiveChecks = 0, outranked = [], starChecks = 0;
   const kinds = new Set();
   for (let k = 0; k < 90; k++) {
     const L = C.newLife({ seed: 'fo:' + k, league, story: true });
@@ -880,12 +930,15 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
         if (/starting five|real spot|fourth quarter/.test(b.text)) up++;
         if (/cuts your minutes/.test(b.text)) cut++;
         if (/summer project paid off/.test(b.text)) focusPaid++;
-        if (/^Deadline: /.test(b.text)) {
-          const m = /^Deadline: (?:the \w[\w ]* (?:get|send) )?(.+?) (?:to the|from the) /.exec(b.text);
+        if (/^Deadline/.test(b.text)) {
+          dlDeals++;
+          /* The first man named is the one the deal is about. */
+          const m = /have traded (.+?)(?:,| and | to the )/.exec(b.text);
           const nm = m && m[1];
           const hits = C.CLUBS.map((c) => C.matesOf(L, c).find((e) => e.n === nm)).filter(Boolean);
           if (hits.length > 1) dupNames++;
-          else if (hits[0] && hits[0].w > 7.2) stars++;
+          else if (hits[0] && C.show(hits[0].ovr) >= 90 && hits[0].age <= 30) stars++;
+          if (!/^Deadline(?: deal)?: the [\w .']+ have traded .+ to the [\w .']+ (for .+|to clear cap space|for cash considerations)\.$/.test(b.text)) badHead.push(b.text);
         }
       }
       if (before && out.beats.some((b) => b.kind === 'dev')) {
@@ -899,12 +952,24 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
         const role = C.roleOf(L), rot = C.rotationOf(L);
         fiveChecks++;
         if (role.starter !== !!rot.slot && role.min >= 22 && role.min <= 26) notFive++;
+        const me = C.effOvr(L), you = rot.list.find((x) => x.you);
+        for (const x of rot.list) {
+          if (x.you || x.ovr == null || x.ovr <= me + C.CLEAR_GAP) continue;
+          starChecks++;
+          if (x.min <= you.min || x.rank > you.rank || role.min > x.min) outranked.push(x.n + ' ' + C.show(x.ovr) + ' (' + x.min + ' min, #' + x.rank + ') under you ' + C.show(C.ovrOf(L)) + ' (' + you.min + ', #' + you.rank + ')');
+        }
       }
     }
   }
+  /* Reported by a player: an 85 first in the rotation over a 95 point guard. */
+  ok(starChecks > 200 && outranked.length === 0, `a teammate clearly better than you plays more and ranks higher (${outranked.length} of ${starChecks}: ${outranked.slice(0, 2).join(' | ')})`);
   ok(dl >= 25 && kinds.size >= 2, `the deadline calls about you, for more than one reason (${dl} calls: ${[...kinds].join(', ')})`);
   ok(traded >= 8 && swap === traded, `a deadline trade sends a named man back the other way (${swap} of ${traded})`);
-  ok(stars === 0, `no franchise star changes clubs at the deadline (${stars})`);
+  /* A deadline blockbuster happens in the real league (a star or two a
+     decade), but a young superstar moving most Februaries is a league nobody
+     would recognize. */
+  ok(stars <= Math.max(2, dlDeals * 0.02), `a young superstar rarely moves at the deadline (${stars} of ${dlDeals} deadline deals)`);
+  ok(dlDeals > 100 && badHead.length === 0, `a deadline headline reads like a newsroom wrote it: who traded what to whom for what (${badHead.slice(0, 2).join(' | ') || dlDeals + ' deals'})`);
   ok(dupNames === 0, `no two men in the league share a name (${dupNames} deadline names found twice)`);
   ok(badName === 0, `the result names the general manager who made the call, not the new one (${badName})`);
   ok(talks >= 300, `a talk with the coach is a conversation with options (${talks} talks)`);
@@ -923,7 +988,7 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
    the end of the roster and out of the league. */
 {
   section('12b. one move a summer, and the free agents are real');
-  let summers = 0, twice = [], gen2 = [], gen4 = [], realWaived = 0;
+  let summers = 0, twice = [], gen2 = [], gen4 = [], realWaived = 0, moves = 0, trades = 0, withPicks = 0;
   for (let i = 0; i < 40; i++) {
     let lastY = -1;
     play('mv:' + i, 'random', { pos: C.POS[i % 5], arch: C.ARCH_KEYS[i % 6] }, (L) => {
@@ -932,10 +997,12 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
       lastY = lg.rostY;
       summers++;
       const seen = {};
-      for (const f of L.feed || []) {
-        if (f.k !== 'move' || f.y !== L.year) continue;
-        const m = /^(.+?) (?:is traded to|signs with) /.exec(f.t);
-        if (m) { seen[m[1]] = (seen[m[1]] || 0) + 1; if (seen[m[1]] === 2) twice.push(m[1] + ' ' + L.year); }
+      for (const x of (lg.fo && lg.fo.tx) || []) {
+        if (x.y !== L.year || x.w !== 'summer' || !x.m) continue;
+        for (const n of x.m) { seen[n] = (seen[n] || 0) + 1; if (seen[n] === 2) twice.push(n + ' ' + L.year); }
+        moves++;
+        if (x.k === 'trade' && /pick/.test(x.t)) withPicks++;
+        if (x.k === 'trade') trades++;
       }
       let tot = 0, gen = 0;
       for (const c in lg.rost) for (const e of lg.rost[c]) { tot++; if (e.g) gen++; }
@@ -947,8 +1014,13 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
   }
   const mean = (a) => a.reduce((x, y) => x + y, 0) / (a.length || 1);
   ok(summers > 200 && twice.length === 0, `no man is reported moving twice in one summer (${twice.slice(0, 3).join(', ') || 'none'} over ${summers} summers)`);
-  ok(gen2.length > 20 && mean(gen2) < 0.03, `two summers in, the league is real men (${(mean(gen2) * 100).toFixed(1)}% invented)`);
-  ok(gen4.length > 20 && mean(gen4) < 0.15, `four summers in, still mostly real (${(mean(gen4) * 100).toFixed(1)}% invented)`);
+  /* A real draft brings about forty rookies a year into a league of 450, and
+     the real league turns over that fast too. What must not happen is real
+     men pushed out for invented ones: rookies replace retirements and the
+     men nobody signs, so two drafts in the league is still four fifths real. */
+  ok(gen2.length > 20 && mean(gen2) < 0.22, `two summers in, the league is mostly real men (${(mean(gen2) * 100).toFixed(1)}% invented, two draft classes)`);
+  ok(gen4.length > 20 && mean(gen4) < 0.4, `four summers in, still mostly real (${(mean(gen4) * 100).toFixed(1)}% invented)`);
+  ok(moves > 300 && trades > 100 && withPicks / trades > 0.4, `a summer has trades and signings, and most trades carry picks (${moves} moves, ${withPicks} of ${trades} trades with picks)`);
   ok(realWaived === 0, `the free agent pool holds only real men (${realWaived} invented found)`);
   ok(league.fa && league.fa.length > 20, `today's free agents are seeded into the pool (${league.fa ? league.fa.length : 0})`);
 }
@@ -1117,6 +1189,105 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
   ok(/if \(ct\.tw\) \{[^}]*debut_gl/.test(SC), 'a two-way rookie opens the season in the G League scene');
 }
 
+/* THE LEAGUE OFFICE. Reported by the owner: players did not grow or decline
+   at a natural rate, role players hung around to 37 doing nothing, trades
+   had no picks in them, and a headline read "X to the Pacers". Measured over
+   a dozen careers played to the end, a season at a time. */
+{
+  section('12g. the league ages, retires, drafts and trades like the real one');
+  const byYear = {}, leave = [], grow = [], fade = [], heads = [], overMax = [];
+  const arcs = new Map(), top20 = {}, prime = {};
+  let lingering = 0, looked = 0;
+  for (let k = 0; k < 12; k++) {
+    const L = C.newLife({ seed: 'office:' + k, league, start: 'draft' });
+    let g = 0, lastY = 0, prev = null;
+    while (!L.retired && g++ < 5000) {
+      if (L.pending.length) C.choose(L, (L.steps * 7 + k) % L.pending[0].options.length); else C.step(L);
+      if (L.stage !== 'nba' || !L.league.rost || L.year === lastY) continue;
+      lastY = L.year;
+      const y = L.year - L.league.rs, cap = C.capFor(L.year);
+      const now = new Map();
+      for (const c of C.CLUBS) for (const m of C.matesOf(L, c)) {
+        now.set(m.n, m);
+        const b = byYear[y] = byYear[y] || { n: 0, old: 0, s85: 0 };
+        b.n++; if (m.age >= 35) b.old++; if (C.show(m.ovr) >= 85) b.s85++;
+        if (y >= 3) { looked++; if (m.age >= 35 && C.show(m.ovr) < 75) lingering++; }
+        if (m.pay > cap * 0.351 && (!m.real || y >= 5)) overMax.push(m.n + ' $' + m.pay + ' in ' + L.year);
+        if (prev && prev.has(m.n)) { const d = m.ovr - prev.get(m.n).ovr; if (m.age <= 23) grow.push(d); if (m.age >= 32) fade.push(d); }
+      }
+      /* Every man's rating by age, for where a career peaks, and who the
+         best twenty in the league are, real or invented. */
+      const all = [...now.values()];
+      for (const m of all) { const key = k + ':' + m.n; const h = arcs.get(key) || []; h.push([m.age, m.ovr]); arcs.set(key, h); }
+      const t20 = all.sort((a, b) => b.ovr - a.ovr).slice(0, 20), tt = top20[y] = top20[y] || [0, 0];
+      tt[0] += t20.filter((m) => m.real).length; tt[1] += 20;
+      if (y === 0) for (const m of all) if (m.real && m.age <= 22 && m.pg && /^A/.test(m.pg)) prime[k + ':' + m.n] = C.show(m.ovr);
+      if (prev && y >= 2) for (const [n, m] of prev) if (!now.has(n) && m.age >= 26) leave.push(m.age + 1);
+      prev = now;
+    }
+    for (const x of (L.league.fo && L.league.fo.tx) || []) heads.push(x);
+  }
+  const mean = (a) => a.reduce((x, y) => x + y, 0) / (a.length || 1);
+  const med = (a) => a.slice().sort((x, y) => x - y)[Math.floor(a.length / 2)];
+  const late = Object.keys(byYear).filter((y) => y >= 4 && y <= 14 && byYear[y].n > 2000);
+  const oldShare = mean(late.map((y) => byYear[y].old / byYear[y].n));
+  ok(late.length >= 6 && oldShare > 0.012 && oldShare < 0.06, `about one man in thirty is 35 or older, as in the real league (${(oldShare * 100).toFixed(1)}%)`);
+  ok(lingering / looked < 0.004, `a 35-year-old who can no longer play is out of the league (${lingering} of ${looked} roster spots)`);
+  ok(leave.length > 500 && med(leave) >= 31 && med(leave) <= 35, `a career ends in the early thirties for most, later for a star (median ${med(leave)} of ${leave.length})`);
+  ok(mean(grow) > 1.5 && mean(fade) < -1, `the young grow and the old fade, a year at a time (${mean(grow).toFixed(1)} a year at 23 and under, ${mean(fade).toFixed(1)} at 32 and over)`);
+  const s0 = byYear[0] ? byYear[0].s85 / byYear[0].n : 0, s10 = mean(late.filter((y) => y >= 8).map((y) => byYear[y].s85 / byYear[y].n));
+  ok(s10 > s0 * 0.6 && s10 < s0 * 1.5, `the league keeps its stars as the real ones age out (85 and up: ${(s0 * 100).toFixed(1)}% at the start, ${(s10 * 100).toFixed(1)}% ten years on)`);
+  ok(overMax.length === 0, `a deal the league signs never pays past the max, 35 percent of the cap (${overMax.slice(0, 2).join(', ') || 'none'})`);
+  const tr = heads.filter((x) => x.k === 'trade'), pk = tr.filter((x) => /pick/.test(x.t));
+  ok(tr.length > 200 && pk.length / tr.length > 0.4, `most trades carry draft picks (${pk.length} of ${tr.length})`);
+  const head = /^The [\w .']+ have traded .+ to the [\w .']+ (for .+|to clear cap space|for cash considerations)\.$/;
+  const badT = tr.filter((x) => !head.test(x.t));
+  ok(badT.length === 0, `a trade headline says who traded what to whom for what (${badT.slice(0, 2).map((x) => x.t).join(' | ') || 'all ' + tr.length})`);
+  ok(heads.some((x) => x.k === 'draft' && /first overall/.test(x.t)) && heads.some((x) => x.k === 'fa' && /-year, \$/.test(x.t)) && heads.some((x) => x.k === 'retire'), 'the league has a draft night, free agency and retirements');
+  /* A career peaks at 27 to 29, as in the real league: the age at a man's
+     best rating, for every man the sweep watched from 24 to 32. */
+  const peaks = [];
+  for (const h of arcs.values()) { const ages = h.map((x) => x[0]); if (Math.min(...ages) > 24 || Math.max(...ages) < 32) continue; peaks.push(h.slice().sort((a, b) => b[1] - a[1])[0][0]); }
+  ok(peaks.length > 100 && med(peaks) >= 27 && med(peaks) <= 29, `a career peaks at 27 to 29 (median ${med(peaks)} of ${peaks.length} careers watched from 24 to 32)`);
+  /* Today's young real stars grow into the league's best, and the invented
+     classes behind them do not take the league over within a decade. */
+  const share = (y) => top20[y] ? top20[y][0] / top20[y][1] : 1;
+  ok(share(5) >= 0.75 && share(8) >= 0.45, `real players still lead the league years in (top twenty: ${(share(5) * 100).toFixed(0)}% real at year 5, ${(share(8) * 100).toFixed(0)}% at year 8)`);
+  const grew = Object.keys(prime).map((key) => { const h = arcs.get(key) || []; return Math.max(...h.map((x) => C.show(x[1]))) - prime[key]; });
+  ok(grew.length > 10 && med(grew) >= 6, `a young real player graded A grows into it (median ${med(grew)} points over his start, ${grew.length} watched)`);
+  const blowout = tr.filter((x) => (x.t.match(/,/g) || []).length > 4);
+  ok(blowout.length / tr.length < 0.05, `a trade is a few men and a few picks, not a roster (${blowout.length} of ${tr.length} name more than five assets)`);
+}
+
+{
+  section('12h. the career answers what your club does');
+  const got = {}, bad = [];
+  let seasons = 0;
+  for (let k = 0; k < 40; k++) {
+    const L = C.newLife({ seed: 'club:' + k, league, start: 'draft' });
+    let g = 0;
+    while (!L.retired && g++ < 5000) {
+      if (L.pending.length) {
+        const c = L.pending[0];
+        if (C.TEAM_EV[c.id]) {
+          got[c.id] = (got[c.id] || 0) + 1;
+          const x = L.flags.twNow || {};
+          if (/\{|undefined|NaN|null/.test(c.title + c.text)) bad.push(c.id + ': ' + c.title + ' / ' + c.text);
+          if (x.n && c.id !== 'tm_cold_meeting' && !/(race|hot|cold|top|rebuild|allin)/.test(x.k) && (c.title + c.text).indexOf(x.n) < 0) bad.push(c.id + ' does not name ' + x.n);
+        }
+        C.choose(L, (L.steps * 7 + k) % c.options.length);
+      } else C.step(L);
+    }
+    seasons += L.history.length;
+  }
+  const ids = Object.keys(C.TEAM_EV), dark = ids.filter((id) => !got[id]);
+  const n = Object.values(got).reduce((a, b) => a + b, 0);
+  ok(dark.length === 0, `every club card is dealt somewhere (${dark.join(', ') || 'all ' + ids.length})`);
+  ok(n / seasons > 0.6 && n / seasons < 1.6, `about one club card a season, not a flood (${(n / seasons).toFixed(2)})`);
+  ok(bad.length === 0, `a club card names the man it is about and fills every token (${bad.slice(0, 2).join(' | ') || 'none'})`);
+  ok(Object.keys(C.TEAM_KINDS).every((k) => C.TEAM_KINDS[k].every((id) => C.TEAM_EV[id])), 'every situation has its cards');
+}
+
 if (!QUICK) await browser();
 
 console.log('');
@@ -1270,6 +1441,16 @@ async function browser() {
   await page.click('[data-start="hs"]');
   ok(!(await page.$('#cr-roadbox')) && !(await page.$('[data-bg]')), 'with Pro, a high school start shows no generated road');
   await page.click('[data-bstep="player"]');
+  /* THE NAME IS SAID BEFORE THE CAREER STARTS. The board drops a name with a
+     digit or an emoji, and the builder used to take it and say nothing. Blank
+     says a name is picked; a bad one says so and offers the cleaned name. */
+  await page.fill('#cr-name', '');
+  ok(/pick a name/i.test(await page.$eval('#cr-namehint', (e) => e.textContent)), 'a blank name says one is picked for you');
+  await page.fill('#cr-name', 'Big Mike 23');
+  const nh = await page.$eval('#cr-namehint', (e) => ({ bad: e.classList.contains('bad'), fix: (e.querySelector('.cr-namefix') || {}).textContent || '' }));
+  ok(nh.bad && nh.fix === 'Use Big Mike', `a name the board drops is flagged with a fix ("${nh.fix}")`);
+  await page.click('.cr-namefix');
+  ok((await page.$eval('#cr-name', (e) => e.value)) === 'Big Mike' && !(await page.$eval('#cr-namehint', (e) => e.textContent)), 'the fix fills the field and the warning goes');
   await page.fill('#cr-name', 'Checker McTest');
   await page.click('#cr-go');
   const made = await page.evaluate(() => RTF_CAREER_UI.state().cur);
@@ -1278,9 +1459,33 @@ async function browser() {
   ok(made && made.look && made.look.beard === 'full' && made.look.bc === 6, `the facial hair color is the career's (${made && JSON.stringify(made.look)})`);
   const third = await page.evaluate(() => (document.querySelectorAll('.cr-fact .k')[2] || {}).textContent || '');
   ok(/ranking/i.test(third), `a sophomore is told his ranking, not his bank (${third})`);
+  /* ONE PRESS, ONE CARD. A held number key repeats, and a double tap lands
+     its second tap on the next card, which the tray draws under the same
+     thumb. Both used to answer cards nobody had read. Counted at C.choose. */
+  {
+    await page.evaluate(() => { const C = window.RTF_CAREER, o = C.choose; window.__chN = 0; window.__chO = o; C.choose = function(){ window.__chN++; return o.apply(this, arguments); }; });
+    const toCard = async () => { for (let i = 0; i < 80; i++) { if (await page.evaluate(() => !!RTF_CAREER_UI.state().cur.pending.length)) return true; await page.click('#cr-next'); } return false; };
+    if (await toCard()) {
+      await page.waitForTimeout(400);
+      await page.evaluate(() => { window.__chN = 0; for (let k = 0; k < 4; k++) document.dispatchEvent(new KeyboardEvent('keydown', { key: '1', repeat: k > 0, bubbles: true })); });
+      ok((await page.evaluate(() => window.__chN)) === 1, 'a held number key answers one card, not every card behind it');
+    }
+    let dbl = 0, tries = 0;
+    for (let t = 0; t < 8; t++) {
+      if (!(await toCard())) break;
+      await page.waitForTimeout(400);
+      const r = await page.$eval('.cr-choice[data-i="0"]', (e) => { const q = e.getBoundingClientRect(); return { x: q.x + q.width / 2, y: q.y + q.height / 2 }; });
+      await page.evaluate(() => { window.__chN = 0; });
+      await page.mouse.click(r.x, r.y); await page.waitForTimeout(110); await page.mouse.click(r.x, r.y); await page.waitForTimeout(250);
+      tries++; if ((await page.evaluate(() => window.__chN)) > 1) dbl++;
+    }
+    ok(tries >= 4 && dbl === 0, `a double tap answers one card (${dbl} of ${tries} answered two)`);
+    await page.evaluate(() => { window.RTF_CAREER.choose = window.__chO; });
+  }
 
   /* Play it out, pressing the first choice or the next button, reading the
      glass for a field that printed as nothing. */
+  let rosAsked = false, rosSigned = false, arcSeen = false;
   let presses = 0, junk = [], reloaded = false, offOpened = false, resumed = null, keyed = false, docked = false, offFold = [], cardsSeen = 0, tall = false, trayed = false, trayBad = [];
   const stagesSeen = {};
   while (presses++ < 900) {
@@ -1288,7 +1493,7 @@ async function browser() {
       const s = RTF_CAREER_UI.state();
       const t = document.querySelector('#s-car').innerText;
       return { cur: !!s.cur, last: !!s.last, junk: /\bundefined\b|\bNaN\b|\[object/.test(t), steps: s.cur ? s.cur.steps : 0, stage: s.cur && s.cur.stage,
-        card: s.cur && s.cur.pending[0] ? s.cur.pending[0].key : null };
+        card: s.cur && s.cur.pending[0] ? s.cur.pending[0].key : null, cid: s.cur && s.cur.pending[0] ? s.cur.pending[0].id : null };
     });
     if (st.junk && junk.length < 3) junk.push('press ' + presses);
     if (st.stage) stagesSeen[st.stage] = 1;
@@ -1304,6 +1509,25 @@ async function browser() {
       await page.waitForSelector('#s-car.active');
       resumed = await page.evaluate(() => { const s = RTF_CAREER_UI.state(); return s.cur && s.cur.pending[0] ? s.cur.pending[0].key : null; });
       ok(resumed === st.card, `a reload lands on the same card (${st.card} against ${resumed})`);
+    }
+    /* Once: the Seasons tab draws the arc, a column a season, the peak
+       labelled, and a tap names the season in words. */
+    if (!arcSeen && !st.card) {
+      const a = await page.evaluate(() => {
+        const L = RTF_CAREER_UI.state().cur, n = (L.amHist || []).length + L.history.length;
+        if (n < 3) return null;
+        const t = document.querySelector('[data-tab="seasons"]'); if (!t) return null; t.click();
+        const arc = document.querySelector('.cr-arc'); if (!arc) return { n, cols: 0 };
+        const b = arc.querySelectorAll('.cr-arcb'); b[0].click();
+        const out = { n, cols: b.length, peak: arc.querySelectorAll('.cr-arcb.pk em').length, cap: arc.querySelector('.cr-arccap').textContent, wide: arc.scrollWidth > arc.clientWidth };
+        const s0 = document.querySelector('[data-tab="log"]'); if (s0) s0.click();
+        return out;
+      });
+      if (a) {
+        arcSeen = true;
+        ok(a.cols === a.n && a.peak === 1 && !a.wide, `the arc draws a column a season with one peak, inside its box (${a.cols} of ${a.n})`);
+        ok(/OVR/.test(a.cap) && !/undefined|NaN/.test(a.cap), `a tap on a column says which season it was ("${a.cap}")`);
+      }
     }
     /* Once: the off-the-court sheet opens and an action lands. */
     if (!offOpened && st.steps >= 6 && !st.card) {
@@ -1387,6 +1611,45 @@ async function browser() {
       await page.setViewportSize({ width: 390, height: 844 });
       await page.evaluate(() => RTF_CAREER_UI.paintPress({ beats: [], result: null }));
     }
+    /* A CLUB ON A CARD OPENS ITS ROSTER. Asked once on a stood-in offer at
+       the NBA stage (the card a walk meets is a coin toss), and then on the
+       first real card that carries one, where Sign from the sheet answers it. */
+    if (!rosAsked && st.card && st.stage === 'nba') {
+      rosAsked = true;
+      const r = await page.evaluate(() => {
+        const L = RTF_CAREER_UI.state().cur;
+        L.pending.unshift({ id: 'rostest', kind: 'fa', key: 'rostest', eyebrow: 'Free agency', scene: "Agent's office", title: 'Two offers. Where do you sign?',
+          options: [{ label: 'Sign with the Rockets', hint: '4 years, $34M a year · Starter · Contender', club: 'HOU' }, { label: 'Sign with the Jazz', hint: '4 years, $32M a year · Starter · Rebuilding', club: 'UTA' }] });
+        RTF_CAREER_UI.paintPress({ beats: [], result: null });
+        const btns = document.querySelectorAll('#cr-card [data-ros]').length;
+        document.querySelector('#cr-card [data-ros="1"]').click();
+        const sh = document.querySelector('#cr-sheet'), open = !sh.hidden;
+        const rows = sh.querySelectorAll('.cr-rot-ros li:not(.cr-rot-h)').length, you = sh.querySelectorAll('.cr-rot-ros li.you').length;
+        const h = (sh.querySelector('h3') || {}).textContent || '', go = (sh.querySelector('#cr-ros-go') || {}).textContent || '';
+        const junk = /\bundefined\b|\bNaN\b/.test(sh.innerText);
+        const ch = document.querySelector('#cr-card .cr-choice').getBoundingClientRect(), rb = document.querySelector('#cr-card [data-ros]').getBoundingClientRect();
+        sh.querySelector('#cr-sheet-x').click();
+        const shut = sh.hidden, still = L.pending[0].key === 'rostest';
+        L.pending.shift(); RTF_CAREER_UI.paintPress({ beats: [], result: null });
+        return { btns, open, rows, you, h, go, junk, shut, still, side: rb.left >= ch.right - 1 && rb.height >= 40 };
+      });
+      ok(r.btns === 2 && r.side, `every club answer carries a Roster button beside it, big enough to press (${r.btns})`);
+      ok(r.open && /Jazz/.test(r.h) && r.rows >= 10 && r.you === 1 && !r.junk, `Roster opens that club's players with you placed among them (${r.h}, ${r.rows} rows)`);
+      ok(r.go === 'Sign with the Jazz', `the sheet's own button is the same answer ("${r.go}")`);
+      ok(r.shut && r.still, 'Back closes it and the decision is still waiting');
+    }
+    if (rosAsked && !rosSigned && st.card) {
+      const real = await page.$('#cr-card [data-ros]');
+      if (real) {
+        rosSigned = true;
+        await real.click();
+        await page.waitForSelector('#cr-sheet:not([hidden]) #cr-ros-go');
+        await page.click('#cr-ros-go');
+        const after = await page.evaluate(() => { const s = RTF_CAREER_UI.state(); return { card: s.cur && s.cur.pending[0] ? s.cur.pending[0].key : null, shut: document.querySelector('#cr-sheet').hidden }; });
+        ok(after.shut && after.card !== st.card, `Sign from a real ${st.card} roster answers the card (${st.card} to ${after.card})`);
+        continue;
+      }
+    }
     if (!keyed && st.card && st.steps >= 3) {
       keyed = true;
       await page.keyboard.press('1');
@@ -1409,7 +1672,10 @@ async function browser() {
         ok(wide <= 0, `nothing scrolls sideways on a phone (${wide}px)`);
       }
     }
-    const c = await page.$('.cr-choice');
+    /* The walk files its career to the board, so it turns the bookie down:
+       a yes can end in a lifetime ban, and a banned career is off the board
+       (check-story holds that half). */
+    const c = st.cid === 'wp_bet' ? (await page.$$('.cr-choice'))[1] : await page.$('.cr-choice');
     if (c) {
       /* A card the game is waiting on is on the screen, not below the fold. */
       /* Every card, all of the first answer, not a sample: what pushed one
@@ -1463,9 +1729,12 @@ async function browser() {
   /* The career is a slot on the account: the key is in cloud.js's list. */
   const cl = await page.evaluate(() => window.RTF_CLOUD && window.RTF_CLOUD.MODE_KEYS['rtf.life.v1']);
   ok(cl === 'life', `the career is a slot on the shelf (${cl})`);
-  await vaultWalk(fin);
+  /* A walk that never reached retirement has no Hall card, and a crash here
+     would hide every failure above it. */
+  if (fin.hof) await vaultWalk(fin); else ok(false, 'the Vault walk needs a finished career, and the walk never filed one');
   ok(boom.length === 0, `no page errors (${boom.join(' | ') || 'none'})`);
   console.log(`  ${presses} presses to retirement`);
+  ok(arcSeen, 'the walk reached a career long enough to read the arc');
   await scenesWalk(b, serve);
   await b.close();
 
@@ -1643,7 +1912,12 @@ async function scenesWalk(b, serve) {
       }
       continue;
     }
-    const r = await page.evaluate(() => { const c = document.querySelector('.cr-choice'); if (c) { c.click(); return 'c'; } const n = document.querySelector('#cr-next'); if (n) { n.click(); return 'n'; } return 'x'; });
+    /* A card or Next button that has just arrived is ARMED (disabled for a
+       moment so a double tap cannot answer it unseen). element.click() does
+       nothing on a disabled button, so the walk waits it out rather than
+       spending a press on it, and does not count the wait. */
+    const r = await page.evaluate(() => { const c = document.querySelector('.cr-choice') || document.querySelector('#cr-next'); if (!c) return 'x'; if (c.disabled) return 'w'; c.click(); return c.id === 'cr-next' ? 'n' : 'c'; });
+    if (r === 'w') { presses--; await page.waitForTimeout(120); continue; }
     if (r === 'x') { lastX = await page.evaluate(() => ({ html: document.body.innerText.slice(0, 300), scov: !!document.querySelector('#scov:not([hidden])'), tk: !!document.querySelector('#tkov:not([hidden])'), court: !!document.querySelector('.sc-court') })); break; }
   }
   if (lastX || presses >= 1400) console.log('  walk ended:', presses, JSON.stringify(lastX));

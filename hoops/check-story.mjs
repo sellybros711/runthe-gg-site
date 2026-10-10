@@ -35,7 +35,7 @@ const clone = (x) => JSON.parse(JSON.stringify(x));
 const ROSTERS = fs.existsSync(path.join(HERE, 'data', 'rosters.json')) ? JSON.parse(fs.readFileSync(path.join(HERE, 'data', 'rosters.json'), 'utf8')) : null;
 const league = C.seedLeague(ROWS, C.withRatings(ROSTERS, (() => { const f = new URL('./data/ratings.json', import.meta.url); return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : null; })()));
 const words = (s) => String(s).replace(/\{[a-z0-9]+(?::\w+)?\}/gi, 'X').split(/\s+/).filter(Boolean).length;
-const POOLS = { nba: C.EVENTS, am: C.AM_EVENTS, arc: C.ARC_EVENTS, story: C.STORY_EV };
+const POOLS = { nba: C.EVENTS, am: C.AM_EVENTS, arc: C.ARC_EVENTS, story: C.STORY_EV, team: C.TEAM_EV };
 
 /* One career, every card it was dealt and the state it was dealt in. */
 function play(seed, start, pickFn, more) {
@@ -46,7 +46,7 @@ function play(seed, start, pickFn, more) {
   while (!L.retired && g++ < 4000) {
     if (L.pending.length) {
       const c = L.pending[0];
-      cards.push({ c: clone(c), year: L.year, am: !!(L.am && L.stage !== 'nba'), cont: C.continuity(L, c) });
+      cards.push({ c: clone(c), year: L.year, am: !!(L.am && L.stage !== 'nba'), cont: C.continuity(L, c), sd: L.seasonsDone, sl: !!(((L.evlog || {}).sl_first_game || []).length || (L.mem && L.mem['route.undrafted'])) });
       C.choose(L, pickFn ? pickFn(c, r) : Math.floor(r() * c.options.length));
     } else C.step(L);
   }
@@ -132,8 +132,32 @@ section('4. the copy is short');
       if (words(o.label) > 7) long.push(id + ' label "' + o.label + '"');
       for (const m of o.run.toString().matchAll(/return '([^']+)'/g)) if (words(m[1]) > 16) long.push(id + ' result ' + words(m[1]) + ': ' + m[1].slice(0, 40));
     }
+    /* A second take is held to the same limits as the card it stands in for. */
+    for (const t of ev.takes || []) {
+      const tt = typeof t.title === 'function' ? t.title(L) : t.title;
+      let tx = ''; try { tx = t.text(L); } catch (e) { tx = ''; }
+      if (words(tt) > 10) long.push(id + ' take title ' + words(tt));
+      if (words(tx) > 22) long.push(id + ' take text ' + words(tx));
+      if ((String(tx).match(/[.!?](\s|$)/g) || []).length > 3) long.push(id + ' take text has more than three sentences');
+      for (const o of t.options) {
+        if (words(o.label) > 7) long.push(id + ' take label "' + o.label + '"');
+        if (!o.hint || words(o.hint) > 6 || o.hint === o.label) long.push(id + ' take "' + o.label + '" hint');
+        if (!Array.isArray(o.rep)) long.push(id + ' take "' + o.label + '" carries no reputation');
+        for (const m of o.run.toString().matchAll(/return '([^']+)'/g)) if (words(m[1]) > 16) long.push(id + ' take result ' + words(m[1]) + ': ' + m[1].slice(0, 40));
+      }
+    }
   }
   ok(long.length === 0, `titles under 11 words, card text under 23 and three sentences, answers under 8, results under 17 (${long.slice(0, 5).join('; ') || 'all'})`);
+  /* Run The Tour's shape: a place over the title, and a line under every
+     answer saying what the choice is really about. */
+  const bare = [];
+  for (const k in POOLS) for (const id in POOLS[k]) {
+    const ev = POOLS[k][id];
+    const tag = typeof ev.tag === 'function' ? ev.tag(L) : ev.tag;
+    if (!tag || words(tag) > 3) bare.push(id + ' tag');
+    for (const o of ev.options) if (!o.hint || words(o.hint) > 6 || o.hint === o.label) bare.push(id + ' "' + o.label + '"');
+  }
+  ok(bare.length === 0, `every card names its place in three words or less, and every answer has a line under it of six or less (${bare.length} missing: ${bare.slice(0, 5).join('; ') || 'none'})`);
 }
 
 section('5. arcs: set up, escalate, pay off, and end more than one way');
@@ -294,6 +318,159 @@ section('12. Phase D: origins, routes, endings, epilogues and the legend switch'
   ok(real.length === 0, `no Phase D card puts a real player or coach in a story (${real.slice(0, 4).join(', ') || 'none'})`);
   ok(Object.keys(AUTH).length >= 150, `Phase D wrote the content it claims (${Object.keys(AUTH).length} cards)`);
   void L;
+}
+
+section('14. the game narrates, and a card that comes back comes back different');
+{
+  /* The narrator's line, the second takes and the varied system cards are a
+     story career's alone. Played here as a player meets them: the line is
+     short, true to the moment, never unfilled, and not on every card; a card
+     dealt again in one career never repeats the take it was last dealt in;
+     every take is met somewhere; and a career from before the story engine
+     sees none of it. */
+  const DASH = new RegExp('[' + String.fromCharCode(8211, 8212) + ']');
+  const runs = [];
+  for (let i = 0; i < 40; i++) runs.push(play('narr' + i, i % 2 ? 'hs' : 'draft'));
+  let cards = 0, led = 0, bad = [], longLead = [];
+  const takeSeen = {}, takeN = {}, repeatSame = [], titles = {};
+  for (const x of runs) {
+    const last = {};
+    for (const k of x.cards) {
+      const c = k.c;
+      cards++;
+      if (c.lead) {
+        led++;
+        if (/\{[a-z0-9]+(?::\w+)?\}|undefined|NaN/.test(c.lead) || DASH.test(c.lead)) bad.push(c.id + ': ' + c.lead);
+        if (words(c.lead) > 16) longLead.push(c.lead);
+      }
+      if (c.take != null) {
+        (takeSeen[c.id] = takeSeen[c.id] || new Set()).add(c.take); takeN[c.id] = (takeN[c.id] || 0) + 1;
+        if (last[c.id] != null && last[c.id] === c.take) repeatSame.push(c.id);
+        last[c.id] = c.take;
+      } else if (C.EVENTS[c.id] && C.EVENTS[c.id].takes || C.AM_EVENTS[c.id] && C.AM_EVENTS[c.id].takes) {
+        (takeSeen[c.id] = takeSeen[c.id] || new Set()).add(0); takeN[c.id] = (takeN[c.id] || 0) + 1;
+        if (last[c.id] === 0) repeatSame.push(c.id);
+        last[c.id] = 0;
+      }
+      (titles[c.id] = titles[c.id] || new Set()).add(c.title.replace(/\d+/g, '#'));
+    }
+  }
+  const share = led / cards;
+  ok(share > 0.15 && share < 0.6, `the narrator speaks on some cards and not all of them (${(share * 100).toFixed(0)}% of ${cards})`);
+  ok(!bad.length, `every narrator line is filled in and carries no dash (${bad.slice(0, 3).join(' | ') || 'all'})`);
+  ok(!longLead.length, `every narrator line is sixteen words or less (${longLead.slice(0, 2).join(' | ') || 'all'})`);
+  ok(!repeatSame.length, `a card dealt again in one career never comes back as the same take (${repeatSame.slice(0, 4).join(', ') || 'none'})`);
+  const withTakes = [...Object.keys(C.EVENTS), ...Object.keys(C.AM_EVENTS)].filter((id) => (C.EVENTS[id] || C.AM_EVENTS[id]).takes);
+  const dark = [];
+  for (const id of withTakes) { const n = ((C.EVENTS[id] || C.AM_EVENTS[id]).takes.length) + 1; const s = takeSeen[id]; if (s && takeN[id] >= 4 && s.size < Math.min(n, 2)) dark.push(id); }
+  ok(withTakes.length >= 25 && !dark.length, `${withTakes.length} cards carry other takes, and each one dealt four times or more here showed more than one (${dark.join(', ') || 'all'})`);
+  const one = ['clutch', 'retire', 'injury', 'coach_review'].filter((id) => titles[id] && titles[id].size < 2);
+  ok(!one.length, `the system cards are put more than one way (${['clutch', 'retire', 'injury', 'coach_review'].map((id) => id + ' ' + (titles[id] ? titles[id].size : 0)).join(', ')})`);
+  /* Off a story career: none of it. */
+  let offLead = 0, offTake = 0;
+  for (let i = 0; i < 6; i++) for (const k of play('narroff' + i, i % 2 ? 'hs' : 'draft', null, { story: false }).cards) { if (k.c.lead) offLead++; if (k.c.take != null || k.c.varied) offTake++; }
+  ok(!offLead && !offTake, `a career from before the story engine hears no narrator and sees no take (${offLead} lines, ${offTake} takes)`);
+}
+
+section('15. nothing reads the same twice: the summer, the goal and the answers');
+{
+  /* A card that comes back every season (the summer, the goal, Game 7, an
+     injury, a free agency) is the most read copy in the game, so it is the
+     copy most able to feel like a loop. What is held: across a career the
+     exact same card text, the exact same set of answers and the exact same
+     title come back rarely, the summer reads off the season it follows, and
+     last year's goal is named rather than gestured at. Measured before this
+     pass: 11.5 repeated texts, 10.9 repeated answer sets and 18.6 repeated
+     titles a career. */
+  const N = 40;
+  let rt = 0, ro = 0, rti = 0, sum = 0, sumFact = 0, named = 0, back = 0, longSum = [];
+  for (let i = 0; i < N; i++) {
+    const x = play('fresh' + i, i % 2 ? 'hs' : 'draft');
+    const T = {}, O = {}, Ti = {};
+    for (const k of x.cards) {
+      const c = k.c, op = c.options.map((o) => o.label).join('/');
+      if (T[c.text]) rt++; if (O[op]) ro++; if (Ti[c.title]) rti++;
+      T[c.text] = O[op] = Ti[c.title] = 1;
+      if (c.id === 'training' && !/college|campus|school/i.test(c.title + c.text)) {
+        sum++;
+        if (/\d/.test(c.text) || /All-Star|ring|year \d|bench|rotation/.test(c.text)) sumFact++;
+        if (words(c.text) > 22) longSum.push(c.text);
+      }
+      if (c.id === 'goal' && /Last year/.test(c.text)) { back++; if (/Last year(?:'s goal is still on the wall)?:? ?(?:you said )?[a-z]/.test(c.text) && !/hit yours|missed yours/.test(c.text)) named++; }
+    }
+  }
+  ok(rt / N < 4, `a career rarely reads the same card text twice (${(rt / N).toFixed(1)} a career)`);
+  ok(ro / N < 4, `a career rarely meets the same set of answers twice (${(ro / N).toFixed(1)} a career)`);
+  ok(rti / N < 6, `a career rarely reads the same title twice (${(rti / N).toFixed(1)} a career)`);
+  ok(sum > 100 && sumFact / sum > 0.4, `the summer card says something true about the season it follows (${sumFact} of ${sum})`);
+  ok(!longSum.length, `the summer card is 22 words or less (${longSum.slice(0, 2).join(' | ') || 'all'})`);
+  ok(back > 20 && named / back > 0.8, `last year's goal is named when it is brought up (${named} of ${back})`);
+  /* SUMMER LEAGUE "AGAIN" NEEDS A FIRST TIME. A player was offered Play
+     Summer League again in his first summer as a pro. A rookie is offered it
+     plain, and not at all if this summer already sent him to Vegas; from his
+     second summer it says again. */
+  let rookAgain = 0, rookTwice = 0, rookPlain = 0, laterAgain = 0;
+  for (let i = 0; i < 80; i++) {
+    const x = play('slg' + i, i % 2 ? 'hs' : 'draft');
+    for (const k of x.cards) {
+      if (k.c.id !== 'training' || k.am) continue;
+      const L0 = k.c.options.map((o) => o.label).join('|');
+      if (k.sd === 0) { if (/Summer League again|Vegas again/.test(L0)) rookAgain++; if (k.sl && /Summer League|Vegas/.test(L0)) rookTwice++; if (/Play Summer League(?! again)/.test(L0)) rookPlain++; }
+      else if (k.sd <= 2 && /Summer League again|Vegas again/.test(L0)) laterAgain++;
+    }
+  }
+  ok(!rookAgain, `a rookie is never offered Summer League "again" (${rookAgain})`);
+  ok(!rookTwice, `a rookie already sent to Vegas this summer is not offered it again (${rookTwice})`);
+  ok(rookPlain > 0 && laterAgain > 0, `the first summer offers it plain and a later one says again (${rookPlain} plain, ${laterAgain} again)`);
+  /* A story career only: an old save reads exactly what it always read. */
+  let offVu = 0;
+  for (let i = 0; i < 4; i++) { const x = play('freshoff' + i, 'draft', null, { story: false }); if (x.L && x.L.vu) offVu++; }
+  ok(!offVu, `a career from before the story engine keeps no memory of what it read (${offVu})`);
+}
+
+section('16. the bracket is the one the engine played');
+{
+  /* The playoff screen draws the whole bracket off bracketOf. Every series
+     of yours on it has to be the one you played, against the club you
+     played, and the club it crowns has to be the champion the league
+     records. A bracket worked out again later must not crown anybody else. */
+  let seasons = 0, played = 0, wrong = [], crowned = 0, piSeen = 0, open4 = 0;
+  for (let i = 0; i < 14; i++) {
+    const L = C.newLife({ seed: 'bracket' + i, league, start: 'draft' });
+    let g = 0;
+    while (!L.retired && g++ < 3000) {
+      const ph = L.phase;
+      if (L.pending.length) C.choose(L, 0); else C.step(L);
+      if (ph === 'off' || L.phase !== 'off' || L.stage !== 'nba' || !L.season || !L.season.po) continue;
+      seasons++;
+      const s = L.season, po = s.po, bk = C.bracketOf(L);
+      if (!bk) { wrong.push(s.year + ' no bracket'); continue; }
+      if (bk.piWent) piSeen++;
+      for (const r of po.results) {
+        played++;
+        const x = r.round < 3 ? (bk.conf[bk.cf][r.round] || []).find((y) => y.you) : bk.finals;
+        const opp = x ? (x.a === bk.team ? x.b : x.a) : null;
+        if (opp !== r.opp) wrong.push(s.year + ' round ' + r.round + ': ' + opp + ' on the bracket, ' + r.opp + ' played');
+        else if (x.w !== (r.won ? bk.team : r.opp)) wrong.push(s.year + ' round ' + r.round + ' has the wrong winner');
+      }
+      for (const cf of ['East', 'West']) for (const row of bk.conf[cf]) for (const x of row) if (x.w == null || Math.max(x.sa, x.sb) !== 4) open4++;
+      if (bk.finals.w == null || Math.max(bk.finals.sa, bk.finals.sb) !== 4) open4++;
+      if (bk.champ === L.league.champs[s.year]) crowned++;
+      else wrong.push(s.year + ' crowns ' + bk.champ + ', the league records ' + L.league.champs[s.year]);
+    }
+  }
+  ok(seasons >= 100 && played >= 60, `the sweep files seasons and plays series (${seasons} seasons, ${played} series)`);
+  ok(piSeen > 0, `it meets a play-in (${piSeen})`);
+  ok(!wrong.length, `every series of yours on the bracket is the one you played (${wrong.slice(0, 3).join(' | ') || 'all'})`);
+  ok(!open4, `every series on a filed bracket is finished at four wins (${open4} open)`);
+  ok(crowned === seasons, `the bracket crowns the champion the league records (${crowned} of ${seasons})`);
+  /* A career banned for life is off the board: the board reads its verdict
+     off the score and would call it a Journeyman. */
+  const ban = C.newLife({ seed: 'banned', league, start: 'draft' });
+  for (let g = 0; g < 400 && ban.history.length < 2; g++) { if (ban.pending.length) C.choose(ban, 0); else C.step(ban); }
+  const filed = !!C.boardSummary(ban);
+  ban.flags.banned = true;
+  ok(filed && C.boardSummary(ban) === null, `a career banned for life is not filed to the board (${filed ? 'filed before the ban' : 'never filed'})`);
 }
 
 section('13. the road ends in today\'s league');

@@ -1320,6 +1320,32 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/mycard.js?v=14"></script>
 <script src="/arcade/topbanner.js?v=11"></script>
 <script src="/arcade/auth-ui.js?v=9"></script>
+<script>
+/* Stumpire, testers only. Nothing is added to the page unless the API says
+   this account is a tester: everybody else gets a 404 back and the hub is
+   exactly what it was. The tile reuses Sportegories' look until it has art. */
+(function () {
+  var A = window.RTG_AUTH, done = false;
+  if (!A || !A.onChange) return;
+  A.onChange(function (s) {
+    if (done || !s || !s.resolved || !s.signedIn || !A.token || !A.token()) return;
+    done = true;
+    fetch('/api/stumpire/me', { headers: { Authorization: 'Bearer ' + A.token() }, credentials: 'same-origin' })
+      .then(function (r) {
+        if (r.status !== 200 || document.getElementById('cardStump')) return;
+        var after = document.getElementById('cardSpg');
+        if (!after || !after.parentNode) return;
+        var a = document.createElement('a');
+        a.className = 'tile spg'; a.id = 'cardStump'; a.href = '/arcade/stumpire/';
+        a.innerHTML = '<span class="cap" aria-hidden="true"><span class="status">Testers</span></span>' +
+          '<span class="body"><span class="nm">Stumpire</span>' +
+          '<span class="desc">Name something the umpire did not see coming. Five at-bats.</span>' +
+          '<span class="foot"><span class="play">PLAY</span></span></span>';
+        after.parentNode.insertBefore(a, after.nextSibling);
+      }).catch(function () {});
+  });
+})();
+</script>
 <script src="/arcade/card.js?v=23"></script>
 <script src="/arcade/referral.js?v=12"></script>
 <script src="/arcade/nav.js?v=4"></script>

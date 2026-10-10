@@ -22,6 +22,28 @@
  * one of the 88 that did not is a bald look, and the only bald ones that did
  * move wear a cap, where bald used to be drawn as a buzz cut. That is the
  * proof the pass touched hair and nothing else.
+ *
+ * RE-RECORDED A SECOND TIME, ON PURPOSE, for the 3D model the owner asked
+ * for: the player is now Run The Tour's style, a posable 3D model put through
+ * the golf game's paint step (PXHD), so every one of the 960 moved. That is
+ * the whole drawing redone rather than a pixel drifting, and from here on the
+ * hashes guard the new drawing exactly as they guarded the old one.
+ *
+ * RE-RECORDED A THIRD TIME, ON PURPOSE, because the owner found the players
+ * too buff and the jersey poor. Lean and Standard got narrower shoulders,
+ * smaller delts and thinner arms; only Muscular (the 'strong' id) keeps the
+ * broad build. The tank was recut (a round scoop, narrow straps, round
+ * armholes, one even trim band) and its number is stamped on the screen so no
+ * digit loses a row. The lower body was asked to stay and did not change.
+ *
+ * RE-RECORDED A FOURTH TIME, ON PURPOSE, because the owner asked for height
+ * and weight to show on the figure. The proportions moved off the chibi ones
+ * (the head is a smaller share of the body, the legs longer), the body is
+ * built from metrics(look) so a taller or heavier player is drawn taller or
+ * heavier, the number was cut to a smaller face, and the shorts were narrowed
+ * with a thin side trim. That reverses the third pass's lower body rule at the
+ * owner's later request. A look with no ht or wt is drawn at the default size,
+ * which is what these hashes hold.
  */
 import fs from 'node:fs';
 import path from 'node:path';

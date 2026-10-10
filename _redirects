@@ -28,3 +28,11 @@
 # ever be written in a way that catches it.
 /basketball /hoops/ 302
 /basketball/* /hoops/:splat 302
+
+# The source files under functions/ are code, never pages. Most are harmless,
+# but functions/_stumpire carries the tester game's sample prompts (with the
+# editor's wildcards) and its page shells, which must only ever be served by
+# the Function that checks who is asking. A 404 here holds that even if the
+# deploy uploads the directory as assets. No route on this site lives under
+# /functions/, so this catches nothing else.
+/functions/* /404.html 404

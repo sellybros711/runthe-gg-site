@@ -1,0 +1,41 @@
+name: "Stumpire: diagnose access"
+
+# Read-only. Asks the live site and the database the questions that decide
+# whether a tester sees the Stumpire tile. Writes nothing.
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/stumpire-diag.yml']
+  workflow_dispatch: {}
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SR: ${{ secrets.SUPABASE_SERVICE_ROLE }}
+    steps:
+      - name: Install psql
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client >/dev/null
+      - name: The live site
+        run: |
+          echo "--- /api/stumpire/me with no token"; curl -sS -i https://runthe.gg/api/stumpire/me | head -20 || true
+          echo; echo "--- /api/stumpire/me with a junk token"; curl -sS -i -H 'Authorization: Bearer junk' https://runthe.gg/api/stumpire/me | head -20 || true
+          echo; echo "--- hub page carries the tile script?"; curl -sS https://runthe.gg/arcade/ | grep -c cardStump || true
+          echo "--- www hub page?"; curl -sS https://www.runthe.gg/arcade/ | grep -c cardStump || true
+          echo "--- /arcade/stumpire/ status"; curl -sS -o /dev/null -w "%{http_code}\n" https://runthe.gg/arcade/stumpire/ || true
+      - name: The database
+        run: |
+          psql "$SUPABASE_DB_URL" -c "select p.username, t.user_id, t.role from stumpire_testers t left join profiles p on p.id = t.user_id;"
+          psql "$SUPABASE_DB_URL" -c "select key, value from stumpire_settings;"
+          psql "$SUPABASE_DB_URL" -c "select id, username, public.stumpire_access(id) from profiles where lower(username) in ('runnyj','csel8');"
+          psql "$SUPABASE_DB_URL" -c "select has_function_privilege('service_role','public.stumpire_access(uuid)','execute') as sr_exec, has_table_privilege('service_role','public.stumpire_settings','select') as sr_settings, has_table_privilege('service_role','public.stumpire_testers','select') as sr_testers, has_table_privilege('service_role','public.stumpire_plays','insert') as sr_plays;"
+          psql "$SUPABASE_DB_URL" -c "select slate_date from stumpire_slates order by slate_date;"
+      - name: The REST path the function uses
+        run: |
+          TUID=$(psql "$SUPABASE_DB_URL" -tAc "select id from profiles where lower(username)='runnyj' limit 1")
+          echo "runnyj uid $TUID"
+          curl -sS -X POST "$SUPABASE_URL/rest/v1/rpc/stumpire_access" -H "apikey: $SR" -H "Authorization: Bearer $SR" -H 'Content-Type: application/json' -d "{\"p_uid\":\"$TUID\"}"; echo
+          curl -sS "$SUPABASE_URL/rest/v1/stumpire_settings?key=eq.mode&select=value" -H "apikey: $SR" -H "Authorization: Bearer $SR"; echo

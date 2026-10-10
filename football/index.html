@@ -1846,7 +1846,13 @@ window.GA_ID='G-L29P5MRWKE';
   .bg-narr b{color:#f4f7fc;font-weight:700}
   .bg-narr .good{color:#4ade80;font-weight:800}
   .bg-narr .bad{color:#f87171;font-weight:800}
-  .bg-skip{display:flex;justify-content:flex-end;margin:-2px 2px 2px}
+  .bg-skip{display:flex;justify-content:flex-end;gap:16px;margin:-2px 2px 2px}
+  /* The broadcast's two controls share a row: Sim to the end, and the Speed button that
+     slows it down (assets/simspeed.js). Speed is sized to its words so the way out stays the
+     bigger target. */
+  .porow{display:flex;gap:8px}
+  .porow .btn{flex:1;width:auto;white-space:nowrap;padding-left:12px;padding-right:12px}
+  .porow .btn.spd{flex:0 0 auto}
   /* THE SIXTH TIME IN THIS FILE. .bg-skip sets display:flex, so the `hidden` the script
      writes on it never takes without this line, and the control stays on screen through the
      verdict offering to hurry a game that has finished. */
@@ -7976,7 +7982,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
       <canvas id="po-fcanvas" width="600" height="160"></canvas>
     </div>
     <div class="polog" id="po-log"></div>
-    <div style="margin-top:14px"><button class="btn ghost sm" id="b-po-fast">Sim to the end</button></div>
+    <div class="porow" style="margin-top:14px"><button class="btn ghost sm" id="b-po-fast">Sim to the end</button>
+      <button class="btn ghost sm spd" data-simspeed>Speed: Normal</button></div>
   </div>
 
   <div class="screen" id="s-seed">
@@ -8310,7 +8317,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
          watch in the mode, so there has to be a way to get to the result. It does NOT take
          the calls: fourth down and the two point try are what a boss battle IS, so it runs
          the football fast and still stops to ask. See bossFast. -->
-    <div class="bg-skip" id="bg-skip"><button class="btn-text" id="b-boss-fast">Sim the rest</button></div>
+    <div class="bg-skip" id="bg-skip"><button class="btn-text" data-simspeed>Speed: Normal</button><button class="btn-text" id="b-boss-fast">Sim the rest</button></div>
     <!-- EVERY DRIVE, NOT JUST THE SCORES, which is the one thing this screen can do that the
          playoff broadcast cannot. That log is built from scoringScript, which works BACKWARDS
          from a final score to a legal way of reaching it, so the only honest thing it can list
@@ -8394,7 +8401,8 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 
     <div class="pocap" id="bowl-cap"></div>
     <div class="polog" id="bowl-log"></div>
-    <div style="margin-top:14px" id="bowl-fastwrap"><button class="btn ghost sm" id="b-bowl-fast">See result</button></div>
+    <div style="margin-top:14px" id="bowl-fastwrap"><div class="porow"><button class="btn ghost sm" id="b-bowl-fast">See result</button>
+      <button class="btn ghost sm spd" data-simspeed>Speed: Normal</button></div></div>
 
     <div id="bowl-result" hidden>
       <div class="verdict" id="bowl-verdict" style="margin-top:6px">
@@ -8562,6 +8570,7 @@ affiliated with or endorsed by the NFL, the NFLPA or any club.
 <!-- The broadcast field every game is played out on. drawDriveChart hands its drives here and
      keeps its own body as the fallback, so a blocked copy still draws the old chart. -->
 <script src="/assets/fieldcast.js?v=4"></script>
+<script src="/assets/simspeed.js?v=1"></script>
 <script defer src="auth.js?v=8"></script>
 <script>
 (function(){
@@ -19579,6 +19588,19 @@ function recordBefore(r){
 
 /* Flatten a script into segments of real time: run the clock down to the next
    score, hold on it, repeat, then run out the quarter. */
+/* HOW FAST IT PLAYS. Players said the playoffs went by too fast to follow, so a Speed button
+   on every broadcast screen stretches this pace (assets/simspeed.js, one setting for both
+   football games). Each segment reads the multiplier ONCE, the first time its length is asked
+   for, which is the moment it starts playing. So a change lands on the next segment and never
+   halfway through one: re-read every frame, a slower setting would wind the clock back, and
+   the field reads a clock going backwards as a new game. */
+const simMul=()=>(window.RTG_SPEED&&RTG_SPEED.mul)?RTG_SPEED.mul():1;
+function paced(seg,base){
+  seg.base=base;
+  Object.defineProperty(seg,'ms',{enumerable:true,
+    get(){ if(this._ms==null) this._ms=this.base*simMul(); return this._ms; }});
+  return seg;
+}
 function buildTimeline(script,pace){
   const segs=[];
   /* THE SCORE'S PLACE IN THE SCRIPT, carried through onto the segment. The timeline is
@@ -19590,12 +19612,12 @@ function buildTimeline(script,pace){
   for(let q=1;q<=4;q++){
     let from=900;
     for(const e of script.filter(x=>x.q===q)){
-      segs.push({kind:'run',q,from,to:e.sec,ms:Math.max(200,(from-e.sec)/900*pace.quarterMs)});
-      segs.push({kind:'score',q,e,i:idx.get(e),ms:pace.hold});
+      segs.push(paced({kind:'run',q,from,to:e.sec},Math.max(200,(from-e.sec)/900*pace.quarterMs)));
+      segs.push(paced({kind:'score',q,e,i:idx.get(e)},pace.hold));
       from=e.sec;
     }
-    segs.push({kind:'run',q,from,to:0,ms:Math.max(200,from/900*pace.quarterMs)});
-    if(q<4) segs.push({kind:'break',q,ms:q===2?pace.half:pace.qbreak});
+    segs.push(paced({kind:'run',q,from,to:0},Math.max(200,from/900*pace.quarterMs)));
+    if(q<4) segs.push(paced({kind:'break',q},q===2?pace.half:pace.qbreak));
   }
   return segs;
 }
@@ -21120,6 +21142,8 @@ let bossFast=false;
  * seconds, which is 2.6 over its resolved counterpart and the honest limit of this.
  */
 let bossPace=1;
+/* The Speed button multiplies every duration below by simMul() on top of this, AFTER the
+   floors, so Slow really is slower on a Wild Card whose pace is already sitting on them. */
 function bossStop(){ clearTimeout(bossTimer); cancelAnimationFrame(bossRaf); }
 function bossRenderScore(){
   $('bg-syou').textContent=bossSim.you; $('bg-sthem').textContent=bossSim.them;
@@ -21248,7 +21272,7 @@ function liveBoard(o,sim,rng,opts){
   show('s-bgame');
   bossField=initFieldCanvas('bg-fcanvas'); bossFcv=$('bg-fcanvas');
   bossDraw(0,false);
-  bossTimer=setTimeout(bossLoop,Math.max(300,600*bossPace));
+  bossTimer=setTimeout(bossLoop,Math.max(300,600*bossPace)*simMul());
 }
 
 /* THE GAME. Build the sim with the chosen read, set up the field, then run it forward. */
@@ -21301,7 +21325,7 @@ function bossLoop(){
   /* 200ms between events was the rest of why the game was over in a blink. The drives
      themselves carry the pace now, so this is the handoff between them rather than the
      pace itself. */
-  bossFlush(()=>{ bossTimer=setTimeout(bossLoop,bossFast?0:420*bossPace); });
+  bossFlush(()=>{ bossTimer=setTimeout(bossLoop,bossFast?0:420*bossPace*simMul()); });
 }
 
 function bossAnnounceOt(){
@@ -21354,7 +21378,7 @@ function bossLiveTo(d,cb){
   if(!c||bossFast||at<=from+1){
     bossShownTo=Math.max(from,at); bossLiveY=ball; cb(); return;
   }
-  const dur=Math.max(220,bossPace*Math.max(240,Math.min(2400,(at-from)*10)));
+  const dur=Math.max(220,bossPace*Math.max(240,Math.min(2400,(at-from)*10)))*simMul();
   const t0=(window.performance||Date).now();
   const tick=()=>{
     const k=Math.min(1,((window.performance||Date).now()-t0)/dur);
@@ -21468,8 +21492,8 @@ function bossAnimateDrive(d,cb){
    */
   const from=Math.max(d.tStart,bossShownTo);
   const span=Math.max(0,d.tEnd-from), full=Math.max(1,d.tEnd-d.tStart);
-  const whole=bossPace*Math.max(900,Math.min(3000,(d.plays||4)*260));
-  const floor=from>d.tStart?Math.max(120,240*bossPace):Math.max(220,900*bossPace);
+  const whole=bossPace*Math.max(900,Math.min(3000,(d.plays||4)*260))*simMul();
+  const floor=(from>d.tStart?Math.max(120,240*bossPace):Math.max(220,900*bossPace))*simMul();
   const dur=span<=0?0:Math.max(floor,whole*(span/full));
   const anchor=(from>d.tStart&&bossLiveY!=null)?{t:from,y:bossLiveY}:null;
   const t0=(window.performance||Date).now();
@@ -21490,7 +21514,7 @@ function bossAnimateDrive(d,cb){
     /* A BEAT ON A SCORE, and only on a score. The drives run back to back otherwise, and a
        touchdown that is gone before the number under it has finished moving is the thing
        this screen was asked to stop doing. */
-    if(scored){ bossTimer=setTimeout(cb,Math.max(300,700*bossPace)); return; }
+    if(scored){ bossTimer=setTimeout(cb,Math.max(300,700*bossPace)*simMul()); return; }
     cb();
   };
   bossRaf=requestAnimationFrame(tick);

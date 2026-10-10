@@ -1,0 +1,78 @@
+name: Stumpire checks
+
+# Stumpire is testers only. These checks hold its rules: the matcher, the
+# scoring and depth bands, the blend, the strike tier drop, the ramp and slate
+# validators, the tester gate on every route, and the Sportegories replay on
+# the synthetic fixture (a floor on regressions, not the launch number).
+
+on:
+  pull_request:
+    paths:
+      - 'functions/_stumpire/**'
+      - 'functions/api/stumpire/**'
+      - 'functions/arcade/stumpire/**'
+      - 'supabase/133_stumpire.sql'
+      - 'supabase/134_stumpire_score.sql'
+      - 'supabase/test/stumpire_*.sql'
+      - '.github/workflows/stumpire-checks.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'functions/_stumpire/**'
+      - 'functions/api/stumpire/**'
+      - 'functions/arcade/stumpire/**'
+      - 'supabase/133_stumpire.sql'
+      - 'supabase/134_stumpire_score.sql'
+      - 'supabase/test/stumpire_*.sql'
+      - '.github/workflows/stumpire-checks.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: stumpire-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Unit tests
+        run: node --test functions/_stumpire/test/*.test.mjs
+      - name: Sportegories replay (synthetic fixture)
+        run: node functions/_stumpire/build/replay-sportegories.mjs --fixture --strict --show 20
+      # Cloudflare's build image bundles with an older esbuild than current
+      # wrangler, and it failed the whole site's deploy on one import
+      # attribute. Building with wrangler 3 catches that class here.
+      - name: Pages Functions build like Cloudflare's
+        run: npx --yes wrangler@3.20.0 pages functions build --outdir "$RUNNER_TEMP/fn"
+      - name: The seed slate passes every rule
+        run: node functions/_stumpire/build/seed-slate.mjs
+      # The migration, applied twice (it must be idempotent), then its checks.
+      # Any line that does not start " ok " fails the step.
+      - name: Migration against Postgres 16
+        run: |
+          createdb stump
+          psql -q -d stump -c 'create role authenticated' -c 'create role anon' -c 'create role service_role'
+          psql -q -d stump -f supabase/test/stumpire_base.sql
+          psql -q -d stump -v ON_ERROR_STOP=1 -f supabase/133_stumpire.sql
+          psql -q -d stump -v ON_ERROR_STOP=1 -f supabase/133_stumpire.sql
+          psql -q -d stump -v ON_ERROR_STOP=1 -f supabase/134_stumpire_score.sql
+          psql -q -d stump -v ON_ERROR_STOP=1 -f supabase/134_stumpire_score.sql
+          # stderr too: a claim that errors must fail the step, not vanish
+          psql -q -d stump -f supabase/test/stumpire_test.sql 2>&1 | grep -v NOTICE | tee out.txt
+          psql -q -d stump -f supabase/test/stumpire_score_test.sql 2>&1 | grep -v NOTICE | tee -a out.txt
+          ! grep -v '^ ok ' out.txt | grep -q .
