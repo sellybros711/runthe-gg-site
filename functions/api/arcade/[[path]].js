@@ -13,6 +13,19 @@ import { supabaseDb } from '../../_arcadelab/db-supabase.js';
 import { handle } from '../../_arcadelab/api.js';
 import { sign, setCookie, secretOf } from '../../_stumpire/cookie.js';
 
+/* The content tools (validators, drafts, snapshots) read the 2MB athlete
+   dataset, so they load on first use and only the admin routes pay for it.
+   No `with { type: 'json' }`: Cloudflare's build image cannot parse it. */
+let CONTENT = null;
+async function content() {
+  if (!CONTENT) {
+    const [c, search] = await Promise.all([import('../../_arcadelab/content/index.js'), import('../../_stumpire/data/search_avg.json')]);
+    c.setLookups((search.default || search).values);
+    CONTENT = c;
+  }
+  return CONTENT;
+}
+
 export async function onRequest(context) {
   const { request, env, params } = context;
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE) return json({ error: 'not_found' }, 404);
@@ -25,7 +38,7 @@ export async function onRequest(context) {
   let res;
   try {
     res = await handle({ method: request.method, path, query: Object.fromEntries(url.searchParams), body,
-      uid, guestId: /^[A-Za-z0-9-]{8,64}$/.test(guest) ? guest : null }, { db: supabaseDb(env), now: () => Date.now() });
+      uid, guestId: /^[A-Za-z0-9-]{8,64}$/.test(guest) ? guest : null }, { db: supabaseDb(env), now: () => Date.now(), content });
   } catch (e) {
     /* A database without 134 answers like a refusal: never confirm the game. */
     return json({ error: 'not_found' }, 404);

@@ -11,6 +11,11 @@
 import { CONFIG as C, LAYOUTS, HOT_ZONES } from './config.js';
 import { mulberry32, streamFor } from '../../shared/seed.js';
 import { gemsFor } from '../../shared/gems.js';
+import { sin, cos, atan2, hypot } from '../../shared/dmath.js';
+import { replay as replayAny } from '../../shared/replay.js';
+
+export const MAX_FRAMES = C.MAX_FRAMES;
+export const MAX_INPUTS = C.BALLS;
 
 export const GAME_ID = C.GAME_ID;
 export const NAME = C.NAME;
@@ -36,16 +41,16 @@ export function layoutOf(id) { return LAYOUTS.find(l => l.id === id) || LAYOUTS[
 export function pocketAt(p, frame) {
   if (!p.slide) return { x: p.x, y: p.y };
   const t = frame / p.slide.period + p.slide.phase;
-  return { x: p.x + p.slide.amp * Math.sin(2 * Math.PI * t), y: p.y };
+  return { x: p.x + p.slide.amp * sin(2 * Math.PI * t), y: p.y };
 }
 
-export function create(seed) {
+export function create(seed, cfg) {
   const day = dailyConfig(seed);
   return {
     seed, day, layout: layoutOf(day.layoutId), frame: 0,
     ball: 0, phase: 'ready', phaseFrame: 0,
     x: 0, y: 0, z: 0, vx: 0, vy: 0,
-    air: null, results: [], score: 0, over: false, event: null
+    air: null, results: [], score: 0, over: false, events: []
   };
 }
 
@@ -56,13 +61,13 @@ export function throwBall(s, a, p) {
   if (!(typeof p === 'number' && isFinite(p) && p >= 0 && p <= 1)) return false;
   const v = C.V_MIN + p * (C.V_MAX - C.V_MIN);
   s.x = 0; s.y = 0; s.z = 0;
-  s.vx = v * Math.sin(a); s.vy = v * Math.cos(a);
+  s.vx = v * sin(a); s.vy = v * cos(a);
   s.phase = 'lane'; s.phaseFrame = 0;
   return true;
 }
 
 function decel(s, a) {
-  const sp = Math.hypot(s.vx, s.vy);
+  const sp = hypot(s.vx, s.vy);
   if (sp === 0) return 0;
   const ns = Math.max(0, sp - a * C.DT);
   s.vx *= ns / sp; s.vy *= ns / sp;
@@ -70,7 +75,7 @@ function decel(s, a) {
 }
 
 function ringZone(L, x, y) {
-  const d = Math.hypot(x - L.ring.x, y - L.ring.y);
+  const d = hypot(x - L.ring.x, y - L.ring.y);
   const [r1, r2, r3] = L.ring.r;
   return d <= r3 ? '3B' : d <= r2 ? '2B' : d <= r1 ? '1B' : 'F';
 }
@@ -83,31 +88,31 @@ function finish(s, zone, why) {
   s.score += bases;
   s.phase = 'settle'; s.phaseFrame = 0;
   s.vx = s.vy = 0; s.z = 0;
-  s.event = { type: 'result', zone, bases, hot, ball: s.ball };
+  s.events.push({ type: 'result', zone, bases, hot, ball: s.ball });
 }
 
 /* Advance one fixed step. */
 export function step(s) {
-  s.event = null;
+  s.events = [];
   s.frame++;
   s.phaseFrame++;
   const L = s.layout;
   if (s.phase === 'lane') {
     decel(s, C.LANE_FRICTION);
     s.x += s.vx * C.DT; s.y += s.vy * C.DT;
-    if (s.x > C.LANE_HALF) { s.x = 2 * C.LANE_HALF - s.x; s.vx = -Math.abs(s.vx) * C.WALL_E; s.vy *= C.WALL_E + (1 - C.WALL_E) * 0.6; s.event = { type: 'rail' }; }
-    if (s.x < -C.LANE_HALF) { s.x = -2 * C.LANE_HALF - s.x; s.vx = Math.abs(s.vx) * C.WALL_E; s.vy *= C.WALL_E + (1 - C.WALL_E) * 0.6; s.event = { type: 'rail' }; }
+    if (s.x > C.LANE_HALF) { s.x = 2 * C.LANE_HALF - s.x; s.vx = -Math.abs(s.vx) * C.WALL_E; s.vy *= C.WALL_E + (1 - C.WALL_E) * 0.6; s.events.push({ type: 'rail' }); }
+    if (s.x < -C.LANE_HALF) { s.x = -2 * C.LANE_HALF - s.x; s.vx = Math.abs(s.vx) * C.WALL_E; s.vy *= C.WALL_E + (1 - C.WALL_E) * 0.6; s.events.push({ type: 'rail' }); }
     if (s.vy <= 0) return finish(s, 'F', 'short');
     if (s.y >= C.LIP_Y) {
-      const sp = Math.hypot(s.vx, s.vy);
+      const sp = hypot(s.vx, s.vy);
       if (sp < C.MIN_LIP_SPEED) return finish(s, 'F', 'short');
       const r = streamFor(s.seed, 'ball' + s.ball);
       const jc = (r() * 2 - 1) * C.CARRY_JITTER, ja = (r() * 2 - 1) * C.ANGLE_JITTER;
-      const ang = Math.atan2(s.vx, s.vy) + ja;
+      const ang = atan2(s.vx, s.vy) + ja;
       const carry = sp * C.CARRY_S * (1 + jc);
-      s.air = { x0: s.x, y0: s.y, x1: s.x + carry * Math.sin(ang), y1: s.y + carry * Math.cos(ang), sp, ang, hop: r() };
+      s.air = { x0: s.x, y0: s.y, x1: s.x + carry * sin(ang), y1: s.y + carry * cos(ang), sp, ang, hop: r() };
       s.phase = 'air'; s.phaseFrame = 0;
-      s.event = { type: 'launch' };
+      s.events.push({ type: 'launch' });
     }
     return;
   }
@@ -121,9 +126,9 @@ export function step(s) {
       if (s.y > C.BOARD_BACK) return finish(s, 'F', 'long');
       if (s.y < C.BOARD_FRONT) return finish(s, 'F', 'short');
       const v = A.sp * C.ROLL_KEEP;
-      s.vx = v * Math.sin(A.ang); s.vy = v * Math.cos(A.ang);
+      s.vx = v * sin(A.ang); s.vy = v * cos(A.ang);
       s.phase = 'roll'; s.phaseFrame = 0;
-      s.event = { type: 'land' };
+      s.events.push({ type: 'land' });
     }
     return;
   }
@@ -131,14 +136,14 @@ export function step(s) {
     s.x += s.vx * C.DT; s.y += s.vy * C.DT;
     for (const p of L.pockets) {
       const c = pocketAt(p, s.frame);
-      if (Math.hypot(s.x - c.x, s.y - c.y) < C.POCKET_R) { s.x = c.x; s.y = c.y; return finish(s, 'HR'); }
+      if (hypot(s.x - c.x, s.y - c.y) < C.POCKET_R) { s.x = c.x; s.y = c.y; return finish(s, 'HR'); }
     }
     if (Math.abs(s.x) > C.BOARD_HALF) return finish(s, 'F', 'side');
     if (s.y > C.BOARD_BACK) return finish(s, 'F', 'long');
     if (decel(s, C.BOARD_FRICTION) > 0) return;
     /* At rest. A ball sitting on a ring line hops one way or the other,
        decided by this ball's own seeded draw. */
-    const dx = s.x - L.ring.x, dy = s.y - L.ring.y, d = Math.hypot(dx, dy) || 1;
+    const dx = s.x - L.ring.x, dy = s.y - L.ring.y, d = hypot(dx, dy) || 1;
     for (const r of L.ring.r) {
       if (Math.abs(d - r) < C.EDGE_BAND) {
         const nd = s.air.hop < 0.5 ? r - C.HOP : r + C.HOP;
@@ -152,8 +157,8 @@ export function step(s) {
     if (s.phaseFrame >= C.SETTLE_FRAMES) {
       s.ball++;
       s.x = 0; s.y = 0; s.z = 0; s.air = null;
-      if (s.ball >= C.BALLS) { s.over = true; s.phase = 'over'; s.event = { type: 'over' }; }
-      else { s.phase = 'ready'; s.phaseFrame = 0; }
+      if (s.ball >= C.BALLS) { s.over = true; s.phase = 'over'; s.events.push({ type: 'over' }); }
+      else { s.phase = 'ready'; s.phaseFrame = 0; s.events.push({ type: 'next', ball: s.ball }); }
     }
     return;
   }
@@ -168,30 +173,18 @@ export function detail(s) {
 }
 
 export function gems(score) { return gemsFor(score, C.GEM_BANDS); }
+export function bands() { return C.GEM_BANDS; }
 
 const SQ = { '1B': '🟩', '2B': '🟨', '3B': '🟧', HR: '🟥', F: '⬛' };
-export function squares(d) { return d.results.map(r => SQ[r.zone]); }
+export function squares(d) { return (d.results || []).map(r => SQ[r.zone]); }
 export function scoreText(score) { return score + '/' + (C.BALLS * C.MAX_BASES); }
+
+/* The contract shared/replay.js plays. */
+export function applyInput(s, inp) { return throwBall(s, inp.a, inp.p); }
+export function waiting(s) { return s.phase === 'ready'; }
 
 /* Replay a whole run from its log. The server's only source of truth. */
 export function replay(seed, inputs) {
   if (!Array.isArray(inputs) || inputs.length !== C.BALLS) return { error: 'bad_inputs' };
-  const s = create(seed);
-  let i = 0, last = -1;
-  for (const inp of inputs) {
-    if (!inp || !Number.isInteger(inp.f) || inp.f < 0 || inp.f <= last || inp.f > C.MAX_FRAMES) return { error: 'bad_inputs' };
-    last = inp.f;
-  }
-  while (!s.over) {
-    if (s.frame > C.MAX_FRAMES) return { error: 'too_long' };
-    if (i < inputs.length && inputs[i].f === s.frame) {
-      if (!throwBall(s, inputs[i].a, inputs[i].p)) return { error: 'illegal_input', at: i };
-      i++;
-    } else if (s.phase === 'ready' && (i >= inputs.length || inputs[i].f < s.frame)) {
-      return { error: 'illegal_input', at: i };
-    }
-    step(s);
-  }
-  if (i !== inputs.length) return { error: 'illegal_input', at: i };
-  return { score: s.score, detail: detail(s), frames: s.frame };
+  return replayAny({ create, applyInput, step, detail, waiting, MAX_FRAMES, MAX_INPUTS }, seed, inputs);
 }

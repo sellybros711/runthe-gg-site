@@ -47,7 +47,7 @@ function aimFor(tx, ty) {
 }
 
 function play(kind, seedBase) {
-  const tally = { '1B': 0, '2B': 0, '3B': 0, HR: 0, F: 0 }; let total = 0;
+  const tally = { '1B': 0, '2B': 0, '3B': 0, HR: 0, F: 0 }; let total = 0; const scores = [];
   for (let n = 0; n < RUNS; n++) {
     const seed = (seedBase + n * 7919) >>> 0, r = mulberry32(seed ^ 0xabc);
     const s = create(seed); const L = s.layout;
@@ -67,9 +67,9 @@ function play(kind, seedBase) {
       step(s);
     }
     for (const x of s.results) tally[x.zone]++;
-    total += s.score;
+    total += s.score; scores.push(s.score);
   }
   const n = RUNS * C.BALLS;
-  console.log(kind.padEnd(7), Object.entries(tally).map(([k, v]) => k + ' ' + (100 * v / n).toFixed(1) + '%').join('  '), ' mean score', (total / RUNS).toFixed(1));
+  console.log(kind.padEnd(7), Object.entries(tally).map(([k, v]) => k + ' ' + (100 * v / n).toFixed(1) + '%').join('  '), ' mean score', (total / RUNS).toFixed(1), ' p90', scores.sort((a, b) => a - b)[Math.floor(RUNS * 0.9)], ' best', scores[RUNS - 1]);
 }
 play('good', 1); play('goodtri', 4); play('steady', 2); play('casual', 3);

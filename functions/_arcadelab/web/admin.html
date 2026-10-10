@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Arcade Lab admin | RunThe.GG</title>
+<style>
+:root{--ground:#EFEDE8;--ink:#141414;--green:#22B07D;--red:#E0533D;--dim:#5d5a54;--edge:rgba(20,20,20,.14)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font:15px/1.45 'DM Sans',system-ui,sans-serif}
+main{max-width:980px;margin:0 auto;padding:16px}
+h1{font:800 24px Outfit,sans-serif;margin:0 0 4px}
+h2{font:800 18px Outfit,sans-serif;margin:22px 0 8px}
+.tag{font-size:10px;font-weight:700;letter-spacing:.12em;background:var(--ink);color:var(--ground);padding:3px 7px;border-radius:999px;vertical-align:middle}
+.mut{color:var(--dim)}
+.box{background:#fff;border:1px solid var(--edge);border-radius:12px;padding:12px;margin:8px 0}
+button,select,input{font:inherit;min-height:36px;border-radius:10px;border:1px solid var(--edge);background:#fff;padding:4px 10px;cursor:pointer}
+button.go{background:var(--ink);color:#fff;border-color:var(--ink)}
+textarea{width:100%;min-height:220px;font:12px/1.4 ui-monospace,monospace;border:1px solid var(--edge);border-radius:10px;padding:8px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.st{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:999px}
+.st.draft{background:#f3e3b5}.st.approved{background:#bfe9d6}.st.rejected{background:#f6cbc3}
+ul.err{color:var(--red);margin:6px 0;padding-left:18px}
+ul.note{color:var(--dim);margin:6px 0;padding-left:18px}
+.cards{display:flex;flex-wrap:wrap;gap:4px}
+.cards span{font-size:12px;border-radius:8px;padding:2px 6px;background:#eee}
+.cards span.ok{background:#bfe9d6}.cards span.pl{background:#f6dcc3}
+table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid var(--edge);padding:4px 6px;text-align:left;font-size:13px}
+</style>
+</head>
+<body>
+<main>
+<h1>Arcade Lab admin <span class="tag">ADMINS ONLY</span></h1>
+<p class="mut">Every prompt and theme is checked against the dataset, approved by an editor, then frozen into a slate. A published slate never changes.</p>
+<div id="out" class="mut">Loading...</div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="/arcade/auth.js?v=4"></script>
+<script type="module">
+import { api, session } from '/arcade/lab/m/shared/kit.js?b=__BUILD__';
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const GAMES = { whack: 'Whack the Right Player', 'drop-board': 'Drop Board' };
+let game = 'whack', prompts = [];
+const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date());
+
+function report(r) {
+  if (!r || !r.errors) return '';
+  return (r.ok ? '<p style="color:var(--green)"><b>Validates.</b></p>' : '<ul class="err">' + r.errors.map(e => '<li>' + esc(e) + '</li>').join('') + '</ul>') +
+    (r.notes && r.notes.length ? '<ul class="note">' + r.notes.map(e => '<li>' + esc(e) + '</li>').join('') + '</ul>' : '');
+}
+function preview(p) {
+  if (p.rounds) return p.rounds.map((r, i) => '<div class="box"><b>Round ' + (i + 1) + ': ' + esc(r.title) + '</b><div class="cards">' +
+    r.cards.map(c => '<span class="' + (c.ok ? 'ok' : c.plausible ? 'pl' : '') + '">' + esc(c.n) + ' ' + esc(c.pos) + '</span>').join('') + '</div></div>').join('');
+  if (p.theme) return '<div class="box"><b>' + esc(p.theme.title) + '</b><div class="cards">' + p.theme.slots.map(s => '<span>' + esc(s.label) + ': ' + s.value + '</span>').join('') + '</div></div>';
+  return '';
+}
+async function call(m, path, body) { const r = await api(m, 'admin/' + path, body); if (r.status === 404) throw new Error('Admins only.'); return r; }
+
+async function draw() {
+  const [fl, pr, sl, rp] = await Promise.all([call('GET', 'flags'), call('GET', 'prompts?game=' + game), call('GET', 'slates?game=' + game), call('GET', 'reports')]);
+  prompts = pr.data.prompts || [];
+  const need = game === 'whack' ? 3 : 1;
+  const approved = prompts.filter(p => p.status === 'approved');
+  const pick = i => '<select id="pick' + i + '">' + approved.map(p => '<option value="' + esc(p.id) + '">' + esc(p.def.title) + '</option>').join('') + '</select>';
+  $('out').innerHTML =
+    '<h2>Flags</h2><div class="box">' + Object.entries(fl.data.flags).map(([f, m]) => '<div class="row"><code>' + esc(f) + '</code> <select data-flag="' + esc(f) + '">' +
+      ['off', 'testers', 'public'].map(x => '<option' + (x === m ? ' selected' : '') + '>' + x + '</option>').join('') + '</select></div>').join('') + '</div>' +
+    '<div class="row">' + Object.entries(GAMES).map(([k, n]) => '<button ' + (k === game ? 'class="go" ' : '') + 'data-game="' + k + '">' + n + '</button>').join('') + '</div>' +
+    '<h2>Publish a day</h2><div class="box"><div class="row">Date <input type="date" id="date" value="' + today + '"> ' +
+      Array.from({ length: need }, (_, i) => (need > 1 ? 'Round ' + (i + 1) + ' ' : '') + pick(i)).join(' ') +
+      ' <button id="bPrev">Preview</button> <button class="go" id="bPub">Publish</button></div>' +
+      (approved.length < need ? '<p class="mut">Approve ' + need + ' first. Rounds go easiest first.</p>' : '') + '<div id="pv"></div></div>' +
+    '<h2>Prompts and themes</h2><div class="row"><button id="bDraft">Draft from the templates (Claude)</button> <button id="bNew">New</button></div><div id="edit"></div>' +
+    prompts.map(p => '<div class="box"><div class="row"><b>' + esc(p.def.title) + '</b> <span class="st ' + p.status + '">' + p.status + '</span> <span class="mut">' + esc(p.id) + ' · drafted by ' + esc(p.drafted_by) + '</span></div>' +
+      report(p.report) + '<div class="row"><button data-edit="' + esc(p.id) + '">Edit</button> <button data-approve="' + esc(p.id) + '">Approve</button> <button data-reject="' + esc(p.id) + '">Reject</button></div></div>').join('') +
+    '<h2>Published</h2><div class="box"><table><tr><th>Date</th><th>From</th></tr>' + (sl.data.slates || []).map(s => '<tr><td>' + esc(s.date_key) + '</td><td>' + esc((s.source_ids || []).join(', ')) + '</td></tr>').join('') + '</table></div>' +
+    '<h2>Reports</h2><div class="box"><table><tr><th>When</th><th>Game</th><th>Prompt</th><th>Card</th><th>Note</th></tr>' + (rp.data.reports || []).map(r => '<tr><td>' + esc(String(r.created_at).slice(0, 16)) + '</td><td>' + esc(r.game_id) + '</td><td>' + esc(r.prompt_id) + '</td><td>' + esc(r.athlete_id) + '</td><td>' + esc(r.note) + '</td></tr>').join('') + '</table></div>';
+  document.querySelectorAll('[data-flag]').forEach(s => s.onchange = async () => { await call('POST', 'flag', { flag: s.dataset.flag, mode: s.value }); });
+  document.querySelectorAll('[data-game]').forEach(b => b.onclick = () => { game = b.dataset.game; draw(); });
+  document.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => editor(prompts.find(p => p.id === b.dataset.edit).def));
+  document.querySelectorAll('[data-approve]').forEach(b => b.onclick = async () => { const r = await call('POST', 'status', { id: b.dataset.approve, status: 'approved' }); if (r.status !== 200) alert('Does not validate. The reasons are listed.'); draw(); });
+  document.querySelectorAll('[data-reject]').forEach(b => b.onclick = async () => { await call('POST', 'status', { id: b.dataset.reject, status: 'rejected' }); draw(); });
+  $('bDraft').onclick = async () => { const r = await call('POST', 'draft', { game }); alert('Drafted ' + r.data.drafted.length + '. Review each before approving.'); draw(); };
+  $('bNew').onclick = () => editor(game === 'whack'
+    ? { id: 'whack-new', title: 'Hit every ', query: { league: 'NBA', type: 'athlete', years: [1980, 2025], where: [{ k: 'award', v: 'NBA MVP' }] }, correct: [], decoys: [] }
+    : { id: 'drop-new', title: '', slots: [] });
+  const ids = () => Array.from({ length: need }, (_, i) => $('pick' + i) && $('pick' + i).value);
+  $('bPrev').onclick = async () => { const r = await call('POST', 'preview', { game, date: $('date').value, ids: ids() }); $('pv').innerHTML = r.status === 200 ? preview(r.data.payload) : '<p class="mut">' + esc(r.data.error + ' ' + (r.data.message || '')) + '</p>'; };
+  $('bPub').onclick = async () => {
+    if (!confirm('Publish ' + $('date').value + '? A published day can never be changed.')) return;
+    const r = await call('POST', 'publish', { game, date: $('date').value, ids: ids() });
+    alert(r.status === 200 ? 'Published.' : 'Not published: ' + r.data.error); draw();
+  };
+}
+function editor(def) {
+  $('edit').innerHTML = '<div class="box"><textarea id="ta">' + esc(JSON.stringify(def, null, 1)) + '</textarea><div class="row"><button id="bVal">Validate</button> <button class="go" id="bSave">Save as draft</button></div><div id="vr"></div></div>';
+  const read = () => { try { return JSON.parse($('ta').value); } catch (e) { $('vr').innerHTML = '<ul class="err"><li>Not valid JSON: ' + esc(e.message) + '</li></ul>'; return null; } };
+  $('bVal').onclick = async () => { const d = read(); if (!d) return; const r = await call('POST', 'validate', { game, def: d }); $('vr').innerHTML = report(r.data.report); };
+  $('bSave').onclick = async () => { const d = read(); if (!d) return; const r = await call('POST', 'prompts', { game, def: d }); if (r.status !== 200) { $('vr').innerHTML = '<p class="mut">' + esc(r.data.error) + '</p>'; return; } draw(); };
+  $('edit').scrollIntoView();
+}
+(async () => { await session(); try { await draw(); } catch (e) { $('out').textContent = e.message; } })();
+</script>
+</body>
+</html>

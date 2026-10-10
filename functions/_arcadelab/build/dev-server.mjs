@@ -11,19 +11,31 @@ import { memoryDb } from '../db-memory.js';
 import { handle } from '../api.js';
 import { FLAGS } from '../registry.js';
 import { render } from './pages.mjs';
+import * as content from '../content/index.js';
+import { dateKey } from '../shared/seed.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(HERE, '../../..');
 export function startDev(port = 8787) {
-  const db = memoryDb({ roles: { dev: 'tester' }, names: { dev: 'dev' }, flags: Object.fromEntries(FLAGS.map(f => [f, 'testers'])) });
+  const db = memoryDb({ roles: { dev: 'tester', boss: 'admin' }, names: { dev: 'dev' }, flags: Object.fromEntries(FLAGS.map(f => [f, 'testers'])) });
+  content.setLookups(JSON.parse(fs.readFileSync(path.join(REPO, 'functions/_stumpire/data/search_avg.json'), 'utf8')).values);
+  /* Today's content, so Whack the Right Player and Drop Board are playable
+     here: Claude's drafts, published for today (and yesterday, for practice). */
+  const W = content.whack, D = content.drop, today = dateKey(Date.now());
+  const yday = new Date(Date.parse(today + 'T12:00:00Z') - 86400000).toISOString().slice(0, 10);
+  const wdefs = [0, 7, 3].map(i => W.draftPrompt(W.TEMPLATES[i]).def);
+  for (const d of [today, yday]) {
+    db.insertSlate({ game_id: 'whack', date_key: d, payload: W.snapshotSlate(wdefs) });
+    db.insertSlate({ game_id: 'drop-board', date_key: d, payload: D.snapshotTheme(D.draftTheme(D.STAT_THEMES[d === today ? 0 : 5]).def) });
+  }
   let who = 'dev';
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://x');
-    if (url.searchParams.get('as')) who = url.searchParams.get('as') === 'nobody' ? 'nobody' : 'dev';
+    if (url.searchParams.get('as')) who = { nobody: 'nobody', boss: 'boss' }[url.searchParams.get('as')] || 'dev';
     if (url.pathname.startsWith('/api/arcade/')) {
       let body = null;
       if (req.method !== 'GET') { const chunks = []; for await (const c of req) chunks.push(c); try { body = JSON.parse(Buffer.concat(chunks).toString() || '{}'); } catch (e) { body = {}; } }
-      const r = await handle({ method: req.method, path: url.pathname.slice('/api/arcade/'.length), query: Object.fromEntries(url.searchParams), body, uid: who, guestId: null }, { db, now: () => Date.now() });
+      const r = await handle({ method: req.method, path: url.pathname.slice('/api/arcade/'.length), query: Object.fromEntries(url.searchParams), body, uid: who, guestId: null }, { db, now: () => Date.now(), content: async () => content });
       res.writeHead(r.status, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify(r.body));
     }
     if (url.pathname.startsWith('/arcade/lab/')) {

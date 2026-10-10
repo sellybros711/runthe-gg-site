@@ -39,7 +39,7 @@ export const CONFIG = Object.freeze({
   BOARD_BACK: 336,             // the back gutter
   EDGE_BAND: 1.6,              // a rest this close to a ring line can hop
   HOP: 2.6,                    // how far a hop moves it off the line
-  POCKET_R: 7,                 // home run pocket radius
+  POCKET_R: 6.2,                 // home run pocket radius
   SETTLE_FRAMES: 40,           // the pause on a result before the next ball
 
   /* Scoring. Max is BALLS * MAX_BASES = 36. */
@@ -53,21 +53,29 @@ export const CONFIG = Object.freeze({
   MAX_FRAMES: 60 * 60 * 30
 });
 
-/* Eight layouts. A day picks one, then a hot ring. Ring radii are single,
+/* THE RISK AND THE REWARD, measured by build/tune-rollball.mjs (300 runs a
+   player): a good player aiming at the home run pockets lands 45% home runs,
+   39% singles and 15% fouls, for a mean of 21 and a best of 34. The same hand
+   aiming at the middle of the rings means 23 but tops out near 30. So the
+   middle is the safe play and the pockets are how a board is won. The pockets
+   sit just inside the single ring, so a near miss is a single, not a foul;
+   only a long miss goes in the gutter.
+
+   Eight layouts. A day picks one, then a hot ring. Ring radii are single,
    double, triple. A pocket with `slide` moves side to side on a sine:
    amplitude in units, period in frames, phase 0 or 0.5. */
 const P = (x, y, slide) => ({ x, y, slide: slide || null });
 export const LAYOUTS = Object.freeze([
-  { id: 'classic',  name: 'Classic board', ring: { x: 0, y: 262, r: [52, 20, 6.5] }, pockets: [P(-36, 308), P(36, 308)] },
-  { id: 'lean-l',   name: 'Leaning left',  ring: { x: -6, y: 262, r: [52, 20, 6.5] }, pockets: [P(-42, 306), P(32, 310)] },
-  { id: 'lean-r',   name: 'Leaning right', ring: { x: 6, y: 262, r: [52, 20, 6.5] }, pockets: [P(-32, 310), P(42, 306)] },
-  { id: 'deep',     name: 'Deep board',    ring: { x: 0, y: 270, r: [50, 19, 6] }, pockets: [P(-34, 316), P(34, 316)] },
-  { id: 'shallow',  name: 'Short board',   ring: { x: 0, y: 252, r: [52, 20, 6.5] }, pockets: [P(-38, 298), P(38, 298)] },
-  { id: 'slide-l',  name: 'Moving left pocket',  ring: { x: 0, y: 262, r: [52, 20, 6.5] },
-    pockets: [P(-36, 309, { amp: 10, period: 220, phase: 0 }), P(36, 308)] },
-  { id: 'slide-r',  name: 'Moving right pocket', ring: { x: 0, y: 262, r: [52, 20, 6.5] },
-    pockets: [P(-36, 308), P(36, 309, { amp: 10, period: 220, phase: 0.5 })] },
-  { id: 'twins',    name: 'Twin sliders',  ring: { x: 0, y: 263, r: [51, 19, 6] },
-    pockets: [P(-36, 310, { amp: 8, period: 260, phase: 0 }), P(36, 310, { amp: 8, period: 260, phase: 0.5 })] }
+  { id: 'classic',  name: 'Classic board', ring: { x: 0, y: 262, r: [52, 20, 4.2] }, pockets: [P(-29, 299), P(29, 299)] },
+  { id: 'lean-l',   name: 'Leaning left',  ring: { x: -6, y: 262, r: [52, 20, 4.2] }, pockets: [P(-35, 297), P(24, 300)] },
+  { id: 'lean-r',   name: 'Leaning right', ring: { x: 6, y: 262, r: [52, 20, 4.2] }, pockets: [P(-24, 300), P(35, 297)] },
+  { id: 'deep',     name: 'Deep board',    ring: { x: 0, y: 270, r: [50, 19, 3.9] }, pockets: [P(-27, 307), P(27, 307)] },
+  { id: 'shallow',  name: 'Short board',   ring: { x: 0, y: 252, r: [52, 20, 4.2] }, pockets: [P(-30, 289), P(30, 289)] },
+  { id: 'slide-l',  name: 'Moving left pocket',  ring: { x: 0, y: 262, r: [52, 20, 4.2] },
+    pockets: [P(-29, 300, { amp: 10, period: 220, phase: 0 }), P(29, 299)] },
+  { id: 'slide-r',  name: 'Moving right pocket', ring: { x: 0, y: 262, r: [52, 20, 4.2] },
+    pockets: [P(-29, 299), P(29, 300, { amp: 10, period: 220, phase: 0.5 })] },
+  { id: 'twins',    name: 'Twin sliders',  ring: { x: 0, y: 263, r: [51, 19, 3.9] },
+    pockets: [P(-29, 301, { amp: 8, period: 260, phase: 0 }), P(29, 301, { amp: 8, period: 260, phase: 0.5 })] }
 ]);
 export const HOT_ZONES = Object.freeze(['1B', '2B', '3B']);

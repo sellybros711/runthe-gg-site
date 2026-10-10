@@ -2,7 +2,8 @@ name: Arcade Lab checks
 
 # The Arcade Lab is testers only. These checks hold the tester gate on every
 # route, the pure sims' determinism, the server's replay against a forged
-# score, the gem ledger's one award per run, and the migration.
+# score, the gem ledger's one award per run, the content validators, and the
+# migrations.
 
 on:
   pull_request:
@@ -11,6 +12,8 @@ on:
       - 'functions/api/arcade/**'
       - 'functions/arcade/lab/**'
       - 'supabase/134_arcade_lab.sql'
+      - 'supabase/135_arcade_lab_content.sql'
+      - 'functions/_stumpire/**'
       - 'supabase/test/arcade_lab_*.sql'
       - '.github/workflows/arcade-lab-checks.yml'
   push:
@@ -20,6 +23,8 @@ on:
       - 'functions/api/arcade/**'
       - 'functions/arcade/lab/**'
       - 'supabase/134_arcade_lab.sql'
+      - 'supabase/135_arcade_lab_content.sql'
+      - 'functions/_stumpire/**'
       - 'supabase/test/arcade_lab_*.sql'
       - '.github/workflows/arcade-lab-checks.yml'
   workflow_dispatch: {}
@@ -49,6 +54,8 @@ jobs:
           node-version: '22'
       - name: Unit tests
         run: node --test functions/_arcadelab/test/*.test.mjs
+      - name: Pinball holds together (1000 balls, no tunnelling, nothing stuck)
+        run: node functions/_arcadelab/build/tune-pinball.mjs 1000 | tee pin.txt && grep -q '"crossings":0,"escapes":0' pin.txt && grep -q 'replay matches' pin.txt
       - name: Pages Functions build like Cloudflare's
         run: npx --yes wrangler@3.20.0 pages functions build --outdir "$RUNNER_TEMP/fn"
       # The migration, applied twice (it must be idempotent), then its checks.
@@ -60,4 +67,7 @@ jobs:
           psql -q -d lab -v ON_ERROR_STOP=1 -f supabase/134_arcade_lab.sql
           psql -q -d lab -v ON_ERROR_STOP=1 -f supabase/134_arcade_lab.sql
           psql -q -d lab -f supabase/test/arcade_lab_test.sql | tee out.txt
+          psql -q -d lab -v ON_ERROR_STOP=1 -f supabase/135_arcade_lab_content.sql
+          psql -q -d lab -v ON_ERROR_STOP=1 -f supabase/135_arcade_lab_content.sql
+          psql -q -d lab -f supabase/test/arcade_lab_content_test.sql | tee -a out.txt
           ! grep -v '^ ok ' out.txt | grep -q .
