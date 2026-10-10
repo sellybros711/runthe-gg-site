@@ -430,7 +430,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/howto.js?v=26"></script>
 <script src="/arcade/teamcolors.js?v=2"></script>
 <script src="/arcade/type.js?v=5"></script>
-<script src="/arcade/fact.js?v=5"></script>
+<script src="/arcade/fact.js?v=6"></script>
 <script>
 (function(){
   'use strict';
@@ -813,16 +813,20 @@ window.GA_ID='G-L29P5MRWKE';
       setSub('<span class="pts">+'+got+'</span> '+(got===1?'point':'points')+' <span class="school">'+esc(schoolsOf(r))+'</span>', 'score');
       if(window.RTGSound) RTGSound.lock(); idx++;
       saveResume();
-      afterFact(function(){ busy=false; renderRound(); answerIn.focus(); }, 1400);
+      afterFact(function(){ busy=false; renderRound(); answerIn.focus(); }, 1100, 2500);
     } else {
       ANSLOG.push('x');
       setSub('<span class="pts">Nope.</span> <span class="school">It was '+esc(schoolsOf(r))+'.</span>', 'miss');
       if(window.RTGSound) RTGSound.wrong();
-      afterFact(function(){ finish(); }, 2000);
+      afterFact(function(){ finish(); }, 1800, 3000);
     }
   }
 
-  function afterFact(fn, ms){ return (window.RTGFact && RTGFact.hold) ? RTGFact.hold(fn, ms) : setTimeout(fn, ms); }
+  /* The beat after an answer: the school, then the next player. With a fact
+     line showing it holds a little longer for reading (`floor`), and any tap
+     or Enter moves on at once. Was 1.4s, or 4s with a fact; reported as too
+     slow. */
+  function afterFact(fn, ms, floor){ return (window.RTGFact && RTGFact.hold) ? RTGFact.hold(fn, ms, floor) : setTimeout(fn, ms); }
   function startIfNeeded(){ if(started||done) return;
     if(!charged){ if(ARCHIVE){ charged=true; attemptFirst=false; } else { var r=(window.RTGTokens?RTGTokens.startAttempt(GAME):{ok:true,first:true}); charged=true; attemptFirst=!!(r&&r.first); } }
     started=true; startTs=performance.now(); if(window.RTGReview) RTGReview.start(GAME); saveResume(); }
