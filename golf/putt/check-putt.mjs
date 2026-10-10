@@ -383,6 +383,11 @@ if (!args.includes('--no-browser')){
     await pg.waitForTimeout(400);
     const ck2 = await pg.evaluate(() => document.querySelector('[data-dclock]') && document.querySelector('[data-dclock]').textContent);
     claim(ck && ck2 && ck !== ck2 && /^\d+:\d\d\.\d$/.test(ck2), `the Daily Hole shows a running clock (${ck} then ${ck2})`);
+    // A GOLFER OVER THE CUP IS DRAWN FAINT: stood at the tee he covers nothing, stood at the cup he covers it
+    const far = await pg.evaluate(() => window.RTT_PUTT._covers());
+    const near = await pg.evaluate(async () => { const P = window.RTT_PUTT._state().play, keep = P.ball.slice(); P.ball = [P.C.cup[0] + 0.4, P.C.cup[1]];
+      let v = null; for (let i = 0; i < 60 && !v; i++){ await new Promise(r => setTimeout(r, 50)); v = window.RTT_PUTT._covers(); } P.ball = keep; return v; });
+    claim(far === false && near === true, `the golfer covers the cup only when he stands over it, and is drawn faint then (tee ${far}, at the cup ${near})`);
     const box = await pg.locator('.pt-stage canvas').boundingBox();
     const before = await pg.evaluate(() => window.RTT_PUTT._state().play.ball.slice());
     // A RELEASE NOBODY HEARS STILL PUTTS: pulled back past the window's edge and let go outside the browser,

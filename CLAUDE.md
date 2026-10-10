@@ -19923,7 +19923,8 @@ out of sight and the golfer stood on the roof to putt it.
 
 **A BALL BEHIND SOMETHING IS BEHIND IT.** `hole3d.js` hands back `hid(x, y, z)` off the depth the
 picture was painted with, so a ball behind a block, a rail or the house is drawn as a faint dashed
-outline instead of painted on top of it, and the golfer beside it is drawn faint.
+outline instead of painted on top of it, and the golfer beside it is drawn faint. **A golfer standing over the cup on screen is drawn faint too** (`golferCovers`, off the rectangle
+`drawGolfer0` would draw), so the hole he is putting at is never hidden behind him.
 
 **IT IS NOT LAUNCHED.** The home card, second in the list right after Play 18, is drawn by `puttOn()`
 in `golf/index.html` for the `PUTT_TESTERS` usernames and nobody else, read off the server-attributed

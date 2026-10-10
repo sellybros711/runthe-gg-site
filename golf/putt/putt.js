@@ -2887,28 +2887,38 @@ function drawPowerMeter(ctx, pow){
 function imgOf(url){ S.imgs = S.imgs || {}; var im = S.imgs[url]; if (!im){ im = new Image(); im.src = url; S.imgs[url] = im; var ks = Object.keys(S.imgs); if (ks.length > 40) delete S.imgs[ks[0]]; } return im; }
 /* The golfer stands beside the ball, so when the ball is behind something he is behind it too: drawn
    faint rather than standing on the roof of the windmill house or the top of a block. */
+/* And when he is standing over the cup on screen he is drawn faint as well, so the hole he is
+   putting at is never hidden behind him. golferCovers() is the one answer and the check reads it. */
 function drawGolfer(ctx, P, cam){
-  var V = cam.v3, at0 = P.state === 'aim' ? P.ball : P.prev;
-  if (V && V.hid){ var z0 = V.zAt(at0[0], at0[1]);
-    if (V.hid(at0[0], at0[1], z0 + 0.3) || V.hid(at0[0] + 0.6, at0[1], z0 + 0.8) || V.hid(at0[0] - 0.6, at0[1], z0 + 0.8)){ ctx.save(); ctx.globalAlpha = 0.4; drawGolfer0(ctx, P, cam); ctx.restore(); return; } }
+  var V = cam.v3, at0 = P.state === 'aim' ? P.ball : P.prev, faint = golferCovers(P, cam);
+  if (!faint && V && V.hid){ var z0 = V.zAt(at0[0], at0[1]);
+    faint = V.hid(at0[0], at0[1], z0 + 0.3) || V.hid(at0[0] + 0.6, at0[1], z0 + 0.8) || V.hid(at0[0] - 0.6, at0[1], z0 + 0.8); }
+  if (faint){ ctx.save(); ctx.globalAlpha = 0.4; drawGolfer0(ctx, P, cam); ctx.restore(); return; }
   drawGolfer0(ctx, P, cam);
 }
-function drawGolfer0(ctx, P, cam){
+function golferCovers(P, cam){
+  var r = drawGolfer0(null, P, cam, true); if (!r) return false;
+  var C = P.C, c = w2s(cam, C.cup[0], C.cup[1]), pad = Math.max(4, (C.cupR || 0.18) * cam.s * 1.6);
+  return c[0] > r[0] - pad && c[0] < r[0] + r[2] + pad && c[1] > r[1] - pad && c[1] < r[1] + r[3] + pad;
+}
+/* With measure set it draws nothing and hands back the rectangle it would draw, [x, y, w, h]. */
+function drawGolfer0(ctx, P, cam, measure){
   var h = S.host, at = P.state === 'aim' ? P.ball : P.prev, ang = P.state === 'aim' ? (P.C.kind === 'real' ? Math.atan2(P.target[1] - P.ball[1], P.target[0] - P.ball[0]) : P.aimAng) : P.shotAng;
   // the 3D modelled golfer (golfer3d.js through the page), side-on to the putt, putter on the ball:
   // address while aiming, the take back while a pull is held, the through once it is struck
   if (h.golfer3){ var g = null; try{ g = h.golfer3(Math.cos(ang), Math.sin(ang)); }catch(e){ g = null; }
     if (g && g.urls){ var im = imgOf(g.urls[P.state !== 'aim' ? 2 : P.pow > 0.02 ? 1 : 0]);
       if (im.complete && im.naturalWidth){ var hg = (P.C.kind === 'real' ? 3.4 : 3.1) * cam.s, kk = hg / g.fig, bp = w2s(cam, at[0], at[1]);
-        ctx.save(); ctx.imageSmoothingEnabled = false;
-        ctx.drawImage(im, Math.round(bp[0] - g.ball[0] * kk), Math.round(bp[1] - g.ball[1] * kk), Math.round(g.W * kk), Math.round(g.H * kk));
-        ctx.restore(); }
-      return; } }   // still loading: draw nothing this frame rather than flash the flat golfer
-  if (!h.golfer || P.state !== 'aim') return;
+        var rx = Math.round(bp[0] - g.ball[0] * kk), ry = Math.round(bp[1] - g.ball[1] * kk), rw = Math.round(g.W * kk), rh = Math.round(g.H * kk);
+        if (measure) return [rx, ry, rw, rh];
+        ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(im, rx, ry, rw, rh); ctx.restore(); }
+      return null; } }   // still loading: draw nothing this frame rather than flash the flat golfer
+  if (!h.golfer || P.state !== 'aim') return null;
   if (!S.gcv){ try{ S.gcv = h.golfer(); }catch(e){ S.gcv = null; } }
-  var g = S.gcv; if (!g || !g.width) return;
+  var g = S.gcv; if (!g || !g.width) return null;
   var hgt = (P.C.kind === 'real' ? 3.4 : cam.v3 ? 3.1 : 2.9) * cam.s, k = hgt / g.height, w = Math.round(g.width * k), hh = Math.round(g.height * k);
   var b = w2s(cam, P.ball[0], P.ball[1]), side = Math.cos(P.aimAng) >= 0 ? -1 : 1;
+  if (measure) return [Math.round(b[0] + side * (w * 0.42)) - w / 2, Math.round(b[1] - hh * 0.9), w, hh];
   ctx.save(); ctx.imageSmoothingEnabled = false;
   ctx.translate(Math.round(b[0] + side * (w * 0.42)), Math.round(b[1] - hh * 0.9));
   if (side > 0){ ctx.scale(-1, 1); ctx.drawImage(g, -w / 2, 0, w, hh); } else ctx.drawImage(g, -w / 2, 0, w, hh);
@@ -2960,6 +2970,7 @@ function scorecard(){
 }
 RTT_PUTT.open = open; RTT_PUTT.close = close; RTT_PUTT.paintCourse = paintCourse; RTT_PUTT.SKIN = SKIN;
 RTT_PUTT._state = function(){ return S; };
+RTT_PUTT._covers = function(){ var P = S.play; return P && P.camNow ? golferCovers(P, P.camNow) : null; };
 RTT_PUTT._lose = function(){ loseLife(pload()); };
 RTT_PUTT._dailyFinish = function(s, par, ms){ return dailyFinish(s, par, ms); };
 // the checker's door straight onto a Tour level. Nothing on the page calls it.
