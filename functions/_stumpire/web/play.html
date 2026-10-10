@@ -1034,6 +1034,7 @@
     }
   }
 
+  var CHAL = {};   // at-bat -> what its challenge came to, so a re-render keeps it
   function renderHistory(v) {
     if (!v.history.length) { show('historyCard', false); return; }
     show('historyCard', true);
@@ -1041,7 +1042,7 @@
       var what = h.ruling === 'SAFE' ? TIER[h.tier] : (h.strikeout ? 'Struck out' : 'Out');
       return '<li><b>' + esc(h.prompt) + '</b><br>' + esc(h.answer || 'No answer') + ': <span class="' + h.ruling + '">' + what + '</span>' +
         '<div class="called">Called: ' + esc(h.called.join(', ')) + '</div>' +
-        (v.over ? '<button data-ch="' + h.atBat + '">Challenge the call</button>' : '') + '</li>';
+        (v.over ? (CHAL[h.atBat] ? '<button disabled>' + esc(CHAL[h.atBat]) + '</button>' : '<button data-ch="' + h.atBat + '">Challenge the call</button>') : '') + '</li>';
     }).join('');
   }
 
@@ -1237,9 +1238,20 @@
   $('history').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-ch]'); if (!b) return;
     var note = prompt('What did the Stumpire get wrong? (optional)') || '';
-    api('POST', 'challenge', { atBat: Number(b.dataset.ch), note: note }).then(function (r) {
-      b.disabled = true; b.textContent = r._status === 200 ? 'Challenge sent' : r.error === 'already_challenged' ? 'Already challenged' : 'Could not send';
-      if (r._status === 200) setUmp('impatient', null, 'A challenge? Fine. I will look at the tape.');
+    var at = Number(b.dataset.ch);
+    b.disabled = true; b.textContent = 'Checking the tape';
+    api('POST', 'challenge', { atBat: at, note: note }).then(function (r) {
+      /* The server rules the moment it can: it looks the player up live and
+         either overturns the call (the score is fixed in r.state) or lets it
+         stand. If the record cannot settle it, it waits for the admin. */
+      var st = r._status === 200 && r.challenge ? r.challenge.status : null;
+      CHAL[at] = st === 'upheld' ? 'Overturned' : st === 'denied' ? 'Call stands' : st === 'open' ? 'Challenge sent'
+        : r.error === 'already_challenged' ? 'Already challenged' : null;
+      if (!CHAL[at]) { b.disabled = false; b.textContent = 'Could not send. Try again'; return; }
+      b.textContent = CHAL[at];
+      if (r.state) render(r.state);
+      var line = r.msg || (st === 'open' ? 'A challenge? Fine. I will look at the tape.' : '');
+      if (st) setTimeout(function () { setUmp(st === 'upheld' ? 'shocked' : st === 'denied' ? 'smug' : 'impatient', null, line); if (st === 'upheld') sfx('organ'); }, 60);
     });
   });
 

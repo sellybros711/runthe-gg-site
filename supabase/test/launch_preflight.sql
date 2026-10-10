@@ -87,7 +87,7 @@ has_table as (
     'rtf_runs','rtd_runs','rtf_plays','rtd_mode_plays','premium_subscriptions',
     'rtd_profiles','rtd_career','rtf_profiles',
     'cfb_fantasy_weeks','cfb_fantasy_entries','cfb_fantasy_prizes','rtf_careers',
-    'sportegories_rulings'
+    'sportegories_rulings','stumpire_rulings'
   ]) as t
   where to_regclass('public.' || t) is not null
 ),
@@ -600,7 +600,16 @@ check_rows(sort, migration, what, breaks, ok) as (
       'a won Sportegories challenge is remembered for every later card',
       'Challenges still rule, but nothing is remembered. The same answer is marked wrong again tomorrow.',
       (select count(*) > 0 from has_table where name = 'sportegories_rulings')
-      and (select count(*) > 0 from trg where name = 'sportegories_rulings_keep_admin'))
+      and (select count(*) > 0 from trg where name = 'sportegories_rulings_keep_admin')),
+
+  -- STUMPIRE CHALLENGES. Without it a challenge is still ruled live, but the
+  -- ruling is not remembered, so the same player strikes again the next time
+  -- the prompt is dealt.
+  (51, '136_stumpire_rulings',
+      'a won Stumpire challenge is remembered for the next slate',
+      'Challenges still rule, but nothing is remembered. The same answer strikes again next time.',
+      (select count(*) > 0 from has_table where name = 'stumpire_rulings')
+      and (select count(*) > 0 from trg where name = 'stumpire_rulings_keep_admin'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

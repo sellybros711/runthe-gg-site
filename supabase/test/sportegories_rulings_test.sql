@@ -10,6 +10,8 @@
 -- check in the same statement as the write reads the snapshot from before it.
 
 \set ON_ERROR_STOP 1
+\pset tuples_only on
+\pset format unaligned
 create temp table claims (ok boolean, what text);
 grant insert on claims to public;
 
@@ -84,7 +86,7 @@ do $$ begin
 end $$;
 reset role;
 
-select case when ok then 'ok   ' else 'FAIL ' end || what from claims;
+select case when ok then ' ok ' else ' FAIL ' end || what from claims;
 do $$ begin
   if exists (select 1 from claims where not ok) then raise exception 'sportegories_rulings_test: % failing', (select count(*) from claims where not ok); end if;
 end $$;

@@ -6,7 +6,7 @@ export function memoryDb(opts = {}) {
   const S = {
     mode: opts.mode || 'testers', testers: new Map(Object.entries(opts.testers || {})),
     users: new Map(Object.entries(opts.users || {})),   // username -> uid
-    prompts: new Map(), slates: new Map(), answers: [], plays: [], log: [], review: [], challenges: [], seq: 1
+    prompts: new Map(), slates: new Map(), answers: [], plays: [], log: [], review: [], challenges: [], rulings: new Map(), seq: 1
   };
   const clone = x => JSON.parse(JSON.stringify(x));
   return {
@@ -64,6 +64,14 @@ export function memoryDb(opts = {}) {
     async challenges() { return S.challenges.filter(c => c.status === 'open'); },
     async challenge(id) { return S.challenges.find(c => c.id === id) || null; },
     async resolveChallenge(id, status, by, resolution) { Object.assign(S.challenges.find(c => c.id === id), { status, resolved_by: by, resolution }); },
+    /* 136: one ruling per (prompt, player); an admin's is never overwritten. */
+    async ruling(promptId, entityId) { const r = S.rulings.get(promptId + '#' + entityId); return r ? clone(r) : null; },
+    async putRuling(row) {
+      const k = row.prompt_id + '#' + row.entity_id, old = S.rulings.get(k);
+      if (old && old.source === 'admin' && row.source !== 'admin') return;
+      S.rulings.set(k, { ...old, ...row, updated_at: new Date().toISOString(), created_at: old ? old.created_at : new Date().toISOString() });
+    },
+    async rulings(promptId) { return [...S.rulings.values()].filter(r => r.prompt_id === promptId && r.verdict === 'upheld').map(r => r.entity_id); },
     async acceptAnswer(date, atBat, promptId, entityId, name) {
       if (S.answers.some(r => r.slate_date === date && r.at_bat === atBat && r.entity_id === entityId)) return false;
       S.answers.push({ slate_date: date, at_bat: atBat, prompt_id: promptId, entity_id: entityId, name, tier: 1, called: false, arguable: true, expected_share: 0 });

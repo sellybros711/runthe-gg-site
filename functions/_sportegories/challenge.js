@@ -121,7 +121,7 @@ function said(row, cached) {
   return { verdict: 'denied', msg: 'We checked. The record books say no.', cached };
 }
 
-async function athletesNamed(answer, key, wiki, SP) {
+export async function athletesNamed(answer, key, wiki, SP) {
   const hits = await wiki.searchName(answer);
   if (!hits.length) return [];
   const ents = await wiki.getEntities(hits, 'claims|labels');

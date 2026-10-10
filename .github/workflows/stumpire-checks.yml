@@ -13,7 +13,12 @@ on:
       - 'functions/arcade/stumpire/**'
       - 'supabase/133_stumpire.sql'
       - 'supabase/134_stumpire_score.sql'
+      - 'supabase/136_stumpire_rulings.sql'
       - 'supabase/test/stumpire_*.sql'
+      - 'functions/_sportegories/**'
+      - 'functions/api/player-check.js'
+      - 'arcade/livecheck.js'
+      - 'arcade/sportegories.js'
       - '.github/workflows/stumpire-checks.yml'
   push:
     branches: [main]
@@ -23,7 +28,12 @@ on:
       - 'functions/arcade/stumpire/**'
       - 'supabase/133_stumpire.sql'
       - 'supabase/134_stumpire_score.sql'
+      - 'supabase/136_stumpire_rulings.sql'
       - 'supabase/test/stumpire_*.sql'
+      - 'functions/_sportegories/**'
+      - 'functions/api/player-check.js'
+      - 'arcade/livecheck.js'
+      - 'arcade/sportegories.js'
       - '.github/workflows/stumpire-checks.yml'
   workflow_dispatch: {}
 
@@ -72,7 +82,10 @@ jobs:
           psql -q -d stump -v ON_ERROR_STOP=1 -f supabase/133_stumpire.sql
           psql -q -d stump -v ON_ERROR_STOP=1 -f supabase/134_stumpire_score.sql
           psql -q -d stump -v ON_ERROR_STOP=1 -f supabase/134_stumpire_score.sql
+          psql -q -d stump -v ON_ERROR_STOP=1 -f supabase/136_stumpire_rulings.sql
+          psql -q -d stump -v ON_ERROR_STOP=1 -f supabase/136_stumpire_rulings.sql
           # stderr too: a claim that errors must fail the step, not vanish
           psql -q -d stump -f supabase/test/stumpire_test.sql 2>&1 | grep -v NOTICE | tee out.txt
           psql -q -d stump -f supabase/test/stumpire_score_test.sql 2>&1 | grep -v NOTICE | tee -a out.txt
+          psql -q -d stump -f supabase/test/stumpire_rulings_test.sql 2>&1 | grep -v NOTICE | tee -a out.txt
           ! grep -v '^ ok ' out.txt | grep -q .
