@@ -74,6 +74,23 @@
       var k = p.first + '|' + p.last;
       (BY_KEY[k] = BY_KEY[k] || []).push(p.idx);
     });
+    /* NBA career totals summed from every season since 1973-74
+       (scripts/build-sportegories.mjs, NBA CAREER TOTALS). They fill a stat
+       the record does not have, never replace one it does, and they can only
+       under-count, so evalTri lets them prove a line and only deny one when
+       the whole career is in the file and well short of it. Dikembe Mutombo's
+       11,706 is what "10,000+ NBA points" was missing. Applied before the
+       join below, so every name of a man gets them. */
+    (D.dst || []).forEach(function (row) {
+      var p = P[row[0]], o = row[1]; if (!p || !o) return;
+      Object.keys(o).forEach(function (k) {
+        if (k === '_f') return;
+        p.st = p.st || {};
+        if (p.st[k] != null) return;
+        p.st[k] = o[k];
+        (p.dst = p.dst || {})[k] = o._f ? 2 : 1;   // 2: the whole career is counted
+      });
+    });
     /* A man the sources write two ways is two records, each holding part of
        him (scripts/sportegories-people.mjs says how they are found). Penny
        Hardaway had the All-Star years and Anfernee Hardaway had Memphis, so
@@ -232,7 +249,13 @@
       // our lists are partial, so they can confirm but never deny
       case 'award':    return p.aw.indexOf(pr.v) >= 0 ? true : null;
       case 'awardRe':  return p.aw.some(function (a) { return a.indexOf(pr.v) >= 0; }) ? true : null;
-      case 'stat':     return (p.st && p.st[pr.v] != null) ? (p.st[pr.v] >= pr.min) : null;
+      case 'stat':
+        if (!p.st || p.st[pr.v] == null) return null;
+        if (p.st[pr.v] >= pr.min) return true;
+        // a summed total under-counts (short seasons and pre-1974 years are
+        // missing), so it denies only a full career a tenth or more short
+        if (p.dst && p.dst[pr.v]) return (p.dst[pr.v] === 2 && p.st[pr.v] < pr.min * 0.9) ? false : null;
+        return false;
       case 'draft1':   return p.dp1 ? true : null;
       default:         return null;
     }

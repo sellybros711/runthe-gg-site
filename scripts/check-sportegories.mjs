@@ -443,5 +443,35 @@ console.log('\n8) the tips describe the game as it is');
   }
 }
 
+/* ---- 10. a stat line is known for everybody, not only the leaders ------ */
+console.log('\n10. NBA career totals');
+{
+  /* "10,000+ NBA points" told a player Dikembe Mutombo (11,729) could not be
+     verified, because the only NBA stats were a hand list of 77 career
+     leaders. The totals are summed from the hoops season file now. Real
+     careers, both sides of each line, none of them on the leaders' list. */
+  const cat = (l) => D.cats.find((c) => c.l === l);
+  const judge = (l, name) => {
+    const c = cat(l); if (!c) return 'no category';
+    const r = S.check({ letter: name[0], cats: [{ i: c.i }] }, 0, name, {});
+    return r.ok ? 'yes' : (r.reason === 'category' ? 'no' : 'unknown');
+  };
+  const CASES = [
+    ['10,000+ NBA points', 'Dikembe Mutombo', 'yes'],      // 11,729
+    ['10,000+ NBA points', 'Kyle Korver', 'yes'],           // 10,212
+    ['10,000+ NBA points', 'Luol Deng', 'yes'],             // 13,394
+    ['15,000+ NBA points', 'Richard Hamilton', 'yes'],      // 15,708
+    ['10,000+ NBA points', 'Ben Wallace', 'no'],            // 6,254
+    ['10,000+ NBA points', 'Shane Battier', 'no']           // 8,408
+  ];
+  for (const [l, n, want] of CASES) {
+    const got = judge(l, n);
+    if (got !== want) fail(n + ' in "' + l + '": ' + got + ', should be ' + want);
+  }
+  const have = (D.dst || []).length, nba = D.players.filter((p) => D.sports[p[1]] === 'NBA').length;
+  if (have < 0.75 * nba) fail('only ' + have + ' of ' + nba + ' NBA players have career totals');
+  else ok(have + ' of ' + nba + ' NBA players have career totals, and ' + CASES.length + ' real careers land on the right side of the line');
+}
+
 if (bad) { console.error('\n' + bad + ' problem' + (bad === 1 ? '' : 's')); process.exit(1); }
 console.log('\nsportegories ok');

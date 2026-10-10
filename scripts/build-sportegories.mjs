@@ -434,6 +434,67 @@ for (const rec of [...pool.values()].flat()) {
   if (Object.keys(st).length) rec.st = st;
 }
 
+/* NBA CAREER TOTALS FOR EVERYBODY, NOT ONLY THE LEADERBOARD.
+ *
+ * "10,000+ NBA points" refused Dikembe Mutombo, who scored 11,729, with "we
+ * couldn't verify this category". Every NBA counting stat here came from
+ * stats.js, a hand list of 77 career leaders, because the Basketball-Reference
+ * fetch that should fill rosterstats.js has returned no NBA rows from CI. So
+ * the 10,000 point category knew the 20,000 point club and nobody else.
+ *
+ * The hoops game ships every NBA season since 1973-74 from Basketball-
+ * Reference (hoops/data/players.json): per-game numbers and games played, one
+ * row a club a season. Summed, they land within a rounding of the real
+ * totals: Mutombo 11,706, Karl Malone 36,936, Dirk Nowitzki 31,561.
+ *
+ * They only ever UNDER-count. Seasons under 20 games or 12 minutes a night are
+ * not in that file (Jordan's 18-game 1986 and his 17-game return in 1995), and
+ * nothing before 1973-74 is. So a total at or over a line PROVES the category,
+ * and a total under it can only deny when the career started after the data
+ * does and sits well short of the line. That rule is in sportegories.js.
+ *
+ * Shipped as `dst`, beside the records and not inside them, for the reason
+ * `same` is: the per-letter counts that pick each day's board are built from
+ * the records, and a new stat on 1,000 players would move boards already
+ * played. The game reads `dst` when it judges an answer. */
+const NBA_TOT = (() => {
+  let rows;
+  try { rows = Object.values(JSON.parse(R('hoops/data/players.json'))); } catch (e) { console.warn('skip hoops/data/players.json: ' + e.message); return new Map(); }
+  const byId = new Map();
+  for (const r of rows) {
+    if (!r || !r.i || !r.n) continue;
+    const g = +r.g || 0;
+    const t = byId.get(r.i) || { name: r.n, first: 9999, last: 0, pts: 0, reb: 0, ast: 0, blk: 0, stl: 0 };
+    t.first = Math.min(t.first, r.s); t.last = Math.max(t.last, r.s);
+    for (const k of ['pts', 'reb', 'ast', 'blk', 'stl']) t[k] += (+r[k] || 0) * g;
+    byId.set(r.i, t);
+  }
+  const DATA_FIRST = Math.min(...rows.map((r) => r.s || 9999));
+  const byName = new Map();
+  for (const t of byId.values()) {
+    t.full = t.first > DATA_FIRST ? 1 : 0;          // the whole career is in the file
+    for (const k of new Set([nkFull(t.name), nkFull(t.name.replace(/\s+(jr|sr|ii|iii|iv|v)\.?$/i, ''))])) {
+      (byName.get(k) || byName.set(k, []).get(k)).push(t);
+    }
+  }
+  return byName;
+})();
+const NBA_STAT = { pts: 'nba_points', reb: 'nba_rebounds', ast: 'nba_assists', blk: 'nba_blocks', stl: 'nba_steals' };
+function nbaTotals(rec) {
+  const keys = new Set([nkFull(rec.name), nkFull(rec.name.replace(/\s+(jr|sr|ii|iii|iv|v)\.?$/i, ''))]);
+  let cands = [];
+  for (const k of keys) for (const t of (NBA_TOT.get(k) || [])) if (!cands.includes(t)) cands.push(t);
+  // two men, one name: keep the one whose seasons fall in this record's decades
+  if (cands.length > 1 && rec.decade.length) {
+    cands = cands.filter((t) => rec.decade.some((d) => d <= t.last && d + 9 >= t.first - 1));
+  }
+  if (cands.length !== 1) return null;
+  const t = cands[0], o = {};
+  for (const [k, stat] of Object.entries(NBA_STAT)) o[stat] = Math.round(t[k]);
+  o._f = t.full;
+  return o;
+}
+
 if (collisions.length) {
   console.log('shared names split into separate people: ' + collisions.length);
   for (const c of collisions.slice(0, 8)) {
@@ -995,6 +1056,10 @@ const payload = {
      three is two pairs sharing a first record. The game joins each group when
      it loads, so any name proves every fact of all of them. */
   same: PERSONS.flatMap((g) => g.slice(1).map((j) => [g[0], j])),
+  /* [record, {stat: total, _f}]: NBA career totals summed from the hoops
+     season file, for judging answers only (see NBA CAREER TOTALS above).
+     _f is 1 when the whole career is in that file. */
+  dst: PLAYERS.map((p, i) => (p.sport === 'NBA' ? [i, nbaTotals(p)] : null)).filter((x) => x && x[1]),
   cats: CATS.map((c) => ({ i: c.i, l: c.l, p: c.p, g: c.g, n: c.n, t: c.t, s: c.s })),
   viab: viability,
   letters: PLAYABLE,
