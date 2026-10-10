@@ -71,9 +71,10 @@
     guestboard: { since: null, pct: 0, daily: false },
     // Sportegories: a Challenge button on any answer marked wrong or not
     // verified. The server looks it up live and rules, and a won challenge is
-    // remembered for every later card (135_sportegories_rulings.sql). Off
-    // until switched on; raise pct to roll it out, or ?flags=challenge to try.
-    challenge: { since: null, pct: 0, daily: false }
+    // remembered for every later card (135_sportegories_rulings.sql). On for
+    // everybody since 2026-10-10, once 135 was deployed and a challenge was
+    // tried live. Set pct to 0 to switch it off again.
+    challenge: { since: null, pct: 100, daily: false }
   };
 
   var KEY = 'rtg:flags';

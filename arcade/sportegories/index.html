@@ -423,7 +423,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/resultstats.js?v=4"></script>
 <script src="/arcade/review.js?v=1" defer></script>
 <script src="/arcade/sfx.js?v=4"></script>
-<script src="/arcade/flags.js?v=7"></script>
+<script src="/arcade/flags.js?v=8"></script>
 <script src="/arcade/sportegories-data.js?v=53"></script>
 <script src="/arcade/type.js?v=5"></script>
 <script src="/arcade/sportegories.js?v=21"></script>
@@ -444,8 +444,8 @@ window.GA_ID='G-L29P5MRWKE';
   var SECONDS = 120;
 
   function $(id){ return document.getElementById(id); }
-  /* Challenges and their memory ride on one flag (flags.js 'challenge'), off
-     until it is switched on, and ?flags=challenge turns it on for a tester. */
+  /* Challenges and their memory ride on one flag (flags.js 'challenge'), on for
+     everybody since 2026-10-10. Setting its pct to 0 switches both off. */
   function challengeOn(){ try{ return !!(window.RTGFlags && RTGFlags.on('challenge')); }catch(e){ return false; } }
   var RULINGS=[];
   function rememberRuling(a, c){ if(a && c){ RULINGS.push({a:a, c:c}); SP.setRulings(RULINGS); } }
