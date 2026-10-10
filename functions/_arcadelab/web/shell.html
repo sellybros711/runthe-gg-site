@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>{{TITLE}} | RunThe.GG Arcade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&family=Outfit:wght@600;800&family={{FONT}}&display=swap">
+<style>
+:root{--ground:#EFEDE8;--ink:#141414;--green:#22B07D;--red:#E0533D;--dim:#5d5a54;--card:#fff;--edge:rgba(20,20,20,.12)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--ground);color:var(--ink);font-family:'DM Sans',system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
+body{overscroll-behavior:none}
+h1,h2,.big{font-family:'Outfit','DM Sans',sans-serif}
+button{font:inherit;color:inherit;cursor:pointer}
+.app{position:fixed;inset:0;display:flex;flex-direction:column;max-width:560px;margin:0 auto}
+/* THE HEADER IS THE GAME'S MARQUEE. Every lab page is this one shell, so
+   each game's look is a set of custom properties and an emblem written in by
+   build/pages.mjs (THEMES there), never a fork of the markup. */
+.top{position:relative;display:flex;align-items:center;gap:10px;margin:8px 10px 4px;margin-top:max(8px,env(safe-area-inset-top));padding:8px 8px 8px 4px;border-radius:18px;background:var(--hdr-bg);color:var(--hdr-ink);box-shadow:0 8px 22px -12px rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.08);overflow:hidden;isolation:isolate}
+.top::before{content:"";position:absolute;inset:0;z-index:-1;background:var(--hdr-fx,none);pointer-events:none}
+.top a.back{min-width:40px;min-height:44px;display:grid;place-items:center;text-decoration:none;color:var(--hdr-ink);font-weight:700;font-size:20px;border-radius:12px}
+.top .emb{width:42px;height:42px;flex:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
+.top .ttl{flex:1;min-width:0}
+.top h1{margin:0;font-family:var(--disp),'Outfit',sans-serif;font-weight:var(--disp-w,400);font-size:var(--disp-size,22px);line-height:1.05;letter-spacing:var(--disp-ls,.02em);color:var(--hdr-title);text-shadow:var(--hdr-shadow,none);text-wrap:balance}
+.top .sub{display:flex;align-items:center;gap:7px;margin-top:3px;font-size:12px;font-weight:600;color:var(--hdr-dim);white-space:nowrap;overflow:hidden}
+.top .sub em{font-style:normal;overflow:hidden;text-overflow:ellipsis}
+/* A tagline cut to "Nine balls. Find t..." reads as a fault, so a phone drops it and keeps the tag. */
+@media (max-width:440px){.top .sub em{display:none}}
+.tag{flex:none;font-size:9px;font-weight:700;letter-spacing:.12em;background:var(--accent);color:var(--accent-ink);padding:3px 7px;border-radius:999px}
+.icon{min-width:44px;min-height:44px;border:1px solid var(--edge);background:var(--card);border-radius:12px;display:grid;place-items:center}
+.top .icon{flex:none;border-color:rgba(255,255,255,.22);background:rgba(255,255,255,.12);color:var(--hdr-ink)}
+.icon[aria-pressed="true"],.top .icon[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.hud{display:flex;gap:10px;align-items:center;padding:4px 12px 6px}
+.stats{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.stat{background:var(--card);border:1px solid var(--edge);border-top:3px solid var(--accent);border-radius:12px;padding:5px 10px 6px;min-width:72px}
+.stat b{display:block;font-family:'Outfit',sans-serif;font-size:22px;line-height:1.05;font-variant-numeric:tabular-nums}
+.stat span{font-size:11px;color:var(--dim);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.diamond{width:52px;height:52px;flex:none}
+.host{margin-left:auto;width:56px;height:56px;flex:none;transition:transform .2s}
+.host[data-mood="hype"],.host[data-mood="celebrate"]{transform:translateY(-4px) rotate(-6deg)}
+.host[data-mood="disappointed"]{transform:translateY(3px)}
+.host[data-mood="disappointed"] .mouth{transform:translateY(5px) scaleY(-1);transform-origin:28px 41px}
+.host[data-mood="hype"] .mouth,.host[data-mood="celebrate"] .mouth{stroke-width:3}
+.host[data-mood="nervous"]{animation:jit .3s infinite}
+@keyframes jit{50%{transform:translateX(1px)}}
+.stage{position:relative;flex:1;min-height:0}
+canvas#c{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block;outline:none}
+.pop{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) scale(.6);font-family:'Outfit',sans-serif;font-weight:800;font-size:34px;opacity:0;pointer-events:none;letter-spacing:.03em;white-space:nowrap;color:#fff;padding:6px 18px;border-radius:14px;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+.pop.on{animation:pop 1s ease-out}
+@keyframes pop{15%{opacity:1;transform:translate(-50%,-50%) scale(1.06)}70%{opacity:1;transform:translate(-50%,-60%) scale(1)}100%{opacity:0;transform:translate(-50%,-70%) scale(1)}}
+.hint{position:absolute;left:0;right:0;bottom:20%;text-align:center;font-weight:700;font-size:15px;pointer-events:none;opacity:.85}
+.sheet{position:absolute;inset:0;display:none;align-items:flex-end;justify-content:center;background:rgba(239,237,232,.72);backdrop-filter:blur(3px);z-index:5}
+.sheet.on{display:flex}
+.card{background:var(--card);border:1px solid var(--edge);border-radius:20px 20px 0 0;width:100%;padding:20px 18px;padding-bottom:max(20px,env(safe-area-inset-bottom));box-shadow:0 -10px 30px rgba(0,0,0,.08);max-height:92%;overflow:auto}
+.card h2{margin:0 0 6px;font-size:26px;font-family:var(--disp),'Outfit',sans-serif;font-weight:var(--disp-w,400)}
+.card p{margin:6px 0;line-height:1.4}
+.rule{font-size:18px;font-weight:700}
+.today{color:var(--dim);font-size:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.btn{min-height:48px;padding:0 20px;border-radius:14px;border:0;background:var(--ink);color:var(--ground);font-weight:700;font-size:16px;flex:1}
+.btn.alt{background:var(--card);color:var(--ink);border:1px solid var(--edge)}
+.btn.go{background:var(--green);color:#fff}
+.score{font-family:'Outfit',sans-serif;font-size:56px;font-weight:800;line-height:1}
+.strip{font-size:24px;letter-spacing:2px;margin:8px 0}
+.gems{font-weight:700;color:var(--green)}
+.badge{display:inline-block;background:var(--red);color:#fff;font-weight:700;font-size:12px;padding:4px 8px;border-radius:999px;margin-left:6px}
+.board{margin-top:12px;border-top:1px solid var(--edge);padding-top:10px;font-size:14px}
+.board ol{margin:6px 0 0;padding-left:22px}
+.board li.me{font-weight:700}
+.mut{color:var(--dim);font-size:13px}
+.link{background:none;border:0;padding:0;text-decoration:underline;color:var(--dim);font-size:13px;min-height:32px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.chip{min-height:40px;padding:0 12px;border-radius:12px;border:1px solid var(--edge);background:var(--card);font-weight:600}
+.chip.on{background:var(--ink);color:var(--ground)}
+.toggle{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:14px}
+.toggle input{width:22px;height:22px}
+.pause{position:absolute;inset:0;display:none;place-items:center;background:rgba(239,237,232,.8);font-family:'Outfit',sans-serif;font-size:26px;font-weight:800;z-index:4}
+.pause.on{display:grid}
+.dbg{position:absolute;left:6px;top:6px;font:11px/1.3 ui-monospace,monospace;background:rgba(0,0,0,.65);color:#9f9;padding:6px;border-radius:6px;pointer-events:none;white-space:pre;z-index:3}
+.practice-chip{position:absolute;right:10px;top:8px;background:var(--red);color:#fff;font-weight:700;font-size:11px;padding:4px 8px;border-radius:999px;letter-spacing:.08em;z-index:2}
+@media (prefers-reduced-motion:reduce){.pop.on{animation:none;opacity:1}.host{transition:none}.host[data-mood="nervous"]{animation:none}}
+{{THEME}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <a class="back" href="/arcade/" id="back" aria-label="Back to the Arcade">&#8592;</a>
+    {{EMBLEM}}
+    <div class="ttl"><h1>{{TITLE}}</h1><div class="sub"><span class="tag">TESTERS ONLY</span><em>{{TAGLINE}}</em></div></div>
+    <button class="icon" id="mute" aria-label="Sound" aria-pressed="false">&#9834;</button>
+  </div>
+  <div class="hud">
+    <div class="stats" id="stats"></div>
+    <svg class="host" id="host" viewBox="0 0 56 56" role="img" aria-label="{{HOST}}" data-mood="idle" data-state="idle">
+      <circle cx="28" cy="31" r="17" fill="#f2c9a0" stroke="#141414" stroke-width="2"/>
+      <path d="M11 25 Q28 6 45 25 Z" fill="{{HAT}}"/><rect x="9" y="23" width="38" height="5" rx="2" fill="{{HAT}}"/>
+      <circle class="eye" cx="22" cy="31" r="2.2" fill="#141414"/><circle class="eye" cx="34" cy="31" r="2.2" fill="#141414"/>
+      <path class="mouth" d="M22 39 Q28 43 34 39" fill="none" stroke="#141414" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div class="stage" id="stage">
+    <canvas id="c" aria-label="{{LABEL}}" tabindex="0"></canvas>
+    <div class="pop" id="pop"></div>
+    <div class="hint" id="hint"></div>
+    <div class="practice-chip" id="pchip" hidden>PRACTICE</div>
+    <div class="pause" id="pause" role="button" tabindex="0">Paused. Tap to keep playing.</div>
+    <div class="sheet" id="sheet"><div class="card" id="card"></div></div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="/arcade/auth.js?v=4"></script>
+<script type="module" src="/arcade/lab/m/games/{{DIR}}/client.js?b=__BUILD__"></script>
+</body>
+</html>

@@ -1903,7 +1903,7 @@ function top(title, sub, right){
    Quitting after the first putt costs a life too. The Daily Hole never costs one.
    3 lives, 6 with a Tour Pass. When the last one goes a 24 hour clock starts and fills them.
 
-   WHAT IS KEPT WHERE: a signed in player's record is on ps_saves and their lives on putt_lives (134),
+   WHAT IS KEPT WHERE: a signed in player's record is on ps_saves and their lives on putt_lives (138),
    on the server's clock. A guest's are in this browser. The Daily Hole board is not built yet. */
 /* WHAT THE TOURS PAY. The Putt Putt Tour pays 4,000 coins a world, every ace included: 80 a hole and 280
    for the signature hole the first time it is beaten, 20 for a first ace, 2,000 for finishing a world. That
@@ -2000,12 +2000,12 @@ function cloudPull(){ var uid = cloudUid(); if (!uid) return Promise.resolve(fal
     try{ localStorage.setItem(pkey(), JSON.stringify(cur)); }catch(e){}
     CLOUD.uid = uid; cloudPush();
     return livesSync().then(function(){ var now = pload(); return before !== JSON.stringify(now.tours) + now.lives; }); }, function(){ return false; }); }
-/* LIVES ARE THE SERVER'S, ON ITS CLOCK (134_putt_lives.sql). The Tour record above cannot hold them: its
+/* LIVES ARE THE SERVER'S, ON ITS CLOCK (138_putt_lives.sql). The Tour record above cannot hold them: its
    rule is progress, and lives go down. So a signed in player's lives come from putt_lives_state, a life is
    taken by putt_lives_spend, and the 24 hour clock is the server's now(). Once the server has answered for
    an account (st.lsrv) the device never refills on its own clock and a merged copy never moves them.
    The first answer seeds the row from the lives this browser had, so nobody is handed a fresh three.
-   A database without 134 answers null, and the lives stay on the device as they were. */
+   A database without 138 answers null, and the lives stay on the device as they were. */
 function livesApply(uid, r){ r = cloudRow(r); if (!r || r.lives == null || cloudUid() !== uid) return false;
   var st = pload(), was = st.lives + '|' + st.refillAt;
   st.lives = +r.lives; st.refillAt = r.refill_at ? Date.parse(r.refill_at) : null; st.lt = Date.now(); st.lsrv = true;

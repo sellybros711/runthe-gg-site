@@ -162,7 +162,15 @@
       'body.rtggh .runbar .big,body.rtggh .runbar .best,body.rtggh .runbar .rstat,body.rtggh .runbar .rl .k{display:none !important;}',
       'body.rtggh .runbar .rl{text-align:center;width:100%;}',
       'body.rtggh .runbar .rl .v{font-size:16px !important;line-height:1.3 !important;}',
-      'body.rtggh.rtggh-rankit .runbar{display:none !important;}'
+      'body.rtggh.rtggh-rankit .runbar{display:none !important;}',
+      /* THE RESULT SHEET, WIDER ON A DESKTOP. Every game sized it for a phone,
+         360 to 420px, so on a wide screen it was a strip with the share card
+         squeezed into a third of it. The owner asked for wider. Keyed on the
+         sheet that holds Play again, so a sign-in or store sheet sharing the
+         class name never grows, and here because this is the one file all
+         twelve games load at boot (High Low does not load funnel.js). The id
+         inside :has() outranks each game's one-class rule. */
+      '@media (min-width:900px){.sheet:has(#mAgain),.modal:has(#mAgain),.sheet:has(#resAgain),.modal:has(#resAgain){max-width:600px;}}'
     ].join('\n');
     (document.head || document.documentElement).appendChild(s);
   }

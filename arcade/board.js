@@ -485,8 +485,11 @@
        which reads in a report as a game nobody finishes rather than as the tier
        that cannot be counted. Now both fire for every tier and carry the same
        `tier` param, so started and completed divide into the same buckets. */
+    /* opts.again: the same run filed a second time because it changed after
+       it was filed (a won Sportegories challenge). It posts, and the board
+       keeps the better row, but it is not a second completion. */
     try{
-      if (typeof window.gtag === 'function') {
+      if (!opts.again && typeof window.gtag === 'function') {
         var GA_L = {'match':'Common Ground','crossword':'Daily Crossword','guess':'Guess the Player','table':'Number Game','oddone':'Odd One Out','career':'Career Path','rankit':'Rank It','almamater':'Alma Mater','sportegories':'Sportegories','highlow':'High Low','rollcall':'Roll Call','chain':'Chain'};
         var tr = 'guest', ranked = !!session;
         try { if (window.RTGTokens && RTGTokens.tier) tr = RTGTokens.tier(); } catch (e) {}

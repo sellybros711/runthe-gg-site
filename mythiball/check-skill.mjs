@@ -93,6 +93,10 @@ const SKILLS = [
   { name: 'knows it',     aim: 0.26, ms: 55 },
   { name: 'cannot lose',  aim: 0.10, ms: 22 },
 ];
+/* THE SAME PLAYER WITH NO EYE. Hands and aim are the 'knows it' rung, and he
+   swings at anything he could reach. He is not on the ladder: he is the other
+   half of the claim that taking a ball has to be worth something. */
+const CHASER = { name: 'knows it, chases', aim: 0.26, ms: 55, chase: true };
 
 function sweep(pa, skills, tier, seed, sweet, mode, bat) {
   const realTimeout = window.setTimeout;
@@ -153,7 +157,7 @@ function sweep(pa, skills, tier, seed, sweet, mode, bat) {
       let guard = 0;
       while (guard++ < 30) {
         const pick = cpuCallPitch();
-        throwPitch(pick.pt, pick.zone);
+        throwPitch(pick.pt, pick.zone, pick.aim ? { aim: pick.aim } : undefined);
         const p = g.pitch;
         if (!p) break;
         r.pitches++;
@@ -162,7 +166,9 @@ function sweep(pa, skills, tier, seed, sweet, mode, bat) {
            how wrong they read both is the skill. */
         const seen = { x: p.loc.x + nrm() * sk.aim * 0.55,
                        y: p.loc.y + nrm() * sk.aim * 0.55 };
-        const looksStrike = Math.abs(seen.x) <= 1 && Math.abs(seen.y) <= 1;
+        const looksStrike = sk.chase
+          ? Math.abs(seen.x) <= 1.6 && Math.abs(seen.y) <= 1.6
+          : Math.abs(seen.x) <= 1 && Math.abs(seen.y) <= 1;
         /* Two strikes and anything close gets protected, which is what a
            person does and is the difference between a strikeout rate and a
            called strikeout rate. */
@@ -257,7 +263,7 @@ async function main() {
       return new Function('pa', 'skills', 'tier', 'seed', 'sweet', 'mode', 'bat',
         'return (' + src + ')(pa, skills, tier, seed, sweet, mode, bat)')(
           pa, skills, tier, seed, sweet, mode, bat);
-    }, [PA, SKILLS, tier, 20260924, sweep.toString(), SWEET, mode, BATOVER]);
+    }, [PA, [...SKILLS, CHASER], tier, 20260924, sweep.toString(), SWEET, mode, BATOVER]);
     if (mode === 'contact') all[tier] = rows;
     console.log(`\n${tier.toUpperCase()} ${mode.toUpperCase()}   ${PA} plate appearances a rung`);
     console.log('  who               AVG   OBP   SLG    HR%    K%   BB%  ' +
@@ -333,6 +339,28 @@ async function main() {
     ok(pool('easy') > pool('hard'),
        'and the tiers are in order across the four rungs',
        ['easy', 'medium', 'hard'].map(t => `${t} ${pool(t).toFixed(3)}`).join(' / '));
+  }
+  /* AN EYE HAS TO BE WORTH SOMETHING. Same hands, same aim, and one of them
+     swings at anything he can reach. Before a ball off the plate cost contact
+     quality and the pitcher's count meant anything, the chaser OUT-HIT the
+     disciplined batter on easy and hard (OPS 1.528 against 1.406 on easy), so
+     taking a pitch was a mistake.
+
+     POOLED, because one tier cannot resolve it: two runs of one build at 900
+     plate appearances put the medium gap at .17 and .086. The pitches the game
+     throws are not seeded, so a tier's OPS moves by about .05 run to run. */
+  if (tiers.every(t => all[t])) {
+    const ops = (r) => (r.pa ? (r.h + r.bb) / r.pa : 0)
+      + (r.ab ? ((r.h - r.d - r.t - r.hr) + r.d * 2 + r.t * 3 + r.hr * 4) / r.ab : 0);
+    const gaps = tiers.map(t => {
+      const eye = all[t].find(r => r.name === 'knows it');
+      const ch = all[t].find(r => r.name === 'knows it, chases');
+      return ops(eye) - ops(ch);
+    });
+    const mean = gaps.reduce((a, b) => a + b, 0) / gaps.length;
+    ok(mean >= 0.06,
+       'laying off balls beats swinging at everything',
+       tiers.map((t, i) => `${t} ${gaps[i] >= 0 ? '+' : ''}${gaps[i].toFixed(3)} OPS`).join(' / '));
   }
   ok(errors.length === 0, 'no page errors', [...new Set(errors)].join(' | '));
 

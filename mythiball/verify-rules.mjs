@@ -338,12 +338,19 @@ async function main() {
         const b = document.getElementById('inning-board');
         const during = b ? { text: b.textContent, sprites: b.querySelectorAll('canvas').length } : null;
         await new Promise(r => setTimeout(r, BEAT.betweenHalfInnings * 0.7));
-        return { during, after: !!document.getElementById('inning-board'), pitch: !!g.pitch };
+        const sel = document.getElementById('pitch-select');
+        return { during, after: !!document.getElementById('inning-board'), pitch: !!g.pitch,
+                 picker: !!sel && getComputedStyle(sel).display !== 'none' };
       });
       ok(r.during && /Bottom 2/.test(r.during.text) && /You pitch/.test(r.during.text), 'the board names the coming half and your side', JSON.stringify(r));
       ok(r.during && /Due up/.test(r.during.text) && r.during.sprites === 3, 'three batters due, drawn', JSON.stringify(r));
       ok(r.during && /arm fresh/i.test(r.during.text), 'the arm is named', JSON.stringify(r));
-      ok(!r.after && r.pitch, 'gone once the next at bat starts', JSON.stringify(r));
+      /* YOU PITCH THE BOTTOM, SO NOTHING IS THROWN UNTIL YOU THROW IT. This used
+         to ask for `g.pitch`, and it passed only because the first at bat's
+         timer called cpuCallPitch and threw straight into the half the player
+         was pitching, hiding their picker. That timer goes through nextPitch
+         now, which asks who is pitching when it fires. */
+      ok(!r.after && r.picker && !r.pitch, 'gone once the next at bat starts, and your pitch is yours to call', JSON.stringify(r));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
       await pg.close();
     }

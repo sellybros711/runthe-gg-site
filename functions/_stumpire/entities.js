@@ -1,7 +1,7 @@
 /* The Stumpire dataset, loaded once per isolate. Every lookup by id goes
  * through here, so a published answer is always resolved against the same
  * records the matcher and the typeahead see. */
-import DATA from './data/entities.json' with { type: 'json' };
+import DATA from './data/entities.js';
 
 const POS_ABBR = {
   'Quarterback': 'QB', 'Running Back': 'RB', 'Fullback': 'FB', 'Wide Receiver': 'WR',

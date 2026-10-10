@@ -301,6 +301,13 @@ begin
     'stumpire_claim(text,uuid)', 'stumpire_accept_answer(date,smallint,text,text,text)']
   loop
     execute 'revoke all on function public.' || f || ' from public, anon, authenticated';
+    /* The revoke takes away PUBLIC's execute, which is the only way the
+       service role could run these when the file is applied by psql rather
+       than the dashboard. Without this every API call fails the access check
+       and every tester gets a 404. */
+    if exists (select 1 from pg_roles where rolname = 'service_role') then
+      execute 'grant execute on function public.' || f || ' to service_role';
+    end if;
   end loop;
 end $$;
 

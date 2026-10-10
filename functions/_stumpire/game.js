@@ -110,28 +110,61 @@ function strike(st, ab, out, now) {
 }
 
 /* ---------- results ---------- */
+/* THE STUMPIRE SCORE. Every part rewards a different thing a good day has:
+ *   total bases x10   how deep your answers went, the core skill
+ *   hits        x5    reaching base at all: consistency
+ *   home runs   x10   the deepest cuts get a bonus on top of their bases
+ *   runs        x15   stringing hits together: runners move up as many bases
+ *                     as the hit is worth, and a man who reaches home scores
+ *   strikeouts  x-10  three wrong answers in one at-bat
+ * A called OUT costs nothing extra: it already ended the at-bat and pushed
+ * you a third of the way to losing the day. The score never goes below 0. */
+export const SCORE = { TB: 10, H: 5, HR: 10, R: 15, K: -10 };
+
+export function boxScore(st) {
+  let occ = [0, 0, 0], runs = 0, hits = 0, hr = 0, k = 0, tb = 0;
+  const line = [];
+  for (const a of st.ab) {
+    if (a.s !== 'done') { line.push(null); continue; }
+    if (a.r.ruling === 'SAFE') {
+      const t = a.r.tier, n = [0, 0, 0];
+      let scored = 0;
+      for (let i = 2; i >= 0; i--) if (occ[i]) { if (i + t >= 3) scored++; else n[i + t] = 1; }
+      if (t >= 4) scored++; else n[t - 1] = 1;
+      occ = n; runs += scored; hits++; tb += t; if (t >= 4) hr++;
+      line.push({ hit: t, runs: scored });
+    } else {
+      if (a.r.strikeout) k++;
+      line.push({ out: a.r.strikeout ? 'K' : 'OUT', runs: 0 });
+    }
+  }
+  const score = Math.max(0, SCORE.TB * tb + SCORE.H * hits + SCORE.HR * hr + SCORE.R * runs + SCORE.K * k);
+  return { tb, hits, hr, runs, k, score, line, onBase: occ };
+}
+
 export function summary(st) {
   const tiers = st.ab.map(a => (a.s === 'done' ? (a.r.ruling === 'SAFE' ? a.r.tier : 0) : null));
   const bases = tiers.reduce((s, t) => s + (t || 0), 0);
   const strikes = st.ab.reduce((s, a) => s + (a.strikes || 0), 0);
   const hit = new Set(tiers.filter(t => t > 0));
+  const box = boxScore(st);
   return {
     over: st.over, won: st.won, bases, max: CONFIG.AT_BATS * CONFIG.MAX_BASES,
     outs: st.outs, strikes, tiers,
-    cycle: [1, 2, 3, 4].every(t => hit.has(t))
+    cycle: [1, 2, 3, 4].every(t => hit.has(t)),
+    runs: box.runs, hits: box.hits, hr: box.hr, k: box.k, score: box.score
   };
 }
 
-/* Higher is better: total bases, then fewer outs, then fewer strikes. */
+/* Higher is better: the score, then total bases, then fewer outs, then fewer strikes. */
 export function compareResults(a, b) {
-  return (b.bases - a.bases) || (a.outs - b.outs) || (a.strikes - b.strikes);
+  return ((b.score || 0) - (a.score || 0)) || (b.bases - a.bases) || (a.outs - b.outs) || (a.strikes - b.strikes);
 }
 
 const KEYCAP = ['0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣'];
 export function shareLine(st) {
   const s = summary(st);
   const marks = st.ab.map(a => a.s !== 'done' ? '⬜' : a.r.ruling === 'SAFE' ? KEYCAP[a.r.tier] : '❌');
-  const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
   return 'Stumpire #' + st.no + '\n' + marks.join(' ') + '\n'
-    + s.bases + '/' + s.max + ' · ' + plural(s.outs, 'out') + ' · ' + plural(s.strikes, 'strike');
+    + 'Score ' + s.score + ' · ' + s.runs + ' R · ' + s.hits + ' H · ' + s.hr + ' HR · ' + s.k + ' K';
 }

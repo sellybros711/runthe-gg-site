@@ -6,7 +6,7 @@ export function memoryDb(opts = {}) {
   const S = {
     mode: opts.mode || 'testers', testers: new Map(Object.entries(opts.testers || {})),
     users: new Map(Object.entries(opts.users || {})),   // username -> uid
-    prompts: new Map(), slates: new Map(), answers: [], plays: [], log: [], review: [], challenges: [], seq: 1
+    prompts: new Map(), slates: new Map(), answers: [], plays: [], log: [], review: [], challenges: [], rulings: new Map(), seq: 1
   };
   const clone = x => JSON.parse(JSON.stringify(x));
   return {
@@ -36,9 +36,16 @@ export function memoryDb(opts = {}) {
     async savePlay(id, version, state, sm) {
       const p = S.plays.find(p => p.id === id);
       if (!p || p.version !== version) return null;
-      p.state = clone(state); p.version++; Object.assign(p, { bases: sm.bases, outs: sm.outs, strikes: sm.strikes, over: sm.over, won: sm.won });
+      p.state = clone(state); p.version++; Object.assign(p, { bases: sm.bases, outs: sm.outs, strikes: sm.strikes, over: sm.over, won: sm.won, score: sm.score || 0, runs: sm.runs || 0, hits: sm.hits || 0, hr: sm.hr || 0, ks: sm.k || 0, updated_at: p.updated_at || Date.now() });
       return p.version;
     },
+    async board(date) {
+      const name = uid => [...S.users.entries()].find(([, id]) => id === uid)?.[0] || null;
+      return S.plays.filter(p => p.slate_date === date && p.over && p.user_id)
+        .sort((a, b) => (b.score - a.score) || (b.bases - a.bases) || (a.outs - b.outs) || (a.strikes - b.strikes) || (a.updated_at - b.updated_at))
+        .map(p => ({ user_id: p.user_id, username: name(p.user_id), score: p.score, bases: p.bases, outs: p.outs, strikes: p.strikes, runs: p.runs, hits: p.hits, hr: p.hr, ks: p.ks }));
+    },
+    async playedDates(uid) { return S.plays.filter(p => p.user_id === uid && p.over).map(p => p.slate_date).sort().reverse(); },
     async log(e) { S.log.push({ id: S.seq++, ...e }); },
     async lastLog(playId, atBat) { return [...S.log].reverse().find(l => l.play_id === playId && l.at_bat === atBat) || null; },
     async review(e) { S.review.push({ id: S.seq++, status: 'open', ...e }); },
@@ -57,6 +64,14 @@ export function memoryDb(opts = {}) {
     async challenges() { return S.challenges.filter(c => c.status === 'open'); },
     async challenge(id) { return S.challenges.find(c => c.id === id) || null; },
     async resolveChallenge(id, status, by, resolution) { Object.assign(S.challenges.find(c => c.id === id), { status, resolved_by: by, resolution }); },
+    /* 136: one ruling per (prompt, player); an admin's is never overwritten. */
+    async ruling(promptId, entityId) { const r = S.rulings.get(promptId + '#' + entityId); return r ? clone(r) : null; },
+    async putRuling(row) {
+      const k = row.prompt_id + '#' + row.entity_id, old = S.rulings.get(k);
+      if (old && old.source === 'admin' && row.source !== 'admin') return;
+      S.rulings.set(k, { ...old, ...row, updated_at: new Date().toISOString(), created_at: old ? old.created_at : new Date().toISOString() });
+    },
+    async rulings(promptId) { return [...S.rulings.values()].filter(r => r.prompt_id === promptId && r.verdict === 'upheld').map(r => r.entity_id); },
     async acceptAnswer(date, atBat, promptId, entityId, name) {
       if (S.answers.some(r => r.slate_date === date && r.at_bat === atBat && r.entity_id === entityId)) return false;
       S.answers.push({ slate_date: date, at_bat: atBat, prompt_id: promptId, entity_id: entityId, name, tier: 1, called: false, arguable: true, expected_share: 0 });

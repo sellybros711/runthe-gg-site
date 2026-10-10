@@ -74,6 +74,83 @@
       var k = p.first + '|' + p.last;
       (BY_KEY[k] = BY_KEY[k] || []).push(p.idx);
     });
+    /* NBA career totals summed from every season since 1973-74
+       (scripts/build-sportegories.mjs, NBA CAREER TOTALS). They fill a stat
+       the record does not have, never replace one it does, and they can only
+       under-count, so evalTri lets them prove a line and only deny one when
+       the whole career is in the file and well short of it. Dikembe Mutombo's
+       11,706 is what "10,000+ NBA points" was missing. Applied before the
+       join below, so every name of a man gets them. */
+    /* _x: an exact career total entered by hand (before 1973-74), judged
+       like any curated stat. _o: curated numbers the season file shows are
+       wrong (Luol Deng's 15,208 points are 13,394), replaced by the file's. */
+    (D.dst || []).forEach(function (row) {
+      var p = P[row[0]], o = row[1]; if (!p || !o) return;
+      Object.keys(o).forEach(function (k) {
+        if (k.charAt(0) === '_') return;
+        p.st = p.st || {};
+        if (p.st[k] != null && !(o._o && o._o.indexOf(k) >= 0)) return;
+        p.st[k] = o[k];
+        if (!o._x) (p.dst = p.dst || {})[k] = o._f ? 2 : 1;   // 2: the whole career is counted
+        if (o._m != null) p.dstM = o._m;
+        if (o._p != null) p.dstP = o._p;
+      });
+    });
+    /* A man the sources write two ways is two records, each holding part of
+       him (scripts/sportegories-people.mjs says how they are found). Penny
+       Hardaway had the All-Star years and Anfernee Hardaway had Memphis, so
+       each name failed a category the other passed. Joined here, at load, so
+       the board a day gets never moves: every record carries the union of
+       all of them, any name finds them all, and naming him twice is a
+       duplicate. A man can be three records (the corpus twice and a roster
+       row), so the pairs are gathered into groups first; joined pair by pair,
+       the first record would miss the third one's facts. */
+    var up = {};
+    var find = function (i) { while (up[i] != null && up[i] !== i) i = up[i]; return i; };
+    (D.same || []).forEach(function (pr) {
+      if (!P[pr[0]] || !P[pr[1]]) return;
+      var ra = find(pr[0]), rb = find(pr[1]);
+      if (ra !== rb) { var lo = Math.min(ra, rb); up[ra] = lo; up[rb] = lo; }
+    });
+    var group = {};
+    Object.keys(up).forEach(function (k) { var r = find(+k); (group[r] = group[r] || []).indexOf(+k) < 0 && group[r].push(+k); });
+    Object.keys(group).forEach(function (r) {
+      var g = group[r].map(function (i) { return P[i]; });
+      var u = function (lists) { var o = []; lists.forEach(function (l) { (l || []).forEach(function (v) { if (o.indexOf(v) < 0) o.push(v); }); }); return o; };
+      var teams = u(g.map(function (p) { return p.teams; })), aw = u(g.map(function (p) { return p.aw; }));
+      var first = function (f) { for (var i = 0; i < g.length; i++) if (g[i][f]) return g[i][f]; return g[0][f]; };
+      var col = first('col'), pos = first('pos'), rpos = first('rpos');
+      // every stat any of the records holds, and whether it was summed
+      var st = null, dst = null;
+      g.forEach(function (p) {
+        Object.keys(p.st || {}).forEach(function (k) {
+          if (p.st[k] == null) return;
+          st = st || {};
+          if (st[k] == null || (dst && dst[k] && !(p.dst && p.dst[k]))) {
+            st[k] = p.st[k];
+            if (p.dst && p.dst[k]) (dst = dst || {})[k] = p.dst[k]; else if (dst) delete dst[k];
+          }
+        });
+      });
+      var bits = 0, act = 0, f = 0;
+      g.forEach(function (p) { bits |= p.decBits; act = act || p.act; f = Math.max(f, p.f || 0); });
+      var person = Math.min.apply(null, g.map(function (p) { return p.idx; }));
+      g.forEach(function (p) {
+        p.teams = teams; p.aw = aw;
+        if (!p.col) p.col = col;
+        if (!p.pos) p.pos = pos;
+        if (!p.rpos) p.rpos = rpos;
+        if (st) p.st = st;
+        p.dst = dst;
+        if (dst) p.dstM = Math.max.apply(null, g.map(function (q) { return q.dstM || 0; }));
+        g.forEach(function (q) { if (q.dstP != null) p.dstP = Math.max(p.dstP || 0, q.dstP); });
+        p.decBits = bits; p.act = act; p.f = f; p.person = person;
+      });
+      g.forEach(function (p) {
+        var ids = BY_KEY[p.first + '|' + p.last];
+        g.forEach(function (o) { if (ids.indexOf(o.idx) < 0) ids.push(o.idx); });
+      });
+    });
   }
 
   // ---------- predicate evaluation (mirrors the builder) ----------
@@ -146,6 +223,18 @@
    *
    * Award and stat lists are confirm-only even when present: ours are
    * incomplete, so a missing Pro Bowl is not evidence it never happened. */
+  /* What a man still playing can have added since the totals were summed:
+     the games played so far this season (a season opens about 21 October and
+     its 82 games run to mid April), at his rate last season plus five. Zero
+     before the opener, so the day after a refresh he is judged like anyone. */
+  function seasonSoFar(p, stat) {
+    if (p.dstP == null || !D.nbaThrough) return 0;
+    var open = Date.UTC(D.nbaThrough, 9, 21), now = Date.now();
+    if (now <= open) return 0;
+    var games = Math.min(82, Math.ceil((now - open) / 864e5 * 82 / 174));
+    var rate = stat === 'nba_points' ? p.dstP + 5 : 15;
+    return Math.round(games * rate);
+  }
   function evalTri(p, pr) {
     if (pr.all) {
       var unknown = false;
@@ -192,7 +281,21 @@
       // our lists are partial, so they can confirm but never deny
       case 'award':    return p.aw.indexOf(pr.v) >= 0 ? true : null;
       case 'awardRe':  return p.aw.some(function (a) { return a.indexOf(pr.v) >= 0; }) ? true : null;
-      case 'stat':     return (p.st && p.st[pr.v] != null) ? (p.st[pr.v] >= pr.min) : null;
+      case 'stat':
+        if (!p.st || p.st[pr.v] == null) return null;
+        if (p.st[pr.v] >= pr.min) return true;
+        /* A summed total under-counts: a season under 20 games or 12 minutes
+           is not in the file (Michael Jordan's 18 games in 1986 and 17 in
+           1995 are 860 points), and a man still playing adds to it all
+           season. The build says how far short each one can be (dstM): 400
+           for a career with no hole in it, more for one with a hole, and a
+           season's worth more for a man still playing. Short by more than
+           that is a real no; inside it, nobody can say. */
+        if (p.dst && p.dst[pr.v]) {
+          var m = (p.dstM != null ? p.dstM : Math.min(1000, pr.min * 0.1)) + seasonSoFar(p, pr.v);
+          return (p.dst[pr.v] === 2 && p.st[pr.v] < pr.min - m) ? false : null;
+        }
+        return false;
       case 'draft1':   return p.dp1 ? true : null;
       default:         return null;
     }
@@ -339,7 +442,29 @@
     return L;
   }
 
-  function build(seed, forcedLetter, broad) {
+  /* Flag 'fullstats' (flags.js). A stat category goes on a board only if we
+     hold that stat for every player a fan could name for it. The owner's
+     rule, after "10,000+ NBA points" could not verify Dikembe Mutombo: a
+     category we put up cannot be missing the answer. NBA points are summed
+     from every season (and hand-entered before 1973-74); the MLB and NFL
+     stats are still career leaders only (181 of 1,134 recognizable hitters
+     have a hit total), so their categories stay off the board until that
+     data is whole. Answers to them still score in practice and archives. */
+  var STAT_SURE = { nba_points: 1 };
+  function statsOf(pr, out) {
+    out = out || [];
+    if (!pr) return out;
+    if (pr.k === 'stat') out.push(pr.v);
+    (pr.all || []).forEach(function (q) { statsOf(q, out); });
+    return out;
+  }
+  function sureCat(c) { return statsOf(c.p).every(function (k) { return STAT_SURE[k]; }); }
+  function sureOn(dateStr) {
+    var F = (typeof self !== 'undefined' ? self : this).RTGFlags;
+    try { return !!(F && F.on && F.on('fullstats', dateStr)); } catch (e) { return false; }
+  }
+
+  function build(seed, forcedLetter, broad, sure) {
     if (!data()) return null;
     var r = rng(seed);
     var pick = (D.letters || []).filter(function (L) { return (D.byLetter[L] || []).length >= LETTER_MIN_CATS; });
@@ -355,6 +480,7 @@
     }
     var avail = viableFor(L);
     if (broad) avail = avail.filter(function (c) { return !RETIRED.test(c.l); });
+    if (sure) avail = avail.filter(sureCat);
     var out = [], used = {}, byTag = {}, bySport = {};
     function freeSport(c) { return (bySport[c.s || 'ANY'] || 0) < (SPORT_CAP[c.s || 'ANY'] || 3); }
     function draw(opts) {                       // weighted by sport AND breadth
@@ -424,8 +550,8 @@
     }
     return lab;
   }
-  function daily(dateStr) { return build(hash('sportegories:' + dateStr), letterForDate(dateStr), broadOn(dateStr)); }
-  function practice(seed) { return build(hash('sportegories:practice:' + (seed == null ? Math.floor(Math.random() * 1e9) : seed)), null, broadOn()); }
+  function daily(dateStr) { return build(hash('sportegories:' + dateStr), letterForDate(dateStr), broadOn(dateStr), sureOn(dateStr)); }
+  function practice(seed) { return build(hash('sportegories:practice:' + (seed == null ? Math.floor(Math.random() * 1e9) : seed)), null, broadOn(), sureOn()); }
 
   // ---------- grading ----------
   /* Returns:
@@ -462,6 +588,23 @@
      * the boundary of who counts. The miss goes to the live check, and even
      * the fallback wording claims only that WE couldn't confirm them. */
     var ids = BY_KEY[keyOf(toks)] || [];
+
+    /* A CHALLENGE THAT WAS WON IS A FACT, and it outranks our file. Somebody
+       challenged this name against this category, the server looked it up live
+       and the record books said yes. Every later card takes it as an answer
+       rather than asking our file, which was the thing that got it wrong. Set
+       only under the 'challenge' flag (setRulings), so nothing here moves for
+       anybody else. */
+    var ruled = rulingFor(toks, D.cats[cat.i]);
+    if (ruled) {
+      if (usedPlayers) {
+        for (var w = 0; w < ids.length; w++) {
+          if (usedPlayers[ids[w]]) return { ok: false, reason: 'dup', msg: 'Already used this player.' };
+        }
+      }
+      return creditOf(puz, ids, text);
+    }
+
     if (!ids.length) {
       return { ok: false, reason: 'unknown', live: true, msg: 'Couldn’t verify that one.' };
     }
@@ -500,6 +643,37 @@
     };
   }
 
+  /* ---------- challenges ----------
+   * A ruling is { a: nameKey, c: category label }. Keyed on the NAME, not on a
+   * record, the way check() already is: a name that is several people counts
+   * if any of them fits, so a ruling on "josh|allen" against a Bills category
+   * holds for whoever typed it. Keyed on the LABEL, not the index, because an
+   * index moves when the library is rebuilt and a label means the same thing. */
+  var RULED = Object.create(null);
+  function nameKey(text) { return keyOf(tokens(text)); }
+  function setRulings(list) {
+    RULED = Object.create(null);
+    (list || []).forEach(function (r) { if (r && r.a && r.c) RULED[r.a + '#' + r.c] = 1; });
+    return Object.keys(RULED).length;
+  }
+  function rulingFor(toks, def) { var k = keyOf(toks); return !!(k && def && RULED[k + '#' + def.l]); }
+  /* What a won challenge scores: the letter points, plus the rarity of the man
+     if our file knows him, or the outside-the-file rate livecheck.js uses. */
+  function creditOf(puz, ids, text) {
+    var allit = letterHits(puz, text), hit = ids.length ? P[ids[0]] : null;
+    var rar = hit ? rarityOf(hit) : { pct: 2, bonus: 2, tier: 'Rare', est: true };
+    return {
+      ok: true, ruled: true,
+      player: hit ? { idx: hit.idx, name: hit.name, sport: hit.sport, f: hit.f }
+                  : { idx: -1, name: String(text || '').trim(), sport: null, f: 0 },
+      base: allit, allit: allit, rarity: rar, points: allit + rar.bonus
+    };
+  }
+  function credit(puz, catIndex, text) {
+    if (!data()) return null;
+    return creditOf(puz, BY_KEY[nameKey(text)] || [], text);
+  }
+
   /* How many words of a typed name lead with the puzzle's letter. Exposed so
    * the live check can score an outside player on the same scale. */
   function letterHits(puz, text) {
@@ -536,10 +710,12 @@
     var hits = P.filter(function (p) {
       return (p.first[0] === L || p.last[0] === L) && test(p, def.p);
     }).sort(function (a, b) { return (b.f || 0) - (a.f || 0); });
+    /* And one per MAN: Penny and Anfernee Hardaway are one record pair, so
+       the reveal names him once, by the first of the two it reaches. */
     for (var i = 0; i < hits.length && out.length < (limit || 10); i++) {
-      var n = hits[i].name;
-      if (seen[n.toLowerCase()]) continue;
-      seen[n.toLowerCase()] = 1; out.push(n);
+      var n = hits[i].name, who = hits[i].person != null ? '#' + hits[i].person : n.toLowerCase();
+      if (seen[n.toLowerCase()] || seen[who]) continue;
+      seen[n.toLowerCase()] = 1; seen[who] = 1; out.push(n);
     }
     return out;
   }
@@ -553,6 +729,7 @@
     daily: daily, practice: practice, build: build, wheelLetters: wheelLetters,
     check: check, suggest: suggest, answersFor: answersFor, score: scoreOf,
     letterHits: letterHits,
-    test: test, evalTri: evalTri, rarityOf: rarityOf, CATS_PER: CATS_PER
+    nameKey: nameKey, setRulings: setRulings, credit: credit,
+    test: test, evalTri: evalTri, rarityOf: rarityOf, CATS_PER: CATS_PER, STAT_SURE: STAT_SURE, sureCat: sureCat, players: function () { return P; }
   };
 });

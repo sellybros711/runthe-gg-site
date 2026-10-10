@@ -1315,34 +1315,65 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/day.js?v=3"></script>
 <script src="/arcade/dayroll.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=24"></script>
+<script src="/arcade/board.js?v=25"></script>
 <script src="/arcade/auth.js?v=4"></script>
 <script src="/arcade/mycard.js?v=14"></script>
 <script src="/arcade/topbanner.js?v=11"></script>
 <script src="/arcade/auth-ui.js?v=9"></script>
 <script>
-/* Stumpire, testers only. Nothing is added to the page unless the API says
-   this account is a tester: everybody else gets a 404 back and the hub is
-   exactly what it was. The tile reuses Sportegories' look until it has art. */
+/* TESTERS ONLY: Stumpire and the Arcade Lab, in a category of their own at the
+   bottom of the grid. Nothing is added unless the API says this account is a
+   tester: /api/stumpire/me and /api/arcade/me both answer 404 to everybody
+   else, and then the hub is exactly what it was. Each lab game has its own
+   flag (functions/_arcadelab).
+   ORDER IS INLINE AND HIGH ON PURPOSE. paint() numbers the public tiles from
+   zero and the tiles here borrow Sportegories' class for its look, which
+   carries order:1 in the stylesheet, so left alone they landed among the free
+   games. 9000 and up is past anything paint() can reach. */
 (function () {
   var A = window.RTG_AUTH, done = false;
   if (!A || !A.onChange) return;
+  function grid() { var t = document.getElementById('cardSpg'); return t && t.parentNode; }
+  function head(g) {
+    var h = document.getElementById('tsecTest');
+    if (h) return h;
+    h = document.createElement('div');
+    h.className = 'tsec'; h.id = 'tsecTest'; h.style.order = '9000';
+    h.innerHTML = '<b>Testers only</b><span>New games in testing. Only testers can see these.</span>';
+    g.appendChild(h);
+    return h;
+  }
+  function tile(g, id, href, name, desc, n) {
+    if (document.getElementById(id)) return;
+    var a = document.createElement('a');
+    a.className = 'tile spg'; a.id = id; a.href = href; a.style.order = String(9001 + n);
+    var cap = document.createElement('span'); cap.className = 'cap'; cap.setAttribute('aria-hidden', 'true');
+    cap.innerHTML = '<span class="status">Testers only</span>';
+    var body = document.createElement('span'); body.className = 'body';
+    var nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = name;
+    var ds = document.createElement('span'); ds.className = 'desc'; ds.textContent = desc;
+    var foot = document.createElement('span'); foot.className = 'foot'; foot.innerHTML = '<span class="play">PLAY</span>';
+    body.appendChild(nm); body.appendChild(ds); body.appendChild(foot);
+    a.appendChild(cap); a.appendChild(body);
+    g.appendChild(a);
+  }
   A.onChange(function (s) {
     if (done || !s || !s.resolved || !s.signedIn || !A.token || !A.token()) return;
     done = true;
-    fetch('/api/stumpire/me', { headers: { Authorization: 'Bearer ' + A.token() }, credentials: 'same-origin' })
-      .then(function (r) {
-        if (r.status !== 200 || document.getElementById('cardStump')) return;
-        var after = document.getElementById('cardSpg');
-        if (!after || !after.parentNode) return;
-        var a = document.createElement('a');
-        a.className = 'tile spg'; a.id = 'cardStump'; a.href = '/arcade/stumpire/';
-        a.innerHTML = '<span class="cap" aria-hidden="true"><span class="status">Testers</span></span>' +
-          '<span class="body"><span class="nm">Stumpire</span>' +
-          '<span class="desc">Name something the umpire did not see coming. Five at-bats.</span>' +
-          '<span class="foot"><span class="play">PLAY</span></span></span>';
-        after.parentNode.insertBefore(a, after.nextSibling);
-      }).catch(function () {});
+    var h = { headers: { Authorization: 'Bearer ' + A.token() }, credentials: 'same-origin' };
+    function ask(u) {
+      return fetch(u, h).then(function (r) { return r.status === 200 ? r.json().catch(function () { return {}; }) : null; })
+        .catch(function () { return null; });
+    }
+    Promise.all([ask('/api/stumpire/me'), ask('/api/arcade/me')]).then(function (res) {
+      var g = grid(); if (!g) return;
+      var stump = !!res[0], lab = (res[1] && res[1].games) || [];
+      if (!stump && !lab.length) return;
+      head(g);
+      var n = 0;
+      if (stump) tile(g, 'cardStump', '/arcade/stumpire/', 'Stumpire', 'Name something the umpire did not see coming. Five at-bats.', n++);
+      lab.forEach(function (x) { tile(g, 'cardLab-' + x.id, x.path, x.name, x.desc, n++); });
+    });
   });
 })();
 </script>

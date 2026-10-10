@@ -2792,7 +2792,19 @@ function roleRank(L) {
   const up = above > 0 ? mates.filter((m) => m.ovr > me).reduce((a, m) => Math.min(a, m.ovr), 99) : null;
   const lean = up != null ? clamp(1 - (up - me) / 4, 0, 1) * 0.5 : 0;
   const min = RANK_MIN[above] + lean * ((RANK_MIN[Math.max(0, above - 1)]) - RANK_MIN[above]);
-  return { above, min, diff: me - fifth, best: above === 0 };
+  return { above, min, diff: me - fifth, best: above === 0, clear: clearlyAbove(mates, me) };
+}
+/* A TEAMMATE CLEARLY BETTER THAN YOU PLAYS MORE THAN YOU. Reported by a
+   player: an 85 was first in the rotation at 35.9 minutes over a 95 point
+   guard, because trust, a coach's promotions and the cards each add minutes
+   on top of the rank and nothing held them under the men ranked above. Trust
+   can carry you past a man a point or two better; it cannot carry you past a
+   star. CLEAR_GAP is on the model's scale (about three on the one shown). */
+const CLEAR_GAP = 2;
+function clearlyAbove(mates, me) { return mates.filter((m) => m.ovr > me + CLEAR_GAP).length; }
+/* The most a man with k clearly better teammates may play: a minute under
+   what the kth of them is given. */
+function clearCap(k) { return k > 0 ? RANK_MIN[Math.min(k, RANK_MIN.length) - 1] - 1 : Infinity;
 }
 /* A two-way player's NBA minutes: the rest of his nights are in the G League. */
 const TW_MIN = 7;
@@ -2804,6 +2816,7 @@ function roleOf(L) {
       let min = rk.min + (L.m.trust - 50) * 0.05 + (L.season ? L.season.mods.min : 0);
       if (L.contract && L.contract.kind === 'rookie' && L.draft && L.draft.pick <= 5 && net < 0) min += 3;
       min = clamp(depthCheck(L, min, rk.diff), 2, 38.5);
+      min = Math.min(min, clearCap(rk.clear));
       if (L.contract && L.contract.tw) return { min: round1(Math.min(min, TW_MIN)), diff: rk.diff, label: 'Two-way', starter: false, rank: rk.above + 1, tw: 1 };
       /* The first man off the bench is a job of its own. The sixth man route
          and ending always asked for this label; nothing wrote it until now. */
@@ -2865,6 +2878,9 @@ function rotationOf(L) {
   const mates = matesOf(L, L.team).slice(0, 14);
   let at = ROT_SHAPE.findIndex((m) => m <= mine);
   if (at < 0 || at > mates.length) at = mates.length;
+  /* Never above a man clearly better than you, whatever the minutes say. */
+  const meNow = effOvr(L), better = (m) => storyOn(L) && m.ovr > meNow + CLEAR_GAP;
+  at = Math.max(at, Math.min(mates.length, mates.filter(better).length));
   /* The label and the screen are one answer: a coach who calls you a
      starter puts you in the five, at whatever minutes he plays you. */
   if (role.starter && at > 4) at = 4;
@@ -2892,6 +2908,15 @@ function rotationOf(L) {
   starters.filter((x) => x.m !== me).sort((a, b) => b.m.ovr - a.m.ovr || b.m.w - a.m.w).forEach((x, k, arr) => rows.set(x.m, row(x.m, k, x.slot)));
   const nS = starters.filter((x) => x.m !== me).length;
   bench.forEach((m, k) => rows.set(m, row(m, nS + k, null)));
+  /* A season average can sit above the cap (minutes played before a star
+     arrived, or before a promotion was taken back), so the screen still puts
+     a clearly better man ahead of you: he plays at least half a minute more. */
+  const top = Math.max(mine, role.min);
+  rows.forEach((r, m) => {
+    if (!better(m) || r.min > top) return;
+    const ln = lines[m.n], rate = ln && ln[0] > 0 ? ln[1] / ln[0] : 0.18 + Math.max(0, m.w) * 0.035;
+    r.min = round1(Math.min(40, top + 0.5)); r.pts = round1(rate * r.min);
+  });
   me.slot = youStart ? starters.find((x) => x.m === me).slot : null;
   /* The five in position order, then the bench (you among it if you come
      off it) in minutes order. Rank is by minutes across the whole club. */
@@ -3670,7 +3695,7 @@ function momentResolve(L, card, i, rng, touch, touches) {
   const f = L.flags, duel = duelOn(L) && card.ctx.won != null, won = !!card.ctx.won;
   const mate = card.ctx.mate;
   if (card.ctx.m === 'ft') {
-    const p1 = touched(o.p, touches ? touches[0] : touch, L), p2 = touched(o.p, touches ? touches[1] : touch, L);
+    const p1 = touched(o.p, touches ? touches[0] : touch, L, touches ? 0 : null), p2 = touched(o.p, touches ? touches[1] : touch, L, touches ? 1 : null);
     const s1 = rng() < p1, s2 = rng() < p2, n = (s1 ? 1 : 0) + (s2 ? 1 : 0);
     if (duel) {
       if (n === 2) { f.ftIce = (f.ftIce || 0) + 1; bump(L, { fame: 3, morale: 6 }); logIt(L, 'Two free throws with the game on them against the ' + opp + '.', 'gold'); }
@@ -10859,7 +10884,17 @@ function newRoad(L, rng) {
    scenes off passes no touch, which is a touch of nought: the odds the card
    always had. */
 const TOUCH = 0.12, TOUCH_DUEL = 0.2;
-function touched(p, touch, L) { return touch ? clamp(p + touch * (L && duelOn(L) ? TOUCH_DUEL : TOUCH), 0.05, 0.9) : p; }
+/* A GREEN RELEASE GOES IN. extra.green is the court saying the release landed
+   in the gold core of a shot meter (or a dunk loaded to the edge of the help),
+   which is a touch of exactly 1. That is a make, the way a green release is in
+   the games people know: the one place the press decides the shot outright
+   rather than nudging it. The draw is still made, so the stream does not move.
+   Only the court sets it, only on a shot, and a touch of nought never does. */
+let GREEN = null;
+function touched(p, touch, L, k) {
+  if (touch >= 1 && GREEN && (k == null ? GREEN.one : GREEN.ft && GREEN.ft[k])) return 1;
+  return touch ? clamp(p + touch * (L && duelOn(L) ? TOUCH_DUEL : TOUCH), 0.05, 0.9) : p;
+}
 function choose(L, i, extra) {
   const card = L.pending[0];
   if (!card) return null;
@@ -10871,6 +10906,7 @@ function choose(L, i, extra) {
     ? extra.touches.map((t) => clamp(+t, -1, 1)) : null;
   const rng = rngAt(L, 'pick:' + card.key + ':' + i);
   TRADED = null;
+  GREEN = extra && (extra.green === true || Array.isArray(extra.greens)) ? { one: extra.green === true && touch >= 1, ft: Array.isArray(extra.greens) ? extra.greens.map((g, j) => g === true && touches && touches[j] >= 1) : null } : null;
   const before = snapshot(L);
   let text = '', tone = '', beats = [], made = null, won = null, shots = null, contest = null;
   L.pending.shift();
@@ -11807,7 +11843,7 @@ const publicAPI = {
   picksText, leagueTable, transactions, clubModes, TEAM_EV, TEAM_KINDS,
   seedLeague, normaliseNets, newLife, rotationOf, clubView, bestFive, fitAt, rostOf, rostNow, randomName, overall, ovrOf, step, choose, nextLabel,
   view, perGame, totals, legacy, legacyScore, clubNet, clubTier, rotationBar,
-  roleOf, lineMeans, capFor, marketSalary, projectedPick, draftOrder, money, ordinal,
+  roleOf, effOvr, CLEAR_GAP, lineMeans, capFor, marketSalary, projectedPick, draftOrder, money, ordinal,
   clutchOptions, offers, ACTS, actsOpen, act, retireNow, lifeOf, lifeLine, sonsOf, rivalOn, featSummary, boardSummary, boardName, cleanName, verdictOf,
   SCHOOLS, SCHOOL_BY, TIER_NAME, AM_EVENTS, HS_ROUNDS, NCAA_ROUNDS, GRADE, CYEAR, AGE_HS,
   isAm, colorsOf, bracketOf, roadView, nationalRank, rankText, starsOf, draftTalk, collegeOffers, schoolNet,

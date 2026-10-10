@@ -213,6 +213,12 @@ function profileOf(qid, e, labels) {
  * can exercise the claim parsing without reaching Wikidata. */
 export const _test = { profileOf, isAthlete, yearOf, idOf };
 
+/* The same reads, for a Sportegories challenge (sportegories-challenge.js),
+   which has to look at EVERY athlete a name search returns rather than the
+   first one: a challenge on the Browns' Joe Thomas must not be ruled on the
+   linebacker of the same name. */
+export const wikidata = { searchName, getEntities, getLabels, isAthlete, collectRefs, profileOf };
+
 function json(obj, status, ttl) {
   const h = { 'content-type': 'application/json; charset=utf-8' };
   if (ttl) h['cache-control'] = 'public, max-age=' + ttl;

@@ -1,0 +1,81 @@
+name: Arcade Lab checks
+
+# The Arcade Lab is testers only. These checks hold the tester gate on every
+# route, the pure sims' determinism, the server's replay against a forged
+# score, the gem ledger's one award per run, the content validators, and the
+# migrations.
+
+on:
+  pull_request:
+    paths:
+      - 'functions/_arcadelab/**'
+      - 'functions/api/arcade/**'
+      - 'functions/arcade/lab/**'
+      - 'supabase/134_arcade_lab.sql'
+      - 'supabase/135_arcade_lab_content.sql'
+      - 'supabase/136_arcade_lab_publish_days.sql'
+      - 'supabase/137_arcade_lab_republish_drop.sql'
+      - 'functions/_stumpire/**'
+      - 'supabase/test/arcade_lab_*.sql'
+      - '.github/workflows/arcade-lab-checks.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'functions/_arcadelab/**'
+      - 'functions/api/arcade/**'
+      - 'functions/arcade/lab/**'
+      - 'supabase/134_arcade_lab.sql'
+      - 'supabase/135_arcade_lab_content.sql'
+      - 'supabase/136_arcade_lab_publish_days.sql'
+      - 'supabase/137_arcade_lab_republish_drop.sql'
+      - 'functions/_stumpire/**'
+      - 'supabase/test/arcade_lab_*.sql'
+      - '.github/workflows/arcade-lab-checks.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: arcade-lab-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Unit tests
+        run: node --test functions/_arcadelab/test/*.test.mjs
+      - name: Pinball holds together (1000 balls, no tunnelling, nothing stuck)
+        run: node functions/_arcadelab/build/tune-pinball.mjs 1000 | tee pin.txt && grep -q '"crossings":0,"escapes":0' pin.txt && grep -q 'replay matches' pin.txt
+      - name: Pages Functions build like Cloudflare's
+        run: npx --yes wrangler@3.20.0 pages functions build --outdir "$RUNNER_TEMP/fn"
+      # The migration, applied twice (it must be idempotent), then its checks.
+      - name: Migration against Postgres 16
+        run: |
+          createdb lab
+          psql -q -d lab -c 'create role authenticated' -c 'create role anon' -c 'create role service_role'
+          psql -q -d lab -f supabase/test/arcade_lab_base.sql
+          psql -q -d lab -v ON_ERROR_STOP=1 -f supabase/134_arcade_lab.sql
+          psql -q -d lab -v ON_ERROR_STOP=1 -f supabase/134_arcade_lab.sql
+          psql -q -d lab -f supabase/test/arcade_lab_test.sql | tee out.txt
+          psql -q -d lab -v ON_ERROR_STOP=1 -f supabase/135_arcade_lab_content.sql
+          psql -q -d lab -v ON_ERROR_STOP=1 -f supabase/135_arcade_lab_content.sql
+          psql -q -d lab -f supabase/test/arcade_lab_content_test.sql | tee -a out.txt
+          psql -q -d lab -v ON_ERROR_STOP=1 -f supabase/136_arcade_lab_publish_days.sql
+          psql -q -d lab -v ON_ERROR_STOP=1 -f supabase/136_arcade_lab_publish_days.sql
+          psql -q -d lab -v ON_ERROR_STOP=1 -f supabase/137_arcade_lab_republish_drop.sql
+          psql -q -d lab -v ON_ERROR_STOP=1 -f supabase/137_arcade_lab_republish_drop.sql
+          ! grep -v '^ ok ' out.txt | grep -q .

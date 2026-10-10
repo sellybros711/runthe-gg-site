@@ -1,6 +1,6 @@
 -- Putt Putt lives, on server time. Chain:
 --   psql -d putt -f supabase/test/baseball_pro_base.sql      (auth.users, auth.uid() off test.uid, the roles)
---   psql -d putt -f supabase/134_putt_lives.sql
+--   psql -d putt -f supabase/138_putt_lives.sql
 --   psql -d putt -f supabase/test/putt_lives_test.sql
 \set ON_ERROR_STOP on
 create table if not exists public.profiles (id uuid primary key, username text);

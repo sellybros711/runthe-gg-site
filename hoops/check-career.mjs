@@ -892,7 +892,7 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
   /* The deadline and the coach, over careers played three ways. */
   let dl = 0, traded = 0, swap = 0, stars = 0, badName = 0, talks = 0, focusPaid = 0, focusSet = 0, up = 0, cut = 0;
   let dlDeals = 0, badHead = [];
-  let dupNames = 0, bigSummer = 0, bigSkill = 0, summers = 0, legsFirst = 0, legsN = 0, posTalk = 0, posFar = 0, notFive = 0, fiveChecks = 0;
+  let dupNames = 0, bigSummer = 0, bigSkill = 0, summers = 0, legsFirst = 0, legsN = 0, posTalk = 0, posFar = 0, notFive = 0, fiveChecks = 0, outranked = [], starChecks = 0;
   const kinds = new Set();
   for (let k = 0; k < 90; k++) {
     const L = C.newLife({ seed: 'fo:' + k, league, story: true });
@@ -952,9 +952,17 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
         const role = C.roleOf(L), rot = C.rotationOf(L);
         fiveChecks++;
         if (role.starter !== !!rot.slot && role.min >= 22 && role.min <= 26) notFive++;
+        const me = C.effOvr(L), you = rot.list.find((x) => x.you);
+        for (const x of rot.list) {
+          if (x.you || x.ovr == null || x.ovr <= me + C.CLEAR_GAP) continue;
+          starChecks++;
+          if (x.min <= you.min || x.rank > you.rank || role.min > x.min) outranked.push(x.n + ' ' + C.show(x.ovr) + ' (' + x.min + ' min, #' + x.rank + ') under you ' + C.show(C.ovrOf(L)) + ' (' + you.min + ', #' + you.rank + ')');
+        }
       }
     }
   }
+  /* Reported by a player: an 85 first in the rotation over a 95 point guard. */
+  ok(starChecks > 200 && outranked.length === 0, `a teammate clearly better than you plays more and ranks higher (${outranked.length} of ${starChecks}: ${outranked.slice(0, 2).join(' | ')})`);
   ok(dl >= 25 && kinds.size >= 2, `the deadline calls about you, for more than one reason (${dl} calls: ${[...kinds].join(', ')})`);
   ok(traded >= 8 && swap === traded, `a deadline trade sends a named man back the other way (${swap} of ${traded})`);
   /* A deadline blockbuster happens in the real league (a star or two a
@@ -1721,7 +1729,9 @@ async function browser() {
   /* The career is a slot on the account: the key is in cloud.js's list. */
   const cl = await page.evaluate(() => window.RTF_CLOUD && window.RTF_CLOUD.MODE_KEYS['rtf.life.v1']);
   ok(cl === 'life', `the career is a slot on the shelf (${cl})`);
-  await vaultWalk(fin);
+  /* A walk that never reached retirement has no Hall card, and a crash here
+     would hide every failure above it. */
+  if (fin.hof) await vaultWalk(fin); else ok(false, 'the Vault walk needs a finished career, and the walk never filed one');
   ok(boom.length === 0, `no page errors (${boom.join(' | ') || 'none'})`);
   console.log(`  ${presses} presses to retirement`);
   ok(arcSeen, 'the walk reached a career long enough to read the arc');

@@ -213,7 +213,10 @@
      four seconds, whichever comes first. With no fact it waits `ms` as before.
      A tap in the first 300ms is ignored so the press that answered the round
      cannot also skip it. */
-  function hold(next, ms) {
+  /* `floor` is how long a shown fact holds the next screen when nobody taps.
+     Four seconds by default; a game that moves faster passes its own (Alma
+     Mater's reveal was reported as too slow to get to the next player). */
+  function hold(next, ms, floor) {
     if (typeof document === 'undefined') return setTimeout(next, ms);
     var el = document.getElementById('factline');
     if (!el || !el.classList.contains('on')) return setTimeout(next, ms);
@@ -239,7 +242,7 @@
     }
     document.addEventListener('pointerdown', tap, true);
     document.addEventListener('keydown', key, true);
-    timer = setTimeout(go, Math.max(ms, 4000));
+    timer = setTimeout(go, Math.max(ms, floor != null ? floor : 4000));
     return timer;
   }
 

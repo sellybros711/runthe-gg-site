@@ -22050,7 +22050,7 @@ function pressBuzzHTML(bz){
        dev flags use), so the public site is untouched until it's launched.
    To LAUNCH to everyone: flip CUTSCENE_LIVE to true. -------------------------------------------- */
 var CUTSCENE_LIVE=true;                                    // live for everyone (was tester-only)
-var CS_TESTERS=['csel8','runnyj','malikwillislover'];      // tester accounts (lowercased usernames)
+var CS_TESTERS=['csel8','runnyj','malikwillislover','slimeyb3','jordantest'];      // tester accounts (lowercased usernames)
 function cutscenesOn(){
   try{
     if(CUTSCENE_LIVE) return true;
@@ -22071,13 +22071,13 @@ var PUTT_TESTERS=['csel8','runnyj','malikwillislover','slimeyb3','jordantest']; 
    G3D_LIVE=false is the kill switch, which puts it back to the G3D_TESTERS accounts only. A blocked or stale
    module, or a draw that throws, falls back to the old sprites. ---- */
 var G3D_LIVE=true;
-var G3D_TESTERS=['csel8','runnyj','malikwillislover'];   // tester accounts (lowercased usernames)
+var G3D_TESTERS=['csel8','runnyj','malikwillislover','slimeyb3','jordantest'];   // tester accounts (lowercased usernames)
 const G3D_API=1;                                          // the golfer3d.js API this page was written against
 /* ---- THE 3D COURSE (golf/tracer3d.js): Tour Tracer's tile with volume and light, in the golfer's style.
    Live for everybody. T3D_LIVE=false is the kill switch, back to the tester list. A blocked or stale module, or a draw that
    throws, falls back to the flat tile, so nobody is ever shown a blank hole. ---- */
 var T3D_LIVE=true;
-var T3D_TESTERS=['csel8','runnyj','malikwillislover'];   // tester accounts (lowercased usernames)
+var T3D_TESTERS=['csel8','runnyj','malikwillislover','slimeyb3','jordantest'];   // tester accounts (lowercased usernames)
 const T3D_API=1;                                          // the tracer3d.js API this page was written against
 function t3dOn(){
   try{

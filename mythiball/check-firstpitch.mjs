@@ -458,6 +458,63 @@ const main = async () => {
     }
   }
 
+  /* ---- the man throwing the ball is in the picture ---- */
+  {
+    console.log('the pitcher is in the picture');
+    /* Reported from a laptop with a screenshot: a pair of legs on the mound,
+       the park's sign where the face should be, and no arm. The keep box
+       held the zone and the ball and nothing above them, so the camera
+       centred on the zone and a short wide window started below the
+       pitcher's head. The zone section above was green the whole time,
+       because the zone was never the thing missing.
+
+       READ OFF THE GLASS, both ends of him: the top of his drawing and the
+       mound he stands on, through the same inversion the zone section uses.
+       And the sign, because a head in frame under a placard is not a face
+       anybody can see. The 21:9 row is the one that needs the camera to
+       step back, so it is the one that proves the step is there. */
+    for (const [label, w, h, dpr, yh] of [['laptop', 1366, 768, 1],
+                                      ['laptop pitching', 1366, 768, 1, true],
+                                      ['retina laptop', 1440, 780, 2],
+                                      ['desktop', 1280, 720, 1],
+                                      ['desktop pitching', 1280, 720, 1, true],
+                                      ['wide desktop', 1920, 1080, 1],
+                                      ['ultrawide', 2560, 1080, 1],
+                                      ['phone upright', 390, 844, 3],
+                                      ['phone sideways', 844, 390, 3]]) {
+      const { ctx, pg, errors } = await game(browser, w, h, dpr, null, yh);
+      await pg.waitForFunction(() => State.game && plateViewActive(State.game),
+        { timeout: 25000 });
+      await pg.evaluate(() => {
+        const g = State.game;
+        for (let i = 0; i < 12; i++) g.log.push({ text: `Line ${i + 1} of the play by play, as long as a real one gets.` });
+        refreshHud();
+      });
+      await pg.waitForTimeout(450);
+      const r = await pg.evaluate(() => {
+        const P = plateGeom();
+        const cv = document.getElementById('field');
+        const box = cv.getBoundingClientRect();
+        const toY = (ly) => box.top + (ly / PIX - FIELD_CAM.sy) / FIELD_CAM.sh * box.height;
+        const ar = cv.parentElement.getBoundingClientRect();
+        const sign = document.querySelector('.arena .corner.park');
+        const sb = sign && sign.getBoundingClientRect();
+        return { head: toY(P.moundY - HERO_DRAW_H * P.pitSc), feet: toY(P.moundY),
+                 top: Math.max(ar.top, box.top), bottom: Math.min(ar.bottom, box.bottom),
+                 sign: sb && { b: sb.bottom, shown: getComputedStyle(sign).opacity !== '0'
+                   && getComputedStyle(sign).display !== 'none' } };
+      });
+      ok(r.head >= r.top - 1 && r.feet <= r.bottom + 1,
+        `${label}: the whole pitcher is in frame, head to feet`,
+        `head at ${r.head.toFixed(0)}, feet at ${r.feet.toFixed(0)}, picture ${r.top.toFixed(0)}..${r.bottom.toFixed(0)}`);
+      ok(!r.sign || !r.sign.shown || r.sign.b <= r.head + 1,
+        `${label}: and the park's sign is not on his face`,
+        r.sign && `sign ends at ${r.sign.b.toFixed(0)}, head at ${r.head.toFixed(0)}`);
+      ok(errors.length === 0, `${label}: no page errors`, errors.join(' | '));
+      await pg.close(); await ctx.close();
+    }
+  }
+
   /* ---- a batter is not shown where the pitch is going ---- */
   {
     console.log('a batter is not shown where the pitch is going');

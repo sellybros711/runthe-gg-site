@@ -439,7 +439,7 @@ if (!args.includes('--no-browser')){
       return { open, lives:local.lives, gets:calls.filter(c => c === 'ps_save_get').length, puts:calls.filter(c => c === 'ps_save_put').length, ace:!!after.tours.main.ace[7], srvLv:srv.payload.tours.main.lv, srvLives:srv.payload.lives }; });
     claim(cld.open >= 30 && cld.lives === 1 && cld.gets >= 1, `a fresh browser takes the account's place and lives from the server (${cld.open} open, ${cld.lives} lives)`);
     claim(cld.ace && cld.srvLv >= 30 && cld.puts >= 2 && cld.srvLives === 0, `a save the server refuses is merged with what it holds and sent again (ace kept ${cld.ace}, server at hole ${cld.srvLv} with ${cld.srvLives} lives)`);
-    // LIVES ARE THE SERVER'S (134). A fresh browser takes the server's lives, a lost life is spent there, and a
+    // LIVES ARE THE SERVER'S (138). A fresh browser takes the server's lives, a lost life is spent there, and a
     // device clock wound past the refill does not fill them: only the server's answer does.
     const lvs = await pg.evaluate(async () => { const sb0 = sb, calls = [], row = { lives:0, refill_at:new Date(Date.now() + 3600e3).toISOString() };
       sb = { rpc(fn, a){ calls.push(fn);

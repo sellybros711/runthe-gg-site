@@ -35,6 +35,15 @@
  * broad build. The tank was recut (a round scoop, narrow straps, round
  * armholes, one even trim band) and its number is stamped on the screen so no
  * digit loses a row. The lower body was asked to stay and did not change.
+ *
+ * RE-RECORDED A FOURTH TIME, ON PURPOSE, because the owner asked for height
+ * and weight to show on the figure. The proportions moved off the chibi ones
+ * (the head is a smaller share of the body, the legs longer), the body is
+ * built from metrics(look) so a taller or heavier player is drawn taller or
+ * heavier, the number was cut to a smaller face, and the shorts were narrowed
+ * with a thin side trim. That reverses the third pass's lower body rule at the
+ * owner's later request. A look with no ht or wt is drawn at the default size,
+ * which is what these hashes hold.
  */
 import fs from 'node:fs';
 import path from 'node:path';

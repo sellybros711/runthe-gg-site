@@ -8419,6 +8419,38 @@ them nothing they do not know. `check-firstpitch` reads it off the drawing calls
 (a ring of 11 with a dot of 2 at its centre) in both halves, so a check that never
 sees the pitcher's target drawn cannot pass by accident.
 
+#### The pitcher is in the keep, and the deck only counts where it covers the column
+
+Reported from a laptop with a screenshot: a pair of legs on the mound, the park's
+sign where the face should be, and no arm. The keep box held the zone and the ball
+and nothing above them, so the camera centred on the zone, and a short wide window
+started at or below the pitcher's head. Measured at 1366x768 the crop began 55
+logical pixels under his head. The zone checks were green the whole time, because
+the zone was never what was missing.
+
+**Three changes, and each one was needed:**
+
+- **`plateKeepTop()` is the top of his drawing plus room for the FRESH chip**,
+  read off `plateGeom`. It is clamped BEFORE the zone's bottom keep, so the zone
+  still wins when the two cannot both be held.
+- **`deckOverKeep` counts the deck only where it stands in front of the column the
+  ball can land in.** On a wide window the swing row is a box at the bottom left,
+  and reserving its whole height cost the camera the 11 blocks the head needed. On
+  a desktop the deck is held to half the window less 150 (from 1000 wide), so the
+  pitching row wraps at the left instead of reaching the column. Under 1000 it is
+  not held, because a sideways phone's End Game went 7 pixels off the window.
+- **The camera steps back one whole scale when the head still does not fit.** On a
+  21:9 window that leaves bars at the sides, which is the wide camera's answer on
+  the same window. The step asks for the head and not for the chip, or a 1366
+  laptop would get bars for a picture that was already right.
+
+**The park sign steps aside on the plate camera.** It hangs top centre, which is
+the pitcher's face. The wide camera between pitches still shows it.
+
+`check-firstpitch`'s "the pitcher is in the picture" reads the head, the feet and
+the sign off the glass on nine screens in both halves. Against the page before the
+fix it fails ten claims.
+
 #### There are two batter's boxes and the camera only ever framed one
 
 Reported as nothing, because a screenshot of it looks fine about a quarter of the
@@ -9779,6 +9811,45 @@ happen. Two copies of one answer, and the one that was right was the one being
 overwritten. It calls the mutation itself now, which is that function's own tail,
 and that matters beyond the totals: whether a bunt or a fly ball is charged as an
 at bat at all is a RULE and it lives in those functions.
+
+#### Taking a ball was a mistake, and the count meant nothing
+
+Measured through `check-skill.mjs` with a fifth batter: the "knows it" rung's
+hands and aim, swinging at anything he can reach. **He out-hit the same batter
+with an eye on easy and hard** (OPS 1.528 against 1.406 on easy). Two faults
+made that true, and neither threw:
+
+- **A ball off the plate came off the bat as hard as a strike.** If the barrel
+  found it and the timing was right, `swingGeometry` gave full contact quality
+  wherever the pitch was. It now multiplies by `1 - chase * CHASE_COST` (1.5 per
+  zone unit past the edge, floored at 0.2), where `chase` is how far past the
+  edge it landed. Both dugouts pay it, so a pitch the player paints just off the
+  corner is a weapon too.
+- **The CPU's chase pitch was a strike.** On 0-2 it aimed at a corner of the 3x3
+  grid, which is 0.62 of the zone, inside it. `cpuCallPitch` reads the count now
+  and returns an `aim` in zone units: behind (2-0, 3-0, 3-1) it throws its
+  hardest pitch at the plate, full count near the plate, ahead with two strikes
+  it throws off speed just off an edge about half the time, ahead otherwise it
+  works the edges, and even counts keep the old mix. **Every caller passes the
+  aim** (`nextPitch`, check-skill, check-frames, check-runs), because a caller
+  that passes only the zone throws a random spot on every count but an even one.
+
+After, at 900 plate appearances a rung, contact mode:
+
+| | eye | chases |
+|---|---|---|
+| easy | OPS 1.339 | 1.070 |
+| medium | 1.289 | 1.203 |
+| hard | 1.077 | 0.993 |
+
+`check-skill` asserts the eye wins by 0.06 of OPS POOLED across the tiers, and
+the ladder bands all still hold. Pooled because one tier cannot resolve it: the
+game's own pitches are not seeded, and two runs of one build put the medium gap
+at .17 and .086. Against the page before this fix the pooled gap is negative. **Walks are still rare** (under 4% for a competent batter):
+the reward for an eye is mostly the pitch he gets once he is ahead, not ball
+four. The batting how-to and both sets of coach notes say so; the how-to also
+lost "watch the target ring", which a batter has not been shown since the
+target went pitcher-only.
 
 #### A swing that misses half the time is not a backyard game
 
@@ -11703,7 +11774,26 @@ because mapped onto the model in world cells the camera's pitch dropped whole ro
 tank is a round scoop, narrow straps and round armholes, each edged in one even band of the second
 colour. The lower body was asked to stay as it is.
 
-The figure is a little over four heads tall, the sports sprite's proportion.
+**HEIGHT AND WEIGHT ARE DRAWN.** Asked for by the owner: every player looked the same whatever his
+size. `metrics(look)` in baller.js turns `ht` (inches) and `wt` (pounds) into the body: legs grow
+faster than the torso with height (`h^1.35` against `h^0.85`, measured off 6'7" as `BASE_HT`), and
+girth is weight against `typicalWt(ht)` (career.js's own `wtFor`), so 250 lb reads heavy at 6'2" and
+lean at 7'2". The head is scaled as a unit (`HEAD_K`), so it is about a sixth of a 7 footer. A look
+with no `ht` is drawn at the default size, which is what check-sprite's hashes hold.
+
+- **Two readers hand the size over and both are needed**: career-ui's `withSize` puts `L.ht` and
+  `L.wt` on the look every Career screen draws, and scenes.js's `ctxOf` does the same for a cutscene.
+  court.js passes the whole look to `handAt`, because a taller man's hands are somewhere else.
+- **The builder has sliders**, between the minus and plus buttons. Dragging repaints only the
+  preview on a frame (`sizeLive`), and a release does the full render. Moving height moves the weight
+  slider's range in the same frame, or a 7'4" is briefly held at a 6'9" weight.
+- **A big portrait is traced finer** (`resFor`: 2x over 120px), so a face reads at the size it is
+  shown. The court sprites stay at 1x, because there are ten of them a frame.
+- **check-moments section 5 sweeps 6'0" to 7'4" and both weight extremes**, and asserts no frame
+  touches the grid's edge. The tallest man's raised arms are what binds; the arm length is capped
+  against the shoulder height for that reason.
+
+The figure is about six heads tall at the default size.
 
 **`paint(look, { parts: true })` hands back part names instead of colours**, and only
 check-career asks for it. Section 10 proves four things over forty looks and six poses: no part
@@ -12092,8 +12182,8 @@ node hoops/check-career.mjs                    section 11 (the engine), section 
 ```
 
 The owner's calls, 2026-10-02: no daily seeded career; playing the road from high
-school and the family tree are **Run The Floor Pro** (`rtf_premium`, the $9.99
-Endless already sells). A guest or free account starts on draft night from a
+school and the family tree are **Run The Floor Pro** (`rtf_premium`, the $14.99 a
+year Endless already sells). A guest or free account starts on draft night from a
 pre-NBA life generated for them, a new one every career.
 
 **THE GENERATED ROAD IS THE REAL ROAD.** `C.generateRoad(opts)` is
@@ -12378,21 +12468,62 @@ it, and one of the four plays beats it (`READ_GOOD` +0.12) while one plays into
 it (`READ_BAD` -0.08). Reading it right earns the coach's trust whatever the
 result. check-moments asserts reading the look pays.
 
-**THE COURT (court.js API 2) HAS TWO KINDS OF PRESS:**
+**THE COURT (court.js API 2) HAS FOUR KINDS OF PRESS**, one a job, because a
+dunk is not a jumper and a steal is not a stop. Asked for by the owner: shots
+should be held and let go like NBA 2K's meter, and the dunk and the passing lane
+should be their own mini games.
 
-- **The meter** for a shot: a pendulum, slowest at the ends and fastest through
-  the green, with a gold core (`touchOf`: core 1, green edge 0.5, -1 at the far
-  end). The green is narrower (`zoneFor` 0.035 to 0.115) and drifts with nerves
-  (low morale raises them, the clutch trait lowers them). A step-back, a
-  fadeaway and a heave swing faster; a catch-and-shoot is easier. A drive is two
-  presses (the gather, then the rise), and two free throws are two presses
-  handed over as `{ touches }`, each shot reported back in `res.shots`.
-- **The read** for a stop, a chase-down and a pass (`reactTouch`): press when he
-  really goes. Jabs and hesitations are fakes and pressing on one is biting
-  (-0.8). The lamp lights 160ms AFTER the real move, so reading the court beats
-  reacting to the lamp. A rating buys a little time, never the read.
+| control | used by | what you do |
+|---|---|---|
+| `hold` | jumpers, free throws, the post, layups | hold, the fill climbs, let go in the green |
+| `launch` | dunks and posters | hold to load your legs, let go between the rim line and the help |
+| `lanes` | jumping the passing lane | two lane buttons; jump the man who shows his hands |
+| `react` | the stop, the chase-down, the pass, the lob | press when he really goes |
 
-Every press shows how it went (Perfect, Good, Early, Late, Bit on the fake).
+- **The hold** (`holdTouch`, `HOLD_C` 0.78). The fill speeds up as it climbs and
+  the green sits near the top, as wide as `zoneFor` says (a better shooter has a
+  bigger green; a heave or a step-back shrinks it, a catch-and-shoot grows it,
+  nerves wobble it). **The shooter rises while you hold**, so letting go at the
+  top of the green is letting go at the top of the jump: the moment plays the
+  rise itself and skips `CLIPS.rise` after. Held to the end is a brick (-1).
+  Two free throws are two holds, each judged on its own (`touches`, `greens`).
+- **The launch** (`launchLines`, `launchTouch`). Not a timing window but a
+  trade: let go before the rim line and it is a safe layup (0.05 to 0.35, drawn
+  as a layup), past it a dunk (0.6 up), and the closer to the help the harder it
+  goes (1 in the last 28% of the window). If the help gets there first you are
+  met at the rim (-0.9, drawn as a block when it misses). Bounce lowers the rim
+  line and widens the window; a big already under the rim takes time away.
+- **The lanes** (`laneTouch`, `laneWindow`). His eyes flick between two men and
+  the lane button says so ("His eyes"); the man he is really throwing to shows
+  his hands a beat before the ball leaves ("Calling for it"), and that window is
+  longer for a better defender. Jump him then and it is a pick (1). After the
+  throw it is a race (`reactTouch`). Jumping on his eyes alone, or the wrong man,
+  leaves your man open (-0.8, -0.9). A guess that happens to be right is 0.15,
+  so reading always beats gambling.
+- **The read** (`reactTouch`) is unchanged: press when he really goes, a fake
+  is a bite, the lamp is 160ms late on purpose.
+
+**A GREEN RELEASE GOES IN.** A hold let go in the gold core, or a launch loaded to
+the edge of the help, sends `{ touch: 1, green: true }`, and `touched()` in
+career.js returns a make for it (`GREEN`, set per `choose`). That is the 2K rule
+and the one place a press decides a shot outright rather than nudging it by
+`TOUCH`. It is safe because only the court sets it, only for a touch of exactly
+1, only on a shot (never a read), the draw is still made so the stream does not
+move, and the simulator sends nothing. Section 2b asserts every green is a make
+and that green with a lesser touch moves nothing.
+
+**PRESSING IS A POINTER, NOT A CLICK.** `pointerdown` on the button (or the court)
+starts a hold, the release is heard on the window (`pointerup`, `pointercancel`
+and `blur`), so a thumb that slides off still lets go and a phone call never
+leaves a shot held for ever. Space and Enter hold too, a repeated keydown is not
+a press, and 1, 2 and the arrows pick a lane. A bare `click` with no pointerdown
+before it (a walker's `element.click()`) is a press and an instant release, so
+every checker that clicks `.ct-go` still finishes a moment. **The first
+`.ct-go` in the control must be the visible one**: the second lane button lives
+after it in the DOM, or a walker's `querySelector('.ct-go')` finds a hidden
+button and waits for ever.
+
+Every press shows how it went (Green, Good, Early, Late, Laid it up, Met at the rim, Jumped the lane, Bit on the look).
 
 **VARIETY IS SEEDED** off the card's key and the option (`spec.seed`), so a moment
 shown twice is the same picture: jumpers are a pull-up, a catch-and-shoot, a
@@ -12829,6 +12960,15 @@ locker room ten times. The ten best known show first and the rest are a tap away
 Every pass is final and the shot clock is ten passes. An undo turns it into a
 map to be searched at leisure.
 
+**The years are hidden, and easy mode costs a pass.** A teammate tile shows only his name.
+The button under the last group ("Too hard? Use a pass to reveal the years each player played
+for that team") sets `st.easy`, which adds one to `passesOf()` for the clock, the verdict, the
+share and the board, and shows each man's seasons with THAT club (`clubYears`), not his career.
+It is not offered when spending it would end the clock. The server counts it too:
+`supabase/134_hoops_passes_easy.sql` gives `rtf_submit_passes` a `p_easy` argument, and
+`board.js` sends it only when it is true, so a normal chain files against 116 unchanged and an
+easy chain is refused there rather than filed a pass short. Deploy 134 by hand; preflight row 44.
+
 **The two ends wear pixel portraits, and they are silhouettes on purpose.** There
 is no licensed art, and a face drawn from a hash would put a guess about a real
 person's hair, build and skin on him, wrong about most of them. So `portrait()`
@@ -12910,7 +13050,7 @@ server, and the link is built off the SENDER's own page rather than a written-ou
 the www-against-apex reason in the Stripe section. It is read once on boot and on `hashchange`,
 then cleared, so a reload after finishing goes to the front page.
 
-**IT IS RUN THE FLOOR PRO**, $9.99 once, the `floor-pro` bundle granting `rtf_premium`
+**IT IS RUN THE FLOOR PRO**, $14.99 a year and renewing, the `floor-pro` bundle granting `rtf_premium`
 (`supabase/123_hoops_pro.sql`, go-live order in `functions/api/stripe/README.md`). Same shape
 as Diamond Pro: one checkout, one webhook, and the page asks `premium_products()` through
 `hoops/auth.js`. `endlessOpen()` in `modes-ui.js` is the one gate. There is no server meter,
@@ -18867,12 +19007,11 @@ are never counted and never sold. The Stripe steps are in
 
 #### It was $9.99 once and is now a yearly subscription
 
-**Run The Floor Pro (basketball) stays $9.99 once, and that is the owner's decision
-(2026-09), not a price the move above forgot.** The instruction was to change every
-$9.99 on the site, and basketball was then kept as it is. `hoops/modes-ui.js` and
-`hoops/how-to-play.html` are right to say $9.99 and "never renews". A sweep for $9.99
-should leave them alone, and the Large Bucket in Run The Tour is a third, unrelated
-$9.99.
+**Run The Floor Pro (basketball) is $14.99 a year too**, the owner's call (2026-10),
+made before it ever went on sale (it was planned at $9.99 once). The catalog row carries
+`recurring: true`, so it takes exactly the path below, and the Pro sheet in
+`hoops/modes-ui.js` writes `PRO_PRICE` with `PRO_TERM` and offers Manage billing to an
+owner. The Large Bucket in Run The Tour is an unrelated $9.99.
 
 ```
 node scripts/stripe/check-recurring.mjs   the checkout and webhook, driven, no network
@@ -19739,13 +19878,13 @@ The page writes localStorage first and never waits on the network. The host hand
   three times running.
 - **Every call fails soft.** null is no opinion and the local record stands.
 
-**Lives are on the server, on its clock** (`supabase/134_putt_lives.sql`, deployed by hand). The Tour record
+**Lives are on the server, on its clock** (`supabase/138_putt_lives.sql`, deployed by hand). The Tour record
 cannot hold them, because its rule is progress and lives go down. So a signed in player's lives come from
 `putt_lives_state`, a life is taken by `putt_lives_spend`, and the 24 hour clock is the server's `now()`. Once
 the server has answered for an account (`st.lsrv`) the device never refills on its own clock and a merged
 copy never moves them. The first answer seeds the row from the lives the browser had, so nobody is handed a
-fresh three. **A database without 134 answers null and lives stay on the device**, as before; preflight row
-44 asks for it. The tester refill is `putt_lives_refill`, which carries its own copy of `PUTT_TESTERS`: keep
+fresh three. **A database without 138 answers null and lives stay on the device**, as before; preflight row
+52 asks for it. The tester refill is `putt_lives_refill`, which carries its own copy of `PUTT_TESTERS`: keep
 the two lists in step. The Tour Pass max (6) is the page's word, because the golf wallet is not in this repo;
 a forged 6 buys three lives once and never shortens a clock. A guest's lives stay on the device.
 

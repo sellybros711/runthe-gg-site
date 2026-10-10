@@ -175,7 +175,7 @@ const playGames = async (field, count) => {
         if (!g) return { gone: true };
         if (g.over) return { over: true };
         if (g.aiming && !g.play && !g.tail) {
-          try { const p = cpuCallPitch(); throwPitch(p.pt, p.zone); window.__threw++; } catch (e) {}
+          try { const p = cpuCallPitch(); throwPitch(p.pt, p.zone, p.aim ? { aim: p.aim } : undefined); window.__threw++; } catch (e) {}
         }
         return { ok: true };
       }).catch(() => ({ gone: true }));

@@ -89,6 +89,13 @@ export const CONFIG = Object.freeze({
     founded: { from: 1900 }
   }),
 
+  /* A challenge on a strike is looked up live and settled at once when the
+     record can settle it (livecheck.js); otherwise it waits for the admin.
+     False puts every challenge back in the admin queue. A remembered denial
+     is asked again after DENIED_TTL_DAYS, because the record keeps filling in. */
+  LIVE_CHALLENGE: true,
+  DENIED_TTL_DAYS: 30,
+
   /* Per award, where the field-wide row above is too generous. An award
      listed here overrides `award`. MLB All-Star is missing for 106 of the 266
      MVPs, Cy Young winners and Hall of Famers since 1940 (Jeter, A-Rod, Judge),

@@ -2,7 +2,7 @@ name: "Stumpire: set up and publish the daily slates"
 
 # Everything Stumpire needs to be playable, run on merge and then every night:
 #
-#   1. Apply supabase/133_stumpire.sql. It is idempotent, so running it nightly
+#   1. Apply supabase/133_stumpire.sql and 134_stumpire_score.sql. Both are idempotent, so running them nightly
 #      costs nothing and means the database can never be behind the code.
 #   2. Seed the tester list, ONLY while the table is empty, so a tester an admin
 #      removes stays removed. csel8 is the admin; the other four are the same
@@ -24,6 +24,7 @@ on:
     branches: [main]
     paths:
       - 'supabase/133_stumpire.sql'
+      - 'supabase/134_stumpire_score.sql'
       - 'functions/_stumpire/prompts/**'
       - 'functions/_stumpire/daily.js'
       - 'functions/_stumpire/publish.js'
@@ -55,6 +56,7 @@ jobs:
         run: |
           test -n "$SUPABASE_DB_URL" || { echo "::error::SUPABASE_DB_URL is not set"; exit 1; }
           psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -1 -q -f supabase/133_stumpire.sql
+          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -1 -q -f supabase/134_stumpire_score.sql
 
       - name: Seed testers (only if there are none)
         run: |

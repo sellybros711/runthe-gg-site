@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* Build functions/_stumpire/data/entities.json: every NFL, NBA and MLB player
+/* Build functions/_stumpire/data/entities.js: every NFL, NBA and MLB player
  * and team Stumpire can be asked about, with a stable id and the aliases the
  * matcher accepts.
  *
@@ -26,7 +26,13 @@ import { key, slug, fold, sortedKey, tokens } from '../normalize.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../../..');
-const OUT = path.join(HERE, '../data/entities.json');
+/* A JS module rather than JSON, on purpose: Cloudflare's build image bundles
+   with an esbuild too old to parse `import ... with { type: 'json' }`, and
+   that one line failed the whole site's deploy. A module needs no attribute
+   in Node or in any bundler. */
+const OUT = path.join(HERE, '../data/entities.js');
+const PREFIX = 'export default ';
+const readOut = () => JSON.parse(fs.readFileSync(OUT, 'utf8').slice(PREFIX.length).replace(/;\s*$/, ''));
 const LEAGUES = ['NFL', 'NBA', 'MLB'];
 
 function loadSportegories() {
@@ -231,7 +237,7 @@ for (const e of all) { if (ids.has(e.id)) throw new Error('duplicate id ' + e.id
 let lost = [];
 if (fs.existsSync(OUT)) {
   try {
-    const prev = JSON.parse(fs.readFileSync(OUT, 'utf8'));
+    const prev = readOut();
     lost = prev.entities.map(e => e.id).filter(id => !ids.has(id));
   } catch (e) {}
 }
@@ -248,7 +254,7 @@ const out = {
     return o;
   })
 };
-fs.writeFileSync(OUT, JSON.stringify(out));
+fs.writeFileSync(OUT, PREFIX + JSON.stringify(out) + ';\n');
 const c = {}; for (const e of all) c[e.s + ' ' + e.k] = (c[e.s + ' ' + e.k] || 0) + 1;
 console.log('wrote', path.relative(ROOT, OUT), all.length, 'entities', c);
 console.log('duplicate records merged:', merged);
