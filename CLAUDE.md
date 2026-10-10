@@ -19878,8 +19878,17 @@ The page writes localStorage first and never waits on the network. The host hand
   three times running.
 - **Every call fails soft.** null is no opinion and the local record stands.
 
-What is still not on the server: lives are not on server time, so clearing site data before the first sync
-of a session can refill them, and the Daily Hole has no shared board.
+**Lives are on the server, on its clock** (`supabase/138_putt_lives.sql`, deployed by hand). The Tour record
+cannot hold them, because its rule is progress and lives go down. So a signed in player's lives come from
+`putt_lives_state`, a life is taken by `putt_lives_spend`, and the 24 hour clock is the server's `now()`. Once
+the server has answered for an account (`st.lsrv`) the device never refills on its own clock and a merged
+copy never moves them. The first answer seeds the row from the lives the browser had, so nobody is handed a
+fresh three. **A database without 138 answers null and lives stay on the device**, as before; preflight row
+52 asks for it. The tester refill is `putt_lives_refill`, which carries its own copy of `PUTT_TESTERS`: keep
+the two lists in step. The Tour Pass max (6) is the page's word, because the golf wallet is not in this repo;
+a forged 6 buys three lives once and never shortens a clock. A guest's lives stay on the device.
+
+What is still not on the server: the Daily Hole has no shared board.
 
 **A guest plays the first five Tour holes free** (`GUEST_HOLES`). Hole 6 opens a sheet asking them to sign
 in or create an account, and its buttons close the mode and open the page's account sheet. The Daily Hole
@@ -19914,7 +19923,8 @@ out of sight and the golfer stood on the roof to putt it.
 
 **A BALL BEHIND SOMETHING IS BEHIND IT.** `hole3d.js` hands back `hid(x, y, z)` off the depth the
 picture was painted with, so a ball behind a block, a rail or the house is drawn as a faint dashed
-outline instead of painted on top of it, and the golfer beside it is drawn faint.
+outline instead of painted on top of it, and the golfer beside it is drawn faint. **A golfer standing over the cup on screen is drawn faint too** (`golferCovers`, off the rectangle
+`drawGolfer0` would draw), so the hole he is putting at is never hidden behind him.
 
 **IT IS NOT LAUNCHED.** The home card, second in the list right after Play 18, is drawn by `puttOn()`
 in `golf/index.html` for the `PUTT_TESTERS` usernames and nobody else, read off the server-attributed

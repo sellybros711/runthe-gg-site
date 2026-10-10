@@ -383,6 +383,11 @@ if (!args.includes('--no-browser')){
     await pg.waitForTimeout(400);
     const ck2 = await pg.evaluate(() => document.querySelector('[data-dclock]') && document.querySelector('[data-dclock]').textContent);
     claim(ck && ck2 && ck !== ck2 && /^\d+:\d\d\.\d$/.test(ck2), `the Daily Hole shows a running clock (${ck} then ${ck2})`);
+    // A GOLFER OVER THE CUP IS DRAWN FAINT: stood at the tee he covers nothing, stood at the cup he covers it
+    const far = await pg.evaluate(() => window.RTT_PUTT._covers());
+    const near = await pg.evaluate(async () => { const P = window.RTT_PUTT._state().play, keep = P.ball.slice(); P.ball = [P.C.cup[0] + 0.4, P.C.cup[1]];
+      let v = null; for (let i = 0; i < 60 && !v; i++){ await new Promise(r => setTimeout(r, 50)); v = window.RTT_PUTT._covers(); } P.ball = keep; return v; });
+    claim(far === false && near === true, `the golfer covers the cup only when he stands over it, and is drawn faint then (tee ${far}, at the cup ${near})`);
     const box = await pg.locator('.pt-stage canvas').boundingBox();
     const before = await pg.evaluate(() => window.RTT_PUTT._state().play.ball.slice());
     // A RELEASE NOBODY HEARS STILL PUTTS: pulled back past the window's edge and let go outside the browser,
@@ -406,6 +411,44 @@ if (!args.includes('--no-browser')){
       window.RTT_PUTT._dailyFinish(2, C.par, Math.round(performance.now() - P.t0)); const d = Object.keys(localStorage).filter(x => x.indexOf('bag_ppt_v1') === 0).map(k => Object.values(JSON.parse(localStorage.getItem(k)).daily || {}).find(v => v.done)).find(Boolean); return { ms:d && d.ms, txt:document.body.innerText }; });
     claim(dres.ms >= 12345 && dres.ms < 14000 && /0:12\.\d/.test(dres.txt), `a finished daily keeps its time and the result shows it (${dres.ms} ms)`);
     claim(await pg.evaluate(() => homeModeList().map(m => m.id).indexOf('putt') === 1), 'the Putt Putt Tour card comes second, right after Play 18');
+    // THE DAILY TAB: the card only asks while today is unplayed, the calendar has every day back to CAL_BACK,
+    // a missed day is shut without the Tour Pass, and a day played late pays but never moves the streak.
+    const calk = await pg.evaluate(async () => { const wait = async q => { for (let t = 0; t < 100 && !document.querySelector(q); t++) await new Promise(r => setTimeout(r, 50)); return !!document.querySelector(q); };
+      const k = String(todayKey()), td = k.slice(0, 4) + '-' + k.slice(4, 6) + '-' + k.slice(6, 8), add = n => new Date(Date.parse(td + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10);
+      const seed = daily => { localStorage.setItem('bag_ppt_v1@cal', JSON.stringify({ v:2, daily, streak:{ n:2, last:add(-1), best:2 }, tours:{ main:{ lv:1, best:{}, ace:{}, paid:{}, wpaid:{} } } })); };
+      const out = {}; window.RTT_PUTT.close(); sbUser = { id:'cal' };
+      seed({ [add(-1)]:{ s:3, par:3, done:1 } }); openPutt(); await wait('.pp-tabs [data-tab="daily"]'); out.cardUnplayed = !!document.querySelector('[data-daily]'); window.RTT_PUTT.close();
+      seed({ [add(-1)]:{ s:3, par:3, done:1 }, [td]:{ s:2, par:3, done:1 } }); openPutt(); await wait('.pp-tabs [data-tab="daily"]'); out.cardPlayed = !!document.querySelector('[data-daily]');
+      document.querySelector('.pp-tabs [data-tab="daily"]').click(); await wait('.pp-cday');
+      out.days = document.querySelectorAll('.pp-cday').length; out.todayDone = document.querySelector('.pp-cday[data-day="' + td + '"]').classList.contains('done');
+      out.lockN = document.querySelectorAll('.pp-cday.lock').length; document.querySelector('.pp-cday[data-day="' + add(-3) + '"]').click(); await wait('.pp-memsh');
+      out.sheet = !!document.querySelector('.pp-memsh'); out.noRound = !document.querySelector('.pt-stage canvas'); document.querySelector('.pp-memsh [data-n]').click();
+      window.RTT_PUTT._state().calPreview = true; document.querySelector('.pp-cday[data-day="' + add(-3) + '"]').click(); await wait('.pt-stage canvas');
+      const R = window.RTT_PUTT._state().round; out.pastRound = R && R.mode === 'pdaily' && R.day === add(-3) && R.past;
+      window.RTT_PUTT._state().play.state = 'done'; window.RTT_PUTT._dailyFinish(2, 3, 9000);
+      const st = JSON.parse(localStorage.getItem('bag_ppt_v1@cal')); out.late = st.daily[add(-3)] && st.daily[add(-3)].late === 1; out.streak = st.streak.n; out.last = st.streak.last === add(-1);
+      window.RTT_PUTT.close(); sbUser = { id:'chk' }; return out; });
+    claim(calk.cardUnplayed && !calk.cardPlayed, `the Daily card shows while today is unplayed and goes once it is played (${calk.cardUnplayed}, ${calk.cardPlayed})`);
+    claim(calk.days >= 60 && calk.todayDone, `the Daily tab is a calendar of ${calk.days} days with today marked played`);
+    claim(calk.lockN > 0 && calk.sheet && calk.noRound, 'without the Tour Pass a missed day is shut, and pressing it opens the Pass sheet rather than a hole');
+    claim(calk.pastRound && calk.late && calk.streak === 2 && calk.last, `a Pass holder plays a missed day, and it is filed late without moving the streak (streak ${calk.streak})`);
+    // THE WALK TO THE NEXT HOLE: Next walks the golfer up the cart path on the map and then opens the hole; a tap skips it.
+    // At a world's edge the door fills with the stars you have: enough and it opens, short and it stays shut on the map.
+    const wk = await pg.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), seed = (s, lv) => { const best = {}; for (let n = 1; n <= 18; n++) best[n] = s;
+      localStorage.setItem('bag_ppt_v1@walk', JSON.stringify({ v:2, tours:{ main:{ lv, best, ace:{}, paid:{}, wpaid:{} } } })); };
+      window.RTT_PUTT.close(); sbUser = { id:'walk' }; seed(1, 19); openPutt(); await sleep(300);
+      window.RTT_PUTT._walkTo(5); await sleep(400); out.walking = !!document.querySelector('.pp-walking .pp-me.walk') && !window.RTT_PUTT._state().round;
+      document.querySelector('.pp-map').dispatchEvent(new PointerEvent('pointerdown', { bubbles:true })); await sleep(100);
+      const R = window.RTT_PUTT._state().round; out.skipTo = R && R.lv;
+      window.RTT_PUTT.close(); openPutt(); await sleep(300); window.RTT_PUTT._walkTo(18); await sleep(2600);
+      out.doorOpen = !!document.querySelector('.pp-door.fill'); await sleep(3500); const R2 = window.RTT_PUTT._state().round; out.through = R2 && R2.lv;
+      window.RTT_PUTT.close(); seed(2, 18); openPutt(); await sleep(300); window.RTT_PUTT._walkTo(18); await sleep(3200);
+      out.shutTxt = (document.querySelector('.pp-door small') || {}).textContent || ''; await sleep(2000);
+      out.shutStay = window.RTT_PUTT._state().screen === 'menu' && !window.RTT_PUTT._state().play;
+      window.RTT_PUTT.close(); sbUser = { id:'chk' }; return out; });
+    claim(wk.walking && wk.skipTo === 6, `Next walks the golfer up the path on the map, and a tap skips straight to the hole (${wk.walking}, hole ${wk.skipTo})`);
+    claim(wk.doorOpen && wk.through === 19, `with the stars, the world door fills, opens and the walk carries on into World 2 (hole ${wk.through})`);
+    claim(/Need \d+ more/.test(wk.shutTxt) && wk.shutStay, `short of the stars, the door stays shut, says how many more, and leaves you on the map (${wk.shutTxt})`);
     // ---- THE TOUR'S RULES, through the page. Each life is real: a fresh record for a fresh account.
     await pg.evaluate(() => { const st = window.RTT_PUTT._state(); if (st && st.play && st.play.strokes) { st.round.mode = 'x'; } document.querySelector('.pt-ov') && window.RTT_PUTT.close(); sbUser = { id:'chk' }; localStorage.removeItem('bag_ppt_v1@chk'); openPutt(); });
     await pg.waitForSelector('.pp-map [data-lv="1"]');
@@ -439,6 +482,28 @@ if (!args.includes('--no-browser')){
       return { open, lives:local.lives, gets:calls.filter(c => c === 'ps_save_get').length, puts:calls.filter(c => c === 'ps_save_put').length, ace:!!after.tours.main.ace[7], srvLv:srv.payload.tours.main.lv, srvLives:srv.payload.lives }; });
     claim(cld.open >= 30 && cld.lives === 1 && cld.gets >= 1, `a fresh browser takes the account's place and lives from the server (${cld.open} open, ${cld.lives} lives)`);
     claim(cld.ace && cld.srvLv >= 30 && cld.puts >= 2 && cld.srvLives === 0, `a save the server refuses is merged with what it holds and sent again (ace kept ${cld.ace}, server at hole ${cld.srvLv} with ${cld.srvLives} lives)`);
+    // LIVES ARE THE SERVER'S (138). A fresh browser takes the server's lives, a lost life is spent there, and a
+    // device clock wound past the refill does not fill them: only the server's answer does.
+    const lvs = await pg.evaluate(async () => { const sb0 = sb, calls = [], row = { lives:0, refill_at:new Date(Date.now() + 3600e3).toISOString() };
+      sb = { rpc(fn, a){ calls.push(fn);
+        if (fn === 'putt_lives_state') return Promise.resolve({ data:[{ lives:row.lives, refill_at:row.refill_at, max_lives:3 }], error:null });
+        if (fn === 'putt_lives_spend'){ row.lives = Math.max(0, row.lives - 1); return Promise.resolve({ data:[{ lives:row.lives, refill_at:row.refill_at, max_lives:3 }], error:null }); }
+        if (fn === 'ps_save_get') return Promise.resolve({ data:[], error:null });
+        if (fn === 'ps_save_put') return Promise.resolve({ data:[{ ok:true }], error:null });
+        return Promise.resolve({ data:null, error:{ message:'no' } }); } };
+      sbUser = { id:'lvs' }; localStorage.removeItem('bag_ppt_v1@lvs'); openPutt();
+      for (let t = 0; t < 100 && !calls.includes('putt_lives_state'); t++) await new Promise(r => setTimeout(r, 50));
+      await new Promise(r => setTimeout(r, 100));
+      const k = 'bag_ppt_v1@lvs', a = JSON.parse(localStorage.getItem(k) || '{}');
+      a.refillAt = Date.now() - 1000; localStorage.setItem(k, JSON.stringify(a));
+      const wound = window.RTT_PUTT.summary(puttHost()).lives;
+      row.lives = 2; await window.RTT_PUTT.sync(puttHost()); window.RTT_PUTT._lose();
+      for (let t = 0; t < 40 && !calls.includes('putt_lives_spend'); t++) await new Promise(r => setTimeout(r, 50));
+      await new Promise(r => setTimeout(r, 100));
+      const after = JSON.parse(localStorage.getItem(k)); window.RTT_PUTT.close(); sb = sb0;
+      return { first:a.lives, wound, spent:calls.includes('putt_lives_spend'), after:after.lives, srv:row.lives }; });
+    claim(lvs.first === 0 && lvs.wound === 0, `a fresh browser takes the server's lives, and a wound clock does not refill them (${lvs.first}, then ${lvs.wound})`);
+    claim(lvs.spent && lvs.srv === 1 && lvs.after === 1, `a lost life is spent on the server (server ${lvs.srv}, browser ${lvs.after})`);
     // A GUEST PLAYS THE FIRST FEW HOLES FREE, then is asked to sign in. The Daily Hole stays open.
     const gst = await pg.evaluate(async () => { const best = {}; for (let n = 1; n <= 8; n++) best[n] = 2;
       localStorage.setItem('bag_ppt_v1', JSON.stringify({ v:2, tours:{ main:{ lv:9, best, ace:{}, paid:{}, wpaid:{} } } })); sbUser = null; window.RTT_PUTT.open(puttHost());
