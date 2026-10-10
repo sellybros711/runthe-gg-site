@@ -8791,7 +8791,7 @@ const isDefRun=()=>!!(run&&run.defense);
    database is what actually decides whether a run is recorded, and it does not consult
    this list. */
 const DEFENSE_LIVE=true;
-const DEFENSE_TESTERS=['malikwillislover','runnyj','slimeyb3'];
+const DEFENSE_TESTERS=['malikwillislover','runnyj','slimeyb3','csel8','jordantest'];
 /* FULL TEAM ASKS ITS OWN FILE. Same two gates as above and the same warning applies with
    more force: fullteam-access.js is served to anybody who asks for it, so it hides an
    unannounced mode and must never be what stands between a paying player and the thing
@@ -23958,7 +23958,7 @@ function avatarOf(name,color,initials,crest){
    names in the page is a feature flag rather than a permission is written out there.
 
    LIVE FOR EVERYBODY since supabase/88_football_crests.sql. The tester list stays as the
-   way back: flipping CREST_LIVE to false puts the crest behind those three names again
+   way back: flipping CREST_LIVE to false puts the crest behind the tester names again
    without touching anything else, which is what a kill switch is for.
 
    88 IS NOT REQUIRED FOR THIS TO BE SAFE, and that is deliberate. Without it the two crest
@@ -23968,7 +23968,7 @@ function avatarOf(name,color,initials,crest){
    never needed it: it is drawn from rows this browser already fetched for the badge
    cabinet. */
 const CREST_LIVE=true;
-const CREST_TESTERS=['malikwillislover','runnyj','slimeyb3'];
+const CREST_TESTERS=['malikwillislover','runnyj','slimeyb3','csel8','jordantest'];
 const canUseCrest=()=>{
   if(!window.PS_CREST) return false;
   if(!authState.signedIn) return false;
