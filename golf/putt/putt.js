@@ -1725,7 +1725,23 @@ function pkey(){ try{ var h = hostOf(); return h.storeKey ? h.storeKey('bag_ppt_
 /* THE RECORD. Lives, the Daily Hole, the streak and the rewards are the account's; each tour keeps its
    own place, best scores, aces and what it has paid. A record from the 50 hole Tour keeps everything
    but its place on a ladder that no longer exists: those holes are gone, so it starts at hole 1. */
-function pload(){ var st = null; try{ st = JSON.parse(localStorage.getItem(pkey())); }catch(e){} st = st || {};
+/* A RECORD SAVED SIGNED OUT IS CLAIMED BY THE ACCOUNT, never lost. The key is the account's once the page
+   knows who is playing, and the bare key before that, so a session that opened before sign-in resolved
+   (or while it had dropped) played under the bare key. A player reported reaching hole 18 and coming
+   back to hole 1. So a signed-in load folds the bare key in: the furthest hole, the best score on every
+   hole, every ace and every payout, and the bare key is cleared so it is folded once. */
+function pmerge(st, g){
+  Object.keys(g.tours || {}).forEach(function(k){ var a = st.tours[k] = st.tours[k] || {}, b = g.tours[k] || {};
+    a.lv = Math.max(a.lv || 1, b.lv || 1); a.best = a.best || {};
+    Object.keys(b.best || {}).forEach(function(n){ if (a.best[n] == null || b.best[n] < a.best[n]) a.best[n] = b.best[n]; });
+    ['ace', 'paid', 'wpaid'].forEach(function(f){ a[f] = a[f] || {}; Object.keys(b[f] || {}).forEach(function(n){ if (!a[f][n]) a[f][n] = b[f][n]; }); }); });
+  st.daily = st.daily || {}; Object.keys(g.daily || {}).forEach(function(d){ if (!st.daily[d]) st.daily[d] = g.daily[d]; });
+  st.rewards = st.rewards || []; (g.rewards || []).forEach(function(r){ if (st.rewards.indexOf(r) < 0) st.rewards.push(r); });
+  if (g.streak && (!st.streak || (g.streak.best || 0) > (st.streak.best || 0))) st.streak = Object.assign({}, st.streak || {}, { best:g.streak.best });
+  return st; }
+function pload(){ var st = null, key = pkey(); try{ st = JSON.parse(localStorage.getItem(key)); }catch(e){} st = st || {};
+  if (key !== 'bag_ppt_v1'){ var g = null; try{ g = JSON.parse(localStorage.getItem('bag_ppt_v1')); }catch(e){}
+    if (g && g.v === 2 && g.tours){ if (st.v !== 2){ st = { v:2, tours:{} }; } pmerge(st, g); try{ localStorage.setItem(key, JSON.stringify(st)); localStorage.removeItem('bag_ppt_v1'); }catch(e){} } }
   if (st.v !== 2){ st.tours = {}; delete st.lv; delete st.best; delete st.ace; delete st.paid; delete st.wpaid; st.v = 2; }
   st.tours = st.tours || {}; Object.keys(TOURS).forEach(function(k){ var t = st.tours[k] = st.tours[k] || {}; t.lv = t.lv || 1; t.best = t.best || {}; t.ace = t.ace || {}; t.paid = t.paid || {}; t.wpaid = t.wpaid || {}; t.lv = TOURS[k].lab ? TOURS[k].levels.length : frontier(t, TOURS[k]); });
   st.daily = st.daily || {}; st.rewards = st.rewards || []; st.streak = st.streak || { n:0, last:null, best:0 };
@@ -1878,7 +1894,7 @@ function drawMap(st, TR){
       return toastHub((n - 1) % K === 0 && tq.best[n - 1] != null ? (TR.members ? WS[pw + 1].name : 'World ' + (pw + 2)) + ' opens at ' + worldGate(TR, pw) + ' total stars. You have ' + starsThrough(tq, TR, pw) + '.' : 'Clear level ' + (n - 1) + ' at par or better to open it.'); } startLevel(n, TR.id); }; });
   // the chip in the corner names the world in view and how much of it is beaten
   var chip = S.ov.querySelector('[data-wchip]'), lastW = -1;
-  function wchip(){ if (!chip) return; var mid = (box.scrollTop + box.clientHeight * 0.55) / k, w = 0;
+  function wchip(){ if (!chip || !S || !box.isConnected) return; var mid = (box.scrollTop + box.clientHeight * 0.55) / k, w = 0;
     for (var wi = 0; wi < WS.length; wi++) if (mid < pos[wi * K][1] + STEP / 2 + 1) w = wi;
     if (w === lastW) return; lastW = w; var hub = S.ov.querySelector('.pp-hub'); if (hub) hub.setAttribute('data-wt', WS[w].theme);     chip.textContent = (TR.members && !membersOpen() ? 'Preview · ' : '') + (TR.members ? WS[w].name : 'World ' + (w + 1)) + ' · ' + worldStars(tp, TR, w) + '/' + worldMax(TR, w) + ' ★'; }
   box.addEventListener('scroll', wchip, { passive:true });
