@@ -216,7 +216,10 @@ ok(/\/api\/sportegories-challenge\?/.test(page) && /SP\.setRulings\(/.test(page)
 ok(/className='chal'/.test(page) && /runChallenge\(i, b\)/.test(page), 'a Challenge button is offered on a row');
 ok(/again:filed/.test(page), 'a won challenge re-files the card without a second completion event');
 const flags = require('../arcade/flags.js');
-ok(flags.FLAGS.challenge && !flags.FLAGS.challenge.since && flags.FLAGS.challenge.pct === 0, 'the flag ships off');
+// On for everybody since 2026-10-10. It stays a flag, so setting pct to 0
+// switches it off again, and the page has to keep asking it.
+ok(flags.FLAGS.challenge && !flags.FLAGS.challenge.since && flags.FLAGS.challenge.pct === 100, 'the flag is on for everybody');
+ok(/RTGFlags\.on\('challenge'\)/.test(page), 'the page still asks the flag, so it can be switched off');
 
 globalThis.fetch = realFetch;
 console.log(fails ? '\n' + fails + ' FAILED' : '\nall challenge claims hold');
