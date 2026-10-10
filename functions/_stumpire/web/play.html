@@ -57,6 +57,25 @@
     background:#07080a radial-gradient(circle,rgba(255,207,90,.07) 1px,transparent 1.4px) 0 0/3px 3px;line-height:1.05;padding:2px 8px}
   #ruling.hide{display:none}
   #ruling .ruling{font-size:clamp(26px,6.5vw,46px);font-weight:900;font-style:italic;letter-spacing:.04em;text-shadow:0 0 10px currentColor;animation:slam .45s cubic-bezier(.2,1.6,.4,1) both}
+  #ruling .plate{margin-top:6px;display:flex;flex-direction:column;align-items:center;gap:5px;animation:rise .35s .15s ease-out both}
+  #ruling .who2{font-size:15px;font-weight:900;color:#fff3cf;letter-spacing:.02em}
+  #ruling .prow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center}
+  .tchip{font-size:12px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;padding:3px 10px 3px;border-radius:4px;color:#07080a;
+    clip-path:polygon(6px 0,100% 0,calc(100% - 6px) 100%,0 100%);text-shadow:none}
+  .tchip.t1{background:#3ecf8e}.tchip.t2{background:#45c7e6}.tchip.t3{background:#ffcf5a}
+  .tchip.t4{background:linear-gradient(90deg,#ff7a3d,#ffcf5a,#ff7a3d);background-size:200% 100%;animation:shine 1.2s linear infinite}
+  .tchip.tout{background:#ff6b6b}
+  @keyframes shine{to{background-position:-200% 0}}
+  .fans{display:flex;align-items:center;gap:6px;color:#ffe9b0}
+  .fans .bulbs{display:flex;gap:3px}
+  .fans i{width:7px;height:7px;border-radius:50%;background:#2a2410;box-shadow:inset 0 0 0 1px #4a3d18}
+  .fans i.on{background:#3ecf8e;box-shadow:0 0 6px #3ecf8e;animation:bulb .25s both}
+  .fans.hot i.on{background:#ff6b6b;box-shadow:0 0 6px #ff6b6b}
+  .fans b{font-size:16px;font-weight:900;color:#fff3cf;font-variant-numeric:tabular-nums}
+  .fans em{font-style:normal;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;opacity:.75}
+  @media (min-width:700px){#ruling .who2{font-size:19px}.tchip{font-size:15px;padding:4px 14px}.fans i{width:9px;height:9px}.fans b{font-size:21px}.fans em{font-size:12px}}
+  @keyframes bulb{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:scale(1)}}
+  @keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
   #ruling .sub{margin-top:4px;font-size:13px;font-weight:800;color:#ffe9b0;letter-spacing:.04em}
   #ruling.fade{transition:opacity .5s;opacity:0}
   @keyframes slam{from{transform:scale(2.4) rotate(-6deg);opacity:0}to{transform:scale(1) rotate(-2deg);opacity:1}}
@@ -939,11 +958,6 @@
     if (v.summary.bases >= 8) return ' You are hitting me hard today.';
     return ' Name one I did not.';
   }
-  /* A hit's distance is a fact about the answer, not the swing: the same
-     name on the same prompt carries the same distance for everybody. */
-  var BANDS = [null, [165, 255], [285, 365], [370, 402], [405, 478]];
-  function strHash(t) { var h = 2166136261; for (var i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
-  function feet(r) { var b = BANDS[r.tier] || BANDS[1]; return b[0] + strHash((r.answer ? r.answer.name : '') + '|' + (S0 && S0.current ? S0.current.prompt : '')) % (b[1] - b[0]); }
 
   var INTRO_KEY = 'stumpire_intro_v1', introStep = -1, introTimer = null;
   var INTRO = ['I am the Stumpire. I call the obvious answers before you step in.',
@@ -1131,13 +1145,27 @@
   }
 
   var ruleTimer = null;
+  /* The graphic under a call: who it was, a badge for the hit, and a row of
+     ten bulbs for how many fans say that name. Fewer lit is a deeper cut. */
+  function plate(r) {
+    var safe = r.ruling === 'SAFE', pct = r.rarity;
+    var badge = safe ? '<span class="tchip t' + r.tier + '">' + ['', 'Single', 'Double', 'Triple', 'Home run'][r.tier] + '</span>' : '<span class="tchip tout">Called</span>';
+    var fans = '';
+    if (pct != null) {
+      var lit = Math.max(1, Math.min(10, Math.ceil(pct / 10))), bulbs = '';
+      for (var i = 0; i < 10; i++) bulbs += '<i class="' + (i < lit ? 'on' : '') + '" style="animation-delay:' + (0.25 + i * 0.05) + 's"></i>';
+      fans = '<span class="fans ' + (safe ? '' : 'hot') + '"><span class="bulbs">' + bulbs + '</span><b>' + (pct < 1 ? '&lt;1' : pct) + '%</b><em>of fans</em></span>';
+    }
+    return '<div class="plate"><div class="who2">' + esc(r.answer ? r.answer.name : '') + '</div><div class="prow">' + badge + fans + '</div></div>';
+  }
   function ruling(r) {
     var word = r.ruling === 'SAFE' ? 'SAFE' : r.ruling === 'OUT' ? 'OUT' : r.ruling === 'STRIKE' ? (r.strikeout ? 'STRIKE THREE' : 'STRIKE') : 'NO PITCH';
-    var sub = r.ruling === 'SAFE' ? TIER[r.tier] + ' · ' + feet(r) + ' ft' + (r.rarity != null ? ' · ' + r.rarity + '% of fans' : '') : r.ruling === 'OUT' ? 'Called it.'
+    var sub = r.ruling === 'SAFE' ? '' : r.ruling === 'OUT' ? 'Called it.'
       : r.ruling === 'STRIKE' ? (r.strikeout ? 'You are out.' : r.expired ? 'The clock ran out.' : r.reason === 'invalid' ? 'That does not fit.' : '')
       : (r.reason === 'already_tried' ? 'You tried that one.' : r.reason === 'too_many' ? 'Too many players by that name. Add more.' : r.reason === 'clock_running' ? 'Keep swinging.' : 'No player or team by that name. Try again.');
     var html = '<div class="ruling ' + r.ruling + '">' + esc(word) + '</div>';
-    html += '<div class="sub">' + (r.answer ? esc(r.answer.name) + ' · ' : '') + esc(sub) + '</div>';
+    if (r.ruling === 'SAFE' || (r.ruling === 'OUT' && r.answer)) html += plate(r);
+    else html += '<div class="sub">' + (r.answer ? esc(r.answer.name) + ' · ' : '') + esc(sub) + '</div>';
     var el = $('ruling'); el.innerHTML = html; el.classList.remove('hide', 'fade');
     clearTimeout(ruleTimer); ruleTimer = setTimeout(function () { el.classList.add('fade'); }, 2600);
     if (r.reveal) {
