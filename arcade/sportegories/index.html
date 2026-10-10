@@ -171,6 +171,16 @@
   .res .pts{font-family:var(--hero); font-weight:400; font-size:19px; line-height:1; color:var(--greenT);}
   .res .pct{color:var(--mut); font-weight:800; font-size:11px;}
   .res .why{color:var(--red); font-weight:800;}
+  /* Challenge. A real button: 44px tall to tap, outlined so it never reads as
+     the score, and in the row's own line so it sits beside the ruling it
+     questions. */
+  .res .chal{appearance:none; cursor:pointer; min-height:44px; padding:0 14px; border-radius:10px;
+    border:1.5px solid var(--line2); background:transparent; color:var(--ink);
+    font:inherit; font-size:12.5px; font-weight:800; letter-spacing:.02em;}
+  .res .chal:hover{border-color:var(--spT);}
+  .res .chal:focus-visible{outline:2px solid var(--spT); outline-offset:2px;}
+  .res .chal.busy{opacity:.7; cursor:progress;}
+  .res .pct.won{color:var(--greenT);}
   .res .allit{color:var(--goldT); font-weight:900; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase;}
   .res .also{color:var(--mut); font-weight:600; font-size:11.5px; width:100%; line-height:1.45;}
   .res .also b{color:var(--ink); font-weight:700;}
@@ -394,7 +404,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/gamemarks.js?v=4"></script>
 <script src="/arcade/calendar.js?v=15"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=24"></script>
+<script src="/arcade/board.js?v=25"></script>
 <script src="/arcade/leaderboard.js?v=16"></script>
 <!-- Sportegories shipped without the shared account chrome, so it had no
      paywall, no sign-in modal and no end-of-game funnel: guests got unlimited
@@ -413,10 +423,10 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/resultstats.js?v=4"></script>
 <script src="/arcade/review.js?v=1" defer></script>
 <script src="/arcade/sfx.js?v=4"></script>
-<script src="/arcade/flags.js?v=6"></script>
+<script src="/arcade/flags.js?v=7"></script>
 <script src="/arcade/sportegories-data.js?v=51"></script>
 <script src="/arcade/type.js?v=5"></script>
-<script src="/arcade/sportegories.js?v=20"></script>
+<script src="/arcade/sportegories.js?v=21"></script>
 <script src="/arcade/livecheck.js?v=11"></script>
 <script>
 (function(){
@@ -434,6 +444,25 @@ window.GA_ID='G-L29P5MRWKE';
   var SECONDS = 120;
 
   function $(id){ return document.getElementById(id); }
+  /* Challenges and their memory ride on one flag (flags.js 'challenge'), off
+     until it is switched on, and ?flags=challenge turns it on for a tester. */
+  function challengeOn(){ try{ return !!(window.RTGFlags && RTGFlags.on('challenge')); }catch(e){ return false; } }
+  var RULINGS=[];
+  function rememberRuling(a, c){ if(a && c){ RULINGS.push({a:a, c:c}); SP.setRulings(RULINGS); } }
+  /* The won challenges for the categories on this card. Asked once when the
+     card is dealt, so by the time it is graded the answer is in; a card graded
+     before it lands is graded the old way, which is what it would have been. */
+  function loadRulings(p){
+    if(!challengeOn() || !p || !window.fetch) return;
+    var D=SP.data(); if(!D) return;
+    var q=p.cats.map(function(c){ return 'c='+encodeURIComponent(D.cats[c.i].l); }).join('&');
+    fetch('/api/sportegories-challenge?'+q).then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(j){
+        if(!j || !Array.isArray(j.rulings)) return;
+        j.rulings.forEach(function(x){ if(x && x.a && x.c && !RULINGS.some(function(y){ return y.a===x.a && y.c===x.c; })) RULINGS.push(x); });
+        SP.setRulings(RULINGS);
+      })['catch'](function(){});
+  }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function load(){ try{ return JSON.parse(LS.getItem(SAVE))||{}; }catch(e){ return {}; } }
   function save(o){ try{ LS.setItem(SAVE, JSON.stringify(o)); }catch(e){} }
@@ -583,6 +612,7 @@ window.GA_ID='G-L29P5MRWKE';
     isDaily = daily;
     puz = daily ? SP.daily(pdate()) : SP.practice();
     if(!puz){ toast('Couldn’t build a puzzle'); return; }
+    loadRulings(puz);
     graded=false; left=SECONDS;
     $('scrim').classList.add('hidden');
     $('spinLab').textContent = ARCHIVE ? 'Spinning that day’s letter' : (daily ? 'Spinning for today’s letter' : 'Spinning a practice letter');
@@ -615,6 +645,7 @@ window.GA_ID='G-L29P5MRWKE';
     isDaily=true; attemptFirst=true; graded=false;
     puz = SP.daily(pdate());
     if(!puz || puz.letter!==r.letter){ clearResume(); return false; }
+    loadRulings(puz);
     ENDS = +r.ends || Date.now();
     left = Math.max(0, Math.round((ENDS-Date.now())/1000));
     playCard();
@@ -746,6 +777,30 @@ window.GA_ID='G-L29P5MRWKE';
       }
       try{ row.scrollIntoView({behavior:reduced()?'auto':'smooth', block:'center'}); }catch(e){}
     }
+    /* What the end screen files: the review, the share marks and the board.
+       A function, because a won challenge changes the card after it was
+       filed and files it again. The board keeps the better of two scores for
+       a day (125), so a second post can only raise it, never cost anything. */
+    var filed=false;
+    function fileResult(){
+      lastMarks = results.map(function(r){ return r && r.ok ? 'x' : '.'; }).join('');
+      if(window.RTGReview) RTGReview.set(GAME, puz.cats.map(function(c,i){
+        var r=results[i]||{}, also=r.ok ? [] : SP.answersFor(puz, i, 3);
+        return { q:c.label+' ('+puz.letter+')', you:inputs[i].value.trim(), answer: r.ok ? '' : also.join(', '),
+                 ok: r.ok ? true : (r.reason==='empty' ? false : (soft(r) ? null : false)),
+                 note: r.ok ? ('+'+r.points+(r.points===1?' point':' points')) : (r.reason==='empty' ? 'No answer' : (r.msg||'Not valid')) };
+      }));
+      if(isDaily && total>0 && !ARCHIVE){
+        try{
+          var secs = Math.max(5, SECONDS - Math.max(0,left));
+          if(window.RTG_BOARD && RTG_BOARD.submit){
+            RTG_BOARD.submit(GAME, today(), { seconds:secs, mistakes:0, reveals:0, runLen:total, replay:!attemptFirst, again:filed })
+              .then(function(){ try{ if(window.RTG_LB) RTG_LB.refresh(); }catch(e){} });
+          }
+        }catch(e){}
+      }
+      filed=true;
+    }
     function finish(){
       clearReveal();
       $('tally').classList.remove('on');
@@ -766,22 +821,7 @@ window.GA_ID='G-L29P5MRWKE';
       // Points ride the run_len column: the board's score is
       // 1000000 - run_len*1000 + seconds, i.e. most points wins and a faster
       // card breaks the tie - exactly this game's ordering.
-      lastMarks = results.map(function(r){ return r && r.ok ? 'x' : '.'; }).join('');
-      if(window.RTGReview) RTGReview.set(GAME, puz.cats.map(function(c,i){
-        var r=results[i]||{}, also=r.ok ? [] : SP.answersFor(puz, i, 3);
-        return { q:c.label+' ('+puz.letter+')', you:inputs[i].value.trim(), answer: r.ok ? '' : also.join(', '),
-                 ok: r.ok ? true : (r.reason==='empty' ? false : (soft(r) ? null : false)),
-                 note: r.ok ? ('+'+r.points+(r.points===1?' point':' points')) : (r.reason==='empty' ? 'No answer' : (r.msg||'Not valid')) };
-      }));
-      if(isDaily && total>0 && !ARCHIVE){
-        try{
-          var secs = Math.max(5, SECONDS - Math.max(0,left));
-          if(window.RTG_BOARD && RTG_BOARD.submit){
-            RTG_BOARD.submit(GAME, today(), { seconds:secs, mistakes:0, reveals:0, runLen:total, replay:!attemptFirst })
-              .then(function(){ try{ if(window.RTG_LB) RTG_LB.refresh(); }catch(e){} });
-          }
-        }catch(e){}
-      }
+      fileResult();
       $('mScore').textContent='0';
       $('mFilled').textContent=correct+'/'+n;
       $('mBonus').textContent=bonus;
@@ -810,6 +850,74 @@ window.GA_ID='G-L29P5MRWKE';
       sc.classList.remove('hidden');
       try{ sc.scrollIntoView({behavior:reduced()?'auto':'smooth', block:'start'}); }catch(e){}
       if(perfect || (newBest && correct>=4)){ confetti(perfect?130:90, perfect); sfx('win'); }
+      if(challengeOn()) for(var ci=0;ci<n;ci++) offerChallenge(ci);
+    }
+
+    /* CHALLENGE. A row marked wrong, or one we could not verify, gets a button.
+       Pressing it asks the server, which looks the answer up live and rules.
+       Won: the row turns green, the points land, the card is filed again, and
+       the ruling is remembered so no later card marks it wrong. Lost: the row
+       says the record books said no. Each row can be challenged once. */
+    function challengeable(r, i){
+      if(!r || r.ok) return false;
+      if(!inputs[i] || !inputs[i].value.trim()) return false;
+      return r.reason==='category' || r.reason==='unverified' || r.reason==='unknown';
+    }
+    function offerChallenge(i){
+      var r=results[i], res=$('res'+i);
+      if(!challengeable(r, i) || !res || res.querySelector('.chal')) return;
+      var b=document.createElement('button'); b.type='button'; b.className='chal';
+      b.textContent='Challenge'; b.setAttribute('aria-label','Challenge this ruling: '+inputs[i].value.trim());
+      b.addEventListener('click', function(){ runChallenge(i, b); });
+      res.insertBefore(b, res.firstChild ? res.firstChild.nextSibling : null);
+    }
+    function runChallenge(i, b){
+      if(b.disabled) return;
+      b.disabled=true; b.textContent='Checking…'; b.classList.add('busy');
+      var text=inputs[i].value.trim(), def=SP.data().cats[puz.cats[i].i];
+      track('challenge_sent', i);
+      fetch('/api/sportegories-challenge', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ answer:text, letter:puz.letter, cat:puz.cats[i].i, label:def.l }) })
+        .then(function(res){ return res.json(); })
+        .then(function(j){ ruled(i, b, j||{}); })
+        ['catch'](function(){ ruled(i, b, { verdict:'offline', msg:'Couldn’t reach the record books. Try again in a minute.' }); });
+    }
+    function ruled(i, b, j){
+      var row=$('row'+i), res=$('res'+i), v=j.verdict;
+      track('challenge_'+(v||'none'), i);
+      if(v==='offline'){ b.disabled=false; b.classList.remove('busy'); b.textContent='Try again'; toast(j.msg||'Try again in a minute.'); return; }
+      b.remove();
+      if(v==='upheld'){
+        var key=SP.nameKey(inputs[i].value);
+        var twice=results.some(function(o,k){ return k!==i && o && o.ok && SP.nameKey(inputs[k].value)===key; });
+        if(twice){ var dl=document.createElement('span'); dl.className='why chalno'; dl.textContent='Won, but you already used this player.';
+          res.insertBefore(dl, res.firstChild ? res.firstChild.nextSibling : null); return; }
+        var cr=SP.credit(puz, i, inputs[i].value);
+        if(!cr){ return; }
+        cr.challenged=true;
+        results[i]=cr; total+=cr.points; correct++; bonus+=(cr.points-1);
+        // remembered on this page too, so a practice card dealt next counts it
+        rememberRuling(SP.nameKey(inputs[i].value), SP.data().cats[puz.cats[i].i].l);
+        row.classList.remove('bad','unsure'); row.classList.add('good','flip');
+        res.innerHTML='<span class="pts">+'+cr.points+'</span>'+
+          (cr.allit>1?'<span class="allit">×'+cr.allit+' letter bonus</span>':'')+
+          '<span class="pct won">'+esc(j.msg||'Challenge won. That one counts.')+'</span>';
+        var st=load(), prevBest=st.best||0;
+        if(isDaily && !ARCHIVE){ st.best=Math.max(prevBest,total); st.last={d:today(), score:total, correct:correct}; save(st); }
+        else if(total>prevBest){ st.best=total; save(st); }
+        $('mScore').textContent=total; $('mFilled').textContent=correct+'/'+n;
+        $('mBonus').textContent=bonus; $('mBest').textContent=Math.max(prevBest,total);
+        fileResult();
+        sfx('win'); buzz([18,40,18]);
+        return;
+      }
+      var line=document.createElement('span');
+      line.className = v==='denied' ? 'why chalno' : 'hedge chalno';
+      line.textContent = j.msg || (v==='denied' ? 'We checked. The record books say no.' : 'Couldn’t settle it.');
+      res.insertBefore(line, res.firstChild ? res.firstChild.nextSibling : null);
+    }
+    function track(ev, i){
+      try{ if(typeof window.gtag==='function') window.gtag('event','arcade_'+ev,{ arcade_game:'Sportegories', row:i }); }catch(e){}
     }
     revealDone = function(){                      // skip: land everything now
       clearReveal();

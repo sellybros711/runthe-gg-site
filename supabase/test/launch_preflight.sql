@@ -86,7 +86,8 @@ has_table as (
     'nfl_games','fantasy_prizes',
     'rtf_runs','rtd_runs','rtf_plays','rtd_mode_plays','premium_subscriptions',
     'rtd_profiles','rtd_career','rtf_profiles',
-    'cfb_fantasy_weeks','cfb_fantasy_entries','cfb_fantasy_prizes','rtf_careers'
+    'cfb_fantasy_weeks','cfb_fantasy_entries','cfb_fantasy_prizes','rtf_careers',
+    'sportegories_rulings'
   ]) as t
   where to_regclass('public.' || t) is not null
 ),
@@ -590,7 +591,16 @@ check_rows(sort, migration, what, breaks, ok) as (
       'an unnamed account gets a generated name on the arcade boards',
       'Unnamed accounts all show as "Player" and cannot find their own row.',
       (select count(*) > 0 from proc where name = 'arcade_generated_name')
-      and (select count(*) > 0 from trg where name = 'grid_runs_fill_name'))
+      and (select count(*) > 0 from trg where name = 'grid_runs_fill_name')),
+
+  -- SPORTEGORIES CHALLENGES. They rule live either way, so a missing table is
+  -- silent: a won challenge scores for the player who made it and is
+  -- forgotten, and the next card marks the same answer wrong again.
+  (50, '135_sportegories_rulings',
+      'a won Sportegories challenge is remembered for every later card',
+      'Challenges still rule, but nothing is remembered. The same answer is marked wrong again tomorrow.',
+      (select count(*) > 0 from has_table where name = 'sportegories_rulings')
+      and (select count(*) > 0 from trg where name = 'sportegories_rulings_keep_admin'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

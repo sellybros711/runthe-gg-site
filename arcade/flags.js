@@ -68,7 +68,12 @@
     // Supabase dashboard; without either it quietly keeps the run local. It
     // changes who is on the board, not what the puzzle is, so a percentage is
     // safe here.
-    guestboard: { since: null, pct: 0, daily: false }
+    guestboard: { since: null, pct: 0, daily: false },
+    // Sportegories: a Challenge button on any answer marked wrong or not
+    // verified. The server looks it up live and rules, and a won challenge is
+    // remembered for every later card (135_sportegories_rulings.sql). Off
+    // until switched on; raise pct to roll it out, or ?flags=challenge to try.
+    challenge: { since: null, pct: 0, daily: false }
   };
 
   var KEY = 'rtg:flags';

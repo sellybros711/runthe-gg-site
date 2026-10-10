@@ -588,6 +588,23 @@
      * the boundary of who counts. The miss goes to the live check, and even
      * the fallback wording claims only that WE couldn't confirm them. */
     var ids = BY_KEY[keyOf(toks)] || [];
+
+    /* A CHALLENGE THAT WAS WON IS A FACT, and it outranks our file. Somebody
+       challenged this name against this category, the server looked it up live
+       and the record books said yes. Every later card takes it as an answer
+       rather than asking our file, which was the thing that got it wrong. Set
+       only under the 'challenge' flag (setRulings), so nothing here moves for
+       anybody else. */
+    var ruled = rulingFor(toks, D.cats[cat.i]);
+    if (ruled) {
+      if (usedPlayers) {
+        for (var w = 0; w < ids.length; w++) {
+          if (usedPlayers[ids[w]]) return { ok: false, reason: 'dup', msg: 'Already used this player.' };
+        }
+      }
+      return creditOf(puz, ids, text);
+    }
+
     if (!ids.length) {
       return { ok: false, reason: 'unknown', live: true, msg: 'Couldn’t verify that one.' };
     }
@@ -624,6 +641,37 @@
       ok: true, player: { idx: hit.idx, name: hit.name, sport: hit.sport, f: hit.f },
       base: allit, allit: allit, rarity: rar, points: allit + rar.bonus
     };
+  }
+
+  /* ---------- challenges ----------
+   * A ruling is { a: nameKey, c: category label }. Keyed on the NAME, not on a
+   * record, the way check() already is: a name that is several people counts
+   * if any of them fits, so a ruling on "josh|allen" against a Bills category
+   * holds for whoever typed it. Keyed on the LABEL, not the index, because an
+   * index moves when the library is rebuilt and a label means the same thing. */
+  var RULED = Object.create(null);
+  function nameKey(text) { return keyOf(tokens(text)); }
+  function setRulings(list) {
+    RULED = Object.create(null);
+    (list || []).forEach(function (r) { if (r && r.a && r.c) RULED[r.a + '#' + r.c] = 1; });
+    return Object.keys(RULED).length;
+  }
+  function rulingFor(toks, def) { var k = keyOf(toks); return !!(k && def && RULED[k + '#' + def.l]); }
+  /* What a won challenge scores: the letter points, plus the rarity of the man
+     if our file knows him, or the outside-the-file rate livecheck.js uses. */
+  function creditOf(puz, ids, text) {
+    var allit = letterHits(puz, text), hit = ids.length ? P[ids[0]] : null;
+    var rar = hit ? rarityOf(hit) : { pct: 2, bonus: 2, tier: 'Rare', est: true };
+    return {
+      ok: true, ruled: true,
+      player: hit ? { idx: hit.idx, name: hit.name, sport: hit.sport, f: hit.f }
+                  : { idx: -1, name: String(text || '').trim(), sport: null, f: 0 },
+      base: allit, allit: allit, rarity: rar, points: allit + rar.bonus
+    };
+  }
+  function credit(puz, catIndex, text) {
+    if (!data()) return null;
+    return creditOf(puz, BY_KEY[nameKey(text)] || [], text);
   }
 
   /* How many words of a typed name lead with the puzzle's letter. Exposed so
@@ -681,6 +729,7 @@
     daily: daily, practice: practice, build: build, wheelLetters: wheelLetters,
     check: check, suggest: suggest, answersFor: answersFor, score: scoreOf,
     letterHits: letterHits,
+    nameKey: nameKey, setRulings: setRulings, credit: credit,
     test: test, evalTri: evalTri, rarityOf: rarityOf, CATS_PER: CATS_PER, STAT_SURE: STAT_SURE, sureCat: sureCat, players: function () { return P; }
   };
 });

@@ -49,8 +49,8 @@
       "sha": "1b448144ed18e5b8"
     },
     "/arcade/flags.js": {
-      "v": "6",
-      "sha": "3254a2a3ffbf4e7b"
+      "v": "7",
+      "sha": "56ebdf62c82b4f06"
     },
     "/arcade/fame.js": {
       "v": "2",
@@ -117,8 +117,8 @@
       "sha": "d28844bc9b057049"
     },
     "/arcade/board.js": {
-      "v": "24",
-      "sha": "462513f83beba07e"
+      "v": "25",
+      "sha": "2d28f368fcaa0004"
     },
     "/arcade/leaderboard.js": {
       "v": "16",
@@ -215,8 +215,8 @@
       "sha": "0531494fc5183283"
     },
     "/arcade/board.js": {
-      "v": "24",
-      "sha": "462513f83beba07e"
+      "v": "25",
+      "sha": "2d28f368fcaa0004"
     },
     "/arcade/auth.js": {
       "v": "4",
@@ -301,8 +301,8 @@
       "sha": "1b448144ed18e5b8"
     },
     "/arcade/flags.js": {
-      "v": "6",
-      "sha": "3254a2a3ffbf4e7b"
+      "v": "7",
+      "sha": "56ebdf62c82b4f06"
     },
     "/arcade/fame.js": {
       "v": "2",
@@ -365,8 +365,8 @@
       "sha": "0531494fc5183283"
     },
     "/arcade/board.js": {
-      "v": "24",
-      "sha": "462513f83beba07e"
+      "v": "25",
+      "sha": "2d28f368fcaa0004"
     },
     "/arcade/leaderboard.js": {
       "v": "16",
@@ -475,8 +475,8 @@
       "sha": "d633f99672c5715c"
     },
     "/arcade/board.js": {
-      "v": "24",
-      "sha": "462513f83beba07e"
+      "v": "25",
+      "sha": "2d28f368fcaa0004"
     },
     "/arcade/leaderboard.js": {
       "v": "16",
@@ -621,8 +621,8 @@
       "sha": "1b448144ed18e5b8"
     },
     "/arcade/flags.js": {
-      "v": "6",
-      "sha": "3254a2a3ffbf4e7b"
+      "v": "7",
+      "sha": "56ebdf62c82b4f06"
     },
     "/arcade/fame.js": {
       "v": "2",
@@ -689,8 +689,8 @@
       "sha": "0531494fc5183283"
     },
     "/arcade/board.js": {
-      "v": "24",
-      "sha": "462513f83beba07e"
+      "v": "25",
+      "sha": "2d28f368fcaa0004"
     },
     "/arcade/leaderboard.js": {
       "v": "16",
@@ -803,8 +803,8 @@
       "sha": "1b448144ed18e5b8"
     },
     "/arcade/flags.js": {
-      "v": "6",
-      "sha": "3254a2a3ffbf4e7b"
+      "v": "7",
+      "sha": "56ebdf62c82b4f06"
     },
     "/arcade/rosters.js": {
       "v": "5",
@@ -867,8 +867,8 @@
       "sha": "0531494fc5183283"
     },
     "/arcade/board.js": {
-      "v": "24",
-      "sha": "462513f83beba07e"
+      "v": "25",
+      "sha": "2d28f368fcaa0004"
     },
     "/arcade/leaderboard.js": {
       "v": "16",
@@ -973,8 +973,8 @@
       "sha": "1b448144ed18e5b8"
     },
     "/arcade/flags.js": {
-      "v": "6",
-      "sha": "3254a2a3ffbf4e7b"
+      "v": "7",
+      "sha": "56ebdf62c82b4f06"
     },
     "/arcade/fame.js": {
       "v": "2",
@@ -1005,8 +1005,8 @@
       "sha": "d568e3a1575f8fb5"
     },
     "/arcade/board.js": {
-      "v": "24",
-      "sha": "462513f83beba07e"
+      "v": "25",
+      "sha": "2d28f368fcaa0004"
     },
     "/arcade/leaderboard.js": {
       "v": "16",
@@ -1115,8 +1115,8 @@
       "sha": "d568e3a1575f8fb5"
     },
     "/arcade/board.js": {
-      "v": "24",
-      "sha": "462513f83beba07e"
+      "v": "25",
+      "sha": "2d28f368fcaa0004"
     },
     "/arcade/auth.js": {
       "v": "4",
@@ -1153,8 +1153,8 @@
   },
   "arcade/join/index.html": {
     "/arcade/board.js": {
-      "v": "24",
-      "sha": "462513f83beba07e"
+      "v": "25",
+      "sha": "2d28f368fcaa0004"
     },
     "/arcade/icons.js": {
       "v": "3",
@@ -1295,8 +1295,8 @@
       "sha": "0531494fc5183283"
     },
     "/arcade/board.js": {
-      "v": "24",
-      "sha": "462513f83beba07e"
+      "v": "25",
+      "sha": "2d28f368fcaa0004"
     },
     "/arcade/leaderboard.js": {
       "v": "16",
@@ -1405,8 +1405,8 @@
       "sha": "1b448144ed18e5b8"
     },
     "/arcade/flags.js": {
-      "v": "6",
-      "sha": "3254a2a3ffbf4e7b"
+      "v": "7",
+      "sha": "56ebdf62c82b4f06"
     },
     "/arcade/fame.js": {
       "v": "2",
@@ -1461,8 +1461,8 @@
       "sha": "0531494fc5183283"
     },
     "/arcade/board.js": {
-      "v": "24",
-      "sha": "462513f83beba07e"
+      "v": "25",
+      "sha": "2d28f368fcaa0004"
     },
     "/arcade/leaderboard.js": {
       "v": "16",
@@ -1635,8 +1635,8 @@
       "sha": "0531494fc5183283"
     },
     "/arcade/board.js": {
-      "v": "24",
-      "sha": "462513f83beba07e"
+      "v": "25",
+      "sha": "2d28f368fcaa0004"
     },
     "/arcade/leaderboard.js": {
       "v": "16",
@@ -1713,8 +1713,8 @@
       "sha": "e5a73154c06c0e0a"
     },
     "/arcade/flags.js": {
-      "v": "6",
-      "sha": "3254a2a3ffbf4e7b"
+      "v": "7",
+      "sha": "56ebdf62c82b4f06"
     },
     "/arcade/icons.js": {
       "v": "3",
@@ -1741,8 +1741,8 @@
       "sha": "d633f99672c5715c"
     },
     "/arcade/board.js": {
-      "v": "24",
-      "sha": "462513f83beba07e"
+      "v": "25",
+      "sha": "2d28f368fcaa0004"
     },
     "/arcade/leaderboard.js": {
       "v": "16",
@@ -1871,8 +1871,8 @@
       "sha": "d633f99672c5715c"
     },
     "/arcade/board.js": {
-      "v": "24",
-      "sha": "462513f83beba07e"
+      "v": "25",
+      "sha": "2d28f368fcaa0004"
     },
     "/arcade/leaderboard.js": {
       "v": "16",
@@ -1935,8 +1935,8 @@
       "sha": "c51a588b3f3d2559"
     },
     "/arcade/flags.js": {
-      "v": "6",
-      "sha": "3254a2a3ffbf4e7b"
+      "v": "7",
+      "sha": "56ebdf62c82b4f06"
     },
     "/arcade/sportegories-data.js": {
       "v": "51",
@@ -1947,8 +1947,8 @@
       "sha": "3c801e8a64f49dc8"
     },
     "/arcade/sportegories.js": {
-      "v": "20",
-      "sha": "13fe766c94bf0bcd"
+      "v": "21",
+      "sha": "7dd362685a1436c5"
     },
     "/arcade/livecheck.js": {
       "v": "11",
@@ -2009,8 +2009,8 @@
       "sha": "1b448144ed18e5b8"
     },
     "/arcade/flags.js": {
-      "v": "6",
-      "sha": "3254a2a3ffbf4e7b"
+      "v": "7",
+      "sha": "56ebdf62c82b4f06"
     },
     "/arcade/rosters.js": {
       "v": "5",
@@ -2077,8 +2077,8 @@
       "sha": "0531494fc5183283"
     },
     "/arcade/board.js": {
-      "v": "24",
-      "sha": "462513f83beba07e"
+      "v": "25",
+      "sha": "2d28f368fcaa0004"
     },
     "/arcade/leaderboard.js": {
       "v": "16",
