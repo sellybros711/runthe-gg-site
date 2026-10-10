@@ -181,7 +181,7 @@ function makeView(env) {
   return {
     resize(w, h) { W = w; H = h; K = Math.min((W - 16) / 100, (H - 12) / TABLE_H); OX = (W - 100 * K) / 2 - K; OY = 6; },
     snap: s => ({ x: s.b.x, y: s.b.y, ball: s.ball, ramp: s.b.ramp, a: s.flippers.map(f => f.ang) }),
-    onStart(s) { st = s; charge = -1; touches.clear(); flash = []; tiltShown = false; rings = []; dmd = []; trail = []; say('BALL 1 · PLUNGE', 2400); env.host.set('idle'); env.hint(S.waiting(s) ? 'Hold to pull the plunger, then let go' : ''); },
+    onStart(s) { st = s; charge = -1; touches.clear(); flash = []; tiltShown = false; rings = []; dmd = []; trail = []; say('BALL 1 · PLUNGE', 2400); env.host.set('idle'); env.hint(''); },
     onInput(inp) { if (inp.k === 'P') { env.sound.play('launch'); env.hint(''); } else if (inp.k[1] === '1') env.haptics.buzz(8); },
     onPause() { charge = -1; touches.clear(); keysDown.clear(); },
     onEvent(e, s) {
@@ -197,7 +197,7 @@ function makeView(env) {
         if (e.hot) { env.pop(s.day.bumpers[e.i] + ' x5', '#E0533D'); say(s.day.bumpers[e.i].toUpperCase() + ' X5'); }
       }
       else if (e.type === 'sling') { flash.push({ what: e.side, until: now + 5 }); env.sound.play('rail', { pitch: 1.4 }); env.fx.shake(2, 90); }
-      else if (e.type === 'flip') env.sound.play('flip');
+      else if (e.type === 'flip') { env.sound.play('flip'); env.haptics.buzz(6); }
       else if (e.type === 'plunge') { env.sound.play('whoosh'); say('GO GO GO', 900); }
       else if (e.type === 'lane') {
         env.sound.play('ding', { pitch: [1, 1.12, 1.26][e.i] || 1 }); say(['FIRST BASE', 'SECOND BASE', 'THIRD BASE'][e.i] || 'ON BASE');
@@ -213,16 +213,20 @@ function makeView(env) {
       else if (e.type === 'targetsUp') say('ARMS RESET');
       else if (e.type === 'nudge') { env.haptics.buzz(30); env.fx.shake(7, 220); env.sound.play('thud'); say('NUDGE · ' + e.left + ' LEFT', 1000); if (e.left === 0) env.host.say('Careful...'); }
       else if (e.type === 'tilt') { env.pop('TILT', '#E0533D'); env.sound.play('buzzer'); env.host.set('disappointed'); env.haptics.buzz([60, 30, 60]); env.fx.shake(12, 600); env.fx.flash('#E0533D', 500, 0.4); env.host.say('Tilt!'); }
-      else if (e.type === 'saved') { env.pop('Ball save', '#22B07D'); env.sound.play('ding'); say('BALL SAVED', 1800); env.hint('Hold to pull the plunger, then let go'); }
+      else if (e.type === 'saved') { env.pop('Ball save', '#22B07D'); env.sound.play('ding'); say('BALL SAVED', 1800); env.hint(''); }
       else if (e.type === 'search') env.hint('');
       else if (e.type === 'drain') {
         env.sound.play('drain'); env.fx.shake(4, 260); env.host.set(e.score > 5000 ? 'idle' : 'disappointed');
         say(s.over ? 'GAME OVER' : 'BALL ' + (s.ball + 1) + ' · PLUNGE', 2600);
         env.host.say(e.score > 15000 ? 'Great ball!' : s.ball === C.BALLS - 1 ? 'Last ball!' : 'Drained.');
-        if (!s.over) env.hint('Hold to pull the plunger, then let go');
+        if (!s.over) env.hint('');
       }
     },
     onOver() { charge = -1; },
+    coach(s) {
+      if (!S.waiting(s) || charge >= 0) return null;
+      return { x0: X(C.LANE_X), y0: Y(176), hold: true };
+    },
     hud(s) {
       return '<div class="stat"><b>' + S.scoreText(s.score) + '</b><span>Score</span></div>' +
         '<div class="stat"><b>' + Math.min(C.BALLS, s.ball + 1) + '/' + C.BALLS + '</b><span>Ball</span></div>' +
@@ -234,6 +238,12 @@ function makeView(env) {
       // a flipper still up after a pause or a lost pointer comes down
       if (env.playing()) st.flippers.forEach(f => { if (f.held && !holding(f.side)) press(f.side, false); });
       table(st);
+      // the side you are holding glows, so the button is under your thumb
+      for (const side of ['L', 'R']) if (holding(side) && !env.RM) {
+        const g = cx.createRadialGradient(side === 'L' ? X(20) : X(78), Y(178), 2, side === 'L' ? X(20) : X(78), Y(178), 40 * K);
+        g.addColorStop(0, 'rgba(255,79,163,.35)'); g.addColorStop(1, 'rgba(255,79,163,0)');
+        cx.fillStyle = g; cx.fillRect(0, Y(140), W, H - Y(140));
+      }
       st.flippers.forEach((f, i) => flipper(f, prev ? prev.a[i] + (f.ang - prev.a[i]) * alpha : f.ang));
       // the plunger, pulled back while it charges
       const pull = chargePower();
@@ -252,7 +262,7 @@ function makeView(env) {
 }
 
 bootGame({
-  id: 'pinball', name: 'Pinball', version: 'pin-1', sim: S, unit: 'points',
+  id: 'pinball', name: 'Pinball', version: 'pin-1', sim: S, unit: 'points', ambient: 'arcade',
   rule: 'Three balls. Light the bases, hit the ramp.',
   howto: 'Tap the left or right half of the table to flip. Hold to pull the plunger, then let go. Light 1B, 2B and 3B, then hit the ramp for a Home Run. Knock down all three arms to raise the multiplier. Nudge twice a ball; the third is a tilt. Keyboard: Z and / (or the arrows) flip, Space plunges, N nudges.',
   resultExtra: d => d && d.hot ? '<p class="mut">Hot Athlete today: ' + d.hot + '. Top multiplier: x' + d.mult + '.</p>' : '',

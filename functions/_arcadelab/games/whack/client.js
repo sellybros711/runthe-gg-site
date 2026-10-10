@@ -13,6 +13,9 @@ function makeView(env) {
   let W = 1, H = 1, st = null, grid = null, banner = '', bannerAt = -999, fx = [], mallets = [], stamps = [];
   const now = () => performance.now(), T0 = now();
   /* The mallet comes down on every tap, hit or not: the booth answers the hand. */
+  let hover = null;
+  cv.addEventListener('pointermove', e => { const rc = cv.getBoundingClientRect(); hover = { x: e.clientX - rc.left, y: e.clientY - rc.top }; });
+  cv.addEventListener('pointerleave', () => { if (!matchMedia('(pointer: coarse)').matches) hover = null; });
   const swing = h => { if (h >= 0) { mallets.push({ hole: h, at: now() }); if (mallets.length > 6) mallets.shift(); env.sound.play('thud'); } };
 
   function layout() {
@@ -34,6 +37,7 @@ function makeView(env) {
     if (!env.playing()) return;
     e.preventDefault();
     const rc = cv.getBoundingClientRect(), h = holeAt(e.clientX - rc.left, e.clientY - rc.top);
+    hover = { x: e.clientX - rc.left, y: e.clientY - rc.top };
     if (h >= 0) { swing(h); env.input({ h }); }
   });
   /* Keyboard: the number pad, or Q W E / A S D / Z X C. */
@@ -127,6 +131,16 @@ function makeView(env) {
       cx.restore();
     }
   }
+  /* The mallet is in your hand between swings, cocked over where you point. */
+  function heldMallet() {
+    if (!hover || mallets.length || env.RM) return;
+    const bob = Math.sin(now() / 260) * 0.05;
+    cx.save(); cx.globalAlpha = 0.9; cx.translate(hover.x + grid.cw * 0.28, hover.y - grid.ch * 0.1); cx.rotate(-0.75 + bob);
+    cx.fillStyle = '#8a4b22'; cx.fillRect(-4, 0, 8, grid.ch * 0.55);
+    cx.fillStyle = '#E0533D'; cx.strokeStyle = '#141414'; cx.lineWidth = 2;
+    cx.beginPath(); cx.roundRect(-grid.cw * 0.22, -16, grid.cw * 0.44, 22, 6); cx.fill(); cx.stroke();
+    cx.restore();
+  }
   const center = h => { const { x, y } = cell(h); return [x + grid.cw / 2, y + grid.ch / 2]; };
 
   return {
@@ -141,7 +155,7 @@ function makeView(env) {
         const [X, Y] = center(e.hole);
         fx.push({ hole: e.hole, txt: '+' + e.pts, col: '#5ff0b5', at: s.frame });
         env.sound.play('whack', { pitch: 1.2 }); env.sound.play('combo', { pitch: 1 + Math.min(1, e.combo * 0.07) });
-        env.haptics.buzz(10); env.fx.shake(3, 110);
+        env.haptics.buzz(10); env.fx.shake(3, 110); env.sound.swell(1.2);
         env.fx.burst(X, Y, { n: 12 + Math.min(20, e.combo * 2), colors: ['#ffd23f', '#fff', '#5ff0b5'], speed: 230, gravity: 300, shape: e.combo >= 6 ? 'spark' : 'dot' });
         env.fx.ring(X, Y, '#ffd23f', 40);
         if (e.combo > 1 && e.combo % C.COMBO_STEP === 0) { env.pop('COMBO x' + e.mult, '#22B07D'); env.fx.flash('#22B07D', 160, 0.18); }
@@ -184,6 +198,7 @@ function makeView(env) {
       }
       for (const c of st.live) card(c, f);
       malletsAndStamps();
+      heldMallet();
       if (st.combo >= C.COMBO_STEP) {
         const y = grid.gy + grid.ch * ROWS + 22, txt = 'COMBO x' + S.mult(st.combo) + '  ·  ' + st.combo + ' in a row';
         cx.font = '800 20px Outfit, sans-serif';
@@ -236,7 +251,7 @@ function report(d, ui) {
 }
 
 bootGame({
-  id: 'whack', name: 'Whack the Right Player', version: 'whack-1', sim: S, unit: 'points', needsConfig: true, practiceAfterDaily: true,
+  id: 'whack', name: 'Whack the Right Player', version: 'whack-1', sim: S, unit: 'points', ambient: 'carnival', needsConfig: true, practiceAfterDaily: true,
   practiceCfg: today => today && today.practice,
   rule: 'Hit every player who fits. Leave the rest alone.',
   howto: 'Three rounds of 20 seconds, each with its own prompt. Tap a card that fits. Hitting one that does not is a strike, and three strikes end the run. Hits in a row build a combo. Keyboard: Q W E, A S D, Z X C.',

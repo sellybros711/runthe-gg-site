@@ -10,7 +10,7 @@ function makeView(env) {
   const cv = env.canvas, cx = env.ctx;
   let W = 1, H = 1, st = null, flick = null, trail = [];
   const keys = { left: false, right: false, charging: false, chargeT: 0, aim: 0 };
-  let lastR = 0, postT = -9999, postCol = '#ffd23f', ftrail = [], lastKick = -1;
+  let kickT = -9999, lastR = 0, postT = -9999, postCol = '#ffd23f', ftrail = [], lastKick = -1;
   const now = () => performance.now();
   /* A camera eight yards behind the tee, two yards up. */
   const CAM_BACK = 8, CAM_H = 2.2;
@@ -77,6 +77,32 @@ function makeView(env) {
     cx.save(); cx.translate(PX(x, y), PY(y, z)); cx.rotate(spin && !env.RM ? now() / 70 : -0.4);
     cx.fillStyle = '#8a4b22'; cx.beginPath(); cx.ellipse(0, 0, r * 1.25, r * 0.8, 0, 0, Math.PI * 2); cx.fill();
     cx.strokeStyle = '#fff'; cx.lineWidth = Math.max(1, r * 0.12); cx.beginPath(); cx.moveTo(-r * 0.4, 0); cx.lineTo(r * 0.4, 0); cx.stroke();
+    cx.restore();
+  }
+
+  /* The hold: a holder kneeling, a finger on the tip of the ball. */
+  function holder() {
+    const x = PX(0, 0), y = PY(0, 0), r = Math.max(2.5, 0.35 * F / CAM_BACK) * 0.95;
+    // kneeling to the left of the ball, back to the posts, an arm reaching to the tip
+    cx.fillStyle = '#1f4e79'; cx.beginPath(); cx.ellipse(x - r * 3.4, y - r * 1.3, r * 1.4, r * 2, -0.15, 0, Math.PI * 2); cx.fill();
+    cx.fillStyle = '#f4f4f4'; cx.font = '800 ' + Math.round(r * 1.3) + 'px Outfit, sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillText('4', x - r * 3.4, y - r * 1.4);
+    cx.fillStyle = '#d9a51c'; cx.beginPath(); cx.arc(x - r * 3.6, y - r * 3.7, r, 0, Math.PI * 2); cx.fill();
+    cx.strokeStyle = '#1f4e79'; cx.lineWidth = r * 0.6; cx.lineCap = 'round'; cx.beginPath(); cx.moveTo(x - r * 2.4, y - r * 2.2); cx.lineTo(x - r * 0.2, y - r * 2.4); cx.stroke();
+  }
+  function fingerOnBall() {
+    const x = PX(0, 0), y = PY(0, 0.1), r = Math.max(2.5, 0.35 * F / CAM_BACK) * 1.2;
+    cx.fillStyle = '#c98b5a'; cx.strokeStyle = '#3a1d06'; cx.lineWidth = 1.5;
+    cx.beginPath(); cx.roundRect(x - r * 0.25, y - r * 1.9, r * 0.5, r * 1.3, r * 0.25); cx.fill(); cx.stroke();
+  }
+  /* Your leg: a cleat that swings through the ball on the kick. */
+  function foot() {
+    const age = (now() - kickT) / 1000; if (age > 0.35 || env.RM) return;
+    const x = PX(0, 0), y = PY(0, 0), r = Math.max(2.5, 0.35 * F / CAM_BACK) * 1.2;
+    const u = Math.min(1, age / 0.14), a = -1.1 + u * 1.5, fade = age > 0.2 ? 1 - (age - 0.2) / 0.15 : 1;
+    cx.save(); cx.globalAlpha = fade; cx.translate(x - r * 1.5, H + r * 2); cx.rotate(a);
+    cx.fillStyle = '#e6e6e6'; cx.fillRect(-r * 0.9, -H * 0.42, r * 1.8, H * 0.42 - r);
+    cx.fillStyle = '#E0533D'; cx.fillRect(-r * 0.9, -H * 0.2, r * 1.8, r * 1.2);
+    cx.fillStyle = '#141414'; cx.beginPath(); cx.roundRect(-r * 1.2, -H * 0.44 - r * 1.2, r * 3.4, r * 1.8, r * 0.8); cx.fill();
     cx.restore();
   }
 
@@ -153,12 +179,12 @@ function makeView(env) {
   return {
     resize(w, h) { W = w; H = h; HOR = H * 0.34; F = Math.min(W, H * 0.62) * 1.25; },
     snap: () => null,
-    onStart(s) { st = s; trail = []; ftrail = []; postT = -9999; env.hint(s.kick === 0 && s.phase === 'ready' ? 'Flick up from the ball' : ''); env.host.set('idle'); },
+    onStart(s) { st = s; trail = []; ftrail = []; postT = -9999; env.hint(''); env.host.set('idle'); },
     onInput() { env.sound.play('launch'); env.haptics.buzz(15); env.hint(''); trail = []; },
     onPause() { flick = null; keys.charging = false; },
     onEvent(e) {
       const k = kickNow(), D = k ? k.yards : 40;
-      if (e.type === 'kick') { env.sound.play('thud'); env.sound.play('whoosh'); env.fx.shake(2, 120); }
+      if (e.type === 'kick') { kickT = now(); env.sound.play('thud'); env.sound.play('whoosh'); env.fx.shake(2, 120); }
       else if (e.type === 'result') {
         const good = e.call === 'GOOD' || e.call === 'DOINK';
         env.pop(e.call === 'DOINK' ? 'DOINK... GOOD!' : good ? "IT'S GOOD!" + (e.pts ? '  +' + e.pts : '') : e.call, CALL_COL[e.call]);
@@ -166,7 +192,7 @@ function makeView(env) {
         const tx = PX(0, D), ty = PY(D, C.BAR + 6);
         if (e.call === 'DOINK') { env.sound.play('doink'); env.fx.shake(9, 450); env.fx.flash('#ffffff', 180, 0.4); env.host.say('Off the iron!'); }
         if (good) {
-          env.sound.play(e.call === 'DOINK' ? 'big' : 'good'); env.sound.play('cheer'); env.host.set('celebrate'); env.haptics.buzz(30);
+          env.sound.play(e.call === 'DOINK' ? 'big' : 'good'); env.sound.play('cheer'); env.sound.swell(2.5); env.host.set('celebrate'); env.haptics.buzz(30);
           env.fx.burst(tx, ty, { n: 34, speed: 260, colors: ['#ffd23f', '#fff', '#E0533D', '#22B07D'] });
           if (!env.RM) setTimeout(() => env.fx.burst(tx - W * 0.2, ty - 20, { n: 22, speed: 200 }), 220);
           if (!env.RM) setTimeout(() => env.fx.burst(tx + W * 0.2, ty - 30, { n: 22, speed: 200 }), 420);
@@ -180,6 +206,11 @@ function makeView(env) {
       }
     },
     onOver(s) { env.host.set(s.score >= s.day.max * 0.7 ? 'celebrate' : 'idle'); },
+    coach(s) {
+      if (s.phase !== 'ready' || flick) return null;
+      const x = PX(0, 0), y = PY(0, 0) + 30;
+      return { x0: x, y0: Math.min(H - 20, y), x1: x + 8, y1: y - H * 0.4 };
+    },
     hud(s) {
       const k = kickNow();
       return '<div class="stat"><b>' + s.score + '</b><span>Points</span></div>' +
@@ -209,12 +240,15 @@ function makeView(env) {
         }
         ballAt(pos.x, pos.y, pos.z, 1, st.phase === 'flight');
       } else {
+        holder();
         ballAt(0, 0, 0.1, 1.2);
+        fingerOnBall();
         if (st.phase === 'ready') {
           cx.fillStyle = '#ffe066'; cx.font = '800 15px Graduate, Outfit, sans-serif'; cx.textAlign = 'center';
           cx.fillText(k.yards + ' YARDS', W / 2, PY(0, 0) + 34);
         }
       }
+      foot();
       if (ready() && (keys.charging || keys.left || keys.right)) {
         cx.strokeStyle = 'rgba(255,255,255,.7)'; cx.setLineDash([4, 6]); cx.lineWidth = 2;
         cx.beginPath(); cx.moveTo(PX(0, 0), PY(0, 0)); cx.lineTo(PX(k.yards * Math.tan(keys.aim), k.yards), PY(k.yards, 0)); cx.stroke(); cx.setLineDash([]);
@@ -232,7 +266,7 @@ function makeView(env) {
 }
 
 bootGame({
-  id: 'field-goal-flick', name: 'Field Goal Flick', version: 'fgf-1', sim: S, unit: 'points',
+  id: 'field-goal-flick', name: 'Field Goal Flick', version: 'fgf-1', sim: S, unit: 'points', ambient: 'crowd',
   rule: 'Five kicks. Read the wind. Flick it through.',
   howto: 'Flick up from the ball. The angle of the flick aims it, the speed of the flick is the power. Read the wind flag first. Keyboard: arrows aim, hold Space to charge.',
   resultExtra: d => '<p class="mut">Best possible today: ' + d.max + '</p>',

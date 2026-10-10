@@ -16,12 +16,12 @@
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;color:var(--ink);font-family:'DM Sans',system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
 html{background:#0b0814}
-body{overscroll-behavior:none;background:
+body{overscroll-behavior:none;background:var(--world,
   radial-gradient(circle at 22% 28%,rgba(255,79,163,.22) 0 2.5px,transparent 3.5px) 0 0/44px 44px,
   radial-gradient(circle at 72% 64%,rgba(80,230,255,.2) 0 2px,transparent 3px) 0 0/36px 36px,
   radial-gradient(circle at 50% 50%,rgba(255,210,63,.14) 0 1.5px,transparent 2.5px) 11px 7px/52px 52px,
   linear-gradient(135deg,transparent 46%,rgba(140,90,255,.09) 47% 53%,transparent 54%) 0 0/64px 64px,
-  radial-gradient(120% 80% at 50% 0%,#1d1435 0%,#0b0814 70%)}
+  radial-gradient(120% 80% at 50% 0%,#1d1435 0%,#0b0814 70%))}
 h1,h2,.big{font-family:'Outfit','DM Sans',sans-serif}
 button{font:inherit;color:inherit;cursor:pointer}
 .app{position:fixed;inset:0;display:flex;flex-direction:column;max-width:560px;margin:0 auto}
@@ -73,11 +73,13 @@ button{font:inherit;color:inherit;cursor:pointer}
 .say::after{content:"";position:absolute;right:-6px;top:50%;margin-top:-6px;border:6px solid transparent;border-left-color:#fff;border-right:0}
 .say.on{animation:say 1.6s ease-out forwards}
 @keyframes say{10%{opacity:1;transform:translateY(-50%) scale(1.05)}18%{transform:translateY(-50%) scale(1)}85%{opacity:1}100%{opacity:0;transform:translateY(-50%) scale(1)}}
-/* The stage sits behind a lit bezel. */
-.stage{position:relative;flex:1;min-height:0;margin:0 8px max(8px,env(safe-area-inset-bottom));border-radius:16px;overflow:hidden;background:#07050d;
-  box-shadow:0 0 0 2px var(--bezel),0 0 0 4px rgba(0,0,0,.6),0 0 24px -4px var(--accent),inset 0 0 0 1px rgba(255,255,255,.06)}
+/* The stage is the world, edge to edge: no frame between you and the game.
+   The page behind the marquee and the counters is the same place (--world,
+   per game in THEMES), so the game does not sit in a box on a web page. */
+.stage{position:relative;flex:1;min-height:0;overflow:hidden;background:#07050d;padding-bottom:env(safe-area-inset-bottom)}
 .stage::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;
-  background:repeating-linear-gradient(0deg,rgba(0,0,0,.07) 0 1px,transparent 1px 3px),radial-gradient(130% 100% at 50% 50%,transparent 62%,rgba(0,0,0,.42) 100%)}
+  background:linear-gradient(180deg,rgba(0,0,0,.28),transparent 9%),radial-gradient(140% 100% at 50% 55%,transparent 66%,rgba(0,0,0,.38) 100%)}
+@media (min-width:600px){.stage{margin:0 8px 8px;border-radius:16px;box-shadow:0 0 30px -6px var(--accent)}}
 canvas#c{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block;outline:none}
 .pop{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) scale(.6);font-family:var(--disp),'Outfit',sans-serif;font-weight:800;font-size:32px;opacity:0;pointer-events:none;letter-spacing:.04em;white-space:nowrap;color:#fff;padding:6px 18px;border-radius:14px;border:2px solid rgba(255,255,255,.75);text-shadow:0 2px 0 rgba(0,0,0,.35);box-shadow:0 6px 18px rgba(0,0,0,.35),0 0 24px -2px currentColor;z-index:3}
 .pop.on{animation:pop 1.05s cubic-bezier(.2,1.4,.4,1)}
@@ -90,7 +92,7 @@ canvas#c{position:absolute;inset:0;width:100%;height:100%;touch-action:none;disp
 .cd3.on{display:grid}
 .cd3 b{animation:cdn .55s ease-out}
 @keyframes cdn{0%{transform:scale(2.2);opacity:0}30%{transform:scale(1);opacity:1}100%{transform:scale(.85);opacity:.9}}
-.sheet{position:absolute;inset:0;display:none;align-items:flex-end;justify-content:center;background:rgba(8,6,16,.62);backdrop-filter:blur(3px);z-index:5}
+.sheet{position:absolute;inset:0;display:none;align-items:flex-end;justify-content:center;background:linear-gradient(180deg,transparent 30%,rgba(8,6,16,.55));z-index:5}
 .sheet.on{display:flex}
 .card{background:linear-gradient(180deg,#221b3c,#15112a);border:1px solid var(--edge);border-top:3px solid var(--led);border-radius:20px 20px 0 0;width:100%;padding:20px 18px;padding-bottom:max(20px,env(safe-area-inset-bottom));box-shadow:0 -10px 30px rgba(0,0,0,.45),0 -2px 22px -8px var(--led);max-height:92%;overflow:auto;animation:rise .3s ease-out}
 @keyframes rise{from{transform:translateY(24px);opacity:.4}}
@@ -101,7 +103,10 @@ canvas#c{position:absolute;inset:0;width:100%;height:100%;touch-action:none;disp
 .press{font-family:'Outfit',sans-serif;font-weight:800;letter-spacing:.24em;font-size:13px;color:#fff;text-align:center;margin:12px 0 0;animation:blink 1s steps(2) infinite}
 .hiline{display:flex;gap:14px;font-weight:700;font-size:13px;letter-spacing:.08em;color:var(--dim);text-transform:uppercase}
 .hiline b{color:#ff8ad0;text-shadow:0 0 8px #ff4fa3;font-family:'Outfit',sans-serif;font-size:15px;letter-spacing:0}
-.rule{font-size:18px;font-weight:700}
+.rule{font-size:19px;font-weight:800;line-height:1.25}
+.how{margin-top:10px;color:var(--dim)}
+.how summary{cursor:pointer;font-weight:700;font-size:13px;min-height:32px;display:flex;align-items:center}
+.how p{margin:2px 0 6px}
 .today{color:var(--dim);font-size:14px}
 .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
 .btn{min-height:48px;padding:0 20px;border-radius:14px;border:0;background:var(--ink);color:#120e20;font-weight:800;font-size:16px;flex:1;letter-spacing:.02em;transition:transform .08s}

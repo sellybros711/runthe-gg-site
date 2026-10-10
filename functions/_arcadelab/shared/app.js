@@ -93,6 +93,37 @@ function makeFx(RM) {
 const $ = id => document.getElementById(id);
 export const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+/* THE COACH. A ghost hand that shows the move instead of a paragraph saying
+ * it: it presses, drags and lets go over the real playfield, in the real
+ * place, when the game is waiting on you and you have not moved. A view
+ * hands back { x0, y0, x1, y1 } for a drag, { x0, y0, tap: true } for a
+ * tap and { x0, y0, hold: true } for a press and hold, in screen points. */
+function drawCoach(cx, c, t, RM) {
+  const P = 1700, u = (t % P) / P;
+  let x = c.x0, y = c.y0, down = false, a = 1;
+  if (c.tap) { down = u > 0.2 && u < 0.4; a = u > 0.85 ? (1 - u) / 0.15 : 1; }
+  else if (c.hold) { down = u > 0.15 && u < 0.8; a = u > 0.88 ? (1 - u) / 0.12 : 1; }
+  else {
+    const m = Math.max(0, Math.min(1, (u - 0.18) / 0.45)), e = RM ? (u > 0.5 ? 1 : 0) : 1 - Math.pow(1 - m, 2);
+    x = c.x0 + (c.x1 - c.x0) * e; y = c.y0 + (c.y1 - c.y0) * e;
+    down = u > 0.12 && u < 0.66; a = u < 0.08 ? u / 0.08 : u > 0.82 ? (1 - u) / 0.18 : 1;
+    if (down && !RM) {
+      cx.globalAlpha = 0.35 * a; cx.strokeStyle = '#fff'; cx.lineWidth = 6; cx.lineCap = 'round'; cx.setLineDash([2, 10]);
+      cx.beginPath(); cx.moveTo(c.x0, c.y0); cx.lineTo(x, y); cx.stroke(); cx.setLineDash([]);
+    }
+  }
+  cx.globalAlpha = a;
+  if (down) {
+    const r = c.hold ? 14 + 22 * Math.min(1, (u - 0.15) / 0.65) : 18;
+    cx.strokeStyle = 'rgba(255,255,255,.85)'; cx.lineWidth = 3; cx.beginPath(); cx.arc(x, y, r, 0, Math.PI * 2); cx.stroke();
+  }
+  // the hand: a finger, a palm, a thumb, fingertip at (x, y)
+  cx.save(); cx.translate(x, y + (down ? 2 : 0)); cx.rotate(-0.28);
+  cx.fillStyle = '#fff'; cx.strokeStyle = '#141414'; cx.lineWidth = 2; cx.shadowColor = 'rgba(0,0,0,.45)'; cx.shadowBlur = 10;
+  cx.beginPath(); cx.roundRect(-7, -2, 14, 34, 7); cx.roundRect(-9, 22, 34, 32, 12); cx.roundRect(-20, 28, 16, 12, 6); cx.fill(); cx.shadowBlur = 0; cx.stroke();
+  cx.restore(); cx.globalAlpha = 1;
+}
+
 export function bootGame(def) {
   const { sim } = def;
   const DEBUG = /[?&]debug=1/.test(location.search);
@@ -102,7 +133,7 @@ export function bootGame(def) {
   let today = null, mode = 'daily', cfg = null, seed = 0;
   let S = null, prev = null, log = [], queue = [];
   let running = false, paused = false, finishing = false, startedAt = 0, resumedMs = 0;
-  let fps = 0, W = 0, H = 0, DPR = 1, counting = false, cdTimer = 0, beatShown = false;
+  let fps = 0, W = 0, H = 0, DPR = 1, counting = false, cdTimer = 0, beatShown = false, lastTouch = 0;
   const SAVE_KEY = 'arcade_lab_save_' + def.id, BEST_KEY = 'arcade_lab_best_' + def.id;
   /* A personal best on this device, the HI on the cabinet. */
   const best = () => { const v = +lsGet(BEST_KEY, '0'); return isFinite(v) ? v : 0; };
@@ -152,6 +183,11 @@ export function bootGame(def) {
     if (o.x || o.y) { cx.fillStyle = '#07050d'; cx.fillRect(0, 0, W, H); cx.setTransform(DPR, 0, 0, DPR, o.x * DPR, o.y * DPR); }
     view.render(running ? acc / DT : 1, S, prev);
     fx.draw(cx);
+    // the coach shows the move while the game waits and the hand is still
+    if (view.coach && running && !paused && S && !S.over && !def.noCoach) {
+      const idle = performance.now() - Math.max(lastTouch, startedAt);
+      if ((log.length < 2 && idle > 1400) || idle > 7000) { const c = view.coach(S); if (c) drawCoach(cx, c, performance.now(), RM); }
+    }
   }
   function tick() {
     while (queue.length) {
@@ -191,8 +227,8 @@ export function bootGame(def) {
   function clearSave() { lsSet(SAVE_KEY, 'null'); }
 
   /* ---- pause, and never lose a run to a back swipe ---- */
-  function pause() { if (running && S && !S.over) { paused = true; queue = []; if (view.onPause) view.onPause(); $('pause').classList.add('on'); if (mode === 'daily') save(); } }
-  function resume() { paused = false; last = 0; $('pause').classList.remove('on'); }
+  function pause() { if (running && S && !S.over) { paused = true; queue = []; sound.stopAmbient(); if (view.onPause) view.onPause(); $('pause').classList.add('on'); if (mode === 'daily') save(); } }
+  function resume() { paused = false; last = 0; $('pause').classList.remove('on'); if (def.ambient) sound.ambient(def.ambient); }
   document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
   addEventListener('blur', pause);
   addEventListener('pagehide', () => { if (running && mode === 'daily' && S && !S.over) save(); });
@@ -208,8 +244,8 @@ export function bootGame(def) {
   $('back').addEventListener('click', e => { if (midRun() && !confirm(LEAVE)) e.preventDefault(); });
   $('mute').setAttribute('aria-pressed', String(sound.muted));
   $('mute').addEventListener('click', () => { sound.unlock(); $('mute').setAttribute('aria-pressed', String(sound.toggle())); });
-  addEventListener('pointerdown', () => sound.unlock(), { capture: true });
-  addEventListener('keydown', () => sound.unlock(), { capture: true });
+  addEventListener('pointerdown', () => { sound.unlock(); lastTouch = performance.now(); }, { capture: true });
+  addEventListener('keydown', () => { sound.unlock(); lastTouch = performance.now(); }, { capture: true });
 
   /* ---- screens ---- */
   const sheet = html => { $('card').innerHTML = html; $('sheet').classList.add('on'); };
@@ -221,19 +257,23 @@ export function bootGame(def) {
 
   function intro() {
     host.set('idle');
+    if (def.ambient) sound.ambient(def.ambient);   // waits for the first tap to be heard
     const sv = loadSave();
     const noDay = def.needsConfig && !today.config;
     const b = best();
+    /* The world is the intro: it plays behind a short card that says the one
+       thing to do. The long how-to is folded away for anybody who wants it;
+       the coach shows the move once the game starts. */
     sheet('<div class="marq">' + esc(def.name) + '</div>' +
       '<div class="hiline"><span>Daily <b>#' + today.dayNumber + '</b></span>' + (b > 0 ? '<span>Your best <b>' + esc(sim.scoreText(b, cfg)) + '</b></span>' : '<span>1 credit</span>') + '</div>' +
       '<p class="rule">' + esc(def.rule) + '</p>' +
       (today.config && today.config.rule ? '<p class="today">Today: ' + esc(today.config.rule) + '</p>' : '') +
       (noDay ? '<p class="today">No board is published for today yet. Check back soon.</p>' : '') +
-      '<p class="mut">' + esc(def.howto) + '</p>' +
       '<div class="row">' + (noDay ? '' : sv ? '<button class="btn go" id="bPlay">Resume today\'s run</button>' : '<button class="btn go" id="bPlay">Play today</button>') +
       (canPractice() ? '<button class="btn alt" id="bPrac">Practice</button>' : '') + '</div>' +
       (def.practiceAfterDaily && !canPractice() ? '<p class="mut">Practice opens after today\'s run.</p>' : '') +
       (noDay ? '' : '<p class="press" aria-hidden="true">PRESS START</p>') +
+      '<details class="how"><summary>How to play</summary><p class="mut">' + esc(def.howto) + '</p></details>' +
       '<label class="toggle"><input type="checkbox" id="hap"' + (haptics.on ? ' checked' : '') + '> Vibrate</label>');
     if ($('bPlay')) { $('bPlay').classList.add('pulse'); $('bPlay').onclick = () => { sound.unlock(); sound.play('coin'); start('daily', sv); }; }
     if ($('bPrac')) $('bPrac').onclick = () => { sound.unlock(); sound.play('coin'); start('practice'); };
@@ -260,6 +300,7 @@ export function bootGame(def) {
   function go() {
     running = true; paused = false; acc = 0; last = 0; startedAt = performance.now();
     stage.dataset.phase = S.phase || 'play';
+    if (def.ambient) sound.ambient(def.ambient);
     if (document.hidden) pause();
   }
   function countIn(done) {
@@ -278,6 +319,7 @@ export function bootGame(def) {
 
   async function finish() {
     if (finishing) return; finishing = true; running = false;
+    setTimeout(() => sound.stopAmbient(), 900);
     const durationMs = Math.round(resumedMs + performance.now() - startedAt);
     const d = sim.detail(S);
     const local = { score: S.score, scoreText: sim.scoreText(S.score, cfg), detail: d, squares: sim.squares(d, cfg), gems: 0,

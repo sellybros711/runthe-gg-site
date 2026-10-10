@@ -142,7 +142,7 @@ prompt dealt Ichiro and Clemens as decoys.
 Players can report a card from the result screen ("Something here was wrong");
 reports land in `arcade_reports` and the admin page.
 
-## The cabinet: what makes it feel like an arcade
+## The world: what makes it feel like you are there
 
 Every game shares one presentation layer, and **none of it can reach a
 score.** The server replays the input log against `sim.js`; everything below
@@ -150,7 +150,10 @@ is drawn on the wall clock over whatever the view painted.
 
 | | where | what |
 |---|---|---|
-| the cabinet | `web/shell.html` | dark carpet, a lit bezel round the stage, scanlines, LED counters, chasing bulbs on the marquee. `--led` per game in `THEMES` |
+| the world | `web/shell.html`, `--world` in `THEMES` | the stage runs edge to edge on a phone, and the page behind the marquee and the counters is the same place (a night sky, an arena, a carnival), so the game is not a box on a web page |
+| the room | `sound.ambient(kind)` in `kit.js` | a bed under the game (`crowd`, `carnival`, `studio`, `arcade`), named by `ambient` on each game's `bootGame`. It waits for the first tap, fades on pause, mute and the result, and `swell()` lifts it for a big moment |
+| the coach | `drawCoach` in `app.js`, `view.coach(s)` | a ghost hand that shows the move on the real playfield while the game waits on you, instead of a sentence. The long how-to is folded under the intro |
+| in your hand | each `client.js` | the ball comes back with a Roll-Ball pull, sits in your hands and follows the swipe in Hoop Shoot, the holder and your cleat in Field Goal, the mallet hovers where you point in Whack, the side you hold glows in Pinball |
 | sound | `shared/kit.js` `makeSound` | one bus through a compressor; `play(name, { pitch })`, so a combo climbs |
 | juice | `shared/app.js` `makeFx`, as `env.fx` | `shake`, `flash`, `burst`, `confetti`, `text`, `ring`, all in screen points |
 | the host | `env.host.say(text)` | a callout bubble beside the host |

@@ -11,7 +11,7 @@ const ZONE_COL = { '1B': '#22B07D', '2B': '#d9a51c', '3B': '#e07a2a', HR: '#E053
 function makeView(env) {
   const cv = env.canvas, cx = env.ctx;
   let W = 1, H = 1, DPR = 1, KX = 1, KY = 1, BOTTOM = 0, boardImg = null, st = null;
-  let aim = null, keyAngle = 0, trail = [], hitFx = null, hrRun = 0;
+  let aim = null, keyAngle = 0, trail = [], hitFx = null, hrRun = 0, tickets = [], ticketTotal = 0;
   const T0 = performance.now(), now = () => performance.now();
   const keys = { left: false, right: false, charging: false, chargeT: 0 };
   const FAR = 345;
@@ -99,6 +99,26 @@ function makeView(env) {
     else if (hitFx.zone !== 'F') { const i = { '1B': 0, '2B': 1, '3B': 2 }[hitFx.zone]; quad(cx, circlePts(L.ring.x, L.ring.y, L.ring.r[i])); cx.stroke(); }
     cx.restore();
   }
+  /* THE PAYOUT. Every base is a ticket that feeds out of the slot under the
+     lane and curls onto the floor, the way a real alley pays you. */
+  function payout(n) { const t = now(); for (let i = 0; i < n; i++) tickets.push({ born: t + i * 90, k: tickets.length }); if (tickets.length > 60) tickets.splice(0, tickets.length - 60); }
+  function drawTickets() {
+    const t = now(), sx = 50, sy = H - 30;
+    cx.fillStyle = '#20141a'; cx.strokeStyle = '#d9a51c'; cx.lineWidth = 2;
+    cx.beginPath(); cx.roundRect(sx - 40, sy - 18, 92, 40, 8); cx.fill(); cx.stroke();
+    cx.fillStyle = '#050305'; cx.fillRect(sx - 22, sy - 10, 44, 4);
+    cx.fillStyle = '#ff8ad0'; cx.font = '800 9px Outfit, sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle';
+    cx.fillText('TICKETS', sx + 4, sy + 4);
+    cx.fillStyle = '#ffd23f'; cx.font = '800 13px Outfit, sans-serif'; cx.fillText(String(ticketTotal), sx + 4, sy + 15);
+    for (const k of tickets) {
+      const age = (t - k.born) / 1000; if (age < 0) continue;
+      const fall = env.RM ? 0 : Math.min(1, age / 0.6), x = sx - 14 + (k.k % 5) * 7 - fall * 30 * ((k.k % 3) - 1) * 0.6, y = sy - 8 - (env.RM ? 12 : 26 * Math.sin(Math.min(1, age / 0.25) * Math.PI / 2)) + fall * fall * 24;
+      cx.save(); cx.translate(x, y); cx.rotate(env.RM ? 0 : ((k.k % 7) - 3) * 0.12 * fall);
+      cx.fillStyle = k.k % 2 ? '#ff8ad0' : '#ffb3e0'; cx.fillRect(-6, -9, 12, 18);
+      cx.fillStyle = 'rgba(0,0,0,.25)'; cx.fillRect(-6, -1, 12, 1);
+      cx.restore();
+    }
+  }
   function drawTrail() {
     for (let i = 0; i < trail.length; i++) {
       const p = trail[i], s = sOf(p.y), r = 3.6 * KX * s * (0.35 + 0.65 * i / trail.length);
@@ -171,12 +191,14 @@ function makeView(env) {
     // a drag can start anywhere on the lane, so a thumb has room to pull back
     if (p.y < SY(C.LIP_Y) - 30) return;
     cv.setPointerCapture(e.pointerId);
-    aim = { from: p, a: 0, p: 0 };
+    aim = { from: p, cur: p, a: 0, p: 0 };
     e.preventDefault();
   });
   cv.addEventListener('pointermove', e => {
     if (!aim) return;
     const p = stagePt(e), dx = p.x - aim.from.x, pull = Math.max(0, p.y - aim.from.y);
+    aim.cur = p;
+    if (!env.RM && ((aim.p * 10) | 0) !== ((Math.max(0, Math.min(1, pull / PULL_FULL())) * 10) | 0)) { env.sound.play('tick'); env.haptics.buzz(4); }
     aim.p = Math.max(0, Math.min(1, pull / PULL_FULL()));
     // a slingshot: pull back and to the left to roll right
     aim.a = Math.max(-C.MAX_ANGLE, Math.min(C.MAX_ANGLE, Math.atan2(-dx, Math.max(30, pull)) * 0.9));
@@ -217,7 +239,7 @@ function makeView(env) {
       BOTTOM = H * 0.9; KY = (H * 0.84) / proj(FAR); boardImg = null;
     },
     snap: s => ({ x: s.x, y: s.y, z: s.z, ball: s.ball }),
-    onStart(s) { st = s; boardImg = null; aim = null; keyAngle = 0; trail = []; hitFx = null; hrRun = 0; env.hint(s.ball === 0 && s.phase === 'ready' ? 'Touch the lane, pull back, let go' : ''); env.host.set('idle'); },
+    onStart(s) { st = s; boardImg = null; aim = null; keyAngle = 0; trail = []; hitFx = null; hrRun = 0; tickets = []; ticketTotal = s.score; env.hint(''); env.host.set('idle'); },
     onInput() { env.sound.play('roll'); env.haptics.buzz(12); env.hint(''); env.host.set(st.ball >= 7 ? 'nervous' : 'idle', 'watching'); },
     onPause() { aim = null; keys.charging = false; },
     onEvent(e) {
@@ -232,7 +254,7 @@ function makeView(env) {
         })[0] : null;
         hitFx = { zone: e.zone, t: now(), pocket: pk };
         env.pop(ZONE_NAME[e.zone] + (e.hot ? ' +1' : ''), ZONE_COL[e.zone]);
-        if (e.bases) env.fx.text(X0, Y0 - 20, '+' + e.bases, '#ffe680', 26);
+        if (e.bases) { env.fx.text(X0, Y0 - 20, '+' + e.bases, '#ffe680', 26); payout(e.bases); ticketTotal = st.score; setTimeout(() => { for (let i = 0; i < e.bases; i++) setTimeout(() => env.sound.play('tick'), i * 90); }, 0); }
         if (e.zone === 'HR') {
           hrRun++;
           env.sound.play('big'); env.sound.play('cheer'); env.haptics.buzz([30, 40, 60]); env.host.set('hype', 'homer');
@@ -252,6 +274,11 @@ function makeView(env) {
       }
     },
     onOver(s) { env.host.set(s.score >= 24 ? 'celebrate' : s.score <= 11 ? 'disappointed' : 'idle', 'over'); if (S.detail(s).cycle) { env.fx.confetti(80); env.host.say('The cycle!'); } },
+    coach(s) {
+      if (s.phase !== 'ready' || aim) return null;
+      const x = SX(0, 8), y = SY(8) - 10;
+      return { x0: x, y0: y, x1: x - 14, y1: Math.min(H - 20, y + PULL_FULL() * 0.75) };
+    },
     hud(s) {
       return '<div class="stat"><b>' + s.score + '</b><span>Bases</span></div>' +
         '<div class="stat"><b id="hBall">' + Math.min(C.BALLS, s.ball + 1) + '/' + C.BALLS + '</b><span>Ball</span></div>' + diamond();
@@ -275,7 +302,14 @@ function makeView(env) {
         if (!lt || Math.hypot(lt.x - ix, lt.y - iy) > 2) { trail.push({ x: ix, y: iy, z: iz }); if (trail.length > 14) trail.shift(); }
         drawTrail();
       }
-      if (st.phase !== 'over') drawBall(ix, iy, iz);
+      if (st.phase === 'ready' && aim && !env.RM) {
+        // the ball comes back with your hand: a slingshot you can feel
+        const bx = SX(ix, iy), by = SY(iy), ox = Math.max(-30, Math.min(30, (aim.cur.x - aim.from.x) * 0.35)), oy = aim.p * 26;
+        cx.strokeStyle = 'rgba(255,230,140,.55)'; cx.lineWidth = 2; cx.setLineDash([4, 4]);
+        cx.beginPath(); cx.moveTo(bx, by); cx.lineTo(bx + ox, by + oy); cx.stroke(); cx.setLineDash([]);
+        cx.save(); cx.translate(ox, oy); drawBall(ix, iy, iz); cx.restore();
+      } else if (st.phase !== 'over') drawBall(ix, iy, iz);
+      drawTickets();
       if (st.phase === 'ready') drawAim();
       if (env.DEBUG) drawDebug();
     }
@@ -283,7 +317,7 @@ function makeView(env) {
 }
 
 bootGame({
-  id: 'roll-ball', name: 'Roll-Ball', version: 'rollball-2', sim: S, unit: 'bases out of 36',
+  id: 'roll-ball', name: 'Roll-Ball', version: 'rollball-2', sim: S, unit: 'bases out of 36', ambient: 'arcade',
   rule: 'Roll nine balls. Land them in the rings. Rack up bases.',
   howto: 'Touch the lane, pull back and let go. Pull further for more power, sideways to aim. Keyboard: arrows aim, hold Space to charge.',
   resultExtra: d => d.cycle ? '<p>Hit for the cycle<span class="badge">CYCLE</span></p>' : '',

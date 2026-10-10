@@ -14,7 +14,26 @@ function makeView(env) {
   const fromPx = px => Math.max(C.DROP_MIN, Math.min(C.DROP_MAX, (px - OX) / K));
   const tierCol = { high: '#22B07D', mid: '#d9a51c', low: '#5d5a54' };
   const now = () => performance.now(), T0 = now();
-  let pegLit = new Map(), slotFx = null, trail = [], bumpT = -9999;
+  let pegLit = new Map(), slotFx = null, trail = [], bumpT = -9999, cheerT = -9999;
+  /* The studio audience, in the seats under the board. They lean in while
+     the puck falls and jump when it lands big. */
+  function audience() {
+    const top = Y(C.HEIGHT + 30) + 6; if (top > H - 20) return;
+    const t = now(), falling = st && st.phase === 'fall', big = t - cheerT < 1800;
+    const sign = top + 4, sw = Math.min(150, W * 0.4);
+    cx.fillStyle = big && (env.RM || ((t / 160) | 0) % 2) ? '#E0533D' : '#3a1414';
+    cx.beginPath(); cx.roundRect(W / 2 - sw / 2, sign, sw, 22, 6); cx.fill();
+    cx.fillStyle = big ? '#fff' : 'rgba(255,255,255,.25)'; cx.font = '800 13px "Rubik Mono One", Outfit, sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle';
+    cx.fillText('APPLAUSE', W / 2, sign + 12);
+    const rows = 2, base = sign + 34;
+    for (let r = 0; r < rows; r++) for (let i = 0; i < 18; i++) {
+      const x = (i + (r % 2) * 0.5) * W / 17, y = base + r * 14; if (y > H - 4) continue;
+      const jump = env.RM ? 0 : big ? Math.abs(Math.sin(t / 110 + i * 1.3 + r)) * 7 : falling ? Math.sin(t / 400 + i) * 1.2 : 0;
+      cx.fillStyle = ['#2b3a52', '#24304a', '#1d2840'][r]; cx.beginPath(); cx.arc(x, y - jump, 7, 0, Math.PI * 2); cx.fill();
+      cx.fillRect(x - 9, y - jump + 5, 18, 12);
+      if (big && !env.RM && (i + r) % 3 === 0) { cx.fillRect(x - 10, y - jump - 14, 3, 10); cx.fillRect(x + 7, y - jump - 14, 3, 10); }
+    }
+  }
   /* A peg lights and chimes as the puck passes it; the chime climbs as it falls. */
   function touchPegs(x, y) {
     const t = now();
@@ -114,9 +133,9 @@ function makeView(env) {
   });
 
   return {
-    resize(w, h) { W = w; H = h; K = Math.min((W - 24) / C.WIDTH, (H - 20) / (C.HEIGHT + 34)); OX = (W - C.WIDTH * K) / 2; OY = 12; },
+    resize(w, h) { W = w; H = h; K = Math.min((W - 24) / C.WIDTH, (H - 84) / (C.HEIGHT + 34)); OX = (W - C.WIDTH * K) / 2; OY = 12; },
     snap: s => ({ x: s.x, y: s.y, drop: s.drop }),
-    onStart(s) { st = s; aimX = 50; pegLit = new Map(); slotFx = null; trail = []; env.hint(s.drop === 0 && s.phase === 'ready' ? 'Slide along the top, let go to drop' : ''); env.host.set('idle'); },
+    onStart(s) { st = s; aimX = 50; pegLit = new Map(); slotFx = null; trail = []; env.hint(''); env.host.set('idle'); },
     onInput() { env.sound.play('whoosh'); env.haptics.buzz(10); env.hint(''); trail = []; env.host.set('nervous'); },
     onPause() { aiming = false; },
     onEvent(e) {
@@ -129,6 +148,7 @@ function makeView(env) {
         slotFx = { i: e.slot, t: now(), col: e.dbl ? '#ff6b57' : t === 'high' ? '#5ff0b5' : t === 'mid' ? '#ffd23f' : '#a0a8b8' };
         env.pop(e.label + '  +' + e.pts + (e.dbl ? ' (x2)' : ''), tierCol[t]);
         env.fx.text(sx, sy - 30, '+' + e.pts, '#fff', 26);
+        if (t !== 'low') { cheerT = now(); env.sound.swell(t === 'high' ? 2.5 : 1.2); }
         if (t === 'high') { env.sound.play('jackpot'); env.fx.confetti(90); env.fx.flash('#ffd23f', 260, 0.25); env.fx.shake(6, 320); env.host.say(e.dbl ? 'Double!' : 'Big money!'); }
         else if (t === 'mid') { env.sound.play('good'); env.host.say('Not bad!'); }
         else { env.sound.play('groan'); env.host.say('Ooh, so close.'); }
@@ -137,6 +157,10 @@ function makeView(env) {
       } else if (e.type === 'next' && st.drop === C.DROPS - 1) { env.pop('FINAL DROP', '#ff4fa3'); env.host.say('Last one!'); }
     },
     onOver() {},
+    coach(s) {
+      if (s.phase !== 'ready' || aiming) return null;
+      return { x0: X(30), y0: Y(C.DROP_Y) + 10, x1: X(68), y1: Y(C.DROP_Y) + 10 };
+    },
     hud(s) {
       return '<div class="stat"><b>' + s.score + '</b><span>Total</span></div>' +
         '<div class="stat"><b>' + Math.min(C.DROPS, s.drop + 1) + '/' + C.DROPS + '</b><span>Drop</span></div>' +
@@ -145,6 +169,7 @@ function makeView(env) {
     render(alpha, s, prev) {
       if (!st) { cx.fillStyle = '#EFEDE8'; cx.fillRect(0, 0, W, H); return; }
       board();
+      audience();
       if (st.phase === 'ready') {
         cx.strokeStyle = 'rgba(255,210,63,.75)'; cx.setLineDash([3, 5]); cx.lineWidth = 1.5;
         cx.beginPath(); cx.moveTo(X(aimX), Y(C.DROP_Y)); cx.lineTo(X(aimX), Y(C.PEG_TOP - 4)); cx.stroke(); cx.setLineDash([]);
@@ -166,7 +191,7 @@ function makeView(env) {
 }
 
 bootGame({
-  id: 'drop-board', name: 'Drop Board', version: 'drop-1', sim: S, unit: 'points', needsConfig: true, practiceAfterDaily: true,
+  id: 'drop-board', name: 'Drop Board', version: 'drop-1', sim: S, unit: 'points', ambient: 'studio', needsConfig: true, practiceAfterDaily: true,
   practiceCfg: today => today && today.practice,
   rule: 'Pick your drop. Hope it lands on the big one.',
   howto: 'Slide along the top to choose where the puck drops, then let go. Read the slots first: one is worth double, and the red peg kicks. Keyboard: arrows move, Space drops.',

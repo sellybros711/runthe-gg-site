@@ -118,6 +118,17 @@ function makeView(env) {
     if (b && b.fire && b.at != null && !env.RM && now() - emberAt > 30) { emberAt = now(); env.fx.burst(X, Y, { n: 3, colors: ['#ff8a2a', '#ffd23f', '#E0533D'], speed: 60, gravity: -120, life: 420, size: r * 0.35 }); }
   }
 
+  /* Your hands, either side of the ball, so you are the one shooting. */
+  function hands(x, y, r, up) {
+    for (const side of [-1, 1]) {
+      cx.save(); cx.translate(x + side * r * 0.95, y + r * (up ? 0.35 : 0.55)); cx.rotate(side * (up ? 0.25 : 0.5));
+      cx.fillStyle = '#c98b5a'; cx.strokeStyle = '#3a1d06'; cx.lineWidth = 2;
+      cx.beginPath(); cx.roundRect(-r * 0.32, -r * 0.55, r * 0.64, r * 1.6, r * 0.3); cx.fill(); cx.stroke();
+      cx.fillStyle = '#E0533D'; cx.fillRect(-r * 0.36, r * 0.7, r * 0.72, r * 0.25);
+      cx.restore();
+    }
+  }
+
   /* ---- input: a swipe up from the rack ---- */
   const pt = e => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top, t: performance.now() }; };
   const ready = () => env.playing() && st && st.reload === 0 && st.frame < C.CLOCK_FRAMES;
@@ -161,7 +172,7 @@ function makeView(env) {
       crowd = []; for (let i = 0; i < 160; i++) { const u = (i * 0.618034) % 1, v = ((i * 0.41421) % 1); crowd.push({ x: u * W, y: H * 0.05 + v * H * 0.24, r: 2 + v * 2.4, col: cols[i % cols.length], ph: u * 20 }); }
     },
     snap(s) { const o = {}; for (const b of s.balls) o[b.id] = { x: b.x, y: b.y, z: b.z }; return { balls: o, hx: s.hx }; },
-    onStart(s) { st = s; lastClock = -1; netT = rimT = hornT = -9999; env.hint(s.shots === 0 ? 'Swipe up to shoot' : ''); env.host.set('idle'); },
+    onStart(s) { st = s; lastClock = -1; netT = rimT = hornT = -9999; env.hint(''); env.host.set('idle'); },
     onInput() { env.hint(''); env.haptics.buzz(8); env.sound.play('launch'); },
     onPause() { sw = null; keys.charging = false; },
     onEvent(e) {
@@ -173,6 +184,7 @@ function makeView(env) {
         netT = now();
         env.sound.play(e.kind === 'swish' ? 'swish' : 'good', { pitch: 1 + Math.min(0.5, st.streak * 0.06) });
         if (e.kind === 'swish' || e.money) env.sound.play('cheer');
+        env.sound.swell(e.money || e.kind === 'swish' ? 2.2 : 1);
         env.haptics.buzz(18);
         env.pop((e.kind === 'swish' ? 'SWISH' : e.kind === 'glass' ? 'OFF GLASS' : 'IN') + ' +' + e.pts, e.money ? '#E0533D' : e.fire ? '#e8812e' : '#22B07D');
         env.fx.text(RX, RY - 10, '+' + e.pts, e.money ? '#ffd23f' : '#fff', e.money ? 30 : 24);
@@ -186,6 +198,11 @@ function makeView(env) {
       else if (e.type === 'horn') { hornT = now(); env.pop('BUZZER', '#E0533D'); env.sound.play('buzzer'); env.fx.flash('#E0533D', 400, 0.35); env.fx.shake(5, 300); }
     },
     onOver(s) { env.host.set(s.made >= 22 ? 'celebrate' : 'idle'); },
+    coach(s) {
+      if (s.reload || s.frame >= C.CLOCK_FRAMES || sw) return null;
+      const x = PX(0, 0), y = PY(0, C.RELEASE_Z - 4.2);
+      return { x0: x, y0: y, x1: x + 4, y1: y - H * 0.38 };
+    },
     hud(s) {
       return '<div class="stat"><b>' + s.score + '</b><span>Points</span></div>' +
         '<div class="stat"><b>' + clock(s) + '</b><span>Seconds</span></div>' +
@@ -217,7 +234,12 @@ function makeView(env) {
       // the next ball in the rack
       if (st.frame < C.CLOCK_FRAMES && st.reload === 0) {
         const money = st.shots % C.MONEY_EVERY === C.MONEY_EVERY - 1;
-        ball({ money, fire: st.fireLeft > 0 }, 0, 0, C.RELEASE_Z - 4.2);
+        const rx = PX(0, 0), ry = PY(0, C.RELEASE_Z - 4.2), rr = C.BALL_R / (0 - CAM_Y) * F;
+        if (sw && trail.length && !env.RM) {
+          // the ball is in your hand: it goes where the finger goes
+          const p = trail[trail.length - 1], dx = Math.max(-W * 0.3, Math.min(W * 0.3, p.x - sw.pts[0].x)), dy = Math.max(-H * 0.3, Math.min(0, p.y - sw.pts[0].y));
+          cx.save(); cx.translate(dx, dy); hands(rx, ry, rr, true); ball({ money, fire: st.fireLeft > 0 }, 0, 0, C.RELEASE_Z - 4.2); cx.restore();
+        } else { hands(rx, ry, rr, false); ball({ money, fire: st.fireLeft > 0 }, 0, 0, C.RELEASE_Z - 4.2); }
         if (money) { cx.fillStyle = '#ffd23f'; cx.font = '800 13px Outfit, sans-serif'; cx.textAlign = 'center'; cx.fillText('MONEY BALL x' + C.MONEY_MULT, PX(0, 0), PY(0, C.RELEASE_Z - 4.2) - C.BALL_R / (0 - CAM_Y) * F - 10); }
       }
       scoreboard();
@@ -242,7 +264,7 @@ function makeView(env) {
 }
 
 bootGame({
-  id: 'hoop-shoot', name: 'Hoop Shoot', version: 'hoop-1', sim: S, unit: 'points',
+  id: 'hoop-shoot', name: 'Hoop Shoot', version: 'hoop-1', sim: S, unit: 'points', ambient: 'crowd',
   rule: '60 seconds. Swipe to shoot. Hit the money ball.',
   howto: 'Swipe up from the ball. The angle of the swipe aims, its speed is the power. Every fifth ball is the money ball, worth double. Four in a row puts you on fire. Keyboard: arrows aim, hold Space to charge.',
   resultExtra: d => '<p class="mut">' + d.made + ' of ' + d.shots + ' shots. ' + d.kinds.swish + ' swishes.</p>',

@@ -32,7 +32,7 @@ const svg = (inner) => '<svg class="emb" viewBox="0 0 48 48" aria-hidden="true">
 export const THEMES = {
   'roll-ball': {
     font: 'Bungee', tagline: 'Nine balls. Find the rings.',
-    vars: '--led:#ffd23f;--disp:"Bungee";--disp-size:22px;--accent:#E0533D;--accent-ink:#fff;--hdr-ink:#fff;--hdr-title:#ffd23f;--hdr-dim:#d9d5cc;'
+    vars: '--world:radial-gradient(circle,rgba(255,79,163,.22) 0 2px,transparent 3px) 0 0/40px 40px,radial-gradient(circle,rgba(80,230,255,.18) 0 2px,transparent 3px) 20px 20px/40px 40px,radial-gradient(120% 70% at 50% 0%,#2a1a44,#0a0714 75%);--led:#ffd23f;--disp:"Bungee";--disp-size:22px;--accent:#E0533D;--accent-ink:#fff;--hdr-ink:#fff;--hdr-title:#ffd23f;--hdr-dim:#d9d5cc;'
       + '--hdr-shadow:0 2px 0 #b8341f,0 0 14px rgba(224,83,61,.55);'
       + '--hdr-bg:radial-gradient(120% 140% at 20% 0%,#3a2a20 0%,#141414 60%);'
       + '--hdr-fx:repeating-linear-gradient(90deg,rgba(255,255,255,.035) 0 2px,transparent 2px 22px);',
@@ -40,7 +40,7 @@ export const THEMES = {
   },
   'field-goal-flick': {
     font: 'Graduate', tagline: 'Five kicks. Read the wind.',
-    vars: '--led:#ffe066;--disp:"Graduate";--disp-size:21px;--accent:#ffd23f;--accent-ink:#141414;--hdr-ink:#fff;--hdr-title:#fff;--hdr-dim:#d8f5e8;'
+    vars: '--world:radial-gradient(circle,rgba(255,255,255,.55) 0 1px,transparent 1.5px) 0 0/53px 41px,radial-gradient(circle,rgba(255,255,255,.35) 0 1px,transparent 1.5px) 17px 23px/71px 59px,linear-gradient(180deg,#040814,#14203f 85%,#1d2b52);--led:#ffe066;--disp:"Graduate";--disp-size:21px;--accent:#ffd23f;--accent-ink:#141414;--hdr-ink:#fff;--hdr-title:#fff;--hdr-dim:#d8f5e8;'
       + '--hdr-shadow:0 2px 0 #0d5e41;'
       + '--hdr-bg:linear-gradient(180deg,#22B07D 0%,#178a60 100%);'
       + '--hdr-fx:repeating-linear-gradient(90deg,transparent 0 46px,rgba(255,255,255,.28) 46px 48px),repeating-linear-gradient(90deg,rgba(0,0,0,.06) 0 24px,transparent 24px 48px);',
@@ -48,7 +48,7 @@ export const THEMES = {
   },
   'hoop-shoot': {
     font: 'Russo+One', tagline: 'Sixty seconds on the clock.',
-    vars: '--led:#ff8a2a;--disp:"Russo One";--disp-size:22px;--accent:#1d2129;--accent-ink:#fff;--hdr-ink:#fff;--hdr-title:#fff;--hdr-dim:#fbe3cc;'
+    vars: '--world:radial-gradient(circle,rgba(232,116,42,.3) 0 2px,transparent 3px) 0 0/22px 18px,radial-gradient(circle,rgba(74,111,216,.3) 0 2px,transparent 3px) 11px 9px/22px 18px,linear-gradient(180deg,#07080d,#0b0d14);--led:#ff8a2a;--disp:"Russo One";--disp-size:22px;--accent:#1d2129;--accent-ink:#fff;--hdr-ink:#fff;--hdr-title:#fff;--hdr-dim:#fbe3cc;'
       + '--hdr-shadow:0 2px 0 #6e3511,0 0 10px rgba(0,0,0,.25);'
       + '--hdr-bg:linear-gradient(180deg,#c8813a 0%,#a8622a 100%);'
       + '--hdr-fx:repeating-linear-gradient(90deg,rgba(0,0,0,.09) 0 1px,transparent 1px 34px),repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 17px,transparent 17px 34px);',
@@ -56,7 +56,7 @@ export const THEMES = {
   },
   'whack': {
     font: 'Lilita+One', tagline: 'Hit the ones who fit.',
-    vars: '--led:#ffd23f;--disp:"Lilita One";--disp-size:21px;--disp-ls:.01em;--accent:#ffd23f;--accent-ink:#141414;--hdr-ink:#fff;--hdr-title:#ffd23f;--hdr-dim:#cfe0f0;'
+    vars: '--world:radial-gradient(circle,#fff3b0 0 2px,rgba(255,210,63,.3) 3px,transparent 5px) 0 6px/30px 30px repeat-x,repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 18px,transparent 18px 36px),linear-gradient(180deg,#4a0f1e,#3a0d18);--led:#ffd23f;--disp:"Lilita One";--disp-size:21px;--disp-ls:.01em;--accent:#ffd23f;--accent-ink:#141414;--hdr-ink:#fff;--hdr-title:#ffd23f;--hdr-dim:#cfe0f0;'
       + '--hdr-shadow:0 2px 0 #0d2a45;'
       + '--hdr-bg:linear-gradient(180deg,#1f4e79 0%,#163a5c 100%);'
       + '--hdr-fx:radial-gradient(circle,rgba(255,210,63,.16) 2px,transparent 2.5px) 0 0/16px 16px;',
@@ -64,7 +64,7 @@ export const THEMES = {
   },
   'drop-board': {
     font: 'Rubik+Mono+One', tagline: 'Pick a slot. Hope it lands big.',
-    vars: '--led:#ffd23f;--disp:"Rubik Mono One";--disp-size:18px;--disp-ls:.03em;--accent:#ffd23f;--accent-ink:#141414;--hdr-ink:#fff;--hdr-title:#ffd23f;--hdr-dim:#c9d3df;'
+    vars: '--world:conic-gradient(from 200deg at 15% -10%,transparent 0 20deg,rgba(255,240,190,.08) 20deg 34deg,transparent 34deg),conic-gradient(from 130deg at 85% -10%,transparent 0 20deg,rgba(255,240,190,.08) 20deg 34deg,transparent 34deg),linear-gradient(180deg,#1b2638,#141c2a);--led:#ffd23f;--disp:"Rubik Mono One";--disp-size:18px;--disp-ls:.03em;--accent:#ffd23f;--accent-ink:#141414;--hdr-ink:#fff;--hdr-title:#ffd23f;--hdr-dim:#c9d3df;'
       + '--hdr-shadow:0 2px 0 #7a5a07,0 0 12px rgba(255,210,63,.35);'
       + '--hdr-bg:linear-gradient(180deg,#26333f 0%,#1f2a36 100%);'
       + '--hdr-fx:radial-gradient(circle,#ffd23f 2px,rgba(255,210,63,.25) 3px,transparent 4px) 6px calc(100% - 3px)/16px 8px repeat-x,radial-gradient(circle,#ffd23f 2px,rgba(255,210,63,.25) 3px,transparent 4px) 6px -3px/16px 8px repeat-x;',
@@ -72,7 +72,7 @@ export const THEMES = {
   },
   'pinball': {
     font: 'Audiowide', tagline: 'Three balls. Light the bases.',
-    vars: '--led:#ff4fa3;--disp:"Audiowide";--disp-size:22px;--accent:#ff4fa3;--accent-ink:#fff;--hdr-ink:#fff;--hdr-title:#ffd6f0;--hdr-dim:#d7c6ef;'
+    vars: '--world:linear-gradient(115deg,transparent 40%,rgba(80,230,255,.1) 41%,transparent 43%),linear-gradient(65deg,transparent 55%,rgba(255,79,163,.1) 56%,transparent 58%),radial-gradient(100% 60% at 50% 0%,#3a1a66,#120822 70%);--led:#ff4fa3;--disp:"Audiowide";--disp-size:22px;--accent:#ff4fa3;--accent-ink:#fff;--hdr-ink:#fff;--hdr-title:#ffd6f0;--hdr-dim:#d7c6ef;'
       + '--hdr-shadow:0 0 6px #ff4fa3,0 0 16px rgba(255,79,163,.7);'
       + '--hdr-bg:radial-gradient(120% 160% at 85% 0%,#5a2a96 0%,#2a1446 55%,#160a26 100%);'
       + '--hdr-fx:linear-gradient(115deg,transparent 40%,rgba(80,230,255,.22) 41%,transparent 43%),linear-gradient(115deg,transparent 62%,rgba(255,79,163,.2) 63%,transparent 65%);',

@@ -109,10 +109,62 @@ export function makeSound() {
     best: () => { arp([523, 659, 784, 1047, 1319], 0.09, 0.2, 'square', 0.06); tone(1568, 0.7, 'triangle', 0.07, 0, 0.5); },
     jackpot: () => { arp([784, 988, 1175, 1568, 1175, 1568, 2093], 0.06, 0.12, 'square', 0.05); noise(1.2, 0.05, 'bandpass', 1500, 900, 0.1, 0.2); }
   };
+  /* THE ROOM. A bed of sound under the game, so the world is there between
+     the moments: a crowd that murmurs and swells, a carnival organ, a studio
+     audience, the other machines in an arcade. One at a time; it fades out on
+     pause, mute and the result, and a swell() lifts it for a big moment. */
+  let amb = null;
+  function stopAmbient() {
+    if (!amb) return;
+    const a = amb; amb = null; clearInterval(a.timer);
+    try { const t = ctx.currentTime; a.gain.gain.cancelScheduledValues(t); a.gain.gain.setTargetAtTime(0.0001, t, 0.25); setTimeout(() => a.nodes.forEach(n => { try { n.stop(); } catch (e) {} }), 1200); } catch (e) {}
+  }
+  function ambient(kind) {
+    if (amb && amb.kind === kind) return; stopAmbient();
+    if (!ctx || !bus || muted || !kind) { pendingAmb = kind; return; }
+    pendingAmb = null;
+    const gain = ctx.createGain(), nodes = [], t = ctx.currentTime;
+    gain.gain.setValueAtTime(0.0001, t); gain.gain.setTargetAtTime(1, t, 0.6); gain.connect(bus);
+    const bed = (filt, f, q, vol, lfo) => {
+      const s = ctx.createBufferSource(), bq = ctx.createBiquadFilter(), g = ctx.createGain();
+      s.buffer = noiseBuf; s.loop = true; bq.type = filt; bq.frequency.value = f; bq.Q.value = q || 0.7; g.gain.value = vol;
+      if (lfo) { const o = ctx.createOscillator(), og = ctx.createGain(); o.frequency.value = lfo; og.gain.value = vol * 0.45; o.connect(og).connect(g.gain); o.start(); nodes.push(o); }
+      s.connect(bq).connect(g).connect(gain); s.start(t, Math.random()); nodes.push(s);
+    };
+    const hum = (f, vol) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine'; o.frequency.value = f; g.gain.value = vol; o.connect(g).connect(gain); o.start(); nodes.push(o); };
+    let timer = 0;
+    if (kind === 'crowd') {
+      bed('bandpass', 700, 0.6, 0.035, 0.13); bed('bandpass', 1900, 0.9, 0.012, 0.21);
+      timer = setInterval(() => { if (Math.random() < 0.35) noise(0.9 + Math.random(), 0.018, 'bandpass', 900 + Math.random() * 600, 700, 0, 0.3); if (Math.random() < 0.12) [0, 0.18].forEach(d => noise(0.08, 0.025, 'bandpass', 2400, 0, d)); }, 1400);
+    } else if (kind === 'carnival') {
+      bed('bandpass', 900, 0.5, 0.016, 0.1);
+      const tune = [392, 523, 659, 523, 587, 494, 392, 440, 523, 494, 440, 392];
+      let i = 0;
+      timer = setInterval(() => { tone(tune[i % tune.length], 0.28, 'triangle', 0.02); if (i % 3 === 0) tone(tune[i % tune.length] / 2, 0.4, 'sine', 0.018); i++; }, 330);
+    } else if (kind === 'studio') {
+      hum(55, 0.012); bed('bandpass', 600, 0.5, 0.02, 0.08);
+      timer = setInterval(() => { if (Math.random() < 0.3) noise(1.2, 0.012, 'bandpass', 800, 600, 0, 0.4); }, 1800);
+    } else if (kind === 'arcade') {
+      hum(60, 0.01); bed('lowpass', 400, 0.5, 0.015, 0.05);
+      timer = setInterval(() => {
+        const r = Math.random();
+        if (r < 0.25) arp([660, 880, 1320].map(f => f * (0.7 + Math.random() * 0.6)), 0.06, 0.08, 'square', 0.008);
+        else if (r < 0.4) tone(200 + Math.random() * 400, 0.18, 'square', 0.006, 80);
+        else if (r < 0.5) noise(0.4, 0.01, 'lowpass', 500, 200, 0, 0.05);
+      }, 900);
+    }
+    amb = { kind, gain, nodes, timer };
+  }
+  let pendingAmb = null;
+  function swell(k) { if (!amb || !ctx) return; const t = ctx.currentTime, g = amb.gain.gain; g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(1 + (k || 1.5), t + 0.15); g.setTargetAtTime(1, t + 0.6, 0.8); }
   return {
-    unlock, get muted() { return muted; },
-    toggle() { muted = !muted; lsSet('arcade_lab_mute', muted ? '1' : '0'); return muted; },
-    play(name, opt) { const f = SFX[name]; if (f && ok()) { try { f((opt && opt.pitch) || 1); } catch (e) {} } }
+    unlock() { const was = !!ctx; unlock(); if (!was && ctx && pendingAmb) ambient(pendingAmb); },
+    get muted() { return muted; },
+    toggle() { muted = !muted; lsSet('arcade_lab_mute', muted ? '1' : '0'); if (muted) { const k = amb && amb.kind; stopAmbient(); pendingAmb = k; } else if (pendingAmb) ambient(pendingAmb); return muted; },
+    play(name, opt) { const f = SFX[name]; if (f && ok()) { try { f((opt && opt.pitch) || 1); } catch (e) {} } },
+    ambient(kind) { try { ambient(kind); } catch (e) {} },
+    stopAmbient() { pendingAmb = null; try { stopAmbient(); } catch (e) {} },
+    swell(k) { try { swell(k); } catch (e) {} }
   };
 }
 
