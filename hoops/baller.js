@@ -308,6 +308,15 @@ var SETS = {
     fr([140, 160], DOWN),
   ],
 };
+/* A standing dribble for the cutscene stage, eight frames off one phase
+   (BOUNCE_AT). The ball is NOT in these frames: live() draws it every display
+   frame with real easing, locked to this hand while they touch. So the arm
+   only has to hit its key poses. Frame 0 is the catch with the hand high, 1
+   and 2 push the ball down and let it go, 3 follows through, 4 to 7 bring the
+   hand back up to wait for it. The knees give a little on the push. */
+var BOUNCE_ARM = [[20, 54, 1, 0.58], [22, 32, 1, 0.8], [24, 12, 1, 1], [24, 4], [23, 18, 1, 0.92], [21, 34, 1, 0.76], [20, 48, 1, 0.62], [20, 56, 1, 0.56]];
+var BOUNCE_DIP = [0.6, 1.2, 1.5, 1.3, 0.9, 0.6, 0.4, 0.4];
+SETS.bounce = BOUNCE_ARM.map(function(a, i){ return fr(a, [14, 10], { dip: BOUNCE_DIP[i], sp: 0.7 }); });
 var ANIM = {};
 Object.keys(SETS).forEach(function(k){ SETS[k].forEach(function(f, i){ ANIM[k + i] = f; }); });
 /* The six standing poses, in the same angles. */
@@ -348,7 +357,7 @@ function metrics(L){
    the body (metrics). */
 function skeleton(f, bw, am, breath, MX){
   MX = MX || metrics(null);
-  var dip = f.dip || 0, sp = f.sp || 0, up = breath ? 1 : 0, ts = MX.ts, sw = MX.sw, g = MX.gw;
+  var dip = f.dip || 0, sp = f.sp || 0, up = typeof breath === 'number' ? breath : breath ? 1 : 0, ts = MX.ts, sw = MX.sw, g = MX.gw;
   var hipY = GY - MX.legs, neckY = hipY - MX.torso, ankY = GY - 4.0;
   var J = { dip: dip, MX: MX };
   J.head = [CX, neckY - 8.2 * MX.k + dip + up, 0.6 * MX.k];
@@ -684,7 +693,10 @@ function paint(look, opts){
   var BD = bodyOf(L.build), bw = BD.bw, am = BD.am;
   var f = AN || STILL[pose] || STILL.stand;
   var MX = metrics(L), res = Math.max(1, Math.min(4, Math.round(+o.res || 1)));
-  var J = skeleton(f, bw, am, o.frame === 1 && !AN, MX);
+  /* o.breath, when given, is how far the chest has risen in cells (live()
+     passes a fraction, so a breath is a pixel at the fine resolution rather
+     than the whole cell frame 1 lifts). Absent, it is frame 1's old rule. */
+  var J = skeleton(f, bw, am, o.breath != null ? +o.breath : o.frame === 1 && !AN, MX);
   var HH = H * res, WW = W * res;
   var bandHex = L.band === 'none' ? null : L.band === 'club' ? c2 : FIXED[L.band];
   var slvHex = L.sleeve === 'none' ? null : L.sleeve === 'club' ? c2 : FIXED[L.sleeve];
@@ -778,8 +790,12 @@ function paint(look, opts){
   var ew = res >= 2 ? Math.max(1, Math.round(res * 0.6)) : 1, eh = Math.max(2, Math.round(1.6 * fs));
   [-1, 1].forEach(function(sd){
     var ex = fx + sd * R_(2.6) - (sd < 0 ? ew : 0);
-    if (res >= 2) block(ex, fy - Math.floor(eh / 2), ew + 1, eh, mix(SK[3], '#ffffff', 0.55));
-    block(sd < 0 ? ex : ex + 1, fy - Math.floor(eh / 2), ew, eh, pupil);
+    /* a blink is the lid: one row of shadow where the eye was */
+    if (o.blink) block(ex, fy + Math.floor(eh / 2) - 1, ew + (res >= 2 ? 1 : 0), 1, SK[0]);
+    else {
+      if (res >= 2) block(ex, fy - Math.floor(eh / 2), ew + 1, eh, mix(SK[3], '#ffffff', 0.55));
+      block(sd < 0 ? ex : ex + 1, fy - Math.floor(eh / 2), ew, eh, pupil);
+    }
     block(ex - (sd < 0 ? 1 : 0), fy - Math.floor(eh / 2) - Math.max(1, R_(1.6)), ew + 1 + (res >= 2 ? 1 : 0), Math.max(1, Math.round(res * 0.5)), brow);
   });
   block(fx - Math.max(0, Math.round(res * 0.5) - 1), fy + R_(1.6), Math.max(1, Math.round(res * 0.6)), Math.max(1, R_(1.2)), SK[1]);
@@ -816,13 +832,13 @@ function torusV(c, R, r){ return function(p){ var q = Math.hypot(p[0] - c[0], p[
 function propModel(kind, o){
   var P = [], add = function(n, m, f, c, r, x){ var q = { n: n, g: n, m: m, f: f, c: c, r: r }; for (var k in x || {}) q[k] = x[k]; P.push(q); };
   if (kind === 'ball') {
-    var R = o.r || 4.6, c = [o.w / 2, o.h / 2, 0], a = (o.spin || 0) * Math.PI / 4;
+    var R = o.r || 4.6, c = [o.w / 2, o.h / 2, 0], a = (o.spin || 0) * Math.PI / 4, sq = o.sq || 0;
     add('ball', function(p){
       var x = (p[0] - c[0]) / R, y = (p[1] - c[1]) / R, z = p[2] / R;
       var u = x * Math.cos(a) - y * Math.sin(a), v = x * Math.sin(a) + y * Math.cos(a);
       if (Math.abs(u) < 0.11 || Math.abs(v) < 0.11 || Math.abs(Math.hypot(u - 0.95, z) - 0.62) < 0.09 || Math.abs(Math.hypot(u + 0.95, z) - 0.62) < 0.09) return { m: 'seam', dt: -1 };
       return 'ball';
-    }, sph(c, R), c, R + 0.2, { gloss: 1 });
+    }, sq ? ell(c, [R * (1 + sq * 0.5), R * (1 - sq), R * (1 + sq * 0.5)]) : sph(c, R), c, R * (1 + sq) + 0.2, { gloss: 1 });
   } else if (kind === 'trophy') {
     var cx = o.w / 2;
     add('ball', function(p){ var x = p[0] - cx, y = p[1] - 3.6; return Math.abs(x) < 0.45 || Math.abs(y) < 0.45 || Math.abs(Math.hypot(x - 3.2, y) - 2.1) < 0.4 ? { m: 'goldd' } : 'tball'; }, sph([cx, 3.6, 0], 3.3), [cx, 3.6, 0], 3.5, { gloss: 1 });
@@ -970,6 +986,177 @@ function breathe(){
   }, 720);
 }
 
+/* ─── live(): a figure that is alive on the stage ──────────────────────────
+
+   img() is two pictures swapped every 720ms, and frame 1 lifts the chest a
+   whole cell, which on the stage is five or six screen pixels: the man hops.
+   That is the stop motion. live() is a canvas, and three things make it move
+   rather than tick:
+
+   THE BALL IS NOT A FRAME. It is drawn every display frame, on the dribble's
+   own curve: locked to the hand while they touch, thrown down accelerating,
+   squashed for a beat on the floor, rising and slowing into the hand. Its
+   shadow grows as it falls. The arm is eight key poses (the bounce set) chosen
+   off the SAME phase, so the hand is always where the ball needs it.
+
+   THE BREATH IS A PIXEL. Standing, the chest rises a fraction of a cell on a
+   slow sine, through four levels painted at the fine resolution, and he blinks
+   every few seconds. Nothing moves by more than one fine pixel a step.
+
+   NOTHING IS PAINTED ON THE MAIN THREAD AFTER THE FIRST FRAME. A frame is a
+   sphere trace, 70ms on a desktop and three or four times that on a phone, and
+   a loop needs eight. So they are painted in a Web Worker that loads this same
+   file, and the figure stands on its still pose until the loop is ready. With
+   no Worker they are painted one per idle moment instead. Frames are cached by
+   look, so the next beat of the same scene starts moving at once.
+
+   One requestAnimationFrame drives every live figure on the page, and stops
+   when there are none. A figure whose canvas has left the page is dropped.
+   Reduced motion draws the still pose and nothing else. */
+var SRC = (typeof document !== 'undefined' && document.currentScript && document.currentScript.src) || '';
+var BOUNCE_MS = 620, BREATH_MS = 3600, BREATH_AMP = 0.55, BREATH_LV = [0, 0.34, 0.67, 1];
+var LIVE = {}, liveN = 0, liveRaf = 0, SETCACHE = {}, SETKEYS = [];
+var reducedNow = function(){ return typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches; };
+
+/* where the held ball's centre is, in fine pixels, for a bounce frame: the
+   same offset the 'ball' pose holds it at */
+function heldBall(pose, L, res){
+  var f = ANIM[pose], MX = metrics(L), J = skeleton(f, bodyOf(L.build).bw, 0, false, MX);
+  var hd = J.arm[1].hand, w = [hd[0] + 1.4, hd[1] + 3.2, hd[2] + 1.0], v = toView(w);
+  var fl = toView([w[0], GY - 3.7, w[2]]);
+  return { x: v[0] * res, y: v[1] * res, fy: fl[1] * res, gy: toView([w[0], GY, w[2]])[1] * res };
+}
+function gridData(g){
+  var h = g.length, w = g[0].length, d = new Uint8ClampedArray(w * h * 4);
+  for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) { var c = g[y][x]; if (!c) continue;
+    var i = (y * w + x) * 4; d[i] = parseInt(c.slice(1, 3), 16); d[i + 1] = parseInt(c.slice(3, 5), 16); d[i + 2] = parseInt(c.slice(5, 7), 16); d[i + 3] = 255; }
+  return { w: w, h: h, d: d };
+}
+function toCanvas(img){
+  var cv = document.createElement('canvas'); cv.width = img.w; cv.height = img.h;
+  cv.getContext('2d').putImageData(new ImageData(img.d, img.w, img.h), 0, 0);
+  return cv;
+}
+var worker = null, workerOk = true, jobs = {}, jobN = 0;
+function getWorker(){
+  if (worker || !workerOk) return worker;
+  try {
+    if (!SRC || typeof Worker === 'undefined' || typeof Blob === 'undefined') throw 0;
+    var code = 'importScripts(' + JSON.stringify(SRC) + ');self.onmessage=function(e){var d=e.data,B=self.RTF_BALLER;'
+      + 'try{var g=B._gridData(B.paint(d.look,d.o));self.postMessage({id:d.id,w:g.w,h:g.h,d:g.d},[g.d.buffer]);}catch(x){self.postMessage({id:d.id,err:String(x)});}};';
+    worker = new Worker(URL.createObjectURL(new Blob([code], { type: 'text/javascript' })));
+    worker.onmessage = function(e){ var j = jobs[e.data.id]; delete jobs[e.data.id]; if (j) j(e.data.err ? null : { w: e.data.w, h: e.data.h, d: e.data.d }); };
+    worker.onerror = function(){ workerOk = false; worker = null; var js = jobs; jobs = {}; for (var k in js) js[k](null, true); };
+  } catch (x) { workerOk = false; worker = null; }
+  return worker;
+}
+/* paint one frame off the main thread if we can, in an idle moment if not */
+function paintAsync(look, o, cb){
+  var w = getWorker();
+  if (w) { var id = ++jobN; jobs[id] = function(img, failed){ if (failed) paintAsync(look, o, cb); else cb(img); }; w.postMessage({ id: id, look: look, o: o }); return; }
+  var run = function(){ try { cb(gridData(paint(look, o))); } catch (x) { cb(null); } };
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(run, { timeout: 400 }); else setTimeout(run, 30);
+}
+/* the frames a live figure needs, painted once per look and shared */
+function frameSet(look, o, mode){
+  var key = JSON.stringify([normal(look), o.c1, o.c2, o.num, o.pose, o.age >= 33 ? o.age : 0, o.dress || '', o.faceless ? 1 : 0, o.res, mode]);
+  var fs = SETCACHE[key];
+  if (fs) return fs;
+  var want = [];
+  if (mode === 'dribble') for (var i = 0; i < 8; i++) want.push({ pose: 'bounce' + i });
+  else BREATH_LV.forEach(function(b){ want.push({ breath: b * BREATH_AMP }); want.push({ breath: b * BREATH_AMP, blink: 1 }); });
+  fs = SETCACHE[key] = { frames: new Array(want.length), left: want.length, ready: false };
+  SETKEYS.push(key); if (SETKEYS.length > 8) delete SETCACHE[SETKEYS.shift()];
+  /* in order, one at a time, so a page with two figures never queues sixteen */
+  (function next(i){
+    if (i >= want.length) { fs.ready = true; kick(); return; }
+    paintAsync(look, Object.assign({}, o, want[i]), function(img){
+      if (!img) { fs.dead = true; return; }
+      fs.frames[i] = toCanvas(img); next(i + 1);
+    });
+  })(0);
+  return fs;
+}
+var BALLS = {};
+function ballArt(res, spin, sq){
+  var k = res + ':' + spin + ':' + sq;
+  if (BALLS[k]) return BALLS[k];
+  var r = 3.7 * res, n = Math.ceil(r * 2 * 1.3) + 4;
+  return (BALLS[k] = propCanvas('ball', { r: r, w: n, h: n, spin: spin, sq: sq }));
+}
+function live(look, opts, cls){
+  var o = Object.assign({}, opts || {});
+  var s = Math.max(1, Math.round(o.scale || 4)), res = resFor(o);
+  o.res = res;
+  var mode = o.pose === 'ball' ? 'dribble' : 'breath';
+  var id = 'L' + (++liveN), base = Object.assign({}, o); delete base.scale;
+  var first = gridData(paint(look, Object.assign({}, base, { frame: 0 })));
+  LIVE[id] = { look: look, o: base, mode: mode, res: res, still: first, el: null, born: Date.now(), next: 0, blinkAt: 0, t0: Math.random() * BOUNCE_MS };
+  if (!reducedNow() && typeof document !== 'undefined') LIVE[id].set = frameSet(look, base, mode);
+  kick();
+  return '<canvas class="rtf-baller rtf-live' + (cls ? ' ' + cls : '') + '" data-live="' + id + '" width="' + (W * res) + '" height="' + (H * res) + '"'
+    + ' style="width:' + (W * s) + 'px;height:' + (H * s) + 'px"></canvas>';
+}
+function kick(){ if (!liveRaf && typeof requestAnimationFrame === 'function') liveRaf = requestAnimationFrame(tick); }
+function ease(u){ return u * u * (3 - 2 * u); }
+function drawLive(L, now){
+  var ctx = L.ctx, res = L.res, cw = W * res, ch = H * res;
+  var fs = L.set, go = fs && fs.ready && !fs.dead;
+  if (!go && L.drewStill) return;
+  ctx.clearRect(0, 0, cw, ch);
+  ctx.fillStyle = 'rgba(0,0,0,.28)';
+  ctx.beginPath(); ctx.ellipse(22 * res, 63.1 * res, 11 * res, 1.3 * res, 0, 0, Math.PI * 2); ctx.fill();
+  if (!go) { ctx.drawImage(toCanvas(L.still), 0, 0); L.drewStill = true; return; }
+  if (L.mode !== 'dribble') {
+    /* the breath: a slow sine through four painted levels, and a blink */
+    var b = (1 - Math.cos((now / BREATH_MS) * Math.PI * 2)) / 2, lv = Math.round(b * (BREATH_LV.length - 1));
+    if (now > L.blinkAt + 150 && now > L.next) { L.blinkAt = now; L.next = now + 2600 + Math.random() * 3200; }
+    var bl = now - L.blinkAt < 130 && L.blinkAt > 0;
+    ctx.drawImage(fs.frames[lv * 2 + (bl ? 1 : 0)], 0, 0);
+    return;
+  }
+  /* the dribble: phase 0 is the catch, the hand high */
+  var ph = (((now + L.t0) % BOUNCE_MS) / BOUNCE_MS), k = Math.floor(ph * 8) % 8;
+  if (!L.held) { L.held = []; for (var i = 0; i < 8; i++) L.held.push(heldBall('bounce' + i, normal(L.look), res)); }
+  var H8 = L.held, at = function(p){ var u = p * 8, a = Math.floor(u) % 8, b2 = (a + 1) % 8, f = u - Math.floor(u); return { x: H8[a].x + (H8[b2].x - H8[a].x) * f, y: H8[a].y + (H8[b2].y - H8[a].y) * f }; };
+  var REL = 0.25, HIT = 0.46, UP = 0.5, CATCH = 0.875;
+  var bx, by, sq = 0, spin;
+  var rel = at(REL), cat = at(CATCH), floorY = H8[2].fy;
+  if (ph >= CATCH || ph < REL) { var c = at(ph); bx = c.x; by = c.y; spin = 0; }
+  else if (ph < HIT) {
+    /* thrown down: it leaves the hand moving and gravity adds to it */
+    var u = (ph - REL) / (HIT - REL); bx = rel.x + (cat.x - rel.x) * u * 0.5; by = rel.y + (floorY - rel.y) * (0.4 * u + 0.6 * u * u); spin = 1 + Math.floor(u * 3);
+  } else if (ph < UP) { bx = rel.x + (cat.x - rel.x) * 0.5; by = floorY + 0.35 * res; sq = 0.16; spin = 0; }
+  else {
+    /* up off the floor, slowing into the hand */
+    var v = (ph - UP) / (CATCH - UP); bx = rel.x + (cat.x - rel.x) * (0.5 + 0.5 * v); by = floorY - (floorY - cat.y) * (1 - (1 - v) * (1 - v)); spin = 3 - Math.floor(v * 3);
+  }
+  /* the ball's shadow on the floor, bigger and darker as it comes down */
+  var near = Math.max(0, Math.min(1, 1 - (floorY - by) / (floorY - cat.y + 1)));
+  ctx.fillStyle = 'rgba(0,0,0,' + (0.12 + 0.22 * near).toFixed(3) + ')';
+  ctx.beginPath(); ctx.ellipse(Math.round(bx), H8[2].gy + 0.2 * res, (1.6 + 1.8 * near) * res, (0.45 + 0.4 * near) * res, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.drawImage(fs.frames[k], 0, 0);
+  var art = ballArt(res, spin % 4, sq);
+  ctx.drawImage(art, Math.round(bx - art.width / 2), Math.round(by - art.height / 2));
+}
+function tick(now){
+  liveRaf = 0;
+  var any = false;
+  for (var id in LIVE) {
+    var L = LIVE[id];
+    if (!L.el) {
+      L.el = document.querySelector('canvas[data-live="' + id + '"]');
+      if (!L.el) { if (Date.now() - L.born > 4000) delete LIVE[id]; else any = true; continue; }
+      L.ctx = L.el.getContext('2d'); L.ctx.imageSmoothingEnabled = false;
+    }
+    if (!L.el.isConnected) { delete LIVE[id]; continue; }
+    any = true;
+    if (typeof document !== 'undefined' && document.hidden) continue;
+    drawLive(L, now);
+  }
+  if (any) kick();
+}
+
 var API = {
   W: W, H: H,
   SKINS: SKINS, HAIR_COLORS: HAIR_COLORS, HAIRS: HAIRS, BEARDS: BEARDS, BANDS: BANDS, SLEEVES: SLEEVES, SHOES: SHOES, BUILDS: BUILDS,
@@ -980,9 +1167,10 @@ var API = {
   },
   SETS: Object.keys(SETS).reduce(function(m, k){ m[k] = SETS[k].length; return m; }, {}), isFrame: function(p){ return !!ANIM[p]; },
   DEFAULT: DEFAULT, normal: normal, lookFor: lookFor, hash: hash, inkOn: inkOn, contrast: contrast,
-  paint: paint, canvas: canvas, url: url, img: img, breathe: breathe,
+  paint: paint, canvas: canvas, url: url, img: img, breathe: breathe, live: live, _gridData: gridData,
   prop: prop, propCanvas: propCanvas, ramp: ramp, PROPS: Object.keys(PROP_SIZE),
 };
 if (typeof module !== 'undefined' && module.exports) module.exports = API;
 if (typeof window !== 'undefined') { window.RTF_BALLER = API; breathe(); }
+else if (typeof self !== 'undefined') self.RTF_BALLER = API;   /* the paint worker */
 })();

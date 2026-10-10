@@ -486,10 +486,13 @@ function hand(pose, a, build, s){
   if (a.flip) h = [44 - h[0], h[1]];
   return [Math.round(a.x) - 22 + h[0], Math.round(a.y - 62 - (a.jump || 0)) + h[1]];
 }
-/* The ball bouncing under a dribbling hand. */
+/* The ball bouncing under a dribbling hand. It was linear both ways, which
+   is a piston: pushed down it speeds up into the floor, and off the floor it
+   slows into the hand. */
 function dribbleBall(st, a, build, t){
   var hn = hand(a.pose, a, build);
-  var ph = (t % 8) / 8, by = ph < 0.5 ? lerp(hn[1] + 3, st.playY - 3, ph * 2) : lerp(st.playY - 3, hn[1] + 3, (ph - 0.5) * 2);
+  var ph = (t % 8) / 8, top = hn[1] + 3, fl = st.playY - 3, u;
+  var by = ph < 0.5 ? (u = ph * 2, top + (fl - top) * (0.35 * u + 0.65 * u * u)) : (u = (ph - 0.5) * 2, fl - (fl - top) * (1 - (1 - u) * (1 - u)));
   return { x: hn[0] + (a.flip ? -1 : 1), y: by, spin: t };
 }
 
