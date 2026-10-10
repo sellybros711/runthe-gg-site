@@ -60,7 +60,7 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- The Putting Green: a tester preview. It draws nothing until puttOn() opens it (see PUTT_TESTERS). -->
-<script defer src="putt/putt.js?v=35"></script>
+<script defer src="putt/putt.js?v=36"></script>
 <script defer src="putt/land.js?v=5"></script>
 <script defer src="putt/hole3d.js?v=8"></script>
 <script defer src="putt/mapland.js?v=3"></script>
@@ -22115,6 +22115,11 @@ function puttHost(){
     golfer3:function(vx,vy){ return g3dOn()?g3dSet(S.look,vx,vy,'putt'):null; },
     // the Tour's record is kept per account, coins land in the game's own wallet, a Tour Pass means 6 lives
     storeKey:function(k){ return acctKey(k); },
+    // the record is the account's: who is signed in, the server call the Tour saves through, and the sign in sheet
+    uid:function(){ try{ return (sbUser&&sbUser.id)||null; }catch(e){ return null; } },
+    signedIn:function(){ try{ return sbSignedIn(); }catch(e){ return false; } },
+    rpc:function(fn,args){ try{ if(!sb||!sbUser) return Promise.resolve(null); return Promise.resolve(sb.rpc(fn,args)).then(r=>(r&&!r.error)?r.data:null,()=>null); }catch(e){ return Promise.resolve(null); } },
+    signIn:function(mode){ S.overlay='account'; S.acctMode=mode==='signup'?'signup':'signin'; S.acctErr=''; try{ render(); }catch(e){} },
     coins:function(n,label){ try{ addBonusCoins(n,{label:label}); }catch(e){} },
     balance:function(){ try{ return coinBalance(); }catch(e){ return 0; } },
     passActive:function(){ try{ return dailyPassActive(); }catch(e){ return false; } },
@@ -40604,6 +40609,7 @@ async function sbApply(session){
     try{ migrateLegacyIdentity(); }catch(e){}   // claim this browser's pre-scoping golfer, clear the unscoped copy
     try{ restoreProfileIdentity(); }catch(e){}  // show THIS account's golfer immediately (cloudPull may refine it)
     try{ grandfatherLook(); }catch(e){}   // CS192: keep a returning player's current look owned after the cosmetics-shop launch
+    try{ if(puttOn()) window.RTT_PUTT.sync(puttHost()).then(m=>{ if(m) try{ document.querySelectorAll('.gc-putt').forEach(o=>o.replaceWith(puttCard())); }catch(e){} }); }catch(e){}   // bring the account's Putt Putt record down, and redraw its card in place
     maybeClaimDaily();        // log a guest-played daily round to the account (consumes one of its attempts)
     // refresh course records + today's attempt count from the server RIGHT on sign-in, not just whenever
     // the player happens to open the records overlay, otherwise a signed-in session on a fresh browser

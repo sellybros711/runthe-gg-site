@@ -1879,6 +1879,8 @@ function open(host){
   document.body.style.overflow = 'hidden';
   S.onKey = function(e){ onKey(e); }; window.addEventListener('keydown', S.onKey);
   showMenu();
+  // the account's record may be ahead of this browser's: redraw the map if the merge moved anything
+  cloudPull().then(function(moved){ if (moved && S && S.screen === 'menu' && !S.ov.querySelector('.pp-sheet')) showHub(S.tour); });
 }
 function close(){
   if (!S) return;
@@ -1951,7 +1953,66 @@ function pload(){ var st = null, key = pkey(); try{ st = JSON.parse(localStorage
   if (st.lives == null) st.lives = livesMax();
   if (st.refillAt && Date.now() >= st.refillAt){ st.lives = livesMax(); st.refillAt = null; psave(st); }
   return st; }
-function psave(st){ try{ localStorage.setItem(pkey(), JSON.stringify(st)); }catch(e){} }
+function psave(st){ st.t = Date.now(); try{ localStorage.setItem(pkey(), JSON.stringify(st)); }catch(e){} cloudPush(); }
+/* THE RECORD IS THE ACCOUNT'S, ON THE SERVER. A signed in player's record goes up to ps_saves (103, game
+   'putt', slot 'tour') after every save and comes down on every open and every sign in, so a cleared
+   browser or a second phone starts where the account left off. The local copy is still written first
+   and the game never waits on the network.
+   TWO COPIES ARE MERGED, NEVER CHOSEN BETWEEN. pmerge only ever adds: the furthest hole, the best score
+   on every hole, every ace and payout, every daily played. So a stale phone can never take a hole away,
+   and a daily played on one device is played on all of them. Lives and the clock are the one part that
+   goes down as well as up, so they come from whichever copy was written last.
+   PROGRESS is the server's conflict rule (103 refuses a write that moves it backwards). It is a count of
+   things the merge only adds, so a merged record is never behind either copy, and a refusal hands back
+   the stored record, which is merged in and sent again.
+   EVERY CALL FAILS SOFT. null from the server is no opinion; the local record stands. */
+var CLOUD = { uid:null, busy:false, again:false, refused:0 };
+function cloudUid(){ try{ var h = hostOf(); return h.rpc && h.uid ? h.uid() || null : null; }catch(e){ return null; } }
+function cloudProg(st){ var n = 0, c = function(o){ return Object.keys(o || {}).length; };
+  Object.keys(st.tours || {}).forEach(function(k){ var t = st.tours[k] || {}; n += (t.lv || 1) + c(t.best) + c(t.ace) + c(t.paid) + c(t.wpaid); });
+  return n + c(st.daily) + (st.rewards || []).length; }
+// fold a copy of the record into this one: everything earned is kept, lives come from the newer copy
+function cloudMerge(st, g){ if (!g || g.v !== 2 || !g.tours) return st;
+  if ((g.t || 0) > (st.t || 0)){ st.lives = g.lives; st.refillAt = g.refillAt || null; st.t = g.t; if (g.streak) st.streak = Object.assign({}, g.streak, { best:Math.max((st.streak && st.streak.best) || 0, g.streak.best || 0) }); }
+  return pmerge(st, g); }
+function cloudRow(d){ var r = Array.isArray(d) ? d[0] : d; return r && typeof r === 'object' ? r : null; }
+function cloudPush(){ var uid = cloudUid(); if (!uid || CLOUD.uid !== uid) return;
+  if (CLOUD.busy){ CLOUD.again = true; return; }
+  var st = null; try{ st = JSON.parse(localStorage.getItem(pkey())); }catch(e){} if (!st || st.v !== 2) return;
+  CLOUD.busy = true; CLOUD.again = false;
+  var done = function(){ CLOUD.busy = false; if (CLOUD.again) cloudPush(); };
+  var p = null; try{ p = hostOf().rpc('ps_save_put', { p_game:'putt', p_slot:'tour', p_payload:st, p_progress:cloudProg(st) }); }catch(e){ p = null; }
+  if (!p || !p.then) return done();
+  p.then(function(d){ var r = cloudRow(d);
+    // refused: the server holds more than this copy. Merge it in, keep it, and send the merged record.
+    // Bounded, so two copies that cannot agree on a count never send each other round for ever.
+    if (r && r.ok === false && r.payload && cloudUid() === uid){ var cur = pload(); cloudMerge(cur, r.payload); try{ localStorage.setItem(pkey(), JSON.stringify(cur)); }catch(e){} if (++CLOUD.refused <= 3) CLOUD.again = true; }
+    else if (r && r.ok !== false) CLOUD.refused = 0;
+    done(); }, done); }
+// bring the account's record down and merge it into this browser's, then send the merged one up
+function cloudPull(){ var uid = cloudUid(); if (!uid) return Promise.resolve(false);
+  var p = null; try{ p = hostOf().rpc('ps_save_get', { p_game:'putt', p_slot:'tour' }); }catch(e){ p = null; }
+  if (!p || !p.then) return Promise.resolve(false);
+  return p.then(function(d){ if (cloudUid() !== uid) return false;
+    var r = cloudRow(d), cur = pload(), before = JSON.stringify(cur.tours) + cur.lives;
+    if (r && r.payload) cloudMerge(cur, r.payload);
+    try{ localStorage.setItem(pkey(), JSON.stringify(cur)); }catch(e){}
+    CLOUD.uid = uid; cloudPush();
+    return before !== JSON.stringify(cur.tours) + cur.lives; }, function(){ return false; }); }
+/* A GUEST PLAYS THE FIRST FEW HOLES FREE and is then asked to sign in to go on, so their progress has an
+   account to live on. What they played signed out is claimed by the account on the way in (pload). The
+   Daily Hole stays open to everybody. A host that cannot say who is signed in gates nobody. */
+var GUEST_HOLES = 5;
+function isGuest(){ try{ var h = hostOf(); return !!(h.signedIn && !h.signedIn()); }catch(e){ return false; } }
+function guestSheet(){
+  var sh = el('<div class="pp-sheet"><div class="pp-card"><div class="k">' + GUEST_HOLES + ' FREE HOLES PLAYED</div><div class="t">Sign in to keep going</div>\
+    <div class="m">A free account keeps your stars and your place on the Tour. On every device.</div>\
+    <button class="pt-go pp-wide" data-in>Sign in</button><button class="pt-go pp-wide" data-up>Create a free account</button><button class="pt-bt pp-wide" data-n>Not now</button></div></div>');
+  S.ov.appendChild(sh);
+  var go = function(mode){ var h = S.host; close(); try{ if (h.signIn) h.signIn(mode); }catch(e){} };
+  sh.querySelector('[data-in]').onclick = function(){ go('signin'); };
+  sh.querySelector('[data-up]').onclick = function(){ go('signup'); };
+  sh.querySelector('[data-n]').onclick = function(){ sh.remove(); }; }
 function livesMax(){ try{ var h = hostOf(); return h.passActive && h.passActive() ? 6 : 3; }catch(e){ return 3; } }
 function loseLife(st){ st.lives = Math.max(0, (st.lives == null ? livesMax() : st.lives) - 1); if (st.lives === 0 && !st.refillAt) st.refillAt = Date.now() + LIFE_MS; psave(st); }
 function coins(n, label){ try{ if (S.host.coins) S.host.coins(n, label); }catch(e){} }
@@ -2158,6 +2219,7 @@ function startLevel(n, tid){
   var st = pload(); tid = tid || S.tour || 'main';
   if (tourOf(tid).members && !membersOpen() && !membersPreview()) return membersSheet();
   if (tourOf(tid).lab && !labOpen()) return showHub('main');
+  if (tid === 'main' && n > GUEST_HOLES && isGuest()) return guestSheet();
   if (st.lives <= 0 && !tourOf(tid).lab) return outOfLives();
   var d = tourDesc(n, S.host, tid);
   S.round = { mode:'ppt', lv:n, tid:tid, i:0, cards:[], holes:[d], title:levelName(n, tid) };
@@ -2881,6 +2943,7 @@ function scorecard(){
 }
 RTT_PUTT.open = open; RTT_PUTT.close = close; RTT_PUTT.paintCourse = paintCourse; RTT_PUTT.SKIN = SKIN;
 RTT_PUTT._state = function(){ return S; };
+RTT_PUTT._lose = function(){ loseLife(pload()); };
 RTT_PUTT._dailyFinish = function(s, par, ms){ return dailyFinish(s, par, ms); };
 // the checker's door straight onto a Tour level. Nothing on the page calls it.
 RTT_PUTT._level = function(n, tid){ if (S) startLevel(n, tid || 'main'); };
@@ -2894,6 +2957,8 @@ RTT_PUTT.cardArt = function(theme){ var t = CARD_ART[theme] ? theme : 'clubhouse
   return '<img class="gc-art" src="putt/cards/' + t + '.png?v=' + CARD_V + '" alt="" aria-hidden="true">'; };
 RTT_PUTT.COINS = { hole:COIN_HOLE, sig:COIN_SIG, ace:COIN_ACE, world:COIN_WORLD, daily:COIN_DAILY, dailyPar:COIN_DAILY_PAR }; RTT_PUTT.PAY = PAY;
 // what the home screen card shows: today's Daily Hole, your level and your lives
+// the page calls this on sign in, so the home card shows the account's place before the mode is opened
+RTT_PUTT.sync = function(host){ HOSTX = host || HOSTX; return cloudPull(); };
 RTT_PUTT.summary = function(host){ HOSTX = host || HOSTX; var st = pload(), dk = today(), dh = dailyHole(dk), rec = st.daily[dk];
   var tm = st.tours.main, lv = Math.min(tm.lv, LEVELS.length);
   return { lv:lv, levels:LEVELS.length, world:worldOf(lv, 'main').name, theme:worldOf(lv, 'main').theme, members:membersOpen(), lives:st.lives, max:livesMax(), refillAt:st.refillAt || null,

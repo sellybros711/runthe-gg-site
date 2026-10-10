@@ -19862,17 +19862,34 @@ first time it is beaten, 20 for a first ace, and 2,000 for finishing the world. 
 go through the page's `addBonusCoins`, so a Tour Pass multiplier does not apply. The signature, world, ace
 and streak rewards are recorded by name in the Tour record and are not wearable yet.
 
-**Where it is kept, said plainly.** The Tour record (`bag_ppt_v1`, account-scoped through the page's
-`acctKey`) is in the browser. The mockup's server ledger (lives on server time, a tester table the score
-calls check, a shared Daily Hole board) is not built, so a tester could reset a clock by clearing site
-data, and the Daily Hole result screen says the board is not there yet.
+**A signed in player's record is on the server** (`ps_saves` from 103, game `putt`, slot `tour`, so no
+migration). It goes up after every `psave` and comes down when the mode opens and on every sign in
+(`RTT_PUTT.sync`, called from `sbApply`, which redraws the home card in place and never re-renders a round).
+The page writes localStorage first and never waits on the network. The host hands the module `uid`,
+`signedIn`, `rpc` (golf's own `sb.rpc`, null on any error) and `signIn`.
+
+- **Two copies are merged, never chosen between.** `pmerge` only adds: the furthest hole, the best score per
+  hole, every ace and payout, every daily played. So a stale phone cannot take a hole away, and a daily
+  played on one device is played on all. Lives, the refill clock and the streak come from whichever copy
+  was written last (`st.t`), because they go down as well as up.
+- **Progress is a count of things the merge only adds** (`cloudProg`), so a merged record is never behind
+  either copy. A refused write hands back the stored record, which is merged in and sent again, at most
+  three times running.
+- **Every call fails soft.** null is no opinion and the local record stands.
+
+What is still not on the server: lives are not on server time, so clearing site data before the first sync
+of a session can refill them, and the Daily Hole has no shared board.
+
+**A guest plays the first five Tour holes free** (`GUEST_HOLES`). Hole 6 opens a sheet asking them to sign
+in or create an account, and its buttons close the mode and open the page's account sheet. The Daily Hole
+stays open to guests. What a guest played is claimed by the account on the way in (below), then synced.
+A host with no `signedIn` gates nobody.
 
 **A record saved signed out is claimed by the account, never lost** (`pmerge` in `pload`). The key is
 `bag_ppt_v1@<id>` once the page knows who is playing and the bare key before that, so a session that
 opened before sign-in resolved played under the bare key. A player reached hole 18 and came back to
 hole 1. A signed-in load folds the bare record in (furthest hole, best score per hole, aces, payouts)
-and clears it. Another account's record is never folded in. A different browser or device still starts
-over, because nothing here is on a server.
+and clears it. Another account's record is never folded in.
 
 **Two hazards were added to the engine for it**: conveyors (`M.BELT`, a zone with a push in
 `C.belts`) and bounce pads (a bumper with `e` over 1, capped at `V_MAX`). Mini golf sand is
