@@ -14,7 +14,7 @@ only after the API confirms a tester.
 |---|---|
 | `config.js` | every tunable number (clock, bands, blend k, ramp, coverage) |
 | `normalize.js`, `matcher.js` | the answer engine: tapped id, exact, alias, order free, surname, fuzzy, picker, NO PITCH |
-| `entities.js`, `data/entities.json` | the dataset, with stable ids (generated) |
+| `entities.js`, `data/entities.js` | the dataset, with stable ids (generated) |
 | `query.js` | the prompt query language and field coverage |
 | `scoring.js` | prior share, blended expected share, depth, tiers, called list |
 | `validate.js`, `publish.js` | the authoring rules, and building a frozen slate |
@@ -61,7 +61,7 @@ set, and NFL prompts start in 1995 or later (`CONFIG.LEAGUE_COVERAGE`).
 ## Scripts
 
 ```
-node functions/_stumpire/build/build-entities.mjs     rebuild data/entities.json (reports lost ids)
+node functions/_stumpire/build/build-entities.mjs     rebuild data/entities.js (reports lost ids)
 node functions/_stumpire/build/import-search.mjs --source fixture|wikipedia|csv [--spot google.csv]
 node functions/_stumpire/build/audit-fields.mjs       where an award can be trusted
 node functions/_stumpire/build/seed-slate.mjs [--sql] [--date YYYY-MM-DD] [--days N] [--recent used.json] [--extra prompts.json]

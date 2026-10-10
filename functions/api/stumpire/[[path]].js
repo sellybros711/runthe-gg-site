@@ -14,10 +14,12 @@ import { sign, setCookie, secretOf } from '../../_stumpire/cookie.js';
 /* EVERY PAGES FUNCTION IS ONE WORKER. A static import of the engine would
    evaluate its 2MB dataset on the cold start of every endpoint on the site,
    the Stripe webhook included. Loaded on first use, only Stumpire pays. */
+/* No `with { type: 'json' }` here: Cloudflare's build image cannot parse it
+   and the whole deploy fails. Its bundler loads .json without being asked. */
 let ENGINE = null;
 async function engine() {
   if (!ENGINE) {
-    const [api, search] = await Promise.all([import('../../_stumpire/api.js'), import('../../_stumpire/data/search_avg.json', { with: { type: 'json' } })]);
+    const [api, search] = await Promise.all([import('../../_stumpire/api.js'), import('../../_stumpire/data/search_avg.json')]);
     ENGINE = { handle: api.handle, search: (search.default || search).values };
   }
   return ENGINE;
