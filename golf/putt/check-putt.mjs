@@ -423,7 +423,7 @@ if (!args.includes('--no-browser')){
     // A fresh browser for an account the server knows starts at the server's hole with the server's lives.
     const cld = await pg.evaluate(async () => { window.RTT_PUTT.close(); const store = {}, calls = [], sb0 = sb;
       const best = {}; for (let n = 1; n <= 29; n++) best[n] = 3;
-      store.tour = { progress:30, payload:{ v:2, t:Date.now() - 60000, lives:1, refillAt:null, tours:{ main:{ lv:30, best, ace:{}, paid:{}, wpaid:{} } }, daily:{}, rewards:[] } };
+      store.tour = { progress:30, payload:{ v:2, lt:Date.now() - 60000, lives:1, refillAt:null, tours:{ main:{ lv:30, best, ace:{}, paid:{}, wpaid:{} } }, daily:{}, rewards:[] } };
       sb = { rpc(fn, a){ calls.push(fn); const cur = store[a.p_slot];
         if (fn === 'ps_save_get') return Promise.resolve({ data:cur ? [{ slot:a.p_slot, progress:cur.progress, payload:cur.payload }] : [], error:null });
         if (fn === 'ps_save_put'){ if (cur && cur.progress > a.p_progress) return Promise.resolve({ data:[{ ok:false, slot:a.p_slot, progress:cur.progress, payload:cur.payload }], error:null });
