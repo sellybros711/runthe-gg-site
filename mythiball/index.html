@@ -10572,6 +10572,9 @@ const CPU_SWEET = { easy: 0.26, medium: 0.20, hard: 0.16 };
    6.2 a nine before the forced runner was fixed, against a real game's 4.5 and
    this file's own note that a backyard game should sit a LITTLE over it), and
    it is measured rather than assumed. */
+/* What a swing at a ball off the plate costs in contact quality, per zone
+   unit past the edge: a pitch a third of a zone outside keeps about half. */
+const CHASE_COST = 1.5;
 const BAT = {
   HR_BASE: 0.018, HR_Q: 0.135,
   XBH_BASE: 0.035, XBH_Q: 0.090,
@@ -11663,11 +11666,7 @@ function startAtBat() {
   refreshHud();
   if (playerIsBatting()) {
     /* CPU calls its own pitch, once the coach (first swing only) is done. */
-    coachShow('bat', COACH.bat, () => setTimeout(() => {
-      if (walkWorthIt(State.game, currentBatter())) return issueIntentionalWalk();
-      const pick = cpuCallPitch();
-      throwPitch(pick.pt, pick.zone);
-    }, BEAT.intoAtBat));
+    coachShow('bat', COACH.bat, () => setTimeout(nextPitch, BEAT.intoAtBat));
   } else {
     /* Your defense is on the field: you call the pitch. */
     coachShow('pitch', COACH.pitch, () => setTimeout(offerPitchSelection, BEAT.intoAtBat));
@@ -11716,6 +11715,11 @@ const COACH = COARSE ? {
     '<b>Contact, Power, Bunt</b> are under the field. They change your swing before '
     + 'the pitch. Contact is the forgiving one. Power swings for the fence. Start '
     + 'with Contact.',
+    /* THE COUNT IS THE DECISION, and the notes never said so: until a ball
+       off the plate cost contact quality, swinging at everything was the
+       better way to bat. */
+    '<b>Lay off balls.</b> A pitch off the plate comes off the end of the bat. '
+    + 'Get ahead 2-0 or 3-1 and he has to throw you a strike.',
   ],
   pitch: [
     '<b>You are pitching.</b> Your first pick is on the mound for the whole game. '
@@ -11745,6 +11749,11 @@ const COACH = COARSE ? {
     + 'whether you hit it. When you swing decides how hard, and where it goes.',
     '<b>Contact, Power, Bunt</b> (keys 1, 2, 3) change your swing before the pitch. '
     + 'Contact is the forgiving one. Power swings for the fence. Start with Contact.',
+    /* THE COUNT IS THE DECISION, and the notes never said so: until a ball
+       off the plate cost contact quality, swinging at everything was the
+       better way to bat. */
+    '<b>Lay off balls.</b> A pitch off the plate comes off the end of the bat. '
+    + 'Get ahead 2-0 or 3-1 and he has to throw you a strike.',
   ],
   pitch: [
     '<b>You are pitching.</b> Your first pick is on the mound for the whole game. '
@@ -11827,60 +11836,73 @@ function issueIntentionalWalk() {
   return true;
 }
 
-/* CPU pitching AI. Decides pitch type and zone against the current
-   batter and count. Reads:
-     - batter's CON: attack corners on high-CON hitters (avoid squaring up)
-     - count: 0-2 wastes off the plate; 3-0 grooves down the middle
-     - pitcher fatigue: gassed pitchers throw more fastballs, aim center more
-     - last pitch: mix things up on repeat calls
-   Returns { pt, zone } consumed by throwPitch. */
+/* CPU pitching AI. Decides pitch type and WHERE, against the batter and
+   the count. The count is the whole of it, the way it is in the sport:
+
+     - BEHIND (2-0, 3-0, 3-1, 2-1 is not), he has to throw a strike, so he
+       throws his hardest pitch and aims it at the plate. That is the pitch
+       a hitter waits for.
+     - AHEAD with two strikes, he tries to get you to chase: off speed,
+       aimed just off the plate.
+     - AHEAD otherwise, he works the edges.
+     - EVEN, the old mix: contact hitters get cornered, sluggers get it low.
+
+   The chase pitch USED to be aimed at a corner of the 3x3 grid, which sits
+   at 0.62 of the zone, inside it, so the 0-2 "waste" pitch was a strike two
+   times in three and there was nothing to lay off. Measured through
+   check-skill, a batter who swung at everything out-hit the same batter with
+   an eye. An aim is in zone units now, so off the plate means off the plate.
+
+   Returns { pt, zone, aim } for throwPitch; `aim` wins over `zone`. */
 function cpuCallPitch() {
   const g = State.game;
   const batter = currentBatter();
   const pitcher = currentPitcher();
   const fat = pitcherFatigue();
   const rep = pitcherRepertoire(pitcher);
+  const hardest = rep.reduce((a, b) => (PITCHES[a].speed <= PITCHES[b].speed ? a : b));
+  const soft = rep.filter(x => x !== hardest);
+  const any = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  const sgn = () => (Math.random() < 0.5 ? -1 : 1);
+  const span = (lo, hi) => lo + Math.random() * (hi - lo);
 
-  /* Type choice from HIS repertoire: mix, but repeat rarely. */
+  const behind = g.balls === 3 ? g.strikes < 2 : g.balls - g.strikes >= 2;
+  const full = g.balls === 3 && g.strikes === 2;
+  const ahead = g.strikes > g.balls;
+
+  /* Type: mix by default, repeat rarely. */
   let pt;
   if (g.lastCpuPitchType && Math.random() < 0.65) {
-    const alts = rep.filter(x => x !== g.lastCpuPitchType);
-    pt = alts[Math.floor(Math.random() * alts.length)] || rep[0];
+    pt = any(rep.filter(x => x !== g.lastCpuPitchType)) || rep[0];
   } else {
-    pt = rep[Math.floor(Math.random() * rep.length)];
+    pt = any(rep);
   }
-  /* Gassed pitcher: he leans on his straightest, hardest pitch. */
-  if (fat.level >= 2) {
-    pt = rep.reduce((a, b) => (PITCHES[a].speed <= PITCHES[b].speed ? a : b));
+  let aim = null, zone = null;
+  if (behind) {
+    if (Math.random() < 0.7) pt = hardest;
+    aim = { x: span(-0.45, 0.45), y: span(-0.45, 0.45) };
+  } else if (full) {
+    if (Math.random() < 0.5) pt = hardest;
+    aim = { x: span(-0.75, 0.75), y: span(-0.75, 0.75) };
+  } else if (ahead && g.strikes >= 2 && Math.random() < 0.55) {
+    if (soft.length && Math.random() < 0.7) pt = any(soft);
+    /* Off one edge by a little: far enough to be a ball, close enough to
+       look like one he has to protect against. */
+    const off = sgn() * span(1.12, 1.38), along = span(-0.75, 0.75);
+    aim = Math.random() < 0.5 ? { x: off, y: along } : { x: along, y: -Math.abs(off) };
+  } else if (ahead) {
+    const edge = sgn() * span(0.7, 0.98), along = span(-0.8, 0.8);
+    aim = Math.random() < 0.5 ? { x: edge, y: along } : { x: along, y: edge };
+  } else {
+    /* Even count: contact hitters get cornered, power hitters get it low. */
+    if (batter.con >= 75) zone = any([0, 2, 6, 8, 1, 3, 5, 7]);
+    else if (batter.pow >= 80) zone = any([6, 7, 8]);
+    else zone = Math.floor(Math.random() * 9);
   }
+  /* A gassed pitcher leans on his straightest, hardest pitch whatever the count. */
+  if (fat.level >= 2) pt = hardest;
   g.lastCpuPitchType = pt;
-
-  /* Zone choice: 3x3 grid indices 0..8, 4 = center. */
-  let zone;
-  const wasteRoll = g.strikes >= 2 && Math.random() < 0.35;
-  const grooveRoll = g.balls >= 3 && Math.random() < 0.55;
-  if (grooveRoll) {
-    zone = 4;   /* dead center on 3-0 */
-  } else if (wasteRoll) {
-    /* Chase pitch: pick one of the four corners. */
-    const corners = [0, 2, 6, 8];
-    zone = corners[Math.floor(Math.random() * 4)];
-  } else {
-    /* Contact hitters get cornered; power hitters get sinkers low. */
-    const hitContact = batter.con >= 75;
-    const hitPower = batter.pow >= 80;
-    if (hitContact) {
-      const cornersOrEdges = [0, 2, 6, 8, 1, 3, 5, 7];
-      zone = cornersOrEdges[Math.floor(Math.random() * cornersOrEdges.length)];
-    } else if (hitPower) {
-      /* Low pitches to power hitters */
-      zone = [6, 7, 8][Math.floor(Math.random() * 3)];
-    } else {
-      /* Balanced: random */
-      zone = Math.floor(Math.random() * 9);
-    }
-  }
-  return { pt, zone };
+  return { pt, zone, aim };
 }
 
 /* When the CPU bats, the player picks the pitch type and the target zone
@@ -11901,7 +11923,7 @@ function nextPitch() {
   if (playerIsBatting()) {
     if (walkWorthIt(g, currentBatter())) return issueIntentionalWalk();
     const pick = cpuCallPitch();
-    throwPitch(pick.pt, pick.zone);
+    throwPitch(pick.pt, pick.zone, pick.aim ? { aim: pick.aim } : undefined);
   } else {
     offerPitchSelection();
   }
@@ -12658,7 +12680,16 @@ function swingGeometry(cursorT, aim, pitch, ctx, mode, sweet) {
     contact *= 0.30 + 0.70 * locQ;
     if (locQ < 0.18) inZone = false;      /* a piece of it: foul */
   }
-  return { half, perfectDist, contact, inZone, through, locQ, d, reach,
+  /* A BALL OFF THE PLATE IS A BAD PITCH TO HIT, and until this it was not.
+     A swing at a pitch half a zone outside, timed and found, came off the
+     bat as hard as one down the middle, so measured through check-skill a
+     player who swung at everything OUT-HIT the same player with an eye.
+     Taking a ball was worth nothing, and the count meant nothing.
+     `chase` is how far past the edge it landed; the barrel can still find
+     it, but what comes off is the end of the bat. Both dugouts pay it. */
+  const chase = Math.max(0, Math.max(Math.abs(loc.x), Math.abs(loc.y)) - 1);
+  if (chase > 0 && !through) contact *= clamp(1 - chase * CHASE_COST, 0.2, 1);
+  return { half, perfectDist, contact, inZone, through, locQ, d, reach, chase,
            lift: clamp(loc.y - cur.y, -0.8, 0.8), off: cursorT - pitch.ideal };
 }
 
@@ -20103,8 +20134,11 @@ function renderHowTo() {
     + 'the ball, late goes the other way. <b>Place</b> decides whether you hit it '
     + 'at all: a bat is a horizontal thing, so a miss along it still finds the '
     + 'ball and a miss over or under it does not. Swing under the ball and it '
-    + 'climbs; over it and it is beaten into the ground. Watch the target ring: '
-    + 'it sets up where the pitch is aimed.</p>'
+    + 'climbs; over it and it is beaten into the ground.</p>'
+    + '<p><b>Watch the count.</b> A ball off the plate can be hit, but only off '
+    + 'the end of the bat. Lay off it. Get ahead 2-0 or 3-1 and the pitcher has '
+    + 'to come to you, usually with his fastball. Fall behind and he makes you '
+    + 'chase.</p>'
     + '<p>Before each pitch choose your swing with the buttons or keys <b>1, 2, 3</b>: '
     + '<b>Contact</b> widens the green and trades power away, <b>Power</b> narrows '
     + 'it and swings for the fence, and <b>Bunt</b> lays one down: runners move up, '
@@ -20128,6 +20162,8 @@ function renderHowTo() {
     + 'it go. In the green the pitch goes where you aimed. Outside it, the miss '
     + 'opens up, and a miss off a corner is a ball. Every pitcher owns three '
     + 'pitches, so the buttons change with whoever you put on the mound.</p>'
+    + '<p>A pitch just off the plate is a weapon. Hit, it comes off weak. Get '
+    + 'ahead in the count and make them chase it.</p>'
     + '<p><b>Runner: auto, send, hold</b> decides two things now, not one. On a '
     + 'base hit it waves men round or stops them at third. On a <b>caught fly '
     + 'ball</b> it decides whether they tag: a man on third can trade the out for '

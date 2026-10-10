@@ -146,7 +146,7 @@ while (Date.now() < until) {
       startGame({ mode: 'exhibition', youHome: true });
       return;
     }
-    if (g.aiming) { try { const p = cpuCallPitch(); throwPitch(p.pt, p.zone); } catch (e) {} }
+    if (g.aiming) { try { const p = cpuCallPitch(); throwPitch(p.pt, p.zone, p.aim ? { aim: p.aim } : undefined); } catch (e) {} }
   }).catch(() => {});
   await pg.waitForTimeout(250);
 }
