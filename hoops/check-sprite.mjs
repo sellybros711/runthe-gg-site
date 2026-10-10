@@ -32,7 +32,7 @@
  * RE-RECORDED A THIRD TIME, ON PURPOSE, because the owner found the players
  * too buff and the jersey poor. Lean and Standard got narrower shoulders,
  * smaller delts and thinner arms; only Muscular (the 'strong' id) keeps the
- * broad build. The tank was recut (a round scoop, narrow straps, round
+ * broad build. The tank was recut (a round scoop (since made a U), narrow straps, round
  * armholes, one even trim band) and its number is stamped on the screen so no
  * digit loses a row. The lower body was asked to stay and did not change.
  *
@@ -44,6 +44,10 @@
  * with a thin side trim. That reverses the third pass's lower body rule at the
  * owner's later request. A look with no ht or wt is drawn at the default size,
  * which is what these hashes hold.
+ *
+ * RE-RECORDED A FIFTH TIME, ON PURPOSE, because the owner found the tank's
+ * neckline read as a V neck and asked for a U. The scoop is wider with a flat
+ * bottom and a little shallower. Nothing but the neck opening and its trim moved.
  */
 import fs from 'node:fs';
 import path from 'node:path';

@@ -444,13 +444,14 @@ function build(L, o, J){
   if (!suit) {
     var torsoMat = function(p){
       var dx = Math.abs(p[0] - CX), y = 29.2 + (p[1] - C0[1]) / ts, front = p[2] > 0.6;
-      /* the tank, cut the way a real one is: a round scoop at the neck, two
+      /* the tank, cut the way a real one is: a U at the neck, two
          narrow straps, deep round armholes, each opening edged in one even
          band of the second colour. Nothing is trimmed but an edge. */
       var edge = cR[0], strapIn = 3.0, strapOut = Math.min(5.8, edge - 1.4);
-      /* the neck: deeper in front than behind */
-      var nd = front ? 2.6 : 0.8, nw = 3.0;
-      var neck = function(w){ var t = dx / w; return t < 1 ? 24.6 + nd * (1 - t * t) : -1; };
+      /* the neck: a U, wide with a flat bottom, a little deeper in front than
+         behind. A narrow parabola here read as a V neck. */
+      var nd = front ? 1.9 : 0.7, nw = 3.7;
+      var neck = function(w){ var t = dx / w; return t < 1 ? 24.6 + nd * (1 - t * t * t * t) : -1; };
       if (y < neck(nw)) return 'skin';
       if (y < neck(nw + 0.9) + 0.85) return 'trim';
       /* the armholes: an ellipse cut out of each side, under the strap */
