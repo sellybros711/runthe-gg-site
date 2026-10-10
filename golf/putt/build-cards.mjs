@@ -20,7 +20,7 @@ await pg.goto('http://127.0.0.1:' + srv.address().port + '/golf/');
 await pg.waitForFunction(() => window.RTT_PUTT && window.RTT_PUTT_3D);
 await pg.evaluate(() => { sbUser = { id:'build' }; puttOn = () => true; openPutt(); });
 const ASPECT = 2.4;   // the card is about 2.4 wide to 1 tall on a phone; it is cut to fit by object-fit
-for (const [theme, n] of [['clubhouse', 18], ['temple', 36], ['pirate', 54], ['canyon', 72], ['volcano', 90]]) {
+for (const [theme, n] of [['clubhouse', 18], ['temple', 36], ['pirate', 54], ['canyon', 72], ['volcano', 90], ['frozen', 108], ['sky', 126], ['neon', 144]]) {
   await pg.evaluate((n) => window.RTT_PUTT._level(n), n);
   await pg.waitForFunction(() => { const P = window.RTT_PUTT._state().play; return P && P.v3 && P.v3.cv; }, null, { timeout:120000 });
   const url = await pg.evaluate((A) => { const c = window.RTT_PUTT._state().play.v3.cv, h = Math.round(c.width / A), o = document.createElement('canvas');

@@ -164,7 +164,7 @@ function* steps(C, opt){
   var B = { solid:solid, vox:vox, tube:tube, blob:blob, gz:gz, ART:ART, clearAt:clearAt, T:T };
 
   // ---- the hole's own pieces
-  var LATHE = { pumpkin:1, ghost:1, pine:1, snowman:1, egg:1, snowball:1, beachball:1, pie:1, potgold:1, umbrella:1, clover:0, star:0 };
+  var LATHE = { pumpkin:1, ghost:1, pine:1, snowman:1, egg:1, snowball:1, beachball:1, pie:1, potgold:1, umbrella:1, cloud:1, neonpost:1, clover:0, star:0 };
   var LIFT = { bat:1.4, ghost:0.5 };
   function base(x, y){ return CARP + F.h(x, y) * K + TZ(x, y); }
   function skinCol(name){ var fn = SK[name] || SK.stone, n = {}, best = null, bn = 0;
@@ -231,7 +231,7 @@ function* steps(C, opt){
     if (m === 'ground') return R(h3((c.ti || x) >> 1, (c.tj || y) >> 1, 9) < 0.14 ? T.bg2 : T.bg);
     if (m === 'rail') return R(T.wall);
     if (m === 'haz') return R(((x + (y >> 1) * 3) % 13) === 0 ? T.hazCol2 : T.hazCol);
-    if (m === 'ice') return R(T.hazCol); if (m === 'slow') return R(T.slowCol);
+    if (m === 'ice') return R(T.iceCol ? (((x * 5 + y * 3) % 23) < 2 ? T.iceCol2 : T.iceCol) : T.hazCol); if (m === 'slow') return R(T.slowCol);
     if (m === 'flow'){ var rc = T.river || ['#2f86c8', '#5fb3e6']; return R(((x * 3 + y * 5) % 17) < 3 ? rc[1] : rc[0]); }
     if (m === 'sand') return R(n < 0.14 ? '#d9c48a' : '#ecdba4');
     if (m === 'belt'){ var bl = C.belts && C.belts[0], horiz = !bl || Math.abs(bl.ax) >= Math.abs(bl.ay), q = horiz ? (c.ti || x) : (c.tj || y); return R((((q % 6) + 6) % 6) < 3 ? '#3a3f48' : '#5a616c'); }

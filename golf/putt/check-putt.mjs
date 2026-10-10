@@ -229,7 +229,7 @@ if (!QUICK){
     const ok = ['', ':sc', ':3'].map(k => ROUTES[TR.id + ':' + n + k]).filter(l => l && l.length <= want).find(l => !replayRoute(C, l));
     claim(!!ok && P.starsOf(ok.length, L.par, L.three) === 3, `${TR.id} ${n} ${P.levelName(n, TR.id)}: three stars (${want === 1 ? 'an ace' : want + ' strokes'}) has a route that replays with room for error`); };
   const TM = P.TOURS.main, TB = P.TOURS.members, Cn = P.PAY;
-  claim(TM.levels.length === 90 && TM.worlds.length === 5 && TM.per === 18, `the main tour is 90 holes in ${TM.worlds.length} worlds of ${TM.per}`);
+  claim(TM.levels.length === 144 && TM.worlds.length === 8 && TM.per === 18, `the main tour is 144 holes in ${TM.worlds.length} worlds of ${TM.per}`);
   claim(TB.levels.length === 18 && TB.worlds.length === 2 && TB.per === 9 && TB.members, `the Members Tour is 18 holes in ${TB.worlds.length} worlds of ${TB.per}`);
   claim(TM.worlds.every(W => P.CAL_THEMES.indexOf(W.theme) < 0), 'the main tour wears none of the calendar themes, which belong to the passes (' + TM.worlds.map(W => W.theme).join(', ') + ')');
   for (const TR of [TM, TB]){
@@ -289,8 +289,8 @@ if (!QUICK){
     claim(!!dr && blind.pts.every(p => p[1] > -19.3) && !blind.ev.some(e => e[1] === 'plate'), 'the Switch door holds a putt that never touched its plate');
     const sl = ROUTES['lab:5'], f = sl && sl[0], sv = f && P.speedFor(C, f[1]), first = f && P.simulate(C, C.tee[0], C.tee[1], Math.cos(f[0]) * sv, Math.sin(f[0]) * sv, f[2]);
     claim(!!first && first.ev.some(e => e[1] === 'plate') && first.pts.some(p => p[1] < -19.3), 'the Switch route rolls over the plate and through the door it opened'); }
-  const mw = TM.levels.filter(L => !L.sig).length / 5 * Cn.main.hole + Cn.main.sig + TM.per * Cn.main.ace + Cn.main.world;
-  claim(mw * 5 === 20000, `the main tour pays exactly 20,000 coins (${mw} a world)`);
+  const mw = TM.levels.filter(L => !L.sig).length / TM.worlds.length * Cn.main.hole + Cn.main.sig + TM.per * Cn.main.ace + Cn.main.world;
+  claim(mw === 4000, `the main tour pays 4,000 coins a world, ${mw * P.TOURS.main.worlds.length} in all (${mw} a world)`);
   claim(Cn.members.exclusive && Cn.members.hole > Cn.main.hole && Cn.members.sig > Cn.main.sig && /Members only/.test(Cn.members.finish), 'the Members Tour pays more a hole and carries rewards only members can earn');
   head(`4. ${DAYS} DAILY HOLES FROM TODAY`);
   const day0 = new Date(Date.UTC(2026, 9, 1));
@@ -409,7 +409,7 @@ if (!args.includes('--no-browser')){
     // ---- THE TOUR'S RULES, through the page. Each life is real: a fresh record for a fresh account.
     await pg.evaluate(() => { const st = window.RTT_PUTT._state(); if (st && st.play && st.play.strokes) { st.round.mode = 'x'; } document.querySelector('.pt-ov') && window.RTT_PUTT.close(); sbUser = { id:'chk' }; localStorage.removeItem('bag_ppt_v1@chk'); openPutt(); });
     await pg.waitForSelector('.pp-map [data-lv="1"]');
-    claim(await pg.evaluate(() => document.querySelectorAll('.pp-lv').length === 90 && document.querySelectorAll('.pp-lv.lock').length === 89 && document.querySelectorAll('.pp-lv.sig').length === 5), 'the map shows 90 levels, five signature holes, and only level 1 open');
+    claim(await pg.evaluate(() => document.querySelectorAll('.pp-lv').length === 144 && document.querySelectorAll('.pp-lv.lock').length === 143 && document.querySelectorAll('.pp-lv.sig').length === 8), 'the map shows 144 levels, eight signature holes, and only level 1 open');
     // A RECORD SAVED SIGNED OUT IS CLAIMED, NEVER LOST. A player reached hole 18 and came back to hole 1, because
     // the record is keyed by account and a session that opened before sign-in resolved played under the bare key.
     const mrg = await pg.evaluate(async () => { window.RTT_PUTT.close(); const best = {}; for (let n = 1; n <= 17; n++) best[n] = 2;
@@ -419,7 +419,7 @@ if (!args.includes('--no-browser')){
       sbUser = { id:'chk' }; localStorage.removeItem('bag_ppt_v1@chk'); openPutt(); return { open, bare }; });
     await pg.waitForSelector('.pp-map [data-lv="1"]');
     claim(mrg.open >= 18 && mrg.bare === null, `a signed-in account claims the holes played signed out (${mrg.open} open, bare key ${mrg.bare === null ? 'cleared' : 'left'})`);
-    await pg.waitForFunction(() => document.querySelectorAll('.pp-land').length === 5, null, { timeout:15000 }).catch(() => {});
+    await pg.waitForFunction(() => document.querySelectorAll('.pp-land').length === 8, null, { timeout:15000 }).catch(() => {});
     const land = await pg.evaluate(() => [...document.querySelectorAll('.pp-band')].map(b => { const c = b.querySelector('.pp-land'); if (!c) return null;
       const x = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; const cols = new Set(); for (let i = 0; i < x.length; i += 4 * 37) cols.add(x[i] << 16 | x[i + 1] << 8 | x[i + 2]);
       return { cols:cols.size, exact:Math.abs(c.offsetWidth - c.width * 2) < 1 && Math.abs(c.offsetHeight - c.height * 2) < 1, covers:c.offsetWidth >= b.offsetWidth && c.offsetHeight >= b.offsetHeight }; }));
@@ -513,7 +513,7 @@ if (!args.includes('--no-browser')){
       return out; });
     claim(!!v3, 'the 3D hole module loaded');
     if (v3){
-      claim(v3.n === 72 + 90 + 18 && v3.magenta.length === 0, `all ${v3.n} themed and Tour holes draw in 3D with no unknown material` + (v3.magenta.length ? ': ' + v3.magenta.slice(0, 4).join('; ') : ''));
+      claim(v3.n === 72 + 144 + 18 && v3.magenta.length === 0, `all ${v3.n} themed and Tour holes draw in 3D with no unknown material` + (v3.magenta.length ? ': ' + v3.magenta.slice(0, 4).join('; ') : ''));
       claim(v3.off.length === 0, 'the projection puts open carpet on carpet in every picture, so the ball rolls on what is drawn' + (v3.off.length ? ': ' + v3.off.slice(0, 4).join('; ') : ''));
       claim(v3.sliceDiff === 0 && v3.slices > 20, `rendered a little at a time (${v3.slices} steps) it is the same picture, pixel for pixel` + (v3.sliceDiff ? ': ' + v3.sliceDiff + ' differ' : ''));
       claim(v3.med < 600, `a hole renders in ${v3.med}ms at the median (${v3.max}ms the slowest), on this machine`);
