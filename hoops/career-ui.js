@@ -154,7 +154,7 @@ var CSS = [
 '.cr-id .cr-lines + .k-strip{padding-top:10px;}',
 '.cr-id .k-stage + .cr-lines{border-top:3px solid var(--k-frame);}',
 '.cr-id .k-strip .k-tag{white-space:normal;line-height:1.5;}',
-'.cr-id .k-actor img.rtf-baller{display:block;filter:drop-shadow(0 6px 0 rgba(5,7,13,.55));}',
+'.cr-id .k-actor .rtf-baller{display:block;filter:drop-shadow(0 6px 0 rgba(5,7,13,.55));}',
 '.cr-id .k-set img{display:block;}',
 '.cr-id .k-ovr .k-num{font-size:30px;}',
 '@media (max-width:380px){.cr-id .k-id .k-hero{font-size:26px;}}',
@@ -620,7 +620,7 @@ var CSS = [
 '.cr-gear summary{cursor:pointer;font:800 12px var(--k-f-text);letter-spacing:.1em;text-transform:uppercase;color:var(--k-ink-2);margin:4px 0 10px;min-height:32px;}',
 '@media (max-width:379px){.cr-look{grid-template-columns:1fr;}.cr-look > div:first-child{position:static;text-align:center;}}',
 /* the player, drawn (hoops/baller.js), always at a whole-number scale */
-'img.rtf-baller{image-rendering:pixelated;image-rendering:crisp-edges;}',
+'.rtf-baller{image-rendering:pixelated;image-rendering:crisp-edges;}',
 '.ch-cur .rtf-baller{flex:0 0 auto;height:80px;width:auto;margin:-8px 0 -10px -2px;}',
 '@media (prefers-reduced-motion:reduce){.cr-beats.k-in li{animation:none;}}',
 '/* ═══ THE VISUAL LEAP ═══════════════════════════════════════════════════════',
@@ -859,6 +859,8 @@ function portrait(L, o){
   if (!B) return jersey(L);
   var k = C.colorsOf(L);
   o = o || {};
+  /* the first scene walks him on: paint that in the background now */
+  try { if (window.RTF_SCENES && window.RTF_SCENES.warm) window.RTF_SCENES.warm(L); } catch (x) {}
   return B.img(lookOf(L), { c1: k.primary, c2: k.secondary, num: L.num, age: L.age, pose: o.pose || 'stand', scale: o.scale || 3 });
 }
 /* A jersey in the club's colours with your number on it. The fallback

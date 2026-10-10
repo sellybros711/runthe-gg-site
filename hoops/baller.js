@@ -968,6 +968,11 @@ function url(look, opts){
    on the page. Reduced motion gets the first frame and no timer. */
 function img(look, opts, cls){
   var o = Object.assign({}, opts || {});
+  /* A figure that is not asked to stand still is live (see live()): it
+     breathes a pixel and blinks rather than hopping a whole cell. A still one
+     is an <img>, which is what a screen that swaps it on every slider drag
+     needs. */
+  if (!o.still && o.pose !== 'trophy' && !ANIM[o.pose] && typeof document !== 'undefined' && !reducedNow()) return live(look, o, cls);
   o.frame = 0;
   var a = url(look, o);
   var still = o.pose === 'trophy' || o.still || !!ANIM[o.pose];
@@ -1015,7 +1020,7 @@ function breathe(){
    Reduced motion draws the still pose and nothing else. */
 var SRC = (typeof document !== 'undefined' && document.currentScript && document.currentScript.src) || '';
 var BOUNCE_MS = 620, BREATH_MS = 3600, BREATH_AMP = 0.55, BREATH_LV = [0, 0.34, 0.67, 1];
-var LIVE = {}, liveN = 0, liveRaf = 0, SETCACHE = {}, SETKEYS = [];
+var FIRSTS = {}, FKEYS = [], LIVE = {}, liveN = 0, liveRaf = 0, SETCACHE = {}, SETKEYS = [];
 var reducedNow = function(){ return typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches; };
 
 /* where the held ball's centre is, in fine pixels, for a bounce frame: the
@@ -1050,20 +1055,33 @@ function getWorker(){
   } catch (x) { workerOk = false; worker = null; }
   return worker;
 }
-/* paint one frame off the main thread if we can, in an idle moment if not */
-function paintAsync(look, o, cb){
-  var w = getWorker();
-  if (w) { var id = ++jobN; jobs[id] = function(img, failed){ if (failed) paintAsync(look, o, cb); else cb(img); }; w.postMessage({ id: id, look: look, o: o }); return; }
-  var run = function(){ try { cb(gridData(paint(look, o))); } catch (x) { cb(null); } };
+/* ONE QUEUE for every frame on the page, painted one at a time, so two
+   figures never fight for the worker and a frame needed first (the walk-in)
+   can go to the front of it. Off the main thread if we can, one per idle
+   moment if not. */
+var QUEUE = [], qBusy = false;
+function paintAsync(look, o, cb, first){
+  QUEUE[first ? 'unshift' : 'push']({ look: look, o: o, cb: cb });
+  pump();
+}
+function pump(){
+  if (qBusy || !QUEUE.length) return;
+  var j = QUEUE.shift(), w = getWorker();
+  qBusy = true;
+  var fin = function(img){ qBusy = false; j.cb(img); pump(); };
+  if (w) { var id = ++jobN; jobs[id] = function(img, failed){ if (failed) { qBusy = false; QUEUE.unshift(j); pump(); } else fin(img); }; w.postMessage({ id: id, look: j.look, o: j.o }); return; }
+  var run = function(){ var g = null; try { g = gridData(paint(j.look, j.o)); } catch (x) {} fin(g); };
   if (typeof requestIdleCallback === 'function') requestIdleCallback(run, { timeout: 400 }); else setTimeout(run, 30);
 }
 /* the frames a live figure needs, painted once per look and shared */
 function frameSet(look, o, mode){
-  var key = JSON.stringify([normal(look), o.c1, o.c2, o.num, o.pose, o.age >= 33 ? o.age : 0, o.dress || '', o.faceless ? 1 : 0, o.res, mode]);
+  /* a walk does not care which pose the beat is in, so it is shared */
+  var key = JSON.stringify([normal(look), o.c1, o.c2, o.num, mode === 'walk' ? '' : o.pose, o.age >= 33 ? o.age : 0, o.dress || '', o.faceless ? 1 : 0, o.res, mode]);
   var fs = SETCACHE[key];
   if (fs) return fs;
   var want = [];
   if (mode === 'dribble') for (var i = 0; i < 8; i++) want.push({ pose: 'bounce' + i });
+  else if (mode === 'walk') for (var w2 = 0; w2 < 4; w2++) want.push({ pose: 'walk' + w2 });
   else BREATH_LV.forEach(function(b){ want.push({ breath: b * BREATH_AMP }); want.push({ breath: b * BREATH_AMP, blink: 1 }); });
   fs = SETCACHE[key] = { frames: new Array(want.length), left: want.length, ready: false };
   SETKEYS.push(key); if (SETKEYS.length > 8) delete SETCACHE[SETKEYS.shift()];
@@ -1073,7 +1091,7 @@ function frameSet(look, o, mode){
     paintAsync(look, Object.assign({}, o, want[i]), function(img){
       if (!img) { fs.dead = true; return; }
       fs.frames[i] = toCanvas(img); next(i + 1);
-    });
+    }, mode === 'walk');
   })(0);
   return fs;
 }
@@ -1088,25 +1106,84 @@ function live(look, opts, cls){
   var o = Object.assign({}, opts || {});
   var s = Math.max(1, Math.round(o.scale || 4)), res = resFor(o);
   o.res = res;
+  var enter = !!o.enter; delete o.enter;
   var mode = o.pose === 'ball' ? 'dribble' : 'breath';
   var id = 'L' + (++liveN), base = Object.assign({}, o); delete base.scale;
-  var first = gridData(paint(look, Object.assign({}, base, { frame: 0 })));
+  /* the first frame is painted here, once per look: the career screen redraws
+     on every press and must not repaint the man each time */
+  var fk = JSON.stringify([normal(look), base]), first = FIRSTS[fk];
+  if (!first) { first = FIRSTS[fk] = gridData(paint(look, Object.assign({}, base, { frame: 0 }))); FKEYS.push(fk); if (FKEYS.length > 40) delete FIRSTS[FKEYS.shift()]; }
   LIVE[id] = { look: look, o: base, mode: mode, res: res, still: first, el: null, born: Date.now(), next: 0, blinkAt: 0, t0: Math.random() * BOUNCE_MS };
-  if (!reducedNow() && typeof document !== 'undefined') LIVE[id].set = frameSet(look, base, mode);
-  kick();
+  if (!reducedNow() && typeof document !== 'undefined') {
+    /* the walk is asked for FIRST, so it is painted before the idle loop */
+    if (enter) { LIVE[id].walk = frameSet(look, base, 'walk'); LIVE[id].enter = 1; }
+    LIVE[id].set = frameSet(look, base, mode);
+  }
+  kick(); liveCss();
+  /* the size it is shown at is a custom property under a one-class rule, not
+     an inline width, so any screen's own rule for .rtf-baller still wins the
+     way it did over an <img>'s width attribute */
   return '<canvas class="rtf-baller rtf-live' + (cls ? ' ' + cls : '') + '" data-live="' + id + '" width="' + (W * res) + '" height="' + (H * res) + '"'
-    + ' style="width:' + (W * s) + 'px;height:' + (H * s) + 'px"></canvas>';
+    + ' style="--lw:' + (W * s) + 'px;--lh:' + (H * s) + 'px' + (LIVE[id].enter ? ';opacity:0' : '') + '"></canvas>';
+}
+/* Paint a figure's walk-in ahead of time, in the background, so the first
+   scene that walks him on does not wait for it. Same options as live(). */
+function warm(look, opts){
+  if (reducedNow() || typeof document === 'undefined') return;
+  var o = Object.assign({}, opts || {}); o.res = resFor(o); delete o.scale; delete o.enter;
+  frameSet(look, o, 'walk');
+}
+var cssDone = false;
+function liveCss(){
+  if (cssDone || typeof document === 'undefined' || !document.head) return;
+  cssDone = true;
+  var st = document.createElement('style');
+  st.textContent = 'canvas.rtf-live{width:var(--lw);height:var(--lh);image-rendering:pixelated;image-rendering:crisp-edges;}';
+  document.head.insertBefore(st, document.head.firstChild);
 }
 function kick(){ if (!liveRaf && typeof requestAnimationFrame === 'function') liveRaf = requestAnimationFrame(tick); }
 function ease(u){ return u * u * (3 - 2 * u); }
+/* THE ENTRANCE. He is drawn facing the camera, so a walk across the stage
+   would be a strafe: he walks DOWN-stage instead, toward the camera onto his
+   mark, growing from a little smaller and a little further back, on the walk
+   cycle. It waits for the walk frames for at most ENTER_WAIT and simply
+   appears without them. The size steps by whole fine pixels, so he never
+   shimmers. */
+var ENTER_MS = 900, ENTER_WAIT = 700, ENTER_FROM = 0.86;
+function entrance(L, now){
+  var el = L.el, wk = L.walk;
+  if (L.enter === 1) {
+    if (wk && wk.ready && !wk.dead) { L.enter = 2; L.e0 = now; }
+    else if (now - L.born > ENTER_WAIT || (wk && wk.dead)) { L.enter = 0; el.style.opacity = ''; return null; }
+    else return 'wait';
+  }
+  var u = (now - L.e0) / ENTER_MS;
+  if (u >= 1) { L.enter = 0; el.style.opacity = ''; el.style.transform = ''; return null; }
+  var e = 1 - (1 - u) * (1 - u), k = ENTER_FROM + (1 - ENTER_FROM) * e, h = el.offsetHeight || 1;
+  k = Math.round(k * h) / h;
+  el.style.transformOrigin = '50% 100%';
+  el.style.transform = 'translateY(' + Math.round(-(1 - e) * h * 0.06) + 'px) scale(' + k.toFixed(4) + ')';
+  el.style.opacity = String(Math.min(1, u * 5));
+  return wk.frames[Math.floor((now - L.e0) / 130) % 4];
+}
 function drawLive(L, now){
   var ctx = L.ctx, res = L.res, cw = W * res, ch = H * res;
+  if (L.enter) {
+    var wf = entrance(L, now);
+    if (wf === 'wait') return;
+    if (wf) {
+      ctx.clearRect(0, 0, cw, ch);
+      ctx.fillStyle = 'rgba(0,0,0,.28)';
+      ctx.beginPath(); ctx.ellipse(22 * res, 63.1 * res, 11 * res, 1.3 * res, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.drawImage(wf, 0, 0); L.drewStill = false; return;
+    }
+  }
   var fs = L.set, go = fs && fs.ready && !fs.dead;
   if (!go && L.drewStill) return;
   ctx.clearRect(0, 0, cw, ch);
   ctx.fillStyle = 'rgba(0,0,0,.28)';
   ctx.beginPath(); ctx.ellipse(22 * res, 63.1 * res, 11 * res, 1.3 * res, 0, 0, Math.PI * 2); ctx.fill();
-  if (!go) { ctx.drawImage(toCanvas(L.still), 0, 0); L.drewStill = true; return; }
+  if (!go) { if (!L.still.cv) L.still.cv = toCanvas(L.still); ctx.drawImage(L.still.cv, 0, 0); L.drewStill = true; return; }
   if (L.mode !== 'dribble') {
     /* the breath: a slow sine through four painted levels, and a blink */
     var b = (1 - Math.cos((now / BREATH_MS) * Math.PI * 2)) / 2, lv = Math.round(b * (BREATH_LV.length - 1));
@@ -1167,7 +1244,7 @@ var API = {
   },
   SETS: Object.keys(SETS).reduce(function(m, k){ m[k] = SETS[k].length; return m; }, {}), isFrame: function(p){ return !!ANIM[p]; },
   DEFAULT: DEFAULT, normal: normal, lookFor: lookFor, hash: hash, inkOn: inkOn, contrast: contrast,
-  paint: paint, canvas: canvas, url: url, img: img, breathe: breathe, live: live, _gridData: gridData,
+  paint: paint, canvas: canvas, url: url, img: img, breathe: breathe, live: live, warm: warm, _gridData: gridData,
   prop: prop, propCanvas: propCanvas, ramp: ramp, PROPS: Object.keys(PROP_SIZE),
 };
 if (typeof module !== 'undefined' && module.exports) module.exports = API;

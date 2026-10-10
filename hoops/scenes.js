@@ -914,7 +914,7 @@ function play(beats, ctx, opts){
   ov.hidden = false;
   document.documentElement.style.overflow = 'hidden';
   var $ = function(s){ return ov.querySelector(s); };
-  var list = beats.slice(), i = 0, timer = null, typing = false, choosing = false, room = null, roomName = 'studio', castKey = '', done = false, playing = false, moment = null;
+  var list = beats.slice(), i = 0, timer = null, typing = false, choosing = false, room = null, roomName = 'studio', castKey = '', walked = false, done = false, playing = false, moment = null;
   ctx.vseed = ctx.vseed != null ? ctx.vseed : B.hash(ctx.L.seed + ':' + ctx.L.year + ':' + (ctx.sceneId || '')) % 997;
 
   function stopType(){ if (timer) { clearInterval(timer); timer = null; } }
@@ -954,17 +954,20 @@ function play(beats, ctx, opts){
       for (var n = 0; n < imgs.length; n++) imgs[n].classList.toggle('dim', bt.who !== 'me' && bt.pic === 'both' && n === 0);
       return;
     }
+    /* the first beat of a scene walks him on; later beats only change pose */
+    var enter = !walked && !!B.live && bt.pic === 'me';
+    if (bt.pic) walked = true;
     castKey = k;
     var html = '';
     /* the figures on the stage are live (baller.js): the ball is dribbled,
        the chest breathes a pixel, the eyes blink. A cached baller.js older
        than live() still draws them the old way. */
     var fig = B.live || B.img;
-    var me = function(){ return fig(ctx.look, { c1: old ? ctx.fc1 : ctx.c1, c2: old ? ctx.fc2 : ctx.c2, num: ctx.num, pose: bt.pose || 'stand', age: ctx.age, scale: 6 }, 'in'); };
+    var me = function(){ return fig(ctx.look, { c1: old ? ctx.fc1 : ctx.c1, c2: old ? ctx.fc2 : ctx.c2, num: ctx.num, pose: bt.pose || 'stand', age: ctx.age, scale: 6, enter: enter }, enter ? '' : 'in'); };
     var rv = function(){
       var r = ctx.rival, last = r && r.seasons && r.seasons[r.seasons.length - 1];
       var k2 = last && E.clubSkin ? E.clubSkin(last.team) : { primary: '#2b3242', secondary: '#c9ccd6' };
-      return fig(B.lookFor(r ? r.name : 'rival'), { c1: k2.primary, c2: k2.secondary, num: r ? (B.hash(r.name) % 99) : 0, pose: bt.pose || 'stand', scale: 6 }, 'in');
+      return fig(B.lookFor(r ? r.name : 'rival'), { c1: k2.primary, c2: k2.secondary, num: r ? (B.hash(r.name) % 99) : 0, pose: bt.pose || 'stand', scale: 6, enter: enter }, enter ? '' : 'in');
     };
     if (bt.pic === 'me') html = me();
     else if (bt.pic === 'rival') html = rv();
@@ -1209,5 +1212,7 @@ window.RTF_SCENES = {
   CAST: CAST, OUTLETS: OUTLETS, SCENES: SCENES, CARD_INTROS: CARD_INTROS, PRESENTABLE: PRESENTABLE,
   on: on, setOn: setOn, pickScene: pickScene, build: build, chain: chain, play: play, ctxOf: ctxOf, feedFor: feedFor,
   isOpen: function(){ return !!(ov && !ov.hidden); },
+  /* paint the walk-on ahead of the first scene, with the scene's own colours */
+  warm: function(L){ if (!on() || !B.warm || !L) return; var c = ctxOf(L); B.warm(c.look, { c1: c.c1, c2: c.c2, num: c.num, age: c.age, scale: 6 }); },
 };
 })();

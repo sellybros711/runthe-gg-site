@@ -12,6 +12,18 @@
  * ball, the rim and the crowd sit on the same pixel grid and the canvas is
  * scaled by a whole number. Nothing is tweened between cells.
  *
+ * BUT THE CLOCK IS NOT THE FRAME RATE. A clip ticks twelve times a second,
+ * and drawn only on the tick a ball in flight jumped five cells at a time:
+ * the court looked like stop motion. So every display frame blends where
+ * things ARE between this tick and the next (blendState): the men, a jump,
+ * the ball and the light pool slide a cell at a time, rounded to the grid.
+ * The POSE still changes on the tick, because that is pixel art's own
+ * rhythm. The next tick is asked for fresh every frame rather than cached,
+ * because a press sets flags that at() reads, and a stale lookahead would
+ * show the defender's real move a tick late. Anything that moves further
+ * than a cut is drawn as the cut it is. at() must stay cheap and draw no
+ * random number, which every clip here already does.
+ *
  * A PLAYABLE MOMENT DECIDES NOTHING ON ITS OWN. Every press is a touch, a
  * number from -1 to 1, handed to the engine through C.choose(L, i, { touch })
  * (two free throws hand over { touches }). The engine rolls the shot with its
@@ -317,8 +329,24 @@ function stage(host, opts){
     else ctx.drawImage(sp, x, y);
     if (a.alpha != null) ctx.restore();
   }
+  /* the state between two ticks: positions slide, poses do not */
+  function blendState(a, b, f){
+    if (!b || f <= 0) return a;
+    var r = Object.assign({}, a), near = function(p, q, lim){ return Math.abs(p - q) <= lim; };
+    var L = function(p, q){ return Math.round(p + (q - p) * f); };
+    if (a.actors && b.actors) r.actors = a.actors.map(function(x, i){
+      var y = b.actors[i];
+      if (!y || y.who !== x.who || !near(x.x, y.x, 24) || !near(x.y, y.y, 24)) return x;
+      var o = Object.assign({}, x); o.x = L(x.x, y.x); o.y = L(x.y, y.y);
+      if (x.jump != null || y.jump != null) o.jump = L(x.jump || 0, y.jump || 0);
+      return o;
+    });
+    if (a.ball && b.ball && near(a.ball.x, b.ball.x, 40) && near(a.ball.y, b.ball.y, 40)) { r.ball = Object.assign({}, a.ball); r.ball.x = L(a.ball.x, b.ball.x); r.ball.y = L(a.ball.y, b.ball.y); }
+    if (a.focus != null && b.focus != null) r.focus = L(a.focus, b.focus);
+    return r;
+  }
   function draw(){
-    var s = st.state || {};
+    var s = st.next ? blendState(st.state || {}, st.next, st.frac) : st.state || {};
     ctx.clearRect(0, 0, st.cw, st.ch);
     ctx.imageSmoothingEnabled = false;
     var fy = st.fy;
@@ -415,6 +443,7 @@ function stage(host, opts){
     var t = 0, last = 0, acc = 0, per = TICK * (clip.slow || 1);
     var cues = clip.cues || {};
     if (REDUCED) {
+      st.next = null;
       st.tick = clip.key != null ? clip.key : clip.len - 1;
       st.state = clip.at(st.tick); draw();
       if (clip.call) st.say(clip.call, clip.big);
@@ -433,12 +462,14 @@ function stage(host, opts){
         st.tick = t;
         st.state = clip.at(t);
         t++;
-        if (t >= clip.len && !clip.loop) { draw(); if (done) done(); return; }
+        if (t >= clip.len && !clip.loop) { st.next = null; draw(); if (done) done(); return; }
         if (clip.loop && t >= clip.len) t = 0;
       }
+      st.next = t < clip.len ? clip.at(t) : null; st.frac = acc / per;
       draw();
       st.raf = requestAnimationFrame(frame);
     }
+    st.next = null;
     st.state = clip.at(0); draw();
     st.raf = requestAnimationFrame(frame);
   };

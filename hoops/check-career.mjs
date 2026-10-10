@@ -1863,7 +1863,7 @@ async function scenesWalk(b, serve) {
   await page.click('#cr-go');
   const look = await page.evaluate(() => RTF_CAREER_UI.state().cur.look);
   ok(look && look.hair === 'afro', `the builder's look is the career's (${JSON.stringify(look)})`);
-  const pic = await page.evaluate(() => !!document.querySelector('.cr-id img.rtf-baller'));
+  const pic = await page.evaluate(() => !!document.querySelector('.cr-id .rtf-baller'));
   ok(pic, 'the identity card draws the player');
 
   const seen = {}, rooms = {}, podium = [], jobs = [];
