@@ -406,6 +406,44 @@ if (!args.includes('--no-browser')){
       window.RTT_PUTT._dailyFinish(2, C.par, Math.round(performance.now() - P.t0)); const d = Object.keys(localStorage).filter(x => x.indexOf('bag_ppt_v1') === 0).map(k => Object.values(JSON.parse(localStorage.getItem(k)).daily || {}).find(v => v.done)).find(Boolean); return { ms:d && d.ms, txt:document.body.innerText }; });
     claim(dres.ms >= 12345 && dres.ms < 14000 && /0:12\.\d/.test(dres.txt), `a finished daily keeps its time and the result shows it (${dres.ms} ms)`);
     claim(await pg.evaluate(() => homeModeList().map(m => m.id).indexOf('putt') === 1), 'the Putt Putt Tour card comes second, right after Play 18');
+    // THE DAILY TAB: the card only asks while today is unplayed, the calendar has every day back to CAL_BACK,
+    // a missed day is shut without the Tour Pass, and a day played late pays but never moves the streak.
+    const calk = await pg.evaluate(async () => { const wait = async q => { for (let t = 0; t < 100 && !document.querySelector(q); t++) await new Promise(r => setTimeout(r, 50)); return !!document.querySelector(q); };
+      const k = String(todayKey()), td = k.slice(0, 4) + '-' + k.slice(4, 6) + '-' + k.slice(6, 8), add = n => new Date(Date.parse(td + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10);
+      const seed = daily => { localStorage.setItem('bag_ppt_v1@cal', JSON.stringify({ v:2, daily, streak:{ n:2, last:add(-1), best:2 }, tours:{ main:{ lv:1, best:{}, ace:{}, paid:{}, wpaid:{} } } })); };
+      const out = {}; window.RTT_PUTT.close(); sbUser = { id:'cal' };
+      seed({ [add(-1)]:{ s:3, par:3, done:1 } }); openPutt(); await wait('.pp-tabs [data-tab="daily"]'); out.cardUnplayed = !!document.querySelector('[data-daily]'); window.RTT_PUTT.close();
+      seed({ [add(-1)]:{ s:3, par:3, done:1 }, [td]:{ s:2, par:3, done:1 } }); openPutt(); await wait('.pp-tabs [data-tab="daily"]'); out.cardPlayed = !!document.querySelector('[data-daily]');
+      document.querySelector('.pp-tabs [data-tab="daily"]').click(); await wait('.pp-cday');
+      out.days = document.querySelectorAll('.pp-cday').length; out.todayDone = document.querySelector('.pp-cday[data-day="' + td + '"]').classList.contains('done');
+      out.lockN = document.querySelectorAll('.pp-cday.lock').length; document.querySelector('.pp-cday[data-day="' + add(-3) + '"]').click(); await wait('.pp-memsh');
+      out.sheet = !!document.querySelector('.pp-memsh'); out.noRound = !document.querySelector('.pt-stage canvas'); document.querySelector('.pp-memsh [data-n]').click();
+      window.RTT_PUTT._state().calPreview = true; document.querySelector('.pp-cday[data-day="' + add(-3) + '"]').click(); await wait('.pt-stage canvas');
+      const R = window.RTT_PUTT._state().round; out.pastRound = R && R.mode === 'pdaily' && R.day === add(-3) && R.past;
+      window.RTT_PUTT._state().play.state = 'done'; window.RTT_PUTT._dailyFinish(2, 3, 9000);
+      const st = JSON.parse(localStorage.getItem('bag_ppt_v1@cal')); out.late = st.daily[add(-3)] && st.daily[add(-3)].late === 1; out.streak = st.streak.n; out.last = st.streak.last === add(-1);
+      window.RTT_PUTT.close(); sbUser = { id:'chk' }; return out; });
+    claim(calk.cardUnplayed && !calk.cardPlayed, `the Daily card shows while today is unplayed and goes once it is played (${calk.cardUnplayed}, ${calk.cardPlayed})`);
+    claim(calk.days >= 60 && calk.todayDone, `the Daily tab is a calendar of ${calk.days} days with today marked played`);
+    claim(calk.lockN > 0 && calk.sheet && calk.noRound, 'without the Tour Pass a missed day is shut, and pressing it opens the Pass sheet rather than a hole');
+    claim(calk.pastRound && calk.late && calk.streak === 2 && calk.last, `a Pass holder plays a missed day, and it is filed late without moving the streak (streak ${calk.streak})`);
+    // THE WALK TO THE NEXT HOLE: Next walks the golfer up the cart path on the map and then opens the hole; a tap skips it.
+    // At a world's edge the door fills with the stars you have: enough and it opens, short and it stays shut on the map.
+    const wk = await pg.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), seed = (s, lv) => { const best = {}; for (let n = 1; n <= 18; n++) best[n] = s;
+      localStorage.setItem('bag_ppt_v1@walk', JSON.stringify({ v:2, tours:{ main:{ lv, best, ace:{}, paid:{}, wpaid:{} } } })); };
+      window.RTT_PUTT.close(); sbUser = { id:'walk' }; seed(1, 19); openPutt(); await sleep(300);
+      window.RTT_PUTT._walkTo(5); await sleep(400); out.walking = !!document.querySelector('.pp-walking .pp-me.walk') && !window.RTT_PUTT._state().round;
+      document.querySelector('.pp-map').dispatchEvent(new PointerEvent('pointerdown', { bubbles:true })); await sleep(100);
+      const R = window.RTT_PUTT._state().round; out.skipTo = R && R.lv;
+      window.RTT_PUTT.close(); openPutt(); await sleep(300); window.RTT_PUTT._walkTo(18); await sleep(2600);
+      out.doorOpen = !!document.querySelector('.pp-door.fill'); await sleep(3500); const R2 = window.RTT_PUTT._state().round; out.through = R2 && R2.lv;
+      window.RTT_PUTT.close(); seed(2, 18); openPutt(); await sleep(300); window.RTT_PUTT._walkTo(18); await sleep(3200);
+      out.shutTxt = (document.querySelector('.pp-door small') || {}).textContent || ''; await sleep(2000);
+      out.shutStay = window.RTT_PUTT._state().screen === 'menu' && !window.RTT_PUTT._state().play;
+      window.RTT_PUTT.close(); sbUser = { id:'chk' }; return out; });
+    claim(wk.walking && wk.skipTo === 6, `Next walks the golfer up the path on the map, and a tap skips straight to the hole (${wk.walking}, hole ${wk.skipTo})`);
+    claim(wk.doorOpen && wk.through === 19, `with the stars, the world door fills, opens and the walk carries on into World 2 (hole ${wk.through})`);
+    claim(/Need \d+ more/.test(wk.shutTxt) && wk.shutStay, `short of the stars, the door stays shut, says how many more, and leaves you on the map (${wk.shutTxt})`);
     // ---- THE TOUR'S RULES, through the page. Each life is real: a fresh record for a fresh account.
     await pg.evaluate(() => { const st = window.RTT_PUTT._state(); if (st && st.play && st.play.strokes) { st.round.mode = 'x'; } document.querySelector('.pt-ov') && window.RTT_PUTT.close(); sbUser = { id:'chk' }; localStorage.removeItem('bag_ppt_v1@chk'); openPutt(); });
     await pg.waitForSelector('.pp-map [data-lv="1"]');

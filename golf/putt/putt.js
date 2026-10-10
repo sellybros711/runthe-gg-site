@@ -989,10 +989,11 @@ var LEVELS = [
   // Loop the Pond: through the loop, over the drawbridge (the curb keeps a stray ball out of the moat), putt out.
   { par:3, f:function(T){ var H = hole([rm(-4, 0, 4, -10), pg([[-4, -10], [4, -10], [0.8, -13.5], [-0.8, -13.5]]), rm(-0.8, -13.4, 0.8, -17), rm(-5, -16.9, 5, -26), rm(-5, -25.9, 5, -28.6), rm(-5, -28.5, 5, -40)], [0, -2.5], [0.3, -35.8]);
     loopAt(H, 0, -15, 0, -1, 0.65, 1.6); zoneR(H, M.WATER, -5, -26, 5, -28.5); drawb(H, -1.4, -26, 1.4, -28.5, 3, 0.2, 0.55); blk(H, T, -5, -25.3, -1.4, -25.9); blk(H, T, 1.4, -25.3, 5, -25.9); bowl(H, 0.3, -35.8, 1.8, 0.13); return H; } },
-  // Clubhouse Classic: up the ramp lane, the windmill, the drawbridge, then round the end of the last wall. 
+  // Clubhouse Classic: up the ramp lane, the windmill, the drawbridge, then round the end of the last wall.
+  // The moat is walled either side of the drawbridge, so a ball off line bounces back rather than sinking.
   { par:3, three:2, sig:true, f:function(T){ var H = hole([rm(-5, 0, 5, -12), rm(-6, -16, 6, -34, 0.6), rm(-6, -33.9, 6, -36.6, 0.6), rm(-6, -36.5, 6, -48, 0.6)], [0, -2.5], [-2, -44]);
-    climb(H, -3, -12, -16, 2.4, 0.3); millAt(H, T, -28, 6, 1.3); zoneR(H, M.WATER, -6, -34, 6, -36.5); drawb(H, -1.4, -34, 1.4, -36.5, 3.6, 0.5, 0.55);
-    blk(H, T, -6, -33.3, -1.4, -33.9); blk(H, T, 1.4, -33.3, 6, -33.9);
+    climb(H, -3, -12, -16, 2.4, 0.3); millAt(H, T, -28, 6, 1.3); zoneR(H, M.WATER, -1.4, -34, 1.4, -36.5); drawb(H, -1.4, -34, 1.4, -36.5, 3.6, 0.5, 0.55);
+    blk(H, T, -6, -34, -1.4, -36.5); blk(H, T, 1.4, -34, 6, -36.5);
     blk(H, T, -6, -39.4, 1.8, -40); flatAt(H, -2, -44); return H; } },
   // ---- 2 LOST TEMPLE: jade rivers, stone doors, turning floors and the vines
   // Temple Steps: up the steps between the pillars, two putts.
@@ -1858,6 +1859,38 @@ var CSS = '\
 /* ON A WIDE SCREEN THE DAILY STANDS TO THE SIDE. The map sits in the middle of the window with landscape either side, so the card docks in that landscape, top left, rather than across the levels. On a phone it stays on top, where there is no side to put it. */\
 @media (max-width:899px){.pp-hub .pp-daily.mini{right:auto;max-width:none;padding:6px 8px;gap:8px;border-radius:14px}.pp-hub .pp-daily.mini .pp-dmid{display:none}.pp-hub .pp-daily.mini .pp-dtile{width:34px}.pp-hub .pp-daily.mini .pp-dtile .mo{font-size:8px;padding:1px 0}.pp-hub .pp-daily.mini .pp-dtile .dy{font-size:18px}.pp-hub .pp-daily.mini .pp-dside .g{padding:7px 12px;font-size:13px}.pp-hub .pp-daily.mini .pp-dside .rw{display:none}}@media (min-width:900px){.pp-hub .pp-daily{left:24px;right:auto;top:100px;width:clamp(220px,26vw,300px);max-width:none;margin:0;flex-direction:column;align-items:stretch;text-align:center;gap:12px;padding:20px 18px 18px}.pp-hub .pp-daily .pp-dtile{align-self:center}.pp-hub .pp-dmid{align-items:center;text-align:center;gap:4px}.pp-hub .pp-dk{justify-content:center}.pp-hub .pp-daily .t{white-space:normal;font-size:clamp(24px,2.6vw,30px)}.pp-hub .pp-daily .m{white-space:normal}.pp-hub .pp-daily .pp-dside{align-items:stretch}.pp-hub .pp-daily .pp-dside .g{text-align:center}}\
 .pp-hub[data-wt] .pp-tabs,.pp-hub[data-wt] .pp-wchip{background:var(--wt);border-color:color-mix(in srgb,var(--wa) 45%,transparent)}.pp-hub[data-wt] .pp-tabs button.on{background:var(--wa);color:var(--wi)}.pp-hub[data-wt] .pp-wchip{color:#fff;box-shadow:inset 3px 0 0 var(--wa)}\
+.pp-walking .pp-daily,.pp-walking .pp-tabs,.pp-walking .pp-wchip{opacity:0;pointer-events:none;transition:opacity .25s}.pp-walking .pp-map{overflow:hidden}.pp-me.walk{transform:translate(-50%,-100%)!important;z-index:3}.pp-me.walk img{animation:ppwalk .34s steps(2) infinite;transform-origin:50% 100%}.pp-me.walk.flip img{scale:-1 1}@keyframes ppwalk{50%{translate:0 -3px;rotate:-3deg}}\
+/* A WORLD DOOR: two leaves made of that world, a lock that fills with the stars you have */\
+.pp-door{position:absolute;z-index:6;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .35s;background:radial-gradient(ellipse at center,rgba(0,0,0,.35),rgba(0,0,0,.75))}.pp-door.in{opacity:1}\
+.pp-dl,.pp-dr{position:absolute;top:6%;bottom:6%;width:min(44vw,300px);background:linear-gradient(180deg,var(--dc),var(--db));border:6px solid color-mix(in srgb,var(--da) 70%,#000);box-shadow:inset 0 0 0 4px rgba(0,0,0,.35),0 20px 40px rgba(0,0,0,.6);transition:transform .9s cubic-bezier(.6,0,.3,1)}\
+.pp-dl{right:50%;border-radius:22px 0 0 22px;border-right-width:3px}.pp-dr{left:50%;border-radius:0 22px 22px 0;border-left-width:3px}.pp-door .pp-dl,.pp-door .pp-dr{transform:scale(.92)}.pp-door.in .pp-dl,.pp-door.in .pp-dr{transform:none}\
+.pp-door.open .pp-dl{transform:translateX(-110%)}.pp-door.open .pp-dr{transform:translateX(110%)}.pp-door.open .pp-dlock{opacity:0;transform:translate(-50%,-50%) scale(1.3)}\
+.pp-door.shut .pp-dlock{animation:ppshake .45s}@keyframes ppshake{20%,60%{margin-left:-9px}40%,80%{margin-left:9px}}\
+.pp-dlock{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(78vw,300px);padding:16px 18px;border-radius:20px;text-align:center;color:#fff;background:rgba(8,12,18,.88);border:3px solid var(--da);box-shadow:0 0 30px color-mix(in srgb,var(--da) 55%,transparent);transition:opacity .5s,transform .5s}\
+.pp-dlock i{display:block;font-style:normal;font-size:11px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:var(--da)}.pp-dlock b{display:block;font-family:var(--display,inherit);font-size:30px;line-height:1.1;margin:2px 0 10px}\
+.pp-dbar{display:block;height:12px;border-radius:99px;background:rgba(255,255,255,.14);overflow:hidden}.pp-dbar u{display:block;height:100%;width:0;background:var(--da);border-radius:99px;transition:width .9s ease-out}.pp-door.fill .pp-dbar u{width:calc(var(--f) * 100%)}\
+.pp-dlock em{display:block;font-style:normal;font-weight:900;font-size:18px;margin-top:8px;color:#ffd45e}.pp-dlock small{display:block;margin-top:4px;font-size:12.5px;opacity:.85}\
+.pp-door[data-door=temple] .pp-dl,.pp-door[data-door=temple] .pp-dr{background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0 3px,transparent 3px 46px),linear-gradient(180deg,#6f6a50,#3f3c2c);border-color:#2f4a2a}\
+.pp-door[data-door=temple] .pp-dl:after,.pp-door[data-door=temple] .pp-dr:after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 20% 10%,#2f7a3c 0 22px,transparent 23px),radial-gradient(circle at 80% 30%,#2f7a3c 0 16px,transparent 17px),radial-gradient(circle at 30% 85%,#2f7a3c 0 18px,transparent 19px);opacity:.9;border-radius:inherit}\
+.pp-door[data-door=pirate] .pp-dl,.pp-door[data-door=pirate] .pp-dr{background:repeating-linear-gradient(90deg,rgba(0,0,0,.28) 0 3px,transparent 3px 34px),linear-gradient(180deg,#8a5a34,#5a3a20);border-color:#2b1a0e}\
+.pp-door[data-door=canyon] .pp-dl,.pp-door[data-door=canyon] .pp-dr{background:repeating-linear-gradient(90deg,#3a3a40 0 10px,transparent 10px 40px),repeating-linear-gradient(0deg,#3a3a40 0 10px,transparent 10px 70px),linear-gradient(180deg,#5a3b22,#2a1a10);border-color:#6e6e76}\
+.pp-door[data-door=volcano] .pp-dl,.pp-door[data-door=volcano] .pp-dr{background:repeating-linear-gradient(35deg,rgba(255,110,30,.5) 0 2px,transparent 2px 38px),linear-gradient(180deg,#3a2c2c,#1a1212);border-color:#ff6a1e}\
+.pp-door[data-door=frozen] .pp-dl,.pp-door[data-door=frozen] .pp-dr{background:linear-gradient(135deg,rgba(255,255,255,.55),transparent 40%,rgba(255,255,255,.3) 60%,transparent 80%),linear-gradient(180deg,#bfe9ff,#6fb6dc);border-color:#e9f8ff}\
+.pp-door[data-door=sky] .pp-dl,.pp-door[data-door=sky] .pp-dr{background:radial-gradient(circle at 30% 20%,#fff 0 40px,transparent 41px),radial-gradient(circle at 70% 60%,#fff 0 52px,transparent 53px),linear-gradient(180deg,#9fd3ff,#e8f5ff);border-color:#ffd45e}\
+.pp-door[data-door=neon] .pp-dl,.pp-door[data-door=neon] .pp-dr{background:repeating-linear-gradient(0deg,#1a1430 0 14px,#2a2050 14px 18px),#1a1430;border-color:#ff3fd2;box-shadow:0 0 22px #ff3fd2,inset 0 0 18px #3ff0ff}\
+.pp-tabs u{display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff5a4e;margin-left:5px;vertical-align:2px;box-shadow:0 0 0 2px rgba(0,0,0,.35)}.pp-tabs .on u{display:none}\
+/* THE DAILY TAB: a month to a page, the page ruled like a wall calendar, the days tear-off sheets on the trail */\
+.pp-cmon{background:linear-gradient(180deg,var(--c1),var(--c2));overflow:hidden}.pp-cmon:after{content:"";position:absolute;inset:0;opacity:.13;background-image:linear-gradient(90deg,#fff 1px,transparent 1px),linear-gradient(#fff 1px,transparent 1px);background-size:48.6px 48.6px;pointer-events:none}\
+.pp-cpage{position:absolute;z-index:1;left:50%;transform:translateX(-50%);width:240px;padding:16px 12px 10px;text-align:center;background:#fbf7ee;color:#1d1a16;border-radius:10px;border-top:14px solid var(--ca);box-shadow:0 8px 18px rgba(0,0,0,.4)}.pp-cpage .rings{position:absolute;top:-22px;left:32px;right:32px;height:14px;background:radial-gradient(circle at 7px 7px,#cfd3da 4px,#5b6270 5px,transparent 6px) 0 0/34px 14px repeat-x}\
+.pp-cpage b{display:block;font-family:var(--display,inherit);font-size:30px;line-height:1;letter-spacing:.02em;text-transform:uppercase}.pp-cpage span{display:block;margin-top:4px;font-size:11.5px;font-weight:800;color:#6c6457;letter-spacing:.04em}\
+.pp-calw .pp-path .walk{stroke:#F1D04A;stroke-dasharray:none;stroke-width:5;opacity:.9}\
+.pp-cday{position:absolute;z-index:1;transform:translate(-50%,-50%);width:58px;padding:0 0 4px;border:0;border-radius:9px;background:#fbf7ee;color:#1d1a16;font:inherit;cursor:pointer;text-align:center;box-shadow:0 5px 0 #c9bfae,0 9px 14px rgba(0,0,0,.4);overflow:visible}\
+.pp-cday i{display:block;font-style:normal;font-size:10px;font-weight:900;letter-spacing:.12em;color:#fff;background:var(--ca);border-radius:9px 9px 0 0;padding:3px 0 2px}.pp-cday b{display:block;font-family:var(--display,inherit);font-size:27px;line-height:1.05;padding-top:2px}\
+.pp-cday .sc{display:inline-block;margin-top:1px;padding:1px 6px;border-radius:999px;font-size:10.5px;font-weight:900;background:#e8e1d2;color:#4b443a}.pp-cday .sc.u{background:#1f9d55;color:#fff}.pp-cday .sc.e{background:#2b6cb0;color:#fff}.pp-cday .sc.o{background:#b9452f;color:#fff}.pp-cday .sc.now{background:#F1D04A;color:#10241a}\
+.pp-cday.lock{filter:saturate(.35) brightness(.78)}.pp-cday.lock s{position:absolute;right:-6px;top:-8px;text-decoration:none;font-size:13px}.pp-cday.open .sc.ms{background:#3a1f63;color:#ffd45e}\
+.pp-cday.cur{width:68px;box-shadow:0 0 0 3px #F1D04A,0 5px 0 #c9bfae,0 0 26px rgba(241,208,74,.75);animation:ppcal 1.6s ease-in-out infinite}.pp-cday.cur b{font-size:32px}@keyframes ppcal{50%{box-shadow:0 0 0 3px #F1D04A,0 5px 0 #c9bfae,0 0 8px rgba(241,208,74,.3)}}\
+.pp-cday.done:after{content:"✓";position:absolute;right:-7px;top:-8px;width:18px;height:18px;border-radius:50%;background:#1f9d55;color:#fff;font-size:11px;font-weight:900;line-height:18px;box-shadow:0 2px 4px rgba(0,0,0,.4)}\
+@media (prefers-reduced-motion:reduce){.pp-cday.cur{animation:none}}\
 .pp-hub[data-wt] .pp-cpill,.pp-hub[data-wt] .pp-cx{background:var(--wt)}.pp-hub[data-wt] .pp-av{border-color:var(--wa)}'
 
 var S = null;   // the open game, or null
@@ -2111,22 +2144,27 @@ function showHub(tid){
   if (S.tour === 'members' && !membersOpen() && !membersPreview()) S.tour = 'main';
   if (S.tour === 'lab' && !labOpen()) S.tour = 'main';
   st.view = S.tour; psave(st);
-  var TR = tourOf(S.tour), mem = !!TR.members;
-  S.ov.innerHTML = '<div class="pp-hub' + (mem ? ' pp-mem' : '') + '"><div class="pp-map" data-map></div>' + hdr() +
-    '<button class="pp-daily" data-daily aria-label="Daily Challenge: ' + esc(dh.name) + '">\
+  var cal = S.tour === 'daily', TR = cal ? TOURS.main : tourOf(S.tour), mem = !cal && !!TR.members, lab = !cal && !!TR.lab;
+  /* THE DAILY CARD ONLY ASKS. Once today is played it has nothing left to offer, so it goes, and the
+     result lives on the Daily tab's calendar with every other day. On that tab today is a page of the
+     calendar itself, so the card would be the same day twice. */
+  var showCard = !cal && !(drec && drec.done);
+  S.ov.innerHTML = '<div class="pp-hub' + (mem ? ' pp-mem' : '') + (cal ? ' pp-calv' : '') + '"><div class="pp-map" data-map></div>' + hdr() +
+    (!showCard ? '' : '<button class="pp-daily" data-daily aria-label="Daily Challenge: ' + esc(dh.name) + '">\
       <span class="pp-dtile" style="--dt:' + dT.acc + '"><span class="mo">' + monthDay(dk).split(' ')[0] + '</span><span class="dy">' + (+dk.slice(8, 10)) + '</span></span>\
       <span class="pp-dmid"><span class="pp-dk"><b>Daily Challenge</b>' + (st.streak.n > 1 ? '<i class="pp-dstreak">' + st.streak.n + ' day streak</i>' : '') + '</span>\
         <span class="t">' + esc(dh.name) + '</span>\
         <span class="m">' + (drec && drec.done ? 'You shot ' + drec.s + ' (par ' + drec.par + ')' + (drec.ms != null ? ' in ' + clockTxt(drec.ms) : '') : esc(dT.name) + ' · par ' + buildHole(dh).par + ' · timed, one try') + '</span>\
         <span class="pp-dends">' + (drec && drec.done ? 'Next hole in ' : 'Ends in ') + '<b data-dcount>' + hms(msToNextDay()) + '</b></span></span>\
-      <span class="pp-dside"><span class="g">' + (drec && drec.done ? 'Result' : 'Play') + '</span><span class="rw">' + (drec && drec.done ? 'Played' : '+' + COIN_DAILY + ' coins') + '</span></span></button>' +
+      <span class="pp-dside"><span class="g">' + (drec && drec.done ? 'Result' : 'Play') + '</span><span class="rw">' + (drec && drec.done ? 'Played' : '+' + COIN_DAILY + ' coins') + '</span></span></button>') +
     '<div class="pp-wchip" data-wchip></div>' +
-    '<div class="pp-tabs" role="tablist"><button data-tab="main" class="' + (mem || TR.lab ? '' : 'on') + '" role="tab">Putt Putt Tour</button><button data-tab="members" class="' + (mem ? 'on' : '') + '" role="tab"><i>★</i> Members' + (membersOpen() ? '' : ' <s>🔒</s>') + '</button>' + (labOpen() ? '<button data-tab="lab" class="' + (TR.lab ? 'on' : '') + '" role="tab">Lab</button>' : '') + '</div>' + '</div>';
+    '<div class="pp-tabs" role="tablist"><button data-tab="main" class="' + (mem || lab || cal ? '' : 'on') + '" role="tab">Putt Putt Tour</button><button data-tab="members" class="' + (mem ? 'on' : '') + '" role="tab"><i>★</i> Members' + (membersOpen() ? '' : ' <s>🔒</s>') + '</button>' + (labOpen() ? '<button data-tab="lab" class="' + (lab ? 'on' : '') + '" role="tab">Lab</button>' : '') +
+    '<button data-tab="daily" class="' + (cal ? 'on' : '') + '" role="tab">Daily' + (drec && drec.done ? '' : '<u class="pp-tdot" aria-label="not played today"></u>') + '</button></div>' + '</div>';
   S.ov.querySelector('[data-x]').onclick = close;
-  S.ov.querySelector('[data-daily]').onclick = function(){ if (drec && drec.done) dailyResult(); else startDaily(); };
+  var dcb = S.ov.querySelector('[data-daily]'); if (dcb) dcb.onclick = function(){ startDaily(); };
   S.ov.querySelectorAll('[data-tab]').forEach(function(b){ b.onclick = function(){ var t = b.getAttribute('data-tab'); if (t === S.tour) return;
     if (t === 'members' && !membersOpen() && !membersPreview()) return membersSheet(); showHub(t); }; });
-  drawMap(st, TR);
+  if (cal) drawCal(st); else drawMap(st, TR);
   var clk = S.ov.querySelector('[data-clock]');
   var dc = S.ov.querySelector('[data-dcount]'), dkNow = dk;
   var tick = function(){ var s2 = pload(); clk.textContent = s2.refillAt ? hms(s2.refillAt - Date.now()) : '';
@@ -2167,7 +2205,7 @@ function drawMap(st, TR){
   /* THE MAP FILLS THE SCREEN. The world is drawn 340 wide with 200 of landscape either side, and on a
      wider screen the whole thing is scaled up until the landscape reaches both edges, so a desktop is
      the same picture larger rather than a phone's picture in a dark frame. */
-  var k = Math.max(1, (box.clientWidth || 390) / (W + 380)); S.mapK = k;
+  var k = Math.max(1, (box.clientWidth || 390) / (W + 380)); S.mapK = k; S.mapPos = pos; S.mapWS = WS;
   box.innerHTML = '<div class="pp-sizer" style="height:' + Math.ceil(H * k) + 'px"><div class="pp-world" style="height:' + H + 'px;width:' + W + 'px;transform:translateX(-50%) scale(' + k + ')">' + bands +
     '<svg class="pp-path" width="' + W + '" height="' + H + '"><path d="' + d + '"/></svg>' + badges +
     '<div class="pp-me" style="left:' + (cp[0] > W / 2 + 50 ? cp[0] - 76 : cp[0] + 34) + 'px;top:' + (cp[1] + 22) + 'px">' + golferImg('pp-meimg') + '</div></div></div>';
@@ -2185,6 +2223,69 @@ function drawMap(st, TR){
   box.addEventListener('scroll', function(){ if (!dcard || home0 == null) return; dcard.classList.toggle('mini', Math.abs(box.scrollTop - home0) > 40); }, { passive:true });
   requestAnimationFrame(function(){ box.scrollTop = Math.max(0, cp[1] * k - box.clientHeight * 0.6); home0 = box.scrollTop; wchip(); });
   mapArt(box, pos, TR);
+}
+/* THE DAILY TAB IS A CALENDAR YOU CAN WALK BACK DOWN. Today is at the top, every day before it is a
+   tear-off page on the trail below, a month to a page with the month's own theme behind it. A page
+   says what you shot that day, or that you missed it. Missing a day is a fact for a free player; a
+   Tour Pass holder can go back and play any page they missed, as the scored try it would have been.
+   A day played late pays its coins but never moves the streak, which is about turning up each day. */
+var CAL_BACK = 60;
+function dayAdd(dk, n){ return new Date(Date.parse(dk + 'T12:00:00Z') + n * 86400000).toISOString().slice(0, 10); }
+function pastOpen(){ return membersOpen() || !!(S && S.calPreview); }
+function calDays(st){ var t = today(), from = dayAdd(t, -(CAL_BACK - 1));
+  Object.keys(st.daily || {}).forEach(function(k){ if (/^\d{4}-\d{2}-\d{2}$/.test(k) && k < from && st.daily[k].done) from = k; });
+  var out = []; for (var d = from; d <= t; d = dayAdd(d, 1)) out.push(d); return out; }
+var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+var WDAYS = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+function drawCal(st){
+  var box = S.ov.querySelector('[data-map]'), days = calDays(st), t = today(), W = 340, STEP = 88, MH = 118, PADB = 120, PADT = 76;
+  var months = []; days.forEach(function(d){ var m = d.slice(0, 7); if (!months.length || months[months.length - 1].m !== m) months.push({ m:m, first:days.indexOf(d) }); });
+  var H = days.length * STEP + months.length * MH + PADB + PADT, pos = [], mi = -1;
+  days.forEach(function(d, i){ if (mi + 1 < months.length && months[mi + 1].first === i) mi++; var y = H - PADB - i * STEP - mi * MH, x = W / 2 + Math.sin(i * 0.9) * 105; pos.push([x, y]); });
+  var bands = months.map(function(M, j){ var last = j + 1 < months.length ? months[j + 1].first - 1 : days.length - 1, T = THEMES[themeForDay(days[M.first])] || THEMES[themeForDay(t)];
+    var top = j + 1 < months.length ? pos[last][1] - STEP / 2 - MH : 0, bot = j === 0 ? H : pos[M.first][1] + STEP / 2;
+    var played = 0; for (var i = M.first; i <= last; i++) if (st.daily[days[i]] && st.daily[days[i]].done) played++;
+    return '<div class="pp-band pp-cmon" data-m="' + M.m + '" style="top:' + top + 'px;height:' + (bot - top) + 'px;--c1:' + T.bg2 + ';--c2:' + T.bg + ';--ca:' + T.acc + '"></div>\
+      <div class="pp-cpage" style="top:' + (pos[last][1] - STEP / 2 - MH + 14) + 'px;--ca:' + T.acc + '"><i class="rings"></i><b>' + MONTHS[+M.m.slice(5) - 1] + '</b><span>' + M.m.slice(0, 4) + ' · ' + played + ' of ' + (last - M.first + 1) + ' played</span></div>'; }).join('');
+  var dpath = pos.map(function(p, i){ return (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' ');
+  // the trail is walked in gold up to the last day you played, so the run you are on reads at a glance
+  var lastPlayed = -1; days.forEach(function(d, i){ if (st.daily[d] && st.daily[d].done) lastPlayed = i; });
+  var walked = lastPlayed > 0 ? pos.slice(0, lastPlayed + 1).map(function(p, i){ return (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' ') : '';
+  var pro = pastOpen();
+  var pages = days.map(function(d, i){ var p = pos[i], rec = st.daily[d], done = !!(rec && rec.done), cur = d === t, dt = new Date(Date.parse(d + 'T12:00:00Z')), T = THEMES[themeForDay(d)];
+    var cls = 'pp-cday' + (done ? ' done' : cur ? ' cur' : pro ? ' open' : ' lock'), tag;
+    if (done){ var df = rec.s - rec.par; tag = '<span class="sc ' + (df < 0 ? 'u' : df > 0 ? 'o' : 'e') + '">' + (rec.s >= rec.par + 3 ? 'Pick up' : fmtPar(df)) + '</span>'; }
+    else tag = cur ? '<span class="sc now">Play</span>' : '<span class="sc ms">' + (pro ? 'Catch up' : 'Missed') + '</span>';
+    return '<button class="' + cls + '" data-day="' + d + '" style="left:' + p[0] + 'px;top:' + p[1] + 'px;--ca:' + T.acc + '" aria-label="' + MONTHS[dt.getUTCMonth()] + ' ' + dt.getUTCDate() + (done ? ', played' : cur ? ', today' : ', missed') + '">' +
+      '<i>' + WDAYS[dt.getUTCDay()] + '</i><b>' + dt.getUTCDate() + '</b>' + tag + (!done && !cur && !pro ? '<s>🔒</s>' : '') + '</button>'; }).join('');
+  var cp = pos[pos.length - 1], k = Math.max(1, (box.clientWidth || 390) / (W + 380)); S.mapK = k;
+  box.innerHTML = '<div class="pp-sizer" style="height:' + Math.ceil(H * k) + 'px"><div class="pp-world pp-calw" style="height:' + H + 'px;width:' + W + 'px;transform:translateX(-50%) scale(' + k + ')">' + bands +
+    '<svg class="pp-path" width="' + W + '" height="' + H + '"><path d="' + dpath + '"/>' + (walked ? '<path class="walk" d="' + walked + '"/>' : '') + '</svg>' + pages +
+    '<div class="pp-me" style="left:' + (cp[0] > W / 2 + 50 ? cp[0] - 76 : cp[0] + 34) + 'px;top:' + (cp[1] + 22) + 'px">' + golferImg('pp-meimg') + '</div></div></div>';
+  box.querySelectorAll('[data-day]').forEach(function(b){ b.onclick = function(){ var d = b.getAttribute('data-day'), r = pload().daily[d];
+    if (r && r.done) return dailyResult(null, d);
+    if (d === today()) return startDaily();
+    if (!pastOpen()) return pastSheet(d);
+    startDaily(d); }; });
+  var chip = S.ov.querySelector('[data-wchip]'), hub = S.ov.querySelector('.pp-hub');
+  function mchip(){ if (!chip || !box.isConnected) return; var mid = (box.scrollTop + box.clientHeight * 0.55) / k, j = 0;
+    for (var q = 0; q < months.length; q++) if (mid < pos[months[q].first][1] + STEP / 2 + 1) j = q;
+    var M = months[j], last = j + 1 < months.length ? months[j + 1].first - 1 : days.length - 1, n = 0; for (var i = M.first; i <= last; i++) if (st.daily[days[i]] && st.daily[days[i]].done) n++;
+    chip.textContent = MONTHS[+M.m.slice(5) - 1] + ' · ' + n + '/' + (last - M.first + 1) + ' played' + (st.streak && st.streak.n > 1 ? ' · ' + st.streak.n + ' day streak' : '');
+    if (hub) hub.setAttribute('data-wt', themeForDay(days[M.first])); }
+  box.addEventListener('scroll', mchip, { passive:true });
+  requestAnimationFrame(function(){ box.scrollTop = Math.max(0, Math.min(cp[1] * k - box.clientHeight * 0.62, (PADT + 58) * k - 80)); mchip(); });
+}
+/* A MISSED DAY, SHUT: the way back to it is the Tour Pass. Nothing here sells it for coins. */
+function pastSheet(dk){
+  var dh = dailyHole(dk), sh = el('<div class="pp-sheet pp-memsh"><div class="pp-card"><div class="k">★ ' + monthDay(dk) + ' · MISSED</div><div class="t">' + esc(dh.name) + '</div>\
+    <div class="m">Every day you missed is still on the calendar. Tour Pass members can go back and play any of them: one scored try each, the same hole everybody played that day.</div>\
+    <button class="pt-go pp-wide pass" disabled>Get Tour Pass<small>Play every past Daily Hole · at launch</small></button>' +
+    (S.host.tester && S.host.tester() ? '<button class="pt-bt pp-wide" data-prev>Tester preview</button>' : '') +
+    '<button class="pt-bt pp-wide" data-n>Not now</button></div></div>');
+  S.ov.appendChild(sh);
+  sh.querySelector('[data-n]').onclick = function(){ sh.remove(); };
+  var pv = sh.querySelector('[data-prev]'); if (pv) pv.onclick = function(){ S.calPreview = true; sh.remove(); startDaily(dk); };
 }
 /* EACH WORLD ON THE MAP IS A PLACE OF ITS OWN THEME, painted by mapland.js the way the mockups were:
    one continuous landscape a world tall (a haunted wood with a river and a chapel, a snowed-in pine
@@ -2215,6 +2316,51 @@ function mapArt(box, pos, TR){
 }
 function toastHub(msg){ var t = S.ov.querySelector('.pp-toast'); if (!t){ t = el('<div class="pp-toast"></div>'); S.ov.appendChild(t); } t.textContent = msg; t.classList.add('on'); clearTimeout(S.tt); S.tt = setTimeout(function(){ t.classList.remove('on'); }, 1800); }
 
+/* ------------------------------------------------------------------- the walk to the next hole */
+/* THE TOUR IS ONE PLACE. Winning a hole and pressing Next does not cut to the next hole: the map comes
+   back, the golfer walks the cart path from this hole's flag to the next one and the camera walks with
+   him, and only then does the hole open. Crossing into a new world he meets its door, built of that
+   world (a temple's carved stone, a ship's hull, a mine's iron gate, a glacier), and the stars he has
+   fill the lock. Enough and it opens; short and it stays shut and says how many more. Tapping anywhere
+   skips the walk, and reduced motion skips it outright (the door still says whether it opened). */
+var DOOR_NAMES = { temple:'Temple Door', pirate:'Hull Door', canyon:'Mine Gate', volcano:'Basalt Gate', frozen:'Ice Gate', sky:'Cloud Gate', neon:'Arcade Shutter', haunted:'Crypt Gate', harvest:'Barn Doors', clubhouse:'Clubhouse Door' };
+function walkTo(n, tid){
+  var TR = tourOf(tid), K = TR.per || PER, N = TR.levels.length;
+  if (n >= N) return showHub(tid);
+  showHub(tid);
+  var hub = S.ov.querySelector('.pp-hub'), box = S.ov.querySelector('[data-map]'), me = S.ov.querySelector('.pp-me'), pos = S.mapPos, k = S.mapK || 1;
+  var tp = pload().tours[TR.id], open = tp.lv > n, cross = n % K === 0, w = Math.floor(n / K), Wd = TR.worlds[w];
+  var reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+  if (!hub || !box || !me || !pos || !pos[n]){ if (open) startLevel(n + 1, tid); return; }
+  if (reduce && !cross){ if (open) startLevel(n + 1, tid); return; }
+  hub.classList.add('pp-walking'); me.classList.add('walk');
+  var a = pos[n - 1], b = pos[n], token = S.walkTok = {}, done = false, door = null;
+  function at(f){ var x = a[0] + (b[0] - a[0]) * f, y = a[1] + (b[1] - a[1]) * f; me.style.left = x + 'px'; me.style.top = (y - 6) + 'px'; me.classList.toggle('flip', b[0] < a[0]);
+    box.scrollTop = Math.max(0, y * k - box.clientHeight * 0.55); }
+  function alive(){ return S && S.walkTok === token && box.isConnected; }
+  function finish(){ if (done || !alive()) return; done = true; S.walkTok = null; S.ov.removeEventListener('pointerdown', skip, true);
+    if (open) return startLevel(n + 1, tid);
+    hub.classList.remove('pp-walking'); me.classList.remove('walk');
+    if (door) setTimeout(function(){ if (door && door.isConnected) door.remove(); }, 2600); }
+  function skip(e){ if (e.target.closest && e.target.closest('[data-x]')) return; e.preventDefault(); e.stopPropagation();
+    if (door && !open){ door.classList.add('fill', 'shut'); } finish(); }
+  S.ov.addEventListener('pointerdown', skip, true);
+  function tween(f0, f1, ms, then){ var t0 = performance.now(); (function step(){ if (!alive() || done) return; var u = Math.min(1, (performance.now() - t0) / ms), e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
+      at(f0 + (f1 - f0) * e); if (u < 1) requestAnimationFrame(step); else then(); })(); }
+  at(0);
+  if (!cross) return tween(0, 1, 2100, finish);
+  // a world's door: the walk stops halfway, at the boundary, and the door has its say
+  var gw = w - 1, have = starsThrough(tp, TR, gw), gate = worldGate(TR, gw), T = THEMES[Wd.theme] || {};
+  door = el('<div class="pp-door" data-door="' + Wd.theme + '" style="--da:' + (T.acc || '#F1D04A') + ';--db:' + (T.bg || '#20302a') + ';--dc:' + (T.bg2 || '#34483e') + '">\
+    <div class="pp-dl"></div><div class="pp-dr"></div>\
+    <div class="pp-dlock"><i>' + (TR.members ? 'Members Tour' : 'World ' + (w + 1)) + '</i><b>' + esc(Wd.name) + '</b>\
+      <span class="pp-dbar"><u style="--f:' + Math.min(1, have / Math.max(1, gate)) + '"></u></span><em>★ ' + have + ' / ' + gate + '</em>\
+      <small>' + (open ? esc(DOOR_NAMES[Wd.theme] || 'The door') + ' opens' : 'Need ' + (gate - have) + ' more ★ · replay holes to earn them') + '</small></div></div>');
+  tween(0, 0.5, reduce ? 1 : 1300, function(){ if (!alive()) return; hub.appendChild(door);
+    requestAnimationFrame(function(){ door.classList.add('in'); setTimeout(function(){ if (!alive()) return; door.classList.add('fill');
+      setTimeout(function(){ if (!alive()) return; door.classList.add(open ? 'open' : 'shut');
+        setTimeout(function(){ if (!alive()) return; if (open) tween(0.5, 1, reduce ? 1 : 1200, finish); else finish(); }, open ? 900 : 1500); }, 1000); }, reduce ? 50 : 450); }); });
+}
 /* ------------------------------------------------------------------------------ out of lives */
 function outOfLives(){
   var st = pload(), sh = el('<div class="pp-sheet pp-oolf">' + hdr() + '<div class="pp-oolb"><div class="k">OUT OF LIVES</div><div class="pp-lives">' + hearts(st) + '</div>\
@@ -2242,15 +2388,18 @@ function startLevel(n, tid){
   S.round = { mode:'ppt', lv:n, tid:tid, i:0, cards:[], holes:[d], title:levelName(n, tid) };
   playHole();
 }
-function startDaily(){
-  var dk = today(), d = dailyHole(dk);
-  S.round = { mode:'pdaily', day:dk, i:0, cards:[], holes:[d], title:d.name, kick:THEMES[d.theme].name };
+function startDaily(dk){
+  var t = today(); dk = dk || t; if (dk > t) return;
+  if (dk < t && !pastOpen()) return pastSheet(dk);
+  var r0 = pload().daily[dk]; if (r0 && r0.done) return dailyResult(null, dk);
+  var d = dailyHole(dk);
+  S.round = { mode:'pdaily', day:dk, past:dk < t, i:0, cards:[], holes:[d], title:d.name, kick:THEMES[d.theme].name };
   playHole();
 }
 // what the bar under the title says during a hole
 function tourSub(R, C, P){
   if (R.mode === 'ppt'){ var left = C.par - P.strokes; return 'Hole ' + wl(R.lv, R.tid) + ' · Par ' + C.par + ' · ' + (left > 1 ? left + ' strokes left' : 'Last stroke'); }
-  if (R.mode === 'pdaily') return R.kick + ' · Daily Hole · Par ' + C.par;
+  if (R.mode === 'pdaily') return R.kick + ' · ' + (R.past ? monthDay(R.day) + ' Daily' : 'Daily Hole') + ' · Par ' + C.par;
   return (C.kind === 'real' ? C.sub : (R.kick || '')) + ' · Par ' + C.par;
 }
 // leaving a hole: free before the first putt, a life after it on the Tour
@@ -2302,7 +2451,7 @@ function tourOut(holed){
       (got ? '<div class="pp-coins">+' + got + ' coins</div>' : '<div class="s">Coins land the first time only.</div>') + lines.map(function(t){ return '<div class="s">' + esc(t) + '</div>'; }).join('') +
       (openLine ? '<div class="s">' + openLine + '</div>' : '') +
       '<div class="row"><button class="pt-bt" data-a="again">Replay</button>' + (nextOpen ? '<button class="pt-go" data-a="next">Next hole</button>' : '<button class="pt-go" data-a="map">Map</button>') + '</div>',
-      { again:function(){ startLevel(n, tid); }, next:function(){ startLevel(n + 1, tid); }, map:function(){ showHub(tid); } });
+      { again:function(){ startLevel(n, tid); }, next:function(){ walkTo(n, tid); }, map:function(){ showHub(tid); } });
   }
   // over par: the moment par strokes are gone with the ball still out
   if (TR.lab) return popup('<div class="k">OUT OF STROKES</div><div class="t">Over par</div><div class="s">' + par + ' strokes used and still not down. The Lab costs no lives.</div>\
@@ -2323,8 +2472,8 @@ function worldComplete(n, s, par, got, tid){
     (shut ? '<div class="s">' + (TR.members ? esc(nx.name) : 'World ' + (w + 2)) + ' opens at ' + gate + ' total stars. You have ' + total + '. Replay holes to earn ' + (gate - total) + ' more.</div>' :
      nx ? '<div class="s">' + (TR.members ? esc(nx.name) : 'World ' + (w + 2) + ', ' + esc(nx.name) + ',') + ' is open.</div>' : '<div class="s">You have finished the ' + esc(TR.name) + '.</div>') +
     '<div class="s pp-fine">Rewards are saved to your Tour record. They become wearable at launch.</div>\
-    <div class="row"><button class="pt-bt" data-a="map">Map</button>' + (nx && !shut ? '<button class="pt-go" data-a="next">Next ' + (TR.members ? 'hole' : 'world') + ' ▸</button>' : '') + '</div>',
-    { map:function(){ showHub(tid); }, next:function(){ startLevel(n + 1, tid); } });
+    <div class="row"><button class="pt-bt" data-a="map">Map</button>' + (nx ? '<button class="pt-go" data-a="next">' + (shut ? 'To the door' : 'Next ' + (TR.members ? 'hole' : 'world')) + ' ▸</button>' : '') + '</div>',
+    { map:function(){ showHub(tid); }, next:function(){ walkTo(n, tid); } });
 }
 
 /* ----------------------------------------------------------------------------- the Daily Hole */
@@ -2343,18 +2492,19 @@ function dailyClock(P){
 function dailyFinish(s, par, ms){
   var st = pload(), dk = S.round.day, rec = st.daily[dk];
   if (rec && rec.done) return dailyResult();
-  st.daily[dk] = { s:s, par:par, ms:ms == null ? null : ms, done:1 };
+  var late = dk < today();
+  st.daily[dk] = { s:s, par:par, ms:ms == null ? null : ms, done:1 }; if (late) st.daily[dk].late = 1;
   var got = COIN_DAILY + (s < par ? COIN_DAILY_PAR : 0);
   // the streak counts days played in a row, on the game's own calendar
   var y = new Date(Date.parse(dk + 'T12:00:00Z') - 86400000).toISOString().slice(0, 10);
-  st.streak.n = st.streak.last === y ? st.streak.n + 1 : (st.streak.last === dk ? st.streak.n : 1); st.streak.last = dk; st.streak.best = Math.max(st.streak.best || 0, st.streak.n);
-  if (STREAK_REWARD[st.streak.n]) grant(st, STREAK_REWARD[st.streak.n]);
+  if (!late){ st.streak.n = st.streak.last === y ? st.streak.n + 1 : (st.streak.last === dk ? st.streak.n : 1); st.streak.last = dk; st.streak.best = Math.max(st.streak.best || 0, st.streak.n);
+  if (STREAK_REWARD[st.streak.n]) grant(st, STREAK_REWARD[st.streak.n]); }
   psave(st); coins(got, 'Daily Hole');
   if (s < par) try{ S.host.sfx && S.host.sfx('holeGood'); }catch(e){}
-  dailyResult(got);
+  dailyResult(got, dk);
 }
-function dailyResult(got){
-  var st = pload(), dk = S.round && S.round.day || today(), rec = st.daily[dk], dh = dailyHole(dk), T = THEMES[dh.theme];
+function dailyResult(got, dk){
+  var st = pload(); dk = dk || (S.round && S.round.day) || today(); var rec = st.daily[dk], dh = dailyHole(dk), T = THEMES[dh.theme];
   if (!rec) return showHub();
   var label = rec.s >= rec.par + 3 ? 'Picked up' : scoreName(rec.s, rec.par);
   cancelAnimationFrame(S.raf); S.screen = 'card';
@@ -2363,10 +2513,10 @@ function dailyResult(got){
       <div class="sc"><b>' + rec.s + '</b><span>' + (rec.s === 1 ? 'stroke' : 'strokes') + '<br>par ' + rec.par + '</span>' + (rec.ms != null ? '<b class="pp-tm">' + clockTxt(rec.ms) + '</b><span>time</span>' : '') + '</div>\
       <div class="m" style="color:#ffd9a8;font-weight:800">' + esc(label) + (rec.s < rec.par ? ' · beat par' : '') + (st.streak.best > 1 ? ' · best streak ' + st.streak.best : '') + '</div>' + (got ? '<div class="pp-coins">+' + got + ' coins</div>' : '') + '</div>\
     <div class="pt-card" style="cursor:default"><div class="k">Leaderboard</div><div class="m">Fewest strokes wins and the clock breaks a tie. The shared board needs the server ledger, which is not built yet. Your own result is saved.</div></div>\
-    <button class="pt-go" data-share style="background:#12a08f;color:#fff;padding:14px">Share</button><button class="pt-bt" data-menu style="padding:13px">Map</button>\
-    <div class="m" style="text-align:center;color:#a9a3c9">Played. Next Daily Hole in ' + hm(msToNextDay()) + '.</div></div>';
+    <button class="pt-go" data-share style="background:#12a08f;color:#fff;padding:14px">Share</button><button class="pt-bt" data-menu style="padding:13px">Calendar</button>\
+    <div class="m" style="text-align:center;color:#a9a3c9">' + (rec.late ? 'Played late, so the streak did not move. ' : 'Played. ') + 'Next Daily Hole in ' + hm(msToNextDay()) + '.</div></div>';
   setTimeout(function(){ if (S && S.screen === 'card') thumb(S.ov.querySelector('[data-th]'), dh, 'd' + dk); }, 30);
-  S.ov.querySelector('[data-x]').onclick = showHub; S.ov.querySelector('[data-menu]').onclick = showHub;
+  S.ov.querySelector('[data-x]').onclick = function(){ showHub(); }; S.ov.querySelector('[data-menu]').onclick = function(){ showHub('daily'); };
   S.ov.querySelector('[data-share]').onclick = function(e){ var txt = 'Run The Tour · Putt Putt Tour Daily Hole ' + dk + '\n' + T.name + ': ' + dh.name + '\n' + label + ' (' + rec.s + ', par ' + rec.par + ')' + (rec.ms != null ? ' in ' + clockTxt(rec.ms) : '') + '\nrunthe.gg/golf';
     try{ navigator.clipboard.writeText(txt); e.currentTarget.textContent = 'Copied'; }catch(err){} };
 }
@@ -2960,6 +3110,7 @@ function scorecard(){
 }
 RTT_PUTT.open = open; RTT_PUTT.close = close; RTT_PUTT.paintCourse = paintCourse; RTT_PUTT.SKIN = SKIN;
 RTT_PUTT._state = function(){ return S; };
+RTT_PUTT._walkTo = function(n, tid){ return walkTo(n, tid || 'main'); };
 RTT_PUTT._lose = function(){ loseLife(pload()); };
 RTT_PUTT._dailyFinish = function(s, par, ms){ return dailyFinish(s, par, ms); };
 // the checker's door straight onto a Tour level. Nothing on the page calls it.
