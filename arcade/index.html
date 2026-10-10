@@ -1346,6 +1346,40 @@ window.GA_ID='G-L29P5MRWKE';
   });
 })();
 </script>
+<script>
+/* The Arcade Lab, testers only, beside Stumpire. Same rule: nothing is added
+   unless /api/arcade/me answers 200 for this account, and it answers 404 to
+   everybody else. Each game has its own flag (functions/_arcadelab). */
+(function () {
+  var A = window.RTG_AUTH, done = false;
+  if (!A || !A.onChange) return;
+  A.onChange(function (s) {
+    if (done || !s || !s.resolved || !s.signedIn || !A.token || !A.token()) return;
+    done = true;
+    fetch('/api/arcade/me', { headers: { Authorization: 'Bearer ' + A.token() }, credentials: 'same-origin' })
+      .then(function (r) { return r.status === 200 ? r.json() : null; })
+      .then(function (d) {
+        if (!d || !d.games) return;
+        var after = document.getElementById('cardStump') || document.getElementById('cardSpg');
+        if (!after || !after.parentNode) return;
+        d.games.forEach(function (g) {
+          if (document.getElementById('cardLab-' + g.id)) return;
+          var a = document.createElement('a');
+          a.className = 'tile spg'; a.id = 'cardLab-' + g.id; a.href = g.path;
+          var cap = document.createElement('span'); cap.className = 'cap'; cap.setAttribute('aria-hidden', 'true');
+          cap.innerHTML = '<span class="status">Testers only</span>';
+          var body = document.createElement('span'); body.className = 'body';
+          var nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = g.name;
+          var desc = document.createElement('span'); desc.className = 'desc'; desc.textContent = g.desc;
+          var foot = document.createElement('span'); foot.className = 'foot'; foot.innerHTML = '<span class="play">PLAY</span>';
+          body.appendChild(nm); body.appendChild(desc); body.appendChild(foot);
+          a.appendChild(cap); a.appendChild(body);
+          after.parentNode.insertBefore(a, after.nextSibling); after = a;
+        });
+      }).catch(function () {});
+  });
+})();
+</script>
 <script src="/arcade/card.js?v=23"></script>
 <script src="/arcade/referral.js?v=12"></script>
 <script src="/arcade/nav.js?v=4"></script>

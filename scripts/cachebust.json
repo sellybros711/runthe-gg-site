@@ -2517,6 +2517,12 @@
       "sha": "e8aeb933203f81b3"
     }
   },
+  "functions/_arcadelab/web/roll-ball.html": {
+    "/arcade/auth.js": {
+      "v": "4",
+      "sha": "c71a149f3b8da69e"
+    }
+  },
   "functions/_stumpire/web/admin.html": {
     "/arcade/auth.js": {
       "v": "4",
