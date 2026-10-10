@@ -76,7 +76,7 @@ try {
     claim(/SAFE|OUT|STRIKE/.test(r1), w + ': a pick from the picker is ruled (' + r1.split('.')[0] + ')');
 
     // Play the rest through the typeahead, tapping the first suggestion.
-    for (let guard = 0; guard < 80; guard++) {
+    for (let guard = 0; guard < 160; guard++) {
       if (await page.isVisible('#over:not(.hide)')) break;
       if (await page.isVisible('#next:not(.hide)')) { await page.click('#nextBtn'); await page.waitForFunction(() => !document.getElementById('atbat').classList.contains('hide')); continue; }
       if (!(await page.isVisible('#answer'))) { await page.waitForTimeout(300); continue; }
