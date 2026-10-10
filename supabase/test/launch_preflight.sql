@@ -116,7 +116,7 @@ trg as (
 -- statement can leave the table committed and the index raised, and `if not
 -- exists` does not help: it skips on a name that is taken, never on a duplicate
 -- row. Applied through `--single-transaction` the whole file rolls back and the
--- table is missing too, which the block above already catches; pasted by hand it
+-- table is missing too, which the block above already catches. Pasted by hand it
 -- is the 114 trigger all over again, an object whose absence is invisible from
 -- every side. Like `col` and `trg` and unlike `has_table`, it asks the catalog
 -- for everything and lets the row do the filtering.
@@ -444,7 +444,7 @@ check_rows(sort, migration, what, breaks, ok) as (
 
   -- RUN THE DIAMOND PRO. Two halves that fail differently, asked in one row
   -- because neither is any use without the other. Without the constraint every
-  -- paid Pro checkout 500s in the webhook and Stripe retries it; without the
+  -- paid Pro checkout 500s in the webhook and Stripe retries it. Without the
   -- meter the six modes stay unlimited for everybody, because the page fails
   -- open, so nothing is sold at all.
   (31, '121_baseball_pro',
@@ -469,7 +469,7 @@ check_rows(sort, migration, what, breaks, ok) as (
             ('newsletter_status','newsletter_set','newsletter_guest_request','newsletter_confirm','newsletter_unsubscribe'))),
 
   -- THE KEY IS THE RULE. 121 keyed the meter on (user, day), one play a day
-  -- across all six modes; 122 widens it to (user, mode, day), one of each.
+  -- across all six modes. 122 widens it to (user, mode, day), one of each.
   (33, '122_baseball_pro_per_mode',
       'a free account gets one play of each extra mode a day, not one in total',
       'The meter keeps 121''s rule: one play a day across all six modes. The page says one of each, so the second mode a player opens is refused with a sheet that says it is still free.',
