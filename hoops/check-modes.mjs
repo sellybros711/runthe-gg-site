@@ -1083,6 +1083,7 @@ if (!QUICK) {
   ok(psDone && psDone.done && psDone.solved && psDone.chain.length === chain.par + 1, 'a chain at par solves the day');
   const pssub = posts.find((p) => p.fn === 'rtf_submit_passes');
   ok(!!pssub && pssub.body.p_par === chain.par && pssub.body.p_solved === true, 'and is filed with its par and solved');
+  ok(!!pssub && !('p_easy' in pssub.body), 'and a chain played without easy mode sends no p_easy, so it files against 116 as well');
   ok(/Perfect pass/i.test(await page.textContent('#s-pass')), 'a chain at par is called a perfect pass');
   const win = await page.evaluate(() => {
     const d = document.querySelector('#s-pass .ps-done'), top = document.querySelector('#s-pass .ps-top');
@@ -1263,6 +1264,33 @@ if (!QUICK) {
     s: JSON.parse(localStorage.getItem('rtf.passes.endless.v1')) }));
   ok(/Custom/.test(fr.rung) && fr.s.pz.from === 'jordami01' && fr.s.pz.to === 'jamesle01', `a friend's link opens the made puzzle ("${fr.rung}")`);
   ok(fr.hash === '', 'and the hash is cleared once it has been read');
+  /* EASY MODE. The years are hidden until a pass is spent on them, and the
+     offer sits under the last group of teammates. */
+  const ez0 = await friend.evaluate(() => ({ small: document.querySelectorAll('#s-pass .ps-mate small').length,
+    last: (document.querySelector('#ps-pick').lastElementChild || {}).id, clock: document.querySelector('#s-pass .ps-clock b').textContent }));
+  ok(ez0.small === 0, `the years are hidden by default (${ez0.small} shown)`);
+  ok(ez0.last === 'ps-easy' && /Too hard\? Use a pass to reveal the years each player played for that team/.test(await friend.textContent('#ps-easy')),
+    'and the offer to show them is the last thing under the teammates');
+  await friend.click('#ps-easy');
+  const ez1 = await friend.evaluate(() => {
+    const M = window.RTF_MODES, g = M.psGraph(window.RTF_PAGE.data), grp = document.querySelector('#s-pass .ps-grp');
+    const b = grp.querySelector('.ps-mate'), id = b.getAttribute('data-id'), em = grp.querySelector('.ps-gh em').textContent;
+    return { clock: document.querySelector('#s-pass .ps-clock b').textContent, offer: !!document.getElementById('ps-easy'),
+      mates: document.querySelectorAll('#s-pass .ps-mate').length, small: document.querySelectorAll('#s-pass .ps-mate small').length,
+      yrs: b.querySelector('small').textContent,
+      want: (g.seasonsOf[id] || []).filter((ts) => ts.slice(0, ts.lastIndexOf('_')) === grp.getAttribute('data-code')).map((ts) => ts.slice(ts.lastIndexOf('_') + 1)),
+      easy: JSON.parse(localStorage.getItem('rtf.passes.endless.v1')).st.easy };
+  });
+  ok(Number(ez1.clock) === Number(ez0.clock) - 1, `easy mode costs one pass of the shot clock (${ez0.clock} to ${ez1.clock})`);
+  const yset = new Set();
+  ez1.yrs.split(', ').forEach((r) => { const [a, b] = r.split('-'); const lo = +a, hi = b ? +(a.slice(0, 2) + b) : lo; for (let y = lo; y <= hi; y++) yset.add(String(y)); });
+  ok(ez1.want.length > 0 && yset.size === ez1.want.length && ez1.want.every((y) => yset.has(y)),
+    `the years are his seasons with that club, not his career (${ez1.want.join(' ')} as "${ez1.yrs}")`);
+  ok(ez1.small === ez1.mates && /^\d{4}(-\d{2})?(, \d{4}(-\d{2})?)*$/.test(ez1.yrs), `every teammate then shows his years with that club ("${ez1.yrs}")`);
+  ok(!ez1.offer && ez1.easy === true, 'the offer goes, and easy mode is saved with the puzzle');
+  /* The offer is at the foot of the picker, so pressing it leaves the page
+     scrolled down; the desktop checks below measure from the top. */
+  await friend.evaluate(() => window.scrollTo(0, 0));
   /* THE DESKTOP. The page widens, the timeline sits BETWEEN the two ends, and
      the teammates are even tiles in two columns, each a name over its years.
      Measured off the rectangles, because every way this goes wrong renders. */

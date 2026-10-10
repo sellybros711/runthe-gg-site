@@ -12889,6 +12889,15 @@ locker room ten times. The ten best known show first and the rest are a tap away
 Every pass is final and the shot clock is ten passes. An undo turns it into a
 map to be searched at leisure.
 
+**The years are hidden, and easy mode costs a pass.** A teammate tile shows only his name.
+The button under the last group ("Too hard? Use a pass to reveal the years each player played
+for that team") sets `st.easy`, which adds one to `passesOf()` for the clock, the verdict, the
+share and the board, and shows each man's seasons with THAT club (`clubYears`), not his career.
+It is not offered when spending it would end the clock. The server counts it too:
+`supabase/134_hoops_passes_easy.sql` gives `rtf_submit_passes` a `p_easy` argument, and
+`board.js` sends it only when it is true, so a normal chain files against 116 unchanged and an
+easy chain is refused there rather than filed a pass short. Deploy 134 by hand; preflight row 44.
+
 **The two ends wear pixel portraits, and they are silhouettes on purpose.** There
 is no licensed art, and a face drawn from a hash would put a guess about a real
 person's hair, build and skin on him, wrong about most of them. So `portrait()`

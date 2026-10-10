@@ -567,10 +567,13 @@
     }
     return typeof id === 'number' ? id : null;
   }
-  async function submitPasses(day, chain, par, solved) {
-    const id = await rpc('submitPasses', 'rtf_submit_passes', {
-      p_day: Math.round(day), p_chain: chain, p_par: Math.round(par), p_solved: !!solved,
-    });
+  /* p_easy is sent only when it is true (134). A normal chain then files
+     against a database still on 116 exactly as it always did, and an easy
+     chain is refused there rather than filed a pass cheaper than it was played. */
+  async function submitPasses(day, chain, par, solved, easy) {
+    const args = { p_day: Math.round(day), p_chain: chain, p_par: Math.round(par), p_solved: !!solved };
+    if (easy) args.p_easy = true;
+    const id = await rpc('submitPasses', 'rtf_submit_passes', args);
     return typeof id === 'number' ? id : null;
   }
   async function submitConquest(c) {
