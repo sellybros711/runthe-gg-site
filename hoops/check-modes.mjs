@@ -1112,12 +1112,17 @@ if (!QUICK) {
     rows: [...document.querySelectorAll('.td-end')].map((e) => Math.round(e.getBoundingClientRect().height)) }));
   ok(lockedHome.lk === 4 && lockedHome.go, `without Pro all four doors are locked and Go Pro is offered (${JSON.stringify(lockedHome)})`);
   ok(lockedHome.rows.length === 2 && lockedHome.rows.every((h) => h > 0 && h < 44), `and each row of doors holds one line (${lockedHome.rows})`);
+  /* The whole locked card opens the offer, not only its buttons. */
+  const cardOffer = await page.evaluate(() => { const c = document.getElementById('mw-pro'), t = c && c.querySelector('.mt-name');
+    if (!t) return null; t.click(); const sh = document.getElementById('pro-sheet'); const on = !!sh && !sh.hidden;
+    if (sh) sh.hidden = true; return { on: on, shut: c.classList.contains('mw-shut') }; });
+  ok(cardOffer && cardOffer.on && cardOffer.shut, 'a press anywhere on the locked Endless card opens the offer');
   await tapMode(page, '#td-efx');
   const sheet1 = await page.evaluate(() => { const s = document.getElementById('pro-sheet');
     return { open: !!s && !s.hidden, text: s ? s.textContent : '', screen: document.querySelector('.screen.active').id }; });
   ok(sheet1.open && /Run The Floor Pro/.test(sheet1.text) && /Sign in to get Pro/.test(sheet1.text), 'a locked door opens the offer, and a guest is asked to sign in');
   ok(sheet1.screen === 's-home', `and nothing behind it opens (${sheet1.screen})`);
-  ok(/\$9\.99/.test(sheet1.text) && /stay free|dailies are free/i.test(sheet1.text), 'the offer names the price and says the dailies stay free');
+  ok(/\$14\.99/.test(sheet1.text) && /a year/.test(sheet1.text) && !/for good|nothing renews/i.test(sheet1.text) && /stay free|dailies are free/i.test(sheet1.text), 'the offer names the yearly price, never a lifetime one, and says the dailies stay free');
   await page.click('#pro-sheet [data-pro-x]');
   await tapMode(page, '#mc-fix');
   await page.waitForSelector('#fx-endless');

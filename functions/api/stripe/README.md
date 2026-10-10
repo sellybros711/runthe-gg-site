@@ -498,7 +498,7 @@ values ('<user uuid>', 'rtd_premium', 'comp')
 on conflict (user_id, product) do update set expires_at = null;
 ```
 
-## Run The Floor Pro ($9.99 once, basketball only)
+## Run The Floor Pro ($14.99 a year, basketball only)
 
 The second single-game tier, the same shape as Diamond Pro and by the same owner's
 decision (2026-09). One checkout, one webhook, no second payment path. The catalog
@@ -518,13 +518,13 @@ files nothing to the board, so the gate is `endlessOpen()` in `hoops/modes-ui.js
    row 34 reads **yes**. Until it runs, the table refuses `rtf_premium` and a paid
    checkout 500s in the webhook.
 2. **Create the Product and Price in Stripe**, by hand in the Dashboard: name
-   **Run The Floor Pro**, one-time price **$9.99 USD**, lookup key `rtf_pro_once`.
+   **Run The Floor Pro**, **recurring yearly** price **$14.99 USD**, lookup key `rtf_pro_year`.
    Or `STRIPE_SECRET_KEY=sk_live_... node scripts/stripe/setup-premium-bundles.mjs`,
    which is idempotent. Copy the price id (`price_...`).
 3. **Add the env var in Cloudflare Pages** (Production):
    `STRIPE_PRICE_RTF_PRO = price_...`, then redeploy (push any commit). Until it is
    set the Get Pro button answers "Pro is not on sale yet".
-4. **Nothing to change on the webhook.**
+4. **Nothing to change on the webhook.** It already listens for the `customer.subscription.*` events Diamond Pro needs, and a subscription grant is the same path.
 5. **Test it** with a 100% off promotion code restricted to this product: open
    `/hoops/` signed in, press Go Pro, pay with the code, and you land back on the game
    with "Pro is on". The Endless and Build doors lose their Pro tag.

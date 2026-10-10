@@ -380,6 +380,7 @@ var CSS = [
   '.td-pro{display:block;margin:8px auto 0;background:none;border:0;color:#f2c14e;font:inherit;font-weight:800;font-size:13px;',
   'cursor:pointer;padding:2px 6px;}',
   '.td-pro .pro-tag{font-style:normal;margin:0 4px 0 0;}',
+  '.mw-pro.mw-shut{cursor:pointer;}',
   '.pro-tag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#1b1405;',
   'background:#f2c14e;border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:1px;}',
   '#pro-sheet[hidden]{display:none;}',
@@ -1536,7 +1537,11 @@ function today(){ return P.dayNumberOf(P.easternISO()); }
    with no store behind it is a wall. A friend's link never asks. */
 var PRO_LIVE = true;
 var PRO_BUNDLE = 'floor-pro';
-var PRO_PRICE = '$9.99';
+/* $14.99 A YEAR, renewing (the owner's call, 2026-10). PRO_TERM rides beside the
+   price wherever it is shown, because a price with no term on a subscription
+   reads as once. */
+var PRO_PRICE = '$14.99';
+var PRO_TERM = ' a year';
 var proOwned = false;
 /* TESTER ACCOUNTS ARE COMPED PRO, the owner's call. Usernames as the board
    prints them (matched lowercased, because set_username keeps the casing
@@ -2976,7 +2981,7 @@ function proTileHtml(){
   return '<span class="mt-tag">Pro · No daily limit</span><b class="mt-name">Endless</b>'
     + '<div class="td-end"><span>Endless</span><button id="td-efx"' + lk + '>Fix History</button><button id="td-eps"' + lk + '>Six Passes</button></div>'
     + '<div class="td-end"><span>Build</span><button id="td-pfx"' + lk + '>Any team</button><button id="td-pps"' + lk + '>Two players</button></div>'
-    + (endlessOpen() ? '' : '<button class="td-pro" id="td-pro"><i class="pro-tag">Pro</i> Unlock both for ' + PRO_PRICE + '</button>');
+    + (endlessOpen() ? '' : '<button class="td-pro" id="td-pro"><i class="pro-tag">Pro</i> Unlock both for ' + PRO_PRICE + PRO_TERM + '</button>');
 }
 /* How many of today's two puzzles are still open, for the strip's heading. */
 function dailiesLeft(){
@@ -3005,6 +3010,19 @@ function renderHome(){
   var pf = $('td-pfx'); if (pf) pf.onclick = fxOpenPicker;
   var pp = $('td-pps'); if (pp) pp.onclick = psOpenPicker;
   var tp = $('td-pro'); if (tp) tp.onclick = function(){ openPro(null); };
+  /* LOCKED, THE WHOLE CARD IS THE OFFER, asked for by the owner: a press anywhere on
+     it opens the Pro sheet. The chips keep their own presses (they open the same
+     sheet without Pro, and their mode with it), so this only takes the rest of the
+     card. Unlocked the card has nothing of its own to open. */
+  var mp = $('mw-pro');
+  if (mp) {
+    var shut = !endlessOpen();
+    mp.classList.toggle('mw-shut', shut);
+    mp.onclick = shut ? function(ev){ if (!ev.target.closest('button')) openPro(null); } : null;
+    if (shut) { mp.setAttribute('role', 'button'); mp.tabIndex = 0;
+      mp.onkeydown = function(ev){ if (ev.target === mp && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); openPro(null); } }; }
+    else { mp.removeAttribute('role'); mp.removeAttribute('tabindex'); mp.onkeydown = null; }
+  }
   if (window.RTF_CAREER_UI) window.RTF_CAREER_UI.renderHero();
 }
 
@@ -3265,7 +3283,10 @@ function paintPro(why, kind){
     h += '<p class="mx-say">' + (proOwned ? 'Endless puzzles, build your own, high school careers and the family tree are open. On every device you sign in on.'
       : 'Your payment went through. Pro is on its way to your account and usually lands in a few seconds.') + '</p>';
   } else if (proOwned) {
-    h += '<p class="mx-say">Endless puzzles, build your own, high school careers and the family tree are open. Thanks for backing the game.</p>';
+    h += '<p class="mx-say">Endless puzzles, build your own, high school careers and the family tree are open. Thanks for backing the game.</p>'
+      + '<button class="ghost" id="pro-bill">Manage billing</button>'
+      + '<p class="pro-err" id="pro-err" hidden></p>'
+      + '<p class="fx-hint" style="text-align:center">Change your card or cancel in Stripe. Pro stays on until the end of the year you paid for.</p>';
   } else {
     var signed = signedAcct();
     h += '<p class="mx-say">' + (why === 'endless' ? 'Out of puzzles for today? Pro keeps them coming.'
@@ -3279,15 +3300,17 @@ function paintPro(why, kind){
       + '<li><b>Rebuild any team</b>Any club, any year, champions too. Four trade windows to win it.</li>'
       + '<li><b>Make a puzzle</b>Pick any two players and send the link. Friends play it free.</li>'
       + '</ul>'
-      + '<div class="pro-price"><b>' + PRO_PRICE + '</b><span>once. Yours for good.</span></div>'
-      + '<button class="pro-buy" id="pro-buy">' + (signed ? 'Get Pro for ' + PRO_PRICE : 'Sign in to get Pro') + '</button>'
+      + '<div class="pro-price"><b>' + PRO_PRICE + '</b><span>a year. Cancel any time.</span></div>'
+      + '<button class="pro-buy" id="pro-buy">' + (signed ? 'Get Pro for ' + PRO_PRICE + PRO_TERM : 'Sign in to get Pro') + '</button>'
       + '<p class="pro-err" id="pro-err" hidden></p>'
       + '<p class="fx-hint" style="text-align:center">' + (signed
-        ? 'One payment through Stripe. Nothing renews. Classic, Conquest, the dailies and Career from draft night stay free.'
+        ? 'Paid through Stripe. Renews each year until you cancel. Classic, Conquest, the dailies and Career from draft night stay free.'
         : 'Pro belongs to your RunThe.GG account, so it follows you to every device. The dailies and Career from draft night stay free.') + '</p>';
   }
   sh.innerHTML = h + '</div>';
   sh.querySelectorAll('[data-pro-x]').forEach(function(b){ b.onclick = closePro; });
+  var bill = $('pro-bill');
+  if (bill) bill.onclick = function(){ openBilling(bill); };
   var buy = $('pro-buy');
   if (buy) buy.onclick = function(){
     if (!signedAcct()) { closePro(); if (P.openProfile) P.openProfile(); return; }
@@ -3312,13 +3335,36 @@ function buyPro(btn){
       if (d && d.url) { location.href = d.url; return; }
       if (d && d.error === 'already_owned') proRefresh(true);
       btn.disabled = false;
-      btn.textContent = 'Get Pro for ' + PRO_PRICE;
+      btn.textContent = 'Get Pro for ' + PRO_PRICE + PRO_TERM;
       if (err) {
         err.hidden = false;
         err.textContent = d && d.error === 'stripe_not_configured' ? 'Pro is not on sale yet. Try again soon.'
           : d && d.error === 'already_owned' ? 'This account already has Pro.'
           : d && d.error === 'unauthorized' ? 'Sign in again, then try once more.'
           : 'Checkout did not open. Try again.';
+      }
+    });
+}
+/* The Stripe Customer Portal, where a subscription is changed or cancelled.
+   A comped tester has no customer, and is told so rather than shown an error. */
+function openBilling(btn){
+  var a = P.auth(), t = a && a.token ? a.token() : null;
+  if (!t) { closePro(); if (P.openProfile) P.openProfile(); return; }
+  var err = $('pro-err'); if (err) err.hidden = true;
+  var label = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Opening billing...';
+  fetch('/api/stripe/portal', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
+    body: JSON.stringify({ return_path: '/hoops/' })
+  }).then(function(r){ return r.json().catch(function(){ return {}; }); })
+    .catch(function(){ return {}; })
+    .then(function(d){
+      if (d && d.url) { location.href = d.url; return; }
+      btn.disabled = false; btn.textContent = label;
+      if (err) {
+        err.hidden = false;
+        err.textContent = d && d.error === 'no_customer' ? 'There is no billing on this account to show.' : 'Billing did not open. Try again.';
       }
     });
 }
