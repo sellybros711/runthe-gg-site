@@ -537,8 +537,16 @@ if (!args.includes('--no-browser')){
       await pg.keyboard.press('Space'); await pg.waitForFunction(() => { const P = window.RTT_PUTT._state().play; return !P || P.state !== 'roll'; }, null, { timeout:30000 }); };
     await pg.click('[data-lv="1"]');
     claim(await pg.evaluate(() => /Hole 1-1 · Par 3 · 3 strokes left/.test(document.querySelector('.pt-hd span').textContent)), 'a Tour hole says how many strokes are left');
-    for (let k = 0; k < 3; k++) await putt(0.04);
+    await putt(0.04);
+    // EVERY PUTT IS SAVED: the hole in progress is in the record, and opening the game again lands back in it
+    const mid = await rec(), cur = mid.cur || {};
+    const back = await pg.evaluate(async () => { const b0 = window.RTT_PUTT._state().play.ball.slice(); window.RTT_PUTT.close(); window.RTT_PUTT.open(puttHost());
+      const S2 = window.RTT_PUTT._state(), P = S2.play; return { screen:S2.screen, s:P && P.strokes, d:P ? Math.hypot(P.ball[0] - b0[0], P.ball[1] - b0[1]) : 99 }; });
+    claim(cur.n === 1 && cur.s === 1 && ((mid.tours.main.tries || {})[1] === 1) && back.screen === 'play' && back.s === 1 && back.d < 0.01,
+      `every putt is saved, an attempt is counted, and reopening resumes the hole with the ball where it lay (cur ${JSON.stringify(cur)}, back ${JSON.stringify(back)})`);
+    for (let k = 0; k < 2; k++) await putt(0.04);
     await pg.waitForSelector('.pp-pop');
+    claim(!(await rec()).cur, 'a finished hole leaves nothing to resume');
     claim(/Over par/.test(await pg.textContent('.pp-pop')) && (await rec()).lives === 2, 'over par ends the hole the moment par strokes are gone, and takes a life');
     await pg.click('.pp-pop [data-a="again"]');
     const [pw, pa] = await pg.evaluate(() => { const P = window.RTT_PUTT._state().play, C = P.C, a0 = Math.atan2(C.cup[1] - P.ball[1], C.cup[0] - P.ball[0]);

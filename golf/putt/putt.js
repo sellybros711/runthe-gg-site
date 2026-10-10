@@ -1912,6 +1912,7 @@ function open(host){
   document.body.style.overflow = 'hidden';
   S.onKey = function(e){ onKey(e); }; window.addEventListener('keydown', S.onKey);
   showMenu();
+  resumeCur();
   // the account's record may be ahead of this browser's: redraw the map if the merge moved anything
   cloudPull().then(function(moved){ if (moved && S && S.screen === 'menu' && !S.ov.querySelector('.pp-sheet')) showHub(S.tour); });
 }
@@ -1970,7 +1971,8 @@ function pmerge(st, g){
   Object.keys(g.tours || {}).forEach(function(k){ var a = st.tours[k] = st.tours[k] || {}, b = g.tours[k] || {};
     a.lv = Math.max(a.lv || 1, b.lv || 1); a.best = a.best || {};
     Object.keys(b.best || {}).forEach(function(n){ if (a.best[n] == null || b.best[n] < a.best[n]) a.best[n] = b.best[n]; });
-    ['ace', 'paid', 'wpaid'].forEach(function(f){ a[f] = a[f] || {}; Object.keys(b[f] || {}).forEach(function(n){ if (!a[f][n]) a[f][n] = b[f][n]; }); }); });
+    ['ace', 'paid', 'wpaid'].forEach(function(f){ a[f] = a[f] || {}; Object.keys(b[f] || {}).forEach(function(n){ if (!a[f][n]) a[f][n] = b[f][n]; }); });
+    a.tries = a.tries || {}; Object.keys(b.tries || {}).forEach(function(n){ a.tries[n] = Math.max(a.tries[n] || 0, b.tries[n] || 0); }); });
   st.daily = st.daily || {}; Object.keys(g.daily || {}).forEach(function(d){ if (!st.daily[d]) st.daily[d] = g.daily[d]; });
   st.rewards = st.rewards || []; (g.rewards || []).forEach(function(r){ if (st.rewards.indexOf(r) < 0) st.rewards.push(r); });
   if (g.streak && (!st.streak || (g.streak.best || 0) > (st.streak.best || 0))) st.streak = Object.assign({}, st.streak || {}, { best:g.streak.best });
@@ -1979,7 +1981,7 @@ function pload(){ var st = null, key = pkey(); try{ st = JSON.parse(localStorage
   if (key !== 'bag_ppt_v1'){ var g = null; try{ g = JSON.parse(localStorage.getItem('bag_ppt_v1')); }catch(e){}
     if (g && g.v === 2 && g.tours){ if (st.v !== 2){ st = { v:2, tours:{} }; } pmerge(st, g); try{ localStorage.setItem(key, JSON.stringify(st)); localStorage.removeItem('bag_ppt_v1'); }catch(e){} } }
   if (st.v !== 2){ st.tours = {}; delete st.lv; delete st.best; delete st.ace; delete st.paid; delete st.wpaid; st.v = 2; }
-  st.tours = st.tours || {}; Object.keys(TOURS).forEach(function(k){ var t = st.tours[k] = st.tours[k] || {}; t.lv = t.lv || 1; t.best = t.best || {}; t.ace = t.ace || {}; t.paid = t.paid || {}; t.wpaid = t.wpaid || {}; t.lv = TOURS[k].lab ? TOURS[k].levels.length : frontier(t, TOURS[k]); });
+  st.tours = st.tours || {}; Object.keys(TOURS).forEach(function(k){ var t = st.tours[k] = st.tours[k] || {}; t.lv = t.lv || 1; t.best = t.best || {}; t.ace = t.ace || {}; t.paid = t.paid || {}; t.wpaid = t.wpaid || {}; t.tries = t.tries || {}; t.lv = TOURS[k].lab ? TOURS[k].levels.length : frontier(t, TOURS[k]); });
   st.daily = st.daily || {}; st.rewards = st.rewards || []; st.streak = st.streak || { n:0, last:null, best:0 };
   if (st.lives == null) st.lives = livesMax();
   if (st.refillAt && Date.now() >= st.refillAt && !st.lsrv){ st.lives = livesMax(); st.refillAt = null; st.lt = Date.now(); psave(st); }
@@ -2007,6 +2009,7 @@ function cloudProg(st){ var n = 0, c = function(o){ return Object.keys(o || {}).
 // fold a copy of the record into this one: everything earned is kept, lives come from the newer copy
 function cloudMerge(st, g){ if (!g || g.v !== 2 || !g.tours) return st;
   if (!st.lsrv && (g.lt || 0) > (st.lt || 0)){ st.lives = g.lives; st.refillAt = g.refillAt || null; st.lt = g.lt; }
+  if ((g.curT || 0) > (st.curT || 0)){ st.cur = g.cur || null; st.curT = g.curT; }
   if (g.streak && g.streak.last && (!st.streak || !st.streak.last || g.streak.last > st.streak.last)) st.streak = Object.assign({}, g.streak, { best:Math.max((st.streak && st.streak.best) || 0, g.streak.best || 0) });
   return pmerge(st, g); }
 function cloudRow(d){ var r = Array.isArray(d) ? d[0] : d; return r && typeof r === 'object' ? r : null; }
@@ -2383,10 +2386,41 @@ function startLevel(n, tid){
   if (tourOf(tid).members && !membersOpen() && !membersPreview()) return membersSheet();
   if (tourOf(tid).lab && !labOpen()) return showHub('main');
   if (tid === 'main' && n > GUEST_HOLES && isGuest()) return guestSheet();
-  if (st.lives <= 0 && !tourOf(tid).lab) return outOfLives();
+  var c = st.cur, back = c && c.tid === tid && c.n === n && c.s > 0;
+  if (c && !back){ clearCur(st); psave(st); }   // only a hole in progress on another device can be left this way
+  if (!back && st.lives <= 0 && !tourOf(tid).lab) return outOfLives();
   var d = tourDesc(n, S.host, tid);
   S.round = { mode:'ppt', lv:n, tid:tid, i:0, cards:[], holes:[d], title:levelName(n, tid) };
   playHole();
+  if (back) resumeInto(c);
+}
+/* EVERY PUTT IS SAVED. The hole in progress (which hole, the strokes, where the ball lies) goes into the
+   Tour record the moment a putt is struck and again when it stops, so a reload, a closed tab or a phone
+   that kills the page lands back on the same hole with the same count. It is saved at the STRIKE with the
+   ball still at its starting spot, so closing the tab while a bad putt rolls costs that stroke rather than
+   undoing it. Every attempt is counted on the hole (tp.tries) the first time a putt is struck in it.
+   Opening the game goes straight back into a hole in progress; only leaving it through the X (which costs
+   a life, as before) or finishing it clears it. A signed in player's hole in progress follows the account:
+   the copy changed last wins (curT), the same rule as lives. */
+function saveCur(P, ball){
+  var R = S.round; if (!R || R.mode !== 'ppt' || !P) return;
+  var st = pload(), tid = R.tid || 'main', tp = st.tours[tid];
+  if (!P.counted){ P.counted = 1; tp.tries[R.lv] = (tp.tries[R.lv] || 0) + 1; }
+  st.cur = { tid:tid, n:R.lv, s:P.strokes, b:[+ball[0].toFixed(3), +ball[1].toFixed(3)], t:Date.now() }; st.curT = st.cur.t;
+  psave(st);
+}
+function clearCur(st){ if (st.cur){ st.cur = null; st.curT = Date.now(); } }
+function resumeInto(c){
+  var P = S.play; if (!P) return;
+  P.ball = c.b.slice(); P.prev = c.b.slice(); P.strokes = c.s; P.counted = 1;
+  P.target = P.C.cup.slice(); P.aimAng = Math.atan2(P.C.cup[1] - P.ball[1], P.C.cup[0] - P.ball[0]); P.cam = null; P.camNow = null;
+  // the tab closed while the last stroke rolled: the hole was lost then, and is settled now
+  if (P.strokes >= P.C.par){ P.state = 'done'; return tourOut(false); }
+  hud(); toast('Back where you left off: ' + c.s + (c.s === 1 ? ' stroke' : ' strokes') + ' played.');
+}
+function resumeCur(){
+  var c = pload().cur; if (!c || !TOURS[c.tid] || !(c.n >= 1 && c.n <= tourOf(c.tid).levels.length) || !c.b) return false;
+  startLevel(c.n, c.tid); return true;
 }
 function startDaily(dk){
   var t = today(); dk = dk || t; if (dk > t) return;
@@ -2406,15 +2440,17 @@ function tourSub(R, C, P){
 function leaveHole(){
   var P = S.play, R = S.round;
   if (R && R.mode === 'ppt' && R.tid !== 'lab' && P && P.strokes > 0 && P.state !== 'done'){
-    return confirmSheet('Leave this hole?', 'You have putted, so leaving costs a life.', 'Leave · lose a life', function(){ var st = pload(); loseLife(st); showHub(); }); }
+    return confirmSheet('Leave this hole?', 'You have putted, so leaving costs a life.', 'Leave · lose a life', function(){ var st = pload(); clearCur(st); loseLife(st); showHub(); }); }
   if (R && R.mode === 'pdaily' && P && P.strokes > 0 && P.state !== 'done'){
     return confirmSheet('Leave the Daily Hole?', 'You get one scored try a day. Leaving now scores it as a pick up.', 'Leave and score it', function(){ dailyFinish(P.C.par + 3, P.C.par, null); }); }
+  if (R && R.mode === 'ppt'){ var st = pload(); if (st.cur){ clearCur(st); psave(st); } }
   showHub();
 }
 function restartHole(){
   var P = S.play, R = S.round;
-  if (R.mode === 'ppt' && R.tid !== 'lab' && P.strokes > 0 && P.state !== 'done') return confirmSheet('Restart?', 'You have putted, so a restart costs a life.', 'Restart · lose a life', function(){ var st = pload(); loseLife(st); if (st.lives <= 0) return showHub(), outOfLives(); playHole(); });
+  if (R.mode === 'ppt' && R.tid !== 'lab' && P.strokes > 0 && P.state !== 'done') return confirmSheet('Restart?', 'You have putted, so a restart costs a life.', 'Restart · lose a life', function(){ var st = pload(); clearCur(st); loseLife(st); if (st.lives <= 0) return showHub(), outOfLives(); playHole(); });
   if (R.mode === 'pdaily' && P.strokes > 0) return toast('One scored try a day. Finish this one.');
+  if (R.mode === 'ppt'){ var st = pload(); if (st.cur){ clearCur(st); psave(st); } }
   playHole();
 }
 function confirmSheet(title, body, yes, fn){
@@ -2428,6 +2464,7 @@ function popup(html, wire, kind){ var pop = el('<div class="pt-pop pp-pop' + (ki
 function tourOut(holed){
   var P = S.play, R = S.round, C = P.C, n = R.lv, tid = R.tid || 'main', TR = tourOf(tid), PY = PAY[TR.id], K = TR.per || PER, N = TR.levels.length;
   var s = P.strokes, par = C.par, st = pload(), tp = st.tours[TR.id], th = TR.levels[n - 1].three;
+  clearCur(st); if (TR.lab || !(holed && s <= par)) psave(st);
   if (holed && s <= par){
     var first = tp.best[n] == null, lines = [], had = starsOf(tp.best[n], par, th), wasLv = tp.lv;
     tp.best[n] = first ? s : Math.min(tp.best[n], s);
@@ -2734,7 +2771,7 @@ function strike(){
   P.shot = simulate(C, P.ball[0], P.ball[1], Math.cos(a) * v, Math.sin(a) * v, t0);
   if (onSecret(C, P.shot)) P.foundSecret = true;
   P.shotStart = gnow(); P.shotAng = a; P.strokes++; P.state = 'roll'; P.pow = 0; P.evI = 0; P.prev = P.ball.slice(); P.lastFt = ft;
-  P.trail = P.shot.pts; hud();
+  P.trail = P.shot.pts; hud(); saveCur(P, P.prev);
 }
 // did this putt go through the hole's secret line (see secret())
 function onSecret(C, r){ var Z = C.secret || []; if (!Z.length || !r || !r.pts) return false;
@@ -2798,6 +2835,7 @@ function settle(){
   else P.ball = sh.rest.slice();
   P.state = 'aim'; P.shot = null;
   if (sh.holed){ return holeOut(); }
+  saveCur(P, P.ball);
   if (S.round.mode === 'ppt' && P.strokes >= C.par){ P.state = 'done'; return tourOut(false); }
   if (P.strokes >= P.cap){ return holeOut(true); }
   P.target = C.cup.slice(); P.aimAng = Math.atan2(C.cup[1] - P.ball[1], C.cup[0] - P.ball[0]);

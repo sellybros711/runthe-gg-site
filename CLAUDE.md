@@ -19878,6 +19878,15 @@ The page writes localStorage first and never waits on the network. The host hand
   three times running.
 - **Every call fails soft.** null is no opinion and the local record stands.
 
+**Every putt is saved, and the game reopens on the hole in progress** (`saveCur`, `st.cur`). The hole,
+the strokes and where the ball lies go into the Tour record when a putt is struck (ball still at its
+starting spot, so closing the tab while a bad putt rolls costs that stroke instead of undoing it) and again
+when it stops. Opening the mode goes straight back into that hole, and the lives check is skipped for it,
+because the attempt has not cost one yet. Only finishing the hole or leaving through the X (a life, as
+before) clears it. Each hole counts its attempts in `tp.tries`, merged as a maximum. A signed in player's
+hole in progress follows the account, last change wins (`curT`), the same rule as lives. The Daily Hole is
+not resumed: it is one timed try.
+
 **Lives are on the server, on its clock** (`supabase/138_putt_lives.sql`, deployed by hand). The Tour record
 cannot hold them, because its rule is progress and lives go down. So a signed in player's lives come from
 `putt_lives_state`, a life is taken by `putt_lives_spend`, and the 24 hour clock is the server's `now()`. Once
