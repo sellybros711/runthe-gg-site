@@ -593,6 +593,13 @@ check_rows(sort, migration, what, breaks, ok) as (
       (select count(*) > 0 from proc where name = 'arcade_generated_name')
       and (select count(*) > 0 from trg where name = 'grid_runs_fill_name')),
 
+  -- SIX PASSES EASY MODE. Without it a normal chain still files, and a chain
+  -- solved in easy mode is refused, so it never reaches the board at all.
+  (44, '134_hoops_passes_easy',
+      'a Six Passes chain played in easy mode is filed with its extra pass',
+      'Chains that used easy mode do not reach the Six Passes board.',
+      (select count(*) > 0 from proc where name = 'rtf_submit_passes' and args like '%p_easy%')),
+
   -- SPORTEGORIES CHALLENGES. They rule live either way, so a missing table is
   -- silent: a won challenge scores for the player who made it and is
   -- forgotten, and the next card marks the same answer wrong again.

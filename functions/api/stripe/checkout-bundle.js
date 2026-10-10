@@ -12,7 +12,7 @@
  *   STRIPE_PRICE_PS_YEAR              price_...  (Perfect Season, $19.99 a year)
  *   STRIPE_PRICE_RTB_YEAR             price_...  (Run The Bundle, $34.99 a year)
  *   STRIPE_PRICE_RTD_PRO              price_...  (Run The Diamond Pro, $14.99 a year, RECURRING)
- *   STRIPE_PRICE_RTF_PRO              price_...  (Run The Floor Pro, one-time)
+ *   STRIPE_PRICE_RTF_PRO              price_...  (Run The Floor Pro, $14.99 a year, RECURRING)
  *   SITE_URL                          https://runthe.gg
  *   SUPABASE_URL, SUPABASE_SERVICE_ROLE
  *
