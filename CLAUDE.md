@@ -19887,6 +19887,17 @@ before) clears it. Each hole counts its attempts in `tp.tries`, merged as a maxi
 hole in progress follows the account, last change wins (`curT`), the same rule as lives. The Daily Hole is
 not resumed: it is one timed try.
 
+**The walk to the next hole is the 3D golfer, seen from behind.** `golfer3d.js` has a `walk` kind: eight
+frames a stride (`w0` to `w7`, `walkPose`), legs, arms and hips swinging and the body rising at each passing
+step, facing the way he goes, drawn from a higher camera (`WALK_EL`, 34 degrees) than the swing's 26. The swing
+is untouched: every walk term is gated on `walk`, and the camera is put back after each walk frame (check-golfer3d
+asserts it). A walk frame is drawn on first ask (`frame`, `has`, `warmAim`, through `puttHost().golferWalk`), and
+the facing for the next walk is drawn while the hole is played (`warmWalk` in `startLevel`). On the map,
+`walker3` hides the flat golfer, puts the 3D one in an overlay, picks the frame off the DISTANCE walked
+(`WALK_STRIDE`) so the feet never skate, and tilts and closes in the map (`WALK_TILT`, `WALK_ZOOM`) pivoting on
+the golfer, so the camera sits behind and above him and he stays put on the screen. A page without the 3D golfer
+walks the flat one as before. check-putt asserts the frames change, the flat sprite is hidden and the map tilts.
+
 **Lives are on the server, on its clock** (`supabase/138_putt_lives.sql`, deployed by hand). The Tour record
 cannot hold them, because its rule is progress and lives go down. So a signed in player's lives come from
 `putt_lives_state`, a life is taken by `putt_lives_spend`, and the 24 hour clock is the server's `now()`. Once

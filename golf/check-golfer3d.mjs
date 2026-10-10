@@ -70,6 +70,28 @@ ok('every set has its frames (4 full, 4 chip, 3 putt)', sweep.frames >= sweep.se
 ok('no cell is painted with a material the palette does not know', sweep.magenta === 0, sweep);
 ok('the ball anchor is on the canvas for every set', sweep.ballOff === 0, sweep);
 
+head('2a. THE WALK: EIGHT FRAMES A STRIDE, EVERY FACING, A REAL STEP');
+// The tour map walks this golfer from hole to hole. A walk that came back as one frame eight times is the
+// old waddle again, so every frame of a facing has to be a different picture, the figure stays on the canvas
+// with its feet on the ground point, and the legs actually move (the lowest painted row changes shape).
+const walk = await pg.evaluate(() => { const out = { facings: 0, same: [], off: [], magenta: 0, ex: [] };
+  for (const look of [DEFLOOK, Object.assign({}, DEFLOOK, { lefty: true, hatStyle: Object.keys(PXG_HATS)[0] })])
+  for (const a of [0, 45, 90, 135, 180, 225, 270, 315]) { const urls = new Set();
+    for (let i = 0; i < RTT_G3D.WALK_N; i++){ let f; try{ f = RTT_G3D.frame(look, a, 'walk', i); }catch(e){ out.ex.push(String(e)); continue; }
+      urls.add(f.url); if (!(f.ball[0] > 4 && f.ball[0] < f.W - 4 && f.ball[1] > 4 && f.ball[1] < f.H - 4)) out.off.push({ a, i, ball: f.ball });
+      const d = RTT_G3D.draw(look, a, 'walk', 'w' + i).cv.getContext('2d').getImageData(0, 0, f.W, f.H).data;
+      for (let j = 0; j < d.length; j += 4) if (d[j] === 255 && d[j + 1] === 0 && d[j + 2] === 255) { out.magenta++; break; }
+      for (let x = 0; x < f.W; x++) if (d[(0 * f.W + x) * 4 + 3] > 0) { out.off.push({ a, i, top: true }); break; } }
+    out.facings++; if (urls.size < RTT_G3D.WALK_N) out.same.push({ a, distinct: urls.size }); }
+  return out; });
+ok('every facing walks without throwing', walk.facings === 16 && !walk.ex.length, walk.ex);
+ok('every frame of a stride is its own picture', walk.same.length === 0, walk.same);
+ok('the walker stays on the canvas, feet on the ground point', walk.off.length === 0, walk.off.slice(0, 4));
+ok('no walk frame paints a material the palette does not know', walk.magenta === 0);
+const keep = await pg.evaluate(() => { const L = Object.assign({}, DEFLOOK, { hairStyle: 'short' });
+  const a = RTT_G3D.draw(L, 90, 'putt', 'pA').cv.toDataURL(); RTT_G3D.draw(L, 90, 'walk', 'w3'); return a === RTT_G3D.draw(L, 90, 'putt', 'pA').cv.toDataURL(); });
+ok('drawing a walk frame leaves the swing camera where it was', keep);
+
 head('2b. EVERY ITEM IN THE STORE IS DRAWN ON THE COURSE GOLFER');
 // One item at a time, against the plain look. An item that draws nothing is the quiet failure here: the
 // store sells it, the profile shows it, and the course golfer would play in the plain look with nothing

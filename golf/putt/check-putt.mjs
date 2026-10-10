@@ -437,7 +437,9 @@ if (!args.includes('--no-browser')){
     const wk = await pg.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), seed = (s, lv) => { const best = {}; for (let n = 1; n <= 18; n++) best[n] = s;
       localStorage.setItem('bag_ppt_v1@walk', JSON.stringify({ v:2, tours:{ main:{ lv, best, ace:{}, paid:{}, wpaid:{} } } })); };
       window.RTT_PUTT.close(); sbUser = { id:'walk' }; seed(1, 19); openPutt(); await sleep(300);
-      window.RTT_PUTT._walkTo(5); await sleep(400); out.walking = !!document.querySelector('.pp-walking .pp-me.walk') && !window.RTT_PUTT._state().round;
+      window.RTT_PUTT._walkTo(5); const srcs = new Set(), tilts = []; for (let i = 0; i < 12; i++){ await sleep(70); const im = document.querySelector('.pp-walker img'); if (im) srcs.add(im.src); tilts.push(document.querySelector('.pp-world').style.transform); }
+      out.walking = !!document.querySelector('.pp-walking .pp-walker img') && !window.RTT_PUTT._state().round;
+      out.frames = srcs.size; out.tilt = tilts.some(t => /rotateX\(/.test(t)); out.flatMe = getComputedStyle(document.querySelector('.pp-me')).visibility === 'hidden';
       document.querySelector('.pp-map').dispatchEvent(new PointerEvent('pointerdown', { bubbles:true })); await sleep(100);
       const R = window.RTT_PUTT._state().round; out.skipTo = R && R.lv;
       window.RTT_PUTT.close(); openPutt(); await sleep(300); window.RTT_PUTT._walkTo(18); await sleep(2600);
@@ -447,6 +449,9 @@ if (!args.includes('--no-browser')){
       out.shutStay = window.RTT_PUTT._state().screen === 'menu' && !window.RTT_PUTT._state().play;
       window.RTT_PUTT.close(); sbUser = { id:'chk' }; return out; });
     claim(wk.walking && wk.skipTo === 6, `Next walks the golfer up the path on the map, and a tap skips straight to the hole (${wk.walking}, hole ${wk.skipTo})`);
+    // THE WALKER IS THE 3D GOLFER, in a real step: the frames change as he goes, the flat map golfer is hidden,
+    // and the camera tilts the map away from him (a camera behind and above, not a sticker sliding up a picture)
+    claim(wk.frames >= 3 && wk.flatMe && wk.tilt, `the walk is the 3D golfer stepping (${wk.frames} frames seen), the flat sprite is hidden, and the map tilts away behind him (${wk.tilt})`);
     claim(wk.doorOpen && wk.through === 19, `with the stars, the world door fills, opens and the walk carries on into World 2 (hole ${wk.through})`);
     claim(/Need \d+ more/.test(wk.shutTxt) && wk.shutStay, `short of the stars, the door stays shut, says how many more, and leaves you on the map (${wk.shutTxt})`);
     // ---- THE TOUR'S RULES, through the page. Each life is real: a fresh record for a fresh account.
