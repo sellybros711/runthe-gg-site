@@ -35,7 +35,7 @@ jobs:
           psql "$SUPABASE_DB_URL" -c "select slate_date from stumpire_slates order by slate_date;"
       - name: The REST path the function uses
         run: |
-          UID=$(psql "$SUPABASE_DB_URL" -tAc "select id from profiles where lower(username)='runnyj' limit 1")
-          echo "runnyj uid $UID"
-          curl -sS -X POST "$SUPABASE_URL/rest/v1/rpc/stumpire_access" -H "apikey: $SR" -H "Authorization: Bearer $SR" -H 'Content-Type: application/json' -d "{\"p_uid\":\"$UID\"}"; echo
+          TUID=$(psql "$SUPABASE_DB_URL" -tAc "select id from profiles where lower(username)='runnyj' limit 1")
+          echo "runnyj uid $TUID"
+          curl -sS -X POST "$SUPABASE_URL/rest/v1/rpc/stumpire_access" -H "apikey: $SR" -H "Authorization: Bearer $SR" -H 'Content-Type: application/json' -d "{\"p_uid\":\"$TUID\"}"; echo
           curl -sS "$SUPABASE_URL/rest/v1/stumpire_settings?key=eq.mode&select=value" -H "apikey: $SR" -H "Authorization: Bearer $SR"; echo

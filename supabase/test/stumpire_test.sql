@@ -87,3 +87,11 @@ insert into stumpire_answer_log (prompt_id, matched_id, status, ruling) values
   ('a','x2','match','SAFE'), ('a','x2','match','SAFE'), ('a','x1','match','OUT'), ('a','zz','match','STRIKE');
 select pg_temp.claim((select n from stumpire_observed('a') where entity_id = 'x2') = 2, 'observed counts what players actually said');
 select pg_temp.claim(not exists (select 1 from stumpire_observed('a') where entity_id = 'zz'), 'a strike is not an observation');
+
+-- the server can reach every function it calls. The live database shipped
+-- with service_role unable to run stumpire_access, so every API call 404d.
+select pg_temp.claim(bool_and(has_function_privilege('service_role', 'public.' || f, 'execute')), 'service_role can execute every stumpire function')
+  from unnest(array['stumpire_access(uuid)', 'stumpire_save_play(bigint,integer,jsonb,integer,integer,integer,boolean,boolean)',
+    'stumpire_publish_slate(date,integer,text[],text[],text[],text[],jsonb,uuid)', 'stumpire_observed(text)',
+    'stumpire_claim(text,uuid)', 'stumpire_accept_answer(date,smallint,text,text,text)']) f;
+select pg_temp.claim(not has_function_privilege('anon', 'public.stumpire_access(uuid)', 'execute'), 'anon still cannot execute stumpire_access');

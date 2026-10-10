@@ -2,7 +2,7 @@
 -- A stand-in schema for testing 133_stumpire.sql against a real Postgres.
 --
 --   createdb stump
---   psql -d stump -c 'create role authenticated; create role anon;'
+--   psql -d stump -c 'create role authenticated; create role anon; create role service_role;'
 --   psql -d stump -f supabase/test/stumpire_base.sql
 --   psql -d stump -f supabase/133_stumpire.sql
 --   psql -d stump -f supabase/test/stumpire_test.sql
