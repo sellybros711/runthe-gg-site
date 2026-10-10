@@ -5053,6 +5053,7 @@ function savePrefs() {
       coach: PREFS.coach !== false,
       coach_bat: !!PREFS.coach_bat,
       coach_pitch: !!PREFS.coach_pitch,
+      coach_star: !!PREFS.coach_star,
       rosterSort: PREFS.rosterSort || 'name',
       lastTeam: Array.isArray(State.team) && State.team.length === 9 ? State.team : PREFS.lastTeam,
       seasonLen: State.seasonLen || PREFS.seasonLen,
@@ -9056,7 +9057,7 @@ function renderSettings() {
         (v) => {
           /* Switching them back on means seeing them again, so the two
              "already shown" marks come off with it. */
-          if (v && PREFS.coach === false) { PREFS.coach_bat = false; PREFS.coach_pitch = false; }
+          if (v && PREFS.coach === false) { PREFS.coach_bat = false; PREFS.coach_pitch = false; PREFS.coach_star = false; }
           PREFS.coach = v;
         });
 
@@ -9970,8 +9971,14 @@ function renderSeasonHub() {
         State.mode = 'season';
         const home = !!(S.homeAt && S.homeAt[games]);
         const slot = games === 0 ? 'first' : (games === seasonGames(S) - 1 ? 'finale' : 'mid');
-        pressPlay('pregame', pressCtx({ slot }),
-                  () => startGame({ mode:'season', youHome: home }));
+        /* NOT EVERY GAME IS A PRESS DAY. Over a seventeen game season a
+           cutscene in front of every first pitch is seventeen taps between
+           a player and the thing they pressed Play for. Opening day, the
+           finale, a rivalry and every third game keep theirs; the rest go
+           straight to the plate. The postgame room still meets every game. */
+        const pressDay = slot !== 'mid' || !!riv || games % 3 === 0;
+        const go = () => startGame({ mode:'season', youHome: home });
+        if (pressDay) pressPlay('pregame', pressCtx({ slot }), go); else go();
       };
       nextCard.appendChild(play);
       /* SIM IT. A seventeen game season is a commitment, and the one game a
@@ -10496,7 +10503,7 @@ function statBump(k, key, by) {
    that mattered. This game had nothing like it, so playing well bought
    nothing in the game you were playing.
 
-   Three stars fill the meter. Your hits earn them (a home run earns two)
+   Five stars fill the meter. Your hits earn them (a home run earns two)
    and so do your strikeouts on the mound. A full meter offers ONE special
    on whichever side you are on:
 
@@ -10512,7 +10519,11 @@ function statBump(k, key, by) {
    appearances a game that the player chose. Per game: the meter starts
    empty every first pitch.
    ============================================================================ */
-const STAR_NEED = 3;
+/* FIVE, MEASURED. At three a player who knows the game earned about four
+   specials in a five inning game (roughly ten hits and four strikeouts),
+   which is a button rather than a moment. Backyard handed out one or two. At
+   five that player gets two or three and a first-timer about one. */
+const STAR_NEED = 5;
 const MOON_SWEET = 1.6, MOON_HR = 2.4, MOON_XBH = 1.4;
 const FIRE_SWEET = 0.6, FIRE_CONTACT = 0.5;
 function playerIsBattingSafe() {
@@ -11872,12 +11883,16 @@ function startAtBat() {
     showCallout(`${b.n} steps in`, 'sub');
   }
   refreshHud();
+  /* The star card, once ever, the first plate appearance a meter is full. */
+  const starFirst = (then) => starReady(g) && coachDue('star')
+    ? coachShow('star', COACH_STAR[playerIsBatting() ? 'moon' : 'fire'], then)
+    : then();
   if (playerIsBatting()) {
     /* CPU calls its own pitch, once the coach (first swing only) is done. */
-    coachShow('bat', COACH.bat, () => setTimeout(nextPitch, BEAT.intoAtBat));
+    starFirst(() => coachShow('bat', COACH.bat, () => setTimeout(nextPitch, BEAT.intoAtBat)));
   } else {
     /* Your defense is on the field: you call the pitch. */
-    coachShow('pitch', COACH.pitch, () => setTimeout(offerPitchSelection, BEAT.intoAtBat));
+    starFirst(() => coachShow('pitch', COACH.pitch, () => setTimeout(offerPitchSelection, BEAT.intoAtBat)));
   }
 }
 
@@ -11976,6 +11991,24 @@ const COACH = COARSE ? {
     + '<b>green</b> to finish a throw or make a catch. Let it run out and the batter '
     + 'reaches, nothing worse. A <b>ring</b> on a deep fly is a robbery. Time it and '
     + 'his hit becomes an out. Miss that one and nothing is lost at all.',
+  ],
+};
+/* STAR POWER IS TAUGHT WHEN IT ARRIVES, not in the opening notes. Four
+   plaques before the first pitch is already the most a stranger reads, and a
+   note about a button that is not on the screen yet is a note nobody keeps.
+   So the first time a meter fills, the next plate appearance opens on one
+   card about the button that has just appeared beside it. */
+const COACH_STAR = {
+  moon: [
+    '<b>Star power is ready.</b> Your hits and strikeouts filled the meter. ' + (COARSE ? 'Tap' : 'Click')
+    + ' <b>&#9733; Moon Shot</b> under the field to arm it. Your next swing gets a much '
+    + 'bigger window and a real shot at the fence. It is spent on that swing, hit or '
+    + 'miss, so wait for a pitch you like.',
+  ],
+  fire: [
+    '<b>Star power is ready.</b> Your hits and strikeouts filled the meter. '
+    + (COARSE ? 'Tap' : 'Click') + ' <b>&#9733; Fireball</b> under the field to arm it. '
+    + 'Your next pitch is very hard to square up. Save it for the hitter who scares you.',
   ],
 };
 function coachDue(kind) { return PREFS.coach !== false && !PREFS['coach_' + kind]; }
@@ -20504,7 +20537,7 @@ function renderHowTo() {
     + '<h3>Star power</h3>'
     + '<p>Play well and you earn a special. Every hit by your bats fills a star '
     + '(a home run fills two), and so does every strikeout your pitcher throws. '
-    + 'Three stars and a gold button appears beside Steal and Mound.</p>'
+    + 'Five stars and a gold button appears beside Steal and Mound.</p>'
     + '<p><b>Moon Shot</b> (batting): a much wider timing window, and a squared '
     + 'ball is far likelier to leave the yard. It is spent on your next swing, hit '
     + 'or miss, so pick your pitch. <b>Fireball</b> (pitching): the next pitch is '

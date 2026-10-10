@@ -2056,8 +2056,14 @@ async function main() {
             await new Promise(r => setTimeout(r, 50));
           }
         };
-        /* Pitch one: hold right, read what the flight did with it. */
+        /* Pitch one: hold right, read what the flight did with it. Its spot
+           is pinned to the middle, because a random draw lands near the
+           1.7 clamp about one run in a hundred and twenty (measured: 1.675),
+           and a pitch already at the edge has nowhere right to bend to: the
+           steer registered and the ball could not move, which read as the
+           late break gone. Pitch two below already pins its own. */
         endAtBatCleanup(); State.game.pitch = null; throwPitch();
+        State.game.pitch.baseLocX = 0; State.game.pitch.loc.x = 0;
         State.game.steerHeld = 1;
         await landed(State.game.pitch);
         {

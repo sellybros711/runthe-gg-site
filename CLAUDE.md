@@ -6010,7 +6010,7 @@ blue sky, which a screenshot said and no guard can.
 Asked for as making MythiBall play like the Backyard Baseball it is modeled on.
 Four additions, each small in code and large in what a player feels.
 
-**STAR POWER IS THE POWER-UP.** Three stars fill a per-game meter: a hit by your
+**STAR POWER IS THE POWER-UP.** Five stars fill a per-game meter: a hit by your
 bats is one (a home run is two, through `statBump`), and a strikeout your pitcher
 throws is one (`recordOut`). Full, a gold button appears in the controls row
 beside Steal and Mound: **Moon Shot** at the plate (timing window x`MOON_SWEET`,
@@ -6018,6 +6018,20 @@ home runs x`MOON_HR`, extra bases x`MOON_XBH`, spent on the next swing hit or
 miss, never on a bunt) and **Fireball** on the mound (the CPU's window x`FIRE_SWEET`
 and its contact x`FIRE_CONTACT`, spent on the throw, drawn orange). The meter
 reads in the inning chip (`hudSideText`).
+
+**Five rather than three, measured.** At three, a player who knows the game (about
+ten hits and four strikeouts in five innings) earned four specials a game, which is
+a button rather than a moment. At five it is two or three, and about one for a
+first-timer. `check-skill.mjs --moon` arms every swing and reads what one is worth:
+for the "knows it" rung at medium, home runs per plate appearance go 12% to 33% in
+Power and 10% to 15% in Contact. It is a reading, not a band. The first time a
+meter fills, the next plate appearance opens on one coach card about the button
+(`COACH_STAR`, flag `coach_star`), rather than a fifth card in the opening notes
+about a button not yet on screen.
+
+**Not every season game is a press day.** The pregame scene plays on opening day,
+the finale, a rivalry game and every third game; the rest go straight to the plate.
+Playoff and cup pregames and every postgame are unchanged.
 
 **THE CPU NEVER GETS ONE**, which is what keeps every calibrated rate here honest:
 `calibrate.mjs`, `check-skill.mjs` and `whiff.mjs` all measure with nothing armed.

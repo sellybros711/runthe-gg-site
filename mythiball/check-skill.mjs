@@ -31,6 +31,7 @@
      node mythiball/check-skill.mjs                   all three tiers
      node mythiball/check-skill.mjs --tier medium     one of them
      node mythiball/check-skill.mjs --pa 1200         a bigger sample
+     node mythiball/check-skill.mjs --moon            every swing a Moon Shot (a reading, not a band)
    `MYTHIBALL_PAGE` points it at another copy of the page. */
 
 import { createRequire } from 'node:module';
@@ -58,6 +59,7 @@ const ONE_TIER = argOf('tier', null);
    It is how the shipped one was picked; a normal run passes nothing. */
 const SWEET = argOf('sweet', null) == null ? null : Number(argOf('sweet', null));
 const ONE_MODE = argOf('mode', null);
+const MOON = argv.includes('--moon');
 /* Ladder coefficients to run in place of the shipped ones, as `KEY=value` pairs
    (`--bat HIT_BASE=0.08,HIT_Q=0.27`). Also how the shipped ones were chosen. */
 const BATOVER = (() => {
@@ -184,6 +186,9 @@ function sweep(pa, skills, tier, seed, sweet, mode, bat) {
         const t = Math.min(1, Math.max(0, p.ideal + nrm() * frac));
         r.swings++;
         p.swung = true;
+        /* --moon: every swing is a Moon Shot, which is how its worth per
+           armed swing is read. Off by default, so the bands are untouched. */
+        if (window.__moon) { g.star = STAR_NEED; g.special = 'moon'; }
         resolveSwing(t);
         const res = g.lastSwing ? g.lastSwing.res : null;
         if (res === 'whiff') r.whiffs++;
@@ -257,6 +262,7 @@ async function main() {
      because a mode that is strictly worse is a button nobody should press. */
   const modes = ONE_MODE ? [ONE_MODE] : ['contact', 'power'];
   const all = {};
+  if (MOON) await pg.evaluate(() => { window.__moon = true; });
   for (const tier of tiers) for (const mode of modes) {
     const rows = await pg.evaluate(([pa, skills, tier, seed, src, sweet, mode, bat]) => {
       // eslint-disable-next-line no-new-func
