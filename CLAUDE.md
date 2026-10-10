@@ -8419,6 +8419,38 @@ them nothing they do not know. `check-firstpitch` reads it off the drawing calls
 (a ring of 11 with a dot of 2 at its centre) in both halves, so a check that never
 sees the pitcher's target drawn cannot pass by accident.
 
+#### The pitcher is in the keep, and the deck only counts where it covers the column
+
+Reported from a laptop with a screenshot: a pair of legs on the mound, the park's
+sign where the face should be, and no arm. The keep box held the zone and the ball
+and nothing above them, so the camera centred on the zone, and a short wide window
+started at or below the pitcher's head. Measured at 1366x768 the crop began 55
+logical pixels under his head. The zone checks were green the whole time, because
+the zone was never what was missing.
+
+**Three changes, and each one was needed:**
+
+- **`plateKeepTop()` is the top of his drawing plus room for the FRESH chip**,
+  read off `plateGeom`. It is clamped BEFORE the zone's bottom keep, so the zone
+  still wins when the two cannot both be held.
+- **`deckOverKeep` counts the deck only where it stands in front of the column the
+  ball can land in.** On a wide window the swing row is a box at the bottom left,
+  and reserving its whole height cost the camera the 11 blocks the head needed. On
+  a desktop the deck is held to half the window less 150 (from 1000 wide), so the
+  pitching row wraps at the left instead of reaching the column. Under 1000 it is
+  not held, because a sideways phone's End Game went 7 pixels off the window.
+- **The camera steps back one whole scale when the head still does not fit.** On a
+  21:9 window that leaves bars at the sides, which is the wide camera's answer on
+  the same window. The step asks for the head and not for the chip, or a 1366
+  laptop would get bars for a picture that was already right.
+
+**The park sign steps aside on the plate camera.** It hangs top centre, which is
+the pitcher's face. The wide camera between pitches still shows it.
+
+`check-firstpitch`'s "the pitcher is in the picture" reads the head, the feet and
+the sign off the glass on nine screens in both halves. Against the page before the
+fix it fails ten claims.
+
 #### There are two batter's boxes and the camera only ever framed one
 
 Reported as nothing, because a screenshot of it looks fine about a quarter of the
@@ -9779,6 +9811,45 @@ happen. Two copies of one answer, and the one that was right was the one being
 overwritten. It calls the mutation itself now, which is that function's own tail,
 and that matters beyond the totals: whether a bunt or a fly ball is charged as an
 at bat at all is a RULE and it lives in those functions.
+
+#### Taking a ball was a mistake, and the count meant nothing
+
+Measured through `check-skill.mjs` with a fifth batter: the "knows it" rung's
+hands and aim, swinging at anything he can reach. **He out-hit the same batter
+with an eye on easy and hard** (OPS 1.528 against 1.406 on easy). Two faults
+made that true, and neither threw:
+
+- **A ball off the plate came off the bat as hard as a strike.** If the barrel
+  found it and the timing was right, `swingGeometry` gave full contact quality
+  wherever the pitch was. It now multiplies by `1 - chase * CHASE_COST` (1.5 per
+  zone unit past the edge, floored at 0.2), where `chase` is how far past the
+  edge it landed. Both dugouts pay it, so a pitch the player paints just off the
+  corner is a weapon too.
+- **The CPU's chase pitch was a strike.** On 0-2 it aimed at a corner of the 3x3
+  grid, which is 0.62 of the zone, inside it. `cpuCallPitch` reads the count now
+  and returns an `aim` in zone units: behind (2-0, 3-0, 3-1) it throws its
+  hardest pitch at the plate, full count near the plate, ahead with two strikes
+  it throws off speed just off an edge about half the time, ahead otherwise it
+  works the edges, and even counts keep the old mix. **Every caller passes the
+  aim** (`nextPitch`, check-skill, check-frames, check-runs), because a caller
+  that passes only the zone throws a random spot on every count but an even one.
+
+After, at 900 plate appearances a rung, contact mode:
+
+| | eye | chases |
+|---|---|---|
+| easy | OPS 1.339 | 1.070 |
+| medium | 1.289 | 1.203 |
+| hard | 1.077 | 0.993 |
+
+`check-skill` asserts the eye wins by 0.06 of OPS POOLED across the tiers, and
+the ladder bands all still hold. Pooled because one tier cannot resolve it: the
+game's own pitches are not seeded, and two runs of one build put the medium gap
+at .17 and .086. Against the page before this fix the pooled gap is negative. **Walks are still rare** (under 4% for a competent batter):
+the reward for an eye is mostly the pitch he gets once he is ahead, not ball
+four. The batting how-to and both sets of coach notes say so; the how-to also
+lost "watch the target ring", which a batter has not been shown since the
+target went pitcher-only.
 
 #### A swing that misses half the time is not a backyard game
 
