@@ -20,6 +20,7 @@
  *   repeats      two slots with one value or one athlete read as a mistake.
  */
 import { get, store, nameCount, nameKey } from './dataset.js';
+import VERIFIED from './verified-stats.js';
 
 export const SLOTS = 7;
 export const LABEL_MAX = 16;
@@ -35,6 +36,8 @@ function labelOk(e, label) {
 }
 /* Every club a franchise of the league. Satchel Paige's record carries 130
    wins against the 28 a fan finds for his MLB career. */
+/* The number a second source agrees with, or undefined. */
+const verified = (key, id) => (VERIFIED[key] || {})[id];
 const fullRecord = e => (e.tm || []).length > 0 && e.tm.every(t => t.startsWith('team-'));
 /* A surname alone is only a name when nobody else well known in the league
    wears it: "Williams" on a rushing board could be DeAngelo or Ricky. */
@@ -64,6 +67,7 @@ export function validateTheme(t) {
     if (s.field === 'stat' && !fullRecord(e)) errors.push(at + e.n + " played in a league whose records are partial (the Negro Leagues, say), so the career number mixes what a fan can look up with what they cannot.");
     if (!(Number.isInteger(s.value) && s.value >= 1 && s.value <= 99999)) errors.push(at + 'the value ' + JSON.stringify(s.value) + ' is not readable: a whole number from 1 to 99999.');
     else if (s.value !== rv) errors.push(at + 'the value ' + s.value + ' is wrong: the record says ' + rv + '.');
+    else if (s.field === 'stat' && verified(s.key, e.id) !== s.value) errors.push(at + e.n + "'s " + s.key + ' is not confirmed by a second source (build/verify-stats.py): the index alone has been wrong (Chris Webber 9,123 rebounds for 8,124).');
     if (typeof s.label !== 'string' || !s.label.trim() || s.label.length > LABEL_MAX) errors.push(at + 'the label must be 1 to ' + LABEL_MAX + ' characters.');
     else if (!labelOk(e, s.label)) errors.push(at + 'the label "' + s.label + '" is not ' + e.n + "'s name or surname.");
     else if (nameKey(s.label) !== nameKey(e.n) && !(e.nick && nameKey(s.label) === nameKey(e.nick)) && surnameShared(e)) errors.push(at + 'the label "' + s.label + '" could be somebody else: another well known ' + e.s + ' player has that surname.');
@@ -98,7 +102,7 @@ const FLOOR_SHARE = 0.08;
    each, so a theme that comes round again is not the same seven names. */
 export const VARIANTS = 4;
 export function draftTheme(th, variant = 0) {
-  let pool = store().list.filter(e => e.k === 'p' && !e.act && !(e.dc || []).includes(2020) && fullRecord(e) && nameCount(e) === 1 && (!th.pos || th.pos(e.pos)) && e.st && Number.isInteger(e.st[th.key]) && e.st[th.key] >= 1 && e.st[th.key] <= 99999
+  let pool = store().list.filter(e => e.k === 'p' && !e.act && !(e.dc || []).includes(2020) && fullRecord(e) && nameCount(e) === 1 && (!th.pos || th.pos(e.pos)) && e.st && Number.isInteger(e.st[th.key]) && e.st[th.key] >= 1 && e.st[th.key] <= 99999 && verified(th.key, e.id) === e.st[th.key]
     && (e.n.length <= LABEL_MAX || !surnameShared(e)));
   const top = Math.max(0, ...pool.map(e => e.st[th.key]));
   pool = pool.filter(e => e.st[th.key] >= top * FLOOR_SHARE)

@@ -102,7 +102,14 @@ across the three rounds, and a draft keeps eight famous players from elsewhere
 on the field for the early rounds to draw from. A shared team used to count as
 plausible too, and almost everybody shares a team with somebody.
 
-The Drop Board validator holds every value to the record and refuses a
+The Drop Board validator holds every value to the record AND to a second
+source, `content/verified-stats.js`, written by `build/verify-stats.py` from
+Lahman (MLB), Basketball-Reference season totals (NBA) and nflverse plus a
+hand-checked list of pre-1999 careers (NFL). The index alone was wrong for
+fourteen NBA players (Chris Webber 9,123 rebounds for 8,124, Elton Brand
+8,213 for 9,040, Carlos Boozer 12,842 points for 13,976); a player the two
+sources disagree on is left out, whichever is wrong. Rebuild the table when
+the index changes. It also refuses a
 missing value, a wrong one, an unreadable one, a stat for anybody who may
 still be active, a career with any club in a league whose records are partial
 (Satchel Paige's record carries Negro League wins), a label that is not the
@@ -112,6 +119,12 @@ for some. Each theme drafts `VARIANTS` boards, one athlete from each of seven
 value bands, so a theme that comes round again is not the same seven names.
 
 ### Publishing a run of days without an editor
+
+`--replace whack|drop-board` takes down and republishes that game's days,
+but only a day nobody has played: a slate with a run on it is what that run
+was scored against and stays. `supabase/137` is that, for Drop Board, after
+the second source went in.
+
 
 ```
 node functions/_arcadelab/build/publish-days.mjs 2026-10-10 30 > supabase/136_arcade_lab_publish_days.sql

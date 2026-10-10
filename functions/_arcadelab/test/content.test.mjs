@@ -54,6 +54,17 @@ test('a decoy must be famous, retired, and plausible means the same position gro
   assert.ok(!mlb.def.decoys.includes('mlb-ichiro-suzuki-2000'));
 });
 
+test('a drop board value ships only when a second source agrees with it', () => {
+  // the index has Chris Webber at 9,123 rebounds; Basketball-Reference has 8,124
+  const th = D.STAT_THEMES.find(t => t.key === 'nba_rebounds');
+  const { def } = D.draftTheme(th);
+  const bad = { ...def, slots: def.slots.map((s, i) => i === 1 ? { ...s, id: 'nba-chris-webber-1990', label: 'Chris Webber', value: 9123 } : s) };
+  const r = D.validateTheme(bad);
+  assert.ok(r.errors.some(e => /Chris Webber.*not confirmed by a second source/.test(e)), r.errors.join(' | '));
+  // and no draft, in any variant, uses a value the second source does not hold
+  for (const t of D.STAT_THEMES) for (let v = 0; v < D.VARIANTS; v++) assert.ok(D.draftTheme(t, v).report.ok, t.key + ' v' + v);
+});
+
 test('the validator rejects a shared name, a stat filter and a wrong correct card', () => {
   const d = mvp(); d.query = { league: 'MLB', type: 'athlete', years: [1990, 2025], where: [{ k: 'award', v: 'MLB MVP' }] };
   d.correct = ['mlb-adam-jones-2000']; d.decoys = [];

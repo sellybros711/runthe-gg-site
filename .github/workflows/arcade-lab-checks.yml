@@ -14,6 +14,7 @@ on:
       - 'supabase/134_arcade_lab.sql'
       - 'supabase/135_arcade_lab_content.sql'
       - 'supabase/136_arcade_lab_publish_days.sql'
+      - 'supabase/137_arcade_lab_republish_drop.sql'
       - 'functions/_stumpire/**'
       - 'supabase/test/arcade_lab_*.sql'
       - '.github/workflows/arcade-lab-checks.yml'
@@ -26,6 +27,7 @@ on:
       - 'supabase/134_arcade_lab.sql'
       - 'supabase/135_arcade_lab_content.sql'
       - 'supabase/136_arcade_lab_publish_days.sql'
+      - 'supabase/137_arcade_lab_republish_drop.sql'
       - 'functions/_stumpire/**'
       - 'supabase/test/arcade_lab_*.sql'
       - '.github/workflows/arcade-lab-checks.yml'
@@ -74,4 +76,6 @@ jobs:
           psql -q -d lab -f supabase/test/arcade_lab_content_test.sql | tee -a out.txt
           psql -q -d lab -v ON_ERROR_STOP=1 -f supabase/136_arcade_lab_publish_days.sql
           psql -q -d lab -v ON_ERROR_STOP=1 -f supabase/136_arcade_lab_publish_days.sql
+          psql -q -d lab -v ON_ERROR_STOP=1 -f supabase/137_arcade_lab_republish_drop.sql
+          psql -q -d lab -v ON_ERROR_STOP=1 -f supabase/137_arcade_lab_republish_drop.sql
           ! grep -v '^ ok ' out.txt | grep -q .
