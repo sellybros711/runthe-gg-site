@@ -1951,9 +1951,9 @@ function pload(){ var st = null, key = pkey(); try{ st = JSON.parse(localStorage
   st.tours = st.tours || {}; Object.keys(TOURS).forEach(function(k){ var t = st.tours[k] = st.tours[k] || {}; t.lv = t.lv || 1; t.best = t.best || {}; t.ace = t.ace || {}; t.paid = t.paid || {}; t.wpaid = t.wpaid || {}; t.lv = TOURS[k].lab ? TOURS[k].levels.length : frontier(t, TOURS[k]); });
   st.daily = st.daily || {}; st.rewards = st.rewards || []; st.streak = st.streak || { n:0, last:null, best:0 };
   if (st.lives == null) st.lives = livesMax();
-  if (st.refillAt && Date.now() >= st.refillAt){ st.lives = livesMax(); st.refillAt = null; psave(st); }
+  if (st.refillAt && Date.now() >= st.refillAt){ st.lives = livesMax(); st.refillAt = null; st.lt = Date.now(); psave(st); }
   return st; }
-function psave(st){ st.t = Date.now(); try{ localStorage.setItem(pkey(), JSON.stringify(st)); }catch(e){} cloudPush(); }
+function psave(st){ try{ localStorage.setItem(pkey(), JSON.stringify(st)); }catch(e){} cloudPush(); }
 /* THE RECORD IS THE ACCOUNT'S, ON THE SERVER. A signed in player's record goes up to ps_saves (103, game
    'putt', slot 'tour') after every save and comes down on every open and every sign in, so a cleared
    browser or a second phone starts where the account left off. The local copy is still written first
@@ -1961,7 +1961,9 @@ function psave(st){ st.t = Date.now(); try{ localStorage.setItem(pkey(), JSON.st
    TWO COPIES ARE MERGED, NEVER CHOSEN BETWEEN. pmerge only ever adds: the furthest hole, the best score
    on every hole, every ace and payout, every daily played. So a stale phone can never take a hole away,
    and a daily played on one device is played on all of them. Lives and the clock are the one part that
-   goes down as well as up, so they come from whichever copy was written last.
+   goes down as well as up, so they come from whichever copy changed them last (st.lt, stamped only when
+   lives move, so a fresh browser's first save never beats the account's lives), and the streak from the copy
+   that played the later day.
    PROGRESS is the server's conflict rule (103 refuses a write that moves it backwards). It is a count of
    things the merge only adds, so a merged record is never behind either copy, and a refusal hands back
    the stored record, which is merged in and sent again.
@@ -1973,7 +1975,8 @@ function cloudProg(st){ var n = 0, c = function(o){ return Object.keys(o || {}).
   return n + c(st.daily) + (st.rewards || []).length; }
 // fold a copy of the record into this one: everything earned is kept, lives come from the newer copy
 function cloudMerge(st, g){ if (!g || g.v !== 2 || !g.tours) return st;
-  if ((g.t || 0) > (st.t || 0)){ st.lives = g.lives; st.refillAt = g.refillAt || null; st.t = g.t; if (g.streak) st.streak = Object.assign({}, g.streak, { best:Math.max((st.streak && st.streak.best) || 0, g.streak.best || 0) }); }
+  if ((g.lt || 0) > (st.lt || 0)){ st.lives = g.lives; st.refillAt = g.refillAt || null; st.lt = g.lt; }
+  if (g.streak && g.streak.last && (!st.streak || !st.streak.last || g.streak.last > st.streak.last)) st.streak = Object.assign({}, g.streak, { best:Math.max((st.streak && st.streak.best) || 0, g.streak.best || 0) });
   return pmerge(st, g); }
 function cloudRow(d){ var r = Array.isArray(d) ? d[0] : d; return r && typeof r === 'object' ? r : null; }
 function cloudPush(){ var uid = cloudUid(); if (!uid || CLOUD.uid !== uid) return;
@@ -2014,7 +2017,7 @@ function guestSheet(){
   sh.querySelector('[data-up]').onclick = function(){ go('signup'); };
   sh.querySelector('[data-n]').onclick = function(){ sh.remove(); }; }
 function livesMax(){ try{ var h = hostOf(); return h.passActive && h.passActive() ? 6 : 3; }catch(e){ return 3; } }
-function loseLife(st){ st.lives = Math.max(0, (st.lives == null ? livesMax() : st.lives) - 1); if (st.lives === 0 && !st.refillAt) st.refillAt = Date.now() + LIFE_MS; psave(st); }
+function loseLife(st){ st.lives = Math.max(0, (st.lives == null ? livesMax() : st.lives) - 1); if (st.lives === 0 && !st.refillAt) st.refillAt = Date.now() + LIFE_MS; st.lt = Date.now(); psave(st); }
 function coins(n, label){ try{ if (S.host.coins) S.host.coins(n, label); }catch(e){} }
 function hms(ms){ ms = Math.max(0, ms); var s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return h + ':' + (m < 10 ? '0' : '') + m + ':' + (x < 10 ? '0' : '') + x; }
 function hm(ms){ var m = Math.max(0, Math.round(ms / 60000)); return Math.floor(m / 60) + 'h ' + (m % 60) + 'm'; }
@@ -2211,7 +2214,7 @@ function outOfLives(){
   var c = sh.querySelector('[data-c]'), iv = setInterval(function(){ if (!sh.isConnected) return clearInterval(iv); var s2 = pload(); if (!s2.refillAt){ clearInterval(iv); sh.remove(); showHub(); return; } c.textContent = hms(s2.refillAt - Date.now()); }, 1000);
   sh.querySelector('[data-wait]').onclick = function(){ sh.remove(); };
   sh.querySelector('[data-x]').onclick = function(){ sh.remove(); };
-  var fr = sh.querySelector('[data-free]'); if (fr) fr.onclick = function(){ var s2 = pload(); s2.lives = livesMax(); s2.refillAt = null; psave(s2); sh.remove(); showHub(); };
+  var fr = sh.querySelector('[data-free]'); if (fr) fr.onclick = function(){ var s2 = pload(); s2.lives = livesMax(); s2.refillAt = null; s2.lt = Date.now(); psave(s2); sh.remove(); showHub(); };
 }
 
 /* ---------------------------------------------------------------------------- a Tour level */

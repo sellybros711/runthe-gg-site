@@ -19871,7 +19871,8 @@ The page writes localStorage first and never waits on the network. The host hand
 - **Two copies are merged, never chosen between.** `pmerge` only adds: the furthest hole, the best score per
   hole, every ace and payout, every daily played. So a stale phone cannot take a hole away, and a daily
   played on one device is played on all. Lives, the refill clock and the streak come from whichever copy
-  was written last (`st.t`), because they go down as well as up.
+  changed them last (`st.lt`, stamped only when lives move, so a fresh browser's first save never beats the
+  account's lives). The streak comes from the copy that played the later day.
 - **Progress is a count of things the merge only adds** (`cloudProg`), so a merged record is never behind
   either copy. A refused write hands back the stored record, which is merged in and sent again, at most
   three times running.
