@@ -19,8 +19,9 @@ import { sign, setCookie, secretOf } from '../../_stumpire/cookie.js';
 let ENGINE = null;
 async function engine() {
   if (!ENGINE) {
-    const [api, search] = await Promise.all([import('../../_stumpire/api.js'), import('../../_stumpire/data/search_avg.json')]);
-    ENGINE = { handle: api.handle, search: (search.default || search).values };
+    const [api, search, live, ents] = await Promise.all([import('../../_stumpire/api.js'), import('../../_stumpire/data/search_avg.json'),
+      import('../../_stumpire/livecheck.js'), import('../../_stumpire/entities.js')]);
+    ENGINE = { handle: api.handle, search: (search.default || search).values, liveRule: live.liveRule, get: ents.get };
   }
   return ENGINE;
 }
@@ -38,7 +39,15 @@ export async function onRequest(context) {
   const res = await handle({
     method: request.method, path, query: Object.fromEntries(url.searchParams), body,
     uid, guestId: /^[A-Za-z0-9-]{8,64}$/.test(guest) ? guest : null
-  }, { db: supabaseDb(env), now: () => Date.now(), searchAvg: () => search });
+  }, { db: supabaseDb(env), now: () => Date.now(), searchAvg: () => search,
+    /* A challenged strike is looked up live (_stumpire/livecheck.js) with the
+       Sportegories engine, loaded only when a challenge needs it. */
+    liveCheck: async (entity, def) => {
+      const [{ loadEngine }, { wikidata }] = await Promise.all([import('../../_sportegories/engine.js'), import('../player-check.js')]);
+      const { SP, LC } = await loadEngine(context);
+      return ENGINE.liveRule(entity, def, { SP, LC, wiki: wikidata, getEntity: ENGINE.get });
+    },
+    seedPrompts: async () => { const m = await import('../../_stumpire/prompts/seed.json'); return (m.default || m).prompts || []; } });
   const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
   if (path === 'me' && res.status === 200 && uid && secretOf(env)) {
     headers['Set-Cookie'] = setCookie(await sign(secretOf(env), uid, Date.now()));

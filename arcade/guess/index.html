@@ -320,7 +320,7 @@ window.GA_ID='G-L29P5MRWKE';
 </script>
 <script src="/arcade/tokens.js?v=15"></script>
 <script src="/arcade/metrics.js?v=3"></script>
-<script src="/arcade/gamehead.js?v=3"></script>
+<script src="/arcade/gamehead.js?v=4"></script>
 </head>
 <body>
 <div class="wrap">
@@ -388,7 +388,7 @@ window.GA_ID='G-L29P5MRWKE';
   <span class="gj-chev" aria-hidden="true">▾</span>
 </summary>
 <div class="gj-body">
-<p>You get one mystery player a day, from any era. We tell you the sport. Guess any player from that sport and the tiles show how close you are. They compare whole careers, not just this season: position, teams, debut decade, college and honors.</p>
+<p>You get one mystery player a day, <span id="eraLine">from any era</span>. We tell you the sport. Guess any player from that sport and the tiles show how close you are. They compare whole careers, not just this season: position, teams, debut decade, college and honors.</p>
 <ul>
   <li>Green is a match. Yellow is close. Arrows point higher or lower.</li>
   <li>You get 8 guesses to crack it.</li>
@@ -443,7 +443,8 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/cluebank.js?v=3"></script>
 <script src="/arcade/primary.js?v=40"></script>
 <script src="/arcade/franchise.js?v=1"></script>
-<script src="/arcade/data.js?v=8"></script>
+<script src="/arcade/data.js?v=9"></script>
+<script src="/arcade/flags.js?v=7"></script>
 <script src="/arcade/rosters.js?v=6"></script>
 <script src="/arcade/teamcolors.js?v=2"></script>
 <script src="/arcade/sfx.js?v=4"></script>
@@ -451,7 +452,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/funnel.js?v=14"></script>
 <script src="/arcade/share.js?v=11"></script>
 <script src="/arcade/resultart.js?v=5"></script>
-<script src="/arcade/resultstats.js?v=3"></script>
+<script src="/arcade/resultstats.js?v=4"></script>
 <script src="/arcade/review.js?v=1" defer></script>
 <script src="/arcade/challenge.js?v=4"></script>
 <script src="/arcade/modal-a11y.js?v=2"></script>
@@ -460,7 +461,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/mode.js?v=8"></script>
 <script src="/arcade/archive.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/arcade/board.js?v=24"></script>
+<script src="/arcade/board.js?v=25"></script>
 <script src="/arcade/leaderboard.js?v=16"></script>
 <script src="/arcade/alltime.js?v=4"></script>
 <script src="/arcade/auth.js?v=4"></script>
@@ -475,7 +476,7 @@ window.GA_ID='G-L29P5MRWKE';
 <script src="/arcade/demo.js?v=5"></script>
 <script src="/arcade/pregame.js?v=29"></script>
 <script src="/arcade/howto.js?v=26"></script>
-<script src="/arcade/fact.js?v=5"></script>
+<script src="/arcade/fact.js?v=6"></script>
 <script>
 (function(){
   'use strict';
@@ -540,6 +541,7 @@ window.GA_ID='G-L29P5MRWKE';
      and anyone who retired was ineligible to be the mystery player. Sports
      history is the subject, so the corpus is the pool. */
   var CAREER_MODE = true;
+  var CURRENT = !!(window.RTGFlags && RTGFlags.on('current', DATE));
   var GUESSABLE, TARGETS, ROSTER_MODE = false, byId = {};
   if(ROS_RICH && !CAREER_MODE){
     ROSTER_MODE = true;
@@ -600,6 +602,37 @@ window.GA_ID='G-L29P5MRWKE';
     TARGETS = GUESSABLE.filter(targetOK);
     if(TARGETS.length<40) TARGETS = GUESSABLE.filter(function(e){ return TARGET_SPORTS[e.sport] && (e.f||0)>=4; });
     if(!TARGETS.length) TARGETS = GUESSABLE;
+    /* Flag 'current': today's players only, for the answer AND for what you
+       can guess. Eight tries to find one man in the whole history of a sport
+       was the report, from the owner. The columns still read whole careers,
+       because a current player's career is in the corpus too; what narrows
+       is who can be in the room. rosters.js says who is on a club today. A
+       sport too thin to deal from keeps the career pool. */
+    if(CURRENT && ROSTERS){
+      var ON={}; ROSTERS.players.forEach(function(p){ if(p && p.n) ON[p.n+'|'+p.s]=1; });
+      var onNow=function(e){ return !!ON[e.name+'|'+e.sport]; };
+      var g2=GUESSABLE.filter(onNow), t2=TARGETS.filter(onNow);
+      var thin=Object.keys(TARGET_SPORTS).some(function(sp){ return t2.filter(function(e){ return e.sport===sp; }).length<20; });
+      /* Every rostered player can be GUESSED, not only the ones the corpus
+         holds a career for: refusing a real name is the one thing that
+         makes a guessing game feel broken, and the corpus knows 118 of the
+         MLB's current players. A roster-only player is built from the
+         roster row: today's club, the debut decade from his years of
+         experience, his college. The answer still comes from TARGETS. */
+      if(!thin){
+        var have={}; g2.forEach(function(e){ have[e.name+'|'+e.sport]=1; });
+        var yr=new Date().getFullYear();
+        ROSTERS.players.forEach(function(p){
+          if(!p || !p.n || !TARGET_SPORTS[p.s] || !p.p || have[p.n+'|'+p.s]) return;
+          have[p.n+'|'+p.s]=1;
+          var d0=Math.floor((yr-Math.max(0, Math.min(30, +p.exp||0)))/10)*10, dec=[];
+          for(var y=d0;y<=yr;y+=10) dec.push(y);
+          g2.push({ id:'ros:'+p.n+'|'+p.s, name:p.n, sport:p.s, pos:p.p, t:(p.t?[p.t]:[]), col:(p.col||null),
+                    decade:dec, ns:(p.exp!=null?(+p.exp||0)+1:null), aw:[], act:1, f:0 });
+        });
+        GUESSABLE=g2; TARGETS=t2;
+      } else CURRENT=false;
+    } else CURRENT=false;
   }
   var HAS_DIV = !!(ROSTERS && ROSTERS.divisions && Object.keys(ROSTERS.divisions).length);
   /* THE SPORT IS GIVEN. Naming it up front means every guess spends itself on
@@ -618,6 +651,10 @@ window.GA_ID='G-L29P5MRWKE';
     byId={}; POOL.forEach(function(e){ byId[e.id]=e; });
   }
   pickTarget();
+  /* Read-only view for scripts/check-current.mjs: who can be the answer and who can be guessed. */
+  window.__rtgGuess = function(){ return { current:CURRENT, sport:SPORT, target:TARGET&&TARGET.name, decade:TARGET&&TARGET.decade, pool:POOL.length, rosterOnly:((POOL.filter(function(e){ return /^ros:/.test(e.id); })[0])||{}).name||null, guessable:(function(){ var c={}; GUESSABLE.forEach(function(e){ c[e.sport]=(c[e.sport]||0)+1; }); return c; })(), targets:TARGETS.map(function(e){ return e.sport+'|'+e.name; }) }; };
+  window.__rtgGuessHas = function(names){ return names.filter(function(n){ return GUESSABLE.some(function(e){ return e.name===n; }); }); };
+  if(CURRENT){ try{ var eraEl=document.getElementById('eraLine'); if(eraEl) eraEl.textContent='from today\'s rosters'; }catch(e){} }
 
   // ---- comparison ----
   function setEq(a,b){ if(a.length!==b.length) return false; var s={}; a.forEach(function(x){s[x]=1;}); return b.every(function(x){return s[x];}); }
@@ -973,7 +1010,7 @@ window.GA_ID='G-L29P5MRWKE';
           : ((HAS_DIV?'team, division, ':'team, ')+'position, nationality, age and number'))
       : ('position, franchises, debut decade, '+((TARGET&&TARGET.col)?'college':'seasons played')+' and honors');
     /* "An": NBA, NFL and MLB all open on a vowel sound */
-    v.innerHTML='An <b>'+esc(SPORT)+'</b> player, any era. <b>8 tries</b>. '+
+    v.innerHTML=(CURRENT?'A current <b>'+esc(SPORT)+'</b> player. ':'An <b>'+esc(SPORT)+'</b> player, any era. ')+'<b>8 tries</b>. '+
       'Each guess compares '+traits+'.'+'<span class="lh">'+esc(lbl)+'</span>';
   }
   function beginAttempt(){

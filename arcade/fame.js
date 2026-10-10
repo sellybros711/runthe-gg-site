@@ -239,5 +239,46 @@
 
   function key(e) { return e.id || (e.sport + '|' + e.name); }
 
-  return { of: of, score: score, tier: tier, rank: rank, bandFor: bandFor, pick: pick, ramp: ramp, alike: alike, posFamily: posFamily, eraScore: eraScore, CUT: CUT, STEPS: STEPS, OPEN: OPEN, MARQUEE: MARQUEE };
+  /* THE ERA GATE (flag 'eras', flags.js). These games are for younger fans,
+   * and a run that opens on Chet Walker or a 1960s Yankee outfielder loses
+   * them on the second card. Fame alone cannot say so: a Hall of Famer from
+   * 1965 is famous, and to a twenty-year-old he is a name they have never
+   * heard. So the opening of a run is held to careers that reached the
+   * 1990s, the middle to careers that reached the 1970s, and anyone at all
+   * comes after that. Keyed on the question number, like bandFor.
+   *
+   * RTGFame.eraFloor(k)   -> the last decade a career must reach for question k
+   * RTGFame.eraOk(e, k)   -> whether e may be question k
+   * RTGFame.eraOrder(list, n) -> the same list, its first n reordered so each
+   *   position takes the first remaining entry its gate allows. Stable: the
+   *   caller's order (fame, the day's shuffle) decides everything else, and a
+   *   position no entry can fill takes the next entry anyway, so a thin pool
+   *   still deals a full run. */
+  var ERA_STEPS = [[8, 1990], [16, 1970]];
+  function eraFloor(k) {
+    for (var i = 0; i < ERA_STEPS.length; i++) if (k < ERA_STEPS[i][0]) return ERA_STEPS[i][1];
+    return 0;
+  }
+  function lastDecade(e) {
+    var d = decades(e && (e._ent || e));
+    return d.length ? Math.max.apply(null, d) : 0;
+  }
+  function eraOk(e, k) {
+    var f = eraFloor(k), last = lastDecade(e);
+    return !f || !last || last >= f;      // no decade on record: do not hold it back
+  }
+  function eraOrder(list, n) {
+    var a = (list || []).slice(), lim = Math.min(n == null ? a.length : n, a.length);
+    for (var k = 0; k < lim; k++) {
+      if (eraOk(a[k], k)) continue;
+      for (var i = k + 1; i < a.length; i++) {
+        if (eraOk(a[i], k)) { var x = a.splice(i, 1)[0]; a.splice(k, 0, x); break; }
+      }
+    }
+    return a;
+  }
+
+  return { of: of, score: score, tier: tier, rank: rank, bandFor: bandFor, pick: pick, ramp: ramp, alike: alike, posFamily: posFamily, eraScore: eraScore,
+           eraFloor: eraFloor, eraOk: eraOk, eraOrder: eraOrder, lastDecade: lastDecade,
+           CUT: CUT, STEPS: STEPS, OPEN: OPEN, MARQUEE: MARQUEE, ERA_STEPS: ERA_STEPS };
 });

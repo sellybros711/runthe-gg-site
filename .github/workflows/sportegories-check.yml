@@ -19,10 +19,19 @@ on:
       - 'arcade/jerseys.js'
       - 'scripts/build-sportegories.mjs'
       - 'scripts/check-sportegories.mjs'
+      - 'scripts/sportegories-people.mjs'
+      - 'scripts/sportegories-people.json'
+      - 'hoops/data/players.json'
       - 'scripts/check-sportegories-leagues.mjs'
       - 'scripts/nba-awards.json'
       - 'arcade/franchise.js'
       - 'arcade/livecheck.js'
+      - 'arcade/flags.js'
+      - 'arcade/sportegories/index.html'
+      - 'functions/api/sportegories-challenge.js'
+      - 'functions/api/player-check.js'
+      - 'functions/_sportegories/**'
+      - 'scripts/check-sportegories-challenge.mjs'
       - '.github/workflows/sportegories-check.yml'
   push:
     branches: [main]
@@ -33,10 +42,19 @@ on:
       - 'arcade/jerseys.js'
       - 'scripts/build-sportegories.mjs'
       - 'scripts/check-sportegories.mjs'
+      - 'scripts/sportegories-people.mjs'
+      - 'scripts/sportegories-people.json'
+      - 'hoops/data/players.json'
       - 'scripts/check-sportegories-leagues.mjs'
       - 'scripts/nba-awards.json'
       - 'arcade/franchise.js'
       - 'arcade/livecheck.js'
+      - 'arcade/flags.js'
+      - 'arcade/sportegories/index.html'
+      - 'functions/api/sportegories-challenge.js'
+      - 'functions/api/player-check.js'
+      - 'functions/_sportegories/**'
+      - 'scripts/check-sportegories-challenge.mjs'
       - '.github/workflows/sportegories-check.yml'
   workflow_dispatch: {}
 
@@ -55,3 +73,5 @@ jobs:
       - run: node scripts/check-sportegories.mjs
       # every category type, per league it names (Hall of Famer, MVP, Rookie of the Year...)
       - run: node scripts/check-sportegories-leagues.mjs
+      # a challenge rules live and is remembered (no network: Wikidata is canned)
+      - run: node scripts/check-sportegories-challenge.mjs

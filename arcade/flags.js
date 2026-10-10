@@ -43,13 +43,37 @@
     // The dense mini crossword (every letter crossed) in place of the sparse
     // layout.
     densecw:   { since: null, pct: 0, daily: true },
+    // Career Path: the first eight cards are careers that reached the 1990s,
+    // the next eight the 1970s, anyone after that (fame.js eraOrder). Asked
+    // for by the owner after a run opened on a 1960s Yankee. On from the day
+    // after it shipped, so the board in play that day did not move.
+    eras:      { since: '2026-10-06', pct: 0, daily: true },
+    // Guess the Player, Alma Mater and Number Game deal current players only.
+    // Eight tries to find any player in baseball history was the report.
+    // Career Path deals careers that reached the 2020s, and its wrong names
+    // reached the 2010s: the eras gate above still let the 1970s in.
+    current:   { since: '2026-10-06', pct: 0, daily: true },
+    // Roll Call, NBA boards: every man on that season's roster is a blank,
+    // not only the famous eight. DeShawn Stevenson started for the 2009-10
+    // Mavericks and could only ever be a deep cut.
+    fullroster: { since: '2026-10-06', pct: 0, daily: true },
+    // Sportegories: a stat category goes on a board only when we hold that
+    // stat for every player a fan could name (sportegories.js STAT_SURE).
+    // "10,000+ NBA points" could not verify Dikembe Mutombo. From the day
+    // after it shipped, so the board in play that day does not move.
+    fullstats: { since: '2026-10-11', pct: 0, daily: true },
     // Phase 3: a guest's finished run goes on the daily board under a
     // generated name, through an anonymous session (board.js). Needs
     // supabase/132_arcade_guest_board.sql and "Allow anonymous sign-ins" in the
     // Supabase dashboard; without either it quietly keeps the run local. It
     // changes who is on the board, not what the puzzle is, so a percentage is
     // safe here.
-    guestboard: { since: null, pct: 0, daily: false }
+    guestboard: { since: null, pct: 0, daily: false },
+    // Sportegories: a Challenge button on any answer marked wrong or not
+    // verified. The server looks it up live and rules, and a won challenge is
+    // remembered for every later card (135_sportegories_rulings.sql). Off
+    // until switched on; raise pct to roll it out, or ?flags=challenge to try.
+    challenge: { since: null, pct: 0, daily: false }
   };
 
   var KEY = 'rtg:flags';

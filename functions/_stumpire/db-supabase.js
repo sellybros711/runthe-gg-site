@@ -73,6 +73,20 @@ export function supabaseDb(env) {
     async resolveChallenge(id, status, by, resolution) {
       await req('PATCH', 'stumpire_challenges?id=eq.' + id, { status, resolved_by: by, resolution, resolved_at: new Date().toISOString() });
     },
+    /* 136. A database without it answers 404 here; the callers treat a
+       throw as "nothing remembered" and carry on. */
+    async ruling(promptId, entityId) {
+      const r = await req('GET', 'stumpire_rulings?prompt_id=eq.' + q(promptId) + '&entity_id=eq.' + q(entityId) + '&select=verdict,source,qid,created_at,updated_at&limit=1');
+      return r[0] || null;
+    },
+    async putRuling(row) {
+      await req('POST', 'stumpire_rulings?on_conflict=prompt_id,entity_id', { ...row, updated_at: new Date().toISOString() },
+        { Prefer: 'resolution=merge-duplicates,return=minimal' });
+    },
+    async rulings(promptId) {
+      const r = await req('GET', 'stumpire_rulings?prompt_id=eq.' + q(promptId) + '&verdict=eq.upheld&select=entity_id&limit=500');
+      return r.map(x => x.entity_id);
+    },
     async acceptAnswer(date, atBat, promptId, entityId, name) {
       return rpc('stumpire_accept_answer', { p_date: date, p_at_bat: atBat, p_prompt_id: promptId, p_entity_id: entityId, p_name: name });
     },

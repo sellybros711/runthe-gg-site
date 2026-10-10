@@ -26,6 +26,7 @@
 import { readFileSync, writeFileSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { candidates, groups, classify, pairKey } from './sportegories-people.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const R = (p) => readFileSync(path.join(ROOT, p), 'utf8');
@@ -369,6 +370,42 @@ try {
     for (const rec of recs) for (const a of tags) if (!rec.aw.includes(a)) rec.aw.push(a);
   }
 } catch (e) { console.warn('skip scripts/nba-awards.json: ' + e.message); }
+/* ONE MAN, TWO NAMES.
+ *
+ * The pool is keyed on the name, so a player the sources spell two ways is two
+ * records, and each holds half of him. Penny Hardaway came in from the corpus
+ * with four All-Star selections and no college. Anfernee Hardaway came in from
+ * former.js with Memphis and no awards. A player who typed the name on his
+ * birth certificate into "NBA All-Star who played for the Orlando Magic" was
+ * told we could not verify the franchise's best player of the 1990s. The
+ * other spelling failed "played college ball at Memphis" the same way.
+ *
+ * Nothing threw. Each record is a valid record. The only symptom is a right
+ * answer refused, and only for whichever name the player happened to use.
+ *
+ * It was an explicit list of nine pairs, and the reports kept coming, one
+ * player at a time, because the list was never the cause. A sweep of the whole
+ * file found about 160 men held as two or three records, nearly all of them
+ * from three mechanical causes: the rosters write "Deebo Samuel Sr." where
+ * every other source writes the bare name, the corpus lists forty stars twice,
+ * and an edge rusher is a Linebacker in one source and a Defensive Lineman in
+ * another. So a RULE now finds them (scripts/sportegories-people.mjs) and the
+ * json beside it holds only the calls a rule cannot make: a nickname, a new
+ * surname, and the look-alikes who really are two men. check-sportegories.mjs
+ * runs the same rule and fails on a related pair nobody has decided, which
+ * stops the nightly rebuild and leaves yesterday's file on the site.
+ *
+ * THE RECORDS ARE PAIRED HERE AND JOINED IN THE GAME, NOT MERGED HERE. Merging
+ * them in this file moved the category picker: one fewer record shifts the
+ * per-letter counts, and 25 boards already played came out with different
+ * categories, which is somebody's archived day rewritten under them. So both
+ * records ship exactly as before and `same` names the pairs. sportegories.js
+ * gives each half the union of both when it loads, which changes what an
+ * answer proves and never which board a day gets. */
+/* The list and the rule live in scripts/sportegories-people.{json,mjs}, and
+   the pairing runs after FRANCHISE below, so a club two sources name
+   differently (Tris Speaker's Indians and Guardians) still counts as shared. */
+const PEOPLE = JSON.parse(R('scripts/sportegories-people.json'));
 /* THE HALL OF FAME IS ONE FACT IN TWO PLACES, and the category reads only one.
    "Hall of Famer" tests the award list, but the curated corpus records an
    induction as the hof flag, so Ben Wallace, Wayne Gretzky, Sue Bird and every
@@ -395,6 +432,140 @@ for (const rec of [...pool.values()].flat()) {
     for (const id of rec.ids) { const v = STATVALS[k][id]; if (v != null) { st[k] = v; break; } }
   }
   if (Object.keys(st).length) rec.st = st;
+}
+
+/* NBA CAREER TOTALS FOR EVERYBODY, NOT ONLY THE LEADERBOARD.
+ *
+ * "10,000+ NBA points" refused Dikembe Mutombo, who scored 11,729, with "we
+ * couldn't verify this category". Every NBA counting stat here came from
+ * stats.js, a hand list of 77 career leaders, because the Basketball-Reference
+ * fetch that should fill rosterstats.js has returned no NBA rows from CI. So
+ * the 10,000 point category knew the 20,000 point club and nobody else.
+ *
+ * The hoops game ships every NBA season since 1973-74 from Basketball-
+ * Reference (hoops/data/players.json): per-game numbers and games played, one
+ * row a club a season. Summed, they land within a rounding of the real
+ * totals: Mutombo 11,706, Karl Malone 36,936, Dirk Nowitzki 31,561.
+ *
+ * They only ever UNDER-count. Seasons under 20 games or 12 minutes a night are
+ * not in that file (Jordan's 18-game 1986 and his 17-game return in 1995), and
+ * nothing before 1973-74 is. So a total at or over a line PROVES the category,
+ * and a total under it can only deny when the career started after the data
+ * does and sits well short of the line. That rule is in sportegories.js.
+ *
+ * Shipped as `dst`, beside the records and not inside them, for the reason
+ * `same` is: the per-letter counts that pick each day's board are built from
+ * the records, and a new stat on 1,000 players would move boards already
+ * played. The game reads `dst` when it judges an answer. */
+let NBA_LAST = 0;                  // the last season in the file, by the year it ends
+const NBA_TOT = (() => {
+  let rows;
+  try { rows = Object.values(JSON.parse(R('hoops/data/players.json'))); } catch (e) { console.warn('skip hoops/data/players.json: ' + e.message); return new Map(); }
+  const byId = new Map();
+  for (const r of rows) {
+    if (!r || !r.i || !r.n) continue;
+    const g = +r.g || 0;
+    const t = byId.get(r.i) || { id: r.i, name: r.n, first: 9999, last: 0, pts: 0, reb: 0, ast: 0, blk: 0, stl: 0, seasons: new Set(), dr: null, top: 0 };
+    t.first = Math.min(t.first, r.s); t.last = Math.max(t.last, r.s);
+    t.seasons.add(r.s); if (r.dr) t.dr = r.dr; t.top = Math.max(t.top, +r.pts || 0);
+    if (r.s > (t.lastS || 0)) { t.lastS = r.s; t.lastPpg = +r.pts || 0; } else if (r.s === t.lastS) t.lastPpg = Math.max(t.lastPpg, +r.pts || 0);
+    for (const k of ['pts', 'reb', 'ast', 'blk', 'stl']) t[k] += (+r[k] || 0) * g;
+    byId.set(r.i, t);
+  }
+  const DATA_FIRST = Math.min(...rows.map((r) => r.s || 9999));
+  NBA_LAST = Math.max(...rows.map((r) => r.s || 0));
+  const byName = new Map();
+  for (const t of byId.values()) {
+    t.full = t.first > DATA_FIRST ? 1 : 0;          // the whole career is in the file
+    /* How far short the sum can be. A season under 20 games or 12 minutes is
+       not in the file, and it shows as a hole: a year missing between his
+       first and last, or a first season later than the year after his draft.
+       With no hole, what can still be missing is one short spell at a second
+       club in a trade year, a few hundred points at most. */
+    let holes = 0;
+    for (let y = t.first + 1; y < t.last; y++) if (!t.seasons.has(y)) holes++;
+    if (t.dr && t.dr >= DATA_FIRST && t.first > t.dr + 1) holes++;
+    t.margin = holes ? Math.max(1000, Math.round(holes * 20 * t.top)) : 400;
+    for (const k of new Set([nkFull(t.name), nkFull(t.name.replace(/\s+(jr|sr|ii|iii|iv|v)\.?$/i, ''))])) {
+      (byName.get(k) || byName.set(k, []).get(k)).push(t);
+    }
+  }
+  return byName;
+})();
+const NBA_STAT = { pts: 'nba_points', reb: 'nba_rebounds', ast: 'nba_assists', blk: 'nba_blocks', stl: 'nba_steals' };
+/* Names Basketball-Reference writes differently from our sources. Two ids
+   means we cannot tell which of two namesakes he is, so the larger total is
+   used, which can still deny a line both of them fall well short of. */
+const HOOPS_ALIAS = {
+  'Nate Archibald': ['architi01'], 'Tyrone Bogues': ['boguemu01'], 'John Hotrod Williams': ['williho01'],
+  'Eddie A. Johnson': ['johnsed03'], 'Charles J Jones': ['jonesch01', 'jonesch02']
+};
+/* Careers the season file cannot hold, because all or part of them came
+   before 1973-74: Basketball-Reference's NBA-only career points (no ABA, no
+   NBL), entered by hand, so they are exact and judged like a curated stat.
+   George Mikan is his BAA and NBA total, Dolph Schayes his NBA total; both
+   sit on the same side of every line either way. */
+const NBA_HISTORIC_POINTS = {
+  'Bob Cousy': 16960, 'George Mikan': 10156, 'Bob Pettit': 20880, 'Dolph Schayes': 18438,
+  'Hal Greer': 21586, 'Sam Jones': 15411, 'Tom Heinsohn': 12194, 'Bill Sharman': 12665,
+  'Walt Frazier': 15581, 'Wes Unseld': 10624, 'Rick Barry': 18395, 'Dave Bing': 18327,
+  'Spencer Haywood': 14592, 'Nate Thurmond': 14437, 'Jerry Lucas': 14053, 'Chet Walker': 18831,
+  'Nate Archibald': 16481
+};
+const HOOPS_BY_ID = (() => {
+  const m = new Map();
+  for (const list of NBA_TOT.values()) for (const t of list) m.set(t.id, t);
+  return m;
+})();
+const NBA_STAT_KEYS = Object.values(NBA_STAT);
+function nbaTotals(rec) {
+  const hist = NBA_HISTORIC_POINTS[rec.name];
+  if (hist != null) return { nba_points: hist, _x: 1 };
+  const alias = HOOPS_ALIAS[rec.name];
+  if (alias) {
+    const ts = alias.map((id) => HOOPS_BY_ID.get(id)).filter(Boolean);
+    if (!ts.length) return null;
+    const o = {};
+    for (const [k, stat] of Object.entries(NBA_STAT)) o[stat] = Math.round(Math.max(...ts.map((t) => t[k])));
+    o._f = ts.every((t) => t.full) ? 1 : 0;
+    return o;
+  }
+  const keys = new Set([nkFull(rec.name), nkFull(rec.name.replace(/\s+(jr|sr|ii|iii|iv|v)\.?$/i, ''))]);
+  let cands = [];
+  for (const k of keys) for (const t of (NBA_TOT.get(k) || [])) if (!cands.includes(t)) cands.push(t);
+  /* A rookie: on a roster this season, a career only in the 2020s, and in no
+     season of the file under any name (no decade at all is a draft pick
+     with no season yet: Darryn Peterson). The file runs through the season just
+     played, so he has not played a full NBA season, and every line here is
+     in the thousands. */
+  if (!cands.length && rec.act && rec.decade.every((d) => d >= 2020)) {
+    const o = { _f: 1, _r: 1 };
+    for (const stat of NBA_STAT_KEYS) o[stat] = 0;
+    return o;
+  }
+  // two men, one name: keep the one whose seasons fall in this record's decades
+  if (cands.length > 1 && rec.decade.length) {
+    cands = cands.filter((t) => rec.decade.some((d) => d <= t.last && d + 9 >= t.first - 1));
+  }
+  if (cands.length !== 1) return null;
+  const t = cands[0], o = {};
+  for (const [k, stat] of Object.entries(NBA_STAT)) o[stat] = Math.round(t[k]);
+  o._f = t.full;
+  /* the points he can be short by: the file's holes. A man still playing
+     also adds to it all season, which the game works out on the day (_p is
+     his scoring rate last season, see NBA_SEASON below). */
+  o._m = t.margin;
+  if (rec.act && t.last === NBA_LAST) o._p = Math.round(t.lastPpg * 10) / 10;
+  /* The hand list is wrong in places the season file is not: Luol Deng at
+     15,208 points (13,394), Chris Webber at 9,123 rebounds (8,124), Marcus
+     Camby at 2,564 blocks (2,331). Every disagreement checked went the
+     season file's way, so where a whole career is in the file and a curated
+     number is more than 3% off it, the game judges by the file. */
+  if (t.full && rec.st) {
+    const off = NBA_STAT_KEYS.filter((k) => rec.st[k] != null && Math.abs(rec.st[k] - o[k]) > 0.03 * rec.st[k]);
+    if (off.length) o._o = off;
+  }
+  return o;
 }
 
 if (collisions.length) {
@@ -558,6 +729,39 @@ for (const p of PLAYERS) {
   const seen = new Set();
   p.t = p.t.map(franchise).filter((t) => t && !seen.has(t) && seen.add(t));
 }
+
+/* ------------------------------------------- one man, every record joined
+ *
+ * Every pair the rule calls 'auto' (the same written name, a suffix or a
+ * middle name aside, sharing a club in a shared decade, nothing contradicting)
+ * plus every pair the json lists as `same`, gathered into groups: a man can be
+ * three records. Nothing is merged, for the reason ONE MAN, TWO NAMES gives above;
+ * the game joins each group when it loads. */
+const shape = (p) => ({ name: p.name, sport: p.sport, pos: p.pos, t: p.t, col: p.col, dec: p.decade });
+const SHAPES = PLAYERS.map(shape);
+const APART = new Set(PEOPLE.apart.map(([sp, a, b]) => pairKey(sp, a, b)));
+const joins = [];
+let autoN = 0;
+for (const [i, j, v] of candidates(SHAPES)) {
+  if (v !== 'auto') continue;
+  if (APART.has(pairKey(PLAYERS[i].sport, PLAYERS[i].name, PLAYERS[j].name))) continue;
+  joins.push([i, j]); autoN++;
+}
+const byName = new Map();
+PLAYERS.forEach((p, i) => { const k = p.sport + '|' + nkFull(p.name); (byName.get(k) || byName.set(k, []).get(k)).push(i); });
+for (const [sport, name, other] of PEOPLE.same) {
+  const A = byName.get(sport + '|' + nkFull(name)) || [], B = byName.get(sport + '|' + nkFull(other)) || [];
+  // The same man shares a club with himself. Pick the pair that does, so a
+  // namesake in either bucket is never the one joined; when each name is one
+  // record and their decades overlap, that is enough for a listed pair.
+  let hit = null;
+  for (const i of A) for (const j of B) if (!hit && SHAPES[i].t.some((t) => SHAPES[j].t.includes(t))) hit = [i, j];
+  if (!hit && A.length === 1 && B.length === 1 && SHAPES[A[0]].dec.some((d) => SHAPES[B[0]].dec.includes(d))) hit = [A[0], B[0]];
+  if (!hit) { if (A.length && B.length) console.warn('one person: ' + name + ' and ' + other + ' share no club, left apart'); continue; }
+  joins.push(hit);
+}
+const PERSONS = groups(PLAYERS.length, joins);
+console.log('one man, several records: ' + PERSONS.length + ' joined (' + autoN + ' by the rule, ' + (joins.length - autoN) + ' from the list)');
 
 // --------------------------------------------------------- lookup tables
 const uniq = (arr) => [...new Set(arr.filter(Boolean))].sort();
@@ -921,6 +1125,16 @@ const payload = {
      second copy to drift. */
   alias: FRANCHISE,
   players: compact,
+  /* [first, other]: records that are one man (see ONE MAN, TWO NAMES). A group of
+     three is two pairs sharing a first record. The game joins each group when
+     it loads, so any name proves every fact of all of them. */
+  same: PERSONS.flatMap((g) => g.slice(1).map((j) => [g[0], j])),
+  /* [record, {stat: total, _f}]: NBA career totals summed from the hoops
+     season file, for judging answers only (see NBA CAREER TOTALS above).
+     _f is 1 when the whole career is in that file. */
+  dst: PLAYERS.map((p, i) => (p.sport === 'NBA' ? [i, nbaTotals(p)] : null)).filter((x) => x && x[1]),
+  // the season the NBA totals run through (2026 is 2025-26)
+  nbaThrough: NBA_LAST,
   cats: CATS.map((c) => ({ i: c.i, l: c.l, p: c.p, g: c.g, n: c.n, t: c.t, s: c.s })),
   viab: viability,
   letters: PLAYABLE,
