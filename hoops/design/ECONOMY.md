@@ -65,25 +65,44 @@ Finals 24, Champion 8.
 
 ### The rule this sets
 
-The brief's anchor, and golf's: **one full career earns about what the smallest
-paid bucket holds, which is about two base packs.** So the career pays about
-2,000 coins and a base pack costs 1,000. Worked through the table above with the
-rates in section 3, a random-answer career lands at about **1,300 coins** before its badges and **1,600 to 1,800** with them, and a
-good one (more titles, a Hall tier) at 2,500 to 3,500. That is the right shape: a
-career is a long thing worth two or three packs, not a store.
+**A typical player plays one to three careers a day** (the owner's figure,
+2026-10-11). That moves the anchor. Golf's rule (one career is worth about the
+smallest bucket, about two packs) was written for a 30 year golf career, which is
+weeks of play. Here a career is a session, so paying it two packs would hand a
+typical player four to six packs a day and empty the catalogue in weeks.
 
-### Daily play pays more than simming
+So the anchor is the DAY, not the career: **a typical day (two careers and the
+dailies) earns about what the smallest bucket holds, about two base packs.** A
+career pays about 650 coins before its badges (random answers, the table above,
+the rates in section 3), about 1,000 for a good one, and up to 1,600 for a Hall
+of Fame career with a title.
 
-Hoops has no single "sim a season" button to discount, so the rule is written per
-source instead: **every repeatable source pays full for its first few each
-Eastern day, then a quarter.** One evening of grinding Classic runs or career
-seasons buys a little, not the store. The shared-question dailies pay once a day
-and are the biggest single lines.
+### Careers are the main loop, so they are not the thing discounted
+
+The old draft cut career pay to a quarter after four seasons a day. At one to
+three careers a day that would have cut the core player's second career almost
+to nothing. **The diminishing rule now counts whole careers: the first three
+finished each Eastern day pay full, the fourth and later a quarter.** Classic
+runs keep their own three a day. A grinder still earns more than a typical
+player, just not three times more. The shared-question dailies pay once a day.
 
 Target days, in coins (base, before any multiplier):
 
 | player | what they do | coins a day |
 |---|---|---|
+| light | one career, one daily, the login | about 1,000 |
+| typical | two careers, the dailies, quests, the streak, the wheel | about 1,900 |
+| heavy | three careers and all of the above | about 2,600 |
+| grinder | six careers | about 3,100 (the quarter-rate tail) |
+
+A typical player opens about two base packs a day from play, plus the two League
+Packs a week from weekly challenges: about 70 packs a month. With about 310 items
+that is most of the commons and about half the rares in month one, and the
+legendaries are a season long chase. Phase 2's suite simulates each row for 60
+days and asserts the pace: a typical player owns about a third of the catalogue
+after 30 days, and nobody owns all of it in one season.
+
+---|---|---|
 | casual | one daily, a Classic run, the login | about 200 |
 | engaged | all three dailies, quests, the streak, a run, a career season or two, the wheel | about 450 to 550 |
 | grinder | the above plus three hours of Classic and career | about 700 (the diminishing tail) |
@@ -109,8 +128,8 @@ idempotent (section 4). `src` is what the daily diminishing rule counts.
 | Classic run | 30, +20 October, +15 a series won, +100 title | 3 | `run:<seed>` |
 | One Franchise or Decades run | as Classic | shares Classic's 3 | `run:<seed>` |
 | Conquest | 5 a win, +60 a clear | 150 coins a day | `cq:<seed>:<rung>` |
-| Career season closed | 60, +15 a playoff round won, +30 All-Star, +40 each other award, +150 title | 4 seasons | `cs:<seed>:<year>` |
-| Career finished (reached the league) | 400, plus Hall tier 0 to 400 | not counted | `cf:<seed>` |
+| Career season closed | 30, +8 a playoff round won, +15 All-Star, +20 each other award, +75 title | counted by career (below) | `cs:<seed>:<year>` |
+| Career finished (reached the league) | 200, plus Hall tier 0 to 200 | the first 3 careers a day full, later ones (and their seasons) a quarter | `cf:<seed>` |
 | A badge earned for the first time | bronze 15, silver 30, gold 60, ring 150 | not counted | `bd:<id>` |
 | Daily quests | 40 each, +60 for all three | 1 set | `dq:<day>:<n>` |
 | Weekly challenges | 400 + a shard, the first two a League Pack | 4 a week | `wk:<week>:<n>` |
@@ -344,9 +363,9 @@ the cabinet.
 |---|---|
 | season | 60 days from a fixed Eastern epoch; the countdown is to Eastern midnight |
 | tiers | 60, cost(t) = 300 + 5(t - 1), 26,850 XP total |
-| XP | 1 per base coin earned (before multipliers), plus quests at their own XP |
+| XP | 0.35 per base coin earned (before multipliers), plus quests at their own XP |
 | daily cap | 700 XP: a perfectly capped player needs 39 days |
-| expected | engaged (500 a day) about day 50; casual (200 a day) about tier 33 |
+| expected | light (1,000 coins, 350 XP a day) reaches about tier 50; typical (1,900 coins, 665 XP) finishes about day 41; heavy and grinder sit on the cap and finish day 39 |
 | rollover | unclaimed tiers settle into the ledger, the season locks |
 
 The free lane is real: packs at 5, 10, 20, 30 and 40, a cosmetic at 15 and 35,
@@ -422,8 +441,9 @@ an API.
 
 ## 12. Decisions for you
 
-1. **Numbers.** Base pack 1,000, a career about 2,000, an engaged day about 500.
-   The ratios are golf's; the unit is new. Fine, or a different unit?
+1. **Numbers.** Base pack 1,000, a career about 650 to 1,000, a typical day
+   (two careers) about 1,900, which is the $1.99 bucket. Re-anchored on the day
+   because a typical player plays one to three careers a day.
 2. **The keyed ledger** in place of golf's derived total and max merge. It is
    exact across devices where max is not. It is more code than golf's.
 3. **Badges held at launch pay nothing** (a baseline), and a panel says so.
