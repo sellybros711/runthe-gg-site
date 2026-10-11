@@ -464,6 +464,33 @@ function skeleton(f, bw, am, breath, MX){
    so far out that a heavy man's ball leaves the grid */
 function heldX(hx){ return Math.min(hx + 1.4, W - 1.6 - 3.7); }
 
+/* WHAT EACH TOP IS. neck: crew, scoop, collar, turtle, hood, tank;
+   sleeve: 0 none, 1 short, 2 long; infl: how far it stands off the body;
+   hem: how far below the waist it falls, in torso units */
+var TOPS = {
+  tee: { neck: 'crew', sleeve: 1, infl: 0.3, hem: 3.6 },
+  longsleeve: { neck: 'crew', sleeve: 2, infl: 0.32, hem: 3.6 },
+  tank: { neck: 'scoop', sleeve: 0, infl: 0.25, hem: 3.8 },
+  jersey: { neck: 'vee', sleeve: 0, infl: 0.6, hem: 5.0 },
+  polo: { neck: 'collar', sleeve: 1, infl: 0.32, hem: 3.6 },
+  buttonup: { neck: 'collar', sleeve: 2, infl: 0.38, hem: 4.0 },
+  flannel: { neck: 'collar', sleeve: 2, infl: 0.45, hem: 4.0 },
+  knit: { neck: 'crew', sleeve: 2, infl: 0.55, hem: 3.8 },
+  turtleneck: { neck: 'turtle', sleeve: 2, infl: 0.4, hem: 3.8 },
+  hoodie: { neck: 'hood', sleeve: 2, infl: 0.7, hem: 4.2 },
+};
+/* WHAT EACH JACKET IS. open: worn open over the top; long: the skirt
+   reaches the knee; infl is on top of the top's own */
+var OUTERS = {
+  varsity: { open: 1, infl: 0.95, hem: 4.6, rib: 1 },
+  bomber: { open: 0, infl: 0.95, hem: 4.0, rib: 1 },
+  puffer: { open: 0, infl: 1.9, hem: 4.8, quilt: 1 },
+  denim: { open: 1, infl: 0.8, hem: 4.0, collar: 1 },
+  blazer: { open: 1, infl: 0.75, hem: 6.2, lapel: 1 },
+  trench: { open: 1, infl: 0.85, hem: 6.4, lapel: 1, long: 1 },
+  track: { open: 0, infl: 0.7, hem: 4.2, stripe: 1 },
+};
+
 /* ── the model for one pose and one look ── */
 function build(L, o, J){
   var suit = o.suit, cap = o.cap, pose = o.pose;
@@ -502,8 +529,38 @@ function build(L, o, J){
     }
     /* the shoe: a rounded toe box on a flat sole */
     var a = G.ank, fx = a[0] + s * 0.3, fy = a[1] + 2.4, fz = a[2] + 1.3, fl = a[1] + 4.0;
-    var shoeF, shoeM;
-    if (suit) {
+    var shoeF, shoeM, sk = ST && ST.shoes ? ST.shoes.k : '';
+    if (sk === 'boot') {
+      /* a work boot: a lugged sole, a round toe, a shaft to above the ankle,
+         laced through hooks, with a padded collar */
+      var bSole = rbox([fx, fl - 0.6, fz + 0.1], [2.25, 0.65, 3.75], 0.4), bToe = ell([fx, fl - 1.6, fz + 1.5], [2.1, 1.5, 2.5]), bShaft = cone([fx, fl - 2.0, fz - 0.9], [fx, a[1] - 2.4, a[2] - 0.2], 2.15, 2.0);
+      shoeF = function(p){ return Math.min(bSole(p), smin(bToe(p), bShaft(p), 1.2)); };
+      shoeM = function(p){ var ly = p[1] - a[1], dz = p[2] - fz, dx = Math.abs(p[0] - fx);
+        if (ly > 2.75) return Math.floor(p[2] * 1.6) % 2 ? 'sole' : { m: 'sole', dt: -1 };
+        if (ly < -1.6) return 'trim';
+        if (dx < 0.6 && dz > -1.2 && ly < 1.8) return Math.floor((ly + 4) * 1.6) % 2 ? { m: 'lace', t: 3 } : { m: 'trim', t: 2 };
+        if (Math.abs(ly - 2.5) < 0.25) return { m: 'shoe', dt: -1 };
+        return 'shoe'; };
+    } else if (sk === 'slide') {
+      /* a slide: a footbed and one wide strap over the instep, the foot (or a sock) showing */
+      var fb = rbox([fx, fl - 0.4, fz + 0.15], [2.05, 0.42, 3.6], 0.35), strap = rbox([fx, fl - 1.25, fz + 0.5], [2.2, 0.95, 1.5], 0.6);
+      var footF = smf(ell([fx, fl - 1.15, fz + 1.2], [1.7, 0.95, 2.6]), cone([fx, fl - 1.0, fz - 1.4], [a[0], a[1] - 0.4, a[2]], 1.55, 1.3), 1.0);
+      shoeF = function(p){ return Math.min(fb(p), Math.min(strap(p), footF(p))); };
+      shoeM = function(p){ var ly = p[1] - a[1];
+        if (ly > 3.55) return 'sole';
+        if (strap(p) < 0.05) return Math.abs(p[2] - (fz + 0.5)) < 0.35 ? 'trim' : 'shoe';
+        return ST.socks ? 'sock' : 'skin'; };
+    } else if (sk === 'runner') {
+      /* a runner: low, a thick foam midsole, a mesh upper and a sweep of colour */
+      var rSole = rbox([fx, fl - 0.7, fz + 0.1], [2.1, 0.75, 3.7], 0.6), rToe = ell([fx, fl - 1.7, fz + 1.4], [1.95, 1.25, 2.5]), rHeel = rbox([fx, fl - 2.2, fz - 1.0], [1.9, 1.5, 2.2], 1.0);
+      shoeF = function(p){ return Math.min(rSole(p), smin(rToe(p), rHeel(p), 1.3)); };
+      shoeM = function(p){ var ly = p[1] - a[1], dz = p[2] - fz, dx = Math.abs(p[0] - fx);
+        if (ly > 3.65) return { m: 'sole', dt: -1 };
+        if (ly > 2.6) return 'sole';
+        if (dx < 0.5 && dz > -0.6 && dz < 1.8) return Math.floor((dz + 3) * 1.6) % 2 ? { m: 'lace', t: 4 } : { m: 'lace', t: 2 };
+        if (dx > 1.3 && Math.abs(ly - (2.4 - (dz + 2) * 0.28)) < 0.5 && dz > -2.4 && dz < 2.2) return 'trim';
+        return (Math.floor(p[0] * 3) + Math.floor(p[1] * 3)) % 3 === 0 ? { m: 'shoe', dt: -1 } : 'shoe'; };
+    } else if (suit || sk === 'dress') {
       shoeF = cut(ell([fx, fy, fz], [2.4, 1.9, 3.9]), function(p){ return p[1] - fl; });
       shoeM = function(p){ return p[1] - a[1] > 3.35 ? 'sole' : { m: 'shoe', gloss: 2 }; };
     } else {
@@ -672,6 +729,7 @@ function build(L, o, J){
     add('hand' + s, 'arm' + s, 'skin', ell(A.hand, [1.55 * hk, 2.0 * hk, 1.4 * hk]), A.hand, 3 * hk, { hand: s });
   });
 
+  if (ST) streetGear();
   /* what he is holding */
   if (pose === 'ball') {
     var hd = J.arm[1].hand, bc = [heldX(hd[0]), hd[1] + 3.2, hd[2] + 1.0];
@@ -774,7 +832,9 @@ function build(L, o, J){
   else if (L.beard === 'full') add('beard', 'beard', 'beard', cut(shellF(0.55), function(p){ var l = local(p);
     return Math.max(2.4 - l[1], -(l[2] + 2), (Math.abs(l[0]) < 2.0 && l[1] < 5.8 && l[2] > 4) ? 1 : -1); }), H, 9);
   /* the band, the cap */
-  if (hatK) streetHat(hatK, shellF, local, hx, hy, hz);
+  if (hatK === 'beanie' || hatK === 'bucket') streetHat(hatK, shellF, local, hx, hy, hz);
+  if (hatK === 'cap' || hatK === 'durag') streetCapAndRag(hatK, shellF, local, hx, hy, hz);
+  if (ST && ST.phones) streetPhones(hx, hy, hz);
   if (ST && ST.eyes) streetEyes(hx, hy, hz);
   if (o.band && !cap && !hatK) add('band', 'band', 'band', cut(shellF(0.55), function(p){ var l = local(p); return Math.abs(l[1] + 4.6) - 1.0; }), H, 9);
   if (cap) {
@@ -793,30 +853,63 @@ function build(L, o, J){
   /* smin blends two distances; these blend two shapes */
   function smf(a, b, k){ return function(p){ return smin(a(p), b(p), k); }; }
   function streetTop(){ return (ST.top && ST.top.k) || 'tee'; }
+  function streetBottom(){ return (ST.bottom && ST.bottom.k) || 'jeans'; }
+  function topDef(){ return TOPS[streetTop()] || TOPS.tee; }
+  function outDef(){ return ST.outer ? OUTERS[ST.outer.k] || null : null; }
+
+  /* a bare leg, exactly as the uniform draws it, for shorts */
+  function bareLegF(G){
+    var cr = Math.max(1.4, 2.3 + am + g * 0.16), ca = [G.kn[0] + (G.ank[0] - G.kn[0]) * 0.32, G.kn[1] + (G.ank[1] - G.kn[1]) * 0.32, G.kn[2] + (G.ank[2] - G.kn[2]) * 0.32 - 0.5];
+    var legF = uni([cone(G.hip, G.kn, Math.max(1.6, 2.6 + am + g * 0.36), Math.max(1.5, 2.1 + am + g * 0.22)), cone(G.kn, G.ank, cr * 0.9, Math.max(1.0, 1.45 + am * 0.5 + g * 0.08))]);
+    var calfF = ell(ca, [cr * 1.08, 3.2 * ls, cr * 1.1]);
+    return function(p){ return smin(legF(p), calfF(p), 1.4); };
+  }
   function streetLegF(G, s){
-    var kd = (ST.bottom && ST.bottom.k) || 'jeans', top = [G.hip[0] - s * 0.55, G.hip[1] - 2.2, 0];
+    var kd = streetBottom(), top = [G.hip[0] - s * 0.55, G.hip[1] - 2.2, 0];
     /* an athlete's legs are long and lean: a straight leg from a narrow seat,
        barely tapering. Cut wide, the thighs flared out past the hem of the
        shirt and the figure read as curvy. */
+    if (kd === 'shorts') return bareLegF(G);
     if (kd === 'sweats') return uni([cone(top, G.kn, 2.85 + g * 0.3, 2.6 + g * 0.16), cone(G.kn, [G.ank[0], G.ank[1] - 0.5, G.ank[2]], 2.6 + g * 0.12, 1.95)]);
+    if (kd === 'cargos') return uni([cone(top, G.kn, 2.95 + g * 0.3, 2.7 + g * 0.16), cone(G.kn, [G.ank[0], G.ank[1] + 0.2, G.ank[2]], 2.7 + g * 0.1, 2.35)]);
+    if (kd === 'trousers') return uni([cone(top, G.kn, 2.55 + g * 0.3, 2.3 + g * 0.14), cone(G.kn, [G.ank[0], G.ank[1] + 0.9, G.ank[2]], 2.3 + g * 0.1, 2.25)]);
     return uni([cone(top, G.kn, 2.6 + g * 0.3, 2.35 + g * 0.14), cone(G.kn, [G.ank[0], G.ank[1] + 0.4, G.ank[2]], 2.35 + g * 0.1, 2.25)]);
   }
   function streetLegMat(G, s){
-    var kd = (ST.bottom && ST.bottom.k) || 'jeans';
+    var kd = streetBottom();
     return function(p){
       var tA = clamp01((p[1] - G.hip[1]) / Math.max(1, G.ank[1] - G.hip[1])), ax = G.hip[0] + (G.ank[0] - G.hip[0]) * tA, lx = (p[0] - ax) * s, toAnk = G.ank[1] - p[1];
+      if (kd === 'shorts') {
+        /* below the shorts: skin, and the socks the sock slot asks for */
+        var y = p[1] - (G.ank[1] - 57.4), sl = ST.socks ? ST.socks.k : 'crew';
+        var top = sl === 'high' ? 50.4 : sl === 'ankle' ? 55.6 : 53.4;
+        if (y > top) return y < top + 0.6 ? { m: 'sock', dt: 1 } : 'sock';
+        return 'skin';
+      }
       if (kd === 'sweats') {
         if (toAnk < 1.3) return { m: 'btm', dt: Math.floor(p[0] * 2) % 2 ? -1 : 0 };
-        /* one stripe down the outside of the leg, as wide as a finger: the
-           cloth's radius falls from the hip to the cuff, so the stripe follows it */
-        var rr = 3.45 - 1.15 * tA + g * 0.2;
-        if (lx > rr - 0.62 && Math.abs(p[2] - G.kn[2] * tA) < 1.25) return 'btm2';
+        /* one stripe down the outside of the leg, as wide as a finger, only
+           when the item gives a second colour: without one they are joggers */
+        var rr = 2.85 - 0.9 * tA + g * 0.3;
+        if (ST.bottom.c[1] && lx > rr - 0.6 && Math.abs(p[2] - G.kn[2] * tA) < 1.25) return 'btm2';
+        return 'btm';
+      }
+      if (kd === 'cargos') {
+        /* a bellows pocket on the side of each thigh, with its flap */
+        if (lx > 1.6 && tA > 0.28 && tA < 0.5) return tA < 0.31 ? { m: 'btm', dt: -1 } : Math.abs(p[2]) < 0.4 ? { m: 'btm', dt: -1 } : { m: 'btm', dt: 0 };
+        if (toAnk < 0.8) return { m: 'btm', dt: -1 };
+        return 'btm';
+      }
+      if (kd === 'trousers') {
+        /* a pressed crease down the front of each leg */
+        var fz = p[2] - G.kn[2] * tA * 0.6;
+        if (fz > 1.6 && Math.abs(p[0] - ax) < 0.3) return { m: 'btm', dt: 1 };
         return 'btm';
       }
       /* jeans: a rolled cuff, a lighter fade down the front of the thigh, and the outer seam */
       if (toAnk < 0.9) return { m: 'btm', dt: 1 };
-      if (lx > 2.35 && Math.abs(p[2]) < 0.7) return { m: 'btm', dt: -1 };
-      if (p[2] > 1.6 && tA > 0.12 && tA < 0.45 && (Math.floor(p[0] * 1.7) + Math.floor(p[1] * 1.1)) % 3 === 0) return { m: 'btm', dt: 1 };
+      if (lx > 1.95 && Math.abs(p[2]) < 0.7) return { m: 'btm', dt: -1 };
+      if (p[2] > 1.4 && tA > 0.12 && tA < 0.45 && (Math.floor(p[0] * 1.7) + Math.floor(p[1] * 1.1)) % 3 === 0) return { m: 'btm', dt: 1 };
       return 'btm';
     };
   }
@@ -824,12 +917,10 @@ function build(L, o, J){
      tee follow every muscle under it: the pecs read as a bust, the waist
      pinched in and the seat flared out, which is the silhouette of somebody
      else. A shirt on a basketball player drops straight from broad shoulders
-     to the hem, so it is the chest's ellipse blended into a column the width
-     of the ribcage, carrying a heavy man's belly when he has one, and nothing
-     of the pecs, lats or shoulder blades. */
+     to the hem: a V, an elliptic column whose width runs from the shoulders
+     down to narrow hips, flat front to back, under a dome across the
+     shoulders, carrying a heavy man's belly when he has one. */
   function dropF(off, hemY){
-    /* a V: an elliptic column whose width runs from the shoulders down to
-       narrow hips, flat front to back, under a dome across the shoulders */
     var shX = (6.9 + bw * 0.8) * sw + Math.max(0, g) * 0.3, yT = C0[1] - 2.4 * ts, yB = hemY + 1.0;
     var rxT = shX * 0.9 + off, rxB = cR[0] * 0.8 + off + g * 0.45, rzT = cR[2] * 0.88 + off * 0.8, rzB = cR[2] * 0.74 + off * 0.8 + Math.max(0, g) * 0.75;
     var colF = function(p){
@@ -840,57 +931,126 @@ function build(L, o, J){
     var dome = ell([CX, yT + 0.4, -0.3], [shX + off * 0.6, 2.4 * ts + off * 0.5, cR[2] * 0.82 + off * 0.8]);
     return cut(smf(dome, colF, 1.6), function(q){ return q[1] - hemY; });
   }
-  function streetTorso(){
-    var kd = streetTop(), infl = kd === 'hoodie' ? 0.7 : 0.3, hemY = W0[1] + (kd === 'hoodie' ? 4.2 : 3.6) * ts;
-    var mk = function(y, dx, front){ var nd = front ? 1.0 : 0.3; return function(w){ var t = dx / w; return t < 1 ? 23.9 + nd * (1 - t * t) : -1; }; };
-    add('torso', 'torso', function(p){
-      var sx = p[0] - CX, dx = Math.abs(sx), y = 29.2 + (p[1] - C0[1]) / ts, front = p[2] > 0.6, neck = mk(y, dx, front);
-      if (y < neck(2.7)) return 'skin';
-      if (kd === 'tee' && y < neck(3.4) + 0.65) return { m: 'top2' };
-      if (kd === 'hoodie' && y < neck(3.4) + 0.45) return { m: 'top', dt: -1 };
-      if (p[1] > hemY - 0.8) return { m: 'top', dt: kd === 'hoodie' ? (Math.floor(p[0] * 2) % 2 ? -1 : 0) : -1 };
+  /* the y the torso material reads (29.2 at the chest's centre) and the
+     neckline: a curve a little lower at the front than the back */
+  function tY(p){ return 29.2 + (p[1] - C0[1]) / ts; }
+  function neckAt(dx, front, w, depth){ var t = dx / w; return t < 1 ? 23.9 + (front ? (depth || 1.0) : 0.3) * (1 - t * t) : -1; }
+  function topMat(kd, D){
+    return function(p){
+      var sx = p[0] - CX, dx = Math.abs(sx), y = tY(p), front = p[2] > 0.6, hemY = W0[1] + D.hem * ts;
+      var N = function(w, d){ return neckAt(dx, front, w, d); };
+      if (D.neck === 'turtle') { if (y < N(2.6) - 1.2) return 'skin'; if (y < N(3.4) + 1.2) return { m: 'top', dt: Math.floor(y * 2.4) % 2 ? -1 : 0 }; }
+      else if (D.neck === 'vee') { if (front && dx < Math.max(0, 27.4 - y) * 0.7) return y < 23.6 ? 'skin' : 'skin'; if (y < N(2.9)) return 'skin'; if (front && y < 28.2 && dx < Math.max(0, 28.2 - y) * 0.7 + 0.6) return 'top2'; if (y < N(3.5) + 0.5) return 'top2'; }
+      else if (D.neck === 'scoop') { if (y < N(3.0, 2.2)) return 'skin'; if (y < N(3.6, 2.2) + 0.45) return { m: 'top', dt: -1 }; }
+      else { if (y < N(2.7)) return 'skin'; if (D.neck === 'crew' && y < N(3.4) + 0.65) return kd === 'knit' ? { m: 'top', dt: -1 } : 'top2'; if (D.neck === 'hood' && y < N(3.4) + 0.45) return { m: 'top', dt: -1 }; }
+      /* armholes, for a top with no sleeves: the jersey's and the tank's cut */
+      if (!D.sleeve) { var edge = cR[0] + 0.3, ax = edge + 0.9, rx = ax - Math.min(6.2, edge - 1.4), ae = Math.pow((dx - ax) / rx, 2) + Math.pow((y - 24.8) / 5.2, 2);
+        if (ae < 1) return 'skin'; if (ae < 1.3) return kd === 'jersey' ? 'top2' : { m: 'top', dt: -1 }; }
+      if (D.neck === 'collar') {
+        /* a shirt collar, its two points, and the button placket */
+        if (y < N(3.3) + 1.3 && !(front && dx < 0.7)) return { m: 'top', dt: y < N(3.3) + 0.4 ? 1 : -1 };
+        if (front && dx < 0.55 && y > 24) return Math.floor(y * 0.9) % 3 === 0 && dx < 0.35 ? { m: 'top2', t: 3 } : { m: 'top', dt: -1 };
+        if (kd === 'polo' && front && y > 27.6 && dx < 0.6) return 'top';
+      }
+      if (p[1] > hemY - 0.8) return { m: 'top', dt: kd === 'hoodie' || kd === 'knit' ? (Math.floor(p[0] * 2) % 2 ? -1 : 0) : -1 };
       if (kd === 'hoodie' && front) {
         /* the drawstrings, and the kangaroo pocket across the belly */
         if (Math.abs(dx - 1.25) < 0.32 && y > 24.4 && y < 28.6) return { m: 'top2', t: y > 28.0 ? 3 : 2 };
         if (y > 33.2 && y < 37.4 && dx < 4.2) return (Math.abs(y - 33.2) < 0.42 || Math.abs(dx - (3.4 + (y - 33.2) * 0.2)) < 0.38) ? { m: 'top', dt: -1 } : 'top';
       }
+      if (kd === 'flannel') { var gx = ((p[0] * 0.55) % 2 + 2) % 2 < 0.55, gy = ((p[1] * 0.55) % 2 + 2) % 2 < 0.55; if (gx && gy) return { m: 'top2', dt: -1 }; if (gx || gy) return 'top2'; }
+      if (kd === 'knit' && Math.abs(((sx * 0.5) % 2 + 2) % 2 - 1) < 0.18 && front) return { m: 'top', dt: -1 };
+      /* a mesh jersey: the weave as a fine dither, and a side panel in the second colour */
+      if (kd === 'jersey') { if ((Math.floor(p[0] * 2) + Math.floor(p[1] * 2)) % 4 === 0) return { m: 'top', dt: -1 }; if (dx > cR[0] - 0.3) return 'top2'; }
       return 'top';
-    }, dropF(infl, hemY), [CX, (C0[1] + W0[1]) / 2 + 1, 0], 13 * Math.max(1, ts, sw) + Math.max(0, g));
-    /* the seat of the trousers, under the hem */
-    /* the seat is as narrow as an athlete's hips, narrower than his shoulders */
-    var sy0 = W0[1] - 0.4, shW = (4.9 + bw * 0.3) * sw + g * 0.55;
-    var bk = (ST.bottom && ST.bottom.k) || 'jeans';
-    add('seat', 'seat', function(p){ var y = p[1] - sy0; if (y < 0.9) return bk === 'jeans' ? { m: 'btm', dt: -1 } : 'btm2'; return 'btm'; },
+    };
+  }
+  function outMat(kd, D, topK){
+    var hemY = W0[1] + D.hem * ts;
+    return function(p){
+      var sx = p[0] - CX, dx = Math.abs(sx), y = tY(p), front = p[2] > 0.8, N = function(w){ return neckAt(dx, front, w); };
+      if (y < N(3.0)) return 'skin';
+      if (D.rib && y < N(3.9) + 0.9) return (Math.floor(y * 2.2) % 2) ? 'out3' : 'out2';
+      if (D.quilt && y < N(3.9) + 1.6) return { m: 'out1', dt: y < N(3.9) + 0.6 ? 1 : 0 };
+      if (D.collar && y < N(4.0) + 1.1) return { m: 'out1', dt: y < N(4.0) + 0.4 ? 1 : -1 };
+      if (D.open) {
+        /* worn open: the front shows the top underneath, widening to the
+           collar; lapels fold back on a blazer and a trench */
+        var open = (D.lapel ? 0.6 : 1.05) + Math.max(0, (D.lapel ? 31.6 : 27.4) - y) * (D.lapel ? 0.62 : 0.55);
+        if (front && dx < open) return 'top';
+        if (D.lapel && front && dx < open + 1.3 && y < 31.6) return { m: 'out1', dt: sx < 0 ? 1 : -1 };
+        if (front && dx < open + 0.5) return { m: 'out1', dt: -1 };
+        if (!D.lapel && front && Math.abs(dx - (open + 1.1)) < 0.35 && Math.floor(y) % 3 === 0) return { m: 'out3', t: 3 };
+        if (D.lapel && front && Math.abs(dx - (open + 0.9)) < 0.4 && (Math.abs(y - 33.4) < 0.45 || Math.abs(y - 35.8) < 0.45)) return { m: 'out3', t: 3 };
+      } else {
+        /* closed with a zip up the middle */
+        if (front && dx < 0.32) return { m: 'out3', t: Math.floor(y * 2) % 2 ? 3 : 2 };
+      }
+      if (D.rib && p[1] > hemY - 1.5) return Math.floor((p[1] - hemY) * 2.4) % 2 ? 'out3' : 'out2';
+      if (D.quilt) { var q = ((y - 24) / 2.3) % 1; if (q < 0.18) return { m: 'out1', dt: -1 }; if (q > 0.5 && q < 0.8) return { m: 'out1', dt: 1 }; }
+      if (D.stripe && front && dx > 2.3 && dx < 2.8 && y < 27.2) return 'out2';
+      if (D.collar && front && dx > 2.0 && dx < 4.3 && y > 25.8 && y < 28.6) return Math.abs(y - 25.8) < 0.45 || Math.abs(dx - 3.1) < 0.25 ? { m: 'out1', dt: -1 } : 'out1';
+      if (D.collar && (Math.abs(dx - 2.0) < 0.2 || Math.abs(dx - 4.3) < 0.2)) return { m: 'out2', t: 3 };
+      if (kd === 'varsity' && front && sx > 2.4 && sx < 5.0 && y > 25.6 && y < 28.8) return (sx < 2.8 || sx > 4.6 || y < 26.0 || y > 28.4) ? 'out3' : 'out2';
+      if (kd === 'trench' && Math.abs(p[1] - (W0[1] + 0.4 * ts)) < 0.7) return { m: 'out1', dt: -1 };
+      if (p[1] > hemY - 0.7) return { m: 'out1', dt: -1 };
+      return 'out1';
+    };
+  }
+  function streetTorso(){
+    var kd = streetTop(), D = topDef(), hemY = W0[1] + D.hem * ts;
+    add('torso', 'torso', topMat(kd, D), dropF(D.infl, hemY), [CX, (C0[1] + W0[1]) / 2 + 1, 0], 13 * Math.max(1, ts, sw) + Math.max(0, g));
+    /* the seat of the trousers, under the hem: as narrow as an athlete's
+       hips, narrower than his shoulders */
+    var sy0 = W0[1] - 0.4, shW = (4.9 + bw * 0.3) * sw + g * 0.55, bk = streetBottom();
+    add('seat', 'seat', function(p){ var y = p[1] - sy0; if (y < 0.9) return bk === 'jeans' || bk === 'trousers' || bk === 'cargos' ? { m: 'btm', dt: -1 } : bk === 'sweats' && ST.bottom.c[1] ? 'btm2' : { m: 'btm', dt: -1 }; return 'btm'; },
       cut(ell([CX, sy0 + 2.8 * ts, -0.2], [shW, 3.7 * ts, 3.8 + Math.max(0, g) * 0.45]), function(q){ return sy0 - q[1]; }), [CX, sy0 + 3 * ts, 0], 9 + Math.max(0, g));
-    var out = ST.outer && ST.outer.k;
-    if (out === 'varsity') {
-      var oHem = W0[1] + 4.6 * ts;
-      add('outer', 'outer', function(p){
-        var sx = p[0] - CX, dx = Math.abs(sx), y = 29.2 + (p[1] - C0[1]) / ts, front = p[2] > 0.8, neck = mk(y, dx, front);
-        if (y < neck(3.0)) return 'skin';
-        if (y < neck(3.9) + 0.9) return (Math.floor(y * 2.2) % 2) ? 'out3' : 'out2';
-        /* worn open: the front shows the top underneath, widening to the collar */
-        var open = 1.05 + Math.max(0, 27.4 - y) * 0.55;
-        if (front && dx < open) return kd === 'hoodie' ? 'top' : 'top';
-        if (front && dx < open + 0.55) return { m: 'out1', dt: -1 };
-        if (front && Math.abs(dx - (open + 1.1)) < 0.35 && Math.floor(y) % 3 === 0) return { m: 'out3', t: 3 };
-        if (p[1] > oHem - 1.5) return Math.floor((p[1] - oHem) * 2.4) % 2 ? 'out3' : 'out2';
-        /* a chenille letter patch on the left chest */
-        if (front && sx > 2.4 && sx < 5.0 && y > 25.6 && y < 28.8) return (sx < 2.8 || sx > 4.6 || y < 26.0 || y > 28.4) ? 'out3' : 'out2';
-        return 'out1';
-      }, dropF(infl + 0.95, oHem), [CX, (C0[1] + W0[1]) / 2 + 1, 0], 14 * Math.max(1, ts, sw) + Math.max(0, g));
+    if (bk === 'shorts') [-1, 1].forEach(function(s){
+      /* shorts: a straight, loose leg to just above the knee */
+      var G = J.leg[s], t0 = [G.hip[0] - s * 0.4, G.hip[1] - 2.4, 0], t1 = [G.hip[0] + (G.kn[0] - G.hip[0]) * 0.72, G.hip[1] + (G.kn[1] - G.hip[1]) * 0.72, G.kn[2] * 0.6];
+      add('short' + s, 'seat', function(p){ return p[1] > t1[1] - 0.7 ? { m: 'btm', dt: -1 } : 'btm'; }, cone(t0, t1, 3.2 + g * 0.3, 3.0 + g * 0.2), t1, 9);
+    });
+    var OD = outDef();
+    if (OD) {
+      var ok_ = ST.outer.k, oHem = W0[1] + OD.hem * ts;
+      add('outer', 'outer', outMat(ok_, OD, kd), dropF(D.infl + OD.infl, oHem), [CX, (C0[1] + W0[1]) / 2 + 1, 0], 15 * Math.max(1, ts, sw) + Math.max(0, g));
+      if (OD.long) {
+        /* a long coat's skirt, falling round both legs to the knee, split at the front */
+        var kY = (J.leg[-1].kn[1] + J.leg[1].kn[1]) / 2 + 1.0, s0 = W0[1] + 3.0 * ts;
+        add('skirt', 'outer', function(p){ return p[2] > 1.8 && Math.abs(p[0] - CX) < 0.9 + (p[1] - s0) * 0.18 ? 'btm' : p[1] > kY - 0.7 ? { m: 'out1', dt: -1 } : 'out1'; },
+          cut(function(p){ var t = clamp01((p[1] - s0) / (kY - s0)), rx = cR[0] * 0.85 + D.infl + OD.infl + t * 1.6, rz = cR[2] * 0.85 + 1 + t * 1.2;
+            return Math.max((Math.hypot((p[0] - CX) / rx, (p[2] + 0.2) / rz) - 1) * Math.min(rx, rz) * 0.85, s0 - p[1]); }, function(q){ return q[1] - kY; }), [CX, (s0 + kY) / 2, 0], (kY - s0) / 2 + 9);
+      }
     }
   }
   /* what an arm is wearing: its material, how far the cloth stands off it,
      and the shoulder's material */
   function streetArm(A){
-    var out = ST.outer && ST.outer.k, kd = streetTop(), wr = A.wr, el = A.el, sh = A.sh;
+    var OD = outDef(), kd = streetTop(), D = topDef(), wr = A.wr, el = A.el, sh = A.sh;
     var along = function(p){ var ux = el[0] - sh[0], uy = el[1] - sh[1], uz = el[2] - sh[2], L2 = ux * ux + uy * uy + uz * uz || 1;
       return ((p[0] - sh[0]) * ux + (p[1] - sh[1]) * uy + (p[2] - sh[2]) * uz) / L2; };
-    var cuff = function(p, a, b){ return Math.hypot(p[0] - wr[0], p[1] - wr[1], p[2] - wr[2]) < 1.5 ? a : b; };
-    if (out === 'varsity') return { r: 0.85, d: 'out2', m: function(p){ return cuff(p, Math.floor(p[1] * 2.6) % 2 ? 'out3' : 'out2', 'out2'); } };
-    if (kd === 'hoodie') return { r: 0.55, d: 'top', m: function(p){ return cuff(p, { m: 'top', dt: Math.floor(p[1] * 2.6) % 2 ? -1 : 0 }, 'top'); } };
-    return { r: 0.12, d: 'top', m: function(p){ var t = along(p); return t < 0.5 ? 'top' : t < 0.6 ? { m: 'top', dt: -1 } : 'skin'; } };
+    var nearWr = function(p, r){ return Math.hypot(p[0] - wr[0], p[1] - wr[1], p[2] - wr[2]) < r; };
+    var rib = function(p){ return Math.floor(p[1] * 2.6) % 2; };
+    if (OD) {
+      var ok_ = ST.outer.k, r = Math.min(1.2, OD.infl * 0.8 + 0.25);
+      return { r: r, d: ok_ === 'varsity' ? 'out2' : 'out1', m: function(p){
+        if (ok_ === 'varsity') return nearWr(p, 1.5) ? (rib(p) ? 'out3' : 'out2') : 'out2';
+        if (OD.rib && nearWr(p, 1.5)) return rib(p) ? 'out3' : { m: 'out1', dt: -1 };
+        if (OD.quilt) { var t = along(p); return nearWr(p, 1.3) ? { m: 'out1', dt: -1 } : (t * 4) % 1 < 0.2 || ((t - 1) * 3 + 10) % 1 < 0.12 ? { m: 'out1', dt: -1 } : 'out1'; }
+        if (OD.stripe) {
+          /* a stripe down the outside of each sleeve: the axis is read at this point along the arm */
+          var t2 = clamp01(along(p) * 0.5), axX = sh[0] + (wr[0] - sh[0]) * t2, lx2 = (p[0] - axX) * (sh[0] < CX ? -1 : 1);
+          if (lx2 > 0.85 && lx2 < 2.6 && Math.abs(p[2] - (sh[2] + (wr[2] - sh[2]) * t2)) < 0.75) return 'out2';
+        }
+        if (OD.lapel && nearWr(p, 1.1)) return { m: 'out1', dt: -1 };
+        return 'out1'; } };
+    }
+    if (D.sleeve === 2) return { r: kd === 'hoodie' ? 0.55 : D.infl * 0.6, d: 'top', m: function(p){
+      if (nearWr(p, 1.5)) return kd === 'hoodie' || kd === 'knit' || kd === 'longsleeve' || kd === 'turtleneck' ? { m: 'top', dt: rib(p) ? -1 : 0 } : { m: 'top', dt: -1 };
+      if (kd === 'flannel') { var gx = ((p[0] * 0.55) % 2 + 2) % 2 < 0.55, gy = ((p[1] * 0.55) % 2 + 2) % 2 < 0.55; if (gx && gy) return { m: 'top2', dt: -1 }; if (gx || gy) return 'top2'; }
+      return 'top'; } };
+    if (D.sleeve === 1) return { r: 0.12, d: 'top', m: function(p){ var t = along(p); return t < 0.5 ? 'top' : t < 0.6 ? (kd === 'polo' ? { m: 'top2' } : { m: 'top', dt: -1 }) : 'skin'; } };
+    return { r: 0, d: 'skin', m: 'skin' };
   }
   function streetNeck(){
     if (streetTop() === 'hoodie') {
@@ -899,15 +1059,29 @@ function build(L, o, J){
       add('hood', 'hood', function(p){ return p[2] > -1.6 ? { m: 'top', dt: -1 } : 'top'; },
         smf(ell(hc, [4.6 * sw + g * 0.2, 2.5, 2.9]), torus([CX, J.neck[1] + 2.4 * ts, -0.6], 3.2 * sw, 1.05), 1.2), hc, 7.5);
     }
-    if (ST.chain && ST.chain.k === 'chain') {
+    if (streetTop() === 'turtleneck') {
+      /* the roll of a turtleneck, standing up round the neck */
+      add('turtle', 'torso', function(p){ return Math.floor(p[1] * 2.2) % 2 ? { m: 'top', dt: -1 } : 'top'; },
+        cone([CX, J.neck[1] + 0.8 * ts, -0.4], [CX, J.neck[1] - 1.4, -0.4], 2.9 + g * 0.15, 2.5 + g * 0.1), J.neck, 5);
+    }
+    var OD = outDef();
+    if (OD && OD.quilt) {
+      /* a puffer's stand collar */
+      add('pcollar', 'outer', { m: 'out1', dt: 0 }, cone([CX, J.neck[1] + 1.6 * ts, -0.4], [CX, J.neck[1] - 0.6, -0.4], 3.6 + g * 0.2, 3.2 + g * 0.15), J.neck, 6);
+    }
+    var ck = ST.chain && ST.chain.k;
+    if (ck === 'chain' || ck === 'cuban' || ck === 'beads') {
       /* a chain that drapes: a ring laid over the collarbones, its front
          dropping onto the chest, with a pendant where it falls lowest */
-      var cc = [CX, J.neck[1] + 1.4 * ts, 2.0 + Math.max(0, bw) * 0.6 + Math.max(0, g) * 0.4], R = 3.9 * sw + Math.max(0, g) * 0.25, a = 0.82, ca = Math.cos(a), sa = Math.sin(a);
-      add('chain', 'chain', function(p){ return Math.floor((p[0] + p[2]) * 2.2) % 2 ? { m: 'chainc', dt: 1 } : 'chainc'; }, function(p){
+      var lift = OD && !OD.open ? 1.6 : 0;
+      var cc = [CX, J.neck[1] + 1.4 * ts, 2.0 + lift + Math.max(0, bw) * 0.6 + Math.max(0, g) * 0.4], R = 3.9 * sw + Math.max(0, g) * 0.25, a = 0.82, ca = Math.cos(a), sa = Math.sin(a);
+      var th = ck === 'cuban' ? 0.62 : ck === 'beads' ? 0.55 : 0.42;
+      add('chain', 'chain', function(p){
+        if (ck === 'beads') return Math.floor(Math.atan2(p[0] - cc[0], p[2] - cc[2]) * 9 + 40) % 2 ? 'chainc' : { m: 'chainc', dt: -1 };
+        return Math.floor((p[0] + p[2]) * (ck === 'cuban' ? 1.5 : 2.2)) % 2 ? { m: 'chainc', dt: 1 } : 'chainc'; }, function(p){
         var x = p[0] - cc[0], y = p[1] - cc[1], z = p[2] - cc[2], yy = y * ca - z * sa, zz = y * sa + z * ca;
-        return Math.hypot(Math.hypot(x, zz) - R, yy) - 0.42; }, cc, R + 1.5, { gloss: 2 });
-      var pc = [CX, cc[1] + R * sa + 1.0, cc[2] + R * ca + 0.2];
-      add('pendant', 'chain', 'chainc', rbox(pc, [0.95, 1.2, 0.4], 0.35), pc, 1.9, { gloss: 2 });
+        return Math.hypot(Math.hypot(x, zz) - R, yy) - th; }, cc, R + 1.5, { gloss: 2 });
+      if (ck === 'chain') { var pc = [CX, cc[1] + R * sa + 1.0, cc[2] + R * ca + 0.2]; add('pendant', 'chain', 'chainc', rbox(pc, [0.95, 1.2, 0.4], 0.35), pc, 1.9, { gloss: 2 }); }
     }
   }
   function streetHat(kd, shellF, local, hx, hy, hz){
@@ -925,8 +1099,86 @@ function build(L, o, J){
         return Math.max(Math.abs(l[1] - ys) - 0.42, Math.max(7.2 - rr, rr - 11.0)) * 0.6; }, [hx, hy - 3, hz], 12.5);
     }
   }
+  /* a ring of radius R round an axis through c */
+  function ringF(c, ax, R, r){ var l = Math.hypot(ax[0], ax[1], ax[2]) || 1, u = [ax[0] / l, ax[1] / l, ax[2] / l];
+    return function(p){ var d = [p[0] - c[0], p[1] - c[1], p[2] - c[2]], h = d[0] * u[0] + d[1] * u[1] + d[2] * u[2], q = Math.hypot(d[0] - h * u[0], d[1] - h * u[1], d[2] - h * u[2]) - R; return Math.hypot(q, h) - r; }; }
+  function streetGear(){
+    var off = topDef().infl + (outDef() ? outDef().infl : 0), fz = cR[2] * 0.85 + off;
+    if (ST.watch) {
+      /* a watch on the left wrist, its face turned out */
+      var A = J.arm[-1], ax = [A.wr[0] - A.el[0], A.wr[1] - A.el[1], A.wr[2] - A.el[2]], wc = [A.wr[0] - ax[0] * 0.12, A.wr[1] - ax[1] * 0.12, A.wr[2] - ax[2] * 0.12];
+      add('watch', 'arm-1', 'wband', ringF(wc, ax, 1.55 + am * 0.5 + Math.max(0, g) * 0.06, 0.42), wc, 2.4);
+      add('wface', 'arm-1', 'wface', rbox([wc[0] - 1.3, wc[1], wc[2] + 0.6], [0.6, 0.85, 0.75], 0.25), wc, 1.6, { gloss: 2 });
+    }
+    var bk = ST.bag && ST.bag.k, shY = J.arm[1].sh[1];
+    if (bk === 'backpack') {
+      /* a backpack: the pack behind the back and a strap over each shoulder */
+      add('pack', 'bag', function(p){ return Math.abs(p[1] - (C0[1] + 1.5)) < 0.4 ? 'bag2' : 'bag'; }, rbox([CX, C0[1] + 1.2, -cR[2] - off - 2.0], [4.3 * sw, 5.4 * ts, 1.9], 1.1), [CX, C0[1], -cR[2] - 2], 8);
+      [-1, 1].forEach(function(s){ add('strap' + s, 'bag', 'bag2', uni([cone([CX + s * 3.2 * sw, shY - 0.6, 0.2], [CX + s * 3.4 * sw, shY + 0.6, fz * 0.9], 0.5, 0.5), cone([CX + s * 3.4 * sw, shY + 0.6, fz * 0.9], [CX + s * 3.9 * sw, W0[1] - 1.0, fz * 0.95], 0.5, 0.45)]), [CX + s * 3.5, C0[1], fz], 9); });
+    } else if (bk === 'crossbody') {
+      /* a crossbody: a strap from the right shoulder to the left hip, and its pouch */
+      add('strap', 'bag', 'bag2', uni([cone([CX + 3.4 * sw, shY - 0.6, 0.5], [CX + 2.6 * sw, shY + 1.4, fz], 0.45, 0.45), cone([CX + 2.6 * sw, shY + 1.4, fz], [CX - 4.2 * sw, W0[1] + 1.4 * ts, fz * 0.92 + 0.4], 0.45, 0.45)]), [CX, C0[1] + 2, fz], 11);
+      add('pouch', 'bag', function(p){ return Math.abs(p[1] - (W0[1] + 1.0 * ts)) < 0.35 ? 'bag2' : 'bag'; }, rbox([CX - 3.8 * sw, W0[1] + 2.2 * ts, fz * 0.92 + 1.0], [2.0, 1.4 * ts, 0.85], 0.5), [CX - 4, W0[1] + 2, fz], 3.2);
+    } else if (bk === 'duffel') {
+      /* a duffel on a shoulder strap, carried at the right hip */
+      var dc = [CX - cR[0] - off - 2.8, W0[1] + 4.0 * ts, 0.6];
+      add('duffel', 'bag', function(p){ return Math.abs(p[0] - dc[0]) < 0.3 ? 'bag2' : Math.abs(p[2] - dc[2]) > 3.0 ? 'bag2' : 'bag'; }, rbox(dc, [2.1, 2.3, 4.6], 1.8), dc, 6.2);
+      add('dstrap', 'bag', 'bag2', uni([cone([CX + 3.4 * sw, shY - 0.6, 0.5], [CX + 2.4 * sw, shY + 1.6, fz], 0.45, 0.45), cone([CX + 2.4 * sw, shY + 1.6, fz], [dc[0] + 1.0, dc[1] - 2.0, fz * 0.6 + 1.0], 0.45, 0.45)]), [CX, C0[1] + 3, fz], 12);
+    }
+    var hk = ST.held && ST.held.k, hd = J.arm[1].hand;
+    if (hk && pose !== 'ball' && pose !== 'trophy' && !J.arm[1].hand.up) {
+      if (hk === 'coffee') {
+        /* a coffee: a cup with a sleeve and a lid, held upright */
+        var cb = [hd[0] + 0.4, hd[1] - 0.2, hd[2] + 1.6];
+        add('cup', 'held', function(p){ var y = cb[1] - p[1]; return y > 2.6 ? 'cup2' : y > 0.6 && y < 1.8 ? 'cup2' : 'cup'; }, cone(cb, [cb[0], cb[1] - 3.0, cb[2]], 0.95, 1.2), [cb[0], cb[1] - 1.5, cb[2]], 2.6);
+      } else if (hk === 'phone') {
+        /* a phone in his hand, its screen lit */
+        var pc2 = [hd[0] + 0.2, hd[1] + 0.4, hd[2] + 1.4];
+        add('phone', 'held', function(p){ return p[2] > pc2[2] + 0.1 ? { m: 'phone2', t: 3 } : 'phone'; }, rbox(pc2, [0.85, 1.6, 0.2], 0.25), pc2, 2, { gloss: 2 });
+      }
+    }
+  }
+  function streetCapAndRag(kd, shellF, local, hx, hy, hz){
+    if (kd === 'cap') {
+      /* a snapback: six panels, a button on top, a flat brim straight ahead */
+      add('hat', 'hat', function(p){ var l = local(p);
+        if (l[2] > 4.0 && Math.abs(l[0]) < 2.6 && l[1] > -7.6 && l[1] < -4.4) return Math.abs(l[0]) > 2.2 || l[1] < -7.2 || l[1] > -4.8 ? { m: 'hat2', dt: -1 } : 'hat2';
+        if (l[1] < -9.2 && Math.abs(l[0]) < 0.9 && Math.abs(l[2]) < 0.9) return 'hat2';
+        return Math.abs(l[0]) < 0.25 || Math.abs(Math.atan2(l[0], l[2])) % 1.05 < 0.06 ? { m: 'hat', dt: -1 } : 'hat'; },
+        cut(shellF(1.7), function(p){ return local(p)[1] + 2.4; }), [hx, hy - 4, hz], 10, { gloss: 1 });
+      add('brim', 'hat', function(p){ return local(p)[1] > -2.0 ? { m: 'hat2', dt: -1 } : 'hat2'; }, cut(ell([hx, hy - 2.5, hz + 6.4], [6.6, 0.75, 5.0]), function(p){ return -(local(p)[2] - 3.4); }), [hx, hy - 2.6, hz + 7.5], 8);
+      return;
+    }
+    if (kd === 'durag') {
+      /* a durag: silk pulled tight over the head, a seam down the middle, the tails hanging behind */
+      add('hat', 'hat', function(p){ var l = local(p); return Math.abs(l[0]) < 0.3 && l[2] > -2 ? { m: 'hat', dt: -1 } : 'hat'; },
+        cut(shellF(0.7), function(p){ var l = local(p); return l[1] + 3.2 - Math.max(0, -l[2]) * 0.65; }), [hx, hy - 4, hz], 10, { gloss: 2 });
+      add('tail', 'hat', 'hat', smf(cone([hx - 1.0, hy - 1.0, hz - 7.4], [hx - 1.4, hy + 8.4, hz - 7.8], 1.25, 0.95), cone([hx + 1.0, hy - 1.0, hz - 7.4], [hx + 1.5, hy + 7.6, hz - 7.6], 1.25, 0.95), 0.6), [hx, hy + 3, hz - 7.5], 7, { gloss: 2 });
+    }
+  }
+  function streetPhones(hx, hy, hz){
+    if (!ST.phones || ST.phones.k !== 'over') return;
+    /* over-ear headphones: a band across the crown and two cups over the ears */
+    add('band2', 'phones', 'phn2', cut(torusV([hx, hy - 0.4, hz - 0.8], 9.1, 0.8), function(p){ return p[1] - (hy - 1.4); }), [hx, hy - 5, hz], 10.5);
+    [-1, 1].forEach(function(s){ add('cup' + s, 'phones', function(p){ return Math.abs(p[0] - hx) > 9.3 ? 'phn2' : 'phn'; }, ell([hx + s * 8.6, hy + 0.8, hz - 0.6], [1.7, 2.9, 2.7]), [hx + s * 8.6, hy + 0.8, hz], 3.6, { gloss: 1 }); });
+  }
   function streetEyes(hx, hy, hz){
-    if (ST.eyes.k !== 'shades') return;
+    var ek = ST.eyes.k;
+    if (ek === 'frames') {
+      /* glasses: only the rims, so the eyes show through the lenses */
+      [-1, 1].forEach(function(s){
+        add('rim' + s, 'eyes', 'frame', torusV([hx + s * 2.85, hy + 0.35, hz + 7.5], 1.95, 0.34), [hx + s * 2.85, hy, hz + 7.5], 2.6);
+        add('temple' + s, 'eyes', 'frame', cone([hx + s * 4.8, hy - 0.2, hz + 6.6], [hx + s * 7.35, hy + 0.5, hz - 0.8], 0.32, 0.28), [hx + s * 6, hy, hz + 3], 4.6);
+      });
+      add('bridge', 'eyes', 'frame', rbox([hx, hy, hz + 7.9], [0.9, 0.24, 0.28], 0.2), [hx, hy, hz + 7.9], 1.2);
+      return;
+    }
+    if (ek === 'sport') {
+      /* wraparound sport shades: one lens across both eyes */
+      add('lens0', 'eyes', function(p){ return p[1] - hy < -0.5 ? { m: 'lens', t: 4 } : 'lens'; }, cut(ell([hx, hy + 0.2, hz + 1.2], [8.0, 1.65, 7.0]), function(p){ return -(local(p)[2] - 3.0); }), [hx, hy, hz + 6], 8.4, { gloss: 2 });
+      return;
+    }
+    if (ek !== 'shades') return;
     [-1, 1].forEach(function(s){
       add('lens' + s, 'eyes', function(p){ return p[1] - hy < -0.55 ? { m: 'lens', t: 4 } : p[1] - hy < 0.1 ? { m: 'lens', t: 2 } : 'lens'; }, ell([hx + s * 2.85, hy + 0.35, hz + 7.4], [2.5, 1.55, 0.6]), [hx + s * 2.75, hy, hz + 7.3], 2.4, { gloss: 2 });
       add('temple' + s, 'eyes', 'frame', cone([hx + s * 4.7, hy - 0.2, hz + 6.4], [hx + s * 7.35, hy + 0.5, hz - 0.8], 0.36, 0.3), [hx + s * 6, hy, hz + 3], 4.6);
@@ -994,7 +1246,14 @@ function toneOf(c, part, dt){
    from a newer catalogue or a hand edit draws as the starter piece rather than
    as a blank. With no ctx nothing here runs and every court sprite is drawn
    exactly as before (check-sprite holds 960 of them). */
-var WEAR_KINDS = { top: ['tee', 'hoodie'], outer: ['varsity'], bottom: ['jeans', 'sweats'], shoes: ['sneaker', 'hitop'], hat: ['beanie', 'bucket'], eyes: ['shades'], chain: ['chain'] };
+var WEAR_KINDS = {
+  top: ['tee', 'longsleeve', 'tank', 'jersey', 'polo', 'buttonup', 'flannel', 'knit', 'turtleneck', 'hoodie'],
+  outer: ['varsity', 'bomber', 'puffer', 'denim', 'blazer', 'trench', 'track'],
+  bottom: ['jeans', 'sweats', 'cargos', 'shorts', 'trousers'],
+  shoes: ['sneaker', 'hitop', 'runner', 'boot', 'slide', 'dress'],
+  hat: ['beanie', 'bucket', 'cap', 'durag'], eyes: ['shades', 'frames', 'sport'], chain: ['chain', 'cuban', 'beads'],
+  socks: ['crew', 'high', 'ankle'], watch: ['watch'], bag: ['backpack', 'crossbody', 'duffel'], phones: ['over'], held: ['coffee', 'phone'],
+};
 var WEAR_BASE = { top: { k: 'tee', c: ['#f1f0ea', '#dcdad2'] }, bottom: { k: 'jeans', c: ['#3d5a86'] } };
 var HEX = /^#[0-9a-f]{6}$/i;
 function wearNorm(w){
@@ -1079,6 +1338,11 @@ function paint0(look, o){
     var hk = cc('hat', 0, '#2a2e38'); R.hat = ramp(hk); R.hat2 = ramp(cc('hat', 1, mix(hk, '#000000', 0.2)));
     R.lens = ramp(cc('eyes', 1, '#1a1c22')); R.frame = ramp(cc('eyes', 0, '#16181d'));
     R.chainc = ramp(cc('chain', 0, '#e3a92f'));
+    R.sock = ramp(cc('socks', 0, '#f1f0ea'));
+    R.wband = ramp(cc('watch', 1, '#2a2e38')); R.wface = ramp(cc('watch', 0, '#c9ccd3'));
+    var bg0 = cc('bag', 0, '#2a2e38'); R.bag = ramp(bg0); R.bag2 = ramp(cc('bag', 1, mix(bg0, '#000000', 0.3)));
+    var ph0 = cc('phones', 0, '#1d1f24'); R.phn = ramp(ph0); R.phn2 = ramp(cc('phones', 1, mix(ph0, '#f4f2ec', 0.25)));
+    var hl0 = cc('held', 0, '#f1f0ea'); R.cup = ramp(hl0); R.cup2 = ramp(cc('held', 1, '#8a5a32')); R.phone = ramp(cc('held', 0, '#1d1f24')); R.phone2 = ramp(cc('held', 1, '#5b8fe6'));
     if (ST.shoes) { R.shoe = ramp(cc('shoes', 0, shoeHex)); R.trim = ramp(cc('shoes', 1, '#16181f')); R.sole = ramp(cc('shoes', 2, '#e8e2d4')); }
   }
   /* tones, and what each pixel is made of */

@@ -44,6 +44,24 @@ var ITEMS = [
   { id: 'bucket_khaki', ctx: 'street', slot: 'hat', name: 'Bucket Hat', rarity: 'rare', k: 'bucket', c: ['#c9b48a', '#8c7a55'], art: 1 },
   { id: 'chain_rope', ctx: 'street', slot: 'chain', name: 'Rope Chain', rarity: 'epic', k: 'chain', c: ['#e3a92f'], art: 1 },
   { id: 'shades_night', ctx: 'street', slot: 'eyes', name: 'Night Shades', rarity: 'rare', k: 'shades', c: ['#15171c', '#26303f'], art: 1 },
+
+  /* every other shape, one colourway each, so each is drawn and checked */
+  { id: 'cap_navy', ctx: 'street', slot: 'hat', name: 'Snapback', rarity: 'common', k: 'cap', c: ['#1f3a6b', '#f2f2f0'] },
+  { id: 'durag_black', ctx: 'street', slot: 'hat', name: 'Silk Durag', rarity: 'rare', k: 'durag', c: ['#1d1f24'] },
+  { id: 'frames_tort', ctx: 'street', slot: 'eyes', name: 'Reading Frames', rarity: 'common', k: 'frames', c: ['#5a3a22'] },
+  { id: 'sport_smoke', ctx: 'street', slot: 'eyes', name: 'Wraparounds', rarity: 'rare', k: 'sport', c: ['#26303f', '#15171c'] },
+  { id: 'phones_cream', ctx: 'street', slot: 'phones', name: 'Studio Cans', rarity: 'epic', k: 'over', c: ['#f1f0ea', '#5b8fe6'] },
+  { id: 'watch_gold', ctx: 'street', slot: 'watch', name: 'Gold Watch', rarity: 'epic', k: 'watch', c: ['#e3a92f', '#2a2e38'] },
+  { id: 'backpack_slate', ctx: 'street', slot: 'bag', name: 'Day Pack', rarity: 'common', k: 'backpack', c: ['#2c4468', '#1d2a40'] },
+  { id: 'crossbody_black', ctx: 'street', slot: 'bag', name: 'Crossbody', rarity: 'common', k: 'crossbody', c: ['#2a2e38'] },
+  { id: 'duffel_red', ctx: 'street', slot: 'bag', name: 'Gym Duffel', rarity: 'rare', k: 'duffel', c: ['#c8352e', '#7a1e1a'] },
+  { id: 'coffee_cup', ctx: 'street', slot: 'held', name: 'Morning Coffee', rarity: 'common', k: 'coffee', c: ['#f1f0ea', '#8a5a32'] },
+  { id: 'phone_blue', ctx: 'street', slot: 'held', name: 'Phone', rarity: 'common', k: 'phone', c: ['#1d1f24', '#5b8fe6'] },
+  { id: 'runner_blue', ctx: 'both', slot: 'shoes', name: 'Trail Runners', rarity: 'rare', k: 'runner', c: ['#5b8fe6', '#f2f2f0', '#f2efe6'] },
+  { id: 'boot_wheat', ctx: 'street', slot: 'shoes', name: 'Work Boots', rarity: 'rare', k: 'boot', c: ['#b8863a', '#3a2a1c', '#2a1d14'] },
+  { id: 'slide_black', ctx: 'street', slot: 'shoes', name: 'Slides', rarity: 'common', k: 'slide', c: ['#22242b', '#f2f2f0', '#22242b'] },
+  { id: 'dress_oxford', ctx: 'street', slot: 'shoes', name: 'Oxfords', rarity: 'epic', k: 'dress', c: ['#2a1d14', '#2a1d14', '#1a120c'] },
+  { id: 'socks_crew', ctx: 'street', slot: 'socks', name: 'Heather Crews', rarity: 'common', k: 'crew', c: ['#9aa0aa'] },
 ];
 var BY_ID = {};
 ITEMS.forEach(function(it){ BY_ID[it.id] = it; });

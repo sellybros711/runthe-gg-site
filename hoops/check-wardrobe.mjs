@@ -46,12 +46,17 @@ for (const build of ['lean', 'standard', 'strong']) for (const pose of ['stand',
   plain[build + pose] = JSON.stringify(B.paint(L, { ctx: 'street', wear: base, pose }));
   for (const it of CAT.ITEMS) {
     if (it.ctx === 'court') continue;
-    const wear = Object.assign({}, base, { [it.slot]: { k: it.k, c: it.c } });
+    /* socks only show under shorts, so they are judged in shorts */
+    const under = it.slot === 'socks' ? { bottom: { k: 'shorts', c: ['#3a3f4a'] } } : {};
+    const wear = Object.assign({}, base, under, { [it.slot]: { k: it.k, c: it.c } });
     let g = null;
     try { g = B.paint(L, { ctx: 'street', wear, pose }); } catch (e) { ok(false, '2 ' + it.id + ' paints on ' + build + ' ' + pose + ': ' + e.message); continue; }
     const e = edgeOf(L, { ctx: 'street', wear, pose });
     ok(!e, '2 ' + it.id + ' stays inside the grid on ' + build + ' ' + pose + (e ? ' (' + e + ')' : ''));
-    if (!it.free) ok(JSON.stringify(g) !== plain[build + pose], '3 ' + it.id + ' changes the picture on ' + build + ' ' + pose);
+    const ref = it.slot === 'socks' ? JSON.stringify(B.paint(L, { ctx: 'street', wear: Object.assign({}, base, under), pose })) : plain[build + pose];
+    /* a hand holding a ball holds nothing else: a held item is dropped, not drawn through the ball */
+    if (it.slot === 'held' && pose === 'ball') ok(JSON.stringify(g) === ref, '3 ' + it.id + ' is not drawn while he holds the ball');
+    else if (!it.free) ok(JSON.stringify(g) !== ref, '3 ' + it.id + ' changes the picture on ' + build + ' ' + pose);
   }
 }
 /* a heavy, tall man in everything at once */
