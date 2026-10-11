@@ -2755,6 +2755,22 @@ if (prose) {
     'a resumed pick is looked up by its position in its show, so a sandwich survives');
 }
 
+/* THE STAGE IS A RENDERER. It draws the night the scorecard already scored, so
+   it must not read a song, a score or a rule of its own, and it must never be
+   able to take the playback down with it: a stage that throws is a show that
+   never reaches the scorecard. Both fail silently, so both are read here. */
+{
+  const stage = read('setlist/stage.js');
+  check(!/from\s+['"]\.\/scoring\.js/.test(stage) && !/scoreShow|scorePerf|show_gap/.test(stage),
+    'the stage reads nothing but the cues it is handed');
+  const show = (() => {
+    const at = gameBare.indexOf('function renderShow(');
+    return at < 0 ? '' : gameBare.slice(at, gameBare.indexOf('\nfunction ', at + 10));
+  })();
+  check(/try\s*\{\s*stage = createStage\(/.test(show), 'a stage that fails to start leaves the playback running');
+  check(/if \(S\.stage\)\s*\{\s*S\.stage\.destroy\(\)/.test(gameBare), 'leaving the show stops the stage');
+}
+
 console.log();
 console.log(failures ? `${failures} check(s) failed` : 'all checks passed');
 process.exit(failures ? 1 : 0);
