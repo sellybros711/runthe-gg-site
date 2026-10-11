@@ -695,24 +695,25 @@ check(/\.sim-song\{[^}]*position:relative/.test(game)
 check(/\.sim-song:before\{[^}]*background:var\(--acc/.test(game),
   'and carries the same accent bar');
 // Both score numbers are the full-bleed band, and neither is a card.
-for (const [sel, what] of [['scorebox', 'the final score'], ['sim-head', 'the running score']]) {
+for (const [sel, what] of [['scorebox', 'the final score']]) {
   check(new RegExp(`\\.${sel}\\{[^}]*margin:0 calc\\(var\\(--gut\\) \\* -1\\)`).test(game),
     `${what} is full bleed`);
   check(new RegExp(`<div class="${sel}"`).test(game), `${what} is not a card`);
   check(new RegExp(`\\.${sel}:after\\{[^}]*linear-gradient\\(90deg`).test(game),
     `${what} closes on a dye rule`);
 }
-// The sticky one has to hide what scrolls under it.
-/* OPAQUE means the last layer of the background is a solid colour. The
-   washes above it are translucent, which is fine; a stack that ends on
-   transparent is what lets song titles scroll through the score. */
-{
-  const head = (game.match(/\.sim-head\{[^}]*\}/) || [''])[0];
-  const bg = (head.match(/background:([\s\S]*?);/) || [])[1] || '';
-  const last = bg.split(/,(?![^(]*\))/).pop().trim();
-  check(/^#[0-9A-Fa-f]{6}$/.test(last) || last === 'var(--bg)',
-    `the sticky running score is opaque (ends on ${last || 'nothing'})`);
-}
+/* THE SHOW IS THE WHOLE SCREEN. The running score used to be a sticky band
+   over a scrolling feed, and the stage took half a phone above it. Now the
+   stage is the window and everything else rides on it: the score and Skip at
+   the top, the setlist as the paper taped to the stage, the song as a caption.
+   Each of these fails quietly, so each is read here. */
+check(/\.stagefull\{position:fixed; inset:0;/.test(game), 'the show fills the window');
+check(/body\[data-screen="show"\]\{overflow:hidden;\}/.test(game), 'and the page under it does not scroll');
+check(/class="sx-paper"/.test(game) && /\.sx-paper\{[^}]*background:var\(--paper\)/.test(game),
+  'the setlist is the paper taped to the stage');
+check(/id="simFeed"/.test(game) && /id="sxPaper"/.test(game),
+  'and the full feed is still there, one tap on the paper away');
+check(/id="simSkip"/.test(game), 'Skip is a button, not a tap anywhere on the stage');
 /* THE GRADE COLOURS ARE MEASURED, and the measurement is the comment above
    them. Both scores now sit on --bg rather than on --card, where the old green
    fell to 2.93:1: below even the 3:1 large-text floor, on the largest thing in
