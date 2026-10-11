@@ -2021,7 +2021,7 @@ function pmerge(st, g){
   st.daily = st.daily || {}; Object.keys(g.daily || {}).forEach(function(d){ if (!st.daily[d]) st.daily[d] = g.daily[d]; });
   // what was picked up on the trails between holes: only ever added to
   st.trail = st.trail || {}; Object.keys(g.trail || {}).forEach(function(k){ var a = st.trail[k] = st.trail[k] || {}, b = g.trail[k] || {};
-    ['c', 'b'].forEach(function(f){ if (b[f]){ a[f] = a[f] || []; b[f].forEach(function(v){ if (a[f].indexOf(v) < 0) a[f].push(v); }); } });
+    ['c', 'b', 'ch'].forEach(function(f){ if (b[f]){ a[f] = a[f] || []; b[f].forEach(function(v){ if (a[f].indexOf(v) < 0) a[f].push(v); }); } });
     ['k', 'g', 'key', 'life', 'tk', 'pt'].forEach(function(f){ if (b[f]) a[f] = 1; }); });
   // the rare things: lists only grow, and the spare life counters only go up, so the larger is the newer
   ['bank', 'tk', 'met'].forEach(function(f){ (g[f] || []).forEach(function(v){ st[f] = st[f] || []; if (st[f].indexOf(v) < 0) st[f].push(v); }); });
@@ -2058,7 +2058,7 @@ var CLOUD = { uid:null, busy:false, again:false, refused:0 };
 function cloudUid(){ try{ var h = hostOf(); return h.rpc && h.uid ? h.uid() || null : null; }catch(e){ return null; } }
 function cloudProg(st){ var n = 0, c = function(o){ return Object.keys(o || {}).length; };
   Object.keys(st.tours || {}).forEach(function(k){ var t = st.tours[k] || {}; n += (t.lv || 1) + c(t.best) + c(t.ace) + c(t.paid) + c(t.wpaid); });
-  Object.keys(st.trail || {}).forEach(function(k){ var t = st.trail[k] || {}; n += (t.c || []).length + (t.b || []).length + (t.k ? 1 : 0) + (t.g ? 1 : 0) + (t.key ? 1 : 0) + (t.life ? 1 : 0) + (t.tk ? 1 : 0) + (t.pt ? 1 : 0); });
+  Object.keys(st.trail || {}).forEach(function(k){ var t = st.trail[k] || {}; n += (t.c || []).length + (t.b || []).length + (t.ch || []).length + (t.k ? 1 : 0) + (t.g ? 1 : 0) + (t.key ? 1 : 0) + (t.life ? 1 : 0) + (t.tk ? 1 : 0) + (t.pt ? 1 : 0); });
   n += (st.bank || []).length + (st.tk || []).length + (st.met || []).length + ((st.pp && st.pp.parts) || []).length + (st.bused || 0) + (st.bspent || 0);
   return n + c(st.daily) + (st.rewards || []).length; }
 // fold a copy of the record into this one: everything earned is kept, lives come from the newer copy
@@ -2578,7 +2578,7 @@ function openTrail(tid, from){
       pick:function(kind, id, n){ var st = pload(); st.trail = st.trail || {}; var r = st.trail[sp.key] = st.trail[sp.key] || {}, msg = '';
         if (kind === 'coin'){ r.c = r.c || []; if (r.c.indexOf(id) < 0) r.c.push(id); else n = 0; }
         else if (kind === 'brk'){ r.b = r.b || []; if (r.b.indexOf(id) < 0) r.b.push(id); else n = 0; }
-        else if (kind === 'chest'){ if (r.k) n = 0; r.k = 1; }
+        else if (kind === 'chest'){ r.ch = r.ch || []; if (r.ch.indexOf(id) < 0) r.ch.push(id); }   // a chest pays nothing itself: its coins are picked up off the ground
         else if (kind === 'key') r.key = 1;
         else if (kind === 'life'){ r.life = 1; st.bank = st.bank || []; if (st.bank.indexOf(sp.loot.life.id) < 0) st.bank.push(sp.loot.life.id);
           msg = 'A spare life. ' + bankHeld(st) + ' banked for when your hearts run out.'; }
