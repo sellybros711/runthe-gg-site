@@ -3074,7 +3074,7 @@ import {
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
 } from './scoring.js?v=41';
 import { loadBand, setLabel, setRank, parseCSV } from './dataLoader.js?v=41';
-import { createStage } from './stage.js?v=5';
+import { createStage } from './stage.js?v=6';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -6612,6 +6612,15 @@ function showBeats(){
   return beats;
 }
 
+/* One second on screen for every five minutes of song. The floor keeps a
+   three minute song readable: under a second the caption is gone before
+   anybody can read it. */
+const SHOW_SEC_PER_5MIN = 1000;
+const SHOW_SONG_FLOOR = 1000;
+function songHold(sec){
+  return Math.max(SHOW_SONG_FLOOR, Math.round((sec || 0) / 300 * SHOW_SEC_PER_5MIN));
+}
+
 function renderShow(){
   const beats = showBeats();
   /* THE SHOW IS THE WHOLE SCREEN. The stage is a room, so it gets the window;
@@ -6776,12 +6785,12 @@ function renderShow(){
     if (i >= beats.length) return;
     const b = beats[i++];
     paint(b);
-    /* Long enough for the room to answer a song before the next one. A segue,
-       a bustout and a big jam hold a beat longer, because those are what the
-       crowd does something about. Skip is still one tap. */
-    const big = b.kind === 'song' && (b.event
-      || (Number(b.perf.show_gap) || 0) >= BREADTH_BUSTOUT_GAP || lenOf(b.perf) >= LEN_20MIN);
-    const wait = b.kind === 'song' ? (big ? 2600 : 2000)
+    /* A song is on screen one second for every five minutes it really ran, so
+       a twenty minute jam holds four times as long as a five minute song and
+       the night keeps its shape. The stage itself plays at real tempo; only
+       the gaps between songs are compressed. A song with no recorded length
+       gets the floor. Skip is still one tap. */
+    const wait = b.kind === 'song' ? songHold(lenOf(b.perf))
       : b.kind === 'set' ? 1600 : b.kind === 'time' ? 1800 : 0;
     if (i < beats.length) S.revealTimer = setTimeout(step, wait);
   };
