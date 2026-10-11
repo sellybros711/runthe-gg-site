@@ -34,6 +34,32 @@ for (const it of CAT.ITEMS) {
 }
 ok(new Set(CAT.ITEMS.map((i) => i.id)).size === CAT.ITEMS.length, '1 every id is unique');
 
+/* 1b: the catalogue is the plan's (ECONOMY.md section 5) */
+{
+  const t = {};
+  for (const it of CAT.ITEMS) if (CAT.sold(it)) { const g = it.ctx === 'street' ? 'off' : 'on'; t[g] = t[g] || { common: 0, rare: 0, epic: 0, legendary: 0 }; t[g][it.rarity]++; }
+  ok(same(t.off, { common: 70, rare: 55, epic: 33, legendary: 12 }), '1b off court is 70 common, 55 rare, 33 epic, 12 legendary (' + JSON.stringify(t.off) + ')');
+  ok(same(t.on, { common: 30, rare: 26, epic: 16, legendary: 8 }), '1b on court is 30 common, 26 rare, 16 epic, 8 legendary (' + JSON.stringify(t.on) + ')');
+  const X = require('./economy.js');
+  for (const it of CAT.ITEMS) {
+    ok(['common', 'rare', 'epic', 'legendary'].indexOf(it.rarity) >= 0, '1b ' + it.id + ' has a rarity');
+    if (it.excl) ok(!CAT.sold(it) && it.earn && X.priceOf(it) === 0, '1b the exclusive ' + it.id + ' is earned and never sold');
+    if (it.free) ok(!CAT.sold(it), '1b the free ' + it.id + ' is not sold');
+  }
+  ok(new Set(CAT.ITEMS.map((i) => i.name)).size === CAT.ITEMS.length, '1b every name is unique');
+  for (const d of CAT.DROPS) {
+    const items = CAT.ITEMS.filter((i) => i.drop === d.id), rw = CAT.item(d.reward);
+    ok(items.length >= 6 && items.every(CAT.sold), '1b the ' + d.id + ' drop sells at least six pieces (' + items.length + ')');
+    ok(rw && rw.excl && rw.earn === 'drop:' + d.id, '1b the ' + d.id + ' drop rewards an exclusive');
+    ok(CAT.dropLive(d.id, d.from) && CAT.dropLive(d.id, d.to) && !CAT.dropLive(d.id, '2099-01-01'), '1b the ' + d.id + ' drop is live inside its window only');
+  }
+  ok(CAT.ITEMS.every((i) => !i.drop || CAT.DROPS.some((d) => d.id === i.drop)), '1b every drop an item names exists');
+  /* no real brand, and no real club's name: an invented club's jersey is the only club wear */
+  const BAD = /\b(nike|adidas|jordan|puma|reebok|converse|vans|supreme|rolex|cartier|beats|apple|gucci|prada|champion|starter|mitchell|spalding|wilson|hawks|celtics|nets|hornets|bulls|cavaliers|mavericks|nuggets|pistons|warriors|rockets|pacers|clippers|lakers|grizzlies|heat|bucks|timberwolves|pelicans|knicks|thunder|magic|76ers|sixers|suns|blazers|kings|spurs|raptors|jazz|wizards)\b/i;
+  const bad = CAT.ITEMS.filter((i) => BAD.test(i.name));
+  ok(!bad.length, '1b no real brand or club in a name (' + bad.map((i) => i.name).join(', ') + ')');
+}
+
 /* 2 and 3 */
 const base = { top: { k: 'tee', c: ['#f1f0ea', '#d8d6cc'] } };
 /* the held ball already reaches the edge in the court drawing (heldX keeps
@@ -41,29 +67,41 @@ const base = { top: { k: 'tee', c: ['#f1f0ea', '#d8d6cc'] } };
 const edgeOf = (L, o) => { const g = B.paint(L, Object.assign({}, o, { parts: 1 })), h = g.length, w = g[0].length, on = (n) => n && n !== 'ball';
   for (let y = 0; y < h; y++) if (on(g[y][0]) || on(g[y][w - 1])) return 'side ' + y + ' ' + (g[y][0] || g[y][w - 1]);
   for (let x = 0; x < w; x++) if (on(g[0][x])) return 'top ' + x + ' ' + g[0][x]; return null; };
-const plain = {};
+/* Colour never moves geometry, so a SHAPE is drawn on every build and pose
+   (and must stay on the grid there), and each colourway is drawn once, where
+   it must change the picture. */
+const firstOf = (items) => { const seen = new Map(); for (const it of items) { const key = it.slot + ':' + it.k; if (!seen.has(key)) seen.set(key, it); } return [...seen.values()]; };
+const STREET = CAT.ITEMS.filter((i) => i.ctx !== 'court'), COURT = CAT.ITEMS.filter((i) => i.ctx !== 'street');
+const underOf = (it) => it.slot === 'socks' ? { bottom: { k: 'shorts', c: ['#3a3f4a'] } } : {};
 for (const build of ['lean', 'standard', 'strong']) for (const pose of ['stand', 'walk1', 'cheer1', 'ball']) {
   const L = Object.assign({}, LOOK, { build });
-  plain[build + pose] = JSON.stringify(B.paint(L, { ctx: 'street', wear: base, pose }));
-  for (const it of CAT.ITEMS) {
-    if (it.ctx === 'court') continue;
-    /* socks only show under shorts, so they are judged in shorts */
-    const under = it.slot === 'socks' ? { bottom: { k: 'shorts', c: ['#3a3f4a'] } } : {};
-    const wear = Object.assign({}, base, under, { [it.slot]: { k: it.k, c: it.c } });
-    let g = null;
-    try { g = B.paint(L, { ctx: 'street', wear, pose }); } catch (e) { ok(false, '2 ' + it.id + ' paints on ' + build + ' ' + pose + ': ' + e.message); continue; }
-    const e = edgeOf(L, { ctx: 'street', wear, pose });
-    ok(!e, '2 ' + it.id + ' stays inside the grid on ' + build + ' ' + pose + (e ? ' (' + e + ')' : ''));
-    const ref = it.slot === 'socks' ? JSON.stringify(B.paint(L, { ctx: 'street', wear: Object.assign({}, base, under), pose })) : plain[build + pose];
-    /* a hand holding a ball holds nothing else: a held item is dropped, not drawn through the ball */
-    if (it.slot === 'held' && pose === 'ball') ok(JSON.stringify(g) === ref, '3 ' + it.id + ' is not drawn while he holds the ball');
-    else if (!it.free) ok(JSON.stringify(g) !== ref, '3 ' + it.id + ' changes the picture on ' + build + ' ' + pose);
+  for (const it of firstOf(STREET)) {
+    const wear = Object.assign({}, base, underOf(it), { [it.slot]: { k: it.k, c: it.c } });
+    let e = null;
+    try { e = edgeOf(L, { ctx: 'street', wear, pose }); } catch (x) { ok(false, '2 ' + it.slot + ':' + it.k + ' paints on ' + build + ' ' + pose + ': ' + x.message); continue; }
+    ok(!e, '2 ' + it.slot + ':' + it.k + ' stays inside the grid on ' + build + ' ' + pose + (e ? ' (' + e + ')' : ''));
   }
+  /* a hand holding a ball holds nothing else: a held item is dropped, not drawn through the ball */
+  if (pose === 'ball') for (const it of firstOf(STREET.filter((i) => i.slot === 'held'))) {
+    ok(same(B.paint(L, { ctx: 'street', wear: Object.assign({}, base, { held: { k: it.k, c: it.c } }), pose }), B.paint(L, { ctx: 'street', wear: base, pose })), '3 ' + it.k + ' is not drawn while he holds the ball');
+  }
+}
+{
+  const refs = {};
+  for (const it of STREET) {
+    if (it.free) continue;
+    const under = underOf(it), rk = JSON.stringify(under);
+    refs[rk] = refs[rk] || JSON.stringify(B.paint(LOOK, { ctx: 'street', wear: Object.assign({}, base, under) }));
+    ok(JSON.stringify(B.paint(LOOK, { ctx: 'street', wear: Object.assign({}, base, under, { [it.slot]: { k: it.k, c: it.c } }) })) !== refs[rk], '3 ' + it.id + ' changes the picture');
+  }
+  /* two items are never the same look under two names */
+  const looks = new Map();
+  for (const it of CAT.ITEMS) { const key = it.ctx + it.slot + it.k + JSON.stringify(it.c); ok(!looks.has(key), '3 ' + it.id + ' is not ' + looks.get(key) + ' again'); looks.set(key, it.id); }
 }
 /* a heavy, tall man in everything at once */
 {
   const all = {};
-  for (const it of CAT.ITEMS) if (it.ctx !== 'court' && !it.free) all[it.slot] = { k: it.k, c: it.c };
+  for (const it of STREET) if (!it.free) all[it.slot] = { k: it.k, c: it.c };
   for (const L of [Object.assign({}, LOOK, { ht: 92, wt: 360, build: 'strong' }), Object.assign({}, LOOK, { ht: 66, wt: 140, build: 'lean' })]) for (const pose of ['stand', 'walk2', 'cheer0', 'wave1']) {
     const e = edgeOf(L, { ctx: 'street', wear: all, pose });
     ok(!e, '2 the whole fit stays inside the grid at ' + L.ht + '" ' + L.wt + 'lb ' + pose + (e ? ' (' + e + ')' : ''));
@@ -73,21 +111,22 @@ for (const build of ['lean', 'standard', 'strong']) for (const pose of ['stand',
 /* 2c and 3c: the court accessories, over the uniform */
 const UNI = { c1: '#1d428a', c2: '#ffc72c', num: '23' };
 for (const build of ['lean', 'standard', 'strong']) for (const pose of ['stand', 'walk1', 'cheer1', 'ball']) {
-  const L = Object.assign({}, LOOK, { build }), ref = JSON.stringify(B.paint(L, Object.assign({ pose }, UNI)));
-  for (const it of CAT.ITEMS) {
-    if (it.ctx === 'street') continue;
+  const L = Object.assign({}, LOOK, { build });
+  for (const it of firstOf(COURT)) {
     const o = Object.assign({ pose, cwear: { [it.slot]: { k: it.k, c: it.c } } }, UNI);
-    let g = null;
-    try { g = B.paint(L, o); } catch (e) { ok(false, '2c ' + it.id + ' paints on court on ' + build + ' ' + pose + ': ' + e.message); continue; }
-    const e = edgeOf(L, o);
-    ok(!e, '2c ' + it.id + ' stays inside the grid on court on ' + build + ' ' + pose + (e ? ' (' + e + ')' : ''));
-    if (!it.free) ok(JSON.stringify(g) !== ref, '3c ' + it.id + ' changes the court picture on ' + build + ' ' + pose);
+    let e = null;
+    try { e = edgeOf(L, o); } catch (x) { ok(false, '2c ' + it.slot + ':' + it.k + ' paints on court on ' + build + ' ' + pose + ': ' + x.message); continue; }
+    ok(!e, '2c ' + it.slot + ':' + it.k + ' stays inside the grid on court on ' + build + ' ' + pose + (e ? ' (' + e + ')' : ''));
   }
+}
+{
+  const ref = JSON.stringify(B.paint(LOOK, UNI));
+  for (const it of COURT) if (!it.free) ok(JSON.stringify(B.paint(LOOK, Object.assign({ cwear: { [it.slot]: { k: it.k, c: it.c } } }, UNI))) !== ref, '3c ' + it.id + ' changes the court picture');
 }
 {
   /* everything at once, on the biggest and smallest man */
   const all = {};
-  for (const it of CAT.ITEMS) if (it.ctx === 'court') all[it.slot] = { k: it.k, c: it.c };
+  for (const it of COURT) if (it.ctx === 'court') all[it.slot] = { k: it.k, c: it.c };
   all.shoes = { k: 'hitop', c: ['#c8352e', '#f2f2f0', '#f2efe6'] };
   for (const L of [Object.assign({}, LOOK, { ht: 92, wt: 360, build: 'strong' }), Object.assign({}, LOOK, { ht: 66, wt: 140, build: 'lean' })]) for (const pose of ['stand', 'walk2', 'cheer0', 'ball']) {
     const e = edgeOf(L, Object.assign({ pose, cwear: all }, UNI));

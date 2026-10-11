@@ -515,7 +515,7 @@ function build(L, o, J){
       var legMat = function(p){
         var y = p[1] - (G.ank[1] - 57.4);
         /* crew socks, with the club's two colours ringed near the top */
-        if (CW) return courtLegMat(y, s);
+        if (CW) return courtLegMat(y, s, p);
         if (y > 53.4) return y < 54.2 ? 'sock' : y < 54.9 ? 'jersey' : y < 55.6 ? 'trim' : 'sock';
         return 'skin';
       };
@@ -1113,12 +1113,14 @@ function build(L, o, J){
   }
   /* ON COURT. Every piece here is drawn only when an on-court outfit is
      passed (o.cw), so the uniform with nothing on it is the uniform it was. */
-  function courtLegMat(y, s){
+  function courtLegMat(y, s, p){
     var sk = CW.csocks ? CW.csocks.k : 'crew', top = sk === 'high' ? 47.6 : sk === 'low' ? 56.4 : 53.4;
     var ti = CW.tights, tlo = ti ? (ti.k === 'three' ? 49.8 : top) : -1e9;
     if (y > top) { if (sk === 'low') return 'sock';
       var r = y - top; return r < 0.8 ? 'sock' : r < 1.5 ? 'jersey' : r < 2.2 ? 'trim' : 'sock'; }
-    if (ti && y < tlo) return Math.floor(y * 1.4) % 7 === 0 ? { m: 'tight', dt: -1 } : 'tight';
+    /* under the shorts the leg is hidden, except where a stride pokes it
+       through the cloth: there it stays skin, as it always was */
+    if (ti && y < tlo && p[1] > J.waist[1] - 0.2 + 3.6 * ts + 7.0 * ls - 1.2) return Math.floor(y * 1.4) % 7 === 0 ? { m: 'tight', dt: -1 } : 'tight';
     return 'skin';
   }
   function courtLeg(G, s, cr){
@@ -1154,7 +1156,7 @@ function build(L, o, J){
       var bw2 = b.k === 'wide' ? 1.7 : 1.0;
       add('band', 'band', function(p){ var l = local(p); return Math.abs(Math.abs(l[1] + 4.6) - bw2) < 0.3 ? { m: 'cband', dt: -1 } : 'cband'; },
         cut(shellF(0.6), function(p){ var l = local(p); return Math.abs(l[1] + 4.6) - bw2; }), H, 9);
-      if (b.k === 'tied') add('tails', 'band', 'cband', smf(cone([hx - 0.6, hy - 4.6, hz - 7.6], [hx - 2.4, hy + 1.4, hz - 9.0], 0.75, 0.55), cone([hx + 0.6, hy - 4.6, hz - 7.6], [hx + 1.8, hy + 2.2, hz - 8.8], 0.75, 0.55), 0.5), [hx, hy - 1.5, hz - 8.2], 5);
+      if (b.k === 'tied') add('tails', 'band', 'cband', smf(cone([hx - 5.4, hy - 4.6, hz - 5.6], [hx - 8.6, hy + 1.6, hz - 6.4], 0.8, 0.6), cone([hx - 5.0, hy - 4.6, hz - 6.0], [hx - 7.6, hy + 2.6, hz - 7.6], 0.8, 0.6), 0.5), [hx - 7, hy - 1.5, hz - 6.5], 5.5);
     }
     if (CW.goggles) {
       /* rec specs: two round lenses in a thick frame on a strap round the head */
