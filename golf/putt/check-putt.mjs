@@ -512,6 +512,11 @@ if (!args.includes('--no-browser')){
       document.querySelector('[data-mapb]').click(); await sleep(150); out.map = S().screen === 'menu' && !!document.querySelector('.pp-toworld');
       document.querySelector('.pp-toworld').click(); for (let i = 0; i < 400 && !T(); i++) await sleep(50); await sleep(200);
       out.back = S().screen === 'trail' && T().host() && T().host().ph === 'idle' && !document.querySelector('.pp-gd');
+      // the world is alive: things fly and drift round him, and Pirate Cove has ships sailing on its own sea
+      out.alive = T().life().flyers > 0 && T().life().motes > 0;
+      window.RTT_PUTT._walkTo(37); for (let i = 0; i < 600 && !(T() && T().life().theme === 'pirate'); i++) await sleep(50); await sleep(300);
+      const L3 = T().life(), P3 = T().plan(); out.ships = L3.ships.length; out.afloat = L3.ships.every(q => q.y < P3.b[1] || q.y > P3.b[3] || P3.seaAt(q.x, q.y));
+      const y0 = L3.ships[0].y; await sleep(700); out.sails = Math.abs(T().life().ships[0].y - y0) > 0.5;
       // every world's first trail has its greeter, on both tours
       out.greeters = []; for (let w = 0; w < 8; w++){ const P = window.RTT_PUTT._trailPlan(w * 18); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }
       for (let w = 0; w < 2; w++){ const P = window.RTT_PUTT._trailPlan(w * 9, 'members'); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }
@@ -521,6 +526,7 @@ if (!args.includes('--no-browser')){
     claim(wo.talk && wo.face && wo.held, `the world's greeter walks up and talks, with their face in the box, and walking waits for them (${wo.talk}, ${wo.face}, ${wo.held})`);
     claim(wo.done && wo.met && wo.talkBtn, `tapping through the talk lets the golfer go, it is kept on the record, and Talk plays it again (${wo.done}, ${wo.met}, ${wo.talkBtn})`);
     claim(wo.map && wo.back, `Map opens the map and its World button goes back into the world, where the greeter does not start over (${wo.map}, ${wo.back})`);
+    claim(wo.alive && wo.ships === 2 && wo.afloat && wo.sails, `the world is alive round him, and two pirate ships sail Pirate Cove's sea (${wo.alive}, ${wo.ships}, ${wo.afloat}, ${wo.sails})`);
     claim(wo.greeters.every(Boolean) && wo.notMid, `all eight worlds and both Members worlds have a greeter on their first trail, and only there (${wo.greeters.map(Number).join('')})`);
     // A SPARE LIFE IS SPENT WHEN THE HEARTS ARE GONE, and a built putter is equipped from the Bag
     const sp = await pg.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), K = 'bag_ppt_v1@spare';

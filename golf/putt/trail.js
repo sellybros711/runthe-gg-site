@@ -145,7 +145,22 @@ function plan(spec){
   if (kitOf(th).sea){ P.sea = { side:R() < 0.5 ? -1 : 1 }; }
   P.pools = pools;
   function poolAt(x, y){ for (var i = 0; i < pools.length; i++){ var o = pools[i], u = (x - o.x) / o.rx, v = (y - o.y) / o.ry, w = u * u + v * v + (vn(x * 0.4, y * 0.4, o.seed) - 0.5) * 0.5; if (w < 1) return o; } return null; }
-  function seaAt(x, y){ if (!P.sea) return false; var edge = (spec.halfW || HALFW) - 8 + vn((y || 0) * 0.08, 3, seed) * 4; return P.sea.side * x > edge; }
+  /* THE SHORE FOLLOWS THE PATH. Out at the plan's edge the sea was off camera on a phone for most of a walk,
+     and the ships are what Pirate Cove has to show; so the water comes in to a strip of beach beside the path
+     (and round the clearing, the spur and the ends), never nearer than it was allowed before. */
+  var SEA = null, SEA_Y0 = b[1];
+  if (P.sea){ var sd = P.sea.side, HWs = spec.halfW || HALFW; SEA = new Float32Array(Math.ceil(b[3] - b[1]) + 2);
+    for (var sj = 0; sj < SEA.length; sj++){ var sy = b[1] + sj, near = 8;
+      for (var yy2 = sy - 12; yy2 <= sy + 12; yy2 += 1.5) near = Math.max(near, sd * cx(yy2) + PW + 3.5);
+      if (Math.abs(sy - clr.y) < clr.r + 8) near = Math.max(near, sd * clr.x + clr.r + 5);
+      spur.forEach(function(q){ if (Math.abs(sy - q[1]) < 8) near = Math.max(near, sd * q[0] + 6); });
+      if (Math.abs(sy - start.y) < start.r + 6) near = Math.max(near, sd * start.x + start.r + 4);
+      if (sy < 4 && sy > -18) near = Math.max(near, 14);
+      if (gy && Math.abs(sy - gy) < 6) near = Math.max(near, PW + 10);
+      SEA[sj] = Math.min(HWs - 8 + vn(sy * 0.08, 3, seed) * 4, near + vn(sy * 0.15, 9, seed) * 1.5); } }
+  function seaEdge(y){ if (!SEA) return 1e9; var f = Math.max(0, Math.min(SEA.length - 1.001, y - SEA_Y0)), i = f | 0, u = f - i; return SEA[i] * (1 - u) + SEA[i + 1] * u; }
+  function seaAt(x, y){ if (!P.sea) return false; return P.sea.side * x > seaEdge(y || 0); }
+  P.seaEdge = seaEdge;
   P.poolAt = poolAt; P.seaAt = seaAt;
 
   // ---- what stands where. Every tall thing is kept from standing in front of the path, so the golfer is
@@ -289,7 +304,7 @@ function land(P){
       if (y < -1.5 && y > -16 && Math.abs(x - cx(0)) < 7.5) return [Math.abs(x - cx(0)) > 6.6 || y < -15.2 || y > -2.3 ? 'rail' : 'carpet'];
       var dc = Math.hypot(x - P.clr.x, y - P.clr.y) - P.clr.r, ds = Math.hypot(x - P.start.x, y - P.start.y) - (P.start.r - 1), dIn = Math.min(wd - PW, dc, ds);
       if (dIn < 0){ if (dIn > -0.35){ ex = ex || {}; ex.edge = 1; } return [P.themeAt(y) === sp.theme ? 'path' : 'path0', ex]; }
-      if (P.sea && P.sea.side * x > (sp.halfW || HALFW) - 12 + vn(y * 0.08, 3, seed) * 4) return ['sand', ex];
+      if (P.sea && P.sea.side * x > P.seaEdge(y) - 3.5) return ['sand', ex];
       if (dIn < 0.3){ ex = ex || {}; ex.edge = 1; }
       var fb = vn(x * 0.22, y * 0.22, seed + 77); if (fb > 0.74 && dIn > 1.2){ ex = ex || {}; ex.fl = Math.min(0.55, (fb - 0.74) * 4); }
       return [P.themeAt(y) === sp.theme ? 'g' : 'g0', ex]; },
@@ -497,6 +512,71 @@ BUILD.scarecrow = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, d
   if (Math.hypot(dx, dy, tt - 5.1) < 0.55) return '#e2bc5c'; if (tt > 5.5 && tt < 6.3 && Math.hypot(dx, dy) < 0.9 - (tt - 5.5)) return '#6a4a2a'; return null; }, 0.125); };
 BUILD.cornfield = function(B, t, i){ for (var r = 0; r < 4; r++) for (var c = 0; c < 6; c++) BUILD.corn(B, { x:t.x - t.w / 2 + 0.8 + c * (t.w - 1.6) / 5, y:t.y - t.d / 2 + 1 + r * (t.d - 2) / 3, h:4.6 + hash(i, r * 7 + c, 2) }, i * 31 + r * 7 + c); };
 
+/* ------------------------------------------------------------------------------ ambient life */
+/* EVERY WORLD IS ALIVE AROUND YOU. Nothing here can be touched or picked up and none of it blocks the golfer:
+   it is what makes the trail a place rather than a picture. Each world has its own (LIFE): things that fly
+   over (birds, gulls, parrots, vultures, bats, crows, drones), things in the air (butterflies, fireflies,
+   snow, embers, leaves, dust, neon sparks), and the big set pieces: pirate ships sailing past Pirate Cove,
+   balloons drifting over Sky Islands, smoke off Volcano Island's vents and lava, tumbleweeds across the
+   canyon, ghosts in Hallows Night. Flyers and motes are spawned round the golfer and recycled once they are
+   out of sight, so the cost is a few dozen squares a frame wherever he walks. Ships and balloons are 3D
+   props, rendered once like a chest, and moved. */
+var LIFE = {
+  clubhouse:{ fly:['song', 5], mote:[['butter', 12], ['petal', 10]] },
+  temple:{ fly:['parrot', 4], mote:[['firefly', 22], ['butter', 6]] },
+  pirate:{ fly:['gull', 4], ships:2 },
+  canyon:{ fly:['vulture', 3], mote:['dust', 24], tumble:3 },
+  volcano:{ mote:[['ember', 34], ['ash', 26]], smoke:true },
+  frozen:{ mote:['snow', 90], fly:['gull', 2] },
+  sky:{ fly:['gull', 3], balloons:3 },
+  neon:{ fly:['drone', 3], mote:['spark', 40] },
+  haunted:{ fly:['bat', 5], ghosts:2, mote:['firefly', 8] },
+  harvest:{ fly:['crow', 3], mote:['leaf', 16] }
+};
+// two frames a flyer: wings up, wings down. o body, w wing, h head or beak, l light
+var PIX_FLY = {
+  bird:[['w.....w', '.w...w.', '..wow..', '...h...'], ['..wow..', '.w.h.w.', 'w.....w']],
+  bat:[['w.....w', 'ww...ww', '.wwoww.', '..h.h..'], ['..wow..', '.wwoww.', 'w.h.h.w']],
+  drone:[['l.....l', 'ooooooo', '..ooo..', '...h...'], ['h.....h', 'ooooooo', '..ooo..', '...l...']]
+};
+var FLY_PAL = {
+  song:{ base:'bird', w:'#6a4a2e', o:'#8a6a44', h:'#e8a03a', sz:0.8, z:[6, 10], v:[6, 9] },
+  parrot:{ base:'bird', w:'#e5483a', o:'#2bb04a', h:'#ffd23a', sz:1, z:[8, 13], v:[6, 8] },
+  gull:{ base:'bird', w:'#f4f6fb', o:'#d8dde6', h:'#f2a03a', sz:1.1, z:[9, 15], v:[5, 8] },
+  vulture:{ base:'bird', w:'#2a2228', o:'#3a3036', h:'#d89a7a', sz:1.3, z:[13, 17], v:[4, 5], circle:true },
+  crow:{ base:'bird', w:'#1a1820', o:'#24222a', h:'#d8a02a', sz:1, z:[7, 12], v:[6, 8] },
+  bat:{ base:'bat', w:'#2a2230', o:'#3a2e44', h:'#ff4a3a', sz:0.9, z:[4, 9], v:[5, 9], flit:true },
+  drone:{ base:'drone', w:'#2bf0ff', o:'#2a2440', h:'#ff2bd6', l:'#2bf0ff', sz:1, z:[8, 12], v:[4, 6] }
+};
+var PIX_BUTTER = [['ww.ww', 'wwbww', '.wbw.'], ['.wbw.', '..b..']], PIX_GHOST = ['..ggg..', '.ggggg.', 'gg.g.gg', 'ggggggg', 'ggggggg', 'ggggggg', 'g.g.g.g'];
+// a pirate ship, bow toward dir (+1 down the screen, -1 up it): a dark hull, two masts, square sails, a black flag
+function shipFn(dir){ return function(B){ box(B, 0, 0, 5, 14, 11.5, function(dx, dy, tt){ var u = dy * dir, L2 = 5.6;
+  // masts, yards, the crow's nest and the black flag
+  var m1 = 0.6 * dir, m2 = -2.8 * dir;
+  if (Math.abs(dx) < 0.17 && Math.abs(dy - m1) < 0.17 && tt < 10.4) return '#4a301a';
+  if (Math.abs(dx) < 0.15 && Math.abs(dy - m2) < 0.15 && tt < 8.6) return '#4a301a';
+  if (Math.hypot(dx, dy - m1) < 0.5 && tt > 9 && tt < 9.35) return '#5a3a1e';
+  if (tt > 9.6 && tt < 10.4 && dx > 0.1 && dx < 1.5 && Math.abs(dy - m1) < 0.1){ var fx = dx - 0.8, fy = tt - 10; return (fx * fx + fy * fy < 0.05) ? '#f4efe2' : '#151218'; }
+  if ((Math.abs(tt - 8.7) < 0.12 || Math.abs(tt - 3.6) < 0.12) && Math.abs(dx) < 2.4 && Math.abs(dy - m1) < 0.14) return '#5a3a1e';
+  if ((Math.abs(tt - 7.3) < 0.12 || Math.abs(tt - 3.3) < 0.12) && Math.abs(dx) < 2 && Math.abs(dy - m2) < 0.14) return '#5a3a1e';
+  // the sails, bellied with the wind behind them
+  function sail(top, bot, half, my){ if (tt <= bot || tt >= top || Math.abs(dx) >= half) return null; var v = (tt - bot) / (top - bot), belly = 0.75 * (1 - Math.pow(dx / half, 2)) * Math.sin(v * Math.PI);
+    if (Math.abs(dy - my - dir * belly) > 0.24) return null; return v > 0.42 && v < 0.58 ? '#c8402e' : '#fbf3dc'; }
+  var sl = sail(8.6, 3.7, 2.3, m1) || sail(7.2, 3.4, 1.9, m2); if (sl) return sl;
+  // the bowsprit
+  if (u > 5 && u < 7.4 && Math.abs(dx) < 0.13 && Math.abs(tt - (2 + (u - 5) * 0.35)) < 0.16) return '#4a301a';
+  if (tt > 2.4 || Math.abs(u) > L2) return null;
+  var hw = u > 1.4 ? 2.1 * Math.sqrt(Math.max(0, 1 - Math.pow((u - 1.4) / (L2 - 1.4), 2))) : u < -L2 + 0.7 ? 1.8 : 2.1;
+  hw *= 0.72 + tt * 0.12; if (Math.abs(dx) > hw) return null;
+  if (Math.abs(dx) < hw - 0.32 && tt > 1.6) return tt < 1.85 ? ((Math.abs(dx * 3) | 0) % 2 ? '#a8763e' : '#9a6a36') : null;
+  if (Math.abs(tt - 1.15) < 0.16 && Math.abs(dx) > hw - 0.4 && Math.abs((u + 8) % 1.6 - 0.8) < 0.28 && Math.abs(u) < 4) return '#151218';   // cannon ports
+  if (tt > 2.1) return '#3a2410';
+  return Math.abs(tt - 0.7) < 0.12 ? '#d8a83a' : (tt * 2.6 | 0) % 2 ? '#5a3a1e' : '#4a2e16'; }, 0.2); }; }
+function balloonFn(c1, c2){ return function(B){ box(B, 0, 0, 6.4, 6.4, 16, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
+  if (tt < 2.2) return Math.max(Math.abs(dx), Math.abs(dy)) < 1.1 ? (tt > 1.9 ? '#5a4228' : '#a8865a') : null;
+  if (tt < 7) return (Math.abs(Math.abs(dx) - 0.9) < 0.07 && Math.abs(Math.abs(dy) - 0.9) < 0.07) ? '#5a4228' : null;
+  var d = Math.hypot(dx / 3, dy / 3, (tt - 11) / 4.6); if (d > 1) return null; return (Math.floor((Math.atan2(dy, dx) + 4) * 2) % 2) ? c1 : c2; }, 0.25); }; }
+var BALLOON_COLS = [['#ff5a7a', '#ffd23a'], ['#2bb0ff', '#ffffff'], ['#7a5cff', '#7cff8a']];
 /* -------------------------------------------------------------------------------- rendering */
 function sceneC(P){ var T = P.spec.T || {}; return { T:T, field:{ h:function(){ return 0; } }, poly:[[0, 0], [1, 0], [1, 1]], allPts:[[0, 0], [1, 1]], mats:{ at:function(){ return 0; } }, bounds:[1e9, 1e9, -1e9, -1e9], seed:P.seed,
   bumpers:[], blocks:[], ramps:[], loops:[], movers:[] }; }
@@ -556,7 +636,8 @@ function run(box, P, pic, api){
     return false; }
   // the screen: art pixel to device pixel, through the picture's own projection
   function scr(x, y, z){ var p = pic.pr(x, y, z == null ? pic.zAt(x, y) : z); return [ox + p[0] * kk, oy + p[1] * kk]; }
-  function camAim(snap){ var p = pic.pr(g.x, g.y, pic.zAt(g.x, g.y)), tx = Math.round(W / 2 - p[0] * kk), ty = Math.round(H * 0.64 - p[1] * kk), iw = pic.cv.width * kk, ih = pic.cv.height * kk;
+  // on a shore trail the camera looks a little out to sea, where the ships are, rather than inland at more sand
+  function camAim(snap){ var lx = g.x + (P.sea && LIFE[sp.theme] && LIFE[sp.theme].ships ? P.sea.side * 4.5 : 0), p = pic.pr(lx, g.y, pic.zAt(lx, g.y)), tx = Math.round(W / 2 - p[0] * kk), ty = Math.round(H * 0.64 - p[1] * kk), iw = pic.cv.width * kk, ih = pic.cv.height * kk;
     tx = iw > W ? Math.max(W - iw, Math.min(0, tx)) : Math.round((W - iw) / 2); ty = ih > H ? Math.max(H - ih, Math.min(0, ty)) : Math.round((H - ih) / 2);
     if (snap){ ox = tx; oy = ty; } else { ox += Math.round((tx - ox) * 0.14); oy += Math.round((ty - oy) * 0.14); } }
   camAim(true);
@@ -569,8 +650,8 @@ function run(box, P, pic, api){
       for (var ax = a0; ax <= a1 + 1; ax++){ var front = ax <= a1 && pic.Z[row + ax] > dp + 0.35;
         if (front && run < 0) run = ax; else if (!front && run >= 0){ ctx.drawImage(pic.cv, run, ay, ax - run, 1, ox + run * kk, oy + ay * kk, (ax - run) * kk, kk); run = -1; } } }
     ctx.globalAlpha = 1; }
-  function drawSprite(sp2, x, y, z, k2){ if (!sp2) return; k2 = k2 || 1; var p = scr(x, y, z), w = sp2.cv.width * kk * k2, h = sp2.cv.height * kk * k2, rx = Math.round(p[0] - sp2.ax * kk * k2), ry = Math.round(p[1] - sp2.ay * kk * k2);
-    ctx.drawImage(sp2.cv, rx, ry, w, h); occlude(rx, ry, w, h, x, y, z); }
+  function drawSprite(sp2, x, y, z, k2, noOcc){ if (!sp2) return; k2 = k2 || 1; var p = scr(x, y, z), w = sp2.cv.width * kk * k2, h = sp2.cv.height * kk * k2, rx = Math.round(p[0] - sp2.ax * kk * k2), ry = Math.round(p[1] - sp2.ay * kk * k2);
+    ctx.drawImage(sp2.cv, rx, ry, w, h); if (!noOcc) occlude(rx, ry, w, h, x, y, z); }
   var brkKind = function(t){ return kitOf(t.th || sp.theme).brk; };
   function prop(name, fn, w, d, h){ return propSprite(name, P, fn, w, d, h); }
   var SPR = {
@@ -607,6 +688,78 @@ function run(box, P, pic, api){
     sparkle(p[0], ry, now, s); occlude(rx, ry, w * s, h * s, t.x, t.y, pic.zAt(t.x, t.y)); }
   function sparkle(x, y, now, s){ var a = (Math.sin(now * 5) + 1) / 2; ctx.fillStyle = 'rgba(255,255,255,' + (0.4 + a * 0.6).toFixed(2) + ')'; var d = (3 + a * 3) * s;
     ctx.fillRect(Math.round(x - s / 2 + d), Math.round(y - d), s, s); ctx.fillRect(Math.round(x - s / 2 - d * 0.8), Math.round(y - d * 0.4), s, s); }
+
+  // ---- the life around him (LIFE): seeded where it is placed, free running once it moves
+  var life = LIFE[sp.theme] || {}, LR = rng(P.seed ^ 0x51f3), reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+  function rr(a, b){ return a + LR() * (b - a); }
+  var flyers = [], motes = [], ships = [], balloons = [], tumbles = [], ghosts = [], puffs = [], puffT = 0;
+  function spawnFly(f, first){ var C = FLY_PAL[f.kind], a = LR() * 6.283, sp3 = rr(C.v[0], C.v[1]);
+    if (C.circle){ f.cx = g.x + rr(-14, 14); f.cy = g.y + rr(-18, 10); f.r = rr(8, 13); f.a = a; f.w = (LR() < 0.5 ? -1 : 1) * sp3 / f.r; f.z = rr(C.z[0], C.z[1]); return; }
+    var d = first ? rr(0, 26) : 34; f.x = g.x + Math.cos(a) * d; f.y = g.y + Math.sin(a) * d * 1.3; var b2 = a + Math.PI + rr(-0.7, 0.7);
+    f.vx = Math.cos(b2) * sp3; f.vy = Math.sin(b2) * sp3; f.z = rr(C.z[0], C.z[1]); f.ph = LR() * 6; }
+  if (life.fly) for (var lf = 0; lf < life.fly[1]; lf++){ var f0 = { kind:life.fly[0] }; spawnFly(f0, true); flyers.push(f0); }
+  function moteZ(k){ return k === 'snow' || k === 'ash' ? rr(0, 18) : k === 'leaf' || k === 'petal' ? rr(2, 12) : k === 'ember' || k === 'spark' ? rr(0, 7) : k === 'dust' ? rr(0.2, 1.6) : rr(0.8, 3); }
+  function spawnMote(m, first){ var k = m.k; m.x = g.x + rr(-26, 26); m.y = g.y + rr(-34, 22); m.z = first ? moteZ(k) : k === 'snow' || k === 'ash' ? 18 : k === 'leaf' || k === 'petal' ? rr(9, 13) : k === 'ember' || k === 'spark' ? 0 : moteZ(k);
+    if (k === 'ember' && P.pools.length){ var lp = P.pools.filter(function(o){ return o.k === 'lava' && Math.hypot(o.x - g.x, o.y - g.y) < 45; }); if (lp.length && LR() < 0.7){ var o = lp[(LR() * lp.length) | 0], a = LR() * 6.283; m.x = o.x + Math.cos(a) * o.rx * 0.8; m.y = o.y + Math.sin(a) * o.ry * 0.8; } }
+    m.ph = LR() * 6.283; m.vx = rr(-1, 1); m.vy = rr(-1, 1); m.life = 0; m.c = k === 'petal' ? ['#ffffff', '#f8c8dc', '#fff3a8'][(LR() * 3) | 0] : k === 'leaf' ? ['#e07a1e', '#c8461a', '#e8b02a', '#a8321e'][(LR() * 4) | 0] : k === 'spark' ? ['#2bf0ff', '#ff2bd6', '#ffe02b', '#7cff4a'][(LR() * 4) | 0] : k === 'butter' ? ['#ffd23a', '#ffffff', '#f48fb1', '#7ec8ff'][(LR() * 4) | 0] : null; }
+  (life.mote ? (Array.isArray(life.mote[0]) ? life.mote : [life.mote]) : []).forEach(function(ms){ for (var lm = 0; lm < ms[1]; lm++){ var m0 = { k:ms[0] }; spawnMote(m0, true); motes.push(m0); } });
+  if (life.ships && P.sea){ var lane = 0, dirS = LR() < 0.5 ? -1 : 1, span = P.b[3] - P.b[1] + 40;
+    for (var ls = 0; ls < life.ships; ls++) ships.push({ x:lane, y0:P.b[1] - 20 + (ls / life.ships) * span + rr(-8, 8), dir:dirS, v:rr(2.2, 3), span:span, ph:LR() * 6 }); }
+  if (life.balloons) for (var lb = 0; lb < life.balloons; lb++) balloons.push({ x:rr(P.b[0] + 6, P.b[2] - 6), y:rr(P.b[1] + 10, P.b[3] - 10), z:rr(9, 16), vx:rr(-0.7, 0.7), vy:rr(-0.5, 0.5), ph:LR() * 6, c:lb % BALLOON_COLS.length });
+  if (life.tumble) for (var lt = 0; lt < life.tumble; lt++) tumbles.push({ x:g.x - 30 - lt * 22, y:g.y + rr(-14, 6), v:rr(4, 6.5), ph:LR() * 6 });
+  if (life.ghosts) for (var lg = 0; lg < life.ghosts; lg++){ var gy3 = P.L * (0.3 + 0.4 * lg / Math.max(1, life.ghosts - 1)) + rr(-10, 10), gs = LR() < 0.5 ? -1 : 1; ghosts.push({ x:P.cx(gy3) + gs * rr(7, 13), y:gy3, ax:P.cx(gy3) + gs * rr(7, 13), ay:gy3, ph:LR() * 6 }); }
+  var smokeSrc = life.smoke ? P.things.filter(function(t){ return t.k === 'vent'; }).map(function(t){ return { x:t.x, y:t.y, z:2.4, big:true }; }).concat(P.pools.filter(function(o){ return o.k === 'lava'; }).map(function(o){ return { x:o.x, y:o.y, z:0.2 }; })) : [];
+  function lifeStep(dt){ if (reduce) return;
+    flyers.forEach(function(f){ var C = FLY_PAL[f.kind];
+      if (C.circle){ f.a += f.w * dt; f.x = f.cx + Math.cos(f.a) * f.r; f.y = f.cy + Math.sin(f.a) * f.r * 0.8; f.vx = -Math.sin(f.a) * f.w; f.vy = Math.cos(f.a) * f.w; if (Math.hypot(f.cx - g.x, f.cy - g.y) > 40) spawnFly(f); return; }
+      if (C.flit){ f.vx += Math.sin(f.ph + performance.now() / 260) * 9 * dt; f.vy += Math.cos(f.ph * 1.7 + performance.now() / 330) * 9 * dt; }
+      f.x += f.vx * dt; f.y += f.vy * dt; if (Math.hypot(f.x - g.x, f.y - g.y) > 46) spawnFly(f); });
+    motes.forEach(function(m){ var k = m.k; m.life += dt;
+      if (k === 'snow' || k === 'ash'){ m.z -= (k === 'ash' ? 1.6 : 3.2) * dt; m.x += (Math.sin(m.ph + m.life * 1.3) * 0.8 + 0.6) * dt; if (m.z <= pic.zAt(m.x, m.y)) spawnMote(m); }
+      else if (k === 'leaf' || k === 'petal'){ m.z -= 1.5 * dt; m.x += Math.sin(m.ph + m.life * 2.2) * 2.2 * dt + 0.8 * dt; if (m.z <= pic.zAt(m.x, m.y) + 0.1){ if (m.life > 40) spawnMote(m); else m.z = pic.zAt(m.x, m.y) + 0.1; } }
+      else if (k === 'ember' || k === 'spark'){ m.z += (k === 'ember' ? 2.6 : 1.8) * dt; m.x += Math.sin(m.ph + m.life * 3) * 0.6 * dt; if (m.z > 8 + (m.ph % 3)) spawnMote(m); }
+      else if (k === 'dust'){ m.x += 3.5 * dt; m.z = 0.3 + Math.abs(Math.sin(m.ph + m.life * 1.5)) * 1.2; if (m.life > 9) spawnMote(m); }
+      else { m.x += Math.sin(m.ph + m.life * 0.9) * (k === 'butter' ? 1.8 : 0.7) * dt; m.y += Math.cos(m.ph * 1.3 + m.life * 0.7) * (k === 'butter' ? 1.4 : 0.6) * dt; m.z = Math.max(0.6, m.z + Math.sin(m.life * 2 + m.ph) * 0.6 * dt); }
+      if (Math.abs(m.x - g.x) > 32 || m.y - g.y > 30 || g.y - m.y > 40) spawnMote(m); });
+    balloons.forEach(function(b2){ b2.x += b2.vx * dt; b2.y += b2.vy * dt; if (b2.x < P.b[0] + 4 || b2.x > P.b[2] - 4) b2.vx = -b2.vx; if (b2.y < P.b[1] + 6 || b2.y > P.b[3] - 6) b2.vy = -b2.vy; });
+    tumbles.forEach(function(t){ t.x += t.v * dt; t.ph += t.v * dt * 1.6; if (t.x > g.x + 34){ t.x = g.x - 34 - LR() * 20; t.y = g.y + rr(-16, 8); } });
+    ghosts.forEach(function(q){ q.ph += dt; q.x = q.ax + Math.sin(q.ph * 0.5) * 4; q.y = q.ay + Math.sin(q.ph * 0.33) * 3; });
+    if (smokeSrc.length){ puffT -= dt; if (puffT <= 0){ puffT = 0.35; smokeSrc.forEach(function(s0){ if (Math.hypot(s0.x - g.x, s0.y - g.y) < 50 && (s0.big || LR() < 0.35)) puffs.push({ x:s0.x + rr(-0.6, 0.6), y:s0.y + rr(-0.4, 0.4), z:s0.z + pic.zAt(s0.x, s0.y), r:s0.big ? 0.9 : 0.6, t:0 }); }); }
+      puffs = puffs.filter(function(q){ q.t += dt; q.z += 1.8 * dt; q.x += 0.5 * dt; q.r += 0.55 * dt; return q.t < 4.5; }); } }
+  function px2(ft){ return kk * Math.max(1, Math.round(ft / ART)); }   // a size in feet, as whole scene pixels
+  function sq(x, y, z, w, col, a){ var p = scr(x, y, z), s = px2(w); if (a != null) ctx.globalAlpha = a; ctx.fillStyle = col; ctx.fillRect(Math.round(p[0] - s / 2), Math.round(p[1] - s / 2), s, s); if (a != null) ctx.globalAlpha = 1; }
+  function pixAt(rows, pal, x, y, z, sz, flip, a){ var p = scr(x, y, z), s = px2(sz), w = rows[0].length, h = rows.length, rx = Math.round(p[0] - w * s / 2), ry = Math.round(p[1] - h * s / 2);
+    if (a != null) ctx.globalAlpha = a; for (var yy = 0; yy < h; yy++) for (var xx = 0; xx < w; xx++){ var ch = rows[yy][flip ? w - 1 - xx : xx]; if (ch === '.') continue; ctx.fillStyle = pal[ch] || pal.o; ctx.fillRect(rx + xx * s, ry + yy * s, s, s); }
+    if (a != null) ctx.globalAlpha = 1; return [rx, ry, w * s, h * s]; }
+  function shadowAt(x, y, r, a){ var p = scr(x, y); ctx.fillStyle = 'rgba(0,0,0,' + a + ')'; ctx.beginPath(); ctx.ellipse(p[0], p[1], r * kk / ART, r * 0.4 * kk / ART, 0, 0, 7); ctx.fill(); }
+  // what stands on the ground or the sea is sorted in with everything else; what flies is drawn over it all
+  function lifeGround(ds){ ships.forEach(function(s1, i){ var yS = shipY(s1); ds.push({ k:'ship', o:s1, x:shipX(yS), y:yS }); }); tumbles.forEach(function(t){ ds.push({ k:'tumble', o:t, x:t.x, y:t.y }); }); ghosts.forEach(function(q){ ds.push({ k:'ghost', o:q, x:q.x, y:q.y }); }); }
+  function shipX(y){ return P.sea.side * Math.min((sp.halfW || HALFW) - 2.6, P.seaEdge(y) + 3); }
+  function shipY(s1){ var tt = performance.now() / 1000, u = ((s1.y0 + s1.dir * s1.v * tt) - (P.b[1] - 20)) % s1.span; if (u < 0) u += s1.span; return P.b[1] - 20 + u; }
+  function drawLifeThing(t, tsec){ var o = t.o;
+    if (t.k === 'ship'){ var spr = prop('ship2:' + o.dir, shipFn(o.dir), 5, 14, 11.5), zb = -0.7 + Math.sin(tsec * 1.2 + o.ph) * 0.12;
+      for (var fb2 = 0; fb2 < 5; fb2++){ var fa = tsec * 4 + fb2 * 1.3; sq(t.x + Math.sin(fa) * 1.3, t.y + o.dir * (5.4 + Math.abs(Math.cos(fa)) * 0.8), -0.66, 0.35, '#ffffff', 0.85); }
+      for (var w2 = 1; w2 < 7; w2++){ var wy = t.y - o.dir * (6 + w2 * 1.6), wx = t.x + Math.sin(tsec * 3 + w2) * 0.6 * w2 * 0.3; sq(wx - 0.8 - w2 * 0.3, wy, -0.68, 0.4, '#ffffff', 0.85 - w2 * 0.1); sq(wx + 0.8 + w2 * 0.3, wy, -0.68, 0.4, '#ffffff', 0.85 - w2 * 0.1); }
+      drawSprite(spr, t.x, t.y, zb, 1, true); }   // long on the water: a flat cut-out's occlusion would let the sea in front eat its bow
+    else if (t.k === 'tumble'){ var z0 = pic.zAt(t.x, t.y), bz = Math.abs(Math.sin(o.ph * 0.9)) * 1.1; shadowAt(t.x, t.y, 1.1, 0.18);
+      for (var q = 0; q < 14; q++){ var a = o.ph + q * 0.449, rr2 = q % 2 ? 1.2 : 0.8; sq(t.x + Math.cos(a) * rr2, t.y, z0 + 1.2 + bz + Math.sin(a) * rr2, 0.3, q % 3 ? '#a8864e' : '#7a5a30'); } }
+    else if (t.k === 'ghost'){ var gz = pic.zAt(t.x, t.y) + 2 + Math.sin(tsec * 1.6 + o.ph) * 0.4; shadowAt(t.x, t.y, 1, 0.12);
+      pixAt(PIX_GHOST, { g:'#eef2ff', o:'#eef2ff' }, t.x, t.y, gz, 0.36, Math.sin(o.ph * 0.5) < 0, 0.5 + 0.15 * Math.sin(tsec * 2 + o.ph)); } }
+  function lifeAir(tsec){
+    if (reduce) return;
+    puffs.forEach(function(q){ var p = scr(q.x, q.y, q.z), a = 0.38 * (1 - q.t / 4.5); ctx.fillStyle = 'rgba(70,62,66,' + a.toFixed(3) + ')'; ctx.beginPath(); ctx.arc(p[0], p[1], q.r * kk * 1.4, 0, 7); ctx.fill(); });
+    balloons.forEach(function(b2){ var cs = BALLOON_COLS[b2.c], spr = prop('balloon:' + b2.c, balloonFn(cs[0], cs[1]), 6.4, 6.4, 16); shadowAt(b2.x, b2.y, 2.4, 0.1); drawSprite(spr, b2.x, b2.y, b2.z + Math.sin(tsec * 0.8 + b2.ph) * 0.6); });
+    motes.forEach(function(m){ var k = m.k, z = m.z + (k === 'leaf' || k === 'petal' || k === 'ash' || k === 'snow' || k === 'ember' || k === 'spark' || k === 'dust' ? 0 : pic.zAt(m.x, m.y));
+      if (k === 'snow') sq(m.x, m.y, z, 0.3, '#ffffff', 0.95);
+      else if (k === 'ash') sq(m.x, m.y, z, 0.3, '#9a9094', 0.8);
+      else if (k === 'ember') sq(m.x, m.y, z, 0.32, m.life * 5 % 1 < 0.5 ? '#ffb43a' : '#ff5a1a', Math.max(0, 1 - m.z / 9));
+      else if (k === 'spark') sq(m.x, m.y, z, 0.3, m.c, (Math.sin(m.life * 9 + m.ph) + 1) / 2);
+      else if (k === 'leaf' || k === 'petal') sq(m.x, m.y, z, k === 'leaf' ? 0.38 : 0.28, m.c);
+      else if (k === 'dust') sq(m.x, m.y, z, 0.22, '#f0d8b0', 0.7);
+      else if (k === 'firefly'){ var gl = Math.max(0, Math.sin(m.life * 2.2 + m.ph)); if (gl > 0.05){ sq(m.x, m.y, z, 0.9, 'rgba(220,255,120,' + (gl * 0.35).toFixed(2) + ')'); sq(m.x, m.y, z, 0.3, '#f4ff9a', gl); } }
+      else if (k === 'butter') pixAt(PIX_BUTTER[(Math.floor(m.life * 9 + m.ph) % 2)], { w:m.c, b:'#2a2228', o:m.c }, m.x, m.y, z, 0.24, false); });
+    flyers.forEach(function(f){ var C = FLY_PAL[f.kind], fr = PIX_FLY[C.base][Math.floor(tsec * (f.kind === 'vulture' ? 3 : 8) + (f.ph || 0)) % 2], gz = pic.zAt(f.x, f.y);
+      shadowAt(f.x + 1, f.y + 1, 0.9 * C.sz, 0.1); pixAt(fr, C, f.x, f.y, gz + f.z, C.sz * 0.28, f.vx < 0); }); }
 
   // ---- input: a stick under the thumb, or the keys
   var ui = document.createElement('div'); ui.className = 'pp-tui'; ui.innerHTML = '<div class="pp-stick" data-stick><i></i></div><div class="pp-way" data-way><i></i><b></b></div><div class="pp-pin" data-pin><b></b><i></i></div>' +
@@ -708,6 +861,7 @@ function run(box, P, pic, api){
     else if (!blocked(g.x, ny)){ moved = Math.abs(ny - g.y); g.y = ny; g.vx *= 0.5; }
     else { g.vx = 0; g.vy = 0; }
     hostStep(dt);
+    lifeStep(dt);
     var spd = Math.hypot(g.vx, g.vy); g.moving = moved > 0.002 && spd > 0.4; if (spd > 0.4) g.face = [g.vx, g.vy]; g.dist += moved;
     if (moved > 0.5) hint.classList.add('gone');
     // lava sends him back to the last safe ground
@@ -743,6 +897,7 @@ function run(box, P, pic, api){
     if (P.fence) ds.push({ k:'lock', x:P.lockGate.x, y:P.lockGate.y });
     ds.push({ k:'me', x:g.x, y:g.y });
     if (hs) ds.push({ k:'hostfig', x:hs.x, y:hs.y });
+    if (!reduce) lifeGround(ds);
     ds.sort(function(a, c){ return a.y - c.y; });
     for (var i = 0; i < ds.length; i++){ var t = ds[i];
       if (t.k === 'me') drawMe(tsec);
@@ -755,11 +910,13 @@ function run(box, P, pic, api){
       else if (t.k === 'chest') drawSprite(t.done ? SPR.chest1 : SPR.chest0, t.x, t.y, pic.zAt(t.x, t.y));
       else if (t.k === 'brk') drawSprite(brkSprite(t), t.x, t.y, pic.zAt(t.x, t.y));
       else if (t.k === 'npc') drawFigure(npcFrame(t), t.x, t.y);
+      else if (t.k === 'ship' || t.k === 'tumble' || t.k === 'ghost') drawLifeThing(t, tsec);
       else if (t.k === 'hostfig'){ var hp = scr(t.x, t.y); ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(hp[0], hp[1], 5 * kk, 2 * kk, 0, 0, 7); ctx.fill(); drawFigure(hostFrame(), t.x, t.y);
         if (hs.ph === 'wait'){ var ep = scr(t.x, t.y, pic.zAt(t.x, t.y) + GH + 1.4 + Math.sin(tsec * 4) * 0.25), es = Math.max(2, Math.round(kk)); ctx.fillStyle = '#3a2a14'; ctx.fillRect(Math.round(ep[0] - 2 * es), Math.round(ep[1] - 7 * es), 4 * es, 9 * es); ctx.fillRect(Math.round(ep[0] - 2 * es), Math.round(ep[1] + 3 * es), 4 * es, 4 * es);
           ctx.fillStyle = '#ffd24a'; ctx.fillRect(Math.round(ep[0] - es), Math.round(ep[1] - 6 * es), 2 * es, 7 * es); ctx.fillRect(Math.round(ep[0] - es), Math.round(ep[1] + 4 * es), 2 * es, 2 * es); } }
       else if (t.k === 'gate') drawSprite(gate && gate.open ? SPR.gate1 : SPR.gate0, t.x, P.gate.y, pic.zAt(t.x, P.gate.y));
       else if (t.k === 'lock'){ var ls = lockOpen ? SPR.lock1 : SPR.lock0; if (ls){ ctx.save(); drawSprite(ls, t.x, t.y, pic.zAt(t.x, t.y)); ctx.restore(); } } }
+    lifeAir(tsec);
     // bits that fly
     var s = Math.max(2, Math.round(kk * 0.8));
     parts = parts.filter(function(q){ q.t += dt; q.x += q.vx * dt; q.y += q.vy * dt; q.z += q.vz * dt; q.vz -= 18 * dt; if (q.z < pic.zAt(q.x, q.y)){ q.z = pic.zAt(q.x, q.y); q.vz *= -0.3; q.vx *= 0.6; q.vy *= 0.6; }
@@ -795,7 +952,7 @@ function run(box, P, pic, api){
       window.removeEventListener('pointercancel', pup); window.removeEventListener('blur', pup); window.removeEventListener('keydown', kd, true); window.removeEventListener('keyup', ku, true); },
     // for the checks: where he is, and a way to hold the stick
     pos:function(){ return [g.x, g.y]; }, stick:function(vx, vy){ stickV = [vx, vy]; }, auto:function(on){ setAuto(on !== false); },
-    plan:function(){ return P; }, gate:function(){ return gate; }, host:function(){ return hs ? { x:hs.x, y:hs.y, ph:hs.ph, talking:!!dlg } : null; }, items:function(){ return items; }, goTo:function(x, y){ g.x = x; g.y = y; }, view:function(){ return { kk:kk, W:W, H:H, ox:ox, oy:oy }; }, scr:scr };
+    plan:function(){ return P; }, gate:function(){ return gate; }, life:function(){ return { theme:sp.theme, ships:ships.map(function(s1){ var y1 = shipY(s1); return { x:shipX(y1), y:y1 }; }), flyers:flyers.length, motes:motes.length, balloons:balloons.length, tumbles:tumbles.length, ghosts:ghosts.length, puffs:puffs.length, smoke:smokeSrc.length }; }, host:function(){ return hs ? { x:hs.x, y:hs.y, ph:hs.ph, talking:!!dlg } : null; }, items:function(){ return items; }, goTo:function(x, y){ g.x = x; g.y = y; }, view:function(){ return { kk:kk, W:W, H:H, ox:ox, oy:oy }; }, scr:scr };
   return ctl;
 }
 

@@ -19898,7 +19898,7 @@ closes the mode; on the map it goes back to the world. The world screen is `.pp-
 own class, and sharing it broke the layout). `window.RTT_PUTT_MAPFIRST` makes the mode open on the map, and
 check-putt sets it for its map sections; its world section turns it off.
 
-**Every world has a greeter** (`GREETERS`, `greetSpec` in putt.js), a board game host: Pro Pete, Professor
+**Every world has a greeter** (`GREETERS`, `greetSpec` in putt.js), a board game host: Pro Pete (a preppy club pro: white polo, visor, slacks), Professor
 Fern, Captain Bogey, Dusty, Ranger Mae, Coach Frost, Skye, DJ Pixel, and Count Mulligan and Farmer Hayes on
 the Members Tour. They are invented, drawn by the same 3D golfer in a look nobody can buy, and stand on the
 first trail of their world (from `w * K`), a little up the path or just past the world door. They wait while
@@ -19907,6 +19907,19 @@ face (the profile picture renderer, `host.portrait(look)`), a name plate, typed 
 Walking waits while they talk. The pages are who they are, how the world plays, what clearing it pays, the
 star gate to the next world and the hole ahead, all read off the tour rather than typed. They talk on their
 own once (`st.met`, merged as a union) and stand by the path after, where Talk plays it again.
+
+**Every world is alive round you** (`LIFE` in trail.js). Flyers (songbirds, parrots, gulls, vultures, crows, bats,
+drones), things in the air (butterflies, petals, fireflies, snow, ash, embers, leaves, dust, neon sparks) and set
+pieces: pirate ships sailing Pirate Cove, balloons over Sky Islands, smoke off Volcano Island's vents and lava,
+tumbleweeds, ghosts. None of it blocks or can be picked up. Flyers and motes spawn round the golfer and are
+recycled out of sight; ships and balloons are 3D props rendered once (`shipFn`, `balloonFn`). **Sizes are in
+feet, as whole scene pixels** (`px2`): sized in screen pixels a gull came out a few pixels wide. Reduced motion
+draws none of it.
+
+**The shore follows the path** on a sea trail (`SEA`, `P.seaEdge`): a phone shows about ten feet either side of
+the golfer, so a sea at the plan's edge was off screen for most of a walk and so were the ships. The camera
+also looks a little out to sea there. **A ship is drawn without occlusion**: `occlude()` treats a sprite as a
+flat cut-out standing at its anchor, so the sea in front of a long hull painted over its bow.
 
 **The walk to the next hole is a place you walk through** (`golf/putt/trail.js`, `RTT_PUTT_TRAIL`). Next opens a
 3D trail of the world, drawn by `hole3d.js` from a scene (`opt.scene`) at a finer art grid (`TART`, an eighth of

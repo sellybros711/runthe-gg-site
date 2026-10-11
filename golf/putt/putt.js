@@ -2474,7 +2474,7 @@ function livesNow(st){ return (st.lives || 0) + lifeExtra(st); }
    path after, so walking up to them again plays it again. They are invented characters, drawn by the same
    3D golfer as the player, in a look nobody can buy. */
 var GREETERS = {
-  clubhouse:{ name:'Pro Pete', role:'Club Pro', look:{ skin:'light', polo:'navy', hat:'tan', pants:'khaki', hair:'grey', hairStyle:'short', cap:true, hatStyle:'tweed', top:'cardigan', leg:'plusfours', gender:'male' },
+  clubhouse:{ name:'Pro Pete', role:'Club Pro', look:{ skin:'light', polo:'white', hat:'navy', pants:'navy', hair:'brown', hairStyle:'swoop', cap:true, hatStyle:'visor', gender:'male' },   // a preppy club pro: white polo, visor, slacks
     hi:['Hey there! Welcome to the Putt Putt Tour.', 'I’m Pro Pete. I run the Clubhouse.'],
     tip:['Match par and the next hole opens. Beat it and you earn more stars.', 'Windmills, loops and drawbridges live here. Time them right.'],
     bye:'Go get ’em, champ!' },
