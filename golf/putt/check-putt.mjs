@@ -456,9 +456,16 @@ if (!args.includes('--no-browser')){
       out.drops = plans.every(p => p.items.filter(t => t.k === 'chest').every(t => t.drops.length >= 4));
       const fromL = 1 + plans.findIndex(p => p.fence), fromT = 1 + plans.findIndex(p => p.items.some(t => t.k === 'trinket'));
       let t = await open(fromL);
-      out.trail = !!t && S().screen === 'trail' && !S().round && !!document.querySelector('.pp-tcv') && !!document.querySelector('.pp-stick');
+      out.trail = !!t && S().screen === 'trail' && !S().round && !!document.querySelector('.pp-tcv');
       out.mark = !!document.querySelector('.pp-pin.on,.pp-way.on');
       const p0 = t.pos(); t.stick(0, -1); await sleep(900); t.stick(0, 0); const p1 = t.pos(); out.moved = p0[1] - p1[1];
+      // THE STICK IS FOR A TOUCH SCREEN: on a desktop there is none on screen, a drag does not walk him, and the keys do
+      out.noStick = !matchMedia('(pointer: coarse)').matches && !document.querySelector('.pp-stick');
+      await sleep(400); { const bx = document.querySelector('.pp-tcv').parentNode, r = bx.getBoundingClientRect(), q0 = t.pos(), ev = (ty, x, y) => new PointerEvent(ty, { pointerId:7, clientX:x, clientY:y, bubbles:true, cancelable:true });
+        bx.dispatchEvent(ev('pointerdown', r.left + r.width / 2, r.top + r.height / 2)); window.dispatchEvent(ev('pointermove', r.left + r.width / 2, r.top + r.height / 2 - 60));
+        await sleep(600); window.dispatchEvent(ev('pointerup', r.left + r.width / 2, r.top + r.height / 2 - 60)); const q1 = t.pos(); out.dragStill = Math.hypot(q1[0] - q0[0], q1[1] - q0[1]) < 0.05;
+        window.dispatchEvent(new KeyboardEvent('keydown', { code:'ArrowDown', key:'ArrowDown', bubbles:true })); await sleep(600); window.dispatchEvent(new KeyboardEvent('keyup', { code:'ArrowDown', key:'ArrowDown', bubbles:true }));
+        const q2 = t.pos(); out.keyWalk = Math.hypot(q2[0] - q1[0], q2[1] - q1[1]); }
       const P = t.plan(), its = t.items(), key = its.find(i => i.k === 'key'), chest = its.find(i => i.k === 'chest' && i.main), gold = its.find(i => i.k === 'golden'), K = 'main:' + (fromL + 1);
       const paid = []; const h0 = S().host, c0 = h0.coins; h0.coins = (n, l) => { paid.push(n); };
       const coinsOf = c => its.filter(i => i.k === 'coin' && i.ch === c);
@@ -506,7 +513,8 @@ if (!args.includes('--no-browser')){
     claim(wk.listImgs >= 3 && wk.listImgs === wk.list.length && wk.list.some(x => /Chest/.test(x)) && wk.list.some(x => /Golden ball/.test(x)) && wk.list.some(x => /Key/.test(x)) && wk.listGot >= 3, `the trail lists every find with its own picture, and ticks them off (${JSON.stringify(wk.list)}, ${wk.listGot} ticked)`);
     claim(wk.buried && wk.burst && wk.hidCoins && wk.paid, `opening the chest throws its coins onto the ground, and each one walked over is paid into the account (${JSON.stringify([wk.buried, wk.burst, wk.hidCoins, wk.paid])})`);
     claim(wk.tk === 1 && wk.bagTk === 1 && (wk.rk.indexOf('part') < 0 || wk.parts === 1) && (wk.rk.indexOf('life') < 0 || wk.bank === 1), `a trinket and the rare things on its trail are kept, and the Bag shows them (${wk.rk}: ${wk.tk}, ${wk.parts}, ${wk.bank}, bag ${wk.bagTk})`);
-    claim(wk.trail && wk.mark && wk.moved > 3, `Next opens the trail with the golfer, a stick and a waypoint, and the stick walks him (${wk.trail}, ${wk.mark}, ${(wk.moved || 0).toFixed(1)} ft)`);
+    claim(wk.trail && wk.mark && wk.moved > 3, `Next opens the trail with the golfer and a waypoint, and the stick walks him (${wk.trail}, ${wk.mark}, ${(wk.moved || 0).toFixed(1)} ft)`);
+    claim(wk.noStick && wk.dragStill && wk.keyWalk > 1, `on a desktop there is no stick on screen and a drag does not walk him; the arrow keys do (${wk.noStick}, ${wk.dragStill}, ${(wk.keyWalk || 0).toFixed(1)} ft)`);
     claim(wk.locked && wk.shutChest && wk.coin && wk.key && wk.chest && wk.gold && /Golden ball/.test(wk.bub), `the coins, the key, the chest it opens and the golden ball are picked up and kept (${JSON.stringify([wk.coin, wk.key, wk.chest, wk.gold, wk.bub])})`);
     claim(wk.reached === wk.want && wk.kept && wk.skipTo === wk.want, `walking through the arch opens the hole, what was picked up stays picked up, a coin left on the ground is still there, and Skip goes straight there (${wk.reached}, ${wk.kept}, ${wk.skipTo})`);
     claim(wk.cross && wk.doorOpen && wk.passed && wk.through === 19, `with the stars, the world door on the trail opens and he walks on into World 2 (${wk.doorOpen}, ${wk.passed}, hole ${wk.through})`);
