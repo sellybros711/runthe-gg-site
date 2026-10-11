@@ -6005,6 +6005,35 @@ proved by mutation, with a misspelt landmark and a deleted `far`.
 stands rather than on them. At 0.18 the lavender castle vanished into a pale
 blue sky, which a screenshot said and no guard can.
 
+### The 3D prototype is a separate page, and the game does not load it
+
+```
+runthe.gg/mythiball/proto3d/      noindexed, linked from nowhere
+```
+
+Asked for by the owner: real depth, perspective and animation, judged against
+Backyard Baseball. `mythiball/proto3d/` is a standalone page on Three.js 0.180.0,
+vendored under `vendor/three-0.180.0/` with the version in the path, so a new
+Three.js is a new folder and never a stale cache.
+
+- **The pixel look is the render size.** The scene is drawn into a canvas about
+  240 lines tall and blown up with `image-rendering: pixelated`. A level is a
+  pixel BUDGET (its height on a 3:2 screen), so an upright phone gets as many
+  pixels as a landscape one rather than a 111 pixel sliver.
+- **The 68 characters are built from `sprites/cast.js`**, the same specs the 2D
+  rig bakes from, by one procedural body in `rig.js`. No model files. Limbs are
+  placed by two bone IK from hand and foot targets, so one pose drives every
+  build and both hands stay on the bat.
+- **Animations are hand keyed** in `anim.js` and sampled on a Catmull-Rom curve.
+  Authored for a righty facing +z with his left at +x; a lefty is `mirror()`.
+  The swing plane moves with the aim, and the pitch types carry an arm slot tell.
+- **Its gameplay is a sketch, not the game's rules.** The ball, the fielding and
+  the throws in `main.js` exist to show the animations doing their job. Nothing
+  in `index.html` reads any of it.
+- **Frame times in this sandbox mean nothing**: Chromium here renders WebGL in
+  software. The HUD prints fps, p95 and the game logic's own milliseconds so a
+  real phone can be read.
+
 ### The collection: ten to start, packs for the middle, feats for the best
 
 ```
