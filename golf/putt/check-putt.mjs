@@ -432,28 +432,45 @@ if (!args.includes('--no-browser')){
     claim(calk.days >= 60 && calk.todayDone, `the Daily tab is a calendar of ${calk.days} days with today marked played`);
     claim(calk.lockN > 0 && calk.sheet && calk.noRound, 'without the Tour Pass a missed day is shut, and pressing it opens the Pass sheet rather than a hole');
     claim(calk.pastRound && calk.late && calk.streak === 2 && calk.last, `a Pass holder plays a missed day, and it is filed late without moving the streak (streak ${calk.streak})`);
-    // THE WALK TO THE NEXT HOLE: Next walks the golfer up the cart path on the map and then opens the hole; a tap skips it.
-    // At a world's edge the door fills with the stars you have: enough and it opens, short and it stays shut on the map.
+    // THE WALK TO THE NEXT HOLE IS YOURS: Next brings the map back with the 3D golfer on it and a joystick, a
+    // waypoint says where the next hole is (an arrow on the edge of the screen once it is out of sight), and
+    // walking onto it opens it. Auto walks the path, Skip goes straight there, and walking back offers a hole
+    // already open. At a world's edge the door stands on the path: enough stars and it opens, short and it holds.
     const wk = await pg.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), seed = (s, lv) => { const best = {}; for (let n = 1; n <= 18; n++) best[n] = s;
       localStorage.setItem('bag_ppt_v1@walk', JSON.stringify({ v:2, tours:{ main:{ lv, best, ace:{}, paid:{}, wpaid:{} } } })); };
+      const S = () => window.RTT_PUTT._state(), toward = p => { const r = S().roam; if (!r) return; const [x, y] = r.pos(), dx = p[0] - x, dy = p[1] - y, L = Math.hypot(dx, dy) || 1; r.stick(dx / L, dy / L); };
       window.RTT_PUTT.close(); sbUser = { id:'walk' }; seed(1, 19); openPutt(); await sleep(300);
-      window.RTT_PUTT._walkTo(5); const srcs = new Set(), tilts = []; for (let i = 0; i < 12; i++){ await sleep(70); const im = document.querySelector('.pp-walker img'); if (im) srcs.add(im.src); tilts.push(document.querySelector('.pp-world').style.transform); }
-      out.walking = !!document.querySelector('.pp-walking .pp-walker img') && !window.RTT_PUTT._state().round;
-      out.frames = srcs.size; out.tilt = tilts.some(t => /rotateX\(/.test(t)); out.flatMe = getComputedStyle(document.querySelector('.pp-me')).visibility === 'hidden';
-      document.querySelector('.pp-map').dispatchEvent(new PointerEvent('pointerdown', { bubbles:true })); await sleep(100);
-      const R = window.RTT_PUTT._state().round; out.skipTo = R && R.lv;
-      window.RTT_PUTT.close(); openPutt(); await sleep(300); window.RTT_PUTT._walkTo(18); await sleep(2600);
-      out.doorOpen = !!document.querySelector('.pp-door.fill'); await sleep(3500); const R2 = window.RTT_PUTT._state().round; out.through = R2 && R2.lv;
-      window.RTT_PUTT.close(); seed(2, 18); openPutt(); await sleep(300); window.RTT_PUTT._walkTo(18); await sleep(3200);
-      out.shutTxt = (document.querySelector('.pp-door small') || {}).textContent || ''; await sleep(2000);
-      out.shutStay = window.RTT_PUTT._state().screen === 'menu' && !window.RTT_PUTT._state().play;
+      window.RTT_PUTT._walkTo(5); await sleep(60);
+      out.roam = !!document.querySelector('.pp-roam .pp-walker img') && !!document.querySelector('.pp-stick') && !S().round;
+      out.mark = !!document.querySelector('.pp-pin.on,.pp-way.on') && !!document.querySelector('.pp-lv.pp-tgt[data-lv="6"]');
+      // walk it with the stick: the frames change, the map tilts, the flat golfer is hidden, and the hole opens
+      const srcs = new Set(), tilts = []; for (let i = 0; i < 80 && S().roam; i++){ toward(S().mapPos[5]); await sleep(60); const im = document.querySelector('.pp-walker img'); if (im) srcs.add(im.src); const w = document.querySelector('.pp-world'); if (w) tilts.push(w.style.transform); if (i === 6) out.flatMe = getComputedStyle(document.querySelector('.pp-me')).visibility === 'hidden'; }
+      out.frames = srcs.size; out.tilt = tilts.some(t => /rotateX\(/.test(t)); out.reached = S().round && S().round.lv;
+      // walk back down the path instead: the hole behind is offered again, and the next one goes off screen behind an edge arrow
+      window.RTT_PUTT.close(); openPutt(); await sleep(300); window.RTT_PUTT._walkTo(5); await sleep(60);
+      for (let h = 4; h >= 1 && S().roam; h--){ for (let i = 0; i < 60 && S().roam; i++){ const r = S().roam, [x, y] = r.pos(), p = S().mapPos[h - 1]; if (Math.hypot(p[0] - x, p[1] - y) < 12) break; toward(p); await sleep(50);
+        const pb = document.querySelector('[data-rplay]'); if (pb && !pb.hidden && /Play hole \d/.test(pb.textContent)) out.offer = pb.textContent; if (document.querySelector('.pp-way.on')) out.edge = (document.querySelector('.pp-way b') || {}).textContent; } }
+      S().roam && S().roam.stick(0, 0);
+      document.querySelector('[data-skip]').click(); await sleep(80); out.skipTo = S().round && S().round.lv;
+      // the door, with the stars: Auto walks him to it, it opens, and he walks on into World 2
+      window.RTT_PUTT.close(); openPutt(); await sleep(300); window.RTT_PUTT._walkTo(18); await sleep(60); document.querySelector('[data-auto]').click();
+      for (let i = 0; i < 90 && !out.doorOpen; i++){ await sleep(60); if (document.querySelector('.pp-door.fill')) out.doorOpen = true; }
+      for (let i = 0; i < 120 && !S().round; i++) await sleep(60); out.through = S().round && S().round.lv;
+      // and without: it says how many more, he cannot walk past it, and he is still on the map
+      window.RTT_PUTT.close(); seed(2, 18); openPutt(); await sleep(300); window.RTT_PUTT._walkTo(18); await sleep(60); document.querySelector('[data-auto]').click();
+      for (let i = 0; i < 90 && !out.shutTxt; i++){ await sleep(60); const sm = document.querySelector('.pp-door small'); if (sm) out.shutTxt = sm.textContent; }
+      await sleep(3600); for (let i = 0; i < 30 && S().roam; i++){ toward([S().mapPos[18][0], S().mapPos[18][1] - 40]); await sleep(50); }
+      const g = (S().mapPos[17][1] + S().mapPos[18][1]) / 2; out.shutStay = S().screen === 'menu' && !S().play && !!S().roam && S().roam.pos()[1] > g - 50;
+      // the golfer on the map is a door into the walk too
+      window.RTT_PUTT.close(); seed(1, 19); openPutt(); await sleep(300); const me = document.querySelector('.pp-me.tap'); if (me) me.click(); await sleep(60); out.tapRoam = !!document.querySelector('.pp-roam') && S().roam && S().roam.to === 19;
       window.RTT_PUTT.close(); sbUser = { id:'chk' }; return out; });
-    claim(wk.walking && wk.skipTo === 6, `Next walks the golfer up the path on the map, and a tap skips straight to the hole (${wk.walking}, hole ${wk.skipTo})`);
-    // THE WALKER IS THE 3D GOLFER, in a real step: the frames change as he goes, the flat map golfer is hidden,
-    // and the camera tilts the map away from him (a camera behind and above, not a sticker sliding up a picture)
-    claim(wk.frames >= 3 && wk.flatMe && wk.tilt, `the walk is the 3D golfer stepping (${wk.frames} frames seen), the flat sprite is hidden, and the map tilts away behind him (${wk.tilt})`);
-    claim(wk.doorOpen && wk.through === 19, `with the stars, the world door fills, opens and the walk carries on into World 2 (hole ${wk.through})`);
-    claim(/Need \d+ more/.test(wk.shutTxt) && wk.shutStay, `short of the stars, the door stays shut, says how many more, and leaves you on the map (${wk.shutTxt})`);
+    claim(wk.roam && wk.mark, `Next brings the map back with the golfer, a joystick, and a waypoint on the next hole (${wk.roam}, ${wk.mark})`);
+    claim(wk.frames >= 3 && wk.flatMe && wk.tilt && wk.reached === 6, `the stick walks the 3D golfer in a real step (${wk.frames} frames seen) with the map tilted behind him, and walking onto hole 6 opens it (hole ${wk.reached})`);
+    claim(/Play hole [1-4]/.test(wk.offer || '') && /Hole 6 · \d+ yd/.test(wk.edge || ''), `walking back offers an open hole again (${wk.offer}), and an arrow on the edge points to the next one off screen (${wk.edge})`);
+    claim(wk.skipTo === 6, `Skip goes straight to the hole (hole ${wk.skipTo})`);
+    claim(wk.doorOpen && wk.through === 19, `with the stars, Auto walks him to the world door, it opens, and he walks on into World 2 (hole ${wk.through})`);
+    claim(/Need \d+ more/.test(wk.shutTxt || '') && wk.shutStay, `short of the stars, the door stays shut, says how many more, and he cannot walk past it (${wk.shutTxt})`);
+    claim(wk.tapRoam, 'tapping the golfer on the map starts the walk, heading for the next hole');
     // ---- THE TOUR'S RULES, through the page. Each life is real: a fresh record for a fresh account.
     await pg.evaluate(() => { const st = window.RTT_PUTT._state(); if (st && st.play && st.play.strokes) { st.round.mode = 'x'; } document.querySelector('.pt-ov') && window.RTT_PUTT.close(); sbUser = { id:'chk' }; localStorage.removeItem('bag_ppt_v1@chk'); openPutt(); });
     await pg.waitForSelector('.pp-map [data-lv="1"]');

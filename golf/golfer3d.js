@@ -121,7 +121,7 @@
     gear=gear||{};
     /* WALKING the golfer faces the way he goes (F), so T is his carrying side, and the frame's phase (pose.ph,
        0 to 1 over two steps) swings the legs, the arms and the hips and lifts the body at each passing step */
-    const walk=kind==='walk', ph=walk?pose.ph*2*Math.PI:0, cyc=Math.cos(ph), syc=Math.sin(ph);
+    const walk=kind==='walk', ph=walk?pose.ph*2*Math.PI:0, cyc=pose.stand?0:Math.cos(ph), syc=pose.stand?0:Math.sin(ph);   // ws stands, feet together
     const yb=walk?0.75*Math.abs(syc)-0.3:0;
     const U=V(0,1,0);
     let T,F; if(walk){ F=norm(aimV); T=lefty?norm(cross(U,F)):norm(cross(F,U)); }
@@ -332,7 +332,8 @@
 
   // a walk frame is a phase of the step (w0 to w7) and is seen from higher up, the tour map's camera
   const WALK_N=8, WALK_EL=34;
-  function walkPose(key){ const ph=(+key.slice(1)||0)/WALK_N, c=Math.cos(ph*2*Math.PI);
+  function walkPose(key){ if(key==='ws') return {ph:0,stand:1,phi:0,hinge:0,turn:0,hip:0,head:0,heel:0};
+    const ph=(+key.slice(1)||0)/WALK_N, c=Math.cos(ph*2*Math.PI);
     return {ph,phi:0,hinge:0,turn:-5*c,hip:7*c,head:0,heel:0}; }
   function draw(look,aimDeg,kind,poseKey){
     if(kind==='walk'){ setEl(WALK_EL); try{ return draw0(look,aimDeg,kind,poseKey); } finally{ setEl(26); } }
@@ -422,7 +423,7 @@
     return {cv,ball:[bc[0]+OX,bc[1]+OY],fig:OY+2-y0};
   }
 
-  const KEYS={full:['A','B','D','C'],chip:['A','chipB','D','chipC'],putt:['pA','pB','pC'],walk:['w0','w1','w2','w3','w4','w5','w6','w7']};
+  const KEYS={full:['A','B','D','C'],chip:['A','chipB','D','chipC'],putt:['pA','pB','pC'],walk:['w0','w1','w2','w3','w4','w5','w6','w7','ws']};   // ws (index 8) is standing still, for the roam
   const cache=new Map();
   function lookKey(look){ return JSON.stringify(look||{}); }
   // aimDeg is snapped to eight facings so a round draws each direction once
@@ -446,7 +447,7 @@
     const keys=KEYS[kind]; if(!keys||!keys[i]) return null;
     const k=fkey(look,aimDeg,kind,i); let r=fcache.get(k); if(r) return r;
     const a=((Math.round(aimDeg/45)*45)%360+360)%360, f=draw(look,a,kind,keys[i]);
-    r={url:f.cv.toDataURL('image/png'),ball:f.ball,fig:f.fig,W:GW,H:GH,aim:a,n:keys.length};
+    r={url:f.cv.toDataURL('image/png'),ball:f.ball,fig:f.fig,W:GW,H:GH,aim:a,n:kind==='walk'?WALK_N:keys.length};
     if(fcache.size>160) fcache.clear(); fcache.set(k,r); return r; }
   function has(look,aimDeg,kind,i){ return fcache.has(fkey(look,aimDeg,kind,i)); }
   function warmAim(look,aimDeg,kind){ const keys=KEYS[kind]; if(!keys) return; let i=0;

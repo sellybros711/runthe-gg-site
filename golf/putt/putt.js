@@ -1860,6 +1860,20 @@ var CSS = '\
 @media (max-width:899px){.pp-hub .pp-daily.mini{right:auto;max-width:none;padding:6px 8px;gap:8px;border-radius:14px}.pp-hub .pp-daily.mini .pp-dmid{display:none}.pp-hub .pp-daily.mini .pp-dtile{width:34px}.pp-hub .pp-daily.mini .pp-dtile .mo{font-size:8px;padding:1px 0}.pp-hub .pp-daily.mini .pp-dtile .dy{font-size:18px}.pp-hub .pp-daily.mini .pp-dside .g{padding:7px 12px;font-size:13px}.pp-hub .pp-daily.mini .pp-dside .rw{display:none}}@media (min-width:900px){.pp-hub .pp-daily{left:24px;right:auto;top:100px;width:clamp(220px,26vw,300px);max-width:none;margin:0;flex-direction:column;align-items:stretch;text-align:center;gap:12px;padding:20px 18px 18px}.pp-hub .pp-daily .pp-dtile{align-self:center}.pp-hub .pp-dmid{align-items:center;text-align:center;gap:4px}.pp-hub .pp-dk{justify-content:center}.pp-hub .pp-daily .t{white-space:normal;font-size:clamp(24px,2.6vw,30px)}.pp-hub .pp-daily .m{white-space:normal}.pp-hub .pp-daily .pp-dside{align-items:stretch}.pp-hub .pp-daily .pp-dside .g{text-align:center}}\
 .pp-hub[data-wt] .pp-tabs,.pp-hub[data-wt] .pp-wchip{background:var(--wt);border-color:color-mix(in srgb,var(--wa) 45%,transparent)}.pp-hub[data-wt] .pp-tabs button.on{background:var(--wa);color:var(--wi)}.pp-hub[data-wt] .pp-wchip{color:#fff;box-shadow:inset 3px 0 0 var(--wa)}\
 .pp-walking .pp-daily,.pp-walking .pp-tabs,.pp-walking .pp-wchip{opacity:0;pointer-events:none;transition:opacity .25s}.pp-walking .pp-map{overflow:hidden}.pp-me.walk{transform:translate(-50%,-100%)!important;z-index:3}.pp-walker{position:absolute;z-index:3;width:0;height:0;pointer-events:none}.pp-walker img{position:absolute;image-rendering:pixelated;max-width:none}.pp-walk3 .pp-world{will-change:transform}.pp-me.walk img{animation:ppwalk .34s steps(2) infinite;transform-origin:50% 100%}.pp-me.walk.flip img{scale:-1 1}@keyframes ppwalk{50%{translate:0 -3px;rotate:-3deg}}\
+.pp-roam .pp-map{touch-action:none;cursor:grab}.pp-me.tap{pointer-events:auto;cursor:pointer}.pp-me.tap::after{content:"Walk";position:absolute;left:50%;top:100%;transform:translateX(-50%);font-size:10px;font-weight:900;color:#3a2a14;background:#ffd24a;border:2px solid #3a2a14;border-radius:8px;padding:1px 6px}.pp-path .route{fill:none;stroke:#ffd24a;stroke-width:7;stroke-dasharray:2 11;stroke-linecap:round;opacity:.95;animation:pproute .9s linear infinite}@keyframes pproute{to{stroke-dashoffset:-13}}\
+.pp-lv.pp-tgt{box-shadow:0 0 0 4px #ffd24a,0 0 18px 6px rgba(255,210,74,.65)}.pp-gatemk{position:absolute;width:2px;height:2px;pointer-events:none}\
+.pp-rui{position:absolute;inset:0;z-index:4;pointer-events:none}.pp-rui button{pointer-events:auto}\
+.pp-way{position:absolute;display:none;transform:translate(-50%,-50%);flex-direction:column;align-items:center;gap:3px}.pp-way.on{display:flex}\
+.pp-way i{display:block;width:0;height:0;border-left:15px solid transparent;border-right:15px solid transparent;border-bottom:26px solid #ffd24a;filter:drop-shadow(0 2px 0 #3a2a14) drop-shadow(0 0 6px rgba(0,0,0,.6));animation:ppway 1s ease-in-out infinite}\
+.pp-way b{font-size:11px;font-weight:900;color:#fff;background:rgba(16,24,20,.86);border:2px solid #ffd24a;border-radius:9px;padding:2px 7px;white-space:nowrap}@keyframes ppway{50%{scale:1.14}}\
+.pp-pin{position:absolute;display:none;transform:translate(-50%,-100%);flex-direction:column;align-items:center;animation:pppin 1.1s ease-in-out infinite}.pp-pin.on{display:flex}\
+.pp-pin b{font-size:12px;font-weight:900;color:#3a2a14;background:#ffd24a;border:2px solid #3a2a14;border-radius:10px;padding:2px 8px;white-space:nowrap}.pp-pin i{font-style:normal;font-size:10px;font-weight:900;color:#fff;text-shadow:0 1px 0 #000}\
+.pp-pin::after{content:"";width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:11px solid #ffd24a;margin-top:-1px;filter:drop-shadow(0 2px 0 #3a2a14)}@keyframes pppin{50%{translate:0 -7px}}\
+.pp-stick{position:absolute;left:78px;bottom:96px;width:104px;height:104px;margin:-52px 0 0 -52px;border-radius:50%;border:3px solid rgba(255,255,255,.55);background:rgba(10,18,14,.32);opacity:.55;transition:opacity .2s}.pp-stick.on{opacity:1;bottom:auto}\
+.pp-stick i{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px;border-radius:50%;background:radial-gradient(circle at 38% 34%,#fff6d6,#ffd24a 55%,#b88a10);border:3px solid #3a2a14;box-shadow:0 3px 0 rgba(0,0,0,.35)}\
+.pp-rbar{position:absolute;right:12px;bottom:max(14px,env(safe-area-inset-bottom));display:flex;gap:8px;pointer-events:auto}.pp-rb{font:inherit;font-size:12px;font-weight:900;border-radius:12px;border:2px solid #3a2a14;background:#f6ead2;color:#3a2a14;padding:8px 12px;cursor:pointer;box-shadow:0 3px 0 rgba(0,0,0,.35)}.pp-rb.on{background:#ffd24a}\
+.pp-rplay{position:absolute;left:50%;bottom:74px;transform:translateX(-50%);font:inherit;font-size:15px;font-weight:900;border-radius:14px;border:3px solid #3a2a14;background:#ffd24a;color:#3a2a14;padding:10px 20px;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.4)}.pp-rplay[hidden]{display:none}.pp-rplay:disabled{background:#c9d6cf;cursor:default}\
+.pp-rhint{position:absolute;left:50%;top:70px;transform:translateX(-50%);font-size:13px;font-weight:900;color:#fff;background:rgba(10,18,14,.78);border-radius:12px;padding:6px 12px;white-space:nowrap;transition:opacity .4s}.pp-rhint.gone{opacity:0}\
 /* A WORLD DOOR: two leaves made of that world, a lock that fills with the stars you have */\
 .pp-door{position:absolute;z-index:6;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .35s;background:radial-gradient(ellipse at center,rgba(0,0,0,.35),rgba(0,0,0,.75))}.pp-door.in{opacity:1}\
 .pp-dl,.pp-dr{position:absolute;top:6%;bottom:6%;width:min(44vw,300px);background:linear-gradient(180deg,var(--dc),var(--db));border:6px solid color-mix(in srgb,var(--da) 70%,#000);box-shadow:inset 0 0 0 4px rgba(0,0,0,.35),0 20px 40px rgba(0,0,0,.6);transition:transform .9s cubic-bezier(.6,0,.3,1)}\
@@ -2212,6 +2226,9 @@ function drawMap(st, TR){
   box.innerHTML = '<div class="pp-sizer" style="height:' + Math.ceil(H * k) + 'px"><div class="pp-world" style="height:' + H + 'px;width:' + W + 'px;transform:translateX(-50%) scale(' + k + ')">' + bands +
     '<svg class="pp-path" width="' + W + '" height="' + H + '"><path d="' + d + '"/></svg>' + badges +
     '<div class="pp-me" style="left:' + (cp[0] > W / 2 + 50 ? cp[0] - 76 : cp[0] + 34) + 'px;top:' + (cp[1] + 22) + 'px">' + golferImg('pp-meimg') + '</div></div></div>';
+  // the golfer on the map walks: tap him and the joystick comes up, heading for the hole in front of him
+  var meEl = box.querySelector('.pp-me'); if (meEl && S.host.golferWalk && tp.lv <= N){ meEl.classList.add('tap'); meEl.setAttribute('role', 'button'); meEl.setAttribute('aria-label', 'Walk to hole ' + tp.lv);
+    meEl.onclick = function(){ if (!S.walkTok) roam(TR.id, Math.min(N, tp.lv), Math.min(N, tp.lv)); }; }
   box.querySelectorAll('[data-lv]').forEach(function(b){ b.onclick = function(){ var n = +b.getAttribute('data-lv'); var tq = pload().tours[TR.id]; if (n > tq.lv){ var pw = Math.floor((n - 2) / K);
       return toastHub((n - 1) % K === 0 && tq.best[n - 1] != null ? (TR.members ? WS[pw + 1].name : 'World ' + (pw + 2)) + ' opens at ' + worldGate(TR, pw) + ' total stars. You have ' + starsThrough(tq, TR, pw) + '.' : 'Clear level ' + (n - 1) + ' at par or better to open it.'); } startLevel(n, TR.id); }; });
   // the chip in the corner names the world in view and how much of it is beaten
@@ -2333,82 +2350,223 @@ var DOOR_NAMES = { temple:'Temple Door', pirate:'Hull Door', canyon:'Mine Gate',
    a stride is drawn the first time it is needed (the facing for the next walk is drawn while the hole is played).
    The camera comes down behind him: the map tilts away from the golfer and closes in while he walks, pivoting on
    him so he stays put on the screen. A page without the 3D golfer walks the flat one as before. */
-var WALK_STRIDE = 28, WALK_TILT = 30, WALK_ZOOM = 1.45;
+var WALK_STRIDE = 28, WALK_TILT = 30, WALK_ZOOM = 1.45, WALK_STAND = 8;
 function segDir(TR, n){   // the screen direction from hole n to hole n + 1 on the tour map (see drawMap)
   var K = TR.per || PER, dy = -92 - (n % K === 0 ? 104 : 0), dx = 105 * (Math.sin(n * 0.9) - Math.sin((n - 1) * 0.9)); return [dx, dy]; }
 function warmWalk(TR, n){ try{ var h = S.host; if (h.golferWalkWarm && n < TR.levels.length){ var d = segDir(TR, n); h.golferWalkWarm(d[0], d[1]); } }catch(e){} }
+/* the eight facings the walk is drawn in, and which of them a direction is */
+function faceOf(dx, dy){ return ((Math.round(Math.atan2(dx, -dy) / (Math.PI / 4)) % 8) + 8) % 8; }
+function faceVec(f){ var a = f * Math.PI / 4; return [Math.sin(a), -Math.cos(a)]; }
 function walker3(hub, box, world, dx, dy){
   var h = S.host; if (!h.golferWalk) return null;
   var f0 = null; try{ f0 = h.golferWalk(dx, dy, 0); }catch(e){ f0 = null; } if (!f0 || !f0.url) return null;
-  try{ h.golferWalkWarm && h.golferWalkWarm(dx, dy); }catch(e){}
-  var k = S.mapK || 1, px = Math.max(2, Math.round(2 * k)), N = f0.n || 8, frames = [f0], cur = -1;
+  var k = S.mapK || 1, px = Math.max(2, Math.round(2 * k)), N = f0.n || 8, face = faceOf(dx, dy), sets = {}, cur = '';
+  sets[face] = [f0];
   var wk = el('<div class="pp-walker"><img alt=""></div>'), im = wk.firstChild;
   im.style.width = f0.W * px + 'px'; im.style.height = f0.H * px + 'px'; im.style.left = -f0.ball[0] * px + 'px'; im.style.top = -f0.ball[1] * px + 'px';
   hub.appendChild(wk);
   var W = world.offsetWidth || 340, base = world.style.transform, tilt = 0;
-  function show(i){ if (!frames[i]){ try{ if (h.golferWalkHas(dx, dy, i)) frames[i] = h.golferWalk(dx, dy, i); }catch(e){} }
-    var j = i; while (j > 0 && !frames[j]) j--; if (j !== cur){ cur = j; im.src = frames[j].url; } }
+  function warmAll(){ for (var q = 0; q < 8; q++){ var v = faceVec((face + q) % 8); try{ h.golferWalkWarm && h.golferWalkWarm(v[0], v[1]); }catch(e){} } }
+  warmAll();
+  function show(i){ var fr = sets[face] || (sets[face] = []), v = faceVec(face);
+    if (!fr[i]){ try{ if (h.golferWalkHas(v[0], v[1], i)) fr[i] = h.golferWalk(v[0], v[1], i); }catch(e){} }
+    var j = i; if (!fr[j]){ j = i === WALK_STAND ? 0 : i; while (j > 0 && !fr[j]) j--; }
+    if (!fr[j]){ try{ fr[j] = h.golferWalk(v[0], v[1], j); }catch(e){} }   // a facing never drawn: draw the one frame now
+    if (!fr[j]) return; var key = face + ':' + j; if (key !== cur){ cur = key; im.src = fr[j].url; } }
   return {
-    // put the golfer at world point (x, y), having walked dist world pixels, and the camera at tilt t (0 to 1)
-    at:function(x, y, dist, t){ tilt = t;
+    /* put the golfer at world point (x, y), showing frame i (WALK_STAND stands still), the camera at tilt t
+       (0 to 1); c (0 to 1) is how far the camera follows him sideways, 1 keeping him in the middle */
+    at:function(x, y, i, t, c){ tilt = t; c = c || 0;
       var ox = x - W / 2, z = 1 + (WALK_ZOOM - 1) * t;
-      world.style.transform = base + (t > 0.001 ? ' translate(' + ox + 'px,' + y + 'px) perspective(' + 900 + 'px) rotateX(' + (WALK_TILT * t).toFixed(2) + 'deg) scale(' + z.toFixed(3) + ') translate(' + (-ox) + 'px,' + (-y) + 'px)' : '');
+      world.style.transform = base + (c ? ' translate(' + (-ox * c).toFixed(1) + 'px,0)' : '') + (t > 0.001 ? ' translate(' + ox + 'px,' + y + 'px) perspective(' + 900 + 'px) rotateX(' + (WALK_TILT * t).toFixed(2) + 'deg) scale(' + z.toFixed(3) + ') translate(' + (-ox) + 'px,' + (-y) + 'px)' : '');
       var br = box.getBoundingClientRect(), hr = hub.getBoundingClientRect();
-      wk.style.left = Math.round(br.left - hr.left + box.clientWidth / 2 + ox * k) + 'px';
+      wk.style.left = Math.round(br.left - hr.left + box.clientWidth / 2 + ox * k * (1 - c)) + 'px';
       wk.style.top = Math.round(br.top - hr.top + y * k - box.scrollTop) + 'px';
-      show(Math.floor(dist / WALK_STRIDE * N) % N); },
+      show(i); },
+    face:function(vx, vy){ var f = faceOf(vx, vy); if (f !== face){ face = f; } return face; },
+    frameAt:function(dist){ return Math.floor(dist / WALK_STRIDE * N) % N; },
     tilt:function(){ return tilt; },
     done:function(){ world.style.transform = base; if (wk.parentNode) wk.remove(); } };
 }
+/* THE WALK IS YOURS. Winning a hole and pressing Next brings the map back as a place to walk: the camera
+   comes down behind the 3D golfer, and a joystick (drag anywhere on the map, or the arrows and WASD on a
+   keyboard) walks him along the cart path. A waypoint on the next hole, and an arrow on the edge of the
+   screen when it is out of sight, say where to go, the way a waypoint does in an open world game. He walks
+   the path and the ground beside it (ROAM_R either side) and nowhere else, so the land beyond is scenery.
+   Reaching the next hole opens it. Walking back to a hole already open offers it again. A world's door
+   stands on the path where the worlds meet: it opens with the stars and stays shut without them.
+   Auto walks the path for you, and Skip goes straight to the hole. Reduced motion, or a page without
+   the 3D golfer, keeps the old short walk. */
+var ROAM_SPEED = 96, ROAM_R = 46, ROAM_REACH = 24;
 function walkTo(n, tid){
+  var TR = tourOf(tid), N = TR.levels.length;
+  if (n >= N) return showHub(tid);
+  var reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+  if (!reduce && S.host.golferWalk){ showHub(tid); if (roam(tid, n, n + 1)) return; }
+  return walkFlat(n, tid);
+}
+/* roam on the map of tour tid, starting at hole `from`'s flag (0: just below hole 1), heading for hole `to` */
+function roam(tid, from, to){
+  var TR = tourOf(tid), K = TR.per || PER, N = TR.levels.length;
+  var hub = S.ov.querySelector('.pp-hub'), box = S.ov.querySelector('[data-map]'), me = S.ov.querySelector('.pp-me'), world = S.ov.querySelector('.pp-world'), pos = S.mapPos, k = S.mapK || 1;
+  if (!hub || !box || !me || !world || !pos || !pos[to - 1]) return false;
+  var tp = pload().tours[TR.id];
+  var start = from >= 1 ? pos[from - 1].slice() : [pos[0][0], pos[0][1] + 70];
+  if (from >= 1 && from === to){ var pv = from >= 2 ? pos[from - 2] : [pos[0][0], pos[0][1] + 70], dl = Math.hypot(pv[0] - start[0], pv[1] - start[1]) || 1; start = [start[0] + (pv[0] - start[0]) / dl * 52, start[1] + (pv[1] - start[1]) / dl * 52]; }
+  var dv = segDir(TR, Math.max(1, Math.min(N - 1, from || 1)));
+  var wk = walker3(hub, box, world, dv[0], dv[1]); if (!wk) return false;
+  // the path he may walk: the start, then every hole up to the furthest one open (or the one he is heading for)
+  var reach = Math.max(to, Math.min(N, tp.lv)), gate = null, gateOpen = true;
+  var cross = from >= 1 && to === from + 1 && from % K === 0;
+  if (cross){ var gw = Math.floor(from / K) - 1; gate = { x:(pos[from - 1][0] + pos[from][0]) / 2, y:(pos[from - 1][1] + pos[from][1]) / 2, w:Math.floor(from / K), have:starsThrough(tp, TR, gw), need:worldGate(TR, gw), shown:false };
+    gateOpen = tp.lv > from; }
+  var P = [start].concat(pos.slice(0, reach));
+  if (cross && !gateOpen) P = [start].concat(pos.slice(0, from), [[gate.x, gate.y]]);
+  else if (!cross && reach > to && tp.lv <= to) P = [start].concat(pos.slice(0, to));
+  function near(x, y){ var best = 1e9; for (var i = 0; i + 1 < P.length; i++){ var a = P[i], b = P[i + 1], vx = b[0] - a[0], vy = b[1] - a[1], L2 = vx * vx + vy * vy || 1,
+      u = Math.max(0, Math.min(1, ((x - a[0]) * vx + (y - a[1]) * vy) / L2)), d = Math.hypot(a[0] + vx * u - x, a[1] + vy * u - y); if (d < best) best = d; } return best; }
+  // how far along the path a point is (segment index plus fraction), for the autopilot
+  function along(x, y){ var best = 1e9, s = 0; for (var i = 0; i + 1 < P.length; i++){ var a = P[i], b = P[i + 1], vx = b[0] - a[0], vy = b[1] - a[1], L2 = vx * vx + vy * vy || 1,
+      u = Math.max(0, Math.min(1, ((x - a[0]) * vx + (y - a[1]) * vy) / L2)), d = Math.hypot(a[0] + vx * u - x, a[1] + vy * u - y); if (d < best - 0.01){ best = d; s = i + u; } } return s; }
+  function pathAt(s){ var i = Math.max(0, Math.min(P.length - 2, Math.floor(s))), u = Math.max(0, Math.min(1, s - i)), a = P[i], b = P[i + 1]; return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u]; }
+  var goalS = (function(){ if (cross && !gateOpen) return P.length - 1; for (var i = 1; i < P.length; i++) if (P[i] === pos[to - 1]) return i; return P.length - 1; })();
+
+  hub.classList.add('pp-walking', 'pp-walk3', 'pp-roam'); me.style.visibility = 'hidden';
+  // the route to the next hole, worn in gold on the path
+  var svg = world.querySelector('.pp-path'), route = null;
+  if (svg){ var rp = [start]; for (var ri = 1; ri <= goalS; ri++) rp.push(P[ri]); route = document.createElementNS('http://www.w3.org/2000/svg', 'path'); route.setAttribute('class', 'route');
+    route.setAttribute('d', rp.map(function(p, i){ return (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' ')); svg.appendChild(route); }
+  var tgtBtn = world.querySelector('[data-lv="' + to + '"]'); if (tgtBtn) tgtBtn.classList.add('pp-tgt');
+  // the gate is a point on the path rather than an element, so it gets a marker the waypoint can measure
+  var gmk = null; if (cross && !gateOpen){ gmk = el('<i class="pp-gatemk" style="left:' + gate.x + 'px;top:' + gate.y + 'px"></i>'); world.appendChild(gmk); }
+  var ui = el('<div class="pp-rui"><div class="pp-way" data-way><i></i><b></b></div><div class="pp-pin" data-pin><b></b><i></i></div>\
+    <div class="pp-stick" data-stick><i></i></div><div class="pp-rbar"><button class="pp-rb" data-auto>Auto walk</button><button class="pp-rb" data-skip>' + (gateOpen && to <= tp.lv ? 'Skip to hole ' + to : 'Map') + '</button></div>\
+    <button class="pp-rplay" data-rplay hidden></button><div class="pp-rhint" data-hint>' + (S.host && matchMedia && matchMedia('(pointer: coarse)').matches ? 'Drag to walk' : 'Drag or use the arrow keys to walk') + '</div></div>');
+  hub.appendChild(ui);
+  var way = ui.querySelector('[data-way]'), pin = ui.querySelector('[data-pin]'), stick = ui.querySelector('[data-stick]'), knob = stick.firstChild, playB = ui.querySelector('[data-rplay]'), hint = ui.querySelector('[data-hint]');
+  pin.querySelector('b').textContent = cross && !gateOpen ? 'World ' + (gate.w + 1) : 'Hole ' + to;
+  var token = S.walkTok = {}, x = start[0], y = start[1], dist = 0, cam = 0, stand = true, ended = false, paused = false, auto = false, door = null, leftFrom = false, offer = 0;
+  var stickV = [0, 0], keys = {}, drag = null, moved = 0;
+  S.roam = { tid:tid, to:to, pos:function(){ return [x, y]; }, stick:function(vx, vy){ stickV = [vx, vy]; }, auto:function(){ setAuto(true); } };
+  function alive(){ return S && S.walkTok === token && box.isConnected && !ended; }
+  function tidy(){ ended = true; if (S.walkTok === token) S.walkTok = null; S.roam = null; wk.done(); if (ui.parentNode) ui.remove(); if (route && route.parentNode) route.remove(); if (tgtBtn) tgtBtn.classList.remove('pp-tgt');
+    me.style.visibility = ''; hub.classList.remove('pp-walking', 'pp-walk3', 'pp-roam'); window.removeEventListener('keydown', kd, true); window.removeEventListener('keyup', ku, true);
+    window.removeEventListener('pointermove', pmv, true); window.removeEventListener('pointerup', pup, true); window.removeEventListener('pointercancel', pup, true); window.removeEventListener('blur', pup);
+    hub.removeEventListener('pointerdown', pdn, true); if (gmk && gmk.parentNode) gmk.remove(); if (door && door.isConnected) door.remove(); }
+  function play(n){ if (!alive()) return; tidy(); startLevel(n, tid); }
+  function toMap(){ if (!alive()) return; tidy(); showHub(tid); }
+  function setAuto(on){ auto = on; ui.querySelector('[data-auto]').classList.toggle('on', on); if (on) hint.classList.add('gone'); }
+  ui.querySelector('[data-auto]').onclick = function(){ setAuto(!auto); };
+  ui.querySelector('[data-skip]').onclick = function(){ if (gateOpen && to <= pload().tours[TR.id].lv) play(to); else toMap(); };
+  playB.onclick = function(){ if (offer) play(offer); };
+  // the joystick: press anywhere on the map, and the stick appears under the thumb
+  function kd(e){ var c = { ArrowUp:'u', KeyW:'u', ArrowDown:'d', KeyS:'d', ArrowLeft:'l', KeyA:'l', ArrowRight:'r', KeyD:'r' }[e.code]; if (!c || !alive()) return; keys[c] = 1; setAuto(false); hint.classList.add('gone'); e.preventDefault(); }
+  function ku(e){ var c = { ArrowUp:'u', KeyW:'u', ArrowDown:'d', KeyS:'d', ArrowLeft:'l', KeyA:'l', ArrowRight:'r', KeyD:'r' }[e.code]; if (c) keys[c] = 0; }
+  var SR = 46;
+  function pdn(e){ if (!alive() || e.target.closest('button,[data-x],.pp-rbar')) return; e.preventDefault(); var hr = hub.getBoundingClientRect();
+    drag = { id:e.pointerId, x:e.clientX, y:e.clientY }; stick.style.left = (e.clientX - hr.left) + 'px'; stick.style.top = (e.clientY - hr.top) + 'px'; stick.classList.add('on'); knob.style.transform = ''; setAuto(false); hint.classList.add('gone'); }
+  function pmv(e){ if (!drag || e.pointerId !== drag.id) return; var dx = e.clientX - drag.x, dy = e.clientY - drag.y, L = Math.hypot(dx, dy), m = Math.min(1, L / SR);
+    stickV = L > 4 ? [dx / L * m, dy / L * m] : [0, 0]; knob.style.transform = 'translate(' + (stickV[0] * SR).toFixed(1) + 'px,' + (stickV[1] * SR).toFixed(1) + 'px)'; }
+  function pup(e){ if (!drag || (e && e.pointerId != null && e.pointerId !== drag.id)) return; drag = null; stickV = [0, 0]; stick.classList.remove('on'); stick.style.left = stick.style.top = ''; knob.style.transform = ''; }
+  hub.addEventListener('pointerdown', pdn, true); window.addEventListener('pointermove', pmv, true); window.addEventListener('pointerup', pup, true); window.addEventListener('pointercancel', pup, true); window.addEventListener('blur', pup);
+  window.addEventListener('keydown', kd, true); window.addEventListener('keyup', ku, true);
+
+  function frame(){ var i = stand ? WALK_STAND : wk.frameAt(dist);
+    box.scrollTop = Math.max(0, y * k - box.clientHeight * 0.62); wk.at(x, y, i, cam, cam); }
+  function showDoor(){ gate.shown = true; paused = true; stickV = [0, 0]; setAuto(false); var Wd = TR.worlds[gate.w], T = THEMES[Wd.theme] || {};
+    door = el('<div class="pp-door" data-door="' + Wd.theme + '" style="--da:' + (T.acc || '#F1D04A') + ';--db:' + (T.bg || '#20302a') + ';--dc:' + (T.bg2 || '#34483e') + '">\
+      <div class="pp-dl"></div><div class="pp-dr"></div>\
+      <div class="pp-dlock"><i>' + (TR.members ? 'Members Tour' : 'World ' + (gate.w + 1)) + '</i><b>' + esc(Wd.name) + '</b>\
+        <span class="pp-dbar"><u style="--f:' + Math.min(1, gate.have / Math.max(1, gate.need)) + '"></u></span><em>★ ' + gate.have + ' / ' + gate.need + '</em>\
+        <small>' + (gateOpen ? esc(DOOR_NAMES[Wd.theme] || 'The door') + ' opens' : 'Need ' + (gate.need - gate.have) + ' more ★ · replay holes to earn them') + '</small></div></div>');
+    hub.appendChild(door);
+    requestAnimationFrame(function(){ door.classList.add('in'); setTimeout(function(){ if (!alive()) return; door.classList.add('fill');
+      setTimeout(function(){ if (!alive()) return; door.classList.add(gateOpen ? 'open' : 'shut');
+        setTimeout(function(){ if (!alive()) return; door.classList.remove('in'); setTimeout(function(){ if (door && door.isConnected) door.remove(); door = null; paused = false; if (gateOpen) setAuto(autoWas); }, 360); }, gateOpen ? 900 : 1700); }, 1000); }, 400); }); }
+  var autoWas = false;
+  // the waypoint: a pin over the hole while it is on screen, an arrow on the edge of the screen when it is not
+  function waypoint(){ var tx, ty, br = box.getBoundingClientRect(), hr = hub.getBoundingClientRect();
+    var mk = cross && !gateOpen ? gmk : tgtBtn;
+    if (mk){ var r = mk.getBoundingClientRect(); tx = r.left + r.width / 2; ty = r.top + r.height / 2; }
+    if (tx == null) return;
+    var M = 34, inside = tx > br.left + M && tx < br.right - M && ty > br.top + M + 40 && ty < br.bottom - M - 60;
+    var d = Math.round(Math.hypot((cross && !gateOpen ? gate.x : pos[to - 1][0]) - x, (cross && !gateOpen ? gate.y : pos[to - 1][1]) - y) / 2);
+    if (inside){ way.classList.remove('on'); pin.classList.add('on'); pin.style.left = (tx - hr.left) + 'px'; pin.style.top = (ty - hr.top - 34) + 'px'; pin.querySelector('i').textContent = d > 4 ? d + ' yd' : ''; return; }
+    pin.classList.remove('on'); way.classList.add('on');
+    var cx = (br.left + br.right) / 2, cy = (br.top + br.bottom) / 2, vx = tx - cx, vy = ty - cy, sx = (br.width / 2 - M) / Math.abs(vx || 1e-6), sy = (br.height / 2 - M - 50) / Math.abs(vy || 1e-6), s = Math.min(sx, sy);
+    way.style.left = (cx + vx * s - hr.left) + 'px'; way.style.top = (cy + vy * s - hr.top) + 'px';
+    way.querySelector('i').style.transform = 'rotate(' + (Math.atan2(vy, vx) * 180 / Math.PI + 90).toFixed(1) + 'deg)';
+    way.querySelector('b').textContent = (cross && !gateOpen ? 'Door' : 'Hole ' + to) + ' · ' + d + ' yd'; }
+  var last = performance.now();
+  function step(){ if (!alive()) return; var now = performance.now(), dt = Math.min(0.05, (now - last) / 1000); last = now;
+    var vx = 0, vy = 0;
+    if (!paused){
+      if (auto){ var s = along(x, y), aim = s >= goalS - 0.02 ? pathAt(goalS) : pathAt(Math.min(goalS, s + 0.35)), ax = aim[0] - x, ay = aim[1] - y, L = Math.hypot(ax, ay); if (L > 0.5){ vx = ax / L; vy = ay / L; } }
+      else { vx = stickV[0] + (keys.r ? 1 : 0) - (keys.l ? 1 : 0); vy = stickV[1] + (keys.d ? 1 : 0) - (keys.u ? 1 : 0); var m = Math.hypot(vx, vy); if (m > 1){ vx /= m; vy /= m; } }
+    }
+    var sp = Math.hypot(vx, vy);
+    if (sp > 0.12){
+      var st1 = ROAM_SPEED * sp * dt, ux = vx / sp, uy = vy / sp, nx = x + ux * st1, ny = y + uy * st1, moved1 = false;
+      if (near(nx, ny) <= ROAM_R){ x = nx; y = ny; moved1 = true; }
+      else if (near(x + ux * st1, y) <= ROAM_R){ x += ux * st1; moved1 = true; }   // slide along the edge of the path
+      else if (near(x, y + uy * st1) <= ROAM_R){ y += uy * st1; moved1 = true; }
+      wk.face(vx, vy);
+      if (moved1){ dist += st1; stand = false; moved += st1; } else stand = true;
+    } else stand = true;
+    if (!stand && cam < 1) cam = Math.min(1, cam + dt * 2.4);
+    if (moved > 8) hint.classList.add('gone');
+    frame(); waypoint();
+    // the door, where the worlds meet
+    if (gate && !gate.shown && Math.hypot(x - gate.x, y - gate.y) < ROAM_REACH + 8){ autoWas = auto; showDoor(); }
+    // a hole he walks onto
+    var on = 0; for (var h = 1; h <= reach && h <= N; h++){ if (Math.hypot(pos[h - 1][0] - x, pos[h - 1][1] - y) < ROAM_REACH){ on = h; break; } }
+    if (on === from && !leftFrom) on = 0; if (!on && Math.hypot(start[0] - x, start[1] - y) > ROAM_REACH * 1.5) leftFrom = true;
+    if (on){ var lvNow = pload().tours[TR.id].lv;
+      if (on === to && on <= lvNow && !(cross && !gateOpen)) return play(on);
+      if (on !== offer){ offer = on; playB.hidden = false; playB.textContent = on <= lvNow ? 'Play hole ' + on : 'Hole ' + on + ' is locked'; playB.disabled = on > lvNow; } }
+    else if (offer){ offer = 0; playB.hidden = true; }
+    requestAnimationFrame(step); }
+  frame(); waypoint(); requestAnimationFrame(step);
+  return true;
+}
+/* reduced motion, or no 3D golfer: the short walk the flat golfer took before (a tap skips it) */
+function walkFlat(n, tid){
   var TR = tourOf(tid), K = TR.per || PER, N = TR.levels.length;
   if (n >= N) return showHub(tid);
   showHub(tid);
   var hub = S.ov.querySelector('.pp-hub'), box = S.ov.querySelector('[data-map]'), me = S.ov.querySelector('.pp-me'), pos = S.mapPos, k = S.mapK || 1;
-  var world = S.ov.querySelector('.pp-world');
   var tp = pload().tours[TR.id], open = tp.lv > n, cross = n % K === 0, w = Math.floor(n / K), Wd = TR.worlds[w];
   var reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
   if (!hub || !box || !me || !pos || !pos[n]){ if (open) startLevel(n + 1, tid); return; }
   if (reduce && !cross){ if (open) startLevel(n + 1, tid); return; }
-  hub.classList.add('pp-walking');
-  var a = pos[n - 1], b = pos[n], token = S.walkTok = {}, done = false, door = null, len = Math.hypot(b[0] - a[0], b[1] - a[1]);
-  var wk = reduce || !world ? null : walker3(hub, box, world, b[0] - a[0], b[1] - a[1]), cam = 0;
-  if (wk){ me.style.visibility = 'hidden'; hub.classList.add('pp-walk3'); } else me.classList.add('walk');
-  var lastF = 0;
-  function at(f){ lastF = f; var x = a[0] + (b[0] - a[0]) * f, y = a[1] + (b[1] - a[1]) * f;
-    box.scrollTop = Math.max(0, y * k - box.clientHeight * (wk ? 0.64 : 0.55));
-    if (wk) return wk.at(x, y, f * len, cam);
+  hub.classList.add('pp-walking'); me.classList.add('walk');
+  var a = pos[n - 1], b = pos[n], token = S.walkTok = {}, done = false, door = null;
+  function at(f){ var x = a[0] + (b[0] - a[0]) * f, y = a[1] + (b[1] - a[1]) * f;
+    box.scrollTop = Math.max(0, y * k - box.clientHeight * 0.55);
     me.style.left = x + 'px'; me.style.top = (y - 6) + 'px'; me.classList.toggle('flip', b[0] < a[0]); }
   function alive(){ return S && S.walkTok === token && box.isConnected; }
-  function camTo(c1, ms, then){ var c0 = cam, t0 = performance.now(); (function step(){ if (!alive()) return; var u = ms > 0 ? Math.min(1, (performance.now() - t0) / ms) : 1;
-      cam = c0 + (c1 - c0) * (u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2); at(lastF); if (u < 1) requestAnimationFrame(step); else then && then(); })(); }
   function finish(){ if (done || !alive()) return; done = true; S.walkTok = null; S.ov.removeEventListener('pointerdown', skip, true);
     if (open) return startLevel(n + 1, tid);
-    var tidy = function(){ if (wk) wk.done(); me.style.visibility = ''; hub.classList.remove('pp-walking', 'pp-walk3'); me.classList.remove('walk'); };
-    if (wk && cam > 0){ S.walkTok = token; camTo(0, 380, function(){ S.walkTok = null; tidy(); }); } else tidy();
+    hub.classList.remove('pp-walking'); me.classList.remove('walk');
     if (door) setTimeout(function(){ if (door && door.isConnected) door.remove(); }, 2600); }
   function skip(e){ if (e.target.closest && e.target.closest('[data-x]')) return; e.preventDefault(); e.stopPropagation();
-    if (door && !open){ door.classList.add('fill', 'shut'); } cam = 0; finish(); }
+    if (door && !open){ door.classList.add('fill', 'shut'); } finish(); }
   S.ov.addEventListener('pointerdown', skip, true);
-  // a gentle start and stop, and a steady walk between, so the stride reads as walking
   function ease(u){ var r = 0.18; if (u < r) return u * u / (2 * r * (1 - r)); if (u > 1 - r) return 1 - (1 - u) * (1 - u) / (2 * r * (1 - r)); return (u - r / 2) / (1 - r); }
   function tween(f0, f1, ms, then){ var t0 = performance.now(); (function step(){ if (!alive() || done) return; var u = Math.min(1, (performance.now() - t0) / ms);
       at(f0 + (f1 - f0) * ease(u)); if (u < 1) requestAnimationFrame(step); else then(); })(); }
   at(0);
-  var pace = wk ? Math.min(2900, Math.max(1900, len * k * WALK_ZOOM / 72 * 1000)) : 2100;
-  function go(f0, f1, ms, then){ if (wk && cam < 1) camTo(1, 420); tween(f0, f1, ms, then); }
-  if (!cross) return go(0, 1, pace, finish);
-  // a world's door: the walk stops halfway, at the boundary, and the door has its say
+  if (!cross) return tween(0, 1, 2100, finish);
   var gw = w - 1, have = starsThrough(tp, TR, gw), gate = worldGate(TR, gw), T = THEMES[Wd.theme] || {};
   door = el('<div class="pp-door" data-door="' + Wd.theme + '" style="--da:' + (T.acc || '#F1D04A') + ';--db:' + (T.bg || '#20302a') + ';--dc:' + (T.bg2 || '#34483e') + '">\
     <div class="pp-dl"></div><div class="pp-dr"></div>\
     <div class="pp-dlock"><i>' + (TR.members ? 'Members Tour' : 'World ' + (w + 1)) + '</i><b>' + esc(Wd.name) + '</b>\
       <span class="pp-dbar"><u style="--f:' + Math.min(1, have / Math.max(1, gate)) + '"></u></span><em>★ ' + have + ' / ' + gate + '</em>\
       <small>' + (open ? esc(DOOR_NAMES[Wd.theme] || 'The door') + ' opens' : 'Need ' + (gate - have) + ' more ★ · replay holes to earn them') + '</small></div></div>');
-  go(0, 0.5, reduce ? 1 : pace * 0.6, function(){ if (!alive()) return; hub.appendChild(door);
+  tween(0, 0.5, reduce ? 1 : 1260, function(){ if (!alive()) return; hub.appendChild(door);
     requestAnimationFrame(function(){ door.classList.add('in'); setTimeout(function(){ if (!alive()) return; door.classList.add('fill');
       setTimeout(function(){ if (!alive()) return; door.classList.add(open ? 'open' : 'shut');
-        setTimeout(function(){ if (!alive()) return; if (open) tween(0.5, 1, reduce ? 1 : pace * 0.55, finish); else finish(); }, open ? 900 : 1500); }, 1000); }, reduce ? 50 : 450); }); });
+        setTimeout(function(){ if (!alive()) return; if (open) tween(0.5, 1, reduce ? 1 : 1150, finish); else finish(); }, open ? 900 : 1500); }, 1000); }, reduce ? 50 : 450); }); });
 }
 /* ------------------------------------------------------------------------------ out of lives */
 function outOfLives(){
