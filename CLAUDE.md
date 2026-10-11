@@ -11785,10 +11785,19 @@ check-sprite was re-recorded for it, and its header says why.
 **ONLY MUSCULAR IS BROAD.** The owner found the first 3D players too buff. `BODY` in baller.js is
 one table read by the skeleton, the model and `handAt`: Lean and Standard are long and narrow (small
 delts, thin arms), and Muscular (id `strong`, kept because it is in saves) carries the broad
-shoulders. **The jersey number is stamped on the screen**, after the light, onto jersey cloth only,
-because mapped onto the model in world cells the camera's pitch dropped whole rows of a digit. The
-tank is a round scoop, narrow straps and round armholes, each edged in one even band of the second
-colour. The lower body was asked to stay as it is.
+shoulders.
+
+**The jersey is an NBA crew neck, and every club wears its own design.** The owner found the old
+scoop cut too low. `KITS` in baller.js maps a club's two colours (the only thing a caller hands
+the painter) to one of seven designs (classic, double trim in a third colour, side panels,
+pinstripes, a sash, chest bands, a fade), and an unknown pair picks one off a hash of its colours,
+so every screen gets a design without learning a club code. **The number is printed on the cloth
+at a fine trace** (`res` 2 and up, the portraits): a 3 by 5 numeral in the body's own units on
+the front of the chest, so it turns and foreshortens with it, and no stripe runs through it
+(`numClear`). A cell is never under a pixel and a half or the pitch drops a row. **At a single
+resolution trace (every court sprite) it is still stamped on the screen**, because a chest there
+is twelve pixels and 3 by 5 is the smallest numeral that reads; a slant was tried and broke the
+digits.
 
 **HEIGHT AND WEIGHT ARE DRAWN.** Asked for by the owner: every player looked the same whatever his
 size. `metrics(look)` in baller.js turns `ht` (inches) and `wt` (pounds) into the body: legs grow

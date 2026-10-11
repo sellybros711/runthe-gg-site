@@ -85,6 +85,15 @@
  * a profile (a jaw and chin, a brow ridge, cheekbones and a modelled nose) so
  * a face from the corner reads as looking somewhere, and every hairline climbs
  * at the front so the forehead and the eyes show.
+ *
+ * RE-RECORDED AN ELEVENTH TIME, ON PURPOSE: the owner found the jersey cut too
+ * low and asked for team designs and a number that fits the chest. The tank
+ * is an NBA crew neck now, with wider straps and shallower armholes; each club
+ * wears a design keyed by its two colours (KITS: double trim, side panels,
+ * pinstripes, a sash, chest bands, a fade); and at a fine trace the number is
+ * printed on the cloth in the body's own units, smaller, turning with the
+ * chest. These hashes are a single resolution trace, where the number is
+ * still stamped on the screen.
  */
 import fs from 'node:fs';
 import path from 'node:path';
