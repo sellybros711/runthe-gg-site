@@ -435,8 +435,9 @@ if (!args.includes('--no-browser')){
     claim(calk.lockN > 0 && calk.sheet && calk.noRound, 'without the Tour Pass a missed day is shut, and pressing it opens the Pass sheet rather than a hole');
     claim(calk.pastRound && calk.late && calk.streak === 2 && calk.last, `a Pass holder plays a missed day, and it is filed late without moving the streak (streak ${calk.streak})`);
     // THE WALK TO THE NEXT HOLE IS A PLACE (trail.js): Next opens a 3D trail of the world, walked with a stick,
-    // with a waypoint on the hole ahead. Coins, a chest behind a locked gate and its key, and a golden ball are
-    // picked up and kept in the Tour record; walking through the arch opens the hole; Skip goes straight there.
+    // with a waypoint on the hole ahead. No coin lies loose: chests are hidden off the path, and opening one throws
+    // its coins onto the ground to be walked over and paid into the account. A chest behind a locked gate and its
+    // key, and a golden ball, are picked up and kept in the Tour record; walking through the arch opens the hole; Skip goes straight there.
     // Where two worlds meet a wall stands across the land: with the stars its door opens, short of them it holds.
     const wk = await pg.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), seed = (s, lv) => { const best = {}; for (let n = 1; n <= 18; n++) best[n] = s;
       localStorage.setItem('bag_ppt_v1@walk', JSON.stringify({ v:2, met:['clubhouse', 'temple', 'pirate'], tours:{ main:{ lv, best, ace:{}, paid:{}, wpaid:{} } } })); };   // greeters met: their section is below
@@ -444,24 +445,37 @@ if (!args.includes('--no-browser')){
       const open = async n => { window.RTT_PUTT._walkTo(n); for (let i = 0; i < 400 && !T(); i++) await sleep(50); await sleep(150); return T(); };
       const visit = async (t, x, y) => { t.goTo(x, y + 0.05); await sleep(120); };
       window.RTT_PUTT.close(); sbUser = { id:'walk' }; seed(1, 19); openPutt(); await sleep(300);
-      // NO TWO WALKS ALIKE: the shapes and where the coins lie change from trail to trail
+      // NO TWO WALKS ALIKE: the shapes and where the chests are hidden change from trail to trail
       const plans = []; for (let f = 1; f < 18; f++) plans.push(window.RTT_PUTT._trailPlan(f));
       out.styles = new Set(plans.map(p => p.style)).size; out.clrs = new Set(plans.map(p => p.clrKind + (p.spur.length ? 's' : 'h'))).size;
-      const cpos = p => JSON.stringify(p.items.filter(t => t.k === 'coin').map(t => [t.x | 0, t.y | 0]));
+      const cpos = p => JSON.stringify(p.items.filter(t => t.k === 'chest').map(t => [t.x | 0, t.y | 0]));
       out.sameCoins = plans.slice(1).filter((p, i) => cpos(p) === cpos(plans[i])).length;
+      out.looseCoins = plans.reduce((n, p) => n + p.items.filter(t => t.k === 'coin').length, 0);
+      out.hidden = plans.map(p => p.items.filter(t => t.k === 'chest' && !t.main)).map(cs => cs.length).sort((a, b) => a - b)[0];
+      out.offPath = plans.every(p => p.items.filter(t => t.k === 'chest' && !t.main).every(t => p.walkD(t.x, t.y) > 5));
+      out.drops = plans.every(p => p.items.filter(t => t.k === 'chest').every(t => t.drops.length >= 4));
       const fromL = 1 + plans.findIndex(p => p.fence), fromT = 1 + plans.findIndex(p => p.items.some(t => t.k === 'trinket'));
       let t = await open(fromL);
       out.trail = !!t && S().screen === 'trail' && !S().round && !!document.querySelector('.pp-tcv') && !!document.querySelector('.pp-stick');
       out.mark = !!document.querySelector('.pp-pin.on,.pp-way.on');
       const p0 = t.pos(); t.stick(0, -1); await sleep(900); t.stick(0, 0); const p1 = t.pos(); out.moved = p0[1] - p1[1];
-      const P = t.plan(), its = t.items(), coin = its.find(i => i.k === 'coin'), key = its.find(i => i.k === 'key'), chest = its.find(i => i.k === 'chest'), gold = its.find(i => i.k === 'golden'), K = 'main:' + (fromL + 1);
-      out.locked = !!P.fence && !!key && !!chest; await visit(t, chest.x, chest.y + 2.4); out.shutChest = !rec()[K] || !rec()[K].k;
-      await visit(t, coin.x, coin.y); await visit(t, key.x, key.y); await visit(t, P.lockGate.x, P.lockGate.y); await visit(t, chest.x, chest.y + 2.0); await visit(t, gold.x, gold.y);
-      const r = rec()[K] || {}; out.coin = (r.c || []).indexOf(coin.id) >= 0; out.key = r.key === 1; out.chest = r.k === 1; out.gold = r.g === 1; out.bub = (document.querySelector('[data-bub]') || {}).textContent || '';
+      const P = t.plan(), its = t.items(), key = its.find(i => i.k === 'key'), chest = its.find(i => i.k === 'chest' && i.main), hid = its.find(i => i.k === 'chest' && !i.main), gold = its.find(i => i.k === 'golden'), K = 'main:' + (fromL + 1);
+      const paid = []; const h0 = S().host, c0 = h0.coins; h0.coins = (n, l) => { paid.push(n); };
+      const coinsOf = c => its.filter(i => i.k === 'coin' && i.ch === c);
+      out.locked = !!P.fence && !!key && !!chest; await visit(t, chest.x, chest.y + 2.4); out.shutChest = !(rec()[K] && (rec()[K].ch || []).indexOf(chest.id) >= 0);
+      // a hidden chest: nothing on the ground until it is opened, then its coins land round it and are walked over
+      out.buried = coinsOf(hid).every(c => !c.out); await visit(t, hid.x, hid.y + 2.0); await sleep(1200);
+      const hc = coinsOf(hid); out.burst = hc.length >= 4 && hc.every(c => c.out);
+      for (const c of hc) await visit(t, c.x, c.y);
+      out.hidCoins = hc.every(c => c.done); out.paid = paid.reduce((a, b) => a + b, 0) === hc.length * window.RTT_PUTT_TRAIL.COIN_V && paid.length === hc.length;
+      await visit(t, key.x, key.y); await visit(t, P.lockGate.x, P.lockGate.y); await visit(t, chest.x, chest.y + 2.0); await sleep(1200); await visit(t, gold.x, gold.y);
+      const left = coinsOf(chest)[0]; h0.coins = c0;
+      const r = rec()[K] || {}; out.coin = hc.every(c => (r.c || []).indexOf(c.id) >= 0); out.key = r.key === 1; out.chest = (r.ch || []).indexOf(chest.id) >= 0 && (r.ch || []).indexOf(hid.id) >= 0; out.gold = r.g === 1; out.bub = (document.querySelector('[data-bub]') || {}).textContent || '';
       // walking through the arch opens the hole
       await visit(t, P.cx(0), 2.5); t.stick(0, -1); for (let i = 0; i < 40 && !(S().round && S().round.lv === fromL + 1); i++) await sleep(50); out.reached = S().round && S().round.lv; out.want = fromL + 1;
       // what was picked up stays picked up
-      t = await open(fromL); out.kept = t.items().find(i => i.id === coin.id).done && t.items().find(i => i.k === 'chest').done;
+      t = await open(fromL); const it2 = t.items(), lc = it2.find(i => i.id === left.id);
+      out.kept = it2.filter(i => i.k === 'coin' && i.ch && i.ch.id === hid.id).every(i => i.done) && it2.filter(i => i.k === 'chest' && (i.id === hid.id || i.id === chest.id)).every(i => i.done) && lc.out && !lc.done;
       document.querySelector('[data-skip]').click(); await sleep(80); out.skipTo = S().round && S().round.lv;
       // the rare things: a trinket and whatever else that trail carries, into the record and the Bag
       t = await open(fromT); const rares = t.items().filter(i => i.k === 'trinket' || i.k === 'part' || i.k === 'life');
@@ -473,7 +487,7 @@ if (!args.includes('--no-browser')){
       t = await open(18); const G = t.plan().gate; out.cross = !!G;
       await visit(t, G.x, G.y + 4); t.stick(0, -1); for (let i = 0; i < 60 && !out.doorOpen; i++){ await sleep(50); if (document.querySelector('.pp-door.fill')) out.doorOpen = true; }
       for (let i = 0; i < 80 && !(t.gate() && t.gate().open && !document.querySelector('.pp-door')); i++) await sleep(50);
-      t.stick(0, -1); await sleep(700); out.passed = t.pos()[1] < G.y - 1; t.stick(0, 0);
+      t.stick(0, -1); await sleep(1100); out.passed = t.pos()[1] < G.y - 1; t.stick(0, 0);
       await visit(t, t.plan().cx(0), 2.5); t.stick(0, -1); for (let i = 0; i < 60 && !(S().round && S().round.lv === 19); i++) await sleep(50); out.through = S().round && S().round.lv;
       // and without
       window.RTT_PUTT.close(); seed(2, 18); openPutt(); await sleep(300); t = await open(18); const G2 = t.plan().gate;
@@ -483,11 +497,13 @@ if (!args.includes('--no-browser')){
       // the golfer on the map is a door into the walk too
       window.RTT_PUTT.close(); seed(1, 19); openPutt(); await sleep(300); const me = document.querySelector('.pp-me.tap'); if (me) me.click(); for (let i = 0; i < 400 && !T(); i++) await sleep(50); out.tap = S().screen === 'trail';
       window.RTT_PUTT.close(); sbUser = { id:'chk' }; return out; });
-    claim(wk.styles >= 3 && wk.clrs >= 3 && wk.sameCoins === 0, `seventeen trails take at least three shapes and three kinds of clearing, and no two put their coins in the same places (${wk.styles}, ${wk.clrs}, ${wk.sameCoins})`);
+    claim(wk.styles >= 3 && wk.clrs >= 3 && wk.sameCoins === 0, `seventeen trails take at least three shapes and three kinds of clearing, and no two hide their chests in the same places (${wk.styles}, ${wk.clrs}, ${wk.sameCoins})`);
+    claim(wk.looseCoins === 0 && wk.hidden >= 2 && wk.offPath && wk.drops, `no coin lies loose on a trail: every trail hides at least two chests off the path, each with coins to throw (${wk.looseCoins} loose, fewest hidden ${wk.hidden})`);
+    claim(wk.buried && wk.burst && wk.hidCoins && wk.paid, `opening a hidden chest throws its coins onto the ground, and each one walked over is paid into the account (${JSON.stringify([wk.buried, wk.burst, wk.hidCoins, wk.paid])})`);
     claim(wk.tk === 1 && wk.bagTk === 1 && (wk.rk.indexOf('part') < 0 || wk.parts === 1) && (wk.rk.indexOf('life') < 0 || wk.bank === 1), `a trinket and the rare things on its trail are kept, and the Bag shows them (${wk.rk}: ${wk.tk}, ${wk.parts}, ${wk.bank}, bag ${wk.bagTk})`);
     claim(wk.trail && wk.mark && wk.moved > 3, `Next opens the trail with the golfer, a stick and a waypoint, and the stick walks him (${wk.trail}, ${wk.mark}, ${(wk.moved || 0).toFixed(1)} ft)`);
-    claim(wk.locked && wk.shutChest && wk.coin && wk.key && wk.chest && wk.gold && /Golden ball/.test(wk.bub), `a coin, the key, the chest it opens and the golden ball are picked up and kept (${JSON.stringify([wk.coin, wk.key, wk.chest, wk.gold, wk.bub])})`);
-    claim(wk.reached === wk.want && wk.kept && wk.skipTo === wk.want, `walking through the arch opens the hole, what was picked up stays picked up, and Skip goes straight there (${wk.reached}, ${wk.kept}, ${wk.skipTo})`);
+    claim(wk.locked && wk.shutChest && wk.coin && wk.key && wk.chest && wk.gold && /Golden ball/.test(wk.bub), `the coins, the key, the chest it opens and the golden ball are picked up and kept (${JSON.stringify([wk.coin, wk.key, wk.chest, wk.gold, wk.bub])})`);
+    claim(wk.reached === wk.want && wk.kept && wk.skipTo === wk.want, `walking through the arch opens the hole, what was picked up stays picked up, a coin left on the ground is still there, and Skip goes straight there (${wk.reached}, ${wk.kept}, ${wk.skipTo})`);
     claim(wk.cross && wk.doorOpen && wk.passed && wk.through === 19, `with the stars, the world door on the trail opens and he walks on into World 2 (${wk.doorOpen}, ${wk.passed}, hole ${wk.through})`);
     claim(/Need \d+ more/.test(wk.shutTxt || '') && wk.held, `short of the stars, the door stays shut, says how many more, and he cannot walk past it (${wk.shutTxt})`);
     claim(wk.tap, 'tapping the golfer on the map starts the walk to the next hole');

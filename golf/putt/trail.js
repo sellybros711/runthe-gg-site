@@ -17,11 +17,11 @@
    the hole you are walking to: TRAIL_L feet, about two and a half screens on a phone. The camera rides
    behind the golfer. What is on the way:
 
-     coins along the path and round the clearings (picked up once each, for good),
-     a chest in a clearing off a spur (opened once), and on some trails that clearing is fenced and the
-     gate opens with a key found somewhere else on the trail,
+     chests hidden off the path, behind trees and rocks, and one in the clearing off a spur: walk up to one
+     and it opens, its coins burst out onto the ground, and each is picked up by walking over it, once for
+     good. On some trails the clearing is fenced and the gate opens with a key found somewhere else,
      breakables in the world's own form (crates, pots, barrels, ice blocks, pumpkins), smashed by walking
-     into them, the first time each with a coin inside,
+     into them, the first time each with a coin inside, the only coins not in a chest,
      one golden ball hidden off the path on every trail; all of a world's golden balls is a reward,
      a local who talks about the hole ahead when you walk up to them,
      and the world's own ground: water to walk round, lava that sends you back, ice that slides.
@@ -39,11 +39,11 @@
 (function(){
 var API_VERSION = 1;
 var GH = 4.0, ELEV = 42, D2R = Math.PI / 180, SE = Math.sin(ELEV * D2R), CE = Math.cos(ELEV * D2R);
-var TRAIL_L = 150, HALFW = 46, PW = 2.2, VIEW_FT = 60, SPEED = 9.5, STRIDE = 5.4;
+var TRAIL_L = 150, HALFW = 46, PW = 2.2, VIEW_FT = 60, SPEED = 7, STRIDE = 3.4;   // a stride the legs can be seen to make: about two steps a second each way
 var PIX_HEART = ['.oo.oo.', 'orhrrro', 'orrrrro', '.orrro.', '..oro..', '...o...'];
 var PIX_GEM = ['.ooooo.', 'ohrrrro', 'orhrrro', '.orrro.', '..oro..', '...o...'];
 var PIX_PART = ['ooo....', 'ohro...', 'orrro..', '.orrro.', '..orrgo', '...oggo', '....ooo'];
-var COIN_V = 2, CHEST_V = 25, TART = 0.125;   // the trail is painted on a finer grid than a hole, because the camera comes in closer
+var COIN_V = 3, TART = 0.125;   // the trail is painted on a finer grid than a hole, because the camera comes in closer
 
 function hash(x, y, s){ var h = (x * 374761393 + y * 668265263 + s * 982451653) | 0; h = Math.imul(h ^ h >>> 13, 1274126177); return ((h ^ h >>> 16) >>> 0) / 4294967296; }
 function vn(x, y, s){ var xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi, u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
@@ -121,8 +121,8 @@ function plan(spec){
   // half the clearings have a little path out to them; the rest are hidden in the trees and found by wandering
   var spurOn = R() < 0.55;
   if (spurOn) for (var k = 0; k <= 10; k++){ var t = k / 10; spur.push([sx0 + (clr.x - sx0) * t + Math.sin(t * Math.PI) * 2 * sg, ys + (clr.y - ys) * t - Math.sin(t * Math.PI) * 2.5]); }
-  // what the clearing holds: a chest most often, else a ring of coins, else a pile of things to smash
-  var clrKind = R() < 0.6 ? 'chest' : R() < 0.6 ? 'ring' : 'pile';
+  // what the clearing holds: a chest most often, else a pile of things to smash
+  var clrKind = R() < 0.7 ? 'chest' : 'pile';
   var locked = !spec.cross && clrKind === 'chest' && R() < 0.4;
   var start = { x:cx(L + 6), y:L + 6, r:7 };
   function pathD(x, y){ var m = 1e9; for (var i = 0; i < path.length - 1; i++){ var a = path[i], c = path[i + 1]; if (Math.abs(a[1] - y) > 6 && Math.abs(c[1] - y) > 6) continue; m = Math.min(m, segD(x, y, a[0], a[1], c[0], c[1])); } return m; }
@@ -218,25 +218,26 @@ function plan(spec){
   function okSpot(x, y, r, minD, maxD){ var wd = walkD(x, y); return okGround(x, y, r) && free(x, y, r) && !inClear(x, y, 1.5) && wd >= minD && (maxD == null || wd <= maxD) && !(gy && Math.abs(y - gy) < 6) && y > 6 && y < L - 4; }
   function spotOff(minD, maxD, r, tries){ for (var t = 0; t < (tries || 80); t++){ var yy = L * (0.08 + R() * 0.84), xx = cx(yy) + (R() < 0.5 ? -1 : 1) * (minD + R() * (maxD - minD));
       if (okSpot(xx, yy, r, minD - 1, maxD + 2)) return [xx, yy]; } return null; }
-  /* COINS ARE NEVER IN THE SAME PLACES TWICE. A trail picks a few patterns from a list and puts each one
-     somewhere of its own: a run along the path, an arc round a bend, singles lying in the grass, a line of
-     crumbs leading off into the trees to a little pile, and a ring round a tree. */
-  var pats = ['run', 'run', 'arc', 'loose', 'crumbs', 'crumbs', 'ring', 'zig'], np = 3 + ((R() * 3) | 0), usedY = [];
-  for (var pi = 0; pi < np; pi++){ var pat = pats[(R() * pats.length) | 0], y0 = 0;
-    for (var ty = 0; ty < 20; ty++){ y0 = L * (0.1 + R() * 0.78); if (usedY.every(function(u){ return Math.abs(u - y0) > 14; }) && !(gy && Math.abs(y0 - gy) < 9)) break; } usedY.push(y0);
-    if (pat === 'run'){ var n0 = 3 + ((R() * 3) | 0); for (var c = 0; c < n0; c++){ var yc = y0 - c * 2.4; item('coin', cx(yc) + (R() - 0.5) * 1.0, yc); } }
-    else if (pat === 'zig'){ for (var c2 = 0; c2 < 5; c2++){ var yz = y0 - c2 * 2.2; item('coin', cx(yz) + (c2 % 2 ? 1 : -1) * 1.3, yz); } }
-    else if (pat === 'arc'){ var sd = R() < 0.5 ? -1 : 1; for (var c3 = 0; c3 < 5; c3++){ var ya = y0 - c3 * 2.2, xa = cx(ya) + sd * (PW + 1 + Math.sin(c3 / 4 * Math.PI) * 3.5); if (okGround(xa, ya, 0.4) && free(xa, ya, 0.5)) item('coin', xa, ya); } }
-    else if (pat === 'loose'){ for (var c4 = 0; c4 < 5; c4++){ var sp4 = spotOff(4, 16, 0.6, 30); if (sp4) item('coin', sp4[0], sp4[1]); } }
-    else if (pat === 'crumbs'){ var sd5 = R() < 0.5 ? -1 : 1, ang = sd5 * (0.6 + R() * 0.5), x5 = cx(y0) + sd5 * (PW + 1), y5 = y0, n5 = 5 + ((R() * 4) | 0), ok5 = 0;
-      for (var c5 = 0; c5 < n5; c5++){ x5 += Math.sin(ang) * 2.4; y5 -= Math.cos(ang) * 2.4 * 0.6; ang += (R() - 0.5) * 0.5; if (!okGround(x5, y5, 0.5) || !free(x5, y5, 0.5) || x5 < b[0] + 3 || x5 > b[2] - 3) break; item('coin', x5, y5); ok5++; }
-      if (ok5 >= 4) for (var c6 = 0; c6 < 3; c6++){ var x6 = x5 + Math.cos(c6 * 2.1) * 0.9, y6 = y5 + Math.sin(c6 * 2.1) * 0.9; if (okGround(x6, y6, 0.3)) item('coin', x6, y6); } }
-    else if (pat === 'ring'){ var tr0 = null; for (var q3 = 0; q3 < P.things.length; q3++){ var t3 = P.things[q3]; if (TREEH[t3.k] && Math.abs(t3.y - y0) < 14 && walkD(t3.x, t3.y) > 5 && walkD(t3.x, t3.y) < 18){ tr0 = t3; break; } }
-      if (tr0) for (var c7 = 0; c7 < 6; c7++){ var a7 = c7 / 6 * 6.28, x7 = tr0.x + Math.cos(a7) * 2.2, y7 = tr0.y + Math.sin(a7) * 2.2; if (okGround(x7, y7, 0.3)) item('coin', x7, y7); } }
-  }
+  /* NO COINS LIE LOOSE ON A TRAIL. They are in chests hidden off the path: tucked in behind a tree or a rock
+     where the camera cannot see them from the path, and one in the clearing. Walk up to a chest and it opens,
+     and its coins burst out onto the ground round it for you to walk over. Where each coin lands is fixed by
+     the plan, so a coin left on the ground is still lying there next time. */
+  function drops(x, y, n){ var out = [], a0 = R() * 6.283;
+    for (var i = 0, t = 0; out.length < n && t < n * 8; t++, i++){ var a = a0 + i * 2.39996, r = 2.1 + (i % 4) * 0.55 + R() * 0.5, dx = x + Math.cos(a) * r, dy = y + Math.sin(a) * r * 0.8;
+      if (okGround(dx, dy, 0.3) && !hitThing(dx, dy) && !(gy && Math.abs(dy - gy) < 1.5) && dy > -0.5 && dy < L + 10) out.push([dx, dy]); }
+    return out; }
+  function hitThing(x, y){ for (var i = 0; i < P.things.length; i++){ var t = P.things[i], r = BLOCKR[t.k] != null ? BLOCKR[t.k] : t.r; if (t.k === 'arch' || t.k === 'wall' || t.k === 'fence') continue;
+      if (t.w){ if (Math.abs(x - t.x) < t.w / 2 + 0.8 && Math.abs(y - t.y) < t.d / 2 + 0.8) return true; } else if (r > 0 && Math.hypot(x - t.x, y - t.y) < r + 0.8) return true; } return false; }
+  function chest(x, y, n, o){ var t = item('chest', x, y, o); t.n = n; t.drops = drops(x, y, n); return t; }
+  function hideSpot(minD, maxD){   // just behind a tree or a rock, as seen from the path: north of it, and off the path
+    var cand = P.things.filter(function(t){ var w = walkD(t.x, t.y); return (TREEH[t.k] || LOWR[t.k]) && w > minD - 2 && w < maxD && !inClear(t.x, t.y, 3) && !(gy && Math.abs(t.y - gy) < 8) && t.y > 8 && t.y < L - 4; });
+    for (var tr = 0; tr < 40 && cand.length; tr++){ var t = cand[(R() * cand.length) | 0], hx = t.x + (R() - 0.5) * 1.6, hy = t.y - (t.r || 1) - 1.6 - R() * 1.2;
+      if (okSpot(hx, hy, 1.4, minD, maxD + 4)) return [hx, hy]; }
+    return spotOff(minD, maxD, 1.4, 80); }
+  var nch = 3 + (R() < 0.5 ? 1 : 0);
+  for (var ci = 0; ci < nch; ci++){ var hsp = hideSpot(7 + ci * 2, 24); if (hsp){ chest(hsp[0], hsp[1], 5 + ((R() * 5) | 0)); used.push({ x:hsp[0], y:hsp[1], r:4 }); } }
   // the clearing
-  if (clrKind === 'chest') item('chest', P.chest.x, P.chest.y);
-  else if (clrKind === 'ring'){ for (var cr = 0; cr < 8; cr++){ var a = cr / 8 * 6.28; item('coin', clr.x + Math.cos(a) * clr.r * 0.55, clr.y + Math.sin(a) * clr.r * 0.45); } item('coin', clr.x, clr.y); }
+  if (clrKind === 'chest') chest(P.chest.x, P.chest.y, locked ? 16 : 10 + ((R() * 4) | 0), { main:1 });
   else { for (var cp2 = 0; cp2 < 4; cp2++){ var xp = clr.x + (cp2 % 2 ? 1 : -1) * 1.3, yp = clr.y + (cp2 < 2 ? -0.9 : 0.9); item('brk', xp, yp, { th:themeAt(yp) }); } }
   if (locked){ for (var tk2 = 0; tk2 < 60; tk2++){ var ky = L * (0.15 + R() * 0.7), kxp = cx(ky) - sg * (8 + R() * 10);
       if (okGround(kxp, ky, 1) && free(kxp, ky, 1) && walkD(kxp, ky) > PW + 3 && !inClear(kxp, ky, 2) && !(gy && Math.abs(ky - gy) < 6)){ item('key', kxp, ky); used.push({ x:kxp, y:ky, r:1 }); break; } } }
@@ -620,7 +621,14 @@ function run(box, P, pic, api){
   // the golfer
   var g = { x:P.start.x, y:P.start.y - 2, vx:0, vy:0, face:[0, -1], dist:0, safe:[P.start.x, P.start.y - 2], moving:false };
   var gate = P.gate ? { open:!!sp.gateOpen, asked:false } : null, lockOpen = !P.fence || !!found.key;
-  var items = P.items.map(function(t){ var o = Object.assign({}, t); o.done = t.k === 'coin' ? (found.c || []).indexOf(t.id) >= 0 : t.k === 'chest' ? !!found.k : t.k === 'golden' ? !!found.g : t.k === 'key' ? !!found.key : t.k === 'life' ? !!found.life : t.k === 'trinket' ? !!found.tk : t.k === 'part' ? !!found.pt : false; return o; });
+  /* A chest is open if this account opened it (found.ch); the clearing's chest also counts as open on a record
+     from before chests held coins (found.k), and those coins were paid then, so none drop. The coins of an open
+     chest that were not picked up are still lying where they landed. */
+  var chOpen = function(t){ return (found.ch || []).indexOf(t.id) >= 0; }, legacyK = function(t){ return t.main && found.k && !chOpen(t); };
+  var items = [];
+  P.items.forEach(function(t){ var o = Object.assign({}, t); o.done = t.k === 'chest' ? chOpen(t) || legacyK(t) : t.k === 'golden' ? !!found.g : t.k === 'key' ? !!found.key : t.k === 'life' ? !!found.life : t.k === 'trinket' ? !!found.tk : t.k === 'part' ? !!found.pt : false; items.push(o);
+    if (t.k === 'chest') (t.drops || []).forEach(function(d, i){ var cid = t.id + ':' + i; items.push({ k:'coin', id:cid, x:d[0], y:d[1], ch:o, done:legacyK(t) || (found.c || []).indexOf(cid) >= 0, out:chOpen(t), fly:null }); }); });
+  var chests = items.filter(function(t){ return t.k === 'chest'; });
   var parts = [], bubble = null, flash = 0, paused = false, ended = false;
   // the colliders, on a coarse grid
   var GRID = {}; function gk(x, y){ return (x / 6 | 0) + ',' + (y / 6 | 0); }
@@ -663,11 +671,19 @@ function run(box, P, pic, api){
   // the local is the 3D golfer model, in the world's own clothes, standing and facing the path
   function npcFrame(t){ var G = window.RTT_G3D; if (!G || !G.frame) return null; var face = t.x < P.cx(t.y) ? 90 : -90; try{ return G.frame(Object.assign({ shoes:'white', club:'driver', lefty:false }, kitOf(t.th).npc), face, 'walk', 8); }catch(e){ return null; } }
   var IMG = {}; function img(u){ var im = IMG[u]; if (!im){ im = IMG[u] = new Image(); im.src = u; } return im; }
-  function drawFigure(f, x, y, see){ if (!f || !f.url) return null; var im = img(f.url); if (!im.complete || !im.naturalWidth) return null;
+  /* A frame not yet decoded is never a blank: who drew a frame last keeps it on screen until the new one is ready,
+     or the golfer blinks out for a frame every time his foot or his facing changes. */
+  var lastFig = {};
+  function drawFigure(f, x, y, see, who){ if (!f || !f.url){ if (!who || !lastFig[who]) return null; f = lastFig[who].f; }
+    var im = img(f.url); if (!im.complete || !im.naturalWidth){ var lf = who && lastFig[who]; if (!lf) return null; f = lf.f; im = lf.im; } else if (who) lastFig[who] = { f:f, im:im };
     var hgt = GH * CE / ART * kk, k2 = hgt / f.fig, p = scr(x, y), rx = Math.round(p[0] - f.ball[0] * k2), ry = Math.round(p[1] - f.ball[1] * k2), rw = Math.round(f.W * k2), rh = Math.round(f.H * k2);
     ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(im, rx, ry, rw, rh); ctx.restore(); occlude(rx, ry, rw, rh, x, y, pic.zAt(x, y), see); return [rx, ry, rw, rh]; }
   // a coin, a key and the golden ball are drawn at the scene's own pixel size, so they sit in it
-  function drawCoin(t, now){ var z = pic.zAt(t.x, t.y) + 1.1 + Math.sin(now * 3 + t.x) * 0.12, p = scr(t.x, t.y, z), s = Math.max(2, Math.round(kk)), w = Math.max(1, Math.round(Math.abs(Math.cos(now * 3.2 + t.y)) * 5)), h = 6;
+  function drawCoin(t, now){ var f = t.fly;
+    if (f && now < f.t0 + f.dur){ if (now < f.t0) return; var u = (now - f.t0) / f.dur, fx = f.x0 + (t.x - f.x0) * u, fy = f.y0 + (t.y - f.y0) * u, fz = f.z0 + (pic.zAt(t.x, t.y) + 0.4 - f.z0) * u + Math.sin(u * Math.PI) * 3.2;
+      var fp = scr(fx, fy, fz), fs = Math.max(2, Math.round(kk)), fw = Math.max(1, Math.round(Math.abs(Math.cos(now * 14 + t.x)) * 5));
+      ctx.fillStyle = '#7a5200'; ctx.fillRect(Math.round(fp[0] - (fw / 2 + 1) * fs), Math.round(fp[1] - 6 * fs), (fw + 2) * fs, 6 * fs); ctx.fillStyle = '#ffd23a'; ctx.fillRect(Math.round(fp[0] - fw / 2 * fs), Math.round(fp[1] - 5 * fs), fw * fs, 4 * fs); return; }
+    var z = pic.zAt(t.x, t.y) + 1.1 + Math.sin(now * 3 + t.x) * 0.12, p = scr(t.x, t.y, z), s = Math.max(2, Math.round(kk)), w = Math.max(1, Math.round(Math.abs(Math.cos(now * 3.2 + t.y)) * 5)), h = 6;
     var shp = scr(t.x, t.y); ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(Math.round(shp[0] - 2 * s), Math.round(shp[1] - s / 2), 4 * s, s);
     var rx = Math.round(p[0] - w * s / 2), ry = Math.round(p[1] - h * s); ctx.fillStyle = '#7a5200'; ctx.fillRect(rx - s, ry, (w + 2) * s, h * s); ctx.fillRect(rx, ry - s, w * s, (h + 2) * s);
     ctx.fillStyle = '#ffd23a'; ctx.fillRect(rx, ry, w * s, h * s); ctx.fillStyle = '#fff3a8'; if (w > 2) ctx.fillRect(rx + s, ry + s, s, (h - 2) * s);
@@ -763,7 +779,7 @@ function run(box, P, pic, api){
 
   // ---- input: a stick under the thumb, or the keys
   var ui = document.createElement('div'); ui.className = 'pp-tui'; ui.innerHTML = '<div class="pp-stick" data-stick><i></i></div><div class="pp-way" data-way><i></i><b></b></div><div class="pp-pin" data-pin><b></b><i></i></div>' +
-    '<div class="pp-thud"><span data-coins>+0</span><span data-gold></span></div><div class="pp-rbar"><button class="pp-rb pp-talkb" data-talk hidden></button><button class="pp-rb" data-auto>Auto walk</button><button class="pp-rb" data-skip></button></div><div class="pp-rhint" data-hint></div><div class="pp-bub" data-bub hidden></div>';
+    '<div class="pp-thud"><span data-coins>+0</span><span data-chest></span><span data-gold></span></div><div class="pp-rbar"><button class="pp-rb pp-talkb" data-talk hidden></button><button class="pp-rb" data-auto>Auto walk</button><button class="pp-rb" data-skip></button></div><div class="pp-rhint" data-hint></div><div class="pp-bub" data-bub hidden></div>';
   box.appendChild(ui);
   var stick = ui.querySelector('[data-stick]'), knob = stick.firstChild, way = ui.querySelector('[data-way]'), pin = ui.querySelector('[data-pin]'), bubEl = ui.querySelector('[data-bub]'), hint = ui.querySelector('[data-hint]');
   var coarse = false; try{ coarse = matchMedia('(pointer: coarse)').matches; }catch(e){}
@@ -792,8 +808,9 @@ function run(box, P, pic, api){
   function say(txt, ms){ bubble = { txt:txt, until:performance.now() + (ms || 3200) }; bubEl.textContent = txt; bubEl.hidden = false; }
   function burst(x, y, z, cols, n){ for (var i = 0; i < n; i++){ var a = Math.random() * 6.28, sp2 = 2 + Math.random() * 4; parts.push({ x:x, y:y, z:z, vx:Math.cos(a) * sp2, vy:Math.sin(a) * sp2 * 0.6, vz:3 + Math.random() * 4, c:cols[i % cols.length], t:0 }); } }
   function hudCoins(){ ui.querySelector('[data-coins]').textContent = '+' + coinsGot; }
+  function hudChests(){ var n = chests.filter(function(t){ return t.done; }).length; ui.querySelector('[data-chest]').textContent = chests.length ? 'Chests ' + n + '/' + chests.length : ''; }
   function hudGold(){ var gd = api.golden ? api.golden() : null; ui.querySelector('[data-gold]').textContent = gd ? '● ' + gd.have + '/' + gd.total : ''; }
-  hudGold();
+  hudGold(); hudChests();
   /* THE GREETER. They wait where the plan put them until you come within reach, then walk up to you, the
      way a board game host does, and talk: a box at the foot of the screen, their face in it, the words typed
      out, a tap for the next page. Walking is paused while they talk. After that they stay by the path, and
@@ -804,7 +821,7 @@ function run(box, P, pic, api){
   function hostFrame(){ var G = window.RTT_G3D; if (!G || !G.frame || !hs) return null; var i = hs.moving ? Math.floor(hs.dist / STRIDE * 8) % 8 : 8;
     try{ return G.frame(greet.look, Math.atan2(hs.face[0], -hs.face[1]) * 180 / Math.PI, 'walk', i); }catch(e){ return null; } }
   function talk(){ if (!hs || dlg) return; hs.ph = 'talk'; hs.moving = false; paused = true; setAuto(false); pup(); keys = {}; g.vx = g.vy = 0;
-    hs.face = [g.x - hs.x, g.y - hs.y]; g.face = [hs.x - g.x, hs.y - g.y]; talkB.hidden = true;
+    hs.face = [g.x - hs.x, g.y - hs.y]; g.face = [hs.x - g.x, hs.y - g.y]; g.aimI = null; talkB.hidden = true;
     var pages = greet.lines || [], pg = 0, typed = 0, tm = null;
     dlg = document.createElement('div'); dlg.className = 'pp-gd'; dlg.style.setProperty('--gc', greet.col || '#F1D04A');
     dlg.innerHTML = '<div class="pp-gdbox"><div class="pp-gdp"><canvas width="64" height="64"></canvas></div><div class="pp-gdn"><b></b><i></i></div><p aria-live="polite"></p><span class="pp-gdm">▼</span><button class="pp-gdx" data-gdx>Skip</button></div>';
@@ -828,12 +845,16 @@ function run(box, P, pic, api){
   talkB.onclick = function(){ if (hs && hs.ph === 'idle') talk(); };
   function hostStep(dt){ if (!hs) return; var dx = g.x - hs.x, dy = g.y - hs.y, d = Math.hypot(dx, dy);
     if (hs.ph === 'wait' && d < 16 && performance.now() >= hs.at && !(gate && (!gate.open || g.y > P.gate.y - 0.5))){ hs.ph = 'come'; paused = true; setAuto(false); pup(); keys = {}; g.vx = g.vy = 0; }
-    if (hs.ph === 'come'){ g.face = [-dx, -dy]; if (d > 3.2){ var v = Math.min(5.2 * dt, d - 3.2); hs.x += dx / d * v; hs.y += dy / d * v; hs.dist += v; hs.moving = true; hs.face = [dx, dy]; } else talk(); }
+    if (hs.ph === 'come'){ g.face = [-dx, -dy]; g.aimI = null; if (d > 3.2){ var v = Math.min(5.2 * dt, d - 3.2); hs.x += dx / d * v; hs.y += dy / d * v; hs.dist += v; hs.moving = true; hs.face = [dx, dy]; } else talk(); }
     else if (hs.ph === 'idle'){ hs.moving = false; if (d < 7) hs.face = [dx, dy]; }
     talkB.hidden = !(hs.ph === 'idle' && d < 3.6); }
   function take(t, now){ var z = pic.zAt(t.x, t.y);
     if (t.k === 'coin'){ t.done = true; coinsGot += COIN_V; hudCoins(); burst(t.x, t.y, z + 1.2, ['#ffd23a', '#fff3a8'], 6); pick('coin', t.id, COIN_V); api.sfx && api.sfx('coin'); }
-    else if (t.k === 'chest'){ t.done = true; coinsGot += CHEST_V; hudCoins(); burst(t.x, t.y, z + 1.4, ['#ffd23a', '#fff3a8', '#ffffff'], 18); pick('chest', t.id, CHEST_V); say('Chest opened. +' + CHEST_V + ' coins.'); }
+    else if (t.k === 'chest'){ t.done = true; t.openAt = now; burst(t.x, t.y, z + 1.4, ['#ffd23a', '#fff3a8', '#ffffff'], 14); pick('chest', t.id, 0); hudChests(); api.sfx && api.sfx('coin');
+      // the coins fly out of the lid in an arc and land where the plan put them
+      var cs = items.filter(function(c){ return c.k === 'coin' && c.ch === t; });
+      cs.forEach(function(c, i){ c.out = true; c.fly = { t0:now + i * 0.06, dur:0.55 + (i % 3) * 0.08, x0:t.x, y0:t.y, z0:z + 1.6 }; });
+      say(cs.length ? 'A chest. ' + cs.length + ' coins. Walk over them to pick them up.' : 'A chest.', 2800); }
     else if (t.k === 'key'){ t.done = true; lockOpen = true; burst(t.x, t.y, z + 1.3, ['#ffd23a', '#ffffff'], 10); pick('key', t.id, 0); say('A key. The gate to the clearing is open.'); }
     else if (t.k === 'golden'){ t.done = true; burst(t.x, t.y, z + 1, ['#ffd23a', '#fff3a8', '#ffffff'], 24); var msg = pick('golden', t.id, 0); hudGold(); say(msg || 'A golden ball.', 3600); }
     else if (t.k === 'life'){ t.done = true; burst(t.x, t.y, z + 1.2, ['#e5483a', '#ff9d8a', '#ffffff'], 18); say(pick('life', t.id, 0) || 'A spare life.', 3600); }
@@ -862,7 +883,13 @@ function run(box, P, pic, api){
     else { g.vx = 0; g.vy = 0; }
     hostStep(dt);
     lifeStep(dt);
-    var spd = Math.hypot(g.vx, g.vy); g.moving = moved > 0.002 && spd > 0.4; if (spd > 0.4) g.face = [g.vx, g.vy]; g.dist += moved;
+    /* He faces one of eight ways, and only turns when the way he is going is well past the middle between two of them:
+       snapped every frame, a heading near a boundary flipped him between two drawings and he flickered. The same
+       for walking and standing: he starts and stops on two different speeds, never the same one. */
+    var spd = Math.hypot(g.vx, g.vy); g.moving = moved > 0.002 && (g.moving ? spd > 0.25 : spd > 0.6);
+    if (spd > 0.4){ var ang = Math.atan2(g.vx, -g.vy), cur = g.aimI == null ? null : g.aimI * Math.PI / 4, dd = cur == null ? 9 : Math.abs(Math.atan2(Math.sin(ang - cur), Math.cos(ang - cur)));
+      if (dd > Math.PI / 8 + 0.2){ g.aimI = ((Math.round(ang / (Math.PI / 4)) % 8) + 8) % 8; var a8 = g.aimI * Math.PI / 4; g.face = [Math.sin(a8), -Math.cos(a8)]; } }
+    g.dist += moved;
     if (moved > 0.5) hint.classList.add('gone');
     // lava sends him back to the last safe ground
     var o2 = P.poolAt(g.x, g.y);
@@ -870,8 +897,9 @@ function run(box, P, pic, api){
     else if (!o2 && now - lastSafe > 400){ g.safe = [g.x, g.y]; lastSafe = now; }
     // picking things up, and walking into them
     for (var i = 0; i < items.length; i++){ var t = items[i]; if (t.done) continue; var d = Math.hypot(t.x - g.x, t.y - g.y);
+      if (t.k === 'coin' && (!t.out || (t.fly && tsec < t.fly.t0 + t.fly.dur))) continue;
       if ((t.k === 'coin' || t.k === 'golden' || t.k === 'key' || t.k === 'life' || t.k === 'trinket' || t.k === 'part') && d < 1.3) take(t, tsec);
-      else if (t.k === 'chest' && d < 2.3 && (lockOpen || !P.fence)) take(t, tsec);
+      else if (t.k === 'chest' && d < 2.3 && (lockOpen || !P.fence || !t.main)) take(t, tsec);
       else if (t.k === 'brk' && d < 1.5 && spd > 1.5) take(t, tsec); }
     // the local talks when he walks up
     var npc = items.filter(function(t){ return t.k === 'npc'; })[0];
@@ -892,7 +920,7 @@ function run(box, P, pic, api){
     ctx.drawImage(pic.cv, ox, oy, pic.cv.width * kk, pic.cv.height * kk);
     // everything that moves, far to near
     var ds = [];
-    items.forEach(function(t){ if (t.k === 'host') return; if (t.done && t.k !== 'chest' && t.k !== 'brk') return; if (t.k === 'brk' && t.done) return; ds.push(t); });
+    items.forEach(function(t){ if (t.k === 'host') return; if (t.k === 'coin' && !t.out) return; if (t.done && t.k !== 'chest' && t.k !== 'brk') return; if (t.k === 'brk' && t.done) return; ds.push(t); });
     if (P.gate) ds.push({ k:'gate', x:P.gate.x, y:P.gate.y + 0.01 });
     if (P.fence) ds.push({ k:'lock', x:P.lockGate.x, y:P.lockGate.y });
     ds.push({ k:'me', x:g.x, y:g.y });
@@ -911,7 +939,7 @@ function run(box, P, pic, api){
       else if (t.k === 'brk') drawSprite(brkSprite(t), t.x, t.y, pic.zAt(t.x, t.y));
       else if (t.k === 'npc') drawFigure(npcFrame(t), t.x, t.y);
       else if (t.k === 'ship' || t.k === 'tumble' || t.k === 'ghost') drawLifeThing(t, tsec);
-      else if (t.k === 'hostfig'){ var hp = scr(t.x, t.y); ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(hp[0], hp[1], 5 * kk, 2 * kk, 0, 0, 7); ctx.fill(); drawFigure(hostFrame(), t.x, t.y);
+      else if (t.k === 'hostfig'){ var hp = scr(t.x, t.y); ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(hp[0], hp[1], 5 * kk, 2 * kk, 0, 0, 7); ctx.fill(); drawFigure(hostFrame(), t.x, t.y, false, 'host');
         if (hs.ph === 'wait'){ var ep = scr(t.x, t.y, pic.zAt(t.x, t.y) + GH + 1.4 + Math.sin(tsec * 4) * 0.25), es = Math.max(2, Math.round(kk)); ctx.fillStyle = '#3a2a14'; ctx.fillRect(Math.round(ep[0] - 2 * es), Math.round(ep[1] - 7 * es), 4 * es, 9 * es); ctx.fillRect(Math.round(ep[0] - 2 * es), Math.round(ep[1] + 3 * es), 4 * es, 4 * es);
           ctx.fillStyle = '#ffd24a'; ctx.fillRect(Math.round(ep[0] - es), Math.round(ep[1] - 6 * es), 2 * es, 7 * es); ctx.fillRect(Math.round(ep[0] - es), Math.round(ep[1] + 4 * es), 2 * es, 2 * es); } }
       else if (t.k === 'gate') drawSprite(gate && gate.open ? SPR.gate1 : SPR.gate0, t.x, P.gate.y, pic.zAt(t.x, P.gate.y));
@@ -934,7 +962,7 @@ function run(box, P, pic, api){
       else { for (var j = 8; j >= 0 && !f; j--) if (h.golferWalkHas(fv[0], fv[1], j)) f = h.golferWalk(fv[0], fv[1], j); if (!f) f = h.golferWalk(fv[0], fv[1], i); } }catch(e){ f = null; }
     if (!f) f = lastFace; else lastFace = f;
     var shp = scr(g.x, g.y), s = kk; ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(shp[0], shp[1], 5 * s, 2 * s, 0, 0, 7); ctx.fill();
-    drawFigure(f, g.x, g.y, true); }
+    drawFigure(f, g.x, g.y, true, 'me'); }
   function waypoint(){ var tx, ty, label, br = cv.getBoundingClientRect();
     var shut = gate && !gate.open && g.y > P.gate.y, tgt = shut ? [P.gate.x, P.gate.y] : [P.cx(0), -0.5], p = scr(tgt[0], tgt[1], pic.zAt(tgt[0], tgt[1]) + (shut ? 7 : 9.5));
     tx = p[0] / dpr; ty = p[1] / dpr; var M = 34, Wc = W / dpr, Hc = H / dpr, inside = tx > M && tx < Wc - M && ty > M + 110 && ty < Hc - M - 70;
@@ -956,5 +984,5 @@ function run(box, P, pic, api){
   return ctl;
 }
 
-window.RTT_PUTT_TRAIL = { API_VERSION:API_VERSION, plan:plan, slices:slices, run:run, GH:GH, TRAIL_L:TRAIL_L, ELEV:ELEV, KIT:KIT };
+window.RTT_PUTT_TRAIL = { API_VERSION:API_VERSION, COIN_V:COIN_V, plan:plan, slices:slices, run:run, GH:GH, TRAIL_L:TRAIL_L, ELEV:ELEV, KIT:KIT };
 })();

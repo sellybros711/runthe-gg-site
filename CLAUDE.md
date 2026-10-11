@@ -11785,10 +11785,19 @@ check-sprite was re-recorded for it, and its header says why.
 **ONLY MUSCULAR IS BROAD.** The owner found the first 3D players too buff. `BODY` in baller.js is
 one table read by the skeleton, the model and `handAt`: Lean and Standard are long and narrow (small
 delts, thin arms), and Muscular (id `strong`, kept because it is in saves) carries the broad
-shoulders. **The jersey number is stamped on the screen**, after the light, onto jersey cloth only,
-because mapped onto the model in world cells the camera's pitch dropped whole rows of a digit. The
-tank is a round scoop, narrow straps and round armholes, each edged in one even band of the second
-colour. The lower body was asked to stay as it is.
+shoulders.
+
+**The jersey is an NBA crew neck, and every club wears its own design.** The owner found the old
+scoop cut too low. `KITS` in baller.js maps a club's two colours (the only thing a caller hands
+the painter) to one of seven designs (classic, double trim in a third colour, side panels,
+pinstripes, a sash, chest bands, a fade), and an unknown pair picks one off a hash of its colours,
+so every screen gets a design without learning a club code. **The number is printed on the cloth
+at a fine trace** (`res` 2 and up, the portraits): a 3 by 5 numeral in the body's own units on
+the front of the chest, so it turns and foreshortens with it, and no stripe runs through it
+(`numClear`). A cell is never under a pixel and a half or the pitch drops a row. **At a single
+resolution trace (every court sprite) it is still stamped on the screen**, because a chest there
+is twelve pixels and 3 by 5 is the smallest numeral that reads; a slant was tried and broke the
+digits.
 
 **HEIGHT AND WEIGHT ARE DRAWN.** Asked for by the owner: every player looked the same whatever his
 size. `metrics(look)` in baller.js turns `ht` (inches) and `wt` (pounds) into the body: legs grow
@@ -19950,13 +19959,20 @@ walked with a stick or the arrows, or on Auto walk along the path; Skip goes str
   that slides, mud that slows), its own breakables and someone to talk to. Lava sends him back to the path.
 - **No two walks are alike.** A trail takes one of four shapes (a meander, switchbacks, one long sweep, a
   twisting lane), mirrored at random. Its clearing sits on the side with room, half the time down a little
-  path and half the time hidden in the trees, and holds a chest, a ring of coins or a pile to smash. Coins come
-  in patterns picked per trail (a run, a zigzag, an arc round a bend, singles in the grass, a line of crumbs
-  leading off to a pile, a ring round a tree). check-putt plans seventeen trails and asserts at least three
-  shapes, three kinds of clearing, and no two with their coins in the same places.
-- **What is on the trail is kept** in the Tour record as `st.trail['tour:to']`: coins, breakables smashed,
-  the chest, the key, the golden ball and the rare things below. A chest is locked behind a fence on about
-  four trails in ten, the key somewhere off the path. A golden ball on every trail; all of a world's pays 500
+  path and half the time hidden in the trees, and holds a chest or a pile to smash. check-putt plans seventeen
+  trails and asserts at least three shapes, three kinds of clearing, and no two hiding their chests in the same
+  places.
+- **NO COIN LIES LOOSE. Coins are in chests**, the owner's call. Three or four are hidden off the path on every
+  trail (`hideSpot`: just north of a tree or a rock, so the camera cannot see them from the path), plus the
+  clearing's. Walking up to one opens it and its coins fly out and land round it; each is walked over to pick
+  up and paid into the Run The Tour wallet (`COIN_V` each, through the host's `coins`). A chest pays nothing
+  itself. Where each coin lands is fixed by the plan (`drops`), so a coin left on the ground is still there next
+  time. Breakables are the only other coins. check-putt opens a hidden chest, picks its coins up and checks the
+  payout.
+- **What is on the trail is kept** in the Tour record as `st.trail['tour:to']`: coins (`c`), chests opened
+  (`ch`), breakables smashed, the key, the golden ball and the rare things below. `k` is the clearing chest on a
+  record from before chests held coins: it reads as opened with its coins already paid. A chest is locked behind
+  a fence on about four trails in ten, the key somewhere off the path. A golden ball on every trail; all of a world's pays 500
   coins and a named reward. `pmerge` takes the union and `cloudProg` counts them.
 - **The rare things are fixed to trails** (`trailLoot`, `lootSlots`, main tour only), so every player finds
   them in the same places, further off the path than anything else:

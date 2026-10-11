@@ -2559,8 +2559,8 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "48",
-      "sha": "74cd8da264609e30"
+      "v": "49",
+      "sha": "24d89bc21280d1da"
     },
     "putt/land.js": {
       "v": "5",
@@ -2571,8 +2571,8 @@
       "sha": "88e5cf8081e2f71b"
     },
     "putt/trail.js": {
-      "v": "4",
-      "sha": "12455c32017a051b"
+      "v": "6",
+      "sha": "fa59673a3553c356"
     },
     "putt/mapland.js": {
       "v": "3",
@@ -2593,8 +2593,8 @@
       "sha": "0d5d587d6d003a01"
     },
     "../baller.js": {
-      "v": "12",
-      "sha": "3ca0958b36d716d7"
+      "v": "13",
+      "sha": "3bee67dab89c6851"
     },
     "../sound.js": {
       "v": "2",
@@ -2635,8 +2635,8 @@
       "sha": "97dbcac3f6f8d29d"
     },
     "baller.js": {
-      "v": "17",
-      "sha": "3ca0958b36d716d7"
+      "v": "18",
+      "sha": "3bee67dab89c6851"
     },
     "board.js": {
       "v": "8",
