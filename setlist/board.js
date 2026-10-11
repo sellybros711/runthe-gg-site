@@ -200,9 +200,24 @@
      The old rows are still in the table and still on each player's profile. */
   const SCORING_SINCE = '2026-10-11T23:00:00Z';
 
+  /* TODAY'S DAILY, as the key the page seeds its draw with and the board files
+     it under: the Eastern calendar date, so everyone's day turns over at once. */
+  function dayKey(d) {
+    try {
+      const p = zoneParts(d || new Date());
+      return p.year + '-' + String(p.month).padStart(2, '0') + '-' + String(p.day).padStart(2, '0');
+    } catch (e) {
+      return (d || new Date()).toISOString().slice(0, 10);
+    }
+  }
+
   function scope(opts) {
     opts = opts || {};
     let f = '&band=eq.' + encodeURIComponent(opts.band || 'goose');
+    /* ONE DAY'S CHALLENGE. `daily` is a column 139_segue_daily.sql derives from
+       rng_seed; without that migration this filter is a 400 and the call fails
+       soft, which the page reads as "the daily board is not up yet". */
+    if (opts.daily) f += '&daily=eq.' + encodeURIComponent(opts.daily);
     if (opts.named) f += '&display_name=not.is.null';
     let cut = cutoffISO(opts.win || 'all');
     const since = window.SEGUE_SCORING_SINCE || SCORING_SINCE;   // a harness can move it
@@ -360,10 +375,10 @@
   /* All three windows, on whichever axis is asked for. Six index-only counts in
      parallel; there is no batching RPC here yet and at this board's size there does
      not need to be. */
-  async function ranks(band, sort, value) {
-    const wins = ['day', 'week', 'all'];
+  async function ranks(band, sort, value, daily) {
+    const wins = daily ? ['daily', 'all'] : ['day', 'week', 'all'];
     const got = await Promise.all(wins.map((win) => {
-      const o = { band, win, named: true };
+      const o = win === 'daily' ? { band, daily, named: true } : { band, win, named: true };
       return Promise.all([placeIn(o, sort, value), total(o)]);
     }));
     const out = {};
@@ -480,21 +495,25 @@
      sorted here so the caller gets a ready ranking. Null on any failure, which the
      caller reads as "draw nothing". */
   const SPREAD_LIMIT = 5000;
-  async function spread(band) {
-    const url = base() + TABLE + '?select=pct_of_best&pct_of_best=not.is.null' +
-      '&order=pct_of_best.desc&limit=' + SPREAD_LIMIT + scope({ band });
+  /* A DAILY IS RANKED ON THE TOTAL. Everybody drew the same shows, so the draw
+     cannot inflate anybody's score and the raw number is the fair one. */
+  async function spread(band, opts) {
+    const daily = opts && opts.daily;
+    const col = daily ? 'total' : 'pct_of_best';
+    const url = base() + TABLE + '?select=' + col + '&' + col + '=not.is.null' +
+      '&order=' + col + '.desc&limit=' + SPREAD_LIMIT + scope({ band, daily });
     try {
       const res = await timed(url, { headers: headers() });
       if (!res.ok) return await fail('spread', res);
       const rows = await res.json().catch(() => null);
       if (!Array.isArray(rows)) return null;
-      return rows.map(r => Number(r.pct_of_best)).filter(Number.isFinite);
+      return rows.map(r => Number(r[col])).filter(Number.isFinite);
     } catch (e) { return failThrown('spread', e); }
   }
 
   window.SEGUE_BOARD = {
-    API_VERSION: 2,
-    submit, top, mine, ranks, placeIn, total, claim, probe, cutoffISO, spread,
+    API_VERSION: 3,
+    submit, top, mine, ranks, placeIn, total, claim, probe, cutoffISO, spread, dayKey,
     syncAttended, forgetAttended,
     SORTS,
     get offline() { return offline; },
