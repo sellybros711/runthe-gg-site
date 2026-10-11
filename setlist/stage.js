@@ -566,7 +566,7 @@ const ROTATION = ['jam', 'closer', 'ballad', 'cover', 'opener', 'peak'];
 /* The sky does the lighting. A multiply over the whole world: white at noon, warm through the
    afternoon, rose at dusk and blue at night, keyed to how far through the show the night is. */
 const SKY = [
-  [0, [255, 255, 255]], [.35, [255, 238, 216]], [.5, [238, 180, 170]], [.62, [132, 122, 176]], [1, [92, 98, 156]],
+  [0, [255, 255, 255]], [.35, [255, 238, 216]], [.5, [236, 176, 166]], [.62, [112, 104, 160]], [1, [58, 62, 112]],
 ];
 function skyAt(p){
   for (let i = 1; i < SKY.length; i++){
@@ -624,8 +624,44 @@ export function createStage(view, opts = {}){
   const SCR = { x: Math.round(sx(SCREEN.x0)), y: Math.round(sy(SCREEN.y, SCREEN.z1)) };
 
   const out = view.getContext('2d');
+  /* Five buffers, all the size of what the camera sees. `g` is the world as it is painted; `lg` the
+     light falling on it, multiplied in, so a beam's pool turns the rug and the people under it its own
+     colour; `eg` what glows of its own accord (the screen, lenses, bulbs, phones and the beams in the
+     haze), added on top; and two small ones the glow is blurred through for the bloom. */
   let buf = canvas(4, 4), g = buf.getContext('2d');
+  let lmap = canvas(4, 4), lg = lmap.getContext('2d');
+  let emit = canvas(4, 4), eg = emit.getContext('2d');
+  let beams = canvas(4, 4), bg = beams.getContext('2d');
+  let bloomA = canvas(2, 2), bloomB = canvas(1, 1);
+  /* THE BLOOM IS ITS OWN SMALL CANVAS, stretched over the picture by the browser and blended in with
+     `screen`. Drawn at full screen resolution every frame it cost five times the rest of the frame put
+     together (measured: 83ms against 17), because scaling three million pixels twice a frame is work a
+     canvas does on the CPU. Scaled by CSS it is the compositor's job, which is what a GPU is for. */
+  const glow = document.createElement('canvas');
+  glow.setAttribute('aria-hidden', 'true');
+  glow.style.cssText = view.style.cssText;
+  Object.assign(glow.style, { pointerEvents: 'none', imageRendering: 'auto', mixBlendMode: 'screen' });
+  if (view.parentElement) view.parentElement.insertBefore(glow, view.nextSibling);
+  const gg = glow.getContext('2d');
   let k = 1, visW = 4, visH = 4, camX = 0, camY = 0;
+  /* Haze: soft blobs of smoke the beams are seen through, so a beam is never a flat triangle. */
+  const haze = canvas(64, 64);
+  {
+    const hg = haze.getContext('2d'), im = hg.createImageData(64, 64);
+    for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++){
+      let v = 0, a = 1, f = 1 / 16;
+      for (let o = 0; o < 3; o++){
+        const X = x * f, Y = y * f, xi = Math.floor(X), yi = Math.floor(Y), u = X - xi, w = Y - yi;
+        const r = (i, j) => hash(((i % (64 * f)) + 64 * f) % (64 * f), ((j % (64 * f)) + 64 * f) % (64 * f), o + 40);
+        const su = u * u * (3 - 2 * u), sw = w * w * (3 - 2 * w);
+        v += a * (r(xi, yi) * (1 - su) * (1 - sw) + r(xi + 1, yi) * su * (1 - sw) + r(xi, yi + 1) * (1 - su) * sw + r(xi + 1, yi + 1) * su * sw);
+        a *= .5; f *= 2;
+      }
+      im.data[(y * 64 + x) * 4 + 3] = Math.round(255 * clamp01(.25 + (v / 1.75) * .95));
+    }
+    hg.putImageData(im, 0, 0);
+  }
+  let hazePat = null;
 
   const st = {
     pal: PALETTES.house, palFrom: PALETTES.house, palT: 1,
@@ -633,7 +669,7 @@ export function createStage(view, opts = {}){
     energy: .2, energyWant: .2, density: .8, densityWant: .8,
     sky: 0, skyWant: 0,
     band: false, encore: false, bow: false,
-    signsUntil: 0, flashUntil: 0, jumpUntil: 0, segueUntil: 0, mode: 0, rot: 0,
+    signsUntil: 0, flashUntil: 0, jumpUntil: 0, segueUntil: 0, strobeUntil: 0, mode: 0, rot: 0,
   };
   let raf = 0, dead = false, last = 0, now = performance.now();
 
@@ -652,6 +688,16 @@ export function createStage(view, opts = {}){
     view.style.width = (visW * k / dpr) + 'px';
     view.style.height = (visH * k / dpr) + 'px';
     buf = canvas(visW, visH); g = buf.getContext('2d');
+    lmap = canvas(visW, visH); lg = lmap.getContext('2d');
+    emit = canvas(visW, visH); eg = emit.getContext('2d');
+    beams = canvas(visW, visH); bg = beams.getContext('2d');
+    bloomA = canvas(Math.ceil(visW / 3), Math.ceil(visH / 3));
+    bloomB = canvas(Math.ceil(visW / 9), Math.ceil(visH / 9));
+    glow.width = Math.ceil(visW / 2); glow.height = Math.ceil(visH / 2);
+    glow.style.cssText = view.style.cssText;
+    Object.assign(glow.style, { pointerEvents: 'none', imageRendering: 'auto', mixBlendMode: 'screen',
+      width: view.style.width, height: view.style.height });
+    hazePat = bg.createPattern(haze, 'repeat');
     camX = Math.round(sx(0) - visW / 2);
     // A tall screen shows the whole stage house and plenty of lawn; a wide one starts at the screen.
     camY = Math.round(Math.min(Math.max(0, visH >= 230 ? 18 : SCR_TOP - 6), HPX - visH));
@@ -664,7 +710,7 @@ export function createStage(view, opts = {}){
     return [mixc(st.palFrom[0], st.pal[0], t), mixc(st.palFrom[1], st.pal[1], t)];
   }
 
-  function screen(p, t){
+  function screen(c2, p, t, pulse){
     const d = ledImg.data, e = st.energy, L = st.light, mode = st.mode % 4;
     for (let y = 0; y < LED.h; y++){
       for (let x = 0; x < LED.w; x++){
@@ -675,32 +721,50 @@ export function createStage(view, opts = {}){
         else if (mode === 2) s = .5 + .5 * Math.sin(u * 8 + t * 1.3) * Math.cos(v * 6 - t * 1.1 + Math.sin(u * 4 + t));
         else s = ((x * 7 + y * 13 + ((t * 6) | 0)) % 17 === 0) ? 1 : .12;
         const c = mixc(p[0], p[1], .5 + .5 * Math.sin(u * 3 + t * .5));
-        const lit = (.15 + .85 * s) * (.3 + .7 * Math.max(L, .25)) * (1 - st.house * .55);
+        // Held under white, or a pale palette turns the wall into one blown out lamp.
+        const lit = (.12 + .6 * s) * (.3 + .7 * Math.max(L, .25)) * (1 - st.house * .55) * (.82 + .18 * pulse);
         const i = (y * LED.w + x) * 4;
         d[i] = c[0] * lit; d[i + 1] = c[1] * lit; d[i + 2] = c[2] * lit; d[i + 3] = 255;
       }
     }
     ledG.putImageData(ledImg, 0, 0);
-    g.imageSmoothingEnabled = false;
-    g.drawImage(led, SCR.x, SCR.y, LED.w * 2, LED.h * 2);
-    g.fillStyle = 'rgba(0,0,0,.28)';
-    for (let x = SCR.x; x < SCR.x + LED.w * 2; x += 2) g.fillRect(x, SCR.y, 1, LED.h * 2);
+    c2.imageSmoothingEnabled = false;
+    c2.drawImage(led, SCR.x, SCR.y, LED.w * 2, LED.h * 2);
+    c2.globalCompositeOperation = 'destination-out';
+    c2.fillStyle = 'rgba(0,0,0,.3)';
+    for (let x = SCR.x; x < SCR.x + LED.w * 2; x += 2) c2.fillRect(x, SCR.y, 1, LED.h * 2);
+    c2.globalCompositeOperation = 'lighter';
   }
 
   const P2 = (x, y, z) => [Math.round(sx(x)), Math.round(sy(y, z))];
 
-  function cone(a, b, r, c, al){
-    const grad = g.createLinearGradient(a[0], a[1], b[0], b[1]);
-    grad.addColorStop(0, rgb(c, Math.min(1, al * 1.5)));
-    grad.addColorStop(1, rgb(c, al * .3));
-    g.fillStyle = grad;
-    g.beginPath(); g.moveTo(a[0] - 1, a[1]); g.lineTo(a[0] + 1, a[1]); g.lineTo(b[0] + r, b[1]); g.lineTo(b[0] - r, b[1]); g.closePath(); g.fill();
+  /* A cone of light from a lens to where it lands: brightest at the lens and thinning as it spreads,
+     the way a beam in haze looks. Drawn into the beam layer, which the haze then breaks up. */
+  function cone(c2, a, b, r, c, al){
+    const grad = c2.createLinearGradient(a[0], a[1], b[0], b[1]);
+    grad.addColorStop(0, rgb(c, Math.min(1, al * 1.6)));
+    grad.addColorStop(.6, rgb(c, al * .6));
+    grad.addColorStop(1, rgb(c, al * .25));
+    c2.fillStyle = grad;
+    c2.beginPath(); c2.moveTo(a[0] - 1, a[1]); c2.lineTo(a[0] + 1, a[1]); c2.lineTo(b[0] + r, b[1]); c2.lineTo(b[0] - r, b[1]); c2.closePath(); c2.fill();
   }
-  function pool(x, y, r, c, al){
-    const grad = g.createRadialGradient(x, y, 0, x, y, r);
-    grad.addColorStop(0, rgb(c, Math.min(1, al))); grad.addColorStop(1, rgb(c, 0));
-    g.save(); g.translate(x, y); g.scale(1, .6); g.translate(-x, -y);
-    g.fillStyle = grad; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); g.restore();
+  /* A soft pool of light, squashed by the camera's angle when it lies on the ground. */
+  function pool(c2, x, y, r, c, al, flat = .6){
+    if (al <= .003) return;
+    const grad = c2.createRadialGradient(x, y, 0, x, y, r);
+    grad.addColorStop(0, rgb(c, Math.min(1, al))); grad.addColorStop(.45, rgb(c, Math.min(1, al) * .45)); grad.addColorStop(1, rgb(c, 0));
+    c2.save(); c2.translate(x, y); c2.scale(1, flat); c2.translate(-x, -y);
+    c2.fillStyle = grad; c2.beginPath(); c2.arc(x, y, r, 0, Math.PI * 2); c2.fill(); c2.restore();
+  }
+  // A four point glint on a lens that is pointed at you, the way a mover reads in a photo.
+  function glint(c2, x, y, c, a, len){
+    c2.fillStyle = rgb([255, 255, 255], Math.min(1, a));
+    c2.fillRect(x, y, 1, 1);
+    for (let i = 1; i <= len; i++){
+      const f = a * (1 - i / (len + 1));
+      c2.fillStyle = rgb(mixc(c, [255, 255, 255], .5), f);
+      c2.fillRect(x - i, y, 1, 1); c2.fillRect(x + i, y, 1, 1); c2.fillRect(x, y - i, 1, 1); c2.fillRect(x, y + i, 1, 1);
+    }
   }
 
   const PLAYERS = [['keys', BAND.keys], ['guitar', BAND.guitar], ['bass', BAND.bass], ['drums', BAND.drums]];
@@ -759,13 +823,18 @@ export function createStage(view, opts = {}){
     const t = now / 1000, p = palette();
     const L = st.light, H = st.house, e = st.energy;
     const night = clamp01((st.sky - .45) / .4);
+    // The beat. Everything that pulses pulses on it, and it quickens with the song.
+    const bpm = 86 + e * 46, ph = t * bpm / 60, beatN = Math.floor(ph), pulse = Math.exp(-(ph - beatN) * 4.5);
+    const show = st.band && H < .5;
+    // How much the rig can be seen: hardly in the sun, fully once it is dark.
+    const dark = .22 + night * .78;
+
+    // 1. THE WORLD as it is painted.
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.globalCompositeOperation = 'source-over';
     g.imageSmoothingEnabled = false;
     g.drawImage(back, camX, camY, visW, visH, 0, 0, visW, visH);
     g.translate(-camX, -camY);
-
-    // Shadows under the players, the players, the gear in front of them, then the lawn.
     if (st.band){
       g.fillStyle = 'rgba(30,20,40,.35)';
       for (const [, m] of PLAYERS){ const [px, py] = P2(m.x, m.y, m.z); g.beginPath(); g.ellipse(px, py, 5, 2, 0, 0, 7); g.fill(); }
@@ -774,78 +843,169 @@ export function createStage(view, opts = {}){
     g.drawImage(front, camX, camY, visW, visH, camX, camY, visW, visH);
     drawCrowd(t);
 
-    // The sky's light over all of it.
-    g.globalCompositeOperation = 'multiply';
-    g.fillStyle = rgb(skyAt(st.sky));
-    g.fillRect(camX, camY, visW, visH);
+    // 2. THE LIGHT falling on it. The sky is the floor of it; the rig adds to it.
+    lg.setTransform(1, 0, 0, 1, 0, 0);
+    lg.globalCompositeOperation = 'source-over';
+    const sky = skyAt(st.sky);
+    lg.fillStyle = rgb(H > .5 ? mixc(sky, [246, 232, 210], H * night * .6) : sky);
+    lg.fillRect(0, 0, visW, visH);
+    lg.translate(-camX, -camY);
+    lg.globalCompositeOperation = 'lighter';
+    const beamA = (.05 + e * .1) * L * (1 - H) * dark;
+    const spot = mixc([255, 240, 222], p[1], .3);
+    if (show){
+      // A wash across the deck in the song's colour, breathing on the beat.
+      const [wx, wy] = P2(0, -7, DECK.z);
+      pool(lg, wx, wy, 95, mixc(p[0], [255, 255, 255], .35), (.18 + .32 * L) * dark * (.75 + .25 * pulse), .55);
+      // The screen throws its colour onto the back of the deck.
+      const [sx2, sy2] = P2(0, -13, DECK.z);
+      pool(lg, sx2, sy2, 70, mixc(p[0], p[1], .5), .3 * L * dark, .4);
+      // A key light on every player, so the band is the brightest thing in the room.
+      for (const [, m] of PLAYERS){
+        const [px, py] = P2(m.x, m.y, m.z);
+        pool(lg, px, py - 8, 15, spot, (.45 + .35 * L) * dark, 1.2);
+      }
+      // Spill off the stage onto the front of the lawn.
+      const [, fy] = P2(0, 2, 0);
+      const fg = lg.createLinearGradient(0, fy - 8, 0, fy + 70);
+      fg.addColorStop(0, rgb(mixc(p[0], [255, 255, 255], .5), .32 * L * dark));
+      fg.addColorStop(1, rgb(p[0], 0));
+      lg.fillStyle = fg; lg.fillRect(camX, fy - 8, visW, 50);
+    }
+    // Lamp posts and the strings over the lawn, coming on with the dusk.
+    for (const [x, y] of LAMPS){
+      const [px, py] = P2(x, y, 0);
+      pool(lg, px, py, 30, [255, 206, 140], .5 * night);
+    }
+    for (const yy of [14, 30]){
+      for (let x = -30; x <= 30; x += 4.8){
+        const [px, py] = P2(x, yy, 0);
+        pool(lg, px, py, 14, [255, 200, 130], .13 * night);
+      }
+    }
 
-    // What makes its own light: the screen, the lamps, the strings, the rig and the phones.
-    g.globalCompositeOperation = 'source-over';
-    screen(p, t);
-    g.globalCompositeOperation = 'lighter';
+    // 3. THE BEAMS, worked out once and used twice: where each lands lights the ground under it, and
+    //    the cone itself glows in the haze.
+    bg.setTransform(1, 0, 0, 1, 0, 0);
+    bg.globalCompositeOperation = 'source-over';
+    bg.clearRect(0, 0, visW, visH);
+    bg.translate(-camX, -camY);
+    bg.globalCompositeOperation = 'lighter';
+    const strobe = now < st.strobeUntil && (Math.floor(ph * 2) % 2 === 0);
+    if (beamA > .008){
+      const sp = .45 + e * 1.4;
+      FIX.forEach((fx, i) => {
+        const [px, py] = P2(fx, -.8, TRUSS_Z - 1.2);
+        const col = p[(i + beatN) % 2];
+        const tx = fx + Math.sin(t * sp + i * .8) * (3 + e * 6) * (i % 2 ? 1 : -1);
+        const deep = e > .6 && i % 3 === 0;
+        const ty = deep ? 8 + Math.sin(t * sp * .7 + i) * 6 : -9 + (i * 13) % 8;
+        const b = P2(tx, ty, deep ? 0 : DECK.z);
+        const a = beamA * (.7 + .5 * pulse);
+        cone(bg, [px, py + 1], b, 5 + e * 4, col, a);
+        pool(lg, b[0], b[1], 12 + e * 4, col, a * 4.5);
+      });
+      // Uplights at the lip of the deck, fanning into the sky when the song has earned them.
+      if (e > .45){
+        for (let i = 0; i < 6; i++){
+          const base = P2(-12 + i * 4.8, -.4, DECK.z);
+          const ang = Math.sin(t * (.4 + e) + i * 1.3) * .5 + (i - 2.5) * .12;
+          cone(bg, base, [base[0] + Math.sin(ang) * 90, base[1] - Math.cos(ang) * 120], 8, p[(i + beatN + 1) % 2], beamA * (e - .3) * 1.8);
+        }
+      }
+      if (now < st.segueUntil){
+        const f = 1 - (st.segueUntil - now) / 1500;
+        const b2 = P2(-14 + f * 28, -2, DECK.z);
+        cone(bg, P2(0, -.8, TRUSS_Z), b2, 12, [255, 255, 255], .3 * Math.sin(f * Math.PI) * dark);
+        pool(lg, b2[0], b2[1], 26, [255, 255, 255], .5 * Math.sin(f * Math.PI) * dark);
+      }
+    }
+    // The haze: the beams are only seen where there is smoke to see them in.
+    if (hazePat){
+      bg.globalCompositeOperation = 'destination-in';
+      bg.save();
+      bg.translate(Math.round(t * 3) % 64, Math.round(t * -1.5) % 64);
+      bg.fillStyle = hazePat; bg.fillRect(camX - 64, camY - 64, visW + 128, visH + 128);
+      bg.restore();
+    }
+
+    // 4. LIGHT THE WORLD: what is painted, times the light on it.
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.globalCompositeOperation = 'multiply';
+    g.drawImage(lmap, 0, 0);
+
+    // 5. WHAT GLOWS: the screen, lenses, bulbs, phones, and the beams in their haze.
+    eg.setTransform(1, 0, 0, 1, 0, 0);
+    eg.globalCompositeOperation = 'source-over';
+    eg.clearRect(0, 0, visW, visH);
+    eg.translate(-camX, -camY);
+    eg.globalCompositeOperation = 'lighter';
+    screen(eg, p, t, pulse);
+    FIX.forEach((fx, i) => {
+      const [px, py] = P2(fx, -.8, TRUSS_Z - 1.2);
+      const col = strobe ? [255, 255, 255] : p[(i + beatN) % 2];
+      const on = (strobe ? 1 : (.35 + .65 * L) * (.65 + .35 * pulse)) * (show || L > .1 ? 1 : .3);
+      eg.fillStyle = rgb(col, on); eg.fillRect(px - 1, py, 2, 1);
+      if (on > .5 && night > .3 && (i + beatN) % 3 === 0) glint(eg, px, py, col, on * night, 2 + (pulse > .6 ? 1 : 0));
+    });
+    // Par cans along the lip of the deck, chasing.
+    for (let i = 0; i < 9; i++){
+      const [px, py] = P2(-12 + i * 3, .1, DECK.z + .3);
+      const ch = .5 + .5 * Math.sin(ph * Math.PI + i * .9);
+      eg.fillStyle = rgb(p[i % 2], (.25 + .75 * ch) * L * (show ? 1 : .2));
+      eg.fillRect(px, py, 1, 1);
+    }
     for (const [x, y] of LAMPS){
       const [px, py] = P2(x, y, 11.4);
-      pool(px, py, 6 + night * 6, [255, 220, 150], .2 + night * .45);
+      eg.fillStyle = rgb([255, 236, 190], .35 + .65 * night); eg.fillRect(px - 1, py - 1, 2, 2);
     }
     for (const yy of [14, 30]){
       for (let x = -30; x <= 30; x += 2.4){
         const sag = 1.6 * (1 - (x / 30) ** 2);
         const [px, py] = P2(x, yy, 13 - sag);
-        g.fillStyle = rgb([255, 214, 140], .3 + night * .7);
-        g.fillRect(px, py, 1, 1);
-        if (night > .2) pool(px, py + .5, 3, [255, 200, 120], night * .25);
+        const tw = .75 + .25 * Math.sin(t * 2.3 + x * 1.7 + yy);
+        eg.fillStyle = rgb([255, 214, 150], (.25 + .75 * night) * tw);
+        eg.fillRect(px, py, 1, 1);
       }
-    }
-    // Stage wash: a pool under each player, stronger as the sky goes.
-    const wash = (.12 + .3 * L) * (.35 + night * .65) * (1 - H);
-    if (st.band) for (const [, m] of PLAYERS){
-      const [px, py] = P2(m.x, m.y, m.z);
-      pool(px, py - 4, 14 + e * 4, mixc([255, 244, 228], p[1], .4), wash * 1.4);
-    }
-    // The rig on the truss, and the beams it throws once it is dark enough to see them.
-    const a = (.05 + e * .1) * L * (1 - H) * (.25 + night * .9);
-    FIX.forEach((fx, i) => {
-      const [px, py] = P2(fx, -.8, TRUSS_Z - 1.2);
-      g.fillStyle = rgb(p[i % 2], .4 + .6 * L);
-      g.fillRect(px - 1, py, 2, 1);
-      if (a > .01){
-        const sp = .45 + e * 1.4;
-        const tx = fx + Math.sin(t * sp + i * .8) * (3 + e * 6) * (i % 2 ? 1 : -1);
-        const deep = e > .6 && i % 3 === 0;
-        const ty = deep ? 8 + Math.sin(t * sp * .7 + i) * 6 : -9 + (i * 13) % 8;
-        const b = P2(tx, ty, deep ? 0 : DECK.z);
-        cone([px, py + 1], b, 5 + e * 4, p[i % 2], a);
-        pool(b[0], b[1], 7 + e * 3, p[i % 2], a * 2.2);
-      }
-    });
-    if (e > .45 && a > .01){
-      for (let i = 0; i < 6; i++){
-        const base = P2(-12 + i * 4.8, -.4, DECK.z);
-        const ang = Math.sin(t * (.4 + e) + i * 1.3) * .5 + (i - 2.5) * .12;
-        cone(base, [base[0] + Math.sin(ang) * 90, base[1] - Math.cos(ang) * 120], 8, p[(i + 1) % 2], a * (e - .3) * 1.6);
-      }
-    }
-    if (now < st.segueUntil){
-      const f = 1 - (st.segueUntil - now) / 1500;
-      cone(P2(0, -.8, TRUSS_Z), P2(-14 + f * 28, -2, DECK.z), 12, [255, 255, 255], .25 * Math.sin(f * Math.PI) * (.4 + night * .6));
     }
     if (st.encore && H < .5){
       for (const c of crowd){
         if (c.pose !== 'phone' || c.px == null) continue;
-        const fl = .75 + .25 * Math.sin(t * 4 + c.phase);
+        const fl = .8 + .2 * Math.sin(t * 4 + c.phase);
         const qx = c.px - Math.round(.85 / ART), qy = c.py - Math.round(6.05 * CE / ART);
-        g.fillStyle = rgb([226, 240, 255], fl); g.fillRect(qx, qy, 1, 2);
-        pool(qx, qy + 1, 4, [190, 215, 255], .3 * fl);
+        eg.fillStyle = rgb([230, 242, 255], fl); eg.fillRect(qx, qy, 1, 2);
+        pool(lg, qx, qy + 6, 8, [190, 215, 255], .25 * fl);
       }
     }
+    eg.setTransform(1, 0, 0, 1, 0, 0);
+    eg.drawImage(beams, 0, 0);
+    g.globalCompositeOperation = 'lighter';
+    g.drawImage(emit, 0, 0);
     g.globalCompositeOperation = 'source-over';
     if (now < st.flashUntil){
       g.fillStyle = rgb([255, 255, 255], .4 * (st.flashUntil - now) / 260);
-      g.fillRect(camX, camY, visW, visH);
+      g.fillRect(0, 0, visW, visH);
     }
-    g.setTransform(1, 0, 0, 1, 0, 0);
+
+    // 6. ON TO THE SCREEN: the pixels whole, then the bloom over them at the screen's own resolution,
+    //    which is what makes a lens or a beam read as light rather than as a coloured shape.
+    out.globalCompositeOperation = 'source-over';
     out.imageSmoothingEnabled = false;
     out.drawImage(buf, 0, 0, visW * k, visH * k);
+    const ba = bloomA.getContext('2d'), bb = bloomB.getContext('2d');
+    ba.globalCompositeOperation = 'copy'; ba.imageSmoothingEnabled = true;
+    ba.drawImage(emit, 0, 0, bloomA.width, bloomA.height);
+    bb.globalCompositeOperation = 'copy'; bb.imageSmoothingEnabled = true;
+    bb.drawImage(bloomA, 0, 0, bloomB.width, bloomB.height);
+    gg.globalCompositeOperation = 'copy'; gg.imageSmoothingEnabled = true; gg.imageSmoothingQuality = 'high';
+    gg.globalAlpha = .55 + .25 * night;
+    gg.drawImage(bloomA, 0, 0, glow.width, glow.height);
+    gg.globalCompositeOperation = 'lighter';
+    gg.globalAlpha = .5 + .35 * night;
+    gg.drawImage(bloomB, 0, 0, glow.width, glow.height);
+    gg.globalAlpha = 1;
+    out.globalAlpha = 1;
+    out.globalCompositeOperation = 'source-over';
   }
 
   function ease(dt){
@@ -895,7 +1055,7 @@ export function createStage(view, opts = {}){
       setPalette(ev.palette || ROTATION[st.rot++ % ROTATION.length]);
       st.mode++;
       if (ev.segue) st.segueUntil = ts + 1500;
-      if (ev.bustout){ st.signsUntil = ts + 3400; st.jumpUntil = ts + 2000; st.flashUntil = ts + 260; }
+      if (ev.bustout){ st.signsUntil = ts + 3400; st.jumpUntil = ts + 2000; st.flashUntil = ts + 260; st.strobeUntil = ts + 1600; }
       if (ev.grade) st.densityWant = DENSITY[ev.grade] || .8;
     } else if (ev.kind === 'time'){
       if (!ev.last){ st.band = false; st.houseWant = .85; st.lightWant = 0; st.energyWant = .15; }
@@ -904,7 +1064,7 @@ export function createStage(view, opts = {}){
       st.houseWant = 0; st.lightWant = 1; st.energyWant = ev.grade === 'cold' ? .4 : 1;
       st.densityWant = DENSITY[ev.grade] || .8;
       st.flashUntil = ts + 260;
-      if (ev.grade !== 'cold') st.jumpUntil = ts + 3000;
+      if (ev.grade !== 'cold'){ st.jumpUntil = ts + 3000; st.strobeUntil = ts + 1400; }
     }
     for (const c of crowd) c.until = 0;
     if (reduce || ev.instant){
@@ -916,6 +1076,7 @@ export function createStage(view, opts = {}){
 
   function destroy(){
     dead = true;
+    if (glow.parentElement) glow.remove();
     cancelAnimationFrame(raf);
     window.removeEventListener('resize', fit);
   }
