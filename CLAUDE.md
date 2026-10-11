@@ -19898,10 +19898,30 @@ walked with a stick or the arrows, or on Auto walk along the path; Skip goes str
   path or screen it only from behind (`screensPath`), and a figure behind something is drawn see-through.
 - **Each world has a kit** (`KIT`): ground, path, trees, low plants, landmarks, a hazard (water, lava, ice
   that slides, mud that slows), its own breakables and someone to talk to. Lava sends him back to the path.
+- **No two walks are alike.** A trail takes one of four shapes (a meander, switchbacks, one long sweep, a
+  twisting lane), mirrored at random. Its clearing sits on the side with room, half the time down a little
+  path and half the time hidden in the trees, and holds a chest, a ring of coins or a pile to smash. Coins come
+  in patterns picked per trail (a run, a zigzag, an arc round a bend, singles in the grass, a line of crumbs
+  leading off to a pile, a ring round a tree). check-putt plans seventeen trails and asserts at least three
+  shapes, three kinds of clearing, and no two with their coins in the same places.
 - **What is on the trail is kept** in the Tour record as `st.trail['tour:to']`: coins, breakables smashed,
-  the chest, the key and the golden ball. One trail in three hides the chest behind a locked fence and the key
-  somewhere off the path. A golden ball on every trail; all of a world's pays 500 coins and a named reward.
-  `pmerge` takes the union and `cloudProg` counts them, so a pickup is never lost to a stale device.
+  the chest, the key, the golden ball and the rare things below. A chest is locked behind a fence on about
+  four trails in ten, the key somewhere off the path. A golden ball on every trail; all of a world's pays 500
+  coins and a named reward. `pmerge` takes the union and `cloudProg` counts them.
+- **The rare things are fixed to trails** (`trailLoot`, `lootSlots`, main tour only), so every player finds
+  them in the same places, further off the path than anything else:
+  - **Trinkets**, three a world and this game's alone (`TRINKETS`). A world's three pays 300 coins and a
+    named reward.
+  - **Putt Putt putters**, three, each built from three parts found in the worlds it lists (`PP_PUTTERS`):
+    the Scope Putter (aim line four feet longer), the Bank Shot Putter (the aim line is the ball's real path
+    off the walls, `bankLine`) and the Lifeguard Putter (once a hole, water or out costs no penalty
+    stroke). One is equipped in the Bag (`st.pp.eq`), and the Daily Hole is played without them
+    (`puttEquipped`).
+  - **Spare lives**, about one trail in ten. Banked (`st.bank`), spent from the out of lives sheet. Spending
+    one moves `bused`, losing it moves `bspent`, and the life in play is the difference (`lifeExtra`), so
+    two devices merge by the larger of each counter. It is not on the server's lives row.
+- **The Bag** (a button on the hub, `bagSheet`) shows the putters, the spare lives, and each world's
+  trinkets and golden balls.
 - **Where two worlds meet, a wall of the new world stands across the land** with a door on the path, the
   stars door from putt.js. Short of the stars it stays shut and he cannot walk past it.
 - **A plan is the same every time** (seeded on the tour and the hole), and the next trail is built ahead

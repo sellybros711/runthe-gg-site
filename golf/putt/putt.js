@@ -1864,6 +1864,14 @@ var CSS = '\
 .pp-tui{position:absolute;inset:0;z-index:4;pointer-events:none}.pp-tui button{pointer-events:auto}\
 .pp-trail{flex:1;min-height:0;display:flex;flex-direction:column}.pp-tbox{position:relative;flex:1;min-height:0;overflow:hidden;touch-action:none;background:#07130d}.pp-tcv{position:absolute;inset:0;image-rendering:pixelated;touch-action:none}\
 .pp-tload{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;font-weight:900;color:#fff}.pp-tload span{width:60%;max-width:280px;height:10px;border-radius:6px;background:rgba(255,255,255,.15);overflow:hidden}.pp-tload u{display:block;height:100%;width:8%;background:#ffd24a;transition:width .2s}\
+.pp-bagb{position:absolute;right:12px;top:60px;z-index:6;font:900 13px system-ui,sans-serif;color:#3a2a14;background:#ffd24a;border:2px solid #3a2a14;border-radius:12px;padding:6px 12px;box-shadow:0 3px 0 #3a2a14;cursor:pointer}\
+.pp-bag .pp-card{max-height:86vh;overflow:auto;text-align:left}.pp-bsec{margin:14px 0 6px;font:900 11px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;opacity:.7}\
+.pp-bput{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.06);margin:6px 0}.pp-bput.on{background:rgba(255,210,74,.18);outline:2px solid #ffd24a}\
+.pp-bpn{flex:1;min-width:0}.pp-bpn b{display:block;font-size:14px}.pp-bpn span{display:block;font-size:12px;opacity:.8}.pp-bput button{flex:0 0 auto;padding:6px 12px;min-width:0}\
+.pp-bpp{display:flex;gap:4px}.pp-bpp u{width:12px;height:12px;border-radius:3px;background:rgba(255,255,255,.18)}.pp-bpp u.on{background:#ffd24a}\
+.pp-bw{padding:6px 10px;border-left:4px solid var(--wc);margin:6px 0;background:rgba(255,255,255,.04);border-radius:6px}.pp-bw b{font-size:13px}.pp-bw em{display:block;font-size:11px;font-style:normal;opacity:.75}\
+.pp-btk{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0}.pp-btk i{font-style:normal;font-size:11px;padding:2px 7px;border-radius:8px;background:rgba(255,255,255,.08);opacity:.55}.pp-btk i.on{opacity:1;background:var(--wc);color:#1a1420;font-weight:800}\
+.pp-hbank{margin-left:4px;font:900 12px system-ui,sans-serif;color:#ffd24a}.pp-hx{filter:drop-shadow(0 0 3px #ffd24a)}\
 .pp-thud{position:absolute;left:10px;top:10px;display:flex;gap:6px}.pp-thud span{font-size:13px;font-weight:900;color:#3a2a14;background:#ffd24a;border:2px solid #3a2a14;border-radius:10px;padding:3px 9px}.pp-thud span:empty{display:none}\
 .pp-bub{position:absolute;transform:translate(-50%,-100%);max-width:min(78vw,300px);font-size:14px;font-weight:800;line-height:1.3;color:#1d2a20;background:#fffdf5;border:2px solid #3a2a14;border-radius:12px;padding:8px 11px;box-shadow:0 3px 0 rgba(0,0,0,.35)}.pp-bub[hidden]{display:none}\
 .pp-way{position:absolute;display:none;transform:translate(-50%,-50%);flex-direction:column;align-items:center;gap:3px}.pp-way.on{display:flex}\
@@ -1994,7 +2002,11 @@ function pmerge(st, g){
   // what was picked up on the trails between holes: only ever added to
   st.trail = st.trail || {}; Object.keys(g.trail || {}).forEach(function(k){ var a = st.trail[k] = st.trail[k] || {}, b = g.trail[k] || {};
     ['c', 'b'].forEach(function(f){ if (b[f]){ a[f] = a[f] || []; b[f].forEach(function(v){ if (a[f].indexOf(v) < 0) a[f].push(v); }); } });
-    ['k', 'g', 'key'].forEach(function(f){ if (b[f]) a[f] = 1; }); });
+    ['k', 'g', 'key', 'life', 'tk', 'pt'].forEach(function(f){ if (b[f]) a[f] = 1; }); });
+  // the rare things: lists only grow, and the spare life counters only go up, so the larger is the newer
+  ['bank', 'tk'].forEach(function(f){ (g[f] || []).forEach(function(v){ st[f] = st[f] || []; if (st[f].indexOf(v) < 0) st[f].push(v); }); });
+  ['bused', 'bspent'].forEach(function(f){ st[f] = Math.max(st[f] || 0, g[f] || 0); });
+  if (g.pp){ st.pp = st.pp || { parts:[] }; st.pp.parts = st.pp.parts || []; (g.pp.parts || []).forEach(function(v){ if (st.pp.parts.indexOf(v) < 0) st.pp.parts.push(v); }); if (!st.pp.eq && g.pp.eq) st.pp.eq = g.pp.eq; }
   st.rewards = st.rewards || []; (g.rewards || []).forEach(function(r){ if (st.rewards.indexOf(r) < 0) st.rewards.push(r); });
   if (g.streak && (!st.streak || (g.streak.best || 0) > (st.streak.best || 0))) st.streak = Object.assign({}, st.streak || {}, { best:g.streak.best });
   return st; }
@@ -2026,7 +2038,8 @@ var CLOUD = { uid:null, busy:false, again:false, refused:0 };
 function cloudUid(){ try{ var h = hostOf(); return h.rpc && h.uid ? h.uid() || null : null; }catch(e){ return null; } }
 function cloudProg(st){ var n = 0, c = function(o){ return Object.keys(o || {}).length; };
   Object.keys(st.tours || {}).forEach(function(k){ var t = st.tours[k] || {}; n += (t.lv || 1) + c(t.best) + c(t.ace) + c(t.paid) + c(t.wpaid); });
-  Object.keys(st.trail || {}).forEach(function(k){ var t = st.trail[k] || {}; n += (t.c || []).length + (t.b || []).length + (t.k ? 1 : 0) + (t.g ? 1 : 0) + (t.key ? 1 : 0); });
+  Object.keys(st.trail || {}).forEach(function(k){ var t = st.trail[k] || {}; n += (t.c || []).length + (t.b || []).length + (t.k ? 1 : 0) + (t.g ? 1 : 0) + (t.key ? 1 : 0) + (t.life ? 1 : 0) + (t.tk ? 1 : 0) + (t.pt ? 1 : 0); });
+  n += (st.bank || []).length + (st.tk || []).length + ((st.pp && st.pp.parts) || []).length + (st.bused || 0) + (st.bspent || 0);
   return n + c(st.daily) + (st.rewards || []).length; }
 // fold a copy of the record into this one: everything earned is kept, lives come from the newer copy
 function cloudMerge(st, g){ if (!g || g.v !== 2 || !g.tours) return st;
@@ -2089,7 +2102,7 @@ function guestSheet(){
   sh.querySelector('[data-up]').onclick = function(){ go('signup'); };
   sh.querySelector('[data-n]').onclick = function(){ sh.remove(); }; }
 function livesMax(){ try{ var h = hostOf(); return h.passActive && h.passActive() ? 6 : 3; }catch(e){ return 3; } }
-function loseLife(st){ st.lives = Math.max(0, (st.lives == null ? livesMax() : st.lives) - 1); if (st.lives === 0 && !st.refillAt) st.refillAt = Date.now() + LIFE_MS; st.lt = Date.now(); psave(st); livesCall('putt_lives_spend'); }
+function loseLife(st){ if (lifeExtra(st) > 0){ st.bspent = (st.bspent || 0) + 1; psave(st); return; } st.lives = Math.max(0, (st.lives == null ? livesMax() : st.lives) - 1); if (st.lives === 0 && !st.refillAt) st.refillAt = Date.now() + LIFE_MS; st.lt = Date.now(); psave(st); livesCall('putt_lives_spend'); }
 function coins(n, label){ try{ if (S.host.coins) S.host.coins(n, label); }catch(e){} }
 function hms(ms){ ms = Math.max(0, ms); var s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return h + ':' + (m < 10 ? '0' : '') + m + ':' + (x < 10 ? '0' : '') + x; }
 function hm(ms){ var m = Math.max(0, Math.round(ms / 60000)); return Math.floor(m / 60) + 'h ' + (m % 60) + 'm'; }
@@ -2143,7 +2156,10 @@ var HEART_PX = ['0110110', '1111111', '1111111', '0111110', '0011100', '0001000'
 function heartSvg(on){ var d = ''; HEART_PX.forEach(function(r, y){ for (var x = 0; x < 7; x++) if (r[x] === '1') d += 'M' + x + ' ' + y + 'h1v1h-1z'; });
   return '<svg viewBox="0 0 7 6" shape-rendering="crispEdges"><path d="' + d + '" fill="' + (on ? '#e5483a' : '#5b6670') + '"/>' + (on ? '<path d="M1 1h1v1h-1z" fill="#ff9d8a"/>' : '') + '</svg>'; }
 function hearts(st){ var mx = Math.max(livesMax(), st.lives), out = '';
-  for (var i = 0; i < mx; i++) out += '<i class="pp-h' + (i < st.lives ? ' on' : '') + '">' + heartSvg(i < st.lives) + '</i>'; return out; }
+  for (var i = 0; i < mx; i++) out += '<i class="pp-h' + (i < st.lives ? ' on' : '') + '">' + heartSvg(i < st.lives) + '</i>';
+  var x = lifeExtra(st), bk = bankHeld(st);
+  if (x) out += '<i class="pp-h on pp-hx" title="A spare life in play">' + heartSvg(true) + '</i>';
+  if (bk) out += '<b class="pp-hbank" title="Spare lives banked">+' + bk + '</b>'; return out; }
 function golferImg(cls){ try{ var c = S.host.golfer && S.host.golfer(); if (c && c.toDataURL) return '<img class="' + cls + '" alt="" src="' + c.toDataURL() + '">'; }catch(e){} return ''; }
 function golferUrl(){ try{ var c = S.host.golfer && S.host.golfer(); if (c && c.toDataURL) return c.toDataURL(); }catch(e){} return ''; }
 function balStr(){ try{ if (S.host.balance) return Number(S.host.balance()).toLocaleString(); }catch(e){} return ''; }
@@ -2182,11 +2198,12 @@ function showHub(tid){
         <span class="m">' + (drec && drec.done ? 'You shot ' + drec.s + ' (par ' + drec.par + ')' + (drec.ms != null ? ' in ' + clockTxt(drec.ms) : '') : esc(dT.name) + ' · par ' + buildHole(dh).par + ' · timed, one try') + '</span>\
         <span class="pp-dends">' + (drec && drec.done ? 'Next hole in ' : 'Ends in ') + '<b data-dcount>' + hms(msToNextDay()) + '</b></span></span>\
       <span class="pp-dside"><span class="g">' + (drec && drec.done ? 'Result' : 'Play') + '</span><span class="rw">' + (drec && drec.done ? 'Played' : '+' + COIN_DAILY + ' coins') + '</span></span></button>') +
-    '<div class="pp-wchip" data-wchip></div>' +
+    '<div class="pp-wchip" data-wchip></div>' + (TOURS.main && !cal ? '<button class="pp-bagb" data-bag aria-label="Your Bag">Bag</button>' : '') +
     '<div class="pp-tabs" role="tablist"><button data-tab="main" class="' + (mem || lab || cal ? '' : 'on') + '" role="tab">Putt Putt Tour</button><button data-tab="members" class="' + (mem ? 'on' : '') + '" role="tab"><i>★</i> Members' + (membersOpen() ? '' : ' <s>🔒</s>') + '</button>' + (labOpen() ? '<button data-tab="lab" class="' + (lab ? 'on' : '') + '" role="tab">Lab</button>' : '') +
     '<button data-tab="daily" class="' + (cal ? 'on' : '') + '" role="tab">Daily' + (drec && drec.done ? '' : '<u class="pp-tdot" aria-label="not played today"></u>') + '</button></div>' + '</div>';
   S.ov.querySelector('[data-x]').onclick = close;
   var dcb = S.ov.querySelector('[data-daily]'); if (dcb) dcb.onclick = function(){ startDaily(); };
+  var bgb = S.ov.querySelector('[data-bag]'); if (bgb) bgb.onclick = bagSheet;
   S.ov.querySelectorAll('[data-tab]').forEach(function(b){ b.onclick = function(){ var t = b.getAttribute('data-tab'); if (t === S.tour) return;
     if (t === 'members' && !membersOpen() && !membersPreview()) return membersSheet(); showHub(t); }; });
   if (cal) drawCal(st); else drawMap(st, TR);
@@ -2197,6 +2214,26 @@ function showHub(tid){
     if (dc) dc.textContent = hms(msToNextDay());
     var h = S.ov.querySelector('[data-hearts]'); if (h) h.innerHTML = hearts(s2); };
   tick(); S.tick = setInterval(function(){ if (!S || S.screen !== 'menu') return clearInterval(S && S.tick); tick(); }, 1000);
+}
+/* THE BAG: what the trails have given you. The Putt Putt putters (built from their parts, one equipped),
+   the spare lives banked, each world's trinkets and its golden balls. Nothing here is for sale. */
+function bagSheet(){
+  var st = pload(), TR = TOURS.main, pp = st.pp || {}, eq = pp.eq;
+  var puts = PP_PUTTERS.map(function(pt){ var n = partsOf(st, pt.id), built = n >= 3, on = built && eq === pt.id;
+    return '<div class="pp-bput' + (built ? ' built' : '') + (on ? ' on' : '') + '"><div class="pp-bpn"><b>' + esc(pt.name) + '</b><span>' + (built ? esc(pt.tells) : n + ' of 3 parts · found on the trails of ' + pt.worlds.map(function(w){ return esc(TR.worlds[w].name); }).join(', ')) + '</span></div>' +
+      (built ? '<button class="' + (on ? 'pt-go' : 'pt-bt') + '" data-eq="' + pt.id + '">' + (on ? 'Equipped' : 'Equip') + '</button>' : '<i class="pp-bpp">' + [0, 1, 2].map(function(j){ return '<u class="' + ((pp.parts || []).indexOf(pt.id + ':' + j) >= 0 ? 'on' : '') + '"></u>'; }).join('') + '</i>') + '</div>'; }).join('');
+  var worlds = TR.worlds.map(function(Wd, w){ var T = TRINKETS[Wd.theme] || [], gd = goldenOf(st, 'main', w);
+    return '<div class="pp-bw" style="--wc:' + (TRINKET_COL[Wd.theme] || '#fff') + '"><b>' + esc(Wd.name) + '</b><span class="pp-btk">' + T.map(function(nm, j){ var got = (st.tk || []).indexOf(Wd.theme + ':' + j) >= 0;
+      return '<i class="' + (got ? 'on' : '') + '">' + (got ? esc(nm) : '???') + '</i>'; }).join('') + '</span><em>● ' + gd.have + '/' + gd.total + ' golden</em></div>'; }).join('');
+  var sh = el('<div class="pp-sheet pp-bag"><div class="pp-card"><div class="k">YOUR BAG</div><div class="t">Found on the trails</div>\
+    <div class="pp-bsec">Putt Putt putters</div>' + puts + (eq && partsOf(st, eq) >= 3 ? '<button class="pt-bt pp-wide" data-uneq>Play with no special putter</button>' : '') + '\
+    <div class="pp-bsec">Spare lives</div><div class="m">' + (bankHeld(st) ? bankHeld(st) + ' banked. Use one from the out of lives screen.' : 'None banked. A heart turns up on a trail now and then.') + '</div>\
+    <div class="pp-bsec">Trinkets and golden balls</div>' + worlds + '\
+    <button class="pt-bt pp-wide" data-n>Close</button></div></div>');
+  S.ov.appendChild(sh);
+  sh.querySelector('[data-n]').onclick = function(){ sh.remove(); };
+  sh.querySelectorAll('[data-eq]').forEach(function(b){ b.onclick = function(){ var s2 = pload(); s2.pp = s2.pp || { parts:[] }; s2.pp.eq = b.getAttribute('data-eq'); psave(s2); sh.remove(); bagSheet(); }; });
+  var ue = sh.querySelector('[data-uneq]'); if (ue) ue.onclick = function(){ var s2 = pload(); s2.pp = s2.pp || { parts:[] }; s2.pp.eq = null; psave(s2); sh.remove(); bagSheet(); };
 }
 /* THE MEMBERS TOUR, SHUT: what it is, what it pays, and the way in. It is the Tour Pass holder's, so
    there is nothing to buy here with coins, and the pass itself opens at launch. */
@@ -2361,13 +2398,52 @@ function warmWalk(TR, n){ try{ var h = S.host; if (h.golferWalkWarm && n < TR.le
    is the Tour record's (st.trail, merged like everything else there: it only adds). The trail renders while
    the hole before it is played, the way the next hole does, so Next does not wait. Reduced motion, or a
    page without the trail or the 3D golfer, keeps the short walk on the map. */
+/* THE RARE THINGS ON THE TRAILS, all of them the main tour's and all of them fixed to a trail, so every
+   player finds them in the same places and a trail can be gone back to.
+   TRINKETS: three a world, found only on the trails, each the world's own. A world's three is a set and
+   pays TRINKET_SET_COINS and a named reward. They are this game's alone.
+   PUTT PUTT PUTTERS: three, each built from three parts found on the trails, early worlds first. A built
+   putter is equipped in the Bag and helps the way its card says. They never move a price, a par or a
+   score anyone else plays against, and the Daily Hole is played without them.
+   SPARE LIVES: one trail in about ten carries a heart. Picked up, it is banked, and spent from the out of
+   lives sheet when the hearts are gone. */
+var TRINKETS = {
+  clubhouse:['Brass Ball Marker', 'Club Pennant', 'Scorecard Pencil'], temple:['Jade Idol', 'Sun Disc', 'Carved Tee'],
+  pirate:['Doubloon Marker', 'Spyglass', 'Parrot Feather'], canyon:['Gold Nugget', 'Lucky Horseshoe', 'Prospector Pan'],
+  volcano:['Obsidian Shard', 'Ember Stone', 'Fire Opal'], frozen:['Ice Crystal', 'Snow Globe', 'Mitten Tee'],
+  sky:['Cloud Feather', 'Kite Charm', 'Weather Vane'], neon:['Arcade Token', 'Joystick Charm', 'Prize Ticket']
+};
+var TRINKET_COL = { clubhouse:'#7ee081', temple:'#3fd0a0', pirate:'#ffd23a', canyon:'#ff9a4a', volcano:'#ff5a3c', frozen:'#a8dcf4', sky:'#ffffff', neon:'#ff2bd6' };
+var TRINKET_SET_COINS = 300;
+var PP_PUTTERS = [
+  { id:'scope', name:'Scope Putter', worlds:[0, 1, 2], tells:'The aim line reaches four feet further.' },
+  { id:'bank', name:'Bank Shot Putter', worlds:[2, 3, 4], tells:'The aim line bends off the walls the way the ball will.' },
+  { id:'buoy', name:'Lifeguard Putter', worlds:[4, 5, 6], tells:'Once a hole, water or out of bounds costs no penalty stroke.' }
+];
+var PART_NAMES = ['grip', 'shaft', 'head'];
+// which trail carries what: a pure function of the tour and the hole walked to
+function trailLoot(tid, to){ var TR = tourOf(tid); if (tid !== 'main' || TR.lab || TR.members) return {};
+  var K = TR.per || PER, w = Math.floor((to - 1) / K), out = {}, Wd = TR.worlds[w]; if (!Wd) return out;
+  var slots = lootSlots(tid, w);
+  var ti = slots.tk.indexOf(to); if (ti >= 0){ var nm = (TRINKETS[Wd.theme] || [])[ti]; if (nm) out.trinket = { id:Wd.theme + ':' + ti, name:nm, col:TRINKET_COL[Wd.theme] }; }
+  PP_PUTTERS.forEach(function(pt){ var j = pt.worlds.indexOf(w); if (j >= 0 && slots.pt[pt.id] === to) out.part = { id:pt.id + ':' + j, name:pt.name + ' ' + PART_NAMES[j], putter:pt.id }; });
+  if (to > 2 && hstr('life:' + tid + ':' + to) % 10 === 3) out.life = { id:'life:' + to };
+  return out; }
+function lootSlots(tid, w){ var K = tourOf(tid).per || PER, base = w * K, pool = [], i; for (i = 2; i <= K; i++) pool.push(base + i);
+  pool.sort(function(a, b){ return hstr('loot:' + a) - hstr('loot:' + b); });
+  var r = { tk:pool.slice(0, 3), pt:{} }, k = 3; PP_PUTTERS.forEach(function(pt){ if (pt.worlds.indexOf(w) >= 0) r.pt[pt.id] = pool[k++]; }); return r; }
+function partsOf(st, id){ var pp = st.pp || {}, n = 0; (pp.parts || []).forEach(function(x){ if (x.split(':')[0] === id) n++; }); return n; }
+function puttEquipped(){ try{ if (S.round && S.round.mode !== 'ppt') return null; var st = pload(), id = st.pp && st.pp.eq; return id && partsOf(st, id) >= 3 ? id : null; }catch(e){ return null; } }
+function bankHeld(st){ return Math.max(0, (st.bank || []).length - (st.bused || 0)); }
+function lifeExtra(st){ return Math.max(0, (st.bused || 0) - (st.bspent || 0)); }
+function livesNow(st){ return (st.lives || 0) + lifeExtra(st); }
 var TRAIL_GOLD_COINS = 500;
 function trailOk(){ var TT = window.RTT_PUTT_TRAIL; return !!(TT && TT.API_VERSION === 1 && v3Ok() && S && S.host && S.host.golferWalk); }
 function trailSpec(tid, from){
   var TR = tourOf(tid), K = TR.per || PER, to = from + 1, w = Math.min(TR.worlds.length - 1, Math.floor((to - 1) / K)), th = TR.worlds[w].theme;
   var cross = from >= 1 && from % K === 0, th0 = cross ? TR.worlds[w - 1].theme : th, tp = pload().tours[TR.id];
   var portrait = (window.innerHeight || 800) >= (window.innerWidth || 400);
-  return { key:tid + ':' + to, tid:tid, from:from, to:to, w:w, seed:hstr('trail:' + tid + ':' + to), theme:th, theme0:th0, cross:cross, gateOpen:tp.lv > from, T:THEMES[th] || THEMES.clubhouse, halfW:portrait ? 28 : 46 };
+  return { key:tid + ':' + to, tid:tid, from:from, to:to, w:w, seed:hstr('trail:' + tid + ':' + to), theme:th, theme0:th0, cross:cross, gateOpen:tp.lv > from, T:THEMES[th] || THEMES.clubhouse, halfW:portrait ? 28 : 46, loot:trailLoot(tid, to) };
 }
 function trailKey(sp){ return sp.key + '|' + sp.halfW + '|' + (sp.gateOpen ? 1 : 0); }
 function trailPlan(sp){ S.trp = S.trp || {}; var k = trailKey(sp); if (!S.trp[k]) S.trp[k] = window.RTT_PUTT_TRAIL.plan(sp); return S.trp[k]; }
@@ -2404,6 +2480,16 @@ function openTrail(tid, from){
         else if (kind === 'brk'){ r.b = r.b || []; if (r.b.indexOf(id) < 0) r.b.push(id); else n = 0; }
         else if (kind === 'chest'){ if (r.k) n = 0; r.k = 1; }
         else if (kind === 'key') r.key = 1;
+        else if (kind === 'life'){ r.life = 1; st.bank = st.bank || []; if (st.bank.indexOf(sp.loot.life.id) < 0) st.bank.push(sp.loot.life.id);
+          msg = 'A spare life. ' + bankHeld(st) + ' banked for when your hearts run out.'; }
+        else if (kind === 'trinket'){ r.tk = 1; var tk = sp.loot.trinket; st.tk = st.tk || []; if (st.tk.indexOf(tk.id) < 0) st.tk.push(tk.id);
+          var th = tk.id.split(':')[0], got = st.tk.filter(function(x){ return x.split(':')[0] === th; }).length, rt = 'Trinket Set: ' + Wd.name;
+          msg = 'Found the ' + tk.name + '. ' + got + ' of 3 from ' + Wd.name + '.';
+          if (got >= 3 && st.rewards.indexOf(rt) < 0){ st.rewards.push(rt); n = TRINKET_SET_COINS; msg += ' Set complete: +' + TRINKET_SET_COINS + ' coins.'; } }
+        else if (kind === 'part'){ r.pt = 1; var pa = sp.loot.part; st.pp = st.pp || { parts:[] }; st.pp.parts = st.pp.parts || []; if (st.pp.parts.indexOf(pa.id) < 0) st.pp.parts.push(pa.id);
+          var have = partsOf(st, pa.putter), PT = PP_PUTTERS.filter(function(q){ return q.id === pa.putter; })[0];
+          msg = 'A putter part: the ' + pa.name + '. ' + have + ' of 3.';
+          if (have >= 3){ if (!st.pp.eq) st.pp.eq = pa.putter; msg = 'The ' + PT.name + ' is built. ' + PT.tells + ' It is in your Bag.'; } }
         else if (kind === 'golden'){ var was = !!r.g; r.g = 1; var gd = goldenOf(st, tid, sp.w), done = gd.have >= gd.total, rw = 'Golden Ball Set: ' + Wd.name;
           msg = 'Golden ball. ' + gd.have + ' of ' + gd.total + ' in ' + Wd.name + '.';
           if (done && !was && st.rewards.indexOf(rw) < 0){ st.rewards.push(rw); n = TRAIL_GOLD_COINS; msg += ' Set complete: +' + TRAIL_GOLD_COINS + ' coins.'; } }
@@ -2488,12 +2574,14 @@ function outOfLives(){
     <div class="m">The clock keeps running while you are away.</div>\
     <button class="pt-go pp-wide ref" disabled>Refill lives · $0.99<small>Checkout opens at launch</small></button>\
     <button class="pt-go pp-wide pass" disabled>Get Tour Pass<small>6 lives and 3 of them right away · at launch</small></button>' +
+    (bankHeld(st) ? '<button class="pt-go pp-wide" data-spare>Use a spare life<small>' + bankHeld(st) + ' banked from the trails</small></button>' : '') +
     (S.host.tester && S.host.tester() ? '<button class="pt-bt pp-wide" data-free>Tester refill · free</button>' : '') +
     '<button class="pt-bt pp-wide" data-wait>Wait it out</button><div class="m">The Daily Hole never uses a life.</div></div></div>');
   S.ov.appendChild(sh);
   var c = sh.querySelector('[data-c]'), iv = setInterval(function(){ if (!sh.isConnected) return clearInterval(iv); var s2 = pload(); if (!s2.refillAt){ clearInterval(iv); sh.remove(); showHub(); return; } if (s2.lsrv && Date.now() >= s2.refillAt && !sh._ask){ sh._ask = 1; livesSync().then(function(){ sh._ask = 0; }); } c.textContent = hms(s2.refillAt - Date.now()); }, 1000);
   sh.querySelector('[data-wait]').onclick = function(){ sh.remove(); };
   sh.querySelector('[data-x]').onclick = function(){ sh.remove(); };
+  var spb = sh.querySelector('[data-spare]'); if (spb) spb.onclick = function(){ var s2 = pload(); if (!bankHeld(s2)) return; s2.bused = (s2.bused || 0) + 1; psave(s2); clearInterval(iv); sh.remove(); showHub(); };
   var fr = sh.querySelector('[data-free]'); if (fr) fr.onclick = function(){ var s2 = pload(); s2.lives = livesMax(); s2.refillAt = null; s2.lt = Date.now(); psave(s2); livesCall('putt_lives_refill'); sh.remove(); showHub(); };
 }
 
@@ -2505,7 +2593,7 @@ function startLevel(n, tid){
   if (tid === 'main' && n > GUEST_HOLES && isGuest()) return guestSheet();
   var c = st.cur, back = c && c.tid === tid && c.n === n && c.s > 0;
   if (c && !back){ clearCur(st); psave(st); }   // only a hole in progress on another device can be left this way
-  if (!back && st.lives <= 0 && !tourOf(tid).lab) return outOfLives();
+  if (!back && livesNow(st) <= 0 && !tourOf(tid).lab) return outOfLives();
   var d = tourDesc(n, S.host, tid);
   S.round = { mode:'ppt', lv:n, tid:tid, i:0, cards:[], holes:[d], title:levelName(n, tid) };
   stopTrail(); playHole(); warmWalk(tourOf(tid), n); trailAhead(tid, n);
@@ -2565,7 +2653,7 @@ function leaveHole(){
 }
 function restartHole(){
   var P = S.play, R = S.round;
-  if (R.mode === 'ppt' && R.tid !== 'lab' && P.strokes > 0 && P.state !== 'done') return confirmSheet('Restart?', 'You have putted, so a restart costs a life.', 'Restart · lose a life', function(){ var st = pload(); clearCur(st); loseLife(st); if (st.lives <= 0) return showHub(), outOfLives(); playHole(); });
+  if (R.mode === 'ppt' && R.tid !== 'lab' && P.strokes > 0 && P.state !== 'done') return confirmSheet('Restart?', 'You have putted, so a restart costs a life.', 'Restart · lose a life', function(){ var st = pload(); clearCur(st); loseLife(st); if (livesNow(st) <= 0) return showHub(), outOfLives(); playHole(); });
   if (R.mode === 'pdaily' && P.strokes > 0) return toast('One scored try a day. Finish this one.');
   if (R.mode === 'ppt'){ var st = pload(); if (st.cur){ clearCur(st); psave(st); } }
   playHole();
@@ -2612,9 +2700,9 @@ function tourOut(holed){
     <div class="row"><button class="pt-bt" data-a="map">Map</button><button class="pt-go" data-a="again">Try again</button></div>', { map:function(){ showHub(tid); }, again:function(){ startLevel(n, tid); } }, 'over');
   loseLife(st);
   return popup('<div class="k">OUT OF STROKES</div><div class="t">Over par</div><div class="s">' + par + ' strokes used and still not down.</div>\
-    <div class="pp-lives">' + hearts(st) + '</div><div class="s">' + (st.lives ? st.lives + (st.lives === 1 ? ' life' : ' lives') + ' left' : 'That was your last life.') + '</div>\
-    <div class="row"><button class="pt-bt" data-a="map">Map</button><button class="pt-go" data-a="again">' + (st.lives ? 'Try again' : 'Refill') + '</button></div>',
-    { map:function(){ showHub(tid); }, again:function(){ if (pload().lives > 0) startLevel(n, tid); else { showHub(tid); outOfLives(); } } }, 'over');
+    <div class="pp-lives">' + hearts(st) + '</div><div class="s">' + (livesNow(st) ? livesNow(st) + (livesNow(st) === 1 ? ' life' : ' lives') + ' left' : 'That was your last life.') + '</div>\
+    <div class="row"><button class="pt-bt" data-a="map">Map</button><button class="pt-go" data-a="again">' + (livesNow(st) ? 'Try again' : 'Refill') + '</button></div>',
+    { map:function(){ showHub(tid); }, again:function(){ if (livesNow(pload()) > 0) startLevel(n, tid); else { showHub(tid); outOfLives(); } } }, 'over');
 }
 function worldComplete(n, s, par, got, tid){
   var TR = tourOf(tid), PY = PAY[TR.id], K = TR.per || PER, w = Math.floor((n - 1) / K), Wd = TR.worlds[w], last = n === TR.levels.length;
@@ -2948,7 +3036,8 @@ function frame(){
 }
 function settle(){
   var P = S.play, sh = P.shot, C = P.C;
-  if (sh.water || sh.out){ P.strokes++; P.ball = P.prev.slice(); toast(sh.water ? ((C.T && C.T.hazName) || 'Water') + '. One stroke, and it goes back.' : 'Out. One stroke, and it goes back.'); }
+  if ((sh.water || sh.out) && !P.buoyUsed && puttEquipped() === 'buoy'){ P.buoyUsed = 1; P.ball = P.prev.slice(); toast('Lifeguard Putter. No penalty stroke this time.'); }
+  else if (sh.water || sh.out){ P.strokes++; P.ball = P.prev.slice(); toast(sh.water ? ((C.T && C.T.hazName) || 'Water') + '. One stroke, and it goes back.' : 'Out. One stroke, and it goes back.'); }
   else P.ball = sh.rest.slice();
   P.state = 'aim'; P.shot = null;
   if (sh.holed){ return holeOut(); }
@@ -3154,7 +3243,7 @@ function drawTrail(ctx, cam, pts){
    Signature 3). A page with no bag answers Stock. */
 var AIM_FEET = [5, 7, 9, 11];
 function aimFeet(){ var t = 0; try{ t = S.host && S.host.putter ? S.host.putter() | 0 : 0; }catch(e){ t = 0; }
-  return AIM_FEET[Math.max(0, Math.min(3, t))]; }
+  return AIM_FEET[Math.max(0, Math.min(3, t))] + (puttEquipped() === 'scope' ? 4 : 0); }
 function drawAim(ctx, P, cam){
   var C = P.C, b = w2s(cam, P.ball[0], P.ball[1]), d = S.dpr;
   if (C.kind === 'real'){
@@ -3169,15 +3258,24 @@ function drawAim(ctx, P, cam){
        going: they are one size and one spacing and never change with the pull, which used to make them
        read as a power bar. Power is the meter on the side of the screen and nothing else. How far the
        dots reach is the putter in the bag: a better putter shows more of the line. */
-    var ux = Math.cos(P.aimAng), uy = Math.sin(P.aimAng), GL = aimFeet(), step = 0.75;
+    var ux = Math.cos(P.aimAng), uy = Math.sin(P.aimAng), GL = aimFeet(), step = 0.75, bp = puttEquipped() === 'bank' ? bankLine(P, GL) : null;
     for (var f = step; f <= GL + 1e-6; f += step){
-      var q = w2s(cam, P.ball[0] + ux * f, P.ball[1] + uy * f);
+      var at = bp ? alongPts(bp, f) : null; if (bp && !at) break;
+      var q = at ? w2s(cam, at[0], at[1]) : w2s(cam, P.ball[0] + ux * f, P.ball[1] + uy * f);
       ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.beginPath(); ctx.arc(q[0], q[1], 3 * d, 0, 6.29); ctx.fill();
       ctx.fillStyle = 'rgba(255,255,255,.95)'; ctx.beginPath(); ctx.arc(q[0], q[1], 2 * d, 0, 6.29); ctx.fill();
     }
   }
   if (P.pow > 0 || S.held) drawPowerMeter(ctx, P.pow);
 }
+/* THE BANK SHOT PUTTER: the aim line is the ball's own path off the walls, from the real physics, at a pace
+   that carries it the length of the line. Cached on the aim and the ball, so it costs one roll per change. */
+function bankLine(P, GL){ var C = P.C, k = P.aimAng.toFixed(3) + '|' + P.ball[0].toFixed(2) + ',' + P.ball[1].toFixed(2);
+  if (P._bank && P._bank.k === k) return P._bank.pts;
+  var pts = null; try{ var v = speedFor(C, GL * 1.6), r = simulate(C, P.ball[0], P.ball[1], Math.cos(P.aimAng) * v, Math.sin(P.aimAng) * v, gnow() / 1000 - P.clock0); pts = r && r.pts; }catch(e){ pts = null; }
+  P._bank = { k:k, pts:pts }; return pts; }
+function alongPts(pts, f){ var acc = 0; for (var i = 1; i < pts.length; i++){ var a = pts[i - 1], b = pts[i], d = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    if (acc + d >= f){ var u = d ? (f - acc) / d : 0; return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u]; } acc += d; } return null; }
 /* The power meter stands on the right edge of the stage, big enough to read at a glance, with the
    percentage on it: green to yellow to red from the bottom up. */
 function drawPowerMeter(ctx, pow){
@@ -3277,6 +3375,8 @@ RTT_PUTT.open = open; RTT_PUTT.close = close; RTT_PUTT.paintCourse = paintCourse
 RTT_PUTT._state = function(){ return S; };
 RTT_PUTT._walkTo = function(n, tid){ return walkTo(n, tid || 'main'); };
 RTT_PUTT._trail = function(){ return S && S.trailCtl; };
+RTT_PUTT._trailPlan = function(from, tid){ return trailPlan(trailSpec(tid || 'main', from)); };
+RTT_PUTT._loot = trailLoot; RTT_PUTT._bag = function(){ bagSheet(); };
 RTT_PUTT._covers = function(){ var P = S.play; return P && P.camNow ? golferCovers(P, P.camNow) : null; };
 RTT_PUTT._lose = function(){ loseLife(pload()); };
 RTT_PUTT._dailyFinish = function(s, par, ms){ return dailyFinish(s, par, ms); };

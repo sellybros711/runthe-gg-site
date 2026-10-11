@@ -40,6 +40,9 @@
 var API_VERSION = 1;
 var GH = 4.0, ELEV = 42, D2R = Math.PI / 180, SE = Math.sin(ELEV * D2R), CE = Math.cos(ELEV * D2R);
 var TRAIL_L = 150, HALFW = 46, PW = 2.2, VIEW_FT = 60, SPEED = 9.5, STRIDE = 5.4;
+var PIX_HEART = ['.oo.oo.', 'orhrrro', 'orrrrro', '.orrro.', '..oro..', '...o...'];
+var PIX_GEM = ['.ooooo.', 'ohrrrro', 'orhrrro', '.orrro.', '..oro..', '...o...'];
+var PIX_PART = ['ooo....', 'ohro...', 'orrro..', '.orrro.', '..orrgo', '...oggo', '....ooo'];
 var COIN_V = 2, CHEST_V = 25, TART = 0.125;   // the trail is painted on a finer grid than a hole, because the camera comes in closer
 
 function hash(x, y, s){ var h = (x * 374761393 + y * 668265263 + s * 982451653) | 0; h = Math.imul(h ^ h >>> 13, 1274126177); return ((h ^ h >>> 16) >>> 0) / 4294967296; }
@@ -95,8 +98,15 @@ function kitOf(th){ return KIT[th] || KIT.clubhouse; }
 function plan(spec){
   var seed = spec.seed >>> 0, R = rng(seed), L = TRAIL_L, th = spec.theme, th0 = spec.cross ? (spec.theme0 || th) : th;
   var HW = spec.halfW || HALFW, b = [-HW, -18, HW, L + 16];
-  var A1 = 6 + R() * 4, A2 = 2 + R() * 2.5, p1 = R() * 6.28, p2 = R() * 6.28, f1 = 0.038 + R() * 0.012, f2 = 0.1 + R() * 0.04;
-  function cx(y){ var t = sm(-2, 22, y) * sm(L + 6, L - 18, y); return t * (A1 * Math.sin(y * f1 + p1) + A2 * Math.sin(y * f2 + p2)); }
+  /* NO TWO WALKS ARE THE SAME WALK. A trail takes one of four shapes, each with its own amplitude and
+     rhythm, mirrored at random: a meander, switchbacks, one long sweep round to the other side, and a
+     twisting little lane. Where it bends is the seed's, so the shape of the walk changes every hole. */
+  var Amax = Math.max(8, HW * 0.55), style = ['meander', 'switch', 'sweep', 'twist'][(R() * 4) | 0], flip = R() < 0.5 ? -1 : 1, A1, A2, f1, f2, p1 = R() * 6.28, p2 = R() * 6.28;
+  if (style === 'switch'){ A1 = Math.min(Amax, 11 + R() * 5); f1 = 0.06 + R() * 0.02; A2 = 1 + R(); f2 = 0.16; }
+  else if (style === 'sweep'){ A1 = Amax * (0.7 + R() * 0.2); f1 = Math.PI / (L - 10); p1 = 0; A2 = 2 + R() * 2; f2 = 0.09 + R() * 0.04; }
+  else if (style === 'twist'){ A1 = 4 + R() * 2.5; f1 = 0.11 + R() * 0.04; A2 = 2.5 + R() * 1.5; f2 = 0.21 + R() * 0.05; }
+  else { A1 = Math.min(Amax, 6 + R() * 4); A2 = 2 + R() * 2.5; f1 = 0.038 + R() * 0.012; f2 = 0.1 + R() * 0.04; }
+  function cx(y){ var t = sm(-2, 22, y) * sm(L + 6, L - 18, y); return flip * t * (A1 * Math.sin(y * f1 + p1) + A2 * Math.sin(y * f2 + p2)); }
   // the path, south (the start) to north (the arch), a point every 2 ft
   var path = []; for (var y = L + 7; y >= -1; y -= 2) path.push([cx(y), y]);
   if (path[path.length - 1][1] !== -1) path.push([cx(-1), -1]);
@@ -104,13 +114,19 @@ function plan(spec){
   var gy = spec.cross ? Math.round(L * 0.72) : null;
   function themeAt(y){ return spec.cross && y > gy ? th0 : th; }
   // the spur and its clearing, to one side
-  var ys = Math.round(L * (0.38 + R() * 0.22)), sg = R() < 0.5 ? -1 : 1; if (spec.cross && Math.abs(ys - gy) < 18) ys = gy - 26;
-  var sx0 = cx(ys), clr = { x:sx0 + sg * (17 + R() * 5), y:ys - 5, r:5.5 }, spur = [];
-  for (var k = 0; k <= 10; k++){ var t = k / 10; spur.push([sx0 + (clr.x - sx0) * t + Math.sin(t * Math.PI) * 2 * sg, ys + (clr.y - ys) * t - Math.sin(t * Math.PI) * 2.5]); }
-  var locked = !spec.cross && spec.to % 3 === 0;
+  var ys = Math.round(L * (0.3 + R() * 0.4)); if (spec.cross && Math.abs(ys - gy) < 18) ys = gy - 26;
+  var sx0 = cx(ys), sg = Math.abs(sx0 + 1) > 3 ? (sx0 > 0 ? -1 : 1) : (R() < 0.5 ? -1 : 1);   // toward the side with the room
+  var crr = 4.5 + R() * 2, cdist = Math.min(13 + R() * 9, HW - sg * sx0 - crr - 3);
+  var clr = { x:sx0 + sg * Math.max(9, cdist), y:ys - 3 - R() * 6, r:crr }, spur = [];
+  // half the clearings have a little path out to them; the rest are hidden in the trees and found by wandering
+  var spurOn = R() < 0.55;
+  if (spurOn) for (var k = 0; k <= 10; k++){ var t = k / 10; spur.push([sx0 + (clr.x - sx0) * t + Math.sin(t * Math.PI) * 2 * sg, ys + (clr.y - ys) * t - Math.sin(t * Math.PI) * 2.5]); }
+  // what the clearing holds: a chest most often, else a ring of coins, else a pile of things to smash
+  var clrKind = R() < 0.6 ? 'chest' : R() < 0.6 ? 'ring' : 'pile';
+  var locked = !spec.cross && clrKind === 'chest' && R() < 0.4;
   var start = { x:cx(L + 6), y:L + 6, r:7 };
   function pathD(x, y){ var m = 1e9; for (var i = 0; i < path.length - 1; i++){ var a = path[i], c = path[i + 1]; if (Math.abs(a[1] - y) > 6 && Math.abs(c[1] - y) > 6) continue; m = Math.min(m, segD(x, y, a[0], a[1], c[0], c[1])); } return m; }
-  function spurD(x, y){ var m = 1e9; for (var i = 0; i < spur.length - 1; i++) m = Math.min(m, segD(x, y, spur[i][0], spur[i][1], spur[i + 1][0], spur[i + 1][1])); return m; }
+  function spurD(x, y){ var m = 1e9; if (spur.length < 2) return m; for (var i = 0; i < spur.length - 1; i++) m = Math.min(m, segD(x, y, spur[i][0], spur[i][1], spur[i + 1][0], spur[i + 1][1])); return m; }
   // a field of how far each point is from the path, the spur and the clearings, read back smoothly
   var DS = 1, DX = Math.ceil((b[2] - b[0]) / DS) + 1, DY = Math.ceil((b[3] - b[1]) / DS) + 1, DD = new Float32Array(DX * DY);
   for (var j = 0; j < DY; j++) for (var i2 = 0; i2 < DX; i2++){ var x = b[0] + i2 * DS, yy = b[1] + j * DS; DD[j * DX + i2] = Math.min(pathD(x, yy), spurD(x, yy) + 0.4); }
@@ -118,7 +134,7 @@ function plan(spec){
     var i = fx | 0, j = fy | 0, u = fx - i, v = fy - j, q = j * DX + i; return (DD[q] * (1 - u) + DD[q + 1] * u) * (1 - v) + (DD[q + DX] * (1 - u) + DD[q + DX + 1] * u) * v; }
   function inClear(x, y, pad){ pad = pad || 0; return Math.hypot(x - clr.x, y - clr.y) < clr.r + pad || Math.hypot(x - start.x, y - start.y) < start.r + pad || (y < 3 + pad && y > -16 && Math.abs(x) < 9 + pad); }
 
-  var P = { spec:spec, seed:seed, L:L, b:b, path:path, cum:cum, cx:cx, gy:gy, themeAt:themeAt, clr:clr, spur:spur, locked:locked, start:start, walkD:walkD, inClear:inClear,
+  var P = { spec:spec, seed:seed, L:L, b:b, path:path, cum:cum, cx:cx, gy:gy, themeAt:themeAt, clr:clr, spur:spur, locked:locked, style:style, clrKind:clrKind, start:start, walkD:walkD, inClear:inClear,
     things:[], cols:[], items:[], hazards:[] };
 
   // ---- the world's ground to keep off: ponds, lava pools, ice sheets, bogs. Never on the path or a clearing.
@@ -155,7 +171,7 @@ function plan(spec){
   // the clearing off the spur: a chest, and a fence round it on a locked trail
   P.chest = { x:clr.x, y:clr.y - 1.2 }; used.push({ x:clr.x, y:clr.y, r:clr.r + 1 });
   if (locked){
-    var gA = Math.atan2(spur[spur.length - 3][1] - clr.y, spur[spur.length - 3][0] - clr.x), fr = clr.r + 0.6;
+    var gA = spurOn ? Math.atan2(spur[spur.length - 3][1] - clr.y, spur[spur.length - 3][0] - clr.x) : Math.atan2(ys - clr.y, sx0 - clr.x), fr = clr.r + 0.6;
     P.fence = { x:clr.x, y:clr.y, r:fr, a:gA, half:0.32 };   // the gap is the gate, half an arc of 0.32 rad either side
     P.lockGate = { x:clr.x + Math.cos(gA) * fr, y:clr.y + Math.sin(gA) * fr, a:gA };
     place('fence', clr.x, clr.y, 0.1, 2.6);
@@ -184,23 +200,48 @@ function plan(spec){
   // ---- what can be picked up and walked into
   var items = P.items, id = 0;
   function item(kind, x, y, o){ var t = { k:kind, x:x, y:y, id:kind + (id++) }; if (o) for (var q2 in o) t[q2] = o[q2]; items.push(t); return t; }
-  // coins in short runs along the path, and a ring round the chest
-  var runs = 4; for (var ri = 0; ri < runs; ri++){ var ry = L * (0.14 + 0.2 * ri) + R() * 8; if (gy && Math.abs(ry - gy) < 8) ry += 12;
-    for (var c = 0; c < 3; c++){ var yc = ry - c * 2.4; item('coin', cx(yc) + (R() - 0.5) * 1.2, yc); } }
-  for (var cr = 0; cr < 5; cr++){ var a = -Math.PI / 2 + (cr - 2) * 0.55; item('coin', clr.x + Math.cos(a) * 3.2, clr.y + Math.sin(a) * 2.6); }
-  item('chest', P.chest.x, P.chest.y);
+  function okSpot(x, y, r, minD, maxD){ var wd = walkD(x, y); return okGround(x, y, r) && free(x, y, r) && !inClear(x, y, 1.5) && wd >= minD && (maxD == null || wd <= maxD) && !(gy && Math.abs(y - gy) < 6) && y > 6 && y < L - 4; }
+  function spotOff(minD, maxD, r, tries){ for (var t = 0; t < (tries || 80); t++){ var yy = L * (0.08 + R() * 0.84), xx = cx(yy) + (R() < 0.5 ? -1 : 1) * (minD + R() * (maxD - minD));
+      if (okSpot(xx, yy, r, minD - 1, maxD + 2)) return [xx, yy]; } return null; }
+  /* COINS ARE NEVER IN THE SAME PLACES TWICE. A trail picks a few patterns from a list and puts each one
+     somewhere of its own: a run along the path, an arc round a bend, singles lying in the grass, a line of
+     crumbs leading off into the trees to a little pile, and a ring round a tree. */
+  var pats = ['run', 'run', 'arc', 'loose', 'crumbs', 'crumbs', 'ring', 'zig'], np = 3 + ((R() * 3) | 0), usedY = [];
+  for (var pi = 0; pi < np; pi++){ var pat = pats[(R() * pats.length) | 0], y0 = 0;
+    for (var ty = 0; ty < 20; ty++){ y0 = L * (0.1 + R() * 0.78); if (usedY.every(function(u){ return Math.abs(u - y0) > 14; }) && !(gy && Math.abs(y0 - gy) < 9)) break; } usedY.push(y0);
+    if (pat === 'run'){ var n0 = 3 + ((R() * 3) | 0); for (var c = 0; c < n0; c++){ var yc = y0 - c * 2.4; item('coin', cx(yc) + (R() - 0.5) * 1.0, yc); } }
+    else if (pat === 'zig'){ for (var c2 = 0; c2 < 5; c2++){ var yz = y0 - c2 * 2.2; item('coin', cx(yz) + (c2 % 2 ? 1 : -1) * 1.3, yz); } }
+    else if (pat === 'arc'){ var sd = R() < 0.5 ? -1 : 1; for (var c3 = 0; c3 < 5; c3++){ var ya = y0 - c3 * 2.2, xa = cx(ya) + sd * (PW + 1 + Math.sin(c3 / 4 * Math.PI) * 3.5); if (okGround(xa, ya, 0.4) && free(xa, ya, 0.5)) item('coin', xa, ya); } }
+    else if (pat === 'loose'){ for (var c4 = 0; c4 < 5; c4++){ var sp4 = spotOff(4, 16, 0.6, 30); if (sp4) item('coin', sp4[0], sp4[1]); } }
+    else if (pat === 'crumbs'){ var sd5 = R() < 0.5 ? -1 : 1, ang = sd5 * (0.6 + R() * 0.5), x5 = cx(y0) + sd5 * (PW + 1), y5 = y0, n5 = 5 + ((R() * 4) | 0), ok5 = 0;
+      for (var c5 = 0; c5 < n5; c5++){ x5 += Math.sin(ang) * 2.4; y5 -= Math.cos(ang) * 2.4 * 0.6; ang += (R() - 0.5) * 0.5; if (!okGround(x5, y5, 0.5) || !free(x5, y5, 0.5) || x5 < b[0] + 3 || x5 > b[2] - 3) break; item('coin', x5, y5); ok5++; }
+      if (ok5 >= 4) for (var c6 = 0; c6 < 3; c6++){ var x6 = x5 + Math.cos(c6 * 2.1) * 0.9, y6 = y5 + Math.sin(c6 * 2.1) * 0.9; if (okGround(x6, y6, 0.3)) item('coin', x6, y6); } }
+    else if (pat === 'ring'){ var tr0 = null; for (var q3 = 0; q3 < P.things.length; q3++){ var t3 = P.things[q3]; if (TREEH[t3.k] && Math.abs(t3.y - y0) < 14 && walkD(t3.x, t3.y) > 5 && walkD(t3.x, t3.y) < 18){ tr0 = t3; break; } }
+      if (tr0) for (var c7 = 0; c7 < 6; c7++){ var a7 = c7 / 6 * 6.28, x7 = tr0.x + Math.cos(a7) * 2.2, y7 = tr0.y + Math.sin(a7) * 2.2; if (okGround(x7, y7, 0.3)) item('coin', x7, y7); } }
+  }
+  // the clearing
+  if (clrKind === 'chest') item('chest', P.chest.x, P.chest.y);
+  else if (clrKind === 'ring'){ for (var cr = 0; cr < 8; cr++){ var a = cr / 8 * 6.28; item('coin', clr.x + Math.cos(a) * clr.r * 0.55, clr.y + Math.sin(a) * clr.r * 0.45); } item('coin', clr.x, clr.y); }
+  else { for (var cp2 = 0; cp2 < 4; cp2++){ var xp = clr.x + (cp2 % 2 ? 1 : -1) * 1.3, yp = clr.y + (cp2 < 2 ? -0.9 : 0.9); item('brk', xp, yp, { th:themeAt(yp) }); } }
   if (locked){ for (var tk2 = 0; tk2 < 60; tk2++){ var ky = L * (0.15 + R() * 0.7), kxp = cx(ky) - sg * (8 + R() * 10);
       if (okGround(kxp, ky, 1) && free(kxp, ky, 1) && walkD(kxp, ky) > PW + 3 && !inClear(kxp, ky, 2) && !(gy && Math.abs(ky - gy) < 6)){ item('key', kxp, ky); used.push({ x:kxp, y:ky, r:1 }); break; } } }
   // the golden ball: off the path, tucked behind a landmark or a tree if it can be
-  for (var tg = 0; tg < 80; tg++){ var gyp = L * (0.1 + R() * 0.8), gxp = cx(gyp) + (R() < 0.5 ? -1 : 1) * (11 + R() * 20);
-    if (!okGround(gxp, gyp, 1) || !free(gxp, gyp, 1.1) || inClear(gxp, gyp, 2) || walkD(gxp, gyp) < 9 || (gy && Math.abs(gyp - gy) < 6)) continue;
-    item('golden', gxp, gyp); used.push({ x:gxp, y:gyp, r:1 }); break; }
-  // breakables beside the path, in twos and threes
-  for (var bi = 0; bi < 3; bi++){ var by = L * (0.2 + bi * 0.26) + R() * 10, bsd = R() < 0.5 ? -1 : 1;
-    for (var bj = 0; bj < 2 + (R() < 0.5 ? 1 : 0); bj++){ var bx = cx(by) + bsd * (PW + 1.4 + bj * 1.6), byy = by + (R() - 0.5) * 2;
-      if (okGround(bx, byy, 0.9) && free(bx, byy, 0.9) && !(gy && Math.abs(byy - gy) < 5)){ item('brk', bx, byy, { th:themeAt(byy) }); used.push({ x:bx, y:byy, r:0.8 }); } } }
+  var gs = spotOff(10, 26, 1.1, 90) || spotOff(6, 20, 1, 60); if (gs){ item('golden', gs[0], gs[1]); used.push({ x:gs[0], y:gs[1], r:1 }); }
+  /* THE RARE THINGS, handed in by putt.js (spec.loot): a world's trinket, a part for one of the Putt Putt
+     putters, and once in a while a spare life. They go further off the path than anything else, and a
+     trinket goes in the hidden clearing when there is one, so they have to be looked for. */
+  var LT = spec.loot || {};
+  function rare(kind, o, far){ var sp = (kind === 'trinket' && !spurOn && clrKind !== 'chest') ? [clr.x, clr.y + 0.6] : (spotOff(far, 28, 1.1, 120) || spotOff(8, 24, 1, 80));
+    if (sp){ item(kind, sp[0], sp[1], o); used.push({ x:sp[0], y:sp[1], r:1 }); } }
+  if (LT.trinket) rare('trinket', { name:LT.trinket.name, col:LT.trinket.col }, 14);
+  if (LT.part) rare('part', { name:LT.part.name }, 12);
+  if (LT.life) rare('life', null, 16);
+  // breakables beside the path and in the grass, in ones, twos and threes
+  var nb = 2 + ((R() * 3) | 0); for (var bi = 0; bi < nb; bi++){ var by = L * (0.12 + R() * 0.76), bsd = R() < 0.5 ? -1 : 1, off = R() < 0.6 ? PW + 1.4 : 5 + R() * 9, nn = 1 + ((R() * 3) | 0);
+    for (var bj = 0; bj < nn; bj++){ var bx = cx(by) + bsd * (off + bj * 1.6), byy = by + (R() - 0.5) * 2;
+      if (okGround(bx, byy, 0.9) && free(bx, byy, 0.9) && !inClear(bx, byy, 1) && !(gy && Math.abs(byy - gy) < 5)){ item('brk', bx, byy, { th:themeAt(byy) }); used.push({ x:bx, y:byy, r:0.8 }); } } }
   // the local, beside the path a little before the arch
-  for (var tn = 0; tn < 30; tn++){ var ny = L * (0.16 + R() * 0.12), nx = cx(ny) + (R() < 0.5 ? -1 : 1) * (PW + 1.6);
+  for (var tn = 0; tn < 30; tn++){ var ny = L * (0.14 + R() * 0.7), nx = cx(ny) + (R() < 0.5 ? -1 : 1) * (PW + 1.6);
     if (free(nx, ny, 1) && okGround(nx, ny, 1)){ item('npc', nx, ny, { th:themeAt(ny) }); used.push({ x:nx, y:ny, r:1 }); break; } }
 
   // ---- what blocks the golfer: trunks, rocks, buildings, the fence and the wall
@@ -494,7 +535,7 @@ function run(box, P, pic, api){
   // the golfer
   var g = { x:P.start.x, y:P.start.y - 2, vx:0, vy:0, face:[0, -1], dist:0, safe:[P.start.x, P.start.y - 2], moving:false };
   var gate = P.gate ? { open:!!sp.gateOpen, asked:false } : null, lockOpen = !P.fence || !!found.key;
-  var items = P.items.map(function(t){ var o = Object.assign({}, t); o.done = t.k === 'coin' ? (found.c || []).indexOf(t.id) >= 0 : t.k === 'chest' ? !!found.k : t.k === 'golden' ? !!found.g : t.k === 'key' ? !!found.key : false; return o; });
+  var items = P.items.map(function(t){ var o = Object.assign({}, t); o.done = t.k === 'coin' ? (found.c || []).indexOf(t.id) >= 0 : t.k === 'chest' ? !!found.k : t.k === 'golden' ? !!found.g : t.k === 'key' ? !!found.key : t.k === 'life' ? !!found.life : t.k === 'trinket' ? !!found.tk : t.k === 'part' ? !!found.pt : false; return o; });
   var parts = [], bubble = null, flash = 0, paused = false, ended = false;
   // the colliders, on a coarse grid
   var GRID = {}; function gk(x, y){ return (x / 6 | 0) + ',' + (y / 6 | 0); }
@@ -553,6 +594,12 @@ function run(box, P, pic, api){
     var shp = scr(t.x, t.y); ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(Math.round(shp[0] - 2 * s), Math.round(shp[1] - s / 2), 4 * s, s);
     for (var yy = -r; yy <= r; yy++) for (var xx = -r; xx <= r; xx++){ var d = Math.hypot(xx, yy); if (d > r + 0.3) continue; ctx.fillStyle = d > r - 0.7 ? '#7a5200' : (xx + yy < -1 ? '#fff3a8' : (xx + yy) % 3 === 0 ? '#e0a820' : '#ffd23a'); ctx.fillRect(Math.round(p[0] + xx * s), Math.round(p[1] + yy * s - r * s), s, s); }
     sparkle(p[0], p[1] - r * s, now, s); occlude(Math.round(p[0] - (r + 1) * s), Math.round(p[1] - (2 * r + 2) * s), (2 * r + 3) * s, (2 * r + 3) * s, t.x, t.y, pic.zAt(t.x, t.y)); }
+  /* the rare things: a little pixel picture floating over a glow on the ground, so they read as special */
+  function drawPix(t, now, rows, pal){ var z = pic.zAt(t.x, t.y) + 1.2 + Math.sin(now * 2.2 + t.x) * 0.18, p = scr(t.x, t.y, z), s = Math.max(2, Math.round(kk)), w = rows[0].length, h = rows.length;
+    var shp = scr(t.x, t.y), gl = 0.25 + 0.15 * Math.sin(now * 3); ctx.fillStyle = 'rgba(255,240,170,' + gl.toFixed(2) + ')'; ctx.beginPath(); ctx.ellipse(shp[0], shp[1], 5 * s, 2 * s, 0, 0, 7); ctx.fill();
+    var rx = Math.round(p[0] - w * s / 2), ry = Math.round(p[1] - h * s);
+    for (var yy = 0; yy < h; yy++) for (var xx = 0; xx < w; xx++){ var ch = rows[yy][xx]; if (ch === '.') continue; ctx.fillStyle = pal[ch] || pal.r; ctx.fillRect(rx + xx * s, ry + yy * s, s, s); }
+    sparkle(p[0], ry, now, s); occlude(rx, ry, w * s, h * s, t.x, t.y, pic.zAt(t.x, t.y)); }
   function sparkle(x, y, now, s){ var a = (Math.sin(now * 5) + 1) / 2; ctx.fillStyle = 'rgba(255,255,255,' + (0.4 + a * 0.6).toFixed(2) + ')'; var d = (3 + a * 3) * s;
     ctx.fillRect(Math.round(x - s / 2 + d), Math.round(y - d), s, s); ctx.fillRect(Math.round(x - s / 2 - d * 0.8), Math.round(y - d * 0.4), s, s); }
 
@@ -594,6 +641,9 @@ function run(box, P, pic, api){
     else if (t.k === 'chest'){ t.done = true; coinsGot += CHEST_V; hudCoins(); burst(t.x, t.y, z + 1.4, ['#ffd23a', '#fff3a8', '#ffffff'], 18); pick('chest', t.id, CHEST_V); say('Chest opened. +' + CHEST_V + ' coins.'); }
     else if (t.k === 'key'){ t.done = true; lockOpen = true; burst(t.x, t.y, z + 1.3, ['#ffd23a', '#ffffff'], 10); pick('key', t.id, 0); say('A key. The gate to the clearing is open.'); }
     else if (t.k === 'golden'){ t.done = true; burst(t.x, t.y, z + 1, ['#ffd23a', '#fff3a8', '#ffffff'], 24); var msg = pick('golden', t.id, 0); hudGold(); say(msg || 'A golden ball.', 3600); }
+    else if (t.k === 'life'){ t.done = true; burst(t.x, t.y, z + 1.2, ['#e5483a', '#ff9d8a', '#ffffff'], 18); say(pick('life', t.id, 0) || 'A spare life.', 3600); }
+    else if (t.k === 'trinket'){ t.done = true; burst(t.x, t.y, z + 1.2, [t.col || '#b48cff', '#ffffff', '#ffd23a'], 22); say(pick('trinket', t.id, 0) || ('Found: ' + t.name + '.'), 3800); }
+    else if (t.k === 'part'){ t.done = true; burst(t.x, t.y, z + 1.2, ['#cfd8e2', '#ffffff', '#ffd23a'], 18); say(pick('part', t.id, 0) || ('A putter part: ' + t.name + '.'), 3800); }
     else if (t.k === 'brk'){ t.done = true; var k = brkKind(t), cols = k === 'ice' ? ['#a8dcf4', '#e2f6ff'] : k === 'neoncube' ? ['#2bf0ff', '#1a1430'] : k === 'pumpkin' ? ['#e8761f', '#d0621a'] : k === 'hay' ? ['#e2bc5c', '#c8a04a'] : k === 'pot' ? ['#b8643a', '#f0e0b0'] : ['#c08a4e', '#8a5a2a'];
       burst(t.x, t.y, z + 0.8, cols, 14); if ((found.b || []).indexOf(t.id) < 0){ (found.b = found.b || []).push(t.id); coinsGot += 1; hudCoins(); pick('brk', t.id, 1); burst(t.x, t.y, z + 1, ['#ffd23a'], 3); } else pick('brk', t.id, 0); } }
 
@@ -623,7 +673,7 @@ function run(box, P, pic, api){
     else if (!o2 && now - lastSafe > 400){ g.safe = [g.x, g.y]; lastSafe = now; }
     // picking things up, and walking into them
     for (var i = 0; i < items.length; i++){ var t = items[i]; if (t.done) continue; var d = Math.hypot(t.x - g.x, t.y - g.y);
-      if ((t.k === 'coin' || t.k === 'golden' || t.k === 'key') && d < 1.3) take(t, tsec);
+      if ((t.k === 'coin' || t.k === 'golden' || t.k === 'key' || t.k === 'life' || t.k === 'trinket' || t.k === 'part') && d < 1.3) take(t, tsec);
       else if (t.k === 'chest' && d < 2.3 && (lockOpen || !P.fence)) take(t, tsec);
       else if (t.k === 'brk' && d < 1.5 && spd > 1.5) take(t, tsec); }
     // the local talks when he walks up
@@ -655,6 +705,9 @@ function run(box, P, pic, api){
       else if (t.k === 'coin') drawCoin(t, tsec);
       else if (t.k === 'key') drawKey(t, tsec);
       else if (t.k === 'golden') drawGolden(t, tsec);
+      else if (t.k === 'life') drawPix(t, tsec, PIX_HEART, { r:'#e5483a', h:'#ff9d8a', o:'#6a1410' });
+      else if (t.k === 'trinket') drawPix(t, tsec, PIX_GEM, { r:t.col || '#b48cff', h:'#ffffff', o:'#2a1a40' });
+      else if (t.k === 'part') drawPix(t, tsec, PIX_PART, { r:'#cfd8e2', h:'#ffffff', o:'#2e3640', g:'#ffd23a' });
       else if (t.k === 'chest') drawSprite(t.done ? SPR.chest1 : SPR.chest0, t.x, t.y, pic.zAt(t.x, t.y));
       else if (t.k === 'brk') drawSprite(brkSprite(t), t.x, t.y, pic.zAt(t.x, t.y));
       else if (t.k === 'npc') drawFigure(npcFrame(t), t.x, t.y);

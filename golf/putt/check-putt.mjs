@@ -442,19 +442,31 @@ if (!args.includes('--no-browser')){
       const open = async n => { window.RTT_PUTT._walkTo(n); for (let i = 0; i < 400 && !T(); i++) await sleep(50); await sleep(150); return T(); };
       const visit = async (t, x, y) => { t.goTo(x, y + 0.05); await sleep(120); };
       window.RTT_PUTT.close(); sbUser = { id:'walk' }; seed(1, 19); openPutt(); await sleep(300);
-      let t = await open(5);
+      // NO TWO WALKS ALIKE: the shapes and where the coins lie change from trail to trail
+      const plans = []; for (let f = 1; f < 18; f++) plans.push(window.RTT_PUTT._trailPlan(f));
+      out.styles = new Set(plans.map(p => p.style)).size; out.clrs = new Set(plans.map(p => p.clrKind + (p.spur.length ? 's' : 'h'))).size;
+      const cpos = p => JSON.stringify(p.items.filter(t => t.k === 'coin').map(t => [t.x | 0, t.y | 0]));
+      out.sameCoins = plans.slice(1).filter((p, i) => cpos(p) === cpos(plans[i])).length;
+      const fromL = 1 + plans.findIndex(p => p.fence), fromT = 1 + plans.findIndex(p => p.items.some(t => t.k === 'trinket'));
+      let t = await open(fromL);
       out.trail = !!t && S().screen === 'trail' && !S().round && !!document.querySelector('.pp-tcv') && !!document.querySelector('.pp-stick');
       out.mark = !!document.querySelector('.pp-pin.on,.pp-way.on');
       const p0 = t.pos(); t.stick(0, -1); await sleep(900); t.stick(0, 0); const p1 = t.pos(); out.moved = p0[1] - p1[1];
-      const P = t.plan(), its = t.items(), coin = its.find(i => i.k === 'coin'), key = its.find(i => i.k === 'key'), chest = its.find(i => i.k === 'chest'), gold = its.find(i => i.k === 'golden');
-      out.locked = !!P.fence && !!key; await visit(t, chest.x, chest.y + 2.4); out.shutChest = !rec()['main:6'] || !rec()['main:6'].k;
-      await visit(t, coin.x, coin.y); if (key) await visit(t, key.x, key.y); await visit(t, P.lockGate.x, P.lockGate.y); await visit(t, chest.x, chest.y + 2.0); await visit(t, gold.x, gold.y);
-      const r = rec()['main:6'] || {}; out.coin = (r.c || []).indexOf(coin.id) >= 0; out.key = r.key === 1; out.chest = r.k === 1; out.gold = r.g === 1; out.bub = (document.querySelector('[data-bub]') || {}).textContent || '';
+      const P = t.plan(), its = t.items(), coin = its.find(i => i.k === 'coin'), key = its.find(i => i.k === 'key'), chest = its.find(i => i.k === 'chest'), gold = its.find(i => i.k === 'golden'), K = 'main:' + (fromL + 1);
+      out.locked = !!P.fence && !!key && !!chest; await visit(t, chest.x, chest.y + 2.4); out.shutChest = !rec()[K] || !rec()[K].k;
+      await visit(t, coin.x, coin.y); await visit(t, key.x, key.y); await visit(t, P.lockGate.x, P.lockGate.y); await visit(t, chest.x, chest.y + 2.0); await visit(t, gold.x, gold.y);
+      const r = rec()[K] || {}; out.coin = (r.c || []).indexOf(coin.id) >= 0; out.key = r.key === 1; out.chest = r.k === 1; out.gold = r.g === 1; out.bub = (document.querySelector('[data-bub]') || {}).textContent || '';
       // walking through the arch opens the hole
-      await visit(t, P.cx(0), 2.5); t.stick(0, -1); for (let i = 0; i < 40 && !S().round; i++) await sleep(50); out.reached = S().round && S().round.lv;
+      await visit(t, P.cx(0), 2.5); t.stick(0, -1); for (let i = 0; i < 40 && !(S().round && S().round.lv === fromL + 1); i++) await sleep(50); out.reached = S().round && S().round.lv; out.want = fromL + 1;
       // what was picked up stays picked up
-      t = await open(5); out.kept = t.items().find(i => i.id === coin.id).done && t.items().find(i => i.k === 'chest').done;
+      t = await open(fromL); out.kept = t.items().find(i => i.id === coin.id).done && t.items().find(i => i.k === 'chest').done;
       document.querySelector('[data-skip]').click(); await sleep(80); out.skipTo = S().round && S().round.lv;
+      // the rare things: a trinket and whatever else that trail carries, into the record and the Bag
+      t = await open(fromT); const rares = t.items().filter(i => i.k === 'trinket' || i.k === 'part' || i.k === 'life');
+      for (const it of rares) await visit(t, it.x, it.y);
+      const st2 = JSON.parse(localStorage.getItem('bag_ppt_v1@walk')); out.tk = (st2.tk || []).length; out.rk = rares.map(i => i.k).join(',');
+      out.parts = ((st2.pp || {}).parts || []).length; out.bank = (st2.bank || []).length;
+      window.RTT_PUTT._bag(); await sleep(60); out.bagTk = document.querySelectorAll('.pp-bag .pp-btk i.on').length; const bs = document.querySelector('.pp-bag [data-n]'); if (bs) bs.click();
       // the world door, with the stars
       t = await open(18); const G = t.plan().gate; out.cross = !!G;
       await visit(t, G.x, G.y + 4); t.stick(0, -1); for (let i = 0; i < 60 && !out.doorOpen; i++){ await sleep(50); if (document.querySelector('.pp-door.fill')) out.doorOpen = true; }
@@ -469,12 +481,30 @@ if (!args.includes('--no-browser')){
       // the golfer on the map is a door into the walk too
       window.RTT_PUTT.close(); seed(1, 19); openPutt(); await sleep(300); const me = document.querySelector('.pp-me.tap'); if (me) me.click(); for (let i = 0; i < 400 && !T(); i++) await sleep(50); out.tap = S().screen === 'trail';
       window.RTT_PUTT.close(); sbUser = { id:'chk' }; return out; });
+    claim(wk.styles >= 3 && wk.clrs >= 3 && wk.sameCoins === 0, `seventeen trails take at least three shapes and three kinds of clearing, and no two put their coins in the same places (${wk.styles}, ${wk.clrs}, ${wk.sameCoins})`);
+    claim(wk.tk === 1 && wk.bagTk === 1 && (wk.rk.indexOf('part') < 0 || wk.parts === 1) && (wk.rk.indexOf('life') < 0 || wk.bank === 1), `a trinket and the rare things on its trail are kept, and the Bag shows them (${wk.rk}: ${wk.tk}, ${wk.parts}, ${wk.bank}, bag ${wk.bagTk})`);
     claim(wk.trail && wk.mark && wk.moved > 3, `Next opens the trail with the golfer, a stick and a waypoint, and the stick walks him (${wk.trail}, ${wk.mark}, ${(wk.moved || 0).toFixed(1)} ft)`);
     claim(wk.locked && wk.shutChest && wk.coin && wk.key && wk.chest && wk.gold && /Golden ball/.test(wk.bub), `a coin, the key, the chest it opens and the golden ball are picked up and kept (${JSON.stringify([wk.coin, wk.key, wk.chest, wk.gold, wk.bub])})`);
-    claim(wk.reached === 6 && wk.kept && wk.skipTo === 6, `walking through the arch opens hole 6, what was picked up stays picked up, and Skip goes straight there (${wk.reached}, ${wk.kept}, ${wk.skipTo})`);
+    claim(wk.reached === wk.want && wk.kept && wk.skipTo === wk.want, `walking through the arch opens the hole, what was picked up stays picked up, and Skip goes straight there (${wk.reached}, ${wk.kept}, ${wk.skipTo})`);
     claim(wk.cross && wk.doorOpen && wk.passed && wk.through === 19, `with the stars, the world door on the trail opens and he walks on into World 2 (${wk.doorOpen}, ${wk.passed}, hole ${wk.through})`);
     claim(/Need \d+ more/.test(wk.shutTxt || '') && wk.held, `short of the stars, the door stays shut, says how many more, and he cannot walk past it (${wk.shutTxt})`);
     claim(wk.tap, 'tapping the golfer on the map starts the walk to the next hole');
+    // A SPARE LIFE IS SPENT WHEN THE HEARTS ARE GONE, and a built putter is equipped from the Bag
+    const sp = await pg.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), K = 'bag_ppt_v1@spare';
+      window.RTT_PUTT.close(); sbUser = { id:'spare' };
+      localStorage.setItem(K, JSON.stringify({ v:2, lives:0, refillAt:Date.now() + 3600e3, lt:Date.now(), bank:['life:9'], pp:{ parts:['scope:0', 'scope:1', 'scope:2', 'bank:0'] }, tours:{ main:{ lv:3, best:{ 1:2, 2:2 }, ace:{}, paid:{}, wpaid:{} } } }));
+      openPutt(); await sleep(300);
+      window.RTT_PUTT._state().ov.querySelector('[data-lv="3"]').click(); await sleep(150);
+      out.sheet = !!document.querySelector('.pp-oolf [data-spare]'); document.querySelector('.pp-oolf [data-spare]').click(); await sleep(200);
+      let st = JSON.parse(localStorage.getItem(K)); out.used = st.bused;
+      window.RTT_PUTT._state().ov.querySelector('[data-lv="3"]').click(); for (let i = 0; i < 100 && window.RTT_PUTT._state().screen !== 'play'; i++) await sleep(50); out.play = window.RTT_PUTT._state().screen === 'play';
+      window.RTT_PUTT._lose(); st = JSON.parse(localStorage.getItem(K)); out.spent = st.bspent; out.lives = st.lives;
+      window.RTT_PUTT.close(); openPutt(); await sleep(200); window.RTT_PUTT._bag(); await sleep(60);
+      const eq = document.querySelector('.pp-bag [data-eq="scope"]'); out.eqBtn = !!eq && !document.querySelector('.pp-bag [data-eq="bank"]'); if (eq) eq.click(); await sleep(60);
+      st = JSON.parse(localStorage.getItem(K)); out.eq = st.pp.eq;
+      window.RTT_PUTT.close(); sbUser = { id:'chk' }; return out; });
+    claim(sp.sheet && sp.used === 1 && sp.play && sp.spent === 1 && sp.lives === 0, `out of lives, a banked spare life is offered, plays a hole, and losing it spends it and not the server's lives (${JSON.stringify(sp)})`);
+    claim(sp.eqBtn && sp.eq === 'scope', 'a putter is equipped from the Bag once all three parts are found, and not before');
     // ---- THE TOUR'S RULES, through the page. Each life is real: a fresh record for a fresh account.
     await pg.evaluate(() => { const st = window.RTT_PUTT._state(); if (st && st.play && st.play.strokes) { st.round.mode = 'x'; } document.querySelector('.pt-ov') && window.RTT_PUTT.close(); sbUser = { id:'chk' }; localStorage.removeItem('bag_ppt_v1@chk'); openPutt(); });
     await pg.waitForSelector('.pp-map [data-lv="1"]');
