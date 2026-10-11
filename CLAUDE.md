@@ -19703,8 +19703,11 @@ node golf/putt/solve.mjs --tour main        search every hole for the par it sho
 node golf/putt/solve.mjs --tour members --only 3,7 --write    re-solve edited holes and record their routes
 ```
 
-`golf/putt/putt.js` is a mini golf game you PLAY inside Run The Tour. It opens on a hub: the Daily
-Challenge on top, and under it the Tour map, a winding path up through the worlds. `golf/putt/DESIGN.md`
+`golf/putt/putt.js` is a mini golf game you PLAY inside Run The Tour. **It opens in the 3D world**: the
+player's own golfer, in everything they have earned, standing on the trail to the next hole (see the trail
+section below). The owner's call: the world is the selling point, so it is the first thing anybody sees. The
+hub is one button away (Map, top right): the Daily Challenge on top, and under it the Tour map, a winding
+path up through the worlds. The map's World button goes back. `golf/putt/DESIGN.md`
 is the analysis of the mini golf games it learns from. **It replaced the Putting Green menu**, which the
 owner said was not what was being built.
 
@@ -19893,6 +19896,89 @@ The page writes localStorage first and never waits on the network. The host hand
   either copy. A refused write hands back the stored record, which is merged in and sent again, at most
   three times running.
 - **Every call fails soft.** null is no opinion and the local record stands.
+
+**Every putt is saved, and the game reopens on the hole in progress** (`saveCur`, `st.cur`). The hole,
+the strokes and where the ball lies go into the Tour record when a putt is struck (ball still at its
+starting spot, so closing the tab while a bad putt rolls costs that stroke instead of undoing it) and again
+when it stops. Opening the mode goes straight back into that hole, and the lives check is skipped for it,
+because the attempt has not cost one yet. Only finishing the hole or leaving through the X (a life, as
+before) clears it. Each hole counts its attempts in `tp.tries`, merged as a maximum. A signed in player's
+hole in progress follows the account, last change wins (`curT`), the same rule as lives. The Daily Hole is
+not resumed: it is one timed try.
+
+**THE WORLD IS HOME** (`home()`, `worldOk()`, `worldTour()` in putt.js). Opening the mode, leaving a Tour
+hole and pressing World on the map all land on the trail to the frontier hole of the tour last looked at
+(the Putt Putt Tour or the Members Tour). The Lab, the Daily tab, reduced motion and a page without the 3D
+golfer open on the map, as before. A hole in progress is resumed before anything else. Escape on the trail
+closes the mode; on the map it goes back to the world. The world screen is `.pp-wv` (`.pp-world` is the map's
+own class, and sharing it broke the layout). `window.RTT_PUTT_MAPFIRST` makes the mode open on the map, and
+check-putt sets it for its map sections; its world section turns it off.
+
+**Every world has a greeter** (`GREETERS`, `greetSpec` in putt.js), a board game host: Pro Pete (a preppy club pro: white polo, visor, slacks), Professor
+Fern, Captain Bogey, Dusty, Ranger Mae, Coach Frost, Skye, DJ Pixel, and Count Mulligan and Farmer Hayes on
+the Members Tour. They are invented, drawn by the same 3D golfer in a look nobody can buy, and stand on the
+first trail of their world (from `w * K`), a little up the path or just past the world door. They wait while
+the world's title card shows (`greetDelay`), walk up, and talk: a box at the foot of the screen with their
+face (the profile picture renderer, `host.portrait(look)`), a name plate, typed pages and a tap for the next.
+Walking waits while they talk. The pages are who they are, how the world plays, what clearing it pays, the
+star gate to the next world and the hole ahead, all read off the tour rather than typed. They talk on their
+own once (`st.met`, merged as a union) and stand by the path after, where Talk plays it again.
+
+**Every world is alive round you** (`LIFE` in trail.js). Flyers (songbirds, parrots, gulls, vultures, crows, bats,
+drones), things in the air (butterflies, petals, fireflies, snow, ash, embers, leaves, dust, neon sparks) and set
+pieces: pirate ships sailing Pirate Cove, balloons over Sky Islands, smoke off Volcano Island's vents and lava,
+tumbleweeds, ghosts. None of it blocks or can be picked up. Flyers and motes spawn round the golfer and are
+recycled out of sight; ships and balloons are 3D props rendered once (`shipFn`, `balloonFn`). **Sizes are in
+feet, as whole scene pixels** (`px2`): sized in screen pixels a gull came out a few pixels wide. Reduced motion
+draws none of it.
+
+**The shore follows the path** on a sea trail (`SEA`, `P.seaEdge`): a phone shows about ten feet either side of
+the golfer, so a sea at the plan's edge was off screen for most of a walk and so were the ships. The camera
+also looks a little out to sea there. **A ship is drawn without occlusion**: `occlude()` treats a sprite as a
+flat cut-out standing at its anchor, so the sea in front of a long hull painted over its bow.
+
+**The walk to the next hole is a place you walk through** (`golf/putt/trail.js`, `RTT_PUTT_TRAIL`). Next opens a
+3D trail of the world, drawn by `hole3d.js` from a scene (`opt.scene`) at a finer art grid (`TART`, an eighth of
+a foot a pixel), about 150 ft long, so two to three screens of walking. The golfer is `golfer3d.js`'s walk
+(eight frames a stride plus `ws`, standing), picked off the distance walked so the feet never skate. He is
+walked with a stick or the arrows, or on Auto walk along the path; Skip goes straight to the hole.
+
+- **Scale is one rule**: the golfer is 4 ft tall at 2/3 scale, so a person is 6 ft, and every tree, lamp,
+  chest, fence and landmark is sized in those feet (`TREEH`, `LMSIZE`, `BLOCKR`). Tall things stand off the
+  path or screen it only from behind (`screensPath`), and a figure behind something is drawn see-through.
+- **Each world has a kit** (`KIT`): ground, path, trees, low plants, landmarks, a hazard (water, lava, ice
+  that slides, mud that slows), its own breakables and someone to talk to. Lava sends him back to the path.
+- **No two walks are alike.** A trail takes one of four shapes (a meander, switchbacks, one long sweep, a
+  twisting lane), mirrored at random. Its clearing sits on the side with room, half the time down a little
+  path and half the time hidden in the trees, and holds a chest, a ring of coins or a pile to smash. Coins come
+  in patterns picked per trail (a run, a zigzag, an arc round a bend, singles in the grass, a line of crumbs
+  leading off to a pile, a ring round a tree). check-putt plans seventeen trails and asserts at least three
+  shapes, three kinds of clearing, and no two with their coins in the same places.
+- **What is on the trail is kept** in the Tour record as `st.trail['tour:to']`: coins, breakables smashed,
+  the chest, the key, the golden ball and the rare things below. A chest is locked behind a fence on about
+  four trails in ten, the key somewhere off the path. A golden ball on every trail; all of a world's pays 500
+  coins and a named reward. `pmerge` takes the union and `cloudProg` counts them.
+- **The rare things are fixed to trails** (`trailLoot`, `lootSlots`, main tour only), so every player finds
+  them in the same places, further off the path than anything else:
+  - **Trinkets**, three a world and this game's alone (`TRINKETS`). A world's three pays 300 coins and a
+    named reward.
+  - **Putt Putt putters**, three, each built from three parts found in the worlds it lists (`PP_PUTTERS`):
+    the Scope Putter (aim line four feet longer), the Bank Shot Putter (the aim line is the ball's real path
+    off the walls, `bankLine`) and the Lifeguard Putter (once a hole, water or out costs no penalty
+    stroke). One is equipped in the Bag (`st.pp.eq`), and the Daily Hole is played without them
+    (`puttEquipped`).
+  - **Spare lives**, about one trail in ten. Banked (`st.bank`), spent from the out of lives sheet. Spending
+    one moves `bused`, losing it moves `bspent`, and the life in play is the difference (`lifeExtra`), so
+    two devices merge by the larger of each counter. It is not on the server's lives row.
+- **The Bag** (a button on the hub, `bagSheet`) shows the putters, the spare lives, and each world's
+  trinkets and golden balls.
+- **Where two worlds meet, a wall of the new world stands across the land** with a door on the path, the
+  stars door from putt.js. Short of the stars it stays shut and he cannot walk past it.
+- **A plan is the same every time** (seeded on the tour and the hole), and the next trail is built ahead
+  in slices while a hole is played (`trailAhead`, `trailTick`), so most walks open at once.
+
+check-putt walks one for real: the stick moves him, a coin, the key, the chest and the golden ball are kept,
+the arch opens the hole, Skip works, the world door opens with the stars and holds without them.
 
 **Lives are on the server, on its clock** (`supabase/138_putt_lives.sql`, deployed by hand). The Tour record
 cannot hold them, because its rule is progress and lives go down. So a signed in player's lives come from

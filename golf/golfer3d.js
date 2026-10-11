@@ -119,75 +119,99 @@
 
   function model(aimV,lefty,kind,pose,gear){
     gear=gear||{};
-    const U=V(0,1,0), T=norm(aimV);
-    const F=lefty?norm(cross(U,T)):norm(cross(T,U));   // the chest. A righty's lead shoulder points down the line.
-    const P=(f,u,t)=>add(sc(F,f),sc(U,u),sc(T,t));
+    /* WALKING the golfer faces the way he goes (F), so T is his carrying side, and the frame's phase (pose.ph,
+       0 to 1 over two steps) swings the legs, the arms and the hips and lifts the body at each passing step */
+    const walk=kind==='walk', ph=walk?pose.ph*2*Math.PI:0, cyc=pose.stand?0:Math.cos(ph), syc=pose.stand?0:Math.sin(ph);   // ws stands, feet together
+    const yb=walk?0.75*Math.abs(syc)-0.3:0;
+    const U=V(0,1,0);
+    let T,F; if(walk){ F=norm(aimV); T=lefty?norm(cross(U,F)):norm(cross(F,U)); }
+    else { T=norm(aimV); F=lefty?norm(cross(U,T)):norm(cross(T,U)); }   // the chest. A righty's lead shoulder points down the line.
+    const P0=(f,u,t)=>add(sc(F,f),sc(U,u),sc(T,t));
+    const P=(f,u,t)=>P0(f,u>8?u+yb:u,t);
+    // the swing's coordinates above the hips assume a forward bend; walking is nearly upright
+    const Pu=walk?(f,u,t)=>P(f-(u-23)*0.44,u,t):P;
     const parts=[]; const push=p=>parts.push(p);
     const club=kind==='putt'?CLUBS.putter:kind==='chip'?CLUBS.iron:CLUBS.driver;
-    const lean=(kind==='putt'?22:28)*D2R, spine=norm(add(sc(F,Math.sin(lean)),sc(U,Math.cos(lean))));
+    const lean=(walk?5:kind==='putt'?22:28)*D2R, spine=norm(add(sc(F,Math.sin(lean)),sc(U,Math.cos(lean))));
     // a turn moves the chest away from the target: pick the sign that does
     const sgn=dot(rot(F,U,0.1),T)<0?1:-1, turnA=a=>a*D2R*sgn;
     // legs, hips, shoes. A leg bends at the knee, which is where plus fours end.
-    const hipC=P(-1.2,15.2,0), hipAx=a=>rot(a,U,turnA(pose.hip));
+    const hipC=walk?P(-0.3,15.2,0):P(-1.2,15.2,0), hipAx=a=>rot(a,U,turnA(pose.hip));
     const lg=gear.legPal, cl=gear.cleats;
-    for(const s of [1,-1]){ const lead=s>0, l=(kind==='putt'?3.9:4.8)*s;
-      const heel=lead?0:pose.heel; const ank=add(P(0.4,3.2+heel*1.8,l),sc(T,heel*1.6));
-      const hip=rotAbout(P(-1,14,l*0.95),hipC,U,turnA(pose.hip)), knee=add(sc(add(hip,ank),0.5),sc(F,1.1));
+    for(const s of [1,-1]){ const lead=s>0, l=(walk?3.4:kind==='putt'?3.9:4.8)*s;
+      const heel=lead||walk?0:pose.heel;
+      // walking: this leg's foot is forward of the hips by fw, and lifts while it swings through
+      const fw=walk?5.2*s*cyc:0, lift=walk?Math.max(0,-s*syc)*2.6:0;
+      const ank=walk?P0(fw,3.2+lift,l):add(P(0.4,3.2+heel*1.8,l),sc(T,heel*1.6));
+      const hip=rotAbout(P(walk?0:-1,14,l*0.95),hipC,U,turnA(pose.hip)), knee=add(sc(add(hip,ank),0.5),sc(F,1.1+lift*0.9));
       if(lg){ push(capsule(hip,knee,3.05,'pants')); push(ellipsoid(add(knee,sc(U,-0.8)),[F,U,T],[3.2,1.6,3.2],'pants',{dt:-1}));
         push(capsule(add(knee,sc(U,-1.4)),ank,2.35,'sock')); }
       else { push(capsule(hip,knee,2.7,'pants')); push(capsule(knee,ank,2.7,'pants')); }
-      const sc0=add(P(1.4,1.5+heel*1.2,l),sc(T,heel*1.4)), sax=[F,U,T], sr=[4.6,1.7,2.5];
+      const tip=walk?(lift>0?-0.12*lift:fw<0?0.22*(-fw/5.2):0):0;   // a lifted foot toes down, the trailing one rolls onto its toe
+      const sF=walk?rot(F,T,tip):F, sU=walk?rot(U,T,tip):U;
+      const sc0=walk?add(ank,sc(sF,1.0),sc(sU,-1.7)):add(P(1.4,1.5+heel*1.2,l),sc(T,heel*1.4)), sax=[sF,sU,T], sr=[4.6,1.7,2.5];
       push(ellipsoid(sc0,sax,sr,'shoe',{gloss:2,bias:.15}));
       push(over(sc0,sax,sr,cl?'x:'+cl.sole:'sole',l=>l[1]<-0.5));
       if(cl&&cl.acc) push(over(sc0,sax,sr,'x:'+cl.acc,l=>l[0]>-0.38&&l[0]<0.08&&l[1]>-0.5,{gloss:1})); }
     push(ellipsoid(hipC,[hipAx(F),U,hipAx(T)],[4.8,4.2,7.2],'pants'));
     push(ellipsoid(add(hipC,P(0.6,2.4,0)),[hipAx(F),spine,hipAx(T)],[5.3,1.15,7.7],'belt',{gloss:1}));
     // the torso turns about the spine
-    const tc=P(1.2,23,0), tr=v=>rot(v,spine,turnA(pose.turn)), tp=p=>rotAbout(p,tc,spine,turnA(pose.turn));
+    const tc=walk?P(0.4,23,0):P(1.2,23,0), tr=v=>rot(v,spine,turnA(pose.turn)), tp=p=>rotAbout(p,tc,spine,turnA(pose.turn));
     const TAX=[tr(F),spine,tr(T)], TR=[5.6,7.6,8.3], top=gear.top, tpal=gear.topPal||{};
     const body=top==='shacket'?'plaid':'shirt';
     const tsurf=(v,z)=>add(tc,sc(TAX[0],5.6*1.04*Math.sqrt(Math.max(0,1-v*v-(z/8.3)*(z/8.3)))),sc(TAX[1],7.6*v),sc(TAX[2],z));
     push(ellipsoid(tc,TAX,TR,body));
-    push(capsule(tp(P(3.2,28.8,0)),tp(P(4.2,30.4,0)),2.6,'skin',{dt:-1}));
-    push(ellipsoid(tp(P(3.0,28.6,0)),TAX,[3.6,1.3,4.3],body,{dt:1}));
+    push(capsule(tp(Pu(3.2,28.8,0)),tp(Pu(4.2,30.4,0)),2.6,'skin',{dt:-1}));
+    push(ellipsoid(tp(Pu(3.0,28.6,0)),TAX,[3.6,1.3,4.3],body,{dt:1}));
     // the outerwear, over the torso
     if(top==='cardigan'||top==='shacket'){ push(over(tc,TAX,TR,'polo',l=>l[0]>0.3&&Math.abs(l[2])<0.15+0.1*Math.max(0,l[1])));
       for(const v of [-0.35,0.05,0.42]) push(ellipsoid(tsurf(v,1.9),TAX,[0.55,0.55,0.55],'x:'+(tpal['4']||'#5f4c2e'),{gloss:2})); }
     if(top==='blazer'){ push(over(tc,TAX,TR,'x:'+tpal['6'],l=>l[0]>0.25&&l[1]>-0.2&&Math.abs(l[2])<0.36*(l[1]+0.2)));
       push(over(tc,TAX,TR.map(v=>v*1.01),'x:'+tpal['7'],l=>l[0]>0.25&&l[1]>-0.62&&Math.abs(l[2])<0.075));
       for(const v of [-0.42,-0.22]) push(ellipsoid(tsurf(v,1.6),TAX,[0.5,0.5,0.5],'x:'+tpal['4'],{gloss:2})); }
-    if(top==='cape'){ const cc=tp(P(-4.9,19.5,0)); push(ellipsoid(cc,TAX,[1.6,11.2,8.8],'x:'+tpal['1'],{cut:l=>l[1]<0.55||l[0]<0.2}));
+    if(top==='cape'){ const cc=tp(Pu(-4.9,19.5,0)); push(ellipsoid(cc,TAX,[1.6,11.2,8.8],'x:'+tpal['1'],{cut:l=>l[1]<0.55||l[0]<0.2}));
       push(over(cc,TAX,[1.6,11.2,8.8],'x:'+tpal['4'],l=>l[0]>0.55&&l[1]<0.4));
-      push(ellipsoid(tp(P(0.4,29.4,0)),TAX,[5.4,1.6,6.8],'x:'+tpal['4'],{cut:l=>l[0]<0.35}));
-      for(const s of [1,-1]) push(ellipsoid(tp(P(4.4,28.3,3.6*s)),TAX,[0.75,0.75,0.75],'x:'+tpal['5'],{gloss:2})); }
+      push(ellipsoid(tp(Pu(0.4,29.4,0)),TAX,[5.4,1.6,6.8],'x:'+tpal['4'],{cut:l=>l[0]<0.35}));
+      for(const s of [1,-1]) push(ellipsoid(tp(Pu(4.4,28.3,3.6*s)),TAX,[0.75,0.75,0.75],'x:'+tpal['5'],{gloss:2})); }
     if(top==='duckfloatie'){ const fc=add(hipC,P(0.7,2.6,0)), A=hipAx(F), B=hipAx(T), ring=a=>add(fc,sc(A,7.4*Math.cos(a)),sc(B,9.8*Math.sin(a)));
       const N=22; for(let i=0;i<N;i++) push(capsule(ring(i/N*2*Math.PI),ring((i+1)/N*2*Math.PI),2.55,'x:'+tpal['1'],{gloss:1,bias:.15}));
       const ha=-38*D2R, rp=ring(ha), out=norm(add(sc(A,Math.cos(ha)),sc(B,Math.sin(ha)))), hd=add(rp,sc(U,4.8),sc(out,0.9));
       push(capsule(add(rp,sc(U,1.2)),hd,1.45,'x:'+tpal['1'],{gloss:1})); push(ellipsoid(hd,[out,U,norm(cross(out,U))],[2.9,2.7,2.7],'x:'+tpal['1'],{gloss:1}));
       push(ellipsoid(add(hd,sc(out,2.9),sc(U,-0.5)),[out,U,norm(cross(out,U))],[1.7,0.7,1.1],'x:'+tpal['4'],{gloss:1}));
       for(const s of [1,-1]) push(ellipsoid(add(hd,sc(out,2.1),sc(U,0.9),sc(norm(cross(out,U)),1.35*s)),[out,U,T],[0.55,0.6,0.55],'x:'+tpal['5'])); }
+    let head0=null;
+    if(walk){
+      // the arms swing against the legs, and the putter rides in the carrying hand, its head off the grass
+      for(const s of [1,-1]){ const carry=s>0, ang=-s*cyc*(carry?0.32:0.55), sh=tp(Pu(2.2,27.6,6.2*s));
+        const hand=add(sh,rot(sc(U,-12.2),T,ang),sc(T,s*0.9)), elb=add(sc(add(sh,hand),0.5),sc(F,-0.7+Math.max(0,ang)*1.6),sc(T,s*0.5));
+        push(capsule(sh,elb,2.6,body)); push(capsule(elb,hand,1.75,'skin'));
+        push(ellipsoid(hand,[F,U,T],[2.1,2.1,2.1],carry?'skin':'glove'));
+        if(carry){ const cdir=norm(rot(norm(add(sc(U,-0.86),sc(F,0.5))),T,ang*0.8)), head=add(hand,sc(cdir,14.2));
+          clubParts(push,add(hand,sc(cdir,0.6)),cdir,F,head,'putt',gear.club||'',gear.clubPal||{}); } }
+    } else {
     // the swing plane holds the address club and the target line
-    const hand0=P(club.hand[0],club.hand[1]+26.4,0), head0=P(club.head[0],club.head[1]+26.4,0);
-    let ax=norm(cross(sub(head0,hand0),T)); if(dot(rot(sub(head0,hand0),ax,0.1),T)>dot(sub(head0,hand0),T)) ax=sc(ax,-1);
-    const handsW=rotAbout(rotAbout(P(club.hand[0],club.hand[1]+26.4,0),P(3.4,26.4,0),ax,pose.phi*D2R),tc,spine,turnA(pose.turn)*0.35);
-    const cvec=rot(rot(sub(head0,hand0),ax,(pose.phi+pose.hinge)*D2R),spine,turnA(pose.turn)*0.35);
-    const head=add(handsW,cvec), cdir=norm(cvec);
-    for(const s of [1,-1]){ const sh=tp(P(2.2,27.6,6.6*s)); const toH=sub(handsW,sh);
-      const elb=add(sh,sc(toH,.5),sc(norm(cross(toH,spine)),-1.0*s));
-      push(capsule(sh,elb,2.6,body)); push(capsule(elb,add(handsW,sc(cdir,-1.2*s)),1.75,'skin')); }
-    push(ellipsoid(add(handsW,sc(cdir,-1.0)),[F,U,T],[2.4,2.4,2.4],'glove'));
-    push(ellipsoid(add(handsW,sc(cdir,1.2)),[F,U,T],[2.1,2.1,2.1],'skin'));
-    const face=norm(rot(T,ax,(pose.phi+pose.hinge)*D2R));
-    clubParts(push,handsW,cdir,face,head,kind,gear.club||'',gear.clubPal||{});
+      const hand0=P(club.hand[0],club.hand[1]+26.4,0); head0=P(club.head[0],club.head[1]+26.4,0);
+      let ax=norm(cross(sub(head0,hand0),T)); if(dot(rot(sub(head0,hand0),ax,0.1),T)>dot(sub(head0,hand0),T)) ax=sc(ax,-1);
+      const handsW=rotAbout(rotAbout(P(club.hand[0],club.hand[1]+26.4,0),P(3.4,26.4,0),ax,pose.phi*D2R),tc,spine,turnA(pose.turn)*0.35);
+      const cvec=rot(rot(sub(head0,hand0),ax,(pose.phi+pose.hinge)*D2R),spine,turnA(pose.turn)*0.35);
+      const head=add(handsW,cvec), cdir=norm(cvec);
+      for(const s of [1,-1]){ const sh=tp(P(2.2,27.6,6.6*s)); const toH=sub(handsW,sh);
+        const elb=add(sh,sc(toH,.5),sc(norm(cross(toH,spine)),-1.0*s));
+        push(capsule(sh,elb,2.6,body)); push(capsule(elb,add(handsW,sc(cdir,-1.2*s)),1.75,'skin')); }
+      push(ellipsoid(add(handsW,sc(cdir,-1.0)),[F,U,T],[2.4,2.4,2.4],'glove'));
+      push(ellipsoid(add(handsW,sc(cdir,1.2)),[F,U,T],[2.1,2.1,2.1],'skin'));
+      const face=norm(rot(T,ax,(pose.phi+pose.hinge)*D2R));
+      clubParts(push,handsW,cdir,face,head,kind,gear.club||'',gear.clubPal||{});
+    }
     // head
-    const hc=tp(P(kind==='putt'?6.2:5.4,34.2,0));
-    let gaze=norm(add(sc(F,.72),sc(U,kind==='putt'?-.69:-.6)));
+    const hc=tp(Pu(kind==='putt'?6.2:5.4,34.2,0));
+    let gaze=walk?norm(add(F,sc(U,-0.14))):norm(add(sc(F,.72),sc(U,kind==='putt'?-.69:-.6)));
     if(pose.head) gaze=norm(rot(gaze,U,-turnA(pose.head)));
     if(pose.head>30) gaze=norm(add(gaze,sc(U,.55)));
     const hup=norm(cross(cross(gaze,U),gaze)), side=norm(cross(hup,gaze)), hr=8.3;
     push(ellipsoid(hc,[gaze,hup,side],[hr,hr*1.04,hr*0.98],'skin',{bias:.06}));
     for(const s of [1,-1]) push(ellipsoid(add(hc,sc(side,hr*0.95*s),sc(gaze,-0.6)),[gaze,hup,side],[1.4,1.9,1.2],'skin'));
-    const head0Ball=add(head0,sc(T,kind==='putt'?4.3:kind==='chip'?3.3:5.0),sc(U,kind==='putt'?0.6:0));
+    const head0Ball=walk?V(0,0,0):add(head0,sc(T,kind==='putt'?4.3:kind==='chip'?3.3:5.0),sc(U,kind==='putt'?0.6:0));
     return {parts,hc,look:gaze,hup,Lf:side,hr,F,U,T,ball:head0Ball,tc};
   }
 
@@ -306,7 +330,15 @@
     for(let i=0;i<N;i++){ const a=i/N*2*Math.PI, b=(i+1)/N*2*Math.PI, p=t=>add(c,sc(look,R*Math.cos(t)),sc(Lf,R*Math.sin(t)));
       out.push(capsule(p(a),p(b),0.85,'x:'+(i%3?pal['4']:pal['6']),{gloss:3})); } return out; }
 
+  // a walk frame is a phase of the step (w0 to w7) and is seen from higher up, the tour map's camera
+  const WALK_N=8, WALK_EL=42;   // the trail camera (putt/trail.js) looks down at 42 degrees, the same as the holes
+  function walkPose(key){ if(key==='ws') return {ph:0,stand:1,phi:0,hinge:0,turn:0,hip:0,head:0,heel:0};
+    const ph=(+key.slice(1)||0)/WALK_N, c=Math.cos(ph*2*Math.PI);
+    return {ph,phi:0,hinge:0,turn:-5*c,hip:7*c,head:0,heel:0}; }
   function draw(look,aimDeg,kind,poseKey){
+    if(kind==='walk'){ setEl(WALK_EL); try{ return draw0(look,aimDeg,kind,poseKey); } finally{ setEl(26); } }
+    return draw0(look,aimDeg,kind,poseKey); }
+  function draw0(look,aimDeg,kind,poseKey){
     look=look||DEFLOOK;
     const capOn=look.cap!==false;
     const novel=(capOn&&look.hatStyle&&look.hatStyle!=='cap'&&look.hatStyle!=='visor'&&PXG_HATS[look.hatStyle])?look.hatStyle:'';
@@ -319,7 +351,7 @@
       cleats={main:p.T||p.R||p.D||v[0], acc:p.M||p.W||p.b||p.f||v[1], sole:p.s||p.k||p.p||p.B||'#2a2f38'}; }
     const gear={top, topPal:top?PXG_TOP_PAL[top]:null, legPal:legw?PXG_LEG_PAL[legw]:null, cleats,
       club:PXG_CLUBS[cid]?cid:'driver', clubPal:Object.assign({},PXG_CLUB_PAL[cid]||{})};
-    const M=model(aim,!!look.lefty,kind,POSES[poseKey],gear);
+    const M=model(aim,!!look.lefty,kind,kind==='walk'?walkPose(poseKey):POSES[poseKey],gear);
     const P=Object.assign({k:PXG_FIX.k,l:PXG_FIX.l,g:PXG_FIX.g,n:PXG_FIX.n,G:PXG_FIX.G,H:PXG_FIX.H,F:PXG_FIX.F,E:'#20242c',S:'#e8ebf0'},typeof PXG_NOV!=='undefined'?PXG_NOV:{});
     const closed=!!novel&&!(typeof PXG_HAT_OPEN!=='undefined'&&PXG_HAT_OPEN[novel]);
     const hs=look.hairStyle||'short'; M.hairK=closed?1.06:hs==='afro'?1.32:hs==='curly'?1.08:1.03;   // a band sits on the hair, not in it
@@ -360,7 +392,7 @@
     for(const k of [-1,0,1]) put(add(hc,sc(lk,hr*0.9),sc(Lf,k),sc(hup,-hr*0.48)),'mouth');
     const bc=cam(M.ball);
     const cv=document.createElement('canvas'); cv.width=GW; cv.height=GH; const ctx=cv.getContext('2d');
-    ctx.fillStyle='rgba(0,0,0,.20)'; ctx.beginPath(); ctx.ellipse(OX+1,OY+.5,kind==='putt'?11:13,4.5,0,0,7); ctx.fill();
+    ctx.fillStyle='rgba(0,0,0,.20)'; ctx.beginPath(); ctx.ellipse(OX+1,OY+.5,kind==='putt'?11:kind==='walk'?9:13,kind==='walk'?3.6:4.5,0,0,7); ctx.fill();
     // the look, coloured exactly as the profile golfer colours it
     let shirt=av.shirtHex, pants=pantsHexOf(look), shoes=av.shoesHex;
     const tpal=gear.topPal||{}; if(top&&top!=='duckfloatie'&&top!=='cape') shirt=tpal['1']||shirt;
@@ -391,7 +423,7 @@
     return {cv,ball:[bc[0]+OX,bc[1]+OY],fig:OY+2-y0};
   }
 
-  const KEYS={full:['A','B','D','C'],chip:['A','chipB','D','chipC'],putt:['pA','pB','pC']};
+  const KEYS={full:['A','B','D','C'],chip:['A','chipB','D','chipC'],putt:['pA','pB','pC'],walk:['w0','w1','w2','w3','w4','w5','w6','w7','ws']};   // ws (index 8) is standing still, for the roam
   const cache=new Map();
   function lookKey(look){ return JSON.stringify(look||{}); }
   // aimDeg is snapped to eight facings so a round draws each direction once
@@ -406,5 +438,20 @@
   function warm(look,kind){ const k=lookKey(look)+'|'+kind; if(warmed.has(k)) return; warmed.add(k);
     const todo=[0,45,90,135,180,225,270,315]; const idle=window.requestIdleCallback||(f=>setTimeout(()=>f({timeRemaining:()=>8}),60));
     const step=()=>{ if(!todo.length) return; set(look,todo.shift(),kind); idle(step); }; idle(step); }
-  window.RTT_G3D={API_VERSION:1, set, warm, draw};
+  /* ONE FRAME AT A TIME, for the walk. A walk is eight frames a facing and a facing is drawn the first time it
+     is walked, so frame() draws and keeps a single frame (null for a key the kind does not have), has() asks
+     without drawing, and warmAim() draws one facing's frames while the page is idle. */
+  const fcache=new Map();
+  function fkey(look,aimDeg,kind,i){ const a=((Math.round(aimDeg/45)*45)%360+360)%360; return lookKey(look)+'|'+a+'|'+kind+'|'+i; }
+  function frame(look,aimDeg,kind,i){
+    const keys=KEYS[kind]; if(!keys||!keys[i]) return null;
+    const k=fkey(look,aimDeg,kind,i); let r=fcache.get(k); if(r) return r;
+    const a=((Math.round(aimDeg/45)*45)%360+360)%360, f=draw(look,a,kind,keys[i]);
+    r={url:f.cv.toDataURL('image/png'),ball:f.ball,fig:f.fig,W:GW,H:GH,aim:a,n:kind==='walk'?WALK_N:keys.length};
+    if(fcache.size>160) fcache.clear(); fcache.set(k,r); return r; }
+  function has(look,aimDeg,kind,i){ return fcache.has(fkey(look,aimDeg,kind,i)); }
+  function warmAim(look,aimDeg,kind){ const keys=KEYS[kind]; if(!keys) return; let i=0;
+    const idle=window.requestIdleCallback||(f=>setTimeout(()=>f({timeRemaining:()=>8}),60));
+    const step=()=>{ while(i<keys.length&&has(look,aimDeg,kind,i)) i++; if(i>=keys.length) return; frame(look,aimDeg,kind,i++); idle(step); }; idle(step); }
+  window.RTT_G3D={API_VERSION:1, set, warm, draw, frame, has, warmAim, WALK_N};
 })();

@@ -36,16 +36,18 @@ function slices(C, opt){ var g = steps(C, opt), out = null;
 
 function* steps(C, opt){
   opt = opt || {};
-  var P = window.RTT_PUTT, M = P.M, ART = P.ART, SK = P.SKIN, PX = window.PXHD, LAND = window.RTT_PUTT_LAND;
+  var P = window.RTT_PUTT, M = P.M, ART = opt.art || P.ART, SK = P.SKIN, PX = window.PXHD, LAND = window.RTT_PUTT_LAND;
   var T = C.T, F = C.field, elev = opt.elev || 42;
   var D2R = Math.PI / 180, se = Math.sin(elev * D2R), ce = Math.cos(elev * D2R);
+  var SC = opt.scene || null;   // a scene with no course in it (a trail, or one prop): its own bounds and land
   var AP = C.allPts || C.poly, pxs = AP.map(function(p){ return p[0]; }), pys = AP.map(function(p){ return p[1]; });
   var TZ = C.tierAt || function(){ return 0; };
   var b = [Math.min.apply(null, pxs) - 11, Math.min.apply(null, pys) - 15, Math.max.apply(null, pxs) + 11, Math.max.apply(null, pys) + 5];
-  var K = opt.k || 2, zMax = 14;
+  var K = opt.k || 2, zMax = (opt.scene && opt.scene.zMax) || 14;
   // a tall phone wants a tall picture: grow the land north and south until it has the stage's shape, so a wide hole never sits on a bare band
   // measured against the width the camera shows (the course and its margins), not the whole picture
-  if (opt.aspect){ var iw = Math.max.apply(null, pxs) - Math.min.apply(null, pxs) + 13, ih = (b[3] - b[1]) * se + zMax * ce, need = opt.aspect * iw - ih;
+  if (SC) b = SC.b.slice();
+  if (opt.aspect && !SC){ var iw = Math.max.apply(null, pxs) - Math.min.apply(null, pxs) + 13, ih = (b[3] - b[1]) * se + zMax * ce, need = opt.aspect * iw - ih;
     if (need > 0){ var ext = Math.min(need / se, 40); b[1] -= ext * 0.55; b[3] += ext * 0.45; } }
   var W = Math.floor((b[2] - b[0]) / ART) + 1, Hh = Math.ceil(((b[3] - b[1]) * se + zMax * ce) / ART) + 4;
   var oy = zMax * ce / ART + 2 - b[1] * se / ART;
@@ -60,7 +62,7 @@ function* steps(C, opt){
   }
 
   // ---- the distance to the rail, worked out once on the ground grid rather than at every question
-  var st = ART / 2, GX = Math.round((b[2] - b[0]) / st) + 1, GY = Math.round((b[3] - b[1]) / st) + 1;
+  var st = SC ? ART : ART / 2, GX = Math.round((b[2] - b[0]) / st) + 1, GY = Math.round((b[3] - b[1]) / st) + 1, GY0 = GY;
   var SD = new Float32Array(GX * GY), Q = C.poly;
   // the signed distance to the course's outline: the union of its rooms, so a mouth between two is open
   var PS = C.polys || [Q], ED = C.edges;
@@ -73,25 +75,27 @@ function* steps(C, opt){
   function railTier(x, y){ var z = TZ(x, y); for (var a = 0; a < 8; a++){ var ang = a * Math.PI / 4, v = TZ(x + Math.cos(ang) * 0.75, y + Math.sin(ang) * 0.75); if (v > z) z = v; } return z; }
   // exact every 8th point; between them read it off the coarse grid, unless it is near the rail where it has to be exact
   var CS = 8, CX = Math.ceil(GX / CS) + 1, CY = Math.ceil(GY / CS) + 1, CD = new Float32Array(CX * CY);
+  if (SC){ SD.fill(20); CY = 0; GY0 = GY; GY = 0; }
   for (var cj = 0; cj < CY; cj++) for (var ci = 0; ci < CX; ci++) CD[cj * CX + ci] = sdExact(b[0] + ci * CS * st, b[1] + cj * CS * st);
   for (var j = 0; j < GY; j++){ for (var i = 0; i < GX; i++){
     var fi = i / CS, fj = j / CS, i0 = fi | 0, j0 = fj | 0, u0 = fi - i0, v0 = fj - j0, c0 = j0 * CX + i0;
     var dv = (CD[c0] * (1 - u0) + CD[c0 + 1] * u0) * (1 - v0) + (CD[c0 + CX] * (1 - u0) + CD[c0 + CX + 1] * u0) * v0;
     SD[j * GX + i] = Math.abs(dv) < CS * st * 1.5 + 1.2 ? sdExact(b[0] + i * st, b[1] + j * st) : dv;
   } if ((j & 31) === 31) yield; }
+  if (SC) GY = GY0;
   var x, y;
   function sdAt(x, y){ var i = Math.round((x - b[0]) / st), j = Math.round((y - b[1]) / st);
     if (i < 0 || j < 0 || i >= GX || j >= GY) return 20; return SD[j * GX + i]; }
   var CARP = 0.35, RAIL = 0.95, RW = 0.55;
-  var clearAt = function(x, y){ return sdAt(x, y) - RW; };
-  var inB = function(x, y){ return x >= C.bounds[0] && y >= C.bounds[1] && x <= C.bounds[2] && y <= C.bounds[3]; };
-  var LD = LAND ? LAND.make(C, b, clearAt, (C.seed | 0) || 7) : null;
+  var clearAt = SC ? (SC.clearAt || function(){ return 20; }) : function(x, y){ return sdAt(x, y) - RW; };
+  var inB = SC ? function(){ return false; } : function(x, y){ return x >= C.bounds[0] && y >= C.bounds[1] && x <= C.bounds[2] && y <= C.bounds[3]; };
+  var LD = SC ? (SC.land || null) : LAND ? LAND.make(C, b, clearAt, (C.seed | 0) || 7) : null;
   yield;
   var surf = function(x, y){ var m = inB(x, y) ? C.mats.at(x, y) : M.OUT, tz = TZ(x, y); if (m === M.WATER || m === M.ICE) return CARP - 0.22 + tz; if (m === M.FLOW) return CARP - 0.16 + tz; return CARP + F.h(x, y) * K + tz; };
 
   // ---- the ground, the carpet and the rail, as one height field
-  var GZ = new Float32Array(GX * GY), GM = new Array(GX * GY), GE = new Array(GX * GY);
-  for (j = 0; j < GY; j++){ for (i = 0; i < GX; i++){
+  var GZ = new Float32Array(GX * GY), GM = new Array(GX * GY), GE = new Array(GX * GY), GYG = SC && SC.noGround ? 0 : GY;
+  for (j = 0; j < GYG; j++){ for (i = 0; i < GX; i++){
     x = b[0] + i * st; y = b[1] + j * st; var k0 = j * GX + i, m = inB(x, y) ? C.mats.at(x, y) : M.OUT;
     if (m !== M.OUT){ var tz0 = TZ(x, y); GZ[k0] = ((m === M.WATER || m === M.ICE) ? CARP - 0.22 : m === M.FLOW ? CARP - 0.16 : CARP + F.h(x, y) * K) + tz0; GM[k0] = m; continue; }
     if (Math.abs(SD[k0]) < RW){ GZ[k0] = RAIL + railTier(x, y); GM[k0] = 'rail'; continue; }
@@ -100,7 +104,7 @@ function* steps(C, opt){
   } if ((j & 15) === 15) yield; }
   function gzI(i, j){ return GZ[Math.max(0, Math.min(GY - 1, j)) * GX + Math.max(0, Math.min(GX - 1, i))]; }
   function gz(x, y){ return gzI(Math.round((x - b[0]) / st), Math.round((y - b[1]) / st)); }
-  for (j = 0; j < GY; j++){ if ((j & 15) === 15) yield; for (i = 0; i < GX; i++){
+  for (j = 0; j < GYG; j++){ if ((j & 15) === 15) yield; for (i = 0; i < GX; i++){
     x = b[0] + i * st; y = b[1] + j * st; var kk = j * GX + i, z = GZ[kk], mm = GM[kk], zs = gzI(i, j + 1);
     var zx = (gzI(i + 1, j) - gzI(i - 1, j)) / (2 * st), zy = (gzI(i, j + 1) - gzI(i, j - 1)) / (2 * st);
     var terr = typeof mm === 'string' && mm.charAt(0) === 't';
@@ -125,7 +129,10 @@ function* steps(C, opt){
       if (occ(i, j + 1, k) && occ(i, j, k + 1) && occ(i - 1, j, k) && occ(i + 1, j, k)) continue;   // hidden from the camera
       var gx = 0, gy = 0, gz2 = 0;
       for (var u = 0; u < NB.length; u++){ var o = NB[u]; if (occ(i + o[0], j + o[1], k + o[2])) continue; gx += o[0]; gy += o[1]; gz2 += o[2]; }
-      splat(x0 + i * sv, y0 + j * sv, z0 + k * sv, 'x:' + c, camN(gx, gy, gz2 || 0.0001));
+      var nn = camN(gx, gy, gz2 || 0.0001);
+      if (sv > ART * 1.01){ var nb = Math.ceil(sv / ART), fs = sv / nb;   // a voxel bigger than an art pixel covers its whole face, not one dot
+        for (var d0 = 0; d0 < nb; d0++) for (var d1 = 0; d1 < nb; d1++) for (var d2 = 0; d2 < nb; d2++) splat(x0 + i * sv + d0 * fs, y0 + j * sv + d1 * fs, z0 + k * sv + d2 * fs, 'x:' + c, nn); }
+      else splat(x0 + i * sv, y0 + j * sv, z0 + k * sv, 'x:' + c, nn);
     }
   }
   // solid(box, fn): asks fn(x, y, z) for a colour at every voxel. Fine for small things.
@@ -179,7 +186,7 @@ function* steps(C, opt){
       if (Math.abs(w) > 0.28) return null; return fn(u, v);
     });
   }
-  if (LD) LD.build(B);
+  if (LD && LD.build) LD.build(B);
   (C.bumpers || []).forEach(function(u){ prop(u.x, u.y, u.r * 1.05, u.skin, base(u.x, u.y) - 0.1); });
   (C.blocks || []).forEach(function(rc){ var fn = SK[rc.skin] || SK.stone, h = 1.5, zb = CARP;
     solid(rc.x0, rc.y0, zb, rc.x1, rc.y1, zb + h, function(x, y, z){ var u = ((x - rc.x0) / (rc.x1 - rc.x0)) * 2 - 1, v = 1 - 2 * (z - zb) / h;
@@ -223,7 +230,7 @@ function* steps(C, opt){
   var y0 = 0; while (y0 < Hh - 1 && S.g[y0].every(function(c){ return !c; })) y0++;
   if (y0 > 0){ S.g = S.g.slice(y0); S.H = Hh - y0; }
   var cv = document.createElement('canvas'); cv.width = W; cv.height = Hh - y0; var ctx = cv.getContext('2d');
-  ctx.fillStyle = (LD && LD.bg) || T.bg; ctx.fillRect(0, 0, W, Hh);
+  if (!(SC && SC.noGround)){ ctx.fillStyle = (LD && LD.bg) || T.bg; ctx.fillRect(0, 0, W, Hh); }
   var rampOf = function(c, x, y){
     var n = h3(c.ti || x, c.tj || y, 3), m = c.m;
     if (m === 'carpet') return R(n < 0.16 ? T.carpet2 : T.carpet);
@@ -262,6 +269,8 @@ function* steps(C, opt){
      behind a block, a wall or the windmill house is behind it, not painted over it. */
   var hid = function(x, y, z){ var sx = Math.floor((x - b[0]) / ART), sy = Math.floor(y * se / ART - z * ce / ART + oy);
     if (sx < 0 || sy < 0 || sx >= W || sy >= Hh) return false; return Z[sy * W + sx] > y * ce + z * se + 0.2; };
-  return { cv:cv, pr:pr, un:un, zAt:surf, hid:hid, mill:mill, se:se, ce:ce, K:K, carp:CARP };
+  /* the depth of every pixel (Z, W wide, starting y0 rows down), so a trail can draw the golfer and anything
+     that moves behind whatever stands in front of it */
+  return { ART:ART, cv:cv, pr:pr, un:un, zAt:SC ? function(x, y){ return gz(x, y); } : surf, hid:hid, mill:mill, se:se, ce:ce, K:K, carp:CARP, Z:Z, ZW:W, zy0:y0, b:b };
 }
 })();
