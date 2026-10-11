@@ -348,6 +348,8 @@ if (!args.includes('--no-browser')){
     await pg.route(/^https?:\/\/(?!127\.0\.0\.1)/, r => r.abort());
     await pg.goto(base + '/golf/', { waitUntil:'domcontentloaded' });
     await pg.waitForFunction(() => window.RTT_PUTT && typeof puttOn === 'function', null, { timeout:30000 });
+    // the mode opens on the 3D world (home()); the map checks below ask for the map first, and the world has its own section
+    await pg.evaluate(() => { window.RTT_PUTT_MAPFIRST = true; });
     claim(await pg.evaluate(() => !document.querySelector('.pt-ov')), 'loading the module draws nothing');
     // A PLAIN SCRIPT'S TOP LEVEL FUNCTION IS A GLOBAL. hole3d.js once declared render() unwrapped and
     // replaced the game's own screen painter, so every tap on the site threw and nothing responded,
@@ -437,7 +439,7 @@ if (!args.includes('--no-browser')){
     // picked up and kept in the Tour record; walking through the arch opens the hole; Skip goes straight there.
     // Where two worlds meet a wall stands across the land: with the stars its door opens, short of them it holds.
     const wk = await pg.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), seed = (s, lv) => { const best = {}; for (let n = 1; n <= 18; n++) best[n] = s;
-      localStorage.setItem('bag_ppt_v1@walk', JSON.stringify({ v:2, tours:{ main:{ lv, best, ace:{}, paid:{}, wpaid:{} } } })); };
+      localStorage.setItem('bag_ppt_v1@walk', JSON.stringify({ v:2, met:['clubhouse', 'temple', 'pirate'], tours:{ main:{ lv, best, ace:{}, paid:{}, wpaid:{} } } })); };   // greeters met: their section is below
       const S = () => window.RTT_PUTT._state(), T = () => window.RTT_PUTT._trail(), rec = () => (JSON.parse(localStorage.getItem('bag_ppt_v1@walk')).trail || {});
       const open = async n => { window.RTT_PUTT._walkTo(n); for (let i = 0; i < 400 && !T(); i++) await sleep(50); await sleep(150); return T(); };
       const visit = async (t, x, y) => { t.goTo(x, y + 0.05); await sleep(120); };
@@ -489,6 +491,37 @@ if (!args.includes('--no-browser')){
     claim(wk.cross && wk.doorOpen && wk.passed && wk.through === 19, `with the stars, the world door on the trail opens and he walks on into World 2 (${wk.doorOpen}, ${wk.passed}, hole ${wk.through})`);
     claim(/Need \d+ more/.test(wk.shutTxt || '') && wk.held, `short of the stars, the door stays shut, says how many more, and he cannot walk past it (${wk.shutTxt})`);
     claim(wk.tap, 'tapping the golfer on the map starts the walk to the next hole');
+    // THE WORLD IS WHERE THE MODE OPENS. Opening the Tour drops the player's own golfer onto the trail to the
+    // next hole, with Map top right, and the map's close goes back to the world. The first trail of every
+    // world has its greeter, who walks up and talks the first time and waits by the path after.
+    const wo = await pg.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), K = 'bag_ppt_v1@world';
+      const S = () => window.RTT_PUTT._state(), T = () => window.RTT_PUTT._trail();
+      window.RTT_PUTT.close(); window.RTT_PUTT_MAPFIRST = false; sbUser = { id:'world' }; localStorage.removeItem(K); openPutt();
+      for (let i = 0; i < 600 && !T(); i++) await sleep(50);
+      out.world = !!T() && S().screen === 'trail' && !!document.querySelector('.pp-wv [data-mapb]') && !!document.querySelector('.pp-wv .pp-tgoal');
+      out.ban = !!document.querySelector('.pp-wban');
+      out.host = !!(T() && T().host());
+      for (let i = 0; i < 200 && !document.querySelector('.pp-gd'); i++) await sleep(50);
+      out.talk = !!document.querySelector('.pp-gd') && T().host().ph === 'talk' && /Pro Pete/.test(document.querySelector('.pp-gdn').textContent);
+      out.face = !!(document.querySelector('.pp-gdp.pic') && document.querySelector('.pp-gdp.pic').style.backgroundImage);
+      const p0 = T().pos(); T().stick(0, -1); await sleep(400); out.held = Math.abs(T().pos()[1] - p0[1]) < 0.05; T().stick(0, 0);
+      for (let i = 0; i < 60 && document.querySelector('.pp-gd'); i++){ document.querySelector('.pp-gd').dispatchEvent(new PointerEvent('pointerdown', { bubbles:true })); await sleep(40); }
+      out.done = !document.querySelector('.pp-gd') && T().host().ph === 'idle';
+      out.met = (JSON.parse(localStorage.getItem(K)).met || []).indexOf('clubhouse') >= 0;
+      await sleep(100); out.talkBtn = !!document.querySelector('[data-talk]:not([hidden])');
+      document.querySelector('[data-mapb]').click(); await sleep(150); out.map = S().screen === 'menu' && !!document.querySelector('.pp-toworld');
+      document.querySelector('.pp-toworld').click(); for (let i = 0; i < 400 && !T(); i++) await sleep(50); await sleep(200);
+      out.back = S().screen === 'trail' && T().host() && T().host().ph === 'idle' && !document.querySelector('.pp-gd');
+      // every world's first trail has its greeter, on both tours
+      out.greeters = []; for (let w = 0; w < 8; w++){ const P = window.RTT_PUTT._trailPlan(w * 18); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }
+      for (let w = 0; w < 2; w++){ const P = window.RTT_PUTT._trailPlan(w * 9, 'members'); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }
+      out.notMid = !window.RTT_PUTT._trailPlan(5).spec.greet;
+      window.RTT_PUTT.close(); window.RTT_PUTT_MAPFIRST = true; sbUser = { id:'chk' }; return out; });
+    claim(wo.world && wo.ban && wo.host, `opening the Tour drops the golfer into the world on the trail to the next hole, with its title card and Map top right (${wo.world}, ${wo.ban}, ${wo.host})`);
+    claim(wo.talk && wo.face && wo.held, `the world's greeter walks up and talks, with their face in the box, and walking waits for them (${wo.talk}, ${wo.face}, ${wo.held})`);
+    claim(wo.done && wo.met && wo.talkBtn, `tapping through the talk lets the golfer go, it is kept on the record, and Talk plays it again (${wo.done}, ${wo.met}, ${wo.talkBtn})`);
+    claim(wo.map && wo.back, `Map opens the map and its World button goes back into the world, where the greeter does not start over (${wo.map}, ${wo.back})`);
+    claim(wo.greeters.every(Boolean) && wo.notMid, `all eight worlds and both Members worlds have a greeter on their first trail, and only there (${wo.greeters.map(Number).join('')})`);
     // A SPARE LIFE IS SPENT WHEN THE HEARTS ARE GONE, and a built putter is equipped from the Bag
     const sp = await pg.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), K = 'bag_ppt_v1@spare';
       window.RTT_PUTT.close(); sbUser = { id:'spare' };

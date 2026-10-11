@@ -1883,6 +1883,27 @@ var CSS = '\
 .pp-stick{position:absolute;left:78px;bottom:96px;width:104px;height:104px;margin:-52px 0 0 -52px;border-radius:50%;border:3px solid rgba(255,255,255,.55);background:rgba(10,18,14,.32);opacity:.55;transition:opacity .2s}.pp-stick.on{opacity:1;bottom:auto}\
 .pp-stick i{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px;border-radius:50%;background:radial-gradient(circle at 38% 34%,#fff6d6,#ffd24a 55%,#b88a10);border:3px solid #3a2a14;box-shadow:0 3px 0 rgba(0,0,0,.35)}\
 .pp-rbar{position:absolute;right:12px;bottom:max(14px,env(safe-area-inset-bottom));display:flex;gap:8px;pointer-events:auto}.pp-rb{font:inherit;font-size:12px;font-weight:900;border-radius:12px;border:2px solid #3a2a14;background:#f6ead2;color:#3a2a14;padding:8px 12px;cursor:pointer;box-shadow:0 3px 0 rgba(0,0,0,.35)}.pp-rb.on{background:#ffd24a}\
+.pp-wv{position:relative}.pp-wv>.pp-hdr{z-index:6}\
+.pp-mapb,.pp-toworld{display:flex;align-items:center;gap:6px;height:38px;width:auto;border-radius:12px;border:2px solid #3a2a14;background:#ffd24a;color:#3a2a14;font:900 14px system-ui,sans-serif;padding:0 12px 0 8px;cursor:pointer;box-shadow:0 3px 0 #3a2a14}.pp-mapb svg,.pp-toworld svg{width:22px;height:22px;display:block}.pp-mapb:active,.pp-toworld:active{transform:translateY(2px);box-shadow:0 1px 0 #3a2a14}\
+.pp-wv .pp-thud{top:calc(env(safe-area-inset-top,0px) + 102px)}.pp-wv .pp-rhint{top:auto;bottom:calc(max(14px,env(safe-area-inset-bottom)) + 58px)}\
+.pp-hub:has(.pp-daily) .pp-bagb{top:calc(env(safe-area-inset-top,0px) + 178px)}\
+.pp-wv>.pp-bagb{top:calc(env(safe-area-inset-top,0px) + 98px);z-index:5}\
+.pp-tgoal{position:absolute;left:50%;top:calc(env(safe-area-inset-top,0px) + 58px);transform:translateX(-50%);z-index:5;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:1px;max-width:calc(100% - 24px);background:rgba(10,18,14,.8);border:2px solid rgba(255,210,74,.7);border-radius:12px;padding:4px 12px;text-align:center}\
+.pp-tgoal i{font:900 10px system-ui,sans-serif;letter-spacing:.1em;text-transform:uppercase;font-style:normal;color:#ffd24a;white-space:nowrap}.pp-tgoal b{font:900 13px system-ui,sans-serif;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}\
+.pp-wban{position:absolute;left:0;right:0;top:30%;z-index:7;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:4px;padding:16px 12px;background:linear-gradient(90deg,transparent,rgba(8,12,18,.82) 18%,rgba(8,12,18,.82) 82%,transparent);animation:ppwban .6s cubic-bezier(.2,1.4,.4,1) both;transition:opacity .6s,transform .6s}\
+.pp-wban i{font:900 13px system-ui,sans-serif;letter-spacing:.24em;text-transform:uppercase;font-style:normal;color:var(--wa)}.pp-wban b{font:900 clamp(30px,9vw,54px)/1 Georgia,serif;color:#fff;text-shadow:0 3px 0 #3a2a14,0 0 18px var(--wa);text-align:center}.pp-wban span{font:800 12px system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#e8f2ec;opacity:.85}\
+.pp-wban.out{opacity:0;transform:translateY(-24px)}@keyframes ppwban{0%{opacity:0;transform:scale(1.6)}100%{opacity:1;transform:none}}\
+.pp-gd{position:absolute;left:0;right:0;bottom:0;z-index:8;pointer-events:auto;padding:0 10px max(12px,env(safe-area-inset-bottom));display:flex;justify-content:center;animation:ppgd .35s cubic-bezier(.2,1.3,.4,1) both;cursor:pointer;touch-action:manipulation}\
+.pp-gdbox{position:relative;width:100%;max-width:560px;min-height:118px;box-sizing:border-box;background:#fffdf5;border:3px solid #3a2a14;border-radius:18px;box-shadow:0 5px 0 #3a2a14,0 0 0 5px var(--gc) inset;padding:30px 18px 16px 100px}\
+.pp-gdp{position:absolute;left:12px;top:-30px;width:78px;height:78px;border-radius:50%;background:radial-gradient(circle at 50% 40%,#fff,var(--gc));border:3px solid #3a2a14;box-shadow:0 3px 0 #3a2a14;overflow:hidden}.pp-gdp canvas{width:100%;height:100%;image-rendering:pixelated;display:block}\
+.pp-gdn{position:absolute;left:96px;top:-17px;display:flex;align-items:baseline;gap:8px;background:var(--gc);border:3px solid #3a2a14;border-radius:10px;padding:3px 12px;box-shadow:0 3px 0 #3a2a14}.pp-gdn b{font:900 15px system-ui,sans-serif;color:#1d1408}.pp-gdn i{font:800 11px system-ui,sans-serif;font-style:normal;color:#1d1408;opacity:.75}\
+.pp-gd p{margin:0;min-height:48px;font:800 16px/1.35 system-ui,sans-serif;color:#1d2a20}\
+.pp-gdm{position:absolute;right:16px;bottom:8px;font-size:14px;color:#3a2a14;opacity:0}.pp-gdm.on{opacity:1;animation:ppgdm .7s ease-in-out infinite}@keyframes ppgdm{50%{transform:translateY(4px)}}\
+.pp-gdx{position:absolute;right:10px;top:8px;font:900 11px system-ui,sans-serif;color:#3a2a14;background:none;border:0;opacity:.6;cursor:pointer;padding:4px}\
+@keyframes ppgd{0%{opacity:0;transform:translateY(60px)}100%{opacity:1;transform:none}}.pp-tui:has(.pp-gd) .pp-rbar,.pp-tui:has(.pp-gd) .pp-way,.pp-tui:has(.pp-gd) .pp-pin,.pp-tui:has(.pp-gd) .pp-stick,.pp-tui:has(.pp-gd) .pp-rhint{display:none}\
+.pp-gdp.pic{background-repeat:no-repeat;background-size:230%;background-position:50% 8%;background-color:var(--gc);image-rendering:pixelated}\
+.pp-talkb{background:#ffd24a!important;animation:ppway 1s ease-in-out infinite}.pp-talkb[hidden]{display:none}\
+@media (min-width:900px){.pp-wv .pp-thud{top:120px}.pp-wv>.pp-bagb{top:118px}.pp-tgoal{top:72px}.pp-gd p{font-size:18px}}\
 .pp-rhint{position:absolute;left:50%;top:70px;transform:translateX(-50%);font-size:13px;font-weight:900;color:#fff;background:rgba(10,18,14,.78);border-radius:12px;padding:6px 12px;white-space:nowrap;transition:opacity .4s}.pp-rhint.gone{opacity:0}\
 /* A WORLD DOOR: two leaves made of that world, a lock that fills with the stars you have */\
 .pp-door{position:absolute;z-index:6;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .35s;background:radial-gradient(ellipse at center,rgba(0,0,0,.35),rgba(0,0,0,.75))}.pp-door.in{opacity:1}\
@@ -1935,8 +1956,7 @@ function open(host){
   S = { host:host || {}, ov:ov, prevOverflow:document.body.style.overflow };
   document.body.style.overflow = 'hidden';
   S.onKey = function(e){ onKey(e); }; window.addEventListener('keydown', S.onKey);
-  showMenu();
-  resumeCur();
+  if (!resumeCur()) showMenu();
   // the account's record may be ahead of this browser's: redraw the map if the merge moved anything
   cloudPull().then(function(moved){ if (moved && S && S.screen === 'menu' && !S.ov.querySelector('.pp-sheet')) showHub(S.tour); });
 }
@@ -2004,7 +2024,7 @@ function pmerge(st, g){
     ['c', 'b'].forEach(function(f){ if (b[f]){ a[f] = a[f] || []; b[f].forEach(function(v){ if (a[f].indexOf(v) < 0) a[f].push(v); }); } });
     ['k', 'g', 'key', 'life', 'tk', 'pt'].forEach(function(f){ if (b[f]) a[f] = 1; }); });
   // the rare things: lists only grow, and the spare life counters only go up, so the larger is the newer
-  ['bank', 'tk'].forEach(function(f){ (g[f] || []).forEach(function(v){ st[f] = st[f] || []; if (st[f].indexOf(v) < 0) st[f].push(v); }); });
+  ['bank', 'tk', 'met'].forEach(function(f){ (g[f] || []).forEach(function(v){ st[f] = st[f] || []; if (st[f].indexOf(v) < 0) st[f].push(v); }); });
   ['bused', 'bspent'].forEach(function(f){ st[f] = Math.max(st[f] || 0, g[f] || 0); });
   if (g.pp){ st.pp = st.pp || { parts:[] }; st.pp.parts = st.pp.parts || []; (g.pp.parts || []).forEach(function(v){ if (st.pp.parts.indexOf(v) < 0) st.pp.parts.push(v); }); if (!st.pp.eq && g.pp.eq) st.pp.eq = g.pp.eq; }
   st.rewards = st.rewards || []; (g.rewards || []).forEach(function(r){ if (st.rewards.indexOf(r) < 0) st.rewards.push(r); });
@@ -2039,7 +2059,7 @@ function cloudUid(){ try{ var h = hostOf(); return h.rpc && h.uid ? h.uid() || n
 function cloudProg(st){ var n = 0, c = function(o){ return Object.keys(o || {}).length; };
   Object.keys(st.tours || {}).forEach(function(k){ var t = st.tours[k] || {}; n += (t.lv || 1) + c(t.best) + c(t.ace) + c(t.paid) + c(t.wpaid); });
   Object.keys(st.trail || {}).forEach(function(k){ var t = st.trail[k] || {}; n += (t.c || []).length + (t.b || []).length + (t.k ? 1 : 0) + (t.g ? 1 : 0) + (t.key ? 1 : 0) + (t.life ? 1 : 0) + (t.tk ? 1 : 0) + (t.pt ? 1 : 0); });
-  n += (st.bank || []).length + (st.tk || []).length + ((st.pp && st.pp.parts) || []).length + (st.bused || 0) + (st.bspent || 0);
+  n += (st.bank || []).length + (st.tk || []).length + (st.met || []).length + ((st.pp && st.pp.parts) || []).length + (st.bused || 0) + (st.bspent || 0);
   return n + c(st.daily) + (st.rewards || []).length; }
 // fold a copy of the record into this one: everything earned is kept, lives come from the newer copy
 function cloudMerge(st, g){ if (!g || g.v !== 2 || !g.tours) return st;
@@ -2176,7 +2196,17 @@ function thumb(box, d, key){ if (!box) return; var c = THUMBS[key];
 function monthDay(dk){ var m = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][+dk.slice(5, 7) - 1]; return m + ' ' + (+dk.slice(8, 10)); }
 
 /* ----------------------------------------------------------------------------------- the hub */
-function showMenu(){ showHub(); }
+function showMenu(){ home(); }
+/* THE WORLD IS WHERE THE MODE OPENS. The 3D trail out to the next hole, walked by the player's own golfer,
+   is the home screen; the map is one button away (Map, top right) and its close goes back to the world.
+   Only the Putt Putt Tour and the Members Tour have a world. The Lab, the Daily tab, reduced motion and a
+   page without the 3D golfer open on the map, as before. */
+function worldOk(tid){ var TR = TOURS[tid]; if (!TR || TR.lab || tid === 'daily' || !trailOk()) return false;
+  var reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){} return !reduce; }
+function worldTour(){ if (window.RTT_PUTT_MAPFIRST) return null; var st = pload(), t = (S && S.tour) || st.view || 'main'; if (t === 'members' && !membersOpen() && !membersPreview()) t = 'main'; return worldOk(t) ? t : worldOk('main') ? 'main' : null; }
+function home(tid){ var t = window.RTT_PUTT_MAPFIRST ? null : tid && worldOk(tid) ? tid : worldTour(); if (!t) return showHub(tid);
+  var TR = tourOf(t), tp = pload().tours[TR.id], n = Math.min(TR.levels.length, frontier(tp, TR));
+  S.tour = t; return openTrail(t, n - 1); }
 function showHub(tid){
   stopTrail(); cancelAnimationFrame(S.raf); S.screen = 'menu'; S.play = null; clearInterval(S.tick);
   var st = pload(), dk = today(), dh = dailyHole(dk), dT = THEMES[dh.theme], drec = st.daily[dk];
@@ -2201,7 +2231,8 @@ function showHub(tid){
     '<div class="pp-wchip" data-wchip></div>' + (TOURS.main && !cal ? '<button class="pp-bagb" data-bag aria-label="Your Bag">Bag</button>' : '') +
     '<div class="pp-tabs" role="tablist"><button data-tab="main" class="' + (mem || lab || cal ? '' : 'on') + '" role="tab">Putt Putt Tour</button><button data-tab="members" class="' + (mem ? 'on' : '') + '" role="tab"><i>★</i> Members' + (membersOpen() ? '' : ' <s>🔒</s>') + '</button>' + (labOpen() ? '<button data-tab="lab" class="' + (lab ? 'on' : '') + '" role="tab">Lab</button>' : '') +
     '<button data-tab="daily" class="' + (cal ? 'on' : '') + '" role="tab">Daily' + (drec && drec.done ? '' : '<u class="pp-tdot" aria-label="not played today"></u>') + '</button></div>' + '</div>';
-  S.ov.querySelector('[data-x]').onclick = close;
+  var hx = S.ov.querySelector('[data-x]'), wt = worldOk(S.tour) ? S.tour : worldTour();
+  if (wt){ hx.textContent = ''; hx.className = 'pp-toworld'; hx.setAttribute('aria-label', 'Back to the world'); hx.innerHTML = '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8" fill="#5fb3e8" stroke="#3a2a14" stroke-width="1.6"/><path d="M4 8c3 0 3 3 6 2s2-4 5-3M5 14c2-1 4 0 5 2" stroke="#3f9a4a" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg><b>World</b>'; hx.onclick = function(){ home(wt); }; } else hx.onclick = close;
   var dcb = S.ov.querySelector('[data-daily]'); if (dcb) dcb.onclick = function(){ startDaily(); };
   var bgb = S.ov.querySelector('[data-bag]'); if (bgb) bgb.onclick = bagSheet;
   S.ov.querySelectorAll('[data-tab]').forEach(function(b){ b.onclick = function(){ var t = b.getAttribute('data-tab'); if (t === S.tour) return;
@@ -2437,15 +2468,75 @@ function puttEquipped(){ try{ if (S.round && S.round.mode !== 'ppt') return null
 function bankHeld(st){ return Math.max(0, (st.bank || []).length - (st.bused || 0)); }
 function lifeExtra(st){ return Math.max(0, (st.bused || 0) - (st.bspent || 0)); }
 function livesNow(st){ return (st.lives || 0) + lifeExtra(st); }
+/* THE GREETERS. Every world has one: a local who walks up the moment you step into their world, the way a
+   board game host does, and tells you where you are. The first trail of a world is theirs. They talk on
+   their own the first time (st.met keeps who you have met, and it follows the account) and stay by the
+   path after, so walking up to them again plays it again. They are invented characters, drawn by the same
+   3D golfer as the player, in a look nobody can buy. */
+var GREETERS = {
+  clubhouse:{ name:'Pro Pete', role:'Club Pro', look:{ skin:'light', polo:'navy', hat:'tan', pants:'khaki', hair:'grey', hairStyle:'short', cap:true, hatStyle:'tweed', top:'cardigan', leg:'plusfours', gender:'male' },
+    hi:['Hey there! Welcome to the Putt Putt Tour.', 'I’m Pro Pete. I run the Clubhouse.'],
+    tip:['Match par and the next hole opens. Beat it and you earn more stars.', 'Windmills, loops and drawbridges live here. Time them right.'],
+    bye:'Go get ’em, champ!' },
+  temple:{ name:'Professor Fern', role:'Explorer', look:{ skin:'tan', polo:'gold', hat:'tan', pants:'khaki', hair:'black', hairStyle:'ponytail', cap:true, hatStyle:'safari', gender:'female' },
+    hi:['Oh! A visitor! Mind the vines.', 'I’m Professor Fern. I’ve studied this temple for twenty years.'],
+    tip:['Jade rivers carry your ball. Some stone doors only open when a ball rolls over the plate.', 'I’ve lost three trinkets out on these trails. Keep your eyes open.'],
+    bye:'Off you go. Science awaits!' },
+  pirate:{ name:'Captain Bogey', role:'Pirate Captain', look:{ skin:'tan', polo:'black', hat:'black', pants:'wine', hair:'black', hairStyle:'long', cap:true, hatStyle:'pirate', top:'blazer', gender:'male' },
+    hi:['Ahoy! Welcome to Pirate Cove!', 'Captain Bogey’s the name. Treasure’s the game.'],
+    tip:['Gangplanks run on a clock. Wait for the plank, then putt.', 'Smash a barrel or two. There’s gold hidden all over this beach.'],
+    bye:'Now hoist the flag, matey!' },
+  canyon:{ name:'Dusty', role:'Prospector', look:{ skin:'tan', polo:'gold', hat:'tan', pants:'navy', hair:'grey', hairStyle:'short', cap:true, hatStyle:'cowboy', gender:'male' },
+    hi:['Well howdy, partner!', 'Name’s Dusty. Been minin’ this canyon forty years.'],
+    tip:['Carts roll on the rails and shafts drop to the floor below. Read the track.', 'Chests turn up off the main trail. Sometimes behind a locked gate.'],
+    bye:'Happy trails, partner!' },
+  volcano:{ name:'Ranger Mae', role:'Volcano Ranger', look:{ skin:'brown', polo:'black', hat:'orange', pants:'grey', hair:'black', hairStyle:'buzz', cap:true, hatStyle:'headband', gender:'female' },
+    hi:['Whoa there! It’s hot out here.', 'I’m Ranger Mae. I keep an eye on the volcano.'],
+    tip:['Lava on every side. Jump it, ride it, or go round.', 'Step in the lava on the trail and you’re straight back on the path. Trust me.'],
+    bye:'Stay cool out there!' },
+  frozen:{ name:'Coach Frost', role:'Ski Coach', look:{ skin:'light', polo:'teal', hat:'red', pants:'navy', hair:'blonde', hairStyle:'long', cap:true, hatStyle:'beanie', gender:'female' },
+    hi:['Brr! Welcome to Frozen Peak.', 'I’m Coach Frost. Ice is my thing.'],
+    tip:['The ball slides a long way on ice. Putt softer than you think.', 'Snowdrifts stop a ball cold. Use them.'],
+    bye:'Now get out there and shred!' },
+  sky:{ name:'Skye', role:'Balloon Pilot', look:{ skin:'porcelain', polo:'purple', hat:'white', pants:'stone', hair:'platinum', hairStyle:'curly', cap:true, hatStyle:'propeller', gender:'female' },
+    hi:['Look at you, way up in the clouds!', 'I’m Skye. I fly the balloons around here.'],
+    tip:['The wind pushes your ball. Follow the arrows.', 'Bounce pads launch the ball. Miss the island and it drops.'],
+    bye:'Up, up and away!' },
+  neon:{ name:'DJ Pixel', role:'Arcade Keeper', look:{ skin:'tan', polo:'rtggreen', hat:'black', pants:'navy', hair:'jet', hairStyle:'mohawk', cap:true, hatStyle:'headphones', gender:'male' },
+    hi:['Yo! Welcome to the Neon Arcade!', 'DJ Pixel on the decks. Everything in here runs on a beat.'],
+    tip:['Lasers, pinball and power ups. Watch the lights and time every shot.', 'High score gets the glory. Let’s see what you’ve got.'],
+    bye:'Press start!' },
+  haunted:{ name:'Count Mulligan', role:'Graveyard Keeper', look:{ skin:'porcelain', polo:'black', hat:'black', pants:'grey', hair:'white', hairStyle:'long', cap:true, hatStyle:'tophat', top:'cape', gender:'male' },
+    hi:['Good evening. Welcome to Hallows Night.', 'I am Count Mulligan. I never take a second shot. Well. Almost never.'],
+    tip:['Mud slows everything here. Hit it firm.', 'These are the hardest holes of the season. Members only.'],
+    bye:'Do come back. They always do.' },
+  harvest:{ name:'Farmer Hayes', role:'Farmer', look:{ skin:'tan', polo:'gold', hat:'tan', pants:'navy', hair:'auburn', hairStyle:'short', cap:true, hatStyle:'straw', gender:'male' },
+    hi:['Howdy, and welcome to Harvest Moon!', 'I’m Farmer Hayes. This is my field.'],
+    tip:['Soft ground in the furrows. Give it a little more.', 'Finish the season and there’s something special waiting.'],
+    bye:'Better get going before dark!' }
+};
+// the pages a greeter says on the first trail of world w: who they are, how the world plays, what it pays, the hole ahead
+function greetSpec(tid, w, to){
+  var TR = tourOf(tid); if (TR.lab) return null; var Wd = TR.worlds[w], G = GREETERS[Wd.theme]; if (!G) return null;
+  var K = TR.per || PER, Pay = PAY[TR.id] || PAY.main, L = TR.levels[to - 1], st = pload(), last = w >= TR.worlds.length - 1, rw = (Pay.worldReward || [])[w];
+  var pages = G.hi.slice();
+  if (!TR.members && w === 0) pages.push('Walk the trails between holes. Coins, chests and golden balls are hidden all over.');
+  pages = pages.concat(G.tip);
+  pages.push(K + ' holes in ' + Wd.name + '.' + (rw ? ' Clear them all for the ' + rw.replace(' (Members only)', '') + '.' : ''));
+  if (!last) pages.push(worldGate(TR, w) + ' stars opens the next world.');
+  pages.push('Hole ' + to + ', ' + levelName(to, tid) + ', is just up the path. Par ' + (L ? L.par : 3) + '.');
+  pages.push(G.bye);
+  return { theme:Wd.theme, name:G.name, role:G.role, look:G.look, lines:pages, met:(st.met || []).indexOf(Wd.theme) >= 0, col:(THEMES[Wd.theme] || {}).acc || '#F1D04A' };
+}
 var TRAIL_GOLD_COINS = 500;
 function trailOk(){ var TT = window.RTT_PUTT_TRAIL; return !!(TT && TT.API_VERSION === 1 && v3Ok() && S && S.host && S.host.golferWalk); }
 function trailSpec(tid, from){
   var TR = tourOf(tid), K = TR.per || PER, to = from + 1, w = Math.min(TR.worlds.length - 1, Math.floor((to - 1) / K)), th = TR.worlds[w].theme;
   var cross = from >= 1 && from % K === 0, th0 = cross ? TR.worlds[w - 1].theme : th, tp = pload().tours[TR.id];
   var portrait = (window.innerHeight || 800) >= (window.innerWidth || 400);
-  return { key:tid + ':' + to, tid:tid, from:from, to:to, w:w, seed:hstr('trail:' + tid + ':' + to), theme:th, theme0:th0, cross:cross, gateOpen:tp.lv > from, T:THEMES[th] || THEMES.clubhouse, halfW:portrait ? 28 : 46, loot:trailLoot(tid, to) };
+  return { key:tid + ':' + to, tid:tid, from:from, to:to, w:w, seed:hstr('trail:' + tid + ':' + to), theme:th, theme0:th0, cross:cross, gateOpen:tp.lv > from, T:THEMES[th] || THEMES.clubhouse, halfW:portrait ? 28 : 46, loot:trailLoot(tid, to), greet:from % K === 0 ? greetSpec(tid, w, to) : null };
 }
-function trailKey(sp){ return sp.key + '|' + sp.halfW + '|' + (sp.gateOpen ? 1 : 0); }
+function trailKey(sp){ return sp.key + '|' + sp.halfW + '|' + (sp.gateOpen ? 1 : 0) + (sp.greet ? '|g' : ''); }
 function trailPlan(sp){ S.trp = S.trp || {}; var k = trailKey(sp); if (!S.trp[k]) S.trp[k] = window.RTT_PUTT_TRAIL.plan(sp); return S.trp[k]; }
 // render the trail out of this hole while the hole is played (frame() calls trailTick), a few ms a frame
 function trailAhead(tid, from){
@@ -2464,17 +2555,26 @@ function openTrail(tid, from){
   var TR = tourOf(tid), N = TR.levels.length; if (from >= N) return showHub(tid);
   stopTrail(); cancelAnimationFrame(S.raf); clearInterval(S.tick); S.play = null; S.screen = 'trail';
   var sp = trailSpec(tid, from), k = trailKey(sp), to = sp.to, L = TR.levels[to - 1], Wd = TR.worlds[sp.w];
-  S.ov.innerHTML = '<div class="pp-trail">' + top('To hole ' + to, levelName(to, tid) + ' · par ' + (L ? L.par : 3), '') + '<div class="pp-tbox" data-tbox></div></div>';
-  var bx = S.ov.querySelector('[data-x]'); bx.textContent = 'Map'; bx.onclick = function(){ stopTrail(); showHub(tid); };
+  var b0 = balStr(), wlab = TR.lab ? 'Lab' : TR.members ? 'Members Tour' : 'World ' + (sp.w + 1), seen = S.wban === TR.id + ':' + sp.w; S.wban = TR.id + ':' + sp.w;
+  S.ov.innerHTML = '<div class="pp-trail pp-wv" data-wv="' + Wd.theme + '">' + hdr((b0 !== '' ? '<span class="pp-cpill" data-bal>' + b0 + '</span>' : '') + '<button class="pp-mapb" data-mapb aria-label="Open the map"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 4l5-2 6 2 5-2v14l-5 2-6-2-5 2z" fill="#f6ead2" stroke="#3a2a14" stroke-width="1.6" stroke-linejoin="round"/><path d="M7 2v14M13 4v14" stroke="#3a2a14" stroke-width="1.4"/><circle cx="10" cy="9" r="1.8" fill="#e5483a"/></svg><b>Map</b></button>') +
+    '<div class="pp-tbox" data-tbox></div>' +
+    '<div class="pp-tgoal"><i>' + esc(wlab) + ' · ' + esc(Wd.name) + '</i><b>Hole ' + to + ' · ' + esc(levelName(to, tid)) + ' · Par ' + (L ? L.par : 3) + '</b></div>' +
+    (TR.id === 'main' ? '<button class="pp-bagb" data-bag aria-label="Your Bag">Bag</button>' : '') +
+    (seen ? '' : '<div class="pp-wban" style="--wa:' + ((THEMES[Wd.theme] || {}).acc || '#F1D04A') + '"><i>' + esc(wlab) + '</i><b>' + esc(Wd.name) + '</b><span>' + esc((Wd.haz || []).join(' · ')) + '</span></div>') + '</div>';
+  S.ov.querySelector('[data-x]').onclick = close;
+  S.ov.querySelector('[data-mapb]').onclick = function(){ stopTrail(); showHub(tid); };
+  var bgw = S.ov.querySelector('[data-bag]'); if (bgw) bgw.onclick = bagSheet;
+  // the world's title card holds while the world loads, and leaves once you are standing in it
+  var wbn = S.ov.querySelector('.pp-wban'); function banOut(){ if (wbn) setTimeout(function(){ if (wbn.isConnected) wbn.classList.add('out'); setTimeout(function(){ if (wbn.isConnected) wbn.remove(); }, 700); }, 2200); }
   var box = S.ov.querySelector('[data-tbox]'), P = trailPlan(sp);
   S.trc = S.trc || {}; var pic = S.trc[k];
   function go(pic){ if (!S || S.screen !== 'trail' || !box.isConnected) return;
     if (!pic){ return walkFlat(from, tid); }
     var st0 = pload(), rec0 = (st0.trail || {})[sp.key] || {};
-    var three = L ? threeOf(L) : null;
+    var three = L ? threeOf(L) : null; banOut();
     S.trailCtl = window.RTT_PUTT_TRAIL.run(box, P, pic, {
-      host:S.host, found:JSON.parse(JSON.stringify(rec0)), holeLabel:'Hole ' + to,
-      skipLabel:sp.cross && !sp.gateOpen ? 'Map' : 'Skip to hole ' + to,
+      host:S.host, found:JSON.parse(JSON.stringify(rec0)), holeLabel:'Hole ' + to, greetDelay:wbn ? 2700 : 400,
+      skipLabel:sp.cross && !sp.gateOpen ? 'Map' : 'Play hole ' + to,
       pick:function(kind, id, n){ var st = pload(); st.trail = st.trail || {}; var r = st.trail[sp.key] = st.trail[sp.key] || {}, msg = '';
         if (kind === 'coin'){ r.c = r.c || []; if (r.c.indexOf(id) < 0) r.c.push(id); else n = 0; }
         else if (kind === 'brk'){ r.b = r.b || []; if (r.b.indexOf(id) < 0) r.b.push(id); else n = 0; }
@@ -2495,6 +2595,8 @@ function openTrail(tid, from){
           if (done && !was && st.rewards.indexOf(rw) < 0){ st.rewards.push(rw); n = TRAIL_GOLD_COINS; msg += ' Set complete: +' + TRAIL_GOLD_COINS + ' coins.'; } }
         psave(st); if (n > 0) coins(n, TR.name + ' trail'); return msg; },
       golden:function(){ return goldenOf(pload(), tid, sp.w); },
+      portrait:function(look){ try{ var c = S.host.portrait && S.host.portrait(look); return c && c.toDataURL ? c.toDataURL() : ''; }catch(e){ return ''; } },
+      met:function(th){ var st = pload(); st.met = st.met || []; if (st.met.indexOf(th) < 0){ st.met.push(th); psave(st); } if (sp.greet) sp.greet.met = true; },
       lines:function(who){ var nm = levelName(to, tid), out = ['Hole ' + to + ' is ' + nm + '.', 'Par ' + (L ? L.par : 3) + '.'];
         if (three) out.push('Three stars needs ' + (three === 1 ? 'an ace.' : three + ' strokes.'));
         if (L && L.sig) out.push('It is the signature hole of ' + Wd.name + '.'); return out; },
@@ -2645,11 +2747,11 @@ function tourSub(R, C, P){
 function leaveHole(){
   var P = S.play, R = S.round;
   if (R && R.mode === 'ppt' && R.tid !== 'lab' && P && P.strokes > 0 && P.state !== 'done'){
-    return confirmSheet('Leave this hole?', 'You have putted, so leaving costs a life.', 'Leave · lose a life', function(){ var st = pload(); clearCur(st); loseLife(st); showHub(); }); }
+    return confirmSheet('Leave this hole?', 'You have putted, so leaving costs a life.', 'Leave · lose a life', function(){ var st = pload(); clearCur(st); loseLife(st); if (livesNow(st) > 0) home(R.tid); else showHub(); }); }
   if (R && R.mode === 'pdaily' && P && P.strokes > 0 && P.state !== 'done'){
     return confirmSheet('Leave the Daily Hole?', 'You get one scored try a day. Leaving now scores it as a pick up.', 'Leave and score it', function(){ dailyFinish(P.C.par + 3, P.C.par, null); }); }
   if (R && R.mode === 'ppt'){ var st = pload(); if (st.cur){ clearCur(st); psave(st); } }
-  showHub();
+  if (R && R.mode === 'ppt') home(R.tid); else showHub();
 }
 function restartHole(){
   var P = S.play, R = S.round;
@@ -2955,7 +3057,7 @@ function bindInput(cv){
 }
 function onKey(e){
   if (!S) return;
-  if (e.key === 'Escape'){ e.preventDefault(); if (S.ov.querySelector('.pp-sheet')){ S.ov.querySelector('.pp-sheet').remove(); return; } if (S.screen === 'menu') close(); else if (S.screen === 'play') leaveHole(); else showHub(); return; }
+  if (e.key === 'Escape'){ e.preventDefault(); if (S.ov.querySelector('.pp-sheet')){ S.ov.querySelector('.pp-sheet').remove(); return; } if (S.screen === 'menu'){ var wt = worldTour(); if (wt) home(wt); else close(); } else if (S.screen === 'play') leaveHole(); else if (S.screen === 'trail') close(); else showHub(); return; }
   var P = S.play; if (!P || P.state !== 'aim') return;
   var fine = e.shiftKey ? 0.2 : 1;
   if (e.key === 'ArrowLeft' || e.key === 'ArrowRight'){ e.preventDefault(); var s = e.key === 'ArrowLeft' ? -1 : 1;

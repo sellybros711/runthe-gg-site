@@ -240,8 +240,13 @@ function plan(spec){
   var nb = 2 + ((R() * 3) | 0); for (var bi = 0; bi < nb; bi++){ var by = L * (0.12 + R() * 0.76), bsd = R() < 0.5 ? -1 : 1, off = R() < 0.6 ? PW + 1.4 : 5 + R() * 9, nn = 1 + ((R() * 3) | 0);
     for (var bj = 0; bj < nn; bj++){ var bx = cx(by) + bsd * (off + bj * 1.6), byy = by + (R() - 0.5) * 2;
       if (okGround(bx, byy, 0.9) && free(bx, byy, 0.9) && !inClear(bx, byy, 1) && !(gy && Math.abs(byy - gy) < 5)){ item('brk', bx, byy, { th:themeAt(byy) }); used.push({ x:bx, y:byy, r:0.8 }); } } }
-  // the local, beside the path a little before the arch
-  for (var tn = 0; tn < 30; tn++){ var ny = L * (0.14 + R() * 0.7), nx = cx(ny) + (R() < 0.5 ? -1 : 1) * (PW + 1.6);
+  // the world's greeter, on the first trail of a world: a little way up the path from where you start, or just past the
+  // world door, so the first thing that happens in a new world is somebody walking up to say hello
+  if (spec.greet){ var hy0 = gy ? gy - 7 : Math.min(P.start.y - 9, L - 10);
+    for (var hn = 0; hn < 40 && !P.host; hn++){ var hy = hy0 - (hn >> 1) * 1.2, hsd = (hn & 1) ? -1 : 1, hx = cx(hy) + hsd * (PW + 1.4);
+      if (okGround(hx, hy, 1) && free(hx, hy, 1)){ P.host = item('host', hx, hy, { th:themeAt(hy) }); used.push({ x:hx, y:hy, r:1 }); } } }
+  // the local, beside the path a little before the arch (a greeter's trail has the greeter instead)
+  for (var tn = 0; tn < (spec.greet ? 0 : 30); tn++){ var ny = L * (0.14 + R() * 0.7), nx = cx(ny) + (R() < 0.5 ? -1 : 1) * (PW + 1.6);
     if (free(nx, ny, 1) && okGround(nx, ny, 1)){ item('npc', nx, ny, { th:themeAt(ny) }); used.push({ x:nx, y:ny, r:1 }); break; } }
 
   // ---- what blocks the golfer: trunks, rocks, buildings, the fence and the wall
@@ -605,7 +610,7 @@ function run(box, P, pic, api){
 
   // ---- input: a stick under the thumb, or the keys
   var ui = document.createElement('div'); ui.className = 'pp-tui'; ui.innerHTML = '<div class="pp-stick" data-stick><i></i></div><div class="pp-way" data-way><i></i><b></b></div><div class="pp-pin" data-pin><b></b><i></i></div>' +
-    '<div class="pp-thud"><span data-coins>+0</span><span data-gold></span></div><div class="pp-rbar"><button class="pp-rb" data-auto>Auto walk</button><button class="pp-rb" data-skip></button></div><div class="pp-rhint" data-hint></div><div class="pp-bub" data-bub hidden></div>';
+    '<div class="pp-thud"><span data-coins>+0</span><span data-gold></span></div><div class="pp-rbar"><button class="pp-rb pp-talkb" data-talk hidden></button><button class="pp-rb" data-auto>Auto walk</button><button class="pp-rb" data-skip></button></div><div class="pp-rhint" data-hint></div><div class="pp-bub" data-bub hidden></div>';
   box.appendChild(ui);
   var stick = ui.querySelector('[data-stick]'), knob = stick.firstChild, way = ui.querySelector('[data-way]'), pin = ui.querySelector('[data-pin]'), bubEl = ui.querySelector('[data-bub]'), hint = ui.querySelector('[data-hint]');
   var coarse = false; try{ coarse = matchMedia('(pointer: coarse)').matches; }catch(e){}
@@ -636,6 +641,43 @@ function run(box, P, pic, api){
   function hudCoins(){ ui.querySelector('[data-coins]').textContent = '+' + coinsGot; }
   function hudGold(){ var gd = api.golden ? api.golden() : null; ui.querySelector('[data-gold]').textContent = gd ? '● ' + gd.have + '/' + gd.total : ''; }
   hudGold();
+  /* THE GREETER. They wait where the plan put them until you come within reach, then walk up to you, the
+     way a board game host does, and talk: a box at the foot of the screen, their face in it, the words typed
+     out, a tap for the next page. Walking is paused while they talk. After that they stay by the path, and
+     the Talk button plays it again whenever you are beside them. */
+  var greet = sp.greet, hs = null, hostIt = items.filter(function(t){ return t.k === 'host'; })[0], talkB = ui.querySelector('[data-talk]'), dlg = null;
+  if (greet && hostIt){ hs = { x:hostIt.x, y:hostIt.y, ph:greet.met ? 'idle' : 'wait', face:[0, 1], dist:0, moving:false, at:performance.now() + (api.greetDelay || 0) }; talkB.textContent = 'Talk to ' + greet.name;
+    try{ var G0 = window.RTT_G3D; if (G0 && G0.warmAim){ var a0 = Math.atan2(g.x - hs.x, -(g.y - hs.y)) * 180 / Math.PI; G0.warmAim(greet.look, a0, 'walk'); G0.warmAim(greet.look, 180, 'walk'); } }catch(e){} }
+  function hostFrame(){ var G = window.RTT_G3D; if (!G || !G.frame || !hs) return null; var i = hs.moving ? Math.floor(hs.dist / STRIDE * 8) % 8 : 8;
+    try{ return G.frame(greet.look, Math.atan2(hs.face[0], -hs.face[1]) * 180 / Math.PI, 'walk', i); }catch(e){ return null; } }
+  function talk(){ if (!hs || dlg) return; hs.ph = 'talk'; hs.moving = false; paused = true; setAuto(false); pup(); keys = {}; g.vx = g.vy = 0;
+    hs.face = [g.x - hs.x, g.y - hs.y]; g.face = [hs.x - g.x, hs.y - g.y]; talkB.hidden = true;
+    var pages = greet.lines || [], pg = 0, typed = 0, tm = null;
+    dlg = document.createElement('div'); dlg.className = 'pp-gd'; dlg.style.setProperty('--gc', greet.col || '#F1D04A');
+    dlg.innerHTML = '<div class="pp-gdbox"><div class="pp-gdp"><canvas width="64" height="64"></canvas></div><div class="pp-gdn"><b></b><i></i></div><p aria-live="polite"></p><span class="pp-gdm">▼</span><button class="pp-gdx" data-gdx>Skip</button></div>';
+    dlg.querySelector('.pp-gdn b').textContent = greet.name; dlg.querySelector('.pp-gdn i').textContent = greet.role || ''; ui.appendChild(dlg);
+    var pEl = dlg.querySelector('p'), mEl = dlg.querySelector('.pp-gdm');
+    // their face: the profile picture of their look, as the player's own avatar is drawn; the 3D model if the page has none
+    var pu = api.portrait ? api.portrait(greet.look) : ''; if (pu){ var pp0 = dlg.querySelector('.pp-gdp'); pp0.innerHTML = ''; pp0.classList.add('pic'); pp0.style.backgroundImage = 'url(' + pu + ')'; }
+    else (function face(){ var f = null; try{ f = window.RTT_G3D.frame(greet.look, 180, 'walk', 8); }catch(e){} if (!f || !f.url) return;
+      var im = new Image(); im.onload = function(){ var c = dlg && dlg.querySelector('canvas'); if (!c) return; var x2 = c.getContext('2d'), fs = f.fig || f.H * 0.6, sz = fs * 0.62;
+        x2.imageSmoothingEnabled = false; x2.clearRect(0, 0, 64, 64); x2.drawImage(im, f.ball[0] - sz / 2, f.ball[1] - fs * 1.06, sz, sz, 0, 0, 64, 64); }; im.src = f.url; })();
+    function show(){ clearInterval(tm); typed = 0; var t = pages[pg] || ''; pEl.textContent = ''; mEl.classList.remove('on');
+      tm = setInterval(function(){ typed += 2; pEl.textContent = t.slice(0, typed); if (typed >= t.length){ clearInterval(tm); tm = null; mEl.classList.add('on'); } }, 28);
+      api.sfx && api.sfx('blip'); }
+    function done(){ clearInterval(tm); if (dlg){ dlg.remove(); dlg = null; } window.removeEventListener('keydown', dk, true); hs.ph = 'idle'; paused = false; if (api.met) api.met(greet.theme); greet.met = true; }
+    function next(){ var t = pages[pg] || ''; if (tm){ clearInterval(tm); tm = null; pEl.textContent = t; mEl.classList.add('on'); return; } pg++; if (pg >= pages.length) return done(); show(); }
+    function dk(e){ if (e.key === 'Enter' || e.key === ' ' || e.code === 'Space'){ e.preventDefault(); e.stopPropagation(); next(); } }
+    dlg.addEventListener('pointerdown', function(e){ e.stopPropagation(); if (e.target.closest('[data-gdx]')) return; e.preventDefault(); next(); });
+    dlg.querySelector('[data-gdx]').onclick = function(e){ e.stopPropagation(); done(); };
+    dlg.kill = function(){ clearInterval(tm); if (dlg){ dlg.remove(); dlg = null; } window.removeEventListener('keydown', dk, true); };
+    window.addEventListener('keydown', dk, true); show(); }
+  talkB.onclick = function(){ if (hs && hs.ph === 'idle') talk(); };
+  function hostStep(dt){ if (!hs) return; var dx = g.x - hs.x, dy = g.y - hs.y, d = Math.hypot(dx, dy);
+    if (hs.ph === 'wait' && d < 16 && performance.now() >= hs.at && !(gate && (!gate.open || g.y > P.gate.y - 0.5))){ hs.ph = 'come'; paused = true; setAuto(false); pup(); keys = {}; g.vx = g.vy = 0; }
+    if (hs.ph === 'come'){ g.face = [-dx, -dy]; if (d > 3.2){ var v = Math.min(5.2 * dt, d - 3.2); hs.x += dx / d * v; hs.y += dy / d * v; hs.dist += v; hs.moving = true; hs.face = [dx, dy]; } else talk(); }
+    else if (hs.ph === 'idle'){ hs.moving = false; if (d < 7) hs.face = [dx, dy]; }
+    talkB.hidden = !(hs.ph === 'idle' && d < 3.6); }
   function take(t, now){ var z = pic.zAt(t.x, t.y);
     if (t.k === 'coin'){ t.done = true; coinsGot += COIN_V; hudCoins(); burst(t.x, t.y, z + 1.2, ['#ffd23a', '#fff3a8'], 6); pick('coin', t.id, COIN_V); api.sfx && api.sfx('coin'); }
     else if (t.k === 'chest'){ t.done = true; coinsGot += CHEST_V; hudCoins(); burst(t.x, t.y, z + 1.4, ['#ffd23a', '#fff3a8', '#ffffff'], 18); pick('chest', t.id, CHEST_V); say('Chest opened. +' + CHEST_V + ' coins.'); }
@@ -665,6 +707,7 @@ function run(box, P, pic, api){
     else if (!blocked(nx, g.y)){ moved = Math.abs(nx - g.x); g.x = nx; g.vy *= 0.5; }
     else if (!blocked(g.x, ny)){ moved = Math.abs(ny - g.y); g.y = ny; g.vx *= 0.5; }
     else { g.vx = 0; g.vy = 0; }
+    hostStep(dt);
     var spd = Math.hypot(g.vx, g.vy); g.moving = moved > 0.002 && spd > 0.4; if (spd > 0.4) g.face = [g.vx, g.vy]; g.dist += moved;
     if (moved > 0.5) hint.classList.add('gone');
     // lava sends him back to the last safe ground
@@ -695,10 +738,11 @@ function run(box, P, pic, api){
     ctx.drawImage(pic.cv, ox, oy, pic.cv.width * kk, pic.cv.height * kk);
     // everything that moves, far to near
     var ds = [];
-    items.forEach(function(t){ if (t.done && t.k !== 'chest' && t.k !== 'brk') return; if (t.k === 'brk' && t.done) return; ds.push(t); });
+    items.forEach(function(t){ if (t.k === 'host') return; if (t.done && t.k !== 'chest' && t.k !== 'brk') return; if (t.k === 'brk' && t.done) return; ds.push(t); });
     if (P.gate) ds.push({ k:'gate', x:P.gate.x, y:P.gate.y + 0.01 });
     if (P.fence) ds.push({ k:'lock', x:P.lockGate.x, y:P.lockGate.y });
     ds.push({ k:'me', x:g.x, y:g.y });
+    if (hs) ds.push({ k:'hostfig', x:hs.x, y:hs.y });
     ds.sort(function(a, c){ return a.y - c.y; });
     for (var i = 0; i < ds.length; i++){ var t = ds[i];
       if (t.k === 'me') drawMe(tsec);
@@ -711,6 +755,9 @@ function run(box, P, pic, api){
       else if (t.k === 'chest') drawSprite(t.done ? SPR.chest1 : SPR.chest0, t.x, t.y, pic.zAt(t.x, t.y));
       else if (t.k === 'brk') drawSprite(brkSprite(t), t.x, t.y, pic.zAt(t.x, t.y));
       else if (t.k === 'npc') drawFigure(npcFrame(t), t.x, t.y);
+      else if (t.k === 'hostfig'){ var hp = scr(t.x, t.y); ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(hp[0], hp[1], 5 * kk, 2 * kk, 0, 0, 7); ctx.fill(); drawFigure(hostFrame(), t.x, t.y);
+        if (hs.ph === 'wait'){ var ep = scr(t.x, t.y, pic.zAt(t.x, t.y) + GH + 1.4 + Math.sin(tsec * 4) * 0.25), es = Math.max(2, Math.round(kk)); ctx.fillStyle = '#3a2a14'; ctx.fillRect(Math.round(ep[0] - 2 * es), Math.round(ep[1] - 7 * es), 4 * es, 9 * es); ctx.fillRect(Math.round(ep[0] - 2 * es), Math.round(ep[1] + 3 * es), 4 * es, 4 * es);
+          ctx.fillStyle = '#ffd24a'; ctx.fillRect(Math.round(ep[0] - es), Math.round(ep[1] - 6 * es), 2 * es, 7 * es); ctx.fillRect(Math.round(ep[0] - es), Math.round(ep[1] + 4 * es), 2 * es, 2 * es); } }
       else if (t.k === 'gate') drawSprite(gate && gate.open ? SPR.gate1 : SPR.gate0, t.x, P.gate.y, pic.zAt(t.x, P.gate.y));
       else if (t.k === 'lock'){ var ls = lockOpen ? SPR.lock1 : SPR.lock0; if (ls){ ctx.save(); drawSprite(ls, t.x, t.y, pic.zAt(t.x, t.y)); ctx.restore(); } } }
     // bits that fly
@@ -733,22 +780,22 @@ function run(box, P, pic, api){
     drawFigure(f, g.x, g.y, true); }
   function waypoint(){ var tx, ty, label, br = cv.getBoundingClientRect();
     var shut = gate && !gate.open && g.y > P.gate.y, tgt = shut ? [P.gate.x, P.gate.y] : [P.cx(0), -0.5], p = scr(tgt[0], tgt[1], pic.zAt(tgt[0], tgt[1]) + (shut ? 7 : 9.5));
-    tx = p[0] / dpr; ty = p[1] / dpr; var M = 34, Wc = W / dpr, Hc = H / dpr, inside = tx > M && tx < Wc - M && ty > M + 50 && ty < Hc - M - 70;
+    tx = p[0] / dpr; ty = p[1] / dpr; var M = 34, Wc = W / dpr, Hc = H / dpr, inside = tx > M && tx < Wc - M && ty > M + 110 && ty < Hc - M - 70;
     var d = Math.round(Math.hypot(tgt[0] - g.x, tgt[1] - g.y) * 1.5 / 3);   // trail feet are two thirds of real ones, and yards are three feet
     label = shut ? 'World door' : (api.holeLabel || 'Next hole');
     if (inside){ way.classList.remove('on'); pin.classList.add('on'); pin.style.left = tx + 'px'; pin.style.top = ty + 'px'; pin.querySelector('b').textContent = label; pin.querySelector('i').textContent = d > 3 ? d + ' yd' : ''; return; }
-    pin.classList.remove('on'); way.classList.add('on'); var cxs = Wc / 2, cys = Hc / 2, vx = tx - cxs, vy = ty - cys, s2 = Math.min((Wc / 2 - M) / Math.abs(vx || 1e-6), (Hc / 2 - M - 60) / Math.abs(vy || 1e-6));
+    pin.classList.remove('on'); way.classList.add('on'); var cxs = Wc / 2, cys = Hc / 2, vx = tx - cxs, vy = ty - cys, s2 = Math.min((Wc / 2 - M) / Math.abs(vx || 1e-6), (Hc / 2 - M - 90) / Math.abs(vy || 1e-6));
     way.style.left = (cxs + vx * s2) + 'px'; way.style.top = (cys + vy * s2) + 'px'; way.querySelector('i').style.transform = 'rotate(' + (Math.atan2(vy, vx) * 180 / Math.PI + 90).toFixed(1) + 'deg)';
     way.querySelector('b').textContent = label + ' · ' + d + ' yd'; }
   // warm every facing of the walk while the trail opens, so turning never waits on a drawing
   try{ var hh = api.host; if (hh && hh.golferWalkWarm) for (var q = 0; q < 8; q++){ var a = q * Math.PI / 4; hh.golferWalkWarm(Math.sin(a), -Math.cos(a)); } }catch(e){}
   requestAnimationFrame(step);
   var ctl = {
-    stop:function(){ alive = false; window.removeEventListener('resize', onRs); box.removeEventListener('pointerdown', pdn); window.removeEventListener('pointermove', pmv); window.removeEventListener('pointerup', pup);
+    stop:function(){ alive = false; if (dlg && dlg.kill) dlg.kill(); window.removeEventListener('resize', onRs); box.removeEventListener('pointerdown', pdn); window.removeEventListener('pointermove', pmv); window.removeEventListener('pointerup', pup);
       window.removeEventListener('pointercancel', pup); window.removeEventListener('blur', pup); window.removeEventListener('keydown', kd, true); window.removeEventListener('keyup', ku, true); },
     // for the checks: where he is, and a way to hold the stick
     pos:function(){ return [g.x, g.y]; }, stick:function(vx, vy){ stickV = [vx, vy]; }, auto:function(on){ setAuto(on !== false); },
-    plan:function(){ return P; }, gate:function(){ return gate; }, items:function(){ return items; }, goTo:function(x, y){ g.x = x; g.y = y; }, view:function(){ return { kk:kk, W:W, H:H, ox:ox, oy:oy }; }, scr:scr };
+    plan:function(){ return P; }, gate:function(){ return gate; }, host:function(){ return hs ? { x:hs.x, y:hs.y, ph:hs.ph, talking:!!dlg } : null; }, items:function(){ return items; }, goTo:function(x, y){ g.x = x; g.y = y; }, view:function(){ return { kk:kk, W:W, H:H, ox:ox, oy:oy }; }, scr:scr };
   return ctl;
 }
 

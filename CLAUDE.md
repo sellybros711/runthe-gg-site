@@ -19687,8 +19687,11 @@ node golf/putt/solve.mjs --tour main        search every hole for the par it sho
 node golf/putt/solve.mjs --tour members --only 3,7 --write    re-solve edited holes and record their routes
 ```
 
-`golf/putt/putt.js` is a mini golf game you PLAY inside Run The Tour. It opens on a hub: the Daily
-Challenge on top, and under it the Tour map, a winding path up through the worlds. `golf/putt/DESIGN.md`
+`golf/putt/putt.js` is a mini golf game you PLAY inside Run The Tour. **It opens in the 3D world**: the
+player's own golfer, in everything they have earned, standing on the trail to the next hole (see the trail
+section below). The owner's call: the world is the selling point, so it is the first thing anybody sees. The
+hub is one button away (Map, top right): the Daily Challenge on top, and under it the Tour map, a winding
+path up through the worlds. The map's World button goes back. `golf/putt/DESIGN.md`
 is the analysis of the mini golf games it learns from. **It replaced the Putting Green menu**, which the
 owner said was not what was being built.
 
@@ -19886,6 +19889,24 @@ because the attempt has not cost one yet. Only finishing the hole or leaving thr
 before) clears it. Each hole counts its attempts in `tp.tries`, merged as a maximum. A signed in player's
 hole in progress follows the account, last change wins (`curT`), the same rule as lives. The Daily Hole is
 not resumed: it is one timed try.
+
+**THE WORLD IS HOME** (`home()`, `worldOk()`, `worldTour()` in putt.js). Opening the mode, leaving a Tour
+hole and pressing World on the map all land on the trail to the frontier hole of the tour last looked at
+(the Putt Putt Tour or the Members Tour). The Lab, the Daily tab, reduced motion and a page without the 3D
+golfer open on the map, as before. A hole in progress is resumed before anything else. Escape on the trail
+closes the mode; on the map it goes back to the world. The world screen is `.pp-wv` (`.pp-world` is the map's
+own class, and sharing it broke the layout). `window.RTT_PUTT_MAPFIRST` makes the mode open on the map, and
+check-putt sets it for its map sections; its world section turns it off.
+
+**Every world has a greeter** (`GREETERS`, `greetSpec` in putt.js), a board game host: Pro Pete, Professor
+Fern, Captain Bogey, Dusty, Ranger Mae, Coach Frost, Skye, DJ Pixel, and Count Mulligan and Farmer Hayes on
+the Members Tour. They are invented, drawn by the same 3D golfer in a look nobody can buy, and stand on the
+first trail of their world (from `w * K`), a little up the path or just past the world door. They wait while
+the world's title card shows (`greetDelay`), walk up, and talk: a box at the foot of the screen with their
+face (the profile picture renderer, `host.portrait(look)`), a name plate, typed pages and a tap for the next.
+Walking waits while they talk. The pages are who they are, how the world plays, what clearing it pays, the
+star gate to the next world and the hole ahead, all read off the tour rather than typed. They talk on their
+own once (`st.met`, merged as a union) and stand by the path after, where Talk plays it again.
 
 **The walk to the next hole is a place you walk through** (`golf/putt/trail.js`, `RTT_PUTT_TRAIL`). Next opens a
 3D trail of the world, drawn by `hole3d.js` from a scene (`opt.scene`) at a finer art grid (`TART`, an eighth of
