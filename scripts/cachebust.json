@@ -2559,8 +2559,8 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "49",
-      "sha": "24d89bc21280d1da"
+      "v": "51",
+      "sha": "a4b56faa67e5b07b"
     },
     "putt/land.js": {
       "v": "5",
@@ -2571,8 +2571,8 @@
       "sha": "88e5cf8081e2f71b"
     },
     "putt/trail.js": {
-      "v": "6",
-      "sha": "fa59673a3553c356"
+      "v": "7",
+      "sha": "c612c78da17f48b7"
     },
     "putt/mapland.js": {
       "v": "3",
@@ -2753,8 +2753,8 @@
       "sha": "30180c7247719f6c"
     },
     "stage.js": {
-      "v": "5",
-      "sha": "538915cf5e595762"
+      "v": "6",
+      "sha": "b48fe7c6a50c8960"
     }
   },
   "soccer/index.html": {

@@ -711,7 +711,7 @@ export function createStage(view, opts = {}){
   }
 
   function screen(c2, p, t, pulse){
-    const d = ledImg.data, e = st.energy, L = st.light, mode = st.mode % 4;
+    const d = ledImg.data, e = st.energy, L = st.light, mode = Math.floor(st.mode / 3) % 4;
     for (let y = 0; y < LED.h; y++){
       for (let x = 0; x < LED.w; x++){
         const u = x / LED.w - .5, v = y / LED.h - .5;
@@ -771,11 +771,14 @@ export function createStage(view, opts = {}){
 
   function drawBand(t){
     if (!st.band) return;
-    const beat = t * (1.7 + st.energy * 1.5);
+    // Real tempo: two frames a beat at the song's own bpm, the same clock the lights pulse on.
+    const beat = t * (86 + st.energy * 46) / 60;
     PLAYERS.forEach(([role, m], i) => {
       let fr = frames[role], at = m;
       if (role === 'keys'){
-        const where = KEY_SEQ[st.mode % KEY_SEQ.length];
+        // A keys player moves between rigs every few songs, not every song, or the compressed
+        // night reads as a timelapse of him running round the riser.
+        const where = KEY_SEQ[Math.floor(st.mode / 3) % KEY_SEQ.length];
         fr = frames.keys[where];
         if (where === 'guitar') at = { x: m.stand.x, y: m.stand.y, z: m.z };
       }
@@ -808,7 +811,7 @@ export function createStage(view, opts = {}){
           else if (r < e * .55) pose = r < e * .3 ? 'up' : r < e * .42 ? 'one' : 'clap';
         }
         c.pose = pose;
-        c.until = now + 600 + Math.random() * 1700;
+        c.until = now + 1500 + Math.random() * 3500;
       }
       const hop = st.band && !lit && (jumping || e > .7)
         ? Math.round(Math.max(0, Math.sin(t * (5 + e * 3) + c.phase)) * 2 * c.jumpy) : 0;
@@ -893,7 +896,7 @@ export function createStage(view, opts = {}){
     bg.globalCompositeOperation = 'lighter';
     const strobe = now < st.strobeUntil && (Math.floor(ph * 2) % 2 === 0);
     if (beamA > .008){
-      const sp = .45 + e * 1.4;
+      const sp = .25 + e * .6;
       FIX.forEach((fx, i) => {
         const [px, py] = P2(fx, -.8, TRUSS_Z - 1.2);
         const col = p[(i + beatN) % 2];
@@ -909,7 +912,7 @@ export function createStage(view, opts = {}){
       if (e > .45){
         for (let i = 0; i < 6; i++){
           const base = P2(-12 + i * 4.8, -.4, DECK.z);
-          const ang = Math.sin(t * (.4 + e) + i * 1.3) * .5 + (i - 2.5) * .12;
+          const ang = Math.sin(t * (.25 + e * .4) + i * 1.3) * .5 + (i - 2.5) * .12;
           cone(bg, base, [base[0] + Math.sin(ang) * 90, base[1] - Math.cos(ang) * 120], 8, p[(i + beatN + 1) % 2], beamA * (e - .3) * 1.8);
         }
       }
@@ -1066,7 +1069,9 @@ export function createStage(view, opts = {}){
       st.flashUntil = ts + 260;
       if (ev.grade !== 'cold'){ st.jumpUntil = ts + 3000; st.strobeUntil = ts + 1400; }
     }
-    for (const c of crowd) c.until = 0;
+    // The lawn only rethinks its poses all at once when something big happens. Reset on every song,
+    // a night of one second songs had the whole crowd changing pose every second.
+    if (ev.kind !== 'song' || ev.bustout) for (const c of crowd) c.until = 0;
     if (reduce || ev.instant){
       st.light = st.lightWant; st.house = st.houseWant; st.energy = st.energyWant;
       st.density = st.densityWant; st.sky = st.skyWant; st.palT = 1; st.flashUntil = 0;

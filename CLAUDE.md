@@ -19978,13 +19978,16 @@ walked with a stick or the arrows, or on Auto walk along the path; Skip goes str
   path and half the time hidden in the trees, and holds a chest or a pile to smash. check-putt plans seventeen
   trails and asserts at least three shapes, three kinds of clearing, and no two hiding their chests in the same
   places.
-- **NO COIN LIES LOOSE. Coins are in chests**, the owner's call. Three or four are hidden off the path on every
-  trail (`hideSpot`: just north of a tree or a rock, so the camera cannot see them from the path), plus the
-  clearing's. Walking up to one opens it and its coins fly out and land round it; each is walked over to pick
+- **NO COIN LIES LOOSE. Coins are in a chest, ONE A TRAIL**, the owner's call: in the clearing when it holds
+  one, else hidden off the path (`hideSpot`: just north of a tree or a rock). Walking up to it opens it and its coins fly out and land round it; each is walked over to pick
   up and paid into the Run The Tour wallet (`COIN_V` each, through the host's `coins`). A chest pays nothing
   itself. Where each coin lands is fixed by the plan (`drops`), so a coin left on the ground is still there next
-  time. Breakables are the only other coins. check-putt opens a hidden chest, picks its coins up and checks the
-  payout.
+  time. Breakables are the only other coins. Paying refreshes the wallet pill at the top (`coins()` in putt.js
+  rewrites every `[data-bal]`). check-putt opens the chest, picks its coins up and checks the payout.
+- **A find never looks like a coin.** `LOOT` in trail.js draws each its own way, bigger than a coin: the golden
+  ball on a tee, a key, a heart, a gem in the trinket's colour, a putter. Each stands in a column of light of its
+  own colour that shows over the trees. The list under the top of the screen (`hudList`, "On this trail") names
+  every find on the trail with the same picture and ticks it off, so a player always knows what to look for.
 - **What is on the trail is kept** in the Tour record as `st.trail['tour:to']`: coins (`c`), chests opened
   (`ch`), breakables smashed, the key, the golden ball and the rare things below. `k` is the clearing chest on a
   record from before chests held coins: it reads as opened with its coins already paid. A chest is locked behind
@@ -19997,8 +20000,22 @@ walked with a stick or the arrows, or on Auto walk along the path; Skip goes str
   - **Putt Putt putters**, three, each built from three parts found in the worlds it lists (`PP_PUTTERS`):
     the Scope Putter (aim line four feet longer), the Bank Shot Putter (the aim line is the ball's real path
     off the walls, `bankLine`) and the Lifeguard Putter (once a hole, water or out costs no penalty
-    stroke). One is equipped in the Bag (`st.pp.eq`), and the Daily Hole is played without them
-    (`puttEquipped`).
+    stroke). A built one goes into Run The Tour's closet (`host.grantPutter`, and `syncPutters` on every
+    open grants any built before this), and is equipped there like any putter. The Daily Hole is played
+    without the perks (`puttEquipped`). `st.pp.eq` is only the fallback for a page with no closet.
+- **PUTTERS ARE THEIR OWN CLOSET SLOT, apart from the club sets** (`PUTTERS` in `golf/index.html`, cosmetic
+  category `putter`, key `pu:<id>`, `look.putter`). The one equipped is the putter in both games:
+  - **Run The Tour:** it adds its Putting boost on top of the set (`cosmeticBoostRows`), and the 3D golfer
+    holds it on every putt (`puttLook` in `g3dSet`).
+  - **Putt Putt:** its `reach` (0 to 3) sets the aim line (`host.putter()`, 5 to 11 ft), and a Putt Putt
+    putter carries its perk (`host.putterNow`).
+  - **Where they come from:** Stock is free, seven are pack putters (common to legendary, never sold
+    directly, `cosPackOnly`), and the three `pp` putters are only built in Putt Putt.
+  - **Closet in Putt Putt:** a Closet button on the hub and every trail opens `closetSheet`, which equips
+    any owned putter. "Open the full closet" (`host.closet`) opens the main closet on its Putters page,
+    and Back returns into Putt Putt (`setupReturn.putt`).
+  - **Sprites:** each putter registers its sprite as `PXG_CLUBS['pu_<id>']` over an existing club shape
+    in a finish of its own, so a thumb and the 3D golfer both read it.
   - **Spare lives**, about one trail in ten. Banked (`st.bank`), spent from the out of lives sheet. Spending
     one moves `bused`, losing it moves `bspent`, and the life in play is the difference (`lifeExtra`), so
     two devices merge by the larger of each counter. It is not on the server's lives row.

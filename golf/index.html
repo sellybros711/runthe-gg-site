@@ -60,10 +60,10 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- The Putting Green: a tester preview. It draws nothing until puttOn() opens it (see PUTT_TESTERS). -->
-<script defer src="putt/putt.js?v=49"></script>
+<script defer src="putt/putt.js?v=51"></script>
 <script defer src="putt/land.js?v=5"></script>
 <script defer src="putt/hole3d.js?v=9"></script>
-<script defer src="putt/trail.js?v=6"></script>
+<script defer src="putt/trail.js?v=7"></script>
 <script defer src="putt/mapland.js?v=3"></script>
 <!-- The course golfer in the profile style, asked through g3dOn(). -->
 <script defer src="golfer3d.js?v=5"></script>
@@ -11694,13 +11694,13 @@ const FREE_COSMETICS={
   'ht:teal':1,'ht:navy':1,'ht:gold':1,'ht:white':1,'ht:purple':1,'ht:black':1,
   'sp:none':1,'hp:none':1,'pt:stone':1,'so:white':1,
   'hw:none':1,'hw:cap':1,'hw:visor':1,'ew:none':1,'fx:none':1,'tp:none':1,'lg:none':1,
-  'cl:driver':1,'bl:none':1,'ct:none':1,'bd:none':1,
+  'cl:driver':1,'pu:stock':1,'bl:none':1,'ct:none':1,'bd:none':1,
   'np:classic':1,'cb:club':1};   // player-card defaults: the Classic plate + Clubhouse background are free   // CS356g: base hats + no-shades are free; bucket/flat/shades are shop unlocks · sets: the Starter set + "no ball" + "no cleats" stay free
 const COS_CATS=[ {k:'shirt',pk:'sh',lookKey:'polo',name:'Shirt color'}, {k:'pat',pk:'sp',lookKey:'shirtPat',name:'Shirt pattern'},
   {k:'hat',pk:'ht',lookKey:'hat',name:'Hat color'}, {k:'pants',pk:'pt',lookKey:'pants',name:'Trousers'}, {k:'shoes',pk:'so',lookKey:'shoes',name:'Shoe color'},
   {k:'hw',pk:'hw',lookKey:'hatStyle',name:'Headwear'}, {k:'ew',pk:'ew',lookKey:'eyewear',name:'Eyewear'}, {k:'fx',pk:'fx',lookKey:'fx',name:'Effect'},
   {k:'top',pk:'tp',lookKey:'top',name:'Outerwear'}, {k:'leg',pk:'lg',lookKey:'leg',name:'Legwear'},
-  {k:'club',pk:'cl',lookKey:'club',name:'Clubs'},   // CS414: favorite club is now a cosmetic (basics free, vintage/legendary paid)
+  {k:'club',pk:'cl',lookKey:'club',name:'Clubs'}, {k:'putter',pk:'pu',lookKey:'putter',name:'Putters'},   // CS414: favorite club is now a cosmetic (basics free, vintage/legendary paid)
   {k:'ball',pk:'bl',lookKey:'ball',name:'Balls'}, {k:'cleats',pk:'ct',lookKey:'cleats',name:'Cleats'},
   {k:'plate',pk:'np',lookKey:'plate',name:'Nameplate'}, {k:'cardbg',pk:'cb',lookKey:'cardbg',name:'Card Background'},
   {k:'body',pk:'bd',lookKey:'body',name:'Skin'} ];   // full-body skins: collection rewards only, from Haunted Links (Oct 2026) on   // player-card cosmetics
@@ -11723,7 +11723,8 @@ function cosmeticPriceBase(cat,id){
   if(cat==='fx'){ if(id==='none') return 0; return (PXFX_BY[id]?PXFX_BY[id].price:0); }   // CS410: effect auras (epic/legendary)
   if(cat==='top'){ if(id==='none'||cosRewardOnly(cat,id)) return 0; return {cardigan:16000,blazer:30000,cape:30000}[id]||16000; }   // CS411 blazer legendary
   if(cat==='leg'){ if(id==='none') return 0; return {plusfours:16000}[id]||16000; }
-  if(cat==='club'){ const c=CLUBS_BY[id]; if(!c||c.kind==='free') return 0; return CLUB_SEL[c.rar]||0; }   // stock free; store+pack priced by rarity (selector → packRarityOf → RARITY_PRICE)
+  if(cat==='club'){ const c=CLUBS_BY[id]; if(!c||c.kind==='free') return 0; return CLUB_SEL[c.rar]||0; }
+  if(cat==='putter'){ const p=PUTTERS_BY[id]; if(!p||p.kind!=='pack') return 0; return CLUB_SEL[p.rar]||0; }   // pack putters only: Stock is free and the Putt Putt ones are built   // stock free; store+pack priced by rarity (selector → packRarityOf → RARITY_PRICE)
   if(cat==='ball'){ if(id==='none') return 0; return (PXBALL_BY[id]?PXBALL_BY[id].price:0); }   // CS414: featherie epic, comet legendary
   if(cat==='cleats'){ return {rocket:30000,golden:20000,sunday:13000,neon:12000,saddle:6000,phantom:30000,bone:20000,rungames:13000}[id]||0; }   // CS414: Rocket Cleats legendary
   if(cat==='plate')  return (id==='sunsplash'||id==='harvesttable'||id==='graveyard')?18000:0;       // player cards: only the seasonal piece is priced (epic, pack pull); the rest are EARNED
@@ -11767,6 +11768,7 @@ function cosPackOnly(cat,id){
   if(cat==='shirt'||cat==='hat'||cat==='pants'||cat==='shoes') return false;       // colors purchasable
   if(cat==='pat'){ const pd=PXPAT_BY[id]; return !!(pd&&pd.fixed); }               // basic patterns purchasable
   if(cat==='club'){ const c=CLUBS_BY[id]; return !!(c && c.kind==='pack'); }        // store clubs buyable; only pack clubs are pack-only
+  if(cat==='putter') return true;                                                  // putters come from packs (and Putt Putt)
   return true;                                                                     // hw/ew/fx/top/leg/ball/cleats
 }
 function cosBuy(cat,id){
@@ -11823,7 +11825,7 @@ function cosmeticBoostRows(){ const rows=[]; const L=S.look||{};
   const push=(cat,id)=>{ if(!id||id==='none') return; if(!cosOwned(cat,id)) return; const b=cosBoost(cat,id); if(!b) return;
     const o=(cosmeticItems(cat)||[]).find(x=>x.id===id); rows.push({cat,id,name:(o&&o.name)||id,b}); };
   if(L.cap) push('hw', L.hatStyle||'cap');   // headwear boost only counts while a hat is actually worn
-  push('ew', L.eyewear); push('pat', L.shirtPat);   // colors never boost (owner), so shirt color isn't read
+  push('ew', L.eyewear); push('pat', L.shirtPat); push('putter', puttEquippedId());   // colors never boost (owner), so shirt color isn't read
   return rows;
 }
 function cosmeticBoost(){ const o={}; cosmeticBoostRows().forEach(r=>{ for(const k in r.b) o[k]=(o[k]||0)+r.b[k]; }); return o; }
@@ -11925,7 +11927,8 @@ function cosmeticItems(cat){
   if(cat==='body')  return [{id:'none',name:'No Skin',body:1},{id:'zombie',name:'Zombie',body:1,hist:'Haunted Links collection reward'},{id:'pumpkinhead',name:'Pumpkin Head',body:1,hist:'Season 2 Tour Pass, tier 60'}];
   if(cat==='top')   return [{id:'none',name:'None',top:1},{id:'cardigan',name:'Cardigan',top:1,hist:'Old-school knit'},{id:'blazer',name:'Champion\'s Blazer',top:1,hist:'Draped on the winner'},{id:'cape',name:'Vampire Cape',top:1,hist:'Out for blood on Sunday'},{id:'shacket',name:'Corduroy Shacket',top:1,hist:'Season 2 Tour Pass'},{id:'duckfloatie',name:'Rubber Ducky Floatie',top:1,reward:1,hist:'Own the whole Summer Smash collection. The only way to float.'}];   // CS411
   if(cat==='leg')   return [{id:'none',name:'None',leg:1},{id:'plusfours',name:'Plus-Fours',leg:1,hist:'Knickerbockers & argyle socks'}];   // CS411
-  if(cat==='club')  return CLUBS.map(function(c){ return {id:c.id,name:c.name,club:1,hist:c.hist||'',rar:c.rar}; });   // one club, one list
+  if(cat==='club')  return CLUBS.map(function(c){ return {id:c.id,name:c.name,club:1,hist:c.hist||'',rar:c.rar}; });
+  if(cat==='putter') return PUTTERS.map(function(p){ return {id:p.id,name:p.name,putter:1,hist:p.hist||'',rar:p.rar}; });   // one club, one list
   if(cat==='ball')  return [{id:'none',name:'None',ball:1}].concat(PXBALL.map(function(o){ return {id:o.id,name:o.name,ball:1,hist:o.hist,col:o.col}; }));   // CS414
   if(cat==='cleats') return [{id:'none',name:'None',cleats:1},{id:'saddle',name:'Saddle Shoes',cleats:1,hist:'Classic two-tone clubhouse style'},{id:'sunday',name:'Sunday Kicks',cleats:1,hist:'Fresh sneakers for the final round'},{id:'neon',name:'Neon Trainers',cleats:1,hist:'Loud on the fairway'},{id:'golden',name:'Golden Spikes',cleats:1,hist:'Walk the walk'},{id:'rocket',name:'Rocket Cleats',cleats:1,hist:'Blast off the tee box'},{id:'phantom',name:'Phantom Cleats',cleats:1,hist:'Silent steps, loud scores'},{id:'bone',name:'Bone Cleats',cleats:1,hist:'Walks out of the graveyard'},{id:'hayride',name:'Hayride Boots',cleats:1,hist:'Season 2 Tour Pass'},{id:'rungames',name:'Run The Games Cleats',cleats:1,hist:'House kit, green flash, navy sole'}];   // CS414
   if(cat==='plate')  return PLATES.map(o=>({id:o.id,name:o.name,plate:1,hist:o.hist}));
@@ -15672,7 +15675,7 @@ function scrSetup(){
   // ITEM TILES scroll beneath, never the chrome. Buying stays in the Pro Shop; here you equip what you own.
   const LOOKCATS=[['skin','Skin'],['hair','Hair'],['style','Style'],['hand','Hand']];
   const APPAREL=[['shirt','Shirt'],['pat','Pattern'],['hat','Hat'],['hw','Headwear'],['ew','Eyewear'],['pants','Trousers'],['shoes','Shoes'],['top','Outerwear'],['leg','Legwear']];   // headwear + eyewear are apparel (owner)
-  const GEAR=[['club','Clubs'],['ball','Balls'],['cleats','Cleats']];
+  const GEAR=[['club','Clubs'],['putter','Putters'],['ball','Balls'],['cleats','Cleats']];
   const EFFECTS=[['fx','Aura'],['body','Skins']];
   // ITEM 09: a guest can NAME their golfer. The name is theirs alone - it is stored on the guest-scoped
   // key and no guest submission path carries it (a guest season posts server-hardcoded as 'Guest Player',
@@ -15748,12 +15751,16 @@ function scrSetup(){
     let tiles;
     if(isLook){ tiles=setupLookTiles(cat); }
     else {   // LOCKER: show only the items you OWN in this category, tap to equip. No buying here.
-      tiles=cosmeticItems(cat).filter(o=>cosOwned(cat,o.id) || ((cat==='plate'||cat==='cardbg') && (CARD_EARN[cosKey(cat,o.id)]||cosRewardOnly(cat,o.id)))).map(o=>cosTileHTML(cat,o));   // card cosmetics also show LOCKED earned + collection-reward items with how to earn them
+      tiles=cosmeticItems(cat).filter(o=>cosOwned(cat,o.id) || (cat==='putter' && PUTTERS_BY[o.id] && PUTTERS_BY[o.id].kind==='pp') || ((cat==='plate'||cat==='cardbg') && (CARD_EARN[cosKey(cat,o.id)]||cosRewardOnly(cat,o.id)))).map(o=>cosTileHTML(cat,o));   // card cosmetics also show LOCKED earned + collection-reward items with how to earn them
     }
     const catLabel=(cats.find(c=>c[0]===cat)||[,cat])[1];
     grid.innerHTML=emojifyIcons(tiles.length?tiles.join('')
       :`<div class="shop-empty">You don't own any ${esc(catPlural(catLabel))} yet. Grab some in the Pro Shop.</div>`);
     wrap.appendChild(grid);
+    if(cat==='putter' && !guest){
+      wrap.appendChild($(`<div class="small muted" style="margin-top:9px;line-height:1.5">Your putter is apart from your club set. Whichever you equip is the one you putt with in Run The Tour and in Putt Putt. In the Tour it adds its Putting boost. In Putt Putt a better putter runs a longer aim line. Pull putters from packs, or build the three Putt Putt putters from parts found on its trails.</div>`));
+      markCatSeen('putter');
+    }
     if((cat==='plate'||cat==='cardbg') && !guest){
       const pv=$(`<button class="setup-shopbtn" style="margin-top:11px"><span>★ Preview my Player Card</span> <span class="ssb-go">▸</span></button>`);
       pv.onclick=()=>openPlayerCardSelf(); wrap.appendChild(pv);
@@ -15814,7 +15821,7 @@ function scrSetup(){
       // CS484: the banner-profile entry stores {screen,overlay} to restore; the Trophy Room entry stores 'record'.
       if(r && typeof r==='object'){ S.screen=(r.screen&&r.screen!=='setup')?r.screen:'title'; S.overlay=r.overlay||null; }
       else { S.screen='title'; S.overlay=(r==='record'?'record':null); }
-      render(); };
+      render(); if(r && r.putt){ try{ openPutt(); }catch(e){} } };   // the closet was opened from Putt Putt: go back into it
     back.onclick=ret; done.onclick=()=>{ ret(); toast('Golfer saved'); };
     bar.appendChild(back); bar.appendChild(done); add(bar); return;
   }
@@ -16052,6 +16059,34 @@ const CLUBS=[
  {id:'broomstick',name:'Broomstick Clubs',tag:'Broomstick',rar:'epic',kind:'pass',b:{},hist:'Season 2 Tour Pass'},
  {id:'pitchfork',name:'Pitchfork Clubs',tag:'Pitchfork',rar:'epic',kind:'pass',b:{},hist:'Season 2 Tour Pass'}];
 const CLUBS_BY={}; CLUBS.forEach(function(c){ CLUBS_BY[c.id]=c; });
+// ============ PUTTERS (owner): their own closet slot, apart from the club sets ============
+// You equip any putter you own (look.putter), and it is the putter in both games. In Run The Tour it adds its
+// Putting boost on top of your club set. In Putt Putt its `reach` is how far the aim dots run (0 to 3, the same
+// scale the old bag tiers used) and a Putt Putt putter carries its `perk` (scope, bank, buoy). Most are pulled
+// from packs; the three `pp` putters are built in Putt Putt from parts found on its trails, and are never sold.
+// Each draws on an existing club shape (`shape`) in a finish of its own (`pal`), so a tile reads at a glance.
+const PUTTERS=[
+ {id:'stock',name:'Stock Putter',rar:'common',kind:'free',b:{},reach:0,shape:'putter',pal:{H:'#9aa2ad',F:'#c9ced6',S:'#e8ebf0',G:'#4c535c'},hist:'The putter in every new bag'},
+ {id:'milled',name:'Milled Blade',rar:'common',kind:'pack',b:{put:1},reach:1,shape:'putter',pal:{H:'#cfd3da',F:'#f0f3f7',S:'#ffffff',G:'#5d6570'},hist:'A face milled flat, a roll you can trust'},
+ {id:'halfmoon',name:'Half Moon Mallet',rar:'rare',kind:'pack',b:{put:2},reach:1,shape:'putter',pal:{H:'#1b1e24',F:'#3d434d',S:'#e14a33',G:'#0c0e12'},hist:'A big forgiving head that holds its line'},
+ {id:'longbroom',name:'Long Broom Putter',rar:'rare',kind:'pack',b:{put:2},reach:2,shape:'blade',pal:null,hist:'Anchored and steady from long range'},
+ {id:'counter',name:'Counterbalance Putter',rar:'epic',kind:'pack',b:{put:3},reach:2,shape:'putter',pal:{H:'#2b6fd6',F:'#7fb1ff',S:'#dce9ff',G:'#123a78'},hist:'Weight up the grip, silky under pressure'},
+ {id:'copper',name:'Copper Tour Blade',rar:'epic',kind:'pack',b:{put:3},reach:2,shape:'putter',pal:{H:'#b5652a',F:'#e39a5c',S:'#ffd0a3',G:'#6a3410'},hist:'Soft copper inlay, a tour player\'s touch'},
+ {id:'magicwand',name:'The Magic Wand',rar:'legendary',kind:'pack',b:{put:4},reach:3,shape:'wand',pal:null,hist:'It just goes in'},
+ {id:'goldplated',name:'Gold Plated Putter',rar:'legendary',kind:'pack',b:{put:4,clu:1},reach:3,shape:'putter',pal:{H:'#c99a1a',F:'#ffe98a',S:'#fff6c4',G:'#7a5a08'},hist:'Twenty four karat, made for Sunday'},
+ {id:'scope',name:'Scope Putter',rar:'epic',kind:'pp',b:{put:2},reach:2,perk:'scope',shape:'putter',pal:{H:'#1f8fd6',F:'#7fd0ff',S:'#e0f4ff',G:'#0a3a5a'},hist:'Putt Putt: the aim line reaches four feet further'},
+ {id:'bank',name:'Bank Shot Putter',rar:'epic',kind:'pp',b:{put:2},reach:2,perk:'bank',shape:'putter',pal:{H:'#2e9e52',F:'#8fe0a8',S:'#e2ffe9',G:'#0e4a24'},hist:'Putt Putt: the aim line bends off the walls'},
+ {id:'buoy',name:'Lifeguard Putter',rar:'epic',kind:'pp',b:{put:2},reach:2,perk:'buoy',shape:'putter',pal:{H:'#e5483a',F:'#ffffff',S:'#ffd0cb',G:'#7a1a12'},hist:'Putt Putt: once a hole, water costs no stroke'}];
+const PUTTERS_BY={}; PUTTERS.forEach(function(p){ PUTTERS_BY[p.id]=p; if(p.b && Object.keys(p.b).length) COS_BOOST['pu:'+p.id]=p.b; PXG_CLUBS['pu_'+p.id]=PXG_CLUBS[p.shape]; if(p.pal) PXG_CLUB_PAL['pu_'+p.id]=p.pal; else if(PXG_CLUB_PAL[p.shape]) PXG_CLUB_PAL['pu_'+p.id]=PXG_CLUB_PAL[p.shape]; });
+const PUTTER_REACH_FT=[5,7,9,11];   // the Putt Putt aim line at each reach (putt.js AIM_FEET)
+// the equipped putter, only if it is owned (a synced choice this device has no record of falls back to Stock)
+function puttEquippedId(){ const id=(S.look&&S.look.putter)||'stock'; return (PUTTERS_BY[id]&&cosOwned('putter',id))?id:'stock'; }
+function puttGrant(id){ if(!PUTTERS_BY[id]||!sbSignedIn()) return false; const s=coinState(), k='pu:'+id; if(s.owned[k]) return false;
+  s.owned[k]=1; coinSave(s); if(S.look && (!S.look.putter||S.look.putter==='stock')){ S.look.putter=id; saveLook(); } return true; }
+// what a putter does, in words, for a tile or a sheet
+function puttEffectTxt(p){ const bits=[]; if(p.b&&p.b.put) bits.push('+'+p.b.put+' Putting'); if(p.b&&p.b.clu) bits.push('+'+p.b.clu+' Clutch');
+  bits.push('Putt Putt aim line '+PUTTER_REACH_FT[p.reach|0]+' ft'); if(p.perk==='scope') bits.push('plus 4 ft'); if(p.perk==='bank') bits.push('bends off walls'); if(p.perk==='buoy') bits.push('one free splash a hole');
+  return bits.join(' · '); }
 // club SETS (owner): each item is an implied full matched set; its `tag` prefixes club names in the
 // TourTracer shot narration ('Wizard 7-iron from 168 yds') so your set shows on every shot.
 function clubSetTag(look){ try{ const c=CLUBS_BY[((look||S.look||{}).club)||'']; return (c&&c.tag)||''; }catch(e){ return ''; } }
@@ -22095,7 +22130,12 @@ function g3dOn(){
   }catch(e){ return false; }
 }
 // screen vector -> the golfer's frames. 0 degrees is up the screen.
+// THE PUTTER YOU EQUIPPED IS THE ONE IN YOUR HANDS on a putt, whatever club set you carry: the 3D golfer draws
+// it in its own finish (its sprite is registered as pu_<id>), and The Magic Wand is the wand.
+function puttLook(look){ try{ const mine=look===S.look, id=mine?puttEquippedId():(look&&look.putter); const p=PUTTERS_BY[id]; if(!p) return look;
+  return Object.assign({},look,{club:p.shape==='wand'?'wand':'pu_'+p.id}); }catch(e){ return look; } }
 function g3dSet(look,vx,vy,kind){
+  if(kind==='putt') look=puttLook(look);
   try{ const a=Math.atan2(vx,-vy)*180/Math.PI; const r=window.RTT_G3D.set(look,a,kind); window.RTT_G3D.warm(look,kind); return r; }
   catch(e){ return null; }
 }
@@ -22130,8 +22170,16 @@ function puttHost(){
     coins:function(n,label){ try{ addBonusCoins(n,{label:label}); }catch(e){} },
     balance:function(){ try{ return coinBalance(); }catch(e){ return 0; } },
     passActive:function(){ try{ return dailyPassActive(); }catch(e){ return false; } },
-    // the putter tier the player runs (Stock 0 to Signature 3): how far the aim dots reach
-    putter:function(){ try{ return bagActiveTier('putter'); }catch(e){ return 0; } },
+    // THE PUTTER IN YOUR CLOSET: how far its aim dots reach (0 to 3), and the putter itself. A Putt Putt putter
+    // built from trail parts is granted to the closet here, and equipping one is equipping it for both games.
+    putter:function(){ try{ const p=PUTTERS_BY[puttEquippedId()]; return Math.max(p?p.reach|0:0, bagActiveTier('putter')); }catch(e){ return 0; } },
+    putterNow:function(){ try{ const id=puttEquippedId(), p=PUTTERS_BY[id]; return {id:id,name:p.name,perk:p.perk||null,reach:p.reach|0}; }catch(e){ return null; } },
+    putters:function(){ try{ return PUTTERS.map(p=>({id:p.id,name:p.name,rar:p.rar,kind:p.kind,perk:p.perk||null,owned:sbSignedIn()&&cosOwned('putter',p.id),on:puttEquippedId()===p.id,
+      thumb:pxClubThumb('pu_'+p.id),txt:puttEffectTxt(p)})); }catch(e){ return []; } },
+    equipPutter:function(id){ try{ if(!cosOwned('putter',id)) return false; cosEquip('putter',id); return true; }catch(e){ return false; } },
+    grantPutter:function(id){ try{ return puttGrant(id); }catch(e){ return false; } },
+    // the full closet, opened on its Putters page; Back from it comes straight back into Putt Putt
+    closet:function(){ try{ window.RTT_PUTT.close(); }catch(e){} S.shopPreview=null; S.overlay=null; S.setupEdit=true; S.setupReturn={screen:'title',overlay:null,putt:true}; S.screen='setup'; S.setupCat='putter'; render(); },
     tester:function(){ return sbSignedIn() && PUTT_TESTERS.indexOf((sbUsername||'').toLowerCase())>=0; },
     onClose:function(){ try{ render(); }catch(e){} } };
 }
@@ -36849,6 +36897,7 @@ function cosIsEquipped(cat,id){
   if(cat==='ball') return (S.look.ball||'none')===id;
   if(cat==='cleats') return (S.look.cleats||'none')===id;
   if(cat==='club') return (S.look.club||'driver')===id;   // the single equipped club
+  if(cat==='putter') return puttEquippedId()===id;
   if(cat==='plate')  return (S.look.plate||'classic')===id;
   if(cat==='cardbg') return (S.look.cardbg||'club')===id;
   if(cat==='body') return (S.look.body||'none')===id;
@@ -37027,6 +37076,7 @@ function cosThumbHTML(cat,o){
   return (cat==='fx')
      ? auraThumbHTML(o.id)
      : (cat==='club') ? pxClubThumb(o.id)
+     : (cat==='putter') ? pxClubThumb('pu_'+o.id)
      : (cat==='ball') ? pxBallThumb(o.id)
      : (cat==='cleats') ? pxCleatsThumb(o.id)
      : (cat==='pat') ? pxPatThumb(o.id)
@@ -37086,6 +37136,11 @@ function cosTileHTML(cat,o){
   if(csE && !owned){   // EARNED Legend gear not yet unlocked: show the requirement, not a buy
     const sub=(bt?shopBoostTxt(bt)+' · ':'')+`<span style="color:#c9a520">🔒 ${esc(csE.reqText)}</span>`;
     return shopTile({thumb,name:o.name,state:'lock',noFoot:true,sub,data:`data-tile data-kind="cos-req" data-req="${esc(csE.reqText)}"`});
+  }
+  const ppP=(cat==='putter')&&PUTTERS_BY[o.id]&&PUTTERS_BY[o.id].kind==='pp';
+  if(ppP && !owned){   // a Putt Putt putter: built from three parts found on Putt Putt trails, never a buy
+    const sub=`<span style="color:#c9a520">🔒 Build it in Putt Putt</span>`;
+    return shopTile({thumb,name:o.name,state:'lock',noFoot:true,sub,data:`data-tile data-kind="cos-req" data-req="Find its grip, shaft and head on the Putt Putt Tour trails"`});
   }
   const cardE=(typeof CARD_EARN!=='undefined')&&CARD_EARN[cosKey(cat,o.id)];
   if(cardE && !owned){   // earned player-card plate/background: show HOW to earn it, never a buy
@@ -38413,7 +38468,7 @@ function celebrateDropReward(d,r){
   document.body.appendChild(ov);
 }
 function packPool(){ const pool=[];
-  [['shirt','sh'],['hat','ht'],['pat','sp'],['pants','pt'],['shoes','so'],['hw','hw'],['ew','ew'],['fx','fx'],['top','tp'],['leg','lg'],['club','cl'],['ball','bl'],['cleats','ct'],['plate','np'],['cardbg','cb']].forEach(function(cp){ var cat=cp[0],pk=cp[1];
+  [['shirt','sh'],['hat','ht'],['pat','sp'],['pants','pt'],['shoes','so'],['hw','hw'],['ew','ew'],['fx','fx'],['top','tp'],['leg','lg'],['club','cl'],['putter','pu'],['ball','bl'],['cleats','ct'],['plate','np'],['cardbg','cb']].forEach(function(cp){ var cat=cp[0],pk=cp[1];
     (cosmeticItems(cat)||[]).forEach(function(o){ if(o.id==='none') return;
       if((cat==='shirt'||cat==='hat') && COSMETIC_SHIRTS.find(function(x){return x.id===o.id&&x.earn;})) return;
       if(itemDropLocked(cat,o.id)) return;   // DROPS: a themed drop out of its window isn't in the pack pool
@@ -40046,6 +40101,10 @@ function overlayShop(screen){
     if(byKind.free.length){ tiles.push(grp('Your starter set','#9fb0a6')); byKind.free.forEach(o=>tiles.push(cosTileHTML('club',o))); }
     if(byKind.store.length){ tiles.push(grp('Buy in the shop','var(--gold)')); byKind.store.forEach(o=>tiles.push(cosTileHTML('club',o))); }
     if(byKind.pack.length){ tiles.push(grp('Pull from packs','#b69bff')); byKind.pack.forEach(o=>tiles.push(cosTileHTML('club',o))); }
+    // PUTTERS: their own slot, apart from the sets. Pack putters, then the three built in Putt Putt
+    const pu=cosmeticItems('putter')||[];
+    tiles.push(grp('Putters · pull from packs','#b69bff')); pu.filter(o=>PUTTERS_BY[o.id].kind!=='pp').forEach(o=>tiles.push(cosTileHTML('putter',o)));
+    tiles.push(grp('Putters · build in Putt Putt','#4fe0d0')); pu.filter(o=>PUTTERS_BY[o.id].kind==='pp').forEach(o=>tiles.push(cosTileHTML('putter',o)));
   }
   else {  // My Items: everything you've unlocked (colors, patterns, headwear, eyewear, clubs) beyond the free basics
     COS_CATS.forEach(c=>{ cosmeticItems(c.k).forEach(o=>{ if(cosOwned(c.k,o.id)&&!FREE_COSMETICS[cosKey(c.k,o.id)]) tiles.push(cosTileHTML(c.k,o)); }); });
@@ -40068,7 +40127,7 @@ function overlayShop(screen){
   ov.appendChild(grid);
   // CS422: viewing a category (or My Items) clears its NEW badges on the next render
   if(sec==='apparel'||sec==='accessories'||sec==='effects'){ markCatSeen(cat); }
-  else if(sec==='bag'){ markCatSeen('club'); }
+  else if(sec==='bag'){ markCatSeen('club'); markCatSeen('putter'); }
   else if(sec==='owned'){ COS_CATS.forEach(c=>markCatSeen(c.k)); }
   ov.appendChild($(`<div class="small muted center" style="margin-top:14px">Tap a locked item to preview it on your golfer, then confirm to buy. <span style="color:#7fd3b0">Items you own are marked green</span>. Equip them in your Closet.</div>`));
   ov.appendChild($(`<button class="btn red" style="margin-top:10px">Done</button>`));
