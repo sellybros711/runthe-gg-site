@@ -11746,9 +11746,25 @@ profile and Look screens. Two earlier versions came before it (flat rectangles i
 then a 2D rig of shaded tubes), and both are gone. Now:
 - **The body is volumes posed in three dimensions**: a head and ears, a chest and waist blended
   into one torso, limbs as round cones, hands, shoes clipped flat at the floor, and every
-  hairstyle as a volume over the head (`build` in baller.js). The camera looks down about 12
-  degrees, and every pixel is sphere traced into the model to find the part it lands on and the
-  way that surface faces.
+  hairstyle as a volume over the head (`build` in baller.js). Every pixel is sphere traced into
+  the model to find the part it lands on and the way that surface faces.
+- **THE CAMERA IS 3/4 TOP DOWN, FROM A CORNER**, asked for by the owner. It looks down 30 degrees
+  and the man is turned (`YAW`, 35 by default) so one shoulder is near and one far, and the depth
+  of the chest and the top of the head are in the picture. `rotV` is the one turn every point goes
+  through: the tracer, the face, the number, a hand, a held ball and the props. `paint(look,
+  { yaw })` and `handAt(pose, s, build, yaw)` take another turn, and must take the same one, or
+  the ball leaves the hand. **The face is on the head, not the screen**: each feature is a point on
+  the skull projected through the camera, so the far eye sits near the cheek's edge and drops off
+  when the head turns away. The body has depth to match (a ribcage two thirds as deep as wide,
+  pecs, lats, shoulder blades) and is about six and a half heads tall.
+- **The court is laid out under the same camera** (court.js). A man on a court is turned
+  `COURT_YAW` (60) to face along it, a mirror image facing away. Clips are still written along a
+  play line; `sy()` shears every point by `SLOPE` as it is drawn, so a step toward the rim is a
+  step along the court's axis as the camera sees it, for the men, the ball, its shadow, dust and
+  props alike. The floor is painted by turning every pixel back into a point on the court
+  (`courtAt`), so the lines converge the way the men do. The glass is a pane across the court
+  behind the rim, and the rim prop splits into halves by depth to the camera, not by world z.
+  A room (a ceremony) keeps the default corner pose and no shear.
 - **Then the golf game's paint step, copied rather than imitated** (PXHD in golf/index.html): five
   step ramps that go cool in shadow and warm in the light (skin goes red-violet), one light from the
   top left, a contact shadow under a part with another in front of it, an inner contour on the front

@@ -65,6 +65,13 @@
  * trapezius at its base, and the deltoid cap is smaller and lower with the arm
  * starting just under the shoulder point, so nothing rises above the shoulder
  * line.
+ *
+ * RE-RECORDED AN EIGHTH TIME, ON PURPOSE, for the camera the owner asked for:
+ * 3/4 top down from a corner (30 degrees down, the man turned 35), with the
+ * anatomy to carry it. The torso has depth (pecs, lats, shoulder blades), the
+ * figure is about six and a half heads tall, and the face is placed on the
+ * skull in 3D. Every one of the 960 moved, which is the whole drawing seen
+ * from a new place rather than a pixel drifting.
  */
 import fs from 'node:fs';
 import path from 'node:path';

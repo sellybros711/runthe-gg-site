@@ -696,7 +696,12 @@ section('10. the press room, the persona, the look');
         const f0 = BL.paint(lk, o), f1 = BL.paint(lk, Object.assign({ frame: 1 }, o));
         if (JSON.stringify(f0) === JSON.stringify(f1)) still.push(pose);
         const cols = new Set(); f0.forEach(r => r.forEach(c => { if (c) cols.add(c); }));
-        if (cols.size < 24) flat.push(`${pose} ${lk.hair} (${cols.size})`);
+        /* 22 and not 24 since the camera moved to the 3/4 corner: the far ear
+           is hidden and the face is a narrower strip, so a bald man standing
+           measured 23. A count only ever stood in for shading, so the claim is
+           asked directly too: the jersey is lit in at least three of its tones. */
+        if (cols.size < 22) flat.push(`${pose} ${lk.hair} (${cols.size})`);
+        if (pose !== 'suit' && pose !== 'cap' && pose !== 'trophy') { const J = new Set(BL.ramp('#1d428a')), seen = new Set(); f0.forEach(r => r.forEach(c => { if (J.has(c)) seen.add(c); })); if (seen.size < 3) flat.push(`${pose} ${lk.hair} jersey`); }
       }
     }
     ok(!edge.length, `no part of the sprite touches the grid's edge (${edge.slice(0, 3).join('; ') || 'none'})`);
@@ -1487,7 +1492,10 @@ async function browser() {
      glass for a field that printed as nothing. */
   let rosAsked = false, rosSigned = false, arcSeen = false;
   let presses = 0, junk = [], reloaded = false, offOpened = false, resumed = null, keyed = false, docked = false, offFold = [], cardsSeen = 0, tall = false, trayed = false, trayBad = [];
-  const stagesSeen = {};
+  /* The career starts in high school (asserted above), and the double tap
+     arm before this loop can press through all of it on a short high school
+     career, so the stage it started in is counted as seen. */
+  const stagesSeen = made && made.stage ? { [made.stage]: 1 } : {};
   while (presses++ < 900) {
     const st = await page.evaluate(() => {
       const s = RTF_CAREER_UI.state();
