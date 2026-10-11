@@ -19933,6 +19933,27 @@ Walking waits while they talk. The pages are who they are, how the world plays, 
 star gate to the next world and the hole ahead, all read off the tour rather than typed. They talk on their
 own once (`st.met`, merged as a union) and stand by the path after, where Talk plays it again.
 
+**A greeter talks within a BAND of 3.2 ft, never at exactly 3.2.** Each step moved them the distance left to
+3.2 ft and they spoke only once closer than that, so in floating point they could stop a hair short for ever,
+holding the golfer: the game froze on the first trail of a new world, about one walk in three. They talk at
+3.25 now, and check-putt holds a greeter a ten millionth of a foot outside 3.2 and asks that they talk.
+
+**THE WORLDS AHEAD ARE UNDER CLOUD**, the owner's design. Nothing names a world, or any hole in it, until its
+clouds part, and they part at its gate: walk up with the stars and the door opens on it.
+- **Revealed is a list on the record**, `st.rv` (`'main:1'`), merged as a union and counted in `cloudProg`.
+  `revealed()` also counts any hole played in the world, and `startLevel` reveals the world it opens, so a
+  skipped walk never leaves you standing under cloud. The first world of each tour and the Lab are never hidden.
+- **The map** draws a hidden world as a cloud bank (`.pp-cloudo`) over its band, with no holes, no landscape
+  (`mapArt` skips it) and a label reading World N, In the clouds. A tap on it walks to the gate if the stars
+  are there and otherwise says how many it asks. The golfer stands at the gate below it.
+- **Every other place a name shows** goes through `wName`/`wLabel`: the corner chip, the locked-hole toast, the
+  result and world complete popups, the Bag's putter parts and trinket rows, the home card (`summary()` gives
+  the last revealed world) and the shut door (`data-door="clouds"`).
+- **The walk into it** (`clouded` in `openTrail`) hides the world and hole in its goal line, keeps the old
+  world's colours, birds and title, and `trail.js` draws a cloud bank from the top of the wall up
+  (`drawClouds`). The door reveals it when the stars are there ("The clouds part"); the bank rolls apart, the
+  goal line and title card name the world, and the greeter waiting behind the cloud walks up.
+
 **Every world is alive round you** (`LIFE` in trail.js). Flyers (songbirds, parrots, gulls, vultures, crows, bats,
 drones), things in the air (butterflies, petals, fireflies, snow, ash, embers, leaves, dust, neon sparks) and set
 pieces: pirate ships sailing Pirate Cove, balloons over Sky Islands, smoke off Volcano Island's vents and lava,

@@ -1726,6 +1726,14 @@ var CSS = '\
 .pp-daily .m{grid-column:1;font-size:12px;opacity:.9}.pp-daily .g{grid-column:2;grid-row:1/4;font-weight:900;font-size:14px;background:#F1D04A;color:#10241a;border-radius:11px;padding:10px 14px}\
 .pp-map{position:relative;flex:1;min-height:0;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;border-top:1px solid rgba(241,208,74,.25)}\
 .pp-world{position:relative;margin:0 auto}.pp-band{position:absolute;left:-200px;right:-200px;background-size:cover;background-position:center;background-repeat:no-repeat;overflow:hidden}.pp-land{position:absolute;left:0;top:0;image-rendering:pixelated;display:block}\
+.pp-band.cloud{background:#e6edf6}\
+.pp-cloudo{position:absolute;left:-200px;right:-200px;z-index:3;cursor:pointer;background:linear-gradient(180deg,#c9d6e8,#e6edf6);-webkit-tap-highlight-color:transparent}\
+.pp-cloudo u{position:absolute;border-radius:50%;background:radial-gradient(circle at 42% 38%,#ffffff 0 52%,#e2e9f3 70%,rgba(226,233,243,0) 71%);animation:ppcloud 18s ease-in-out infinite alternate}\
+.pp-cloudo u:nth-child(1){width:300px;height:170px;left:90px;bottom:-54px}.pp-cloudo u:nth-child(2){width:340px;height:190px;left:300px;bottom:-56px;animation-duration:23s}\
+.pp-cloudo u:nth-child(3){width:280px;height:160px;left:520px;bottom:-50px;animation-duration:20s;animation-delay:-6s}.pp-cloudo u:nth-child(4){width:320px;height:180px;left:250px;top:18%;animation-delay:-11s;opacity:.8}\
+.pp-cloudo u:nth-child(5){width:300px;height:170px;left:420px;top:44%;animation-duration:26s;animation-delay:-3s;opacity:.8}\
+@keyframes ppcloud{to{transform:translateX(40px)}}@media (prefers-reduced-motion:reduce){.pp-cloudo u{animation:none}}\
+.pp-wname.wm.wm-cloud{z-index:4}.wm-cloud i{background:#5d7190}.wm.wm-cloud b{font-family:Anton,var(--display,inherit);background:linear-gradient(180deg,#7a8aa6,#3b4a63);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 0 #fff)}.wm.wm-cloud span{background:rgba(59,74,99,.75)}\
 .pp-wname{position:absolute;left:0;right:0;text-align:center;pointer-events:none;text-shadow:0 2px 0 rgba(0,0,0,.55),0 0 8px rgba(0,0,0,.5)}.pp-wname b{display:block;font-family:var(--display,inherit);font-size:18px;letter-spacing:.02em}.pp-wname span{font-size:11px;font-weight:800;opacity:.8}\
 /* EVERY WORLD HAS ITS OWN WORDMARK. A kicker on a ribbon, the name set in the type of that world and\
    metal, and the set pieces under it. Each is CSS on real text (so it stays text) and keeps to the\
@@ -1923,6 +1931,7 @@ var CSS = '\
 .pp-door[data-door=volcano] .pp-dl,.pp-door[data-door=volcano] .pp-dr{background:repeating-linear-gradient(35deg,rgba(255,110,30,.5) 0 2px,transparent 2px 38px),linear-gradient(180deg,#3a2c2c,#1a1212);border-color:#ff6a1e}\
 .pp-door[data-door=frozen] .pp-dl,.pp-door[data-door=frozen] .pp-dr{background:linear-gradient(135deg,rgba(255,255,255,.55),transparent 40%,rgba(255,255,255,.3) 60%,transparent 80%),linear-gradient(180deg,#bfe9ff,#6fb6dc);border-color:#e9f8ff}\
 .pp-door[data-door=sky] .pp-dl,.pp-door[data-door=sky] .pp-dr{background:radial-gradient(circle at 30% 20%,#fff 0 40px,transparent 41px),radial-gradient(circle at 70% 60%,#fff 0 52px,transparent 53px),linear-gradient(180deg,#9fd3ff,#e8f5ff);border-color:#ffd45e}\
+.pp-door[data-door=clouds] .pp-dl,.pp-door[data-door=clouds] .pp-dr{background:radial-gradient(circle at 30% 25%,#fff 0 46px,transparent 47px),radial-gradient(circle at 75% 55%,#fff 0 58px,transparent 59px),radial-gradient(circle at 35% 80%,#f3f6fb 0 50px,transparent 51px),linear-gradient(180deg,#c9d5e6,#8ea0bb);border-color:#eef3fa}\
 .pp-door[data-door=neon] .pp-dl,.pp-door[data-door=neon] .pp-dr{background:repeating-linear-gradient(0deg,#1a1430 0 14px,#2a2050 14px 18px),#1a1430;border-color:#ff3fd2;box-shadow:0 0 22px #ff3fd2,inset 0 0 18px #3ff0ff}\
 .pp-tabs u{display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff5a4e;margin-left:5px;vertical-align:2px;box-shadow:0 0 0 2px rgba(0,0,0,.35)}.pp-tabs .on u{display:none}\
 /* THE DAILY TAB: a month to a page, the page ruled like a wall calendar, the days tear-off sheets on the trail */\
@@ -2026,7 +2035,7 @@ function pmerge(st, g){
     ['c', 'b', 'ch'].forEach(function(f){ if (b[f]){ a[f] = a[f] || []; b[f].forEach(function(v){ if (a[f].indexOf(v) < 0) a[f].push(v); }); } });
     ['k', 'g', 'key', 'life', 'tk', 'pt'].forEach(function(f){ if (b[f]) a[f] = 1; }); });
   // the rare things: lists only grow, and the spare life counters only go up, so the larger is the newer
-  ['bank', 'tk', 'met'].forEach(function(f){ (g[f] || []).forEach(function(v){ st[f] = st[f] || []; if (st[f].indexOf(v) < 0) st[f].push(v); }); });
+  ['bank', 'tk', 'met', 'rv'].forEach(function(f){ (g[f] || []).forEach(function(v){ st[f] = st[f] || []; if (st[f].indexOf(v) < 0) st[f].push(v); }); });
   ['bused', 'bspent'].forEach(function(f){ st[f] = Math.max(st[f] || 0, g[f] || 0); });
   if (g.pp){ st.pp = st.pp || { parts:[] }; st.pp.parts = st.pp.parts || []; (g.pp.parts || []).forEach(function(v){ if (st.pp.parts.indexOf(v) < 0) st.pp.parts.push(v); }); if (!st.pp.eq && g.pp.eq) st.pp.eq = g.pp.eq; }
   st.rewards = st.rewards || []; (g.rewards || []).forEach(function(r){ if (st.rewards.indexOf(r) < 0) st.rewards.push(r); });
@@ -2061,7 +2070,7 @@ function cloudUid(){ try{ var h = hostOf(); return h.rpc && h.uid ? h.uid() || n
 function cloudProg(st){ var n = 0, c = function(o){ return Object.keys(o || {}).length; };
   Object.keys(st.tours || {}).forEach(function(k){ var t = st.tours[k] || {}; n += (t.lv || 1) + c(t.best) + c(t.ace) + c(t.paid) + c(t.wpaid); });
   Object.keys(st.trail || {}).forEach(function(k){ var t = st.trail[k] || {}; n += (t.c || []).length + (t.b || []).length + (t.ch || []).length + (t.k ? 1 : 0) + (t.g ? 1 : 0) + (t.key ? 1 : 0) + (t.life ? 1 : 0) + (t.tk ? 1 : 0) + (t.pt ? 1 : 0); });
-  n += (st.bank || []).length + (st.tk || []).length + (st.met || []).length + ((st.pp && st.pp.parts) || []).length + (st.bused || 0) + (st.bspent || 0);
+  n += (st.bank || []).length + (st.tk || []).length + (st.met || []).length + (st.rv || []).length + ((st.pp && st.pp.parts) || []).length + (st.bused || 0) + (st.bspent || 0);
   return n + c(st.daily) + (st.rewards || []).length; }
 // fold a copy of the record into this one: everything earned is kept, lives come from the newer copy
 function cloudMerge(st, g){ if (!g || g.v !== 2 || !g.tours) return st;
@@ -2203,6 +2212,18 @@ function showMenu(){ home(); }
    is the home screen; the map is one button away (Map, top right) and its close goes back to the world.
    Only the Putt Putt Tour and the Members Tour have a world. The Lab, the Daily tab, reduced motion and a
    page without the 3D golfer open on the map, as before. */
+/* THE WORLDS AHEAD ARE UNDER CLOUD. A world's name, its land and its holes are not shown anywhere until the
+   clouds over it part, and they part at its gate: walk up with the stars it asks for and the door opens on it.
+   Revealed is a list on the record, 'tour:world', only ever added to (pmerge), so it follows the account.
+   Playing any hole in a world reveals it too, so a skipped walk or reduced motion never leaves a world you are
+   standing in under cloud. The first world of a tour and the Lab are never hidden. */
+function revealed(TR, w, st){ if (!TR || TR.lab || w <= 0) return true; st = st || pload(); if ((st.rv || []).indexOf(TR.id + ':' + w) >= 0) return true;
+  var tp = st.tours[TR.id] || {}, K = TR.per || PER; for (var n = w * K + 1; n <= Math.min(TR.levels.length, w * K + K); n++) if ((tp.best || {})[n] != null) return true; return false; }
+function reveal(TR, w){ if (revealed(TR, w)) return false; var st = pload(); st.rv = st.rv || []; st.rv.push(TR.id + ':' + w); psave(st); return true; }
+var CLOUD_NAME = 'In the clouds';
+// what a world is called where the player can read it: its name once revealed, and nothing about it before
+function wName(TR, w, st){ return revealed(TR, w, st) ? TR.worlds[w].name : CLOUD_NAME; }
+function wLabel(TR, w, st){ return TR.members ? (revealed(TR, w, st) ? TR.worlds[w].name : 'The next Members world') : 'World ' + (w + 1); }
 function worldOk(tid){ var TR = TOURS[tid]; if (!TR || TR.lab || tid === 'daily' || !trailOk()) return false;
   var reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){} return !reduce; }
 function worldTour(){ if (window.RTT_PUTT_MAPFIRST) return null; var st = pload(), t = (S && S.tour) || st.view || 'main'; if (t === 'members' && !membersOpen() && !membersPreview()) t = 'main'; return worldOk(t) ? t : worldOk('main') ? 'main' : null; }
@@ -2255,9 +2276,10 @@ function bagSheet(){
   var st = pload(), TR = TOURS.main, pp = st.pp || {}, eq = pp.eq;
   var cl = putterRows(st);
   var puts = cl ? cl : PP_PUTTERS.map(function(pt){ var n = partsOf(st, pt.id), built = n >= 3, on = built && eq === pt.id;
-    return '<div class="pp-bput' + (built ? ' built' : '') + (on ? ' on' : '') + '"><div class="pp-bpn"><b>' + esc(pt.name) + '</b><span>' + (built ? esc(pt.tells) : n + ' of 3 parts · found on the trails of ' + pt.worlds.map(function(w){ return esc(TR.worlds[w].name); }).join(', ')) + '</span></div>' +
+    return '<div class="pp-bput' + (built ? ' built' : '') + (on ? ' on' : '') + '"><div class="pp-bpn"><b>' + esc(pt.name) + '</b><span>' + (built ? esc(pt.tells) : n + ' of 3 parts · found on the trails of ' + pt.worlds.map(function(w){ return esc(revealed(TR, w, st) ? TR.worlds[w].name : 'World ' + (w + 1)); }).join(', ')) + '</span></div>' +
       (built ? '<button class="' + (on ? 'pt-go' : 'pt-bt') + '" data-eq="' + pt.id + '">' + (on ? 'Equipped' : 'Equip') + '</button>' : '<i class="pp-bpp">' + [0, 1, 2].map(function(j){ return '<u class="' + ((pp.parts || []).indexOf(pt.id + ':' + j) >= 0 ? 'on' : '') + '"></u>'; }).join('') + '</i>') + '</div>'; }).join('');
   var worlds = TR.worlds.map(function(Wd, w){ var T = TRINKETS[Wd.theme] || [], gd = goldenOf(st, 'main', w);
+    if (!revealed(TR, w, st)) return '<div class="pp-bw" style="--wc:#b9c6d8"><b>World ' + (w + 1) + ' · ' + CLOUD_NAME + '</b><span class="pp-btk"><i>???</i><i>???</i><i>???</i></span><em>● ?/' + gd.total + ' golden</em></div>';
     return '<div class="pp-bw" style="--wc:' + (TRINKET_COL[Wd.theme] || '#fff') + '"><b>' + esc(Wd.name) + '</b><span class="pp-btk">' + T.map(function(nm, j){ var got = (st.tk || []).indexOf(Wd.theme + ':' + j) >= 0;
       return '<i class="' + (got ? 'on' : '') + '">' + (got ? esc(nm) : '???') + '</i>'; }).join('') + '</span><em>● ' + gd.have + '/' + gd.total + ' golden</em></div>'; }).join('');
   var sh = el('<div class="pp-sheet pp-bag"><div class="pp-card"><div class="k">YOUR BAG</div><div class="t">Found on the trails</div>\
@@ -2277,7 +2299,7 @@ function bagSheet(){
 function membersSheet(){
   var TR = TOURS.members, Pm = PAY.members, tot = (TR.levels.length - 2) * Pm.hole + 2 * Pm.sig + 2 * Pm.world;
   var sh = el('<div class="pp-sheet pp-memsh"><div class="pp-card"><div class="k">★ MEMBERS TOUR · ' + esc(TR.season.toUpperCase()) + '</div><div class="t">Eighteen of the hardest holes in the game</div>\
-    <div class="m">Hallows Night and Harvest Moon: the season’s own holes, every set piece at once, for Tour Pass members.</div>\
+    <div class="m">Two worlds of the season’s own holes, every set piece at once, for Tour Pass members.</div>\
     <div class="pp-memrw"><b>' + tot.toLocaleString() + ' coins</b> to win, and rewards only members can earn:<br>' + Pm.sigReward.concat(Pm.worldReward).map(function(r){ return esc(r.replace(' (Members only)', '')); }).join(' · ') + ' · ' + esc(Pm.finish.replace(' (Members only)', '')) + '</div>\
     <button class="pt-go pp-wide pass" disabled>Get Tour Pass<small>Opens the Members Tour, and 6 lives · at launch</small></button>' +
     (S.host.tester && S.host.tester() ? '<button class="pt-bt pp-wide" data-prev>Tester preview</button>' : '') +
@@ -2292,32 +2314,45 @@ function drawMap(st, TR){
   TR = TR || tourOf(S.tour); var tp = st.tours[TR.id], K = TR.per || PER, WS = TR.worlds;
   var box = S.ov.querySelector('[data-map]'), N = TR.levels.length, STEP = 92, PADB = 190, WH = 104, H = N * STEP + WS.length * WH + PADB + 60, W = 340;
   var pos = []; for (var n = 1; n <= N; n++){ var w = Math.floor((n - 1) / K), y = H - PADB - (n - 1) * STEP - w * WH, x = W / 2 + Math.sin((n - 1) * 0.9) * 105; pos.push([x, y]); }
+  var hid = WS.map(function(Wd, w){ return !revealed(TR, w, st); }), clouds = '';
   var bands = WS.map(function(Wd, w){ var T = THEMES[Wd.theme], top = pos[Math.min(N, w * K + K) - 1][1] - STEP / 2 - WH, bot = w === 0 ? H : pos[w * K][1] + STEP / 2;
+    if (hid[w]){
+      // a hidden world is a bank of cloud over everything: its ground, its path and its holes. The label is all it says.
+      clouds += '<div class="pp-cloudo" data-cw="' + w + '" role="button" aria-label="' + (TR.members ? 'The next Members world' : 'World ' + (w + 1)) + ', hidden in the clouds" style="top:' + (top - 30) + 'px;height:' + (bot - top - 26) + 'px"><u></u><u></u><u></u><u></u><u></u></div>' +
+        '<div class="pp-wname wm wm-cloud" style="top:' + (top + 8) + 'px"><i>' + (TR.members ? 'Members Tour' : 'World ' + (w + 1)) + '</i><b>' + CLOUD_NAME + '</b><span>Reach the gate with ' + worldGate(TR, w - 1) + ' ★ to part them</span></div>';
+      return '<div class="pp-band cloud" data-w="' + w + '" style="top:' + top + 'px;height:' + (bot - top) + 'px"></div>'; }
     return '<div class="pp-band" data-w="' + w + '" style="top:' + top + 'px;height:' + (bot - top) + 'px;background:linear-gradient(180deg,' + T.bg2 + ',' + T.bg + ')"></div>\
       <div class="pp-wname wm wm-' + Wd.id + '" style="top:' + (top + 8) + 'px"><i>' + (TR.id === 'lab' ? 'Testers only' : TR.members ? 'Members Tour' : 'World ' + (w + 1)) + '</i><b>' + esc(Wd.name) + '</b><span>' + esc(Wd.haz.join(' · ')) + '</span></div>'; }).join('');
   var d = pos.map(function(p, i){ return (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' ');
   var badges = pos.map(function(p, i){ var n = i + 1, L = TR.levels[i], best = tp.best[n], open = n <= tp.lv, cur = n === tp.lv, ace = !!tp.ace[n];
+    if (hid[Math.floor(i / K)]) return '';
     var cls = 'pp-lv wt-' + WS[Math.min(WS.length - 1, Math.floor(i / K))].theme + (L.sig ? ' sig' : '') + (open ? '' : ' lock') + (cur ? ' cur' : '') + (best != null ? ' done' : '') + (ace ? ' ace' : '');
     return '<button class="' + cls + '" data-lv="' + n + '" style="left:' + p[0] + 'px;top:' + p[1] + 'px" aria-label="Level ' + n + (open ? '' : ', locked') + '">' +
       '<b>' + n + '</b>' + (cur ? '<span>Par ' + L.par + '</span>' : best != null ? '<span class="st">' + starRow(starsOf(best, L.par, L.three)) + '</span>' : '') + (L.sig ? '<i>★</i>' : '') + '</button>'; }).join('');
-  var cp = pos[Math.min(N, tp.lv) - 1];
+  // the golfer stands on the hole being played; when that hole is still under cloud, at the gate below it
+  var cpn = Math.min(N, tp.lv); while (cpn > 1 && hid[Math.floor((cpn - 1) / K)]) cpn--; var cp = pos[cpn - 1];
   /* THE MAP FILLS THE SCREEN. The world is drawn 340 wide with 200 of landscape either side, and on a
      wider screen the whole thing is scaled up until the landscape reaches both edges, so a desktop is
      the same picture larger rather than a phone's picture in a dark frame. */
   var k = Math.max(1, (box.clientWidth || 390) / (W + 380)); S.mapK = k; S.mapPos = pos; S.mapWS = WS;
   box.innerHTML = '<div class="pp-sizer" style="height:' + Math.ceil(H * k) + 'px"><div class="pp-world" style="height:' + H + 'px;width:' + W + 'px;transform:translateX(-50%) scale(' + k + ')">' + bands +
-    '<svg class="pp-path" width="' + W + '" height="' + H + '"><path d="' + d + '"/></svg>' + badges +
+    '<svg class="pp-path" width="' + W + '" height="' + H + '"><path d="' + d + '"/></svg>' + badges + clouds +
     '<div class="pp-me" style="left:' + (cp[0] > W / 2 + 50 ? cp[0] - 76 : cp[0] + 34) + 'px;top:' + (cp[1] + 22) + 'px">' + golferImg('pp-meimg') + '</div></div></div>';
   // the golfer on the map walks: tap him and the joystick comes up, heading for the hole in front of him
   var meEl = box.querySelector('.pp-me'); if (meEl && trailOk() && tp.lv <= N){ meEl.classList.add('tap'); meEl.setAttribute('role', 'button'); meEl.setAttribute('aria-label', 'Walk to hole ' + tp.lv);
     meEl.onclick = function(){ if (trailOk()) openTrail(TR.id, Math.min(N, tp.lv) - 1); }; }
   box.querySelectorAll('[data-lv]').forEach(function(b){ b.onclick = function(){ var n = +b.getAttribute('data-lv'); var tq = pload().tours[TR.id]; if (n > tq.lv){ var pw = Math.floor((n - 2) / K);
-      return toastHub((n - 1) % K === 0 && tq.best[n - 1] != null ? (TR.members ? WS[pw + 1].name : 'World ' + (pw + 2)) + ' opens at ' + worldGate(TR, pw) + ' total stars. You have ' + starsThrough(tq, TR, pw) + '.' : 'Clear level ' + (n - 1) + ' at par or better to open it.'); } skipWarn(n, TR.id); }; });
+      return toastHub((n - 1) % K === 0 && tq.best[n - 1] != null ? wLabel(TR, pw + 1) + ' opens at ' + worldGate(TR, pw) + ' total stars. You have ' + starsThrough(tq, TR, pw) + '.' : 'Clear level ' + (n - 1) + ' at par or better to open it.'); } skipWarn(n, TR.id); }; });
+  box.querySelectorAll('[data-cw]').forEach(function(c){ c.onclick = function(){ var w = +c.getAttribute('data-cw'), tq = pload().tours[TR.id], have = starsThrough(tq, TR, w - 1), need = worldGate(TR, w - 1);
+    // standing at the gate with the stars: walk up to it, and the clouds part there
+    if (tq.lv > w * K && trailOk()) return openTrail(TR.id, w * K);
+    toastHub('Clouds hide what is next. Reach the gate at the end of ' + wLabel(TR, w - 1) + (have >= need ? '.' : ' with ' + need + ' ★. You have ' + have + '.')); }; });
   // the chip in the corner names the world in view and how much of it is beaten
   var chip = S.ov.querySelector('[data-wchip]'), lastW = -1;
   function wchip(){ if (!chip || !S || !box.isConnected) return; var mid = (box.scrollTop + box.clientHeight * 0.55) / k, w = 0;
     for (var wi = 0; wi < WS.length; wi++) if (mid < pos[wi * K][1] + STEP / 2 + 1) w = wi;
-    if (w === lastW) return; lastW = w; var hub = S.ov.querySelector('.pp-hub'); if (hub) hub.setAttribute('data-wt', WS[w].theme);     chip.textContent = (TR.members && !membersOpen() ? 'Preview · ' : '') + (TR.members ? WS[w].name : 'World ' + (w + 1)) + ' · ' + worldStars(tp, TR, w) + '/' + worldMax(TR, w) + ' ★'; }
+    if (w === lastW) return; lastW = w; var hub = S.ov.querySelector('.pp-hub'), wv = w; while (wv > 0 && hid[wv]) wv--; if (hub) hub.setAttribute('data-wt', WS[wv].theme);
+    chip.textContent = (TR.members && !membersOpen() ? 'Preview · ' : '') + (hid[w] ? wLabel(TR, w) + ' · ' + CLOUD_NAME : (TR.members ? WS[w].name : 'World ' + (w + 1)) + ' · ' + worldStars(tp, TR, w) + '/' + worldMax(TR, w) + ' ★'); }
   box.addEventListener('scroll', wchip, { passive:true });
   /* ON A PHONE THE DAILY FOLDS TO A CHIP ONCE THE MAP IS SCROLLED, so it never sits over a level for
      long; back where the map opened, it is the full card again. A wide screen docks it to the side. */
@@ -2402,7 +2437,7 @@ function mapArt(box, pos, TR){
   (function next(){
     if (!S || S.screen !== 'menu' || w >= WS.length || !box.isConnected) return;
     var band = box.querySelector('.pp-band[data-w="' + w + '"]');
-    if (band){
+    if (band && !band.classList.contains('cloud')){
       var top = parseFloat(band.style.top), bh = band.offsetHeight, bw = band.offsetWidth, cw = Math.ceil(bw / 2), ch = Math.ceil(bh / 2), key = TR.id + w + ':' + cw + 'x' + ch;
       if (MAPART[key] === undefined){
         var pts = pos.map(function(p){ return [(p[0] + PADX) / 2, (p[1] - top) / 2]; });
@@ -2484,7 +2519,7 @@ function putterRows(st){ var L = hostPutters(); if (!L) return null; var TR = TO
   var order = function(p){ return p.owned ? 0 : p.kind === 'pp' ? 1 : 2; };
   return L.slice().sort(function(a, b){ return order(a) - order(b); }).map(function(p){
     var pt = PP_PUTTERS.filter(function(q){ return q.id === p.id; })[0], n = pt ? partsOf(st, p.id) : 0;
-    var how = p.owned ? esc(p.txt) : pt ? n + ' of 3 parts · found on the trails of ' + pt.worlds.map(function(w){ return esc(TR.worlds[w].name); }).join(', ') : 'Pull it from a pack in the Pro Shop';
+    var how = p.owned ? esc(p.txt) : pt ? n + ' of 3 parts · found on the trails of ' + pt.worlds.map(function(w){ return esc(revealed(TR, w) ? TR.worlds[w].name : 'World ' + (w + 1)); }).join(', ') : 'Pull it from a pack in the Pro Shop';
     return '<div class="pp-bput' + (p.owned ? ' built' : ' locked') + (p.on ? ' on' : '') + '"><span class="pp-pth">' + p.thumb + '</span><div class="pp-bpn"><b>' + esc(p.name) + '</b><span>' + how + '</span></div>' +
       (p.owned ? '<button class="' + (p.on ? 'pt-go' : 'pt-bt') + '" data-peq="' + p.id + '">' + (p.on ? 'Equipped' : 'Equip') + '</button>' : pt ? '<i class="pp-bpp">' + [0, 1, 2].map(function(j){ return '<u class="' + (((st.pp || {}).parts || []).indexOf(pt.id + ':' + j) >= 0 ? 'on' : '') + '"></u>'; }).join('') + '</i>' : '<i class="pp-plock">Locked</i>') + '</div>'; }).join(''); }
 /* THE CLOSET, IN PUTT PUTT: your putters, the one equipped, and a way into the full closet. */
@@ -2593,14 +2628,17 @@ function courseFoot(n, tid){ var key = tid + ':' + n; if (FOOT[key] !== undefine
       T:{ carpet:T.carpet || '#2f8f4e', carpet2:T.carpet2 || '#2a8246', wall:T.wall || '#f4efe2', wallHi:T.wallHi || '#ffffff', block:T.wallLo || '#a99c7c', flag:T.flag || '#e53935' } };
   }catch(e){ return FOOT[key] = null; } }
 function trailKey(sp){ return sp.key + '|' + sp.halfW + '|' + (sp.gateOpen ? 1 : 0) + (sp.greet ? '|g' : ''); }
-function trailPlan(sp){ S.trp = S.trp || {}; var k = trailKey(sp); if (!S.trp[k]) S.trp[k] = window.RTT_PUTT_TRAIL.plan(sp); return S.trp[k]; }
+// kept on the module, not on S, so a plan survives the mode being closed and opened again
+var TRP = {};
+function trailPlan(sp){ var k = trailKey(sp); if (!TRP[k]){ TRP[k] = window.RTT_PUTT_TRAIL.plan(sp); var ks = Object.keys(TRP); if (ks.length > 12) delete TRP[ks[0]]; } return TRP[k]; }
 // render the trail out of this hole while the hole is played (frame() calls trailTick), a few ms a frame
 function trailAhead(tid, from){
   try{ var TR = tourOf(tid); if (!trailOk() || from >= TR.levels.length || from < 0) return; var sp = trailSpec(tid, from), k = trailKey(sp);
     S.trc = S.trc || {}; if (S.trc[k] !== undefined || (S.trjob && S.trjob.k === k)) return;
     var P = trailPlan(sp); S.trjob = { k:k, step:window.RTT_PUTT_TRAIL.slices(P) }; }catch(e){ S.trjob = null; } }
 function trailTick(ms){ var J = S.trjob; if (!J || S.v3job) return;
-  var P = S.play; if (P && (P.state !== 'aim' || S.held)) return;
+  // while aiming a little a frame; once the hole is over and the result is up, nothing else is moving, so more
+  var P = S.play; if (P && ((P.state !== 'aim' && P.state !== 'done') || S.held)) return; if (P && P.state === 'done') ms = 10;
   var out = null; try{ out = J.step(ms || 4); }catch(e){ S.trjob = null; S.trc[J.k] = null; return; }
   if (out){ S.trjob = null; S.trc[J.k] = out; var ks = Object.keys(S.trc); if (ks.length > 3) delete S.trc[ks[0]]; } }
 function stopTrail(){ if (S && S.trailCtl){ try{ S.trailCtl.stop(); }catch(e){} S.trailCtl = null; } if (S) cancelAnimationFrame(S.trraf); }
@@ -2611,12 +2649,16 @@ function openTrail(tid, from){
   var TR = tourOf(tid), N = TR.levels.length; if (from >= N) return showHub(tid);
   stopTrail(); cancelAnimationFrame(S.raf); clearInterval(S.tick); S.play = null; S.screen = 'trail';
   var sp = trailSpec(tid, from), k = trailKey(sp), to = sp.to, L = TR.levels[to - 1], Wd = TR.worlds[sp.w];
-  var b0 = balStr(), wlab = TR.lab ? 'Lab' : TR.members ? 'Members Tour' : 'World ' + (sp.w + 1), seen = S.wban === TR.id + ':' + sp.w; S.wban = TR.id + ':' + sp.w;
-  S.ov.innerHTML = '<div class="pp-trail pp-wv" data-wv="' + Wd.theme + '">' + hdr((b0 !== '' ? '<span class="pp-cpill" data-bal>' + b0 + '</span>' : '') + '<button class="pp-mapb" data-mapb aria-label="Open the map"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 4l5-2 6 2 5-2v14l-5 2-6-2-5 2z" fill="#f6ead2" stroke="#3a2a14" stroke-width="1.6" stroke-linejoin="round"/><path d="M7 2v14M13 4v14" stroke="#3a2a14" stroke-width="1.4"/><circle cx="10" cy="9" r="1.8" fill="#e5483a"/></svg><b>Map</b></button>') +
+  var b0 = balStr(), wlab = TR.lab ? 'Lab' : TR.members ? 'Members Tour' : 'World ' + (sp.w + 1), seen = S.wban === TR.id + ':' + sp.w;
+  // walking up to a world still under cloud: nothing on screen names it or its hole until the door opens on it
+  var clouded = sp.cross && !revealed(TR, sp.w); if (clouded) seen = true; else S.wban = TR.id + ':' + sp.w;
+  function goalHtml(){ return clouded ? '<i>' + esc(wlab) + ' · ' + CLOUD_NAME + '</i><b>Hole ' + to + ' · Beyond the clouds</b>' : '<i>' + esc(wlab) + ' · ' + esc(Wd.name) + '</i><b>Hole ' + to + ' · ' + esc(levelName(to, tid)) + ' · Par ' + (L ? L.par : 3) + '</b>'; }
+  function banHtml(){ return '<div class="pp-wban" style="--wa:' + ((THEMES[Wd.theme] || {}).acc || '#F1D04A') + '"><i>' + esc(wlab) + '</i><b>' + esc(Wd.name) + '</b><span>' + esc((Wd.haz || []).join(' · ')) + '</span></div>'; }
+  S.ov.innerHTML = '<div class="pp-trail pp-wv" data-wv="' + (clouded ? sp.theme0 : Wd.theme) + '">' + hdr((b0 !== '' ? '<span class="pp-cpill" data-bal>' + b0 + '</span>' : '') + '<button class="pp-mapb" data-mapb aria-label="Open the map"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 4l5-2 6 2 5-2v14l-5 2-6-2-5 2z" fill="#f6ead2" stroke="#3a2a14" stroke-width="1.6" stroke-linejoin="round"/><path d="M7 2v14M13 4v14" stroke="#3a2a14" stroke-width="1.4"/><circle cx="10" cy="9" r="1.8" fill="#e5483a"/></svg><b>Map</b></button>') +
     '<div class="pp-tbox" data-tbox></div>' +
-    '<div class="pp-tgoal"><i>' + esc(wlab) + ' · ' + esc(Wd.name) + '</i><b>Hole ' + to + ' · ' + esc(levelName(to, tid)) + ' · Par ' + (L ? L.par : 3) + '</b></div>' +
+    '<div class="pp-tgoal">' + goalHtml() + '</div>' +
     (TR.id === 'main' ? '<button class="pp-bagb" data-bag aria-label="Your Bag">Bag</button>' : '') + '<button class="pp-bagb pp-closb" data-closet aria-label="Your closet">Closet</button>' +
-    (seen ? '' : '<div class="pp-wban" style="--wa:' + ((THEMES[Wd.theme] || {}).acc || '#F1D04A') + '"><i>' + esc(wlab) + '</i><b>' + esc(Wd.name) + '</b><span>' + esc((Wd.haz || []).join(' · ')) + '</span></div>') + '</div>';
+    (seen ? '' : banHtml()) + '</div>';
   S.ov.querySelector('[data-x]').onclick = close;
   S.ov.querySelector('[data-mapb]').onclick = function(){ stopTrail(); showHub(tid); };
   var bgw = S.ov.querySelector('[data-bag]'); if (bgw) bgw.onclick = bagSheet;
@@ -2630,7 +2672,7 @@ function openTrail(tid, from){
     var st0 = pload(), rec0 = (st0.trail || {})[sp.key] || {};
     var three = L ? threeOf(L) : null; banOut();
     S.trailCtl = window.RTT_PUTT_TRAIL.run(box, P, pic, {
-      host:S.host, found:JSON.parse(JSON.stringify(rec0)), holeLabel:'Hole ' + to, greetDelay:wbn ? 2700 : 400,
+      host:S.host, found:JSON.parse(JSON.stringify(rec0)), holeLabel:'Hole ' + to, greetDelay:wbn ? 2700 : 400, clouds:clouded,
       skipLabel:sp.cross && !sp.gateOpen ? 'Map' : 'Play hole ' + to,
       pick:function(kind, id, n){ var st = pload(); st.trail = st.trail || {}; var r = st.trail[sp.key] = st.trail[sp.key] || {}, msg = '';
         if (kind === 'coin'){ r.c = r.c || []; if (r.c.indexOf(id) < 0) r.c.push(id); else n = 0; }
@@ -2659,11 +2701,16 @@ function openTrail(tid, from){
         if (three) out.push('Three stars needs ' + (three === 1 ? 'an ace.' : three + ' strokes.'));
         if (L && L.sig) out.push('It is the signature hole of ' + Wd.name + '.'); return out; },
       door:function(cb){ var tp = pload().tours[TR.id], open = tp.lv > from, gw = sp.w - 1, have = starsThrough(tp, TR, gw), need = worldGate(TR, gw), T = THEMES[Wd.theme] || {};
-        var door = el('<div class="pp-door" data-door="' + Wd.theme + '" style="--da:' + (T.acc || '#F1D04A') + ';--db:' + (T.bg || '#20302a') + ';--dc:' + (T.bg2 || '#34483e') + '">\
+        // the stars are there: this is where the clouds part, and the world gets its name
+        var hide = clouded && !open; if (clouded && open){ reveal(TR, sp.w); }
+        var door = el('<div class="pp-door" data-door="' + (hide ? 'clouds' : Wd.theme) + '" style="--da:' + (hide ? '#cfd9e8' : T.acc || '#F1D04A') + ';--db:' + (hide ? '#4a5a72' : T.bg || '#20302a') + ';--dc:' + (hide ? '#6d7f99' : T.bg2 || '#34483e') + '">\
           <div class="pp-dl"></div><div class="pp-dr"></div>\
-          <div class="pp-dlock"><i>' + (TR.members ? 'Members Tour' : 'World ' + (sp.w + 1)) + '</i><b>' + esc(Wd.name) + '</b>\
+          <div class="pp-dlock"><i>' + (TR.members ? 'Members Tour' : 'World ' + (sp.w + 1)) + '</i><b>' + esc(hide ? CLOUD_NAME : Wd.name) + '</b>\
             <span class="pp-dbar"><u style="--f:' + Math.min(1, have / Math.max(1, need)) + '"></u></span><em>★ ' + have + ' / ' + need + '</em>\
-            <small>' + (open ? esc(DOOR_NAMES[Wd.theme] || 'The door') + ' opens' : 'Need ' + (need - have) + ' more ★ · replay holes to earn them') + '</small></div></div>');
+            <small>' + (open ? (clouded ? 'The clouds part' : esc(DOOR_NAMES[Wd.theme] || 'The door') + ' opens') : 'Need ' + (need - have) + ' more ★ · replay holes to earn them') + '</small></div></div>');
+        var cb0 = cb; cb = function(o){ cb0(o); if (o && clouded){ clouded = false; var gl = S.ov.querySelector('.pp-tgoal'); if (gl) gl.innerHTML = goalHtml();
+          var tr = S.ov.querySelector('.pp-trail'); if (tr){ tr.setAttribute('data-wv', Wd.theme); var bn = el(banHtml()); tr.appendChild(bn); S.wban = TR.id + ':' + sp.w;
+            setTimeout(function(){ if (bn.isConnected) bn.classList.add('out'); setTimeout(function(){ if (bn.isConnected) bn.remove(); }, 700); }, 2600); } } };
         S.ov.appendChild(door);
         requestAnimationFrame(function(){ door.classList.add('in'); setTimeout(function(){ if (!door.isConnected) return; door.classList.add('fill');
           setTimeout(function(){ if (!door.isConnected) return; door.classList.add(open ? 'open' : 'shut');
@@ -2716,10 +2763,11 @@ function walkFlat(n, tid){
       at(f0 + (f1 - f0) * ease(u)); if (u < 1) requestAnimationFrame(step); else then(); })(); }
   at(0);
   if (!cross) return tween(0, 1, 2100, finish);
-  var gw = w - 1, have = starsThrough(tp, TR, gw), gate = worldGate(TR, gw), T = THEMES[Wd.theme] || {};
-  door = el('<div class="pp-door" data-door="' + Wd.theme + '" style="--da:' + (T.acc || '#F1D04A') + ';--db:' + (T.bg || '#20302a') + ';--dc:' + (T.bg2 || '#34483e') + '">\
+  var gw = w - 1, have = starsThrough(tp, TR, gw), gate = worldGate(TR, gw), T = THEMES[Wd.theme] || {}, hide = !open && !revealed(TR, w);
+  if (open) reveal(TR, w);
+  door = el('<div class="pp-door" data-door="' + (hide ? 'clouds' : Wd.theme) + '" style="--da:' + (hide ? '#cfd9e8' : T.acc || '#F1D04A') + ';--db:' + (hide ? '#4a5a72' : T.bg || '#20302a') + ';--dc:' + (hide ? '#6d7f99' : T.bg2 || '#34483e') + '">\
     <div class="pp-dl"></div><div class="pp-dr"></div>\
-    <div class="pp-dlock"><i>' + (TR.members ? 'Members Tour' : 'World ' + (w + 1)) + '</i><b>' + esc(Wd.name) + '</b>\
+    <div class="pp-dlock"><i>' + (TR.members ? 'Members Tour' : 'World ' + (w + 1)) + '</i><b>' + esc(hide ? CLOUD_NAME : Wd.name) + '</b>\
       <span class="pp-dbar"><u style="--f:' + Math.min(1, have / Math.max(1, gate)) + '"></u></span><em>★ ' + have + ' / ' + gate + '</em>\
       <small>' + (open ? esc(DOOR_NAMES[Wd.theme] || 'The door') + ' opens' : 'Need ' + (gate - have) + ' more ★ · replay holes to earn them') + '</small></div></div>');
   tween(0, 0.5, reduce ? 1 : 1260, function(){ if (!alive()) return; hub.appendChild(door);
@@ -2773,7 +2821,8 @@ function startLevel(n, tid){
   var c = st.cur, back = c && c.tid === tid && c.n === n && c.s > 0;
   if (c && !back){ clearCur(st); psave(st); }   // only a hole in progress on another device can be left this way
   if (!back && livesNow(st) <= 0 && !tourOf(tid).lab) return outOfLives();
-  var d = tourDesc(n, S.host, tid);
+  var d = tourDesc(n, S.host, tid), TRs = tourOf(tid);
+  reveal(TRs, Math.floor((n - 1) / (TRs.per || PER)));   // standing in a world is seeing it
   S.round = { mode:'ppt', lv:n, tid:tid, i:0, cards:[], holes:[d], title:levelName(n, tid) };
   stopTrail(); playHole(); warmWalk(tourOf(tid), n); trailAhead(tid, n);
   if (back) resumeInto(c);
@@ -2865,7 +2914,7 @@ function tourOut(holed){
     var sec = !!P.foundSecret; if (sec){ tp.secret = tp.secret || {}; if (!tp.secret[n]){ tp.secret[n] = 1; psave(st); } }
     var nextOpen = n < N && tp.lv > n, have = starsThrough(tp, TR, gw), gate = worldGate(TR, gw);
     var openLine = n >= N ? 'That is the whole ' + esc(TR.name) + '.' : nextOpen ? (wasLv <= n ? 'Level ' + (n + 1) + ' is open.' : '') :
-      (TR.members ? esc(TR.worlds[gw + 1].name) : 'World ' + (gw + 2)) + ' opens at ' + gate + ' total stars. You have ' + have + '.';
+      esc(wLabel(TR, gw + 1)) + ' opens at ' + gate + ' total stars. You have ' + have + '.';
     return popup('<div class="k">' + (sec ? 'SECRET LINE FOUND' : s === 1 ? 'HOLE IN ONE' : s < par ? 'UNDER PAR' : 'PAR') + '</div><div class="t">' + esc(scoreName(s, par)) + '</div>\
       <div class="pp-stars">' + starRow(stars) + '</div>' + (stars > had && !first ? '<div class="s">New best on this hole.</div>' : stars < 3 ? '<div class="s">' + (stars === 1 ? (threeOf(par, th) >= par - 1 ? 'Beat par for 3 stars.' : 'Beat par for 2 stars, ' + threeLine(par, th) + ' for 3.') : threeLine(par, th).replace(/^./, function(c){ return c.toUpperCase(); }) + ' for 3 stars.') + '</div>' : '') + '\
       <div class="pp-nums"><span><b>' + s + '</b>Strokes</span><span><b>' + par + '</b>Par</span><span><b>' + fmtPar(s - par) + '</b>To par</span></div>' +
@@ -2890,8 +2939,8 @@ function worldComplete(n, s, par, got, tid){
     <div class="pp-reward">New · ' + esc(PY.sigReward[w]) + '<br>New · ' + esc(PY.worldReward[w]) + (PY.finish && last ? '<br>New · ' + esc(PY.finish) : '') + '</div>\
     <div class="pp-coins">+' + got + ' coins · +' + PY.world.toLocaleString() + ' ' + (TR.members ? 'members' : 'world') + ' bonus</div>' +
     '<div class="pp-stars">' + have + ' of ' + worldMax(TR, w) + ' ★</div>' +
-    (shut ? '<div class="s">' + (TR.members ? esc(nx.name) : 'World ' + (w + 2)) + ' opens at ' + gate + ' total stars. You have ' + total + '. Replay holes to earn ' + (gate - total) + ' more.</div>' :
-     nx ? '<div class="s">' + (TR.members ? esc(nx.name) : 'World ' + (w + 2) + ', ' + esc(nx.name) + ',') + ' is open.</div>' : '<div class="s">You have finished the ' + esc(TR.name) + '.</div>') +
+    (shut ? '<div class="s">' + esc(wLabel(TR, w + 1)) + ' opens at ' + gate + ' total stars. You have ' + total + '. Replay holes to earn ' + (gate - total) + ' more.</div>' :
+     nx ? '<div class="s">' + (revealed(TR, w + 1) ? (TR.members ? esc(nx.name) : 'World ' + (w + 2) + ', ' + esc(nx.name) + ',') + ' is open.' : 'You have the stars. Walk to the gate and the clouds will part.') + '</div>' : '<div class="s">You have finished the ' + esc(TR.name) + '.</div>') +
     '<div class="s pp-fine">Rewards are saved to your Tour record. They become wearable at launch.</div>\
     <div class="row"><button class="pt-bt" data-a="map">Map</button>' + (nx ? '<button class="pt-go" data-a="next">' + (shut ? 'To the door' : 'Next ' + (TR.members ? 'hole' : 'world')) + ' ▸</button>' : '') + '</div>',
     { map:function(){ showHub(tid); }, next:function(){ walkTo(n, tid); } });
@@ -3574,8 +3623,9 @@ RTT_PUTT.COINS = { hole:COIN_HOLE, sig:COIN_SIG, ace:COIN_ACE, world:COIN_WORLD,
 // the page calls this on sign in, so the home card shows the account's place before the mode is opened
 RTT_PUTT.sync = function(host){ HOSTX = host || HOSTX; return cloudPull(); };
 RTT_PUTT.summary = function(host){ HOSTX = host || HOSTX; var st = pload(), dk = today(), dh = dailyHole(dk), rec = st.daily[dk];
-  var tm = st.tours.main, lv = Math.min(tm.lv, LEVELS.length);
-  return { lv:lv, levels:LEVELS.length, world:worldOf(lv, 'main').name, theme:worldOf(lv, 'main').theme, members:membersOpen(), lives:st.lives, max:livesMax(), refillAt:st.refillAt || null,
+  var tm = st.tours.main, lv = Math.min(tm.lv, LEVELS.length), wv = Math.floor((lv - 1) / PER);
+  while (wv > 0 && !revealed(TOURS.main, wv, st)) wv--;   // a world still under cloud is not named on the home card either
+  return { lv:lv, levels:LEVELS.length, world:WORLDS[wv].name, theme:WORLDS[wv].theme, members:membersOpen(), lives:st.lives, max:livesMax(), refillAt:st.refillAt || null,
     daily:{ name:dh.name, theme:THEMES[dh.theme].name, kick:THEMES[dh.theme].kick, done:!!(rec && rec.done), s:rec && rec.s, par:rec && rec.par, ms:rec && rec.ms }, nextMs:msToNextDay() }; };
 // the checker's door: start a round at a given hole. Nothing on the page calls it.
 RTT_PUTT._go = function(mode, arg, i){ if (!S) return; startRound(mode, arg); if (i){ S.round.i = i; playHole(); } };

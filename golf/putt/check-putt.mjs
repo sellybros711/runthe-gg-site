@@ -578,6 +578,38 @@ if (!args.includes('--no-browser')){
       window.RTT_PUTT.close(); localStorage.removeItem(K); sbUser = { id:'chk' }; return out; });
     claim(sk.left > 0 && sk.warn && sk.still && sk.cancel && sk.replay && sk.walk && sk.skip,
       `a hole started from the map warns that its trail's rewards are forfeit; Walk goes to the trail, Play goes to the hole, and a hole already beaten does not warn (${JSON.stringify(sk)})`);
+    // THE WORLDS AHEAD ARE UNDER CLOUD. No name of a world not yet reached shows on the map, the home card or the
+    // walk; the gate shut leaves the clouds; the gate with its stars parts them, and only then is the world named.
+    const cl = await pg.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), K = 'bag_ppt_v1@cld', T = () => window.RTT_PUTT._trail();
+      const hidden = /Lost Temple|Pirate Cove|Canyon Mine|Volcano Island|Frozen Peak|Sky Islands|Neon Arcade|Temple Steps/;
+      const rec = (lv, s) => { const best = {}; for (let n = 1; n <= 18; n++) best[n] = s; return { v:2, lives:3, met:['clubhouse'], tours:{ main:{ lv:lv, best:best, ace:{}, paid:{}, wpaid:{} } } }; };
+      window.RTT_PUTT.close(); window.RTT_PUTT_MAPFIRST = true; sbUser = { id:'cld' };
+      // short of the stars: 18 pars is 18 stars, under the 40 the gate asks
+      localStorage.setItem(K, JSON.stringify(rec(18, 3))); openPutt(); for (let i = 0; i < 100 && !document.querySelector('.pp-map [data-lv="1"]'); i++) await sleep(50);
+      out.map = !hidden.test(document.body.innerText) && document.querySelectorAll('.pp-cloudo').length === 7 && !document.querySelector('.pp-map [data-lv="19"]');
+      out.card = window.RTT_PUTT.summary().world === 'The Clubhouse';
+      window.RTT_PUTT._walkTo(18); for (let i = 0; i < 400 && !T(); i++) await sleep(30); await sleep(200);
+      out.walk = !hidden.test(document.body.innerText) && T().clouds() === 'on';
+      T().goTo(T().plan().gate.x, T().plan().gate.y + 2); for (let i = 0; i < 100 && !document.querySelector('.pp-door'); i++) await sleep(30);
+      const d0 = document.querySelector('.pp-door'); out.shut = !!d0 && d0.getAttribute('data-door') === 'clouds' && !hidden.test(d0.innerText);
+      for (let i = 0; i < 200 && document.querySelector('.pp-door'); i++) await sleep(30); await sleep(300); out.stays = T().clouds() === 'on' && !(JSON.parse(localStorage.getItem(K)).rv || []).length;
+      // with the stars: the door opens on it, the clouds part and the world is named
+      window.RTT_PUTT.close(); localStorage.setItem(K, JSON.stringify(rec(19, 1))); openPutt(); await sleep(300);
+      window.RTT_PUTT._walkTo(18); for (let i = 0; i < 400 && !T(); i++) await sleep(30); await sleep(200);
+      out.before = !/Lost Temple/.test(document.querySelector('.pp-tgoal').innerText);
+      T().goTo(T().plan().gate.x, T().plan().gate.y + 2); for (let i = 0; i < 100 && !document.querySelector('.pp-door'); i++) await sleep(30);
+      out.named = /Lost Temple/.test((document.querySelector('.pp-door') || {}).innerText || '');
+      const seen = []; for (let i = 0; i < 200; i++){ const c = T() && T().clouds(); if (seen[seen.length - 1] !== c) seen.push(c); if (c === 'off') break; await sleep(30); }
+      out.parts = seen.join(','); out.after = /Lost Temple/.test(document.querySelector('.pp-tgoal').innerText) && (JSON.parse(localStorage.getItem(K)).rv || []).indexOf('main:1') >= 0;
+      // THE GREETER STOPPED A HAIR SHORT OF TALKING, FOR EVER. Held 3.2 ft and a ten millionth away, they have to talk
+      for (let i = 0; i < 300 && !(T().host() && T().host().ph === 'come'); i++) await sleep(20);
+      const h = T().host(); out.come = !!h && h.ph === 'come';
+      for (let i = 0; i < 25 && T().host().ph === 'come'; i++){ const q = T().host(); T().goTo(q.x, q.y + 3.2000001); await sleep(16); }
+      out.talks = T().host().ph === 'talk';
+      window.RTT_PUTT.close(); localStorage.removeItem(K); sbUser = { id:'chk' }; return out; });
+    claim(cl.map && cl.card && cl.walk && cl.shut && cl.stays, `the worlds ahead are under cloud: no name of one on the map, the home card or the walk, and a shut gate leaves them hidden (${JSON.stringify(cl)})`);
+    claim(cl.before && cl.named && /parting/.test(cl.parts) && /off$/.test(cl.parts) && cl.after, `with the stars the gate opens, the clouds part and only then is the world named (${cl.parts})`);
+    claim(cl.come && cl.talks, `a greeter who reaches talking distance talks, rather than stopping a hair short and holding the golfer for ever (${cl.come}, ${cl.talks})`);
     // A SPARE LIFE IS SPENT WHEN THE HEARTS ARE GONE, and a built putter is equipped from the Bag
     const sp = await pg.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), K = 'bag_ppt_v1@spare';
       window.RTT_PUTT.close(); sbUser = { id:'spare' };
@@ -604,7 +636,7 @@ if (!args.includes('--no-browser')){
     // ---- THE TOUR'S RULES, through the page. Each life is real: a fresh record for a fresh account.
     await pg.evaluate(() => { const st = window.RTT_PUTT._state(); if (st && st.play && st.play.strokes) { st.round.mode = 'x'; } document.querySelector('.pt-ov') && window.RTT_PUTT.close(); sbUser = { id:'chk' }; localStorage.removeItem('bag_ppt_v1@chk'); openPutt(); });
     await pg.waitForSelector('.pp-map [data-lv="1"]');
-    claim(await pg.evaluate(() => document.querySelectorAll('.pp-lv').length === 144 && document.querySelectorAll('.pp-lv.lock').length === 143 && document.querySelectorAll('.pp-lv.sig').length === 8), 'the map shows 144 levels, eight signature holes, and only level 1 open');
+    claim(await pg.evaluate(() => document.querySelectorAll('.pp-lv').length === 18 && document.querySelectorAll('.pp-lv.lock').length === 17 && document.querySelectorAll('.pp-lv.sig').length === 1 && document.querySelectorAll('.pp-cloudo').length === 7), 'the map shows world 1\'s 18 holes, its signature hole and only level 1 open, with the seven worlds ahead under cloud');
     // A RECORD SAVED SIGNED OUT IS CLAIMED, NEVER LOST. A player reached hole 18 and came back to hole 1, because
     // the record is keyed by account and a session that opened before sign-in resolved played under the bare key.
     const mrg = await pg.evaluate(async () => { window.RTT_PUTT.close(); const best = {}; for (let n = 1; n <= 17; n++) best[n] = 2;
@@ -670,6 +702,9 @@ if (!args.includes('--no-browser')){
       localStorage.removeItem('bag_ppt_v1'); sbUser = { id:'chk' }; localStorage.removeItem('bag_ppt_v1@chk'); openPutt(); return { sheet, txt, played, toAcct }; });
     await pg.waitForSelector('.pp-map [data-lv="1"]');
     claim(gst.sheet && /Sign in to keep going/.test(gst.txt) && gst.played && gst.toAcct, `a guest plays holes 1 to 5 free, hole 6 asks them to sign in, and the button opens the sign in sheet (sheet ${gst.sheet}, hole 5 played ${gst.played}, sign in ${gst.toAcct})`);
+    // every world painted means every world revealed: a record that has walked through all eight gates
+    await pg.evaluate(() => { window.RTT_PUTT.close(); const K = 'bag_ppt_v1@chk', st = JSON.parse(localStorage.getItem(K)) || { v:2, tours:{} }; st.rv = [1, 2, 3, 4, 5, 6, 7].map(w => 'main:' + w); localStorage.setItem(K, JSON.stringify(st)); openPutt(); });
+    await pg.waitForSelector('.pp-map [data-lv="1"]');
     await pg.waitForFunction(() => document.querySelectorAll('.pp-land').length === 8, null, { timeout:15000 }).catch(() => {});
     const land = await pg.evaluate(() => [...document.querySelectorAll('.pp-band')].map(b => { const c = b.querySelector('.pp-land'); if (!c) return null;
       const x = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; const cols = new Set(); for (let i = 0; i < x.length; i += 4 * 37) cols.add(x[i] << 16 | x[i + 1] << 8 | x[i + 2]);
@@ -726,7 +761,7 @@ if (!args.includes('--no-browser')){
     const ms = await pg.textContent('.pp-memsh');
     claim(/Members only/.test(await pg.evaluate(() => JSON.stringify(window.RTT_PUTT.PAY.members))) && /Get Tour Pass/.test(ms) && !/\d+ coins? to (buy|unlock)/i.test(ms) && await pg.evaluate(() => !document.querySelector('.pp-mem .pp-lv')), 'without a pass the Members tab opens a sheet about the Tour Pass, not the holes');
     await pg.click('.pp-memsh [data-prev]'); await pg.waitForSelector('.pp-mem .pp-map [data-lv="1"]');
-    claim(await pg.evaluate(() => document.querySelectorAll('.pp-lv').length === 18 && document.querySelectorAll('.pp-lv.sig').length === 2), 'a tester previews the Members Tour: 18 holes, two signature holes');
+    claim(await pg.evaluate(() => document.querySelectorAll('.pp-lv').length === 9 && document.querySelectorAll('.pp-lv.sig').length === 1 && document.querySelectorAll('.pp-cloudo').length === 1 && !/Harvest Moon/.test(document.querySelector('.pp-map').innerText)), 'a tester previews the Members Tour: its first nine holes and their signature hole, and the second world under cloud, unnamed');
     await pg.click('.pp-tabs [data-tab="main"]'); await pg.waitForSelector('.pp-map [data-lv="90"]');
     await pg.keyboard.press('Escape'); await pg.keyboard.press('Escape');
     claim(await pg.evaluate(() => !document.querySelector('.pt-ov') && document.body.style.overflow !== 'hidden'), 'Escape twice closes it and gives the page its scroll back');

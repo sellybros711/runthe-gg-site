@@ -667,7 +667,7 @@ function run(box, P, pic, api){
   size(); var onRs = function(){ size(); }; window.addEventListener('resize', onRs);
   // the golfer
   var g = { x:P.start.x, y:P.start.y - 2, vx:0, vy:0, face:[0, -1], dist:0, safe:[P.start.x, P.start.y - 2], moving:false };
-  var gate = P.gate ? { open:!!sp.gateOpen, asked:false } : null, lockOpen = !P.fence || !!found.key;
+  var gate = P.gate ? { open:!!sp.gateOpen, asked:false } : null, cloud = api.clouds && P.gate ? { part:0 } : null, lockOpen = !P.fence || !!found.key;
   /* A chest is open if this account opened it (found.ch); the clearing's chest also counts as open on a record
      from before chests held coins (found.k), and those coins were paid then, so none drop. The coins of an open
      chest that were not picked up are still lying where they landed. */
@@ -751,7 +751,9 @@ function run(box, P, pic, api){
     ctx.fillRect(Math.round(x - s / 2 + d), Math.round(y - d), s, s); ctx.fillRect(Math.round(x - s / 2 - d * 0.8), Math.round(y - d * 0.4), s, s); }
 
   // ---- the life around him (LIFE): seeded where it is placed, free running once it moves
-  var life = LIFE[sp.theme] || {}, LR = rng(P.seed ^ 0x51f3), reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+  // under cloud the new world's birds and set pieces would give it away, so the walk keeps the old world's (no ships: the sea is the new world's)
+  var lifeTh = api.clouds && sp.theme0 ? sp.theme0 : sp.theme, life = LIFE[lifeTh] || {}; if (lifeTh !== sp.theme){ life = Object.assign({}, life); delete life.ships; }
+  var LR = rng(P.seed ^ 0x51f3), reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
   function rr(a, b){ return a + LR() * (b - a); }
   var flyers = [], motes = [], ships = [], balloons = [], tumbles = [], ghosts = [], puffs = [], puffT = 0;
   function spawnFly(f, first){ var C = FLY_PAL[f.kind], a = LR() * 6.283, sp3 = rr(C.v[0], C.v[1]);
@@ -895,7 +897,10 @@ function run(box, P, pic, api){
   talkB.onclick = function(){ if (hs && hs.ph === 'idle') talk(); };
   function hostStep(dt){ if (!hs) return; var dx = g.x - hs.x, dy = g.y - hs.y, d = Math.hypot(dx, dy);
     if (hs.ph === 'wait' && d < 16 && performance.now() >= hs.at && !(gate && (!gate.open || g.y > P.gate.y - 0.5))){ hs.ph = 'come'; paused = true; setAuto(false); pup(); keys = {}; g.vx = g.vy = 0; }
-    if (hs.ph === 'come'){ g.face = [-dx, -dy]; g.aimI = null; if (d > 3.2){ var v = Math.min(5.2 * dt, d - 3.2); hs.x += dx / d * v; hs.y += dy / d * v; hs.dist += v; hs.moving = true; hs.face = [dx, dy]; } else talk(); }
+    /* THEY STOP AT 3.2 FT AND TALK, AND "STOP AT" HAS TO BE A BAND. Each step moves them the distance left to 3.2,
+       so in floating point d lands a hair over 3.2 and the next step moves them a hair less, for ever: the greeter
+       stood still, never spoke, and the golfer was held. That was the freeze entering a new world. */
+    if (hs.ph === 'come'){ g.face = [-dx, -dy]; g.aimI = null; if (d > 3.25){ var v = Math.min(5.2 * dt, d - 3.2); hs.x += dx / d * v; hs.y += dy / d * v; hs.dist += v; hs.moving = true; hs.face = [dx, dy]; } else talk(); }
     else if (hs.ph === 'idle'){ hs.moving = false; if (d < 7) hs.face = [dx, dy]; }
     talkB.hidden = !(hs.ph === 'idle' && d < 3.6); }
   function take(t, now){ take0(t, now); if (LOOT[t.k]) hudList(); }
@@ -958,7 +963,7 @@ function run(box, P, pic, api){
     if (P.fence && !lockOpen){ var df = Math.hypot(g.x - P.lockGate.x, g.y - P.lockGate.y); if (df < 2.4 && (!bubble || now > bubble.until)) say('Locked. The key is somewhere on this trail.', 2200); }
     // the door between worlds
     if (gate && !gate.asked && Math.abs(g.y - P.gate.y) < 3.2 && Math.abs(g.x - P.gate.x) < PW + 3){ gate.asked = true; paused = true; var wasAuto = auto; setAuto(false); g.vx = g.vy = 0;
-      api.door(function(open){ gate.open = open; paused = false; if (open && wasAuto) setAuto(true); }); }
+      api.door(function(open){ gate.open = open; paused = false; if (open && cloud) cloud.part = performance.now() / 1000; if (open && wasAuto) setAuto(true); }); }
     if (gate && gate.asked && !gate.open && Math.abs(g.y - P.gate.y) > 7) gate.asked = false;
     // the arch: the hole
     if (g.y < 1.2 && Math.abs(g.x - P.cx(0)) < 3.6 && !ended){ ended = true; api.arrive(); return; }
@@ -992,6 +997,7 @@ function run(box, P, pic, api){
       else if (t.k === 'gate') drawSprite(gate && gate.open ? SPR.gate1 : SPR.gate0, t.x, P.gate.y, pic.zAt(t.x, P.gate.y));
       else if (t.k === 'lock'){ var ls = lockOpen ? SPR.lock1 : SPR.lock0; if (ls){ ctx.save(); drawSprite(ls, t.x, t.y, pic.zAt(t.x, t.y)); ctx.restore(); } } }
     lifeAir(tsec);
+    if (cloud) drawClouds(tsec);
     // bits that fly
     var s = Math.max(2, Math.round(kk * 0.8));
     parts = parts.filter(function(q){ q.t += dt; q.x += q.vx * dt; q.y += q.vy * dt; q.z += q.vz * dt; q.vz -= 18 * dt; if (q.z < pic.zAt(q.x, q.y)){ q.z = pic.zAt(q.x, q.y); q.vz *= -0.3; q.vx *= 0.6; q.vy *= 0.6; }
@@ -1002,6 +1008,22 @@ function run(box, P, pic, api){
       if (nearNpc && npc) bp = scr(npc.x, npc.y, pic.zAt(npc.x, npc.y) + GH + 0.6);
       bubEl.style.left = (bp[0] / dpr) + 'px'; bubEl.style.top = (bp[1] / dpr) + 'px'; }
   }
+  /* THE NEXT WORLD IS UNDER CLOUD until its gate opens: a bank of it from the top of the wall to the top of the
+     screen, so nothing past the wall shows (its ground, its greeter, its hole). The puffs are pinned to the wall's
+     line and to the ground under them, so they move with the camera. When the door opens they roll apart to both
+     sides and thin out, and then the world is there. */
+  function drawClouds(tsec){ var u = cloud.part ? Math.min(1, (tsec - cloud.part) / 1.9) : 0; if (u >= 1){ cloud = null; return; }
+    var e = u * u * (3 - 2 * u), zg = pic.zAt(P.gate.x, P.gate.y), base = scr(P.gate.x, P.gate.y, zg + 7.6)[1], r0 = 7 * kk, cxs = W / 2;
+    ctx.save(); ctx.globalAlpha = 1 - e;
+    if (base > 0){ var gr = ctx.createLinearGradient(0, 0, 0, base); gr.addColorStop(0, '#cfdbea'); gr.addColorStop(1, '#eef3f9');
+      ctx.fillStyle = gr; var sh = e * W * 0.6; ctx.fillRect(-sh, 0, W / 2, base); ctx.fillRect(W / 2 + sh, 0, W / 2 + 2, base); }
+    var step = r0 * 1.15, n = Math.ceil(W / step) + 3, rows = Math.max(1, Math.ceil(base / (r0 * 1.6)));
+    for (var j = 0; j <= rows; j++) for (var i = -1; i < n; i++){ var h = Math.sin(i * 12.9898 + j * 78.233) * 43758.5453; h -= Math.floor(h);
+      var x = i * step + (j % 2) * step / 2 + Math.sin(tsec * 0.35 + i * 1.7 + j) * kk * 1.4, y = base - j * r0 * 1.6 + (h - 0.5) * r0 * 0.5, r = r0 * (0.9 + h * 0.6);
+      if (y + r < 0) continue; x += (x < cxs ? -1 : 1) * e * W * (0.55 + h * 0.3); y -= e * r0 * 2 * h;
+      ctx.fillStyle = '#c2cfe1'; ctx.beginPath(); ctx.arc(x, y + r * 0.22, r, 0, 7); ctx.fill();
+      ctx.fillStyle = j ? '#f3f6fb' : '#ffffff'; ctx.beginPath(); ctx.arc(x - r * 0.08, y, r * 0.92, 0, 7); ctx.fill(); }
+    ctx.restore(); }
   var lastFace = null;
   // the frame asked for if it is drawn, else any frame of this facing that is, else draw it now (once a facing)
   function drawMe(tsec){ var h = api.host, f = null, fv = g.face, i = g.moving ? Math.floor(g.dist / STRIDE * 8) % 8 : 8;
@@ -1027,7 +1049,7 @@ function run(box, P, pic, api){
       window.removeEventListener('pointercancel', pup); window.removeEventListener('blur', pup); window.removeEventListener('keydown', kd, true); window.removeEventListener('keyup', ku, true); },
     // for the checks: where he is, and a way to hold the stick
     pos:function(){ return [g.x, g.y]; }, stick:function(vx, vy){ stickV = [vx, vy]; }, auto:function(on){ setAuto(on !== false); },
-    plan:function(){ return P; }, gate:function(){ return gate; }, life:function(){ return { theme:sp.theme, ships:ships.map(function(s1){ var y1 = shipY(s1); return { x:shipX(y1), y:y1 }; }), flyers:flyers.length, motes:motes.length, balloons:balloons.length, tumbles:tumbles.length, ghosts:ghosts.length, puffs:puffs.length, smoke:smokeSrc.length }; }, host:function(){ return hs ? { x:hs.x, y:hs.y, ph:hs.ph, talking:!!dlg } : null; }, items:function(){ return items; }, goTo:function(x, y){ g.x = x; g.y = y; }, view:function(){ return { kk:kk, W:W, H:H, ox:ox, oy:oy }; }, scr:scr };
+    plan:function(){ return P; }, gate:function(){ return gate; }, clouds:function(){ return cloud ? (cloud.part ? 'parting' : 'on') : 'off'; }, life:function(){ return { theme:sp.theme, ships:ships.map(function(s1){ var y1 = shipY(s1); return { x:shipX(y1), y:y1 }; }), flyers:flyers.length, motes:motes.length, balloons:balloons.length, tumbles:tumbles.length, ghosts:ghosts.length, puffs:puffs.length, smoke:smokeSrc.length }; }, host:function(){ return hs ? { x:hs.x, y:hs.y, ph:hs.ph, talking:!!dlg } : null; }, items:function(){ return items; }, goTo:function(x, y){ g.x = x; g.y = y; }, view:function(){ return { kk:kk, W:W, H:H, ox:ox, oy:oy }; }, scr:scr };
   return ctl;
 }
 
