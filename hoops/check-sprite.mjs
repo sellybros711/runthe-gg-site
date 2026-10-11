@@ -58,6 +58,33 @@
  * too bulbous. The deltoid is smaller and sits lower, the bicep swells less and
  * half way down rather than a third, the upper arm is thinner where it meets
  * the shoulder, and the shoulders and chest are a little narrower.
+ *
+ * RE-RECORDED A SEVENTH TIME, ON PURPOSE, because the owner found the neck too
+ * long and tubular and the shoulders still bulging at the top. The head sits
+ * lower, the neck is short, narrow under the jaw and flares into a slope of
+ * trapezius at its base, and the deltoid cap is smaller and lower with the arm
+ * starting just under the shoulder point, so nothing rises above the shoulder
+ * line.
+ *
+ * RE-RECORDED AN EIGHTH TIME, ON PURPOSE, for the camera the owner asked for:
+ * 3/4 top down from a corner (30 degrees down, the man turned 35), with the
+ * anatomy to carry it. The torso has depth (pecs, lats, shoulder blades), the
+ * figure is about six and a half heads tall, and the face is placed on the
+ * skull in 3D. Every one of the 960 moved, which is the whole drawing seen
+ * from a new place rather than a pixel drifting.
+ *
+ * RE-RECORDED A NINTH TIME, ON PURPOSE: the owner found the chest too big for
+ * the hips, the neck disconnected with too wide a base, and the shoes ovals.
+ * The chest and pecs are smaller and the hips fuller, the neck is narrower at
+ * the base and drawn as the same piece as the torso so no seam shows, and the
+ * shoes are basketball sneakers: a flat cupsole, a toe box, a heel counter, a
+ * high-top collar, a midsole, laces, a side stripe and a heel tab.
+ *
+ * RE-RECORDED A TENTH TIME, ON PURPOSE: the owner found the necks too long.
+ * The head sits lower and the shoulders a little higher. With it the head got
+ * a profile (a jaw and chin, a brow ridge, cheekbones and a modelled nose) so
+ * a face from the corner reads as looking somewhere, and every hairline climbs
+ * at the front so the forehead and the eyes show.
  */
 import fs from 'node:fs';
 import path from 'node:path';

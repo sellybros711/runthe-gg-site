@@ -154,11 +154,25 @@ function cssOnce(){
 // ─── sprites, cached as canvases ─────────────────────────────────────────────
 
 var SPR = {}, SPRN = 0;
-function sprite(who, pose){
-  var k = JSON.stringify([who.look, who.c1, who.c2, who.num, pose, who.age, who.dress || '', who.faceless ? 1 : 0]);
+/* THE CAMERA IS THE PLAYER'S: 30 degrees down, from a corner. On a court the
+   men are turned to face along the court (COURT_YAW: toward the rim, a
+   mirror image facing away), and the floor is laid out under the same view,
+   so a man, the ball, the rim and the lines are one 3D picture. A room keeps
+   the corner pose every other screen uses. YAW_NOW is the stage that is
+   playing, read by hand() so a ball sits in the hand of the man as drawn. */
+var CAM = B.CAM || { pitch: 30, yaw: 35 }, COURT_YAW = 60, YAW_NOW = CAM.yaw;
+var SN_ = Math.sin(CAM.pitch * Math.PI / 180), PSI = COURT_YAW * Math.PI / 180;
+/* court axes on screen, per world cell: U runs toward the rim, V across */
+var UX = Math.sin(PSI), UY = Math.cos(PSI) * SN_, VX = -Math.cos(PSI), VY = Math.sin(PSI) * SN_;
+/* clips are written along the play line; a step toward the rim on screen is
+   also a step up or down it, by this much */
+var SLOPE = UY / UX;
+function sprite(who, pose, yaw){
+  if (yaw == null) yaw = CAM.yaw;
+  var k = JSON.stringify([who.look, who.c1, who.c2, who.num, pose, who.age, who.dress || '', who.faceless ? 1 : 0, yaw]);
   if (SPR[k]) return SPR[k];
   if (++SPRN > 400) { SPR = {}; SPRN = 0; }
-  var g = B.paint(who.look, { pose: pose, c1: who.c1, c2: who.c2, num: who.num, age: who.age, dress: who.dress, faceless: who.faceless });
+  var g = B.paint(who.look, { pose: pose, c1: who.c1, c2: who.c2, num: who.num, age: who.age, dress: who.dress, faceless: who.faceless, yaw: yaw });
   var cv = document.createElement('canvas'); cv.width = B.W; cv.height = B.H;
   var c = cv.getContext('2d');
   for (var y = 0; y < B.H; y++) for (var x = 0; x < B.W; x++) { var col = g[y][x]; if (col) { c.fillStyle = col; c.fillRect(x, y, 1, 1); } }
@@ -170,51 +184,49 @@ function ballArt(spin){ return B.propCanvas('ball', { spin: (spin | 0) % 4, r: 3
 
 // ─── the floor ──────────────────────────────────────────────────────────────
 
-/* Boards in perspective, the lane under the rim in the home colour, the
-   baseline and the free throw line running into the picture, the arc. It is
-   painted once per size, cell by cell, with the wood on the same five-step
-   ramp as everything else, cool and dark at the back, warm at the front. */
+/* THE FLOOR UNDER THE CORNER CAMERA. Every pixel is turned back into a
+   point on the court (U toward the rim, V across it, in world cells, the rim
+   at the origin) and painted by what is there: boards running the length of
+   the court, the lane in the home colour, the baseline, the lane lines, the
+   free throw circle, the arc and its corners. So the lines converge and turn
+   exactly the way the men standing on them do. Painted once per size, on the
+   same five-step ramp as everything else, darker toward the back. */
 var FLOORS = {};
+var DET = UX * VY - UY * VX;
+function courtAt(dx, dy){ return [(dx * VY - dy * VX) / DET, (UX * dy - UY * dx) / DET]; }
 function courtFloor(cw, ch, fy, rimX, playY, c1){
   var key = [cw, ch, fy, rimX, playY, c1].join('|');
   if (FLOORS[key]) return FLOORS[key];
   var cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
   var c = cv.getContext('2d');
-  var R = B.ramp('#c48a52'), paint = B.ramp(mix(c1, '#c48a52', 0.3)), line = '#f2ead6';
-  var rect = function(x, y, w, h, col){ c.fillStyle = col; c.fillRect(x, y, w, h); };
-  var slant = 0.42, ftX = function(y){ return rimX - 40 + (y - playY) * slant; }, baseX = function(y){ return rimX + 9 + (y - playY) * slant; };
-  var laneFar = playY - 15, laneNear = playY + 9;
-  var plank = 0, acc = 0, row = 2;
-  for (var y = fy; y < ch; y++) {
+  var R = B.ramp('#c48a52'), paint = B.ramp(mix(c1, '#c48a52', 0.3)), ink = '#f2ead6';
+  /* one scale, about three cells to the foot: 16 ft lane, free throw line 19 ft out, 23 ft 9 arc, 22 ft corners */
+  var BASE = 12, FT = -45, LANE = 24, FTR = 18, ARC = 72, CORNER = 66;
+  var img = c.createImageData(cw, ch), d = img.data;
+  var put = function(x, y, hex){ var i = (y * cw + x) * 4, v = parseInt(hex.slice(1), 16); d[i] = v >> 16; d[i + 1] = (v >> 8) & 255; d[i + 2] = v & 255; d[i + 3] = 255; };
+  var near = function(v, w){ return Math.abs(v) < w; };
+  for (var y = fy; y < ch; y++) for (var x = 0; x < cw; x++) {
+    var q = courtAt(x + 0.5 - rimX, y + 0.5 - playY), U = q[0], V = q[1];
     var u = (y - fy) / Math.max(1, ch - fy);
-    if (++acc > row) { acc = 0; plank++; row = 1 + Math.round(u * 4); }
-    var seam = acc === 0;
-    var base = u < 0.18 ? 1 : u < 0.62 ? 2 : 3;
-    for (var x = 0; x < cw; x++) {
-      var t = base;
-      var h = B.hash(plank * 977 + Math.floor((x + plank * 13) / (9 + Math.round(u * 10))));
-      if (h % 5 === 0) t = Math.max(0, t - 1);
-      var inLane = y >= laneFar && y <= laneNear && x >= ftX(y) && x <= baseX(y);
-      var col = inLane ? paint[t] : R[t];
-      if (seam) col = (inLane ? paint : R)[Math.max(0, t - 1)];
-      else if (h % 23 === 0) col = (inLane ? paint : R)[Math.max(0, t - 1)];
-      rect(x, y, 1, 1, col);
-    }
+    var t = u < 0.22 ? 1 : u < 0.62 ? 2 : 3;
+    /* boards: bands across V, each with its own joints along U */
+    var band = Math.floor(V / 3.2), seam = near(V - band * 3.2, 0.5);
+    var joint = near(((U + B.hash(band * 31) % 40) % 40 + 40) % 40, 0.6);
+    var h = B.hash(band * 977 + Math.floor((U + 400) / 13));
+    if (h % 5 === 0) t = Math.max(0, t - 1);
+    var inLane = U < BASE && U > FT && Math.abs(V) < LANE;
+    var col = (inLane ? paint : R)[seam || joint || h % 23 === 0 ? Math.max(0, t - 1) : t];
+    /* the lines, about a cell wide whichever way they run on screen */
+    var w = 0.75, r = Math.hypot(U, V), line =
+      (near(U - BASE, w) && Math.abs(V) < CORNER + 2) ||
+      (U < BASE + w && U > FT - w && near(Math.abs(V) - LANE, w)) ||
+      (near(U - FT, w) && Math.abs(V) < LANE) ||
+      (U < FT && near(Math.hypot(U - FT, V) - FTR, w)) ||
+      (U <= -Math.sqrt(Math.max(0, ARC * ARC - CORNER * CORNER)) + 0.5 && near(r - ARC, w * 1.1)) ||
+      (U > -Math.sqrt(Math.max(0, ARC * ARC - CORNER * CORNER)) && U < BASE && near(Math.abs(V) - CORNER, w));
+    put(x, y, line ? mix(col, ink, 0.85) : col);
   }
-  c.globalAlpha = 0.85;
-  /* the lines */
-  for (var y2 = Math.max(fy, laneFar); y2 <= Math.min(ch - 1, laneNear); y2++) { rect(Math.round(ftX(y2)), y2, 1, 1, line); rect(Math.round(baseX(y2)), y2, 1, 1, line); }
-  for (var y3 = fy; y3 < ch; y3++) rect(Math.round(baseX(y3)), y3, 1, 1, line);
-  [laneFar, laneNear].forEach(function(ly){ if (ly >= fy && ly < ch) rect(Math.round(ftX(ly)), ly, Math.round(baseX(ly) - ftX(ly)), 1, line); });
-  /* the free throw circle, the half away from the rim */
-  for (var a = 0; a < 64; a++) { var th = Math.PI / 2 + a / 63 * Math.PI, cy = (laneFar + laneNear) / 2;
-    var px = Math.round(ftX(cy) + Math.cos(th) * 11), py = Math.round(cy + Math.sin(th) * 7);
-    if (py >= fy && py < ch) rect(px, py, 1, 1, line); }
-  /* the arc, around the rim, squashed by the camera */
-  for (var b = 0; b < 160; b++) { var th2 = Math.PI / 2 + b / 159 * Math.PI;
-    var qx = Math.round(rimX + Math.cos(th2) * 74), qy = Math.round(playY - 3 + Math.sin(th2) * 19);
-    if (qy >= fy && qy < ch && qx >= 0) rect(qx, qy, 1, 1, line); }
-  c.globalAlpha = 1;
+  c.putImageData(img, 0, 0);
   /* the back of the floor falls into shadow */
   var gr = c.createLinearGradient(0, fy, 0, fy + (ch - fy) * 0.45);
   gr.addColorStop(0, 'rgba(10,12,30,.55)'); gr.addColorStop(1, 'rgba(10,12,30,0)');
@@ -261,11 +273,12 @@ function stage(host, opts){
     st.floorY = ch - 6 - Math.ceil((opts.pad || 0) / k);
     if (opts.stand) st.floorY = Math.max(66, Math.min(st.floorY, Math.round(ch * opts.stand)));
     st.playY = st.floorY;
-    st.fy = Math.round(ch * 0.58);
+    st.fy = Math.round(ch * (opts.hoop ? 0.46 : 0.58));
+    st.yaw = opts.hoop ? COURT_YAW : CAM.yaw;
     var rimX = Math.round(Math.min(cw * 0.8, cw / 2 + 74));
-    st.rim = [rimX, Math.max(18, st.floorY - 96)];
+    st.rim = [rimX, Math.max(18, st.floorY - 86)];  /* ten feet, foreshortened by the camera looking down */
     st.floor = opts.hoop ? courtFloor(cw, ch, st.fy, rimX, st.playY, roomC1 || '#c8102e') : null;
-    var art = K.room(opts.room || 'nba', cw, ch, { c1: roomC1, c2: roomC2, floorAt: 0.58, seed: 'court:' + (opts.room || 'nba'), spotAt: 0.5 });
+    var art = K.room(opts.room || 'nba', cw, ch, { c1: roomC1, c2: roomC2, floorAt: opts.hoop ? 0.46 : 0.58, seed: 'court:' + (opts.room || 'nba'), spotAt: 0.5 });
     var im = new Image();
     im.onload = function(){ st.room = im; draw(); };
     im.src = art.url;
@@ -276,22 +289,36 @@ function stage(host, opts){
   if (ro) ro.observe(el); else window.addEventListener('resize', fit);
 
   function rect(x, y, w, h, c){ ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); }
+  /* where a clip's point is on screen: a step toward the rim is also a step
+     along the court's axis, which the corner camera sees rising or falling */
+  function sy(x, y){ return opts.hoop ? y + Math.round((x - st.rim[0]) * SLOPE) : y; }
+  function quad(p, col){ ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(p[0][0], p[0][1]); for (var i = 1; i < p.length; i++) ctx.lineTo(p[i][0], p[i][1]); ctx.closePath(); ctx.fill(); }
   var METAL = B.ramp('#4a5470'), GLASS = 'rgba(200,225,255,.30)';
   /* The basket: a stanchion with a padded base, the arm, the glass seen edge
      on with its frame and a glint, the rim traced in two halves so a ball can
      drop between them, and a net that snaps. */
   function hoopBack(s){
+    /* the stanchion stands behind the baseline, further along the court, and
+       the arm reaches back over it to the glass */
     var rx = st.rim[0], ry = st.rim[1] + (s.rimShake ? (s.rimShake % 2 ? -1 : 1) : 0);
-    var px = Math.min(st.cw - 4, rx + 24), base = st.playY - 2;
-    rect(px, ry - 4, 4, base - ry, METAL[2]); rect(px, ry - 4, 1, base - ry, METAL[4]); rect(px + 3, ry - 4, 1, base - ry, METAL[0]);
-    rect(px - 3, base - 14, 10, 14, mix(roomC1 || '#c8102e', '#05070d', 0.25)); rect(px - 3, base - 14, 10, 1, mix(roomC1 || '#c8102e', '#ffffff', 0.25));
-    rect(px - 3, base - 1, 10, 1, '#05070d');
-    rect(rx + 10, ry - 5, px - rx - 10, 3, METAL[2]); rect(rx + 10, ry - 5, px - rx - 10, 1, METAL[4]);
-    rect(rx + 7, ry - 24, 4, 31, GLASS); rect(rx + 7, ry - 24, 4, 1, '#ffffff'); rect(rx + 7, ry + 6, 4, 1, '#ffffff');
-    rect(rx + 7, ry - 24, 1, 31, 'rgba(255,255,255,.75)'); rect(rx + 10, ry - 24, 1, 31, 'rgba(160,180,220,.6)');
-    if (!REDUCED && st.tick % 24 < 3) rect(rx + 8, ry - 20 + (st.tick % 24) * 6, 1, 4, '#ffffff');
+    var gU = 7, pU = 22, gx = rx + gU * UX, gy = ry + gU * UY, px = Math.round(rx + pU * UX), base = Math.round(st.playY + pU * UY);
+    rect(px - 2, ry - 6 + pU * UY, 4, base - (ry - 6 + pU * UY), METAL[2]); rect(px - 2, ry - 6 + pU * UY, 1, base - (ry - 6 + pU * UY), METAL[4]);
+    rect(px - 5, base - 12, 10, 12, mix(roomC1 || '#c8102e', '#05070d', 0.25)); rect(px - 5, base - 12, 10, 1, mix(roomC1 || '#c8102e', '#ffffff', 0.25));
+    quad([[gx, gy - 5], [px, ry - 6 + pU * UY], [px, ry - 3 + pU * UY], [gx, gy - 2]], METAL[2]);
     var back = B.propCanvas('rim', { half: 'back' });
-    ctx.drawImage(back, Math.round(rx - back.width / 2), Math.round(ry - 3));
+    ctx.drawImage(back, Math.round(rx - back.width / 2), Math.round(ry - back.height / 2));
+  }
+  /* the glass, a pane across the court behind the rim, seen from the corner */
+  function glass(s){
+    var rx = st.rim[0], ry = st.rim[1] + (s.rimShake ? (s.rimShake % 2 ? -1 : 1) : 0);
+    var gx = rx + 7 * UX, gy = ry + 7 * UY, hw = 13, top = -24, bot = 6;
+    var a = [gx + VX * hw, gy + VY * hw], b = [gx - VX * hw, gy - VY * hw];
+    quad([[a[0], a[1] + top], [b[0], b[1] + top], [b[0], b[1] + bot], [a[0], a[1] + bot]], GLASS);
+    ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 1; ctx.beginPath();
+    ctx.moveTo(a[0], a[1] + top); ctx.lineTo(b[0], b[1] + top); ctx.lineTo(b[0], b[1] + bot); ctx.lineTo(a[0], a[1] + bot); ctx.closePath(); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.beginPath(); var sq = 5;
+    ctx.moveTo(gx + VX * sq, gy + VY * sq - 9); ctx.lineTo(gx - VX * sq, gy - VY * sq - 9); ctx.lineTo(gx - VX * sq, gy - VY * sq - 1); ctx.lineTo(gx + VX * sq, gy + VY * sq - 1); ctx.closePath(); ctx.stroke();
+    if (!REDUCED && st.tick % 24 < 3) rect(Math.round(gx - 2 + (st.tick % 24) * 2), Math.round(gy + top + 3 + (st.tick % 24) * 5), 1, 4, '#ffffff');
   }
   function hoopFront(s){
     var rx = st.rim[0], ry = st.rim[1] + (s.rimShake ? (s.rimShake % 2 ? -1 : 1) : 0);
@@ -306,21 +333,21 @@ function stage(host, opts){
     }
     for (var j = 0; j < 4; j++) rect(rx - 4 + j * 2, ry + 1 + Math.round(len * 0.45), 2, 1, '#aab2c4');
     var front = B.propCanvas('rim', { half: 'front' });
-    ctx.drawImage(front, Math.round(rx - front.width / 2), Math.round(ry - 3));
+    ctx.drawImage(front, Math.round(rx - front.width / 2), Math.round(ry - front.height / 2));
   }
 
   var conf = [];
   function drawActor(a, refl){
     var who = a.who === 'me' ? opts.me : a.who;
     if (!who) return;
-    var sp = sprite(who, a.pose);
-    var j = a.jump || 0, x = Math.round(a.x) - 22, y = Math.round(a.y - 62 - j);
+    var ay = sy(a.x, a.y), sp = sprite(who, a.pose, st.yaw);
+    var j = a.jump || 0, x = Math.round(a.x) - 22, y = Math.round(ay - 62 - j);
     if (refl) {
       /* the floor is varnished: a faint, upside-down copy under the feet */
       ctx.save(); ctx.globalAlpha = 0.1;
-      ctx.beginPath(); ctx.rect(0, a.y + 1, st.cw, 20); ctx.clip();
-      ctx.translate(a.flip ? x + 44 : x, a.y * 2 + 2 + j); ctx.scale(a.flip ? -1 : 1, -1);
-      ctx.drawImage(sp, 0, Math.round(a.y - 62));
+      ctx.beginPath(); ctx.rect(0, ay + 1, st.cw, 20); ctx.clip();
+      ctx.translate(a.flip ? x + 44 : x, ay * 2 + 2 + j); ctx.scale(a.flip ? -1 : 1, -1);
+      ctx.drawImage(sp, 0, Math.round(ay - 62));
       ctx.restore();
       return;
     }
@@ -369,7 +396,7 @@ function stage(host, opts){
       for (var bx = -24 + off; bx < st.cw; bx += 24) { rect(bx, fy - 5, 16, 4, rc1); rect(bx + 3, fy - 4, 10, 1, rc2); rect(bx + 3, fy - 2, 6, 1, mix(rc2, rc1, 0.5)); }
       /* a pool of light where the play is */
       var fx = s.focus != null ? s.focus : st.rim[0] - 40;
-      var lg = ctx.createRadialGradient(fx, st.playY - 6, 2, fx, st.playY - 6, 70);
+      var lg = ctx.createRadialGradient(fx, sy(fx, st.playY) - 6, 2, fx, sy(fx, st.playY) - 6, 70);
       lg.addColorStop(0, 'rgba(255,236,196,.22)'); lg.addColorStop(1, 'rgba(255,236,196,0)');
       ctx.fillStyle = lg; ctx.fillRect(0, fy, st.cw, st.ch - fy);
     }
@@ -381,19 +408,22 @@ function stage(host, opts){
     var ball = s.ball;
     /* the ball's shadow on the floor, smaller and fainter the higher it is */
     if (ball && st.floor) { var gy = ball.floor || st.playY, hgt = Math.max(0, gy - ball.y), sw = Math.max(1, 4 - Math.round(hgt / 18));
-      ctx.fillStyle = 'rgba(0,0,0,' + Math.max(0.08, 0.32 - hgt / 260).toFixed(2) + ')'; ctx.fillRect(Math.round(ball.x) - sw, gy, sw * 2, 1); }
+      ctx.fillStyle = 'rgba(0,0,0,' + Math.max(0.08, 0.32 - hgt / 260).toFixed(2) + ')'; ctx.fillRect(Math.round(ball.x) - sw, sy(ball.x, gy), sw * 2, 1); }
     if (ball && ball.behind) drawBall(ball);
     acts.forEach(function(a){
-      if (s.spot) { var sw2 = 30; ctx.fillStyle = 'rgba(255,236,196,.16)'; ctx.fillRect(Math.round(a.x) - sw2 / 2, 0, sw2, a.y + 2); }
+      var ay2 = sy(a.x, a.y);
+      if (s.spot) { var sw2 = 30; ctx.fillStyle = 'rgba(255,236,196,.16)'; ctx.fillRect(Math.round(a.x) - sw2 / 2, 0, sw2, ay2 + 2); }
       var j = a.jump || 0;
-      var shw = Math.max(5, 11 - Math.round(j / 4));
-      ctx.fillStyle = 'rgba(0,0,0,.32)'; ctx.fillRect(Math.round(a.x) - shw, a.y, shw * 2, 1);
-      ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(Math.round(a.x) - shw + 2, a.y + 1, shw * 2 - 4, 1);
+      /* seen from above, a shadow is a patch on the floor, not a line */
+      var shw = Math.max(5, 10 - Math.round(j / 4));
+      ctx.fillStyle = 'rgba(0,0,0,.30)'; ctx.fillRect(Math.round(a.x) - shw, ay2 - 1, shw * 2, 3);
+      ctx.fillStyle = 'rgba(0,0,0,.16)'; ctx.fillRect(Math.round(a.x) - shw + 2, ay2 - 2, shw * 2 - 4, 5);
       drawActor(a, false);
     });
     if (opts.hoop) hoopFront(s);
     if (ball && !ball.behind) drawBall(ball);
-    if (s.dust) s.dust.forEach(function(d){ var r = d.t; rect(d.x - r, d.y - 1, 1, 1, 'rgba(230,214,190,.7)'); rect(d.x + r, d.y - 1, 1, 1, 'rgba(230,214,190,.7)'); rect(d.x - r + 1, d.y - 2, 1, 1, 'rgba(230,214,190,.45)'); rect(d.x + r - 1, d.y - 2, 1, 1, 'rgba(230,214,190,.45)'); });
+    if (opts.hoop) glass(s);
+    if (s.dust) s.dust.forEach(function(d0){ var d = { x: d0.x, y: sy(d0.x, d0.y), t: d0.t }, r = d.t; rect(d.x - r, d.y - 1, 1, 1, 'rgba(230,214,190,.7)'); rect(d.x + r, d.y - 1, 1, 1, 'rgba(230,214,190,.7)'); rect(d.x - r + 1, d.y - 2, 1, 1, 'rgba(230,214,190,.45)'); rect(d.x + r - 1, d.y - 2, 1, 1, 'rgba(230,214,190,.45)'); });
     if (s.props) s.props.forEach(function(p){ drawProp(p); });
     if (s.confetti && !REDUCED) {
       if (conf.length < 70) for (var c = 0; c < 4; c++) conf.push({ x: Math.random() * st.cw, y: -2, v: 0.6 + Math.random() * 0.9, c: [opts.c1, opts.c2, '#ffd166', '#ffffff'][(Math.random() * 4) | 0] });
@@ -401,7 +431,7 @@ function stage(host, opts){
       conf = conf.filter(function(p){ return p.y < st.ch; });
     } else if (!s.confetti) conf = [];
   }
-  function drawBall(b){ var a = ballArt(b.spin != null ? b.spin : 0); ctx.drawImage(a, Math.round(b.x) - 4, Math.round(b.y) - 4); }
+  function drawBall(b){ var a = ballArt(b.spin != null ? b.spin : 0); ctx.drawImage(a, Math.round(b.x) - 4, Math.round(sy(b.x, b.y)) - 4); }
   /* A banner going up to the rafters, a ring box, a podium, a trophy. The
      solid ones are traced (B.propCanvas); the cloth ones are shaded here. */
   function drawProp(p){
@@ -424,7 +454,7 @@ function stage(host, opts){
     } else {
       var opt = p.kind === 'podium' ? { c1: p.c1 || '#1a2445', c2: p.c2 || '#c9ccd6' } : {};
       var art = B.propCanvas(p.kind, opt);
-      var ax = Math.round(p.x - art.width / 2), ay = p.kind === 'podium' ? st.floorY - art.height + 1 : Math.round(p.y - art.height / 2);
+      var ax = Math.round(p.x - art.width / 2), ay = p.kind === 'podium' ? sy(p.x, st.floorY) - art.height + 1 : Math.round(sy(p.x, p.y) - art.height / 2);
       ctx.drawImage(art, ax, ay);
     }
   }
@@ -440,6 +470,7 @@ function stage(host, opts){
      the speed (a replay). Reduced motion draws the key tick and holds it. */
   st.play = function(clip, done){
     cancelAnimationFrame(st.raf); clearTimeout(st.timer);
+    YAW_NOW = st.yaw;
     var t = 0, last = 0, acc = 0, per = TICK * (clip.slow || 1);
     var cues = clip.cues || {};
     if (REDUCED) {
@@ -513,7 +544,7 @@ function stage(host, opts){
 function cyc(set, t, per){ return set + (Math.floor(t / (per || 2)) % B.SETS[set]); }
 function arc(p0, p1, h, u){ return [lerp(p0[0], p1[0], u), lerp(p0[1], p1[1], u) - Math.sin(Math.PI * u) * h]; }
 function hand(pose, a, build, s){
-  var h = B.handAt(pose, s == null ? 1 : s, build) || [33, 30];
+  var h = B.handAt(pose, s == null ? 1 : s, build, YAW_NOW) || [33, 30];
   if (a.flip) h = [44 - h[0], h[1]];
   return [Math.round(a.x) - 22 + h[0], Math.round(a.y - 62 - (a.jump || 0)) + h[1]];
 }

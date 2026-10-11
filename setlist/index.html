@@ -1932,6 +1932,93 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      using, and at this length it reads as a list of receipts rather than as a
      night. The rows keep their entrance animation, which is the whole point of
      the screen. */
+  /* ── THE SHOW, FULL SCREEN ───────────────────────────────────────────────
+     The stage is a room, so it takes the whole window while the night plays,
+     over the header and everything else. The canvas sizes itself to a whole
+     number of device pixels a cell and is centred; anything a hair past the
+     edge is clipped rather than scaled. */
+  body[data-screen="show"]{overflow:hidden;}
+  .stagefull{position:fixed; inset:0; z-index:300; overflow:hidden; background:#0b0718;
+    color:#F6F2EA; --gradeHot:#48D17A; --gradeWarm:#F2B632; --gradeCold:#FF625F;
+    --glass:rgba(12,8,26,.66);}
+  .stagefull > canvas{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    image-rendering:pixelated; image-rendering:crisp-edges;}
+  .sx-top{position:absolute; left:12px; right:12px; top:calc(env(safe-area-inset-top) + 10px);
+    display:flex; align-items:flex-start; justify-content:space-between; pointer-events:none;}
+  .sx-score, .sx-skip, .sx-cap, .sx-final{background:var(--glass);
+    -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
+    border:1px solid rgba(255,255,255,.10);}
+  .sx-score{border-radius:14px; padding:6px 13px 7px; display:flex; flex-direction:column;
+    align-items:flex-start; min-width:84px;}
+  .sx-set{font-size:9.5px; font-weight:900; letter-spacing:1.6px; text-transform:uppercase;
+    color:#CFC4E6;}
+  .sx-score .sim-score{font-size:30px;}
+  .sx-skip{pointer-events:auto; border-radius:99px; padding:9px 15px; font-size:13px;
+    font-weight:900; color:#F6F2EA;}
+  .sx-skip[hidden]{display:none;}
+  /* THE SETLIST IS THE PAPER TAPED TO THE STAGE, the same object the draft
+     builds and the share card hands you. It holds the set being played, newest
+     at the bottom, and it is the door to the full feed. */
+  .sx-paper{position:absolute; left:12px; top:calc(env(safe-area-inset-top) + 76px);
+    width:min(44vw, 200px); padding:10px 11px 8px; border:0; border-radius:3px;
+    text-align:left; background:var(--paper); color:var(--paper-ink);
+    transform:rotate(-2deg); box-shadow:0 14px 26px -12px rgba(0,0,0,.8);
+    background-image:repeating-linear-gradient(180deg, transparent 0 19px, rgba(27,23,38,.06) 19px 20px);}
+  .sx-paper:before{content:''; position:absolute; top:-7px; left:50%; width:54px; height:15px;
+    transform:translateX(-50%) rotate(3deg); background:rgba(255,241,200,.66);
+    box-shadow:0 1px 2px rgba(0,0,0,.2);}
+  .sx-ph{display:block; font-size:9.5px; font-weight:900; letter-spacing:1.5px;
+    text-transform:uppercase; color:var(--paper-mut); margin-bottom:3px;}
+  .sx-list{list-style:none; margin:0; padding:0;}
+  .sx-list li{font-family:var(--hand); font-size:13.5px; line-height:1.45; white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis; color:rgba(27,23,38,.62);}
+  .sx-list li.on{color:var(--paper-ink);}
+  .sx-list li.on span{background:linear-gradient(transparent 58%, rgba(55,197,213,.35) 58%);}
+  .sx-list li.seg:after{content:' >'; color:#6D3BD6; font-weight:900;}
+  .sx-more{display:block; margin-top:4px; font-size:10px; font-weight:900; color:#0E7884;
+    letter-spacing:.3px;}
+  .sx-now{position:absolute; left:12px; right:12px;
+    bottom:calc(env(safe-area-inset-bottom) + 14px); display:flex; justify-content:center;
+    pointer-events:none;}
+  .sx-cap{width:100%; max-width:560px; border-radius:16px; padding:11px 14px 12px;
+    animation:sxIn .42s cubic-bezier(.2,.8,.2,1);}
+  @keyframes sxIn{from{opacity:0; translate:0 10px;} to{opacity:1; translate:0 0;}}
+  .sx-kick{font-size:10px; font-weight:900; letter-spacing:1.8px; text-transform:uppercase;
+    color:#CFC4E6;}
+  .sx-row{display:flex; align-items:baseline; gap:9px; border-left:3px solid var(--acc);
+    padding-left:9px; margin-left:-2px;}
+  .sx-nm{flex:1; min-width:0; font-size:18px; font-weight:900; line-height:1.15;}
+  .sx-len{font-size:12px; font-weight:700; color:#B8AFCB; font-variant-numeric:tabular-nums;}
+  .sx-pts{font-family:var(--ui); font-size:22px; color:#F6F2EA;}
+  .sx-react{font-size:13px; font-weight:600; font-style:italic; color:#D8D0E8; margin-top:4px;}
+  .sx-time{font-style:normal; font-weight:700;}
+  .sx-react b, .sx-seg b{color:#fff;}
+  .sx-seg{font-size:11.5px; font-weight:900; color:#C9B4FF; margin-bottom:5px;}
+  .sx-final{position:absolute; left:50%; bottom:calc(env(safe-area-inset-bottom) + 14px);
+    transform:translateX(-50%); width:min(calc(100vw - 24px), 440px); border-radius:20px; padding:18px 20px 20px; text-align:center;
+    animation:sxIn .5s cubic-bezier(.2,.8,.2,1);}
+  .sx-final[hidden]{display:none;}
+  .sx-fk{font-size:10px; font-weight:900; letter-spacing:2px; text-transform:uppercase; color:#CFC4E6;}
+  .sx-ft{font-family:var(--hero); font-size:64px; line-height:1;}
+  .sx-rest{font-size:12.5px; font-weight:700; color:#B8AFCB; margin-top:4px;}
+  .sx-rest b{color:#fff;}
+  .sx-hl{font-size:15px; font-weight:800; font-style:italic; line-height:1.4; margin:10px 0 14px;
+    color:#E8E2F2;}
+  .sx-sheet{position:absolute; left:0; right:0; bottom:0; max-height:80%; overflow:auto;
+    background:var(--bg); color:var(--ink); border-radius:18px 18px 0 0;
+    padding:6px var(--gut) calc(env(safe-area-inset-bottom) + 20px);
+    box-shadow:0 -18px 40px rgba(0,0,0,.5); animation:sxIn .3s ease-out;}
+  .sx-sheet[hidden]{display:none;}
+  .sx-sheet-hd{position:sticky; top:-6px; display:flex; align-items:center;
+    justify-content:space-between; padding:12px 0 8px; background:var(--bg); z-index:1;}
+  .sx-sheet-hd b{font-family:var(--hero); font-size:20px; font-weight:400;}
+  .sx-close{border:0; background:none; font-weight:900; font-size:13px; color:var(--tealT);}
+  @media (min-width:900px){
+    .sx-paper{left:28px; top:96px; width:230px;}
+    .sx-list li{font-size:15px;}
+    .sx-sheet{left:auto; right:24px; bottom:24px; width:420px; max-height:72%; border-radius:18px;}
+  }
+  @media (prefers-reduced-motion: reduce){ .sx-cap, .sx-final, .sx-sheet{animation:none;} }
   .sim-feed{display:flex; flex-direction:column;}
   .sim-set{font-size:11px; font-weight:900; letter-spacing:1.9px; text-transform:uppercase;
     color:var(--dim); padding:16px 0 6px; margin-top:4px;
@@ -2987,6 +3074,7 @@ import {
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
 } from './scoring.js?v=41';
 import { loadBand, setLabel, setRank, parseCSV } from './dataLoader.js?v=41';
+import { createStage } from './stage.js?v=2';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -3315,6 +3403,9 @@ function backFrom(){
 
 function setScreen(name){
   clearTimeout(S.revealTimer);
+  // The stage stops itself once its canvas leaves the page; this also takes
+  // its resize listener with it, which a reduced-motion stage never loops to drop.
+  if (S.stage){ S.stage.destroy(); S.stage = null; }
   /* A NEW SCREEN STARTS AT THE TOP. Nothing reset the scroll, so "See the
      scorecard" at the foot of a long playback landed half way down the
      scorecard, and every round after the first opened its reveal wherever the
@@ -6523,31 +6614,103 @@ function showBeats(){
 
 function renderShow(){
   const beats = showBeats();
+  /* THE SHOW IS THE WHOLE SCREEN. The stage is a room, so it gets the window;
+     the setlist is the paper taped to that stage, and the song being played is
+     a caption along the bottom, the way a broadcast puts a name on screen. The
+     full feed is still here, one tap on the paper away, because the crowd
+     lines are half the fun and a screen reader needs them as text. */
   app.innerHTML = `
-    <div class="showsim" id="showSim">
-      <div class="sim-head">
-        <div class="eyebrow">The show</div>
-        <div class="sim-score" id="simScore">0</div>
-        <div class="sim-sub" id="simSub">Lights down.</div>
+    <div class="showsim stagefull" id="showSim">
+      <canvas id="simStage" aria-hidden="true"></canvas>
+      <div class="sx-top">
+        <div class="sx-score">
+          <span class="sx-set" id="sxSet">Lights down</span>
+          <b class="sim-score" id="simScore">0</b>
+        </div>
+        <button class="sx-skip" type="button" id="simSkip">Skip &rsaquo;</button>
       </div>
-      <div class="sim-feed" id="simFeed"></div>
-      <div class="skip" id="simSkip">Tap to skip &rarr;</div>
+      <button class="sx-paper" type="button" id="sxPaper" aria-label="Open tonight's full setlist">
+        <span class="sx-ph" id="sxPh">Tonight</span>
+        <ol class="sx-list" id="sxList"></ol>
+        <span class="sx-more">Full setlist</span>
+      </button>
+      <div class="sx-now" id="sxNow" aria-live="polite"></div>
+      <div class="sx-final" id="sxFinal" hidden></div>
+      <div class="sx-sheet" id="sxSheet" hidden>
+        <div class="sx-sheet-hd"><b>Tonight&rsquo;s setlist</b>
+          <button type="button" class="sx-close" id="sxClose">Close</button></div>
+        <div class="sim-feed" id="simFeed"></div>
+      </div>
     </div>`;
 
   const feed = document.getElementById('simFeed');
   const scoreEl = document.getElementById('simScore');
-  const subEl = document.getElementById('simSub');
+  const setEl = document.getElementById('sxSet');
+  const nowEl = document.getElementById('sxNow');
+  const listEl = document.getElementById('sxList');
+  const phEl = document.getElementById('sxPh');
+  const finalEl = document.getElementById('sxFinal');
+  const sheet = document.getElementById('sxSheet');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  let i = 0, stopped = false;
+  /* THE STAGE IS TOLD WHAT HAPPENED AND DECIDES ONLY HOW IT LOOKS. Every
+     value below is read off the beat, which is read off the scored result, so
+     the picture and the scorecard cannot disagree. A song's energy is its
+     points against the night's best song, so the room is loudest for the
+     thing that scored most, whatever the band's own scale happens to be. */
+  const best = Math.max(1, ...beats.filter(b => b.kind === 'song').map(b => b.gained));
+  const lastSetBeat = beats.reduce((m, b, j) => b.kind === 'set' ? j : m, -1);
+  let stage = null;
+  try {
+    stage = createStage(document.getElementById('simStage'), {
+      seed: Math.abs(S.result.total) + 17, venue: 'theater', reduce });
+  } catch (err) { stage = null; }
+  S.stage = stage;
+  const toStage = (b, idx, instant) => {
+    if (!stage) return;
+    const grade = (b.played || 0) < GRADE_SETTLE ? 'warm' : gradeRunning(b.running, b.progress);
+    if (b.kind === 'set'){
+      stage.cue({ kind: 'set', instant,
+        encore: SETS.findIndex(x => x.label === b.label) === ENCORE_INDEX });
+    } else if (b.kind === 'song'){
+      const p = b.perf;
+      stage.cue({ kind: 'song', instant, grade,
+        palette: accentOf(p).chip || null,
+        energy: .25 + .75 * Math.pow(Math.max(0, b.gained) / best, .8),
+        segue: !!b.event,
+        jam: isJamchart(p) || lenOf(p) >= LEN_20MIN || tagsOf(p).includes('jam'),
+        bustout: (Number(p.show_gap) || 0) >= BREADTH_BUSTOUT_GAP,
+      });
+    } else if (b.kind === 'time'){
+      stage.cue({ kind: 'time', instant, last: idx > lastSetBeat });
+    } else {
+      stage.cue({ kind: 'final', instant, grade: gradeScore(b.running) });
+    }
+  };
+
+  /* The caption is rebuilt rather than edited, so its entrance plays for
+     every song. Only the last one is ever on screen. */
+  const caption = html => {
+    nowEl.innerHTML = html ? `<div class="sx-cap">${html}</div>` : '';
+  };
+
+  let i = 0, stopped = false, skipping = false, setNo = 0;
   const paint = b => {
+    toStage(b, i - 1, skipping);
     if (b.kind === 'set'){
       feed.insertAdjacentHTML('beforeend',
         `<div class="sim-set">${esc(b.label)}</div>`);
-      subEl.textContent = setOpenLine(SETS.findIndex(x => x.label === b.label));
+      // A new set is a new page of the paper.
+      setNo = 0;
+      listEl.innerHTML = '';
+      phEl.textContent = b.label;
+      setEl.textContent = b.label;
+      caption(`<div class="sx-kick">${esc(b.label)}</div>
+        <div class="sx-react">${esc(setOpenLine(SETS.findIndex(x => x.label === b.label)))}</div>`);
     } else if (b.kind === 'song'){
+      const acc = accentOf(b.perf).v;
       feed.insertAdjacentHTML('beforeend', `
-        <div class="sim-song" style="--acc:${accentOf(b.perf).v}">
+        <div class="sim-song" style="--acc:${acc}">
           ${b.event ? `<div class="sim-seg"><i class="segmark"></i>${esc(b.event)}${
             b.segPoints ? ` <b>+${b.segPoints}</b>` : ''}</div>` : ''}
           <div class="sim-row">
@@ -6558,26 +6721,51 @@ function renderShow(){
           <div class="sim-react">${esc(b.reaction)}</div>
           ${b.recommended ? `<div class="sim-badge"><span class="chip rec">The archive&rsquo;s pick</span></div>` : ''}
         </div>`);
-      subEl.textContent = b.perf.song;
+      setNo += 1;
+      const prev = listEl.querySelector('.on');
+      if (prev) prev.classList.remove('on');
+      // A segue is written the way it is on a real setlist: an arrow off the
+      // song before into this one.
+      if (b.event && listEl.lastElementChild) listEl.lastElementChild.classList.add('seg');
+      listEl.insertAdjacentHTML('beforeend',
+        `<li class="on"><span>${esc(b.perf.song)}</span></li>`);
+      while (listEl.children.length > 7) listEl.firstElementChild.remove();
+      caption(`
+        ${b.event ? `<div class="sx-seg"><i class="segmark"></i>${esc(b.event)}${
+          b.segPoints ? ` <b>+${b.segPoints}</b>` : ''}</div>` : ''}
+        <div class="sx-row" style="--acc:${acc}">
+          <span class="sx-nm">${esc(b.perf.song)}</span>
+          <span class="sx-len">${fmtClock(lenOf(b.perf))}</span>
+          <span class="sx-pts">+${b.gained}</span>
+        </div>
+        <div class="sx-react">${esc(b.reaction)}</div>`);
     } else if (b.kind === 'time'){
-      feed.insertAdjacentHTML('beforeend', `
-        <div class="sim-time">${esc(b.label)} ran ${fmtClock(b.used)} of ${fmtClock(b.budget)}
-          &middot; ${esc(b.note)} <b>+${b.points}</b></div>`);
+      const line = `${esc(b.label)} ran ${fmtClock(b.used)} of ${fmtClock(b.budget)}
+          &middot; ${esc(b.note)} <b>+${b.points}</b>`;
+      feed.insertAdjacentHTML('beforeend', `<div class="sim-time">${line}</div>`);
+      caption(`<div class="sx-kick">Set break</div><div class="sx-react sx-time">${line}</div>`);
     } else {
       feed.insertAdjacentHTML('beforeend', `
         <div class="sim-final">
           <div class="sim-rest">Segues, flow and the rest <b>+${b.rest}</b></div>
           <div class="headline">&ldquo;${esc(b.headline)}&rdquo;</div>
-          <button class="btn primary" type="button" id="toResult">See the scorecard</button>
         </div>`);
-      subEl.textContent = 'House lights.';
+      caption('');
+      setEl.textContent = 'Final';
+      finalEl.innerHTML = `
+        <div class="sx-fk">Final</div>
+        <div class="sx-ft grade-${gradeScore(b.running)}">${b.running}</div>
+        <div class="sx-rest">Segues, flow and the rest <b>+${b.rest}</b></div>
+        <div class="sx-hl">&ldquo;${esc(b.headline)}&rdquo;</div>
+        <button class="btn primary" type="button" id="toResult">See the scorecard</button>`;
+      finalEl.hidden = false;
+      const sk = document.getElementById('simSkip');
+      if (sk) sk.hidden = true;
     }
     scoreEl.textContent = b.running;
     // Too few songs in and a projection is noise, so hold the neutral colour.
     scoreEl.className = 'sim-score grade-' + ((b.played || 0) < GRADE_SETTLE
       ? 'warm' : gradeRunning(b.running, b.progress));
-    feed.lastElementChild.scrollIntoView({ block: 'nearest',
-      behavior: reduce ? 'auto' : 'smooth' });
   };
 
   const step = () => {
@@ -6585,8 +6773,13 @@ function renderShow(){
     if (i >= beats.length) return;
     const b = beats[i++];
     paint(b);
-    const wait = b.kind === 'song' ? (b.event ? 1150 : 850)
-      : b.kind === 'set' ? 700 : b.kind === 'time' ? 750 : 0;
+    /* Long enough for the room to answer a song before the next one. A segue,
+       a bustout and a big jam hold a beat longer, because those are what the
+       crowd does something about. Skip is still one tap. */
+    const big = b.kind === 'song' && (b.event
+      || (Number(b.perf.show_gap) || 0) >= BREADTH_BUSTOUT_GAP || lenOf(b.perf) >= LEN_20MIN);
+    const wait = b.kind === 'song' ? (big ? 2600 : 2000)
+      : b.kind === 'set' ? 1600 : b.kind === 'time' ? 1800 : 0;
     if (i < beats.length) S.revealTimer = setTimeout(step, wait);
   };
 
@@ -6594,19 +6787,21 @@ function renderShow(){
     if (stopped) return;
     stopped = true;
     clearTimeout(S.revealTimer);
+    skipping = true;
     while (i < beats.length){ const b = beats[i++]; paint(b); }
+    skipping = false;
     stopped = false;
     i = beats.length;
-    const sk = document.getElementById('simSkip');
-    if (sk) sk.remove();
   };
   document.getElementById('showSim').addEventListener('click', e => {
     if (e.target.closest('#toResult')){ setScreen('result'); return; }
-    skip();
+    if (e.target.closest('#simSkip')){ skip(); return; }
+    if (e.target.closest('#sxPaper')){ sheet.hidden = false; return; }
+    if (e.target.closest('#sxClose')){ sheet.hidden = true; return; }
   });
 
   if (reduce){ skip(); return; }
-  S.revealTimer = setTimeout(step, 500);
+  S.revealTimer = setTimeout(step, 700);
 }
 
 function render(){

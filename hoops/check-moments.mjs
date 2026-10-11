@@ -284,7 +284,12 @@ section('5. every moving frame is the rig, inside the grid');
     if (JSON.stringify(B.paint(lk, { pose: set + f })) === JSON.stringify(B.paint(lk, { pose: set + (f - 1) }))) dull.push(set + f);
   }
   ok(dull.length === 0, `every frame moves from the one before it (${dull.join(', ') || 'all'})`);
-  ok(B.handAt('shot2', 1)[1] < 10 && B.handAt('dribble0', 1)[1] > 34, 'the hand is over the head at the release and low on the dribble');
+  /* Asked against the man himself rather than a fixed row: the camera now
+     looks down 30 degrees, so every height is foreshortened and a row that
+     was over the head from the old camera is not from this one. */
+  const crown = (pose) => { const g = B.paint({}, { pose, parts: true }); for (let y = 0; y < B.H; y++) if (g[y].some((n) => n === 'head')) return y; return B.H; };
+  const hipRow = (pose) => { const g = B.paint({}, { pose, parts: true }); for (let y = 0; y < B.H; y++) if (g[y].some((n) => n === 'shorts')) return y; return 0; };
+  ok(B.handAt('shot2', 1)[1] < crown('shot2') && B.handAt('dribble0', 1)[1] > hipRow('dribble0'), 'the hand is over the head at the release and low on the dribble');
 }
 
 /* ── the page ─────────────────────────────────────────────────────────── */
