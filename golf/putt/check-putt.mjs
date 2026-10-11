@@ -596,12 +596,16 @@ if (!args.includes('--no-browser')){
       // with the stars: the door opens on it, the clouds part and the world is named
       window.RTT_PUTT.close(); localStorage.setItem(K, JSON.stringify(rec(19, 1))); openPutt(); await sleep(300);
       window.RTT_PUTT._walkTo(18); for (let i = 0; i < 400 && !T(); i++) await sleep(30); await sleep(200);
-      out.before = !/Lost Temple/.test(document.querySelector('.pp-tgoal').innerText);
+      out.before = !/Lost Temple/.test(document.querySelector('.pp-tgoal').textContent);
       T().goTo(T().plan().gate.x, T().plan().gate.y + 2); for (let i = 0; i < 100 && !document.querySelector('.pp-door'); i++) await sleep(30);
-      out.named = /Lost Temple/.test((document.querySelector('.pp-door') || {}).innerText || '');
+      out.named = /Lost Temple/.test((document.querySelector('.pp-door') || {}).textContent || '');
       const seen = []; for (let i = 0; i < 200; i++){ const c = T() && T().clouds(); if (seen[seen.length - 1] !== c) seen.push(c); if (c === 'off') break; await sleep(30); }
-      out.parts = seen.join(','); out.after = /Lost Temple/.test(document.querySelector('.pp-tgoal').innerText) && (JSON.parse(localStorage.getItem(K)).rv || []).indexOf('main:1') >= 0;
+      out.parts = seen.join(','); for (let i = 0; i < 150 && !/Lost Temple/.test(document.querySelector('.pp-tgoal').textContent); i++) await sleep(30);
+      out.after = /Lost Temple/.test(document.querySelector('.pp-tgoal').textContent) && (JSON.parse(localStorage.getItem(K)).rv || []).indexOf('main:1') >= 0;
       // THE GREETER STOPPED A HAIR SHORT OF TALKING, FOR EVER. Held 3.2 ft and a ten millionth away, they have to talk
+      // a greeter waits on their own side of the gate, so walk through it first
+      for (let i = 0; i < 100 && document.querySelector('.pp-door'); i++) await sleep(30);
+      const hp = T().host(); if (hp) T().goTo(hp.x, Math.min(T().plan().gate.y - 2, hp.y + 10));
       for (let i = 0; i < 300 && !(T().host() && T().host().ph === 'come'); i++) await sleep(20);
       const h = T().host(); out.come = !!h && h.ph === 'come';
       for (let i = 0; i < 25 && T().host().ph === 'come'; i++){ const q = T().host(); T().goTo(q.x, q.y + 3.2000001); await sleep(16); }
@@ -610,6 +614,18 @@ if (!args.includes('--no-browser')){
     claim(cl.map && cl.card && cl.walk && cl.shut && cl.stays, `the worlds ahead are under cloud: no name of one on the map, the home card or the walk, and a shut gate leaves them hidden (${JSON.stringify(cl)})`);
     claim(cl.before && cl.named && /parting/.test(cl.parts) && /off$/.test(cl.parts) && cl.after, `with the stars the gate opens, the clouds part and only then is the world named (${cl.parts})`);
     claim(cl.come && cl.talks, `a greeter who reaches talking distance talks, rather than stopping a hair short and holding the golfer for ever (${cl.come}, ${cl.talks})`);
+    // A PLANT IS WALKED THROUGH, and it bends away from him and springs back once he is past
+    const pl = await pg.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), K = 'bag_ppt_v1@plt', T = () => window.RTT_PUTT._trail();
+      window.RTT_PUTT.close(); window.RTT_PUTT_MAPFIRST = true; sbUser = { id:'plt' };
+      localStorage.setItem(K, JSON.stringify({ v:2, lives:3, met:['clubhouse'], tours:{ main:{ lv:3, best:{ 1:2, 2:2 }, ace:{}, paid:{}, wpaid:{} } } }));
+      openPutt(); await sleep(300); window.RTT_PUTT._walkTo(2); for (let i = 0; i < 400 && !T(); i++) await sleep(30); await sleep(300);
+      const P = T().plan(), ps = T().plants(); out.n = ps.length; const q = ps.filter(p => p.y > 10 && p.y < P.L - 10)[0];
+      out.noWall = !!q && !P.cols.some(c => Math.hypot(c.x - q.x, c.y - q.y) < 0.05);
+      T().goTo(q.x - 0.6, q.y + 0.1); let mx = 0; for (let i = 0; i < 20; i++){ await sleep(30); const b = T().plants().find(p => p.x === q.x).b; mx = Math.max(mx, Math.abs(b)); }
+      out.bent = mx > 0.1; out.inside = T().plants().find(p => p.x === q.x).in;
+      T().goTo(q.x + 6, q.y + 0.1); await sleep(1500); out.back = Math.abs(T().plants().find(p => p.x === q.x).b) < 0.02;
+      window.RTT_PUTT.close(); localStorage.removeItem(K); sbUser = { id:'chk' }; return out; });
+    claim(pl.n > 10 && pl.noWall && pl.bent && pl.inside && pl.back, `bushes and ferns are walked through, bend away from him and spring back once he is past (${JSON.stringify(pl)})`);
     // A SPARE LIFE IS SPENT WHEN THE HEARTS ARE GONE, and a built putter is equipped from the Bag
     const sp = await pg.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), K = 'bag_ppt_v1@spare';
       window.RTT_PUTT.close(); sbUser = { id:'spare' };
@@ -618,7 +634,8 @@ if (!args.includes('--no-browser')){
       window.RTT_PUTT._state().ov.querySelector('[data-lv="3"]').click(); await sleep(150);
       out.sheet = !!document.querySelector('.pp-oolf [data-spare]'); document.querySelector('.pp-oolf [data-spare]').click(); await sleep(200);
       let st = JSON.parse(localStorage.getItem(K)); out.used = st.bused;
-      window.RTT_PUTT._state().ov.querySelector('[data-lv="3"]').click(); for (let i = 0; i < 100 && window.RTT_PUTT._state().screen !== 'play'; i++) await sleep(50); out.play = window.RTT_PUTT._state().screen === 'play';
+      window.RTT_PUTT._state().ov.querySelector('[data-lv="3"]').click(); await sleep(80); const skw = document.querySelector('.pp-skipw [data-skip]'); if (skw) skw.click();
+      for (let i = 0; i < 100 && window.RTT_PUTT._state().screen !== 'play'; i++) await sleep(50); out.play = window.RTT_PUTT._state().screen === 'play';
       window.RTT_PUTT._lose(); st = JSON.parse(localStorage.getItem(K)); out.spent = st.bspent; out.lives = st.lives;
       // the built Scope Putter goes into the closet and is equipped, for both games; the Bank Shot (one part) does not
       window.RTT_PUTT.close(); openPutt(); await sleep(200);

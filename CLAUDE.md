@@ -19984,6 +19984,11 @@ It names what the trail to that hole still holds and offers Walk, Play now, or C
 yet beaten on the main tour: a beaten hole's trail is already behind you. A gate that would refuse the hole anyway
 (a guest past hole 5, the Members Tour, no lives) shows its own sheet first.
 
+- **Bushes and ferns are walked through** (`PLANT` in trail.js), asked for by the owner. They are left out of the
+  baked land and out of `P.cols`, and drawn live each frame, sorted with everything else that moves. As he
+  pushes through one it bends away from him on a spring (drawn a strip of art pixels at a time, the top leaning
+  most), squashes a little, sheds a few leaves, and swings back past upright once he is past. Rocks, trunks and
+  hay still block. Reduced motion draws them upright.
 - **Scale is one rule**: the golfer is 4 ft tall at 2/3 scale, so a person is 6 ft, and every tree, lamp,
   chest, fence and landmark is sized in those feet (`TREEH`, `LMSIZE`, `BLOCKR`). Tall things stand off the
   path or screen it only from behind (`screensPath`), and a figure behind something is drawn see-through.

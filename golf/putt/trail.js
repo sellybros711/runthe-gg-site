@@ -301,7 +301,7 @@ function plan(spec){
     if (free(nx, ny, 1) && okGround(nx, ny, 1)){ item('npc', nx, ny, { th:themeAt(ny) }); used.push({ x:nx, y:ny, r:1 }); break; } }
 
   // ---- what blocks the golfer: trunks, rocks, buildings, the fence and the wall
-  P.things.forEach(function(t){ if (t.k === 'arch' || t.k === 'fence' || t.k === 'wall') return; var r = BLOCKR[t.k] != null ? BLOCKR[t.k] : t.r; if (r > 0) P.cols.push({ x:t.x, y:t.y, r:r, w:t.w, d:t.d }); });
+  P.things.forEach(function(t){ if (t.k === 'arch' || t.k === 'fence' || t.k === 'wall') return; if (PLANT[t.k]) return; var r = BLOCKR[t.k] != null ? BLOCKR[t.k] : t.r; if (r > 0) P.cols.push({ x:t.x, y:t.y, r:r, w:t.w, d:t.d }); });
   /* SHADOWS ON THE GROUND. The light comes from the upper left, the same as the golfer's, so everything tall
      throws a soft shadow down and to the right. It is what sets a tree on the ground rather than over it. */
   var SH = []; P.things.forEach(function(t){ var H = t.h || 1; if (H < 1.6 && !t.w) return; var rx, ry, cx2, cy2;
@@ -318,6 +318,9 @@ var TREEH = { broad:[13, 5, 4.2], pine:[14, 6, 3.4], palm:[12, 4, 3.6], cactus:[
 var LOWR = { bush:1.1, bushf:1.1, rock:1.1, fern:1, shell:0.5, bushdry:0.9, rockdark:1, ember:0.6, rocksnow:1.2, bushsnow:1.1, puffsmall:1.2, rainbowrock:0.9, cube:0.8, cone:0.6, tomb:0.9, pumpkin:0.8, hay:1.1 };
 var LOWH = { bush:1.8, bushf:1.8, rock:1.4, fern:1.6, shell:0.4, bushdry:1.2, rockdark:1.4, ember:0.8, rocksnow:1.6, bushsnow:1.8, puffsmall:1.6, rainbowrock:1.3, cube:1.4, cone:1.2, tomb:2.2, pumpkin:1.2, hay:1.6 };
 // what part of a thing stops the golfer (a tree stops him at its trunk, not its crown)
+/* PLANTS ARE WALKED THROUGH. A bush or a fern is never a wall: it is drawn live rather than baked into the land,
+   and as the golfer pushes through it the leaves bend away from him, rustle, and spring back once he is past. */
+var PLANT = { bush:1, bushf:1, fern:1, bushdry:1, bushsnow:1 };
 var BLOCKR = { pin:0.1, broad:0.6, pine:0.7, palm:0.5, cactus:0.7, dead:0.6, basalt:1.2, puff:0.8, pylon:0.8, cab:1.1, corn:0.5, lamp:0.3, shell:0, ember:0, bushf:0.9 };
 // landmark footprints: width, depth, height
 var LMSIZE = { shed:[9, 6, 11], green:[9, 7, 1], bench:[3, 1.2, 2], lamps:[1, 1, 7], ruin:[10, 3, 9], statue:[3, 3, 8], columns:[8, 5, 9], wreck:[12, 5, 7], boat:[6, 3, 3], barrels:[4, 3, 2.4],
@@ -348,7 +351,7 @@ function land(P){
       if (dIn < 0.3){ ex = ex || {}; ex.edge = 1; }
       var fb = vn(x * 0.22, y * 0.22, seed + 77); if (fb > 0.74 && dIn > 1.2){ ex = ex || {}; ex.fl = Math.min(0.55, (fb - 0.74) * 4); }
       return [P.themeAt(y) === sp.theme ? 'g' : 'g0', ex]; },
-    build:function(B){ P.things.forEach(function(t, i){ try{ (BUILD[t.k] || BUILD.rock)(B, t, i, P); }catch(e){} }); },
+    build:function(B){ P.things.forEach(function(t, i){ if (PLANT[t.k]) return; try{ (BUILD[t.k] || BUILD.rock)(B, t, i, P); }catch(e){} }); },
     mats:mats(P)
   };
 }
@@ -714,6 +717,26 @@ function run(box, P, pic, api){
     gate0:P.gate ? prop('gate0:' + sp.theme, gateFn(false, P), PW * 2 + 1, 1.2, 7) : null, gate1:P.gate ? prop('gate1:' + sp.theme, gateFn(true, P), PW * 2 + 1, 1.2, 7) : null,
     lock0:P.fence ? prop('lock0', lockGateFn(false), 3.4, 1, 3) : null, lock1:P.fence ? prop('lock1', lockGateFn(true), 3.4, 1, 3) : null
   };
+  // a plant's sprite, three of each kind a world so a hedge of them is not one bush stamped over and over
+  var plants = []; P.things.forEach(function(t, i){ if (PLANT[t.k]) plants.push({ t:t, v3:i % 3, b:0, vb:0, sq:0, in:false, x:t.x, y:t.y, r:LOWR[t.k] || 1 }); });
+  function plantSprite(q){ var t = q.t, k = t.k + ':' + kitOf(t.th).leaves.join('') + ':' + q.v3; return prop('plant:' + k, function(B){ BUILD[t.k](B, { k:t.k, x:0, y:0, th:t.th, h:t.h }, 3 + q.v3 * 5); }, 3.2, 3, 2.6); }
+  function stepPlants(dt){ for (var i = 0; i < plants.length; i++){ var q = plants[i], dx = q.x - g.x, dy = q.y - g.y, d = Math.hypot(dx, dy), reach = q.r + 0.9, inside = d < reach;
+      if (!inside && Math.abs(q.b) < 0.003 && Math.abs(q.vb) < 0.003 && q.sq < 0.003){ q.b = q.vb = q.sq = 0; q.in = false; continue; }
+      var push = inside ? 1 - d / reach : 0, side = dx === 0 ? (g.vx > 0 ? 1 : -1) : (dx > 0 ? 1 : -1), tgt = side * push * (0.55 + Math.min(1, Math.hypot(g.vx, g.vy) / SPEED) * 0.45);
+      if (inside && !q.in){ q.vb += side * 2.6; rustle(q); } q.in = inside;
+      // a spring, a little underdamped, so it swings back past upright once and settles
+      q.vb += ((tgt - q.b) * 70 - q.vb * 7) * dt; q.b += q.vb * dt; q.sq += ((push * 0.22) - q.sq) * Math.min(1, dt * 10); } }
+  function rustle(q){ if (reduce) return; var kx = kitOf(q.t.th), z = pic.zAt(q.x, q.y) + 1.4; for (var i = 0; i < 4; i++){ var a = Math.random() * 6.28, s1 = 1 + Math.random() * 1.6;
+      parts.push({ x:q.x + Math.cos(a) * 0.5, y:q.y + Math.sin(a) * 0.4, z:z, vx:Math.cos(a) * s1, vy:Math.sin(a) * s1 * 0.6, vz:2 + Math.random() * 2.5, c:kx.leaves[i % kx.leaves.length], t:0.35 }); } }
+  // bent: the plant drawn in strips of one art pixel, each shifted by how high it stands, so the top leans most
+  function drawPlant(q){ var sp2 = plantSprite(q); if (!sp2) return; var z = pic.zAt(q.x, q.y), p = scr(q.x, q.y, z), w = sp2.cv.width * kk, h = sp2.cv.height * kk, rx = Math.round(p[0] - sp2.ax * kk), ry = Math.round(p[1] - sp2.ay * kk);
+    if (rx > W || ry > H || rx + w < 0 || ry + h < 0) return;
+    var bend = reduce ? 0 : q.b, sq = reduce ? 0 : q.sq;
+    if (Math.abs(bend) < 0.01 && sq < 0.01) ctx.drawImage(sp2.cv, rx, ry, w, h);
+    else { var rows = sp2.cv.height, base = sp2.ay, top = 0;
+      for (var a = 0; a < rows; a++){ var u = Math.max(0, (base - a) / Math.max(1, base)), off = Math.round(bend * u * u * 9) * kk, ny = Math.round(p[1] - (base - a) * (1 - sq * u) * kk);
+        ctx.drawImage(sp2.cv, 0, a, sp2.cv.width, 1, rx + off, ny, w, kk); } }
+    occlude(rx - 8 * kk, ry, w + 16 * kk, h, q.x, q.y, z); }
   function brkSprite(t){ var k = brkKind(t); return prop('brk:' + k, function(B){ (BRK[k] || BRK.crate)(B, 0, 0); }, 1.8, 1.8, 2); }
   // the local is the 3D golfer model, in the world's own clothes, standing and facing the path
   function npcFrame(t){ var G = window.RTT_G3D; if (!G || !G.frame) return null; var face = t.x < P.cx(t.y) ? 90 : -90; try{ return G.frame(Object.assign({ shoes:'white', club:'driver', lefty:false }, kitOf(t.th).npc), face, 'walk', 8); }catch(e){ return null; } }
@@ -969,7 +992,7 @@ function run(box, P, pic, api){
     if (g.y < 1.2 && Math.abs(g.x - P.cx(0)) < 3.6 && !ended){ ended = true; api.arrive(); return; }
     if (bubble && now > bubble.until){ bubble = null; bubEl.hidden = true; }
     camAim(false);
-    draw(tsec, dt);
+    stepPlants(dt); draw(tsec, dt);
   }
   function draw(tsec, dt){
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = false; ctx.fillStyle = kitOf(sp.theme).g[0]; ctx.fillRect(0, 0, W, H);
@@ -981,10 +1004,12 @@ function run(box, P, pic, api){
     if (P.fence) ds.push({ k:'lock', x:P.lockGate.x, y:P.lockGate.y });
     ds.push({ k:'me', x:g.x, y:g.y });
     if (hs) ds.push({ k:'hostfig', x:hs.x, y:hs.y });
+    for (var pi = 0; pi < plants.length; pi++) ds.push({ k:'plant', x:plants[pi].x, y:plants[pi].y, q:plants[pi] });
     if (!reduce) lifeGround(ds);
     ds.sort(function(a, c){ return a.y - c.y; });
     for (var i = 0; i < ds.length; i++){ var t = ds[i];
       if (t.k === 'me') drawMe(tsec);
+      else if (t.k === 'plant') drawPlant(t.q);
       else if (t.k === 'coin') drawCoin(t, tsec);
       else if (LOOT[t.k] && t.k !== 'chest') drawLoot(t, tsec);
       else if (t.k === 'chest') drawSprite(t.done ? SPR.chest1 : SPR.chest0, t.x, t.y, pic.zAt(t.x, t.y));
@@ -1049,7 +1074,7 @@ function run(box, P, pic, api){
       window.removeEventListener('pointercancel', pup); window.removeEventListener('blur', pup); window.removeEventListener('keydown', kd, true); window.removeEventListener('keyup', ku, true); },
     // for the checks: where he is, and a way to hold the stick
     pos:function(){ return [g.x, g.y]; }, stick:function(vx, vy){ stickV = [vx, vy]; }, auto:function(on){ setAuto(on !== false); },
-    plan:function(){ return P; }, gate:function(){ return gate; }, clouds:function(){ return cloud ? (cloud.part ? 'parting' : 'on') : 'off'; }, life:function(){ return { theme:sp.theme, ships:ships.map(function(s1){ var y1 = shipY(s1); return { x:shipX(y1), y:y1 }; }), flyers:flyers.length, motes:motes.length, balloons:balloons.length, tumbles:tumbles.length, ghosts:ghosts.length, puffs:puffs.length, smoke:smokeSrc.length }; }, host:function(){ return hs ? { x:hs.x, y:hs.y, ph:hs.ph, talking:!!dlg } : null; }, items:function(){ return items; }, goTo:function(x, y){ g.x = x; g.y = y; }, view:function(){ return { kk:kk, W:W, H:H, ox:ox, oy:oy }; }, scr:scr };
+    plan:function(){ return P; }, gate:function(){ return gate; }, clouds:function(){ return cloud ? (cloud.part ? 'parting' : 'on') : 'off'; }, life:function(){ return { theme:sp.theme, ships:ships.map(function(s1){ var y1 = shipY(s1); return { x:shipX(y1), y:y1 }; }), flyers:flyers.length, motes:motes.length, balloons:balloons.length, tumbles:tumbles.length, ghosts:ghosts.length, puffs:puffs.length, smoke:smokeSrc.length }; }, host:function(){ return hs ? { x:hs.x, y:hs.y, ph:hs.ph, talking:!!dlg } : null; }, items:function(){ return items; }, goTo:function(x, y){ g.x = x; g.y = y; }, plants:function(){ return plants.map(function(q){ return { x:q.x, y:q.y, k:q.t.k, b:q.b, in:q.in }; }); }, view:function(){ return { kk:kk, W:W, H:H, ox:ox, oy:oy }; }, scr:scr };
   return ctl;
 }
 
