@@ -375,13 +375,13 @@ function skeleton(f, bw, am, breath, MX){
   var dip = f.dip || 0, sp = f.sp || 0, up = typeof breath === 'number' ? breath : breath ? 1 : 0, ts = MX.ts, sw = MX.sw, g = MX.gw;
   var hipY = GY - MX.legs, neckY = hipY - MX.torso, ankY = GY - 4.0;
   var J = { dip: dip, MX: MX };
-  J.head = [CX, neckY - 8.9 * MX.k + dip + up, 0.4 * MX.k];
+  J.head = [CX, neckY - 6.5 * MX.k + dip + up, 0.6 * MX.k];
   J.neck = [CX, neckY + dip + up, 0];
   J.chest = [CX, neckY + 7.2 * ts + dip + up, 0];
   J.waist = [CX, neckY + 15.6 * ts + dip, 0];
   J.arm = {}; J.leg = {};
   /* hanging, the fingertips reach the top of the thigh, whatever his height */
-  var shY = neckY + 3.0 * ts, kneeY0 = (hipY + ankY) / 2 + 0.6;
+  var shY = neckY + 2.6 * ts, kneeY0 = (hipY + ankY) / 2 + 0.6;
   var as = Math.max(0.85, (hipY + 0.42 * (kneeY0 - hipY) - shY) / 16.7);
   /* but an arm straight up must still fit under the top of the canvas */
   /* measured on screen, where the camera looking down foreshortens every
@@ -612,7 +612,20 @@ function build(L, o, J){
   var headFrom = P.length;
   var headF = ell(H, HR);
   [-1, 1].forEach(function(s){ add('ear' + s, 'head', 'skin', ell([hx + s * 7.0, hy + 1.2, hz - 0.8], [1.3, 2.0, 1.2]), [hx + s * 7, hy + 1, hz], 2.6); });
-  add('head', 'head', 'skin', headF, H, 8.4, { bias: 0.06 });
+  /* A HEAD IS NOT A BALL. Seen from the corner a ball with dots on it looks
+     away from you; what says which way a face points is its profile. So the
+     skull carries a jaw and a chin that come forward under it, a brow ridge,
+     cheekbones and a nose that stands off the face and catches the light. */
+  var faceF = (function(){
+    var jaw = ell([hx, hy + 3.6, hz + 2.4], [5.4, 3.6, 4.8]);
+    var chin = ell([hx, hy + 6.4, hz + 4.6], [2.4, 1.7, 2.0]);
+    var brow = ell([hx, hy - 1.9, hz + 5.6], [5.0, 1.3, 2.0]);
+    var cheeks = [-1, 1].map(function(s){ return ell([hx + s * 3.6, hy + 1.6, hz + 4.9], [1.9, 1.6, 1.8]); });
+    var nose = cone([hx, hy - 0.2, hz + 7.2], [hx, hy + 2.3, hz + 7.9], 0.45, 0.75);
+    return function(p){ var d = smin(headF(p), jaw(p), 1.6); d = smin(d, chin(p), 1.0); d = smin(d, brow(p), 0.9);
+      d = smin(d, cheeks[0](p), 0.8); d = smin(d, cheeks[1](p), 0.8); return smin(d, nose(p), 0.5); };
+  })();
+  add('head', 'head', 'skin', faceF, H, 9.4, { bias: 0.06 });
 
   /* hair: every style a volume over the head */
   var hs = L.hair;
@@ -621,24 +634,27 @@ function build(L, o, J){
   /* what of the head the hair covers: above the hairline, the sides down
      past the temples, and all of the back */
   var hairline = function(p, low){ var l = local(p);
-    if (l[1] < -3.3 + Math.max(0, -l[2]) * 0.25) return true;
+    if (l[1] < -4.3 + Math.max(0, -l[2]) * 0.35) return true;
     if (l[2] < -1.0 && l[1] < (low || 3.0)) return true;
     return Math.abs(l[0]) > 5.6 && l[1] < -0.6 && l[2] < 3.0; };
   var onHair = function(f, low){ return function(p){ return hairline(p, low) ? f(p) : Math.max(f(p), 0.6); }; };
+  /* a hairline is higher at the front than at the sides, so the forehead
+     shows: the cut climbs as it comes round to the face */
+  var frontCut = function(p, at){ var l = local(p); return l[1] + at + Math.max(0, l[2] - 2.5) * 0.45; };
   var hairMat = function(fn){ return fn ? function(p){ return fn(local(p)); } : 'hair'; };
   var hb = { gloss: 1, bias: -0.12 };
   if (hs === 'fade' || hs === 'flattop' || hs === 'curly') {
     add('hairf', 'hair', function(p){ var l = local(p); return l[1] > -4.4 && Math.abs(l[0]) > 4.8 ? { m: 'fade', dt: (Math.floor(p[0]) + Math.floor(p[1])) % 2 ? 0 : -1 } : 'hair'; },
       onHair(shellF(0.45)), H, 9, hb);
   }
-  if (hs === 'fade') add('hair', 'hair', hairMat(), cut(shellF(1.3), function(p){ return local(p)[1] + 3.6; }), H, 9.5, hb);
+  if (hs === 'fade') add('hair', 'hair', hairMat(), cut(shellF(1.3), function(p){ return frontCut(p, 3.6); }), H, 9.5, hb);
   else if (hs === 'flattop') add('hair', 'hair', hairMat(function(l){ return l[1] < -10.2 ? { m: 'hair', dt: 1 } : (Math.floor(l[0] + 30) % 3 === 0 ? { m: 'hair', dt: -1 } : 'hair'); }),
-    (function(a, b){ return function(p){ return smin(a(p), b(p), 1.0); }; })(cut(shellF(0.9), function(p){ return local(p)[1] + 3.4; }), rbox([hx, hy - 8.6, hz - 0.3], [6.4, 3.0, 5.8], 1.1)), [hx, hy - 6, hz], 10, hb);
+    (function(a, b){ return function(p){ return smin(a(p), b(p), 1.0); }; })(cut(shellF(0.9), function(p){ return frontCut(p, 3.4); }), rbox([hx, hy - 8.6, hz - 0.3], [6.4, 3.0, 5.8], 1.1)), [hx, hy - 6, hz], 10, hb);
   else if (hs === 'curly') {
     var bumps = [shellF(0.9)];
     [[-4, -8, 2], [0, -9, 2.6], [4, -8, 2], [-6, -5, 1], [6, -5, 1], [-2, -8, -2.4], [2.4, -8, -2.6], [0, -6.4, 4.2], [-4.6, -6, 3.2], [4.6, -6, 3.2], [-5.6, -6.4, -2.4], [5.6, -6.4, -2.4]].forEach(function(b){
       bumps.push(sph([hx + b[0], hy + b[1], hz + b[2]], 2.5)); });
-    add('hair', 'hair', 'hair', cut(uni(bumps), function(p){ return local(p)[1] + 3.4; }), [hx, hy - 6, hz], 11, hb);
+    add('hair', 'hair', 'hair', cut(uni(bumps), function(p){ return frontCut(p, 3.4); }), [hx, hy - 6, hz], 11, hb);
   }
   else if (hs === 'buzz') add('hair', 'hair', 'buzz', onHair(shellF(0.35)), H, 9, { bias: -0.2 });
   else if (hs === 'braids') add('hair', 'hair', hairMat(function(l){ var r = Math.floor(l[0] + 30.5) % 3; return r === 0 ? { m: 'scalp' } : { m: 'hair', dt: (Math.floor(l[1] + l[2] * 0.4 + 40) + r) % 2 ? 1 : -1 }; }),
@@ -649,7 +665,7 @@ function build(L, o, J){
   }
   else if (hs === 'afro' || hs === 'afrocap') {
     var big = hs === 'afro' ? ell([hx, hy - 3.6, hz - 0.8], [10.0, 9.2, 9.0]) : ell([hx, hy - 1.8, hz - 1.2], [9.2, 6.6, 8.0]);
-    var faceHole = function(p){ var l = local(p); return Math.max(-l[1] - 3.4, l[1] - 9, Math.abs(l[0]) - 6.4, -l[2]); };
+    var faceHole = function(p){ var l = local(p); return Math.max(-l[1] - 4.6, l[1] - 9, Math.abs(l[0]) - 6.4, -l[2]); };
     add('hair', 'hair', function(p){ return (Math.floor(p[0] * 0.7) * 7 + Math.floor(p[1] * 0.7) * 13) % 5 === 0 ? { m: 'hair', dt: 1 } : (Math.floor(p[0]) * 3 + Math.floor(p[1]) * 5) % 7 === 0 ? { m: 'hair', dt: -1 } : 'hair'; },
       minus(big, faceHole), [hx, hy - 3, hz], 11, hb);
   }
@@ -874,11 +890,8 @@ function paint0(look, o){
     if (res >= 2) { block(ex - 1, ey - 2, w + 1, 1, brow); block(ex - 1, ey - 1, w + 1, 1, SK[1]); }
     if (o.blink) block(ex, ey + eh - 1, w, 1, SK[0]); else block(ex, ey, w, eh, pupil);
   });
-  if (res >= 2) {
-    var nz = at(0.9, 1.6, 7.9), nb = at(0.4, 2.7, 7.9);
-    block(nz[0], nz[1], 1, Math.max(1, nb[1] - nz[1]), SK[1]);
-    block(nb[0], nb[1], 2, 1, SK[0]);
-  }
+  /* the nose is modelled now, and lit like the rest of the head; a painted
+     shadow on top of it read as a second nose */
   var m0 = at(-1.3, 3.6, 7.0), m1 = at(1.3, 3.6, 7.0), mc = mix(SK[0], '#4a1820', 0.35);
   for (var mx = Math.min(m0[0], m1[0]); mx <= Math.max(m0[0], m1[0], m0[0] + 1); mx++) put(mx, Math.round(m0[1] + (m1[1] - m0[1]) * ((mx - m0[0]) / Math.max(1, m1[0] - m0[0]))), mc);
   /* stubble and beards are read off where each pixel lands on the skull */

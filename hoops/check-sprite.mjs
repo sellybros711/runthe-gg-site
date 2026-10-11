@@ -79,6 +79,12 @@
  * the base and drawn as the same piece as the torso so no seam shows, and the
  * shoes are basketball sneakers: a flat cupsole, a toe box, a heel counter, a
  * high-top collar, a midsole, laces, a side stripe and a heel tab.
+ *
+ * RE-RECORDED A TENTH TIME, ON PURPOSE: the owner found the necks too long.
+ * The head sits lower and the shoulders a little higher. With it the head got
+ * a profile (a jaw and chin, a brow ridge, cheekbones and a modelled nose) so
+ * a face from the corner reads as looking somewhere, and every hairline climbs
+ * at the front so the forehead and the eyes show.
  */
 import fs from 'node:fs';
 import path from 'node:path';
