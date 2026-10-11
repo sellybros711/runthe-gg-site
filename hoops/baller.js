@@ -215,7 +215,7 @@ function hairRamp(hex){ var l = hl(hex), r = ramp(hex, { spread: l < 0.2 ? 0.55 
   if (l < 0.2) { r[3] = mix(hex, '#8a7a9a', 0.28); r[4] = mix(hex, '#b8aac8', 0.45); } return r; }
 
 /* ── the camera: a little above, looking down, the floor where it was ── */
-var PITCH = 30 * Math.PI / 180, CP = Math.cos(PITCH), SN = Math.sin(PITCH), GY = 59.4;  /* the floor, two cells up: from above, the near foot reaches lower on screen */
+var PITCH = 30 * Math.PI / 180, CP = Math.cos(PITCH), SN = Math.sin(PITCH), GY = 58.2;  /* the floor, three cells up: from above, the near foot reaches lower on screen */
 /* THE 3/4 CORNER CAMERA. The camera looks down 30 degrees, and the man is
    turned YAW about his own vertical axis, so he is seen from the front corner
    rather than straight on: one shoulder near, one far, the depth of his chest
@@ -363,7 +363,7 @@ function typicalWt(ht){ return Math.round((195 + (ht - 75) * 8) / 5) * 5; }
 function metrics(L){
   var ht = (L && L.ht) || BASE_HT, wt = (L && L.wt) || typicalWt(ht), h = ht / BASE_HT;
   var gw = Math.max(-3, Math.min(4, (wt - typicalWt(ht)) / 10));
-  var legs = 29.0 * Math.pow(h, 1.35), torso = 18.6 * Math.pow(h, 0.85);
+  var legs = 27.8 * Math.pow(h, 1.35), torso = 18.6 * Math.pow(h, 0.85);
   return { ht: ht, wt: wt, h: h, gw: gw, legs: legs, torso: torso, ts: torso / 19, ls: legs / 22.2, sw: 1 + (h - 1) * 0.55, k: HEAD_K };
 }
 
@@ -389,7 +389,7 @@ function skeleton(f, bw, am, breath, MX){
   as = Math.min(as, (GY + (shY - GY) * CP - 4.6) / (19.0 * CP));
   [-1, 1].forEach(function(s){
     var p = f.a[String(s)] || DOWN;
-    var sh = [CX + s * ((7.4 + bw * 0.8) * sw + Math.max(0, g) * 0.3 - Math.max(0, -g) * 0.15), shY + dip + up, 0];
+    var sh = [CX + s * ((6.9 + bw * 0.8) * sw + Math.max(0, g) * 0.3 - Math.max(0, -g) * 0.15), shY + dip + up, 0];
     var r1 = p[0] * Math.PI / 180, r2 = p[1] * Math.PI / 180;
     var f1 = p[2] == null ? 1 : p[2], f2 = p[3] == null ? 1 : p[3];
     var L1 = 7.6 * as, L2 = 7.0 * as;
@@ -456,28 +456,45 @@ function build(L, o, J){
       add('trouser' + s, 'leg' + s, 'trouser', uni([cone([G.hip[0], G.hip[1] - 2, 0], G.kn, 3.4 + g * 0.25, 3.0 + g * 0.15), cone(G.kn, G.ank, 3.0 + g * 0.1, 2.7)]), G.kn, 12 * ls);
     }
     /* the shoe: a rounded toe box on a flat sole */
-    var a = G.ank, fx = a[0] + s * 0.3, fy = a[1] + 2.4, fz = a[2] + 1.3;
-    var shoeF = cut(ell([fx, fy, fz], [2.5, 2.1, 3.9]), function(p){ return p[1] - (a[1] + 4.0); });
-    add('shoe' + s, 'shoe' + s, function(p){
-      var ly = p[1] - a[1];
-      if (ly > 3.35) return 'sole';
-      if (suit) return { m: 'shoe', gloss: 2 };
-      if (ly < 1.0) return { m: 'shoe', dt: -1 };
-      if (p[2] > fz + 2.4 && Math.abs(p[0] - fx) < 0.6 && ly < 2.6) return { m: 'lace', t: Math.floor(ly * 2) % 2 ? 4 : 2 };
-      if (Math.abs(p[2] - fz) < 1.1 && Math.abs(p[0] - fx) > 2.1 && ly > 1.2 && ly < 2.8) return 'trim';
-      return 'shoe';
-    }, shoeF, [fx, fy, fz], 5.2, { gloss: 1 });
+    var a = G.ank, fx = a[0] + s * 0.3, fy = a[1] + 2.4, fz = a[2] + 1.3, fl = a[1] + 4.0;
+    var shoeF, shoeM;
+    if (suit) {
+      shoeF = cut(ell([fx, fy, fz], [2.4, 1.9, 3.9]), function(p){ return p[1] - fl; });
+      shoeM = function(p){ return p[1] - a[1] > 3.35 ? 'sole' : { m: 'shoe', gloss: 2 }; };
+    } else {
+      /* A BASKETBALL SNEAKER, NOT AN EGG: a flat cupsole with a rounded toe,
+         a low toe box, a tall heel counter and a padded high-top collar
+         around the ankle. Then what makes it read as a shoe: the white
+         midsole with a tread line, laces up the vamp, a stripe down the
+         side and a heel tab. */
+      var soleF = rbox([fx, fl - 0.5, fz + 0.05], [2.1, 0.5, 3.6], 0.45);
+      var toeF = ell([fx, fl - 1.45, fz + 1.45], [2.0, 1.3, 2.4]);
+      var heelF = rbox([fx, fl - 2.3, fz - 1.0], [1.95, 1.8, 2.25], 1.0);
+      var collarF = ell([fx, a[1] + 0.5, fz - 1.3], [1.95, 1.5, 1.95]);
+      shoeF = function(p){ return Math.min(soleF(p), smin(smin(toeF(p), heelF(p), 1.3), collarF(p), 0.9)); };
+      shoeM = function(p){
+        var ly = p[1] - a[1], dz = p[2] - fz, dx = Math.abs(p[0] - fx);
+        if (ly > 3.62) return { m: 'shoe', dt: -1 };
+        if (ly > 2.95) return 'sole';
+        if (ly < 0.8) return { m: 'shoe', dt: -1 };
+        if (dz < -3.0 && ly < 2.4) return 'trim';
+        if (dx < 0.55 && dz > -0.8 && dz < 1.6 && ly < 2.4) return Math.floor((dz + 3) * 1.4) % 2 ? { m: 'lace', t: 4 } : { m: 'lace', t: 1 };
+        if (dx > 1.45 && dz > -2.2 && dz < 2.6 && Math.abs(ly - (2.3 - dz * 0.32)) < 0.42) return 'trim';
+        return 'shoe';
+      };
+    }
+    add('shoe' + s, 'shoe' + s, shoeM, shoeF, [fx, fy, fz], 6.2, { gloss: 1 });
   });
 
   /* the torso: a chest and a waist, one smooth body */
   /* the chest and the waist fill out with weight, the waist (and the belly
      in front of it) most */
-  var cR = [(7.5 + bw) * sw + g * 0.48, 6.0 * ts, (7.5 + bw) * sw * 0.66 + g * 0.42], wR = [(5.0 + bw * 0.5) * sw + g * 0.72, 5.0 * ts, (5.0 + bw * 0.5) * sw * 0.74 + Math.max(0, g) * 0.8 + Math.min(0, g) * 0.3];
+  var cR = [(6.9 + bw) * sw + g * 0.48, 5.8 * ts, (6.9 + bw) * sw * 0.64 + g * 0.42], wR = [(5.3 + bw * 0.5) * sw + g * 0.72, 5.0 * ts, (5.3 + bw * 0.5) * sw * 0.74 + Math.max(0, g) * 0.8 + Math.min(0, g) * 0.3];
   var C0 = J.chest, W0 = J.waist;
   /* a body, not a barrel: the ribcage and the waist, the two pecs over the
      front of the ribs, the lats flaring under the arms behind, and the
      shoulder blades. From the 3/4 corner the depth is half of what is seen. */
-  var pecs = [-1, 1].map(function(s){ return ell([CX + s * 2.7 * sw, C0[1] - 1.6 * ts, cR[2] - 1.2], [3.0 * sw + Math.max(0, bw) * 0.5, 2.3 * ts, 1.7 + Math.max(0, bw) * 0.3]); });
+  var pecs = [-1, 1].map(function(s){ return ell([CX + s * 2.5 * sw, C0[1] - 1.6 * ts, cR[2] - 1.3], [2.6 * sw + Math.max(0, bw) * 0.5, 2.0 * ts, 1.4 + Math.max(0, bw) * 0.3]); });
   var lats = [-1, 1].map(function(s){ return ell([CX + s * (cR[0] - 2.2), C0[1] + 0.6 * ts, -1.2], [2.4, 4.4 * ts, 2.6]); });
   var blades = [-1, 1].map(function(s){ return ell([CX + s * 3.0 * sw, C0[1] - 2.2 * ts, -cR[2] + 1.0], [2.6, 2.6 * ts, 1.4]); });
   var torsoF = function(p){ var d = smin(ell(C0, cR)(p), ell(W0, wR)(p), 2.2);
@@ -508,7 +525,7 @@ function build(L, o, J){
     /* the shorts: wide and long, cut into two legs at the seat, and as long
        on a tall man as on a short one, to just above the knee */
     var sy0 = W0[1] - 0.2, sd = 3.6 * ts, sl = 7.0 * ls;
-    var shW = (5.9 + bw * 0.4) * sw + g * 0.6, lr0 = 3.7 + g * 0.36, lr1 = 3.3 + g * 0.24;
+    var shW = (6.4 + bw * 0.4) * sw + g * 0.6, lr0 = 3.7 + g * 0.36, lr1 = 3.3 + g * 0.24;
     var shortsF = uni([ell([CX, sy0 + 2.6 * ts, 0], [shW, 4.2 * ts, 4.8 + Math.max(0, g) * 0.45]),
       cone([CX - 3.7 * sw, sy0 + 3.0 * ts, 0], [J.leg[-1].kn[0] + 0.4, sy0 + sd + sl, J.leg[-1].kn[2] * 0.6], lr0, lr1),
       cone([CX + 3.7 * sw, sy0 + 3.0 * ts, 0], [J.leg[1].kn[0] - 0.4, sy0 + sd + sl, J.leg[1].kn[2] * 0.6], lr0, lr1)]);
@@ -542,8 +559,9 @@ function build(L, o, J){
      base, so it reads as part of the shoulders rather than a tube */
   var nb = Math.max(0, bw * 0.3);
   var neckF = function(p){ return smin(cone([CX, J.neck[1] - 2.2, -0.5], [CX, J.neck[1] + 1.2 * ts, -0.5], 1.95 + nb + g * 0.1, 2.6 + nb + g * 0.15)(p),
-    ell([CX, J.neck[1] + 2.2 * ts, -0.8], [4.6 + nb * 2 + g * 0.3, 1.5, 2.2])(p), 1.6); };
-  add('neck', 'neck', 'skin', neckF, J.neck, 7, { bias: -0.25 });
+    ell([CX, J.neck[1] + 2.4 * ts, -0.9], [3.3 + nb * 1.6 + g * 0.25, 1.3, 1.9])(p), 1.4); };
+  /* the same piece as the torso, so no contour line is drawn where they meet */
+  add('neck', 'torso', 'skin', neckF, J.neck, 7, { bias: -0.25 });
 
   /* the arms: a shoulder, an upper arm, a forearm, a hand */
   [-1, 1].forEach(function(s){
@@ -563,7 +581,9 @@ function build(L, o, J){
       var t = Math.hypot(p[0] - A.wr[0], p[1] - A.wr[1], p[2] - A.wr[2]);
       return t < 1.3 ? 'cuff' : 'jacket';
     } : mat, armF, A.el, 10);
-    add('hand' + s, 'arm' + s, 'skin', ell(A.hand, [1.55, 2.0, 1.4]), A.hand, 3, { hand: s });
+    /* a hand grows with the man: a fixed size was lost inside a big man's jacket */
+    var hk = sw * (1 + Math.max(0, g) * 0.05);
+    add('hand' + s, 'arm' + s, 'skin', ell(A.hand, [1.55 * hk, 2.0 * hk, 1.4 * hk]), A.hand, 3 * hk, { hand: s });
   });
 
   /* what he is holding */

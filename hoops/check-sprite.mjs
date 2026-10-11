@@ -72,6 +72,13 @@
  * figure is about six and a half heads tall, and the face is placed on the
  * skull in 3D. Every one of the 960 moved, which is the whole drawing seen
  * from a new place rather than a pixel drifting.
+ *
+ * RE-RECORDED A NINTH TIME, ON PURPOSE: the owner found the chest too big for
+ * the hips, the neck disconnected with too wide a base, and the shoes ovals.
+ * The chest and pecs are smaller and the hips fuller, the neck is narrower at
+ * the base and drawn as the same piece as the torso so no seam shows, and the
+ * shoes are basketball sneakers: a flat cupsole, a toe box, a heel counter, a
+ * high-top collar, a midsole, laces, a side stripe and a heel tab.
  */
 import fs from 'node:fs';
 import path from 'node:path';
