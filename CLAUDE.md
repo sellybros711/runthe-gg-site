@@ -19934,13 +19934,20 @@ walked with a stick or the arrows, or on Auto walk along the path; Skip goes str
   that slides, mud that slows), its own breakables and someone to talk to. Lava sends him back to the path.
 - **No two walks are alike.** A trail takes one of four shapes (a meander, switchbacks, one long sweep, a
   twisting lane), mirrored at random. Its clearing sits on the side with room, half the time down a little
-  path and half the time hidden in the trees, and holds a chest, a ring of coins or a pile to smash. Coins come
-  in patterns picked per trail (a run, a zigzag, an arc round a bend, singles in the grass, a line of crumbs
-  leading off to a pile, a ring round a tree). check-putt plans seventeen trails and asserts at least three
-  shapes, three kinds of clearing, and no two with their coins in the same places.
-- **What is on the trail is kept** in the Tour record as `st.trail['tour:to']`: coins, breakables smashed,
-  the chest, the key, the golden ball and the rare things below. A chest is locked behind a fence on about
-  four trails in ten, the key somewhere off the path. A golden ball on every trail; all of a world's pays 500
+  path and half the time hidden in the trees, and holds a chest or a pile to smash. check-putt plans seventeen
+  trails and asserts at least three shapes, three kinds of clearing, and no two hiding their chests in the same
+  places.
+- **NO COIN LIES LOOSE. Coins are in chests**, the owner's call. Three or four are hidden off the path on every
+  trail (`hideSpot`: just north of a tree or a rock, so the camera cannot see them from the path), plus the
+  clearing's. Walking up to one opens it and its coins fly out and land round it; each is walked over to pick
+  up and paid into the Run The Tour wallet (`COIN_V` each, through the host's `coins`). A chest pays nothing
+  itself. Where each coin lands is fixed by the plan (`drops`), so a coin left on the ground is still there next
+  time. Breakables are the only other coins. check-putt opens a hidden chest, picks its coins up and checks the
+  payout.
+- **What is on the trail is kept** in the Tour record as `st.trail['tour:to']`: coins (`c`), chests opened
+  (`ch`), breakables smashed, the key, the golden ball and the rare things below. `k` is the clearing chest on a
+  record from before chests held coins: it reads as opened with its coins already paid. A chest is locked behind
+  a fence on about four trails in ten, the key somewhere off the path. A golden ball on every trail; all of a world's pays 500
   coins and a named reward. `pmerge` takes the union and `cloudProg` counts them.
 - **The rare things are fixed to trails** (`trailLoot`, `lootSlots`, main tour only), so every player finds
   them in the same places, further off the path than anything else:
