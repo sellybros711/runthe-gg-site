@@ -1,0 +1,437 @@
+# Run The Floor economy: the plan (Phase 0)
+
+The port of Run The Tour's user side (`golf/`) into Run The Floor (`hoops/`).
+Nothing in this file is built yet. It is the map, the measured numbers and the
+decisions, written down before any code so the next phases have something to be
+held to. `docs/economy-2026-09-04.md` (the wrestling port) is the playbook and
+its two lessons are the spine of this one: coins are a meta currency that never
+scale with the career, and the pass is balanced by a daily cap.
+
+Status: 2026-10-11, for review. Every number below is a proposal. Phase 2 and
+Phase 4 each re-measure them with a headless suite before anything ships.
+
+---
+
+## 1. What golf has, and where each piece lands
+
+| golf system | golf identifiers | hoops home | notes |
+|---|---|---|---|
+| Coin wallet | `coinState`, `coinsEarned`, `coinBalance`, `coinCharge`, `addBonusCoins`, `COIN_EPOCH` | `economy.js`: `awardCoins()`, `coinCharge()`, `balance()` | a keyed ledger, not golf's derived total (section 4) |
+| Coin history | `coinLog`, `overlayCoinLog` (last 150, device only) | falls out of the ledger | the ledger IS the history, so it follows the account |
+| Store and tabs | `overlayShop`, `SHOP_SECS` | `shop.js`: Team Shop | tabs in section 6 |
+| Prices | `RARITY_PRICE`, `ACC_RARITY`, `accPrice`, `COLOR_PRICE` | `catalog.js` | no boost premium (decision 4) |
+| Accessories and slots | `ACC_SLOTS` (8), `ACCESSORIES` (33), `MILESTONE_ITEMS` (5) | `catalog.js`: 23 slots over two looks | section 5 |
+| Packs, odds, pity, 5 for 4 | `PACK_TYPES`, `PACK_ODDS`, `rollPackWin`, `packState` | `economy.js` + `catalog.js` | one item per pack, as golf |
+| Duplicates, shards | `dupeRefund`, `PACK_DUPE_REFUND`, `shardEarn`, `shardSpend` | `economy.js` | coins back only from coin bought packs |
+| Shard Exchange | `EXCHANGE_COST` (10), `NEXT_RARITY`, `overlayLegendaryChoice`, `LEG_EXCHANGE_COINS` | `shop.js` | golf's UI says 5 and the constant says 10: hoops says 10 everywhere |
+| Drops, set rewards | `DROPS`, `dropLive`, `DROP_REWARDS` | `catalog.js` | a launch drop and one seasonal drop |
+| Customization | `DEFLOOK`, `scrSetup` wardrobe, `cosOwned`, `FREE_COSMETICS` | `wardrobe.js` (closet UI) + `wear.js` (art) | body and face stay in the career's Look editor |
+| Auras | `AURA_SHAPE` (11) | `catalog.js`, drawn by `wear.js` | sold outside both looks |
+| Player card | `PLATES` (13), `overlayPlayerCard`, `overlayPassport` | Phase 5 | nameplate, backdrop, rep frame |
+| Season pass | `TOURPASS_*`, `PASS_*` | `economy.js` + `pass.js` UI: Floor Pass | section 8 |
+| Prize wheel | `overlayWheel`, `WHEEL_*` (13 wedges, scales with rank) | `economy.js` | 1 free spin a day |
+| Quests, weeklies | `DAILY_QUEST_DEFS` (4), `WEEKLY_POOL` (12) | `economy.js` | written for hoops' modes |
+| Streak week, login | `bumpStreak`, `STREAK_WEEK_TRACK`, `LOGIN_TRACK` | `economy.js` | same seven day shapes, hoops numbers |
+| Rep ladder | `REP_TIERS` (19 + G.O.A.T.), fractions of achievement points | `economy.js`: Floor Rep | reads `badges.js` |
+| Boards | `LB_TABS`, `LB_SORTS`, `overlayStreakBoard` | `board.js` (exists) | Phase 5 draws the worn look on rows |
+| Cloud merge | `mergeCoins`, `mergePacks`, `cloudPush` | `cloud.js` new slots | section 4 |
+| Real money | `BUCKETS` (5), `TOURPASS` $14.99, `DAILY_TOKENS` (4), `beginCheckout` | Phase 6, dark | this repo's Stripe path, not golf's |
+
+Not ported: golf's daily tokens. Hoops' dailies are free, one a day, and selling
+a second attempt at a shared-question puzzle is selling a better score.
+
+---
+
+## 2. The faucet, measured
+
+### What a career produces
+
+Measured headless, 60 careers off `C.generateRoad` (the free draft-night start),
+random answers, today's rosters and ratings:
+
+| per career | value |
+|---|---|
+| NBA seasons | 10.6 mean, 12 median |
+| cards answered | 106.8 |
+| steps pressed (Next) | 67.6 |
+| seasons in October (play-in counted) | 8.05 |
+| playoff rounds won | 4.4 |
+| titles | 0.13 |
+| All-Star nods | 1.20 |
+| other awards (All-NBA, All-D, DPOY, ROY, MIP, MVP, FMVP) | 3.4 |
+
+Playoff paths over the 636 seasons: Missed 153, Play-in 94, R1 233, R2 86, CF 38,
+Finals 24, Champion 8.
+
+### The rule this sets
+
+The brief's anchor, and golf's: **one full career earns about what the smallest
+paid bucket holds, which is about two base packs.** So the career pays about
+2,000 coins and a base pack costs 1,000. Worked through the table above with the
+rates in section 3, a random-answer career lands at about **1,300 coins** before its badges and **1,600 to 1,800** with them, and a
+good one (more titles, a Hall tier) at 2,500 to 3,500. That is the right shape: a
+career is a long thing worth two or three packs, not a store.
+
+### Daily play pays more than simming
+
+Hoops has no single "sim a season" button to discount, so the rule is written per
+source instead: **every repeatable source pays full for its first few each
+Eastern day, then a quarter.** One evening of grinding Classic runs or career
+seasons buys a little, not the store. The shared-question dailies pay once a day
+and are the biggest single lines.
+
+Target days, in coins (base, before any multiplier):
+
+| player | what they do | coins a day |
+|---|---|---|
+| casual | one daily, a Classic run, the login | about 200 |
+| engaged | all three dailies, quests, the streak, a run, a career season or two, the wheel | about 450 to 550 |
+| grinder | the above plus three hours of Classic and career | about 700 (the diminishing tail) |
+
+An engaged player opens a base pack about every two days from play, plus the
+two League Packs a week from weekly challenges. Phase 2's suite asserts these
+three rows by simulating each player for 60 days.
+
+---
+
+## 3. The faucet table (proposed)
+
+Every line goes through `awardCoins(key, amount, src)`. `key` makes it
+idempotent (section 4). `src` is what the daily diminishing rule counts.
+
+| source | coins | full each day | key |
+|---|---|---|---|
+| welcome grant | 300, plus a Streetball Pack | once ever | `welcome` |
+| Daily Draft filed | 60, +40 made the playoffs, +60 each series won, +150 title | 1 | `dd:<day>` |
+| Fix History daily | 50 + round(80 x title odds) | 1 | `fx:<day>` |
+| Six Passes daily | 50, +50 at par or under, +30 easy mode not used | 1 | `ps:<day>` |
+| Endless Fix or Passes (Pro) | 10 | 5 | `fxe:<id>`, `pse:<id>` |
+| Classic run | 30, +20 October, +15 a series won, +100 title | 3 | `run:<seed>` |
+| One Franchise or Decades run | as Classic | shares Classic's 3 | `run:<seed>` |
+| Conquest | 5 a win, +60 a clear | 150 coins a day | `cq:<seed>:<rung>` |
+| Career season closed | 60, +15 a playoff round won, +30 All-Star, +40 each other award, +150 title | 4 seasons | `cs:<seed>:<year>` |
+| Career finished (reached the league) | 400, plus Hall tier 0 to 400 | not counted | `cf:<seed>` |
+| A badge earned for the first time | bronze 15, silver 30, gold 60, ring 150 | not counted | `bd:<id>` |
+| Daily quests | 40 each, +60 for all three | 1 set | `dq:<day>:<n>` |
+| Weekly challenges | 400 + a shard, the first two a League Pack | 4 a week | `wk:<week>:<n>` |
+| Streak week, login track, wheel | section 7 | once a day | `st:<day>`, `lg:<day>`, `wh:<day>` |
+
+Two rules that are easy to get wrong:
+
+- **Easy pays half.** An Easy career already files no badges and no board row,
+  for the same reason.
+- **Badges held when the economy ships pay nothing.** Badges are derived and
+  retroactive, so paying for them at launch would hand a long-time player
+  12,000 coins on day one (213 badges: 33 bronze, 71 silver, 74 gold, 35 ring
+  add to 12,315). The first load records the earned set as the baseline, the
+  way golf's `COIN_EPOCH` does, and a panel says so.
+
+---
+
+## 4. Storage: a coin is a keyed entry
+
+### The wallet is a ledger, not a total
+
+Golf derives earned coins from career stats and merges counters by max. Merged by
+max, two devices that both earned since their last sync lose one side's coins.
+The wrestling port accepted that (it only under-counts). Hoops can do better for
+no extra cost, because every award already has a natural key:
+
+```
+wallet slot: {
+  e: { "<key>": [amount, t, src] },   earned, union by key
+  s: { "<key>": [amount, t, what] },  spent, union by key
+  z: { "<device>": [e, s] }           compacted totals, per device max
+}
+balance = sum(e) + sum(z.e) - sum(s) - sum(z.s) + paid (server, Phase 6)
+```
+
+- **Idempotent.** The same daily filed on two devices is one key, paid once.
+- **Exact.** Nothing earned on either device is lost in a merge.
+- **A spend is keyed too.** Buying an item is `buy:<item>`, so the same purchase
+  on two offline devices is one charge for one item. A pack open is
+  `pk:<random id>` and its contents are rolled off that id, so it is the same
+  pack wherever it is replayed.
+- **It is the coin history.** The ledger screen reads the newest entries.
+- **Compaction** folds entries older than 60 days into this device's `z` row once
+  there are more than 2,000 keys, so the slot stays small. A folded key can be
+  paid again only if an old device that never synced replays it, which costs at
+  most a handful of coins.
+- **Negative is possible after a merge** (two devices spending the same balance
+  offline). The shop then refuses a spend until the balance is back above zero.
+  Nothing owned is taken away.
+
+### Slots and merge rules
+
+All on `ps_saves` (103), game `rtf`. No migration: slots are free form. Each is a
+new entry in `cloud.js` `MODE_KEYS` and `MODE_MERGE`, and `cloud.js` and
+`NEED_CLOUD` move to API 6 so a cached page cannot run a merge it does not know.
+
+| slot | holds | merge |
+|---|---|---|
+| `wallet` | the ledger above | union of `e` and `s` by key; per device max of `z` |
+| `owned` | item ids, shards earned and spent per rarity, drop claims | union of ids and claims; shard counters per device max, like `z` |
+| `packs` | opens as `{id, tier, t, rarity, item}` | union by id. Pity is DERIVED: opens since the last epic or legendary, in time order. Nothing to merge |
+| `pass` | season, XP by day, claimed tiers per lane | same season: max XP per day, union of claims. Newer season wins wholesale |
+| `quests` | today's three, this week's four, progress | newer day or week wins; same day max progress, union of done |
+| `streak` | days played, freezes | union of days played; the streak is derived |
+| `wheel` | last spin day, banked spins earned and used | later day; per device max of earned and used |
+
+**What the player wears is on the account row, not the shelf**, because a board
+needs it to draw somebody else's circle: see migration 139 in section 10.
+
+**A guest sees, an account owns.** A guest browses the shop, previews anything on
+their own player and spins nothing. The first claim or purchase opens the
+sign-in sheet. A guest's earnings are not banked, so signing in after a guest
+session is not a way to collect it (the baseball cabinet's rule).
+
+---
+
+## 5. The wardrobe
+
+### Two looks
+
+| | off court (`street`) | on court (`court`) |
+|---|---|---|
+| where it is drawn | front page hero, Career hub, Locker, Team Shop preview, player card, board avatar, every off-floor scene, the new tunnel walk-in | every on-floor moment in `court.js`, the in-game sprite |
+| who owns the design | the player | the team: the uniform is never sold, club colours stay earned |
+| slots | hat, eyewear, top, outerwear, bottoms, shoes, socks, chain, watch, bag, headphones, held item | headband, goggles, mouthguard, sleeve L, sleeve R, wristbands, finger tape, tights or leg sleeve, knee pad, ankle brace, socks, shoes, undershirt |
+| also | up to three named street outfits | one loadout |
+
+Shoes are one item that can be worn in both looks. Sold outside both: ball skin,
+shot trail, aura, nameplate, card backdrop, celebration, and idles (section 6).
+
+**The look follows the account, not the career.** Body, face, hair and beard stay
+on `L.look` (each career's own man, a son included). The wardrobe and both
+loadouts are the account's and dress whichever invented player is on screen.
+
+**The context is the only switch.** `B.paint(look, { ctx: 'street' | 'court',
+wear })` and nothing else decides which is drawn. Today's `dress: 'suit'` and
+`'cap'` become street outfits (the draft suit, a cap), so the ceremonies in
+`court.js` (`suitOf`) and the beats in `scenes.js` pass `ctx` instead.
+
+**Today's free options become starter items.** `BANDS`, `SLEEVES` and `SHOES` in
+`baller.js` map to the court slots, so every look saved today draws exactly as
+it does now. `check-sprite.mjs` holds the 960 existing hashes through every phase.
+
+### The art: `wear.js`
+
+The survey of `baller.js` says what this costs. Today clothing is mostly a
+MATERIAL painted over the body volumes (the jersey over the torso, socks by
+height on the leg); only the shorts, the suit jacket and trousers, the cap and
+brim and the band are volumes of their own. Street clothes need volumes:
+
+- Each garment is an `add(name, group, material, sdf)` call in `build()`, plus a
+  ramp in `paint0`. Loose cloth is a torso or limb volume grown a little and
+  softened, so it follows every pose the limb takes, sitting at a press table
+  included.
+- Layering is draw order plus clipping: outerwear over top, a chain over a tee and
+  under a zipped jacket, a hood up or down as two volumes, trousers over or tucked
+  into boots.
+- **`wear.js` registers builders into `baller.js`** rather than growing it, so the
+  catalogue is data plus a builder per garment shape (about 30 shapes cover 170
+  street items through colourways and patterns). `baller.js` gains an
+  `API_VERSION` and a hook; the page pins it the way `NEED_BOARD` pins `board.js`.
+- **Every cache key takes the wear**: `keyOf`, the `paintAsync` key, the `live`
+  key and `court.js`'s key. Missing one draws a stale outfit with nothing thrown.
+- **Real men never wear anything.** `faceless` drops `wear`, and `court.js`
+  passes it only for the invented player.
+- A store tile, a pack card and a reveal are `B.paint` of the buyer's own player
+  in the item, so the preview is the product.
+
+### The catalogue: `catalog.js`
+
+Data, one row an item: `{id, ctx, slot, name, rarity, art, colors, drop, boost}`.
+`boost` exists and is ignored while `GEAR_BOOSTS` is false (decision 4).
+
+| | common | rare | epic | legendary | total |
+|---|---|---|---|---|---|
+| off court | 70 | 55 | 33 | 12 | 170 |
+| on court | 30 | 26 | 16 | 8 | 80 |
+| everything else (auras, trails, ball skins, plates, backdrops, celebrations) | 6 | 10 | 8 | 6 | 30 |
+
+Plus about 30 idles (section 6) and exclusives that are earned and never sold: a
+draft night suit (first overall), a ring night fit (a title), the Hall of Fame
+gold jacket fit, a rookie tee (first career). A free starter wardrobe: plain tee,
+hoodie, sweats, jeans, two sneakers, and the starter court items.
+
+No real brands, no real arena names, no logos of real clubs on anything. An
+invented club's jersey is fine and is the only club wear sold.
+
+---
+
+## 6. Idles
+
+Today `live()` in `baller.js` has two modes, `dribble` (pose `ball`) and
+`breath`. Both become idles in a slot, one per look, and the rest come from
+packs.
+
+- **Standing** (the breath, no ball) is the new free default. **Standing Dribble**
+  is today's dribble, free, unchanged. `heroCast` and `buildView` in
+  `career-ui.js` stop hardcoding `pose: 'ball'` and read the equipped idle.
+  Cutscenes keep choosing their own poses.
+- An idle is keyframes on the rig, advanced on `court.js`'s 12 a second tick
+  with position blended between ticks, and the ball drawn by the existing prop
+  tracer. Loops of 2 to 6 seconds meet themselves with no pop. A rare flourish
+  fires one loop in five.
+- Silent. Reduced motion and small avatars show the idle's signature still.
+  Only the on-screen player animates, and it pauses when hidden.
+- The launch list in the brief is the plan: about 6 common, 8 rare, 8 epic, 7
+  legendary, 4 exclusive. Nothing that belongs to a real person.
+
+Cost to watch: an idle is frames painted in the worker, per look and wear. Phase
+1b measures a throttled phone before the set is finished.
+
+---
+
+## 7. Prices, packs and the daily loop
+
+### Direct buy and packs
+
+Golf's ratios, on hoops' unit (golf's base pack is 8,000 and its common 15,000; a
+hoops base pack is 1,000):
+
+| rarity | direct buy | dupe refund (coin packs only) | shards to step up |
+|---|---|---|---|
+| common | 2,000 | 250 | 10 common: a rare spin |
+| rare | 5,500 | 700 | 10 rare: an epic spin |
+| epic | 14,000 | 1,800 | 10 epic: a legendary spin |
+| legendary | 34,000 | 3,400 | 10 legendary: 3,000 coins, a Hall of Fame Pack, choose 1 of 3 legendaries |
+
+Idles price one step up (a common idle costs as a rare item): they are the most
+visible thing a player owns.
+
+| pack | coins | odds C / R / E / L | pity: epic+ / legendary |
+|---|---|---|---|
+| Streetball Pack | 1,000 | 55 / 30 / 12 / 3 | 10 / 40 |
+| League Pack | 2,800 | 30 / 40 / 22 / 8 | 6 / 24 |
+| Hall of Fame Pack | 5,600 | 10 / 35 / 38 / 17 | 4 / 12 |
+| seasonal pack (drop live) | 3,800 | as League, 40% toward the drop | 6 / 24 |
+
+One item a pack. Five for the price of four, same tier. Pity is shared across
+tiers and derived from the open log. A pack can pull either look; the reveal
+labels Off Court or On Court. Odds are printed on every pack.
+
+### The daily loop
+
+| | day 1 | 2 | 3 | 4 | 5 | 6 | 7 |
+|---|---|---|---|---|---|---|---|
+| streak week (a daily played) | 40 | 60, 2 common shards | a spin | Streetball Pack | 120, 2 rare shards | a spin | League Pack |
+| login track (opened the game) | 15 | 20 | 25, a common shard | Streetball Pack | 40, a rare shard | a spin | Streetball Pack |
+
+Freezes at 7, 30 and 100 days, as golf. The wheel: one free spin an Eastern day,
+13 wedges with golf's weights, coin wedges 15 to 300 scaled up to 1.8x by Floor
+Rep, plus shard, pack, XP boost and bonus spin wedges.
+
+Daily quests (three of): play today's Daily Draft, finish a Classic run, close a
+career season, win a Conquest game, solve Six Passes at par, open the Locker and
+change something. Weekly pool of twelve, four a week: one career, one daily, one
+Classic or Conquest, one collection.
+
+### Floor Rep
+
+Badge points: bronze 1, silver 2, gold 4, ring 8, which is 751 points over today's
+213 badges. Twenty ranks at golf's fractions of the total (Rookie at 1% up to
+Icon at 96.5%), and a twentieth, G.O.A.T., for every badge. Read by the wheel and
+by rep-gated cosmetics. Derived, so it needs no storage and never disagrees with
+the cabinet.
+
+---
+
+## 8. Floor Pass
+
+| | |
+|---|---|
+| season | 60 days from a fixed Eastern epoch; the countdown is to Eastern midnight |
+| tiers | 60, cost(t) = 300 + 5(t - 1), 26,850 XP total |
+| XP | 1 per base coin earned (before multipliers), plus quests at their own XP |
+| daily cap | 700 XP: a perfectly capped player needs 39 days |
+| expected | engaged (500 a day) about day 50; casual (200 a day) about tier 33 |
+| rollover | unclaimed tiers settle into the ledger, the season locks |
+
+The free lane is real: packs at 5, 10, 20, 30 and 40, a cosmetic at 15 and 35,
+shards and coins between, a League Pack and an exclusive fit at 60. The paid lane
+doubles the packs, carries the season's exclusives and an exclusive idle at 60.
+
+The suite throws 200,000 coins of farming at one day and asserts the track moves
+700 XP.
+
+**Floor Pass is not Run The Floor Pro.** Pro (`rtf_premium`, $14.99 a year) is the
+endless puzzles; the pass is a season's cosmetics. Different names in copy,
+different products in the catalog, different code paths. Pro buys nothing in the
+economy.
+
+---
+
+## 9. Real money, dark (Phase 6)
+
+All behind flags that default to off: `BUCKETS_ENABLED`, `PASS_PAID_ENABLED`.
+Coin buckets at golf's ratios on hoops' unit:
+
+| bucket | coins | extra |
+|---|---|---|
+| $1.99 | 2,000 | |
+| $4.99 | 6,000 | |
+| $9.99 | 13,600 | a League Pack |
+| $19.99 | 38,000 | a Hall of Fame Pack |
+
+Paid coins live only on the server. The client never grants one: `coinCharge`
+spends earned coins first, then calls the server to spend paid ones. This uses
+this repo's checkout (`functions/api/stripe/checkout-bundle.js`, `_bundles.js`,
+the webhook), not golf's `create-checkout` edge function, which is not in this
+repo. The pass is a `premium_unlocks` row with an end date, the shape 124 already
+handles.
+
+---
+
+## 10. Migrations
+
+Hand deployed, each with a preflight row in `launch_preflight.sql`, each failing
+soft: without it the game plays and the thing it holds stays on the device.
+
+| number | phase | what |
+|---|---|---|
+| 139 `hoops_wardrobe` | 1 | `rtf_profiles` gains `wear_street`, `wear_court`, `idle`, `plate`, `card` (jsonb or short text, shape checked like `ps_set_crest`, not entitlement checked); `rtf_set_profile` gains the arguments; the board read asks for them and drops them on a 400 |
+| 140 `hoops_wallet` | 6 | `rtf_wallet` (paid coins only), `rtf_wallet_spend`, purchase rows |
+| 141 `hoops_pass` | 6 | `rtf_pass` product in `premium_unlocks` with `expires_at` |
+
+The earned economy (sections 3 to 8) needs no migration at all.
+
+---
+
+## 11. Files
+
+| file | phase | what |
+|---|---|---|
+| `hoops/economy.js` | 1 to 4 | wallet ledger, faucet, packs, shards, quests, streak, wheel, rep, pass. Pure, node requirable, `ECON_API_VERSION` |
+| `hoops/catalog.js` | 1 | items, idles, packs, drops. Data only |
+| `hoops/wear.js` | 1 | garment and accessory builders registered into `baller.js` |
+| `hoops/idles.js` | 1b | idle keyframes |
+| `hoops/shop.js` | 1 to 4 | Team Shop, closet, pack reveal, pass and wheel sheets, on `career-kit.js` |
+| `hoops/check-economy.mjs` | 1 | ledger merge, idempotence, compaction, diminishing tail, the three player days |
+| `hoops/check-wardrobe.mjs` | 1 | every item in both looks, every pose, no part off the grid, cache keys move, old looks unchanged |
+| `hoops/check-idles.mjs` | 1b | every loop closes, reduced motion still, phone budget |
+| `hoops/check-shop.mjs` | 2 | odds by sampling, pity at the boundary, dupes, exchange, guest wall, the browser walk |
+| `hoops/check-pass.mjs` | 4 | the cap, rollover, settlement |
+
+Every sibling script carries a `?v=` in `index.html` and goes into
+`scripts/cachebust.json`. Every one is added to `NEED_*` pins where the page reads
+an API.
+
+---
+
+## 12. Decisions for you
+
+1. **Numbers.** Base pack 1,000, a career about 2,000, an engaged day about 500.
+   The ratios are golf's; the unit is new. Fine, or a different unit?
+2. **The keyed ledger** in place of golf's derived total and max merge. It is
+   exact across devices where max is not. It is more code than golf's.
+3. **Badges held at launch pay nothing** (a baseline), and a panel says so.
+4. **The account owns the wardrobe**; each career keeps its own body and face.
+5. **Floor Pass price.** Not set by the brief. My suggestion is $9.99 a season,
+   next to Pro at $14.99 a year, but it ships dark either way.
+6. **The guest rule**: guests browse and preview, and earn nothing until they
+   sign in. Golf pays guests nothing; the alternative (guest earnings claimed on
+   sign in) is friendlier and easier to farm.
+7. **Golf's daily tokens are not ported** (selling a second try at a shared
+   daily). Confirm.
