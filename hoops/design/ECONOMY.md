@@ -73,8 +73,8 @@ typical player four to six packs a day and empty the catalogue in weeks.
 
 So the anchor is the DAY, not the career: **a typical day (two careers and the
 dailies) earns about what the smallest bucket holds, about two base packs.** A
-career pays about 650 coins before its badges (random answers, the table above,
-the rates in section 3), about 1,000 for a good one, and up to 1,600 for a Hall
+career pays about 5,200 coins before its badges (random answers, the table above,
+the rates in section 3), about 8,000 for a good one, and up to 12,800 for a Hall
 of Fame career with a title.
 
 ### Careers are the main loop, so they are not the thing discounted
@@ -90,10 +90,10 @@ Target days, in coins (base, before any multiplier):
 
 | player | what they do | coins a day |
 |---|---|---|
-| light | one career, one daily, the login | about 1,000 |
-| typical | two careers, the dailies, quests, the streak, the wheel | about 1,900 |
-| heavy | three careers and all of the above | about 2,600 |
-| grinder | six careers | about 3,100 (the quarter-rate tail) |
+| light | one career, one daily, the login | about 8,000 |
+| typical | two careers, the dailies, quests, the streak, the wheel | about 15,200 |
+| heavy | three careers and all of the above | about 20,800 |
+| grinder | six careers | about 24,800 (the quarter-rate tail) |
 
 A typical player opens about two base packs a day from play, plus the two League
 Packs a week from weekly challenges: about 70 packs a month. With about 310 items
@@ -120,19 +120,19 @@ idempotent (section 4). `src` is what the daily diminishing rule counts.
 
 | source | coins | full each day | key |
 |---|---|---|---|
-| welcome grant | 300, plus a Streetball Pack | once ever | `welcome` |
-| Daily Draft filed | 60, +40 made the playoffs, +60 each series won, +150 title | 1 | `dd:<day>` |
-| Fix History daily | 50 + round(80 x title odds) | 1 | `fx:<day>` |
-| Six Passes daily | 50, +50 at par or under, +30 easy mode not used | 1 | `ps:<day>` |
-| Endless Fix or Passes (Pro) | 10 | 5 | `fxe:<id>`, `pse:<id>` |
-| Classic run | 30, +20 October, +15 a series won, +100 title | 3 | `run:<seed>` |
+| welcome grant | 2,400, plus a Streetball Pack | once ever | `welcome` |
+| Daily Draft filed | 480, +320 made the playoffs, +480 each series won, +1,200 title | 1 | `dd:<day>` |
+| Fix History daily | 400 + round(640 x title odds) | 1 | `fx:<day>` |
+| Six Passes daily | 400, +400 at par or under, +240 easy mode not used | 1 | `ps:<day>` |
+| Endless Fix or Passes (Pro) | 80 | 5 | `fxe:<id>`, `pse:<id>` |
+| Classic run | 240, +160 October, +120 a series won, +800 title | 3 | `run:<seed>` |
 | One Franchise or Decades run | as Classic | shares Classic's 3 | `run:<seed>` |
-| Conquest | 5 a win, +60 a clear | 150 coins a day | `cq:<seed>:<rung>` |
-| Career season closed | 30, +8 a playoff round won, +15 All-Star, +20 each other award, +75 title | counted by career (below) | `cs:<seed>:<year>` |
-| Career finished (reached the league) | 200, plus Hall tier 0 to 200 | the first 3 careers a day full, later ones (and their seasons) a quarter | `cf:<seed>` |
-| A badge earned for the first time | bronze 15, silver 30, gold 60, ring 150 | not counted | `bd:<id>` |
-| Daily quests | 40 each, +60 for all three | 1 set | `dq:<day>:<n>` |
-| Weekly challenges | 400 + a shard, the first two a League Pack | 4 a week | `wk:<week>:<n>` |
+| Conquest | 40 a win, +480 a clear | 1,200 coins a day | `cq:<seed>:<rung>` |
+| Career season closed | 240, +60 a playoff round won, +120 All-Star, +160 each other award, +600 title | counted by career (below) | `cs:<seed>:<year>` |
+| Career finished (reached the league) | 1,600, plus Hall tier 0 to 1,600 | the first 3 careers a day full, later ones (and their seasons) a quarter | `cf:<seed>` |
+| A badge earned for the first time | bronze 120, silver 240, gold 480, ring 1,200 | not counted | `bd:<id>` |
+| Daily quests | 320 each, +480 for all three | 1 set | `dq:<day>:<n>` |
+| Weekly challenges | 3,200 + a shard, the first two a League Pack | 4 a week | `wk:<week>:<n>` |
 | Streak week, login track, wheel | section 7 | once a day | `st:<day>`, `lg:<day>`, `wh:<day>` |
 
 Two rules that are easy to get wrong:
@@ -141,8 +141,8 @@ Two rules that are easy to get wrong:
   for the same reason.
 - **Badges held when the economy ships pay nothing.** Badges are derived and
   retroactive, so paying for them at launch would hand a long-time player
-  12,000 coins on day one (213 badges: 33 bronze, 71 silver, 74 gold, 35 ring
-  add to 12,315). The first load records the earned set as the baseline, the
+  about 98,500 coins on day one (213 badges: 33 bronze, 71 silver, 74 gold, 35
+  ring). The first load records the earned set as the baseline, the
   way golf's `COIN_EPOCH` does, and a panel says so.
 
 ---
@@ -307,25 +307,25 @@ Cost to watch: an idle is frames painted in the worker, per look and wear. Phase
 
 ### Direct buy and packs
 
-Golf's ratios, on hoops' unit (golf's base pack is 8,000 and its common 15,000; a
-hoops base pack is 1,000):
+Run The Tour's prices exactly (the owner's call, 2026-10-11), so a coin means the
+same thing in both games. Every earning in this file is scaled to match:
 
 | rarity | direct buy | dupe refund (coin packs only) | shards to step up |
 |---|---|---|---|
-| common | 2,000 | 250 | 10 common: a rare spin |
-| rare | 5,500 | 700 | 10 rare: an epic spin |
-| epic | 14,000 | 1,800 | 10 epic: a legendary spin |
-| legendary | 34,000 | 3,400 | 10 legendary: 3,000 coins, a Hall of Fame Pack, choose 1 of 3 legendaries |
+| common | 15,000 | 2,000 | 10 common: a rare spin |
+| rare | 45,000 | 5,000 | 10 rare: an epic spin |
+| epic | 110,000 | 12,000 | 10 epic: a legendary spin |
+| legendary | 275,000 | 25,000 | 10 legendary: 25,000 coins, a Hall of Fame Pack, choose 1 of 3 legendaries |
 
 Idles price one step up (a common idle costs as a rare item): they are the most
 visible thing a player owns.
 
 | pack | coins | odds C / R / E / L | pity: epic+ / legendary |
 |---|---|---|---|
-| Streetball Pack | 1,000 | 55 / 30 / 12 / 3 | 10 / 40 |
-| League Pack | 2,800 | 30 / 40 / 22 / 8 | 6 / 24 |
-| Hall of Fame Pack | 5,600 | 10 / 35 / 38 / 17 | 4 / 12 |
-| seasonal pack (drop live) | 3,800 | as League, 40% toward the drop | 6 / 24 |
+| Streetball Pack | 8,000 | 55 / 30 / 12 / 3 | 10 / 40 |
+| League Pack | 22,000 | 30 / 40 / 22 / 8 | 6 / 24 |
+| Hall of Fame Pack | 45,000 | 10 / 35 / 38 / 17 | 4 / 12 |
+| seasonal pack (drop live) | 30,000 | as League, 40% toward the drop | 6 / 24 |
 
 One item a pack. Five for the price of four, same tier. Pity is shared across
 tiers and derived from the open log. A pack can pull either look; the reveal
@@ -335,11 +335,11 @@ labels Off Court or On Court. Odds are printed on every pack.
 
 | | day 1 | 2 | 3 | 4 | 5 | 6 | 7 |
 |---|---|---|---|---|---|---|---|
-| streak week (a daily played) | 40 | 60, 2 common shards | a spin | Streetball Pack | 120, 2 rare shards | a spin | League Pack |
-| login track (opened the game) | 15 | 20 | 25, a common shard | Streetball Pack | 40, a rare shard | a spin | Streetball Pack |
+| streak week (a daily played) | 150 | 350, 2 common shards | a spin | Streetball Pack | 1,000, 2 rare shards | a spin | League Pack |
+| login track (opened the game) | 50 | 75 | 100, a common shard | Streetball Pack | 150, a rare shard | a spin | Streetball Pack |
 
-Freezes at 7, 30 and 100 days, as golf. The wheel: one free spin an Eastern day,
-13 wedges with golf's weights, coin wedges 15 to 300 scaled up to 1.8x by Floor
+Both tracks are golf's own numbers. Freezes at 7, 30 and 100 days, as golf. The wheel: one free spin an Eastern day,
+13 wedges with golf's weights, coin wedges 50 to 2,500 (golf's) scaled up to 1.8x by Floor
 Rep, plus shard, pack, XP boost and bonus spin wedges.
 
 Daily quests (three of): play today's Daily Draft, finish a Classic run, close a
@@ -362,18 +362,18 @@ the cabinet.
 | | |
 |---|---|
 | season | 60 days from a fixed Eastern epoch; the countdown is to Eastern midnight |
-| tiers | 60, cost(t) = 300 + 5(t - 1), 26,850 XP total |
-| XP | 0.35 per base coin earned (before multipliers), plus quests at their own XP |
-| daily cap | 700 XP: a perfectly capped player needs 39 days |
-| expected | light (1,000 coins, 350 XP a day) reaches about tier 50; typical (1,900 coins, 665 XP) finishes about day 41; heavy and grinder sit on the cap and finish day 39 |
+| tiers | 60, golf's curve: cost(t) = 800 + 20.338(t - 1), about 84,000 XP total |
+| XP | 0.13 per base coin earned (before multipliers), plus quests at their own XP |
+| daily cap | 2,100 XP: a perfectly capped player needs 40 days |
+| expected | light (8,000 coins, 1,040 XP a day) reaches about tier 48; typical (15,200 coins, 1,976 XP) finishes about day 43; heavy and grinder sit on the cap and finish day 40 |
 | rollover | unclaimed tiers settle into the ledger, the season locks |
 
 The free lane is real: packs at 5, 10, 20, 30 and 40, a cosmetic at 15 and 35,
 shards and coins between, a League Pack and an exclusive fit at 60. The paid lane
 doubles the packs, carries the season's exclusives and an exclusive idle at 60.
 
-The suite throws 200,000 coins of farming at one day and asserts the track moves
-700 XP.
+The suite throws 2,000,000 coins of farming at one day and asserts the track moves
+2,100 XP.
 
 **Floor Pass is not Run The Floor Pro.** Pro (`rtf_premium`, $14.99 a year) is the
 endless puzzles; the pass is a season's cosmetics. Different names in copy,
@@ -385,14 +385,15 @@ economy.
 ## 9. Real money, dark (Phase 6)
 
 All behind flags that default to off: `BUCKETS_ENABLED`, `PASS_PAID_ENABLED`.
-Coin buckets at golf's ratios on hoops' unit:
+Coin buckets at golf's own prices and amounts:
 
 | bucket | coins | extra |
 |---|---|---|
-| $1.99 | 2,000 | |
-| $4.99 | 6,000 | |
-| $9.99 | 13,600 | a League Pack |
-| $19.99 | 38,000 | a Hall of Fame Pack |
+| $1.99 | 15,000 | |
+| $4.99 | 45,000 | |
+| $9.99 | 102,000 | a League Pack |
+| $19.99 | 285,000 | a Hall of Fame Pack |
+| $49.99 | 750,000 | three Hall of Fame Packs |
 
 Paid coins live only on the server. The client never grants one: `coinCharge`
 spends earned coins first, then calls the server to spend paid ones. This uses
@@ -441,9 +442,9 @@ an API.
 
 ## 12. Decisions for you
 
-1. **Numbers.** Base pack 1,000, a career about 650 to 1,000, a typical day
-   (two careers) about 1,900, which is the $1.99 bucket. Re-anchored on the day
-   because a typical player plays one to three careers a day.
+1. **Numbers.** Run The Tour's pack and item prices exactly (base pack 8,000).
+   A career earns about 5,200 to 8,000 and a typical day (two careers) about
+   15,200, which is the $1.99 bucket, as in golf.
 2. **The keyed ledger** in place of golf's derived total and max merge. It is
    exact across devices where max is not. It is more code than golf's.
 3. **Badges held at launch pay nothing** (a baseline), and a panel says so.
