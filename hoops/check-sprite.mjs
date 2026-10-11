@@ -58,6 +58,13 @@
  * too bulbous. The deltoid is smaller and sits lower, the bicep swells less and
  * half way down rather than a third, the upper arm is thinner where it meets
  * the shoulder, and the shoulders and chest are a little narrower.
+ *
+ * RE-RECORDED A SEVENTH TIME, ON PURPOSE, because the owner found the neck too
+ * long and tubular and the shoulders still bulging at the top. The head sits
+ * lower, the neck is short, narrow under the jaw and flares into a slope of
+ * trapezius at its base, and the deltoid cap is smaller and lower with the arm
+ * starting just under the shoulder point, so nothing rises above the shoulder
+ * line.
  */
 import fs from 'node:fs';
 import path from 'node:path';

@@ -360,7 +360,7 @@ function skeleton(f, bw, am, breath, MX){
   var dip = f.dip || 0, sp = f.sp || 0, up = typeof breath === 'number' ? breath : breath ? 1 : 0, ts = MX.ts, sw = MX.sw, g = MX.gw;
   var hipY = GY - MX.legs, neckY = hipY - MX.torso, ankY = GY - 4.0;
   var J = { dip: dip, MX: MX };
-  J.head = [CX, neckY - 9.9 * MX.k + dip + up, 0.4 * MX.k];
+  J.head = [CX, neckY - 8.9 * MX.k + dip + up, 0.4 * MX.k];
   J.neck = [CX, neckY + dip + up, 0];
   J.chest = [CX, neckY + 7.2 * ts + dip + up, 0];
   J.waist = [CX, neckY + 15.6 * ts + dip, 0];
@@ -513,21 +513,27 @@ function build(L, o, J){
       return 'jacket';
     }, cut(jacketF, function(p){ return p[1] - (W0[1] + 5.6 * ts); }), [CX, (C0[1] + W0[1]) / 2 + 1, 0], 13 * Math.max(1, ts, sw) + Math.max(0, g));
   }
-  /* the neck */
-  add('neck', 'neck', 'skin', cone([CX, J.neck[1] - 3.0, -0.4], [CX, J.neck[1] + 2.4 * ts, -0.4], 2.15 + Math.max(0, bw * 0.3) + g * 0.12, 2.5 + Math.max(0, bw * 0.3) + g * 0.15), J.neck, 6, { bias: -0.25 });
+  /* the neck: short, narrow under the jaw and flaring into the traps at the
+     base, so it reads as part of the shoulders rather than a tube */
+  var nb = Math.max(0, bw * 0.3);
+  var neckF = function(p){ return smin(cone([CX, J.neck[1] - 2.2, -0.5], [CX, J.neck[1] + 1.2 * ts, -0.5], 1.95 + nb + g * 0.1, 2.6 + nb + g * 0.15)(p),
+    ell([CX, J.neck[1] + 2.2 * ts, -0.8], [4.6 + nb * 2 + g * 0.3, 1.5, 2.2])(p), 1.6); };
+  add('neck', 'neck', 'skin', neckF, J.neck, 7, { bias: -0.25 });
 
   /* the arms: a shoulder, an upper arm, a forearm, a hand */
   [-1, 1].forEach(function(s){
     var A = J.arm[s], sleeved = !suit && o.sleeve && s === 1;
     var mat = suit ? 'jacket' : sleeved ? 'sleeve' : 'skin';
     var r0 = Math.max(1.4, (suit ? 2.6 : 2.2) + am + g * 0.24), r1 = Math.max(1.25, (suit ? 2.2 : 1.85) + am * 0.8 + g * 0.17), r2 = Math.max(1.05, (suit ? 1.95 : 1.5) + am * 0.6 + g * 0.08);
-    if (!suit) add('delt' + s, 'arm' + s, sleeved ? 'sleeve' : 'skin', sph([A.sh[0] - s * 0.9, A.sh[1] + 1.3, 0], BD.dl + g * 0.12), A.sh, 3.5);
+    if (!suit) add('delt' + s, 'arm' + s, sleeved ? 'sleeve' : 'skin', sph([A.sh[0] - s * 0.7, A.sh[1] + 2.0, 0], BD.dl * 0.85 + g * 0.1), A.sh, 3.5);
     /* an arm has a shape: the bicep swells half way down, a little, so the shoulder stays narrow, the
        forearm is thickest just under the elbow and narrows to the wrist */
+    /* the arm starts just under the shoulder point, so its cap does not rise above the shoulder line */
+    var sh0 = [A.sh[0] + (A.el[0] - A.sh[0]) * 0.1, A.sh[1] + (A.el[1] - A.sh[1]) * 0.1, A.sh[2] + (A.el[2] - A.sh[2]) * 0.1];
     var bi = [A.sh[0] + (A.el[0] - A.sh[0]) * 0.5, A.sh[1] + (A.el[1] - A.sh[1]) * 0.5, A.sh[2] + (A.el[2] - A.sh[2]) * 0.5];
     var fo = [A.el[0] + (A.wr[0] - A.el[0]) * 0.25, A.el[1] + (A.wr[1] - A.el[1]) * 0.25, A.el[2] + (A.wr[2] - A.el[2]) * 0.25];
     var armF = suit ? uni([cone(A.sh, A.el, r0, r1), cone(A.el, A.wr, r1, r2)])
-      : function(p){ return smin(smin(cone(A.sh, A.el, r0 * 0.8, r1 * 0.9)(p), ell(bi, [r0 * 0.92, r0 * 1.3, r0 * 0.92])(p), 1.4), smin(cone(A.el, A.wr, r1 * 0.96, r2 * 0.8)(p), ell(fo, [r1 * 1.02, r1 * 1.6, r1 * 1.0])(p), 2.0), 0.8); };
+      : function(p){ return smin(smin(cone(sh0, A.el, r0 * 0.74, r1 * 0.9)(p), ell(bi, [r0 * 0.92, r0 * 1.3, r0 * 0.92])(p), 1.4), smin(cone(A.el, A.wr, r1 * 0.96, r2 * 0.8)(p), ell(fo, [r1 * 1.02, r1 * 1.6, r1 * 1.0])(p), 2.0), 0.8); };
     add('arm' + s, 'arm' + s, suit ? function(p){
       var t = Math.hypot(p[0] - A.wr[0], p[1] - A.wr[1], p[2] - A.wr[2]);
       return t < 1.3 ? 'cuff' : 'jacket';
