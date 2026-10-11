@@ -425,7 +425,7 @@ The earned economy (sections 3 to 8) needs no migration at all.
 |---|---|---|
 | `hoops/economy.js` | 1 to 4 | wallet ledger, faucet, packs, shards, quests, streak, wheel, rep, pass. Pure, node requirable, `ECON_API_VERSION` |
 | `hoops/catalog.js` | 1 | items, idles, packs, drops. Data only |
-| `hoops/wear.js` | 1 | garment and accessory builders registered into `baller.js` |
+| `hoops/baller.js` (street section) | 1 | garment and accessory shapes, drawn behind `ctx: 'street'` (section 13) |
 | `hoops/idles.js` | 1b | idle keyframes |
 | `hoops/shop.js` | 1 to 4 | Team Shop, closet, pack reveal, pass and wheel sheets, on `career-kit.js` |
 | `hoops/check-economy.mjs` | 1 | ledger merge, idempotence, compaction, diminishing tail, the three player days |
@@ -440,19 +440,27 @@ an API.
 
 ---
 
-## 12. Decisions for you
+## 12. Decisions (settled 2026-10-11)
 
 1. **Numbers.** Run The Tour's pack and item prices exactly (base pack 8,000).
    A career earns about 5,200 to 8,000 and a typical day (two careers) about
-   15,200, which is the $1.99 bucket, as in golf.
-2. **The keyed ledger** in place of golf's derived total and max merge. It is
-   exact across devices where max is not. It is more code than golf's.
-3. **Badges held at launch pay nothing** (a baseline), and a panel says so.
+   15,200, which is the $1.99 bucket, as in golf. A typical player plays one to
+   three careers a day.
+2. **The keyed ledger**, not golf's derived total and max merge.
+3. **Badges held at launch pay nothing.** A baseline is recorded on first load
+   and a panel says so.
 4. **The account owns the wardrobe**; each career keeps its own body and face.
-5. **Floor Pass price.** Not set by the brief. My suggestion is $9.99 a season,
-   next to Pro at $14.99 a year, but it ships dark either way.
-6. **The guest rule**: guests browse and preview, and earn nothing until they
-   sign in. Golf pays guests nothing; the alternative (guest earnings claimed on
-   sign in) is friendlier and easier to farm.
-7. **Golf's daily tokens are not ported** (selling a second try at a shared
-   daily). Confirm.
+5. **Floor Pass: $9.99 a season**, kept apart from Pro ($14.99 a year). Ships
+   dark.
+6. **Guests browse and preview, and earn nothing until they sign in.**
+7. **Golf's daily tokens are not ported.**
+
+## 13. A change from the plan, found while building
+
+**The garments live in `baller.js`, not in a `wear.js` beside it.** The figure
+is painted in a Web Worker that loads `baller.js` and nothing else
+(`getWorker`), so a shape registered by a second file would draw in the first
+frame and vanish from every frame the worker paints. `catalog.js` is the data
+(an item is a shape plus colours) and `baller.js` holds the shapes, in its
+street section, behind `ctx: 'street'`. A new colourway is a row; only a new
+shape needs art. `baller.js` carries `API_VERSION` 1 for the page to pin.

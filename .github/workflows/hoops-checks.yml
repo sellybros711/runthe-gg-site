@@ -12,6 +12,8 @@ name: Hoops checks
 #   node hoops/check-saves.mjs          old saves migrate and play on unchanged
 #   node hoops/check-sprite.mjs         no existing sprite pose moves a cell
 #   node hoops/check-moments.mjs --quick the touch, the moments, the frames
+#   node hoops/check-economy.mjs        the coin ledger, the daily rule, the merge, the faucet
+#   node hoops/check-wardrobe.mjs       every item painted, in every pose, on every build
 #   node hoops/check-story.mjs --quick  the story engine: order, arcs, traits, people, league
 #   node hoops/check-rosters.mjs        a career joins today's real rosters
 #   node hoops/sim-career.mjs           a thousand careers against the story bible
@@ -99,6 +101,16 @@ jobs:
       # locally.
       - name: Playable moments
         run: node hoops/check-moments.mjs --quick
+
+      # Coins are a keyed ledger: a key pays once, two devices merge exactly,
+      # careers count by career, and a measured career pays what the plan says.
+      - name: The coin economy
+        run: node hoops/check-economy.mjs
+
+      # Every street item names a shape the rig knows, paints on every build
+      # and pose, stays on the grid, and never dresses a real player.
+      - name: The wardrobe
+        run: node hoops/check-wardrobe.mjs
 
       # The story engine holds together: events are data, every card says
       # when it is and the story happens in order, arcs end more than one way,

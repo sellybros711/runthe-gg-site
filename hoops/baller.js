@@ -477,11 +477,14 @@ function build(L, o, J){
   var H = J.head, hx = H[0], hy = H[1], hz = H[2];
   var HR = [7.3, 8.6, 7.6];
   var local = function(p){ return [p[0] - hx, p[1] - hy, p[2] - hz]; };
+  var ST = o.st || null;
 
   /* legs: skin and socks under the shorts, or trousers */
   [-1, 1].forEach(function(s){
     var G = J.leg[s];
-    if (!suit) {
+    if (ST) {
+      add('trouser' + s, 'leg' + s, streetLegMat(G, s), streetLegF(G, s), G.kn, 12 * ls);
+    } else if (!suit) {
       var legMat = function(p){
         var y = p[1] - (G.ank[1] - 57.4);
         /* crew socks, with the club's two colours ringed near the top */
@@ -512,7 +515,7 @@ function build(L, o, J){
       var soleF = rbox([fx, fl - 0.5, fz + 0.05], [2.1, 0.5, 3.6], 0.45);
       var toeF = ell([fx, fl - 1.45, fz + 1.45], [2.0, 1.3, 2.4]);
       var heelF = rbox([fx, fl - 2.3, fz - 1.0], [1.95, 1.8, 2.25], 1.0);
-      var collarF = ell([fx, a[1] + 0.5, fz - 1.3], [1.95, 1.5, 1.95]);
+      var collarF = ST && ST.shoes && ST.shoes.k === 'hitop' ? ell([fx, a[1] - 0.5, fz - 1.2], [2.05, 2.5, 2.05]) : ell([fx, a[1] + 0.5, fz - 1.3], [1.95, 1.5, 1.95]);
       shoeF = function(p){ return Math.min(soleF(p), smin(smin(toeF(p), heelF(p), 1.3), collarF(p), 0.9)); };
       shoeM = function(p){
         var ly = p[1] - a[1], dz = p[2] - fz, dx = Math.abs(p[0] - fx);
@@ -543,7 +546,8 @@ function build(L, o, J){
     for (var i = 0; i < 2; i++) { d = smin(d, pecs[i](p), 1.2); d = smin(d, lats[i](p), 1.4); d = smin(d, blades[i](p), 1.0); }
     return d; };
   var bodyN = function(p){ return p; };
-  if (!suit) {
+  if (ST) streetTorso();
+  else if (!suit) {
     var kit = o.kit || 'classic', nres = o.res || 1;
     /* the number, on the cloth itself: a 3 by 5 numeral laid on the front of
        the chest in the body's own units, so it turns with the chest and
@@ -642,13 +646,15 @@ function build(L, o, J){
     ell([CX, J.neck[1] + 2.4 * ts, -0.9], [3.3 + nb * 1.6 + g * 0.25, 1.3, 1.9])(p), 1.4); };
   /* the same piece as the torso, so no contour line is drawn where they meet */
   add('neck', 'torso', 'skin', neckF, J.neck, 7, { bias: -0.25 });
+  if (ST) streetNeck();
 
   /* the arms: a shoulder, an upper arm, a forearm, a hand */
   [-1, 1].forEach(function(s){
     var A = J.arm[s], sleeved = !suit && o.sleeve && s === 1;
     var mat = suit ? 'jacket' : sleeved ? 'sleeve' : 'skin';
     var r0 = Math.max(1.3, (suit ? 2.5 : 2.0) + am + g * 0.24), r1 = Math.max(1.2, (suit ? 2.1 : 1.7) + am * 0.8 + g * 0.17), r2 = Math.max(1.05, (suit ? 1.95 : 1.5) + am * 0.6 + g * 0.08);
-    if (!suit) add('delt' + s, 'arm' + s, sleeved ? 'sleeve' : 'skin', sph([A.sh[0] - s * 0.7, A.sh[1] + 2.0, 0], BD.dl * 0.85 + g * 0.1), A.sh, 3.5);
+    if (ST) { var ai = streetArm(A); mat = ai.m; r0 += ai.r; r1 += ai.r; r2 += ai.r * 0.8; }
+    if (!suit) add('delt' + s, 'arm' + s, ST ? (ai.d || 'skin') : sleeved ? 'sleeve' : 'skin', sph([A.sh[0] - s * 0.7, A.sh[1] + 2.0, 0], BD.dl * 0.85 + g * 0.1 + (ST ? ai.r : 0)), A.sh, 3.5);
     /* an arm has a shape: the bicep swells half way down, a little, so the shoulder stays narrow, the
        forearm is thickest just under the elbow and narrows to the wrist */
     /* the arm starts just under the shoulder point, so its cap does not rise above the shoulder line */
@@ -708,8 +714,8 @@ function build(L, o, J){
   add('head', 'head', 'skin', faceF, H, 9.4, { bias: 0.06 });
 
   /* hair: every style a volume over the head */
-  var hs = L.hair;
-  if (cap) hs = hs === 'afro' ? 'afrocap' : hs === 'long' || hs === 'twists' || hs === 'bald' ? hs : 'buzz';
+  var hs = L.hair, hatK = ST && ST.hat ? ST.hat.k : '';
+  if (cap || hatK) hs = hs === 'afro' ? 'afrocap' : hs === 'long' || hs === 'twists' || hs === 'bald' ? hs : 'buzz';
   var shellF = function(t){ return ell(H, [HR[0] + t, HR[1] + t, HR[2] + t]); };
   /* what of the head the hair covers: above the hairline, the sides down
      past the temples, and all of the back */
@@ -768,13 +774,140 @@ function build(L, o, J){
   else if (L.beard === 'full') add('beard', 'beard', 'beard', cut(shellF(0.55), function(p){ var l = local(p);
     return Math.max(2.4 - l[1], -(l[2] + 2), (Math.abs(l[0]) < 2.0 && l[1] < 5.8 && l[2] > 4) ? 1 : -1); }), H, 9);
   /* the band, the cap */
-  if (o.band && !cap) add('band', 'band', 'band', cut(shellF(0.55), function(p){ var l = local(p); return Math.abs(l[1] + 4.6) - 1.0; }), H, 9);
+  if (hatK) streetHat(hatK, shellF, local, hx, hy, hz);
+  if (ST && ST.eyes) streetEyes(hx, hy, hz);
+  if (o.band && !cap && !hatK) add('band', 'band', 'band', cut(shellF(0.55), function(p){ var l = local(p); return Math.abs(l[1] + 4.6) - 1.0; }), H, 9);
   if (cap) {
     add('cap', 'cap', function(p){ var l = local(p);
       if (l[2] > 4.2 && Math.abs(l[0]) < 1.4 && l[1] > -7.2 && l[1] < -4.6) return 'logo';
       return l[1] < -8.6 && Math.abs(l[0]) < 0.8 ? { m: 'cap', dt: -1 } : 'cap'; },
       cut(shellF(1.7), function(p){ return local(p)[1] + 2.4; }), H, 10, { gloss: 1 });
     add('brim', 'cap', 'cap', cut(ell([hx, hy - 2.6, hz + 5.6], [7.0, 0.85, 4.6]), function(p){ return -(local(p)[2] - 3.0); }), [hx, hy - 2.6, hz + 7], 7.5);
+  }
+  /* ─── OFF COURT: street clothes ─────────────────────────────────────────
+     Drawn only when the caller asks for the street look (paint's ctx). Each
+     garment is a VOLUME, not paint on the body: cloth is the body's own
+     surface pushed out (an SDF offset), so it follows every pose the limb
+     takes. The catalogue (catalog.js) hands over a shape (k) and its colours;
+     this file knows the shapes and nothing about prices or names. */
+  /* smin blends two distances; these blend two shapes */
+  function smf(a, b, k){ return function(p){ return smin(a(p), b(p), k); }; }
+  function streetTop(){ return (ST.top && ST.top.k) || 'tee'; }
+  function streetLegF(G, s){
+    var kd = (ST.bottom && ST.bottom.k) || 'jeans', top = [G.hip[0] - s * 0.3, G.hip[1] - 2.2, 0];
+    if (kd === 'sweats') return uni([cone(top, G.kn, 3.55 + g * 0.26, 3.2 + g * 0.16), cone(G.kn, [G.ank[0], G.ank[1] - 0.5, G.ank[2]], 3.2 + g * 0.12, 2.15)]);
+    return uni([cone(top, G.kn, 3.25 + g * 0.25, 2.85 + g * 0.14), cone(G.kn, [G.ank[0], G.ank[1] + 0.4, G.ank[2]], 2.85 + g * 0.1, 2.6)]);
+  }
+  function streetLegMat(G, s){
+    var kd = (ST.bottom && ST.bottom.k) || 'jeans';
+    return function(p){
+      var tA = clamp01((p[1] - G.hip[1]) / Math.max(1, G.ank[1] - G.hip[1])), ax = G.hip[0] + (G.ank[0] - G.hip[0]) * tA, lx = (p[0] - ax) * s, toAnk = G.ank[1] - p[1];
+      if (kd === 'sweats') {
+        if (toAnk < 1.3) return { m: 'btm', dt: Math.floor(p[0] * 2) % 2 ? -1 : 0 };
+        /* one stripe down the outside of the leg, as wide as a finger: the
+           cloth's radius falls from the hip to the cuff, so the stripe follows it */
+        var rr = 3.45 - 1.15 * tA + g * 0.2;
+        if (lx > rr - 0.62 && Math.abs(p[2] - G.kn[2] * tA) < 1.25) return 'btm2';
+        return 'btm';
+      }
+      /* jeans: a rolled cuff, a lighter fade down the front of the thigh, and the outer seam */
+      if (toAnk < 0.9) return { m: 'btm', dt: 1 };
+      if (lx > 2.35 && Math.abs(p[2]) < 0.7) return { m: 'btm', dt: -1 };
+      if (p[2] > 1.6 && tA > 0.12 && tA < 0.45 && (Math.floor(p[0] * 1.7) + Math.floor(p[1] * 1.1)) % 3 === 0) return { m: 'btm', dt: 1 };
+      return 'btm';
+    };
+  }
+  function streetTorso(){
+    var kd = streetTop(), infl = kd === 'hoodie' ? 0.8 : 0.35, hemY = W0[1] + (kd === 'hoodie' ? 4.2 : 3.6) * ts;
+    var mk = function(y, dx, front){ var nd = front ? 1.0 : 0.3; return function(w){ var t = dx / w; return t < 1 ? 23.9 + nd * (1 - t * t) : -1; }; };
+    add('torso', 'torso', function(p){
+      var sx = p[0] - CX, dx = Math.abs(sx), y = 29.2 + (p[1] - C0[1]) / ts, front = p[2] > 0.6, neck = mk(y, dx, front);
+      if (y < neck(2.7)) return 'skin';
+      if (kd === 'tee' && y < neck(3.4) + 0.65) return { m: 'top2' };
+      if (kd === 'hoodie' && y < neck(3.4) + 0.45) return { m: 'top', dt: -1 };
+      if (p[1] > hemY - 0.8) return { m: 'top', dt: kd === 'hoodie' ? (Math.floor(p[0] * 2) % 2 ? -1 : 0) : -1 };
+      if (kd === 'hoodie' && front) {
+        /* the drawstrings, and the kangaroo pocket across the belly */
+        if (Math.abs(dx - 1.25) < 0.32 && y > 24.4 && y < 28.6) return { m: 'top2', t: y > 28.0 ? 3 : 2 };
+        if (y > 33.2 && y < 37.4 && dx < 4.2) return (Math.abs(y - 33.2) < 0.42 || Math.abs(dx - (3.4 + (y - 33.2) * 0.2)) < 0.38) ? { m: 'top', dt: -1 } : 'top';
+      }
+      return 'top';
+    }, cut(function(q){ return torsoF(q) - infl; }, function(q){ return q[1] - hemY; }), [CX, (C0[1] + W0[1]) / 2 + 1, 0], 13 * Math.max(1, ts, sw) + Math.max(0, g));
+    /* the seat of the trousers, under the hem */
+    var sy0 = W0[1] - 0.4, shW = (6.2 + bw * 0.4) * sw + g * 0.6;
+    var bk = (ST.bottom && ST.bottom.k) || 'jeans';
+    add('seat', 'seat', function(p){ var y = p[1] - sy0; if (y < 0.9) return bk === 'jeans' ? { m: 'btm', dt: -1 } : 'btm2'; return 'btm'; },
+      cut(ell([CX, sy0 + 2.8 * ts, 0], [shW, 4.0 * ts, 4.4 + Math.max(0, g) * 0.45]), function(q){ return sy0 - q[1]; }), [CX, sy0 + 3 * ts, 0], 9 + Math.max(0, g));
+    var out = ST.outer && ST.outer.k;
+    if (out === 'varsity') {
+      var oHem = W0[1] + 4.6 * ts;
+      add('outer', 'outer', function(p){
+        var sx = p[0] - CX, dx = Math.abs(sx), y = 29.2 + (p[1] - C0[1]) / ts, front = p[2] > 0.8, neck = mk(y, dx, front);
+        if (y < neck(3.0)) return 'skin';
+        if (y < neck(3.9) + 0.9) return (Math.floor(y * 2.2) % 2) ? 'out3' : 'out2';
+        /* worn open: the front shows the top underneath, widening to the collar */
+        var open = 1.05 + Math.max(0, 27.4 - y) * 0.55;
+        if (front && dx < open) return kd === 'hoodie' ? 'top' : 'top';
+        if (front && dx < open + 0.55) return { m: 'out1', dt: -1 };
+        if (front && Math.abs(dx - (open + 1.1)) < 0.35 && Math.floor(y) % 3 === 0) return { m: 'out3', t: 3 };
+        if (p[1] > oHem - 1.5) return Math.floor((p[1] - oHem) * 2.4) % 2 ? 'out3' : 'out2';
+        /* a chenille letter patch on the left chest */
+        if (front && sx > 2.4 && sx < 5.0 && y > 25.6 && y < 28.8) return (sx < 2.8 || sx > 4.6 || y < 26.0 || y > 28.4) ? 'out3' : 'out2';
+        return 'out1';
+      }, cut(function(q){ return torsoF(q) - (infl + 0.95); }, function(q){ return q[1] - oHem; }), [CX, (C0[1] + W0[1]) / 2 + 1, 0], 14 * Math.max(1, ts, sw) + Math.max(0, g));
+    }
+  }
+  /* what an arm is wearing: its material, how far the cloth stands off it,
+     and the shoulder's material */
+  function streetArm(A){
+    var out = ST.outer && ST.outer.k, kd = streetTop(), wr = A.wr, el = A.el, sh = A.sh;
+    var along = function(p){ var ux = el[0] - sh[0], uy = el[1] - sh[1], uz = el[2] - sh[2], L2 = ux * ux + uy * uy + uz * uz || 1;
+      return ((p[0] - sh[0]) * ux + (p[1] - sh[1]) * uy + (p[2] - sh[2]) * uz) / L2; };
+    var cuff = function(p, a, b){ return Math.hypot(p[0] - wr[0], p[1] - wr[1], p[2] - wr[2]) < 1.5 ? a : b; };
+    if (out === 'varsity') return { r: 0.85, d: 'out2', m: function(p){ return cuff(p, Math.floor(p[1] * 2.6) % 2 ? 'out3' : 'out2', 'out2'); } };
+    if (kd === 'hoodie') return { r: 0.55, d: 'top', m: function(p){ return cuff(p, { m: 'top', dt: Math.floor(p[1] * 2.6) % 2 ? -1 : 0 }, 'top'); } };
+    return { r: 0.12, d: 'top', m: function(p){ var t = along(p); return t < 0.5 ? 'top' : t < 0.6 ? { m: 'top', dt: -1 } : 'skin'; } };
+  }
+  function streetNeck(){
+    if (streetTop() === 'hoodie') {
+      /* the hood, down: a soft roll of cloth behind the neck and round the collar */
+      var hc = [CX, J.neck[1] + 1.6 * ts, -3.0];
+      add('hood', 'hood', function(p){ return p[2] > -1.6 ? { m: 'top', dt: -1 } : 'top'; },
+        smf(ell(hc, [4.6 * sw + g * 0.2, 2.5, 2.9]), torus([CX, J.neck[1] + 2.4 * ts, -0.6], 3.2 * sw, 1.05), 1.2), hc, 7.5);
+    }
+    if (ST.chain && ST.chain.k === 'chain') {
+      /* a chain that drapes: a ring laid over the collarbones, its front
+         dropping onto the chest, with a pendant where it falls lowest */
+      var cc = [CX, J.neck[1] + 1.4 * ts, 2.0 + Math.max(0, bw) * 0.6 + Math.max(0, g) * 0.4], R = 3.9 * sw + Math.max(0, g) * 0.25, a = 0.82, ca = Math.cos(a), sa = Math.sin(a);
+      add('chain', 'chain', function(p){ return Math.floor((p[0] + p[2]) * 2.2) % 2 ? { m: 'chainc', dt: 1 } : 'chainc'; }, function(p){
+        var x = p[0] - cc[0], y = p[1] - cc[1], z = p[2] - cc[2], yy = y * ca - z * sa, zz = y * sa + z * ca;
+        return Math.hypot(Math.hypot(x, zz) - R, yy) - 0.42; }, cc, R + 1.5, { gloss: 2 });
+      var pc = [CX, cc[1] + R * sa + 1.0, cc[2] + R * ca + 0.2];
+      add('pendant', 'chain', 'chainc', rbox(pc, [0.95, 1.2, 0.4], 0.35), pc, 1.9, { gloss: 2 });
+    }
+  }
+  function streetHat(kd, shellF, local, hx, hy, hz){
+    if (kd === 'beanie') {
+      var bF = smf(cut(shellF(1.25), function(p){ var l = local(p); return l[1] + 1.5 - Math.max(0, -l[2]) * 0.45; }), ell([hx, hy - 7.4, hz - 0.4], [5.8, 3.6, 5.6]), 1.6);
+      add('hat', 'hat', function(p){ var l = local(p);
+        if (l[1] > -4.6) return { m: 'hat2', dt: Math.floor(Math.atan2(l[0], l[2]) * 7 + 50) % 2 ? -1 : 0 };
+        return (Math.floor(l[0] * 0.9 + 30) + Math.floor(l[1] * 1.2 + 30)) % 3 === 0 ? { m: 'hat', dt: -1 } : 'hat'; }, bF, [hx, hy - 4, hz], 11, { bias: -0.05 });
+      return;
+    }
+    if (kd === 'bucket') {
+      add('hat', 'hat', function(p){ var l = local(p); return Math.abs(l[1] + 4.2) < 0.5 ? 'hat2' : 'hat'; },
+        cut(smf(shellF(1.6), ell([hx, hy - 8.0, hz - 0.3], [6.4, 3.0, 6.0]), 1.4), function(p){ return local(p)[1] + 3.6; }), [hx, hy - 5, hz], 11);
+      add('brim', 'hat', { m: 'hat', dt: -1 }, function(p){ var l = local(p), rr = Math.hypot(l[0], (l[2] - 0.4) / 0.96), ys = -3.9 + (rr - 7.6) * 0.62;
+        return Math.max(Math.abs(l[1] - ys) - 0.42, Math.max(7.2 - rr, rr - 11.0)) * 0.6; }, [hx, hy - 3, hz], 12.5);
+    }
+  }
+  function streetEyes(hx, hy, hz){
+    if (ST.eyes.k !== 'shades') return;
+    [-1, 1].forEach(function(s){
+      add('lens' + s, 'eyes', function(p){ return p[1] - hy < -0.55 ? { m: 'lens', t: 4 } : p[1] - hy < 0.1 ? { m: 'lens', t: 2 } : 'lens'; }, ell([hx + s * 2.85, hy + 0.35, hz + 7.4], [2.5, 1.55, 0.6]), [hx + s * 2.75, hy, hz + 7.3], 2.4, { gloss: 2 });
+      add('temple' + s, 'eyes', 'frame', cone([hx + s * 4.7, hy - 0.2, hz + 6.4], [hx + s * 7.35, hy + 0.5, hz - 0.8], 0.36, 0.3), [hx + s * 6, hy, hz + 3], 4.6);
+    });
+    add('bridge', 'eyes', 'frame', rbox([hx, hy - 0.1, hz + 7.85], [0.95, 0.28, 0.32], 0.2), [hx, hy, hz + 7.8], 1.2);
   }
   var k = MX.k;
   var shrink = function(q){ return [H[0] + (q[0] - H[0]) / k, H[1] + (q[1] - H[1]) / k, H[2] + (q[2] - H[2]) / k]; };
@@ -830,6 +963,27 @@ function toneOf(c, part, dt){
   return Math.max(0, Math.min(4, t + (dt || 0)));
 }
 
+/* ─── the street look's input ─────────────────────────────────────────────
+   paint(look, { ctx: 'street', wear }) draws him off court. wear is what
+   catalog.js resolves an outfit to: per slot a shape this file knows (k) and
+   its colours (c). Anything unknown is dropped, a slot at a time, so an item
+   from a newer catalogue or a hand edit draws as the starter piece rather than
+   as a blank. With no ctx nothing here runs and every court sprite is drawn
+   exactly as before (check-sprite holds 960 of them). */
+var WEAR_KINDS = { top: ['tee', 'hoodie'], outer: ['varsity'], bottom: ['jeans', 'sweats'], shoes: ['sneaker', 'hitop'], hat: ['beanie', 'bucket'], eyes: ['shades'], chain: ['chain'] };
+var WEAR_BASE = { top: { k: 'tee', c: ['#f1f0ea', '#dcdad2'] }, bottom: { k: 'jeans', c: ['#3d5a86'] } };
+var HEX = /^#[0-9a-f]{6}$/i;
+function wearNorm(w){
+  var out = {};
+  for (var slot in WEAR_KINDS) {
+    var it = w && w[slot];
+    if (it && WEAR_KINDS[slot].indexOf(it.k) >= 0) out[slot] = { k: it.k, c: (Array.isArray(it.c) ? it.c : []).filter(function(x){ return HEX.test(x); }).slice(0, 3) };
+    else if (WEAR_BASE[slot]) out[slot] = WEAR_BASE[slot];
+  }
+  return out;
+}
+function wearKey(o){ return o && o.ctx === 'street' ? JSON.stringify(wearNorm(o.wear)) : ''; }
+
 /* Paint the whole figure into a grid of colours. opts:
      c1, c2   the jersey's two colours
      num      the number on the chest
@@ -851,8 +1005,9 @@ function paint0(look, o){
   if (o.faceless) L = Object.assign({}, L, { hair: 'bald', beard: 'none', band: 'none', sleeve: 'none' });
   var pose = o.pose || 'stand';
   var AN = ANIM[pose] || null;
-  var suit = pose === 'suit' || pose === 'cap' || !!(AN && (o.dress === 'suit' || o.dress === 'cap'));
-  var cap = pose === 'cap' || !!(AN && o.dress === 'cap');
+  var ST = o.ctx === 'street' && !o.faceless ? wearNorm(o.wear) : null;
+  var suit = !ST && (pose === 'suit' || pose === 'cap' || !!(AN && (o.dress === 'suit' || o.dress === 'cap')));
+  var cap = !ST && (pose === 'cap' || !!(AN && o.dress === 'cap'));
   var c1 = o.c1 || '#2b3242', c2 = o.c2 || '#c9ccd6';
   if (contrast(c1, c2) < 1.4) c2 = inkOn(c1);
   var age = +o.age || 0;
@@ -866,8 +1021,8 @@ function paint0(look, o){
   var HH = H * res, WW = W * res;
   var bandHex = L.band === 'none' ? null : L.band === 'club' ? c2 : FIXED[L.band];
   var slvHex = L.sleeve === 'none' ? null : L.sleeve === 'club' ? c2 : FIXED[L.sleeve];
-  var num = pose === 'trophy' || suit ? '' : String(o.num == null ? '' : o.num).slice(0, 2);
-  var model = build(L, { suit: suit, cap: cap, pose: pose, num: num, band: !!bandHex, sleeve: !!slvHex, kit: kitOf(c1, c2, o.kit), res: res }, J);
+  var num = pose === 'trophy' || suit || ST ? '' : String(o.num == null ? '' : o.num).slice(0, 2);
+  var model = build(L, { suit: suit, cap: cap, pose: pose, num: num, band: !!bandHex && !ST, sleeve: !!slvHex && !ST, kit: kitOf(c1, c2, o.kit), res: res, st: ST }, J);
   var hit = trace(model, res);
 
   if (o.parts) return hit.map(function(r){ return r.map(function(c){ return c ? model[c.i].n : null; }); });
@@ -889,6 +1044,19 @@ function paint0(look, o){
     trouser: ramp('#2a2e38'), jacket: ramp(mix(c1, '#14161c', 0.66)), shirt: ramp('#f1f1ec'), cuff: ramp('#f1f1ec'), pocket: ramp(c2),
     tie: ramp(contrast(c1, mix(c1, '#14161c', 0.66)) >= 1.6 ? c1 : c2), cap: ramp(c1), logo: ramp(c2), gold: ramp('#e3a92f'), ball: ramp('#e2762a'),
   };
+  if (ST) {
+    /* the street colours: each slot's own, with a sensible second shade when
+       the catalogue gives one colour */
+    var cc = function(slot, i, d){ var it = ST[slot]; return it && it.c[i] ? it.c[i] : d; };
+    var t0 = cc('top', 0, '#f1f0ea'), o0 = cc('outer', 0, '#1f3a6b'), b0 = cc('bottom', 0, '#3d5a86');
+    R.top = ramp(t0); R.top2 = ramp(cc('top', 1, mix(t0, '#000000', 0.18)));
+    R.out1 = ramp(o0); R.out2 = ramp(cc('outer', 1, '#f1ede2')); R.out3 = ramp(cc('outer', 2, mix(o0, '#f4f2ec', 0.6)));
+    R.btm = ramp(b0); R.btm2 = ramp(cc('bottom', 1, mix(b0, '#f4f2ec', 0.7)));
+    var hk = cc('hat', 0, '#2a2e38'); R.hat = ramp(hk); R.hat2 = ramp(cc('hat', 1, mix(hk, '#000000', 0.2)));
+    R.lens = ramp(cc('eyes', 1, '#1a1c22')); R.frame = ramp(cc('eyes', 0, '#16181d'));
+    R.chainc = ramp(cc('chain', 0, '#e3a92f'));
+    if (ST.shoes) { R.shoe = ramp(cc('shoes', 0, shoeHex)); R.trim = ramp(cc('shoes', 1, '#16181f')); R.sole = ramp(cc('shoes', 2, '#e8e2d4')); }
+  }
   /* tones, and what each pixel is made of */
   var T = [], M = [];
   for (var y = 0; y < HH; y++) { T.push([]); M.push([]); for (var x = 0; x < WW; x++) {
@@ -1097,7 +1265,7 @@ function propCanvas(kind, opts){
 /* ─── to the screen ───────────────────────────────────────────────────── */
 
 var CACHE = {}, KEYS = [];
-function keyOf(look, o){ return JSON.stringify([normal(look), o.c1, o.c2, o.num, o.pose, o.age >= 33 ? o.age : 0, o.frame || 0, o.scale || 4, !!o.shadow, o.dress || '', o.faceless ? 1 : 0, resFor(o), o.kit || '']); }
+function keyOf(look, o){ return JSON.stringify([normal(look), o.c1, o.c2, o.num, o.pose, o.age >= 33 ? o.age : 0, o.frame || 0, o.scale || 4, !!o.shadow, o.dress || '', o.faceless ? 1 : 0, resFor(o), o.kit || ''].concat(o.ctx === 'street' ? [wearKey(o)] : [])); }
 /* THE BIGGER IT IS SHOWN, THE FINER IT IS TRACED. The model has no pixels of
    its own: it is volumes, so a portrait shown at 4 screen pixels a cell is
    traced at 2 sub-cells a cell and drawn 2 pixels each, and at 3 or 6 it is
@@ -1259,7 +1427,7 @@ function pump(){
 /* the frames a live figure needs, painted once per look and shared */
 function frameSet(look, o, mode){
   /* a walk does not care which pose the beat is in, so it is shared */
-  var key = JSON.stringify([normal(look), o.c1, o.c2, o.num, mode === 'walk' ? '' : o.pose, o.age >= 33 ? o.age : 0, o.dress || '', o.faceless ? 1 : 0, o.res, mode, o.kit || '']);
+  var key = JSON.stringify([normal(look), o.c1, o.c2, o.num, mode === 'walk' ? '' : o.pose, o.age >= 33 ? o.age : 0, o.dress || '', o.faceless ? 1 : 0, o.res, mode, o.kit || ''].concat(o.ctx === 'street' ? [wearKey(o)] : []));
   var fs = SETCACHE[key];
   if (fs) return fs;
   var want = [];
@@ -1431,6 +1599,11 @@ var API = {
   DEFAULT: DEFAULT, normal: normal, lookFor: lookFor, hash: hash, inkOn: inkOn, contrast: contrast,
   paint: paint, canvas: canvas, url: url, img: img, breathe: breathe, live: live, warm: warm, _gridData: gridData,
   prop: prop, propCanvas: propCanvas, ramp: ramp, PROPS: Object.keys(PROP_SIZE),
+  WEAR_KINDS: WEAR_KINDS, wearNorm: wearNorm,
+  /* 1 is the first version with the street look. A page that needs it pins
+     this, the way it pins board.js: a stale cached copy would ignore ctx and
+     draw the uniform with nothing thrown. */
+  API_VERSION: 1,
 };
 if (typeof module !== 'undefined' && module.exports) module.exports = API;
 if (typeof window !== 'undefined') { window.RTF_BALLER = API; breathe(); }
