@@ -25,7 +25,8 @@ var API_VERSION = 1;
 var GEAR_BOOSTS = false;
 
 var STREET_SLOTS = ['hat', 'eyes', 'top', 'outer', 'bottom', 'shoes', 'socks', 'chain', 'watch', 'bag', 'phones', 'held'];
-var COURT_SLOTS = ['band', 'goggles', 'guard', 'sleeveL', 'sleeveR', 'wrist', 'tape', 'tights', 'knee', 'ankle', 'csocks', 'cshoes', 'under'];
+/* a shoe cut for the floor is a 'both' item in the shoes slot, worn on court too */
+var COURT_SLOTS = ['band', 'goggles', 'guard', 'sleeveL', 'sleeveR', 'wrist', 'tape', 'tights', 'knee', 'ankle', 'csocks', 'shoes', 'under'];
 
 var ITEMS = [
   /* the starter wardrobe: free, owned by everyone, so nobody starts bare */
@@ -61,6 +62,25 @@ var ITEMS = [
   { id: 'boot_wheat', ctx: 'street', slot: 'shoes', name: 'Work Boots', rarity: 'rare', k: 'boot', c: ['#b8863a', '#3a2a1c', '#2a1d14'] },
   { id: 'slide_black', ctx: 'street', slot: 'shoes', name: 'Slides', rarity: 'common', k: 'slide', c: ['#22242b', '#f2f2f0', '#22242b'] },
   { id: 'dress_oxford', ctx: 'street', slot: 'shoes', name: 'Oxfords', rarity: 'epic', k: 'dress', c: ['#2a1d14', '#2a1d14', '#1a120c'] },
+  /* on court: worn over the uniform, never in place of it */
+  { id: 'band_wide_red', ctx: 'court', slot: 'band', name: 'Wide Headband', rarity: 'common', k: 'wide', c: ['#c8352e'] },
+  { id: 'band_tied_black', ctx: 'court', slot: 'band', name: 'Tied Headband', rarity: 'rare', k: 'tied', c: ['#16181f'] },
+  { id: 'goggles_specs', ctx: 'court', slot: 'goggles', name: 'Rec Specs', rarity: 'epic', k: 'specs', c: ['#1d1f24', '#b9d8f0'] },
+  { id: 'guard_blue', ctx: 'court', slot: 'guard', name: 'Mouthguard', rarity: 'common', k: 'guard', c: ['#5b8fe6'] },
+  { id: 'sleeve_l_black', ctx: 'court', slot: 'sleeveL', name: 'Shooting Sleeve (left)', rarity: 'common', k: 'arm', c: ['#16181f'] },
+  { id: 'sleeve_r_white', ctx: 'court', slot: 'sleeveR', name: 'Half Sleeve (right)', rarity: 'common', k: 'half', c: ['#f4f2ec'] },
+  { id: 'wrist_gold', ctx: 'court', slot: 'wrist', name: 'Wristbands', rarity: 'common', k: 'band', c: ['#e3a92f'] },
+  { id: 'tape_white', ctx: 'court', slot: 'tape', name: 'Finger Tape', rarity: 'common', k: 'fingers', c: ['#f4f2ec'] },
+  { id: 'tights_black', ctx: 'court', slot: 'tights', name: 'Compression Tights', rarity: 'rare', k: 'full', c: ['#16181f'] },
+  { id: 'tights_white_three', ctx: 'court', slot: 'tights', name: 'Three-Quarter Tights', rarity: 'rare', k: 'three', c: ['#f4f2ec'] },
+  { id: 'knee_black', ctx: 'court', slot: 'knee', name: 'Knee Pads', rarity: 'common', k: 'pad', c: ['#16181f'] },
+  { id: 'knee_white_one', ctx: 'court', slot: 'knee', name: 'Single Knee Pad', rarity: 'common', k: 'one', c: ['#f4f2ec'] },
+  { id: 'ankle_black', ctx: 'court', slot: 'ankle', name: 'Ankle Braces', rarity: 'common', k: 'brace', c: ['#16181f'] },
+  { id: 'csocks_high_black', ctx: 'court', slot: 'csocks', name: 'High Socks', rarity: 'rare', k: 'high', c: ['#16181f'] },
+  { id: 'csocks_low_white', ctx: 'court', slot: 'csocks', name: 'No-Show Socks', rarity: 'common', k: 'low', c: ['#f1f0ea'] },
+  { id: 'under_tee_black', ctx: 'court', slot: 'under', name: 'Undershirt', rarity: 'common', k: 'tee', c: ['#16181f'] },
+  { id: 'under_long_white', ctx: 'court', slot: 'under', name: 'Long-Sleeve Undershirt', rarity: 'rare', k: 'long', c: ['#f4f2ec'] },
+
   { id: 'socks_crew', ctx: 'street', slot: 'socks', name: 'Heather Crews', rarity: 'common', k: 'crew', c: ['#9aa0aa'] },
 ];
 var BY_ID = {};

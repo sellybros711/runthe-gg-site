@@ -29,6 +29,7 @@ for (const it of CAT.ITEMS) {
   const slots = it.ctx === 'court' ? CAT.COURT_SLOTS : CAT.STREET_SLOTS;
   ok(slots.indexOf(it.slot) >= 0, '1 ' + it.id + ' is in a real slot');
   if (it.ctx !== 'court') ok((B.WEAR_KINDS[it.slot] || []).indexOf(it.k) >= 0, '1 ' + it.id + ' names a shape baller.js knows (' + it.slot + ':' + it.k + ')');
+  if (it.ctx !== 'street') ok((B.CWEAR_KINDS[it.slot === 'shoes' ? 'cshoes' : it.slot] || []).indexOf(it.k) >= 0, '1 ' + it.id + ' names a court shape baller.js knows (' + it.slot + ':' + it.k + ')');
   ok(Array.isArray(it.c) && it.c.every((x) => /^#[0-9a-f]{6}$/i.test(x)), '1 ' + it.id + ' has hex colours');
 }
 ok(new Set(CAT.ITEMS.map((i) => i.id)).size === CAT.ITEMS.length, '1 every id is unique');
@@ -69,6 +70,46 @@ for (const build of ['lean', 'standard', 'strong']) for (const pose of ['stand',
   }
 }
 
+/* 2c and 3c: the court accessories, over the uniform */
+const UNI = { c1: '#1d428a', c2: '#ffc72c', num: '23' };
+for (const build of ['lean', 'standard', 'strong']) for (const pose of ['stand', 'walk1', 'cheer1', 'ball']) {
+  const L = Object.assign({}, LOOK, { build }), ref = JSON.stringify(B.paint(L, Object.assign({ pose }, UNI)));
+  for (const it of CAT.ITEMS) {
+    if (it.ctx === 'street') continue;
+    const o = Object.assign({ pose, cwear: { [it.slot]: { k: it.k, c: it.c } } }, UNI);
+    let g = null;
+    try { g = B.paint(L, o); } catch (e) { ok(false, '2c ' + it.id + ' paints on court on ' + build + ' ' + pose + ': ' + e.message); continue; }
+    const e = edgeOf(L, o);
+    ok(!e, '2c ' + it.id + ' stays inside the grid on court on ' + build + ' ' + pose + (e ? ' (' + e + ')' : ''));
+    if (!it.free) ok(JSON.stringify(g) !== ref, '3c ' + it.id + ' changes the court picture on ' + build + ' ' + pose);
+  }
+}
+{
+  /* everything at once, on the biggest and smallest man */
+  const all = {};
+  for (const it of CAT.ITEMS) if (it.ctx === 'court') all[it.slot] = { k: it.k, c: it.c };
+  all.shoes = { k: 'hitop', c: ['#c8352e', '#f2f2f0', '#f2efe6'] };
+  for (const L of [Object.assign({}, LOOK, { ht: 92, wt: 360, build: 'strong' }), Object.assign({}, LOOK, { ht: 66, wt: 140, build: 'lean' })]) for (const pose of ['stand', 'walk2', 'cheer0', 'ball']) {
+    const e = edgeOf(L, Object.assign({ pose, cwear: all }, UNI));
+    ok(!e, '2c the whole court kit stays inside the grid at ' + L.ht + '" ' + L.wt + 'lb ' + pose + (e ? ' (' + e + ')' : ''));
+  }
+  /* the jersey keeps its trim under new shoes: only the shoe changes */
+  const plainU = B.paint(LOOK, Object.assign({}, UNI, { parts: 1 }));
+  const shod = B.paint(LOOK, Object.assign({}, UNI, { cwear: { shoes: { k: 'sneaker', c: ['#c8352e', '#16181f', '#f2efe6'] } } }));
+  const bare = B.paint(LOOK, UNI);
+  let jerseyMoved = 0;
+  for (let y = 0; y < plainU.length; y++) for (let x = 0; x < plainU[0].length; x++) if (plainU[y][x] && !/^shoe/.test(plainU[y][x]) && JSON.stringify(shod[y][x]) !== JSON.stringify(bare[y][x])) jerseyMoved++;
+  ok(jerseyMoved === 0, '3c a court shoe changes the shoe and nothing else (' + jerseyMoved + ' other cells moved)');
+  /* a suit is not a uniform: court wear goes with the uniform */
+  ok(same(B.paint(LOOK, Object.assign({}, UNI, { pose: 'suit' })), B.paint(LOOK, Object.assign({}, UNI, { pose: 'suit', cwear: all }))), '3c nothing on court is worn with a suit');
+  const n = B.cwearNorm({ band: { k: 'cape' }, shoes: { k: 'boot', c: ['#fff000'] }, knee: { k: 'pad', c: ['#123456', 'red'] } });
+  ok(!n.band && !n.cshoes && n.knee && same(n.knee.c, ['#123456']), '5 a court shape that is not one is dropped, and a street-only shoe never goes on court');
+  ok(B.cwearNorm({}) === null && B.cwearNorm(null) === null, '5 no court wear is no court wear');
+  ok(same(B.paint(LOOK, Object.assign({ faceless: 1, cwear: all }, UNI)), B.paint(LOOK, Object.assign({ faceless: 1 }, UNI))), '8 a real player wears nothing from the court catalogue');
+  const src = require('node:fs').readFileSync(new URL('./baller.js', import.meta.url), 'utf8');
+  ok(/cwearKey\(o\)/.test(src.match(/function keyOf\([^]*?\n/)[0]) && /cwearKey\(o\)/.test(src.match(/var key = JSON\.stringify\(\[normal\(look\)[^\n]*/)[0]), '6 the court outfit is in the url key and the live frame key');
+}
+
 /* 4 */
 {
   const court = B.paint(LOOK, { c1: '#1d428a', c2: '#ffc72c', num: '23' });
@@ -107,6 +148,8 @@ for (const build of ['lean', 'standard', 'strong']) for (const pose of ['stand',
   ok(r2.hat && r2.hat.k === 'beanie' && r2.top.k === 'hoodie', '7 an owned item is worn');
   ok(!CAT.resolve({ top: 'jeans_raw' }, 'street', true).top || CAT.resolve({ top: 'jeans_raw' }, 'street', true).top.k === 'tee', '7 an item in the wrong slot is not worn');
   ok(CAT.resolve({ shoes: 'hitop_red' }, 'court', true).shoes, '7 shoes cross between the two looks');
+  ok(!CAT.resolve({ shoes: 'boot_wheat' }, 'court', true).shoes, '7 a street-only shoe stays off the court');
+  ok(!CAT.resolve({ goggles: 'goggles_specs' }, 'street', true).goggles && CAT.resolve({ goggles: 'goggles_specs' }, 'court', true).goggles, '7 court gear is worn on court and not on the street');
 }
 
 /* 8 */
