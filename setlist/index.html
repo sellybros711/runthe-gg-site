@@ -1552,6 +1552,25 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      than starting at it, and clamped so it cannot run off either end. */
   .cs-rnd{position:absolute; top:0; transform:translateX(-50%); white-space:nowrap;}
   .ceil-fine{font-size:11px; font-weight:600; color:var(--dim); line-height:1.45;}
+  /* WHERE YOU'D BE STANDING. The lawn is a night scene in both themes, the
+     same way the stage is: it is a picture of a venue, not a panel of the UI. */
+  .crowdcard{padding:14px 16px 15px; margin-bottom:16px;
+    border-color:color-mix(in srgb,var(--teal) 30%, transparent);}
+  .cw-row{display:flex; align-items:baseline; gap:12px; margin-bottom:10px;}
+  .cw-big{font-family:var(--ui); font-size:38px; line-height:1; color:var(--tealT);
+    flex:0 0 auto; font-variant-numeric:tabular-nums;}
+  .cw-zone{font-size:15px; font-weight:900; color:var(--ink); line-height:1.25;}
+  .cw-zone span{display:block; font-size:11px; font-weight:700; color:var(--dim);}
+  .cw-lawn{position:relative; border-radius:10px; overflow:hidden; background:#0B0818;}
+  .cw-lawn canvas{display:block; width:100%; height:auto; image-rendering:pixelated;}
+  .cw-you{position:absolute; transform:translate(-50%,-100%); padding:2px 7px 3px;
+    border-radius:99px; background:#37C5D5; color:#0B0818; font-size:10px; font-weight:900;
+    letter-spacing:.8px; text-transform:uppercase; white-space:nowrap; pointer-events:none;
+    box-shadow:0 0 0 3px rgba(55,197,213,.25); animation:cwBob 1.6s var(--ease) infinite;}
+  .cw-rnd{position:absolute; left:10px; font-size:9px; font-weight:800; letter-spacing:.6px;
+    text-transform:uppercase; color:rgba(246,242,234,.6); pointer-events:none;}
+  @keyframes cwBob{0%,100%{margin-top:0} 50%{margin-top:-3px}}
+  @media (prefers-reduced-motion: reduce){ .cw-you{animation:none;} }
   /* ---------------- THE SCORE, DRAWN ----------------
      Four numbers in four tiles under "Four things are scored, and they add up
      to your total", with a line of prose under each saying what it was for.
@@ -3058,10 +3077,10 @@ setTimeout(function(){
      HTML change can never be served against a stale script. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"
   crossorigin="anonymous" defer></script>
-<script src="/setlist/auth.js?v=41" defer></script>
+<script src="/setlist/auth.js?v=42" defer></script>
 <!-- The release newsletter checkbox on the account sheet. See supabase/121_newsletter.sql. -->
 <script src="/assets/newsletter.js?v=2" defer></script>
-<script src="/setlist/board.js?v=41" defer></script>
+<script src="/setlist/board.js?v=42" defer></script>
 
 <script type="module">
 import {
@@ -3072,8 +3091,8 @@ import {
   monotonyRun, MONO_AT, BREADTH_BUSTOUT_GAP, LEN_20MIN,
   scoreShow, gradeScore, gradeRunning, GRADE_SETTLE, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=41';
-import { loadBand, setLabel, setRank, parseCSV } from './dataLoader.js?v=41';
+} from './scoring.js?v=42';
+import { loadBand, setLabel, setRank, parseCSV } from './dataLoader.js?v=42';
 import { createStage } from './stage.js?v=6';
 
 // ── bands ────────────────────────────────────────────────────────────────────
@@ -3331,6 +3350,7 @@ const S = {
   // forever if there is no board to talk to.
   posted: null,
   ranks: null,
+  crowd: null,
 };
 
 /* ── a draft survives a refresh ───────────────────────────────────────────────
@@ -4057,11 +4077,12 @@ function renderReveal(){
 function bankGoesTo(si){ return SETS[si + 1] ? SETS[si + 1].label : null; }
 
 /* WHAT PICKING AT RANDOM IS WORTH, as a mark on the ceiling bar rather than a
-   sentence under it. Six full games played by choosing a random legal song
-   every round: 71, 71, 76, 78, 88 and 93 percent of the ceiling, median 77.
+   sentence under it. 200 games played by choosing a random legal song every
+   round (setlist/build/sim.mjs --best): median 61 percent of the ceiling under
+   v6 scoring, where it was 77 to 82 when a song paid once whatever its length.
    It is the only benchmark on the scorecard that says whether a percentage is
    any good, so it is drawn where the percentage is. */
-const RANDOM_PCT = 77;
+const RANDOM_PCT = 61;
 
 function setsPanelHTML({ live }){
   const bud = budgets(S.sets, S.closed, S.spent);
@@ -4523,9 +4544,14 @@ function songBreakdownHTML(perf, sc, opts = {}){
         <div class="bdpts">${sc.subtotal}</div>
       </div>
       <div class="bdmath">
-        <span class="bdterm"><i>Song</i><b>${sc.base}</b></span><span class="bdop">×</span>
+        <span class="bdterm"><i>Song</i><b>${sc.quality}</b></span><span class="bdop">×</span>
         <span class="bdterm"><i>Version</i><b>${sc.versionMult.toFixed(2)}</b></span><span class="bdop">×</span>
-        <span class="bdterm ${sc.fit}"><i>Placement</i><b>${sc.placementMult.toFixed(2)}</b></span>
+        <span class="bdterm ${sc.fit}"><i>Placement</i><b>${sc.placementMult.toFixed(2)}</b></span><span class="bdop">×</span>
+        ${/* v6: a song is paid for its time on stage, counted in tens of minutes,
+              so the arithmetic on screen has to carry the length or it will not close. */''}
+        <span class="bdterm"><i>Per 10 min</i><b>${sc.length.toFixed(2)}</b></span>${
+          sc.monotonyMult < 1 ? `<span class="bdop">×</span>
+        <span class="bdterm bad"><i>Repeat</i><b>${sc.monotonyMult.toFixed(2)}</b></span>` : ''}
         <span class="bdop">=</span><span class="bdterm tot"><b>${sc.subtotal}</b></span>
       </div>
       <div class="bdwhy">${reasons}<span class="vr fit ${sc.fit}">${fitWord}</span>${(() => {
@@ -4582,6 +4608,136 @@ function rankCardHTML(){
           lists named shows. <button class="linkbtn" type="button"
           id="rankSignIn">Sign in</button> and it's yours.</div>`}
   </div>`;
+}
+
+/* WHERE YOU'D BE STANDING.
+ *
+ * A rank is a number, and a number out of four hundred is still just a number.
+ * Every night drafted on this band's board is drawn as one fan on the lawn,
+ * lined up by how close it came to its own best possible night: the best are on
+ * the rail, the worst are out by the merch tent. You are the one lit up. Where
+ * you stand IS the rank, so the picture needs one line of words, not a sentence.
+ *
+ * Ranked on % of best rather than on the total, because the total is partly the
+ * draw (see SORTS in board.js) and this card is about how you played.
+ */
+const CROWD_MIN = 5;          // fewer drafts than this and a crowd is not a crowd
+const CROWD_DRAW = 240;       // fans drawn; the rank itself uses every draft
+const CROWD_W = 192, CROWD_H = 124;
+const CROWD_ZONES = [
+  [0.01, 'On the rail'],
+  [0.10, 'In the pit'],
+  [0.25, 'Up front'],
+  [0.50, 'Middle of the lawn'],
+  [0.75, 'Back of the lawn'],
+  [1.01, 'Out by the merch tent'],
+];
+function crowdStanding(){
+  const all = S.crowd, r = S.result;
+  if (!all || all.length < CROWD_MIN || !S.best || !r) return null;
+  const mine = 100 * r.total / Math.max(1, S.best.total);
+  // Rows filed after a submit carry this night too; a draft that did not land is
+  // added so the count is never one short of the truth.
+  const n = S.posted ? all.length : all.length + 1;
+  const above = all.filter(v => v > mine + 0.005).length;
+  const top = (above + 1) / n;
+  const zone = CROWD_ZONES.find(z => top <= z[0])[1];
+  // Where a random draft would stand, measured against this same crowd.
+  const rndAbove = all.filter(v => v > RANDOM_PCT).length;
+  return { n, above, top, zone, mine, rndDepth: rndAbove / n };
+}
+
+function crowdCardHTML(){
+  const st = crowdStanding();
+  if (!st) return '';
+  const pct = Math.max(1, Math.ceil(100 * st.top));
+  return `<div class="card crowdcard">
+    <div class="ceil-lbl">Where you'd be standing</div>
+    <div class="cw-row">
+      <div class="cw-big">Top ${pct}%</div>
+      <div class="cw-zone">${esc(st.zone)}<span>of ${st.n.toLocaleString()} nights drafted</span></div>
+    </div>
+    <div class="cw-lawn">
+      <canvas id="crowdCanvas" width="${CROWD_W}" height="${CROWD_H}"
+        role="img" aria-label="A crowd of ${st.n} drafted nights. You are ${esc(st.zone.toLowerCase())}, in the top ${pct} percent."></canvas>
+      <div class="cw-you" id="crowdYou">You</div>
+      <div class="cw-rnd" id="crowdRnd">Random picks</div>
+    </div>
+  </div>`;
+}
+
+function drawCrowd(){
+  const cv = document.getElementById('crowdCanvas');
+  const st = crowdStanding();
+  if (!cv || !st) return;
+  const g = cv.getContext('2d');
+  const W = CROWD_W, H = CROWD_H;
+  let seed = hash32(`${S.result.total}|${st.n}`);
+  const rnd = () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const px = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), w, h); };
+
+  // The night sky and the lawn, in bands so depth reads without perspective maths.
+  px(0, 0, W, H, '#0B0818');
+  const LAWN0 = 30, LAWN1 = H - 4;
+  for (let y = LAWN0; y < H; y++){
+    const k = (y - LAWN0) / (H - LAWN0);
+    const c = Math.round(26 + 14 * k), d = Math.round(40 + 18 * k);
+    px(0, y, W, 1, `rgb(${c - 8},${d},${c})`);
+  }
+  // The stage: deck, truss and the rig, glowing down onto the rail.
+  const glow = g.createRadialGradient(W / 2, 22, 2, W / 2, 30, 90);
+  glow.addColorStop(0, 'rgba(55,197,213,.35)'); glow.addColorStop(1, 'rgba(55,197,213,0)');
+  g.fillStyle = glow; g.fillRect(0, 0, W, 70);
+  px(46, 8, W - 92, 2, '#3A3355');            // truss
+  px(46, 8, 2, 18, '#3A3355'); px(W - 48, 8, 2, 18, '#3A3355');
+  ['#37C5D5', '#A982F3', '#FF6FC1', '#48D17A', '#37C5D5', '#A982F3', '#FF6FC1'].forEach((c, i) => {
+    px(54 + i * 14, 10, 2, 2, c);
+  });
+  px(40, 22, W - 80, 4, '#211B3B');           // deck
+  px(40, 26, W - 80, 1, '#4A4270');
+  px(30, 28, W - 60, 1, '#8C83A2');           // the rail
+  // The merch tent at the back, which is what the last row is named after.
+  px(W - 30, H - 22, 22, 3, '#F06A5F'); px(W - 29, H - 19, 20, 12, '#F6F2EA');
+  px(W - 23, H - 15, 8, 8, '#2A2349');
+
+  // Everybody, best on the rail. The lawn widens as it goes back, like a real one.
+  const depthY = d => LAWN0 + 3 + d * (LAWN1 - LAWN0 - 10);
+  const halfW = d => 52 + d * 40;
+  const shirts = ['#F06A5F', '#A982F3', '#37C5D5', '#5C8CFF', '#FF6FC1', '#48D17A', '#F6F2EA', '#B8AFCB'];
+  const skins = ['#F2C9A0', '#D9A273', '#A8724A', '#6E4429', '#F5D6B8'];
+  const shown = Math.min(CROWD_DRAW, st.n);
+  const fan = (x, y, shirt, skin, up) => {
+    px(x, y + 2, 3, 3, shirt);
+    px(x + 1, y, 1, 2, skin); px(x, y + 1, 3, 1, skin);
+    if (up){ px(x - 1, y - 1, 1, 2, skin); px(x + 3, y - 1, 1, 2, skin); }
+  };
+  const meD = st.above / Math.max(1, st.n - 1);
+  for (let i = 0; i < shown; i++){
+    const d = shown > 1 ? i / (shown - 1) : 0;
+    if (Math.abs(d - meD) < 0.012) continue;   // leave the space you are standing in
+    const y = depthY(d) + (rnd() - .5) * 3;
+    const x = W / 2 + (rnd() * 2 - 1) * halfW(d);
+    fan(x, y, shirts[Math.floor(rnd() * shirts.length)], skins[Math.floor(rnd() * skins.length)],
+      d < 0.25 && rnd() < .45);
+  }
+  // A random draft's line, faint, so the rest of the lawn reads against it.
+  const ry = depthY(Math.min(1, st.rndDepth));
+  for (let x = 20; x < W - 20; x += 4) px(x, ry + 6, 2, 1, 'rgba(246,242,234,.35)');
+
+  // You: lit from above, arms up.
+  const yx = W / 2 + (rnd() * 2 - 1) * halfW(meD) * 0.5, yy = depthY(meD);
+  const halo = g.createRadialGradient(yx + 1.5, yy + 2, 0, yx + 1.5, yy + 2, 12);
+  halo.addColorStop(0, 'rgba(55,197,213,.85)'); halo.addColorStop(1, 'rgba(55,197,213,0)');
+  g.fillStyle = halo; g.fillRect(yx - 12, yy - 12, 28, 28);
+  fan(yx, yy, '#37C5D5', '#F6F2EA', true);
+  px(yx + 1, yy - 4, 1, 2, '#F6F2EA');
+
+  // The two labels are HTML over the canvas, so their text is crisp at any size.
+  const you = document.getElementById('crowdYou');
+  if (you){ you.style.left = `${100 * (yx + 1.5) / W}%`; you.style.top = `${100 * (yy - 4) / H}%`; }
+  const rl = document.getElementById('crowdRnd');
+  if (rl){ rl.style.top = `${100 * (ry + 7) / H}%`; rl.hidden = Math.abs(ry - yy) < 9; }
 }
 
 function renderResult(){
@@ -4664,6 +4820,8 @@ function renderResult(){
         <div class="band-meta" style="margin:6px 0 0">${esc(S.band.label)} ·
           ${r.stats.songs} songs · ${fmtClock(r.totalUsed)} on stage</div>
       </div>
+
+      ${crowdCardHTML()}
 
       ${S.best ? (() => {
         const gap = S.best.total - r.total;
@@ -4808,7 +4966,7 @@ function renderResult(){
           <span class="ss-s">Song by song, segue by segue</span>
         </summary>
         <div class="sub">Each song is <b>how loved it is</b> × <b>how good that version was</b>
-          × <b>how well it fit its spot</b>. Then the whole night gets judged.</div>
+          × <b>how well it fit its spot</b> × <b>how long it held the stage</b>. Then the whole night gets judged.</div>
 
         ${r.monoLost ? `<div class="sheetgrp">
           <h3>Songs <span>${r.songTotal}</span></h3>
@@ -4882,6 +5040,7 @@ function renderResult(){
       </div>
     </div>`;
 
+  drawCrowd();
   const el = document.getElementById('scoreN');
   const target = r.total;
   // The grade is the finished night's, fixed up front — the count-up animation
@@ -6501,6 +6660,8 @@ function finishShow(){
      different, so it needs the pick each alternative was an alternative TO. */
   S.missed = theOneThatGotAway(S.drafted, S.sets);
   S.posted = null;
+  // Last night's rank and crowd are not this night's, and would show until the board answered.
+  S.ranks = null; S.crowd = null;
   recordShow();       // fire and forget; the playback does not wait on a network
   setScreen('show');
 }
@@ -6542,7 +6703,12 @@ async function recordShow(){
   S.posted = id;
   // The rank is read from the board rather than from this insert, so a submit
   // that failed still shows a true number instead of collapsing to "1 of 1".
-  S.ranks = await b.ranks(S.band.id, 'score', r.total);
+  const [ranks, crowd] = await Promise.all([
+    b.ranks(S.band.id, 'score', r.total),
+    b.spread ? b.spread(S.band.id) : null,
+  ]);
+  S.ranks = ranks;
+  S.crowd = crowd;
   if (S.screen === 'result') render();
 }
 
