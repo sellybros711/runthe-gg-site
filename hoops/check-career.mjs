@@ -699,8 +699,10 @@ section('10. the press room, the persona, the look');
         /* 22 and not 24 since the camera moved to the 3/4 corner: the far ear
            is hidden and the face is a narrower strip, so a bald man standing
            measured 23. A count only ever stood in for shading, so the claim is
-           asked directly too: the jersey is lit in at least three of its tones. */
-        if (cols.size < 22) flat.push(`${pose} ${lk.hair} (${cols.size})`);
+           asked directly too: the jersey is lit in at least three of its tones.
+           20 since the crew neck: the higher neckline covers the chest skin, so
+           a buzz cut standing measured 21 with the jersey still in its tones. */
+        if (cols.size < 20) flat.push(`${pose} ${lk.hair} (${cols.size})`);
         if (pose !== 'suit' && pose !== 'cap' && pose !== 'trophy') { const J = new Set(BL.ramp('#1d428a')), seen = new Set(); f0.forEach(r => r.forEach(c => { if (J.has(c)) seen.add(c); })); if (seen.size < 3) flat.push(`${pose} ${lk.hair} jersey`); }
       }
     }
