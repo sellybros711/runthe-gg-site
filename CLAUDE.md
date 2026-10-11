@@ -19987,7 +19987,9 @@ flat cut-out standing at its anchor, so the sea in front of a long hull painted 
 3D trail of the world, drawn by `hole3d.js` from a scene (`opt.scene`) at a finer art grid (`TART`, an eighth of
 a foot a pixel), 110 ft long, so about two screens of walking. The golfer is `golfer3d.js`'s walk
 (eight frames a stride plus `ws`, standing), picked off the distance walked so the feet never skate. He is
-walked with a stick or the arrows, or on Auto walk along the path; Skip goes straight to the hole.
+walked with a stick or the arrows; Skip goes straight to the hole. **There is no Auto walk**, the owner's
+call: the walk is the place. Somebody who would rather not walk it goes to the map and plays the next hole from
+there, which warns that the trail's rewards are forfeit (`skipWarn`).
 
 **The holes at each end of a walk are the real holes** (`courseFoot` in putt.js, `feet` and `footAt` in the plan).
 Each is the compiled course rastered to a grid of codes (carpet, fringe, rail, block, cup, water, sand, ice) and
@@ -20029,7 +20031,7 @@ yet beaten on the main tour: a beaten hole's trail is already behind you. A gate
   - **A phone's plan is 72 ft across** (`halfW` 36, was 28), so a sideways leg is a real change of direction.
     A route reaches at most 26 ft either side (`XR`) on any screen, so a wide desktop plan does not make a long
     walk. On a shore the route keeps to the land side so the sea and its ships stay in sight.
-  - **Auto walk and the arrow follow the route.** `along` only searches round where he already is, because a
+  - **The arrow follows the route.** `along` only searches round where he already is, because a
     doubled-back route puts two legs side by side. The arrow points some way ahead along the path while the arch
     is round a bend, and the yards it gives are what is left to walk.
 - **NO COIN LIES LOOSE. Coins are in a chest, ONE A TRAIL**, the owner's call: in the clearing when it holds
