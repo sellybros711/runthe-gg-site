@@ -926,12 +926,14 @@ function run(box, P, pic, api){
       shadowAt(f.x + 1, f.y + 1, 0.9 * C.sz, 0.1); pixAt(fr, C, f.x, f.y, gz + f.z, C.sz * 0.28, f.vx < 0); }); }
 
   // ---- input: a stick under the thumb, or the keys
-  var ui = document.createElement('div'); ui.className = 'pp-tui'; ui.innerHTML = '<div class="pp-stick" data-stick><i></i></div><div class="pp-way" data-way><i></i><b></b></div><div class="pp-pin" data-pin><b></b><i></i></div>' +
+  /* THE STICK IS FOR A TOUCH SCREEN ONLY, the owner's call. With a mouse and a keyboard he walks on the arrow keys
+     or WASD, so a desktop gets no stick on screen and a drag does not walk him. */
+  var coarse = false; try{ coarse = matchMedia('(pointer: coarse)').matches; }catch(e){}
+  var ui = document.createElement('div'); ui.className = 'pp-tui'; ui.innerHTML = (coarse ? '<div class="pp-stick" data-stick><i></i></div>' : '') + '<div class="pp-way" data-way><i></i><b></b></div><div class="pp-pin" data-pin><b></b><i></i></div>' +
     '<div class="pp-thud"><span data-coins>+0</span><span data-gold></span></div><div class="pp-tlist" data-tlist></div><div class="pp-rbar"><button class="pp-rb pp-talkb" data-talk hidden></button><button class="pp-rb" data-skip></button></div><div class="pp-rhint" data-hint></div><div class="pp-bub" data-bub hidden></div>';
   box.appendChild(ui);
-  var stick = ui.querySelector('[data-stick]'), knob = stick.firstChild, way = ui.querySelector('[data-way]'), pin = ui.querySelector('[data-pin]'), bubEl = ui.querySelector('[data-bub]'), hint = ui.querySelector('[data-hint]');
-  var coarse = false; try{ coarse = matchMedia('(pointer: coarse)').matches; }catch(e){}
-  hint.textContent = coarse ? 'Drag anywhere to walk' : 'Drag, or use the arrow keys, to walk';
+  var stick = ui.querySelector('[data-stick]'), knob = stick && stick.firstChild, way = ui.querySelector('[data-way]'), pin = ui.querySelector('[data-pin]'), bubEl = ui.querySelector('[data-bub]'), hint = ui.querySelector('[data-hint]');
+  hint.textContent = coarse ? 'Drag anywhere to walk' : 'Use the arrow keys or WASD to walk';
   ui.querySelector('[data-skip]').textContent = api.skipLabel || 'Skip';
   /* THERE IS NO AUTO WALK, the owner's call: the walk is the place, so it is walked. Anybody who would rather not
      can go to the map and play the next hole from there, forfeiting what the trail holds (putt.js warns them). */
@@ -945,7 +947,7 @@ function run(box, P, pic, api){
   function pmv(e){ if (!drag || e.pointerId !== drag.id) return; var dx = e.clientX - drag.x, dy = e.clientY - drag.y, Ln = Math.hypot(dx, dy), m = Math.min(1, Ln / SR);
     stickV = Ln > 4 ? [dx / Ln * m, dy / Ln * m] : [0, 0]; knob.style.transform = 'translate(' + (stickV[0] * SR).toFixed(1) + 'px,' + (stickV[1] * SR).toFixed(1) + 'px)'; }
   function pup(e){ if (!drag || (e && e.pointerId != null && e.pointerId !== drag.id)) return; drag = null; stickV = [0, 0]; stick.classList.remove('on'); stick.style.left = stick.style.top = ''; knob.style.transform = ''; }
-  box.addEventListener('pointerdown', pdn); window.addEventListener('pointermove', pmv); window.addEventListener('pointerup', pup); window.addEventListener('pointercancel', pup); window.addEventListener('blur', pup);
+  if (coarse) box.addEventListener('pointerdown', pdn); window.addEventListener('pointermove', pmv); window.addEventListener('pointerup', pup); window.addEventListener('pointercancel', pup); window.addEventListener('blur', pup);
   window.addEventListener('keydown', kd, true); window.addEventListener('keyup', ku, true);
 
   /* WHERE HE IS ALONG THE WALK. A route that doubles back has two legs side by side, so the nearest bit of path can

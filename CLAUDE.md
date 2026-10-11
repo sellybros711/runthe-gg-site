@@ -19987,7 +19987,8 @@ flat cut-out standing at its anchor, so the sea in front of a long hull painted 
 3D trail of the world, drawn by `hole3d.js` from a scene (`opt.scene`) at a finer art grid (`TART`, an eighth of
 a foot a pixel), 110 ft long, so about two screens of walking. The golfer is `golfer3d.js`'s walk
 (eight frames a stride plus `ws`, standing), picked off the distance walked so the feet never skate. He is
-walked with a stick or the arrows; Skip goes straight to the hole. **There is no Auto walk**, the owner's
+walked with a stick on a touch screen and with the arrow keys or WASD on a desktop, which draws no stick and
+ignores a drag (owner's call); Skip goes straight to the hole. **There is no Auto walk**, the owner's
 call: the walk is the place. Somebody who would rather not walk it goes to the map and plays the next hole from
 there, which warns that the trail's rewards are forfeit (`skipWarn`).
 
