@@ -180,24 +180,41 @@ const SHIRTS = ['#e8505f', '#3f86d8', '#f2efe6', '#4fb36e', '#9b5fd0', '#2e3140'
   '#c7c065', '#7d5a44', '#ec7aa8', '#5fc4a0'];
 const DYE = ['#f05a7e', '#ffd04a', '#4ac0e6', '#9b5ff0', '#5fd47a'];
 
-function personParts(G, P, pose, back){
-  // Turned round is x and y negated about the feet: the same model, its back to you.
-  const T = back ? (x, y, z) => [-x, -y, z] : (x, y, z) => [x, y, z];
+/* `facing` turns the model about its feet: 0 faces you, PI is its back to you, and a quarter turn
+   either way is side on. Only quarter turns, so an ellipsoid's radii simply swap. */
+function turnOf(facing){ return typeof facing === 'number' ? facing : facing ? Math.PI : 0; }
+function personParts(G, P, pose, facing){
+  const th = turnOf(facing), cs = Math.round(Math.cos(th)), sn = Math.round(Math.sin(th)), swap = sn !== 0;
+  const T = (x, y, z) => [x * cs - y * sn, x * sn + y * cs, z];
   const E = (x, y, z, rx, ry, rz, m, o, cut) => {
     const [a, b, c] = T(x, y, z);
-    ell(G, a, b, c, rx, ry, rz, m, o, cut ? (u, v, w) => cut(back ? -u : u, back ? -v : v, w) : null);
+    ell(G, a, b, c, swap ? ry : rx, swap ? rx : ry, rz, m, o, cut ? (u, v, w) => cut(u * cs + v * sn, -u * sn + v * cs, w) : null);
   };
   const C = (a, b, r, m, o) => cap(G, T(...a), T(...b), r, m, o);
-  const skin = 'k:' + P.skin, hair = 'h:' + P.hair, pants = 'x:' + P.pants, shoes = 'x:' + P.shoes;
-  const shirt = P.dye
+  const skin = 'k:' + P.skin, hair = 'h:' + P.hair, shoes = 'x:' + P.shoes;
+  /* A painted suit: cream canvas with marker doodles all over it, the way the keys player's is. */
+  const doodle = base => (x, y, z) => {
+    const h = hash(Math.floor(x * 5) + 40, Math.floor(z * 5) + Math.floor(y * 5) * 9, 21);
+    return 'x:' + (h < .13 ? ['#d8402e', '#3f8a4a', '#3a62c4', '#e08a2a', '#7a4ab0'][(h * 100 | 0) % 5] : base);
+  };
+  const pants = P.doodle ? doodle(P.pants) : 'x:' + P.pants;
+  const shirt = P.doodle ? doodle(P.shirt) : P.dye
     ? (x, y, z) => 'x:' + DYE[(Math.floor(Math.hypot(x, z - 2.3) * 3.2 + P.dye) % DYE.length + DYE.length) % DYE.length]
     : P.stripe ? (x, y, z) => 'x:' + (Math.floor(z * 3) % 2 ? P.shirt : P.stripe)
     : 'x:' + P.shirt;
-  // Legs and shoes.
-  C([-.38, 0, .35], [-.38, 0, 1.55], .3, pants);
-  C([.38, 0, .35], [.38, 0, 1.55], .3, pants);
-  E(-.38, .12, .2, .32, .45, .22, shoes, { gloss: 1 });
-  E(.38, .12, .2, .32, .45, .22, shoes, { gloss: 1 });
+  // Legs and shoes. Sitting, the thighs run forward and the shins drop to the deck.
+  if (pose.seated){
+    for (const s2 of [-1, 1]){
+      C([s2 * .38, 0, 1.45], [s2 * .38, .95, 1.45], .3, pants);
+      C([s2 * .38, .95, 1.45], [s2 * .38, .95, .35], .28, pants);
+      E(s2 * .38, 1.07, .2, .32, .45, .22, shoes, { gloss: 1 });
+    }
+  } else {
+    C([-.38, 0, .35], [-.38, 0, 1.55], .3, pants);
+    C([.38, 0, .35], [.38, 0, 1.55], .3, pants);
+    E(-.38, .12, .2, .32, .45, .22, shoes, { gloss: 1 });
+    E(.38, .12, .2, .32, .45, .22, shoes, { gloss: 1 });
+  }
   // Body.
   E(0, 0, 2.3, .78, .55, .92, shirt);
   if (P.vest) E(0, .02, 2.35, .8, .57, .86, 'x:' + P.vest, {}, (u, v, w) => Math.abs(u) > .35 && v > -.2);
@@ -209,7 +226,14 @@ function personParts(G, P, pose, back){
   // Hair: over the top and back of the head; longer styles fall behind the shoulders.
   const cut = { long: (u, v, w) => w > .1 || v < 0, curly: (u, v, w) => w > -.1 || v < .1 }[P.style]
     || ((u, v, w) => w > .15 || v < -.2);
-  if (P.style !== 'bald') E(0, -.02, 4.32, 1.24, 1.14, 1.16, hair, {}, cut);
+  if (P.style === 'shag'){
+    // A big shag of curls: over the brow and down past the ears, the face left open.
+    // Two tones of brown so the curls read as curls rather than a helmet.
+    const curl = (x, y, z) => 'h:' + (hash(Math.floor(x * 6) + 60, Math.floor(z * 6) + Math.floor(y * 6) * 5, 33) < .35
+      ? PXHD.mix(P.hair, '#c08a52', .35) : P.hair);
+    E(0, -.02, 4.32, 1.26, 1.16, 1.18, curl, {}, (u, v, w) => w > .32 || v < -.1 || (Math.abs(u) > .78 && (v < .3 || w > .05)));
+    E(0, -.25, 4.42, 1.38, 1.2, 1.24, curl, {}, (u, v, w) => v < 0 || w > .55);
+  } else if (P.style !== 'bald') E(0, -.02, 4.32, 1.24, 1.14, 1.16, hair, {}, cut);
   if (P.style === 'long') E(0, -.55, 3.35, 1.05, .5, 1.05, hair);
   if (P.style === 'curly') E(0, -.05, 4.45, 1.42, 1.3, 1.25, hair, {}, (u, v, w) => w > -.25 || v < 0);
   if (P.style === 'bun') E(0, -.5, 5.35, .45, .45, .42, hair);
@@ -238,25 +262,35 @@ function personParts(G, P, pose, back){
   if (pose.extra) pose.extra(E, C, T, G);
 }
 
-/* Two dots and a mouth, set onto the face after it is drawn, the way the golf golfer gets its own. */
-function face(G, P){
+/* Two dots and a mouth, set onto the face after it is drawn, the way the golf golfer gets its own.
+   Turned side on, only the near eye shows. Glasses are a dark rim either side of an eye; a mustache
+   is a short dark bar over the mouth. */
+function face(G, P, facing){
+  const th = turnOf(facing), cs = Math.round(Math.cos(th)), sn = Math.round(Math.sin(th));
+  const at = (x, y, z) => { const wx = x * cs - y * sn, wy = x * sn + y * cs;
+    return { i: Math.floor(sx(wx) - G.ox), j: Math.floor(sy(wy, z) - G.oy), seen: wy > .25 }; };
+  const rim = 'f:#241c22';
   for (const s of [-1, 1]){
-    const i = Math.floor(sx(s * .42) - G.ox), j = Math.floor(sy(1.02, 4.25) - G.oy);
-    G.S.set(i, j, 'f:#2a1c22', 0, { noCast: 1 });
+    const e = at(s * .42, 1.02, 4.25);
+    if (!e.seen) continue;
+    if (P.glasses){ G.S.set(e.i - 1, e.j, rim, 0, { noCast: 1 }); G.S.set(e.i + 1, e.j, rim, 0, { noCast: 1 }); G.S.set(e.i, e.j - 1, rim, 0, { noCast: 1 }); }
+    G.S.set(e.i, e.j, 'f:#2a1c22', 0, { noCast: 1 });
   }
-  if (!P.beard){
-    const i = Math.floor(sx(0) - G.ox), j = Math.floor(sy(1.05, 3.72) - G.oy);
-    G.S.set(i, j, 'f:' + PXHD.mix(P.skin, '#7a2a34', .35), 0, { noCast: 1 });
+  if (P.mustache){
+    for (const dx of [-.3, 0, .3]){ const m = at(dx, 1.06, 3.86); if (m.seen) G.S.set(m.i, m.j, 'f:' + PXHD.mix(P.hair, '#000000', .25), 0, { noCast: 1 }); }
+  } else if (!P.beard){
+    const m = at(0, 1.05, 3.72);
+    if (m.seen) G.S.set(m.i, m.j, 'f:' + PXHD.mix(P.skin, '#7a2a34', .35), 0, { noCast: 1 });
   }
 }
 
 /* A person as a sprite: drawn into their own small grid and painted. (PAX, PAY) is the cell their
    feet stand on, so they can be stood anywhere in the world. */
 const PW = 34, PH = 46, PAX = 17, PAY = 38;
-function personSprite(P, pose, back){
+function personSprite(P, pose, facing){
   const G = new Grid(PW, PH, sx(0) - PAX, OY - PAY);
-  personParts(G, P, pose, back);
-  if (!back) face(G, P);
+  personParts(G, P, pose, facing);
+  if (Math.cos(turnOf(facing)) > -.5) face(G, P, facing);
   return paint(G);
 }
 
@@ -296,7 +330,12 @@ function crowdVariant(rand){
 
 // ── the band ───────────────────────────────────────────────────────────────
 const BAND = {
-  keys:   { x: -8.6, y: -8.8, z: 4, look: { skin: SKINS[1], hair: HAIRS[1], style: 'long', shirt: '#5c9a62', pants: '#3c3a48', shoes: '#4a3a30' } },
+  /* Keys sits on a stool inside three boards (one each side and one behind) and turns between them,
+     and for some songs stands up with a red guitar. Big curls, round glasses, a mustache, and the
+     painted cream suit. */
+  keys:   { x: -9, y: -8.0, z: 4, stand: { x: -9, y: -6.3 }, axe: '#c8302c', bass: false,
+    look: { skin: SKINS[1], hair: '#5a3a24', style: 'shag', glasses: true, mustache: true, doodle: true,
+      shirt: '#efe6cf', pants: '#e8dec4', shoes: '#3a2e28' } },
   guitar: { x: -3, y: -4.6, z: 4, look: { skin: SKINS[1], hair: HAIRS[0], style: 'short', beard: true, hat: 'capback', hatC: '#ece6d8',
     shirt: '#9cc0e8', dye: 2, pants: '#6b5640', shoes: '#4a3e36' }, axe: '#f2e8d8', bass: false },
   bass:   { x: 2.6, y: -5.6, z: 4, look: { skin: SKINS[0], hair: HAIRS[4], style: 'long', shirt: '#c9c9d2', pants: '#2c3044', shoes: '#2a2a30' },
@@ -314,6 +353,22 @@ function guitarExtra(m){
     E(tip[0] + .12, tip[1], tip[2] + .1, .2, .08, .14, 'x:' + (m.bass ? '#2a2226' : '#efe6d4'));
   };
 }
+/* The keys player's four places: a board to his right, one to his left, one behind him, and the red
+   guitar. Two frames a board, hands rising and falling; the guitar strums like the other two. */
+const KEY_TURN = { right: -Math.PI / 2, left: Math.PI / 2, back: Math.PI };
+function keysFrames(){
+  const k = BAND.keys, out = {};
+  for (const [st2, th] of Object.entries(KEY_TURN)){
+    out[st2] = [0, 1].map(f => personSprite(k.look, { seated: true,
+      L: [-.5, 1.18, f ? 2.62 : 2.75], R: [.5, 1.18, f ? 2.75 : 2.62] }, th));
+  }
+  out.guitar = [0, 1, 2, 3].map(f => personSprite(k.look, {
+    L: [1.15, .9, 2.85], R: [-.55, .95, [2.25, 1.85, 2.15, 2.45][f]], extra: guitarExtra(k) }, 0));
+  return out;
+}
+// Which of his four places he is at, song by song. Mostly keys, the guitar now and then.
+const KEY_SEQ = ['right', 'left', 'right', 'back', 'guitar', 'left', 'back', 'right', 'left', 'guitar'];
+
 function bandFrames(){
   const g = m => [0, 1, 2, 3].map(f => personSprite(m.look, {
     L: [m.bass ? 1.4 : 1.15, .9, m.bass ? 3.05 : 2.85],
@@ -324,8 +379,7 @@ function bandFrames(){
   return {
     guitar: g(BAND.guitar),
     bass: g(BAND.bass),
-    keys: [0, 1, 2, 3].map(f => personSprite(BAND.keys.look, {
-      L: [-.7 + [0, .15, 0, -.1][f], 1.1, 2.55], R: [.7 + [0, -.1, .12, 0][f], 1.1, 2.5] }, false)),
+    keys: keysFrames(),
     drums: D.map(([l, r], f) => personSprite(BAND.drums.look, {
       L: l, R: r, extra: (E, C) => { stick(l, f !== 0 && f !== 2, C); stick(r, f === 0 || f === 3, C); } }, false)),
   };
@@ -399,6 +453,11 @@ function buildBack(rand){
     return 'x:' + (Math.floor(x * 1.4) % 2 ? '#8a6a54' : '#7e604c');
   });
   box(G, 4.6, 12.6, -13.6, -7.6, DECK.z, DECK.z + 1.2, (x, y, z, f) => 'x:' + (f === 'top' ? '#5a4f62' : '#2e2a36'));
+  // The keys player's third board, behind his stool, and the stool he turns on.
+  // Longer than the other two, so its ends show past his curls from out front.
+  keysBoard(G, BAND.keys.x, BAND.keys.y - 1.75, 'x', '#3a3e48', 5.4);
+  cyl(G, BAND.keys.x, BAND.keys.y, .14, DECK.z, DECK.z + 1.3, 'x:#7a7a84', null);
+  cyl(G, BAND.keys.x, BAND.keys.y, .62, DECK.z + 1.3, DECK.z + 1.5, 'x:#2a2a30', 'x:#3a3a42');
   // Amps along the back.
   for (const [x, w] of [[-4.6, 1.6], [-2.8, 1.6], [3.4, 2.2]]){
     box(G, x - w / 2, x + w / 2, -13.4, -12.4, DECK.z, DECK.z + 2.1, (px, py, pz, f) => f === 'top' ? 'x:#2e2b30'
@@ -417,25 +476,34 @@ function buildBack(rand){
   return paint(G);
 }
 
+/* A keyboard on an X stand at sitting height. `along` is the way its keys run: 'x' across the stage
+   for the board behind him, 'y' toward you for the two either side of him. */
+function keysBoard(G, x, y, along, body, L = 3.4){
+  const Z = DECK.z, top = Z + 2.7, W = .95;
+  const [hx, hy] = along === 'x' ? [L / 2, W / 2] : [W / 2, L / 2];
+  box(G, x - hx, x + hx, y - hy, y + hy, top - .35, top, (px, py, pz, f) => {
+    const a = along === 'x' ? px - x : py - y, c = along === 'x' ? py - y : px - x;
+    if (f === 'top' && Math.abs(a) < L / 2 - .2 && Math.abs(c) < W / 2 - .18){
+      const k = ((Math.floor(a * 5) % 7) + 7) % 7;
+      return (k === 2 || k === 4 || k === 6) && c < .02 ? 'x:#26242a' : 'x:#f4f1ea';
+    }
+    return 'x:' + body;
+  }, { gloss: 1 });
+  const e = along === 'x' ? [[-L / 2 + .5, 0], [L / 2 - .5, 0]] : [[0, -1.2], [0, 1.2]];
+  for (const [dx, dy] of e){
+    cap(G, [x + dx - .3, y + dy, Z], [x + dx + .3, y + dy, top - .4], .07, 'x:#6a6a74');
+    cap(G, [x + dx + .3, y + dy, Z], [x + dx - .3, y + dy, top - .4], .07, 'x:#6a6a74');
+  }
+}
+
 /* What stands in front of a player: the keys rig, the kit, mic stands, wedges, the barricade. Drawn
    after the band so a player is behind their gear, the way they are on a real stage. */
 function buildFront(){
   const G = new Grid(WPX, HPX, 0, 0);
   const Z = DECK.z;
-  // The keys rig: two boards on a stand, the top one red.
-  const board = (x, y, z, w, body) => {
-    box(G, x - w / 2, x + w / 2, y - .5, y + .5, z - .35, z, (px, py, pz, f) => {
-      if (f === 'top' && py > y - .3 && py < y + .35 && Math.abs(px - x) < w / 2 - .25){
-        const k = Math.floor((px - x) * 5) % 7;
-        return (k === 3 || k === 5) && py < y + .05 ? 'x:#26242a' : 'x:#f4f1ea';
-      }
-      return 'x:' + body;
-    }, { gloss: 1 });
-  };
-  board(-8.6, -7.4, Z + 3.1, 4.4, '#d23c3a');
-  board(-8.6, -6.6, Z + 2.5, 4.2, '#2c2a32');
-  cap(G, [-10, -6.8, Z], [-7.2, -6.8, Z + 2.2], .09, 'x:#6a6a74');
-  cap(G, [-7.2, -6.8, Z], [-10, -6.8, Z + 2.2], .09, 'x:#6a6a74');
+  // The keys player's boards either side of him. The one behind him is in the back layer.
+  keysBoard(G, BAND.keys.x + 1.65, BAND.keys.y, 'y', '#d23c3a');
+  keysBoard(G, BAND.keys.x - 1.65, BAND.keys.y, 'y', '#2c2a32');
   // The kit: yellow shells, cymbals, and the kick facing you with a swirl painted on it.
   const yel = (x, y, z, th) => 'x:' + (Math.sin(th || 0) > .6 ? '#c9a218' : '#f4cc2c');
   const drum = (x, y, r, z0, z1) => cyl(G, x, y, r, z0, z1, yel, 'x:#efeadc', { gloss: 1 });
@@ -466,7 +534,7 @@ function buildFront(){
     G.put(kx + x, ky + .02, kz + z, m, [0, 1, 0], { gloss: 1 });
   }
   // Mic stands in front of the strings, wedges at the lip, and pedalboards.
-  for (const [x, y] of [[-2.7, -3.0], [2.9, -4.0], [-7.2, -5.8]]){
+  for (const [x, y] of [[-2.7, -3.0], [2.9, -4.0]]){
     cap(G, [x, y, Z], [x, y, Z + 4.4], .06, 'x:#a8a8b2');
     ell(G, x, y + .1, Z + 4.5, .15, .2, .15, 'x:#2a2a30');
   }
@@ -641,13 +709,18 @@ export function createStage(view, opts = {}){
     if (!st.band) return;
     const beat = t * (1.7 + st.energy * 1.5);
     PLAYERS.forEach(([role, m], i) => {
-      const fr = frames[role];
+      let fr = frames[role], at = m;
+      if (role === 'keys'){
+        const where = KEY_SEQ[st.mode % KEY_SEQ.length];
+        fr = frames.keys[where];
+        if (where === 'guitar') at = { x: m.stand.x, y: m.stand.y, z: m.z };
+      }
       let f = ((beat * 2 + i * .7) | 0) % fr.length;
       if (st.energy < .3 && role !== 'drums') f = (beat | 0) % 2 ? 0 : 2;
       if (st.bow) f = role === 'drums' ? 3 : 1;
       const bob = st.energy > .45 && Math.sin(t * (4 + st.energy * 4) + i) > .4 ? 1 : 0;
-      const [px, py] = P2(m.x, m.y, m.z);
-      g.drawImage(fr[f], px - PAX, py - PAY - bob);
+      const [px, py] = P2(at.x, at.y, at.z);
+      g.drawImage(fr[f % fr.length], px - PAX, py - PAY - bob);
     });
   }
 
