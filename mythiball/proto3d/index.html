@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>MythiBall 3D Prototype</title>
+<style>
+  :root { --ink: #fbf6e8; --dim: #c9c2ae; --panel: rgba(16, 18, 28, 0.78); --gold: #f4c25a; --line: rgba(255, 255, 255, 0.14); }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #0d1018; color: var(--ink); font: 14px/1.35 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; overflow: hidden; }
+  #view { position: fixed; inset: 0; width: 100%; height: 100%; display: block; image-rendering: pixelated; touch-action: none; }
+  .bar { position: fixed; left: 0; right: 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 10px; pointer-events: none; }
+  .bar > * { pointer-events: auto; }
+  #top { top: 0; background: linear-gradient(var(--panel), rgba(16, 18, 28, 0)); padding-bottom: 18px; }
+  #bottom { bottom: 0; background: linear-gradient(rgba(16, 18, 28, 0), var(--panel)); padding-top: 18px; justify-content: center; }
+  .grp { display: flex; gap: 2px; background: rgba(0, 0, 0, 0.35); border: 1px solid var(--line); border-radius: 10px; padding: 2px; }
+  button, select { font: inherit; font-size: 12px; color: var(--ink); background: transparent; border: 0; border-radius: 8px; padding: 6px 9px; cursor: pointer; }
+  select { background: rgba(0, 0, 0, 0.35); border: 1px solid var(--line); max-width: 150px; }
+  button.solo { background: rgba(0, 0, 0, 0.4); border: 1px solid var(--line); }
+  button.on, button.solo.on { background: var(--gold); color: #1a1408; font-weight: 700; }
+  h1 { font-size: 14px; margin: 0 6px 0 2px; letter-spacing: .04em; }
+  #stats { font: 11px ui-monospace, monospace; color: var(--dim); margin-left: auto; font-variant-numeric: tabular-nums; }
+  #res { font: 11px ui-monospace, monospace; color: var(--dim); }
+  #name { font-weight: 700; text-shadow: 0 1px 2px #000; }
+  #count { font-variant-numeric: tabular-nums; letter-spacing: .05em; text-shadow: 0 1px 2px #000; }
+  #count b { color: var(--gold); margin-left: 8px; }
+  #tell { color: var(--dim); font-size: 12px; }
+  #banner { position: fixed; left: 50%; top: 34%; transform: translate(-50%, -50%) scale(.6); font: 900 clamp(22px, 6.4vw, 64px)/1 system-ui, sans-serif; letter-spacing: .03em; color: #fff; text-shadow: 0 4px 0 #14121a, 0 0 18px rgba(0, 0, 0, .5); opacity: 0; pointer-events: none; transition: opacity .15s, transform .25s cubic-bezier(.2, 1.6, .4, 1); white-space: nowrap; }
+  #banner.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  #banner.hr { color: var(--gold); } #banner.out { color: #ff8a7a; } #banner.safe { color: #8af08a; } #banner.strike { color: #ffb05a; } #banner.ball { color: #9ad0ff; }
+  #anims { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; max-width: 820px; }
+  #anims button { background: rgba(0, 0, 0, 0.45); border: 1px solid var(--line); }
+  #anims button.on { background: var(--gold); }
+  body[data-mode="play"] .cast-only, body[data-mode="cast"] .play-only { display: none !important; }
+  #opts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; width: 100%; }
+  #b-opts { display: none; }
+  @media (max-width: 640px) { #b-opts { display: inline-block; } #opts { display: none; } body.opts #opts { display: flex; } #hint { display: none; } }
+  #hint { color: var(--dim); font-size: 12px; text-align: center; width: 100%; }
+  #nogl { display: none; position: fixed; inset: 0; place-items: center; text-align: center; padding: 24px; }
+  body.nogl #nogl { display: grid; } body.nogl .bar { display: none; }
+  @media (max-width: 640px) { #stats, #res, #b-outline, #b-shadow { display: none; } h1 { display: none; } select { max-width: 110px; } }
+
+  #sb { position: fixed; top: 46px; left: 10px; display: grid; grid-template-columns: auto auto; gap: 2px 10px; padding: 7px 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; font-variant-numeric: tabular-nums; pointer-events: none; }
+  #sb .t { display: flex; align-items: center; gap: 6px; font-weight: 700; min-width: 120px; }
+  #sb .t i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+  #sb .t b { margin-left: auto; font-size: 16px; }
+  #sb-side { grid-row: span 2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-left: 1px solid var(--line); padding-left: 10px; }
+  #sb-inn { font-weight: 700; color: var(--gold); font-size: 12px; }
+  #diamond { position: relative; width: 30px; height: 22px; }
+  #diamond span { position: absolute; width: 9px; height: 9px; transform: rotate(45deg); border: 1.5px solid var(--dim); background: transparent; }
+  #diamond span.on { background: var(--gold); border-color: var(--gold); }
+  #base1 { right: 1px; top: 8px; } #base2 { left: 10px; top: 1px; } #base3 { left: 1px; top: 8px; }
+  #sb-count { grid-column: span 2; font-size: 11px; color: var(--dim); letter-spacing: .06em; }
+  #sb-count b { color: var(--ink); margin: 0 2px 0 6px; } #sb-count b:first-child { margin-left: 0; }
+  #pitchbar { display: none; gap: 6px; align-items: center; justify-content: center; width: 100%; }
+  body.pitching #pitchbar { display: flex; } body.pitching #batbar { display: none; }
+  #batbar { display: flex; gap: 6px; justify-content: center; width: 100%; }
+  .big { font-size: 15px; font-weight: 800; padding: 10px 22px; border-radius: 12px; background: var(--gold) !important; color: #1a1408 !important; letter-spacing: .04em; }
+  #b-swing { display: none; } @media (pointer: coarse) { #b-swing { display: inline-block; } }
+  .ov { position: fixed; inset: 0; display: none; place-items: center; background: rgba(8, 10, 16, .72); padding: 16px; z-index: 5; }
+  body.menu #menu, body.end #end { display: grid; }
+  body.menu #bottom, body.menu #sb, body.end #sb { display: none; }
+  .card { background: #171b28; border: 1px solid var(--line); border-radius: 16px; padding: 18px; width: min(460px, 100%); max-height: 100%; overflow: auto; }
+  .card h2 { margin: 0 0 4px; font-size: 22px; } .card p { margin: 0 0 12px; color: var(--dim); }
+  .card h3 { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); margin: 14px 0 6px; }
+  #m-team { list-style: none; margin: 0; padding: 0; columns: 2; font-size: 13px; }
+  #m-team li { padding: 2px 0; break-inside: avoid; } #m-team span { display: inline-block; width: 28px; color: var(--gold); font-weight: 700; font-size: 11px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  #end table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; margin: 6px 0 14px; }
+  #end td, #end th { padding: 4px 6px; text-align: center; border-bottom: 1px solid var(--line); font-size: 13px; }
+  #end td:first-child { text-align: left; } #end tr.you td { color: var(--gold); }
+  body[data-mode="cast"] #sb, body[data-mode="cast"] .ov { display: none !important; }
+</style>
+<script src="../sprites/cast.js?v=1"></script>
+</head>
+<body data-mode="play">
+<canvas id="view"></canvas>
+<div id="banner"></div>
+<div id="nogl"><div><h2>This prototype needs WebGL.</h2><p>Your browser did not give it one. <a href="../" style="color:#f4c25a">Back to MythiBall</a></p></div></div>
+
+<div id="top" class="bar">
+  <h1>MythiBall 3D</h1>
+  <div class="grp" id="modes"><button data-m="play" class="on">Play</button><button data-m="cast">Cast</button></div>
+  <div class="grp" id="levels"><button>Chunky</button><button class="on">Pixel</button><button>Crisp</button><button>HD</button></div>
+  <span id="res"></span>
+  <button id="b-outline" class="solo on">Outlines</button>
+  <button id="b-shadow" class="solo on">Shadows</button>
+  <span id="stats"></span>
+</div>
+
+<div id="sb" class="play-only">
+  <div class="t" id="sb-away"></div>
+  <div id="sb-side"><span id="sb-inn"></span><div id="diamond"><span id="base3"></span><span id="base2"></span><span id="base1"></span></div></div>
+  <div class="t" id="sb-home"></div>
+  <div id="sb-count"></div>
+</div>
+
+<div id="bottom" class="bar">
+  <span id="name"></span>
+  <span id="tell" class="play-only"></span>
+  <div id="batbar" class="play-only">
+    <button id="b-swing" class="big">Swing</button>
+    <button id="b-bunt" class="solo">Bunt</button>
+  </div>
+  <div id="pitchbar" class="play-only">
+    <div class="grp"><button data-p="fb" class="on">Fastball</button><button data-p="sl">Slider</button><button data-p="cu">Curve</button><button data-p="ch">Change</button></div>
+    <button id="b-throw" class="big">Pitch</button>
+  </div>
+  <button id="b-opts" class="solo play-only">Options</button>
+  <div class="play-only" id="opts">
+    <select id="sel-cam" title="Camera"><option value="plate">Camera: plate</option><option value="wide">Camera: wide</option></select>
+    <button id="b-quit" class="solo">Quit game</button>
+  </div>
+  <div id="hint" class="play-only">Batting: put the green ring on the ball and tap, click or press Space. B bunts. Pitching: pick a pitch, put the red ring where you want it, then click or press Pitch.</div>
+  <div class="cast-only" style="display:flex;gap:6px;align-items:center;justify-content:center;width:100%">
+    <button id="b-prev" class="solo">Prev</button><button id="b-next" class="solo">Next</button>
+  </div>
+  <div id="anims" class="cast-only"></div>
+</div>
+
+<div id="menu" class="ov"><div class="card">
+  <h2>MythiBall 3D</h2>
+  <p>You bat when your team is up and pitch when it takes the field.</p>
+  <h3>Your nine</h3>
+  <ul id="m-team"></ul>
+  <div class="row" style="margin-top:8px"><button id="m-shuffle" class="solo">Shuffle</button></div>
+  <h3>Opponent</h3>
+  <div id="m-opp"></div>
+  <h3>Innings</h3>
+  <div class="grp" id="m-inn" style="display:inline-flex"><button data-n="3">3</button><button data-n="5">5</button><button data-n="9">9</button></div>
+  <h3>You are</h3>
+  <div class="grp" id="m-side" style="display:inline-flex"><button data-s="away">Away (bat first)</button><button data-s="home">Home (bat last)</button></div>
+  <div class="row" style="margin-top:18px"><button id="m-play" class="big">Play ball</button></div>
+</div></div>
+
+<div id="end" class="ov"><div class="card">
+  <h2 id="end-title"></h2>
+  <div id="end-score"></div>
+  <button id="end-again" class="big">Play again</button>
+</div></div>
+
+<script type="module" src="main.js?v=2"></script>
+</body>
+</html>
