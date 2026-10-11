@@ -1920,6 +1920,14 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     margin:0 calc(var(--gut) * -1) var(--sp-2);
     padding:12px var(--gut) 12px;}
   .sim-head .eyebrow{color:#CFC4E6;}
+  /* The stage sits at the top of the band, centred, at whatever whole number of
+     device pixels a cell the width allows. The canvas sets its own size; the
+     box only centres it and keeps the space while it does. */
+  .sim-stage{display:flex; justify-content:center; margin:-12px calc(var(--gut) * -1) 10px;
+    background:#0b0718;}
+  .sim-stage canvas{display:block; image-rendering:pixelated; image-rendering:crisp-edges;}
+  /* On a short phone the eyebrow is the one line the stage has made redundant. */
+  @media (max-height:700px){ .sim-head .eyebrow{display:none;} }
   .sim-head:after{content:''; position:absolute; left:0; right:0; bottom:0; height:3px;
     background-image:linear-gradient(90deg, var(--sweep));}
   .sim-score{font-family:var(--hero); font-size:42px; line-height:1;
@@ -2987,6 +2995,7 @@ import {
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
 } from './scoring.js?v=41';
 import { loadBand, setLabel, setRank, parseCSV } from './dataLoader.js?v=41';
+import { createStage } from './stage.js?v=1';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -3315,6 +3324,9 @@ function backFrom(){
 
 function setScreen(name){
   clearTimeout(S.revealTimer);
+  // The stage stops itself once its canvas leaves the page; this also takes
+  // its resize listener with it, which a reduced-motion stage never loops to drop.
+  if (S.stage){ S.stage.destroy(); S.stage = null; }
   /* A NEW SCREEN STARTS AT THE TOP. Nothing reset the scroll, so "See the
      scorecard" at the foot of a long playback landed half way down the
      scorecard, and every round after the first opened its reveal wherever the
@@ -6526,6 +6538,7 @@ function renderShow(){
   app.innerHTML = `
     <div class="showsim" id="showSim">
       <div class="sim-head">
+        <div class="sim-stage" aria-hidden="true"><canvas id="simStage"></canvas></div>
         <div class="eyebrow">The show</div>
         <div class="sim-score" id="simScore">0</div>
         <div class="sim-sub" id="simSub">Lights down.</div>
@@ -6539,8 +6552,44 @@ function renderShow(){
   const subEl = document.getElementById('simSub');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  let i = 0, stopped = false;
+  /* THE STAGE IS TOLD WHAT HAPPENED AND DECIDES ONLY HOW IT LOOKS. Every
+     value below is read off the beat, which is read off the scored result, so
+     the picture and the scorecard cannot disagree. A song's energy is its
+     points against the night's best song, so the room is loudest for the
+     thing that scored most, whatever the band's own scale happens to be. */
+  const best = Math.max(1, ...beats.filter(b => b.kind === 'song').map(b => b.gained));
+  const lastSetBeat = beats.reduce((m, b, j) => b.kind === 'set' ? j : m, -1);
+  let stage = null;
+  try {
+    stage = createStage(document.getElementById('simStage'), {
+      seed: Math.abs(S.result.total) + 17, venue: 'theater', reduce });
+  } catch (err) { stage = null; }
+  S.stage = stage;
+  const toStage = (b, idx, instant) => {
+    if (!stage) return;
+    const grade = (b.played || 0) < GRADE_SETTLE ? 'warm' : gradeRunning(b.running, b.progress);
+    if (b.kind === 'set'){
+      stage.cue({ kind: 'set', instant,
+        encore: SETS.findIndex(x => x.label === b.label) === ENCORE_INDEX });
+    } else if (b.kind === 'song'){
+      const p = b.perf;
+      stage.cue({ kind: 'song', instant, grade,
+        palette: accentOf(p).chip || null,
+        energy: .25 + .75 * Math.pow(Math.max(0, b.gained) / best, .8),
+        segue: !!b.event,
+        jam: isJamchart(p) || lenOf(p) >= LEN_20MIN || tagsOf(p).includes('jam'),
+        bustout: (Number(p.show_gap) || 0) >= BREADTH_BUSTOUT_GAP,
+      });
+    } else if (b.kind === 'time'){
+      stage.cue({ kind: 'time', instant, last: idx > lastSetBeat });
+    } else {
+      stage.cue({ kind: 'final', instant, grade: gradeScore(b.running) });
+    }
+  };
+
+  let i = 0, stopped = false, skipping = false;
   const paint = b => {
+    toStage(b, i - 1, skipping);
     if (b.kind === 'set'){
       feed.insertAdjacentHTML('beforeend',
         `<div class="sim-set">${esc(b.label)}</div>`);
@@ -6585,8 +6634,13 @@ function renderShow(){
     if (i >= beats.length) return;
     const b = beats[i++];
     paint(b);
-    const wait = b.kind === 'song' ? (b.event ? 1150 : 850)
-      : b.kind === 'set' ? 700 : b.kind === 'time' ? 750 : 0;
+    /* Long enough for the room to answer a song before the next one. A segue,
+       a bustout and a big jam hold a beat longer, because those are what the
+       crowd does something about. Tap to skip is still one tap. */
+    const big = b.kind === 'song' && (b.event
+      || (Number(b.perf.show_gap) || 0) >= BREADTH_BUSTOUT_GAP || lenOf(b.perf) >= LEN_20MIN);
+    const wait = b.kind === 'song' ? (big ? 2000 : 1500)
+      : b.kind === 'set' ? 1100 : b.kind === 'time' ? 1300 : 0;
     if (i < beats.length) S.revealTimer = setTimeout(step, wait);
   };
 
@@ -6594,7 +6648,9 @@ function renderShow(){
     if (stopped) return;
     stopped = true;
     clearTimeout(S.revealTimer);
+    skipping = true;
     while (i < beats.length){ const b = beats[i++]; paint(b); }
+    skipping = false;
     stopped = false;
     i = beats.length;
     const sk = document.getElementById('simSkip');
