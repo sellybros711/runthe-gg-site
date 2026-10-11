@@ -2731,6 +2731,16 @@
       "sha": "e47f62989dca7e2c"
     }
   },
+  "mythiball/proto3d/index.html": {
+    "../sprites/cast.js": {
+      "v": "1",
+      "sha": "cc95a7621fa29203"
+    },
+    "main.js": {
+      "v": "2",
+      "sha": "a7a96500f3e1a565"
+    }
+  },
   "setlist/index.html": {
     "/setlist/auth.js": {
       "v": "43",

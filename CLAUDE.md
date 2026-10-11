@@ -6005,6 +6005,46 @@ proved by mutation, with a misspelt landmark and a deleted `far`.
 stands rather than on them. At 0.18 the lavender castle vanished into a pale
 blue sky, which a screenshot said and no guard can.
 
+### The 3D prototype is a separate page, and the game does not load it
+
+```
+runthe.gg/mythiball/proto3d/      noindexed, linked from nowhere
+```
+
+Asked for by the owner: real depth, perspective and animation, judged against
+Backyard Baseball. `mythiball/proto3d/` is a standalone page on Three.js 0.180.0,
+vendored under `vendor/three-0.180.0/` with the version in the path, so a new
+Three.js is a new folder and never a stale cache.
+
+- **The pixel look is the render size.** The scene is drawn into a canvas about
+  240 lines tall and blown up with `image-rendering: pixelated`. A level is a
+  pixel BUDGET (its height on a 3:2 screen), so an upright phone gets as many
+  pixels as a landscape one rather than a 111 pixel sliver.
+- **The 68 characters are built from `sprites/cast.js`**, the same specs the 2D
+  rig bakes from, by one procedural body in `rig.js`. No model files. Limbs are
+  placed by two bone IK from hand and foot targets, so one pose drives every
+  build and both hands stay on the bat.
+- **Animations are hand keyed** in `anim.js` and sampled on a Catmull-Rom curve.
+  Authored for a righty facing +z with his left at +x; a lefty is `mirror()`.
+  The swing plane moves with the aim, and the pitch types carry an arm slot tell.
+- **It is a whole game now, and its own one.** Two nines built from `names.js`
+  (the ratings copied out of ROSTER), innings, outs, a count, runners who stay
+  on base and score, and you on both sides: you swing when your team bats and
+  pick a pitch and a spot when it fields. The CPU swings off the batter's CON,
+  pitches to the count, and a ball in play is decided by the ball flight and the
+  fielders' own speeds and arms, not by a table. None of it shares code with
+  `mythiball/index.html`, and nothing there reads any of it.
+- **`node mythiball/proto3d/check-game.mjs` plays whole games** headless, with
+  the page's own autoplay bot on both halves, stepping the clock rather than
+  waiting on frames. It fails on a page error, a play that never resolves, or a
+  game that never ends. A booted ground ball has to be pickable again
+  (`f.missed` expires), and a fielder's catch reach is measured from his own
+  height, or a ball rolling to the pitcher's feet on the mound is never fielded.
+  Both shipped as stuck games first.
+- **Frame times in this sandbox mean nothing**: Chromium here renders WebGL in
+  software. The HUD prints fps, p95 and the game logic's own milliseconds so a
+  real phone can be read.
+
 ### The collection: ten to start, packs for the middle, feats for the best
 
 ```
