@@ -6027,9 +6027,20 @@ Three.js is a new folder and never a stale cache.
 - **Animations are hand keyed** in `anim.js` and sampled on a Catmull-Rom curve.
   Authored for a righty facing +z with his left at +x; a lefty is `mirror()`.
   The swing plane moves with the aim, and the pitch types carry an arm slot tell.
-- **Its gameplay is a sketch, not the game's rules.** The ball, the fielding and
-  the throws in `main.js` exist to show the animations doing their job. Nothing
-  in `index.html` reads any of it.
+- **It is a whole game now, and its own one.** Two nines built from `names.js`
+  (the ratings copied out of ROSTER), innings, outs, a count, runners who stay
+  on base and score, and you on both sides: you swing when your team bats and
+  pick a pitch and a spot when it fields. The CPU swings off the batter's CON,
+  pitches to the count, and a ball in play is decided by the ball flight and the
+  fielders' own speeds and arms, not by a table. None of it shares code with
+  `mythiball/index.html`, and nothing there reads any of it.
+- **`node mythiball/proto3d/check-game.mjs` plays whole games** headless, with
+  the page's own autoplay bot on both halves, stepping the clock rather than
+  waiting on frames. It fails on a page error, a play that never resolves, or a
+  game that never ends. A booted ground ball has to be pickable again
+  (`f.missed` expires), and a fielder's catch reach is measured from his own
+  height, or a ball rolling to the pitcher's feet on the mound is never fielded.
+  Both shipped as stuck games first.
 - **Frame times in this sandbox mean nothing**: Chromium here renders WebGL in
   software. The HUD prints fps, p95 and the game logic's own milliseconds so a
   real phone can be read.

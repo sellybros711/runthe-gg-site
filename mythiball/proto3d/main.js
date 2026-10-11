@@ -1,19 +1,20 @@
 /* MythiBall 3D prototype: the page.
 
-   Two modes. Play is one at bat after another from behind the catcher, with
-   the ball put in play, fielded and thrown for real. Cast turns one of the 68
-   characters on a pedestal and plays every animation the game needs.
+   Two modes. Play is a whole game: two nines, innings, runners on base,
+   runs, and you on both sides of it, swinging when your team bats and
+   pitching when it fields. Cast turns one of the 68 characters on a
+   pedestal and plays every animation the game needs.
 
    THE PIXEL LOOK IS THE RENDER SIZE. The scene is drawn into a canvas a few
    hundred pixels tall and the browser blows it up with hard edges
    (image-rendering: pixelated). That is also why this is cheap: at the
-   default 240 lines a phone fills about 100 thousand pixels a frame, a
+   default level a phone fills about 100 thousand pixels a frame, a
    twentieth of its own screen. */
 import * as THREE from './vendor/three-0.180.0/three.module.min.js';
 import { buildCharacter, OPTS } from './rig.js?v=1';
 import * as A from './anim.js?v=1';
 import { buildPark, BASES, MOUND, FIELD } from './park.js?v=1';
-import { NAMES } from './names.js?v=1';
+import { NAMES, STATS } from './names.js?v=2';
 
 /* cast.js declares a top level const, which is a global binding and not a
    property of window, so it is read by name */
@@ -23,6 +24,9 @@ const KEYS = Object.keys(CAST);
 const $ = (id) => document.getElementById(id);
 const rnd = Math.random;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const gauss = () => { let u = 0, v = 0; while (!u) u = rnd(); while (!v) v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+const stat = (k, s) => (STATS[k] ? STATS[k][s] : 50);
+const nm = (k) => NAMES[k] || k;
 
 /* ------------------------------------------------------------ renderer */
 const canvas = $('view');
@@ -59,7 +63,6 @@ function resize() {
 addEventListener('resize', resize);
 
 /* ------------------------------------------------------------ actors */
-const TEAM_HOME = '#1f3f7a', TEAM_AWAY = '#a8282a';
 class Actor {
   constructor(key, opts = {}) {
     this.c = buildCharacter(key, CAST[key]); this.key = key; this.root = this.c.root; scene.add(this.root);
@@ -78,24 +81,59 @@ class Actor {
   dispose() { scene.remove(this.root); }
 }
 const yawTo = (from, to) => Math.atan2(to.x - from.x, to.z - from.z);
+const hash = (s) => { let h = 7; for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
 
-/* ------------------------------------------------------------ ui state */
+/* ------------------------------------------------------------ ui */
 let mode = 'play';
-const ui = { banner: $('banner'), count: $('count'), stats: $('stats'), name: $('name') };
-function banner(text, cls) { ui.banner.textContent = text; ui.banner.className = 'show ' + (cls || ''); clearTimeout(banner.t); banner.t = setTimeout(() => (ui.banner.className = ''), 1300); }
+const ui = { banner: $('banner'), stats: $('stats'), name: $('name') };
+function banner(text, cls, ms = 1400) { ui.banner.textContent = text; ui.banner.className = 'show ' + (cls || ''); clearTimeout(banner.t); banner.t = setTimeout(() => (ui.banner.className = ''), ms); }
 
-/* ============================================================ PLAY */
-const play = {
-  actors: [], fielders: {}, lineup: [], li: 0, batter: null, pitcher: null, runner: null, catcher: null,
-  ball: null, state: 'idle', st: 0, count: { b: 0, s: 0, o: 0 }, aim: new THREE.Vector2(0, 2.5), swung: false, hitstop: 0, cam: 'plate', camT: new THREE.Vector3(),
+/* ============================================================ THE GAME */
+const POSITIONS = ['P', 'C', '1B', '2B', 'SS', '3B', 'LF', 'CF', 'RF'];
+const SPOT = {
+  P: MOUND.clone(), C: new THREE.Vector3(0, 0, 3.2), '1B': new THREE.Vector3(33, 0, -43), '2B': new THREE.Vector3(14, 0, -63), SS: new THREE.Vector3(-14, 0, -63),
+  '3B': new THREE.Vector3(-34, 0, -42), LF: new THREE.Vector3(-62, 0, -104), CF: new THREE.Vector3(0, 0, -122), RF: new THREE.Vector3(62, 0, -104),
 };
+const BASE_LIST = [BASES.home, BASES.first, BASES.second, BASES.third, BASES.home];
+const CLUBS = ['Mudville Mammoths', 'Hollow Hobgoblins', 'Olympus Owls', 'Neverland Nomads', 'Sherwood Stags', 'Tin Pan Tritons', 'Avalon Anvils', 'Gotham Griffins'];
 const ZONE = { z: 0.7, x0: -0.85, x1: 0.85, y0: 1.55, y1: 3.45 };
-const POS = {
-  P: MOUND.clone(), C: new THREE.Vector3(0, 0, 3.2), '1B': new THREE.Vector3(34, 0, -44), '2B': new THREE.Vector3(14, 0, -63), SS: new THREE.Vector3(-14, 0, -63),
-  '3B': new THREE.Vector3(-35, 0, -42), LF: new THREE.Vector3(-62, 0, -104), CF: new THREE.Vector3(0, 0, -122), RF: new THREE.Vector3(62, 0, -104),
-};
+const inZone = (x, y) => x >= ZONE.x0 - 0.12 && x <= ZONE.x1 + 0.12 && y >= ZONE.y0 - 0.12 && y <= ZONE.y1 + 0.12;
+const PITCHES = { fb: { T: 1.05, name: 'Fastball' }, sl: { T: 1.18, name: 'Slider', run: 1.1 }, cu: { T: 1.32, name: 'Curveball', drop: 1.3 }, ch: { T: 1.42, name: 'Changeup' } };
 
-/* the zone: a frame with gold corners, and the bat's aim ring */
+/* A team is nine characters. The best arm pitches, the rest are put where
+   their ratings fit, and the order is the usual one: on base, then power,
+   pitcher last. */
+function makeTeam(keys, name, color) {
+  const left = keys.slice();
+  const take = (score) => { left.sort((a, b) => score(b) - score(a)); return left.shift(); };
+  const pos = {};
+  pos.P = take((k) => stat(k, 'pit'));
+  pos.C = take((k) => stat(k, 'def') - stat(k, 'spd') * 0.5);
+  pos.SS = take((k) => stat(k, 'def') + stat(k, 'spd'));
+  pos.CF = take((k) => stat(k, 'spd') * 1.3 + stat(k, 'def'));
+  pos['2B'] = take((k) => stat(k, 'def') + stat(k, 'spd') * 0.6);
+  pos['3B'] = take((k) => stat(k, 'def') + stat(k, 'pow') * 0.4);
+  pos.LF = take((k) => stat(k, 'spd') + stat(k, 'pow') * 0.3);
+  pos.RF = take((k) => stat(k, 'def') + stat(k, 'pow') * 0.3);
+  pos['1B'] = left.shift();
+  const bat = POSITIONS.filter((p) => p !== 'P').map((p) => pos[p]);
+  const val = (k) => stat(k, 'con') + stat(k, 'pow');
+  bat.sort((a, b) => val(b) - val(a));
+  const lead = bat.slice(0, 8).sort((a, b) => (stat(b, 'spd') + stat(b, 'con')) - (stat(a, 'spd') + stat(a, 'con')))[0];
+  const order = [lead, ...bat.filter((k) => k !== lead)]; order.push(pos.P);
+  return { name, color, keys, pos, order, li: 0, runs: [], hits: 0 };
+}
+function randomNine(exclude = []) { const pool = KEYS.filter((k) => !exclude.includes(k)); const out = []; while (out.length < 9) out.push(pool.splice(rnd() * pool.length | 0, 1)[0]); return out; }
+
+const G = {
+  teams: null, you: 1, innings: 3, inning: 1, half: 0, outs: 0, b: 0, s: 0, bases: [null, null, null, null], over: false,
+  state: 'menu', st: 0, clockT: 0, actors: [], fielders: {}, batter: null, runners: [], ball: null, pitch: null,
+  aim: new THREE.Vector2(0, 2.5), target: new THREE.Vector2(0, 2.5), ptype: 'fb', swung: false, hitstop: 0, cheer: 0,
+};
+const batting = () => G.teams[G.half], fielding = () => G.teams[1 - G.half];
+const youBat = () => G.half === G.you;
+
+/* ------------------------------------------------------------ the zone */
 const zoneG = new THREE.Group(); scene.add(zoneG);
 {
   const W = ZONE.x1 - ZONE.x0, H = ZONE.y1 - ZONE.y0, cx = (ZONE.x0 + ZONE.x1) / 2, cy = (ZONE.y0 + ZONE.y1) / 2, t = 0.06;
@@ -106,16 +144,17 @@ const zoneG = new THREE.Group(); scene.add(zoneG);
   for (const x of [ZONE.x0, ZONE.x1]) for (const y of [ZONE.y0, ZONE.y1]) { bar(0.32, t * 2, x + (x < 0 ? 0.13 : -0.13), y, gold); bar(t * 2, 0.32, x, y + (y < 2 ? 0.13 : -0.13), gold); }
   const fill = new THREE.Mesh(new THREE.PlaneGeometry(W, H), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.07, depthWrite: false })); fill.position.set(cx, cy, ZONE.z); zoneG.add(fill);
 }
-const aimRing = new THREE.Group(); zoneG.add(aimRing);
-{
-  const ring = new THREE.Mesh(new THREE.RingGeometry(0.34, 0.44, 24), new THREE.MeshBasicMaterial({ color: '#7cf07a', transparent: true, opacity: 0.95, depthWrite: false, depthTest: false }));
+function ringMarker(color) {
+  const g = new THREE.Group();
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.34, 0.44, 24), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95, depthWrite: false, depthTest: false }));
   const halo = new THREE.Mesh(new THREE.RingGeometry(0.44, 0.5, 24), new THREE.MeshBasicMaterial({ color: '#14121a', transparent: true, opacity: 0.6, depthWrite: false, depthTest: false }));
-  const dot = new THREE.Mesh(new THREE.CircleGeometry(0.07, 10), new THREE.MeshBasicMaterial({ color: '#7cf07a', depthTest: false }));
-  for (const m of [halo, ring, dot]) { m.renderOrder = 9; aimRing.add(m); }
-  aimRing.position.z = ZONE.z + 0.02;
+  const dot = new THREE.Mesh(new THREE.CircleGeometry(0.07, 10), new THREE.MeshBasicMaterial({ color, depthTest: false }));
+  for (const m of [halo, ring, dot]) { m.renderOrder = 9; g.add(m); }
+  g.position.z = ZONE.z + 0.02; zoneG.add(g); return g;
 }
+const aimRing = ringMarker('#7cf07a'), targetRing = ringMarker('#ff6a5a');
 
-/* the ball, its shadow and its trail */
+/* ------------------------------------------------------------ the ball */
 function makeBall() {
   const g = new THREE.Group();
   const m = new THREE.Mesh(new THREE.SphereGeometry(0.27, 12, 9), new THREE.MeshToonMaterial({ color: '#fbfaf4' })); m.castShadow = true; g.add(m);
@@ -129,114 +168,131 @@ function makeBall() {
   const trail = []; for (let i = 0; i < 6; i++) { const t = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.35 - i * 0.05, depthWrite: false })); scene.add(t); trail.push(t); }
   return { g, m, sh, trail, hist: [], pos: new THREE.Vector3(), vel: new THREE.Vector3(), state: 'hidden' };
 }
+G.ball = makeBall();
+const flash = new THREE.Mesh(new THREE.RingGeometry(0.2, 0.55, 20), new THREE.MeshBasicMaterial({ color: '#fff3b0', transparent: true, depthTest: false, depthWrite: false }));
+flash.renderOrder = 10; scene.add(flash); flash.visible = false;
 
-function pickTeam() {
-  const pool = KEYS.slice(); const take = () => pool.splice(rnd() * pool.length | 0, 1)[0];
-  const want = $('sel-batter').value, wantP = $('sel-pitcher').value;
-  const lineup = [want || take()]; if (want) pool.splice(pool.indexOf(want), 1);
-  while (lineup.length < 9) lineup.push(take());
-  const pk = wantP || take(); if (wantP && pool.includes(wantP)) pool.splice(pool.indexOf(wantP), 1);
-  const field = {}; for (const r of ['C', '1B', '2B', 'SS', '3B', 'LF', 'CF', 'RF']) field[r] = take();
-  return { lineup, pk, field };
+/* ------------------------------------------------------------ setting the field */
+function clearActors() { for (const a of G.actors) a.dispose(); G.actors = []; G.fielders = {}; G.batter = null; G.runners = []; G.bases = [null, null, null, null]; }
+function setField() {
+  for (const p in G.fielders) { G.fielders[p].dispose(); } G.actors = G.actors.filter((a) => !Object.values(G.fielders).includes(a)); G.fielders = {};
+  const T = fielding();
+  for (const p of POSITIONS) {
+    const a = new Actor(T.pos[p]); a.role = p; a.home = SPOT[p].clone(); a.pos.copy(a.home); G.fielders[p] = a; G.actors.push(a);
+    a.spd = 10 + stat(a.key, 'spd') * 0.05; a.react = /F$/.test(p) ? 0.8 : 0.45; a.arm = 55 + stat(a.key, 'def') * 0.25;
+  }
+  const P = G.fielders.P; P.pos.y = 0.7;
+  G.fielders.C.play(A.clip([Object.assign({ t: 0 }, A.CATCHER), Object.assign({ t: 1 }, A.CATCHER)], { loop: true })); G.fielders.C.yaw = Math.PI;
 }
-
-function setupPlay() {
-  for (const a of play.actors) a.dispose(); play.actors = []; play.fielders = {};
-  const t = pickTeam(); play.lineup = t.lineup; play.li = 0;
-  play.pitcher = new Actor(t.pk); play.actors.push(play.pitcher);
-  play.pitcher.root.position.set(MOUND.x, 0.7, MOUND.z); play.pitcher.yaw = 0;
-  for (const r in t.field) { const a = new Actor(t.field[r]); a.role = r; a.home = POS[r].clone(); a.pos.copy(a.home); a.yaw = yawTo(a.pos, BASES.home) ; play.fielders[r] = a; play.actors.push(a); }
-  play.catcher = play.fielders.C; play.catcher.play(A.clip([Object.assign({ t: 0 }, A.CATCHER), Object.assign({ t: 1 }, A.CATCHER)], { loop: true })); play.catcher.yaw = Math.PI;
-  if (!play.ball) play.ball = makeBall();
-  play.count = { b: 0, s: 0, o: 0 }; nextBatter(true);
+function newBatter() {
+  if (G.batter) { G.batter.dispose(); G.actors = G.actors.filter((a) => a !== G.batter); }
+  const T = batting(); const key = T.order[T.li % 9];
+  const b = new Actor(key, { helmet: T.color }); G.batter = b; G.actors.push(b);
+  b.c.lefty = hash(key) % 4 === 0; b.c.bat.visible = true;
+  G.b = G.s = 0; resetPitch(); updateHud();
 }
-
-function nextBatter(first) {
-  if (play.batter) { play.batter.dispose(); play.actors = play.actors.filter((a) => a !== play.batter); }
-  if (!first) play.li = (play.li + 1) % play.lineup.length;
-  const key = play.lineup[play.li];
-  const b = new Actor(key, { helmet: TEAM_HOME }); play.batter = b; play.actors.push(b);
-  const lefty = $('sel-hand').value === 'L' || ($('sel-hand').value === 'auto' && (hash(key) % 4 === 0));
-  b.c.lefty = lefty; b.c.bat.visible = true;
-  b.pos.set(lefty ? 2.9 : -2.9, 0, 0.2); b.yaw = lefty ? -Math.PI / 2 : Math.PI / 2;
-  play.count.b = play.count.s = 0;
-  ui.name.textContent = 'At bat: ' + (NAMES[key] || key) + (lefty ? ' (L)' : ' (R)') + '  ·  Pitching: ' + (NAMES[play.pitcher.key] || play.pitcher.key);
-  resetPitch();
-}
-const hash = (s) => { let h = 7; for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
 
 function resetPitch() {
-  play.state = 'idle'; play.st = 0; play.swung = false; play.cam = 'plate'; play.result = null; play.hitT = null;
-  const b = play.batter; b.play(A.STANCE_IDLE); b.c.bat.visible = true; b.pos.set(b.c.lefty ? 2.9 : -2.9, 0, 0.2); b.yaw = b.c.lefty ? -Math.PI / 2 : Math.PI / 2; b.reach = null; b.override = null;
-  play.pitcher.play(A.clip([Object.assign({ t: 0 }, A.pitchClip('fb').keys[0]), Object.assign({ t: 1 }, A.pitchClip('fb').keys[0])], { loop: true }));
-  play.pitcher.pos.set(MOUND.x, 0.7, MOUND.z); play.pitcher.yaw = 0;
-  for (const r in play.fielders) { const f = play.fielders[r]; if (r === 'C') continue; f.pos.copy(f.home); f.yaw = yawTo(f.pos, BASES.home); f.play(A.READY_CLIP, rnd()); f.task = null; f.reach = null; f.override = null; f.c.glove.visible = true; }
-  play.catcher.pos.copy(POS.C); play.catcher.reach = null;
-  if (play.runner) { play.runner.dispose(); play.actors = play.actors.filter((a) => a !== play.runner); play.runner = null; }
-  const ball = play.ball; ball.state = 'hidden'; ball.g.visible = ball.sh.visible = false; ball.trail.forEach((t) => (t.visible = false));
-  zoneG.visible = true; refreshCount();
+  G.state = 'idle'; G.st = 0; G.swung = false; G.result = null; G.contact = null; G.cpuSwing = null; G.thrown = null; G.throwPrep = null; G.sim = null; G.dive = null;
+  const b = G.batter; b.play(A.STANCE_IDLE); b.c.bat.visible = true; b.pos.set(b.c.lefty ? 2.9 : -2.9, 0, 0.2); b.yaw = b.c.lefty ? -Math.PI / 2 : Math.PI / 2; b.reach = null; b.override = null;
+  const P = G.fielders.P; P.play(A.clip([Object.assign({ t: 0 }, A.pitchClip('fb').keys[0]), Object.assign({ t: 1 }, A.pitchClip('fb').keys[0])], { loop: true }));
+  P.pos.set(MOUND.x, 0.7, MOUND.z); P.yaw = 0; P.task = null; P.reach = null; P.override = null;
+  for (const r of POSITIONS) { if (r === 'P' || r === 'C') continue; const f = G.fielders[r]; f.pos.copy(f.home); f.yaw = yawTo(f.pos, BASES.home); f.play(A.READY_CLIP, rnd()); f.task = null; f.reach = null; f.override = null; }
+  const C = G.fielders.C; C.pos.copy(SPOT.C); C.reach = null; C.task = null; C.override = null; C.yaw = Math.PI; C.play(A.clip([Object.assign({ t: 0 }, A.CATCHER), Object.assign({ t: 1 }, A.CATCHER)], { loop: true }));
+  G.contactJudged = false; targetRing.visible = !youBat();
+  for (const r of G.runners) placeOnBase(r);
+  const ball = G.ball; ball.state = 'hidden'; ball.g.visible = ball.sh.visible = false; ball.trail.forEach((t) => (t.visible = false));
+  zoneG.visible = true; G.ptype = G.ptype || 'fb';
+  if (!youBat()) { G.state = 'aim'; G.target.set(0, 2.5); }
+  updateHud();
 }
-function refreshCount() { const c = play.count; ui.count.innerHTML = `<b>B</b> ${'●'.repeat(c.b)}${'○'.repeat(3 - c.b)} <b>S</b> ${'●'.repeat(c.s)}${'○'.repeat(2 - c.s)} <b>O</b> ${'●'.repeat(c.o)}${'○'.repeat(2 - c.o)}`; }
 
-const PITCHES = { fb: { T: 1.05, name: 'Fastball' }, ch: { T: 1.4, name: 'Changeup' }, cu: { T: 1.32, name: 'Curveball', drop: 1.3 }, sl: { T: 1.18, name: 'Slider', run: 1.1 } };
-function startPitch() {
-  const types = Object.keys(PITCHES); const type = types[rnd() * types.length | 0];
-  const inZone = rnd() < 0.6;
-  const tx = inZone ? (rnd() - 0.5) * 1.5 : (rnd() < 0.5 ? -1 : 1) * (1.0 + rnd() * 0.5);
-  const ty = inZone ? 1.75 + rnd() * 1.5 : (rnd() < 0.5 ? 1.2 + rnd() * 0.3 : 3.6 + rnd() * 0.4);
-  play.pitch = { type, ...PITCHES[type], target: new THREE.Vector3(tx, ty, ZONE.z), released: false };
-  play.state = 'windup'; play.st = 0; play.pitcher.play(A.pitchClip(type));
+/* a runner on a base takes his lead toward the next one, crouched, watching home */
+function placeOnBase(r) {
+  const B = BASE_LIST[r.at], N = BASE_LIST[r.at + 1]; const lead = N.clone().sub(B).setLength(4);
+  r.actor.pos.copy(B).add(lead); r.actor.pos.y = 0; r.actor.yaw = yawTo(r.actor.pos, BASES.home);
+  r.actor.play(A.clip([Object.assign({ t: 0 }, A.READY, { glove: false }), Object.assign({ t: 1 }, A.READY, { glove: false, p: [0, 0.8, 0] }), Object.assign({ t: 2 }, A.READY, { glove: false })], { loop: true }), rnd());
+  r.actor.override = null; r.target = r.at; r.done = true; r.slide = false; r.hold = false; r.scored = false;
 }
+
+/* ------------------------------------------------------------ pitching */
 function pitchPos(p, t) {
   const e = clamp(t / p.T, 0, 1.6), R = p.release, T = p.target;
   const v = new THREE.Vector3().lerpVectors(R, T, e);
   v.y += 4 * (0.5 + p.T * 0.6) * e * (1 - e) * 0.8;
   if (p.drop) v.y -= p.drop * (e * e - e);
-  if (p.run) v.x += p.run * (e * e - e) * (play.batter.c.lefty ? -1 : 1);
+  if (p.run) v.x += p.run * (e * e - e) * (G.batter.c.lefty ? -1 : 1);
   return v;
 }
+function startPitch(type, tx, ty) {
+  const P = G.fielders.P, pit = stat(P.key, 'pit');
+  /* an arm is only as accurate as its pitcher: the spot you chose is where he
+     is aiming, not where it goes */
+  const sc = 0.38 - pit * 0.0026;
+  const x = clamp(tx + gauss() * sc, -2, 2), y = clamp(ty + gauss() * sc, 0.8, 4.6);
+  const T = PITCHES[type].T * (1.12 - pit * 0.0025);
+  G.pitch = Object.assign({ type }, PITCHES[type], { T, target: new THREE.Vector3(x, y, ZONE.z), released: false });
+  G.state = 'windup'; G.st = 0; P.play(A.pitchClip(type));
+}
+function cpuPitch() {
+  const types = ['fb', 'fb', 'sl', 'cu', 'ch']; const type = types[rnd() * types.length | 0];
+  const behind = G.b >= 2 && G.b > G.s, ahead = G.s === 2 && G.b < 3;
+  const zoneP = behind ? 0.8 : ahead ? 0.35 : 0.58;
+  let tx, ty;
+  if (rnd() < zoneP) { tx = (rnd() - 0.5) * 1.5; ty = 1.8 + rnd() * 1.4; }
+  else { tx = (rnd() < 0.5 ? -1 : 1) * (1.05 + rnd() * 0.4); ty = rnd() < 0.5 ? 1.25 + rnd() * 0.3 : 3.6 + rnd() * 0.3; if (rnd() < 0.5) tx *= 0.4; }
+  startPitch(type, tx, ty);
+}
+function throwPlayerPitch() { if (G.state !== 'aim' || youBat()) return; startPitch(G.ptype, G.target.x, G.target.y); targetRing.visible = false; }
 
+/* the other dugout swings on what it sees, and how well depends on the man */
+function cpuDecide() {
+  const p = G.pitch, k = G.batter.key, con = stat(k, 'con');
+  const iz = inZone(p.target.x, p.target.y);
+  let ps = iz ? 0.72 : 0.26; if (G.s === 2) ps += 0.14; if (G.b === 3 && G.s < 2) ps -= 0.35;
+  if (rnd() > ps) return;
+  const mean = p.type === 'ch' ? -0.05 : p.type === 'cu' ? -0.025 : 0;
+  const err = mean + gauss() * (0.1 - con * 0.0005);
+  const ae = 0.48 - con * 0.0032;
+  G.cpuSwing = { at: p.arrive - A.CONTACT_T + err, aim: new THREE.Vector2(p.target.x + gauss() * ae, p.target.y + gauss() * ae) };
+}
+
+/* ------------------------------------------------------------ batting */
 function swing(bunt) {
-  if (play.swung || !(play.state === 'windup' || play.state === 'flight')) return;
-  play.swung = true; play.swingAt = play.clockT; play.bunt = !!bunt;
-  const dy = clamp(play.aim.y - 2.85, -1.2, 1.2) * 0.55;
-  play.batter.play(bunt ? A.BUNT : A.swingClip(dy));
+  if (G.swung || !(G.state === 'windup' || G.state === 'flight') || !G.batter) return;
+  G.swung = true; G.swingAt = G.clockT; G.bunt = !!bunt;
+  const dy = clamp(G.aim.y - 2.85, -1.2, 1.2) * 0.55;
+  G.batter.play(bunt ? A.BUNT : A.swingClip(dy));
 }
-
 function judgeContact() {
-  const p = play.pitch, b = play.ball, arr = p.arrive;
-  const contactAt = play.swingAt + (play.bunt ? 0.25 : A.CONTACT_T);
-  const err = contactAt - arr; const at = pitchPos(p, p.T);
-  const miss = Math.hypot(play.aim.x - at.x, play.aim.y - at.y);
-  const reach = play.bunt ? 0.75 : 0.62;
-  if ((play.bunt ? Math.abs(err) < 0.32 : Math.abs(err) < 0.13) && miss < reach) {
-    const q = (play.bunt ? 0.2 : clamp(1 - Math.abs(err) / 0.13, 0, 1) * 0.6 + clamp(1 - miss / reach, 0, 1) * 0.4);
-    const off = at.y - play.aim.y; /* aim under the ball: it goes up */
-    let la = play.bunt ? -8 : clamp(16 + off * 46 + (rnd() - 0.5) * 10, -14, 58);
-    let ev = play.bunt ? 22 : 34 + 54 * Math.pow(q, 0.8);
-    let spray = play.bunt ? (rnd() - 0.5) * 30 : clamp(err * 380 + (rnd() - 0.5) * 12, -62, 62);
-    if (play.batter.c.lefty) spray = -spray;
-    const sp = THREE.MathUtils.degToRad(spray), lr = THREE.MathUtils.degToRad(la);
-    b.pos.copy(at); b.vel.set(Math.sin(sp) * Math.cos(lr), Math.sin(lr), -Math.cos(sp) * Math.cos(lr)).multiplyScalar(ev);
-    b.state = 'hit'; b.bounced = false; b.landed = null; play.state = 'inplay'; play.st = 0; play.hitstop = 0.12 + q * 0.08;
-    play.hitQ = q; flashContact(at, q); zoneG.visible = false;
-    planFielding();
-    return true;
-  }
-  return false;
+  const p = G.pitch, b = G.ball, k = G.batter.key;
+  const contactAt = G.swingAt + (G.bunt ? 0.25 : A.CONTACT_T);
+  const err = contactAt - p.arrive; const at = pitchPos(p, p.T);
+  const miss = Math.hypot(G.aim.x - at.x, G.aim.y - at.y);
+  const reach = (G.bunt ? 0.75 : 0.5) + stat(k, 'con') * 0.0022;
+  const win = G.bunt ? 0.32 : 0.11 + stat(k, 'con') * 0.0004;
+  if (Math.abs(err) >= win || miss >= reach) return false;
+  const q = G.bunt ? 0.2 : clamp(1 - Math.abs(err) / win, 0, 1) * 0.6 + clamp(1 - miss / reach, 0, 1) * 0.4;
+  const off = at.y - G.aim.y; /* aim under the ball and it goes up */
+  const la = G.bunt ? -8 : clamp(14 + off * 46 + gauss() * 6, -14, 60);
+  const ev = G.bunt ? 20 : 30 + (34 + stat(k, 'pow') * 0.26) * Math.pow(q, 0.85);
+  let spray = G.bunt ? (rnd() - 0.5) * 30 : clamp(err * 360 + gauss() * 8, -62, 62);
+  if (G.batter.c.lefty) spray = -spray;
+  const sp = THREE.MathUtils.degToRad(spray), lr = THREE.MathUtils.degToRad(la);
+  b.pos.copy(at); b.vel.set(Math.sin(sp) * Math.cos(lr), Math.sin(lr), -Math.cos(sp) * Math.cos(lr)).multiplyScalar(ev);
+  b.state = 'hit'; b.bounced = false; G.state = 'inplay'; G.st = 0; G.hitstop = 0.1 + q * 0.1;
+  flash.position.copy(at); flash.position.z += 0.1; flash.visible = true; flash.userData.t = 0; flash.userData.q = q; zoneG.visible = false;
+  startPlay(la);
+  return true;
 }
 
-const flash = new THREE.Mesh(new THREE.RingGeometry(0.2, 0.55, 20), new THREE.MeshBasicMaterial({ color: '#fff3b0', transparent: true, depthTest: false, depthWrite: false }));
-flash.renderOrder = 10; scene.add(flash); flash.visible = false;
-function flashContact(at, q) { flash.position.copy(at); flash.position.z += 0.1; flash.visible = true; flash.userData.t = 0; flash.userData.q = q; }
-
-/* ------------------------------------------------------------ fielding */
-const G = 32;
+/* ------------------------------------------------------------ the ball in play */
+const GRAV = 32;
 function simulate(p0, v0, maxT = 12) {
   const out = []; const p = p0.clone(), v = v0.clone(); let bounced = false, firstLand = null, hr = false, wall = false;
   for (let t = 0; t < maxT; t += 1 / 60) {
     out.push({ t, p: p.clone(), air: !bounced });
-    v.y -= G / 60; p.addScaledVector(v, 1 / 60);
+    v.y -= GRAV / 60; p.addScaledVector(v, 1 / 60);
     const r = Math.hypot(p.x, p.z);
     if (r > FIELD.fence - 0.5 && Math.abs(Math.atan2(p.x, -p.z)) < Math.PI / 4 + 0.03) {
       if (p.y > 8) { hr = true; out.push({ t, p: p.clone(), air: true }); break; }
@@ -248,190 +304,311 @@ function simulate(p0, v0, maxT = 12) {
   return { samples: out, firstLand, hr, wall };
 }
 
-function planFielding() {
-  const b = play.ball; const sim = simulate(b.pos, b.vel); play.sim = sim; play.simT = 0;
-  const L = sim.firstLand ? sim.firstLand.p : sim.samples[sim.samples.length - 1].p;
-  const ang = Math.atan2(L.x, -L.z);
-  play.foul = !sim.hr && Math.abs(ang) > Math.PI / 4 + 0.01 && sim.firstLand;
-  if (sim.hr) { play.foul = Math.abs(Math.atan2(sim.samples[sim.samples.length - 1].p.x, -sim.samples[sim.samples.length - 1].p.z)) > Math.PI / 4; }
-  /* who gets there first. A fielder's run is a straight line at his speed
-     after a beat to read the ball, which is the whole model, and it is
-     enough to make the right man go. */
+function startPlay(la) {
+  const b = G.ball; const sim = simulate(b.pos, b.vel); G.sim = sim; G.simT = 0;
+  const last = sim.samples[sim.samples.length - 1].p, L = sim.firstLand ? sim.firstLand.p : last;
+  G.foul = sim.hr ? Math.abs(Math.atan2(last.x, -last.z)) > Math.PI / 4 : (!!sim.firstLand && Math.abs(Math.atan2(L.x, -L.z)) > Math.PI / 4 + 0.01);
+  /* who gets there first. A fielder's run is a straight line at his own speed
+     after a beat to read the ball, which is the whole model, and it is enough
+     to make the right man go. */
   let best = null;
-  for (const r in play.fielders) {
-    if (r === 'C') continue; const f = play.fielders[r]; const spd = 21;
+  for (const r of POSITIONS) {
+    if (r === 'C') continue; const f = G.fielders[r];
     for (const s of sim.samples) {
-      if (s.p.y > 7.5) continue;
-      const d = Math.hypot(s.p.x - f.home.x, s.p.z - f.home.z); const need = 0.35 + d / spd;
-      if (need <= s.t) { if (!best || s.t < best.s.t) best = { f, s, d }; break; }
+      if (s.p.y > 5.5) continue;
+      const d = Math.hypot(s.p.x - f.pos.x, s.p.z - f.pos.z); if (f.react + Math.max(0, d - 2.4) / f.spd <= s.t) { if (!best || s.t < best.s.t) best = { f, s }; break; }
     }
   }
+  for (const r of POSITIONS) { G.fielders[r].task = null; G.fielders[r].missed = false; }
   /* a dive: nobody gets to a fly ball standing up, but somebody is close */
-  if (!sim.hr && sim.firstLand && best && best.s.t > sim.firstLand.t && !best.s.air) {
-    for (const r in play.fielders) { if (r === 'C') continue; const f = play.fielders[r];
-      const s = sim.samples.find((x) => x.t >= sim.firstLand.t - 0.02); const d = Math.hypot(s.p.x - f.home.x, s.p.z - f.home.z);
-      const short = d - (s.t - 0.35) * 21; if (short > 0 && short < 7) { play.dive = { f, s, make: rnd() < 0.55 }; break; } }
+  if (!sim.hr && sim.firstLand && best && best.s.t > sim.firstLand.t + 0.05) {
+    const s = sim.samples.find((x) => x.t >= sim.firstLand.t - 0.03);
+    for (const r of POSITIONS) { if (r === 'C') continue; const f = G.fielders[r]; const d = Math.hypot(s.p.x - f.pos.x, s.p.z - f.pos.z);
+      const short = d - 2.4 - (s.t - f.react) * f.spd; if (short > 0 && short < 5) { G.dive = { f, s, make: rnd() < 0.3 + stat(f.key, 'def') * 0.004 }; f.task = { kind: 'dive', to: s.p.clone(), dive: G.dive }; break; } }
   }
-  play.chaser = best; play.plan = best;
-  for (const r in play.fielders) { const f = play.fielders[r]; if (r === 'C') continue; f.task = null; }
-  if (play.dive) { const f = play.dive.f; f.task = { kind: 'dive', to: play.dive.s.p.clone(), at: play.dive.s.t, dive: play.dive }; if (best && best.f === f) play.chaser = null; }
-  if (play.chaser && !(play.dive && play.dive.f === play.chaser.f)) { const f = play.chaser.f; f.task = { kind: 'field', to: best.s.p.clone(), at: best.s.t, air: best.s.air }; }
-  /* the first baseman covers the bag, the rest drift toward the ball */
-  const fb = play.fielders['1B']; if (!fb.task) fb.task = { kind: 'cover', to: BASES.first.clone().add(new THREE.Vector3(-1, 0, -1)) };
-  const ss = play.fielders.SS; if (!ss.task) ss.task = { kind: 'cover', to: BASES.second.clone().add(new THREE.Vector3(-2, 0, 2)) };
-  /* the batter becomes a runner */
-  const bat = play.batter; bat.c.bat.visible = false;
-  play.runner = bat; play.batter = null;
-  bat.runPath = [BASES.home.clone().add(new THREE.Vector3(bat.c.lefty ? 1.5 : -1.5, 0, 0.5)), BASES.first.clone()]; bat.runI = 0; bat.runDelay = 0.38; bat.target = 1;
-  play.result = null; play.ballHolder = null; play.throwing = null; play.throwPrep = null;
+  if (best && !(G.dive && G.dive.f === best.f)) best.f.task = { kind: 'field', to: best.s.p.clone() };
+  /* the bags get covered */
+  const cover = (r, base, off) => { const f = G.fielders[r]; if (!f.task) f.task = { kind: 'cover', to: BASE_LIST[base].clone().add(off) }; };
+  cover('1B', 1, new THREE.Vector3(-1, 0, -1)); cover('SS', 2, new THREE.Vector3(-2, 0, 2)); cover('2B', 2, new THREE.Vector3(2, 0, 2)); cover('3B', 3, new THREE.Vector3(1, 0, 1));
+  G.fielders.C.task = { kind: 'cover', to: BASES.home.clone().add(new THREE.Vector3(0, 0, 1.5)) };
+  /* the batter becomes a runner, and the others go: on the ground at once,
+     in the air they hold until it comes down */
+  const bat = G.batter; bat.c.bat.visible = false; G.batter = null;
+  const br = { key: bat.key, actor: bat, at: 0, target: 1, done: false, delay: 0.35, batter: true };
+  G.runners.push(br);
+  const air = la > 12 && !G.foul;
+  for (const r of G.runners) { if (r === br) continue; r.base0 = r.at; r.hold = air && !forced(r.at); r.target = r.hold ? r.at : Math.max(r.target, r.at + 1); r.done = false; r.delay = 0.15; }
+  G.result = null; G.holder = null; G.thrown = null; G.throwPrep = null;
 }
+/* forced: every base behind him is occupied, so he has to go */
+function forced(at) { for (let i = 1; i < at; i++) if (!G.runners.some((r) => !r.batter && r.at === i)) return false; return true; }
 
-function baseFor(t) { return t < 4.0 ? 1 : t < 7.2 ? 2 : 3; }
-const BASE_LIST = [BASES.home, BASES.first, BASES.second, BASES.third, BASES.home];
-
+const runSpeed = (r) => 15 + stat(r.key, 'spd') * 0.07;
 function updateRunner(r, dt) {
-  if (r.runDelay > 0) { r.runDelay -= dt; r.play(A.IDLE); return; }
-  if (r.done) return;
-  const tgt = BASE_LIST[r.runI + 1]; const to = tgt.clone().sub(r.pos); to.y = 0; const d = to.length();
-  const spd = r.slide ? 0 : 19.5;
-  if (r.slide) { r.slideT += dt; const v = Math.max(0, 14 - r.slideT * 26); r.pos.addScaledVector(r.slideDir, v * dt); r.override = null; if (r.clip !== A.SLIDE) r.play(A.SLIDE); if (r.slideT > 0.8) r.done = true; return; }
-  if (d < 0.6) {
-    r.runI++; if (r.runI >= r.target) { r.done = true; r.play(play.result === 'homer' ? A.CHEER : A.IDLE); r.yaw = yawTo(r.pos, BASES.home); return; }
+  const a = r.actor;
+  if (r.delay > 0) { r.delay -= dt; return; }
+  if (r.done || r.scored) return;
+  if (r.slide) { r.slideT += dt; a.pos.addScaledVector(r.slideDir, Math.max(0, 14 - r.slideT * 26) * dt); if (a.clip !== A.SLIDE) a.play(A.SLIDE); if (r.slideT > 0.75) { r.done = true; r.slide = false; r.at = r.slideTo; } return; }
+  /* going back to the bag he left */
+  if (r.target <= r.at) {
+    const B = BASE_LIST[r.at].clone(); const to = B.sub(a.pos); to.y = 0; const d = to.length();
+    if (d < 0.8) { r.done = !r.hold; if (r.done) { a.override = null; a.play(A.IDLE); } return; }
+    const step = Math.min(d, runSpeed(r) * dt); a.pos.addScaledVector(to.normalize(), step); a.yaw = Math.atan2(to.x, to.z); a.phase += dt * runSpeed(r) / 1.15; a.override = () => A.runPose(a.phase, 1); return;
   }
-  /* close play at the bag he is going to stop on: he slides */
-  if (r.runI + 1 === r.target && r.target >= 2 && d < 9 && play.throwing && !r.slide) { r.slide = true; r.slideT = 0; r.slideDir = to.clone().normalize(); r.yaw = Math.atan2(to.x, to.z); return; }
-  const step = Math.min(d, spd * dt); r.pos.addScaledVector(to.normalize(), step);
-  r.yaw = Math.atan2(to.x, to.z); r.phase += dt * spd / 1.15;
-  r.override = () => A.runPose(r.phase, 1);
+  const N = BASE_LIST[r.at + 1]; const to = N.clone().sub(a.pos); to.y = 0; const d = to.length();
+  if (d < 0.7) {
+    r.at++;
+    if (r.at >= 4) { r.scored = true; r.done = true; a.override = null; a.play(A.CHEER); a.yaw = Math.PI; return; }
+    if (r.at >= r.target) { r.done = true; a.override = null; a.play(A.IDLE); a.yaw = yawTo(a.pos, BASES.home); return; }
+  }
+  /* a close play at the bag he stops on: he slides into it */
+  if (r.at + 1 === r.target && r.target >= 2 && r.target <= 3 && d < 8 && d > 5 && G.thrown && G.thrown.base === r.target) { r.slide = true; r.slideT = 0; r.slideDir = to.clone().normalize(); r.slideTo = r.target; a.override = null; a.yaw = Math.atan2(to.x, to.z); return; }
+  const step = Math.min(d, runSpeed(r) * dt); a.pos.addScaledVector(to.normalize(), step);
+  a.yaw = Math.atan2(to.x, to.z); a.phase += dt * runSpeed(r) / 1.15; a.override = () => A.runPose(a.phase, 1);
 }
 
 function updateFielder(f, dt) {
   const T = f.task; if (!T) return;
-  if (T.kind === 'cover' || T.kind === 'field' || T.kind === 'dive') {
-    const to = T.to.clone().sub(f.pos); to.y = 0; const d = to.length();
-    const near = T.kind === 'cover' ? 0.5 : T.kind === 'dive' ? 6.5 : 0.8;
-    if (d > near) { const spd = 21; const step = Math.min(d - near * 0.5, spd * dt); f.pos.addScaledVector(to.normalize(), step); f.yaw = Math.atan2(to.x, to.z); f.phase += dt * spd / 1.15; f.override = () => Object.assign(A.runPose(f.phase, 1), { glove: true }); }
-    else if (T.kind === 'cover') { f.override = null; if (f.clip !== A.READY_CLIP) f.play(A.READY_CLIP); f.yaw = play.ballHolder ? yawTo(f.pos, play.ballHolder.pos) : yawTo(f.pos, play.ball.pos); }
-    else if (T.kind === 'dive' && !T.went) { T.went = true; const side = Math.sign(new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), f.yaw).dot(to)) || 1; f.play(A.diveClip(side)); f.override = null; }
-    else if (T.kind === 'field') { f.override = null; if (f.clip !== A.READY_CLIP) f.play(A.READY_CLIP); f.yaw = yawTo(f.pos, play.ball.pos); }
-    if (T.kind !== 'cover' && play.ball.state === 'hit') {
-      const bd = play.ball.pos.distanceTo(f.pos.clone().add(new THREE.Vector3(0, 2.5, 0)));
-      f.reach = bd < 9 ? play.ball.pos.clone() : null;
-      const grab = T.kind === 'dive' ? (T.dive.make ? 5.5 : 0) : 3.4;
-      if (bd < grab && play.ball.pos.y < 7.5) catchBall(f, T);
+  const to = T.to.clone().sub(f.pos); to.y = 0; const d = to.length();
+  const near = T.kind === 'cover' ? 0.5 : T.kind === 'dive' ? 6.5 : 0.8;
+  f.pos.y = 0.7 * clamp(1 - Math.hypot(f.pos.x - MOUND.x, f.pos.z - MOUND.z) / 9, 0, 1);
+  if (d > near && !T.went) { const step = Math.min(d - near * 0.5, f.spd * dt); f.pos.addScaledVector(to.normalize(), step); f.yaw = Math.atan2(to.x, to.z); f.phase += dt * f.spd / 1.15; f.override = () => Object.assign(A.runPose(f.phase, 1), { glove: true }); }
+  else if (T.kind === 'dive' && !T.went) { T.went = true; const side = Math.sign(new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), f.yaw).dot(to)) || 1; f.play(A.diveClip(side)); f.override = null; }
+  else if (!T.went) { f.override = null; if (f.clip !== A.READY_CLIP) f.play(A.READY_CLIP); f.yaw = G.holder && G.holder !== f ? yawTo(f.pos, G.holder.pos) : yawTo(f.pos, G.ball.pos); }
+  if (T.kind !== 'cover' && G.ball.state === 'hit') {
+    const bd = Math.hypot(G.ball.pos.x - f.pos.x, G.ball.pos.z - f.pos.z, Math.max(0, G.ball.pos.y - f.pos.y - 4.5));
+    f.reach = bd < 9 ? G.ball.pos.clone() : null;
+    const grab = T.kind === 'dive' ? (T.dive.make ? 5.5 : 0) : 2.4;
+    if (f.missed && G.clockT - f.missed > 0.7) f.missed = false;
+    if (bd < grab && G.ball.pos.y < 6 && !f.missed) {
+      /* a hard ball on the ground does not always stay in the glove: the
+         faster it comes, the likelier it skips past him */
+      const hv = G.ball.bounced ? Math.hypot(G.sim.samples[Math.min(G.sim.samples.length - 1, Math.floor(G.simT * 60) + 1)].p.x - G.ball.pos.x, G.sim.samples[Math.min(G.sim.samples.length - 1, Math.floor(G.simT * 60) + 1)].p.z - G.ball.pos.z) * 60 : 0;
+      const p = clamp(0.62 + stat(f.key, 'def') * 0.004 - Math.max(0, hv - 22) * 0.012, 0.15, 0.98);
+      if (hv > 22 && rnd() > p) { f.missed = G.clockT; f.task = { kind: 'cover', to: f.pos.clone() }; f.play(A.diveClip(rnd() < 0.5 ? 1 : -1)); f.override = null; }
+      else fieldBall(f, T);
     }
   }
 }
 
-function catchBall(f, T) {
-  const ball = play.ball; ball.state = 'held'; play.ballHolder = f; f.reach = null;
-  const inAir = !ball.bounced;
-  if (inAir && !play.foul) { play.result = 'out'; banner(T.kind === 'dive' ? 'WHAT A GRAB!' : 'CAUGHT!', 'out'); play.count.o++; endPlay(1.8); return; }
-  const r = play.runner; const tgt = baseFor(play.st); r.target = Math.max(r.target, tgt);
-  if (r.target > 1) r.runPath = null;
-  /* throw to the base he is going to */
-  f.task = null; const base = BASE_LIST[r.target];
-  /* on the game clock, never setTimeout: a hit stop or a background tab must
-     not let the throw happen in a different moment from the catch */
-  play.throwPrep = { f, base, at: play.clockT + 0.12 };
+function fieldBall(f, T) {
+  const ball = G.ball; if (G.result) return;
+  if (ball.bounced && G.foul) return;
+  ball.state = 'held'; G.holder = f; f.reach = null; f.task = null;
+  const br = G.runners.find((r) => r.batter);
+  if (!ball.bounced) {
+    G.result = 'out'; G.outs++; if (G.foul) for (const r of G.runners) if (!r.batter) r.at = r.base0; banner(T.kind === 'dive' ? 'WHAT A GRAB!' : 'CAUGHT!', 'out');
+    br.out = true; br.actor.override = null; br.actor.play(A.SLUMP); br.done = true;
+    for (const r of G.runners) if (r !== br && !r.scored) { r.hold = false; r.target = Math.min(r.target, r.at); r.done = false; }
+    finishPlay(1.8); return;
+  }
+  /* it is on the ground: everybody goes, how far is how long it took */
+  for (const r of G.runners) r.hold = false;
+  const deep = Math.hypot(f.pos.x, f.pos.z) > 85, hb = G.simT < 3.2 ? 1 : G.simT < 6 ? 2 : 3;
+  br.target = Math.max(br.target, hb);
+  /* the runners take what the ball gives them: one more on anything that
+     reached the outfield */
+  for (const r of G.runners) if (r !== br && !r.scored) { r.target = Math.min(4, Math.max(r.target, r.base0 + hb + (deep ? 1 : 0))); r.done = false; }
+  /* throw at the batter, the one runner a defence always has a play on */
+  G.throwPrep = { f, base: br.target, at: G.clockT + 0.45 };
 }
 
 function updateBall(dt) {
-  const b = play.ball;
-  if (play.state === 'flight') {
-    const p = play.pitch; const t = play.clockT - p.relT; b.pos.copy(pitchPos(p, t));
-    if (t >= p.T + 0.22) { b.state = 'hidden'; }
-  } else if (b.state === 'hit' && play.sim) {
-    play.simT += dt; const S = play.sim.samples; let i = Math.min(S.length - 1, Math.floor(play.simT * 60));
+  const b = G.ball;
+  if (G.state === 'flight' && b.state === 'pitch') {
+    const p = G.pitch; const t = G.clockT - p.relT; b.pos.copy(pitchPos(p, t));
+    if (t >= p.T + 0.2) b.state = 'hidden';
+  } else if (b.state === 'hit' && G.sim) {
+    G.simT += dt; const S = G.sim.samples; const i = Math.min(S.length - 1, Math.floor(G.simT * 60));
     b.pos.copy(S[i].p); b.bounced = !S[i].air;
-    if (i === S.length - 1 && !play.result) {
-      if (play.sim.hr && !play.foul) { play.result = 'homer'; banner('HOME RUN!', 'hr'); const r = play.runner; r.target = 4; r.runDelay = 0; play.cheer = 3; endPlay(7.5); }
-      else if (play.foul) { play.result = 'foul'; banner('FOUL', 'foul'); if (play.count.s < 2) play.count.s++; endPlay(1.2); }
+    if (b.bounced) for (const r of G.runners) if (r.hold) { r.hold = false; r.target = Math.max(r.target, r.at + 1); r.done = false; }
+    if (!G.result && G.foul && ((G.sim.firstLand && G.simT >= G.sim.firstLand.t) || i === S.length - 1)) {
+      G.result = 'foul'; banner('FOUL BALL', 'foul'); if (G.s < 2) G.s++;
+      for (const r of G.runners) if (!r.batter) { r.at = r.base0; r.target = r.at; r.hold = false; r.done = false; r.scored = false; }
+      finishPlay(1.3, true); updateHud();
+    } else if (!G.result && G.sim.hr && i === S.length - 1) {
+      G.result = 'homer'; banner('HOME RUN!', 'hr', 2600); G.cheer = 3.5;
+      for (const r of G.runners) { r.hold = false; r.target = 4; r.done = false; r.delay = 0; }
+      finishPlay(1.2);
     }
-    if (play.foul && play.sim.firstLand && play.simT >= play.sim.firstLand.t && !play.result) { play.result = 'foul'; banner('FOUL', 'foul'); if (play.count.s < 2) play.count.s++; endPlay(1.2); }
   } else if (b.state === 'held') {
-    const h = play.ballHolder; if (h) b.pos.copy(h.c.glove.visible ? h.c.glove.getWorldPosition(new THREE.Vector3()) : h.c.worldOf('rH'));
+    const h = G.holder; if (h) b.pos.copy(h.c.glove.visible ? h.c.glove.getWorldPosition(new THREE.Vector3()) : h.c.worldOf('rH'));
   } else if (b.state === 'thrown') {
-    const th = b.throwInfo; const u = clamp((play.clockT - th.t0) / th.T, 0, 1);
+    const th = G.thrown; const u = clamp((G.clockT - th.t0) / th.T, 0, 1);
     b.pos.lerpVectors(th.from, th.to, u); b.pos.y += Math.sin(u * Math.PI) * th.arc;
-    if (u >= 1) {
-      b.state = 'held'; play.ballHolder = th.catcher;
-      const r = play.runner; const safe = r.runI + 1 > th.targetBase || (r.done && !r.slide) || (r.slide && r.slideT > 0.1 && r.pos.distanceTo(BASE_LIST[th.targetBase]) < 2.6);
-      if (!play.result) {
-        if (safe || r.runI >= th.targetBase) { play.result = 'safe'; banner(['', 'SINGLE', 'DOUBLE', 'TRIPLE'][th.targetBase] || 'SAFE', 'safe'); }
-        else { play.result = 'out'; banner('OUT!', 'out'); play.count.o++; r.done = true; r.override = null; r.play(A.SLUMP); }
-        endPlay(1.8);
-      }
-    }
+    if (u >= 1) arriveThrow(th);
   }
   b.g.visible = b.state !== 'hidden'; b.sh.visible = b.g.visible && b.state !== 'held';
   b.g.position.copy(b.pos); b.g.rotation.x += dt * 30;
   b.sh.position.set(b.pos.x, 0.24, b.pos.z); const hgt = Math.max(0, b.pos.y);
   b.sh.scale.setScalar(1 + hgt * 0.02); b.sh.material.opacity = clamp(0.45 - hgt * 0.004, 0.15, 0.45);
   b.hist.unshift(b.pos.clone()); if (b.hist.length > 14) b.hist.pop();
-  const showTrail = b.state === 'hit' || b.state === 'thrown' || play.state === 'flight';
+  const showTrail = b.state === 'hit' || b.state === 'thrown' || b.state === 'pitch';
   b.trail.forEach((t, i) => { const p = b.hist[(i + 1) * 2]; t.visible = showTrail && !!p && b.g.visible; if (p) t.position.copy(p); });
 }
-
-function endPlay(after) {
-  play.state = 'after'; play.st = 0; play.after = after;
+function arriveThrow(th) {
+  const b = G.ball; b.state = 'held'; G.holder = th.catcher; G.thrown = null;
+  if (G.result) return;
+  const br = G.runners.find((r) => r.batter);
+  const made = br.at >= th.base || (br.slide && br.slideT > 0.12);
+  if (made) { G.result = 'hit'; batting().hits++; banner(['', 'SINGLE!', 'DOUBLE!', 'TRIPLE!'][th.base] || 'SAFE!', 'safe'); }
+  else { G.result = 'out'; G.outs++; br.out = true; br.done = true; br.actor.override = null; br.actor.play(A.SLUMP); banner('OUT!', 'out');
+    /* the third out on the batter before first is a force: nobody scores */
+    if (G.outs >= 3) { for (const r of G.runners) if (!r.batter) { r.target = r.at; } G.noRuns = true; } }
+  finishPlay(1.6);
 }
 
+function finishPlay(after, foul) { G.state = 'after'; G.st = 0; G.after = after; G.foulPlay = !!foul; updateHud(); }
+
+/* everything that happened, written down: who is on, who scored, who is out */
+function settle() {
+  const T = batting(); let runs = 0;
+  for (const r of G.runners) { if (r.scored && !G.noRuns) runs++; }
+  G.noRuns = false;
+  const keep = [];
+  for (const r of G.runners) {
+    if (r.out || r.scored) { r.actor.dispose(); G.actors = G.actors.filter((a) => a !== r.actor); continue; }
+    if (r.slide) r.at = r.slideTo;
+    r.at = clamp(r.at, 1, 3); keep.push(r);
+  }
+  /* two on one bag cannot happen; the trailing man stops a base short */
+  keep.sort((a, b) => b.at - a.at); for (let i = 1; i < keep.length; i++) if (keep[i].at >= keep[i - 1].at) keep[i].at = keep[i - 1].at - 1;
+  G.runners = keep.filter((r) => { if (r.at < 1) { r.actor.dispose(); G.actors = G.actors.filter((a) => a !== r.actor); return false; } return true; });
+  for (const r of G.runners) r.batter = false;
+  addRuns(runs);
+}
+function addRuns(n) {
+  if (!n) return; const T = batting(); T.runs[G.inning - 1] = (T.runs[G.inning - 1] || 0) + n;
+  setTimeout(() => banner(n === 1 ? 'RUN SCORES!' : n + ' RUNS SCORE!', 'hr'), 250);
+  updateHud();
+}
+const total = (T) => T.runs.reduce((a, b) => a + (b || 0), 0);
+
+function walk() {
+  const T = batting(); const bat = G.batter; G.batter = null; bat.c.bat.visible = false;
+  /* forced along: each man moves only if the base behind him is taken */
+  const occ = [true, ...[1, 2, 3].map((i) => G.runners.some((r) => r.at === i))];
+  for (const r of G.runners) { let forcedR = true; for (let i = 1; i <= r.at; i++) if (!occ[i - 1]) forcedR = false; r.target = forcedR ? r.at + 1 : r.at; r.done = false; r.delay = 0; }
+  const br = { key: bat.key, actor: bat, at: 0, target: 1, done: false, delay: 0.2, batter: true }; G.runners.push(br);
+}
+
+function endPA() {
+  const T = batting(); T.li = (T.li + 1) % 9;
+  if (checkWalkoff()) return;
+  if (G.outs >= 3) return endHalf();
+  newBatter();
+}
+function checkWalkoff() {
+  if (G.half === 1 && G.inning >= G.innings && total(G.teams[1]) > total(G.teams[0])) { gameOver(); return true; }
+  return false;
+}
+function endHalf() {
+  for (const r of G.runners) { r.actor.dispose(); G.actors = G.actors.filter((a) => a !== r.actor); } G.runners = [];
+  const T = batting(); if (T.runs[G.inning - 1] == null) T.runs[G.inning - 1] = 0;
+  const [away, home] = G.teams;
+  if (G.half === 0 && G.inning >= G.innings && total(home) > total(away)) return gameOver();
+  if (G.half === 1 && G.inning >= G.innings && total(home) !== total(away)) return gameOver();
+  if (G.half === 1 && G.inning >= G.innings + 3) return gameOver();
+  if (G.half === 1) { G.inning++; G.half = 0; } else G.half = 1;
+  G.outs = 0; G.b = G.s = 0;
+  banner((G.half ? 'BOTTOM ' : 'TOP ') + G.inning + (youBat() ? ': YOU BAT' : ': YOU PITCH'), 'side', 2000);
+  setField(); newBatter();
+}
+
+function gameOver() {
+  G.over = true; G.state = 'over';
+  const [away, home] = G.teams, you = G.teams[G.you], them = G.teams[1 - G.you];
+  const won = total(you) > total(them), tie = total(you) === total(them);
+  $('end-title').textContent = tie ? 'Tie game' : won ? 'You win!' : 'You lose';
+  $('end-score').innerHTML = lineScore();
+  document.body.classList.add('end');
+  if (won) G.cheer = 5;
+}
+function lineScore() {
+  const n = Math.max(G.innings, G.inning);
+  const head = '<tr><th></th>' + Array.from({ length: n }, (_, i) => `<th>${i + 1}</th>`).join('') + '<th>R</th><th>H</th></tr>';
+  const row = (T, i) => `<tr${i === G.you ? ' class="you"' : ''}><td>${T.name}</td>` + Array.from({ length: n }, (_, j) => `<td>${T.runs[j] == null ? '' : T.runs[j]}</td>`).join('') + `<td><b>${total(T)}</b></td><td>${T.hits}</td></tr>`;
+  return `<table>${head}${row(G.teams[0], 0)}${row(G.teams[1], 1)}</table>`;
+}
+
+/* ------------------------------------------------------------ the clock */
 function stepPlay(dt) {
-  play.st += dt; play.clockT = (play.clockT || 0) + dt;
-  const P = play.pitcher, Bt = play.batter;
-  if (play.state === 'idle' && play.st > 1.3) startPitch();
-  if (play.state === 'windup') {
-    if (play.pitcher.t >= A.RELEASE_T && !play.pitch.released) {
-      const p = play.pitch; p.released = true; p.relT = play.clockT; p.arrive = p.relT + p.T;
-      P.step(0); p.release = P.c.worldOf('rH'); play.state = 'flight'; play.st = 0;
-      play.ball.state = 'pitch'; if (Bt && !play.swung) Bt.play(A.STRIDE);
-      $('tell').textContent = ''; play.ball.hist.length = 0;
+  G.st += dt; G.clockT += dt;
+  const P = G.fielders.P;
+  if (G.state === 'idle' && youBat() && G.st > 1.2) cpuPitch();
+  if (G.state === 'windup' && P.t >= A.RELEASE_T && !G.pitch.released) {
+    const p = G.pitch; p.released = true; p.relT = G.clockT; p.arrive = p.relT + p.T;
+    P.step(0); p.release = P.c.worldOf('rH'); G.state = 'flight'; G.st = 0;
+    G.ball.state = 'pitch'; G.ball.hist.length = 0; if (G.batter && !G.swung) G.batter.play(A.STRIDE);
+    if (!youBat()) cpuDecide();
+    $('tell').textContent = '';
+  }
+  if (G.state === 'flight') {
+    const p = G.pitch;
+    if (G.cpuSwing && !G.swung && G.clockT >= G.cpuSwing.at) { G.aim.copy(G.cpuSwing.aim); swing(false); }
+    if (G.swung && !G.contactJudged && G.clockT >= G.swingAt + (G.bunt ? 0.25 : A.CONTACT_T) - 1e-4) {
+      G.contactJudged = true; if (judgeContact()) { G.contactJudged = false; return; }
+    }
+    if (G.clockT >= p.arrive + 0.25) {
+      G.contactJudged = false;
+      const iz = inZone(p.target.x, p.target.y);
+      if (G.swung) { banner(G.bunt ? 'MISSED BUNT' : 'SWING AND A MISS', 'strike'); G.s++; }
+      else if (iz) { banner('STRIKE', 'strike'); G.s++; }
+      else { banner('BALL', 'ball'); G.b++; }
+      $('tell').textContent = p.name + (p.type === 'cu' ? ' · higher arm' : p.type === 'sl' ? ' · lower arm' : '');
+      if (G.s >= 3) { banner('STRUCK OUT', 'strike'); G.outs++; G.batter.play(A.SLUMP); G.paDone = true; finishPlay(2.0); }
+      else if (G.b >= 4) { banner('WALK', 'ball'); walk(); G.paDone = true; finishPlay(1.8); }
+      else finishPlay(0.8);
+      updateHud();
     }
   }
-  if (play.state === 'flight') {
-    const p = play.pitch;
-    if (play.swung && !play.contactJudged && play.clockT >= play.swingAt + (play.bunt ? 0.25 : A.CONTACT_T) - 0.0001) {
-      play.contactJudged = true; if (judgeContact()) { play.contactJudged = false; return; }
-    }
-    if (play.clockT >= p.arrive + 0.25) {
-      play.contactJudged = false;
-      const t = p.target, inZ = t.x >= ZONE.x0 - 0.15 && t.x <= ZONE.x1 + 0.15 && t.y >= ZONE.y0 - 0.15 && t.y <= ZONE.y1 + 0.15;
-      if (play.swung) { banner(play.bunt ? 'MISSED BUNT' : 'SWING AND A MISS', 'strike'); play.count.s++; }
-      else if (inZ) { banner('STRIKE', 'strike'); play.count.s++; }
-      else { banner('BALL', 'ball'); play.count.b++; }
-      $('tell').textContent = p.name + (p.type === 'cu' ? ' (higher arm slot)' : p.type === 'sl' ? ' (lower arm slot)' : '');
-      if (play.count.s >= 3) { banner('STRUCK OUT', 'strike'); play.count.o++; Bt.play(A.SLUMP); endPlay(2.2); play.nextBatter = true; }
-      else if (play.count.b >= 4) { banner('WALK', 'ball'); endPlay(1.6); play.nextBatter = true; }
-      else { endPlay(0.9); }
-      refreshCount();
-    }
+  if (G.throwPrep && G.clockT >= G.throwPrep.at) {
+    const { f, base } = G.throwPrep; G.throwPrep = null;
+    if (G.holder === f) { f.yaw = yawTo(f.pos, BASE_LIST[base]); f.play(A.throwClip()); f.override = null; G.throwing = { f, base, at: G.clockT + A.THROW_RELEASE }; }
   }
-  if (play.throwPrep && play.clockT >= play.throwPrep.at) {
-    const { f, base } = play.throwPrep; play.throwPrep = null;
-    if (play.ballHolder === f) { f.yaw = yawTo(f.pos, base); f.play(A.throwClip()); f.override = null; play.throwing = { f, base, at: play.clockT + A.THROW_RELEASE, target: play.runner.target }; }
+  if (G.throwing && G.clockT >= G.throwing.at) {
+    const th = G.throwing; G.throwing = null;
+    const catcher = th.base === 1 ? G.fielders['1B'] : th.base === 2 ? G.fielders.SS : th.base === 3 ? G.fielders['3B'] : G.fielders.C;
+    const from = th.f.c.worldOf('rH'), to = catcher.pos.clone().add(new THREE.Vector3(0, 3.2, 0)), d = from.distanceTo(to);
+    G.ball.state = 'thrown'; G.thrown = { from, to, t0: G.clockT, T: Math.max(0.35, d / th.f.arm), arc: d * 0.04, catcher, base: th.base }; G.holder = null;
   }
-  if (play.throwing && play.clockT >= play.throwing.at) {
-    const th = play.throwing; play.throwing = null; const b = play.ball;
-    const catcher = th.target === 1 ? play.fielders['1B'] : th.target === 2 ? play.fielders.SS : th.target === 3 ? play.fielders['3B'] : play.catcher;
-    if (th.target === 3 && !catcher.task) catcher.task = { kind: 'cover', to: BASES.third.clone().add(new THREE.Vector3(1, 0, 1)) };
-    const from = th.f.c.worldOf('rH'), to = catcher.pos.clone().add(new THREE.Vector3(0, 3.2, 0));
-    const T = Math.max(0.45, from.distanceTo(to) / 85);
-    b.state = 'thrown'; b.throwInfo = { from, to, t0: play.clockT, T, arc: from.distanceTo(to) * 0.05, catcher, targetBase: th.target }; play.ballHolder = null;
-    play.throwing = { pending: true };
+  for (const r of G.runners) updateRunner(r, dt);
+  for (const p of POSITIONS) updateFielder(G.fielders[p], dt);
+  /* nobody planned for it: the nearest man goes and gets it */
+  /* once it is on the ground the plan is over: the nearest man runs it down */
+  if ((G.state === 'inplay' || G.state === 'after') && G.ball.state === 'hit' && G.ball.bounced && !G.holder && !G.result) {
+    let near = null; for (const r of POSITIONS) { if (r === 'C') continue; const f = G.fielders[r]; const d = f.pos.distanceTo(G.ball.pos) + (f.missed ? 12 : 0); if (!near || d < near.d) near = { f, d }; }
+    for (const r of POSITIONS) { const f = G.fielders[r]; if (f !== near.f && f.task && f.task.kind !== 'cover') f.task = { kind: 'cover', to: f.pos.clone() }; }
+    if (!near.f.task || near.f.task.kind !== 'field') near.f.task = { kind: 'field', to: G.ball.pos.clone() };
+    near.f.task.to.copy(G.ball.pos);
   }
-  if (play.runner) updateRunner(play.runner, dt);
-  for (const r in play.fielders) updateFielder(play.fielders[r], dt);
-  if (play.state === 'inplay' && play.ball.state === 'hit' && play.sim && play.simT > play.sim.samples[play.sim.samples.length - 1].t + 0.5 && !play.ballHolder && !play.result) {
-    /* nobody planned for it: the nearest man goes and gets it */
-    let near = null; for (const r in play.fielders) { if (r === 'C') continue; const f = play.fielders[r]; const d = f.pos.distanceTo(play.ball.pos); if (!near || d < near.d) near = { f, d }; }
-    near.f.task = { kind: 'field', to: play.ball.pos.clone(), at: 0, air: false };
-  }
-  if (play.state === 'after' && play.st > play.after) {
-    if (play.count.o >= 3) { play.count.o = 0; banner('SIDE RETIRED', 'out'); }
-    if (play.nextBatter || play.result) { play.nextBatter = false; nextBatter(false); } else resetPitch();
+  if (G.state === 'after' && G.st > G.after) {
+    const running = G.runners.some((r) => !r.done && !r.out && !r.scored && !r.hold);
+    if (running && G.st < G.after + 6) return;
+    const inPlay = G.runners.some((r) => r.batter);
+    if (G.foulPlay && !G.paDone) {
+      const br = G.runners.find((r) => r.batter); G.runners = G.runners.filter((r) => !r.batter);
+      if (br) { G.batter = br.actor; br.actor.override = null; br.actor.c.bat.visible = true; }
+      for (const r of G.runners) { if (r.base0 != null) r.at = r.base0; r.scored = false; }
+      G.foulPlay = false; resetPitch(); return; }
+    if (inPlay || G.paDone) { G.paDone = false; settle(); updateHud(); endPA(); return; }
+    resetPitch();
   }
 }
+
+/* ------------------------------------------------------------ hud */
+function updateHud() {
+  if (!G.teams) return;
+  const [away, home] = G.teams;
+  $('sb-away').innerHTML = `<i style="background:${away.color}"></i>${away.name}<b>${total(away)}</b>`;
+  $('sb-home').innerHTML = `<i style="background:${home.color}"></i>${home.name}<b>${total(home)}</b>`;
+  $('sb-inn').textContent = (G.half ? 'Bot ' : 'Top ') + G.inning;
+  $('sb-count').innerHTML = `<b>B</b>${dots(G.b, 3)} <b>S</b>${dots(G.s, 2)} <b>O</b>${dots(G.outs, 2)}`;
+  for (let i = 1; i <= 3; i++) $('base' + i).classList.toggle('on', G.runners.some((r) => !r.batter && r.at === i));
+  document.body.classList.toggle('pitching', !youBat());
+  if (G.batter) ui.name.textContent = (youBat() ? 'You bat: ' : 'They bat: ') + nm(G.batter.key) + '  ·  ' + (youBat() ? 'Pitching: ' : 'You pitch: ') + nm(G.fielders.P.key);
+}
+const dots = (n, m) => '●'.repeat(Math.min(n, m)).padEnd(m, '○');
 
 /* ------------------------------------------------------------ cameras */
 function fitFov(vfov, ref = 1.5) {
@@ -439,57 +616,91 @@ function fitFov(vfov, ref = 1.5) {
   const h = 2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(vfov) / 2) * ref);
   return Math.min(80, THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(h / 2) / a)));
 }
-const camPos = new THREE.Vector3(), camLook = new THREE.Vector3();
+const camPos = new THREE.Vector3(0, 7, 30), camLook = new THREE.Vector3(0, 2.6, -28);
 function playCamera(dt) {
-  const b = play.ball; let pos, look, fov;
-  if (play.state === 'inplay' || (play.state === 'after' && (play.result && play.result !== 'foul'))) {
+  const b = G.ball; let pos, look, fov;
+  const live = G.state === 'inplay' || (G.state === 'after' && !G.foulPlay && (G.runners.some((r) => r.batter) || G.result === 'out'));
+  if (live) {
     const tgt = b.state !== 'hidden' ? b.pos : MOUND;
     const L = new THREE.Vector3(tgt.x * 0.75, 0, Math.min(-10, tgt.z * 0.8));
-    pos = new THREE.Vector3(L.x * 0.35, 34 + Math.max(0, -L.z) * 0.22, 40 + L.z * 0.25); look = L; fov = 48;
-  } else if ($('sel-cam').value === 'wide') { pos = new THREE.Vector3(0, 36, 48); look = new THREE.Vector3(0, 0, -52); fov = 50; }
+    pos = new THREE.Vector3(L.x * 0.35, 34 + Math.max(0, -L.z) * 0.22, 40 + L.z * 0.25); look = L; fov = fitFov(48, 1.15);
+  } else if ($('sel-cam').value === 'wide') { pos = new THREE.Vector3(0, 36, 48); look = new THREE.Vector3(0, 0, -52); fov = fitFov(50, 1.15); }
   else {
     /* upright, the plate camera keeps the batter and the zone and lets the
        foul ground go: it frames a narrower slice, centred between them */
-    const narrow = camera.aspect < 1; const bx = play.batter && play.batter.c.lefty ? 1 : -1;
-    pos = new THREE.Vector3(narrow ? bx * 1.0 : 0, 7.2, 30); look = new THREE.Vector3(narrow ? bx * 1.0 : 0, 2.6, -28); fov = narrow ? fitFov(19, 0.72) : 19;
+    const narrow = camera.aspect < 1; const bx = G.batter && G.batter.c.lefty ? 1 : -1;
+    pos = new THREE.Vector3(narrow ? bx : 0, 7.2, 30); look = new THREE.Vector3(narrow ? bx : 0, 2.6, -28); fov = narrow ? fitFov(19, 0.72) : 19;
   }
-  const k = 1 - Math.exp(-dt * (play.state === 'inplay' ? 3.2 : 6));
-  /* a phone held upright is narrow, so the authored framing is kept across
-     the WIDTH: the vertical fov opens up until the same width fits */
-  if (play.state === 'inplay' || play.state === 'after' || $('sel-cam').value === 'wide') fov = fitFov(fov, 1.15);
+  const k = 1 - Math.exp(-dt * (live ? 3.2 : 6));
   camPos.lerp(pos, k); camLook.lerp(look, k); camera.fov += (fov - camera.fov) * k; camera.updateProjectionMatrix();
   camera.position.copy(camPos); camera.lookAt(camLook);
-  play.catcher.root.visible = !(play.state !== 'inplay' && $('sel-cam').value === 'plate' && play.state !== 'after');
+  if (G.fielders.C) G.fielders.C.root.visible = live || $('sel-cam').value === 'wide';
 }
 
 /* ------------------------------------------------------------ input */
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), zonePlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -ZONE.z);
-function aimFrom(e) {
+function zoneFrom(e, out) {
   const r = canvas.getBoundingClientRect(); ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
-  ray.setFromCamera(ndc, camera); const hit = new THREE.Vector3(); if (ray.ray.intersectPlane(zonePlane, hit)) { play.aim.set(clamp(hit.x, -1.7, 1.7), clamp(hit.y, 0.9, 4.3)); }
+  ray.setFromCamera(ndc, camera); const hit = new THREE.Vector3(); if (ray.ray.intersectPlane(zonePlane, hit)) out.set(clamp(hit.x, -1.7, 1.7), clamp(hit.y, 0.9, 4.3));
 }
-canvas.addEventListener('pointermove', (e) => { if (mode === 'play' && e.pointerType === 'mouse') aimFrom(e); });
+canvas.addEventListener('pointermove', (e) => { if (mode === 'play' && e.pointerType === 'mouse' && G.teams) { if (youBat()) zoneFrom(e, G.aim); else if (G.state === 'aim') zoneFrom(e, G.target); } });
 canvas.addEventListener('pointerdown', (e) => {
   if (mode === 'cast') { orbit.drag = { x: e.clientX, a: orbit.a }; return; }
-  aimFrom(e); swing(false);
+  if (!G.teams || G.state === 'menu' || G.over) return;
+  if (youBat()) { zoneFrom(e, G.aim); swing(false); }
+  else if (G.state === 'aim') { zoneFrom(e, G.target); if (e.pointerType === 'mouse') throwPlayerPitch(); }
 });
 addEventListener('pointerup', () => { orbit.drag = null; });
 addEventListener('pointermove', (e) => { if (orbit.drag) orbit.a = orbit.drag.a - (e.clientX - orbit.drag.x) * 0.01; });
 const keys = {};
 addEventListener('keydown', (e) => {
   keys[e.key] = true;
-  if (mode === 'play' && (e.key === ' ' || e.key === 'Enter')) { e.preventDefault(); swing(false); }
-  if (mode === 'play' && (e.key === 'b' || e.key === 'B')) swing(true);
+  if (mode === 'play' && G.teams && !G.over) {
+    if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); if (youBat()) swing(false); else throwPlayerPitch(); }
+    if ((e.key === 'b' || e.key === 'B') && youBat()) swing(true);
+    if (!youBat() && '1234'.includes(e.key)) setPitchType(['fb', 'sl', 'cu', 'ch'][+e.key - 1]);
+  }
   if (mode === 'cast' && e.key === 'ArrowRight') castStep(1); if (mode === 'cast' && e.key === 'ArrowLeft') castStep(-1);
 });
 addEventListener('keyup', (e) => { keys[e.key] = false; });
+function setPitchType(t) { G.ptype = t; document.querySelectorAll('#pitchbar [data-p]').forEach((b) => b.classList.toggle('on', b.dataset.p === t)); }
+document.querySelectorAll('#pitchbar [data-p]').forEach((b) => (b.onclick = () => setPitchType(b.dataset.p)));
+$('b-throw').onclick = () => throwPlayerPitch();
 $('b-bunt').onclick = () => swing(true);
+$('b-swing').onclick = () => swing(false);
 $('b-opts').onclick = () => document.body.classList.toggle('opts');
+
+/* ------------------------------------------------------------ menu */
+const menu = { yours: randomNine(), them: null, innings: 3, home: true, club: CLUBS[rnd() * CLUBS.length | 0] };
+function drawMenu() {
+  const t = makeTeam(menu.yours, 'You', '#1f3f7a');
+  $('m-team').innerHTML = t.order.map((k, i) => `<li><span>${POSITIONS.find((p) => t.pos[p] === k)}</span>${nm(k)}</li>`).join('');
+  $('m-opp').textContent = menu.club;
+  document.querySelectorAll('#m-inn button').forEach((b) => b.classList.toggle('on', +b.dataset.n === menu.innings));
+  document.querySelectorAll('#m-side button').forEach((b) => b.classList.toggle('on', (b.dataset.s === 'home') === menu.home));
+}
+$('m-shuffle').onclick = () => { menu.yours = randomNine(); drawMenu(); };
+document.querySelectorAll('#m-inn button').forEach((b) => (b.onclick = () => { menu.innings = +b.dataset.n; drawMenu(); }));
+document.querySelectorAll('#m-side button').forEach((b) => (b.onclick = () => { menu.home = b.dataset.s === 'home'; drawMenu(); }));
+$('m-play').onclick = () => startGame();
+$('end-again').onclick = () => { document.body.classList.remove('end'); menu.club = CLUBS[rnd() * CLUBS.length | 0]; showMenu(); };
+function showMenu() { G.state = 'menu'; document.body.classList.add('menu'); drawMenu(); }
+function startGame() {
+  document.body.classList.remove('menu', 'end');
+  clearActors();
+  const mine = makeTeam(menu.yours, 'You', '#1f3f7a'), theirs = makeTeam(randomNine(menu.yours), menu.club.split(' ').pop(), '#a8282a');
+  G.teams = menu.home ? [theirs, mine] : [mine, theirs]; G.you = menu.home ? 1 : 0;
+  Object.assign(G, { innings: menu.innings, inning: 1, half: 0, outs: 0, b: 0, s: 0, over: false, clockT: 0 });
+  setField(); newBatter();
+  banner('PLAY BALL!' + (youBat() ? '' : ' YOU PITCH'), 'side', 1800);
+}
 
 /* ============================================================ CAST */
 const orbit = { a: 0.6, drag: null };
 const cast = { i: Math.max(0, KEYS.indexOf('paulbunyan')), actor: null, anim: 'Swing' };
+const HELMET = '#1f3f7a';
 const pad = new THREE.Mesh(new THREE.CylinderGeometry(5, 5.4, 0.6, 32), new THREE.MeshLambertMaterial({ color: '#c09060' })); pad.position.set(0, 0.3, -12); pad.receiveShadow = true; pad.visible = false; scene.add(pad);
+function loopClip(c, dur) { const k = c.keys.map((x) => Object.assign({}, x)); k.push(Object.assign({}, k[0], { t: dur })); return A.clip(k, { loop: true }); }
 const ANIMS = {
   Idle: () => A.IDLE, Stance: () => A.STANCE_IDLE,
   Swing: () => A.clip([...A.STRIDE.keys.map((k) => Object.assign({}, k)), ...A.swingClip(0).keys.map((k) => Object.assign({}, k, { t: k.t + 0.75 })), Object.assign({}, A.STANCE, { t: 2.6, bat: A.STANCE.bat })], { loop: true }),
@@ -499,16 +710,15 @@ const ANIMS = {
   Run: 'run', Field: () => A.READY_CLIP, Dive: () => loopClip(A.diveClip(1), 2.0), Throw: () => loopClip(A.throwClip(), 1.6), Slide: () => loopClip(A.SLIDE, 1.6),
   Cheer: () => A.CHEER, Slump: () => loopClip(A.SLUMP, 3.0), Signature: () => A.SIGNATURE,
 };
-function loopClip(c, dur) { const k = c.keys.map((x) => Object.assign({}, x)); k.push(Object.assign({}, k[0], { t: dur })); return A.clip(k, { loop: true }); }
 function castShow() {
   if (cast.actor) cast.actor.dispose();
-  const key = KEYS[cast.i]; const a = new Actor(key, { helmet: /Swing|Bunt|Stance/.test(cast.anim) ? TEAM_HOME : null }); cast.actor = a;
+  const key = KEYS[cast.i]; const a = new Actor(key); cast.actor = a;
   a.pos.set(0, 0.6, -12); setCastAnim(cast.anim);
-  ui.name.textContent = (cast.i + 1) + ' / ' + KEYS.length + '  ·  ' + (NAMES[key] || key);
+  ui.name.textContent = (cast.i + 1) + ' / ' + KEYS.length + '  ·  ' + nm(key);
 }
 function setCastAnim(n) {
   cast.anim = n; const a = cast.actor; if (!a) return;
-  a.c.bat.visible = /Swing|Bunt|Stance/.test(n); a.c.setHelmet(/Swing|Bunt|Stance/.test(n), TEAM_HOME);
+  const bats = /Swing|Bunt|Stance/.test(n); a.c.bat.visible = bats; a.c.setHelmet(bats, HELMET);
   const v = ANIMS[n]; a.override = null;
   if (v === 'run') { a.play(A.IDLE); a.override = (s) => A.runPose(s.t * 10, 1); }
   else a.play(v());
@@ -527,25 +737,41 @@ function castCamera(dt) {
 }
 
 /* ============================================================ modes, loop */
+function hideBall() { const b = G.ball; b.g.visible = b.sh.visible = false; b.trail.forEach((t) => (t.visible = false)); }
 function setMode(m) {
   mode = m; document.body.dataset.mode = m;
-  for (const a of play.actors) a.root.visible = m === 'play';
-  if (play.ball) { play.ball.g.visible = false; play.ball.sh.visible = false; play.ball.trail.forEach((t) => (t.visible = false)); }
-  zoneG.visible = m === 'play'; pad.visible = m === 'cast';
-  if (m === 'cast') { castShow(); } else { if (cast.actor) { cast.actor.dispose(); cast.actor = null; } if (!play.actors.length) setupPlay(); else { play.actors.forEach((a) => (a.root.visible = true)); resetPitch(); } ui.name.textContent = ''; nextBatterLabel(); }
+  for (const a of G.actors) a.root.visible = m === 'play';
+  hideBall(); zoneG.visible = m === 'play'; pad.visible = m === 'cast';
+  if (m === 'cast') castShow();
+  else { if (cast.actor) { cast.actor.dispose(); cast.actor = null; } ui.name.textContent = ''; if (!G.teams) showMenu(); else updateHud(); }
   document.querySelectorAll('#modes button').forEach((b) => b.classList.toggle('on', b.dataset.m === m));
 }
-function nextBatterLabel() { if (play.batter) ui.name.textContent = 'At bat: ' + (NAMES[play.batter.key] || play.batter.key) + '  ·  Pitching: ' + (NAMES[play.pitcher.key] || play.pitcher.key); }
 document.querySelectorAll('#modes button').forEach((b) => (b.onclick = () => setMode(b.dataset.m)));
 document.querySelectorAll('#levels button').forEach((b, i) => (b.onclick = () => { level = i; resize(); document.querySelectorAll('#levels button').forEach((x, j) => x.classList.toggle('on', j === i)); }));
 $('b-outline').onclick = () => { OPTS.outlines = !OPTS.outlines; scene.traverse((o) => { if (o.userData.outline) o.visible = OPTS.outlines; }); $('b-outline').classList.toggle('on', OPTS.outlines); };
 $('b-shadow').onclick = () => { sun.castShadow = !sun.castShadow; $('b-shadow').classList.toggle('on', sun.castShadow); };
-$('b-newteam').onclick = () => { setupPlay(); };
-for (const id of ['sel-batter', 'sel-pitcher']) { const s = $(id); for (const k of KEYS.slice().sort((a, b) => (NAMES[a] || a).localeCompare(NAMES[b] || b))) { const o = document.createElement('option'); o.value = k; o.textContent = NAMES[k] || k; s.appendChild(o); } }
-$('sel-batter').value = 'paulbunyan';
-$('sel-batter').onchange = $('sel-pitcher').onchange = $('sel-hand').onchange = () => setupPlay();
+$('b-quit').onclick = () => { if (G.teams && !G.over && !confirm('Quit this game?')) return; clearActors(); G.teams = null; hideBall(); showMenu(); };
 
-/* frame timing: the number that matters is the slow tail, not the average */
+function steer(dt) {
+  if (mode !== 'play' || !G.teams) return;
+  const v = youBat() ? G.aim : G.target, live = youBat() ? (G.state === 'flight' || G.state === 'windup' || G.state === 'idle') : G.state === 'aim';
+  if (!live) return;
+  if (keys.ArrowLeft) v.x -= dt * 3; if (keys.ArrowRight) v.x += dt * 3; if (keys.ArrowUp) v.y += dt * 3; if (keys.ArrowDown) v.y -= dt * 3;
+  v.set(clamp(v.x, -1.7, 1.7), clamp(v.y, 0.9, 4.3));
+}
+function tick(dt, real) {
+  let wdt = dt;
+  if (G.hitstop > 0) { G.hitstop -= dt; wdt = 0; }
+  if (G.teams && !G.over) stepPlay(wdt);
+  for (const a of G.actors) a.step(wdt);
+  steer(dt);
+  aimRing.position.set(G.aim.x, G.aim.y, ZONE.z + 0.02); aimRing.visible = !!G.teams && youBat() && !!G.batter && G.state !== 'inplay' && G.state !== 'after';
+  targetRing.position.set(G.target.x, G.target.y, ZONE.z + 0.02); targetRing.visible = !!G.teams && !youBat() && G.state === 'aim';
+  updateBall(wdt); playCamera(dt);
+  if (flash.visible) { flash.userData.t += dt; const u = flash.userData.t / 0.25; flash.scale.setScalar(1 + u * (2 + flash.userData.q * 3)); flash.material.opacity = 1 - u; flash.lookAt(camera.position); if (u >= 1) flash.visible = false; }
+  if (G.cheer > 0) { G.cheer -= dt; park.cheer(real, Math.min(1, G.cheer)); }
+}
+
 const perf = { frames: [], last: performance.now() };
 let paused = false;
 function frame(now) {
@@ -553,29 +779,34 @@ function frame(now) {
   const raw = now - perf.last; perf.last = now; const dt = Math.min(0.05, raw / 1000);
   perf.frames.push(raw); if (perf.frames.length > 120) perf.frames.shift();
   if (paused) return;
-  let wdt = dt;
-  if (mode === 'play') {
-    if (play.hitstop > 0) { play.hitstop -= dt; wdt = 0; }
-    stepPlay(wdt);
-    for (const a of play.actors) a.step(wdt);
-    if (play.state === 'flight' || play.state === 'windup') {
-      if (keys.ArrowLeft) play.aim.x -= dt * 3; if (keys.ArrowRight) play.aim.x += dt * 3; if (keys.ArrowUp) play.aim.y += dt * 3; if (keys.ArrowDown) play.aim.y -= dt * 3;
-      play.aim.set(clamp(play.aim.x, -1.7, 1.7), clamp(play.aim.y, 0.9, 4.3));
-    }
-    aimRing.position.x = play.aim.x; aimRing.position.y = play.aim.y; aimRing.visible = !!play.batter && play.state !== 'inplay';
-    updateBall(wdt); playCamera(dt);
-    if (play.cheer > 0) { play.cheer -= dt; park.cheer(now / 1000, Math.min(1, play.cheer)); }
-  } else { cast.actor && cast.actor.step(dt); castCamera(dt); }
-  if (flash.visible) { flash.userData.t += dt; const u = flash.userData.t / 0.25; flash.scale.setScalar(1 + u * (2 + flash.userData.q * 3)); flash.material.opacity = 1 - u; flash.lookAt(camera.position); if (u >= 1) flash.visible = false; }
+  if (mode === 'play') { if (PROTO.auto) autoplay(); tick(dt, now / 1000); }
+  else { cast.actor && cast.actor.step(dt); castCamera(dt); }
   const cpu = performance.now() - now; perf.cpu = (perf.cpu || cpu) * 0.95 + cpu * 0.05;
   renderer.render(scene, camera);
   if ((perf.n = (perf.n || 0) + 1) % 15 === 0) {
     const f = perf.frames.slice().sort((a, b) => a - b); const avg = f.reduce((a, b) => a + b, 0) / f.length; const p95 = f[Math.floor(f.length * 0.95)] || 0;
-    ui.stats.textContent = `${(1000 / avg).toFixed(0)} fps · avg ${avg.toFixed(1)}ms · p95 ${p95.toFixed(1)}ms · game ${perf.cpu.toFixed(1)}ms · ${renderer.info.render.calls} draws · ${(renderer.info.render.triangles / 1000).toFixed(0)}k tris`;
+    ui.stats.textContent = `${(1000 / avg).toFixed(0)} fps · p95 ${p95.toFixed(1)}ms · game ${perf.cpu.toFixed(1)}ms · ${renderer.info.render.calls} draws`;
   }
 }
 
+/* a bot that plays your half, for the soak test: it aims near the pitch,
+   swings a little early or late, and pitches to random spots */
+function autoplay() {
+  if (!G.teams || G.over) return;
+  if (youBat()) {
+    const p = G.pitch;
+    if (G.state === 'flight' && !G.swung && p && !p.botT) { p.botT = p.arrive - A.CONTACT_T + gauss() * 0.06; p.botSwing = inZone(p.target.x, p.target.y) ? rnd() < 0.85 : rnd() < 0.25; }
+    if (G.state === 'flight' && !G.swung && p && p.botSwing && G.clockT >= p.botT) { G.aim.set(p.target.x + gauss() * 0.25, p.target.y + gauss() * 0.25); swing(rnd() < 0.05); }
+  } else if (G.state === 'aim' && G.st > 0.4) { setPitchType(['fb', 'sl', 'cu', 'ch'][rnd() * 4 | 0]); G.target.set((rnd() - 0.5) * 2.2, 1.4 + rnd() * 2.4); throwPlayerPitch(); }
+}
+
 /* checker hooks: nothing on the page reads these */
-window.PROTO = { castTo(k) { cast.i = Math.max(0, KEYS.indexOf(k)); castShow(); }, orbitSet(a) { orbit.a = a; orbit.drag = { x: 0, a }; }, THREE, scene, camera, renderer, play, cast, setMode, castStep, setCastAnim, swing, ANIMS, pause: (v) => (paused = v), tick(dt = 1 / 60) { stepPlay(dt); for (const a of play.actors) a.step(dt); updateBall(dt); }, stepFrames(n, dt = 1 / 60) { for (let i = 0; i < n; i++) { if (mode === 'play') { stepPlay(dt); for (const a of play.actors) a.step(dt); updateBall(dt); playCamera(dt); } else { cast.actor.step(dt); castCamera(dt); } } renderer.render(scene, camera); } };
+const PROTO = window.PROTO = {
+  THREE, scene, camera, renderer, G, cast, menu, auto: false, setMode, castStep, setCastAnim, swing, ANIMS, startGame, throwPlayerPitch, setPitchType, autoplay,
+  castTo(k) { cast.i = Math.max(0, KEYS.indexOf(k)); castShow(); }, orbitSet(a) { orbit.a = a; orbit.drag = { x: 0, a }; },
+  pause: (v) => (paused = v),
+  tick(dt = 1 / 60) { if (PROTO.auto) autoplay(); tick(dt, 0); },
+  stepFrames(n, dt = 1 / 60) { for (let i = 0; i < n; i++) { if (mode === 'play') { if (PROTO.auto) autoplay(); tick(dt, 0); } else { cast.actor.step(dt); castCamera(dt); } } renderer.render(scene, camera); },
+};
 
 resize(); setMode('play'); requestAnimationFrame(frame);
