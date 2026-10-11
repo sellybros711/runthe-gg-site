@@ -897,7 +897,8 @@ function setArt(kind, c1, c2, seed){ return K.img(K.room(kind, 132, 80, { c1: c1
 
 var form = null;
 function freshForm(){
-  var seed = String(Math.floor(Math.random() * 1e9));
+  /* the look the front page's stage showed, so the builder opens on him */
+  var seed = heroSeed(); heroLook.seed = null;
   var B = window.RTF_BALLER;
   return { seed: seed, name: C.randomName(seed), num: Math.floor(Math.random() * 100), pos: 'SF', arch: 'sf_wing', bg: 'oad', start: proOpen() ? 'hs' : 'gen',
     origin: '', legend: true, look: B ? B.lookFor(seed) : {}, diff: 'normal', challenge: '', ht: 79, wt: C.wtFor(79) };
@@ -2691,15 +2692,16 @@ function renderHero(){
   var st = store(), L = st.cur;
   var cur = $('ch-cur'), say = $('ch-say'), go = $('b-career'), best = $('ch-best'), path = $('ch-path');
   if (!go) return;
-  /* The door stands in the same pixel arena the mode is played in, in the
+  /* The stage stands in the same pixel arena the mode is played in, in the
      colours of the career in progress (or the league's orange). */
-  var hero = $('career');
-  if (hero) {
+  var hero = $('career'), stageEl = $('ch-stage');
+  if (hero && stageEl) {
     var hk = L ? C.colorsOf(L) : { primary: '#ff7a1a', secondary: '#ffd166' };
-    var art = K.room(L ? stageKind(L) : 'nba', 132, 80, { c1: hk.primary, c2: hk.secondary, spotAt: 0.6, seed: 'hero' });
-    var set = hero.querySelector('.ch-set');
-    if (!set) { set = document.createElement('div'); set.className = 'ch-set'; set.setAttribute('aria-hidden', 'true'); hero.insertBefore(set, hero.firstChild); }
+    var art = K.room(L ? stageKind(L) : 'nba', 132, 80, { c1: hk.primary, c2: hk.secondary, spotAt: 0.5, seed: 'hero' });
+    var set = stageEl.querySelector('.ch-set');
+    if (!set) { set = document.createElement('div'); set.className = 'ch-set'; stageEl.insertBefore(set, stageEl.firstChild); }
     if (set.getAttribute('data-src') !== art.url) { set.innerHTML = '<img src="' + art.url + '" alt="" draggable="false">'; set.setAttribute('data-src', art.url); }
+    heroCast(L && !L.retired ? L : null);
   }
   if (L && !L.retired) {
     var k = C.colorsOf(L);
@@ -2707,7 +2709,7 @@ function renderHero(){
     var rv = C.roadView(L);
     var where = rv ? rv.what + (rv.level === 'High school' ? ' at ' + rv.where : '') : L.team ? teamName(L.team) : 'Draft prospect';
     var when = L.season ? seasonTag(L.season.year) + ' · ' + L.season.w + '-' + L.season.l : (L.year ? 'Summer of ' + (L.year - 1) : '');
-    cur.innerHTML = portrait(L, { pose: 'ball', scale: 2 }) + '<div><b>' + esc(L.name) + '</b><span>' + esc(where) + '</span><span>Age ' + L.age + ' · ' + esc(when) + '</span></div>'
+    cur.innerHTML = '<div><b>' + esc(L.name) + '</b><span>' + esc(where) + '</span><span>Age ' + L.age + ' · ' + esc(when) + '</span></div>'
       + '<div class="o"><b>' + C.show(v.ovr) + '</b><span>OVR</span></div>';
     cur.style.setProperty('--c1', k.primary);
     cur.hidden = false;
@@ -2739,6 +2741,65 @@ function renderHero(){
       open();
     };
   }
+}
+
+/* THE CAST ON THE FRONT PAGE'S STAGE. In the middle, yours: the career in
+   progress, or the look a new career would start from (one per visit, so the
+   builder opens on the man the page showed). He dribbles, through baller.js's
+   live loop. Either side, a player somebody else could build, in another
+   club's colours and another body, swapped for a new one every few seconds.
+   Nobody here is a real person: every look is generated.
+
+   A side figure is two still frames swapped by baller.js's breath timer,
+   never a second live loop. The next look is painted in an idle moment
+   before it is shown, so a swap never stalls a frame while somebody scrolls,
+   and nothing is painted while the front page is not on screen. */
+var CAST_CLUBS = ['BOS', 'LAL', 'GSW', 'MIA', 'CHI', 'NYK', 'DEN', 'PHO', 'MIL', 'OKC', 'DAL', 'SAS', 'TOR', 'MEM', 'MIN', 'IND', 'CLE', 'ORL', 'SAC', 'ATL', 'NOP', 'POR', 'UTA', 'DET', 'HOU', 'CHO', 'WAS', 'BRK', 'PHI', 'LAC'];
+var CAST_HT = [[72, 185], [75, 200], [78, 215], [80, 230], [83, 245], [86, 265]];
+var cast = { key: null, n: 0, timer: null, next: null };
+function heroLook(L){
+  if (L) return lookOf(L);
+  return Object.assign({}, window.RTF_BALLER.lookFor(heroSeed()), { ht: 79, wt: 215 });
+}
+function heroSeed(){ return heroLook.seed || (heroLook.seed = String(Math.floor(Math.random() * 1e9))); }
+function castFig(n){
+  var B = window.RTF_BALLER;
+  var h = B.hash('cast:' + n + ':' + (cast.salt || (cast.salt = Math.random()))), club = CAST_CLUBS[h % CAST_CLUBS.length];
+  var col = E && E.teamColors ? E.teamColors(club) : ['#334', '#ccd'];
+  var sz = CAST_HT[(h >>> 8) % CAST_HT.length];
+  var look = Object.assign({}, B.lookFor('cast' + n + ':' + h), { ht: sz[0], wt: sz[1] });
+  var o = { c1: col[0], c2: col[1], num: (h >>> 12) % 55, pose: 'stand', scale: 4, frame: 0 };
+  var a = B.url(look, o), b = B.url(look, Object.assign({}, o, { frame: 1 }));
+  return '<img class="rtf-baller" src="' + a + '" data-b0="' + a + '" data-b1="' + b + '" width="176" height="256" alt="" draggable="false">';
+}
+function castOnScreen(){ var h = document.getElementById('s-home'); return h && h.classList.contains('active') && !document.hidden; }
+function castTick(){
+  if (!castOnScreen()) return;
+  var B = window.RTF_BALLER;
+  var side = cast.n % 2 ? 'r' : 'l', el = document.querySelector('#ch-cast .ch-p.' + side);
+  if (!el || !cast.next) return;
+  var html = cast.next; cast.next = null;
+  el.classList.add('swap');
+  setTimeout(function(){ el.innerHTML = html; el.classList.remove('swap'); }, 450);
+  cast.n++;
+  var ric = window.requestIdleCallback || function(f){ return setTimeout(f, 200); };
+  ric(function(){ cast.next = castFig(cast.n + 2); });
+}
+function heroCast(L){
+  var B = window.RTF_BALLER, box = $('ch-cast');
+  if (!B || !box) return;
+  var look = heroLook(L), k = L ? C.colorsOf(L) : { primary: '#ff7a1a', secondary: '#1d1f2b' };
+  var key = JSON.stringify([look, k.primary, k.secondary, L ? L.num : 0]);
+  if (cast.key === key) return;
+  cast.key = key;
+  var mid = B.img(look, { c1: k.primary, c2: k.secondary, num: L ? L.num : 23, age: L ? L.age : 20, pose: 'ball', scale: 5 });
+  box.innerHTML = '<div class="ch-p s l">' + castFig(0) + '</div><div class="ch-p c">' + mid + '</div><div class="ch-p s r">' + castFig(1) + '</div>';
+  cast.n = 0;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  if (reduce || cast.timer) return;
+  var ric = window.requestIdleCallback || function(f){ return setTimeout(f, 200); };
+  ric(function(){ cast.next = castFig(2); });
+  cast.timer = setInterval(castTick, 3400);
 }
 
 window.RTF_CAREER_UI = {

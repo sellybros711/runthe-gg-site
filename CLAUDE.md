@@ -11489,6 +11489,19 @@ so the dock can carry `#b-career` from boot on a phone; Classic's Start stays in
 card. The first-visit guide names five modes with Career first and points at the docked
 button. `check-home`'s budget went 2.5 to 2.9 screens for it (2.40, 2.79 and 1.95 measured).
 
+**The card is a stage, and the player is the picture** (asked for by the owner: Career, the
+player you build and the graphics are what the game sells). `#ch-stage` holds three drawn
+players in the kit's arena (`heroCast` in career-ui.js): in the middle yours, dribbling through
+baller.js's live loop (the career in progress, or the look a new career starts from, which
+`freshForm` then reuses so the builder opens on the man the page showed), and either side an
+invented player in another club's colours and size, swapped every 3.4s. A side figure is two
+still frames on baller.js's breath timer, never a second live loop, and the next look is
+painted in an idle moment and only while the front page is on screen. Reduced motion swaps
+nothing. Figure heights are whole multiples of the 64 cell grid (160, 192, 256, 320), and a
+live canvas needs its CSS width set as well as its height. **Classic's court and reels are
+hidden, not deleted**: the court is one of the three `check-arenas` holds to the lines and the
+reel code still runs against it. Classic is a compact card under the puzzles.
+
 #### The league office: everybody ages, retires, signs, gets drafted and gets traded
 
 ```
@@ -13156,6 +13169,9 @@ focus, or players play the two dailies once and leave, so **the draft is Classic
 and it is the hero. Then, with Run The Diamond as the model: the other modes go
 under a **More ways to play** door, and **the daily challenge gets a spot of its
 own**. Then: **Fix History and Six Passes go at the top, as the daily puzzles.**
+Then, a fourth time: **Career leads the whole page**, as a stage with the drawn player in it
+(see the Career section), and Classic drops its court and reels to a compact card. The table
+below is everything under the Career card, in order.
 
 | order | what | where |
 |---|---|---|

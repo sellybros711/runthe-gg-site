@@ -1737,42 +1737,57 @@
    * dock can carry its button from boot; career-ui.js fills in who and where.
    * Its rules are here rather than in that file's injected sheet because this
    * is the first thing on the first paint. */
-  .career-hero{position:relative;overflow:hidden;padding:18px 16px 16px;border-radius:0;border:0;
-    background:radial-gradient(600px 260px at 85% -40px,rgba(240,120,45,.28),transparent 65%),linear-gradient(180deg,#151b30,#0d1120);
+  .career-hero{position:relative;overflow:hidden;padding:0;border-radius:0;border:0;
+    background:radial-gradient(600px 300px at 50% 0,rgba(240,120,45,.26),transparent 65%),linear-gradient(180deg,#151b30,#0d1120);
     /* Career is drawn in the Arena Arcade style (career-kit.js), so its door
        wears the same stepped pixel frame as every Career screen behind it. */
     margin-left:3px;margin-right:3px;
-    box-shadow:0 -3px 0 0 #2d3a66,0 3px 0 0 #2d3a66,-3px 0 0 0 #2d3a66,3px 0 0 0 #2d3a66;}
-  .career-hero > *{position:relative;z-index:1;}
+    box-shadow:0 -3px 0 0 #2d3a66,0 3px 0 0 #2d3a66,-3px 0 0 0 #2d3a66,3px 0 0 0 #2d3a66,0 30px 60px -30px rgba(240,120,45,.55);}
   /* THE WHOLE CARD IS THE DOOR, like the puzzle cards under it. On a phone its
      button is docked at the foot of the screen, so without this the card a
      thumb lands on first was the one thing on the page that did nothing.
      career-ui.js routes a press anywhere on it to the button's own handler. */
-  .career-hero.live{cursor:pointer;transition:filter .12s;}
-  .career-hero.live:hover{filter:brightness(1.12);}
-  .career-hero.live:active{transform:translateY(1px);}
-  .career-hero .ch-chip{position:absolute;top:16px;right:14px;font-size:10.5px;font-weight:800;padding:2px 9px;
+  .career-hero.live{cursor:pointer;}
+  .career-hero.live:hover .ch-stage{filter:brightness(1.1);}
+  .career-hero .ch-chip{position:absolute;top:12px;right:12px;z-index:3;font-size:10.5px;font-weight:800;padding:2px 9px;
     background:#ff7a1a;color:#160b02;white-space:nowrap;}
   .career-hero:not(.live) .ch-chip{display:none;}
-  .career-hero .ch-set{position:absolute;inset:0;z-index:0;overflow:hidden;opacity:.24;pointer-events:none;
-    -webkit-mask:linear-gradient(90deg,transparent 20%,#000 75%);mask:linear-gradient(90deg,transparent 20%,#000 75%);}
-  .career-hero .ch-set img{position:absolute;right:0;top:0;height:100%;width:auto;image-rendering:pixelated;}
+  /* THE STAGE: the arena drawn by the kit behind, a pool of light on the floor,
+     and the cast standing in it. Its height is fixed so nothing under it moves
+     while the figures are painted. */
+  .ch-stage{position:relative;height:230px;overflow:hidden;transition:filter .15s;
+    background:linear-gradient(180deg,rgba(13,17,32,0) 55%,#0d1120 100%);}
+  .ch-stage .ch-set{position:absolute;inset:0;z-index:0;opacity:.38;pointer-events:none;}
+  .ch-stage .ch-set img{position:absolute;left:50%;top:0;height:100%;width:auto;transform:translateX(-50%);image-rendering:pixelated;}
+  .ch-stage:after{content:"";position:absolute;left:0;right:0;bottom:0;height:46%;z-index:1;pointer-events:none;
+    background:linear-gradient(180deg,transparent,rgba(13,17,32,.82) 70%,#0d1120);}
+  .ch-stage:before{content:"";position:absolute;left:50%;bottom:22px;width:300px;height:56px;margin-left:-150px;z-index:1;
+    background:radial-gradient(closest-side,rgba(255,174,61,.42),rgba(255,122,26,.14) 60%,transparent);pointer-events:none;}
+  .ch-cast{position:absolute;left:0;right:0;bottom:16px;z-index:2;display:flex;align-items:flex-end;justify-content:center;}
+  .ch-p{position:relative;flex:0 0 auto;line-height:0;}
+  .ch-p .rtf-baller{display:block;width:auto;image-rendering:pixelated;}
+  .ch-p.c{z-index:2;margin:0 -26px;}
+  .ch-p.c .rtf-baller{height:192px;width:132px;}
+  .ch-p.s{z-index:1;filter:brightness(.72) saturate(.9);transition:opacity .45s,transform .45s;}
+  .ch-p.s .rtf-baller{height:160px;width:110px;}
+  .ch-p.s.r .rtf-baller{transform:scaleX(-1);}
+  .ch-p.s.swap{opacity:0;transform:translateY(8px);}
+  .ch-tags{position:absolute;left:12px;top:12px;z-index:3;display:flex;gap:4px;margin:0;padding:0;list-style:none;}
+  .ch-tags li{font-family:var(--pixel);font-size:8px;line-height:1;padding:5px 6px 4px;color:#ffd166;
+    background:rgba(11,15,23,.78);box-shadow:0 0 0 1px rgba(255,209,102,.35);}
+  .ch-body{position:relative;z-index:2;padding:4px 16px 16px;}
+  .career-hero .ch-eye{display:inline-flex;gap:8px;align-items:center;font-family:var(--pixel);font-size:8px;line-height:1.6;letter-spacing:.02em;text-transform:uppercase;color:#ffd166;}
+  .career-hero h2{font-size:30px;line-height:1.02;margin:6px 0 6px;display:block;}
+  .career-hero .ch-say{margin:0 0 12px;color:var(--mut);font-size:14.5px;line-height:1.45;max-width:30em;}
+  .ch-feats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:0 0 14px;padding:0;list-style:none;}
+  .ch-feats li{padding:8px 8px 7px;background:rgba(11,15,24,.7);box-shadow:0 0 0 2px #2d3a66;min-width:0;}
+  .ch-feats b{display:block;font-size:12px;font-weight:800;color:#ffae3d;letter-spacing:.02em;}
+  .ch-feats span{display:block;font-size:10.5px;color:var(--dim);margin-top:2px;line-height:1.3;}
   #b-career{border-radius:0;border:0;color:#160b02;background:#ff7a1a;font-weight:800;margin-bottom:6px;
     box-shadow:0 -3px 0 0 #05070d,-3px 0 0 0 #05070d,3px 0 0 0 #05070d,0 3px 0 0 #b04a06,0 6px 0 0 #05070d;}
   #b-career:active{transform:translateY(3px);box-shadow:0 -3px 0 0 #05070d,-3px 0 0 0 #05070d,3px 0 0 0 #05070d,0 3px 0 0 #05070d;}
   #b-career:disabled{background:#202a4a;color:#8fa0d6;box-shadow:0 -3px 0 0 #2d3a66,-3px 0 0 0 #2d3a66,3px 0 0 0 #2d3a66,0 3px 0 0 #2d3a66;}
-  .career-hero .ch-eye{display:inline-flex;gap:8px;align-items:center;font-family:var(--pixel);font-size:8px;line-height:1.6;letter-spacing:.02em;text-transform:uppercase;color:#ffd166;}
-  .career-hero .ch-eye i{font-style:normal;color:#0b0f17;background:#ffd166;padding:3px 5px;}
-  .career-hero h2{font-size:30px;line-height:1.02;margin:8px 0 6px;display:block;}
-  .career-hero .ch-say{margin:0 0 14px;color:var(--mut);font-size:14.5px;line-height:1.5;max-width:30em;}
-  .ch-path{display:flex;align-items:center;gap:0;margin:0 0 14px;padding:0;list-style:none;}
-  .ch-path li{flex:1 1 0;text-align:center;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);font-weight:800;position:relative;padding-top:18px;}
-  .ch-path li:before{content:"";position:absolute;top:4px;left:50%;width:10px;height:10px;margin-left:-5px;background:#0e131c;border:2px solid var(--orange);z-index:1;}
-  .ch-path li:after{content:"";position:absolute;top:8px;left:-50%;width:100%;height:2px;background:rgba(240,120,45,.4);}
-  .ch-path li:first-child:after{display:none;}
-  .ch-path li.end:before{background:#f2c14e;border-color:#f2c14e;}
   .ch-cur{display:flex;gap:12px;align-items:center;margin:0 3px 14px;padding:12px;border-radius:0;background:linear-gradient(135deg,var(--c1,#1d2433),rgba(14,19,28,.9) 80%);box-shadow:0 -2px 0 0 #2d3a66,0 2px 0 0 #2d3a66,-2px 0 0 0 #2d3a66,2px 0 0 0 #2d3a66;}
-  .ch-cur .cr-jersey{flex-basis:48px;width:48px;height:52px;}
   .ch-cur b{display:block;font-size:16px;font-weight:800;}
   .ch-cur span{display:block;font-size:12.5px;color:rgba(255,255,255,.78);}
   .ch-cur .o{margin-left:auto;text-align:center;}
@@ -1780,10 +1795,28 @@
   .ch-cur .o span{font-size:9px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;}
   .ch-best{font-size:12.5px;color:var(--mut);margin:10px 0 0;}
   .ch-best b{color:#ffe3a0;}
-  @media (min-width:920px){.career-hero h2{font-size:38px;}}
-  .ch-cur .cr-jersey{display:block;}
-  /* Both set a display, so the attribute alone would never take. */
-  .ch-cur[hidden],.ch-path[hidden]{display:none;}
+  .ch-cur[hidden],.ch-path[hidden],.ch-say[hidden]{display:none;}
+  /* A short phone keeps the button and the words above the fold by drawing
+     the stage shorter, never by dropping it: the player is the point. */
+  @media (max-height:700px) and (max-width:919px){
+    .ch-stage{height:190px;} .ch-p.c .rtf-baller{height:160px;width:110px;} .ch-p.s .rtf-baller{height:128px;width:88px;}
+    .ch-feats{display:none;}
+  }
+  /* A desktop sets the words beside the stage, and the stage takes the bigger
+     half, so the drawn player is the largest thing on the page. */
+  @media (min-width:920px){
+    .career-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);align-items:center;min-height:400px;}
+    .ch-stage{grid-column:2;grid-row:1;height:100%;min-height:400px;}
+    .ch-body{grid-column:1;grid-row:1;padding:30px 10px 30px 32px;}
+    .career-hero h2{font-size:46px;}
+    .career-hero .ch-say{font-size:16px;}
+    .ch-stage:before{width:440px;margin-left:-220px;height:80px;bottom:34px;}
+    .ch-cast{bottom:30px;}
+    .ch-p.c{margin:0 -40px;} .ch-p.c .rtf-baller{height:320px;width:220px;} .ch-p.s .rtf-baller{height:256px;width:176px;}
+    .ch-stage:after{display:none;}
+    .ch-tags{left:auto;right:12px;top:auto;bottom:12px;}
+    .career-hero .ch-chip{display:none;}
+  }
   .frg-eyebrow{font-size:10px;letter-spacing:.16em;text-transform:uppercase;
     color:var(--orange);font-weight:800;margin-bottom:5px;}
   .frg-panel h2{font-family:var(--display);font-size:22px;line-height:1.1;margin:0 0 12px;}
@@ -2073,9 +2106,12 @@
     font-size:clamp(26px,7.4vw,36px);line-height:1.02;text-transform:uppercase;margin:6px 0;}
   .cl-say{font-size:14px;color:var(--mut);margin:0 auto;max-width:36ch;line-height:1.45;}
   .cl-say b{color:var(--ink);}
-  .classic .hero{background:none;margin:0 auto 12px;max-width:440px;}
-  .classic .hero .reelbox{height:52px;}
-  .classic .heroreels{margin-bottom:6px;}
+  /* THE COURT AND THE REELS ARE NOT DRAWN HERE ANY MORE. Career leads the page
+     and its stage is the picture; a second big picture under it made the page
+     two heroes long and neither the hero. The markup stays, because the court
+     is one of the three the arena check holds to the lines and the reel code
+     still runs against it, so hiding is free and deleting is not. */
+  .classic .hero{display:none;}
   /* THE THREE PLANS, said on the front page because they are what makes this
      game different from every other draft game: a roster is asked how fast it
      plays, not only how good it is. Colour is the plan's own and matches the
@@ -2238,19 +2274,14 @@
     .wrap:has(#s-home.active){max-width:1040px;}
     /* Rows of 1fr above and below the words centre them against the court,
        which is the taller of the two columns. */
-    .classic{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);
-      grid-template-rows:1fr auto auto auto auto 1fr;
-      column-gap:30px;align-items:center;padding:24px 26px 22px;}
-    .classic > *{grid-column:1;}
-    .classic .cl-head{grid-row:2;}
-    .classic .cl-plans{grid-row:3;}
-    .classic .cl-career{grid-row:4;}
-    .classic #b-start{grid-row:5;}
-    .classic .hero{grid-column:2;grid-row:1 / -1;margin:0;max-width:none;}
-    .classic .herocourt{aspect-ratio:1/0.74;}
-    .classic .cl-head{text-align:left;}
+    .classic{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);
+      grid-template-rows:auto auto auto;column-gap:30px;align-items:center;padding:22px 26px 20px;}
+    .classic .cl-head{grid-column:1;grid-row:1 / 4;text-align:left;margin:0;}
+    .classic .cl-plans{grid-column:2;grid-row:1;margin-bottom:10px;}
+    .classic .cl-career{grid-column:2;grid-row:2;}
+    .classic #b-start{grid-column:2;grid-row:3;}
     .classic .cl-say{margin:0;}
-    .classic .cl-title{font-size:42px;}
+    .classic .cl-title{font-size:36px;}
     .cl-career{justify-content:flex-start;}
     .cl-career .lastrun{text-align:left;}
     .hp-bento{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:14px;margin-top:14px;}
@@ -2531,7 +2562,7 @@
 <header class="mast">
   <div class="eyebrow">RunThe.GG</div>
   <h1><span class="l1">Run The</span> <span class="l2">Floor</span></h1>
-  <p>Real NBA history. Draft five. Chase a ring.</p>
+  <p>Build a player. Write his NBA story.</p>
 </header>
 
 <!-- ── home ─────────────────────────────────────────────────────────────── -->
@@ -2574,20 +2605,35 @@
        today's state (open, or done with the result), and the line beside the
        heading says how many are left. modes-ui.js fills both slots and shows
        the section, because only that file knows whether a puzzle is done. -->
-  <!-- CAREER IS THE HERO. One basketball life from high school to the Hall of Fame,
-       a season at a time, with the calls in between. Asked for by the owner as
-       the main game mode, so it leads the page and the dock carries its button
-       on a phone. career-ui.js paints it: a career in progress says who and
-       where, none says what the mode is. -->
+  <!-- CAREER IS THE HERO, AND THE PLAYER IS THE HERO OF THE HERO.
+       Asked for by the owner: Career, the player you build and the way he is
+       drawn are what this game sells, so the front page opens on him. The stage
+       is three drawn players: in the middle yours (the career in progress, or a
+       look the builder would start from), dribbling, and either side a player
+       somebody else could build, swapped for a new look every few seconds, which
+       says "face, hair, height and kit are yours" without a sentence. Nothing on
+       the stage is a real person: baller.js draws invented players only.
+       career-ui.js paints the stage and the words; this markup is static so the
+       dock can carry the button from boot. -->
   <section class="card career-hero" id="career" aria-labelledby="ch-title">
-    <span class="ch-eye">Career <i>New</i></span>
-    <span class="ch-chip" id="ch-chip" aria-hidden="true">Play</span>
-    <h2 id="ch-title">Live an NBA life.</h2>
-    <p class="ch-say" id="ch-say">High school to the Hall of Fame. Recruiting, March, contracts, rivals and Game 7s. Every call is yours.</p>
-    <ol class="ch-path" id="ch-path" aria-hidden="true"><li>High school</li><li>College</li><li>Draft</li><li>Ring</li><li class="end">Hall</li></ol>
-    <div class="ch-cur" id="ch-cur" hidden></div>
-    <button class="big" id="b-career" disabled>Start your career</button>
-    <p class="ch-best" id="ch-best" hidden></p>
+    <div class="ch-stage" id="ch-stage" aria-hidden="true">
+      <div class="ch-cast" id="ch-cast"></div>
+      <ul class="ch-tags"><li>Face</li><li>Hair</li><li>Height</li><li>Kit</li></ul>
+    </div>
+    <div class="ch-body">
+      <span class="ch-eye">Career mode</span>
+      <span class="ch-chip" id="ch-chip" aria-hidden="true">Play</span>
+      <h2 id="ch-title">Build a player. Live an NBA life.</h2>
+      <p class="ch-say" id="ch-say">Make him yours, then play it out. High school to the Hall of Fame. Every call is yours.</p>
+      <ul class="ch-feats" id="ch-path" aria-hidden="true">
+        <li><b>Build him</b><span>Face, hair, size, kit</span></li>
+        <li><b>Live it</b><span>Prep to the pros</span></li>
+        <li><b>Call it</b><span>Contracts, rivals, Game 7s</span></li>
+      </ul>
+      <div class="ch-cur" id="ch-cur" hidden></div>
+      <button class="big" id="b-career" disabled>Start your career</button>
+      <p class="ch-best" id="ch-best" hidden></p>
+    </div>
   </section>
 
   <section class="hp-puzzles" id="hp-puzzles" aria-labelledby="pz-h" hidden>
@@ -2595,7 +2641,9 @@
     <div class="pz-row"><div class="pz-slot" id="pz-fix"></div><div class="pz-slot" id="pz-ps"></div></div>
   </section>
 
-  <!-- CLASSIC IS THE HERO, AND THE REASON IS RETENTION.
+  <!-- CLASSIC IS THE GAME YOU CAN PLAY AGAIN, AND THE REASON IS RETENTION.
+       It was the hero until Career took the top of the page; it keeps its
+       own card, its plans and its Start, drawn compact under the puzzles.
        Asked for by the owner: the two dailies are one shot each, so a front
        page that leads with them teaches a new player to play twice and leave.
        Classic is unlimited and it is the game this page was built as, so it is
@@ -11983,6 +12031,6 @@ boot();
 <script src="court.js?v=9"></script>
 <script src="ticker.js?v=2"></script>
 <script src="scenes.js?v=17"></script>
-<script src="career-ui.js?v=49"></script>
+<script src="career-ui.js?v=50"></script>
 </body>
 </html>
