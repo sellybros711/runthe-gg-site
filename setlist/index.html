@@ -543,6 +543,18 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .resume-note{margin:8px 0 10px; text-align:center; font-family:var(--ui);
     font-size:15px; letter-spacing:.04em; color:var(--mut);}
   .band [data-fresh]{width:100%;}
+  /* The daily: a ticket stub under the main button, quieter than it. */
+  .dailycard{margin-top:12px; padding:11px 13px; border-radius:12px;
+    border:1.5px dashed color-mix(in srgb,var(--teal) 55%, transparent);
+    background:color-mix(in srgb,var(--teal) 7%, transparent);}
+  .dc-hd{display:flex; align-items:baseline; gap:8px;}
+  .dc-k{font-size:10px; font-weight:900; letter-spacing:1.6px; text-transform:uppercase; color:var(--tealT);}
+  .dc-hd b{font-size:13px; color:var(--ink);}
+  .dc-row{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:6px;}
+  .dc-s{font-size:12.5px; font-weight:700; color:var(--mut); line-height:1.35;}
+  .dc-s b{color:var(--ink);}
+  .dailycard .btn{width:auto; flex:0 0 auto;}
+  .dc-go{background:var(--teal); color:#0B0818; border-color:var(--teal);}
   .warn{margin-top:12px; padding:11px 13px; border-radius:var(--r-sm); font-size:13px;
     font-weight:700; line-height:1.5; background:color-mix(in srgb,var(--gold) 12%, transparent);
     border:1px solid color-mix(in srgb,var(--gold) 34%, transparent); color:var(--goldT);}
@@ -3077,10 +3089,10 @@ setTimeout(function(){
      HTML change can never be served against a stale script. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"
   crossorigin="anonymous" defer></script>
-<script src="/setlist/auth.js?v=42" defer></script>
+<script src="/setlist/auth.js?v=43" defer></script>
 <!-- The release newsletter checkbox on the account sheet. See supabase/121_newsletter.sql. -->
 <script src="/assets/newsletter.js?v=2" defer></script>
-<script src="/setlist/board.js?v=42" defer></script>
+<script src="/setlist/board.js?v=43" defer></script>
 
 <script type="module">
 import {
@@ -3091,8 +3103,8 @@ import {
   monotonyRun, MONO_AT, BREADTH_BUSTOUT_GAP, LEN_20MIN,
   scoreShow, gradeScore, gradeRunning, GRADE_SETTLE, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=42';
-import { loadBand, setLabel, setRank, parseCSV } from './dataLoader.js?v=42';
+} from './scoring.js?v=43';
+import { loadBand, setLabel, setRank, parseCSV } from './dataLoader.js?v=43';
 import { createStage } from './stage.js?v=6';
 
 // ── bands ────────────────────────────────────────────────────────────────────
@@ -3174,6 +3186,52 @@ function mulberry32(a){
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
+}
+
+/* ── the daily challenge ─────────────────────────────────────────────────────
+ *
+ * EVERYBODY GETS THE SAME SHOWS. The draw is seeded from the band and today's
+ * Eastern date, and drawShow() takes one number from it per show, so the Nth
+ * show anybody draws today is the same show. A respin is the next show in the
+ * same sequence, so it is the same for everybody too.
+ *
+ * ONE TRY A DAY. Once today's challenge is started it is marked here, so
+ * abandoning it does not buy a second look at shows you have already seen.
+ * An account is held to the same rule on the server (139_segue_daily.sql);
+ * this is the guest's half and the reason the button changes.
+ */
+const DAILY_STORE = 'segue_daily_v1';
+function todayKey(){
+  try {
+    const p = {};
+    new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', year: 'numeric',
+      month: '2-digit', day: '2-digit' }).formatToParts(new Date())
+      .forEach(x => { p[x.type] = x.value; });
+    return `${p.year}-${p.month}-${p.day}`;
+  } catch { return new Date().toISOString().slice(0, 10); }
+}
+function dailyRng(bandId, day){ return mulberry32(hash32(`${bandId}|daily|${day}`)); }
+function dailyRead(){
+  try { return JSON.parse(localStorage.getItem(DAILY_STORE) || '{}') || {}; } catch { return {}; }
+}
+/** What this device knows about a band's daily on a day: null, 'started' or a finished record. */
+function dailyState(bandId, day = todayKey()){
+  const d = dailyRead();
+  return (d[bandId] && d[bandId][day]) || null;
+}
+function dailyWrite(bandId, day, val){
+  const d = dailyRead();
+  // Only the last week is worth keeping.
+  for (const b of Object.keys(d)) for (const k of Object.keys(d[b])) {
+    if (k < new Date(Date.now() - 8 * 864e5).toISOString().slice(0, 10)) delete d[b][k];
+  }
+  (d[bandId] = d[bandId] || {})[day] = val;
+  try { localStorage.setItem(DAILY_STORE, JSON.stringify(d)); } catch {}
+}
+function fmtDay(day){
+  const [y, m, d] = day.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-US',
+    { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
 function shuffle(arr, rng){
   const a = arr.slice();
@@ -3351,6 +3409,7 @@ const S = {
   posted: null,
   ranks: null,
   crowd: null,
+  daily: null,
 };
 
 /* ── a draft survives a refresh ───────────────────────────────────────────────
@@ -3394,6 +3453,7 @@ function saveDraft(){
     respins: S.respins,
     seen: [...S.seenShows].map(String),
     picks: S.drafted.map(p => [String(p.show.show_id), p.show.songs.indexOf(p.perf), p.si]),
+    daily: S.daily || null,
   };
   try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)); } catch {}
 }
@@ -3676,6 +3736,27 @@ function placeGuideCard(card, target, ring, arrow){
 }
 
 // ── home ─────────────────────────────────────────────────────────────────────
+/* THE DAILY, on the band panel under the main button. Three states, and each
+   says what pressing it does: play it, carry on with it, or see how you did. */
+function dailyCardHTML(b, saved){
+  const day = todayKey();
+  const st = dailyState(b.id, day);
+  const inHand = saved && saved.daily === day;
+  let act;
+  if (inHand) act = `<span class="dc-s">In progress. Resume it above.</span>`;
+  else if (st && st.total != null) act = `<span class="dc-s">You scored <b>${st.total}</b>.
+      New shows tomorrow.</span>
+    <button class="btn ghost tiny" type="button" data-daily-board="1">Today's board</button>`;
+  else if (st) act = `<span class="dc-s">Started on this device. New shows tomorrow.</span>
+    <button class="btn ghost tiny" type="button" data-daily-board="1">Today's board</button>`;
+  else act = `<span class="dc-s">Same shows for everyone. One try.</span>
+    <button class="btn tiny dc-go" type="button" data-daily="${b.id}">Play today's</button>`;
+  return `<div class="dailycard">
+    <div class="dc-hd"><span class="dc-k">Daily challenge</span><b>${esc(fmtDay(day))}</b></div>
+    <div class="dc-row">${act}</div>
+  </div>`;
+}
+
 function renderHome(){
   const real = BANDS.filter(b => !b.sample);
   /* THE SAMPLE BAND IS A DEVELOPMENT FIXTURE and it was on the live page, one
@@ -3727,6 +3808,7 @@ function renderHome(){
         <div class="resume-note">${esc(draftSummary(saved))}</div>
         <button class="btn ghost" data-start="${b.id}" data-fresh="1">Start a new one</button>`
         : `<button class="btn primary big" data-start="${b.id}">Build a setlist</button>`}
+        ${b.sample ? '' : dailyCardHTML(b, saved)}
 
         ${next ? `<div class="nextline">
           <span class="nl-k">Next show</span>
@@ -4596,7 +4678,8 @@ function rankCardHTML(){
              shows or, until it is claimed, this one. -->
         <div class="ceil-say">of ${rk.total} show${rk.total === 1 ? '' : 's'}
           on the ${esc(S.band.label)} board${
-          S.ranks.day ? `. <b>#${S.ranks.day.rank}</b> today.` : '.'}</div>
+          S.ranks.daily ? `. <b>#${S.ranks.daily.rank}</b> of ${S.ranks.daily.total} on today's challenge.`
+          : S.ranks.day ? `. <b>#${S.ranks.day.rank}</b> today.` : '.'}</div>
       </div>`
     : '<div class="ceil-fine">Recorded.</div>';
   return `<div class="card ceiling">
@@ -4635,16 +4718,18 @@ const CROWD_ZONES = [
 function crowdStanding(){
   const all = S.crowd, r = S.result;
   if (!all || all.length < CROWD_MIN || !S.best || !r) return null;
-  const mine = 100 * r.total / Math.max(1, S.best.total);
+  // A daily is ranked on the total: everyone drew the same shows.
+  const mine = S.daily ? r.total : 100 * r.total / Math.max(1, S.best.total);
   // Rows filed after a submit carry this night too; a draft that did not land is
   // added so the count is never one short of the truth.
   const n = S.posted ? all.length : all.length + 1;
   const above = all.filter(v => v > mine + 0.005).length;
   const top = (above + 1) / n;
   const zone = CROWD_ZONES.find(z => top <= z[0])[1];
-  // Where a random draft would stand, measured against this same crowd.
-  const rndAbove = all.filter(v => v > RANDOM_PCT).length;
-  return { n, above, top, zone, mine, rndDepth: rndAbove / n };
+  // Where a random draft would stand, measured against this same crowd. Only
+  // known as a percentage, so a daily (ranked on points) has no line.
+  const rndAbove = S.daily ? null : all.filter(v => v > RANDOM_PCT).length;
+  return { n, above, top, zone, mine, rndDepth: rndAbove === null ? null : rndAbove / n };
 }
 
 function crowdCardHTML(){
@@ -4655,13 +4740,15 @@ function crowdCardHTML(){
     <div class="ceil-lbl">Where you'd be standing</div>
     <div class="cw-row">
       <div class="cw-big">Top ${pct}%</div>
-      <div class="cw-zone">${esc(st.zone)}<span>of ${st.n.toLocaleString()} nights drafted</span></div>
+      <div class="cw-zone">${esc(st.zone)}<span>${S.daily
+        ? `of ${st.n.toLocaleString()} ${st.n === 1 ? 'player' : 'players'} today`
+        : `of ${st.n.toLocaleString()} nights drafted`}</span></div>
     </div>
     <div class="cw-lawn">
       <canvas id="crowdCanvas" width="${CROWD_W}" height="${CROWD_H}"
         role="img" aria-label="A crowd of ${st.n} drafted nights. You are ${esc(st.zone.toLowerCase())}, in the top ${pct} percent."></canvas>
       <div class="cw-you" id="crowdYou">You</div>
-      <div class="cw-rnd" id="crowdRnd">Random picks</div>
+      ${st.rndDepth === null ? '' : '<div class="cw-rnd" id="crowdRnd">Random picks</div>'}
     </div>
   </div>`;
 }
@@ -4722,8 +4809,8 @@ function drawCrowd(){
       d < 0.25 && rnd() < .45);
   }
   // A random draft's line, faint, so the rest of the lawn reads against it.
-  const ry = depthY(Math.min(1, st.rndDepth));
-  for (let x = 20; x < W - 20; x += 4) px(x, ry + 6, 2, 1, 'rgba(246,242,234,.35)');
+  const ry = st.rndDepth === null ? null : depthY(Math.min(1, st.rndDepth));
+  if (ry !== null) for (let x = 20; x < W - 20; x += 4) px(x, ry + 6, 2, 1, 'rgba(246,242,234,.35)');
 
   // You: lit from above, arms up.
   const yx = W / 2 + (rnd() * 2 - 1) * halfW(meD) * 0.5, yy = depthY(meD);
@@ -4737,7 +4824,7 @@ function drawCrowd(){
   const you = document.getElementById('crowdYou');
   if (you){ you.style.left = `${100 * (yx + 1.5) / W}%`; you.style.top = `${100 * (yy - 4) / H}%`; }
   const rl = document.getElementById('crowdRnd');
-  if (rl){ rl.style.top = `${100 * (ry + 7) / H}%`; rl.hidden = Math.abs(ry - yy) < 9; }
+  if (rl && ry !== null){ rl.style.top = `${100 * (ry + 7) / H}%`; rl.hidden = Math.abs(ry - yy) < 9; }
 }
 
 function renderResult(){
@@ -4811,7 +4898,7 @@ function renderResult(){
   app.innerHTML = `
     <div class="result">
       <div class="scorebox">
-        <div class="eyebrow">Final score</div>
+        <div class="eyebrow">${S.daily ? `Daily challenge &middot; ${esc(fmtDay(S.daily))}` : 'Final score'}</div>
         <div class="n" id="scoreN">0</div>
         ${pct === null ? '' : `<div class="sb-pct">
           <b class="grade-${gradeScore(r.total)}">${pct}%</b>
@@ -6284,7 +6371,8 @@ function shareText(){
   const r = S.result;
   const lines = [];
 
-  lines.push('SEGUE // ' + S.band.label.toUpperCase());
+  lines.push('SEGUE // ' + S.band.label.toUpperCase()
+    + (S.daily ? ` // DAILY ${fmtDay(S.daily).toUpperCase()}` : ''));
   lines.push('');
 
   S.sets.forEach((set, i) => {
@@ -6309,6 +6397,7 @@ function shareText(){
      hour show read as "144:37". A score and where it came from is the whole
      job; anyone who wants the rest can play. */
   lines.push(`${r.total} points`);
+  if (S.daily) lines.push('Same shows for everyone today. Beat me.');
   lines.push('runthe.gg/setlist');
   return lines.join('\n');
 }
@@ -6424,9 +6513,11 @@ function countdownWords(n){
 }
 
 // ── running a show ───────────────────────────────────────────────────────────
-async function start(bandId){
+async function start(bandId, opts){
   const band = BANDS.find(b => b.id === bandId);
   if (!band) return;
+  const daily = opts && opts.daily ? todayKey() : null;
+  if (daily && dailyState(bandId, daily)) return;   // one try a day
 
   S.band = band; S.error = '';
   setScreen('loading');
@@ -6443,8 +6534,11 @@ async function start(bandId){
   // A new night replaces whatever draft was in hand. The home screen asks
   // before it gets here, so this is the player's choice rather than an accident.
   clearDraft();
-  // Fresh draw every run — there is no shared/seeded mode yet.
-  S.rng = mulberry32(hash32(`${bandId}|${Date.now()}|${Math.random()}`));
+  // A fresh draw every run, except the daily, which is the same for everybody.
+  S.daily = daily;
+  S.rng = daily ? dailyRng(bandId, daily)
+    : mulberry32(hash32(`${bandId}|${Date.now()}|${Math.random()}`));
+  if (daily) dailyWrite(bandId, daily, 'started');
   S.round = 0;
   S.sets = [[], [], []];
   S.closed = [false, false, false];
@@ -6500,7 +6594,12 @@ async function resumeDraft(bandId){
     return;
   }
 
-  S.rng = mulberry32(hash32(`${bandId}|${Date.now()}|${Math.random()}`));
+  /* A daily's draw has to carry on where it left off, or the next show would
+     differ from everybody else's. Every show drawn so far took one number. */
+  S.daily = d.daily || null;
+  S.rng = S.daily ? dailyRng(bandId, S.daily)
+    : mulberry32(hash32(`${bandId}|${Date.now()}|${Math.random()}`));
+  if (S.daily) for (let k = 0; k < d.seen.length; k++) S.rng();
   S.round = d.round | 0;
   S.sets = sets;
   S.closed = d.closed.map(Boolean);
@@ -6662,6 +6761,7 @@ function finishShow(){
   S.posted = null;
   // Last night's rank and crowd are not this night's, and would show until the board answered.
   S.ranks = null; S.crowd = null;
+  if (S.daily) dailyWrite(S.band.id, S.daily, { total: S.result.total });
   recordShow();       // fire and forget; the playback does not wait on a network
   setScreen('show');
 }
@@ -6699,13 +6799,15 @@ async function recordShow(){
     respins: S.respins,
     secondsUsed: Math.round(r.totalUsed),
     shows, picks,
+    // The daily is filed by its day, which 139_segue_daily.sql reads off this.
+    rngSeed: S.daily ? `daily:${S.daily}` : null,
   });
   S.posted = id;
   // The rank is read from the board rather than from this insert, so a submit
   // that failed still shows a true number instead of collapsing to "1 of 1".
   const [ranks, crowd] = await Promise.all([
-    b.ranks(S.band.id, 'score', r.total),
-    b.spread ? b.spread(S.band.id) : null,
+    b.ranks(S.band.id, 'score', r.total, S.daily),
+    b.spread ? b.spread(S.band.id, { daily: S.daily }) : null,
   ]);
   S.ranks = ranks;
   S.crowd = crowd;
@@ -7736,9 +7838,12 @@ const BOARD_STATE = { band: 'goose', sort: 'score', win: 'all', rows: null, busy
 async function loadBoard(){
   const b = BOARD();
   BOARD_STATE.busy = true; render();
+  // The daily tab is one day's challenge, ranked on points: same shows for all.
+  const daily = BOARD_STATE.win === 'daily';
   BOARD_STATE.rows = b
-    ? await b.top({ band: BOARD_STATE.band, win: BOARD_STATE.win, named: true },
-                  50, BOARD_STATE.sort, 'desc')
+    ? await b.top(daily ? { band: BOARD_STATE.band, daily: todayKey(), named: true }
+                        : { band: BOARD_STATE.band, win: BOARD_STATE.win, named: true },
+                  50, daily ? 'score' : BOARD_STATE.sort, 'desc')
     : null;
   BOARD_STATE.busy = false;
   if (S.screen === 'board') render();
@@ -7753,7 +7858,8 @@ const AX_NOTE = {
 
 function renderBoard(){
   const rows = BOARD_STATE.rows;
-  const pct = BOARD_STATE.sort === 'pct';
+  const daily = BOARD_STATE.win === 'daily';
+  const pct = BOARD_STATE.sort === 'pct' && !daily;
   const seg = (id, group, opts) => `<div class="segbar" role="group" aria-label="${esc(id)}">${
     opts.map(([v, label]) => `<button type="button" data-${group}="${v}"
       aria-pressed="${BOARD_STATE[group] === v}">${esc(label)}</button>`).join('')}</div>`;
@@ -7763,6 +7869,9 @@ function renderBoard(){
     : rows === null
       ? `<div class="bempty">Can't reach the board right now.<br>
           Your shows are safe. Nothing was lost.</div>`
+      : !rows.length && daily
+        ? `<div class="bempty">Nobody's posted today's challenge yet.<br>
+            Play it and you're first.</div>`
       : !rows.length
         ? `<div class="bempty">Nobody's posted a show here yet.<br>
             Build one and you're first.</div>`
@@ -7784,9 +7893,11 @@ function renderBoard(){
 
   app.innerHTML = `
     <div class="bhd"><h2>Leaderboard</h2></div>
-    ${seg('Ranked by', 'sort', [['score', 'Score'], ['pct', 'Percent of best']])}
-    ${seg('When', 'win', [['day', 'Today'], ['week', 'This week'], ['all', 'All time']])}
-    <p class="axnote">${esc(AX_NOTE[BOARD_STATE.sort])}</p>
+    ${seg('When', 'win', [['daily', 'Daily'], ['day', 'Today'], ['week', 'This week'], ['all', 'All time']])}
+    ${daily ? '' : seg('Ranked by', 'sort', [['score', 'Score'], ['pct', 'Percent of best']])}
+    <p class="axnote">${daily
+      ? `Today's challenge, ${esc(fmtDay(todayKey()))}. Everyone got the same shows, so points decide it.`
+      : esc(AX_NOTE[BOARD_STATE.sort])}</p>
     <section class="card">${body}</section>
     ${!ME.signedIn ? `<p class="axnote" style="margin-top:14px">Shows you build
       signed out still count. They just post as Anonymous, and the board only
@@ -8048,6 +8159,29 @@ app.addEventListener('click', e => {
     return;
   }
 
+  const dailyBtn = e.target.closest('[data-daily]');
+  if (dailyBtn){
+    const id = dailyBtn.dataset.daily;
+    const d = readDraft();
+    if (d && d.band === id){
+      ask({
+        title: "Play today's challenge?",
+        body: 'The setlist you have going will be gone.',
+        confirm: "Play today's",
+        cancel: 'Keep it',
+        onYes: () => start(id, { daily: true }),
+      });
+      return;
+    }
+    start(id, { daily: true });
+    return;
+  }
+  if (e.target.closest('[data-daily-board]')){
+    BOARD_STATE.win = 'daily'; BOARD_STATE.sort = 'score';
+    setScreen('board'); loadBoard();
+    return;
+  }
+
   const startBtn = e.target.closest('[data-start]');
   if (startBtn && !startBtn.disabled){
     /* Starting over while a draft is in hand throws it away, so that press
@@ -8055,7 +8189,9 @@ app.addEventListener('click', e => {
     if (startBtn.dataset.fresh){
       ask({
         title: 'Start a new setlist?',
-        body: "The one you have going will be gone.",
+        body: readDraft() && readDraft().daily
+          ? "Today's challenge will be gone, and it's one try a day."
+          : "The one you have going will be gone.",
         confirm: 'Start a new one',
         cancel: 'Keep it',
         onYes: () => start(startBtn.dataset.start),

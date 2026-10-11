@@ -25,6 +25,8 @@ psql -d seguetest -f supabase/67_setlist_leaderboard.sql
 psql -d seguetest -f supabase/68_setlist_username.sql
 psql -d seguetest -f setlist/build/test/test_leaderboard.sql       # 93 assertions
 psql -d seguetest -f setlist/build/test/test_username.sql          # 40 assertions
+psql -d seguetest -f supabase/139_segue_daily.sql
+psql -d seguetest -f setlist/build/test/test_daily.sql             # the daily challenge
 
 node setlist/build/test/postgrest_stub.mjs 5556 seguetest &
 node setlist/build/test/test_board_e2e.mjs http://localhost:5556
