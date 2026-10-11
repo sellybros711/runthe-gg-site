@@ -187,6 +187,34 @@ var DIG35 = {
 };
 var CX = 22;
 
+/* ── each club's jersey design ──
+   Keyed by the club's own two colours, which is all a caller hands the
+   painter, so every screen gets the design without learning a club code.
+   classic: trim on the openings only. double: a second, inner line in the
+   third colour. side: panels down the sides of the jersey and the shorts.
+   pin: pinstripes. sash: a band across the body. band: two stripes across
+   the chest under the number. fade: stripes thickening down the jersey. */
+var KITS = {
+  'E03A3E|C1D32F': 'side', '007A33|BA9653': 'double', '000000|FFFFFF': 'side', 'CE1141|000000': 'double',
+  '1D1160|00788C': 'pin', '860038|FDBB30': 'band', '00538C|B8C4CA': 'side', '0E2240|FEC524': 'fade',
+  'C8102E|1D42BA': 'band', '1D428A|FFC72C': 'classic', 'CE1141|C4CED4': 'sash', '002D62|FDBB30': 'pin',
+  'C8102E|1D428A': 'side', '552583|FDB927': 'double', '5D76A9|F5B112': 'side', '98002E|F9A01B': 'fade',
+  '00471B|EEE1C6': 'side', '0C2340|78BE20': 'pin', '0C2340|C8102E': 'side', '006BB6|F58426': 'double',
+  '007AC1|EF3B24': 'fade', '0077C0|C4CED4': 'pin', '006BB6|ED174C': 'double', '1D1160|E56020': 'fade',
+  'E03A3E|000000': 'sash', '5A2D81|63727A': 'side', '000000|C4CED4': 'side', '002B5C|F9A01B': 'fade',
+  '002B5C|E31837': 'band', '00653A|FFC200': 'double', '002A60|DA2032': 'band', '00B2A9|BC7844': 'side',
+  '00778B|280071': 'pin', 'F47B20|000000': 'double', 'E35205|00285E': 'sash',
+};
+var KIT_IDS = ['classic', 'double', 'side', 'pin', 'sash', 'band', 'fade'];
+function kitOf(c1, c2, want){
+  if (want && KIT_IDS.indexOf(want) >= 0) return want;
+  var k = String(c1 || '').replace('#', '').toUpperCase() + '|' + String(c2 || '').replace('#', '').toUpperCase();
+  if (KITS[k]) return KITS[k];
+  if (!c1) return 'classic';
+  var h = 0; for (var i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) >>> 0;
+  return KIT_IDS[h % KIT_IDS.length];
+}
+
 /* ── the golf game's ramps, as PXHD writes them ── */
 function rgbHsl(c){ var r = c[0] / 255, g = c[1] / 255, b = c[2] / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), h = 0, s = 0, l = (mx + mn) / 2;
   if (mx !== mn) { var d = mx - mn; s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn); h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h *= 60; }
@@ -502,23 +530,59 @@ function build(L, o, J){
     return d; };
   var bodyN = function(p){ return p; };
   if (!suit) {
+    var kit = o.kit || 'classic', nres = o.res || 1;
+    /* the number, on the cloth itself: a 3 by 5 numeral laid on the front of
+       the chest in the body's own units, so it turns with the chest and
+       foreshortens with the camera the way a printed number does. A cell is
+       never smaller than a pixel and a half, or the pitch drops whole rows of
+       a digit; at a portrait's single resolution there is no room for that,
+       and the number is stamped on the screen instead (paint0). */
+    var ncs = Math.max(0.7 * ts, 1.5 / nres), nlen = (o.num || '').length, nTop = C0[1] - 1.6 * ts;
+    var numAt = function(p){
+      if (nres < 2 || !nlen || p[2] < 1.0) return false;
+      var u = (p[0] - CX) / ncs + (nlen * 4 - 1) / 2, v = (p[1] - nTop) / ncs;
+      if (v < 0 || v >= 5 || u < 0) return false;
+      var di = Math.floor(u / 4), cu = Math.floor(u - di * 4);
+      if (di >= nlen || cu > 2) return false;
+      var DG = DIG35[o.num[di]];
+      return !!DG && DG[Math.floor(v)][cu] === '1';
+    };
+    /* the number sits on clean cloth: no stripe runs through it */
+    var numClear = function(p){
+      if (!nlen || p[2] < 0.5) return false;
+      var u = (p[0] - CX) / ncs, v = (p[1] - nTop) / ncs, hw = (nlen * 4 - 1) / 2 + 1;
+      return Math.abs(u) < hw && v > -1 && v < 6;
+    };
+    /* the club's design, laid over the body: the second colour as a pattern */
+    var pinG = Math.max(1.4, 2.4 / nres), pinW = Math.max(0.32, 0.9 / nres);
+    var patAt = function(p, y, sx){
+      var dx = Math.abs(sx);
+      if (kit === 'side') return Math.atan2(Math.abs(p[2]), dx) < 0.34 && y > 29.6;
+      if (kit === 'pin') { var q = ((sx / pinG) % 1 + 1) % 1; return Math.abs(q - 0.5) * pinG < pinW / 2 && y > 25.6; }
+      if (kit === 'sash') return Math.abs(y - (33.0 - sx * 0.62)) < 0.95 && p[2] > -1.0;
+      if (kit === 'band') return (y > 32.0 && y < 32.9) || (y > 33.5 && y < 34.0);
+      if (kit === 'fade') { if (y < 32.2) return false; var f = ((y * 1.3) % 1 + 1) % 1; return f < Math.min(0.9, (y - 32.2) * 0.16 + 0.12); }
+      return false;
+    };
     var torsoMat = function(p){
-      var dx = Math.abs(p[0] - CX), y = 29.2 + (p[1] - C0[1]) / ts, front = p[2] > 0.6;
-      /* the tank, cut the way a real one is: a round scoop at the neck, two
-         narrow straps, deep round armholes, each opening edged in one even
-         band of the second colour. Nothing is trimmed but an edge. */
-      var edge = cR[0], strapIn = 3.0, strapOut = Math.min(5.8, edge - 1.4);
-      /* the neck: deeper in front than behind */
-      var nd = front ? 2.6 : 0.8, nw = 3.0;
-      var neck = function(w){ var t = dx / w; return t < 1 ? 24.6 + nd * (1 - t * t) : -1; };
+      var sx = p[0] - CX, dx = Math.abs(sx), y = 29.2 + (p[1] - C0[1]) / ts, front = p[2] > 0.6;
+      /* an NBA jersey, not a vest: a high round crew neck that sits just
+         under the collarbone, straps as wide as a hand from the collar to
+         the shoulder, and an armhole cut no lower than the chest. Each
+         opening is edged in one band of the second colour, and a club that
+         trims twice gets an inner line of the third. */
+      var edge = cR[0], strapOut = Math.min(6.6, edge - 0.9);
+      var nd = front ? 1.15 : 0.35, nw = 2.75;
+      var neck = function(w){ var t = dx / w; return t < 1 ? 23.9 + nd * (1 - t * t) : -1; };
       if (y < neck(nw)) return 'skin';
-      if (y < neck(nw + 0.9) + 0.85) return 'trim';
-      /* the armholes: an ellipse cut out of each side, under the strap */
-      var ax = edge + 0.8, rx = ax - strapOut, ry = 6.2, ay = 25.0;
+      if (y < neck(nw + 0.75) + (kit === 'double' ? 1.05 : 0.7)) return kit === 'double' && y > neck(nw + 0.75) + 0.55 ? 'third' : 'trim';
+      var ax = edge + 0.9, rx = ax - strapOut, ry = 5.0, ay = 24.6;
       var ae = Math.pow((dx - ax) / rx, 2) + Math.pow((y - ay) / ry, 2);
-      if (y < 25.4 && dx > strapIn) { if (dx > strapOut) return 'skin'; }
+      if (y < 24.9 && dx > strapOut) return 'skin';
       if (ae < 1) return 'skin';
-      if (ae < 1.42) return 'trim';
+      if (ae < (kit === 'double' ? 1.5 : 1.34)) return kit === 'double' && ae > 1.3 ? 'third' : 'trim';
+      if (numAt(p)) return { m: 'ink', dt: 1 };
+      if (!numClear(p) && patAt(p, y, sx)) return 'pat';
       return 'jersey';
     };
     add('torso', 'torso', torsoMat, torsoF, [CX, (C0[1] + W0[1]) / 2, 0], 11 * Math.max(1, ts, sw) + Math.max(0, g));
@@ -536,7 +600,9 @@ function build(L, o, J){
       var y = p[1] - sy0, dx = Math.abs(p[0] - CX);
       if (y < 1.2) return 'trim';
       if (y > sd + sl - 0.6) return { m: 'jersey', dt: -1 };
-      if (y > 2.4 && stripe(p)) return 'trim';
+      if (y > 2.4 && stripe(p)) return kit === 'double' && Math.abs(p[2]) < 0.5 ? 'third' : 'trim';
+      if (kit === 'side' && y > 2.4 && Math.atan2(Math.abs(p[2]), dx) < 0.42) return 'pat';
+      if (kit === 'pin' && y > 1.6) { var q = (((p[0] - CX) / pinG) % 1 + 1) % 1; if (Math.abs(q - 0.5) * pinG < pinW / 2) return 'pat'; }
       return 'jersey';
     }, cut(shortsF, function(p){ return Math.max(sy0 - p[1], p[1] - (sy0 + sd + sl + 0.2)); }), [CX, sy0 + (sd + sl) / 2, 0], 6 + (sd + sl) / 2 + Math.max(0, g));
   } else {
@@ -787,7 +853,7 @@ function paint0(look, o){
   var bandHex = L.band === 'none' ? null : L.band === 'club' ? c2 : FIXED[L.band];
   var slvHex = L.sleeve === 'none' ? null : L.sleeve === 'club' ? c2 : FIXED[L.sleeve];
   var num = pose === 'trophy' || suit ? '' : String(o.num == null ? '' : o.num).slice(0, 2);
-  var model = build(L, { suit: suit, cap: cap, pose: pose, num: num, band: !!bandHex, sleeve: !!slvHex }, J);
+  var model = build(L, { suit: suit, cap: cap, pose: pose, num: num, band: !!bandHex, sleeve: !!slvHex, kit: kitOf(c1, c2, o.kit), res: res }, J);
   var hit = trace(model, res);
 
   if (o.parts) return hit.map(function(r){ return r.map(function(c){ return c ? model[c.i].n : null; }); });
@@ -804,7 +870,7 @@ function paint0(look, o){
   var shoeHex = suit ? '#1c1f27' : L.shoes === 'club' ? c1 : FIXED[L.shoes];
   var R = {
     skin: SK, hair: HRm, fade: hairRamp(mix(hairHex, skinHex, 0.5)), buzz: hairRamp(mix(hairHex, skinHex, 0.22)), scalp: skinRamp(mix(skinHex, hairHex, 0.35)),
-    beard: hairRamp(beardHex), jersey: ramp(c1), trim: ramp(c2), ink: ramp(inkOn(c1, c2)), sock: ramp('#f1f0ea'),
+    beard: hairRamp(beardHex), jersey: ramp(c1), trim: ramp(c2), pat: ramp(c2), third: ramp(contrast(c1, '#f4f2ec') >= 1.8 && contrast(c2, '#f4f2ec') >= 1.4 ? '#f4f2ec' : '#16181f'), ink: ramp(inkOn(c1, c2)), sock: ramp('#f1f0ea'),
     shoe: ramp(shoeHex), sole: ramp('#e8e2d4'), lace: ramp('#f4f1ea'), band: ramp(bandHex || '#ffffff'), sleeve: ramp(slvHex || '#ffffff'),
     trouser: ramp('#2a2e38'), jacket: ramp(mix(c1, '#14161c', 0.66)), shirt: ramp('#f1f1ec'), cuff: ramp('#f1f1ec'), pocket: ramp(c2),
     tie: ramp(contrast(c1, mix(c1, '#14161c', 0.66)) >= 1.6 ? c1 : c2), cap: ramp(c1), logo: ramp(c2), gold: ramp('#e3a92f'), ball: ramp('#e2762a'),
@@ -846,12 +912,13 @@ function paint0(look, o){
     edits.push([x5, y5, sh ? r5[Math.max(0, Math.min(t5 - 1, 1))] : r5[Math.max(0, Math.min(t5 - 1, 2))]]); }
   edits.forEach(function(ed){ out[ed[1]][ed[0]] = ed[2]; });
 
-  /* The number is stamped on the screen, after the light, the way a sprite
-     artist letters a jersey. Mapped onto the model in world cells, the
-     camera's pitch dropped whole rows of a digit and a 2 came out broken. It
-     only lands on jersey cloth, takes the cloth's own tone, and so bends with
+  /* At a single resolution trace (the court sprites) the number is stamped
+     on the screen, after the light, the way a sprite artist letters a
+     jersey; a finer trace prints it on the cloth instead, in build. Mapped onto the model in world cells
+     at this resolution, the camera's pitch dropped whole rows of a digit and a 2 came out broken. It
+     only lands on jersey cloth (or the club's pattern), takes the cloth's own tone, and so bends with
      the chest and hides behind an arm in front of it. */
-  if (num !== '' && !suit) {
+  if (num !== '' && !suit && res < 2) {
     var BD2 = bodyOf(L.build), nv = toView([CX - SY * 2.4, J.chest[1] + 3.0 * MX.ts, 4.4 + BD2.bw * 0.3 + MX.gw * 0.3]);
     /* a 3 by 5 numeral, each cell `res` pixels: on a chest a few cells wide
        the old 4 by 6 one covered the shirt from the neck to the shorts */
@@ -862,7 +929,7 @@ function paint0(look, o){
     for (var dI = 0; dI < num.length; dI++) { var DG = DIG35[num[dI]]; if (!DG) continue;
       for (var gy = 0; gy < 5 * res; gy++) for (var gx = 0; gx < dw; gx++) { if (DG[Math.floor(gy / res)][Math.min(2, Math.floor(gx * 3 / dw))] !== '1') continue;
         var px = nx0 + dI * (dw + dg) + gx, py = ny0 + gy, hc_ = g(px, py);
-        if (!hc_ || model[hc_.i].n !== 'torso' || M[py][px] !== 'jersey') continue;
+        if (!hc_ || model[hc_.i].n !== 'torso' || (M[py][px] !== 'jersey' && M[py][px] !== 'pat')) continue;
         out[py][px] = R.ink[Math.max(1, Math.min(T[py][px], 3))]; } }
   }
 
@@ -1016,7 +1083,7 @@ function propCanvas(kind, opts){
 /* ─── to the screen ───────────────────────────────────────────────────── */
 
 var CACHE = {}, KEYS = [];
-function keyOf(look, o){ return JSON.stringify([normal(look), o.c1, o.c2, o.num, o.pose, o.age >= 33 ? o.age : 0, o.frame || 0, o.scale || 4, !!o.shadow, o.dress || '', o.faceless ? 1 : 0, resFor(o)]); }
+function keyOf(look, o){ return JSON.stringify([normal(look), o.c1, o.c2, o.num, o.pose, o.age >= 33 ? o.age : 0, o.frame || 0, o.scale || 4, !!o.shadow, o.dress || '', o.faceless ? 1 : 0, resFor(o), o.kit || '']); }
 /* THE BIGGER IT IS SHOWN, THE FINER IT IS TRACED. The model has no pixels of
    its own: it is volumes, so a portrait shown at 4 screen pixels a cell is
    traced at 2 sub-cells a cell and drawn 2 pixels each, and at 3 or 6 it is
@@ -1178,7 +1245,7 @@ function pump(){
 /* the frames a live figure needs, painted once per look and shared */
 function frameSet(look, o, mode){
   /* a walk does not care which pose the beat is in, so it is shared */
-  var key = JSON.stringify([normal(look), o.c1, o.c2, o.num, mode === 'walk' ? '' : o.pose, o.age >= 33 ? o.age : 0, o.dress || '', o.faceless ? 1 : 0, o.res, mode]);
+  var key = JSON.stringify([normal(look), o.c1, o.c2, o.num, mode === 'walk' ? '' : o.pose, o.age >= 33 ? o.age : 0, o.dress || '', o.faceless ? 1 : 0, o.res, mode, o.kit || '']);
   var fs = SETCACHE[key];
   if (fs) return fs;
   var want = [];
