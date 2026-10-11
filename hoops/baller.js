@@ -794,9 +794,12 @@ function build(L, o, J){
   function smf(a, b, k){ return function(p){ return smin(a(p), b(p), k); }; }
   function streetTop(){ return (ST.top && ST.top.k) || 'tee'; }
   function streetLegF(G, s){
-    var kd = (ST.bottom && ST.bottom.k) || 'jeans', top = [G.hip[0] - s * 0.3, G.hip[1] - 2.2, 0];
-    if (kd === 'sweats') return uni([cone(top, G.kn, 3.55 + g * 0.26, 3.2 + g * 0.16), cone(G.kn, [G.ank[0], G.ank[1] - 0.5, G.ank[2]], 3.2 + g * 0.12, 2.15)]);
-    return uni([cone(top, G.kn, 3.25 + g * 0.25, 2.85 + g * 0.14), cone(G.kn, [G.ank[0], G.ank[1] + 0.4, G.ank[2]], 2.85 + g * 0.1, 2.6)]);
+    var kd = (ST.bottom && ST.bottom.k) || 'jeans', top = [G.hip[0] - s * 0.55, G.hip[1] - 2.2, 0];
+    /* an athlete's legs are long and lean: a straight leg from a narrow seat,
+       barely tapering. Cut wide, the thighs flared out past the hem of the
+       shirt and the figure read as curvy. */
+    if (kd === 'sweats') return uni([cone(top, G.kn, 2.85 + g * 0.3, 2.6 + g * 0.16), cone(G.kn, [G.ank[0], G.ank[1] - 0.5, G.ank[2]], 2.6 + g * 0.12, 1.95)]);
+    return uni([cone(top, G.kn, 2.6 + g * 0.3, 2.35 + g * 0.14), cone(G.kn, [G.ank[0], G.ank[1] + 0.4, G.ank[2]], 2.35 + g * 0.1, 2.25)]);
   }
   function streetLegMat(G, s){
     var kd = (ST.bottom && ST.bottom.k) || 'jeans';
@@ -817,8 +820,28 @@ function build(L, o, J){
       return 'btm';
     };
   }
+  /* CLOTH HANGS, IT DOES NOT CLING. Offsetting the body's own surface made a
+     tee follow every muscle under it: the pecs read as a bust, the waist
+     pinched in and the seat flared out, which is the silhouette of somebody
+     else. A shirt on a basketball player drops straight from broad shoulders
+     to the hem, so it is the chest's ellipse blended into a column the width
+     of the ribcage, carrying a heavy man's belly when he has one, and nothing
+     of the pecs, lats or shoulder blades. */
+  function dropF(off, hemY){
+    /* a V: an elliptic column whose width runs from the shoulders down to
+       narrow hips, flat front to back, under a dome across the shoulders */
+    var shX = (6.9 + bw * 0.8) * sw + Math.max(0, g) * 0.3, yT = C0[1] - 2.4 * ts, yB = hemY + 1.0;
+    var rxT = shX * 0.9 + off, rxB = cR[0] * 0.8 + off + g * 0.45, rzT = cR[2] * 0.88 + off * 0.8, rzB = cR[2] * 0.74 + off * 0.8 + Math.max(0, g) * 0.75;
+    var colF = function(p){
+      var t = clamp01((p[1] - yT) / (yB - yT)), rx = rxT + (rxB - rxT) * t, rz = rzT + (rzB - rzT) * t;
+      var e = Math.hypot((p[0] - CX) / rx, (p[2] + 0.2) / rz);
+      return Math.max((e - 1) * Math.min(rx, rz) * 0.9, yT - p[1]);
+    };
+    var dome = ell([CX, yT + 0.4, -0.3], [shX + off * 0.6, 2.4 * ts + off * 0.5, cR[2] * 0.82 + off * 0.8]);
+    return cut(smf(dome, colF, 1.6), function(q){ return q[1] - hemY; });
+  }
   function streetTorso(){
-    var kd = streetTop(), infl = kd === 'hoodie' ? 0.8 : 0.35, hemY = W0[1] + (kd === 'hoodie' ? 4.2 : 3.6) * ts;
+    var kd = streetTop(), infl = kd === 'hoodie' ? 0.7 : 0.3, hemY = W0[1] + (kd === 'hoodie' ? 4.2 : 3.6) * ts;
     var mk = function(y, dx, front){ var nd = front ? 1.0 : 0.3; return function(w){ var t = dx / w; return t < 1 ? 23.9 + nd * (1 - t * t) : -1; }; };
     add('torso', 'torso', function(p){
       var sx = p[0] - CX, dx = Math.abs(sx), y = 29.2 + (p[1] - C0[1]) / ts, front = p[2] > 0.6, neck = mk(y, dx, front);
@@ -832,12 +855,13 @@ function build(L, o, J){
         if (y > 33.2 && y < 37.4 && dx < 4.2) return (Math.abs(y - 33.2) < 0.42 || Math.abs(dx - (3.4 + (y - 33.2) * 0.2)) < 0.38) ? { m: 'top', dt: -1 } : 'top';
       }
       return 'top';
-    }, cut(function(q){ return torsoF(q) - infl; }, function(q){ return q[1] - hemY; }), [CX, (C0[1] + W0[1]) / 2 + 1, 0], 13 * Math.max(1, ts, sw) + Math.max(0, g));
+    }, dropF(infl, hemY), [CX, (C0[1] + W0[1]) / 2 + 1, 0], 13 * Math.max(1, ts, sw) + Math.max(0, g));
     /* the seat of the trousers, under the hem */
-    var sy0 = W0[1] - 0.4, shW = (6.2 + bw * 0.4) * sw + g * 0.6;
+    /* the seat is as narrow as an athlete's hips, narrower than his shoulders */
+    var sy0 = W0[1] - 0.4, shW = (4.9 + bw * 0.3) * sw + g * 0.55;
     var bk = (ST.bottom && ST.bottom.k) || 'jeans';
     add('seat', 'seat', function(p){ var y = p[1] - sy0; if (y < 0.9) return bk === 'jeans' ? { m: 'btm', dt: -1 } : 'btm2'; return 'btm'; },
-      cut(ell([CX, sy0 + 2.8 * ts, 0], [shW, 4.0 * ts, 4.4 + Math.max(0, g) * 0.45]), function(q){ return sy0 - q[1]; }), [CX, sy0 + 3 * ts, 0], 9 + Math.max(0, g));
+      cut(ell([CX, sy0 + 2.8 * ts, -0.2], [shW, 3.7 * ts, 3.8 + Math.max(0, g) * 0.45]), function(q){ return sy0 - q[1]; }), [CX, sy0 + 3 * ts, 0], 9 + Math.max(0, g));
     var out = ST.outer && ST.outer.k;
     if (out === 'varsity') {
       var oHem = W0[1] + 4.6 * ts;
@@ -854,7 +878,7 @@ function build(L, o, J){
         /* a chenille letter patch on the left chest */
         if (front && sx > 2.4 && sx < 5.0 && y > 25.6 && y < 28.8) return (sx < 2.8 || sx > 4.6 || y < 26.0 || y > 28.4) ? 'out3' : 'out2';
         return 'out1';
-      }, cut(function(q){ return torsoF(q) - (infl + 0.95); }, function(q){ return q[1] - oHem; }), [CX, (C0[1] + W0[1]) / 2 + 1, 0], 14 * Math.max(1, ts, sw) + Math.max(0, g));
+      }, dropF(infl + 0.95, oHem), [CX, (C0[1] + W0[1]) / 2 + 1, 0], 14 * Math.max(1, ts, sw) + Math.max(0, g));
     }
   }
   /* what an arm is wearing: its material, how far the cloth stands off it,
