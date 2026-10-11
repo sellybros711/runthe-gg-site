@@ -2559,24 +2559,28 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "42",
-      "sha": "59060fce10ba7ec2"
+      "v": "44",
+      "sha": "7390efb4060b9f04"
     },
     "putt/land.js": {
       "v": "5",
       "sha": "4bd5518cffd6b98e"
     },
     "putt/hole3d.js": {
-      "v": "8",
-      "sha": "b35e71b643c08af0"
+      "v": "9",
+      "sha": "88e5cf8081e2f71b"
+    },
+    "putt/trail.js": {
+      "v": "1",
+      "sha": "639b8ce6ae2df53f"
     },
     "putt/mapland.js": {
       "v": "3",
       "sha": "4e1660289348cb21"
     },
     "golfer3d.js": {
-      "v": "4",
-      "sha": "319fa8ca58bcd99b"
+      "v": "5",
+      "sha": "b01263909065e2fe"
     },
     "tracer3d.js": {
       "v": "1",

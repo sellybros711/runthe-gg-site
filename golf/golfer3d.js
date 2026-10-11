@@ -331,7 +331,7 @@
       out.push(capsule(p(a),p(b),0.85,'x:'+(i%3?pal['4']:pal['6']),{gloss:3})); } return out; }
 
   // a walk frame is a phase of the step (w0 to w7) and is seen from higher up, the tour map's camera
-  const WALK_N=8, WALK_EL=34;
+  const WALK_N=8, WALK_EL=42;   // the trail camera (putt/trail.js) looks down at 42 degrees, the same as the holes
   function walkPose(key){ if(key==='ws') return {ph:0,stand:1,phi:0,hinge:0,turn:0,hip:0,head:0,heel:0};
     const ph=(+key.slice(1)||0)/WALK_N, c=Math.cos(ph*2*Math.PI);
     return {ph,phi:0,hinge:0,turn:-5*c,hip:7*c,head:0,heel:0}; }

@@ -19887,16 +19887,28 @@ before) clears it. Each hole counts its attempts in `tp.tries`, merged as a maxi
 hole in progress follows the account, last change wins (`curT`), the same rule as lives. The Daily Hole is
 not resumed: it is one timed try.
 
-**The walk to the next hole is the 3D golfer, seen from behind.** `golfer3d.js` has a `walk` kind: eight
-frames a stride (`w0` to `w7`, `walkPose`), legs, arms and hips swinging and the body rising at each passing
-step, facing the way he goes, drawn from a higher camera (`WALK_EL`, 34 degrees) than the swing's 26. The swing
-is untouched: every walk term is gated on `walk`, and the camera is put back after each walk frame (check-golfer3d
-asserts it). A walk frame is drawn on first ask (`frame`, `has`, `warmAim`, through `puttHost().golferWalk`), and
-the facing for the next walk is drawn while the hole is played (`warmWalk` in `startLevel`). On the map,
-`walker3` hides the flat golfer, puts the 3D one in an overlay, picks the frame off the DISTANCE walked
-(`WALK_STRIDE`) so the feet never skate, and tilts and closes in the map (`WALK_TILT`, `WALK_ZOOM`) pivoting on
-the golfer, so the camera sits behind and above him and he stays put on the screen. A page without the 3D golfer
-walks the flat one as before. check-putt asserts the frames change, the flat sprite is hidden and the map tilts.
+**The walk to the next hole is a place you walk through** (`golf/putt/trail.js`, `RTT_PUTT_TRAIL`). Next opens a
+3D trail of the world, drawn by `hole3d.js` from a scene (`opt.scene`) at a finer art grid (`TART`, an eighth of
+a foot a pixel), about 150 ft long, so two to three screens of walking. The golfer is `golfer3d.js`'s walk
+(eight frames a stride plus `ws`, standing), picked off the distance walked so the feet never skate. He is
+walked with a stick or the arrows, or on Auto walk along the path; Skip goes straight to the hole.
+
+- **Scale is one rule**: the golfer is 4 ft tall at 2/3 scale, so a person is 6 ft, and every tree, lamp,
+  chest, fence and landmark is sized in those feet (`TREEH`, `LMSIZE`, `BLOCKR`). Tall things stand off the
+  path or screen it only from behind (`screensPath`), and a figure behind something is drawn see-through.
+- **Each world has a kit** (`KIT`): ground, path, trees, low plants, landmarks, a hazard (water, lava, ice
+  that slides, mud that slows), its own breakables and someone to talk to. Lava sends him back to the path.
+- **What is on the trail is kept** in the Tour record as `st.trail['tour:to']`: coins, breakables smashed,
+  the chest, the key and the golden ball. One trail in three hides the chest behind a locked fence and the key
+  somewhere off the path. A golden ball on every trail; all of a world's pays 500 coins and a named reward.
+  `pmerge` takes the union and `cloudProg` counts them, so a pickup is never lost to a stale device.
+- **Where two worlds meet, a wall of the new world stands across the land** with a door on the path, the
+  stars door from putt.js. Short of the stars it stays shut and he cannot walk past it.
+- **A plan is the same every time** (seeded on the tour and the hole), and the next trail is built ahead
+  in slices while a hole is played (`trailAhead`, `trailTick`), so most walks open at once.
+
+check-putt walks one for real: the stick moves him, a coin, the key, the chest and the golden ball are kept,
+the arch opens the hole, Skip works, the world door opens with the stars and holds without them.
 
 **Lives are on the server, on its clock** (`supabase/138_putt_lives.sql`, deployed by hand). The Tour record
 cannot hold them, because its rule is progress and lives go down. So a signed in player's lives come from
