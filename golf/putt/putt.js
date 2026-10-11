@@ -1864,7 +1864,7 @@ var CSS = '\
 .pp-tui{position:absolute;inset:0;z-index:4;pointer-events:none}.pp-tui button{pointer-events:auto}\
 .pp-trail{flex:1;min-height:0;display:flex;flex-direction:column}.pp-tbox{position:relative;flex:1;min-height:0;overflow:hidden;touch-action:none;background:#07130d}.pp-tcv{position:absolute;inset:0;image-rendering:pixelated;touch-action:none}\
 .pp-tload{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;font-weight:900;color:#fff}.pp-tload span{width:60%;max-width:280px;height:10px;border-radius:6px;background:rgba(255,255,255,.15);overflow:hidden}.pp-tload u{display:block;height:100%;width:8%;background:#ffd24a;transition:width .2s}\
-.pp-bagb{position:absolute;right:12px;top:60px;z-index:6;font:900 13px system-ui,sans-serif;color:#3a2a14;background:#ffd24a;border:2px solid #3a2a14;border-radius:12px;padding:6px 12px;box-shadow:0 3px 0 #3a2a14;cursor:pointer}\
+.pp-bagb{position:absolute;right:12px;top:60px;z-index:3;font:900 13px system-ui,sans-serif;color:#3a2a14;background:#ffd24a;border:2px solid #3a2a14;border-radius:12px;padding:6px 12px;box-shadow:0 3px 0 #3a2a14;cursor:pointer}\
 .pp-bag .pp-card{max-height:86vh;overflow:auto;text-align:left}.pp-bsec{margin:14px 0 6px;font:900 11px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;opacity:.7}\
 .pp-bput{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.06);margin:6px 0}.pp-bput.on{background:rgba(255,210,74,.18);outline:2px solid #ffd24a}\
 .pp-bpn{flex:1;min-width:0}.pp-bpn b{display:block;font-size:14px}.pp-bpn span{display:block;font-size:12px;opacity:.8}.pp-bput button{flex:0 0 auto;padding:6px 12px;min-width:0}\
