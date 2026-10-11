@@ -17,8 +17,7 @@
    the hole you are walking to: TRAIL_L feet, about two and a half screens on a phone. The camera rides
    behind the golfer. What is on the way:
 
-     chests hidden off the path, behind trees and rocks, and one in the clearing off a spur: walk up to one
-     and it opens, its coins burst out onto the ground, and each is picked up by walking over it, once for
+     one chest, in the clearing off a spur or hidden behind a tree or a rock: walk up to it and it opens, its coins burst out onto the ground, and each is picked up by walking over it, once for
      good. On some trails the clearing is fenced and the gate opens with a key found somewhere else,
      breakables in the world's own form (crates, pots, barrels, ice blocks, pumpkins), smashed by walking
      into them, the first time each with a coin inside, the only coins not in a chest,
@@ -40,9 +39,29 @@
 var API_VERSION = 1;
 var GH = 4.0, ELEV = 42, D2R = Math.PI / 180, SE = Math.sin(ELEV * D2R), CE = Math.cos(ELEV * D2R);
 var TRAIL_L = 150, HALFW = 46, PW = 2.2, VIEW_FT = 60, SPEED = 7, STRIDE = 3.4;   // a stride the legs can be seen to make: about two steps a second each way
-var PIX_HEART = ['.oo.oo.', 'orhrrro', 'orrrrro', '.orrro.', '..oro..', '...o...'];
-var PIX_GEM = ['.ooooo.', 'ohrrrro', 'orhrrro', '.orrro.', '..oro..', '...o...'];
-var PIX_PART = ['ooo....', 'ohro...', 'orrro..', '.orrro.', '..orrgo', '...oggo', '....ooo'];
+/* WHAT IS HIDDEN ON A TRAIL LOOKS LIKE WHAT IT IS, never like a coin: a heart, a gem, a putter, a key, a golf
+   ball. Each is drawn bigger than a coin and stands in a light of its own colour, so it is seen through the trees
+   and known before you reach it. LOOT says how each is drawn, and the list on screen uses the same pictures. */
+var PIX_HEART = ['.oo...oo.', 'ohho.orro', 'ohrrorrro', 'orrrrrrro', '.orrrrro.', '..orrro..', '...oro...', '....o....'];
+var PIX_GEM = ['..ooooo..', '.ohhrrro.', 'ohhrrrrro', 'ooooooooo', '.orrrrro.', '..orrro..', '...oro...', '....o....'];
+var PIX_PART = ['.......oo', '......ogo', '.....ogo.', '....ogo..', '...oro...', '..oro....', 'oooooo...', 'ohhhhro..', 'orrrrro..', 'oooooo...'];
+var PIX_KEY = ['.ooo..........', 'ohhro.........', 'oh.roooooooooo', 'or.rrrrrrrrrro', 'orrroooooororo', '.ooo.....o.o.o'];
+var PIX_BALL = ['...ooooo...', '..ohhhrro..', '.ohhrdrdro.', 'ohhdrrdrrdo', 'ohrrdrrdrro', 'odrrdrrdrdo', 'orrdrrdrrro', 'ordrrdrrdro', '.orrdrrdro.', '..orrrrro..', '...ooooo...', '..oowwwoo..', '....owo....', '....owo....', '.....o.....'];
+var PIX_CHEST = ['.oooooooooo.', 'ohhhhhhhhhro', 'orrrrggrrrro', 'oooooggooooo', 'orrrrggrrrro', 'orrrrrrrrrro', 'oooooooooooo'];
+var LOOT = {
+  golden:{ rows:PIX_BALL, pal:{ r:'#ffd23a', h:'#fff6c4', d:'#a8700a', o:'#5a3a00', w:'#ffffff' }, beam:'255,214,64', name:'Golden ball' },
+  key:{ rows:PIX_KEY, pal:{ r:'#c9ccd6', h:'#ffffff', o:'#3a3e4a' }, beam:'200,220,255', name:'Key' },
+  life:{ rows:PIX_HEART, pal:{ r:'#e5483a', h:'#ff9d8a', o:'#6a1410' }, beam:'255,90,80', name:'Spare life' },
+  trinket:{ rows:PIX_GEM, pal:{ r:'#b48cff', h:'#ffffff', o:'#2a1a40' }, beam:'190,150,255', name:'Trinket' },
+  part:{ rows:PIX_PART, pal:{ r:'#7fa0c4', h:'#e6eef8', o:'#1e2a38', g:'#2a2a2a' }, beam:'120,190,255', name:'Putter part' },
+  chest:{ rows:PIX_CHEST, pal:{ r:'#a8662e', h:'#d8944a', g:'#ffd23a', o:'#3a2410' }, beam:null, name:'Chest' }
+};
+function lootPal(t){ var L = LOOT[t.k]; return t.k === 'trinket' && t.col ? Object.assign({}, L.pal, { r:t.col }) : L.pal; }
+function lootBeam(t){ if (t.k === 'trinket' && t.col){ var n = parseInt(t.col.slice(1), 16); return (n >> 16) + ',' + (n >> 8 & 255) + ',' + (n & 255); } return LOOT[t.k].beam; }
+// a list icon: the same picture, as an image the HUD can show
+var ICONS = {};
+function lootIcon(t){ var key = t.k + (t.col || ''); if (ICONS[key]) return ICONS[key]; var L = LOOT[t.k], rows = L.rows, pal = lootPal(t), c = document.createElement('canvas'); c.width = rows[0].length; c.height = rows.length;
+  var x = c.getContext('2d'); rows.forEach(function(r, j){ for (var i = 0; i < r.length; i++){ var ch = r[i]; if (ch === '.') continue; x.fillStyle = pal[ch] || pal.r; x.fillRect(i, j, 1, 1); } }); return ICONS[key] = c.toDataURL(); }
 var COIN_V = 3, TART = 0.125;   // the trail is painted on a finer grid than a hole, because the camera comes in closer
 
 function hash(x, y, s){ var h = (x * 374761393 + y * 668265263 + s * 982451653) | 0; h = Math.imul(h ^ h >>> 13, 1274126177); return ((h ^ h >>> 16) >>> 0) / 4294967296; }
@@ -218,12 +237,13 @@ function plan(spec){
   function okSpot(x, y, r, minD, maxD){ var wd = walkD(x, y); return okGround(x, y, r) && free(x, y, r) && !inClear(x, y, 1.5) && wd >= minD && (maxD == null || wd <= maxD) && !(gy && Math.abs(y - gy) < 6) && y > 6 && y < L - 4; }
   function spotOff(minD, maxD, r, tries){ for (var t = 0; t < (tries || 80); t++){ var yy = L * (0.08 + R() * 0.84), xx = cx(yy) + (R() < 0.5 ? -1 : 1) * (minD + R() * (maxD - minD));
       if (okSpot(xx, yy, r, minD - 1, maxD + 2)) return [xx, yy]; } return null; }
-  /* NO COINS LIE LOOSE ON A TRAIL. They are in chests hidden off the path: tucked in behind a tree or a rock
-     where the camera cannot see them from the path, and one in the clearing. Walk up to a chest and it opens,
+  /* NO COINS LIE LOOSE ON A TRAIL. They are in its one chest: in the clearing, or tucked in behind a tree or a
+     rock where the camera cannot see it from the path. Walk up to a chest and it opens,
      and its coins burst out onto the ground round it for you to walk over. Where each coin lands is fixed by
      the plan, so a coin left on the ground is still lying there next time. */
+  // on crowded ground the coins fly a little further, so a chest always throws most of what it holds
   function drops(x, y, n){ var out = [], a0 = R() * 6.283;
-    for (var i = 0, t = 0; out.length < n && t < n * 8; t++, i++){ var a = a0 + i * 2.39996, r = 2.1 + (i % 4) * 0.55 + R() * 0.5, dx = x + Math.cos(a) * r, dy = y + Math.sin(a) * r * 0.8;
+    for (var i = 0, t = 0; out.length < n && t < n * 14; t++, i++){ var a = a0 + i * 2.39996, r = 2.1 + (i % 4) * 0.55 + R() * 0.5 + Math.floor(t / n) * 0.7, dx = x + Math.cos(a) * r, dy = y + Math.sin(a) * r * 0.8;
       if (okGround(dx, dy, 0.3) && !hitThing(dx, dy) && !(gy && Math.abs(dy - gy) < 1.5) && dy > -0.5 && dy < L + 10) out.push([dx, dy]); }
     return out; }
   function hitThing(x, y){ for (var i = 0; i < P.things.length; i++){ var t = P.things[i], r = BLOCKR[t.k] != null ? BLOCKR[t.k] : t.r; if (t.k === 'arch' || t.k === 'wall' || t.k === 'fence') continue;
@@ -234,11 +254,11 @@ function plan(spec){
     for (var tr = 0; tr < 40 && cand.length; tr++){ var t = cand[(R() * cand.length) | 0], hx = t.x + (R() - 0.5) * 1.6, hy = t.y - (t.r || 1) - 1.6 - R() * 1.2;
       if (okSpot(hx, hy, 1.4, minD, maxD + 4)) return [hx, hy]; }
     return spotOff(minD, maxD, 1.4, 80); }
-  var nch = 3 + (R() < 0.5 ? 1 : 0);
-  for (var ci = 0; ci < nch; ci++){ var hsp = hideSpot(7 + ci * 2, 24); if (hsp){ chest(hsp[0], hsp[1], 5 + ((R() * 5) | 0)); used.push({ x:hsp[0], y:hsp[1], r:4 }); } }
-  // the clearing
-  if (clrKind === 'chest') chest(P.chest.x, P.chest.y, locked ? 16 : 10 + ((R() * 4) | 0), { main:1 });
-  else { for (var cp2 = 0; cp2 < 4; cp2++){ var xp = clr.x + (cp2 % 2 ? 1 : -1) * 1.3, yp = clr.y + (cp2 < 2 ? -0.9 : 0.9); item('brk', xp, yp, { th:themeAt(yp) }); } }
+  // ONE CHEST A TRAIL, the owner's call: in the clearing when the clearing holds one, else tucked in behind a tree.
+  // The rest of what there is to find is the rare things below, for whoever wants more.
+  if (clrKind === 'chest') chest(P.chest.x, P.chest.y, locked ? 18 : 12 + ((R() * 4) | 0), { main:1 });
+  else { var hsp = hideSpot(8, 24) || hideSpot(6, 30) || spotOff(6, 30, 1.2, 200) || [clr.x, clr.y - 1.2]; if (hsp){ chest(hsp[0], hsp[1], 10 + ((R() * 5) | 0)); used.push({ x:hsp[0], y:hsp[1], r:4 }); }
+    for (var cp2 = 0; cp2 < 4; cp2++){ var xp = clr.x + (cp2 % 2 ? 1 : -1) * 1.3, yp = clr.y + (cp2 < 2 ? -0.9 : 0.9); item('brk', xp, yp, { th:themeAt(yp) }); } }
   if (locked){ for (var tk2 = 0; tk2 < 60; tk2++){ var ky = L * (0.15 + R() * 0.7), kxp = cx(ky) - sg * (8 + R() * 10);
       if (okGround(kxp, ky, 1) && free(kxp, ky, 1) && walkD(kxp, ky) > PW + 3 && !inClear(kxp, ky, 2) && !(gy && Math.abs(ky - gy) < 6)){ item('key', kxp, ky); used.push({ x:kxp, y:ky, r:1 }); break; } } }
   // the golden ball: off the path, tucked behind a landmark or a tree if it can be
@@ -678,7 +698,7 @@ function run(box, P, pic, api){
     var im = img(f.url); if (!im.complete || !im.naturalWidth){ var lf = who && lastFig[who]; if (!lf) return null; f = lf.f; im = lf.im; } else if (who) lastFig[who] = { f:f, im:im };
     var hgt = GH * CE / ART * kk, k2 = hgt / f.fig, p = scr(x, y), rx = Math.round(p[0] - f.ball[0] * k2), ry = Math.round(p[1] - f.ball[1] * k2), rw = Math.round(f.W * k2), rh = Math.round(f.H * k2);
     ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(im, rx, ry, rw, rh); ctx.restore(); occlude(rx, ry, rw, rh, x, y, pic.zAt(x, y), see); return [rx, ry, rw, rh]; }
-  // a coin, a key and the golden ball are drawn at the scene's own pixel size, so they sit in it
+  // a coin is drawn at the scene's own pixel size, so it sits in it
   function drawCoin(t, now){ var f = t.fly;
     if (f && now < f.t0 + f.dur){ if (now < f.t0) return; var u = (now - f.t0) / f.dur, fx = f.x0 + (t.x - f.x0) * u, fy = f.y0 + (t.y - f.y0) * u, fz = f.z0 + (pic.zAt(t.x, t.y) + 0.4 - f.z0) * u + Math.sin(u * Math.PI) * 3.2;
       var fp = scr(fx, fy, fz), fs = Math.max(2, Math.round(kk)), fw = Math.max(1, Math.round(Math.abs(Math.cos(now * 14 + t.x)) * 5));
@@ -688,17 +708,15 @@ function run(box, P, pic, api){
     var rx = Math.round(p[0] - w * s / 2), ry = Math.round(p[1] - h * s); ctx.fillStyle = '#7a5200'; ctx.fillRect(rx - s, ry, (w + 2) * s, h * s); ctx.fillRect(rx, ry - s, w * s, (h + 2) * s);
     ctx.fillStyle = '#ffd23a'; ctx.fillRect(rx, ry, w * s, h * s); ctx.fillStyle = '#fff3a8'; if (w > 2) ctx.fillRect(rx + s, ry + s, s, (h - 2) * s);
     occlude(rx - s, ry - s, (w + 2) * s, (h + 2) * s, t.x, t.y, pic.zAt(t.x, t.y)); }
-  function drawKey(t, now){ var z = pic.zAt(t.x, t.y) + 1.3 + Math.sin(now * 2.4) * 0.2, p = scr(t.x, t.y, z), s = Math.max(2, Math.round(kk)), rx = Math.round(p[0] - 4 * s), ry = Math.round(p[1] - 4 * s);
-    var shp = scr(t.x, t.y); ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(Math.round(shp[0] - 3 * s), Math.round(shp[1] - s / 2), 6 * s, s);
-    ctx.fillStyle = '#7a5200'; ctx.fillRect(rx, ry, 4 * s, 4 * s); ctx.fillRect(rx + 3 * s, ry + s, 6 * s, 2 * s); ctx.fillStyle = '#ffd23a'; ctx.fillRect(rx + s, ry + s, 2 * s, 2 * s); ctx.fillRect(rx + 4 * s, ry + 1.5 * s | 0, 5 * s, s); ctx.fillRect(rx + 7 * s, ry + 2 * s, s, 2 * s);
-    sparkle(p[0], p[1] - 2 * s, now, s); occlude(rx, ry, 10 * s, 5 * s, t.x, t.y, pic.zAt(t.x, t.y)); }
-  function drawGolden(t, now){ var z = pic.zAt(t.x, t.y) + 0.8 + Math.sin(now * 2) * 0.1, p = scr(t.x, t.y, z), s = Math.max(2, Math.round(kk)), r = 3;
-    var shp = scr(t.x, t.y); ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(Math.round(shp[0] - 2 * s), Math.round(shp[1] - s / 2), 4 * s, s);
-    for (var yy = -r; yy <= r; yy++) for (var xx = -r; xx <= r; xx++){ var d = Math.hypot(xx, yy); if (d > r + 0.3) continue; ctx.fillStyle = d > r - 0.7 ? '#7a5200' : (xx + yy < -1 ? '#fff3a8' : (xx + yy) % 3 === 0 ? '#e0a820' : '#ffd23a'); ctx.fillRect(Math.round(p[0] + xx * s), Math.round(p[1] + yy * s - r * s), s, s); }
-    sparkle(p[0], p[1] - r * s, now, s); occlude(Math.round(p[0] - (r + 1) * s), Math.round(p[1] - (2 * r + 2) * s), (2 * r + 3) * s, (2 * r + 3) * s, t.x, t.y, pic.zAt(t.x, t.y)); }
-  /* the rare things: a little pixel picture floating over a glow on the ground, so they read as special */
-  function drawPix(t, now, rows, pal){ var z = pic.zAt(t.x, t.y) + 1.2 + Math.sin(now * 2.2 + t.x) * 0.18, p = scr(t.x, t.y, z), s = Math.max(2, Math.round(kk)), w = rows[0].length, h = rows.length;
-    var shp = scr(t.x, t.y), gl = 0.25 + 0.15 * Math.sin(now * 3); ctx.fillStyle = 'rgba(255,240,170,' + gl.toFixed(2) + ')'; ctx.beginPath(); ctx.ellipse(shp[0], shp[1], 5 * s, 2 * s, 0, 0, 7); ctx.fill();
+  /* a find: its own picture, bigger than a coin, bobbing over a pool of its colour, in a column of its own light
+     that shows over the trees, so you can see what it is and where it is from a long way off */
+  function drawLoot(t, now){ var L = LOOT[t.k], rows = L.rows, pal = lootPal(t), bc = lootBeam(t), z = pic.zAt(t.x, t.y) + 1.4 + Math.sin(now * 2.2 + t.x) * 0.2, p = scr(t.x, t.y, z),
+      s = Math.max(2, Math.round(kk * 1.25)), w = rows[0].length, h = rows.length, shp = scr(t.x, t.y), pu = 0.5 + 0.5 * Math.sin(now * 3 + t.y);
+    if (bc){ var bw = 9 * s, bh = Math.round(H * 0.45), gr = ctx.createLinearGradient(0, shp[1] - bh, 0, shp[1]);
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      gr.addColorStop(0, 'rgba(' + bc + ',0)'); gr.addColorStop(0.6, 'rgba(' + bc + ',' + (0.18 + 0.08 * pu).toFixed(2) + ')'); gr.addColorStop(1, 'rgba(' + bc + ',' + (0.4 + 0.15 * pu).toFixed(2) + ')'); ctx.fillStyle = gr; ctx.fillRect(Math.round(shp[0] - bw / 2), Math.round(shp[1] - bh), bw, bh);
+      ctx.fillStyle = 'rgba(' + bc + ',' + (0.35 + 0.15 * pu).toFixed(2) + ')'; ctx.fillRect(Math.round(shp[0] - s), Math.round(shp[1] - bh), 2 * s, bh);
+      ctx.beginPath(); ctx.ellipse(shp[0], shp[1], 7 * s, 2.6 * s, 0, 0, 7); ctx.fill(); ctx.restore(); }
     var rx = Math.round(p[0] - w * s / 2), ry = Math.round(p[1] - h * s);
     for (var yy = 0; yy < h; yy++) for (var xx = 0; xx < w; xx++){ var ch = rows[yy][xx]; if (ch === '.') continue; ctx.fillStyle = pal[ch] || pal.r; ctx.fillRect(rx + xx * s, ry + yy * s, s, s); }
     sparkle(p[0], ry, now, s); occlude(rx, ry, w * s, h * s, t.x, t.y, pic.zAt(t.x, t.y)); }
@@ -779,7 +797,7 @@ function run(box, P, pic, api){
 
   // ---- input: a stick under the thumb, or the keys
   var ui = document.createElement('div'); ui.className = 'pp-tui'; ui.innerHTML = '<div class="pp-stick" data-stick><i></i></div><div class="pp-way" data-way><i></i><b></b></div><div class="pp-pin" data-pin><b></b><i></i></div>' +
-    '<div class="pp-thud"><span data-coins>+0</span><span data-chest></span><span data-gold></span></div><div class="pp-rbar"><button class="pp-rb pp-talkb" data-talk hidden></button><button class="pp-rb" data-auto>Auto walk</button><button class="pp-rb" data-skip></button></div><div class="pp-rhint" data-hint></div><div class="pp-bub" data-bub hidden></div>';
+    '<div class="pp-thud"><span data-coins>+0</span><span data-gold></span></div><div class="pp-tlist" data-tlist></div><div class="pp-rbar"><button class="pp-rb pp-talkb" data-talk hidden></button><button class="pp-rb" data-auto>Auto walk</button><button class="pp-rb" data-skip></button></div><div class="pp-rhint" data-hint></div><div class="pp-bub" data-bub hidden></div>';
   box.appendChild(ui);
   var stick = ui.querySelector('[data-stick]'), knob = stick.firstChild, way = ui.querySelector('[data-way]'), pin = ui.querySelector('[data-pin]'), bubEl = ui.querySelector('[data-bub]'), hint = ui.querySelector('[data-hint]');
   var coarse = false; try{ coarse = matchMedia('(pointer: coarse)').matches; }catch(e){}
@@ -808,9 +826,14 @@ function run(box, P, pic, api){
   function say(txt, ms){ bubble = { txt:txt, until:performance.now() + (ms || 3200) }; bubEl.textContent = txt; bubEl.hidden = false; }
   function burst(x, y, z, cols, n){ for (var i = 0; i < n; i++){ var a = Math.random() * 6.28, sp2 = 2 + Math.random() * 4; parts.push({ x:x, y:y, z:z, vx:Math.cos(a) * sp2, vy:Math.sin(a) * sp2 * 0.6, vz:3 + Math.random() * 4, c:cols[i % cols.length], t:0 }); } }
   function hudCoins(){ ui.querySelector('[data-coins]').textContent = '+' + coinsGot; }
-  function hudChests(){ var n = chests.filter(function(t){ return t.done; }).length; ui.querySelector('[data-chest]').textContent = chests.length ? 'Chests ' + n + '/' + chests.length : ''; }
-  function hudGold(){ var gd = api.golden ? api.golden() : null; ui.querySelector('[data-gold]').textContent = gd ? '● ' + gd.have + '/' + gd.total : ''; }
-  hudGold(); hudChests();
+  /* WHAT IS ON THIS TRAIL, said up front: a list of every find with its picture, ticked off as it is picked up,
+     so a player always knows what they are looking for. Coins are not on it: they come out of the chest. */
+  function hudList(){ var el = ui.querySelector('[data-tlist]'), fs = items.filter(function(t){ return LOOT[t.k]; });
+    el.innerHTML = fs.length ? '<b>On this trail</b>' + fs.map(function(t){ var nm = t.k === 'trinket' ? t.name || 'Trinket' : t.k === 'part' ? (t.name || 'Putter part') : LOOT[t.k].name;
+      if (t.k === 'chest' && t.drops) nm = 'Chest'; return '<span class="' + (t.done ? 'got' : '') + '"><img alt="" src="' + lootIcon(t) + '">' + nm.replace(/[<>&]/g, '') + '</span>'; }).join('') : ''; }
+  function hudChests(){}
+  function hudGold(){ var gd = api.golden ? api.golden() : null; ui.querySelector('[data-gold]').textContent = gd ? 'Golden balls ' + gd.have + '/' + gd.total : ''; }
+  hudGold(); hudChests(); hudList();
   /* THE GREETER. They wait where the plan put them until you come within reach, then walk up to you, the
      way a board game host does, and talk: a box at the foot of the screen, their face in it, the words typed
      out, a tap for the next page. Walking is paused while they talk. After that they stay by the path, and
@@ -848,7 +871,8 @@ function run(box, P, pic, api){
     if (hs.ph === 'come'){ g.face = [-dx, -dy]; g.aimI = null; if (d > 3.2){ var v = Math.min(5.2 * dt, d - 3.2); hs.x += dx / d * v; hs.y += dy / d * v; hs.dist += v; hs.moving = true; hs.face = [dx, dy]; } else talk(); }
     else if (hs.ph === 'idle'){ hs.moving = false; if (d < 7) hs.face = [dx, dy]; }
     talkB.hidden = !(hs.ph === 'idle' && d < 3.6); }
-  function take(t, now){ var z = pic.zAt(t.x, t.y);
+  function take(t, now){ take0(t, now); if (LOOT[t.k]) hudList(); }
+  function take0(t, now){ var z = pic.zAt(t.x, t.y);
     if (t.k === 'coin'){ t.done = true; coinsGot += COIN_V; hudCoins(); burst(t.x, t.y, z + 1.2, ['#ffd23a', '#fff3a8'], 6); pick('coin', t.id, COIN_V); api.sfx && api.sfx('coin'); }
     else if (t.k === 'chest'){ t.done = true; t.openAt = now; burst(t.x, t.y, z + 1.4, ['#ffd23a', '#fff3a8', '#ffffff'], 14); pick('chest', t.id, 0); hudChests(); api.sfx && api.sfx('coin');
       // the coins fly out of the lid in an arc and land where the plan put them
@@ -930,11 +954,7 @@ function run(box, P, pic, api){
     for (var i = 0; i < ds.length; i++){ var t = ds[i];
       if (t.k === 'me') drawMe(tsec);
       else if (t.k === 'coin') drawCoin(t, tsec);
-      else if (t.k === 'key') drawKey(t, tsec);
-      else if (t.k === 'golden') drawGolden(t, tsec);
-      else if (t.k === 'life') drawPix(t, tsec, PIX_HEART, { r:'#e5483a', h:'#ff9d8a', o:'#6a1410' });
-      else if (t.k === 'trinket') drawPix(t, tsec, PIX_GEM, { r:t.col || '#b48cff', h:'#ffffff', o:'#2a1a40' });
-      else if (t.k === 'part') drawPix(t, tsec, PIX_PART, { r:'#cfd8e2', h:'#ffffff', o:'#2e3640', g:'#ffd23a' });
+      else if (LOOT[t.k] && t.k !== 'chest') drawLoot(t, tsec);
       else if (t.k === 'chest') drawSprite(t.done ? SPR.chest1 : SPR.chest0, t.x, t.y, pic.zAt(t.x, t.y));
       else if (t.k === 'brk') drawSprite(brkSprite(t), t.x, t.y, pic.zAt(t.x, t.y));
       else if (t.k === 'npc') drawFigure(npcFrame(t), t.x, t.y);

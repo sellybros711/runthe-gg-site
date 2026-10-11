@@ -451,31 +451,35 @@ if (!args.includes('--no-browser')){
       const cpos = p => JSON.stringify(p.items.filter(t => t.k === 'chest').map(t => [t.x | 0, t.y | 0]));
       out.sameCoins = plans.slice(1).filter((p, i) => cpos(p) === cpos(plans[i])).length;
       out.looseCoins = plans.reduce((n, p) => n + p.items.filter(t => t.k === 'coin').length, 0);
-      out.hidden = plans.map(p => p.items.filter(t => t.k === 'chest' && !t.main)).map(cs => cs.length).sort((a, b) => a - b)[0];
-      out.offPath = plans.every(p => p.items.filter(t => t.k === 'chest' && !t.main).every(t => p.walkD(t.x, t.y) > 5));
+      out.oneChest = plans.every(p => p.items.filter(t => t.k === 'chest').length === 1);
+      out.offPath = plans.every(p => p.items.filter(t => t.k === 'chest' && !t.main).every(t => p.walkD(t.x, t.y) > 4));
       out.drops = plans.every(p => p.items.filter(t => t.k === 'chest').every(t => t.drops.length >= 4));
       const fromL = 1 + plans.findIndex(p => p.fence), fromT = 1 + plans.findIndex(p => p.items.some(t => t.k === 'trinket'));
       let t = await open(fromL);
       out.trail = !!t && S().screen === 'trail' && !S().round && !!document.querySelector('.pp-tcv') && !!document.querySelector('.pp-stick');
       out.mark = !!document.querySelector('.pp-pin.on,.pp-way.on');
       const p0 = t.pos(); t.stick(0, -1); await sleep(900); t.stick(0, 0); const p1 = t.pos(); out.moved = p0[1] - p1[1];
-      const P = t.plan(), its = t.items(), key = its.find(i => i.k === 'key'), chest = its.find(i => i.k === 'chest' && i.main), hid = its.find(i => i.k === 'chest' && !i.main), gold = its.find(i => i.k === 'golden'), K = 'main:' + (fromL + 1);
+      const P = t.plan(), its = t.items(), key = its.find(i => i.k === 'key'), chest = its.find(i => i.k === 'chest' && i.main), gold = its.find(i => i.k === 'golden'), K = 'main:' + (fromL + 1);
       const paid = []; const h0 = S().host, c0 = h0.coins; h0.coins = (n, l) => { paid.push(n); };
       const coinsOf = c => its.filter(i => i.k === 'coin' && i.ch === c);
+      // what there is to find is listed on screen, each with its own picture
+      out.list = [...document.querySelectorAll('[data-tlist] span')].map(e => e.textContent); out.listImgs = document.querySelectorAll('[data-tlist] img').length;
       out.locked = !!P.fence && !!key && !!chest; await visit(t, chest.x, chest.y + 2.4); out.shutChest = !(rec()[K] && (rec()[K].ch || []).indexOf(chest.id) >= 0);
-      // a hidden chest: nothing on the ground until it is opened, then its coins land round it and are walked over
-      out.buried = coinsOf(hid).every(c => !c.out); await visit(t, hid.x, hid.y + 2.0); await sleep(1200);
-      const hc = coinsOf(hid); out.burst = hc.length >= 4 && hc.every(c => c.out);
+      // the chest: nothing on the ground until it is opened, then its coins land round it and are walked over
+      out.buried = coinsOf(chest).every(c => !c.out);
+      await visit(t, key.x, key.y); await visit(t, P.lockGate.x, P.lockGate.y); await visit(t, chest.x, chest.y + 2.0); await sleep(1200);
+      const cc = coinsOf(chest), stand = [chest.x, chest.y + 2.05], left = cc.slice().sort((a, b) => Math.hypot(b.x - stand[0], b.y - stand[1]) - Math.hypot(a.x - stand[0], a.y - stand[1]))[0], hc = cc.filter(c => c !== left && Math.hypot(c.x - left.x, c.y - left.y) > 1.6); out.burst = cc.length >= 4 && cc.every(c => c.out);
+      const bal0 = (document.querySelector('[data-bal]') || {}).textContent;
       for (const c of hc) await visit(t, c.x, c.y);
-      out.hidCoins = hc.every(c => c.done); out.paid = paid.reduce((a, b) => a + b, 0) === hc.length * window.RTT_PUTT_TRAIL.COIN_V && paid.length === hc.length;
-      await visit(t, key.x, key.y); await visit(t, P.lockGate.x, P.lockGate.y); await visit(t, chest.x, chest.y + 2.0); await sleep(1200); await visit(t, gold.x, gold.y);
-      const left = coinsOf(chest)[0]; h0.coins = c0;
-      const r = rec()[K] || {}; out.coin = hc.every(c => (r.c || []).indexOf(c.id) >= 0); out.key = r.key === 1; out.chest = (r.ch || []).indexOf(chest.id) >= 0 && (r.ch || []).indexOf(hid.id) >= 0; out.gold = r.g === 1; out.bub = (document.querySelector('[data-bub]') || {}).textContent || '';
+      const got = cc.filter(c => c.done).length; out.hidCoins = hc.every(c => c.done) && !left.done; out.paid = got > 0 && paid.reduce((a, b) => a + b, 0) === got * window.RTT_PUTT_TRAIL.COIN_V && paid.length === got;
+      await visit(t, gold.x, gold.y); h0.coins = c0;
+      out.listGot = document.querySelectorAll('[data-tlist] span.got').length;
+      const r = rec()[K] || {}; out.coin = hc.every(c => (r.c || []).indexOf(c.id) >= 0); out.key = r.key === 1; out.chest = (r.ch || []).indexOf(chest.id) >= 0; out.gold = r.g === 1; out.bub = (document.querySelector('[data-bub]') || {}).textContent || '';
       // walking through the arch opens the hole
       await visit(t, P.cx(0), 2.5); t.stick(0, -1); for (let i = 0; i < 40 && !(S().round && S().round.lv === fromL + 1); i++) await sleep(50); out.reached = S().round && S().round.lv; out.want = fromL + 1;
       // what was picked up stays picked up
       t = await open(fromL); const it2 = t.items(), lc = it2.find(i => i.id === left.id);
-      out.kept = it2.filter(i => i.k === 'coin' && i.ch && i.ch.id === hid.id).every(i => i.done) && it2.filter(i => i.k === 'chest' && (i.id === hid.id || i.id === chest.id)).every(i => i.done) && lc.out && !lc.done;
+      out.kept = hc.length > 0 && it2.filter(i => i.k === 'coin' && hc.some(c => c.id === i.id)).every(i => i.done) && it2.find(i => i.k === 'chest').done && lc.out && !lc.done;
       document.querySelector('[data-skip]').click(); await sleep(80); out.skipTo = S().round && S().round.lv;
       // the rare things: a trinket and whatever else that trail carries, into the record and the Bag
       t = await open(fromT); const rares = t.items().filter(i => i.k === 'trinket' || i.k === 'part' || i.k === 'life');
@@ -498,8 +502,9 @@ if (!args.includes('--no-browser')){
       window.RTT_PUTT.close(); seed(1, 19); openPutt(); await sleep(300); const me = document.querySelector('.pp-me.tap'); if (me) me.click(); for (let i = 0; i < 400 && !T(); i++) await sleep(50); out.tap = S().screen === 'trail';
       window.RTT_PUTT.close(); sbUser = { id:'chk' }; return out; });
     claim(wk.styles >= 3 && wk.clrs >= 3 && wk.sameCoins === 0, `seventeen trails take at least three shapes and three kinds of clearing, and no two hide their chests in the same places (${wk.styles}, ${wk.clrs}, ${wk.sameCoins})`);
-    claim(wk.looseCoins === 0 && wk.hidden >= 2 && wk.offPath && wk.drops, `no coin lies loose on a trail: every trail hides at least two chests off the path, each with coins to throw (${wk.looseCoins} loose, fewest hidden ${wk.hidden})`);
-    claim(wk.buried && wk.burst && wk.hidCoins && wk.paid, `opening a hidden chest throws its coins onto the ground, and each one walked over is paid into the account (${JSON.stringify([wk.buried, wk.burst, wk.hidCoins, wk.paid])})`);
+    claim(wk.looseCoins === 0 && wk.oneChest && wk.offPath && wk.drops, `no coin lies loose on a trail: every trail has one chest, a hidden one off the path, with coins to throw (${wk.looseCoins} loose)`);
+    claim(wk.listImgs >= 3 && wk.listImgs === wk.list.length && wk.list.some(x => /Chest/.test(x)) && wk.list.some(x => /Golden ball/.test(x)) && wk.list.some(x => /Key/.test(x)) && wk.listGot >= 3, `the trail lists every find with its own picture, and ticks them off (${JSON.stringify(wk.list)}, ${wk.listGot} ticked)`);
+    claim(wk.buried && wk.burst && wk.hidCoins && wk.paid, `opening the chest throws its coins onto the ground, and each one walked over is paid into the account (${JSON.stringify([wk.buried, wk.burst, wk.hidCoins, wk.paid])})`);
     claim(wk.tk === 1 && wk.bagTk === 1 && (wk.rk.indexOf('part') < 0 || wk.parts === 1) && (wk.rk.indexOf('life') < 0 || wk.bank === 1), `a trinket and the rare things on its trail are kept, and the Bag shows them (${wk.rk}: ${wk.tk}, ${wk.parts}, ${wk.bank}, bag ${wk.bagTk})`);
     claim(wk.trail && wk.mark && wk.moved > 3, `Next opens the trail with the golfer, a stick and a waypoint, and the stick walks him (${wk.trail}, ${wk.mark}, ${(wk.moved || 0).toFixed(1)} ft)`);
     claim(wk.locked && wk.shutChest && wk.coin && wk.key && wk.chest && wk.gold && /Golden ball/.test(wk.bub), `the coins, the key, the chest it opens and the golden ball are picked up and kept (${JSON.stringify([wk.coin, wk.key, wk.chest, wk.gold, wk.bub])})`);

@@ -19962,13 +19962,16 @@ walked with a stick or the arrows, or on Auto walk along the path; Skip goes str
   path and half the time hidden in the trees, and holds a chest or a pile to smash. check-putt plans seventeen
   trails and asserts at least three shapes, three kinds of clearing, and no two hiding their chests in the same
   places.
-- **NO COIN LIES LOOSE. Coins are in chests**, the owner's call. Three or four are hidden off the path on every
-  trail (`hideSpot`: just north of a tree or a rock, so the camera cannot see them from the path), plus the
-  clearing's. Walking up to one opens it and its coins fly out and land round it; each is walked over to pick
+- **NO COIN LIES LOOSE. Coins are in a chest, ONE A TRAIL**, the owner's call: in the clearing when it holds
+  one, else hidden off the path (`hideSpot`: just north of a tree or a rock). Walking up to it opens it and its coins fly out and land round it; each is walked over to pick
   up and paid into the Run The Tour wallet (`COIN_V` each, through the host's `coins`). A chest pays nothing
   itself. Where each coin lands is fixed by the plan (`drops`), so a coin left on the ground is still there next
-  time. Breakables are the only other coins. check-putt opens a hidden chest, picks its coins up and checks the
-  payout.
+  time. Breakables are the only other coins. Paying refreshes the wallet pill at the top (`coins()` in putt.js
+  rewrites every `[data-bal]`). check-putt opens the chest, picks its coins up and checks the payout.
+- **A find never looks like a coin.** `LOOT` in trail.js draws each its own way, bigger than a coin: the golden
+  ball on a tee, a key, a heart, a gem in the trinket's colour, a putter. Each stands in a column of light of its
+  own colour that shows over the trees. The list under the top of the screen (`hudList`, "On this trail") names
+  every find on the trail with the same picture and ticks it off, so a player always knows what to look for.
 - **What is on the trail is kept** in the Tour record as `st.trail['tour:to']`: coins (`c`), chests opened
   (`ch`), breakables smashed, the key, the golden ball and the rare things below. `k` is the clearing chest on a
   record from before chests held coins: it reads as opened with its coins already paid. A chest is locked behind

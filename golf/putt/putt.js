@@ -1885,7 +1885,8 @@ var CSS = '\
 .pp-rbar{position:absolute;right:12px;bottom:max(14px,env(safe-area-inset-bottom));display:flex;gap:8px;pointer-events:auto}.pp-rb{font:inherit;font-size:12px;font-weight:900;border-radius:12px;border:2px solid #3a2a14;background:#f6ead2;color:#3a2a14;padding:8px 12px;cursor:pointer;box-shadow:0 3px 0 rgba(0,0,0,.35)}.pp-rb.on{background:#ffd24a}\
 .pp-wv{position:relative}.pp-wv>.pp-hdr{z-index:6}\
 .pp-mapb,.pp-toworld{display:flex;align-items:center;gap:6px;height:38px;width:auto;border-radius:12px;border:2px solid #3a2a14;background:#ffd24a;color:#3a2a14;font:900 14px system-ui,sans-serif;padding:0 12px 0 8px;cursor:pointer;box-shadow:0 3px 0 #3a2a14}.pp-mapb svg,.pp-toworld svg{width:22px;height:22px;display:block}.pp-mapb:active,.pp-toworld:active{transform:translateY(2px);box-shadow:0 1px 0 #3a2a14}\
-.pp-wv .pp-thud{top:calc(env(safe-area-inset-top,0px) + 102px)}.pp-wv .pp-rhint{top:auto;bottom:calc(max(14px,env(safe-area-inset-bottom)) + 58px)}\
+.pp-wv .pp-thud{top:calc(env(safe-area-inset-top,0px) + 102px)}.pp-tlist{position:absolute;left:10px;top:calc(env(safe-area-inset-top,0px) + 134px);display:flex;flex-direction:column;gap:3px;max-width:46vw;pointer-events:none}.pp-tlist:empty{display:none}.pp-tlist b{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#fff;text-shadow:0 1px 2px #000}.pp-tlist span{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:800;color:#fff;background:rgba(20,16,10,.62);border-radius:9px;padding:3px 8px 3px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pp-tlist img{width:20px;height:16px;object-fit:contain;image-rendering:pixelated;flex:none}.pp-tlist span.got{opacity:.55;text-decoration:line-through}\
+.pp-wv .pp-rhint{top:auto;bottom:calc(max(14px,env(safe-area-inset-bottom)) + 58px)}\
 .pp-hub:has(.pp-daily) .pp-bagb{top:calc(env(safe-area-inset-top,0px) + 178px)}\
 .pp-wv>.pp-bagb{top:calc(env(safe-area-inset-top,0px) + 98px);z-index:5}\
 .pp-tgoal{position:absolute;left:50%;top:calc(env(safe-area-inset-top,0px) + 58px);transform:translateX(-50%);z-index:5;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:1px;max-width:calc(100% - 24px);background:rgba(10,18,14,.8);border:2px solid rgba(255,210,74,.7);border-radius:12px;padding:4px 12px;text-align:center}\
@@ -1903,7 +1904,7 @@ var CSS = '\
 @keyframes ppgd{0%{opacity:0;transform:translateY(60px)}100%{opacity:1;transform:none}}.pp-tui:has(.pp-gd) .pp-rbar,.pp-tui:has(.pp-gd) .pp-way,.pp-tui:has(.pp-gd) .pp-pin,.pp-tui:has(.pp-gd) .pp-stick,.pp-tui:has(.pp-gd) .pp-rhint{display:none}\
 .pp-gdp.pic{background-repeat:no-repeat;background-size:230%;background-position:50% 8%;background-color:var(--gc);image-rendering:pixelated}\
 .pp-talkb{background:#ffd24a!important;animation:ppway 1s ease-in-out infinite}.pp-talkb[hidden]{display:none}\
-@media (min-width:900px){.pp-wv .pp-thud{top:120px}.pp-wv>.pp-bagb{top:118px}.pp-tgoal{top:72px}.pp-gd p{font-size:18px}}\
+@media (min-width:900px){.pp-wv .pp-thud{top:120px}.pp-tlist{top:152px}.pp-wv>.pp-bagb{top:118px}.pp-tgoal{top:72px}.pp-gd p{font-size:18px}}\
 .pp-rhint{position:absolute;left:50%;top:70px;transform:translateX(-50%);font-size:13px;font-weight:900;color:#fff;background:rgba(10,18,14,.78);border-radius:12px;padding:6px 12px;white-space:nowrap;transition:opacity .4s}.pp-rhint.gone{opacity:0}\
 /* A WORLD DOOR: two leaves made of that world, a lock that fills with the stars you have */\
 .pp-door{position:absolute;z-index:6;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .35s;background:radial-gradient(ellipse at center,rgba(0,0,0,.35),rgba(0,0,0,.75))}.pp-door.in{opacity:1}\
@@ -2123,7 +2124,7 @@ function guestSheet(){
   sh.querySelector('[data-n]').onclick = function(){ sh.remove(); }; }
 function livesMax(){ try{ var h = hostOf(); return h.passActive && h.passActive() ? 6 : 3; }catch(e){ return 3; } }
 function loseLife(st){ if (lifeExtra(st) > 0){ st.bspent = (st.bspent || 0) + 1; psave(st); return; } st.lives = Math.max(0, (st.lives == null ? livesMax() : st.lives) - 1); if (st.lives === 0 && !st.refillAt) st.refillAt = Date.now() + LIFE_MS; st.lt = Date.now(); psave(st); livesCall('putt_lives_spend'); }
-function coins(n, label){ try{ if (S.host.coins) S.host.coins(n, label); }catch(e){} }
+function coins(n, label){ try{ if (S.host.coins) S.host.coins(n, label); }catch(e){} var b = balStr(); if (b !== '' && S.ov) S.ov.querySelectorAll('[data-bal]').forEach(function(e){ e.textContent = b; }); }   // the wallet at the top moves the moment coins land
 function hms(ms){ ms = Math.max(0, ms); var s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return h + ':' + (m < 10 ? '0' : '') + m + ':' + (x < 10 ? '0' : '') + x; }
 function hm(ms){ var m = Math.max(0, Math.round(ms / 60000)); return Math.floor(m / 60) + 'h ' + (m % 60) + 'm'; }
 // how long until the game's day turns over (Eastern midnight), which is when the next Daily Hole arrives
