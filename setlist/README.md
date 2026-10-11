@@ -288,15 +288,24 @@ disagree with the scorecard that follows it. Tap to skip.
 `scoring.js` is the source of truth; this is a summary, not a spec.
 
 ```
-perSong = base            SONG       is this a song people treasure?
+perSong = (base - 25)      SONG       is this a song people treasure?
         x versionMult     VERSION    was this a special night for it?
         x placementMult   PLACEMENT  does it suit where it landed?
+        x minutes / 10    LENGTH     how much of the night did it hold?
 
-total   = sum(perSong) + time + flow
+total   = sum(perSong) + time + flow + breadth
 ```
 
-**SONG** is `crowd_rating` — 30 ordinary, up to 75 at the top of the jamcharts.
-See `DATA_CONTRACT.md` for how it is derived.
+**SONG** is `crowd_rating`, 38 to 75 in the archive, measured from a floor of 25
+so the best song is worth about four times the worst rather than twice. An
+unrated take counts as 40. See `DATA_CONTRACT.md` for how it is derived.
+
+**LENGTH (v6).** A song is paid for every minute it holds the stage. Before v6 it
+paid once whatever its length, so on a fixed clock four short songs beat one long
+jam and random play (which drifts short) reached 82% of the best possible night.
+Now it reaches 61%, careful play 88%. `node setlist/build/sim.mjs 200 --best`
+plays four strategies on the same draws and prints the table. The leaderboard
+starts again at v6 (`SCORING_SINCE` in `board.js`).
 
 **VERSION** is additive: recommended +0.55 (or jamcharted +0.30), 20+ min +0.25
 (or 15+ min +0.12), rarity by show gap 100+ +0.40 · 50+ +0.25 · 20+ +0.15 ·

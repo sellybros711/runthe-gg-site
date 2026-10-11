@@ -192,12 +192,22 @@
      Anonymous on a board whose whole job is to say who did what. Every ranking call
      asks for this and the activity count deliberately does not, which is the
      difference between "how many shows were drafted" and "who is on the board". */
+  /* THE BOARD STARTS AGAIN AT SCORING v6. From here a song is paid for its time
+     on stage (see QUALITY_FLOOR in scoring.js), which moved what a random night
+     scores from about 82% of the best to about 61%. Ranking a v6 night against
+     v5 totals and percentages would put it under numbers it could not have
+     earned, so every ranking and listing reads only rows filed after the change.
+     The old rows are still in the table and still on each player's profile. */
+  const SCORING_SINCE = '2026-10-11T23:00:00Z';
+
   function scope(opts) {
     opts = opts || {};
     let f = '&band=eq.' + encodeURIComponent(opts.band || 'goose');
     if (opts.named) f += '&display_name=not.is.null';
-    const cut = cutoffISO(opts.win || 'all');
-    if (cut) f += '&created_at=gte.' + encodeURIComponent(cut);
+    let cut = cutoffISO(opts.win || 'all');
+    const since = window.SEGUE_SCORING_SINCE || SCORING_SINCE;   // a harness can move it
+    if (!cut || cut < since) cut = since;
+    f += '&created_at=gte.' + encodeURIComponent(cut);
     return f;
   }
 
@@ -462,9 +472,29 @@
     } catch (e) { failThrown('attended', e); return false; }
   }
 
+  /* ---------------- the whole crowd ----------------
+     Every night drafted on this band's board, guests included, as one number each:
+     the percentage of its own best possible night (the axis the draw cannot
+     inflate). The results screen stands the player among them. Capped, because a
+     picture of a crowd needs a few hundred people and not the whole history, and
+     sorted here so the caller gets a ready ranking. Null on any failure, which the
+     caller reads as "draw nothing". */
+  const SPREAD_LIMIT = 5000;
+  async function spread(band) {
+    const url = base() + TABLE + '?select=pct_of_best&pct_of_best=not.is.null' +
+      '&order=pct_of_best.desc&limit=' + SPREAD_LIMIT + scope({ band });
+    try {
+      const res = await timed(url, { headers: headers() });
+      if (!res.ok) return await fail('spread', res);
+      const rows = await res.json().catch(() => null);
+      if (!Array.isArray(rows)) return null;
+      return rows.map(r => Number(r.pct_of_best)).filter(Number.isFinite);
+    } catch (e) { return failThrown('spread', e); }
+  }
+
   window.SEGUE_BOARD = {
-    API_VERSION: 1,
-    submit, top, mine, ranks, placeIn, total, claim, probe, cutoffISO,
+    API_VERSION: 2,
+    submit, top, mine, ranks, placeIn, total, claim, probe, cutoffISO, spread,
     syncAttended, forgetAttended,
     SORTS,
     get offline() { return offline; },
