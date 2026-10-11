@@ -19948,9 +19948,20 @@ flat cut-out standing at its anchor, so the sea in front of a long hull painted 
 
 **The walk to the next hole is a place you walk through** (`golf/putt/trail.js`, `RTT_PUTT_TRAIL`). Next opens a
 3D trail of the world, drawn by `hole3d.js` from a scene (`opt.scene`) at a finer art grid (`TART`, an eighth of
-a foot a pixel), about 150 ft long, so two to three screens of walking. The golfer is `golfer3d.js`'s walk
+a foot a pixel), 110 ft long, so about two screens of walking. The golfer is `golfer3d.js`'s walk
 (eight frames a stride plus `ws`, standing), picked off the distance walked so the feet never skate. He is
 walked with a stick or the arrows, or on Auto walk along the path; Skip goes straight to the hole.
+
+**The holes at each end of a walk are the real holes** (`courseFoot` in putt.js, `feet` and `footAt` in the plan).
+Each is the compiled course rastered to a grid of codes (carpet, fringe, rail, block, cup, water, sand, ice) and
+scaled to fit about 24 ft, laid into the land with its own carpet and wall colours and a flag in the cup. The hole
+just played sits behind the start with its cup on the path's line, so he walks away from it; the next one sits past
+the arch with its tee on the path. A player reported starting the walk from 17 to 18 with nothing behind him.
+
+**A hole started from the map warns before the trail's rewards are forfeit** (`skipWarn`, read off `trailLeft`).
+It names what the trail to that hole still holds and offers Walk, Play now, or Cancel. It only fires for a hole not
+yet beaten on the main tour: a beaten hole's trail is already behind you. A gate that would refuse the hole anyway
+(a guest past hole 5, the Members Tour, no lives) shows its own sheet first.
 
 - **Scale is one rule**: the golfer is 4 ft tall at 2/3 scale, so a person is 6 ft, and every tree, lamp,
   chest, fence and landmark is sized in those feet (`TREEH`, `LMSIZE`, `BLOCKR`). Tall things stand off the

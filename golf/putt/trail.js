@@ -14,8 +14,11 @@
      4 ft figure, so he and the scene are one scale.
 
    A trail runs north (up the screen) from a clearing just past the hole you left to an arch in front of
-   the hole you are walking to: TRAIL_L feet, about two and a half screens on a phone. The camera rides
-   behind the golfer. What is on the way:
+   the hole you are walking to: TRAIL_L feet, about two screens on a phone. The camera rides behind the
+   golfer. The holes at both ends are the REAL holes: putt.js hands over each one's compiled course as a
+   grid of codes (courseFoot), scaled to fit, and it is laid into the land here. The hole you just played
+   sits behind the start with its cup on the path's line; the next one sits past the arch with its tee on
+   the path. A flag stands in each cup. What is on the way:
 
      one chest, in the clearing off a spur or hidden behind a tree or a rock: walk up to it and it opens, its coins burst out onto the ground, and each is picked up by walking over it, once for
      good. On some trails the clearing is fenced and the gate opens with a key found somewhere else,
@@ -38,7 +41,7 @@
 (function(){
 var API_VERSION = 1;
 var GH = 4.0, ELEV = 42, D2R = Math.PI / 180, SE = Math.sin(ELEV * D2R), CE = Math.cos(ELEV * D2R);
-var TRAIL_L = 150, HALFW = 46, PW = 2.2, VIEW_FT = 60, SPEED = 7, STRIDE = 3.4;   // a stride the legs can be seen to make: about two steps a second each way
+var TRAIL_L = 110, HALFW = 46, PW = 2.2, VIEW_FT = 60, SPEED = 7, STRIDE = 3.4;   // a stride the legs can be seen to make: about two steps a second each way
 /* WHAT IS HIDDEN ON A TRAIL LOOKS LIKE WHAT IT IS, never like a coin: a heart, a gem, a putter, a key, a golf
    ball. Each is drawn bigger than a coin and stands in a light of its own colour, so it is seen through the trees
    and known before you reach it. LOOT says how each is drawn, and the list on screen uses the same pictures. */
@@ -144,6 +147,16 @@ function plan(spec){
   var clrKind = R() < 0.7 ? 'chest' : 'pile';
   var locked = !spec.cross && clrKind === 'chest' && R() < 0.4;
   var start = { x:cx(L + 6), y:L + 6, r:7 };
+  /* THE REAL HOLES AT EACH END (spec.holeTo, spec.holeFrom, rastered by putt.js). The hole you are walking to
+     lies beyond the arch with its tee at the path; the hole you just left lies behind the start with its cup
+     nearest you. Each is a grid of codes at a quarter of a trail foot, placed by its south west corner. */
+  var feet = [];
+  function foot(f, X0, Y0){ var o = { f:f, X0:X0, Y0:Y0, w:(f.W - 1) * 0.25, h:(f.H - 1) * 0.25 }; o.cup = [X0 + (f.cup[0] - f.x0) * f.k, Y0 + (f.cup[1] - f.y0) * f.k]; feet.push(o); return o; }
+  if (spec.holeTo){ var HT = spec.holeTo, hh0 = (HT.H - 1) * 0.25; foot(HT, cx(0) - (HT.tee[0] - HT.x0) * HT.k, -2.6 - hh0); b[1] = Math.min(b[1], -2.6 - hh0 - 4); }
+  if (spec.holeFrom){ var HF = spec.holeFrom, fy0 = start.y + start.r + 2; foot(HF, start.x - (HF.cup[0] - HF.x0) * HF.k, fy0); b[3] = Math.max(b[3], fy0 + (HF.H - 1) * 0.25 + 4); }
+  function footAt(x, y){ for (var i = 0; i < feet.length; i++){ var o = feet[i], f = o.f, ii = Math.round((x - o.X0) / 0.25), jj = Math.round((y - o.Y0) / 0.25);
+      if (ii >= 0 && jj >= 0 && ii < f.W && jj < f.H){ var c = f.codes[jj * f.W + ii]; if (c) return { c:c, i:i }; } } return null; }
+  function inFoot(x, y, pad){ for (var i = 0; i < feet.length; i++){ var o = feet[i]; if (x > o.X0 - pad && x < o.X0 + o.w + pad && y > o.Y0 - pad && y < o.Y0 + o.h + pad) return true; } return false; }
   function pathD(x, y){ var m = 1e9; for (var i = 0; i < path.length - 1; i++){ var a = path[i], c = path[i + 1]; if (Math.abs(a[1] - y) > 6 && Math.abs(c[1] - y) > 6) continue; m = Math.min(m, segD(x, y, a[0], a[1], c[0], c[1])); } return m; }
   function spurD(x, y){ var m = 1e9; if (spur.length < 2) return m; for (var i = 0; i < spur.length - 1; i++) m = Math.min(m, segD(x, y, spur[i][0], spur[i][1], spur[i + 1][0], spur[i + 1][1])); return m; }
   // a field of how far each point is from the path, the spur and the clearings, read back smoothly
@@ -151,9 +164,9 @@ function plan(spec){
   for (var j = 0; j < DY; j++) for (var i2 = 0; i2 < DX; i2++){ var x = b[0] + i2 * DS, yy = b[1] + j * DS; DD[j * DX + i2] = Math.min(pathD(x, yy), spurD(x, yy) + 0.4); }
   function walkD(x, y){ var fx = (x - b[0]) / DS, fy = (y - b[1]) / DS; if (fx < 0 || fy < 0 || fx >= DX - 1 || fy >= DY - 1) return 99;
     var i = fx | 0, j = fy | 0, u = fx - i, v = fy - j, q = j * DX + i; return (DD[q] * (1 - u) + DD[q + 1] * u) * (1 - v) + (DD[q + DX] * (1 - u) + DD[q + DX + 1] * u) * v; }
-  function inClear(x, y, pad){ pad = pad || 0; return Math.hypot(x - clr.x, y - clr.y) < clr.r + pad || Math.hypot(x - start.x, y - start.y) < start.r + pad || (y < 3 + pad && y > -16 && Math.abs(x) < 9 + pad); }
+  function inClear(x, y, pad){ pad = pad || 0; if (inFoot(x, y, pad + 1.5)) return true; return Math.hypot(x - clr.x, y - clr.y) < clr.r + pad || Math.hypot(x - start.x, y - start.y) < start.r + pad || (y < 3 + pad && y > -16 && Math.abs(x) < 9 + pad); }
 
-  var P = { spec:spec, seed:seed, L:L, b:b, path:path, cum:cum, cx:cx, gy:gy, themeAt:themeAt, clr:clr, spur:spur, locked:locked, style:style, clrKind:clrKind, start:start, walkD:walkD, inClear:inClear,
+  var P = { spec:spec, seed:seed, L:L, b:b, path:path, cum:cum, cx:cx, gy:gy, themeAt:themeAt, clr:clr, spur:spur, locked:locked, style:style, clrKind:clrKind, start:start, walkD:walkD, inClear:inClear, feet:feet, footAt:footAt,
     things:[], cols:[], items:[], hazards:[] };
 
   // ---- the world's ground to keep off: ponds, lava pools, ice sheets, bogs. Never on the path or a clearing.
@@ -199,6 +212,8 @@ function plan(spec){
 
   // the end: an arch over the path at y = 0, and the hole's carpet beyond it
   place('arch', cx(0), 0, 0.1, 9);
+  // the flag still in the cup of the hole you just left, behind you
+  if (spec.holeFrom && feet.length){ var fo = feet[feet.length - 1]; place('pin', fo.cup[0], fo.cup[1], 0.1, 6, { col:fo.f.T.flag }); }
   used.push({ x:cx(0), y:-8, r:9 });
   // the boundary wall where one world meets the next, a door on the path (its leaves are drawn by run())
   if (gy){ P.gate = { x:cx(gy), y:gy }; place('wall', 0, gy, 0.1, 7, { gx:cx(gy) }); }
@@ -278,7 +293,7 @@ function plan(spec){
       if (okGround(bx, byy, 0.9) && free(bx, byy, 0.9) && !inClear(bx, byy, 1) && !(gy && Math.abs(byy - gy) < 5)){ item('brk', bx, byy, { th:themeAt(byy) }); used.push({ x:bx, y:byy, r:0.8 }); } } }
   // the world's greeter, on the first trail of a world: a little way up the path from where you start, or just past the
   // world door, so the first thing that happens in a new world is somebody walking up to say hello
-  if (spec.greet){ var hy0 = gy ? gy - 7 : Math.min(P.start.y - 9, L - 10);
+  if (spec.greet){ var hy0 = gy ? gy - 7 : P.start.y - 9;
     for (var hn = 0; hn < 40 && !P.host; hn++){ var hy = hy0 - (hn >> 1) * 1.2, hsd = (hn & 1) ? -1 : 1, hx = cx(hy) + hsd * (PW + 1.4);
       if (okGround(hx, hy, 1) && free(hx, hy, 1)){ P.host = item('host', hx, hy, { th:themeAt(hy) }); used.push({ x:hx, y:hy, r:1 }); } } }
   // the local, beside the path a little before the arch (a greeter's trail has the greeter instead)
@@ -303,7 +318,7 @@ var TREEH = { broad:[13, 5, 4.2], pine:[14, 6, 3.4], palm:[12, 4, 3.6], cactus:[
 var LOWR = { bush:1.1, bushf:1.1, rock:1.1, fern:1, shell:0.5, bushdry:0.9, rockdark:1, ember:0.6, rocksnow:1.2, bushsnow:1.1, puffsmall:1.2, rainbowrock:0.9, cube:0.8, cone:0.6, tomb:0.9, pumpkin:0.8, hay:1.1 };
 var LOWH = { bush:1.8, bushf:1.8, rock:1.4, fern:1.6, shell:0.4, bushdry:1.2, rockdark:1.4, ember:0.8, rocksnow:1.6, bushsnow:1.8, puffsmall:1.6, rainbowrock:1.3, cube:1.4, cone:1.2, tomb:2.2, pumpkin:1.2, hay:1.6 };
 // what part of a thing stops the golfer (a tree stops him at its trunk, not its crown)
-var BLOCKR = { broad:0.6, pine:0.7, palm:0.5, cactus:0.7, dead:0.6, basalt:1.2, puff:0.8, pylon:0.8, cab:1.1, corn:0.5, lamp:0.3, shell:0, ember:0, bushf:0.9 };
+var BLOCKR = { pin:0.1, broad:0.6, pine:0.7, palm:0.5, cactus:0.7, dead:0.6, basalt:1.2, puff:0.8, pylon:0.8, cab:1.1, corn:0.5, lamp:0.3, shell:0, ember:0, bushf:0.9 };
 // landmark footprints: width, depth, height
 var LMSIZE = { shed:[9, 6, 11], green:[9, 7, 1], bench:[3, 1.2, 2], lamps:[1, 1, 7], ruin:[10, 3, 9], statue:[3, 3, 8], columns:[8, 5, 9], wreck:[12, 5, 7], boat:[6, 3, 3], barrels:[4, 3, 2.4],
   mesa:[11, 8, 13], tower:[5, 5, 15], cart:[5, 2.5, 3.5], basaltset:[7, 6, 9], vent:[5, 5, 4], skull:[5, 4, 5], igloo:[7, 7, 5], snowman:[3, 3, 5.5], cabin:[9, 6, 11],
@@ -317,12 +332,16 @@ function land(P){
   return {
     gain:1.4,
     bg:kitOf(sp.theme).g[0],
-    h:function(x, y){ var wd = P.walkD(x, y), z = (fbm(x * 0.045, y * 0.045, seed) - 0.45) * 2.4 * sm(PW + 0.5, PW + 7, wd);
+    // a hole is flat ground, its rails and blocks stand up off it, its water and cup sit down in it
+    h:function(x, y){ var fc = P.footAt(x, y); if (fc) return fc.c === 10 ? 0.42 : fc.c === 11 ? 0.55 : fc.c === 12 ? -0.3 : (fc.c === 5 || fc.c === 9) ? -0.3 : 0.05;
+      var wd = P.walkD(x, y), z = (fbm(x * 0.045, y * 0.045, seed) - 0.45) * 2.4 * sm(PW + 0.5, PW + 7, wd);
       if (P.inClear(x, y)) z *= 0.3; var o = P.poolAt(x, y); if (o) z = o.k === 'lava' ? -0.45 : o.k === 'water' ? -0.55 : o.k === 'ice' ? -0.05 : -0.12;
       if (P.seaAt(x, y)) z = -0.7; if (wd < PW) z -= 0.06; return z; },
-    mat:function(x, y){ var o = P.poolAt(x, y); if (o) return [o.k === 'slow' ? 'bog' : o.k]; if (P.seaAt(x, y)) return ['water'];
+    mat:function(x, y){ var fc = P.footAt(x, y);
+      if (fc){ var c = fc.c, q = fc.i; return [c === 10 ? 'cr' + q : c === 11 ? 'cb' + q : c === 12 ? 'cup' : c === 4 ? 'sand' : (c === 5 || c === 9) ? 'water' : c === 6 ? 'ice' : c === 7 ? 'bog' : c === 3 ? 'g' : c === 2 ? 'cf' + q : 'cc' + q]; }
+      var o = P.poolAt(x, y); if (o) return [o.k === 'slow' ? 'bog' : o.k]; if (P.seaAt(x, y)) return ['water'];
       var wd = P.walkD(x, y), sh = P.shadeAt(x, y), ex = sh ? { sh:sh } : null;
-      if (y < -1.5 && y > -16 && Math.abs(x - cx(0)) < 7.5) return [Math.abs(x - cx(0)) > 6.6 || y < -15.2 || y > -2.3 ? 'rail' : 'carpet'];
+      if (!P.feet.length && y < -1.5 && y > -16 && Math.abs(x - cx(0)) < 7.5) return [Math.abs(x - cx(0)) > 6.6 || y < -15.2 || y > -2.3 ? 'rail' : 'carpet'];
       var dc = Math.hypot(x - P.clr.x, y - P.clr.y) - P.clr.r, ds = Math.hypot(x - P.start.x, y - P.start.y) - (P.start.r - 1), dIn = Math.min(wd - PW, dc, ds);
       if (dIn < 0){ if (dIn > -0.35){ ex = ex || {}; ex.edge = 1; } return [P.themeAt(y) === sp.theme ? 'path' : 'path0', ex]; }
       if (P.sea && P.sea.side * x > P.seaEdge(y) - 3.5) return ['sand', ex];
@@ -354,13 +373,18 @@ function mats(P){
     return R(c.sh ? shd(col, 0.22 * c.sh) : col); }; }
   var hz = k.hazC || ['#3f86c8', '#6fb3e6'];
   function lfn(cols, rip){ return function(c, R, h3){ var n = h3(c.ti, c.tj, 7); return R(((c.ti * 3 + c.tj * 5) % rip) < 2 ? cols[1] : cols[0]); }; }
-  return {
+  var out = {
     g:['', '', '', 0, gfn(k)], g0:['', '', '', 0, gfn(k0)], path:['', '', '', 0, pfn(k)], path0:['', '', '', 0, pfn(k0)],
     water:['', '', '', 0, lfn((P.sea ? ['#1f8fc8', '#5cc6ee'] : ['#3f86c8', '#6fb3e6']), 13)],
     lava:['', '', '', 0, lfn(['#ff6a1a', '#ffc23a'], 9)], ice:['', '', '', 0, lfn(['#a8dcf4', '#e2f6ff'], 23)], bog:['', '', '', 0, lfn(['#5d4634', '#7a6044'], 17)],
     sand:['#ecdba4', '#f4e4b4', '#dcc88c', 0.2],
-    carpet:[T.carpet || '#2f8f4e', T.carpet2 || '#2a8246', T.carpet || '#2f8f4e', 0.16], rail:[T.wall || '#f4efe2', T.wallHi || '#ffffff', T.wall || '#f4efe2', 0.1]
+    carpet:[T.carpet || '#2f8f4e', T.carpet2 || '#2a8246', T.carpet || '#2f8f4e', 0.16], rail:[T.wall || '#f4efe2', T.wallHi || '#ffffff', T.wall || '#f4efe2', 0.1],
+    cup:['#141414', '#202020', '#141414', 0]
   };
+  // each real hole in its own colours: carpet, fringe, rail and block
+  P.feet.forEach(function(o, i){ var C = o.f.T; out['cc' + i] = [C.carpet, C.carpet2, C.carpet, 0.16]; out['cf' + i] = [C.carpet2, C.carpet2, C.carpet, 0.1];
+    out['cr' + i] = [C.wall, C.wallHi, C.wall, 0.1]; out['cb' + i] = [C.block, C.wall, C.block, 0.12]; });
+  return out;
 }
 
 /* ------------------------------------------------------------------------- building the things */
@@ -456,9 +480,12 @@ BUILD.arch = function(B, t, i, P){ var x = t.x, y = t.y, zb = B.gz(x, y), T = P.
   B.solid(x - 4.2, y - 0.8, zb - 0.1, x + 4.2, y + 0.8, zb + 9.2, function(px, py, pz){ var dx = px - x, tt = pz - zb, dy = Math.abs(py - y);
     if (dy > 0.7) return null; var leg = Math.abs(Math.abs(dx) - 3.4) < 0.6; if (leg && tt < 7.4) return (tt * 2 | 0) % 2 ? c1 : c2;
     if (tt > 7 && tt < 9 && Math.abs(dx) < 4.1) return tt > 8.7 || tt < 7.25 ? c2 : (Math.abs(dx) < 2.6 ? acc : c1); return null; }, 0.25);
-  var fx = x + 1.5, fy = y - 12.5, fz = B.gz(fx, fy);   // the hole's flag on its pin
+  var fx = x + 1.5, fy = y - 12.5; if (P.feet.length && P.spec.holeTo){ fx = P.feet[0].cup[0]; fy = P.feet[0].cup[1]; } var fz = B.gz(fx, fy);   // the hole's flag on its pin, in its real cup
   B.solid(fx - 0.3, fy - 0.3, fz, fx + 2.2, fy + 0.3, fz + 5.6, function(px, py, pz){ var tt = pz - fz; if (Math.hypot(px - fx, py - fy) < 0.1 && tt < 5.5) return '#ffffff';
     if (px > fx && px < fx + 2 && tt > 4 && tt < 5.4 && Math.abs(py - fy) < 0.06) return T.flag || '#e53935'; return null; }, 0.125); };
+BUILD.pin = function(B, t){ var fx = t.x, fy = t.y, fz = B.gz(fx, fy);
+  B.solid(fx - 0.3, fy - 0.3, fz, fx + 2.2, fy + 0.3, fz + 5.6, function(px, py, pz){ var tt = pz - fz; if (Math.hypot(px - fx, py - fy) < 0.1 && tt < 5.5) return '#ffffff';
+    if (px > fx && px < fx + 2 && tt > 4 && tt < 5.4 && Math.abs(py - fy) < 0.06) return t.col || '#e53935'; return null; }, 0.125); };
 /* the wall between two worlds, the width of the land with a doorway on the path, in the new world's stone */
 BUILD.wall = function(B, t, i, P){ var kx = kitOf(P.spec.theme), y = t.y, gx = t.gx, b = P.b, c1 = kx.wall[0], c2 = kx.wall[1];
   for (var x0 = b[0]; x0 < b[2]; x0 += 8){ var x1 = Math.min(b[2], x0 + 8); (function(x0, x1){ var zb = B.gz((x0 + x1) / 2, y);

@@ -2312,7 +2312,7 @@ function drawMap(st, TR){
   var meEl = box.querySelector('.pp-me'); if (meEl && trailOk() && tp.lv <= N){ meEl.classList.add('tap'); meEl.setAttribute('role', 'button'); meEl.setAttribute('aria-label', 'Walk to hole ' + tp.lv);
     meEl.onclick = function(){ if (trailOk()) openTrail(TR.id, Math.min(N, tp.lv) - 1); }; }
   box.querySelectorAll('[data-lv]').forEach(function(b){ b.onclick = function(){ var n = +b.getAttribute('data-lv'); var tq = pload().tours[TR.id]; if (n > tq.lv){ var pw = Math.floor((n - 2) / K);
-      return toastHub((n - 1) % K === 0 && tq.best[n - 1] != null ? (TR.members ? WS[pw + 1].name : 'World ' + (pw + 2)) + ' opens at ' + worldGate(TR, pw) + ' total stars. You have ' + starsThrough(tq, TR, pw) + '.' : 'Clear level ' + (n - 1) + ' at par or better to open it.'); } startLevel(n, TR.id); }; });
+      return toastHub((n - 1) % K === 0 && tq.best[n - 1] != null ? (TR.members ? WS[pw + 1].name : 'World ' + (pw + 2)) + ' opens at ' + worldGate(TR, pw) + ' total stars. You have ' + starsThrough(tq, TR, pw) + '.' : 'Clear level ' + (n - 1) + ' at par or better to open it.'); } skipWarn(n, TR.id); }; });
   // the chip in the corner names the world in view and how much of it is beaten
   var chip = S.ov.querySelector('[data-wchip]'), lastW = -1;
   function wchip(){ if (!chip || !S || !box.isConnected) return; var mid = (box.scrollTop + box.clientHeight * 0.55) / k, w = 0;
@@ -2569,8 +2569,29 @@ function trailSpec(tid, from){
   var TR = tourOf(tid), K = TR.per || PER, to = from + 1, w = Math.min(TR.worlds.length - 1, Math.floor((to - 1) / K)), th = TR.worlds[w].theme;
   var cross = from >= 1 && from % K === 0, th0 = cross ? TR.worlds[w - 1].theme : th, tp = pload().tours[TR.id];
   var portrait = (window.innerHeight || 800) >= (window.innerWidth || 400);
-  return { key:tid + ':' + to, tid:tid, from:from, to:to, w:w, seed:hstr('trail:' + tid + ':' + to), theme:th, theme0:th0, cross:cross, gateOpen:tp.lv > from, T:THEMES[th] || THEMES.clubhouse, halfW:portrait ? 28 : 46, loot:trailLoot(tid, to), greet:from % K === 0 ? greetSpec(tid, w, to) : null };
+  return { key:tid + ':' + to, tid:tid, from:from, to:to, w:w, seed:hstr('trail:' + tid + ':' + to), theme:th, theme0:th0, cross:cross, gateOpen:tp.lv > from, T:THEMES[th] || THEMES.clubhouse, halfW:portrait ? 28 : 46, loot:trailLoot(tid, to), holeTo:to <= TR.levels.length ? courseFoot(to, tid) : null, holeFrom:from >= 1 ? courseFoot(from, tid) : null, greet:from % K === 0 ? greetSpec(tid, w, to) : null };
 }
+/* THE HOLES ON A TRAIL ARE THE REAL HOLES. The hole you just left lies behind you where the walk starts, and the
+   hole you are walking to lies beyond the arch, each drawn from its own layout: its carpet, its rails, its water and
+   sand, its blocks and its cup. courseFoot rasters a hole once, at the trail's own scale (trail.js draws it as
+   ground), so nothing about the hole has to be known twice. Codes: 0 outside, 1 to 9 the hole's materials (M),
+   10 a rail, 11 a block or bumper, 12 the cup. */
+var FOOT = {};
+function courseFoot(n, tid){ var key = tid + ':' + n; if (FOOT[key] !== undefined) return FOOT[key];
+  try{ var C = buildLevel(n, tid), xs = C.allPts.map(function(q){ return q[0]; }), ys = C.allPts.map(function(q){ return q[1]; });
+    var x0 = Math.min.apply(null, xs) - 0.5, y0 = Math.min.apply(null, ys) - 0.5, x1 = Math.max.apply(null, xs) + 0.5, y1 = Math.max.apply(null, ys) + 0.5;
+    var k = Math.min(0.62, 24 / Math.max(x1 - x0, y1 - y0)), st = 0.25 / k, W = Math.ceil((x1 - x0) / st) + 1, H = Math.ceil((y1 - y0) / st) + 1, codes = new Uint8Array(W * H), RW = 0.3;
+    var E = C.edges || [], BL = C.blocks || [], BU = C.bumpers || [];
+    for (var j = 0; j < H; j++) for (var i = 0; i < W; i++){ var x = x0 + i * st, y = y0 + j * st, c = 0, m = C.matFn(x, y);
+      for (var e = 0; e < E.length && !c; e++) if (segDist(x, y, E[e][0], E[e][1], E[e][2], E[e][3]) < RW) c = 10;
+      if (!c && m){ for (var q = 0; q < BL.length && !c; q++) if (inBlock(BL[q], x, y)) c = 11;
+        for (var u = 0; u < BU.length && !c; u++) if (Math.hypot(x - BU[u].x, y - BU[u].y) < BU[u].r) c = 11;
+        if (!c && Math.hypot(x - C.cup[0], y - C.cup[1]) < C.cupR * 1.25) c = 12; if (!c) c = m; }
+      codes[j * W + i] = c; }
+    var T = C.T || {};
+    return FOOT[key] = { k:k, st:st, W:W, H:H, x0:x0, y0:y0, codes:codes, cup:C.cup.slice(), tee:C.tee.slice(), n:n,
+      T:{ carpet:T.carpet || '#2f8f4e', carpet2:T.carpet2 || '#2a8246', wall:T.wall || '#f4efe2', wallHi:T.wallHi || '#ffffff', block:T.wallLo || '#a99c7c', flag:T.flag || '#e53935' } };
+  }catch(e){ return FOOT[key] = null; } }
 function trailKey(sp){ return sp.key + '|' + sp.halfW + '|' + (sp.gateOpen ? 1 : 0) + (sp.greet ? '|g' : ''); }
 function trailPlan(sp){ S.trp = S.trp || {}; var k = trailKey(sp); if (!S.trp[k]) S.trp[k] = window.RTT_PUTT_TRAIL.plan(sp); return S.trp[k]; }
 // render the trail out of this hole while the hole is played (frame() calls trailTick), a few ms a frame
@@ -2725,6 +2746,25 @@ function outOfLives(){
 }
 
 /* ---------------------------------------------------------------------------- a Tour level */
+/* STARTING A HOLE FROM THE MAP SKIPS THE WALK TO IT, and the walk is where the chest, the golden ball and the rare
+   things are. So when the trail to this hole still holds anything, the map says what is being left behind and offers
+   the walk instead. Nothing is lost for good: the trail and what is on it wait for the next time you walk it. */
+function trailLeft(tid, n){ try{ if (tid !== 'main' || n < 2 || !trailOk()) return []; var sp = trailSpec(tid, n - 1), P = trailPlan(sp), r = (pload().trail || {})[sp.key] || {};
+    var NAME = { chest:'a chest of coins', golden:'a golden ball', trinket:'a trinket', part:'a putter part', life:'a spare life' };
+    return P.items.filter(function(t){ if (!NAME[t.k]) return false;
+      if (t.k === 'chest') return (r.ch || []).indexOf(t.id) < 0 && !(t.main && r.k); if (t.k === 'golden') return !r.g; if (t.k === 'trinket') return !r.tk; if (t.k === 'part') return !r.pt; if (t.k === 'life') return !r.life; return false; })
+      .map(function(t){ return t.k === 'trinket' && t.name ? 'the ' + t.name : t.k === 'part' && t.name ? 'the ' + t.name : NAME[t.k]; }); }catch(e){ return []; } }
+function skipWarn(n, tid){ var st = pload(), c = st.cur, tr = (st.tours || {})[tid] || {};
+  // only a hole being reached for the first time can forfeit anything: its trail is gone once it is beaten. A gate
+  // that would refuse the hole anyway (a guest, the Members Tour, no lives) speaks first, from startLevel.
+  if ((c && c.tid === tid && c.n === n && c.s > 0) || (tr.best && tr.best[n] != null) || (tid === 'main' && n > GUEST_HOLES && isGuest()) || livesNow(st) <= 0) return startLevel(n, tid);
+  var left = trailLeft(tid, n); if (!left.length) return startLevel(n, tid);
+  var list = left.length === 1 ? left[0] : left.slice(0, -1).join(', ') + ' and ' + left[left.length - 1];
+  var sh = el('<div class="pp-sheet pp-skipw"><div class="pp-card"><div class="k">SKIP THE WALK?</div><div class="t">Hole ' + n + '</div><div class="m">The trail to Hole ' + n + ' still has ' + esc(list) + '. Skip it and ' + (left.length > 1 ? 'they are' : 'it is') + ' gone.</div><button class="pt-go pp-wide" data-walk>Walk to Hole ' + n + '</button><button class="pt-bt pp-wide" data-skip>Play now and forfeit the rewards</button><button class="pt-bt pp-wide" data-n>Cancel</button></div></div>');
+  S.ov.appendChild(sh);
+  sh.querySelector('[data-n]').onclick = function(){ sh.remove(); };
+  sh.querySelector('[data-walk]').onclick = function(){ sh.remove(); openTrail(tid, n - 1); };
+  sh.querySelector('[data-skip]').onclick = function(){ sh.remove(); startLevel(n, tid); }; }
 function startLevel(n, tid){
   var st = pload(); tid = tid || S.tour || 'main';
   if (tourOf(tid).members && !membersOpen() && !membersPreview()) return membersSheet();
@@ -3515,7 +3555,7 @@ RTT_PUTT._state = function(){ return S; };
 RTT_PUTT._walkTo = function(n, tid){ return walkTo(n, tid || 'main'); };
 RTT_PUTT._trail = function(){ return S && S.trailCtl; };
 RTT_PUTT._trailPlan = function(from, tid){ return trailPlan(trailSpec(tid || 'main', from)); };
-RTT_PUTT._loot = trailLoot; RTT_PUTT._bag = function(){ bagSheet(); }; RTT_PUTT._closet = function(){ closetSheet(); };
+RTT_PUTT._loot = trailLoot; RTT_PUTT._bag = function(){ bagSheet(); }; RTT_PUTT._closet = function(){ closetSheet(); }; RTT_PUTT._foot = courseFoot; RTT_PUTT._left = trailLeft;
 RTT_PUTT._covers = function(){ var P = S.play; return P && P.camNow ? golferCovers(P, P.camNow) : null; };
 RTT_PUTT._lose = function(){ loseLife(pload()); };
 RTT_PUTT._dailyFinish = function(s, par, ms){ return dailyFinish(s, par, ms); };

@@ -549,6 +549,35 @@ if (!args.includes('--no-browser')){
     claim(wo.map && wo.back, `Map opens the map and its World button goes back into the world, where the greeter does not start over (${wo.map}, ${wo.back})`);
     claim(wo.alive && wo.ships === 2 && wo.afloat && wo.sails, `the world is alive round him, and two pirate ships sail Pirate Cove's sea (${wo.alive}, ${wo.ships}, ${wo.afloat}, ${wo.sails})`);
     claim(wo.greeters.every(Boolean) && wo.notMid, `all eight worlds and both Members worlds have a greeter on their first trail, and only there (${wo.greeters.map(Number).join('')})`);
+    // THE HOLES AT EACH END OF A WALK ARE THE REAL HOLES: the one you just played behind you, the next one past the arch,
+    // each drawn from its own compiled course, with its cup where the course puts it
+    const ft = await pg.evaluate(() => { const P = window.RTT_PUTT._trailPlan(17), f = P.feet || [];
+      const to = f[0], fr = f[1], cupAt = o => { const r = P.footAt(o.cup[0], o.cup[1]); return r && r.c; };
+      const carpet = o => { let n = 0; for (let j = 0; j < o.f.H; j += 3) for (let i = 0; i < o.f.W; i += 3){ const c = o.f.codes[j * o.f.W + i]; if (c === 1 || c === 2) n++; } return n; };
+      const P0 = window.RTT_PUTT._trailPlan(0);
+      return { n:f.length, to:to && to.f.n, from:fr && fr.f.n, ahead:to && to.Y0 + to.h < P.start.y, behind:fr && fr.Y0 > P.start.y, cups:[cupAt(to), cupAt(fr)], carpet:[carpet(to), carpet(fr)], first:(P0.feet || []).length, len:P.L }; });
+    claim(ft.n === 2 && ft.to === 18 && ft.from === 17 && ft.ahead && ft.behind && ft.cups[0] === 12 && ft.cups[1] === 12 && ft.carpet[0] > 20 && ft.carpet[1] > 20 && ft.first === 1 && ft.len <= 110,
+      `a walk from 17 to 18 has the real hole 17 behind him and hole 18 past the arch, each with its own carpet and cup (${JSON.stringify(ft)})`);
+    // STARTING A HOLE FROM THE MAP WARNS when its trail still holds rewards, and only then
+    const sk = await pg.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), K = 'bag_ppt_v1@skw', S = () => window.RTT_PUTT._state();
+      window.RTT_PUTT.close(); window.RTT_PUTT_MAPFIRST = true; sbUser = { id:'skw' };
+      localStorage.setItem(K, JSON.stringify({ v:2, lives:3, met:['clubhouse'], tours:{ main:{ lv:3, best:{ 1:2, 2:2 }, ace:{}, paid:{}, wpaid:{} } } }));
+      openPutt(); for (let i = 0; i < 100 && !document.querySelector('.pp-map [data-lv="3"]'); i++) await sleep(50);
+      out.left = window.RTT_PUTT._left('main', 3).length;
+      document.querySelector('.pp-map [data-lv="3"]').click(); await sleep(60); const w = document.querySelector('.pp-skipw');
+      out.warn = !!w && /forfeit/i.test(w.innerText) && !!w.querySelector('[data-walk]'); out.still = S().screen !== 'play';
+      w && w.querySelector('[data-n]').click(); out.cancel = !document.querySelector('.pp-skipw') && S().screen !== 'play';
+      document.querySelector('.pp-map [data-lv="2"]').click(); for (let i = 0; i < 100 && S().screen !== 'play'; i++) await sleep(50);
+      out.replay = S().screen === 'play' && !document.querySelector('.pp-skipw');
+      window.RTT_PUTT.close(); openPutt(); for (let i = 0; i < 100 && !document.querySelector('.pp-map [data-lv="3"]'); i++) await sleep(50);
+      document.querySelector('.pp-map [data-lv="3"]').click(); await sleep(60); document.querySelector('.pp-skipw [data-walk]').click();
+      for (let i = 0; i < 400 && !window.RTT_PUTT._trail(); i++) await sleep(50); out.walk = S().screen === 'trail';
+      window.RTT_PUTT.close(); openPutt(); for (let i = 0; i < 100 && !document.querySelector('.pp-map [data-lv="3"]'); i++) await sleep(50);
+      document.querySelector('.pp-map [data-lv="3"]').click(); await sleep(60); document.querySelector('.pp-skipw [data-skip]').click();
+      for (let i = 0; i < 100 && S().screen !== 'play'; i++) await sleep(50); out.skip = S().screen === 'play';
+      window.RTT_PUTT.close(); localStorage.removeItem(K); sbUser = { id:'chk' }; return out; });
+    claim(sk.left > 0 && sk.warn && sk.still && sk.cancel && sk.replay && sk.walk && sk.skip,
+      `a hole started from the map warns that its trail's rewards are forfeit; Walk goes to the trail, Play goes to the hole, and a hole already beaten does not warn (${JSON.stringify(sk)})`);
     // A SPARE LIFE IS SPENT WHEN THE HEARTS ARE GONE, and a built putter is equipped from the Bag
     const sp = await pg.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), K = 'bag_ppt_v1@spare';
       window.RTT_PUTT.close(); sbUser = { id:'spare' };
