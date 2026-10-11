@@ -3074,7 +3074,7 @@ import {
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
 } from './scoring.js?v=41';
 import { loadBand, setLabel, setRank, parseCSV } from './dataLoader.js?v=41';
-import { createStage } from './stage.js?v=2';
+import { createStage } from './stage.js?v=5';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -6663,18 +6663,21 @@ function renderShow(){
   let stage = null;
   try {
     stage = createStage(document.getElementById('simStage'), {
-      seed: Math.abs(S.result.total) + 17, venue: 'theater', reduce });
+      seed: Math.abs(S.result.total) + 17, venue: 'lawn', reduce });
   } catch (err) { stage = null; }
   S.stage = stage;
   const toStage = (b, idx, instant) => {
     if (!stage) return;
+    // How far through the night we are: it sets the sun, so Set I is in daylight and the
+    // encore is under the rig.
+    const progress = b.progress;
     const grade = (b.played || 0) < GRADE_SETTLE ? 'warm' : gradeRunning(b.running, b.progress);
     if (b.kind === 'set'){
-      stage.cue({ kind: 'set', instant,
+      stage.cue({ kind: 'set', instant, progress,
         encore: SETS.findIndex(x => x.label === b.label) === ENCORE_INDEX });
     } else if (b.kind === 'song'){
       const p = b.perf;
-      stage.cue({ kind: 'song', instant, grade,
+      stage.cue({ kind: 'song', instant, grade, progress,
         palette: accentOf(p).chip || null,
         energy: .25 + .75 * Math.pow(Math.max(0, b.gained) / best, .8),
         segue: !!b.event,
@@ -6682,7 +6685,7 @@ function renderShow(){
         bustout: (Number(p.show_gap) || 0) >= BREADTH_BUSTOUT_GAP,
       });
     } else if (b.kind === 'time'){
-      stage.cue({ kind: 'time', instant, last: idx > lastSetBeat });
+      stage.cue({ kind: 'time', instant, progress, last: idx > lastSetBeat });
     } else {
       stage.cue({ kind: 'final', instant, grade: gradeScore(b.running) });
     }

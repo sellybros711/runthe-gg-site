@@ -39,7 +39,7 @@
 (function(){
 var API_VERSION = 1;
 var GH = 4.0, ELEV = 42, D2R = Math.PI / 180, SE = Math.sin(ELEV * D2R), CE = Math.cos(ELEV * D2R);
-var TRAIL_L = 150, HALFW = 46, PW = 2.2, VIEW_FT = 60, SPEED = 9.5, STRIDE = 5.4;
+var TRAIL_L = 150, HALFW = 46, PW = 2.2, VIEW_FT = 60, SPEED = 7, STRIDE = 3.4;   // a stride the legs can be seen to make: about two steps a second each way
 var PIX_HEART = ['.oo.oo.', 'orhrrro', 'orrrrro', '.orrro.', '..oro..', '...o...'];
 var PIX_GEM = ['.ooooo.', 'ohrrrro', 'orhrrro', '.orrro.', '..oro..', '...o...'];
 var PIX_PART = ['ooo....', 'ohro...', 'orrro..', '.orrro.', '..orrgo', '...oggo', '....ooo'];
@@ -671,7 +671,11 @@ function run(box, P, pic, api){
   // the local is the 3D golfer model, in the world's own clothes, standing and facing the path
   function npcFrame(t){ var G = window.RTT_G3D; if (!G || !G.frame) return null; var face = t.x < P.cx(t.y) ? 90 : -90; try{ return G.frame(Object.assign({ shoes:'white', club:'driver', lefty:false }, kitOf(t.th).npc), face, 'walk', 8); }catch(e){ return null; } }
   var IMG = {}; function img(u){ var im = IMG[u]; if (!im){ im = IMG[u] = new Image(); im.src = u; } return im; }
-  function drawFigure(f, x, y, see){ if (!f || !f.url) return null; var im = img(f.url); if (!im.complete || !im.naturalWidth) return null;
+  /* A frame not yet decoded is never a blank: who drew a frame last keeps it on screen until the new one is ready,
+     or the golfer blinks out for a frame every time his foot or his facing changes. */
+  var lastFig = {};
+  function drawFigure(f, x, y, see, who){ if (!f || !f.url){ if (!who || !lastFig[who]) return null; f = lastFig[who].f; }
+    var im = img(f.url); if (!im.complete || !im.naturalWidth){ var lf = who && lastFig[who]; if (!lf) return null; f = lf.f; im = lf.im; } else if (who) lastFig[who] = { f:f, im:im };
     var hgt = GH * CE / ART * kk, k2 = hgt / f.fig, p = scr(x, y), rx = Math.round(p[0] - f.ball[0] * k2), ry = Math.round(p[1] - f.ball[1] * k2), rw = Math.round(f.W * k2), rh = Math.round(f.H * k2);
     ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(im, rx, ry, rw, rh); ctx.restore(); occlude(rx, ry, rw, rh, x, y, pic.zAt(x, y), see); return [rx, ry, rw, rh]; }
   // a coin, a key and the golden ball are drawn at the scene's own pixel size, so they sit in it
@@ -817,7 +821,7 @@ function run(box, P, pic, api){
   function hostFrame(){ var G = window.RTT_G3D; if (!G || !G.frame || !hs) return null; var i = hs.moving ? Math.floor(hs.dist / STRIDE * 8) % 8 : 8;
     try{ return G.frame(greet.look, Math.atan2(hs.face[0], -hs.face[1]) * 180 / Math.PI, 'walk', i); }catch(e){ return null; } }
   function talk(){ if (!hs || dlg) return; hs.ph = 'talk'; hs.moving = false; paused = true; setAuto(false); pup(); keys = {}; g.vx = g.vy = 0;
-    hs.face = [g.x - hs.x, g.y - hs.y]; g.face = [hs.x - g.x, hs.y - g.y]; talkB.hidden = true;
+    hs.face = [g.x - hs.x, g.y - hs.y]; g.face = [hs.x - g.x, hs.y - g.y]; g.aimI = null; talkB.hidden = true;
     var pages = greet.lines || [], pg = 0, typed = 0, tm = null;
     dlg = document.createElement('div'); dlg.className = 'pp-gd'; dlg.style.setProperty('--gc', greet.col || '#F1D04A');
     dlg.innerHTML = '<div class="pp-gdbox"><div class="pp-gdp"><canvas width="64" height="64"></canvas></div><div class="pp-gdn"><b></b><i></i></div><p aria-live="polite"></p><span class="pp-gdm">▼</span><button class="pp-gdx" data-gdx>Skip</button></div>';
@@ -841,7 +845,7 @@ function run(box, P, pic, api){
   talkB.onclick = function(){ if (hs && hs.ph === 'idle') talk(); };
   function hostStep(dt){ if (!hs) return; var dx = g.x - hs.x, dy = g.y - hs.y, d = Math.hypot(dx, dy);
     if (hs.ph === 'wait' && d < 16 && performance.now() >= hs.at && !(gate && (!gate.open || g.y > P.gate.y - 0.5))){ hs.ph = 'come'; paused = true; setAuto(false); pup(); keys = {}; g.vx = g.vy = 0; }
-    if (hs.ph === 'come'){ g.face = [-dx, -dy]; if (d > 3.2){ var v = Math.min(5.2 * dt, d - 3.2); hs.x += dx / d * v; hs.y += dy / d * v; hs.dist += v; hs.moving = true; hs.face = [dx, dy]; } else talk(); }
+    if (hs.ph === 'come'){ g.face = [-dx, -dy]; g.aimI = null; if (d > 3.2){ var v = Math.min(5.2 * dt, d - 3.2); hs.x += dx / d * v; hs.y += dy / d * v; hs.dist += v; hs.moving = true; hs.face = [dx, dy]; } else talk(); }
     else if (hs.ph === 'idle'){ hs.moving = false; if (d < 7) hs.face = [dx, dy]; }
     talkB.hidden = !(hs.ph === 'idle' && d < 3.6); }
   function take(t, now){ var z = pic.zAt(t.x, t.y);
@@ -879,7 +883,13 @@ function run(box, P, pic, api){
     else { g.vx = 0; g.vy = 0; }
     hostStep(dt);
     lifeStep(dt);
-    var spd = Math.hypot(g.vx, g.vy); g.moving = moved > 0.002 && spd > 0.4; if (spd > 0.4) g.face = [g.vx, g.vy]; g.dist += moved;
+    /* He faces one of eight ways, and only turns when the way he is going is well past the middle between two of them:
+       snapped every frame, a heading near a boundary flipped him between two drawings and he flickered. The same
+       for walking and standing: he starts and stops on two different speeds, never the same one. */
+    var spd = Math.hypot(g.vx, g.vy); g.moving = moved > 0.002 && (g.moving ? spd > 0.25 : spd > 0.6);
+    if (spd > 0.4){ var ang = Math.atan2(g.vx, -g.vy), cur = g.aimI == null ? null : g.aimI * Math.PI / 4, dd = cur == null ? 9 : Math.abs(Math.atan2(Math.sin(ang - cur), Math.cos(ang - cur)));
+      if (dd > Math.PI / 8 + 0.2){ g.aimI = ((Math.round(ang / (Math.PI / 4)) % 8) + 8) % 8; var a8 = g.aimI * Math.PI / 4; g.face = [Math.sin(a8), -Math.cos(a8)]; } }
+    g.dist += moved;
     if (moved > 0.5) hint.classList.add('gone');
     // lava sends him back to the last safe ground
     var o2 = P.poolAt(g.x, g.y);
@@ -929,7 +939,7 @@ function run(box, P, pic, api){
       else if (t.k === 'brk') drawSprite(brkSprite(t), t.x, t.y, pic.zAt(t.x, t.y));
       else if (t.k === 'npc') drawFigure(npcFrame(t), t.x, t.y);
       else if (t.k === 'ship' || t.k === 'tumble' || t.k === 'ghost') drawLifeThing(t, tsec);
-      else if (t.k === 'hostfig'){ var hp = scr(t.x, t.y); ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(hp[0], hp[1], 5 * kk, 2 * kk, 0, 0, 7); ctx.fill(); drawFigure(hostFrame(), t.x, t.y);
+      else if (t.k === 'hostfig'){ var hp = scr(t.x, t.y); ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(hp[0], hp[1], 5 * kk, 2 * kk, 0, 0, 7); ctx.fill(); drawFigure(hostFrame(), t.x, t.y, false, 'host');
         if (hs.ph === 'wait'){ var ep = scr(t.x, t.y, pic.zAt(t.x, t.y) + GH + 1.4 + Math.sin(tsec * 4) * 0.25), es = Math.max(2, Math.round(kk)); ctx.fillStyle = '#3a2a14'; ctx.fillRect(Math.round(ep[0] - 2 * es), Math.round(ep[1] - 7 * es), 4 * es, 9 * es); ctx.fillRect(Math.round(ep[0] - 2 * es), Math.round(ep[1] + 3 * es), 4 * es, 4 * es);
           ctx.fillStyle = '#ffd24a'; ctx.fillRect(Math.round(ep[0] - es), Math.round(ep[1] - 6 * es), 2 * es, 7 * es); ctx.fillRect(Math.round(ep[0] - es), Math.round(ep[1] + 4 * es), 2 * es, 2 * es); } }
       else if (t.k === 'gate') drawSprite(gate && gate.open ? SPR.gate1 : SPR.gate0, t.x, P.gate.y, pic.zAt(t.x, P.gate.y));
@@ -952,7 +962,7 @@ function run(box, P, pic, api){
       else { for (var j = 8; j >= 0 && !f; j--) if (h.golferWalkHas(fv[0], fv[1], j)) f = h.golferWalk(fv[0], fv[1], j); if (!f) f = h.golferWalk(fv[0], fv[1], i); } }catch(e){ f = null; }
     if (!f) f = lastFace; else lastFace = f;
     var shp = scr(g.x, g.y), s = kk; ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(shp[0], shp[1], 5 * s, 2 * s, 0, 0, 7); ctx.fill();
-    drawFigure(f, g.x, g.y, true); }
+    drawFigure(f, g.x, g.y, true, 'me'); }
   function waypoint(){ var tx, ty, label, br = cv.getBoundingClientRect();
     var shut = gate && !gate.open && g.y > P.gate.y, tgt = shut ? [P.gate.x, P.gate.y] : [P.cx(0), -0.5], p = scr(tgt[0], tgt[1], pic.zAt(tgt[0], tgt[1]) + (shut ? 7 : 9.5));
     tx = p[0] / dpr; ty = p[1] / dpr; var M = 34, Wc = W / dpr, Hc = H / dpr, inside = tx > M && tx < Wc - M && ty > M + 110 && ty < Hc - M - 70;

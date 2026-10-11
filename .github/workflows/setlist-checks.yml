@@ -17,6 +17,9 @@ on:
       - 'scripts/setlist/**'
       - 'sitemap.xml'
       - 'index.html'
+      # The stage draws with golf's PXHD, copied out by scripts/setlist/extract_pxhd.mjs,
+      # so a change to it in golf has to run the check that the copy still matches.
+      - 'golf/index.html'
       - '.github/workflows/setlist-checks.yml'
   push:
     branches: [main]
@@ -25,6 +28,9 @@ on:
       - 'scripts/setlist/**'
       - 'sitemap.xml'
       - 'index.html'
+      # The stage draws with golf's PXHD, copied out by scripts/setlist/extract_pxhd.mjs,
+      # so a change to it in golf has to run the check that the copy still matches.
+      - 'golf/index.html'
       - '.github/workflows/setlist-checks.yml'
   workflow_dispatch: {}
 

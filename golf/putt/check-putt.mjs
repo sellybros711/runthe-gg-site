@@ -487,7 +487,7 @@ if (!args.includes('--no-browser')){
       t = await open(18); const G = t.plan().gate; out.cross = !!G;
       await visit(t, G.x, G.y + 4); t.stick(0, -1); for (let i = 0; i < 60 && !out.doorOpen; i++){ await sleep(50); if (document.querySelector('.pp-door.fill')) out.doorOpen = true; }
       for (let i = 0; i < 80 && !(t.gate() && t.gate().open && !document.querySelector('.pp-door')); i++) await sleep(50);
-      t.stick(0, -1); await sleep(700); out.passed = t.pos()[1] < G.y - 1; t.stick(0, 0);
+      t.stick(0, -1); await sleep(1100); out.passed = t.pos()[1] < G.y - 1; t.stick(0, 0);
       await visit(t, t.plan().cx(0), 2.5); t.stick(0, -1); for (let i = 0; i < 60 && !(S().round && S().round.lv === 19); i++) await sleep(50); out.through = S().round && S().round.lv;
       // and without
       window.RTT_PUTT.close(); seed(2, 18); openPutt(); await sleep(300); t = await open(18); const G2 = t.plan().gate;

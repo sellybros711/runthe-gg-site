@@ -2770,6 +2770,12 @@ if (prose) {
   })();
   check(/try\s*\{\s*stage = createStage\(/.test(show), 'a stage that fails to start leaves the playback running');
   check(/if \(S\.stage\)\s*\{\s*S\.stage\.destroy\(\)/.test(gameBare), 'leaving the show stops the stage');
+  /* THE STAGE IS PAINTED BY RUN THE TOUR'S OWN RENDERER, so the concert and the putt putt world are
+     one style. setlist/pxhd.js is generated from golf/index.html; a hand edit there, or a change to
+     PXHD in golf that was never carried over, is two renderers that look almost alike. */
+  const { extract } = await import('./extract_pxhd.mjs');
+  check(read('setlist/pxhd.js') === extract(), 'setlist/pxhd.js is golf\'s PXHD, unedited (run scripts/setlist/extract_pxhd.mjs)');
+  check(/from '\.\/pxhd\.js\?v=\d+'/.test(stage), 'and the stage draws with it');
 }
 
 console.log();
