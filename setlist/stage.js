@@ -1,63 +1,61 @@
 /* THE STAGE.
  *
- * The night, drawn as a room you are standing in: a 3/4 view looking down the
- * floor at the stage, the band facing you, the crowd's backs in front of you,
- * the rig over all of it. It fills the screen while the show plays, and the
- * setlist rides on top of it as the paper taped to the stage.
+ * The night, drawn in Run The Tour's putt putt style: a small 3D world seen from above at 42 degrees,
+ * painted by the same renderer (PXHD, lifted out of golf by scripts/setlist/extract_pxhd.mjs), so the
+ * light from the top left, the five step hue shifted ramps, the contact shadows and the soft outline
+ * inside each shape are exactly the golf world's. Chunky pixels, chibi people, a lawn you could putt on.
  *
- * IT IS A RENDERER AND NOTHING ELSE. Every cue it is handed comes out of
- * showBeats(), which comes out of the result that was already scored, so the
- * picture can never disagree with the scorecard. Nothing in here reads a song,
- * a score or a rule. The page decides what happened; the stage decides how it
- * looks. scripts/setlist/check_data.mjs holds that line.
+ * The venue is a lawn in front of an outdoor stage, the way the Bend photos look, and the show runs from
+ * daylight into night: Set I in the sun, the set break at dusk, Set II and the encore under the rig.
  *
- * ONE WORLD, ONE SCALE. The room is a fixed 640x720 world in logical pixels,
- * laid out at real proportions: a person is 34 pixels, so a metre is about 19,
- * which makes the deck fifteen metres wide, the screen twelve, a keyboard a
- * metre and a half. Nothing is resized for depth. That is the 3/4 convention
- * this site's golf world uses, and depth comes from occlusion, shadow and
- * light, the way it does in every game drawn this way.
+ * IT IS A RENDERER AND NOTHING ELSE. Every cue it is handed comes out of showBeats(), which comes out of
+ * the result that was already scored, so the picture can never disagree with the scorecard. Nothing in
+ * here reads a song, a score or a rule. scripts/setlist/check_data.mjs holds that line.
  *
- * WHOLE DEVICE PIXELS A CELL. The camera picks the visible slice of the world
- * for this screen, draws it into a buffer at one logical pixel a cell, and
- * blits that at a whole number of device pixels with smoothing off. A
- * fractional scale gives some cells two pixels and some one, which reads as a
- * broken picture rather than as pixel art.
+ * HOW IT IS DRAWN. Everything is solids in feet (x east, y toward you, z up), splatted into a grid of
+ * cells, each with a material and the way its surface faces. PXHD paints that grid. The world is drawn
+ * once into two layers (what stands behind the band, and the gear in front of it); the band and the
+ * crowd are small worlds of their own, drawn once per pose and stood in place every frame. Light that
+ * moves (the screen, the rig, the dusk) is laid over the top.
  *
- * THE BAND IS DRAWN FROM ITS GEAR. A generic face is a pair of eyes; what a fan
- * recognises is the yellow kit on its riser, the keys rig stage left, the rug,
- * the hats, and where each player stands. No likeness, and no copy of any
- * band's own artwork: the kick drum head is an abstract swirl.
+ * THE BAND IS DRAWN FROM ITS GEAR. A face is two dots. What a fan knows is the yellow kit on its riser,
+ * the keys stage left, the rug, the hats and where each player stands. No likeness, and no copy of
+ * anybody's artwork: the kick drum head is an abstract swirl.
  *
- * VENUES are a table so the next one is a row. A venue changes the room and
- * how many people it holds. It never changes a score.
+ * VENUES are a table so the next one is a row. A venue changes the room and how many people it holds.
+ * It never changes a score.
  */
-
-const WW = 640, WH = 720;
-
-const PALETTES = {
-  jam:    [[150, 92, 255], [64, 214, 230]],
-  peak:   [[255, 70, 170], [235, 235, 255]],
-  cover:  [[255, 104, 92], [70, 220, 200]],
-  encore: [[240, 240, 255], [255, 96, 120]],
-  ballad: [[70, 120, 255], [160, 110, 255]],
-  opener: [[80, 230, 130], [235, 235, 255]],
-  closer: [[60, 210, 220], [255, 80, 180]],
-  house:  [[150, 140, 200], [110, 170, 220]],
-};
-const ROTATION = ['jam', 'closer', 'ballad', 'cover', 'opener', 'peak'];
+import PXHD from './pxhd.js?v=1';
 
 export const VENUES = {
-  theater: { name: 'The Theater', capacity: 1 },
+  lawn: { name: 'The Lawn', capacity: 1 },
+};
+
+// ── the camera ─────────────────────────────────────────────────────────────
+const ART = 0.2;                       // feet per pixel
+const ELEV = 42, D2R = Math.PI / 180;
+const SE = Math.sin(ELEV * D2R), CE = Math.cos(ELEV * D2R);
+const X0 = -48, X1 = 48;               // the world, west to east, in feet
+const WPX = Math.round((X1 - X0) / ART);
+const OY = 150, HPX = 400;             // pixel row of y=0,z=0, and the world's height in pixels
+const sx = x => (x - X0) / ART;
+const sy = (y, z) => (y * SE - z * CE) / ART + OY;
+const depth = (y, z) => y * CE + z * SE;
+// A world normal, turned into the screen's frame, which is what PXHD lights.
+const camN = (nx, ny, nz) => {
+  const v0 = nx, v1 = -nz * CE + ny * SE, v2 = nz * SE + ny * CE, l = Math.hypot(v0, v1, v2) || 1;
+  return [v0 / l, v1 / l, v2 / l];
 };
 
 // ── colour ─────────────────────────────────────────────────────────────────
 const rgb = (c, a = 1) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`;
-const mix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
-const sh = (c, k) => [Math.min(255, c[0] * k), Math.min(255, c[1] * k), Math.min(255, c[2] * k)];
+const mixc = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 const clamp01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
-const INK = [22, 14, 28];
-
+function hash(x, y, s){
+  let h = (x * 374761393 + y * 668265263 + s * 982451653) | 0;
+  h = Math.imul(h ^ h >>> 13, 1274126177);
+  return ((h ^ h >>> 16) >>> 0) / 4294967296;
+}
 function mulberry32(a){
   return () => {
     a |= 0; a = a + 0x6D2B79F5 | 0;
@@ -66,717 +64,743 @@ function mulberry32(a){
     return ((t ^ t >>> 14) >>> 0) / 4294967296;
   };
 }
+function canvas(w, h){ const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
 
-function canvas(w, h){
-  const c = document.createElement('canvas');
-  c.width = w; c.height = h;
-  return c;
+/* Materials. 'x:' is an ordinary surface on PXHD's ramp, 'k:' skin, 'h:' hair, and 'f:' a flat colour
+   that takes no light at all (pupils, a mouth). */
+const rampCache = new Map();
+function rampOf(c){
+  const m = c.m;
+  let r = rampCache.get(m);
+  if (r) return r;
+  const kind = m.slice(0, 2), hex = m.slice(2);
+  r = kind === 'k:' ? PXHD.skinRamp(hex) : kind === 'h:' ? PXHD.hairRamp(hex)
+    : kind === 'f:' ? hex : PXHD.ramp(hex);
+  rampCache.set(m, r);
+  return r;
 }
 
-/* A brush over one 2D context: rectangles in a colour, and a one pixel line.
-   Everything in the room is built out of these two. */
-function brush(g){
-  const r = (x, y, w, h, c, a = 1) => {
-    if (w <= 0 || h <= 0) return;
-    g.fillStyle = rgb(c, a); g.fillRect(Math.round(x), Math.round(y), w, h);
-  };
-  const line = (x0, y0, x1, y1, c, w = 1, a = 1) => {
-    const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) | 0;
-    for (let i = 0; i <= n; i++){
-      const t = n ? i / n : 0;
-      r(x0 + (x1 - x0) * t - (w >> 1), y0 + (y1 - y0) * t - (w >> 1), w, w, c, a);
+// ── splatting solids into a grid ───────────────────────────────────────────
+/* A grid of cells over some window of the world. `put` keeps the nearest surface for each cell, the
+   z-buffer every 3D renderer has. A cell (i, j) is world pixel (i + ox, j + oy). The world itself is
+   one big grid; a person is a small one. */
+function Grid(w, h, ox, oy){
+  this.S = new PXHD.Sprite(w, h);
+  this.w = w; this.h = h; this.ox = ox; this.oy = oy;
+  this.Z = new Float32Array(w * h).fill(-1e9);
+}
+Grid.prototype.put = function(x, y, z, m, n, o){
+  const i = Math.floor(sx(x) - this.ox), j = Math.floor(sy(y, z) - this.oy);
+  if (i < 0 || j < 0 || i >= this.w || j >= this.h) return;
+  const D = depth(y, z), k = j * this.w + i;
+  if (D <= this.Z[k]) return;
+  this.Z[k] = D;
+  const nn = camN(n[0], n[1], n[2]);
+  this.S.g[j][i] = { m, n: () => nn, z: D, dt: (o && o.dt) || 0, gloss: (o && o.gloss) || 0,
+    bias: (o && o.bias) || 0, t: null, tag: '', noCast: (o && o.noCast) || 0 };
+};
+const STEP = ART * 0.45;
+const fn = mat => typeof mat === 'function' ? mat : () => mat;
+
+/* A box: its top and its front, the two faces a camera above and in front of it can see. `mat` is a
+   colour or a function of the point that answers one, which is how a rug or a grille gets its pattern. */
+function box(G, x0, x1, y0, y1, z0, z1, mat, o){
+  const m = fn(mat);
+  for (let x = x0; x <= x1; x += STEP){
+    for (let y = y0; y <= y1; y += STEP) G.put(x, y, z1, m(x, y, z1, 'top'), [0, 0, 1], o);
+    for (let z = z0; z <= z1; z += STEP) G.put(x, y1, z, m(x, y1, z, 'front'), [0, 1, 0], o);
+  }
+}
+/* An ellipsoid, sampled over its whole surface. `cut(u, v, w)` is asked in the ellipsoid's own unit
+   frame, so hair can cover the back and top of a head and leave the face. */
+function ell(G, cx, cy, cz, rx, ry, rz, mat, o, cut){
+  const m = fn(mat);
+  const R = Math.max(rx, ry, rz), nT = Math.ceil(2 * Math.PI * R / STEP), nP = Math.ceil(Math.PI * R / STEP);
+  for (let a = 0; a <= nP; a++){
+    const ph = a / nP * Math.PI, sp = Math.sin(ph), cp = Math.cos(ph);
+    const nt = Math.max(4, Math.ceil(nT * sp));
+    for (let b = 0; b < nt; b++){
+      const th = b / nt * 2 * Math.PI, u = sp * Math.cos(th), v = sp * Math.sin(th), w = cp;
+      if (cut && !cut(u, v, w)) continue;
+      const x = cx + u * rx, y = cy + v * ry, z = cz + w * rz;
+      G.put(x, y, z, m(x, y, z, u, v, w), [u / rx, v / ry, w / rz], o);
     }
-  };
-  return { r, line, g };
+  }
+}
+/* A capsule from a to b: limbs, poles, a guitar's neck, a drumstick. */
+function cap(G, a, b, r, mat, o){
+  const m = fn(mat);
+  const d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], L = Math.hypot(...d) || 1e-6;
+  const u = d.map(v => v / L);
+  const t0 = Math.abs(u[2]) < .9 ? [0, 0, 1] : [1, 0, 0];
+  let p = [u[1] * t0[2] - u[2] * t0[1], u[2] * t0[0] - u[0] * t0[2], u[0] * t0[1] - u[1] * t0[0]];
+  const pl = Math.hypot(...p); p = p.map(v => v / pl);
+  const q = [u[1] * p[2] - u[2] * p[1], u[2] * p[0] - u[0] * p[2], u[0] * p[1] - u[1] * p[0]];
+  const nl = Math.max(1, Math.ceil(L / STEP)), nc = Math.max(6, Math.ceil(2 * Math.PI * r / STEP));
+  for (let i = 0; i <= nl; i++){
+    const t = i / nl, c = [a[0] + d[0] * t, a[1] + d[1] * t, a[2] + d[2] * t];
+    for (let k = 0; k < nc; k++){
+      const th = k / nc * 2 * Math.PI, cs = Math.cos(th), sn = Math.sin(th);
+      const n = [p[0] * cs + q[0] * sn, p[1] * cs + q[1] * sn, p[2] * cs + q[2] * sn];
+      const x = c[0] + n[0] * r, y = c[1] + n[1] * r, z = c[2] + n[2] * r;
+      G.put(x, y, z, m(x, y, z), n, o);
+    }
+  }
+  for (const e of [a, b]) ell(G, e[0], e[1], e[2], r, r, r, mat, o);
+}
+/* A standing cylinder: a drum shell, a tree trunk, a light pole. */
+function cyl(G, cx, cy, r, z0, z1, side, top, o){
+  const ms = fn(side);
+  const nc = Math.max(8, Math.ceil(2 * Math.PI * r / STEP));
+  for (let z = z0; z <= z1; z += STEP){
+    for (let k = 0; k < nc; k++){
+      const th = k / nc * 2 * Math.PI, nx = Math.cos(th), ny = Math.sin(th);
+      G.put(cx + nx * r, cy + ny * r, z, ms(cx + nx * r, cy + ny * r, z, th), [nx, ny, 0], o);
+    }
+  }
+  if (top){
+    const mt = fn(top);
+    for (let x = -r; x <= r; x += STEP) for (let y = -r; y <= r; y += STEP)
+      if (x * x + y * y <= r * r) G.put(cx + x, cy + y, z1, mt(x, y), [0, 0, 1], o);
+  }
 }
 
-/* A sprite with a one pixel ink outline, which is what makes a figure read as
-   drawn rather than as a pile of rectangles. Drawn into a scratch canvas, then
-   its silhouette is stamped four times in ink underneath. */
-function outlined(w, h, draw, ink = INK){
-  const t = canvas(w, h);
-  draw(brush(t.getContext('2d')));
-  const s = canvas(w, h);
-  const sg = s.getContext('2d');
-  sg.drawImage(t, 0, 0);
-  sg.globalCompositeOperation = 'source-in';
-  sg.fillStyle = rgb(ink); sg.fillRect(0, 0, w, h);
-  const c = canvas(w + 2, h + 2);
-  const cg = c.getContext('2d');
-  for (const [dx, dy] of [[0, 1], [2, 1], [1, 0], [1, 2]]) cg.drawImage(s, dx, dy);
-  cg.drawImage(t, 1, 1);
+function paint(G){
+  const c = canvas(G.w, G.h);
+  G.S.paint(c.getContext('2d'), 1, rampOf);
   return c;
 }
 
 // ── people ─────────────────────────────────────────────────────────────────
-/* One figure, drawn about a centre column `cx` with the feet on row `fy`. The
-   proportions are a 34 pixel person: an eight wide head, a ten wide body. */
-const SKINS = [[241, 204, 170], [222, 176, 134], [192, 136, 96], [150, 100, 68], [104, 68, 46]];
-const HAIRS = [[44, 30, 24], [96, 64, 36], [150, 108, 60], [26, 22, 28], [196, 160, 112], [130, 52, 34], [170, 170, 176]];
-const SHIRTS = [[218, 72, 88], [68, 132, 218], [236, 236, 230], [86, 176, 112], [160, 96, 206],
-  [44, 44, 56], [226, 136, 58], [56, 172, 184], [196, 196, 112], [120, 84, 64], [230, 120, 160]];
+/* A chibi person, the putt putt world's proportions: a big round head on a small body, about five and
+   a half feet in all. Built facing you (+y); a person seen from behind is the same person turned. */
+const SKINS = ['#f2cfae', '#e3b48b', '#c58c5e', '#9a6644', '#6e4630'];
+const HAIRS = ['#3a2a22', '#6b4428', '#a87a44', '#22202a', '#d8b47a', '#8e3a26', '#b4b4bc'];
+const SHIRTS = ['#e8505f', '#3f86d8', '#f2efe6', '#4fb36e', '#9b5fd0', '#2e3140', '#ef8a3c', '#2fb3c0',
+  '#c7c065', '#7d5a44', '#ec7aa8', '#5fc4a0'];
+const DYE = ['#f05a7e', '#ffd04a', '#4ac0e6', '#9b5ff0', '#5fd47a'];
 
-function shirtFill(b, x, y, w, h, o){
-  const c = o.shirt;
-  b.r(x, y, w, h, c);
-  if (o.dye){
-    // Tie dye: the shirt every lot sells, in rings.
-    const cols = [[236, 80, 120], [250, 200, 70], [70, 190, 220], [140, 90, 230], [90, 210, 120]];
-    for (let yy = 0; yy < h; yy++){
-      for (let xx = 0; xx < w; xx++){
-        const d = Math.hypot(xx - w / 2 + .5, (yy - h / 2) * 1.3) + o.dye;
-        b.r(x + xx, y + yy, 1, 1, cols[(d | 0) % cols.length]);
-      }
-    }
-  } else if (o.check){
-    for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++)
-      if ((xx % 3 === 0) || (yy % 3 === 0)) b.r(x + xx, y + yy, 1, 1, sh(c, .72));
-  } else if (o.stripe){
-    for (let yy = 1; yy < h; yy += 3) b.r(x, y + yy, w, 1, sh(c, .7));
-  }
-  // Light from the stage side, shadow away from it.
-  b.r(x, y, 1, h, sh(c, 1.15), .55);
-  b.r(x + w - 2, y, 2, h, sh(c, .7), .6);
-}
-
-function headFront(b, cx, top, o){
-  const sk = o.skin, hr = o.hair;
-  const L = cx - 4;
-  // Long hair falls behind the shoulders, so it is drawn first.
-  if (o.style === 'long' || o.style === 'shaggy'){
-    b.r(L - 1, top + 2, 10, o.style === 'long' ? 15 : 11, sh(hr, .8));
-  }
-  b.r(L, top + 2, 8, 7, sk);
-  b.r(L + 1, top + 9, 6, 1, sk);
-  b.r(L + 6, top + 2, 2, 7, sh(sk, .82));
-  b.r(L + 1, top + 9, 6, 1, sh(sk, .9));
-  // A generic face: two eyes and a shadow for a nose. Nobody in particular.
-  b.r(L + 2, top + 5, 1, 1, [36, 26, 30]);
-  b.r(L + 5, top + 5, 1, 1, [36, 26, 30]);
-  b.r(L + 4, top + 6, 1, 1, sh(sk, .8));
-  if (o.beard){
-    b.r(L, top + 6, 8, 4, sh(hr, .95));
-    b.r(L + 1, top + 10, 6, 1, sh(hr, .8));
-    b.r(L + 3, top + 7, 2, 1, sh(sk, .55));
-  } else b.r(L + 3, top + 8, 2, 1, sh(sk, .7));
-  if (o.glasses){ b.r(L + 1, top + 5, 3, 1, [30, 26, 34]); b.r(L + 4, top + 5, 3, 1, [30, 26, 34]); }
-  // Hair on top, then whatever is on it.
-  if (o.style !== 'bald'){
-    b.r(L, top, 8, 3, hr);
-    b.r(L + 1, top - 1, 6, 1, hr);
-    b.r(L + 1, top, 3, 1, sh(hr, 1.3));
-    b.r(L - 1, top + 1, 1, o.style === 'short' ? 4 : 8, hr);
-    b.r(L + 8, top + 1, 1, o.style === 'short' ? 4 : 8, sh(hr, .8));
-    if (o.style === 'shaggy') b.r(L, top + 3, 2, 1, hr), b.r(L + 6, top + 3, 2, 1, hr);
-  }
-  if (o.hat === 'brim'){
-    const c = o.hatC;
-    b.r(L - 4, top + 1, 16, 2, c);
-    b.r(L - 4, top + 3, 16, 1, sh(c, .6));
-    b.r(L, top - 4, 8, 5, c);
-    b.r(L, top - 1, 8, 1, sh(c, .55));
-    b.r(L + 1, top - 4, 2, 4, sh(c, 1.25));
-  } else if (o.hat === 'capback'){
-    const c = o.hatC;
-    b.r(L, top - 2, 8, 4, c);
-    b.r(L + 1, top - 2, 3, 1, sh(c, 1.2));
-    b.r(L + 2, top + 1, 4, 1, sh(c, .6));
-  } else if (o.hat === 'cap'){
-    const c = o.hatC;
-    b.r(L, top - 2, 8, 4, c);
-    b.r(L - 1, top + 2, 10, 1, sh(c, .7));
-  }
-}
-
-function bodyFront(b, cx, fy, o, armL, armR){
-  const top = fy - 34;
-  const sk = o.skin;
-  headFront(b, cx, top, o);
-  // Neck, shirt, belt, legs, shoes.
-  b.r(cx - 1, top + 10, 3, 2, sh(sk, .8));
-  shirtFill(b, cx - 5, top + 12, 10, 10, o);
-  if (o.vest){ b.r(cx - 5, top + 12, 3, 10, o.vest); b.r(cx + 2, top + 12, 3, 10, sh(o.vest, .8)); }
-  b.r(cx - 1, top + 12, 2, 1, sh(sk, .85));
-  b.r(cx - 5, top + 22, 10, 1, [40, 30, 28]);
-  const pa = o.pants;
-  b.r(cx - 5, top + 23, 4, 9, pa);
-  b.r(cx + 1, top + 23, 4, 9, sh(pa, .85));
-  b.r(cx - 2, top + 23, 1, 9, sh(pa, .7));
-  b.r(cx + 4, top + 23, 1, 9, sh(pa, .65));
-  b.r(cx - 6, top + 32, 5, 2, o.shoes);
-  b.r(cx + 1, top + 32, 5, 2, sh(o.shoes, .85));
-  b.r(cx - 6, top + 32, 5, 1, sh(o.shoes, 1.4));
-  // Arms: each is a list of [x, y] joints from the shoulder to the hand.
-  const sleeve = o.sleeveless ? sk : o.shirt;
-  const arm = (pts, side) => {
-    for (let i = 0; i < pts.length - 1; i++){
-      const [x0, y0] = pts[i], [x1, y1] = pts[i + 1];
-      b.line(x0, y0, x1, y1, i === 0 ? sleeve : sk, 2);
-    }
-    const [hx, hy] = pts[pts.length - 1];
-    b.r(hx - 1, hy - 1, 2, 2, side ? sh(sk, .85) : sk);
+/* `facing` turns the model about its feet: 0 faces you, PI is its back to you, and a quarter turn
+   either way is side on. Only quarter turns, so an ellipsoid's radii simply swap. */
+function turnOf(facing){ return typeof facing === 'number' ? facing : facing ? Math.PI : 0; }
+function personParts(G, P, pose, facing){
+  const th = turnOf(facing), cs = Math.round(Math.cos(th)), sn = Math.round(Math.sin(th)), swap = sn !== 0;
+  const T = (x, y, z) => [x * cs - y * sn, x * sn + y * cs, z];
+  const E = (x, y, z, rx, ry, rz, m, o, cut) => {
+    const [a, b, c] = T(x, y, z);
+    ell(G, a, b, c, swap ? ry : rx, swap ? rx : ry, rz, m, o, cut ? (u, v, w) => cut(u * cs + v * sn, -u * sn + v * cs, w) : null);
   };
-  if (armL) arm(armL.map(([x, y]) => [cx + x, top + y]), 0);
-  if (armR) arm(armR.map(([x, y]) => [cx + x, top + y]), 1);
-}
-
-function guitar(b, cx, top, o, bass){
-  const c = o.axe, d = sh(c, .62), l = sh(c, 1.18);
-  const bx = cx - 7, by = top + 20;
-  // The body, a rounded double cutaway, then the neck rising to the right.
-  const rows = [5, 8, 9, 10, 10, 10, 9, 7];
-  rows.forEach((w, i) => {
-    const x = bx + ((10 - w) >> 1);
-    b.r(x, by + i, w, 1, i < 2 ? l : i > 5 ? d : c);
-  });
-  if (o.guard) b.r(bx + 2, by + 3, 4, 3, o.guard);
-  b.r(bx + 5, by + 2, 1, 5, [30, 26, 28]);
-  b.r(bx + 3, by + 6, 4, 1, [200, 200, 210]);
-  const len = bass ? 18 : 14;
-  b.line(bx + 8, by + 3, bx + 8 + len, by + 3 - (len >> 1) - 1, [96, 64, 40], 2);
-  b.line(bx + 9, by + 2, bx + 8 + len, by + 2 - (len >> 1) - 1, [70, 44, 28], 1);
-  const hx = bx + 8 + len, hy = by + 1 - (len >> 1) - 1;
-  b.r(hx, hy - 1, 3, 3, bass ? d : [230, 226, 214]);
-  // The strap over the shoulder.
-  b.line(bx + 1, by + 1, cx - 3, top + 12, [120, 40, 36], 1);
-}
-
-const BAND = {
-  keys:   { x: 236, fy: 262, look: { skin: SKINS[1], hair: HAIRS[1], style: 'shaggy', beard: false,
-    glasses: true, shirt: [92, 150, 98], pants: [56, 52, 66], shoes: [60, 46, 38] } },
-  guitar: { x: 294, fy: 272, look: { skin: SKINS[1], hair: HAIRS[0], style: 'short', beard: true,
-    hat: 'capback', hatC: [228, 222, 206], shirt: [150, 184, 228], dye: 3, pants: [104, 82, 60],
-    shoes: [72, 60, 52], axe: [238, 228, 210], guard: [250, 248, 240] } },
-  bass:   { x: 350, fy: 266, look: { skin: SKINS[0], hair: HAIRS[4], style: 'long', beard: false,
-    shirt: [196, 196, 204], pants: [44, 48, 62], shoes: [40, 36, 40], axe: [170, 70, 46], guard: [36, 30, 30] } },
-  drums:  { x: 424, fy: 230, look: { skin: SKINS[1], hair: HAIRS[0], style: 'short', beard: true,
-    hat: 'brim', hatC: [86, 72, 62], shirt: [60, 84, 112], vest: [70, 96, 128], sleeveless: true,
-    pants: [48, 48, 56], shoes: [40, 36, 40] } },
-};
-
-/* The players, as frames. A frame is a whole drawn figure, so animating is
-   choosing one, which costs a drawImage rather than a redraw. */
-function guitarFrames(m, bass){
-  const o = m.look;
-  const frames = [];
-  for (let f = 0; f < 4; f++){
-    const bob = f === 1 ? 1 : 0;
-    const strum = [[-9, 24], [-8, 27], [-9, 25], [-8, 22]][f];
-    frames.push(outlined(40, 46, b => {
-      const cx = 16, fy = 44 + bob;
-      bodyFront(b, cx, fy, o, [[-5, 13], [-8, 18], strum], null);
-      guitar(b, cx, fy - 34, o, bass);
-      // The fretting hand reaches up the neck, over the body.
-      const nx = bass ? 9 : 7, ny = bass ? 15 : 17;
-      b.line(cx + 5, fy - 34 + 13, cx + nx - 2, fy - 34 + ny + 3, o.shirt, 2);
-      b.line(cx + nx - 2, fy - 34 + ny + 3, cx + nx, fy - 34 + ny, o.skin, 2);
-    }));
+  const C = (a, b, r, m, o) => cap(G, T(...a), T(...b), r, m, o);
+  const skin = 'k:' + P.skin, hair = 'h:' + P.hair, shoes = 'x:' + P.shoes;
+  /* A painted suit: cream canvas with marker doodles all over it, the way the keys player's is. */
+  const doodle = base => (x, y, z) => {
+    const h = hash(Math.floor(x * 5) + 40, Math.floor(z * 5) + Math.floor(y * 5) * 9, 21);
+    return 'x:' + (h < .13 ? ['#d8402e', '#3f8a4a', '#3a62c4', '#e08a2a', '#7a4ab0'][(h * 100 | 0) % 5] : base);
+  };
+  const pants = P.doodle ? doodle(P.pants) : 'x:' + P.pants;
+  const shirt = P.doodle ? doodle(P.shirt) : P.dye
+    ? (x, y, z) => 'x:' + DYE[(Math.floor(Math.hypot(x, z - 2.3) * 3.2 + P.dye) % DYE.length + DYE.length) % DYE.length]
+    : P.stripe ? (x, y, z) => 'x:' + (Math.floor(z * 3) % 2 ? P.shirt : P.stripe)
+    : 'x:' + P.shirt;
+  // Legs and shoes. Sitting, the thighs run forward and the shins drop to the deck.
+  if (pose.seated){
+    for (const s2 of [-1, 1]){
+      C([s2 * .38, 0, 1.45], [s2 * .38, .95, 1.45], .3, pants);
+      C([s2 * .38, .95, 1.45], [s2 * .38, .95, .35], .28, pants);
+      E(s2 * .38, 1.07, .2, .32, .45, .22, shoes, { gloss: 1 });
+    }
+  } else {
+    C([-.38, 0, .35], [-.38, 0, 1.55], .3, pants);
+    C([.38, 0, .35], [.38, 0, 1.55], .3, pants);
+    E(-.38, .12, .2, .32, .45, .22, shoes, { gloss: 1 });
+    E(.38, .12, .2, .32, .45, .22, shoes, { gloss: 1 });
   }
-  return frames;
+  // Body.
+  E(0, 0, 2.3, .78, .55, .92, shirt);
+  if (P.vest) E(0, .02, 2.35, .8, .57, .86, 'x:' + P.vest, {}, (u, v, w) => Math.abs(u) > .35 && v > -.2);
+  // Head, neck, ears.
+  C([0, 0, 3.1], [0, 0, 3.4], .25, skin);
+  E(0, 0, 4.25, 1.18, 1.08, 1.12, skin);
+  E(-1.12, 0, 4.15, .2, .22, .28, skin);
+  E(1.12, 0, 4.15, .2, .22, .28, skin);
+  // Hair: over the top and back of the head; longer styles fall behind the shoulders.
+  const cut = { long: (u, v, w) => w > .1 || v < 0, curly: (u, v, w) => w > -.1 || v < .1 }[P.style]
+    || ((u, v, w) => w > .15 || v < -.2);
+  if (P.style === 'shag'){
+    // A big shag of curls: over the brow and down past the ears, the face left open.
+    // Two tones of brown so the curls read as curls rather than a helmet.
+    const curl = (x, y, z) => 'h:' + (hash(Math.floor(x * 6) + 60, Math.floor(z * 6) + Math.floor(y * 6) * 5, 33) < .35
+      ? PXHD.mix(P.hair, '#c08a52', .35) : P.hair);
+    E(0, -.02, 4.32, 1.26, 1.16, 1.18, curl, {}, (u, v, w) => w > .32 || v < -.1 || (Math.abs(u) > .78 && (v < .3 || w > .05)));
+    E(0, -.25, 4.42, 1.38, 1.2, 1.24, curl, {}, (u, v, w) => v < 0 || w > .55);
+  } else if (P.style !== 'bald') E(0, -.02, 4.32, 1.24, 1.14, 1.16, hair, {}, cut);
+  if (P.style === 'long') E(0, -.55, 3.35, 1.05, .5, 1.05, hair);
+  if (P.style === 'curly') E(0, -.05, 4.45, 1.42, 1.3, 1.25, hair, {}, (u, v, w) => w > -.25 || v < 0);
+  if (P.style === 'bun') E(0, -.5, 5.35, .45, .45, .42, hair);
+  if (P.style === 'pony') C([0, -.95, 4.6], [0, -1.2, 3.5], .26, hair);
+  if (P.beard) E(0, .45, 3.75, .95, .7, .62, hair, {}, (u, v, w) => v > .1 && w < .25);
+  // Hats.
+  if (P.hat){
+    const hm = 'x:' + P.hatC;
+    if (P.hat === 'brim'){ E(0, 0, 5.05, 1.62, 1.5, .13, hm); E(0, 0, 5.35, 1.05, .98, .62, hm, {}, (u, v, w) => w > -.1); }
+    else if (P.hat === 'bucket'){ E(0, 0, 4.85, 1.6, 1.5, .2, hm); E(0, 0, 5.05, 1.12, 1.05, .6, hm, {}, (u, v, w) => w > -.1); }
+    else if (P.hat === 'beanie') E(0, -.02, 4.5, 1.27, 1.17, 1.2, hm, {}, (u, v, w) => w > .2);
+    else {
+      E(0, -.02, 4.5, 1.26, 1.16, 1.18, hm, {}, (u, v, w) => w > .22);
+      E(0, (P.hat === 'capback' ? -1 : 1) * 1.1, 4.82, .82, .62, .1, hm);
+    }
+  }
+  // Arms. A pose is two hands; the elbow sits halfway, pushed a little outward.
+  const arm = (s, hand) => {
+    const sh = [s * .72, 0, 2.95], mid = [(sh[0] + hand[0]) / 2 + s * .25, (sh[1] + hand[1]) / 2, (sh[2] + hand[2]) / 2];
+    C(sh, mid, .24, P.sleeveless ? skin : shirt);
+    C(mid, hand, .21, skin);
+    E(hand[0], hand[1], hand[2], .24, .24, .24, skin);
+  };
+  arm(-1, pose.L);
+  arm(1, pose.R);
+  if (pose.extra) pose.extra(E, C, T, G);
 }
 
-function keysFrames(m){
-  const o = m.look;
-  return [0, 1, 2, 3].map(f => outlined(28, 40, b => {
-    const cx = 12, fy = 38 + (f === 2 ? 1 : 0);
-    const h = [[-6, 22], [-4, 23], [-5, 22], [-6, 23]][f];
-    const h2 = [[6, 23], [5, 22], [7, 22], [6, 23]][f];
-    bodyFront(b, cx, fy, o, [[-5, 13], [-7, 18], h], [[5, 13], [7, 18], h2]);
-  }));
+/* Two dots and a mouth, set onto the face after it is drawn, the way the golf golfer gets its own.
+   Turned side on, only the near eye shows. Glasses are a dark rim either side of an eye; a mustache
+   is a short dark bar over the mouth. */
+function face(G, P, facing){
+  const th = turnOf(facing), cs = Math.round(Math.cos(th)), sn = Math.round(Math.sin(th));
+  const at = (x, y, z) => { const wx = x * cs - y * sn, wy = x * sn + y * cs;
+    return { i: Math.floor(sx(wx) - G.ox), j: Math.floor(sy(wy, z) - G.oy), seen: wy > .25 }; };
+  const rim = 'f:#241c22';
+  for (const s of [-1, 1]){
+    const e = at(s * .42, 1.02, 4.25);
+    if (!e.seen) continue;
+    if (P.glasses){ G.S.set(e.i - 1, e.j, rim, 0, { noCast: 1 }); G.S.set(e.i + 1, e.j, rim, 0, { noCast: 1 }); G.S.set(e.i, e.j - 1, rim, 0, { noCast: 1 }); }
+    G.S.set(e.i, e.j, 'f:#2a1c22', 0, { noCast: 1 });
+  }
+  if (P.mustache){
+    for (const dx of [-.3, 0, .3]){ const m = at(dx, 1.06, 3.86); if (m.seen) G.S.set(m.i, m.j, 'f:' + PXHD.mix(P.hair, '#000000', .25), 0, { noCast: 1 }); }
+  } else if (!P.beard){
+    const m = at(0, 1.05, 3.72);
+    if (m.seen) G.S.set(m.i, m.j, 'f:' + PXHD.mix(P.skin, '#7a2a34', .35), 0, { noCast: 1 });
+  }
 }
 
-function drummerFrames(m){
-  const o = m.look;
-  const stick = [214, 180, 120];
-  // L down R up, both mid, L up R down, both up for the crash.
-  const poses = [
-    [[-7, 9], [-4, 19]], [[-8, 13], [5, 15]], [[-6, 15], [7, 8]], [[-9, 6], [9, 6]],
-  ];
-  return poses.map(([l, r], f) => outlined(36, 40, b => {
-    const cx = 17, fy = 52;
-    bodyFront(b, cx, fy, o, [[-5, 13], [-8, 17], [l[0], l[1] + 9]], [[5, 13], [8, 17], [r[0], r[1] + 9]]);
-    const top = fy - 34;
-    b.line(cx + l[0], top + l[1] + 9, cx + l[0] + 6, top + l[1] + 6 - (f === 3 ? 4 : 0), stick, 1);
-    b.line(cx + r[0], top + r[1] + 9, cx + r[0] - 6 + (f === 3 ? 10 : 0), top + r[1] + 6 - (f === 3 ? 4 : 0), stick, 1);
-  }));
+/* A person as a sprite: drawn into their own small grid and painted. (PAX, PAY) is the cell their
+   feet stand on, so they can be stood anywhere in the world. */
+const PW = 34, PH = 46, PAX = 17, PAY = 38;
+function personSprite(P, pose, facing){
+  const G = new Grid(PW, PH, sx(0) - PAX, OY - PAY);
+  personParts(G, P, pose, facing);
+  if (Math.cos(turnOf(facing)) > -.5) face(G, P, facing);
+  return paint(G);
 }
 
-// ── the crowd ──────────────────────────────────────────────────────────────
-/* Seen from behind. A variant is a person: hair, hat, shirt, height. A pose is
-   what their arms are doing. Every person in the room is one variant in one
-   pose, drawn at a place, so the room costs a drawImage a head. */
+// Poses, as hand positions in feet about the feet, facing you.
+const CROWD_POSES = {
+  down:  { L: [-.95, .15, 1.75], R: [.95, .15, 1.75] },
+  up:    { L: [-1.05, .1, 5.9], R: [1.05, .1, 5.9] },
+  one:   { L: [-.95, .15, 1.75], R: [1.0, .15, 6.1] },
+  clap:  { L: [-.25, .4, 5.7], R: [.25, .4, 5.7] },
+  phone: { L: [-.95, .15, 1.75], R: [.85, .2, 5.6], extra: (E) => E(.85, .2, 6.05, .22, .1, .32, 'x:#2a2c36') },
+};
+/* A sign is a board over the head, held in both hands, drawn on the person's own grid so it is lit
+   and outlined like everything else. */
+function signPose(v){
+  return { L: [-1.0, .1, 5.7], R: [1.0, .1, 5.7], extra: (E, C, T, G) => {
+    for (let x = -1.7; x <= 1.7; x += STEP) for (let z = 5.7; z <= 7.4; z += STEP){
+      const [a, b] = T(x, .15, z);
+      const col = Math.abs(z - 6.85) < .18 && Math.abs(x) < 1.3 ? v.sign[0]
+        : Math.abs(z - 6.25) < .14 && Math.abs(x + .2) < 1.0 ? v.sign[1] : '#f6f1e4';
+      G.put(a, b, z, 'x:' + col, [0, 1, 0], { noCast: 1 });
+    }
+  } };
+}
+
 function crowdVariant(rand){
   const pick = a => a[(rand() * a.length) | 0];
-  const style = pick(['short', 'short', 'long', 'pony', 'bun', 'curly', 'bald', 'dreads']);
-  const hat = rand() < .3 ? pick(['cap', 'capback', 'bucket', 'beanie', 'brim']) : null;
-  const top = pick(['tee', 'tee', 'tee', 'dye', 'dye', 'check', 'hoodie', 'stripe']);
+  const top = rand();
   return {
-    skin: pick(SKINS), hair: pick(HAIRS), style, hat, hatC: pick(SHIRTS),
-    shirt: pick(SHIRTS), top, dye: (rand() * 5) | 0, short: (rand() * 4) | 0,
-    print: rand() < .35 ? pick(SHIRTS) : null,
+    skin: pick(SKINS), hair: pick(HAIRS),
+    style: pick(['short', 'short', 'long', 'bun', 'curly', 'pony', 'bald', 'long']),
+    hat: rand() < .32 ? pick(['cap', 'capback', 'bucket', 'beanie', 'brim']) : null, hatC: pick(SHIRTS),
+    shirt: pick(SHIRTS), dye: top < .3 ? 1 + ((rand() * 4) | 0) : 0, stripe: top > .85 ? pick(SHIRTS) : null,
+    pants: pick(['#4a5a7e', '#3b4258', '#6b5a48', '#2e2e38', '#8a7a62']), shoes: pick(['#f0ece2', '#2e2a30', '#c0473c']),
     sign: [pick(SHIRTS), pick(SHIRTS)],
   };
 }
 
-function crowdSprite(v, pose){
-  return outlined(26, 50, b => {
-    const cx = 13, fy = 49, top = fy - 34 + v.short;
-    const sk = v.skin, hr = v.hair;
-    // Legs and shoes, mostly hidden by the row behind but there for the gaps.
-    b.r(cx - 5, top + 23, 4, 11 - v.short, [52, 56, 76]);
-    b.r(cx + 1, top + 23, 4, 11 - v.short, [44, 48, 66]);
-    // The back of a shirt, with the band tee print some of them wear.
-    const o = { shirt: v.shirt, dye: v.top === 'dye' ? v.dye + 1 : 0, check: v.top === 'check', stripe: v.top === 'stripe' };
-    shirtFill(b, cx - 5, top + 11, 10, 12, o);
-    if (v.top === 'hoodie') b.r(cx - 4, top + 10, 8, 3, sh(v.shirt, .8));
-    if (v.print && v.top === 'tee'){ b.r(cx - 2, top + 14, 4, 4, v.print); b.r(cx - 1, top + 15, 2, 2, sh(v.print, .6)); }
-    // Neck and the back of the head.
-    b.r(cx - 1, top + 9, 3, 2, sh(sk, .78));
-    b.r(cx - 4, top + 1, 8, 8, sh(sk, .92));
-    b.r(cx - 5, top + 4, 1, 2, sk); b.r(cx + 4, top + 4, 1, 2, sh(sk, .8));
-    if (v.style !== 'bald'){
-      const hl = sh(hr, 1.3);
-      b.r(cx - 4, top, 8, v.style === 'short' ? 6 : 9, hr);
-      b.r(cx - 3, top - 1, 6, 1, hr);
-      b.r(cx - 3, top, 3, 1, hl);
-      if (v.style === 'long') b.r(cx - 4, top + 8, 8, 6, hr), b.r(cx - 4, top + 13, 8, 1, sh(hr, .75));
-      if (v.style === 'pony') b.r(cx - 1, top + 8, 2, 6, hr);
-      if (v.style === 'bun') b.r(cx - 2, top - 3, 4, 3, hr), b.r(cx - 1, top - 3, 2, 1, hl);
-      if (v.style === 'curly') b.r(cx - 5, top - 1, 10, 8, hr), b.r(cx - 4, top - 2, 8, 1, hr);
-      if (v.style === 'dreads') for (let i = 0; i < 4; i++) b.r(cx - 4 + i * 2, top + 6, 1, 8, sh(hr, .9));
+// ── the band ───────────────────────────────────────────────────────────────
+const BAND = {
+  /* Keys sits on a stool inside three boards (one each side and one behind) and turns between them,
+     and for some songs stands up with a red guitar. Big curls, round glasses, a mustache, and the
+     painted cream suit. */
+  keys:   { x: -9, y: -8.0, z: 4, stand: { x: -9, y: -6.3 }, axe: '#c8302c', bass: false,
+    look: { skin: SKINS[1], hair: '#5a3a24', style: 'shag', glasses: true, mustache: true, doodle: true,
+      shirt: '#efe6cf', pants: '#e8dec4', shoes: '#3a2e28' } },
+  guitar: { x: -3, y: -4.6, z: 4, look: { skin: SKINS[1], hair: HAIRS[0], style: 'short', beard: true, hat: 'capback', hatC: '#ece6d8',
+    shirt: '#9cc0e8', dye: 2, pants: '#6b5640', shoes: '#4a3e36' }, axe: '#f2e8d8', bass: false },
+  bass:   { x: 2.6, y: -5.6, z: 4, look: { skin: SKINS[0], hair: HAIRS[4], style: 'long', shirt: '#c9c9d2', pants: '#2c3044', shoes: '#2a2a30' },
+    axe: '#b04a32', bass: true },
+  drums:  { x: 8.4, y: -10.4, z: 5.2, look: { skin: SKINS[1], hair: HAIRS[0], style: 'short', beard: true, hat: 'brim', hatC: '#5a4a40',
+    shirt: '#3d5878', vest: '#5a7da6', sleeveless: true, pants: '#30303a', shoes: '#2a2a30' } },
+};
+
+function guitarExtra(m){
+  return (E, C) => {
+    E(-.2, .8, 2.0, .98, .22, .74, 'x:' + m.axe, { gloss: 1 });
+    E(-.62, .96, 1.95, .36, .1, .3, 'x:' + (m.bass ? '#2a2226' : '#f8f4ea'));
+    const tip = m.bass ? [2.25, .85, 3.75] : [1.85, .85, 3.4];
+    C([.5, .88, 2.25], tip, .12, 'x:#8a5a34');
+    E(tip[0] + .12, tip[1], tip[2] + .1, .2, .08, .14, 'x:' + (m.bass ? '#2a2226' : '#efe6d4'));
+  };
+}
+/* The keys player's four places: a board to his right, one to his left, one behind him, and the red
+   guitar. Two frames a board, hands rising and falling; the guitar strums like the other two. */
+const KEY_TURN = { right: -Math.PI / 2, left: Math.PI / 2, back: Math.PI };
+function keysFrames(){
+  const k = BAND.keys, out = {};
+  for (const [st2, th] of Object.entries(KEY_TURN)){
+    out[st2] = [0, 1].map(f => personSprite(k.look, { seated: true,
+      L: [-.5, 1.18, f ? 2.62 : 2.75], R: [.5, 1.18, f ? 2.75 : 2.62] }, th));
+  }
+  out.guitar = [0, 1, 2, 3].map(f => personSprite(k.look, {
+    L: [1.15, .9, 2.85], R: [-.55, .95, [2.25, 1.85, 2.15, 2.45][f]], extra: guitarExtra(k) }, 0));
+  return out;
+}
+// Which of his four places he is at, song by song. Mostly keys, the guitar now and then.
+const KEY_SEQ = ['right', 'left', 'right', 'back', 'guitar', 'left', 'back', 'right', 'left', 'guitar'];
+
+function bandFrames(){
+  const g = m => [0, 1, 2, 3].map(f => personSprite(m.look, {
+    L: [m.bass ? 1.4 : 1.15, .9, m.bass ? 3.05 : 2.85],
+    R: [-.55, .95, [2.25, 1.85, 2.15, 2.45][f]],
+    extra: guitarExtra(m) }, false));
+  const stick = (hand, up, C) => C(hand, [hand[0] * .6, hand[1] + 1.1, hand[2] + (up ? .9 : -.2)], .07, 'x:#e0c08a');
+  const D = [[[-1.0, .9, 2.6], [1.0, .9, 3.6]], [[-1.0, .9, 3.6], [1.0, .9, 2.6]], [[-1.05, .9, 3.0], [1.05, .9, 3.0]], [[-1.2, .7, 4.6], [1.2, .7, 4.6]]];
+  return {
+    guitar: g(BAND.guitar),
+    bass: g(BAND.bass),
+    keys: keysFrames(),
+    drums: D.map(([l, r], f) => personSprite(BAND.drums.look, {
+      L: l, R: r, extra: (E, C) => { stick(l, f !== 0 && f !== 2, C); stick(r, f === 0 || f === 3, C); } }, false)),
+  };
+}
+
+// ── the venue ──────────────────────────────────────────────────────────────
+const DECK = { x0: -14, x1: 14, y0: -14.5, y1: 0, z: 4 };
+const SCREEN = { x0: -10.5, x1: 10.5, y: -14.6, z0: 8.4, z1: 16.6 };
+const TRUSS_Z = 21.5;
+const FIX = Array.from({ length: 10 }, (_, i) => -12.6 + i * 2.8);
+const LAMPS = [[-31.8, -2], [31.8, -2], [-31.8, 18], [31.8, 18], [-31.8, 38], [31.8, 38]];
+
+function grassAt(x, y){
+  const n = hash(Math.floor(x * 2.5), Math.floor(y * 2.5), 3), p = hash(Math.floor(x / 2), Math.floor(y / 2), 5);
+  if (n < .018) return ['#f4e9f2', '#f6d65a', '#e98bb4'][(n * 1000 | 0) % 3];
+  if (p < .25) return '#79bc58';
+  if (n > .85) return '#93d06c';
+  return '#86c661';
+}
+
+function buildBack(rand){
+  const G = new Grid(WPX, HPX, 0, 0);
+  const up = camN(0, 0, 1), nUp = () => up;
+  // The lawn, every cell, then everything else stood on it.
+  for (let j = 0; j < HPX; j++){
+    const y = (j + .5 - OY) * ART / SE;
+    for (let i = 0; i < WPX; i++){
+      const x = X0 + (i + .5) * ART;
+      let col = grassAt(x, y);
+      if (y > -20 && y < -16 && Math.abs(x) < 26) col = '#b9a78a';
+      if (y > 1 && y < 3.2 && Math.abs(x) < 17) col = '#a8a29a';
+      if (Math.abs(x) > 30 && Math.abs(x) < 33.5 && y > -10) col = (Math.floor(y * 2) % 2) ? '#d9cfba' : '#cfc4ad';
+      G.S.g[j][i] = { m: 'x:' + col, n: nUp, z: depth(y, 0), dt: hash(i >> 1, j >> 1, 9) < .12 ? -1 : 0,
+        gloss: 0, bias: 0, t: null, tag: '' };
+      G.Z[j * WPX + i] = depth(y, 0);
     }
-    if (v.hat){
-      const c = v.hatC;
-      if (v.hat === 'brim'){ b.r(cx - 7, top + 2, 14, 2, c); b.r(cx - 4, top - 3, 8, 5, sh(c, .9)); }
-      else if (v.hat === 'bucket'){ b.r(cx - 5, top + 2, 10, 2, sh(c, .85)); b.r(cx - 4, top - 2, 8, 5, c); }
-      else if (v.hat === 'beanie'){ b.r(cx - 4, top - 2, 8, 5, c); b.r(cx - 4, top + 2, 8, 1, sh(c, .7)); }
-      else if (v.hat === 'capback'){ b.r(cx - 4, top - 1, 8, 4, c); b.r(cx - 3, top + 3, 6, 2, sh(c, .7)); }
-      else { b.r(cx - 4, top - 1, 8, 4, c); b.r(cx - 2, top + 3, 4, 1, sh(c, .6)); }
+  }
+  // Blankets at the back of the lawn, where the people who came to sit, sit.
+  for (let k = 0; k < 14; k++){
+    const x = -26 + rand() * 52, y = 34 + rand() * 14;
+    const c = SHIRTS[(rand() * SHIRTS.length) | 0], c2 = SHIRTS[(rand() * SHIRTS.length) | 0];
+    box(G, x - 2, x + 2, y - 1.4, y + 1.4, 0, .05, (px, py) => 'x:' + ((Math.floor(px) + Math.floor(py)) % 2 ? c : c2));
+  }
+  // Trees round the lawn and a stand of them behind the stage.
+  const greens = ['#4f9a48', '#5aab50', '#3f8640'];
+  const tree = (x, y, r, h) => {
+    cyl(G, x, y, .7, 0, h * .55, 'x:#7a5236', null);
+    ell(G, x, y, h, r, r * .9, r * .82, (px, py, pz) => 'x:' + greens[(hash(Math.floor(px * 1.5), Math.floor(pz * 1.5), 2) * 3) | 0]);
+    ell(G, x - r * .5, y + .4, h - r * .35, r * .6, r * .55, r * .55, 'x:#5aab50');
+    ell(G, x + r * .55, y + .3, h - r * .3, r * .6, r * .55, r * .5, 'x:#4f9a48');
+  };
+  for (const [x, y, r, h] of [[-30, -26, 6.5, 22], [-18, -30, 7, 26], [-4, -32, 6.5, 27], [10, -31, 7.5, 26],
+    [24, -28, 6.5, 23], [36, -22, 6, 20], [-40, -18, 6, 18], [-40, 4, 5.5, 14], [41, 6, 5.5, 14],
+    [-42, 26, 6, 15], [42, 30, 6, 15], [-38, 46, 5, 13], [40, 50, 5.5, 14]]) tree(x, y, r, h);
+  // Lamp posts up the side paths.
+  for (const [x, y] of LAMPS){
+    cyl(G, x, y, .22, 0, 11, 'x:#3a3a44', null);
+    ell(G, x, y, 11.4, .6, .6, .5, 'x:#f6efd8', { gloss: 2 });
+  }
+  // The stage house: the back wall, the screen's frame, the deck, its skirt and the drum riser.
+  box(G, -15.5, 15.5, -16, -14.8, 0, 19.5, (x, y, z, f) => 'x:' + (f === 'top' ? '#4a4652' : (Math.floor(x * 2) % 2 ? '#3a3742' : '#34313c')));
+  box(G, SCREEN.x0 - .5, SCREEN.x1 + .5, -14.8, -14.6, SCREEN.z0 - .5, SCREEN.z1 + .5, 'x:#1c1b22');
+  box(G, DECK.x0, DECK.x1, DECK.y0, DECK.y1, 0, DECK.z, (x, y, z, f) => {
+    if (f === 'front') return 'x:' + (Math.floor(x * 1.5) % 2 ? '#26232c' : '#2d2a34');
+    // Planks running away from you, and the rug in the middle of them.
+    if (Math.abs(x) < 6.5 && y > -9.5 && y < -1.2){
+      if (Math.abs(x) > 6.1 || y < -9.1 || y > -1.6) return 'x:#6e2620';
+      const d = Math.abs(x) * .8 + Math.abs(y + 5.35) * 1.4, b = Math.floor(d * 1.8) % 5;
+      return 'x:' + (b === 0 ? '#e0a650' : b === 2 ? '#3a4a8a' : '#a83a2c');
     }
-    // Arms.
-    const sleeve = v.top === 'hoodie' || v.top === 'check' ? v.shirt : sk;
-    const arm = (pts) => {
-      for (let i = 0; i < pts.length - 1; i++)
-        b.line(cx + pts[i][0], top + pts[i][1], cx + pts[i + 1][0], top + pts[i + 1][1], i === 0 ? v.shirt : sleeve, 2);
-      const [hx, hy] = pts[pts.length - 1];
-      b.r(cx + hx - 1, top + hy - 1, 2, 2, sk);
-    };
-    if (pose === 'down'){ arm([[-6, 12], [-7, 18], [-7, 22]]); arm([[6, 12], [7, 18], [7, 22]]); }
-    else if (pose === 'up'){ arm([[-5, 12], [-8, 4], [-9, -4]]); arm([[5, 12], [8, 4], [9, -4]]); }
-    else if (pose === 'one'){ arm([[-6, 12], [-7, 18], [-7, 22]]); arm([[5, 12], [7, 3], [8, -6]]); }
-    else if (pose === 'clap'){ arm([[-5, 12], [-5, 4], [-1, -4]]); arm([[5, 12], [5, 4], [1, -4]]); }
-    else if (pose === 'phone'){
-      arm([[-6, 12], [-7, 18], [-7, 22]]); arm([[5, 12], [6, 4], [6, -2]]);
-      b.r(cx + 5, top - 6, 3, 5, [30, 30, 40]);
-    } else if (pose === 'sign'){
-      arm([[-5, 12], [-7, 4], [-7, -5]]); arm([[5, 12], [7, 4], [7, -5]]);
-      b.r(cx - 10, top - 13, 20, 9, [244, 240, 228]);
-      b.r(cx - 10, top - 5, 20, 1, [200, 196, 184]);
-      b.r(cx - 8, top - 11, 9, 2, v.sign[0]); b.r(cx + 2, top - 11, 6, 2, v.sign[1]);
-      b.r(cx - 7, top - 8, 13, 2, v.sign[0]);
-    }
+    return 'x:' + (Math.floor(x * 1.4) % 2 ? '#8a6a54' : '#7e604c');
   });
+  box(G, 4.6, 12.6, -13.6, -7.6, DECK.z, DECK.z + 1.2, (x, y, z, f) => 'x:' + (f === 'top' ? '#5a4f62' : '#2e2a36'));
+  // The keys player's third board, behind his stool, and the stool he turns on.
+  // Longer than the other two, so its ends show past his curls from out front.
+  keysBoard(G, BAND.keys.x, BAND.keys.y - 1.75, 'x', '#3a3e48', 5.4);
+  cyl(G, BAND.keys.x, BAND.keys.y, .14, DECK.z, DECK.z + 1.3, 'x:#7a7a84', null);
+  cyl(G, BAND.keys.x, BAND.keys.y, .62, DECK.z + 1.3, DECK.z + 1.5, 'x:#2a2a30', 'x:#3a3a42');
+  // Amps along the back.
+  for (const [x, w] of [[-4.6, 1.6], [-2.8, 1.6], [3.4, 2.2]]){
+    box(G, x - w / 2, x + w / 2, -13.4, -12.4, DECK.z, DECK.z + 2.1, (px, py, pz, f) => f === 'top' ? 'x:#2e2b30'
+      : 'x:' + ((Math.floor(pz * 6) % 2) ? '#5a524a' : '#4c4640'));
+  }
+  // Side towers, the PA hung off them, and the truss across the top.
+  for (const s of [-1, 1]){
+    for (const dy of [-.6, .6]) for (const dx of [-.6, .6]) cap(G, [s * 15.6 + dx, -.8 + dy, 0], [s * 15.6 + dx, -.8 + dy, TRUSS_Z], .12, 'x:#9ea0aa');
+    for (let z = 1; z < TRUSS_Z; z += 1.4) cap(G, [s * 15.6 - .6, -.2, z], [s * 15.6 + .6, -.2, z + 1.2], .07, 'x:#8a8c96');
+    box(G, s * 17.6 - 1.4, s * 17.6 + 1.4, -1.6, -.2, 9, 18.5, (x, y, z, f) => f === 'top' ? 'x:#3a3a42'
+      : 'x:' + ((Math.floor(z * 2.2) % 3 === 0) ? '#4a4a54' : '#2c2c34'));
+  }
+  for (const dy of [-.6, .6]) for (const dz of [-.5, .5]) cap(G, [-16.2, -.8 + dy, TRUSS_Z + dz], [16.2, -.8 + dy, TRUSS_Z + dz], .12, 'x:#a8aab4');
+  for (let x = -16; x < 16; x += 1.2) cap(G, [x, -.2, TRUSS_Z - .5], [x + 1.1, -.2, TRUSS_Z + .5], .06, 'x:#8a8c96');
+  for (const fx of FIX) ell(G, fx, -.8, TRUSS_Z - 1, .35, .35, .4, 'x:#2a2a32', { gloss: 1 });
+  return paint(G);
 }
 
-// ── the room ───────────────────────────────────────────────────────────────
-/* Where everything stands, in world pixels. The deck is the stage floor seen
-   from above at an angle; its face is the black skirt below its front edge. */
-const DECK = { x0: 168, x1: 472, top: 206, front: 286, face: 302 };
-const WALL = { x0: 150, x1: 490, top: 30 };
-const SCREEN = { x: 186, y: 62, w: 268, h: 108 };
-const TRUSS_Y = 42;
-const PODS = [0, 1, 2, 3, 4, 5].map(i => 236 + i * 34);
-const FIXTURES = Array.from({ length: 14 }, (_, i) => 170 + i * 23);
-const BARRIER = 316;
-const CROWD_TOP = 338;
-
-function buildRoom(rand){
-  const c = canvas(WW, WH);
-  const b = brush(c.getContext('2d'));
-  // Ceiling and the dark the rig hangs in.
-  b.r(0, 0, WW, WH, [16, 12, 24]);
-  for (let y = 4; y < 34; y += 10) b.r(0, y, WW, 2, [26, 20, 36]);
-  // Side walls, with acoustic panels.
-  for (const [x0, x1] of [[0, 104], [536, WW]]){
-    b.r(x0, 20, x1 - x0, 300, [30, 22, 40]);
-    for (let y = 40; y < 280; y += 34){
-      for (let x = x0 + 8; x < x1 - 8; x += 24){
-        b.r(x, y, 18, 28, [40, 30, 52]);
-        b.r(x, y, 18, 1, [56, 44, 70]);
-        b.r(x + 17, y, 1, 28, [24, 18, 32]);
-      }
+/* A keyboard on an X stand at sitting height. `along` is the way its keys run: 'x' across the stage
+   for the board behind him, 'y' toward you for the two either side of him. */
+function keysBoard(G, x, y, along, body, L = 3.4){
+  const Z = DECK.z, top = Z + 2.7, W = .95;
+  const [hx, hy] = along === 'x' ? [L / 2, W / 2] : [W / 2, L / 2];
+  box(G, x - hx, x + hx, y - hy, y + hy, top - .35, top, (px, py, pz, f) => {
+    const a = along === 'x' ? px - x : py - y, c = along === 'x' ? py - y : px - x;
+    if (f === 'top' && Math.abs(a) < L / 2 - .2 && Math.abs(c) < W / 2 - .18){
+      const k = ((Math.floor(a * 5) % 7) + 7) % 7;
+      return (k === 2 || k === 4 || k === 6) && c < .02 ? 'x:#26242a' : 'x:#f4f1ea';
     }
-    b.r(x0, 316, x1 - x0, 4, [12, 10, 18]);
+    return 'x:' + body;
+  }, { gloss: 1 });
+  const e = along === 'x' ? [[-L / 2 + .5, 0], [L / 2 - .5, 0]] : [[0, -1.2], [0, 1.2]];
+  for (const [dx, dy] of e){
+    cap(G, [x + dx - .3, y + dy, Z], [x + dx + .3, y + dy, top - .4], .07, 'x:#6a6a74');
+    cap(G, [x + dx + .3, y + dy, Z], [x + dx - .3, y + dy, top - .4], .07, 'x:#6a6a74');
   }
-  // The back wall behind the stage.
-  b.r(WALL.x0, WALL.top, WALL.x1 - WALL.x0, DECK.top - WALL.top, [20, 16, 30]);
-  for (let x = WALL.x0; x < WALL.x1; x += 8) b.r(x, WALL.top, 1, DECK.top - WALL.top, [26, 20, 38]);
-  // The screen's frame. What is ON the screen is drawn live, it is a light.
-  b.r(SCREEN.x - 4, SCREEN.y - 4, SCREEN.w + 8, SCREEN.h + 8, [10, 10, 14]);
-  b.r(SCREEN.x - 4, SCREEN.y - 4, SCREEN.w + 8, 1, [50, 48, 60]);
-  b.r(SCREEN.x - 4, SCREEN.y + SCREEN.h + 3, SCREEN.w + 8, 1, [6, 6, 8]);
-  // PA hangs, stage left and right of the wall.
-  for (const x of [112, 500]){
-    for (let i = 0; i < 7; i++){
-      const y = 52 + i * 15;
-      b.r(x, y, 28, 13, [34, 32, 40]);
-      b.r(x, y, 28, 1, [64, 62, 72]);
-      b.r(x + 2, y + 3, 24, 8, [22, 20, 26]);
-      for (let gx = x + 3; gx < x + 26; gx += 2) b.r(gx, y + 4, 1, 6, [30, 28, 34]);
-    }
-    b.line(x + 14, 30, x + 14, 52, [60, 60, 70]);
-  }
-  // Floor of the room, poured concrete under years of shows.
-  for (let y = DECK.face; y < WH; y++){
-    const k = .9 + .1 * Math.sin(y * .7);
-    b.r(0, y, WW, 1, sh([40, 34, 46], k));
-  }
-  for (let i = 0; i < 900; i++){
-    const x = rand() * WW, y = DECK.face + rand() * (WH - DECK.face);
-    b.r(x, y, 1, 1, rand() < .5 ? [52, 46, 58] : [30, 26, 36]);
-  }
-  // Truss towers either side of the deck.
-  for (const x of [148, 482]){
-    b.r(x, TRUSS_Y, 10, DECK.face - TRUSS_Y, [70, 70, 80]);
-    b.r(x + 2, TRUSS_Y, 6, DECK.face - TRUSS_Y, [24, 22, 30]);
-    for (let y = TRUSS_Y; y < DECK.face; y += 8) b.line(x + 2, y, x + 7, y + 7, [100, 100, 112]);
-  }
-  // The deck: planks going away from you, then the rug, gaff tape and cable.
-  for (let y = DECK.top; y < DECK.front; y++){
-    const k = .82 + .18 * ((y - DECK.top) / (DECK.front - DECK.top));
-    b.r(DECK.x0, y, DECK.x1 - DECK.x0, 1, sh([62, 48, 44], k));
-  }
-  for (let x = DECK.x0 + 6; x < DECK.x1; x += 12) b.r(x, DECK.top, 1, DECK.front - DECK.top, [44, 34, 32]);
-  b.r(DECK.x0, DECK.front - 1, DECK.x1 - DECK.x0, 2, [92, 74, 64]);
-  rug(b, 252, 232, 140, 50);
-  for (const [x, y] of [[214, 278], [400, 272], [300, 250], [338, 212]]) b.r(x, y, 7, 2, [210, 200, 120]);
-  b.line(206, 268, 290, 280, [18, 16, 22]); b.line(330, 276, 452, 252, [18, 16, 22]);
-  // The skirt across the front of the deck.
-  b.r(DECK.x0 - 2, DECK.front + 1, DECK.x1 - DECK.x0 + 4, DECK.face - DECK.front - 1, [14, 12, 18]);
-  for (let x = DECK.x0; x < DECK.x1; x += 5) b.r(x, DECK.front + 2, 2, DECK.face - DECK.front - 2, [22, 18, 28]);
-  // Amps and the backline against the wall.
-  amp(b, 266, 176); amp(b, 286, 176, true); amp(b, 362, 180);
-  b.r(374, 190, 24, 16, [36, 32, 40]); b.r(376, 192, 20, 12, [28, 26, 30]);
-  // The drum riser.
-  b.r(384, 214, 82, 22, [54, 46, 60]);
-  b.r(384, 214, 82, 2, [88, 78, 96]);
-  b.r(384, 236, 82, 9, [20, 18, 26]);
-  rug(b, 396, 220, 58, 14, true);
-  // The barricade between the pit and the floor.
-  b.r(110, BARRIER - 8, WW - 220, 3, [130, 132, 140]);
-  for (let x = 112; x < WW - 110; x += 6) b.r(x, BARRIER - 5, 1, 12, [90, 92, 100]);
-  b.r(110, BARRIER + 6, WW - 220, 2, [60, 62, 70]);
-  return c;
 }
 
-function rug(b, x, y, w, h, small){
-  const base = [150, 46, 38], dark = [96, 28, 26], gold = [214, 150, 70], blue = [44, 60, 120];
-  b.r(x, y, w, h, base);
-  b.r(x, y, w, 2, dark); b.r(x, y + h - 2, w, 2, dark);
-  b.r(x, y, 2, h, dark); b.r(x + w - 2, y, 2, h, dark);
-  for (let yy = 3; yy < h - 3; yy++){
-    for (let xx = 3; xx < w - 3; xx++){
-      const cx = Math.abs(xx - w / 2), cy = Math.abs(yy - h / 2) * (w / h) * .5;
-      const d = cx + cy;
-      if (((d | 0) % 9) === 0) b.r(x + xx, y + yy, 1, 1, gold);
-      else if (!small && ((d | 0) % 9) === 4) b.r(x + xx, y + yy, 1, 1, blue);
-      else if (((xx + yy) % 6) === 0) b.r(x + xx, y + yy, 1, 1, sh(base, .8));
-    }
-  }
-  for (let xx = 0; xx < w; xx += 2){ b.r(x + xx, y - 1, 1, 1, [230, 220, 200]); b.r(x + xx, y + h, 1, 1, [230, 220, 200]); }
-}
-
-function amp(b, x, y, head){
-  b.r(x, y, 18, 28, [32, 28, 30]);
-  b.r(x, y, 18, 1, [70, 64, 66]);
-  b.r(x + 2, y + (head ? 8 : 3), 14, head ? 18 : 22, [56, 50, 46]);
-  for (let gy = y + (head ? 9 : 4); gy < y + 26; gy += 2) b.r(x + 2, gy, 14, 1, [44, 40, 38]);
-  if (head){ b.r(x, y - 7, 18, 7, [40, 36, 40]); for (let k = 0; k < 4; k++) b.r(x + 3 + k * 4, y - 4, 2, 2, [200, 196, 180]); }
-}
-
-/* Gear that stands IN FRONT of a player, so it is drawn after the band. */
+/* What stands in front of a player: the keys rig, the kit, mic stands, wedges, the barricade. Drawn
+   after the band so a player is behind their gear, the way they are on a real stage. */
 function buildFront(){
-  const c = canvas(WW, WH);
-  const b = brush(c.getContext('2d'));
-  // The keys rig: two boards on an X stand, a third angled at the side.
-  const kx = 218, ky = 256;
-  keyboard(b, kx, ky - 10, 36, [180, 44, 40]);
-  keyboard(b, kx + 2, ky - 2, 34, [36, 34, 40]);
-  b.line(kx + 6, ky + 4, kx + 30, ky + 14, [70, 70, 80], 2); b.line(kx + 30, ky + 4, kx + 6, ky + 14, [70, 70, 80], 2);
-  keyboard(b, kx - 14, ky + 2, 14, [60, 58, 66]);
-  // Mic stands in front of the two strings, and wedges at the lip.
-  for (const [x, top] of [[300, 236], [356, 230], [244, 238]]){
-    b.line(x, top, x, top + 34, [150, 150, 160]);
-    b.line(x - 4, top + 34, x + 4, top + 34, [150, 150, 160]);
-    b.r(x - 1, top - 2, 3, 3, [50, 50, 56]);
+  const G = new Grid(WPX, HPX, 0, 0);
+  const Z = DECK.z;
+  // The keys player's boards either side of him. The one behind him is in the back layer.
+  keysBoard(G, BAND.keys.x + 1.65, BAND.keys.y, 'y', '#d23c3a');
+  keysBoard(G, BAND.keys.x - 1.65, BAND.keys.y, 'y', '#2c2a32');
+  // The kit: yellow shells, cymbals, and the kick facing you with a swirl painted on it.
+  const yel = (x, y, z, th) => 'x:' + (Math.sin(th || 0) > .6 ? '#c9a218' : '#f4cc2c');
+  const drum = (x, y, r, z0, z1) => cyl(G, x, y, r, z0, z1, yel, 'x:#efeadc', { gloss: 1 });
+  const RZ = DECK.z + 1.2;
+  drum(6.9, -8.6, .7, RZ + 1.6, RZ + 2.3); drum(9.7, -8.6, .7, RZ + 1.6, RZ + 2.3);
+  drum(11.5, -7.8, .95, RZ, RZ + 1.8); drum(5.4, -7.6, .75, RZ + .8, RZ + 1.4);
+  for (const [x, y, z, r] of [[5.6, -8.8, RZ + 3.4, 1.15], [11.6, -9.6, RZ + 3.9, 1.35], [4.6, -7.8, RZ + 2.0, .8], [12.6, -8.2, RZ + 3.0, 1.0]]){
+    cap(G, [x, y, RZ], [x, y, z], .06, 'x:#9a9aa4');
+    ell(G, x, y, z, r, r * .9, .07, 'x:#d8ae5a', { gloss: 2 });
   }
-  for (const x of [282, 340, 228]){
-    b.r(x, 278, 20, 7, [26, 24, 30]);
-    b.r(x, 278, 20, 2, [52, 50, 58]);
-    b.r(x + 3, 281, 14, 3, [18, 16, 20]);
-  }
-  // Pedalboards at the guitarists' feet.
-  for (const x of [284, 342]){
-    b.r(x, 272, 22, 5, [24, 22, 26]);
-    for (let k = 0; k < 4; k++) b.r(x + 2 + k * 5, 273, 3, 3, [[220, 70, 70], [70, 200, 120], [240, 240, 240], [80, 120, 230]][k]);
-  }
-  kit(b);
-  return c;
-}
-
-function keyboard(b, x, y, w, body){
-  b.r(x, y, w, 6, body);
-  b.r(x, y, w, 1, sh(body, 1.35));
-  b.r(x + 2, y + 2, w - 4, 3, [236, 234, 228]);
-  for (let k = x + 3; k < x + w - 3; k += 2) if ((k - x) % 7 !== 0) b.r(k, y + 2, 1, 2, [24, 22, 26]);
-  b.r(x, y + 6, w, 1, sh(body, .5));
-}
-
-function kit(b){
-  const yel = [244, 204, 40], yelD = [188, 146, 18], yelL = [255, 236, 120];
-  const head = [232, 228, 214], hoop = [190, 190, 200];
-  const drum = (x, y, w, h, deep) => {
-    b.r(x, y + 2, w, deep, yel);
-    b.r(x, y + 2, 1, deep, yelL);
-    b.r(x + w - 2, y + 2, 2, deep, yelD);
-    b.r(x, y + 2 + deep - 1, w, 1, hoop);
-    b.r(x, y, w, h, head);
-    b.r(x, y, w, 1, hoop); b.r(x, y + h - 1, w, 1, hoop);
-  };
-  const cymbal = (x, y, w) => {
-    b.line(x + (w >> 1), y + 2, x + (w >> 1), 250, [120, 120, 130]);
-    b.r(x, y, w, 2, [214, 172, 92]);
-    b.r(x + 2, y, w - 4, 1, [250, 220, 140]);
-    b.r(x + (w >> 1) - 1, y - 1, 2, 1, [180, 140, 70]);
-  };
-  cymbal(398, 202, 16); cymbal(440, 198, 18); cymbal(388, 218, 12); cymbal(452, 214, 14);
-  drum(408, 222, 10, 4, 5); drum(426, 222, 10, 4, 5);
-  drum(442, 232, 13, 5, 10);
-  drum(398, 234, 11, 4, 4);
-  // The kick, facing you, with a painted head of no one's art in particular.
-  const cx = 424, cy = 246, r = 11;
-  for (let yy = -r; yy <= r; yy++){
-    for (let xx = -r; xx <= r; xx++){
-      const d2 = xx * xx + yy * yy;
-      if (d2 > r * r) continue;
-      let c;
-      if (d2 > (r - 2) * (r - 2)) c = yy < 0 ? yelL : yel;
-      else {
-        const a = Math.atan2(yy, xx) + Math.sqrt(d2) * .45;
-        c = [[236, 84, 64], [64, 104, 220], [92, 200, 216], [248, 236, 210]][((a / 1.1 | 0) % 4 + 4) % 4];
-      }
-      b.r(cx + xx, cy + yy, 1, 1, c);
+  // The kick lies on its side: a shell running toward you and the painted head at its end.
+  const kx = 8.3, ky = -7.4, kz = RZ + 1.25, kr = 1.25;
+  for (let y = ky - 1.6; y <= ky; y += STEP){
+    for (let k = 0; k < 60; k++){
+      const th = k / 60 * 2 * Math.PI, nx = Math.cos(th), nz = Math.sin(th);
+      G.put(kx + nx * kr, y, kz + nz * kr, 'x:' + (nz < -.4 ? '#c9a218' : '#f4cc2c'), [nx, 0, nz], { gloss: 1 });
     }
   }
-  b.r(cx - r, cy + r - 1, 2 * r, 2, yelD);
+  for (let x = -kr; x <= kr; x += STEP) for (let z = -kr; z <= kr; z += STEP){
+    const d = Math.hypot(x, z);
+    if (d > kr) continue;
+    let m;
+    if (d > kr - .22) m = 'x:#f4cc2c';
+    else {
+      const a = Math.atan2(z, x) + d * 2.4;
+      m = 'x:' + ['#e8573c', '#3c62d6', '#4ec4d8', '#f6ecd4'][((Math.floor(a / 1.1) % 4) + 4) % 4];
+    }
+    G.put(kx + x, ky + .02, kz + z, m, [0, 1, 0], { gloss: 1 });
+  }
+  // Mic stands in front of the strings, wedges at the lip, and pedalboards.
+  for (const [x, y] of [[-2.7, -3.0], [2.9, -4.0]]){
+    cap(G, [x, y, Z], [x, y, Z + 4.4], .06, 'x:#a8a8b2');
+    ell(G, x, y + .1, Z + 4.5, .15, .2, .15, 'x:#2a2a30');
+  }
+  for (const x of [-3.2, 2.8, -8.4]){
+    box(G, x - 1.1, x + 1.1, -1.6, -.5, Z, Z + .7, (px, py, pz, f) => f === 'top' ? 'x:#3a3840' : 'x:#22212a');
+  }
+  for (const [x, y] of [[-3.2, -2.6], [2.5, -3.6]]){
+    box(G, x - 1, x + 1, y - .3, y + .3, Z, Z + .2, px => 'x:' + ['#e85a5a', '#5ad48a', '#f2f2f2', '#5a7ae8'][Math.floor((px - x + 1) * 2) & 3]);
+  }
+  // The barricade between the pit and the lawn.
+  for (let x = -16; x <= 16; x += .9) cap(G, [x, 3.4, 0], [x, 3.4, 3.2], .06, 'x:#b8bac4');
+  cap(G, [-16.2, 3.4, 3.3], [16.2, 3.4, 3.3], .12, 'x:#c8cad4');
+  return paint(G);
 }
 
 // ── the stage ──────────────────────────────────────────────────────────────
+const PALETTES = {
+  jam:    [[160, 100, 255], [70, 220, 235]],
+  peak:   [[255, 80, 180], [240, 240, 255]],
+  cover:  [[255, 112, 96], [80, 225, 205]],
+  encore: [[245, 245, 255], [255, 100, 130]],
+  ballad: [[80, 130, 255], [170, 120, 255]],
+  opener: [[90, 235, 140], [240, 240, 255]],
+  closer: [[70, 215, 225], [255, 90, 190]],
+  house:  [[170, 160, 220], [120, 180, 230]],
+};
+const ROTATION = ['jam', 'closer', 'ballad', 'cover', 'opener', 'peak'];
+
+/* The sky does the lighting. A multiply over the whole world: white at noon, warm through the
+   afternoon, rose at dusk and blue at night, keyed to how far through the show the night is. */
+const SKY = [
+  [0, [255, 255, 255]], [.35, [255, 238, 216]], [.5, [236, 176, 166]], [.62, [112, 104, 160]], [1, [58, 62, 112]],
+];
+function skyAt(p){
+  for (let i = 1; i < SKY.length; i++){
+    if (p <= SKY[i][0]){
+      const [a, ca] = SKY[i - 1], [b, cb] = SKY[i];
+      return mixc(ca, cb, (p - a) / (b - a));
+    }
+  }
+  return SKY[SKY.length - 1][1];
+}
+
 export function createStage(view, opts = {}){
-  const venue = VENUES[opts.venue] || VENUES.theater;
+  const venue = VENUES[opts.venue] || VENUES.lawn;
   const reduce = !!opts.reduce;
   const rand = mulberry32((opts.seed | 0) || 7);
 
-  const room = buildRoom(rand);
+  const back = buildBack(rand);
   const front = buildFront();
-  const frames = {
-    keys: keysFrames(BAND.keys),
-    guitar: guitarFrames(BAND.guitar, false),
-    bass: guitarFrames(BAND.bass, true),
-    drums: drummerFrames(BAND.drums),
-  };
+  const frames = bandFrames();
 
-  /* The crowd: thirty people, drawn as several hundred. Laid out once off the
-     night's seed so a replay draws the same room, sorted back to front so the
-     row nearer you covers the row behind. `t` is how full the room has to be
-     before a person turns up, so a bad night empties the back first. */
-  const variants = Array.from({ length: 30 }, () => crowdVariant(rand));
+  // The crowd: twenty eight kinds of person, several hundred people, back to front.
+  const variants = Array.from({ length: 28 }, () => crowdVariant(rand));
   const spriteCache = new Map();
   const spriteOf = (vi, pose) => {
     const key = vi + ':' + pose;
     let s = spriteCache.get(key);
-    if (!s){ s = crowdSprite(variants[vi], pose); spriteCache.set(key, s); }
+    if (!s){
+      const v = variants[vi];
+      s = personSprite(v, pose === 'sign' ? signPose(v) : CROWD_POSES[pose], true);
+      spriteCache.set(key, s);
+    }
     return s;
   };
   const crowd = [];
-  for (let y = CROWD_TOP; y < WH + 40; y += 8){
-    const depth = (y - CROWD_TOP) / (WH - CROWD_TOP);
-    // The floor is wall to wall, and so is the crowd: only the pit in front
-    // of the barricade is narrower than the room.
-    const x0 = depth < .05 ? 112 : 14, x1 = depth < .05 ? WW - 112 : WW - 14;
-    for (let x = x0; x < x1; x += 9 + rand() * 4){
-      crowd.push({
-        x: x + (rand() - .5) * 4, y: y + (rand() - .5) * 3,
-        v: (rand() * variants.length) | 0,
-        t: Math.min(1, depth * .55 + rand() * .5),
-        phase: rand() * Math.PI * 2,
-        jumpy: .4 + rand() * .6,
-        phone: rand() < .5, sign: rand() < .035,
-        drift: (rand() - .5) * 2, pose: 'down', until: 0,
-      });
+  /* Room to see the lawn between people, the way the putt putt world shows its ground: packed at the
+     rail and thinning toward the blankets at the back. */
+  for (let y = 5.5; y < 44; y += 2.3 + (y - 5) * .02){
+    const half = 19 + (y - 5) * .42, gap = 2.9 + (y - 5) * .05;
+    for (let x = -half; x < half; x += gap + rand() * 1.2){
+      crowd.push({ x: x + (rand() - .5) * .5, y: y + (rand() - .5) * .5,
+        v: (rand() * variants.length) | 0, t: Math.min(1, (y - 5) / 40 * .6 + rand() * .45),
+        phase: rand() * Math.PI * 2, jumpy: .4 + rand() * .6,
+        phone: rand() < .55, sign: rand() < .035, pose: 'down', until: 0 });
     }
   }
   crowd.sort((a, b) => a.y - b.y);
+  // Everybody's first pose up front, so the first frame is not a stall.
+  for (let vi = 0; vi < variants.length; vi++) spriteOf(vi, 'down');
 
-  // The screen is a light, drawn per frame into a grid of LED cells.
-  const LED = { w: SCREEN.w / 4 | 0, h: SCREEN.h / 4 | 0 };
+  // The screen is a light: a grid of LED cells drawn every frame.
+  const LED = { w: Math.round((SCREEN.x1 - SCREEN.x0) / ART / 2), h: Math.round((SCREEN.z1 - SCREEN.z0) * CE / ART / 2) };
   const led = canvas(LED.w, LED.h);
   const ledG = led.getContext('2d');
   const ledImg = ledG.createImageData(LED.w, LED.h);
+  const SCR = { x: Math.round(sx(SCREEN.x0)), y: Math.round(sy(SCREEN.y, SCREEN.z1)) };
 
   const out = view.getContext('2d');
+  /* Five buffers, all the size of what the camera sees. `g` is the world as it is painted; `lg` the
+     light falling on it, multiplied in, so a beam's pool turns the rug and the people under it its own
+     colour; `eg` what glows of its own accord (the screen, lenses, bulbs, phones and the beams in the
+     haze), added on top; and two small ones the glow is blurred through for the bloom. */
   let buf = canvas(4, 4), g = buf.getContext('2d');
+  let lmap = canvas(4, 4), lg = lmap.getContext('2d');
+  let emit = canvas(4, 4), eg = emit.getContext('2d');
+  let beams = canvas(4, 4), bg = beams.getContext('2d');
+  let bloomA = canvas(2, 2), bloomB = canvas(1, 1);
+  /* THE BLOOM IS ITS OWN SMALL CANVAS, stretched over the picture by the browser and blended in with
+     `screen`. Drawn at full screen resolution every frame it cost five times the rest of the frame put
+     together (measured: 83ms against 17), because scaling three million pixels twice a frame is work a
+     canvas does on the CPU. Scaled by CSS it is the compositor's job, which is what a GPU is for. */
+  const glow = document.createElement('canvas');
+  glow.setAttribute('aria-hidden', 'true');
+  glow.style.cssText = view.style.cssText;
+  Object.assign(glow.style, { pointerEvents: 'none', imageRendering: 'auto', mixBlendMode: 'screen' });
+  if (view.parentElement) view.parentElement.insertBefore(glow, view.nextSibling);
+  const gg = glow.getContext('2d');
   let k = 1, visW = 4, visH = 4, camX = 0, camY = 0;
+  /* Haze: soft blobs of smoke the beams are seen through, so a beam is never a flat triangle. */
+  const haze = canvas(64, 64);
+  {
+    const hg = haze.getContext('2d'), im = hg.createImageData(64, 64);
+    for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++){
+      let v = 0, a = 1, f = 1 / 16;
+      for (let o = 0; o < 3; o++){
+        const X = x * f, Y = y * f, xi = Math.floor(X), yi = Math.floor(Y), u = X - xi, w = Y - yi;
+        const r = (i, j) => hash(((i % (64 * f)) + 64 * f) % (64 * f), ((j % (64 * f)) + 64 * f) % (64 * f), o + 40);
+        const su = u * u * (3 - 2 * u), sw = w * w * (3 - 2 * w);
+        v += a * (r(xi, yi) * (1 - su) * (1 - sw) + r(xi + 1, yi) * su * (1 - sw) + r(xi, yi + 1) * (1 - su) * sw + r(xi + 1, yi + 1) * su * sw);
+        a *= .5; f *= 2;
+      }
+      im.data[(y * 64 + x) * 4 + 3] = Math.round(255 * clamp01(.25 + (v / 1.75) * .95));
+    }
+    hg.putImageData(im, 0, 0);
+  }
+  let hazePat = null;
 
   const st = {
     pal: PALETTES.house, palFrom: PALETTES.house, palT: 1,
-    light: 0, lightWant: 0,
-    house: 1, houseWant: 1,
-    energy: .2, energyWant: .2,
-    density: .78, densityWant: .78,
+    light: 0, lightWant: 0, house: 1, houseWant: 1,
+    energy: .2, energyWant: .2, density: .8, densityWant: .8,
+    sky: 0, skyWant: 0,
     band: false, encore: false, bow: false,
-    signsUntil: 0, flashUntil: 0, jumpUntil: 0, segueUntil: 0,
-    mode: 0, rot: 0,
+    signsUntil: 0, flashUntil: 0, jumpUntil: 0, segueUntil: 0, strobeUntil: 0, mode: 0, rot: 0,
   };
   let raf = 0, dead = false, last = 0, now = performance.now();
 
   function fit(){
     const dpr = window.devicePixelRatio || 1;
-    const box = view.parentElement || document.body;
-    const cw = box.clientWidth || window.innerWidth, ch = box.clientHeight || window.innerHeight;
+    const host = view.parentElement || document.body;
+    const cw = host.clientWidth || window.innerWidth, ch = host.clientHeight || window.innerHeight;
     const devW = Math.round(cw * dpr), devH = Math.round(ch * dpr);
-    /* About a pixel and a half of screen to a cell, so a phone shows a slice
-       of the room near 290 pixels across with real detail in it. Never so small
-       a scale that the screen would see past the edge of the world. */
-    k = Math.max(1, Math.round(1.4 * dpr), Math.ceil(devW / WW), Math.ceil(devH / WH));
+    /* Chunky, the way the putt putt world is: about 115 pixels across a phone, so a person is twenty
+       pixels tall and three or four screen pixels make one of theirs. Never so small a scale that the
+       screen would see past the edge of the world. */
+    k = Math.max(1, Math.min(Math.floor(devW / 116), Math.floor(devH / 150)));
+    k = Math.max(k, Math.ceil(devW / WPX), Math.ceil(devH / HPX));
     visW = Math.ceil(devW / k); visH = Math.ceil(devH / k);
     view.width = visW * k; view.height = visH * k;
     view.style.width = (visW * k / dpr) + 'px';
     view.style.height = (visH * k / dpr) + 'px';
     buf = canvas(visW, visH); g = buf.getContext('2d');
-    // The band at the centre and the rig over it in the frame.
-    camX = Math.round(Math.min(Math.max(0, 326 - visW / 2), WW - visW));
-    camY = Math.round(Math.min(Math.max(0, Math.min(240 - visH * .4, 34)), WH - visH));
+    lmap = canvas(visW, visH); lg = lmap.getContext('2d');
+    emit = canvas(visW, visH); eg = emit.getContext('2d');
+    beams = canvas(visW, visH); bg = beams.getContext('2d');
+    bloomA = canvas(Math.ceil(visW / 3), Math.ceil(visH / 3));
+    bloomB = canvas(Math.ceil(visW / 9), Math.ceil(visH / 9));
+    glow.width = Math.ceil(visW / 2); glow.height = Math.ceil(visH / 2);
+    glow.style.cssText = view.style.cssText;
+    Object.assign(glow.style, { pointerEvents: 'none', imageRendering: 'auto', mixBlendMode: 'screen',
+      width: view.style.width, height: view.style.height });
+    hazePat = bg.createPattern(haze, 'repeat');
+    camX = Math.round(sx(0) - visW / 2);
+    // A tall screen shows the whole stage house and plenty of lawn; a wide one starts at the screen.
+    camY = Math.round(Math.min(Math.max(0, visH >= 230 ? 18 : SCR_TOP - 6), HPX - visH));
     draw();
   }
+  const SCR_TOP = Math.round(sy(SCREEN.y, SCREEN.z1));
 
   function palette(){
     const t = clamp01(st.palT);
-    return [mix(st.palFrom[0], st.pal[0], t), mix(st.palFrom[1], st.pal[1], t)];
+    return [mixc(st.palFrom[0], st.pal[0], t), mixc(st.palFrom[1], st.pal[1], t)];
   }
 
-  // ── drawing, per frame ───────────────────────────────────────────────────
-  function screen(p, t){
-    const d = ledImg.data, e = st.energy, L = st.light;
-    const mode = st.mode % 4;
+  function screen(c2, p, t, pulse){
+    const d = ledImg.data, e = st.energy, L = st.light, mode = Math.floor(st.mode / 3) % 4;
     for (let y = 0; y < LED.h; y++){
       for (let x = 0; x < LED.w; x++){
         const u = x / LED.w - .5, v = y / LED.h - .5;
         let s;
-        if (mode === 0) s = .5 + .5 * Math.sin(Math.hypot(u * 2.5, v) * 18 - t * (2 + e * 4));
-        else if (mode === 1){
-          const bar = Math.abs(Math.sin((x >> 2) * 1.7 + t * (1 + e * 3)));
-          s = (1 - (y / LED.h)) < bar ? 1 : .08;
-        } else if (mode === 2) s = .5 + .5 * Math.sin(u * 9 + t * 1.3) * Math.cos(v * 7 - t * 1.1 + Math.sin(u * 4 + t));
-        else s = ((x * 7 + y * 13 + ((t * 6) | 0)) % 23 === 0) ? 1 : .05 + .05 * Math.sin(u * 3 + t);
-        const c = mix(p[0], p[1], .5 + .5 * Math.sin(u * 3 + t * .5));
-        const lit = (.06 + .94 * s) * (.12 + .88 * L) * (1 - st.house * .7);
+        if (mode === 0) s = .5 + .5 * Math.sin(Math.hypot(u * 2.4, v) * 16 - t * (2 + e * 4));
+        else if (mode === 1) s = (1 - y / LED.h) < Math.abs(Math.sin((x >> 1) * 1.7 + t * (1 + e * 3))) ? 1 : .1;
+        else if (mode === 2) s = .5 + .5 * Math.sin(u * 8 + t * 1.3) * Math.cos(v * 6 - t * 1.1 + Math.sin(u * 4 + t));
+        else s = ((x * 7 + y * 13 + ((t * 6) | 0)) % 17 === 0) ? 1 : .12;
+        const c = mixc(p[0], p[1], .5 + .5 * Math.sin(u * 3 + t * .5));
+        // Held under white, or a pale palette turns the wall into one blown out lamp.
+        const lit = (.12 + .6 * s) * (.3 + .7 * Math.max(L, .25)) * (1 - st.house * .55) * (.82 + .18 * pulse);
         const i = (y * LED.w + x) * 4;
         d[i] = c[0] * lit; d[i + 1] = c[1] * lit; d[i + 2] = c[2] * lit; d[i + 3] = 255;
       }
     }
     ledG.putImageData(ledImg, 0, 0);
-    g.imageSmoothingEnabled = false;
-    g.drawImage(led, SCREEN.x, SCREEN.y, LED.w * 4, LED.h * 4);
-    // The gaps between LED tiles.
-    g.fillStyle = 'rgba(0,0,0,.35)';
-    for (let x = SCREEN.x; x < SCREEN.x + SCREEN.w; x += 4) g.fillRect(x, SCREEN.y, 1, SCREEN.h);
-    for (let y = SCREEN.y; y < SCREEN.y + SCREEN.h; y += 4) g.fillRect(SCREEN.x, y, SCREEN.w, 1);
+    c2.imageSmoothingEnabled = false;
+    c2.drawImage(led, SCR.x, SCR.y, LED.w * 2, LED.h * 2);
+    c2.globalCompositeOperation = 'destination-out';
+    c2.fillStyle = 'rgba(0,0,0,.3)';
+    for (let x = SCR.x; x < SCR.x + LED.w * 2; x += 2) c2.fillRect(x, SCR.y, 1, LED.h * 2);
+    c2.globalCompositeOperation = 'lighter';
   }
 
-  function rig(p, t, b){
-    // The truss, a box of tubes with its lattice.
-    b.r(140, TRUSS_Y, 360, 9, [74, 74, 86]);
-    b.r(140, TRUSS_Y + 2, 360, 5, [26, 24, 34]);
-    for (let x = 140; x < 500; x += 6) b.line(x, TRUSS_Y + 2, x + 5, TRUSS_Y + 6, [110, 110, 124]);
-    b.r(140, TRUSS_Y, 360, 1, [140, 140, 156]);
-    // The pods, hung in front of the screen, chasing.
-    PODS.forEach((x, c) => {
-      b.line(x + 3, TRUSS_Y + 9, x + 3, TRUSS_Y + 12, [90, 90, 100]);
-      b.r(x, TRUSS_Y + 12, 7, 88, [28, 26, 36]);
-      b.r(x, TRUSS_Y + 12, 1, 88, [60, 58, 70]);
-      for (let r = 0; r < 6; r++){
-        const v = .5 + .5 * Math.sin(t * (2 + st.energy * 5) + c * .9 + r * .7);
-        const on = st.light * (.2 + .8 * v);
-        const y = TRUSS_Y + 15 + r * 14;
-        b.r(x + 1, y, 5, 5, [16, 14, 20]);
-        b.r(x + 2, y + 1, 3, 3, mix([46, 42, 56], p[(c + r) % 2], on));
-        if (on > .6) b.r(x + 3, y + 2, 1, 1, [255, 255, 255], (on - .6) * 2.5);
-      }
-    });
-    // The movers on the truss.
-    FIXTURES.forEach((x, i) => {
-      b.r(x - 3, TRUSS_Y + 9, 7, 3, [40, 38, 48]);
-      b.r(x - 2, TRUSS_Y + 12, 5, 4, [24, 22, 30]);
-      b.r(x - 1, TRUSS_Y + 13, 3, 2, p[i % 2], .3 + .7 * st.light);
-    });
+  const P2 = (x, y, z) => [Math.round(sx(x)), Math.round(sy(y, z))];
+
+  /* A cone of light from a lens to where it lands: brightest at the lens and thinning as it spreads,
+     the way a beam in haze looks. Drawn into the beam layer, which the haze then breaks up. */
+  function cone(c2, a, b, r, c, al){
+    const grad = c2.createLinearGradient(a[0], a[1], b[0], b[1]);
+    grad.addColorStop(0, rgb(c, Math.min(1, al * 1.6)));
+    grad.addColorStop(.6, rgb(c, al * .6));
+    grad.addColorStop(1, rgb(c, al * .25));
+    c2.fillStyle = grad;
+    c2.beginPath(); c2.moveTo(a[0] - 1, a[1]); c2.lineTo(a[0] + 1, a[1]); c2.lineTo(b[0] + r, b[1]); c2.lineTo(b[0] - r, b[1]); c2.closePath(); c2.fill();
+  }
+  /* A soft pool of light, squashed by the camera's angle when it lies on the ground. */
+  function pool(c2, x, y, r, c, al, flat = .6){
+    if (al <= .003) return;
+    const grad = c2.createRadialGradient(x, y, 0, x, y, r);
+    grad.addColorStop(0, rgb(c, Math.min(1, al))); grad.addColorStop(.45, rgb(c, Math.min(1, al) * .45)); grad.addColorStop(1, rgb(c, 0));
+    c2.save(); c2.translate(x, y); c2.scale(1, flat); c2.translate(-x, -y);
+    c2.fillStyle = grad; c2.beginPath(); c2.arc(x, y, r, 0, Math.PI * 2); c2.fill(); c2.restore();
+  }
+  // A four point glint on a lens that is pointed at you, the way a mover reads in a photo.
+  function glint(c2, x, y, c, a, len){
+    c2.fillStyle = rgb([255, 255, 255], Math.min(1, a));
+    c2.fillRect(x, y, 1, 1);
+    for (let i = 1; i <= len; i++){
+      const f = a * (1 - i / (len + 1));
+      c2.fillStyle = rgb(mixc(c, [255, 255, 255], .5), f);
+      c2.fillRect(x - i, y, 1, 1); c2.fillRect(x + i, y, 1, 1); c2.fillRect(x, y - i, 1, 1); c2.fillRect(x, y + i, 1, 1);
+    }
   }
 
-  /* One cone of light from a lens to a pool on the floor. In 3/4 a light
-     pointed down lands lower on the screen, so a beam is a tall triangle and
-     its pool an ellipse squashed by the angle. Drawn with 'lighter': where two
-     cross, the haze gets brighter, as in every photo in the reference set. */
-  function cone(x0, y0, x1, y1, r, c, a){
-    const grad = g.createLinearGradient(x0, y0, x1, y1);
-    grad.addColorStop(0, rgb(c, Math.min(1, a * 1.4)));
-    grad.addColorStop(1, rgb(c, a * .35));
-    g.fillStyle = grad;
-    g.beginPath();
-    g.moveTo(x0 - 1, y0); g.lineTo(x0 + 1, y0);
-    g.lineTo(x1 + r, y1); g.lineTo(x1 - r, y1);
-    g.closePath(); g.fill();
-  }
-  function pool(x, y, r, c, a){
-    const grad = g.createRadialGradient(x, y, 0, x, y, r);
-    grad.addColorStop(0, rgb(c, Math.min(1, a))); grad.addColorStop(1, rgb(c, 0));
-    g.save(); g.translate(x, y); g.scale(1, .42); g.translate(-x, -y);
-    g.fillStyle = grad; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
-    g.restore();
-  }
-
-  const players = [
-    ['keys', BAND.keys], ['guitar', BAND.guitar], ['bass', BAND.bass], ['drums', BAND.drums],
-  ];
+  const PLAYERS = [['keys', BAND.keys], ['guitar', BAND.guitar], ['bass', BAND.bass], ['drums', BAND.drums]];
 
   function drawBand(t){
     if (!st.band) return;
-    const beat = t * (1.6 + st.energy * 1.4);
-    players.forEach(([role, m], i) => {
-      const fr = frames[role];
+    // Real tempo: two frames a beat at the song's own bpm, the same clock the lights pulse on.
+    const beat = t * (86 + st.energy * 46) / 60;
+    PLAYERS.forEach(([role, m], i) => {
+      let fr = frames[role], at = m;
+      if (role === 'keys'){
+        // A keys player moves between rigs every few songs, not every song, or the compressed
+        // night reads as a timelapse of him running round the riser.
+        const where = KEY_SEQ[Math.floor(st.mode / 3) % KEY_SEQ.length];
+        fr = frames.keys[where];
+        if (where === 'guitar') at = { x: m.stand.x, y: m.stand.y, z: m.z };
+      }
       let f = ((beat * 2 + i * .7) | 0) % fr.length;
       if (st.energy < .3 && role !== 'drums') f = (beat | 0) % 2 ? 0 : 2;
       if (st.bow) f = role === 'drums' ? 3 : 1;
-      const s = fr[f];
-      const sway = role === 'guitar' || role === 'bass'
-        ? Math.round(Math.sin(t * .9 + i) * (st.energy > .6 ? 2 : 1)) : 0;
-      // Anchor is the feet: bottom centre of the sprite, less its outline.
-      const ax = role === 'drums' ? 18 : role === 'keys' ? 13 : 17;
-      const ay = role === 'drums' ? 41 : role === 'keys' ? 39 : 45;
-      g.drawImage(s, m.x - ax + sway, m.fy - ay);
+      const bob = st.energy > .45 && Math.sin(t * (4 + st.energy * 4) + i) > .4 ? 1 : 0;
+      const [px, py] = P2(at.x, at.y, at.z);
+      g.drawImage(fr[f % fr.length], px - PAX, py - PAY - bob);
     });
   }
 
   function drawCrowd(t){
     const e = st.energy, lit = st.house > .5;
-    const jumping = now < st.jumpUntil;
-    const signs = now < st.signsUntil;
-    const yMax = camY + visH + 50, yMin = camY - 10;
-    const xMin = camX - 20, xMax = camX + visW + 20;
+    const jumping = now < st.jumpUntil, signs = now < st.signsUntil;
+    const top = camY - 20, bot = camY + visH + 50, lft = camX - 20, rgt = camX + visW + 20;
     for (const c of crowd){
-      if (c.y < yMin || c.y > yMax || c.x < xMin || c.x > xMax) continue;
+      c.px = null;
       if (c.t > st.density * venue.capacity) continue;
-      // A pose is held for a while, then reconsidered, so the room never moves
-      // in lockstep. What they reach for depends on how the night is going.
+      const [px, py] = P2(c.x, c.y, 0);
+      if (py < top || py > bot || px < lft || px > rgt) continue;
+      // A pose is held for a while and then reconsidered, so the lawn never moves in lockstep.
       if (now > c.until){
         const r = Math.random();
         let pose = 'down';
@@ -787,151 +811,204 @@ export function createStage(view, opts = {}){
           else if (r < e * .55) pose = r < e * .3 ? 'up' : r < e * .42 ? 'one' : 'clap';
         }
         c.pose = pose;
-        c.until = now + 500 + Math.random() * 1600;
+        c.until = now + 1500 + Math.random() * 3500;
       }
       const hop = st.band && !lit && (jumping || e > .7)
-        ? Math.round(Math.max(0, Math.sin(t * (5 + e * 3) + c.phase)) * 3 * c.jumpy) : 0;
-      const sway = st.band && !lit ? Math.round(Math.sin(t * 1.4 + c.phase)) : 0;
-      const wander = lit ? Math.round(Math.sin(t * .35 + c.phase) * 4 * c.drift) : 0;
-      c.dx = sway + wander; c.hop = hop;
-      g.drawImage(spriteOf(c.v, c.pose), Math.round(c.x + c.dx - 14), Math.round(c.y - 50 - hop));
-    }
-  }
-
-  function rims(p){
-    // The stage light on the tops of heads, in the rig's colour.
-    if (st.light < .05 || st.house > .5) return;
-    const a = .7 * st.light;
-    for (const c of crowd){
-      if (c.t > st.density * venue.capacity) continue;
-      if (c.y > CROWD_TOP + 200) break;
-      if (c.y < camY - 10) continue;
-      const fade = 1 - (c.y - CROWD_TOP) / 220;
-      g.fillStyle = rgb(p[(c.x / 40 | 0) % 2], a * fade);
-      const top = c.y - 50 + 1 + 15 + variants[c.v].short - (c.hop || 0);
-      g.fillRect(c.x + (c.dx || 0) - 4, top - 1, 8, 1);
-      g.fillStyle = rgb(p[(c.x / 40 | 0) % 2], a * fade * .4);
-      g.fillRect(c.x + (c.dx || 0) - 5, top + 10, 10, 1);
-    }
-  }
-
-  function phones(t){
-    if (!st.encore || st.house > .5) return;
-    for (const c of crowd){
-      if (c.pose !== 'phone' || c.t > st.density) continue;
-      if (c.y < camY - 10 || c.y > camY + visH + 50) continue;
-      const v = variants[c.v];
-      const x = c.x + (c.dx || 0) - 14 + 1 + 13 + 5;
-      const y = c.y - 50 - (c.hop || 0) + 1 + 15 + v.short - 6;
-      const fl = .75 + .25 * Math.sin(t * 4 + c.phase);
-      g.fillStyle = rgb([220, 236, 255], fl); g.fillRect(x + 1, y + 1, 1, 3);
-      pool(x + 1, y + 2, 9, [190, 215, 255], .35 * fl);
+        ? Math.round(Math.max(0, Math.sin(t * (5 + e * 3) + c.phase)) * 2 * c.jumpy) : 0;
+      const sway = st.band && !lit && e > .35 ? Math.round(Math.sin(t * 1.5 + c.phase)) : 0;
+      const wander = lit ? Math.round(Math.sin(t * .4 + c.phase) * 2) : 0;
+      c.px = px + sway + wander; c.py = py - hop;
+      g.drawImage(spriteOf(c.v, c.pose), c.px - PAX, c.py - PAY);
     }
   }
 
   function draw(){
-    const t = now / 1000;
-    const p = palette();
+    const t = now / 1000, p = palette();
     const L = st.light, H = st.house, e = st.energy;
+    const night = clamp01((st.sky - .45) / .4);
+    // The beat. Everything that pulses pulses on it, and it quickens with the song.
+    const bpm = 86 + e * 46, ph = t * bpm / 60, beatN = Math.floor(ph), pulse = Math.exp(-(ph - beatN) * 4.5);
+    const show = st.band && H < .5;
+    // How much the rig can be seen: hardly in the sun, fully once it is dark.
+    const dark = .22 + night * .78;
+
+    // 1. THE WORLD as it is painted.
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.globalCompositeOperation = 'source-over';
-    g.globalAlpha = 1;
     g.imageSmoothingEnabled = false;
-    g.drawImage(room, camX, camY, visW, visH, 0, 0, visW, visH);
+    g.drawImage(back, camX, camY, visW, visH, 0, 0, visW, visH);
     g.translate(-camX, -camY);
-    const b = brush(g);
-
-    // The room in its light: dark for the show, warm when the house is up.
-    g.globalCompositeOperation = 'multiply';
-    g.fillStyle = rgb(mix([66, 56, 96], [236, 228, 218], H));
-    g.fillRect(0, 0, WW, DECK.face);
-    g.globalCompositeOperation = 'source-over';
-
-    screen(p, t);
-    rig(p, t, b);
-
-    // Light pools on the deck: a wash, then one on each player.
-    g.globalCompositeOperation = 'lighter';
-    pool(320, 250, 170, p[0], (.10 + .25 * L) * (1 - H) * .6);
     if (st.band){
-      for (const [, m] of players) pool(m.x, m.fy - 2, 26 + e * 8, mix([255, 240, 230], p[1], .35), (.2 + .3 * L) * (1 - H * .6));
-    }
-    g.globalCompositeOperation = 'source-over';
-    // Shadows under the players, then the players, then what stands in front.
-    if (st.band){
-      g.fillStyle = 'rgba(8,4,14,.45)';
-      for (const [, m] of players){ g.beginPath(); g.ellipse(m.x, m.fy, 9, 3, 0, 0, Math.PI * 2); g.fill(); }
+      g.fillStyle = 'rgba(30,20,40,.35)';
+      for (const [, m] of PLAYERS){ const [px, py] = P2(m.x, m.y, m.z); g.beginPath(); g.ellipse(px, py, 5, 2, 0, 0, 7); g.fill(); }
     }
     drawBand(t);
     g.drawImage(front, camX, camY, visW, visH, camX, camY, visW, visH);
-    // The stage is lit by the rig, so it takes the rig's colour a little.
-    g.globalCompositeOperation = 'multiply';
-    g.fillStyle = rgb(mix([255, 255, 255], mix(p[0], [255, 255, 255], .55), L * (1 - H)));
-    g.fillRect(DECK.x0 - 20, 150, DECK.x1 - DECK.x0 + 40, DECK.face - 150);
+    drawCrowd(t);
 
-    // Beams from the truss. A sweep in every song, a fan when it is big.
-    g.globalCompositeOperation = 'lighter';
-    if (L > .03 && H < .9){
-      const sp = .4 + e * 1.4, amp = 50 + e * 90;
-      const a = (.05 + e * .09) * L * (1 - H);
-      FIXTURES.forEach((fx, i) => {
-        const tx = fx + Math.sin(t * sp + i * .8) * amp * (i % 2 ? 1 : -1) * .6;
+    // 2. THE LIGHT falling on it. The sky is the floor of it; the rig adds to it.
+    lg.setTransform(1, 0, 0, 1, 0, 0);
+    lg.globalCompositeOperation = 'source-over';
+    const sky = skyAt(st.sky);
+    lg.fillStyle = rgb(H > .5 ? mixc(sky, [246, 232, 210], H * night * .6) : sky);
+    lg.fillRect(0, 0, visW, visH);
+    lg.translate(-camX, -camY);
+    lg.globalCompositeOperation = 'lighter';
+    const beamA = (.05 + e * .1) * L * (1 - H) * dark;
+    const spot = mixc([255, 240, 222], p[1], .3);
+    if (show){
+      // A wash across the deck in the song's colour, breathing on the beat.
+      const [wx, wy] = P2(0, -7, DECK.z);
+      pool(lg, wx, wy, 95, mixc(p[0], [255, 255, 255], .35), (.18 + .32 * L) * dark * (.75 + .25 * pulse), .55);
+      // The screen throws its colour onto the back of the deck.
+      const [sx2, sy2] = P2(0, -13, DECK.z);
+      pool(lg, sx2, sy2, 70, mixc(p[0], p[1], .5), .3 * L * dark, .4);
+      // A key light on every player, so the band is the brightest thing in the room.
+      for (const [, m] of PLAYERS){
+        const [px, py] = P2(m.x, m.y, m.z);
+        pool(lg, px, py - 8, 15, spot, (.45 + .35 * L) * dark, 1.2);
+      }
+      // Spill off the stage onto the front of the lawn.
+      const [, fy] = P2(0, 2, 0);
+      const fg = lg.createLinearGradient(0, fy - 8, 0, fy + 70);
+      fg.addColorStop(0, rgb(mixc(p[0], [255, 255, 255], .5), .32 * L * dark));
+      fg.addColorStop(1, rgb(p[0], 0));
+      lg.fillStyle = fg; lg.fillRect(camX, fy - 8, visW, 50);
+    }
+    // Lamp posts and the strings over the lawn, coming on with the dusk.
+    for (const [x, y] of LAMPS){
+      const [px, py] = P2(x, y, 0);
+      pool(lg, px, py, 30, [255, 206, 140], .5 * night);
+    }
+    for (const yy of [14, 30]){
+      for (let x = -30; x <= 30; x += 4.8){
+        const [px, py] = P2(x, yy, 0);
+        pool(lg, px, py, 14, [255, 200, 130], .13 * night);
+      }
+    }
+
+    // 3. THE BEAMS, worked out once and used twice: where each lands lights the ground under it, and
+    //    the cone itself glows in the haze.
+    bg.setTransform(1, 0, 0, 1, 0, 0);
+    bg.globalCompositeOperation = 'source-over';
+    bg.clearRect(0, 0, visW, visH);
+    bg.translate(-camX, -camY);
+    bg.globalCompositeOperation = 'lighter';
+    const strobe = now < st.strobeUntil && (Math.floor(ph * 2) % 2 === 0);
+    if (beamA > .008){
+      const sp = .25 + e * .6;
+      FIX.forEach((fx, i) => {
+        const [px, py] = P2(fx, -.8, TRUSS_Z - 1.2);
+        const col = p[(i + beatN) % 2];
+        const tx = fx + Math.sin(t * sp + i * .8) * (3 + e * 6) * (i % 2 ? 1 : -1);
         const deep = e > .6 && i % 3 === 0;
-        const ty = deep ? CROWD_TOP + 40 + Math.sin(t * sp * .7 + i) * 60 : DECK.top + 20 + (i * 13) % 60;
-        cone(fx, TRUSS_Y + 15, tx, ty, 12 + e * 10, p[i % 2], a);
-        pool(tx, ty, 22 + e * 10, p[i % 2], a * 2.2);
+        const ty = deep ? 8 + Math.sin(t * sp * .7 + i) * 6 : -9 + (i * 13) % 8;
+        const b = P2(tx, ty, deep ? 0 : DECK.z);
+        const a = beamA * (.7 + .5 * pulse);
+        cone(bg, [px, py + 1], b, 5 + e * 4, col, a);
+        pool(lg, b[0], b[1], 12 + e * 4, col, a * 4.5);
       });
-      // Up from the lip of the deck, fanning into the dark, when it is earned.
+      // Uplights at the lip of the deck, fanning into the sky when the song has earned them.
       if (e > .45){
-        const ua = a * (e - .3) * 1.8;
-        for (let i = 0; i < 8; i++){
-          const fx = DECK.x0 + 14 + i * 40;
-          const ang = Math.sin(t * sp * .8 + i * 1.3) * .5 + (i - 3.5) * .09;
-          cone(fx, DECK.front, fx + Math.sin(ang) * 260, DECK.front - Math.cos(ang) * 300, 16, p[(i + 1) % 2], ua);
+        for (let i = 0; i < 6; i++){
+          const base = P2(-12 + i * 4.8, -.4, DECK.z);
+          const ang = Math.sin(t * (.25 + e * .4) + i * 1.3) * .5 + (i - 2.5) * .12;
+          cone(bg, base, [base[0] + Math.sin(ang) * 90, base[1] - Math.cos(ang) * 120], 8, p[(i + beatN + 1) % 2], beamA * (e - .3) * 1.8);
         }
       }
-      // A segue: one white sweep across the whole rig while the colour turns.
       if (now < st.segueUntil){
         const f = 1 - (st.segueUntil - now) / 1500;
-        cone(320, TRUSS_Y + 10, 120 + f * 400, DECK.front, 30, [255, 255, 255], .2 * Math.sin(f * Math.PI) * L);
+        const b2 = P2(-14 + f * 28, -2, DECK.z);
+        cone(bg, P2(0, -.8, TRUSS_Z), b2, 12, [255, 255, 255], .3 * Math.sin(f * Math.PI) * dark);
+        pool(lg, b2[0], b2[1], 26, [255, 255, 255], .5 * Math.sin(f * Math.PI) * dark);
       }
     }
-    g.globalCompositeOperation = 'source-over';
+    // The haze: the beams are only seen where there is smoke to see them in.
+    if (hazePat){
+      bg.globalCompositeOperation = 'destination-in';
+      bg.save();
+      bg.translate(Math.round(t * 3) % 64, Math.round(t * -1.5) % 64);
+      bg.fillStyle = hazePat; bg.fillRect(camX - 64, camY - 64, visW + 128, visH + 128);
+      bg.restore();
+    }
 
-    // The crowd, back to front, then the dark they stand in.
-    drawCrowd(t);
+    // 4. LIGHT THE WORLD: what is painted, times the light on it.
+    g.setTransform(1, 0, 0, 1, 0, 0);
     g.globalCompositeOperation = 'multiply';
-    const near = mix([150, 128, 180], [236, 228, 218], H);
-    const far = mix([44, 38, 66], [214, 206, 198], H);
-    const grad = g.createLinearGradient(0, DECK.face, 0, WH);
-    grad.addColorStop(0, rgb(mix(near, sh(p[0], .9), .25 * L * (1 - H))));
-    grad.addColorStop(1, rgb(far));
-    g.fillStyle = grad; g.fillRect(0, DECK.face - 40, WW, WH - DECK.face + 40);
+    g.drawImage(lmap, 0, 0);
+
+    // 5. WHAT GLOWS: the screen, lenses, bulbs, phones, and the beams in their haze.
+    eg.setTransform(1, 0, 0, 1, 0, 0);
+    eg.globalCompositeOperation = 'source-over';
+    eg.clearRect(0, 0, visW, visH);
+    eg.translate(-camX, -camY);
+    eg.globalCompositeOperation = 'lighter';
+    screen(eg, p, t, pulse);
+    FIX.forEach((fx, i) => {
+      const [px, py] = P2(fx, -.8, TRUSS_Z - 1.2);
+      const col = strobe ? [255, 255, 255] : p[(i + beatN) % 2];
+      const on = (strobe ? 1 : (.35 + .65 * L) * (.65 + .35 * pulse)) * (show || L > .1 ? 1 : .3);
+      eg.fillStyle = rgb(col, on); eg.fillRect(px - 1, py, 2, 1);
+      if (on > .5 && night > .3 && (i + beatN) % 3 === 0) glint(eg, px, py, col, on * night, 2 + (pulse > .6 ? 1 : 0));
+    });
+    // Par cans along the lip of the deck, chasing.
+    for (let i = 0; i < 9; i++){
+      const [px, py] = P2(-12 + i * 3, .1, DECK.z + .3);
+      const ch = .5 + .5 * Math.sin(ph * Math.PI + i * .9);
+      eg.fillStyle = rgb(p[i % 2], (.25 + .75 * ch) * L * (show ? 1 : .2));
+      eg.fillRect(px, py, 1, 1);
+    }
+    for (const [x, y] of LAMPS){
+      const [px, py] = P2(x, y, 11.4);
+      eg.fillStyle = rgb([255, 236, 190], .35 + .65 * night); eg.fillRect(px - 1, py - 1, 2, 2);
+    }
+    for (const yy of [14, 30]){
+      for (let x = -30; x <= 30; x += 2.4){
+        const sag = 1.6 * (1 - (x / 30) ** 2);
+        const [px, py] = P2(x, yy, 13 - sag);
+        const tw = .75 + .25 * Math.sin(t * 2.3 + x * 1.7 + yy);
+        eg.fillStyle = rgb([255, 214, 150], (.25 + .75 * night) * tw);
+        eg.fillRect(px, py, 1, 1);
+      }
+    }
+    if (st.encore && H < .5){
+      for (const c of crowd){
+        if (c.pose !== 'phone' || c.px == null) continue;
+        const fl = .8 + .2 * Math.sin(t * 4 + c.phase);
+        const qx = c.px - Math.round(.85 / ART), qy = c.py - Math.round(6.05 * CE / ART);
+        eg.fillStyle = rgb([230, 242, 255], fl); eg.fillRect(qx, qy, 1, 2);
+        pool(lg, qx, qy + 6, 8, [190, 215, 255], .25 * fl);
+      }
+    }
+    eg.setTransform(1, 0, 0, 1, 0, 0);
+    eg.drawImage(beams, 0, 0);
     g.globalCompositeOperation = 'lighter';
-    rims(p);
-    // Where a deep beam lands on the floor, it lights the people standing there.
-    if (L > .03 && e > .6 && H < .5){
-      const sp = .4 + e * 1.4, amp = 50 + e * 90, a = (.05 + e * .09) * L;
-      FIXTURES.forEach((fx, i) => {
-        if (i % 3) return;
-        const tx = fx + Math.sin(t * sp + i * .8) * amp * (i % 2 ? 1 : -1) * .6;
-        const ty = CROWD_TOP + 40 + Math.sin(t * sp * .7 + i) * 60;
-        pool(tx, ty - 10, 34, p[i % 2], a * 3);
-      });
-    }
-    phones(t);
-    // Haze over the stage, drifting.
-    for (let i = 0; i < 3; i++){
-      pool(240 + i * 80 + Math.sin(t * .2 + i) * 30, 190 + i * 10, 120, p[i % 2], .05 * L * (.4 + e) * (1 - H));
-    }
+    g.drawImage(emit, 0, 0);
     g.globalCompositeOperation = 'source-over';
     if (now < st.flashUntil){
-      g.fillStyle = rgb([255, 255, 255], .45 * (st.flashUntil - now) / 260);
-      g.fillRect(camX, camY, visW, visH);
+      g.fillStyle = rgb([255, 255, 255], .4 * (st.flashUntil - now) / 260);
+      g.fillRect(0, 0, visW, visH);
     }
-    g.setTransform(1, 0, 0, 1, 0, 0);
+
+    // 6. ON TO THE SCREEN: the pixels whole, then the bloom over them at the screen's own resolution,
+    //    which is what makes a lens or a beam read as light rather than as a coloured shape.
+    out.globalCompositeOperation = 'source-over';
     out.imageSmoothingEnabled = false;
     out.drawImage(buf, 0, 0, visW * k, visH * k);
+    const ba = bloomA.getContext('2d'), bb = bloomB.getContext('2d');
+    ba.globalCompositeOperation = 'copy'; ba.imageSmoothingEnabled = true;
+    ba.drawImage(emit, 0, 0, bloomA.width, bloomA.height);
+    bb.globalCompositeOperation = 'copy'; bb.imageSmoothingEnabled = true;
+    bb.drawImage(bloomA, 0, 0, bloomB.width, bloomB.height);
+    gg.globalCompositeOperation = 'copy'; gg.imageSmoothingEnabled = true; gg.imageSmoothingQuality = 'high';
+    gg.globalAlpha = .55 + .25 * night;
+    gg.drawImage(bloomA, 0, 0, glow.width, glow.height);
+    gg.globalCompositeOperation = 'lighter';
+    gg.globalAlpha = .5 + .35 * night;
+    gg.drawImage(bloomB, 0, 0, glow.width, glow.height);
+    gg.globalAlpha = 1;
+    out.globalAlpha = 1;
+    out.globalCompositeOperation = 'source-over';
   }
 
   function ease(dt){
@@ -940,6 +1017,7 @@ export function createStage(view, opts = {}){
     st.house += (st.houseWant - st.house) * f;
     st.energy += (st.energyWant - st.energy) * f;
     st.density += (st.densityWant - st.density) * f * .5;
+    st.sky += (st.skyWant - st.sky) * f * .35;
     if (st.palT < 1) st.palT = Math.min(1, st.palT + dt / 1.2);
   }
 
@@ -947,8 +1025,7 @@ export function createStage(view, opts = {}){
     if (dead) return;
     if (!view.isConnected){ destroy(); return; }
     raf = requestAnimationFrame(frame);
-    // Thirty frames a second. The figures move on the beat, not per frame,
-    // and the other thirty would cost a phone's battery for nothing.
+    // Thirty frames a second: people move on the beat, not per frame.
     if (ts - last < 32) return;
     const dt = Math.min(.1, (ts - (last || ts)) / 1000);
     last = ts; now = ts;
@@ -962,12 +1039,13 @@ export function createStage(view, opts = {}){
     st.palFrom = palette(); st.pal = next; st.palT = 0;
   }
 
-  const DENSITY = { hot: 1, warm: .78, cold: .5 };
+  const DENSITY = { hot: 1, warm: .8, cold: .52 };
 
-  /* The whole interface. The page hands over what happened; the stage decides
-     only how it looks. See renderShow() for the mapping from a beat. */
+  /* The whole interface. The page hands over what happened; the stage decides only how it looks.
+     `progress` is how far through the night the show is, and it is what sets the sun. */
   function cue(ev){
     const ts = performance.now();
+    if (ev.progress != null) st.skyWant = clamp01(ev.progress);
     if (ev.kind === 'set'){
       st.band = true; st.bow = false; st.encore = !!ev.encore;
       st.houseWant = 0; st.lightWant = .5; st.energyWant = .3;
@@ -980,27 +1058,30 @@ export function createStage(view, opts = {}){
       setPalette(ev.palette || ROTATION[st.rot++ % ROTATION.length]);
       st.mode++;
       if (ev.segue) st.segueUntil = ts + 1500;
-      if (ev.bustout){ st.signsUntil = ts + 3400; st.jumpUntil = ts + 2000; st.flashUntil = ts + 260; }
-      if (ev.grade) st.densityWant = DENSITY[ev.grade] || .78;
+      if (ev.bustout){ st.signsUntil = ts + 3400; st.jumpUntil = ts + 2000; st.flashUntil = ts + 260; st.strobeUntil = ts + 1600; }
+      if (ev.grade) st.densityWant = DENSITY[ev.grade] || .8;
     } else if (ev.kind === 'time'){
       if (!ev.last){ st.band = false; st.houseWant = .85; st.lightWant = 0; st.energyWant = .15; }
     } else if (ev.kind === 'final'){
-      st.band = true; st.bow = true;
+      st.band = true; st.bow = true; st.skyWant = 1;
       st.houseWant = 0; st.lightWant = 1; st.energyWant = ev.grade === 'cold' ? .4 : 1;
-      st.densityWant = DENSITY[ev.grade] || .78;
+      st.densityWant = DENSITY[ev.grade] || .8;
       st.flashUntil = ts + 260;
-      if (ev.grade !== 'cold') st.jumpUntil = ts + 3000;
+      if (ev.grade !== 'cold'){ st.jumpUntil = ts + 3000; st.strobeUntil = ts + 1400; }
     }
-    for (const c of crowd) c.until = 0;
+    // The lawn only rethinks its poses all at once when something big happens. Reset on every song,
+    // a night of one second songs had the whole crowd changing pose every second.
+    if (ev.kind !== 'song' || ev.bustout) for (const c of crowd) c.until = 0;
     if (reduce || ev.instant){
       st.light = st.lightWant; st.house = st.houseWant; st.energy = st.energyWant;
-      st.density = st.densityWant; st.palT = 1; st.flashUntil = 0;
+      st.density = st.densityWant; st.sky = st.skyWant; st.palT = 1; st.flashUntil = 0;
       now = ts; draw();
     }
   }
 
   function destroy(){
     dead = true;
+    if (glow.parentElement) glow.remove();
     cancelAnimationFrame(raf);
     window.removeEventListener('resize', fit);
   }
@@ -1008,5 +1089,5 @@ export function createStage(view, opts = {}){
   window.addEventListener('resize', fit);
   fit();
   if (!reduce) raf = requestAnimationFrame(frame);
-  return { cue, destroy, fit };
+  return { cue, destroy, fit, sprites: frames };
 }

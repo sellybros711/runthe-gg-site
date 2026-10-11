@@ -337,7 +337,7 @@ var SETS = {
   sad: [
     fr([40, -45], [40, -45]),
     fr([140, 230], [140, 230]),
-    fr([10, -25], [10, -25], { dip: 4 }),
+    fr([10, -25, 1, 0.85], [10, -25, 1, 0.85], { dip: 4 }),
   ],
   /* the hand held out toward the man you are meeting, then the pump */
   shake: [
@@ -408,31 +408,45 @@ function skeleton(f, bw, am, breath, MX){
   J.chest = [CX, neckY + 7.2 * ts + dip + up, 0];
   J.waist = [CX, neckY + 15.6 * ts + dip, 0];
   J.arm = {}; J.leg = {};
-  /* hanging, the fingertips reach the top of the thigh, whatever his height */
+  /* hanging, the fingertips reach the middle of the thigh, whatever his
+     height: the wrist at the seat of the shorts, the elbow at the waist */
   var shY = neckY + 2.6 * ts, kneeY0 = (hipY + ankY) / 2 + 0.6;
-  var as = Math.max(0.85, (hipY + 0.42 * (kneeY0 - hipY) - shY) / 16.7);
-  /* but an arm straight up must still fit under the top of the canvas */
-  /* measured on screen, where the camera looking down foreshortens every
-     height: in world cells it cut a 7'4" man's arms to a third */
-  as = Math.min(as, (GY + (shY - GY) * CP - 4.6) / (19.0 * CP));
+  var as = Math.max(0.85, (hipY + 0.62 * (kneeY0 - hipY) - shY) / 16.7);
+  /* but an arm straight up must still fit under the top of the canvas,
+     measured on screen, where the camera looking down foreshortens every
+     height. THAT LIMIT IS FOR A RAISED ARM ONLY: applied to every pose it
+     bound at the default height and left every man with arms ending at his
+     hips. So an arm keeps its full length while the hand is below the
+     shoulder and eases down to the limit as it rises. */
+  var asUp = Math.min(as, (GY + (shY - GY) * CP - 4.6) / (19.0 * CP));
   [-1, 1].forEach(function(s){
     var p = f.a[String(s)] || DOWN;
     var sh = [CX + s * ((6.9 + bw * 0.8) * sw + Math.max(0, g) * 0.3 - Math.max(0, -g) * 0.15), shY + dip + up, 0];
     var r1 = p[0] * Math.PI / 180, r2 = p[1] * Math.PI / 180;
     var f1 = p[2] == null ? 1 : p[2], f2 = p[3] == null ? 1 : p[3];
-    var L1 = 7.6 * as, L2 = 7.0 * as;
-    /* foreshortened means turned toward the camera, the length kept. A limb
-       that crosses the body passes in FRONT of it, so it comes forward by how
-       far across it reaches: drawn flat it went into the chest and vanished,
-       and a hand over the head went behind the hair. */
-    var acr1 = Math.sin(r1) < 0 ? Math.min(1, -Math.sin(r1) * 1.4) : 0, acr2 = Math.sin(r2) < 0 ? Math.min(1, -Math.sin(r2) * 1.4) : 0;
-    var el = [sh[0] + s * Math.sin(r1) * L1 * f1, sh[1] + Math.cos(r1) * L1 * f1, L1 * Math.sqrt(Math.max(0, 1 - f1 * f1)) + acr1 * 4.2];
-    var wr = [el[0] + s * Math.sin(r2) * L2 * f2, el[1] + Math.cos(r2) * L2 * f2, el[2] + L2 * Math.sqrt(Math.max(0, 1 - f2 * f2)) + acr2 * (6.2 - el[2] * 0.4)];
-    var hl2 = 2.1 * Math.min(1.1, as);
-    var hd = [wr[0] + s * Math.sin(r2) * hl2 * f2 + s * (p[4] || 0), wr[1] + Math.cos(r2) * hl2 * f2 + (p[5] || 0), wr[2] + hl2 * Math.sqrt(Math.max(0, 1 - f2 * f2))];
-    /* a heavy man's thighs are thicker, so a hand at his side or on his knees
-       is held out in front of them rather than lost inside them */
-    if (g > 0 && hd[1] > hipY - 2) { hd = [hd[0] + s * g * 0.42, hd[1], hd[2] + g * 0.8]; wr = [wr[0] + s * g * 0.22, wr[1], wr[2] + g * 0.42]; }
+    /* how high the hand reaches, as a share of the arm: nought at the
+       shoulder, one straight up */
+    var rise = -(Math.cos(r1) * 7.6 * f1 + Math.cos(r2) * 7.0 * f2) / 14.6;
+    var ua0 = as + (asUp - as) * clamp01(rise / 0.7), ua, el, wr, hd;
+    var reach = function(ua){
+      var L1 = 7.6 * ua, L2 = 7.0 * ua;
+      /* foreshortened means turned toward the camera, the length kept. A limb
+         that crosses the body passes in FRONT of it, so it comes forward by how
+         far across it reaches: drawn flat it went into the chest and vanished,
+         and a hand over the head went behind the hair. */
+      var acr1 = Math.sin(r1) < 0 ? Math.min(1, -Math.sin(r1) * 1.4) : 0, acr2 = Math.sin(r2) < 0 ? Math.min(1, -Math.sin(r2) * 1.4) : 0;
+      el = [sh[0] + s * Math.sin(r1) * L1 * f1, sh[1] + Math.cos(r1) * L1 * f1, L1 * Math.sqrt(Math.max(0, 1 - f1 * f1)) + acr1 * 4.2];
+      wr = [el[0] + s * Math.sin(r2) * L2 * f2, el[1] + Math.cos(r2) * L2 * f2, el[2] + L2 * Math.sqrt(Math.max(0, 1 - f2 * f2)) + acr2 * (6.2 - el[2] * 0.4)];
+      var hl2 = 2.1 * Math.min(1.1, ua);
+      hd = [wr[0] + s * Math.sin(r2) * hl2 * f2 + s * (p[4] || 0), wr[1] + Math.cos(r2) * hl2 * f2 + (p[5] || 0), wr[2] + hl2 * Math.sqrt(Math.max(0, 1 - f2 * f2))];
+      /* a heavy man's thighs are thicker, so a hand at his side or on his knees
+         is held out in front of them rather than lost inside them */
+      if (g > 0 && hd[1] > hipY - 2) { hd = [hd[0] + s * g * 0.42, hd[1], hd[2] + g * 0.8]; wr = [wr[0] + s * g * 0.22, wr[1], wr[2] + g * 0.42]; }
+    };
+    /* and a long arm held out to the side, a heavy man's most of all, must
+       keep its hand on the canvas: it gives back length a little at a time
+       until the hand is inside the grid on screen */
+    for (var k = 0; k < 8; k++) { ua = ua0 * (1 - k * 0.04); reach(ua); var vx = toView(hd)[0]; if (vx > 2.6 && vx < W - 3.6) break; }
     J.arm[s] = { sh: sh, el: el, wr: wr, hand: hd, hang: Math.abs(p[1]) < 30 };
     var lf = f.lift ? f.lift[String(s)] || 0 : 0;
     var hw = (3.9 + g * 0.22) * sw;
@@ -517,7 +531,7 @@ function build(L, o, J){
   /* the torso: a chest and a waist, one smooth body */
   /* the chest and the waist fill out with weight, the waist (and the belly
      in front of it) most */
-  var cR = [(6.9 + bw) * sw + g * 0.48, 5.8 * ts, (6.9 + bw) * sw * 0.64 + g * 0.42], wR = [(5.3 + bw * 0.5) * sw + g * 0.72, 5.0 * ts, (5.3 + bw * 0.5) * sw * 0.74 + Math.max(0, g) * 0.8 + Math.min(0, g) * 0.3];
+  var cR = [(6.9 + bw) * sw + g * 0.48, 5.8 * ts, (6.9 + bw) * sw * 0.64 + g * 0.42], wR = [(6.0 + bw * 0.4) * sw + g * 0.72, 5.0 * ts, (6.0 + bw * 0.4) * sw * 0.7 + Math.max(0, g) * 0.8 + Math.min(0, g) * 0.3];
   var C0 = J.chest, W0 = J.waist;
   /* a body, not a barrel: the ribcage and the waist, the two pecs over the
      front of the ribs, the lats flaring under the arms behind, and the

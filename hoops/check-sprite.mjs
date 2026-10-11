@@ -94,6 +94,14 @@
  * printed on the cloth in the body's own units, smaller, turning with the
  * chest. These hashes are a single resolution trace, where the number is
  * still stamped on the screen.
+ *
+ * RE-RECORDED A TWELFTH TIME, ON PURPOSE: the owner found the arms too short
+ * and the waist too thin against the hips. A hanging arm now reaches the
+ * middle of the thigh, with the wrist at the seat of the shorts. The limit
+ * that keeps an arm straight up under the top of the canvas had been applied
+ * to every pose, and it bound at the default height; it now applies only as
+ * the hand rises above the shoulder. The waist is wider, so the torso falls
+ * into the hips instead of pinching above them.
  */
 import fs from 'node:fs';
 import path from 'node:path';
