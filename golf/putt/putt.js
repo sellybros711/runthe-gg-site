@@ -1867,7 +1867,7 @@ var CSS = '\
 .pp-bagb{position:absolute;right:12px;top:60px;z-index:3;font:900 13px system-ui,sans-serif;color:#3a2a14;background:#ffd24a;border:2px solid #3a2a14;border-radius:12px;padding:6px 12px;box-shadow:0 3px 0 #3a2a14;cursor:pointer}\
 .pp-bag .pp-card{max-height:86vh;overflow:auto;text-align:left}.pp-bsec{margin:14px 0 6px;font:900 11px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;opacity:.7}\
 .pp-bput{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.06);margin:6px 0}.pp-bput.on{background:rgba(255,210,74,.18);outline:2px solid #ffd24a}\
-.pp-bpn{flex:1;min-width:0}.pp-bpn b{display:block;font-size:14px}.pp-bpn span{display:block;font-size:12px;opacity:.8}.pp-bput button{flex:0 0 auto;padding:6px 12px;min-width:0}\
+.pp-bagb.pp-closb{right:76px}.pp-pth{flex:0 0 44px;width:44px;height:44px;display:block}.pp-pth .sthumb{width:44px!important;height:44px!important;display:block;margin:0}.pp-bput.locked{opacity:.6}.pp-plock{font-style:normal;font-size:11px;font-weight:800;opacity:.8}.pp-bpn{flex:1;min-width:0}.pp-bpn b{display:block;font-size:14px}.pp-bpn span{display:block;font-size:12px;opacity:.8}.pp-bput button{flex:0 0 auto;padding:6px 12px;min-width:0}\
 .pp-bpp{display:flex;gap:4px}.pp-bpp u{width:12px;height:12px;border-radius:3px;background:rgba(255,255,255,.18)}.pp-bpp u.on{background:#ffd24a}\
 .pp-bw{padding:6px 10px;border-left:4px solid var(--wc);margin:6px 0;background:rgba(255,255,255,.04);border-radius:6px}.pp-bw b{font-size:13px}.pp-bw em{display:block;font-size:11px;font-style:normal;opacity:.75}\
 .pp-btk{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0}.pp-btk i{font-style:normal;font-size:11px;padding:2px 7px;border-radius:8px;background:rgba(255,255,255,.08);opacity:.55}.pp-btk i.on{opacity:1;background:var(--wc);color:#1a1420;font-weight:800}\
@@ -1957,9 +1957,10 @@ function open(host){
   S = { host:host || {}, ov:ov, prevOverflow:document.body.style.overflow };
   document.body.style.overflow = 'hidden';
   S.onKey = function(e){ onKey(e); }; window.addEventListener('keydown', S.onKey);
+  syncPutters();
   if (!resumeCur()) showMenu();
   // the account's record may be ahead of this browser's: redraw the map if the merge moved anything
-  cloudPull().then(function(moved){ if (moved && S && S.screen === 'menu' && !S.ov.querySelector('.pp-sheet')) showHub(S.tour); });
+  cloudPull().then(function(moved){ if (moved) syncPutters(); if (moved && S && S.screen === 'menu' && !S.ov.querySelector('.pp-sheet')) showHub(S.tour); });
 }
 function close(){
   if (!S) return;
@@ -2229,13 +2230,14 @@ function showHub(tid){
         <span class="m">' + (drec && drec.done ? 'You shot ' + drec.s + ' (par ' + drec.par + ')' + (drec.ms != null ? ' in ' + clockTxt(drec.ms) : '') : esc(dT.name) + ' · par ' + buildHole(dh).par + ' · timed, one try') + '</span>\
         <span class="pp-dends">' + (drec && drec.done ? 'Next hole in ' : 'Ends in ') + '<b data-dcount>' + hms(msToNextDay()) + '</b></span></span>\
       <span class="pp-dside"><span class="g">' + (drec && drec.done ? 'Result' : 'Play') + '</span><span class="rw">' + (drec && drec.done ? 'Played' : '+' + COIN_DAILY + ' coins') + '</span></span></button>') +
-    '<div class="pp-wchip" data-wchip></div>' + (TOURS.main && !cal ? '<button class="pp-bagb" data-bag aria-label="Your Bag">Bag</button>' : '') +
+    '<div class="pp-wchip" data-wchip></div>' + (TOURS.main && !cal ? '<button class="pp-bagb" data-bag aria-label="Your Bag">Bag</button><button class="pp-bagb pp-closb" data-closet aria-label="Your closet">Closet</button>' : '') +
     '<div class="pp-tabs" role="tablist"><button data-tab="main" class="' + (mem || lab || cal ? '' : 'on') + '" role="tab">Putt Putt Tour</button><button data-tab="members" class="' + (mem ? 'on' : '') + '" role="tab"><i>★</i> Members' + (membersOpen() ? '' : ' <s>🔒</s>') + '</button>' + (labOpen() ? '<button data-tab="lab" class="' + (lab ? 'on' : '') + '" role="tab">Lab</button>' : '') +
     '<button data-tab="daily" class="' + (cal ? 'on' : '') + '" role="tab">Daily' + (drec && drec.done ? '' : '<u class="pp-tdot" aria-label="not played today"></u>') + '</button></div>' + '</div>';
   var hx = S.ov.querySelector('[data-x]'), wt = worldOk(S.tour) ? S.tour : worldTour();
   if (wt){ hx.textContent = ''; hx.className = 'pp-toworld'; hx.setAttribute('aria-label', 'Back to the world'); hx.innerHTML = '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8" fill="#5fb3e8" stroke="#3a2a14" stroke-width="1.6"/><path d="M4 8c3 0 3 3 6 2s2-4 5-3M5 14c2-1 4 0 5 2" stroke="#3f9a4a" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg><b>World</b>'; hx.onclick = function(){ home(wt); }; } else hx.onclick = close;
   var dcb = S.ov.querySelector('[data-daily]'); if (dcb) dcb.onclick = function(){ startDaily(); };
   var bgb = S.ov.querySelector('[data-bag]'); if (bgb) bgb.onclick = bagSheet;
+  var clb = S.ov.querySelector('[data-closet]'); if (clb) clb.onclick = closetSheet;
   S.ov.querySelectorAll('[data-tab]').forEach(function(b){ b.onclick = function(){ var t = b.getAttribute('data-tab'); if (t === S.tour) return;
     if (t === 'members' && !membersOpen() && !membersPreview()) return membersSheet(); showHub(t); }; });
   if (cal) drawCal(st); else drawMap(st, TR);
@@ -2251,20 +2253,23 @@ function showHub(tid){
    the spare lives banked, each world's trinkets and its golden balls. Nothing here is for sale. */
 function bagSheet(){
   var st = pload(), TR = TOURS.main, pp = st.pp || {}, eq = pp.eq;
-  var puts = PP_PUTTERS.map(function(pt){ var n = partsOf(st, pt.id), built = n >= 3, on = built && eq === pt.id;
+  var cl = putterRows(st);
+  var puts = cl ? cl : PP_PUTTERS.map(function(pt){ var n = partsOf(st, pt.id), built = n >= 3, on = built && eq === pt.id;
     return '<div class="pp-bput' + (built ? ' built' : '') + (on ? ' on' : '') + '"><div class="pp-bpn"><b>' + esc(pt.name) + '</b><span>' + (built ? esc(pt.tells) : n + ' of 3 parts · found on the trails of ' + pt.worlds.map(function(w){ return esc(TR.worlds[w].name); }).join(', ')) + '</span></div>' +
       (built ? '<button class="' + (on ? 'pt-go' : 'pt-bt') + '" data-eq="' + pt.id + '">' + (on ? 'Equipped' : 'Equip') + '</button>' : '<i class="pp-bpp">' + [0, 1, 2].map(function(j){ return '<u class="' + ((pp.parts || []).indexOf(pt.id + ':' + j) >= 0 ? 'on' : '') + '"></u>'; }).join('') + '</i>') + '</div>'; }).join('');
   var worlds = TR.worlds.map(function(Wd, w){ var T = TRINKETS[Wd.theme] || [], gd = goldenOf(st, 'main', w);
     return '<div class="pp-bw" style="--wc:' + (TRINKET_COL[Wd.theme] || '#fff') + '"><b>' + esc(Wd.name) + '</b><span class="pp-btk">' + T.map(function(nm, j){ var got = (st.tk || []).indexOf(Wd.theme + ':' + j) >= 0;
       return '<i class="' + (got ? 'on' : '') + '">' + (got ? esc(nm) : '???') + '</i>'; }).join('') + '</span><em>● ' + gd.have + '/' + gd.total + ' golden</em></div>'; }).join('');
   var sh = el('<div class="pp-sheet pp-bag"><div class="pp-card"><div class="k">YOUR BAG</div><div class="t">Found on the trails</div>\
-    <div class="pp-bsec">Putt Putt putters</div>' + puts + (eq && partsOf(st, eq) >= 3 ? '<button class="pt-bt pp-wide" data-uneq>Play with no special putter</button>' : '') + '\
+    <div class="pp-bsec">' + (cl ? 'Your putters' : 'Putt Putt putters') + '</div>' + puts + (!cl && eq && partsOf(st, eq) >= 3 ? '<button class="pt-bt pp-wide" data-uneq>Play with no special putter</button>' : '') + (cl && S.host.closet ? '<button class="pt-bt pp-wide" data-full>Open the full closet</button>' : '') + '\
     <div class="pp-bsec">Spare lives</div><div class="m">' + (bankHeld(st) ? bankHeld(st) + ' banked. Use one from the out of lives screen.' : 'None banked. A heart turns up on a trail now and then.') + '</div>\
     <div class="pp-bsec">Trinkets and golden balls</div>' + worlds + '\
     <button class="pt-bt pp-wide" data-n>Close</button></div></div>');
   S.ov.appendChild(sh);
   sh.querySelector('[data-n]').onclick = function(){ sh.remove(); };
   sh.querySelectorAll('[data-eq]').forEach(function(b){ b.onclick = function(){ var s2 = pload(); s2.pp = s2.pp || { parts:[] }; s2.pp.eq = b.getAttribute('data-eq'); psave(s2); sh.remove(); bagSheet(); }; });
+  sh.querySelectorAll('[data-peq]').forEach(function(b){ b.onclick = function(){ if (S.host.equipPutter(b.getAttribute('data-peq'))){ sh.remove(); bagSheet(); } }; });
+  var fu = sh.querySelector('[data-full]'); if (fu) fu.onclick = function(){ var h = S.host; sh.remove(); h.closet(); };
   var ue = sh.querySelector('[data-uneq]'); if (ue) ue.onclick = function(){ var s2 = pload(); s2.pp = s2.pp || { parts:[] }; s2.pp.eq = null; psave(s2); sh.remove(); bagSheet(); };
 }
 /* THE MEMBERS TOUR, SHUT: what it is, what it pays, and the way in. It is the Tour Pass holder's, so
@@ -2465,7 +2470,36 @@ function lootSlots(tid, w){ var K = tourOf(tid).per || PER, base = w * K, pool =
   pool.sort(function(a, b){ return hstr('loot:' + a) - hstr('loot:' + b); });
   var r = { tk:pool.slice(0, 3), pt:{} }, k = 3; PP_PUTTERS.forEach(function(pt){ if (pt.worlds.indexOf(w) >= 0) r.pt[pt.id] = pool[k++]; }); return r; }
 function partsOf(st, id){ var pp = st.pp || {}, n = 0; (pp.parts || []).forEach(function(x){ if (x.split(':')[0] === id) n++; }); return n; }
-function puttEquipped(){ try{ if (S.round && S.round.mode !== 'ppt') return null; var st = pload(), id = st.pp && st.pp.eq; return id && partsOf(st, id) >= 3 ? id : null; }catch(e){ return null; } }
+/* THE PUTTER IS THE ONE IN YOUR CLOSET. Run The Tour's closet has a Putters slot of its own, and whatever is
+   equipped there is the putter in both games: its reach sets the aim line (host.putter) and a Putt Putt putter
+   carries its perk (host.putterNow). A putter built here from trail parts is granted to that closet. A page with
+   no closet (or a check's stub host) falls back to the Bag's own choice, st.pp.eq. */
+function puttEquipped(){ try{ if (S.round && S.round.mode !== 'ppt') return null;
+    if (S.host.putterNow){ var p = S.host.putterNow(); return p && p.perk ? p.perk : null; }
+    var st = pload(), id = st.pp && st.pp.eq; return id && partsOf(st, id) >= 3 ? id : null; }catch(e){ return null; } }
+function syncPutters(){ try{ if (!S || !S.host.grantPutter) return; var st = pload(); PP_PUTTERS.forEach(function(pt){ if (partsOf(st, pt.id) >= 3) S.host.grantPutter(pt.id); }); }catch(e){} }
+function hostPutters(){ try{ return S.host.putters && S.host.signedIn && S.host.signedIn() ? S.host.putters() : null; }catch(e){ return null; } }
+// the putters, as rows: owned first (equip), then the Putt Putt ones still being built (their parts), then the pack ones
+function putterRows(st){ var L = hostPutters(); if (!L) return null; var TR = TOURS.main;
+  var order = function(p){ return p.owned ? 0 : p.kind === 'pp' ? 1 : 2; };
+  return L.slice().sort(function(a, b){ return order(a) - order(b); }).map(function(p){
+    var pt = PP_PUTTERS.filter(function(q){ return q.id === p.id; })[0], n = pt ? partsOf(st, p.id) : 0;
+    var how = p.owned ? esc(p.txt) : pt ? n + ' of 3 parts · found on the trails of ' + pt.worlds.map(function(w){ return esc(TR.worlds[w].name); }).join(', ') : 'Pull it from a pack in the Pro Shop';
+    return '<div class="pp-bput' + (p.owned ? ' built' : ' locked') + (p.on ? ' on' : '') + '"><span class="pp-pth">' + p.thumb + '</span><div class="pp-bpn"><b>' + esc(p.name) + '</b><span>' + how + '</span></div>' +
+      (p.owned ? '<button class="' + (p.on ? 'pt-go' : 'pt-bt') + '" data-peq="' + p.id + '">' + (p.on ? 'Equipped' : 'Equip') + '</button>' : pt ? '<i class="pp-bpp">' + [0, 1, 2].map(function(j){ return '<u class="' + (((st.pp || {}).parts || []).indexOf(pt.id + ':' + j) >= 0 ? 'on' : '') + '"></u>'; }).join('') + '</i>' : '<i class="pp-plock">Locked</i>') + '</div>'; }).join(''); }
+/* THE CLOSET, IN PUTT PUTT: your putters, the one equipped, and a way into the full closet. */
+function closetSheet(){
+  var st = pload(), rows = putterRows(st), sh;
+  if (!rows) sh = el('<div class="pp-sheet pp-bag"><div class="pp-card"><div class="k">YOUR CLOSET</div><div class="t">Putters</div><div class="m">Your closet and its putters are part of a free account. Sign in to equip a putter for both games.</div>' +
+    (S.host.signIn ? '<button class="pt-go pp-wide" data-si>Sign in</button>' : '') + '<button class="pt-bt pp-wide" data-n>Close</button></div></div>');
+  else sh = el('<div class="pp-sheet pp-bag"><div class="pp-card"><div class="k">YOUR CLOSET</div><div class="t">Putters</div>    <div class="m">The putter you equip is the one you putt with in Run The Tour and in Putt Putt. A better putter runs a longer aim line here.</div>' + rows +
+    (S.host.closet ? '<button class="pt-go pp-wide" data-full>Open the full closet</button>' : '') + '<button class="pt-bt pp-wide" data-n>Close</button></div></div>');
+  S.ov.appendChild(sh);
+  sh.querySelector('[data-n]').onclick = function(){ sh.remove(); };
+  var si = sh.querySelector('[data-si]'); if (si) si.onclick = function(){ var h = S.host; sh.remove(); close(); h.signIn('signin'); };
+  var fu = sh.querySelector('[data-full]'); if (fu) fu.onclick = function(){ var h = S.host; sh.remove(); h.closet(); };
+  sh.querySelectorAll('[data-peq]').forEach(function(b){ b.onclick = function(){ if (S.host.equipPutter(b.getAttribute('data-peq'))){ sh.remove(); closetSheet(); } }; });
+}
 function bankHeld(st){ return Math.max(0, (st.bank || []).length - (st.bused || 0)); }
 function lifeExtra(st){ return Math.max(0, (st.bused || 0) - (st.bspent || 0)); }
 function livesNow(st){ return (st.lives || 0) + lifeExtra(st); }
@@ -2560,11 +2594,12 @@ function openTrail(tid, from){
   S.ov.innerHTML = '<div class="pp-trail pp-wv" data-wv="' + Wd.theme + '">' + hdr((b0 !== '' ? '<span class="pp-cpill" data-bal>' + b0 + '</span>' : '') + '<button class="pp-mapb" data-mapb aria-label="Open the map"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 4l5-2 6 2 5-2v14l-5 2-6-2-5 2z" fill="#f6ead2" stroke="#3a2a14" stroke-width="1.6" stroke-linejoin="round"/><path d="M7 2v14M13 4v14" stroke="#3a2a14" stroke-width="1.4"/><circle cx="10" cy="9" r="1.8" fill="#e5483a"/></svg><b>Map</b></button>') +
     '<div class="pp-tbox" data-tbox></div>' +
     '<div class="pp-tgoal"><i>' + esc(wlab) + ' · ' + esc(Wd.name) + '</i><b>Hole ' + to + ' · ' + esc(levelName(to, tid)) + ' · Par ' + (L ? L.par : 3) + '</b></div>' +
-    (TR.id === 'main' ? '<button class="pp-bagb" data-bag aria-label="Your Bag">Bag</button>' : '') +
+    (TR.id === 'main' ? '<button class="pp-bagb" data-bag aria-label="Your Bag">Bag</button>' : '') + '<button class="pp-bagb pp-closb" data-closet aria-label="Your closet">Closet</button>' +
     (seen ? '' : '<div class="pp-wban" style="--wa:' + ((THEMES[Wd.theme] || {}).acc || '#F1D04A') + '"><i>' + esc(wlab) + '</i><b>' + esc(Wd.name) + '</b><span>' + esc((Wd.haz || []).join(' · ')) + '</span></div>') + '</div>';
   S.ov.querySelector('[data-x]').onclick = close;
   S.ov.querySelector('[data-mapb]').onclick = function(){ stopTrail(); showHub(tid); };
   var bgw = S.ov.querySelector('[data-bag]'); if (bgw) bgw.onclick = bagSheet;
+  var clw = S.ov.querySelector('[data-closet]'); if (clw) clw.onclick = closetSheet;
   // the world's title card holds while the world loads, and leaves once you are standing in it
   var wbn = S.ov.querySelector('.pp-wban'); function banOut(){ if (wbn) setTimeout(function(){ if (wbn.isConnected) wbn.classList.add('out'); setTimeout(function(){ if (wbn.isConnected) wbn.remove(); }, 700); }, 2200); }
   var box = S.ov.querySelector('[data-tbox]'), P = trailPlan(sp);
@@ -2590,7 +2625,8 @@ function openTrail(tid, from){
         else if (kind === 'part'){ r.pt = 1; var pa = sp.loot.part; st.pp = st.pp || { parts:[] }; st.pp.parts = st.pp.parts || []; if (st.pp.parts.indexOf(pa.id) < 0) st.pp.parts.push(pa.id);
           var have = partsOf(st, pa.putter), PT = PP_PUTTERS.filter(function(q){ return q.id === pa.putter; })[0];
           msg = 'A putter part: the ' + pa.name + '. ' + have + ' of 3.';
-          if (have >= 3){ if (!st.pp.eq) st.pp.eq = pa.putter; msg = 'The ' + PT.name + ' is built. ' + PT.tells + ' It is in your Bag.'; } }
+          if (have >= 3){ if (!st.pp.eq) st.pp.eq = pa.putter; var inCl = false; try{ inCl = S.host.grantPutter && S.host.grantPutter(pa.putter); }catch(e){}
+            msg = 'The ' + PT.name + ' is built. ' + PT.tells + (S.host.grantPutter ? ' It is in your closet.' : ' It is in your Bag.'); } }
         else if (kind === 'golden'){ var was = !!r.g; r.g = 1; var gd = goldenOf(st, tid, sp.w), done = gd.have >= gd.total, rw = 'Golden Ball Set: ' + Wd.name;
           msg = 'Golden ball. ' + gd.have + ' of ' + gd.total + ' in ' + Wd.name + '.';
           if (done && !was && st.rewards.indexOf(rw) < 0){ st.rewards.push(rw); n = TRAIL_GOLD_COINS; msg += ' Set complete: +' + TRAIL_GOLD_COINS + ' coins.'; } }
@@ -3479,7 +3515,7 @@ RTT_PUTT._state = function(){ return S; };
 RTT_PUTT._walkTo = function(n, tid){ return walkTo(n, tid || 'main'); };
 RTT_PUTT._trail = function(){ return S && S.trailCtl; };
 RTT_PUTT._trailPlan = function(from, tid){ return trailPlan(trailSpec(tid || 'main', from)); };
-RTT_PUTT._loot = trailLoot; RTT_PUTT._bag = function(){ bagSheet(); };
+RTT_PUTT._loot = trailLoot; RTT_PUTT._bag = function(){ bagSheet(); }; RTT_PUTT._closet = function(){ closetSheet(); };
 RTT_PUTT._covers = function(){ var P = S.play; return P && P.camNow ? golferCovers(P, P.camNow) : null; };
 RTT_PUTT._lose = function(){ loseLife(pload()); };
 RTT_PUTT._dailyFinish = function(s, par, ms){ return dailyFinish(s, par, ms); };

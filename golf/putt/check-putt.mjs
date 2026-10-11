@@ -559,12 +559,19 @@ if (!args.includes('--no-browser')){
       let st = JSON.parse(localStorage.getItem(K)); out.used = st.bused;
       window.RTT_PUTT._state().ov.querySelector('[data-lv="3"]').click(); for (let i = 0; i < 100 && window.RTT_PUTT._state().screen !== 'play'; i++) await sleep(50); out.play = window.RTT_PUTT._state().screen === 'play';
       window.RTT_PUTT._lose(); st = JSON.parse(localStorage.getItem(K)); out.spent = st.bspent; out.lives = st.lives;
-      window.RTT_PUTT.close(); openPutt(); await sleep(200); window.RTT_PUTT._bag(); await sleep(60);
-      const eq = document.querySelector('.pp-bag [data-eq="scope"]'); out.eqBtn = !!eq && !document.querySelector('.pp-bag [data-eq="bank"]'); if (eq) eq.click(); await sleep(60);
-      st = JSON.parse(localStorage.getItem(K)); out.eq = st.pp.eq;
-      window.RTT_PUTT.close(); sbUser = { id:'chk' }; return out; });
+      // the built Scope Putter goes into the closet and is equipped, for both games; the Bank Shot (one part) does not
+      window.RTT_PUTT.close(); openPutt(); await sleep(200);
+      out.owned = !!coinState().owned['pu:scope'] && !coinState().owned['pu:bank']; out.on = puttEquippedId(); out.boost = accBoost().put || 0;
+      const cb = window.RTT_PUTT._state().ov.querySelector('[data-closet]'); out.closetBtn = !!cb; if (cb) cb.click(); await sleep(60);
+      out.rows = document.querySelectorAll('.pp-bag .pp-bput').length; out.thumbs = document.querySelectorAll('.pp-bag .pp-pth .sthumb').length;
+      out.eqBtn = !!document.querySelector('.pp-bag [data-peq="scope"]') && !document.querySelector('.pp-bag [data-peq="bank"]');
+      const so = document.querySelector('.pp-bag [data-peq="stock"]'); if (so) so.click(); await sleep(60); out.stock = puttEquippedId(); out.reach = window.RTT_PUTT._state().host.putter();
+      const sc = document.querySelector('.pp-bag [data-peq="scope"]'); if (sc) sc.click(); await sleep(60); out.back = puttEquippedId(); out.reach2 = window.RTT_PUTT._state().host.putter();
+      out.full = !!document.querySelector('.pp-bag [data-full]');
+      window.RTT_PUTT.close(); S.look.putter = 'stock'; sbUser = { id:'chk' }; return out; });
     claim(sp.sheet && sp.used === 1 && sp.play && sp.spent === 1 && sp.lives === 0, `out of lives, a banked spare life is offered, plays a hole, and losing it spends it and not the server's lives (${JSON.stringify(sp)})`);
-    claim(sp.eqBtn && sp.eq === 'scope', 'a putter is equipped from the Bag once all three parts are found, and not before');
+    claim(sp.owned && sp.on === 'scope' && sp.boost >= 2, `a putter built from its three parts goes into the closet, equipped, and adds its Putting boost in the Tour; one part builds nothing (${JSON.stringify([sp.owned, sp.on, sp.boost])})`);
+    claim(sp.closetBtn && sp.rows >= 11 && sp.thumbs === sp.rows && sp.eqBtn && sp.stock === 'stock' && sp.reach === 0 && sp.back === 'scope' && sp.reach2 === 2 && sp.full, `the closet opens in Putt Putt: every putter with its picture, equip any owned one, and the full closet one tap away (${JSON.stringify(sp)})`);
     // ---- THE TOUR'S RULES, through the page. Each life is real: a fresh record for a fresh account.
     await pg.evaluate(() => { const st = window.RTT_PUTT._state(); if (st && st.play && st.play.strokes) { st.round.mode = 'x'; } document.querySelector('.pt-ov') && window.RTT_PUTT.close(); sbUser = { id:'chk' }; localStorage.removeItem('bag_ppt_v1@chk'); openPutt(); });
     await pg.waitForSelector('.pp-map [data-lv="1"]');

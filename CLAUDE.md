@@ -19984,8 +19984,22 @@ walked with a stick or the arrows, or on Auto walk along the path; Skip goes str
   - **Putt Putt putters**, three, each built from three parts found in the worlds it lists (`PP_PUTTERS`):
     the Scope Putter (aim line four feet longer), the Bank Shot Putter (the aim line is the ball's real path
     off the walls, `bankLine`) and the Lifeguard Putter (once a hole, water or out costs no penalty
-    stroke). One is equipped in the Bag (`st.pp.eq`), and the Daily Hole is played without them
-    (`puttEquipped`).
+    stroke). A built one goes into Run The Tour's closet (`host.grantPutter`, and `syncPutters` on every
+    open grants any built before this), and is equipped there like any putter. The Daily Hole is played
+    without the perks (`puttEquipped`). `st.pp.eq` is only the fallback for a page with no closet.
+- **PUTTERS ARE THEIR OWN CLOSET SLOT, apart from the club sets** (`PUTTERS` in `golf/index.html`, cosmetic
+  category `putter`, key `pu:<id>`, `look.putter`). The one equipped is the putter in both games:
+  - **Run The Tour:** it adds its Putting boost on top of the set (`cosmeticBoostRows`), and the 3D golfer
+    holds it on every putt (`puttLook` in `g3dSet`).
+  - **Putt Putt:** its `reach` (0 to 3) sets the aim line (`host.putter()`, 5 to 11 ft), and a Putt Putt
+    putter carries its perk (`host.putterNow`).
+  - **Where they come from:** Stock is free, seven are pack putters (common to legendary, never sold
+    directly, `cosPackOnly`), and the three `pp` putters are only built in Putt Putt.
+  - **Closet in Putt Putt:** a Closet button on the hub and every trail opens `closetSheet`, which equips
+    any owned putter. "Open the full closet" (`host.closet`) opens the main closet on its Putters page,
+    and Back returns into Putt Putt (`setupReturn.putt`).
+  - **Sprites:** each putter registers its sprite as `PXG_CLUBS['pu_<id>']` over an existing club shape
+    in a finish of its own, so a thumb and the 3D golfer both read it.
   - **Spare lives**, about one trail in ten. Banked (`st.bank`), spent from the out of lives sheet. Spending
     one moves `bused`, losing it moves `bspent`, and the life in play is the difference (`lifeExtra`), so
     two devices merge by the larger of each counter. It is not on the server's lives row.
