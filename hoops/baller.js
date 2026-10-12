@@ -1622,20 +1622,23 @@ var PROP_SIZE = { ball: [11, 11], trophy: [14, 22], podium: [24, 28], ring: [13,
 function prop(kind, opts){
   var o = Object.assign({}, opts || {}), sz = PROP_SIZE[kind] || [12, 12];
   o.w = o.w || sz[0]; o.h = o.h || sz[1];
-  var P = propModel(kind, o), w = o.w, h = o.h, cy = h / 2;
+  /* o.res traces the same prop at that many fine pixels a cell (a court
+     drawn at a fine resolution), every coordinate still in cells */
+  var P = propModel(kind, o), RS = Math.max(1, Math.min(4, Math.round(+o.res || 1))), w = o.w, h = o.h, cy = h / 2;
   /* the same camera as the player, turned about the prop's own centre */
   var cx = w / 2;
   var world = function(q){ var x = q[0] - cx, y = q[1] - cy, z = q[2], dy = y * CP - z * SN, rz = y * SN + z * CP;
     return [cx + x * CY - rz * SY, cy + dy, x * SY + rz * CY]; };
   var ink = Object.assign({}, PROP_INK, { pod: o.c1 || '#1a2445', logo: o.c2 || '#c9ccd6' }, o.ink || {});
   var hit = [];
-  for (var y = 0; y < h; y++) { var row = []; for (var x = 0; x < w; x++) {
-    var sx = x + 0.5, sy = y + 0.5, t = 30, found = -1, wp = null;
+  var FW = w * RS, FH = h * RS;
+  for (var y = 0; y < FH; y++) { var row = []; for (var x = 0; x < FW; x++) {
+    var sx = (x + 0.5) / RS, sy = (y + 0.5) / RS, t = 30, found = -1, wp = null;
     for (var k = 0; k < 90 && t > -30; k++) {
       var q = world([sx, sy, t]), d = 1e9, at = -1;
       for (var j = 0; j < P.length; j++) { var v = P[j].f(q); if (v < d) { d = v; at = j; } }
       if (d < 0.02) { found = at; wp = q; break; }
-      t -= Math.max(d * 0.85, 0.03);
+      t -= Math.max(d * 0.85, 0.03 / RS);
     }
     if (found < 0) { row.push(null); continue; }
     var f = P[found].f, e = 0.07;
@@ -1648,13 +1651,13 @@ function prop(kind, opts){
   } hit.push(row); }
   var out = hit.map(function(r){ return r.map(function(c){ return c ? ramp(ink[c.m] || '#888888')[c.t] : null; }); });
   /* the soft outline, inside the silhouette, as on the player */
-  var g = function(x, y){ return y >= 0 && y < h && x >= 0 && x < w ? hit[y][x] : null; };
+  var g = function(x, y){ return y >= 0 && y < FH && x >= 0 && x < FW ? hit[y][x] : null; };
   var ed = [];
-  for (var y2 = 0; y2 < h; y2++) for (var x2 = 0; x2 < w; x2++) { var c2 = hit[y2][x2]; if (!c2) continue;
+  for (var y2 = 0; y2 < FH; y2++) for (var x2 = 0; x2 < FW; x2++) { var c2 = hit[y2][x2]; if (!c2) continue;
     if (!g(x2, y2 + 1) || !g(x2 + 1, y2)) ed.push([x2, y2, ramp(ink[c2.m] || '#888888')[Math.max(0, Math.min(c2.t - 1, 1))]]);
     else if (g(x2, y2 + 1).i !== c2.i && Math.abs(g(x2, y2 + 1).t - c2.t) > 1) ed.push([x2, y2, ramp(ink[c2.m] || '#888888')[Math.max(0, c2.t - 1)]]); }
   ed.forEach(function(e2){ out[e2[1]][e2[0]] = e2[2]; });
-  return { w: w, h: h, grid: out };
+  return { w: FW, h: FH, cw: w, chh: h, res: RS, grid: out };
 }
 var PCACHE = {};
 function propCanvas(kind, opts){
@@ -1662,6 +1665,8 @@ function propCanvas(kind, opts){
   if (PCACHE[k]) return PCACHE[k];
   var pr = prop(kind, opts), cv = document.createElement('canvas');
   cv.width = pr.w; cv.height = pr.h;
+  /* the size in cells, which a fine canvas is drawn at */
+  cv.cw = pr.cw; cv.chh = pr.chh;
   var cx = cv.getContext('2d');
   for (var y = 0; y < pr.h; y++) for (var x = 0; x < pr.w; x++) { var col = pr.grid[y][x]; if (col) { cx.fillStyle = col; cx.fillRect(x, y, 1, 1); } }
   return (PCACHE[k] = cv);
@@ -2037,7 +2042,7 @@ var API = {
   SETS: Object.keys(SETS).reduce(function(m, k){ m[k] = SETS[k].length; return m; }, {}), isFrame: function(p){ return !!ANIM[p]; },
   DEFAULT: DEFAULT, normal: normal, lookFor: lookFor, hash: hash, inkOn: inkOn, contrast: contrast,
   paint: paint, canvas: canvas, url: url, img: img, breathe: breathe, live: live, warm: warm, _gridData: gridData,
-  prop: prop, propCanvas: propCanvas, ramp: ramp, PROPS: Object.keys(PROP_SIZE),
+  prop: prop, propCanvas: propCanvas, paintAsync: paintAsync, gridCanvas: toCanvas, ramp: ramp, PROPS: Object.keys(PROP_SIZE),
   WEAR_KINDS: WEAR_KINDS, wearNorm: wearNorm, CWEAR_KINDS: CWEAR_KINDS, cwearNorm: cwearNorm,
   /* 1 is the first version with the street look. A page that needs it pins
      this, the way it pins board.js: a stale cached copy would ignore ctx and

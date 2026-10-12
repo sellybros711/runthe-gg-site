@@ -12556,6 +12556,34 @@ tale of the tape compares you with your rival, never a real player. The score
 bug shows teams and the clock and no score, because the engine settles a game on
 odds, not points; on a duel career it ends on `Final · W` or `Final · L`.
 
+#### The court is traced fine, and the console look is light and lens, never new art
+
+```
+node hoops/check-moments.mjs     section 11: a canvas pixel is a whole number of device pixels
+```
+
+Asked for by the owner: the moments and cutscenes should look like a console game
+loading in a browser, in the game's own pixel style. **The blur was resolution, not
+style.** Every sprite was traced at one pixel a cell and blown up by seven to nine
+device pixels. `fineRes(k)` in court.js picks how many fine pixels a cell gets (up
+to 4) so one fine pixel is a whole number of device pixels, and the sprites, the
+props (`B.prop` takes `res` now) and the floor are traced at it. Res 1 is byte for
+byte what it was (check-sprite: 960 compared, 0 changed).
+
+- **A fine sprite is painted in the worker** (`B.paintAsync`), never on the main
+  thread, which costs about 150ms a frame at res 3. Until it lands the coarse one is
+  drawn. `st.warm` asks for every pose a clip will use before it plays (urgent), and
+  the whole vocabulary for `opts.me` is warmed once in the background.
+- **The room behind the play is soft focus** (`softRoom`: blurred, a little darker)
+  and the court in front is sharp. That depth of field, two additive light shafts and
+  a vignette (`lens`) are most of the console look. A broadcast camera eases in on a
+  loud moment and on the replay, as a CSS transform on the canvas so the pixels are
+  never resampled. Reduced motion gets no camera move.
+- **Shadows are soft ellipses** and a moving ball leaves a short trail. The call is
+  a broadcast strip in the club's colour.
+- **A scene's room is blurred the same way** (`.sc-pix > .sc-pset img`), so
+  cutscenes and moments share one lens.
+
 #### The rebuild of the court: the game is the team's, the moment is yours
 
 ```

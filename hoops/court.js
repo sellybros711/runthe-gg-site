@@ -8,9 +8,15 @@
  * painted here as boards in perspective, the lane under the rim in the home
  * colour, with a light pool and a reflection of whoever stands on it.
  *
- * ONE GRID. The court is drawn at one cell per sprite cell, so the man, the
- * ball, the rim and the crowd sit on the same pixel grid and the canvas is
- * scaled by a whole number. Nothing is tweened between cells.
+ * ONE GRID, TRACED FINE. Every coordinate here is a sprite cell, and the
+ * canvas holds R fine pixels a cell (st.R, 2 to 4), chosen so a fine pixel
+ * is a whole number of device pixels. The men, the ball, the rim and the
+ * floor are traced at R (baller.js paint and prop take res), so a line is one
+ * sharp device step, the way a console renders pixel art at its native
+ * resolution rather than a postage stamp blown up. A man is drawn coarse the
+ * first time and swapped for his fine trace when the paint worker hands it
+ * back, so a moment never waits on the tracer. Motion is placed on the fine
+ * grid, so a man slides a third of a cell at a time, not a whole one.
  *
  * BUT THE CLOCK IS NOT THE FRAME RATE. A clip ticks twelve times a second,
  * and drawn only on the tick a ball in flight jumped five cells at a time:
@@ -86,8 +92,11 @@ var CSS = [
 '.ct-bug .fin.w{background:#3ecf8e;}',
 '.ct-bug .fin.l{background:#ff4b4b;color:#fff;}',
 '@keyframes ctHot{50%{color:#ff4b4b}}',
-'.ct-call{position:absolute;left:0;right:0;top:40px;z-index:4;padding:8px 12px;font-family:var(--k-f-display,var(--display,Impact));font-size:clamp(16px,4.6vw,24px);letter-spacing:.03em;text-transform:uppercase;color:#fff;text-shadow:2px 2px 0 #05070d;text-align:center;pointer-events:none;}',
+'.ct-call{position:absolute;left:0;right:0;top:40px;z-index:4;padding:8px 12px;background:linear-gradient(90deg,rgba(5,7,13,0),rgba(5,7,13,.78) 18%,rgba(5,7,13,.78) 82%,rgba(5,7,13,0));box-shadow:inset 0 2px 0 0 color-mix(in srgb,var(--c1) 70%,transparent),inset 0 -2px 0 0 rgba(255,255,255,.08);animation:ctCall .32s cubic-bezier(.2,.8,.2,1) both;font-family:var(--k-f-display,var(--display,Impact));font-size:clamp(16px,4.6vw,24px);letter-spacing:.03em;text-transform:uppercase;color:#fff;text-shadow:2px 2px 0 #05070d;text-align:center;pointer-events:none;}',
 '.ct-call:empty{display:none;}',
+'@keyframes ctCall{0%{transform:translateX(-14%);opacity:0;clip-path:inset(0 100% 0 0);}100%{transform:none;opacity:1;clip-path:inset(0 0 0 0);}}',
+'.ct-call.big{text-shadow:2px 2px 0 #05070d,0 0 18px rgba(255,209,102,.55);box-shadow:inset 0 2px 0 0 #ffd166,inset 0 -2px 0 0 #ffd166;}',
+'@media (prefers-reduced-motion:reduce){.ct-call{animation:none;}}',
 '.ct-call.big{color:#ffd166;font-size:clamp(24px,8vw,46px);}',
 '.ct-fbk{position:absolute;left:50%;top:40%;z-index:4;transform:translateX(-50%);padding:7px 10px;background:rgba(5,7,13,.82);box-shadow:0 0 0 2px #05070d;white-space:nowrap;font-family:var(--k-f-pixel,"Press Start 2P",var(--display,Impact));font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:#fff;pointer-events:none;animation:ctPop .7s steps(6) both;}',
 '.ct-fbk.p{color:#ffd166;font-size:16px;box-shadow:0 0 0 2px #ffd166;}.ct-fbk.g{color:#8ff0c2;}.ct-fbk.b{color:#ff8a7a;}',
@@ -167,9 +176,23 @@ var UX = Math.sin(PSI), UY = Math.cos(PSI) * SN_, VX = -Math.cos(PSI), VY = Math
 /* clips are written along the play line; a step toward the rim on screen is
    also a step up or down it, by this much */
 var SLOPE = UY / UX;
-function sprite(who, pose, yaw){
+var FINE = {}, FINEN = 0, FINEASK = {};
+function sprite(who, pose, yaw, R, urgent){
   if (yaw == null) yaw = CAM.yaw;
   var k = JSON.stringify([who.look, who.c1, who.c2, who.num, pose, who.age, who.dress || '', who.faceless ? 1 : 0, yaw, who.faceless ? null : who.cwear || null]);
+  /* the fine trace, if the worker has handed it back; asked for once */
+  if (R > 1 && B.paintAsync) {
+    var fk = k + '|' + R;
+    if (FINE[fk]) return FINE[fk];
+    if (!FINEASK[fk]) {
+      FINEASK[fk] = 1;
+      B.paintAsync(who.look, { pose: pose, c1: who.c1, c2: who.c2, num: who.num, age: who.age, dress: who.dress, faceless: who.faceless, yaw: yaw, cwear: who.faceless ? null : who.cwear, res: R }, function(img){
+        if (!img) return;
+        if (++FINEN > 300) { FINE = {}; FINEASK = {}; FINEN = 0; }
+        FINE[fk] = B.gridCanvas(img);
+      }, !!urgent);
+    }
+  }
   if (SPR[k]) return SPR[k];
   if (++SPRN > 400) { SPR = {}; SPRN = 0; }
   /* the court gear he chose (hoops/wardrobe.js); a real man has none */
@@ -181,7 +204,7 @@ function sprite(who, pose, yaw){
   return cv;
 }
 /* The ball turns in the air: four frames of the same traced ball. */
-function ballArt(spin){ return B.propCanvas('ball', { spin: (spin | 0) % 4, r: 3.7, w: 9, h: 9 }); }
+function ballArt(spin, R){ return B.propCanvas('ball', { spin: (spin | 0) % 4, r: 3.7, w: 9, h: 9, res: R || 1 }); }
 
 // ─── the floor ──────────────────────────────────────────────────────────────
 
@@ -195,19 +218,23 @@ function ballArt(spin){ return B.propCanvas('ball', { spin: (spin | 0) % 4, r: 3
 var FLOORS = {};
 var DET = UX * VY - UY * VX;
 function courtAt(dx, dy){ return [(dx * VY - dy * VX) / DET, (UX * dy - UY * dx) / DET]; }
-function courtFloor(cw, ch, fy, rimX, playY, c1){
-  var key = [cw, ch, fy, rimX, playY, c1].join('|');
+function courtFloor(cw, ch, fy, rimX, playY, c1, RF){
+  RF = RF || 1;
+  var key = [cw, ch, fy, rimX, playY, c1, RF].join('|');
   if (FLOORS[key]) return FLOORS[key];
-  var cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
+  var cv = document.createElement('canvas'); cv.width = cw * RF; cv.height = ch * RF;
   var c = cv.getContext('2d');
   var R = B.ramp('#c48a52'), paint = B.ramp(mix(c1, '#c48a52', 0.3)), ink = '#f2ead6';
   /* one scale, about three cells to the foot: 16 ft lane, free throw line 19 ft out, 23 ft 9 arc, 22 ft corners */
   var BASE = 12, FT = -45, LANE = 24, FTR = 18, ARC = 72, CORNER = 66;
-  var img = c.createImageData(cw, ch), d = img.data;
-  var put = function(x, y, hex){ var i = (y * cw + x) * 4, v = parseInt(hex.slice(1), 16); d[i] = v >> 16; d[i + 1] = (v >> 8) & 255; d[i + 2] = v & 255; d[i + 3] = 255; };
+  var FW = cw * RF, img = c.createImageData(FW, ch * RF), d = img.data;
+  var put = function(x, y, hex){ var i = (y * FW + x) * 4, v = parseInt(hex.slice(1), 16); d[i] = v >> 16; d[i + 1] = (v >> 8) & 255; d[i + 2] = v & 255; d[i + 3] = 255; };
   var near = function(v, w){ return Math.abs(v) < w; };
-  for (var y = fy; y < ch; y++) for (var x = 0; x < cw; x++) {
-    var q = courtAt(x + 0.5 - rimX, y + 0.5 - playY), U = q[0], V = q[1];
+  /* the grain stays a cell wide (the boards' pixel texture); the lines and
+     the seams are traced at the fine resolution, so they run clean */
+  for (var py = fy * RF; py < ch * RF; py++) for (var px = 0; px < FW; px++) {
+    var x = Math.floor(px / RF), y = Math.floor(py / RF);
+    var q = courtAt((px + 0.5) / RF - rimX, (py + 0.5) / RF - playY), U = q[0], V = q[1];
     var u = (y - fy) / Math.max(1, ch - fy);
     var t = u < 0.22 ? 1 : u < 0.62 ? 2 : 3;
     /* boards: bands across V, each with its own joints along U */
@@ -218,16 +245,17 @@ function courtFloor(cw, ch, fy, rimX, playY, c1){
     var inLane = U < BASE && U > FT && Math.abs(V) < LANE;
     var col = (inLane ? paint : R)[seam || joint || h % 23 === 0 ? Math.max(0, t - 1) : t];
     /* the lines, about a cell wide whichever way they run on screen */
-    var w = 0.75, r = Math.hypot(U, V), line =
+    var w = 0.75 - 0.2 * (RF > 1 ? 1 : 0), r = Math.hypot(U, V), line =
       (near(U - BASE, w) && Math.abs(V) < CORNER + 2) ||
       (U < BASE + w && U > FT - w && near(Math.abs(V) - LANE, w)) ||
       (near(U - FT, w) && Math.abs(V) < LANE) ||
       (U < FT && near(Math.hypot(U - FT, V) - FTR, w)) ||
       (U <= -Math.sqrt(Math.max(0, ARC * ARC - CORNER * CORNER)) + 0.5 && near(r - ARC, w * 1.1)) ||
       (U > -Math.sqrt(Math.max(0, ARC * ARC - CORNER * CORNER)) && U < BASE && near(Math.abs(V) - CORNER, w));
-    put(x, y, line ? mix(col, ink, 0.85) : col);
+    put(px, py, line ? mix(col, ink, 0.85) : col);
   }
   c.putImageData(img, 0, 0);
+  c.setTransform(RF, 0, 0, RF, 0, 0);
   /* the back of the floor falls into shadow */
   var gr = c.createLinearGradient(0, fy, 0, fy + (ch - fy) * 0.45);
   gr.addColorStop(0, 'rgba(10,12,30,.55)'); gr.addColorStop(1, 'rgba(10,12,30,0)');
@@ -244,6 +272,15 @@ function courtFloor(cw, ch, fy, rimX, playY, c1){
      opts.hoop   draw the basket (a court) or not (a room)
      opts.c1, c2 the home colours (the building's), opts.oc the other club's
      opts.me     { look, c1, c2, num, age } */
+/* FINE PIXELS A CELL: the most (up to the tracer's 4) that make one fine
+   pixel a whole number of device pixels at k CSS pixels a cell. A screen
+   where none divides (a 5 pixel cell on a 1x desktop) gets 4 and a near
+   even scale, which still reads finer than a whole cell. */
+function fineRes(k){
+  var d = k * (window.devicePixelRatio || 1);
+  for (var r = 4; r >= 2; r--) { var q = d / r; if (q >= 1 && Math.abs(q - Math.round(q)) < 0.01) return r; }
+  return Math.max(1, Math.min(4, Math.floor(d)));
+}
 function stage(host, opts){
   cssOnce();
   opts = opts || {};
@@ -256,7 +293,7 @@ function stage(host, opts){
   el.innerHTML = '<canvas aria-hidden="true"></canvas><div class="ct-call" aria-live="polite"></div><div class="ct-rp" hidden>Replay</div>';
   host.appendChild(el);
   var cv = el.querySelector('canvas'), ctx = cv.getContext('2d');
-  var st = { el: el, cw: 160, ch: 128, k: 3, room: null, floor: null, fy: 70, floorY: 120, playY: 120, rim: [120, 30], tick: 0, state: {}, opts: opts, raf: 0, timer: 0, dead: false, slow: 1 };
+  var st = { el: el, cw: 160, ch: 128, k: 3, R: 1, room: null, floor: null, fy: 70, floorY: 120, playY: 120, rim: [120, 30], tick: 0, state: {}, opts: opts, raf: 0, timer: 0, dead: false, slow: 1 };
   var roomC1 = opts.roomC1 || opts.c1, roomC2 = opts.roomC2 || opts.c2;
   function fit(){
     var W = el.clientWidth || 360, H = el.clientHeight || 280;
@@ -265,9 +302,10 @@ function stage(host, opts){
        and tall enough for a dunk. Whichever binds sets the cell. */
     var k = Math.max(2, Math.min(Math.floor((H - (opts.pad || 0)) / 124), Math.floor(W / 130)));
     var cw = Math.ceil(W / k), ch = Math.floor(H / k);
-    if (cw === st.cw && ch === st.ch && st.room) return;
-    st.k = k; st.cw = cw; st.ch = ch;
-    cv.width = cw; cv.height = ch;
+    var R = fineRes(k);
+    if (cw === st.cw && ch === st.ch && R === st.R && st.room) return;
+    st.k = k; st.cw = cw; st.ch = ch; st.R = R;
+    cv.width = cw * R; cv.height = ch * R;
     cv.style.width = (cw * k) + 'px'; cv.style.height = (ch * k) + 'px';
     /* Anything laid over the bottom of the court (the meter) pushes the
        floor up so it never covers the man. */
@@ -278,10 +316,13 @@ function stage(host, opts){
     st.yaw = opts.hoop ? COURT_YAW : CAM.yaw;
     var rimX = Math.round(Math.min(cw * 0.8, cw / 2 + 74));
     st.rim = [rimX, Math.max(18, st.floorY - 86)];  /* ten feet, foreshortened by the camera looking down */
-    st.floor = opts.hoop ? courtFloor(cw, ch, st.fy, rimX, st.playY, roomC1 || '#c8102e') : null;
+    st.floor = opts.hoop ? courtFloor(cw, ch, st.fy, rimX, st.playY, roomC1 || '#c8102e', R) : null;
+    /* his whole vocabulary, in the background behind anything urgent: the
+       next moment of this career starts fine from its first frame */
+    if (R > 1 && opts.me && opts.hoop && !st.warmed) { st.warmed = 1; Object.keys(B.SETS || {}).forEach(function(n){ for (var i = 0; i < B.SETS[n]; i++) sprite(opts.me, n + i, st.yaw, R, false); }); }
     var art = K.room(opts.room || 'nba', cw, ch, { c1: roomC1, c2: roomC2, floorAt: opts.hoop ? 0.46 : 0.58, seed: 'court:' + (opts.room || 'nba'), spotAt: 0.5 });
     var im = new Image();
-    im.onload = function(){ st.room = im; draw(); };
+    im.onload = function(){ st.room = im; st.soft = softRoom(im, cw, ch, R, opts.hoop ? st.fy : ch); draw(); };
     im.src = art.url;
     draw();
   }
@@ -289,6 +330,26 @@ function stage(host, opts){
   var ro = window.ResizeObserver ? new ResizeObserver(fit) : null;
   if (ro) ro.observe(el); else window.addEventListener('resize', fit);
 
+  /* THE BUILDING IS IN SOFT FOCUS, the way a console renders pixel figures
+     in front of a deep scene: the stands above the floor are blurred a little
+     and dimmed, so the sharp men and the ball are what the eye lands on. Built
+     once per size. Reduced motion keeps it; it is a picture, not a motion. */
+  function softRoom(im, cw, ch, R, fy){
+    try {
+      var c = document.createElement('canvas'); c.width = cw * R; c.height = fy * R;
+      var x = c.getContext('2d');
+      x.imageSmoothingEnabled = false;
+      x.drawImage(im, 0, 0, cw, fy, 0, 0, cw * R, fy * R);
+      if (!('filter' in x)) return null;
+      var o = document.createElement('canvas'); o.width = c.width; o.height = c.height;
+      var y = o.getContext('2d');
+      y.filter = 'blur(' + (0.75 * R).toFixed(2) + 'px) saturate(1.1) brightness(.86)';
+      y.drawImage(c, 0, 0);
+      return o;
+    } catch (e) { return null; }
+  }
+  /* a position on the fine grid: a third or a quarter of a cell */
+  function fine(v){ return Math.round(v * st.R) / st.R; }
   function rect(x, y, w, h, c){ ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); }
   /* where a clip's point is on screen: a step toward the rim is also a step
      along the court's axis, which the corner camera sees rising or falling */
@@ -306,8 +367,8 @@ function stage(host, opts){
     rect(px - 2, ry - 6 + pU * UY, 4, base - (ry - 6 + pU * UY), METAL[2]); rect(px - 2, ry - 6 + pU * UY, 1, base - (ry - 6 + pU * UY), METAL[4]);
     rect(px - 5, base - 12, 10, 12, mix(roomC1 || '#c8102e', '#05070d', 0.25)); rect(px - 5, base - 12, 10, 1, mix(roomC1 || '#c8102e', '#ffffff', 0.25));
     quad([[gx, gy - 5], [px, ry - 6 + pU * UY], [px, ry - 3 + pU * UY], [gx, gy - 2]], METAL[2]);
-    var back = B.propCanvas('rim', { half: 'back' });
-    ctx.drawImage(back, Math.round(rx - back.width / 2), Math.round(ry - back.height / 2));
+    var back = B.propCanvas('rim', { half: 'back', res: st.R });
+    ctx.drawImage(back, Math.round(rx - back.cw / 2), Math.round(ry - back.chh / 2), back.cw, back.chh);
   }
   /* the glass, a pane across the court behind the rim, seen from the corner */
   function glass(s){
@@ -333,35 +394,35 @@ function stage(host, opts){
       }
     }
     for (var j = 0; j < 4; j++) rect(rx - 4 + j * 2, ry + 1 + Math.round(len * 0.45), 2, 1, '#aab2c4');
-    var front = B.propCanvas('rim', { half: 'front' });
-    ctx.drawImage(front, Math.round(rx - front.width / 2), Math.round(ry - front.height / 2));
+    var front = B.propCanvas('rim', { half: 'front', res: st.R });
+    ctx.drawImage(front, Math.round(rx - front.cw / 2), Math.round(ry - front.chh / 2), front.cw, front.chh);
   }
 
   var conf = [];
   function drawActor(a, refl){
     var who = a.who === 'me' ? opts.me : a.who;
     if (!who) return;
-    var ay = sy(a.x, a.y), sp = sprite(who, a.pose, st.yaw);
-    var j = a.jump || 0, x = Math.round(a.x) - 22, y = Math.round(ay - 62 - j);
+    var ay = sy(a.x, a.y), sp = sprite(who, a.pose, st.yaw, st.R);
+    var j = a.jump || 0, x = fine(a.x) - 22, y = fine(ay - 62 - j);
     if (refl) {
       /* the floor is varnished: a faint, upside-down copy under the feet */
       ctx.save(); ctx.globalAlpha = 0.1;
       ctx.beginPath(); ctx.rect(0, ay + 1, st.cw, 20); ctx.clip();
       ctx.translate(a.flip ? x + 44 : x, ay * 2 + 2 + j); ctx.scale(a.flip ? -1 : 1, -1);
-      ctx.drawImage(sp, 0, Math.round(ay - 62));
+      ctx.drawImage(sp, 0, Math.round(ay - 62), B.W, B.H);
       ctx.restore();
       return;
     }
     if (a.alpha != null) { ctx.save(); ctx.globalAlpha = a.alpha; }
-    if (a.flip) { ctx.save(); ctx.translate(x + 44, y); ctx.scale(-1, 1); ctx.drawImage(sp, 0, 0); ctx.restore(); }
-    else ctx.drawImage(sp, x, y);
+    if (a.flip) { ctx.save(); ctx.translate(x + 44, y); ctx.scale(-1, 1); ctx.drawImage(sp, 0, 0, B.W, B.H); ctx.restore(); }
+    else ctx.drawImage(sp, x, y, B.W, B.H);
     if (a.alpha != null) ctx.restore();
   }
   /* the state between two ticks: positions slide, poses do not */
   function blendState(a, b, f){
     if (!b || f <= 0) return a;
     var r = Object.assign({}, a), near = function(p, q, lim){ return Math.abs(p - q) <= lim; };
-    var L = function(p, q){ return Math.round(p + (q - p) * f); };
+    var L = function(p, q){ return fine(p + (q - p) * f); };
     if (a.actors && b.actors) r.actors = a.actors.map(function(x, i){
       var y = b.actors[i];
       if (!y || y.who !== x.who || !near(x.x, y.x, 24) || !near(x.y, y.y, 24)) return x;
@@ -375,14 +436,19 @@ function stage(host, opts){
   }
   function draw(){
     var s = st.next ? blendState(st.state || {}, st.next, st.frac) : st.state || {};
+    ctx.setTransform(st.R, 0, 0, st.R, 0, 0);
     ctx.clearRect(0, 0, st.cw, st.ch);
     ctx.imageSmoothingEnabled = false;
     var fy = st.fy;
     if (st.room) {
       /* A loud building jumps: the crowd above the floor moves a cell. */
       var bump = s.loud >= 2 && !REDUCED && (st.tick % 4 < 2) ? 1 : 0;
-      ctx.drawImage(st.room, 0, 0, st.cw, fy, 0, -bump, st.cw, fy);
-      ctx.drawImage(st.room, 0, fy, st.cw, st.ch - fy, 0, fy, st.cw, st.ch - fy);
+      if (st.soft) ctx.drawImage(st.soft, 0, -bump, st.cw, fy);
+      else ctx.drawImage(st.room, 0, 0, st.cw, fy, 0, -bump, st.cw, fy);
+      /* a room (no court) is soft all the way down: the stands in front of the
+         stage are out of focus too, the way a lens at the stage would see them */
+      if (st.soft && !opts.hoop) ctx.drawImage(st.soft, 0, fy * st.R, st.cw * st.R, (st.ch - fy) * st.R, 0, fy, st.cw, st.ch - fy);
+      else ctx.drawImage(st.room, 0, fy, st.cw, st.ch - fy, 0, fy, st.cw, st.ch - fy);
       if (bump) rect(0, fy - 1, st.cw, 1, '#05070d');
     } else rect(0, 0, st.cw, st.ch, '#0b0e1a');
     /* depth: the upper deck falls into the dark */
@@ -390,7 +456,7 @@ function stage(host, opts){
     gr.addColorStop(0, 'rgba(4,6,14,.62)'); gr.addColorStop(0.7, 'rgba(4,6,14,.18)'); gr.addColorStop(1, 'rgba(4,6,14,0)');
     ctx.fillStyle = gr; ctx.fillRect(0, 0, st.cw, fy);
     if (st.floor) {
-      ctx.drawImage(st.floor, 0, 0);
+      ctx.drawImage(st.floor, 0, 0, st.cw, st.ch);
       /* the scorer's table ribbon, in the building's colours, scrolling when it's loud */
       rect(0, fy - 6, st.cw, 6, '#05070d');
       var off = s.loud >= 2 && !REDUCED ? (st.tick * 2) % 24 : 0, rc1 = roomC1 || '#c8102e', rc2 = roomC2 || '#ffffff';
@@ -407,18 +473,22 @@ function stage(host, opts){
     var acts = (s.actors || []).slice().sort(function(a, b){ return (a.y + (a.z || 0)) - (b.y + (b.z || 0)); });
     if (st.floor) acts.forEach(function(a){ drawActor(a, true); });
     var ball = s.ball;
+    if (!ball) trail = [];
     /* the ball's shadow on the floor, smaller and fainter the higher it is */
     if (ball && st.floor) { var gy = ball.floor || st.playY, hgt = Math.max(0, gy - ball.y), sw = Math.max(1, 4 - Math.round(hgt / 18));
-      ctx.fillStyle = 'rgba(0,0,0,' + Math.max(0.08, 0.32 - hgt / 260).toFixed(2) + ')'; ctx.fillRect(Math.round(ball.x) - sw, sy(ball.x, gy), sw * 2, 1); }
+      ctx.fillStyle = 'rgba(0,0,0,' + Math.max(0.08, 0.32 - hgt / 260).toFixed(2) + ')'; ctx.beginPath(); ctx.ellipse(ball.x, sy(ball.x, gy), sw, Math.max(0.6, sw * 0.32), 0, 0, Math.PI * 2); ctx.fill(); }
     if (ball && ball.behind) drawBall(ball);
     acts.forEach(function(a){
       var ay2 = sy(a.x, a.y);
       if (s.spot) { var sw2 = 30; ctx.fillStyle = 'rgba(255,236,196,.16)'; ctx.fillRect(Math.round(a.x) - sw2 / 2, 0, sw2, ay2 + 2); }
       var j = a.jump || 0;
       /* seen from above, a shadow is a patch on the floor, not a line */
-      var shw = Math.max(5, 10 - Math.round(j / 4));
-      ctx.fillStyle = 'rgba(0,0,0,.30)'; ctx.fillRect(Math.round(a.x) - shw, ay2 - 1, shw * 2, 3);
-      ctx.fillStyle = 'rgba(0,0,0,.16)'; ctx.fillRect(Math.round(a.x) - shw + 2, ay2 - 2, shw * 2 - 4, 5);
+      var shw = Math.max(5, 11 - j / 4), al = Math.max(0.12, 0.42 - j / 120);
+      /* a soft contact shadow, an ellipse on the floor, fainter in the air */
+      var sg = ctx.createRadialGradient(a.x, ay2, 0, a.x, ay2, shw);
+      sg.addColorStop(0, 'rgba(0,0,0,' + al.toFixed(2) + ')'); sg.addColorStop(0.6, 'rgba(0,0,0,' + (al * 0.55).toFixed(2) + ')'); sg.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.save(); ctx.translate(0, ay2); ctx.scale(1, 0.32); ctx.translate(0, -ay2);
+      ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(a.x, ay2, shw, 0, Math.PI * 2); ctx.fill(); ctx.restore();
       drawActor(a, false);
     });
     if (opts.hoop) hoopFront(s);
@@ -431,8 +501,63 @@ function stage(host, opts){
       conf.forEach(function(p){ p.y += p.v; p.x += Math.sin((p.y + p.v * 9) / 6) * 0.4; rect(p.x, p.y, (p.y | 0) % 3 ? 2 : 1, 1, p.c); });
       conf = conf.filter(function(p){ return p.y < st.ch; });
     } else if (!s.confetti) conf = [];
+    lens(s);
+    camera(s);
   }
-  function drawBall(b){ var a = ballArt(b.spin != null ? b.spin : 0); ctx.drawImage(a, Math.round(b.x) - 4, Math.round(sy(b.x, b.y)) - 4); }
+  /* THE BROADCAST CAMERA. It leans in when the building gets loud and further
+     on a replay, toward wherever the ball is, and kicks when the rim shakes.
+     It eases every frame, so a cut in the clip is a push, never a jump. It is
+     a transform on the canvas, so the HUD over it never moves. Reduced motion
+     gets the still camera. */
+  var cam = { z: 1, x: 50, y: 60 };
+  function camera(s){
+    if (REDUCED) return;
+    var tz = 1 + (s.loud >= 3 ? 0.07 : s.loud >= 2 ? 0.035 : 0) + (el.classList.contains('ct-bars') ? 0.06 : 0);
+    var b = s.ball, fx = b ? b.x : (s.focus != null ? s.focus : st.rim[0] - 40), fyy = b ? sy(b.x, b.y) : st.playY - 40;
+    var tx = clamp(fx / st.cw * 100, 15, 85), ty = clamp(fyy / st.ch * 100, 20, 85);
+    cam.z += (tz - cam.z) * 0.08; cam.x += (tx - cam.x) * 0.06; cam.y += (ty - cam.y) * 0.06;
+    var k = s.rimShake ? (s.rimShake % 2 ? 1 : -1) * st.k * 0.8 : 0;
+    cv.style.transformOrigin = cam.x.toFixed(2) + '% ' + cam.y.toFixed(2) + '%';
+    cv.style.transform = 'translateX(-50%) translate(' + k.toFixed(1) + 'px,' + (k * 0.5).toFixed(1) + 'px) scale(' + cam.z.toFixed(4) + ')';
+  }
+  /* THE LENS: what makes it read as a broadcast camera rather than a
+     diagram. Two arena light shafts falling on the play (added light), and a
+     vignette that pulls the corners down. Light, not pixels: nothing here is
+     drawn on the grid, the way a console's post pass sits over its sprites. */
+  function lens(s){
+    var w = st.cw, h = st.ch;
+    if (st.floor && !s.spot) {
+      var fx = s.focus != null ? s.focus : st.rim[0] - 40;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      [[fx - 26, 0.05], [fx + 30, 0.04]].forEach(function(b){
+        var g = ctx.createLinearGradient(0, 0, 0, h);
+        g.addColorStop(0, 'rgba(255,240,210,' + b[1] + ')'); g.addColorStop(0.8, 'rgba(255,240,210,' + (b[1] * 0.4).toFixed(3) + ')'); g.addColorStop(1, 'rgba(255,240,210,0)');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(b[0] - 6, 0); ctx.lineTo(b[0] + 6, 0); ctx.lineTo(b[0] + 30, h); ctx.lineTo(b[0] - 30, h); ctx.closePath(); ctx.fill();
+      });
+      ctx.restore();
+    }
+    var v = ctx.createRadialGradient(w / 2, h * 0.55, Math.min(w, h) * 0.35, w / 2, h * 0.55, Math.max(w, h) * 0.78);
+    v.addColorStop(0, 'rgba(3,4,10,0)'); v.addColorStop(1, 'rgba(3,4,10,.55)');
+    ctx.fillStyle = v; ctx.fillRect(0, 0, w, h);
+  }
+  /* THE BALL CARRIES A TRAIL when it flies: the last few places it was,
+     drawn as fading discs behind it, the motion streak a console puts on a
+     fast object. A cut (a jump of more than a few cells) starts it over. */
+  var trail = [];
+  function drawBall(b){
+    var bx = fine(b.x), by = fine(sy(b.x, b.y)), last = trail[trail.length - 1];
+    if (last && Math.hypot(bx - last[0], by - last[1]) > 14) trail = [];
+    if (!last || last[0] !== bx || last[1] !== by) { trail.push([bx, by]); if (trail.length > 6) trail.shift(); }
+    if (!REDUCED && trail.length > 2) {
+      var moving = Math.hypot(bx - trail[0][0], by - trail[0][1]) > 6;
+      if (moving) for (var i = 0; i < trail.length - 1; i++) {
+        var q = (i + 1) / trail.length;
+        ctx.fillStyle = 'rgba(255,186,120,' + (0.22 * q).toFixed(3) + ')';
+        ctx.beginPath(); ctx.arc(trail[i][0], trail[i][1], 1.2 + 2.6 * q, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    var a = ballArt(b.spin != null ? b.spin : 0, st.R); ctx.drawImage(a, bx - 4, by - 4, 9, 9);
+  }
   /* A banner going up to the rafters, a ring box, a podium, a trophy. The
      solid ones are traced (B.propCanvas); the cloth ones are shaded here. */
   function drawProp(p){
@@ -454,9 +579,10 @@ function stage(host, opts){
       if (p.text) drawDigits(String(p.text), jx + 8, jy + 7, p.c2);
     } else {
       var opt = p.kind === 'podium' ? { c1: p.c1 || '#1a2445', c2: p.c2 || '#c9ccd6' } : {};
-      var art = B.propCanvas(p.kind, opt);
-      var ax = Math.round(p.x - art.width / 2), ay = p.kind === 'podium' ? sy(p.x, st.floorY) - art.height + 1 : Math.round(sy(p.x, p.y) - art.height / 2);
-      ctx.drawImage(art, ax, ay);
+      opt.res = st.R;
+      var art = B.propCanvas(p.kind, opt), aw = art.cw || art.width, ah = art.chh || art.height;
+      var ax = Math.round(p.x - aw / 2), ay = p.kind === 'podium' ? sy(p.x, st.floorY) - ah + 1 : Math.round(sy(p.x, p.y) - ah / 2);
+      ctx.drawImage(art, ax, ay, aw, ah);
     }
   }
   var FONT = { 0: ['111', '101', '101', '101', '111'], 1: ['010', '110', '010', '010', '111'], 2: ['111', '001', '111', '100', '111'], 3: ['111', '001', '111', '001', '111'], 4: ['101', '101', '111', '001', '001'],
@@ -469,8 +595,28 @@ function stage(host, opts){
   /* Play a clip: a function of the tick that returns the state to draw, for
      `len` ticks, with sound cues at ticks. clip.slow plays it at a fraction of
      the speed (a replay). Reduced motion draws the key tick and holds it. */
+  /* WARM BEFORE IT IS SEEN. Every pose a clip will show is asked of the
+     paint worker the moment the clip is handed over, at the front of its
+     queue, so the fine trace is usually back before the frame that needs it.
+     at() is cheap and draws no random number, so reading ahead is free. */
+  st.warm = function(clips, urgent){
+    if (st.R < 2 || !B.paintAsync) return;
+    var seen = {};
+    clips.forEach(function(c){
+      if (!c || typeof c.at !== 'function') return;
+      for (var t = 0; t < Math.min(c.len || 1, 120); t++) {
+        var sx; try { sx = c.at(t); } catch (e) { return; }
+        (sx && sx.actors || []).forEach(function(a){
+          var who = a.who === 'me' ? opts.me : a.who, k = a.pose + '|' + (who && who.num);
+          if (!who || seen[k]) return; seen[k] = 1;
+          sprite(who, a.pose, st.yaw, st.R, urgent);
+        });
+      }
+    });
+  };
   st.play = function(clip, done){
     cancelAnimationFrame(st.raf); clearTimeout(st.timer);
+    st.warm([clip], true);
     YAW_NOW = st.yaw;
     var t = 0, last = 0, acc = 0, per = TICK * (clip.slow || 1);
     var cues = clip.cues || {};
@@ -507,6 +653,7 @@ function stage(host, opts){
   };
   /* A run of clips, one after another. */
   st.run = function(list, done){
+    st.warm(list, true);
     var i = 0;
     (function next(){
       if (st.dead) return;

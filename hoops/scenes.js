@@ -169,6 +169,12 @@ var CSS = [
 '.sc-pfront .sc-pset{clip-path:inset(var(--cut) 0 0 0);}',
 '.scov:has(.sc-pix) .sc-hud{background:#05070d;box-shadow:0 3px 0 0 #0b0e1a;}',
 '.sc-pset img{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;}',
+/* THE LENS (court.js does the same): the set behind the cast is a little out
+   of focus and darker, the furniture in front of them stays sharp, and the
+   corners fall off, so the sharp traced figures are the picture */
+'.sc-pix > .sc-pset img{filter:blur(calc(var(--px,4px) * .32)) brightness(.86) saturate(1.08);}',
+'.sc-pix::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:3;background:radial-gradient(ellipse 75% 70% at 50% 52%,rgba(3,4,10,0) 55%,rgba(3,4,10,.5) 100%);}',
+'@media (prefers-reduced-motion:reduce){.sc-pix > .sc-pset img{filter:brightness(.86);}}',
 '.sc-pboard{position:absolute;left:50%;transform:translateX(-50%);padding:calc(var(--px,4px)*1.5) calc(var(--px,4px)*3);background:#05070d;color:#ffd36b;font-family:var(--k-f-pixel,"Press Start 2P",monospace);font-size:max(9px,calc(var(--px,4px)*2.2));line-height:1;white-space:nowrap;text-shadow:0 0 6px rgba(255,190,60,.6);',
 '  box-shadow:0 calc(var(--px,4px)*-1) 0 0 var(--c1),0 var(--px,4px) 0 0 var(--c1),calc(var(--px,4px)*-1) 0 0 0 var(--c1),var(--px,4px) 0 0 0 var(--c1);}',
 '.sc-pboard.sc-pscreen{background:transparent;box-shadow:none;color:#fff;text-shadow:calc(var(--px,4px)*.6) calc(var(--px,4px)*.6) 0 rgba(0,0,0,.6);font-size:max(11px,calc(var(--px,4px)*3.4));}',

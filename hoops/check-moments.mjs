@@ -297,8 +297,8 @@ async function browser() {
   const pw = createRequire('/opt/node22/lib/node_modules/')('playwright');
   const b = await pw.chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
   const SHELL = '<!doctype html><meta charset="utf-8"><body style="margin:0;background:#000"><div id=h style="position:relative;width:100vw;height:100vh"></div></body>';
-  async function open(w, h, reduced) {
-    const ctx = await b.newContext({ viewport: { width: w, height: h }, reducedMotion: reduced ? 'reduce' : 'no-preference' });
+  async function open(w, h, reduced, dpr) {
+    const ctx = await b.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: dpr || 1, reducedMotion: reduced ? 'reduce' : 'no-preference' });
     const page = await ctx.newPage();
     const boom = [];
     page.on('pageerror', (e) => boom.push(String(e).slice(0, 160)));
@@ -494,6 +494,26 @@ async function browser() {
     ok(boom.length === 0, `no page errors (${boom.join(' | ') || 'none'})`);
     await ctx.close();
   }
+  section('11. the court is traced fine, like a console at its own resolution');
+  {
+    const { ctx, page, boom } = await open(390, 760, false, 3);
+    const r = await page.evaluate((ME) => new Promise((done) => {
+      const host = document.getElementById('h'); host.innerHTML = '';
+      const m = window.RTF_COURT.moment(host, { kind: 'three', rating: 72, rateName: 'Shooting', room: 'nba', c1: ME.c1, c2: ME.c2, oc: '#C8102E', me: ME, bug: { home: 'MIL', away: 'CHI', clock: '0:07' }, intro: 'Go.' }, { resolve: () => ({ made: true }), done: () => {} });
+      setTimeout(() => {
+        const cv = host.querySelector('.ct canvas'), css = parseFloat(cv.style.width), dev = css * devicePixelRatio / cv.width;
+        m.stop(); done({ w: cv.width, css, dev });
+      }, 2500);
+    }), ME);
+    /* a 390 wide phone draws a 3 CSS pixel cell (130 cells across), so a court
+       traced fine holds at least 2 canvas pixels a cell, and on a 3x screen a
+       canvas pixel is a whole number of device pixels */
+    ok(Math.abs(r.dev - Math.round(r.dev)) < 0.01, `a fine pixel is whole device pixels (${r.dev})`);
+    ok(r.w >= 2 * Math.round(r.css / 3), `the court canvas holds at least two fine pixels a cell (${r.w} for ${r.css} CSS pixels)`);
+    ok(!boom.length, 'and nothing threw (' + boom.join(' | ') + ')');
+    await ctx.close();
+  }
+
   await b.close();
 }
 if (!QUICK) await browser();
