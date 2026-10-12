@@ -14,6 +14,7 @@ name: Hoops checks
 #   node hoops/check-moments.mjs --quick the touch, the moments, the frames
 #   node hoops/check-economy.mjs        the coin ledger, the daily rule, the merge, the faucet
 #   node hoops/check-wardrobe.mjs       every item painted, in every pose, on every build
+#   node hoops/check-closet.mjs         what he owns and wears, two devices, the closet on a phone
 #   node hoops/check-story.mjs --quick  the story engine: order, arcs, traits, people, league
 #   node hoops/check-rosters.mjs        a career joins today's real rosters
 #   node hoops/sim-career.mjs           a thousand careers against the story bible
@@ -111,6 +112,11 @@ jobs:
       # and pose, stays on the grid, and never dresses a real player.
       - name: The wardrobe
         run: node hoops/check-wardrobe.mjs
+
+      # Only what he owns is ever saved or drawn, two devices merge without
+      # losing anything, and the closet wears a piece on a press.
+      - name: The closet
+        run: node hoops/check-closet.mjs
 
       # The story engine holds together: events are data, every card says
       # when it is and the story happens in order, arcs end more than one way,

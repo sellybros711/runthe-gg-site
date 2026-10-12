@@ -169,10 +169,11 @@ var UX = Math.sin(PSI), UY = Math.cos(PSI) * SN_, VX = -Math.cos(PSI), VY = Math
 var SLOPE = UY / UX;
 function sprite(who, pose, yaw){
   if (yaw == null) yaw = CAM.yaw;
-  var k = JSON.stringify([who.look, who.c1, who.c2, who.num, pose, who.age, who.dress || '', who.faceless ? 1 : 0, yaw]);
+  var k = JSON.stringify([who.look, who.c1, who.c2, who.num, pose, who.age, who.dress || '', who.faceless ? 1 : 0, yaw, who.faceless ? null : who.cwear || null]);
   if (SPR[k]) return SPR[k];
   if (++SPRN > 400) { SPR = {}; SPRN = 0; }
-  var g = B.paint(who.look, { pose: pose, c1: who.c1, c2: who.c2, num: who.num, age: who.age, dress: who.dress, faceless: who.faceless, yaw: yaw });
+  /* the court gear he chose (hoops/wardrobe.js); a real man has none */
+  var g = B.paint(who.look, { pose: pose, c1: who.c1, c2: who.c2, num: who.num, age: who.age, dress: who.dress, faceless: who.faceless, yaw: yaw, cwear: who.faceless ? null : who.cwear });
   var cv = document.createElement('canvas'); cv.width = B.W; cv.height = B.H;
   var c = cv.getContext('2d');
   for (var y = 0; y < B.H; y++) for (var x = 0; x < B.W; x++) { var col = g[y][x]; if (col) { c.fillStyle = col; c.fillRect(x, y, 1, 1); } }

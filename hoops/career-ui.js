@@ -861,7 +861,7 @@ function portrait(L, o){
   o = o || {};
   /* the first scene walks him on: paint that in the background now */
   try { if (window.RTF_SCENES && window.RTF_SCENES.warm) window.RTF_SCENES.warm(L); } catch (x) {}
-  return B.img(lookOf(L), { c1: k.primary, c2: k.secondary, num: L.num, age: L.age, pose: o.pose || 'stand', scale: o.scale || 3 });
+  return B.img(lookOf(L), dressed({ c1: k.primary, c2: k.secondary, num: L.num, age: L.age, pose: o.pose || 'stand', scale: o.scale || 3 }));
 }
 /* A jersey in the club's colours with your number on it. The fallback
    picture, and the shape the hero used before the player was drawn. */
@@ -2047,25 +2047,42 @@ function scene(res){
 }
 
 /* ─── the Look sheet, mid-career ─────────────────────────────────────────── */
-function openLook(){
+function openLook(tab){
   var L = store().cur;
   if (!L || !window.RTF_BALLER) return;
   var look = Object.assign({}, window.RTF_BALLER.normal(lookOf(L)));
   var k = C.colorsOf(L);
-  var first = true;
+  var first = true, tabNow = tab || 'body';
+  var closet = !!(window.RTF_CLOSET && window.RTF_WARD);
+  /* the body and face are this career's; the clothes are the account's */
+  var TABS = [['body', 'Body'], ['street', 'Off court'], ['court', 'On court']];
   var draw = function(){
-    var html = '<h3 class="k-h1">Your look</h3><p class="cash">How you look on the floor and in every scene.</p>'
+    var tabs = closet ? '<div class="k-tabs cr-ltabs" role="tablist">' + TABS.map(function(t){
+      return '<button type="button" class="k-tab" role="tab" data-ltab="' + t[0] + '" aria-selected="' + (t[0] === tabNow) + '">' + t[1] + '</button>'; }).join('') + '</div>' : '';
+    var html = '<h3 class="k-h1">Your look</h3>' + tabs;
+    if (tabNow === 'body' || !closet) html += '<p class="cash">How you look on the floor and in every scene.</p>'
       + lookRows(look, k.primary, k.secondary, L.num)
       + '<div class="cr-btnrow" style="margin:14px 0 0"><button class="k-btn" id="cr-look-save" type="button">Save</button><button class="k-btn k-sec" id="cr-sheet-x" type="button">Cancel</button></div>';
+    else html += '<div id="cr-closet"></div><div class="cr-btnrow" style="margin:14px 0 0"><button class="k-btn" id="cr-sheet-x" type="button">Done</button></div>';
     if (first) { openSheet(html, 'Your look'); first = false; }
     else $('cr-sheet').querySelector('.in').innerHTML = html;
     var sh = $('cr-sheet');
-    wireLook(sh, look, draw);
-    $('cr-look-save').onclick = function(){ C.setLook(L, look); save(); closeOff(); render(); };
-    $('cr-sheet-x').onclick = closeOff;
+    sh.querySelectorAll('[data-ltab]').forEach(function(b){ b.onclick = function(){ tabNow = b.getAttribute('data-ltab'); draw(); }; });
+    if (tabNow === 'body' || !closet) {
+      wireLook(sh, look, draw);
+      $('cr-look-save').onclick = function(){ C.setLook(L, look); save(); closeOff(); render(); };
+      $('cr-sheet-x').onclick = closeOff;
+    } else {
+      window.RTF_CLOSET.pane($('cr-closet'), { ctx: tabNow, look: withSize(look, L), c1: k.primary, c2: k.secondary, num: L.num });
+      /* what he put on is saved already: Done only has to show it */
+      $('cr-sheet-x').onclick = function(){ closeOff(); render(); };
+    }
   };
   draw();
 }
+/* Paint options for the invented player in a look (hoops/wardrobe.js). A
+   page without the closet draws him as he always was. */
+function dressed(o, ctx){ return window.RTF_WARD ? window.RTF_WARD.dress(o, ctx || 'court') : o; }
 function doAct(id){
   var L = store().cur;
   if (!L) return;
@@ -2792,7 +2809,7 @@ function heroCast(L){
   var key = JSON.stringify([look, k.primary, k.secondary, L ? L.num : 0]);
   if (cast.key === key) return;
   cast.key = key;
-  var mid = B.img(look, { c1: k.primary, c2: k.secondary, num: L ? L.num : 23, age: L ? L.age : 20, pose: 'ball', scale: 5 });
+  var mid = B.img(look, L ? dressed({ c1: k.primary, c2: k.secondary, num: L.num, age: L.age, pose: 'ball', scale: 5 }) : { c1: k.primary, c2: k.secondary, num: 23, age: 20, pose: 'ball', scale: 5 });
   box.innerHTML = '<div class="ch-p s l">' + castFig(0) + '</div><div class="ch-p c">' + mid + '</div><div class="ch-p s r">' + castFig(1) + '</div>';
   cast.n = 0;
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;

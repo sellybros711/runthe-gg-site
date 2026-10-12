@@ -139,6 +139,8 @@ function cloudAdopt(by, claim){
   if (!onScreen('cq')) cq = null;
   if (!onScreen('fixrun')) { fx = null; fxSt = null; fxDayPz = null; }
   if (!onScreen('psend')) psPz = null;
+  if (window.RTF_WARD) window.RTF_WARD.reload();
+  if (window.RTF_WALLET) window.RTF_WALLET.reload();
   if (window.RTF_CAREER_UI) window.RTF_CAREER_UI.reload();
   var home = $('s-home');
   if (home && home.classList.contains('active')) renderHome();

@@ -2602,7 +2602,7 @@
     },
     "../court.js": {
       "v": "6",
-      "sha": "a7ffd0a06136d4c7"
+      "sha": "a855b07b9be28b42"
     },
     "../ticker.js": {
       "v": "2",
@@ -2638,13 +2638,25 @@
       "v": "23",
       "sha": "bec75b32b8e39f66"
     },
+    "economy.js": {
+      "v": "1",
+      "sha": "412c0e03ebc292c2"
+    },
+    "catalog.js": {
+      "v": "1",
+      "sha": "31f29f2f9eb5589f"
+    },
+    "wardrobe.js": {
+      "v": "1",
+      "sha": "77c0c6ef0cb582f6"
+    },
     "board.js": {
       "v": "8",
       "sha": "b4dfc54e5d9481a7"
     },
     "auth.js": {
-      "v": "4",
-      "sha": "181f307ca7be7113"
+      "v": "5",
+      "sha": "13975ab64bcd45eb"
     },
     "/assets/cloudsave.js": {
       "v": "2",
@@ -2655,12 +2667,12 @@
       "sha": "260c8dc0bc33a527"
     },
     "cloud.js": {
-      "v": "5",
-      "sha": "c78aebc5a144ff1d"
+      "v": "6",
+      "sha": "ef1dc4f60b3b480b"
     },
     "modes-ui.js": {
-      "v": "25",
-      "sha": "4db384c97aabf4f2"
+      "v": "26",
+      "sha": "29337d5c079f03cc"
     },
     "career-kit.js": {
       "v": "9",
@@ -2671,20 +2683,24 @@
       "sha": "fbf8ac8bab981947"
     },
     "court.js": {
-      "v": "9",
-      "sha": "a7ffd0a06136d4c7"
+      "v": "10",
+      "sha": "a855b07b9be28b42"
     },
     "ticker.js": {
       "v": "2",
       "sha": "36759d12852558b2"
     },
     "scenes.js": {
-      "v": "17",
-      "sha": "e6873cab44020ada"
+      "v": "18",
+      "sha": "f17a858cad115a76"
+    },
+    "closet-ui.js": {
+      "v": "1",
+      "sha": "f3a8aa8cdd21c694"
     },
     "career-ui.js": {
-      "v": "50",
-      "sha": "decc2ed7afe3f383"
+      "v": "51",
+      "sha": "00bf8a9e1ac644fd"
     },
     "data/players.json": {
       "v": "5",

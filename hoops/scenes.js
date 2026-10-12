@@ -302,6 +302,13 @@ function confettiHTML(c){
 // ─── the context a scene is told in ─────────────────────────────────────────
 
 function last(name){ var p = String(name || '').trim().split(/\s+/); return p[p.length - 1] || name; }
+/* WHERE HE IS DECIDES WHAT HE WEARS. Off the floor (his place, a hotel, the
+   front office, the podium) he is in his own clothes; on it, in the uniform
+   and his court gear. A suit or the draft cap is the scene's call and stays.
+   Only he is dressed: a rival or a real man is drawn as he always was. */
+var STREET_ROOMS = { home: 1, hotel: 1, office: 1, press: 1 };
+function wearCtx(room, pose){ return pose === 'suit' || pose === 'cap' ? 'suit' : STREET_ROOMS[room] ? 'street' : 'court'; }
+function dressMe(o, lookCtx){ return window.RTF_WARD && lookCtx !== 'suit' ? window.RTF_WARD.dress(o, lookCtx) : o; }
 function ctxOf(L, extra){
   var k = C.colorsOf(L);
   var team = L.team || (L.draft && L.draft.team) || null;
@@ -775,7 +782,7 @@ function playSpec(card, n, c){
   return { kind: kind, rating: rating || 60, rateName: rn, room: room, c1: c.c1, c2: c.c2, oc: ok ? ok.primary : '#3a4566', oc2: ok ? ok.secondary : '#c9ccd6',
     roomC1: road && ok ? ok.primary : c.c1, roomC2: road && ok ? ok.secondary : c.c2,
     confetti: card.id !== 'moment', seed: seed, look: cx.look || null, mate: mate, nerves: nerves,
-    me: { look: c.look, c1: c.c1, c2: c.c2, num: c.num, age: c.age },
+    me: dressMe({ look: c.look, c1: c.c1, c2: c.c2, num: c.num, age: c.age }, 'court'),
     bug: { home: home || 'YOU', away: opp || 'OPP', period: clock[0], clock: clock[1] },
     pressure: pressure,
     intro: (INTRO[kind] || INTRO.mid)[vs % (INTRO[kind] || INTRO.mid).length],
@@ -947,7 +954,8 @@ function play(beats, ctx, opts){
   }
   function setCast(bt){
     var old = bt.club === 'from' && ctx.fc1;
-    var k = (bt.pic || '') + '|' + (bt.pose || '') + '|' + (old ? 'from' : '');
+    var lookCtx = wearCtx(bt.room || roomName, bt.pose);
+    var k = (bt.pic || '') + '|' + (bt.pose || '') + '|' + (old ? 'from' : '') + '|' + lookCtx;
     var el = $('.sc-cast');
     if (k === castKey) {
       var imgs = el.querySelectorAll('img,canvas');
@@ -963,7 +971,7 @@ function play(beats, ctx, opts){
        the chest breathes a pixel, the eyes blink. A cached baller.js older
        than live() still draws them the old way. */
     var fig = B.live || B.img;
-    var me = function(){ return fig(ctx.look, { c1: old ? ctx.fc1 : ctx.c1, c2: old ? ctx.fc2 : ctx.c2, num: ctx.num, pose: bt.pose || 'stand', age: ctx.age, scale: 6, enter: enter }, enter ? '' : 'in'); };
+    var me = function(){ return fig(ctx.look, dressMe({ c1: old ? ctx.fc1 : ctx.c1, c2: old ? ctx.fc2 : ctx.c2, num: ctx.num, pose: bt.pose || 'stand', age: ctx.age, scale: 6, enter: enter }, lookCtx), enter ? '' : 'in'); };
     var rv = function(){
       var r = ctx.rival, last = r && r.seasons && r.seasons[r.seasons.length - 1];
       var k2 = last && E.clubSkin ? E.clubSkin(last.team) : { primary: '#2b3242', secondary: '#c9ccd6' };
@@ -998,7 +1006,7 @@ function play(beats, ctx, opts){
     $('.sc-cast').style.visibility = 'hidden';
     var x = {}; for (var k in ctx) x[k] = ctx[k];
     for (var k2 in bt.sx || {}) if (bt.sx[k2] != null) x[k2] = bt.sx[k2];
-    shotLive = CT.ceremony(host, key, x, { room: pixKind(bt.room || roomName, ctx), me: { look: ctx.look, c1: ctx.c1, c2: ctx.c2, num: ctx.num, age: ctx.age } });
+    shotLive = CT.ceremony(host, key, x, { room: pixKind(bt.room || roomName, ctx), me: dressMe({ look: ctx.look, c1: ctx.c1, c2: ctx.c2, num: ctx.num, age: ctx.age }, 'court') });
     if (!shotLive) clearShot();
   }
   /* Tale of the tape: you and your draft-class rival, side by side, on the

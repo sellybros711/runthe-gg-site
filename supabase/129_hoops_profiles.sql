@@ -65,6 +65,11 @@ grant select on public.rtf_profiles to anon, authenticated;
 -- camera never resends the jersey, and a page a version behind that knows
 -- nothing about a column added later cannot wipe it by leaving it out.
 -- Returns the whole row, so a device that has just written holds the answer.
+-- 139 widens this function with the two loadouts. Re-running this file after
+-- it would leave two overloads, which makes a call by name ambiguous, so the
+-- wider one goes first: re-run 139 after this file to put it back (the
+-- preflight's 139 row reads NO until you do).
+drop function if exists public.rtf_set_profile(text,text,text,text,text,text,boolean,jsonb,jsonb);
 create or replace function public.rtf_set_profile(
   p_club text default null, p_num text default null, p_arena text default null,
   p_camera text default null, p_last_club text default null, p_last_era text default null,
