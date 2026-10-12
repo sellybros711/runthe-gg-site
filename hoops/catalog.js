@@ -17,6 +17,7 @@
  *
  * The starter pieces are free and owned by everyone. Exclusives (excl) are
  * earned in a career (earn names the feat) and are never sold or packed.
+ * Everything else comes from packs ONLY: no piece is bought outright.
  */
 (function(){
 'use strict';
@@ -582,7 +583,8 @@ ITEMS.forEach(function(it){ BY_ID[it.id] = it; });
 /* The free starter loadout for each look. */
 var STARTER_STREET = { top: 'st_tee_white', bottom: 'st_jeans', shoes: 'st_sneaker_white' };
 
-/* sold: in the shop and in packs. Exclusives and free pieces are neither. */
+/* sold: in the packs, which are the only way to get a piece (nothing is
+   bought outright). Exclusives and free pieces are neither. */
 function sold(it){ return !!it && !it.free && !it.excl; }
 function dropLive(id, day){ var d = DROPS.filter(function(x){ return x.id === id; })[0]; return !!d && day >= d.from && day <= d.to; }
 

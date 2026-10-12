@@ -829,7 +829,23 @@ var CSS = [
 '#s-car .cr-cta{background:linear-gradient(180deg,rgba(7,9,18,0),#070912 40%);}',
 '/* sheets wear the same plate */',
 '#rtf-locker button{border-radius:0;}',
-'.lk-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;}',
+'.lk-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px;}',
+'.lk-ban{position:relative;flex:1;min-width:0;height:128px;display:flex;align-items:flex-end;overflow:hidden;padding:0 0 10px 2px;}',
+'.lk-rays{position:absolute;right:12%;top:50%;width:260px;height:260px;margin:-130px -130px 0 0;border-radius:50%;opacity:.3;pointer-events:none;background:repeating-conic-gradient(from 0deg,#f2c23a 0deg 7deg,transparent 7deg 22deg);-webkit-mask:radial-gradient(circle,#000 10%,transparent 62%);mask:radial-gradient(circle,#000 10%,transparent 62%);animation:lk-spin 30s linear infinite;}',
+'@keyframes lk-spin{to{transform:rotate(360deg);}}',
+'.lk-fan{position:absolute;right:4%;top:22px;width:150px;height:108px;}',
+'.lk-fp{position:absolute;left:50%;top:6px;width:46px;margin-left:-23px;transform-origin:50% 140%;transform:rotate(calc((var(--i) - (var(--n) - 1) / 2) * 15deg)) translateY(calc(var(--i) * 0px));filter:drop-shadow(0 6px 8px rgba(0,0,0,.6));}',
+'.lk-fp:nth-child(2){top:2px;}.lk-fp:nth-child(3){top:2px;}',
+'.lk-fimg{width:100%;display:block;image-rendering:pixelated;}',
+'.lk-fp::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.3) 50%,transparent 62%);background-size:260% 100%;mix-blend-mode:screen;animation:lk-foil 4.4s ease-in-out infinite;animation-delay:calc(var(--i) * .35s);}',
+'@keyframes lk-foil{0%{background-position:120% 0;}60%,100%{background-position:-60% 0;}}',
+'.lk-tt{position:relative;}',
+'.lk-tt .k-h1{margin:0;text-shadow:0 3px 0 rgba(0,0,0,.6);}',
+'.lk-sub{margin:4px 0 0;font:700 11px var(--k-f-text);text-transform:uppercase;letter-spacing:.12em;color:var(--k-gold);text-shadow:0 2px 0 rgba(0,0,0,.6);}',
+'.lk-tabs .k-tab{display:inline-flex;flex-direction:column;align-items:center;gap:4px;}',
+'.lk-ti{width:22px;height:22px;image-rendering:pixelated;opacity:.7;}',
+'.lk-tabs .k-tab[aria-selected="true"] .lk-ti{opacity:1;filter:drop-shadow(0 0 6px rgba(242,194,58,.7));}',
+'@media (prefers-reduced-motion:reduce){.lk-rays,.lk-fp::after{animation:none!important;}}',
 '#cr-sheet .k-sheet,#rtf-locker .k-sheet{box-shadow:0 -3px 0 0 var(--k-team-ring),inset 0 2px 0 rgba(255,255,255,.06);}',
 ].join('\n');
 (function(){
@@ -2081,7 +2097,7 @@ function openLook(tab){
       $('cr-sheet-x').onclick = closeOff;
     } else {
       if (tabNow === 'shop') window.RTF_SHOP.pane($('cr-closet'), { look: withSize(look, L), c1: k.primary, c2: k.secondary, num: L.num });
-      else window.RTF_CLOSET.pane($('cr-closet'), { ctx: tabNow, look: withSize(look, L), c1: k.primary, c2: k.secondary, num: L.num });
+      else window.RTF_CLOSET.pane($('cr-closet'), { ctx: tabNow, look: withSize(look, L), c1: k.primary, c2: k.secondary, num: L.num, toShop: window.RTF_SHOP ? function(){ tabNow = 'shop'; draw(); } : null });
       /* what he put on is saved already: Done only has to show it */
       $('cr-sheet-x').onclick = function(){ closeOff(); render(); };
     }
@@ -2103,6 +2119,22 @@ function lockerPlayer(){
   if (h && h.look) return { look: B.normal(h.look), c1: h.c1 || '#1d428a', c2: h.c2 || '#ffc72c', num: h.num || 23 };
   return { look: B.normal(B.lookFor('locker')), c1: '#c9ccd6', c2: '#2b3242', num: 23 };
 }
+/* THE BANNER IS THE PACK ART: the four packs fanned in their own light
+   behind the word, so the place the clothes come from is the first thing
+   the Locker says. Drawn from hoops/itemart.js, never a picture file. */
+function lockerBanner(){
+  var A = window.RTF_ART, PK = window.RTF_PACKS;
+  var ids = PK ? PK.IDS.filter(function(id){ return id !== 'season' || PK.available(id); }) : [];
+  var fan = A ? ids.map(function(id, i){ return '<span class="lk-fp" style="--i:' + i + ';--n:' + ids.length + '">' + A.pack(id, 'lk-fimg') + '</span>'; }).join('') : '';
+  return '<div class="lk-ban"><span class="lk-rays" aria-hidden="true"></span><span class="lk-fan" aria-hidden="true">' + fan + '</span>'
+    + '<div class="lk-tt"><h3 class="k-h1">Locker</h3><p class="lk-sub">Every piece comes from a pack.</p></div></div>';
+}
+function lockerTabIcon(id){
+  var A = window.RTF_ART; if (!A) return '';
+  if (id === 'shop') return A.pack('street', 'lk-ti');
+  var slot = id === 'court' ? 'band' : 'top';
+  return '<img class="lk-ti" alt="" src="' + A.iconURL({ id: 'slot:' + slot, slot: slot, k: '', c: ['#c9ccd6', '#7d8396'] }) + '">';
+}
 function openLocker(tab){
   if (!window.RTF_CLOSET || !window.RTF_WARD || !window.RTF_BALLER) return false;
   var sh = document.getElementById('rtf-locker');
@@ -2116,15 +2148,15 @@ function openLocker(tab){
   var now = TABS.some(function(t){ return t[0] === tab; }) ? tab : TABS[0][0];
   var who = lockerPlayer();
   var draw = function(){
-    sh.querySelector('.in').innerHTML = '<div class="lk-head"><h3 class="k-h1">Locker</h3>' + K.closeX('Close the locker', 'lk-x') + '</div>'
-      + '<div class="k-tabs cr-ltabs" role="tablist">' + TABS.map(function(t){
-        return '<button type="button" class="k-tab" role="tab" data-ktab="' + t[0] + '" aria-selected="' + (t[0] === now) + '">' + t[1] + '</button>'; }).join('') + '</div>'
+    sh.querySelector('.in').innerHTML = '<div class="lk-head">' + lockerBanner() + K.closeX('Close the locker', 'lk-x') + '</div>'
+      + '<div class="k-tabs cr-ltabs lk-tabs" role="tablist">' + TABS.map(function(t){
+        return '<button type="button" class="k-tab" role="tab" data-ktab="' + t[0] + '" aria-selected="' + (t[0] === now) + '">' + lockerTabIcon(t[0]) + '<span>' + t[1] + '</span></button>'; }).join('') + '</div>'
       + '<div id="lk-pane"></div>';
     sh.querySelectorAll('[data-ktab]').forEach(function(b){ b.onclick = function(){ now = b.getAttribute('data-ktab'); draw(); }; });
     sh.querySelector('.lk-x').onclick = function(){ if (lockerDlg) { var d = lockerDlg; lockerDlg = null; d.close(); } };
     var o = Object.assign({}, who);
     if (now === 'shop') window.RTF_SHOP.pane(document.getElementById('lk-pane'), o);
-    else window.RTF_CLOSET.pane(document.getElementById('lk-pane'), Object.assign(o, { ctx: now }));
+    else window.RTF_CLOSET.pane(document.getElementById('lk-pane'), Object.assign(o, { ctx: now, toShop: window.RTF_SHOP ? function(){ now = 'shop'; draw(); } : null }));
   };
   draw();
   lockerDlg = K.dialog(sh, { label: 'Locker', onClose: function(){ lockerDlg = null; if (onScreen()) render(); } });

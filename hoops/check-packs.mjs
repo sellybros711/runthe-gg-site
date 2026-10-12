@@ -20,11 +20,13 @@
  *   8. a free pack opens once, keyed, on every device
  *   9. a drop's pieces are only in a pack while the drop is live, and the
  *      seasonal pack only then
- *  10. the door: a guest opens nothing and buys nothing, a buy is keyed and
- *      refused for what is not sold, owned, or too dear
+ *  10. the door: a guest opens nothing; EVERY PIECE IS PACK ONLY, so no
+ *      piece is bought outright by anybody, and the odds the closet prints
+ *      (chance, best) are the odds an open actually rolls
  *  11. the welcome Streetball Pack is granted once by settle
  *  12. the shop on a phone: packs with odds, a free pack opened, the reveal
- *      wearing the piece, the welcome panel, the closet's Buy, nothing wide
+ *      wearing the piece, the welcome panel, the closet's pack panel in
+ *      place of a Buy (its button opens the packs), nothing wide
  */
 import { createRequire } from 'node:module';
 import fs from 'node:fs';
@@ -188,19 +190,35 @@ for (const id of ['street', 'league', 'hof']) {
 {
   W._reset(); localStorage._m = {};
   W.shop._auth(() => false);
-  ok(W.shop.open('street').err === 'signin' && W.shop.buy('tee_black').err === 'signin', '10 a guest opens nothing and buys nothing');
+  ok(W.shop.open('street').err === 'signin', '10 a guest opens nothing');
   W.shop._auth(() => true);
   ok(W.shop.open('street').err === 'coins', '10 an empty wallet opens nothing');
   W.wallet.award('give', 100000, 'x');
-  const it = CAT.item('tee_black'), p = X.priceOf(it);
-  const r = W.shop.buy('tee_black');
-  ok(r.item && W.owns('tee_black') && W.wallet.balance() === 100000 - p, '10 a buy spends the price and the piece is his');
-  ok(W.shop.buy('tee_black').err === 'owned', '10 a piece he has is not bought twice');
-  ok(W.shop.buy('ex_hof_blazer').err === 'notsold' && W.shop.buy('st_tee_white').err === 'notsold', '10 an exclusive or a free piece is not for sale');
-  const dear = CAT.ITEMS.find((i) => CAT.sold(i) && i.rarity === 'legendary' && i.slot !== 'idle');
-  ok(W.shop.buy(dear.id).err === 'coins' && !W.owns(dear.id), '10 a piece he cannot afford is refused');
+  /* PACK ONLY: every piece in the catalogue is refused outright, and nothing
+     is spent or granted by trying */
+  const refused = CAT.ITEMS.filter((it) => W.shop.buy(it.id).err !== 'packonly').map((it) => it.id);
+  ok(!refused.length, '10 no piece is bought outright (' + refused.slice(0, 3).join(', ') + ')');
+  ok(W.wallet.balance() === 100000 && !Object.keys(W.load().own).length, '10 and refusing spent nothing and gave nothing');
+  /* the odds: one open of a pack lands on exactly one piece of the pool */
+  for (const pk of P.IDS.filter((x) => P.available(x))) {
+    const sum = P.pool().reduce((a, it) => a + P.chance(it.id, pk), 0);
+    ok(Math.abs(sum - 1) < 1e-9, '10 the ' + pk + ' pack\'s odds over its pool add to 1 (' + sum + ')');
+  }
+  ok(CAT.ITEMS.filter((it) => !CAT.sold(it)).every((it) => P.best(it.id) === null && P.IDS.every((pk) => P.chance(it.id, pk) === 0)), '10 an exclusive or a starter is in no pack');
+  const leg = P.pool().find((it) => it.rarity === 'legendary');
+  ok(P.best(leg.id).pack === 'hof', '10 a legendary\'s best odds are the Hall of Fame Pack (' + P.best(leg.id).pack + ')');
+  /* and those are the odds open() rolls: a fresh record each time, so pity
+     never steps in, and a seeded stream so the count is the same every run */
+  {
+    let seed = 7; const rng = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+    const tgt = P.pool().find((it) => it.rarity === 'common'), N = 40000, t = Date.now();
+    let hit = 0;
+    for (let i = 0; i < N; i++) { const ww = X.fresh(); X.award(ww, 'mc', 8000, 'x'); const r = P.open({ own: {} }, ww, 'street', { id: 'mc' + i, rng, t }); if (r.item && r.item.id === tgt.id) hit++; }
+    const want = P.chance(tgt.id, 'street') * N, sd = Math.sqrt(want);
+    ok(Math.abs(hit - want) < 4 * sd, '10 one piece turns up as often as chance() says (' + hit + ' against ' + Math.round(want) + ')');
+  }
   const o = W.shop.open('street');
-  ok(!o.err && W.wallet.balance() === 100000 - p - 8000 + (o.refund || 0) && Object.keys(W.load().po).length === 1, '10 the door opens a pack and saves both records');
+  ok(!o.err && W.wallet.balance() === 100000 - 8000 + (o.refund || 0) && Object.keys(W.load().po).length === 1, '10 the door opens a pack and saves both records');
   W._reset(); localStorage._m = {};
 }
 
@@ -282,16 +300,23 @@ async function browser(){
   await page.click('.sh-ov .sh-done');
   const wide = await page.evaluate(() => [...document.querySelectorAll('#cr-sheet *')].filter((el) => { const r = el.getBoundingClientRect(); return r.width && r.right > innerWidth + 1 && !el.closest('.k-tabs'); }).map((e) => e.className).slice(0, 3));
   ok(!wide.length, '12 nothing in the shop runs off a 375px phone (' + wide.join(', ') + ')');
-  /* the closet's Buy */
+  /* the closet has no Buy: a piece he does not own names its pack and the
+     odds, and the panel's button opens the packs */
   await page.click('[data-ltab="street"]');
   await page.waitForSelector('#cr-closet .cl-tile');
   await page.click('#cr-closet [data-slot="top"]');
-  const id = await page.evaluate(() => { const t = [...document.querySelectorAll('#cr-closet .cl-tile.lock')].find((x) => RTF_ECON.priceOf(RTF_CATALOG.item(x.dataset.id)) <= RTF_WALLET.balance() && RTF_CATALOG.sold(RTF_CATALOG.item(x.dataset.id))); return t && t.dataset.id; });
+  const id = await page.evaluate(() => { const t = [...document.querySelectorAll('#cr-closet .cl-tile.lock')].find((x) => RTF_CATALOG.sold(RTF_CATALOG.item(x.dataset.id)) && RTF_PACKS.best(x.dataset.id)); return t && t.dataset.id; });
   await page.click('#cr-closet .cl-tile[data-id="' + id + '"]');
-  await page.click('#cr-closet .cl-buy');
-  ok(await page.evaluate((id) => !RTF_WARD.owns(id), id), '12 the closet\'s Buy asks twice');
-  await page.click('#cr-closet .cl-buy');
-  ok(await page.evaluate((id) => RTF_WARD.owns(id) && JSON.parse(localStorage.getItem('rtf.ward.v1')).w.street.top === id, id), '12 and the second press buys it and puts it on');
+  const pk = await page.evaluate((id) => {
+    const b = RTF_PACKS.best(id), pn = document.querySelector('#cr-closet .cl-pk');
+    return { buy: !!document.querySelector('#cr-closet .cl-buy'), price: /\d+K|Buy/.test(document.querySelector('#cr-closet .cl-grid').innerText), text: pn ? pn.innerText : '',
+      name: RTF_PACKS.packOf(b.pack).name, n: Math.round(1 / b.chance).toLocaleString('en-US') };
+  }, id);
+  ok(!pk.buy && !pk.price, '12 the closet offers no Buy and prints no price on a tile');
+  ok(pk.text.toUpperCase().includes(pk.name.toUpperCase()) && pk.text.includes('1 in ' + pk.n), '12 it names the best pack and the odds of one open (' + pk.text.replace(/\s+/g, ' ') + ')');
+  await page.click('#cr-closet .cl-topacks');
+  await page.waitForSelector('#cr-closet .sh-pack');
+  ok(await page.evaluate((id) => !RTF_WARD.owns(id) && document.querySelector('[data-ltab="shop"]').getAttribute('aria-selected') === 'true', id), '12 and its button opens the packs without granting anything');
   ok(!out.length, '12 no request reached a payment endpoint (' + out.join(', ') + ')');
 
   /* PAID COINS, SHIPPED DARK (Phase 6). Off, the shop draws no bucket and a
