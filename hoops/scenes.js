@@ -38,8 +38,11 @@ if (!E || !C || !B) return;
 var KEY = 'rtf.scenes.v1';
 var REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-function on(){ try { return localStorage.getItem(KEY) !== 'off'; } catch (e) { return true; } }
-function setOn(v){ try { localStorage.setItem(KEY, v ? 'on' : 'off'); } catch (e) {} }
+/* SCENES ARE ALWAYS ON, the owner's call. There is no switch a player can
+   reach. The stored 'off' is read only under automation (navigator.webdriver),
+   because the walks that answer a hundred cards would otherwise sit through a
+   hundred cutscenes. A player who switched them off before this sees them again. */
+function on(){ try { return !(navigator.webdriver && localStorage.getItem(KEY) === 'off'); } catch (e) { return true; } }
 
 // ─── the cast ───────────────────────────────────────────────────────────────
 
@@ -1465,7 +1468,7 @@ function chain(L, res, seen){
 
 window.RTF_SCENES = {
   CAST: CAST, OUTLETS: OUTLETS, SCENES: SCENES, CARD_INTROS: CARD_INTROS, PRESENTABLE: PRESENTABLE,
-  on: on, setOn: setOn, pickScene: pickScene, build: build, chain: chain, play: play, ctxOf: ctxOf, feedFor: feedFor,
+  on: on, pickScene: pickScene, build: build, chain: chain, play: play, ctxOf: ctxOf, feedFor: feedFor,
   isOpen: function(){ return !!(ov && !ov.hidden); },
   /* paint the walk-on ahead of the first scene, with the scene's own colours */
   warm: function(L){ if (!on() || !B.warm || !L) return; var c = ctxOf(L); B.warm(c.look, { c1: c.c1, c2: c.c2, num: c.num, age: c.age, scale: 6 }); },

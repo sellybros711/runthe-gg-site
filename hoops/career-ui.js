@@ -1856,7 +1856,6 @@ function lifeView(L, d){
   var SC = window.RTF_SCENES, SN = window.RTF_SOUND;
   return '<div class="cr-top"><div class="cr-topl"><h2 class="k-h1">Career</h2>' + hud(L) + '</div><div class="cr-topbtns">'
     + (window.RTF_BALLER ? ib('cr-lookbtn', 'shirt', 'Look') : '')
-    + (SC ? ib('cr-scenes', 'film', 'Scenes', { cls: 'cr-scn', dot: 1, attr: 'aria-pressed="' + SC.on() + '" title="Scenes ' + (SC.on() ? 'on' : 'off') + '"' }) : '')
     + (SC && SN ? ib('cr-sound', SN.on() ? 'sound' : 'mute', SN.on() ? 'Sound' : 'Muted', { cls: 'cr-snd', attr: 'aria-pressed="' + SN.on() + '" aria-label="Sound in scenes, ' + (SN.on() ? 'on' : 'off') + '"' }) : '')
     + ib('cr-home', 'home', 'Home', { cls: 'cr-home', attr: 'aria-label="Home"' }) + '</div></div>'
     + '<div class="cr-grid"><div class="cr-side">' + idCard(L) + meters(L, d) + '</div>'
@@ -1872,8 +1871,6 @@ function wireLife(L, d){
   $('cr-home').onclick = goHome;
   var lb = $('cr-lookbtn');
   if (lb) lb.onclick = openLook;
-  var sb = $('cr-scenes');
-  if (sb) sb.onclick = function(){ var SC = window.RTF_SCENES; SC.setOn(!SC.on()); render(); };
   var sn = $('cr-sound');
   if (sn) sn.onclick = function(){ var SN = window.RTF_SOUND; SN.setOn(!SN.on()); if (SN.on()) SN.cue('chime'); render(); };
   var nx = $('cr-next');

@@ -12041,9 +12041,11 @@ the engine's own pending card answered through `C.choose`, so the plain card is 
 screen underneath and a closed scene loses nothing. **Skip never skips a decision**: it jumps
 to the next one, and is hidden while one is up. `chain()` runs a moment straight into the
 next decision (a title into its press conference), and `build()` resolves every line against
-that moment's own context, or a chained scene would tell the first one's facts. Scenes are on
-by default and switched off per device (`rtf.scenes.v1`); check-career's main walk runs with
-them off and 7b runs them on.
+that moment's own context, or a chained scene would tell the first one's facts. **Scenes are
+always on and a player has no switch**, the owner's call. `on()` reads `rtf.scenes.v1 = 'off'`
+only under automation (`navigator.webdriver`), so the walks that answer a hundred cards can
+skip them; check-career's main walk runs with them off and 7b runs them on. A player who
+switched them off before this sees them again.
 
 **The broadcasters are invented, and the coach and the commissioner are the career's.** Their
 plates read `C.myCoach` and `C.say(L, '{commish}')` through `ctxOf`, so a scene and a card name
@@ -12322,7 +12324,7 @@ engine sees no take also asserts it keeps no `L.vu`. The story-off replay is byt
 
 - **The top bar** is the title, one line under it saying where you are (the season and game,
   or the summer, then the club and record; the builder says which step), and square pixel
-  buttons that each wear their word (`k-ib`: Look, Scenes, Sound, Home; Vault and Back
+  buttons that each wear their word (`k-ib`: Look, Sound, Home; Vault and Back
   elsewhere). The ids did not change.
 - **The player card's facts are a spec sheet** (`k-spec`: Age, Role, Coach, Contract,
   Chasing), so the eye finds a contract without reading the coach's name first.
@@ -12602,7 +12604,7 @@ press into a number from -1 to 1 and `C.choose(L, i, { touch })` moves that
 shot's odds by at most `TOUCH` (0.12, or `TOUCH_DUEL` 0.2 on a duel career), with the card's own seeded draw. So a
 perfect release can rim out, a better release can only turn a miss into a make
 (section 2 answers the same card at -1, 0 and 1 from clones), and a touch of
-nought is the card it always was, byte for byte (section 1). Scenes off passes
+nought is the card it always was, byte for byte (section 1). Scenes off (a checker only) passes
 no touch. The simulator passes none, so balance is untouched by the meter.
 
 **MOMENT CARDS GO TO NEW CAREERS ONLY.** `L.opt.moments` is set by `newLife` and
