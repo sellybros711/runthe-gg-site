@@ -920,6 +920,15 @@ visited for a week, a phone that is not the laptop, and a second account signing
 same browser. **None of those throws.** The only symptom is a front page offering to start
 something the player was forty seasons into.
 
+**UNTIL 143 THE SHELF HAD NEVER ACCEPTED A SAVE, FOR ANY GAME.** `ps_save_put` is
+`returns table (ok, slot, progress, ...)`, so `slot` is an OUT variable and its own `where ...
+and slot = p_slot` raised "column reference slot is ambiguous" on every call: 102's `used`
+trap at a second function. Read off the live database, `ps_saves` held zero rows. Every caller
+fails soft, so nothing said so; it was reported as Putt Putt progress resetting to hole 1 on a
+tester's second device. `supabase/143_ps_save_put_fix.sql` qualifies every column, preflight
+row 57 asks the body, and `supabase/test/ps_saves_test.sql` (on `ps_saves_base.sql`) fails on
+103 alone. `.github/workflows/putt-diag.yml` reads the shelf, read-only.
+
 **localStorage is still written first and synchronously, and that is deliberate.** A dynasty
 autosaves on every cut and every signing, and a game that waited on a round trip for each of
 those would be worse than one that loses a save. The browser copy is a cache of the table
@@ -20321,6 +20330,14 @@ The page writes localStorage first and never waits on the network. The host hand
   either copy. A refused write hands back the stored record, which is merged in and sent again, at most
   three times running.
 - **Every call fails soft.** null is no opinion and the local record stands.
+- **The account's record lands after the first screen, so the screen has to look again** (`pulled()`). The game
+  opens on the trail to THIS browser's frontier, and the pull only redrew the map. A phone whose copy was behind
+  (a new browser, or Safari evicting a site not visited for a week) stood on the trail to hole 1 with the
+  progress sitting on the server. A tester reported it as being reset to level 1. A trail opened by `home()` now
+  walks on to the new frontier when the pull moves it; one walked on purpose from the map is left alone.
+- **A browser that will not save keeps the session in memory** (`praw`, `pwrite`). Every read is fresh from
+  localStorage, so a setItem that throws used to hand back the old record on the next read. Writes are mirrored
+  in memory and a refused key is read from the mirror, and the cloud copy is sent from that same read.
 
 **Every putt is saved, and the game reopens on the hole in progress** (`saveCur`, `st.cur`). The hole,
 the strokes and where the ball lies go into the Tour record when a putt is struck (ball still at its

@@ -668,7 +668,15 @@ check_rows(sort, migration, what, breaks, ok) as (
   (56, '142_hoops_pass',
       'the Floor Pass premium lane can be granted as a product',
       'Needed before the Floor Pass goes on sale: a paid pass cannot be written to premium_unlocks.',
-      (select count(*) > 0 from con where name = 'premium_unlocks_product_ck' and def like '%rtf_pass%'))
+      (select count(*) > 0 from con where name = 'premium_unlocks_product_ck' and def like '%rtf_pass%')),
+
+  -- 103's ps_save_put raised "column reference slot is ambiguous" on every call,
+  -- so row 12 read yes over a shelf nothing could write to. Asked of the BODY,
+  -- because the broken function and the fixed one have the same name.
+  (57, '143_ps_save_put_fix',
+      'ps_save_put can actually write a save',
+      'NO run is kept against the account in ANY game. Every save is in one browser only.',
+      (select count(*) > 0 from proc where name = 'ps_save_put' and body like '%ps_saves_pkey%'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

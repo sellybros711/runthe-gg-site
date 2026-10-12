@@ -60,7 +60,7 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- The Putting Green: a tester preview. It draws nothing until puttOn() opens it (see PUTT_TESTERS). -->
-<script defer src="putt/putt.js?v=60"></script>
+<script defer src="putt/putt.js?v=61"></script>
 <script defer src="putt/land.js?v=6"></script>
 <script defer src="putt/hole3d.js?v=11"></script>
 <script defer src="putt/trail.js?v=20"></script>
@@ -3011,6 +3011,11 @@ window.GA_ID='G-L29P5MRWKE';
   body.hvfull .hvfs[data-hvl="phone"] .hvboard::-webkit-scrollbar{display:none}
   body.hvfull .hvfs[data-hvl="phone"] .hvboard.nodesc{bottom:calc(var(--hvdock,90px) + 8px)}
   body.hvfull .hvfs[data-hvl="phone"] .hvboard > *{flex:0 0 auto}
+  /* YOUR score is never the part that scrolls off: on the one-line bar your row comes straight after THRU,
+     whatever the standings order is, and the target goes to the end (owner: see your score at all times) */
+  body.hvfull .hvfs[data-hvl="phone"] .hvboard > .hvbcap{order:-3}
+  body.hvfull .hvfs[data-hvl="phone"] .hvboard > .hvbrow.mine{order:-2}
+  body.hvfull .hvfs[data-hvl="phone"] .hvboard > .hvbtarget{order:5}
   body.hvfull .hvfs[data-hvl="phone"] .hvbcap,
   body.hvfull .hvfs[data-hvl="phone"] .hvbtarget{padding:0 2px; font-size:10px}
   body.hvfull .hvfs[data-hvl="phone"] .hvbrow{padding:3px 6px; gap:5px}

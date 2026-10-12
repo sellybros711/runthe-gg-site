@@ -2124,7 +2124,21 @@ function open(host){
   syncPutters();
   if (!resumeCur()) showMenu();
   // the account's record may be ahead of this browser's: redraw the map if the merge moved anything
-  cloudPull().then(function(moved){ if (moved) syncPutters(); if (moved && S && S.screen === 'menu' && !S.ov.querySelector('.pp-sheet')) showHub(S.tour); });
+  cloudPull().then(function(moved){ if (moved) syncPutters(); if (moved) pulled(); });
+}
+/* THE ACCOUNT'S RECORD LANDS AFTER THE FIRST SCREEN IS DRAWN. The game opens on the trail to this browser's
+   frontier, and on a phone whose copy is behind the account's (a new browser, or Safari clearing a site not
+   visited for a week) that is the trail to hole 1. Reported by a tester as progress reset to level 1: the
+   record was on the server the whole time and the screen never looked again. So a pull that moved anything
+   redraws the map, or walks the trail on to the new frontier, unless a hole or a sheet is up. */
+function pulled(){
+  if (!S || S.ov.querySelector('.pp-sheet')) return;
+  if (S.screen === 'menu') return showHub(S.tour);
+  if (S.screen !== 'trail' || !S.trailTo || !S.trailTo.home) return;   // a trail walked on purpose from the map is left alone
+  var st = pload();
+  if (st.cur && resumeCur()) return;   // a hole in progress on another device
+  var t = S.trailTo.tid, TR = tourOf(t), n = Math.min(TR.levels.length, frontier(st.tours[TR.id], TR));
+  if (n !== S.trailTo.to) home(t);
 }
 function close(){
   if (!S) return;
@@ -2196,16 +2210,23 @@ function pmerge(st, g){
   st.rewards = st.rewards || []; (g.rewards || []).forEach(function(r){ if (st.rewards.indexOf(r) < 0) st.rewards.push(r); });
   if (g.streak && (!st.streak || (g.streak.best || 0) > (st.streak.best || 0))) st.streak = Object.assign({}, st.streak || {}, { best:g.streak.best });
   return st; }
-function pload(){ var st = null, key = pkey(); try{ st = JSON.parse(localStorage.getItem(key)); }catch(e){} st = st || {};
+/* A BROWSER THAT WILL NOT SAVE MUST NOT LOSE THE SESSION. Every load reads the record afresh, so a setItem that
+   throws (storage full, a private window, Safari having evicted the site) would hand back the old record on the
+   next read and the hole just won would be gone. So every write is mirrored in memory, and a key the browser
+   refused is read from the mirror for the rest of the page's life. The cloud copy is sent from the same read. */
+var PMEM = {}, PBAD = {};
+function praw(key){ key = key || pkey(); if (PBAD[key]) return PMEM[key] || null; try{ return localStorage.getItem(key); }catch(e){ return PMEM[key] || null; } }
+function pwrite(st, key){ key = key || pkey(); var v = JSON.stringify(st); PMEM[key] = v; try{ localStorage.setItem(key, v); delete PBAD[key]; }catch(e){ PBAD[key] = 1; } }
+function pload(){ var st = null, key = pkey(); try{ st = JSON.parse(praw(key)); }catch(e){} st = st || {};
   if (key !== 'bag_ppt_v1'){ var g = null; try{ g = JSON.parse(localStorage.getItem('bag_ppt_v1')); }catch(e){}
-    if (g && g.v === 2 && g.tours){ if (st.v !== 2){ st = { v:2, tours:{} }; } pmerge(st, g); try{ localStorage.setItem(key, JSON.stringify(st)); localStorage.removeItem('bag_ppt_v1'); }catch(e){} } }
+    if (g && g.v === 2 && g.tours){ if (st.v !== 2){ st = { v:2, tours:{} }; } pmerge(st, g); pwrite(st, key); if (!PBAD[key]) try{ localStorage.removeItem('bag_ppt_v1'); }catch(e){} } }
   if (st.v !== 2){ st.tours = {}; delete st.lv; delete st.best; delete st.ace; delete st.paid; delete st.wpaid; st.v = 2; }
   st.tours = st.tours || {}; Object.keys(TOURS).forEach(function(k){ var t = st.tours[k] = st.tours[k] || {}; t.lv = t.lv || 1; t.best = t.best || {}; t.ace = t.ace || {}; t.paid = t.paid || {}; t.wpaid = t.wpaid || {}; t.tries = t.tries || {}; t.lv = TOURS[k].lab ? TOURS[k].levels.length : frontier(t, TOURS[k]); });
   st.daily = st.daily || {}; st.rewards = st.rewards || []; st.streak = st.streak || { n:0, last:null, best:0 };
   if (st.lives == null) st.lives = livesMax();
   if (st.refillAt && Date.now() >= st.refillAt && !st.lsrv){ st.lives = livesMax(); st.refillAt = null; st.lt = Date.now(); psave(st); }
   return st; }
-function psave(st){ try{ localStorage.setItem(pkey(), JSON.stringify(st)); }catch(e){} cloudPush(); }
+function psave(st){ pwrite(st); cloudPush(); }
 /* THE RECORD IS THE ACCOUNT'S, ON THE SERVER. A signed in player's record goes up to ps_saves (103, game
    'putt', slot 'tour') after every save and comes down on every open and every sign in, so a cleared
    browser or a second phone starts where the account left off. The local copy is still written first
@@ -2236,7 +2257,7 @@ function cloudMerge(st, g){ if (!g || g.v !== 2 || !g.tours) return st;
 function cloudRow(d){ var r = Array.isArray(d) ? d[0] : d; return r && typeof r === 'object' ? r : null; }
 function cloudPush(){ var uid = cloudUid(); if (!uid || CLOUD.uid !== uid) return;
   if (CLOUD.busy){ CLOUD.again = true; return; }
-  var st = null; try{ st = JSON.parse(localStorage.getItem(pkey())); }catch(e){} if (!st || st.v !== 2) return;
+  var st = null; try{ st = JSON.parse(praw()); }catch(e){} if (!st || st.v !== 2) return;
   CLOUD.busy = true; CLOUD.again = false;
   var done = function(){ CLOUD.busy = false; if (CLOUD.again) cloudPush(); };
   var p = null; try{ p = hostOf().rpc('ps_save_put', { p_game:'putt', p_slot:'tour', p_payload:st, p_progress:cloudProg(st) }); }catch(e){ p = null; }
@@ -2244,7 +2265,7 @@ function cloudPush(){ var uid = cloudUid(); if (!uid || CLOUD.uid !== uid) retur
   p.then(function(d){ var r = cloudRow(d);
     // refused: the server holds more than this copy. Merge it in, keep it, and send the merged record.
     // Bounded, so two copies that cannot agree on a count never send each other round for ever.
-    if (r && r.ok === false && r.payload && cloudUid() === uid){ var cur = pload(); cloudMerge(cur, r.payload); try{ localStorage.setItem(pkey(), JSON.stringify(cur)); }catch(e){} if (++CLOUD.refused <= 3) CLOUD.again = true; }
+    if (r && r.ok === false && r.payload && cloudUid() === uid){ var cur = pload(); cloudMerge(cur, r.payload); pwrite(cur); if (++CLOUD.refused <= 3) CLOUD.again = true; }
     else if (r && r.ok !== false) CLOUD.refused = 0;
     done(); }, done); }
 // bring the account's record down and merge it into this browser's, then send the merged one up
@@ -2254,7 +2275,7 @@ function cloudPull(){ var uid = cloudUid(); if (!uid) return Promise.resolve(fal
   return p.then(function(d){ if (cloudUid() !== uid) return false;
     var r = cloudRow(d), cur = pload(), before = JSON.stringify(cur.tours) + cur.lives;
     if (r && r.payload) cloudMerge(cur, r.payload);
-    try{ localStorage.setItem(pkey(), JSON.stringify(cur)); }catch(e){}
+    pwrite(cur);
     CLOUD.uid = uid; cloudPush();
     return livesSync().then(function(){ var now = pload(); return before !== JSON.stringify(now.tours) + now.lives; }); }, function(){ return false; }); }
 /* LIVES ARE THE SERVER'S, ON ITS CLOCK (138_putt_lives.sql). The Tour record above cannot hold them: its
@@ -2266,7 +2287,7 @@ function cloudPull(){ var uid = cloudUid(); if (!uid) return Promise.resolve(fal
 function livesApply(uid, r){ r = cloudRow(r); if (!r || r.lives == null || cloudUid() !== uid) return false;
   var st = pload(), was = st.lives + '|' + st.refillAt;
   st.lives = +r.lives; st.refillAt = r.refill_at ? Date.parse(r.refill_at) : null; st.lt = Date.now(); st.lsrv = true;
-  try{ localStorage.setItem(pkey(), JSON.stringify(st)); }catch(e){}
+  pwrite(st);
   return was !== st.lives + '|' + st.refillAt; }
 function livesCall(fn, extra){ var uid = cloudUid(); if (!uid) return Promise.resolve(false);
   var p = null; try{ p = hostOf().rpc(fn, Object.assign({ p_max:livesMax() }, extra || {})); }catch(e){ p = null; }
@@ -2384,7 +2405,7 @@ function worldOk(tid){ var TR = TOURS[tid]; if (!TR || TR.lab || tid === 'daily'
 function worldTour(){ if (window.RTT_PUTT_MAPFIRST) return null; var st = pload(), t = (S && S.tour) || st.view || 'main'; if (t === 'members' && !membersOpen() && !membersPreview()) t = 'main'; return worldOk(t) ? t : worldOk('main') ? 'main' : null; }
 function home(tid){ var t = window.RTT_PUTT_MAPFIRST ? null : tid && worldOk(tid) ? tid : worldTour(); if (!t) return showHub(tid);
   var TR = tourOf(t), tp = pload().tours[TR.id], n = Math.min(TR.levels.length, frontier(tp, TR));
-  S.tour = t; return openTrail(t, n - 1); }
+  S.tour = t; var r = openTrail(t, n - 1); if (S.trailTo) S.trailTo.home = true; return r; }
 function showHub(tid){
   stopTrail(); cancelAnimationFrame(S.raf); S.screen = 'menu'; S.play = null; clearInterval(S.tick);
   var st = pload(), dk = today(), dh = dailyHole(dk), dT = THEMES[dh.theme], drec = st.daily[dk];
@@ -2813,6 +2834,7 @@ function openTrail(tid, from){
   var TR = tourOf(tid), N = TR.levels.length; if (from >= N) return showHub(tid);
   stopTrail(); cancelAnimationFrame(S.raf); clearInterval(S.tick); S.play = null; S.screen = 'trail';
   var sp = trailSpec(tid, from), k = trailKey(sp), to = sp.to, L = TR.levels[to - 1], Wd = TR.worlds[sp.w];
+  S.trailTo = { tid:tid, to:to };
   var b0 = balStr(), wlab = TR.lab ? 'Lab' : TR.members ? 'Members Tour' : 'World ' + (sp.w + 1), seen = S.wban === TR.id + ':' + sp.w;
   // walking up to a world still under cloud: nothing on screen names it or its hole until the door opens on it
   var clouded = sp.cross && !revealed(TR, sp.w); if (clouded) seen = true; else S.wban = TR.id + ':' + sp.w;

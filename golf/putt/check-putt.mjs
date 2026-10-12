@@ -727,6 +727,29 @@ if (!args.includes('--no-browser')){
       return { open, lives:local.lives, gets:calls.filter(c => c === 'ps_save_get').length, puts:calls.filter(c => c === 'ps_save_put').length, ace:!!after.tours.main.ace[7], srvLv:srv.payload.tours.main.lv, srvLives:srv.payload.lives }; });
     claim(cld.open >= 30 && cld.lives === 1 && cld.gets >= 1, `a fresh browser takes the account's place and lives from the server (${cld.open} open, ${cld.lives} lives)`);
     claim(cld.ace && cld.srvLv >= 30 && cld.puts >= 2 && cld.srvLives === 0, `a save the server refuses is merged with what it holds and sent again (ace kept ${cld.ace}, server at hole ${cld.srvLv} with ${cld.srvLives} lives)`);
+    // THE GAME OPENS ON THE TRAIL, AND THE ACCOUNT'S RECORD LANDS AFTER IT. A tester's progress read as reset to
+    // level 1: a browser whose copy was behind drew the trail to hole 1 and never looked again once the server's
+    // answer arrived. The stand-in answers late on purpose, so the first screen is the stale one.
+    const lat = await pg.evaluate(async () => { const sb0 = sb, mf = window.RTT_PUTT_MAPFIRST, best = {}; for (let n = 1; n <= 29; n++) best[n] = 3;
+      const payload = { v:2, tours:{ main:{ lv:30, best, ace:{}, paid:{}, wpaid:{} } }, daily:{}, rewards:[] };
+      sb = { rpc(fn){ if (fn === 'ps_save_get') return new Promise(r => setTimeout(() => r({ data:[{ slot:'tour', progress:60, payload }], error:null }), 600));
+        if (fn === 'ps_save_put') return Promise.resolve({ data:[{ ok:true }], error:null });
+        return Promise.resolve({ data:null, error:{ message:'no' } }); } };
+      window.RTT_PUTT_MAPFIRST = false; sbUser = { id:'lat' }; localStorage.removeItem('bag_ppt_v1@lat'); openPutt();
+      // the hole the trail leads to, read off its own goal line (Hole N), so the claim holds on any version of the page
+      const goal = () => { const g = document.querySelector('.pp-tgoal b'), m = g && /Hole (\d+)/.exec(g.textContent); return m ? +m[1] : null; };
+      for (let t = 0; t < 40 && goal() == null; t++) await new Promise(r => setTimeout(r, 25));
+      const first = goal();
+      for (let t = 0; t < 80 && goal() !== 30; t++) await new Promise(r => setTimeout(r, 50));
+      const after = goal(), scr = window.RTT_PUTT._state().screen;
+      // a browser that refuses every write keeps the session's progress in memory, and still sends it up
+      const sent = []; sb = { rpc(fn, a){ if (fn === 'ps_save_put') sent.push(a.p_payload); return Promise.resolve({ data:fn === 'ps_save_put' ? [{ ok:true }] : [], error:null }); } };
+      const set0 = Storage.prototype.setItem; Storage.prototype.setItem = function(k, v){ if (/^bag_ppt_v1@lat/.test(k)) throw new Error('QuotaExceededError'); return set0.call(this, k, v); };
+      window.RTT_PUTT._lose(); localStorage.removeItem('bag_ppt_v1@lat'); const s1 = window.RTT_PUTT.summary(puttHost()); await new Promise(r => setTimeout(r, 100));
+      Storage.prototype.setItem = set0; window.RTT_PUTT.close(); sb = sb0; window.RTT_PUTT_MAPFIRST = mf;
+      return { first, after, scr, lv:s1.lv, sentLv:sent.length ? sent[sent.length - 1].tours.main.lv : null }; });
+    claim(lat.first === 1 && lat.after === 30 && lat.scr === 'trail', `the trail moves on to the account's hole when its record lands after the first screen (hole ${lat.first}, then ${lat.after})`);
+    claim(lat.lv === 30 && lat.sentLv === 30, `a browser that refuses to save keeps the record in memory and still sends it to the account (hole ${lat.lv}, sent ${lat.sentLv})`);
     // LIVES ARE THE SERVER'S (138). A fresh browser takes the server's lives, a lost life is spent there, and a
     // device clock wound past the refill does not fill them: only the server's answer does.
     const lvs = await pg.evaluate(async () => { const sb0 = sb, calls = [], row = { lives:0, refill_at:new Date(Date.now() + 3600e3).toISOString() };
