@@ -498,6 +498,7 @@ var ICONS = {
   up: ['...o...', '..obo..', '.obbbo.', 'oobbboo', '..obo..', '..obo..', '..ooo..'],
   down: ['..ooo..', '..obo..', '..obo..', 'oobbboo', '.obbbo.', '..obo..', '...o...'],
   lock: ['..ooo..', '.o...o.', '.o...o.', 'ooooooo', 'ohbkbbo', 'obbkbbo', 'ooooooo'],
+  close: ['oo...oo', 'obo.obo', '.obobo.', '..obo..', '.obobo.', 'obo.obo', 'oo...oo'],
   check: ['......o', '.....oo', 'o...obo', 'oo.obo.', 'oboobo.', '.obbo..', '..oo...'],
   mic: ['..ooo..', '.ohbbo.', '.obbbo.', '.obbbo.', 'o.ooo.o', '.o.o.o.', '..ooo..'],
   shoe: ['.......', 'ooo....', 'ohbo...', 'obbbooo', 'obbbbbo', 'owwwwwo', 'ooooooo'],
@@ -523,7 +524,7 @@ var ICONS = {
 var ICON_BASE = {
   heart: '#e5483f', face: '#f2b632', star: '#ffd166', clip: '#7fb2ff', cash: '#3ecf8e', ball: '#e2762a',
   trophy: '#e8b33c', medal: '#e8b33c', arrow: '#ff7a1a', up: '#3ecf8e', down: '#ff6b6b', lock: '#8fa0d6',
-  check: '#3ecf8e', mic: '#b8c3e6', sound: '#ffd166', mute: '#8fa0d6', shoe: '#ff7a1a', ring: '#ffd166', whistle: '#b8c3e6', plane: '#7fb2ff', home: '#c98b4e',
+  check: '#3ecf8e', close: '#e8ecf8', mic: '#b8c3e6', sound: '#ffd166', mute: '#8fa0d6', shoe: '#ff7a1a', ring: '#ffd166', whistle: '#b8c3e6', plane: '#7fb2ff', home: '#c98b4e',
   vault: '#b8c3e6', tree: '#3ecf8e', share: '#ff7a1a',
   crown: '#ffd166', shield: '#7fb2ff', sprout: '#3ecf8e', flame: '#ff7a1a', globe: '#7fb2ff', six: '#b8c3e6', net: '#f4f1e8',
   shirt: '#7fb2ff', film: '#b8c3e6',
@@ -985,6 +986,39 @@ var CSS = [
 '.k-toast.k-gold{box-shadow:0 -3px 0 0 var(--k-gold),0 3px 0 0 var(--k-gold),-3px 0 0 0 var(--k-gold),3px 0 0 0 var(--k-gold),0 7px 0 0 var(--k-shade);}',
 '@keyframes k-toast-in{from{transform:translateY(16px);opacity:0;}to{transform:none;opacity:1;}}',
 
+/* THE NOTICE LANE. Every pop the game throws (coins, a streak day, Pass XP, a
+   tier) used to place itself at its own fixed height, so two at once sat on top
+   of each other and on top of whatever sheet was open. They all go in one lane
+   now: under the top bar, stacked, one width. While a full screen sheet is up
+   the lane moves to the foot of the screen, so it never covers that sheet's
+   title or its close button. */
+'.k-lane{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 60px);z-index:96;display:flex;flex-direction:column;align-items:center;gap:8px;padding:0 12px;pointer-events:none;}',
+'.k-lane>*{position:relative!important;left:auto!important;top:auto!important;bottom:auto!important;max-width:min(420px,100%);pointer-events:auto;transform:translateY(-10px) scale(.95)!important;}',
+'.k-lane>.on{transform:none!important;}',
+'.k-lane>:not(.on){position:absolute!important;pointer-events:none;}',
+'.k-lane.foot{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);flex-direction:column-reverse;}',
+'.k-lane.foot>*{transform:translateY(10px) scale(.95)!important;}.k-lane.foot>.on{transform:none!important;}',
+'.k-lane b,.k-lane i,.k-lane em,.k-lane span{white-space:nowrap;}',
+/* Kit controls are square wherever they are drawn: the page's own button
+   rule rounds every button, and a kit key inside a sheet that is not a kit
+   root (the player card, the pass) came out soft cornered beside square art. */
+'button.k-btn,button.k-x,button.k-coin,button.k-tab,.k-root button{border-radius:0;}',
+/* The close button every sheet shares: a square key with a pixel X, raised
+   the way every other key here is raised. */
+'.k-x{display:inline-grid;place-items:center;width:40px;height:40px;flex:none;padding:0;border:0;cursor:pointer;color:var(--k-ink);',
+'  background:linear-gradient(180deg,#2c3352,#1a1f35);box-shadow:inset 0 0 0 2px #3a4468,inset 0 2px 0 2px rgba(255,255,255,.08),0 3px 0 0 #05070d;',
+'  transition:transform var(--k-m-snap) var(--k-e-quick),box-shadow var(--k-m-snap);}',
+'.k-x:hover{box-shadow:inset 0 0 0 2px var(--k-gold),inset 0 2px 0 2px rgba(255,255,255,.1),0 3px 0 0 #05070d;}',
+'.k-x:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px #3a4468,0 0 0 0 #05070d;}',
+'.k-x img{width:14px;height:14px;}',
+/* The coin pill: the balance, in the top bar and on every sheet that spends. */
+'.k-coin{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px 0 6px;border:0;cursor:pointer;font:400 11px/1 var(--k-f-pixel);color:#ffe28a;font-variant-numeric:tabular-nums;',
+'  background:linear-gradient(180deg,#2a2210,#15110a);box-shadow:inset 0 0 0 2px #8a6a1c,inset 0 2px 0 2px rgba(255,226,138,.12),0 2px 0 0 #05070d;}',
+'.k-coin:hover{box-shadow:inset 0 0 0 2px var(--k-gold),inset 0 2px 0 2px rgba(255,226,138,.16),0 2px 0 0 #05070d;}',
+'.k-coin .k-cb{width:18px;height:18px;border-radius:50%;flex:none;background:radial-gradient(circle at 35% 30%,#fff3b0,#e8b923 55%,#9a6f0c);box-shadow:inset 0 0 0 2px #7a560a;}',
+'.k-coin.bump{animation:k-coin-bump .5s var(--k-e-move);}',
+'@keyframes k-coin-bump{30%{transform:scale(1.12);}}',
+
 /* Sheets and modals. On a phone a sheet rises from the bottom; from 640px it is
    a centred modal. The backdrop is a dark scrim, never a blur over the arena. */
 '.k-scrim{position:fixed;inset:0;z-index:70;background:rgba(5,7,13,.72);display:flex;align-items:flex-end;justify-content:center;}',
@@ -1075,6 +1109,23 @@ function countUp(el, to, opts){
 function reduced(){ return typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches; }
 
 var toastBox = null;
+/* The one lane every pop lives in (see the stylesheet). A caller appends its
+   pop here instead of to the body, and the lane does the placing. */
+var laneEl = null;
+function lane(){
+  if (typeof document === 'undefined') return null;
+  if (!laneEl || !laneEl.isConnected){ laneEl = document.createElement('div'); laneEl.className = 'k-lane'; document.body.appendChild(laneEl); }
+  laneFoot();
+  return laneEl;
+}
+var SHEETS = '.dy-ov,.fp-ov,.sh-ov,.pc-ov,.k-scrim:not([hidden])';
+function laneFoot(){ if (laneEl) laneEl.classList.toggle('foot', !!document.querySelector(SHEETS)); }
+if (typeof document !== 'undefined' && typeof MutationObserver !== 'undefined'){
+  new MutationObserver(function(){ laneFoot(); }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
+}
+/* A close button. */
+function closeX(label, cls){ return '<button type="button" class="k-x' + (cls ? ' ' + cls : '') + '" aria-label="' + (label || 'Close') + '">' + img(icon('close'), 2, '', '') + '</button>'; }
+
 function toast(html, cls, ms){
   if (typeof document === 'undefined') return;
   if (!toastBox){ toastBox = document.createElement('div'); toastBox.className = 'k-toasts k-root'; toastBox.setAttribute('role', 'status'); toastBox.setAttribute('aria-live', 'polite'); document.body.appendChild(toastBox); }
@@ -1121,7 +1172,7 @@ var API = {
   API_VERSION: API_VERSION, T: T, CSS: CSS,
   mix: mix, contrast: contrast, ramp: ramp, teamVars: teamVars, theme: theme,
   crowd: crowd, wood: wood, brick: brick, room: room, icon: icon, img: img, iconHtml: iconHtml, badgeHtml: badgeHtml, ICONS_L: Object.keys(ICONS_L), ICONS: Object.keys(ICONS), ICON16: Object.keys(ICON16), icon16: icon16,
-  pips: pips, bar: bar, tickerHtml: tickerHtml, wireTips: wireTips, countUp: countUp, toast: toast, wipe: wipe, dialog: dialog, reduced: reduced, inject: inject,
+  pips: pips, bar: bar, tickerHtml: tickerHtml, wireTips: wireTips, countUp: countUp, toast: toast, lane: lane, closeX: closeX, wipe: wipe, dialog: dialog, reduced: reduced, inject: inject,
 };
 if (typeof module !== 'undefined' && module.exports) module.exports = API;
 if (typeof window !== 'undefined'){ window.RTF_KIT = API; inject(); }

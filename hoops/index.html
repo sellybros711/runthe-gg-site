@@ -72,6 +72,42 @@
   @font-face{font-family:'Anton';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/anton-latin.woff2?v=1) format('woff2');}
   @font-face{font-family:'Archivo';font-style:normal;font-weight:100 900;font-display:swap;src:url(fonts/archivo-latin.woff2?v=1) format('woff2');}
   @font-face{font-family:'Press Start 2P';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/pressstart2p-latin.woff2?v=1) format('woff2');}
+
+  /* ── ONE FRAME ON THE FRONT PAGE ────────────────────────────────────────
+     Career, the quick row and the Floor Pass are drawn in the Arena Arcade kit
+     (square cards on a stepped 3px pixel frame), and everything under them was
+     the draft game's older soft cards, rounded with a hairline border. Two
+     languages on one scroll read as two products. Run The Tour is one material
+     from top to bottom, so this page is too: every card here takes the kit's
+     stepped frame in its own colour (--fr), and the round chips go square.
+     Only radius, border and shadow move, so no box changes size beyond the 3px
+     the frame needs at each side. */
+  #s-home .classic,#s-home .dailycard,#s-home .pz,#s-home .hp-modes,#s-home .hdoor,#s-home .howto,#s-home .mtile{
+    --fr:#2d3a66;border-radius:0;border:0;margin-left:3px;margin-right:3px;width:calc(100% - 6px);
+    box-shadow:0 -3px 0 0 var(--fr),0 3px 0 0 var(--fr),-3px 0 0 0 var(--fr),3px 0 0 0 var(--fr),0 7px 0 0 #05070d;}
+  #s-home .classic{margin-bottom:20px;}
+  #s-home .dailycard,#s-home .hp-modes{margin-bottom:18px;}
+  #s-home .hrow{margin:4px 0 18px;}
+  #s-home .pz-row{margin-bottom:6px;}
+  #s-home .dailycard{--fr:#8a6a1c;}
+  #s-home .pz{--fr:color-mix(in srgb,var(--c) 60%,#1a2033);}
+  #s-home .pz.done{--fr:#2d3a66;}
+  #s-home .hp-modes{--fr:#4a3a6e;}
+  #s-home .mtile{--fr:color-mix(in srgb,var(--c,#2d3a66) 55%,#1a2033);}
+  #s-home .pz-row,#s-home .hrow{gap:12px;}
+  #s-home .pz-chip,#s-home .dc-go,#s-home .clp,#s-home .cl-plans>*{border-radius:0;}
+  #s-home #b-start{border-radius:0;border:0;color:#160b02;background:#ff7a1a;font-weight:800;
+    box-shadow:0 -3px 0 0 #05070d,-3px 0 0 0 #05070d,3px 0 0 0 #05070d,0 3px 0 0 #05070d,inset 0 -5px 0 0 #c4560a,inset 0 3px 0 0 #ffb066;}
+  #s-home #b-start:active{transform:translateY(3px);}
+  /* The boards take the same corners: square tabs and rows, the segmented
+     controls a recessed well the way the kit's tabs are. Radius only, so a row
+     keeps its border and every champion or record state it wears. */
+  #s-board .bd-tab,#s-board .bd-seg,#s-board .bd-seg button,#s-board .bd-sort,#s-board .bd-row,#s-board .bd-lock select,#s-board .bd-ent.open .bd-row,#s-board .btnrow button{border-radius:0;}
+  #s-board .bd-seg{background:#0c1019;border:0;box-shadow:inset 0 0 0 2px #232b44,inset 0 3px 0 rgba(0,0,0,.4);}
+  #s-board .bd-seg button.on{background:linear-gradient(180deg,#2c3352,#1d2340);box-shadow:inset 0 2px 0 rgba(255,255,255,.08),0 2px 0 #05070d;}
+  #s-board .bd-tab.on{box-shadow:inset 0 -3px 0 #a8460e,inset 0 2px 0 rgba(255,255,255,.25);}
+
+  #s-home #b-start:disabled{background:#202a4a;color:#8fa0d6;box-shadow:0 -3px 0 0 #2d3a66,-3px 0 0 0 #2d3a66,3px 0 0 0 #2d3a66,0 3px 0 0 #2d3a66;}
 </style>
 
 <style>
@@ -2552,6 +2588,7 @@
   </button>
   <div class="right">
     <span class="state" id="ab-state" hidden></span>
+    <button class="k-coin" id="ab-coins" type="button" aria-label="Your coins. Open the shop" hidden><span class="k-cb" aria-hidden="true"></span><span id="ab-cn">0</span></button>
     <button class="link" id="ab-action" hidden></button>
   </div>
 </div>
@@ -3503,7 +3540,7 @@
 <script src="daily.js?v=1"></script>
 <script src="pass.js?v=1"></script>
 <script src="wardrobe.js?v=8"></script>
-<script src="earn.js?v=5"></script>
+<script src="earn.js?v=6"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
      or either file fails to load, the game runs exactly as it did, with runs
      kept in this browser and the board reporting itself unreachable. An account
@@ -3879,9 +3916,29 @@ function renderDock(screen){
    than only from home, and the WORDMARK is the way back out. That split is the
    ordinary phone convention (mark home-left, account right), and it means the
    bar never carries two buttons the home screen already has below it. */
+/* THE COIN PILL, Run The Tour's: the balance, one tap from the shop. Only
+   where the bar has room and nothing else is counting money: the front page,
+   the career and the boards. The draft's cap HUD is money of a different kind,
+   and a second figure beside it would read as the same thing. */
+var abShown = 0;
+function renderCoins(screen){
+  var cp = $('ab-coins'), W = window.RTF_WARD;
+  if (!cp) return;
+  if (screen) cp.dataset.scr = screen;
+  var on = !!(W && W.wallet && window.RTF_CAREER_UI && window.RTF_CAREER_UI.openLocker) && /^(s-home|s-car|s-board)$/.test(cp.dataset.scr || '');
+  cp.hidden = !on;
+  if (!on) return;
+  var n = 0; try { n = W.wallet.balance(); } catch (e) {}
+  $('ab-cn').textContent = n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1) + 'M' : n.toLocaleString('en-US');
+  if (n > abShown && abShown) { cp.classList.remove('bump'); void cp.offsetWidth; cp.classList.add('bump'); }
+  abShown = n;
+  if (!cp.onclick) cp.onclick = function(){ window.RTF_CAREER_UI.openLocker('shop'); };
+  if (!cp.dataset.wired && W.wallet.onChange) { cp.dataset.wired = '1'; W.wallet.onChange(function(){ renderCoins(); }); }
+}
 function renderAppBar(screen){
   var state = $('ab-state'), action = $('ab-action');
   if (!state || !action) return;
+  renderCoins(screen);
   action.hidden = false;
   action.textContent = 'Career';
   action.onclick = openProfile;
@@ -12001,6 +12058,7 @@ function recordFeats(f){
 }
 
 window.RTF_PAGE = {
+  coins: function(){ renderCoins(); },
   get data(){ return DATA; },
   /* the career the badges are read off: Floor Rep and the daily loop read it */
   career: function(){ return loadCareer() || blankCareer(); },
@@ -12087,17 +12145,17 @@ boot();
 <!-- AFTER the page, because it draws through window.RTF_PAGE, which the script
      above publishes. -->
 <script src="modes-ui.js?v=27"></script>
-<script src="career-kit.js?v=9"></script>
+<script src="career-kit.js?v=10"></script>
 <script src="sound.js?v=2"></script>
 <script src="court.js?v=10"></script>
 <script src="ticker.js?v=2"></script>
 <script src="scenes.js?v=18"></script>
 <script src="itemart.js?v=3"></script>
 <script src="closet-ui.js?v=8"></script>
-<script src="shop-ui.js?v=3"></script>
-<script src="daily-ui.js?v=1"></script>
-<script src="pass-ui.js?v=2"></script>
+<script src="shop-ui.js?v=4"></script>
+<script src="daily-ui.js?v=2"></script>
+<script src="pass-ui.js?v=3"></script>
 <script src="card-ui.js?v=1"></script>
-<script src="career-ui.js?v=56"></script>
+<script src="career-ui.js?v=57"></script>
 </body>
 </html>

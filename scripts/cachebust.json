@@ -2589,8 +2589,8 @@
   },
   "hoops/design/style-guide.html": {
     "../career-kit.js": {
-      "v": "9",
-      "sha": "0d5d587d6d003a01"
+      "v": "10",
+      "sha": "0857f50670050cfc"
     },
     "../baller.js": {
       "v": "14",
@@ -2667,8 +2667,8 @@
       "sha": "e7637be795976781"
     },
     "earn.js": {
-      "v": "5",
-      "sha": "df334e49fa2d4427"
+      "v": "6",
+      "sha": "30ccb1787d383fe2"
     },
     "board.js": {
       "v": "9",
@@ -2695,8 +2695,8 @@
       "sha": "bc4fd85f6f528926"
     },
     "career-kit.js": {
-      "v": "9",
-      "sha": "0d5d587d6d003a01"
+      "v": "10",
+      "sha": "0857f50670050cfc"
     },
     "sound.js": {
       "v": "2",
@@ -2723,24 +2723,24 @@
       "sha": "69618a3097450a83"
     },
     "shop-ui.js": {
-      "v": "3",
-      "sha": "a57c2101daab6340"
+      "v": "4",
+      "sha": "486dc56c4897887b"
     },
     "daily-ui.js": {
-      "v": "1",
-      "sha": "5763d7c9e24f2139"
+      "v": "2",
+      "sha": "5a8198dc97c7f159"
     },
     "pass-ui.js": {
-      "v": "2",
-      "sha": "92fbd757b7e41f89"
+      "v": "3",
+      "sha": "e1a0b0d12ed4f4d2"
     },
     "card-ui.js": {
       "v": "1",
       "sha": "ed8ffc8721479ed1"
     },
     "career-ui.js": {
-      "v": "56",
-      "sha": "dbcbadb20ad72f4d"
+      "v": "57",
+      "sha": "a60864a8b055353f"
     },
     "data/players.json": {
       "v": "5",

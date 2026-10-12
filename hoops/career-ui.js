@@ -507,8 +507,8 @@ var CSS = [
 '.cr-btnrow{display:flex;gap:4px;flex-wrap:wrap;margin:0 0 16px;}',
 '.cr-btnrow .k-btn{flex:1 1 160px;}',
 /* sheets */
-'#cr-sheet .k-sheet h3{margin:0 0 4px;}',
-'#cr-sheet .cash{font-size:14px;color:var(--k-ink-2);margin:0 0 14px;}',
+'#cr-sheet .k-sheet h3,#rtf-locker .k-sheet h3{margin:0 0 4px;}',
+'#cr-sheet .cash,#rtf-locker .cash{font-size:14px;color:var(--k-ink-2);margin:0 0 14px;}',
 '.cr-actrow{display:flex;gap:10px;align-items:center;padding:12px 0;border-top:1px solid rgba(143,160,214,.14);}',
 '.cr-actrow > div{flex:1 1 auto;min-width:0;}',
 '.cr-actrow b{display:block;font-size:15px;}',
@@ -651,7 +651,7 @@ var CSS = [
 '#s-car .k-ib{background:linear-gradient(180deg,#2a3560,#1a2142 60%,#141a33);box-shadow:inset 0 0 0 2px #3a4777,inset 0 2px 0 rgba(255,255,255,.12),0 3px 0 #05070d;}',
 '#s-car .k-ib:hover,#s-car .k-ib:focus-visible{box-shadow:inset 0 0 0 2px var(--k-accent),inset 0 2px 0 rgba(255,255,255,.12),0 3px 0 #05070d;}',
 '/* menu panels: a lit top edge, a darker foot and a hard pixel drop */',
-'#s-car .k-panel:where(:not(.cr-card)),#cr-sheet .k-sheet{background:linear-gradient(180deg,#171e3a 0%,#11162b 46%,#0e1225 100%);}',
+'#s-car .k-panel:where(:not(.cr-card)),#cr-sheet .k-sheet,#rtf-locker .k-sheet{background:linear-gradient(180deg,#171e3a 0%,#11162b 46%,#0e1225 100%);}',
 '#s-car .k-panel:where(:not(.cr-card)){box-shadow:0 calc(var(--k-px)*-1) 0 0 var(--k-frame),0 var(--k-px) 0 0 var(--k-frame),calc(var(--k-px)*-1) 0 0 0 var(--k-frame),var(--k-px) 0 0 0 var(--k-frame),inset 0 2px 0 rgba(255,255,255,.07),0 calc(var(--k-px) + 5px) 0 0 rgba(3,5,10,.75);margin-bottom:18px;}',
 '#s-car .k-panel:where(:not(.cr-card)).k-team{box-shadow:0 calc(var(--k-px)*-1) 0 0 var(--k-team-ring),0 var(--k-px) 0 0 var(--k-team-ring),calc(var(--k-px)*-1) 0 0 0 var(--k-team-ring),var(--k-px) 0 0 0 var(--k-team-ring),inset 0 2px 0 rgba(255,255,255,.07),0 calc(var(--k-px) + 5px) 0 0 rgba(3,5,10,.75);}',
 '#s-car .k-panel:where(:not(.cr-card)).k-gold{box-shadow:0 calc(var(--k-px)*-1) 0 0 var(--k-gold),0 var(--k-px) 0 0 var(--k-gold),calc(var(--k-px)*-1) 0 0 0 var(--k-gold),var(--k-px) 0 0 0 var(--k-gold),inset 0 2px 0 rgba(255,236,170,.12),0 calc(var(--k-px) + 5px) 0 0 rgba(3,5,10,.75),0 0 26px rgba(255,209,102,.16);}',
@@ -828,7 +828,9 @@ var CSS = [
 '#s-car .cr-name input{background:#05070d;}',
 '#s-car .cr-cta{background:linear-gradient(180deg,rgba(7,9,18,0),#070912 40%);}',
 '/* sheets wear the same plate */',
-'#cr-sheet .k-sheet{box-shadow:0 -3px 0 0 var(--k-team-ring),inset 0 2px 0 rgba(255,255,255,.06);}',
+'#rtf-locker button{border-radius:0;}',
+'.lk-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;}',
+'#cr-sheet .k-sheet,#rtf-locker .k-sheet{box-shadow:0 -3px 0 0 var(--k-team-ring),inset 0 2px 0 rgba(255,255,255,.06);}',
 ].join('\n');
 (function(){
   if (document.getElementById('cr-css')) return;
@@ -2086,6 +2088,48 @@ function openLook(tab){
   };
   draw();
 }
+/* THE LOCKER: the closet and the shop from anywhere. The Look sheet above
+   lives in the career screen and dresses the man in the career on screen, so
+   a player between careers, or one who never started, had no way to the shop
+   at all. Run The Tour's shop is one tap from every screen, and so is this:
+   the coin pill and the front page's row open it. It dresses the career in
+   progress, else the newest Hall card's player, else the look a new career
+   starts from. The body belongs to a career, so this sheet has no Body tab. */
+var lockerDlg = null;
+function lockerPlayer(){
+  var st = store(), L = st.cur && !st.cur.retired ? st.cur : null, B = window.RTF_BALLER;
+  if (L) { var k = C.colorsOf(L); return { look: withSize(Object.assign({}, B.normal(lookOf(L))), L), c1: k.primary, c2: k.secondary, num: L.num }; }
+  var h = (st.hof || [])[0];
+  if (h && h.look) return { look: B.normal(h.look), c1: h.c1 || '#1d428a', c2: h.c2 || '#ffc72c', num: h.num || 23 };
+  return { look: B.normal(B.lookFor('locker')), c1: '#c9ccd6', c2: '#2b3242', num: 23 };
+}
+function openLocker(tab){
+  if (!window.RTF_CLOSET || !window.RTF_WARD || !window.RTF_BALLER) return false;
+  var sh = document.getElementById('rtf-locker');
+  if (!sh) {
+    sh = document.createElement('div');
+    sh.className = 'k-scrim k-root'; sh.id = 'rtf-locker'; sh.hidden = true;
+    sh.innerHTML = '<div class="k-sheet in"></div>';
+    document.body.appendChild(sh);
+  }
+  var TABS = (window.RTF_SHOP ? [['shop', 'Shop']] : []).concat([['street', 'Off court'], ['court', 'On court']]);
+  var now = TABS.some(function(t){ return t[0] === tab; }) ? tab : TABS[0][0];
+  var who = lockerPlayer();
+  var draw = function(){
+    sh.querySelector('.in').innerHTML = '<div class="lk-head"><h3 class="k-h1">Locker</h3>' + K.closeX('Close the locker', 'lk-x') + '</div>'
+      + '<div class="k-tabs cr-ltabs" role="tablist">' + TABS.map(function(t){
+        return '<button type="button" class="k-tab" role="tab" data-ktab="' + t[0] + '" aria-selected="' + (t[0] === now) + '">' + t[1] + '</button>'; }).join('') + '</div>'
+      + '<div id="lk-pane"></div>';
+    sh.querySelectorAll('[data-ktab]').forEach(function(b){ b.onclick = function(){ now = b.getAttribute('data-ktab'); draw(); }; });
+    sh.querySelector('.lk-x').onclick = function(){ if (lockerDlg) { var d = lockerDlg; lockerDlg = null; d.close(); } };
+    var o = Object.assign({}, who);
+    if (now === 'shop') window.RTF_SHOP.pane(document.getElementById('lk-pane'), o);
+    else window.RTF_CLOSET.pane(document.getElementById('lk-pane'), Object.assign(o, { ctx: now }));
+  };
+  draw();
+  lockerDlg = K.dialog(sh, { label: 'Locker', onClose: function(){ lockerDlg = null; if (onScreen()) render(); } });
+  return true;
+}
 /* Paint options for the invented player in a look (hoops/wardrobe.js). A
    page without the closet draws him as he always was. */
 function dressed(o, ctx){ return window.RTF_WARD ? window.RTF_WARD.dress(o, ctx || 'court') : o; }
@@ -2718,6 +2762,9 @@ function goHome(){ closeOff(); P.goHome(); }
    none says what the mode is. */
 function renderHero(){
   var st = store(), L = st.cur;
+  /* A Hall card from before verdicts were kept has none: read it off the
+     score, and say nothing rather than print undefined. */
+  function bestVerdict(t){ return t.verdict || (t.score != null && C.verdictOf ? C.verdictOf(t.score) : ''); }
   var cur = $('ch-cur'), say = $('ch-say'), go = $('b-career'), best = $('ch-best'), path = $('ch-path');
   if (!go) return;
   /* The stage stands in the same pixel arena the mode is played in, in the
@@ -2753,7 +2800,7 @@ function renderHero(){
   var top = st.hof.slice().sort(function(a, b){ return b.score - a.score; })[0];
   if (best) {
     best.hidden = !top;
-    if (top) best.innerHTML = 'Your best: <b>' + esc(top.name) + '</b>, ' + esc(top.verdict) + '. ' + st.hof.length + (st.hof.length === 1 ? ' career' : ' careers') + ' played.';
+    if (top) best.innerHTML = 'Your best: <b>' + esc(top.name) + '</b>' + (bestVerdict(top) ? ', ' + esc(bestVerdict(top)) : '') + '. ' + st.hof.length + (st.hof.length === 1 ? ' career' : ' careers') + ' played.';
   }
   go.disabled = !league();
   go.onclick = open;
@@ -2862,6 +2909,7 @@ window.RTF_CAREER_UI = {
   },
   /* the player card's Change button: the Look sheet, on a slot. Mid career
      only, because the sheet dresses the man in the career on screen. */
+  openLocker: openLocker,
   openCloset: function(ctx, slot){
     if (!store().cur || store().cur.retired) return false;
     if (window.RTF_CLOSET && window.RTF_CLOSET.focus) window.RTF_CLOSET.focus(ctx, slot);
@@ -2895,4 +2943,6 @@ function boot(){
   renderHero();
 }
 boot();
+/* the top bar's coin pill opens the locker, which only now exists */
+if (window.RTF_PAGE && window.RTF_PAGE.coins) window.RTF_PAGE.coins();
 })();

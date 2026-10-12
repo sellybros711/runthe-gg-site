@@ -169,7 +169,7 @@ function draw(scroll){
   var cap = (d.prem || {})[P.TIERS] || [], free60 = (d.free || {})[P.TIERS] || [];
   var h = '<div class="fp-box" style="--fpa:' + d.accent + ';--fpb:' + d.accent2 + '">'
     + '<div class="fp-head"><img class="fp-shield sm" alt="" src="' + shieldURL(d) + '"><div class="fp-ht"><i>Floor Pass · Season ' + s.n + '</i><b>' + esc(d.name) + '</b></div>'
-    + '<span class="fp-clock" data-clock>' + c.d + 'd ' + c.h + 'h ' + c.m + 'm ' + c.s + 's</span><button type="button" class="fp-x" aria-label="Close">x</button></div>'
+    + '<span class="fp-clock" data-clock>' + c.d + 'd ' + c.h + 'h ' + c.m + 'm ' + c.s + 's</span>' + (window.RTF_KIT ? RTF_KIT.closeX('Close', 'fp-x') : '<button type="button" class="fp-x" aria-label="Close">x</button>') + '</div>'
     /* the hero: the capstones on a lit plinth */
     + '<div class="fp-hero"><span class="fp-rays"></span><span class="fp-spot"></span>'
     + '<div class="fp-plinth">' + cap.map(function(id, i){ return '<span class="fp-pz p' + i + '" style="--fpc:' + RCOL[(CAT.item(id) || {}).rarity || 'legendary'] + '">' + itemIcon(id, 'fp-hi') + '</span>'; }).join('')
@@ -258,7 +258,8 @@ var xpEl = null, xpT = null, xpSum = 0;
 function xpPop(n){
   if (!n) return;
   xpSum += n;
-  if (!xpEl) { xpEl = document.createElement('div'); xpEl.className = 'fp-xpop'; xpEl.setAttribute('role', 'status'); document.body.appendChild(xpEl); }
+  if (!xpEl) { xpEl = document.createElement('div'); xpEl.className = 'fp-xpop'; xpEl.setAttribute('role', 'status'); }
+  if (!xpEl.isConnected) (window.RTF_KIT && RTF_KIT.lane ? RTF_KIT.lane() : document.body).appendChild(xpEl);
   var d = P.def(P.season().n);
   xpEl.style.setProperty('--fpa', d.accent);
   xpEl.innerHTML = '<img alt="" src="' + shieldURL(d) + '"><span>+' + money(xpSum) + ' Pass XP</span>';
@@ -274,7 +275,7 @@ function tierPop(tier){
     tpEl = document.createElement('button');
     tpEl.type = 'button'; tpEl.className = 'fp-tpop';
     tpEl.onclick = function(){ hideTier(); open(); };
-    document.body.appendChild(tpEl);
+    (window.RTF_KIT && RTF_KIT.lane ? RTF_KIT.lane() : document.body).appendChild(tpEl);
   }
   tpEl.style.setProperty('--fpa', d.accent); tpEl.style.setProperty('--fpb', d.accent2);
   tpEl.innerHTML = '<span class="fp-tierb"><img class="fp-shield" alt="" src="' + shieldURL(d) + '"><b>' + tier + '</b></span><span><i>Floor Pass</i><b>Tier ' + tier + ' reached</b><em>Tap to claim</em></span>';
@@ -339,7 +340,7 @@ var CSS = [
 '.fp-ht b{font:400 12px/1.4 var(--k-f-pixel,monospace);color:#fff;}',
 '.fp-head{flex-wrap:wrap;}@media (max-width:440px){.fp-clock{order:3;flex-basis:100%;text-align:center;}}',
 '.fp-clock{font:800 12px var(--k-f-text);color:#fff;font-variant-numeric:tabular-nums;padding:6px 8px;background:#0e1120;box-shadow:inset 0 0 0 1px #343c5c;white-space:nowrap;}',
-'.fp-x{border:0;background:#262c44;color:#fff;min-width:40px;min-height:40px;font:800 15px var(--k-f-text);cursor:pointer;}',
+'.fp-x:not(.k-x){border:0;background:#262c44;color:#fff;min-width:40px;min-height:40px;font:800 15px var(--k-f-text);cursor:pointer;}',
 '.fp-hero{position:relative;margin-top:10px;padding:8px 12px 12px;overflow:hidden;text-align:center;background:radial-gradient(60% 80% at 50% 70%,color-mix(in srgb,var(--fpb) 50%,transparent),transparent 75%),linear-gradient(180deg,#0d1020,#161a2e);box-shadow:inset 0 0 0 2px #262c44;}',
 '.fp-rays{position:absolute;left:50%;top:46%;width:620px;height:620px;margin:-310px;border-radius:50%;background:repeating-conic-gradient(var(--fpa) 0 6deg,transparent 6deg 20deg);opacity:.16;-webkit-mask:radial-gradient(circle,#000 8%,transparent 60%);mask:radial-gradient(circle,#000 8%,transparent 60%);animation:fp-spin 30s linear infinite;pointer-events:none;}',
 '@keyframes fp-spin{to{transform:rotate(360deg);}}',

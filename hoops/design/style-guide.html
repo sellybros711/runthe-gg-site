@@ -28,7 +28,7 @@
   .sg-room .lab{position:absolute;left:8px;top:8px;}
   .sg-demo-wipe{position:relative;height:60px;overflow:hidden;background:var(--k-panel);}
 </style>
-<script src="../career-kit.js?v=9"></script>
+<script src="../career-kit.js?v=10"></script>
 </head>
 <body>
 <main class="sg k-root" id="sg">
@@ -189,6 +189,8 @@
   <section>
     <h2>Toasts and sheet</h2>
     <div class="sg-row"><button class="k-btn k-sec" id="toast-go">Show a toast</button><button class="k-btn k-sec" id="sheet-go">Open a sheet</button></div>
+    <p class="k-dim">Pops go in one lane under the top bar, stacked, and move to the foot while a full screen sheet is up. A sheet closes on the kit's pixel X. The coin pill is the balance in the top bar and opens the shop.</p>
+    <div class="sg-row"><button class="k-btn k-sec" id="lane-go">Pop two at once</button><span id="sg-x"></span><button class="k-coin" type="button"><span class="k-cb"></span>12,450</button></div>
     <div class="k-scrim" id="scrim" hidden><div class="k-sheet">
       <div class="k-sheet-head"><h3 class="k-h2">Off the court</h3><button class="k-btn k-quiet" data-close>Close</button></div>
       <p class="k-dim">Buy your mother a house. Start a foundation. Call Tavi back. Each once a year.</p>
@@ -326,6 +328,8 @@
     + tape.map(function(t){ var a = parseFloat(t[1]), b = parseFloat(t[2]); return '<span class="k-l' + (a > b ? ' win' : '') + '">' + t[1] + '</span><span class="k-mid">' + t[0] + '</span><span class="k-r' + (b > a ? ' win' : '') + '">' + t[2] + '</span>'; }).join('');
   $('tick').innerHTML = K.tickerHtml('Around the league', ['Celtics win 9 straight', 'Malik Rowe out 4 weeks', 'MVP ladder: Hale 11th', 'Lakers fire their coach']);
   $('wipe-go').onclick = function(){ K.wipe(); };
+  $('sg-x').innerHTML = K.closeX('Close');
+  $('lane-go').onclick = function(){ ['+250 coins', 'Day 3 \u00b7 Welcome back'].forEach(function(t, i){ var el = document.createElement('div'); el.className = 'k-toast k-gold'; el.textContent = t; K.lane().appendChild(el); setTimeout(function(){ el.classList.add('on'); }, 20 + i * 60); setTimeout(function(){ el.remove(); }, 2600); }); };
   $('toast-go').onclick = function(){ K.toast(K.iconHtml('trophy', 2) + ' Badge earned: Clutch gene', 'k-gold'); };
   $('sheet-go').onclick = function(){ var d = K.dialog($('scrim'), { label: 'Off the court' }); Array.prototype.forEach.call($('scrim').querySelectorAll('[data-close]'), function(b){ b.onclick = d.close; }); };
 

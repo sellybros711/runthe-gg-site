@@ -21,6 +21,7 @@ name: Hoops checks
 #   node hoops/check-daily.mjs          the streak, the wheel, the quests, Floor Rep
 #   node hoops/check-pass.mjs           the Floor Pass: the cap, claims, settlement, the track
 #   node hoops/check-card.mjs           the player card: its pieces, the 140 shapes, the boards
+#   node hoops/check-polish.mjs         one notice lane, the coin pill, the Locker, one material
 #   node hoops/check-earn.mjs           who earns coins, from what, and only once
 #   node hoops/check-story.mjs --quick  the story engine: order, arcs, traits, people, league
 #   node hoops/check-rosters.mjs        a career joins today's real rosters
@@ -156,6 +157,12 @@ jobs:
       # a board row filed by an account draws its player and opens his card.
       - name: The player card
         run: node hoops/check-card.mjs
+
+      # The UI pass: pops share one lane and never cover a sheet, the coin pill
+      # is the wallet and opens the Locker, which works with no career, every
+      # sheet closes on the kit's X, and the front page is one material.
+      - name: The front page polish
+        run: node hoops/check-polish.mjs
 
       # Only what he owns is ever saved or drawn, two devices merge without
       # losing anything, and the closet wears a piece on a press.

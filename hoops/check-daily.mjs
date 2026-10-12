@@ -246,8 +246,8 @@ async function browser(){
   ok(true, '10 a guest sees what an account adds on the front page');
   await page.evaluate(() => { const st = RTF_AUTH.state; RTF_AUTH.state = () => Object.assign({}, st(), { signedIn: true }); RTF_EARN.settle({}); RTF_DAILY_UI.render(); });
   await page.waitForSelector('#hp-daily .dy-t-wheel.ready');
-  const strip = await page.evaluate(() => ({ tiles: document.querySelectorAll('#hp-daily .dy-tile').length, flame: !!document.querySelector('#hp-daily img.dy-fl[src^="data:image/png"]'), free: document.querySelector('.dy-t-wheel .dy-tl').textContent, logged: RTF_WARD.daily.logged() }));
-  ok(strip.tiles === 3 && strip.flame && /Free spin/.test(strip.free), '10 signed in, the strip shows the flame, a free spin and the quests');
+  const strip = await page.evaluate(() => ({ tiles: document.querySelectorAll('#hp-daily .dy-tile').length, flame: !!document.querySelector('#hp-daily img.dy-fl[src^="data:image/png"]'), free: document.querySelector('.dy-t-wheel .dy-tl').textContent, locker: !!document.querySelector('#hp-daily [data-locker="shop"]'), logged: RTF_WARD.daily.logged() }));
+  ok(strip.tiles === 4 && strip.locker && strip.flame && /Free spin/.test(strip.free), '10 signed in, the strip shows the flame, a free spin, the quests and the locker');
   ok(strip.logged, '10 opening the game files the login day');
   if (process.env.SHOT) await page.screenshot({ path: process.env.SHOT.replace('.png', '-home.png') });
   await page.click('#hp-daily [data-dy="wheel"]');

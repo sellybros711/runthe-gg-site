@@ -67,9 +67,9 @@ function pop(n){
     var css = document.createElement('style');
     css.textContent = '#rtf-coinpop{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 62px);z-index:90;'
       + 'transform:translate(-50%,-8px);opacity:0;pointer-events:none;display:flex;align-items:center;gap:7px;'
-      + 'padding:7px 13px 7px 9px;border-radius:999px;background:#1d1606;border:1px solid #c9a227;color:#ffd970;'
-      + 'font:700 14px/1 var(--display,system-ui),system-ui;letter-spacing:.02em;font-variant-numeric:tabular-nums;'
-      + 'box-shadow:0 6px 18px rgba(0,0,0,.45);transition:opacity .2s,transform .2s}'
+      + 'padding:8px 14px 8px 9px;background:linear-gradient(180deg,#2a2210,#15110a);color:#ffe28a;'
+      + 'font:400 11px/1 var(--k-f-pixel,system-ui),system-ui;letter-spacing:.02em;font-variant-numeric:tabular-nums;'
+      + 'box-shadow:inset 0 0 0 2px #c9a227,inset 0 2px 0 2px rgba(255,226,138,.14),0 3px 0 0 #05070d,0 10px 24px rgba(0,0,0,.5);transition:opacity .2s,transform .2s}'
       + '#rtf-coinpop.on{opacity:1;transform:translate(-50%,0)}'
       + '#rtf-coinpop i{width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3b0,#e8b923 55%,#9a6f0c);'
       + 'box-shadow:inset 0 0 0 1.5px #7a560a;flex:none}'
@@ -79,8 +79,8 @@ function pop(n){
     popEl.id = 'rtf-coinpop';
     popEl.setAttribute('role', 'status');
     popEl.setAttribute('aria-live', 'polite');
-    document.body.appendChild(popEl);
   }
+  if (!popEl.isConnected || popEl.parentNode === document.body) (window.RTF_KIT && RTF_KIT.lane ? RTF_KIT.lane() : document.body).appendChild(popEl);
   popEl.innerHTML = '<i aria-hidden="true"></i><span>+' + fmt(n) + ' coins</span>';
   popEl.classList.add('on');
   clearTimeout(popT);

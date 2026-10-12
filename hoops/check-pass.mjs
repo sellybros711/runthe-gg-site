@@ -278,6 +278,9 @@ async function browser(){
   await page.waitForSelector('.fp-ov .fp-won');
   const after = await page.evaluate(() => ({ left: RTF_WARD.pass.state().claimable, prem: document.querySelectorAll('.fp-ov .fp-cell.prem.got').length }));
   ok(after.left === 0 && after.prem >= 5, '12 a tester has the premium lane, and Claim all takes both lanes (' + JSON.stringify(after) + ')');
+  /* the reveal pops in on a scale that overshoots for a moment: a box read
+     mid bounce is the animation, not the layout, so wait it out */
+  await page.waitForTimeout(900);
   const wide = await page.evaluate(() => [...document.querySelectorAll('.fp-ov *, #hp-pass *')].filter((el) => { const r = el.getBoundingClientRect(); return r.width && r.right > innerWidth + 1 && !el.closest('.fp-track,.fp-rays,.fp-wrays,.fp-spot,.fp-bshine,.fp-cglow'); }).map((e) => e.className).slice(0, 3));
   ok(!wide.length, '12 nothing runs off a 390px phone (' + wide.join(', ') + ')');
   await page.click('.fp-ov .fp-x');

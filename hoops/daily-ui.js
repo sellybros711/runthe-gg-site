@@ -75,11 +75,26 @@ function strip(){
     + (sp.total ? '<span class="dy-badge">' + sp.total + '</span>' : '')
     + '<span class="dy-tl">' + (sp.free ? 'Free spin' : sp.total ? sp.total + ' spin' + (sp.total === 1 ? '' : 's') : 'Back tomorrow') + '</span></button>'
     + '<button type="button" class="dy-tile dy-t-quest' + (q.dailyAll ? ' done' : '') + '" data-dy="quests"><span class="dy-ring" style="background:' + ring + '"><span>' + done + '/3</span></span>'
-    + '<span class="dy-tl">' + (q.dailyAll ? 'All done' : 'Quests') + '</span></button>';
+    + '<span class="dy-tl">' + (q.dailyAll ? 'All done' : 'Quests') + '</span></button>'
+    + lockerTile();
   el.hidden = false;
   wireStrip(el);
 }
-function wireStrip(el){ el.querySelectorAll('[data-dy]').forEach(function(b){ b.onclick = function(){ open(b.getAttribute('data-dy')); }; }); }
+/* THE LOCKER, fourth in the row: the shop and the closet are one tap from the
+   front page, the way Run The Tour's are, rather than only from inside a
+   career's Look sheet. */
+function lockerTile(){
+  var CU = window.RTF_CAREER_UI, K = window.RTF_KIT;
+  if (!CU || !CU.openLocker || !K) return '';
+  var free = 0; try { free = W.shop && W.shop.credits ? W.shop.credits().length : 0; } catch (e) {}
+  return '<button type="button" class="dy-tile dy-t-locker" data-locker="shop"><span class="dy-well">' + K.iconHtml('shirt', 4) + '</span>'
+    + (free ? '<span class="dy-badge">' + free + '</span>' : '')
+    + '<span class="dy-tl">' + (free ? 'Free pack' : 'Locker') + '</span></button>';
+}
+function wireStrip(el){
+  el.querySelectorAll('[data-dy]').forEach(function(b){ b.onclick = function(){ open(b.getAttribute('data-dy')); }; });
+  el.querySelectorAll('[data-locker]').forEach(function(b){ b.onclick = function(){ window.RTF_CAREER_UI.openLocker(b.getAttribute('data-locker')); }; });
+}
 /* the flame flickers on its three frames, only while it is on screen */
 function flicker(){
   clearInterval(flameT);
@@ -111,7 +126,7 @@ function draw(){
   var h = '<div class="dy-box"><div class="dy-head"><div class="dy-rep"><span class="dy-rank">' + esc(r.name) + '</span>'
     + '<span class="dy-repbar"><i style="width:' + Math.round(r.frac * 100) + '%"></i></span>'
     + '<span class="dy-repn">Floor Rep ' + r.pts + (r.next ? ' · ' + (r.nextAt - r.pts) + ' to ' + esc(r.next) : '') + '</span></div>'
-    + '<span class="dy-bal">' + A.coin('dy-ci') + money(coins) + '</span><button type="button" class="dy-x" aria-label="Close">x</button></div>'
+    + '<span class="dy-bal">' + A.coin('dy-ci') + money(coins) + '</span>' + (window.RTF_KIT ? RTF_KIT.closeX('Close', 'dy-x') : '<button type="button" class="dy-x" aria-label="Close">x</button>') + '</div>'
     + (rush > 0 ? '<div class="dy-rush">Coin Rush: play pays double for <b data-rush>' + clock(rush) + '</b></div>' : '')
     + '<div class="dy-tabs" role="tablist">' + [['wheel', 'Wheel'], ['streak', 'Streak'], ['quests', 'Quests']].map(function(x){
       return '<button type="button" role="tab" data-tab="' + x[0] + '" aria-selected="' + (tab === x[0]) + '">' + x[1] + '</button>'; }).join('') + '</div>'
@@ -293,7 +308,7 @@ function nextPop(){
   el.type = 'button'; el.className = 'dy-pop';
   el.innerHTML = bigIcon(p[1]) + '<span><b>' + esc(p[0]) + '</b><span class="dy-pc">' + chips(p[1]) + '</span></span>';
   el.onclick = function(){ el.remove(); open(/Quest/.test(p[0]) ? 'quests' : 'streak'); };
-  document.body.appendChild(el);
+  (window.RTF_KIT && RTF_KIT.lane ? RTF_KIT.lane() : document.body).appendChild(el);
   requestAnimationFrame(function(){ el.classList.add('on'); });
   setTimeout(function(){ el.classList.remove('on'); setTimeout(function(){ el.remove(); nextPop(); }, 300); }, 3600);
 }
@@ -312,10 +327,17 @@ if (window.RTF_AUTH && window.RTF_AUTH.onChange) window.RTF_AUTH.onChange(functi
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', render); else render();
 
 var CSS = [
-'.hp-daily{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 12px;}',
+/* ONE PANEL, FOUR KEYS, Run The Tour's quick row: a raised panel holding the
+   keys, each an icon in its own well with a label under it. */
+'.hp-daily{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));grid-auto-flow:column;gap:4px;margin:0 0 12px;padding:6px;',
+' background:linear-gradient(180deg,#171c30,#0e111d);box-shadow:inset 0 0 0 2px #2a3150,inset 0 2px 0 2px rgba(255,255,255,.05),0 4px 0 0 #05070d,0 10px 24px -10px rgba(0,0,0,.7);}',
+'.hp-daily:has(.dy-guest){grid-auto-flow:row;padding:0;background:none;box-shadow:none;}',
 '.hp-daily img{image-rendering:pixelated;}',
-'.dy-tile{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;min-height:96px;padding:10px 6px 8px;border:0;cursor:pointer;color:var(--k-ink,#fff);',
-' background:linear-gradient(180deg,#1b2034,#11141f);box-shadow:inset 0 0 0 2px #2c3350,inset 0 -4px 0 rgba(0,0,0,.4);font:700 11px var(--k-f-text,system-ui);overflow:hidden;}',
+'.dy-tile{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;min-height:92px;padding:8px 2px 6px;border:0;cursor:pointer;color:var(--k-ink,#fff);',
+' background:transparent;box-shadow:none;font:700 11px var(--k-f-text,system-ui);overflow:hidden;transition:background .15s;}',
+'.dy-tile:hover{background:rgba(255,255,255,.04);}',
+'.dy-well{display:grid;place-items:center;width:56px;height:56px;background:radial-gradient(70% 70% at 50% 35%,#2b3354,#141829);box-shadow:inset 0 0 0 2px #333c60,inset 0 -3px 0 rgba(0,0,0,.45);}',
+'.dy-t-locker .dy-well img{width:28px;height:28px;filter:drop-shadow(0 0 6px rgba(127,178,255,.45));}',
 '.dy-tile:active{transform:translateY(2px);}',
 '.dy-tl{font:800 10px var(--k-f-text,system-ui);text-transform:uppercase;letter-spacing:.06em;color:var(--k-ink-2,#cdd3e6);white-space:nowrap;}',
 '.dy-t-streak{flex-direction:row;justify-content:center;flex-wrap:wrap;align-content:flex-end;}',
@@ -354,7 +376,7 @@ var CSS = [
 '.dy-repbar{height:8px;background:#232840;box-shadow:inset 0 0 0 1px #343c5c;}.dy-repbar i{display:block;height:100%;background:linear-gradient(90deg,#c98a12,#ffd970);box-shadow:0 0 8px rgba(242,194,58,.6);}',
 '.dy-repn{font-size:11px;color:var(--k-ink-3,#8a93b0);}',
 '.dy-bal{display:flex;align-items:center;gap:5px;font:800 14px var(--k-f-text);color:var(--k-gold,#f2c23a);font-variant-numeric:tabular-nums;}',
-'.dy-x{border:0;background:#262c44;color:var(--k-ink,#fff);min-width:40px;min-height:40px;font:800 15px var(--k-f-text);cursor:pointer;}',
+'.dy-x:not(.k-x){border:0;background:#262c44;color:var(--k-ink,#fff);min-width:40px;min-height:40px;font:800 15px var(--k-f-text);cursor:pointer;}',
 '.dy-rush{margin:8px 0 0;padding:8px 10px;background:linear-gradient(90deg,rgba(127,224,160,.22),#11141f);box-shadow:inset 3px 0 0 #7fe0a0;color:#c8ffd9;font-weight:700;}',
 '.dy-rush b{font-variant-numeric:tabular-nums;}',
 '.dy-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin:10px 0;}',

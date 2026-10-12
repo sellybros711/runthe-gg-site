@@ -16460,6 +16460,36 @@ psql ... -f supabase/141_hoops_wallet.sql     paid coins (row 55), and 142_hoops
   lane over the rail and premium under it), and an XP pill and one tier card however
   many tiers a press crossed. No pop fires over the open track.
 
+### One material, one lane, and the shop from anywhere
+
+```
+node hoops/check-polish.mjs     the lane, the coin pill, the Locker, the close keys, one material
+```
+
+Asked for by the owner: bring the game up to Run The Tour's UI, simple in layout and
+expensive in feel, in the pixel art's own language.
+
+- **Every pop goes in one lane** (`RTF_KIT.lane()`). Coins, a streak day, Pass XP and a
+  tier each used to place itself at its own fixed height, so two at once sat on each
+  other and on the open sheet's title. The lane stacks them under the top bar and moves
+  to the foot of the screen while a full screen sheet is up (`SHEETS` in career-kit.js,
+  watched by a MutationObserver). A new pop is appended to the lane, never to the body.
+- **The top bar carries the coin pill** (`#ab-coins`, `renderCoins` in the page): the
+  wallet's balance, bumped when it grows, and a tap opens the Locker on the Shop. It is
+  drawn on the front page, the career and the boards, and not on the draft, whose cap
+  HUD is money of another kind.
+- **The Locker is the shop and the closet without a career** (`RTF_CAREER_UI.openLocker`,
+  `#rtf-locker`, a body-level kit sheet). The Look sheet lives in the career screen and
+  dresses the career on screen, so between careers there was no way to the shop. The
+  Locker dresses the career in progress, else the newest Hall card, else a stock look,
+  and has no Body tab. The front page row has a Locker key beside streak, wheel and quests.
+- **One material on the front page.** Career and the economy were kit (square cards on a
+  stepped 3px frame) and the draft game's cards under them were soft and rounded. A layer
+  scoped to `#s-home` puts every card on the kit frame in its own colour (`--fr`), and the
+  boards go square. Radius, border and shadow only, so nothing re-flows past the frame's
+  3px. Kit keys are square wherever they are drawn (`button.k-btn` and friends).
+- **A sheet closes on the kit's pixel X** (`RTF_KIT.closeX`), never a letter.
+
 ## Run The Diamond, the baseball game
 
 `baseball/`, at `/baseball/`. Same split as hoops: `engine.js`, `run.js`,
