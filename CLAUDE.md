@@ -6043,7 +6043,40 @@ Three.js is a new folder and never a stale cache.
   Both shipped as stuck games first.
 - **Frame times in this sandbox mean nothing**: Chromium here renders WebGL in
   software. The HUD prints fps, p95 and the game logic's own milliseconds so a
-  real phone can be read.
+  real phone can be read. **Draw calls do mean something**, and the HUD prints
+  those too (`renderer.info.render.calls`).
+- **A body is two draw calls, not forty.** `rig.js` still builds a character out
+  of dozens of primitives, each with its own ink hull, and then `bake()` merges
+  them into one skinned mesh for the body and one for the ink. Every node the
+  poser moves (trunk, limb segments, hands, feet, and whatever is held or
+  toggled: bat, glove, prop, hat, helmet, hair cap) is a bone, and each piece is
+  bound rigidly to the node it hung from, so posing goes through the same
+  Object3Ds as before. A hidden node gets a zero bone matrix (`VisSkeleton`),
+  which is how the bat and the helmet still switch off. The ink hull's push
+  along the normal is baked into its vertices. A helmet added later is baked
+  as a second pair. The park's static meshes are merged by material too
+  (`mergeStatic`). A full field went from 365-669 draws a frame to 38-61, and
+  the pixels came out the same to within shadow rounding. Baked meshes own
+  their geometry and bone texture, so `Actor.dispose()` frees them: fielders
+  are rebuilt every half inning.
+- **The offence dials are one object, `TUNE` in `main.js`**, exposed on `PROTO`
+  so a sweep can set them before `startGame`. How far the batter goes is a
+  race, not a timer: the furthest bag he reaches before a throw there would,
+  give or take a little nerve, so a ball in the gap is a double and now and
+  then he is thrown out stretching. Three things were needed and each was
+  silent:
+  - **The batter who reached first had stopped.** He was `done` by the time a
+    deep ball was fielded, and raising his target never cleared it. Every
+    double attempt was thrown out at second.
+  - **The bases are 50 ft and the fence is 142, so the outfield is close.** On
+    this field the runner never beat a throw to second. What makes doubles is
+    the outfielder's stop, turn and set before he throws (`transfer`, 1.4s
+    when he fielded it deep) and grounders that roll on to the track (`drag`).
+  - **`rnd` reads `Math.random` at call time**, so a checker can seed it. Seeded,
+    the old dials scored 10.8 runs and 30 hits a game (all singles) between two
+    bots. The shipped ones score about 15.5 runs, 34 hits, 5 doubles and a
+    homer. Unseeded runs of six games differ by more than any dial does.
+  Homers count as hits now; they never did.
 
 ### The collection: ten to start, packs for the middle, feats for the best
 

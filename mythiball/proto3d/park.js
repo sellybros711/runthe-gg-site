@@ -29,6 +29,48 @@ function noiseTex(c1, c2, size = 64, stripe = 0) {
   const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.magFilter = THREE.NearestFilter; t.colorSpace = THREE.SRGBColorSpace; return t;
 }
 
+/* Everything above is a few dozen small meshes that never move. Merged in
+   world space, one mesh per material, they cost a draw call each instead of
+   one per piece. The crowd and the stand steps are already instanced. */
+function mergeStatic(g) {
+  g.updateMatrixWorld(true);
+  const groups = new Map(), drop = [];
+  g.traverse((o) => {
+    if (!o.isMesh || o.isInstancedMesh) return;
+    const key = o.material.uuid + (o.castShadow ? 's' : '') + (o.receiveShadow ? 'r' : '');
+    if (!groups.has(key)) groups.set(key, []); groups.get(key).push(o);
+  });
+  const v = new THREE.Vector3(), n = new THREE.Vector3(), N = new THREE.Matrix3();
+  for (const list of groups.values()) {
+    if (list.length < 2) continue;
+    const pos = [], nor = [], uv = [], col = [], idx = []; let vo = 0;
+    const hasCol = list.every((m) => m.geometry.attributes.color);
+    for (const m of list) {
+      const geo = m.geometry, P = geo.attributes.position, Nn = geo.attributes.normal, U = geo.attributes.uv, C = geo.attributes.color;
+      N.getNormalMatrix(m.matrixWorld);
+      for (let i = 0; i < P.count; i++) {
+        v.fromBufferAttribute(P, i).applyMatrix4(m.matrixWorld); pos.push(v.x, v.y, v.z);
+        if (Nn) { n.fromBufferAttribute(Nn, i).applyMatrix3(N).normalize(); nor.push(n.x, n.y, n.z); } else nor.push(0, 1, 0);
+        if (U) uv.push(U.getX(i), U.getY(i)); else uv.push(0, 0);
+        if (hasCol) col.push(C.getX(i), C.getY(i), C.getZ(i));
+      }
+      if (geo.index) for (let i = 0; i < geo.index.count; i++) idx.push(geo.index.getX(i) + vo);
+      else for (let i = 0; i < P.count; i++) idx.push(i + vo);
+      vo += P.count; drop.push(m);
+    }
+    const out = new THREE.BufferGeometry();
+    out.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    out.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+    out.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    if (hasCol) out.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    out.setIndex(idx);
+    const mm = new THREE.Mesh(out, list[0].material); mm.castShadow = list[0].castShadow; mm.receiveShadow = list[0].receiveShadow; g.add(mm);
+  }
+  for (const m of drop) m.parent.remove(m);
+  /* a group the merge emptied is a node with nothing in it */
+  for (const c of [...g.children]) if (c.isGroup && !c.children.length) g.remove(c);
+}
+
 export function buildPark(scene) {
   const g = new THREE.Group(); scene.add(g);
   /* sky: a gradient dome, and fog the colour of its horizon so the far stands
@@ -128,6 +170,7 @@ export function buildPark(scene) {
   for (let i = 0; i < 9; i++) { const c = new THREE.Group(); const a = 0.4 + i * 0.27, r = 520 + rnd() * 150;
     for (let j = 0; j < 4; j++) { const b = new THREE.Mesh(new THREE.SphereGeometry(18 + rnd() * 14, 8, 6), cloudMat); b.position.set(j * 22 - 33, rnd() * 8, rnd() * 10); b.scale.y = 0.55; c.add(b); }
     c.position.set(Math.cos(a) * r, 150 + rnd() * 90, -Math.sin(a) * r); c.lookAt(0, c.position.y, 0); g.add(c); }
+  mergeStatic(g);
   return {
     group: g,
     cheer(t, amount) {
