@@ -41,6 +41,14 @@ jobs:
           psql "$SUPABASE_DB_URL" -c "select p.username, s.game, s.slot, s.progress, s.saved_at, length(s.payload::text) as bytes from ps_saves s join profiles p on p.id = s.user_id where lower(p.username) like '%runny%' order by s.saved_at desc;"
           echo "--- runnyj main tour best scores"
           psql "$SUPABASE_DB_URL" -c "select s.payload->'tours'->'main'->'best' as best, s.payload->'tours'->'main'->'tries' as tries from ps_saves s join profiles p on p.id = s.user_id where s.game='putt' and lower(p.username)='runnyj';"
+      - name: The save shelf itself
+        run: |
+          echo "--- rows per game"
+          psql "$SUPABASE_DB_URL" -c "select game, slot, count(*), max(saved_at) from ps_saves group by game, slot order by game, slot;"
+          echo "--- the functions"
+          psql "$SUPABASE_DB_URL" -c "select p.proname, pg_get_function_identity_arguments(p.oid) as args, has_function_privilege('authenticated', p.oid, 'execute') as auth_exec from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname like 'ps_save%' order by 1;"
+          echo "--- every row either tester has on the shelf"
+          psql "$SUPABASE_DB_URL" -c "select p.username, s.game, s.slot, s.progress, s.saved_at, length(s.payload::text) as bytes from ps_saves s join profiles p on p.id = s.user_id where lower(p.username) in ('runnyj','csel8') order by s.saved_at desc;"
       - name: The lives row
         run: |
           psql "$SUPABASE_DB_URL" -c "select p.username, l.* from putt_lives l join profiles p on p.id = l.user_id where lower(p.username) in ('runnyj','csel8');" || echo "no putt_lives table"
