@@ -920,6 +920,15 @@ visited for a week, a phone that is not the laptop, and a second account signing
 same browser. **None of those throws.** The only symptom is a front page offering to start
 something the player was forty seasons into.
 
+**UNTIL 143 THE SHELF HAD NEVER ACCEPTED A SAVE, FOR ANY GAME.** `ps_save_put` is
+`returns table (ok, slot, progress, ...)`, so `slot` is an OUT variable and its own `where ...
+and slot = p_slot` raised "column reference slot is ambiguous" on every call: 102's `used`
+trap at a second function. Read off the live database, `ps_saves` held zero rows. Every caller
+fails soft, so nothing said so; it was reported as Putt Putt progress resetting to hole 1 on a
+tester's second device. `supabase/143_ps_save_put_fix.sql` qualifies every column, preflight
+row 57 asks the body, and `supabase/test/ps_saves_test.sql` (on `ps_saves_base.sql`) fails on
+103 alone. `.github/workflows/putt-diag.yml` reads the shelf, read-only.
+
 **localStorage is still written first and synchronously, and that is deliberate.** A dynasty
 autosaves on every cut and every signing, and a game that waited on a round trip for each of
 those would be worse than one that loses a save. The browser copy is a cache of the table
