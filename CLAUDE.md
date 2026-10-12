@@ -11542,6 +11542,14 @@ live canvas needs its CSS width set as well as its height. **Classic's court and
 hidden, not deleted**: the court is one of the three `check-arenas` holds to the lines and the
 reel code still runs against it. Classic is a compact card under the puzzles.
 
+**The front page cast is traced fine** (`heroRes` in career-ui.js). A figure is 64 cells
+tall and drawn 160 to 320 CSS pixels high, and a scale of 5 falls back to one fine pixel a
+cell in `resFor`, which a phone blew up into a blurry mosaic. Each figure is traced at the
+finest resolution (up to 4 a cell) that lands every fine pixel on whole device pixels at
+its box's size. A res 3 first frame is about 150ms of main thread, so the page draws the
+coarse figure at once and swaps the fine one in at the next idle moment (`cast.fine`).
+check-polish section 8 holds it.
+
 #### The league office: everybody ages, retires, signs, gets drafted and gets traded
 
 ```

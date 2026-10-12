@@ -2869,13 +2869,38 @@ function heroLook(L){
   return Object.assign({}, window.RTF_BALLER.lookFor(heroSeed()), { ht: 79, wt: 215 });
 }
 function heroSeed(){ return heroLook.seed || (heroLook.seed = String(Math.floor(Math.random() * 1e9))); }
+/* THE FRONT PAGE CAST IS TRACED FINE. A figure is 64 cells tall and shown
+   here at 160 to 320 CSS pixels, so a trace of one fine pixel a cell (what a
+   scale of 5 falls back to in baller.js resFor) is blown up to 9 device
+   pixels a cell on a phone and reads as a blurry mosaic. Each figure is
+   traced at the finest resolution (up to 4 a cell) that lands every fine
+   pixel on whole device pixels at the size its box is drawn, so the pixel
+   look stays and the lines are one sharp device step.
+   A fine trace costs a phone a few hundred milliseconds, so the page first
+   draws the coarse figure at once and swaps the fine one in at the next idle
+   moment (cast.fine); nothing waits on it. */
+function heroRes(cssH){
+  var d = (cssH / 64) * (window.devicePixelRatio || 1);
+  for (var r = 4; r >= 2; r--) { var k = d / r; if (Math.abs(k - Math.round(k)) < 0.01 && Math.round(k) <= 3) return r; }
+  return 4;
+}
+function heroBoxH(sel, fallback){
+  var el = document.querySelector('#ch-cast ' + sel + ' .rtf-baller');
+  var h = el ? el.getBoundingClientRect().height : 0;
+  if (h) return h;
+  var w = window.innerWidth, t = window.innerHeight;
+  if (w >= 920) return fallback[2];
+  return t < 700 ? fallback[1] : fallback[0];
+}
 function castFig(n){
   var B = window.RTF_BALLER;
   var h = B.hash('cast:' + n + ':' + (cast.salt || (cast.salt = Math.random()))), club = CAST_CLUBS[h % CAST_CLUBS.length];
   var col = E && E.teamColors ? E.teamColors(club) : ['#334', '#ccd'];
   var sz = CAST_HT[(h >>> 8) % CAST_HT.length];
   var look = Object.assign({}, B.lookFor('cast' + n + ':' + h), { ht: sz[0], wt: sz[1] });
-  var o = { c1: col[0], c2: col[1], num: (h >>> 12) % 55, pose: 'stand', scale: 4, frame: 0 };
+  var r = cast.fine ? heroRes(heroBoxH('.ch-p.s', [160, 128, 256])) : 2;
+  /* scale = res keeps baller.js canvas() on whole fine pixels */
+  var o = { c1: col[0], c2: col[1], num: (h >>> 12) % 55, pose: 'stand', scale: r, res: r, frame: 0 };
   var a = B.url(look, o), b = B.url(look, Object.assign({}, o, { frame: 1 }));
   return '<img class="rtf-baller" src="' + a + '" data-b0="' + a + '" data-b1="' + b + '" width="176" height="256" alt="" draggable="false">';
 }
@@ -2896,15 +2921,19 @@ function heroCast(L){
   var B = window.RTF_BALLER, box = $('ch-cast');
   if (!B || !box) return;
   var look = heroLook(L), k = L ? C.colorsOf(L) : { primary: '#ff7a1a', secondary: '#1d1f2b' };
-  var key = JSON.stringify([look, k.primary, k.secondary, L ? L.num : 0, L && window.RTF_WARD && window.RTF_WARD.idleOf ? window.RTF_WARD.idleOf('court') : '']);
+  var res = cast.fine ? heroRes(heroBoxH('.ch-p.c', [192, 160, 320])) : 1;
+  cast.L = L;
+  var key = JSON.stringify([look, k.primary, k.secondary, L ? L.num : 0, L && window.RTF_WARD && window.RTF_WARD.idleOf ? window.RTF_WARD.idleOf('court') : '', res]);
   if (cast.key === key) return;
   cast.key = key;
   /* he does his own idle on the front page: the one he wears on court */
-  var mo = L ? dressed({ c1: k.primary, c2: k.secondary, num: L.num, age: L.age, pose: 'ball', scale: 5 }) : { c1: k.primary, c2: k.secondary, num: 23, age: 20, pose: 'ball', scale: 5 };
+  var mo = L ? dressed({ c1: k.primary, c2: k.secondary, num: L.num, age: L.age, pose: 'ball', scale: 5, res: res }) : { c1: k.primary, c2: k.secondary, num: 23, age: 20, pose: 'ball', scale: 5, res: res };
   if (L && window.RTF_WARD && window.RTF_WARD.idle) mo = window.RTF_WARD.idle(mo, 'court');
   var mid = B.img(look, mo);
   box.innerHTML = '<div class="ch-p s l">' + castFig(0) + '</div><div class="ch-p c">' + mid + '</div><div class="ch-p s r">' + castFig(1) + '</div>';
   cast.n = 0;
+  var ric0 = window.requestIdleCallback || function(f){ return setTimeout(f, 200); };
+  if (!cast.fine && !cast.fineAsked) { cast.fineAsked = true; ric0(function(){ cast.fine = true; if (castOnScreen()) heroCast(cast.L); }); }
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
   if (reduce || cast.timer) return;
   var ric = window.requestIdleCallback || function(f){ return setTimeout(f, 200); };
