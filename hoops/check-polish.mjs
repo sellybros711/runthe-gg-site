@@ -18,6 +18,9 @@
  *   7. the pack art leads: the Locker's banner fans one pack per pack on the
  *      shelf and says every piece comes from one, the front page's Locker key
  *      is a pack, and the closet's stage glows in a tried on piece's rarity
+ *   8. the front page player is traced fine once the page is idle: at least
+ *      two fine pixels a cell, landing on whole device pixels, never the one
+ *      a cell mosaic a scale of 5 used to fall back to
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -70,6 +73,14 @@ await page.waitForTimeout(600);
   const t = await page.evaluate(() => ({ home: document.getElementById('s-home').innerText, best: (document.getElementById('ch-best') || {}).textContent || '' }));
   ok(!/undefined|NaN/.test(t.home), '6 the front page prints no undefined or NaN (' + (t.home.match(/.{0,30}undefined.{0,10}/) || [''])[0] + ')');
   ok(/Dre Okafor/.test(t.best) && /88|Hall|ballot|Legend|Star|All|Journeyman|Starter/i.test(t.best) && !/undefined/.test(t.best), '6 an old Hall card reads its verdict off its score (' + t.best + ')');
+}
+
+/* 8 */
+{
+  await page.waitForFunction(() => { const c = document.querySelector('#ch-cast .ch-p.c canvas.rtf-baller'); return c && c.width > 44; }, null, { timeout: 8000 }).catch(() => {});
+  const f = await page.evaluate(() => { const c = document.querySelector('#ch-cast .ch-p.c .rtf-baller'); if (!c) return null; const r = c.width / 44, dev = c.getBoundingClientRect().height * devicePixelRatio / 64; return { r, step: dev / r }; });
+  ok(f && f.r >= 2, '8 the front page player is traced at least two fine pixels a cell (' + (f && f.r) + ')');
+  ok(f && Math.abs(f.step - Math.round(f.step)) < 0.02, '8 and each fine pixel lands on whole device pixels (' + (f && f.step) + ')');
 }
 
 /* 2 */
