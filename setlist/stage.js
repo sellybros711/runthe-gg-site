@@ -400,6 +400,8 @@ const DECK = { x0: -14, x1: 14, y0: -14.5, y1: 0, z: 4 };
 const SCREEN = { x0: -10.5, x1: 10.5, y: -14.6, z0: 8.4, z1: 16.6 };
 const TRUSS_Z = 21.5;
 const FIX = Array.from({ length: 10 }, (_, i) => -12.6 + i * 2.8);
+const TENT = { x0: 15, x1: 22, y0: 42, y1: 47, z: 6.2 };
+const inTent = (x, y, pad = 0) => x > TENT.x0 - pad && x < TENT.x1 + pad && y > TENT.y0 - pad && y < TENT.y1 + pad + 1;
 const LAMPS = [[-31.8, -2], [31.8, -2], [-31.8, 18], [31.8, 18], [-31.8, 38], [31.8, 38]];
 
 function grassAt(x, y){
@@ -432,7 +434,24 @@ function buildBack(rand){
   for (let k = 0; k < 14; k++){
     const x = -26 + rand() * 52, y = 34 + rand() * 14;
     const c = SHIRTS[(rand() * SHIRTS.length) | 0], c2 = SHIRTS[(rand() * SHIRTS.length) | 0];
+    if (inTent(x, y, 3)) continue;
     box(G, x - 2, x + 2, y - 1.4, y + 1.4, 0, .05, (px, py) => 'x:' + ((Math.floor(px) + Math.floor(py)) % 2 ? c : c2));
+  }
+  /* The merch tent at the back of the lawn, stage right: a striped canopy on four poles, a rack of
+     shirts on the back wall and a counter out front. The last row of the crowd is named after it. */
+  {
+    const T = TENT;
+    box(G, T.x0, T.x1, T.y0, T.y0 + .3, 0, T.z, (x, y, z, f) => {
+      if (f === 'front' && z > 2.6 && z < 5.2){
+        const k = Math.floor((x - T.x0) / 1.15);
+        if ((x - T.x0) % 1.15 > .25 && k > 0 && k < 6) return 'x:' + SHIRTS[(k * 5) % SHIRTS.length];
+      }
+      return 'x:#e9e2d2';
+    });
+    for (const [x, y] of [[T.x0, T.y0], [T.x1, T.y0], [T.x0, T.y1], [T.x1, T.y1]]) cap(G, [x, y, 0], [x, y, T.z], .1, 'x:#d8d4cc');
+    box(G, T.x0 - .3, T.x1 + .3, T.y0 - .3, T.y1 + .3, T.z, T.z + .5,
+      x => 'x:' + (Math.floor((x - T.x0) * 1.1) % 2 ? '#f6f1e4' : '#e8505f'));
+    box(G, T.x0 + .6, T.x1 - .6, T.y1 - 1.3, T.y1 - .3, 0, 2.4, (x, y, z, f) => 'x:' + (f === 'top' ? '#8a6a54' : '#5e4636'));
   }
   // Trees round the lawn and a stand of them behind the stage.
   const greens = ['#4f9a48', '#5aab50', '#3f8640'];
@@ -594,14 +613,22 @@ function skyAt(p){
   return SKY[SKY.length - 1][1];
 }
 
+const WORLDS = new Map();
 export function createStage(view, opts = {}){
   const venue = VENUES[opts.venue] || VENUES.lawn;
   const reduce = !!opts.reduce;
-  const rand = mulberry32((opts.seed | 0) || 7);
+  const seed = (opts.seed | 0) || 7;
+  const rand = mulberry32(seed ^ 0x5bd1e995);
 
-  const back = buildBack(rand);
-  const front = buildFront();
-  const frames = bandFrames();
+  /* The venue and the band are a second of work on a phone, so a night is built once and shared: the
+     crowd shot on the scorecard is the same world the show was just played in. */
+  let W = WORLDS.get(seed);
+  if (!W){
+    W = { back: buildBack(mulberry32(seed)), front: buildFront(), frames: bandFrames() };
+    WORLDS.set(seed, W);
+    if (WORLDS.size > 2) WORLDS.delete(WORLDS.keys().next().value);
+  }
+  const { back, front, frames } = W;
 
   // The crowd: twenty eight kinds of person, several hundred people, back to front.
   const variants = Array.from({ length: 28 }, () => crowdVariant(rand));
@@ -622,13 +649,34 @@ export function createStage(view, opts = {}){
   for (let y = 5.5; y < 44; y += 2.3 + (y - 5) * .02){
     const half = 19 + (y - 5) * .42, gap = 2.9 + (y - 5) * .05;
     for (let x = -half; x < half; x += gap + rand() * 1.2){
-      crowd.push({ x: x + (rand() - .5) * .5, y: y + (rand() - .5) * .5,
+      const c = { x: x + (rand() - .5) * .5, y: y + (rand() - .5) * .5,
         v: (rand() * variants.length) | 0, t: Math.min(1, (y - 5) / 40 * .6 + rand() * .45),
         phase: rand() * Math.PI * 2, jumpy: .4 + rand() * .6,
-        phone: rand() < .55, sign: rand() < .035, pose: 'down', until: 0 });
+        phone: rand() < .55, sign: rand() < .035, pose: 'down', until: 0 };
+      if (!inTent(c.x, c.y, 1.5)) crowd.push(c);
     }
   }
   crowd.sort((a, b) => a.y - b.y);
+  /* THE CROWD SHOT. The same night, after the last song, framed on the lawn instead of the stage: the
+     rail is the best night anybody drafted and the merch tent is the worst, and one fan in the middle
+     of it all is you, in the follow spot. Where you stand is the rank. Nothing here reads a score: the
+     page hands over a depth between 0 (the rail) and 1 (the tent). */
+  const shot = opts.shot === 'crowd' && opts.you ? opts.you : null;
+  const LAWN_Y0 = 5.5, LAWN_Y1 = 42.5;
+  const lawnY = d => LAWN_Y0 + clamp01(d) * (LAWN_Y1 - LAWN_Y0);
+  let you = null;
+  if (shot){
+    const ty = lawnY(shot.d), r2 = mulberry32((shot.seed | 0) || 11);
+    const half = 19 + (ty - 5) * .42, tx = (r2() * 2 - 1) * half * .45;
+    let bestD = 1e9;
+    for (const c of crowd){
+      const dd = (c.y - ty) ** 2 * 6 + (c.x - tx) ** 2 * .08;
+      if (dd < bestD){ bestD = dd; you = c; }
+    }
+    variants.push({ skin: SKINS[1], hair: HAIRS[0], style: 'short', hat: 'capback', hatC: '#f6f1e4',
+      shirt: '#37c5d5', dye: 0, stripe: null, pants: '#2e2e38', shoes: '#f0ece2', sign: ['#37c5d5', '#f6f1e4'] });
+    you.v = variants.length - 1; you.t = 0; you.you = true; you.pose = 'up'; you.jumpy = 1;
+  }
   // Everybody's first pose up front, so the first frame is not a stall.
   for (let vi = 0; vi < variants.length; vi++) spriteOf(vi, 'down');
 
@@ -768,7 +816,8 @@ export function createStage(view, opts = {}){
     /* Chunky, the way the putt putt world is: about 115 pixels across a phone, so a person is twenty
        pixels tall and three or four screen pixels make one of theirs. Never so small a scale that the
        screen would see past the edge of the world. */
-    k = Math.max(1, Math.min(Math.floor(devW / 140), Math.floor(devH / 260)));
+    k = shot ? Math.max(1, Math.round(devW / 340))
+      : Math.max(1, Math.min(Math.floor(devW / 140), Math.floor(devH / 260)));
     k = Math.max(k, Math.ceil(devW / WPX), Math.ceil(devH / HPX));
     visW = Math.ceil(devW / k); visH = Math.ceil(devH / k);
     view.width = visW * k; view.height = visH * k;
@@ -793,16 +842,29 @@ export function createStage(view, opts = {}){
        a wide screen, so there is always sky over the trees and lawn under the rail. */
     const tall = visH / visW > 1.4;
     camY = Math.round(Math.min(Math.max(0, DECK_FRONT - (tall ? .47 : .56) * visH), HPX - visH));
+    // The crowd shot sits the back of the lawn on the bottom of the frame and lets the stage fill the top.
+    if (shot) camY = Math.round(Math.min(Math.max(0, sy(TENT.y1 + .5, 0) + 5 - visH), HPX - visH));
     dofA = canvas(Math.max(1, Math.ceil(visW / 3)), Math.max(1, Math.ceil(visH / 3)));
     dof.width = Math.ceil(visW / 4); dof.height = Math.ceil(visH / 4);
     dof.style.cssText = view.style.cssText;
     // Sharp from just above the back wall to a few rows into the crowd; soft beyond, either side.
     const pc = r => (100 * (r - camY) / visH).toFixed(1) + '%';
     const a0 = pc(BACK_TOP - 10), a1 = pc(BACK_TOP + 6), b0 = pc(sy(22, 0)), b1 = pc(sy(44, 0));
-    const mask = `linear-gradient(to bottom, #000 0%, #000 ${a0}, transparent ${a1}, transparent ${b0}, rgba(0,0,0,.7) ${b1}, rgba(0,0,0,.7) 100%)`;
+    // The crowd shot is about the lawn, so all of it stays sharp; only the trees behind the stage go soft.
+    const mask = shot ? `linear-gradient(to bottom, #000 0%, #000 ${a0}, transparent ${a1}, transparent 100%)`
+      : `linear-gradient(to bottom, #000 0%, #000 ${a0}, transparent ${a1}, transparent ${b0}, rgba(0,0,0,.7) ${b1}, rgba(0,0,0,.7) 100%)`;
     Object.assign(dof.style, { pointerEvents: 'none', imageRendering: 'auto', maskImage: mask, webkitMaskImage: mask,
       width: view.style.width, height: view.style.height });
     draw();
+    if (shot && opts.onFit) opts.onFit(marks());
+  }
+  /* Where the page should hang its labels, as fractions of the picture: over your head, and the row a
+     random draft would stand in. */
+  function marks(){
+    if (!shot || !you) return null;
+    const [px, py] = P2(you.x, you.y, 0);
+    return { you: [(px - camX) / visW, (py - 24 - camY) / visH],
+      rnd: shot.rnd == null ? null : (P2(0, lawnY(shot.rnd), 0)[1] - camY) / visH };
   }
   const DECK_FRONT = sy(0, DECK.z), BACK_TOP = sy(-16, 19.5);
 
@@ -905,7 +967,8 @@ export function createStage(view, opts = {}){
       const [px, py] = P2(c.x, c.y, 0);
       if (py < top || py > bot || px < lft || px > rgt) continue;
       // A pose is held for a while and then reconsidered, so the lawn never moves in lockstep.
-      if (now > c.until){
+      if (c.you) c.pose = 'up';
+      else if (now > c.until){
         const r = Math.random();
         let pose = 'down';
         if (st.band && !lit){
@@ -1049,6 +1112,14 @@ export function createStage(view, opts = {}){
         pool(lg, px, py, 14, [255, 200, 130], .13 * night);
       }
     }
+    // The bulbs under the merch tent.
+    { const [px, py] = P2((TENT.x0 + TENT.x1) / 2, TENT.y1 - 1, 0); pool(lg, px, py, 34, [255, 214, 150], .55 * night); }
+    if (you){
+      // The follow spot: you, lit like you are in the band.
+      const [px, py] = P2(you.x, you.y, 0);
+      pool(lg, px, py - 6, 22, [235, 250, 255], 1, .9);
+      pool(lg, px, py, 34, [120, 220, 235], .45, .5);
+    }
 
     // 3. THE BEAMS, worked out once and used twice: where each lands lights the ground under it, and
     //    the cone itself glows in the haze.
@@ -1085,6 +1156,10 @@ export function createStage(view, opts = {}){
         cone(bg, P2(0, -.8, TRUSS_Z), b2, 12, [255, 255, 255], .3 * Math.sin(f * Math.PI) * dark);
         pool(lg, b2[0], b2[1], 26, [255, 255, 255], .5 * Math.sin(f * Math.PI) * dark);
       }
+    }
+    if (you){
+      const [px, py] = P2(you.x, you.y, 0);
+      cone(bg, P2(you.x > 0 ? 15.6 : -15.6, -.8, TRUSS_Z), [px, py], 13, [210, 245, 255], .32 * (.85 + .15 * pulse));
     }
     /* BACKLIGHTS on the roof of the stage house, firing over the band and out across the lawn: the
        shot every concert film is made of. Where they land they sweep the crowd. */
@@ -1177,6 +1252,25 @@ export function createStage(view, opts = {}){
         eg.fillStyle = rgb([255, 214, 150], (.25 + .75 * night) * tw);
         eg.fillRect(px, py, 1, 1);
       }
+    }
+    for (let x = TENT.x0 + .6; x <= TENT.x1 - .6; x += 1.6){
+      const [px, py] = P2(x, TENT.y1 + .2, TENT.z - .2);
+      eg.fillStyle = rgb([255, 222, 160], .4 + .6 * night); eg.fillRect(px, py, 1, 1);
+    }
+    // Where a random draft would be standing: a row of glow stakes across the lawn.
+    if (shot && shot.rnd != null){
+      const yr = lawnY(shot.rnd), half = 19 + (yr - 5) * .42;
+      for (let x = -half; x <= half; x += 1.4){
+        const [px, py] = P2(x, yr, .3);
+        eg.fillStyle = rgb([200, 236, 255], .3 + .15 * Math.sin(t * 2 + x)); eg.fillRect(px, py, 1, 1);
+      }
+    }
+    // A ring of light on the grass at your feet, breathing, so you are found before you are read.
+    if (you && you.px != null){
+      const br = .55 + .45 * Math.sin(t * 3);
+      eg.save(); eg.translate(you.px, you.py); eg.scale(1, .45);
+      eg.strokeStyle = rgb([90, 225, 240], .55 + .35 * br); eg.lineWidth = 1.4;
+      eg.beginPath(); eg.arc(0, 0, 7 + br * 1.5, 0, Math.PI * 2); eg.stroke(); eg.restore();
     }
     if (st.encore && H < .5){
       for (const c of crowd){
@@ -1298,7 +1392,7 @@ export function createStage(view, opts = {}){
     if (!view.isConnected){ destroy(); return; }
     raf = requestAnimationFrame(frame);
     // Thirty frames a second: people move on the beat, not per frame.
-    if (ts - last < 32) return;
+    if (ts - last < 32 || !seen) return;
     const dt = Math.min(.1, (ts - (last || ts)) / 1000);
     last = ts; now = ts;
     ease(dt);
@@ -1362,11 +1456,24 @@ export function createStage(view, opts = {}){
     if (dof.parentElement) dof.remove();
     if (vig.parentElement) vig.remove();
     cancelAnimationFrame(raf);
+    if (io) io.disconnect();
     window.removeEventListener('resize', fit);
   }
 
+  // The crowd shot is the end of the night: dark, the band taking a bow, the lawn on its feet.
+  if (shot){
+    Object.assign(st, { sky: 1, skyWant: 1, band: true, bow: true, house: 0, houseWant: 0,
+      light: .8, lightWant: .8, energy: .7, energyWant: .7, density: 1, densityWant: 1 });
+    setPalette('closer'); st.palT = 1;
+  }
+  /* Off screen, a picture nobody is looking at is not drawn: the crowd shot sits in a scrolling page. */
+  let seen = true, io = null;
+  if (shot && typeof IntersectionObserver === 'function'){
+    io = new IntersectionObserver(es => { seen = es.some(e => e.isIntersecting); });
+    io.observe(view);
+  }
   window.addEventListener('resize', fit);
   fit();
   if (!reduce) raf = requestAnimationFrame(frame);
-  return { cue, destroy, fit, sprites: frames };
+  return { cue, destroy, fit, marks, sprites: frames };
 }
