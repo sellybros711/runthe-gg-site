@@ -66,7 +66,7 @@ function lootBeam(t){ if (t.k === 'trinket' && t.col){ var n = parseInt(t.col.sl
 var ICONS = {};
 function lootIcon(t){ var key = t.k + (t.col || ''); if (ICONS[key]) return ICONS[key]; var L = LOOT[t.k], rows = L.rows, pal = lootPal(t), c = document.createElement('canvas'); c.width = rows[0].length; c.height = rows.length;
   var x = c.getContext('2d'); rows.forEach(function(r, j){ for (var i = 0; i < r.length; i++){ var ch = r[i]; if (ch === '.') continue; x.fillStyle = pal[ch] || pal.r; x.fillRect(i, j, 1, 1); } }); return ICONS[key] = c.toDataURL(); }
-var COIN_V = 25, BRK_V = 5, TART = 0.125;   // a coin off the ground pays 25 into the wallet and a smashed breakable 5; the trail is painted on a finer grid than a hole, because the camera comes in closer
+var COIN_V = 50, BRK_V = 25, TART = 0.125;   // a coin off the ground pays 50 into the wallet and a smashed breakable 25; the trail is painted on a finer grid than a hole, because the camera comes in closer
 
 function hash(x, y, s){ var h = (x * 374761393 + y * 668265263 + s * 982451653) | 0; h = Math.imul(h ^ h >>> 13, 1274126177); return ((h ^ h >>> 16) >>> 0) / 4294967296; }
 function vn(x, y, s){ var xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi, u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
