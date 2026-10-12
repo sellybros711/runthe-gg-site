@@ -382,7 +382,7 @@ function frOf(x){
 }
 /* The six standing poses, in the same angles. */
 var STILL = {
-  stand: fr([12, 6], [12, 6]),
+  stand: fr([12, 2, 1, 0.92], [12, 2, 1, 0.92]),
   suit: fr([10, 5], [10, 5]),
   cap: fr([10, 5], [10, 5]),
   up: fr([148, 176], [148, 176]),
@@ -738,7 +738,7 @@ function build(L, o, J){
     if (ST) { var ai = streetArm(A); mat = ai.m; r0 += ai.r; r1 += ai.r; r2 += ai.r * 0.8; }
     var ca = CW && !suit ? courtArm(A, s, mat) : null;
     if (ca) mat = ca.m;
-    if (!suit) add('delt' + s, 'arm' + s, ST ? (ai.d || 'skin') : ca ? ca.d : sleeved ? 'sleeve' : 'skin', sph([A.sh[0] - s * 0.7, A.sh[1] + 2.0, 0], BD.dl * 0.85 + g * 0.1 + (ST ? ai.r : 0)), A.sh, 3.5);
+    if (!suit) add('delt' + s, 'arm' + s, ST ? (ai.d || 'skin') : ca ? ca.d : sleeved ? 'sleeve' : 'skin', sph([A.sh[0] - s * 0.85, A.sh[1] + 2.3, 0], BD.dl * 0.8 + g * 0.1 + (ST ? ai.r : 0)), A.sh, 3.5);
     /* an arm has a shape: the bicep swells half way down, a little, so the shoulder stays narrow, the
        forearm is thickest just under the elbow and narrows to the wrist */
     /* the arm starts just under the shoulder point, so its cap does not rise above the shoulder line */
@@ -1553,7 +1553,9 @@ function paint0(look, o){
   if (L.beard === 'stubble' || L.beard === 'full' || L.beard === 'goatee') for (var y6 = 0; y6 < HH; y6++) for (var x6 = 0; x6 < WW; x6++) {
     var c6 = hit[y6][x6]; if (!c6 || model[c6.i].n !== 'head') continue;
     var l6 = loc(c6), chin = l6[1] > 4.4 && Math.abs(l6[0]) < 2.2 && l6[2] > 3, jaw = l6[1] > 2.2 && l6[2] > -1 && !(Math.abs(l6[0]) < 2.4 && l6[1] < 4.2);
-    if (L.beard === 'stubble' && jaw && (x6 + y6) % 2 === 0) out[y6][x6] = mix(out[y6][x6], R.beard[1], 0.45);
+    /* stubble is a shadow on the jaw with a few darker flecks, never a
+       checkerboard: at the size the face is drawn a checker read as noise */
+    if (L.beard === 'stubble' && jaw) { var fl = ((x6 * 73856093) ^ (y6 * 19349663)) >>> 0; out[y6][x6] = mix(out[y6][x6], R.beard[1], fl % 5 === 0 ? 0.5 : 0.26); }
     if ((L.beard === 'goatee' || L.beard === 'full') && chin) out[y6][x6] = mix(out[y6][x6], '#2a1a14', 0.7);
   }
   if (L.hair === 'bald' && !cap) { var sh0 = at(-2.6, -7.6, 3.4); block(sh0[0], sh0[1], Math.max(2, res + 1), Math.max(1, res), SK[4]); }

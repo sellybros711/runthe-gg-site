@@ -1893,13 +1893,32 @@ async function scenesWalk(b, serve) {
         /* the look of the shot: the room is not blurred, the cast is drawn on
            whole device pixels, and on the draft stage his feet are on it */
         look: open ? (() => {
-          const img = ov.querySelector('.sc-pix > .sc-pset img'), set = ov.querySelector('.sc-pix > .sc-pset');
-          const cv = [...ov.querySelectorAll('.sc-cast canvas')].filter((c) => c.offsetParent && ov.querySelector('.sc-cast').style.visibility !== 'hidden');
+          const rm = ov.querySelector('.sc-3d'), back = rm && rm.querySelector('.st-back');
+          const cv = [...ov.querySelectorAll('.sc-cast canvas:not(.st-sh)')].filter((c) => c.offsetParent && ov.querySelector('.sc-cast').style.visibility !== 'hidden');
           const dpr = window.devicePixelRatio || 1;
-          const crisp = cv.every((c) => { const q = c.getBoundingClientRect().width * dpr / c.width; return Math.abs(q - Math.round(q)) < 0.02 && Math.round(q) >= 1; });
-          let feet = null;
-          if (set && /rm-draft/.test(ov.querySelector('.sc-room').className) && cv.length) { const sr = set.getBoundingClientRect(); feet = Math.abs(cv[0].getBoundingClientRect().bottom - (sr.top + sr.height * 0.56)); }
-          return { blur: !!(img && /blur/.test(getComputedStyle(img).filter)), cast: cv.length, crisp, feet, shot: !!ov.querySelector('.sc-shot') };
+          const whole = (c) => { const q = c.getBoundingClientRect().width * dpr / c.width; return Math.abs(q - Math.round(q)) < 0.02 && Math.round(q) >= 1; };
+          const crisp = cv.every(whole) && (!back || !back.width || rm.getAttribute('data-fine') !== '1' || whole(back));
+          /* the room is the 3D stage, traced on the figure's own fine grid */
+          const three = !!(rm && window.RTF_STAGE && back);
+          const sameGrid = !back || !back.width || !cv.length || rm.getAttribute('data-fine') !== '1' || cv.every((c) => Math.abs(c.getBoundingClientRect().width / c.width - back.getBoundingClientRect().width / back.width) < 0.02);
+          /* a figure's feet are on its floor spot, where the room's own
+             projection puts that spot */
+          let feet = null, hidden = null;
+          if (three && cv.length) {
+            const S = window.RTF_STAGE, spec = S.build(rm.getAttribute('data-room'), JSON.parse(rm.getAttribute('data-o')));
+            const box = rm.querySelector('.st3').getBoundingClientRect(), k = cv[0].getBoundingClientRect().width / 44;
+            const cc = (rm.getAttribute('data-cam') || '0,0').split(',').map(Number), cam = { ox: cc[0], oy: cc[1] };
+            feet = Math.max(...cv.map((c) => { const p = S.project(cam, spec.spots[c.dataset.slot] || spec.spots.main); const r = c.getBoundingClientRect(); return Math.abs(r.top + S.FOOT_Y * k - (box.top + p[1] * k)); }));
+            /* and furniture in front of a figure covers him: a host behind the
+               studio desk or the draft podium has his feet under its layer */
+            const host = cv.find((c) => /host/.test(c.dataset.slot)), l1 = rm.querySelector('.st-l1');
+            if (host && l1 && l1.width && /rm-(studio|draft)/.test(rm.className) && rm.getAttribute('data-res') === String(l1.width / Math.round(box.width / k))) {
+              const p = S.project(cam, spec.spots[host.dataset.slot]); const r = (l1.width / box.width);
+              const x = Math.round((p[0] * k) * r), y = Math.round((p[1] * k - 6) * r);
+              hidden = l1.getContext('2d').getImageData(x, y, 1, 1).data[3] > 0;
+            }
+          }
+          return { blur: !!(back && /blur/.test(getComputedStyle(back).filter)), three, sameGrid, cast: cv.length, crisp, feet, hidden, room: rm ? rm.className : '', shot: !!ov.querySelector('.sc-shot') };
         })() : null };
     });
     if (!st.cur && !st.open) break;
@@ -1916,10 +1935,10 @@ async function scenesWalk(b, serve) {
          blur put back would pass unseen. The room is read once with motion on. */
       if (st.look && roomBlur == null) {
         await page.emulateMedia({ reducedMotion: 'no-preference' });
-        roomBlur = await page.evaluate(() => { const img = document.querySelector('#scov .sc-pix > .sc-pset img'); return img ? getComputedStyle(img).filter : null; });
+        roomBlur = await page.evaluate(() => { const img = document.querySelector('#scov .st3 .st-back'); return img ? getComputedStyle(img).filter : null; });
         await page.emulateMedia({ reducedMotion: 'reduce' });
       }
-      if (st.look) { looks.push(st.look); if (st.role === 'Commissioner' && !st.look.shot) onStage.push(st.look.cast > 0 && st.look.feet != null && st.look.feet < 10); }
+      if (st.look) { looks.push(st.look); if (st.role === 'Commissioner' && !st.look.shot && /rm-draft/.test(st.look.room)) onStage.push(st.look.cast > 0 && st.look.feet != null && st.look.feet < 2); }
       if (/^(the commissioner|your coach)$/i.test(st.who)) jobs.push(st.who);
       (st.room.match(/rm-\w+/g) || []).forEach((r) => { rooms[r] = 1; });
       if (st.ch) {
@@ -1954,7 +1973,12 @@ async function scenesWalk(b, serve) {
   ok(podium.length > 0 && podium.every(Boolean), `draft night is told from the podium, by the career's own commissioner (${podium.length} beats, ${Object.keys(seen).join(', ')})`);
   ok(looks.length > 0 && looks.every((l) => !l.blur) && roomBlur != null && !/blur/.test(roomBlur), `no scene room is blurred, with motion on or off: pixel art behind the cast stays crisp (${roomBlur})`);
   ok(looks.every((l) => l.crisp), `every figure on a scene's stage is drawn on whole device pixels (${looks.filter((l) => !l.crisp).length} soft)`);
-  ok(onStage.length > 0 && onStage.every(Boolean), `the commissioner is drawn, standing on the draft stage (${onStage.filter(Boolean).length} of ${onStage.length})`);
+  ok(onStage.length > 0 && onStage.every(Boolean), `the commissioner is drawn, standing on his spot on the draft stage (${onStage.filter(Boolean).length} of ${onStage.length})`);
+  ok(looks.length > 0 && looks.every((l) => l.three), `every scene room is the 3D stage, not a flat set (${looks.filter((l) => !l.three).length} flat)`);
+  ok(looks.every((l) => l.sameGrid), `the room is traced on the figure's own fine pixel grid (${looks.filter((l) => !l.sameGrid).length} off grid)`);
+  ok(looks.filter((l) => l.feet != null).every((l) => l.feet < 2), `every figure's feet are on its floor spot (worst ${Math.max(0, ...looks.map((l) => l.feet || 0)).toFixed(2)}px)`);
+  const occl = looks.filter((l) => l.hidden != null);
+  ok(occl.length > 0 && occl.every((l) => l.hidden), `furniture in front of a figure covers him: the desk or podium is over a host's feet (${occl.filter((l) => l.hidden).length} of ${occl.length})`);
   ok(jobs.length === 0, `no plate names a person by job alone (${jobs.slice(0, 2).join(', ') || 'none'})`);
   ok(rooms['rm-draft'] && rooms['rm-press'] && rooms['rm-arena'], `the draft stage, the press room and the arena all appear (${Object.keys(rooms).join(', ')})`);
   ok(choseInScene >= 1, `decisions are answered inside scenes (${choseInScene})`);

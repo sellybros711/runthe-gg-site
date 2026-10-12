@@ -2559,8 +2559,8 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "60",
-      "sha": "18bb30f4c7fc5e91"
+      "v": "61",
+      "sha": "e1501dd45d585caa"
     },
     "putt/land.js": {
       "v": "6",
@@ -2594,7 +2594,7 @@
     },
     "../baller.js": {
       "v": "15",
-      "sha": "cd2f9a24bc88af1c"
+      "sha": "bcdbde4e2b2abd36"
     },
     "../sound.js": {
       "v": "2",
@@ -2635,8 +2635,8 @@
       "sha": "97dbcac3f6f8d29d"
     },
     "baller.js": {
-      "v": "25",
-      "sha": "cd2f9a24bc88af1c"
+      "v": "26",
+      "sha": "bcdbde4e2b2abd36"
     },
     "economy.js": {
       "v": "4",
@@ -2710,9 +2710,13 @@
       "v": "2",
       "sha": "36759d12852558b2"
     },
+    "stage3d.js": {
+      "v": "1",
+      "sha": "240d69adebb700f7"
+    },
     "scenes.js": {
-      "v": "21",
-      "sha": "3eaa30c112aca682"
+      "v": "22",
+      "sha": "a08ee319556a9ba1"
     },
     "itemart.js": {
       "v": "3",

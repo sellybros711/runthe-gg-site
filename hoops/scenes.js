@@ -179,6 +179,19 @@ var CSS = [
 '.rm-hall .floor{position:absolute;left:0;right:0;bottom:0;height:26%;background:linear-gradient(#5a4a26,#2a2212);border-top:3px solid #e8b33c;}',
 '.rm-hall .plaque{position:absolute;left:50%;top:6%;transform:translateX(-50%);padding:6px 14px;border:2px solid #e8b33c;border-radius:6px;background:rgba(0,0,0,.4);font-family:var(--display,Impact);letter-spacing:.12em;color:#ffd36b;font-size:clamp(14px,3.6vw,22px);white-space:nowrap;}',
 '.sc-pix{overflow:hidden;background:#05070d;}',
+'.sc-3d{overflow:hidden;background:#05070d;}',
+'.sc-3d .sc-pflash{z-index:5;}',
+'.st3{position:absolute;}',
+'.st3 canvas{position:absolute;left:0;top:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;pointer-events:none;}',
+'.st3 .st-back{z-index:1;}',
+'.st3 .st-glow{z-index:1;image-rendering:auto;mix-blend-mode:screen;opacity:.55;filter:blur(10px);}',
+'.st3 .st-l1{z-index:3;}',
+'.st3 .st-l2{z-index:5;}',
+'.sc-3d::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:5;background:radial-gradient(ellipse 80% 75% at 50% 55%,rgba(3,4,10,0) 58%,rgba(3,4,10,.55) 100%);}',
+'.scov.s3 .sc-cast{display:block;inset:0;top:0;bottom:0;z-index:auto;}',
+'.scov.s3 .sc-cast img,.scov.s3 .sc-cast canvas{position:absolute;max-height:none;filter:none;}',
+'.scov.s3 .sc-cast .st-sh{z-index:2;opacity:1;animation:none;}',
+'.scov.s3:has(.sc-3d) .sc-hud{background:#05070d;box-shadow:0 3px 0 0 #0b0e1a;}',
 '.sc-pset{position:absolute;left:50%;top:var(--hud,58px);transform:translateX(-50%);}',
 '.sc-pfront{z-index:4;}',
 '.sc-pfront .sc-pset{clip-path:inset(var(--cut) 0 0 0);}',
@@ -223,6 +236,7 @@ function cssOnce(){
    cell is the same size, big enough to cover the stage and cropped from the
    middle. Text on a board or a screen sits in the set's own coordinates. */
 var PIX_ROOM = { arena: 1, press: 1, draft: 1, studio: 1, gym: 1, locker: 1, hall: 1, home: 1, office: 1, hotel: 1 };
+var STAGE_ROOM = PIX_ROOM;
 function pixKind(room, c){
   if (room === 'arena') return c.level === 'College' ? 'col' : c.level === 'High school' ? 'hs' : c.level === 'Pro' ? 'gl' : 'nba';
   if (room === 'gym') return 'hs';
@@ -283,6 +297,8 @@ function castPlan(ov){
 function fitPix(ov){
   var st = ov.querySelector('.sc-stage'), set = ov.querySelector('.sc-pset');
   if (!st) return;
+  ov.classList.toggle('s3', !!ov.querySelector('.sc-3d'));
+  if (fit3(ov)) return;
   var W = st.clientWidth, H = st.clientHeight;
   if (!W || !H) return;
   /* The broadcast bar sits over the top of the stage, so the set starts under
@@ -317,7 +333,99 @@ function fitPix(ov){
     imgs[i].style.height = h + 'px'; imgs[i].style.width = w + 'px'; imgs[i].style.maxHeight = 'none';
   }
 }
+/* THE 3D STAGE (stage3d.js). A room is a small 3D world traced from the
+   character's own camera and painted with his ramps; a figure stands on a
+   floor spot with his feet on it, between the furniture layers. A page whose
+   stage3d.js is blocked or stale gets the flat pixel sets above. */
+function S3(){ var S = window.RTF_STAGE; return S && S.API_VERSION >= 1 && B && B.paint ? S : null; }
+function stageRoom(room, c){ var kind = pixKind(room, c); return room === 'arena' && kind === 'hs' ? 'gym' : room; }
+function stageHTML(room, c){
+  var kind = pixKind(room, c);
+  var o = { c1: c.c1, c2: c.c2, oc: c.oc, board: c.board || '', nick: c.nick || '', kind: kind, loud: !!c.loud, tex: c.tex || '' };
+  return '<div class="sc-room sc-3d rm-' + room + '" data-room="' + stageRoom(room, c) + '" data-o="' + esc(JSON.stringify(o)) + '">'
+    + '<div class="st3"><canvas class="st-back"></canvas><canvas class="st-glow"></canvas><canvas class="st-l1"></canvas><canvas class="st-l2"></canvas></div>'
+    + (c.loud ? '<i class="sc-pflash"></i>' : '') + '</div>';
+}
+/* The size of a cell and the trace, chosen together: a cell is a whole
+   number of fine pixels and a fine pixel a whole number of device pixels, so
+   the room, the furniture and the man are one grid. About 92 cells across a
+   phone and 128 down the stage, so two people and the room around them fit. */
+function plan3(ov){
+  var st = ov.querySelector('.sc-stage'); if (!st) return null;
+  var W = st.clientWidth || 390, H = st.clientHeight || 600, hud = ov.querySelector('.sc-hud'), hh = hud ? hud.offsetHeight : 58;
+  /* The cell is sized off the WINDOW, never off the stage: the stage
+     shrinks whenever the caption grows (a decision is taller than a line),
+     and a cell that moved with it would leave a figure traced for one size
+     shown at another, soft. */
+  var Hs = Math.max(80, H - hh), vh = (typeof window !== 'undefined' && window.innerHeight) || H + 260;
+  var kd = Math.max(2.5, Math.min(W / 80, Math.max(160, vh * 0.66 - hh) / 120, 9));
+  var dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1, best = null;
+  for (var r = 3; r >= 1; r--) {
+    var q = Math.max(1, Math.round(kd * dpr / r)), k = r * q / dpr, cost = (W / k * r) * (Hs / k * r);
+    if (cost > 160000 && r > 1) continue;
+    var sc = Math.abs(k - kd) / kd - r * 0.05;
+    if (!best || sc < best.sc) best = { sc: sc, r: r, k: k };
+  }
+  return { k: best.k, r: best.r, cw: Math.ceil(W / best.k), ch: Math.ceil(Hs / best.k), W: W, Hs: Hs, hh: hh, dpr: dpr };
+}
+function fit3(ov){
+  var rm = ov.querySelector('.sc-3d'), S = S3();
+  if (!rm || !S) return false;
+  var pl = plan3(ov); if (!pl) return true;
+  ov.style.setProperty('--hud', pl.hh + 'px');
+  var o = JSON.parse(rm.getAttribute('data-o') || '{}'), spec = S.build(rm.getAttribute('data-room'), o);
+  if (!spec) return true;
+  var box = rm.querySelector('.st3'), left = Math.round((pl.W - pl.cw * pl.k) / 2 * pl.dpr) / pl.dpr;
+  /* One canvas per room, taller than the stage by PAD rows above and below,
+     traced once with the camera pinned. When the stage changes height (the
+     caption under it grows for a decision) the picture slides by the
+     difference in where the focus belongs, whole device pixels, and nothing
+     is traced again. */
+  var PAD = 40, key = spec.key + '@' + pl.cw + 'x' + pl.r + 'x' + pl.k;
+  if (rm._key !== key) {
+    rm._key = key; rm.removeAttribute('data-fine'); if (rm._stop) rm._stop();
+    var c0 = S.frame(spec, pl.cw, pl.ch);
+    rm._cam = { ox: c0.ox, oy: c0.oy + PAD }; rm._ch0 = pl.ch; rm._rows = pl.ch + PAD * 2;
+    var put = function(out, fine){
+      if (rm._key !== key || (!fine && rm._fine)) return;
+      [['st-back', out.back], ['st-glow', out.glow], ['st-l1', out.l1], ['st-l2', out.l2]].forEach(function(a){
+        var el = box.querySelector('.' + a[0]);
+        if (el !== a[1]) { a[1].className = a[0]; if (el) box.replaceChild(a[1], el); else box.appendChild(a[1]); }
+      });
+      rm.setAttribute('data-res', out.res); if (fine) rm.setAttribute('data-fine', '1');
+    };
+    rm._fine = false;
+    if (pl.r > 1) S.draw(spec, pl.cw, rm._rows, 1, function(out){ put(out, false); }, rm._cam);
+    rm._stop = S.draw(spec, pl.cw, rm._rows, pl.r, function(out){ rm._fine = true; put(out, true); }, rm._cam);
+  }
+  var slide = S.frame(spec, pl.cw, pl.ch).oy - S.frame(spec, pl.cw, rm._ch0).oy;
+  var top = pl.hh + Math.round((slide - PAD) * pl.k * pl.dpr) / pl.dpr;
+  box.style.left = left + 'px'; box.style.top = top + 'px'; box.style.width = pl.cw * pl.k + 'px'; box.style.height = rm._rows * pl.k + 'px';
+  rm.setAttribute('data-cam', rm._cam.ox + ',' + rm._cam.oy);
+  /* the cast: each figure on its spot, its feet on the floor there, its
+     shadow under it, between the layers its spot belongs to */
+  var cam = { ox: rm._cam.ox, oy: rm._cam.oy, cw: pl.cw, ch: rm._rows }, cast = ov.querySelector('.sc-cast');
+  if (cast) cast.style.bottom = '';
+  var figs = ov.querySelectorAll('.sc-cast [data-slot]');
+  for (var i = 0; i < figs.length; i++) {
+    var el = figs[i], slot = el.getAttribute('data-slot'), spot = spec.spots[slot] || spec.spots.main, p = S.project(cam, spot);
+    var fr = el.width ? el.width / 44 : pl.r;
+    var fx = Math.round((p[0] - S.FOOT_X) * fr) / fr, fy = Math.round((p[1] - S.FOOT_Y) * fr) / fr;
+    el.style.left = (left + fx * pl.k) + 'px'; el.style.top = (top + fy * pl.k) + 'px';
+    el.style.width = 44 * pl.k + 'px'; el.style.height = 64 * pl.k + 'px';
+    el.style.zIndex = slot === 'main' ? 4 : 2;
+    var sh = el.previousElementSibling && el.previousElementSibling.classList.contains('st-sh') ? el.previousElementSibling : null;
+    if (!sh) { sh = document.createElement('canvas'); sh.className = 'st-sh'; el.parentNode.insertBefore(sh, el); }
+    var sc = S.shadow(fr);
+    if (sh.width !== sc.width) { sh.width = sc.width; sh.height = sc.height; sh.getContext('2d').drawImage(sc, 0, 0); }
+    sh.style.left = (left + Math.round((p[0] - 13) * fr) / fr * pl.k) + 'px'; sh.style.top = (top + Math.round((p[1] - 4.2) * fr) / fr * pl.k) + 'px';
+    sh.style.width = 30 * pl.k + 'px'; sh.style.height = 10 * pl.k + 'px';
+    sh.style.zIndex = slot === 'main' ? 4 : 2;
+  }
+  return true;
+}
 function roomHTML(room, c){
+  if (K && STAGE_ROOM[room] && S3()) return stageHTML(room, c);
   if (K && PIX_ROOM[room]) return pixRoomHTML(room, c);
   var v = 'style="--c1:' + c.c1 + ';--c2:' + c.c2 + '"';
   switch (room) {
@@ -996,6 +1104,26 @@ function play(beats, ctx, opts){
     live = null;
     if (opts.done) opts.done();
   }
+  /* The studio talks about him with his face on the video wall: a bust off
+     his own sprite, the network's colour behind, his name on a lower third. */
+  function portraitTex(oc){
+    var S = S3(); if (!S) return '';
+    var name = 'me:' + B.hash(JSON.stringify([ctx.look, ctx.c1, ctx.c2, ctx.num, oc, ctx.name]));
+    if (portraitTex[name]) return name;
+    var g = B.paint(ctx.look, dressMe({ c1: ctx.c1, c2: ctx.c2, num: ctx.num, pose: 'stand', age: ctx.age, res: 1 }, 'court'));
+    var nm = S.textTex(String(ctx.last || ctx.name || '').toUpperCase().slice(0, 8), '#ffffff', 1, { sh: '#05070d' });
+    var W = 54, H = 32, bx = 5, by = -3;
+    S.setTex(name, { w: W, h: H, at: function(x, y){
+      if (y >= 23 && y < 32) { if (y === 23) return oc; var u = x - 4, v = y - 24; var c = u >= 0 && u < nm.w && v >= 0 && v < nm.h ? nm.at(u, v) : null; return c || (x < 2 ? oc : '#0d0b18'); }
+      var gx = x - bx, gy = y - by, row = g[gy];
+      var c2 = row && gx >= 0 && gx < row.length ? row[gx] : null;
+      if (c2) return c2;
+      var band = (x + y) % 9 < 1;
+      return band ? '#2a1d44' : (y < 12 ? '#1c1430' : '#160f28');
+    } });
+    portraitTex[name] = 1;
+    return name;
+  }
   function setRoom(bt){
     var r = bt.room || roomName;
     roomName = r;
@@ -1006,7 +1134,7 @@ function play(beats, ctx, opts){
     if (key !== room) {
       room = key;
       var on2 = OUTLETS[CAST[bt.who] ? CAST[bt.who].outlet : 'night'];
-      $('.sc-rooms').innerHTML = roomHTML(r, { c1: k1, c2: k2, oc: oc, level: ctx.level, loud: bt.loud, board: T(bt.board, ctx), outlet: on2 ? on2.name.toUpperCase() : '' });
+      $('.sc-rooms').innerHTML = roomHTML(r, { c1: k1, c2: k2, oc: oc, level: ctx.level, loud: bt.loud, board: T(bt.board, ctx), outlet: on2 ? on2.name.toUpperCase() : '', nick: ctx.nick || ctx.teamName || '', tex: r === 'studio' ? portraitTex(oc) : '' });
     }
     $('.sc-conf').innerHTML = bt.confetti ? confettiHTML(ctx) : '';
     fitPix(ov);
@@ -1023,6 +1151,8 @@ function play(beats, ctx, opts){
     var rm = bt.room || roomName, sd = SPEAKER[bt.who];
     var spk = !bt.pic && !bt.shot && sd && (!sd.rooms || sd.rooms[rm]) ? bt.who : '';
     var pic = bt.pic || (!spk && !bt.shot && ASKS_HIM[bt.who] && rm !== 'studio' ? 'me' : '');
+    var s3 = !!ov.querySelector('.sc-3d');
+    if (s3) return setCast3(bt, rm, sd, old, lookCtx);
     var k = (pic || (spk ? 'spk:' + spk : '')) + '|' + (bt.pose || '') + '|' + (old ? 'from' : '') + '|' + lookCtx;
     var el = $('.sc-cast');
     if (k === castKey) {
@@ -1057,6 +1187,49 @@ function play(beats, ctx, opts){
     el.innerHTML = html;
     fitPix(ov);
   }
+  /* On the 3D stage the shot is two people in a room rather than one man
+     cut out: whoever is talking stands at his place (the commissioner at the
+     podium, the GM behind his desk, a veteran at his stall) and the player
+     at his, both lit by the room. The studio always has its two hosts at the
+     desk, and the player on the video wall behind them. */
+  function setCast3(bt, rm, sd, old, lookCtx){
+    var spk = !bt.shot && sd && (!sd.rooms || sd.rooms[rm]) ? bt.who : '';
+    var pic = bt.shot ? '' : bt.pic || (ASKS_HIM[bt.who] && rm !== 'studio' ? 'me' : '');
+    var who = [];
+    if (rm === 'studio') { if (!bt.shot) who = [['host', 'hollis'], ['host2', 'whit']]; }
+    else {
+      if (spk) who.push(['host', 'spk:' + spk]);
+      if (pic === 'me' || pic === 'both') who.push(['main', 'me']);
+      if ((pic === 'rival' || pic === 'both') && !spk) who.push(['host', 'rival']);
+      if (!who.length && !bt.shot && (rm === 'home' || rm === 'hotel' || rm === 'locker' || rm === 'office')) who.push(['main', 'me']);
+    }
+    var k = JSON.stringify(who) + '|' + (bt.pose || '') + '|' + (old ? 'from' : '') + '|' + lookCtx + '|' + rm;
+    if (k === castKey) return;
+    var enter = !walked && !!B.live && who.some(function(w){ return w[1] === 'me'; });
+    if (enter) walked = true;
+    castKey = k;
+    var fig = B.live || B.img, cres = (plan3(ov) || { r: 2 }).r;
+    var slot = function(html, sl){ return html.replace(/^<(canvas|img)/, '<$1 data-slot="' + sl + '"'); };
+    var html = '';
+    who.forEach(function(w){
+      var sl = w[0], id = w[1];
+      if (id === 'me') html += slot(fig(ctx.look, dressMe({ c1: old ? ctx.fc1 : ctx.c1, c2: old ? ctx.fc2 : ctx.c2, num: ctx.num, pose: bt.pose || 'stand', age: ctx.age, scale: 6, res: cres, enter: enter }, lookCtx), enter ? '' : 'in'), sl);
+      else if (id === 'rival') {
+        var r = ctx.rival, last = r && r.seasons && r.seasons[r.seasons.length - 1];
+        var k2 = last && E.clubSkin ? E.clubSkin(last.team) : { primary: '#2b3242', secondary: '#c9ccd6' };
+        html += slot(fig(B.lookFor(r ? r.name : 'rival'), { c1: k2.primary, c2: k2.secondary, num: r ? (B.hash(r.name) % 99) : 0, pose: bt.pose || 'stand', scale: 6, res: cres }, 'in'), sl);
+      } else {
+        var sid = id.replace(/^spk:/, ''), d = SPEAKER[sid] || SPEAKER.hollis, cw = CAST[sid] || CAST.hollis, nm = T(cw.name, ctx) || sid;
+        var team = d.team, c1 = team ? (old ? ctx.fc1 : ctx.c1) : (OUTLETS[cw.outlet] || OUTLETS.night).c, c2 = team ? (old ? ctx.fc2 : ctx.c2) : '#11141f';
+        if (!team) c1 = mix3(c1);
+        html += slot(fig(B.lookFor('speaker:' + nm), { c1: c1, c2: c2, num: B.hash(nm) % 60 + 1, pose: d.pose, faceless: !!d.real, scale: 6, res: cres }, 'in'), sl);
+      }
+    });
+    $('.sc-cast').innerHTML = html;
+    fitPix(ov);
+  }
+  /* a suit in the outlet's colour, darkened to a suit */
+  function mix3(c){ var x = parseInt(String(c).slice(1), 16); var r = (x >> 16) & 255, g = (x >> 8) & 255, b = x & 255; var f = function(v){ return Math.round(v * 0.42 + 12); }; return '#' + [f(r), f(g), f(b)].map(function(v){ return (v < 16 ? '0' : '') + v.toString(16); }).join(''); }
   /* A beat with a shot plays it on the court player (hoops/court.js): the
      same room, the man moving through it. The shot carries on across beats
      that name the same shot, so the caption can change while he walks. */

@@ -102,6 +102,15 @@
  * to every pose, and it bound at the default height; it now applies only as
  * the hand rises above the shoulder. The waist is wider, so the torso falls
  * into the hips instead of pinching above them.
+ *
+ * RE-RECORDED A THIRTEENTH TIME, ON PURPOSE: with the cutscenes redrawn as 3D
+ * rooms the owner asked for the characters to be cleaned up. Stubble was a
+ * checkerboard on the jaw and read as noise at the size a face is drawn; it is
+ * a shadow with a few darker flecks now. A standing arm hung dead straight; it
+ * carries a slight bend at the elbow, the forearm a little toward the camera.
+ * The shoulder cap is a touch smaller and lower so it does not knob above the
+ * arm. The neck and the head did not move: the owner has asked twice for a
+ * short neck.
  */
 import fs from 'node:fs';
 import path from 'node:path';
