@@ -20133,7 +20133,8 @@ yet beaten on the main tour: a beaten hole's trail is already behind you. A gate
   - **The chest is a real treasure chest and opening it is a sequence** (`chestFn(lid)`, `drawChest`): oak planks,
     iron bands, gold corners and lock, a domed lid on a hinge, drawn at five lid angles. Shut, it sits in a warm pool
     of light and glints. Walked up to, it rattles (`CH_SHAKE`), the lid swings back (`CH_LID`), light rays pour out,
-    and the coins spray out after (`CH_COINS`), under a "12 coins!" that rises off it.
+    and the coins spray out after (`CH_COINS`), under a "300 coins!" that rises off it. It has no square edge: a rounded footprint (`CH_RC`), sides
+    that bow out, a bevelled foot and rim, and a lid whose ends round into its dome, built on a sixteenth of a foot.
 - **Nothing picked up just vanishes** (`collect`, `drawFx`): it pops up and grows, turns, then flies to where it is
     kept on screen (a coin to the coin count, a golden ball to its counter, any other find to its own row of the
     list) and that spot pulses (`.pp-bump`). A word rises where it was. The speech bubble waits until the find has
@@ -20156,7 +20157,9 @@ yet beaten on the main tour: a beaten hole's trail is already behind you. A gate
     is round a bend, and the yards it gives are what is left to walk.
 - **NO COIN LIES LOOSE. Coins are in a chest, ONE A TRAIL**, the owner's call: in the clearing when it holds
   one, else hidden off the path (`hideSpot`: just north of a tree or a rock). Walking up to it opens it and its coins fly out and land round it; each is walked over to pick
-  up and paid into the Run The Tour wallet (`COIN_V` each, through the host's `coins`). A chest pays nothing
+  up and paid into the Run The Tour wallet (`COIN_V`, 25 each, through the host's `coins`; a smashed breakable
+  pays `BRK_V`, 5). Over every trail that is about 55,000 coins on the main tour (2,099 chest coins and 567
+  breakables across 143 trails) and 6,600 on the Members Tour, against 32,000 for clearing the main tour's holes. A chest pays nothing
   itself. Where each coin lands is fixed by the plan (`drops`), so a coin left on the ground is still there next
   time. Breakables are the only other coins. Paying refreshes the wallet pill at the top (`coins()` in putt.js
   rewrites every `[data-bal]`). check-putt opens the chest, picks its coins up and checks the payout.

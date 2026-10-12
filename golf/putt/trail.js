@@ -66,7 +66,7 @@ function lootBeam(t){ if (t.k === 'trinket' && t.col){ var n = parseInt(t.col.sl
 var ICONS = {};
 function lootIcon(t){ var key = t.k + (t.col || ''); if (ICONS[key]) return ICONS[key]; var L = LOOT[t.k], rows = L.rows, pal = lootPal(t), c = document.createElement('canvas'); c.width = rows[0].length; c.height = rows.length;
   var x = c.getContext('2d'); rows.forEach(function(r, j){ for (var i = 0; i < r.length; i++){ var ch = r[i]; if (ch === '.') continue; x.fillStyle = pal[ch] || pal.r; x.fillRect(i, j, 1, 1); } }); return ICONS[key] = c.toDataURL(); }
-var COIN_V = 3, TART = 0.125;   // the trail is painted on a finer grid than a hole, because the camera comes in closer
+var COIN_V = 25, BRK_V = 5, TART = 0.125;   // a coin off the ground pays 25 into the wallet and a smashed breakable 5; the trail is painted on a finer grid than a hole, because the camera comes in closer
 
 function hash(x, y, s){ var h = (x * 374761393 + y * 668265263 + s * 982451653) | 0; h = Math.imul(h ^ h >>> 13, 1274126177); return ((h ^ h >>> 16) >>> 0) / 4294967296; }
 function vn(x, y, s){ var xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi, u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
@@ -781,38 +781,47 @@ var BRK = {
 };
 /* THE CHEST, a proper treasure chest: oak planks with grain, iron bands, gold corner caps and a gold lock plate on
    a domed lid that swings back on its hinge. It is drawn at five lid angles (lid 0 shut .. 1 thrown open) so the
-   opening plays as an animation; open, it shows a red lining and a heap of gold. Back is -y, the front faces the camera. */
-var CH_W = 1.55, CH_D = 0.95, CH_H = 1.25, CH_R = 0.95;   // half width, half depth, body height, lid radius (the dome's rise is CH_R * .7)
-function chestFn(lid){ var th = lid * 1.8, ct = Math.cos(th), st = Math.sin(th);
+   opening plays as an animation; open, it shows a red lining and a heap of gold. Back is -y, the front faces the camera.
+   NOTHING ON IT IS A SQUARE EDGE. The footprint is a rounded rectangle (CH_RC), the sides bow out a little, the foot and
+   the rim are bevelled, and the lid's ends are rounded into its dome, all on an eighth of a voxel's finer grid, because
+   at this size a straight edge and a right angle are what made it read as a box of blocks. */
+var CH_W = 1.55, CH_D = 0.95, CH_H = 1.25, CH_R = 0.95, CH_RC = 0.5;   // half width, half depth, body height, lid radius, corner radius
+function rrect(x, y, hw, hd, rc){ var qx = Math.max(Math.abs(x) - (hw - rc), 0), qy = Math.max(Math.abs(y) - (hd - rc), 0); return Math.hypot(qx, qy) - rc; }   // < 0 inside, the distance out of a rounded rectangle
+function chestFn(lid, sv){ var th = lid * 1.8, ct = Math.cos(th), st = Math.sin(th);
   var WOOD = ['#7a4520', '#8e5428', '#a5652f', '#5c3216'], IRON = ['#3a3a44', '#5c5c6a', '#8a8a98'], GOLD = ['#b07a10', '#ffd23a', '#fff1a0'], VEL = '#8a1626';
   function wood(u, w, ex){ var gr = hash(Math.floor(u * 9), Math.floor(w * 3 + ex), 17), seam = Math.abs((w * 3.4 + ex) % 1) < 0.1; return seam ? WOOD[3] : gr < 0.2 ? WOOD[0] : gr > 0.85 ? WOOD[2] : WOOD[1]; }
   function band(x){ return Math.abs(Math.abs(x) - 0.9) < 0.11; }
-  function corner(x, y){ return Math.abs(x) > CH_W - 0.2 && Math.abs(y) > CH_D - 0.2; }
-  return function(B){ box(B, 0, 0, 3.8, 4.8, 4.2, function(dx, dy, tt){
-    if (Math.abs(dx) > CH_W) return null;
-    // the body, a little narrower at the bottom so it sits on the ground like a box rather than a slab
-    if (tt < CH_H && Math.abs(dy) < CH_D){
-      var inside = Math.abs(dx) < CH_W - 0.13 && Math.abs(dy) < CH_D - 0.13 && tt > 0.18;
+  return function(B){ box(B, 0, 0, 3.6, 6.2, 4.4, function(dx, dy, tt){
+    if (Math.abs(dx) > CH_W + 0.1) return null;
+    // the body: a rounded rectangle that bows out at the middle of its height, bevelled into the ground and under the rim
+    if (tt < CH_H){
+      var bow = 0.07 * Math.sin(Math.PI * Math.max(0, Math.min(1, tt / CH_H))), bev = Math.max(0, 0.16 - tt) + Math.max(0, tt - (CH_H - 0.1)) * 0.8,
+          sd = rrect(dx, dy, CH_W + bow - bev, CH_D + bow - bev, CH_RC);
+      if (sd > 0) return null;
+      var inside = rrect(dx, dy, CH_W - 0.13, CH_D - 0.13, CH_RC - 0.1) < 0 && tt > 0.18;
       if (inside && lid > 0.2){ var top = 0.62 + (lid > 0.6 ? 0.28 * (1 - Math.hypot(dx / CH_W, dy / CH_D)) : 0);
         if (tt > top) return null; return tt > top - 0.13 ? (hash(dx * 8 | 0, dy * 8 | 0, 3) < 0.35 ? GOLD[2] : GOLD[1]) : VEL; }
-      if (tt < 0.12) return IRON[0];
-      if (corner(dx, dy)) return tt > CH_H - 0.16 || tt < 0.26 ? GOLD[2] : GOLD[1];
-      if (dy > CH_D - 0.14 && Math.abs(dx) < 0.24 && tt > CH_H - 0.5){ if (Math.abs(dx) < 0.06 && tt > CH_H - 0.36 && tt < CH_H - 0.16) return '#2a1a06'; return Math.abs(dx) > 0.17 ? GOLD[0] : GOLD[1]; }   // the lock plate and its keyhole
+      if (tt < 0.1) return IRON[0];
+      var rim = sd > -0.12;   // the outer skin, where the gold caps and the iron bands sit
+      if (rim && Math.abs(dx) > CH_W - CH_RC * 0.55 && Math.abs(dy) > CH_D - CH_RC * 0.55) return tt > CH_H - 0.16 || tt < 0.26 ? GOLD[2] : GOLD[1];   // a gold cap down the round of each corner
+      if (dy > 0 && rim && Math.abs(dx) < 0.24 && tt > CH_H - 0.5){ if (Math.abs(dx) < 0.06 && tt > CH_H - 0.36 && tt < CH_H - 0.16) return '#2a1a06'; return Math.abs(dx) > 0.17 ? GOLD[0] : GOLD[1]; }   // the lock plate and its keyhole
       if (band(dx)) return Math.abs(dx) > 0.75 ? IRON[1] : IRON[2];
       if (Math.abs(tt - (CH_H - 0.06)) < 0.07) return IRON[1];
       return wood(dx, tt, dy > 0 ? 0 : 0.5); }
-    // the lid: a half barrel on the hinge at the back top edge, turned back by th
+    // the lid: a half barrel on the hinge at the back top edge, turned back by th, its ends rounded into the dome
     var v1 = dy + CH_D, w1 = tt - CH_H, v = v1 * ct + w1 * st, w = -v1 * st + w1 * ct, vc = v - CH_D;
     if (v < 0 || v > 2 * CH_D || w < -0.02) return null;
-    var dome = Math.sqrt(Math.max(0, 1 - (vc * vc) / (CH_D * CH_D))) * CH_R * 0.7 + 0.12; if (w > dome) return null;
-    var shell = w > dome - 0.14 || Math.abs(dx) > CH_W - 0.12 || v < 0.12 || v > 2 * CH_D - 0.12;
+    if (rrect(dx, vc, CH_W, CH_D, CH_RC) > 0) return null;   // the lid's footprint matches the body's rounded corners
+    var endK = Math.max(0, Math.abs(dx) - (CH_W - CH_RC)) / CH_RC, dome = (Math.sqrt(Math.max(0, 1 - (vc * vc) / (CH_D * CH_D))) * CH_R * 0.7 + 0.12) * Math.sqrt(Math.max(0, 1 - endK * endK * 0.75));
+    if (w > dome) return null;
+    var shell = w > dome - 0.14 || rrect(dx, vc, CH_W, CH_D, CH_RC) > -0.12;
     if (!shell) return WOOD[3];
-    if (Math.abs(dx) > CH_W - 0.2 && (v < 0.2 || v > 2 * CH_D - 0.2)) return GOLD[1];
-    if (v > 2 * CH_D - 0.16 && Math.abs(dx) < 0.2 && w < 0.42) return Math.abs(dx) > 0.12 ? GOLD[0] : GOLD[2];   // the hasp
-    if (w < 0.1 && lid > 0.2) return Math.abs(dx) > CH_W - 0.2 ? GOLD[0] : WOOD[3];   // the inside of the lid, dark, as it swings back
+    if (endK > 0.45 && Math.abs(vc) > CH_D - CH_RC * 0.55) return GOLD[1];
+    if (vc > CH_D - 0.16 && Math.abs(dx) < 0.2 && w < 0.42) return Math.abs(dx) > 0.12 ? GOLD[0] : GOLD[2];   // the hasp
+    if (w < 0.1 && lid > 0.2) return endK > 0 ? GOLD[0] : WOOD[3];   // the inside of the lid, dark, as it swings back
     if (band(dx)) return w > dome - 0.08 ? IRON[2] : IRON[1];
-    if (Math.abs(dx) > CH_W - 0.12) return Math.hypot(vc, w) < 0.18 ? GOLD[1] : WOOD[0];   // the end caps, a gold boss in each
-    return wood(dx, vc * 1.4 + 2, 0.25); }, 0.125); }; }
+    if (endK > 0.35) return Math.hypot(vc, w - 0.25) < 0.18 ? GOLD[1] : WOOD[0];   // the rounded end caps, a gold boss in each
+    return wood(dx, vc * 1.4 + 2, 0.25); }, sv || 0.0625); }; }
 function gateFn(open, P){ var kx = kitOf(P.spec.theme), c1 = kx.wall[0], c2 = kx.wall[1];
   return function(B){ box(B, 0, 0, PW * 2 + 1, 1.2, 6.8, function(dx, dy, tt){ if (Math.abs(dy) > 0.25) return null; var half = PW + 0.4;
     if (open){ var leaf = Math.abs(Math.abs(dx) - half) < 0.25 && tt < 6.4; return leaf ? c2 : null; }
@@ -876,7 +885,7 @@ function run(box, P, pic, api){
   var brkKind = function(t){ return kitOf(t.th || sp.theme).brk; };
   function prop(name, fn, w, d, h){ return propSprite(name, P, fn, w, d, h); }
   var SPR = {
-    chest:[0, 0.22, 0.5, 0.78, 1].map(function(l){ return prop('chestv3:' + l, chestFn(l), 3.8, 4.8, 4.2); }),
+    chest:[0, 0.22, 0.5, 0.78, 1].map(function(l){ return prop('chestv4:' + l, chestFn(l), 4.4, 6.4, 5.4); }),
     gate0:P.gate ? prop('gate0:' + sp.theme, gateFn(false, P), PW * 2 + 1, 1.2, 7) : null, gate1:P.gate ? prop('gate1:' + sp.theme, gateFn(true, P), PW * 2 + 1, 1.2, 7) : null,
     lock0:P.fence ? prop('lock0', lockGateFn(false), 3.4, 1, 3) : null, lock1:P.fence ? prop('lock1', lockGateFn(true), 3.4, 1, 3) : null
   };
@@ -1168,7 +1177,7 @@ function run(box, P, pic, api){
       // the coins fly out of the lid in an arc and land where the plan put them
       var cs = items.filter(function(c){ return c.k === 'coin' && c.ch === t; });
       cs.forEach(function(c, i){ c.out = true; c.fly = { t0:now + CH_COINS + i * 0.05, dur:0.6 + (i % 3) * 0.08, x0:t.x, y0:t.y, z0:z + 1.6 }; });
-      setTimeout(function(){ if (alive) floatText(cs.length ? cs.length + ' coins!' : 'Treasure!', t.x, t.y, z + 3.2, '#ffd23a', true); }, CH_COINS * 1000);
+      setTimeout(function(){ if (alive) floatText(cs.length ? (cs.length * COIN_V) + ' coins!' : 'Treasure!', t.x, t.y, z + 3.2, '#ffd23a', true); }, CH_COINS * 1000);
       sayLater(cs.length ? 'Walk over the coins to pick them up.' : 'An empty chest.', 2600, 1.7); }
     else if (t.k === 'key'){ t.done = true; lockOpen = true; burst(t.x, t.y, z + 1.3, ['#ffd23a', '#ffffff'], 14, 1.2); collect(t, now); floatText('Key', t.x, t.y, z + 3, '#e6eef8', true); pick('key', t.id, 0); sayLater('A key. The gate to the clearing is open.', 3200, 1.1); }
     else if (t.k === 'golden'){ t.done = true; burst(t.x, t.y, z + 1, ['#ffd23a', '#fff3a8', '#ffffff'], 28, 1.3, 1.2); collect(t, now); floatText('Golden ball!', t.x, t.y, z + 3, '#ffd23a', true); var msg = pick('golden', t.id, 0); hudGold(); sayLater(msg || 'A golden ball.', 3600, 1.1); }
@@ -1177,7 +1186,7 @@ function run(box, P, pic, api){
     else if (t.k === 'part'){ t.done = true; burst(t.x, t.y, z + 1.2, ['#cfd8e2', '#ffffff', '#ffd23a'], 22, 1.3, 1.2); collect(t, now); floatText('Putter part', t.x, t.y, z + 3, '#cfe2ff', true); sayLater(pick('part', t.id, 0) || ('A putter part: ' + t.name + '.'), 3800, 1.1); }
     else if (t.k === 'brk'){ t.done = true; var k = brkKind(t), cols = k === 'ice' ? ['#a8dcf4', '#e2f6ff'] : k === 'neoncube' ? ['#2bf0ff', '#1a1430'] : k === 'pumpkin' ? ['#e8761f', '#d0621a'] : k === 'hay' ? ['#e2bc5c', '#c8a04a'] : k === 'pot' ? ['#b8643a', '#f0e0b0'] : ['#c08a4e', '#8a5a2a'];
       burst(t.x, t.y, z + 0.8, cols, 10, 2.4, 1.1); burst(t.x, t.y, z + 0.6, cols, 12); burst(t.x, t.y, z + 0.2, ['rgba(220,210,190,.7)'], 8, 1.8, 0.5); ring(t.x, t.y, '230,220,200');
-      if ((found.b || []).indexOf(t.id) < 0){ (found.b = found.b || []).push(t.id); coinsGot += 1; hudCoins(); pick('brk', t.id, 1); burst(t.x, t.y, z + 1, ['#ffd23a'], 4); collect({ x:t.x, y:t.y, k:'coin', id:t.id }, now, 'coin'); floatText('+1', t.x, t.y, z + 2); } else pick('brk', t.id, 0); } }
+      if ((found.b || []).indexOf(t.id) < 0){ (found.b = found.b || []).push(t.id); coinsGot += BRK_V; hudCoins(); pick('brk', t.id, BRK_V); burst(t.x, t.y, z + 1, ['#ffd23a'], 4); collect({ x:t.x, y:t.y, k:'coin', id:t.id }, now, 'coin'); floatText('+' + BRK_V, t.x, t.y, z + 2); } else pick('brk', t.id, 0); } }
 
   var last = performance.now(), lastSafe = 0, nearNpc = false;
   function step(){ if (!alive) return; requestAnimationFrame(step);
@@ -1318,5 +1327,5 @@ function run(box, P, pic, api){
   return ctl;
 }
 
-window.RTT_PUTT_TRAIL = { API_VERSION:API_VERSION, COIN_V:COIN_V, plan:plan, slices:slices, run:run, GH:GH, TRAIL_L:TRAIL_L, ELEV:ELEV, KIT:KIT };
+window.RTT_PUTT_TRAIL = { API_VERSION:API_VERSION, COIN_V:COIN_V, BRK_V:BRK_V, plan:plan, slices:slices, run:run, GH:GH, TRAIL_L:TRAIL_L, ELEV:ELEV, KIT:KIT };
 })();
