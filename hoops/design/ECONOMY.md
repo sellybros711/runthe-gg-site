@@ -394,6 +394,24 @@ the cabinet.
 
 ---
 
+
+### As built (Phase 2b: the look of it)
+
+Run The Tour's shop, redrawn for the Floor:
+
+- **Pixel art for everything** (`itemart.js`): 64 item masks (one per shape key, plus slot
+  fallbacks), four packs, the coin and four shard gems, each a grid blown up by a whole number.
+- **The shelf**: a wallet bar (spinning coin, four gems), free packs as glowing cards, a pity
+  meter in cells, each pack on a stand with slow rays in its colour, a bob, a foil sweep and
+  its odds as a coloured bar, and Open 5 naming what it saves.
+- **The show**: stage, tear (the crimp flies, the pack flashes and drops), a reel that slows
+  for 4.6 seconds onto the item (Skip lands it), and the reveal: rarity rays, a burst and
+  confetti for an epic or better, a foil sweep, his own player wearing it, Put it on. Five at
+  once deal five cards face down and flip them one by one.
+- **The closet**: the player under a spotlight on a stage, slot chips with their own icon,
+  tiles with the item's icon on a rarity tinted plate and a rarity edge, a foil sweep on a
+  legendary.
+
 ## 8. Floor Pass
 
 | | |

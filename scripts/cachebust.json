@@ -2706,13 +2706,17 @@
       "v": "18",
       "sha": "f17a858cad115a76"
     },
+    "itemart.js": {
+      "v": "1",
+      "sha": "abfdedc5d33d1e66"
+    },
     "closet-ui.js": {
-      "v": "4",
-      "sha": "1bb02785878c5021"
+      "v": "5",
+      "sha": "f0bac161806cf26d"
     },
     "shop-ui.js": {
-      "v": "1",
-      "sha": "424ec52213a4a376"
+      "v": "2",
+      "sha": "c38e04763949d7a1"
     },
     "career-ui.js": {
       "v": "54",

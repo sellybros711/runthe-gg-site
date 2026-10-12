@@ -21,6 +21,10 @@
 
 var API_VERSION = 1;
 var W = window.RTF_WARD, CAT = window.RTF_CATALOG, X = window.RTF_ECON, B = window.RTF_BALLER;
+var RCOL = { common: '#aeb4bf', rare: '#5b9bff', epic: '#b47cff', legendary: '#f2c23a' };
+/* the pixel art is hoops/itemart.js; a page without it draws the old swatch */
+function art(){ return window.RTF_ART || null; }
+function slotIcon(s){ var A = art(); return A ? '<img class="cl-si" alt="" src="' + A.iconURL({ id: 'slot:' + s, slot: s, k: '', c: ['#c9ccd6', '#7d8396'] }) + '">' : ''; }
 
 var LABEL = {
   hat: 'Hat', eyes: 'Glasses', top: 'Top', outer: 'Jacket', bottom: 'Pants', shoes: 'Shoes', socks: 'Socks',
@@ -85,7 +89,7 @@ function pane(host, o){
     var chips = slots.map(function(s){
       var n = itemsFor(ctx, s).filter(function(it){ return om[it.id] && !it.free; }).length;
       var on = s === v.slot;
-      return '<button type="button" class="k-chip cl-slot' + (shown[s] ? ' has' : '') + '" data-slot="' + s + '" aria-pressed="' + on + '">' + esc(LABEL[s] || s) + (n ? ' <i>' + n + '</i>' : '') + '</button>';
+      return '<button type="button" class="k-chip cl-slot' + (shown[s] ? ' has' : '') + '" data-slot="' + s + '" aria-pressed="' + on + '">' + slotIcon(s) + esc(LABEL[s] || s) + (n ? ' <i>' + n + '</i>' : '') + '</button>';
     }).join('');
 
     var list = itemsFor(ctx, v.slot).filter(function(it){ return !v.owned || om[it.id]; });
@@ -98,7 +102,7 @@ function pane(host, o){
       var own = !!om[it.id], on = shown[v.slot] === it.id;
       var a = it.c[0], b = it.c[1] || it.c[0];
       return '<button type="button" class="cl-tile r-' + it.rarity + (own ? ' own' : ' lock') + (on ? ' is-on' : '') + '" data-id="' + it.id + '" aria-pressed="' + on + '">'
-        + '<span class="cl-sw" style="--a:' + a + ';--b:' + b + '"></span>'
+        + '<span class="cl-sw" style="--a:' + a + ';--b:' + b + ';--rc:' + RCOL[it.rarity] + '">' + (art() ? art().icon(it, 'cl-ic') : '') + '</span>'
         + '<span class="cl-n">' + esc(it.name) + '</span>'
         + '<span class="cl-p">' + (it.excl && !own ? '<b class="cl-x">' + esc(earnText(it)) + '</b>' : '<b class="cl-r">' + it.rarity + '</b>' + esc(priceText(it, own))) + '</span></button>';
     }).join('');
@@ -112,8 +116,8 @@ function pane(host, o){
        player has to see, so the figure and the slots are pinned to the top
        of the sheet while the pieces scroll under them. */
     host.innerHTML = '<div class="cl"><div class="cl-head">'
-      + '<div class="cl-top"><div class="cl-fig">' + fig + '</div><div class="cl-side">'
-      + '<div class="cl-coins"><b>' + money(coins) + '</b> coins</div>'
+      + '<div class="cl-top"><div class="cl-fig"><span class="cl-spot" aria-hidden="true"></span>' + fig + '</div><div class="cl-side">'
+      + '<div class="cl-coins">' + (art() ? art().coin('cl-coin') : '') + '<b>' + money(coins) + '</b> coins</div>'
       + '<div class="cl-wear">' + (wearing.length ? wearing.length + ' piece' + (wearing.length === 1 ? '' : 's') + ' on' : (ctx === 'street' ? 'Starter clothes' : 'The plain uniform')) + '</div>'
       + (trying ? '<div class="cl-try"><span>Trying on <b>' + esc(CAT.item(trying.id).name) + '</b></span>' + buyHtml(trying.id, signedIn, coins) + (bought ? '<span class="cl-buynote" role="status">' + (bought === 'coins' ? 'Not enough coins.' : 'That did not go through.') + '</span>' : '') + '<button type="button" class="cl-back">Back to my fit</button></div>' : '')
       + '</div></div>'
@@ -206,11 +210,16 @@ var CSS = [
 '.cl-hist li b.neg{color:var(--k-ink-3);}',
 '.cl-head{position:sticky;top:calc(-1 * var(--k-s-5, 20px));z-index:2;background:var(--k-panel);margin:0 -4px;padding:8px 4px 0;box-shadow:0 8px 10px -8px rgba(0,0,0,.6);}',
 '.cl-top{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start;margin:4px 0 8px;}',
-'.cl-fig{background:var(--k-panel-2);padding:4px;line-height:0;}',
+'.cl-fig{position:relative;padding:6px 8px 4px;line-height:0;overflow:hidden;background:radial-gradient(70% 55% at 50% 30%,rgba(255,214,140,.16),transparent 70%),linear-gradient(180deg,#1b2034,#11141f);box-shadow:inset 0 0 0 2px #2c3350,inset 0 -4px 0 rgba(0,0,0,.4);}',
+'.cl-spot{position:absolute;left:14%;right:14%;bottom:4px;height:12px;border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.6),transparent 70%);}',
+'.cl-fig::before{content:"";position:absolute;left:50%;top:-30%;width:70%;height:120%;transform:translateX(-50%);background:linear-gradient(180deg,rgba(255,232,180,.14),transparent 75%);clip-path:polygon(38% 0,62% 0,100% 100%,0 100%);pointer-events:none;}',
+'.cl-fig img{position:relative;}',
 '.cl-fig img{width:88px;height:auto;image-rendering:pixelated;display:block;}',
 '@media (min-height:760px){.cl-fig img{width:110px;}}',
 '.cl-side{display:flex;flex-direction:column;gap:6px;min-width:0;text-align:left;font:600 12.5px/1.3 var(--k-f-text);color:var(--k-ink-2);}',
-'.cl-coins b{font:400 15px var(--k-f-pixel);color:var(--k-gold);margin-right:4px;}',
+'.cl-coins{display:flex;align-items:center;gap:6px;}',
+'.cl-coin{width:18px;height:18px;image-rendering:pixelated;filter:drop-shadow(0 0 5px rgba(242,194,58,.5));}',
+'.cl-coins b{font:400 15px var(--k-f-pixel);color:var(--k-gold);margin-right:4px;text-shadow:0 2px 0 #5a3e0a;}',
 '.cl-try{background:#2a2412;padding:6px 8px;color:var(--k-ink);display:flex;flex-direction:column;gap:4px;align-items:flex-start;}',
 '.cl-try b{color:var(--k-gold);}',
 '.cl-buy{min-height:40px;padding:8px 14px;font-size:13px;margin:2px 0;}',
@@ -220,18 +229,27 @@ var CSS = [
 '.cl-guest{margin:10px 0 0;color:var(--k-ink-3);font:600 12.5px var(--k-f-text);text-align:left;}',
 '.cl-slots{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0 -4px 8px;padding:2px 4px 6px;}',
 '.cl-slots::-webkit-scrollbar{display:none;}',
-'.cl-slot{flex:0 0 auto;min-height:38px;padding:6px 12px;white-space:nowrap;}',
+'.cl-slot{flex:0 0 auto;min-height:38px;padding:6px 12px 6px 8px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;}',
+'.cl-si{width:20px;height:20px;image-rendering:pixelated;opacity:.85;}',
+'.cl-slot[aria-pressed="true"] .cl-si{opacity:1;filter:drop-shadow(0 0 4px rgba(242,194,58,.6));}',
 '.cl-slot i{font-style:normal;color:var(--k-gold);margin-left:3px;}',
 '.cl-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0 8px;}',
 '.cl-own{border:0;background:none;color:var(--k-ink-3);font:700 12px var(--k-f-text);cursor:pointer;min-height:36px;padding:0 4px;text-decoration:underline;text-underline-offset:3px;}',
 '.cl-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;}',
 '@media (min-width:560px){.cl-grid{grid-template-columns:repeat(3,minmax(0,1fr));}}',
-'.cl-tile{display:grid;grid-template-columns:30px minmax(0,1fr);grid-template-rows:auto auto;column-gap:8px;align-items:center;text-align:left;min-height:56px;padding:8px;border:0;cursor:pointer;',
-' background:var(--k-panel-2);color:var(--k-ink);font:700 12.5px/1.25 var(--k-f-text);position:relative;padding-right:20px;}',
+'.cl-tile{display:grid;grid-template-columns:44px minmax(0,1fr);grid-template-rows:auto auto;column-gap:8px;align-items:center;text-align:left;min-height:56px;padding:8px;border:0;cursor:pointer;',
+' background:linear-gradient(180deg,#1a1f32,#141826);color:var(--k-ink);font:700 12.5px/1.25 var(--k-f-text);position:relative;padding-right:20px;box-shadow:inset 3px 0 0 var(--rc,#3a4058);overflow:hidden;}',
+'.cl-tile.r-common{--rc:#aeb4bf;}.cl-tile.r-rare{--rc:#5b9bff;}.cl-tile.r-epic{--rc:#b47cff;}.cl-tile.r-legendary{--rc:#f2c23a;}',
+'.cl-tile.r-legendary::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 40%,rgba(255,236,170,.13) 50%,transparent 60%);background-size:260% 100%;animation:cl-foil 4s ease-in-out infinite;}',
+'@keyframes cl-foil{0%{background-position:120% 0;}60%,100%{background-position:-60% 0;}}',
+'@media (prefers-reduced-motion:reduce){.cl-tile.r-legendary::after{animation:none;}}',
 '.cl-tile:hover{background:var(--k-panel-3);}',
-'.cl-tile.is-on{background:#2a2412;box-shadow:0 -2px 0 0 var(--k-gold),0 2px 0 0 var(--k-gold),-2px 0 0 0 var(--k-gold),2px 0 0 0 var(--k-gold);}',
+'.cl-tile.is-on{background:linear-gradient(180deg,#3a2f12,#221c0c);box-shadow:0 -2px 0 0 var(--k-gold),0 2px 0 0 var(--k-gold),-2px 0 0 0 var(--k-gold),2px 0 0 0 var(--k-gold);}',
 '.cl-tile:focus-visible{outline:2px solid var(--k-gold);outline-offset:2px;}',
-'.cl-sw{grid-row:1 / span 2;width:30px;height:30px;background:linear-gradient(135deg,var(--a,#3a3f4a) 0 55%,var(--b,#22242b) 55% 100%);box-shadow:inset 0 0 0 2px rgba(0,0,0,.35);}',
+'.cl-sw{grid-row:1 / span 2;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--rc,#aeb4bf) 30%,#121625),#0d1019 75%);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--rc,#aeb4bf) 55%,transparent);}',
+'.cl-sw:not(:has(img)){background:linear-gradient(135deg,var(--a,#3a3f4a) 0 55%,var(--b,#22242b) 55% 100%);}',
+'.cl-ic{width:40px;height:40px;image-rendering:pixelated;filter:drop-shadow(0 2px 2px rgba(0,0,0,.5));}',
+'.cl-tile.lock .cl-ic{opacity:.75;}',
 '.cl-none .cl-sw{background:repeating-linear-gradient(45deg,var(--k-panel-3) 0 4px,transparent 4px 8px);}',
 '.cl-n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
 '.cl-p{font:600 11px var(--k-f-text);color:var(--k-ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
@@ -241,7 +259,7 @@ var CSS = [
 '.cl-x{color:var(--k-gold);font-weight:800;}',
 '.cl-tile.lock::after{content:"";position:absolute;top:6px;right:6px;width:7px;height:6px;border:2px solid var(--k-ink-3);border-top:0;}',
 '.cl-tile.lock::before{content:"";position:absolute;top:2px;right:8px;width:3px;height:4px;border:2px solid var(--k-ink-3);border-bottom:0;}',
-'.r-legendary.own .cl-sw{box-shadow:inset 0 0 0 2px var(--k-gold);}',
+'.r-legendary.own .cl-sw{box-shadow:inset 0 0 0 2px var(--k-gold),0 0 10px -2px var(--k-gold);}',
 '.cl-empty{grid-column:1 / -1;color:var(--k-ink-3);font:600 13px var(--k-f-text);margin:6px 0;}',
 '.cl-fits{margin:14px 0 4px;}',
 '.cl-fitrow{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;}',
