@@ -392,6 +392,23 @@ Icon at 96.5%), and a twentieth, G.O.A.T., for every badge. Read by the wheel an
 by rep-gated cosmetics. Derived, so it needs no storage and never disagrees with
 the cabinet.
 
+
+### As built (Phase 3)
+
+- `hoops/daily.js`: the streak week and the login track with Run The Tour's numbers,
+  freezes at 7, 30 and 100 (three at most), one free spin an Eastern day plus banked
+  spins, Run The Tour's thirteen wedges scaled by Floor Rep, three daily quests out of
+  six and four weekly out of twelve (one a group), and Floor Rep off the badges.
+- **Run The Tour's XP boost wedges are a Coin Rush** (play pays double for 15, 30 or 60
+  minutes) until the Floor Pass exists to give XP a meaning.
+- **Rewards**: a quest 320 coins, all three 480 plus a common shard and a spin; a weekly
+  quest 3,200 and a rare shard, all four a League Pack.
+- `hoops/daily-ui.js`: a strip on the front page (the flickering pixel flame, a turning
+  wheel with its spins, a quest ring), the hub (Floor Rep, then Wheel, Streak and Quests),
+  and a reward pop for a login slot, a streak day or a quest. The wheel has blinking rim
+  bulbs, a glow while it turns, a reveal card with rays and confetti on a big prize.
+- `check-daily.mjs` holds it, each rule proved by breaking it once.
+
 ---
 
 

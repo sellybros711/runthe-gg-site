@@ -31,6 +31,11 @@ function W(){ return env.wallet || (typeof window !== 'undefined' ? window.RTF_W
 function WD(){ return env.ward || (typeof window !== 'undefined' ? window.RTF_WARD : null); }
 function PK(){ return env.packs || (typeof window !== 'undefined' ? window.RTF_PACKS : null); }
 function BD(){ return env.badges || (typeof window !== 'undefined' ? window.RTF_BADGES : null); }
+/* the daily loop's door (wardrobe.js RTF_WARD.daily). A missing one costs the
+   streak and the quests, never a coin. */
+function DLY(){ var w = WD(); return w && w.daily ? w.daily : null; }
+function day1(f){ try { var d = DLY(); if (d && signedIn()) return f(d); } catch (e) {} return null; }
+var PLAY_SRC = { run: 1, dd: 1, fx: 1, ps: 1, cq: 1, cqclear: 1, career: 1, endless: 1 };
 function signedIn(){
   if (env.signedIn) return !!env.signedIn();
   try { var A = window.RTF_AUTH; return !!(A && A.state && A.state().signedIn); } catch (e) { return false; }
@@ -88,6 +93,9 @@ function pay(key, amount, src, opts){
   try {
     if (!signedIn()) return { paid: false, amount: 0, why: 'guest' };
     var w = W(); if (!w || !w.award) return { paid: false, amount: 0, why: 'nowallet' };
+    /* A COIN RUSH (won on the wheel) doubles what play pays while it runs.
+       The award is still keyed, so a reload during the rush pays nothing more. */
+    if (PLAY_SRC[src] && !w.has(key)) { var d = DLY(); var m = d && d.rushMult ? d.rushMult() : 1; if (m > 1) amount = Math.round(amount * m); }
     var r = w.award(key, amount, src, opts);
     if (r && r.paid) tell(r.amount);
     return r;
@@ -110,6 +118,7 @@ function settle(career){
   settled = true;
   pay('welcome', x.WELCOME, 'welcome');
   welcomePack();
+  day1(function(d){ return d.login(); });
   var got = earnedIds(career);
   if (w.baseline('bg:base', got.map(function(b){ return 'bg:' + b.id; }))) return { baseline: got.length };
   return { paid: badges(career) };
@@ -146,9 +155,11 @@ function badges(career){
 function run(out, rn){
   var x = X(); if (!x || !out || !rn) return null;
   var o = { madePlayoffs: !!out.madePlayoffs, seriesWon: +out.seriesWon || 0, champion: !!out.champion };
-  if (rn.daily) return pay('dd:' + rn.daily, x.dailyDraftCoins(o), 'dd');
+  if (rn.daily) { var dr = pay('dd:' + rn.daily, x.dailyDraftCoins(o), 'dd'); day1(function(d){ return d.played('dd', rn.daily); }); return dr; }
   if (rn.seed == null) return null;
-  return pay('run:' + rn.seed, x.runCoins(o), 'run');
+  var rr = pay('run:' + rn.seed, x.runCoins(o), 'run');
+  day1(function(d){ d.note('run', rn.seed); if (o.champion) d.note('title', rn.seed); return 1; });
+  return rr;
 }
 
 /* ─── the puzzles and Conquest ────────────────────────────────────────────
@@ -157,12 +168,16 @@ function run(out, rn){
 function fix(day, odds, endless){
   var x = X(); if (!x || day == null) return null;
   if (endless) return pay('fxe:' + day, x.RATE.endless, 'endless');
-  return pay('fx:' + day, x.fixCoins(odds), 'fx');
+  var r = pay('fx:' + day, x.fixCoins(odds), 'fx');
+  day1(function(d){ return d.played('fx', day); });
+  return r;
 }
 function passes(day, atPar, easy, endless){
   var x = X(); if (!x || day == null) return null;
   if (endless) return pay('pse:' + day, x.RATE.endless, 'endless');
-  return pay('ps:' + day, x.passesCoins(!!atPar, !!easy), 'ps');
+  var r = pay('ps:' + day, x.passesCoins(!!atPar, !!easy), 'ps');
+  day1(function(d){ if (atPar) d.note('pspar', day); return d.played('ps', day); });
+  return r;
 }
 /* A Conquest win pays on the rung it was won on, so a reload of the same win
    is the same key. The clear is its own source: the day cap is for the wins. */
@@ -170,6 +185,7 @@ function conquest(seed, wins, cleared){
   var x = X(); if (!x || seed == null) return 0;
   var n = 0;
   for (var i = 1; i <= wins; i++) { var r = pay('cq:' + seed + ':' + i, x.RATE.cqWin, 'cq'); if (r && r.paid) n += r.amount; }
+  day1(function(d){ for (var j = 1; j <= wins; j++) d.note('cq', seed + ':' + j); return 1; });
   if (cleared) { var c = pay('cqc:' + seed, x.RATE.cqClear, 'cqclear'); if (c && c.paid) n += c.amount; }
   return n;
 }
@@ -187,7 +203,7 @@ function career(L){
   var easy = !!(L.opt && L.opt.diff === 'easy'), n = 0;
   hist.forEach(function(h){
     var r = pay(seasonKey(L, h), x.seasonCoins(h), 'career', { easy: easy });
-    if (r && r.paid) n += r.amount;
+    if (r && r.paid) { n += r.amount; day1(function(d){ return d.note('cs', seasonKey(L, h)); }); }
   });
   return n;
 }
@@ -197,6 +213,7 @@ function finish(L, tier){
   if (!signedIn() || !L || L.seed == null || !(L.history || []).length) return null;
   var x = X(); if (!x) return null;
   career(L);
+  day1(function(d){ return d.note('cf', L.seed); });
   return pay('cf:' + L.seed, x.finishCoins(tier || ''), 'career', { easy: !!(L.opt && L.opt.diff === 'easy') });
 }
 

@@ -37,12 +37,14 @@ var MAX_FITS = 12;
 var CAT = typeof require === 'function' && typeof window === 'undefined' ? require('./catalog.js') : (typeof window !== 'undefined' ? window.RTF_CATALOG : null);
 /* the pack logs ride on this record (hoops/packs.js says what they are) */
 var PK = typeof require === 'function' && typeof window === 'undefined' ? require('./packs.js') : (typeof window !== 'undefined' ? window.RTF_PACKS : null);
+/* and the daily loop's logs (hoops/daily.js): the streak, the wheel, the quests */
+var DY = typeof require === 'function' && typeof window === 'undefined' ? require('./daily.js') : (typeof window !== 'undefined' ? window.RTF_DAILY : null);
 
 function obj(x){ return x && typeof x === 'object' && !Array.isArray(x) ? x : {}; }
 function now(){ return Date.now(); }
 
 /* po, pc, sg, sx: the pack logs (hoops/packs.js); nb: the shop's welcome was read */
-function fresh(){ return { v: 1, own: {}, w: { street: {}, court: {}, ts: 0, tc: 0 }, fits: {}, po: {}, pc: {}, sg: {}, sx: {}, nb: 0 }; }
+function fresh(){ return { v: 1, own: {}, w: { street: {}, court: {}, ts: 0, tc: 0 }, fits: {}, po: {}, pc: {}, sg: {}, sx: {}, nb: 0, dp: {}, dl: {}, dw: {}, dg: {}, de: {}, db: {} }; }
 /* Anything read back from storage or the shelf: unknown shapes become empty. */
 function clean(s){
   s = obj(s);
@@ -63,6 +65,7 @@ function clean(s){
     out.fits[k] = { n: String(x.n || 'Outfit').slice(0, 24), ctx: x.ctx, set: Object.assign({}, obj(x.set)), t: +x.t || 0 };
   }
   if (PK) PK.cleanLogs(out, s);
+  if (DY) DY.cleanLogs(out, s);
   return out;
 }
 
@@ -139,6 +142,8 @@ function equip(ctx, slot, id){
     lo[slot] = id;
   }
   st.w[ctx === 'court' ? 'tc' : 'ts'] = now();
+  /* changing the look is a daily quest; a guest's change counts for nothing */
+  if (DY && authFn()) { try { DY.note(st, 'look', DY.today()); } catch (e) {} }
   save(st);
   return true;
 }
@@ -230,11 +235,12 @@ function merge(a, b){
   Object.keys(own).sort().forEach(function(k){ out.own[k] = own[k]; });
   Object.keys(fts).sort().forEach(function(k){ out.fits[k] = fts[k]; });
   if (PK) PK.mergeLogs(out, a, b);
+  if (DY) DY.mergeLogs(out, a, b);
   return out;
 }
 /* What only grows: items owned, then pack log rows, then outfits ever made (a
    tombstone counts). */
-function progress(s){ s = clean(s); return Object.keys(s.own).length * 1e9 + (PK ? PK.logCount(s) : 0) * 1000 + Math.min(999, Object.keys(s.fits).length); }
+function progress(s){ s = clean(s); return Object.keys(s.own).length * 1e9 + ((PK ? PK.logCount(s) : 0) + (DY ? DY.logCount(s) : 0)) * 1000 + Math.min(999, Object.keys(s.fits).length); }
 
 /* ─── the coins, on this device ───────────────────────────────────────────
    The ledger and every rule about it is hoops/economy.js; this is only where
@@ -276,6 +282,8 @@ function both(fn){
   if (!PK || !X || !CAT) return { err: 'off' };
   var st = clean(JSON.parse(JSON.stringify(load()))), w = X.clean(JSON.parse(JSON.stringify(wLoad())));
   var r = fn(st, w);
+  /* a pack opened or a spin spun can finish a quest, so every call settles them */
+  if (r && !r.err && DY) { try { DY.settleQuests(st, w); } catch (e) {} }
   if (r && !r.err) { wSave(w); save(st); }
   return r;
 }
@@ -316,6 +324,36 @@ var SHOP = {
   _auth: function(fn){ authFn = fn; },
 };
 
+/* ─── the daily loop ─────────────────────────────────────────────────────
+   The streak, the login track, the wheel and the quests (hoops/daily.js), on
+   the same copies-then-save door as the shop. Every call settles the quests,
+   so a quest finished by anything is paid by the next call. */
+var dsubs = [];
+function dailyDo(fn, kind){
+  if (!DY || !PK || !X) return { err: 'off' };
+  var r = both(function(st, w){ var x = fn(st, w) || {}; x.quests = DY.settleQuests(st, w); return x; });
+  /* the screen says what was just won: a login slot, a streak day, a quest */
+  if (r && !r.err) { r.kind = kind; dsubs.forEach(function(f){ try { f(r); } catch (e) {} }); }
+  return r;
+}
+var DAILY = {
+  login: function(){ return dailyDo(function(st, w){ return DY.noteLogin(st, w); }, 'login'); },
+  /* a daily puzzle or the Daily Draft was finished: the streak's day */
+  played: function(ev, key){ return dailyDo(function(st, w){ DY.note(st, ev, key); return DY.notePlayed(st, w); }, 'streak'); },
+  note: function(ev, key){ return dailyDo(function(st){ return { fresh: DY.note(st, ev, key) }; }, 'note'); },
+  settle: function(){ return dailyDo(function(){ return {}; }, 'note'); },
+  spin: function(rankIdx, opts){ return dailyDo(function(st, w){ return DY.spin(st, w, rankIdx, opts); }, 'spin'); },
+  on: function(fn){ dsubs.push(fn); },
+  streak: function(){ return DY ? DY.streak(load()) : { cur: 0, best: 0, freezes: 0, pos: {}, next: 1 }; },
+  spins: function(){ return DY ? DY.spins(load()) : { free: false, banked: 0, total: 0 }; },
+  quests: function(){ return DY ? DY.quests(load()) : null; },
+  loginPos: function(){ return DY ? DY.loginPos(load(), DY.today()) : 1; },
+  logged: function(){ return !!(DY && load().dl[DY.today()]); },
+  rushUntil: function(){ return DY ? DY.rushUntil(load()) : 0; },
+  rushMult: function(){ return DY && authFn() ? DY.rushMult(load()) : 1; },
+  signedIn: function(){ return authFn(); },
+};
+
 var API = {
   API_VERSION: API_VERSION, KEY: KEY, MAX_FITS: MAX_FITS,
   fresh: fresh, clean: clean, load: load, save: save, reload: reload, onChange: onChange,
@@ -323,7 +361,7 @@ var API = {
   slotsOf: slotsOf, loadout: loadout, equip: equip, wearSet: wearSet, resolved: resolved, dress: dress, idleOf: idleOf, idle: idle,
   fits: fits, saveFit: saveFit, applyFit: applyFit, delFit: delFit,
   merge: merge, progress: progress,
-  wallet: WALLET, shop: SHOP,
+  wallet: WALLET, shop: SHOP, daily: DAILY,
   _reset: function(){ mem = null; subs = []; pubLast = ''; WALLET._reset(); },
 };
 if (typeof module !== 'undefined' && module.exports) module.exports = API;

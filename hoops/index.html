@@ -2636,6 +2636,7 @@
     </div>
   </section>
 
+  <section class="hp-daily" id="hp-daily" aria-label="Your daily" hidden></section>
   <section class="hp-puzzles" id="hp-puzzles" aria-labelledby="pz-h" hidden>
     <div class="pz-head"><h2 id="pz-h">Daily puzzles</h2><span class="pz-left" id="pz-left"></span></div>
     <div class="pz-row"><div class="pz-slot" id="pz-fix"></div><div class="pz-slot" id="pz-ps"></div></div>
@@ -3489,8 +3490,9 @@
 <script src="catalog.js?v=2"></script>
 <script src="idles.js?v=1"></script>
 <script src="packs.js?v=1"></script>
-<script src="wardrobe.js?v=4"></script>
-<script src="earn.js?v=2"></script>
+<script src="daily.js?v=1"></script>
+<script src="wardrobe.js?v=5"></script>
+<script src="earn.js?v=3"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
      or either file fails to load, the game runs exactly as it did, with runs
      kept in this browser and the board reporting itself unreachable. An account
@@ -11967,6 +11969,8 @@ function recordFeats(f){
 
 window.RTF_PAGE = {
   get data(){ return DATA; },
+  /* the career the badges are read off: Floor Rep and the daily loop read it */
+  career: function(){ return loadCareer() || blankCareer(); },
   feats: recordFeats,
   confetti: fireConfetti,
   arenaChanged: arenaChanged,
@@ -12055,9 +12059,10 @@ boot();
 <script src="court.js?v=10"></script>
 <script src="ticker.js?v=2"></script>
 <script src="scenes.js?v=18"></script>
-<script src="itemart.js?v=1"></script>
+<script src="itemart.js?v=2"></script>
 <script src="closet-ui.js?v=5"></script>
 <script src="shop-ui.js?v=2"></script>
+<script src="daily-ui.js?v=1"></script>
 <script src="career-ui.js?v=54"></script>
 </body>
 </html>

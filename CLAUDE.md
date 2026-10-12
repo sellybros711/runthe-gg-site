@@ -16350,6 +16350,7 @@ node hoops/check-earn.mjs        who earns coins, from what, and only once
 node hoops/check-idles.mjs       every idle frame inside the grid, every loop closes, the page plays it
 node hoops/check-packs.mjs       odds, pity, shards, the exchange, two devices, the shop on a phone, the show
 node hoops/check-shopart.mjs     every item, pack, coin and shard in pixels, nothing clipped
+node hoops/check-daily.mjs       the streak, the login track, the wheel, the quests, Floor Rep
 psql ... -f supabase/139_hoops_wardrobe.sql   deploy by hand (preflight row 53)
 ```
 
@@ -16400,6 +16401,20 @@ psql ... -f supabase/139_hoops_wardrobe.sql   deploy by hand (preflight row 53)
   written; a new shape key falls back to its slot's mask. The packs are Run The Tour's
   foil pillow redrawn with a ball, a hoop, a trophy and a star. A mask must fit 14 cells
   or the light and the outline clip it (check-shopart counts the cells placed).
+- **The daily loop is six more keyed logs on the wardrobe record** (`hoops/daily.js`:
+  `dp` days played, `dl` days opened, `dw` spins, `dg` banked spins, `de` quest events,
+  `db` Coin Rushes), merged with it. The streak, its freezes (earned at 7, 30 and 100,
+  three at most), the spins left, the quests done and the rush are read off them. A
+  reward is paid under its key (`sw:<day>`, `lg:<day>`, `wh:<spin>`, `qd:`, `qw:`), so
+  two devices pay once. earn.js files the events: a Daily Draft, Fix History or Six
+  Passes finished is the streak's day; settle() is the login day. `RTF_WARD.daily` is
+  the door and every call through it (and every shop call) settles the quests.
+- **A Coin Rush doubles what PLAY pays** (`PLAY_SRC` in earn.js), never a badge or a
+  quest. It is Run The Tour's XP boost until the Floor Pass gives XP a meaning.
+- **A wheel spin is decided before it turns.** `daily-ui.js` sets `spinning` BEFORE it
+  calls `D.spin`: the spin's own update redraws the hub, and set after, the wheel turned
+  on a detached copy (check-daily caught it). The wedge under the pointer, the `dw` row
+  and the prize card are one prize, and check-daily reads all three.
 
 ## Run The Diamond, the baseball game
 

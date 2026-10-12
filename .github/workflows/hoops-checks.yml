@@ -18,6 +18,7 @@ name: Hoops checks
 #   node hoops/check-packs.mjs          odds, pity, shards, the exchange, two devices, the shop on a phone
 #   node hoops/check-closet.mjs         what he owns and wears, two devices, the closet on a phone
 #   node hoops/check-shopart.mjs        every item, pack, coin and shard in pixels
+#   node hoops/check-daily.mjs          the streak, the wheel, the quests, Floor Rep
 #   node hoops/check-earn.mjs           who earns coins, from what, and only once
 #   node hoops/check-story.mjs --quick  the story engine: order, arcs, traits, people, league
 #   node hoops/check-rosters.mjs        a career joins today's real rosters
@@ -133,6 +134,12 @@ jobs:
       # row, nothing is clipped, and the four packs are four pictures.
       - name: The shop's pixel art
         run: node hoops/check-shopart.mjs
+
+      # The streak and its freezes, the login track, the wheel's odds and a
+      # spin that stops on the prize it paid, quests that pay once, Floor
+      # Rep, and a Coin Rush that doubles play and nothing else.
+      - name: The daily loop
+        run: node hoops/check-daily.mjs
 
       # Only what he owns is ever saved or drawn, two devices merge without
       # losing anything, and the closet wears a piece on a press.

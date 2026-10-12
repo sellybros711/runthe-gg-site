@@ -286,6 +286,24 @@ function iconURL(it){ return toURL('i:' + (it && it.id) + ':' + ((it && it.c) ||
 function packURL(id){ return toURL('p:' + id, PW, PH, packGrid(id), 4); }
 function coinURL(){ var g = coinGrid(); return toURL('coin', g.w, g.h, g.px, 4); }
 function gemURL(r){ var g = gemGrid(r); return toURL('gem:' + r, g.w, g.h, g.px, 4); }
+/* any small sprite from rows and a palette ('.' is empty), cached by key */
+function spriteURL(key, rows, pal, sc){ var g = smallGrid(rows, pal); return toURL('s:' + key, g.w, g.h, g.px, sc || 4); }
+/* THE STREAK FLAME, three frames that flicker. Hot core, orange body, a red
+   lick at the edge; the cold flame (a frozen day) is the same shape in blue. */
+var FLAME = [
+  ['....r.......', '...rr...r...', '...rrr..rr..', '..rroor.rr..', '..roooorrr..', '.rrooyoorr..', '.roooyyoorr.', 'rrooyyyyoor.', 'rooyywwyyor.', 'rooywwwwyorr', 'rooywwwwyoor', '.rooywwyoor.', '..rrooooor..', '...rrrrrr...'],
+  ['.......r....', '...r...rr...', '..rr..rrr...', '..rr.rooorr.', '..rrroooor..', '..rrooyoorr.', '.rrooyyooor.', '.rooyyyyoorr', '.royywwyyoor', 'rroywwwwyoor', 'rooywwwwyoor', '.rooywwyoor.', '..rooooorr..', '...rrrrrr...'],
+  ['.....r......', '....rr..r...', '...rrr.rr...', '..rrooorrr..', '.rrooooorr..', '.rrooyyoorr.', '.rooyyyyoor.', 'rrooyyyyoorr', 'rooyywwyyoor', 'rooywwwwyoor', 'rooywwwwyoor', '.rooywwyoor.', '..rrooooor..', '...rrrrrr...'],
+];
+var FLAME_PAL = { r: '#d8381e', o: '#ff8a1e', y: '#ffd23a', w: '#fff6d8' };
+var COLD_PAL = { r: '#2f6fd8', o: '#5aa8ff', y: '#a8dcff', w: '#f0fbff' };
+function flameURL(f, cold){ return spriteURL('fl' + (f | 0) + (cold ? 'c' : ''), FLAME[(f | 0) % 3], cold ? COLD_PAL : FLAME_PAL, 4); }
+var SNOW = ['...w...', '.w.w.w.', '..www..', 'wwwbwww', '..www..', '.w.w.w.', '...w...'];
+function snowURL(){ return spriteURL('snow', SNOW, { w: '#d8f2ff', b: '#5aa8ff' }, 4); }
+var WHEELI = ['..kkkkk..', '.kyrybrk.', 'kbyrybryk', 'krbyrybrk', 'kyrbwbryk', 'kryby.rbk', 'kbryrybrk', '.kbryryk.', '..kkkkk..'];
+function wheelIconURL(){ return spriteURL('wheel', WHEELI, { k: '#5a3e0a', y: '#f2c23a', r: '#e0483e', b: '#3a6fd8', w: '#ffffff' }, 4); }
+var SCROLL = ['.kkkkkkk.', 'kwwwwwwwk', 'kwkkkkkwk', 'kwwwwwwwk', 'kwkkkkwwk', 'kwwwwwwwk', 'kwkkkkkwk', 'kwwwwwwwk', '.kkkkkkk.'];
+function questIconURL(){ return spriteURL('quest', SCROLL, { k: '#5a3e0a', w: '#f4e7c4' }, 4); }
 function img(url, cls, alt){ return url ? '<img src="' + url + '" class="' + cls + '" alt="' + (alt || '') + '" draggable="false">' : '<span class="' + cls + '"></span>'; }
 
 var API = {
@@ -296,6 +314,9 @@ var API = {
   pack: function(id, cls){ return img(packURL(id), cls || 'ia-pack'); },
   coin: function(cls){ return img(coinURL(), cls || 'ia-coin', 'coins'); },
   gem: function(r, cls){ return img(gemURL(r), cls || 'ia-gem'); },
+  flame: function(f, cold, cls){ return img(flameURL(f, cold), cls || 'ia-flame'); }, flameURL: flameURL,
+  snow: function(cls){ return img(snowURL(), cls || 'ia-snow'); }, wheelIcon: function(cls){ return img(wheelIconURL(), cls || 'ia-wheel'); }, wheelIconURL: wheelIconURL,
+  questIcon: function(cls){ return img(questIconURL(), cls || 'ia-quest'); }, spriteURL: spriteURL, FLAME: FLAME,
   dark: dark, lite: lite, mix: mix, lum: lum,
 };
 if (isNode) module.exports = API;

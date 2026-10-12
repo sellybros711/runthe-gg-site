@@ -2654,13 +2654,17 @@
       "v": "1",
       "sha": "3e06b1432bb7cdb7"
     },
+    "daily.js": {
+      "v": "1",
+      "sha": "b49b97f74b34ac3a"
+    },
     "wardrobe.js": {
-      "v": "4",
-      "sha": "e186198b0c2366cb"
+      "v": "5",
+      "sha": "0c6892b7f4b7423d"
     },
     "earn.js": {
-      "v": "2",
-      "sha": "4ca68e4aa73cf16b"
+      "v": "3",
+      "sha": "7c071f594fd4bfb0"
     },
     "board.js": {
       "v": "8",
@@ -2707,8 +2711,8 @@
       "sha": "f17a858cad115a76"
     },
     "itemart.js": {
-      "v": "1",
-      "sha": "abfdedc5d33d1e66"
+      "v": "2",
+      "sha": "294059ef0740b469"
     },
     "closet-ui.js": {
       "v": "5",
@@ -2717,6 +2721,10 @@
     "shop-ui.js": {
       "v": "2",
       "sha": "c38e04763949d7a1"
+    },
+    "daily-ui.js": {
+      "v": "1",
+      "sha": "5763d7c9e24f2139"
     },
     "career-ui.js": {
       "v": "54",
