@@ -3011,11 +3011,12 @@ window.GA_ID='G-L29P5MRWKE';
   body.hvfull .hvfs[data-hvl="phone"] .hvboard::-webkit-scrollbar{display:none}
   body.hvfull .hvfs[data-hvl="phone"] .hvboard.nodesc{bottom:calc(var(--hvdock,90px) + 8px)}
   body.hvfull .hvfs[data-hvl="phone"] .hvboard > *{flex:0 0 auto}
-  /* YOUR score is never the part that scrolls off: on the one-line bar your row comes straight after THRU,
-     whatever the standings order is, and the target goes to the end (owner: see your score at all times) */
-  body.hvfull .hvfs[data-hvl="phone"] .hvboard > .hvbcap{order:-3}
-  body.hvfull .hvfs[data-hvl="phone"] .hvboard > .hvbrow.mine{order:-2}
-  body.hvfull .hvfs[data-hvl="phone"] .hvboard > .hvbtarget{order:5}
+  /* the bar keeps the scoreboard's own order (standings, then the target) and YOUR row is sticky: it sits in
+     its place, and when it would scroll off either end it pins to that edge, so your score is always on screen
+     (owner). Sticky needs a solid fill or the rows sliding under it show through. */
+  body.hvfull .hvfs[data-hvl="phone"] .hvboard > .hvbrow.mine{position:sticky; left:0; right:0; z-index:1;
+    background:linear-gradient(rgba(241,208,74,.2),rgba(241,208,74,.2)),#0b1620;
+    box-shadow:inset 0 0 0 1px rgba(241,208,74,.55), 0 0 10px 4px rgba(6,14,22,.85)}
   body.hvfull .hvfs[data-hvl="phone"] .hvbcap,
   body.hvfull .hvfs[data-hvl="phone"] .hvbtarget{padding:0 2px; font-size:10px}
   body.hvfull .hvfs[data-hvl="phone"] .hvbrow{padding:3px 6px; gap:5px}
