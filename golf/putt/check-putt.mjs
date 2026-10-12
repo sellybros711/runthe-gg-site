@@ -487,7 +487,13 @@ if (!args.includes('--no-browser')){
       // what was picked up stays picked up
       t = await open(fromL); const it2 = t.items(), lc = it2.find(i => i.id === left.id);
       out.kept = hc.length > 0 && it2.filter(i => i.k === 'coin' && hc.some(c => c.id === i.id)).every(i => i.done) && it2.find(i => i.k === 'chest').done && lc.out && !lc.done;
-      document.querySelector('[data-skip]').click(); await sleep(80); out.skipTo = S().round && S().round.lv;
+      document.querySelector('[data-skip]').click(); await sleep(80); { const sw0 = document.querySelector('.pp-skipw [data-skip]'); if (sw0){ sw0.click(); await sleep(80); } } out.skipTo = S().round && S().round.lv;
+      // a trail that still holds rewards warns before Skip leaves it: Keep walking stays, Skip anyway goes
+      t = await open(fromT); document.querySelector('.pp-trail [data-skip]').click(); await sleep(80);
+      const sw = document.querySelector('.pp-skipw'); out.warn = !!sw && /still has/.test(sw.textContent);
+      if (sw) sw.querySelector('[data-n]').click(); await sleep(60); out.stay = !document.querySelector('.pp-skipw') && !!window.RTT_PUTT._trail();
+      document.querySelector('.pp-trail [data-skip]').click(); await sleep(80); const sw2 = document.querySelector('.pp-skipw [data-skip]'); if (sw2) sw2.click(); await sleep(80);
+      out.gone = !window.RTT_PUTT._trail();
       // the rare things: a trinket and whatever else that trail carries, into the record and the Bag
       t = await open(fromT); const rares = t.items().filter(i => i.k === 'trinket' || i.k === 'part' || i.k === 'life');
       for (const it of rares) await visit(t, it.x, it.y);
@@ -516,6 +522,7 @@ if (!args.includes('--no-browser')){
     claim(wk.trail && wk.mark && wk.moved > 3, `Next opens the trail with the golfer and a waypoint, and the stick walks him (${wk.trail}, ${wk.mark}, ${(wk.moved || 0).toFixed(1)} ft)`);
     claim(wk.noStick && wk.dragStill && wk.keyWalk > 1, `on a desktop there is no stick on screen and a drag does not walk him; the arrow keys do (${wk.noStick}, ${wk.dragStill}, ${(wk.keyWalk || 0).toFixed(1)} ft)`);
     claim(wk.locked && wk.shutChest && wk.coin && wk.key && wk.chest && wk.gold && /Golden ball/.test(wk.bub), `the coins, the key, the chest it opens and the golden ball are picked up and kept (${JSON.stringify([wk.coin, wk.key, wk.chest, wk.gold, wk.bub])})`);
+    claim(wk.warn && wk.stay && wk.gone, `Skip on a trail that still holds rewards warns first, Keep walking stays on the trail, and skipping anyway leaves it (${wk.warn}, ${wk.stay}, ${wk.gone})`);
     claim(wk.reached === wk.want && wk.kept && wk.skipTo === wk.want, `walking through the arch opens the hole, what was picked up stays picked up, a coin left on the ground is still there, and Skip goes straight there (${wk.reached}, ${wk.kept}, ${wk.skipTo})`);
     claim(wk.cross && wk.doorOpen && wk.passed && wk.through === 19, `with the stars, the world door on the trail opens and he walks on into World 2 (${wk.doorOpen}, ${wk.passed}, hole ${wk.through})`);
     claim(/Need \d+ more/.test(wk.shutTxt || '') && wk.held, `short of the stars, the door stays shut, says how many more, and he cannot walk past it (${wk.shutTxt})`);
@@ -773,7 +780,7 @@ if (!args.includes('--no-browser')){
     await putt(pw, pa); await pg.waitForSelector('.pp-pop');
     claim(/Coins land the first time only/.test(await pg.textContent('.pp-pop')), 'a replay pays nothing');
     // two more over pars: the last life goes, the 24 hour clock starts, and the sheet offers a refill for money and nothing for coins
-    await pg.click('.pp-pop [data-a="next"]'); await pg.waitForFunction(() => { const S = window.RTT_PUTT._state(); return S.screen === 'play' || window.RTT_PUTT._trail(); }, null, { timeout:60000 }); if (await pg.$('.pp-trail [data-skip]')) await pg.click('.pp-trail [data-skip]');
+    await pg.click('.pp-pop [data-a="next"]'); await pg.waitForFunction(() => { const S = window.RTT_PUTT._state(); return S.screen === 'play' || window.RTT_PUTT._trail(); }, null, { timeout:60000 }); if (await pg.$('.pp-trail [data-skip]')) await pg.click('.pp-trail [data-skip]'); if (await pg.$('.pp-skipw [data-skip]')) await pg.click('.pp-skipw [data-skip]');
     for (let t = 0; t < 2; t++){ for (let k = 0; k < 3; k++) await putt(0.03); await pg.waitForSelector('.pp-pop'); await pg.click('.pp-pop [data-a="again"]'); }
     await pg.waitForSelector('.pp-sheet');
     const r2 = await rec();
