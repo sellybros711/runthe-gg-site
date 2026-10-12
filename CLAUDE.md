@@ -20281,6 +20281,14 @@ The page writes localStorage first and never waits on the network. The host hand
   either copy. A refused write hands back the stored record, which is merged in and sent again, at most
   three times running.
 - **Every call fails soft.** null is no opinion and the local record stands.
+- **The account's record lands after the first screen, so the screen has to look again** (`pulled()`). The game
+  opens on the trail to THIS browser's frontier, and the pull only redrew the map. A phone whose copy was behind
+  (a new browser, or Safari evicting a site not visited for a week) stood on the trail to hole 1 with the
+  progress sitting on the server. A tester reported it as being reset to level 1. A trail opened by `home()` now
+  walks on to the new frontier when the pull moves it; one walked on purpose from the map is left alone.
+- **A browser that will not save keeps the session in memory** (`praw`, `pwrite`). Every read is fresh from
+  localStorage, so a setItem that throws used to hand back the old record on the next read. Writes are mirrored
+  in memory and a refused key is read from the mirror, and the cloud copy is sent from that same read.
 
 **Every putt is saved, and the game reopens on the hole in progress** (`saveCur`, `st.cur`). The hole,
 the strokes and where the ball lies go into the Tour record when a putt is struck (ball still at its
