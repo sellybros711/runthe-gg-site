@@ -20003,7 +20003,7 @@ owner said was not what was being built.
 
 | | who | holes | worlds |
 |---|---|---|---|
-| Putt Putt Tour (`main`) | everybody | 144 | The Clubhouse, Lost Temple, Pirate Cove, Canyon Mine, Volcano Island, Frozen Peak, Sky Islands, Neon Arcade, 18 each |
+| Putt Putt Tour (`main`) | everybody | 180 | The Clubhouse, Lost Temple, Pirate Cove, Canyon Mine, Volcano Island, Frozen Peak, Sky Islands, Neon Arcade, Schoolyard, Ice Age, 18 each |
 | Members Tour (`members`) | Tour Pass holders | 18 | Hallows Night and Harvest Moon, nine each: the season's own holes, the hardest in the game |
 
 **The main tour wears none of the calendar themes**, which belong to the passes and the dailies, and the
@@ -20015,19 +20015,26 @@ ramp jumps over water, drawbridges on a clock, turntables, sliders, gates, spinn
 
 
 **THE TOUR GROWS A WORLD AT A TIME, about 50 holes a week** (the owner's pace). Worlds 6 to 8 went in
-together as holes 91 to 144. What a new world needs, all of it in one commit:
+together as holes 91 to 144, and worlds 9 and 10 (Schoolyard, Ice Age) as holes 145 to 180. What a new world
+needs, all of it in one commit:
 
 | where | what |
 |---|---|
 | `putt.js` | a `THEMES` entry (`iceCol`/`iceCol2` paint `M.ICE` apart from the hazard), its skins in `SKIN`, a `GLOW`, the `WORLDS` row, its 18 `LEVELS`, 18 `TOUR_NAMES`, the `.wm-`, `.wt-` and `data-wt` CSS, `CARD_ART`, and a `sigReward`/`worldReward` each |
 | `land.js`, `mapland.js` | `BUILD.<theme>` for the land round a hole, `PAL` and `WORLD.<theme>` for the map |
+| `trail.js` | a `KIT` (ground, path, trees, landmarks, hazard, breakable, local), its `LIFE`, and a `BUILD` for each new landmark with its `LMSIZE` |
+| `putt.js` again | a `GREETERS` host, three `TRINKETS` and a `TRINKET_COL`, a `DOOR_NAMES` entry and its `.pp-door[data-door=]` CSS |
 | `build-cards.mjs` | the signature hole the home card is cut from |
 | `routes.json` | `solve.mjs --tour main --only <the 18> --write`, then each `par` set to what it prints (`three` where it says 3 STARS NOT FOUND) |
 
 **A new world has to carry more set pieces a hole than the one before it** (check-putt asserts it, thin
 rails excluded), so a world adds a mechanic on top of the old ones rather than replacing them. Frozen Peak
 brings ice (`M.ICE`, a quarter of the carpet's grip, so the pace is read off where the ice ends), Sky
-Islands wind (belts) and the drop (the hazard painted as cloud), Neon Arcade every machine on a clock.
+Islands wind (belts) and the drop (the hazard painted as cloud), Neon Arcade every machine on a clock,
+Schoolyard the playground (the merry-go-round turns, the seesaw is two drawbridges, the bus is a slider and the
+sandbox stops a ball), Ice Age all of it at once: glacier ice, tar pits (the hazard painted black), and the
+mammoths walking through. **A trail's tar is `slow` ground painted `bogC`**, the Ice Age kit's own colours, so
+a bog anywhere else keeps its brown.
 **Ice makes aces easy**: a bank onto ice slides on with room for error, so the first draft of Frozen Peak
 had four holes acable from the tee. Put a bumper on the line the ice opens up, and re-solve.
 **A skin name is global**: the winter theme already had `snowman`, and a second `snowman` in `SKIN`
@@ -20164,7 +20171,7 @@ of that world's signature hole, cut from the game's own render by `node golf/put
 `golf/putt/cards/`, so it is the same pixel art as the courses. A dark wash keeps the text readable. Re-run
 it after changing `land.js` or a signature hole, and bump `CARD_V`.
 
-**The main tour pays 4,000 coins a world** (32,000 over eight worlds): 80 a hole and 280 for the signature hole the
+**The main tour pays 4,000 coins a world** (40,000 over ten worlds): 80 a hole and 280 for the signature hole the
 first time it is beaten, 20 for a first ace, and 2,000 for finishing the world. Replays pay nothing. They
 go through the page's `addBonusCoins`, so a Tour Pass multiplier does not apply. The signature, world, ace
 and streak rewards are recorded by name in the Tour record and are not wearable yet.
@@ -20203,7 +20210,7 @@ own class, and sharing it broke the layout). `window.RTT_PUTT_MAPFIRST` makes th
 check-putt sets it for its map sections; its world section turns it off.
 
 **Every world has a greeter** (`GREETERS`, `greetSpec` in putt.js), a board game host: Pro Pete (a preppy club pro: white polo, visor, slacks), Professor
-Fern, Captain Bogey, Dusty, Ranger Mae, Coach Frost, Skye, DJ Pixel, and Count Mulligan and Farmer Hayes on
+Fern, Captain Bogey, Dusty, Ranger Mae, Coach Frost, Skye, DJ Pixel, Principal Plum, Grok, and Count Mulligan and Farmer Hayes on
 the Members Tour. They are invented, drawn by the same 3D golfer in a look nobody can buy, and stand on the
 first trail of their world (from `w * K`), a little up the path or just past the world door. They wait while
 the world's title card shows (`greetDelay`), walk up, and talk: a box at the foot of the screen with their
@@ -20320,8 +20327,8 @@ yet beaten on the main tour: a beaten hole's trail is already behind you. A gate
 - **NO COIN LIES LOOSE. Coins are in a chest, ONE A TRAIL**, the owner's call: in the clearing when it holds
   one, else hidden off the path (`hideSpot`: just north of a tree or a rock). Walking up to it opens it and its coins fly out and land round it; each is walked over to pick
   up and paid into the Run The Tour wallet (`COIN_V`, 50 each, through the host's `coins`; a smashed breakable
-  pays `BRK_V`, 25). Over every trail that is about 119,000 coins on the main tour (2,099 chest coins and 567
-  breakables across 143 trails) and 14,000 on the Members Tour, against 32,000 for clearing the main tour's holes. A chest pays nothing
+  pays `BRK_V`, 25). Over every trail that is about 146,000 coins on the main tour (2,571 chest coins and 688
+  breakables across 179 trails) and 14,000 on the Members Tour, against 40,000 for clearing the main tour's holes. A chest pays nothing
   itself. Where each coin lands is fixed by the plan (`drops`), so a coin left on the ground is still there next
   time. Breakables are the only other coins. Paying refreshes the wallet pill at the top (`coins()` in putt.js
   rewrites every `[data-bal]`). check-putt opens the chest, picks its coins up and checks the payout.
@@ -20478,6 +20485,28 @@ stays on the flat painter.
 - **A blocked or stale module, or a render that throws, draws the hole flat.** `check-putt.mjs` asserts
   that, plus every themed hole with no unknown material, open carpet landing on carpet in the picture, and
   the sliced render matching the one-shot render pixel for pixel.
+
+#### The console look, being tried on one hole a world
+
+Asked for by the owner: make the holes look like a console game in a browser, one hole from each world
+first. `opt.fx` on `hole3d.js` relights the finished picture and never moves a pixel, so the pixel art stays
+the pixel art:
+
+- **Sun shadows.** While the scene is built, each pixel's surface height (`WZ`) and a top-down height map
+  (`HM`, a quarter foot a cell) are kept. Each pixel then marches toward a low sun in the upper left, and
+  whatever stands in the way darkens it, cool and blue in shadow and warm in the light, with a dithered edge.
+- **Only what lies on the ground takes a shadow or a dark corner** (within 0.45 ft of `gz`). The painter
+  already shades the far side of a tree; shading it twice turned a wood into a black mass.
+- **Haze over the far land, and a grade.** The top of the picture fades toward a pale sky, or into the dark
+  on a night world (`night`, off the land's own background). Colour and contrast go up a little.
+- **The stage takes the same grade** (`bg` on the render), or a bright band shows under the picture.
+- **Over the stage, in screen pixels** (`drawFxScreen` in putt.js): the low sun's warm light from the upper
+  left (none at night) and a vignette.
+
+It costs about as much as the render did before. `FX_PREVIEW` in putt.js names the holes it is on (the first
+of each world); `window.RTT_PUTT_FX = 'all'` puts it on every hole and `'off'` on none. The key carries it,
+so a cached render without it is never shown in its place. Going to every hole is deleting `FX_PREVIEW`'s
+check in `fxOn`.
 
 ## Run The Tour's course golfer is the profile golfer, drawn from a 3D model
 

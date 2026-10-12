@@ -52,10 +52,18 @@ function* steps(C, opt){
   var W = Math.floor((b[2] - b[0]) / ART) + 1, Hh = Math.ceil(((b[3] - b[1]) * se + zMax * ce) / ART) + 4;
   var oy = zMax * ce / ART + 2 - b[1] * se / ART;
   var S = new PX.Sprite(W, Hh), Z = new Float32Array(W * Hh).fill(-1e9);
+  /* THE CONSOLE PASS (opt.fx). The height of every pixel's surface and a top-down height map of the whole
+     scene are kept while it is built, so once it is painted the sun can cast real shadows across it, the
+     corners can darken where things meet, the far land can sit in haze and the whole picture can be graded.
+     It never moves a pixel: it only relights the ones already there, so the pixel art stays the pixel art. */
+  var FX = !!opt.fx && !SC, WZ = FX ? new Float32Array(W * Hh) : null, HMS = 0.25, HX = 0, HY = 0, HM = null;
+  if (FX){ HX = Math.ceil((b[2] - b[0]) / HMS) + 1; HY = Math.ceil((b[3] - b[1]) / HMS) + 1; HM = new Float32Array(HX * HY).fill(-1e9); }
   function camN(nx, ny, nz){ var v0 = nx, v1 = -nz * ce + ny * se, v2 = nz * se + ny * ce, l = Math.sqrt(v0 * v0 + v1 * v1 + v2 * v2) || 1; return [v0 / l, v1 / l, v2 / l]; }
   function splat(x, y, z, m, n, extra){
     var sx = Math.floor((x - b[0]) / ART), sy = Math.floor(y * se / ART - z * ce / ART + oy), Dp = y * ce + z * se;
-    if (sx < 0 || sy < 0 || sx >= W || sy >= Hh) return; var k = sy * W + sx; if (Dp <= Z[k]) return; Z[k] = Dp;
+    if (sx < 0 || sy < 0 || sx >= W || sy >= Hh) return;
+    if (FX){ var hi = Math.round((x - b[0]) / HMS), hj = Math.round((y - b[1]) / HMS); if (hi >= 0 && hj >= 0 && hi < HX && hj < HY && z > HM[hj * HX + hi]) HM[hj * HX + hi] = z; }
+    var k = sy * W + sx; if (Dp <= Z[k]) return; Z[k] = Dp; if (FX) WZ[k] = z;
     var c = { m:m, n:null, z:Dp, dt:0, gloss:0, bias:0, t:null, tag:'', nv:n };
     if (extra) for (var q in extra) c[q] = extra[q];
     S.g[sy][sx] = c;
@@ -171,7 +179,7 @@ function* steps(C, opt){
   var B = { solid:solid, vox:vox, tube:tube, blob:blob, gz:gz, ART:ART, clearAt:clearAt, T:T };
 
   // ---- the hole's own pieces
-  var LATHE = { pumpkin:1, ghost:1, pine:1, snowman:1, egg:1, snowball:1, beachball:1, pie:1, potgold:1, umbrella:1, cloud:1, neonpost:1, clover:0, star:0 };
+  var LATHE = { pumpkin:1, ghost:1, pine:1, snowman:1, egg:1, snowball:1, beachball:1, pie:1, potgold:1, umbrella:1, cloud:1, neonpost:1, kickball:1, clover:0, star:0 };
   var LIFT = { bat:1.4, ghost:0.5 };
   function base(x, y){ return CARP + F.h(x, y) * K + TZ(x, y); }
   function skinCol(name){ var fn = SK[name] || SK.stone, n = {}, best = null, bn = 0;
@@ -264,6 +272,55 @@ function* steps(C, opt){
       if (clearAt(wx, wy) > 0.4 && fv > 0.62 && (fv > 0.7 || ((fx + fy) & 2))) ctx.fillRect(fx, fy, 2, 2); }
     ctx.globalAlpha = 1; }
   if (LD && LD.after) LD.after(ctx, { pr:pr, W:W, H:Hh - y0, b:b, ART:ART, se:se, oy:oy - y0 });
+  var fxBg = null, fxNight = false;
+  if (FX){ var fxg = fxPass(); while (!fxg.next().done) yield; }
+  function* fxPass(){
+    var HH2 = Hh - y0, img = ctx.getImageData(0, 0, W, HH2), d = img.data;
+    // the sun is low in the upper left, behind the camera's left shoulder: shadows fall toward the lower right
+    var lx = -0.62, ly = -0.48, ln = Math.hypot(lx, ly); lx /= ln; ly /= ln; var RISE = 0.78, STEP = HMS, MAXD = 9;
+    var hm = function(x, y){ var i = Math.round((x - b[0]) / HMS), j = Math.round((y - b[1]) / HMS); if (i < 0 || j < 0 || i >= HX || j >= HY) return -1e9; return HM[j * HX + i]; };
+    // haze colour: the land's own background, lifted toward a pale sky
+    var hz = (LD && LD.bg) || T.bg, hr = parseInt(hz.slice(1, 3), 16), hg = parseInt(hz.slice(3, 5), 16), hb = parseInt(hz.slice(5, 7), 16);
+    // a night world (neon, lava, a churchyard) has no bright sky to fade into: its far land sinks into the dark
+    var night = fxNight = hr * 0.3 + hg * 0.59 + hb * 0.11 < 70;
+    if (!night){ hr = hr + (226 - hr) * 0.6; hg = hg + (232 - hg) * 0.6; hb = hb + (242 - hb) * 0.6; } else { hr *= 0.6; hg *= 0.6; hb *= 0.7; }
+    // the grade: a little more colour and a little more contrast
+    function grade(i4, r, g, bl){ var lum = r * 0.3 + g * 0.59 + bl * 0.11; r = lum + (r - lum) * 1.22; g = lum + (g - lum) * 1.22; bl = lum + (bl - lum) * 1.22;
+      r = 128 + (r - 128) * 1.07; g = 128 + (g - 128) * 1.07; bl = 128 + (bl - 128) * 1.07;
+      d[i4] = r < 0 ? 0 : r > 255 ? 255 : r; d[i4 + 1] = g < 0 ? 0 : g > 255 ? 255 : g; d[i4 + 2] = bl < 0 ? 0 : bl > 255 ? 255 : bl; }
+    var A8 = []; for (var a = 0; a < 8; a++) A8.push([Math.cos(a * Math.PI / 4), Math.sin(a * Math.PI / 4)]);
+    for (var py = 0; py < HH2; py++){
+      for (var px = 0; px < W; px++){
+        var k = (py + y0) * W + px, i4 = (py * W + px) * 4, r = d[i4], g = d[i4 + 1], bl = d[i4 + 2];
+        if (Z[k] < -1e8){ grade(i4, r * 0.86, g * 0.86, bl * 0.9); continue; }
+        var z = WZ[k], wy = (Z[k] - z * se) / ce, wx = b[0] + (px + 0.5) * ART;
+        // only what lies on the ground takes a shadow or a dark corner: the painter already shades the sides
+        // of a tree or a wall that face away, and doing it twice makes a wood a black mass
+        var low = z - gz(wx, wy) < 0.45;
+        // the shadow: march toward the sun over the height map, and the deepest crossing sets how dark it is
+        var sh = 0;
+        if (low) for (var t = STEP; t < MAXD; t += STEP){ var over = hm(wx + lx * t, wy + ly * t) - (z + 0.05 + t * RISE); if (over > 0){ sh = Math.max(sh, Math.min(1, over / 0.25)); if (sh >= 1) break; } }
+        // ambient occlusion: how much of the ground close round it stands higher than it
+        var ao = 0; if (low) for (a = 0; a < 8; a++){ var o1 = hm(wx + A8[a][0] * 0.5, wy + A8[a][1] * 0.5) - z, o2 = hm(wx + A8[a][0] * 1.1, wy + A8[a][1] * 1.1) - z;
+          ao += Math.max(0, Math.min(1, o1 / 0.5)) * 0.6 + Math.max(0, Math.min(1, o2 / 1.1)) * 0.4; }
+        ao = 1 - Math.min(0.35, ao / 8 * 0.8);
+        // a dithered edge on the shadow, so it reads as pixel art and not as a smear
+        if (sh > 0 && sh < 1) sh = ((px + py) & 1) ? Math.min(1, sh * 1.4) : sh * 0.6;
+        // light is warm and bright, shadow is cool and blue, the way a low sun reads
+        var sr = 1.07 - sh * 0.47, sg = 1.05 - sh * 0.31, sb = 1.0 - sh * 0.12;
+        r = r * sr * ao; g = g * sg * ao; bl = bl * sb * ao;
+        // haze over the far land (the top of the picture) and nothing on the course
+        var far = Math.max(0, Math.min(1, (0.42 - py / HH2) / 0.42)), hzA = far * far * 0.26 * (clearAt(wx, wy) > 0.5 ? 1 : 0.35);
+        r += (hr - r) * hzA; g += (hg - g) * hzA; bl += (hb - bl) * hzA;
+        grade(i4, r, g, bl);
+      }
+      if ((py & 15) === 15) yield;
+    }
+    ctx.putImageData(img, 0, 0);
+    // the stage round the picture takes the same grade, or it is a bright band under a graded picture
+    var b0 = T.bg, q = [parseInt(b0.slice(1, 3), 16), parseInt(b0.slice(3, 5), 16), parseInt(b0.slice(5, 7), 16)], t0 = new Uint8ClampedArray(4);
+    var keep = d; d = t0; grade(0, q[0] * 0.86, q[1] * 0.86, q[2] * 0.9); d = keep; fxBg = 'rgb(' + t0[0] + ',' + t0[1] + ',' + t0[2] + ')';
+  }
   /* WHETHER SOMETHING STANDS IN FRONT OF A POINT. The picture keeps how near the camera each pixel's
      surface is, so a point on the hole is hidden when the scene at its pixel is nearer than it: a ball
      behind a block, a wall or the windmill house is behind it, not painted over it. */
@@ -271,6 +328,6 @@ function* steps(C, opt){
     if (sx < 0 || sy < 0 || sx >= W || sy >= Hh) return false; return Z[sy * W + sx] > y * ce + z * se + 0.2; };
   /* the depth of every pixel (Z, W wide, starting y0 rows down), so a trail can draw the golfer and anything
      that moves behind whatever stands in front of it */
-  return { ART:ART, cv:cv, pr:pr, un:un, zAt:SC ? function(x, y){ return gz(x, y); } : surf, hid:hid, mill:mill, se:se, ce:ce, K:K, carp:CARP, Z:Z, ZW:W, zy0:y0, b:b };
+  return { ART:ART, cv:cv, bg:fxBg, night:FX && fxNight, pr:pr, un:un, zAt:SC ? function(x, y){ return gz(x, y); } : surf, hid:hid, mill:mill, se:se, ce:ce, K:K, carp:CARP, Z:Z, ZW:W, zy0:y0, b:b };
 }
 })();

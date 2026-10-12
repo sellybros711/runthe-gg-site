@@ -2559,24 +2559,24 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "58",
-      "sha": "f0a1af6838f08ba1"
+      "v": "59",
+      "sha": "d32ed045daad5524"
     },
     "putt/land.js": {
-      "v": "5",
-      "sha": "4bd5518cffd6b98e"
+      "v": "6",
+      "sha": "ae344c7105d10d42"
     },
     "putt/hole3d.js": {
-      "v": "9",
-      "sha": "88e5cf8081e2f71b"
+      "v": "10",
+      "sha": "a3584943ee99a78c"
     },
     "putt/trail.js": {
-      "v": "18",
-      "sha": "4028ef258e881358"
+      "v": "19",
+      "sha": "ae56df693dccd759"
     },
     "putt/mapland.js": {
-      "v": "3",
-      "sha": "4e1660289348cb21"
+      "v": "4",
+      "sha": "e5d556a2b57cda4e"
     },
     "golfer3d.js": {
       "v": "5",

@@ -949,5 +949,68 @@ window.RTT_PUTT_LAND = (function(){
     };
   };
 
+  /* ---------------- SCHOOLYARD: the blacktop round the hole with its court lines, the school behind, a swing set and a few kickballs on the grass */
+  BUILD.school = function(L){
+    var C = L.C, E = L.E, P0 = L.P0, P1 = L.P1, seed = L.seed, clearAt = L.clearAt, spot = L.spot, spotRect = L.spotRect, north = L.north;
+    var sch = spotRect(8, 5, function(x, y){ return north(x, y) * 1.1 - Math.abs(x - L.cx) * 0.2; });
+    function topW(x, y){ return 3 + (fbm(x * 0.2, y * 0.2, seed + 4) - 0.5) * 0.8; }
+    var swing = spot(1.8, function(x, y){ return north(x, y) * 0.6 + L.side(x) * 3 + hash(x | 0, y | 0, seed + 3); }, function(x, y){ return clearAt(x, y) > topW(x, y) + 1.5; });
+    var balls = []; for (var i = 0; i < 3; i++){ var b = spot(0.35, function(x, y){ return -Math.abs(clearAt(x, y) - 2) * 1.2 + hash(x * 3 | 0, y * 3 | 0, seed + 30 + i); }); if (b) balls.push(b); }
+    return {
+      h:function(x, y){ return (fbm(x * 0.08, y * 0.08, seed) - 0.45) * 0.6 * sm(3.5, 7, clearAt(x, y)); },
+      mat:function(x, y){ var c = clearAt(x, y), w = topW(x, y); if (c < w){ if (Math.abs(c - 2.2) < 0.07 || (Math.abs(((x + 40) % 4) - 2) < 0.06 && c > 1.2 && c < 2.2)) return ['line']; return ['top']; } return ['grass']; },
+      build:function(B){
+        if (sch){ var d = sch.d;
+          house(B, sch, { wh:2.6, rh:1.2, step:'#8a8f99',
+            wall:function(dx, dy, t){ if (dy > d / 2 - 0.15 && Math.abs(dx) < 0.55 && t < 1.8) return '#2b6a95';
+              if (dy > d / 2 - 0.15 && Math.abs(Math.abs(dx) - 2.3) < 0.6 && t > 0.9 && t < 1.9) return Math.abs(t - 1.4) < 0.05 ? '#ffffff' : '#cfe6f4';
+              return ((Math.floor(t * 4) + ((Math.floor(dx * 2.5) + (Math.floor(t * 4) % 2)) % 2)) % 2) ? '#b5452e' : '#a33c27'; },
+            roof:function(dx, dy, t, rr, eave){ return eave ? '#3a3e46' : '#4a4e56'; } });
+          var bx = sch.x, by = sch.y, zb = B.gz(bx, by) + 3.8;
+          B.solid(bx - 0.5, by - 0.5, zb, bx + 0.5, by + 0.5, zb + 1.4, function(px, py, pz){ var t = pz - zb, m = Math.max(Math.abs(px - bx), Math.abs(py - by));
+            if (t < 0.9) return m < 0.42 ? (Math.hypot(px - bx, py - by) < 0.18 && t > 0.3 ? '#e2b33a' : (m > 0.32 ? '#f6f3ea' : null)) : null; return m < 0.48 * (1 - (t - 0.9) / 0.5) ? '#c0392b' : null; }); }
+        if (swing){ var X = swing.x, Y = swing.y, zs = B.gz(X, Y);
+          B.solid(X - 1.8, Y - 0.6, zs - 0.05, X + 1.8, Y + 0.6, zs + 2.6, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zs, ft = 0.5 * (1 - t / 2.4);
+            if (Math.abs(t - 2.4) < 0.08 && Math.abs(dy) < 0.08 && Math.abs(dx) < 1.75) return '#e53935';
+            if (t < 2.4 && Math.abs(Math.abs(dx) - 1.65) < 0.07 && Math.abs(Math.abs(dy) - ft) < 0.07) return '#c62828';
+            for (var k = -1; k <= 1; k += 2){ var sx = k * 0.6; if (t > 0.5 && t < 2.4 && Math.abs(Math.abs(dx - sx) - 0.18) < 0.03 && Math.abs(dy) < 0.04) return '#8a8f99'; if (Math.abs(dx - sx) < 0.24 && Math.abs(dy) < 0.13 && t > 0.42 && t < 0.52) return '#2b6a95'; }
+            return null; }); }
+        balls.forEach(function(b){ var zb = B.gz(b.x, b.y); B.solid(b.x - 0.3, b.y - 0.3, zb, b.x + 0.3, b.y + 0.3, zb + 0.6, function(px, py, pz){ var d = Math.hypot(px - b.x, py - b.y, pz - zb - 0.28); return d < 0.28 ? (d < 0.27 && pz - zb > 0.4 && px < b.x ? '#ff8a7a' : '#de3a2e') : null; }); });
+      },
+      fill:{ on:['grass'], trees:0.42, lows:0.24, tree:function(B, x, y, i){ broadTree(B, x, y, 2.8 + hash(i, seed, 41) * 1.4, '#5a3d2e', ['#3b8f4a', '#2f7d3e', '#e0a83a'], i); },
+        low:function(B, x, y, i){ var k = hash(i, seed, 43); if (k < 0.65) bush(B, x, y, 0.42, ['#3b8f4a', '#2f7d3e', '#5aa84c']); else rockAt(B, x, y, 0.34, ['#9a9a94', '#7a7a74']); } },
+      bg:'#5f9e45', gain:1.9,
+      mats:{ grass:['#6aaa4f', '#76b658', '#5f9e45', 0.18], top:['#4c5058', '#555a63', '#44484f', 0.12], line:['#f4f4ee', '#ffffff', '#e2e2da', 0.1] }
+    };
+  };
+
+  /* ---------------- ICE AGE: a glacier wall behind the hole, a tar pit beside it, snow on the tundra and a mammoth or two on it */
+  BUILD.iceage = function(L){
+    var C = L.C, E = L.E, P0 = L.P0, P1 = L.P1, seed = L.seed, clearAt = L.clearAt, spot = L.spot, north = L.north;
+    function wallY(x){ return P0[1] - 3.2 - (vn(x * 0.14, 6, seed) - 0.5) * 3; }
+    var pit = spot(2.6, function(x, y){ return Math.abs(x - L.cx) * 0.4 + L.side(x) * 3; }, function(x, y){ return y > wallY(x) + 3; });
+    function pitD(x, y){ return pit ? 1 - Math.hypot((x - pit.x) / pit.r, (y - pit.y) / (pit.r * 0.7)) + (fbm(x * 0.6, y * 0.6, seed + 3) - 0.5) * 0.3 : -1; }
+    var herd = []; for (var i = 0; i < 2; i++){ var m = spot(1.3, function(x, y){ return north(x, y) * 0.4 + L.side(x) * 2 + hash(x | 0, y | 0, seed + 9 + i); }, function(x, y){ return y > wallY(x) + 2 && pitD(x, y) < -0.3; }); if (m) herd.push(m); }
+    function mammoth(B, X, Y, k){ var zb = B.gz(X, Y), dir = hash(k, 3, seed) < 0.5 ? 1 : -1;
+      B.solid(X - 1.5, Y - 0.8, zb, X + 1.5, Y + 0.8, zb + 2.2, function(px, py, pz){ var dx = (px - X) * dir, dy = py - Y, t = pz - zb;
+        if (t < 0.7 && Math.abs(Math.abs(dx) - 0.55) < 0.17 && Math.abs(Math.abs(dy) - 0.3) < 0.16) return '#5a3c22';
+        if (Math.hypot(dx / 0.95, dy / 0.55, (t - 1.15) / 0.62) < 1) return t > 1.6 && dx < 0 ? '#5a3c22' : ((Math.floor(px * 7) + Math.floor(pz * 7)) % 3 ? '#7a5434' : '#8e6440');
+        if (Math.hypot((dx - 0.95) / 0.42, dy / 0.38, (t - 1.35) / 0.42) < 1) return '#7a5434';
+        if (dx > 1.15 && dx < 1.4 && Math.abs(dy) < 0.11 && t > 0.25 && t < 1.3) return '#6a4a2e';
+        if (Math.abs(Math.abs(dy) - 0.22) < 0.06 && dx > 1.1 && dx < 1.65 && Math.abs(t - (0.95 + (dx - 1.1) * (dx - 1.1) * 0.9)) < 0.07) return '#f4ead2';
+        return null; }); }
+    return {
+      h:function(x, y){ var wy = wallY(x), k = sm(0.8, 3, clearAt(x, y)); if (y < wy) return (2.2 + Math.min(4.5, (wy - y) * 0.8)) * k; if (pitD(x, y) > 0) return -0.06; return (fbm(x * 0.07, y * 0.09, seed) - 0.42) * 1.4 * sm(1.3, 6, clearAt(x, y)); },
+      mat:function(x, y){ var wy = wallY(x); if (y < wy) return ['glacier', { z:wy - y }]; var t = pitD(x, y); if (t > 0) return ['tar', { dep:t }]; return ['snow']; },
+      build:function(B){ herd.forEach(function(m, k){ mammoth(B, m.x, m.y, k); }); },
+      fill:{ on:['snow'], trees:0.4, lows:0.26, tree:function(B, x, y, i){ pineAt(B, x, y, 0.75 + hash(i, seed, 51) * 0.6, i); },
+        low:function(B, x, y, i){ var k = hash(i, seed, 52); if (k < 0.45) rockAt(B, x, y, 0.4, ['#e4edf6', '#8a8070']); else if (k < 0.8) bush(B, x, y, 0.4, ['#f6f9fd', '#e4edf6', '#28503e']); else deadTree(B, x, y, 2 + hash(i, seed, 53), i); } },
+      bg:'#dbe4ea', gain:2.1,
+      mats:{ snow:['#eef3f7', '#f8fbfd', '#dde6ec', 0.16],
+        glacier:['#8fcde0', '#dcf4fa', '#6fb6d0', 0.2, function(c, R, h3){ var z = c.z || 0, band = (Math.floor(z * 2.2 + h3(c.ti >> 2, 0, 3) * 0.6)) % 3; return R(z > 3.4 ? '#f6fbfd' : band === 0 ? '#6fb6d0' : band === 1 ? '#a8dcea' : '#8fcde0'); }],
+        tar:['#1e1a16', '#3a3028', '#141210', 0.08, function(c, R){ return R((c.dep || 0) < 0.12 ? '#3a3028' : (((c.ti * 3 + c.tj * 7) % 29) === 0 ? '#4a3e32' : '#1e1a16')); }] }
+    };
+  };
+
   return { make:make };
 })();
