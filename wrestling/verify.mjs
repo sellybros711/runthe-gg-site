@@ -197,10 +197,11 @@ section('the event catalog');
     : bad('event card: '+JSON.stringify(r));
   // C2: a choice is remembered, and a later event that names its flag quotes it back
   const q = await page.evaluate(()=>{
-    const later=EV.all.find(x=>(x.recall||[]).some(f=>/^[x-z]?[xkp]_/.test(f)));
-    const f=later.recall.find(f=>/^[xkp]_/.test(f));
-    const src=EV.all.find(x=>x.opts.some(o=>o.flags.indexOf(f)>=0));
-    if(!src) return {none:f};
+    // a recalled flag that some choice really sets (many are set by Phase D rows not built yet)
+    const setBy=f=>EV.all.find(x=>x.opts.some(o=>o.flags.indexOf(f)>=0));
+    let later=null, f=null, src=null;
+    for(const x of EV.all){ f=(x.recall||[]).find(k=>/^[xkp]_/.test(k)&&setBy(k)); if(f){ later=x; src=setBy(f); break; } }
+    if(!src) return {none:'no recalled flag is set by any built event'};
     const i=src.opts.findIndex(o=>o.flags.indexOf(f)>=0);
     const lines=catalogApply(src,i);
     playCatalogEvent(later, ()=>{});
@@ -213,6 +214,23 @@ section('the event catalog');
   !q.leak ? ok('no flag name reaches the screen') : bad('a raw flag name is on the event card');
   errs.length ? bad('event card page errors: '+errs.slice(0,3).join(' | ')) : ok('no page errors playing an event');
   await page.close();
+}
+{
+  // the tour card: every button inside the card, and the card inside the window.
+  // Twelve dots plus Back, Skip and Next once ran Next out past the card's edge.
+  for(const [w,h] of [[1440,900],[390,844],[320,568]]){
+    const {page} = await fresh(URL+'/wrestling/');
+    await page.setViewportSize({width:w,height:h});
+    const r = await page.evaluate(async()=>{ quickStart(); await new Promise(r=>setTimeout(r,400)); const out=[];
+      const n=(TOURS.hub||[]).length;
+      for(let i=0;i<n;i++){ tourStep(i); await new Promise(r=>setTimeout(r,420));
+        const c=document.getElementById('tourCard').getBoundingClientRect();
+        const bad=[...document.querySelectorAll('#tourCard .trow button')].some(b=>{ const x=b.getBoundingClientRect(); return x.right>c.right-1||x.left<c.left+1||x.bottom>c.bottom; });
+        if(bad||c.bottom>innerHeight+1||c.right>innerWidth+1||c.left<-1) out.push(i+1); }
+      return {n, out}; });
+    !r.out.length && r.n ? ok(`tour card holds its buttons at ${w}x${h} (${r.n} steps)`) : bad(`tour card at ${w}x${h} spills on step ${r.out.join(', ')}`);
+    await page.close();
+  }
 }
 /* THE HOME PAGE WITH A CAREER ON IT. This is not the same test as the one above:
    an empty browser takes the "start your journey" branch, and a returning player
