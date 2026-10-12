@@ -922,6 +922,108 @@
   .decopt .dp{font-family:var(--mono);font-size:17px;font-weight:800;margin-top:6px;}
   .dp.good{color:var(--green);} .dp.mid{color:var(--gold);} .dp.bad{color:#f0907f;}
   .frow{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;justify-content:flex-end;}
+  /* ===================== THE CONSOLE LAYER =====================
+     You call your own offense from a pad under the ring, read the other man's
+     move for a reversal, and fill a special meter that arms the finisher. The
+     prompts wear whatever you last touched: pad glyphs for a controller, key
+     caps for a keyboard, nothing extra for a finger. */
+  .kg{display:none;}
+  body.in-pad .kg,body.in-key .kg{display:inline-flex;align-items:center;justify-content:center;flex:none;
+    min-width:20px;height:20px;padding:0 5px;margin-right:6px;border-radius:50%;font:800 11px/1 var(--mono);
+    color:#0c0a0a;background:#d8d2c8;box-shadow:inset 0 -2px 0 rgba(0,0,0,.3);vertical-align:-4px;}
+  body.in-key .kg{border-radius:5px;background:#e9e2d6;color:#141010;box-shadow:inset 0 -2px 0 #9c9488;}
+  body.in-pad .kg[data-k="A"]{background:#5fbf5a;} body.in-pad .kg[data-k="B"]{background:#e0574a;color:#fff;}
+  body.in-pad .kg[data-k="X"]{background:#4f8fe0;color:#fff;} body.in-pad .kg[data-k="Y"]{background:#e9c143;}
+  body.in-pad .kg[data-k="RT"],body.in-pad .kg[data-k="START"]{border-radius:6px;background:#4a4550;color:#f4e8db;}
+  .fspecrow{display:flex;align-items:center;gap:8px;margin-top:5px;}
+  .fspec{flex:1;max-width:190px;height:7px;background:rgba(0,0,0,.55);border-radius:2px;transform:skewX(-20deg);overflow:hidden;
+    box-shadow:inset 0 0 0 1px rgba(244,232,219,.18);}
+  .fspec i{display:block;height:100%;width:0%;background:linear-gradient(90deg,#9a6f12,#f6d97a);transition:width .35s ease-out;}
+  .fspec.full{box-shadow:0 0 0 1px #f6d97a,0 0 12px rgba(246,217,122,.8);animation:specP 1s ease-in-out infinite;}
+  .fspec.full i{background:linear-gradient(90deg,#f6d97a,#fff3c4,#f6d97a);}
+  @keyframes specP{50%{box-shadow:0 0 0 1px #f6d97a,0 0 20px rgba(246,217,122,1);}}
+  .frevs{font:800 9.5px/1 var(--mono);letter-spacing:.12em;color:var(--text-faint);white-space:nowrap;}
+  .frevs b{color:#7dc4e8;letter-spacing:.05em;}
+  .fspecrow.auto{display:none;}
+  .fpad{display:none;margin:10px 0 0;padding:10px 12px 12px;border-radius:14px;
+    background:linear-gradient(180deg,rgba(18,14,16,.96),rgba(8,6,7,.96));border:1.5px solid rgba(244,232,219,.16);
+    box-shadow:0 10px 30px -14px #000,inset 0 1px 0 rgba(255,255,255,.05);}
+  .fpad.on{display:block;animation:decA .18s ease-out;}
+  .fpad .ph{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .fpad .ph-t{font-family:var(--display);font-size:17px;letter-spacing:.06em;text-transform:uppercase;color:var(--cream);}
+  .fpad .ph-s{font-size:11px;color:var(--text-faint);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .fpad .ph-clock{width:72px;height:5px;border-radius:3px;background:#3a1614;overflow:hidden;flex:none;}
+  .fpad .ph-clock i{display:block;height:100%;width:100%;background:var(--gold);}
+  .fpad .cmds{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
+  .cmd{position:relative;display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:2px;min-height:74px;
+    padding:9px 10px 8px;border-radius:11px;cursor:pointer;color:var(--cream);font:inherit;
+    background:linear-gradient(180deg,#262026,#17121a);border:1.5px solid #3a323c;box-shadow:0 4px 0 #0b080b;
+    transition:transform .06s,box-shadow .06s,border-color .1s;}
+  .cmd:hover:not(:disabled),.cmd:focus-visible{border-color:var(--cc,#c8b273);}
+  .cmd:active:not(:disabled),.cmd.press{transform:translateY(3px);box-shadow:0 1px 0 #0b080b;}
+  .cmd:disabled{opacity:.38;cursor:default;}
+  .cmd .c-h{display:flex;align-items:center;font-family:var(--display);font-size:15px;letter-spacing:.05em;text-transform:uppercase;color:var(--cc,#c8b273);}
+  .cmd .c-m{font-size:12px;font-weight:700;line-height:1.2;color:var(--cream);}
+  .cmd .c-r{font:800 9.5px/1.2 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint);margin-top:auto;}
+  .cmd[data-c="strike"]{--cc:#7fcf73;} .cmd[data-c="grapple"]{--cc:#6aa7e6;} .cmd[data-c="risk"]{--cc:#e9c143;}
+  .cmd[data-c="taunt"]{--cc:#e57d70;}
+  .cmd[data-c="fin"]{--cc:#f6d97a;background:linear-gradient(180deg,#3a2c10,#1c150a);border-color:#6b5420;}
+  .cmd[data-c="fin"]:not(:disabled){animation:specP 1s ease-in-out infinite;border-color:#f6d97a;}
+  @media(max-width:640px){
+    .fpad{padding:8px 9px 10px;margin-top:8px;}
+    .fpad .cmds{grid-template-columns:1fr 1fr;gap:7px;}
+    .fpad .cmd[data-c="fin"]{grid-column:1 / -1;}
+    .cmd{min-height:62px;padding:7px 9px;}
+    .fpad .ph-s{display:none;}
+  }
+  /* the read: an outer ring closes on the target ring. Press as they meet. */
+  .revwin{position:absolute;top:44%;z-index:10;width:0;height:0;pointer-events:none;}
+  .revwin .rw-t,.revwin .rw-o{position:absolute;left:-46px;top:-46px;width:92px;height:92px;border-radius:50%;}
+  .revwin .rw-t{border:4px solid #7dc4e8;box-shadow:0 0 14px rgba(125,196,232,.8),inset 0 0 10px rgba(125,196,232,.5);}
+  .revwin .rw-o{border:3px solid rgba(255,255,255,.92);will-change:transform;}
+  .revwin .rw-l{position:absolute;left:-90px;width:180px;top:56px;text-align:center;font-family:var(--display);font-size:20px;
+    letter-spacing:.08em;color:var(--cream);text-shadow:0 3px 0 #000,0 0 14px rgba(0,0,0,.9);display:flex;justify-content:center;align-items:center;}
+  .revwin.hit .rw-t{border-color:#f6d97a;box-shadow:0 0 26px rgba(246,217,122,1);}
+  .revwin.miss .rw-t{border-color:#e0574a;}
+  .revwin .rw-tap{pointer-events:auto;position:absolute;left:-60px;top:-60px;width:120px;height:120px;border-radius:50%;background:transparent;border:0;cursor:pointer;}
+  .revpick{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:10;width:min(88%,400px);text-align:center;
+    background:rgba(8,6,6,.9);border:2px solid #7dc4e8;border-radius:16px;padding:14px;}
+  .revpick .rp-t{font-family:var(--display);font-size:22px;letter-spacing:.06em;color:var(--cream);text-transform:uppercase;}
+  .revpick .rp-s{font-size:12px;color:var(--text-dim);margin:3px 0 10px;}
+  .revpick .rp-b{display:flex;gap:8px;} .revpick .rp-b button{flex:1;}
+  .fcombo{position:absolute;left:14px;top:12px;z-index:6;pointer-events:none;font-family:var(--display);font-size:22px;letter-spacing:.06em;
+    color:#f6d97a;text-shadow:0 3px 0 #000,0 0 12px rgba(224,179,65,.6);opacity:0;transition:opacity .25s;}
+  .fcombo.on{opacity:1;} .fcombo.pop{animation:comboP .32s ease-out;}
+  .fcombo small{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.24em;color:var(--cream);opacity:.8;}
+  @keyframes comboP{0%{transform:scale(1.45)}100%{transform:scale(1)}}
+  .cinebars{position:absolute;inset:0;z-index:8;pointer-events:none;opacity:0;transition:opacity .2s;}
+  .cinebars::before,.cinebars::after{content:"";position:absolute;left:0;right:0;height:0;background:#000;transition:height .28s cubic-bezier(.2,.8,.3,1);}
+  .cinebars::before{top:0;} .cinebars::after{bottom:0;}
+  .cinebars.on{opacity:1;} .cinebars.on::before,.cinebars.on::after{height:13%;}
+  .cinebars .cb-k,.cinebars .cb-t{position:absolute;left:0;right:0;text-align:center;z-index:1;text-transform:uppercase;}
+  .cinebars .cb-k{bottom:calc(13% + 46px);font:800 11px/1 var(--mono);letter-spacing:.4em;color:#f6d97a;}
+  .cinebars .cb-t{bottom:calc(13% + 10px);font-family:var(--display);font-size:32px;letter-spacing:.06em;color:var(--cream);
+    text-shadow:0 0 24px rgba(224,179,65,.8),0 4px 0 #000;transform:translateX(-40px);opacity:0;transition:transform .45s ease-out,opacity .3s;}
+  .cinebars.on .cb-t{transform:none;opacity:1;}
+  @media(max-width:640px){ .cinebars .cb-t{font-size:22px;} .cinebars .cb-k{bottom:calc(13% + 34px);} }
+  .arena.hitstop .fighter,.arena.hitstop .fbob{transition:none!important;animation-play-state:paused!important;}
+  .arena.hitstop{filter:brightness(1.18) contrast(1.12);}
+  .arena.hitstop.big{transform:scale(1.018);}
+  .arena.paused *, .arena.paused{animation-play-state:paused!important;}
+  .fpause{display:none;position:fixed;inset:0;z-index:60;background:rgba(5,4,6,.82);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);
+    align-items:center;justify-content:center;padding:20px;}
+  .fpause.on{display:flex;}
+  .fpause .pz{width:min(100%,380px);background:linear-gradient(180deg,#1c161c,#0f0b0f);border:1.5px solid rgba(244,232,219,.2);border-radius:16px;padding:18px;}
+  .fpause .pz-t{font-family:var(--display);font-size:30px;letter-spacing:.08em;color:var(--cream);text-align:center;margin-bottom:12px;}
+  .fpause .pz button{display:flex;align-items:center;width:100%;margin:0 0 8px;justify-content:flex-start;}
+  .fpause .pz button span.v{margin-left:auto;color:var(--gold);font-weight:800;}
+  .fpause .pz-keys{font:11px/1.6 var(--mono);color:var(--text-faint);margin-top:6px;}
+  .fpause .pz-keys b{color:var(--cream);}
+  body.in-pad :focus-visible,body.in-pad .padfocus{outline:3px solid #f6d97a!important;outline-offset:2px;}
+  @media (prefers-reduced-motion: reduce){
+    .arena.hitstop.big{transform:none;} .fcombo.pop{animation:none;} .fspec.full,.cmd[data-c="fin"]:not(:disabled){animation:none;}
+    .cinebars .cb-t,.cinebars::before,.cinebars::after{transition:none;}
+  }
   @media(max-width:640px){ .arena{height:250px;} .fighter{width:176px;margin-left:-88px;} .callout{font-size:28px;} .pincount{font-size:84px;} }
   /* THE MATCH TAKES THE SCREEN. The six tab rail, the four number strip and the
      bottom bar are all ways to LEAVE, and there is nothing to leave to mid match
@@ -2178,6 +2280,7 @@
       <div class="fnm" id="fMeName">YOU</div>
       <div class="fbar"><b class="lag"></b><i id="hpMe" style="width:100%"></i></div>
       <div class="fsub" id="fMeSub">-</div>
+      <div class="fspecrow" id="fSpecRow"><div class="fspec" title="Special: full means your finisher is ready"><i id="specMe"></i></div><span class="frevs" id="fRevs" title="Reversals left"></span></div>
       </div>
     </div>
     <div class="fmid">
@@ -2221,20 +2324,25 @@
     <div class="cagelayer" id="fCage"></div>
     <div class="fxlayer" id="fFx"></div>
     <div class="callout" id="fCall"></div>
+    <div class="fcombo" id="fCombo" aria-live="polite"></div>
+    <div class="cinebars" id="fCine"><div class="cb-k">Finisher</div><div class="cb-t" id="fCineT"></div></div>
     <div class="pincount" id="fPin"></div>
     <div class="entbanner" id="fEnt"><div class="theme" id="fEntTheme"></div><div class="name" id="fEntName"></div><div class="nick" id="fEntNick"></div></div>
     <div class="vidpack" id="fVid"><div class="vp-k" id="fVidK"></div><div class="vp-t" id="fVidT"></div><div class="vp-s" id="fVidS"></div><div class="vp-b" id="fVidB"></div></div>
   </div>
 
+  <div class="fpad" id="fPad" aria-live="polite"></div>
   <div class="fbottom">
     <div class="flog" id="fLog"></div>
     <div class="fdec" id="fDec"></div>
   </div>
   <div class="frow">
+    <button class="ghost" id="fPauseBtn" onclick="pauseOpen()"><span class="kg" data-k="START"></span>Pause</button>
     <button class="ghost" id="fSpeed" onclick="cycleSpeed()">Speed 1x</button>
     <button class="ghost" id="fTiming" onclick="toggleTiming()">Timing on</button>
     <button class="ghost" onclick="skipFight()">Skip to Result</button>
   </div>
+  <div class="fpause" id="fPause" role="dialog" aria-modal="true" aria-label="Paused"></div>
 </div>
 
 <!-- ============ MATCH RESULT ============ -->
@@ -9212,7 +9320,12 @@ function pushInboxItem(it){ G.car.inbox=G.car.inbox||[]; if(it&&it.y==null){ it.
    LIVE MATCH ENGINE: animated, momentum-driven, with decisions
    ============================================================ */
 let MS=null, FIGHT_SPEED=1, FIGHT_GEN=0;
-const sleep=ms=>new Promise(r=>setTimeout(r, ms/FIGHT_SPEED));
+/* A PAUSE HOLDS THE MATCH WHERE IT IS. Every beat of the live loop waits on
+   sleep(), so a pause is one gate on the far side of it: the timer runs out,
+   and if the match is paused the beat waits for Resume. Nothing in flight is
+   cancelled, which is what makes it safe to drop into any await. */
+let PAUSED=false, PAUSE_Q=[];
+const sleep=ms=>new Promise(r=>setTimeout(r, ms/FIGHT_SPEED)).then(()=>PAUSED?new Promise(r=>PAUSE_Q.push(r)):null);
 /* NOT EVERYBODY CAN MASH. A kick-out, an escape or a climb can be played as a
    timed mash or as one untimed press resolved off your stats with the odds
    shown. The odds are near what a steady player gets mashing, so it is an
@@ -9222,6 +9335,287 @@ function syncTimingBtn(){ const b=$('fTiming'); if(b) b.textContent=timingOff()?
 function toggleTiming(){ G.prefs=G.prefs||{}; G.prefs.untimed=!G.prefs.untimed; syncTimingBtn(); try{ save(); }catch(_){} }
 function untimedOdds(need){ return clamp(0.5+(ovr(G.w)-60)/200-((need||8)-8)*0.03, 0.3, 0.85); }
 function cycleSpeed(){ FIGHT_SPEED = FIGHT_SPEED===1?2:FIGHT_SPEED===2?4:1; $('fSpeed').textContent='Speed '+FIGHT_SPEED+'x'; }
+
+/* ============================================================
+   THE CONSOLE LAYER
+   ------------------------------------------------------------
+   One input router for the whole game. A controller, a keyboard
+   and a finger all become the same named buttons (A B X Y RT
+   START and the four directions), and whichever prompt is on top
+   of the stack gets them. The prompts draw the glyph for the
+   device you last touched, so a pad player sees pad buttons and a
+   keyboard player sees keys. Off a prompt, a controller drives the
+   menus: the d-pad moves focus, A presses, B backs out.
+   ============================================================ */
+const PAD={ stack:[],
+  push(h){ this.stack.push(h); return ()=>{ const i=this.stack.indexOf(h); if(i>=0) this.stack.splice(i,1); }; },
+  fire(b){ for(let i=this.stack.length-1;i>=0;i--){ const r=this.stack[i](b); if(r!==false) return true; if(this.stack[i].modal) return true; } return false; } };
+let INPUT_MODE='touch';
+function setInputMode(m){ if(INPUT_MODE===m) return; INPUT_MODE=m;
+  document.body.classList.remove('in-pad','in-key','in-touch'); document.body.classList.add('in-'+m); paintGlyphs(); }
+const KEY_LABEL={A:'1',X:'2',Y:'3',B:'4',RT:'SPC',START:'ESC'};
+const PAD_LABEL={A:'A',B:'B',X:'X',Y:'Y',RT:'RT',START:'≡'};
+function glyph(k){ return `<span class="kg" data-k="${k}">${(INPUT_MODE==='pad'?PAD_LABEL:KEY_LABEL)[k]||k}</span>`; }
+function paintGlyphs(){ document.querySelectorAll('.kg[data-k]').forEach(g=>{ const k=g.dataset.k; g.textContent=(INPUT_MODE==='pad'?PAD_LABEL:KEY_LABEL)[k]||k; }); }
+const KEYMAP={'1':'A','j':'A','2':'X','k':'X','3':'Y','l':'Y','4':'B',';':'B',' ':'RT','r':'RT','f':'RT','enter':'OK',
+  'escape':'START','p':'START','arrowup':'UP','arrowdown':'DOWN','arrowleft':'LEFT','arrowright':'RIGHT'};
+document.addEventListener('keydown',e=>{
+  if(e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+  const t=e.target; if(t && (t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable)) return;
+  const b=KEYMAP[(e.key||'').toLowerCase()]; if(!b) return;
+  // arrows and Enter only belong to the router while a prompt is up;
+  // otherwise they scroll the page and press the focused button as normal
+  if((b==='UP'||b==='DOWN'||b==='LEFT'||b==='RIGHT'||b==='OK') && !PAD.stack.length) return;
+  setInputMode('key');
+  PAD.lastRaw=(e.key||'').toLowerCase();
+  if(PAD.fire(b==='OK'?'A':b)){ e.preventDefault(); }
+  else if(b==='START' && G && G.screen==='fight' && MS && !MS.ended){ e.preventDefault(); pauseOpen(); }
+  PAD.lastRaw=null;
+},true);
+document.addEventListener('pointerdown',e=>{ if(e.pointerType==='touch'||e.pointerType==='pen') setInputMode('touch'); },true);
+/* The gamepad is polled, not evented: the API only says a pad arrived. Edge
+   detection turns held buttons into single presses, and the left stick acts
+   as a d-pad past a deadzone. The loop only runs while a pad is connected. */
+const GP_MAP={0:'A',1:'B',2:'X',3:'Y',7:'RT',5:'RT',9:'START',12:'UP',13:'DOWN',14:'LEFT',15:'RIGHT'};
+let GP_PREV={}, GP_ON=false;
+function gpLoop(){
+  const pads=(navigator.getGamepads?navigator.getGamepads():[])||[];
+  let any=false;
+  for(const gp of pads){ if(!gp) continue; any=true;
+    const now={};
+    Object.keys(GP_MAP).forEach(i=>{ const bt=gp.buttons[+i]; if(bt && (bt.pressed||bt.value>0.5)) now[GP_MAP[i]]=true; });
+    const ax=gp.axes||[]; if(ax[0]<-0.6) now.LEFT=true; if(ax[0]>0.6) now.RIGHT=true; if(ax[1]<-0.6) now.UP=true; if(ax[1]>0.6) now.DOWN=true;
+    Object.keys(now).forEach(b=>{ if(!GP_PREV[b]){ setInputMode('pad'); padPress(b); } });
+    GP_PREV=now; break;
+  }
+  if(any) requestAnimationFrame(gpLoop); else GP_ON=false;
+}
+window.addEventListener('gamepadconnected',()=>{ setInputMode('pad'); if(!GP_ON){ GP_ON=true; requestAnimationFrame(gpLoop); } });
+function padPress(b){
+  if(PAD.fire(b)) return;
+  // no prompt on screen: the controller drives whatever menu is showing
+  if(b==='START'){ if(G && G.screen==='fight' && MS && !MS.ended){ pauseOpen(); return; } }
+  if(b==='UP'||b==='DOWN'||b==='LEFT'||b==='RIGHT') return spatialMove(b);
+  if(b==='A'){ const f=document.activeElement; if(f && f!==document.body && f.click){ f.click(); } else spatialMove('DOWN'); return; }
+  if(b==='B'){ const mb=document.getElementById('modalBack'); if(mb && mb.classList.contains('open') && typeof closeModal==='function'){ closeModal(); return; }
+    if(G && G.screen && G.screen!=='career' && G.screen!=='home' && G.screen!=='fight' && G.screen!=='promo' && typeof go==='function') go('career'); }
+}
+// the next control in the direction pressed, measured from the focused one
+function spatialMove(dir){
+  const scope=document.querySelector('#modalBack.open') || document.querySelector('.screen.active') || document.body;
+  const els=[...scope.querySelectorAll('button,a[href],[onclick],.decopt,input,select')]
+    .filter(el=>{ const r=el.getBoundingClientRect(); return r.width>0 && r.height>0 && !el.disabled && getComputedStyle(el).visibility!=='hidden'; });
+  if(!els.length) return;
+  els.forEach(el=>{ if(!el.hasAttribute('tabindex') && !/^(BUTTON|A|INPUT|SELECT)$/.test(el.tagName)) el.setAttribute('tabindex','0'); });
+  const cur=document.activeElement;
+  if(!cur || cur===document.body || !els.includes(cur)){ els[0].focus(); els[0].scrollIntoView({block:'nearest'}); return; }
+  const r0=cur.getBoundingClientRect(), cx=r0.left+r0.width/2, cy=r0.top+r0.height/2;
+  let best=null, bd=1e9;
+  els.forEach(el=>{ if(el===cur) return; const r=el.getBoundingClientRect(), x=r.left+r.width/2, y=r.top+r.height/2, dx=x-cx, dy=y-cy;
+    const ok = dir==='UP'?dy<-4 : dir==='DOWN'?dy>4 : dir==='LEFT'?dx<-4 : dx>4; if(!ok) return;
+    const main=(dir==='UP'||dir==='DOWN')?Math.abs(dy):Math.abs(dx), side=(dir==='UP'||dir==='DOWN')?Math.abs(dx):Math.abs(dy);
+    const d=main+side*2.2; if(d<bd){ bd=d; best=el; } });
+  if(best){ best.focus(); best.scrollIntoView({block:'nearest'}); }
+}
+
+/* ---- WHO CALLS THE MOVES ----
+   By default you do. "Auto" hands your offense back to the old sim, which
+   is also what the regression harness and a headless run always use. */
+function cmdOn(){ return !(window.RTR_AUTO) && !(G && G.prefs && G.prefs.autoMoves); }
+function toggleAutoMoves(){ G.prefs=G.prefs||{}; G.prefs.autoMoves=!G.prefs.autoMoves; try{ save(); }catch(_){} if(MS) paintSpec(); }
+
+/* ---- THE SPECIAL METER ----
+   It fills off everything a crowd reacts to: moves that land, a taunt, a
+   reversal, even punishment absorbed. Full, it arms the finisher. It is how
+   a console game makes the finisher something you EARN and then CHOOSE. */
+function specAdd(n){ if(!MS) return; const was=MS.spec||0; MS.spec=clamp(was+n,0,100); paintSpec();
+  if(was<100 && MS.spec>=100 && cmdOn()){ try{ sfx('pop'); }catch(_){} burst(atX('me'),'SPECIAL READY'); } }
+function paintSpec(){ if(!MS) return; const i=$('specMe'); if(i) i.style.width=(MS.spec||0)+'%';
+  const bar=i&&i.parentNode; if(bar) bar.classList.toggle('full',(MS.spec||0)>=100);
+  const row=$('fSpecRow'); if(row) row.classList.toggle('auto',!cmdOn());
+  const rv=$('fRevs'); if(rv) rv.innerHTML='REV <b>'+'●'.repeat(Math.max(0,MS.rev||0))+'</b>'+'○'.repeat(Math.max(0,3-(MS.rev||0)));
+}
+function comboHit(){ if(!MS) return; MS.combo=(MS.combo||0)+1; const c=$('fCombo'); if(!c) return;
+  if(MS.combo>=2){ c.innerHTML=`${MS.combo} HIT<small>COMBO</small>`; c.classList.add('on'); c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop');
+    if(MS.combo>=3) MS.quality+=0.6; } }
+function comboBreak(){ if(!MS) return; MS.combo=0; const c=$('fCombo'); if(c) c.classList.remove('on'); }
+// the half beat a fighting game freezes on contact, so a hit has weight
+function hitStop(power){
+  const a=$('arena'); if(!a) return;
+  a.classList.remove('hitstop','big'); void a.offsetWidth; a.classList.add('hitstop'); if(power>=2) a.classList.add('big');
+  clearTimeout(a._hs); a._hs=setTimeout(()=>a.classList.remove('hitstop','big'), power>=2?120:70);
+}
+async function finisherCinematic(name){
+  const c=$('fCine'), t=$('fCineT'); if(!c) return;
+  t.textContent=name||'THE FINISHER'; c.classList.add('on');
+  try{ sfx('pop'); }catch(_){}
+  await sleep(820);
+  c.classList.remove('on');
+}
+
+/* ---- THE COMMAND PAD ----
+   Four families and the finisher. Each button names the actual move it will
+   throw, drawn from your own move set the way the sim always drew it (the
+   phase still gates the tier, so nobody opens with a top-rope moonsault), so
+   what you choose is the KIND of offense and when. The families trade:
+     STRIKE    safe and quick, small damage, almost never reversed
+     GRAPPLE   the bread and butter: holds, throws, slams
+     HIGH RISK big damage and big pops, and the other man can read it
+     TAUNT     no damage; fills the special meter and swings the crowd
+   Calling the same family over and over is a boring match: it costs damage
+   and the crowd notices. */
+function famOf(m){ if(!m) return 'grapple';
+  if(m.cat==='strike'||m.cat==='runner') return 'strike';
+  if(m.cat==='aerial'||m.cat==='hardcore'||m.tier>=4) return 'risk';
+  return 'grapple'; }
+const FAM_NAME={strike:'Strike',grapple:'Grapple',risk:'High risk',taunt:'Taunt',fin:'Finisher'};
+const FAM_KEY={strike:'A',grapple:'X',risk:'Y',taunt:'B',fin:'RT'};
+function finisherMove(){
+  const f=moveById(G.w.finisher); if(f) return f;
+  const all=G.w.moves.map(moveById).filter(Boolean).sort((a,b)=>b.tier-a.tier||b.dmg-a.dmg);
+  return all[0]||null;
+}
+function commandOptions(){
+  const {pool,band}=myMoveBand();
+  const pick=fam=>{
+    let c=band.filter(m=>famOf(m)===fam && m.id!==G.w.finisher);
+    if(!c.length) c=pool.filter(m=>famOf(m)===fam && m.id!==G.w.finisher && m.tier<=phaseNow().tier[1]+1);
+    // the game plan narrows what the sim reaches for; a family it left out is
+    // still yours to call, from the whole set, within the phase's tier
+    if(!c.length){ const rl=stipRules(MS.o), cap=phaseNow().tier[1]+1;
+      c=G.w.moves.map(moveById).filter(m=>m && famOf(m)===fam && m.id!==G.w.finisher && m.tier<=cap
+        && (rl.noDQ||rl.lenient||!(m.cat==='hardcore'&&WEAPON_MOVE_RE.test(m.name)))); }
+    if(!c.length) return null;
+    const recent=MS.recent||[]; const fresh=c.filter(m=>!recent.includes(m.id));
+    const from=fresh.length?fresh:c; return from[Math.floor(rnd()*from.length)];
+  };
+  return {strike:pick('strike'), grapple:pick('grapple'), risk:pick('risk')};
+}
+// how likely the other man is to read it and turn it around
+function counterChance(fam, mv){
+  if(fam==='taunt') return 0;
+  const base={strike:0.05, grapple:0.11, risk:0.22, fin:0.10}[fam]||0.1;
+  const oppOvr=MS.opp.ovr||MS.o.oppOvr, meOvr=MS.me.ovr||ovr(G.w);
+  let p=base + (MS.opp.hp-50)/420 + (oppOvr-meOvr)/240;
+  if(fam==='risk' && mv && mv.risk) p+=mv.risk*0.5;
+  // a man who is out on his feet cannot read anything
+  if(MS.opp.hp<25) p*=0.5;
+  return clamp(p,0.02,0.42);
+}
+function riskWord(p){ return p<0.08?'Safe':p<0.16?'Low risk':p<0.26?'Risky':'Gamble'; }
+// the pad on screen, waiting on you; resolves to {fam, mv} (mv null for a taunt)
+function commandPick(){
+  const opts=commandOptions(), ready=(MS.spec||0)>=100, fin=ready?finisherMove():null;
+  const fams=['strike','grapple','risk','taunt','fin'];
+  const el=$('fPad');
+  const rows=fams.map(f=>{
+    const mv = f==='fin'?fin : f==='taunt'?null : opts[f];
+    const off = f==='fin' ? !ready : (f!=='taunt' && !mv);
+    const name = f==='taunt' ? 'Play to the crowd' : f==='fin' ? (fin?(G.w.finisherName||fin.name):'Fill the meter') : (mv?mv.name:'Nothing here yet');
+    const r = f==='taunt' ? 'Builds special' : f==='fin' ? (ready?'Ready':'Special '+Math.round(MS.spec||0)+'%') : (mv?riskWord(counterChance(f,mv)):'');
+    return `<button class="cmd" data-c="${f}" type="button" ${off?'disabled':''}><span class="c-h">${glyph(FAM_KEY[f])}${FAM_NAME[f]}</span><span class="c-m">${name}</span><span class="c-r">${r}</span></button>`;
+  }).join('');
+  const ph=phaseNow();
+  el.innerHTML=`<div class="ph"><span class="ph-t">Your call</span><span class="ph-s">${ph.name} · ${ph.say}</span>${timingOff()?'':'<span class="ph-clock"><i id="_cmdClock"></i></span>'}</div><div class="cmds">${rows}</div>`;
+  el.classList.add('on');
+  return new Promise(res=>{
+    let done=false, left=timingOff()?Infinity:6500, last=performance.now(), raf=0;
+    const finish=(fam)=>{ if(done) return; done=true; cancelAnimationFrame(raf); off();
+      el.classList.remove('on'); el.innerHTML='';
+      if(!fam){ res(null); return; }
+      res({fam, mv: fam==='fin'?fin : fam==='taunt'?null : opts[fam]}); };
+    const can=f=>{ const b=el.querySelector(`.cmd[data-c="${f}"]`); return b && !b.disabled; };
+    el.querySelectorAll('.cmd').forEach(b=>b.addEventListener('click',()=>{ if(!b.disabled) finish(b.dataset.c); }));
+    const handler=(k)=>{ const f=Object.keys(FAM_KEY).find(x=>FAM_KEY[x]===k);
+      if(k==='START'){ pauseOpen(); return true; }
+      if(f && can(f)){ const b=el.querySelector(`.cmd[data-c="${f}"]`); if(b){ b.classList.add('press'); setTimeout(()=>b.classList.remove('press'),90); } finish(f); }
+      return true; };
+    const off=PAD.push(handler);
+    // the shot clock: dither too long and instinct takes over
+    const tick=(t)=>{ if(done) return; const dt=t-last; last=t; if(!PAUSED) left-=dt;
+      const c=document.getElementById('_cmdClock'); if(c && isFinite(left)) c.style.width=Math.max(0,left/6500*100)+'%';
+      if(left<=0){ finish(null); return; } raf=requestAnimationFrame(tick); };
+    raf=requestAnimationFrame(tick);
+  });
+}
+
+/* ---- THE REVERSAL ----
+   The other man commits to a move and an outer ring closes on yours. Press
+   as they meet. Early or late and you are caught leaning, which costs a
+   reversal; no press at all and you simply take the move. Three a match,
+   a fourth for the comeback. Timing off makes it one untimed choice with the
+   odds shown, the same access rule every mash in this game already has. */
+function revWindowMs(){ const a=G.w.attrs||{}; return clamp(95+((a.te||40)-40)*1.1+((a.to||40)-40)*0.5,80,170); }
+function revOdds(isFin){ return clamp(0.42+(ovr(G.w)-(MS.opp.ovr||MS.o.oppOvr))/180-(isFin?0.12:0),0.2,0.72); }
+function reversalPrompt(isFin, mvName){
+  const arena=$('arena'); if(!arena) return Promise.resolve('none');
+  if(timingOff()) return new Promise(res=>{
+    const odds=revOdds(isFin);
+    const w=document.createElement('div'); w.className='revpick';
+    w.innerHTML=`<div class="rp-t">${isFin?'Their finisher!':'Read it?'}</div><div class="rp-s">${MS.opp.name} goes for ${mvName}. No clock. ${pct(odds)}% to reverse.</div>
+      <div class="rp-b"><button class="big" type="button" data-r="go">${glyph('RT')}Reverse</button><button class="ghost" type="button" data-r="no">${glyph('B')}Take it</button></div>`;
+    arena.appendChild(w);
+    let off=()=>{};
+    const end=(r)=>{ off(); try{ arena.removeChild(w); }catch(_){} res(r); };
+    w.querySelector('[data-r="go"]').onclick=()=>end(rnd()<odds?'hit':'miss');
+    w.querySelector('[data-r="no"]').onclick=()=>end('none');
+    off=PAD.push(k=>{ if(k==='RT'||k==='A') end(rnd()<odds?'hit':'miss'); else if(k==='B') end('none'); return true; });
+  });
+  return new Promise(res=>{
+    const x=atX('me');
+    const w=document.createElement('div'); w.className='revwin'; w.style.left=`calc(50% + ${Math.round(x)}px)`;
+    w.innerHTML=`<div class="rw-t"></div><div class="rw-o"></div><div class="rw-l">${glyph('RT')}${isFin?'REVERSE IT!':'REVERSE'}</div><button class="rw-tap" type="button" aria-label="Reverse"></button>`;
+    arena.appendChild(w);
+    const ring=w.querySelector('.rw-o');
+    // the ring closes from 2.6x to 1x over the approach, then on past it
+    const approach=isFin?620:820, win=revWindowMs()*(isFin?0.8:1), t0=performance.now();
+    let done=false, raf=0;
+    const end=(r)=>{ if(done) return; done=true; cancelAnimationFrame(raf); off();
+      w.classList.add(r==='hit'?'hit':r==='miss'?'miss':'');
+      setTimeout(()=>{ try{ arena.removeChild(w); }catch(_){} },r==='none'?0:180); res(r); };
+    const press=()=>{ const dt=performance.now()-t0-approach; end(Math.abs(dt)<=win/2?'hit':'miss'); };
+    w.querySelector('.rw-tap').addEventListener('pointerdown',e=>{ e.preventDefault(); press(); });
+    const off=PAD.push(k=>{ if(k==='RT'||k==='A'||k==='B') press(); return true; });
+    const tick=(t)=>{ if(done) return; const e=(t-t0)/approach; ring.style.transform=`scale(${Math.max(0.55,2.6-1.6*e).toFixed(3)})`;
+      if(t-t0>approach+win/2+60){ end('none'); return; } raf=requestAnimationFrame(tick); };
+    raf=requestAnimationFrame(tick);
+  });
+}
+
+/* ---- PAUSE ---- */
+function pauseOpen(){
+  if(!MS || MS.ended || PAUSED) return;
+  PAUSED=true; const a=$('arena'); if(a) a.classList.add('paused');
+  const el=$('fPause');
+  const paint=()=>{ el.innerHTML=`<div class="pz"><div class="pz-t">PAUSED</div>
+    <button class="big" type="button" data-p="resume">${glyph('A')}Resume</button>
+    <button class="ghost" type="button" data-p="auto">Your offense<span class="v">${cmdOn()?'You call it':'Auto'}</span></button>
+    <button class="ghost" type="button" data-p="speed">Speed<span class="v">${FIGHT_SPEED}x</span></button>
+    <button class="ghost" type="button" data-p="timing">Timed prompts<span class="v">${timingOff()?'Off':'On'}</span></button>
+    <button class="ghost" type="button" data-p="skip">Skip to result</button>
+    <div class="pz-keys"><b>Keyboard</b> 1 strike · 2 grapple · 3 high risk · 4 taunt · Space finisher and reversal · Esc pause<br>
+    <b>Controller</b> A strike · X grapple · Y high risk · B taunt · RT finisher and reversal · Start pause</div></div>`;
+    el.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>act(b.dataset.p));
+    const f=el.querySelector('button'); if(f) f.focus(); };
+  const act=(k)=>{
+    if(k==='resume') return close();
+    if(k==='auto'){ toggleAutoMoves(); }
+    if(k==='speed'){ cycleSpeed(); }
+    if(k==='timing'){ toggleTiming(); }
+    if(k==='skip'){ close(); skipFight(); return; }
+    paint(); };
+  const close=()=>{ off(); PAUSED=false; el.classList.remove('on'); el.innerHTML=''; if(a) a.classList.remove('paused');
+    const q=PAUSE_Q; PAUSE_Q=[]; q.forEach(r=>r()); };
+  // the pause owns the buttons while it is up: the d-pad walks the menu
+  const handler=k=>{ if(k==='START'||k==='B') close();
+    else if(k==='UP'||k==='DOWN'||k==='LEFT'||k==='RIGHT'){ const bs=[...el.querySelectorAll('button')], i=bs.indexOf(document.activeElement);
+      const n=bs[(i+(k==='UP'||k==='LEFT'?-1:1)+bs.length)%bs.length]; if(n) n.focus(); }
+    else if(k==='A'){ const f=document.activeElement; if(f && el.contains(f)) f.click(); else close(); }
+    return true; };
+  handler.modal=true;
+  const off=PAD.push(handler);
+  el.classList.add('on'); paint();
+}
 
 // deterministic pixel look for an opponent, from their id/name
 function oppLook(id,name){
@@ -9278,7 +9672,10 @@ function tapWindow(ms, prompt, opts){
     wrap.innerHTML=`<div class="tw-p">${prompt||'NOW'}</div><div class="tw-hint">no clock · ${Math.round(odds*100)}% off your stats</div>
       <button class="tw-b" type="button"><span class="tw-lab">GO</span></button>`;
     arena.appendChild(wrap);
-    wrap.querySelector('button').addEventListener('click',()=>{ try{ arena.removeChild(wrap); }catch(_e){} res(rnd()<odds); });
+    let off=()=>{};
+    const press=()=>{ off(); try{ arena.removeChild(wrap); }catch(_e){} res(rnd()<odds); };
+    wrap.querySelector('button').addEventListener('click',press);
+    off=PAD.push(k=>{ if(k==='A'||k==='RT') press(); return true; });
   });
   return new Promise(res=>{
     const arena=$('arena'); if(!arena){ res(false); return; }
@@ -9288,7 +9685,7 @@ function tapWindow(ms, prompt, opts){
     wrap.className='tapwin';
     wrap.innerHTML=`<div class="tw-p">${prompt||'TAP NOW'}</div>
       <div class="tw-hint">hit it, fast</div>
-      <button class="tw-b" id="_tapBtn" type="button"><span class="tw-lab">TAP</span><span class="tw-n" id="_tapN">0 / ${need}</span></button>
+      <button class="tw-b" id="_tapBtn" type="button"><span class="tw-lab">${glyph('A')}TAP</span><span class="tw-n" id="_tapN">0 / ${need}</span></button>
       <div class="tw-meter"><i id="_tapFill"></i></div>
       <div class="tw-time"><i id="_tapTime"></i></div>`;
     arena.appendChild(wrap);
@@ -9300,7 +9697,8 @@ function tapWindow(ms, prompt, opts){
       const n=document.getElementById('_tapN');
       if(n) n.textContent=Math.max(0,Math.min(need,Math.floor(hits)))+' / '+need;
     };
-    const finish=(ok)=>{ if(done) return; done=true; clearInterval(drain);
+    let offPad=()=>{};
+    const finish=(ok)=>{ if(done) return; done=true; clearInterval(drain); offPad();
       try{ arena.removeChild(wrap); }catch(_e){} res(!!ok); };
     const hit=(e)=>{
       if(e){ e.preventDefault(); e.stopPropagation(); }
@@ -9312,6 +9710,8 @@ function tapWindow(ms, prompt, opts){
     };
     // pointerdown, not click: a mash should register on the way down
     btn.addEventListener('pointerdown', hit);
+    // a controller mashes A, a keyboard mashes Space: each press is one hit
+    offPad=PAD.push(k=>{ if(k==='A'||k==='RT'||k==='X'||k==='B'||k==='Y') hit(); return true; });
     // and it drains, so this is a mash rather than eight taps at your leisure
     const drain=setInterval(()=>{ if(done) return; if(hits>0){ hits=Math.max(0,hits-0.30); paint(); } }, 150);
     const tm=document.getElementById('_tapTime');
@@ -9945,6 +10345,7 @@ async function exchange(byMe, mvName, dmg, momShift, tag, cat){
   const ctx={ big:dmg>=27, hit:(power,quiet)=>{
     const x=atX(D);
     dmgNum(x,Math.round(dmg));
+    hitStop(power);
     impact(x+FIG[D].dir*8,34,power);
     if(power>=2&&!quiet) burst(x,tag||'POW!');
     apply();
@@ -10644,13 +11045,26 @@ function clockStr(){ const m=Math.floor(MS.clock/60), s=MS.clock%60; return `${m
 
 // pick a move: escalating through the match, never the same one twice running
 function myMove(){
-  const ph=phaseNow(), plan=[G.car.plan.a,G.car.plan.b];
+  const ph=phaseNow();
   // Harness: a match pinned to the finisher tell has to actually reach the
   // finisher, or the case passes or fails on which move the sim happened to
   // pick. RTR_FORCE means "this beat happens", so here it means it too.
   if(pinnedIs('tell') && ph.id==='stretch'){ const f=moveById(G.w.finisher); if(f) return f; }
+  const {band}=myMoveBand();
+  if(!band.length) return {id:'_fa',name:'a forearm smash',dmg:12,pop:8,cat:'strike',tier:1,stam:4,risk:0.02};
+  // calling the same move eight times is the surest sign of a fake match
+  const recent=MS.recent||[];
+  const fresh=band.filter(m=>!recent.includes(m.id));
+  return (fresh.length?fresh:band)[Math.floor(rnd()*(fresh.length?fresh.length:band.length))];
+}
+/* The moves this wrestler would reach for right now: the game plan, the
+   stipulation's rules and the phase's tier. The sim picks one of them; the
+   command pad sorts them into families and lets you pick. One list, so the
+   two can never disagree about what you are allowed to throw. */
+function myMoveBand(){
+  const ph=phaseNow(), plan=[G.car.plan.a,G.car.plan.b];
   const all=G.w.moves.map(moveById).filter(Boolean);
-  if(!all.length) return {id:'_fa',name:'a forearm smash',dmg:12,pop:8,cat:'strike',tier:1,stam:4,risk:0.02};
+  if(!all.length) return {pool:[],band:[]};
   const planned=all.filter(m=>plan.includes(m.cat));
   let pool=planned.length>=3?planned:all;
   const rules=stipRules(MS.o);
@@ -10679,10 +11093,7 @@ function myMove(){
   if(ph.id!=='stretch') band=band.filter(m=>m.id!==G.w.finisher);
   if(!band.length) band=pool.filter(m=>m.tier<=ph.tier[1]);
   if(!band.length) band=pool;
-  // calling the same move eight times is the surest sign of a fake match
-  const recent=MS.recent||[];
-  const fresh=band.filter(m=>!recent.includes(m.id));
-  return (fresh.length?fresh:band)[Math.floor(rnd()*(fresh.length?fresh.length:band.length))];
+  return {pool, band};
 }
 function noteMove(id){ MS.recent=MS.recent||[]; MS.recent.unshift(id); if(MS.recent.length>4) MS.recent.pop(); }
 // the opponent's moves carry a family too, so their animations read the same way
@@ -10813,10 +11224,21 @@ function decide(head,sub,opts){
       opts.map((o,i)=>`<div class="decopt" data-i="${i}">
         <div class="dn">${o.name}</div><div class="dd">${o.desc}</div>
         <div class="dp ${pctCls(o.p)}">${pct(o.p)}% success</div></div>`).join('')+`</div>`;
-    el.querySelectorAll('.decopt').forEach(d=>d.onclick=()=>{
-      el.classList.remove('on'); el.innerHTML='';
-      res(opts[+d.dataset.i]);
-    });
+    let sel=0, off=()=>{};
+    const cards=[...el.querySelectorAll('.decopt')];
+    const mark=()=>cards.forEach((c,i)=>c.classList.toggle('padfocus',i===sel && INPUT_MODE!=='touch'));
+    const pick=i=>{ off(); el.classList.remove('on'); el.innerHTML=''; res(opts[i]); };
+    cards.forEach(d=>{ d.setAttribute('tabindex','0'); d.onclick=()=>pick(+d.dataset.i); });
+    // a card is a choice on a pad too: the d-pad moves, A picks; a number key
+    // picks that card outright
+    off=PAD.push(k=>{
+      const n=parseInt(PAD.lastRaw,10); if(n>=1 && n<=cards.length){ pick(n-1); return true; }
+      if(k==='LEFT'||k==='UP'){ sel=(sel-1+cards.length)%cards.length; mark(); }
+      else if(k==='RIGHT'||k==='DOWN'){ sel=(sel+1)%cards.length; mark(); }
+      else if(k==='A'||k==='RT'){ pick(sel); }
+      else if(k==='START'){ pauseOpen(); }
+      return true; });
+    mark();
     // the match is already paused here waiting on this promise, so the first
     // time it happens is the safe moment to explain what a spot even is
     if(G&&!G.car.decSeen){ setTimeout(()=>startTour('dec'),260); }
@@ -11024,8 +11446,12 @@ async function startFight(o){
         <li>The bars up top are <b>damage taken</b>, not health. Nobody loses by running out.</li>
         <li>Matches end like real ones: a <b>pinfall</b>, a <b>submission</b>, a <b>count-out</b>, a <b>DQ</b>, or whatever the stipulation says. Only a title match that goes the distance ends in a draw.</li>
         <li><b>Momentum</b> in the middle shows who's in control.</li>
-        <li>Every so often it stops and asks you to <b>call a spot</b>. That's your part.</li>
+        <li>On your beat, <b>you call the move</b> from the pad under the ring: strike, grapple, high risk or a taunt. High risk hits hardest and gets read most.</li>
+        <li>When the outer ring closes on yours, press to <b>reverse</b> their move. You get three.</li>
+        <li>Moves and taunts fill your <b>special meter</b>. Full, it arms your <b>finisher</b>.</li>
+        <li>Big moments still stop and ask you to <b>call a spot</b>. Pause any time.</li>
       </ul>
+      <p class="log">Controls: tap the buttons, or keys <b>1 2 3 4</b> and <b>Space</b>, or a controller (<b>A X Y B</b> and <b>RT</b>). Prefer to watch? Set your offense to Auto in the pause menu.</p>
       <p class="log">Remember: you're graded on <b>how good the match is</b>, not just whether you win.</p>`, 'Ring the bell');
   }
   const meOvr=ovr(G.w);
@@ -11035,7 +11461,7 @@ async function startFight(o){
   MS={ o, gen:(FIGHT_GEN=(FIGHT_GEN||0)+1), mom:0, beat:0, decisions:0, decWon:0, big:0, ended:false,
        me:{hp:100,name:G.w.name,ovr:meOvr,limb:newLimbs(),target:null},
        opp:{hp:100,name:o.oppName,ovr:o.oppOvr,limb:newLimbs(),target:null},
-       usedMoves:[], recent:[], oppRecent:[], quality:0, finish:null,
+       usedMoves:[], recent:[], oppRecent:[], quality:0, finish:null, spec:0, rev:3, combo:0,
        phase:0, phaseBeat:0, stretch:0, covers:0, nearFalls:0, finisherHit:0,
        clock:0, ally:false, mgrHit:false, hotTag:false, runIn:false, refDown:0, refBumped:false, toldFin:false,
        // Referee for the night. Deterministic by week so the crowd sees the
@@ -11076,6 +11502,7 @@ async function startFight(o){
   if(MS.third) tripleHud();
   $('fLog').innerHTML=''; $('fDec').classList.remove('on'); $('fDec').innerHTML='';
   MS.me.hp=100; MS.opp.hp=100; setBar('hpMe',100); setBar('hpOpp',100); setMom();
+  comboBreak(); paintSpec(); { const fp=$('fPad'); if(fp){ fp.classList.remove('on'); fp.innerHTML=''; } }
   const startGen=MS.gen;
   const stale=()=>!MS||MS.gen!==startGen;
   go('fight');
@@ -11236,6 +11663,8 @@ async function announcePhase(ph){
   fLog(`<span class="phase">· ${ph.name} ·</span> <span class="hint">${ph.say}</span>`);
   if(MS && MS.beat===0) contextCall();
   commLine(null, ph.id);
+  // the comeback earns one more read
+  if(ph.id==='come' && cmdOn() && (MS.rev||0)<4){ MS.rev=(MS.rev||0)+1; paintSpec(); }
   if(ph.id==='heat'||ph.id==='stretch') await sleep(240);
 }
 // a wrestler picks a body part and works it. That is the whole craft.
@@ -11258,11 +11687,56 @@ async function runFight(){
 
     const myTurn=phaseTurn(ph);
     let lastMove=null, lastCat=null, byMe=myTurn, isFin=false;
-    if(myTurn){
-      const mv=myMove(); MS.usedMoves.push(mv); noteMove(mv.id);
+    /* YOUR CALL. With the pad on, your beat waits for you: pick the family and
+       the move it names is the one you throw. A taunt spends the beat on the
+       crowd; a high-risk move or a finisher can be read and turned around. */
+    let called=null;
+    if(myTurn && cmdOn()){
+      called=await commandPick();
+      if(MS.ended || MS.gen!==gen) return;
+      if(!called) fLog(`<span class="hint">You hesitate, and instinct takes over.</span>`);
+    }
+    if(myTurn && called && called.fam==='taunt'){
+      byMe=true;
+      MS.taunts=(MS.taunts||0)+1;
+      const fresh=MS.taunts<=2;
+      await spotTaunt(true, fresh);
+      MS.mom=clamp(MS.mom+(fresh?12:5),-100,100); setMom();
+      specAdd(fresh?34:18); MS.quality+=fresh?2.5:0.5;
+      G.car.reaction=clamp((G.car.reaction||G.car.pop)+(fresh?1:0),0,100);
+      fLog(fresh?`<span class="hi">You stop and play to the crowd. They give it right back.</span>`
+               :`<span class="say">Another pose. The crowd has seen this one.</span>`);
+      lastMove=null; lastCat='showman';
+      MS._lastFam=['taunt'].concat(MS._lastFam||[]).slice(0,3);
+    } else if(myTurn && called && called.mv && rnd()<counterChance(called.fam, called.mv)){
+      // read and turned around: they counter into their own offense
+      byMe=false;
+      const mv=called.mv; MS.usedMoves.push(mv); noteMove(mv.id);
+      const cm=oppMove();
+      const inRingOvr = MS.opp.ovr || o.oppOvr;
+      const dmg=clamp((inRingOvr*0.24 + rnd()*6)*(called.fam==='risk'||called.fam==='fin'?1.35:1)*(styleOf().in||1), 3, 34);
+      if(called.fam==='fin'){ MS.spec=Math.max(0,(MS.spec||0)-60); paintSpec(); }
+      await callout('REVERSED!');
+      fLog(`<span class="bad">${MS.opp.name} saw ${mv.name} coming and turned it around.</span>`);
+      comboBreak();
+      await exchange(false, cm.name, dmg, -(9+rnd()*5), 'REVERSAL!', cm.cat);
+      hurtLimb(MS.me, limbFor(cm.cat, MS.opp), dmg*0.9);
+      specAdd(dmg*0.3); MS.quality+=3; trace('reversed');
+      lastMove=cm.name; lastCat=cm.cat;
+      MS._lastFam=[called.fam].concat(MS._lastFam||[]).slice(0,3);
+    } else if(myTurn){
+      const mv=(called&&called.mv)||myMove(); MS.usedMoves.push(mv); noteMove(mv.id);
       const skill=(G.w.attrs[catById(mv.cat)?catById(mv.cat).attr:'po']||40);
-      const dmg=clamp((mv.dmg*0.30 + skill*0.10 + rnd()*6)*(styleOf().out||1), 4, 40);
-      isFin = mv.id===G.w.finisher || mv.tier>=5;
+      let dmg=clamp((mv.dmg*0.30 + skill*0.10 + rnd()*6)*(styleOf().out||1), 4, 40);
+      // the same family three times running is a boring match, and it shows
+      if(called){
+        const fam=called.fam, lf=MS._lastFam||[];
+        if(lf[0]===fam && lf[1]===fam){ dmg*=0.8; MS.quality-=1.2; if(!MS._staleSaid){ MS._staleSaid=true; fLog(`<span class="hint">The crowd has seen that already. Mix it up.</span>`); } }
+        MS._lastFam=[fam].concat(lf).slice(0,3);
+        if(fam==='risk') MS.quality+=2;
+      }
+      isFin = mv.id===G.w.finisher || mv.tier>=5 || !!(called && called.fam==='fin');
+      if(called && called.fam==='fin'){ MS.spec=0; paintSpec(); await finisherCinematic(G.w.finisherName||mv.name); }
       const moveNameForLog = (isFin && G.w.finisherName) ? G.w.finisherName : mv.name;
       // Once the finisher is KNOWN (five career hits) the building sees it coming.
       if(isFin && (G.car.finHits||0)>=5) await finisherTell();
@@ -11275,6 +11749,7 @@ async function runFight(){
       else if(MS.quality>=70&&MS._crowdStage<2){ MS._crowdStage=2; fLog(`<span class="say">They're on their feet now.</span>`); }
       else if(MS.quality>=55&&MS._crowdStage<1){ MS._crowdStage=1; fLog(`<span class="say">The room is coming alive.</span>`); }
       lastMove=mv.name; lastCat=mv.cat; if(isFin){ MS.finisherHit++; G.car.finHits=(G.car.finHits||0)+1; }
+      comboHit(); if(!(called && called.fam==='fin')) specAdd(6+mv.tier*3);
       if(isFin || rnd()<0.18) commLine(mv.cat, null);
     } else {
       const mv=oppMove();
@@ -11285,11 +11760,39 @@ async function runFight(){
       // whoever is in the ring right now, which in a triple threat changes
       const inRingOvr = MS.opp.ovr || o.oppOvr;
       const dmg=clamp((inRingOvr*0.30 + rnd()*7 - G.w.attrs.to*0.05)*(isFin?1.9:1)*(styleOf().in||1)*facBonus('tough'), 3, 46);
+      /* THE READ. Not every beat: about two in five, and always their finisher.
+         A clean reversal turns their move into yours. */
+      let rev='none';
+      if(cmdOn() && (MS.rev||0)>0 && !MS.third && (isFin || rnd()<0.40)){
+        busy(true);
+        fmv('opp',{pose:'wind',fwd:ST.close*0.4},220);
+        rev=await reversalPrompt(isFin, name);
+        if(MS.ended || MS.gen!==gen) return;
+      }
+      if(rev==='hit'){
+        MS.rev--; paintSpec();
+        const cv=(commandOptions().grapple)||(commandOptions().strike)||myMove();
+        const skill=(G.w.attrs[catById(cv.cat)?catById(cv.cat).attr:'po']||40);
+        const cd=clamp((cv.dmg*0.26 + skill*0.10 + rnd()*5)*(styleOf().out||1)*(isFin?1.25:1), 4, 34);
+        hitStop(2); await callout(isFin?'FINISHER REVERSED!':'REVERSAL!'); sfx('pop');
+        fLog(`<span class="hi">You read ${name} and turn it into ${cv.name}.</span>`);
+        noteMove(cv.id);
+        await exchange(true, cv.name, cd, 10+(isFin?10:0), 'REVERSAL!', cv.cat);
+        hurtLimb(MS.opp, limbFor(cv.cat, MS.me), cd*0.9);
+        specAdd(isFin?40:25); comboHit();
+        MS.quality+=isFin?9:4; MS.big+=isFin?1:0; trace('reversal');
+        if(isFin){ MS.oppFinUsed=true; G.car.reaction=clamp((G.car.reaction||G.car.pop)+2,0,100); }
+        byMe=true; lastMove=cv.name; lastCat=cv.cat; isFin=false;
+      } else {
+      if(rev==='miss'){ MS.rev--; paintSpec(); fLog(`<span class="bad">You went for the reversal too early, and ate it anyway.</span>`); MS.mom=clamp(MS.mom-4,-100,100); }
+      comboBreak();
       await exchange(false, name, dmg, -(6+rnd()*5), isFin?'FINISHER!':null, isFin?'slam':mv.cat);
       hurtLimb(MS.me, isFin?'head':limbFor(mv.cat, MS.opp), dmg*(mv.cat==='submission'||mv.cat==='technical'?1.5:0.9));
       if(isFin) MS.oppFinHit=(MS.oppFinHit||0)+1;
       MS.quality+=isFin?9:4;
       lastMove=name; lastCat=isFin?'slam':mv.cat;
+      specAdd(dmg*0.35);
+      }
     }
     renderLimbs();
     if(MS.beat%3===0 && !MS.refDown) refDrift();
@@ -11704,7 +12207,7 @@ async function runFight(){
       : lastMove;
     if(!MS.ended && lastCat==='submission' && rnd()<(MS.phase>=3?0.85:0.5)){
       await submissionAttempt(byMe, finishName);
-    } else if(!MS.ended && rnd()<coverChance(byMe,isFin)){
+    } else if(!MS.ended && lastMove && rnd()<coverChance(byMe,isFin)){
       await coverAttempt(byMe, finishName, isFin);
     }
     // ---- some matches are won by escape rather than by pinfall ----
@@ -14451,6 +14954,7 @@ async function runRumble(o){
   $('fRules').textContent='Eliminate everyone by dumping them over the top rope. Last one standing wins a title shot.';
   $('fLog').innerHTML='';
   MS.me.hp=100; MS.opp.hp=100; setBar('hpMe',100); setBar('hpOpp',100); setMom();
+  { const r=$('fSpecRow'); if(r) r.classList.add('auto'); const fp=$('fPad'); if(fp){ fp.classList.remove('on'); fp.innerHTML=''; } comboBreak(); }
   go('fight'); stageInit(); dressArena($('arena'),myPromoId());
   figLook('me',G.w.look); figLook('opp',oppLook(ent[0].id,ent[0].name));
   // A Battle Royal is a marquee. Package it like one.
