@@ -21,7 +21,7 @@
 (function(){
 'use strict';
 
-var API_VERSION = 2;
+var API_VERSION = 3;
 var W = window.RTF_WARD, CAT = window.RTF_CATALOG, X = window.RTF_ECON, PK = window.RTF_PACKS, B = window.RTF_BALLER, A = window.RTF_ART;
 
 var COLORS = { street: ['#e8660f', '#6a2a08'], league: ['#3a6fd8', '#14244f'], hof: ['#e3a92f', '#5a3e0a'], season: ['#8a4fd4', '#2e1652'] };
@@ -105,6 +105,13 @@ function pane(host, o){
     var html = '<div class="sh">';
     html += '<div class="sh-wallet"><span class="sh-bal">' + coin('sh-coinbig') + '<b>' + money(coins) + '</b><i>coins</i></span>'
       + '<span class="sh-gems">' + PK.RANK.map(function(r){ return '<span class="sh-gemc" style="--rc:' + RCOL[r] + '" title="' + RLABEL[r] + ' shards">' + gem(r) + '<i>' + (sh[r] || 0) + '</i></span>'; }).join('') + '</span></div>';
+    /* THE COLLECTION: every piece comes from a pack, so the shop says how much
+       of the game's wardrobe is his, by rarity */
+    var om = W.ownedMap(), packed = CAT.ITEMS.filter(CAT.sold), got = packed.filter(function(it){ return om[it.id]; }).length;
+    html += '<div class="sh-coll"><span class="sh-colt"><b>' + got + '</b> of ' + packed.length + ' pieces collected</span><span class="sh-colbar">' + PK.RANK.map(function(r){
+      var t = packed.filter(function(it){ return it.rarity === r; }), h = t.filter(function(it){ return om[it.id]; }).length;
+      return '<i style="flex:' + t.length + ';--rc:' + RCOL[r] + ';--f:' + Math.round(100 * h / Math.max(1, t.length)) + '%" title="' + RLABEL[r] + ' ' + h + ' of ' + t.length + '"></i>';
+    }).join('') + '</span></div>';
     if (msg) html += '<p class="sh-msg" role="status">' + esc(msg) + '</p>';
 
     if (pend) {
@@ -380,6 +387,10 @@ var CSS = [
 '.sh-gemc{display:flex;align-items:center;gap:3px;padding:3px 5px;background:#0e111c;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--rc) 45%,transparent);}',
 '.sh-gem{width:12px;height:12px;}',
 '.sh-gemc i{font:800 12px var(--k-f-text);font-style:normal;color:var(--rc);font-variant-numeric:tabular-nums;}',
+'.sh-coll{display:grid;gap:5px;margin:-4px 0 12px;}',
+'.sh-colt{font:600 12px var(--k-f-text);color:var(--k-ink-3);}.sh-colt b{color:var(--k-gold);font-variant-numeric:tabular-nums;}',
+'.sh-colbar{display:flex;gap:2px;height:6px;}',
+'.sh-colbar i{display:block;min-width:4px;background:linear-gradient(90deg,var(--rc) var(--f),#232840 var(--f));box-shadow:0 0 6px -2px var(--rc);}',
 '.sh-msg{background:#3a1d1d;color:#ffd3c8;padding:8px 10px;margin:0 0 10px;box-shadow:inset 3px 0 0 #e0483e;}',
 '.sh-sec{margin:16px 0 0;}',
 '.sh-h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:6px;}',

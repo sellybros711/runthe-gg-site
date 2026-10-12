@@ -327,12 +327,19 @@ Cost to watch: an idle is frames painted in the worker, per look and wear. Phase
 
 ## 7. Prices, packs and the daily loop
 
-### Direct buy and packs
+### Packs only
 
-Run The Tour's prices exactly (the owner's call, 2026-10-11), so a coin means the
+**Every piece comes from a pack (the owner's call, 2026-10-12).** Nothing is
+bought outright: `RTF_WARD.shop.buy` answers `packonly` for every item, and the
+closet has no Buy. A piece he does not own is tried on and named with the pack
+that has the best odds for it and the odds of one open (`packs.js chance` and
+`best`, the same arithmetic `open()` rolls). The shard exchange stays the sure
+path. The worth column below is what a rarity is valued at; nothing sells at it.
+
+Run The Tour's numbers exactly (the owner's call, 2026-10-11), so a coin means the
 same thing in both games. Every earning in this file is scaled to match:
 
-| rarity | direct buy | dupe refund (coin packs only) | shards to step up |
+| rarity | worth | dupe refund (coin packs only) | shards to step up |
 |---|---|---|---|
 | common | 15,000 | 2,000 | 10 common: a rare spin |
 | rare | 45,000 | 5,000 | 10 rare: an epic spin |
@@ -359,13 +366,14 @@ labels Off Court or On Court. Odds are printed on every pack.
   price of four, the drop leaning of the seasonal pack, shards and the exchange
   ladder. Every row is a keyed log on the wardrobe record, so a merge is a
   union and pity is read off the log in time order.
-- `RTF_WARD.shop` buys, opens and exchanges on copies of the wardrobe and the
+- `RTF_WARD.shop` opens and exchanges on copies of the wardrobe and the
   wallet and saves both only when the call went through. A guest is refused.
 - The Shop tab (`shop-ui.js`) prints the odds on every pack, asks twice before
   spending coins, shows the pull on his own player, and says once that the
   badges held when the wallet started were counted, not paid. The welcome
   Streetball Pack is a free credit given by settle().
-- The closet sells a tried on piece at its direct price, asking twice.
+- The closet sold a tried on piece at its direct price until 2026-10-12. It now
+  names the best pack and the odds instead, and its button opens the packs.
 - `check-packs.mjs` holds all of it, each claim proved by breaking it once.
 
 ### The daily loop

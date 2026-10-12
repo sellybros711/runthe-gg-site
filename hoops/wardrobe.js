@@ -353,18 +353,11 @@ function both(fn){
   return r;
 }
 var SHOP = {
-  /* a piece at its price, keyed so the same purchase on two devices is one */
-  buy: function(id){
-    return both(function(st, w){
-      var it = CAT.item(id);
-      if (!it || !CAT.sold(it)) return { err: 'notsold' };
-      if (owns(id, st)) return { err: 'owned' };
-      var r = X.spend(w, 'buy:' + id, X.priceOf(it), id);
-      if (!r.ok) return { err: r.why === 'short' ? 'coins' : r.why };
-      st.own[id] = Date.now();
-      return { item: it };
-    });
-  },
+  /* EVERY PIECE IS PACK ONLY (Run The Tour's rule, the owner's call
+     2026-10-12): nothing is bought outright. A pack or the shard exchange is
+     the only way in. Kept as a refusal so a cached page that still presses a
+     Buy is told no rather than throwing. */
+  buy: function(){ return { err: 'packonly' }; },
   /* opts.credit: open a free pack. A free pack's open is keyed on its credit,
      so two devices opening the same free pack file one open. */
   open: function(pack, opts){

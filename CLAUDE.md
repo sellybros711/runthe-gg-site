@@ -16393,7 +16393,11 @@ psql ... -f supabase/141_hoops_wallet.sql     paid coins (row 55), and 142_hoops
   spent under `pk:<open>` (a bundle `pkb:`), a free pack is opened under `c:<credit>`, so
   two devices file one open. A duplicate gives a shard always and coins back only when it
   was bought. `RTF_WARD.shop` is the one door that touches both records; the shop screen
-  (`shop-ui.js`, the Look sheet's Shop tab) and the closet's Buy only press it. settle()
+  (`shop-ui.js`, the Look sheet's Shop tab) only presses it. **Every piece is pack only**
+  (the owner's call, 2026-10-12): `shop.buy` answers `packonly` for everything, and a
+  tried on piece names the best pack and the odds of one open (`packs.js chance`, the
+  arithmetic `open()` rolls), with a button to the packs. The Locker's banner, its
+  front page key and the closet stage are drawn in the pack art's light. settle()
   gives the welcome Streetball Pack (credit `welcome`) once an account.
 - **An open is decided before it is shown.** The press spends and rolls; then the show
   plays over the whole screen (`.sh-ov`, appended to `body`): the pack on its stand, the

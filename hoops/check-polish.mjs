@@ -15,6 +15,9 @@
  *   4. every sheet's close key is the kit's pixel X, never a bare letter
  *   5. the front page is one material: its cards are square on a frame
  *   6. a Hall card saved without a verdict never prints "undefined"
+ *   7. the pack art leads: the Locker's banner fans one pack per pack on the
+ *      shelf and says every piece comes from one, the front page's Locker key
+ *      is a pack, and the closet's stage glows in a tried on piece's rarity
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -104,6 +107,17 @@ await page.waitForTimeout(600);
   await page.waitForSelector('#rtf-locker:not([hidden]) #lk-pane .sh-shop, #rtf-locker:not([hidden]) #lk-pane *', { timeout: 5000 });
   const lk = await page.evaluate(() => ({ tabs: [...document.querySelectorAll('#rtf-locker [data-ktab]')].map((x) => x.getAttribute('data-ktab')), body: !!document.querySelector('#rtf-locker [data-ktab="body"]'), pane: document.getElementById('lk-pane').children.length }));
   ok(lk.tabs.join() === 'shop,street,court' && !lk.body && lk.pane > 0, '3 it holds the shop and both looks, and no Body tab (' + lk.tabs.join() + ')');
+  const ban = await page.evaluate(() => ({ fan: document.querySelectorAll('#rtf-locker .lk-fan .lk-fp img').length, shelf: RTF_PACKS.IDS.filter((x) => RTF_PACKS.available(x)).length, sub: (document.querySelector('#rtf-locker .lk-sub') || {}).textContent || '', icons: document.querySelectorAll('#rtf-locker .lk-tabs .lk-ti').length }));
+  ok(ban.fan === ban.shelf && ban.fan > 0, '7 the banner fans one pack per pack on the shelf (' + ban.fan + ' of ' + ban.shelf + ')');
+  ok(/every piece comes from a pack/i.test(ban.sub) && ban.icons === 3, '7 it says every piece comes from a pack, and every tab wears its icon');
+  /* the closet's stage takes the rarity of what he tries on */
+  await page.click('#rtf-locker [data-ktab="street"]');
+  await page.waitForSelector('#lk-pane .cl-tile.lock');
+  const st0 = await page.evaluate(() => document.querySelector('#lk-pane .cl-fig').style.getPropertyValue('--sc'));
+  const tr = await page.evaluate(() => { const t = [...document.querySelectorAll('#lk-pane .cl-tile.lock')].find((x) => !x.classList.contains('r-common')) || document.querySelector('#lk-pane .cl-tile.lock'); t.click(); return RTF_CATALOG.item(t.dataset.id).rarity; });
+  const st1 = await page.evaluate(() => { const f = document.querySelector('#lk-pane .cl-fig'); return { sc: f.style.getPropertyValue('--sc'), on: f.classList.contains('is-try'), tag: (f.querySelector('.cl-stag') || {}).textContent || '' }; });
+  ok(st1.on && st1.sc !== st0 && st1.tag.toLowerCase() === tr, '7 the stage takes the tried on piece\'s rarity (' + st0 + ' to ' + st1.sc + ', ' + st1.tag + ')');
+  await page.click('#rtf-locker [data-ktab="shop"]');
   await page.evaluate(() => { RTF_EARN.pay('polish:pop2', 50, 'run'); });
   await page.waitForTimeout(450);
   const foot = await page.evaluate(() => { const l = document.querySelector('.k-lane'), on = l && l.querySelector('.on'); return { foot: !!l && l.classList.contains('foot'), top: on ? on.getBoundingClientRect().top : -1, h: innerHeight }; });
@@ -117,6 +131,7 @@ await page.waitForTimeout(600);
   ok(await page.evaluate(() => !document.getElementById('rtf-locker').hidden && document.querySelector('#rtf-locker [data-ktab="shop"]').getAttribute('aria-selected') === 'true'), '2 the coin pill opens the Locker on the Shop');
   await page.keyboard.press('Escape');
   ok(await page.evaluate(() => !!document.querySelector('#hp-daily [data-locker]')), '3 the front page row has a door to the Locker');
+  ok(await page.evaluate(() => !!document.querySelector('#hp-daily [data-locker] img.dy-lkpack')), '7 and that door is a pack');
 }
 
 /* 4 */

@@ -285,6 +285,9 @@ function fixCoins(odds){ return RATE.fx.base + Math.round(RATE.fx.odds * Math.ma
 function passesCoins(atPar, easy){ return RATE.ps.base + (atPar ? RATE.ps.par : 0) + (easy ? 0 : RATE.ps.noEasy); }
 function badgeCoins(tier){ return RATE.badge[tier] || 0; }
 
+/* A piece's WORTH by rarity. Nothing is sold at it any more: every piece is
+   pack only (wardrobe.js SHOP.buy refuses). Kept as the scale a rarity is
+   valued on, which the idle step and the checks still read. */
 function priceOf(item){
   if (!item || item.earn) return 0;
   var r = item.slot === 'idle' ? IDLE_STEP[item.rarity] : item.rarity;

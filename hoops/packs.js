@@ -266,10 +266,37 @@ function oddsText(pack){
   return RANK.map(function(r, i){ return Math.round(P.odds[i] * 100) + '% ' + r; }).join(' · ');
 }
 
+/* ─── where a piece comes from ───────────────────────────────────────────
+   Every piece is PACK ONLY (Run The Tour's rule): nothing is bought outright.
+   chance() is a piece's odds from one open of a pack at its base odds, the
+   same arithmetic open() rolls (rarity, then one of that rarity's pool, with
+   the seasonal pack's drop bias). Pity only ever raises it, so it is a floor.
+   0 for a piece no pack holds today (an exclusive, a starter, a drop out of
+   season). best() is the pack with the best odds on the shelf now. */
+function chance(id, pack, d){
+  var it = CAT.item(id), P = packOf(pack);
+  if (!it || !P || !available(pack, d)) return 0;
+  var all = pool(d);
+  if (all.indexOf(it) < 0) return 0;
+  var pr = P.odds[RANK.indexOf(it.rarity)] || 0;
+  var tier = all.filter(function(x){ return x.rarity === it.rarity; });
+  var lv = liveDrop(d);
+  if (P.dropBias && lv) {
+    var bt = tier.filter(function(x){ return x.drop === lv.id; });
+    if (bt.length) return pr * ((it.drop === lv.id ? P.dropBias / bt.length : 0) + (1 - P.dropBias) / tier.length);
+  }
+  return pr / tier.length;
+}
+function best(id, d){
+  var out = null;
+  IDS.forEach(function(pk){ var c = chance(id, pk, d); if (c > 0 && (!out || c > out.chance)) out = { pack: pk, chance: c }; });
+  return out;
+}
+
 var API = {
   API_VERSION: API_VERSION, IDS: IDS, RANK: RANK, NEXT: NEXT, LOGS: LOGS,
   cleanLogs: cleanLogs, mergeLogs: mergeLogs, logCount: logCount,
-  pool: pool, liveDrop: liveDrop, packOf: packOf, available: available, oddsText: oddsText,
+  pool: pool, liveDrop: liveDrop, chance: chance, best: best, packOf: packOf, available: available, oddsText: oddsText,
   pity: pity, rollRarity: rollRarity, pickItem: pickItem,
   shards: shards, credits: credits, grantCredit: grantCredit, grantShards: grantShards,
   open: open, openBundle: openBundle, exchange: exchange, choose: choose, pendingChoice: pendingChoice,

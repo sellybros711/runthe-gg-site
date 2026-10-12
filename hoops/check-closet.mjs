@@ -185,7 +185,8 @@ async function browser(){
   await page.click('#cr-closet .cl-tile[data-id="varsity_navy"]');
   const tr = await page.evaluate(() => ({ lo: JSON.parse(localStorage.getItem('rtf.ward.v1')), trying: !!document.querySelector('#cr-closet .cl-try'), price: document.querySelector('#cr-closet .cl-tile[data-id="varsity_navy"] .cl-p').textContent }));
   ok(tr.trying && !tr.lo.w.street.outer, '7 a press on a piece he does not own tries it on and keeps nothing');
-  ok(/110K/.test(tr.price), '7 and its tile says what it costs (' + tr.price + ')');
+  ok(/In packs/.test(tr.price) && !/\dK|\d,\d/.test(tr.price), '7 and its tile says it comes from a pack, never a price (' + tr.price + ')');
+  ok(await page.evaluate(() => { const p = document.querySelector('#cr-closet .cl-try .cl-pk'); return !!p && /1 in \d/.test(p.textContent) && !document.querySelector('#cr-closet .cl-buy'); }), '7 the try-on names a pack and its odds, and offers no Buy');
   ok(await page.evaluate(() => /Go 1st overall/.test(document.querySelector('#cr-closet .cl-tile[data-id="ex_draft_blazer"] .cl-p').textContent)), '7 an exclusive says how it is earned, never a price');
   await page.click('#cr-closet .cl-back');
   ok(await page.evaluate(() => !document.querySelector('#cr-closet .cl-try')), '7 Back to my fit takes it off');
