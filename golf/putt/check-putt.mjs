@@ -474,12 +474,12 @@ if (!args.includes('--no-browser')){
       out.locked = !!P.fence && !!key && !!chest; await visit(t, chest.x, chest.y + 2.4); out.shutChest = !(rec()[K] && (rec()[K].ch || []).indexOf(chest.id) >= 0);
       // the chest: nothing on the ground until it is opened, then its coins land round it and are walked over
       out.buried = coinsOf(chest).every(c => !c.out);
-      await visit(t, key.x, key.y); await visit(t, P.lockGate.x, P.lockGate.y); await visit(t, chest.x, chest.y + 2.0); await sleep(1200);
+      await visit(t, key.x, key.y); await visit(t, P.lockGate.x, P.lockGate.y); await visit(t, chest.x, chest.y + 2.0); await sleep(2600);
       const cc = coinsOf(chest), stand = [chest.x, chest.y + 2.05], left = cc.slice().sort((a, b) => Math.hypot(b.x - stand[0], b.y - stand[1]) - Math.hypot(a.x - stand[0], a.y - stand[1]))[0], hc = cc.filter(c => c !== left && Math.hypot(c.x - left.x, c.y - left.y) > 1.6); out.burst = cc.length >= 4 && cc.every(c => c.out);
       const bal0 = (document.querySelector('[data-bal]') || {}).textContent;
       for (const c of hc) await visit(t, c.x, c.y);
       const got = cc.filter(c => c.done).length; out.hidCoins = hc.every(c => c.done) && !left.done; out.paid = got > 0 && paid.reduce((a, b) => a + b, 0) === got * window.RTT_PUTT_TRAIL.COIN_V && paid.length === got;
-      await visit(t, gold.x, gold.y); h0.coins = c0;
+      await visit(t, gold.x, gold.y); out.flying = t.fx(); out.bub0 = !document.querySelector('[data-bub]') || document.querySelector('[data-bub]').hidden || !/olden/.test(document.querySelector('[data-bub]').textContent); await sleep(1400); out.landed = t.fx() === 0 && !!document.querySelector('[data-gold].pp-bump'); h0.coins = c0;
       out.listGot = document.querySelectorAll('[data-tlist] span.got').length;
       const r = rec()[K] || {}; out.coin = hc.every(c => (r.c || []).indexOf(c.id) >= 0); out.key = r.key === 1; out.chest = (r.ch || []).indexOf(chest.id) >= 0; out.gold = r.g === 1; out.bub = (document.querySelector('[data-bub]') || {}).textContent || '';
       // walking through the arch opens the hole
@@ -522,6 +522,7 @@ if (!args.includes('--no-browser')){
     claim(wk.trail && wk.mark && wk.moved > 3, `Next opens the trail with the golfer and a waypoint, and the stick walks him (${wk.trail}, ${wk.mark}, ${(wk.moved || 0).toFixed(1)} ft)`);
     claim(wk.noStick && wk.dragStill && wk.keyWalk > 1, `on a desktop there is no stick on screen and a drag does not walk him; the arrow keys do (${wk.noStick}, ${wk.dragStill}, ${(wk.keyWalk || 0).toFixed(1)} ft)`);
     claim(wk.locked && wk.shutChest && wk.coin && wk.key && wk.chest && wk.gold && /Golden ball/.test(wk.bub), `the coins, the key, the chest it opens and the golden ball are picked up and kept (${JSON.stringify([wk.coin, wk.key, wk.chest, wk.gold, wk.bub])})`);
+    claim(wk.flying > 0 && wk.landed && wk.bub0, `a find does not just vanish: it pops up and flies to the top of the screen, which pulses as it lands, and the bubble waits until it has (${wk.flying}, ${wk.landed}, ${wk.bub0})`);
     claim(wk.warn && wk.stay && wk.gone, `Skip on a trail that still holds rewards warns first, Keep walking stays on the trail, and skipping anyway leaves it (${wk.warn}, ${wk.stay}, ${wk.gone})`);
     claim(wk.reached === wk.want && wk.kept && wk.skipTo === wk.want, `walking through the arch opens the hole, what was picked up stays picked up, a coin left on the ground is still there, and Skip goes straight there (${wk.reached}, ${wk.kept}, ${wk.skipTo})`);
     claim(wk.cross && wk.doorOpen && wk.passed && wk.through === 19, `with the stars, the world door on the trail opens and he walks on into World 2 (${wk.doorOpen}, ${wk.passed}, hole ${wk.through})`);

@@ -779,10 +779,40 @@ var BRK = {
   pumpkin:function(B, x, y){ BUILD.pumpkin(B, { x:x, y:y }, 1); },
   hay:function(B, x, y){ BUILD.hay(B, { x:x, y:y }, 1); }
 };
-function chestFn(open){ return function(B){ box(B, 0, 0, 2.2, 1.6, 2.4, function(dx, dy, tt){ if (Math.abs(dx) > 0.9 || Math.abs(dy) > 0.6) return null;
-  if (tt < 0.8) return Math.abs(dx) < 0.12 && tt > 0.4 && dy > 0.5 ? '#ffd23a' : (Math.abs(Math.abs(dx) - 0.75) < 0.1 || tt < 0.12) ? '#5a3a1c' : '#9a5e2e';
-  if (open){ if (dy < -0.4 && tt < 2.0) return tt > 1.85 ? '#5a3a1c' : '#9a5e2e'; if (tt < 0.95 && Math.abs(dx) < 0.75 && Math.abs(dy) < 0.45) return '#ffd23a'; return null; }
-  if (tt < 1.25 && Math.hypot(dy * 1.2, tt - 0.8) < 0.62) return Math.abs(Math.abs(dx) - 0.75) < 0.1 ? '#5a3a1c' : '#9a5e2e'; return null; }, 0.125); }; }
+/* THE CHEST, a proper treasure chest: oak planks with grain, iron bands, gold corner caps and a gold lock plate on
+   a domed lid that swings back on its hinge. It is drawn at five lid angles (lid 0 shut .. 1 thrown open) so the
+   opening plays as an animation; open, it shows a red lining and a heap of gold. Back is -y, the front faces the camera. */
+var CH_W = 1.55, CH_D = 0.95, CH_H = 1.25, CH_R = 0.95;   // half width, half depth, body height, lid radius (the dome's rise is CH_R * .7)
+function chestFn(lid){ var th = lid * 1.8, ct = Math.cos(th), st = Math.sin(th);
+  var WOOD = ['#7a4520', '#8e5428', '#a5652f', '#5c3216'], IRON = ['#3a3a44', '#5c5c6a', '#8a8a98'], GOLD = ['#b07a10', '#ffd23a', '#fff1a0'], VEL = '#8a1626';
+  function wood(u, w, ex){ var gr = hash(Math.floor(u * 9), Math.floor(w * 3 + ex), 17), seam = Math.abs((w * 3.4 + ex) % 1) < 0.1; return seam ? WOOD[3] : gr < 0.2 ? WOOD[0] : gr > 0.85 ? WOOD[2] : WOOD[1]; }
+  function band(x){ return Math.abs(Math.abs(x) - 0.9) < 0.11; }
+  function corner(x, y){ return Math.abs(x) > CH_W - 0.2 && Math.abs(y) > CH_D - 0.2; }
+  return function(B){ box(B, 0, 0, 3.8, 4.8, 4.2, function(dx, dy, tt){
+    if (Math.abs(dx) > CH_W) return null;
+    // the body, a little narrower at the bottom so it sits on the ground like a box rather than a slab
+    if (tt < CH_H && Math.abs(dy) < CH_D){
+      var inside = Math.abs(dx) < CH_W - 0.13 && Math.abs(dy) < CH_D - 0.13 && tt > 0.18;
+      if (inside && lid > 0.2){ var top = 0.62 + (lid > 0.6 ? 0.28 * (1 - Math.hypot(dx / CH_W, dy / CH_D)) : 0);
+        if (tt > top) return null; return tt > top - 0.13 ? (hash(dx * 8 | 0, dy * 8 | 0, 3) < 0.35 ? GOLD[2] : GOLD[1]) : VEL; }
+      if (tt < 0.12) return IRON[0];
+      if (corner(dx, dy)) return tt > CH_H - 0.16 || tt < 0.26 ? GOLD[2] : GOLD[1];
+      if (dy > CH_D - 0.14 && Math.abs(dx) < 0.24 && tt > CH_H - 0.5){ if (Math.abs(dx) < 0.06 && tt > CH_H - 0.36 && tt < CH_H - 0.16) return '#2a1a06'; return Math.abs(dx) > 0.17 ? GOLD[0] : GOLD[1]; }   // the lock plate and its keyhole
+      if (band(dx)) return Math.abs(dx) > 0.75 ? IRON[1] : IRON[2];
+      if (Math.abs(tt - (CH_H - 0.06)) < 0.07) return IRON[1];
+      return wood(dx, tt, dy > 0 ? 0 : 0.5); }
+    // the lid: a half barrel on the hinge at the back top edge, turned back by th
+    var v1 = dy + CH_D, w1 = tt - CH_H, v = v1 * ct + w1 * st, w = -v1 * st + w1 * ct, vc = v - CH_D;
+    if (v < 0 || v > 2 * CH_D || w < -0.02) return null;
+    var dome = Math.sqrt(Math.max(0, 1 - (vc * vc) / (CH_D * CH_D))) * CH_R * 0.7 + 0.12; if (w > dome) return null;
+    var shell = w > dome - 0.14 || Math.abs(dx) > CH_W - 0.12 || v < 0.12 || v > 2 * CH_D - 0.12;
+    if (!shell) return WOOD[3];
+    if (Math.abs(dx) > CH_W - 0.2 && (v < 0.2 || v > 2 * CH_D - 0.2)) return GOLD[1];
+    if (v > 2 * CH_D - 0.16 && Math.abs(dx) < 0.2 && w < 0.42) return Math.abs(dx) > 0.12 ? GOLD[0] : GOLD[2];   // the hasp
+    if (w < 0.1 && lid > 0.2) return Math.abs(dx) > CH_W - 0.2 ? GOLD[0] : WOOD[3];   // the inside of the lid, dark, as it swings back
+    if (band(dx)) return w > dome - 0.08 ? IRON[2] : IRON[1];
+    if (Math.abs(dx) > CH_W - 0.12) return Math.hypot(vc, w) < 0.18 ? GOLD[1] : WOOD[0];   // the end caps, a gold boss in each
+    return wood(dx, vc * 1.4 + 2, 0.25); }, 0.125); }; }
 function gateFn(open, P){ var kx = kitOf(P.spec.theme), c1 = kx.wall[0], c2 = kx.wall[1];
   return function(B){ box(B, 0, 0, PW * 2 + 1, 1.2, 6.8, function(dx, dy, tt){ if (Math.abs(dy) > 0.25) return null; var half = PW + 0.4;
     if (open){ var leaf = Math.abs(Math.abs(dx) - half) < 0.25 && tt < 6.4; return leaf ? c2 : null; }
@@ -823,7 +853,7 @@ function run(box, P, pic, api){
       if (c.w){ if (Math.abs(x - c.x) < c.w / 2 + R && Math.abs(y - c.y) < c.d / 2 + R) return true; } else if (Math.hypot(x - c.x, y - c.y) < c.r + R) return true; }
     if (gate && Math.abs(y - P.gate.y) < 0.9 + R && !(gate.open && Math.abs(x - P.gate.x) < PW + 0.3)) return true;
     if (P.fence){ var d = Math.hypot(x - P.fence.x, y - P.fence.y); if (Math.abs(d - P.fence.r) < R + 0.15){ var a = Math.atan2(y - P.fence.y, x - P.fence.x), da = Math.abs(Math.atan2(Math.sin(a - P.fence.a), Math.cos(a - P.fence.a))); if (!(lockOpen && da < P.fence.half)) return true; } }
-    for (var j = 0; j < items.length; j++){ var t = items[j]; if ((t.k === 'chest' || t.k === 'npc') && Math.hypot(x - t.x, y - t.y) < 1.0 + R) return true; }
+    for (var j = 0; j < items.length; j++){ var t = items[j]; if ((t.k === 'chest' || t.k === 'npc') && Math.hypot(x - t.x, y - t.y) < (t.k === 'chest' ? 1.3 : 1.0) + R) return true; }
     return false; }
   // the screen: art pixel to device pixel, through the picture's own projection
   function scr(x, y, z){ var p = pic.pr(x, y, z == null ? pic.zAt(x, y) : z); return [ox + p[0] * kk, oy + p[1] * kk]; }
@@ -846,7 +876,7 @@ function run(box, P, pic, api){
   var brkKind = function(t){ return kitOf(t.th || sp.theme).brk; };
   function prop(name, fn, w, d, h){ return propSprite(name, P, fn, w, d, h); }
   var SPR = {
-    chest0:prop('chest0', chestFn(false), 2.2, 1.6, 2.4), chest1:prop('chest1', chestFn(true), 2.2, 1.6, 2.4),
+    chest:[0, 0.22, 0.5, 0.78, 1].map(function(l){ return prop('chestv3:' + l, chestFn(l), 3.8, 4.8, 4.2); }),
     gate0:P.gate ? prop('gate0:' + sp.theme, gateFn(false, P), PW * 2 + 1, 1.2, 7) : null, gate1:P.gate ? prop('gate1:' + sp.theme, gateFn(true, P), PW * 2 + 1, 1.2, 7) : null,
     lock0:P.fence ? prop('lock0', lockGateFn(false), 3.4, 1, 3) : null, lock1:P.fence ? prop('lock1', lockGateFn(true), 3.4, 1, 3) : null
   };
@@ -903,6 +933,66 @@ function run(box, P, pic, api){
     var rx = Math.round(p[0] - w * s / 2), ry = Math.round(p[1] - h * s);
     for (var yy = 0; yy < h; yy++) for (var xx = 0; xx < w; xx++){ var ch = rows[yy][xx]; if (ch === '.') continue; ctx.fillStyle = pal[ch] || pal.r; ctx.fillRect(rx + xx * s, ry + yy * s, s, s); }
     sparkle(p[0], ry, now, s); occlude(rx, ry, w * s, h * s, t.x, t.y, pic.zAt(t.x, t.y)); }
+  /* THE CHEST AND WHAT COMES OUT OF IT. Shut, it glints and a warm light sits under it, so it reads as treasure from
+     across the clearing. Walked up to, it rattles, the lock pops, the lid swings back through four drawings with a
+     little squash, light pours out of it in rays, and then the coins spray out. Opened on an earlier visit it just
+     stands open with its gold showing. */
+  var CH_SHAKE = 0.32, CH_LID = 0.42, CH_COINS = 0.62;
+  function drawChest(t, now){ var z = pic.zAt(t.x, t.y), fr = SPR.chest, e = t.openAt != null ? now - t.openAt : (t.done ? 99 : -1), k, ox2 = 0, sy = 1, shp = scr(t.x, t.y);
+    if (!fr) return;
+    if (e < 0){ k = 0; var pu = 0.5 + 0.5 * Math.sin(now * 2.4 + t.x);   // shut: a warm pool of light and a glint now and then
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(255,200,70,' + (0.16 + 0.12 * pu).toFixed(2) + ')'; ctx.beginPath(); ctx.ellipse(shp[0], shp[1], 13 * kk, 5 * kk, 0, 0, 7); ctx.fill(); ctx.restore(); }
+    else if (e < CH_SHAKE){ k = 0; var a = 1 - e / CH_SHAKE; ox2 = Math.round(Math.sin(e * 70) * 1.6 * kk * a); }
+    else if (e < CH_SHAKE + CH_LID){ var u = (e - CH_SHAKE) / CH_LID; k = 1 + Math.min(3, Math.floor(u * 4)); sy = 1 - 0.07 * Math.sin(u * Math.PI); }
+    else k = 4;
+    var sp2 = fr[k]; if (!sp2) return;
+    // rays: from the moment the lid lifts until a while after, fanning up out of the chest
+    if (!reduce && e >= CH_SHAKE + 0.1 && e < 2.8){ var re = e - CH_SHAKE - 0.1, ra = Math.min(1, re / 0.25) * Math.max(0, 1 - Math.max(0, re - 1.2) / 1.2), mp = scr(t.x, t.y, z + 1.3), L0 = 60 * kk;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; for (var r = 0; r < 9; r++){ var an = -Math.PI / 2 + (r - 4) * 0.2 + Math.sin(now * 1.3 + r) * 0.04, len = L0 * (0.6 + 0.4 * Math.abs(Math.sin(r * 2.1 + now * 2))), wd = 0.07;
+        var gr = ctx.createLinearGradient(mp[0], mp[1], mp[0] + Math.cos(an) * len, mp[1] + Math.sin(an) * len); gr.addColorStop(0, 'rgba(255,230,140,' + (0.55 * ra).toFixed(2) + ')'); gr.addColorStop(1, 'rgba(255,230,140,0)');
+        ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(mp[0], mp[1]); ctx.lineTo(mp[0] + Math.cos(an - wd) * len, mp[1] + Math.sin(an - wd) * len); ctx.lineTo(mp[0] + Math.cos(an + wd) * len, mp[1] + Math.sin(an + wd) * len); ctx.closePath(); ctx.fill(); }
+      ctx.restore(); }
+    var p = scr(t.x, t.y, z), w = sp2.cv.width * kk, h = sp2.cv.height * kk, h2 = Math.round(h * sy), rx = Math.round(p[0] - sp2.ax * kk) + ox2, ry = Math.round(p[1] - sp2.ay * kk * sy);
+    ctx.drawImage(sp2.cv, rx, ry, w, h2); occlude(rx, ry, w, h2, t.x, t.y, z);
+    if (e < 0){ var gl = (now * 0.7 + t.x * 0.13) % 1; if (gl < 0.22){ var gu = gl / 0.22, gs = Math.max(2, Math.round(kk)), gp = scr(t.x - 0.9 + gu * 1.8, t.y + 0.9, z + 1.25 + Math.sin(gu * Math.PI) * 0.3);
+      ctx.fillStyle = 'rgba(255,255,255,' + Math.sin(gu * Math.PI).toFixed(2) + ')'; ctx.fillRect(Math.round(gp[0] - gs / 2), Math.round(gp[1] - 2 * gs), gs, 4 * gs); ctx.fillRect(Math.round(gp[0] - 2 * gs), Math.round(gp[1] - gs / 2), 4 * gs, gs); } } }
+
+  /* WHAT YOU PICK UP DOES NOT JUST VANISH. It pops up out of the ground and grows, turns once in the air with a ring
+     of light round it, then flies to where it is kept on screen (a coin to the coin count, a find to its own row in
+     the list) leaving a trail, and that spot pulses as it lands. A word rises where it was: +3, Golden ball, Key. */
+  var fxs = [], texts = [], rings = [];
+  function hudPt(el){ if (!el || !el.getBoundingClientRect) return null; var r = el.getBoundingClientRect(), c = cv.getBoundingClientRect(); if (!r.width) return null; return [(r.left + r.width / 2 - c.left) * dpr, (r.top + r.height / 2 - c.top) * dpr]; }
+  function bump(el){ if (!el) return; el.classList.remove('pp-bump'); void el.offsetWidth; el.classList.add('pp-bump'); }
+  function floatText(txt, x, y, z, col, big){ texts.push({ txt:txt, x:x, y:y, z:z, col:col || '#ffd23a', t0:performance.now() / 1000, big:!!big }); }
+  function ring(x, y, col){ rings.push({ x:x, y:y, col:col, t0:performance.now() / 1000 }); }
+  function collect(t, now, kind){ var z = pic.zAt(t.x, t.y), coin = kind === 'coin', tgt = coin ? function(){ return ui.querySelector('[data-coins]'); } : t.k === 'golden' ? function(){ var gEl = ui.querySelector('[data-gold]'); return gEl && gEl.textContent ? gEl : ui.querySelector('[data-tlist] span[data-id="' + t.id + '"]'); } : function(){ return ui.querySelector('[data-tlist] span[data-id="' + t.id + '"]'); };
+    fxs.push({ t:t, coin:coin, t0:now, z:z + (coin ? 0.8 : 1.4), tgt:tgt, up:coin ? 0.16 : 0.32, hold:coin ? 0.04 : 0.28, fly:coin ? 0.55 : 0.55, trail:[] }); if (!coin) ring(t.x, t.y, lootBeam(t) || '255,214,64'); }
+  function drawPix(rows, pal, cx, by, s, sx){ var w = rows[0].length, h = rows.length, rx = cx - w * s * sx / 2, ry = by - h * s;
+    for (var yy = 0; yy < h; yy++) for (var xx = 0; xx < w; xx++){ var ch = rows[yy][xx]; if (ch === '.') continue; ctx.fillStyle = pal[ch] || pal.r; ctx.fillRect(Math.round(rx + xx * s * sx), Math.round(ry + yy * s), Math.max(1, Math.ceil(s * sx)), s); } }
+  function coinPix(cx, cy, s, sx){ var w = Math.max(1, Math.round(5 * sx)), h = 6; ctx.fillStyle = '#7a5200'; ctx.fillRect(Math.round(cx - (w / 2 + 1) * s), Math.round(cy - h / 2 * s), (w + 2) * s, h * s); ctx.fillRect(Math.round(cx - w / 2 * s), Math.round(cy - (h / 2 + 1) * s), w * s, (h + 2) * s);
+    ctx.fillStyle = '#ffd23a'; ctx.fillRect(Math.round(cx - w / 2 * s), Math.round(cy - h / 2 * s), w * s, h * s); if (w > 2){ ctx.fillStyle = '#fff3a8'; ctx.fillRect(Math.round(cx - w / 2 * s + s), Math.round(cy - h / 2 * s + s), s, (h - 2) * s); } }
+  function drawFx(now){ var s0 = Math.max(2, Math.round(kk * 1.25));
+    // rings on the ground where a find was
+    rings = rings.filter(function(q){ var u = (now - q.t0) / 0.6; if (u >= 1) return false; var p = scr(q.x, q.y); ctx.save(); ctx.strokeStyle = 'rgba(' + q.col + ',' + (1 - u).toFixed(2) + ')'; ctx.lineWidth = Math.max(2, kk * 1.5) * (1 - u * 0.6);
+      ctx.beginPath(); ctx.ellipse(p[0], p[1], (3 + u * 14) * kk, (1.2 + u * 5.5) * kk, 0, 0, 7); ctx.stroke(); ctx.restore(); return true; });
+    fxs = fxs.filter(function(f){ var e = now - f.t0, t = f.t, base = scr(t.x, t.y, f.z), dur = f.up + f.hold + f.fly, x, y, sc, spin = 1;
+      if (reduce){ e = Math.max(e, dur - 0.12); }
+      if (e < f.up){ var u = e / f.up, eo = 1 - (1 - u) * (1 - u); x = base[0]; y = base[1] - eo * 2.4 * kk * 8 / 3; sc = 1 + eo * (f.coin ? 0.4 : 0.9); spin = Math.cos(u * Math.PI * 2); }
+      else if (e < f.up + f.hold){ var u2 = (e - f.up) / f.hold; x = base[0]; y = base[1] - 2.4 * kk * 8 / 3 + Math.sin(u2 * Math.PI) * -2 * kk; sc = f.coin ? 1.4 : 1.9; spin = Math.cos(u2 * Math.PI * 2);
+        if (!f.coin){ ctx.save(); ctx.globalCompositeOperation = 'lighter'; var bc = lootBeam(t) || '255,214,64'; ctx.fillStyle = 'rgba(' + bc + ',' + (0.35 * Math.sin(u2 * Math.PI)).toFixed(2) + ')'; ctx.beginPath(); ctx.arc(x, y - 4 * s0, (10 + u2 * 6) * s0, 0, 7); ctx.fill(); ctx.restore(); } }
+      else { var u3 = Math.min(1, (e - f.up - f.hold) / f.fly), el = f.tgt(), tp = hudPt(el) || [W / 2, -40], sxp = base[0], syp = base[1] - 2.4 * kk * 8 / 3, ez = u3 < 0.5 ? 2 * u3 * u3 : 1 - Math.pow(-2 * u3 + 2, 2) / 2;
+        x = sxp + (tp[0] - sxp) * ez; y = syp + (tp[1] - syp) * ez - Math.sin(u3 * Math.PI) * 30 * dpr; sc = (f.coin ? 1.4 : 1.9) * (1 - 0.55 * ez); spin = f.coin ? Math.cos(u3 * Math.PI * 4) : 1;
+        f.trail.push([x, y]); if (f.trail.length > 7) f.trail.shift();
+        if (u3 >= 1){ bump(el); return false; } }
+      // the trail behind it, fading
+      for (var i = 0; i < f.trail.length; i++){ var a = (i + 1) / (f.trail.length + 1); ctx.fillStyle = 'rgba(255,240,170,' + (a * 0.7).toFixed(2) + ')'; var ts = Math.max(1, Math.round(s0 * a * 1.4)); ctx.fillRect(Math.round(f.trail[i][0] - ts / 2), Math.round(f.trail[i][1] - 3 * s0 - ts / 2), ts, ts); }
+      var s = Math.max(1, Math.round(s0 * sc));
+      if (f.coin) coinPix(x, y - 3 * s, s, Math.abs(spin));
+      else { var L = LOOT[t.k]; drawPix(L.rows, lootPal(t), x, y, s, Math.max(0.15, Math.abs(spin))); if (e > f.up * 0.5) sparkle(x, y - L.rows.length * s, now, s0); }
+      return true; });
+    // words rising where something was found
+    texts = texts.filter(function(q){ var u = (now - q.t0) / (q.big ? 1.6 : 1.1); if (u >= 1) return false; var p = scr(q.x, q.y, q.z + u * 2.2), fs = Math.round((q.big ? 17 : 14) * dpr * (u < 0.12 ? 0.6 + u / 0.12 * 0.4 : 1));
+      ctx.save(); ctx.globalAlpha = u > 0.7 ? (1 - u) / 0.3 : 1; ctx.font = '900 ' + fs + 'px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(3, fs / 4); ctx.strokeStyle = '#2a1a06'; ctx.strokeText(q.txt, p[0], p[1]); ctx.fillStyle = q.col; ctx.fillText(q.txt, p[0], p[1]); ctx.restore(); return true; }); }
   function sparkle(x, y, now, s){ var a = (Math.sin(now * 5) + 1) / 2; ctx.fillStyle = 'rgba(255,255,255,' + (0.4 + a * 0.6).toFixed(2) + ')'; var d = (3 + a * 3) * s;
     ctx.fillRect(Math.round(x - s / 2 + d), Math.round(y - d), s, s); ctx.fillRect(Math.round(x - s / 2 - d * 0.8), Math.round(y - d * 0.4), s, s); }
 
@@ -1015,14 +1105,16 @@ function run(box, P, pic, api){
   function pathAtS(s){ var pp = P.path, cm = P.cum; for (var i = 0; i < pp.length - 1; i++) if (cm[i + 1] >= s){ var u = (s - cm[i]) / ((cm[i + 1] - cm[i]) || 1); return [pp[i][0] + (pp[i + 1][0] - pp[i][0]) * u, pp[i][1] + (pp[i + 1][1] - pp[i][1]) * u]; } return pp[pp.length - 1]; }
   var goalS = P.cum[P.cum.length - 1];
 
+  // a line said once what was just found has flown up to the top of the screen, so the bubble never sits on top of it
+  function sayLater(txt, ms, wait){ setTimeout(function(){ if (alive) say(txt, ms); }, (reduce ? 0.1 : wait) * 1000); }
   function say(txt, ms){ bubble = { txt:txt, until:performance.now() + (ms || 3200) }; bubEl.textContent = txt; bubEl.hidden = false; }
-  function burst(x, y, z, cols, n){ for (var i = 0; i < n; i++){ var a = Math.random() * 6.28, sp2 = 2 + Math.random() * 4; parts.push({ x:x, y:y, z:z, vx:Math.cos(a) * sp2, vy:Math.sin(a) * sp2 * 0.6, vz:3 + Math.random() * 4, c:cols[i % cols.length], t:0 }); } }
+  function burst(x, y, z, cols, n, sz, pow){ pow = pow || 1; for (var i = 0; i < n; i++){ var a = Math.random() * 6.28, sp2 = (2 + Math.random() * 4) * pow; parts.push({ x:x, y:y, z:z, vx:Math.cos(a) * sp2, vy:Math.sin(a) * sp2 * 0.6, vz:(3 + Math.random() * 4) * pow, c:cols[i % cols.length], t:0, sz:sz ? sz * (0.6 + Math.random() * 0.8) : 0 }); } }
   function hudCoins(){ ui.querySelector('[data-coins]').textContent = '+' + coinsGot; }
   /* WHAT IS ON THIS TRAIL, said up front: a list of every find with its picture, ticked off as it is picked up,
      so a player always knows what they are looking for. Coins are not on it: they come out of the chest. */
   function hudList(){ var el = ui.querySelector('[data-tlist]'), fs = items.filter(function(t){ return LOOT[t.k]; });
     el.innerHTML = fs.length ? '<b>On this trail</b>' + fs.map(function(t){ var nm = t.k === 'trinket' ? t.name || 'Trinket' : t.k === 'part' ? (t.name || 'Putter part') : LOOT[t.k].name;
-      if (t.k === 'chest' && t.drops) nm = 'Chest'; return '<span class="' + (t.done ? 'got' : '') + '"><img alt="" src="' + lootIcon(t) + '">' + nm.replace(/[<>&]/g, '') + '</span>'; }).join('') : ''; }
+      if (t.k === 'chest' && t.drops) nm = 'Chest'; return '<span data-id="' + t.id + '" class="' + (t.done ? 'got' : '') + '"><img alt="" src="' + lootIcon(t) + '">' + nm.replace(/[<>&]/g, '') + '</span>'; }).join('') : ''; }
   function hudChests(){}
   function hudGold(){ var gd = api.golden ? api.golden() : null; ui.querySelector('[data-gold]').textContent = gd ? 'Golden balls ' + gd.have + '/' + gd.total : ''; }
   hudGold(); hudChests(); hudList();
@@ -1068,19 +1160,24 @@ function run(box, P, pic, api){
     talkB.hidden = !(hs.ph === 'idle' && d < 3.6); }
   function take(t, now){ take0(t, now); if (LOOT[t.k]) hudList(); }
   function take0(t, now){ var z = pic.zAt(t.x, t.y);
-    if (t.k === 'coin'){ t.done = true; coinsGot += COIN_V; hudCoins(); burst(t.x, t.y, z + 1.2, ['#ffd23a', '#fff3a8'], 6); pick('coin', t.id, COIN_V); api.sfx && api.sfx('coin'); }
-    else if (t.k === 'chest'){ t.done = true; t.openAt = now; burst(t.x, t.y, z + 1.4, ['#ffd23a', '#fff3a8', '#ffffff'], 14); pick('chest', t.id, 0); hudChests(); api.sfx && api.sfx('coin');
+    if (t.k === 'coin'){ t.done = true; coinsGot += COIN_V; hudCoins(); burst(t.x, t.y, z + 1.2, ['#ffd23a', '#fff3a8', '#ffffff'], 8); collect(t, now, 'coin'); floatText('+' + COIN_V, t.x, t.y, z + 2.2); pick('coin', t.id, COIN_V); api.sfx && api.sfx('coin'); }
+    else if (t.k === 'chest'){ t.done = true; t.openAt = now; pick('chest', t.id, 0); hudChests(); api.sfx && api.sfx('coin');
+      // the lock pops as it starts to rattle; the lid lifts; light, a ring and a shower of gold as it comes open
+      burst(t.x, t.y + 0.8, z + 1.0, ['#ffd23a', '#fff1a0'], 6, 1.2, 0.6);
+      setTimeout(function(){ if (!alive) return; burst(t.x, t.y, z + 1.5, ['#ffd23a', '#fff3a8', '#ffffff', '#ffb43a'], 26, 1.5, 1.3); ring(t.x, t.y, '255,214,64'); }, (CH_SHAKE + 0.15) * 1000);
       // the coins fly out of the lid in an arc and land where the plan put them
       var cs = items.filter(function(c){ return c.k === 'coin' && c.ch === t; });
-      cs.forEach(function(c, i){ c.out = true; c.fly = { t0:now + i * 0.06, dur:0.55 + (i % 3) * 0.08, x0:t.x, y0:t.y, z0:z + 1.6 }; });
-      say(cs.length ? 'A chest. ' + cs.length + ' coins. Walk over them to pick them up.' : 'A chest.', 2800); }
-    else if (t.k === 'key'){ t.done = true; lockOpen = true; burst(t.x, t.y, z + 1.3, ['#ffd23a', '#ffffff'], 10); pick('key', t.id, 0); say('A key. The gate to the clearing is open.'); }
-    else if (t.k === 'golden'){ t.done = true; burst(t.x, t.y, z + 1, ['#ffd23a', '#fff3a8', '#ffffff'], 24); var msg = pick('golden', t.id, 0); hudGold(); say(msg || 'A golden ball.', 3600); }
-    else if (t.k === 'life'){ t.done = true; burst(t.x, t.y, z + 1.2, ['#e5483a', '#ff9d8a', '#ffffff'], 18); say(pick('life', t.id, 0) || 'A spare life.', 3600); }
-    else if (t.k === 'trinket'){ t.done = true; burst(t.x, t.y, z + 1.2, [t.col || '#b48cff', '#ffffff', '#ffd23a'], 22); say(pick('trinket', t.id, 0) || ('Found: ' + t.name + '.'), 3800); }
-    else if (t.k === 'part'){ t.done = true; burst(t.x, t.y, z + 1.2, ['#cfd8e2', '#ffffff', '#ffd23a'], 18); say(pick('part', t.id, 0) || ('A putter part: ' + t.name + '.'), 3800); }
+      cs.forEach(function(c, i){ c.out = true; c.fly = { t0:now + CH_COINS + i * 0.05, dur:0.6 + (i % 3) * 0.08, x0:t.x, y0:t.y, z0:z + 1.6 }; });
+      setTimeout(function(){ if (alive) floatText(cs.length ? cs.length + ' coins!' : 'Treasure!', t.x, t.y, z + 3.2, '#ffd23a', true); }, CH_COINS * 1000);
+      sayLater(cs.length ? 'Walk over the coins to pick them up.' : 'An empty chest.', 2600, 1.7); }
+    else if (t.k === 'key'){ t.done = true; lockOpen = true; burst(t.x, t.y, z + 1.3, ['#ffd23a', '#ffffff'], 14, 1.2); collect(t, now); floatText('Key', t.x, t.y, z + 3, '#e6eef8', true); pick('key', t.id, 0); sayLater('A key. The gate to the clearing is open.', 3200, 1.1); }
+    else if (t.k === 'golden'){ t.done = true; burst(t.x, t.y, z + 1, ['#ffd23a', '#fff3a8', '#ffffff'], 28, 1.3, 1.2); collect(t, now); floatText('Golden ball!', t.x, t.y, z + 3, '#ffd23a', true); var msg = pick('golden', t.id, 0); hudGold(); sayLater(msg || 'A golden ball.', 3600, 1.1); }
+    else if (t.k === 'life'){ t.done = true; burst(t.x, t.y, z + 1.2, ['#e5483a', '#ff9d8a', '#ffffff'], 22, 1.3, 1.2); collect(t, now); floatText('+1 life', t.x, t.y, z + 3, '#ff9d8a', true); sayLater(pick('life', t.id, 0) || 'A spare life.', 3600, 1.1); }
+    else if (t.k === 'trinket'){ t.done = true; burst(t.x, t.y, z + 1.2, [t.col || '#b48cff', '#ffffff', '#ffd23a'], 26, 1.3, 1.2); collect(t, now); floatText(t.name || 'Trinket', t.x, t.y, z + 3, t.col || '#d8c4ff', true); sayLater(pick('trinket', t.id, 0) || ('Found: ' + t.name + '.'), 3800, 1.1); }
+    else if (t.k === 'part'){ t.done = true; burst(t.x, t.y, z + 1.2, ['#cfd8e2', '#ffffff', '#ffd23a'], 22, 1.3, 1.2); collect(t, now); floatText('Putter part', t.x, t.y, z + 3, '#cfe2ff', true); sayLater(pick('part', t.id, 0) || ('A putter part: ' + t.name + '.'), 3800, 1.1); }
     else if (t.k === 'brk'){ t.done = true; var k = brkKind(t), cols = k === 'ice' ? ['#a8dcf4', '#e2f6ff'] : k === 'neoncube' ? ['#2bf0ff', '#1a1430'] : k === 'pumpkin' ? ['#e8761f', '#d0621a'] : k === 'hay' ? ['#e2bc5c', '#c8a04a'] : k === 'pot' ? ['#b8643a', '#f0e0b0'] : ['#c08a4e', '#8a5a2a'];
-      burst(t.x, t.y, z + 0.8, cols, 14); if ((found.b || []).indexOf(t.id) < 0){ (found.b = found.b || []).push(t.id); coinsGot += 1; hudCoins(); pick('brk', t.id, 1); burst(t.x, t.y, z + 1, ['#ffd23a'], 3); } else pick('brk', t.id, 0); } }
+      burst(t.x, t.y, z + 0.8, cols, 10, 2.4, 1.1); burst(t.x, t.y, z + 0.6, cols, 12); burst(t.x, t.y, z + 0.2, ['rgba(220,210,190,.7)'], 8, 1.8, 0.5); ring(t.x, t.y, '230,220,200');
+      if ((found.b || []).indexOf(t.id) < 0){ (found.b = found.b || []).push(t.id); coinsGot += 1; hudCoins(); pick('brk', t.id, 1); burst(t.x, t.y, z + 1, ['#ffd23a'], 4); collect({ x:t.x, y:t.y, k:'coin', id:t.id }, now, 'coin'); floatText('+1', t.x, t.y, z + 2); } else pick('brk', t.id, 0); } }
 
   var last = performance.now(), lastSafe = 0, nearNpc = false;
   function step(){ if (!alive) return; requestAnimationFrame(step);
@@ -1116,7 +1213,7 @@ function run(box, P, pic, api){
     for (var i = 0; i < items.length; i++){ var t = items[i]; if (t.done) continue; var d = Math.hypot(t.x - g.x, t.y - g.y);
       if (t.k === 'coin' && (!t.out || (t.fly && tsec < t.fly.t0 + t.fly.dur))) continue;
       if ((t.k === 'coin' || t.k === 'golden' || t.k === 'key' || t.k === 'life' || t.k === 'trinket' || t.k === 'part') && d < 1.3) take(t, tsec);
-      else if (t.k === 'chest' && d < 2.3 && (lockOpen || !P.fence || !t.main)) take(t, tsec);
+      else if (t.k === 'chest' && d < 2.6 && (lockOpen || !P.fence || !t.main)) take(t, tsec);
       else if (t.k === 'brk' && d < 1.5 && spd > 1.5) take(t, tsec); }
     // the local talks when he walks up
     var npc = items.filter(function(t){ return t.k === 'npc'; })[0];
@@ -1150,7 +1247,7 @@ function run(box, P, pic, api){
       else if (t.k === 'plant') drawPlant(t.q);
       else if (t.k === 'coin') drawCoin(t, tsec);
       else if (LOOT[t.k] && t.k !== 'chest') drawLoot(t, tsec);
-      else if (t.k === 'chest') drawSprite(t.done ? SPR.chest1 : SPR.chest0, t.x, t.y, pic.zAt(t.x, t.y));
+      else if (t.k === 'chest') drawChest(t, tsec);
       else if (t.k === 'brk') drawSprite(brkSprite(t), t.x, t.y, pic.zAt(t.x, t.y));
       else if (t.k === 'npc') drawFigure(npcFrame(t), t.x, t.y);
       else if (t.k === 'ship' || t.k === 'tumble' || t.k === 'ghost') drawLifeThing(t, tsec);
@@ -1164,7 +1261,8 @@ function run(box, P, pic, api){
     // bits that fly
     var s = Math.max(2, Math.round(kk * 0.8));
     parts = parts.filter(function(q){ q.t += dt; q.x += q.vx * dt; q.y += q.vy * dt; q.z += q.vz * dt; q.vz -= 18 * dt; if (q.z < pic.zAt(q.x, q.y)){ q.z = pic.zAt(q.x, q.y); q.vz *= -0.3; q.vx *= 0.6; q.vy *= 0.6; }
-      var p = scr(q.x, q.y, q.z); ctx.fillStyle = q.c; ctx.globalAlpha = Math.max(0, 1 - q.t / 1.1); ctx.fillRect(Math.round(p[0]), Math.round(p[1]), s, s); ctx.globalAlpha = 1; return q.t < 1.1; });
+      var p = scr(q.x, q.y, q.z), qs = q.sz ? Math.round(s * q.sz) : s; ctx.fillStyle = q.c; ctx.globalAlpha = Math.max(0, 1 - q.t / 1.1); ctx.fillRect(Math.round(p[0] - qs / 2), Math.round(p[1] - qs / 2), qs, qs); ctx.globalAlpha = 1; return q.t < 1.1; });
+    drawFx(tsec);
     if (flash > 0){ ctx.fillStyle = 'rgba(255,120,40,' + (flash * 0.5).toFixed(2) + ')'; ctx.fillRect(0, 0, W, H); flash = Math.max(0, flash - dt * 2); }
     waypoint();
     if (bubble){ var bp = scr(g.x, g.y, pic.zAt(g.x, g.y) + GH + 0.6); var npc = items.filter(function(t){ return t.k === 'npc'; })[0];
@@ -1215,7 +1313,7 @@ function run(box, P, pic, api){
     stop:function(){ alive = false; if (dlg && dlg.kill) dlg.kill(); window.removeEventListener('resize', onRs); box.removeEventListener('pointerdown', pdn); window.removeEventListener('pointermove', pmv); window.removeEventListener('pointerup', pup);
       window.removeEventListener('pointercancel', pup); window.removeEventListener('blur', pup); window.removeEventListener('keydown', kd, true); window.removeEventListener('keyup', ku, true); },
     // for the checks: where he is, and a way to hold the stick
-    pos:function(){ return [g.x, g.y]; }, stick:function(vx, vy){ stickV = [vx, vy]; },
+    pos:function(){ return [g.x, g.y]; }, fx:function(){ return fxs.length; }, stick:function(vx, vy){ stickV = [vx, vy]; },
     plan:function(){ return P; }, gate:function(){ return gate; }, clouds:function(){ return cloud ? (cloud.part ? 'parting' : 'on') : 'off'; }, life:function(){ return { theme:sp.theme, ships:ships.map(function(s1){ var y1 = shipY(s1); return { x:shipX(y1), y:y1 }; }), flyers:flyers.length, motes:motes.length, balloons:balloons.length, tumbles:tumbles.length, ghosts:ghosts.length, puffs:puffs.length, smoke:smokeSrc.length }; }, host:function(){ return hs ? { x:hs.x, y:hs.y, ph:hs.ph, talking:!!dlg } : null; }, items:function(){ return items; }, goTo:function(x, y){ g.x = x; g.y = y; }, plants:function(){ return plants.map(function(q){ return { x:q.x, y:q.y, k:q.t.k, b:q.b, in:q.in }; }); }, view:function(){ return { kk:kk, W:W, H:H, ox:ox, oy:oy }; }, scr:scr };
   return ctl;
 }

@@ -20145,7 +20145,15 @@ yet beaten on the main tour: a beaten hole's trail is already behind you. A gate
   - **A route is drawn again** when it leaves the land, comes within `MINSEP` of its own other leg, loops back
     past the start or the arch, runs too long (`L * 1.85`, a hairpin `L * 2.1`), or, between worlds, crosses the
     wall's line more than once or not heading north (`wallLine`). A straight walk is the last resort.
-  - **A creek crosses about a third of the trails** in a world with ground to keep off, plus the canyon (`creek` in
+  - **The chest is a real treasure chest and opening it is a sequence** (`chestFn(lid)`, `drawChest`): oak planks,
+    iron bands, gold corners and lock, a domed lid on a hinge, drawn at five lid angles. Shut, it sits in a warm pool
+    of light and glints. Walked up to, it rattles (`CH_SHAKE`), the lid swings back (`CH_LID`), light rays pour out,
+    and the coins spray out after (`CH_COINS`), under a "12 coins!" that rises off it.
+- **Nothing picked up just vanishes** (`collect`, `drawFx`): it pops up and grows, turns, then flies to where it is
+    kept on screen (a coin to the coin count, a golden ball to its counter, any other find to its own row of the
+    list) and that spot pulses (`.pp-bump`). A word rises where it was. The speech bubble waits until the find has
+    flown (`sayLater`), or it sits on top of it. check-putt asserts the flight, the pulse and the wait.
+- **A creek crosses about a third of the trails** in a world with ground to keep off, plus the canyon (`creek` in
     `plan`): water, a lava flow, a frozen creek or a bog, running the whole width of the land, and the path crosses
     it on a bridge (`BUILD.bridge`: wood, stone in the temple and the volcano). A route that doubles back crosses it
     two or three times, a bridge each time. It is part of `poolAt`, so blocking, lava, ice and slow ground need
