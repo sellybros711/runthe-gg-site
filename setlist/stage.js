@@ -22,6 +22,13 @@
  * the keys stage left, the rug, the hats and where each player stands. No likeness, and no copy of
  * anybody's artwork: the kick drum head is an abstract swirl.
  *
+ * SHOT LIKE AN HD-2D GAME. The pixels stay pixels; what is around them is a console's: a real sky over
+ * the treeline (noon blue, a dusk, a night with stars, a moon and the rig glowing up behind the trees),
+ * tilt shift depth of field so the stage is the one sharp thing, a vignette and a grade, backlights
+ * firing over the band into the crowd, smoke on the deck, dust in the beams, fireflies, confetti on a
+ * bustout and the final, spark fountains for a night that went off, and a camera that kicks on both.
+ * A device that cannot keep up drops the decoration first (`lite`), never the light or the people.
+ *
  * VENUES are a table so the next one is a row. A venue changes the room and how many people it holds.
  * It never changes a score.
  */
@@ -37,7 +44,10 @@ const ELEV = 42, D2R = Math.PI / 180;
 const SE = Math.sin(ELEV * D2R), CE = Math.cos(ELEV * D2R);
 const X0 = -48, X1 = 48;               // the world, west to east, in feet
 const WPX = Math.round((X1 - X0) / ART);
-const OY = 150, HPX = 400;             // pixel row of y=0,z=0, and the world's height in pixels
+/* The world reaches 120 rows higher than it used to, so the trees behind the stage stand whole and the
+   sky shows over them. Everything above the treeline is left empty, and the sky is drawn into it. */
+const OY = 270, HPX = 520;             // pixel row of y=0,z=0, and the world's height in pixels
+const LAWN_FAR = -40;                  // the lawn stops here, hidden behind the treeline
 const sx = x => (x - X0) / ART;
 const sy = (y, z) => (y * SE - z * CE) / ART + OY;
 const depth = (y, z) => y * CE + z * SE;
@@ -406,6 +416,7 @@ function buildBack(rand){
   // The lawn, every cell, then everything else stood on it.
   for (let j = 0; j < HPX; j++){
     const y = (j + .5 - OY) * ART / SE;
+    if (y < LAWN_FAR) continue;
     for (let i = 0; i < WPX; i++){
       const x = X0 + (i + .5) * ART;
       let col = grassAt(x, y);
@@ -431,8 +442,13 @@ function buildBack(rand){
     ell(G, x - r * .5, y + .4, h - r * .35, r * .6, r * .55, r * .55, 'x:#5aab50');
     ell(G, x + r * .55, y + .3, h - r * .3, r * .6, r * .55, r * .5, 'x:#4f9a48');
   };
-  for (const [x, y, r, h] of [[-30, -26, 6.5, 22], [-18, -30, 7, 26], [-4, -32, 6.5, 27], [10, -31, 7.5, 26],
-    [24, -28, 6.5, 23], [36, -22, 6, 20], [-40, -18, 6, 18], [-40, 4, 5.5, 14], [41, 6, 5.5, 14],
+  /* A treeline right across the back, close enough that its canopy hides where the lawn ends and low
+     enough that the sky shows over it. Uneven on purpose: a skyline of equal trees reads as a fence. */
+  for (let x = X0 - 3; x <= X1 + 3; x += 5.6 + rand() * 1.8){
+    tree(x, -27 - rand() * 6, 5 + rand() * 1.6, 6.5 + rand() * 3.5);
+  }
+  for (const [x, y, r, h] of [[-21, -34, 6, 11], [19, -35, 6.5, 12],
+    [-40, -18, 6, 14], [40, -18, 6, 13], [-40, 4, 5.5, 14], [41, 6, 5.5, 14],
     [-42, 26, 6, 15], [42, 30, 6, 15], [-38, 46, 5, 13], [40, 50, 5.5, 14]]) tree(x, y, r, h);
   // Lamp posts up the side paths.
   for (const [x, y] of LAMPS){
@@ -643,6 +659,23 @@ export function createStage(view, opts = {}){
   Object.assign(glow.style, { pointerEvents: 'none', imageRendering: 'auto', mixBlendMode: 'screen' });
   if (view.parentElement) view.parentElement.insertBefore(glow, view.nextSibling);
   const gg = glow.getContext('2d');
+  /* DEPTH OF FIELD, the tilt shift every HD-2D game is shot with: the treeline behind the stage and the
+     back of the lawn go soft, and the stage between them is pin sharp. It is the picture downsampled and
+     stretched back up by the browser, laid over the sharp one through a CSS mask, so it costs the page one
+     small drawImage a frame and the compositor the rest. */
+  const dof = document.createElement('canvas');
+  dof.setAttribute('aria-hidden', 'true');
+  let dofA = canvas(2, 2);
+  /* The grade: a vignette that pulls the eye to the stage, and a cool wash in the corners at night. A
+     div over the picture rather than pixels in it, so it is free. */
+  const vig = document.createElement('div');
+  vig.setAttribute('aria-hidden', 'true');
+  vig.style.cssText = 'position:absolute; inset:0; pointer-events:none;';
+  if (view.parentElement){
+    view.parentElement.insertBefore(dof, view.nextSibling);
+    view.parentElement.insertBefore(vig, glow.nextSibling);
+  }
+  const dc = dof.getContext('2d');
   let k = 1, visW = 4, visH = 4, camX = 0, camY = 0;
   /* Haze: soft blobs of smoke the beams are seen through, so a beam is never a flat triangle. */
   const haze = canvas(64, 64);
@@ -671,7 +704,61 @@ export function createStage(view, opts = {}){
     band: false, encore: false, bow: false,
     signsUntil: 0, flashUntil: 0, jumpUntil: 0, segueUntil: 0, strobeUntil: 0, mode: 0, rot: 0,
   };
-  let raf = 0, dead = false, last = 0, now = performance.now();
+  let raf = 0, dead = false, last = 0, now = performance.now(), pdt = 0;
+  /* A phone that cannot draw all of this at thirty frames a second drops the decoration first: the
+     dust, the fireflies and the shadows under the crowd. The light, the band and the crowd stay. */
+  let costMs = 0, lite = false;
+
+  /* The sky over the treeline: stars, a moon and the day's clouds, fixed by the seed so a replay of the
+     same night has the same sky. Rows are world rows, everything above the trees. */
+  // The horizon is the bottom of the canopy; the sky runs from the top of the shot down to it.
+  const SKY_ROWS = sy(-30, 11);
+  const stars = Array.from({ length: 150 }, () => ({ x: rand() * WPX, y: rand(),
+    b: .35 + rand() * .65, tw: rand() * 6.3, big: rand() < .08 }));
+  const clouds = Array.from({ length: 7 }, () => ({ x: rand() * WPX, y: rand(), w: 22 + rand() * 34, v: .6 + rand() * 1.2 }));
+
+  /* Particles, in feet. Confetti falls lit by whatever is lighting the room; sparks and the dust in the
+     beams glow on their own. Nothing here is spawned when motion is reduced. */
+  const confetti = [], sparks = [], motes = [];
+  for (let i = 0; i < 46; i++) motes.push({ x: -14 + rand() * 28, y: -13 + rand() * 16, z: 5 + rand() * 15,
+    ph: rand() * 6.3, s: .2 + rand() * .5 });
+  const flies = Array.from({ length: 22 }, () => ({ x: (rand() < .5 ? -1 : 1) * (22 + rand() * 22),
+    y: -14 + rand() * 60, z: 1 + rand() * 4, ph: rand() * 6.3 }));
+  let sparkUntil = 0, shakeUntil = 0, shakeAmp = 0, shook = '';
+  /* A camera that kicks on the big moments, the way a game sells a hit: a few screen pixels for a
+     quarter of a second, applied to the picture's layers together so the bloom and the blur stay on it. */
+  function shake(){
+    let tr = '0px 0px';
+    if (!reduce && now < shakeUntil){
+      const f = (shakeUntil - now) / 320, a = shakeAmp * f * f;
+      tr = `${(Math.sin(now * .09) * a).toFixed(1)}px ${(Math.cos(now * .113) * a).toFixed(1)}px`;
+    }
+    if (tr === shook) return;
+    shook = tr;
+    for (const el of [view, dof, glow]) el.style.translate = tr;
+  }
+  const FETTI = ['#ff4f7a', '#ffd23f', '#3fd0ff', '#8a5bff', '#5be08a', '#ffffff', '#ff8a3c'];
+  /* Every colour a piece can show, worked out once: its face and its back, at eight levels of the
+     room's light. A colour string built per piece per frame was the most expensive line in the frame. */
+  const FETTI_SH = FETTI.map(c => [0, .35].map(b => Array.from({ length: 8 }, (_, l) =>
+    PXHD.mix(PXHD.mix(c, '#000000', b), '#000000', 1 - (.45 + .55 * l / 7)))));
+  function burst(n){
+    if (reduce) return;
+    if (lite) n = n >> 1;
+    for (let i = 0; i < n; i++){
+      confetti.push({ x: -15 + Math.random() * 30, y: -3 + Math.random() * 6, z: TRUSS_Z - .5,
+        vx: (Math.random() - .5) * 5, vy: 2 + Math.random() * 6, vz: 3 + Math.random() * 6,
+        c: (Math.random() * FETTI.length) | 0, ph: Math.random() * 6.3, f: 3 + Math.random() * 5 });
+    }
+    if (confetti.length > 600) confetti.splice(0, confetti.length - 600);
+  }
+  // A shadow under everybody on the lawn, so a crowd stands on the grass instead of floating over it.
+  const shade = canvas(12, 5);
+  {
+    const sg = shade.getContext('2d'), gr = sg.createRadialGradient(6, 2.5, 0, 6, 2.5, 6);
+    gr.addColorStop(0, 'rgba(10,6,20,.42)'); gr.addColorStop(.7, 'rgba(10,6,20,.2)'); gr.addColorStop(1, 'rgba(10,6,20,0)');
+    sg.setTransform(1, 0, 0, .42, 0, 1.45); sg.fillStyle = gr; sg.beginPath(); sg.arc(6, 2.5, 6, 0, 7); sg.fill();
+  }
 
   function fit(){
     const dpr = window.devicePixelRatio || 1;
@@ -681,7 +768,7 @@ export function createStage(view, opts = {}){
     /* Chunky, the way the putt putt world is: about 115 pixels across a phone, so a person is twenty
        pixels tall and three or four screen pixels make one of theirs. Never so small a scale that the
        screen would see past the edge of the world. */
-    k = Math.max(1, Math.min(Math.floor(devW / 116), Math.floor(devH / 150)));
+    k = Math.max(1, Math.min(Math.floor(devW / 140), Math.floor(devH / 260)));
     k = Math.max(k, Math.ceil(devW / WPX), Math.ceil(devH / HPX));
     visW = Math.ceil(devW / k); visH = Math.ceil(devH / k);
     view.width = visW * k; view.height = visH * k;
@@ -694,16 +781,30 @@ export function createStage(view, opts = {}){
     bloomA = canvas(Math.ceil(visW / 3), Math.ceil(visH / 3));
     bloomB = canvas(Math.ceil(visW / 9), Math.ceil(visH / 9));
     glow.width = Math.ceil(visW / 2); glow.height = Math.ceil(visH / 2);
+    /* The grade is on the picture and on its soft copy, never on the bloom, which is light added
+       on top and would only be pushed into white. */
+    view.style.filter = 'saturate(1.14) contrast(1.06)';
     glow.style.cssText = view.style.cssText;
     Object.assign(glow.style, { pointerEvents: 'none', imageRendering: 'auto', mixBlendMode: 'screen',
-      width: view.style.width, height: view.style.height });
+      width: view.style.width, height: view.style.height, filter: 'none' });
     hazePat = bg.createPattern(haze, 'repeat');
     camX = Math.round(sx(0) - visW / 2);
-    // A tall screen shows the whole stage house and plenty of lawn; a wide one starts at the screen.
-    camY = Math.round(Math.min(Math.max(0, visH >= 230 ? 18 : SCR_TOP - 6), HPX - visH));
+    /* THE SHOT. The front of the deck sits a little under halfway down a phone and a little lower on
+       a wide screen, so there is always sky over the trees and lawn under the rail. */
+    const tall = visH / visW > 1.4;
+    camY = Math.round(Math.min(Math.max(0, DECK_FRONT - (tall ? .47 : .56) * visH), HPX - visH));
+    dofA = canvas(Math.max(1, Math.ceil(visW / 3)), Math.max(1, Math.ceil(visH / 3)));
+    dof.width = Math.ceil(visW / 4); dof.height = Math.ceil(visH / 4);
+    dof.style.cssText = view.style.cssText;
+    // Sharp from just above the back wall to a few rows into the crowd; soft beyond, either side.
+    const pc = r => (100 * (r - camY) / visH).toFixed(1) + '%';
+    const a0 = pc(BACK_TOP - 10), a1 = pc(BACK_TOP + 6), b0 = pc(sy(22, 0)), b1 = pc(sy(44, 0));
+    const mask = `linear-gradient(to bottom, #000 0%, #000 ${a0}, transparent ${a1}, transparent ${b0}, rgba(0,0,0,.7) ${b1}, rgba(0,0,0,.7) 100%)`;
+    Object.assign(dof.style, { pointerEvents: 'none', imageRendering: 'auto', maskImage: mask, webkitMaskImage: mask,
+      width: view.style.width, height: view.style.height });
     draw();
   }
-  const SCR_TOP = Math.round(sy(SCREEN.y, SCREEN.z1));
+  const DECK_FRONT = sy(0, DECK.z), BACK_TOP = sy(-16, 19.5);
 
   function palette(){
     const t = clamp01(st.palT);
@@ -730,9 +831,12 @@ export function createStage(view, opts = {}){
     ledG.putImageData(ledImg, 0, 0);
     c2.imageSmoothingEnabled = false;
     c2.drawImage(led, SCR.x, SCR.y, LED.w * 2, LED.h * 2);
+    /* An LED wall is a grid of dots, not stripes: every other column and row dimmed, so it reads as
+       a matrix up close and as a picture from the lawn. */
     c2.globalCompositeOperation = 'destination-out';
-    c2.fillStyle = 'rgba(0,0,0,.3)';
-    for (let x = SCR.x; x < SCR.x + LED.w * 2; x += 2) c2.fillRect(x, SCR.y, 1, LED.h * 2);
+    c2.fillStyle = 'rgba(0,0,0,.22)';
+    for (let x = SCR.x + 1; x < SCR.x + LED.w * 2; x += 2) c2.fillRect(x, SCR.y, 1, LED.h * 2);
+    for (let y = SCR.y + 1; y < SCR.y + LED.h * 2; y += 2) c2.fillRect(SCR.x, y, LED.w * 2, 1);
     c2.globalCompositeOperation = 'lighter';
   }
 
@@ -818,8 +922,69 @@ export function createStage(view, opts = {}){
       const sway = st.band && !lit && e > .35 ? Math.round(Math.sin(t * 1.5 + c.phase)) : 0;
       const wander = lit ? Math.round(Math.sin(t * .4 + c.phase) * 2) : 0;
       c.px = px + sway + wander; c.py = py - hop;
+      if (!lite) g.drawImage(shade, px + sway + wander - 6, py - 2);
       g.drawImage(spriteOf(c.v, c.pose), c.px - PAX, c.py - PAY);
     }
+  }
+
+  const tallShot = () => visH / visW > 1.4;
+
+  /* THE SKY, drawn behind the world with destination-over, so it only shows where the treeline leaves
+     the picture empty and through the haze of anything light that is already there. Noon blue, a pink
+     and orange dusk, and a deep night with the rig's glow coming up behind the trees. */
+  function drawSky(t, night, p, show, L){
+    const dusk = clamp01(1 - Math.abs(st.sky - .52) / .2);
+    const span = Math.max(8, SKY_ROWS - camY), MOON = { x: camX + Math.round(visW * .78), y: camY + 9 };
+    g.setTransform(1, 0, 0, 1, -camX, -camY);
+    g.globalCompositeOperation = 'destination-over';
+    // Stars first: destination-over puts each later layer further back.
+    if (night > .05){
+      // One colour and an alpha per star: building a colour string for each one every frame is most
+      // of what the sky would cost.
+      g.fillStyle = '#ebf0ff';
+      for (const s2 of stars){
+        if (s2.x < camX - 2 || s2.x > camX + visW + 2) continue;
+        const a = night * s2.b * (.6 + .4 * Math.sin(t * 1.7 + s2.tw));
+        const sy2 = (camY + s2.y * span) | 0;
+        g.globalAlpha = a; g.fillRect(s2.x | 0, sy2, 1, 1);
+        if (s2.big && a > .4){ g.globalAlpha = a * .4; g.fillRect((s2.x | 0) - 1, sy2, 3, 1); g.fillRect(s2.x | 0, sy2 - 1, 1, 3); }
+      }
+      g.globalAlpha = 1;
+      // The moon, with its own halo, and a couple of darker seas so it reads as the moon at this size.
+      const mA = clamp01(night * 1.3);
+      g.fillStyle = rgb([140, 150, 190], .5 * mA); g.fillRect(MOON.x + 2, MOON.y + 2, 2, 2); g.fillRect(MOON.x - 2, MOON.y - 1, 2, 1);
+      g.fillStyle = rgb([248, 244, 226], mA);
+      g.beginPath(); g.arc(MOON.x, MOON.y, 5, 0, 7); g.fill();
+      const mh = g.createRadialGradient(MOON.x, MOON.y, 3, MOON.x, MOON.y, 26);
+      mh.addColorStop(0, rgb([200, 210, 255], .35 * mA)); mh.addColorStop(1, rgb([200, 210, 255], 0));
+      g.fillStyle = mh; g.fillRect(MOON.x - 26, MOON.y - 26, 52, 52);
+    }
+    // Clouds by day, going pink at dusk.
+    if (night < .9){
+      const cc = mixc([255, 255, 255], [255, 170, 160], dusk);
+      for (const c of clouds){
+        const x = ((c.x + t * c.v) % (WPX + 80)) - 40, cy = camY + 5 + c.y * Math.max(2, span - 14);
+        g.fillStyle = rgb(cc, .85 * (1 - night));
+        g.fillRect(x | 0, cy | 0, c.w | 0, 4);
+        g.fillRect((x + c.w * .15) | 0, (cy - 3) | 0, (c.w * .45) | 0, 3);
+        g.fillRect((x + c.w * .5) | 0, (cy - 5) | 0, (c.w * .3) | 0, 5);
+        g.fillStyle = rgb(mixc(cc, [150, 160, 200], .35), .7 * (1 - night));
+        g.fillRect((x + 2) | 0, (cy + 4) | 0, (c.w - 4) | 0, 1);
+      }
+    }
+    // The rig lights the bottom of the sky over the stage once it is dark.
+    if (show && night > .1){
+      const [gx] = P2(0, -16, 0);
+      const rg = g.createRadialGradient(gx, SKY_ROWS, 4, gx, SKY_ROWS, 150);
+      rg.addColorStop(0, rgb(p[0], .4 * night * (.4 + .6 * L))); rg.addColorStop(1, rgb(p[0], 0));
+      g.fillStyle = rg; g.fillRect(gx - 150, SKY_ROWS - 150, 300, 160);
+    }
+    const top = mixc(mixc([92, 160, 232], [74, 66, 140], dusk), [6, 8, 26], night);
+    const hor = mixc(mixc([196, 228, 246], [250, 158, 112], dusk), [30, 30, 74], night);
+    const sk = g.createLinearGradient(0, camY, 0, SKY_ROWS);
+    sk.addColorStop(0, rgb(top)); sk.addColorStop(1, rgb(hor));
+    g.fillStyle = sk; g.fillRect(camX, camY, visW, Math.max(1, SKY_ROWS - camY + 40));
+    g.setTransform(1, 0, 0, 1, 0, 0);
   }
 
   function draw(){
@@ -836,6 +1001,7 @@ export function createStage(view, opts = {}){
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.globalCompositeOperation = 'source-over';
     g.imageSmoothingEnabled = false;
+    g.clearRect(0, 0, visW, visH);
     g.drawImage(back, camX, camY, visW, visH, 0, 0, visW, visH);
     g.translate(-camX, -camY);
     if (st.band){
@@ -869,11 +1035,8 @@ export function createStage(view, opts = {}){
         pool(lg, px, py - 8, 15, spot, (.45 + .35 * L) * dark, 1.2);
       }
       // Spill off the stage onto the front of the lawn.
-      const [, fy] = P2(0, 2, 0);
-      const fg = lg.createLinearGradient(0, fy - 8, 0, fy + 70);
-      fg.addColorStop(0, rgb(mixc(p[0], [255, 255, 255], .5), .32 * L * dark));
-      fg.addColorStop(1, rgb(p[0], 0));
-      lg.fillStyle = fg; lg.fillRect(camX, fy - 8, visW, 50);
+      const [fx, fy] = P2(0, 6, 0);
+      pool(lg, fx, fy, 150, mixc(p[0], [255, 255, 255], .5), .3 * L * dark, .4);
     }
     // Lamp posts and the strings over the lawn, coming on with the dusk.
     for (const [x, y] of LAMPS){
@@ -923,6 +1086,29 @@ export function createStage(view, opts = {}){
         pool(lg, b2[0], b2[1], 26, [255, 255, 255], .5 * Math.sin(f * Math.PI) * dark);
       }
     }
+    /* BACKLIGHTS on the roof of the stage house, firing over the band and out across the lawn: the
+       shot every concert film is made of. Where they land they sweep the crowd. */
+    if (show && e > .3){
+      const bk = beamA * (e - .2) * 1.6;
+      for (let i = 0; i < 6; i++){
+        const x0 = -12.5 + i * 5;
+        const a = P2(x0, -15.2, 19.8);
+        const tx = x0 * .6 + Math.sin(t * (.35 + e * .5) + i * 1.9) * (8 + e * 8);
+        const ty = 14 + Math.sin(t * (.27 + e * .3) + i * 1.1) * 10;
+        const b = P2(tx, ty, 0);
+        const col = p[(i + beatN + 1) % 2];
+        cone(bg, a, b, 9 + e * 7, col, bk);
+        pool(lg, b[0], b[1], 16 + e * 6, col, bk * 3.2, .5);
+      }
+    }
+    /* Smoke on the deck and rolling off the lip, lit in the song's colour. Laid into the beam layer, so
+       the haze below breaks it into the same drifting smoke the beams are seen through. */
+    if (show){
+      const sc = mixc(p[0], [255, 255, 255], .45), sa = .2 * dark * (.6 + .4 * L);
+      const [sx0, sy0] = P2(0, -.5, DECK.z), [, sy1] = P2(0, -7, DECK.z);
+      pool(bg, sx0, sy0, 90, sc, sa, .32);
+      pool(bg, sx0, sy1, 70, sc, sa * .6, .3);
+    }
     // The haze: the beams are only seen where there is smoke to see them in.
     if (hazePat){
       bg.globalCompositeOperation = 'destination-in';
@@ -936,6 +1122,27 @@ export function createStage(view, opts = {}){
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.globalCompositeOperation = 'multiply';
     g.drawImage(lmap, 0, 0);
+    // The light only lands on the world. Over the treeline there is nothing for it to land on.
+    g.globalCompositeOperation = 'destination-in';
+    g.drawImage(back, camX, camY, visW, visH, 0, 0, visW, visH);
+
+    // Confetti, lit by the room it falls through.
+    if (confetti.length){
+      g.globalCompositeOperation = 'source-over';
+      g.translate(-camX, -camY);
+      const lvl = Math.round(7 * clamp01((.55 + .45 * Math.max(L * (1 - H), 1 - night) - .45) / .55));
+      for (let i = confetti.length - 1; i >= 0; i--){
+        const q = confetti[i];
+        q.vz = Math.max(-4.2, q.vz - 9 * pdt);
+        q.x += (q.vx + Math.sin(t * q.f + q.ph) * 1.6) * pdt; q.y += q.vy * pdt; q.z += q.vz * pdt;
+        q.vx *= 1 - .6 * pdt; q.vy *= 1 - .4 * pdt;
+        if (q.z <= 0){ confetti.splice(i, 1); continue; }
+        const [cx, cy] = P2(q.x, q.y, q.z);
+        const flip = Math.sin(t * q.f * 1.7 + q.ph) > 0;
+        g.fillStyle = FETTI_SH[q.c][flip ? 0 : 1][lvl]; g.fillRect(cx, cy, flip ? 2 : 1, 1);
+      }
+      g.setTransform(1, 0, 0, 1, 0, 0);
+    }
 
     // 5. WHAT GLOWS: the screen, lenses, bulbs, phones, and the beams in their haze.
     eg.setTransform(1, 0, 0, 1, 0, 0);
@@ -980,10 +1187,65 @@ export function createStage(view, opts = {}){
         pool(lg, qx, qy + 6, 8, [190, 215, 255], .25 * fl);
       }
     }
+    // The backlights' lenses on the roof, pointed straight at you.
+    if (show && e > .3){
+      for (let i = 0; i < 6; i++){
+        const [px, py] = P2(-12.5 + i * 5, -15.2, 19.8);
+        const col = strobe ? [255, 255, 255] : p[(i + beatN + 1) % 2];
+        const on = (e - .2) * L * (.6 + .4 * pulse);
+        eg.fillStyle = rgb(col, Math.min(1, on * 1.3)); eg.fillRect(px - 1, py, 3, 1);
+        if (night > .3 && on > .35) glint(eg, px, py, col, on * night, 3);
+      }
+    }
+    // Dust drifting in the light over the deck.
+    if (show && L > .2 && !lite){
+      eg.fillStyle = rgb(mixc(p[0], [255, 255, 255], .6));
+      for (const m of motes){
+        const mx = m.x + Math.sin(t * m.s + m.ph) * 1.5, mz = m.z + Math.sin(t * m.s * .7 + m.ph * 2) * 1.2;
+        const [px, py] = P2(mx, m.y, mz);
+        eg.globalAlpha = .18 * L * dark * (.5 + .5 * Math.sin(t * 2 + m.ph));
+        eg.fillRect(px, py, 1, 1);
+      }
+      eg.globalAlpha = 1;
+    }
+    // Fireflies out at the edges of the lawn once it is dark.
+    if (night > .25 && !lite){
+      for (const f of flies){
+        const fx = f.x + Math.sin(t * .3 + f.ph) * 3, fy = f.y + Math.cos(t * .23 + f.ph) * 3, fz = f.z + Math.sin(t * .9 + f.ph) * .8;
+        const bl = Math.max(0, Math.sin(t * 1.3 + f.ph * 3)) ** 3;
+        if (bl < .05) continue;
+        const [px, py] = P2(fx, fy, fz);
+        eg.fillStyle = '#d2ff78'; eg.globalAlpha = bl * night * .9; eg.fillRect(px, py, 1, 1);
+      }
+      eg.globalAlpha = 1;
+    }
+    // Sparks: fountains at the lip of the deck for the last song of a night that went off.
+    if (!reduce && now < sparkUntil){
+      for (const x of [-11, -4, 4, 11]) for (let n = 0; n < 3; n++){
+        sparks.push({ x: x + (Math.random() - .5) * .4, y: .2, z: DECK.z + .4, vx: (Math.random() - .5) * 3,
+          vy: (Math.random() - .3) * 2, vz: 13 + Math.random() * 9, life: .7 + Math.random() * .6 });
+      }
+    }
+    for (let i = sparks.length - 1; i >= 0; i--){
+      const q = sparks[i];
+      q.vz -= 30 * pdt; q.x += q.vx * pdt; q.y += q.vy * pdt; q.z += q.vz * pdt; q.life -= pdt;
+      if (q.life <= 0 || q.z < 0){ sparks.splice(i, 1); continue; }
+      const [px, py] = P2(q.x, q.y, q.z);
+      eg.fillStyle = q.life > .45 ? '#fff6d8' : q.life > .2 ? '#ffc060' : '#ff8a28';
+      eg.globalAlpha = Math.min(1, q.life * 1.8);
+      eg.fillRect(px, py, 1, 1);
+    }
+    eg.globalAlpha = 1;
     eg.setTransform(1, 0, 0, 1, 0, 0);
     eg.drawImage(beams, 0, 0);
     g.globalCompositeOperation = 'lighter';
     g.drawImage(emit, 0, 0);
+    // The wall is the biggest light in the room; at full strength in the bloom it fogs the band out.
+    eg.globalCompositeOperation = 'destination-out';
+    eg.fillStyle = 'rgba(0,0,0,.55)';
+    eg.fillRect(SCR.x - camX, SCR.y - camY, LED.w * 2, LED.h * 2);
+    eg.globalCompositeOperation = 'source-over';
+    drawSky(t, night, p, show, L);
     g.globalCompositeOperation = 'source-over';
     if (now < st.flashUntil){
       g.fillStyle = rgb([255, 255, 255], .4 * (st.flashUntil - now) / 260);
@@ -995,6 +1257,15 @@ export function createStage(view, opts = {}){
     out.globalCompositeOperation = 'source-over';
     out.imageSmoothingEnabled = false;
     out.drawImage(buf, 0, 0, visW * k, visH * k);
+    // The soft copy for the depth of field: a third, then a quarter, so it is round rather than blocky.
+    const da = dofA.getContext('2d');
+    da.globalCompositeOperation = 'copy'; da.imageSmoothingEnabled = true; da.imageSmoothingQuality = 'high';
+    da.drawImage(buf, 0, 0, dofA.width, dofA.height);
+    dc.globalCompositeOperation = 'copy'; dc.imageSmoothingEnabled = true; dc.imageSmoothingQuality = 'high';
+    dc.drawImage(dofA, 0, 0, dof.width, dof.height);
+    const vc = mixc([18, 8, 34], mixc(p[0], [10, 6, 24], .75), night * (1 - H));
+    const va = (.32 + .3 * night).toFixed(2);
+    vig.style.background = `radial-gradient(ellipse 85% 75% at 50% ${tallShot() ? 38 : 42}%, transparent 52%, ${rgb(vc, va)} 100%)`;
     const ba = bloomA.getContext('2d'), bb = bloomB.getContext('2d');
     ba.globalCompositeOperation = 'copy'; ba.imageSmoothingEnabled = true;
     ba.drawImage(emit, 0, 0, bloomA.width, bloomA.height);
@@ -1009,6 +1280,7 @@ export function createStage(view, opts = {}){
     gg.globalAlpha = 1;
     out.globalAlpha = 1;
     out.globalCompositeOperation = 'source-over';
+    shake();
   }
 
   function ease(dt){
@@ -1030,7 +1302,12 @@ export function createStage(view, opts = {}){
     const dt = Math.min(.1, (ts - (last || ts)) / 1000);
     last = ts; now = ts;
     ease(dt);
+    pdt = dt;
+    const t0 = performance.now();
     draw();
+    pdt = 0;
+    costMs = costMs * .92 + (performance.now() - t0) * .08;
+    if (!lite && costMs > 24) lite = true;
   }
 
   function setPalette(name){
@@ -1058,7 +1335,7 @@ export function createStage(view, opts = {}){
       setPalette(ev.palette || ROTATION[st.rot++ % ROTATION.length]);
       st.mode++;
       if (ev.segue) st.segueUntil = ts + 1500;
-      if (ev.bustout){ st.signsUntil = ts + 3400; st.jumpUntil = ts + 2000; st.flashUntil = ts + 260; st.strobeUntil = ts + 1600; }
+      if (ev.bustout){ burst(150); shakeUntil = ts + 320; shakeAmp = 3; st.signsUntil = ts + 3400; st.jumpUntil = ts + 2000; st.flashUntil = ts + 260; st.strobeUntil = ts + 1600; }
       if (ev.grade) st.densityWant = DENSITY[ev.grade] || .8;
     } else if (ev.kind === 'time'){
       if (!ev.last){ st.band = false; st.houseWant = .85; st.lightWant = 0; st.energyWant = .15; }
@@ -1067,7 +1344,7 @@ export function createStage(view, opts = {}){
       st.houseWant = 0; st.lightWant = 1; st.energyWant = ev.grade === 'cold' ? .4 : 1;
       st.densityWant = DENSITY[ev.grade] || .8;
       st.flashUntil = ts + 260;
-      if (ev.grade !== 'cold'){ st.jumpUntil = ts + 3000; st.strobeUntil = ts + 1400; }
+      if (ev.grade !== 'cold'){ st.jumpUntil = ts + 3000; st.strobeUntil = ts + 1400; burst(240); sparkUntil = ts + 2600; shakeUntil = ts + 320; shakeAmp = 4; }
     }
     // The lawn only rethinks its poses all at once when something big happens. Reset on every song,
     // a night of one second songs had the whole crowd changing pose every second.
@@ -1082,6 +1359,8 @@ export function createStage(view, opts = {}){
   function destroy(){
     dead = true;
     if (glow.parentElement) glow.remove();
+    if (dof.parentElement) dof.remove();
+    if (vig.parentElement) vig.remove();
     cancelAnimationFrame(raf);
     window.removeEventListener('resize', fit);
   }
