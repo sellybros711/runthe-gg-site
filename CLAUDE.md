@@ -20486,27 +20486,43 @@ stays on the flat painter.
   that, plus every themed hole with no unknown material, open carpet landing on carpet in the picture, and
   the sliced render matching the one-shot render pixel for pixel.
 
-#### The console look, being tried on one hole a world
+#### The console look is on every hole and every trail
 
-Asked for by the owner: make the holes look like a console game in a browser, one hole from each world
-first. `opt.fx` on `hole3d.js` relights the finished picture and never moves a pixel, so the pixel art stays
-the pixel art:
+Asked for by the owner: make Putt Putt look like a console game in a browser. It was tried on one hole a world
+first and is now on everything themed: the tours, the Lab, the Daily and the trails. `opt.fx` on `hole3d.js`
+relights the finished picture and never moves a pixel, so the pixel art stays the pixel art.
+`window.RTT_PUTT_FX = 'off'` takes it off everywhere, to compare.
 
 - **Sun shadows.** While the scene is built, each pixel's surface height (`WZ`) and a top-down height map
-  (`HM`, a quarter foot a cell) are kept. Each pixel then marches toward a low sun in the upper left, and
-  whatever stands in the way darkens it, cool and blue in shadow and warm in the light, with a dithered edge.
+  (`HM`, a quarter foot a cell) are kept. Each pixel marches toward a low sun in the north west (the upper
+  left), and whatever stands in the way darkens it, cool in shadow and warm in the light, with a dithered edge.
+  **The sun is `(lx, ly, RISE)`, toward -x and -y.** The first rim light used the opposite sign and lit the
+  faces that point away from it; nothing threw.
 - **Only what lies on the ground takes a shadow or a dark corner** (within 0.45 ft of `gz`). The painter
   already shades the far side of a tree; shading it twice turned a wood into a black mass.
+- **A trail's shadows are lighter** (`SC`, times 0.55), because it is seen close in among trees taller than the
+  golfer, and at full strength a wood was a lake of blue. Its painted blob shade (`P.shadeAt`) drops to 0.4
+  under the look, so it is a contact shade and the sun casts the real one.
+- **The course stands on a plinth.** `CARP` is 0.95 and `RAIL` 1.55 (they were 0.35 and 0.95), so the near
+  side shows a base under the rail and the course throws a shadow onto the land. The rail is the same 0.6 over
+  the carpet, so it hides no more of the course. The base is drawn in `wallLo` only where a rail stands over the
+  land; a rail over a lower room keeps its own colour.
+- **The carpet has a nap**: broad strips that catch the light slightly differently, and a tuft here and there.
+- **A lit rim along what stands up**: a pixel one inside the outline, where the scene two pixels up or across
+  is much further away and the surface faces the sun, takes the light.
+- **Water and ice take the sky**, stronger toward the far bank, with a few glints. The glints and tufts use a
+  well mixed hash (`hq`); `P.hash3` is an XOR hash and drew them in diagonal lines.
+- **A glow at night**: lava, neon and lanterns bleed a soft halo, worked at a quarter size and blurred. Only the
+  land and the solids can glow, read before they were relit, so a carpet or a sunlit rim is never a lamp.
 - **Haze over the far land, and a grade.** The top of the picture fades toward a pale sky, or into the dark
   on a night world (`night`, off the land's own background). Colour and contrast go up a little.
-- **The stage takes the same grade** (`bg` on the render), or a bright band shows under the picture.
-- **Over the stage, in screen pixels** (`drawFxScreen` in putt.js): the low sun's warm light from the upper
-  left (none at night) and a vignette.
+- **The stage takes the same grade** (`bg`) and the picture hands back `sky` (`top`, `sky`, `bot`), so the
+  stage above the far land is a sky that meets it and the stage below fades from the near land.
+- **Over the stage, in screen pixels** (`drawFxScreen` in putt.js, `fxScreen` in trail.js): the low sun's warm
+  light from the upper left (none at night) and a vignette.
 
-It costs about as much as the render did before. `FX_PREVIEW` in putt.js names the holes it is on (the first
-of each world); `window.RTT_PUTT_FX = 'all'` puts it on every hole and `'off'` on none. The key carries it,
-so a cached render without it is never shown in its place. Going to every hole is deleting `FX_PREVIEW`'s
-check in `fxOn`.
+It costs a little over what the render did before (`check-putt` holds a Tour hole under 900ms with it). The
+render key carries it, so a cached render without it is never shown in its place.
 
 ## Run The Tour's tracer is full screen, and the course has a console pass
 

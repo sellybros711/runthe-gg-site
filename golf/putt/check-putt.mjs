@@ -849,7 +849,8 @@ if (!args.includes('--no-browser')){
           && (C.rivers || []).every(rv => (rv.pts || rv.path || []).every((q, k, A) => { if (!k) return true; const a = A[k - 1], dx = q[0] - a[0], dy = q[1] - a[1], l2 = dx * dx + dy * dy || 1, t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / l2)); return Math.hypot(x - a[0] - dx * t, y - a[1] - dy * t) > (rv.w || 1.8) / 2 + 1.6; }));   // the tower stands 7 ft tall, so it covers the carpet behind it in the picture
         let tried = 0, bad = 0; globalThis.__badAt = null;
         for (let y = C.bounds[1]; y < C.bounds[3]; y += 1.7) for (let x = C.bounds[0]; x < C.bounds[2]; x += 1.3){
-          if (C.mats.at(x, y) !== P.M.GREEN || !clear(x, y)) continue; let edge = false; for (const [dx, dy] of [[0.9, 0], [-0.9, 0], [0, 0.9], [0, -0.9]]) if (C.mats.at(x + dx, y + dy) !== P.M.GREEN) edge = true; if (edge) continue;
+          if (C.mats.at(x, y) !== P.M.GREEN || !clear(x, y)) continue; let edge = false; for (const [dx, dy] of [[0.9, 0], [-0.9, 0], [0, 0.9], [0, -0.9], [0, -1.4]]) if (C.mats.at(x + dx, y + dy) !== P.M.GREEN) edge = true; if (edge) continue;
+          // the far rail stands on the plinth, so its front face covers a little more of the strip in front of it
           // the near rail stands between the camera and the strip just behind it, and a belt is drawn as a belt
           // and a sunken room's near wall is taller by the drop, so it hides more
           const drop = Math.max(0, -R.zAt(x, y)); if (C.mats.at(x, y + 2.2) !== P.M.GREEN || C.mats.at(x, y + 2.2 + drop * 1.4) !== P.M.GREEN || (C.belts || []).some(z => x > z.x0 - 0.9 && x < z.x1 + 0.9 && y > z.y0 - 0.9 && y < z.y1 + 0.9)) continue;
@@ -864,6 +865,13 @@ if (!args.includes('--no-browser')){
       const A = a.cv.getContext('2d').getImageData(0, 0, a.cv.width, a.cv.height).data, Bv = r.cv.getContext('2d').getImageData(0, 0, r.cv.width, r.cv.height).data;
       let diff = a.cv.width === r.cv.width && a.cv.height === r.cv.height ? 0 : -1; if (!diff) for (let k = 0; k < A.length; k++) if (A[k] !== Bv[k]) diff++;
       out.sliceDiff = diff; out.slices = n;
+      // the console look (on by default) is the same picture sliced or in one go, and costs little more
+      { const fa = D3.render(P.buildFrom(P.themedCourse('haunted')[3]), { aspect:2, fx:true }), fs = D3.slices(P.buildFrom(P.themedCourse('haunted')[3]), { aspect:2, fx:true }); let fr = null; while (!(fr = fs(2))); 
+        const FA = fa.cv.getContext('2d').getImageData(0, 0, fa.cv.width, fa.cv.height).data, FB = fr.cv.getContext('2d').getImageData(0, 0, fr.cv.width, fr.cv.height).data;
+        let fd = fa.cv.width === fr.cv.width && fa.cv.height === fr.cv.height ? 0 : -1; if (!fd) for (let k = 0; k < FA.length; k++) if (FA[k] !== FB[k]) fd++;
+        out.fxDiff = fd; out.fxSky = !!(fa.sky && fa.bg); const fms = [];
+        for (let n2 = 1; n2 <= 180; n2 += 18){ const t1 = performance.now(); D3.render(P.buildFrom(P.tourDesc(n2, null, 'main')), { aspect:2, fx:true }); fms.push(performance.now() - t1); }
+        fms.sort((x, y) => x - y); out.fxMed = Math.round(fms[fms.length >> 1]); }
       out.ms.sort((x, y) => x - y); out.med = Math.round(out.ms[out.ms.length >> 1]); out.max = Math.round(out.ms[out.ms.length - 1]);
       return out; });
     claim(!!v3, 'the 3D hole module loaded');
@@ -872,6 +880,8 @@ if (!args.includes('--no-browser')){
       claim(v3.off.length === 0, 'the projection puts open carpet on carpet in every picture, so the ball rolls on what is drawn' + (v3.off.length ? ': ' + v3.off.slice(0, 4).join('; ') : ''));
       claim(v3.sliceDiff === 0 && v3.slices > 20, `rendered a little at a time (${v3.slices} steps) it is the same picture, pixel for pixel` + (v3.sliceDiff ? ': ' + v3.sliceDiff + ' differ' : ''));
       claim(v3.med < 600, `a hole renders in ${v3.med}ms at the median (${v3.max}ms the slowest), on this machine`);
+      claim(v3.fxDiff === 0 && v3.fxSky, 'the console look is the same picture sliced or in one go, and hands back its sky and stage colour' + (v3.fxDiff ? ': ' + v3.fxDiff + ' differ' : ''));
+      claim(v3.fxMed < 900, `with the console look a Tour hole renders in ${v3.fxMed}ms at the median, on this machine`);
     }
     // a hole in 3D, through the game; and a render that throws draws the hole flat rather than nothing
     await pg.evaluate(() => { if (!document.querySelector('.pt-ov')) openPutt(); window.RTT_PUTT._level(23); });

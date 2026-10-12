@@ -37,8 +37,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "42",
-      "sha": "8e055b9d47621493"
+      "v": "43",
+      "sha": "7722ff18fda2a560"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -57,8 +57,8 @@
       "sha": "8eb403844838a3f1"
     },
     "/arcade/rosters.js": {
-      "v": "6",
-      "sha": "c5bede175cc3ed91"
+      "v": "7",
+      "sha": "798fe06d0b99accb"
     },
     "/arcade/sfx.js": {
       "v": "4",
@@ -289,8 +289,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "42",
-      "sha": "8e055b9d47621493"
+      "v": "43",
+      "sha": "7722ff18fda2a560"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -543,8 +543,8 @@
       "sha": "c51a588b3f3d2559"
     },
     "/arcade/teammates.js": {
-      "v": "43",
-      "sha": "57bd649df1073a43"
+      "v": "44",
+      "sha": "da273b61f40a755b"
     },
     "/arcade/livecheck.js": {
       "v": "11",
@@ -609,8 +609,8 @@
       "sha": "d1c6424bc81b200b"
     },
     "/arcade/primary.js": {
-      "v": "42",
-      "sha": "8e055b9d47621493"
+      "v": "43",
+      "sha": "7722ff18fda2a560"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -791,8 +791,8 @@
       "sha": "d1c6424bc81b200b"
     },
     "/arcade/primary.js": {
-      "v": "42",
-      "sha": "8e055b9d47621493"
+      "v": "43",
+      "sha": "7722ff18fda2a560"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -807,8 +807,8 @@
       "sha": "15a845209f4b3402"
     },
     "/arcade/rosters.js": {
-      "v": "6",
-      "sha": "c5bede175cc3ed91"
+      "v": "7",
+      "sha": "798fe06d0b99accb"
     },
     "/arcade/teamcolors.js": {
       "v": "2",
@@ -961,8 +961,8 @@
       "sha": "42bbabae620fcfbf"
     },
     "/arcade/primary.js": {
-      "v": "42",
-      "sha": "8e055b9d47621493"
+      "v": "43",
+      "sha": "7722ff18fda2a560"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -981,8 +981,8 @@
       "sha": "8eb403844838a3f1"
     },
     "/arcade/jerseys.js": {
-      "v": "42",
-      "sha": "ca708284337b263e"
+      "v": "43",
+      "sha": "db431bdbe251f50d"
     },
     "/arcade/stats.js": {
       "v": "4",
@@ -1227,8 +1227,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "42",
-      "sha": "8e055b9d47621493"
+      "v": "43",
+      "sha": "7722ff18fda2a560"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -1393,8 +1393,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "42",
-      "sha": "8e055b9d47621493"
+      "v": "43",
+      "sha": "7722ff18fda2a560"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -1563,8 +1563,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "42",
-      "sha": "8e055b9d47621493"
+      "v": "43",
+      "sha": "7722ff18fda2a560"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -1809,8 +1809,8 @@
       "sha": "c51a588b3f3d2559"
     },
     "/arcade/teammates.js": {
-      "v": "43",
-      "sha": "57bd649df1073a43"
+      "v": "44",
+      "sha": "da273b61f40a755b"
     },
     "/arcade/livecheck.js": {
       "v": "11",
@@ -1997,8 +1997,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "42",
-      "sha": "8e055b9d47621493"
+      "v": "43",
+      "sha": "7722ff18fda2a560"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -2013,16 +2013,16 @@
       "sha": "15a845209f4b3402"
     },
     "/arcade/rosters.js": {
-      "v": "6",
-      "sha": "c5bede175cc3ed91"
+      "v": "7",
+      "sha": "798fe06d0b99accb"
     },
     "/arcade/fame.js": {
       "v": "2",
       "sha": "8eb403844838a3f1"
     },
     "/arcade/jerseys.js": {
-      "v": "42",
-      "sha": "ca708284337b263e"
+      "v": "43",
+      "sha": "db431bdbe251f50d"
     },
     "/arcade/teamcolors.js": {
       "v": "2",
@@ -2559,20 +2559,20 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "59",
-      "sha": "d32ed045daad5524"
+      "v": "60",
+      "sha": "18bb30f4c7fc5e91"
     },
     "putt/land.js": {
       "v": "6",
       "sha": "ae344c7105d10d42"
     },
     "putt/hole3d.js": {
-      "v": "10",
-      "sha": "a3584943ee99a78c"
+      "v": "11",
+      "sha": "560bde541ebfffa0"
     },
     "putt/trail.js": {
-      "v": "19",
-      "sha": "ae56df693dccd759"
+      "v": "20",
+      "sha": "3252dc36765ca29a"
     },
     "putt/mapland.js": {
       "v": "4",
