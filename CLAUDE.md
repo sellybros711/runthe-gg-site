@@ -20516,8 +20516,9 @@ Asked for by the owner: the Tour Tracer full screen on every device, and the con
 `HV_FULL`). The site header, foot and nav hide; the hole fills the screen and everything else floats on
 it as glass: a top bar (menu, the broadcast header, a Card button that opens the scorecard as a sheet),
 the chips, the shot caption and the control dock. `hvFullChrome()` builds the top bar as a pass over the
-finished screen, so quick play and every other caller keep the page layout. A quick play routine hole
-has no tracer, so it shows the scorecard page between decision holes, as it always did.
+finished screen. **`hvFullSet(mode)` is the one way a screen claims it**: it sets `HV_FULL` and puts the
+`hvfs` class the CSS keys off on the screen, so every rule reads `body.hvfull .hvfs`, never a screen's own
+class. A screen that does not call it keeps the page.
 
 - **The camera keeps the whole hole in the band between the chrome** (`hvFullFrame`). `HV_FULL_SIZE` is
   how much chrome sits above and below the hole, per layout (`phone`, `wide`, `short` for a phone held
@@ -20540,6 +20541,24 @@ water, a sun rim on the lit edge of objects, light falling off away from the pla
 end, and a grade (cool shade, neutral highlights, a touch more saturation and contrast). It never
 writes pure black, because `check-tracer3d` refuses black and transparent pixels and refuses any lift
 of a surface the ball can rest on. `window.__T3D_FX = false` turns it off to compare.
+
+### Quick play, the watch screens and the share GIF are on the same stage
+
+- **A quick play routine hole still has no tracer** (the owner's rule: routine holes only reveal a score).
+  It gets the stage anyway (`qfull` in `scrDailyRound`, class `hvq`): the hole's course fills the screen,
+  blurred and darkened so it reads as a place and not a tracer, the running score sits in a glass card, and
+  the scorecard stays docked over the controls with no Card button. The backdrop is `hvQuickBgURL`, the
+  standard-frame tile (the one the GIF uses), so it is cached by hole alone; `hvPrewarmHole` paints it during
+  the result beat. The hero centres in what the card leaves (`--hvqcard`, measured after each render).
+- **The head to head watch and the career playoff watch** call `hvFullSet` whenever there is a hole to show:
+  live, in a playoff, and for a replay. Their header is `hvBcastHd`, their buttons sit in `hvWatchDock`, and
+  an announcement, standings or result is a glass card (`hvPanel`) over the hole about to be played or the
+  last one played. If the tracer cannot be drawn they set `HV_FULL` back to null and keep the page.
+- **The share GIF and the highlight reel** draw the course at the share's own size (`hvPixelScene(...,
+  crisp, cam)`, the same 3D tile and console pass the screen shows), with course above and below the hole
+  for the glass bars to sit on (`hvShareFrame`), the screen's lens (`hvShareLens`), and the result stamped
+  over the course at the end (`hvShareStamp`). `gifBuild` writes each frame after the first as only the
+  rectangle that changed, which is what keeps a 360px GIF near 250KB.
 
 ## Run The Tour's course golfer is the profile golfer, drawn from a 3D model
 
