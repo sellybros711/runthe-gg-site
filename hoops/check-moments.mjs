@@ -514,6 +514,28 @@ async function browser() {
     await ctx.close();
   }
 
+  section('12. a tall phone spends its spare rows on floor, not on stands');
+  {
+    /* A portrait phone has far more rows than the play needs. They went to the
+       crowd above the floor line: half the screen was blurred stands over a
+       small man. The floor line moves up on a tall frame, and a short frame
+       (a landscape screen) keeps the broadcast height it always had. */
+    const fyOf = async (w, h) => {
+      const { ctx, page } = await open(w, h, true, 2);
+      const r = await page.evaluate((ME) => new Promise((done) => {
+        const host = document.getElementById('h'); host.innerHTML = '';
+        const m = window.RTF_COURT.moment(host, { kind: 'three', rating: 72, rateName: 'Shooting', room: 'nba', c1: ME.c1, c2: ME.c2, oc: '#C8102E', me: ME, bug: { home: 'MIL', away: 'CHI', clock: '0:07' }, intro: 'Go.' }, { resolve: () => ({ made: true }), done: () => {} });
+        setTimeout(() => { const s = m.stage; m.stop(); done({ fy: s.fy, ch: s.ch, play: s.playY, rim: s.rim[1] }); }, 800);
+      }), ME);
+      await ctx.close();
+      return r;
+    };
+    const tall = await fyOf(390, 844), wide = await fyOf(1280, 720);
+    ok(tall.fy / tall.ch <= 0.4, `on a 390x844 phone the stands are at most 40% of the court (${(tall.fy / tall.ch * 100).toFixed(0)}%)`);
+    ok(tall.fy < tall.rim, `and the floor line is above the rim, so the basket stands on the floor (${tall.fy} against ${tall.rim})`);
+    ok(Math.abs(wide.fy / wide.ch - 0.46) < 0.02, `a landscape screen keeps its broadcast floor line (${(wide.fy / wide.ch * 100).toFixed(0)}%)`);
+  }
+
   await b.close();
 }
 if (!QUICK) await browser();

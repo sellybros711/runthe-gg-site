@@ -312,7 +312,13 @@ function stage(host, opts){
     st.floorY = ch - 6 - Math.ceil((opts.pad || 0) / k);
     if (opts.stand) st.floorY = Math.max(66, Math.min(st.floorY, Math.round(ch * opts.stand)));
     st.playY = st.floorY;
-    st.fy = Math.round(ch * (opts.hoop ? 0.46 : 0.58));
+    /* A tall phone gives the court more rows than the play needs, and they
+       went to the crowd: half the screen was blurred stands over a small man.
+       A broadcast camera on a tall frame looks down, so the floor line moves
+       up and the spare rows are floor around the play, never more stands. */
+    var fa = opts.hoop ? 0.46 : 0.58;
+    if (opts.hoop && ch > 160 && ch > cw * 0.9) fa = Math.max(0.3, Math.min(0.46, (st.floorY - 122) / ch));
+    st.fy = Math.round(ch * fa);
     st.yaw = opts.hoop ? COURT_YAW : CAM.yaw;
     var rimX = Math.round(Math.min(cw * 0.8, cw / 2 + 74));
     st.rim = [rimX, Math.max(18, st.floorY - 86)];  /* ten feet, foreshortened by the camera looking down */
@@ -320,7 +326,7 @@ function stage(host, opts){
     /* his whole vocabulary, in the background behind anything urgent: the
        next moment of this career starts fine from its first frame */
     if (R > 1 && opts.me && opts.hoop && !st.warmed) { st.warmed = 1; Object.keys(B.SETS || {}).forEach(function(n){ for (var i = 0; i < B.SETS[n]; i++) sprite(opts.me, n + i, st.yaw, R, false); }); }
-    var art = K.room(opts.room || 'nba', cw, ch, { c1: roomC1, c2: roomC2, floorAt: opts.hoop ? 0.46 : 0.58, seed: 'court:' + (opts.room || 'nba'), spotAt: 0.5 });
+    var art = K.room(opts.room || 'nba', cw, ch, { c1: roomC1, c2: roomC2, floorAt: st.fy / ch, seed: 'court:' + (opts.room || 'nba'), spotAt: 0.5 });
     var im = new Image();
     im.onload = function(){ st.room = im; st.soft = softRoom(im, cw, ch, R, opts.hoop ? st.fy : ch); draw(); };
     im.src = art.url;

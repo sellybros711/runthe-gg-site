@@ -1876,7 +1876,8 @@ async function scenesWalk(b, serve) {
   const pic = await page.evaluate(() => !!document.querySelector('.cr-id .rtf-baller'));
   ok(pic, 'the identity card draws the player');
 
-  const seen = {}, rooms = {}, podium = [], jobs = [];
+  const seen = {}, rooms = {}, podium = [], jobs = [], looks = [], onStage = [];
+  let roomBlur = null;
   let presses = 0, choseInScene = 0, skipHeld = false, underneath = false, pressBefore = 0, movesPlayed = 0, ticks = 0, lastX = null;
   await page.evaluate(() => { window.played = 0; });
   while (presses++ < 1400) {
@@ -1888,7 +1889,18 @@ async function scenesWalk(b, serve) {
         who: open ? ov.querySelector('.sc-who b').textContent : '', role: open ? ov.querySelector('.sc-who span').textContent : '',
         commish: s.cur && window.RTF_CAREER.say ? window.RTF_CAREER.say(s.cur, '{commish}') : '', room: open && ov.querySelector('.sc-room') ? ov.querySelector('.sc-room').className : '',
         card: s.cur && s.cur.pending[0] ? s.cur.pending[0].id : null, press: s.cur && s.cur.flags.press || 0,
-        plain: !!document.querySelector('#cr-card') };
+        plain: !!document.querySelector('#cr-card'),
+        /* the look of the shot: the room is not blurred, the cast is drawn on
+           whole device pixels, and on the draft stage his feet are on it */
+        look: open ? (() => {
+          const img = ov.querySelector('.sc-pix > .sc-pset img'), set = ov.querySelector('.sc-pix > .sc-pset');
+          const cv = [...ov.querySelectorAll('.sc-cast canvas')].filter((c) => c.offsetParent && ov.querySelector('.sc-cast').style.visibility !== 'hidden');
+          const dpr = window.devicePixelRatio || 1;
+          const crisp = cv.every((c) => { const q = c.getBoundingClientRect().width * dpr / c.width; return Math.abs(q - Math.round(q)) < 0.02 && Math.round(q) >= 1; });
+          let feet = null;
+          if (set && /rm-draft/.test(ov.querySelector('.sc-room').className) && cv.length) { const sr = set.getBoundingClientRect(); feet = Math.abs(cv[0].getBoundingClientRect().bottom - (sr.top + sr.height * 0.56)); }
+          return { blur: !!(img && /blur/.test(getComputedStyle(img).filter)), cast: cv.length, crisp, feet, shot: !!ov.querySelector('.sc-shot') };
+        })() : null };
     });
     if (!st.cur && !st.open) break;
     /* A playable moment: the court is up and the meter waits for a press.
@@ -1900,6 +1912,14 @@ async function scenesWalk(b, serve) {
     if (st.open) {
       seen[st.who] = 1;
       if (st.role === 'Commissioner') podium.push(st.who === st.commish && !/^the /i.test(st.who));
+      /* The walk runs reduced, and the reduced rule drops every filter, so a
+         blur put back would pass unseen. The room is read once with motion on. */
+      if (st.look && roomBlur == null) {
+        await page.emulateMedia({ reducedMotion: 'no-preference' });
+        roomBlur = await page.evaluate(() => { const img = document.querySelector('#scov .sc-pix > .sc-pset img'); return img ? getComputedStyle(img).filter : null; });
+        await page.emulateMedia({ reducedMotion: 'reduce' });
+      }
+      if (st.look) { looks.push(st.look); if (st.role === 'Commissioner' && !st.look.shot) onStage.push(st.look.cast > 0 && st.look.feet != null && st.look.feet < 10); }
       if (/^(the commissioner|your coach)$/i.test(st.who)) jobs.push(st.who);
       (st.room.match(/rm-\w+/g) || []).forEach((r) => { rooms[r] = 1; });
       if (st.ch) {
@@ -1932,6 +1952,9 @@ async function scenesWalk(b, serve) {
   }
   if (lastX || presses >= 1400) console.log('  walk ended:', presses, JSON.stringify(lastX));
   ok(podium.length > 0 && podium.every(Boolean), `draft night is told from the podium, by the career's own commissioner (${podium.length} beats, ${Object.keys(seen).join(', ')})`);
+  ok(looks.length > 0 && looks.every((l) => !l.blur) && roomBlur != null && !/blur/.test(roomBlur), `no scene room is blurred, with motion on or off: pixel art behind the cast stays crisp (${roomBlur})`);
+  ok(looks.every((l) => l.crisp), `every figure on a scene's stage is drawn on whole device pixels (${looks.filter((l) => !l.crisp).length} soft)`);
+  ok(onStage.length > 0 && onStage.every(Boolean), `the commissioner is drawn, standing on the draft stage (${onStage.filter(Boolean).length} of ${onStage.length})`);
   ok(jobs.length === 0, `no plate names a person by job alone (${jobs.slice(0, 2).join(', ') || 'none'})`);
   ok(rooms['rm-draft'] && rooms['rm-press'] && rooms['rm-arena'], `the draft stage, the press room and the arena all appear (${Object.keys(rooms).join(', ')})`);
   ok(choseInScene >= 1, `decisions are answered inside scenes (${choseInScene})`);

@@ -12581,8 +12581,42 @@ byte what it was (check-sprite: 960 compared, 0 changed).
   never resampled. Reduced motion gets no camera move.
 - **Shadows are soft ellipses** and a moving ball leaves a short trail. The call is
   a broadcast strip in the club's colour.
-- **A scene's room is blurred the same way** (`.sc-pix > .sc-pset img`), so
-  cutscenes and moments share one lens.
+- **A scene's room is NOT blurred, and that reverses the first version.** Blurring
+  it like the court's stands looked broken in a screenshot: on the court the blur
+  sits behind a sharp floor, but in a scene the room IS the shot, and the draft stage
+  turned to mush. The room is darkened a little and vignetted, never blurred.
+  check-career 7b reads the computed filter on every beat.
+
+#### A console cutscene shows the person talking
+
+```
+node hoops/check-career.mjs      7b: nothing blurred, every figure crisp, the commissioner on the stage
+node hoops/check-moments.mjs     section 12: a tall phone spends its spare rows on floor
+```
+
+Found by looking at screenshots, after every check was green. Three faults, each
+silent:
+
+- **Most cutscene lines were said by nobody on screen.** A beat with no `pic` drew an
+  empty room, so draft night was a dark stage and a line from the commissioner. Now
+  `SPEAKER` in scenes.js stands the speaker there in the 3D pixel style: the
+  commissioner and the GMs (named off career.js's men's list, `personName`'s
+  default), the studio hosts and the play-by-play man in the studio only, a
+  teammate in the club's kit, and the coach faceless because he is real. **The rig
+  draws men**, so the reporters and the agents (whose names come from both lists)
+  are never drawn: their line is a shot of the player (`ASKS_HIM`), because he is
+  the one being asked. Family, the narrator and the timeline stay off the stage.
+- **The cast was resampled by 3.33 and went soft.** `castPlan` picks the size and the
+  trace together: every fine pixel is a whole number of device pixels, at the finest
+  trace that fills most of the room. A figure kept across beats keeps its own trace's
+  whole pixels when the room changes rather than being stretched. A room with a stage
+  (`STAND`, the draft at 0.56) puts the feet on the stage line, not in the seats.
+- **Half a tall phone was blurred crowd.** The court picks its cell off the width on a
+  portrait phone, so the spare rows went to the stands above a small man. On a tall
+  frame (`ch > cw * 0.9`) the floor line moves up to about a third, so the spare rows
+  are floor around the play. A landscape screen keeps 0.46: it has spare rows only
+  because of the meter, and the first version of this caught it too, which the
+  section 12 guard found.
 
 #### The rebuild of the court: the game is the team's, the moment is yours
 
