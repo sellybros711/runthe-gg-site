@@ -20069,7 +20069,17 @@ yet beaten on the main tour: a beaten hole's trail is already behind you. A gate
   - **A route is drawn again** when it leaves the land, comes within `MINSEP` of its own other leg, loops back
     past the start or the arch, runs too long (`L * 1.85`, a hairpin `L * 2.1`), or, between worlds, crosses the
     wall's line more than once or not heading north (`wallLine`). A straight walk is the last resort.
-  - **A phone's plan is 72 ft across** (`halfW` 36, was 28), so a sideways leg is a real change of direction.
+  - **A creek crosses about a third of the trails** in a world with ground to keep off, plus the canyon (`creek` in
+    `plan`): water, a lava flow, a frozen creek or a bog, running the whole width of the land, and the path crosses
+    it on a bridge (`BUILD.bridge`: wood, stone in the temple and the volcano). A route that doubles back crosses it
+    two or three times, a bridge each time. It is part of `poolAt`, so blocking, lava, ice and slow ground need
+    nothing new; `deckAt` takes the deck back out of it. A creek is drawn again if it runs along the path, crosses at
+    less than a fair angle, or comes near the clearing, the spur, the start, the arch, the wall or a pond.
+    check-putt asserts over all 143 main tour trails that the path is never wet and every crossing has a dry bridge,
+    then walks him across one.
+  - **A pond is spaced from the path by its LONG radius.** It used to be the short one, so a stretched pond's ragged
+    edge could reach onto the walk (a pirate trail had two wet path points). `r` on a pool is that long radius now.
+- **A phone's plan is 72 ft across** (`halfW` 36, was 28), so a sideways leg is a real change of direction.
     A route reaches at most 26 ft either side (`XR`) on any screen, so a wide desktop plan does not make a long
     walk. On a shore the route keeps to the land side so the sea and its ships stay in sight.
   - **The arrow follows the route.** `along` only searches round where he already is, because a

@@ -247,12 +247,45 @@ function plan(spec){
   if (midPt && kmid.haz && !(gy && Math.abs(midPt[1] - gy) < 14)){ var mr = Math.min(11, walkD(midPt[0], midPt[1]) - PW - 3.5);
     if (mr > 4 && !inClear(midPt[0], midPt[1], mr)) pools.push({ x:midPt[0], y:midPt[1], r:mr, rx:mr, ry:mr * 0.78, k:kmid.haz, seed:9, big:1 }); }
   for (var q = 0; q < 6; q++){ var ps = 12 + R() * (SL - 22), side = R() < 0.5 ? -1 : 1, pq = beside(ps, side, 9 + R() * 14), py = pq[1], kx = kitOf(themeAt(py));
-    if (!kx.haz) continue; var px = pq[0], pr = kx.haz === 'ice' ? 5 + R() * 4 : 3 + R() * 3.5;
-    if (walkD(px, py) < pr + 2.5 || inClear(px, py, pr + 2) || (gy && Math.abs(py - gy) < pr + 3) || pools.some(function(o){ return Math.hypot(o.x - px, o.y - py) < o.r + pr + 2; })) continue;
-    pools.push({ x:px, y:py, r:pr, rx:pr * (1 + R() * 0.5), ry:pr * (0.7 + R() * 0.3), k:kx.haz, seed:q }); }
+    if (!kx.haz) continue; var px = pq[0], pr = kx.haz === 'ice' ? 5 + R() * 4 : 3 + R() * 3.5, prx = pr * (1 + R() * 0.5), pry = pr * (0.7 + R() * 0.3), pre = Math.max(prx, pry) * 1.12;   // the ragged edge reaches about an eighth past the ellipse
+    if (walkD(px, py) < pre + 2 || inClear(px, py, pre + 1.5) || (gy && Math.abs(py - gy) < pre + 3) || pools.some(function(o){ return Math.hypot(o.x - px, o.y - py) < o.r + pre + 2; })) continue;
+    pools.push({ x:px, y:py, r:pre, rx:prx, ry:pry, k:kx.haz, seed:q }); }
   if (seaK){ P.sea = { side:seaSide }; }
   P.pools = pools;
-  function poolAt(x, y){ for (var i = 0; i < pools.length; i++){ var o = pools[i], u = (x - o.x) / o.rx, v = (y - o.y) / o.ry, w = u * u + v * v + (vn(x * 0.4, y * 0.4, o.seed) - 0.5) * 0.5; if (w < 1) return o; } return null; }
+  /* A CREEK ACROSS THE LAND, on about half the trails of a world that has ground to keep off: a stream (or a lava
+     flow, a frozen creek, a bog) running the whole width, and the path crosses it on a bridge. A route that
+     doubles back crosses it two or three times, a bridge each time. It never runs along the path, never cuts
+     through the clearing, the spur, the start, the arch or the wall, and never through a pond. */
+  var creek = null, CK = { water:1, lava:1, ice:1, slow:1 };
+  (function(){ if (R() >= 0.4) return;
+    for (var ct = 0; ct < 30 && !creek; ct++){ var y0 = L * (0.22 + R() * 0.56), ky = kitOf(themeAt(y0)), kd = ky.haz || (themeAt(y0) === 'canyon' ? 'water' : null); if (!kd || !CK[kd]) return;
+      var A1 = 1.5 + R() * 4.5, f1 = 6.283 / (30 + R() * 30), p1 = R() * 6.283, A2 = R() * 1.6, f2 = 6.283 / (11 + R() * 8), p2 = R() * 6.283, hw = kd === 'ice' ? 2.6 + R() * 0.9 : kd === 'slow' ? 2.4 + R() * 0.8 : kd === 'lava' ? 1.6 + R() * 0.6 : 1.8 + R() * 0.8;
+      var cyf = function(x){ return y0 + A1 * Math.sin(x * f1 + p1) + A2 * Math.sin(x * f2 + p2); };
+      var near = hw + PW + 1.2, ok = true, xs = [];
+      for (var x = b[0]; x <= b[2] && ok; x += 1){ var yc = cyf(x);
+        if (gy && Math.abs(yc - gy) < hw + 12) ok = false;
+        if (Math.hypot(x - clr.x, yc - clr.y) < clr.r + hw + 3) ok = false;
+        if (Math.abs(yc - start.y) < start.r + hw + 3 || yc < 16) ok = false;
+        if (pools.some(function(o){ return Math.hypot(o.x - x, o.y - yc) < Math.max(o.rx, o.ry) + hw + 2.5; })) ok = false;
+        if (spurD(x, yc) < near + 1) ok = false; }
+      if (!ok) continue;
+      // where the path crosses: each crossing has to be a fair way across, and the path is never near the water anywhere else
+      var cs = [], sOf = function(i){ return path[i][1] - cyf(path[i][0]); };
+      for (var i = 0; i < path.length - 1; i++) if (sOf(i) * sOf(i + 1) <= 0){ var u = sOf(i) / ((sOf(i) - sOf(i + 1)) || 1e-9); cs.push(cum[i] + u * (cum[i + 1] - cum[i])); }
+      if (cs.length < 1 || cs.length > 3) continue;
+      var info = cs.map(function(s){ var q = atS(s), tg = tanS(s), sl = (cyf(q[0] + 0.5) - cyf(q[0] - 0.5)), nl = Math.hypot(sl, 1), cosA = Math.abs((tg[1] - tg[0] * sl) / nl); return { s:s, x:q[0], y:q[1], t:tg, cos:cosA, half:(hw + 1.1) / Math.max(0.5, cosA) }; });
+      if (info.some(function(c){ return c.cos < 0.6; })) continue;
+      if (info.some(function(c, k){ return k && c.s - info[k - 1].s < 18; })) continue;
+      for (i = 0; i < path.length && ok; i++){ var d = Math.abs(sOf(i)); if (d < near && !info.some(function(c){ return Math.abs(cum[i] - c.s) < c.half + near; })) ok = false; }
+      if (!ok) continue;
+      creek = { y0:y0, cy:cyf, hw:hw, k:kd, xs:info, seed:41 + ct }; } })();
+  P.creek = creek;
+  function creekD(x, y){ return creek ? Math.abs(y - creek.cy(x)) - creek.hw * (1 + (vn(x * 0.35, 3, creek.seed) - 0.5) * 0.3) : 1e9; }
+  // the deck of a bridge: the walk where it is over the creek
+  function deckAt(x, y){ return !!creek && creekD(x, y) < 1.1 && pathD(x, y) < PW + 0.1; }
+  P.creekD = creekD; P.deckAt = deckAt;
+  function poolAt(x, y){ for (var i = 0; i < pools.length; i++){ var o = pools[i], u = (x - o.x) / o.rx, v = (y - o.y) / o.ry, w = u * u + v * v + (vn(x * 0.4, y * 0.4, o.seed) - 0.5) * 0.5; if (w < 1) return o; }
+    if (creek && creekD(x, y) < 0 && !deckAt(x, y)) return creek; return null; }
   /* THE SHORE FOLLOWS THE PATH. Out at the plan's edge the sea was off camera on a phone for most of a walk,
      and the ships are what Pirate Cove has to show; so the water comes in to a strip of beach beside the path
      (and round the clearing, the spur and the ends), never nearer than it was allowed before. */
@@ -293,6 +326,8 @@ function plan(spec){
   used.push({ x:archX, y:-8, r:9 });
   // the boundary wall where one world meets the next, a door on the path (its leaves are drawn by run())
   if (gy){ var gxx = cx(gy); P.gate = { x:gxx, y:gy, s:sAtY(gy) }; place('wall', 0, gy, 0.1, 7, { gx:gxx }); }
+  // a bridge wherever the walk crosses the creek, its rails along the path
+  if (creek) creek.xs.forEach(function(c){ place('bridge', c.x, c.y, 0.1, 1.4, { tx:c.t[0], ty:c.t[1], half:c.half, ck:creek.k, th:themeAt(c.y) }); used.push({ x:c.x, y:c.y, r:PW + 1 }); });
   // the clearing off the spur: a chest, and a fence round it on a locked trail
   P.chest = { x:clr.x, y:clr.y - 1.2 }; used.push({ x:clr.x, y:clr.y, r:clr.r + 1 });
   if (locked){
@@ -377,7 +412,7 @@ function plan(spec){
     if (free(nx, ny, 1) && okGround(nx, ny, 1)){ item('npc', nx, ny, { th:themeAt(ny) }); used.push({ x:nx, y:ny, r:1 }); break; } }
 
   // ---- what blocks the golfer: trunks, rocks, buildings, the fence and the wall
-  P.things.forEach(function(t){ if (t.k === 'arch' || t.k === 'fence' || t.k === 'wall') return; if (PLANT[t.k]) return; var r = BLOCKR[t.k] != null ? BLOCKR[t.k] : t.r; if (r > 0) P.cols.push({ x:t.x, y:t.y, r:r, w:t.w, d:t.d }); });
+  P.things.forEach(function(t){ if (t.k === 'arch' || t.k === 'fence' || t.k === 'wall' || t.k === 'bridge') return; if (PLANT[t.k]) return; var r = BLOCKR[t.k] != null ? BLOCKR[t.k] : t.r; if (r > 0) P.cols.push({ x:t.x, y:t.y, r:r, w:t.w, d:t.d }); });
   /* SHADOWS ON THE GROUND. The light comes from the upper left, the same as the golfer's, so everything tall
      throws a soft shadow down and to the right. It is what sets a tree on the ground rather than over it. */
   var SH = []; P.things.forEach(function(t){ var H = t.h || 1; if (H < 1.6 && !t.w) return; var rx, ry, cx2, cy2;
@@ -414,11 +449,14 @@ function land(P){
     // a hole is flat ground, its rails and blocks stand up off it, its water and cup sit down in it
     h:function(x, y){ var fc = P.footAt(x, y); if (fc) return fc.c === 10 ? 0.42 : fc.c === 11 ? 0.55 : fc.c === 12 ? -0.3 : (fc.c === 5 || fc.c === 9) ? -0.3 : 0.05;
       var wd = P.walkD(x, y), z = (fbm(x * 0.045, y * 0.045, seed) - 0.45) * 2.4 * sm(PW + 0.5, PW + 7, wd);
-      if (P.inClear(x, y)) z *= 0.3; var o = P.poolAt(x, y); if (o) z = o.k === 'lava' ? -0.45 : o.k === 'water' ? -0.55 : o.k === 'ice' ? -0.05 : -0.12;
+      if (P.inClear(x, y)) z *= 0.3; if (P.deckAt(x, y)){ var dk = P.creekD(x, y) + P.creek.hw; return 0.22 + 0.4 * Math.max(0, 1 - dk * dk / ((P.creek.hw + 1.1) * (P.creek.hw + 1.1))); }
+      if (P.creek){ var cd = P.creekD(x, y); if (cd < 1.4 && cd > 0) z = Math.min(z, -0.12 * (1.4 - cd)); } var o = P.poolAt(x, y); if (o) z = o.k === 'lava' ? -0.45 : o.k === 'water' ? -0.55 : o.k === 'ice' ? -0.05 : -0.12;
       if (P.seaAt(x, y)) z = -0.7; if (wd < PW) z -= 0.06; return z; },
     mat:function(x, y){ var fc = P.footAt(x, y);
       if (fc){ var c = fc.c, q = fc.i; return [c === 10 ? 'cr' + q : c === 11 ? 'cb' + q : c === 12 ? 'cup' : c === 4 ? 'sand' : (c === 5 || c === 9) ? 'water' : c === 6 ? 'ice' : c === 7 ? 'bog' : c === 3 ? 'g' : c === 2 ? 'cf' + q : 'cc' + q]; }
+      if (P.deckAt(x, y)) return ['deck', { pl:Math.floor((y - P.creek.cy(x)) * 2.2 + 50) }];
       var o = P.poolAt(x, y); if (o) return [o.k === 'slow' ? 'bog' : o.k]; if (P.seaAt(x, y)) return ['water'];
+      if (P.creek && P.creek.k !== 'ice' && P.creekD(x, y) < 0.7) return [P.creek.k === 'lava' ? 'scorch' : 'bank'];
       var wd = P.walkD(x, y), sh = P.shadeAt(x, y), ex = sh ? { sh:sh } : null;
       if (!P.feet.length && y < -1.5 && y > -16 && Math.abs(x - P.arch.x) < 7.5) return [Math.abs(x - P.arch.x) > 6.6 || y < -15.2 || y > -2.3 ? 'rail' : 'carpet'];
       var dc = Math.hypot(x - P.clr.x, y - P.clr.y) - P.clr.r, ds = Math.hypot(x - P.start.x, y - P.start.y) - (P.start.r - 1), dIn = Math.min(wd - PW, dc, ds);
@@ -458,7 +496,12 @@ function mats(P){
     lava:['', '', '', 0, lfn(['#ff6a1a', '#ffc23a'], 9)], ice:['', '', '', 0, lfn(['#a8dcf4', '#e2f6ff'], 23)], bog:['', '', '', 0, lfn(['#5d4634', '#7a6044'], 17)],
     sand:['#ecdba4', '#f4e4b4', '#dcc88c', 0.2],
     carpet:[T.carpet || '#2f8f4e', T.carpet2 || '#2a8246', T.carpet || '#2f8f4e', 0.16], rail:[T.wall || '#f4efe2', T.wallHi || '#ffffff', T.wall || '#f4efe2', 0.1],
-    cup:['#141414', '#202020', '#141414', 0]
+    cup:['#141414', '#202020', '#141414', 0],
+    // a bridge's deck, planks laid across the walk (stone slabs in the temple and the volcano), and the creek's banks
+    deck:['', '', '', 0, function(c, R, h3){ var st = P.creek && (P.themeAt(P.creek.y0) === 'volcano' || P.themeAt(P.creek.y0) === 'temple'), n = h3(c.ti, c.tj, 31), m = ((c.pl % 2) + 2) % 2;
+      var cols = st ? ['#8a8078', '#9a9088', '#5e564f'] : P.creek && P.themeAt(P.creek.y0) === 'neon' ? ['#2a3a90', '#3a4ab0', '#151c48'] : ['#a8865a', '#b8966a', '#6e5236'];
+      return R(n < 0.04 ? cols[2] : m ? cols[0] : cols[1]); }],
+    bank:['#8a7a62', '#9a8a70', '#6e624e', 0.3], scorch:['#2a2226', '#3a2e30', '#4a2a22', 0.25]
   };
   // each real hole in its own colours: carpet, fringe, rail and block
   P.feet.forEach(function(o, i){ var C = o.f.T; out['cc' + i] = [C.carpet, C.carpet2, C.carpet, 0.16]; out['cf' + i] = [C.carpet2, C.carpet2, C.carpet, 0.1];
@@ -565,6 +608,18 @@ BUILD.arch = function(B, t, i, P){ var x = t.x, y = t.y, zb = B.gz(x, y), T = P.
 BUILD.pin = function(B, t){ var fx = t.x, fy = t.y, fz = B.gz(fx, fy);
   B.solid(fx - 0.3, fy - 0.3, fz, fx + 2.2, fy + 0.3, fz + 5.6, function(px, py, pz){ var tt = pz - fz; if (Math.hypot(px - fx, py - fy) < 0.1 && tt < 5.5) return '#ffffff';
     if (px > fx && px < fx + 2 && tt > 4 && tt < 5.4 && Math.abs(py - fy) < 0.06) return t.col || '#e53935'; return null; }, 0.125); };
+/* a bridge over the creek: a rail either side of the deck, posts along it, in wood or in the world's stone */
+BUILD.bridge = function(B, t){ var x = t.x, y = t.y, tx = t.tx, ty = t.ty, hl = t.half, off = PW + 0.45, zt = B.gz(x, y), stone = t.th === 'volcano' || t.th === 'temple', neon = t.th === 'neon';
+  var post = stone ? '#6e665e' : neon ? '#ff2bd6' : '#6e5236', rail = stone ? '#9a9088' : neon ? '#2bf0ff' : '#a8865a', snow = t.th === 'frozen', ext = hl + 0.6;
+  var xs = [x - tx * ext, x + tx * ext, x - ty * (off + 0.4), x + ty * (off + 0.4)], ys = [y - ty * ext, y + ty * ext, y + tx * (off + 0.4), y - tx * (off + 0.4)];
+  B.solid(Math.min.apply(null, xs) - 0.5, Math.min.apply(null, ys) - 0.5, zt - 1.2, Math.max.apply(null, xs) + 0.5, Math.max.apply(null, ys) + 0.5, zt + 1.7, function(px, py, pz){
+    var dx = px - x, dy = py - y, u = dx * tx + dy * ty, v = -dx * ty + dy * tx; if (Math.abs(u) > ext || Math.abs(Math.abs(v) - off) > 0.14) return null;
+    var zd = zt - 0.4 * Math.min(1, (u * u) / (hl * hl + 0.01)), tt = pz - zd;   // the deck humps over the middle, and the rails with it
+    if (tt < -0.9 || tt > 1.45) return null;
+    var ps = Math.abs(u - Math.round(u / 1.4) * 1.4) < 0.14; if (ps && tt < 1.45) return snow && tt > 1.3 ? '#f6f9fd' : post;
+    if (Math.abs(tt - 1.25) < 0.12) return snow ? '#f6f9fd' : rail; if (Math.abs(tt - 0.65) < 0.08 && !stone) return rail;
+    if (stone && tt < 1.15 && tt > 0) return (Math.floor(u * 2) + Math.floor(tt * 3)) % 2 ? rail : post;
+    return null; }, 0.125); };
 /* the wall between two worlds, the width of the land with a doorway on the path, in the new world's stone */
 BUILD.wall = function(B, t, i, P){ var kx = kitOf(P.spec.theme), y = t.y, gx = t.gx, b = P.b, c1 = kx.wall[0], c2 = kx.wall[1];
   for (var x0 = b[0]; x0 < b[2]; x0 += 8){ var x1 = Math.min(b[2], x0 + 8); (function(x0, x1){ var zb = B.gz((x0 + x1) / 2, y);

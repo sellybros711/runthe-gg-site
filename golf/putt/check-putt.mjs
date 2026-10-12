@@ -527,6 +527,34 @@ if (!args.includes('--no-browser')){
     claim(wk.cross && wk.doorOpen && wk.passed && wk.through === 19, `with the stars, the world door on the trail opens and he walks on into World 2 (${wk.doorOpen}, ${wk.passed}, hole ${wk.through})`);
     claim(/Need \d+ more/.test(wk.shutTxt || '') && wk.held, `short of the stars, the door stays shut, says how many more, and he cannot walk past it (${wk.shutTxt})`);
     claim(wk.tap, 'tapping the golfer on the map starts the walk to the next hole');
+    /* A CREEK ACROSS THE LAND, crossed on a bridge. Over the whole main tour: the walk is never wet, nothing to
+       pick up lies in the water, every crossing has its bridge and its deck is dry, and the creeks come in the
+       worlds' own kinds. Then he really walks across one: the deck holds him and the water either side does not. */
+    const cr = await pg.evaluate(async () => { const out = { n:0, kinds:{}, wet:0, inWater:0, bridges:0, crossings:0, dryDeck:true }, sleep = ms => new Promise(r => setTimeout(r, ms)), best = {};
+      for (let n = 1; n <= 144; n++) best[n] = 3;
+      localStorage.setItem('bag_ppt_v1@walk', JSON.stringify({ v:2, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'frozen', 'sky', 'neon'], tours:{ main:{ lv:144, best, ace:{}, paid:{}, wpaid:{} } } }));
+      window.RTT_PUTT.close(); sbUser = { id:'walk' }; openPutt(); await sleep(300);
+      let firstWater = 0;
+      for (let f = 1; f < 144; f++){ const P = window.RTT_PUTT._trailPlan(f);
+        for (const p of P.path){ const o = P.poolAt(p[0], p[1]); if ((o && o.k === 'water') || P.seaAt(p[0], p[1])) out.wet++; }
+        if (!P.creek) continue; out.n++; out.kinds[P.creek.k] = 1; if (P.creek.k === 'water' && !firstWater) firstWater = f;
+        out.crossings += P.creek.xs.length; out.bridges += P.things.filter(t => t.k === 'bridge').length;
+        out.inWater += P.items.filter(t => P.poolAt(t.x, t.y)).length;
+        for (const c of P.creek.xs) if (P.poolAt(c.x, c.y) || !P.deckAt(c.x, c.y)) out.dryDeck = false; }
+      if (firstWater){ window.RTT_PUTT._walkTo(firstWater); for (let i = 0; i < 400 && !window.RTT_PUTT._trail(); i++) await sleep(50); await sleep(200);
+        const t = window.RTT_PUTT._trail(), P = t.plan(), c = P.creek.xs[0], side = (x, y) => Math.sign(y - P.creek.cy(x));
+        // back from the bridge on the path, then walk along it
+        t.goTo(c.x - c.t[0] * (c.half + 2.5), c.y - c.t[1] * (c.half + 2.5)); await sleep(150); const s0 = side(...t.pos());
+        t.stick(c.t[0], c.t[1]); await sleep(1600); t.stick(0, 0); out.over = side(...t.pos()) !== s0;
+        // and off the side of the deck: the water holds him
+        t.goTo(c.x, c.y); await sleep(150); const q0 = t.pos(), nx = -c.t[1], ny = c.t[0];
+        // pushed square off the side of the deck he never gets into the water, and gets no further than its edge
+        let dry = true, far = 0; t.stick(nx, ny); for (let k = 0; k < 12; k++){ await sleep(100); const q = t.pos(); if (P.poolAt(q[0], q[1])) dry = false; far = Math.max(far, (q[0] - q0[0]) * nx + (q[1] - q0[1]) * ny); } t.stick(0, 0);
+        out.held = dry && far < 2.8; out.hi = [dry, +far.toFixed(2), firstWater]; }
+      window.RTT_PUTT.close(); sbUser = { id:'chk' }; return out; });
+    claim(cr.n >= 25 && Object.keys(cr.kinds).length >= 3 && cr.wet === 0 && cr.inWater === 0 && cr.bridges === cr.crossings && cr.dryDeck,
+      `creeks cross ${cr.n} trails of the tour in ${Object.keys(cr.kinds).join(', ')}: the walk is never wet, nothing lies in the water, and every crossing has a dry bridge (${cr.wet} wet, ${cr.inWater} in water, ${cr.bridges}/${cr.crossings} bridged)`);
+    claim(cr.over && cr.held, `he walks across a bridge, and the water beside the deck holds him (${cr.over}, ${cr.held}, ${JSON.stringify(cr.hi)})`);
     // THE WORLD IS WHERE THE MODE OPENS. Opening the Tour drops the player's own golfer onto the trail to the
     // next hole, with Map top right, and the map's close goes back to the world. The first trail of every
     // world has its greeter, who walks up and talks the first time and waits by the path after.
