@@ -7,7 +7,7 @@
  */
 
 import {
-  SETS, ENCORE_INDEX, MAX_ROUNDS, NEUTRAL_BASE,
+  SETS, ENCORE_INDEX, MAX_ROUNDS, NEUTRAL_BASE, QUALITY_FLOOR,
   V_RECOMMENDED, V_JAMCHART, V_LEN_20MIN, V_LEN_15MIN,
   MULT_PERFECT, MULT_PARTIAL, MULT_NEUTRAL, MULT_CLASH,
   SEGUE_POINTS, SEGUE_EXACT_BONUS, SEGUE_CHAIN_BONUS, SANDWICH_BONUS,
@@ -58,7 +58,7 @@ group('the show', () => {
   eq(SETS.map(s => s.maxSongs), [8, 8, 3], 'song caps');
   eq(ENCORE_INDEX, 2, 'encore index');
   eq(MAX_ROUNDS, 19, 'hard round cap is the sum of the song caps');
-  eq(NEUTRAL_BASE, 30, 'neutral base');
+  eq(NEUTRAL_BASE, 40, 'neutral base');
   eq(fmtClock(600), '10:00', 'clock formatting');
   eq(fmtClock(75), '1:15', 'clock formatting, seconds padded');
 });
@@ -155,9 +155,17 @@ group('rarityMult tiers', () => {
 group('scorePerf', () => {
   const opener = roleAt(0, 0, 4);
   eq(scorePerf(perf({ crowd: 60, tags: 'opener' }), opener).subtotal,
-     Math.round(60 * 1 * MULT_PERFECT), 'loved song, right role');
+     Math.round((60 - QUALITY_FLOOR) * 1 * MULT_PERFECT), 'loved song, right role');
   eq(scorePerf(perf({ crowd: 60, tags: 'ballad' }), roleAt(1, 4, 5)).subtotal,
-     Math.round(60 * 1 * MULT_CLASH), 'loved song, wrong role');
+     Math.round((60 - QUALITY_FLOOR) * 1 * MULT_CLASH), 'loved song, wrong role');
+  // v6: a song pays for its time on stage, so the same take twice as long is worth twice as much.
+  close(scorePerf(perf({ crowd: 60, tags: 'opener', len: 800 }), opener).length,
+     2 * scorePerf(perf({ crowd: 60, tags: 'opener', len: 400 }), opener).length, 'double the length, double the weight');
+  eq(scorePerf(perf({ crowd: 60, tags: 'opener', len: 1200 * 0.7 }), opener).full,
+     Math.round(35 * MULT_PERFECT * 1.4), 'points are quality x version x placement x tens of minutes');
+  eq(scorePerf(perf({ crowd: QUALITY_FLOOR, len: 600 }), opener).subtotal, 0, 'a song at the floor is worth nothing');
+  eq(scorePerf(perf({ crowd: 60, tags: 'opener' }), opener).take,
+     Math.round(60 * MULT_PERFECT), 'the take, which the crowd reacts to, ignores length');
   const s = scorePerf(perf({ crowd: 50, tags: 'opener', rec: 1 }), opener);
   eq(s.role, 'Opener', 'breakdown carries the role');
   eq(s.versionReasons.length, 1, 'breakdown carries the reasons');
@@ -396,8 +404,8 @@ group('monotony: three of the same thing, unconnected', () => {
 
   // It reaches the score, and it is a multiplier on the song rather than a
   // flat deduction, so stacking three BIG jams costs more than three small.
-  const big = i => perf({ song_id: `B${i}`, tags: 'jam', len: 1200, crowd: 5 });
-  const small = i => perf({ song_id: `s${i}`, tags: 'jam', len: 300, crowd: 1 });
+  const big = i => perf({ song_id: `B${i}`, tags: 'jam', len: 1200, crowd: 45 });
+  const small = i => perf({ song_id: `s${i}`, tags: 'jam', len: 300, crowd: 35 });
   const cost = mk => {
     const r = scoreShow([[mk(0), mk(1), mk(2)], [], []], new Set());
     return r.monoLost;

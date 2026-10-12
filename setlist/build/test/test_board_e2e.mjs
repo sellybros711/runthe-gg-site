@@ -15,7 +15,7 @@
 const BASE = process.argv[2] || 'http://localhost:5556';
 const ALICE = '11111111-1111-1111-1111-111111111111';
 
-global.window = { SEGUE_BOARD_URL: BASE };
+global.window = { SEGUE_BOARD_URL: BASE, SEGUE_SCORING_SINCE: '1970-01-01T00:00:00Z' };
 /* THE TOKEN IS THE WHOLE OF AUTH HERE. The stub reads the bearer as auth.uid(),
    so swapping this is how a test signs in and out. */
 let TOKEN = null;
@@ -151,6 +151,14 @@ const p = await B.probe();
 ok('the read half answers', p.read && p.read.ok === true);
 ok('the write half is refused for the right reason', p.write && p.write.healthy === true,
   p.write && p.write.message);
+
+console.log('\nthe whole crowd');
+const sp = await B.spread('goose');
+ok('every drafted night comes back as a percentage', Array.isArray(sp) && sp.length > 0
+  && sp.every(v => Number.isFinite(v) && v >= 0 && v <= 100), sp && sp.length);
+ok('best first, so the caller has a ready ranking', sp && sp.every((v, i) => !i || sp[i - 1] >= v));
+ok('guests are in it, because it is every draft and not the named board',
+  sp && sp.length >= ((await B.total({ band: 'goose', named: true })) || 0));
 
 console.log('\nfailing soft');
 global.window.SEGUE_BOARD_URL = 'http://127.0.0.1:1';   // nothing listening

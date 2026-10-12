@@ -13,8 +13,9 @@
      24 ft tree, a 7 ft wall is a 10.5 ft wall. The golfer is drawn at the height the camera shows a
      4 ft figure, so he and the scene are one scale.
 
-   A trail runs north (up the screen) from a clearing just past the hole you left to an arch in front of
-   the hole you are walking to: TRAIL_L feet, about two screens on a phone. The camera rides behind the
+   A trail runs from a clearing just past the hole you left to an arch in front of the hole you are walking
+   to, TRAIL_L feet up the land but routed like a course (a dogleg, switchbacks, a hairpin back toward you,
+   round a lake), so it leads in every direction rather than straight up the screen. The camera rides with the
    golfer. The holes at both ends are the REAL holes: putt.js hands over each one's compiled course as a
    grid of codes (courseFoot), scaled to fit, and it is laid into the land here. The hole you just played
    sits behind the start with its cup on the path's line; the next one sits past the arch with its tee on
@@ -120,33 +121,101 @@ function kitOf(th){ return KIT[th] || KIT.clubhouse; }
 function plan(spec){
   var seed = spec.seed >>> 0, R = rng(seed), L = TRAIL_L, th = spec.theme, th0 = spec.cross ? (spec.theme0 || th) : th;
   var HW = spec.halfW || HALFW, b = [-HW, -18, HW, L + 16];
-  /* NO TWO WALKS ARE THE SAME WALK. A trail takes one of four shapes, each with its own amplitude and
-     rhythm, mirrored at random: a meander, switchbacks, one long sweep round to the other side, and a
-     twisting little lane. Where it bends is the seed's, so the shape of the walk changes every hole. */
-  var Amax = Math.max(8, HW * 0.55), style = ['meander', 'switch', 'sweep', 'twist'][(R() * 4) | 0], flip = R() < 0.5 ? -1 : 1, A1, A2, f1, f2, p1 = R() * 6.28, p2 = R() * 6.28;
-  if (style === 'switch'){ A1 = Math.min(Amax, 11 + R() * 5); f1 = 0.06 + R() * 0.02; A2 = 1 + R(); f2 = 0.16; }
-  else if (style === 'sweep'){ A1 = Amax * (0.7 + R() * 0.2); f1 = Math.PI / (L - 10); p1 = 0; A2 = 2 + R() * 2; f2 = 0.09 + R() * 0.04; }
-  else if (style === 'twist'){ A1 = 4 + R() * 2.5; f1 = 0.11 + R() * 0.04; A2 = 2.5 + R() * 1.5; f2 = 0.21 + R() * 0.05; }
-  else { A1 = Math.min(Amax, 6 + R() * 4); A2 = 2 + R() * 2.5; f1 = 0.038 + R() * 0.012; f2 = 0.1 + R() * 0.04; }
-  function cx(y){ var t = sm(-2, 22, y) * sm(L + 6, L - 18, y); return flip * t * (A1 * Math.sin(y * f1 + p1) + A2 * Math.sin(y * f2 + p2)); }
-  // the path, south (the start) to north (the arch), a point every 2 ft
-  var path = []; for (var y = L + 7; y >= -1; y -= 2) path.push([cx(y), y]);
-  if (path[path.length - 1][1] !== -1) path.push([cx(-1), -1]);
-  var cum = [0]; for (var i = 1; i < path.length; i++) cum.push(cum[i - 1] + Math.hypot(path[i][0] - path[i - 1][0], path[i][1] - path[i - 1][1]));
-  var gy = spec.cross ? Math.round(L * 0.72) : null;
+  /* NO TWO WALKS ARE THE SAME WALK, AND THEY DO NOT ALL WALK UP THE SCREEN. A trail is laid out the way a course
+     is routed: from the hole you left to the next tee by a dogleg, by switchbacks across the whole width, by a
+     hairpin that turns back toward you, round a lake, through a run of esses. ROUTES gives each its control
+     points in (across, along) terms, u from -1 to 1 over the width and v from 1 at the start to 0 at the arch,
+     mirrored at random and jittered; a centripetal spline through them is the path. A route that runs out of
+     bounds, comes back too near itself, or (on a trail between worlds) crosses the wall's line more than once is
+     drawn again, and a straight walk is the last resort. Where the walk starts and where the arch stands move
+     too, as far as the real holes at each end leave room. */
+  // how far across a route may reach: the width of a phone's plan, and on a wide screen not much more, so a walk
+  // that crosses and recrosses the land does not turn into a long one
+  var XR = Math.max(12, Math.min(26, HW - 10)), Y0 = L + 6, MINSEP = PW * 2 + 5;
+  var seaK = kitOf(th).sea, seaSide = seaK ? (R() < 0.5 ? -1 : 1) : 0;
+  function fitX(f, off){ return f ? [b[0] + 2 + off, b[2] - 2 - (f.W - 1) * 0.25 + off] : [-XR, XR]; }
+  var sRange = spec.holeFrom ? fitX(spec.holeFrom, (spec.holeFrom.cup[0] - spec.holeFrom.x0) * spec.holeFrom.k) : [-XR, XR];
+  var aRange = spec.holeTo ? fitX(spec.holeTo, (spec.holeTo.tee[0] - spec.holeTo.x0) * spec.holeTo.k) : [-XR, XR];
+  function clampR(x, r){ var lo = Math.max(-XR, r[0]), hi = Math.min(XR, r[1]); return lo > hi ? (lo + hi) / 2 : Math.max(lo, Math.min(hi, x)); }
+  // on a shore the sea keeps one side, so the route stays on the land and the water stays in sight
+  function ux(u){ return (seaK ? u * 0.62 - seaSide * 0.36 : u) * XR; }
+  var ROUTES = {
+    meander:function(s, j){ return { a:j(0.7), z:j(0.6), p:[[s * 0.32 + j(0.2), 0.78], [-s * 0.36 + j(0.2), 0.52], [s * 0.22 + j(0.2), 0.27]] }; },
+    dogleg:function(s, j){ var v = 0.56 + j(0.16); return { a:s * 0.72, z:-s * 0.45, p:[[s * 0.74, 0.86], [s * 0.72, v + 0.1], [s * 0.4, v], [-s * 0.55, v - 0.05], [-s * 0.72, v - 0.18], [-s * 0.6, 0.2]] }; },
+    switchback:function(s, j){ var z = j(0.6); return { a:s * 0.74, z:z, p:[[s * 0.5, 0.95], [-s * 0.72, 0.86 + j(0.04)], [-s * 0.84, 0.74], [-s * 0.5, 0.64], [s * 0.72, 0.58 + j(0.04)], [s * 0.84, 0.44], [s * 0.4, 0.32], [z * 0.6, 0.2]] }; },
+    hairpin:function(s, j){ return { a:s * 0.72, z:-s * 0.5, p:[[s * 0.78, 0.8], [s * 0.74, 0.56 + j(0.04)], [s * 0.42, 0.44], [s * 0.04, 0.52], [-s * 0.02, 0.7 + j(0.04)], [-s * 0.36, 0.8], [-s * 0.76, 0.7], [-s * 0.8, 0.46], [-s * 0.62, 0.22]] }; },
+    lake:function(s, j){ return { a:s * 0.3, z:s * 0.55, mid:[s * 0.25, 0.54], p:[[-s * 0.3, 0.95], [-s * 0.76, 0.84], [-s * 0.88, 0.58 + j(0.06)], [-s * 0.74, 0.32], [-s * 0.24, 0.17], [s * 0.36, 0.17]] }; },
+    esses:function(s, j){ var o = []; for (var k = 0; k < 6; k++) o.push([(k % 2 ? -1 : 1) * s * (0.42 + j(0.16)), 0.88 - k * 0.13]); return { a:j(0.3), z:j(0.4), p:o }; },
+    sweep:function(s, j){ return { a:s * 0.66, z:-s * 0.5, p:[[s * 0.82, 0.8], [s * 0.62, 0.62], [-s * 0.62, 0.44], [-s * 0.8, 0.24]] }; },
+    cape:function(s, j){ return { a:-s * 0.2, z:s * 0.6, mid:[-s * 0.3, 0.42], p:[[s * 0.5, 0.86], [s * 0.82, 0.62], [s * 0.6, 0.4 + j(0.06)], [-s * 0.1, 0.3], [-s * 0.6, 0.2], [s * 0.1, 0.1]] }; }
+  };
+  var RNAMES = ['meander', 'dogleg', 'switchback', 'hairpin', 'lake', 'esses', 'sweep', 'cape'], RWT = [1, 2, 2, 1.2, 1.6, 1.4, 1.6, 1.4];
+  function pickRoute(){ var tot = 0, i; for (i = 0; i < RWT.length; i++) tot += RWT[i]; var r = R() * tot; for (i = 0; i < RWT.length; i++){ r -= RWT[i]; if (r <= 0) return RNAMES[i]; } return RNAMES[0]; }
+  // a centripetal Catmull-Rom through the points, then laid out a point every 2 ft
+  function spline(pts){ var out = [], n = pts.length, A = 0.5;
+    function lp(a, c, t0, t1, t){ var w = (t1 - t0) || 1e-6; return [a[0] + (c[0] - a[0]) * (t - t0) / w, a[1] + (c[1] - a[1]) * (t - t0) / w]; }
+    for (var i = 0; i < n - 1; i++){ var p1 = pts[i], p2 = pts[i + 1], p0 = i ? pts[i - 1] : [2 * p1[0] - p2[0], 2 * p1[1] - p2[1]], p3 = i + 2 < n ? pts[i + 2] : [2 * p2[0] - p1[0], 2 * p2[1] - p1[1]];
+      var t0 = 0, t1 = t0 + Math.pow(Math.hypot(p1[0] - p0[0], p1[1] - p0[1]) || 1e-3, A), t2 = t1 + Math.pow(Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) || 1e-3, A), t3 = t2 + Math.pow(Math.hypot(p3[0] - p2[0], p3[1] - p2[1]) || 1e-3, A);
+      for (var k = 0; k < 24; k++){ var t = t1 + (t2 - t1) * k / 24, a1 = lp(p0, p1, t0, t1, t), a2 = lp(p1, p2, t1, t2, t), a3 = lp(p2, p3, t2, t3, t), b1 = lp(a1, a2, t0, t2, t), b2 = lp(a2, a3, t1, t3, t); out.push(lp(b1, b2, t1, t2, t)); } }
+    out.push(pts[n - 1].slice()); return out; }
+  function even(d){ var o = [d[0].slice()], acc = 0; for (var i = 1; i < d.length; i++){ var a = d[i - 1], c = d[i], l = Math.hypot(c[0] - a[0], c[1] - a[1]), u0 = 0;
+      while (acc + l * (1 - u0) >= 2){ var need = 2 - acc; u0 += need / (l || 1e-9); o.push([a[0] + (c[0] - a[0]) * u0, a[1] + (c[1] - a[1]) * u0]); acc = 0; }
+      acc += l * (1 - u0); }
+    var e = d[d.length - 1]; if (Math.hypot(e[0] - o[o.length - 1][0], e[1] - o[o.length - 1][1]) > 0.4) o.push(e.slice()); return o; }
+  function cumOf(p){ var c = [0]; for (var i = 1; i < p.length; i++) c.push(c[i - 1] + Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1])); return c; }
+  // the one line where two worlds meet, crossed exactly once and heading north, so the wall has one door
+  function wallLine(p){ var cands = []; for (var y = Math.round(L * 0.6); y <= Math.round(L * 0.86); y++) cands.push(y); cands.sort(function(a, c){ return Math.abs(a - L * 0.72) - Math.abs(c - L * 0.72); });
+    for (var q = 0; q < cands.length; q++){ var yy = cands[q] + 0.5, hit = -1, n = 0;
+      for (var i = 0; i < p.length - 1; i++) if ((p[i][1] - yy) * (p[i + 1][1] - yy) <= 0){ n++; hit = i; }
+      if (n !== 1) continue; var ok = true; for (var k = Math.max(0, hit - 3); k < Math.min(p.length - 1, hit + 4); k++){ var dx = p[k + 1][0] - p[k][0], dy = p[k + 1][1] - p[k][1]; if (dy > -0.8 * Math.hypot(dx, dy)) ok = false; }
+      if (ok && Math.abs(p[hit][0]) < XR + 2) return yy; }
+    return null; }
+  function sane(p, c, gyy, nm){ var n = p.length, SLn = c[n - 1], st = p[0], ar = p[n - 1];
+    if (SLn > L * (nm === 'hairpin' ? 2.1 : 1.85)) return false;   // a hairpin is the one route allowed to be long: it walks you back
+    for (var i = 0; i < n; i++){ var q = p[i]; if (q[0] < b[0] + 7 || q[0] > b[2] - 7 || q[1] > L + 7.5) return false;
+      if (c[i] < SLn - 10 && q[1] < 6) return false;
+      if (c[i] > 16 && Math.hypot(q[0] - st[0], q[1] - L - 6) < 12) return false;
+      if (c[i] < SLn - 16 && Math.hypot(q[0] - ar[0], q[1] - 3) < 10) return false;
+      for (var j = i + 1; j < n; j++) if (c[j] - c[i] > 26 && Math.hypot(p[j][0] - q[0], p[j][1] - q[1]) < MINSEP) return false; }
+    return !spec.cross || gyy != null; }
+  var path = null, cum = null, gy = null, style = 'straight', route = null;
+  for (var att = 0; att < 28 && !path; att++){
+    var nm = att < 24 ? pickRoute() : 'meander', flip = R() < 0.5 ? -1 : 1, jit = function(a){ return (R() - 0.5) * a; }, rt = ROUTES[nm](flip, jit);
+    var sx = clampR(ux(rt.a), sRange), ax = clampR(ux(rt.z), aRange), ctrl = [[sx, L + 7]];
+    // every bend wanders a little of its own, so two doglegs are two different doglegs, not one drawn twice
+    var stretch = 0.9 + R() * 0.2; rt.p.forEach(function(q){ ctrl.push([ux(Math.max(-0.95, Math.min(0.95, q[0] * stretch + jit(0.18)))), Math.max(0.1, Math.min(0.97, q[1] + jit(0.06))) * Y0]); });
+    ctrl.push([ax, 7], [ax, -1]);
+    var pp = even(spline(ctrl)), cc = cumOf(pp), gg = spec.cross ? wallLine(pp) : null;
+    if (sane(pp, cc, gg, nm)){ path = pp; cum = cc; gy = gg; style = nm; route = rt; } }
+  if (!path){ var sx2 = clampR(0, sRange), ax2 = clampR(0, aRange); path = even(spline([[sx2, L + 7], [(sx2 + ax2) / 2, Y0 / 2], [ax2, 7], [ax2, -1]])); cum = cumOf(path); gy = spec.cross ? (wallLine(path) || Math.round(L * 0.72) + 0.5) : null; }
+  var SL = cum[cum.length - 1], archX = path[path.length - 1][0];
+  // a point along the walk, the way it is heading there, and a point off to one side (side 1 is the right hand, walking)
+  function atS(s){ s = Math.max(0, Math.min(SL, s)); for (var i = 0; i < path.length - 1; i++) if (cum[i + 1] >= s){ var u = (s - cum[i]) / ((cum[i + 1] - cum[i]) || 1); return [path[i][0] + (path[i + 1][0] - path[i][0]) * u, path[i][1] + (path[i + 1][1] - path[i][1]) * u]; } return path[path.length - 1].slice(); }
+  function tanS(s){ var a = atS(s - 1.5), c = atS(s + 1.5), dx = c[0] - a[0], dy = c[1] - a[1], l = Math.hypot(dx, dy) || 1; return [dx / l, dy / l]; }
+  function beside(s, side, off){ var p = atS(s), t = tanS(s); return [p[0] - t[1] * side * off, p[1] + t[0] * side * off]; }
+  function sAtY(y){ for (var i = 0; i < path.length - 1; i++) if ((path[i][1] - y) * (path[i + 1][1] - y) <= 0){ var u = (y - path[i][1]) / ((path[i + 1][1] - path[i][1]) || 1e-9); return cum[i] + u * (cum[i + 1] - cum[i]); } return SL; }
+  // the path's x where it last crosses a line across the land: for the arch end and the checks
+  function cx(y){ if (y <= 0) return archX; for (var i = path.length - 2; i >= 0; i--) if ((path[i][1] - y) * (path[i + 1][1] - y) <= 0){ var u = (y - path[i][1]) / ((path[i + 1][1] - path[i][1]) || 1e-9); return path[i][0] + (path[i + 1][0] - path[i][0]) * u; } return path[0][0]; }
+  function pathD(x, y){ var m = 1e9; for (var i = 0; i < path.length - 1; i++){ var a = path[i], c = path[i + 1]; if (Math.abs(a[1] - y) > 6 && Math.abs(c[1] - y) > 6) continue; m = Math.min(m, segD(x, y, a[0], a[1], c[0], c[1])); } return m; }
   function themeAt(y){ return spec.cross && y > gy ? th0 : th; }
-  // the spur and its clearing, to one side
-  var ys = Math.round(L * (0.3 + R() * 0.4)); if (spec.cross && Math.abs(ys - gy) < 18) ys = gy - 26;
-  var sx0 = cx(ys), sg = Math.abs(sx0 + 1) > 3 ? (sx0 > 0 ? -1 : 1) : (R() < 0.5 ? -1 : 1);   // toward the side with the room
-  var crr = 4.5 + R() * 2, cdist = Math.min(13 + R() * 9, HW - sg * sx0 - crr - 3);
-  var clr = { x:sx0 + sg * Math.max(9, cdist), y:ys - 3 - R() * 6, r:crr }, spur = [];
+  var start = { x:path[0][0], y:L + 6, r:7 };
+  // the spur and its clearing, off to a side with room: never over another leg of the walk, never across the wall
+  var clr = null, spur = [], ys, sx0, sg, sS;
+  for (var ct = 0; ct < 120 && !clr; ct++){ var s1 = SL * (0.22 + R() * 0.56), sd = R() < 0.5 ? -1 : 1, crr = 4.5 + R() * 2, cp = beside(s1, sd, 10 + R() * 12), o = atS(s1);
+    if (cp[0] < b[0] + crr + 4 || cp[0] > b[2] - crr - 4 || cp[1] < 12 || cp[1] > L - 6) continue;
+    if (pathD(cp[0], cp[1]) < crr + 5 || Math.hypot(cp[0] - start.x, cp[1] - start.y) < crr + start.r + 4) continue;
+    if (gy && (Math.abs(cp[1] - gy) < crr + 6 || Math.abs(o[1] - gy) < 12 || (cp[1] - gy) * (o[1] - gy) < 0)) continue;
+    var crosses = false; for (var kt = 0.4; kt <= 1; kt += 0.1) if (pathD(o[0] + (cp[0] - o[0]) * kt, o[1] + (cp[1] - o[1]) * kt) < PW + 1.4) crosses = true;
+    if (crosses) continue;
+    clr = { x:cp[0], y:cp[1], r:crr }; sS = s1; sx0 = o[0]; ys = o[1]; sg = sd; }
+  if (!clr){ sS = SL * 0.5; var o2 = atS(sS); sx0 = o2[0]; ys = o2[1]; sg = sx0 > 0 ? -1 : 1; clr = { x:sx0 + sg * 11, y:ys - 2, r:4.5 }; }
   // half the clearings have a little path out to them; the rest are hidden in the trees and found by wandering
   var spurOn = R() < 0.55;
-  if (spurOn) for (var k = 0; k <= 10; k++){ var t = k / 10; spur.push([sx0 + (clr.x - sx0) * t + Math.sin(t * Math.PI) * 2 * sg, ys + (clr.y - ys) * t - Math.sin(t * Math.PI) * 2.5]); }
+  if (spurOn){ var sdx = clr.x - sx0, sdy = clr.y - ys, sl = Math.hypot(sdx, sdy) || 1, bow = (R() < 0.5 ? -1 : 1) * 2.2;
+    for (var k = 0; k <= 10; k++){ var t = k / 10, bw = Math.sin(t * Math.PI) * bow; spur.push([sx0 + sdx * t - sdy / sl * bw, ys + sdy * t + sdx / sl * bw]); } }
   // what the clearing holds: a chest most often, else a pile of things to smash
   var clrKind = R() < 0.7 ? 'chest' : 'pile';
   var locked = !spec.cross && clrKind === 'chest' && R() < 0.4;
-  var start = { x:cx(L + 6), y:L + 6, r:7 };
   /* THE REAL HOLES AT EACH END (spec.holeTo, spec.holeFrom, rastered by putt.js). The hole you are walking to
      lies beyond the arch with its tee at the path; the hole you just left lies behind the start with its cup
      nearest you. Each is a grid of codes at a quarter of a trail foot, placed by its south west corner. */
@@ -157,24 +226,31 @@ function plan(spec){
   function footAt(x, y){ for (var i = 0; i < feet.length; i++){ var o = feet[i], f = o.f, ii = Math.round((x - o.X0) / 0.25), jj = Math.round((y - o.Y0) / 0.25);
       if (ii >= 0 && jj >= 0 && ii < f.W && jj < f.H){ var c = f.codes[jj * f.W + ii]; if (c) return { c:c, i:i }; } } return null; }
   function inFoot(x, y, pad){ for (var i = 0; i < feet.length; i++){ var o = feet[i]; if (x > o.X0 - pad && x < o.X0 + o.w + pad && y > o.Y0 - pad && y < o.Y0 + o.h + pad) return true; } return false; }
-  function pathD(x, y){ var m = 1e9; for (var i = 0; i < path.length - 1; i++){ var a = path[i], c = path[i + 1]; if (Math.abs(a[1] - y) > 6 && Math.abs(c[1] - y) > 6) continue; m = Math.min(m, segD(x, y, a[0], a[1], c[0], c[1])); } return m; }
   function spurD(x, y){ var m = 1e9; if (spur.length < 2) return m; for (var i = 0; i < spur.length - 1; i++) m = Math.min(m, segD(x, y, spur[i][0], spur[i][1], spur[i + 1][0], spur[i + 1][1])); return m; }
   // a field of how far each point is from the path, the spur and the clearings, read back smoothly
   var DS = 1, DX = Math.ceil((b[2] - b[0]) / DS) + 1, DY = Math.ceil((b[3] - b[1]) / DS) + 1, DD = new Float32Array(DX * DY);
   for (var j = 0; j < DY; j++) for (var i2 = 0; i2 < DX; i2++){ var x = b[0] + i2 * DS, yy = b[1] + j * DS; DD[j * DX + i2] = Math.min(pathD(x, yy), spurD(x, yy) + 0.4); }
   function walkD(x, y){ var fx = (x - b[0]) / DS, fy = (y - b[1]) / DS; if (fx < 0 || fy < 0 || fx >= DX - 1 || fy >= DY - 1) return 99;
     var i = fx | 0, j = fy | 0, u = fx - i, v = fy - j, q = j * DX + i; return (DD[q] * (1 - u) + DD[q + 1] * u) * (1 - v) + (DD[q + DX] * (1 - u) + DD[q + DX + 1] * u) * v; }
-  function inClear(x, y, pad){ pad = pad || 0; if (inFoot(x, y, pad + 1.5)) return true; return Math.hypot(x - clr.x, y - clr.y) < clr.r + pad || Math.hypot(x - start.x, y - start.y) < start.r + pad || (y < 3 + pad && y > -16 && Math.abs(x) < 9 + pad); }
+  function inClear(x, y, pad){ pad = pad || 0; if (inFoot(x, y, pad + 1.5)) return true; return Math.hypot(x - clr.x, y - clr.y) < clr.r + pad || Math.hypot(x - start.x, y - start.y) < start.r + pad || (y < 3 + pad && y > -16 && Math.abs(x - archX) < 9 + pad); }
 
-  var P = { spec:spec, seed:seed, L:L, b:b, path:path, cum:cum, cx:cx, gy:gy, themeAt:themeAt, clr:clr, spur:spur, locked:locked, style:style, clrKind:clrKind, start:start, walkD:walkD, inClear:inClear, feet:feet, footAt:footAt,
+  var P = { spec:spec, seed:seed, L:L, b:b, path:path, cum:cum, cx:cx, gy:gy, SL:SL, atS:atS, tanS:tanS, beside:beside, arch:{ x:archX, y:0 }, route:route, themeAt:themeAt, clr:clr, spur:spur, locked:locked, style:style, clrKind:clrKind, start:start, walkD:walkD, inClear:inClear, feet:feet, footAt:footAt,
     things:[], cols:[], items:[], hazards:[] };
+  P.near = function(x, y){ var best = 1e9, out = path[0]; for (var i = 0; i < path.length; i++){ var d = Math.hypot(path[i][0] - x, path[i][1] - y); if (d < best){ best = d; out = path[i]; } } return out; };
 
   // ---- the world's ground to keep off: ponds, lava pools, ice sheets, bogs. Never on the path or a clearing.
-  var pools = []; for (var q = 0; q < 6; q++){ var py = 12 + R() * (L - 20), side = R() < 0.5 ? -1 : 1, kx = kitOf(themeAt(py));
-    if (!kx.haz) continue; var px = cx(py) + side * (9 + R() * 14), pr = kx.haz === 'ice' ? 5 + R() * 4 : 3 + R() * 3.5;
-    if (walkD(px, py) < pr + 2.5 || inClear(px, py, pr + 2) || (gy && Math.abs(py - gy) < pr + 3)) continue;
+  var pools = [];
+  /* A ROUTE THAT GOES ROUND SOMETHING HAS SOMETHING IN THE MIDDLE. The lake and the cape bend the walk round a
+     point (route.mid); in a world with ground to keep off, that is a big pond or a lava lake or an ice sheet, the
+     water hole of the walk. In a world without, a landmark takes it (below). */
+  var midPt = route && route.mid ? [ux(route.mid[0]), route.mid[1] * Y0] : null, kmid = midPt && kitOf(themeAt(midPt[1]));
+  if (midPt && kmid.haz && !(gy && Math.abs(midPt[1] - gy) < 14)){ var mr = Math.min(11, walkD(midPt[0], midPt[1]) - PW - 3.5);
+    if (mr > 4 && !inClear(midPt[0], midPt[1], mr)) pools.push({ x:midPt[0], y:midPt[1], r:mr, rx:mr, ry:mr * 0.78, k:kmid.haz, seed:9, big:1 }); }
+  for (var q = 0; q < 6; q++){ var ps = 12 + R() * (SL - 22), side = R() < 0.5 ? -1 : 1, pq = beside(ps, side, 9 + R() * 14), py = pq[1], kx = kitOf(themeAt(py));
+    if (!kx.haz) continue; var px = pq[0], pr = kx.haz === 'ice' ? 5 + R() * 4 : 3 + R() * 3.5;
+    if (walkD(px, py) < pr + 2.5 || inClear(px, py, pr + 2) || (gy && Math.abs(py - gy) < pr + 3) || pools.some(function(o){ return Math.hypot(o.x - px, o.y - py) < o.r + pr + 2; })) continue;
     pools.push({ x:px, y:py, r:pr, rx:pr * (1 + R() * 0.5), ry:pr * (0.7 + R() * 0.3), k:kx.haz, seed:q }); }
-  if (kitOf(th).sea){ P.sea = { side:R() < 0.5 ? -1 : 1 }; }
+  if (seaK){ P.sea = { side:seaSide }; }
   P.pools = pools;
   function poolAt(x, y){ for (var i = 0; i < pools.length; i++){ var o = pools[i], u = (x - o.x) / o.rx, v = (y - o.y) / o.ry, w = u * u + v * v + (vn(x * 0.4, y * 0.4, o.seed) - 0.5) * 0.5; if (w < 1) return o; } return null; }
   /* THE SHORE FOLLOWS THE PATH. Out at the plan's edge the sea was off camera on a phone for most of a walk,
@@ -183,13 +259,13 @@ function plan(spec){
   var SEA = null, SEA_Y0 = b[1];
   if (P.sea){ var sd = P.sea.side, HWs = spec.halfW || HALFW; SEA = new Float32Array(Math.ceil(b[3] - b[1]) + 2);
     for (var sj = 0; sj < SEA.length; sj++){ var sy = b[1] + sj, near = 8;
-      for (var yy2 = sy - 12; yy2 <= sy + 12; yy2 += 1.5) near = Math.max(near, sd * cx(yy2) + PW + 3.5);
+      for (var pi = 0; pi < path.length; pi++) if (Math.abs(path[pi][1] - sy) < 12) near = Math.max(near, sd * path[pi][0] + PW + 3.5);
       if (Math.abs(sy - clr.y) < clr.r + 8) near = Math.max(near, sd * clr.x + clr.r + 5);
       spur.forEach(function(q){ if (Math.abs(sy - q[1]) < 8) near = Math.max(near, sd * q[0] + 6); });
       if (Math.abs(sy - start.y) < start.r + 6) near = Math.max(near, sd * start.x + start.r + 4);
-      if (sy < 4 && sy > -18) near = Math.max(near, 14);
-      if (gy && Math.abs(sy - gy) < 6) near = Math.max(near, PW + 10);
-      SEA[sj] = Math.min(HWs - 8 + vn(sy * 0.08, 3, seed) * 4, near + vn(sy * 0.15, 9, seed) * 1.5); } }
+      if (sy < 4 && sy > -18) near = Math.max(near, sd * archX + 14);
+      if (gy && Math.abs(sy - gy) < 6) near = Math.max(near, sd * cx(gy) + PW + 10);
+      SEA[sj] = Math.max(near, Math.min(HWs - 8 + vn(sy * 0.08, 3, seed) * 4, near + vn(sy * 0.15, 9, seed) * 1.5)); } }
   function seaEdge(y){ if (!SEA) return 1e9; var f = Math.max(0, Math.min(SEA.length - 1.001, y - SEA_Y0)), i = f | 0, u = f - i; return SEA[i] * (1 - u) + SEA[i + 1] * u; }
   function seaAt(x, y){ if (!P.sea) return false; return P.sea.side * x > seaEdge(y || 0); }
   P.seaEdge = seaEdge;
@@ -211,12 +287,12 @@ function plan(spec){
   P.place = place;
 
   // the end: an arch over the path at y = 0, and the hole's carpet beyond it
-  place('arch', cx(0), 0, 0.1, 9);
+  place('arch', archX, 0, 0.1, 9);
   // the flag still in the cup of the hole you just left, behind you
   if (spec.holeFrom && feet.length){ var fo = feet[feet.length - 1]; place('pin', fo.cup[0], fo.cup[1], 0.1, 6, { col:fo.f.T.flag }); }
-  used.push({ x:cx(0), y:-8, r:9 });
+  used.push({ x:archX, y:-8, r:9 });
   // the boundary wall where one world meets the next, a door on the path (its leaves are drawn by run())
-  if (gy){ P.gate = { x:cx(gy), y:gy }; place('wall', 0, gy, 0.1, 7, { gx:cx(gy) }); }
+  if (gy){ var gxx = cx(gy); P.gate = { x:gxx, y:gy, s:sAtY(gy) }; place('wall', 0, gy, 0.1, 7, { gx:gxx }); }
   // the clearing off the spur: a chest, and a fence round it on a locked trail
   P.chest = { x:clr.x, y:clr.y - 1.2 }; used.push({ x:clr.x, y:clr.y, r:clr.r + 1 });
   if (locked){
@@ -228,7 +304,7 @@ function plan(spec){
   // landmarks: one or two of the world's, beside the path in open ground
   var lms = kitOf(th).lm, nlm = 2 + (R() < 0.4 ? 1 : 0);
   for (var li = 0; li < nlm; li++){ var kind = lms[(seed + li) % lms.length];
-    for (var tries = 0; tries < 40; tries++){ var ly = 18 + R() * (L - 30), sideL = R() < 0.5 ? -1 : 1, lx = cx(ly) + sideL * (8 + R() * 16), sz = LMSIZE[kind] || [5, 5, 8];
+    for (var tries = 0; tries < 40; tries++){ var lq = (li === 0 && midPt && !kmid.haz && tries < 6) ? [midPt[0] + (R() - 0.5) * 4, midPt[1] + (R() - 0.5) * 4] : beside(18 + R() * (SL - 30), R() < 0.5 ? -1 : 1, 8 + R() * 16), ly = lq[1], lx = lq[0], sz = LMSIZE[kind] || [5, 5, 8];
       var rr = Math.max(sz[0], sz[1]) / 2 + 0.5; if (walkD(lx, ly) < rr + 2 || inClear(lx, ly, rr + 2) || !okGround(lx, ly, rr) || !free(lx, ly, rr + 1) || (gy && Math.abs(ly - gy) < rr + 3)) continue;
       if (screensPath(lx, ly, rr, sz[2])) continue;
       place(kind, lx, ly, rr, sz[2], { w:sz[0], d:sz[1], th:themeAt(ly) }); break; } }
@@ -243,14 +319,14 @@ function plan(spec){
       if (okGround(jx, jy, lr) && free(jx, jy, lr + 0.3) && !screensPath(jx, jy, lr, lh)) place(lk, jx, jy, lr, lh); }
   }
   // lamps along the path in the worlds that have them
-  if (kitOf(th).lm.indexOf('lamps') >= 0 || th === 'neon') for (var ly2 = 14; ly2 < L - 6; ly2 += 22){ var sd2 = (ly2 / 22 | 0) % 2 ? 1 : -1, lx2 = cx(ly2) + sd2 * (PW + 1.3);
+  if (kitOf(th).lm.indexOf('lamps') >= 0 || th === 'neon') for (var ls2 = 14; ls2 < SL - 6; ls2 += 22){ var sd2 = (ls2 / 22 | 0) % 2 ? 1 : -1, lq2 = beside(ls2, sd2, PW + 1.3), lx2 = lq2[0], ly2 = lq2[1];
     if (free(lx2, ly2, 0.4) && okGround(lx2, ly2, 0.4) && !inClear(lx2, ly2, 1)) place('lamp', lx2, ly2, 0.3, 7); }
 
   // ---- what can be picked up and walked into
   var items = P.items, id = 0;
   function item(kind, x, y, o){ var t = { k:kind, x:x, y:y, id:kind + (id++) }; if (o) for (var q2 in o) t[q2] = o[q2]; items.push(t); return t; }
   function okSpot(x, y, r, minD, maxD){ var wd = walkD(x, y); return okGround(x, y, r) && free(x, y, r) && !inClear(x, y, 1.5) && wd >= minD && (maxD == null || wd <= maxD) && !(gy && Math.abs(y - gy) < 6) && y > 6 && y < L - 4; }
-  function spotOff(minD, maxD, r, tries){ for (var t = 0; t < (tries || 80); t++){ var yy = L * (0.08 + R() * 0.84), xx = cx(yy) + (R() < 0.5 ? -1 : 1) * (minD + R() * (maxD - minD));
+  function spotOff(minD, maxD, r, tries){ for (var t = 0; t < (tries || 80); t++){ var sq = beside(SL * (0.08 + R() * 0.84), R() < 0.5 ? -1 : 1, minD + R() * (maxD - minD)), yy = sq[1], xx = sq[0];
       if (okSpot(xx, yy, r, minD - 1, maxD + 2)) return [xx, yy]; } return null; }
   /* NO COINS LIE LOOSE ON A TRAIL. They are in its one chest: in the clearing, or tucked in behind a tree or a
      rock where the camera cannot see it from the path. Walk up to a chest and it opens,
@@ -274,7 +350,7 @@ function plan(spec){
   if (clrKind === 'chest') chest(P.chest.x, P.chest.y, locked ? 18 : 12 + ((R() * 4) | 0), { main:1 });
   else { var hsp = hideSpot(8, 24) || hideSpot(6, 30) || spotOff(6, 30, 1.2, 200) || [clr.x, clr.y - 1.2]; if (hsp){ chest(hsp[0], hsp[1], 10 + ((R() * 5) | 0)); used.push({ x:hsp[0], y:hsp[1], r:4 }); }
     for (var cp2 = 0; cp2 < 4; cp2++){ var xp = clr.x + (cp2 % 2 ? 1 : -1) * 1.3, yp = clr.y + (cp2 < 2 ? -0.9 : 0.9); item('brk', xp, yp, { th:themeAt(yp) }); } }
-  if (locked){ for (var tk2 = 0; tk2 < 60; tk2++){ var ky = L * (0.15 + R() * 0.7), kxp = cx(ky) - sg * (8 + R() * 10);
+  if (locked){ for (var tk2 = 0; tk2 < 60; tk2++){ var kq = beside(SL * (0.15 + R() * 0.7), R() < 0.5 ? -1 : 1, 8 + R() * 10), ky = kq[1], kxp = kq[0];
       if (okGround(kxp, ky, 1) && free(kxp, ky, 1) && walkD(kxp, ky) > PW + 3 && !inClear(kxp, ky, 2) && !(gy && Math.abs(ky - gy) < 6)){ item('key', kxp, ky); used.push({ x:kxp, y:ky, r:1 }); break; } } }
   // the golden ball: off the path, tucked behind a landmark or a tree if it can be
   var gs = spotOff(10, 26, 1.1, 90) || spotOff(6, 20, 1, 60); if (gs){ item('golden', gs[0], gs[1]); used.push({ x:gs[0], y:gs[1], r:1 }); }
@@ -288,16 +364,16 @@ function plan(spec){
   if (LT.part) rare('part', { name:LT.part.name }, 12);
   if (LT.life) rare('life', null, 16);
   // breakables beside the path and in the grass, in ones, twos and threes
-  var nb = 2 + ((R() * 3) | 0); for (var bi = 0; bi < nb; bi++){ var by = L * (0.12 + R() * 0.76), bsd = R() < 0.5 ? -1 : 1, off = R() < 0.6 ? PW + 1.4 : 5 + R() * 9, nn = 1 + ((R() * 3) | 0);
-    for (var bj = 0; bj < nn; bj++){ var bx = cx(by) + bsd * (off + bj * 1.6), byy = by + (R() - 0.5) * 2;
+  var nb = 2 + ((R() * 3) | 0); for (var bi = 0; bi < nb; bi++){ var bsS = SL * (0.12 + R() * 0.76), bsd = R() < 0.5 ? -1 : 1, off = R() < 0.6 ? PW + 1.4 : 5 + R() * 9, nn = 1 + ((R() * 3) | 0);
+    for (var bj = 0; bj < nn; bj++){ var bq = beside(bsS + (R() - 0.5) * 2, bsd, off + bj * 1.6), bx = bq[0], byy = bq[1];
       if (okGround(bx, byy, 0.9) && free(bx, byy, 0.9) && !inClear(bx, byy, 1) && !(gy && Math.abs(byy - gy) < 5)){ item('brk', bx, byy, { th:themeAt(byy) }); used.push({ x:bx, y:byy, r:0.8 }); } } }
   // the world's greeter, on the first trail of a world: a little way up the path from where you start, or just past the
   // world door, so the first thing that happens in a new world is somebody walking up to say hello
-  if (spec.greet){ var hy0 = gy ? gy - 7 : P.start.y - 9;
-    for (var hn = 0; hn < 40 && !P.host; hn++){ var hy = hy0 - (hn >> 1) * 1.2, hsd = (hn & 1) ? -1 : 1, hx = cx(hy) + hsd * (PW + 1.4);
+  if (spec.greet){ var hs0 = gy ? sAtY(gy) + 7 : 9;
+    for (var hn = 0; hn < 40 && !P.host; hn++){ var hsd = (hn & 1) ? -1 : 1, hq = beside(hs0 + (hn >> 1) * 1.2, hsd, PW + 1.4), hy = hq[1], hx = hq[0];
       if (okGround(hx, hy, 1) && free(hx, hy, 1)){ P.host = item('host', hx, hy, { th:themeAt(hy) }); used.push({ x:hx, y:hy, r:1 }); } } }
   // the local, beside the path a little before the arch (a greeter's trail has the greeter instead)
-  for (var tn = 0; tn < (spec.greet ? 0 : 30); tn++){ var ny = L * (0.14 + R() * 0.7), nx = cx(ny) + (R() < 0.5 ? -1 : 1) * (PW + 1.6);
+  for (var tn = 0; tn < (spec.greet ? 0 : 30); tn++){ var nq = beside(SL * (0.16 + R() * 0.7), R() < 0.5 ? -1 : 1, PW + 1.6), ny = nq[1], nx = nq[0];
     if (free(nx, ny, 1) && okGround(nx, ny, 1)){ item('npc', nx, ny, { th:themeAt(ny) }); used.push({ x:nx, y:ny, r:1 }); break; } }
 
   // ---- what blocks the golfer: trunks, rocks, buildings, the fence and the wall
@@ -344,7 +420,7 @@ function land(P){
       if (fc){ var c = fc.c, q = fc.i; return [c === 10 ? 'cr' + q : c === 11 ? 'cb' + q : c === 12 ? 'cup' : c === 4 ? 'sand' : (c === 5 || c === 9) ? 'water' : c === 6 ? 'ice' : c === 7 ? 'bog' : c === 3 ? 'g' : c === 2 ? 'cf' + q : 'cc' + q]; }
       var o = P.poolAt(x, y); if (o) return [o.k === 'slow' ? 'bog' : o.k]; if (P.seaAt(x, y)) return ['water'];
       var wd = P.walkD(x, y), sh = P.shadeAt(x, y), ex = sh ? { sh:sh } : null;
-      if (!P.feet.length && y < -1.5 && y > -16 && Math.abs(x - cx(0)) < 7.5) return [Math.abs(x - cx(0)) > 6.6 || y < -15.2 || y > -2.3 ? 'rail' : 'carpet'];
+      if (!P.feet.length && y < -1.5 && y > -16 && Math.abs(x - P.arch.x) < 7.5) return [Math.abs(x - P.arch.x) > 6.6 || y < -15.2 || y > -2.3 ? 'rail' : 'carpet'];
       var dc = Math.hypot(x - P.clr.x, y - P.clr.y) - P.clr.r, ds = Math.hypot(x - P.start.x, y - P.start.y) - (P.start.r - 1), dIn = Math.min(wd - PW, dc, ds);
       if (dIn < 0){ if (dIn > -0.35){ ex = ex || {}; ex.edge = 1; } return [P.themeAt(y) === sp.theme ? 'path' : 'path0', ex]; }
       if (P.sea && P.sea.side * x > P.seaEdge(y) - 3.5) return ['sand', ex];
@@ -669,7 +745,9 @@ function run(box, P, pic, api){
     var viewArt = VIEW_FT * SE / ART; kk = Math.max(1, Math.round(H / viewArt)); while (pic.cv.width * kk < W && kk < 40) kk++; }
   size(); var onRs = function(){ size(); }; window.addEventListener('resize', onRs);
   // the golfer
-  var g = { x:P.start.x, y:P.start.y - 2, vx:0, vy:0, face:[0, -1], dist:0, safe:[P.start.x, P.start.y - 2], moving:false };
+  // he stands just inside the start, facing the way the walk leaves it (it may set off sideways, not up the screen)
+  var g0 = P.atS ? P.atS(2) : [P.start.x, P.start.y - 2], t0 = P.tanS ? P.tanS(4) : [0, -1], a00 = Math.round(Math.atan2(t0[0], -t0[1]) / (Math.PI / 4)) * Math.PI / 4;
+  var g = { x:g0[0], y:g0[1], vx:0, vy:0, face:[Math.sin(a00), -Math.cos(a00)], dist:0, safe:[g0[0], g0[1]], moving:false };
   var gate = P.gate ? { open:!!sp.gateOpen, asked:false } : null, cloud = api.clouds && P.gate ? { part:0 } : null, lockOpen = !P.fence || !!found.key;
   /* A chest is open if this account opened it (found.ch); the clearing's chest also counts as open on a record
      from before chests held coins (found.k), and those coins were paid then, so none drop. The coins of an open
@@ -739,7 +817,7 @@ function run(box, P, pic, api){
     occlude(rx - 8 * kk, ry, w + 16 * kk, h, q.x, q.y, z); }
   function brkSprite(t){ var k = brkKind(t); return prop('brk:' + k, function(B){ (BRK[k] || BRK.crate)(B, 0, 0); }, 1.8, 1.8, 2); }
   // the local is the 3D golfer model, in the world's own clothes, standing and facing the path
-  function npcFrame(t){ var G = window.RTT_G3D; if (!G || !G.frame) return null; var face = t.x < P.cx(t.y) ? 90 : -90; try{ return G.frame(Object.assign({ shoes:'white', club:'driver', lefty:false }, kitOf(t.th).npc), face, 'walk', 8); }catch(e){ return null; } }
+  function npcFrame(t){ var G = window.RTT_G3D; if (!G || !G.frame) return null; var face = t.x < P.near(t.x, t.y)[0] ? 90 : -90; try{ return G.frame(Object.assign({ shoes:'white', club:'driver', lefty:false }, kitOf(t.th).npc), face, 'walk', 8); }catch(e){ return null; } }
   var IMG = {}; function img(u){ var im = IMG[u]; if (!im){ im = IMG[u] = new Image(); im.src = u; } return im; }
   /* A frame not yet decoded is never a blank: who drew a frame last keeps it on screen until the new one is ready,
      or the golfer blinks out for a frame every time his foot or his facing changes. */
@@ -793,7 +871,7 @@ function run(box, P, pic, api){
     for (var ls = 0; ls < life.ships; ls++) ships.push({ x:lane, y0:P.b[1] - 20 + (ls / life.ships) * span + rr(-8, 8), dir:dirS, v:rr(2.2, 3), span:span, ph:LR() * 6 }); }
   if (life.balloons) for (var lb = 0; lb < life.balloons; lb++) balloons.push({ x:rr(P.b[0] + 6, P.b[2] - 6), y:rr(P.b[1] + 10, P.b[3] - 10), z:rr(9, 16), vx:rr(-0.7, 0.7), vy:rr(-0.5, 0.5), ph:LR() * 6, c:lb % BALLOON_COLS.length });
   if (life.tumble) for (var lt = 0; lt < life.tumble; lt++) tumbles.push({ x:g.x - 30 - lt * 22, y:g.y + rr(-14, 6), v:rr(4, 6.5), ph:LR() * 6 });
-  if (life.ghosts) for (var lg = 0; lg < life.ghosts; lg++){ var gy3 = P.L * (0.3 + 0.4 * lg / Math.max(1, life.ghosts - 1)) + rr(-10, 10), gs = LR() < 0.5 ? -1 : 1; ghosts.push({ x:P.cx(gy3) + gs * rr(7, 13), y:gy3, ax:P.cx(gy3) + gs * rr(7, 13), ay:gy3, ph:LR() * 6 }); }
+  if (life.ghosts) for (var lg = 0; lg < life.ghosts; lg++){ var gS = P.SL * (0.3 + 0.4 * lg / Math.max(1, life.ghosts - 1)) + rr(-10, 10), gs = LR() < 0.5 ? -1 : 1, gq = P.beside(gS, gs, rr(7, 13)); ghosts.push({ x:gq[0], y:gq[1], ax:gq[0], ay:gq[1], ph:LR() * 6 }); }
   var smokeSrc = life.smoke ? P.things.filter(function(t){ return t.k === 'vent'; }).map(function(t){ return { x:t.x, y:t.y, z:2.4, big:true }; }).concat(P.pools.filter(function(o){ return o.k === 'lava'; }).map(function(o){ return { x:o.x, y:o.y, z:0.2 }; })) : [];
   function lifeStep(dt){ if (reduce) return;
     flyers.forEach(function(f){ var C = FLY_PAL[f.kind];
@@ -848,30 +926,37 @@ function run(box, P, pic, api){
       shadowAt(f.x + 1, f.y + 1, 0.9 * C.sz, 0.1); pixAt(fr, C, f.x, f.y, gz + f.z, C.sz * 0.28, f.vx < 0); }); }
 
   // ---- input: a stick under the thumb, or the keys
-  var ui = document.createElement('div'); ui.className = 'pp-tui'; ui.innerHTML = '<div class="pp-stick" data-stick><i></i></div><div class="pp-way" data-way><i></i><b></b></div><div class="pp-pin" data-pin><b></b><i></i></div>' +
-    '<div class="pp-thud"><span data-coins>+0</span><span data-gold></span></div><div class="pp-tlist" data-tlist></div><div class="pp-rbar"><button class="pp-rb pp-talkb" data-talk hidden></button><button class="pp-rb" data-auto>Auto walk</button><button class="pp-rb" data-skip></button></div><div class="pp-rhint" data-hint></div><div class="pp-bub" data-bub hidden></div>';
-  box.appendChild(ui);
-  var stick = ui.querySelector('[data-stick]'), knob = stick.firstChild, way = ui.querySelector('[data-way]'), pin = ui.querySelector('[data-pin]'), bubEl = ui.querySelector('[data-bub]'), hint = ui.querySelector('[data-hint]');
+  /* THE STICK IS FOR A TOUCH SCREEN ONLY, the owner's call. With a mouse and a keyboard he walks on the arrow keys
+     or WASD, so a desktop gets no stick on screen and a drag does not walk him. */
   var coarse = false; try{ coarse = matchMedia('(pointer: coarse)').matches; }catch(e){}
-  hint.textContent = coarse ? 'Drag anywhere to walk' : 'Drag, or use the arrow keys, to walk';
+  var ui = document.createElement('div'); ui.className = 'pp-tui'; ui.innerHTML = (coarse ? '<div class="pp-stick" data-stick><i></i></div>' : '') + '<div class="pp-way" data-way><i></i><b></b></div><div class="pp-pin" data-pin><b></b><i></i></div>' +
+    '<div class="pp-thud"><span data-coins>+0</span><span data-gold></span></div><div class="pp-tlist" data-tlist></div><div class="pp-rbar"><button class="pp-rb pp-talkb" data-talk hidden></button><button class="pp-rb" data-skip></button></div><div class="pp-rhint" data-hint></div><div class="pp-bub" data-bub hidden></div>';
+  box.appendChild(ui);
+  var stick = ui.querySelector('[data-stick]'), knob = stick && stick.firstChild, way = ui.querySelector('[data-way]'), pin = ui.querySelector('[data-pin]'), bubEl = ui.querySelector('[data-bub]'), hint = ui.querySelector('[data-hint]');
+  hint.textContent = coarse ? 'Drag anywhere to walk' : 'Use the arrow keys or WASD to walk';
   ui.querySelector('[data-skip]').textContent = api.skipLabel || 'Skip';
-  var auto = false, stickV = [0, 0], keys = {}, drag = null, SR = 46;
-  function setAuto(on){ auto = on; ui.querySelector('[data-auto]').classList.toggle('on', on); if (on) hint.classList.add('gone'); }
-  ui.querySelector('[data-auto]').onclick = function(){ setAuto(!auto); };
+  /* THERE IS NO AUTO WALK, the owner's call: the walk is the place, so it is walked. Anybody who would rather not
+     can go to the map and play the next hole from there, forfeiting what the trail holds (putt.js warns them). */
+  var stickV = [0, 0], keys = {}, drag = null, SR = 46;
   ui.querySelector('[data-skip]').onclick = function(){ if (alive) api.skip(); };
   var KM = { ArrowUp:'u', KeyW:'u', ArrowDown:'d', KeyS:'d', ArrowLeft:'l', KeyA:'l', ArrowRight:'r', KeyD:'r' };
-  function kd(e){ var c = KM[e.code]; if (!c || !alive) return; keys[c] = 1; setAuto(false); hint.classList.add('gone'); e.preventDefault(); }
+  function kd(e){ var c = KM[e.code]; if (!c || !alive) return; keys[c] = 1; hint.classList.add('gone'); e.preventDefault(); }
   function ku(e){ var c = KM[e.code]; if (c) keys[c] = 0; }
   function pdn(e){ if (!alive || e.target.closest('button')) return; e.preventDefault(); var r = box.getBoundingClientRect();
-    drag = { id:e.pointerId, x:e.clientX, y:e.clientY }; stick.style.left = (e.clientX - r.left) + 'px'; stick.style.top = (e.clientY - r.top) + 'px'; stick.classList.add('on'); knob.style.transform = ''; setAuto(false); hint.classList.add('gone'); }
+    drag = { id:e.pointerId, x:e.clientX, y:e.clientY }; stick.style.left = (e.clientX - r.left) + 'px'; stick.style.top = (e.clientY - r.top) + 'px'; stick.classList.add('on'); knob.style.transform = ''; hint.classList.add('gone'); }
   function pmv(e){ if (!drag || e.pointerId !== drag.id) return; var dx = e.clientX - drag.x, dy = e.clientY - drag.y, Ln = Math.hypot(dx, dy), m = Math.min(1, Ln / SR);
     stickV = Ln > 4 ? [dx / Ln * m, dy / Ln * m] : [0, 0]; knob.style.transform = 'translate(' + (stickV[0] * SR).toFixed(1) + 'px,' + (stickV[1] * SR).toFixed(1) + 'px)'; }
   function pup(e){ if (!drag || (e && e.pointerId != null && e.pointerId !== drag.id)) return; drag = null; stickV = [0, 0]; stick.classList.remove('on'); stick.style.left = stick.style.top = ''; knob.style.transform = ''; }
-  box.addEventListener('pointerdown', pdn); window.addEventListener('pointermove', pmv); window.addEventListener('pointerup', pup); window.addEventListener('pointercancel', pup); window.addEventListener('blur', pup);
+  if (coarse) box.addEventListener('pointerdown', pdn); window.addEventListener('pointermove', pmv); window.addEventListener('pointerup', pup); window.addEventListener('pointercancel', pup); window.addEventListener('blur', pup);
   window.addEventListener('keydown', kd, true); window.addEventListener('keyup', ku, true);
 
-  function along(x, y){ var best = 1e9, s = 0, pp = P.path; for (var i = 0; i < pp.length - 1; i++){ var a = pp[i], c = pp[i + 1], vx = c[0] - a[0], vy = c[1] - a[1], L2 = vx * vx + vy * vy || 1,
-      u = Math.max(0, Math.min(1, ((x - a[0]) * vx + (y - a[1]) * vy) / L2)), d = Math.hypot(a[0] + vx * u - x, a[1] + vy * u - y); if (d < best){ best = d; s = P.cum[i] + u * Math.sqrt(L2); } } return s; }
+  /* WHERE HE IS ALONG THE WALK. A route that doubles back has two legs side by side, so the nearest bit of path can
+     be the wrong leg: once he is following it, only the stretch round where he was is asked, and the whole walk
+     only when he has strayed off it. */
+  var sNow = 0;
+  function along(x, y){ var s = alongIn(x, y, sNow - 8, sNow + 16); if (s.d > 5) s = alongIn(x, y, -1, 1e9); sNow = s.s; return s.s; }
+  function alongIn(x, y, s0, s1){ var best = 1e9, s = 0, pp = P.path; for (var i = 0; i < pp.length - 1; i++){ if (P.cum[i + 1] < s0 || P.cum[i] > s1) continue; var a = pp[i], c = pp[i + 1], vx = c[0] - a[0], vy = c[1] - a[1], L2 = vx * vx + vy * vy || 1,
+      u = Math.max(0, Math.min(1, ((x - a[0]) * vx + (y - a[1]) * vy) / L2)), d = Math.hypot(a[0] + vx * u - x, a[1] + vy * u - y); if (d < best){ best = d; s = P.cum[i] + u * Math.sqrt(L2); } } return { s:s, d:best }; }
   function pathAtS(s){ var pp = P.path, cm = P.cum; for (var i = 0; i < pp.length - 1; i++) if (cm[i + 1] >= s){ var u = (s - cm[i]) / ((cm[i + 1] - cm[i]) || 1); return [pp[i][0] + (pp[i + 1][0] - pp[i][0]) * u, pp[i][1] + (pp[i + 1][1] - pp[i][1]) * u]; } return pp[pp.length - 1]; }
   var goalS = P.cum[P.cum.length - 1];
 
@@ -895,7 +980,7 @@ function run(box, P, pic, api){
     try{ var G0 = window.RTT_G3D; if (G0 && G0.warmAim){ var a0 = Math.atan2(g.x - hs.x, -(g.y - hs.y)) * 180 / Math.PI; G0.warmAim(greet.look, a0, 'walk'); G0.warmAim(greet.look, 180, 'walk'); } }catch(e){} }
   function hostFrame(){ var G = window.RTT_G3D; if (!G || !G.frame || !hs) return null; var i = hs.moving ? Math.floor(hs.dist / STRIDE * 8) % 8 : 8;
     try{ return G.frame(greet.look, Math.atan2(hs.face[0], -hs.face[1]) * 180 / Math.PI, 'walk', i); }catch(e){ return null; } }
-  function talk(){ if (!hs || dlg) return; hs.ph = 'talk'; hs.moving = false; paused = true; setAuto(false); pup(); keys = {}; g.vx = g.vy = 0;
+  function talk(){ if (!hs || dlg) return; hs.ph = 'talk'; hs.moving = false; paused = true; pup(); keys = {}; g.vx = g.vy = 0;
     hs.face = [g.x - hs.x, g.y - hs.y]; g.face = [hs.x - g.x, hs.y - g.y]; g.aimI = null; talkB.hidden = true;
     var pages = greet.lines || [], pg = 0, typed = 0, tm = null;
     dlg = document.createElement('div'); dlg.className = 'pp-gd'; dlg.style.setProperty('--gc', greet.col || '#F1D04A');
@@ -919,7 +1004,7 @@ function run(box, P, pic, api){
     window.addEventListener('keydown', dk, true); show(); }
   talkB.onclick = function(){ if (hs && hs.ph === 'idle') talk(); };
   function hostStep(dt){ if (!hs) return; var dx = g.x - hs.x, dy = g.y - hs.y, d = Math.hypot(dx, dy);
-    if (hs.ph === 'wait' && d < 16 && performance.now() >= hs.at && !(gate && (!gate.open || g.y > P.gate.y - 0.5))){ hs.ph = 'come'; paused = true; setAuto(false); pup(); keys = {}; g.vx = g.vy = 0; }
+    if (hs.ph === 'wait' && d < 16 && performance.now() >= hs.at && !(gate && (!gate.open || g.y > P.gate.y - 0.5))){ hs.ph = 'come'; paused = true; pup(); keys = {}; g.vx = g.vy = 0; }
     /* THEY STOP AT 3.2 FT AND TALK, AND "STOP AT" HAS TO BE A BAND. Each step moves them the distance left to 3.2,
        so in floating point d lands a hair over 3.2 and the next step moves them a hair less, for ever: the greeter
        stood still, never spoke, and the golfer was held. That was the freeze entering a new world. */
@@ -948,9 +1033,7 @@ function run(box, P, pic, api){
     // where the stick asks him to go, on the screen, made a direction on the ground: up the screen is further than it looks
     var sx = 0, sy = 0;
     if (!paused){
-      if (auto){ var s0 = along(g.x, g.y), tgt = pathAtS(Math.min(goalS, s0 + 4)); if (gate && !gate.open && s0 < goalS){ var gs = along(P.gate.x, P.gate.y); if (s0 > gs - 3) tgt = [g.x, g.y]; }
-        var ax = tgt[0] - g.x, ay = tgt[1] - g.y, Ln = Math.hypot(ax, ay * SE); if (Ln > 0.3){ sx = ax / Ln; sy = ay * SE / Ln; } }
-      else { sx = stickV[0] + (keys.r ? 1 : 0) - (keys.l ? 1 : 0); sy = stickV[1] + (keys.d ? 1 : 0) - (keys.u ? 1 : 0); var m = Math.hypot(sx, sy); if (m > 1){ sx /= m; sy /= m; } } }
+      sx = stickV[0] + (keys.r ? 1 : 0) - (keys.l ? 1 : 0); sy = stickV[1] + (keys.d ? 1 : 0) - (keys.u ? 1 : 0); var m = Math.hypot(sx, sy); if (m > 1){ sx /= m; sy /= m; } }
     var o = P.poolAt(g.x, g.y), ice = o && o.k === 'ice', slow = o && o.k === 'slow' ? 0.5 : 1, mag = Math.hypot(sx, sy), sp2 = SPEED * slow;
     var tvx, tvy;
     if (mag > 0.05){ var wx = sx, wy = sy / SE, wl = Math.hypot(wx, wy); tvx = wx / wl * sp2 * mag; tvy = wy / wl * sp2 * mag; } else { tvx = 0; tvy = 0; }
@@ -985,11 +1068,11 @@ function run(box, P, pic, api){
     if (npc){ var dn = Math.hypot(npc.x - g.x, npc.y - g.y); if (dn < 3.4 && !nearNpc){ nearNpc = true; var ls = api.lines ? api.lines(kitOf(npc.th).who) : []; say(ls.join(' '), 5200); } else if (dn > 5) nearNpc = false; }
     if (P.fence && !lockOpen){ var df = Math.hypot(g.x - P.lockGate.x, g.y - P.lockGate.y); if (df < 2.4 && (!bubble || now > bubble.until)) say('Locked. The key is somewhere on this trail.', 2200); }
     // the door between worlds
-    if (gate && !gate.asked && Math.abs(g.y - P.gate.y) < 3.2 && Math.abs(g.x - P.gate.x) < PW + 3){ gate.asked = true; paused = true; var wasAuto = auto; setAuto(false); g.vx = g.vy = 0;
-      api.door(function(open){ gate.open = open; paused = false; if (open && cloud) cloud.part = performance.now() / 1000; if (open && wasAuto) setAuto(true); }); }
+    if (gate && !gate.asked && Math.abs(g.y - P.gate.y) < 3.2 && Math.abs(g.x - P.gate.x) < PW + 3){ gate.asked = true; paused = true; g.vx = g.vy = 0;
+      api.door(function(open){ gate.open = open; paused = false; if (open && cloud) cloud.part = performance.now() / 1000; }); }
     if (gate && gate.asked && !gate.open && Math.abs(g.y - P.gate.y) > 7) gate.asked = false;
     // the arch: the hole
-    if (g.y < 1.2 && Math.abs(g.x - P.cx(0)) < 3.6 && !ended){ ended = true; api.arrive(); return; }
+    if (g.y < 1.2 && Math.abs(g.x - P.arch.x) < 3.6 && !ended){ ended = true; api.arrive(); return; }
     if (bubble && now > bubble.until){ bubble = null; bubEl.hidden = true; }
     camAim(false);
     stepPlants(dt); draw(tsec, dt);
@@ -1058,9 +1141,13 @@ function run(box, P, pic, api){
     var shp = scr(g.x, g.y), s = kk; ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(shp[0], shp[1], 5 * s, 2 * s, 0, 0, 7); ctx.fill();
     drawFigure(f, g.x, g.y, true, 'me'); }
   function waypoint(){ var tx, ty, label, br = cv.getBoundingClientRect();
-    var shut = gate && !gate.open && g.y > P.gate.y, tgt = shut ? [P.gate.x, P.gate.y] : [P.cx(0), -0.5], p = scr(tgt[0], tgt[1], pic.zAt(tgt[0], tgt[1]) + (shut ? 7 : 9.5));
-    tx = p[0] / dpr; ty = p[1] / dpr; var M = 34, Wc = W / dpr, Hc = H / dpr, inside = tx > M && tx < Wc - M && ty > M + 110 && ty < Hc - M - 70;
-    var d = Math.round(Math.hypot(tgt[0] - g.x, tgt[1] - g.y) * 1.5 / 3);   // trail feet are two thirds of real ones, and yards are three feet
+    /* THE ARROW LEADS ALONG THE WALK, not across country. A route that doglegs or doubles back puts the arch over
+       the trees, so while there is more than a bend to go the arrow points at the path some way ahead of him, and
+       the distance it gives is what is left to walk. Near the end, or at a shut door, it is the place itself. */
+    var shut = gate && !gate.open && g.y > P.gate.y, goal = shut ? [P.gate.x, P.gate.y] : [P.arch.x, -0.5], sg0 = along(g.x, g.y), sEnd = shut && P.gate.s != null ? P.gate.s : goalS, left = Math.max(0, sEnd - sg0);
+    var via = left > 30 && Math.hypot(goal[0] - g.x, goal[1] - g.y) < left * 0.8, tgt = via ? pathAtS(sg0 + 24) : goal, p = scr(tgt[0], tgt[1], pic.zAt(tgt[0], tgt[1]) + (via ? 3 : shut ? 7 : 9.5));
+    tx = p[0] / dpr; ty = p[1] / dpr; var M = 34, Wc = W / dpr, Hc = H / dpr, inside = !via && tx > M && tx < Wc - M && ty > M + 110 && ty < Hc - M - 70;
+    var d = Math.round(Math.max(left, Math.hypot(goal[0] - g.x, goal[1] - g.y)) * 1.5 / 3);   // trail feet are two thirds of real ones, and yards are three feet
     label = shut ? 'World door' : (api.holeLabel || 'Next hole');
     if (inside){ way.classList.remove('on'); pin.classList.add('on'); pin.style.left = tx + 'px'; pin.style.top = ty + 'px'; pin.querySelector('b').textContent = label; pin.querySelector('i').textContent = d > 3 ? d + ' yd' : ''; return; }
     pin.classList.remove('on'); way.classList.add('on'); var cxs = Wc / 2, cys = Hc / 2, vx = tx - cxs, vy = ty - cys, s2 = Math.min((Wc / 2 - M) / Math.abs(vx || 1e-6), (Hc / 2 - M - 90) / Math.abs(vy || 1e-6));
@@ -1073,7 +1160,7 @@ function run(box, P, pic, api){
     stop:function(){ alive = false; if (dlg && dlg.kill) dlg.kill(); window.removeEventListener('resize', onRs); box.removeEventListener('pointerdown', pdn); window.removeEventListener('pointermove', pmv); window.removeEventListener('pointerup', pup);
       window.removeEventListener('pointercancel', pup); window.removeEventListener('blur', pup); window.removeEventListener('keydown', kd, true); window.removeEventListener('keyup', ku, true); },
     // for the checks: where he is, and a way to hold the stick
-    pos:function(){ return [g.x, g.y]; }, stick:function(vx, vy){ stickV = [vx, vy]; }, auto:function(on){ setAuto(on !== false); },
+    pos:function(){ return [g.x, g.y]; }, stick:function(vx, vy){ stickV = [vx, vy]; },
     plan:function(){ return P; }, gate:function(){ return gate; }, clouds:function(){ return cloud ? (cloud.part ? 'parting' : 'on') : 'off'; }, life:function(){ return { theme:sp.theme, ships:ships.map(function(s1){ var y1 = shipY(s1); return { x:shipX(y1), y:y1 }; }), flyers:flyers.length, motes:motes.length, balloons:balloons.length, tumbles:tumbles.length, ghosts:ghosts.length, puffs:puffs.length, smoke:smokeSrc.length }; }, host:function(){ return hs ? { x:hs.x, y:hs.y, ph:hs.ph, talking:!!dlg } : null; }, items:function(){ return items; }, goTo:function(x, y){ g.x = x; g.y = y; }, plants:function(){ return plants.map(function(q){ return { x:q.x, y:q.y, k:q.t.k, b:q.b, in:q.in }; }); }, view:function(){ return { kk:kk, W:W, H:H, ox:ox, oy:oy }; }, scr:scr };
   return ctl;
 }

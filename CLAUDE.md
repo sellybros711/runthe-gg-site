@@ -6005,6 +6005,46 @@ proved by mutation, with a misspelt landmark and a deleted `far`.
 stands rather than on them. At 0.18 the lavender castle vanished into a pale
 blue sky, which a screenshot said and no guard can.
 
+### The 3D prototype is a separate page, and the game does not load it
+
+```
+runthe.gg/mythiball/proto3d/      noindexed, linked from nowhere
+```
+
+Asked for by the owner: real depth, perspective and animation, judged against
+Backyard Baseball. `mythiball/proto3d/` is a standalone page on Three.js 0.180.0,
+vendored under `vendor/three-0.180.0/` with the version in the path, so a new
+Three.js is a new folder and never a stale cache.
+
+- **The pixel look is the render size.** The scene is drawn into a canvas about
+  240 lines tall and blown up with `image-rendering: pixelated`. A level is a
+  pixel BUDGET (its height on a 3:2 screen), so an upright phone gets as many
+  pixels as a landscape one rather than a 111 pixel sliver.
+- **The 68 characters are built from `sprites/cast.js`**, the same specs the 2D
+  rig bakes from, by one procedural body in `rig.js`. No model files. Limbs are
+  placed by two bone IK from hand and foot targets, so one pose drives every
+  build and both hands stay on the bat.
+- **Animations are hand keyed** in `anim.js` and sampled on a Catmull-Rom curve.
+  Authored for a righty facing +z with his left at +x; a lefty is `mirror()`.
+  The swing plane moves with the aim, and the pitch types carry an arm slot tell.
+- **It is a whole game now, and its own one.** Two nines built from `names.js`
+  (the ratings copied out of ROSTER), innings, outs, a count, runners who stay
+  on base and score, and you on both sides: you swing when your team bats and
+  pick a pitch and a spot when it fields. The CPU swings off the batter's CON,
+  pitches to the count, and a ball in play is decided by the ball flight and the
+  fielders' own speeds and arms, not by a table. None of it shares code with
+  `mythiball/index.html`, and nothing there reads any of it.
+- **`node mythiball/proto3d/check-game.mjs` plays whole games** headless, with
+  the page's own autoplay bot on both halves, stepping the clock rather than
+  waiting on frames. It fails on a page error, a play that never resolves, or a
+  game that never ends. A booted ground ball has to be pickable again
+  (`f.missed` expires), and a fielder's catch reach is measured from his own
+  height, or a ball rolling to the pitcher's feet on the mound is never fielded.
+  Both shipped as stuck games first.
+- **Frame times in this sandbox mean nothing**: Chromium here renders WebGL in
+  software. The HUD prints fps, p95 and the game logic's own milliseconds so a
+  real phone can be read.
+
 ### The collection: ten to start, packs for the middle, feats for the best
 
 ```
@@ -20018,7 +20058,10 @@ flat cut-out standing at its anchor, so the sea in front of a long hull painted 
 3D trail of the world, drawn by `hole3d.js` from a scene (`opt.scene`) at a finer art grid (`TART`, an eighth of
 a foot a pixel), 110 ft long, so about two screens of walking. The golfer is `golfer3d.js`'s walk
 (eight frames a stride plus `ws`, standing), picked off the distance walked so the feet never skate. He is
-walked with a stick or the arrows, or on Auto walk along the path; Skip goes straight to the hole.
+walked with a stick on a touch screen and with the arrow keys or WASD on a desktop, which draws no stick and
+ignores a drag (owner's call); Skip goes straight to the hole. **There is no Auto walk**, the owner's
+call: the walk is the place. Somebody who would rather not walk it goes to the map and plays the next hole from
+there, which warns that the trail's rewards are forfeit (`skipWarn`).
 
 **The holes at each end of a walk are the real holes** (`courseFoot` in putt.js, `feet` and `footAt` in the plan).
 Each is the compiled course rastered to a grid of codes (carpet, fringe, rail, block, cup, water, sand, ice) and
@@ -20041,11 +20084,28 @@ yet beaten on the main tour: a beaten hole's trail is already behind you. A gate
   path or screen it only from behind (`screensPath`), and a figure behind something is drawn see-through.
 - **Each world has a kit** (`KIT`): ground, path, trees, low plants, landmarks, a hazard (water, lava, ice
   that slides, mud that slows), its own breakables and someone to talk to. Lava sends him back to the path.
-- **No two walks are alike.** A trail takes one of four shapes (a meander, switchbacks, one long sweep, a
-  twisting lane), mirrored at random. Its clearing sits on the side with room, half the time down a little
-  path and half the time hidden in the trees, and holds a chest or a pile to smash. check-putt plans seventeen
-  trails and asserts at least three shapes, three kinds of clearing, and no two hiding their chests in the same
-  places.
+- **No two walks are alike, and they do not all walk up the screen.** Asked for by the owner: walking up every
+  time was repetitive, so a trail is ROUTED the way a course is (`ROUTES` in trail.js): a dogleg, switchbacks
+  across the whole width, a hairpin that turns back toward the camera, round a lake, a cape, esses, a sweep or a
+  gentle meander. Each is control points in (across, along) terms, mirrored and jittered, through a centripetal
+  spline; where the walk starts and where the arch stands move too, as far as the real holes at each end leave
+  room. A lake or cape bends round its middle (`route.mid`), which is a big pond, lava lake or ice sheet in a
+  world with a hazard and a landmark in one without. Its clearing sits off to a side with room, never over
+  another leg, half the time down a little path and half the time hidden in the trees, and holds a chest or a
+  pile to smash. check-putt plans seventeen trails and asserts at least three routes, three kinds of clearing,
+  and no two hiding their chests in the same places.
+  - **The path is no longer a function of y**, so nothing may be placed at `cx(y)`. Everything beside the walk
+    is placed by distance along it (`P.atS`, `P.tanS`, `P.beside(s, side, off)`; side 1 is the walker's right).
+    `P.cx` is kept only to answer where the path crosses a line, and `P.arch` is the arch.
+  - **A route is drawn again** when it leaves the land, comes within `MINSEP` of its own other leg, loops back
+    past the start or the arch, runs too long (`L * 1.85`, a hairpin `L * 2.1`), or, between worlds, crosses the
+    wall's line more than once or not heading north (`wallLine`). A straight walk is the last resort.
+  - **A phone's plan is 72 ft across** (`halfW` 36, was 28), so a sideways leg is a real change of direction.
+    A route reaches at most 26 ft either side (`XR`) on any screen, so a wide desktop plan does not make a long
+    walk. On a shore the route keeps to the land side so the sea and its ships stay in sight.
+  - **The arrow follows the route.** `along` only searches round where he already is, because a
+    doubled-back route puts two legs side by side. The arrow points some way ahead along the path while the arch
+    is round a bend, and the yards it gives are what is left to walk.
 - **NO COIN LIES LOOSE. Coins are in a chest, ONE A TRAIL**, the owner's call: in the clearing when it holds
   one, else hidden off the path (`hideSpot`: just north of a tree or a rock). Walking up to it opens it and its coins fly out and land round it; each is walked over to pick
   up and paid into the Run The Tour wallet (`COIN_V` each, through the host's `coins`). A chest pays nothing

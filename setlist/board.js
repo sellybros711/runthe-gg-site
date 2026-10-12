@@ -192,12 +192,37 @@
      Anonymous on a board whose whole job is to say who did what. Every ranking call
      asks for this and the activity count deliberately does not, which is the
      difference between "how many shows were drafted" and "who is on the board". */
+  /* THE BOARD STARTS AGAIN AT SCORING v6. From here a song is paid for its time
+     on stage (see QUALITY_FLOOR in scoring.js), which moved what a random night
+     scores from about 82% of the best to about 61%. Ranking a v6 night against
+     v5 totals and percentages would put it under numbers it could not have
+     earned, so every ranking and listing reads only rows filed after the change.
+     The old rows are still in the table and still on each player's profile. */
+  const SCORING_SINCE = '2026-10-11T23:00:00Z';
+
+  /* TODAY'S DAILY, as the key the page seeds its draw with and the board files
+     it under: the Eastern calendar date, so everyone's day turns over at once. */
+  function dayKey(d) {
+    try {
+      const p = zoneParts(d || new Date());
+      return p.year + '-' + String(p.month).padStart(2, '0') + '-' + String(p.day).padStart(2, '0');
+    } catch (e) {
+      return (d || new Date()).toISOString().slice(0, 10);
+    }
+  }
+
   function scope(opts) {
     opts = opts || {};
     let f = '&band=eq.' + encodeURIComponent(opts.band || 'goose');
+    /* ONE DAY'S CHALLENGE. `daily` is a column 139_segue_daily.sql derives from
+       rng_seed; without that migration this filter is a 400 and the call fails
+       soft, which the page reads as "the daily board is not up yet". */
+    if (opts.daily) f += '&daily=eq.' + encodeURIComponent(opts.daily);
     if (opts.named) f += '&display_name=not.is.null';
-    const cut = cutoffISO(opts.win || 'all');
-    if (cut) f += '&created_at=gte.' + encodeURIComponent(cut);
+    let cut = cutoffISO(opts.win || 'all');
+    const since = window.SEGUE_SCORING_SINCE || SCORING_SINCE;   // a harness can move it
+    if (!cut || cut < since) cut = since;
+    f += '&created_at=gte.' + encodeURIComponent(cut);
     return f;
   }
 
@@ -350,10 +375,10 @@
   /* All three windows, on whichever axis is asked for. Six index-only counts in
      parallel; there is no batching RPC here yet and at this board's size there does
      not need to be. */
-  async function ranks(band, sort, value) {
-    const wins = ['day', 'week', 'all'];
+  async function ranks(band, sort, value, daily) {
+    const wins = daily ? ['daily', 'all'] : ['day', 'week', 'all'];
     const got = await Promise.all(wins.map((win) => {
-      const o = { band, win, named: true };
+      const o = win === 'daily' ? { band, daily, named: true } : { band, win, named: true };
       return Promise.all([placeIn(o, sort, value), total(o)]);
     }));
     const out = {};
@@ -462,9 +487,33 @@
     } catch (e) { failThrown('attended', e); return false; }
   }
 
+  /* ---------------- the whole crowd ----------------
+     Every night drafted on this band's board, guests included, as one number each:
+     the percentage of its own best possible night (the axis the draw cannot
+     inflate). The results screen stands the player among them. Capped, because a
+     picture of a crowd needs a few hundred people and not the whole history, and
+     sorted here so the caller gets a ready ranking. Null on any failure, which the
+     caller reads as "draw nothing". */
+  const SPREAD_LIMIT = 5000;
+  /* A DAILY IS RANKED ON THE TOTAL. Everybody drew the same shows, so the draw
+     cannot inflate anybody's score and the raw number is the fair one. */
+  async function spread(band, opts) {
+    const daily = opts && opts.daily;
+    const col = daily ? 'total' : 'pct_of_best';
+    const url = base() + TABLE + '?select=' + col + '&' + col + '=not.is.null' +
+      '&order=' + col + '.desc&limit=' + SPREAD_LIMIT + scope({ band, daily });
+    try {
+      const res = await timed(url, { headers: headers() });
+      if (!res.ok) return await fail('spread', res);
+      const rows = await res.json().catch(() => null);
+      if (!Array.isArray(rows)) return null;
+      return rows.map(r => Number(r[col])).filter(Number.isFinite);
+    } catch (e) { return failThrown('spread', e); }
+  }
+
   window.SEGUE_BOARD = {
-    API_VERSION: 1,
-    submit, top, mine, ranks, placeIn, total, claim, probe, cutoffISO,
+    API_VERSION: 3,
+    submit, top, mine, ranks, placeIn, total, claim, probe, cutoffISO, spread, dayKey,
     syncAttended, forgetAttended,
     SORTS,
     get offline() { return offline; },
