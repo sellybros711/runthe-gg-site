@@ -186,7 +186,7 @@ function render(o){
   const hrAt=(x,y)=>HR[(y<0?0:y>=GH?GH-1:y)*GW+(x<0?0:x>=GW?GW-1:x)];
   // ---- buffers
   const ZB=new Float32Array(N).fill(-1e9), RID=new Int32Array(N).fill(-1), TON=new Int8Array(N), OBJ=new Int32Array(N).fill(-1), COL=new Uint32Array(N), SOFT=new Uint8Array(N);
-  const SHD=new Uint8Array(GW*GH);
+  const SHD=new Uint8Array(GW*GH), TY=new Int8Array(N).fill(-1);   // TY: the course surface each screen pixel shows (-1 is scenery)
   // ---- scenery: pick each recorded spot's kind, size and colours exactly as the flat tile would have
   const pk=(a,t)=>a[(hvHash(seed,t*7,6)*a.length)|0];
   let obj=0;
@@ -197,7 +197,7 @@ function render(o){
     if(shadow){ const s=tp.shadow; for(let k=0;k<s.length;k+=2){ const sx=px+s[k], sy=py+s[k+1]; if(sx>=0&&sy>=0&&sx<GW&&sy<GH) SHD[sy*GW+sx]=1; } }
     const {fx,fy,fd,fs,ft}=tp;
     for(let k=0;k<fx.length;k++){ const sx=px+fx[k], sy=base+fy[k]; if(sx<0||sy<0||sx>=GW||sy>=SH) continue; const j=sy*GW+sx, D2=dep+fd[k];
-      if(D2<=ZB[j]) continue; ZB[j]=D2; RID[j]=ramps[fs[k]-1]; TON[j]=soft?Math.max(2,ft[k]):ft[k]; OBJ[j]=me; SOFT[j]=soft?1:0; }
+      if(D2<=ZB[j]) continue; ZB[j]=D2; RID[j]=ramps[fs[k]-1]; TON[j]=soft?Math.max(2,ft[k]):ft[k]; OBJ[j]=me; SOFT[j]=soft?1:0; TY[j]=-1; }
   };
   const LIFT=12, rr=c=>rampId(shadeRGB(c,LIFT));
   const trunkR=rr(P.trunk);
@@ -233,7 +233,7 @@ function render(o){
     const sh=SHD[i]&&t!==OC&&t!==WA, f=sh?kq*0.84:kq;
     const r=clamp255(D[o4]*f), g=clamp255(D[o4+1]*f*(sh?1.02:1)), b=clamp255(D[o4+2]*f*(sh?1.12:1)), col=(r<<16)|(g<<8)|b;
     const sy=Math.round(cy-lf*CE+HEAD), dep=cy/SE*CE+lf*SE;
-    const put=(y,dd,c)=>{ if(y<0||y>=SH) return; const j=y*GW+cx; if(dd<=ZB[j]) return; ZB[j]=dd; RID[j]=-1; OBJ[j]=-1; COL[j]=c; };
+    const put=(y,dd,c)=>{ if(y<0||y>=SH) return; const j=y*GW+cx; if(dd<=ZB[j]) return; ZB[j]=dd; RID[j]=-1; OBJ[j]=-1; COL[j]=c; TY[j]=t; };
     if(cy===0) for(let y=HEAD-2;y<sy;y++) put(y,dep-0.02,col);
     put(sy,dep,col);
     const ln=cy<GH-1?lfAt(cx,cy+1):lf, sn=cy<GH-1?Math.round(cy+1-ln*CE+HEAD):SH, fc=(lf-ln>0.5*os)?(((r*0.66)|0)<<16)|(((g*0.66)|0)<<8)|((b*0.74)|0):col;
@@ -250,9 +250,76 @@ function render(o){
         for(const n of [j+GW,j+1,j-1]){ if(n<0||n>=N) continue; if(OBJ[n]!==me&&ZB[n]<ZB[j]){ tn=Math.min(tn,1); break; } } }
       rgb=RAMPS[rid][tn]; }
     out[oi]=rgb[0]; out[oi+1]=rgb[1]; out[oi+2]=rgb[2]; out[oi+3]=255; }
+  if(o.fx!==false && root.__T3D_FX!==false) consolePass(out, {GW,GH,HEAD,N,OBJ,SOFT,ZB,TY,ID,os,DIST,detail:os>1.05});
   ctx.putImageData(img,0,0);
   if(root.__T3D_PROBE) root.__T3D_PROBE.push({GW,GH,os,LF,T:T.slice(),DIST:DIST.slice(),ID,REC:REC.length});   // golf/check-tracer3d.mjs reads what moved
   return true;
+}
+
+/* ---- THE CONSOLE PASS (owner, Oct 2026: "make them feel like a console game"). Putt Putt's look brought to the
+   tracer. It runs over the finished picture and only RELIGHTS pixels that are already there, so the pixel
+   art stays the pixel art and nothing the ball can rest on moves:
+   - contact shadow: the ground right round a tree or a rock darkens, cool, so scenery sits ON the course
+     instead of floating over it (the cast shadow above falls one way; this is the light every side loses);
+   - sun rim: the edge of a solid object facing the low sun (top left) catches a warm highlight;
+   - water: a dithered foam line where it meets land, and glints that are a pure hash of the pixel, so a
+     redraw of the same tile is the same tile;
+   - the stage light: the land well away from the line of play (DIST, the tile's own distance from it) sits a
+     step down and a little less saturated, so the hole reads as lit and the woods as depth;
+   - haze over the far end of the hole (the top of the full-hole tile, never the close-up);
+   - a grade: the shade a little cool, a touch more colour and contrast. The light is NOT warmed: a warm
+     highlight turns every bright fairway yellow.
+   Measured against the flat look, it is what most separates "a map" from "a place". */
+function consolePass(d, q){
+  const {GW,GH,HEAD,OBJ,SOFT,ZB,TY,ID,os,DIST,detail}=q, WA=ID.WA, OC=ID.OC;
+  const F0=10*os, F1=46*os;   // the line of play is lit; the land past F1 sits a step down in the light
+  const R0=Math.max(1,Math.round(1.2*os)), R1=Math.max(2,Math.round(2.6*os));
+  const solid=j=>OBJ[j]>=0&&!SOFT[j];
+  const D8=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,1],[1,-1],[-1,-1]];
+  const hz=(x,y)=>{ let h=(x*374761393+y*668265263)|0; h=Math.imul(h^h>>>13,1274126177); return ((h^h>>>16)>>>0)/4294967296; };
+  const SH=GH+HEAD;
+  for(let y=HEAD;y<SH;y++){
+    const far=detail?0:Math.max(0,1-(y-HEAD)/(GH*0.28)), hzA=far*far*0.24;
+    for(let x=0;x<GW;x++){
+      const j=y*GW+x, oi=((y-HEAD)*GW+x)*4; let r=d[oi], g=d[oi+1], b=d[oi+2];
+      const ty=TY[j];
+      if(ty>=0){
+        // contact shadow: how much solid scenery stands right round this patch of ground
+        let occ=0;
+        for(let k=0;k<8;k++){ const dx=D8[k][0], dy=D8[k][1];
+          const x1=x+dx*R0, y1=y+dy*R0, x2=x+dx*R1, y2=y+dy*R1;
+          if(x1>=0&&x1<GW&&y1>=0&&y1<SH&&solid(y1*GW+x1)) occ+=0.65;
+          if(x2>=0&&x2<GW&&y2>=0&&y2<SH&&solid(y2*GW+x2)) occ+=0.35; }
+        if(occ>0){ const a=Math.min(0.34,occ/8*0.62); r*=1-a*1.08; g*=1-a; b*=1-a*0.72; }
+        if(ty===WA||ty===OC){
+          // foam where the water meets anything else, dithered so it reads as pixels and not a line
+          let shore=false;
+          for(let k=0;k<4;k++){ const x1=x+D8[k][0]*R0, y1=y+D8[k][1]*R0; if(x1<0||x1>=GW||y1<HEAD||y1>=SH) continue; const t1=TY[y1*GW+x1]; if(t1!==WA&&t1!==OC){ shore=true; break; } }
+          if(shore && ((x+y)&1)){ r+=(236-r)*0.42; g+=(246-g)*0.42; b+=(250-b)*0.42; }
+          const gl=hz(x,y);   // glints off the water, brightest in the sun's corner of the tile
+          if(gl>0.988-0.006*(1-x/GW)){ r+=(255-r)*0.7; g+=(255-g)*0.7; b+=(255-b)*0.7; }
+        }
+      } else if(solid(j)){
+        // sun rim: the object's outline facing up-left, where the low sun catches it
+        const u=(y-1)*GW+(x-1);
+        if(x>0&&y>HEAD&&OBJ[u]!==OBJ[j]&&ZB[u]<ZB[j]){ r=r*1.16+14; g=g*1.13+10; b=b*1.04+2; }
+      }
+      // the stage light: a step down, and a little colour out, with distance from the line of play
+      { const ry=y-HEAD, dd=DIST[(ry<0?0:ry>=GH?GH-1:ry)*GW+x], f=dd<=F0?0:dd>=F1?1:(dd-F0)/(F1-F0), k=1-f*0.13;
+        if(f>0){ const l0=r*0.3+g*0.59+b*0.11; r=(l0+(r-l0)*(1-f*0.12))*k; g=(l0+(g-l0)*(1-f*0.12))*k; b=(l0+(b-l0)*(1-f*0.12))*k*1.02; } }
+      // haze over the far end, a pale sky blue
+      if(hzA>0){ r+=(206-r)*hzA; g+=(222-g)*hzA; b+=(236-b)*hzA; }
+      // the grade: the shade cool, more colour and a little more contrast
+      const lum=r*0.3+g*0.59+b*0.11, t=(lum-128)/128;
+      if(t<0){ r+=t*7; b-=t*9; } else { r+=t*3; b-=t*2; }
+      const l2=r*0.3+g*0.59+b*0.11;
+      r=l2+(r-l2)*1.1; g=l2+(g-l2)*1.1; b=l2+(b-l2)*1.1;
+      r=128+(r-128)*1.06; g=128+(g-128)*1.06; b=128+(b-128)*1.06;
+      r=r<0?0:r>255?255:r; g=g<0?0:g>255?255:g; b=b<0?0:b>255?255:b;
+      if(r<7&&g<7&&b<7){ r=g=b=7; }   // never a black hole in the course (check-tracer3d holds every tile to that)
+      d[oi]=r; d[oi+1]=g; d[oi+2]=b;
+    }
+  }
 }
 
 window.RTT_T3D = { API_VERSION: 1, render, EL };   // the page pins API_VERSION as T3D_API

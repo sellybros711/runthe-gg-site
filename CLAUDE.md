@@ -20508,6 +20508,39 @@ of each world); `window.RTT_PUTT_FX = 'all'` puts it on every hole and `'off'` o
 so a cached render without it is never shown in its place. Going to every hole is deleting `FX_PREVIEW`'s
 check in `fxOn`.
 
+## Run The Tour's tracer is full screen, and the course has a console pass
+
+Asked for by the owner: the Tour Tracer full screen on every device, and the console feel Putt Putt has.
+
+**Whenever the tracer is up, the round screen IS the window** (`body.hvfull`, set in `render()` from
+`HV_FULL`). The site header, foot and nav hide; the hole fills the screen and everything else floats on
+it as glass: a top bar (menu, the broadcast header, a Card button that opens the scorecard as a sheet),
+the chips, the shot caption and the control dock. `hvFullChrome()` builds the top bar as a pass over the
+finished screen, so quick play and every other caller keep the page layout. A quick play routine hole
+has no tracer, so it shows the scorecard page between decision holes, as it always did.
+
+- **The camera keeps the whole hole in the band between the chrome** (`hvFullFrame`). `HV_FULL_SIZE` is
+  how much chrome sits above and below the hole, per layout (`phone`, `wide`, `short` for a phone held
+  sideways) and per mode (play, decision, review, mulligan, done). The frame extends the course
+  sideways and vertically (`HV_EXL`, `HV_EYT`, `HV_EYB` into `HV_CAML`), and the base tile is painted
+  for that whole frame at the same pixel size. Change a chip's height and change its row there, or the
+  tee lands under the dock.
+- **Each mode is its own frame and its own tile**, cached by camera, so the first decision of a hole
+  pays one terrain render.
+- **Close-ups scale by the frame's width** (`FL` in `hvCamFor2`), never by a tall phone's height, or a
+  short putt zooms half again further in.
+- **Centre a fixed element with left, right and margin auto**, never a transform: an entrance animation
+  that sets `transform` throws it off screen.
+- **Sideways, the decision panel drops its prose** and the frame may widen past `HV_EX_FULL`, or the tee
+  sits under the panel.
+
+**The console pass is `consolePass` in `golf/tracer3d.js`**, run on every 3D tile after it is painted. It
+relights and never moves a pixel: a contact shadow round everything that stands, foam and glints on
+water, a sun rim on the lit edge of objects, light falling off away from the play, haze over the far
+end, and a grade (cool shade, neutral highlights, a touch more saturation and contrast). It never
+writes pure black, because `check-tracer3d` refuses black and transparent pixels and refuses any lift
+of a surface the ball can rest on. `window.__T3D_FX = false` turns it off to compare.
+
 ## Run The Tour's course golfer is the profile golfer, drawn from a 3D model
 
 ```
