@@ -11,9 +11,9 @@
    default level a phone fills about 100 thousand pixels a frame, a
    twentieth of its own screen. */
 import * as THREE from './vendor/three-0.180.0/three.module.min.js';
-import { buildCharacter, OPTS } from './rig.js?v=1';
+import { buildCharacter, OPTS } from './rig.js?v=2';
 import * as A from './anim.js?v=1';
-import { buildPark, BASES, MOUND, FIELD } from './park.js?v=1';
+import { buildPark, BASES, MOUND, FIELD } from './park.js?v=2';
 import { NAMES, STATS } from './names.js?v=2';
 
 /* cast.js declares a top level const, which is a global binding and not a
@@ -22,7 +22,7 @@ import { NAMES, STATS } from './names.js?v=2';
 const CAST = typeof RIG_CAST !== 'undefined' ? RIG_CAST : {};
 const KEYS = Object.keys(CAST);
 const $ = (id) => document.getElementById(id);
-const rnd = Math.random;
+const rnd = () => Math.random(); /* read late, so a checker can seed it */
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const gauss = () => { let u = 0, v = 0; while (!u) u = rnd(); while (!v) v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
 const stat = (k, s) => (STATS[k] ? STATS[k][s] : 50);
@@ -78,7 +78,7 @@ class Actor {
     this.pose = P; this.root.rotation.y = this.yaw; this.c.apply(P);
   }
   get pos() { return this.root.position; }
-  dispose() { scene.remove(this.root); }
+  dispose() { scene.remove(this.root); this.c.dispose(); }
 }
 const yawTo = (from, to) => Math.atan2(to.x - from.x, to.z - from.z);
 const hash = (s) => { let h = 7; for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
@@ -126,7 +126,7 @@ function makeTeam(keys, name, color) {
 function randomNine(exclude = []) { const pool = KEYS.filter((k) => !exclude.includes(k)); const out = []; while (out.length < 9) out.push(pool.splice(rnd() * pool.length | 0, 1)[0]); return out; }
 
 const G = {
-  teams: null, you: 1, innings: 3, inning: 1, half: 0, outs: 0, b: 0, s: 0, bases: [null, null, null, null], over: false,
+  teams: null, tally: {}, you: 1, innings: 3, inning: 1, half: 0, outs: 0, b: 0, s: 0, bases: [null, null, null, null], over: false,
   state: 'menu', st: 0, clockT: 0, actors: [], fielders: {}, batter: null, runners: [], ball: null, pitch: null,
   aim: new THREE.Vector2(0, 2.5), target: new THREE.Vector2(0, 2.5), ptype: 'fb', swung: false, hitstop: 0, cheer: 0,
 };
@@ -179,7 +179,7 @@ function setField() {
   const T = fielding();
   for (const p of POSITIONS) {
     const a = new Actor(T.pos[p]); a.role = p; a.home = SPOT[p].clone(); a.pos.copy(a.home); G.fielders[p] = a; G.actors.push(a);
-    a.spd = 10 + stat(a.key, 'spd') * 0.05; a.react = /F$/.test(p) ? 0.8 : 0.45; a.arm = 55 + stat(a.key, 'def') * 0.25;
+    const of = /F$/.test(p); a.spd = (of ? TUNE.ofSpd : 10) + stat(a.key, 'spd') * (of ? 0.04 : 0.05); a.react = of ? TUNE.ofReact : 0.45; a.arm = 55 + stat(a.key, 'def') * 0.25;
   }
   const P = G.fielders.P; P.pos.y = 0.7;
   G.fielders.C.play(A.clip([Object.assign({ t: 0 }, A.CATCHER), Object.assign({ t: 1 }, A.CATCHER)], { loop: true })); G.fielders.C.yaw = Math.PI;
@@ -257,6 +257,17 @@ function cpuDecide() {
   G.cpuSwing = { at: p.arrive - A.CONTACT_T + err, aim: new THREE.Vector2(p.target.x + gauss() * ae, p.target.y + gauss() * ae) };
 }
 
+/* The offence dials, in one place so check-game can sweep them.
+     ofSpd, ofReact  an outfielder's base speed (ft/s) and the beat to read it
+     read, readP     the extra beat an infielder or the pitcher needs on a ball
+                     in the air: a liner at him is an out, a step away is through
+     transfer        an outfielder's stop, turn and set before he throws, which
+                     is the beat a batter takes second on
+     run             a runner's base speed (ft/s), plus 0.07 per point of spd
+     drag            how fast a ball on the ground slows (ft/s each second)
+     ev              a scale on what contact adds to the ball's speed: home runs */
+const TUNE = { ofSpd: 10, ofReact: 0.8, read: 0, readP: 0.2, transfer: 1.4, run: 15, drag: 18, ev: 1.05 };
+
 /* ------------------------------------------------------------ batting */
 function swing(bunt) {
   if (G.swung || !(G.state === 'windup' || G.state === 'flight') || !G.batter) return;
@@ -275,7 +286,7 @@ function judgeContact() {
   const q = G.bunt ? 0.2 : clamp(1 - Math.abs(err) / win, 0, 1) * 0.6 + clamp(1 - miss / reach, 0, 1) * 0.4;
   const off = at.y - G.aim.y; /* aim under the ball and it goes up */
   const la = G.bunt ? -8 : clamp(14 + off * 46 + gauss() * 6, -14, 60);
-  const ev = G.bunt ? 20 : 30 + (34 + stat(k, 'pow') * 0.26) * Math.pow(q, 0.85);
+  const ev = G.bunt ? 20 : 30 + (34 + stat(k, 'pow') * 0.26) * TUNE.ev * Math.pow(q, 0.85);
   let spray = G.bunt ? (rnd() - 0.5) * 30 : clamp(err * 360 + gauss() * 8, -62, 62);
   if (G.batter.c.lefty) spray = -spray;
   const sp = THREE.MathUtils.degToRad(spray), lr = THREE.MathUtils.degToRad(la);
@@ -298,7 +309,7 @@ function simulate(p0, v0, maxT = 12) {
       if (p.y > 8) { hr = true; out.push({ t, p: p.clone(), air: true }); break; }
       if (!wall) { wall = true; const n = new THREE.Vector3(p.x, 0, p.z).normalize(); const vn = v.dot(n); if (vn > 0) v.addScaledVector(n, -1.6 * vn); p.addScaledVector(n, -0.6); }
     }
-    if (p.y <= 0.42) { p.y = 0.42; if (!firstLand) firstLand = { t, p: p.clone() }; if (v.y < -4) { v.y = -v.y * 0.42; v.x *= 0.72; v.z *= 0.72; bounced = true; } else { v.y = 0; bounced = true; const s = Math.hypot(v.x, v.z); const ns = Math.max(0, s - 22 / 60); if (s > 0) { v.x *= ns / s; v.z *= ns / s; } if (ns === 0) { out.push({ t, p: p.clone(), air: false }); break; } } }
+    if (p.y <= 0.42) { p.y = 0.42; if (!firstLand) firstLand = { t, p: p.clone() }; if (v.y < -4) { v.y = -v.y * 0.42; v.x *= 0.72; v.z *= 0.72; bounced = true; } else { v.y = 0; bounced = true; const s = Math.hypot(v.x, v.z); const ns = Math.max(0, s - TUNE.drag / 60); if (s > 0) { v.x *= ns / s; v.z *= ns / s; } if (ns === 0) { out.push({ t, p: p.clone(), air: false }); break; } } }
     if (r > 420) break;
   }
   return { samples: out, firstLand, hr, wall };
@@ -316,7 +327,11 @@ function startPlay(la) {
     if (r === 'C') continue; const f = G.fielders[r];
     for (const s of sim.samples) {
       if (s.p.y > 5.5) continue;
-      const d = Math.hypot(s.p.x - f.pos.x, s.p.z - f.pos.z); if (f.react + Math.max(0, d - 2.4) / f.spd <= s.t) { if (!best || s.t < best.s.t) best = { f, s }; break; }
+      /* a ball in the air takes the pitcher an extra beat to read, because
+         he is still falling off the mound: a liner back at him is an out and
+         one a step away is through (the infield's beat is a dial, at 0) */
+      const read = s.air && !/F$/.test(r) ? (r === 'P' ? TUNE.readP : TUNE.read) : 0;
+      const d = Math.hypot(s.p.x - f.pos.x, s.p.z - f.pos.z); if (f.react + read + Math.max(0, d - 2.4) / f.spd <= s.t) { if (!best || s.t < best.s.t) best = { f, s }; break; }
     }
   }
   for (const r of POSITIONS) { G.fielders[r].task = null; G.fielders[r].missed = false; }
@@ -343,7 +358,10 @@ function startPlay(la) {
 /* forced: every base behind him is occupied, so he has to go */
 function forced(at) { for (let i = 1; i < at; i++) if (!G.runners.some((r) => !r.batter && r.at === i)) return false; return true; }
 
-const runSpeed = (r) => 15 + stat(r.key, 'spd') * 0.07;
+const runSpeed = (r) => TUNE.run + stat(r.key, 'spd') * 0.07;
+/* an outfielder chasing a ball down has to stop, turn and set before he
+   throws, which is the beat a batter takes second on */
+
 function updateRunner(r, dt) {
   const a = r.actor;
   if (r.delay > 0) { r.delay -= dt; return; }
@@ -397,20 +415,32 @@ function fieldBall(f, T) {
   ball.state = 'held'; G.holder = f; f.reach = null; f.task = null;
   const br = G.runners.find((r) => r.batter);
   if (!ball.bounced) {
-    G.result = 'out'; G.outs++; if (G.foul) for (const r of G.runners) if (!r.batter) r.at = r.base0; banner(T.kind === 'dive' ? 'WHAT A GRAB!' : 'CAUGHT!', 'out');
+    tally('fly'); G.result = 'out'; G.outs++; if (G.foul) for (const r of G.runners) if (!r.batter) r.at = r.base0; banner(T.kind === 'dive' ? 'WHAT A GRAB!' : 'CAUGHT!', 'out');
     br.out = true; br.actor.override = null; br.actor.play(A.SLUMP); br.done = true;
     for (const r of G.runners) if (r !== br && !r.scored) { r.hold = false; r.target = Math.min(r.target, r.at); r.done = false; }
     finishPlay(1.8); return;
   }
   /* it is on the ground: everybody goes, how far is how long it took */
   for (const r of G.runners) r.hold = false;
-  const deep = Math.hypot(f.pos.x, f.pos.z) > 85, hb = G.simT < 3.2 ? 1 : G.simT < 6 ? 2 : 3;
-  br.target = Math.max(br.target, hb);
+  /* how far the batter goes is a race he runs in his head: the furthest bag
+     he reaches before a throw there would, give or take his nerve. So a ball
+     fielded in the gap is a double because it is, not because of a timer, and
+     now and then he is thrown out stretching. */
+  const deep = Math.hypot(f.pos.x, f.pos.z) > 85;
+  const rs = runSpeed(br), next = BASE_LIST[Math.min(4, br.at + 1)];
+  let hb = 1;
+  for (let n = 2; n <= 3; n++) {
+    const run = Math.max(0, br.delay) + (Math.hypot(next.x - br.actor.pos.x, next.z - br.actor.pos.z) + FIELD.base * (n - br.at - 1)) / rs;
+    const thr = (deep ? TUNE.transfer : 0.45) + A.THROW_RELEASE + Math.max(0.35, f.pos.distanceTo(BASE_LIST[n]) / f.arm);
+    const nerve = 0.3 - rnd() * 0.45;
+    if (run + nerve < thr) hb = n; else break;
+  }
+  if (hb > br.target) { br.target = hb; br.done = false; }
   /* the runners take what the ball gives them: one more on anything that
      reached the outfield */
   for (const r of G.runners) if (r !== br && !r.scored) { r.target = Math.min(4, Math.max(r.target, r.base0 + hb + (deep ? 1 : 0))); r.done = false; }
   /* throw at the batter, the one runner a defence always has a play on */
-  G.throwPrep = { f, base: br.target, at: G.clockT + 0.45 };
+  G.throwPrep = { f, base: br.target, at: G.clockT + (deep ? TUNE.transfer : 0.45) };
 }
 
 function updateBall(dt) {
@@ -427,7 +457,7 @@ function updateBall(dt) {
       for (const r of G.runners) if (!r.batter) { r.at = r.base0; r.target = r.at; r.hold = false; r.done = false; r.scored = false; }
       finishPlay(1.3, true); updateHud();
     } else if (!G.result && G.sim.hr && i === S.length - 1) {
-      G.result = 'homer'; banner('HOME RUN!', 'hr', 2600); G.cheer = 3.5;
+      G.result = 'homer'; batting().hits++; tally('hr'); banner('HOME RUN!', 'hr', 2600); G.cheer = 3.5;
       for (const r of G.runners) { r.hold = false; r.target = 4; r.done = false; r.delay = 0; }
       finishPlay(1.2);
     }
@@ -451,6 +481,7 @@ function arriveThrow(th) {
   if (G.result) return;
   const br = G.runners.find((r) => r.batter);
   const made = br.at >= th.base || (br.slide && br.slideT > 0.12);
+  tally(made ? 'h' + th.base : 'out' + th.base);
   if (made) { G.result = 'hit'; batting().hits++; banner(['', 'SINGLE!', 'DOUBLE!', 'TRIPLE!'][th.base] || 'SAFE!', 'safe'); }
   else { G.result = 'out'; G.outs++; br.out = true; br.done = true; br.actor.override = null; br.actor.play(A.SLUMP); banner('OUT!', 'out');
     /* the third out on the batter before first is a force: nobody scores */
@@ -458,6 +489,8 @@ function arriveThrow(th) {
   finishPlay(1.6);
 }
 
+/* a running count of what happened, for the checker; the page never reads it */
+function tally(k) { G.tally[k] = (G.tally[k] || 0) + 1; }
 function finishPlay(after, foul) { G.state = 'after'; G.st = 0; G.after = after; G.foulPlay = !!foul; updateHud(); }
 
 /* everything that happened, written down: who is on, who scored, who is out */
@@ -556,8 +589,8 @@ function stepPlay(dt) {
       else if (iz) { banner('STRIKE', 'strike'); G.s++; }
       else { banner('BALL', 'ball'); G.b++; }
       $('tell').textContent = p.name + (p.type === 'cu' ? ' · higher arm' : p.type === 'sl' ? ' · lower arm' : '');
-      if (G.s >= 3) { banner('STRUCK OUT', 'strike'); G.outs++; G.batter.play(A.SLUMP); G.paDone = true; finishPlay(2.0); }
-      else if (G.b >= 4) { banner('WALK', 'ball'); walk(); G.paDone = true; finishPlay(1.8); }
+      if (G.s >= 3) { tally('k'); banner('STRUCK OUT', 'strike'); G.outs++; G.batter.play(A.SLUMP); G.paDone = true; finishPlay(2.0); }
+      else if (G.b >= 4) { tally('bb'); banner('WALK', 'ball'); walk(); G.paDone = true; finishPlay(1.8); }
       else finishPlay(0.8);
       updateHud();
     }
@@ -687,7 +720,7 @@ $('end-again').onclick = () => { document.body.classList.remove('end'); menu.clu
 function showMenu() { G.state = 'menu'; document.body.classList.add('menu'); drawMenu(); }
 function startGame() {
   document.body.classList.remove('menu', 'end');
-  clearActors();
+  clearActors(); G.tally = {};
   const mine = makeTeam(menu.yours, 'You', '#1f3f7a'), theirs = makeTeam(randomNine(menu.yours), menu.club.split(' ').pop(), '#a8282a');
   G.teams = menu.home ? [theirs, mine] : [mine, theirs]; G.you = menu.home ? 1 : 0;
   Object.assign(G, { innings: menu.innings, inning: 1, half: 0, outs: 0, b: 0, s: 0, over: false, clockT: 0 });
@@ -802,7 +835,7 @@ function autoplay() {
 
 /* checker hooks: nothing on the page reads these */
 const PROTO = window.PROTO = {
-  THREE, scene, camera, renderer, G, cast, menu, auto: false, setMode, castStep, setCastAnim, swing, ANIMS, startGame, throwPlayerPitch, setPitchType, autoplay,
+  THREE, scene, camera, renderer, G, TUNE, cast, menu, auto: false, setMode, castStep, setCastAnim, swing, ANIMS, startGame, throwPlayerPitch, setPitchType, autoplay,
   castTo(k) { cast.i = Math.max(0, KEYS.indexOf(k)); castShow(); }, orbitSet(a) { orbit.a = a; orbit.drag = { x: 0, a }; },
   pause: (v) => (paused = v),
   tick(dt = 1 / 60) { if (PROTO.auto) autoplay(); tick(dt, 0); },

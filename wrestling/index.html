@@ -1657,8 +1657,12 @@
   .tourcard .tt{font-family:var(--display);font-size:21px;color:var(--cream);text-transform:uppercase;line-height:1.14;margin:5px 0 6px;}
   .tourcard .tb{font-size:13px;line-height:1.6;color:var(--text-dim);}
   .tourcard .tb b{color:var(--cream);}
-  .tourcard .trow{display:flex;gap:8px;align-items:center;margin-top:13px;}
-  .tourcard .trow button{padding:8px 15px;font-size:12px;}
+  /* the dots get a line of their own: twelve dots plus Back, Skip and Next in the
+     pixel face is wider than the card, and Next ran out past its edge */
+  .tourcard .trow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-end;margin-top:13px;}
+  .tourcard .trow .tourdots{flex:1 1 100%;}
+  .tourcard .trow .tourdots:empty{display:none;}
+  .tourcard .trow button{padding:8px 15px;font-size:12px;flex:none;}
   /* ---- the Ropes Pass ---- */
   .passhead{display:flex;gap:14px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px;}
   .passhead .ph-l{flex:1;min-width:0;} .passhead .ph-r{flex:none;text-align:right;}

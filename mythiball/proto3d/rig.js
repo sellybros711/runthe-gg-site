@@ -44,11 +44,75 @@ function outlineMat(w) {
         'vec3 transformed = vec3(position) + normalize(normal) * ' + w.toFixed(4) + ';');
     };
     m.customProgramCacheKey = () => 'ol' + k;
+    m.userData.w = w;
     OUT.set(k, m);
   }
   return m;
 }
 export const OPTS = { outlines: true };
+
+/* ---------------------------------------------------------------- baking
+   A character is built as dozens of small primitives, each with its own ink
+   hull, which is easy to write and costs a draw call per piece (about 40 a
+   body with hulls, so 400 to 700 a frame with two teams out). Once built, it
+   is baked into one skinned mesh for the body and one for the ink: every
+   animated node (the trunk, each limb segment, hand and foot, and whatever is
+   held or toggled) becomes a bone, and every piece is bound rigidly to the
+   node it hung from. So posing works exactly as before, through the same
+   Object3Ds, and a node switched off (the bat, a helmet, the hair under it)
+   gets a zero bone matrix, which collapses its triangles to nothing. The ink
+   push along the normal is baked into the hull's vertices. */
+const EMPTY = new THREE.BufferGeometry();
+const TOON_VC = new THREE.MeshToonMaterial({ color: 0xffffff, gradientMap: GRAD, vertexColors: true });
+const INK = new THREE.MeshBasicMaterial({ color: 0x14121a, side: THREE.BackSide });
+const ZERO16 = new Float32Array(16);
+class VisSkeleton extends THREE.Skeleton {
+  constructor(bones, top) { super(bones, bones.map(() => new THREE.Matrix4())); this.top = top; }
+  update() {
+    super.update();
+    const B = this.bones;
+    for (let i = 0; i < B.length; i++) {
+      let o = B[i], vis = true; while (o && o !== this.top) { if (!o.visible) { vis = false; break; } o = o.parent; }
+      if (!vis) this.boneMatrices.set(ZERO16, i * 16);
+    }
+  }
+}
+function mergeSkinned(list, colorOf, push) {
+  let nv = 0, ni = 0;
+  for (const { m } of list) { const g = m.geometry; nv += g.attributes.position.count; ni += g.index ? g.index.count : g.attributes.position.count; }
+  const pos = new Float32Array(nv * 3), nor = new Float32Array(nv * 3), col = colorOf ? new Float32Array(nv * 3) : null, uv = new Float32Array(nv * 2);
+  const si = new Uint16Array(nv * 4), sw = new Float32Array(nv * 4);
+  const idx = new Uint32Array(ni); let vo = 0, io = 0;
+  const M = new THREE.Matrix4(), N = new THREE.Matrix3(), v = new THREE.Vector3(), n = new THREE.Vector3();
+  for (const { m, bone, inv } of list) {
+    let g = m.geometry; if (!g.attributes.normal) { g = g.clone(); g.computeVertexNormals(); }
+    M.multiplyMatrices(inv, m.matrixWorld); N.getNormalMatrix(M);
+    const P = g.attributes.position, Nn = g.attributes.normal, U = g.attributes.uv, w = push ? push(m) : 0;
+    const c = colorOf ? colorOf(m) : null;
+    for (let i = 0; i < P.count; i++) {
+      const k = vo + i;
+      n.fromBufferAttribute(Nn, i).normalize();
+      v.fromBufferAttribute(P, i).addScaledVector(n, w).applyMatrix4(M);
+      pos[k * 3] = v.x; pos[k * 3 + 1] = v.y; pos[k * 3 + 2] = v.z;
+      n.applyMatrix3(N).normalize(); nor[k * 3] = n.x; nor[k * 3 + 1] = n.y; nor[k * 3 + 2] = n.z;
+      if (col) { col[k * 3] = c.r; col[k * 3 + 1] = c.g; col[k * 3 + 2] = c.b; }
+      if (U) { uv[k * 2] = U.getX(i); uv[k * 2 + 1] = U.getY(i); }
+      si[k * 4] = bone; sw[k * 4] = 1;
+    }
+    if (g.index) for (let i = 0; i < g.index.count; i++) idx[io + i] = g.index.getX(i) + vo;
+    else for (let i = 0; i < P.count; i++) idx[io + i] = i + vo;
+    vo += P.count; io += g.index ? g.index.count : P.count;
+  }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  out.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  out.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  if (col) out.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  out.setAttribute('skinIndex', new THREE.BufferAttribute(si, 4));
+  out.setAttribute('skinWeight', new THREE.BufferAttribute(sw, 4));
+  out.setIndex(new THREE.BufferAttribute(idx, 1));
+  return out;
+}
 
 function shade(hex, f) {
   const c = new THREE.Color(hex); const h = {}; c.getHSL(h);
@@ -375,6 +439,7 @@ export class Character {
       const keep = this.hat; this.spec = Object.assign({}, this.spec, { hat: { s: 'helmet', c: color || '#1f3f7a' } });
       this.buildHat(); this.helmet = this.hat; this.hat = keep; this.spec = Object.assign({}, this.spec, { hat: undefined });
       if (this.hairCap) this.hairCap.visible = false;
+      this.bake(); this.setOutlines(OPTS.outlines);
     }
     if (this.helmet) { this.helmet.visible = !!on; if (this.hairCap) this.hairCap.visible = !on; }
   }
@@ -412,6 +477,52 @@ export class Character {
       default: add(sphere(10), c || '#e8bc3a', [0, 0.3 * S, 0], [0.3 * S, 0.3 * S, 0.3 * S]);
     }
     return g;
+  }
+
+  /* Merge what was built (see baking above). Safe to call again: only pieces
+     not yet baked are touched, so a helmet added later is baked on its own. */
+  bake() {
+    const units = [this.root, this.pelvis, this.chest, this.headG, this.skirt, this.bat, this.glove, this.prop, this.hat, this.helmet, this.hairCap, ...Object.values(this.limbs)].filter(Boolean);
+    const uset = new Set(units);
+    this.root.updateMatrixWorld(true);
+    const inv = new Map(units.map((u) => [u, new THREE.Matrix4().copy(u.matrixWorld).invert()]));
+    const unitOf = (o) => { if (uset.has(o)) return o; let p = o.parent; while (p && !uset.has(p)) p = p.parent; return p; };
+    const buckets = new Map(), found = [];
+    this.root.traverse((o) => { if (o.isMesh && !o.userData.baked) found.push(o); });
+    if (!found.length) return;
+    for (const m of found) {
+      const u = unitOf(m); if (!u) continue;
+      let key;
+      if (m.userData.outline) key = 'ink';
+      else if (m.material.isMeshToonMaterial && !m.material.map) key = 'vc';
+      else key = m.material.uuid;
+      if (!buckets.has(key)) buckets.set(key, []);
+      buckets.get(key).push({ m, bone: units.indexOf(u), inv: inv.get(u) });
+    }
+    const skel = new VisSkeleton(units, this.root);
+    for (const [key, b] of buckets) {
+      const ink = key === 'ink', vc = key === 'vc';
+      const geo = mergeSkinned(b, vc ? (m) => m.material.color : null, ink ? (m) => m.material.userData.w || 0 : null);
+      const sm = new THREE.SkinnedMesh(geo, ink ? INK : vc ? TOON_VC : b[0].m.material);
+      sm.bind(skel, new THREE.Matrix4());
+      sm.frustumCulled = false; sm.castShadow = !ink; sm.userData.baked = true;
+      if (ink) sm.userData.outline = true;
+      this.root.add(sm);
+    }
+    /* the pieces are gone; a mesh unit keeps its transform as a plain node */
+    for (const m of found) {
+      if (uset.has(m)) { m.geometry = EMPTY; m.material = TOON_VC; m.castShadow = false; m.userData.baked = true; m.visible = m.visible; m.isMesh = false; m.type = 'Object3D'; }
+      else m.parent.remove(m);
+    }
+    this.meshes = [];
+  }
+
+  /* The baked meshes own their geometry and bone texture; free them when the
+     body leaves for good, or every half inning's fielders leak. */
+  dispose() {
+    const sk = new Set();
+    this.root.traverse((o) => { if (o.isSkinnedMesh && o.userData.baked) { o.geometry.dispose(); sk.add(o.skeleton); } });
+    for (const k of sk) k.dispose();
   }
 
   setOutlines(on) { this.root.traverse((o) => { if (o.userData.outline) o.visible = on; }); }
@@ -499,4 +610,4 @@ export class Character {
   worldOf(name) { return this.limbs[name].getWorldPosition(new THREE.Vector3()); }
 }
 
-export function buildCharacter(key, spec, opts) { const c = new Character(key, spec, opts); c.setOutlines(OPTS.outlines); return c; }
+export function buildCharacter(key, spec, opts) { const c = new Character(key, spec, opts); c.bake(); c.setOutlines(OPTS.outlines); return c; }
