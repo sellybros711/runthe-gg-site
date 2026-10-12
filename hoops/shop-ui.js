@@ -147,6 +147,21 @@ function pane(host, o){
     });
     html += '</div></div>';
 
+    /* COIN BUCKETS, shipped dark: drawn only while economy.js BUCKETS_ENABLED
+       is true. A press opens the site's one checkout; the coins land on the
+       server (141) and the packs as free packs here. */
+    if (X.BUCKETS_ENABLED && X.BUCKETS) {
+      html += '<div class="sh-sec"><div class="sh-h"><span class="k k-label">Coins</span><span class="sh-note">Bought coins are kept on your account.</span></div><div class="sh-buckets">';
+      Object.keys(X.BUCKETS).forEach(function(k){
+        var B = X.BUCKETS[k];
+        html += '<button type="button" class="sh-bucket" data-bucket="' + esc(k) + '"' + (signed ? '' : ' disabled') + '>'
+          + coin('sh-coinbig') + '<b>' + money(B.coins) + '</b><i>' + esc(B.name) + '</i>'
+          + (B.packs.length ? '<em>+' + B.packs.length + ' ' + esc(PK.packOf(B.packs[0]).name) + (B.packs.length > 1 ? 's' : '') + '</em>' : '')
+          + '<span class="sh-bprice">$' + (B.cents / 100).toFixed(2) + '</span></button>';
+      });
+      html += '</div></div>';
+    }
+
     html += '<div class="sh-sec"><div class="sh-h"><span class="k k-label">Shards</span></div><p class="sh-note">A duplicate gives a shard of its rarity. '
       + X.EXCHANGE_COST + ' shards spin for an item one rarity up. ' + X.EXCHANGE_COST + ' legendary shards are ' + money(X.LEG_EXCHANGE_COINS) + ' coins, a Hall of Fame Pack and your pick of three legendaries.</p><div class="sh-ex">';
     PK.RANK.forEach(function(r){
@@ -183,9 +198,30 @@ function pane(host, o){
       if (confirmB !== key) { confirmB = key; draw(); var nb = host.querySelector('[data-' + key.split(':')[0] + '="' + key.split(':')[1] + '"]'); if (nb) { nb.innerHTML = '<span>Tap again to spend</span>'; nb.classList.add('is-arm'); } return; }
       confirmB = null; go();
     };
-    q('[data-open]', function(b){ var id = b.getAttribute('data-open'); twice('open:' + id, function(){ act(S.open(id), { pack: id }); }); });
-    q('[data-open5]', function(b){ var id = b.getAttribute('data-open5'); twice('open5:' + id, function(){ act(S.bundle(id), { pack: id, bundle: true }); }); });
+    /* a coin pack the ledger cannot cover may be covered by bought coins */
+    var cov = function(price, go, show){ (S.covered ? S.covered(price, go) : Promise.resolve(go())).then(function(r){ act(r, show); }); };
+    q('[data-open]', function(b){ var id = b.getAttribute('data-open'); twice('open:' + id, function(){ cov(PK.packOf(id).price, function(){ return S.open(id); }, { pack: id }); }); });
+    q('[data-open5]', function(b){ var id = b.getAttribute('data-open5'); twice('open5:' + id, function(){ cov(PK.packOf(id).price * X.BUNDLE_PAY, function(){ return S.bundle(id); }, { pack: id, bundle: true }); }); });
+    q('[data-bucket]', function(b){ buyBucket(b); });
     q('[data-ex]', function(b){ var r = b.getAttribute('data-ex'); twice('ex:' + r, function(){ act(S.exchange(r), { exchange: r }); }); });
+  }
+
+  /* a bucket is the site's one checkout, never a second payment path */
+  function buyBucket(b){
+    var a = window.RTF_AUTH, t = a && a.token ? a.token() : null;
+    if (!X.BUCKETS_ENABLED) return;
+    if (!t) { msg = errText('signin'); draw(); return; }
+    b.disabled = true;
+    fetch('/api/stripe/checkout-bundle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
+      body: JSON.stringify({ bucket: b.getAttribute('data-bucket'), return_path: '/hoops/' })
+    }).then(function(r){ return r.json().catch(function(){ return {}; }); })
+      .catch(function(){ return {}; })
+      .then(function(d){
+        if (d && d.url) { location.href = d.url; return; }
+        msg = "Checkout couldn't start. Try again."; draw();
+      });
   }
 
   /* ─── the show ───────────────────────────────────────────────────────── */
@@ -353,6 +389,13 @@ var CSS = [
 '.sh-wpack{width:54px;display:block;transform:rotate(-8deg);filter:drop-shadow(0 6px 8px rgba(0,0,0,.5));animation:sh-bob 3s ease-in-out infinite;}',
 '.sh-welcome p{margin:6px 0;}',
 '.sh-free{display:grid;gap:8px;}',
+'.sh-buckets{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;}',
+'.sh-bucket{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 8px 10px;border-radius:10px;border:2px solid #f4c25a;background:linear-gradient(180deg,#2b2214,#15110a);color:#fff;font:inherit;cursor:pointer;}',
+'.sh-bucket b{font-size:20px;font-variant-numeric:tabular-nums;}',
+'.sh-bucket i{font-style:normal;font-size:12px;opacity:.8;}',
+'.sh-bucket em{font-style:normal;font-size:11px;color:#f4c25a;}',
+'.sh-bprice{margin-top:4px;padding:3px 10px;border-radius:999px;background:#f4c25a;color:#1d1406;font-weight:800;font-size:13px;}',
+'.sh-bucket[disabled]{opacity:.5;cursor:default;}',
 '.sh-freecard{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px;border:0;cursor:pointer;text-align:left;color:var(--k-ink);',
 ' background:linear-gradient(100deg,color-mix(in srgb,var(--pa) 30%,#141826),#141826 70%);box-shadow:inset 0 0 0 2px var(--pa),0 0 18px -6px var(--pa);position:relative;overflow:hidden;}',
 '.sh-freecard::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.14) 50%,transparent 60%);background-size:260% 100%;animation:sh-foil 3.6s ease-in-out infinite;pointer-events:none;}',

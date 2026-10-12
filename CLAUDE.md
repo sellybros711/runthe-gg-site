@@ -16350,7 +16350,13 @@ node hoops/check-earn.mjs        who earns coins, from what, and only once
 node hoops/check-idles.mjs       every idle frame inside the grid, every loop closes, the page plays it
 node hoops/check-packs.mjs       odds, pity, shards, the exchange, two devices, the shop on a phone, the show
 node hoops/check-shopart.mjs     every item, pack, coin and shard in pixels, nothing clipped
+node hoops/check-daily.mjs       the streak, the login track, the wheel, the quests, Floor Rep
+node hoops/check-pass.mjs        the Floor Pass: the clock, the curve, the cap, claims, settlement
+node hoops/check-card.mjs        the player card: its pieces, the 140 shapes, the boards
 psql ... -f supabase/139_hoops_wardrobe.sql   deploy by hand (preflight row 53)
+psql ... -f supabase/140_hoops_card.sql       after 139 (preflight row 54; its test is hoops_card_test.sql)
+node scripts/stripe/check-floor-money.mjs    real money, shipped dark: the switches, checkout, webhook, cover()
+psql ... -f supabase/141_hoops_wallet.sql     paid coins (row 55), and 142_hoops_pass.sql the pass (row 56)
 ```
 
 `hoops/design/ECONOMY.md` is the plan and the record. What bites:
@@ -16400,6 +16406,59 @@ psql ... -f supabase/139_hoops_wardrobe.sql   deploy by hand (preflight row 53)
   written; a new shape key falls back to its slot's mask. The packs are Run The Tour's
   foil pillow redrawn with a ball, a hoop, a trophy and a star. A mask must fit 14 cells
   or the light and the outline clip it (check-shopart counts the cells placed).
+- **The player card is `card-ui.js`** (`RTF_CARD`): his backdrop, his number, the man in his street
+  look and idle, his nameplate, and a frame in his Floor Rep metal; a tap flips it. Nameplates and
+  backdrops are catalogue rows in the street loadout (slots `plate` and `bg`), drawn in code from a
+  design key, and `CAT.NOWEAR` keeps them and the idle out of `resolve()`. Who he is is the career in
+  progress or the newest finished one; an account with no career has no card.
+- **139 refused every loadout with an idle in it**, so a player went undrawn on every board from
+  the day he picked one. 140 widens the slot lists and adds `player`; against 139 the page sends the
+  loadout again with only the clothes (`wardrobe.js wearOnly`). Re-running 139 after 140 stops on a
+  stored idle: re-run 140 instead.
+- **A board row filed by an account draws his player** off `player` and `wear_street`, a few a
+  frame, and a tap opens his card without opening the row. A guest row and a row with no player keep
+  the jersey. The read asks for the two columns and asks again without them on a 400.
+- **Real money is built and OFF** (`hoops/design/ECONOMY.md` section 9, the runbook is
+  `functions/api/stripe/README.md`). Each switch is written twice, `_bundles.js` for the
+  server and `economy.js BUCKETS_ENABLED` / `pass.js PASS_PAID_ENABLED` for the page, and
+  check-floor-money fails if they disagree. A bought coin is never in the page's ledger
+  until spent: `RTF_WARD.shop.covered` tries a press, moves exactly the shortfall off the
+  server (`rtf_wallet_spend`, keyed) when it is short, and tries once more. **On sale is not
+  owned**: `PASS_PAID_ENABLED` draws a buy button, and only the `rtf_pass` row (or a
+  tester) opens the premium lane.
+- **The daily loop is six more keyed logs on the wardrobe record** (`hoops/daily.js`:
+  `dp` days played, `dl` days opened, `dw` spins, `dg` banked spins, `de` quest events,
+  `db` Coin Rushes), merged with it. The streak, its freezes (earned at 7, 30 and 100,
+  three at most), the spins left, the quests done and the rush are read off them. A
+  reward is paid under its key (`sw:<day>`, `lg:<day>`, `wh:<spin>`, `qd:`, `qw:`), so
+  two devices pay once. earn.js files the events: a Daily Draft, Fix History or Six
+  Passes finished is the streak's day; settle() is the login day. `RTF_WARD.daily` is
+  the door and every call through it (and every shop call) settles the quests.
+- **A Coin Rush doubles what PLAY pays** (`PLAY_SRC` in earn.js), never a badge or a
+  quest. It stands in for Run The Tour's XP boost; the Floor Pass reads base coins, so
+  a rush never speeds the track.
+- **A wheel spin is decided before it turns.** `daily-ui.js` sets `spinning` BEFORE it
+  calls `D.spin`: the spin's own update redraws the hub, and set after, the wheel turned
+  on a detached copy (check-daily caught it). The wedge under the pointer, the `dw` row
+  and the prize card are one prize, and check-daily reads all three.
+- **The Floor Pass is three more keyed logs** (`hoops/pass.js`: `fx` XP keyed on what
+  earned it, `fc` claims, `fq` seasons the premium lane was open). Sixty Eastern days
+  from `EPOCH`, sixty tiers on Run The Tour's curve (800 to 2,000, about 84,000 XP).
+  Play and badges give 0.13 XP a coin off the BASE coins (a Coin Rush doubles coins,
+  never XP); a quest gives its own XP (`QUEST_XP`), read off the ledger key that paid it.
+  **The 2,100 a day cap is applied when XP is READ**, per Eastern day, so two devices
+  that each earned a full day offline still count one day. A tier is paid under
+  `fp:<season>:<tier>:<lane>`. When a season ends, what was reached and not claimed is
+  paid (the premium lane only if `fq` says it was open), and logs two seasons back go.
+- **Season pieces are exclusives** (catalog.js `pass: n`, `earn: 'pass:n'`), so they are
+  never sold or packed. A season is a `SEASONS` row naming its pieces by tier and lane;
+  a season with no row pays the base lanes and nothing to wear, so author the next one
+  before it starts. The premium lane ships dark (`PASS_PAID_ENABLED` false); a tester on
+  `PRO_TESTERS` is comped it so it can be seen working. The Floor Pass is not Pro.
+- **`pass-ui.js` draws it**: a banner under the daily strip, the track over the whole
+  screen (his own player tried on in the tier 60 pieces, sixty tiers across, the free
+  lane over the rail and premium under it), and an XP pill and one tier card however
+  many tiers a press crossed. No pop fires over the open track.
 
 ## Run The Diamond, the baseball game
 

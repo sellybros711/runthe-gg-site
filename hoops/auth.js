@@ -284,13 +284,30 @@
        for naming arguments it does not know, and nothing else rides on it. */
     const map = { club: 'p_club', num: 'p_num', arena: 'p_arena', camera: 'p_camera',
       lastClub: 'p_last_club', lastEra: 'p_last_era', guide: 'p_guide',
-      wearStreet: 'p_wear_street', wearCourt: 'p_wear_court' };
+      wearStreet: 'p_wear_street', wearCourt: 'p_wear_court', player: 'p_player' };
     for (const k of Object.keys(map)) if (f[k] !== undefined && f[k] !== null) args[map[k]] = f[k];
     if (!Object.keys(args).length) return null;
     try {
       const r = await sb.rpc('rtf_set_profile', args);
       return (r && !r.error) ? (r.data || {}) : null;
     } catch (e) { return null; }
+  }
+
+  /* PAID COINS (supabase/141_hoops_wallet.sql), shipped dark: hoops/wardrobe.js
+     only asks while economy.js BUCKETS_ENABLED is true. walletState answers the
+     balance and what was bought, or null for no opinion; walletSpend spends
+     under a key and answers { ok, balance } or { ok: false, why }. */
+  async function walletState() {
+    if (!sb || !session) return null;
+    try { const r = await sb.rpc('rtf_wallet_state'); return (r && !r.error && r.data) ? r.data : null; } catch (e) { return null; }
+  }
+  async function walletSpend(key, coins) {
+    if (!sb || !session) return { ok: false, why: 'signin' };
+    try {
+      const r = await sb.rpc('rtf_wallet_spend', { p_key: key, p_coins: coins });
+      if (r && !r.error && r.data) return r.data;
+      return { ok: false, why: /not enough/.test((r && r.error && r.error.message) || '') ? 'coins' : 'error' };
+    } catch (e) { return { ok: false, why: 'error' }; }
   }
 
   /* board.js signs its requests with the anon key. Once somebody is signed in
@@ -326,7 +343,7 @@
     API_VERSION: 1,
     boot, state, onChange: (f) => { listeners.push(f); return () => {}; },
     signIn, signUp, signInGoogle, signOut,
-    available, setName, claim, token, deleteAccount, premiumProducts,
+    available, setName, claim, token, deleteAccount, premiumProducts, walletState, walletSpend,
     getProfile, setProfile,
   };
 })();

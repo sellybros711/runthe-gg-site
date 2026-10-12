@@ -2639,36 +2639,44 @@
       "sha": "fef6b540bb5fe5c2"
     },
     "economy.js": {
-      "v": "2",
-      "sha": "8df34bd804a43925"
+      "v": "3",
+      "sha": "8e39be51d53bdfe4"
     },
     "catalog.js": {
-      "v": "2",
-      "sha": "6ec421e043be6e43"
+      "v": "4",
+      "sha": "3f9ad91256ca31ce"
     },
     "idles.js": {
-      "v": "1",
-      "sha": "641a82bb0300b526"
+      "v": "2",
+      "sha": "fcec922e239b0974"
     },
     "packs.js": {
       "v": "1",
       "sha": "3e06b1432bb7cdb7"
     },
+    "daily.js": {
+      "v": "1",
+      "sha": "b49b97f74b34ac3a"
+    },
+    "pass.js": {
+      "v": "1",
+      "sha": "519be239e107831b"
+    },
     "wardrobe.js": {
-      "v": "4",
-      "sha": "e186198b0c2366cb"
+      "v": "8",
+      "sha": "e7637be795976781"
     },
     "earn.js": {
-      "v": "2",
-      "sha": "4ca68e4aa73cf16b"
+      "v": "5",
+      "sha": "df334e49fa2d4427"
     },
     "board.js": {
-      "v": "8",
-      "sha": "b4dfc54e5d9481a7"
+      "v": "9",
+      "sha": "790f294d4dc8a577"
     },
     "auth.js": {
-      "v": "5",
-      "sha": "13975ab64bcd45eb"
+      "v": "7",
+      "sha": "201b9525c2dff333"
     },
     "/assets/cloudsave.js": {
       "v": "2",
@@ -2707,20 +2715,32 @@
       "sha": "f17a858cad115a76"
     },
     "itemart.js": {
-      "v": "1",
-      "sha": "abfdedc5d33d1e66"
+      "v": "3",
+      "sha": "dcb77ca252ced228"
     },
     "closet-ui.js": {
-      "v": "5",
-      "sha": "f0bac161806cf26d"
+      "v": "8",
+      "sha": "69618a3097450a83"
     },
     "shop-ui.js": {
+      "v": "3",
+      "sha": "a57c2101daab6340"
+    },
+    "daily-ui.js": {
+      "v": "1",
+      "sha": "5763d7c9e24f2139"
+    },
+    "pass-ui.js": {
       "v": "2",
-      "sha": "c38e04763949d7a1"
+      "sha": "92fbd757b7e41f89"
+    },
+    "card-ui.js": {
+      "v": "1",
+      "sha": "ed8ffc8721479ed1"
     },
     "career-ui.js": {
-      "v": "54",
-      "sha": "bd6eb129d8b7ca63"
+      "v": "56",
+      "sha": "dbcbadb20ad72f4d"
     },
     "data/players.json": {
       "v": "5",

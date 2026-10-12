@@ -24,7 +24,7 @@
 var API_VERSION = 1;
 var GEAR_BOOSTS = false;
 
-var STREET_SLOTS = ['hat', 'eyes', 'top', 'outer', 'bottom', 'shoes', 'socks', 'chain', 'watch', 'bag', 'phones', 'held', 'idle'];
+var STREET_SLOTS = ['hat', 'eyes', 'top', 'outer', 'bottom', 'shoes', 'socks', 'chain', 'watch', 'bag', 'phones', 'held', 'idle', 'plate', 'bg'];
 /* a shoe cut for the floor is a 'both' item in the shoes slot, worn on court too */
 var COURT_SLOTS = ['band', 'goggles', 'guard', 'sleeveL', 'sleeveR', 'wrist', 'tape', 'tights', 'knee', 'ankle', 'csocks', 'shoes', 'under', 'idle'];
 
@@ -474,6 +474,24 @@ ITEMS.push(
   { id: 'ex_opening_jacket', ctx: S, slot: 'outer', name: 'Opening Night Satin', rarity: 'legendary', excl: true, earn: 'drop:opening', k: 'bomber', c: ['#e8660f', '#16181f', '#f1f0ea'] },
   { id: 'ex_hallows_hoodie', ctx: S, slot: 'top', name: 'Hallows Hoodie', rarity: 'legendary', excl: true, earn: 'drop:hallows', k: 'hoodie', c: ['#3a2a5e', '#e2762a'] }
 );
+
+/* FLOOR PASS, SEASON 1 (Hardwood Classic). Earned on the pass track
+   (hoops/pass.js says at which tier and on which lane), never sold or packed.
+   pass: the season, so the closet can say where it came from. */
+var P1 = { excl: true, earn: 'pass:1', pass: 1 };
+function pass1(id, ctx, slot, name, rarity, k, c){ var it = { id: id, ctx: ctx, slot: slot, name: name, rarity: rarity, k: k, c: c }; for (var x in P1) it[x] = P1[x]; ITEMS.push(it); }
+pass1('ps1_cap', S, 'hat', 'Hardwood Cap', 'rare', 'cap', ['#2c4bd6', '#f2b632']);
+pass1('ps1_long', S, 'top', 'Classic Long Sleeve', 'epic', 'longsleeve', ['#f4efe1', '#2c4bd6']);
+pass1('ps1_track', S, 'outer', 'Hardwood Track Jacket', 'legendary', 'track', ['#2c4bd6', '#f4efe1', '#f2b632']);
+pass1('ps1_sweats', S, 'bottom', 'Hardwood Track Pants', 'legendary', 'sweats', ['#2c4bd6', '#f2b632']);
+pass1('ps1_band', C, 'band', 'Classic Headband', 'rare', 'wide', ['#f2b632']);
+pass1('ps1_shades', S, 'eyes', 'Gold Rim Shades', 'epic', 'shades', ['#f2b632', '#1a1d2e']);
+pass1('ps1_hitop', BOTH, 'shoes', 'Hardwood Hi-Top', 'epic', 'hitop', ['#f4efe1', '#2c4bd6', '#f2b632']);
+pass1('ps1_varsity', S, 'outer', 'Classic Varsity', 'legendary', 'varsity', ['#2c4bd6', '#f4efe1', '#f2b632']);
+pass1('ps1_sleeve', C, 'sleeveL', 'Royal Arm Sleeve', 'epic', 'arm', ['#2c4bd6']);
+pass1('ps1_chain', S, 'chain', 'Hardwood Chain', 'legendary', 'cuban', ['#f7d36b']);
+pass1('ps1_hoodie', S, 'top', 'Classic Hoodie', 'legendary', 'hoodie', ['#1a1d2e', '#f2b632']);
+pass1('ps1_bomber', S, 'outer', 'Hardwood Gold Bomber', 'legendary', 'bomber', ['#f2b632', '#1a1d2e', '#2c4bd6']);
 /* ---------- IDLES ----------
    What he does while he stands there, in either look (ctx 'both'). How each
    one moves is hoops/idles.js, keyed on the same id; this row is its name,
@@ -518,6 +536,45 @@ idle('id_draftwave', 'Draft Night Wave', 'legendary', '#e3a92f', { excl: true, e
 idle('id_ringshow', 'Show the Ring', 'legendary', '#f0c24a', { excl: true, earn: 'title' });
 idle('id_salute', 'The Salute', 'legendary', '#c9a227', { excl: true, earn: 'hof' });
 idle('id_nerves', 'Rookie Nerves', 'rare', '#e8660f', { excl: true, earn: 'career_first' });
+idle('id_tipoff', 'The Tip-Off', 'legendary', '#f2b632', { excl: true, earn: 'pass:1', pass: 1 });
+
+/* ---------- THE PLAYER CARD ----------
+   A nameplate (plate) and a card backdrop (bg) dress the player CARD, never
+   the man: resolve() skips them like an idle, and hoops/card-ui.js draws them.
+   k is a design card-ui.js knows (an unknown one draws the house design), c
+   its colours: a plate [face, trim, ink], a backdrop [sky, ground, light].
+   They live in the street loadout, because the card is drawn off the floor. */
+var NOWEAR = { idle: 1, plate: 1, bg: 1 };
+function plate(id, name, rarity, k, c, extra){ var it = { id: id, ctx: S, slot: 'plate', name: name, rarity: rarity, k: k, c: c }; for (var x in extra || {}) it[x] = extra[x]; ITEMS.push(it); }
+function backdrop(id, name, rarity, k, c, extra){ var it = { id: id, ctx: S, slot: 'bg', name: name, rarity: rarity, k: k, c: c }; for (var x in extra || {}) it[x] = extra[x]; ITEMS.push(it); }
+plate('pl_house', 'House Plate', 'common', 'house', ['#1b1e2b', '#3a3f55', '#f4f2ec'], { free: true });
+plate('pl_wood', 'Gym Floor Plate', 'common', 'wood', ['#c58a4a', '#7a4c22', '#2a1808']);
+plate('pl_tape', 'Tape Label', 'common', 'tape', ['#f1ead2', '#c9bf9a', '#1b1b1b']);
+plate('pl_stitch', 'Stitched Patch', 'common', 'stitch', ['#24324f', '#e6e2d6', '#f4f2ec']);
+plate('pl_varsity', 'Varsity Letter', 'common', 'stitch', ['#7a1e2c', '#f2c23a', '#f4f2ec']);
+plate('pl_chrome', 'Chrome Plate', 'rare', 'chrome', ['#c9d2de', '#6c7688', '#1b1e2b']);
+plate('pl_marble', 'Marble Slab', 'rare', 'marble', ['#ecebe6', '#a9a7a0', '#2a2a30']);
+plate('pl_led', 'Scoreboard LED', 'rare', 'led', ['#111317', '#e8660f', '#ffb020']);
+plate('pl_frost', 'Frost Plate', 'rare', 'frost', ['#bfe6ff', '#4f9bd4', '#0e2a44']);
+plate('pl_neon', 'Neon Sign', 'epic', 'neon', ['#14081f', '#ff3fb4', '#7cf3ff']);
+plate('pl_ember', 'Ember Plate', 'epic', 'ember', ['#2b0f08', '#ff6a1a', '#ffd166']);
+plate('pl_court', 'Center Court', 'epic', 'led', ['#0d1424', '#3a6fd8', '#f2f6ff']);
+plate('pl_gold', 'Gold Nameplate', 'legendary', 'gold', ['#f2c23a', '#8a5a10', '#3a2304']);
+plate('pl_holo', 'Holo Foil', 'legendary', 'holo', ['#7cf3ff', '#ff7ab8', '#1b1e2b']);
+backdrop('bg_tunnel', 'Arena Tunnel', 'common', 'tunnel', ['#141824', '#2a2f40', '#f2c23a'], { free: true });
+backdrop('bg_hardwood', 'Hardwood', 'common', 'hardwood', ['#2a1a10', '#c58a4a', '#ffd9a0']);
+backdrop('bg_blacktop', 'Blacktop', 'common', 'blacktop', ['#3a4a66', '#33363d', '#f4f2ec']);
+backdrop('bg_beach', 'Beach Court', 'common', 'beach', ['#7cc8f0', '#e9d39a', '#fff3c0']);
+backdrop('bg_gym', 'Old Gym', 'common', 'gym', ['#4a3a2a', '#9a6a3a', '#ffe2a8']);
+backdrop('bg_skyline', 'Night Skyline', 'rare', 'skyline', ['#0b1230', '#1e2a52', '#ffd166']);
+backdrop('bg_sunset', 'Sunset Run', 'rare', 'sunset', ['#ff8a5c', '#3b1d4a', '#ffd166']);
+backdrop('bg_lights', 'Stadium Lights', 'rare', 'lights', ['#0e1426', '#1f3a2a', '#f4f6ff']);
+backdrop('bg_snow', 'Snow Day', 'rare', 'snow', ['#9fb8d6', '#eef3fa', '#ffffff']);
+backdrop('bg_neon', 'Neon Grid', 'epic', 'neon', ['#14081f', '#ff3fb4', '#7cf3ff']);
+backdrop('bg_confetti', 'Parade Day', 'epic', 'confetti', ['#1b2550', '#e8660f', '#f2c23a']);
+backdrop('bg_smoke', 'Intro Smoke', 'epic', 'smoke', ['#0c0c12', '#3b3f55', '#e8660f']);
+backdrop('bg_aurora', 'Aurora', 'legendary', 'aurora', ['#06122a', '#3ff2b0', '#b47cff']);
+backdrop('bg_trophy', 'Trophy Room', 'legendary', 'trophy', ['#1a1206', '#f2c23a', '#fff3c0']);
 
 var BY_ID = {};
 ITEMS.forEach(function(it){ BY_ID[it.id] = it; });
@@ -539,7 +596,7 @@ function fits(it, ctx){ return !!it && (it.ctx === ctx || it.ctx === 'both'); }
 function resolve(loadout, ctx, owned){
   ctx = ctx || 'street';
   var base = ctx === 'street' ? STARTER_STREET : {}, out = {}, slot;
-  var pick = function(slot, id){ var it = BY_ID[id]; if (slot === 'idle') return; if (it && fits(it, ctx) && it.slot === slot && (owned === true || owns(owned, id))) out[slot] = { k: it.k, c: it.c.slice() }; };
+  var pick = function(slot, id){ var it = BY_ID[id]; if (NOWEAR[slot]) return; if (it && fits(it, ctx) && it.slot === slot && (owned === true || owns(owned, id))) out[slot] = { k: it.k, c: it.c.slice() }; };
   for (slot in base) pick(slot, base[slot]);
   for (slot in loadout || {}) pick(slot, loadout[slot]);
   return out;
@@ -547,7 +604,7 @@ function resolve(loadout, ctx, owned){
 
 var API = {
   API_VERSION: API_VERSION, GEAR_BOOSTS: GEAR_BOOSTS,
-  STREET_SLOTS: STREET_SLOTS, COURT_SLOTS: COURT_SLOTS, ITEMS: ITEMS, STARTER_STREET: STARTER_STREET, DROPS: DROPS,
+  STREET_SLOTS: STREET_SLOTS, COURT_SLOTS: COURT_SLOTS, ITEMS: ITEMS, STARTER_STREET: STARTER_STREET, NOWEAR: NOWEAR, DROPS: DROPS,
   item: item, owns: owns, fits: fits, resolve: resolve, sold: sold, dropLive: dropLive,
 };
 if (typeof module !== 'undefined' && module.exports) module.exports = API;

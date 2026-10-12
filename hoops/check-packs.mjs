@@ -293,6 +293,45 @@ async function browser(){
   await page.click('#cr-closet .cl-buy');
   ok(await page.evaluate((id) => RTF_WARD.owns(id) && JSON.parse(localStorage.getItem('rtf.ward.v1')).w.street.top === id, id), '12 and the second press buys it and puts it on');
   ok(!out.length, '12 no request reached a payment endpoint (' + out.join(', ') + ')');
+
+  /* PAID COINS, SHIPPED DARK (Phase 6). Off, the shop draws no bucket and a
+     short press is only a short press. On (flipped in the page), the shelf
+     draws the five buckets, a short pack is covered out of bought coins and
+     opened, and a bucket press goes to the site's one checkout, which is
+     stopped here before it leaves. */
+  await page.click('[data-ltab="shop"]');
+  await page.waitForSelector('#cr-closet .sh-pack');
+  ok(await page.evaluate(() => !document.querySelector('#cr-closet .sh-bucket') && RTF_WALLET.paid() === 0), '12b dark: no coin bucket on the shelf and no paid balance');
+  await page.evaluate(() => {
+    RTF_ECON.BUCKETS_ENABLED = true;
+    window.__spent = [];
+    RTF_AUTH.token = () => 'tok';
+    RTF_AUTH.walletState = async () => ({ balance: 200000, buys: [] });
+    RTF_AUTH.walletSpend = async (k, c) => { window.__spent.push([k, c]); return { ok: true, balance: 200000 - c }; };
+    return RTF_WALLET.paidRefresh();
+  });
+  await page.click('[data-ltab="shop"]');
+  await page.waitForSelector('#cr-closet .sh-bucket');
+  const bk = await page.evaluate(() => ({ n: document.querySelectorAll('#cr-closet .sh-bucket').length, p: [...document.querySelectorAll('#cr-closet .sh-bprice')].map((e) => e.textContent).join(' '), bal: RTF_WALLET.balance(), led: RTF_ECON.balance(RTF_WALLET.load()) }));
+  ok(bk.n === 5 && /\$1\.99/.test(bk.p) && /\$49\.99/.test(bk.p), '12b lit: the five buckets with their prices (' + bk.p + ')');
+  ok(bk.bal === bk.led + 200000, '12b lit: the balance shown counts the bought coins');
+  /* spend the ledger down below a Hall of Fame Pack, then open one */
+  const opens0 = await page.evaluate(() => Object.keys(RTF_WARD.load().po || {}).length);
+  const short = await page.evaluate(() => { const led = RTF_ECON.balance(RTF_WALLET.load()); const price = RTF_ECON.PACKS.hof.price; if (led >= price) RTF_WALLET.spend('drain', led - price + 1000, 'test'); return price - RTF_ECON.balance(RTF_WALLET.load()); });
+  await page.click('#cr-closet [data-open="hof"]');
+  await page.click('#cr-closet [data-open="hof"]');
+  await page.waitForFunction(() => window.__spent.length > 0, null, { timeout: 5000 }).catch(() => {});
+  const sp = await page.evaluate(() => window.__spent.slice());
+  ok(sp.length === 1 && sp[0][1] === short, '12b lit: a short pack spends exactly the shortfall of bought coins (' + JSON.stringify(sp) + ' against ' + short + ')');
+  ok(await page.evaluate((n) => Object.keys(RTF_WARD.load().po || {}).length === n + 1, opens0), '12b lit: and the pack opened, once');
+  await page.evaluate(() => { const o = document.querySelector('.sh-ov'); if (o) o.remove(); });
+  await page.click('[data-ltab="shop"]');
+  await page.waitForSelector('#cr-closet .sh-bucket');
+  await page.click('#cr-closet [data-bucket="floor-coins-3"]');
+  await page.waitForTimeout(400);
+  ok(out.some((u) => /checkout-bundle/.test(u)), '12b lit: a bucket press goes to the one checkout, stopped before it leaves (' + out.join(', ') + ')');
+  out.length = 0;
+  await page.evaluate(() => { RTF_ECON.BUCKETS_ENABLED = false; });
   ok(!boom.length, '12 nothing threw (' + boom.join(' | ') + ')');
 
   /* THE SHOW, with motion: the pack, the tear, a reel that stops on the

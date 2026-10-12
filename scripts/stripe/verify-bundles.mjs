@@ -29,7 +29,7 @@
  *    first live test, with a test-mode customer against a live key.
  */
 import { readFileSync, readdirSync } from 'node:fs';
-import { BUNDLES, YEARLY_LIVE, yearlyProducts, yearlyBonus } from '../../functions/api/stripe/_bundles.js';
+import { BUNDLES, BUCKETS, YEARLY_LIVE, yearlyProducts, yearlyBonus } from '../../functions/api/stripe/_bundles.js';
 
 const root = new URL('../../', import.meta.url);
 const read = (p) => readFileSync(new URL(p, root), 'utf8');
@@ -76,6 +76,16 @@ if (new Set(envVars).size === envVars.length && envVars.every((v) => setup.inclu
 }
 
 // 3. return-path allow-lists are usable as prefixes
+/* 8. The coin buckets: their own env vars, none shared with a bundle, every one
+   minted by the setup script, so a bucket switched on is a bucket that exists. */
+{
+  const bv = Object.values(BUCKETS).map((b) => b.envPrice);
+  const clash = bv.filter((v) => envVars.indexOf(v) >= 0 || bv.indexOf(v) !== bv.lastIndexOf(v));
+  if (clash.length) bad('a bucket shares a price env var: ' + clash.join(', '));
+  else if (!/BUCKETS\)\.map/.test(setup)) bad('setup-premium-bundles.mjs does not mint the coin buckets');
+  else ok('coin bucket env vars are unique and the setup script mints every bucket: ' + bv.join(', '));
+}
+
 for (const [key, b] of Object.entries(BUNDLES)) {
   for (const r of b.returnRoots) {
     if (!/^\/[a-z-]+\/$/.test(r)) bad(`${key}: return root '${r}' is not an absolute /dir/ prefix`);

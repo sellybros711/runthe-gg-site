@@ -22,8 +22,10 @@ const B = require('./baller.js'), CAT = require('./catalog.js');
 let fails = 0, passes = 0;
 const ok = (c, msg) => { if (c) passes++; else { fails++; console.log('FAIL ' + msg); } };
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-/* an idle is motion, not wear: hoops/check-idles.mjs holds those rows */
-const WEAR = CAT.ITEMS.filter((i) => i.slot !== 'idle');
+/* an idle is motion, not wear: hoops/check-idles.mjs holds those rows. A
+   nameplate and a card backdrop dress the player card, not the man:
+   hoops/check-card.mjs holds those. */
+const WEAR = CAT.ITEMS.filter((i) => !(CAT.NOWEAR || { idle: 1 })[i.slot]);
 const LOOK = { skin: 4, hair: 'fade', hc: 0, beard: 'stubble', build: 'standard' };
 
 /* 1 */

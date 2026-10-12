@@ -9,6 +9,9 @@ name: Stripe checks
 #                     yearly switch on in a scratch copy (it ships off)
 #   check-recurring   Run The Diamond Pro, $14.99 a year, through the real checkout and
 #                     webhook against a fake Stripe and Supabase
+#   check-floor-money Run The Floor's coin buckets and Floor Pass, shipped dark: the
+#                     switches are off and agree, and each is driven on in a scratch copy
+#   hoops_wallet      supabase/141's paid coin rules, in SQL
 #   replay-webhook    every yearly plan event through the real webhook, against a real
 #                     Postgres built from the migrations, asserting after every event
 #                     that no lifetime row moved and no Fantasy pass was cut short
@@ -19,6 +22,7 @@ name: Stripe checks
 #   node scripts/stripe/verify-bundles.mjs
 #   node scripts/stripe/check-checkout.mjs
 #   node scripts/stripe/check-recurring.mjs
+#   node scripts/stripe/check-floor-money.mjs
 #   node scripts/stripe/replay-webhook.mjs
 #
 # No secrets and no network: every Stripe and Supabase request is answered locally,
@@ -30,12 +34,20 @@ on:
       - 'functions/api/stripe/**'
       - 'scripts/stripe/**'
       - 'supabase/**'
+      - 'hoops/economy.js'
+      - 'hoops/pass.js'
+      - 'hoops/pass-ui.js'
+      - 'hoops/wardrobe.js'
       - '.github/workflows/stripe-checks.yml'
   push:
     paths:
       - 'functions/api/stripe/**'
       - 'scripts/stripe/**'
       - 'supabase/**'
+      - 'hoops/economy.js'
+      - 'hoops/pass.js'
+      - 'hoops/pass-ui.js'
+      - 'hoops/wardrobe.js'
       - '.github/workflows/stripe-checks.yml'
   workflow_dispatch: {}
 
@@ -61,6 +73,8 @@ jobs:
         run: node scripts/stripe/check-checkout.mjs
       - name: Run The Diamond Pro renews
         run: node scripts/stripe/check-recurring.mjs
+      - name: Run The Floor's money is dark, and works when lit
+        run: node scripts/stripe/check-floor-money.mjs
       # The runner image ships PostgreSQL stopped. Start it, and let the runner's own
       # user create databases, which is all the replay needs.
       - name: Start Postgres
@@ -86,3 +100,11 @@ jobs:
             $P -f supabase/$f.sql
           done
           $P -f supabase/test/arcade_cap_test.sql
+      - name: supabase/141, Run The Floor's paid coins
+        run: |
+          createdb rtfw
+          P="psql -X -q -v ON_ERROR_STOP=1 -d rtfw"
+          $P -f supabase/test/baseball_pro_base.sql
+          $P -f supabase/141_hoops_wallet.sql
+          $P -f supabase/141_hoops_wallet.sql
+          $P -f supabase/test/hoops_wallet_test.sql

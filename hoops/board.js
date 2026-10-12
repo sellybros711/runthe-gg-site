@@ -451,13 +451,19 @@
      for: a board row draws the jersey its player chose. Asked after the list
      is drawn, never before, so a slow answer never holds a board up. Null is
      no opinion, and the row keeps the house jersey it was drawn with. */
+  /* 139 and 140 add what he WEARS and who he IS (the player card), so a row
+     can draw him rather than the jersey. A database without them answers the
+     wider select with a 400, which is remembered and asked narrower: the
+     circles never go dark over two columns a migration has not added. */
+  let profWide = true;
   async function jerseys(uids) {
     const ids = (uids || []).filter((u) => /^[0-9a-f-]{36}$/i.test(String(u)));
     if (!ids.length) return {};
     try {
-      const q = base() + 'rtf_profiles?select=user_id,jersey_club,jersey_num' +
-        '&user_id=in.(' + ids.slice(0, 100).join(',') + ')';
-      const res = await timed(q, { headers: headers() });
+      const ask = (wide) => timed(base() + 'rtf_profiles?select=user_id,jersey_club,jersey_num' + (wide ? ',wear_street,player' : '') +
+        '&user_id=in.(' + ids.slice(0, 100).join(',') + ')', { headers: headers() });
+      let res = await ask(profWide);
+      if (!res.ok && profWide && res.status === 400) { profWide = false; res = await ask(false); }
       if (!res.ok) return null;
       const rows = await res.json();
       const out = {};

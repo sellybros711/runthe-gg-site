@@ -392,6 +392,23 @@ Icon at 96.5%), and a twentieth, G.O.A.T., for every badge. Read by the wheel an
 by rep-gated cosmetics. Derived, so it needs no storage and never disagrees with
 the cabinet.
 
+
+### As built (Phase 3)
+
+- `hoops/daily.js`: the streak week and the login track with Run The Tour's numbers,
+  freezes at 7, 30 and 100 (three at most), one free spin an Eastern day plus banked
+  spins, Run The Tour's thirteen wedges scaled by Floor Rep, three daily quests out of
+  six and four weekly out of twelve (one a group), and Floor Rep off the badges.
+- **Run The Tour's XP boost wedges are a Coin Rush** (play pays double for 15, 30 or 60
+  minutes) until the Floor Pass exists to give XP a meaning.
+- **Rewards**: a quest 320 coins, all three 480 plus a common shard and a spin; a weekly
+  quest 3,200 and a rare shard, all four a League Pack.
+- `hoops/daily-ui.js`: a strip on the front page (the flickering pixel flame, a turning
+  wheel with its spins, a quest ring), the hub (Floor Rep, then Wheel, Streak and Quests),
+  and a reward pop for a login slot, a streak day or a quest. The wheel has blinking rim
+  bulbs, a glow while it turns, a reveal card with rays and confetti on a big prize.
+- `check-daily.mjs` holds it, each rule proved by breaking it once.
+
 ---
 
 
@@ -430,12 +447,57 @@ doubles the packs, carries the season's exclusives and an exclusive idle at 60.
 The suite throws 2,000,000 coins of farming at one day and asserts the track moves
 2,100 XP.
 
+### As built (Phase 4)
+
+- `hoops/pass.js`: season 1 (Hardwood Classic) runs 2026-10-12 to 2026-12-10 Eastern.
+  The curve, the two lanes and their packs are Run The Tour's Tour Pass, with the
+  packs renamed (base Streetball, tour League, champ Hall of Fame).
+- **XP**: 0.13 a base coin from play and badges (before a Coin Rush), plus quests at
+  their own XP (60 a quest, 100 all three, 400 a weekly, 800 all four). The cap of
+  2,100 a day covers quests too, so a capped player needs exactly forty days, a
+  typical one finishes about day 41, and a light one ends near tier 56.
+- **The cap is read, not written**: per Eastern day over the union of the log, so it
+  holds across devices and in any order.
+- **Season 1's pieces**: free lane cap at 15, long sleeve at 35, track jacket and pants
+  at 60; premium lane headband 10, shades 20, hi-tops 25, varsity 30, arm sleeve 40,
+  chain 45, hoodie 50, and at 60 The Tip-Off (an exclusive idle) and the Gold Bomber.
+- **Settlement**: when a season ends every reached unclaimed tier is paid, the premium
+  lane only for a season `fq` marks as open. Logs two seasons back are let go.
+- **The premium lane ships dark**: `PASS_PAID_ENABLED` is false. Testers are comped it.
+- `check-pass.mjs` holds it, every rule proved by breaking it once (the cap at read,
+  the key, the premium gate, the locked tier, settling a running season, the prune,
+  a Coin Rush doubling XP, a non play source feeding the track).
+
 **Floor Pass is not Run The Floor Pro.** Pro (`rtf_premium`, $14.99 a year) is the
 endless puzzles; the pass is a season's cosmetics. Different names in copy,
 different products in the catalog, different code paths. Pro buys nothing in the
 economy.
 
 ---
+
+## 8b. The player card (Phase 5, as built)
+
+`hoops/card-ui.js` (`RTF_CARD`). A trading card of the account's invented
+player: his card backdrop (a pixel scene, 60 by 84 cells), his number in the
+club's colours behind him, the man in his street look with his idle, his
+nameplate (64 by 14) across the foot, and a frame and ribbon in his Floor Rep
+rank (wood, bronze, silver, gold, the Icon's purple and gold, the G.O.A.T.'s
+cycling holo). A tap flips it to what the account has done and what he wears.
+
+- **The pieces are catalogue rows**: 14 nameplates and 14 backdrops (slots
+  `plate` and `bg`, street, every rarity, one of each free). A design key names
+  a drawing in `card-ui.js`, so a new colourway is a row. They are never wear:
+  `CAT.NOWEAR` keeps them, and the idle, out of `resolve()`.
+- **Who he is** is the career in progress or the newest finished one
+  (`RTF_CAREER_UI.cardPlayer`); an account with no career has no card.
+- **The boards draw him.** 140 publishes `player` beside the two loadouts, and
+  a board row filed by an account draws his head and shoulders in a ring of his
+  rank's metal; a tap opens his card. A guest row and a row with no player keep
+  the jersey.
+- **Found while building it: 139 refused every loadout with an idle in it**,
+  so a player went undrawn on every board from the day he picked one. 140
+  widens the lists, and against 139 the page sends the loadout again with only
+  the clothes (`wardrobe.js wearOnly`).
 
 ## 9. Real money, dark (Phase 6)
 
@@ -457,6 +519,36 @@ the webhook), not golf's `create-checkout` edge function, which is not in this
 repo. The pass is a `premium_unlocks` row with an end date, the shape 124 already
 handles.
 
+### As built
+
+```
+node scripts/stripe/check-floor-money.mjs        the switches, the catalog, the season, checkout and webhook on and off, cover()
+psql -d rtfw -f supabase/test/hoops_wallet_test.sql   (its header lists the chain)
+```
+
+- **Each switch is written twice**, once for the server (`_bundles.js`) and once for
+  the page (`economy.js BUCKETS_ENABLED`, `pass.js PASS_PAID_ENABLED`), and the check
+  fails if they disagree. Off, the checkout answers 403 `not_on_sale` and the page
+  draws no bucket and no buy button.
+- **The ledger never holds a bought coin until it is spent.** `wardrobe.js cover(price)`
+  asks for exactly the shortfall a press needs, spends it on the server with
+  `rtf_wallet_spend` under a `top:` key, and files the same amount in the ledger as
+  `paid:<key>`. A key sent twice is charged once on both sides. `RTF_WARD.shop.covered`
+  is the one door the shop and the closet press through: try, cover if short, try once more.
+- **The balance shown counts bought coins** (`WALLET.balance()` adds `WALLET.paid()`), so
+  the pill is what the player can spend.
+- **A bucket's packs are free pack credits** keyed `buy:<session>:<i>`, filed when the page
+  reads `rtf_wallet_state`. A refunded bucket's are not filed.
+- **On sale is not owned.** `PASS_PAID_ENABLED` draws the buy button; the premium lane opens
+  only for the `rtf_pass` row (read through `premium_products()`, refreshed on settle) or a
+  tester. Turning sales on must never hand premium to everybody, and check-pass presses the
+  sheet with sales on to prove the lane stays locked.
+- **The pass ends with its season**: `passSeason` in `_bundles.js` is `pass.js`'s arithmetic,
+  held to it at 1,200 instants over both clock changes.
+- **Found while building**: `fileBuys` called `grantCredit` with the key and the pack the
+  wrong way round, so no bucket pack would ever have arrived. The check's page section
+  caught it the first time it ran.
+
 ---
 
 ## 10. Migrations
@@ -466,9 +558,10 @@ soft: without it the game plays and the thing it holds stays on the device.
 
 | number | phase | what |
 |---|---|---|
-| 139 `hoops_wardrobe` | 1 | `rtf_profiles` gains `wear_street`, `wear_court`, `idle`, `plate`, `card` (jsonb or short text, shape checked like `ps_set_crest`, not entitlement checked); `rtf_set_profile` gains the arguments; the board read asks for them and drops them on a 400 |
-| 140 `hoops_wallet` | 6 | `rtf_wallet` (paid coins only), `rtf_wallet_spend`, purchase rows |
-| 141 `hoops_pass` | 6 | `rtf_pass` product in `premium_unlocks` with `expires_at` |
+| 139 `hoops_wardrobe` | 1 | `rtf_profiles` gains `wear_street` and `wear_court`, shape checked like `ps_set_crest`, not entitlement checked; `rtf_set_profile` gains the arguments |
+| 140 `hoops_card` | 5 | the loadouts take `idle`, `plate` and `bg`; `rtf_profiles` gains `player` (who he is, shape checked); `rtf_set_profile` gains `p_player`; the board read asks for both and drops them on a 400 |
+| 141 `hoops_wallet` | 6 | `rtf_coin_buys` (webhook only, keyed on the session) and `rtf_coin_spends` (keyed); `rtf_wallet_state`, `rtf_wallet_spend`; `rtf_coin_refund` by hand. Preflight row 55 |
+| 142 `hoops_pass` | 6 | `rtf_pass` allowed in `premium_unlocks`, granted with `expires_at` at the season's end. Preflight row 56 |
 
 The earned economy (sections 3 to 8) needs no migration at all.
 
@@ -489,10 +582,14 @@ The earned economy (sections 3 to 8) needs no migration at all.
 | `hoops/check-closet.mjs` | 1 | owning, wearing, two devices, the closet on a phone, the coin history |
 | `hoops/check-earn.mjs` | 1 | a guest earns nothing, every award pays once, nothing before the baseline pays |
 | `hoops/check-economy.mjs` | 1 | ledger merge, idempotence, compaction, diminishing tail, the three player days |
+| `hoops/card-ui.js` | 5 | the player card, its pixel art, the board circles, publishing who he is |
+| `hoops/check-card.mjs` | 5 | the card pieces, the 140 shapes, the card on a phone, every design, the boards |
 | `hoops/check-wardrobe.mjs` | 1 | every item in both looks, every pose, no part off the grid, cache keys move, old looks unchanged |
 | `hoops/check-idles.mjs` | 1b | every loop closes, reduced motion still, phone budget |
 | `hoops/check-shop.mjs` | 2 | odds by sampling, pity at the boundary, dupes, exchange, guest wall, the browser walk |
-| `hoops/check-pass.mjs` | 4 | the cap, rollover, settlement |
+| `hoops/pass.js` | 4 | the season, the curve, XP, claims, settlement |
+| `hoops/pass-ui.js` | 4 | the banner, the track, the XP and tier pops |
+| `hoops/check-pass.mjs` | 4 | the cap, rollover, settlement, the track on a phone |
 
 Every sibling script carries a `?v=` in `index.html` and goes into
 `scripts/cachebust.json`. Every one is added to `NEED_*` pins where the page reads
