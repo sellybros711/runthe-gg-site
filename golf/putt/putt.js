@@ -3188,11 +3188,10 @@ function startRound(mode, arg){
    module, or a render that throws, falls back to the flat painter, so a hole is never blank. */
 function v3Ok(){ return !!(window.RTT_PUTT_3D && window.RTT_PUTT_3D.API_VERSION === 1 && window.RTT_PUTT_LAND && window.PXHD); }
 function v3Asp(){ var r = S.stage && S.stage.getBoundingClientRect(); return r && r.width ? Math.round(Math.min(2.4, r.height / r.width) * 5) / 5 : 1.6; }
-/* THE CONSOLE LOOK is being tried on one hole a world (the first) before it goes on every hole: sun shadows,
-   soft corners, haze over the far land, a grade, and a vignette over the stage. window.RTT_PUTT_FX = 'all'
-   puts it on every hole and 'off' takes it off everywhere, so the two can be compared on one screen. */
-var FX_PREVIEW = { 1:1, 19:1, 37:1, 55:1, 73:1, 91:1, 109:1, 127:1, 145:1, 163:1 };
-function fxOn(d){ var f = window.RTT_PUTT_FX; if (f === 'off') return false; if (f === 'all') return true; return !!(d && d.tid === 'main' && !d.daily && FX_PREVIEW[d.tour]); }
+/* THE CONSOLE LOOK is on every themed hole (the tours, the Lab and the Daily): sun shadows, soft corners,
+   haze over the far land, a grade, and a vignette over the stage. window.RTT_PUTT_FX = 'off' takes it off
+   everywhere, so the two can still be compared on one screen. */
+function fxOn(d){ return window.RTT_PUTT_FX !== 'off'; }
 function v3Key(d){ return [d.tpl, d.seed, d.theme, d.extra || 0, v3Asp(), fxOn(d) ? 'fx' : ''].join('|'); }
 function v3Get(d, C){
   if (d.real || !v3Ok()) return null; S.v3c = S.v3c || {}; var k = v3Key(d);
@@ -3424,7 +3423,11 @@ function frame(){
   if (cam.canFollow && !P.ovShown){ P.ovShown = true; var ob = S.ov.querySelector('[data-ov]'); if (ob) ob.hidden = false; }
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = false;
   var bg = C.kind === 'real' ? ((C.biome && C.biome.base) || '#5f8a30') : (cam.v3 && cam.v3.bg) || C.T.bg; ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
-  if (cam.v3) ctx.drawImage(cam.v3.cv, cam.ox, cam.oy, cam.v3.cv.width * cam.k, cam.v3.cv.height * cam.k);
+  if (cam.v3){ var sk = cam.v3.sky, ph = cam.v3.cv.height * cam.k;
+    // the console look carries the land past the picture's edges: haze and sky above the far land, the near land into the dark below
+    if (sk && cam.oy > 0){ var gs = ctx.createLinearGradient(0, 0, 0, cam.oy + 1); gs.addColorStop(0, sk.sky); gs.addColorStop(1, sk.top); ctx.fillStyle = gs; ctx.fillRect(0, 0, W, cam.oy + 1); }
+    if (sk && cam.oy + ph < H){ var gb = ctx.createLinearGradient(0, cam.oy + ph - 1, 0, H); gb.addColorStop(0, sk.bot); gb.addColorStop(1, bg); ctx.fillStyle = gb; ctx.fillRect(0, cam.oy + ph - 1, W, H - cam.oy - ph + 1); }
+    ctx.drawImage(cam.v3.cv, cam.ox, cam.oy, cam.v3.cv.width * cam.k, ph); }
   else { var o = w2s(cam, C.bounds[0], C.bounds[1]), k = cam.s * ART;
     ctx.drawImage(P.art, Math.round(o[0]), Math.round(o[1]), Math.round(P.art.width * k), Math.round(P.art.height * k)); }
   if (C.movers.length) (cam.v3 ? drawMovers3 : drawMovers)(ctx, C, cam, clock);

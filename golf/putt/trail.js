@@ -463,7 +463,7 @@ function land(P){
       if (P.deckAt(x, y)) return ['deck', { pl:Math.floor((y - P.creek.cy(x)) * 2.2 + 50) }];
       var o = P.poolAt(x, y); if (o) return [o.k === 'slow' ? 'bog' : o.k]; if (P.seaAt(x, y)) return ['water'];
       if (P.creek && P.creek.k !== 'ice' && P.creekD(x, y) < 0.7) return [P.creek.k === 'lava' ? 'scorch' : 'bank'];
-      var wd = P.walkD(x, y), sh = P.shadeAt(x, y), ex = sh ? { sh:sh } : null;
+      var wd = P.walkD(x, y), sh = P.shadeAt(x, y) * (P.fx ? 0.4 : 1), ex = sh ? { sh:sh } : null;   // under the console look the sun casts the real shadow, so the painted one is only a contact shade
       if (!P.feet.length && y < -1.5 && y > -16 && Math.abs(x - P.arch.x) < 7.5) return [Math.abs(x - P.arch.x) > 6.6 || y < -15.2 || y > -2.3 ? 'rail' : 'carpet'];
       var dc = Math.hypot(x - P.clr.x, y - P.clr.y) - P.clr.r, ds = Math.hypot(x - P.start.x, y - P.start.y) - (P.start.r - 1), dIn = Math.min(wd - PW, dc, ds);
       if (dIn < 0){ if (dIn > -0.35){ ex = ex || {}; ex.edge = 1; } return [P.themeAt(y) === sp.theme ? 'path' : 'path0', ex]; }
@@ -804,8 +804,8 @@ var BALLOON_COLS = [['#ff5a7a', '#ffd23a'], ['#2bb0ff', '#ffffff'], ['#7a5cff', 
 /* -------------------------------------------------------------------------------- rendering */
 function sceneC(P){ var T = P.spec.T || {}; return { T:T, field:{ h:function(){ return 0; } }, poly:[[0, 0], [1, 0], [1, 1]], allPts:[[0, 0], [1, 1]], mats:{ at:function(){ return 0; } }, bounds:[1e9, 1e9, -1e9, -1e9], seed:P.seed,
   bumpers:[], blocks:[], ramps:[], loops:[], movers:[] }; }
-function slices(P){ var H3 = window.RTT_PUTT_3D; if (!H3) return null;
-  return H3.slices(sceneC(P), { elev:ELEV, art:TART, scene:{ b:P.b, land:land(P), zMax:20, clearAt:function(x, y){ return P.walkD(x, y) - PW - 0.5; } } }); }
+function slices(P){ var H3 = window.RTT_PUTT_3D; if (!H3) return null; P.fx = window.RTT_PUTT_FX !== 'off';
+  return H3.slices(sceneC(P), { elev:ELEV, art:TART, fx:P.fx, scene:{ b:P.b, land:land(P), zMax:20, clearAt:function(x, y){ return P.walkD(x, y) - PW - 0.5; } } }); }
 /* one dynamic thing (a chest, a crate, a gate leaf) rendered on its own, lit and outlined like the scene */
 var PROPS = {};
 function propSprite(key, P, buildFn, w, d, h){ if (PROPS[key] !== undefined) return PROPS[key]; var H3 = window.RTT_PUTT_3D; if (!H3) return null;
@@ -1282,7 +1282,7 @@ function run(box, P, pic, api){
     stepPlants(dt); draw(tsec, dt);
   }
   function draw(tsec, dt){
-    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = false; ctx.fillStyle = kitOf(sp.theme).g[0]; ctx.fillRect(0, 0, W, H);
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = false; ctx.fillStyle = pic.bg || kitOf(sp.theme).g[0]; ctx.fillRect(0, 0, W, H);
     ctx.drawImage(pic.cv, ox, oy, pic.cv.width * kk, pic.cv.height * kk);
     // everything that moves, far to near
     var ds = [];
@@ -1314,6 +1314,7 @@ function run(box, P, pic, api){
     var s = Math.max(2, Math.round(kk * 0.8));
     parts = parts.filter(function(q){ q.t += dt; q.x += q.vx * dt; q.y += q.vy * dt; q.z += q.vz * dt; q.vz -= 18 * dt; if (q.z < pic.zAt(q.x, q.y)){ q.z = pic.zAt(q.x, q.y); q.vz *= -0.3; q.vx *= 0.6; q.vy *= 0.6; }
       var p = scr(q.x, q.y, q.z), qs = q.sz ? Math.round(s * q.sz) : s; ctx.fillStyle = q.c; ctx.globalAlpha = Math.max(0, 1 - q.t / 1.1); ctx.fillRect(Math.round(p[0] - qs / 2), Math.round(p[1] - qs / 2), qs, qs); ctx.globalAlpha = 1; return q.t < 1.1; });
+    if (pic.bg) fxScreen();
     drawFx(tsec);
     if (flash > 0){ ctx.fillStyle = 'rgba(255,120,40,' + (flash * 0.5).toFixed(2) + ')'; ctx.fillRect(0, 0, W, H); flash = Math.max(0, flash - dt * 2); }
     waypoint();
@@ -1321,6 +1322,14 @@ function run(box, P, pic, api){
       if (nearNpc && npc) bp = scr(npc.x, npc.y, pic.zAt(npc.x, npc.y) + GH + 0.6);
       bubEl.style.left = (bp[0] / dpr) + 'px'; bubEl.style.top = (bp[1] / dpr) + 'px'; }
   }
+  /* the console look's last touch, as on a hole: the low sun washing in from the upper left (none at night) and a
+     vignette, drawn over the scene and under what flies to the counters. Built once per screen size. */
+  var fxScr = null;
+  function fxScreen(){ var k = W + 'x' + H; if (!fxScr || fxScr.k !== k){ var c = document.createElement('canvas'); c.width = W; c.height = H; var x = c.getContext('2d');
+      if (!pic.night){ var gl = x.createRadialGradient(W * 0.12, H * 0.05, 0, W * 0.12, H * 0.05, Math.max(W, H) * 0.95); gl.addColorStop(0, 'rgba(255,226,170,0.14)'); gl.addColorStop(0.55, 'rgba(255,226,170,0.04)'); gl.addColorStop(1, 'rgba(255,226,170,0)'); x.fillStyle = gl; x.fillRect(0, 0, W, H); }
+      var v = x.createRadialGradient(W / 2, H * 0.5, Math.min(W, H) * 0.42, W / 2, H * 0.5, Math.hypot(W, H) * 0.62); v.addColorStop(0, 'rgba(8,10,24,0)'); v.addColorStop(1, 'rgba(8,10,24,0.3)'); x.fillStyle = v; x.fillRect(0, 0, W, H);
+      fxScr = { k:k, c:c }; }
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(fxScr.c, 0, 0); }
   /* THE NEXT WORLD IS UNDER CLOUD until its gate opens: a bank of it from the top of the wall to the top of the
      screen, so nothing past the wall shows (its ground, its greeter, its hole). The puffs are pinned to the wall's
      line and to the ground under them, so they move with the camera. When the door opens they roll apart to both
