@@ -1,0 +1,46 @@
+name: "Putt Putt: diagnose a tester's record"
+
+# Read-only. Prints what the server holds for the Putt Putt Tour record of the
+# tester accounts, so a report of "back on hole 1" can be checked against the
+# account's own row rather than argued about. Writes nothing.
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/putt-diag.yml']
+  workflow_dispatch: {}
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+    steps:
+      - name: Install psql
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client >/dev/null
+      - name: The accounts
+        run: |
+          psql "$SUPABASE_DB_URL" -c "select id, username, created_at from profiles where lower(username) in ('runnyj','csel8') order by username;"
+          echo "--- any other account whose name looks like runnyj"
+          psql "$SUPABASE_DB_URL" -c "select id, username, created_at from profiles where lower(username) like '%runny%' order by created_at;"
+      - name: The Putt Putt record on the server
+        run: |
+          psql "$SUPABASE_DB_URL" -c "
+            select p.username, s.slot, s.progress, s.saved_at,
+                   s.payload->>'v' as v,
+                   s.payload->'tours'->'main'->>'lv' as main_lv,
+                   (select count(*) from jsonb_object_keys(coalesce(s.payload->'tours'->'main'->'best','{}'::jsonb))) as main_best,
+                   (select max(k::int) from jsonb_object_keys(coalesce(s.payload->'tours'->'main'->'best','{}'::jsonb)) k) as main_best_max,
+                   (select count(*) from jsonb_object_keys(coalesce(s.payload->'tours'->'main'->'tries','{}'::jsonb))) as main_tries,
+                   s.payload->'cur' as cur, s.payload->>'curT' as cur_t,
+                   s.payload->>'view' as view, s.payload->>'lives' as lives
+            from ps_saves s join profiles p on p.id = s.user_id
+            where s.game = 'putt' and lower(p.username) in ('runnyj','csel8')
+            order by p.username, s.slot;"
+          echo "--- every putt row for a runny account, whatever the slot"
+          psql "$SUPABASE_DB_URL" -c "select p.username, s.game, s.slot, s.progress, s.saved_at, length(s.payload::text) as bytes from ps_saves s join profiles p on p.id = s.user_id where lower(p.username) like '%runny%' order by s.saved_at desc;"
+          echo "--- runnyj main tour best scores"
+          psql "$SUPABASE_DB_URL" -c "select s.payload->'tours'->'main'->'best' as best, s.payload->'tours'->'main'->'tries' as tries from ps_saves s join profiles p on p.id = s.user_id where s.game='putt' and lower(p.username)='runnyj';"
+      - name: The lives row
+        run: |
+          psql "$SUPABASE_DB_URL" -c "select p.username, l.* from putt_lives l join profiles p on p.id = l.user_id where lower(p.username) in ('runnyj','csel8');" || echo "no putt_lives table"
