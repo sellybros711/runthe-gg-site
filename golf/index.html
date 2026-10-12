@@ -60,14 +60,14 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- The Putting Green: a tester preview. It draws nothing until puttOn() opens it (see PUTT_TESTERS). -->
-<script defer src="putt/putt.js?v=58"></script>
-<script defer src="putt/land.js?v=5"></script>
-<script defer src="putt/hole3d.js?v=9"></script>
-<script defer src="putt/trail.js?v=18"></script>
-<script defer src="putt/mapland.js?v=3"></script>
+<script defer src="putt/putt.js?v=60"></script>
+<script defer src="putt/land.js?v=6"></script>
+<script defer src="putt/hole3d.js?v=11"></script>
+<script defer src="putt/trail.js?v=20"></script>
+<script defer src="putt/mapland.js?v=4"></script>
 <!-- The course golfer in the profile style, asked through g3dOn(). -->
 <script defer src="golfer3d.js?v=5"></script>
-<script defer src="tracer3d.js?v=1"></script>
+<script defer src="tracer3d.js?v=2"></script>
 <!-- Google Consent Mode v2 defaults. Advertising storage is denied until the certified CMP (loaded by
      the AdSense tag below) records the user's choice; the CMP then updates these signals automatically,
      including tightening analytics where local law requires it. Analytics storage defaults to granted so
@@ -2309,7 +2309,7 @@ window.GA_ID='G-L29P5MRWKE';
     /* everything else stays a readable column, centred under the window. The scorecard is excluded by
        name: this selector outweighs the rule above it (four class-level parts against three), so without
        the exclusion it quietly clamped the card back to 760 and the 1100 above did nothing. */
-    .screen.scr-dailyround > *:not(.holeview):not(.bcasthd):not(.dcardwrap){max-width:760px; margin-left:auto; margin-right:auto}
+    body:not(.hvfull) .screen.scr-dailyround > *:not(.holeview):not(.bcasthd):not(.dcardwrap){max-width:760px; margin-left:auto; margin-right:auto}
     .screen.scr-dailyround > .dcardwrap{margin-left:auto; margin-right:auto}
     .screen.scr-dailyround > .dcardwrap{margin-top:0}
     /* On desktop the control bar sits IN FLOW directly under the window (order:1) with the scorecard
@@ -2831,6 +2831,230 @@ window.GA_ID='G-L29P5MRWKE';
   .hvbrow{transition:none}
   @media (prefers-reduced-motion:reduce){ .hvbrow{transition:none!important} }
   /* shot-review scrubber: rewatch any hole, replay any single shot's animation */
+  /* ══ FULL SCREEN TOUR TRACER (owner, Oct 2026: "full screen on all devices ... feel much more immersed")
+     body.hvfull is set by render() whenever the round screen shows the tracer (HV_FULL, see hvFullFrame).
+     The window is the whole screen, the camera paints more course to fill whatever shape that is, and every
+     control floats on the picture as frosted glass. The numbers that place the chrome come from the same
+     place as the camera's (hvFullInsets writes --hvt, --hvdock and --hvsb onto the screen), so the hole is
+     framed between the top bar and the dock rather than under them.
+     Fixed elements here are centred with left/right/margin, never a transform: a transform on a fixed
+     element anchors it to the document on iOS (the CS472 drift). */
+  body.hvfull{overflow:hidden; overscroll-behavior:none}
+  body.hvfull .head, body.hvfull .topmask, body.hvfull .foot, body.hvfull .rtt-about, body.hvfull .botnav{display:none!important}
+  body.hvfull #app.has-roundbar, body.hvfull #app{padding-bottom:0}
+  body.hvfull .screen.hvfs{position:fixed; inset:0; z-index:5; max-width:none; margin:0; padding:0; overflow:hidden;
+    background:#06150c; display:block; --hvglass:rgba(6,13,20,.58); --hvedge:rgba(255,255,255,.14)}
+  body.hvfull .hvfs > .holeview{position:absolute; inset:0; margin:0; max-width:none; width:auto}
+  body.hvfull .hvfs > .holeview > .hvbrand{display:none}
+  body.hvfull .hvfs .hvshell{position:absolute; inset:0}
+  body.hvfull .hvfs .hvshell > svg:first-child{width:100%!important; height:100%!important; aspect-ratio:auto!important;
+    border:0!important; border-radius:0!important; box-shadow:none!important}
+  /* the lens, stronger on the whole screen: a low sun from the top left, a vignette, and a deep fall-off top
+     and bottom so the floating chrome reads without a box behind every word */
+  body.hvfull .hvfs .hvshell::after{background:
+      radial-gradient(85% 65% at 10% -6%, rgba(255,216,160,.22), rgba(255,216,160,.05) 42%, rgba(255,216,160,0) 68%),
+      radial-gradient(125% 100% at 50% 52%, rgba(0,0,0,0) 56%, rgba(2,8,16,.5) 100%)}
+  body.hvfull .hvfs .hvshell::before{content:''; position:absolute; inset:0; z-index:1; pointer-events:none;
+    background:linear-gradient(180deg, rgba(2,8,14,.62) 0, rgba(2,8,14,0) calc(var(--hvt,100px) + 10px),
+      rgba(2,8,14,0) calc(100% - var(--hvdock,90px) - 70px), rgba(2,8,14,.6) 100%)}
+  /* ---- the top bar: menu, the broadcast header, the scorecard */
+  body.hvfull .hvtop{position:absolute; z-index:24; top:calc(var(--hvst,0px) + 8px); left:0; right:0; margin:0 auto;
+    width:min(1100px, calc(100% - 16px)); display:flex; align-items:center; gap:8px; pointer-events:none}
+  body.hvfull .hvtop > *{pointer-events:auto}
+  body.hvfull .hvfs{--hvst:env(safe-area-inset-top,0px)}
+  body.hvfull .hvtb{flex:0 0 auto; height:46px; min-width:46px; padding:0 12px; border-radius:14px; display:flex; align-items:center; justify-content:center; gap:7px;
+    background:var(--hvglass); border:1px solid var(--hvedge); color:#eef4ee; cursor:pointer;
+    backdrop-filter:blur(12px) saturate(1.3); -webkit-backdrop-filter:blur(12px) saturate(1.3); box-shadow:0 10px 26px -14px rgba(0,0,0,.9);
+    font:800 11px/1 var(--body); letter-spacing:.12em; text-transform:uppercase; touch-action:manipulation}
+  body.hvfull .hvtb svg{width:20px; height:20px; display:block}
+  body.hvfull .hvtb-card{color:var(--gold); border-color:rgba(241,208,74,.42)}
+  body.hvfull .hvtb-card[aria-expanded="true"]{background:rgba(241,208,74,.2)}
+  body.hvfull .hvtb:active{transform:scale(.95)}
+  body.hvfull .hvtop .bcasthd{flex:1 1 auto; min-width:0; width:auto; max-width:none; margin:0; height:auto; min-height:46px;
+    border-radius:14px; padding:6px 14px; background:var(--hvglass)!important; border:1px solid var(--hvedge);
+    backdrop-filter:blur(12px) saturate(1.3); -webkit-backdrop-filter:blur(12px) saturate(1.3); box-shadow:0 10px 26px -14px rgba(0,0,0,.9)}
+  body.hvfull .hvtop .bcasthd .bc-name{font-size:19px}
+  /* ---- the hole view's own chips, re-anchored to the chrome */
+  body.hvfull .hvfs .hvhole{top:calc(var(--hvst,0px) + 62px); left:calc(8px + env(safe-area-inset-left,0px));
+    background:var(--hvglass); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px)}
+  body.hvfull .hvfs .hvresult{top:calc(var(--hvst,0px) + 62px); right:calc(8px + env(safe-area-inset-right,0px))}
+  body.hvfull .hvfs .hvwind,
+  body.hvfull .hvfs .hvboard{bottom:calc(var(--hvdock,90px) + var(--hvdh,40px) + 14px);
+    background:var(--hvglass); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px)}
+  body.hvfull .hvfs .hvwind{left:calc(8px + env(safe-area-inset-left,0px))}
+  body.hvfull .hvfs .hvboard{right:calc(8px + env(safe-area-inset-right,0px))}
+  body.hvfull .hvfs .hvwind.nodesc,
+  body.hvfull .hvfs .hvboard.nodesc{bottom:calc(var(--hvdock,90px) + 10px)}
+  body.hvfull .hvfs .hvdesc{left:0; right:0; margin:0 auto; width:min(720px, calc(100% - 16px)); bottom:calc(var(--hvdock,90px) + 8px);
+    background:var(--hvglass); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px)}
+  body.hvfull .hvfs .hvdec{left:0; right:0; margin:0 auto; width:min(720px, calc(100% - 16px)); bottom:calc(var(--hvsb,0px) + 10px)}
+  /* the call is read in full, never cut off half way through a sentence */
+  body.hvfull .hvfs .hvdec .dkp{height:auto; overflow:visible}
+  /* ---- the dock: Play/Pause/Next as one frosted pill (fixed, centred without a transform) */
+  body.hvfull .hvfs > .hvctrl.fixed{position:fixed; left:0; right:0; margin:0 auto; bottom:calc(var(--hvsb,0px) + 8px); z-index:24;
+    width:min(560px, calc(100% - 16px)); max-width:none; border-radius:22px; padding:7px 6px 6px;
+    background:var(--hvglass); border:1px solid var(--hvedge); box-shadow:0 16px 36px -16px rgba(0,0,0,.9);
+    backdrop-filter:blur(14px) saturate(1.3); -webkit-backdrop-filter:blur(14px) saturate(1.3)}
+  body.hvfull .hvfs > .hvctrl.fixed > *{max-width:none}
+  body.hvfull .hvfs .hvctrl-cap{display:none}
+  body.hvfull .hvfs .hvctrl-side{gap:4px; font-size:9.5px}
+  body.hvfull .hvfs .hvctrl-side .ci{width:38px; height:38px}
+  body.hvfull .hvfs .hvctrl-play{gap:4px}
+  body.hvfull .hvfs .hvctrl-play .cb{width:50px; height:50px; font-size:22px}
+  /* the end of the round and the mulligan take the dock's place */
+  body.hvfull .hvfs > .hvfin{position:fixed; left:0; right:0; margin:0 auto; bottom:calc(var(--hvsb,0px) + 12px); z-index:24;
+    width:min(520px, calc(100% - 24px)); max-width:none}
+  body.hvfull .hvfs > div.hvfin{padding:14px; border-radius:16px; background:var(--hvglass); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px)}
+  body.hvfull .hvfs > .hvmull{position:fixed; left:0; right:0; margin:0 auto!important; bottom:calc(var(--hvsb,0px) + 10px); z-index:24;
+    width:min(520px, calc(100% - 20px)); max-width:none!important; background:linear-gradient(160deg,rgba(40,32,8,.86),rgba(8,14,10,.9))!important;
+    backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px)}
+  /* ---- reviewing a hole: a panel at the side on anything wide, a compact card above the dock on a phone */
+  body.hvfull .hvfs > .revbar{position:absolute; z-index:22; margin:0; max-width:none; text-align:left;
+    background:var(--hvglass); border:1px solid var(--hvedge); border-radius:16px; padding:10px 12px;
+    backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); overflow:auto; overscroll-behavior:contain}
+  body.hvfull .hvfs[data-hvl="phone"] > .revbar{left:8px; right:8px; bottom:calc(var(--hvdock,90px) + 6px); height:144px; padding:8px 10px}
+  body.hvfull .hvfs[data-hvl="phone"] > .revbar .rvdesc{display:none}
+  body.hvfull .hvfs[data-hvl="phone"] > .revbar .shotlist{flex-direction:row; overflow-x:auto; gap:6px; margin-top:7px; max-width:none; scroll-snap-type:x proximity}
+  body.hvfull .hvfs[data-hvl="phone"] > .revbar .shotlist .sl{flex:0 0 210px; scroll-snap-align:start; font-size:11px; max-height:56px; overflow:hidden}
+  body.hvfull .hvfs[data-hvl="phone"] > .revbar .revbtns{margin-top:7px; flex-wrap:nowrap}
+  body.hvfull .hvfs[data-hvl="phone"] > .revbar .revbtns .btn{min-width:0; padding:9px 10px; font-size:12px}
+  body.hvfull .hvfs[data-hvl="wide"] > .revbar,
+  body.hvfull .hvfs[data-hvl="short"] > .revbar{left:calc(10px + env(safe-area-inset-left,0px)); width:min(340px, 34vw);
+    top:calc(var(--hvt,74px) + 44px); max-height:calc(100% - var(--hvt,74px) - 52px - var(--hvdock,100px))}
+  body.hvfull .hvfs[data-hvl="short"] > .revbar{top:calc(var(--hvt,50px) + 4px)}
+  /* ---- the scorecard: a sheet the Card button opens over the course */
+  body.hvfull .hvfs > .dcardwrap{position:fixed; z-index:30; left:0; right:0; margin:0 auto; bottom:0;
+    width:min(1100px, 100%); max-width:none; max-height:72%; overflow:auto; overscroll-behavior:contain;
+    border-radius:20px 20px 0 0; padding:14px 14px calc(16px + var(--hvsb,0px));
+    background:linear-gradient(180deg,rgba(10,26,18,.94),rgba(5,14,10,.97)); border:1px solid rgba(241,208,74,.3); border-bottom:0;
+    box-shadow:0 -24px 60px -20px rgba(0,0,0,.9); visibility:hidden; opacity:0; translate:0 24px;
+    transition:opacity .2s ease, translate .26s cubic-bezier(.2,.9,.3,1), visibility 0s linear .26s}
+  body.hvfull .hvfs.hvcard-open > .dcardwrap{visibility:visible; opacity:1; translate:0 0; transition:opacity .2s ease, translate .26s cubic-bezier(.2,.9,.3,1)}
+  body.hvfull .hvfs > .dcardwrap .dcardhd{display:flex; align-items:center; gap:10px}
+  body.hvfull .hvfs > .dcardwrap .dcardhd .h{margin-left:auto}
+  .hvcard-x{display:none}
+  body.hvfull .hvcard-x{display:flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:50%; flex:0 0 auto;
+    background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.18); color:#eef4ee; font-size:14px; cursor:pointer}
+  body.hvfull .hvcard-scrim{position:fixed; inset:0; z-index:29; background:rgba(2,8,6,.45); opacity:0; visibility:hidden; transition:opacity .2s ease, visibility 0s linear .2s}
+  body.hvfull .hvfs.hvcard-open > .hvcard-scrim{opacity:1; visibility:visible; transition:opacity .2s ease}
+  @media (prefers-reduced-motion:reduce){ body.hvfull .hvfs > .dcardwrap, body.hvfull .hvcard-scrim{transition:none} }
+  /* ---- QUICK PLAY's routine holes: no tracer, the same stage. The hole's course fills the screen softened
+     behind the glass, the running score sits in the middle, and the scorecard stays docked over the controls. */
+  body.hvfull .hvfs.hvq{background:radial-gradient(120% 90% at 50% 30%, #123a24, #04110a)}
+  body.hvfull .hvfs.hvq > .hvqbg{position:absolute; inset:-24px; z-index:0; background-size:cover; background-position:center;
+    image-rendering:pixelated; filter:blur(5px) brightness(.62) saturate(1.12); transform:scale(1.05);
+    animation:hvqDrift 28s ease-in-out infinite alternate}
+  @keyframes hvqDrift{from{transform:scale(1.05) translate(0,0)} to{transform:scale(1.1) translate(-1.2%,-1.6%)}}
+  body.hvfull .hvfs.hvq::before{content:''; position:absolute; inset:0; z-index:1; pointer-events:none; background:
+      radial-gradient(85% 65% at 10% -6%, rgba(255,216,160,.2), rgba(255,216,160,0) 66%),
+      radial-gradient(120% 95% at 50% 46%, rgba(0,0,0,0) 40%, rgba(2,8,16,.62) 100%),
+      linear-gradient(180deg, rgba(2,8,14,.55) 0, rgba(2,8,14,0) 26%, rgba(2,8,14,0) 62%, rgba(2,8,14,.7) 100%)}
+  body.hvfull .hvfs.hvq > .hvqhero{position:absolute; left:0; right:0; top:var(--hvt,104px);
+    bottom:calc(var(--hvdock,90px) + var(--hvqcard,190px) + 14px); z-index:3; display:flex; align-items:center; justify-content:center; padding:0 10px; pointer-events:none}
+  body.hvfull .hvfs.hvq .hvq-in{pointer-events:auto; text-align:center; padding:16px 22px 18px; border-radius:22px; width:min(440px, 100%);
+    background:linear-gradient(170deg, rgba(14,30,24,.62), rgba(4,12,10,.66)); border:1px solid var(--hvedge,rgba(255,255,255,.14));
+    box-shadow:0 22px 50px -24px rgba(0,0,0,.85), inset 0 1px 0 rgba(255,255,255,.08); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px)}
+  body.hvfull .hvfs.hvq .hvq-eye{display:flex; align-items:center; justify-content:center; gap:8px; font:800 11px/1 var(--body);
+    letter-spacing:.2em; text-transform:uppercase; color:#cfe3d6}
+  body.hvfull .hvfs.hvq .hvq-dot{width:7px; height:7px; border-radius:50%; background:#3ce8b8; box-shadow:0 0 10px #3ce8b8}
+  body.hvfull .hvfs.hvq .hvq-score{font:800 clamp(46px, 13vw, 76px)/1 var(--display, var(--body)); margin:10px 0 6px; letter-spacing:.01em;
+    text-shadow:0 4px 22px rgba(0,0,0,.55); font-variant-numeric:tabular-nums}
+  body.hvfull .hvfs.hvq .hvq-score small{font-size:.48em; opacity:.85; vertical-align:.28em}
+  body.hvfull .hvfs.hvq .hvq-pace{font:700 13px/1.35 var(--body); color:#c4d6ca}
+  body.hvfull .hvfs.hvq .hvq-pace b{color:var(--gold)}
+  body.hvfull .hvfs.hvq .hvq-res{display:flex; align-items:baseline; justify-content:center; flex-wrap:wrap; gap:4px 10px; margin:13px auto 0;
+    padding:9px 16px; border-radius:14px; border:1.5px solid var(--rc); background:rgba(0,0,0,.28); width:max-content; max-width:100%;
+    box-shadow:0 0 22px -6px var(--rc); animation:hvqPop .34s cubic-bezier(.2,1.4,.4,1) both}
+  body.hvfull .hvfs.hvq .hvq-res.hot{box-shadow:0 0 30px -2px var(--rc)}
+  body.hvfull .hvfs.hvq .hvq-res .hn{font:800 11px/1 var(--body); letter-spacing:.16em; text-transform:uppercase; color:#b9cbbf}
+  body.hvfull .hvfs.hvq .hvq-res .rn{font:900 19px/1 var(--body); letter-spacing:.04em}
+  body.hvfull .hvfs.hvq .hvq-res .rs{font:800 14px/1 var(--body); color:#eef4ee; font-variant-numeric:tabular-nums}
+  @keyframes hvqPop{from{opacity:0; transform:scale(.86)} to{opacity:1; transform:none}}
+  body.hvfull .hvfs.hvq .hvq-next{margin-top:12px; font:800 11px/1 var(--body); letter-spacing:.16em; text-transform:uppercase; color:#8fa89a}
+  body.hvfull .hvfs.hvq > .dcardwrap{position:fixed; left:0; right:0; margin:0 auto; bottom:calc(var(--hvdock,90px) + 6px); top:auto;
+    width:min(760px, calc(100% - 16px)); max-height:none; border-radius:16px; padding:10px 12px 12px; border:1px solid var(--hvedge,rgba(255,255,255,.14));
+    background:var(--hvglass,rgba(6,13,20,.58)); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+    visibility:visible; opacity:1; translate:0 0; transition:none; box-shadow:0 18px 44px -22px rgba(0,0,0,.9)}
+  body.hvfull .hvfs.hvq[data-hvm="done"] > .dcardwrap{bottom:calc(var(--hvsb,0px) + 76px)}
+  body.hvfull .hvfs.hvq[data-hvm="mull"] > .dcardwrap{display:none}
+  body.hvfull .hvfs.hvq[data-hvm="mull"] > .hvqhero{bottom:calc(var(--hvsb,0px) + 190px)}
+  body.hvfull .hvfs.hvq[data-hvl="short"] > .dcardwrap{display:none}
+  body.hvfull .hvfs.hvq[data-hvl="short"] > .hvqhero{bottom:calc(var(--hvdock,62px) + 6px)}
+  body.hvfull .hvfs.hvq[data-hvl="short"] .hvq-in{padding:10px 18px 12px}
+  body.hvfull .hvfs.hvq[data-hvl="short"] .hvq-score{font-size:42px; margin:6px 0 4px}
+  @media (prefers-reduced-motion:reduce){ body.hvfull .hvfs.hvq > .hvqbg, body.hvfull .hvfs.hvq .hvq-res{animation:none} }
+  /* ---- the head to head and playoff watch: their buttons in the round's glass dock, and a glass card over the
+     course for a call or a final board */
+  body.hvfull .hvfs > .hvwdock{position:fixed; left:0; right:0; margin:0 auto; bottom:calc(var(--hvsb,0px) + 10px); z-index:24;
+    width:min(560px, calc(100% - 16px)); display:flex; gap:8px; padding:8px; border-radius:18px;
+    background:var(--hvglass,rgba(6,13,20,.58)); border:1px solid var(--hvedge,rgba(255,255,255,.14));
+    backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); box-shadow:0 16px 40px -20px rgba(0,0,0,.9)}
+  body.hvfull .hvfs > .hvwdock .btn{flex:1 1 0; margin:0!important; max-width:none!important; min-width:0}
+  body.hvfull .hvfs[data-hvl="short"] > .hvwdock{width:min(440px, calc(100% - 16px)); padding:5px; gap:6px; bottom:calc(var(--hvsb,0px) + 5px)}
+  body.hvfull .hvfs[data-hvl="short"] > .hvwdock .btn{padding:9px 10px; font-size:13px; min-height:0}
+  body.hvfull .hvfs[data-hvl="short"] > .hvpanel{padding:10px 14px; bottom:calc(var(--hvsb,0px) + 58px); max-height:calc(100% - var(--hvt,50px) - 66px)}
+  body.hvfull .hvfs[data-hvl="short"] > .hvpanel h2{font-size:18px!important; margin:6px 0 2px!important}
+  body.hvfull .hvfs > .hvpanel{position:fixed; left:0; right:0; margin:0 auto; z-index:23; bottom:calc(var(--hvdock,90px) + 8px);
+    width:min(460px, calc(100% - 16px)); max-height:calc(100% - var(--hvt,104px) - var(--hvdock,90px) - 22px); overflow:auto; overscroll-behavior:contain;
+    padding:16px 16px 14px; border-radius:20px; text-align:center;
+    background:linear-gradient(170deg, rgba(16,30,26,.74), rgba(4,12,10,.82)); border:1px solid var(--pc,rgba(241,208,74,.42));
+    box-shadow:0 0 34px -10px var(--pc,rgba(241,208,74,.4)), 0 22px 50px -24px rgba(0,0,0,.9);
+    backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); animation:hvqPop .32s cubic-bezier(.2,1.3,.4,1) both}
+  body.hvfull .hvfs > .hvpanel h2{margin:10px 0 4px; font-size:22px; color:#fff; justify-content:center}
+  body.hvfull .hvfs > .hvpanel .hvp-rows{display:grid; gap:6px; margin-top:10px; text-align:left}
+  @media (prefers-reduced-motion:reduce){ body.hvfull .hvfs > .hvpanel{animation:none} }
+  /* a phone has no side to spare: the hole spans the width, so the scoreboard becomes a one-line score bar in
+     the band above the dock (a broadcast bug) and the wind moves up beside the hole chip. A board in its
+     desktop corner covered the bottom half of the fairway, tee shot included. */
+  body.hvfull .hvfs[data-hvl="phone"] .hvboard{left:8px; right:8px; width:auto; max-width:none; bottom:calc(var(--hvdock,90px) + 50px);
+    flex-direction:row; align-items:center; gap:6px; padding:5px 7px; border-radius:12px; overflow-x:auto; overflow-y:hidden; scrollbar-width:none; white-space:nowrap}
+  body.hvfull .hvfs[data-hvl="phone"] .hvboard::-webkit-scrollbar{display:none}
+  body.hvfull .hvfs[data-hvl="phone"] .hvboard.nodesc{bottom:calc(var(--hvdock,90px) + 8px)}
+  body.hvfull .hvfs[data-hvl="phone"] .hvboard > *{flex:0 0 auto}
+  body.hvfull .hvfs[data-hvl="phone"] .hvbcap,
+  body.hvfull .hvfs[data-hvl="phone"] .hvbtarget{padding:0 2px; font-size:10px}
+  body.hvfull .hvfs[data-hvl="phone"] .hvbrow{padding:3px 6px; gap:5px}
+  body.hvfull .hvfs[data-hvl="phone"] .hvbrow .rk{display:none}
+  body.hvfull .hvfs[data-hvl="phone"] .hvbrow .nm{max-width:90px}
+  body.hvfull .hvfs[data-hvl="phone"] .hvbfoot{border-top:0; border-left:1px solid rgba(255,255,255,.14); margin:0; padding:0 0 0 7px}
+  body.hvfull .hvfs[data-hvl="phone"] .mpholes{flex-wrap:nowrap; margin:0; padding:0 0 0 6px; border-top:0; border-left:1px solid rgba(255,255,255,.1)}
+  body.hvfull .hvfs[data-hvl="phone"] .hvwind,
+  body.hvfull .hvfs[data-hvl="phone"] .hvwind.nodesc{bottom:auto; left:auto; top:calc(var(--hvst,0px) + 62px); right:calc(8px + env(safe-area-inset-right,0px))}
+  body.hvfull .hvfs[data-hvm="review"][data-hvl="phone"] .hvboard,
+  body.hvfull .hvfs[data-hvm="review"][data-hvl="phone"] .hvdesc{display:none}
+  body.hvfull .hvfs[data-hvl="phone"] .hvresult{top:calc(var(--hvst,0px) + 100px); left:0; right:0; margin:0 auto; width:max-content; max-width:calc(100% - 16px)}
+  /* ---- a phone held upright: the header wraps to two lines, the dock is a touch tighter */
+  body.hvfull .hvfs[data-hvl="phone"] .hvtop .bcasthd{padding:6px 12px}
+  body.hvfull .hvfs[data-hvl="phone"] .hvtop .bcasthd .bc-name{font-size:17px}
+  body.hvfull .hvfs[data-hvl="phone"] .hvtb-card span{display:none}
+  body.hvfull .hvfs[data-hvl="phone"] .hvtb{padding:0 10px}
+  /* ---- a phone on its side: one line everywhere, no caption, a slim dock */
+  body.hvfull .hvfs[data-hvl="short"] .hvtop{top:calc(var(--hvst,0px) + 5px)}
+  body.hvfull .hvfs[data-hvl="short"] .hvtb{height:38px; min-width:38px}
+  body.hvfull .hvfs[data-hvl="short"] .hvtop .bcasthd{min-height:38px; padding:3px 12px; flex-wrap:nowrap}
+  body.hvfull .hvfs[data-hvl="short"] .hvtop .bcasthd .bc-name{font-size:15px; flex:0 1 auto; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  body.hvfull .hvfs[data-hvl="short"] .hvtop .bcasthd .bc-meta{flex:0 1 auto; text-align:right}
+  body.hvfull .hvfs[data-hvl="short"] .hvhole{top:calc(var(--hvst,0px) + 50px)}
+  body.hvfull .hvfs[data-hvl="short"] .hvresult{top:calc(var(--hvst,0px) + 50px)}
+  body.hvfull .hvfs[data-hvl="short"] .hvdesc{display:none}
+  /* sideways there is no room for the prose: the two calls carry the decision */
+  body.hvfull .hvfs[data-hvl="short"] .hvdec .dkp{display:none}
+  body.hvfull .hvfs[data-hvl="short"] .hvwind,
+  body.hvfull .hvfs[data-hvl="short"] .hvboard{bottom:calc(var(--hvdock,62px) + 8px)}
+  body.hvfull .hvfs[data-hvl="short"] > .hvctrl.fixed{width:min(440px, calc(100% - 16px)); padding:4px 6px; bottom:calc(var(--hvsb,0px) + 5px)}
+  body.hvfull .hvfs[data-hvl="short"] .hvctrl-side .cl,
+  body.hvfull .hvfs[data-hvl="short"] .hvctrl-play .cl{display:none}
+  body.hvfull .hvfs[data-hvl="short"] .hvctrl-side .ci{width:34px; height:34px}
+  body.hvfull .hvfs[data-hvl="short"] .hvctrl-play .cb{width:44px; height:44px}
+  /* ---- anything wide: a bigger dock, the type scaled up by the desktop blocks above */
+  body.hvfull .hvfs[data-hvl="wide"] > .hvctrl.fixed{width:min(600px, calc(100% - 24px)); bottom:calc(var(--hvsb,0px) + 12px); padding:9px 10px 8px}
+  body.hvfull .hvfs[data-hvl="wide"] .hvctrl-side .ci{width:42px; height:42px}
+  body.hvfull .hvfs[data-hvl="wide"] .hvctrl-play .cb{width:56px; height:56px}
+  body.hvfull .hvfs[data-hvl="wide"] .hvtop{top:calc(var(--hvst,0px) + 10px); width:min(1240px, calc(100% - 24px))}
+  body.hvfull .hvfs[data-hvl="wide"] .hvtop .bcasthd{flex:0 1 auto; margin:0 auto; padding:7px 18px}
+  body.hvfull .hvfs[data-hvl="wide"] .hvtop .hvtb-card{margin-left:0}
+  body.hvfull .hvfs[data-hvl="wide"] .hvhole,
+  body.hvfull .hvfs[data-hvl="wide"] .hvresult{top:calc(var(--hvst,0px) + 70px)}
   .revbar{max-width:560px;margin:9px auto 0;text-align:center}
   .revbar .rvtitle{font:800 13px/1.3 var(--body);color:var(--oncard)}
   .revbar .rvdesc{font:600 12px/1.4 var(--body);color:#cdd8ce;margin:5px auto 0;max-width:520px;min-height:17px}
@@ -12387,9 +12611,11 @@ function render(){
   // blank with no error shown anywhere, this catch turns that into a recoverable "Back to Title"
   // card instead (showing the real error message so a recurrence is diagnosable straight from a
   // screenshot, not just from analytics we might never see).
+  HV_FULL=null;   // the full-screen tracer is the round screen's to claim, per render (see hvFullFrame)
   try{
     ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,qschool:scrQSchool,entry:scrEntry,season:scrSeason,summary:scrSummary,recap:scrRecap,careerend:scrCareerEnd,circuitend:scrCircuitEnd,rules:scrRules,dailyintro:scrDailyIntro,dailyprev:scrDailyPreview,dailyround:scrDailyRound,dailyresult:scrDailyResult,playoffwatch:scrPlayoffWatch,h2hhome:scrH2HHome,h2hlobby:scrH2HLobby,h2hdraft:scrH2HDraft,h2hplay:scrH2HPlay,h2hpreview:scrH2HPreview,h2hwatch:scrH2HWatch,h2hresult:scrH2HResult,h2hboard:scrH2HBoard})[S.screen]();
   }catch(err){
+    HV_FULL=null;
     console.error('[RunTheTour] screen render failed:', S.screen, err);
     try{ track('screen_render_error',{screen:S.screen,message:(err&&err.message)||String(err)}); }catch(e){}
     screen.innerHTML='';
@@ -12424,6 +12650,7 @@ function render(){
     }
     screen.appendChild(fb);
   }
+  try{ document.body.classList.toggle('hvfull', !!HV_FULL); }catch(e){}
   try{ seasonDecorPost(); }catch(e){}   // again, now the screen exists: two hidden things live on screens
   // Tour Pass level-up: flushed here (once the result screen is actually on screen) rather than from inside
   // each screen fn, so an early return in one of them can't skip it. Deferred a beat so the page paints first.
@@ -25485,7 +25712,18 @@ function scrPlayoffWatch(){
   const W=S.poW; if(!W){ S.screen='season'; return scrSeason(); }
   const plan=W.plan, key=plan.key, courseObj=DAILY_COURSES[key];
   const venue=courseObj?dShort(courseObj.v):'';
-  add(h2hTag(`Sudden-Death Playoff${venue?' · '+esc(venue):''}`, !W.done));
+  /* FULL SCREEN, the round's stage: the playoff hole fills the screen from the announcement to the result. The
+     announcement and the result are glass cards over the course (the hole about to be played, then the last one
+     played), the live hole carries the same chips as the round, and every button sits in the glass dock. */
+  const inHole=(!W.intro && !W.done && W.hole<plan.holes.length);
+  const lastH=plan.holes.length?plan.holes[Math.max(0,Math.min(plan.holes.length-1, W.intro?0:(W.done?plan.holes.length-1:W.hole)))]:null;
+  const fullP=lastH?hvFullSet(inHole?'play':'po'):null;
+  const hdTxt=`${esc(plan.evt||'Sudden death')}`, hdMeta=`Sudden-death playoff${venue?' · '+esc(venue):''}`;
+  if(fullP) add(hvBcastHd(hdTxt, hdMeta, '#ff6b5e', !W.done));
+  else add(h2hTag(`Sudden-Death Playoff${venue?' · '+esc(venue):''}`, !W.done));
+  let stage=null;   // the hole on screen; null → the page layout
+  const backdrop=(ph, step, shots)=>{ const hvn=hvNode({n:ph.n, par:ph.par, yards:ph.yards, shots:shots||[]}, step, ph.n-1, key); if(hvn){ add(hvn); stage=hvn; } return hvn; };
+  const btns=[];
   if(W.intro){
     // CS235: quick pop-up announcement - "you're entering a playoff against X" - then it auto-rolls into the sim
     const field=plan.holes[0]?plan.holes[0].alive:[];
@@ -25495,18 +25733,16 @@ function scrPlayoffWatch(){
       : nm.length===2 ? nm[0]+' and '+nm[1]
       : nm.slice(0,-1).join(', ')+' and '+nm[nm.length-1];
     const dots=opps.map(a=>`<span class="cdot" style="background:${a.col};width:13px;height:13px"></span>`).join('');
-    add($(`<div class="scout" style="max-width:460px;margin:26px auto 12px;text-align:center;border-color:#ff6b5e;box-shadow:0 0 26px rgba(255,107,94,.18)">
-      <div class="center"><span class="tag" style="color:#ff6b5e;border-color:#ff6b5e">🔥 Playoff</span></div>
+    const body=`<div class="center"><span class="tag" style="color:#ff6b5e;border-color:#ff6b5e">🔥 Playoff</span></div>
       <h2 style="margin:14px 0 5px;font-size:24px;font-family:var(--serif);color:#fff">You're in a playoff!</h2>
       <div class="small" style="color:#cfe6d8">${esc(plan.evt||'Sudden death')}${plan.major?' · Major':''}</div>
       <div style="font-size:15px;color:var(--oncard);line-height:1.5;margin:12px 0 8px">Sudden death against<br><b style="color:#ffd45e">${oppTxt}</b></div>
       <div style="display:flex;justify-content:center;align-items:center;gap:7px;margin:6px 0 2px">${dots}</div>
-      <div class="small muted" style="margin-top:12px">Heading to the TOURTRACE simulation…</div>
-    </div>`));
-    if(!W.reduce){ const go=$(`<button class="btn goldfill" style="max-width:320px;margin:6px auto 0">Start the playoff ▸</button>`); go.onclick=poWatchBegin; add(go); }
-    return;
-  }
-  if(!W.done && W.hole<plan.holes.length){
+      <div class="small muted" style="margin-top:12px">${lastH?`Playoff hole 1 · Par ${lastH.par} · ${lastH.yards} yds`:'Heading to the TOURTRACE simulation…'}</div>`;
+    if(fullP && lastH && backdrop(lastH, null, [])){ const pn=hvPanel(body); pn.style.setProperty('--pc','rgba(255,107,94,.55)'); add(pn); }
+    else add($(`<div class="scout" style="max-width:460px;margin:26px auto 12px;text-align:center;border-color:#ff6b5e;box-shadow:0 0 26px rgba(255,107,94,.18)">${body}</div>`));
+    if(!W.reduce){ const go=$(`<button class="btn goldfill" style="max-width:320px;margin:6px auto 0">Start the playoff ▸</button>`); go.onclick=poWatchBegin; btns.push(go); }
+  } else if(inHole){
     const ph=plan.holes[W.hole];
     // OWNER (2026-08-23): only YOUR ball plays out on the tracer in a career playoff.
     // Opponents' scores are revealed on the board when your hole finishes ("...and the field").
@@ -25525,20 +25761,22 @@ function scrPlayoffWatch(){
         bd.appendChild($(`<div class="hvbrow ${a.you?'mine':''}"><span class="cdot" style="background:${a.col}"></span><span class="nm">${a.you?'YOU':esc(a.name)}</span><span class="tp" style="color:${isIn?(a.low?'var(--gold)':'#ff9d8f'):'#8fa39a'}">${isIn?esc(dResultLong(ph.par,a.tp)):'…'}</span></div>`)); });
       shell.appendChild(bd);
       if(curSh && curSh.d) shell.appendChild($(`<div class="hvob hvdesc"><b style="color:${ph.cols[yourIdx]||'#3b82f6'}">YOU</b> · ${esc(curSh.d)}</div>`));
-      add(hvn);
+      add(hvn); stage=hvn;
     } else { add($(`<div class="center muted" style="padding:24px 8px">Sudden-death playoff…</div>`)); }
-    if(!W.reduce){ const sk=$(`<button class="btn ghost" style="max-width:320px;margin:12px auto 0">Skip to result ▸</button>`); sk.onclick=poWatchSkip; add(sk); }
+    if(!W.reduce){ const sk=$(`<button class="btn ghost" style="max-width:320px;margin:12px auto 0">Skip to result ▸</button>`); sk.onclick=poWatchSkip; btns.push(sk); }
   } else {
     // final result
     const won=!!(plan.winner && plan.winner.p && plan.winner.p.you);
-    add($(`<div class="scout" style="max-width:440px;margin:16px auto 10px;text-align:center;border-color:var(--gold);box-shadow:0 0 22px rgba(241,208,74,.16)">
-      <div class="center"><span class="tag" style="color:#ff6b5e;border-color:#ff6b5e">🔥 Sudden-Death Playoff</span></div>
+    const body=`<div class="center"><span class="tag" style="color:#ff6b5e;border-color:#ff6b5e">🔥 Sudden-Death Playoff</span></div>
       <h2 style="margin:12px 0 4px;font-size:22px;color:${won?'#35d6a0':'#fff'}">${won?'You won the playoff!':'Lost in the playoff'}</h2>
-      <div class="small muted">${won?('Took it on the '+ord(plan.holeCount)+' playoff hole'):(esc(plan.winner&&plan.winner.p?plan.winner.p.name:'')+' won on the '+ord(plan.holeCount)+' playoff hole')}</div>
-    </div>`));
-    if(W.auto||W.reduce){ add($(`<div class="center small muted">Continuing…</div>`)); }
-    else { const cont=$(`<button class="btn goldfill" style="max-width:320px;margin:0 auto">${won?'Celebrate ▸':'Continue ▸'}</button>`); cont.onclick=poWatchFinish; add(cont); }
+      <div class="small muted">${won?('Took it on the '+ord(plan.holeCount)+' playoff hole'):(esc(plan.winner&&plan.winner.p?plan.winner.p.name:'')+' won on the '+ord(plan.holeCount)+' playoff hole')}</div>`;
+    if(fullP && lastH && backdrop(lastH, null, lastH.yourShots||[])){ const pn=hvPanel(body); pn.style.setProperty('--pc', won?'rgba(53,214,160,.55)':'rgba(241,208,74,.45)'); add(pn); }
+    else add($(`<div class="scout" style="max-width:440px;margin:16px auto 10px;text-align:center;border-color:var(--gold);box-shadow:0 0 22px rgba(241,208,74,.16)">${body}</div>`));
+    if(W.auto||W.reduce){ const c2=$(`<div class="center small muted">Continuing…</div>`); if(stage) btns.push(c2); else add(c2); }
+    else { const cont=$(`<button class="btn goldfill" style="max-width:320px;margin:0 auto">${won?'Celebrate ▸':'Continue ▸'}</button>`); cont.onclick=poWatchFinish; btns.push(cont); }
   }
+  if(stage && HV_FULL){ if(btns.length) add(hvWatchDock(btns)); hvFullChrome(RT); }
+  else { HV_FULL=null; btns.forEach(b=>add(b)); }
 }
 // one sudden-death hole, lower is better, high variance so a single hole is genuinely random
 // one sudden-death hole → a SCORE-TO-PAR INTEGER (like a real playoff hole). Two players who make the
@@ -31128,7 +31366,135 @@ const HV_WIDE_MIN=1000;     // the desktop breakpoint the round layout uses
 const HV_DESK_CHROME=296;   // banner + broadcast header ABOVE, the in-flow control bar BELOW (measured: ~126px bar + gaps)
 const HV_DESK_MAXW=1600;    // even on a huge screen the frame stops here
 const HV_AR_MAX=(HV_W+2*HV_EX_MAX)/HV_H;   // the widest frame shape the camera will paint
-var HV_EXL=HV_EX, HV_CAML=HV_CAM;
+var HV_EXL=HV_EX, HV_EYT=0, HV_EYB=0, HV_CAML=HV_CAM;
+/* ---- FULL SCREEN (owner, Oct 2026: "make tour tracer full screen on all devices"). When the round screen is
+   up with the tracer showing, the frame is the WHOLE WINDOW, whatever its shape. The hole keeps the size the
+   window gives it (a phone the same as it always was, a desktop bigger), and the camera paints more course
+   round it to fill the rest: down the sides on a wide screen, above and below on a tall one. It never crops
+   the hole to fill a shape, which is what a plain cover fit does on a phone (the sides of the hole go and
+   what is left is blown up).
+   HV_FULL is null on every other screen, so those frames are byte-identical to before. When set, it is the
+   chrome the hole has to clear, in CSS pixels: t is the top bar, b is everything docked at the bottom. The
+   round screen works them out per state (hvFullInsets) and writes the same numbers onto the screen as
+   --hvt and --hvb, so the CSS that places the chrome and the camera that keeps the hole out from under it
+   read one answer. render() clears it before every screen. */
+var HV_FULL=null;
+const HV_EX_FULL=700;       // the widest side margin a full-screen frame paints (a 21:9 monitor, a phone on its side)
+function hvFullFrame(){
+  const vw=Math.max(240,window.innerWidth||0), vh=Math.max(240,window.innerHeight||0), t=HV_FULL.t, b=HV_FULL.b;
+  const band=Math.max(120, vh-t-b);
+  // an upright phone hugs the hole: a hair of course either side instead of HV_EX, so the hole is as big as
+  // the width allows (the chips that HV_EX exists to keep off the hole sit in the bands above and below it)
+  const exMin=HV_FULL.lay==='phone'?14:HV_EX;
+  let s=Math.min(vw/(HV_W+2*exMin), band/HV_H);
+  // past the widest margin the hole grows instead; sideways the band is so short that growing would put the
+  // tee under the dock, so a phone held sideways may show more land
+  s=Math.max(s, vw/(HV_W+2*(HV_FULL.lay==='short'?1100:HV_EX_FULL)));
+  const Wu=vw/s, Hu=vh/s, ex=Math.max(exMin, Math.round((Wu-HV_W)/2));
+  // the hole sits in the middle of the band between the chrome, never under it when there is room
+  let eyt=Math.round((t+(band-HV_H*s)/2)/s);
+  eyt=Math.max(0, Math.min(eyt, Math.round(Hu-HV_H)));
+  const eyb=Math.max(0, Math.round(Hu-HV_H-eyt));
+  return {ex, eyt, eyb};
+}
+var HV_FULL_LIVE=true;      // the kill switch: false puts the round back on the scrolling page
+/* The chrome the hole has to clear, per layout and per state. These numbers and the CSS under
+   body.hvfull describe the same boxes, and golf/check-fullscreen.mjs measures that the tee and the pin are
+   never under any of them. Three layouts: a phone held upright, anything wide, and a phone on its side
+   (short), where every bar shrinks to one line. */
+let _hvSafe=null;
+function hvSafeInsets(){
+  const w=window.innerWidth, h=window.innerHeight;
+  if(_hvSafe && _hvSafe.w===w && _hvSafe.h===h) return _hvSafe;
+  let t=0,b=0;
+  try{ const d=document.createElement('div');
+    d.style.cssText='position:fixed;left:0;top:0;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px) 0';
+    document.body.appendChild(d); const cs=getComputedStyle(d); t=parseFloat(cs.paddingTop)||0; b=parseFloat(cs.paddingBottom)||0; d.remove(); }catch(e){}
+  return (_hvSafe={t,b,w,h});
+}
+function hvFullLayout(){
+  const vw=window.innerWidth||0, vh=window.innerHeight||0;
+  if(vw>vh && vh<560) return 'short';
+  return (vw<vh || vw<760) ? 'phone' : 'wide';
+}
+const HV_FULL_SIZE={   // CSS px: top bar (+ the hole chip row under it), the dock, the shot caption, and the docked panels
+  phone:{top:104, dock:86, cap:92, dec:214, rev:150, mull:162, fin:62},   // cap: the shot caption AND the one-line score bar above it
+  wide: {top:74,  dock:100, cap:56, dec:196, rev:0,   mull:150, fin:66},
+  short:{top:50,  dock:62,  cap:0,  dec:104, rev:0,   mull:124, fin:56}};
+function hvFullInsets(mode){
+  const lay=hvFullLayout(), z=HV_FULL_SIZE[lay], sf=hvSafeInsets();
+  const dock=sf.b+z.dock;                     // the control dock's top edge, from the bottom of the screen
+  let b;
+  if(mode==='dec') b=sf.b+10+z.dec;
+  else if(mode==='review') b=dock+z.rev;
+  else if(mode==='mull') b=sf.b+10+z.mull;
+  else if(mode==='done') b=sf.b+10+z.fin;
+  else if(mode==='po') b=sf.b+16;
+  else b=dock+z.cap;
+  return {t:sf.t+z.top, b, dock, sb:sf.b, lay, mode};
+}
+/* Claim the full screen for THIS render: the round, the head to head and the playoff watch, and the quick play
+   scorecard all call this, so one set of numbers places the camera and the chrome on every one of them. The
+   screen gets the hvfs class the CSS keys off; render() clears HV_FULL before every screen, and a screen that
+   does not call this keeps the page. */
+function hvFullSet(mode){
+  if(!HV_FULL_LIVE) return null;
+  HV_FULL=hvFullInsets(mode);
+  try{ RT.classList.add('hvfs'); RT.style.setProperty('--hvt',HV_FULL.t+'px'); RT.style.setProperty('--hvdock',HV_FULL.dock+'px');
+    RT.style.setProperty('--hvsb',HV_FULL.sb+'px'); RT.dataset.hvm=mode; RT.dataset.hvl=HV_FULL.lay; }catch(e){}
+  return HV_FULL;
+}
+// the broadcast header for a screen that has no round header of its own (a watch): name, meta, and the live dot
+function hvBcastHd(name, meta, acc, live){
+  return $(`<div class="bcasthd" style="--bacc:${acc||'#f1d04a'}"><span class="bc-name">${live?'<span class="online-dot"></span>':''}${name}</span><span class="bc-meta">${meta||''}</span></div>`);
+}
+// a watch screen's buttons, docked in the same glass bar as the round's controls
+function hvWatchDock(btns){
+  const d=$(`<div class="hvwdock"></div>`); btns.forEach(b=>{ if(b) d.appendChild(b); }); return d;
+}
+// a glass card over the course (a playoff call, a final standings board), anchored above the dock
+function hvPanel(html){ return $(`<div class="hvpanel">${html||''}</div>`); }
+/* The floating chrome, assembled AFTER the round screen has added its parts: the broadcast header goes into a
+   top bar between a menu button (the site header is hidden while the round fills the screen) and a scorecard
+   button, and the scorecard becomes a sheet that button opens. Kept as a pass over the finished screen so the
+   page layout underneath it (quick play, every other caller) is untouched. */
+var _hvCardOpen=false;
+function hvFullChrome(scr){
+  if(!scr) return;
+  const top=$(`<div class="hvtop"></div>`);
+  const menu=$(`<button class="hvtb" aria-label="Menu"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 6h12M4 10h12M4 14h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>`);
+  menu.onclick=()=>{ S.overlay='menu'; render(); };
+  top.appendChild(menu);
+  const hd=scr.querySelector(':scope > .bcasthd');
+  top.appendChild(hd||$(`<div class="bcasthd"></div>`));
+  const card=scr.querySelector(':scope > .dcardwrap');
+  // quick play's scorecard is the point of the screen: it stays docked, with no button and no sheet
+  if(card && !scr.classList.contains('hvq')){
+    const set=(v)=>{ _hvCardOpen=v; scr.classList.toggle('hvcard-open',v); cb.setAttribute('aria-expanded',v?'true':'false'); };
+    const cb=$(`<button class="hvtb hvtb-card" aria-label="Scorecard" aria-expanded="false"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4" width="14" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 8.5h14M7.5 8.5V16M12.5 8.5V16" stroke="currentColor" stroke-width="1.5"/></svg><span>Card</span></button>`);
+    cb.onclick=()=>set(!_hvCardOpen);
+    top.appendChild(cb);
+    const hdr=card.querySelector('.dcardhd'), x=$(`<button class="hvcard-x" aria-label="Close scorecard">✕</button>`);
+    x.onclick=()=>set(false); if(hdr) hdr.appendChild(x);
+    // opening a hole to rewatch closes the sheet first, so the replay is not under it
+    card.addEventListener('click', e=>{ if(e.target.closest('[data-hole]')) _hvCardOpen=false; }, true);
+    const scrim=$(`<div class="hvcard-scrim" aria-hidden="true"></div>`); scrim.onclick=()=>set(false);
+    scr.insertBefore(scrim, card);
+    set(_hvCardOpen);
+  } else _hvCardOpen=false;
+  // the quick play hero centres in what the docked scorecard leaves: last frame's measure now, this one's next
+  if(card && scr.classList.contains('hvq')){
+    if(_hvqCardH) scr.style.setProperty('--hvqcard', _hvqCardH+'px');
+    requestAnimationFrame(()=>{ try{ if(!card.isConnected) return; const h=Math.round(card.getBoundingClientRect().height);
+      if(h && h!==_hvqCardH){ _hvqCardH=h; scr.style.setProperty('--hvqcard', h+'px'); } }catch(e){} });
+  }
+  scr.insertBefore(top, scr.firstChild);
+}
+var _hvqCardH=0;
+// a phone turned, a window resized: the frame is the screen's shape, so the round redraws on its new one
+let _hvFullRz=0;
+try{ addEventListener('resize',()=>{ if(!document.body.classList.contains('hvfull')) return; clearTimeout(_hvFullRz);
+  _hvFullRz=setTimeout(()=>{ if(document.body.classList.contains('hvfull') && ['dailyround','h2hwatch','playoffwatch'].indexOf(S.screen)>=0){ _hvSafe=null; try{ render(); }catch(e){} } }, 180); }, {passive:true}); }catch(e){}
 function hvViewEx(){        // the margin this viewport wants (phones + tablets keep the standard frame)
   try{
     if(typeof window==='undefined') return HV_EX;
@@ -31146,7 +31512,10 @@ function hvViewEx(){        // the margin this viewport wants (phones + tablets 
 // Pin the camera for one render pass. Called at the top of every hvNode build, so a whole frame (markup,
 // terrain tile, close-up target, HUD percentages) is computed against ONE camera even if the window is
 // resized underneath it; the animator then reads the viewBox off the DOM, so it stays consistent too.
-function hvSetCam(){ HV_EXL=hvViewEx(); HV_CAML=[-HV_EXL,0,HV_W+2*HV_EXL,HV_H]; return HV_CAML; }
+function hvSetCam(){
+  if(HV_FULL){ try{ const f=hvFullFrame(); HV_EXL=f.ex; HV_EYT=f.eyt; HV_EYB=f.eyb;
+      HV_CAML=[-HV_EXL,-HV_EYT,HV_W+2*HV_EXL,HV_H+HV_EYT+HV_EYB]; return HV_CAML; }catch(e){} }
+  HV_EXL=hvViewEx(); HV_EYT=0; HV_EYB=0; HV_CAML=[-HV_EXL,0,HV_W+2*HV_EXL,HV_H]; return HV_CAML; }
 // cup + on-green ball sizes (viewBox units). A real ball (1.68") is ~0.4× the hole's width (4.25"), so on
 // the green the ball is drawn at a FIXED small radius - because ball AND cup are both in viewBox units, the
 // camera scales them together and the ratio stays realistic at every zoom (no more ball-bigger-than-hole).
@@ -31891,7 +32260,11 @@ function hvCamFor2(g, p){   // camera: full hole, or the green close-up for the 
     // ADAPTIVE close-up: frame the ball AND the cup with a margin, zooming as tight as the putt
     // allows - a tap-in gets a much closer camera than a 40-footer, so short putts finally read.
     const P=hvProj(g,g.pin[0],g.pin[1]), A=hvProj(g,p.from[0],p.from[1]);
-    const AR=(HV_W+2*HV_EXL)/HV_H, AR0=(HV_W+2*HV_EX)/HV_H;   // match the on-screen box so nothing gets sliced off
+    const AR=HV_CAML[2]/HV_CAML[3], AR0=(HV_W+2*HV_EX)/HV_H;   // match the on-screen box so nothing gets sliced off
+    // the floors below are written as WIDTHS for the phone frame (AR0). A wider frame scales them up so it
+    // shows the same height of green; a TALLER one (a full-screen phone) keeps the width, or a short putt
+    // would zoom half again further in than it ever did and the pixels would go to blocks.
+    const FL=Math.max(AR,AR0)/AR0;
     // tighter framing than before (owner/Jordo: "the green can be bigger - an 8ft putt is not right on
     // top of the hole"): less padding + a smaller floor so the green fills the frame and putt distance reads.
     let w;
@@ -31903,17 +32276,17 @@ function hvCamFor2(g, p){   // camera: full hole, or the green close-up for the 
       const len=Math.hypot(A[0]-P[0], A[1]-P[1]);
       // the floor is a HEIGHT floor written as a width, so a wide desktop frame shows the same amount of
       // green rather than zooming twice as far in (AR/AR0 converts the phone-frame number to this frame's)
-      w=Math.max(90*AR/AR0, Math.abs(A[0]-P[0])+62+len*0.34, (Math.abs(A[1]-P[1])+74+len*0.34)*AR);
+      w=Math.max(90*FL, Math.abs(A[0]-P[0])+62+len*0.34, (Math.abs(A[1]-P[1])+74+len*0.34)*AR);
       // stay on the same close-up threshold the renderer uses (markers draw to scale + the high-density
       // detail tile kicks in below HV_W*0.6), so a hole-out either gets a true close-up or the full hole.
       if(w >= HV_W*0.6) return HV_CAML;
     } else {
-      w=Math.max(60*AR/AR0, Math.abs(A[0]-P[0])+40, (Math.abs(A[1]-P[1])+54)*AR);
-      w=Math.min(w, 210*AR/AR0);
+      w=Math.max(60*FL, Math.abs(A[0]-P[0])+40, (Math.abs(A[1]-P[1])+54)*AR);
+      w=Math.min(w, 210*FL);
     }
     const h=w/AR;
     const cx=(A[0]+P[0])/2, cy=(A[1]+P[1])/2-h*0.04;
-    const x=Math.max(-HV_EXL,Math.min(HV_W+HV_EXL-w,cx-w/2)), y=Math.max(0,Math.min(HV_H-h,cy-h/2));
+    const x=Math.max(-HV_EXL,Math.min(HV_W+HV_EXL-w,cx-w/2)), y=Math.max(-HV_EYT,Math.min(HV_H+HV_EYB-h,cy-h/2));
     return [+x.toFixed(1),+y.toFixed(1),+w.toFixed(1),+h.toFixed(1)];
   }
   return HV_CAML;
@@ -32483,7 +32856,10 @@ function hvPinTeePixel(g,B){
 // scheduleDailyAdvance, so the cache key (seed + tile size + camera) is built in exactly one place.
 function hvBaseTileURL(g, seedN, B){
   const bw=Math.round(210*(HV_W+HV_EXL*2)/(HV_W+HV_EX*2));
-  return pxTerrainURL(g, seedN, B, HV_EXL===HV_EX?null:{cam:HV_CAML, gw:bw});
+  if(HV_EXL===HV_EX && !HV_EYT && !HV_EYB) return pxTerrainURL(g, seedN, B, null);
+  // a taller frame gets a taller tile at the same pixel size (HV_PX_BASEH pixels over HV_H units)
+  const bh=Math.round(HV_PX_BASEH*HV_CAML[3]/HV_H);
+  return pxTerrainURL(g, seedN, B, (HV_EYT||HV_EYB)?{cam:HV_CAML, gw:bw, gh:bh}:{cam:HV_CAML, gw:bw});
 }
 // TRACER REVAMP: two slow cloud shadows drift across the course so the scene is never a frozen still. The
 // phase is resumed from the wall clock (negative animation-delay) so a re-render mid-shot never makes the
@@ -32501,7 +32877,7 @@ function hvBackdrop(g, seedN, B, detailCam){
     // paints more course at exactly the same pixel size rather than stretching the same tile
     try{ const url=hvBaseTileURL(g, seedN, B);
       if(url){
-        let s=`<image href="${url}" xlink:href="${url}" x="${-HV_EXL}" y="0" width="${HV_W+HV_EXL*2}" height="${HV_H}" preserveAspectRatio="none" style="image-rendering:pixelated"/>`;
+        let s=`<image href="${url}" xlink:href="${url}" x="${HV_CAML[0]}" y="${HV_CAML[1]}" width="${HV_CAML[2]}" height="${HV_CAML[3]}" preserveAspectRatio="none" style="image-rendering:pixelated"/>`;
         if(!detailCam) s+=hvCloudSVG();
         // when zoomed to a close-up, overlay a high-density tile of the visible region so the course pixels
         // match the golfer's pixel size instead of blowing up into big blocks (owner: pixels should match on zoom)
@@ -32517,7 +32893,7 @@ function hvBackdrop(g, seedN, B, detailCam){
     }catch(e){ console.warn('pixel terrain failed, using flat fallback', e); }
   }
   // pixel terrain unavailable (very rare) → a flat colored ground so the tracer still has a surface, never blank.
-  return `<rect x="${-HV_EXL}" y="0" width="${HV_W+HV_EXL*2}" height="${HV_H}" fill="${(B&&B.base)||'#3f7a28'}"/>`+hvPinTeePixel(g,B);
+  return `<rect x="${HV_CAML[0]}" y="${HV_CAML[1]}" width="${HV_CAML[2]}" height="${HV_CAML[3]}" fill="${(B&&B.base)||'#3f7a28'}"/>`+hvPinTeePixel(g,B);
 }
 const HV_PX_DETAIL=340;   // detail-tile vertical pixel count → tuned so a zoomed course pixel ~= the golfer sprite pixel
 const HV_PX_BASEH=254;    // base tile vertical pixel count (pxTerrainURL default GH), over HV_H course-units
@@ -32561,7 +32937,7 @@ function hvGreenCam(g, ball){
   // keep the box over the painted tile rather than off the top of the world, by MOVING it, never resizing
   const tx0=-HV_EXL, tx1=HV_W+HV_EXL;
   if(w<tx1-tx0){ cx=Math.max(tx0+w/2, Math.min(tx1-w/2, cx)); }
-  if(h<HV_H){ cy=Math.max(h/2, Math.min(HV_H-h/2, cy)); }
+  { const ty0=HV_CAML[1], ty1=HV_CAML[1]+HV_CAML[3]; if(h<ty1-ty0){ cy=Math.max(ty0+h/2, Math.min(ty1-h/2, cy)); } }
   return [cx-w/2, cy-h/2, w, h];
 }
 const hvDetailCam=(camTarget,live)=>{
@@ -33439,7 +33815,16 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay, de
 // TRACER REVAMP: paint the NEXT hole's pixel terrain tile during the post-hole beat, so its first render is
 // served from the cache (the ~100ms first-paint hitch on a phone was the "jump" between holes). Same
 // geometry/seed derivation as hvNode, so it lands in the same _pxCache slot; any failure is silently ignored.
+// QUICK PLAY's backdrop: the hole's own pixel course at the standard frame (the same tile the shot GIF uses), so
+// it is cached by hole alone and never waits on the window's shape. Softened by CSS; it is a place, not a tracer.
+function hvQuickBgURL(courseKey, holeIdx){
+  try{ const c=DAILY_COURSES[courseKey]; const hh=c&&c.holes&&c.holes[holeIdx]; if(!hh) return null;
+    const seedN=(dHash(courseKey||'x')^Math.imul((holeIdx|0)+1,0x9e3779b1))>>>0;
+    const g=hvGeom(seedN, hh[0], hh[1]||400, courseKey, holeIdx);
+    return pxTerrainURL(g, seedN, hvBiome(courseKey)); }catch(e){ return null; }
+}
 function hvPrewarmHole(courseKey, holeIdx){
+  if(dailyMode()==='quick' && !dIsDecHole(holeIdx)){ hvQuickBgURL(courseKey, holeIdx); return; }
   try{ const c=DAILY_COURSES[courseKey]; const hh=c&&c.holes&&c.holes[holeIdx]; if(!hh) return;
     const seedN=(dHash(courseKey||'x')^Math.imul((holeIdx|0)+1,0x9e3779b1))>>>0;
     const g=hvGeom(seedN, hh[0], hh[1]||400, courseKey, holeIdx);
@@ -34331,11 +34716,22 @@ function gifBuild(w,h,pal,frames){
   for(let i=0;i<gctSize;i++){ const p=pal[i]||[0,0,0]; put(p[0]); put(p[1]); put(p[2]); }
   puts('!'); put(0xFF); put(11); puts('NETSCAPE2.0'); put(3); put(1); putw(0); put(0);   // loop forever
   const min=gctBits+1;
+  /* Each frame after the first is only the rectangle that CHANGED (the tracer moving over a still course), drawn
+     over the frame before it (disposal 1 keeps it). The picture is identical; the file is a fraction of the size,
+     which is what lets the share be drawn at the course's own pixel size. */
+  let prev=null;
   frames.forEach(f=>{
+    let x0=0,y0=0,x1=w-1,y1=h-1, sub=f.idx;
+    if(prev){ x0=w; y0=h; x1=-1; y1=-1;
+      for(let y=0,q=0;y<h;y++) for(let x=0;x<w;x++,q++){ if(f.idx[q]!==prev[q]){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; } }
+      if(x1<0){ x0=0; y0=0; x1=0; y1=0; }
+      const sw=x1-x0+1, sh=y1-y0+1; sub=new Uint8Array(sw*sh);
+      for(let y=0;y<sh;y++) sub.set(f.idx.subarray((y0+y)*w+x0, (y0+y)*w+x0+sw), y*sw); }
+    prev=f.idx;
     put(0x21); put(0xF9); put(4); put(0x04); putw(f.delay); put(0); put(0);   // GCE: disposal=1, no transparency
-    put(0x2C); putw(0); putw(0); putw(w); putw(h); put(0);                     // image descriptor
+    put(0x2C); putw(x0); putw(y0); putw(x1-x0+1); putw(y1-y0+1); put(0);     // image descriptor (the changed box)
     put(min);
-    const codes=gifLZW(min, f.idx);
+    const codes=gifLZW(min, sub);
     for(let i=0;i<codes.length;i+=255){ const end=Math.min(i+255,codes.length); put(end-i); for(let j=i;j<end;j++) put(codes[j]); }
     put(0);
   });
@@ -34357,16 +34753,21 @@ function hvGifShare(holeIdx){
 // the pixel PNG DIRECTLY (a same-origin canvas data URL, no taint) rather than wrapping it in an SVG, because
 // a nested raster inside an SVG loaded as an <img> is blocked in the browser's secure static-image mode.
 // Returns a Promise<canvas>. The pin/tee overlay is pure vector, so it rasterizes cleanly; it's best-effort.
-function hvPixelScene(g, seedN, B, W, imgH){
+function hvPixelScene(g, seedN, B, W, imgH, crisp, camIn){
   return new Promise((resolve,reject)=>{
-    const url=pxTerrainURL(g, seedN, B);
+    const cam0=camIn||HV_CAM;
+    // crisp: the course is rendered AT the share's size (finer pixels, every object at its true scale, the same
+    // 3D tile and console pass the screen shows) instead of a 210px tile blown up by an uneven factor
+    let url=null;
+    if(crisp){ try{ url=pxTerrainURL(g, seedN, B, {cam:cam0, gw:W, gh:imgH, os:W/210}); }catch(e){ url=null; } }
+    if(!url) url=pxTerrainURL(g, seedN, B);
     if(!url){ reject(new Error('no pixel terrain')); return; }
     const cv=document.createElement('canvas'); cv.width=W; cv.height=imgH; const ctx=cv.getContext('2d');
     ctx.imageSmoothingEnabled=false;   // keep the pixels crisp when scaling to the share size
     const terr=new Image();
     terr.onload=()=>{
       ctx.drawImage(terr,0,0,W,imgH);
-      const [vx,vy,vw,vh]=HV_CAM;
+      const [vx,vy,vw,vh]=(url && crisp)?cam0:HV_CAM;
       const pin=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vx} ${vy} ${vw} ${vh}" width="${vw}" height="${vh}">${hvPinTeePixel(g,B)}</svg>`;
       const p=new Image();
       p.onload=()=>{ try{ ctx.drawImage(p,0,0,W,imgH); }catch(e){} resolve(cv); };
@@ -34382,10 +34783,11 @@ function hvGifRender(hole, holeIdx, c){
   const seedN=(dHash(courseKey||'x')^Math.imul((holeIdx|0)+1,0x9e3779b1))>>>0;
   const g=(hole._hv&&hole._hv.g)||hvGeom(seedN, hole.par, hole.yards||400, courseKey, holeIdx);
   const plots=(hole._hv&&hole._hv.plots)||hvPlots(g, hole.shots, seedN);
-  const biome=hvBiome(courseKey), [vx,vy,vw,vh]=HV_CAM;
-  const W=280, scale=W/vw, imgH=Math.round(vh*scale), barH=Math.round(W*0.14), H=imgH+barH;
-  hvPixelScene(g, seedN, biome, W, imgH)
-    .then(base=>{ hvGifCompose(base, g, plots, hole, c, {W,imgH,barH,H,scale,vx,vy}); })
+  const biome=hvBiome(courseKey);
+  // the course fills the whole frame (the chrome floats on it as glass), drawn at its own pixel size
+  const D=hvShareFrame(360);
+  hvPixelScene(g, seedN, biome, D.W, D.imgH, true, D.cam)
+    .then(base=>{ hvGifCompose(base, g, plots, hole, c, D); })
     .catch(e=>{ console.error('gif',e); hvShareShot(holeIdx); });
 }
 // Shot-tracer draw kit: projects each plot into canvas space and returns the "done" + "animating" line
@@ -34405,14 +34807,17 @@ function hvTracerDraw(g, plots, D){
     return {A,C1,C2,B,rest,hole:!!p.hole,onGreen:!!p.onGreen}; });
   // a completed shot = just its tracer line (NO per-shot rest marker / numbered black dot - owner wants only
   // the ball + tracer). The resting ball is drawn once at the final position via drawBall.
-  const drawDone=(ctx,sh)=>{ ctx.save(); ctx.lineCap='round';
-    ctx.strokeStyle='rgba(120,220,190,.5)'; ctx.lineWidth=Math.max(1,W*0.006); ctx.beginPath();
-    ctx.moveTo(sh.A[0],sh.A[1]);
+  // a finished shot: a bright core over a dark halo, exactly as the live tracer draws it (hvDoneShot)
+  const path=(ctx,sh)=>{ ctx.beginPath(); ctx.moveTo(sh.A[0],sh.A[1]);
     if(sh.putt) ctx.lineTo(sh.rest[0],sh.rest[1]);
-    else { ctx.bezierCurveTo(sh.C1[0],sh.C1[1],sh.C2[0],sh.C2[1],sh.B[0],sh.B[1]); ctx.lineTo(sh.rest[0],sh.rest[1]); }
-    ctx.stroke(); ctx.restore(); };
-  const drawBall=(ctx,pt)=>{ ctx.save(); ctx.fillStyle='#fff'; ctx.strokeStyle='rgba(0,0,0,.3)'; ctx.lineWidth=1;
-    ctx.beginPath(); ctx.arc(pt[0],pt[1],Math.max(1.3,W*0.010),0,7); ctx.fill(); ctx.stroke(); ctx.restore(); };
+    else { ctx.bezierCurveTo(sh.C1[0],sh.C1[1],sh.C2[0],sh.C2[1],sh.B[0],sh.B[1]); ctx.lineTo(sh.rest[0],sh.rest[1]); } };
+  const drawDone=(ctx,sh)=>{ ctx.save(); ctx.lineCap='round'; ctx.lineJoin='round'; const lw=Math.max(1.2,W*0.0055);
+    ctx.strokeStyle='rgba(4,21,10,.42)'; ctx.lineWidth=lw+2.2; path(ctx,sh); ctx.stroke();
+    ctx.strokeStyle='rgba(244,247,244,.78)'; ctx.lineWidth=lw; path(ctx,sh); ctx.stroke(); ctx.restore(); };
+  const drawBall=(ctx,pt)=>{ ctx.save(); const r=Math.max(1.6,W*0.011);
+    ctx.fillStyle='rgba(4,16,8,.38)'; ctx.beginPath(); ctx.ellipse(pt[0]+r*.45,pt[1]+r*.6,r*1.15,r*.7,0,0,7); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.strokeStyle='rgba(0,0,0,.35)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.arc(pt[0],pt[1],r,0,7); ctx.fill(); ctx.stroke(); ctx.restore(); };
   const drawActive=(ctx,sh,t)=>{ ctx.save(); ctx.lineCap='round'; const lw=Math.max(1.4,W*0.008); let head;
     if(sh.putt){ head=lin(sh.A,sh.rest,t); ctx.strokeStyle='rgba(255,255,255,.92)'; ctx.lineWidth=lw;
       ctx.beginPath(); ctx.moveTo(sh.A[0],sh.A[1]); ctx.lineTo(head[0],head[1]); ctx.stroke(); }
@@ -34422,30 +34827,88 @@ function hvTracerDraw(g, plots, D){
       ctx.strokeStyle='rgba(255,255,255,.95)'; ctx.lineWidth=lw;
       ctx.beginPath(); ctx.moveTo(sh.A[0],sh.A[1]); for(let i=1;i<=N;i++){ const q=samp(t*i/N); ctx.lineTo(q[0],q[1]); } ctx.stroke();
       head=samp(t); }
-    ctx.fillStyle='#fff'; ctx.strokeStyle='rgba(0,0,0,.35)'; ctx.lineWidth=1;
-    ctx.beginPath(); ctx.arc(head[0],head[1],Math.max(1.3,W*0.010),0,7); ctx.fill(); ctx.stroke(); ctx.restore(); };
+    ctx.restore(); drawBall(ctx,head); };
   return {shots, drawDone, drawActive, drawBall};
 }
-// A terrain+info-bar background canvas for one hole. `bar` gives the three text zones (title/sub/pos).
+/* THE SHARE FRAME, in the full-screen tracer's style: the course fills the whole frame, under the same lens as
+   the screen (a low warm sun from the top left, a vignette, the fall-off top and bottom), with the chrome as
+   frosted glass on the picture rather than a bar under it. bar: title (the hole), sub (the course or the line),
+   res + col (the result and its colour, for the card at the foot), pos (a reel's 2/5), tag (the url). */
+const SHARE_FONT='"Barlow Semi Condensed",Arial,sans-serif', SHARE_DISP='Anton,Impact,"Arial Narrow",sans-serif';
+function hvShareGlass(ctx,x,y,w,h,r,edge){
+  ctx.save(); ctx.beginPath(); ctx.roundRect?ctx.roundRect(x,y,w,h,r):ctx.rect(x,y,w,h);
+  ctx.fillStyle='rgba(6,13,20,.66)'; ctx.fill(); ctx.strokeStyle=edge||'rgba(255,255,255,.16)'; ctx.lineWidth=1; ctx.stroke(); ctx.restore(); }
+function hvShareLens(ctx,W,H){
+  let g=ctx.createRadialGradient(W*0.08,-H*0.05,0,W*0.08,-H*0.05,Math.max(W,H)*0.75);
+  g.addColorStop(0,'rgba(255,216,160,.24)'); g.addColorStop(.45,'rgba(255,216,160,.06)'); g.addColorStop(1,'rgba(255,216,160,0)');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  g=ctx.createRadialGradient(W/2,H*0.52,Math.min(W,H)*0.42,W/2,H*0.52,Math.max(W,H)*0.78);
+  g.addColorStop(0,'rgba(2,8,16,0)'); g.addColorStop(1,'rgba(2,8,16,.55)'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'rgba(2,8,14,.62)'); g.addColorStop(.17,'rgba(2,8,14,0)'); g.addColorStop(.74,'rgba(2,8,14,0)'); g.addColorStop(1,'rgba(2,8,14,.7)');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+}
+/* The share's camera: the hole's own frame, plus course above and below for the glass bars to sit on (the full
+   screen's rule: the chrome floats over land, never over the tee or the green). Returns the D the painters read. */
+function hvShareFrame(W){
+  const [vx,vy,vw,vh]=HV_CAM, scale=W/vw, u=W/360;
+  const padT=Math.round(64*u/scale), padB=Math.round(70*u/scale);
+  const cam=[vx, vy-padT, vw, vh+padT+padB], H=Math.round(cam[3]*scale);
+  return {W, imgH:H, barH:0, H, scale, vx, vy:cam[1], cam};
+}
+// colours the chrome and the stamp need exactly, whatever the median cut picked from the course
+const SHARE_FIXED_PAL=[[255,255,255],[255,215,106],[241,208,74],[10,25,16],[7,19,12],[159,179,164],[207,227,214],[238,244,238],
+  [53,214,160],[233,162,59],[225,74,51],[244,247,244],[6,13,20],[4,21,10],[40,44,48],[90,96,100]];
 function hvShareBg(base, D, bar){
-  const {W,imgH,barH,H}=D;
+  const {W,H}=D, u=W/360;
   const bg=document.createElement('canvas'); bg.width=W; bg.height=H; const bx=bg.getContext('2d');
   bx.imageSmoothingEnabled=false;
-  bx.fillStyle='#0a1a10'; bx.fillRect(0,0,W,H); bx.drawImage(base,0,0,W,imgH);
-  bx.fillStyle='#07130c'; bx.fillRect(0,imgH,W,barH); bx.textBaseline='middle';
-  bx.fillStyle='#F1D04A'; bx.font=`800 ${Math.round(barH*0.30)}px "Barlow Semi Condensed",Arial,sans-serif`;
-  bx.fillText(bar.title, Math.round(barH*0.18), imgH+barH*0.34);
-  bx.fillStyle='#eef4ee'; bx.font=`700 ${Math.round(barH*0.26)}px "Barlow Semi Condensed",Arial,sans-serif`;
-  bx.fillText(bar.sub, Math.round(barH*0.18), imgH+barH*0.72);
-  bx.fillStyle='#9fb3a4'; bx.font=`700 ${Math.round(barH*0.24)}px "Barlow Semi Condensed",Arial,sans-serif`; bx.textAlign='right';
-  if(bar.pos) bx.fillText(bar.pos, W-Math.round(barH*0.18), imgH+barH*0.34);
-  bx.fillText(bar.tag||'runthe.gg/golf', W-Math.round(barH*0.18), imgH+barH*0.72); bx.textAlign='left';
+  bx.fillStyle='#0a1a10'; bx.fillRect(0,0,W,H); bx.drawImage(base,0,0,W,H);
+  hvShareLens(bx,W,H);
+  bx.textBaseline='middle';
+  // top bar: the TOURTRACE mark, the hole, the course
+  const m=Math.round(9*u), th=Math.round(46*u);
+  hvShareGlass(bx,m,m,W-2*m,th,Math.round(13*u));
+  bx.fillStyle='#F1D04A'; bx.fillRect(m+Math.round(8*u), m+Math.round(9*u), Math.max(2,Math.round(3*u)), th-Math.round(18*u));
+  const tx=m+Math.round(19*u);
+  bx.fillStyle='#ffffff'; bx.font=`800 ${Math.round(17*u)}px ${SHARE_FONT}`; bx.fillText(bar.title, tx, m+th*0.36);
+  bx.fillStyle='#F1D04A'; bx.font=`800 ${Math.round(10.5*u)}px ${SHARE_FONT}`;
+  bx.fillText(String(bar.sub||'').toUpperCase(), tx, m+th*0.74);
+  bx.textAlign='right';
+  bx.font=`800 ${Math.round(11*u)}px ${SHARE_FONT}`;
+  const br=W-m-Math.round(12*u);
+  bx.fillStyle='#F1D04A'; bx.fillText('TRACE', br, m+th*0.36); const tw=bx.measureText('TRACE').width;
+  bx.fillStyle='#ffffff'; bx.fillText('TOUR', br-tw, m+th*0.36);
+  if(bar.pos){ bx.fillStyle='#cfe3d6'; bx.font=`800 ${Math.round(10.5*u)}px ${SHARE_FONT}`; bx.fillText(bar.pos, br, m+th*0.74); }
+  bx.textAlign='left';
+  // foot card: the result in its colour, the score, the url
+  const fh=Math.round(54*u), fy=H-m-fh, col=bar.col||'#eef4ee';
+  hvShareGlass(bx,m,fy,W-2*m,fh,Math.round(15*u), col);
+  bx.fillStyle=col; bx.font=`400 ${Math.round(25*u)}px ${SHARE_DISP}`; bx.fillText(String(bar.res||'').toUpperCase(), m+Math.round(14*u), fy+fh*0.42);
+  const rw=bx.measureText(String(bar.res||'').toUpperCase()).width;
+  bx.fillStyle='#eef4ee'; bx.font=`800 ${Math.round(15*u)}px ${SHARE_FONT}`; if(bar.score) bx.fillText(bar.score, m+Math.round(24*u)+rw, fy+fh*0.44);
+  bx.fillStyle='#9fb3a4'; bx.font=`700 ${Math.round(10.5*u)}px ${SHARE_FONT}`; bx.fillText(bar.line||'', m+Math.round(14*u), fy+fh*0.8);
+  bx.textAlign='right'; bx.fillStyle='#cfe3d6'; bx.font=`800 ${Math.round(10.5*u)}px ${SHARE_FONT}`;
+  bx.fillText(bar.tag||'runthe.gg/golf', W-m-Math.round(14*u), fy+fh*0.8); bx.textAlign='left';
   return bg;
 }
+// the hold at the end of a hole: the result, stamped over the course in its colour (the screen's result pill)
+function hvShareStamp(ctx, D, txt, col){
+  const {W,H}=D, u=W/360; ctx.save(); ctx.textBaseline='middle'; ctx.textAlign='center';
+  ctx.font=`400 ${Math.round(34*u)}px ${SHARE_DISP}`; const tw=ctx.measureText(txt).width, pw=tw+Math.round(44*u), ph=Math.round(56*u);
+  const x=(W-pw)/2, y=H*0.42-ph/2;
+  ctx.shadowColor=col; ctx.shadowBlur=Math.round(22*u);
+  hvShareGlass(ctx,x,y,pw,ph,Math.round(16*u),col); ctx.shadowBlur=0;
+  ctx.lineWidth=Math.max(1.5,2*u); ctx.strokeStyle=col; ctx.beginPath(); ctx.roundRect?ctx.roundRect(x,y,pw,ph,Math.round(16*u)):ctx.rect(x,y,pw,ph); ctx.stroke();
+  ctx.fillStyle=col; ctx.fillText(txt, W/2, y+ph/2+1); ctx.restore();
+}
+// a result's colour as a hex the canvas and the palette can both use (dScoreCol answers a css var for par)
+function hvShareCol(toPar){ const c=dScoreCol(toPar); return c.indexOf('var(')===0?'#eef4ee':c; }
 function hvGifCompose(base,g,plots,hole,c,D){
   const {W,H}=D;
-  const bg=hvShareBg(base, D, {title:`Hole ${hole.n} · Par ${hole.par}`,
-    sub:`${hole.par+hole.toPar} (${dtp(hole.toPar)}) · ${dResultLong(hole.par,hole.toPar)}`, tag:'RunTheTour · runthe.gg/golf'});
+  const col=hvShareCol(hole.toPar), res=hvReelResult(hole);
+  const bg=hvShareBg(base, D, {title:`Hole ${hole.n} · Par ${hole.par}${hole.yards?' · '+hole.yards+' yds':''}`, sub:dShort(c.v),
+    res, col, score:`${hole.par+hole.toPar} (${dtp(hole.toPar)})`, line:'RunTheTour', tag:'runthe.gg/golf'});
   const {shots, drawDone, drawActive, drawBall}=hvTracerDraw(g, plots, D);
   const cv=document.createElement('canvas'); cv.width=W; cv.height=H; const ctx=cv.getContext('2d');
   const frames=[], cache=new Int32Array(262144).fill(-1); let pal=null;
@@ -34455,14 +34918,16 @@ function hvGifCompose(base,g,plots,hole,c,D){
     else { for(let i=0;i<shots.length;i++) drawDone(ctx,shots[i]); if(shots.length) drawBall(ctx,shots[shots.length-1].rest); } };
   const push=delay=>{ const data=ctx.getImageData(0,0,W,H).data;
     if(!pal){ const s=[]; for(let i=0;i<data.length;i+=28){ s.push(data[i],data[i+1],data[i+2]); }
-      pal=gifMedianCut(new Uint8Array(s),250);
-      pal.push([255,255,255],[255,215,106],[241,208,74],[10,25,16],[7,19,12],[159,179,164]);
+      pal=gifMedianCut(new Uint8Array(s),240);
+      pal.push(...SHARE_FIXED_PAL);
       if(pal.length>256) pal=pal.slice(0,256); }
     const idx=new Uint8Array(W*H);
     for(let p=0,q=0;p<data.length;p+=4,q++) idx[q]=gifNearest(pal,data[p],data[p+1],data[p+2],cache);
     frames.push({idx,delay}); };
-  shots.forEach((sh,si)=>{ const steps=sh.putt?6:9; for(let k=1;k<=steps;k++){ state(si,k/steps); push(5); } });
-  state(shots.length,1); push(220);   // hold on the final result before the loop restarts
+  state(0,0); push(40);   // the hole before the first swing, so the loop reads as a new clip
+  shots.forEach((sh,si)=>{ const steps=sh.putt?8:12; for(let k=1;k<=steps;k++){ state(si,k/steps); push(4); } });
+  state(shots.length,1); push(60);
+  state(shots.length,1); hvShareStamp(ctx, D, res.toUpperCase(), col); push(220);   // hold on the result before the loop restarts
   const bytes=gifBuild(W,H,pal,frames);
   const blob=new Blob([bytes],{type:'image/gif'}), fname=`runthetour-hole${hole.n}.gif`;
   const file=new File([blob],fname,{type:'image/gif'});
@@ -34483,27 +34948,27 @@ function hvReelRender(holeList, courseKey, c){
   // holeList: [{hole, holeIdx}] already filtered to birdie-or-better, in play order
   const [vx,vy,vw,vh]=HV_CAM;
   // scale the frame size + animation steps down for long reels so a great round doesn't make a huge GIF
-  const big=holeList.length>5, W=big?224:260, fullSteps=big?6:8, puttSteps=big?4:5;
-  const scale=W/vw, imgH=Math.round(vh*scale), barH=Math.round(W*0.16), H=imgH+barH;
-  const D={W,imgH,barH,H,scale,vx,vy};
+  const big=holeList.length>5, W=big?280:320, fullSteps=big?7:9, puttSteps=big?5:6;
+  const D=hvShareFrame(W), imgH=D.imgH, H=D.H;
   Promise.all(holeList.map(item=>{
     const seedN=(dHash(courseKey||'x')^Math.imul((item.holeIdx|0)+1,0x9e3779b1))>>>0;
     const g=(item.hole._hv&&item.hole._hv.g)||hvGeom(seedN,item.hole.par,item.hole.yards||400,courseKey,item.holeIdx);
     const plots=(item.hole._hv&&item.hole._hv.plots)||hvPlots(g,item.hole.shots,seedN);
-    return hvPixelScene(g,seedN,hvBiome(courseKey),W,imgH).then(base=>({base,g,plots,hole:item.hole}));
+    return hvPixelScene(g,seedN,hvBiome(courseKey),W,imgH,true,D.cam).then(base=>({base,g,plots,hole:item.hole}));
   })).then(scenes=>{
     if(!scenes.length){ toast('No birdies this round, so no reel'); return; }
     // one shared palette sampled across every hole's terrain (same biome → close color families)
     const samp=[]; scenes.forEach(sc=>{ const d=sc.base.getContext('2d').getImageData(0,0,W,imgH).data;
       const step=Math.max(4, (Math.floor(d.length/4/700))*4); for(let i=0;i<d.length;i+=step) samp.push(d[i],d[i+1],d[i+2]); });
-    let pal=gifMedianCut(new Uint8Array(samp),248);
-    pal.push([255,255,255],[255,215,106],[241,208,74],[10,25,16],[7,19,12],[159,179,164]);
+    let pal=gifMedianCut(new Uint8Array(samp),240);
+    pal.push(...SHARE_FIXED_PAL);
     if(pal.length>256) pal=pal.slice(0,256);
     const cache=new Int32Array(262144).fill(-1);
     const frames=[]; const cv=document.createElement('canvas'); cv.width=W; cv.height=H; const ctx=cv.getContext('2d');
     scenes.forEach((sc,si)=>{
-      const bg=hvShareBg(sc.base, D, {title:`${hvReelResult(sc.hole)} · Hole ${sc.hole.n}`,
-        sub:`Par ${sc.hole.par} · ${dtp(sc.hole.toPar)}`, pos:`${si+1}/${scenes.length}`});
+      const col=hvShareCol(sc.hole.toPar), res=hvReelResult(sc.hole);
+      const bg=hvShareBg(sc.base, D, {title:`Hole ${sc.hole.n} · Par ${sc.hole.par}`, sub:dShort(c.v), res, col,
+        score:`${sc.hole.par+sc.hole.toPar} (${dtp(sc.hole.toPar)})`, line:'Highlight reel', pos:`${si+1} / ${scenes.length}`});
       const {shots, drawDone, drawActive, drawBall}=hvTracerDraw(sc.g, sc.plots, D);
       const state=(active,t)=>{ ctx.drawImage(bg,0,0);
         for(let i=0;i<shots.length;i++){ if(i<active) drawDone(ctx,shots[i]); }
@@ -34513,7 +34978,8 @@ function hvReelRender(holeList, courseKey, c){
         for(let p=0,q=0;p<data.length;p+=4,q++) idx[q]=gifNearest(pal,data[p],data[p+1],data[p+2],cache); frames.push({idx,delay}); };
       state(0,0); push(35);   // brief address hold so each hole reads as a new clip
       shots.forEach((sh,k)=>{ const steps=sh.putt?puttSteps:fullSteps; for(let s=1;s<=steps;s++){ state(k,s/steps); push(5); } });
-      state(shots.length,1); push(si===scenes.length-1?300:150);   // linger on the made shot; longest on the last
+      state(shots.length,1); push(40);
+      state(shots.length,1); hvShareStamp(ctx, D, res.toUpperCase(), col); push(si===scenes.length-1?280:140);   // linger on the made shot; longest on the last
     });
     const bytes=gifBuild(W,H,pal,frames);
     const blob=new Blob([bytes],{type:'image/gif'}), fname='runthetour-highlights.gif';
@@ -35683,7 +36149,18 @@ function scrDailyRound(){
     || ((revealing||holePause) && latestIsDec);
   // when there's no tracer window, the big running-score header + scorecard are the focus
   boardPresent = boardPresent && showTracer;
-  add($(`<div class="droundglow" style="--gl:${hvThemeAccent(S.dailyCourse)}"></div>`));   // CS248: subtle themed glow behind the whole round
+  // FULL SCREEN: whenever the tracer is up, the window is the whole screen and everything else floats on it
+  // (hvFullChrome, at the end). A quick-play routine hole has no tracer, so it keeps the page.
+  const full = showTracer && HV_FULL_LIVE;
+  // QUICK PLAY's routine holes keep their no-tracer reveal, but on the same full-screen stage: the course they
+  // are being played on fills the screen behind frosted glass, softened so it reads as a place rather than a
+  // tracer, with the running score in the middle and the scorecard docked above the controls.
+  const qfull = !showTracer && HV_FULL_LIVE;
+  const fullAny = full || qfull;
+  if(!fullAny) add($(`<div class="droundglow" style="--gl:${hvThemeAccent(S.dailyCourse)}"></div>`));
+  if(qfull){ try{ RT.classList.add('hvq');
+    const bi=Math.max(0, Math.min(17, lastIdx>=0?lastIdx:0)), url=hvQuickBgURL(S.dailyCourse, bi);
+    add($(`<div class="hvqbg" aria-hidden="true"${url?` style="background-image:url('${url}')"`:''}></div>`)); }catch(e){} }   // CS248: subtle themed glow behind the whole round
   if(S.matchPlay){   // a Tour Championship knockout match: head to head, one of you goes home
     const mpH=S.matchPlay, stH=matchState();
     const phase=(stH&&stH.extras>0)?('Sudden death · extra hole '+stH.extras):(esc(mpH.day)+' · '+esc(mpH.roundName));
@@ -35697,14 +36174,14 @@ function scrDailyRound(){
     const mTitle=grd?`⚔ You vs ${esc(S.moment.rivalName)}`:esc(S.moment.evtName||'The Moment');
     const mPhase=po?`Playoff hole ${po.round+1}`:'Final Round';
     add($(`<div class="bcasthd" style="--bacc:#ff6b5e"><span class="bc-name" style="color:#ff8f7e">${mTitle}</span><span class="bc-meta">${mPhase} · ${dCondLabel(S.dailyCond)}</span></div>`));
-    if(!boardPresent && !reviewing && !po){
+    if(!boardPresent && !reviewing && !po && !full){
       add($(`<div class="center" style="margin:8px 0 4px"><span class="mono" style="font-weight:800;font-size:34px;white-space:nowrap;color:${total<0?'#35d6a0':total===0?'var(--oncard)':'#E14A33'}">${through>0?strokesThrough+' ('+dtp(total)+')':'E'}</span> <span class="small muted">through ${through}</span></div>`));
       add($(`<div class="center small" style="margin:0 0 4px;color:var(--gold);font-weight:700">${esc(S.moment.evtName)} · ${momentPosTxt(S.moment.info).replace(/<[^>]*>/g,'')} at the start of the day</div>`));
     }
   } else {
   { const _ta=hvThemeAccent(S.dailyCourse);
     add($(`<div class="bcasthd" style="--bacc:${_ta}"><span class="bc-name">${esc(dShort(c.v))}</span><span class="bc-meta">${dWindCondLabel()} · ${esc(S.dailyPlan)}</span></div>`)); }
-  if(!boardPresent && !reviewing){
+  if(!boardPresent && !reviewing && !fullAny){
     add($(`<div class="center" style="margin:8px 0 4px"><span class="mono" style="font-weight:800;font-size:34px;white-space:nowrap;color:${total<0?'#35d6a0':total===0?'var(--oncard)':'#E14A33'}">${through>0?strokesThrough+' ('+dtp(total)+')':'E'}</span> <span class="small muted">through ${through}</span></div>`));
     const beating=(through>0)&&(total < av*(through/18));
     add($(`<div class="center small" style="margin:0 0 4px;color:${through===0?'var(--muted)':(beating?'#35d6a0':'#e9a23b')};font-weight:700">Tour average ${dAvgTxt(av)}, beat it to win${through>0?` · ${beating?'ahead of pace ✓':'behind pace'}`:''}</div>`));
@@ -35712,7 +36189,23 @@ function scrDailyRound(){
   }
   // QUICK-play routine hole (no tracer): a compact per-hole result callout as each score is revealed, so
   // the reveal reads "one by one" (the big running total + scorecard update alongside it).
-  if(!showTracer && holePause && lastIdx>=0){
+  if(qfull){
+    const beating=(through>0)&&(total < av*(through/18));
+    const scol=total<0?'#4be3a8':total===0?'#eef4ee':'#ff8f7e';
+    let pill='';
+    if(holePause && lastIdx>=0){ const lh=played[lastIdx], col=dScoreCol(lh.toPar), ace=(lh.par===3 && lh.par+lh.toPar===1);
+      const big=ace?'HOLE-IN-ONE!':esc(dResultLong(lh.par,lh.toPar)).toUpperCase();
+      pill=`<div class="hvq-res${lh.toPar<0?' hot':''}" style="--rc:${col}"><span class="hn">Hole ${lh.n}</span><span class="rn" style="color:${col}">${big}</span><span class="rs">${lh.par+lh.toPar} (${dtp(lh.toPar)})</span></div>`; }
+    const nh=(!done && i<18)?c.holes[i]:null;
+    add($(`<div class="hvqhero"><div class="hvq-in">
+      <div class="hvq-eye"><span class="hvq-dot"></span>Quick play · ${done?'Final':'Thru '+through}</div>
+      <div class="hvq-score" style="color:${scol}">${through>0?(strokesThrough+' <small>('+dtp(total)+')</small>'):'E'}</div>
+      <div class="hvq-pace">Tour average <b>${dAvgTxt(av)}</b>${through>0?` · <span style="color:${beating?'#4be3a8':'#ffb257'}">${beating?'ahead of pace':'behind pace'}</span>`:'. Beat it to win.'}</div>
+      ${pill}
+      ${(nh&&!holePause)?`<div class="hvq-next">Next · Hole ${i+1} · Par ${nh[0]} · ${nh[1]} yds</div>`:''}
+    </div></div>`));
+  }
+  if(!showTracer && !qfull && holePause && lastIdx>=0){
     const lh=played[lastIdx], col=dScoreCol(lh.toPar), ace=(lh.par===3 && lh.par+lh.toPar===1);
     const big=ace?'HOLE-IN-ONE!':esc(dResultLong(lh.par,lh.toPar)).toUpperCase();
     add($(`<div class="center" style="margin:2px 0 8px"><span style="display:inline-block;padding:7px 16px;border-radius:12px;border:1.5px solid ${col};background:rgba(255,255,255,.03);font-weight:800;letter-spacing:.03em;color:${col}">Hole ${lh.n} · ${big} · ${lh.par+lh.toPar} (${dtp(lh.toPar)})</span></div>`));
@@ -35746,7 +36239,7 @@ function scrDailyRound(){
   // everything) - the tracer underneath shows the relevant hole (upcoming hole for a tee call, the drive
   // for an approach call). Only the non-decision status/controls render inline here.
   // Mulligan offer (bogey+): a prominent prompt at the top, above the tracer.
-  if(S.dailyMullOffer!=null){ const mo=dMullOfferNode(); if(mo) add(mo); }
+  if(S.dailyMullOffer!=null){ const mo=dMullOfferNode(); if(mo){ mo.classList.add('hvmull'); add(mo); } }
   // (CS513: the inline "Playing your round / Pause / Play hole N" status buttons are gone - the fixed bottom
   //  control bar below now handles play/pause/next, so nothing pushes the window down between holes.)
   const vh=(S.dailyViewHole!=null && S.dailyViewHole<played.length)?S.dailyViewHole:played.length-1;   // which hole's shot log is shown
@@ -35943,6 +36436,13 @@ function scrDailyRound(){
       tap:(k)=>{ if(played[k]){ if(S.dailyViewHole===k) dailyReviewClose(); else dailyReviewOpen(k); } }}));
     scoreCardNode=wrap;
   }
+  // the full-screen frame for THIS state: what is docked at the bottom decides how much room the hole leaves
+  if(full){
+    const fm = S.momentPO ? 'po' : (decPending ? 'dec' : (reviewing ? 'review' : (S.dailyMullOffer!=null ? 'mull' : (done ? 'done' : 'play'))));
+    hvFullSet(fm);
+  } else if(qfull){
+    hvFullSet(S.dailyMullOffer!=null ? 'mull' : (done ? 'done' : 'play'));
+  }
   // The tracer window renders only when there's a decision to watch or a hole to rewatch (in QUICK play
   // routine holes show no tracer at all - just the scorecard reveal). In full mode showTracer is always true.
   if(showTracer){
@@ -35982,14 +36482,14 @@ function scrDailyRound(){
   if(decPending && !showTracer) add(dDecisionBar(decPending.sc, decPending.pick, decPending.sub));
   // CS513: the scorecard strip renders BELOW the window (built above; secondary reference).
   if(scoreCardNode) add(scoreCardNode);
-  add($(`<div style="height:10px"></div>`));
+  if(!fullAny) add($(`<div style="height:10px"></div>`));
   // CS366: the 5-button control bar (Speed · Last hole · PLAY/PAUSE · Next hole · Sim to end). The mulligan
   // (streak reward) is now offered automatically via a bogey+ prompt at the top (dMullOfferNode), so the old
   // manual mulligan buttons are gone.
   if(S.momentPO){ /* playoff auto-plays; the extra-hole overlay carries the result + Continue */ }
   else if(S.dailyMullOffer!=null){ /* mulligan Yes / Save-for-later prompt is shown at the top; no play controls */ }
-  else if(done && S.dailyAuto){ add($(`<div class="center" style="color:var(--gold);font-weight:800;letter-spacing:.04em">▶ Heading to the clubhouse…</div>`)); }
-  else if(done){ const fin=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">See your round ▸</button>`); fin.onclick=finishDailyRound; add(fin); }
+  else if(done && S.dailyAuto){ add($(`<div class="center hvfin" style="color:var(--gold);font-weight:800;letter-spacing:.04em">▶ Heading to the clubhouse…</div>`)); }
+  else if(done){ const fin=$(`<button class="btn goldfill hvfin" style="max-width:520px;margin:0 auto">See your round ▸</button>`); fin.onclick=finishDailyRound; add(fin); }
   else if(decPending){ /* an on-course decision is up: the tap-targets + cards ARE the action, no play controls */ }
   else {
     // CS513: pin the control bar to a fixed bottom bar on mobile so the player never scrolls to reach it.
@@ -35997,6 +36497,7 @@ function scrDailyRound(){
     // reserves scroll padding so the fixed bar never covers the scorecard.
     const cb=dRoundControls(); cb.classList.add('fixed'); add(cb); app.classList.add('has-roundbar');
   }
+  if(fullAny) hvFullChrome(RT);
 }
 function scrDailyResult(){
   if(S.special) return scrSpotlightResult();
@@ -42658,7 +43159,9 @@ function scrH2HWatch(){
   // CS239: single-hole REPLAY from the result scorecard (tap a hole to rewatch it)
   if(S.h2h.replay){
     const R=S.h2h.replay, h=S.h2h.playHoles[R.hole], course=S.h2h.course;
-    add(h2hTag(`${esc(dShort(course.v))} · Replay · Hole ${R.hole+1}`, !R.done));
+    // FULL SCREEN, the same stage as the round: the header in the glass top bar, the buttons in the dock
+    const fullR=!!hvFullSet('play');
+    add(fullR?hvBcastHd(esc(dShort(course.v)), `Replay · Hole ${R.hole+1} · Par ${h.par}`, '#7fd8bf', !R.done):h2hTag(`${esc(dShort(course.v))} · Replay · Hole ${R.hole+1}`, !R.done));
     const multi={shots:h.shots, order:h.order, cols:S.h2h.unitCols, names:S.h2h.unitNames};
     const hvn=h2hCourseKey?hvNode(h, R.step, R.hole, h2hCourseKey(S.h2h.seed), multi):null;
     if(hvn){
@@ -42673,11 +43176,12 @@ function scrH2HWatch(){
       if(stW && stW.d && !R.done) shell.appendChild($(`<div class="hvob hvdesc"><b style="color:${S.h2h.unitCols[curW.u]}">${h2hUnitNm(curW.u)}</b> · ${esc(stW.d)}</div>`));
       add(hvn);
     } else add($(`<div class="center muted" style="padding:24px 8px">Replaying…</div>`));
-    const ctrl=$(`<div class="stack" style="max-width:320px;margin:14px auto 0"></div>`);
-    if(!R.done){ const sk=$(`<button class="btn ghost">Skip to end of hole</button>`); sk.onclick=()=>{ if(_h2hWatchTimer){clearTimeout(_h2hWatchTimer);_h2hWatchTimer=null;} R.step=h.order.length; R.done=true; render(); }; ctrl.appendChild(sk); }
-    else { const rp=$(`<button class="btn gold">↻ Replay hole</button>`); rp.onclick=()=>h2hReplayHole(R.hole); ctrl.appendChild(rp); }
-    const bk=$(`<button class="btn goldfill">‹ Back to result</button>`); bk.onclick=()=>{ if(_h2hWatchTimer){clearTimeout(_h2hWatchTimer);_h2hWatchTimer=null;} S.h2h.replay=null; S.screen='h2hresult'; render(); }; ctrl.appendChild(bk);
-    add(ctrl);
+    const btnsR=[];
+    if(!R.done){ const sk=$(`<button class="btn ghost">Skip to end of hole</button>`); sk.onclick=()=>{ if(_h2hWatchTimer){clearTimeout(_h2hWatchTimer);_h2hWatchTimer=null;} R.step=h.order.length; R.done=true; render(); }; btnsR.push(sk); }
+    else { const rp=$(`<button class="btn gold">↻ Replay hole</button>`); rp.onclick=()=>h2hReplayHole(R.hole); btnsR.push(rp); }
+    const bk=$(`<button class="btn goldfill">‹ Back to result</button>`); bk.onclick=()=>{ if(_h2hWatchTimer){clearTimeout(_h2hWatchTimer);_h2hWatchTimer=null;} S.h2h.replay=null; S.screen='h2hresult'; render(); }; btnsR.push(bk);
+    if(fullR && hvn){ add(hvWatchDock(btnsR)); hvFullChrome(RT); }
+    else { HV_FULL=null; const ctrl=$(`<div class="stack" style="max-width:320px;margin:14px auto 0"></div>`); btnsR.forEach(b=>ctrl.appendChild(b)); add(ctrl); }
     return;
   }
   const holes=S.h2h.holes, done=S.h2h.watchDone;
@@ -42685,7 +43189,13 @@ function scrH2HWatch(){
   const m=h2hMode(S.h2h.mode), course=S.h2h.course, inPlay=!done && S.h2h.wHole<holes;
   // sudden-death playoff PLAYING OUT on the tracer (after the regular round, before the match is done)
   const inPO=!done && S.h2h.wHole>=holes && S.h2h.poPlay && S.h2h.poPlay.length && S.h2h.poHole!=null && S.h2h.poHole<S.h2h.poPlay.length;
-  add(h2hTag(`${esc(dShort(course.v))} · ${dCondLabel(S.h2h.cond)} · ${esc(m.label)}`, !done));
+  // FULL SCREEN whenever there is a hole to show: in play, in the playoff, and between holes or at the finish,
+  // where the last hole played stays on screen behind a glass standings card
+  const lastPH=(S.h2h.playHoles&&S.h2h.playHoles.length)?S.h2h.playHoles[Math.max(0,Math.min(S.h2h.playHoles.length,played)-1)]:null;
+  const fullW=(inPlay||inPO||(lastPH&&played>0))?hvFullSet((inPlay||inPO)?'play':'po'):null;
+  let wnode=null;   // the hole on screen (null when the tracer could not be drawn → the page layout)
+  if(fullW) add(hvBcastHd(esc(dShort(course.v)), `${inPO?'Sudden death':esc(m.label)} · ${dCondLabel(S.h2h.cond)}`, inPO?'#ff6b5e':'#f1d04a', !done));
+  else add(h2hTag(`${esc(dShort(course.v))} · ${dCondLabel(S.h2h.cond)} · ${esc(m.label)}`, !done));
   // ONE WINDOW while in play: the tracer is the whole screen - the scoreboard, hole info and the
   // current shot's description float ON it as translucent chips (owner's reference style). The
   // old separate standings column + cumulative shot log are gone during play.
@@ -42716,7 +43226,7 @@ function scrH2HWatch(){
       // ONE clear shot description that swaps to whoever is playing as the shots simulate
       const cur=curW, st=stW;
       if(st && st.d) shell.appendChild($(`<div class="hvob hvdesc"><b style="color:${S.h2h.unitCols[cur.u]}">${h2hUnitNm(cur.u)}</b> · ${esc(st.d)}</div>`));
-      add(hvn);
+      add(hvn); wnode=hvn;
     } else {
       add($(`<div class="center muted" style="padding:24px 8px">Playing…</div>`));
     }
@@ -42737,9 +43247,27 @@ function scrH2HWatch(){
       shell.appendChild(bd);
       const cur=curP, st=stP;
       if(st && st.d) shell.appendChild($(`<div class="hvob hvdesc"><b style="color:${ph.cols[cur.u]}">${esc(ph.names[cur.u])}</b> · ${esc(st.d)}</div>`));
-      add(hvn);
+      add(hvn); wnode=hvn;
     } else add($(`<div class="center" style="padding:24px 8px;color:#ffd0c8;font-weight:800">Sudden-death playoff…</div>`));
-  } else {
+  } else if(fullW && lastPH){
+    // between holes or at the finish: the last hole played, every ball's line on it, under a glass standings card
+    const lh=lastPH, multiL={shots:lh.shots, order:lh.order, cols:S.h2h.unitCols, names:S.h2h.unitNames};
+    const hvL=h2hCourseKey?hvNode(lh, null, lh.n-1, h2hCourseKey(S.h2h.seed), multiL):null;
+    if(hvL){ add(hvL); wnode=hvL;
+      const iWinP=done && h2hIWon();
+      const rowsP=S.h2h.units.map(u=>({u, tp:h2hSum(u.scores,done?holes:played)})).sort((a,b)=>a.tp-b.tp);
+      const pn=hvPanel(`<span class="tag" style="color:${done?(iWinP?'var(--gold)':'#ff9d8f'):'#7fd8bf'};border-color:currentColor">${done?'Final':'Standings'} · ${done?holes:played}/${holes} holes</span>
+        ${done?`<h2 style="color:${iWinP?'var(--gold)':'#fff'}">${iWinP?'You win! 🏆':'You lose'}</h2>`:''}<div class="hvp-rows"></div>`);
+      if(done) pn.style.setProperty('--pc', iWinP?'rgba(241,208,74,.55)':'rgba(255,157,143,.45)');
+      const rws=pn.querySelector('.hvp-rows');
+      rowsP.forEach((r,i)=>{ const mine=r.u.members.some(p=>p.user_id===h2hUid()); const win=done && S.h2h.winner && r.u.id===S.h2h.winner.id;
+        rws.appendChild($(h2hUnitRow(r.u, r.tp, {win, mine, rank:i+1}))); });
+      if(S.h2h.poN>0 && S.h2h.playoff && S.h2h.playoff.length) pn.appendChild($(`<div class="small muted" style="margin-top:9px">Decided in a ${S.h2h.poN}-hole sudden-death playoff.</div>`));
+      add(pn);
+    }
+  }
+  if(!wnode && fullW){ HV_FULL=null; }
+  if(!wnode || !fullW){
   add($(`<h1 class="center" style="font-size:22px;margin:8px 0 2px">${done?'Final':'Live'} · ${done?holes:played}/${holes} holes</h1>`));
   const right=$(`<div style="max-width:440px;margin:0 auto"></div>`); add(right);
   // full standings board once the round (or playoff) is deciding / decided
@@ -42761,15 +43289,19 @@ function scrH2HWatch(){
     right.appendChild(po);
   }
   }   // end of the between-holes / final standings branch
+  const onStage=!!(wnode && HV_FULL);
   if(!done){
-    const sk=$(`<button class="btn ghost" style="max-width:220px;margin:18px auto 0">Skip to result ▸</button>`); sk.onclick=h2hWatchSkip; add(sk);
+    const sk=$(`<button class="btn ghost" style="max-width:220px;margin:18px auto 0">Skip to result ▸</button>`); sk.onclick=h2hWatchSkip;
+    if(onStage) add(hvWatchDock([sk])); else add(sk);
   } else {
     const iWin=h2hIWon();
-    add($(`<h2 class="center" style="margin:18px 0 8px;color:${iWin?'var(--gold)':'inherit'}">${iWin?'You win! 🏆':'You lose'}</h2>`));
-    const go=$(`<button class="btn goldfill" style="max-width:300px;margin:0 auto">See result ▸</button>`); go.onclick=()=>{ S.screen='h2hresult'; render(); }; add(go);
+    if(!onStage) add($(`<h2 class="center" style="margin:18px 0 8px;color:${iWin?'var(--gold)':'inherit'}">${iWin?'You win! 🏆':'You lose'}</h2>`));
+    const go=$(`<button class="btn goldfill" style="max-width:300px;margin:0 auto">See result ▸</button>`); go.onclick=()=>{ S.screen='h2hresult'; render(); };
+    if(onStage) add(hvWatchDock([go])); else add(go);
     // full-screen win/lose ANIMATION, once (owner) - confetti on a win, then Continue → result screen
     if(!S.h2h._celebrated){ S.h2h._celebrated=true; setTimeout(h2hCelebrate, 40); }
   }
+  if(onStage) hvFullChrome(RT);
 }
 // hole-by-hole scorecard for the finished match (owner/Jordo: "See Result should show the scorecards").
 // Rows = each unit (player / team ball); columns = holes; cell = strokes, colored by score-to-par.

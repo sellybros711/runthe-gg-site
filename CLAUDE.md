@@ -5910,6 +5910,62 @@ screen with a direct `h2` needs a line in `SCREEN_ICO`, and the verify section a
 A transform left filling `forwards` on a screen makes it the containing block for anything
 fixed inside it, and the stagger would then move overlays that have nothing to do with it.
 
+### The match is played in a real-time 3D ring
+
+```
+node wrestling/ring3d/check.mjs      poses, clips, builds, a real match, and both fallbacks
+wrestling/ring3d/lab.html            every clip and pose on buttons (?manual drives frames by hand)
+```
+
+`wrestling/ring3d/` is a Three.js stage (0.180.0, vendored at
+`assets/vendor/three-0.180.0/`, the version in the path so an upgrade is a new folder and
+never a stale cache). It draws the wrestlers as small 3D models at about 280 lines, blown up
+with `image-rendering:pixelated`, toon shaded with an inverted hull outline, so it is the
+game's pixel look given depth rather than a different game.
+
+| file | what it is |
+|---|---|
+| `rig.js` | one procedural body per look, built from `RTR_PX` looks, baked to one skinned mesh |
+| `poses.js` | a pose for every name the match engine asks for, plus the referee's |
+| `moves.js` | two actor clips for all nine move families, picked by the move's name |
+| `arena.js` | the building, themed off the promotion; cage and hanging prize |
+| `stage.js` | the scene, the camera director, the clip player, sparks and dust |
+| `boot.js` | the door: `window.RTR_3D`, because `index.html` is a classic script |
+
+**THE ENGINE STILL DECIDES EVERYTHING.** The 3D ring is a renderer. `fmv`, `poseSet` and
+`impact` in `index.html` forward to it, and `exchange` and `spot` await `R3D.play` where
+they used to await a CHOREO routine. A clip calls `hit` at its contact frame, which is when
+the engine applies damage, so a clip that never calls it is a move that never lands.
+
+**A device that cannot draw WebGL plays the classic SVG ring, exactly as before**, and so
+does `rtr_ring3d = '0'` (the 3D ring switch in Help) and `?ring2d`. The guard plays a match
+with the whole folder blocked, because a stage that throws on boot leaves the classic ring,
+which renders perfectly, and a regression there would look like a working game.
+
+**A MOVE KEEPS WALL CLOCK TIME.** The match engine's waits are timers, so a clip running at
+render speed falls behind them on slow frames. The stage clamps each frame at 0.05 s for the
+camera and the sparks only. Clamped everywhere, a Last Man Standing match in a software
+WebGL browser ran past the suite's minute and never reached a result.
+
+**A FOOT IS DRAWN AT ITS ANKLE TARGET, so the target is bounded twice.** It never goes
+through the canvas and never reaches past the leg. Unbounded, a blend from lying to standing
+pointed the pelvis frame's down at the floor from a pelvis a foot off it, and ten clips put a
+foot two feet under the mat. The guard measures every joint of every clip, frame by frame.
+
+**A PITCH LERPS THE SHORT WAY ONLY IF YOU WRITE IT THAT WAY.** The moonsault lands at
+`-1.5 * PI`, which is the splash pose's `+PI / 2`, and a hold key reading the plain splash
+pose turned the body a full circle through the canvas. A key after a flip repeats the flip's
+angle.
+
+**Every pose name the engine uses must be in `POSES`.** An unknown name falls back to the
+ready stance, so a pin would be two men standing. The guard reads the names out of
+`index.html` and asserts the reader found them.
+
+**The modules version each other**, `stage.js` importing `./rig.js?v=1`. Change a file and
+bump the number where it is imported, all the way up to `boot.js?v=` in `index.html`;
+`check-cachebust.mjs` now follows module imports from every script it records, so it holds
+the chain.
+
 The game is unlisted: not linked from the homepage, nav or sitemap, and
 noindexed. Keep it that way unless asked. **The og tags do not change that.** A
 robots tag tells a crawler not to index and does nothing to a chat app unfurling
@@ -20037,7 +20093,7 @@ owner said was not what was being built.
 
 | | who | holes | worlds |
 |---|---|---|---|
-| Putt Putt Tour (`main`) | everybody | 144 | The Clubhouse, Lost Temple, Pirate Cove, Canyon Mine, Volcano Island, Frozen Peak, Sky Islands, Neon Arcade, 18 each |
+| Putt Putt Tour (`main`) | everybody | 180 | The Clubhouse, Lost Temple, Pirate Cove, Canyon Mine, Volcano Island, Frozen Peak, Sky Islands, Neon Arcade, Schoolyard, Ice Age, 18 each |
 | Members Tour (`members`) | Tour Pass holders | 18 | Hallows Night and Harvest Moon, nine each: the season's own holes, the hardest in the game |
 
 **The main tour wears none of the calendar themes**, which belong to the passes and the dailies, and the
@@ -20049,19 +20105,26 @@ ramp jumps over water, drawbridges on a clock, turntables, sliders, gates, spinn
 
 
 **THE TOUR GROWS A WORLD AT A TIME, about 50 holes a week** (the owner's pace). Worlds 6 to 8 went in
-together as holes 91 to 144. What a new world needs, all of it in one commit:
+together as holes 91 to 144, and worlds 9 and 10 (Schoolyard, Ice Age) as holes 145 to 180. What a new world
+needs, all of it in one commit:
 
 | where | what |
 |---|---|
 | `putt.js` | a `THEMES` entry (`iceCol`/`iceCol2` paint `M.ICE` apart from the hazard), its skins in `SKIN`, a `GLOW`, the `WORLDS` row, its 18 `LEVELS`, 18 `TOUR_NAMES`, the `.wm-`, `.wt-` and `data-wt` CSS, `CARD_ART`, and a `sigReward`/`worldReward` each |
 | `land.js`, `mapland.js` | `BUILD.<theme>` for the land round a hole, `PAL` and `WORLD.<theme>` for the map |
+| `trail.js` | a `KIT` (ground, path, trees, landmarks, hazard, breakable, local), its `LIFE`, and a `BUILD` for each new landmark with its `LMSIZE` |
+| `putt.js` again | a `GREETERS` host, three `TRINKETS` and a `TRINKET_COL`, a `DOOR_NAMES` entry and its `.pp-door[data-door=]` CSS |
 | `build-cards.mjs` | the signature hole the home card is cut from |
 | `routes.json` | `solve.mjs --tour main --only <the 18> --write`, then each `par` set to what it prints (`three` where it says 3 STARS NOT FOUND) |
 
 **A new world has to carry more set pieces a hole than the one before it** (check-putt asserts it, thin
 rails excluded), so a world adds a mechanic on top of the old ones rather than replacing them. Frozen Peak
 brings ice (`M.ICE`, a quarter of the carpet's grip, so the pace is read off where the ice ends), Sky
-Islands wind (belts) and the drop (the hazard painted as cloud), Neon Arcade every machine on a clock.
+Islands wind (belts) and the drop (the hazard painted as cloud), Neon Arcade every machine on a clock,
+Schoolyard the playground (the merry-go-round turns, the seesaw is two drawbridges, the bus is a slider and the
+sandbox stops a ball), Ice Age all of it at once: glacier ice, tar pits (the hazard painted black), and the
+mammoths walking through. **A trail's tar is `slow` ground painted `bogC`**, the Ice Age kit's own colours, so
+a bog anywhere else keeps its brown.
 **Ice makes aces easy**: a bank onto ice slides on with room for error, so the first draft of Frozen Peak
 had four holes acable from the tee. Put a bumper on the line the ice opens up, and re-solve.
 **A skin name is global**: the winter theme already had `snowman`, and a second `snowman` in `SKIN`
@@ -20198,7 +20261,7 @@ of that world's signature hole, cut from the game's own render by `node golf/put
 `golf/putt/cards/`, so it is the same pixel art as the courses. A dark wash keeps the text readable. Re-run
 it after changing `land.js` or a signature hole, and bump `CARD_V`.
 
-**The main tour pays 4,000 coins a world** (32,000 over eight worlds): 80 a hole and 280 for the signature hole the
+**The main tour pays 4,000 coins a world** (40,000 over ten worlds): 80 a hole and 280 for the signature hole the
 first time it is beaten, 20 for a first ace, and 2,000 for finishing the world. Replays pay nothing. They
 go through the page's `addBonusCoins`, so a Tour Pass multiplier does not apply. The signature, world, ace
 and streak rewards are recorded by name in the Tour record and are not wearable yet.
@@ -20237,7 +20300,7 @@ own class, and sharing it broke the layout). `window.RTT_PUTT_MAPFIRST` makes th
 check-putt sets it for its map sections; its world section turns it off.
 
 **Every world has a greeter** (`GREETERS`, `greetSpec` in putt.js), a board game host: Pro Pete (a preppy club pro: white polo, visor, slacks), Professor
-Fern, Captain Bogey, Dusty, Ranger Mae, Coach Frost, Skye, DJ Pixel, and Count Mulligan and Farmer Hayes on
+Fern, Captain Bogey, Dusty, Ranger Mae, Coach Frost, Skye, DJ Pixel, Principal Plum, Grok, and Count Mulligan and Farmer Hayes on
 the Members Tour. They are invented, drawn by the same 3D golfer in a look nobody can buy, and stand on the
 first trail of their world (from `w * K`), a little up the path or just past the world door. They wait while
 the world's title card shows (`greetDelay`), walk up, and talk: a box at the foot of the screen with their
@@ -20354,8 +20417,8 @@ yet beaten on the main tour: a beaten hole's trail is already behind you. A gate
 - **NO COIN LIES LOOSE. Coins are in a chest, ONE A TRAIL**, the owner's call: in the clearing when it holds
   one, else hidden off the path (`hideSpot`: just north of a tree or a rock). Walking up to it opens it and its coins fly out and land round it; each is walked over to pick
   up and paid into the Run The Tour wallet (`COIN_V`, 50 each, through the host's `coins`; a smashed breakable
-  pays `BRK_V`, 25). Over every trail that is about 119,000 coins on the main tour (2,099 chest coins and 567
-  breakables across 143 trails) and 14,000 on the Members Tour, against 32,000 for clearing the main tour's holes. A chest pays nothing
+  pays `BRK_V`, 25). Over every trail that is about 146,000 coins on the main tour (2,571 chest coins and 688
+  breakables across 179 trails) and 14,000 on the Members Tour, against 40,000 for clearing the main tour's holes. A chest pays nothing
   itself. Where each coin lands is fixed by the plan (`drops`), so a coin left on the ground is still there next
   time. Breakables are the only other coins. Paying refreshes the wallet pill at the top (`coins()` in putt.js
   rewrites every `[data-bal]`). check-putt opens the chest, picks its coins up and checks the payout.
@@ -20512,6 +20575,96 @@ stays on the flat painter.
 - **A blocked or stale module, or a render that throws, draws the hole flat.** `check-putt.mjs` asserts
   that, plus every themed hole with no unknown material, open carpet landing on carpet in the picture, and
   the sliced render matching the one-shot render pixel for pixel.
+
+#### The console look is on every hole and every trail
+
+Asked for by the owner: make Putt Putt look like a console game in a browser. It was tried on one hole a world
+first and is now on everything themed: the tours, the Lab, the Daily and the trails. `opt.fx` on `hole3d.js`
+relights the finished picture and never moves a pixel, so the pixel art stays the pixel art.
+`window.RTT_PUTT_FX = 'off'` takes it off everywhere, to compare.
+
+- **Sun shadows.** While the scene is built, each pixel's surface height (`WZ`) and a top-down height map
+  (`HM`, a quarter foot a cell) are kept. Each pixel marches toward a low sun in the north west (the upper
+  left), and whatever stands in the way darkens it, cool in shadow and warm in the light, with a dithered edge.
+  **The sun is `(lx, ly, RISE)`, toward -x and -y.** The first rim light used the opposite sign and lit the
+  faces that point away from it; nothing threw.
+- **Only what lies on the ground takes a shadow or a dark corner** (within 0.45 ft of `gz`). The painter
+  already shades the far side of a tree; shading it twice turned a wood into a black mass.
+- **A trail's shadows are lighter** (`SC`, times 0.55), because it is seen close in among trees taller than the
+  golfer, and at full strength a wood was a lake of blue. Its painted blob shade (`P.shadeAt`) drops to 0.4
+  under the look, so it is a contact shade and the sun casts the real one.
+- **The course stands on a plinth.** `CARP` is 0.95 and `RAIL` 1.55 (they were 0.35 and 0.95), so the near
+  side shows a base under the rail and the course throws a shadow onto the land. The rail is the same 0.6 over
+  the carpet, so it hides no more of the course. The base is drawn in `wallLo` only where a rail stands over the
+  land; a rail over a lower room keeps its own colour.
+- **The carpet has a nap**: broad strips that catch the light slightly differently, and a tuft here and there.
+- **A lit rim along what stands up**: a pixel one inside the outline, where the scene two pixels up or across
+  is much further away and the surface faces the sun, takes the light.
+- **Water and ice take the sky**, stronger toward the far bank, with a few glints. The glints and tufts use a
+  well mixed hash (`hq`); `P.hash3` is an XOR hash and drew them in diagonal lines.
+- **A glow at night**: lava, neon and lanterns bleed a soft halo, worked at a quarter size and blurred. Only the
+  land and the solids can glow, read before they were relit, so a carpet or a sunlit rim is never a lamp.
+- **Haze over the far land, and a grade.** The top of the picture fades toward a pale sky, or into the dark
+  on a night world (`night`, off the land's own background). Colour and contrast go up a little.
+- **The stage takes the same grade** (`bg`) and the picture hands back `sky` (`top`, `sky`, `bot`), so the
+  stage above the far land is a sky that meets it and the stage below fades from the near land.
+- **Over the stage, in screen pixels** (`drawFxScreen` in putt.js, `fxScreen` in trail.js): the low sun's warm
+  light from the upper left (none at night) and a vignette.
+
+It costs a little over what the render did before (`check-putt` holds a Tour hole under 900ms with it). The
+render key carries it, so a cached render without it is never shown in its place.
+
+## Run The Tour's tracer is full screen, and the course has a console pass
+
+Asked for by the owner: the Tour Tracer full screen on every device, and the console feel Putt Putt has.
+
+**Whenever the tracer is up, the round screen IS the window** (`body.hvfull`, set in `render()` from
+`HV_FULL`). The site header, foot and nav hide; the hole fills the screen and everything else floats on
+it as glass: a top bar (menu, the broadcast header, a Card button that opens the scorecard as a sheet),
+the chips, the shot caption and the control dock. `hvFullChrome()` builds the top bar as a pass over the
+finished screen. **`hvFullSet(mode)` is the one way a screen claims it**: it sets `HV_FULL` and puts the
+`hvfs` class the CSS keys off on the screen, so every rule reads `body.hvfull .hvfs`, never a screen's own
+class. A screen that does not call it keeps the page.
+
+- **The camera keeps the whole hole in the band between the chrome** (`hvFullFrame`). `HV_FULL_SIZE` is
+  how much chrome sits above and below the hole, per layout (`phone`, `wide`, `short` for a phone held
+  sideways) and per mode (play, decision, review, mulligan, done). The frame extends the course
+  sideways and vertically (`HV_EXL`, `HV_EYT`, `HV_EYB` into `HV_CAML`), and the base tile is painted
+  for that whole frame at the same pixel size. Change a chip's height and change its row there, or the
+  tee lands under the dock.
+- **Each mode is its own frame and its own tile**, cached by camera, so the first decision of a hole
+  pays one terrain render.
+- **Close-ups scale by the frame's width** (`FL` in `hvCamFor2`), never by a tall phone's height, or a
+  short putt zooms half again further in.
+- **Centre a fixed element with left, right and margin auto**, never a transform: an entrance animation
+  that sets `transform` throws it off screen.
+- **Sideways, the decision panel drops its prose** and the frame may widen past `HV_EX_FULL`, or the tee
+  sits under the panel.
+
+**The console pass is `consolePass` in `golf/tracer3d.js`**, run on every 3D tile after it is painted. It
+relights and never moves a pixel: a contact shadow round everything that stands, foam and glints on
+water, a sun rim on the lit edge of objects, light falling off away from the play, haze over the far
+end, and a grade (cool shade, neutral highlights, a touch more saturation and contrast). It never
+writes pure black, because `check-tracer3d` refuses black and transparent pixels and refuses any lift
+of a surface the ball can rest on. `window.__T3D_FX = false` turns it off to compare.
+
+### Quick play, the watch screens and the share GIF are on the same stage
+
+- **A quick play routine hole still has no tracer** (the owner's rule: routine holes only reveal a score).
+  It gets the stage anyway (`qfull` in `scrDailyRound`, class `hvq`): the hole's course fills the screen,
+  blurred and darkened so it reads as a place and not a tracer, the running score sits in a glass card, and
+  the scorecard stays docked over the controls with no Card button. The backdrop is `hvQuickBgURL`, the
+  standard-frame tile (the one the GIF uses), so it is cached by hole alone; `hvPrewarmHole` paints it during
+  the result beat. The hero centres in what the card leaves (`--hvqcard`, measured after each render).
+- **The head to head watch and the career playoff watch** call `hvFullSet` whenever there is a hole to show:
+  live, in a playoff, and for a replay. Their header is `hvBcastHd`, their buttons sit in `hvWatchDock`, and
+  an announcement, standings or result is a glass card (`hvPanel`) over the hole about to be played or the
+  last one played. If the tracer cannot be drawn they set `HV_FULL` back to null and keep the page.
+- **The share GIF and the highlight reel** draw the course at the share's own size (`hvPixelScene(...,
+  crisp, cam)`, the same 3D tile and console pass the screen shows), with course above and below the hole
+  for the glass bars to sit on (`hvShareFrame`), the screen's lens (`hvShareLens`), and the result stamped
+  over the course at the end (`hvShareStamp`). `gifBuild` writes each frame after the first as only the
+  rectangle that changed, which is what keeps a 360px GIF near 250KB.
 
 ## Run The Tour's course golfer is the profile golfer, drawn from a 3D model
 

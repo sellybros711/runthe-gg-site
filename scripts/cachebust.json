@@ -37,8 +37,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "42",
-      "sha": "8e055b9d47621493"
+      "v": "43",
+      "sha": "7722ff18fda2a560"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -57,8 +57,8 @@
       "sha": "8eb403844838a3f1"
     },
     "/arcade/rosters.js": {
-      "v": "6",
-      "sha": "c5bede175cc3ed91"
+      "v": "7",
+      "sha": "798fe06d0b99accb"
     },
     "/arcade/sfx.js": {
       "v": "4",
@@ -289,8 +289,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "42",
-      "sha": "8e055b9d47621493"
+      "v": "43",
+      "sha": "7722ff18fda2a560"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -543,8 +543,8 @@
       "sha": "c51a588b3f3d2559"
     },
     "/arcade/teammates.js": {
-      "v": "43",
-      "sha": "57bd649df1073a43"
+      "v": "44",
+      "sha": "da273b61f40a755b"
     },
     "/arcade/livecheck.js": {
       "v": "11",
@@ -609,8 +609,8 @@
       "sha": "d1c6424bc81b200b"
     },
     "/arcade/primary.js": {
-      "v": "42",
-      "sha": "8e055b9d47621493"
+      "v": "43",
+      "sha": "7722ff18fda2a560"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -791,8 +791,8 @@
       "sha": "d1c6424bc81b200b"
     },
     "/arcade/primary.js": {
-      "v": "42",
-      "sha": "8e055b9d47621493"
+      "v": "43",
+      "sha": "7722ff18fda2a560"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -807,8 +807,8 @@
       "sha": "15a845209f4b3402"
     },
     "/arcade/rosters.js": {
-      "v": "6",
-      "sha": "c5bede175cc3ed91"
+      "v": "7",
+      "sha": "798fe06d0b99accb"
     },
     "/arcade/teamcolors.js": {
       "v": "2",
@@ -961,8 +961,8 @@
       "sha": "42bbabae620fcfbf"
     },
     "/arcade/primary.js": {
-      "v": "42",
-      "sha": "8e055b9d47621493"
+      "v": "43",
+      "sha": "7722ff18fda2a560"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -981,8 +981,8 @@
       "sha": "8eb403844838a3f1"
     },
     "/arcade/jerseys.js": {
-      "v": "42",
-      "sha": "ca708284337b263e"
+      "v": "43",
+      "sha": "db431bdbe251f50d"
     },
     "/arcade/stats.js": {
       "v": "4",
@@ -1227,8 +1227,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "42",
-      "sha": "8e055b9d47621493"
+      "v": "43",
+      "sha": "7722ff18fda2a560"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -1393,8 +1393,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "42",
-      "sha": "8e055b9d47621493"
+      "v": "43",
+      "sha": "7722ff18fda2a560"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -1563,8 +1563,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "42",
-      "sha": "8e055b9d47621493"
+      "v": "43",
+      "sha": "7722ff18fda2a560"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -1809,8 +1809,8 @@
       "sha": "c51a588b3f3d2559"
     },
     "/arcade/teammates.js": {
-      "v": "43",
-      "sha": "57bd649df1073a43"
+      "v": "44",
+      "sha": "da273b61f40a755b"
     },
     "/arcade/livecheck.js": {
       "v": "11",
@@ -1997,8 +1997,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "42",
-      "sha": "8e055b9d47621493"
+      "v": "43",
+      "sha": "7722ff18fda2a560"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -2013,16 +2013,16 @@
       "sha": "15a845209f4b3402"
     },
     "/arcade/rosters.js": {
-      "v": "6",
-      "sha": "c5bede175cc3ed91"
+      "v": "7",
+      "sha": "798fe06d0b99accb"
     },
     "/arcade/fame.js": {
       "v": "2",
       "sha": "8eb403844838a3f1"
     },
     "/arcade/jerseys.js": {
-      "v": "42",
-      "sha": "ca708284337b263e"
+      "v": "43",
+      "sha": "db431bdbe251f50d"
     },
     "/arcade/teamcolors.js": {
       "v": "2",
@@ -2559,32 +2559,32 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "58",
-      "sha": "f0a1af6838f08ba1"
+      "v": "60",
+      "sha": "18bb30f4c7fc5e91"
     },
     "putt/land.js": {
-      "v": "5",
-      "sha": "4bd5518cffd6b98e"
+      "v": "6",
+      "sha": "ae344c7105d10d42"
     },
     "putt/hole3d.js": {
-      "v": "9",
-      "sha": "88e5cf8081e2f71b"
+      "v": "11",
+      "sha": "560bde541ebfffa0"
     },
     "putt/trail.js": {
-      "v": "18",
-      "sha": "4028ef258e881358"
+      "v": "20",
+      "sha": "3252dc36765ca29a"
     },
     "putt/mapland.js": {
-      "v": "3",
-      "sha": "4e1660289348cb21"
+      "v": "4",
+      "sha": "e5d556a2b57cda4e"
     },
     "golfer3d.js": {
       "v": "5",
       "sha": "b01263909065e2fe"
     },
     "tracer3d.js": {
-      "v": "1",
-      "sha": "cd93df083850feee"
+      "v": "2",
+      "sha": "f7a56d5883d63d55"
     }
   },
   "hoops/design/style-guide.html": {
@@ -2881,6 +2881,92 @@
     "pxwrestler.js": {
       "v": "4",
       "sha": "5fa1f4cc2423250e"
+    },
+    "ring3d/boot.js": {
+      "v": "1",
+      "sha": "f301ccdc1880e0c9"
+    }
+  },
+  "wrestling/ring3d/lab.html": {
+    "../pxwrestler.js": {
+      "v": "4",
+      "sha": "5fa1f4cc2423250e"
+    },
+    "stage.js": {
+      "v": "1",
+      "sha": "b532a11c51f75b4d"
+    },
+    "moves.js": {
+      "v": "1",
+      "sha": "74f203102d21dcc3"
+    },
+    "poses.js": {
+      "v": "1",
+      "sha": "cc3b1662c7b56f34"
+    }
+  },
+  "mythiball/proto3d/main.js": {
+    "rig.js": {
+      "v": "2",
+      "sha": "3f9b02fb2d13517d"
+    },
+    "anim.js": {
+      "v": "1",
+      "sha": "05c74b6d91497a45"
+    },
+    "park.js": {
+      "v": "2",
+      "sha": "53bc975762d10369"
+    },
+    "names.js": {
+      "v": "2",
+      "sha": "a5bb70e05f5b4efa"
+    }
+  },
+  "setlist/stage.js": {
+    "pxhd.js": {
+      "v": "1",
+      "sha": "aa371adb6a4d1640"
+    }
+  },
+  "wrestling/ring3d/boot.js": {
+    "stage.js": {
+      "v": "1",
+      "sha": "b532a11c51f75b4d"
+    }
+  },
+  "wrestling/ring3d/stage.js": {
+    "rig.js": {
+      "v": "1",
+      "sha": "0fc7b6f35720ca27"
+    },
+    "poses.js": {
+      "v": "1",
+      "sha": "cc3b1662c7b56f34"
+    },
+    "moves.js": {
+      "v": "1",
+      "sha": "74f203102d21dcc3"
+    },
+    "dims.js": {
+      "v": "1",
+      "sha": "0b9524a162e9ef96"
+    },
+    "arena.js": {
+      "v": "1",
+      "sha": "ae2875ec287a6b01"
+    }
+  },
+  "mythiball/proto3d/park.js": {
+    "rig.js": {
+      "v": "1",
+      "sha": "3f9b02fb2d13517d"
+    }
+  },
+  "wrestling/ring3d/arena.js": {
+    "dims.js": {
+      "v": "1",
+      "sha": "0b9524a162e9ef96"
     }
   }
 }

@@ -52,10 +52,18 @@ function* steps(C, opt){
   var W = Math.floor((b[2] - b[0]) / ART) + 1, Hh = Math.ceil(((b[3] - b[1]) * se + zMax * ce) / ART) + 4;
   var oy = zMax * ce / ART + 2 - b[1] * se / ART;
   var S = new PX.Sprite(W, Hh), Z = new Float32Array(W * Hh).fill(-1e9);
+  /* THE CONSOLE PASS (opt.fx). The height of every pixel's surface and a top-down height map of the whole
+     scene are kept while it is built, so once it is painted the sun can cast real shadows across it, the
+     corners can darken where things meet, the far land can sit in haze and the whole picture can be graded.
+     It never moves a pixel: it only relights the ones already there, so the pixel art stays the pixel art. */
+  var FX = !!opt.fx, WZ = FX ? new Float32Array(W * Hh) : null, HMS = 0.25, HX = 0, HY = 0, HM = null;
+  if (FX){ HX = Math.ceil((b[2] - b[0]) / HMS) + 1; HY = Math.ceil((b[3] - b[1]) / HMS) + 1; HM = new Float32Array(HX * HY).fill(-1e9); }
   function camN(nx, ny, nz){ var v0 = nx, v1 = -nz * ce + ny * se, v2 = nz * se + ny * ce, l = Math.sqrt(v0 * v0 + v1 * v1 + v2 * v2) || 1; return [v0 / l, v1 / l, v2 / l]; }
   function splat(x, y, z, m, n, extra){
     var sx = Math.floor((x - b[0]) / ART), sy = Math.floor(y * se / ART - z * ce / ART + oy), Dp = y * ce + z * se;
-    if (sx < 0 || sy < 0 || sx >= W || sy >= Hh) return; var k = sy * W + sx; if (Dp <= Z[k]) return; Z[k] = Dp;
+    if (sx < 0 || sy < 0 || sx >= W || sy >= Hh) return;
+    if (FX){ var hi = Math.round((x - b[0]) / HMS), hj = Math.round((y - b[1]) / HMS); if (hi >= 0 && hj >= 0 && hi < HX && hj < HY && z > HM[hj * HX + hi]) HM[hj * HX + hi] = z; }
+    var k = sy * W + sx; if (Dp <= Z[k]) return; Z[k] = Dp; if (FX) WZ[k] = z;
     var c = { m:m, n:null, z:Dp, dt:0, gloss:0, bias:0, t:null, tag:'', nv:n };
     if (extra) for (var q in extra) c[q] = extra[q];
     S.g[sy][sx] = c;
@@ -86,7 +94,10 @@ function* steps(C, opt){
   var x, y;
   function sdAt(x, y){ var i = Math.round((x - b[0]) / st), j = Math.round((y - b[1]) / st);
     if (i < 0 || j < 0 || i >= GX || j >= GY) return 20; return SD[j * GX + i]; }
-  var CARP = 0.35, RAIL = 0.95, RW = 0.55;
+  /* THE COURSE STANDS ON A PLINTH: its carpet is raised off the land, so the near side shows a solid base under the
+     rail and the whole course throws a shadow onto the land, the way a hole reads in a console mini golf game. The
+     rail stands the same height over the carpet as it always did, so it hides no more of the course than before. */
+  var CARP = 0.95, RAIL = 1.55, RW = 0.55;
   var clearAt = SC ? (SC.clearAt || function(){ return 20; }) : function(x, y){ return sdAt(x, y) - RW; };
   var inB = SC ? function(){ return false; } : function(x, y){ return x >= C.bounds[0] && y >= C.bounds[1] && x <= C.bounds[2] && y <= C.bounds[3]; };
   var LD = SC ? (SC.land || null) : LAND ? LAND.make(C, b, clearAt, (C.seed | 0) || 7) : null;
@@ -115,7 +126,9 @@ function* steps(C, opt){
     if (GE[kk]) for (var qq in GE[kk]) ex2[qq] = GE[kk][qq];
     splat(x, y, z, key, n, ex2);
     if (z > zs + 0.12){ var ex3 = { ti:ti, tj:tj, nl:terr, dt:-1 }; if (GE[kk]) for (qq in GE[kk]) ex3[qq] = GE[kk][qq];
-      for (var zz = zs; zz < z; zz += st * 0.8) splat(x, y + st / 2, zz, key === 'carpet' ? 'skirt' : key, camN(0, 1, 0), ex3); }
+      // the plinth: where the rail stands over the land (not over another room), the face below its cap is the base
+      var ms = GM[Math.min(GY - 1, j + 1) * GX + i], plin = key === 'rail' && typeof ms === 'string' && (ms === 'ground' || ms.charAt(0) === 't');
+      for (var zz = zs; zz < z; zz += st * 0.8) splat(x, y + st / 2, zz, key === 'carpet' || (plin && zz < z - 0.5) ? 'skirt' : key, camN(0, 1, 0), ex3); }
   } }
 
   // ---- solids: a voxel grid, each surface voxel lit by which way its empty neighbours lie
@@ -171,7 +184,7 @@ function* steps(C, opt){
   var B = { solid:solid, vox:vox, tube:tube, blob:blob, gz:gz, ART:ART, clearAt:clearAt, T:T };
 
   // ---- the hole's own pieces
-  var LATHE = { pumpkin:1, ghost:1, pine:1, snowman:1, egg:1, snowball:1, beachball:1, pie:1, potgold:1, umbrella:1, cloud:1, neonpost:1, clover:0, star:0 };
+  var LATHE = { pumpkin:1, ghost:1, pine:1, snowman:1, egg:1, snowball:1, beachball:1, pie:1, potgold:1, umbrella:1, cloud:1, neonpost:1, kickball:1, clover:0, star:0 };
   var LIFT = { bat:1.4, ghost:0.5 };
   function base(x, y){ return CARP + F.h(x, y) * K + TZ(x, y); }
   function skinCol(name){ var fn = SK[name] || SK.stone, n = {}, best = null, bn = 0;
@@ -264,6 +277,105 @@ function* steps(C, opt){
       if (clearAt(wx, wy) > 0.4 && fv > 0.62 && (fv > 0.7 || ((fx + fy) & 2))) ctx.fillRect(fx, fy, 2, 2); }
     ctx.globalAlpha = 1; }
   if (LD && LD.after) LD.after(ctx, { pr:pr, W:W, H:Hh - y0, b:b, ART:ART, se:se, oy:oy - y0 });
+  var fxBg = null, fxNight = false, fxSky = null;
+  if (FX){ var fxg = fxPass(); while (!fxg.next().done) yield; }
+  function* fxPass(){
+    var HH2 = Hh - y0, img = ctx.getImageData(0, 0, W, HH2), d = img.data;
+    // the sun is low in the upper left, behind the camera's left shoulder: shadows fall toward the lower right
+    var lx = -0.62, ly = -0.48, ln = Math.hypot(lx, ly); lx /= ln; ly /= ln; var RISE = 0.78, STEP = HMS, MAXD = 9;
+    var hm = function(x, y){ var i = Math.round((x - b[0]) / HMS), j = Math.round((y - b[1]) / HMS); if (i < 0 || j < 0 || i >= HX || j >= HY) return -1e9; return HM[j * HX + i]; };
+    // haze colour: the land's own background, lifted toward a pale sky
+    var hz = (LD && LD.bg) || T.bg, hr = parseInt(hz.slice(1, 3), 16), hg = parseInt(hz.slice(3, 5), 16), hb = parseInt(hz.slice(5, 7), 16);
+    // a night world (neon, lava, a churchyard) has no bright sky to fade into: its far land sinks into the dark
+    var night = fxNight = hr * 0.3 + hg * 0.59 + hb * 0.11 < 70;
+    if (!night){ hr = hr + (226 - hr) * 0.6; hg = hg + (232 - hg) * 0.6; hb = hb + (242 - hb) * 0.6; } else { hr *= 0.6; hg *= 0.6; hb *= 0.7; }
+    // the grade: a little more colour and a little more contrast
+    function grade(i4, r, g, bl){ var lum = r * 0.3 + g * 0.59 + bl * 0.11; r = lum + (r - lum) * 1.22; g = lum + (g - lum) * 1.22; bl = lum + (bl - lum) * 1.22;
+      r = 128 + (r - 128) * 1.07; g = 128 + (g - 128) * 1.07; bl = 128 + (bl - 128) * 1.07;
+      d[i4] = r < 0 ? 0 : r > 255 ? 255 : r; d[i4 + 1] = g < 0 ? 0 : g > 255 ? 255 : g; d[i4 + 2] = bl < 0 ? 0 : bl > 255 ? 255 : bl; }
+    // a well mixed hash for the glints and the carpet's tufts (an XOR hash draws them in diagonal lines)
+    var hq = function(x, y, s0){ var h = Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263) + Math.imul(s0, 2246822519) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16; return (h >>> 0) / 4294967296; };
+    var A8 = []; for (var a = 0; a < 8; a++) A8.push([Math.cos(a * Math.PI / 4), Math.sin(a * Math.PI / 4)]);
+    // the sun, as a direction in the world, and the same direction in the camera's terms, so a voxel's own
+    // normal can say whether it faces it
+    var sw = [lx, ly, RISE], swl = Math.hypot(sw[0], sw[1], sw[2]); sw = [sw[0] / swl, sw[1] / swl, sw[2] / swl];
+    // a broad wash of light across the whole scene, brightest toward the sun: one light lights the world
+    var mx0 = (b[0] + b[2]) / 2, my0 = (b[1] + b[3]) / 2, span = Math.max(8, Math.hypot(b[2] - b[0], b[3] - b[1]) / 2);
+    var DD = Math.max(0.6, ART * 6);   // how much nearer the camera a surface has to be than the one behind it to count as an edge
+    var BR = night ? new Float32Array(W * HH2) : null;   // what glows, for the bloom at night
+    for (var py = 0; py < HH2; py++){
+      for (var px = 0; px < W; px++){
+        var k = (py + y0) * W + px, i4 = (py * W + px) * 4, r = d[i4], g = d[i4 + 1], bl = d[i4 + 2], r0 = r, g0 = g, bb0 = bl;
+        if (Z[k] < -1e8){ grade(i4, r * 0.86, g * 0.86, bl * 0.9); continue; }
+        var z = WZ[k], wy = (Z[k] - z * se) / ce, wx = b[0] + (px + 0.5) * ART;
+        var cel = S.g[py] && S.g[py][px], cm = cel ? cel.m : '';
+        // only what lies on the ground takes a shadow or a dark corner: the painter already shades the sides
+        // of a tree or a wall that face away, and doing it twice makes a wood a black mass
+        var low = z - gz(wx, wy) < 0.45;
+        // the shadow: march toward the sun over the height map, and the deepest crossing sets how dark it is
+        var sh = 0;
+        if (low) for (var t = STEP; t < MAXD; t += STEP){ var over = hm(wx + lx * t, wy + ly * t) - (z + 0.05 + t * RISE); if (over > 0){ sh = Math.max(sh, Math.min(1, over / 0.25)); if (sh >= 1) break; } }
+        // ambient occlusion: how much of the ground close round it stands higher than it
+        var ao = 0; if (low) for (a = 0; a < 8; a++){ var o1 = hm(wx + A8[a][0] * 0.5, wy + A8[a][1] * 0.5) - z, o2 = hm(wx + A8[a][0] * 1.1, wy + A8[a][1] * 1.1) - z;
+          ao += Math.max(0, Math.min(1, o1 / 0.5)) * 0.6 + Math.max(0, Math.min(1, o2 / 1.1)) * 0.4; }
+        ao = 1 - Math.min(0.35, ao / 8 * 0.8);
+        // a dithered edge on the shadow, so it reads as pixel art and not as a smear
+        if (sh > 0 && sh < 1) sh = ((px + py) & 1) ? Math.min(1, sh * 1.4) : sh * 0.6;
+        // a trail is seen from close in, among trees taller than the golfer: its shadows are lighter, or a wood is a lake of blue
+        if (SC) sh *= 0.55;
+        // light is warm and bright, shadow is cool and blue, the way a low sun reads
+        var sr = 1.07 - sh * 0.47, sg = 1.05 - sh * 0.31, sb = 1.0 - sh * 0.12;
+        r = r * sr * ao; g = g * sg * ao; bl = bl * sb * ao;
+        // THE CARPET HAS A NAP: it is laid in broad strips that catch the light a little differently, with a tuft here
+        // and there, so it reads as a surface under the sun and not as a flat fill
+        if (cm === 'carpet'){ var nap = ((Math.floor(wy / 2.4) & 1) ? 0.965 : 1.03) * (hq(px, py, 41) < 0.09 ? 0.93 : 1); r *= nap; g *= nap; bl *= nap; }
+        // the sun's wash across the scene
+        var wsh = Math.max(-1, Math.min(1, ((wx - mx0) * lx + (wy - my0) * ly) / span)) * (night ? 0.03 : 0.07) + 1; r *= wsh; g *= wsh; bl *= wsh;
+        // A LIT RIM ALONG WHAT STANDS UP. Where something stands in front of what is behind it (the scene two
+        // pixels up or across is much further away) and it faces the sun, its edge catches the light. It goes one
+        // pixel inside the dark outline, so the outline stays and the light sits on the form: the bevel that makes
+        // a block, a rail, a tree and a tower read as a solid in a lit world rather than a sticker on it.
+        if (cel && cel.nv && py > 1 && px > 1 && (!low || cm === 'rail')){
+          var kU1 = k - W, kU2 = k - 2 * W, kL1 = k - 1, kL2 = k - 2, nearU = Z[kU1] > Z[k] - DD && Z[kU2] < Z[k] - DD, nearL = Z[kL1] > Z[k] - DD && Z[kL2] < Z[k] - DD;
+          if (nearU || nearL){ var nv = cel.nv, nwy = nv[1] * se + nv[2] * ce, nwz = -nv[1] * ce + nv[2] * se, face = nv[0] * sw[0] + nwy * sw[1] + nwz * sw[2];
+            if (face > 0.1){ var rimA = Math.min(0.42, face * 0.5) * (sh > 0.5 ? 0.3 : 1) * (night ? 0.6 : 1); r += (255 - r) * rimA; g += (238 - g) * rimA; bl += (200 - bl) * rimA; } } }
+        // WATER AND ICE TAKE THE SKY: a sheen of it, stronger toward the far bank where the angle is low, and a few
+        // glints where the sun catches a ripple
+        if (cm === 'haz' || cm === 'flow' || cm === 'ice' || cm === 't:water' || cm === 't:ice' || cm === 't:sea' || cm === 't:sea0'){ var fr = 0.1 + 0.16 * (1 - py / HH2); r += (hr - r) * fr; g += (hg - g) * fr; bl += (hb - bl) * fr;
+          if (sh < 0.3 && hq(px >> 1, py, 31) < (cm === 'ice' || cm === 't:ice' ? 0.02 : 0.03) && (px & 1)){ r = 250; g = 250; bl = 255; } }
+        // haze over the far land (the top of the picture) and nothing on the course
+        var far = Math.max(0, Math.min(1, (0.42 - py / HH2) / 0.42)), hzA = far * far * 0.26 * (clearAt(wx, wy) > 0.5 ? 1 : 0.35);
+        r += (hr - r) * hzA; g += (hg - g) * hzA; bl += (hb - bl) * hzA;
+        grade(i4, r, g, bl);
+        // only what is painted to give light glows (lava, neon, a lantern), never the course: the land and the solids,
+        // read before they were relit, so a sunlit rim is not a lamp
+        if (BR && (cm.charAt(0) === 't' || cm.charAt(0) === 'x') && cm !== 'x:' + T.carpet){ var L2 = r0 * 0.3 + g0 * 0.59 + bb0 * 0.11, sat = Math.max(r0, g0, bb0) - Math.min(r0, g0, bb0); if (L2 > 135 && sat > 100) BR[py * W + px] = 1; }
+      }
+      if ((py & 15) === 15) yield;
+    }
+    /* A GLOW AT NIGHT. What is lit and coloured at night (lava, neon, lanterns, the fair's lights) bleeds a soft halo
+       of its own colour onto what is round it. Worked at a quarter of the size and blurred, so it costs a little. */
+    if (BR){ var QW = Math.ceil(W / 4), QH = Math.ceil(HH2 / 4), QR = new Float32Array(QW * QH), QG = new Float32Array(QW * QH), QB = new Float32Array(QW * QH), qi, qx, qy;
+      for (py = 0; py < HH2; py++) for (px = 0; px < W; px++) if (BR[py * W + px]){ qi = (py >> 2) * QW + (px >> 2), i4 = (py * W + px) * 4; QR[qi] += d[i4] / 16; QG[qi] += d[i4 + 1] / 16; QB[qi] += d[i4 + 2] / 16; }
+      var blur = function(A){ var T2 = new Float32Array(A.length), RAD = 3, n2 = RAD * 2 + 1;
+        for (qy = 0; qy < QH; qy++){ var acc = 0; for (qx = -RAD; qx < QW + RAD; qx++){ if (qx + RAD < QW) acc += A[qy * QW + qx + RAD] || 0; if (qx - RAD - 1 >= 0) acc -= A[qy * QW + qx - RAD - 1]; if (qx >= 0 && qx < QW) T2[qy * QW + qx] = acc / n2; } }
+        for (qx = 0; qx < QW; qx++){ acc = 0; for (qy = -RAD; qy < QH + RAD; qy++){ if (qy + RAD < QH) acc += T2[(qy + RAD) * QW + qx]; if (qy - RAD - 1 >= 0) acc -= T2[(qy - RAD - 1) * QW + qx]; if (qy >= 0 && qy < QH) A[qy * QW + qx] = acc / n2; } } };
+      blur(QR); blur(QG); blur(QB); blur(QR); blur(QG); blur(QB); yield;
+      for (py = 0; py < HH2; py++){ for (px = 0; px < W; px++){ i4 = (py * W + px) * 4; var fx2 = px / 4 - 0.5, fy2 = py / 4 - 0.5, x0q = Math.max(0, Math.min(QW - 1, Math.floor(fx2))), y0q = Math.max(0, Math.min(QH - 1, Math.floor(fy2))), x1q = Math.min(QW - 1, x0q + 1), y1q = Math.min(QH - 1, y0q + 1), u = Math.max(0, Math.min(1, fx2 - x0q)), v = Math.max(0, Math.min(1, fy2 - y0q));
+        var w00 = (1 - u) * (1 - v), w10 = u * (1 - v), w01 = (1 - u) * v, w11 = u * v, a00 = y0q * QW + x0q, a10 = y0q * QW + x1q, a01 = y1q * QW + x0q, a11 = y1q * QW + x1q, GL = 1.6;
+        d[i4] = Math.min(255, d[i4] + (QR[a00] * w00 + QR[a10] * w10 + QR[a01] * w01 + QR[a11] * w11) * GL); d[i4 + 1] = Math.min(255, d[i4 + 1] + (QG[a00] * w00 + QG[a10] * w10 + QG[a01] * w01 + QG[a11] * w11) * GL); d[i4 + 2] = Math.min(255, d[i4 + 2] + (QB[a00] * w00 + QB[a10] * w10 + QB[a01] * w01 + QB[a11] * w11) * GL); }
+        if ((py & 31) === 31) yield; } }
+    ctx.putImageData(img, 0, 0);
+    // the colour of the picture's far and near edges, so the stage above and below it continues the land into a sky
+    // and into the dark rather than stopping at a hard line
+    var edgeCol = function(row){ var sr2 = 0, sg2 = 0, sb2 = 0, n2 = 0; for (var xq = 0; xq < W; xq++){ var j4 = (row * W + xq) * 4; sr2 += d[j4]; sg2 += d[j4 + 1]; sb2 += d[j4 + 2]; n2++; } return [sr2 / n2, sg2 / n2, sb2 / n2]; };
+    var topC = edgeCol(Math.min(2, HH2 - 1)), botC = edgeCol(Math.max(0, HH2 - 3)), rgbS = function(c){ return 'rgb(' + Math.round(c[0]) + ',' + Math.round(c[1]) + ',' + Math.round(c[2]) + ')'; };
+    var skyC = night ? [hr * 0.5, hg * 0.5, hb * 0.62 + 10] : [hr + (190 - hr) * 0.35, hg + (214 - hg) * 0.35, hb + (240 - hb) * 0.35];
+    fxSky = { top:rgbS(topC), sky:rgbS(skyC), bot:rgbS(botC) };
+    // the stage round the picture takes the same grade, or it is a bright band under a graded picture
+    var b0 = (SC && LD && LD.bg) || T.bg || '#202020', q = [parseInt(b0.slice(1, 3), 16), parseInt(b0.slice(3, 5), 16), parseInt(b0.slice(5, 7), 16)], t0 = new Uint8ClampedArray(4);
+    var keep = d; d = t0; grade(0, q[0] * 0.86, q[1] * 0.86, q[2] * 0.9); d = keep; fxBg = 'rgb(' + t0[0] + ',' + t0[1] + ',' + t0[2] + ')';
+  }
   /* WHETHER SOMETHING STANDS IN FRONT OF A POINT. The picture keeps how near the camera each pixel's
      surface is, so a point on the hole is hidden when the scene at its pixel is nearer than it: a ball
      behind a block, a wall or the windmill house is behind it, not painted over it. */
@@ -271,6 +383,6 @@ function* steps(C, opt){
     if (sx < 0 || sy < 0 || sx >= W || sy >= Hh) return false; return Z[sy * W + sx] > y * ce + z * se + 0.2; };
   /* the depth of every pixel (Z, W wide, starting y0 rows down), so a trail can draw the golfer and anything
      that moves behind whatever stands in front of it */
-  return { ART:ART, cv:cv, pr:pr, un:un, zAt:SC ? function(x, y){ return gz(x, y); } : surf, hid:hid, mill:mill, se:se, ce:ce, K:K, carp:CARP, Z:Z, ZW:W, zy0:y0, b:b };
+  return { ART:ART, cv:cv, bg:fxBg, sky:fxSky, night:FX && fxNight, pr:pr, un:un, zAt:SC ? function(x, y){ return gz(x, y); } : surf, hid:hid, mill:mill, se:se, ce:ce, K:K, carp:CARP, Z:Z, ZW:W, zy0:y0, b:b };
 }
 })();

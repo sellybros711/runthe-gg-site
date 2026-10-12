@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Arena Lab</title>
+<style>
+  :root { --bg: #07080b; --ink: #e8e4da; --dim: #8a8f99; --panel: rgba(10, 11, 16, 0.82); }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 12px/1.3 system-ui, sans-serif; overflow: hidden; }
+  canvas#view { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
+  #ui { position: fixed; left: 8px; top: 8px; right: 8px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; pointer-events: none; }
+  #ui > * { pointer-events: auto; }
+  button { background: var(--panel); color: var(--ink); border: 1px solid #2c303a; padding: 4px 7px; font: inherit; cursor: pointer; }
+  button.on { border-color: #e2b23a; color: #f4d070; }
+  #stats { position: fixed; right: 8px; bottom: 8px; background: var(--panel); padding: 4px 8px; font: 11px ui-monospace, monospace; color: var(--dim); }
+  label { background: var(--panel); padding: 3px 6px; }
+</style>
+</head>
+<body>
+<canvas id="view"></canvas>
+<div id="ui"></div>
+<div id="stats">-</div>
+<script type="module">
+import * as THREE from '../../assets/vendor/three-0.180.0/three.module.min.js';
+import { buildArena } from './arena.js';
+import { PITCH } from './dims.js';
+
+/* a copy of ARENA_DEF from wrestling/index.html, for the lab only */
+const ARENA_DEF = {
+  gcw:{ mat:['#7a6a52','#5d4f3c'], apron:['#8f4a1e','#43220c'], pad:'#a8602c', rope:'#e2d3ba', glow:'rgba(168,96,44,.20)', seats:2, dens:13, dim:.42, tone:['#6a5340','#8a6a4a','#4a3a2c'], wall:'linear-gradient(180deg,#1c1512 0%,#221a15 62%,#140f0d 100%)', trim:'repeating-linear-gradient(90deg,rgba(232,220,192,.16) 0 60px,transparent 60px 132px)' },
+  cdp:{ mat:['#5c6b72','#43505a'], apron:['#41616c','#1d2b31'], pad:'#5e7f8a', rope:'#dfe6e6', glow:'rgba(94,127,138,.18)', seats:2, dens:16, dim:.34, tone:['#59636a','#7d8a86','#3e4750'], wall:'linear-gradient(180deg,#141a1c 0%,#1a2226 70%,#0f1315 100%)', trim:'repeating-linear-gradient(90deg,rgba(0,0,0,.35) 0 22px,transparent 22px 26px)' },
+  sbcw:{ mat:['#6f6647','#565037'], apron:['#7a6a4a','#3a3220'], pad:'#7a6a4a', rope:'#efe3c6', glow:'rgba(122,106,74,.20)', seats:3, dens:11, dim:.5, tone:['#6b5a44','#8f7a58','#4b3f2f'], wall:'linear-gradient(180deg,#1d1811 0%,#2a2318 66%,#161209 100%)', trim:'repeating-linear-gradient(90deg,rgba(239,227,198,.10) 0 46px,transparent 46px 92px)' },
+  scw:{ mat:['#4a5f86','#33436b'], apron:['#d2687a','#5d2437'], pad:'#d2687a', rope:'#ffe9f0', glow:'rgba(210,104,122,.26)', seats:3, dens:10, dim:.55, tone:['#c0648a','#63b8c8','#8a5aa8'], wall:'linear-gradient(180deg,#20132a 0%,#2c1740 55%,#140a1c 100%)', trim:'repeating-linear-gradient(90deg,rgba(99,184,200,.30) 0 8px,transparent 8px 44px)' },
+  rose:{ mat:['#6b4450','#4c2e39'], apron:['#c0455f','#4d1622'], pad:'#c0455f', rope:'#ffe2e8', glow:'rgba(192,69,95,.24)', seats:3, dens:12, dim:.46, tone:['#8f4257','#b06a72','#5c2f3c'], wall:'linear-gradient(180deg,#1b0f14 0%,#2a151d 60%,#120a0e 100%)', trim:'repeating-linear-gradient(90deg,rgba(192,69,95,.22) 0 34px,transparent 34px 70px)' },
+  acw:{ mat:['#41597d','#2b3c58'], apron:['#3f7fbf','#16324f'], pad:'#3f7fbf', rope:'#f2f6fb', glow:'rgba(63,127,191,.26)', seats:4, dens:8, dim:.62, tone:['#4f6b8f','#7e93ad','#38506e'], wall:'linear-gradient(180deg,#0f1620 0%,#182534 58%,#0b1017 100%)', trim:'repeating-linear-gradient(90deg,rgba(63,127,191,.26) 0 4px,transparent 4px 30px)' },
+  kaiju:{ mat:['#48605a','#31423e'], apron:['#4a8f76','#173029'], pad:'#4a8f76', rope:'#e9f2ee', glow:'rgba(74,143,118,.18)', seats:4, dens:9, dim:.5, tone:['#4c6459','#6f8378','#37473f'], wall:'linear-gradient(180deg,#0d1412 0%,#16211d 62%,#080d0b 100%)', trim:'repeating-linear-gradient(90deg,rgba(233,242,238,.10) 0 70px,transparent 70px 150px)' },
+  eterna:{ mat:['#7a6136','#5a4726'], apron:['#d99a2b','#5c3c0c'], pad:'#d99a2b', rope:'#fff3d6', glow:'rgba(217,154,43,.28)', seats:4, dens:8, dim:.64, tone:['#b9762f','#3f7f9f','#9a4a6a'], wall:'linear-gradient(180deg,#241706 0%,#33230b 58%,#180f04 100%)', trim:'repeating-linear-gradient(90deg,rgba(217,154,43,.30) 0 16px,rgba(192,57,43,.24) 16px 32px)' },
+  cwf:{ mat:['#4d5b6e','#6b7c92'], apron:['#c0392b','#4a1410'], pad:'#c0392b', rope:'#ffffff', glow:'rgba(192,57,43,.30)', seats:6, dens:6, dim:.72, tone:['#5d6b80','#8d9ab0','#414d61'], wall:'linear-gradient(180deg,#0a0d12 0%,#161d28 46%,#090c11 100%)', trim:'repeating-linear-gradient(90deg,rgba(255,255,255,.20) 0 3px,transparent 3px 26px)' },
+};
+const SHORT = { gcw:'GRIT', cdp:'CDP', sbcw:'SBCW', scw:'SCW', rose:'CR', acw:'ACW', kaiju:'KJP', eterna:'LE', cwf:'CWF' };
+
+const LINES = 270;                         /* the drawing buffer's height */
+const canvas = document.getElementById('view');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.BasicShadowMap;
+renderer.toneMapping = THREE.NoToneMapping;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(40, 1, 1, 600);
+
+function fit() {
+  const w = window.innerWidth, h = window.innerHeight;
+  renderer.setPixelRatio(LINES / h);
+  renderer.setSize(w, h, true);
+  camera.aspect = w / h;
+  /* a tall phone needs a wider vertical field to keep the ring across it */
+  camera.fov = camera.aspect < 1.3 ? Math.min(85, 2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(23)) / camera.aspect) * 180 / Math.PI) : 40;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', fit); fit();
+
+const params = new URLSearchParams(location.search);
+const S = { id: params.get('arena') || 'cwf', quality: params.get('q') || 'high', cage: false, prize: null, heat: 0.25, entering: false, orbit: false, flash: 0 };
+let arena = null;
+function load() {
+  if (arena) arena.dispose();
+  arena = buildArena(ARENA_DEF[S.id], { name: SHORT[S.id], cage: S.cage, quality: S.quality });
+  scene.add(arena.group);
+  scene.fog = new THREE.Fog(arena.fog.color, arena.fog.near, arena.fog.far);
+  scene.background = new THREE.Color(arena.fog.color);
+  arena.setCage(S.cage); arena.hangPrize(S.prize);
+  window.__arena = arena;
+  paintUI();
+}
+
+/* the hard camera: in the stands on the near side, looking down PITCH */
+const DIST = 46, LOOK = new THREE.Vector3(0, 0.8, 0);
+let orbitA = 0;
+function placeCamera(dt) {
+  if (S.orbit) orbitA += dt * 0.15; else if (!S.hold) orbitA *= 0.9;
+  const r = DIST * Math.cos(PITCH), y = DIST * Math.sin(PITCH);
+  camera.position.set(Math.sin(orbitA) * r, LOOK.y + y, Math.cos(orbitA) * r);
+  camera.lookAt(LOOK);
+}
+
+const ui = document.getElementById('ui');
+function btn(label, on, fn, id) { const b = document.createElement('button'); b.textContent = label; if (on) b.classList.add('on'); if (id) b.id = id; b.onclick = fn; return b; }
+function paintUI() {
+  ui.innerHTML = '';
+  for (const id of Object.keys(ARENA_DEF)) ui.appendChild(btn(id, id === S.id, () => { S.id = id; load(); }, 'b-' + id));
+  ui.appendChild(btn('q:' + S.quality, false, () => { S.quality = S.quality === 'high' ? 'low' : 'high'; load(); }, 'b-q'));
+  ui.appendChild(btn('cage', S.cage, () => { S.cage = !S.cage; arena.setCage(S.cage); paintUI(); }, 'b-cage'));
+  ui.appendChild(btn('prize:' + (S.prize || 'none'), !!S.prize, () => { S.prize = S.prize === null ? 'case' : S.prize === 'case' ? 'belt' : null; arena.hangPrize(S.prize); paintUI(); }, 'b-prize'));
+  ui.appendChild(btn('entrance', S.entering, () => { S.entering = !S.entering; paintUI(); }, 'b-enter'));
+  ui.appendChild(btn('orbit', S.orbit, () => { S.orbit = !S.orbit; paintUI(); }, 'b-orbit'));
+  ui.appendChild(btn('flash', false, () => { S.flash = 1; }, 'b-flash'));
+  for (const sd of ['n', 'e', 's', 'w']) ui.appendChild(btn('hit ' + sd, false, () => arena.ropeHit(sd, 1), 'b-hit-' + sd));
+  const lab = document.createElement('label');
+  lab.innerHTML = `heat <input id="heat" type="range" min="0" max="1" step="0.05" value="${S.heat}">`;
+  lab.querySelector('input').oninput = (e) => { S.heat = +e.target.value; };
+  ui.appendChild(lab);
+}
+
+/* the lab's own hooks, so a headless check can drive it */
+window.__lab = { S, load, setHeat: (h) => { S.heat = h; }, setOrbit: (a) => { orbitA = a; S.orbit = false; S.hold = true; }, scene, camera, renderer };
+
+const stats = document.getElementById('stats');
+let last = performance.now(), fpsAcc = 0, fpsN = 0, fps = 0, t0 = performance.now();
+window.__frames = 0;
+function frame(now) {
+  const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  const t = (now - t0) / 1000;
+  S.flash = Math.max(0, S.flash - dt * 2.5);
+  placeCamera(dt);
+  arena.update(dt, t, { heat: S.heat, flash: S.flash, entering: S.entering });
+  renderer.render(scene, camera);
+  fpsAcc += dt; fpsN++;
+  if (fpsAcc > 0.5) { fps = fpsN / fpsAcc; fpsAcc = 0; fpsN = 0; }
+  const info = renderer.info.render;
+  stats.textContent = `${S.id} ${S.quality}  calls ${info.calls}  tris ${info.triangles}  fans ${arena.info.fans}  ${fps.toFixed(0)} fps  buffer ${renderer.domElement.width}x${renderer.domElement.height}`;
+  window.__stats = { calls: info.calls, tris: info.triangles, fps, fans: arena.info.fans };
+  window.__frames++;
+  requestAnimationFrame(frame);
+}
+load();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
