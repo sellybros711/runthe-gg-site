@@ -148,6 +148,32 @@ function award(w, key, amount, src, opts){
   return { paid: true, amount: n, why: f < 1 ? 'tail' : 'full', w: w };
 }
 
+/* mark(w, key): the key is held at nought. It is how a badge earned before
+   the account had a wallet, or a season played before this career was being
+   paid, is settled once and for ever without paying: award() then refuses it
+   as already paid, and a merge keeps the earlier of two entries, so a mark can
+   only ever make a device pay LESS. */
+function mark(w, key, t){
+  w = own(w); key = String(key);
+  if (!key || w.e[key]) return false;
+  t = t == null ? Date.now() : +t;
+  w.e[key] = [0, t, 'mark', dayOf(t)];
+  return true;
+}
+/* baseline(w, base, keys): the first time `base` is seen, every key in `keys`
+   is marked and `base` with them. Answers whether it did that now. */
+function baseline(w, base, keys, t){
+  w = own(w);
+  if (w.e[base]) return false;
+  (keys || []).forEach(function(k){ mark(w, k, t); });
+  mark(w, base, t);
+  return true;
+}
+/* Keys that stand for ever (a badge, the welcome, a baseline) are re-asked on
+   every check, so they are never folded away: folded, award() would no longer
+   see them and would pay them a second time. */
+function lasting(k){ return /^(welcome$|bg:|cb:)/.test(k); }
+
 /* spend(w, key, amount, what, paid) -> { ok, why }
    A key already spent is not charged again (the same purchase on two devices
    is one purchase). A balance under the price refuses, which after a merge of
@@ -194,7 +220,7 @@ function compact(w, device, now){
   if (n <= COMPACT_MAX) return w;
   var z = w.z[device] || [0, 0], f = (w.f || []).slice();
   ['e', 's'].forEach(function(m, i){
-    for (var k in w[m]) { var v = w[m][k]; if (now - (+v[1] || 0) > COMPACT_AGE) { z[i] += +v[0] || 0; f.push(k); delete w[m][k]; } }
+    for (var k in w[m]) { var v = w[m][k]; if (!lasting(k) && now - (+v[1] || 0) > COMPACT_AGE) { z[i] += +v[0] || 0; f.push(k); delete w[m][k]; } }
   });
   w.z[device] = z; w.f = f.slice(-4000);
   return w;
@@ -204,7 +230,8 @@ function compact(w, device, now){
 function history(w, n){
   w = clean(w);
   var rows = [], k;
-  for (k in w.e) rows.push({ k: k, a: w.e[k][0], t: w.e[k][1], src: w.e[k][2] });
+  /* a mark paid nothing, so it is not a line in anybody's history */
+  for (k in w.e) if (+w.e[k][0] > 0) rows.push({ k: k, a: w.e[k][0], t: w.e[k][1], src: w.e[k][2] });
   for (k in w.s) rows.push({ k: k, a: -w.s[k][0], t: w.s[k][1], src: w.s[k][2] });
   rows.sort(function(a, b){ return b.t - a.t; });
   return rows.slice(0, n || 150);
@@ -212,7 +239,9 @@ function history(w, n){
 
 /* ─── what each thing pays (base amounts; award() applies the day's rule) ── */
 
-var HALL_TIER = { 'Hall of Fame': 0.5, 'First ballot': 0.75, 'Inner circle': 1 };
+/* career.js's Hall tier ids (HOF_TIERS), so a finish pays off the ending the
+   career really got. A snub or no Hall pays the finish and nothing more. */
+var HALL_TIER = { hof_first: 1, hof_eventual: 0.75, hof_debate: 0.5, hof_committee: 0.5 };
 function seasonCoins(row){
   /* row is a career.js history row: po is how far it went, aw its awards */
   var R = RATE.season, n = R.base, po = row && row.po;
@@ -251,7 +280,7 @@ var API = {
   RARITIES: RARITIES, PRICE: PRICE, DUPE_REFUND: DUPE_REFUND, EXCHANGE_COST: EXCHANGE_COST, LEG_EXCHANGE_COINS: LEG_EXCHANGE_COINS,
   PACKS: PACKS, BUNDLE_N: BUNDLE_N, BUNDLE_PAY: BUNDLE_PAY, WELCOME: WELCOME, RATE: RATE, FULL_A_DAY: FULL_A_DAY, CQ_DAY_CAP: CQ_DAY_CAP, TAIL: TAIL,
   dayOf: dayOf, fresh: fresh, clean: clean, earned: earned, spent: spent, balance: balance,
-  award: award, spend: spend, merge: merge, compact: compact, history: history,
+  award: award, spend: spend, mark: mark, baseline: baseline, lasting: lasting, HALL_TIER: HALL_TIER, merge: merge, compact: compact, history: history,
   seasonCoins: seasonCoins, finishCoins: finishCoins, runCoins: runCoins, dailyDraftCoins: dailyDraftCoins,
   fixCoins: fixCoins, passesCoins: passesCoins, badgeCoins: badgeCoins, priceOf: priceOf,
 };

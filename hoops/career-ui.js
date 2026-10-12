@@ -59,6 +59,9 @@ function backfill(st){
 var S = null;
 function store(){ if (!S) S = load(); return S; }
 function save(){
+  /* A season pays the moment it is filed, keyed on the career and the year,
+     so this is asked on every save and pays each season once. */
+  if (S && S.cur && window.RTF_EARN) { try { window.RTF_EARN.career(S.cur); } catch (e) {} }
   try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {}
   var M = window.RTF_MODES_UI;
   if (M && M.write) M.write(KEY);
@@ -2260,6 +2263,8 @@ function finish(){
   st.arc.unshift(compact(card));
   if (st.arc.length > ARC_MAX) st.arc.length = ARC_MAX;
   card.found = vaultAdd(st, card);
+  /* The finish pays off the Hall tier the ending gave, half on Easy. */
+  if (window.RTF_EARN) { try { window.RTF_EARN.finish(L, f.ending && f.ending.tier); } catch (e) {} }
   st.cur = null;
   st.last = card;
   save();

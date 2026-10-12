@@ -127,10 +127,10 @@ idempotent (section 4). `src` is what the daily diminishing rule counts.
 | Endless Fix or Passes (Pro) | 80 | 5 | `fxe:<id>`, `pse:<id>` |
 | Classic run | 240, +160 October, +120 a series won, +800 title | 3 | `run:<seed>` |
 | One Franchise or Decades run | as Classic | shares Classic's 3 | `run:<seed>` |
-| Conquest | 40 a win, +480 a clear | 1,200 coins a day | `cq:<seed>:<rung>` |
+| Conquest | 40 a win, +480 a clear | the wins: 1,200 coins a day | `cq:<seed>:<rung>`, `cqc:<seed>` |
 | Career season closed | 240, +60 a playoff round won, +120 All-Star, +160 each other award, +600 title | counted by career (below) | `cs:<seed>:<year>` |
 | Career finished (reached the league) | 1,600, plus Hall tier 0 to 1,600 | the first 3 careers a day full, later ones (and their seasons) a quarter | `cf:<seed>` |
-| A badge earned for the first time | bronze 120, silver 240, gold 480, ring 1,200 | not counted | `bd:<id>` |
+| A badge earned for the first time | bronze 120, silver 240, gold 480, ring 1,200 | not counted | `bg:<id>` |
 | Daily quests | 320 each, +480 for all three | 1 set | `dq:<day>:<n>` |
 | Weekly challenges | 3,200 + a shard, the first two a League Pack | 4 a week | `wk:<week>:<n>` |
 | Streak week, login track, wheel | section 7 | once a day | `st:<day>`, `lg:<day>`, `wh:<day>` |
@@ -428,6 +428,11 @@ The earned economy (sections 3 to 8) needs no migration at all.
 | `hoops/baller.js` (street section) | 1 | garment and accessory shapes, drawn behind `ctx: 'street'` (section 13) |
 | `hoops/idles.js` | 1b | idle keyframes |
 | `hoops/shop.js` | 1 to 4 | Team Shop, closet, pack reveal, pass and wheel sheets, on `career-kit.js` |
+| `hoops/wardrobe.js` | 1 | what he owns and wears (`rtf.ward.v1`), and the wallet's one door (`RTF_WALLET`, `rtf.wallet.v1`) |
+| `hoops/closet-ui.js` | 1 | the closet in the Look sheet, the outfits and the coin history |
+| `hoops/earn.js` | 1 | who earns and when (section 14) |
+| `hoops/check-closet.mjs` | 1 | owning, wearing, two devices, the closet on a phone, the coin history |
+| `hoops/check-earn.mjs` | 1 | a guest earns nothing, every award pays once, nothing before the baseline pays |
 | `hoops/check-economy.mjs` | 1 | ledger merge, idempotence, compaction, diminishing tail, the three player days |
 | `hoops/check-wardrobe.mjs` | 1 | every item in both looks, every pose, no part off the grid, cache keys move, old looks unchanged |
 | `hoops/check-idles.mjs` | 1b | every loop closes, reduced motion still, phone budget |
@@ -464,3 +469,44 @@ frame and vanish from every frame the worker paints. `catalog.js` is the data
 (an item is a shape plus colours) and `baller.js` holds the shapes, in its
 street section, behind `ctx: 'street'`. A new colourway is a row; only a new
 shape needs art. `baller.js` carries `API_VERSION` 1 for the page to pin.
+
+## 14. Where coins are earned (`earn.js`)
+
+`economy.js` says what a thing pays; `earn.js` is the one place the game asks
+for it, and it holds three rules.
+
+- **Only a signed in account earns.** `RTF_EARN.pay` answers `guest` and
+  writes nothing otherwise. A guest still plays everything.
+- **Every award is keyed**, so the places that ask can ask often: a Conquest
+  win is asked after every steal (`cq:<seed>:<rung>`), a career season on every
+  save (`cs:<seed>:<year>`), and each pays once.
+- **Nothing earned before the account had a wallet pays.** `economy.js mark`
+  holds a key at nought, and `baseline(base, keys)` marks a whole set the first
+  time `base` is seen. Two baselines:
+  - `bg:base`, set by `settle()` the first time a pull for the account comes
+    back, marks every badge held then. It waits for the pull because the
+    career it reads must already hold every badge another device earned.
+  - `cb:<seed>`, set the first time a career is saved while signed in, marks
+    the seasons it has already played. A career started signed in has none.
+  A merge keeps the earlier of two entries for one key, so a mark against a
+  payment can only make a device pay less. Marks are never folded away by
+  `compact` (a folded key would be paid again) and are not lines in the
+  history.
+
+Where the game asks:
+
+| moment | where | key |
+|---|---|---|
+| a pull for the account has come back | `cloudPull`, after every slot is adopted | `welcome`, then `bg:base` or the new badges |
+| a run is filed | `recordRun` (`earnRun`) | `run:<seed>` or `dd:<day>`, then the badges it lit |
+| a mode files a feat | `recordFeats` | the badges it lit |
+| Conquest, Fix History, Six Passes | `cqFeats`, `fxFeats`, `psFeats` in `modes-ui.js` | as section 3 |
+| a career saves, a career finishes | `save()` and `finish()` in `career-ui.js` | `cs:`, `cf:` |
+
+What it says: a gold pill under the top bar, `+N coins`, gathering everything
+paid in one moment. It is its own element rather than the page's toast,
+because a mode says something in the same tick and the toast is one element.
+
+Not built yet, and said rather than implied: the panel telling a long-time
+player their badges were counted as already earned, the welcome's Streetball
+Pack (packs are Phase 2), quests, weeklies, the streak and the wheel (Phase 3).

@@ -230,6 +230,9 @@ var WALLET = {
   award: function(key, amount, src, opts){ var w = X.clean(wLoad()); var r = X.award(w, key, amount, src, opts); if (r.paid) wSave(w); return r; },
   spend: function(key, amount, what, paid){ var w = X.clean(wLoad()); var r = X.spend(w, key, amount, what, paid); if (r.ok) wSave(w); return r; },
   history: function(n){ return X.history(wLoad(), n); },
+  has: function(key){ return !!wLoad().e[key]; },
+  /* hold keys at nought (see economy.js mark and baseline) */
+  baseline: function(base, keys){ var w = X.clean(wLoad()); var did = X.baseline(w, base, keys); if (did) wSave(w); return did; },
   _reset: function(){ wmem = null; wsubs = []; },
 };
 if (typeof window !== 'undefined') window.RTF_WALLET = WALLET;

@@ -189,6 +189,12 @@ async function browser(){
   ok(await page.evaluate(() => /Go 1st overall/.test(document.querySelector('#cr-closet .cl-tile[data-id="ex_draft_blazer"] .cl-p').textContent)), '7 an exclusive says how it is earned, never a price');
   await page.click('#cr-closet .cl-back');
   ok(await page.evaluate(() => !document.querySelector('#cr-closet .cl-try')), '7 Back to my fit takes it off');
+  /* the coin history: nothing for a guest, then what a signed in award paid */
+  ok(await page.evaluate(() => !document.querySelector('#cr-closet .cl-hist')), '7 a wallet with no coins shows no history');
+  await page.evaluate(() => { const st = RTF_AUTH.state; RTF_AUTH.state = () => Object.assign({}, st(), { signedIn: true }); RTF_EARN.run({ madePlayoffs: true, seriesWon: 1, champion: false }, { seed: 4242 }); });
+  await page.waitForSelector('#cr-closet .cl-hist');
+  const hist = await page.evaluate(() => ({ line: document.querySelector('#cr-closet .cl-hist li').textContent, coins: document.querySelector('#cr-closet .cl-coins b').textContent, want: String(RTF_ECON.runCoins({ madePlayoffs: true, seriesWon: 1 })) }));
+  ok(/^Draft run/.test(hist.line) && hist.line.endsWith('+' + hist.want) && hist.coins === hist.want, '7 an award lands in the coin history and the balance at once (' + hist.line + ', ' + hist.coins + ')');
   await page.click('#cr-closet .cl-savefit');
   ok(await page.evaluate(() => document.querySelectorAll('#cr-closet [data-fit]').length === 1), '7 an outfit saves');
   /* on court */

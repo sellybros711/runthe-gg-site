@@ -1259,6 +1259,9 @@ function cqRecordBest(){
    counts nothing twice. The one count, runs finished, rides on `final`, which
    is passed once and marked on the run so a reload cannot pass it again. */
 function cqFeats(){
+  /* The coins ride on the same moments: every win is keyed on its rung, so
+     asking after every steal pays each win once. */
+  if (window.RTF_EARN && cq) { try { window.RTF_EARN.conquest(cq.seed, cq.wins.length, M.cqCleared(cq)); } catch (e) {} }
   var BD = window.RTF_BADGES;
   if (!BD || !P.feats || !cq) return;
   var final = M.cqOver(cq) && !cq.featsFiled;
@@ -2093,6 +2096,9 @@ function fxFinish(){
    finished and days in a row are a claim about coming back each day, and a
    button that deals a new team every press would make both worthless. */
 function fxFeats(r){
+  /* fxFeats is asked once a finish, so the coins are asked here too. A day's
+     season is keyed on the day; an endless one pays the small endless rate. */
+  if (window.RTF_EARN) { try { window.RTF_EARN.fix(r.day, r.odds, M.isEndless(r.day)); } catch (e) {} }
   var BD = window.RTF_BADGES;
   if (!BD || !P.feats) return;
   if (M.isEndless(r.day)) {
@@ -2682,7 +2688,10 @@ function psPass(to){
    solved, off this device's store. */
 function psFeats(pz, st){
   var BD = window.RTF_BADGES;
-  if (!BD || !P.feats || st.featsFiled) return;
+  if (st.featsFiled) return;
+  /* Keyed on the day, so the guard above is only about the cabinet. */
+  if (window.RTF_EARN) { try { window.RTF_EARN.passes(pz.day, !!st.solved && passesOf(st) <= pz.par, !!st.easy, M.isEndless(pz.day)); } catch (e) {} }
+  if (!BD || !P.feats) return;
   var days = psStore().days, n = 0;
   /* Endless counts every chain and no streak: see fxFeats. */
   if (!M.isEndless(pz.day)) for (var d = pz.day; days[d] && days[d].solved; d--) n++;

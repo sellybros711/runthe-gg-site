@@ -3485,9 +3485,10 @@
 <script src="modes.js?v=9"></script>
 <script src="career.js?v=48"></script>
 <script src="baller.js?v=23"></script>
-<script src="economy.js?v=1"></script>
+<script src="economy.js?v=2"></script>
 <script src="catalog.js?v=1"></script>
-<script src="wardrobe.js?v=1"></script>
+<script src="wardrobe.js?v=2"></script>
+<script src="earn.js?v=1"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
      or either file fails to load, the game runs exactly as it did, with runs
      kept in this browser and the board reporting itself unreachable. An account
@@ -10652,7 +10653,11 @@ function recordRun(out){
   if (day) cloudPushDaily(day);
   var arenas = freshArenas(before, c);
   if (arenas.length) arenaChanged();
-  return { career: c, fresh: fresh, bests: bests, daily: day, arenas: arenas };
+  /* THE COINS, keyed on the run (or the day), so a redrawn results screen
+     pays nothing twice, then the badges this run lit. earn.js decides who
+     earns: a guest plays and keeps nothing in coins. */
+  var coins = earnRun(out, c);
+  return { career: c, fresh: fresh, bests: bests, daily: day, arenas: arenas, coins: coins };
 }
 
 /* WHAT JUST LIT. Nothing stores "earned", by design: every badge is derived
@@ -10662,6 +10667,15 @@ function recordRun(out){
  *
  * It is allowed to answer nothing at all. badges.js is a separate script and a
  * blocked one must cost a row on a screen rather than the screen. */
+function earnRun(out, c){
+  var EN = window.RTF_EARN;
+  if (!EN || !run) return 0;
+  try {
+    var r = EN.run({ madePlayoffs: madePlayoffs(run), seriesWon: seriesWon(run), champion: !!out.titleWon }, run);
+    return (r && r.paid ? r.amount : 0) + EN.badges(c);
+  } catch (e) { return 0; }
+}
+
 function freshBadges(before, after){
   var B = window.RTF_BADGES;
   if (!B || typeof B.earned !== 'function') return [];
@@ -11709,6 +11723,10 @@ function cloudPull(){
     if (window.RTF_MODES_UI && window.RTF_MODES_UI.cloudAdopt) {
       try { window.RTF_MODES_UI.cloudAdopt(by, mine); } catch (e) {}
     }
+    /* THE WALLET SETTLES AFTER EVERYTHING ELSE IS ADOPTED: the welcome, and
+       the badge baseline, which has to see every badge the account already
+       holds or it would pay for one another device earned before launch. */
+    if (window.RTF_EARN && who) { try { window.RTF_EARN.settle(loadCareer() || blankCareer()); } catch (e) {} }
   }, function(){ cloudPulling = false; });
 }
 
@@ -11926,6 +11944,7 @@ function recordFeats(f){
   stampDay(c, false);
   try { localStorage.setItem(PKEY, JSON.stringify(c)); } catch (e) {}
   cloudPushCareer(c);
+  if (window.RTF_EARN) { try { window.RTF_EARN.badges(c); } catch (e) {} }
   var fresh = freshBadges(before, c);
   /* AFTER whatever the mode says about the moment itself, which is usually a
      toast of its own fired in the same tick. Said at once, the badge would be
@@ -12028,13 +12047,13 @@ boot();
 </script>
 <!-- AFTER the page, because it draws through window.RTF_PAGE, which the script
      above publishes. -->
-<script src="modes-ui.js?v=26"></script>
+<script src="modes-ui.js?v=27"></script>
 <script src="career-kit.js?v=9"></script>
 <script src="sound.js?v=2"></script>
 <script src="court.js?v=10"></script>
 <script src="ticker.js?v=2"></script>
 <script src="scenes.js?v=18"></script>
-<script src="closet-ui.js?v=1"></script>
-<script src="career-ui.js?v=51"></script>
+<script src="closet-ui.js?v=2"></script>
+<script src="career-ui.js?v=52"></script>
 </body>
 </html>

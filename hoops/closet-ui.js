@@ -111,6 +111,7 @@ function pane(host, o){
       + (!signedIn ? '<p class="cl-guest">Sign in to earn coins and keep what you buy.</p>' : '')
       + '<div class="cl-fits"><span class="k k-label">Outfits</span><div class="cl-fitrow">' + fitsHtml
       + (fits.length < W.MAX_FITS ? '<button type="button" class="k-chip cl-savefit">Save this fit</button>' : '') + '</div></div>'
+      + histHtml()
       + '</div>';
     wire();
   }
@@ -136,8 +137,33 @@ function pane(host, o){
     if (sf) sf.onclick = function(){ W.saveFit('Fit ' + (W.fits().length + 1), ctx); draw(); };
   }
 
+  /* WHERE THE COINS CAME FROM, newest first. A folded entry (economy.js
+     compact) is past its sixty days and is in the balance, not the list. */
+  function histHtml(){
+    var Wl = window.RTF_WALLET;
+    var rows = Wl && Wl.history ? Wl.history(30) : [];
+    if (!rows.length) return '';
+    var lines = rows.map(function(r){
+      var d = new Date(r.t), when = (d.getMonth() + 1) + '/' + d.getDate();
+      return '<li><span>' + esc(coinLabel(r)) + '</span><i>' + when + '</i><b class="' + (r.a < 0 ? 'neg' : '') + '">' + (r.a < 0 ? '' : '+') + money(r.a) + '</b></li>';
+    }).join('');
+    return '<details class="cl-hist"><summary>Coin history</summary><ul>' + lines + '</ul></details>';
+  }
+
   draw();
   cur = { host: host, draw: draw };
+}
+var SRC = { run: 'Draft run', dd: 'Daily Draft', fx: 'Fix History', ps: 'Six Passes', endless: 'Endless puzzle',
+  cq: 'Conquest win', cqclear: 'Conquest cleared', welcome: 'Welcome to the Floor' };
+function coinLabel(r){
+  if (r.a < 0) { var it = CAT && CAT.item(r.src); return it ? it.name : (r.src || 'Spent'); }
+  if (r.src === 'career') return /^cf:/.test(r.k) ? 'Career finished' : 'Career season';
+  if (r.src === 'badge') {
+    var id = r.k.slice(3), BD = window.RTF_BADGES, b = null;
+    try { b = BD && BD.catalog().filter(function(x){ return x.id === id; })[0]; } catch (e) {}
+    return 'Badge: ' + (b ? b.name : id);
+  }
+  return SRC[r.src] || 'Coins';
 }
 /* a copy from another device lands while the closet is open: one listener,
    for whichever pane is on screen */
@@ -146,6 +172,14 @@ if (W) W.onChange(function(){ if (cur && document.body.contains(cur.host)) cur.d
 if (window.RTF_WALLET) window.RTF_WALLET.onChange(function(){ if (cur && document.body.contains(cur.host)) cur.draw(); });
 
 var CSS = [
+'.cl-hist{margin:14px 0 4px;border-top:1px solid rgba(255,255,255,.12);padding-top:10px;}',
+'.cl-hist summary{cursor:pointer;font:700 13px var(--k-f-text);color:var(--k-ink);}',
+'.cl-hist ul{list-style:none;margin:8px 0 0;padding:0;}',
+'.cl-hist li{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:baseline;padding:5px 0;font-size:13px;border-bottom:1px solid rgba(255,255,255,.06);}',
+'.cl-hist li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+'.cl-hist li i{font-style:normal;color:var(--k-ink-3);font-size:12px;}',
+'.cl-hist li b{font-variant-numeric:tabular-nums;color:var(--k-gold);}',
+'.cl-hist li b.neg{color:var(--k-ink-3);}',
 '.cl-head{position:sticky;top:calc(-1 * var(--k-s-5, 20px));z-index:2;background:var(--k-panel);margin:0 -4px;padding:8px 4px 0;box-shadow:0 8px 10px -8px rgba(0,0,0,.6);}',
 '.cl-top{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start;margin:4px 0 8px;}',
 '.cl-fig{background:var(--k-panel-2);padding:4px;line-height:0;}',
