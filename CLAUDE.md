@@ -16348,7 +16348,8 @@ node hoops/check-wardrobe.mjs    every item drawn on every build and pose, and n
 node hoops/check-closet.mjs      what he owns and wears, two devices, the closet on a phone
 node hoops/check-earn.mjs        who earns coins, from what, and only once
 node hoops/check-idles.mjs       every idle frame inside the grid, every loop closes, the page plays it
-node hoops/check-packs.mjs       odds, pity, shards, the exchange, two devices, the shop on a phone
+node hoops/check-packs.mjs       odds, pity, shards, the exchange, two devices, the shop on a phone, the show
+node hoops/check-shopart.mjs     every item, pack, coin and shard in pixels, nothing clipped
 psql ... -f supabase/139_hoops_wardrobe.sql   deploy by hand (preflight row 53)
 ```
 
@@ -16388,6 +16389,17 @@ psql ... -f supabase/139_hoops_wardrobe.sql   deploy by hand (preflight row 53)
   was bought. `RTF_WARD.shop` is the one door that touches both records; the shop screen
   (`shop-ui.js`, the Look sheet's Shop tab) and the closet's Buy only press it. settle()
   gives the welcome Streetball Pack (credit `welcome`) once an account.
+- **An open is decided before it is shown.** The press spends and rolls; then the show
+  plays over the whole screen (`.sh-ov`, appended to `body`): the pack on its stand, the
+  tear, a reel that slows onto the item already won, the reveal. The reel's winning cell
+  carries `data-win` and IS the granted item; check-packs reads it against the newest `po`
+  row and against the cell under the pointer. Reduced motion lands on the reveal.
+- **Every icon is drawn from the catalogue row** (`hoops/itemart.js`, `RTF_ART`): the
+  item's shape key picks a 16 cell mask, painted in the row's own colours with PXHD's
+  light and an outline in the shape's own dark. A new colourway has an icon the day it is
+  written; a new shape key falls back to its slot's mask. The packs are Run The Tour's
+  foil pillow redrawn with a ball, a hoop, a trophy and a star. A mask must fit 14 cells
+  or the light and the outline clip it (check-shopart counts the cells placed).
 
 ## Run The Diamond, the baseball game
 

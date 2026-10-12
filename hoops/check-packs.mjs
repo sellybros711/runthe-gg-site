@@ -262,13 +262,14 @@ async function browser(){
   ok(await page.evaluate(() => /already counted|from here on/.test(document.querySelector('#cr-closet .sh-welcome').textContent)), '12 the welcome says the badges already held were counted');
   if (process.env.SHOT) await page.screenshot({ path: process.env.SHOT.replace('.png', '-shop.png'), fullPage: true });
   await page.click('#cr-closet [data-free="welcome"]');
-  await page.waitForSelector('#cr-closet .sh-reveal .sh-card');
-  const rv = await page.evaluate(() => ({ n: document.querySelectorAll('#cr-closet .sh-reveal .sh-card').length, fig: !!document.querySelector('#cr-closet .sh-reveal .sh-cfig img, #cr-closet .sh-reveal .sh-cfig canvas'), credits: RTF_WARD.shop.credits().length, look: document.querySelector('#cr-closet .sh-cl').textContent, coins: RTF_WALLET.balance() }));
+  await page.waitForSelector('.sh-ov .sh-reveal .sh-card');
+  const rv = await page.evaluate(() => ({ n: document.querySelectorAll('.sh-ov .sh-reveal .sh-card').length, fig: !!document.querySelector('.sh-ov .sh-reveal .sh-cfig img, .sh-ov .sh-reveal .sh-cfig canvas'), credits: RTF_WARD.shop.credits().length, look: document.querySelector('.sh-ov .sh-cl').textContent, coins: RTF_WALLET.balance() }));
   ok(rv.n === 1 && rv.fig, '12 the free pack opens to one piece, worn by his own player');
   ok(/Off court|On court|Either look/.test(rv.look), '12 the reveal says which look it is for (' + rv.look + ')');
   ok(rv.credits === 0 && rv.coins >= 60000, '12 the free pack is used and cost nothing');
   if (process.env.SHOT) await page.screenshot({ path: process.env.SHOT.replace('.png', '-reveal.png') });
-  await page.click('#cr-closet .sh-done');
+  await page.click('.sh-ov .sh-done');
+  ok(await page.evaluate(() => !document.querySelector('.sh-ov')), '12 Nice closes the show');
   await page.click('#cr-closet .sh-wok');
   ok(await page.evaluate(() => !document.querySelector('#cr-closet .sh-welcome')), '12 the welcome is said once');
   /* a coin pack asks twice */
@@ -276,8 +277,9 @@ async function browser(){
   const armed = await page.evaluate(() => ({ t: document.querySelector('#cr-closet [data-open="street"]').textContent, opens: Object.keys(JSON.parse(localStorage.getItem('rtf.ward.v1')).po || {}).length }));
   ok(/again/.test(armed.t) && armed.opens === 1, '12 the first press on a coin pack only names the price');
   await page.click('#cr-closet [data-open="street"]');
-  await page.waitForSelector('#cr-closet .sh-reveal .sh-card');
+  await page.waitForSelector('.sh-ov .sh-reveal .sh-card');
   ok(await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('rtf.ward.v1')).po).length === 2), '12 the second press opens it');
+  await page.click('.sh-ov .sh-done');
   const wide = await page.evaluate(() => [...document.querySelectorAll('#cr-sheet *')].filter((el) => { const r = el.getBoundingClientRect(); return r.width && r.right > innerWidth + 1 && !el.closest('.k-tabs'); }).map((e) => e.className).slice(0, 3));
   ok(!wide.length, '12 nothing in the shop runs off a 375px phone (' + wide.join(', ') + ')');
   /* the closet's Buy */
@@ -292,7 +294,78 @@ async function browser(){
   ok(await page.evaluate((id) => RTF_WARD.owns(id) && JSON.parse(localStorage.getItem('rtf.ward.v1')).w.street.top === id, id), '12 and the second press buys it and puts it on');
   ok(!out.length, '12 no request reached a payment endpoint (' + out.join(', ') + ')');
   ok(!boom.length, '12 nothing threw (' + boom.join(' | ') + ')');
-  await page.screenshot({ path: process.env.SHOT || '/tmp/shop.png', fullPage: false });
+
+  /* THE SHOW, with motion: the pack, the tear, a reel that stops on the
+     item already won, and the reveal. A reel that lands on anything else
+     is a picture lying about what was granted. */
+  const mctx = await b.newContext({ viewport: { width: 390, height: 844 } });
+  const mp = await mctx.newPage(), mboom = [];
+  mp.on('pageerror', (e) => mboom.push(String(e).slice(0, 200)));
+  await mp.addInitScript(() => { try { localStorage.setItem('rtf.guide.v1', '1'); localStorage.setItem('rtf.scenes.v1', 'off'); } catch (e) {} window.RTF_BOARD_URL = 'http://local.test/sb'; });
+  await mp.route('**/*', serve);
+  await mp.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
+  await mp.waitForSelector('#b-career:not([disabled])', { state: 'attached', timeout: 30000 });
+  await mp.locator('#ch-title').click();
+  await mp.waitForSelector('#cr-go', { timeout: 10000 });
+  await mp.click('[data-bstep="start"]').catch(() => {});
+  await mp.click('#cr-go');
+  await mp.waitForSelector('#cr-lookbtn', { timeout: 20000 });
+  await mp.click('#cr-lookbtn');
+  await mp.evaluate(() => { const st = RTF_AUTH.state; RTF_AUTH.state = () => Object.assign({}, st(), { signedIn: true }); RTF_EARN.settle({}); RTF_WARD.shop.seenWelcome(); RTF_WALLET.award('give', 200000, 'x'); });
+  await mp.click('[data-ltab="shop"]');
+  await mp.waitForSelector('#cr-closet .sh-pack');
+  const art = await mp.evaluate(() => ({ packs: [...document.querySelectorAll('#cr-closet .sh-pack img.sh-packimg')].filter((i) => /^data:image\/png/.test(i.src)).length, coin: !!document.querySelector('#cr-closet .sh-wallet img.sh-coinbig'), gems: document.querySelectorAll('#cr-closet .sh-gemc img').length }));
+  ok(art.packs === 3 && art.coin && art.gems === 4, '13 every pack on the shelf is drawn as pixel art, with the coin and four shard gems (' + JSON.stringify(art) + ')');
+  if (process.env.SHOT) await mp.screenshot({ path: process.env.SHOT.replace('.png', '-shelf.png'), fullPage: true });
+  await mp.click('#cr-closet [data-open="league"]');
+  await mp.click('#cr-closet [data-open="league"]');
+  await mp.waitForSelector('.sh-ov .sh-hero');
+  if (process.env.SHOT) await mp.screenshot({ path: process.env.SHOT.replace('.png', '-stage.png') });
+  ok(await mp.evaluate(() => !document.querySelector('.sh-ov .sh-reveal')), '13 a pack opens on its stand, not on the answer');
+  await mp.click('.sh-ov .sh-tear');
+  await mp.waitForSelector('.sh-ov .sh-reel', { timeout: 5000 });
+  await mp.waitForTimeout(2200);
+  if (process.env.SHOT) await mp.screenshot({ path: process.env.SHOT.replace('.png', '-reel.png') });
+  await mp.waitForSelector('.sh-ov .sh-cell.win', { timeout: 9000 });
+  const landed = await mp.evaluate(() => {
+    const box = document.querySelector('.sh-reel').getBoundingClientRect(), w = document.querySelector('.sh-cell.win'), r = w.getBoundingClientRect();
+    const mid = box.left + box.width / 2;
+    const po = JSON.parse(localStorage.getItem('rtf.ward.v1')).po, last = Object.values(po).sort((a, b) => b[0] - a[0])[0];
+    return { win: w.getAttribute('data-win'), granted: last[3], under: r.left <= mid && r.right >= mid };
+  });
+  ok(landed.win === landed.granted, '13 the reel stops on the item that was granted (' + landed.win + ' / ' + landed.granted + ')');
+  ok(landed.under, '13 and that cell is the one under the pointer');
+  await mp.waitForSelector('.sh-ov .sh-reveal .sh-rcard', { timeout: 4000 });
+  if (process.env.SHOT) await mp.screenshot({ path: process.env.SHOT.replace('.png', '-big.png') });
+  ok(await mp.evaluate((g) => document.querySelector('.sh-rcard').getAttribute('data-id') === g, landed.granted), '13 the reveal is the same item');
+  await mp.click('.sh-ov .sh-done');
+  /* five at once flip over one by one, then sit as a summary */
+  await mp.click('#cr-closet [data-open5="street"]');
+  await mp.click('#cr-closet [data-open5="street"]');
+  await mp.waitForSelector('.sh-ov .sh-tear');
+  await mp.click('.sh-ov .sh-tear');
+  await mp.waitForSelector('.sh-ov .sh-fl', { timeout: 5000 });
+  ok(await mp.evaluate(() => document.querySelectorAll('.sh-ov .sh-fl').length === 5), '13 a bundle deals five cards face down');
+  await mp.waitForSelector('.sh-ov .sh-reveal .sh-cards.many', { timeout: 9000 });
+  if (process.env.SHOT) await mp.screenshot({ path: process.env.SHOT.replace('.png', '-five.png') });
+  ok(await mp.evaluate(() => document.querySelectorAll('.sh-ov .sh-reveal .sh-card').length === 5), '13 and lands on all five');
+  await mp.click('.sh-ov .sh-done');
+  /* the closet draws every piece as its own pixel icon, framed in its rarity */
+  for (const tab of ['street', 'court']) {
+    await mp.click('[data-ltab="' + tab + '"]');
+    await mp.waitForSelector('#cr-closet .cl-tile');
+    const slots = await mp.evaluate(() => [...document.querySelectorAll('#cr-closet [data-slot]')].map((b) => b.getAttribute('data-slot')));
+    let bad = [];
+    for (const sl of slots) {
+      await mp.click('#cr-closet [data-slot="' + sl + '"]');
+      bad = bad.concat(await mp.evaluate(() => [...document.querySelectorAll('#cr-closet .cl-tile[data-id]:not([data-id=""])')].filter((t) => !t.querySelector('.cl-sw img.cl-ic[src^="data:image/png"]')).map((t) => t.dataset.id)));
+    }
+    ok(!bad.length && slots.length > 10, '13 every ' + tab + ' tile carries its pixel icon (' + bad.slice(0, 3).join(', ') + ')');
+    if (process.env.SHOT) { await mp.click('#cr-closet [data-slot="top"], #cr-closet [data-slot="band"]'); await mp.screenshot({ path: process.env.SHOT.replace('.png', '-closet-' + tab + '.png') }); }
+  }
+  ok(!mboom.length, '13 nothing threw in the show (' + mboom.join(' | ') + ')');
+  await mctx.close();
+  ok(!out.length, '13 no request reached a payment endpoint during the show');
   await b.close();
 }
 if (!QUICK) await browser();
