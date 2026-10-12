@@ -3484,7 +3484,13 @@
 <script src="courts.js?v=2"></script>
 <script src="modes.js?v=9"></script>
 <script src="career.js?v=48"></script>
-<script src="baller.js?v=19"></script>
+<script src="baller.js?v=24"></script>
+<script src="economy.js?v=2"></script>
+<script src="catalog.js?v=2"></script>
+<script src="idles.js?v=1"></script>
+<script src="packs.js?v=1"></script>
+<script src="wardrobe.js?v=4"></script>
+<script src="earn.js?v=2"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
      or either file fails to load, the game runs exactly as it did, with runs
      kept in this browser and the board reporting itself unreachable. An account
@@ -3494,7 +3500,7 @@
      comes out of cache in milliseconds while this is still in flight. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="board.js?v=8"></script>
-<script src="auth.js?v=4"></script>
+<script src="auth.js?v=5"></script>
 <!-- THE SHELF. cloudsave.js is the transport and is shared with the football and
      college games; cloud.js is this game's own policy about slots, progress and
      what happens when two devices disagree. The transport asks window.RTF_AUTH
@@ -3503,7 +3509,7 @@
 <script src="/assets/cloudsave.js?v=2"></script>
 <!-- The release newsletter checkbox on the profile. See supabase/121_newsletter.sql. -->
 <script src="/assets/newsletter.js?v=2"></script>
-<script src="cloud.js?v=5"></script>
+<script src="cloud.js?v=6"></script>
 <script>
 (function(){
 'use strict';
@@ -3672,7 +3678,7 @@ var A = window.RTF_AUTH || {
  * renders, and the only symptom is a cabinet that comes back slightly wrong.
  * `null` is the honest answer when either half is missing, and every caller
  * below is written to do nothing at all when it is. */
-var NEED_CLOUD = 5;
+var NEED_CLOUD = 6;
 var CL = (window.RTF_CLOUD && window.RTF_CLOUD.API_VERSION === NEED_CLOUD)
   ? window.RTF_CLOUD : null;
 var SV = window.RTG_SAVE || null;
@@ -10649,7 +10655,11 @@ function recordRun(out){
   if (day) cloudPushDaily(day);
   var arenas = freshArenas(before, c);
   if (arenas.length) arenaChanged();
-  return { career: c, fresh: fresh, bests: bests, daily: day, arenas: arenas };
+  /* THE COINS, keyed on the run (or the day), so a redrawn results screen
+     pays nothing twice, then the badges this run lit. earn.js decides who
+     earns: a guest plays and keeps nothing in coins. */
+  var coins = earnRun(out, c);
+  return { career: c, fresh: fresh, bests: bests, daily: day, arenas: arenas, coins: coins };
 }
 
 /* WHAT JUST LIT. Nothing stores "earned", by design: every badge is derived
@@ -10659,6 +10669,15 @@ function recordRun(out){
  *
  * It is allowed to answer nothing at all. badges.js is a separate script and a
  * blocked one must cost a row on a screen rather than the screen. */
+function earnRun(out, c){
+  var EN = window.RTF_EARN;
+  if (!EN || !run) return 0;
+  try {
+    var r = EN.run({ madePlayoffs: madePlayoffs(run), seriesWon: seriesWon(run), champion: !!out.titleWon }, run);
+    return (r && r.paid ? r.amount : 0) + EN.badges(c);
+  } catch (e) { return 0; }
+}
+
 function freshBadges(before, after){
   var B = window.RTF_BADGES;
   if (!B || typeof B.earned !== 'function') return [];
@@ -11706,6 +11725,10 @@ function cloudPull(){
     if (window.RTF_MODES_UI && window.RTF_MODES_UI.cloudAdopt) {
       try { window.RTF_MODES_UI.cloudAdopt(by, mine); } catch (e) {}
     }
+    /* THE WALLET SETTLES AFTER EVERYTHING ELSE IS ADOPTED: the welcome, and
+       the badge baseline, which has to see every badge the account already
+       holds or it would pay for one another device earned before launch. */
+    if (window.RTF_EARN && who) { try { window.RTF_EARN.settle(loadCareer() || blankCareer()); } catch (e) {} }
   }, function(){ cloudPulling = false; });
 }
 
@@ -11923,6 +11946,7 @@ function recordFeats(f){
   stampDay(c, false);
   try { localStorage.setItem(PKEY, JSON.stringify(c)); } catch (e) {}
   cloudPushCareer(c);
+  if (window.RTF_EARN) { try { window.RTF_EARN.badges(c); } catch (e) {} }
   var fresh = freshBadges(before, c);
   /* AFTER whatever the mode says about the moment itself, which is usually a
      toast of its own fired in the same tick. Said at once, the badge would be
@@ -12025,12 +12049,14 @@ boot();
 </script>
 <!-- AFTER the page, because it draws through window.RTF_PAGE, which the script
      above publishes. -->
-<script src="modes-ui.js?v=25"></script>
+<script src="modes-ui.js?v=27"></script>
 <script src="career-kit.js?v=9"></script>
 <script src="sound.js?v=2"></script>
-<script src="court.js?v=9"></script>
+<script src="court.js?v=10"></script>
 <script src="ticker.js?v=2"></script>
-<script src="scenes.js?v=17"></script>
-<script src="career-ui.js?v=50"></script>
+<script src="scenes.js?v=18"></script>
+<script src="closet-ui.js?v=4"></script>
+<script src="shop-ui.js?v=1"></script>
+<script src="career-ui.js?v=54"></script>
 </body>
 </html>

@@ -293,7 +293,11 @@
     /* Career: the life in progress and the Hall of Fame shelf, one clock slot.
        A career is one life at one point, so the device that played on wins,
        which is the run slot's own argument. */
-    'rtf.life.v1': 'life'
+    'rtf.life.v1': 'life',
+    /* The closet and the coins. Both are merge slots whose merge lives with
+       the record (hoops/wardrobe.js, hoops/economy.js), so there is one
+       merge for each and this file never restates either. */
+    'rtf.ward.v1': 'ward', 'rtf.wallet.v1': 'wallet'
   };
   var DAYS_KEPT = 30;
 
@@ -339,7 +343,18 @@
   }
   function cqBestProgress(v) { v = obj(v); return num(v.runs) * 1000 + Math.min(999, num(v.best)); }
 
+  /* Read at call time: cloud.js loads before the two modules it hands to. A
+     page without one has nothing to merge, and null is "no change". */
+  function lib(name) { return typeof window !== 'undefined' ? window[name] : null; }
+  function mergeWard(mine, theirs) { var W = lib('RTF_WARD'); return W ? W.merge(mine, theirs) : null; }
+  function wardProgress(v) { var W = lib('RTF_WARD'); return W ? W.progress(v) : 0; }
+  function mergeWallet(mine, theirs) { var X = lib('RTF_ECON'); return X ? X.merge(mine, theirs) : null; }
+  /* coins earned plus coins spent: both only grow, and a merge only adds */
+  function walletProgress(v) { var X = lib('RTF_ECON'); return X ? Math.min(2e9, Math.round(X.earned(v) + X.spent(v))) : 0; }
+
   var MODE_MERGE = {
+    ward: { merge: mergeWard, progress: wardProgress },
+    wallet: { merge: mergeWallet, progress: walletProgress },
     fix: { merge: mergeFix, progress: daysProgress },
     passes: { merge: mergePasses, progress: daysProgress },
     cqbest: { merge: mergeCqBest, progress: cqBestProgress },
@@ -360,7 +375,7 @@
   }
 
   var publicAPI = {
-    API_VERSION: 5,
+    API_VERSION: 6,
     MODE_KEYS: MODE_KEYS, modeKind: modeKind, modeProgress: modeProgress, modeMerge: modeMerge,
     GAME: GAME,
     SLOT_RUN: SLOT_RUN, SLOT_CAREER: SLOT_CAREER, SLOT_DAILY: SLOT_DAILY,

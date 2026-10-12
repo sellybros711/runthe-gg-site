@@ -59,6 +59,9 @@ function backfill(st){
 var S = null;
 function store(){ if (!S) S = load(); return S; }
 function save(){
+  /* A season pays the moment it is filed, keyed on the career and the year,
+     so this is asked on every save and pays each season once. */
+  if (S && S.cur && window.RTF_EARN) { try { window.RTF_EARN.career(S.cur); } catch (e) {} }
   try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {}
   var M = window.RTF_MODES_UI;
   if (M && M.write) M.write(KEY);
@@ -861,7 +864,7 @@ function portrait(L, o){
   o = o || {};
   /* the first scene walks him on: paint that in the background now */
   try { if (window.RTF_SCENES && window.RTF_SCENES.warm) window.RTF_SCENES.warm(L); } catch (x) {}
-  return B.img(lookOf(L), { c1: k.primary, c2: k.secondary, num: L.num, age: L.age, pose: o.pose || 'stand', scale: o.scale || 3 });
+  return B.img(lookOf(L), dressed({ c1: k.primary, c2: k.secondary, num: L.num, age: L.age, pose: o.pose || 'stand', scale: o.scale || 3 }));
 }
 /* A jersey in the club's colours with your number on it. The fallback
    picture, and the shape the hero used before the player was drawn. */
@@ -1117,7 +1120,7 @@ function sizeLive(){
     var B = window.RTF_BALLER, fig = root.querySelector('.cr-pfig .rtf-baller'), L = PV.L;
     if (B && fig && L) {
       var k = C.colorsOf(L), tmp = document.createElement('div');
-      tmp.innerHTML = B.img(withSize(C.cleanLook(form.look), { ht: form.ht, wt: form.wt }), { c1: k.primary, c2: k.secondary, num: form.num, pose: bstep === 'look' ? 'stand' : 'ball', scale: bstep === 'look' ? 4 : 2, still: true });
+      tmp.innerHTML = B.img(withSize(C.cleanLook(form.look), { ht: form.ht, wt: form.wt }), idleIf({ c1: k.primary, c2: k.secondary, num: form.num, pose: bstep === 'look' ? 'stand' : 'ball', scale: bstep === 'look' ? 4 : 2, still: true }));
       if (tmp.firstChild) fig.parentNode.replaceChild(tmp.firstChild, fig);
     }
   });
@@ -1179,7 +1182,7 @@ function buildView(){
     /* On the Look step the figure is drawn at twice the size and framed on the
        head and shoulders, because hair is what is being chosen there. */
     + '<div class="cr-preview"><div class="cr-pfig' + (bstep === 'look' ? ' cr-zoom' : '') + '">' + setArt(stageKind(L), k.primary, k.secondary, form.seed)
-    + (B ? B.img(lookOf(L), { c1: k.primary, c2: k.secondary, num: form.num, age: L.age, pose: bstep === 'look' ? 'stand' : 'ball', scale: bstep === 'look' ? 4 : 2 }) : '') + '</div>'
+    + (B ? B.img(lookOf(L), idleIf({ c1: k.primary, c2: k.secondary, num: form.num, age: L.age, pose: bstep === 'look' ? 'stand' : 'ball', scale: bstep === 'look' ? 4 : 2 })) : '') + '</div>'
     + '<div class="cr-pside"><div class="cr-povr"><span class="k-num">' + C.show(C.ovrOf(L)) + '</span><span class="k-label">Overall</span>'
     + '<span class="cr-ceil">Ceiling <b>' + grade(L) + '</b></span></div>'
     + '<div class="cr-rt k-rows">' + rtRows(L, null, false) + '</div></div></div>'
@@ -2047,25 +2050,46 @@ function scene(res){
 }
 
 /* ─── the Look sheet, mid-career ─────────────────────────────────────────── */
-function openLook(){
+function openLook(tab){
   var L = store().cur;
   if (!L || !window.RTF_BALLER) return;
   var look = Object.assign({}, window.RTF_BALLER.normal(lookOf(L)));
   var k = C.colorsOf(L);
-  var first = true;
+  var first = true, tabNow = tab || 'body';
+  var closet = !!(window.RTF_CLOSET && window.RTF_WARD);
+  /* the body and face are this career's; the clothes are the account's */
+  var TABS = [['body', 'Body'], ['street', 'Off court'], ['court', 'On court']].concat(window.RTF_SHOP ? [['shop', 'Shop']] : []);
   var draw = function(){
-    var html = '<h3 class="k-h1">Your look</h3><p class="cash">How you look on the floor and in every scene.</p>'
+    var tabs = closet ? '<div class="k-tabs cr-ltabs" role="tablist">' + TABS.map(function(t){
+      return '<button type="button" class="k-tab" role="tab" data-ltab="' + t[0] + '" aria-selected="' + (t[0] === tabNow) + '">' + t[1] + '</button>'; }).join('') + '</div>' : '';
+    var html = '<h3 class="k-h1">Your look</h3>' + tabs;
+    if (tabNow === 'body' || !closet) html += '<p class="cash">How you look on the floor and in every scene.</p>'
       + lookRows(look, k.primary, k.secondary, L.num)
       + '<div class="cr-btnrow" style="margin:14px 0 0"><button class="k-btn" id="cr-look-save" type="button">Save</button><button class="k-btn k-sec" id="cr-sheet-x" type="button">Cancel</button></div>';
+    else html += '<div id="cr-closet"></div><div class="cr-btnrow" style="margin:14px 0 0"><button class="k-btn" id="cr-sheet-x" type="button">Done</button></div>';
     if (first) { openSheet(html, 'Your look'); first = false; }
     else $('cr-sheet').querySelector('.in').innerHTML = html;
     var sh = $('cr-sheet');
-    wireLook(sh, look, draw);
-    $('cr-look-save').onclick = function(){ C.setLook(L, look); save(); closeOff(); render(); };
-    $('cr-sheet-x').onclick = closeOff;
+    sh.querySelectorAll('[data-ltab]').forEach(function(b){ b.onclick = function(){ tabNow = b.getAttribute('data-ltab'); draw(); }; });
+    if (tabNow === 'body' || !closet) {
+      wireLook(sh, look, draw);
+      $('cr-look-save').onclick = function(){ C.setLook(L, look); save(); closeOff(); render(); };
+      $('cr-sheet-x').onclick = closeOff;
+    } else {
+      if (tabNow === 'shop') window.RTF_SHOP.pane($('cr-closet'), { look: withSize(look, L), c1: k.primary, c2: k.secondary, num: L.num });
+      else window.RTF_CLOSET.pane($('cr-closet'), { ctx: tabNow, look: withSize(look, L), c1: k.primary, c2: k.secondary, num: L.num });
+      /* what he put on is saved already: Done only has to show it */
+      $('cr-sheet-x').onclick = function(){ closeOff(); render(); };
+    }
   };
   draw();
 }
+/* Paint options for the invented player in a look (hoops/wardrobe.js). A
+   page without the closet draws him as he always was. */
+function dressed(o, ctx){ return window.RTF_WARD ? window.RTF_WARD.dress(o, ctx || 'court') : o; }
+/* the builder's figure does the court idle he wears, except on the Look step,
+   where he stands still to have his hair chosen */
+function idleIf(o){ return o.pose === 'ball' && window.RTF_WARD && window.RTF_WARD.idle ? window.RTF_WARD.idle(o, 'court') : o; }
 function doAct(id){
   var L = store().cur;
   if (!L) return;
@@ -2243,6 +2267,8 @@ function finish(){
   st.arc.unshift(compact(card));
   if (st.arc.length > ARC_MAX) st.arc.length = ARC_MAX;
   card.found = vaultAdd(st, card);
+  /* The finish pays off the Hall tier the ending gave, half on Easy. */
+  if (window.RTF_EARN) { try { window.RTF_EARN.finish(L, f.ending && f.ending.tier); } catch (e) {} }
   st.cur = null;
   st.last = card;
   save();
@@ -2789,10 +2815,13 @@ function heroCast(L){
   var B = window.RTF_BALLER, box = $('ch-cast');
   if (!B || !box) return;
   var look = heroLook(L), k = L ? C.colorsOf(L) : { primary: '#ff7a1a', secondary: '#1d1f2b' };
-  var key = JSON.stringify([look, k.primary, k.secondary, L ? L.num : 0]);
+  var key = JSON.stringify([look, k.primary, k.secondary, L ? L.num : 0, L && window.RTF_WARD && window.RTF_WARD.idleOf ? window.RTF_WARD.idleOf('court') : '']);
   if (cast.key === key) return;
   cast.key = key;
-  var mid = B.img(look, { c1: k.primary, c2: k.secondary, num: L ? L.num : 23, age: L ? L.age : 20, pose: 'ball', scale: 5 });
+  /* he does his own idle on the front page: the one he wears on court */
+  var mo = L ? dressed({ c1: k.primary, c2: k.secondary, num: L.num, age: L.age, pose: 'ball', scale: 5 }) : { c1: k.primary, c2: k.secondary, num: 23, age: 20, pose: 'ball', scale: 5 };
+  if (L && window.RTF_WARD && window.RTF_WARD.idle) mo = window.RTF_WARD.idle(mo, 'court');
+  var mid = B.img(look, mo);
   box.innerHTML = '<div class="ch-p s l">' + castFig(0) + '</div><div class="ch-p c">' + mid + '</div><div class="ch-p s r">' + castFig(1) + '</div>';
   cast.n = 0;
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;

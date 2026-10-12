@@ -16340,6 +16340,55 @@ its own name, and a page whose board is pointed at a stand-in while its SAVES
 still go to the live project is a checker writing real rows on somebody's
 account. Redirecting the board redirects the shelf with it.
 
+### The wardrobe, the closet and the coins (the economy port, Phase 1)
+
+```
+node hoops/check-economy.mjs     the ledger: keyed, merged, the day rule, what a career pays
+node hoops/check-wardrobe.mjs    every item drawn on every build and pose, and never on a real man
+node hoops/check-closet.mjs      what he owns and wears, two devices, the closet on a phone
+node hoops/check-earn.mjs        who earns coins, from what, and only once
+node hoops/check-idles.mjs       every idle frame inside the grid, every loop closes, the page plays it
+node hoops/check-packs.mjs       odds, pity, shards, the exchange, two devices, the shop on a phone
+psql ... -f supabase/139_hoops_wardrobe.sql   deploy by hand (preflight row 53)
+```
+
+`hoops/design/ECONOMY.md` is the plan and the record. What bites:
+
+- **The garments are drawn in `baller.js`**, not a file beside it, because the figure is
+  painted in a worker that loads `baller.js` alone. A new colourway is a row in
+  `catalog.js`; only a new shape needs art. Only the invented player is dressed:
+  baller.js drops `wear` and `cwear` for a faceless figure, and under a suit or the cap.
+- **Two looks.** Off court (`ctx: 'street'`, `wear`) in the rooms `STREET_ROOMS` in
+  scenes.js names; on court (`cwear`) over the uniform everywhere else.
+- **The account owns the wardrobe** (`rtf.ward.v1`, the shelf's `ward` slot) and the coins
+  (`rtf.wallet.v1`, slot `wallet`), both merge slots in `cloud.js` API 6. Owned is a union,
+  a look is the later choice. 139 puts the two looks on `rtf_profiles` so a board can draw
+  them; re-running 129 after it leaves two writers, which is why 129 drops the wider one.
+- **A coin is a keyed ledger entry**, so every caller may ask often and each key pays once.
+  Only a signed in account earns (`earn.js`). Badges held at the first settle after a pull,
+  and seasons a career had already played, are MARKED at nought (`economy.js mark`,
+  `baseline`), never paid in a lump. A mark merged against a payment keeps the earlier
+  entry, so a device can only ever pay less. Marks are never folded away by `compact`,
+  because a folded key would be paid a second time.
+- **Coins are said in their own pill**, not the page's toast: a mode toasts in the same tick
+  and the toast is one element.
+- **An idle is keyframes on the rig, handed to the worker as data** (`hoops/idles.js`,
+  paint's `fr` option, read by `frOf`, which draws the standing figure for anything that is
+  not a frame). It is worn in an `idle` slot in both looks and is never wear: `resolve()`
+  skips it, and `wardrobe.js idle()` turns it into paint options, the look's default (the
+  old breath or dribble) when he does not own the one equipped. A straight blend between a
+  hanging and a raised arm holds it out level and the hand leaves the grid on a big man, so
+  the in-betweens bend at the elbow; check-idles paints every frame on four bodies and fails
+  on any part at the edge. A loop is at most 12 painted frames.
+- **Packs, shards and the exchange are keyed logs on the wardrobe record** (`po` opens,
+  `pc` free packs, `sg` shard grants, `sx` exchanges; `hoops/packs.js`). Pity, the shard
+  balance and the unused free packs are derived from them, never stored. A coin pack is
+  spent under `pk:<open>` (a bundle `pkb:`), a free pack is opened under `c:<credit>`, so
+  two devices file one open. A duplicate gives a shard always and coins back only when it
+  was bought. `RTF_WARD.shop` is the one door that touches both records; the shop screen
+  (`shop-ui.js`, the Look sheet's Shop tab) and the closet's Buy only press it. settle()
+  gives the welcome Streetball Pack (credit `welcome`) once an account.
+
 ## Run The Diamond, the baseball game
 
 `baseball/`, at `/baseball/`. Same split as hoops: `engine.js`, `run.js`,

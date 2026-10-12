@@ -1297,7 +1297,7 @@ check(/'Spinning for your next show'/.test(gameBare),
 /* A METER, NOT TABS: "At first I thought set 1 and two were tab buttons." */
 check(/\.nightstrip\{[^}]*pointer-events:none/.test(game),
   'the set meter cannot be pressed');
-check(/\.ns-seg\{[^}]*height:7px/.test(game), 'and is a bar rather than a row of boxes');
+check(/\.ns-seg\{[^}]*height:(?:[6-9]|1[0-2])px/.test(game), 'and is a bar rather than a row of boxes');
 check(/\.ns-seg i\{[^}]*position:absolute/.test(game),
   'with its labels under the track rather than centred inside like button text');
 /* Clipping the track clips those labels, which is how they vanished once. */
@@ -2551,7 +2551,12 @@ check(/class="nextline"/.test(gameBare), 'the panel carries the countdown');
 check(/class="lastset"/.test(gameBare), 'and last night\'s setlist');
 check(/class="ls-hd"/.test(gameBare), 'with the heading it belongs to');
 check(/class="bandlinks"/.test(gameBare), "the band's own pages sit inside the band panel");
-check(/class="youlinks"/.test(gameBare), 'and the player links are a separate, quieter row');
+/* The Yours row is gone: both its links were tabs already. The board moved in
+   with the band's links, and the two ways to play are a pair of equal tiles. */
+check(!/class="youlinks"/.test(homeSrc) && /data-go="board"/.test(homeSrc),
+  'no second row of tab links, and the band panel reaches its own board');
+check(/class="modes"/.test(homeSrc) && /class="mode free"/.test(homeSrc)
+  && /class="mode dailycard/.test(gameBare), 'free play and the daily are two tiles side by side');
 check(!/class="homelinks"/.test(homeSrc), 'the old grid of equal ghost buttons is gone');
 {
   /* The order is load-bearing and was wrong once. The setlist is the LAST

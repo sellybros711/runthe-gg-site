@@ -307,7 +307,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      than the theme tokens, which is the same argument the old knocked-out ink
      made in the other direction. */
   .hero{position:relative; isolation:isolate; overflow:hidden; text-align:center;
-    margin:0 calc(var(--gut) * -1) 0; padding:34px var(--gut) 30px;
+    margin:0 calc(var(--gut) * -1) 0; padding:24px var(--gut) 22px;
     color:#F6F2EA;
     background:
       radial-gradient(90% 55% at 50% 118%, rgba(6,4,15,.85), transparent 70%),
@@ -379,7 +379,7 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      The hard offset shadow is the poster's second ink; the soft one is the
      light spilling off it. The padding is there because background-clip:text
      clips to the box, and Shrikhand's swashes run outside it. */
-  .hero h1{font-family:var(--hero); font-weight:400; font-size:clamp(78px,27vw,138px);
+  .hero h1{font-family:var(--hero); font-weight:400; font-size:clamp(64px,21vw,138px);
     line-height:.98; letter-spacing:.005em; margin:0 auto; padding:0 .12em .1em;
     width:max-content; max-width:100%;
     background:linear-gradient(180deg, #FF8A6B 10%, #FF6FC1 34%, #B794FF 56%,
@@ -489,7 +489,8 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     text-transform:none; letter-spacing:0; line-height:1.2; color:var(--ink);}
   .band.soon .band-meta{margin:2px 0 0; font-size:12px; color:var(--dim);}
   .band.soon > div:first-child{flex:1; min-width:0;}
-  .band.soon .btn{width:auto; margin:0; flex:0 0 auto; font-size:13px; padding:9px 13px;}
+  .band.soon .linkbtn{flex:0 0 auto; font-size:13px;}
+  .band.soon{padding:10px 14px;}
   /* ON A DESKTOP THE PAPER GOES BESIDE THE MARQUEE, not under it. Full width,
      a setlist is a banner 1400px across with four songs on a line, which is a
      shape no setlist has ever been. Beside the button it is the size of the
@@ -500,7 +501,9 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     .band:not(.soon) > *{grid-column:1;}
     .band:not(.soon) > .lastset{grid-column:2; grid-row:1 / span 6; margin:14px 6px 6px;}
     .band-hd h2{font-size:56px;}
-    .how, .bands, .wrap .youlinks{max-width:960px; margin-left:auto; margin-right:auto;}
+    .how, .bands{max-width:960px; margin-left:auto; margin-right:auto;}
+    .md-t{font-size:26px;}
+    .mode{padding:16px 16px 14px;}
   }
 
   .reqform{display:flex; flex-direction:column; gap:4px;}
@@ -537,24 +540,39 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .band-hd h2{font-family:var(--ui); font-weight:400; font-size:44px; line-height:.9;
     margin:0; text-transform:uppercase; letter-spacing:.02em;}
   .band-meta{font-size:12.5px; color:var(--mut); font-weight:700; margin-bottom:2px;}
-  /* A draft in hand: Resume is the big button, what it holds sits under it,
-     and starting over is the quiet one. The two buttons never look alike, so
-     the one that throws the night away is never pressed by mistake. */
-  .resume-note{margin:8px 0 10px; text-align:center; font-family:var(--ui);
-    font-size:15px; letter-spacing:.04em; color:var(--mut);}
-  .band [data-fresh]{width:100%;}
-  /* The daily: a ticket stub under the main button, quieter than it. */
-  .dailycard{margin-top:12px; padding:11px 13px; border-radius:12px;
-    border:1.5px dashed color-mix(in srgb,var(--teal) 55%, transparent);
-    background:color-mix(in srgb,var(--teal) 7%, transparent);}
-  .dc-hd{display:flex; align-items:baseline; gap:8px;}
-  .dc-k{font-size:10px; font-weight:900; letter-spacing:1.6px; text-transform:uppercase; color:var(--tealT);}
-  .dc-hd b{font-size:13px; color:var(--ink);}
-  .dc-row{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:6px;}
-  .dc-s{font-size:12.5px; font-weight:700; color:var(--mut); line-height:1.35;}
-  .dc-s b{color:var(--ink);}
-  .dailycard .btn{width:auto; flex:0 0 auto;}
-  .dc-go{background:var(--teal); color:#0B0818; border-color:var(--teal);}
+  /* TWO MODES, ONE ROW. Free play is the teal the game uses for "go"; the
+     daily is a night ticket on the stage's own dark, with the dye running
+     along its top, so the two read as a pair of choices rather than a button
+     and a footnote. Side by side even on a phone: each needs about 160px. */
+  .modes{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:12px;}
+  .mode{position:relative; display:flex; flex-direction:column; align-items:flex-start;
+    gap:3px; min-width:0; text-align:left; cursor:pointer; font:inherit;
+    padding:13px 13px 12px; border-radius:16px; border:0; overflow:hidden;
+    transition:transform .12s ease, box-shadow .12s ease;}
+  .mode:active{transform:translateY(1px) scale(.99);}
+  .mode:focus-visible{outline:3px solid var(--teal); outline-offset:2px;}
+  .md-k{font-size:9.5px; font-weight:900; letter-spacing:1.8px; text-transform:uppercase;}
+  .md-t{font-family:var(--ui); font-size:clamp(19px,5.4vw,24px); line-height:1; letter-spacing:.01em;}
+  .md-s{font-size:12px; font-weight:700; line-height:1.35; flex:1;}
+  .md-go{margin-top:8px; font-size:12.5px; font-weight:900; padding:7px 12px;
+    border-radius:99px; letter-spacing:.2px; white-space:nowrap;}
+  .md-go:after{content:' \203A';}
+  .mode.free{background:var(--teal); color:#0B0818;
+    box-shadow:0 6px 18px -8px color-mix(in srgb,var(--teal) 70%, transparent);}
+  .mode.free .md-k{color:rgba(11,8,24,.62);}
+  .mode.free .md-s{color:rgba(11,8,24,.74);}
+  .mode.free .md-go{background:#0B0818; color:#F6F2EA;}
+  .dailycard{background:#140D2A; color:#F6F2EA;
+    box-shadow:0 6px 18px -8px rgba(20,13,42,.7);}
+  .dailycard:before{content:''; position:absolute; left:0; right:0; top:0; height:3px;
+    background:linear-gradient(90deg,#FF8A6B,#FF6FC1,#B794FF,#4FD3E0,#5FE39A);}
+  .dailycard .md-k{color:#9FE7EF;}
+  .dailycard .md-s{color:#CFC4E6;}
+  .dailycard .md-s b{color:#fff;}
+  .dailycard .md-go{background:#37C5D5; color:#0B0818;}
+  .dailycard.done .md-go{background:transparent; color:#9FE7EF; padding:7px 0;
+    box-shadow:none;}
+  .freshlink{display:block; margin:9px auto 0; font-size:12.5px; color:var(--dim);}
   .warn{margin-top:12px; padding:11px 13px; border-radius:var(--r-sm); font-size:13px;
     font-weight:700; line-height:1.5; background:color-mix(in srgb,var(--gold) 12%, transparent);
     border:1px solid color-mix(in srgb,var(--gold) 34%, transparent); color:var(--goldT);}
@@ -668,15 +686,6 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .hud.clk-out .hc-n{animation:clockPulse 1.6s ease-in-out infinite;}
   @keyframes clockPulse{ 0%,100%{opacity:1;} 50%{opacity:.55;} }
 
-  /* Thicker, and the track is dark so the spent part of the set is visible
-     rather than implied. At 5px on a light card the bar was a hairline. */
-  .timebar{width:100%; height:9px; border-radius:99px; overflow:hidden; margin:0;
-    background:color-mix(in srgb, var(--ink) 13%, transparent);}
-  .timebar > span{display:block; height:100%; border-radius:99px; background:var(--greenT);
-    transition:width var(--t-slow) var(--ease), background-color var(--t-slow) var(--ease);}
-  .hud.clk-low .timebar > span{background:var(--goldT);}
-  .hud.clk-out .timebar > span{background:var(--redT);}
-
   /* The night, to scale. Two sets and an encore, each block as wide as its own
      budget, so where you are is a place in the evening and not just a label. */
   /* A METER, NOT A ROW OF TABS. It was three filled rounded boxes of centred
@@ -693,20 +702,28 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
      strip now, so clipping the track clips them too. The radius lives on the
      end segments instead. */
   .nightstrip{display:flex; gap:2px; margin-top:9px; pointer-events:none;}
-  .ns-seg{height:7px; display:flex; align-items:flex-end; justify-content:center;
+  .ns-seg{height:10px; display:flex; align-items:flex-end; justify-content:center;
     position:relative;
     background:color-mix(in srgb, var(--ink) 12%, transparent);}
   .ns-seg:first-child{border-radius:99px 0 0 99px;}
   .ns-seg:last-child{border-radius:0 99px 99px 0;}
-  .ns-seg i{position:absolute; top:9px; font-style:normal; font-size:8.5px;
+  .ns-seg i{position:absolute; top:12px; font-style:normal; font-size:8.5px;
     font-weight:900; letter-spacing:1.2px; text-transform:uppercase;
     color:var(--dim); white-space:nowrap;}
   .ns-seg.done{background:color-mix(in srgb, var(--ink) 30%, transparent);}
   .ns-seg.done i{color:var(--mut);}
-  .ns-seg.now{background:var(--teal);}
+  /* The set you are in is a track with its own clock in it: what is left,
+     green, then gold, then red as it runs down. */
+  .ns-seg.now{background:color-mix(in srgb, var(--teal) 22%, transparent);
+    box-shadow:inset 0 0 0 1.5px var(--teal);}
+  .ns-seg:first-child > b{border-radius:99px 0 0 99px;}
+  .ns-seg > b{position:absolute; left:0; top:0; bottom:0; background:var(--greenT);
+    transition:width var(--t-slow) var(--ease), background-color var(--t-slow) var(--ease);}
+  .hud.clk-low .ns-seg > b{background:var(--goldT);}
+  .hud.clk-out .ns-seg > b{background:var(--redT);}
   .ns-seg.now i{color:var(--tealT);}
   /* The labels hang below the track, so the HUD has to make room for them. */
-  .hud .nightstrip{margin-bottom:13px;}
+  .hud .nightstrip{margin:10px 0 15px;}
   .pips{display:flex; gap:5px;}
   .pip{width:9px; height:9px; border-radius:50%; background:var(--line2);}
   .pip.done{background:var(--mut);} .pip.now{background:var(--teal); transform:scale(1.25);}
@@ -784,7 +801,6 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 
   /* The way into the glossary, above the first set heading: the terms it
      explains are all in the list below it. */
-  .keyline{display:flex; justify-content:flex-end; margin:2px 0 10px;}
   .keybtn{flex:0 0 auto; background:none; border:0; padding:2px 0; font-family:inherit;
     font-size:12px; font-weight:800; color:var(--tealT); text-decoration:underline;
     text-underline-offset:3px; text-decoration-thickness:1.5px;
@@ -792,7 +808,9 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 
   .setgrp{margin-bottom:14px;}
   .setgrp h3{font-size:11px; font-weight:900; letter-spacing:2.4px; text-transform:uppercase;
-    color:var(--dim); margin:0 0 8px;}
+    color:var(--dim); margin:0 0 8px; display:flex; align-items:baseline;
+    justify-content:space-between; gap:10px;}
+  .setgrp h3 .keybtn{letter-spacing:0; text-transform:none;}
   /* "Their" is the disambiguator and not the noun, so it is set back a step
      from the set name it qualifies. */
   .sg-w{font-weight:700; opacity:.65; letter-spacing:1.6px;}
@@ -1174,6 +1192,12 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .song .r{display:flex; flex-direction:column; align-items:flex-end; gap:5px; flex-shrink:0;}
   .song .len{font-family:var(--ui); font-weight:400; font-size:16px; color:var(--mut);
     font-variant-numeric:tabular-nums; letter-spacing:.3px;}
+  .song .after{font-size:10.5px; font-weight:800; color:var(--dim); white-space:nowrap;
+    font-variant-numeric:tabular-nums; margin-top:-2px;}
+  .nightnote{margin-top:8px; font-size:12px; font-weight:700; font-style:italic;
+    color:var(--paper-mut); line-height:1.4;}
+  .nightnote b{font-style:normal; font-weight:900; font-size:9.5px; letter-spacing:1.4px;
+    text-transform:uppercase; margin-right:5px; color:#0E7884;}
   /* ── THE CHIP SYSTEM ────────────────────────────────────────────────────
    *
    * Every chip belongs to exactly one of four families, and a family is told
@@ -2386,23 +2410,18 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
 
   /* Inside the panel and under the primary button, so they read as more of
      this band rather than as more of the site. */
-  .bandlinks{display:flex; gap:18px; margin-top:11px; padding-top:10px;
-    border-top:1px solid var(--line);}
-  .bandlinks button{background:none; border:0; padding:2px 0; font-family:inherit;
-    font-size:12.5px; font-weight:800; color:var(--tealT);}
+  /* A 2x2 grid on a phone: four links in a row wrapped mid-label at 390px
+     ("Tour dates" over its own chevron), which read as broken. */
+  .bandlinks{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px 14px;
+    margin-top:12px; padding-top:10px; border-top:1px solid var(--line);}
+  @media (min-width:560px){ .bandlinks{display:flex; gap:20px;} }
+  .bandlinks button{background:none; border:0; padding:4px 0; font-family:inherit; text-align:left;
+    font-size:12.5px; font-weight:800; color:var(--tealT); white-space:nowrap;}
   /* Drawn, not typed. A '›' glyph is a few pixels of ink in a 16px box and
      lands differently in every font the stack falls back through. */
   .bandlinks button:after{content:''; display:inline-block; width:5px; height:5px;
     margin-left:7px; vertical-align:1px; transform:rotate(45deg);
     border-top:2px solid currentColor; border-right:2px solid currentColor;}
-
-  /* QUIETER THAN THE PANEL, on purpose. These two are the only things on this
-     screen that would still mean something if the band changed. */
-  .youlinks{display:flex; align-items:center; gap:16px; margin:var(--sp-2) 0 0;
-    padding-top:var(--sp-1); border-top:1px solid var(--line);}
-  .youlinks .eyebrow{flex:0 0 auto;}
-  .youlinks button{background:none; border:0; padding:4px 0; font-family:inherit;
-    font-size:13px; font-weight:800; color:var(--ink);}
 
   /* ---- the board ---- */
   /* Off the top bar. Every other screen opens with a hero or a card that
@@ -3739,22 +3758,27 @@ function placeGuideCard(card, target, ring, arrow){
 /* THE DAILY, on the band panel under the main button. Three states, and each
    says what pressing it does: play it, carry on with it, or see how you did. */
 function dailyCardHTML(b, saved){
+  /* THE DAILY IS A MODE, so it is a tile beside free play rather than a dashed
+     stub under it. It was the second thing on the panel and read as a footnote
+     to the big button, which undersold the one way to play the same night as
+     everybody else. The whole tile is the button, and what it does depends on
+     where today stands. */
   const day = todayKey();
   const st = dailyState(b.id, day);
   const inHand = saved && saved.daily === day;
-  let act;
-  if (inHand) act = `<span class="dc-s">In progress. Resume it above.</span>`;
-  else if (st && st.total != null) act = `<span class="dc-s">You scored <b>${st.total}</b>.
-      New shows tomorrow.</span>
-    <button class="btn ghost tiny" type="button" data-daily-board="1">Today's board</button>`;
-  else if (st) act = `<span class="dc-s">Started on this device. New shows tomorrow.</span>
-    <button class="btn ghost tiny" type="button" data-daily-board="1">Today's board</button>`;
-  else act = `<span class="dc-s">Same shows for everyone. One try.</span>
-    <button class="btn tiny dc-go" type="button" data-daily="${b.id}">Play today's</button>`;
-  return `<div class="dailycard">
-    <div class="dc-hd"><span class="dc-k">Daily challenge</span><b>${esc(fmtDay(day))}</b></div>
-    <div class="dc-row">${act}</div>
-  </div>`;
+  let attr, line, cta, done = false;
+  if (inHand){ attr = `data-resume="${b.id}"`; line = esc(draftSummary(saved)); cta = 'Resume'; }
+  else if (st && st.total != null){ attr = 'data-daily-board="1"'; done = true;
+    line = `You scored <b>${Number(st.total).toLocaleString()}</b>`; cta = "Today's board"; }
+  else if (st){ attr = 'data-daily-board="1"'; done = true;
+    line = 'Started on this device'; cta = "Today's board"; }
+  else { attr = `data-daily="${b.id}"`; line = 'Same shows for everyone. One try.'; cta = 'Play'; }
+  return `<button type="button" class="mode dailycard${done ? ' done' : ''}" ${attr}>
+      <span class="md-k">Daily &middot; ${esc(fmtDay(day))}</span>
+      <span class="md-t">Today's shows</span>
+      <span class="md-s">${line}</span>
+      <span class="md-go">${cta}</span>
+    </button>`;
 }
 
 function renderHome(){
@@ -3804,11 +3828,26 @@ function renderHome(){
               whose whole job is to be pressed. The countdown was 91px of that,
               and it is the one thing in the card that nobody came here to
               press. Rules, then the button, then what the band is up to. */''}
-        ${saved ? `<button class="btn primary big" data-resume="${b.id}">Resume your setlist</button>
-        <div class="resume-note">${esc(draftSummary(saved))}</div>
-        <button class="btn ghost" data-start="${b.id}" data-fresh="1">Start a new one</button>`
-        : `<button class="btn primary big" data-start="${b.id}">Build a setlist</button>`}
-        ${b.sample ? '' : dailyCardHTML(b, saved)}
+        ${/* TWO WAYS TO PLAY, side by side and the same size, because they are
+              peers: a random night that is yours alone, or today's night that is
+              everybody's. Starting over is a quiet link under them, never a
+              second big button that looks like the first. */''}
+        <div class="modes">
+          ${saved && !saved.daily
+            ? `<button type="button" class="mode free" data-resume="${b.id}">
+                <span class="md-k">In progress</span>
+                <span class="md-t">Resume your setlist</span>
+                <span class="md-s">${esc(draftSummary(saved))}</span>
+                <span class="md-go">Resume</span></button>`
+            : `<button type="button" class="mode free" data-start="${b.id}">
+                <span class="md-k">Free play</span>
+                <span class="md-t">Build a setlist</span>
+                <span class="md-s">Random nights, as many as you like.</span>
+                <span class="md-go">Spin</span></button>`}
+          ${b.sample ? '' : dailyCardHTML(b, saved)}
+        </div>
+        ${saved ? `<button class="linkbtn freshlink" type="button" data-start="${b.id}"
+          data-fresh="1">Throw it away and start a new one</button>` : ''}
 
         ${next ? `<div class="nextline">
           <span class="nl-k">Next show</span>
@@ -3839,6 +3878,7 @@ function renderHome(){
           <button type="button" data-go="tour">Tour dates</button>
           <button type="button" data-go="browse">Track your shows</button>
           <button type="button" data-go="songs">All songs</button>
+          <button type="button" data-go="board">Leaderboard</button>
         </div>` : ''}
       </section>`;
   };
@@ -3953,21 +3993,14 @@ function renderHome(){
 
     <div class="bands">${real.map(card).join('')}
       <section class="card band soon">
-        <div><div class="band-hd"><h2>More bands coming soon</h2></div>
-        <div class="band-meta">Tell us who you want next.</div></div>
-        <button class="btn ghost" type="button" id="reqBand">Request a band</button>
+        <div><div class="band-hd"><h2>More bands coming soon</h2></div></div>
+        <button class="linkbtn" type="button" id="reqBand">Request one</button>
       </section></div>
 
-    <!-- WHAT IS LEFT IS ABOUT THE PLAYER, not the band, and it is quieter than
-         the panel above on purpose. The band's own pages moved inside the band
-         panel, where they belong: these two are the only things on this screen
-         that would still mean something if the band changed. -->
-    <div class="youlinks">
-      <span class="eyebrow">Yours</span>
-      <button type="button" data-go="board">Leaderboard</button>
-      <button type="button" data-go="profile">Your shows</button>
-    </div>
-
+    ${/* THE "YOURS" ROW IS GONE. Leaderboard and Your shows were the only two
+          links on it, and both are tabs on the bar that sits under this screen
+          on a phone and over it on a desktop. The board, which is the band's,
+          joined the band's own links; Your shows is the You tab. */''}
     ${test.length ? `<div class="tryout">
       <button class="btn ghost" data-start="${test[0].id}">Try the sample data</button>
       <span>Made-up data we use for testing.</span>
@@ -4306,6 +4339,16 @@ function renderDraft(){
   }
   const keys = Array.from(bySet.keys()).sort((a, b) => setRank(a) - setRank(b));
 
+  /* A NOTE THAT IS TRUE OF THE WHOLE NIGHT IS SAID ONCE. A guest on sax gets
+     the same footnote on every song he sat in on, so a show with Dave Grippo
+     printed "With Dave Grippo on saxophone." eleven times, one per row, and
+     the rows were half note. Said on three or more rows, it moves up onto the
+     show card and comes off the rows. */
+  const noteN = new Map();
+  for (const p of show.songs){ const n = perfNote(p); if (n) noteN.set(n, (noteN.get(n) || 0) + 1); }
+  const nightNotes = [...noteN].filter(([, c]) => c >= 3).map(([n]) => n);
+  const rowNote = p => { const n = perfNote(p); return n && !nightNotes.includes(n) ? n : ''; };
+
   // Every song is shown, but one that will not fit the clock is dead — saying
   // why beats hiding it, because "no room for a 22 minute Drive" IS the game.
   const fits = show.songs.filter(p => !pickBlock(p, si));
@@ -4314,7 +4357,7 @@ function renderDraft(){
   // Is the close button currently asking you to confirm giving up a segue?
   const closeArmed = S.closeConfirm === closeKey(si) && !!danglingSegue(S.sets, si);
 
-  const songsHTML = keys.map(k => {
+  const songsHTML = keys.map((k, ki) => {
     const rows = bySet.get(k).map(p => {
       const acc = accentOf(p);
       const idx = show.songs.indexOf(p);
@@ -4394,14 +4437,17 @@ function renderDraft(){
           ${/* The curators' note on THIS take, under the computed lines rather
                 than above them: it is the most interesting thing on the row and
                 the least actionable, so it reads last. */''}
-          ${(() => { const n = perfNote(p); return n
+          ${(() => { const n = rowNote(p); return n
             ? `<span class="fnote">${esc(n)}</span>` : ''; })()}
           <!-- Decorative: the clock on the right already states the length, so
                this is hidden from assistive tech rather than read out twice. -->
           <span class="tbar${lenOf(p) > TBAR_FULL ? ' over' : ''}" aria-hidden="true"
             style="--w:${Math.min(100, 100 * lenOf(p) / TBAR_FULL).toFixed(1)}%"></span>
         </span>
-        <span class="r"><span class="len">${fmtClock(lenOf(p))}</span></span>
+        <span class="r"><span class="len">${fmtClock(lenOf(p))}</span>${
+          /* WHAT THE PICK LEAVES, which is the sum the player was doing in their
+             head for every row: the clock above minus the clock on the row. */
+          dead ? '' : `<span class="after">leaves ${fmtClock(Math.max(0, left - lenOf(p)))}</span>`}</span>
       </button>`;
     }).join('');
     /* WHOSE SET I THIS IS. The list below is grouped by the sets of the show
@@ -4409,8 +4455,10 @@ function renderDraft(){
        first-time player reads two different "Set I"s on one screen and has no
        way to tell they are different things. The band's sets are named as
        theirs; yours is the one the clock is counting. */
-    return `<div class="setgrp"><h3><span class="sg-w">Their</span> ${
-      esc(setLabel(k))}</h3><div class="songs">${rows}</div></div>`;
+    return `<div class="setgrp"><h3><span><span class="sg-w">Their</span> ${
+      esc(setLabel(k))}</span>${ki === 0
+        ? '<button class="keybtn" type="button" id="keyBtn">What do the tags mean?</button>' : ''
+      }</h3><div class="songs">${rows}</div></div>`;
   }).join('') + (left < LIST_CLOSE_AT ? `
     <button class="btn listclose ${closeArmed ? 'forfeit' : ''}" type="button" data-close-set>
       <span class="lc-t">${closeArmed
@@ -4443,8 +4491,13 @@ function renderDraft(){
         /* The encore is 600 seconds of a 9300 second night, so its block is
            6.5% wide: about 23px, which clipped "Encore" to "CO". */
         const nm = i === ENCORE_INDEX ? 'E' : cfg2.label;
+        /* ONE BAR, NOT TWO. The set you are in carries its own clock as a
+           fill, so the green bar that used to sit above this strip (the same
+           fact at a different scale) is gone. */
+        const fill = i === si
+          ? `<b style="width:${Math.max(0, Math.min(100, 100 * left / Math.max(1, budget))).toFixed(1)}%"></b>` : '';
         return `<span class="ns-seg ${st}" style="flex:${cfg2.seconds}"
-          title="${esc(cfg2.label)}"><i>${esc(nm)}</i></span>`;
+          title="${esc(cfg2.label)}">${fill}<i>${esc(nm)}</i></span>`;
       }).join('');
       return `<div class="card hud ${state}">
       <div class="hud-row">
@@ -4481,8 +4534,6 @@ function renderDraft(){
         <span class="hc-l">left in<br>${esc(cfg.label)}</span>
         <span class="hc-used">${fmtClock(used)}<i>on stage</i></span>
       </div>
-      <div class="timebar">
-        <span style="width:${Math.max(0, Math.min(100, 100 * left / Math.max(1, budget)))}%"></span></div>
       <div class="nightstrip">${strip}</div>
     </div>`;
     })()}
@@ -4508,6 +4559,7 @@ function renderDraft(){
                 long end and the song list is what the screen is for. */''}
           ${show.notes ? `<button class="snote${S.showNote ? ' open' : ''}" type="button"
             data-note aria-expanded="${!!S.showNote}">${esc(show.notes)}</button>` : ''}
+          ${nightNotes.map(n => `<div class="nightnote"><b>All night</b> ${esc(n)}</div>`).join('')}
         </div>
         ${sofarHTML(si)}
         ${hunt ? `<div class="hunt ${canFinish ? 'hot' : ''}">
@@ -4544,9 +4596,6 @@ function renderDraft(){
         ${/* NO LABEL BESIDE IT. "Set list from that night" wrapped to two lines
               at 390px, collided with the link, and said the same thing as the
               "Their Set I" heading directly under it. */''}
-        <div class="keyline">
-          <button class="keybtn" type="button" id="keyBtn">What do the tags mean?</button>
-        </div>
         ${songsHTML}
       </div>
 

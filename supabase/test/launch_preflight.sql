@@ -626,7 +626,18 @@ check_rows(sort, migration, what, breaks, ok) as (
       (select count(*) > 0 from col where tbl = 'putt_lives' and name = 'refill_at')
       and (select count(*) > 0 from proc where name = 'putt_lives_state')
       and (select count(*) > 0 from proc where name = 'putt_lives_spend')
-      and (select count(*) > 0 from proc where name = 'putt_lives_refill'))
+      and (select count(*) > 0 from proc where name = 'putt_lives_refill')),
+
+  -- WHAT A RUN THE FLOOR PLAYER WEARS, on the public profile. Soft: the closet
+  -- works on the device and on the account's shelf (103) without it; what is
+  -- missing is other players' screens drawing him dressed. Re-running 129 after
+  -- 139 takes the wider writer away, so this row asks for its argument.
+  (53, '139_hoops_wardrobe',
+      'what a hoops player wears is on the profile other players read',
+      'His closet still works and follows the account. Other players see him in the plain uniform.',
+      (select count(*) > 0 from col where tbl = 'rtf_profiles' and name = 'wear_street')
+      and (select count(*) > 0 from col where tbl = 'rtf_profiles' and name = 'wear_court')
+      and (select count(*) > 0 from proc where name = 'rtf_set_profile' and body like '%p_wear_street%'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on
