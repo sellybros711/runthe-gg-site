@@ -1097,6 +1097,9 @@
   .bs-tag.me{color:var(--gold);border-color:rgba(224,179,65,.5);background:rgba(224,179,65,.05);}
   .bs-tag.op{opacity:.7;}
   .bs-oddline{font-size:12.5px;color:var(--text-dim);margin-top:4px;}
+  .bs-finish{font-size:12.5px;line-height:1.45;color:var(--text-dim);}
+  .sb-grade{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border:2px solid currentColor;border-radius:6px;font-family:var(--disp,inherit);font-size:20px;font-weight:800;margin-right:8px;vertical-align:middle;}
+  .sb-script{font-size:12px;color:var(--text-dim);margin-top:6px;line-height:1.4;}
   .bs-oddline b{color:var(--cream);font-family:var(--mono);}
   .bk-quickrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
   .bk-quickrow button{flex:1 1 auto;font-size:11px;padding:6px 8px;}
@@ -3160,6 +3163,18 @@ const SENT_DRIVERS = {
       'Anything that makes their show look good'],
     down:['Injuries and missed dates','Turning down bookings','Bad matches on big nights','Going into business for yourself'] },
 };
+function explainHealth(){
+  const c=G.car, v=Math.round(clamp(c.cond));
+  modal('Health', `<div class="seasonbrief"><div class="sb-quote">You're at <b>${v}</b>. ${c.injWeeks>0?`You're hurt, with ${c.injWeeks} week${c.injWeeks>1?'s':''} of rehab left.`:bandOf('cond',v)+'.'}</div>
+    <p class="log">Every match takes some out of you. Rest gets it back. Under 65 your injury risk climbs, and under 50 your matches suffer. Miles you put on your body don't all come back.</p></div>`,
+    [{label:'Got it',cls:'primary',fn:closeModal}]);
+}
+function explainMoney(){
+  const c=G.car;
+  modal('Money', `<div class="seasonbrief"><div class="sb-quote">You've made <b>${money(c.earnings||0)}</b> in the business.</div>
+    <p class="log">Purses pay more on the main event and on big nights. A great match pays more than a flat one. Your contract and merch add the rest. Bigger companies pay bigger money.</p></div>`,
+    [{label:'Got it',cls:'primary',fn:closeModal}]);
+}
 function explainSentiment(which){
   const d=SENT_DRIVERS[which]; if(!d) return;
   const s=sentiment(), v=s[which], b=sentBand(which,v);
@@ -3848,7 +3863,7 @@ function firstNightDebrief(o,res){
              : /stamina|gassed/i.test(bad) ? 'Put your next training point in Stamina.'
              : /banged up|condition/i.test(bad) ? 'Rest before your next match.'
              : /near-fall|close call|escape/i.test(bad) ? 'Next match, build to the near-falls. Hit the big spots when the match asks.'
-             : 'Study the tape before your next match. It ups your odds.';
+             : 'Study the tape before your next match. You\'ll have a better match.';
   const verdict = res.draw||res.win===null ? 'A draw.' : res.win ? 'You won.' : 'You lost.';
   const body=`<div class="seasonbrief">
     <div class="sb-quote">${verdict} That's the least important thing that happened tonight.</div>
@@ -7044,31 +7059,17 @@ function paintNav(s){ const sc=$('s-'+s); if(sc){ const el=sc.querySelector('.gn
    matters: your goals, your next step, and where to go first.
    ============================================================ */
 const TOURS={
+ /* THREE STEPS, NOT TWELVE. The old walkthrough explained every tab before
+    the player had wrestled once, and nobody remembers card nine of twelve.
+    It now covers the three things a first week needs: who you are, what the
+    office booked, and the ring. Everything else is taught the first time you
+    open the screen it belongs to (FIRST_VISIT, in go()). */
  hub:[
-  {sel:'#weekBody .advice', title:'This is your week',
-   body:'Every week has two halves. <b>Yours</b> is the prep. <b>Theirs</b> is whatever the office books you to do. You don\'t write the card. You just make the most of it.'},
-  {sel:'#weekBody .preprow', title:'Prep like a pro',
-   body:'You get one piece of prep a week, and it pays right away. <b>Gym</b> banks XP. <b>Tape study</b> ups your odds tonight. <b>Rest</b> gets your body back. <b>Working the room</b> helps your standing. Weeks you\'re not booked pay double.'},
+  {sel:'#carTiles', title:'This is you',
+   body:'Four numbers run your career. <b>Pop</b> is how over you are. <b>Office trust</b> decides your spot on the card. <b>Health</b> is what your body has left. <b>Money</b> is what the business has paid you. Tap any of them to see what moves it.'},
   {sel:'#weekBody .bksheet', title:'The office books you',
-   body:'You don\'t pick your matches. The office does. The sheet shows your <b>odds</b>, the <b>purse</b>, the <b>rep</b> on the line and the <b>injury risk</b>. Get your standing up and they start listening.'},
-  {sel:'#weekBody .bksheet', title:'Winning isn\'t the point',
-   body:'You\'re graded on <b>how good the match was</b>, not who won. A <b>90-rated loss</b> pays more than a <b>50-rated win</b>. Getting fed to somebody better? That\'s your chance to steal the show.'},
-  {sel:'.planwhy', title:'Game plan',
-   body:'The two <b>move types you lean on</b> every match. They build mastery, and mastery unlocks better moves. Switch them whenever you want.',
-   before:()=>{ if(G && G.car && !G.car._wkExtras){ G.car._wkExtras=true; try{ renderWeek(); }catch(_){} } }},
-  {sel:'#carTiles', title:'Three rooms are watching',
-   body:'<b>The crowd</b> decides if you\'re over. <b>The locker room</b> decides who wants to work with you. <b>The office</b> decides if you\'re on TV. They never agree. Most weeks somebody gets let down. Tap any of them to see what moves it. The arrow shows last week.'},
-  {sel:'.hud', title:'The clock is running',
-   body:'You start at <b>21</b>. You get better fast, peak around <b>30-32</b>, then start to slide. Wear and tear speeds that up. Take care of yourself and you can still be an 80 in your forties. You can hang it up any time from <b>34</b>. The ones who never quit end up in somebody else\'s corner, still on the road.'},
-  {sel:'[data-nav="skills"]', title:'Skills: get better',
-   body:'Matches earn <b>XP</b>. Every 100 XP is a <b>training point</b> to spend here. Attributes plus mastery unlock new <b>moves</b>, all the way up to Signature and Finisher. <b>Mentors</b> cost three weeks and hand you a legend\'s finisher.'},
-  {sel:'[data-nav="gear"]', title:'Gear: how you look',
-   body:'Change your look any week in the <b>Locker</b>. Open packs at the <b>Merch Stand</b>.'},
-  {sel:'[data-nav="roster"]', title:'Roster: who\'s out there',
-   body:'The <b>Locker Room</b> has your friends, your partner, your stable and everybody who wants you gone. Earn enough respect and you can team up. Or turn on them. <b>The World</b> is all nine promotions and everybody in them.'},
-  {sel:'[data-nav="legacy"]', title:'Career: the paperwork',
-   body:'<b>Business</b> is your contract, schedule, character and injuries. <b>Record</b> is every match, title reign and award you\'ve got.'},
-  {sel:null, title:'Where to start', goals:true},
+   body:'You don\'t pick your matches or your finishes. The office does. The sheet says whether you\'re <b>booked to win or lose</b>. Either way you\'re graded on <b>the match</b>. A great loss moves you up. A flat win costs you. Pick one piece of prep below before you go.'},
+  {sel:'#weekBody .bksheet button.big', title:'Head to the ring', goals:true},
  ],
  // fires the first time a match asks you to call a spot, while the match is paused
  dec:[
@@ -7168,7 +7169,7 @@ function tourGoalsHTML(){
     const o=b.o, slot=o.card==='Main Event'?'main-eventing':o.card==='Opener'?'opening the show':'on the mid-card';
     steps=[
       `Tonight you're <b>${slot}</b> against <b>${o.oppName}</b>. That's the sheet below.`,
-      `Under <b>Your week</b>, pick <b>${lbl('tape','Study the tape')}</b>. It ups your odds tonight.`,
+      `Under <b>Your week</b>, pick <b>${lbl('tape','Study the tape')}</b>. You\'ll have a better match tonight.`,
       `Hit <b>Head To The Ring</b>. Build to your near-falls. Don't go home early. When the match asks you to call a spot, call it.`,
       `After the bell, check what moved, then read the dirt sheet. That's how you find out what everybody thought.`,
     ];
@@ -7219,7 +7220,7 @@ const RULES=[
   </ul>
   <p class="log"><b>Pull</b> comes from your standing, the title and how loud the crowd is. It buys you one conversation a week with the office: more time, a different opponent, a stipulation, even the finish. A no costs you standing, so pick your spots. Your <b>downside guarantee</b> pays every week, booked or not.</p>`},
  {n:'Matches', h:`
-  <p class="log"><b>Momentum</b> is how you're running right now, 0 to 100. Wins and good matches push it up. Losses and weeks off drag it back to 50. It bumps your odds next match.</p>
+  <p class="log"><b>Momentum</b> is how you're running right now, 0 to 100. Wins and good matches push it up. Losses and weeks off drag it back to 50. The office books hot acts to win more.</p>
   <p class="log">Matches aren't simmed. They play out live and end how real matches end.</p>
   <ul class="ruleul">
     <li><b>Pinfall.</b> A cover, a count, and a kickout at one, two or two and a half. Only a finisher late in the match is likely to get three.</li>
@@ -7308,7 +7309,7 @@ const RULES=[
     <tr><td>National TV</td><td>5,200</td><td>59</td></tr>
     <tr><td>Global Main Event</td><td>14,000</td><td>70</td></tr>
   </table>
-  <p class="log"><b>Titles</b> go to whoever the crowd reacts to, so build the reaction first. Title matches are tougher than they look (your odds take a real hit), but they pay a big rep bonus win or lose.</p>
+  <p class="log"><b>Titles</b> go to whoever the crowd reacts to, so build the reaction first. Champions don\'t drop the belt easily, but a title match pays a big rep bonus win or lose.</p>
   <p class="log"><b>Fame depends on where you work.</b> Tearing it up on the indies doesn't make you a household name. Your popularity drifts back to the ceiling of the stage you're actually on.</p>
   <p class="log">At the end of every year there are <b>awards</b>: Match of the Year, Wrestler of the Year, Rookie of the Year. When you're done there's a <b>Hall of Fame</b> that looks back at everything you did.</p>`},
 ];
@@ -7345,6 +7346,25 @@ function applyPromoTheme(){
     document.documentElement.style.setProperty('--promo', (p&&p.color)||'#ea4a36');
   }catch(_){}
 }
+// What the old twelve-step tour said about each tab, said once, the first
+// time you actually open it.
+const FIRST_VISIT={
+  train:'Matches earn XP. Every 100 XP is a training point. Spend them here.',
+  moves:'Attributes and mastery unlock new moves, all the way up to your finisher.',
+  mentors:'A mentor costs three weeks and teaches you a legend\'s finisher.',
+  locker:'Change your look any week. It\'s free.',
+  shop:'Packs of gear. It\'s all cosmetic.',
+  crew:'Friends, your partner, your stable, and everybody who wants you gone.',
+  world:'Every promotion and everybody in it.',
+  deal:'Your contract, your schedule and your injuries.',
+  record:'Every match, title reign and award you\'ve got.',
+};
+function firstVisit(s){
+  const t=FIRST_VISIT[s]; if(!t||!G||!G.car) return;
+  const seen=(G.car._tipsSeen=G.car._tipsSeen||{});
+  if(seen[s]) return;
+  seen[s]=1; setTimeout(()=>toast(t),350);
+}
 function go(s){
   applyPromoTheme(); syncTimingBtn();
   // the walkthrough is anchored to the hub; leaving it must not strand the overlay
@@ -7357,7 +7377,7 @@ function go(s){
   // a match is a broadcast, not a menu: the rails come off so the ring gets the screen
   document.body.classList.toggle('inmatch', s==='fight'||s==='promo');
   window.scrollTo(0,0);
-  if(G){ refreshHud();
+  if(G){ refreshHud(); firstVisit(s);
     if(s==='career') renderCareer();
     if(s==='moves') renderMoves();
     if(s==='train') renderTrain();
@@ -7949,6 +7969,7 @@ function renderCareer(){
         ${tp.to&&tp.p>0.2?`<div class="hint" style="color:var(--gold)">${tp.to} turn ${Math.round(tp.p*100)}%</div>`:''}`;})()}</div>
     <div class="tile"><div class="lab">${termLabel('Condition')}</div><div class="val">${withBand('cond',c.cond)}</div><div class="bar b"><i style="width:${clamp(c.cond)}%"></i></div></div>
     <div class="tile"><div class="lab">${termLabel('Momentum')}</div><div class="val">${withBand('mom',c.mom)}</div><div class="bar g"><i style="width:${clamp(c.mom)}%"></i></div></div>
+    <div class="tile" onclick="explainSentiment('locker')" style="cursor:pointer;"><div class="lab">Locker room</div><div class="val" style="color:${sentBand('locker',lockerScore()).c}">${lockerScore()}<span class="numband" style="color:${sentBand('locker',lockerScore()).c}">${sentBand('locker',lockerScore()).t}</span></div><div class="bar g"><i style="width:${lockerScore()}%"></i></div></div>
     <div class="tile"><div class="lab">${termLabel('Popularity')}</div><div class="val">${withBand('pop',c.pop||50)}</div><div class="bar g"><i style="width:${clamp(c.pop||50)}%"></i></div></div>
     <div class="tile"><div class="lab">${termLabel('Where you stand')}</div><div class="val" style="color:${tb.c}">${traj}<span class="numband" style="color:${tb.c}">${tb.t}</span></div><div class="bar b"><i style="width:${traj}%"></i></div></div>
     <div class="tile"><div class="lab">${termLabel('How hot you are')}</div><div class="val" style="color:${hb.c}">${heat}<span class="numband" style="color:${hb.c}">${hb.t}</span></div><div class="bar g"><i style="width:${heat}%"></i></div></div>
@@ -7968,19 +7989,37 @@ function renderCareer(){
         <div class="rm-s" style="color:${b.c}">${b.t}</div>
       </div>`;
   };
-  // Momentum is the number that actually moves week to week for a rookie,
-  // so it gets a row of its own under the three rooms: this week's delta,
-  // not the month's.
-  const _mom=Math.round(c.mom||50), _momD=Math.round((c.mom||50)-(c._momPrev==null?c.mom:c._momPrev)), _momB=bandOf('mom',_mom);
-  const _momCol=_mom>=75?'var(--gold)':_mom>=60?'var(--green)':_mom>=40?'var(--cream)':_mom>=25?'var(--text-dim)':'#f0907f';
-  const momRow=`<div class="rm-row" onclick="openRules(ruleIdx('Matches'))" title="What moves this">
-        <div class="rm-top"><div class="rm-l">Momentum</div>
-          <div class="rm-v" style="color:${_momCol}">${_mom}${_momD>0?`<span class="rm-d up">▲ ${_momD}</span>`:_momD<0?`<span class="rm-d dn">▼ ${Math.abs(_momD)}</span>`:`<span class="rm-d fl">holding</span>`}</div></div>
-        <div class="rm-b"><i style="width:${_mom}%;background:${_momCol}"></i></div>
-        <div class="rm-s" style="color:${_momCol}">${_momB}${_mom>=60?': the office books you stronger':_mom<40?': a win fixes it':''}</div>
+  /* FOUR METERS. The hub used to lead with seven numbers (three rooms,
+     momentum, and four more behind the toggle), and a first-time player
+     could not tell which one mattered this week. These four are the ones a
+     decision moves: how over you are, whether the office trusts you, whether
+     your body holds up, and what the career has paid. The rest still feed
+     them and still live behind "Show every stat". */
+  const meter=(label,v,shown,band,col,onclick,d,sub)=>{
+    const arrow = d==null ? '' : d>0 ? `<span class="rm-d up" title="over the last month">▲ ${d}</span>`
+                : d<0 ? `<span class="rm-d dn" title="over the last month">▼ ${Math.abs(d)}</span>` : `<span class="rm-d fl" title="over the last month">holding</span>`;
+    return `<div class="rm-row" onclick="${onclick}" title="What moves this">
+        <div class="rm-top"><div class="rm-l">${label}</div><div class="rm-v" style="color:${col}">${shown}${arrow}</div></div>
+        <div class="rm-b"><i style="width:${clamp(v)}%;background:${col}"></i></div>
+        <div class="rm-s" style="color:${col}">${band}${sub?`: ${sub}`:''}</div>
       </div>`;
+  };
+  const _pop=Math.round(c.pop||0), _pb=bandOf('pop',_pop);
+  const _popCol=_pop>=64?'var(--gold)':_pop>=38?'var(--green)':_pop>=15?'var(--cream)':'var(--text-dim)';
+  const _off=officeScore(), _ob=sentBand('office',_off);
+  const _hp=Math.round(clamp(c.cond)), _hb=c.injWeeks>0?`Hurt, ${c.injWeeks} week${c.injWeeks>1?'s':''} out`:bandOf('cond',_hp);
+  const _hpCol=c.injWeeks>0||_hp<50?'#f0907f':_hp<70?'var(--gold)':'var(--green)';
+  // money has no ceiling, so the bar is read against where you work
+  const _yard=[25000,150000,700000,3000000][tierIdx()]||25000;
+  const _cash=Math.round(c.earnings||0);
+  const _cb=_cash>=_yard?'Paid like you belong here':_cash>=_yard*0.4?'Making a living':'Living on gas money';
+  const _snap=c._meterPrev||{};
+  const _dd=(k,v)=>_snap[k]==null?null:Math.round(v-_snap[k]);
   $('carTiles').innerHTML = `<div class="rooms">
-      ${room('crowd','Crowd')}${room('locker','Locker Room')}${room('office','Office')}${momRow}
+      ${meter('Pop',_pop,_pop,_pb,_popCol,"explainHud('pop')",_dd('pop',_pop))}
+      ${meter('Office trust',_off,_off,_ob.t,_ob.c,"explainSentiment('office')",_dd('off',_off))}
+      ${meter('Health',_hp,_hp,_hb,_hpCol,"explainHealth()",_dd('hp',_hp))}
+      ${meter('Money',Math.min(100,_cash/_yard*100),money(_cash),_cb,'var(--green)',"explainMoney()",null)}
     </div>
     ${notesRow?`<div class="headline-notes">${notesRow}</div>`:''}
     <button class="ghost detailtoggle" onclick="toggleVitalsDetail()">${detailsOpen?'Hide':'Show'} every stat</button>
@@ -8084,8 +8123,35 @@ function offerOdds(o){
   if(o.stakes==='title') p*=0.82;
   // a third body means two people can beat you and only one of them has to
   if(o.stip==='triple' && o.third) p*=0.74;
-  if(c.booking&&c.booking.o===o&&c.booking.studied) p+=0.06;   // you did the homework
   return clamp(p,0.05,0.95);
+}
+/* BOOKED FINISHES. The office decides who goes over before you leave the
+   locker room, the way it does in every real company. It is rolled once, on
+   the same odds the old win chance used, so title rates and records land
+   where they always did. What the player plays for is the MATCH: the grade,
+   the heat, and whether they made the finish mean something. A great loss
+   is a good night's work and a flat win is not. Rolled lazily so a booking
+   from a save before this gets one the first time it is read. */
+function bookedFinish(b){
+  if(!b||b.type!=='match'||!b.o) return null;
+  if(b.finish!=='win'&&b.finish!=='lose') b.finish = rnd()<offerOdds(b.o) ? 'win' : 'lose';
+  return b.finish;
+}
+function scriptFor(o){
+  const b=G&&G.car&&G.car.booking;
+  return (b&&b.type==='match'&&b.o===o) ? bookedFinish(b) : null;
+}
+// Bend a finishing chance toward the booked result. `winnerIsMe` is who wins
+// if this one lands. Off the script it can still happen, just rarely.
+function scriptLean(winnerIsMe, p){
+  const s=(typeof MS!=='undefined'&&MS&&MS.o)?scriptFor(MS.o):null;
+  if(!s||!(p>0)) return p;
+  return ((s==='win')===winnerIsMe) ? Math.min(0.95, p*1.6+0.06) : p*0.2;
+}
+// One letter for the night: mostly the work, partly the room.
+function matchGrade(q,heat){
+  const v=q*0.75+(heat==null?q:heat)*0.25;
+  return v>=80?'A':v>=68?'B':v>=56?'C':v>=44?'D':'F';
 }
 // Injuries are only a real risk when you push yourself past what your body can
 // take. Fresh, well-conditioned, safe-stipulation weeks are close to zero. The
@@ -8159,7 +8225,7 @@ function weekAdvice(){
   if(_cand) return {ico:P('handshake'),t:`${_cand.name} respects you. That's how tag teams start.`,cta:{l:'Locker Room',f:"go('crew')"},sev:'act'};
   if(c.deal&&c.deal.weeksLeft<=6) return {ico:P('clipboard'),t:`Deal expires in ${c.deal.weeksLeft} weeks.`,cta:{l:'Contract',f:"go('deal')"},sev:'warn'};
   if(c.booking&&c.booking.type==='match'&&!c.prep&&!c.booking.studied)
-    return {ico:P('tape'),t:`Study ${c.booking.o.oppName}'s tape. Raises your odds.`,sev:'act'};
+    return {ico:P('tape'),t:`Study ${c.booking.o.oppName}'s tape. Better match tonight.`,sev:'act'};
   const t=workTier(), belt=beltName(t);
   if(!c.title&&reactionOf()>=Math.min(70,18+tierIdx()*16)) return {ico:P('trophy'),t:`Over enough for a ${belt} run. Keep winning.`,sev:'good'};
   return {ico:P('fist'),t:'Make the most of the card you were given.',sev:'ok'};
@@ -8311,9 +8377,13 @@ function renderWeek(){
   let sheet='';
 
   if(b.type==='match'){
-    const o=b.o, w=offerOdds(o), risk=offerRisk(o), rep=offerRep(o);
-    const dLab = w>=0.66?'Favored':w>=0.54?'Slight edge':w>=0.46?'Even':w>=0.34?'Underdog':'Way above you';
-    const dCol = w>=0.54?'var(--green)':w>=0.46?'var(--gold)':'#f0907f';
+    const o=b.o, risk=offerRisk(o), rep=offerRep(o);
+    const fin=bookedFinish(b);
+    const dLab = fin==='win'?'Booked to win':'Booked to lose';
+    const dCol = fin==='win'?'var(--green)':'var(--gold)';
+    const finWhy = fin==='win'
+      ? (b.promised?'You asked to go over, and they said yes. Make it worth it.':`The office has you going over. Make ${o.oppName} look good on the way down.`)
+      : `The office has ${o.oppName} going over. Make it a great match and they\'ll remember who carried it.`;
     const _npv = (function(){ try{ return nextPpv(); }catch(_){ return null; } })();
     const buildIn = _npv && !o.ppv && _npv.weeksUntil>=1 && _npv.weeksUntil<=3 ? _npv : null;
     // Card-position + stakes as ONE line, not four labels stacked.
@@ -8340,17 +8410,14 @@ function renderWeek(){
         ${(o.oppTitles&&o.oppTitles.length)?`<div class="bs-oppbelts">${pico('trophy',12)} They hold: ${o.oppTitles.map(t=>`<b>${t.name}</b>`).join(' · ')}</div>`:''}
         <div class="bs-rules"><b>Rules.</b> ${stipRules(o).desc}</div>
         ${b.line?`<div class="bs-office">"${b.line}"<div class="bs-office-src">from ${b.bookerName||'the office'}</div></div>`:''}
-        <div class="bk-odds" style="margin-top:10px;">
-          <div class="bk-obar"><i class="you" style="width:${Math.round(w*100)}%"></i></div>
-          <div class="bk-olab"><span>You <b>${Math.round(w*100)}%</b></span><span style="color:${dCol}">${dLab}</span><span><b>${100-Math.round(w*100)}%</b> them</span></div>
-        </div>
+        <div class="bs-finish" style="margin-top:10px;"><b style="color:${dCol}">${dLab}.</b> ${finWhy} You\'re graded on the match, not the result.</div>
         <div class="bk-rw" style="margin-top:8px;">
           <span>${pico('money',14)} <b>${money(o.purse)}</b></span>
           <span>${pico('graphUp',14)} <b>+${rep}</b> rep</span>
           <span class="${risk>0.18?'hot':''}">${pico('bandage',14)} <b>${Math.round(risk*100)}%</b> risk</span>
           ${myManager()?`<span style="color:var(--gold)">${pico('handshake',14)} ${myManager().name} in your corner</span>`:''}
           ${b.moreTime?`<span style="color:var(--gold)">${pico('star',14)} extra time</span>`:''}
-          ${b.promised?`<span style="color:var(--gold)">${pico('handshake',14)} going over</span>`:''}
+          ${b.promised?`<span style="color:var(--gold)">${pico('handshake',14)} you asked to go over</span>`:''}
           ${b.studied?`<span style="color:var(--gold)">${pico('tape',14)} did the homework</span>`:''}
           ${b.sparred?`<span style="color:var(--gold)">${pico('fist',14)} sparred with an ally</span>`:''}
         </div>
@@ -8385,7 +8452,7 @@ function renderWeek(){
       </div>
       <div class="bs-vs">vs <b onclick="openDossier('${o.oppId}')">${o.oppName}</b>${o.oppNick?` <span class="hint">"${o.oppNick}"</span>`:''}${
         o.stip==='triple'&&o.third?` <span class="hint">and</span> <b onclick="openDossier('${o.third.id}')">${o.third.name}</b>`:''}</div>
-      ${bookDetailsOpen?'':`<div class="bs-oddline"><span style="color:${dCol}">${dLab}</span> · <b>${Math.round(w*100)}%</b> to win · purse <b>${money(o.purse)}</b></div>`}
+      ${bookDetailsOpen?'':`<div class="bs-oddline"><span style="color:${dCol}">${dLab}</span> · purse <b>${money(o.purse)}</b></div>`}
       ${o.nonTitleVsChamp?`<div class="bs-nontitle">${pico('star',12)} A clean pin over the champion earns the shot.</div>`:''}
       ${(!segmentsPlayedThisWeek() && pickSegment())?`<div class="bs-scene-tease">${pico('microphone',12)} A backstage scene plays on the walk to gorilla.</div>`:''}
       <button class="big" style="width:100%;margin-top:13px;" onclick="goBooking()">Head To The Ring →</button>
@@ -10405,6 +10472,7 @@ async function standingTenCount(byMe, mvName){
   const power=(100-Dm.hp)*0.9 + Dm.limb.head*0.6 + MS.stretch*3 + (MS.phase>=4?20:0) - tough;
   let upAt = power>76?10 : power>50?9 : power>28?7 : 4;
   if(MS.phase<3) upAt=Math.min(upAt,8);          // nobody stays down for ten before the stretch
+  { const s=scriptFor(MS.o); if(s && upAt>=10 && ((s==='win')!==byMe) && rnd()<0.8) upAt=9; }
   fLog(byMe?`<span class="hint">${MS.opp.name} is down. The referee starts the count.</span>`
            :`<span class="bad">You're down. The count is on.</span>`);
   $('arena').classList.add('tense');
@@ -10987,7 +11055,7 @@ async function startFight(o){
   if(MS.third) chooseTarget(MS.third);
   chooseTarget(MS.me); chooseTarget(MS.opp);
   // tape study walks to the ring with you: an early edge and a better story
-  if(G.car.booking&&G.car.booking.o===o&&G.car.booking.studied){ MS.mom=8; MS.quality+=4; MS.studied=true; }
+  if(G.car.booking&&G.car.booking.o===o&&G.car.booking.studied){ MS.mom=8; MS.quality+=7; MS.studied=true; }
   // sparring earlier in the week: a small edge that the announcers won't mention
   if(G.car.booking&&G.car.booking.sparred){ MS.quality+=3; MS.sparred=true; }
   // A guaranteed cash-in (Battle Royal, MITB) walks out with the crowd already
@@ -11814,7 +11882,7 @@ async function coverAttempt(byMe, mvName, isFin){
   // over a body counting to ten, and the drama is nine, not two and nine.
   const ends=stipRules(MS.o).ends;
   if(ends.length===1 && ends[0]==='ko'){ await standingTenCount(byMe, mvName); return; }
-  const three = rulesAllowPin && rnd()<p3;
+  const three = rulesAllowPin && rnd()<scriptLean(byMe,p3);
   await pinSequence(byMe, three, power, mvName, isFin);
 }
 
@@ -11891,6 +11959,7 @@ async function submissionAttempt(byMe, mvName){
     refDrift(); await settle(300);
     return false;
   }
+  pTap = scriptLean(byMe,pTap);
   const willTap = rulesAllowSub && MS.phase>=3 && rnd()<pTap;
   if(rulesAllowSub && MS.phase>=3 && (pTap>0.25 || willTap)){
     $('arena').classList.add('tense');
@@ -12020,7 +12089,7 @@ async function climbAttempt(){
   // The one on the mat has a puncher's chance to reach up and drag them back.
   const dragPow = (100 - (iAmClimbing?MS.opp.hp:MS.me.hp))*0.4;
   const escape = only ? 0.60 : 0.45;
-  if(rnd() < escape - dragPow/240 + climbBoost){
+  if(rnd() < scriptLean(iAmClimbing, escape - dragPow/240 + climbBoost)){
     // they get over
     commitFinish({type:'climb', by:iAmClimbing, move:'the climb', fin:false});
     MS.ended=true;
@@ -12661,8 +12730,8 @@ function skipFight(){
   const meOvr=ovr(G.w)+(c.mom-50)*0.10+(c.streak>0?Math.min(6,c.streak):0);
   let p=1/(1+Math.pow(10,(o.oppOvr-meOvr)/16));
   p += ((MS.me.hp-MS.opp.hp)/100)*0.35 + MS.mom/500;
-  if(G.car.booking&&G.car.booking.studied) p+=0.06;
   if(o.stakes==='title'||o.stakes==='defense') p*=0.82;
+  const _scr=scriptFor(o); if(_scr) p = _scr==='win' ? 0.92 : 0.08;
   const rest=Math.max(0,9-MS.beat);
   MS.quality += rest*2.6;                              // the unseen exchanges still happened
   MS.clock += rest*46 + 120;
@@ -12699,6 +12768,11 @@ const PULL_LABEL=['No say in it','A word now and then','They listen to you','Cre
 
 // the office picks your spot: the better they think you are, the better it is
 function bookWeek(){
+  bookWeek0();
+  const b=G.car&&G.car.booking;
+  if(b&&b.type==='match') bookedFinish(b);
+}
+function bookWeek0(){
   const c=G.car;
   if(c.booking || c.freeAgent || c.injWeeks>0 || c.mentorWeeks>0 || c.retired) return;
   // a booked tour beats whatever the office had planned
@@ -12782,7 +12856,7 @@ function prepOptions(){
     {id:'gym',  ico:pico('dumbbell'), l:'Hit the gym', d:dark?'+55 XP. Nothing but time this week.':'+30 XP before the show.'},
   ];
   if(b.type==='match')
-    opts.push({id:'tape', ico:pico('tape'), l:'Study the tape', d:`Scout ${b.o.oppName}. Better odds, better match.`});
+    opts.push({id:'tape', ico:pico('tape'), l:'Study the tape', d:`Scout ${b.o.oppName}. A better match, and a hotter crowd.`});
   // sparring: an ally in the gym gives you a real training partner
   if(allies().length) opts.push({id:'spar', ico:pico('fist'), l:'Spar with an ally',
     d:'Run bumps and calls together. Small edge tonight, and it tightens the corner.'});
@@ -12833,7 +12907,7 @@ function officeOptions(){
             p:clamp(base-0.06,0.05,0.92)});
   if(p>=2) out.push({id:'stip', l:'Pitch a stipulation', d:'Give the match a hook the crowd can follow.',
             p:clamp(base-0.02,0.05,0.92)});
-  if(p>=3) out.push({id:'finish', l:'Ask to go over', d:'Ask them to put you over clean. They remember being asked.',
+  if(p>=3 && bookedFinish(b)==='lose') out.push({id:'finish', l:'Ask to go over', d:'Ask them to put you over clean. They remember being asked.',
             p:clamp(base-0.22,0.03,0.80)});
   // Demand a title shot. Only if you're a mid-carder or higher, the crowd is
   // hot, and you don't already have one. The office remembers being pressed.
@@ -12889,11 +12963,11 @@ function doAsk(id){
   const won=rnd()<o.p;
   if(won){
     if(id==='time'){ b.o.mult=Math.round((b.o.mult+0.25)*100)/100; b.moreTime=true; }
-    if(id==='opp'){ const alt=makeOffers().find(x=>x.oppId!==b.o.oppId); if(alt){ alt.card=b.o.card; b.o=alt; } }
+    if(id==='opp'){ const alt=makeOffers().find(x=>x.oppId!==b.o.oppId); if(alt){ alt.card=b.o.card; b.o=alt; b.finish=null; bookedFinish(b); } }
     if(id==='stip'){ const s=[['Hardcore Match','hardcore',1.25],['Ladder Match','ladder',1.3],['Steel Cage','cage',1.2],['Submission Match','sub',1.1],['Last Man Standing','lms',1.35]][Math.floor(rnd()*5)];
       b.o.stipLabel=s[0]; b.o.stip=s[1]; b.o.mult=s[2];
       b.o.third=null; }                      // none of these five hold three people
-    if(id==='finish'){ b.promised=true; c.standing=clamp(c.standing-2); }
+    if(id==='finish'){ b.promised=true; b.finish='win'; c.standing=clamp(c.standing-2); }
     if(id==='shot'){
       const me=myPromo();
       const _npv=(function(){ try{ return ppvForShot(); }catch(_){ return {week:c.week+8,weeksUntil:8,year:c.year}; } })();
@@ -12973,6 +13047,7 @@ function simMatch(o){
   const me=ovr(w)+(c.mom-50)*0.10+(c.streak>0?Math.min(6,c.streak):0);
   let p=1/(1+Math.pow(10,(o.oppOvr-me)/16));
   if(o.stakes==='title') p*=0.82;                 // champs are protected
+  { const _s=scriptFor(o); if(_s) p = _s==='win' ? 0.92 : 0.08; }   // the booked finish, as live
   const win=rnd()<clamp(p,0.05,0.95);
   // even an unwatched match finishes the way wrestling matches finish
   const finMv=(win?used.filter(m=>m.tier>=4)[0]:null)||used[0];
@@ -13006,6 +13081,17 @@ function heatBand(h){ return h>=80?'Molten':h>=62?'Hot':h>=44?'Warm':h>=26?'Quie
 function applyMatch(o,res){
   const c=G.car, w=G.w, sc=schedOf(c.deal&&c.deal.sched);
   if(res.heat==null) res.heat=crowdHeatOf(o,res);
+  // The booked finish. Following the book is the job; doing it well is the
+  // push. A great loss moves you up, a flat win costs you, and a finish that
+  // got away from you costs a little whichever way it went.
+  const _draw0=res.draw||res.win===null;
+  const script=scriptFor(o);
+  const offScript=!!(script && !_draw0 && ((script==='win')!==!!res.win));
+  res.script=script; res.offScript=offScript; res.grade=matchGrade(res.quality,res.heat);
+  const jobTerm = !script ? (_draw0?0.2:res.win?0.6:-0.2)
+    : offScript ? (res.win?-2:-1)
+    : res.win ? (res.quality<50?-1.2:0.4)
+    : (res.quality>=62?1.4:0);
   /* WHAT TONIGHT DID TO YOU. The result screen used to show what you earned
      (purse, rep, XP) and nothing about what CHANGED (standing, the act,
      momentum, condition, the opponent's opinion of you). Every one of those
@@ -13039,7 +13125,7 @@ function applyMatch(o,res){
   if(res.quality>=64) dailyProgress('good',1);
   if(res.quality>=75) dailyProgress('great',1);
   // ---- standing with the office: they care about the show you put on ----
-  const standDelta=(res.quality-58)*0.16 + (draw?0.2:res.win?0.6:-0.2)
+  const standDelta=(res.quality-58)*0.16 + jobTerm
     + (o.stakes==='title'||o.stakes==='defense'?1.4:0) + (c.workedHurt?-1.6:0);
   c.standing=clamp((c.standing||50)+standDelta);
   // ---- the character: a strong night refreshes the act, a flat one drains it ----
@@ -13054,7 +13140,7 @@ function applyMatch(o,res){
   c.rep+=repGain;
   // fame is tier-relative: tearing it up on the indies doesn't make you a household name
   const reach=0.35+tierIdx()*0.28;
-  const popGain=((res.quality-50)/6 + ((res.heat||50)-50)/20 + (draw?0.7:res.win?1.6:-0.3) + (o.stakes!=='standard'?1.2:0))*reach*(styleOf().popMult||1)*facBonus('pop');
+  const popGain=((res.quality-50)/6 + ((res.heat||50)-50)/20 + (draw?0.7:res.win?1.0:(res.quality>=62?0.6:-0.3)) + (o.stakes!=='standard'?1.2:0))*reach*(styleOf().popMult||1)*facBonus('pop');
   const popCeil=Math.min(100,([38,64,85,100][tierIdx()]||38)+4);
   c.pop=clamp(c.pop+popGain,1,popCeil);
   // the room reacts to the match too, in whichever direction you are working
@@ -13725,6 +13811,14 @@ function resultHero(o,res,draw){
       <div class="mh-plate"><div class="mh-stamp">${word}</div><div class="mh-vs">vs <b>${o.oppName}</b></div></div>
     </div>`;
 }
+// What the night meant against the plan. Read off the grade, never the win.
+function scriptLine(res){
+  const s=res.script, good=res.grade<='B', ok=res.grade==='C';
+  if(!s) return good?'A great night\'s work.':ok?'A solid night\'s work.':'Not your best night.';
+  if(res.offScript) return res.win?'You weren\'t booked to win that. The office noticed.':'You were booked to win, and the finish got away from you.';
+  if(s==='win') return good?'Booked to win, and you made it a show.':ok?'Booked to win. You did the job.':'Booked to win, but it was a flat one. That costs you.';
+  return good?'Booked to lose, and you stole the show. That\'s how a push starts.':ok?'Booked to lose. You did the job.':'Booked to lose, and it showed.';
+}
 function renderMatch(o,res){
   const c=G.car;
   LAST_RESULT={o,res};
@@ -13793,6 +13887,7 @@ function renderMatch(o,res){
       <div class="sb-num"><span id="sbNum">0</span><span style="color:var(--text-faint)">/100</span> · ${starLine}</div>
       <div class="sb-band">${starBand(s)}</div>
       ${res.heat!=null?`<div class="sb-heat">Crowd <b>${heatBand(res.heat)}</b> · ${res.heat}/100</div>`:''}
+      ${res.grade?`<div class="sb-script"><span class="sb-grade" style="color:${res.grade<='B'?'var(--green)':res.grade==='C'?'var(--gold)':'#f0907f'}">${res.grade}</span>${scriptLine(res)}</div>`:''}
     </div>
     <div class="mfinish">
       <div class="mf-head">${finishLine(res,o)}</div>
@@ -14160,6 +14255,10 @@ function advanceWeek(){
     h.push(_sn); while(h.length>5) h.shift();
     const _sp = h[0];
     c._sentDelta = {crowd:_sn.crowd-_sp.crowd, locker:_sn.locker-_sp.locker, office:_sn.office-_sp.office};
+    // the hub's four meters keep the same four-week window
+    const mh = (c._mHist = c._mHist || []);
+    mh.push({pop:Math.round(c.pop||0), off:_sn.office, hp:Math.round(clamp(c.cond))}); while(mh.length>5) mh.shift();
+    c._meterPrev = mh[0];
   }catch(_){}
   save();
   setTimeout(()=>{ if(!maybeBackstage()) checkRecruit(); },260);
