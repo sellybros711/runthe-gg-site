@@ -47,7 +47,11 @@ for (const [k, m] of Object.entries(A.MASK)) { const key = m.join('/'); if (seen
 ok(!dupes.length, '3 no two shapes share a mask (' + dupes.join(', ') + ')');
 ok(lit(A.iconGrid({ id: 'x', slot: 'top', k: 'nope', c: ['#ff0000'] })) > 8, '3 an unknown shape falls back to its slot');
 ok(lit(A.iconGrid({ id: 'y', slot: 'nope', k: 'nope', c: ['#00ff00'] })) > 8, '3 an unknown slot still draws a tag');
-const keys = new Set(CAT.ITEMS.map((it) => it.slot + ':' + it.k)), byMask = new Set(CAT.ITEMS.map((it) => A.maskFor(it).join('/')));
+/* the card's nameplates and backdrops share one icon a slot on purpose: a
+   design is told apart by its colours there, and check-card.mjs holds that
+   every design draws its own picture on the card */
+const SHAPED = CAT.ITEMS.filter((it) => it.slot !== 'plate' && it.slot !== 'bg');
+const keys = new Set(SHAPED.map((it) => it.slot + ':' + it.k)), byMask = new Set(SHAPED.map((it) => A.maskFor(it).join('/')));
 ok(byMask.size >= keys.size * 0.85, '3 the catalogue\'s shapes draw as distinct icons (' + byMask.size + ' of ' + keys.size + ')');
 
 /* 4 */

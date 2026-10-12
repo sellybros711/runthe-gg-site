@@ -110,6 +110,10 @@ var MASK = {
   low: ['..bbbb..', '..aaaaa.', '..aaaaaa'],
   long: ['..aaa..aaa..', '.aaaawwaaaa.', 'aaaaaaaaaaaa', 'aaaawwaaaaaa', 'aa.aaaaaa.aa', 'aa.aaaaaa.aa', 'aa.aaaaaa.aa', 'aa.aaaaaa.aa', '...aaaaaa...'],
   /* an idle: a ball, and the arcs it is moving through */
+  /* a nameplate: a bar with a name on it */
+  plate: ['bbbbbbbbbbbbbb', 'baaaaaaaaaaaab', 'bawwwawwawwwab', 'baaaaaaaaaaaab', 'bbbbbbbbbbbbbb'],
+  /* a card backdrop: a framed picture, sky over ground, with a light */
+  frame: ['kkkkkkkkkkkk', 'kaaaaaaaaaak', 'kaaaaaaaccak', 'kaaaaaaaccak', 'kaaaaaaaaaak', 'kaaaaaaaaaak', 'kbbbbbbbbbbk', 'kbbbbbbbbbbk', 'kbbbbbbbbbbk', 'kkkkkkkkkkkk'],
   idle: ['..b....b....', '.b......b...', '....aaaa....', '...aakkaa...', '..aaakkaaa..', '..kkkkkkkk..', '..aaakkaaa..', '...aakkaa...', '....aaaa....', '.b......b...', '..b....b....'],
 };
 /* a shape key that means one thing in one slot and another in another */
@@ -121,12 +125,14 @@ var BY_SLOT = {
 var SLOT_FALLBACK = { top: 'tee', outer: 'bomber', bottom: 'jeans', shoes: 'sneaker', hat: 'beanie', eyes: 'shades',
   socks: 'crew', chain: 'chain', watch: 'watch', bag: 'backpack', phones: 'over', held: 'phone', band: 'band', goggles: 'specs',
   guard: 'guard', sleeveL: 'arm', sleeveR: 'arm', wrist: 'wrist', tape: 'fingers', tights: 'full', knee: 'pad', ankle: 'brace',
-  csocks: 'crew', under: 'tee', idle: 'idle' };
+  csocks: 'crew', under: 'tee', idle: 'idle', plate: 'plate', bg: 'frame' };
 var TAG = ['..aaaaaa', '.aaaaaaa', 'aawaaaaa', 'aaaaaaaa', 'aaaaaaaa', '.aaaaaaa', '..aaaaaa'];
 
 function maskFor(it){
   var s = it && it.slot, k = it && it.k;
   if (s === 'idle') return MASK.idle;
+  if (s === 'plate') return MASK.plate;
+  if (s === 'bg') return MASK.frame;
   if (s === 'sleeveR' && MASK[k]) return MASK[k].map(function(r){ return r.split('').reverse().join(''); });
   var m = (BY_SLOT[s] && BY_SLOT[s][k]) || k;
   return MASK[m] || MASK[SLOT_FALLBACK[s]] || TAG;

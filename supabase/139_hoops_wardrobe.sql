@@ -4,7 +4,10 @@
 --
 --   psql ... -f supabase/139_hoops_wardrobe.sql
 --
--- Needs 129 (rtf_profiles). Safe to run more than once.
+-- Needs 129 (rtf_profiles). Safe to run more than once, BEFORE 140. 140 widens
+-- the slot lists; after it, a stored loadout holding an idle or a nameplate
+-- breaks this file's narrower checks and it stops on the first one. Re-run 140
+-- instead, which carries everything this file does.
 --
 -- WHAT THE PLAYER OWNS is not here. That is the closet record (hoops/
 -- wardrobe.js), kept in ps_saves (103) under the game 'rtf', slot 'ward',
@@ -60,6 +63,9 @@ alter table public.rtf_profiles add constraint rtf_profiles_wear_court_ck check 
 -- name ambiguous. A page a version behind calls this one by the names it
 -- knows, and the two new arguments default to null, which is "leave it alone".
 drop function if exists public.rtf_set_profile(text,text,text,text,text,text,boolean);
+-- 140 widens it again. Re-running this file after 140 puts this narrower one
+-- back, so 140's goes too; re-run 140 after this file (preflight row 54).
+drop function if exists public.rtf_set_profile(text,text,text,text,text,text,boolean,jsonb,jsonb,jsonb);
 create or replace function public.rtf_set_profile(
   p_club text default null, p_num text default null, p_arena text default null,
   p_camera text default null, p_last_club text default null, p_last_era text default null,

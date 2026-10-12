@@ -63,6 +63,8 @@ function save(){
      so this is asked on every save and pays each season once. */
   if (S && S.cur && window.RTF_EARN) { try { window.RTF_EARN.career(S.cur); } catch (e) {} }
   try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {}
+  /* the player card republishes who he is when the career moves (debounced) */
+  if (window.RTF_CARD && window.RTF_CARD.changed) { try { window.RTF_CARD.changed(); } catch (e) {} }
   var M = window.RTF_MODES_UI;
   if (M && M.write) M.write(KEY);
 }
@@ -2846,6 +2848,35 @@ window.RTF_CAREER_UI = {
   /* the player the front page shows (the career in progress, or the look a
      new one starts from), for screens that dress him: the Floor Pass hero */
   me: function(){ var L = store().cur; L = L && !L.retired ? L : null; var k = L ? C.colorsOf(L) : { primary: '#ff7a1a', secondary: '#1d1f2b' }; return { look: heroLook(L), c1: k.primary, c2: k.secondary, num: L ? L.num : 23 }; },
+  /* WHO THE PLAYER CARD IS (hoops/card-ui.js): the career in progress, or
+     the newest finished one, as the small shape 140 publishes. Null before
+     the account has ever made a player: a card is never a random stranger. */
+  cardPlayer: function(){
+    var st = store(), L = st.cur && !st.cur.retired ? st.cur : null, h = (st.hof || [])[0];
+    var p = null;
+    if (L) { var k = C.colorsOf(L); p = { look: lookOf(L), name: L.name, num: L.num, pos: L.pos, c1: k.primary, c2: k.secondary }; }
+    else if (h && h.look) p = { look: h.look, name: h.name, num: h.num, pos: h.pos, c1: h.c1, c2: h.c2 };
+    if (!p) return null;
+    p.name = C.boardName(p.name) ? p.name : (C.cleanName(p.name) || null);
+    return p;
+  },
+  /* the player card's Change button: the Look sheet, on a slot. Mid career
+     only, because the sheet dresses the man in the career on screen. */
+  openCloset: function(ctx, slot){
+    if (!store().cur || store().cur.retired) return false;
+    if (window.RTF_CLOSET && window.RTF_CLOSET.focus) window.RTF_CLOSET.focus(ctx, slot);
+    if (!onScreen()) open();
+    openLook(ctx || 'street');
+    return true;
+  },
+  /* what the account has done, for the card's back: careers, the best legacy,
+     rings, MVPs and All-Star nods, off the Hall cards the account keeps */
+  cardStats: function(){
+    var st = store(), hof = st.hof || [], n = function(c, k){ var a = (c.awards || []).filter(function(x){ return x.k === k; })[0]; return a ? a.n : 0; };
+    var o = { careers: hof.length + (st.cur && !st.cur.retired ? 1 : 0), best: 0, rings: 0, mvp: 0, star: 0 };
+    hof.forEach(function(c){ o.best = Math.max(o.best, +c.score || 0); o.rings += n(c, 'champ'); o.mvp += n(c, 'mvp'); o.star += n(c, 'star'); });
+    return o;
+  },
   /* check-career.mjs only: the road the start button would play, which the
      builder deliberately never shows. */
   previewRoad: function(){ return form && form.start !== 'hs' && C.roadStory ? C.roadStory(preview()) : []; },

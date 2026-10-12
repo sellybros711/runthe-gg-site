@@ -637,7 +637,18 @@ check_rows(sort, migration, what, breaks, ok) as (
       'His closet still works and follows the account. Other players see him in the plain uniform.',
       (select count(*) > 0 from col where tbl = 'rtf_profiles' and name = 'wear_street')
       and (select count(*) > 0 from col where tbl = 'rtf_profiles' and name = 'wear_court')
-      and (select count(*) > 0 from proc where name = 'rtf_set_profile' and body like '%p_wear_street%'))
+      and (select count(*) > 0 from proc where name = 'rtf_set_profile' and body like '%p_wear_street%')),
+
+  -- THE PLAYER CARD. Soft, twice over: without it a loadout naming an idle, a
+  -- nameplate or a backdrop is refused by 139's narrower check (the page sends
+  -- it again without them), and other players see the plain jersey on a board
+  -- row instead of the player, and cannot open his card.
+  (54, '140_hoops_card',
+      'a hoops player card (who he is, his nameplate and backdrop) is on the profile',
+      'Board rows show the jersey, not the player, and nobody can open his card. His idle and card items stay on the device.',
+      (select count(*) > 0 from col where tbl = 'rtf_profiles' and name = 'player')
+      and (select count(*) > 0 from proc where name = 'rtf_player_ok')
+      and (select count(*) > 0 from proc where name = 'rtf_set_profile' and body like '%p_player%'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

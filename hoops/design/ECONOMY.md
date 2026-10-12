@@ -475,6 +475,30 @@ economy.
 
 ---
 
+## 8b. The player card (Phase 5, as built)
+
+`hoops/card-ui.js` (`RTF_CARD`). A trading card of the account's invented
+player: his card backdrop (a pixel scene, 60 by 84 cells), his number in the
+club's colours behind him, the man in his street look with his idle, his
+nameplate (64 by 14) across the foot, and a frame and ribbon in his Floor Rep
+rank (wood, bronze, silver, gold, the Icon's purple and gold, the G.O.A.T.'s
+cycling holo). A tap flips it to what the account has done and what he wears.
+
+- **The pieces are catalogue rows**: 14 nameplates and 14 backdrops (slots
+  `plate` and `bg`, street, every rarity, one of each free). A design key names
+  a drawing in `card-ui.js`, so a new colourway is a row. They are never wear:
+  `CAT.NOWEAR` keeps them, and the idle, out of `resolve()`.
+- **Who he is** is the career in progress or the newest finished one
+  (`RTF_CAREER_UI.cardPlayer`); an account with no career has no card.
+- **The boards draw him.** 140 publishes `player` beside the two loadouts, and
+  a board row filed by an account draws his head and shoulders in a ring of his
+  rank's metal; a tap opens his card. A guest row and a row with no player keep
+  the jersey.
+- **Found while building it: 139 refused every loadout with an idle in it**,
+  so a player went undrawn on every board from the day he picked one. 140
+  widens the lists, and against 139 the page sends the loadout again with only
+  the clothes (`wardrobe.js wearOnly`).
+
 ## 9. Real money, dark (Phase 6)
 
 All behind flags that default to off: `BUCKETS_ENABLED`, `PASS_PAID_ENABLED`.
@@ -504,9 +528,10 @@ soft: without it the game plays and the thing it holds stays on the device.
 
 | number | phase | what |
 |---|---|---|
-| 139 `hoops_wardrobe` | 1 | `rtf_profiles` gains `wear_street`, `wear_court`, `idle`, `plate`, `card` (jsonb or short text, shape checked like `ps_set_crest`, not entitlement checked); `rtf_set_profile` gains the arguments; the board read asks for them and drops them on a 400 |
-| 140 `hoops_wallet` | 6 | `rtf_wallet` (paid coins only), `rtf_wallet_spend`, purchase rows |
-| 141 `hoops_pass` | 6 | `rtf_pass` product in `premium_unlocks` with `expires_at` |
+| 139 `hoops_wardrobe` | 1 | `rtf_profiles` gains `wear_street` and `wear_court`, shape checked like `ps_set_crest`, not entitlement checked; `rtf_set_profile` gains the arguments |
+| 140 `hoops_card` | 5 | the loadouts take `idle`, `plate` and `bg`; `rtf_profiles` gains `player` (who he is, shape checked); `rtf_set_profile` gains `p_player`; the board read asks for both and drops them on a 400 |
+| 141 `hoops_wallet` | 6 | `rtf_wallet` (paid coins only), `rtf_wallet_spend`, purchase rows |
+| 142 `hoops_pass` | 6 | `rtf_pass` product in `premium_unlocks` with `expires_at` |
 
 The earned economy (sections 3 to 8) needs no migration at all.
 
@@ -527,6 +552,8 @@ The earned economy (sections 3 to 8) needs no migration at all.
 | `hoops/check-closet.mjs` | 1 | owning, wearing, two devices, the closet on a phone, the coin history |
 | `hoops/check-earn.mjs` | 1 | a guest earns nothing, every award pays once, nothing before the baseline pays |
 | `hoops/check-economy.mjs` | 1 | ledger merge, idempotence, compaction, diminishing tail, the three player days |
+| `hoops/card-ui.js` | 5 | the player card, its pixel art, the board circles, publishing who he is |
+| `hoops/check-card.mjs` | 5 | the card pieces, the 140 shapes, the card on a phone, every design, the boards |
 | `hoops/check-wardrobe.mjs` | 1 | every item in both looks, every pose, no part off the grid, cache keys move, old looks unchanged |
 | `hoops/check-idles.mjs` | 1b | every loop closes, reduced motion still, phone budget |
 | `hoops/check-shop.mjs` | 2 | odds by sampling, pity at the boundary, dupes, exchange, guest wall, the browser walk |

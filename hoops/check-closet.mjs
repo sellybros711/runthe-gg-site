@@ -169,7 +169,7 @@ async function browser(){
     const wide = [...sheet.querySelectorAll('*')].filter((el) => { const r = el.getBoundingClientRect(); return r.width && r.right > innerWidth + 1 && !el.closest('.cl-slots'); });
     return { tiles: tiles.length, lowest: Math.min(...tiles.map((t) => t.getBoundingClientRect().height)), wide: wide.map((e) => e.className).slice(0, 3), slots: document.querySelectorAll('#cr-closet .cl-slot').length };
   });
-  ok(m.slots === 13, '7 off court lists the twelve street slots and the idle (' + m.slots + ')');
+  ok(m.slots === 15, '7 off court lists the twelve street slots, the idle, the nameplate and the card backdrop (' + m.slots + ')');
   ok(m.tiles > 10, '7 the Top slot lists its pieces (' + m.tiles + ')');
   ok(m.lowest >= 44, '7 every tile is a thumb tall (' + m.lowest + 'px)');
   ok(!m.wide.length, '7 nothing in the closet runs off a 375px phone (' + m.wide.join(', ') + ')');

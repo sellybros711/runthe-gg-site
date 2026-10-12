@@ -16352,7 +16352,9 @@ node hoops/check-packs.mjs       odds, pity, shards, the exchange, two devices, 
 node hoops/check-shopart.mjs     every item, pack, coin and shard in pixels, nothing clipped
 node hoops/check-daily.mjs       the streak, the login track, the wheel, the quests, Floor Rep
 node hoops/check-pass.mjs        the Floor Pass: the clock, the curve, the cap, claims, settlement
+node hoops/check-card.mjs        the player card: its pieces, the 140 shapes, the boards
 psql ... -f supabase/139_hoops_wardrobe.sql   deploy by hand (preflight row 53)
+psql ... -f supabase/140_hoops_card.sql       after 139 (preflight row 54; its test is hoops_card_test.sql)
 ```
 
 `hoops/design/ECONOMY.md` is the plan and the record. What bites:
@@ -16402,6 +16404,18 @@ psql ... -f supabase/139_hoops_wardrobe.sql   deploy by hand (preflight row 53)
   written; a new shape key falls back to its slot's mask. The packs are Run The Tour's
   foil pillow redrawn with a ball, a hoop, a trophy and a star. A mask must fit 14 cells
   or the light and the outline clip it (check-shopart counts the cells placed).
+- **The player card is `card-ui.js`** (`RTF_CARD`): his backdrop, his number, the man in his street
+  look and idle, his nameplate, and a frame in his Floor Rep metal; a tap flips it. Nameplates and
+  backdrops are catalogue rows in the street loadout (slots `plate` and `bg`), drawn in code from a
+  design key, and `CAT.NOWEAR` keeps them and the idle out of `resolve()`. Who he is is the career in
+  progress or the newest finished one; an account with no career has no card.
+- **139 refused every loadout with an idle in it**, so a player went undrawn on every board from
+  the day he picked one. 140 widens the slot lists and adds `player`; against 139 the page sends the
+  loadout again with only the clothes (`wardrobe.js wearOnly`). Re-running 139 after 140 stops on a
+  stored idle: re-run 140 instead.
+- **A board row filed by an account draws his player** off `player` and `wear_street`, a few a
+  frame, and a tap opens his card without opening the row. A guest row and a row with no player keep
+  the jersey. The read asks for the two columns and asks again without them on a 400.
 - **The daily loop is six more keyed logs on the wardrobe record** (`hoops/daily.js`:
   `dp` days played, `dl` days opened, `dw` spins, `dg` banked spins, `de` quest events,
   `db` Coin Rushes), merged with it. The streak, its freezes (earned at 7, 30 and 100,

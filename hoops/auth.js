@@ -284,7 +284,7 @@
        for naming arguments it does not know, and nothing else rides on it. */
     const map = { club: 'p_club', num: 'p_num', arena: 'p_arena', camera: 'p_camera',
       lastClub: 'p_last_club', lastEra: 'p_last_era', guide: 'p_guide',
-      wearStreet: 'p_wear_street', wearCourt: 'p_wear_court' };
+      wearStreet: 'p_wear_street', wearCourt: 'p_wear_court', player: 'p_player' };
     for (const k of Object.keys(map)) if (f[k] !== undefined && f[k] !== null) args[map[k]] = f[k];
     if (!Object.keys(args).length) return null;
     try {

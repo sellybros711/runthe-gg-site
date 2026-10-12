@@ -31,7 +31,10 @@ var LABEL = {
   chain: 'Chain', watch: 'Watch', bag: 'Bag', phones: 'Headphones', held: 'In hand',
   band: 'Headband', goggles: 'Goggles', guard: 'Mouthguard', sleeveL: 'Left sleeve', sleeveR: 'Right sleeve',
   wrist: 'Wristbands', tape: 'Tape', tights: 'Tights', knee: 'Knees', ankle: 'Ankles', csocks: 'Socks', under: 'Undershirt', idle: 'Idle',
+  plate: 'Nameplate', bg: 'Card backdrop',
 };
+/* the two slots that dress the player CARD rather than the man (catalog.js NOWEAR) */
+var CARD_SLOT = { plate: 1, bg: 1 };
 /* a slot the starter wardrobe fills cannot be left bare: "Starter" is its empty */
 var STARTER = { top: 1, bottom: 1, shoes: 1 };
 var RARITY_ORDER = { common: 0, rare: 1, epic: 2, legendary: 3 };
@@ -82,7 +85,14 @@ function pane(host, o){
     var fo = W.dress({ c1: o.c1, c2: o.c2, num: o.num, pose: 'stand', scale: 4, still: !moving }, ctx, shown, true);
     if (moving && W.idle) fo = W.idle(fo, ctx, shown, true);
     var fig = B.img(o.look, fo, 'cl-figimg');
-    var wearing = slots.map(function(s){ var it = CAT.item(shown[s]); return it ? it.name : null; }).filter(Boolean);
+    /* picking a nameplate or a backdrop shows the card it goes on */
+    var cardNow = CARD_SLOT[v.slot] && window.RTF_CARD && window.RTF_CARD.html;
+    if (cardNow) {
+      var me = window.RTF_CARD.mine ? window.RTF_CARD.mine() : null;
+      fig = window.RTF_CARD.html(Object.assign({ look: o.look, name: 'Your Player', num: o.num, pos: '', c1: o.c1, c2: o.c2, rep: 0 }, me || {}, { look: o.look }), shown, { size: 'mini', tryOn: true });
+    }
+    var nw = CAT.NOWEAR || {};
+    var wearing = slots.map(function(s){ var it = nw[s] ? null : CAT.item(shown[s]); return it ? it.name : null; }).filter(Boolean);
     var coins = window.RTF_WALLET ? window.RTF_WALLET.balance() : 0;
     var signedIn = !!(window.RTF_AUTH && window.RTF_AUTH.state && window.RTF_AUTH.state().signedIn);
 
@@ -97,7 +107,7 @@ function pane(host, o){
       return (om[b.id] ? 1 : 0) - (om[a.id] ? 1 : 0) || RARITY_ORDER[a.rarity] - RARITY_ORDER[b.rarity] || a.name.localeCompare(b.name);
     });
     var none = '<button type="button" class="cl-tile cl-none' + (!shown[v.slot] ? ' is-on' : '') + '" data-id="">'
-      + '<span class="cl-sw"></span><span class="cl-n">' + (STARTER[v.slot] && ctx === 'street' ? 'Starter' : 'Nothing') + '</span><span class="cl-p">' + (STARTER[v.slot] && ctx === 'street' ? 'Always yours' : 'Take it off') + '</span></button>';
+      + '<span class="cl-sw"></span><span class="cl-n">' + (CARD_SLOT[v.slot] ? 'House' : STARTER[v.slot] && ctx === 'street' ? 'Starter' : 'Nothing') + '</span><span class="cl-p">' + (CARD_SLOT[v.slot] || (STARTER[v.slot] && ctx === 'street') ? 'Always yours' : 'Take it off') + '</span></button>';
     var tiles = list.map(function(it){
       var own = !!om[it.id], on = shown[v.slot] === it.id;
       var a = it.c[0], b = it.c[1] || it.c[0];
@@ -116,7 +126,7 @@ function pane(host, o){
        player has to see, so the figure and the slots are pinned to the top
        of the sheet while the pieces scroll under them. */
     host.innerHTML = '<div class="cl"><div class="cl-head">'
-      + '<div class="cl-top"><div class="cl-fig"><span class="cl-spot" aria-hidden="true"></span>' + fig + '</div><div class="cl-side">'
+      + '<div class="cl-top"><div class="cl-fig' + (cardNow ? ' cl-figcard' : '') + '"><span class="cl-spot" aria-hidden="true"></span>' + fig + '</div><div class="cl-side">'
       + '<div class="cl-coins">' + (art() ? art().coin('cl-coin') : '') + '<b>' + money(coins) + '</b> coins</div>'
       + '<div class="cl-wear">' + (wearing.length ? wearing.length + ' piece' + (wearing.length === 1 ? '' : 's') + ' on' : (ctx === 'street' ? 'Starter clothes' : 'The plain uniform')) + '</div>'
       + (trying ? '<div class="cl-try"><span>Trying on <b>' + esc(CAT.item(trying.id).name) + '</b></span>' + buyHtml(trying.id, signedIn, coins) + (bought ? '<span class="cl-buynote" role="status">' + (bought === 'coins' ? 'Not enough coins.' : 'That did not go through.') + '</span>' : '') + '<button type="button" class="cl-back">Back to my fit</button></div>' : '')
@@ -216,6 +226,11 @@ var CSS = [
 '.cl-fig img{position:relative;}',
 '.cl-fig img{width:88px;height:auto;image-rendering:pixelated;display:block;}',
 '@media (min-height:760px){.cl-fig img{width:110px;}}',
+'.cl-figcard{padding:6px;line-height:normal;}',
+'.cl-figcard img{width:100%;height:100%;}',
+'.cl-figcard .pc-fig img{height:auto;}',
+'.cl-figcard .pc-card.pc-mini{width:100px;}',
+'@media (min-height:760px){.cl-figcard .pc-card.pc-mini{width:120px;}}',
 '.cl-side{display:flex;flex-direction:column;gap:6px;min-width:0;text-align:left;font:600 12.5px/1.3 var(--k-f-text);color:var(--k-ink-2);}',
 '.cl-coins{display:flex;align-items:center;gap:6px;}',
 '.cl-coin{width:18px;height:18px;image-rendering:pixelated;filter:drop-shadow(0 0 5px rgba(242,194,58,.5));}',
@@ -270,5 +285,7 @@ if (typeof document !== 'undefined' && !document.getElementById('rtf-closet-css'
   var st = document.createElement('style'); st.id = 'rtf-closet-css'; st.textContent = CSS; document.head.appendChild(st);
 }
 
-window.RTF_CLOSET = { API_VERSION: API_VERSION, pane: pane, LABEL: LABEL };
+/* open the closet on a slot (the player card's Change button) */
+function focus(ctx, slot){ ctx = ctx === 'court' ? 'court' : 'street'; if (W && W.slotsOf(ctx).indexOf(slot) >= 0) view[ctx].slot = slot; }
+window.RTF_CLOSET = { API_VERSION: API_VERSION, pane: pane, LABEL: LABEL, focus: focus };
 })();

@@ -99,10 +99,22 @@ function publish(){
     var body = { wearStreet: mem.w.street, wearCourt: mem.w.court }, key = JSON.stringify(body);
     if (key === pubLast) return;
     pubLast = key;
+    /* 139 knew the twelve wearable slots and nothing else, so a loadout
+       carrying an idle, a nameplate or a backdrop was refused WHOLE there,
+       and he went undrawn on every board from the day he picked an idle.
+       140 takes them. Against 139 the same loadout is sent again without
+       them, so the clothes still go up. */
     var r = A.setProfile(body);
-    if (r && r.then) r.then(function(row){ if (!row) pubLast = ''; });
+    if (r && r.then) r.then(function(row){
+      if (row) return;
+      var bare = { wearStreet: wearOnly(body.wearStreet), wearCourt: wearOnly(body.wearCourt) };
+      if (JSON.stringify(bare) === key) { pubLast = ''; return; }
+      var r2 = A.setProfile(bare);
+      if (r2 && r2.then) r2.then(function(row2){ if (!row2) pubLast = ''; });
+    });
   }, 1200);
 }
+function wearOnly(lo){ var out = {}, nw = (CAT && CAT.NOWEAR) || { idle: 1 }; for (var k in lo || {}) if (!nw[k]) out[k] = lo[k]; return out; }
 /* The shelf brought a new copy down (modes-ui.js cloudAdopt): read it again. */
 function reload(){ mem = null; load(); subs.forEach(function(fn){ try { fn(mem); } catch (e) {} }); }
 function onChange(fn){ subs.push(fn); }

@@ -777,6 +777,8 @@
     font-variant-numeric:tabular-nums;color:var(--dim);text-align:right;}
   .bd-ent.top3 .bd-pos{color:var(--gold);}
   .bd-crest{flex:0 0 30px;width:30px;height:32px;display:block;}
+  .bd-crest.has-player{height:30px;cursor:pointer;border-radius:50%;transition:transform .15s;}
+  .bd-crest.has-player:hover,.bd-crest.has-player:focus-visible{transform:scale(1.12);outline:none;}
   .bd-crest svg{width:100%;height:100%;display:block;}
   .bd-crest.guest{opacity:.4;filter:grayscale(1);}
   .bd-who{flex:1;min-width:0;}
@@ -1786,6 +1788,10 @@
   #b-career{border-radius:0;border:0;color:#160b02;background:#ff7a1a;font-weight:800;margin-bottom:6px;
     box-shadow:0 -3px 0 0 #05070d,-3px 0 0 0 #05070d,3px 0 0 0 #05070d,0 3px 0 0 #b04a06,0 6px 0 0 #05070d;}
   #b-career:active{transform:translateY(3px);box-shadow:0 -3px 0 0 #05070d,-3px 0 0 0 #05070d,3px 0 0 0 #05070d,0 3px 0 0 #05070d;}
+  .ch-pcard,.pf-pcard{display:block;width:100%;margin:6px 0 8px;padding:9px 12px;border:2px solid #f2c23a;border-radius:0;background:linear-gradient(180deg,#2a2210,#171206);
+    color:#f2c23a;font:inherit;font-weight:700;letter-spacing:.02em;cursor:pointer;box-shadow:0 3px 0 #05070d;}
+  .ch-pcard[hidden],.pf-pcard[hidden]{display:none;}
+  .ch-pcard:active,.pf-pcard:active{transform:translateY(2px);box-shadow:0 1px 0 #05070d;}
   #b-career:disabled{background:#202a4a;color:#8fa0d6;box-shadow:0 -3px 0 0 #2d3a66,-3px 0 0 0 #2d3a66,3px 0 0 0 #2d3a66,0 3px 0 0 #2d3a66;}
   .ch-cur{display:flex;gap:12px;align-items:center;margin:0 3px 14px;padding:12px;border-radius:0;background:linear-gradient(135deg,var(--c1,#1d2433),rgba(14,19,28,.9) 80%);box-shadow:0 -2px 0 0 #2d3a66,0 2px 0 0 #2d3a66,-2px 0 0 0 #2d3a66,2px 0 0 0 #2d3a66;}
   .ch-cur b{display:block;font-size:16px;font-weight:800;}
@@ -2632,6 +2638,8 @@
       </ul>
       <div class="ch-cur" id="ch-cur" hidden></div>
       <button class="big" id="b-career" disabled>Start your career</button>
+      <!-- his trading card, drawn by card-ui.js, shown once he exists -->
+      <button class="ch-pcard" id="b-pcard" type="button" hidden>Your player card</button>
       <p class="ch-best" id="ch-best" hidden></p>
     </div>
   </section>
@@ -3364,6 +3372,7 @@
          renderIdentity. The jersey is the one piece of the profile you wear, so
          it is at the top and pressing it opens the Locker where it is changed. -->
     <button class="pid" id="pf-id" type="button" aria-label="Open your locker"></button>
+    <button class="pf-pcard" id="pf-pcard" type="button" hidden>Your player card</button>
 
     <!-- THE ACCOUNT, AND IT SITS ABOVE THE CAREER RATHER THAN BEHIND A TAB.
          The career below is this browser's and says so; the account is what
@@ -3488,12 +3497,12 @@
 <script src="career.js?v=48"></script>
 <script src="baller.js?v=24"></script>
 <script src="economy.js?v=2"></script>
-<script src="catalog.js?v=3"></script>
+<script src="catalog.js?v=4"></script>
 <script src="idles.js?v=2"></script>
 <script src="packs.js?v=1"></script>
 <script src="daily.js?v=1"></script>
 <script src="pass.js?v=1"></script>
-<script src="wardrobe.js?v=6"></script>
+<script src="wardrobe.js?v=7"></script>
 <script src="earn.js?v=4"></script>
 <!-- ACCOUNTS AND THE LEADERBOARD. All three are OPTIONAL: if the CDN is blocked
      or either file fails to load, the game runs exactly as it did, with runs
@@ -3503,8 +3512,8 @@
      for it rather than reading window.supabase once: on a repeat visit the data
      comes out of cache in milliseconds while this is still in flight. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="board.js?v=8"></script>
-<script src="auth.js?v=5"></script>
+<script src="board.js?v=9"></script>
+<script src="auth.js?v=6"></script>
 <!-- THE SHELF. cloudsave.js is the transport and is shared with the football and
      college games; cloud.js is this game's own policy about slots, progress and
      what happens when two devices disagree. The transport asks window.RTF_AUTH
@@ -9293,12 +9302,34 @@ function paintBoardJerseys(list, rows){
   if (!B.jerseys || !Object.keys(uids).length) return;
   B.jerseys(Object.keys(uids)).then(function(map){
     if (!map || !list.isConnected) return;
+    /* THE PLAYER, WHERE THERE IS ONE (140): his head and shoulders in his
+       street look, in a ring the colour of his Floor Rep, and a tap opens his
+       card. A row with no player keeps the jersey. Painted a few a frame, so
+       a long board never holds the page up while a hundred men are traced. */
+    var q = [];
     list.querySelectorAll('.bd-crest[data-uid]').forEach(function(el){
       var p = map[el.getAttribute('data-uid')];
       if (!p) return;
       var num = /^\d{1,2}$/.test(String(p.jersey_num || '')) ? p.jersey_num : '';
       el.innerHTML = jerseySvg(p.jersey_club || 'house', num);
+      if (p.player && window.RTF_CARD) q.push([el, p]);
     });
+    (function next(){
+      if (!q.length || !list.isConnected) return;
+      q.splice(0, 3).forEach(function(x){
+        var el = x[0], p = x[1], h = '';
+        try { h = window.RTF_CARD.bust(p); } catch (e) { h = ''; }
+        if (!h) return;
+        el.innerHTML = h;
+        el.classList.add('has-player');
+        el.setAttribute('role', 'button'); el.setAttribute('tabindex', '0');
+        el.setAttribute('aria-label', 'Open this player card');
+        var go = function(e){ e.stopPropagation(); e.preventDefault(); window.RTF_CARD.openFor(p, el.getAttribute('data-name') || ''); };
+        el.addEventListener('click', go);
+        el.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') go(e); });
+      });
+      (window.requestAnimationFrame || setTimeout)(next);
+    })();
   });
 }
 
@@ -9382,7 +9413,7 @@ function paintBoard(){
     if (play && b.champ && b.tag) meta = '<span class="bd-tag">' + BD_TROPHY + esc(b.tag) + '</span>' + (meta ? ' · ' + meta : '');
     var cls = 'bd-ent' + (rank != null && rank <= 3 ? ' top3' : '') + (b.champ ? ' champ' : '') + (b.record ? ' record' : '');
     var crest = r.user_id
-      ? '<span class="bd-crest" data-uid="' + esc(r.user_id) + '">' + jerseySvg('house', '') + '</span>'
+      ? '<span class="bd-crest" data-uid="' + esc(r.user_id) + '" data-name="' + esc(r.display_name || '') + '">' + jerseySvg('house', '') + '</span>'
       : '<span class="bd-crest guest">' + jerseySvg('house', '') + '</span>';
     return '<div class="' + cls + '" data-i="' + i + '">'
       + '<button type="button" class="bd-row' + (mine(r) ? ' me' : '') + '" aria-expanded="false">'
@@ -12061,11 +12092,12 @@ boot();
 <script src="court.js?v=10"></script>
 <script src="ticker.js?v=2"></script>
 <script src="scenes.js?v=18"></script>
-<script src="itemart.js?v=2"></script>
-<script src="closet-ui.js?v=6"></script>
+<script src="itemart.js?v=3"></script>
+<script src="closet-ui.js?v=7"></script>
 <script src="shop-ui.js?v=2"></script>
 <script src="daily-ui.js?v=1"></script>
 <script src="pass-ui.js?v=1"></script>
-<script src="career-ui.js?v=55"></script>
+<script src="card-ui.js?v=1"></script>
+<script src="career-ui.js?v=56"></script>
 </body>
 </html>
