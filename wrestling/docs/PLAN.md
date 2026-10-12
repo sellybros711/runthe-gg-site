@@ -151,6 +151,29 @@ Saves from before C2 hold flags without the words, so those simply quote nothing
 `verify.mjs` sets a flag, opens the event that recalls it, and checks the quote and that no
 flag name reaches the screen. Over 150 careers, 3,976 of 11,818 event plays (a third) quote an earlier choice back.
 
+**Three changes from the playtest review (2026-10-12).**
+
+- **Booked finishes.** The office rolls the finish when it books the match, on the odds the
+  old win chance used (`bookedFinish`), so records and title rates land where they did. The
+  card says "Booked to win" or "Booked to lose", never a percentage. The live match leans
+  toward the booking (`scriptLean` on covers, holds, climbs and ten counts), so it can still
+  go the other way, rarely. The payout reads the match: a great loss (62 and up) raises
+  office trust, a flat win (under 50) lowers it, and a finish that got away costs a little
+  either way. The result screen shows a letter grade (`matchGrade`, the rating and the
+  crowd) and one line on how the night went against the plan. Tape study now buys a better
+  match instead of better odds. "Ask to go over", which had set a flag nothing read, now
+  books the win, and is only offered when you are booked to lose.
+- **Four meters.** The hub leads with Pop, Office trust, Health and Money. The locker room
+  and momentum still feed the game and moved under "Show every stat".
+- **A three step tutorial.** You, the booking, the ring. What the old twelve steps said
+  about Skills, Gear, Roster and Career is a one time tip the first time each screen opens
+  (`FIRST_VISIT`).
+
+Measured over 300 careers after the change (no faults): pro world title 44 (was 42), pro Hall
+33 (27), legend Hall 5 (9), rookie headliner 4 (10). A booked finish lands 92% of the time,
+so a strong wrestler wins a little less and a weak one a little more. At 100 careers per
+difficulty most of that is inside the noise; the headliner drop is worth watching.
+
 Still out: every career wins some title (the indie belt is too easy) and every career has a
 long injury. The simulator now signs up the ladder and its `rotate` policy trains the weakest
 key stat, because a policy that never moves up measures the policy rather than the game.
