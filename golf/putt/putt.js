@@ -2715,8 +2715,17 @@ function openTrail(tid, from){
         requestAnimationFrame(function(){ door.classList.add('in'); setTimeout(function(){ if (!door.isConnected) return; door.classList.add('fill');
           setTimeout(function(){ if (!door.isConnected) return; door.classList.add(open ? 'open' : 'shut');
             setTimeout(function(){ door.classList.remove('in'); setTimeout(function(){ if (door.isConnected) door.remove(); cb(open); }, 380); }, open ? 900 : 1700); }, 1000); }, 400); }); },
-      arrive:function(){ var tp = pload().tours[TR.id]; stopTrail(); if (tp.lv >= to) startLevel(to, tid); else showHub(tid); },
-      skip:function(){ var tp = pload().tours[TR.id]; stopTrail(); if (tp.lv >= to && !(sp.cross && !sp.gateOpen)) startLevel(to, tid); else showHub(tid); },
+      arrive:function(){ var tp = pload().tours[TR.id], sw = S.ov.querySelector('.pp-skipw'); if (sw) sw.remove(); stopTrail(); if (tp.lv >= to) startLevel(to, tid); else showHub(tid); },
+      // Skip keeps its button, and says what it leaves behind first: the same list the map's warning reads, off
+      // the record as it stands now, so anything already picked up on this walk is not named.
+      skip:function(){ var tp = pload().tours[TR.id], play = tp.lv >= to && !(sp.cross && !sp.gateOpen);
+        function leave(){ stopTrail(); if (play) startLevel(to, tid); else showHub(tid); }
+        var left = trailLeft(tid, to); if (!left.length || S.ov.querySelector('.pp-skipw')) return leave();
+        var list = left.length === 1 ? left[0] : left.slice(0, -1).join(', ') + ' and ' + left[left.length - 1];
+        var sh = el('<div class="pp-sheet pp-skipw"><div class="pp-card"><div class="k">SKIP THE TRAIL?</div><div class="t">Bonus rewards</div><div class="m">This trail still has ' + esc(list) + '. Skip it and ' + (left.length > 1 ? 'they are' : 'it is') + ' gone.</div><button class="pt-go pp-wide" data-n>Keep walking</button><button class="pt-bt pp-wide" data-skip>' + (play ? 'Skip to Hole ' + to : 'Skip to the map') + '</button></div></div>');
+        S.ov.appendChild(sh);
+        sh.querySelector('[data-n]').onclick = function(){ sh.remove(); };
+        sh.querySelector('[data-skip]').onclick = function(){ sh.remove(); leave(); }; },
       sfx:function(k){ try{ S.host.sfx && S.host.sfx(k === 'coin' ? 'coin' : k); }catch(e){} }
     });
   }
