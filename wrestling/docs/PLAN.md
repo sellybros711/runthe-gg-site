@@ -115,6 +115,14 @@ mash and promo beat (Timing off); B5 crowd heat as its own number beside the sta
 switch, as Milestone cards off in Help (backstage scenes carry choices, so they always play).
 Still to do: B1 entrances, B6 new match types, B8 supershow cards, the ceremony scenes.
 
+B2 again, in 3D (2026-10-12): the match is played in a real-time Three.js ring
+(`wrestling/ring3d/`): procedural 3D wrestlers built from the same looks, a pose for every
+engine pose, two actor clips for all nine move families, a themed arena with cage and
+hanging prize, and a camera director that cuts low for big moves, lies down for the pin and
+circles the pose. The classic SVG ring is the fallback and a Help switch. Next: entrance
+walk-ins with robes and pyro per theme, promo scenes in the same ring, and more clip
+variants per family so a long match repeats less.
+
 ## Phase C · The story engine
 
 **C11 to C13, first pass (balance), measured over 300 careers.** One difficulty table

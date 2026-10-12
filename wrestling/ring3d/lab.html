@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Ropes 3D Lab</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0b0a10; color: #eee; font: 13px system-ui, sans-serif; }
+  #stage { position: fixed; inset: 0 0 96px 0; overflow: hidden; }
+  #bar { position: fixed; left: 0; right: 0; bottom: 0; height: 96px; overflow: auto; padding: 6px; display: flex; flex-wrap: wrap; gap: 4px; align-content: flex-start; background: #15131c; }
+  button { font: inherit; font-size: 11px; color: #eee; background: #2a2734; border: 1px solid #3c3848; border-radius: 6px; padding: 4px 7px; cursor: pointer; }
+  button.on { background: #e8b33c; color: #1a1408; }
+  #info { position: fixed; top: 6px; left: 8px; font: 11px ui-monospace, monospace; color: #c9c2ae; z-index: 9; text-shadow: 0 1px 2px #000; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="info"></div>
+<div id="bar"></div>
+<script src="../pxwrestler.js?v=4"></script>
+<script type="module">
+import { Stage } from './stage.js?v=1';
+import { allClips } from './moves.js?v=1';
+import { POSES } from './poses.js?v=1';
+
+const THEMES = {
+  gcw: { mat: ['#7a6a52', '#5d4f3c'], apron: ['#8f4a1e', '#43220c'], pad: '#a8602c', rope: '#e2d3ba', glow: 'rgba(168,96,44,.20)', seats: 2, dens: 13, dim: .42, tone: ['#6a5340', '#8a6a4a', '#4a3a2c'], wall: 'linear-gradient(180deg,#1c1512 0%,#221a15 62%,#140f0d 100%)', trim: '' },
+  cwf: { mat: ['#4d5b6e', '#6b7c92'], apron: ['#c0392b', '#4a1410'], pad: '#c0392b', rope: '#ffffff', glow: 'rgba(192,57,43,.30)', seats: 6, dens: 6, dim: .72, tone: ['#5d6b80', '#8d9ab0', '#414d61'], wall: 'linear-gradient(180deg,#0a0d12 0%,#161d28 46%,#090c11 100%)', trim: '' },
+};
+const LOOKS = {
+  me: { v: 2, build: 'athletic', skin: 3, hair: 'short', hc: 1, facial: 'stubble', bottom: 'trunks', boots: 'tall', knees: 'pads', wrists: 'tape', gear: '#2f6fd8', trim: '#f2d27a', mood: 'scowl' },
+  opp: { v: 2, build: 'heavy', skin: 6, hair: 'bald', facial: 'beard', bottom: 'tights', top: 'tank', boots: 'tall', knees: 'pads', gear: '#c6392c', trim: '#1d1d22', mood: 'scowl' },
+  ref: { attire: 'ref', skin: '#d29b6e', hair: '#241a12', hairStyle: 'buzz', boots: 'sneak', build: 'lean' },
+};
+const BUILDS = ['cruiser', 'athletic', 'heavy', 'super', 'giant'];
+const Q = new URLSearchParams(location.search);
+const st = new Stage(document.getElementById('stage'), { quality: Q.get('q') || 'high', manual: Q.has('manual') });
+window.STAGE = st;
+await st.setArena(THEMES.cwf, 'CWF');
+st.look('me', LOOKS.me); st.look('opp', LOOKS.opp); st.look('ref', LOOKS.ref);
+st.show('me', true); st.show('opp', true); st.show('ref', true);
+const W = 760;
+function home() { st.move('me', { x: -122, pose: 'ready' }, 300, W); st.move('opp', { x: 122, pose: 'ready' }, 300, W); st.move('ref', { x: 228, pose: 'refIdle' }, 300, W); }
+home();
+const bar = document.getElementById('bar');
+const btn = (t, f) => { const b = document.createElement('button'); b.textContent = t; b.onclick = f; bar.appendChild(b); return b; };
+let busy = false;
+for (const [fam, v] of allClips()) btn(fam + ':' + v, async () => {
+  if (busy) return; busy = true;
+  const meFirst = Math.random() < 0.5;
+  await st.play(fam, v, meFirst ? 'me' : 'opp', meFirst ? 'opp' : 'me', { hit: (p) => { document.getElementById('info').textContent = fam + ':' + v + ' hit ' + p; }, big: v === 'powerbomb' });
+  await new Promise((r) => setTimeout(r, 600)); home(); await new Promise((r) => setTimeout(r, 700)); busy = false;
+});
+for (const p of Object.keys(POSES)) btn('pose ' + p, () => { st.move('me', { x: -60, pose: p }, 300, W); });
+btn('builds', () => { const b = BUILDS[(BUILDS.indexOf(LOOKS.opp.build) + 1) % 5]; LOOKS.opp.build = b; st.look('opp', LOOKS.opp); st.show('opp', true); home(); });
+btn('gcw', () => st.setArena(THEMES.gcw, 'GCW')); btn('cwf', () => st.setArena(THEMES.cwf, 'CWF'));
+btn('cam pin', () => st.setCamera('pin')); btn('cam match', () => st.setCamera('match')); btn('cam pose', () => st.setCamera('pose'));
+setInterval(() => { document.getElementById('info').textContent += ''; }, 1000);
+window.LAB_READY = true;
+</script>
+</body>
+</html>

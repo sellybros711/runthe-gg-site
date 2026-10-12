@@ -77,6 +77,21 @@ var CAST = {
   mate: { name: function(c){ return c.oldmate; }, role: function(c){ return 'Teammate, ' + c.fromNick; }, outlet: 'team' },
 };
 
+/* Who can stand on the stage when a line is theirs. A suit for the people
+   in offices and on air, the club's kit for a teammate. The rig draws men,
+   so only people the career names from its men's list stand here (the
+   commissioner and the GMs are personName's default), plus the two studio
+   hosts and the play-by-play man, in the studio. `rooms` limits a speaker to
+   the rooms he belongs in: an announcer on the court is a mistake. */
+var SPEAKER = {
+  commish: { pose: 'suit' }, oldgm: { pose: 'suit' }, newgm: { pose: 'suit' },
+  hollis: { pose: 'suit', rooms: { studio: 1 } }, whit: { pose: 'suit', rooms: { studio: 1 } }, vance: { pose: 'suit', rooms: { studio: 1 } },
+  coach: { pose: 'suit', team: 1, real: 1 }, vet: { pose: 'stand', team: 1 }, mate: { pose: 'stand', team: 1 }
+};
+/* A reporter or an agent talking to him, anywhere but the studio, is a shot of
+   him: it is his story, and he is the one being asked. */
+var ASKS_HIM = { kim: 1, bell: 1, sato: 1, greer: 1, agent: 1, vance: 1 };
+
 /* Fan handles, invented, for the feed. */
 var HANDLES = ['@fadeawayfran', '@courtside_carla', '@benchmob_mike', '@splashzone88', '@glasscleaner_t', '@nightcapnina',
   '@bucketsbelow', '@hoopsdad_92', '@and1andy', '@lobcityleah', '@backdoor_bo', '@pumpfakepat'];
@@ -172,7 +187,7 @@ var CSS = [
 /* THE LENS (court.js does the same): the set behind the cast is a little out
    of focus and darker, the furniture in front of them stays sharp, and the
    corners fall off, so the sharp traced figures are the picture */
-'.sc-pix > .sc-pset img{filter:blur(calc(var(--px,4px) * .32)) brightness(.86) saturate(1.08);}',
+'.sc-pix > .sc-pset img{filter:brightness(.8) saturate(1.1);}',
 '.sc-pix::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:3;background:radial-gradient(ellipse 75% 70% at 50% 52%,rgba(3,4,10,0) 55%,rgba(3,4,10,.5) 100%);}',
 '@media (prefers-reduced-motion:reduce){.sc-pix > .sc-pset img{filter:brightness(.86);}}',
 '.sc-pboard{position:absolute;left:50%;transform:translateX(-50%);padding:calc(var(--px,4px)*1.5) calc(var(--px,4px)*3);background:#05070d;color:#ffd36b;font-family:var(--k-f-pixel,"Press Start 2P",monospace);font-size:max(9px,calc(var(--px,4px)*2.2));line-height:1;white-space:nowrap;text-shadow:0 0 6px rgba(255,190,60,.6);',
@@ -232,6 +247,36 @@ function pixRoomHTML(room, c){
     + (FRONT[kind] ? '<div class="sc-front sc-pfront" style="--cut:' + FRONT[kind] + '"><div class="sc-pset"><img class="k-px" alt="" draggable="false"></div></div>' : '')
     + (c.loud ? '<i class="sc-pflash"></i>' : '') + '</div>';
 }
+/* Where the cast stands, and how big. One answer for the size and for the
+   trace: a figure traced at 3 fine pixels a cell and shown at 5 CSS pixels on
+   a 2x screen is resampled by 3.33 and goes soft. So the size is chosen as a
+   whole number of device pixels for every fine pixel, at the finest trace
+   (up to 4 fine pixels a cell) that still fills most of the room there is.
+   A room with a stage (STAND) puts his feet on the stage line, not in the
+   seats in front of it. */
+var STAND = { draft: 0.56 };
+function castPlan(ov){
+  var st = ov.querySelector('.sc-stage'); if (!st) return null;
+  var H = st.clientHeight || 600, set = ov.querySelector('.sc-pset'), hud = ov.querySelector('.sc-hud'), hh = hud ? hud.offsetHeight : 58;
+  var kind = set && set.getAttribute('data-kind'), bottom = null, avail;
+  if (set && STAND[kind]) {
+    var sh = parseFloat(set.style.height) || Math.max(80, H - hh), line = hh + Math.round(sh * STAND[kind]);
+    bottom = Math.max(0, H - line); avail = Math.min(line - hh - 8, 330);
+  } else {
+    var h2 = set ? Math.max(80, H - hh) : H;
+    avail = Math.min(h2 * 0.94 - 58, 330);
+  }
+  avail = Math.max(64, avail);
+  var dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1, best = null;
+  for (var r = 4; r >= 1; r--) {
+    var q = Math.floor(avail * dpr / (64 * r)); if (q < 1) continue;
+    var h = 64 * r * q / dpr;
+    if (!best || (h >= avail * 0.8 && best.h < avail * 0.8) || (h > best.h && !(best.h >= avail * 0.8))) best = { res: r, h: h, w: 44 * r * q / dpr };
+  }
+  if (!best) best = { res: 1, h: 64 / dpr, w: 44 / dpr };
+  best.bottom = bottom;
+  return best;
+}
 /* The set is drawn at the stage's own shape, so a tall phone gets a tall room
    rather than a wide one blown up and cropped. One cell is a whole number of
    pixels, about a hundredth of the short side, close to the sprite's own. */
@@ -259,10 +304,18 @@ function fitPix(ov){
     var fr = ov.querySelector('.sc-pfront .sc-pset');
     if (fr) { fr.querySelector('img').src = set.querySelector('img').src; fr.style.width = set.style.width; fr.style.height = set.style.height; }
   }
-  var imgs = ov.querySelectorAll('.sc-cast img,.sc-cast canvas');
-  var top = 58, room = Math.max(64, Math.min(H * 0.94 - top, 330));
-  var ks = Math.max(1, Math.floor(room / 64));
-  for (var i = 0; i < imgs.length; i++) { imgs[i].style.height = (64 * ks) + 'px'; imgs[i].style.width = (44 * ks) + 'px'; imgs[i].style.maxHeight = 'none'; }
+  var imgs = ov.querySelectorAll('.sc-cast img,.sc-cast canvas'), plan = castPlan(ov), cast = ov.querySelector('.sc-cast');
+  if (!plan) return;
+  if (cast) cast.style.bottom = plan.bottom == null ? '' : plan.bottom + 'px';
+  /* A figure kept across beats was traced for the room it was drawn in. If
+     this room's plan wants another trace, it is sized on its own trace's
+     whole pixels instead, a little smaller rather than soft. */
+  var dpr = window.devicePixelRatio || 1;
+  for (var i = 0; i < imgs.length; i++) {
+    var r = imgs[i].width ? imgs[i].width / 44 : plan.res, h = plan.h, w = plan.w;
+    if (imgs[i].tagName === 'CANVAS' && r !== plan.res) { var q = Math.max(1, Math.floor(plan.h * dpr / (64 * r))); h = 64 * r * q / dpr; w = 44 * r * q / dpr; }
+    imgs[i].style.height = h + 'px'; imgs[i].style.width = w + 'px'; imgs[i].style.maxHeight = 'none';
+  }
 }
 function roomHTML(room, c){
   if (K && PIX_ROOM[room]) return pixRoomHTML(room, c);
@@ -961,31 +1014,46 @@ function play(beats, ctx, opts){
   function setCast(bt){
     var old = bt.club === 'from' && ctx.fc1;
     var lookCtx = wearCtx(bt.room || roomName, bt.pose);
-    var k = (bt.pic || '') + '|' + (bt.pose || '') + '|' + (old ? 'from' : '') + '|' + lookCtx;
+    /* A line with nobody on the stage is said by somebody: the commissioner,
+       a reporter, an agent, a GM. A console cutscene shows the person
+       talking, so the speaker stands there in the same 3D pixel style. All of
+       them are invented. The coach is a real person, so he is drawn faceless,
+       the same as every real man on the court. Family and the narrator stay
+       off the stage. */
+    var rm = bt.room || roomName, sd = SPEAKER[bt.who];
+    var spk = !bt.pic && !bt.shot && sd && (!sd.rooms || sd.rooms[rm]) ? bt.who : '';
+    var pic = bt.pic || (!spk && !bt.shot && ASKS_HIM[bt.who] && rm !== 'studio' ? 'me' : '');
+    var k = (pic || (spk ? 'spk:' + spk : '')) + '|' + (bt.pose || '') + '|' + (old ? 'from' : '') + '|' + lookCtx;
     var el = $('.sc-cast');
     if (k === castKey) {
       var imgs = el.querySelectorAll('img,canvas');
-      for (var n = 0; n < imgs.length; n++) imgs[n].classList.toggle('dim', bt.who !== 'me' && bt.pic === 'both' && n === 0);
+      for (var n = 0; n < imgs.length; n++) imgs[n].classList.toggle('dim', bt.who !== 'me' && pic === 'both' && n === 0);
       return;
     }
     /* the first beat of a scene walks him on; later beats only change pose */
-    var enter = !walked && !!B.live && bt.pic === 'me';
-    if (bt.pic) walked = true;
+    var enter = !walked && !!B.live && pic === 'me';
+    if (pic) walked = true;
     castKey = k;
     var html = '';
     /* the figures on the stage are live (baller.js): the ball is dribbled,
        the chest breathes a pixel, the eyes blink. A cached baller.js older
        than live() still draws them the old way. */
-    var fig = B.live || B.img;
-    var me = function(){ return fig(ctx.look, dressMe({ c1: old ? ctx.fc1 : ctx.c1, c2: old ? ctx.fc2 : ctx.c2, num: ctx.num, pose: bt.pose || 'stand', age: ctx.age, scale: 6, enter: enter }, lookCtx), enter ? '' : 'in'); };
+    var fig = B.live || B.img, cres = (castPlan(ov) || { res: 2 }).res;
+    var me = function(){ return fig(ctx.look, dressMe({ c1: old ? ctx.fc1 : ctx.c1, c2: old ? ctx.fc2 : ctx.c2, num: ctx.num, pose: bt.pose || 'stand', age: ctx.age, scale: 6, res: cres, enter: enter }, lookCtx), enter ? '' : 'in'); };
     var rv = function(){
       var r = ctx.rival, last = r && r.seasons && r.seasons[r.seasons.length - 1];
       var k2 = last && E.clubSkin ? E.clubSkin(last.team) : { primary: '#2b3242', secondary: '#c9ccd6' };
-      return fig(B.lookFor(r ? r.name : 'rival'), { c1: k2.primary, c2: k2.secondary, num: r ? (B.hash(r.name) % 99) : 0, pose: bt.pose || 'stand', scale: 6, enter: enter }, enter ? '' : 'in');
+      return fig(B.lookFor(r ? r.name : 'rival'), { c1: k2.primary, c2: k2.secondary, num: r ? (B.hash(r.name) % 99) : 0, pose: bt.pose || 'stand', scale: 6, res: cres, enter: enter }, enter ? '' : 'in');
     };
-    if (bt.pic === 'me') html = me();
-    else if (bt.pic === 'rival') html = rv();
-    else if (bt.pic === 'both') html = rv() + me();
+    var sp = function(){
+      var d = SPEAKER[spk], w = CAST[spk], nm = T(w.name, ctx) || spk;
+      var team = d.team, c1 = team ? (old ? ctx.fc1 : ctx.c1) : (OUTLETS[w.outlet] || OUTLETS.night).c, c2 = team ? (old ? ctx.fc2 : ctx.c2) : '#11141f';
+      return fig(B.lookFor('speaker:' + nm), { c1: c1, c2: c2, num: B.hash(nm) % 60 + 1, pose: d.pose, faceless: !!d.real, scale: 6, res: cres }, 'in');
+    };
+    if (spk) html = sp();
+    else if (pic === 'me') html = me();
+    else if (pic === 'rival') html = rv();
+    else if (pic === 'both') html = rv() + me();
     el.innerHTML = html;
     fitPix(ov);
   }

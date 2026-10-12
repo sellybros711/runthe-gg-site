@@ -5910,6 +5910,62 @@ screen with a direct `h2` needs a line in `SCREEN_ICO`, and the verify section a
 A transform left filling `forwards` on a screen makes it the containing block for anything
 fixed inside it, and the stagger would then move overlays that have nothing to do with it.
 
+### The match is played in a real-time 3D ring
+
+```
+node wrestling/ring3d/check.mjs      poses, clips, builds, a real match, and both fallbacks
+wrestling/ring3d/lab.html            every clip and pose on buttons (?manual drives frames by hand)
+```
+
+`wrestling/ring3d/` is a Three.js stage (0.180.0, vendored at
+`assets/vendor/three-0.180.0/`, the version in the path so an upgrade is a new folder and
+never a stale cache). It draws the wrestlers as small 3D models at about 280 lines, blown up
+with `image-rendering:pixelated`, toon shaded with an inverted hull outline, so it is the
+game's pixel look given depth rather than a different game.
+
+| file | what it is |
+|---|---|
+| `rig.js` | one procedural body per look, built from `RTR_PX` looks, baked to one skinned mesh |
+| `poses.js` | a pose for every name the match engine asks for, plus the referee's |
+| `moves.js` | two actor clips for all nine move families, picked by the move's name |
+| `arena.js` | the building, themed off the promotion; cage and hanging prize |
+| `stage.js` | the scene, the camera director, the clip player, sparks and dust |
+| `boot.js` | the door: `window.RTR_3D`, because `index.html` is a classic script |
+
+**THE ENGINE STILL DECIDES EVERYTHING.** The 3D ring is a renderer. `fmv`, `poseSet` and
+`impact` in `index.html` forward to it, and `exchange` and `spot` await `R3D.play` where
+they used to await a CHOREO routine. A clip calls `hit` at its contact frame, which is when
+the engine applies damage, so a clip that never calls it is a move that never lands.
+
+**A device that cannot draw WebGL plays the classic SVG ring, exactly as before**, and so
+does `rtr_ring3d = '0'` (the 3D ring switch in Help) and `?ring2d`. The guard plays a match
+with the whole folder blocked, because a stage that throws on boot leaves the classic ring,
+which renders perfectly, and a regression there would look like a working game.
+
+**A MOVE KEEPS WALL CLOCK TIME.** The match engine's waits are timers, so a clip running at
+render speed falls behind them on slow frames. The stage clamps each frame at 0.05 s for the
+camera and the sparks only. Clamped everywhere, a Last Man Standing match in a software
+WebGL browser ran past the suite's minute and never reached a result.
+
+**A FOOT IS DRAWN AT ITS ANKLE TARGET, so the target is bounded twice.** It never goes
+through the canvas and never reaches past the leg. Unbounded, a blend from lying to standing
+pointed the pelvis frame's down at the floor from a pelvis a foot off it, and ten clips put a
+foot two feet under the mat. The guard measures every joint of every clip, frame by frame.
+
+**A PITCH LERPS THE SHORT WAY ONLY IF YOU WRITE IT THAT WAY.** The moonsault lands at
+`-1.5 * PI`, which is the splash pose's `+PI / 2`, and a hold key reading the plain splash
+pose turned the body a full circle through the canvas. A key after a flip repeats the flip's
+angle.
+
+**Every pose name the engine uses must be in `POSES`.** An unknown name falls back to the
+ready stance, so a pin would be two men standing. The guard reads the names out of
+`index.html` and asserts the reader found them.
+
+**The modules version each other**, `stage.js` importing `./rig.js?v=1`. Change a file and
+bump the number where it is imported, all the way up to `boot.js?v=` in `index.html`;
+`check-cachebust.mjs` now follows module imports from every script it records, so it holds
+the chain.
+
 The game is unlisted: not linked from the homepage, nav or sitemap, and
 noindexed. Keep it that way unless asked. **The og tags do not change that.** A
 robots tag tells a crawler not to index and does nothing to a chat app unfurling
@@ -12581,8 +12637,42 @@ byte what it was (check-sprite: 960 compared, 0 changed).
   never resampled. Reduced motion gets no camera move.
 - **Shadows are soft ellipses** and a moving ball leaves a short trail. The call is
   a broadcast strip in the club's colour.
-- **A scene's room is blurred the same way** (`.sc-pix > .sc-pset img`), so
-  cutscenes and moments share one lens.
+- **A scene's room is NOT blurred, and that reverses the first version.** Blurring
+  it like the court's stands looked broken in a screenshot: on the court the blur
+  sits behind a sharp floor, but in a scene the room IS the shot, and the draft stage
+  turned to mush. The room is darkened a little and vignetted, never blurred.
+  check-career 7b reads the computed filter on every beat.
+
+#### A console cutscene shows the person talking
+
+```
+node hoops/check-career.mjs      7b: nothing blurred, every figure crisp, the commissioner on the stage
+node hoops/check-moments.mjs     section 12: a tall phone spends its spare rows on floor
+```
+
+Found by looking at screenshots, after every check was green. Three faults, each
+silent:
+
+- **Most cutscene lines were said by nobody on screen.** A beat with no `pic` drew an
+  empty room, so draft night was a dark stage and a line from the commissioner. Now
+  `SPEAKER` in scenes.js stands the speaker there in the 3D pixel style: the
+  commissioner and the GMs (named off career.js's men's list, `personName`'s
+  default), the studio hosts and the play-by-play man in the studio only, a
+  teammate in the club's kit, and the coach faceless because he is real. **The rig
+  draws men**, so the reporters and the agents (whose names come from both lists)
+  are never drawn: their line is a shot of the player (`ASKS_HIM`), because he is
+  the one being asked. Family, the narrator and the timeline stay off the stage.
+- **The cast was resampled by 3.33 and went soft.** `castPlan` picks the size and the
+  trace together: every fine pixel is a whole number of device pixels, at the finest
+  trace that fills most of the room. A figure kept across beats keeps its own trace's
+  whole pixels when the room changes rather than being stretched. A room with a stage
+  (`STAND`, the draft at 0.56) puts the feet on the stage line, not in the seats.
+- **Half a tall phone was blurred crowd.** The court picks its cell off the width on a
+  portrait phone, so the spare rows went to the stands above a small man. On a tall
+  frame (`ch > cw * 0.9`) the floor line moves up to about a third, so the spare rows
+  are floor around the play. A landscape screen keeps 0.46: it has spare rows only
+  because of the meter, and the first version of this caught it too, which the
+  section 12 guard found.
 
 #### The rebuild of the court: the game is the team's, the moment is yours
 

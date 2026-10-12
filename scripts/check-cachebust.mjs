@@ -133,6 +133,43 @@ for (const page of pages(ROOT)) {
   }
 }
 
+/* AND A MODULE THAT IMPORTS ANOTHER IS A PAGE TOO.
+ *
+ * The walk above reads pages, so wrestling/ring3d/stage.js reaching rig.js?v=1 was
+ * seen by nothing: change rig.js, leave its number, and a returning visitor runs the
+ * new stage against the rig they already had. Bumping the number inside stage.js
+ * changes stage.js, which this record then asks to be bumped where boot.js imports it,
+ * which changes boot.js, which the page asks for. So the whole chain is held from the
+ * leaf to the page, one record at a time, with nobody having to remember it.
+ *
+ * It reads static imports and a dynamic import('./x.js?v=N'), from every recorded .js
+ * file, and from each file THOSE reach, once each. */
+const DYN = /\bimport\(\s*['"]\.?\/?([A-Za-z0-9_.-]+\.js)\?v=([^'"]+)['"]\s*\)/g;
+{
+  const queue = [], seen = new Set();
+  for (const [page, scripts] of Object.entries(found)) {
+    for (const name of Object.keys(scripts)) {
+      if (!name.endsWith('.js')) continue;
+      queue.push(name.startsWith('/') ? path.join(ROOT, name.slice(1)) : path.join(ROOT, path.dirname(page), name));
+    }
+  }
+  while (queue.length) {
+    const file = path.normalize(queue.shift());
+    if (seen.has(file) || !fs.existsSync(file)) continue;
+    seen.add(file);
+    const src = fs.readFileSync(file, 'utf8');
+    const rel = path.relative(ROOT, file);
+    for (const re of [MOD, DYN]) {
+      for (const m of src.matchAll(re)) {
+        const dep = path.join(path.dirname(file), m[1]);
+        if (!fs.existsSync(dep)) continue;
+        (found[rel] ??= {})[m[1]] = { v: m[2], sha: sha(dep) };
+        queue.push(dep);
+      }
+    }
+  }
+}
+
 /* ONE FILE, ONE VERSION, ACROSS EVERY PAGE THAT ASKS FOR IT.
  *
  * The manifest above is per page, which is right for a sibling script but blind to the

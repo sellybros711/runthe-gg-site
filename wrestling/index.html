@@ -614,6 +614,14 @@
   .ringback svg,.ringfront svg{width:100%;height:100%;display:block;}
   .arena .ringback,.arena .ringfront{height:78%;}
   .arena .ringback{z-index:1;} .arena .ringfront{z-index:4;}
+  /* THE 3D RING (ring3d/). When it draws, the SVG ring, the DOM wrestlers and the
+     DOM sparks stand down; the words over the ring (callouts, the count, the
+     entrance banner, damage numbers) stay, because they are the broadcast's. */
+  .arena.r3d > .crowd,.arena.r3d > .floor,.arena.r3d > .venue,.arena.r3d > .ringback,.arena.r3d > .ringfront,
+  .arena.r3d > .cageback,.arena.r3d > .cagelayer,.arena.r3d > .hangprize,.arena.r3d > .fighter,.arena.r3d > .pyro,.arena.r3d > .matwave,
+  .arena.r3d .fxlayer .ring,.arena.r3d .fxlayer .spark,.arena.r3d .fxlayer .pow,.arena.r3d .fxlayer .dust,.arena.r3d .fxlayer .speed{visibility:hidden!important;}
+  .arena.r3d.shake{animation:none;}
+  .arena.r3d{background:#0b0a10;}
   /* ---- the building: rig, beams, flashes, the screen (see venueHTML) ---- */
   .arena,.homering{container-type:inline-size;}
   .venue{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
@@ -2409,6 +2417,7 @@
 <script src="cosmetics.js?v=5"></script>
 <script src="world.js?v=5"></script>
 <script src="pxwrestler.js?v=4"></script>
+<script type="module" src="ring3d/boot.js?v=1"></script>
 <script>
 "use strict";
 /* ============================================================
@@ -7325,10 +7334,14 @@ function openRules(i){
    shown. Milestone cards off stops the full screen spotlight; every milestone
    is still written to the inbox and the log, so nothing is lost but the pause. */
 function setPref(k){ G.prefs=G.prefs||{}; G.prefs[k]=!G.prefs[k]; syncTimingBtn(); try{ save(); }catch(_){} openHelp(); }
+/* The 3D ring is a device setting, like the graphics style used to be: it is
+   about the screen in front of you, so it lives in local storage and not in the
+   save. It takes effect at the next match, never under one already running. */
+function set3D(){ if(!window.RTR_3D) return; RTR_3D.set(!RTR_3D.on()); openHelp(); }
 function openHelp(){
   const p=(G&&G.prefs)||{};
   const row=(k,label,on)=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:8px;"><span>${label}</span><button class="ghost" style="min-height:44px;padding:6px 14px;" onclick="setPref('${k}')">${on?'On':'Off'}</button></div>`;
-  modal('Help', `<p class="log">New here, or want the details?</p>${G&&G.car?`<div class="log" style="margin-top:6px;"><b>Settings</b>${row('untimed','Timing spots',!p.untimed)}${row('noMoments','Milestone cards',!p.noMoments)}</div>`:''}`,
+  modal('Help', `<p class="log">New here, or want the details?</p>${G&&G.car?`<div class="log" style="margin-top:6px;"><b>Settings</b>${row('untimed','Timing spots',!p.untimed)}${row('noMoments','Milestone cards',!p.noMoments)}${window.RTR_3D&&RTR_3D.ok?`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:8px;"><span>3D ring</span><button class="ghost" style="min-height:44px;padding:6px 14px;" onclick="set3D()">${RTR_3D.on()?'On':'Off'}</button></div>`:''}</div>`:''}`,
     [{label:'Replay walkthrough',cls:'ghost',fn:()=>{closeModal(); startTour('hub');}},
      {label:'Open the Rulebook',fn:()=>{closeModal(); openRules(0);}}]);
 }
@@ -7581,6 +7594,7 @@ function ringDressHTML(T,pid){
 function dressArena(root,pid){
   if(!root) return;
   const T=arenaOf(pid);
+  if(root.id==='arena' && ST.r3d && R3D){ const pr=PROMOS.find(p=>p.id===pid); R3D.setArena(T,(pr&&pr.short)||String(pid||'').toUpperCase()); }
   const back=root.querySelector('.ringback'), front=root.querySelector('.ringfront');
   if(back) back.innerHTML=ringSVG(false,T)+ringDressHTML(T,pid);
   { const old=root.querySelector(':scope > .venue'); if(old) old.remove();
@@ -9498,6 +9512,7 @@ function setBar(id,pct){ const el=$(id); el.style.width=clamp(pct)+'%';
   const lag=el.parentNode&&el.parentNode.querySelector('.lag'); if(lag) lag.style.width=clamp(pct)+'%';
   el.classList.toggle('low',pct<=45&&pct>20); el.classList.toggle('crit',pct<=20); }
 function setMom(){ const m=MS.mom; // -100..100
+  if(ST.r3d&&R3D) R3D.setMood({heat:Math.min(1,0.3+Math.abs(m)/180+(MS.stretch?0.25:0))});
   $('momMe').style.width=(m>0?m/2:0)+'%'; $('momOpp').style.width=(m<0?-m/2:0)+'%'; }
 async function callout(t){ const c=$('fCall'); c.textContent=t; c.classList.remove('show'); void c.offsetWidth; c.classList.add('show'); await sleep(520); }
 /* Sound. Small procedural cues via Web Audio: a bell, a pop, a boo, an impact.
@@ -9649,8 +9664,10 @@ async function playEntrance(nameEl, themeText, nameText, nickText){
   // the lights go to work for an entrance, and anybody with music gets pyro
   const ar=$('arena');
   if(ar){ ar.classList.add('entering'); if(!/lights out/.test(themeText||'')) pyro(ar); }
+  if(ST.r3d&&R3D){ R3D.setMood({entering:true}); R3D.setCamera('entrance'); if(!/lights out/.test(themeText||'')) R3D.pyro(); }
   await sleep(1000);
   el.classList.remove('show'); if(ar) ar.classList.remove('entering'); await sleep(220);
+  if(ST.r3d&&R3D){ R3D.setMood({entering:false}); R3D.setCamera('match'); }
 }
 // two fountains of sparks off the near posts. Cosmetic, and gone in a second.
 function pyro(ar){
@@ -9695,7 +9712,7 @@ async function playVideoPackage(o){
   await sleep(1800);
   el.classList.remove('show'); await sleep(320);
 }
-function shake(){ const a=$('arena'); a.classList.remove('shake'); void a.offsetWidth; a.classList.add('shake'); setTimeout(()=>a.classList.remove('shake'),340); }
+function shake(){ if(ST.r3d&&R3D) R3D.shake(0.7); const a=$('arena'); a.classList.remove('shake'); void a.offsetWidth; a.classList.add('shake'); setTimeout(()=>a.classList.remove('shake'),340); }
 async function flashScreen(){ const f=document.createElement('div'); f.className='flash go'; $('arena').appendChild(f); setTimeout(()=>f.remove(),320); }
 
 /* ------------------------------------------------------------------
@@ -9743,6 +9760,8 @@ function stageInit(arenaId){
   if(FIG.extra){ FIG.extra.home=Math.round(ST.W*0.62); FIG.extra.x=FIG.extra.home; }
   const _ar=$(arenaId||'arena'); if(_ar) _ar.classList.remove('wide');
   FIG.ref.home=Math.round(ST.W*0.30);           // out of the way until he is needed
+  ST.r3d = r3dWanted(arenaId) && r3dBegin();
+  if(!ST.r3d && !PROMO) r3dEnd();
   figLook('ref',REF_LOOK); poseSet('ref','refIdle');
   fmv('ref',{fwd:0,up:0,rot:0,sc:0.86},0);
 }
@@ -9758,16 +9777,20 @@ function refDrift(){
   const side=mid<0?1:-1;
   refTo(mid+side*Math.round(ST.W*0.20),'refWatch',600);
 }
-function figLook(k,L){ const f=FIG[k]; f.look=L; f.pose=null; poseSet(k,'ready'); fmv(k,{fwd:0,up:0,rot:0,sc:1},0); }
+function figLook(k,L){ const f=FIG[k]; f.look=L; f.pose=null;
+  if(r3dFig(k)){ R3D.look(k,L); R3D.show(k,k!=='extra'); }
+  poseSet(k,'ready'); fmv(k,{fwd:0,up:0,rot:0,sc:1},0); }
 function poseSet(k,name,force){ const f=FIG[k]; if(f.pose===name && !force) return;
-  f.pose=name; f.inner.innerHTML=wrestlerSVG(f.look,{pose:name,frame:'action',belt:f.belt||null}); }
+  f.pose=name;
+  if(ST.r3d){ if(!R3D_FMV) r3dMove(k,f,160); return; }   // nothing on screen reads the DOM sprite
+  f.inner.innerHTML=wrestlerSVG(f.look,{pose:name,frame:'action',belt:f.belt||null}); }
 // A champion walks out with it and celebrates with it. Nobody wrestles in one,
 // so the stage carries the belt as figure state and the bell takes it off.
-function figBelt(k,b){ const f=FIG[k]; if(!f) return; f.belt=b||null; poseSet(k, f.pose||'ready', true); }
+function figBelt(k,b){ const f=FIG[k]; if(!f) return; f.belt=b||null; if(r3dFig(k)) R3D.belt(k,r3dBelt(f.belt)); poseSet(k, f.pose||'ready', true); }
 function atX(k){ return FIG[k].x; }
 function fmv(k,o,ms){
   const f=FIG[k]; if(!f||f.x==null) return;   // a stale call from a finished match
-  if(o.pose) poseSet(k,o.pose);
+  R3D_FMV=true; if(o.pose) poseSet(k,o.pose); R3D_FMV=false;
   if(o.fwd!==undefined) f.x=f.home+f.dir*o.fwd;
   if(o.x!==undefined) f.x=o.x;
   if(o.up!==undefined) f.up=o.up;
@@ -9775,10 +9798,39 @@ function fmv(k,o,ms){
   if(o.sc!==undefined) f.sc=o.sc;
   f.el.style.transitionDuration=Math.max(0,(ms===undefined?150:ms))/FIGHT_SPEED+'ms';
   f.el.style.transform=`translate(${f.x.toFixed(1)}px,${(-f.up).toFixed(1)}px) scaleX(${f.dir}) rotate(${f.rot}deg) scale(${f.sc.toFixed(3)})`;
+  r3dMove(k,f,ms);
 }
 function busy(on){ ['me','opp','ref','extra'].forEach(k=>FIG[k]&&FIG[k].el.classList.toggle('busy',!!on)); }
 function hitFlash(k,ms){ const f=FIG[k]; f.el.classList.add('hitflash');
   setTimeout(()=>f.el.classList.remove('hitflash'),(ms||150)/FIGHT_SPEED); }
+
+/* ------------------------------------------------------------------
+   THE 3D RING (wrestling/ring3d/)
+   When the device can draw WebGL, the fight arena is a real-time 3D ring and
+   every call above (figLook, poseSet, fmv, figBelt) is answered there as well.
+   The DOM figures keep their state, because every routine reads it (atX, the
+   dir a figure faces, whether the extra is on), and simply are not drawn.
+   exchange() hands a whole move to the 3D ring, which plays both bodies and
+   calls the engine's own hit() on the frame the body lands. Without WebGL, or
+   if the module never arrives, ST.r3d stays false and nothing here runs.
+   ------------------------------------------------------------------ */
+let R3D=null, R3D_FMV=false;
+function r3dWanted(arenaId){ return (arenaId||'arena')==='arena' && !!(window.RTR_3D && RTR_3D.on()); }
+function r3dBegin(){
+  const A=$('arena'); if(!A) return false;
+  try{ if(!R3D) R3D=RTR_3D.make(A); }catch(e){ console.warn('ring3d',e); R3D=null; return false; }
+  A.classList.add('r3d'); R3D.speed=FIGHT_SPEED; R3D.setWide(false); R3D.setCamera('match');
+  ['me','opp','ref','extra'].forEach(k=>R3D.show(k,false));
+  return true;
+}
+function r3dEnd(){ const A=$('arena'); if(A) A.classList.remove('r3d'); ST.r3d=false; }
+function r3dFig(k){ return ST.r3d && R3D && (k==='me'||k==='opp'||k==='ref'||k==='extra'); }
+function r3dMove(k,f,ms){
+  if(!r3dFig(k)) return;
+  R3D.speed=FIGHT_SPEED;
+  R3D.move(k,{pose:f.pose,x:f.x,up:f.up,rot:f.rot,sc:f.sc,wide:!!(MS&&MS.wide)},ms===undefined?150:ms,ST.W);
+}
+function r3dBelt(b){ return b ? (b.carry==='shoulder'?'shoulder':'waist') : null; }
 
 // ---- effects, all in stage pixels ----
 function fxEl(cls,x,topPct,life){ const d=document.createElement('div'); d.className=cls;
@@ -9787,6 +9839,7 @@ function fxEl(cls,x,topPct,life){ const d=document.createElement('div'); d.class
 function burst(x,txt){ const d=fxEl('burst',x,26,700); d.textContent=txt; d.style.marginLeft='-70px'; d.style.width='140px'; d.style.textAlign='center'; }
 function dmgNum(x,n){ const d=fxEl('dmgnum',x+(rnd()*14-7),30+rnd()*8,900); d.textContent='-'+n; }
 function impact(x,topPct,power){
+  if(ST.r3d&&R3D&&!R3D.job) R3D.impactX(x/ST.W,power);
   fxEl('ring',x,topPct,500);
   if(power>=2){
     // a big one: a starburst on the contact, and the house lights jump with the crowd
@@ -9798,7 +9851,7 @@ function impact(x,topPct,power){
     d.style.setProperty('--dx',(Math.cos(a)*r*(0.6+rnd()*0.7)).toFixed(0)+'px');
     d.style.setProperty('--dy',(Math.sin(a)*r*(0.6+rnd()*0.7)).toFixed(0)+'px'); }
 }
-function dustAt(k){ const x=atX(k);
+function dustAt(k){ if(r3dFig(k)) R3D.dustFig(k); const x=atX(k);
   for(let i=0;i<3;i++){ const d=fxEl('dust',x+(i-1)*26,90,700); d.style.width=(26+i*8)+'px'; d.style.animationDelay=(i*40)+'ms'; } }
 function matWave(k){ const w=document.createElement('div'); w.className='matwave';
   w.style.setProperty('--mx',`calc(50% + ${Math.round(atX(k))}px)`);
@@ -9951,7 +10004,8 @@ async function exchange(byMe, mvName, dmg, momShift, tag, cat){
   }};
   let key = cat||'strike';
   if(key==='strike' && (dmg>=25 || rnd()<0.34)) key='runner';
-  await (CHOREO[key]||chStrike)(A,D,ctx);
+  if(ST.r3d && R3D) await R3D.play(key,mvName,A,D,{hit:ctx.hit,big:ctx.big,finisher:tag==='FINISHER!'});
+  else await (CHOREO[key]||chStrike)(A,D,ctx);
   apply();
   await settle(280);
 }
@@ -9962,7 +10016,8 @@ async function spot(key,byMe,tag,power){
   busy(true);
   const ctx={ big:power>=2, hit:(p,quiet)=>{ const x=atX(D);
     impact(x+FIG[D].dir*8,34,p); if(p>=2&&!quiet&&tag) burst(x,tag); } };
-  await (CHOREO[key]||chStrike)(A,D,ctx);
+  if(ST.r3d && R3D) await R3D.play(key,tag||key,A,D,{hit:ctx.hit,big:ctx.big,finisher:tag==='FINISH!'});
+  else await (CHOREO[key]||chStrike)(A,D,ctx);
   await settle(260);
 }
 async function spotEscape(byMe){          // they slide out the back of your finish
@@ -10046,6 +10101,7 @@ const nmOf=k=>k==='me'?MS.me.name:k==='opp'?MS.opp.name:(FIG.extra&&FIG.extra.na
 
 /* ---- the camera ---- */
 function cameraWide(on){
+  if(ST.r3d&&R3D) R3D.setWide(!!on);
   const a=$('arena'); if(a) a.classList.toggle('wide',!!on);
   if(on) trace('wide');
   if(MS) MS.wide=!!on;
@@ -10076,6 +10132,7 @@ function extraShow(look, side, pose, name){
   const f=FIG.extra; if(!f) return null;
   f.look=look||oppLook('x',name||'x'); f.pose=null; f.name=name||''; trace('extra');
   f.dir = side<0 ? 1 : -1;                     // faces the ring
+  if(r3dFig('extra')){ R3D.look('extra',f.look); R3D.show('extra',true); }
   poseSet('extra', pose||'run');
   f.el.classList.add('on');
   fmv('extra',{x:Math.round(side*ST.W*0.62),up:0,rot:0,sc:(MS&&MS.wide)?0.74:1},0);
@@ -10084,6 +10141,7 @@ function extraShow(look, side, pose, name){
 function extraHide(){
   const f=FIG.extra; if(!f) return;
   f.el.classList.remove('on','up','glow','busy');
+  if(r3dFig('extra')) R3D.show('extra',false);
   fmv('extra',{x:Math.round((f.dir<0?1:-1)*ST.W*0.62),up:0,rot:0},0);
 }
 function extraLookFor(id,name){ const ch=id?charById(id):null; return (ch&&ch.look)||oppLook(id,name); }
@@ -11090,6 +11148,7 @@ async function startFight(o){
     _arena.classList.toggle('cage', o.stip==='cage'||o.stip==='chamber');
     const _hangStip = o.stip==='ladder'||o.stip==='mitb'||o.stip==='tlc';
     _arena.classList.toggle('hang', _hangStip);
+    if(ST.r3d&&R3D){ R3D.setCage(o.stip==='cage'||o.stip==='chamber'); R3D.setPrize(_hangStip?(o.stip==='mitb'?'case':'belt'):null); }
     const _hg=$('fHang');
     if(_hg && _hangStip){
       const cable=`<div style="width:2px;height:34px;background:linear-gradient(#777,#3a3a40);margin:0 auto;"></div>`;

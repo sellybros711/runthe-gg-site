@@ -2601,8 +2601,8 @@
       "sha": "fbf8ac8bab981947"
     },
     "../court.js": {
-      "v": "7",
-      "sha": "1bbdd9b0383b5f98"
+      "v": "9",
+      "sha": "d2d666cb28da001f"
     },
     "../ticker.js": {
       "v": "2",
@@ -2703,16 +2703,16 @@
       "sha": "fbf8ac8bab981947"
     },
     "court.js": {
-      "v": "11",
-      "sha": "1bbdd9b0383b5f98"
+      "v": "13",
+      "sha": "d2d666cb28da001f"
     },
     "ticker.js": {
       "v": "2",
       "sha": "36759d12852558b2"
     },
     "scenes.js": {
-      "v": "19",
-      "sha": "bfb13608946a9502"
+      "v": "21",
+      "sha": "3eaa30c112aca682"
     },
     "itemart.js": {
       "v": "3",
@@ -2881,6 +2881,92 @@
     "pxwrestler.js": {
       "v": "4",
       "sha": "5fa1f4cc2423250e"
+    },
+    "ring3d/boot.js": {
+      "v": "1",
+      "sha": "f301ccdc1880e0c9"
+    }
+  },
+  "wrestling/ring3d/lab.html": {
+    "../pxwrestler.js": {
+      "v": "4",
+      "sha": "5fa1f4cc2423250e"
+    },
+    "stage.js": {
+      "v": "1",
+      "sha": "b532a11c51f75b4d"
+    },
+    "moves.js": {
+      "v": "1",
+      "sha": "74f203102d21dcc3"
+    },
+    "poses.js": {
+      "v": "1",
+      "sha": "cc3b1662c7b56f34"
+    }
+  },
+  "mythiball/proto3d/main.js": {
+    "rig.js": {
+      "v": "2",
+      "sha": "3f9b02fb2d13517d"
+    },
+    "anim.js": {
+      "v": "1",
+      "sha": "05c74b6d91497a45"
+    },
+    "park.js": {
+      "v": "2",
+      "sha": "53bc975762d10369"
+    },
+    "names.js": {
+      "v": "2",
+      "sha": "a5bb70e05f5b4efa"
+    }
+  },
+  "setlist/stage.js": {
+    "pxhd.js": {
+      "v": "1",
+      "sha": "aa371adb6a4d1640"
+    }
+  },
+  "wrestling/ring3d/boot.js": {
+    "stage.js": {
+      "v": "1",
+      "sha": "b532a11c51f75b4d"
+    }
+  },
+  "wrestling/ring3d/stage.js": {
+    "rig.js": {
+      "v": "1",
+      "sha": "0fc7b6f35720ca27"
+    },
+    "poses.js": {
+      "v": "1",
+      "sha": "cc3b1662c7b56f34"
+    },
+    "moves.js": {
+      "v": "1",
+      "sha": "74f203102d21dcc3"
+    },
+    "dims.js": {
+      "v": "1",
+      "sha": "0b9524a162e9ef96"
+    },
+    "arena.js": {
+      "v": "1",
+      "sha": "ae2875ec287a6b01"
+    }
+  },
+  "mythiball/proto3d/park.js": {
+    "rig.js": {
+      "v": "1",
+      "sha": "3f9b02fb2d13517d"
+    }
+  },
+  "wrestling/ring3d/arena.js": {
+    "dims.js": {
+      "v": "1",
+      "sha": "0b9524a162e9ef96"
     }
   }
 }
