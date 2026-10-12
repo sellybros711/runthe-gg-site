@@ -22,10 +22,12 @@ const B = require('./baller.js'), CAT = require('./catalog.js');
 let fails = 0, passes = 0;
 const ok = (c, msg) => { if (c) passes++; else { fails++; console.log('FAIL ' + msg); } };
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+/* an idle is motion, not wear: hoops/check-idles.mjs holds those rows */
+const WEAR = CAT.ITEMS.filter((i) => i.slot !== 'idle');
 const LOOK = { skin: 4, hair: 'fade', hc: 0, beard: 'stubble', build: 'standard' };
 
 /* 1 */
-for (const it of CAT.ITEMS) {
+for (const it of WEAR) {
   const slots = it.ctx === 'court' ? CAT.COURT_SLOTS : CAT.STREET_SLOTS;
   ok(slots.indexOf(it.slot) >= 0, '1 ' + it.id + ' is in a real slot');
   if (it.ctx !== 'court') ok((B.WEAR_KINDS[it.slot] || []).indexOf(it.k) >= 0, '1 ' + it.id + ' names a shape baller.js knows (' + it.slot + ':' + it.k + ')');
@@ -37,7 +39,7 @@ ok(new Set(CAT.ITEMS.map((i) => i.id)).size === CAT.ITEMS.length, '1 every id is
 /* 1b: the catalogue is the plan's (ECONOMY.md section 5) */
 {
   const t = {};
-  for (const it of CAT.ITEMS) if (CAT.sold(it)) { const g = it.ctx === 'street' ? 'off' : 'on'; t[g] = t[g] || { common: 0, rare: 0, epic: 0, legendary: 0 }; t[g][it.rarity]++; }
+  for (const it of WEAR) if (CAT.sold(it)) { const g = it.ctx === 'street' ? 'off' : 'on'; t[g] = t[g] || { common: 0, rare: 0, epic: 0, legendary: 0 }; t[g][it.rarity]++; }
   ok(same(t.off, { common: 70, rare: 55, epic: 33, legendary: 12 }), '1b off court is 70 common, 55 rare, 33 epic, 12 legendary (' + JSON.stringify(t.off) + ')');
   ok(same(t.on, { common: 30, rare: 26, epic: 16, legendary: 8 }), '1b on court is 30 common, 26 rare, 16 epic, 8 legendary (' + JSON.stringify(t.on) + ')');
   const X = require('./economy.js');
@@ -71,7 +73,7 @@ const edgeOf = (L, o) => { const g = B.paint(L, Object.assign({}, o, { parts: 1 
    (and must stay on the grid there), and each colourway is drawn once, where
    it must change the picture. */
 const firstOf = (items) => { const seen = new Map(); for (const it of items) { const key = it.slot + ':' + it.k; if (!seen.has(key)) seen.set(key, it); } return [...seen.values()]; };
-const STREET = CAT.ITEMS.filter((i) => i.ctx !== 'court'), COURT = CAT.ITEMS.filter((i) => i.ctx !== 'street');
+const STREET = WEAR.filter((i) => i.ctx !== 'court'), COURT = WEAR.filter((i) => i.ctx !== 'street');
 const underOf = (it) => it.slot === 'socks' ? { bottom: { k: 'shorts', c: ['#3a3f4a'] } } : {};
 for (const build of ['lean', 'standard', 'strong']) for (const pose of ['stand', 'walk1', 'cheer1', 'ball']) {
   const L = Object.assign({}, LOOK, { build });
@@ -96,7 +98,7 @@ for (const build of ['lean', 'standard', 'strong']) for (const pose of ['stand',
   }
   /* two items are never the same look under two names */
   const looks = new Map();
-  for (const it of CAT.ITEMS) { const key = it.ctx + it.slot + it.k + JSON.stringify(it.c); ok(!looks.has(key), '3 ' + it.id + ' is not ' + looks.get(key) + ' again'); looks.set(key, it.id); }
+  for (const it of WEAR) { const key = it.ctx + it.slot + it.k + JSON.stringify(it.c); ok(!looks.has(key), '3 ' + it.id + ' is not ' + looks.get(key) + ' again'); looks.set(key, it.id); }
 }
 /* a heavy, tall man in everything at once */
 {

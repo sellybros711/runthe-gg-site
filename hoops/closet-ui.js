@@ -26,7 +26,7 @@ var LABEL = {
   hat: 'Hat', eyes: 'Glasses', top: 'Top', outer: 'Jacket', bottom: 'Pants', shoes: 'Shoes', socks: 'Socks',
   chain: 'Chain', watch: 'Watch', bag: 'Bag', phones: 'Headphones', held: 'In hand',
   band: 'Headband', goggles: 'Goggles', guard: 'Mouthguard', sleeveL: 'Left sleeve', sleeveR: 'Right sleeve',
-  wrist: 'Wristbands', tape: 'Tape', tights: 'Tights', knee: 'Knees', ankle: 'Ankles', csocks: 'Socks', under: 'Undershirt',
+  wrist: 'Wristbands', tape: 'Tape', tights: 'Tights', knee: 'Knees', ankle: 'Ankles', csocks: 'Socks', under: 'Undershirt', idle: 'Idle',
 };
 /* a slot the starter wardrobe fills cannot be left bare: "Starter" is its empty */
 var STARTER = { top: 1, bottom: 1, shoes: 1 };
@@ -64,7 +64,11 @@ function pane(host, o){
   function draw(){
     var om = W.ownedMap(), lo = W.loadout(ctx), shown = Object.assign({}, lo);
     if (trying) shown[trying.slot] = trying.id;
-    var fig = B.img(o.look, W.dress({ c1: o.c1, c2: o.c2, num: o.num, pose: 'stand', scale: 4, still: true }, ctx, shown, true), 'cl-figimg');
+    /* the figure stands still while he dresses, and moves while he picks an idle */
+    var moving = v.slot === 'idle';
+    var fo = W.dress({ c1: o.c1, c2: o.c2, num: o.num, pose: 'stand', scale: 4, still: !moving }, ctx, shown, true);
+    if (moving && W.idle) fo = W.idle(fo, ctx, shown, true);
+    var fig = B.img(o.look, fo, 'cl-figimg');
     var wearing = slots.map(function(s){ var it = CAT.item(shown[s]); return it ? it.name : null; }).filter(Boolean);
     var coins = window.RTF_WALLET ? window.RTF_WALLET.balance() : 0;
     var signedIn = !!(window.RTF_AUTH && window.RTF_AUTH.state && window.RTF_AUTH.state().signedIn);

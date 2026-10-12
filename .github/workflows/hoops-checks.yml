@@ -14,6 +14,7 @@ name: Hoops checks
 #   node hoops/check-moments.mjs --quick the touch, the moments, the frames
 #   node hoops/check-economy.mjs        the coin ledger, the daily rule, the merge, the faucet
 #   node hoops/check-wardrobe.mjs       every item painted, in every pose, on every build
+#   node hoops/check-idles.mjs          every idle frame painted, the loop closes, the page plays it
 #   node hoops/check-closet.mjs         what he owns and wears, two devices, the closet on a phone
 #   node hoops/check-earn.mjs           who earns coins, from what, and only once
 #   node hoops/check-story.mjs --quick  the story engine: order, arcs, traits, people, league
@@ -113,6 +114,12 @@ jobs:
       # and pose, stays on the grid, and never dresses a real player.
       - name: The wardrobe
         run: node hoops/check-wardrobe.mjs
+
+      # Every idle frame paints on four bodies inside the grid, every loop
+      # closes and moves, and the page plays it live (the still under
+      # reduced motion).
+      - name: The idles
+        run: node hoops/check-idles.mjs
 
       # Only what he owns is ever saved or drawn, two devices merge without
       # losing anything, and the closet wears a piece on a press.

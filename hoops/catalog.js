@@ -24,9 +24,9 @@
 var API_VERSION = 1;
 var GEAR_BOOSTS = false;
 
-var STREET_SLOTS = ['hat', 'eyes', 'top', 'outer', 'bottom', 'shoes', 'socks', 'chain', 'watch', 'bag', 'phones', 'held'];
+var STREET_SLOTS = ['hat', 'eyes', 'top', 'outer', 'bottom', 'shoes', 'socks', 'chain', 'watch', 'bag', 'phones', 'held', 'idle'];
 /* a shoe cut for the floor is a 'both' item in the shoes slot, worn on court too */
-var COURT_SLOTS = ['band', 'goggles', 'guard', 'sleeveL', 'sleeveR', 'wrist', 'tape', 'tights', 'knee', 'ankle', 'csocks', 'shoes', 'under'];
+var COURT_SLOTS = ['band', 'goggles', 'guard', 'sleeveL', 'sleeveR', 'wrist', 'tape', 'tights', 'knee', 'ankle', 'csocks', 'shoes', 'under', 'idle'];
 
 /* line(shape, slot, ctx, rows): one row a colourway, [suffix, name, rarity,
    colours, extra]. The id is shape_suffix and is stored forever, so a suffix
@@ -474,6 +474,51 @@ ITEMS.push(
   { id: 'ex_opening_jacket', ctx: S, slot: 'outer', name: 'Opening Night Satin', rarity: 'legendary', excl: true, earn: 'drop:opening', k: 'bomber', c: ['#e8660f', '#16181f', '#f1f0ea'] },
   { id: 'ex_hallows_hoodie', ctx: S, slot: 'top', name: 'Hallows Hoodie', rarity: 'legendary', excl: true, earn: 'drop:hallows', k: 'hoodie', c: ['#3a2a5e', '#e2762a'] }
 );
+/* ---------- IDLES ----------
+   What he does while he stands there, in either look (ctx 'both'). How each
+   one moves is hoops/idles.js, keyed on the same id; this row is its name,
+   its rarity and the swatch its tile wears. economy.js prices an idle one
+   rarity step up. Standing and the standing dribble are the old figure and
+   free. resolve() never hands an idle to baller.js as wear: wardrobe.js reads
+   it and turns it into paint options. */
+var IDLE = 'idle';
+function idle(id, name, rarity, sw, extra){ var it = { id: id, ctx: BOTH, slot: 'idle', name: name, rarity: rarity, k: IDLE, c: [sw] }; for (var x in extra || {}) it[x] = extra[x]; ITEMS.push(it); }
+idle('id_stand', 'Standing', 'common', '#9aa0aa', { free: true });
+idle('id_dribble', 'Standing Dribble', 'common', '#e8660f', { free: true });
+idle('id_shakeout', 'Shake It Out', 'common', '#7fa7c9');
+idle('id_hips', 'Hands on Hips', 'common', '#8b9a6b');
+idle('id_clap', 'Clap It Up', 'common', '#c9b27a');
+idle('id_toes', 'On His Toes', 'common', '#6fb39a');
+idle('id_crossed', 'Arms Crossed', 'common', '#6c7488');
+idle('id_looks', 'Looking Around', 'common', '#a58c6f');
+idle('id_reach', 'Big Stretch', 'rare', '#4e8fd4');
+idle('id_roll', 'Shoulder Roll', 'rare', '#3fa27a');
+idle('id_sway', 'The Sway', 'rare', '#7b6fd0');
+idle('id_ballhip', 'Ball on the Hip', 'rare', '#d47a3f');
+idle('id_point', 'Point to the Crowd', 'rare', '#d4a53f');
+idle('id_wave', 'The Wave', 'rare', '#4fb0c6');
+idle('id_squat', 'Deep Squat', 'rare', '#9a6f4e');
+idle('id_box', 'Shadow Box', 'rare', '#c64f4f');
+idle('id_flex', 'The Flex', 'epic', '#b04fd4');
+idle('id_roof', 'Raise the Roof', 'epic', '#d44f8f');
+idle('id_pump', 'Pump Fake', 'epic', '#e8660f');
+idle('id_lunge', 'Lunge Stretch', 'epic', '#4fd49a');
+idle('id_pound', 'Chest Pound', 'epic', '#d4644f');
+idle('id_loud', 'Get Loud', 'epic', '#f0c24a');
+idle('id_ballup', 'Ball to the Sky', 'epic', '#ff8a3d');
+idle('id_pogo', 'The Pogo', 'epic', '#58c4f0');
+idle('id_moment', 'The Moment', 'legendary', '#f0c24a');
+idle('id_conduct', 'The Conductor', 'legendary', '#c9a227');
+idle('id_jacks', 'Jumping Jacks', 'legendary', '#e3a92f');
+idle('id_shimmy', 'The Shimmy', 'legendary', '#f2b84b');
+idle('id_windmill', 'The Windmill', 'legendary', '#d99a2b');
+idle('id_bow', 'Take a Bow', 'legendary', '#e8c25a');
+idle('id_spin', 'Finger Spin', 'legendary', '#ff9f43');
+idle('id_draftwave', 'Draft Night Wave', 'legendary', '#e3a92f', { excl: true, earn: 'draft_first' });
+idle('id_ringshow', 'Show the Ring', 'legendary', '#f0c24a', { excl: true, earn: 'title' });
+idle('id_salute', 'The Salute', 'legendary', '#c9a227', { excl: true, earn: 'hof' });
+idle('id_nerves', 'Rookie Nerves', 'rare', '#e8660f', { excl: true, earn: 'career_first' });
+
 var BY_ID = {};
 ITEMS.forEach(function(it){ BY_ID[it.id] = it; });
 
@@ -494,7 +539,7 @@ function fits(it, ctx){ return !!it && (it.ctx === ctx || it.ctx === 'both'); }
 function resolve(loadout, ctx, owned){
   ctx = ctx || 'street';
   var base = ctx === 'street' ? STARTER_STREET : {}, out = {}, slot;
-  var pick = function(slot, id){ var it = BY_ID[id]; if (it && fits(it, ctx) && it.slot === slot && (owned === true || owns(owned, id))) out[slot] = { k: it.k, c: it.c.slice() }; };
+  var pick = function(slot, id){ var it = BY_ID[id]; if (slot === 'idle') return; if (it && fits(it, ctx) && it.slot === slot && (owned === true || owns(owned, id))) out[slot] = { k: it.k, c: it.c.slice() }; };
   for (slot in base) pick(slot, base[slot]);
   for (slot in loadout || {}) pick(slot, loadout[slot]);
   return out;

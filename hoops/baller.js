@@ -362,6 +362,24 @@ var BOUNCE_DIP = [0.6, 1.2, 1.5, 1.3, 0.9, 0.6, 0.4, 0.4];
 SETS.bounce = BOUNCE_ARM.map(function(a, i){ return fr(a, [14, 10], { dip: BOUNCE_DIP[i], sp: 0.7 }); });
 var ANIM = {};
 Object.keys(SETS).forEach(function(k){ SETS[k].forEach(function(f, i){ ANIM[k + i] = f; }); });
+/* AN IDLE'S FRAME ARRIVES AS DATA (paint's fr option, hoops/idles.js), because
+   the paint worker loads this file and nothing else. It is read here and
+   nowhere else, and anything that is not a frame is no frame at all, so a bad
+   one draws the standing figure rather than throwing. */
+function frOf(x){
+  if (!x || typeof x !== 'object' || !x.a) return null;
+  var arm = function(v){
+    if (!Array.isArray(v) || v.length < 2 || v.length > 6) return null;
+    for (var i = 0; i < v.length; i++) if (typeof v[i] !== 'number' || !isFinite(v[i])) return null;
+    return v.slice();
+  };
+  var R = arm(x.a['1']), Lf = arm(x.a['-1']);
+  if (!R || !Lf) return null;
+  var num = function(v, lo, hi){ v = +v || 0; return Math.max(lo, Math.min(hi, v)); };
+  var lift = {};
+  if (x.lift && typeof x.lift === 'object') ['1', '-1'].forEach(function(s){ var v = num(x.lift[s], 0, 2); if (v) lift[s] = v; });
+  return { a: { '1': R, '-1': Lf }, dip: num(x.dip, 0, 4), sp: num(x.sp, -1, 2.4), lift: lift };
+}
 /* The six standing poses, in the same angles. */
 var STILL = {
   stand: fr([12, 6], [12, 6]),
@@ -493,7 +511,7 @@ var OUTERS = {
 
 /* ── the model for one pose and one look ── */
 function build(L, o, J){
-  var suit = o.suit, cap = o.cap, pose = o.pose;
+  var suit = o.suit, cap = o.cap, pose = o.pose, ballIn = pose === 'ball' || !!o.held;
   var BD = bodyOf(L.build), bw = BD.bw, am = BD.am;
   var MX = J.MX || metrics(L), g = MX.gw, ts = MX.ts, ls = MX.ls, sw = MX.sw;
   var P = [];
@@ -742,7 +760,7 @@ function build(L, o, J){
 
   if (ST) streetGear();
   /* what he is holding */
-  if (pose === 'ball') {
+  if (ballIn) {
     var hd = J.arm[1].hand, bc = [heldX(hd[0]), hd[1] + 3.2, hd[2] + 1.0];
     add('ball', 'ball', function(p){
       var u = p[0] - bc[0], v = p[1] - bc[1], w = p[2] - bc[2];
@@ -1196,7 +1214,7 @@ function build(L, o, J){
       add('dstrap', 'bag', 'bag2', uni([cone([CX + 3.4 * sw, shY - 0.6, 0.5], [CX + 2.4 * sw, shY + 1.6, fz], 0.45, 0.45), cone([CX + 2.4 * sw, shY + 1.6, fz], [dc[0] + 1.0, dc[1] - 2.0, fz * 0.6 + 1.0], 0.45, 0.45)]), [CX, C0[1] + 3, fz], 12);
     }
     var hk = ST.held && ST.held.k, hd = J.arm[1].hand;
-    if (hk && pose !== 'ball' && pose !== 'trophy' && !J.arm[1].hand.up) {
+    if (hk && !ballIn && pose !== 'trophy' && !J.arm[1].hand.up) {
       if (hk === 'coffee') {
         /* a coffee: a cup with a sleeve and a lid, held upright */
         var cb = [hd[0] + 0.4, hd[1] - 0.2, hd[2] + 1.6];
@@ -1375,7 +1393,7 @@ function paint0(look, o){
      the rig and the light, so he stands in the same 3D style as you. */
   if (o.faceless) L = Object.assign({}, L, { hair: 'bald', beard: 'none', band: 'none', sleeve: 'none' });
   var pose = o.pose || 'stand';
-  var AN = ANIM[pose] || null;
+  var AN = ANIM[pose] || frOf(o.fr);
   var ST = o.ctx === 'street' && !o.faceless ? wearNorm(o.wear) : null;
   var suit = !ST && (pose === 'suit' || pose === 'cap' || !!(AN && (o.dress === 'suit' || o.dress === 'cap')));
   var cap = !ST && (pose === 'cap' || !!(AN && o.dress === 'cap'));
@@ -1395,7 +1413,7 @@ function paint0(look, o){
   var bandHex = L.band === 'none' ? null : L.band === 'club' ? c2 : FIXED[L.band];
   var slvHex = L.sleeve === 'none' ? null : L.sleeve === 'club' ? c2 : FIXED[L.sleeve];
   var num = pose === 'trophy' || suit || ST ? '' : String(o.num == null ? '' : o.num).slice(0, 2);
-  var model = build(L, { suit: suit, cap: cap, pose: pose, num: num, band: !!bandHex && !ST, sleeve: !!slvHex && !ST, kit: kitOf(c1, c2, o.kit), res: res, st: ST, cw: CW }, J);
+  var model = build(L, { suit: suit, cap: cap, pose: pose, num: num, band: !!bandHex && !ST, sleeve: !!slvHex && !ST, kit: kitOf(c1, c2, o.kit), res: res, st: ST, cw: CW, held: o.hold === 'ball' }, J);
   var hit = trace(model, res);
 
   if (o.parts) return hit.map(function(r){ return r.map(function(c){ return c ? model[c.i].n : null; }); });
@@ -1652,7 +1670,7 @@ function propCanvas(kind, opts){
 /* ─── to the screen ───────────────────────────────────────────────────── */
 
 var CACHE = {}, KEYS = [];
-function keyOf(look, o){ return JSON.stringify([normal(look), o.c1, o.c2, o.num, o.pose, o.age >= 33 ? o.age : 0, o.frame || 0, o.scale || 4, !!o.shadow, o.dress || '', o.faceless ? 1 : 0, resFor(o), o.kit || ''].concat(o.ctx === 'street' ? [wearKey(o)] : cwearKey(o) ? [cwearKey(o)] : [])); }
+function keyOf(look, o){ return JSON.stringify([normal(look), o.c1, o.c2, o.num, o.pose, o.age >= 33 ? o.age : 0, o.frame || 0, o.scale || 4, !!o.shadow, o.dress || '', o.faceless ? 1 : 0, resFor(o), o.kit || ''].concat(o.ctx === 'street' ? [wearKey(o)] : cwearKey(o) ? [cwearKey(o)] : []).concat(o.fr ? [o.fr, o.hold || ''] : [])); }
 /* THE BIGGER IT IS SHOWN, THE FINER IT IS TRACED. The model has no pixels of
    its own: it is volumes, so a portrait shown at 4 screen pixels a cell is
    traced at 2 sub-cells a cell and drawn 2 pixels each, and at 3 or 6 it is
@@ -1706,6 +1724,10 @@ function url(look, opts){
    on the page. Reduced motion gets the first frame and no timer. */
 function img(look, opts, cls){
   var o = Object.assign({}, opts || {});
+  if (o.idle && !idleOk(o.idle)) delete o.idle;
+  /* an idle that cannot move (reduced motion, no document, or a still asked
+     for) is its signature frame, painted like any other pose */
+  if (o.idle && (o.still || reducedNow() || typeof document === 'undefined')) { o = idleStill(o); o.still = true; }
   /* A figure that is not asked to stand still is live (see live()): it
      breathes a pixel and blinks rather than hopping a whole cell. A still one
      is an <img>, which is what a screen that swaps it on every slider drag
@@ -1812,14 +1834,24 @@ function pump(){
   if (typeof requestIdleCallback === 'function') requestIdleCallback(run, { timeout: 400 }); else setTimeout(run, 30);
 }
 /* the frames a live figure needs, painted once per look and shared */
-function frameSet(look, o, mode){
+function idleOk(d){ return !!(d && Array.isArray(d.f) && d.f.length && d.f.length <= 16 && Array.isArray(d.seq) && d.seq.length); }
+/* paint options for an idle's still: its signature frame, with the ball if it holds one */
+function idleStill(o){
+  var d = o.idle, r = Object.assign({}, o);
+  delete r.idle;
+  r.fr = d.f[d.sig] || d.f[0];
+  if (d.hold) r.hold = d.hold;
+  return r;
+}
+function frameSet(look, o, mode, idle){
   /* a walk does not care which pose the beat is in, so it is shared */
-  var key = JSON.stringify([normal(look), o.c1, o.c2, o.num, mode === 'walk' ? '' : o.pose, o.age >= 33 ? o.age : 0, o.dress || '', o.faceless ? 1 : 0, o.res, mode, o.kit || ''].concat(o.ctx === 'street' ? [wearKey(o)] : cwearKey(o) ? [cwearKey(o)] : []));
+  var key = JSON.stringify([normal(look), o.c1, o.c2, o.num, mode === 'walk' ? '' : o.pose, mode === 'idle' ? idle.id : '', o.age >= 33 ? o.age : 0, o.dress || '', o.faceless ? 1 : 0, o.res, mode, o.kit || ''].concat(o.ctx === 'street' ? [wearKey(o)] : cwearKey(o) ? [cwearKey(o)] : []));
   var fs = SETCACHE[key];
   if (fs) return fs;
   var want = [];
   if (mode === 'dribble') for (var i = 0; i < 8; i++) want.push({ pose: 'bounce' + i });
   else if (mode === 'walk') for (var w2 = 0; w2 < 4; w2++) want.push({ pose: 'walk' + w2 });
+  else if (mode === 'idle') idle.f.forEach(function(f){ want.push(idle.hold ? { fr: f, hold: idle.hold } : { fr: f }); });
   else BREATH_LV.forEach(function(b){ want.push({ breath: b * BREATH_AMP }); want.push({ breath: b * BREATH_AMP, blink: 1 }); });
   fs = SETCACHE[key] = { frames: new Array(want.length), left: want.length, ready: false };
   SETKEYS.push(key); if (SETKEYS.length > 8) delete SETCACHE[SETKEYS.shift()];
@@ -1845,17 +1877,19 @@ function live(look, opts, cls){
   var s = Math.max(1, Math.round(o.scale || 4)), res = resFor(o);
   o.res = res;
   var enter = !!o.enter; delete o.enter;
-  var mode = o.pose === 'ball' ? 'dribble' : 'breath';
+  var idle = o.idle && idleOk(o.idle) ? o.idle : null; delete o.idle;
+  var mode = idle ? 'idle' : o.pose === 'ball' ? 'dribble' : 'breath';
   var id = 'L' + (++liveN), base = Object.assign({}, o); delete base.scale;
   /* the first frame is painted here, once per look: the career screen redraws
      on every press and must not repaint the man each time */
-  var fk = JSON.stringify([normal(look), base]), first = FIRSTS[fk];
-  if (!first) { first = FIRSTS[fk] = gridData(paint(look, Object.assign({}, base, { frame: 0 }))); FKEYS.push(fk); if (FKEYS.length > 40) delete FIRSTS[FKEYS.shift()]; }
-  LIVE[id] = { look: look, o: base, mode: mode, res: res, still: first, el: null, born: Date.now(), next: 0, blinkAt: 0, t0: Math.random() * BOUNCE_MS };
+  var firstO = idle ? idleStill(Object.assign({}, base, { idle: idle })) : base;
+  var fk = JSON.stringify([normal(look), firstO]), first = FIRSTS[fk];
+  if (!first) { first = FIRSTS[fk] = gridData(paint(look, Object.assign({}, firstO, { frame: 0 }))); FKEYS.push(fk); if (FKEYS.length > 40) delete FIRSTS[FKEYS.shift()]; }
+  LIVE[id] = { look: look, o: base, mode: mode, idle: idle, res: res, still: first, el: null, born: Date.now(), next: 0, blinkAt: 0, t0: Math.random() * BOUNCE_MS };
   if (!reducedNow() && typeof document !== 'undefined') {
     /* the walk is asked for FIRST, so it is painted before the idle loop */
     if (enter) { LIVE[id].walk = frameSet(look, base, 'walk'); LIVE[id].enter = 1; }
-    LIVE[id].set = frameSet(look, base, mode);
+    LIVE[id].set = frameSet(look, base, mode, idle);
   }
   kick(); liveCss();
   /* the size it is shown at is a custom property under a one-class rule, not
@@ -1922,6 +1956,7 @@ function drawLive(L, now){
   ctx.fillStyle = 'rgba(0,0,0,.28)';
   ctx.beginPath(); ctx.ellipse(22 * res, 63.1 * res, 11 * res, 1.3 * res, 0, 0, Math.PI * 2); ctx.fill();
   if (!go) { if (!L.still.cv) L.still.cv = toCanvas(L.still); ctx.drawImage(L.still.cv, 0, 0); L.drewStill = true; return; }
+  if (L.mode === 'idle') { drawIdle(L, fs, now); return; }
   if (L.mode !== 'dribble') {
     /* the breath: a slow sine through four painted levels, and a blink */
     var b = (1 - Math.cos((now / BREATH_MS) * Math.PI * 2)) / 2, lv = Math.round(b * (BREATH_LV.length - 1));
@@ -1953,6 +1988,23 @@ function drawLive(L, now){
   ctx.drawImage(fs.frames[k], 0, 0);
   var art = ballArt(res, spin % 4, sq);
   ctx.drawImage(art, Math.round(bx - art.width / 2), Math.round(by - art.height / 2));
+}
+/* AN IDLE PLAYS ITS SEQUENCE BY THE CLOCK: each step is a frame and how long
+   it is held. Every FLAIR_EVERY loops the flourish plays instead of the loop,
+   once, and the loop comes back. */
+function idleStep(d, n){
+  var flair = d.fl && d.fl.length && n % (d.every || 5) === (d.every || 5) - 1;
+  return flair ? d.seq.concat(d.fl) : d.seq;
+}
+function drawIdle(L, fs, now){
+  var d = L.idle, ctx = L.ctx;
+  if (L.i0 == null) { L.i0 = now; L.loop = 0; L.run = idleStep(d, 0); L.runMs = L.run.reduce(function(t, s){ return t + s[1]; }, 0); }
+  var t = now - L.i0;
+  while (t >= L.runMs) { L.i0 += L.runMs; t -= L.runMs; L.loop++; L.run = idleStep(d, L.loop); L.runMs = L.run.reduce(function(a, s){ return a + s[1]; }, 0); }
+  var fi = L.run[0][0];
+  for (var i = 0; i < L.run.length; i++) { if (t < L.run[i][1]) { fi = L.run[i][0]; break; } t -= L.run[i][1]; }
+  var cv = fs.frames[fi] || fs.frames[0];
+  if (cv) ctx.drawImage(cv, 0, 0);
 }
 function tick(now){
   liveRaf = 0;
@@ -1990,7 +2042,8 @@ var API = {
   /* 1 is the first version with the street look. A page that needs it pins
      this, the way it pins board.js: a stale cached copy would ignore ctx and
      draw the uniform with nothing thrown. */
-  API_VERSION: 1,
+  /* 2: an idle (o.idle, from hoops/idles.js) plays as a live figure */
+  API_VERSION: 2, _frOf: frOf, _idleStep: idleStep, _idleStill: idleStill,
 };
 if (typeof module !== 'undefined' && module.exports) module.exports = API;
 if (typeof window !== 'undefined') { window.RTF_BALLER = API; breathe(); }

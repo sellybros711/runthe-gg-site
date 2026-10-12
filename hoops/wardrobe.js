@@ -166,6 +166,29 @@ function dress(o, ctx, lo, tryOn){
   return out;
 }
 
+/* ─── the idle ──────────────────────────────────────────────────────────────
+   One slot in each look, worn like any piece and drawn as motion: the id is a
+   hoops/idles.js entry. An idle he does not own (or no idles.js at all) is the
+   look's default, which is the old figure: standing off court and the
+   standing dribble on court. */
+var I = typeof require === 'function' && typeof window === 'undefined' ? require('./idles.js') : (typeof window !== 'undefined' ? window.RTF_IDLES : null);
+function idleOf(ctx, lo, tryOn){
+  ctx = ctx === 'court' ? 'court' : 'street';
+  var dflt = I ? I.DEFAULT[ctx] : (ctx === 'court' ? 'id_dribble' : 'id_stand');
+  var id = (lo || loadout(ctx)).idle, it = id && CAT ? CAT.item(id) : null;
+  if (!it || it.slot !== 'idle' || !I || !I.isIdle(id) || !(tryOn || owns(id))) return dflt;
+  return id;
+}
+/* paint options for the idle, merged over the caller's: a keyframe idle stands
+   ({ pose: 'stand', idle }) and the dribble is pose 'ball', as it always was */
+function idle(o, ctx, lo, tryOn){
+  var out = Object.assign({}, o || {}), id = idleOf(ctx, lo, tryOn);
+  if (!I) { if (id === 'id_dribble') out.pose = 'ball'; return out; }
+  var x = I.opts(id);
+  if (x.idle) { out.pose = 'stand'; out.idle = x.idle; } else if (x.pose) out.pose = x.pose; else if (out.pose === 'ball') out.pose = 'stand';
+  return out;
+}
+
 /* ─── outfits ────────────────────────────────────────────────────────────── */
 function fits(st){
   st = st || load();
@@ -241,7 +264,7 @@ var API = {
   API_VERSION: API_VERSION, KEY: KEY, MAX_FITS: MAX_FITS,
   fresh: fresh, clean: clean, load: load, save: save, reload: reload, onChange: onChange,
   ownedMap: ownedMap, owns: owns, grant: grant,
-  slotsOf: slotsOf, loadout: loadout, equip: equip, wearSet: wearSet, resolved: resolved, dress: dress,
+  slotsOf: slotsOf, loadout: loadout, equip: equip, wearSet: wearSet, resolved: resolved, dress: dress, idleOf: idleOf, idle: idle,
   fits: fits, saveFit: saveFit, applyFit: applyFit, delFit: delFit,
   merge: merge, progress: progress,
   wallet: WALLET,

@@ -1120,7 +1120,7 @@ function sizeLive(){
     var B = window.RTF_BALLER, fig = root.querySelector('.cr-pfig .rtf-baller'), L = PV.L;
     if (B && fig && L) {
       var k = C.colorsOf(L), tmp = document.createElement('div');
-      tmp.innerHTML = B.img(withSize(C.cleanLook(form.look), { ht: form.ht, wt: form.wt }), { c1: k.primary, c2: k.secondary, num: form.num, pose: bstep === 'look' ? 'stand' : 'ball', scale: bstep === 'look' ? 4 : 2, still: true });
+      tmp.innerHTML = B.img(withSize(C.cleanLook(form.look), { ht: form.ht, wt: form.wt }), idleIf({ c1: k.primary, c2: k.secondary, num: form.num, pose: bstep === 'look' ? 'stand' : 'ball', scale: bstep === 'look' ? 4 : 2, still: true }));
       if (tmp.firstChild) fig.parentNode.replaceChild(tmp.firstChild, fig);
     }
   });
@@ -1182,7 +1182,7 @@ function buildView(){
     /* On the Look step the figure is drawn at twice the size and framed on the
        head and shoulders, because hair is what is being chosen there. */
     + '<div class="cr-preview"><div class="cr-pfig' + (bstep === 'look' ? ' cr-zoom' : '') + '">' + setArt(stageKind(L), k.primary, k.secondary, form.seed)
-    + (B ? B.img(lookOf(L), { c1: k.primary, c2: k.secondary, num: form.num, age: L.age, pose: bstep === 'look' ? 'stand' : 'ball', scale: bstep === 'look' ? 4 : 2 }) : '') + '</div>'
+    + (B ? B.img(lookOf(L), idleIf({ c1: k.primary, c2: k.secondary, num: form.num, age: L.age, pose: bstep === 'look' ? 'stand' : 'ball', scale: bstep === 'look' ? 4 : 2 })) : '') + '</div>'
     + '<div class="cr-pside"><div class="cr-povr"><span class="k-num">' + C.show(C.ovrOf(L)) + '</span><span class="k-label">Overall</span>'
     + '<span class="cr-ceil">Ceiling <b>' + grade(L) + '</b></span></div>'
     + '<div class="cr-rt k-rows">' + rtRows(L, null, false) + '</div></div></div>'
@@ -2086,6 +2086,9 @@ function openLook(tab){
 /* Paint options for the invented player in a look (hoops/wardrobe.js). A
    page without the closet draws him as he always was. */
 function dressed(o, ctx){ return window.RTF_WARD ? window.RTF_WARD.dress(o, ctx || 'court') : o; }
+/* the builder's figure does the court idle he wears, except on the Look step,
+   where he stands still to have his hair chosen */
+function idleIf(o){ return o.pose === 'ball' && window.RTF_WARD && window.RTF_WARD.idle ? window.RTF_WARD.idle(o, 'court') : o; }
 function doAct(id){
   var L = store().cur;
   if (!L) return;
@@ -2811,10 +2814,13 @@ function heroCast(L){
   var B = window.RTF_BALLER, box = $('ch-cast');
   if (!B || !box) return;
   var look = heroLook(L), k = L ? C.colorsOf(L) : { primary: '#ff7a1a', secondary: '#1d1f2b' };
-  var key = JSON.stringify([look, k.primary, k.secondary, L ? L.num : 0]);
+  var key = JSON.stringify([look, k.primary, k.secondary, L ? L.num : 0, L && window.RTF_WARD && window.RTF_WARD.idleOf ? window.RTF_WARD.idleOf('court') : '']);
   if (cast.key === key) return;
   cast.key = key;
-  var mid = B.img(look, L ? dressed({ c1: k.primary, c2: k.secondary, num: L.num, age: L.age, pose: 'ball', scale: 5 }) : { c1: k.primary, c2: k.secondary, num: 23, age: 20, pose: 'ball', scale: 5 });
+  /* he does his own idle on the front page: the one he wears on court */
+  var mo = L ? dressed({ c1: k.primary, c2: k.secondary, num: L.num, age: L.age, pose: 'ball', scale: 5 }) : { c1: k.primary, c2: k.secondary, num: 23, age: 20, pose: 'ball', scale: 5 };
+  if (L && window.RTF_WARD && window.RTF_WARD.idle) mo = window.RTF_WARD.idle(mo, 'court');
+  var mid = B.img(look, mo);
   box.innerHTML = '<div class="ch-p s l">' + castFig(0) + '</div><div class="ch-p c">' + mid + '</div><div class="ch-p s r">' + castFig(1) + '</div>';
   cast.n = 0;
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;

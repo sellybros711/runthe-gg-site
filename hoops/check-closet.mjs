@@ -169,7 +169,7 @@ async function browser(){
     const wide = [...sheet.querySelectorAll('*')].filter((el) => { const r = el.getBoundingClientRect(); return r.width && r.right > innerWidth + 1 && !el.closest('.cl-slots'); });
     return { tiles: tiles.length, lowest: Math.min(...tiles.map((t) => t.getBoundingClientRect().height)), wide: wide.map((e) => e.className).slice(0, 3), slots: document.querySelectorAll('#cr-closet .cl-slot').length };
   });
-  ok(m.slots === 12, '7 off court lists the twelve street slots (' + m.slots + ')');
+  ok(m.slots === 13, '7 off court lists the twelve street slots and the idle (' + m.slots + ')');
   ok(m.tiles > 10, '7 the Top slot lists its pieces (' + m.tiles + ')');
   ok(m.lowest >= 44, '7 every tile is a thumb tall (' + m.lowest + 'px)');
   ok(!m.wide.length, '7 nothing in the closet runs off a 375px phone (' + m.wide.join(', ') + ')');
@@ -200,7 +200,7 @@ async function browser(){
   /* on court */
   await page.click('[data-ltab="court"]');
   await page.waitForSelector('#cr-closet [data-slot="band"]');
-  ok(await page.evaluate(() => document.querySelectorAll('#cr-closet .cl-slot').length === 13), '7 on court lists the thirteen court slots');
+  ok(await page.evaluate(() => document.querySelectorAll('#cr-closet .cl-slot').length === 14), '7 on court lists the thirteen court slots and the idle');
   await page.click('#cr-closet .cl-tile[data-id="st_band_white"]');
   ok(await page.evaluate(() => JSON.parse(localStorage.getItem('rtf.ward.v1')).w.court.band === 'st_band_white'), '7 a court piece goes on and stays');
   await page.click('#cr-sheet-x');

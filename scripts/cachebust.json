@@ -2594,7 +2594,7 @@
     },
     "../baller.js": {
       "v": "14",
-      "sha": "bec75b32b8e39f66"
+      "sha": "fef6b540bb5fe5c2"
     },
     "../sound.js": {
       "v": "2",
@@ -2635,20 +2635,24 @@
       "sha": "97dbcac3f6f8d29d"
     },
     "baller.js": {
-      "v": "23",
-      "sha": "bec75b32b8e39f66"
+      "v": "24",
+      "sha": "fef6b540bb5fe5c2"
     },
     "economy.js": {
       "v": "2",
       "sha": "8df34bd804a43925"
     },
     "catalog.js": {
+      "v": "2",
+      "sha": "6ec421e043be6e43"
+    },
+    "idles.js": {
       "v": "1",
-      "sha": "31f29f2f9eb5589f"
+      "sha": "641a82bb0300b526"
     },
     "wardrobe.js": {
-      "v": "2",
-      "sha": "23944cb50d31f3d5"
+      "v": "3",
+      "sha": "e7d4292d8b5cb9ca"
     },
     "earn.js": {
       "v": "1",
@@ -2699,12 +2703,12 @@
       "sha": "f17a858cad115a76"
     },
     "closet-ui.js": {
-      "v": "2",
-      "sha": "6bb12fab04d96037"
+      "v": "3",
+      "sha": "445da7603d63ebf5"
     },
     "career-ui.js": {
-      "v": "52",
-      "sha": "b69ca115db551dd0"
+      "v": "53",
+      "sha": "d399376575851ea7"
     },
     "data/players.json": {
       "v": "5",

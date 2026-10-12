@@ -16347,6 +16347,7 @@ node hoops/check-economy.mjs     the ledger: keyed, merged, the day rule, what a
 node hoops/check-wardrobe.mjs    every item drawn on every build and pose, and never on a real man
 node hoops/check-closet.mjs      what he owns and wears, two devices, the closet on a phone
 node hoops/check-earn.mjs        who earns coins, from what, and only once
+node hoops/check-idles.mjs       every idle frame inside the grid, every loop closes, the page plays it
 psql ... -f supabase/139_hoops_wardrobe.sql   deploy by hand (preflight row 53)
 ```
 
@@ -16370,6 +16371,14 @@ psql ... -f supabase/139_hoops_wardrobe.sql   deploy by hand (preflight row 53)
   because a folded key would be paid a second time.
 - **Coins are said in their own pill**, not the page's toast: a mode toasts in the same tick
   and the toast is one element.
+- **An idle is keyframes on the rig, handed to the worker as data** (`hoops/idles.js`,
+  paint's `fr` option, read by `frOf`, which draws the standing figure for anything that is
+  not a frame). It is worn in an `idle` slot in both looks and is never wear: `resolve()`
+  skips it, and `wardrobe.js idle()` turns it into paint options, the look's default (the
+  old breath or dribble) when he does not own the one equipped. A straight blend between a
+  hanging and a raised arm holds it out level and the hand leaves the grid on a big man, so
+  the in-betweens bend at the elbow; check-idles paints every frame on four bodies and fails
+  on any part at the edge. A loop is at most 12 painted frames.
 
 ## Run The Diamond, the baseball game
 

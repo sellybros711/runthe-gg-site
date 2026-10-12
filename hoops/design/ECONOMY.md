@@ -301,6 +301,28 @@ packs.
 Cost to watch: an idle is frames painted in the worker, per look and wear. Phase
 1b measures a throttled phone before the set is finished.
 
+### As built (Phase 1b)
+
+- `hoops/idles.js` holds 33 keyframe idles plus the two built in (`id_stand`,
+  `id_dribble`). A key is the two arms as angles, the knees, the stance and a
+  lifted foot. In-betweens are written by blending, and an arm swung through
+  the side bends at the elbow (`ARC`, `BEND`, `ELBOW`), because a straight blend
+  held the arm out level and the hand left the grid on a big man.
+- A loop is at most 12 painted frames. The frames travel to the worker as plain
+  data (paint's `fr` option, read by `frOf` in baller.js, which refuses anything
+  that is not a frame and draws the standing figure instead).
+- `live()` has a third mode, `idle`, that plays the sequence by the clock, the
+  flourish one loop in five. Reduced motion and a still figure get the
+  signature frame (`idleStill`). baller.js is API 2.
+- The catalogue has 35 idle rows in an `idle` slot in both looks (`ctx: 'both'`).
+  `resolve()` never hands one to baller.js as wear; `wardrobe.js idle()` turns
+  the equipped one into paint options, and an idle he does not own is the
+  look's default. The front page hero, the builder and the closet's Idle tab
+  play the equipped court idle. Cutscenes keep their own poses.
+- `check-idles.mjs` paints every frame on four bodies and fails on a part at the
+  grid's edge, a missing head, hand or shoe, a loop that does not close or move,
+  a ball that is or is not there, and checks the page plays it live.
+
 ---
 
 ## 7. Prices, packs and the daily loop
