@@ -1597,14 +1597,22 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
     flex:0 0 auto; font-variant-numeric:tabular-nums;}
   .cw-zone{font-size:15px; font-weight:900; color:var(--ink); line-height:1.25;}
   .cw-zone span{display:block; font-size:11px; font-weight:700; color:var(--dim);}
-  .cw-lawn{position:relative; border-radius:10px; overflow:hidden; background:#0B0818;}
-  .cw-lawn canvas{display:block; width:100%; height:auto; image-rendering:pixelated;}
+  /* The lawn is the stage's own 3D world, framed on the crowd. Its canvas is centred and a pixel or
+     two bigger than the box, the way the show's is, so the edges never show. */
+  .cw-lawn{position:relative; border-radius:10px; overflow:hidden; background:#0B0818;
+    aspect-ratio:5/4;}
+  .cw-lawn > canvas{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    image-rendering:pixelated; image-rendering:crisp-edges;}
+  .cw-lawn.flat{aspect-ratio:auto;}
+  .cw-lawn.flat > canvas{position:static; transform:none; display:block; width:100%; height:auto;}
   .cw-you{position:absolute; transform:translate(-50%,-100%); padding:2px 7px 3px;
     border-radius:99px; background:#37C5D5; color:#0B0818; font-size:10px; font-weight:900;
     letter-spacing:.8px; text-transform:uppercase; white-space:nowrap; pointer-events:none;
     box-shadow:0 0 0 3px rgba(55,197,213,.25); animation:cwBob 1.6s var(--ease) infinite;}
+  .cw-you, .cw-rnd{z-index:2;}
   .cw-rnd{position:absolute; left:10px; font-size:9px; font-weight:800; letter-spacing:.6px;
-    text-transform:uppercase; color:rgba(246,242,234,.6); pointer-events:none;}
+    text-transform:uppercase; color:rgba(246,242,234,.72); pointer-events:none;
+    text-shadow:0 1px 2px rgba(0,0,0,.8);}
   @keyframes cwBob{0%,100%{margin-top:0} 50%{margin-top:-3px}}
   @media (prefers-reduced-motion: reduce){ .cw-you{animation:none;} }
   /* ---------------- THE SCORE, DRAWN ----------------
@@ -3124,7 +3132,7 @@ import {
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
 } from './scoring.js?v=43';
 import { loadBand, setLabel, setRank, parseCSV } from './dataLoader.js?v=43';
-import { createStage } from './stage.js?v=7';
+import { createStage } from './stage.js?v=8';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -3505,6 +3513,7 @@ function setScreen(name){
   // The stage stops itself once its canvas leaves the page; this also takes
   // its resize listener with it, which a reduced-motion stage never loops to drop.
   if (S.stage){ S.stage.destroy(); S.stage = null; }
+  if (S.crowdStage){ S.crowdStage.destroy(); S.crowdStage = null; }
   /* A NEW SCREEN STARTS AT THE TOP. Nothing reset the scroll, so "See the
      scorecard" at the foot of a long playback landed half way down the
      scorecard, and every round after the first opened its reveal wherever the
@@ -4794,7 +4803,7 @@ function crowdCardHTML(){
         : `of ${st.n.toLocaleString()} nights drafted`}</span></div>
     </div>
     <div class="cw-lawn">
-      <canvas id="crowdCanvas" width="${CROWD_W}" height="${CROWD_H}"
+      <canvas id="crowdCanvas"
         role="img" aria-label="A crowd of ${st.n} drafted nights. You are ${esc(st.zone.toLowerCase())}, in the top ${pct} percent."></canvas>
       <div class="cw-you" id="crowdYou">You</div>
       ${st.rndDepth === null ? '' : '<div class="cw-rnd" id="crowdRnd">Random picks</div>'}
@@ -4802,10 +4811,38 @@ function crowdCardHTML(){
   </div>`;
 }
 
+/* The crowd, drawn by the stage itself: the same lawn, the same people and the same light the show
+   was played under, framed on the crowd after the last song with you in the follow spot. The stage is
+   only told how deep into the lawn you stand. If it cannot run, the flat picture below stands in. */
 function drawCrowd(){
   const cv = document.getElementById('crowdCanvas');
   const st = crowdStanding();
+  if (S.crowdStage){ S.crowdStage.destroy(); S.crowdStage = null; }
   if (!cv || !st) return;
+  const you = document.getElementById('crowdYou'), rl = document.getElementById('crowdRnd');
+  const place = m => {
+    if (!m) return;
+    if (you){ you.style.left = `${100 * m.you[0]}%`; you.style.top = `${100 * m.you[1]}%`; }
+    if (rl){
+      // Hidden only where it would sit on your own label, which hangs over your head.
+      rl.hidden = m.rnd === null || (Math.abs(m.rnd - m.you[1]) < .07 && m.you[0] < .42);
+      if (m.rnd !== null) rl.style.top = `${100 * m.rnd + 1}%`;
+    }
+  };
+  try {
+    S.crowdStage = createStage(cv, {
+      seed: Math.abs(S.result.total) + 17, venue: 'lawn', shot: 'crowd', onFit: place,
+      reduce: matchMedia('(prefers-reduced-motion: reduce)').matches,
+      you: { d: st.above / Math.max(1, st.n - 1), rnd: st.rndDepth, seed: hash32(`${S.result.total}|${st.n}`) },
+    });
+    return;
+  } catch (err) { S.crowdStage = null; }
+  drawCrowdFlat(cv, st);
+}
+
+function drawCrowdFlat(cv, st){
+  cv.width = CROWD_W; cv.height = CROWD_H;
+  cv.parentElement.classList.add('flat');
   const g = cv.getContext('2d');
   const W = CROWD_W, H = CROWD_H;
   let seed = hash32(`${S.result.total}|${st.n}`);
