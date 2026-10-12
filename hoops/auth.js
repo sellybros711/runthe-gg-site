@@ -293,6 +293,23 @@
     } catch (e) { return null; }
   }
 
+  /* PAID COINS (supabase/141_hoops_wallet.sql), shipped dark: hoops/wardrobe.js
+     only asks while economy.js BUCKETS_ENABLED is true. walletState answers the
+     balance and what was bought, or null for no opinion; walletSpend spends
+     under a key and answers { ok, balance } or { ok: false, why }. */
+  async function walletState() {
+    if (!sb || !session) return null;
+    try { const r = await sb.rpc('rtf_wallet_state'); return (r && !r.error && r.data) ? r.data : null; } catch (e) { return null; }
+  }
+  async function walletSpend(key, coins) {
+    if (!sb || !session) return { ok: false, why: 'signin' };
+    try {
+      const r = await sb.rpc('rtf_wallet_spend', { p_key: key, p_coins: coins });
+      if (r && !r.error && r.data) return r.data;
+      return { ok: false, why: /not enough/.test((r && r.error && r.error.message) || '') ? 'coins' : 'error' };
+    } catch (e) { return { ok: false, why: 'error' }; }
+  }
+
   /* board.js signs its requests with the anon key. Once somebody is signed in
      the RPC has to see their JWT instead, or auth.uid() is null and the run
      records as a guest, so this hands the live access token over. */
@@ -326,7 +343,7 @@
     API_VERSION: 1,
     boot, state, onChange: (f) => { listeners.push(f); return () => {}; },
     signIn, signUp, signInGoogle, signOut,
-    available, setName, claim, token, deleteAccount, premiumProducts,
+    available, setName, claim, token, deleteAccount, premiumProducts, walletState, walletSpend,
     getProfile, setProfile,
   };
 })();

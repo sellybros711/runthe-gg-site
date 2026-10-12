@@ -133,6 +133,26 @@ function open(){
   }
   draw(true);
 }
+/* The premium lane is sold through the site's one checkout (floor-pass in
+   functions/api/stripe/_bundles.js), only while pass.js PASS_PAID_ENABLED. */
+var PASS_PRICE = '9.99';
+function buyPass(btn){
+  var a = window.RTF_AUTH, t = a && a.token ? a.token() : null, err = ov && ov.querySelector('.fp-err');
+  if (!t) { if (err) { err.hidden = false; err.textContent = 'Sign in to get Premium.'; } return; }
+  btn.disabled = true;
+  fetch('/api/stripe/checkout-bundle', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
+    body: JSON.stringify({ bundle: 'floor-pass', return_path: '/hoops/' })
+  }).then(function(r){ return r.json().catch(function(){ return {}; }); })
+    .catch(function(){ return {}; })
+    .then(function(d){
+      if (d && d.url) { location.href = d.url; return; }
+      btn.disabled = false;
+      if (d && d.error === 'already_owned' && PD.refreshOwned) PD.refreshOwned(true);
+      if (err) { err.hidden = false; err.textContent = "Checkout couldn't start. Try again."; }
+    });
+}
 function cell(t, lane, st, paidOpen){
   var r = P.reward(t, lane, st.season.n), reached = st.tier >= t, got = PD.claimed(t, lane), locked = lane === 'prem' && !paidOpen;
   var big = !!(r.items || r.pack), cls = 'fp-cell ' + lane + (big ? ' big' : '') + (got ? ' got' : reached && !locked ? ' ready' : '') + (!reached ? ' dim' : '') + (locked ? ' lock' : '');
@@ -173,8 +193,11 @@ function draw(scroll){
       + cell(t, 'prem', st, paidOpen) + '</div>';
   }
   h += '</div>'
-    + (paidOpen ? '<p class="fp-note">Premium is open to you as a tester.</p>'
-      : '<div class="fp-premcta"><img alt="" src="' + lockURL() + '"><div><b>Premium is coming</b><span>It doubles the packs and carries the season\'s exclusives, ending with ' + esc(cap.map(itemName).join(' and ')) + '. The free lane is yours now.</span></div></div>')
+    + (paidOpen ? '<p class="fp-note">' + (PD.owned && PD.owned() ? 'Premium is yours for Season ' + s.n + '.' : 'Premium is open to you as a tester.') + '</p>'
+      : (PD.onSale && PD.onSale())
+        ? '<div class="fp-premcta sale"><img alt="" src="' + lockURL() + '"><div><b>Get Premium for Season ' + s.n + '</b><span>It doubles the packs and carries the season\'s exclusives, ending with ' + esc(cap.map(itemName).join(' and ')) + '. It ends with the season.</span>'
+          + '<button type="button" class="k-btn fp-buy">Get Premium $' + PASS_PRICE + '</button><span class="fp-err" hidden></span></div></div>'
+        : '<div class="fp-premcta"><img alt="" src="' + lockURL() + '"><div><b>Premium is coming</b><span>It doubles the packs and carries the season\'s exclusives, ending with ' + esc(cap.map(itemName).join(' and ')) + '. The free lane is yours now.</span></div></div>')
     + '<div class="fp-reveal" aria-live="polite"></div>'
     + '<details class="fp-how"><summary>How the Floor Pass works</summary><ul>'
     + '<li>Play earns Pass XP: ' + P.XP_RATE + ' XP for every coin a game pays, before a Coin Rush doubles it. Quests pay XP too.</li>'
@@ -186,6 +209,7 @@ function draw(scroll){
   ov.innerHTML = h;
   ov.querySelector('.fp-x').onclick = close;
   var all = ov.querySelector('.fp-all'); if (all) all.onclick = function(){ claimAll(); };
+  var buy = ov.querySelector('.fp-buy'); if (buy) buy.onclick = function(){ buyPass(buy); };
   ov.querySelectorAll('.fp-cell[role="button"]').forEach(function(el){
     var go = function(){ claimOne(+el.getAttribute('data-tier'), el.getAttribute('data-lane'), el); };
     el.onclick = go; el.onkeydown = function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } };
@@ -367,6 +391,7 @@ var CSS = [
 '.fp-premcta{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:center;margin-top:6px;padding:10px 12px;background:linear-gradient(90deg,color-mix(in srgb,var(--fpa) 20%,#121625),#121625);box-shadow:inset 3px 0 0 var(--fpa);}',
 '.fp-premcta img{width:24px;height:27px;}.fp-premcta b{display:block;font:400 11px/1.5 var(--k-f-pixel,monospace);color:var(--fpa);}.fp-premcta span{font-size:12px;}',
 '.fp-premcta.nudge{animation:fp-nudge .5s ease;}',
+'.fp-buy{margin-top:8px;}.fp-err{display:block;margin-top:6px;color:#ff8a7a;font-size:12px;}.fp-err[hidden]{display:none;}',
 '@keyframes fp-nudge{25%{transform:translateX(-6px);}75%{transform:translateX(6px);}}',
 '.fp-reveal{margin-top:10px;}',
 '.fp-won{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:18px 14px;overflow:hidden;text-align:center;background:linear-gradient(180deg,color-mix(in srgb,var(--fpc) 24%,#161a2a),#121625);box-shadow:inset 0 0 0 2px var(--fpc),0 0 30px -6px var(--fpc);animation:fp-wpop .5s cubic-bezier(.2,1.5,.4,1);}',

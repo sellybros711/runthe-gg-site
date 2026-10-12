@@ -1,7 +1,7 @@
 /* Premium bundles : Stripe Checkout (Cloudflare Pages Function)
  *
  * POST /api/stripe/checkout-bundle
- *   body: { bundle: "perfect-season"|"run-the-bundle"|"diamond-pro"|"floor-pro",
+ *   body: { bundle: "perfect-season"|"run-the-bundle"|"diamond-pro"|"floor-pro"|"floor-pass",
  *           plan?: "once"|"year", email?, return_path? }
  *   -> { url: "https://checkout.stripe.com/..." }
  *
@@ -13,6 +13,9 @@
  *   STRIPE_PRICE_RTB_YEAR             price_...  (Run The Bundle, $34.99 a year)
  *   STRIPE_PRICE_RTD_PRO              price_...  (Run The Diamond Pro, $14.99 a year, RECURRING)
  *   STRIPE_PRICE_RTF_PRO              price_...  (Run The Floor Pro, $14.99 a year, RECURRING)
+ *   STRIPE_PRICE_RTF_PASS             price_...  (Floor Pass, $9.99 a season; DARK until PASS_PAID_ENABLED)
+ *   STRIPE_PRICE_RTF_COINS_1..5       price_...  (Run The Floor coin buckets; DARK until BUCKETS_ENABLED)
+ *   or body: { bucket: "floor-coins-1".."floor-coins-5", return_path? } for a coin bucket
  *   SITE_URL                          https://runthe.gg
  *   SUPABASE_URL, SUPABASE_SERVICE_ROLE
  *
@@ -66,7 +69,7 @@
  * _verify.js explains.
  */
 import { verifyUser } from './_verify.js';
-import { bundleByKey } from './_bundles.js';
+import { bundleByKey, bucketByKey, BUCKETS_ENABLED, BUCKET_RETURN } from './_bundles.js';
 import { siteBase } from './_site.js';
 import { currentPlan } from './_offer.js';
 
@@ -91,9 +94,14 @@ async function handle(context) {
   // bundle -> price (allow-list; the client can never inject an arbitrary price id)
   let body = {};
   try { body = await request.json(); } catch (e) {}
+  /* A COIN BUCKET is a consumable, not a bundle: its own path, below. */
+  if (body.bucket != null) return bucket(env, request, body);
   const key = String(body.bundle || '');
   const bundle = bundleByKey(key);
   if (!bundle) return json({ error: 'unknown_bundle' }, 400);
+  /* SHIPPED DARK: a catalog row whose switch is off (the Floor Pass, until
+     PASS_PAID_ENABLED) is refused here whatever the env vars say. */
+  if (bundle.live === false) return json({ error: 'not_on_sale' }, 403);
 
   /* Only a bundle with a `year` block has two ways to be sold. The baseball and hoops
      tiers are one-time whatever the switch says, and ignore any plan they are sent. */
@@ -202,6 +210,49 @@ async function handle(context) {
   if (!attempt.res.ok) {
     return json({ error: 'stripe_error', detail: attempt.data.error && attempt.data.error.message }, 400);
   }
+  return json({ url: attempt.data.url });
+}
+
+/* THE COIN BUCKETS (Run The Floor), shipped dark behind BUCKETS_ENABLED. A
+ * one-time payment, bought as often as anybody likes, so there is no ownership
+ * refusal. The webhook files the paid session in rtf_coin_buys (141), keyed on
+ * the session, and paid coins live only there. No promotion codes: a 100% off
+ * code on a consumable is free coins, not a comp. */
+async function bucket(env, request, body) {
+  const key = String(body.bucket || '');
+  const b = bucketByKey(key);
+  if (!b) return json({ error: 'unknown_bucket' }, 400);
+  if (!BUCKETS_ENABLED) return json({ error: 'not_on_sale' }, 403);
+  const price = env[b.envPrice];
+  if (!env.STRIPE_SECRET_KEY || !price) return json({ error: 'stripe_not_configured' }, 503);
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE) return json({ error: 'stripe_not_configured' }, 503);
+  const userId = await verifyUser(env, request);
+  if (!userId) return json({ error: 'unauthorized' }, 401);
+  const site = siteBase(env, request);
+  let ret = typeof body.return_path === 'string' && body.return_path.indexOf(BUCKET_RETURN) === 0 ? body.return_path : BUCKET_RETURN;
+  const sep = ret.indexOf('?') >= 0 ? '&' : '?';
+  const form = new URLSearchParams({
+    mode: 'payment',
+    'line_items[0][price]': price,
+    'line_items[0][quantity]': '1',
+    client_reference_id: userId,
+    'metadata[supabase_user_id]': userId,
+    'metadata[bucket]': key,
+    success_url: site + ret + sep + 'checkout=success&bucket=' + encodeURIComponent(key),
+    cancel_url: site + ret + sep + 'checkout=cancelled',
+    customer_creation: 'always'
+  });
+  const customer = await lookupCustomer(env, userId);
+  if (customer) { form.set('customer', customer); form.delete('customer_creation'); }
+  else if (body.email) form.set('customer_email', String(body.email));
+  let attempt = await createSession(env, form);
+  if (!attempt.res.ok && customer && isMissingCustomer(attempt.data)) {
+    form.delete('customer');
+    form.set('customer_creation', 'always');
+    if (body.email) form.set('customer_email', String(body.email));
+    attempt = await createSession(env, form);
+  }
+  if (!attempt.res.ok) return json({ error: 'stripe_error', detail: attempt.data.error && attempt.data.error.message }, 400);
   return json({ url: attempt.data.url });
 }
 

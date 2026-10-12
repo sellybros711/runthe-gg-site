@@ -128,6 +128,10 @@ function settle(career){
   welcomePack();
   day1(function(d){ return d.login(); });
   try { var ps = PSD(); if (ps && ps.settle) ps.settle(); } catch (e) {}
+  /* Phase 6, both dark until sold: a bought Floor Pass (the rtf_pass row) opens
+     the premium lane, and bought coins are read off the server (141). */
+  try { if (ps && ps.refreshOwned) ps.refreshOwned().then(function(o){ if (o) ps.settle(); }); } catch (e) {}
+  try { if (w.paidRefresh) w.paidRefresh(); } catch (e) {}
   var got = earnedIds(career);
   if (w.baseline('bg:base', got.map(function(b){ return 'bg:' + b.id; }))) return { baseline: got.length };
   return { paid: badges(career) };

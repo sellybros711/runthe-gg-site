@@ -519,6 +519,36 @@ the webhook), not golf's `create-checkout` edge function, which is not in this
 repo. The pass is a `premium_unlocks` row with an end date, the shape 124 already
 handles.
 
+### As built
+
+```
+node scripts/stripe/check-floor-money.mjs        the switches, the catalog, the season, checkout and webhook on and off, cover()
+psql -d rtfw -f supabase/test/hoops_wallet_test.sql   (its header lists the chain)
+```
+
+- **Each switch is written twice**, once for the server (`_bundles.js`) and once for
+  the page (`economy.js BUCKETS_ENABLED`, `pass.js PASS_PAID_ENABLED`), and the check
+  fails if they disagree. Off, the checkout answers 403 `not_on_sale` and the page
+  draws no bucket and no buy button.
+- **The ledger never holds a bought coin until it is spent.** `wardrobe.js cover(price)`
+  asks for exactly the shortfall a press needs, spends it on the server with
+  `rtf_wallet_spend` under a `top:` key, and files the same amount in the ledger as
+  `paid:<key>`. A key sent twice is charged once on both sides. `RTF_WARD.shop.covered`
+  is the one door the shop and the closet press through: try, cover if short, try once more.
+- **The balance shown counts bought coins** (`WALLET.balance()` adds `WALLET.paid()`), so
+  the pill is what the player can spend.
+- **A bucket's packs are free pack credits** keyed `buy:<session>:<i>`, filed when the page
+  reads `rtf_wallet_state`. A refunded bucket's are not filed.
+- **On sale is not owned.** `PASS_PAID_ENABLED` draws the buy button; the premium lane opens
+  only for the `rtf_pass` row (read through `premium_products()`, refreshed on settle) or a
+  tester. Turning sales on must never hand premium to everybody, and check-pass presses the
+  sheet with sales on to prove the lane stays locked.
+- **The pass ends with its season**: `passSeason` in `_bundles.js` is `pass.js`'s arithmetic,
+  held to it at 1,200 instants over both clock changes.
+- **Found while building**: `fileBuys` called `grantCredit` with the key and the pack the
+  wrong way round, so no bucket pack would ever have arrived. The check's page section
+  caught it the first time it ran.
+
 ---
 
 ## 10. Migrations
@@ -530,8 +560,8 @@ soft: without it the game plays and the thing it holds stays on the device.
 |---|---|---|
 | 139 `hoops_wardrobe` | 1 | `rtf_profiles` gains `wear_street` and `wear_court`, shape checked like `ps_set_crest`, not entitlement checked; `rtf_set_profile` gains the arguments |
 | 140 `hoops_card` | 5 | the loadouts take `idle`, `plate` and `bg`; `rtf_profiles` gains `player` (who he is, shape checked); `rtf_set_profile` gains `p_player`; the board read asks for both and drops them on a 400 |
-| 141 `hoops_wallet` | 6 | `rtf_wallet` (paid coins only), `rtf_wallet_spend`, purchase rows |
-| 142 `hoops_pass` | 6 | `rtf_pass` product in `premium_unlocks` with `expires_at` |
+| 141 `hoops_wallet` | 6 | `rtf_coin_buys` (webhook only, keyed on the session) and `rtf_coin_spends` (keyed); `rtf_wallet_state`, `rtf_wallet_spend`; `rtf_coin_refund` by hand. Preflight row 55 |
+| 142 `hoops_pass` | 6 | `rtf_pass` allowed in `premium_unlocks`, granted with `expires_at` at the season's end. Preflight row 56 |
 
 The earned economy (sections 3 to 8) needs no migration at all.
 

@@ -40,6 +40,22 @@ var PRICE = { common: 15000, rare: 45000, epic: 110000, legendary: 275000 };
 var IDLE_STEP = { common: 'rare', rare: 'epic', epic: 'legendary', legendary: 'legendary' };
 var DUPE_REFUND = { common: 2000, rare: 5000, epic: 12000, legendary: 25000 };
 var EXCHANGE_COST = 10, LEG_EXCHANGE_COINS = 25000;
+/* ─── REAL MONEY, SHIPPED DARK (ECONOMY.md section 9) ──────────────────────
+   The page's copy of the coin buckets functions/api/stripe/_bundles.js sells,
+   for drawing them. The server's copy is the one that charges and delivers,
+   and scripts/stripe/check-floor-money.mjs holds the two together. Off, the
+   page draws no bucket and asks the server for nothing. Paid coins are never
+   in this ledger until spent: wardrobe.js cover() moves exactly what a press
+   needs out of the server's balance (141) and files it here under its key. */
+var BUCKETS_ENABLED = false;
+var BUCKETS = {
+  'floor-coins-1': { name: 'Handful of Coins', cents: 199, coins: 15000, packs: [] },
+  'floor-coins-2': { name: 'Bag of Coins', cents: 499, coins: 45000, packs: [] },
+  'floor-coins-3': { name: 'Bucket of Coins', cents: 999, coins: 102000, packs: ['league'] },
+  'floor-coins-4': { name: 'Crate of Coins', cents: 1999, coins: 285000, packs: ['hof'] },
+  'floor-coins-5': { name: 'Vault of Coins', cents: 4999, coins: 750000, packs: ['hof', 'hof', 'hof'] },
+};
+
 var PACKS = {
   street: { name: 'Streetball Pack', price: 8000, odds: [0.55, 0.30, 0.12, 0.03], pity: [10, 40] },
   league: { name: 'League Pack', price: 22000, odds: [0.30, 0.40, 0.22, 0.08], pity: [6, 24] },
@@ -278,6 +294,7 @@ function priceOf(item){
 var API = {
   API_VERSION: API_VERSION,
   RARITIES: RARITIES, PRICE: PRICE, DUPE_REFUND: DUPE_REFUND, EXCHANGE_COST: EXCHANGE_COST, LEG_EXCHANGE_COINS: LEG_EXCHANGE_COINS,
+  BUCKETS_ENABLED: BUCKETS_ENABLED, BUCKETS: BUCKETS,
   PACKS: PACKS, BUNDLE_N: BUNDLE_N, BUNDLE_PAY: BUNDLE_PAY, WELCOME: WELCOME, RATE: RATE, FULL_A_DAY: FULL_A_DAY, CQ_DAY_CAP: CQ_DAY_CAP, TAIL: TAIL,
   dayOf: dayOf, fresh: fresh, clean: clean, earned: earned, spent: spent, balance: balance,
   award: award, spend: spend, mark: mark, baseline: baseline, lasting: lasting, HALL_TIER: HALL_TIER, merge: merge, compact: compact, history: history,

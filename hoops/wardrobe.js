@@ -271,12 +271,59 @@ function wSave(w){
   if (typeof window !== 'undefined' && window.RTF_MODES_UI && window.RTF_MODES_UI.write) window.RTF_MODES_UI.write(WKEY);
   wsubs.forEach(function(fn){ try { fn(w); } catch (e) {} });
 }
+/* ─── paid coins (141), shipped dark ──────────────────────────────────────
+   Bought coins live on the server and never in the ledger above until they
+   are spent. The balance shown is the ledger plus the server's paid balance;
+   a press the ledger cannot cover asks cover(), which spends exactly the
+   shortfall on the server under a key and files the same amount in the ledger
+   under the same key, so a press sent twice is charged once on both sides.
+   With economy.js BUCKETS_ENABLED off, the paid balance is nought and nothing
+   is asked. A bucket's packs are free pack credits, keyed on the session. */
+var paidBal = 0, paidAsk = 0;
+function paidOn(){ return !!(X && X.BUCKETS_ENABLED); }
+function paidRefresh(){
+  if (!paidOn() || !authFn() || typeof window === 'undefined' || !window.RTF_AUTH || !window.RTF_AUTH.walletState) return Promise.resolve(null);
+  var ask = ++paidAsk;
+  return window.RTF_AUTH.walletState().then(function(s){
+    if (!s || ask !== paidAsk) return null;
+    paidBal = Math.max(0, Math.round(+s.balance || 0));
+    fileBuys(s.buys || []);
+    wsubs.forEach(function(fn){ try { fn(wmem); } catch (e) {} });
+    return s;
+  }).catch(function(){ return null; });
+}
+function fileBuys(buys){
+  if (!PK || !buys.length) return;
+  var st = clean(JSON.parse(JSON.stringify(load()))), did = false;
+  buys.forEach(function(b){
+    if (!b || b.refunded || !/^[A-Za-z0-9_]{6,200}$/.test(b.session || '')) return;
+    (b.packs || []).forEach(function(pk, i){ if (PK.grantCredit(st, 'buy:' + b.session + ':' + i, pk)) did = true; });
+  });
+  if (did) save(st);
+}
+function cover(price){
+  var need = Math.round(+price || 0) - X.balance(wLoad());
+  if (need <= 0) return Promise.resolve({ ok: true, moved: 0 });
+  if (!paidOn() || paidBal < need) return Promise.resolve({ ok: false, why: 'coins' });
+  var A = typeof window !== 'undefined' ? window.RTF_AUTH : null;
+  if (!A || !A.walletSpend) return Promise.resolve({ ok: false, why: 'off' });
+  var key = 'top:' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  return A.walletSpend(key, need).then(function(r){
+    if (!r || !r.ok) return { ok: false, why: (r && r.why) || 'error' };
+    paidBal = Math.max(0, Math.round(+r.balance || 0));
+    var w = X.clean(wLoad()); X.award(w, 'paid:' + key, need, 'paid'); wSave(w);
+    return { ok: true, moved: need };
+  });
+}
 var WALLET = {
   KEY: WKEY,
+  /* paid coins: the server's balance, and the two doors that move it */
+  paid: function(){ return paidOn() ? paidBal : 0; },
+  paidRefresh: paidRefresh, cover: cover,
   load: wLoad,
   reload: function(){ wmem = null; wLoad(); wsubs.forEach(function(fn){ try { fn(wmem); } catch (e) {} }); },
   onChange: function(fn){ wsubs.push(fn); },
-  balance: function(paid){ return X.balance(wLoad(), paid); },
+  balance: function(paid){ return X.balance(wLoad(), paid == null ? WALLET.paid() : paid); },
   /* one award, keyed: replaying it pays nothing */
   award: function(key, amount, src, opts){ var w = X.clean(wLoad()); var r = X.award(w, key, amount, src, opts); if (r.paid) wSave(w); return r; },
   spend: function(key, amount, what, paid){ var w = X.clean(wLoad()); var r = X.spend(w, key, amount, what, paid); if (r.ok) wSave(w); return r; },
@@ -329,6 +376,15 @@ var SHOP = {
   },
   bundle: function(pack, opts){ return both(function(st, w){ return PK.openBundle(st, w, pack, opts); }); },
   exchange: function(rarity, opts){ return both(function(st, w){ return PK.exchange(st, w, rarity, opts); }); },
+  /* A press the ledger cannot cover: try it, and if it is short of coins and
+     the server holds bought ones, move exactly the shortfall (cover) and try
+     once more. Always answers a promise. Off (BUCKETS_ENABLED false) it is the
+     press and nothing else. */
+  covered: function(price, go){
+    var r = go();
+    if (!r || r.err !== 'coins' || !(WALLET.paid() > 0)) return Promise.resolve(r);
+    return cover(price).then(function(c){ return c && c.ok ? go() : r; }, function(){ return r; });
+  },
   choose: function(id, itemId){ return both(function(st){ return PK.choose(st, id, itemId); }); },
   /* the welcome panel was read (merge keeps the later) */
   seenWelcome: function(){ var st = clean(load()); st.nb = Date.now(); save(st); },
@@ -374,17 +430,33 @@ var DAILY = {
 
 /* ─── the Floor Pass ─────────────────────────────────────────────────────
    XP, claims and the season's settlement (hoops/pass.js), on the same door.
-   The paid lane ships dark: PASS_PAID_ENABLED is false and nobody can buy it,
-   so it is open only to a tester the page comps (paidFn). */
+   The premium lane is open to an account holding the rtf_pass row (bought,
+   one a season, expiring at the season's end: 142 and the webhook) or a
+   tester the page comps. PASS_PAID_ENABLED says whether it is ON SALE, which
+   draws a buy button; it never opens the lane by itself, or turning sales on
+   would hand premium to everybody. */
 var psubs = [];
+var passOwned = false, passAsk = 0;
+function passRefresh(force){
+  var A = typeof window !== 'undefined' ? window.RTF_AUTH : null;
+  if (!authFn() || !A || !A.premiumProducts) { passOwned = false; return Promise.resolve(false); }
+  var ask = ++passAsk;
+  return A.premiumProducts(force).then(function(prods){
+    if (ask !== passAsk || !Array.isArray(prods)) return passOwned;   /* null: no opinion */
+    var was = passOwned; passOwned = prods.indexOf('rtf_pass') >= 0;
+    if (was !== passOwned) psubs.forEach(function(f){ try { f({ kind: 'owned' }); } catch (e) {} });
+    return passOwned;
+  }).catch(function(){ return passOwned; });
+}
 var paidFn = function(){
+  if (passOwned && authFn()) return true;
   try { var M = window.RTF_MODES_UI, A = window.RTF_AUTH; return !!(M && M._tester && A && A.state && M._tester(A.state())); } catch (e) { return false; }
 };
 function passDo(fn, kind){
   if (!PS || !PK || !X) return { err: 'off' };
   var r = both(function(st, w){
     var s = PS.season();
-    if (PS.PASS_PAID_ENABLED || paidFn()) PS.notePaid(st, s.n);
+    if (paidFn()) PS.notePaid(st, s.n);
     PS.questXp(st, w);
     var x = fn(st, w) || {};
     x.settled = PS.settle(st, w);
@@ -401,7 +473,10 @@ var PASS = {
   claimAll: function(){ return passDo(function(st, w){ return { all: PS.claimAll(st, w) }; }, 'claim'); },
   state: function(){ return PS ? PS.state(load()) : null; },
   claimed: function(tier, lane){ return !!(PS && PS.claimed(load(), PS.season().n, tier, lane)); },
-  paidOpen: function(){ return !!(PS && (PS.PASS_PAID_ENABLED || paidFn())); },
+  paidOpen: function(){ return !!(PS && paidFn()); },
+  onSale: function(){ return !!(PS && PS.PASS_PAID_ENABLED); },
+  owned: function(){ return passOwned; },
+  refreshOwned: passRefresh,
   on: function(fn){ psubs.push(fn); },
   signedIn: function(){ return authFn(); },
   _paid: function(fn){ paidFn = fn; },

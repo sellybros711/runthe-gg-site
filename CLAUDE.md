@@ -16355,6 +16355,8 @@ node hoops/check-pass.mjs        the Floor Pass: the clock, the curve, the cap, 
 node hoops/check-card.mjs        the player card: its pieces, the 140 shapes, the boards
 psql ... -f supabase/139_hoops_wardrobe.sql   deploy by hand (preflight row 53)
 psql ... -f supabase/140_hoops_card.sql       after 139 (preflight row 54; its test is hoops_card_test.sql)
+node scripts/stripe/check-floor-money.mjs    real money, shipped dark: the switches, checkout, webhook, cover()
+psql ... -f supabase/141_hoops_wallet.sql     paid coins (row 55), and 142_hoops_pass.sql the pass (row 56)
 ```
 
 `hoops/design/ECONOMY.md` is the plan and the record. What bites:
@@ -16416,6 +16418,14 @@ psql ... -f supabase/140_hoops_card.sql       after 139 (preflight row 54; its t
 - **A board row filed by an account draws his player** off `player` and `wear_street`, a few a
   frame, and a tap opens his card without opening the row. A guest row and a row with no player keep
   the jersey. The read asks for the two columns and asks again without them on a 400.
+- **Real money is built and OFF** (`hoops/design/ECONOMY.md` section 9, the runbook is
+  `functions/api/stripe/README.md`). Each switch is written twice, `_bundles.js` for the
+  server and `economy.js BUCKETS_ENABLED` / `pass.js PASS_PAID_ENABLED` for the page, and
+  check-floor-money fails if they disagree. A bought coin is never in the page's ledger
+  until spent: `RTF_WARD.shop.covered` tries a press, moves exactly the shortfall off the
+  server (`rtf_wallet_spend`, keyed) when it is short, and tries once more. **On sale is not
+  owned**: `PASS_PAID_ENABLED` draws a buy button, and only the `rtf_pass` row (or a
+  tester) opens the premium lane.
 - **The daily loop is six more keyed logs on the wardrobe record** (`hoops/daily.js`:
   `dp` days played, `dl` days opened, `dw` spins, `dg` banked spins, `de` quest events,
   `db` Coin Rushes), merged with it. The streak, its freezes (earned at 7, 30 and 100,

@@ -64,6 +64,25 @@
  * refuses any update that would give them one. */
 export const YEARLY_LIVE = true;
 
+/* RUN THE FLOOR'S REAL MONEY, SHIPPED DARK (hoops/design/ECONOMY.md section 9).
+ *
+ * Two switches, both OFF, and each is the whole of its own go-live:
+ *
+ *   PASS_PAID_ENABLED  the Floor Pass premium lane is on sale, $9.99 a season
+ *                      (the `floor-pass` row below). Off, checkout-bundle.js
+ *                      answers 403 not_on_sale for it whatever the env vars say.
+ *   BUCKETS_ENABLED    the five coin buckets (BUCKETS below) are on sale. Off,
+ *                      the bucket path answers 403 not_on_sale.
+ *
+ * OFF IS NOT THE ONLY GATE, deliberately. Each needs its price env var set and
+ * its migration deployed (141 for the buckets, 142 for the pass), so a switch
+ * flipped early sells nothing it cannot deliver: no price is 503, and a webhook
+ * against a database without the migration fails loudly and Stripe retries.
+ * hoops/economy.js carries the same two names for the page, and
+ * scripts/stripe/check-floor-money.mjs holds the two copies together. */
+export const PASS_PAID_ENABLED = false;
+export const BUCKETS_ENABLED = false;
+
 export const BUNDLES = {
   /* Perfect Season Premium Bundle: dynasty + one franchise dynasty (NFL) and
    * commissioner mode (CFB). Sold once and for good, or yearly (see YEARLY_LIVE). */
@@ -163,6 +182,26 @@ export const BUNDLES = {
    * two player puzzle, the high school road and the family tree. The dailies,
    * Conquest, Classic and Career from draft night stay free, and a friend
    * opening a shared link plays free. See 123_hoops_pro.sql. */
+  /* The Floor Pass premium lane, $9.99 A SEASON, one-time, SHIPPED DARK (see
+   * PASS_PAID_ENABLED above). A season is sixty Eastern days from 2026-10-12, so
+   * the grant is one premium_unlocks row with an end date at the season's last
+   * Eastern midnight (`season: true`, worked out by passSeason below), written
+   * straight rather than through 124's premium_grant_bundle, which knows months
+   * and nothing about seasons. A pass for the season it is bought in and no
+   * other: the next season is a new purchase, and one already running is refused
+   * by the one bundle per account rule, because its row is live. */
+  'floor-pass': {
+    name: 'Floor Pass',
+    envPrice: 'STRIPE_PRICE_RTF_PASS',
+    live: PASS_PAID_ENABLED,
+    season: true,
+    grants: [
+      { product: 'rtf_pass' },
+    ],
+    returnRoots: ['/hoops/'],
+    defaultReturn: '/hoops/',
+  },
+
   'floor-pro': {
     name: 'Run The Floor Pro',
     envPrice: 'STRIPE_PRICE_RTF_PRO',
@@ -207,4 +246,44 @@ export function bundleForYearPrice(env, priceId) {
 
 export function bundleByKey(key) {
   return Object.prototype.hasOwnProperty.call(BUNDLES, key) ? BUNDLES[key] : null;
+}
+
+/* THE COIN BUCKETS, Run The Floor, SHIPPED DARK (BUCKETS_ENABLED above). Run The
+ * Tour's own sizes and prices. A bucket is a CONSUMABLE, bought as often as
+ * anybody likes, so it is not a premium_unlocks row (one row a product): the
+ * webhook records each paid session in rtf_coin_buys (supabase/141_hoops_wallet.sql)
+ * through rtf_coin_buy, keyed on the session so a retried delivery pays once.
+ * Paid coins live ONLY on the server; the page spends them through rtf_wallet_spend.
+ * The packs are free pack credits the page files once, keyed on the session. */
+export const BUCKETS = {
+  'floor-coins-1': { name: 'Handful of Coins', envPrice: 'STRIPE_PRICE_RTF_COINS_1', cents: 199, coins: 15000, packs: [] },
+  'floor-coins-2': { name: 'Bag of Coins', envPrice: 'STRIPE_PRICE_RTF_COINS_2', cents: 499, coins: 45000, packs: [] },
+  'floor-coins-3': { name: 'Bucket of Coins', envPrice: 'STRIPE_PRICE_RTF_COINS_3', cents: 999, coins: 102000, packs: ['league'] },
+  'floor-coins-4': { name: 'Crate of Coins', envPrice: 'STRIPE_PRICE_RTF_COINS_4', cents: 1999, coins: 285000, packs: ['hof'] },
+  'floor-coins-5': { name: 'Vault of Coins', envPrice: 'STRIPE_PRICE_RTF_COINS_5', cents: 4999, coins: 750000, packs: ['hof', 'hof', 'hof'] },
+};
+export const BUCKET_RETURN = '/hoops/';
+export function bucketByKey(key) {
+  return Object.prototype.hasOwnProperty.call(BUCKETS, key) ? BUCKETS[key] : null;
+}
+
+/* THE PASS SEASON, the same arithmetic as hoops/pass.js: sixty Eastern days
+ * from the epoch, ending at the Eastern midnight after the last day. A grant
+ * bought on the last evening still runs to that midnight. check-floor-money.mjs
+ * holds this to pass.js across both clock changes. */
+export const PASS_EPOCH = '2026-10-12', PASS_LEN = 60;
+function dnum(d) { const p = String(d).split('-'); return Math.round(Date.UTC(+p[0], +p[1] - 1, +p[2]) / 864e5); }
+function easternDay(t) {
+  const f = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' });
+  return f.format(new Date(t));
+}
+function etMidnight(dayN) {
+  const base = dayN * 864e5;
+  const h = +new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric', hourCycle: 'h23' }).format(new Date(base + 12 * 36e5));
+  return base + (12 - h) * 36e5;
+}
+export function passSeason(t) {
+  const el = Math.max(0, dnum(easternDay(t == null ? Date.now() : t)) - dnum(PASS_EPOCH));
+  const n = Math.floor(el / PASS_LEN) + 1;
+  return { n: n, endsAt: etMidnight(dnum(PASS_EPOCH) + n * PASS_LEN) };
 }

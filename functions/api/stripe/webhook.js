@@ -46,7 +46,7 @@
  * order, which is load bearing: a yearly plan (price, then metadata) first, then a
  * recurring bundle (metadata), then the Arcade Card.
  */
-import { bundleByKey, yearlyBonus, bundleForYearPrice } from './_bundles.js';
+import { bundleByKey, yearlyBonus, bundleForYearPrice, bucketByKey, passSeason } from './_bundles.js';
 
 export async function onRequestPost(context) {
   const { env, request } = context;
@@ -102,6 +102,13 @@ export async function handleEvent(env, type, obj) {
         }
       } else if (userId) {
         await upsertSub(env, userId, obj.customer, sub);
+      }
+    } else if (userId && obj.mode === 'payment' && obj.metadata && obj.metadata.bucket) {
+      // a Run The Floor coin bucket: filed once, keyed on the session. It is
+      // delivered whatever BUCKETS_ENABLED says now: a session that was paid
+      // is owed its coins even if the switch went off while it was open.
+      if (obj.payment_status === 'paid' || obj.payment_status === 'no_payment_required') {
+        await grantBucket(env, userId, obj.metadata.bucket, obj);
       }
     } else if (userId && obj.mode === 'payment' && bundleKey) {
       // one-time premium bundle: grant once nothing is owed on the session.
@@ -389,6 +396,7 @@ async function unclaimEvent(env, id) {
 async function grantBundle(env, userId, bundleKey, session) {
   const bundle = bundleByKey(bundleKey);
   if (!bundle) throw new Error('unknown bundle ' + bundleKey);
+  if (bundle.season) return grantSeason(env, userId, bundleKey, bundle, session);
 
   const now = new Date();
   const rows = bundle.grants.map(function (g) {
@@ -458,6 +466,64 @@ async function grantBundle(env, userId, bundleKey, session) {
   };
   await post(rest, 'resolution=merge-duplicates');
   await post(once, 'resolution=ignore-duplicates');
+}
+
+/* THE FLOOR PASS: one row, ending at the pass season's last Eastern midnight
+ * (_bundles.js passSeason, the same arithmetic as hoops/pass.js). Written
+ * straight, because 124's premium_grant_bundle counts in months. A row left from
+ * an earlier season is moved onto this one. A row with no end date is never
+ * moved, by 124's trigger; the pass is never sold that way, so none exists. */
+async function grantSeason(env, userId, bundleKey, bundle, session) {
+  const now = Date.now(), s = passSeason(now);
+  const rows = bundle.grants.map(function (g) {
+    return {
+      user_id: userId,
+      product: g.product,
+      source: 'bundle:' + bundleKey,
+      payload: { checkout_session: session.id, stripe_customer: session.customer || null, season: s.n },
+      expires_at: new Date(s.endsAt).toISOString(),
+      fulfilled_at: new Date(now).toISOString(),
+      granted_at: new Date(now).toISOString()
+    };
+  });
+  const res = await fetch(env.SUPABASE_URL + '/rest/v1/premium_unlocks?on_conflict=user_id,product', {
+    method: 'POST',
+    headers: {
+      apikey: env.SUPABASE_SERVICE_ROLE,
+      Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE,
+      'Content-Type': 'application/json',
+      Prefer: 'resolution=merge-duplicates'
+    },
+    body: JSON.stringify(rows)
+  });
+  if (!res.ok) {
+    var detail = '';
+    try { detail = await res.text(); } catch (e) {}
+    throw new Error('supabase season upsert ' + res.status + ' ' + detail);
+  }
+}
+
+/* A RUN THE FLOOR COIN BUCKET, filed in rtf_coin_buys (141) through rtf_coin_buy,
+ * keyed on the session, so a retried delivery pays once. The coins and packs are
+ * read off the catalog, never off the session, so a session cannot name its own
+ * amount. An unknown bucket throws, for grantBundle's reason. */
+async function grantBucket(env, userId, bucketKey, session) {
+  const b = bucketByKey(bucketKey);
+  if (!b) throw new Error('unknown bucket ' + bucketKey);
+  const res = await fetch(env.SUPABASE_URL + '/rest/v1/rpc/rtf_coin_buy', {
+    method: 'POST',
+    headers: {
+      apikey: env.SUPABASE_SERVICE_ROLE,
+      Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ p_session: session.id, p_user: userId, p_bucket: bucketKey, p_coins: b.coins, p_packs: b.packs })
+  });
+  if (!res.ok) {
+    var detail = '';
+    try { detail = await res.text(); } catch (e) {}
+    throw new Error('rtf_coin_buy ' + res.status + ' ' + detail);
+  }
 }
 
 /* WHEN A RECURRING GRANT RUNS OUT, from the subscription as Stripe has it.

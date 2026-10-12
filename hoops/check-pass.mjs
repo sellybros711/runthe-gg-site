@@ -259,6 +259,19 @@ async function browser(){
   const won = await page.evaluate(() => ({ text: document.querySelector('.fp-won').textContent, packs: RTF_WARD.shop.credits('street').filter((c) => /^fp:/.test(c.key)).length, got: !!document.querySelector('.fp-cell.free.got[data-tier="5"]') }));
   ok(/Tier 5/.test(won.text) && won.packs === 1 && won.got, '12 claiming tier 5 reveals the pack, files it and marks the tier Got');
   if (process.env.SHOT) await page.screenshot({ path: process.env.SHOT.replace('.png', '-won.png') });
+  /* ON SALE IS NOT OWNED (Phase 6). Dark, there is no buy button. Flipped on
+     sale in the page, the sheet offers Premium at its price and the lane stays
+     locked; the press goes to the one checkout, stopped here. */
+  ok(await page.evaluate(() => !document.querySelector('.fp-ov .fp-buy')), '12b dark: the pass sheet has no buy button');
+  await page.evaluate(() => { RTF_PASS.PASS_PAID_ENABLED = true; RTF_AUTH.token = () => 'tok'; RTF_WARD.pass.settle(); });
+  await page.waitForSelector('.fp-ov .fp-buy', { timeout: 3000 }).catch(() => {});
+  const sale = await page.evaluate(() => ({ buy: (document.querySelector('.fp-ov .fp-buy') || {}).textContent || '', lock: document.querySelectorAll('.fp-ov .fp-cell.prem.lock').length, open: RTF_WARD.pass.paidOpen() }));
+  ok(/\$9\.99/.test(sale.buy) && sale.lock === 60 && !sale.open, '12b on sale: a buy button at its price, and the lane still locked (' + sale.buy + ', ' + sale.lock + ' locked)');
+  await page.evaluate(() => document.querySelector('.fp-ov .fp-buy').click());
+  await page.waitForSelector('.fp-ov .fp-err:not([hidden])', { timeout: 3000 }).catch(() => {});
+  ok(out.some((u) => /checkout-bundle/.test(u)) && await page.evaluate(() => !!document.querySelector('.fp-ov .fp-err:not([hidden])')), '12b on sale: the press goes to the one checkout, and a refusal is said');
+  out.length = 0;
+  await page.evaluate(() => { RTF_PASS.PASS_PAID_ENABLED = false; });
   await page.evaluate(() => { RTF_WARD.pass._paid(() => true); RTF_WARD.pass.settle(); });
   await page.waitForFunction(() => document.querySelectorAll('.fp-ov .fp-cell.prem.ready').length > 0);
   await page.evaluate(() => document.querySelector('.fp-ov .fp-all').click());

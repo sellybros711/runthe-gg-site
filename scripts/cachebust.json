@@ -2639,8 +2639,8 @@
       "sha": "fef6b540bb5fe5c2"
     },
     "economy.js": {
-      "v": "2",
-      "sha": "8df34bd804a43925"
+      "v": "3",
+      "sha": "8e39be51d53bdfe4"
     },
     "catalog.js": {
       "v": "4",
@@ -2663,20 +2663,20 @@
       "sha": "519be239e107831b"
     },
     "wardrobe.js": {
-      "v": "7",
-      "sha": "9c98b8f2e2c7e53d"
+      "v": "8",
+      "sha": "e7637be795976781"
     },
     "earn.js": {
-      "v": "4",
-      "sha": "6c45c4c4c6a4d732"
+      "v": "5",
+      "sha": "df334e49fa2d4427"
     },
     "board.js": {
       "v": "9",
       "sha": "790f294d4dc8a577"
     },
     "auth.js": {
-      "v": "6",
-      "sha": "e2e3fe9541a545d4"
+      "v": "7",
+      "sha": "201b9525c2dff333"
     },
     "/assets/cloudsave.js": {
       "v": "2",
@@ -2719,20 +2719,20 @@
       "sha": "dcb77ca252ced228"
     },
     "closet-ui.js": {
-      "v": "7",
-      "sha": "62e2135e6e746afb"
+      "v": "8",
+      "sha": "69618a3097450a83"
     },
     "shop-ui.js": {
-      "v": "2",
-      "sha": "c38e04763949d7a1"
+      "v": "3",
+      "sha": "a57c2101daab6340"
     },
     "daily-ui.js": {
       "v": "1",
       "sha": "5763d7c9e24f2139"
     },
     "pass-ui.js": {
-      "v": "1",
-      "sha": "c14ea34124171270"
+      "v": "2",
+      "sha": "92fbd757b7e41f89"
     },
     "card-ui.js": {
       "v": "1",

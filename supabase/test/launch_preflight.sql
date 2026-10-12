@@ -648,7 +648,27 @@ check_rows(sort, migration, what, breaks, ok) as (
       'Board rows show the jersey, not the player, and nobody can open his card. His idle and card items stay on the device.',
       (select count(*) > 0 from col where tbl = 'rtf_profiles' and name = 'player')
       and (select count(*) > 0 from proc where name = 'rtf_player_ok')
-      and (select count(*) > 0 from proc where name = 'rtf_set_profile' and body like '%p_player%'))
+      and (select count(*) > 0 from proc where name = 'rtf_set_profile' and body like '%p_player%')),
+
+  -- RUN THE FLOOR'S PAID COINS, shipped dark. Not needed while BUCKETS_ENABLED
+  -- is false. Once it is on, a bucket paid for against a database without this
+  -- is a webhook answering 500 and Stripe retrying, with the buyer's coins late.
+  (55, '141_hoops_wallet',
+      'bought Run The Floor coins are kept on the server',
+      'Needed before the coin buckets go on sale: a paid bucket cannot be filed, and the page reads no bought coins.',
+      (select count(*) > 0 from col where tbl = 'rtf_coin_buys' and name = 'session_id')
+      and (select count(*) > 0 from col where tbl = 'rtf_coin_spends' and name = 'key')
+      and (select count(*) > 0 from proc where name = 'rtf_coin_buy')
+      and (select count(*) > 0 from proc where name = 'rtf_wallet_state')
+      and (select count(*) > 0 from proc where name = 'rtf_wallet_spend')),
+
+  -- THE FLOOR PASS AS A PRODUCT, shipped dark. Not needed while
+  -- PASS_PAID_ENABLED is false. Once it is on, a paid pass against a database
+  -- without it is refused by the product constraint and the webhook answers 500.
+  (56, '142_hoops_pass',
+      'the Floor Pass premium lane can be granted as a product',
+      'Needed before the Floor Pass goes on sale: a paid pass cannot be written to premium_unlocks.',
+      (select count(*) > 0 from con where name = 'premium_unlocks_product_ck' and def like '%rtf_pass%'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

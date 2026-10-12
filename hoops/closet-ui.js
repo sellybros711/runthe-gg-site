@@ -159,11 +159,15 @@ function pane(host, o){
     var buy = host.querySelector('.cl-buy');
     if (buy) buy.onclick = function(){
       if (!buyArm) { buyArm = trying.id; buy.textContent = 'Tap again to spend ' + money(X.priceOf(CAT.item(trying.id))); buy.classList.add('is-arm'); return; }
-      var r = W.shop.buy(trying.id);
-      buyArm = null;
-      if (r && !r.err) { W.equip(ctx, v.slot, trying.id); trying = null; }
-      else bought = r && r.err;
-      draw();
+      var id = trying.id, done = function(r){
+        buyArm = null;
+        if (r && !r.err) { W.equip(ctx, v.slot, id); if (trying && trying.id === id) trying = null; }
+        else bought = r && r.err;
+        draw();
+      };
+      /* short of coins, bought coins on the server may cover it (Phase 6) */
+      if (W.shop.covered) W.shop.covered(X.priceOf(CAT.item(id)), function(){ return W.shop.buy(id); }).then(done);
+      else done(W.shop.buy(id));
     };
     var back = host.querySelector('.cl-back');
     if (back) back.onclick = function(){ trying = null; draw(); };

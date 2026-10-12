@@ -34,6 +34,8 @@
  * before repeating it in any copy.
  */
 
+import { BUCKETS } from '../../functions/api/stripe/_bundles.js';
+
 const CATALOG = [
   {
     lookupKey: 'ps_premium_bundle_once',
@@ -87,6 +89,30 @@ const CATALOG = [
       metadata: { site_bundle: 'floor-pro' },
     },
   },
+  /* RUN THE FLOOR'S REAL MONEY, SHIPPED DARK. A Price sells nothing by existing,
+   * and these also wait on their switches in _bundles.js (PASS_PAID_ENABLED and
+   * BUCKETS_ENABLED, both false) and their migrations (142 and 141). The Floor
+   * Pass is $9.99 a SEASON, one-time; the buckets are Run The Tour's own sizes. */
+  {
+    lookupKey: 'rtf_pass_season',
+    envVar: 'STRIPE_PRICE_RTF_PASS',
+    amountCents: 999,
+    product: {
+      name: 'Floor Pass',
+      description: 'The premium lane of this season\'s Floor Pass in Run The Floor: every premium tier to claim, for this season. One payment, does not renew.',
+      metadata: { site_bundle: 'floor-pass' },
+    },
+  },
+  ...Object.entries(BUCKETS).map(([key, b]) => ({
+    lookupKey: 'rtf_' + key.replace(/-/g, '_'),
+    envVar: b.envPrice,
+    amountCents: b.cents,
+    product: {
+      name: 'Run The Floor: ' + b.name,
+      description: b.coins.toLocaleString('en-US') + ' coins in Run The Floor' + (b.packs.length ? ', plus ' + b.packs.length + ' pack' + (b.packs.length === 1 ? '' : 's') : '') + '. Coins are spent in the game and are not money.',
+      metadata: { site_bundle: key },
+    },
+  })),
 ];
 
 const KEY = process.env.STRIPE_SECRET_KEY;

@@ -537,6 +537,57 @@ values ('<user uuid>', 'rtf_premium', 'comp')
 on conflict (user_id, product) do update set expires_at = null;
 ```
 
+## Run The Floor's coin buckets and Floor Pass (shipped dark)
+
+Both are built and **off**. Nothing below sells anything until its switch is flipped,
+and each switch is the whole of its own go-live. The design is in
+`hoops/design/ECONOMY.md` section 9.
+
+| | switch | price env var | migration | what is bought |
+|---|---|---|---|---|
+| Coin buckets | `BUCKETS_ENABLED` in `_bundles.js` AND `hoops/economy.js` | `STRIPE_PRICE_RTF_COINS_1` to `_5` | `141_hoops_wallet.sql` | coins on the server, plus free packs |
+| Floor Pass premium | `PASS_PAID_ENABLED` in `_bundles.js` AND `hoops/pass.js` | `STRIPE_PRICE_RTF_PASS` | `142_hoops_pass.sql` | one `rtf_pass` row ending with the pass season |
+
+**The two copies of each switch must agree**; `node scripts/stripe/check-floor-money.mjs`
+fails if they do not, and the page draws its shelf and buy button off its own copy.
+
+**Bought coins never live in the page's ledger.** They are rows in `rtf_coin_buys`,
+written only by the webhook through `rtf_coin_buy` (keyed on the checkout session, so a
+retried delivery pays once). The page reads the balance with `rtf_wallet_state` and,
+when a press is short, moves exactly the shortfall with `rtf_wallet_spend` under a key
+it also files in its ledger. A bucket's packs arrive as free packs, keyed on the session.
+
+**The pass is for the season it is bought in.** The webhook writes one row with
+`expires_at` at the pass season's last Eastern midnight (`passSeason` in `_bundles.js`,
+held to `hoops/pass.js` by the check). A pass already running this season is refused
+by the one bundle per account rule. A buyer on the season's last evening gets that
+evening only; the sheet says the pass ends with the season.
+
+### Go-live, in this order (for either one)
+
+1. **Run the migration** in the Supabase SQL editor (141 for the buckets, 142 for the
+   pass). Paste `supabase/test/launch_preflight.sql`: row 55 (141) or 56 (142) reads **yes**.
+2. **Create the Prices**: `STRIPE_SECRET_KEY=sk_live_... node scripts/stripe/setup-premium-bundles.mjs`
+   mints `rtf_pass_season` ($9.99 one-time) and the five buckets ($1.99, $4.99, $9.99,
+   $19.99, $49.99, one-time). It is idempotent.
+3. **Add the env vars in Cloudflare Pages** (Production) and redeploy. Without them the
+   checkout answers 503 even with the switch on.
+4. **Flip the switch in BOTH files in one commit**, bump the `?v=` on `economy.js` or
+   `pass.js` in `hoops/index.html`, run `node scripts/check-cachebust.mjs --update` and
+   `node scripts/stripe/check-floor-money.mjs`, and push.
+5. **Nothing to change on the webhook.** A bucket is `checkout.session.completed` with
+   `metadata.bucket`; the pass is the ordinary one-time bundle path.
+6. **Test the pass** with a 100% off promotion code restricted to the Floor Pass. **A
+   bucket takes no promotion code**, so testing one is a real charge: refund it in the
+   Dashboard, then take the coins back by hand:
+
+```sql
+select public.rtf_coin_refund('<cs_live_... session id>');
+```
+
+A refunded bucket's packs stay filed if the page already filed them; that is rare and
+small enough to leave to the refund itself.
+
 ## Before public launch
 
 - Flip `arcade/tokens.js` `TESTING = false` to enforce the tiers.
