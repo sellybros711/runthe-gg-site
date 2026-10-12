@@ -43,6 +43,15 @@ function short(n){ return n >= 10000 ? Math.round(n / 1000) + 'K' : money(n); }
 /* the pane remembers where it was between redraws */
 var view = { street: { slot: 'top', owned: false }, court: { slot: 'band', owned: false } };
 
+/* the try-on's buy button: sold pieces only, and only for an account */
+function buyHtml(id, signedIn, coins){
+  var it = CAT.item(id);
+  if (!it || !CAT.sold(it) || !W.shop) return '';
+  if (!signedIn) return '<span class="cl-buynote">Sign in to buy</span>';
+  var p = X.priceOf(it);
+  if (coins < p) return '<span class="cl-buynote">' + money(p) + ' coins. ' + money(p - coins) + ' short</span>';
+  return '<button type="button" class="k-btn cl-buy">Buy · ' + money(p) + '</button>';
+}
 function priceText(it, owned){
   if (owned) return it.free ? 'Starter' : 'Owned';
   if (it.excl) return 'Earned';
@@ -59,7 +68,7 @@ function pane(host, o){
   var slots = W.slotsOf(ctx);
   if (slots.indexOf(v.slot) < 0) v.slot = slots[0];
   /* what is on the figure: the saved fit, with any try-on laid over it */
-  var trying = null;
+  var trying = null, buyArm = null, bought = null;
 
   function draw(){
     var om = W.ownedMap(), lo = W.loadout(ctx), shown = Object.assign({}, lo);
@@ -106,7 +115,7 @@ function pane(host, o){
       + '<div class="cl-top"><div class="cl-fig">' + fig + '</div><div class="cl-side">'
       + '<div class="cl-coins"><b>' + money(coins) + '</b> coins</div>'
       + '<div class="cl-wear">' + (wearing.length ? wearing.length + ' piece' + (wearing.length === 1 ? '' : 's') + ' on' : (ctx === 'street' ? 'Starter clothes' : 'The plain uniform')) + '</div>'
-      + (trying ? '<div class="cl-try"><span>Trying on <b>' + esc(CAT.item(trying.id).name) + '</b></span><button type="button" class="cl-back">Back to my fit</button></div>' : '')
+      + (trying ? '<div class="cl-try"><span>Trying on <b>' + esc(CAT.item(trying.id).name) + '</b></span>' + buyHtml(trying.id, signedIn, coins) + (bought ? '<span class="cl-buynote" role="status">' + (bought === 'coins' ? 'Not enough coins.' : 'That did not go through.') + '</span>' : '') + '<button type="button" class="cl-back">Back to my fit</button></div>' : '')
       + '</div></div>'
       + '<div class="cl-slots" role="group" aria-label="Slots">' + chips + '</div></div>'
       + '<div class="cl-bar"><span class="k k-label">' + esc(LABEL[v.slot] || v.slot) + '</span>'
@@ -126,11 +135,22 @@ function pane(host, o){
       b.onclick = function(){
         var id = b.getAttribute('data-id') || null;
         if (!id) { trying = null; W.equip(ctx, v.slot, null); draw(); return; }
+        buyArm = null; bought = null;
         if (W.owns(id)) { trying = null; W.equip(ctx, v.slot, id); }
         else trying = { slot: v.slot, id: id };
         draw();
       };
     });
+    /* BUY asks twice: the first press names the price, the second spends it */
+    var buy = host.querySelector('.cl-buy');
+    if (buy) buy.onclick = function(){
+      if (!buyArm) { buyArm = trying.id; buy.textContent = 'Tap again to spend ' + money(X.priceOf(CAT.item(trying.id))); buy.classList.add('is-arm'); return; }
+      var r = W.shop.buy(trying.id);
+      buyArm = null;
+      if (r && !r.err) { W.equip(ctx, v.slot, trying.id); trying = null; }
+      else bought = r && r.err;
+      draw();
+    };
     var back = host.querySelector('.cl-back');
     if (back) back.onclick = function(){ trying = null; draw(); };
     var own = host.querySelector('.cl-own');
@@ -193,6 +213,9 @@ var CSS = [
 '.cl-coins b{font:400 15px var(--k-f-pixel);color:var(--k-gold);margin-right:4px;}',
 '.cl-try{background:#2a2412;padding:6px 8px;color:var(--k-ink);display:flex;flex-direction:column;gap:4px;align-items:flex-start;}',
 '.cl-try b{color:var(--k-gold);}',
+'.cl-buy{min-height:40px;padding:8px 14px;font-size:13px;margin:2px 0;}',
+'.cl-buy.is-arm{filter:brightness(1.25);}',
+'.cl-buynote{font:700 12px var(--k-f-text);color:var(--k-ink-3);}',
 '.cl-back{border:0;background:none;color:var(--k-ink);font:800 12px var(--k-f-text);text-decoration:underline;text-underline-offset:3px;padding:6px 0;min-height:32px;cursor:pointer;}',
 '.cl-guest{margin:10px 0 0;color:var(--k-ink-3);font:600 12.5px var(--k-f-text);text-align:left;}',
 '.cl-slots{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0 -4px 8px;padding:2px 4px 6px;}',

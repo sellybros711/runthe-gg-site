@@ -353,6 +353,21 @@ One item a pack. Five for the price of four, same tier. Pity is shared across
 tiers and derived from the open log. A pack can pull either look; the reveal
 labels Off Court or On Court. Odds are printed on every pack.
 
+### As built (Phase 2)
+
+- `hoops/packs.js` is the rules: Run The Tour's odds and pity, five for the
+  price of four, the drop leaning of the seasonal pack, shards and the exchange
+  ladder. Every row is a keyed log on the wardrobe record, so a merge is a
+  union and pity is read off the log in time order.
+- `RTF_WARD.shop` buys, opens and exchanges on copies of the wardrobe and the
+  wallet and saves both only when the call went through. A guest is refused.
+- The Shop tab (`shop-ui.js`) prints the odds on every pack, asks twice before
+  spending coins, shows the pull on his own player, and says once that the
+  badges held when the wallet started were counted, not paid. The welcome
+  Streetball Pack is a free credit given by settle().
+- The closet sells a tried on piece at its direct price, asking twice.
+- `check-packs.mjs` holds all of it, each claim proved by breaking it once.
+
 ### The daily loop
 
 | | day 1 | 2 | 3 | 4 | 5 | 6 | 7 |

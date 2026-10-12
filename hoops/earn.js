@@ -25,9 +25,11 @@
 var API_VERSION = 1;
 
 /* node: the checker hands these in through _use; the page reads the globals */
-var env = { econ: null, wallet: null, badges: null, signedIn: null, notify: null };
+var env = { econ: null, wallet: null, badges: null, signedIn: null, notify: null, ward: null, packs: null };
 function X(){ return env.econ || (typeof window !== 'undefined' ? window.RTF_ECON : null); }
 function W(){ return env.wallet || (typeof window !== 'undefined' ? window.RTF_WALLET : null); }
+function WD(){ return env.ward || (typeof window !== 'undefined' ? window.RTF_WARD : null); }
+function PK(){ return env.packs || (typeof window !== 'undefined' ? window.RTF_PACKS : null); }
 function BD(){ return env.badges || (typeof window !== 'undefined' ? window.RTF_BADGES : null); }
 function signedIn(){
   if (env.signedIn) return !!env.signedIn();
@@ -107,9 +109,22 @@ function settle(career){
   var x = X(), w = W(); if (!x || !w) return null;
   settled = true;
   pay('welcome', x.WELCOME, 'welcome');
+  welcomePack();
   var got = earnedIds(career);
   if (w.baseline('bg:base', got.map(function(b){ return 'bg:' + b.id; }))) return { baseline: got.length };
   return { paid: badges(career) };
+}
+/* THE WELCOME STREETBALL PACK, once an account: a free pack credit on the
+   wardrobe record, keyed 'welcome', so it is one pack however many devices
+   settle. The shop opens it and says the badges already held were counted. */
+function welcomePack(){
+  try {
+    var wd = WD(), pk = PK(); if (!wd || !pk || !wd.load) return false;
+    var st = wd.clean(wd.load());
+    if (!pk.grantCredit(st, 'welcome', 'street')) return false;
+    wd.save(st);
+    return true;
+  } catch (e) { return false; }
 }
 /* Every badge the career has and the wallet has not paid. Nothing before the
    baseline exists, so a session that has not settled pays no badges at all:

@@ -161,7 +161,7 @@ async function browser(){
   const figBefore = await page.evaluate(() => { const i = document.querySelector('#s-car img.rtf-baller, #s-car canvas'); return i ? (i.src || i.toDataURL()) : ''; });
   await page.click('#cr-lookbtn');
   await page.waitForSelector('[data-ltab="street"]', { timeout: 10000 });
-  ok(await page.evaluate(() => [...document.querySelectorAll('[data-ltab]')].map((b) => b.textContent).join('|')) === 'Body|Off court|On court', '7 the Look sheet has Body, Off court and On court');
+  ok(await page.evaluate(() => [...document.querySelectorAll('[data-ltab]')].map((b) => b.textContent).join('|')) === 'Body|Off court|On court|Shop', '7 the Look sheet has Body, Off court, On court and the Shop');
   await page.click('[data-ltab="street"]');
   await page.waitForSelector('#cr-closet .cl-tile');
   const m = await page.evaluate(() => {

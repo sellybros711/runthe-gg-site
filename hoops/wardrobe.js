@@ -35,11 +35,14 @@ var API_VERSION = 1;
 var KEY = 'rtf.ward.v1';
 var MAX_FITS = 12;
 var CAT = typeof require === 'function' && typeof window === 'undefined' ? require('./catalog.js') : (typeof window !== 'undefined' ? window.RTF_CATALOG : null);
+/* the pack logs ride on this record (hoops/packs.js says what they are) */
+var PK = typeof require === 'function' && typeof window === 'undefined' ? require('./packs.js') : (typeof window !== 'undefined' ? window.RTF_PACKS : null);
 
 function obj(x){ return x && typeof x === 'object' && !Array.isArray(x) ? x : {}; }
 function now(){ return Date.now(); }
 
-function fresh(){ return { v: 1, own: {}, w: { street: {}, court: {}, ts: 0, tc: 0 }, fits: {} }; }
+/* po, pc, sg, sx: the pack logs (hoops/packs.js); nb: the shop's welcome was read */
+function fresh(){ return { v: 1, own: {}, w: { street: {}, court: {}, ts: 0, tc: 0 }, fits: {}, po: {}, pc: {}, sg: {}, sx: {}, nb: 0 }; }
 /* Anything read back from storage or the shelf: unknown shapes become empty. */
 function clean(s){
   s = obj(s);
@@ -59,6 +62,7 @@ function clean(s){
     if (x.ctx !== 'street' && x.ctx !== 'court') continue;
     out.fits[k] = { n: String(x.n || 'Outfit').slice(0, 24), ctx: x.ctx, set: Object.assign({}, obj(x.set)), t: +x.t || 0 };
   }
+  if (PK) PK.cleanLogs(out, s);
   return out;
 }
 
@@ -225,10 +229,12 @@ function merge(a, b){
   /* keys in one order, so two merged copies are the same bytes */
   Object.keys(own).sort().forEach(function(k){ out.own[k] = own[k]; });
   Object.keys(fts).sort().forEach(function(k){ out.fits[k] = fts[k]; });
+  if (PK) PK.mergeLogs(out, a, b);
   return out;
 }
-/* What only grows: items owned, then outfits ever made (a tombstone counts). */
-function progress(s){ s = clean(s); return Object.keys(s.own).length * 1000 + Math.min(999, Object.keys(s.fits).length); }
+/* What only grows: items owned, then pack log rows, then outfits ever made (a
+   tombstone counts). */
+function progress(s){ s = clean(s); return Object.keys(s.own).length * 1e9 + (PK ? PK.logCount(s) : 0) * 1000 + Math.min(999, Object.keys(s.fits).length); }
 
 /* ─── the coins, on this device ───────────────────────────────────────────
    The ledger and every rule about it is hoops/economy.js; this is only where
@@ -260,6 +266,56 @@ var WALLET = {
 };
 if (typeof window !== 'undefined') window.RTF_WALLET = WALLET;
 
+/* ─── the shop: buying, packs and the exchange ─────────────────────────────
+   The one door that touches BOTH records, so the UI never does. Each call
+   works on copies of the wardrobe and the wallet and saves both only when it
+   went through. A guest browses and is refused here (decision 6). */
+var authFn = function(){ return typeof window !== 'undefined' && !!(window.RTF_AUTH && window.RTF_AUTH.state && window.RTF_AUTH.state().signedIn); };
+function both(fn){
+  if (!authFn()) return { err: 'signin' };
+  if (!PK || !X || !CAT) return { err: 'off' };
+  var st = clean(JSON.parse(JSON.stringify(load()))), w = X.clean(JSON.parse(JSON.stringify(wLoad())));
+  var r = fn(st, w);
+  if (r && !r.err) { wSave(w); save(st); }
+  return r;
+}
+var SHOP = {
+  /* a piece at its price, keyed so the same purchase on two devices is one */
+  buy: function(id){
+    return both(function(st, w){
+      var it = CAT.item(id);
+      if (!it || !CAT.sold(it)) return { err: 'notsold' };
+      if (owns(id, st)) return { err: 'owned' };
+      var r = X.spend(w, 'buy:' + id, X.priceOf(it), id);
+      if (!r.ok) return { err: r.why === 'short' ? 'coins' : r.why };
+      st.own[id] = Date.now();
+      return { item: it };
+    });
+  },
+  /* opts.credit: open a free pack. A free pack's open is keyed on its credit,
+     so two devices opening the same free pack file one open. */
+  open: function(pack, opts){
+    opts = Object.assign({}, opts || {});
+    return both(function(st, w){
+      if (opts.credit) { var c = PK.credits(st, pack).filter(function(x){ return opts.credit === true || x.key === opts.credit; })[0]; if (!c) return { err: 'credit' }; opts.credit = c.key; opts.id = 'c:' + c.key; }
+      return PK.open(st, w, pack, opts);
+    });
+  },
+  bundle: function(pack, opts){ return both(function(st, w){ return PK.openBundle(st, w, pack, opts); }); },
+  exchange: function(rarity, opts){ return both(function(st, w){ return PK.exchange(st, w, rarity, opts); }); },
+  choose: function(id, itemId){ return both(function(st){ return PK.choose(st, id, itemId); }); },
+  /* the welcome panel was read (merge keeps the later) */
+  seenWelcome: function(){ var st = clean(load()); st.nb = Date.now(); save(st); },
+  /* reads, for the screen */
+  shards: function(){ return PK ? PK.shards(load()) : {}; },
+  credits: function(pack){ return PK ? PK.credits(load(), pack) : []; },
+  pity: function(){ return PK ? PK.pity(load()) : { sinceEpic: 0, sinceLeg: 0 }; },
+  pending: function(){ return PK ? PK.pendingChoice(load()) : null; },
+  welcomeSeen: function(){ return !!load().nb; },
+  signedIn: function(){ return authFn(); },
+  _auth: function(fn){ authFn = fn; },
+};
+
 var API = {
   API_VERSION: API_VERSION, KEY: KEY, MAX_FITS: MAX_FITS,
   fresh: fresh, clean: clean, load: load, save: save, reload: reload, onChange: onChange,
@@ -267,7 +323,7 @@ var API = {
   slotsOf: slotsOf, loadout: loadout, equip: equip, wearSet: wearSet, resolved: resolved, dress: dress, idleOf: idleOf, idle: idle,
   fits: fits, saveFit: saveFit, applyFit: applyFit, delFit: delFit,
   merge: merge, progress: progress,
-  wallet: WALLET,
+  wallet: WALLET, shop: SHOP,
   _reset: function(){ mem = null; subs = []; pubLast = ''; WALLET._reset(); },
 };
 if (typeof module !== 'undefined' && module.exports) module.exports = API;

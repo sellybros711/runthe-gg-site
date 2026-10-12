@@ -16348,6 +16348,7 @@ node hoops/check-wardrobe.mjs    every item drawn on every build and pose, and n
 node hoops/check-closet.mjs      what he owns and wears, two devices, the closet on a phone
 node hoops/check-earn.mjs        who earns coins, from what, and only once
 node hoops/check-idles.mjs       every idle frame inside the grid, every loop closes, the page plays it
+node hoops/check-packs.mjs       odds, pity, shards, the exchange, two devices, the shop on a phone
 psql ... -f supabase/139_hoops_wardrobe.sql   deploy by hand (preflight row 53)
 ```
 
@@ -16379,6 +16380,14 @@ psql ... -f supabase/139_hoops_wardrobe.sql   deploy by hand (preflight row 53)
   hanging and a raised arm holds it out level and the hand leaves the grid on a big man, so
   the in-betweens bend at the elbow; check-idles paints every frame on four bodies and fails
   on any part at the edge. A loop is at most 12 painted frames.
+- **Packs, shards and the exchange are keyed logs on the wardrobe record** (`po` opens,
+  `pc` free packs, `sg` shard grants, `sx` exchanges; `hoops/packs.js`). Pity, the shard
+  balance and the unused free packs are derived from them, never stored. A coin pack is
+  spent under `pk:<open>` (a bundle `pkb:`), a free pack is opened under `c:<credit>`, so
+  two devices file one open. A duplicate gives a shard always and coins back only when it
+  was bought. `RTF_WARD.shop` is the one door that touches both records; the shop screen
+  (`shop-ui.js`, the Look sheet's Shop tab) and the closet's Buy only press it. settle()
+  gives the welcome Streetball Pack (credit `welcome`) once an account.
 
 ## Run The Diamond, the baseball game
 

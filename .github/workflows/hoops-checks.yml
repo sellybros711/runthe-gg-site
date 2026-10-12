@@ -15,6 +15,7 @@ name: Hoops checks
 #   node hoops/check-economy.mjs        the coin ledger, the daily rule, the merge, the faucet
 #   node hoops/check-wardrobe.mjs       every item painted, in every pose, on every build
 #   node hoops/check-idles.mjs          every idle frame painted, the loop closes, the page plays it
+#   node hoops/check-packs.mjs          odds, pity, shards, the exchange, two devices, the shop on a phone
 #   node hoops/check-closet.mjs         what he owns and wears, two devices, the closet on a phone
 #   node hoops/check-earn.mjs           who earns coins, from what, and only once
 #   node hoops/check-story.mjs --quick  the story engine: order, arcs, traits, people, league
@@ -120,6 +121,12 @@ jobs:
       # reduced motion).
       - name: The idles
         run: node hoops/check-idles.mjs
+
+      # Packs roll their printed odds, pity holds, a free pack never mints
+      # coins, two devices file one open, the exchange steps a rarity up,
+      # and the shop works on a phone without letting a request out.
+      - name: Packs and the shop
+        run: node hoops/check-packs.mjs
 
       # Only what he owns is ever saved or drawn, two devices merge without
       # losing anything, and the closet wears a piece on a press.

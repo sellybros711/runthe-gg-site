@@ -2058,7 +2058,7 @@ function openLook(tab){
   var first = true, tabNow = tab || 'body';
   var closet = !!(window.RTF_CLOSET && window.RTF_WARD);
   /* the body and face are this career's; the clothes are the account's */
-  var TABS = [['body', 'Body'], ['street', 'Off court'], ['court', 'On court']];
+  var TABS = [['body', 'Body'], ['street', 'Off court'], ['court', 'On court']].concat(window.RTF_SHOP ? [['shop', 'Shop']] : []);
   var draw = function(){
     var tabs = closet ? '<div class="k-tabs cr-ltabs" role="tablist">' + TABS.map(function(t){
       return '<button type="button" class="k-tab" role="tab" data-ltab="' + t[0] + '" aria-selected="' + (t[0] === tabNow) + '">' + t[1] + '</button>'; }).join('') + '</div>' : '';
@@ -2076,7 +2076,8 @@ function openLook(tab){
       $('cr-look-save').onclick = function(){ C.setLook(L, look); save(); closeOff(); render(); };
       $('cr-sheet-x').onclick = closeOff;
     } else {
-      window.RTF_CLOSET.pane($('cr-closet'), { ctx: tabNow, look: withSize(look, L), c1: k.primary, c2: k.secondary, num: L.num });
+      if (tabNow === 'shop') window.RTF_SHOP.pane($('cr-closet'), { look: withSize(look, L), c1: k.primary, c2: k.secondary, num: L.num });
+      else window.RTF_CLOSET.pane($('cr-closet'), { ctx: tabNow, look: withSize(look, L), c1: k.primary, c2: k.secondary, num: L.num });
       /* what he put on is saved already: Done only has to show it */
       $('cr-sheet-x').onclick = function(){ closeOff(); render(); };
     }
