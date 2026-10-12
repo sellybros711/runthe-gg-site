@@ -106,6 +106,12 @@ var KIT = {
   neon:{ g:['#141030', '#1a1440', '#100c26', 0.3], grid:true, p:['#23307a', '#2a3a90', '#1c2868'], tree:['pylon', 'pylon', 'cab'], leaves:['#ff2bd6', '#2bf0ff', '#ffe02b'], bark:'#2a2440',
     low:['cube', 'cone', 'cone'], brk:'neoncube', haz:null, dens:0.35, lm:['cabinets', 'sign', 'pylons'], wall:['#ff2bd6', '#7a0e66'],
     npc:{ skin:'tan', polo:'rtggreen', hat:'black', pants:'navy', hair:'jet', hairStyle:'mohawk', cap:false, gender:'male' }, who:'the arcade keeper' },
+  school:{ g:['#78ad58', '#82b862', '#6ea24f', 0.18], mow:true, p:['#4c5058', '#565a62', '#42464e'], tree:['broad', 'broad', 'broad'], leaves:['#2f7d3e', '#3b8f4a', '#25693a'], bark:'#5a3d2e',
+    low:['bush', 'rock', 'bush'], brk:'trashcan', haz:'water', hazC:['#5a7896', '#8eaccc'], lm:['school', 'swings', 'slide'], wall:['#b5452e', '#7a2a1a'],
+    npc:{ skin:'medium', polo:'navy', hat:'red', pants:'khaki', hair:'black', hairStyle:'short', cap:true, hatStyle:'cap', gender:'male' }, who:'the crossing guard' },
+  iceage:{ g:['#e6edf2', '#f2f6f9', '#d6e0e7', 0.2], p:['#b8aa92', '#c8bca6', '#a89a82'], tree:['pine', 'pine', 'dead'], leaves:['#1e3f30', '#28503e', '#173a2a'], bark:'#4a3626', snow:true,
+    low:['rocksnow', 'bushsnow', 'rock'], brk:'ice', haz:'slow', hazC:['#1e1a16', '#3a3028'], bogC:['#1e1a16', '#3a3028'], lm:['mammoth', 'cave', 'tusks'], wall:['#cfeaf2', '#6fb6d0'],
+    npc:{ skin:'tan', polo:'gold', hat:'tan', pants:'khaki', hair:'darkbrown', hairStyle:'long', cap:false, gender:'male' }, who:'the cave dweller' },
   haunted:{ g:['#2e3a2a', '#36442e', '#283224', 0.2], p:['#5d4634', '#6d5440', '#4d3a2a'], tree:['dead', 'dead', 'dead'], leaves:['#3a4a2e', '#4a5a34', '#2e3a24'], bark:'#2b2229',
     low:['tomb', 'rock', 'pumpkin'], brk:'pumpkin', haz:'slow', hazC:['#5d4634', '#4a3628'], lm:['crypt', 'graves', 'fenceyard'], wall:['#4a4652', '#24222a'],
     npc:{ skin:'porcelain', polo:'black', hat:'black', pants:'grey', hair:'white', hairStyle:'long', cap:false, gender:'female' }, who:'the caretaker' },
@@ -437,7 +443,7 @@ var BLOCKR = { pin:0.1, broad:0.6, pine:0.7, palm:0.5, cactus:0.7, dead:0.6, bas
 var LMSIZE = { shed:[9, 6, 11], green:[9, 7, 1], bench:[3, 1.2, 2], lamps:[1, 1, 7], ruin:[10, 3, 9], statue:[3, 3, 8], columns:[8, 5, 9], wreck:[12, 5, 7], boat:[6, 3, 3], barrels:[4, 3, 2.4],
   mesa:[11, 8, 13], tower:[5, 5, 15], cart:[5, 2.5, 3.5], basaltset:[7, 6, 9], vent:[5, 5, 4], skull:[5, 4, 5], igloo:[7, 7, 5], snowman:[3, 3, 5.5], cabin:[9, 6, 11],
   balloon:[6, 6, 16], kite:[3, 3, 12], pillar:[5, 5, 12], cabinets:[8, 2.5, 6.5], sign:[8, 1.5, 11], pylons:[6, 6, 12], crypt:[8, 6, 10], graves:[9, 6, 3], fenceyard:[9, 6, 3],
-  barn:[11, 8, 13], scarecrow:[3, 2, 7], cornfield:[10, 8, 5] };
+  barn:[11, 8, 13], scarecrow:[3, 2, 7], cornfield:[10, 8, 5], school:[12, 8, 13], swings:[8, 3, 6], slide:[4, 6, 5], mammoth:[9, 4, 6.5], cave:[10, 7, 6], tusks:[7, 2, 5] };
 
 /* ------------------------------------------------------------------------------- the ground */
 function land(P){
@@ -493,7 +499,7 @@ function mats(P){
   var out = {
     g:['', '', '', 0, gfn(k)], g0:['', '', '', 0, gfn(k0)], path:['', '', '', 0, pfn(k)], path0:['', '', '', 0, pfn(k0)],
     water:['', '', '', 0, lfn((P.sea ? ['#1f8fc8', '#5cc6ee'] : ['#3f86c8', '#6fb3e6']), 13)],
-    lava:['', '', '', 0, lfn(['#ff6a1a', '#ffc23a'], 9)], ice:['', '', '', 0, lfn(['#a8dcf4', '#e2f6ff'], 23)], bog:['', '', '', 0, lfn(['#5d4634', '#7a6044'], 17)],
+    lava:['', '', '', 0, lfn(['#ff6a1a', '#ffc23a'], 9)], ice:['', '', '', 0, lfn(['#a8dcf4', '#e2f6ff'], 23)], bog:['', '', '', 0, lfn(k.bogC || ['#5d4634', '#7a6044'], 17)],
     sand:['#ecdba4', '#f4e4b4', '#dcc88c', 0.2],
     carpet:[T.carpet || '#2f8f4e', T.carpet2 || '#2a8246', T.carpet || '#2f8f4e', 0.16], rail:[T.wall || '#f4efe2', T.wallHi || '#ffffff', T.wall || '#f4efe2', 0.1],
     cup:['#141414', '#202020', '#141414', 0],
@@ -693,6 +699,40 @@ BUILD.scarecrow = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, d
   if (tt > 3.8 && tt < 4.2 && Math.abs(dx) < 1.4 && Math.abs(dy) < 0.12) return '#6a4a2a'; if (tt > 2.6 && tt < 4.6 && Math.abs(dx) < 0.7 && Math.abs(dy) < 0.45) return (tt * 3 | 0) % 2 ? '#a8321e' : '#c84a2e';
   if (Math.hypot(dx, dy, tt - 5.1) < 0.55) return '#e2bc5c'; if (tt > 5.5 && tt < 6.3 && Math.hypot(dx, dy) < 0.9 - (tt - 5.5)) return '#6a4a2a'; return null; }, 0.125); };
 BUILD.cornfield = function(B, t, i){ for (var r = 0; r < 4; r++) for (var c = 0; c < 6; c++) BUILD.corn(B, { x:t.x - t.w / 2 + 0.8 + c * (t.w - 1.6) / 5, y:t.y - t.d / 2 + 1 + r * (t.d - 2) / 3, h:4.6 + hash(i, r * 7 + c, 2) }, i * 31 + r * 7 + c); };
+// ---- Schoolyard: the school with its bell, a swing set, a slide
+BUILD.school = function(B, t){ gable(B, t.x, t.y, t.w - 1, t.d - 1, 7, 3.4, function(dx, dy, tt){ return ((Math.floor(tt / 0.5) % 2) ? ((dx * 2 + 40 | 0) % 2) : ((dx * 2 + 40.5 | 0) % 2)) ? '#b5452e' : '#a33c27'; }, function(){ return '#4a4e56'; }, '#2b6a95');
+  box(B, t.x, t.y, 2, 2, 13, function(dx, dy, tt){ if (tt < 10.2) return null; var m = Math.max(Math.abs(dx), Math.abs(dy));
+    if (tt < 12){ if (m < 0.75 && m > 0.55 && Math.abs(Math.abs(dx) - Math.abs(dy)) < 0.2) return '#f6f3ea'; if (Math.hypot(dx, dy) < 0.32 + (11.6 - tt) * 0.12 && tt > 10.6 && tt < 11.6) return '#e2b33a'; return null; }
+    return m < 0.9 * (1 - (tt - 12) / 0.9) ? '#c0392b' : null; }, 0.125); };
+BUILD.swings = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var ft = 1.2 * (1 - tt / 5.4);
+  if (Math.abs(tt - 5.4) < 0.16 && Math.abs(dy) < 0.16 && Math.abs(dx) < 3.8) return '#e53935';
+  if (tt < 5.4 && Math.abs(Math.abs(dx) - 3.6) < 0.15 && Math.abs(Math.abs(dy) - ft) < 0.15) return '#c62828';
+  for (var k = -1; k <= 1; k++){ var sx = k * 1.8; if (tt > 1.1 && tt < 5.4 && Math.abs(Math.abs(dx - sx) - 0.35) < 0.06 && Math.abs(dy) < 0.07) return '#8a8f99';
+    if (Math.abs(dx - sx) < 0.5 && Math.abs(dy) < 0.26 && tt > 0.92 && tt < 1.14) return '#2b6a95'; }
+  return null; }, 0.125); };
+BUILD.slide = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var tc = 3.3 - (dy + 0.4) * 1.0;
+  if (dy > -0.4 && dy < 2.7){ if (Math.abs(dx) < 0.55 && tt < tc && tt > tc - 0.18) return '#ffd23f'; if (Math.abs(Math.abs(dx) - 0.6) < 0.1 && tt < tc + 0.3 && tt > tc - 0.18) return '#f0a400'; }
+  if (dy <= -0.4 && dy > -1.5 && Math.abs(dx) < 0.7 && tt > 3.15 && tt < 3.35) return '#2b6a95';
+  if (Math.abs(Math.abs(dx) - 0.62) < 0.09 && Math.abs(Math.abs(dy + 0.95) - 0.5) < 0.09 && tt < 4.4) return '#2b6a95';
+  if (Math.abs(dy + 1.6) < 0.08 && Math.abs(dx) < 0.55 && tt < 3.2 && (tt % 0.55) < 0.09) return '#c9d2dc';
+  if (Math.abs(dy + 1.6) < 0.08 && Math.abs(Math.abs(dx) - 0.5) < 0.08 && tt < 3.4) return '#8a8f99';
+  if (tt > 4.3 && tt < 4.9 && Math.abs(dx) < 0.85 && dy > -1.6 && dy < -0.3) return (tt > 4.7) ? '#e53935' : null;
+  return null; }, 0.125); };
+// ---- Ice Age: a woolly mammoth, a cave with paintings at its mouth, an arch of two great tusks
+BUILD.mammoth = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var fur = function(){ var n = hash(Math.floor(dx * 5), Math.floor(tt * 5) + Math.floor(dy * 5) * 13, 7 + i); return n < 0.2 ? '#5a3c22' : n > 0.85 ? '#9a6e44' : '#7a5434'; };
+  if (tt < 2.2 && Math.abs(Math.abs(dx) - 1.5) < 0.42 && Math.abs(Math.abs(dy) - 0.7) < 0.4) return tt < 0.3 ? '#3a281a' : '#6a4a2e';
+  if (Math.hypot(dx / 2.6, dy / 1.4, (tt - 3.3) / 1.7) < 1) return tt > 4.4 && dx < 0 ? '#5a3c22' : fur();
+  if (Math.hypot((dx - 2.5) / 1.1, dy / 1.0, (tt - 3.8) / 1.1) < 1) return (Math.abs(Math.abs(dy) - 0.45) < 0.12 && Math.abs(tt - 4.1) < 0.12 && dx > 3.1) ? '#1a120c' : fur();
+  if (dx > 3.0 && dx < 3.6 && Math.abs(dy) < 0.28 && tt > 0.6 && tt < 3.6 && Math.abs(dx - 3.3 - (tt < 1.2 ? (1.2 - tt) * 0.4 : 0)) < 0.28) return '#6a4a2e';
+  if (Math.abs(Math.abs(dy) - 0.55) < 0.14 && dx > 3 && dx < 4.6 && Math.abs(tt - (2.5 + (dx - 3) * (dx - 3) * 0.55)) < 0.16) return '#f4ead2';
+  return null; }, 0.125); };
+BUILD.cave = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var d = Math.hypot(dx / (t.w / 2), dy / (t.d / 2), tt / t.h) + (vn(dx * 0.7, tt * 0.7, i) - 0.5) * 0.18; if (d > 1) return null;
+  var mouth = dy > 0 && Math.abs(dx) < 1.5 && tt < 2.6 * (1 - Math.pow(dx / 1.5, 2) * 0.5); if (mouth) return d > 0.86 ? null : '#1a1612';
+  if (dy > t.d / 2 * 0.55 && tt > 2.4 && tt < 3.5 && Math.abs(dx - 2.3) < 1 && hash(Math.floor(dx * 6), Math.floor(tt * 6), 5 + i) < 0.3) return '#b5452e';
+  if (tt > t.h * 0.82) return '#f6f9fd'; return ((tt * 1.4 + dx * 0.3) | 0) % 2 ? '#7a6e62' : '#6a5e54'; }, 0.25); };
+BUILD.tusks = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ if (Math.abs(dy) > 0.32 || tt < 0) return null;
+  for (var s = -1; s <= 1; s += 2){ var cx = s * 2.6, r = Math.hypot(dx - cx, tt); if (Math.abs(r - 3.1 + tt * 0.06) < 0.24 + (3.6 - tt) * 0.06 && s * (dx - cx) <= 0.4 && tt < 4.6) return tt < 0.5 ? '#8a7658' : '#f4ead2'; }
+  return null; }, 0.125); };
 
 /* ------------------------------------------------------------------------------ ambient life */
 /* EVERY WORLD IS ALIVE AROUND YOU. Nothing here can be touched or picked up and none of it blocks the golfer:
@@ -713,7 +753,9 @@ var LIFE = {
   sky:{ fly:['gull', 3], balloons:3 },
   neon:{ fly:['drone', 3], mote:['spark', 40] },
   haunted:{ fly:['bat', 5], ghosts:2, mote:['firefly', 8] },
-  harvest:{ fly:['crow', 3], mote:['leaf', 16] }
+  harvest:{ fly:['crow', 3], mote:['leaf', 16] },
+  school:{ fly:['song', 4], mote:[['leaf', 10], ['butter', 6]] },
+  iceage:{ mote:['snow', 60], fly:['crow', 2] }
 };
 // two frames a flyer: wings up, wings down. o body, w wing, h head or beak, l light
 var PIX_FLY = {
@@ -776,6 +818,7 @@ var BRK = {
   barrel:function(B, x, y){ box(B, x, y, 1.4, 1.4, 1.9, function(dx, dy, tt){ var r = 0.5 + 0.08 * Math.sin(tt / 1.8 * Math.PI); if (Math.hypot(dx, dy) > r || tt > 1.8) return null; return Math.abs(tt - 0.35) < 0.09 || Math.abs(tt - 1.45) < 0.09 ? '#3a3036' : '#8a5a34'; }, 0.125); },
   ice:function(B, x, y){ box(B, x, y, 1.6, 1.6, 1.6, function(dx, dy, tt){ if (Math.abs(dx) > 0.7 || Math.abs(dy) > 0.7 || tt > 1.4) return null; return (Math.abs(dx) > 0.55 || tt > 1.25) ? '#e2f6ff' : '#a8dcf4'; }, 0.125); },
   neoncube:function(B, x, y){ box(B, x, y, 1.6, 1.6, 1.6, function(dx, dy, tt){ if (Math.abs(dx) > 0.7 || Math.abs(dy) > 0.7 || tt > 1.4) return null; return (Math.abs(dx) > 0.58 || Math.abs(dy) > 0.58 || tt > 1.28 || tt < 0.12) ? '#2bf0ff' : '#1a1430'; }, 0.125); },
+  trashcan:function(B, x, y){ box(B, x, y, 1.4, 1.4, 1.9, function(dx, dy, tt){ var r = Math.hypot(dx, dy); if (tt > 1.55) return r < 0.62 && tt < 1.7 ? '#9aa2ac' : (r < 0.12 && tt < 1.85 ? '#6a727c' : null); if (r > 0.55) return null; return ((Math.atan2(dy, dx) * 5 + 20) | 0) % 2 ? '#8a929c' : '#7a828c'; }, 0.125); },
   pumpkin:function(B, x, y){ BUILD.pumpkin(B, { x:x, y:y }, 1); },
   hay:function(B, x, y){ BUILD.hay(B, { x:x, y:y }, 1); }
 };
@@ -1184,7 +1227,7 @@ function run(box, P, pic, api){
     else if (t.k === 'life'){ t.done = true; burst(t.x, t.y, z + 1.2, ['#e5483a', '#ff9d8a', '#ffffff'], 22, 1.3, 1.2); collect(t, now); floatText('+1 life', t.x, t.y, z + 3, '#ff9d8a', true); sayLater(pick('life', t.id, 0) || 'A spare life.', 3600, 1.1); }
     else if (t.k === 'trinket'){ t.done = true; burst(t.x, t.y, z + 1.2, [t.col || '#b48cff', '#ffffff', '#ffd23a'], 26, 1.3, 1.2); collect(t, now); floatText(t.name || 'Trinket', t.x, t.y, z + 3, t.col || '#d8c4ff', true); sayLater(pick('trinket', t.id, 0) || ('Found: ' + t.name + '.'), 3800, 1.1); }
     else if (t.k === 'part'){ t.done = true; burst(t.x, t.y, z + 1.2, ['#cfd8e2', '#ffffff', '#ffd23a'], 22, 1.3, 1.2); collect(t, now); floatText('Putter part', t.x, t.y, z + 3, '#cfe2ff', true); sayLater(pick('part', t.id, 0) || ('A putter part: ' + t.name + '.'), 3800, 1.1); }
-    else if (t.k === 'brk'){ t.done = true; var k = brkKind(t), cols = k === 'ice' ? ['#a8dcf4', '#e2f6ff'] : k === 'neoncube' ? ['#2bf0ff', '#1a1430'] : k === 'pumpkin' ? ['#e8761f', '#d0621a'] : k === 'hay' ? ['#e2bc5c', '#c8a04a'] : k === 'pot' ? ['#b8643a', '#f0e0b0'] : ['#c08a4e', '#8a5a2a'];
+    else if (t.k === 'brk'){ t.done = true; var k = brkKind(t), cols = k === 'ice' ? ['#a8dcf4', '#e2f6ff'] : k === 'neoncube' ? ['#2bf0ff', '#1a1430'] : k === 'pumpkin' ? ['#e8761f', '#d0621a'] : k === 'hay' ? ['#e2bc5c', '#c8a04a'] : k === 'pot' ? ['#b8643a', '#f0e0b0'] : k === 'trashcan' ? ['#8a929c', '#cfd5dc'] : ['#c08a4e', '#8a5a2a'];
       burst(t.x, t.y, z + 0.8, cols, 10, 2.4, 1.1); burst(t.x, t.y, z + 0.6, cols, 12); burst(t.x, t.y, z + 0.2, ['rgba(220,210,190,.7)'], 8, 1.8, 0.5); ring(t.x, t.y, '230,220,200');
       if ((found.b || []).indexOf(t.id) < 0){ (found.b = found.b || []).push(t.id); coinsGot += BRK_V; hudCoins(); pick('brk', t.id, BRK_V); burst(t.x, t.y, z + 1, ['#ffd23a'], 4); collect({ x:t.x, y:t.y, k:'coin', id:t.id }, now, 'coin'); floatText('+' + BRK_V, t.x, t.y, z + 2); } else pick('brk', t.id, 0); } }
 

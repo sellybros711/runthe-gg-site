@@ -19900,7 +19900,7 @@ owner said was not what was being built.
 
 | | who | holes | worlds |
 |---|---|---|---|
-| Putt Putt Tour (`main`) | everybody | 144 | The Clubhouse, Lost Temple, Pirate Cove, Canyon Mine, Volcano Island, Frozen Peak, Sky Islands, Neon Arcade, 18 each |
+| Putt Putt Tour (`main`) | everybody | 180 | The Clubhouse, Lost Temple, Pirate Cove, Canyon Mine, Volcano Island, Frozen Peak, Sky Islands, Neon Arcade, Schoolyard, Ice Age, 18 each |
 | Members Tour (`members`) | Tour Pass holders | 18 | Hallows Night and Harvest Moon, nine each: the season's own holes, the hardest in the game |
 
 **The main tour wears none of the calendar themes**, which belong to the passes and the dailies, and the
@@ -19912,19 +19912,26 @@ ramp jumps over water, drawbridges on a clock, turntables, sliders, gates, spinn
 
 
 **THE TOUR GROWS A WORLD AT A TIME, about 50 holes a week** (the owner's pace). Worlds 6 to 8 went in
-together as holes 91 to 144. What a new world needs, all of it in one commit:
+together as holes 91 to 144, and worlds 9 and 10 (Schoolyard, Ice Age) as holes 145 to 180. What a new world
+needs, all of it in one commit:
 
 | where | what |
 |---|---|
 | `putt.js` | a `THEMES` entry (`iceCol`/`iceCol2` paint `M.ICE` apart from the hazard), its skins in `SKIN`, a `GLOW`, the `WORLDS` row, its 18 `LEVELS`, 18 `TOUR_NAMES`, the `.wm-`, `.wt-` and `data-wt` CSS, `CARD_ART`, and a `sigReward`/`worldReward` each |
 | `land.js`, `mapland.js` | `BUILD.<theme>` for the land round a hole, `PAL` and `WORLD.<theme>` for the map |
+| `trail.js` | a `KIT` (ground, path, trees, landmarks, hazard, breakable, local), its `LIFE`, and a `BUILD` for each new landmark with its `LMSIZE` |
+| `putt.js` again | a `GREETERS` host, three `TRINKETS` and a `TRINKET_COL`, a `DOOR_NAMES` entry and its `.pp-door[data-door=]` CSS |
 | `build-cards.mjs` | the signature hole the home card is cut from |
 | `routes.json` | `solve.mjs --tour main --only <the 18> --write`, then each `par` set to what it prints (`three` where it says 3 STARS NOT FOUND) |
 
 **A new world has to carry more set pieces a hole than the one before it** (check-putt asserts it, thin
 rails excluded), so a world adds a mechanic on top of the old ones rather than replacing them. Frozen Peak
 brings ice (`M.ICE`, a quarter of the carpet's grip, so the pace is read off where the ice ends), Sky
-Islands wind (belts) and the drop (the hazard painted as cloud), Neon Arcade every machine on a clock.
+Islands wind (belts) and the drop (the hazard painted as cloud), Neon Arcade every machine on a clock,
+Schoolyard the playground (the merry-go-round turns, the seesaw is two drawbridges, the bus is a slider and the
+sandbox stops a ball), Ice Age all of it at once: glacier ice, tar pits (the hazard painted black), and the
+mammoths walking through. **A trail's tar is `slow` ground painted `bogC`**, the Ice Age kit's own colours, so
+a bog anywhere else keeps its brown.
 **Ice makes aces easy**: a bank onto ice slides on with room for error, so the first draft of Frozen Peak
 had four holes acable from the tee. Put a bumper on the line the ice opens up, and re-solve.
 **A skin name is global**: the winter theme already had `snowman`, and a second `snowman` in `SKIN`
@@ -20061,7 +20068,7 @@ of that world's signature hole, cut from the game's own render by `node golf/put
 `golf/putt/cards/`, so it is the same pixel art as the courses. A dark wash keeps the text readable. Re-run
 it after changing `land.js` or a signature hole, and bump `CARD_V`.
 
-**The main tour pays 4,000 coins a world** (32,000 over eight worlds): 80 a hole and 280 for the signature hole the
+**The main tour pays 4,000 coins a world** (40,000 over ten worlds): 80 a hole and 280 for the signature hole the
 first time it is beaten, 20 for a first ace, and 2,000 for finishing the world. Replays pay nothing. They
 go through the page's `addBonusCoins`, so a Tour Pass multiplier does not apply. The signature, world, ace
 and streak rewards are recorded by name in the Tour record and are not wearable yet.
@@ -20100,7 +20107,7 @@ own class, and sharing it broke the layout). `window.RTT_PUTT_MAPFIRST` makes th
 check-putt sets it for its map sections; its world section turns it off.
 
 **Every world has a greeter** (`GREETERS`, `greetSpec` in putt.js), a board game host: Pro Pete (a preppy club pro: white polo, visor, slacks), Professor
-Fern, Captain Bogey, Dusty, Ranger Mae, Coach Frost, Skye, DJ Pixel, and Count Mulligan and Farmer Hayes on
+Fern, Captain Bogey, Dusty, Ranger Mae, Coach Frost, Skye, DJ Pixel, Principal Plum, Grok, and Count Mulligan and Farmer Hayes on
 the Members Tour. They are invented, drawn by the same 3D golfer in a look nobody can buy, and stand on the
 first trail of their world (from `w * K`), a little up the path or just past the world door. They wait while
 the world's title card shows (`greetDelay`), walk up, and talk: a box at the foot of the screen with their
