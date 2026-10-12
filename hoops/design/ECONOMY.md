@@ -447,6 +447,27 @@ doubles the packs, carries the season's exclusives and an exclusive idle at 60.
 The suite throws 2,000,000 coins of farming at one day and asserts the track moves
 2,100 XP.
 
+### As built (Phase 4)
+
+- `hoops/pass.js`: season 1 (Hardwood Classic) runs 2026-10-12 to 2026-12-10 Eastern.
+  The curve, the two lanes and their packs are Run The Tour's Tour Pass, with the
+  packs renamed (base Streetball, tour League, champ Hall of Fame).
+- **XP**: 0.13 a base coin from play and badges (before a Coin Rush), plus quests at
+  their own XP (60 a quest, 100 all three, 400 a weekly, 800 all four). The cap of
+  2,100 a day covers quests too, so a capped player needs exactly forty days, a
+  typical one finishes about day 41, and a light one ends near tier 56.
+- **The cap is read, not written**: per Eastern day over the union of the log, so it
+  holds across devices and in any order.
+- **Season 1's pieces**: free lane cap at 15, long sleeve at 35, track jacket and pants
+  at 60; premium lane headband 10, shades 20, hi-tops 25, varsity 30, arm sleeve 40,
+  chain 45, hoodie 50, and at 60 The Tip-Off (an exclusive idle) and the Gold Bomber.
+- **Settlement**: when a season ends every reached unclaimed tier is paid, the premium
+  lane only for a season `fq` marks as open. Logs two seasons back are let go.
+- **The premium lane ships dark**: `PASS_PAID_ENABLED` is false. Testers are comped it.
+- `check-pass.mjs` holds it, every rule proved by breaking it once (the cap at read,
+  the key, the premium gate, the locked tier, settling a running season, the prune,
+  a Coin Rush doubling XP, a non play source feeding the track).
+
 **Floor Pass is not Run The Floor Pro.** Pro (`rtf_premium`, $14.99 a year) is the
 endless puzzles; the pass is a season's cosmetics. Different names in copy,
 different products in the catalog, different code paths. Pro buys nothing in the
@@ -509,7 +530,9 @@ The earned economy (sections 3 to 8) needs no migration at all.
 | `hoops/check-wardrobe.mjs` | 1 | every item in both looks, every pose, no part off the grid, cache keys move, old looks unchanged |
 | `hoops/check-idles.mjs` | 1b | every loop closes, reduced motion still, phone budget |
 | `hoops/check-shop.mjs` | 2 | odds by sampling, pity at the boundary, dupes, exchange, guest wall, the browser walk |
-| `hoops/check-pass.mjs` | 4 | the cap, rollover, settlement |
+| `hoops/pass.js` | 4 | the season, the curve, XP, claims, settlement |
+| `hoops/pass-ui.js` | 4 | the banner, the track, the XP and tier pops |
+| `hoops/check-pass.mjs` | 4 | the cap, rollover, settlement, the track on a phone |
 
 Every sibling script carries a `?v=` in `index.html` and goes into
 `scripts/cachebust.json`. Every one is added to `NEED_*` pins where the page reads

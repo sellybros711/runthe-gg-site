@@ -39,12 +39,14 @@ var CAT = typeof require === 'function' && typeof window === 'undefined' ? requi
 var PK = typeof require === 'function' && typeof window === 'undefined' ? require('./packs.js') : (typeof window !== 'undefined' ? window.RTF_PACKS : null);
 /* and the daily loop's logs (hoops/daily.js): the streak, the wheel, the quests */
 var DY = typeof require === 'function' && typeof window === 'undefined' ? require('./daily.js') : (typeof window !== 'undefined' ? window.RTF_DAILY : null);
+/* and the Floor Pass logs (hoops/pass.js): XP, claims, the paid lane */
+var PS = typeof require === 'function' && typeof window === 'undefined' ? require('./pass.js') : (typeof window !== 'undefined' ? window.RTF_PASS : null);
 
 function obj(x){ return x && typeof x === 'object' && !Array.isArray(x) ? x : {}; }
 function now(){ return Date.now(); }
 
 /* po, pc, sg, sx: the pack logs (hoops/packs.js); nb: the shop's welcome was read */
-function fresh(){ return { v: 1, own: {}, w: { street: {}, court: {}, ts: 0, tc: 0 }, fits: {}, po: {}, pc: {}, sg: {}, sx: {}, nb: 0, dp: {}, dl: {}, dw: {}, dg: {}, de: {}, db: {} }; }
+function fresh(){ return { v: 1, own: {}, w: { street: {}, court: {}, ts: 0, tc: 0 }, fits: {}, po: {}, pc: {}, sg: {}, sx: {}, nb: 0, dp: {}, dl: {}, dw: {}, dg: {}, de: {}, db: {}, fx: {}, fc: {}, fq: {} }; }
 /* Anything read back from storage or the shelf: unknown shapes become empty. */
 function clean(s){
   s = obj(s);
@@ -66,6 +68,7 @@ function clean(s){
   }
   if (PK) PK.cleanLogs(out, s);
   if (DY) DY.cleanLogs(out, s);
+  if (PS) PS.cleanLogs(out, s);
   return out;
 }
 
@@ -236,11 +239,12 @@ function merge(a, b){
   Object.keys(fts).sort().forEach(function(k){ out.fits[k] = fts[k]; });
   if (PK) PK.mergeLogs(out, a, b);
   if (DY) DY.mergeLogs(out, a, b);
+  if (PS) PS.mergeLogs(out, a, b);
   return out;
 }
 /* What only grows: items owned, then pack log rows, then outfits ever made (a
    tombstone counts). */
-function progress(s){ s = clean(s); return Object.keys(s.own).length * 1e9 + ((PK ? PK.logCount(s) : 0) + (DY ? DY.logCount(s) : 0)) * 1000 + Math.min(999, Object.keys(s.fits).length); }
+function progress(s){ s = clean(s); return Object.keys(s.own).length * 1e9 + ((PK ? PK.logCount(s) : 0) + (DY ? DY.logCount(s) : 0) + (PS ? PS.logCount(s) : 0)) * 1000 + Math.min(999, Object.keys(s.fits).length); }
 
 /* ─── the coins, on this device ───────────────────────────────────────────
    The ledger and every rule about it is hoops/economy.js; this is only where
@@ -284,6 +288,8 @@ function both(fn){
   var r = fn(st, w);
   /* a pack opened or a spin spun can finish a quest, so every call settles them */
   if (r && !r.err && DY) { try { DY.settleQuests(st, w); } catch (e) {} }
+  /* and a quest paid is XP on the pass, counted once under its own key */
+  if (r && !r.err && PS) { try { PS.questXp(st, w); } catch (e) {} }
   if (r && !r.err) { wSave(w); save(st); }
   return r;
 }
@@ -354,6 +360,41 @@ var DAILY = {
   signedIn: function(){ return authFn(); },
 };
 
+/* ─── the Floor Pass ─────────────────────────────────────────────────────
+   XP, claims and the season's settlement (hoops/pass.js), on the same door.
+   The paid lane ships dark: PASS_PAID_ENABLED is false and nobody can buy it,
+   so it is open only to a tester the page comps (paidFn). */
+var psubs = [];
+var paidFn = function(){
+  try { var M = window.RTF_MODES_UI, A = window.RTF_AUTH; return !!(M && M._tester && A && A.state && M._tester(A.state())); } catch (e) { return false; }
+};
+function passDo(fn, kind){
+  if (!PS || !PK || !X) return { err: 'off' };
+  var r = both(function(st, w){
+    var s = PS.season();
+    if (PS.PASS_PAID_ENABLED || paidFn()) PS.notePaid(st, s.n);
+    PS.questXp(st, w);
+    var x = fn(st, w) || {};
+    x.settled = PS.settle(st, w);
+    return x;
+  });
+  if (r && !r.err) { r.kind = kind; psubs.forEach(function(f){ try { f(r); } catch (e) {} }); }
+  return r;
+}
+var PASS = {
+  /* play paid coins: base is what it paid before a Coin Rush doubled it */
+  xp: function(key, base){ return passDo(function(st){ return { moved: PS.addXp(st, 'x:' + key, PS.coinXp(base)) }; }, 'xp'); },
+  settle: function(){ return passDo(function(){ return {}; }, 'settle'); },
+  claim: function(tier, lane){ return passDo(function(st, w){ return PS.claim(st, w, tier, lane); }, 'claim'); },
+  claimAll: function(){ return passDo(function(st, w){ return { all: PS.claimAll(st, w) }; }, 'claim'); },
+  state: function(){ return PS ? PS.state(load()) : null; },
+  claimed: function(tier, lane){ return !!(PS && PS.claimed(load(), PS.season().n, tier, lane)); },
+  paidOpen: function(){ return !!(PS && (PS.PASS_PAID_ENABLED || paidFn())); },
+  on: function(fn){ psubs.push(fn); },
+  signedIn: function(){ return authFn(); },
+  _paid: function(fn){ paidFn = fn; },
+};
+
 var API = {
   API_VERSION: API_VERSION, KEY: KEY, MAX_FITS: MAX_FITS,
   fresh: fresh, clean: clean, load: load, save: save, reload: reload, onChange: onChange,
@@ -361,7 +402,7 @@ var API = {
   slotsOf: slotsOf, loadout: loadout, equip: equip, wearSet: wearSet, resolved: resolved, dress: dress, idleOf: idleOf, idle: idle,
   fits: fits, saveFit: saveFit, applyFit: applyFit, delFit: delFit,
   merge: merge, progress: progress,
-  wallet: WALLET, shop: SHOP, daily: DAILY,
+  wallet: WALLET, shop: SHOP, daily: DAILY, pass: PASS,
   _reset: function(){ mem = null; subs = []; pubLast = ''; WALLET._reset(); },
 };
 if (typeof module !== 'undefined' && module.exports) module.exports = API;

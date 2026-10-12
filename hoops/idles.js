@@ -79,6 +79,8 @@ var DEFS = {
   id_draftwave: { keys: [k([138, 176], [10, 5], {}, 260), k([138, 160], [10, 5], {}, 260)], tw: 1 },
   id_ringshow: { keys: [k(HIPS, HIPS, {}, 900), k([142, 160, 1, 0.7], HIPS, {}, 1200)], tw: 2, sig: 1, flair: [k([150, 176], [150, 176], {}, 700)] },
   id_salute: { keys: [k(DOWN, DOWN, {}, 900), k([150, 228, 1, 0.8], DOWN, {}, 1400)], tw: 2, sig: 1 },
+  /* the Floor Pass season 1 capstone: crouch for the jump ball, rise, tap it back */
+  id_tipoff: { keys: [k(KNEES, KNEES, { dip: 3 }, 500), k(UP, [30, 18], { lift: { '1': 1, '-1': 1 } }, 380), k([150, 200], [30, 18], { dip: 0.6 }, 300)], tw: 1, sig: 1 },
   id_nerves: { keys: [k([20, -60, 1, 0.6], [20, -60, 1, 0.6], {}, 400), k([24, -40, 1, 0.6], [16, -70, 1, 0.6], { lift: { '1': 1 } }, 260), k([16, -70, 1, 0.6], [24, -40, 1, 0.6], { lift: { '-1': 1 } }, 260)], tw: 0 },
 };
 /* the two that are the old figure: no keyframes, handed over as they were */

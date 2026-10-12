@@ -95,12 +95,20 @@ function pay(key, amount, src, opts){
     var w = W(); if (!w || !w.award) return { paid: false, amount: 0, why: 'nowallet' };
     /* A COIN RUSH (won on the wheel) doubles what play pays while it runs.
        The award is still keyed, so a reload during the rush pays nothing more. */
-    if (PLAY_SRC[src] && !w.has(key)) { var d = DLY(); var m = d && d.rushMult ? d.rushMult() : 1; if (m > 1) amount = Math.round(amount * m); }
+    var m = 1;
+    if (PLAY_SRC[src] && !w.has(key)) { var d = DLY(); m = d && d.rushMult ? d.rushMult() : 1; if (m > 1) amount = Math.round(amount * m); }
     var r = w.award(key, amount, src, opts);
-    if (r && r.paid) tell(r.amount);
+    if (r && r.paid) { tell(r.amount); if (PLAY_SRC[src] || src === 'badge') passXp(key, r.amount / m); }
     return r;
   } catch (e) { return { paid: false, amount: 0, why: 'error' }; }
 }
+
+/* THE FLOOR PASS takes XP off what play and badges paid, before a Coin Rush
+   doubled it, keyed on the same key so a replay moves nothing. The daily loop's
+   own rewards (the streak, the login track, the wheel, the quests' coins) pay
+   no coin XP: a quest is XP of its own (pass.js QUEST_XP). */
+function PSD(){ var w = WD(); return w && w.pass ? w.pass : null; }
+function passXp(key, base){ try { var p = PSD(); if (p && p.xp) p.xp(key, base); } catch (e) {} }
 
 /* ─── the welcome, and the badges ──────────────────────────────────────────
    Both wait for the shelf. settle() is called once a pull for this account has
@@ -119,6 +127,7 @@ function settle(career){
   pay('welcome', x.WELCOME, 'welcome');
   welcomePack();
   day1(function(d){ return d.login(); });
+  try { var ps = PSD(); if (ps && ps.settle) ps.settle(); } catch (e) {}
   var got = earnedIds(career);
   if (w.baseline('bg:base', got.map(function(b){ return 'bg:' + b.id; }))) return { baseline: got.length };
   return { paid: badges(career) };

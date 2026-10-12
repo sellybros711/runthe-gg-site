@@ -16351,6 +16351,7 @@ node hoops/check-idles.mjs       every idle frame inside the grid, every loop cl
 node hoops/check-packs.mjs       odds, pity, shards, the exchange, two devices, the shop on a phone, the show
 node hoops/check-shopart.mjs     every item, pack, coin and shard in pixels, nothing clipped
 node hoops/check-daily.mjs       the streak, the login track, the wheel, the quests, Floor Rep
+node hoops/check-pass.mjs        the Floor Pass: the clock, the curve, the cap, claims, settlement
 psql ... -f supabase/139_hoops_wardrobe.sql   deploy by hand (preflight row 53)
 ```
 
@@ -16410,11 +16411,30 @@ psql ... -f supabase/139_hoops_wardrobe.sql   deploy by hand (preflight row 53)
   Passes finished is the streak's day; settle() is the login day. `RTF_WARD.daily` is
   the door and every call through it (and every shop call) settles the quests.
 - **A Coin Rush doubles what PLAY pays** (`PLAY_SRC` in earn.js), never a badge or a
-  quest. It is Run The Tour's XP boost until the Floor Pass gives XP a meaning.
+  quest. It stands in for Run The Tour's XP boost; the Floor Pass reads base coins, so
+  a rush never speeds the track.
 - **A wheel spin is decided before it turns.** `daily-ui.js` sets `spinning` BEFORE it
   calls `D.spin`: the spin's own update redraws the hub, and set after, the wheel turned
   on a detached copy (check-daily caught it). The wedge under the pointer, the `dw` row
   and the prize card are one prize, and check-daily reads all three.
+- **The Floor Pass is three more keyed logs** (`hoops/pass.js`: `fx` XP keyed on what
+  earned it, `fc` claims, `fq` seasons the premium lane was open). Sixty Eastern days
+  from `EPOCH`, sixty tiers on Run The Tour's curve (800 to 2,000, about 84,000 XP).
+  Play and badges give 0.13 XP a coin off the BASE coins (a Coin Rush doubles coins,
+  never XP); a quest gives its own XP (`QUEST_XP`), read off the ledger key that paid it.
+  **The 2,100 a day cap is applied when XP is READ**, per Eastern day, so two devices
+  that each earned a full day offline still count one day. A tier is paid under
+  `fp:<season>:<tier>:<lane>`. When a season ends, what was reached and not claimed is
+  paid (the premium lane only if `fq` says it was open), and logs two seasons back go.
+- **Season pieces are exclusives** (catalog.js `pass: n`, `earn: 'pass:n'`), so they are
+  never sold or packed. A season is a `SEASONS` row naming its pieces by tier and lane;
+  a season with no row pays the base lanes and nothing to wear, so author the next one
+  before it starts. The premium lane ships dark (`PASS_PAID_ENABLED` false); a tester on
+  `PRO_TESTERS` is comped it so it can be seen working. The Floor Pass is not Pro.
+- **`pass-ui.js` draws it**: a banner under the daily strip, the track over the whole
+  screen (his own player tried on in the tier 60 pieces, sixty tiers across, the free
+  lane over the rail and premium under it), and an XP pill and one tier card however
+  many tiers a press crossed. No pop fires over the open track.
 
 ## Run The Diamond, the baseball game
 

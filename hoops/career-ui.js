@@ -2843,6 +2843,9 @@ window.RTF_CAREER_UI = {
      the tallest receipt rather than whichever one a random career deals. */
   paintPress: function(st){ stage = st; render(); scrollStage(); },
   boardIds: boardIds,
+  /* the player the front page shows (the career in progress, or the look a
+     new one starts from), for screens that dress him: the Floor Pass hero */
+  me: function(){ var L = store().cur; L = L && !L.retired ? L : null; var k = L ? C.colorsOf(L) : { primary: '#ff7a1a', secondary: '#1d1f2b' }; return { look: heroLook(L), c1: k.primary, c2: k.secondary, num: L ? L.num : 23 }; },
   /* check-career.mjs only: the road the start button would play, which the
      builder deliberately never shows. */
   previewRoad: function(){ return form && form.start !== 'hs' && C.roadStory ? C.roadStory(preview()) : []; },

@@ -37,7 +37,7 @@ var STARTER = { top: 1, bottom: 1, shoes: 1 };
 var RARITY_ORDER = { common: 0, rare: 1, epic: 2, legendary: 3 };
 /* an exclusive is never sold: its tile says how it is earned instead */
 var EARN = { draft_first: 'Go 1st overall', title: 'Win a title', hof: 'Hall of Fame', career_first: 'First career' };
-function earnText(it){ return /^drop:/.test(it.earn) ? 'Finish the drop' : EARN[it.earn] || 'Earned'; }
+function earnText(it){ var m = /^pass:(\d+)$/.exec(it.earn || ''); if (m) return 'Floor Pass, Season ' + m[1]; return /^drop:/.test(it.earn) ? 'Finish the drop' : EARN[it.earn] || 'Earned'; }
 
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 function money(n){ return Math.round(n).toLocaleString('en-US'); }

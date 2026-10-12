@@ -474,6 +474,24 @@ ITEMS.push(
   { id: 'ex_opening_jacket', ctx: S, slot: 'outer', name: 'Opening Night Satin', rarity: 'legendary', excl: true, earn: 'drop:opening', k: 'bomber', c: ['#e8660f', '#16181f', '#f1f0ea'] },
   { id: 'ex_hallows_hoodie', ctx: S, slot: 'top', name: 'Hallows Hoodie', rarity: 'legendary', excl: true, earn: 'drop:hallows', k: 'hoodie', c: ['#3a2a5e', '#e2762a'] }
 );
+
+/* FLOOR PASS, SEASON 1 (Hardwood Classic). Earned on the pass track
+   (hoops/pass.js says at which tier and on which lane), never sold or packed.
+   pass: the season, so the closet can say where it came from. */
+var P1 = { excl: true, earn: 'pass:1', pass: 1 };
+function pass1(id, ctx, slot, name, rarity, k, c){ var it = { id: id, ctx: ctx, slot: slot, name: name, rarity: rarity, k: k, c: c }; for (var x in P1) it[x] = P1[x]; ITEMS.push(it); }
+pass1('ps1_cap', S, 'hat', 'Hardwood Cap', 'rare', 'cap', ['#2c4bd6', '#f2b632']);
+pass1('ps1_long', S, 'top', 'Classic Long Sleeve', 'epic', 'longsleeve', ['#f4efe1', '#2c4bd6']);
+pass1('ps1_track', S, 'outer', 'Hardwood Track Jacket', 'legendary', 'track', ['#2c4bd6', '#f4efe1', '#f2b632']);
+pass1('ps1_sweats', S, 'bottom', 'Hardwood Track Pants', 'legendary', 'sweats', ['#2c4bd6', '#f2b632']);
+pass1('ps1_band', C, 'band', 'Classic Headband', 'rare', 'wide', ['#f2b632']);
+pass1('ps1_shades', S, 'eyes', 'Gold Rim Shades', 'epic', 'shades', ['#f2b632', '#1a1d2e']);
+pass1('ps1_hitop', BOTH, 'shoes', 'Hardwood Hi-Top', 'epic', 'hitop', ['#f4efe1', '#2c4bd6', '#f2b632']);
+pass1('ps1_varsity', S, 'outer', 'Classic Varsity', 'legendary', 'varsity', ['#2c4bd6', '#f4efe1', '#f2b632']);
+pass1('ps1_sleeve', C, 'sleeveL', 'Royal Arm Sleeve', 'epic', 'arm', ['#2c4bd6']);
+pass1('ps1_chain', S, 'chain', 'Hardwood Chain', 'legendary', 'cuban', ['#f7d36b']);
+pass1('ps1_hoodie', S, 'top', 'Classic Hoodie', 'legendary', 'hoodie', ['#1a1d2e', '#f2b632']);
+pass1('ps1_bomber', S, 'outer', 'Hardwood Gold Bomber', 'legendary', 'bomber', ['#f2b632', '#1a1d2e', '#2c4bd6']);
 /* ---------- IDLES ----------
    What he does while he stands there, in either look (ctx 'both'). How each
    one moves is hoops/idles.js, keyed on the same id; this row is its name,
@@ -518,6 +536,7 @@ idle('id_draftwave', 'Draft Night Wave', 'legendary', '#e3a92f', { excl: true, e
 idle('id_ringshow', 'Show the Ring', 'legendary', '#f0c24a', { excl: true, earn: 'title' });
 idle('id_salute', 'The Salute', 'legendary', '#c9a227', { excl: true, earn: 'hof' });
 idle('id_nerves', 'Rookie Nerves', 'rare', '#e8660f', { excl: true, earn: 'career_first' });
+idle('id_tipoff', 'The Tip-Off', 'legendary', '#f2b632', { excl: true, earn: 'pass:1', pass: 1 });
 
 var BY_ID = {};
 ITEMS.forEach(function(it){ BY_ID[it.id] = it; });

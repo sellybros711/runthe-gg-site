@@ -19,6 +19,7 @@ name: Hoops checks
 #   node hoops/check-closet.mjs         what he owns and wears, two devices, the closet on a phone
 #   node hoops/check-shopart.mjs        every item, pack, coin and shard in pixels
 #   node hoops/check-daily.mjs          the streak, the wheel, the quests, Floor Rep
+#   node hoops/check-pass.mjs           the Floor Pass: the cap, claims, settlement, the track
 #   node hoops/check-earn.mjs           who earns coins, from what, and only once
 #   node hoops/check-story.mjs --quick  the story engine: order, arcs, traits, people, league
 #   node hoops/check-rosters.mjs        a career joins today's real rosters
@@ -140,6 +141,12 @@ jobs:
       # Rep, and a Coin Rush that doubles play and nothing else.
       - name: The daily loop
         run: node hoops/check-daily.mjs
+
+      # The Floor Pass: the season clock, the curve, a daily cap that holds
+      # across two devices, claims that pay once, settlement at the season's
+      # end, and the track on a phone.
+      - name: The Floor Pass
+        run: node hoops/check-pass.mjs
 
       # Only what he owns is ever saved or drawn, two devices merge without
       # losing anything, and the closet wears a piece on a press.
