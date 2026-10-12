@@ -12643,6 +12643,46 @@ byte what it was (check-sprite: 960 compared, 0 changed).
   turned to mush. The room is darkened a little and vignetted, never blurred.
   check-career 7b reads the computed filter on every beat.
 
+#### The cutscene rooms are 3D, traced from the character's own camera
+
+```
+node hoops/check-career.mjs      7b: every room is the 3D stage, on the figure's grid, feet on the spot, furniture over a host
+```
+
+Asked for by the owner off a screenshot of the studio: the rooms were flat front-on pixel sets
+(three panels, a dotted skyline, a band for a desk) behind a 3D pixel man drawn from a corner.
+`hoops/stage3d.js` (`window.RTF_STAGE`) builds every room as a small 3D world and traces it with
+baller.js's camera (30 degrees down, turned 35, orthographic, one cell a cell) and paints it with
+baller.js's ramps, so the floor recedes the way his feet do and the light that shades his cheek
+throws the desk's shadow.
+
+- **A room is data**: the floor, the back wall and the right wall as planes, boxes traced exactly
+  by slabs, round things sphere traced. Each surface has a material (a colour, a ramp bias, gloss,
+  emissive, a floor reflection). Ten rooms: studio, press, draft, arena (by level), gym, locker,
+  office, home, hotel, hall. Words on a wall come from a built-in 5 by 7 font (`textTex`), so they
+  sit in the room's own pixels and shear with the wall.
+- **Three canvases on the figure's fine grid**: `back`, `l1` (furniture in front of the far
+  figure: the anchor desk, the podium, the GM's desk) and `l2` (in front of the near figure: the
+  press table, a coffee table). Figures are DOM canvases between them (host z 2, main z 4), so a
+  breath or a blink never repaints the room. `.scov.s3 .sc-cast` is `z-index:auto` for that, and
+  nothing between the stage and the canvases may make a stacking context.
+- **Spots, not a row**: a room names where people stand (`spots.main`, `host`, `host2`). The
+  speaker stands at his place (commissioner at the podium, GM behind his desk) and the player at
+  his, both at once. The studio always has its two invented hosts at the desk and the player's own
+  face on the video wall (`portraitTex`, registered with `setTex`).
+- **Size and trace are chosen together** (`plan3`): a cell is a whole number of fine pixels and a
+  fine pixel a whole number of device pixels, about 80 cells across a phone, the figures traced at
+  the same `r`. A res 1 preview is shown first and the fine trace swaps in when it finishes (it
+  runs in slices, `draw`). Results are cached by room, size and trace.
+- **Back-wall features are sheared left by the turn.** Something on the back wall at depth D shows
+  about D times tan(35) cells left of the same x on the floor, so wall content is placed to the
+  right of the floor spot it should frame (the video wall, the draft screen, the hall lettering).
+- **A blocked or stale stage3d.js falls back to the flat `K.room` sets**, which are untouched.
+
+The characters were cleaned up at the same time (stubble is a shadow, not a checkerboard; a
+standing arm has a slight bend; a smaller shoulder cap). The neck did not move: the owner has
+asked twice for a short one. check-sprite was re-recorded for it and its header says so.
+
 #### A console cutscene shows the person talking
 
 ```
