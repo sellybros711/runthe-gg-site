@@ -20478,6 +20478,21 @@ yet beaten on the main tour: a beaten hole's trail is already behind you. A gate
   a fence on more than half the trails that have a clearing chest (`R() < 0.55`), the key somewhere off the path: that
   key and gate is the walk's little puzzle. A golden ball on every trail; all of a world's pays 500
   coins and a named reward. `pmerge` takes the union and `cloudProg` counts them.
+- **About half the trails carry a puzzle** (`puzzle()` in the plan, played by `stepPuzzle` and `pushCrate` in run),
+  asked for by the owner with a coin bonus as the reward. Four kinds: three **lights** to walk past (the chest turns up
+  when all are lit), **footprints** to a spot where the chest is dug up, a **pen** whose gate a **plate** holds open for a
+  few seconds, and a pen whose gap a **crate** sits in (pushed toward its rock it jams, from the rock's side it clears).
+  The pay is `PZ_COINS` (6) coins out of the puzzle's own chest, an item of kind `prize`, so every trail still has
+  the one `chest` the owner asked for and check-putt's chest claims are untouched. Solved is `r.pz`, merged as a flag.
+  - **The local gives a clue** (or the greeter, as a last page), a nudge rather than the answer, three wordings a kind
+    (`PZ_CLUES`), and on a puzzle trail the local stands near the start so the clue comes first.
+  - **It is placed last, on its own random stream** (`'pz:' + spec.key`), after `reachable()`. A trail with no puzzle is
+    exactly the trail it was. A puzzle may clear the small trees, bushes and rocks (`TREEH`, `LOWR`) in its footprint
+    and never anything else; a kind that does not fit is undone whole (`snap`, `back`) before the next is tried.
+  - **A pen's gap faces the camera**, because the lock gate's sprite is never rotated. The plate's gate only shuts
+    with the golfer clear of it, and stays open once the chest is had.
+  - `spec.pzKind` forces a kind or `'none'`, for checks. check-putt plays every kind and asks that nothing turns up
+    early, the gate shuts again, the crate jams one way and not the other, and each pays.
 - **The one chest is always findable, never always obvious.** Reported by a player who could not find the chests
   the list named on two trails. They were there: one 20 ft off the path behind a tree canopy, the other in a
   locked clearing. So:

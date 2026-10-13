@@ -572,6 +572,63 @@ if (!args.includes('--no-browser')){
     claim(cr.n >= 25 && Object.keys(cr.kinds).length >= 3 && cr.wet === 0 && cr.inWater === 0 && cr.bridges === cr.crossings && cr.dryDeck,
       `creeks cross ${cr.n} trails of the tour in ${Object.keys(cr.kinds).join(', ')}: the walk is never wet, nothing lies in the water, and every crossing has a dry bridge (${cr.wet} wet, ${cr.inWater} in water, ${cr.bridges}/${cr.crossings} bridged)`);
     claim(cr.over && cr.held, `he walks across a bridge, and the water beside the deck holds him (${cr.over}, ${cr.held}, ${JSON.stringify(cr.hi)})`);
+    /* THE PUZZLES (trail.js puzzle()). About half the trails carry one, of four kinds, and each pays its coin bonus out of
+       its own chest. Every kind is played here for real: the three lights lit, the spot dug, the plate stepped on and
+       the pen's gate beaten, the crate jammed against its rock and then pushed the right way. Each asks the thing it is
+       about, never only that it ended: a prize that turns up before its puzzle is done, a gate that never shuts, a crate
+       that goes either way, all fail here. And the local on a puzzle trail gives its clue. */
+    const pzr = await pg.evaluate(async () => { const out = { n:0, pz:0, kinds:{}, drops:true, solo:true }, sleep = ms => new Promise(r => setTimeout(r, ms)), best = {}, TR = window.RTT_PUTT_TRAIL;
+      for (let n = 1; n <= 180; n++) best[n] = 3;
+      localStorage.setItem('bag_ppt_v1@pzl', JSON.stringify({ v:2, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'frozen', 'sky', 'neon', 'school', 'iceage'], tours:{ main:{ lv:180, best, ace:{}, paid:{}, wpaid:{} } } }));
+      window.RTT_PUTT.close(); sbUser = { id:'pzl' }; openPutt(); await sleep(300);
+      const S = () => window.RTT_PUTT._state(), T = () => window.RTT_PUTT._trail(), rec = () => (JSON.parse(localStorage.getItem('bag_ppt_v1@pzl')).trail || {}), first = {};
+      for (let f = 1; f < 180; f++){ const P = window.RTT_PUTT._trailPlan(f); out.n++; const pz = P.puzzle; if (!pz) continue; out.pz++; out.kinds[pz.k] = (out.kinds[pz.k] || 0) + 1;
+        const pr = P.items.filter(t => t.k === 'prize'); if (pr.length !== 1 || pr[0].drops.length !== TR.PZ_COINS) out.drops = false;
+        if (!pz.clue || P.items.filter(t => t.k === 'chest').length !== 1) out.solo = false;
+        if (!first[pz.k] && f % 18 && !P.spec.greet && P.items.some(t => t.k === 'npc')) first[pz.k] = f; }
+      out.first = first;
+      const open = async n => { window.RTT_PUTT.close(); openPutt(); await sleep(200); window.RTT_PUTT._walkTo(n); for (let i = 0; i < 600 && !T(); i++) await sleep(50); await sleep(200); return T(); };
+      const visit = async (t, x, y, ms) => { t.goTo(x, y); await sleep(ms || 140); };
+      const h0 = S().host, c0 = h0.coins, paid = []; h0.coins = n => { paid.push(n); };
+      const collectAll = async (t, prize) => { await sleep(2600); const cs = t.items().filter(c => c.k === 'coin' && c.ch && c.ch.id === prize.id); for (const c of cs) await visit(t, c.x, c.y, 90); return cs; };
+      const away = t => { const P = t.plan(); t.goTo(P.path[0][0], P.path[0][1]); };
+      // the local gives the clue
+      if (first.fire){ const t = await open(first.fire), P = t.plan(), npc = t.items().find(i => i.k === 'npc');
+        await visit(t, npc.x, npc.y + 8, 200); await visit(t, npc.x, npc.y + 2.6, 260); out.clue = t.bubble().indexOf(P.puzzle.clue) >= 0;
+        // the lights: no prize until all three are lit, then it opens and pays
+        const its = t.items(), prize = its.find(i => i.k === 'prize'), fires = its.filter(i => i.k === 'fire');
+        await visit(t, prize.x, prize.y + 2); out.fireHidden = !prize.done && !t.pz().shown;
+        for (let i = 0; i < 2; i++) await visit(t, fires[i].x, fires[i].y + 1.2); await visit(t, prize.x, prize.y + 2); out.twoLit = !t.pz().shown && !prize.done;
+        await visit(t, fires[2].x, fires[2].y + 1.2); out.allLit = t.pz().shown; paid.length = 0;
+        await visit(t, prize.x, prize.y + 2); out.fireOpen = prize.done; const cs = await collectAll(t, prize);
+        out.firePaid = paid.reduce((a, b) => a + b, 0); out.fireWant = cs.length * TR.COIN_V; out.fireRec = (rec()['main:' + (first.fire + 1)] || {}).pz === 1;
+        // and it stays solved
+        const t2 = await open(first.fire); out.fireKept = t2.pz().solved && t2.items().find(i => i.k === 'prize').done; }
+      // the dig: stand where the footprints stop and the chest comes up
+      if (first.dig){ const t = await open(first.dig), P = t.plan(), prize = t.items().find(i => i.k === 'prize');
+        await visit(t, prize.x, prize.y + 1.5); out.digHidden = !prize.done && !t.pz().shown;
+        paid.length = 0; await visit(t, P.puzzle.spot[0], P.puzzle.spot[1], 900); out.dug = t.pz().shown && prize.done; const cs = await collectAll(t, prize); out.digPaid = paid.reduce((a, b) => a + b, 0) === cs.length * TR.COIN_V && cs.length > 0; }
+      // the plate: the gate is shut, the plate opens it for a while, it shuts again, and once the chest is open it stays open
+      if (first.plate){ const t = await open(first.plate), P = t.plan(), pen = P.pen, pl = P.puzzle.plate, gx = pen.x, gyy = pen.y + pen.r, prize = t.items().find(i => i.k === 'prize');
+        away(t); await sleep(120); out.shut = t.blocked(gx, gyy);
+        await visit(t, pl.x, pl.y, 200); away(t); await sleep(120); out.opened = !t.blocked(gx, gyy);
+        await sleep(pl.t * 1000 + 400); out.shutAgain = t.blocked(gx, gyy);
+        await visit(t, pl.x, pl.y, 200); paid.length = 0; await visit(t, pen.x, pen.y + 1.9, 200); out.plateOpen = prize.done; const cs = await collectAll(t, prize);
+        away(t); await sleep(pl.t * 1000 + 400); out.staysOpen = !t.blocked(gx, gyy); out.platePaid = paid.reduce((a, b) => a + b, 0) === cs.length * TR.COIN_V && cs.length > 0; }
+      // the crate: pushed toward its rock it jams, pushed from the rock's side it clears the gap
+      if (first.push){ const t = await open(first.push), P = t.plan(), pen = P.pen, C = t.pz().crate, gx = pen.x, gyy = pen.y + pen.r, prize = t.items().find(i => i.k === 'prize'), H = 0.8 + 0.55;
+        out.blockedAtFirst = t.blocked(gx, gyy);
+        await visit(t, C.x - C.rock * (H + 0.06), C.y); t.stick(C.rock, 0); await sleep(1200); t.stick(0, 0); out.jam = +Math.abs(C.x - C.x0).toFixed(2); out.stillShut = t.blocked(gx, gyy);
+        await visit(t, C.x + C.rock * (H + 0.06), C.y); t.stick(-C.rock, 0); await sleep(1800); t.stick(0, 0); out.pushed = +Math.abs(C.x - C.x0).toFixed(2); out.cleared = !t.blocked(gx, gyy);
+        paid.length = 0; await visit(t, pen.x, pen.y + 1.9, 200); out.pushOpen = prize.done; const cs = await collectAll(t, prize); out.pushPaid = paid.reduce((a, b) => a + b, 0) === cs.length * TR.COIN_V && cs.length > 0; }
+      h0.coins = c0; window.RTT_PUTT.close(); sbUser = { id:'chk' }; return out; });
+    claim(pzr.pz / pzr.n > 0.4 && pzr.pz / pzr.n < 0.65 && Object.keys(pzr.kinds).length === 4 && Object.values(pzr.kinds).every(v => v >= 8), `about half the trails carry a puzzle, of all four kinds (${pzr.pz} of ${pzr.n}: ${JSON.stringify(pzr.kinds)})`);
+    claim(pzr.drops && pzr.solo, `every puzzle has a clue and its own chest of coins, and its trail still has its one chest`);
+    claim(pzr.clue, `the local on a puzzle trail gives its clue`);
+    claim(pzr.fireHidden && pzr.twoLit && pzr.allLit && pzr.fireOpen && pzr.firePaid > 0 && pzr.firePaid === pzr.fireWant && pzr.fireRec && pzr.fireKept, `the three lights: no chest until all three are lit, then it opens, pays, and stays solved (${JSON.stringify([pzr.fireHidden, pzr.twoLit, pzr.allLit, pzr.fireOpen, pzr.firePaid, pzr.fireRec, pzr.fireKept])})`);
+    claim(pzr.digHidden && pzr.dug && pzr.digPaid, `the footprints: the chest is buried until he stands where they stop, then it comes up and pays (${JSON.stringify([pzr.digHidden, pzr.dug, pzr.digPaid])})`);
+    claim(pzr.shut && pzr.opened && pzr.shutAgain && pzr.plateOpen && pzr.staysOpen && pzr.platePaid, `the plate: the pen's gate is shut, opens off the plate, shuts again, and stays open once the chest is had (${JSON.stringify([pzr.shut, pzr.opened, pzr.shutAgain, pzr.plateOpen, pzr.staysOpen, pzr.platePaid])})`);
+    claim(pzr.blockedAtFirst && pzr.jam <= 0.65 && pzr.stillShut && pzr.pushed >= 1.7 && pzr.cleared && pzr.pushOpen && pzr.pushPaid, `the crate: pushed toward its rock it jams (${pzr.jam} ft), pushed from the rock's side it clears the gap (${pzr.pushed} ft), and the chest pays (${JSON.stringify([pzr.blockedAtFirst, pzr.stillShut, pzr.cleared, pzr.pushOpen, pzr.pushPaid])})`);
     // THE WORLD IS WHERE THE MODE OPENS. Opening the Tour drops the player's own golfer onto the trail to the
     // next hole, with Map top right, and the map's close goes back to the world. The first trail of every
     // world has its greeter, who walks up and talks the first time and waits by the path after.

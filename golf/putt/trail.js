@@ -61,7 +61,8 @@ var LOOT = {
   life:{ rows:PIX_HEART, pal:{ r:'#e5483a', h:'#ff9d8a', o:'#6a1410' }, beam:'255,90,80', name:'Spare life' },
   trinket:{ rows:PIX_GEM, pal:{ r:'#b48cff', h:'#ffffff', o:'#2a1a40' }, beam:'190,150,255', name:'Trinket' },
   part:{ rows:PIX_PART, pal:{ r:'#7fa0c4', h:'#e6eef8', o:'#1e2a38', g:'#2a2a2a' }, beam:'120,190,255', name:'Putter part' },
-  chest:{ rows:PIX_CHEST, pal:{ r:'#a8662e', h:'#d8944a', g:'#ffd23a', o:'#3a2410' }, beam:null, name:'Chest' }
+  chest:{ rows:PIX_CHEST, pal:{ r:'#a8662e', h:'#d8944a', g:'#ffd23a', o:'#3a2410' }, beam:null, name:'Chest' },
+  prize:{ rows:PIX_CHEST, pal:{ r:'#3a78b8', h:'#7cc8ff', g:'#ffd23a', o:'#14304a' }, beam:null, name:'Puzzle' }
 };
 function lootPal(t){ var L = LOOT[t.k]; return t.k === 'trinket' && t.col ? Object.assign({}, L.pal, { r:t.col }) : L.pal; }
 function lootBeam(t){ if (t.k === 'trinket' && t.col){ var n = parseInt(t.col.slice(1), 16); return (n >> 16) + ',' + (n >> 8 & 255) + ',' + (n & 255); } return LOOT[t.k].beam; }
@@ -69,6 +70,25 @@ function lootBeam(t){ if (t.k === 'trinket' && t.col){ var n = parseInt(t.col.sl
 var ICONS = {};
 function lootIcon(t){ var key = t.k + (t.col || ''); if (ICONS[key]) return ICONS[key]; var L = LOOT[t.k], rows = L.rows, pal = lootPal(t), c = document.createElement('canvas'); c.width = rows[0].length; c.height = rows.length;
   var x = c.getContext('2d'); rows.forEach(function(r, j){ for (var i = 0; i < r.length; i++){ var ch = r[i]; if (ch === '.') continue; x.fillStyle = pal[ch] || pal.r; x.fillRect(i, j, 1, 1); } }); return ICONS[key] = c.toDataURL(); }
+/* THE PUZZLES (plan's puzzle() places them, run() plays them). PZ_SHARE of trails carry one; it pays PZ_COINS coins
+   of COIN_V each, out of its own small chest. A pen is PEN_R across with a gap of PEN_HALF radians either side of
+   the gate; a plate holds the gate open PZ_GATE_S seconds, plus a little for every foot from the plate to the gate. */
+var PZ_SHARE = 0.5, PZ_COINS = 6, PEN_R = 2.9, PEN_HALF = 0.31, PZ_GATE_S = 4.5, CRATE_H = 0.8;
+var PZ_NAME = { fire:'Light the three', dig:'Buried chest', plate:'Pen and plate', push:'Stuck crate' };
+// what the three lights are in each world, for the clue
+var PZ_LIGHT = { clubhouse:'lanterns', temple:'torches', pirate:'lanterns', canyon:'mine lamps', volcano:'braziers', frozen:'ice lamps', sky:'beacons', neon:'neon lights',
+  school:'lanterns', iceage:'fire pits', haunted:'candles', harvest:'lanterns' };
+var PZ_FLAME = { neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], frozen:['#6ec8ff', '#e2f6ff'], sky:['#ffd24a', '#fff6c4'] };
+var JAM_ROCK = { neon:'cube', frozen:'rocksnow', iceage:'rocksnow', volcano:'rockdark', haunted:'rockdark' };
+/* THE CLUE, said by the local (or the greeter) on a puzzle trail: a nudge, never the answer. Three ways of saying
+   each, picked off the trail, so the same line does not come back trail after trail. */
+var PZ_CLUES = {
+  fire:['Three {l} stand along this path. Light all three and something turns up.', 'Somebody left three {l} out here. Walk past each one to light it.', 'Light the three {l} on this trail. They\'re keeping something hidden.'],
+  dig:['Somebody buried something out here. Follow the footprints off the path.', 'See those footprints? They lead to something buried. Stand where they stop.', 'Tracks run off the path up ahead. Follow them to the end and dig.'],
+  plate:['That pen\'s gate won\'t stay open long. Find the plate that opens it, then run.', 'There\'s a plate in the ground that opens the pen. You\'ll have to be quick.', 'Step on the plate and the pen\'s gate opens. It shuts again fast.'],
+  push:['A crate\'s blocking that pen. Push it from the side by the rock.', 'That crate jams if you push it toward the rock. Push it the other way.', 'Move the crate out of the pen\'s gap. Push it away from the rock.']
+};
+function pzClue(k, th, R){ var a = PZ_CLUES[k] || []; return (a[(R() * a.length) | 0] || '').replace('{l}', PZ_LIGHT[th] || 'lanterns'); }
 var COIN_V = 50, BRK_V = 25, TART = 0.125;   // a coin off the ground pays 50 into the wallet and a smashed breakable 25; the trail is painted on a finer grid than a hole, because the camera comes in closer
 
 function hash(x, y, s){ var h = (x * 374761393 + y * 668265263 + s * 982451653) | 0; h = Math.imul(h ^ h >>> 13, 1274126177); return ((h ^ h >>> 16) >>> 0) / 4294967296; }
@@ -440,6 +460,102 @@ function plan(spec){
   // ---- what blocks the golfer: trunks, rocks, buildings, the fence and the wall
   P.things.forEach(function(t){ if (t.k === 'arch' || t.k === 'fence' || t.k === 'wall' || t.k === 'bridge') return; if (PLANT[t.k]) return; var r = BLOCKR[t.k] != null ? BLOCKR[t.k] : t.r; if (r > 0) P.cols.push({ x:t.x, y:t.y, r:r, w:t.w, d:t.d }); });
   reachable();
+  puzzle();
+  /* PUZZLES, the owner's call: about half the trails carry one, never two, and solving it pays a coin bonus as a
+     small chest of its own (PZ_COINS of them, 300 for an easy puzzle). The local on that trail, or the world's
+     greeter, gives a clue, so nobody is left guessing what the thing by the path is for. Four kinds:
+       fire   three lights beside the path; walk past each to light it, and with all three lit the chest turns up
+       dig    footprints run off the path to a spot; stand on it and the chest is dug up
+       plate  the chest is in a pen whose gate opens off a plate in the ground, for a few seconds
+       push   the chest is in a pen whose gap a crate is sitting in; push it away from the rock beside it
+     IT IS PLACED LAST, ON ITS OWN RANDOM STREAM, after reachable() has settled the chest, the key and the coins. So a
+     trail with no puzzle is exactly the trail it was, and nothing already on a trail moves for one that has. Its
+     chest is a 'prize' and not a 'chest': every trail still has the one chest the owner asked for. The pens are
+     baked into the land (BUILD.pen); their gate, the crate, the lights and the footprints are drawn by run().
+     spec.pzKind forces a kind (or 'none'), for the checks. */
+  function puzzle(){
+    var RQ = rng(hstr('pz:' + (spec.key || '') + ':' + seed)), roll = RQ(), force = spec.pzKind;
+    if (force === 'none' || (!force && roll >= PZ_SHARE)) return;
+    var npc = items.filter(function(t){ return t.k === 'npc'; })[0], host = items.filter(function(t){ return t.k === 'host'; })[0];
+    if (!npc && !host) return;   // nobody to give the clue: no puzzle
+    var FL = P._fl, G0 = FL.flood(false);
+    function reach(x, y, d){ return FL.near(G0, x, y, d || 1.2); }
+    /* ROOM FOR IT. The land is full of trees, so a puzzle may clear the small things in its way (a tree, a bush, a
+       rock: TREEH and LOWR) but never anything that stays: a landmark, a building, a lamp, the wall, the arch, or
+       anything on the list. clearOut() takes them away once a spot is chosen; snap() and back() undo it if the rest of
+       that puzzle then does not fit. */
+    function room(x, y, r){ for (var i = 0; i < P.things.length; i++){ var t = P.things[i], tr = t.w ? Math.max(t.w, t.d) / 2 : (t.r || 0.5);
+        if (!(TREEH[t.k] || LOWR[t.k]) && Math.hypot(t.x - x, t.y - y) < r + tr + 0.4) return false; } return true; }
+    function clearOut(x, y, r){ var gone = P.things.filter(function(t){ return (TREEH[t.k] || LOWR[t.k]) && Math.hypot(t.x - x, t.y - y) < r + (t.r || 0.5) + 0.3; });
+      if (!gone.length) return; function hit(o){ return gone.some(function(t){ return t.x === o.x && t.y === o.y; }); }
+      P.things = P.things.filter(function(t){ return gone.indexOf(t) < 0; }); P.cols = P.cols.filter(function(c){ return !hit(c); });
+      for (var u = used.length - 1; u >= 0; u--) if (hit(used[u])) used.splice(u, 1); }
+    function snap(){ return [P.things.slice(), P.cols.slice(), used.slice(), items.length]; }
+    function back(S0){ P.things = S0[0]; P.cols = S0[1]; used.length = 0; S0[2].forEach(function(u){ used.push(u); }); items.length = S0[3]; }
+    function clearOf(x, y, r){ if (!room(x, y, r)) return false;
+      for (var i = 0; i < items.length; i++){ var t = items[i]; if (Math.hypot(t.x - x, t.y - y) < r + 1.4) return false; if (t.drops) for (var j = 0; j < t.drops.length; j++) if (Math.hypot(t.drops[j][0] - x, t.drops[j][1] - y) < r + 0.6) return false; }
+      return true; }
+    function okAt(x, y, r){ return okGround(x, y, r) && !inClear(x, y, 1.5) && !(gy && Math.abs(y - gy) < r + 5) && y > 6 && y < L - 4 && clearOf(x, y, r); }
+    // a spot this far off the walk, between these fractions of the way along it
+    function spot(minD, maxD, r, s0, s1){ for (var t = 0; t < 240; t++){ var q = beside(SL * (s0 + RQ() * (s1 - s0)), RQ() < 0.5 ? -1 : 1, minD + RQ() * (maxD - minD)), x = q[0], y = q[1], wd = walkD(x, y);
+        if (wd >= minD - 1 && wd <= maxD + 2 && okAt(x, y, r) && reach(x, y)){ clearOut(x, y, r); return [x, y]; } } return null; }
+    // the prize's coins land round it on ground that can be walked to, and never on a pen's fence
+    function pzDrops(x, y, n, pen){ var out = [], a0 = RQ() * 6.283;
+      for (var i = 0; out.length < n && i < n * 30; i++){ var a = a0 + i * 2.39996, r = (pen ? 0.9 : 2.1) + (i % 4) * 0.45 + RQ() * 0.4, dx = x + Math.cos(a) * r, dy = y + Math.sin(a) * r * 0.8;
+        if (pen && Math.abs(Math.hypot(dx - pen.x, dy - pen.y) - pen.r) < 0.9) continue; if (pen && Math.hypot(dx - x, dy - y) < 0.5) continue;
+        if (okGround(dx, dy, 0.3) && !hitThing(dx, dy) && (pen ? Math.hypot(dx - pen.x, dy - pen.y) < pen.r - 0.6 || reach(dx, dy, 1.2) : reach(dx, dy, 1.2))) out.push([dx, dy]); }
+      return out; }
+    function prize(x, y, kind, pen){ var t = item('prize', x, y, { pz:kind, th:themeAt(y), n:PZ_COINS }); t.drops = pzDrops(x, y, PZ_COINS, pen); used.push({ x:x, y:y, r:2.5 }); return t; }
+    // a pen with its gap facing the camera (+y), the way the lock gate's sprite is drawn
+    function pen(minD, maxD){ var r = PEN_R;
+      for (var t = 0; t < 12; t++){ var S0 = snap(), c = spot(minD, maxD, r + 1.2, 0.32, 0.86); if (!c) return null; var ok = true;
+        for (var k = 0; k < 20 && ok; k++){ var a = k / 20 * 6.2832, px = c[0] + Math.cos(a) * r, py = c[1] + Math.sin(a) * r; if (!okGround(px, py, 0.4) || hitThing(px, py) || walkD(px, py) < PW + 1.2) ok = false; }
+        for (var k2 = 0; k2 < 9 && ok; k2++){ var px2 = c[0] + ((k2 % 3) - 1) * r * 0.55, py2 = c[1] + (((k2 / 3) | 0) - 1) * r * 0.55; if (!okGround(px2, py2, 0.3) || hitThing(px2, py2)) ok = false; }
+        if (ok && reach(c[0], c[1] + r + 1.8, 1.0)) return { x:c[0], y:c[1], r:r, a:Math.PI / 2, half:PEN_HALF }; back(S0); }
+      return null; }
+    var kinds = ['fire', 'dig', 'plate', 'push'], order = force ? [force] : kinds.map(function(k){ return [RQ(), k]; }).sort(function(a, c){ return a[0] - c[0]; }).map(function(q){ return q[1]; });
+    var made = null, S9 = snap();
+    // each kind that does not fit is undone whole before the next is tried (a 'continue' below skips to here)
+    for (var oi = 0; oi < order.length && !made; oi++){ var k = order[oi]; back(S9);
+      if (k === 'fire'){ var lit = [];
+        for (var li = 0; li < 3; li++){ var sp3 = spot(PW + 1.4, PW + 2.8, 0.9, 0.24 + li * 0.21, 0.38 + li * 0.21); if (!sp3) break; lit.push(item('fire', sp3[0], sp3[1], { th:themeAt(sp3[1]), n:li })); used.push({ x:sp3[0], y:sp3[1], r:1.4 }); }
+        var fp = lit.length === 3 && spot(6, 11, 2.4, 0.4, 0.82);
+        if (fp){ var pf = prize(fp[0], fp[1], 'fire'); made = { k:'fire', prize:pf.id, lights:lit.map(function(q){ return q.id; }) }; } }
+      else if (k === 'dig'){
+        for (var dt0 = 0; dt0 < 12 && !made; dt0++){ var S1 = snap(), ds = spot(9, 15, 2.6, 0.35, 0.82); if (!ds) break;
+          // where the tracks leave the walk: the nearest point of the path, at its edge, toward the spot
+          var bs = 0, bd = 1e9; for (var ss = 0; ss <= SL; ss += 0.5){ var pq = atS(ss), dd2 = Math.hypot(pq[0] - ds[0], pq[1] - ds[1]); if (dd2 < bd){ bd = dd2; bs = ss; } }
+          var p0 = atS(bs), ux = (ds[0] - p0[0]) / bd, uy = (ds[1] - p0[1]) / bd, sx2 = p0[0] + ux * (PW + 0.4), sy2 = p0[1] + uy * (PW + 0.4), len = Math.hypot(ds[0] - sx2, ds[1] - sy2), steps = [], good = true;
+          for (var f = 0, n = 0; f < len - 0.4; f += 1.05, n++){ var lx = sx2 + ux * f + (n % 2 ? 1 : -1) * uy * 0.28, ly = sy2 + uy * f - (n % 2 ? 1 : -1) * ux * 0.28;
+            if (!okGround(lx, ly, 0.3) || hitThing(lx, ly) || !reach(lx, ly, 1.0)) { good = false; break; } steps.push([lx, ly, Math.atan2(uy, ux)]); }
+          // the chest comes up just past the spot, so it is never dug up under his feet
+          var cxp = ds[0] + ux * 2.3, cyp = ds[1] + uy * 2.3;
+          if (!good || steps.length < 5 || !okGround(cxp, cyp, 1.2) || hitThing(cxp, cyp) || !reach(cxp, cyp, 2.2)){ back(S1); continue; }
+          var pd = prize(cxp, cyp, 'dig'); made = { k:'dig', prize:pd.id, spot:[ds[0], ds[1]], steps:steps }; } }
+      else if (k === 'plate' || k === 'push'){ var pn = pen(PEN_R + PW + 2.5, 13); if (!pn) continue;
+        if (k === 'plate'){ var gx = pn.x, gy2 = pn.y + pn.r, pl = null;
+          for (var ps = 0; ps < 300 && !pl; ps++){ var q2 = beside(SL * RQ(), RQ() < 0.5 ? -1 : 1, PW + 1.2 + RQ() * 1.2), dg = Math.hypot(q2[0] - gx, q2[1] - gy2);
+            if (dg >= 8 && dg <= 14 && Math.hypot(q2[0] - pn.x, q2[1] - pn.y) > pn.r + 3 && okAt(q2[0], q2[1], 0.9) && reach(q2[0], q2[1], 1.0)) pl = { x:q2[0], y:q2[1], t:PZ_GATE_S + dg * 0.18 }; }
+          if (!pl) continue;
+          place('pen', pn.x, pn.y, pn.r, 2.6, { a:pn.a, half:pn.half, th:themeAt(pn.y), gated:1 }); used.push({ x:pn.x, y:pn.y, r:pn.r + 2 }); used.push({ x:pl.x, y:pl.y, r:1.4 });
+          var pp = prize(pn.x, pn.y, 'plate', pn); made = { k:'plate', prize:pp.id, pen:pn, plate:pl }; }
+        else { var sj = RQ() < 0.5 ? -1 : 1, cy3 = pn.y + pn.r + 1.1, rx2 = pn.x + sj * 3.6, kx3 = JAM_ROCK[themeAt(cy3)] || 'rock';
+          // the crate slides along x: from the rock's side it goes all the way across, toward the rock it jams
+          var crate = { x:pn.x, y:cy3, x0:pn.x, lo:sj > 0 ? pn.x - 2.6 : pn.x - 0.6, hi:sj > 0 ? pn.x + 0.6 : pn.x + 2.6, rock:sj };
+          var fits = okGround(rx2, cy3, 1) && !hitThing(rx2, cy3) && okGround(pn.x - sj * 2.8, cy3, 0.9) && !hitThing(pn.x - sj * 2.8, cy3) && reach(pn.x + sj * 1.9, cy3, 0.7) && reach(pn.x - sj * 3.6, cy3 + 1.5, 1.0);
+          if (!fits) continue;
+          place('pen', pn.x, pn.y, pn.r, 2.6, { a:pn.a, half:pn.half, th:themeAt(pn.y) }); used.push({ x:pn.x, y:pn.y, r:pn.r + 3 });
+          var rk = place(kx3, rx2, cy3, 0.9, 1.4, { th:themeAt(cy3) }); P.cols.push({ x:rk.x, y:rk.y, r:0.9 });
+          var pu = prize(pn.x, pn.y, 'push', pn); made = { k:'push', prize:pu.id, pen:pn, crate:crate }; } }
+    }
+    if (!made){ back(S9); return; }
+    made.th = themeAt(items.filter(function(t){ return t.id === made.prize; })[0].y);
+    made.clue = pzClue(made.k, made.th, RQ); made.name = PZ_NAME[made.k];
+    P.puzzle = made; if (made.pen) P.pen = Object.assign({ gated:made.k === 'plate' }, made.pen);
+    // the local stands near the start of the walk on a puzzle trail, so the clue comes before the puzzle does
+    if (npc) for (var tn2 = 0; tn2 < 40; tn2++){ var nq2 = beside(SL * (0.06 + RQ() * 0.14), RQ() < 0.5 ? -1 : 1, PW + 1.6), nx2 = nq2[0], ny2 = nq2[1];
+      if (okGround(nx2, ny2, 1) && free(nx2, ny2, 1) && !hitThing(nx2, ny2) && reach(nx2, ny2, 1.0)){ npc.x = nx2; npc.y = ny2; npc.th = themeAt(ny2); used.push({ x:nx2, y:ny2, r:1 }); break; } }
+  }
   /* EVERY CHEST THE LIST NAMES CAN BE WALKED TO. Placement only ever asks whether a spot is dry and clear, never
      whether the golfer can get there, so nothing stops a chest ending up ringed by trunks and rocks, a clearing
      walled in by trees, or a key on the far side of a pond, and nothing would say so: the list would read Chest and
@@ -473,6 +589,7 @@ function plan(spec){
     function cellOff(G, minD, maxD, clearOf){ for (var t = 0; t < 400; t++){ var i = (R() * NX) | 0, j = (R() * NY) | 0; if (G[j * NX + i] !== 1) continue; var x = b[0] + i * RES, y = b[1] + j * RES, wd = walkD(x, y);
         if (wd < minD || wd > maxD || inClear(x, y, 1.5) || (gy && Math.abs(y - gy) < 6) || y < 6 || y > L - 4 || hitThing(x, y)) continue;
         if (clearOf && items.some(function(o){ return o !== clearOf && Math.hypot(o.x - x, o.y - y) < 2.5; })) continue; return [x, y]; } return null; }
+    P._fl = { flood:flood, near:near };   // for the puzzle, placed after this has settled everything else
     var G0 = flood(false), key = items.filter(function(t){ return t.k === 'key'; })[0];
     // the key first: on the walkable side of everything, or the lock comes off
     if (P.fence && (!key || !near(G0, key.x, key.y, 1.3))){ var kp = cellOff(G0, PW + 3, 18, key);
@@ -497,7 +614,7 @@ function plan(spec){
   var SH = []; P.things.forEach(function(t){ var H = t.h || 1; if (H < 1.6 && !t.w) return; var rx, ry, cx2, cy2;
     if (t.w){ rx = t.w / 2 + H * 0.18; ry = t.d / 2 + H * 0.12; cx2 = t.x + H * 0.22; cy2 = t.y + H * 0.16; }
     else { var cr = t.cr || t.r * 1.4; rx = cr * 1.05 + 0.4; ry = cr * 0.75 + 0.3; cx2 = t.x + H * 0.2; cy2 = t.y + H * 0.14; }
-    if (t.k === 'arch' || t.k === 'wall' || t.k === 'fence' || t.k === 'green') return; SH.push({ x:cx2, y:cy2, rx:rx, ry:ry }); });
+    if (t.k === 'arch' || t.k === 'wall' || t.k === 'fence' || t.k === 'pen' || t.k === 'green') return; SH.push({ x:cx2, y:cy2, rx:rx, ry:ry }); });
   // keyed by a number, not a string: shadeAt is asked once for every pixel of ground
   var SG = new Map(), sgk = function(x, y){ return Math.floor(x / 6) * 65536 + Math.floor(y / 6); };
   SH.forEach(function(o){ for (var x = o.x - o.rx; x <= o.x + o.rx + 6; x += 6) for (var y = o.y - o.ry; y <= o.y + o.ry + 6; y += 6){ var k = sgk(x, y), a = SG.get(k); if (!a) SG.set(k, a = []); a.push(o); } });
@@ -710,7 +827,10 @@ BUILD.wall = function(B, t, i, P){ var kx = kitOf(P.spec.theme), y = t.y, gx = t
       if (tt > 6.2){ if (Math.floor(px / 1.2) % 2 && tt < 6.9) return c1; if (tt > 6.4) return null; }
       return ((Math.floor(tt / 0.75) + (Math.floor(px / 1.5) % 2)) % 2) && (px * 4 | 0) % 6 ? c1 : c2; }, 0.25); })(x0, x1); } };
 /* the fence round a locked clearing, a gap for its gate */
-BUILD.fence = function(B, t, i, P){ var F = P.fence, n = 40, kx = kitOf(t.th), post = kx === KIT.neon ? '#ff2bd6' : '#7a5a3a', rail = kx === KIT.neon ? '#2bf0ff' : '#a8865a';
+BUILD.fence = function(B, t, i, P){ ringFence(B, P.fence, t.th); };
+// a puzzle's pen: the same fence round its own centre, its gap the gate (or the crate's gap)
+BUILD.pen = function(B, t){ ringFence(B, t, t.th); };
+function ringFence(B, F, th){ var n = 40, kx = kitOf(th), post = kx === KIT.neon ? '#ff2bd6' : '#7a5a3a', rail = kx === KIT.neon ? '#2bf0ff' : '#a8865a';
   for (var k = 0; k < n; k++){ var a0 = k / n * 6.2832, a1 = (k + 1) / n * 6.2832, mid = (a0 + a1) / 2, dA = Math.atan2(Math.sin(mid - F.a), Math.cos(mid - F.a)); if (Math.abs(dA) < F.half + 0.08) continue;
     (function(a0, a1){ var ax = F.x + Math.cos(a0) * F.r, ay = F.y + Math.sin(a0) * F.r, bx = F.x + Math.cos(a1) * F.r, by = F.y + Math.sin(a1) * F.r, zb = B.gz(ax, ay);
       B.solid(Math.min(ax, bx) - 0.2, Math.min(ay, by) - 0.2, zb - 0.1, Math.max(ax, bx) + 0.2, Math.max(ay, by) + 0.2, zb + 2.6, function(px, py, pz){ var tt = pz - zb, sd = segD(px, py, ax, ay, bx, by);
@@ -944,6 +1064,12 @@ function gateFn(open, P){ var kx = kitOf(P.spec.theme), c1 = kx.wall[0], c2 = kx
   return function(B){ box(B, 0, 0, PW * 2 + 1, 1.2, 6.8, function(dx, dy, tt){ if (Math.abs(dy) > 0.25) return null; var half = PW + 0.4;
     if (open){ var leaf = Math.abs(Math.abs(dx) - half) < 0.25 && tt < 6.4; return leaf ? c2 : null; }
     if (Math.abs(dx) > half || tt > 6.4) return null; if (Math.abs(dx) < 0.1) return c2; return (Math.floor(dx / 0.55) % 2 && tt < 6.1 && tt > 0.3) ? '#3a2a1a' : c1; }, 0.125); }; }
+// a puzzle's light: a stone or iron stand with a bowl on top, in the world's wall colours; the flame is drawn by run()
+function brazierFn(th){ var kx = kitOf(th), c1 = (kx.wall || ['#c8b890'])[0], c2 = (kx.wall || [0, '#8a7a5a'])[1] || '#8a7a5a';
+  return function(B){ box(B, 0, 0, 1.4, 1.4, 1.9, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
+    if (tt < 1.2) return r < 0.26 ? (tt < 0.16 || tt > 1.06 ? c2 : c1) : (tt < 0.2 && r < 0.55 ? c2 : null);
+    if (tt < 1.62){ var rr = 0.3 + (tt - 1.2) * 1.05; if (r > rr) return null; if (tt > 1.48 && r < rr - 0.14) return '#2a1a10'; return ((Math.atan2(dy, dx) * 4 + 10) | 0) % 2 ? c2 : '#4a3a2c'; }
+    return null; }, 0.125); }; }
 function lockGateFn(open){ return function(B){ box(B, 0, 0, 3.4, 1, 3, function(dx, dy, tt){ if (Math.abs(dy) > 0.15 || tt > 2.7) return null;
   if (open) return Math.abs(Math.abs(dx) - 1.5) < 0.15 ? '#7a5a3a' : null; if (Math.abs(dx) > 1.6) return null;
   if (Math.abs(dx) < 0.3 && Math.abs(tt - 1.4) < 0.3) return '#ffd23a'; return (Math.abs(tt - 0.6) < 0.12 || Math.abs(tt - 2.2) < 0.12 || (dx * 2.5 | 0) % 2 === 0) ? '#7a5a3a' : null; }, 0.125); }; }
@@ -966,8 +1092,17 @@ function run(box, P, pic, api){
      chest that were not picked up are still lying where they landed. */
   var chOpen = function(t){ return (found.ch || []).indexOf(t.id) >= 0; }, legacyK = function(t){ return t.main && found.k && !chOpen(t); };
   var items = [];
-  P.items.forEach(function(t){ var o = Object.assign({}, t); o.done = t.k === 'chest' ? chOpen(t) || legacyK(t) : t.k === 'golden' ? !!found.g : t.k === 'key' ? !!found.key : t.k === 'life' ? !!found.life : t.k === 'trinket' ? !!found.tk : t.k === 'part' ? !!found.pt : false; items.push(o);
-    if (t.k === 'chest') (t.drops || []).forEach(function(d, i){ var cid = t.id + ':' + i; items.push({ k:'coin', id:cid, x:d[0], y:d[1], ch:o, done:legacyK(t) || (found.c || []).indexOf(cid) >= 0, out:chOpen(t), fly:null }); }); });
+  P.items.forEach(function(t){ var o = Object.assign({}, t); o.done = t.k === 'chest' ? chOpen(t) || legacyK(t) : t.k === 'golden' ? !!found.g : t.k === 'key' ? !!found.key : t.k === 'life' ? !!found.life : t.k === 'trinket' ? !!found.tk : t.k === 'part' ? !!found.pt : t.k === 'prize' ? !!found.pz : false; items.push(o);
+    if (t.k === 'chest') (t.drops || []).forEach(function(d, i){ var cid = t.id + ':' + i; items.push({ k:'coin', id:cid, x:d[0], y:d[1], ch:o, done:legacyK(t) || (found.c || []).indexOf(cid) >= 0, out:chOpen(t), fly:null }); });
+    if (t.k === 'prize') (t.drops || []).forEach(function(d, i){ var cid = t.id + ':' + i; items.push({ k:'coin', id:cid, x:d[0], y:d[1], ch:o, done:(found.c || []).indexOf(cid) >= 0, out:!!found.pz, fly:null }); }); });
+  /* THE PUZZLE, if this trail has one (plan's puzzle()). solved is the record's (found.pz): a solved puzzle's chest is
+     open, its gate stays open, its crate stays pushed aside and its lights stay lit. */
+  var PZ = P.puzzle ? { k:P.puzzle.k, solved:!!found.pz, lit:{}, shown:!!found.pz, openUntil:0, dug:0, crate:P.puzzle.crate ? Object.assign({}, P.puzzle.crate) : null, said:false } : null;
+  if (PZ && PZ.crate && PZ.solved) PZ.crate.x = PZ.crate.rock > 0 ? PZ.crate.lo : PZ.crate.hi;
+  var prizeIt = PZ ? items.filter(function(t){ return t.k === 'prize'; })[0] : null;
+  // the prize is out of the ground for the dig and the lights only once they are done; a pen's sits in the pen from the start, as bait
+  function prizeShown(){ return !!PZ && (PZ.shown || PZ.k === 'plate' || PZ.k === 'push'); }
+  function pzGateOpen(){ if (!PZ || PZ.k !== 'plate') return true; if (PZ.solved || performance.now() < PZ.openUntil) return true; var P2 = P.pen; return Math.hypot(g.x - P2.x, g.y - (P2.y + P2.r)) < 1.9; }
   var chests = items.filter(function(t){ return t.k === 'chest'; });
   var parts = [], bubble = null, flash = 0, paused = false, ended = false;
   // the colliders, on a coarse grid
@@ -980,7 +1115,10 @@ function run(box, P, pic, api){
       if (c.w){ if (Math.abs(x - c.x) < c.w / 2 + R && Math.abs(y - c.y) < c.d / 2 + R) return true; } else if (Math.hypot(x - c.x, y - c.y) < c.r + R) return true; }
     if (gate && Math.abs(y - P.gate.y) < 0.9 + R && !(gate.open && Math.abs(x - P.gate.x) < PW + 0.3)) return true;
     if (P.fence){ var d = Math.hypot(x - P.fence.x, y - P.fence.y); if (Math.abs(d - P.fence.r) < R + 0.15){ var a = Math.atan2(y - P.fence.y, x - P.fence.x), da = Math.abs(Math.atan2(Math.sin(a - P.fence.a), Math.cos(a - P.fence.a))); if (!(lockOpen && da < P.fence.half)) return true; } }
-    for (var j = 0; j < items.length; j++){ var t = items[j]; if ((t.k === 'chest' || t.k === 'npc') && Math.hypot(x - t.x, y - t.y) < (t.k === 'chest' ? 1.3 : 1.0) + R) return true; }
+    for (var j = 0; j < items.length; j++){ var t = items[j]; if ((t.k === 'chest' || t.k === 'npc') && Math.hypot(x - t.x, y - t.y) < (t.k === 'chest' ? 1.3 : 1.0) + R) return true;
+      if (t.k === 'fire' && Math.hypot(x - t.x, y - t.y) < 0.6 + R) return true; if (t.k === 'prize' && prizeShown() && Math.hypot(x - t.x, y - t.y) < 1.3 + R) return true; }
+    if (P.pen){ var PN = P.pen, dp = Math.hypot(x - PN.x, y - PN.y); if (Math.abs(dp - PN.r) < R + 0.15){ var ap = Math.atan2(y - PN.y, x - PN.x), dap = Math.abs(Math.atan2(Math.sin(ap - PN.a), Math.cos(ap - PN.a))); if (!(dap < PN.half && pzGateOpen())) return true; } }
+    if (PZ && PZ.crate && Math.abs(x - PZ.crate.x) < CRATE_H + R && Math.abs(y - PZ.crate.y) < CRATE_H + R) return true;
     return false; }
   // the screen: art pixel to device pixel, through the picture's own projection
   function scr(x, y, z){ var p = pic.pr(x, y, z == null ? pic.zAt(x, y) : z); return [ox + p[0] * kk, oy + p[1] * kk]; }
@@ -1022,8 +1160,10 @@ function run(box, P, pic, api){
   var SPR = {
     chest:[0, 0.22, 0.5, 0.78, 1].map(function(l){ return prop('chestv4:' + l, chestFn(l), 4.4, 6.4, 5.4); }),
     gate0:P.gate ? prop('gate0:' + sp.theme, gateFn(false, P), PW * 2 + 1, 1.2, 7) : null, gate1:P.gate ? prop('gate1:' + sp.theme, gateFn(true, P), PW * 2 + 1, 1.2, 7) : null,
-    lock0:P.fence ? prop('lock0', lockGateFn(false), 3.4, 1, 3) : null, lock1:P.fence ? prop('lock1', lockGateFn(true), 3.4, 1, 3) : null
+    lock0:P.fence || (P.pen && P.pen.gated) ? prop('lock0', lockGateFn(false), 3.4, 1, 3) : null, lock1:P.fence || (P.pen && P.pen.gated) ? prop('lock1', lockGateFn(true), 3.4, 1, 3) : null,
+    crate:P.puzzle && P.puzzle.crate ? prop('pzcrate', function(B){ BRK.crate(B, 0, 0); }, 1.8, 1.8, 2) : null
   };
+  function fireSprite(t){ return prop('pzfire:' + t.th, brazierFn(t.th), 1.6, 1.6, 2.2); }
   // a plant's sprite, three of each kind a world so a hedge of them is not one bush stamped over and over
   var plants = []; P.things.forEach(function(t, i){ if (PLANT[t.k]) plants.push({ t:t, v3:i % 3, b:0, vb:0, sq:0, in:false, x:t.x, y:t.y, r:LOWR[t.k] || 1 }); });
   function plantSprite(q){ var t = q.t, k = t.k + ':' + kitOf(t.th).leaves.join('') + ':' + q.v3; return prop('plant:' + k, function(B){ BUILD[t.k](B, { k:t.k, x:0, y:0, th:t.th, h:t.h }, 3 + q.v3 * 5); }, 3.2, 3, 2.6); }
@@ -1082,6 +1222,23 @@ function run(box, P, pic, api){
      little squash, light pours out of it in rays, and then the coins spray out. Opened on an earlier visit it just
      stands open with its gold showing. */
   var CH_SHAKE = 0.32, CH_LID = 0.42, CH_COINS = 0.62;
+  /* A LIGHT: its stand, and once lit a flame flickering on it in the world's own colour (cool in the ice worlds, green
+     in the haunted one, cyan in the arcade), and a glow on the ground round it. */
+  function drawFire(t, now){ var z = pic.zAt(t.x, t.y); drawSprite(fireSprite(t), t.x, t.y, z);
+    if (!(PZ.solved || PZ.shown || PZ.lit[t.id])) return; var fc = PZ_FLAME[t.th] || ['#ff8a1f', '#ffe08a'], fz = z + 1.75;
+    var gp = scr(t.x, t.y); ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(255,200,120,0.14)'; ctx.beginPath(); ctx.ellipse(gp[0], gp[1], 9 * kk, 3.6 * kk, 0, 0, 7); ctx.fill(); ctx.restore();
+    for (var i = 0; i < 5; i++){ var ph = now * 7 + i * 1.7 + t.n * 3, h = 0.18 + i * 0.13 + Math.sin(ph) * 0.05; sq(t.x + Math.sin(ph * 1.3) * 0.08 * (i % 2 ? 1 : -1), t.y, fz + h, 0.34 - i * 0.05, i < 2 ? fc[0] : fc[1], 0.95 - i * 0.12); } }
+  /* ON THE GROUND: the footprints and the spot they lead to (a dark hole once dug), and the plate (gold while it holds
+     the gate open). Drawn flat, under everything that stands. */
+  function drawPzGround(now){ var Pz = P.puzzle, dark = !!pic.night || /^(volcano|neon|haunted)$/.test(sp.theme);
+    if (Pz.k === 'dig'){ ctx.fillStyle = dark ? 'rgba(255,240,210,.32)' : 'rgba(50,30,12,.38)';
+      Pz.steps.forEach(function(q){ var p = scr(q[0], q[1]); ctx.beginPath(); ctx.ellipse(p[0], p[1], 1.6 * kk, 0.8 * kk, 0, 0, 7); ctx.fill(); });
+      var sp0 = scr(Pz.spot[0], Pz.spot[1]), w = 4 * kk;
+      if (PZ.shown){ ctx.fillStyle = 'rgba(30,18,6,.7)'; ctx.beginPath(); ctx.ellipse(sp0[0], sp0[1], w * 1.4, w * 0.6, 0, 0, 7); ctx.fill(); }
+      else { ctx.strokeStyle = dark ? 'rgba(255,230,180,.6)' : 'rgba(90,40,10,.7)'; ctx.lineWidth = Math.max(2, kk * 0.9); ctx.beginPath(); ctx.moveTo(sp0[0] - w, sp0[1] - w * 0.45); ctx.lineTo(sp0[0] + w, sp0[1] + w * 0.45); ctx.moveTo(sp0[0] + w, sp0[1] - w * 0.45); ctx.lineTo(sp0[0] - w, sp0[1] + w * 0.45); ctx.stroke(); } }
+    if (Pz.k === 'plate'){ var pl = Pz.plate, on = pzGateOpen() && !PZ.solved, h = 0.8, c = [[pl.x - h, pl.y - h], [pl.x + h, pl.y - h], [pl.x + h, pl.y + h], [pl.x - h, pl.y + h]].map(function(q){ return scr(q[0], q[1]); });
+      ctx.fillStyle = on ? '#ffd23a' : '#8a8478'; ctx.strokeStyle = on ? '#fff3a8' : '#4a463e'; ctx.lineWidth = Math.max(2, kk * 0.6); ctx.beginPath(); ctx.moveTo(c[0][0], c[0][1]); for (var i = 1; i < 4; i++) ctx.lineTo(c[i][0], c[i][1]); ctx.closePath(); ctx.fill(); ctx.stroke();
+      if (on){ ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(255,210,70,' + (0.18 + 0.12 * Math.sin(now * 10)).toFixed(2) + ')'; var pc = scr(pl.x, pl.y); ctx.beginPath(); ctx.ellipse(pc[0], pc[1], 8 * kk, 3.4 * kk, 0, 0, 7); ctx.fill(); ctx.restore(); } } }
   function drawChest(t, now){ var z = pic.zAt(t.x, t.y), fr = SPR.chest, e = t.openAt != null ? now - t.openAt : (t.done ? 99 : -1), k, ox2 = 0, sy = 1, shp = scr(t.x, t.y);
     if (!fr) return;
     if (e < 0){ k = 0; var pu = 0.5 + 0.5 * Math.sin(now * 2.4 + t.x);   // shut: a warm pool of light and a glint now and then
@@ -1260,7 +1417,7 @@ function run(box, P, pic, api){
      so a player always knows what they are looking for. Coins are not on it: they come out of the chest. */
   function hudList(){ var el = ui.querySelector('[data-tlist]'), fs = items.filter(function(t){ return LOOT[t.k]; });
     el.innerHTML = fs.length ? '<b>On this trail</b>' + fs.map(function(t){ var nm = t.k === 'trinket' ? t.name || 'Trinket' : t.k === 'part' ? (t.name || 'Putter part') : LOOT[t.k].name;
-      if (t.k === 'chest' && t.drops) nm = 'Chest'; return '<span data-id="' + t.id + '" class="' + (t.done ? 'got' : '') + (t.hint ? ' near' : '') + '"><img alt="" src="' + lootIcon(t) + '">' + nm.replace(/[<>&]/g, '') + '</span>'; }).join('') : ''; }
+      if (t.k === 'chest' && t.drops) nm = 'Chest'; if (t.k === 'prize') nm = (P.puzzle && P.puzzle.name) || 'Puzzle'; return '<span data-id="' + t.id + '" class="' + (t.done ? 'got' : '') + (t.hint ? ' near' : '') + '"><img alt="" src="' + lootIcon(t) + '">' + nm.replace(/[<>&]/g, '') + '</span>'; }).join('') : ''; }
   function hudChests(){}
   function hudGold(){ var gd = api.golden ? api.golden() : null; ui.querySelector('[data-gold]').textContent = gd ? 'Golden balls ' + gd.have + '/' + gd.total : ''; }
   hudGold(); hudChests(); hudList();
@@ -1275,7 +1432,7 @@ function run(box, P, pic, api){
     try{ return G.frame(greet.look, Math.atan2(hs.face[0], -hs.face[1]) * 180 / Math.PI, 'walk', i); }catch(e){ return null; } }
   function talk(){ if (!hs || dlg) return; hs.ph = 'talk'; hs.moving = false; paused = true; pup(); keys = {}; g.vx = g.vy = 0;
     hs.face = [g.x - hs.x, g.y - hs.y]; g.face = [hs.x - g.x, hs.y - g.y]; g.aimI = null; talkB.hidden = true;
-    var pages = greet.lines || [], pg = 0, typed = 0, tm = null;
+    var pages = (greet.lines || []).concat(PZ && !PZ.solved ? [P.puzzle.clue] : []), pg = 0, typed = 0, tm = null;
     dlg = document.createElement('div'); dlg.className = 'pp-gd'; dlg.style.setProperty('--gc', greet.col || '#F1D04A');
     dlg.innerHTML = '<div class="pp-gdbox"><div class="pp-gdp"><canvas width="64" height="64"></canvas></div><div class="pp-gdn"><b></b><i></i></div><p aria-live="polite"></p><span class="pp-gdm">▼</span><button class="pp-gdx" data-gdx>Skip</button></div>';
     dlg.querySelector('.pp-gdn b').textContent = greet.name; dlg.querySelector('.pp-gdn i').textContent = greet.role || ''; ui.appendChild(dlg);
@@ -1304,6 +1461,29 @@ function run(box, P, pic, api){
     if (hs.ph === 'come'){ g.face = [-dx, -dy]; g.aimI = null; if (d > 3.25){ var v = Math.min(5.2 * dt, d - 3.2); hs.x += dx / d * v; hs.y += dy / d * v; hs.dist += v; hs.moving = true; hs.face = [dx, dy]; } else talk(); }
     else if (hs.ph === 'idle'){ hs.moving = false; if (d < 7) hs.face = [dx, dy]; }
     talkB.hidden = !(hs.ph === 'idle' && d < 3.6); }
+  /* PUSHING THE CRATE: walking into its side along x shoves it along with him, as far as its track allows. Toward the
+     rock it jams after a little; from the rock's side it goes all the way across and clears the gap. Left half
+     pushed and walked away from, it slides back, so it can never be left stuck. */
+  function pushCrate(dt, now){ var C = PZ.crate, dy = Math.abs(g.y - C.y), dx = C.x - g.x;
+    if (!PZ.solved && Math.abs(C.x - C.x0) > 0.05 && Math.hypot(g.x - C.x, g.y - C.y) > 18){ C.x = C.x0; return; }
+    if (dy > CRATE_H + 0.55 - 0.15 || Math.abs(g.vx) < 0.6 || Math.sign(dx) !== Math.sign(g.vx) || Math.abs(dx) > CRATE_H + 0.55 + 0.14) return;
+    var nx = Math.max(C.lo, Math.min(C.hi, C.x + g.vx * dt * 0.65));
+    if (Math.abs(nx - C.x) > 1e-4){ C.x = nx; if (!C.dust || now - C.dust > 160){ C.dust = now; burst(C.x - Math.sign(g.vx) * CRATE_H, C.y, pic.zAt(C.x, C.y) + 0.2, ['rgba(220,210,190,.8)'], 3, 1.2, 0.4); } }
+    else if (Math.sign(g.vx) === C.rock && Math.abs(C.x - C.x0) < 1 && (!bubble || now > bubble.until)) say('It\'s jammed against the rock.', 1800);
+    if (!C.clear && Math.abs(C.x - C.x0) >= 1.7){ C.clear = true; say('The way into the pen is clear.', 2200); api.sfx && api.sfx('blip'); } }
+  // the lights, the dig and the plate
+  function stepPuzzle(dt, now, tsec){ var Pz = P.puzzle, z;
+    if (PZ.k === 'fire' && !PZ.shown){ items.forEach(function(t){ if (t.k !== 'fire' || PZ.lit[t.id] || Math.hypot(t.x - g.x, t.y - g.y) > 1.7) return;
+        PZ.lit[t.id] = tsec; z = pic.zAt(t.x, t.y); var fc = PZ_FLAME[t.th] || ['#ff8a1f', '#ffe08a']; burst(t.x, t.y, z + 1.8, [fc[0], fc[1], '#ffffff'], 16, 1.2, 0.9); api.sfx && api.sfx('blip');
+        var n = Object.keys(PZ.lit).length; floatText(n + ' of 3', t.x, t.y, z + 3, fc[1], true);
+        if (n >= 3) reveal('All three are lit. A chest has turned up off the path.'); }); }
+    else if (PZ.k === 'dig' && !PZ.shown){ var dd = Math.hypot(Pz.spot[0] - g.x, Pz.spot[1] - g.y);
+      if (dd < 1.1){ PZ.dug += dt; if (PZ.dug > 0.45){ z = pic.zAt(Pz.spot[0], Pz.spot[1]); burst(Pz.spot[0], Pz.spot[1], z + 0.4, ['#6a4a2a', '#8a6a3a', '#3a2a14'], 26, 1.6, 1.1); reveal('You dug something up.'); } } else PZ.dug = 0; }
+    else if (PZ.k === 'plate' && !PZ.solved){ var pl = Pz.plate, dpl = Math.hypot(pl.x - g.x, pl.y - g.y);
+      if (dpl < 1.0){ var was = performance.now() < PZ.openUntil; PZ.openUntil = performance.now() + pl.t * 1000; if (!was){ say('Click. The pen\'s gate is open. Quick!', 2400); api.sfx && api.sfx('blip'); } } } }
+  function reveal(msg){ PZ.shown = true; if (!prizeIt) return; var z = pic.zAt(prizeIt.x, prizeIt.y); prizeIt.rise = performance.now() / 1000;
+    burst(prizeIt.x, prizeIt.y, z + 1.2, ['#7cc8ff', '#ffffff', '#ffd23a'], 24, 1.4, 1.1); ring(prizeIt.x, prizeIt.y, '120,200,255'); say(msg, 3000); api.sfx && api.sfx('coin');
+    var hr = ui.querySelector('[data-tlist] [data-id="' + prizeIt.id + '"]'); if (hr) hr.classList.add('near'); }
   function take(t, now){ take0(t, now); if (LOOT[t.k]) hudList(); }
   function take0(t, now){ var z = pic.zAt(t.x, t.y);
     if (t.k === 'coin'){ t.done = true; coinsGot += COIN_V; hudCoins(); burst(t.x, t.y, z + 1.2, ['#ffd23a', '#fff3a8', '#ffffff'], 8); collect(t, now, 'coin'); floatText('+' + COIN_V, t.x, t.y, z + 2.2); pick('coin', t.id, COIN_V); api.sfx && api.sfx('coin'); }
@@ -1316,6 +1496,13 @@ function run(box, P, pic, api){
       cs.forEach(function(c, i){ c.out = true; c.fly = { t0:now + CH_COINS + i * 0.05, dur:0.6 + (i % 3) * 0.08, x0:t.x, y0:t.y, z0:z + 1.6 }; });
       setTimeout(function(){ if (alive) floatText(cs.length ? (cs.length * COIN_V) + ' coins!' : 'Treasure!', t.x, t.y, z + 3.2, '#ffd23a', true); }, CH_COINS * 1000);
       sayLater(cs.length ? 'Walk over the coins to pick them up.' : 'An empty chest.', 2600, 1.7); }
+    else if (t.k === 'prize'){ t.done = true; t.openAt = now; PZ.solved = true; pick('pz', t.id, 0); api.sfx && api.sfx('coin');
+      burst(t.x, t.y + 0.8, z + 1.0, ['#ffd23a', '#fff1a0'], 6, 1.2, 0.6);
+      setTimeout(function(){ if (!alive) return; burst(t.x, t.y, z + 1.5, ['#ffd23a', '#fff3a8', '#ffffff', '#7cc8ff'], 30, 1.5, 1.3); ring(t.x, t.y, '120,200,255'); }, (CH_SHAKE + 0.15) * 1000);
+      var pcs = items.filter(function(c){ return c.k === 'coin' && c.ch === t; });
+      pcs.forEach(function(c, i){ c.out = true; c.fly = { t0:now + CH_COINS + i * 0.05, dur:0.6 + (i % 3) * 0.08, x0:t.x, y0:t.y, z0:z + 1.6 }; });
+      setTimeout(function(){ if (alive) floatText('Puzzle solved! ' + (pcs.length * COIN_V) + ' coins', t.x, t.y, z + 3.2, '#9fe0ff', true); }, CH_COINS * 1000);
+      sayLater('Puzzle solved. Walk over the coins to pick them up.', 3000, 1.7); }
     else if (t.k === 'key'){ t.done = true; lockOpen = true; burst(t.x, t.y, z + 1.3, ['#ffd23a', '#ffffff'], 14, 1.2); collect(t, now); floatText('Key', t.x, t.y, z + 3, '#e6eef8', true); pick('key', t.id, 0); sayLater('A key. The gate to the clearing is open.', 3200, 1.1); }
     else if (t.k === 'golden'){ t.done = true; burst(t.x, t.y, z + 1, ['#ffd23a', '#fff3a8', '#ffffff'], 28, 1.3, 1.2); collect(t, now); floatText('Golden ball!', t.x, t.y, z + 3, '#ffd23a', true); var msg = pick('golden', t.id, 0); hudGold(); sayLater(msg || 'A golden ball.', 3600, 1.1); }
     else if (t.k === 'life'){ t.done = true; burst(t.x, t.y, z + 1.2, ['#e5483a', '#ff9d8a', '#ffffff'], 22, 1.3, 1.2); collect(t, now); floatText('+1 life', t.x, t.y, z + 3, '#ff9d8a', true); sayLater(pick('life', t.id, 0) || 'A spare life.', 3600, 1.1); }
@@ -1336,6 +1523,7 @@ function run(box, P, pic, api){
     var tvx, tvy;
     if (mag > 0.05){ var wx = sx, wy = sy / SE, wl = Math.hypot(wx, wy); tvx = wx / wl * sp2 * mag; tvy = wy / wl * sp2 * mag; } else { tvx = 0; tvy = 0; }
     var acc = ice ? 2.2 : 26; g.vx += (tvx - g.vx) * Math.min(1, acc * dt); g.vy += (tvy - g.vy) * Math.min(1, acc * dt);
+    if (PZ && PZ.crate && !paused) pushCrate(dt, now);
     var nx = g.x + g.vx * dt, ny = g.y + g.vy * dt, moved = 0;
     if (!blocked(nx, ny)){ moved = Math.hypot(nx - g.x, ny - g.y); g.x = nx; g.y = ny; }
     else if (!blocked(nx, g.y)){ moved = Math.abs(nx - g.x); g.x = nx; g.vy *= 0.5; }
@@ -1360,13 +1548,15 @@ function run(box, P, pic, api){
       if (t.k === 'coin' && (!t.out || (t.fly && tsec < t.fly.t0 + t.fly.dur))) continue;
       if ((t.k === 'coin' || t.k === 'golden' || t.k === 'key' || t.k === 'life' || t.k === 'trinket' || t.k === 'part') && d < 1.3) take(t, tsec);
       else if (t.k === 'chest' && d < 2.6 && (lockOpen || !P.fence || !t.main)) take(t, tsec);
+      else if (t.k === 'prize' && d < 2.6 && prizeShown()) take(t, tsec);
       // warmer: the first time you come within a few strides of a shut chest it says so, and its row on the list lights
       if (t.k === 'chest' && !t.done && !t.hint && d < 9){ t.hint = true; if (!bubble || now > bubble.until) say(t.main && P.fence && !lockOpen ? 'Something glints behind that fence.' : 'Something glints nearby.', 2200);
         var hr = ui.querySelector('[data-tlist] [data-id="' + t.id + '"]'); if (hr) hr.classList.add('near'); }
       else if (t.k === 'brk' && d < 1.5 && spd > 1.5) take(t, tsec); }
-    // the local talks when he walks up
+    if (PZ) stepPuzzle(dt, now, tsec);
+    // the local talks when he walks up, and on a puzzle trail he gives the clue
     var npc = items.filter(function(t){ return t.k === 'npc'; })[0];
-    if (npc){ var dn = Math.hypot(npc.x - g.x, npc.y - g.y); if (dn < 3.4 && !nearNpc){ nearNpc = true; var ls = api.lines ? api.lines(kitOf(npc.th).who) : []; say(ls.join(' '), 5200); } else if (dn > 5) nearNpc = false; }
+    if (npc){ var dn = Math.hypot(npc.x - g.x, npc.y - g.y); if (dn < 3.4 && !nearNpc){ nearNpc = true; var ls = api.lines ? api.lines(kitOf(npc.th).who) : []; if (PZ && !PZ.solved) ls = ls.concat([P.puzzle.clue]); say(ls.join(' '), PZ && !PZ.solved ? 8200 : 5200); } else if (dn > 5) nearNpc = false; }
     if (P.fence && !lockOpen){ var df = Math.hypot(g.x - P.lockGate.x, g.y - P.lockGate.y); if (df < 2.4 && (!bubble || now > bubble.until)) say('Locked. The key is somewhere on this trail.', 2200); }
     // the door between worlds
     if (gate && !gate.asked && Math.abs(g.y - P.gate.y) < 3.2 && Math.abs(g.x - P.gate.x) < PW + 3){ gate.asked = true; paused = true; g.vx = g.vy = 0;
@@ -1385,9 +1575,12 @@ function run(box, P, pic, api){
     var cw = pic.cv.width, ch = pic.cv.height, sx0 = Math.max(0, Math.floor(-ox / kk)), sy0 = Math.max(0, Math.floor(-oy / kk)), sx1 = Math.min(cw, Math.ceil((W - ox) / kk)), sy1 = Math.min(ch, Math.ceil((H - oy) / kk));
     if (!(ox <= 0 && oy <= 0 && ox + cw * kk >= W && oy + ch * kk >= H)){ ctx.fillStyle = pic.bg || kitOf(sp.theme).g[0]; ctx.fillRect(0, 0, W, H); }
     if (sx1 > sx0 && sy1 > sy0) ctx.drawImage(pic.cv, sx0, sy0, sx1 - sx0, sy1 - sy0, ox + sx0 * kk, oy + sy0 * kk, (sx1 - sx0) * kk, (sy1 - sy0) * kk);
+    if (PZ) drawPzGround(tsec);
     // everything that moves, far to near
     var ds = [];
-    items.forEach(function(t){ if (t.k === 'host') return; if (t.k === 'coin' && !t.out) return; if (t.done && t.k !== 'chest' && t.k !== 'brk') return; if (t.k === 'brk' && t.done) return; ds.push(t); });
+    items.forEach(function(t){ if (t.k === 'host') return; if (t.k === 'coin' && !t.out) return; if (t.done && t.k !== 'chest' && t.k !== 'prize' && t.k !== 'brk') return; if (t.k === 'brk' && t.done) return; if (t.k === 'prize' && !prizeShown()) return; ds.push(t); });
+    if (P.pen && P.pen.gated) ds.push({ k:'pzgate', x:P.pen.x, y:P.pen.y + P.pen.r });
+    if (PZ && PZ.crate) ds.push({ k:'crate', x:PZ.crate.x, y:PZ.crate.y });
     if (P.gate) ds.push({ k:'gate', x:P.gate.x, y:P.gate.y + 0.01 });
     if (P.fence) ds.push({ k:'lock', x:P.lockGate.x, y:P.lockGate.y });
     ds.push({ k:'me', x:g.x, y:g.y });
@@ -1399,8 +1592,11 @@ function run(box, P, pic, api){
       if (t.k === 'me') drawMe(tsec);
       else if (t.k === 'plant') drawPlant(t.q);
       else if (t.k === 'coin') drawCoin(t, tsec);
-      else if (LOOT[t.k] && t.k !== 'chest') drawLoot(t, tsec);
-      else if (t.k === 'chest') drawChest(t, tsec);
+      else if (LOOT[t.k] && t.k !== 'chest' && t.k !== 'prize') drawLoot(t, tsec);
+      else if (t.k === 'chest' || t.k === 'prize') drawChest(t, tsec);
+      else if (t.k === 'fire') drawFire(t, tsec);
+      else if (t.k === 'pzgate'){ var gs = pzGateOpen() ? SPR.lock1 : SPR.lock0; if (gs) drawSprite(gs, t.x, t.y, pic.zAt(t.x, t.y)); }
+      else if (t.k === 'crate') drawSprite(SPR.crate, t.x, t.y, pic.zAt(t.x, t.y));
       else if (t.k === 'brk') drawSprite(brkSprite(t), t.x, t.y, pic.zAt(t.x, t.y));
       else if (t.k === 'npc') drawFigure(npcFrame(t), t.x, t.y);
       else if (t.k === 'ship' || t.k === 'tumble' || t.k === 'ghost') drawLifeThing(t, tsec);
@@ -1481,9 +1677,9 @@ function run(box, P, pic, api){
       window.removeEventListener('pointercancel', pup); window.removeEventListener('blur', pup); window.removeEventListener('keydown', kd, true); window.removeEventListener('keyup', ku, true); },
     // for the checks: where he is, and a way to hold the stick
     pos:function(){ return [g.x, g.y]; }, fx:function(){ return fxs.length; }, stick:function(vx, vy){ stickV = [vx, vy]; },
-    plan:function(){ return P; }, gate:function(){ return gate; }, clouds:function(){ return cloud ? (cloud.part ? 'parting' : 'on') : 'off'; }, life:function(){ return { theme:sp.theme, ships:ships.map(function(s1){ var y1 = shipY(s1); return { x:shipX(y1), y:y1 }; }), flyers:flyers.length, motes:motes.length, balloons:balloons.length, tumbles:tumbles.length, ghosts:ghosts.length, puffs:puffs.length, smoke:smokeSrc.length }; }, host:function(){ return hs ? { x:hs.x, y:hs.y, ph:hs.ph, talking:!!dlg } : null; }, items:function(){ return items; }, goTo:function(x, y){ g.x = x; g.y = y; }, plants:function(){ return plants.map(function(q){ return { x:q.x, y:q.y, k:q.t.k, b:q.b, in:q.in }; }); }, view:function(){ return { kk:kk, W:W, H:H, ox:ox, oy:oy }; }, scr:scr };
+    plan:function(){ return P; }, gate:function(){ return gate; }, clouds:function(){ return cloud ? (cloud.part ? 'parting' : 'on') : 'off'; }, life:function(){ return { theme:sp.theme, ships:ships.map(function(s1){ var y1 = shipY(s1); return { x:shipX(y1), y:y1 }; }), flyers:flyers.length, motes:motes.length, balloons:balloons.length, tumbles:tumbles.length, ghosts:ghosts.length, puffs:puffs.length, smoke:smokeSrc.length }; }, host:function(){ return hs ? { x:hs.x, y:hs.y, ph:hs.ph, talking:!!dlg } : null; }, items:function(){ return items; }, goTo:function(x, y){ g.x = x; g.y = y; }, blocked:function(x, y){ return blocked(x, y); }, pz:function(){ return PZ; }, bubble:function(){ return bubble ? bubble.txt : ''; }, plants:function(){ return plants.map(function(q){ return { x:q.x, y:q.y, k:q.t.k, b:q.b, in:q.in }; }); }, view:function(){ return { kk:kk, W:W, H:H, ox:ox, oy:oy }; }, scr:scr };
   return ctl;
 }
 
-window.RTT_PUTT_TRAIL = { API_VERSION:API_VERSION, COIN_V:COIN_V, BRK_V:BRK_V, plan:plan, slices:slices, run:run, GH:GH, TRAIL_L:TRAIL_L, ELEV:ELEV, KIT:KIT };
+window.RTT_PUTT_TRAIL = { API_VERSION:API_VERSION, COIN_V:COIN_V, BRK_V:BRK_V, PZ_COINS:PZ_COINS, plan:plan, slices:slices, run:run, GH:GH, TRAIL_L:TRAIL_L, ELEV:ELEV, KIT:KIT };
 })();

@@ -2216,7 +2216,7 @@ function pmerge(st, g){
   // what was picked up on the trails between holes: only ever added to
   st.trail = st.trail || {}; Object.keys(g.trail || {}).forEach(function(k){ var a = st.trail[k] = st.trail[k] || {}, b = g.trail[k] || {};
     ['c', 'b', 'ch'].forEach(function(f){ if (b[f]){ a[f] = a[f] || []; b[f].forEach(function(v){ if (a[f].indexOf(v) < 0) a[f].push(v); }); } });
-    ['k', 'g', 'key', 'life', 'tk', 'pt'].forEach(function(f){ if (b[f]) a[f] = 1; }); });
+    ['k', 'g', 'key', 'life', 'tk', 'pt', 'pz'].forEach(function(f){ if (b[f]) a[f] = 1; }); });
   // the rare things: lists only grow, and the spare life counters only go up, so the larger is the newer
   ['bank', 'tk', 'met', 'rv'].forEach(function(f){ (g[f] || []).forEach(function(v){ st[f] = st[f] || []; if (st[f].indexOf(v) < 0) st[f].push(v); }); });
   ['bused', 'bspent'].forEach(function(f){ st[f] = Math.max(st[f] || 0, g[f] || 0); });
@@ -2259,7 +2259,7 @@ var CLOUD = { uid:null, busy:false, again:false, refused:0 };
 function cloudUid(){ try{ var h = hostOf(); return h.rpc && h.uid ? h.uid() || null : null; }catch(e){ return null; } }
 function cloudProg(st){ var n = 0, c = function(o){ return Object.keys(o || {}).length; };
   Object.keys(st.tours || {}).forEach(function(k){ var t = st.tours[k] || {}; n += (t.lv || 1) + c(t.best) + c(t.ace) + c(t.paid) + c(t.wpaid) + c(t.treat); });
-  Object.keys(st.trail || {}).forEach(function(k){ var t = st.trail[k] || {}; n += (t.c || []).length + (t.b || []).length + (t.ch || []).length + (t.k ? 1 : 0) + (t.g ? 1 : 0) + (t.key ? 1 : 0) + (t.life ? 1 : 0) + (t.tk ? 1 : 0) + (t.pt ? 1 : 0); });
+  Object.keys(st.trail || {}).forEach(function(k){ var t = st.trail[k] || {}; n += (t.c || []).length + (t.b || []).length + (t.ch || []).length + (t.k ? 1 : 0) + (t.g ? 1 : 0) + (t.key ? 1 : 0) + (t.life ? 1 : 0) + (t.tk ? 1 : 0) + (t.pt ? 1 : 0) + (t.pz ? 1 : 0); });
   n += (st.bank || []).length + (st.tk || []).length + (st.met || []).length + (st.rv || []).length + ((st.pp && st.pp.parts) || []).length + (st.bused || 0) + (st.bspent || 0);
   return n + c(st.daily) + (st.rewards || []).length; }
 // fold a copy of the record into this one: everything earned is kept, lives come from the newer copy
@@ -2932,6 +2932,7 @@ function openTrail(tid, from){
         else if (kind === 'brk'){ r.b = r.b || []; if (r.b.indexOf(id) < 0) r.b.push(id); else n = 0; }
         else if (kind === 'chest'){ r.ch = r.ch || []; if (r.ch.indexOf(id) < 0) r.ch.push(id); }   // a chest pays nothing itself: its coins are picked up off the ground
         else if (kind === 'key') r.key = 1;
+        else if (kind === 'pz') r.pz = 1;   // the trail's puzzle is solved; its coin bonus comes out of its chest as coins
         else if (kind === 'life'){ r.life = 1; st.bank = st.bank || []; if (st.bank.indexOf(sp.loot.life.id) < 0) st.bank.push(sp.loot.life.id);
           msg = 'A spare life. ' + bankHeld(st) + ' banked for when your hearts run out.'; }
         else if (kind === 'trinket'){ r.tk = 1; var tk = sp.loot.trinket; st.tk = st.tk || []; if (st.tk.indexOf(tk.id) < 0) st.tk.push(tk.id);
@@ -3067,9 +3068,9 @@ function outOfLives(){
    things are. So when the trail to this hole still holds anything, the map says what is being left behind and offers
    the walk instead. Nothing is lost for good: the trail and what is on it wait for the next time you walk it. */
 function trailLeft(tid, n){ try{ if (tid !== 'main' || n < 2 || !trailOk()) return []; var sp = trailSpec(tid, n - 1), P = trailPlan(sp), r = (pload().trail || {})[sp.key] || {};
-    var NAME = { chest:'a chest of coins', golden:'a golden ball', trinket:'a trinket', part:'a putter part', life:'a spare life' };
+    var NAME = { chest:'a chest of coins', golden:'a golden ball', trinket:'a trinket', part:'a putter part', life:'a spare life', prize:'a puzzle' };
     return P.items.filter(function(t){ if (!NAME[t.k]) return false;
-      if (t.k === 'chest') return (r.ch || []).indexOf(t.id) < 0 && !(t.main && r.k); if (t.k === 'golden') return !r.g; if (t.k === 'trinket') return !r.tk; if (t.k === 'part') return !r.pt; if (t.k === 'life') return !r.life; return false; })
+      if (t.k === 'chest') return (r.ch || []).indexOf(t.id) < 0 && !(t.main && r.k); if (t.k === 'golden') return !r.g; if (t.k === 'trinket') return !r.tk; if (t.k === 'part') return !r.pt; if (t.k === 'life') return !r.life; if (t.k === 'prize') return !r.pz; return false; })
       .map(function(t){ return t.k === 'trinket' && t.name ? 'the ' + t.name : t.k === 'part' && t.name ? 'the ' + t.name : NAME[t.k]; }); }catch(e){ return []; } }
 function skipWarn(n, tid){ var st = pload(), c = st.cur, tr = (st.tours || {})[tid] || {};
   // only a hole being reached for the first time can forfeit anything: its trail is gone once it is beaten. A gate
