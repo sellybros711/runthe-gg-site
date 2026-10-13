@@ -15535,7 +15535,7 @@ function scrTitle(){
   // already oriented on the interface instead of being dropped onto it cold.)
   // Season 1 launch announcement (returning players, once), fires after this render settles, and only
   // when no other overlay (e.g. the login bonus) is up; retried on later title renders until shown.
-  setTimeout(function(){ try{ maybeFirstTour(); }catch(e){} try{ flushPendingWelcome(); }catch(e){} try{ maybeS1LaunchPopup(); }catch(e){} try{ flushPendingLogin(); }catch(e){} try{ maybeS1EndPopup(); }catch(e){} try{ maybeSpookyPopup(); }catch(e){} try{ maybePassSettleNote(); }catch(e){} try{ maybeRosterPop(); }catch(e){} try{ maybeArcadeAd(); }catch(e){} }, 420);
+  setTimeout(function(){ try{ flushPendingWelcome(); }catch(e){} try{ maybeS1LaunchPopup(); }catch(e){} try{ flushPendingLogin(); }catch(e){} try{ maybeS1EndPopup(); }catch(e){} try{ maybeSpookyPopup(); }catch(e){} try{ maybePassSettleNote(); }catch(e){} try{ maybeRosterPop(); }catch(e){} try{ maybeArcadeAd(); }catch(e){} }, 420);
   // ════════════════════════════════════════════════════════════════════
   // Home = ONE HERO + a rail. Whatever you were last playing becomes the big
   // card (mid-career it's "Resume Year 12", first thing in the morning it's

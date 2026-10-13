@@ -10097,11 +10097,9 @@ async function boot(){
        the normal intro. routeChallenge falls back to false on anything it cannot decode. */
     if(!routeChallenge()) show('s-intro');
     ga('game_loaded');
-    /* A beat after the intro lands, because the auth client decides on ITS first change
-       whether it is opening a sheet of its own, and this must not get there first.
-       ONLY THE GUIDE NOW. askArcadeAd() shared this timer and has been removed: this game
-       does not put up a house ad for another one. */
-    setTimeout(()=>{ firstRunGuide(); },1200);
+    /* The first-run guide no longer opens by itself (owner's call: no auto tutorial on any
+       game). The Tutorial button on the front page is the way in. firstRunGuide() is kept,
+       and check-popups still drives it, so it can be put back with one line here. */
     /* Anything a previous visit could not send. Deliberately not awaited and deliberately
        last: it is somebody else's message from an earlier session, and it must not hold up
        this one by a single frame. */

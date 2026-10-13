@@ -246,7 +246,7 @@ async function main() {
   await pg.evaluate(() => localStorage.clear());
   await pg.goto(URL);
   await pg.evaluate(() => {
-    Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
+    Sound.muted = true; PREFS.cutscenes = false; PREFS.tips = false;
     window.confirm = () => true;
   });
 

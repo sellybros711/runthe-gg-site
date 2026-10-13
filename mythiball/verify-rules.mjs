@@ -120,7 +120,7 @@ async function fresh(browser) {
   await pg.evaluate(() => {
     Sound.muted = true;
     PREFS.cutscenes = false;
-    PREFS.coach = false;          /* the first-timer notes are not what is under test */
+    PREFS.tips = false;          /* the first-timer notes are not what is under test */
     window.confirm = () => true;
     State.gameSpeed = 'fast'; applyGameSpeed();
   });
@@ -3338,7 +3338,7 @@ async function main() {
         };
       });
       const moment = await pg.evaluate(async () => {
-        Sound.muted = true; PREFS.coach = false; PREFS.cutscenes = false;
+        Sound.muted = true; PREFS.tips = false; PREFS.cutscenes = false;
         State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'T';
         State.opponent = OPPONENTS[0]; State.innings = 5; State.mode = 'exhibition';
         startGame({ mode: 'exhibition', youHome: false });
@@ -4119,7 +4119,7 @@ async function main() {
         await pg.goto(URL);
         await wait(pg, 400);
         await pg.evaluate(() => {
-          Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
+          Sound.muted = true; PREFS.cutscenes = false; PREFS.tips = false;
           PREFS.smooth = false; document.body.classList.remove('smooth');
           State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
           State.opponent = OPPONENTS[0]; State.innings = 5; State.mode = 'exhibition';
@@ -4695,7 +4695,7 @@ async function main() {
         await pg.goto(URL);
         await wait(pg, 500);
         await pg.evaluate(() => {
-          Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
+          Sound.muted = true; PREFS.cutscenes = false; PREFS.tips = false;
           State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
           State.opponent = randomOpponent(null); State.innings = 5; State.mode = 'exhibition';
           startGame({ mode: 'exhibition', youHome: false });
@@ -5169,7 +5169,7 @@ async function main() {
       await pg.evaluate(() => localStorage.clear());
       await pg.goto(URL);
       await pg.evaluate(() => {
-        Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false; window.confirm = () => true;
+        Sound.muted = true; PREFS.cutscenes = false; PREFS.tips = false; window.confirm = () => true;
         State.gameSpeed = 'fast'; applyGameSpeed();
         State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
         State.opponent = randomOpponent(null); State.innings = 5; State.mode = 'exhibition';

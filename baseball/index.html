@@ -2621,6 +2621,7 @@ header:before{content:'';position:absolute;inset:0 -14px;background:var(--bg);z-
 
 <div class="screen" id="s-how">
   <h2 class="display" style="font-size:27px;margin:0 0 12px">How to play</h2>
+  <div style="margin:0 0 12px"><button class="btn ghost sm" id="b-how-quick" type="button">Quick start: the three steps</button></div>
   <div style="font-size:14px;line-height:1.6;color:var(--dim)">
     <p><b style="color:var(--ink)">Spin.</b> Each spin draws a random team-season from MLB history (1901-2025). Draft one player from that roster who fits an open spot.</p>
     <p><b style="color:var(--ink)">Budget.</b> You have $190M for all twelve spots. Prices come from WAR, so you can't afford a star every spin. Spend wisely and don't blow it early. Scarce spots like catcher and closer are worth grabbing when a good one appears.</p>
@@ -4854,7 +4855,6 @@ async function boot(){
     show('s-intro');
     heroSync();
     paintDailyCard();
-    maybeFirstRun();
   }catch(e){
     $('s-load').querySelector('.dim').textContent='Failed to load data. Please refresh.';
     console.error(e);
@@ -5805,7 +5805,9 @@ function paintDailyCard(){
 const SEEN_KEY='rtd_seen_intro_v1';
 function hasSeen(){try{return !!localStorage.getItem(SEEN_KEY);}catch(e){return true;}}
 function markSeen(){try{localStorage.setItem(SEEN_KEY,'1');}catch(e){}}
-function maybeFirstRun(){if(!hasSeen())openSheet('sheet-first');}
+/* The first run sheet no longer opens by itself (owner's call: no auto tutorial on any
+   game). How to play carries a Quick start button that opens it. */
+$('b-how-quick').addEventListener('click',()=>openSheet('sheet-first'));
 $('b-how-back').addEventListener('click',()=>{show('s-intro');heroSync();});
 $('b-quit').addEventListener('click',async()=>{
   if(RUN&&RUN.phase===R.PHASES.DRAFT&&RUN.roster.length>0){

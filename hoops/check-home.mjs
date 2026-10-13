@@ -194,6 +194,12 @@ section('3. the first run guide names the games you get to call');
     await page.route('**/*', serve);
     await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#b-start:not([disabled])', { state: 'attached', timeout: 30000 });
+    await page.waitForTimeout(1200);
+    /* NO AUTO TUTORIAL (owner's call): a first visit is not interrupted, and
+       "Show me around" in How to play is the way in. */
+    const auto = await page.evaluate(() => !document.querySelector('#frg').hidden);
+    ok(!auto, `${w}x${h}: the guide does not open by itself on a first visit`);
+    await page.evaluate(() => document.querySelector('#b-home-tour').click());
     await page.waitForTimeout(400);
 
     /* THE ARROW POINTS AT THE CAREER BUTTON, which is the button the dock
@@ -214,7 +220,7 @@ section('3. the first run guide names the games you get to call');
       };
     });
 
-    ok(g.up, `${w}x${h}: the guide is up on a first visit`);
+    ok(g.up, `${w}x${h}: Show me around opens the guide`);
     const all = g.steps.join(' ');
     /* GAME 7 AND NOTHING WIDER. The door used to open on any game that could
        end a series plus every Finals game, which met a first round exit with

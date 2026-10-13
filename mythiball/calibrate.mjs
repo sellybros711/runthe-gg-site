@@ -77,7 +77,7 @@ await pg.goto(URL);
 await pg.evaluate(() => localStorage.clear());
 await pg.goto(URL);
 await pg.evaluate((tier) => {
-  Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
+  Sound.muted = true; PREFS.cutscenes = false; PREFS.tips = false;
   window.confirm = () => true;
   State.difficulty = tier;
   State.gameSpeed = 'fast'; applyGameSpeed();

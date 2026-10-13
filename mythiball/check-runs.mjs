@@ -101,7 +101,7 @@ const playGames = async (field, count) => {
   await pg.evaluate(() => localStorage.clear());
   await pg.goto(URL);
   await pg.evaluate(({ sp, field }) => {
-    Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
+    Sound.muted = true; PREFS.cutscenes = false; PREFS.tips = false;
     window.confirm = () => true;
     State.gameSpeed = sp; applyGameSpeed();
     State.innings = 5; State.mode = 'exhibition';
