@@ -362,8 +362,18 @@ if (!args.includes('--no-browser')){
     await pg.evaluate(() => { sbUser = { id:'x' }; sbUsername = 'somebody'; });
     claim(await pg.evaluate(() => !puttOn() && !homeModeList().some(m => m.id === 'putt')), 'signed in as anybody else: no door');
     claim(await pg.evaluate(() => typeof PUTT_LIVE !== 'undefined' && PUTT_LIVE === false), 'PUTT_LIVE is false, so this is still a preview');
-    await pg.evaluate(() => { sbUsername = 'CSel8'; });
+    // a tester who is NOT on PUTT_ALL_ACCESS, so every gate below is the one an ordinary player meets
+    await pg.evaluate(() => { sbUsername = 'SlimeyB3'; });
     claim(await pg.evaluate(() => puttOn() && homeModeList().some(m => m.id === 'putt')), 'signed in as a tester: the door is there');
+    // EVERY HOLE OPEN for the accounts on PUTT_ALL_ACCESS, asked and never written: the record keeps the real hole
+    const aa = await pg.evaluate(() => { const P = window.RTT_PUTT, T = P.TOURS.main, tp = { lv:1, best:{} }, o = {}; P.close && P.close(); P.summary(puttHost());
+      o.plain = { all:P.allAccess(), open40:P.opened(T, tp, 40), shown:P.revealed(T, 5, { tours:{ main:tp }, rv:[] }) };
+      sbUsername = 'RunnyJ';
+      o.all = { all:P.allAccess(), open:P.opened(T, tp, T.levels.length), shown:P.revealed(T, T.worlds.length - 1, { tours:{ main:tp }, rv:[] }), lv:tp.lv, frontier:P.frontier(tp, T) };
+      sbUsername = 'SlimeyB3'; return o; });
+    claim(!aa.plain.all && !aa.plain.open40 && !aa.plain.shown, 'a tester off the list meets the gates: hole 40 is shut and world 6 is under cloud');
+    claim(aa.all.all && aa.all.open && aa.all.shown, 'an account on PUTT_ALL_ACCESS has every hole open and every world shown');
+    claim(aa.all.lv === 1 && aa.all.frontier === 1, 'and the record still says the hole really reached, so taking the account off the list puts the gates back');
     // every course in the rotation, built off the real hvGeom
     const real = await pg.evaluate(() => { const P = window.RTT_PUTT, h = puttHost(), bad = [];
       let n = 0;

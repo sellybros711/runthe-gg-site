@@ -60,7 +60,7 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- The Putting Green: a tester preview. It draws nothing until puttOn() opens it (see PUTT_TESTERS). -->
-<script defer src="putt/putt.js?v=61"></script>
+<script defer src="putt/putt.js?v=62"></script>
 <script defer src="putt/land.js?v=6"></script>
 <script defer src="putt/hole3d.js?v=11"></script>
 <script defer src="putt/trail.js?v=20"></script>
@@ -22336,6 +22336,7 @@ function cutscenesOn(){
 var PUTT_LIVE=false;
 const PUTT_API=1;                                         // the putt.js API this page was written against
 var PUTT_TESTERS=['csel8','runnyj','malikwillislover','slimeyb3','jordantest'];      // tester accounts (lowercased usernames)
+var PUTT_ALL_ACCESS=['csel8','runnyj','malikwillislover'];   // every Putt Putt hole open for good, whatever the record says (lowercased usernames)
 /* ---- THE 3D COURSE GOLFER (golf/golfer3d.js): the tracer's golfer in the profile style. Live for everybody.
    G3D_LIVE=false is the kill switch, which puts it back to the G3D_TESTERS accounts only. A blocked or stale
    module, or a draw that throws, falls back to the old sprites. ---- */
@@ -22414,6 +22415,7 @@ function puttHost(){
     // the full closet, opened on its Putters page; Back from it comes straight back into Putt Putt
     closet:function(){ try{ window.RTT_PUTT.close(); }catch(e){} S.shopPreview=null; S.overlay=null; S.setupEdit=true; S.setupReturn={screen:'title',overlay:null,putt:true}; S.screen='setup'; S.setupCat='putter'; render(); },
     tester:function(){ return sbSignedIn() && PUTT_TESTERS.indexOf((sbUsername||'').toLowerCase())>=0; },
+    allAccess:function(){ return sbSignedIn() && PUTT_ALL_ACCESS.indexOf((sbUsername||'').toLowerCase())>=0; },
     onClose:function(){ try{ render(); }catch(e){} } };
 }
 function openPutt(){ if(!puttOn()) return; try{ track('putt_open'); }catch(e){} window.RTT_PUTT.open(puttHost()); }

@@ -60,6 +60,11 @@ jobs:
       - name: Data and discoverability
         run: node scripts/setlist/check_data.mjs
 
+      # The rooms: every one has its fields and its picture, every archive name is a real venue,
+      # every rule can be met, and no venue is named on screen.
+      - name: The rooms
+        run: node scripts/setlist/check_venues.mjs
+
       # sitemap.xml is hand-edited, and a malformed one is invisible until a
       # crawler chokes on it.
       - name: sitemap.xml is well-formed

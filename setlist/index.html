@@ -1590,6 +1590,46 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .ceil-fine{font-size:11px; font-weight:600; color:var(--dim); line-height:1.45;}
   /* WHERE YOU'D BE STANDING. The lawn is a night scene in both themes, the
      same way the stage is: it is a picture of a venue, not a panel of the UI. */
+  /* ---------------- THE ROOMS ----------------
+     A room is its picture. The pictures are pixel art rendered from the stage itself, so they are
+     blown up with hard edges; a locked one is the same picture as a dark silhouette. */
+  .vpick{margin:var(--sp-2, 14px) 0; padding:13px 14px 12px;}
+  .vp-hd{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:9px;}
+  .vp-row{display:flex; gap:8px; overflow-x:auto; padding:2px 2px 6px; scroll-snap-type:x mandatory;
+    scrollbar-width:thin;}
+  .vthumb{flex:0 0 auto; width:112px; aspect-ratio:8/5; padding:0; border:2px solid var(--line2);
+    border-radius:var(--r-sm); background:#0B0818; overflow:hidden; cursor:pointer; scroll-snap-align:start;
+    transition:transform var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);}
+  .vthumb img{display:block; width:100%; height:100%; object-fit:cover;
+    image-rendering:pixelated; image-rendering:crisp-edges;}
+  .vthumb:hover{transform:translateY(-1px);}
+  .vthumb.on{border-color:var(--teal); box-shadow:0 0 0 3px color-mix(in srgb,var(--teal) 30%, transparent);}
+  .vthumb.locked img{filter:grayscale(1) brightness(.5) contrast(1.35);}
+  .vthumb.locked.peek{border-color:var(--violet);}
+  .vthumb.vrand{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+    background:linear-gradient(135deg, color-mix(in srgb,var(--violet) 32%, var(--card2, #1c1830)),
+      color-mix(in srgb,var(--teal) 28%, var(--card2, #1c1830))); color:var(--ink);
+    font-size:11px; font-weight:900; letter-spacing:2px; text-transform:uppercase;}
+  .vp-say{font-size:12.5px; font-weight:700; color:var(--mut); line-height:1.4; min-height:2.8em;}
+  .vbar{display:block; height:5px; border-radius:99px; background:var(--card3); margin-top:6px; overflow:hidden;}
+  .vbar span{display:block; height:100%; background:var(--violet); border-radius:99px;}
+  .vsh-n{font-weight:800; color:var(--dim); margin-left:6px;}
+  .vshelf{padding:12px 14px; margin-bottom:var(--sp-2, 14px);}
+  .vsh-tier + .vsh-tier{margin-top:14px;}
+  .vsh-hd{font-size:11px; font-weight:900; letter-spacing:1.2px; text-transform:uppercase;
+    color:var(--dim); margin-bottom:8px;}
+  .vsh-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px;}
+  .vsh-item .vthumb{width:100%;}
+  .vsh-txt{font-size:12px; font-weight:700; color:var(--mut); line-height:1.35; margin-top:5px;}
+  .vsh-item.locked .vsh-txt{color:var(--dim);}
+  .vreveal{padding:14px 16px 15px; margin-bottom:16px; text-align:center;
+    border-color:color-mix(in srgb,var(--violet) 40%, transparent);}
+  .vr-pic{border-radius:10px; overflow:hidden; background:#0B0818; margin:8px 0 10px;
+    animation:vrIn .6s var(--ease) both;}
+  .vr-pic img{display:block; width:100%; height:auto; image-rendering:pixelated; image-rendering:crisp-edges;}
+  .vr-lore{font-size:15px; font-weight:800; color:var(--ink); margin-bottom:12px;}
+  @keyframes vrIn{from{opacity:0; transform:scale(.96)} to{opacity:1; transform:none}}
+  @media (prefers-reduced-motion: reduce){ .vr-pic{animation:none;} }
   .crowdcard{padding:14px 16px 15px; margin-bottom:16px;
     border-color:color-mix(in srgb,var(--teal) 30%, transparent);}
   .cw-row{display:flex; align-items:baseline; gap:12px; margin-bottom:10px;}
@@ -3116,10 +3156,10 @@ setTimeout(function(){
      HTML change can never be served against a stale script. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"
   crossorigin="anonymous" defer></script>
-<script src="/setlist/auth.js?v=43" defer></script>
+<script src="/setlist/auth.js?v=44" defer></script>
 <!-- The release newsletter checkbox on the account sheet. See supabase/121_newsletter.sql. -->
 <script src="/assets/newsletter.js?v=2" defer></script>
-<script src="/setlist/board.js?v=43" defer></script>
+<script src="/setlist/board.js?v=44" defer></script>
 
 <script type="module">
 import {
@@ -3130,9 +3170,10 @@ import {
   monotonyRun, MONO_AT, BREADTH_BUSTOUT_GAP, LEN_20MIN,
   scoreShow, gradeScore, gradeRunning, GRADE_SETTLE, scorePerf, roleAt, roleFit, tagsOf, isJamchart, isRecommended,
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
-} from './scoring.js?v=43';
-import { loadBand, setLabel, setRank, parseCSV } from './dataLoader.js?v=43';
-import { createStage } from './stage.js?v=8';
+} from './scoring.js?v=44';
+import { loadBand, setLabel, setRank, parseCSV } from './dataLoader.js?v=44';
+import { createStage } from './stage.js?v=11';
+import { VENUE_LIST, VENUE_BY_ID, TIERS, venueProgress, newlyOpen, crowdZones } from './venues.js?v=2';
 
 // ── bands ────────────────────────────────────────────────────────────────────
 // `sample` is invented data used to exercise the pipeline — see
@@ -3798,6 +3839,7 @@ function renderHome(){
   const test = DEV_MODE ? BANDS.filter(b => b.sample) : [];
 
   loadLatest();
+  if (ME.signedIn) loadVenueRows();
 
   /* THE BAND PANEL, and the restructure it represents.
    *
@@ -4004,6 +4046,8 @@ function renderHome(){
         <div><div class="band-hd"><h2>More bands coming soon</h2></div></div>
         <button class="linkbtn" type="button" id="reqBand">Request one</button>
       </section></div>
+
+    ${venuePickerHTML()}
 
     ${/* THE "YOURS" ROW IS GONE. Leaderboard and Your shows were the only two
           links on it, and both are tabs on the bar that sits under this screen
@@ -4759,14 +4803,10 @@ function rankCardHTML(){
 const CROWD_MIN = 5;          // fewer drafts than this and a crowd is not a crowd
 const CROWD_DRAW = 240;       // fans drawn; the rank itself uses every draft
 const CROWD_W = 192, CROWD_H = 124;
-const CROWD_ZONES = [
-  [0.01, 'On the rail'],
-  [0.10, 'In the pit'],
-  [0.25, 'Up front'],
-  [0.50, 'Middle of the lawn'],
-  [0.75, 'Back of the lawn'],
-  [1.01, 'Out by the merch tent'],
-];
+/* The six steps from the rail to the back, in the words of the floor the show was played on. The
+   lawn's are the original: on the rail, in the pit, up front, the middle and back of the lawn, and
+   out by the merch tent. A room swaps only the floor's own words (setlist/venues.js). */
+const CROWD_ZONES = crowdZones('lawn');
 function crowdStanding(){
   const all = S.crowd, r = S.result;
   if (!all || all.length < CROWD_MIN || !S.best || !r) return null;
@@ -4777,7 +4817,9 @@ function crowdStanding(){
   const n = S.posted ? all.length : all.length + 1;
   const above = all.filter(v => v > mine + 0.005).length;
   const top = (above + 1) / n;
-  const zone = CROWD_ZONES.find(z => top <= z[0])[1];
+  // The last step catches a rank past the end, which a crowd read before this show lands can give.
+  const zones = crowdZones(S.playedVenue || 'lawn');
+  const zone = (zones.find(z => top <= z[0]) || zones[zones.length - 1])[1];
   // Where a random draft would stand, measured against this same crowd. Only
   // known as a percentage, so a daily (ranked on points) has no line.
   const rndAbove = S.daily ? null : all.filter(v => v > RANDOM_PCT).length;
@@ -4825,7 +4867,7 @@ function drawCrowd(){
   };
   try {
     S.crowdStage = createStage(cv, {
-      seed: Math.abs(S.result.total) + 17, venue: 'lawn', shot: 'crowd', onFit: place,
+      seed: Math.abs(S.result.total) + 17, venue: S.playedVenue || 'lawn', shot: 'crowd', onFit: place,
       reduce: matchMedia('(prefers-reduced-motion: reduce)').matches,
       you: { d: st.above / Math.max(1, st.n - 1), rnd: st.rndDepth, seed: hash32(`${S.result.total}|${st.n}`) },
     });
@@ -4905,6 +4947,190 @@ function drawCrowdFlat(cv, st){
   if (you){ you.style.left = `${100 * (yx + 1.5) / W}%`; you.style.top = `${100 * (yy - 4) / H}%`; }
   const rl = document.getElementById('crowdRnd');
   if (rl && ry !== null){ rl.style.top = `${100 * (ry + 7) / H}%`; rl.hidden = Math.abs(ry - yy) < 9; }
+}
+
+
+/* ── THE ROOMS ───────────────────────────────────────────────────────────────
+ *
+ * Where the show is played. setlist/venues.js holds the rooms and how each is earned; the stage
+ * draws them; this is the part a player touches: choosing tonight's room, the shelf on the profile,
+ * and the reveal on the scorecard when a show opens one.
+ *
+ * NO ROOM IS NAMED ON SCREEN. A room is its picture, a clue and a line of lore, all written so a fan
+ * knows it and nobody is told. scripts/setlist/check_venues.mjs fails on a venue name in this file.
+ *
+ * Unlocks are worked out from the account's own filed shows every time (venueProgress), never kept.
+ * What is kept is the choice. RANDOM IS THE DEFAULT: with nothing set, each show is played in a room
+ * drawn from the ones this account has open, never the same room twice running when there is a
+ * choice. A room picked by hand is kept until it is changed, and a pick the rows do not back counts
+ * as random.
+ */
+const VENUE_KEY = 'segue_venue_v1';
+// The pictures are rendered once by scripts/setlist/make_venue_thumbs.mjs; bump this with them.
+const VENUE_ART_V = 2;
+const venueThumb = id => `/setlist/venues/${id}.png?v=${VENUE_ART_V}`;
+const VSTATE = { rows: null, for: null, busy: false, failed: false };
+
+/* Which venue the archive files a show under, by show id: from the drafted archive when it is
+   loaded, and from the full show table otherwise. */
+let VENUE_OF = null;
+function venueOfShow(id){
+  if (!VENUE_OF || VENUE_OF.size === 0){
+    const m = new Map();
+    for (const r of TOUR_STATE.rows || []) if (r.show_id) m.set(String(r.show_id), r.venue);
+    if (S.data && S.band && S.band.id === 'goose')
+      for (const sh of S.data.shows || []) if (sh.songs && sh.songs[0]) m.set(String(sh.show_id), sh.songs[0].venue);
+    VENUE_OF = m;
+  }
+  return VENUE_OF.get(String(id)) || null;
+}
+
+async function loadVenueRows(force){
+  const b = BOARD();
+  if (!b || !ME.signedIn){ VSTATE.rows = null; VSTATE.for = null; return; }
+  // A read that failed is tried again, but not on every paint: thirty seconds between attempts.
+  const retry = VSTATE.failed && Date.now() - (VSTATE.failedAt || 0) > 30000;
+  if (!force && (VSTATE.busy || (VSTATE.for === ME.userId && !retry))) return;
+  VSTATE.busy = true; VSTATE.for = ME.userId;
+  // Without the venue select (a cached board.js), the plain rows still carry most of the rules.
+  const got = b.venueRows ? await b.venueRows(ME.userId) : ((await b.mine(ME.userId, 500)) || {}).rows;
+  VSTATE.busy = false;
+  VSTATE.failed = !got;
+  if (!got) VSTATE.failedAt = Date.now();
+  VSTATE.rows = got || null;
+  VENUE_OF = null;
+  loadTourRows();
+  if (['home', 'profile', 'result'].includes(S.screen)) render();
+}
+
+function venueProg(rows){
+  if (!ME.signedIn) return VENUE_LIST.map(v => ({ id: v.id, open: !!v.free, frac: v.free ? 1 : 0,
+    reqs: v.free ? [] : v.rule.map(r => ({ have: 0, need: r.n || 1 })) }));
+  return venueProgress(rows || VSTATE.rows || [], venueOfShow);
+}
+function openVenues(){ return new Set(venueProg().filter(p => p.open).map(p => p.id)); }
+
+// 'random', or a room this account has open.
+function chosenVenue(){
+  let id = 'random';
+  try { id = localStorage.getItem(VENUE_KEY) || 'random'; } catch (e) {}
+  return VENUE_BY_ID[id] && openVenues().has(id) ? id : 'random';
+}
+function chooseVenue(id){
+  if (id !== 'random' && !VENUE_BY_ID[id]) return;
+  try { localStorage.setItem(VENUE_KEY, id); } catch (e) {}
+}
+// The room tonight's show is played in: the one picked, or a draw from the open ones.
+let LAST_VENUE = null;
+function tonightVenue(){
+  const pick = chosenVenue();
+  if (pick !== 'random') return (LAST_VENUE = pick);
+  let pool = [...openVenues()];
+  if (pool.length > 1) pool = pool.filter(id => id !== LAST_VENUE);
+  return (LAST_VENUE = pool[Math.floor(Math.random() * pool.length)] || 'lawn');
+}
+
+// A tier's own words, and a room's place in it, which is the only label a room has.
+const tierOf = v => TIERS.find(t => t.id === v.tier) || TIERS[0];
+const venueLabel = v => {
+  const peers = VENUE_LIST.filter(x => x.tier === v.tier);
+  return `${tierOf(v).label}, room ${peers.indexOf(v) + 1} of ${peers.length}`;
+};
+
+/* THE PICKER, on the home screen: every room as a picture, open ones pressable, locked ones dark. */
+function venuePickerHTML(){
+  const prog = venueProg(), cur = chosenVenue();
+  const open = new Set(prog.filter(p => p.open).map(p => p.id));
+  const hint = !ME.signedIn ? 'Sign in to earn new rooms. Every show you build counts.'
+    : VSTATE.rows === null && VSTATE.busy ? 'Checking which rooms you have earned...'
+    : `${open.size} of ${VENUE_LIST.length} rooms open. ${cur === 'random' ? 'Each show draws one of them.' : 'Tap a dark one to see what it takes.'}`;
+  const rnd = cur === 'random';
+  return `<section class="card vpick">
+    <div class="vp-hd"><span class="eyebrow">Where tonight is played</span>
+      ${ME.signedIn ? '' : '<button class="btn ghost tiny" type="button" data-venue-auth>Sign in</button>'}</div>
+    <div class="vp-row" role="radiogroup" aria-label="Choose tonight's room">
+      <button type="button" class="vthumb vrand${rnd ? ' on' : ''}" data-venue="random" role="radio"
+        aria-checked="${rnd}" aria-label="A random room each show">
+        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 7h4c4 0 6 10 10 10h4M3 17h4c1.6 0 2.8-1.6 3.8-3.6M13.2 9.6C14.2 8.2 15.4 7 17 7h4M18 4l3 3-3 3M18 14l3 3-3 3"/></svg>
+        <span>Random</span></button>
+      ${VENUE_LIST.map(v => {
+        const on = open.has(v.id);
+        return `<button type="button" class="vthumb${on ? '' : ' locked'}${v.id === cur ? ' on' : ''}"
+          data-venue="${v.id}" role="radio" aria-checked="${v.id === cur}"
+          aria-label="${esc(venueLabel(v))}${on ? '' : ', locked'}">
+          <img src="${venueThumb(v.id)}" alt="" loading="lazy" width="160" height="100"></button>`;
+      }).join('')}
+    </div>
+    <div class="vp-say" id="vpSay">${esc(hint)}</div>
+  </section>`;
+}
+function venueClueHTML(id){
+  const v = VENUE_BY_ID[id], p = venueProg().find(x => x.id === id);
+  if (!v || !p) return '';
+  if (p.open) return esc(v.lore);
+  const pct = Math.round(100 * p.frac);
+  return `${esc(v.clue)}<span class="vbar"><span style="width:${pct}%"></span></span>`;
+}
+
+/* THE SHELF, on the profile: the rooms by tier, earned ones as pictures with their lore, locked ones
+   as dark silhouettes with the clue and how far along it is. */
+function venueShelfHTML(){
+  const prog = venueProg();
+  const byId = new Map(prog.map(p => [p.id, p]));
+  const open = prog.filter(p => p.open).length;
+  return `<div class="eyebrow">Your rooms <span class="vsh-n">${open} of ${VENUE_LIST.length}</span></div>
+    <section class="card vshelf">
+      ${TIERS.map(t => {
+        const vs = VENUE_LIST.filter(v => v.tier === t.id);
+        if (!vs.length) return '';
+        return `<div class="vsh-tier"><div class="vsh-hd">${esc(t.label)}</div>
+          <div class="vsh-grid">${vs.map(v => {
+            const p = byId.get(v.id);
+            return `<div class="vsh-item${p.open ? '' : ' locked'}">
+              <button type="button" class="vthumb${p.open ? '' : ' locked'}" data-venue="${v.id}"
+                aria-label="${esc(venueLabel(v))}${p.open ? '' : ', locked'}">
+                <img src="${venueThumb(v.id)}" alt="" loading="lazy" width="160" height="100"></button>
+              <div class="vsh-txt">${p.open ? esc(v.lore) : `${esc(v.clue)}
+                <span class="vbar"><span style="width:${Math.round(100 * p.frac)}%"></span></span>`}</div>
+            </div>`;
+          }).join('')}</div></div>`;
+      }).join('')}
+      ${VSTATE.failed ? '<div class="axnote">Can’t reach your shows right now, so no rooms are counted yet.</div>' : ''}
+    </section>`;
+}
+
+/* THE REVEAL. A room this show opened, worked out by asking the rules twice: over the rows before
+   this show, and over the same rows with this show added. Done once per scorecard. */
+function thisShowRow(){
+  const r = S.result;
+  return { created_at: new Date().toISOString(), band: S.band && S.band.id,
+    total: r.total, pct_of_best: S.best ? 100 * r.total / Math.max(1, S.best.total) : null,
+    bustouts: r.stats.bustouts, segues: r.stats.segues,
+    picks: S.drafted.map(d => `${d.show.show_id}:${d.perf.song_id}`),
+    rng_seed: S.daily ? `daily:${S.daily}` : null, _local: true };
+}
+function venueFresh(){
+  if (S.venueFresh !== undefined) return S.venueFresh;
+  if (!ME.signedIn || !S.result || !S.band || S.band.id !== 'goose') return (S.venueFresh = []);
+  // Not decided until the rows are in: a reveal worked out against no rows would announce every room.
+  if (VSTATE.rows === null || VSTATE.for !== ME.userId){ loadVenueRows(); return []; }
+  const base = VSTATE.rows.filter(x => !x._local);
+  S.venueFresh = newlyOpen(venueProg(base), venueProg(base.concat([thisShowRow()])));
+  return S.venueFresh;
+}
+function venueRevealHTML(){
+  const ids = venueFresh();
+  if (!ids.length) return '';
+  return ids.map(id => {
+    const v = VENUE_BY_ID[id];
+    return `<div class="card vreveal">
+      <div class="ceil-lbl">A new room just opened</div>
+      <div class="vr-pic"><img src="${venueThumb(id)}" alt="" width="320" height="200"></div>
+      <div class="vr-lore">${esc(v.lore)}</div>
+      <button class="btn" type="button" data-venue-next="${id}">Play there next</button>
+    </div>`;
+  }).join('');
 }
 
 function renderResult(){
@@ -4987,6 +5213,8 @@ function renderResult(){
         <div class="band-meta" style="margin:6px 0 0">${esc(S.band.label)} ·
           ${r.stats.songs} songs · ${fmtClock(r.totalUsed)} on stage</div>
       </div>
+
+      ${venueRevealHTML()}
 
       ${crowdCardHTML()}
 
@@ -5690,6 +5918,9 @@ function bootAccounts(){
          enough to claim somebody else's. */
       if (S.posted) claimPosted();
     }
+    // A different account (or none) has different rooms.
+    if (VSTATE.for !== (ME.signedIn ? ME.userId : null)){ VSTATE.rows = null; VSTATE.for = null; S.venueFresh = undefined; }
+    if (ME.signedIn) loadVenueRows();
     if (S.screen === 'board' || authScreen()) render();
   });
   ME.ready = true;
@@ -6269,6 +6500,21 @@ async function renderShareCard(r){
   c.width = CARD_W; c.height = CARD_H;
   const x = c.getContext('2d');
   x.fillStyle = CARD_STAGE; x.fillRect(0, 0, CARD_W, CARD_H);
+  /* THE ROOM THE SHOW WAS PLAYED IN, behind everything: its picture across the top of the card,
+     fading into the stage colour, so a fan who knows the room knows it here too. Skipped quietly if
+     the picture will not load; the card is whole without it. */
+  try {
+    const img = new Image();
+    img.src = venueThumb(S.playedVenue || 'lawn');
+    await img.decode();
+    const h = Math.round(CARD_W * img.naturalHeight / img.naturalWidth);
+    x.imageSmoothingEnabled = false;
+    x.globalAlpha = .55; x.drawImage(img, 0, 0, CARD_W, h); x.globalAlpha = 1;
+    x.imageSmoothingEnabled = true;
+    const fade = x.createLinearGradient(0, h * .35, 0, h);
+    fade.addColorStop(0, 'rgba(0,0,0,0)'); fade.addColorStop(1, CARD_STAGE);
+    x.fillStyle = fade; x.fillRect(0, 0, CARD_W, h + 1);
+  } catch (e) { /* no picture, no matter */ }
   // The light rig: the hero's four coloured washes.
   for (const [cx, cy, rad, col, a] of [
     [80, 0, 700, '240,106,95', .32], [CARD_W, 40, 680, '55,197,213', .28],
@@ -6883,6 +7129,9 @@ async function recordShow(){
     rngSeed: S.daily ? `daily:${S.daily}` : null,
   });
   S.posted = id;
+  // The rooms count this show from now on, without waiting for the rows to be read again.
+  if (id && ME.signedIn && Array.isArray(VSTATE.rows) && VSTATE.for === ME.userId)
+    VSTATE.rows = [thisShowRow()].concat(VSTATE.rows);
   // The rank is read from the board rather than from this insert, so a submit
   // that failed still shows a true number instead of collapsing to "1 of 1".
   const [ranks, crowd] = await Promise.all([
@@ -7018,9 +7267,13 @@ function renderShow(){
   const best = Math.max(1, ...beats.filter(b => b.kind === 'song').map(b => b.gained));
   const lastSetBeat = beats.reduce((m, b, j) => b.kind === 'set' ? j : m, -1);
   let stage = null;
+  // The room is decided once, as the lights go down, so the crowd shot and the share card after it
+  // are the same room the show was played in.
+  S.playedVenue = tonightVenue();
+  S.venueFresh = undefined;
   try {
     stage = createStage(document.getElementById('simStage'), {
-      seed: Math.abs(S.result.total) + 17, venue: 'lawn', reduce });
+      seed: Math.abs(S.result.total) + 17, venue: S.playedVenue, reduce });
   } catch (err) { stage = null; }
   S.stage = stage;
   const toStage = (b, idx, instant) => {
@@ -8024,6 +8277,7 @@ function renderProfile(){
     + "How much of the catalog you've heard live, your venues, your years, "
     + 'your rarest catch.');
   if (ME.signedIn && PROFILE.loadedFor !== ME.userId && !PROFILE.busy) loadProfile();
+  loadVenueRows();
   /* THE SHOW TABLE IS WHAT COUNTS THE SHOWS. One in five played shows has no
      setlist typed up, so counting them out of the archive undercounted every
      profile; the table knows every night the band played. 72KB, and it repaints
@@ -8218,6 +8472,8 @@ function renderProfile(){
       <button class="btn tiny ghost" type="button" id="editName">Edit name</button></div>
     <section class="card" style="margin-bottom:var(--sp-2)">${career}</section>
 
+    ${venueShelfHTML()}
+
     <div class="eyebrow">You were there</div>
     <section class="card">${were}</section>
     <p class="axnote" style="margin-top:12px">Mark a show while you're building and
@@ -8233,6 +8489,36 @@ function renderProfile(){
 
 // ── events ───────────────────────────────────────────────────────────────────
 app.addEventListener('click', e => {
+  const vAuth = e.target.closest('[data-venue-auth]');
+  if (vAuth){ openAuth('in'); return; }
+  const vNext = e.target.closest('[data-venue-next]');
+  if (vNext){
+    chooseVenue(vNext.dataset.venueNext);
+    vNext.textContent = 'Set for your next show';
+    vNext.disabled = true;
+    return;
+  }
+  const vBtn = e.target.closest('[data-venue]');
+  if (vBtn){
+    const id = vBtn.dataset.venue;
+    if (id === 'random'){
+      chooseVenue('random');
+      render();
+      return;
+    }
+    if (openVenues().has(id)){
+      chooseVenue(id);
+      render();
+      const say = document.getElementById('vpSay');
+      if (say) say.innerHTML = venueClueHTML(id);
+    } else {
+      const say = document.getElementById('vpSay');
+      if (say) say.innerHTML = venueClueHTML(id);
+      document.querySelectorAll('.vthumb.peek').forEach(x => x.classList.remove('peek'));
+      vBtn.classList.add('peek');
+    }
+    return;
+  }
   const resumeBtn = e.target.closest('[data-resume]');
   if (resumeBtn && !resumeBtn.disabled){
     resumeDraft(resumeBtn.dataset.resume);

@@ -2559,8 +2559,8 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "61",
-      "sha": "e1501dd45d585caa"
+      "v": "62",
+      "sha": "c6de93192f35c920"
     },
     "putt/land.js": {
       "v": "6",
@@ -2803,7 +2803,7 @@
   },
   "setlist/index.html": {
     "/setlist/auth.js": {
-      "v": "43",
+      "v": "44",
       "sha": "2bfbddde6b67b5fc"
     },
     "/assets/newsletter.js": {
@@ -2811,20 +2811,24 @@
       "sha": "260c8dc0bc33a527"
     },
     "/setlist/board.js": {
-      "v": "43",
-      "sha": "2e84ebfe3e1acc9f"
+      "v": "44",
+      "sha": "4121a57c1d6730b3"
     },
     "scoring.js": {
-      "v": "43",
+      "v": "44",
       "sha": "76ce0fc843d116ca"
     },
     "dataLoader.js": {
-      "v": "43",
+      "v": "44",
       "sha": "30180c7247719f6c"
     },
     "stage.js": {
-      "v": "8",
-      "sha": "453587288e634bc8"
+      "v": "11",
+      "sha": "e3f13345ceddd26f"
+    },
+    "venues.js": {
+      "v": "2",
+      "sha": "e2de218e6c8d793b"
     }
   },
   "soccer/index.html": {
@@ -2931,6 +2935,10 @@
     "pxhd.js": {
       "v": "1",
       "sha": "aa371adb6a4d1640"
+    },
+    "rooms.js": {
+      "v": "3",
+      "sha": "36afe06c5ac503d0"
     }
   },
   "wrestling/ring3d/boot.js": {

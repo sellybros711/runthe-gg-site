@@ -1607,7 +1607,7 @@ var RTT_PUTT = {
   M:M, BALL_R:BALL_R, CUP_R:CUP_R, CUP_R_MINI:CUP_R_MINI, V_MAX:V_MAX, V_STIMP:V_STIMP, ART:ART,
   THEMES:THEMES, TEMPLATES:TEMPLATES, COURSE_ORDER:COURSE_ORDER, DAILY_POOL:DAILY_POOL,
   hstr:hstr, mulberry:mulberry, hash3:hash3,
-  simulate:simulate, speedFor:speedFor, feetFor:feetFor, inBlock:inBlock, starsOf:starsOf, threeOf:threeOf, frontier:frontier, worldGate:worldGate, worldStars:worldStars, starsThrough:starsThrough, fricOf:fricOf, moverAt:moverAt,
+  simulate:simulate, speedFor:speedFor, feetFor:feetFor, inBlock:inBlock, starsOf:starsOf, threeOf:threeOf, frontier:frontier, opened:opened, revealed:revealed, allAccess:allAccess, worldGate:worldGate, worldStars:worldStars, starsThrough:starsThrough, fricOf:fricOf, moverAt:moverAt,
   makeField:makeField, finishCourse:finishCourse, inPoly:inPoly,
   greenCharacter:greenCharacter, buildReal:buildReal, spotFor:spotFor, fromHost:fromHost,
   CAL_THEMES:CAL_THEMES, buildMini:buildMini, buildFrom:buildFrom, LEVELS:LEVELS, WORLDS:WORLDS, TOURS:TOURS, PER:PER, buildLevel:buildLevel, worldOf:worldOf, lvHelpers:{ hole:hole, rm:rm, pg:pg }, lvKit:{ bowl:bowl, board:board, blk:blk, bumps:bumps, climb:climb, secret:secret }, tourDesc:tourDesc, levelName:levelName, themedCourse:themedCourse, dailyHole:dailyHole, dailyLevel:dailyLevel, themeForDay:themeForDay, scoreName:scoreName
@@ -2320,7 +2320,14 @@ function wl(n, tid){ var k = perOf(tid); return (tourOf(tid).members ? 'M' : tou
 function aceCount(st){ var n = 0; Object.keys(st.tours).forEach(function(k){ n += Object.keys(st.tours[k].ace).length; }); return n; }
 // the Members Tour is the Tour Pass holder's. A tester can preview it, said so on the screen.
 function membersOpen(){ try{ var h = hostOf(); return !!(h.passActive && h.passActive()); }catch(e){ return false; } }
-function membersPreview(){ return !!(S && S.memPreview); }
+/* EVERY HOLE OPEN, for the accounts the page names (PUTT_ALL_ACCESS in golf/index.html): every hole of every tour,
+   every world out from under its cloud, the Members Tour to play (as a preview: the pass's other perks stay
+   the pass's), and lives never stand in the way. It is asked, never
+   written: the record's lv stays the hole the player has really reached, so the map's golfer, the walk home and the
+   server copy all keep telling the truth, and taking an account off the list puts its gates straight back. */
+function allAccess(){ try{ var h = hostOf(); return !!(h.allAccess && h.allAccess()); }catch(e){ return false; } }
+function opened(TR, tp, n){ return allAccess() || n <= ((tp && tp.lv) || 1); }
+function membersPreview(){ return !!(S && S.memPreview) || allAccess(); }
 // the Lab is a tester's only: its tab is not drawn for anybody else
 function labOpen(){ try{ var h = hostOf(); return !!(h.tester && h.tester()); }catch(e){ return false; } }
 /* STARS. Par clears a hole, so most holes can simply be good to play, and birdies come from reading
@@ -2393,7 +2400,7 @@ function showMenu(){ home(); }
    Revealed is a list on the record, 'tour:world', only ever added to (pmerge), so it follows the account.
    Playing any hole in a world reveals it too, so a skipped walk or reduced motion never leaves a world you are
    standing in under cloud. The first world of a tour and the Lab are never hidden. */
-function revealed(TR, w, st){ if (!TR || TR.lab || w <= 0) return true; st = st || pload(); if ((st.rv || []).indexOf(TR.id + ':' + w) >= 0) return true;
+function revealed(TR, w, st){ if (!TR || TR.lab || w <= 0 || allAccess()) return true; st = st || pload(); if ((st.rv || []).indexOf(TR.id + ':' + w) >= 0) return true;
   var tp = st.tours[TR.id] || {}, K = TR.per || PER; for (var n = w * K + 1; n <= Math.min(TR.levels.length, w * K + K); n++) if ((tp.best || {})[n] != null) return true; return false; }
 function reveal(TR, w){ if (revealed(TR, w)) return false; var st = pload(); st.rv = st.rv || []; st.rv.push(TR.id + ':' + w); psave(st); return true; }
 var CLOUD_NAME = 'In the clouds';
@@ -2500,7 +2507,7 @@ function drawMap(st, TR){
     return '<div class="pp-band" data-w="' + w + '" style="top:' + top + 'px;height:' + (bot - top) + 'px;background:linear-gradient(180deg,' + T.bg2 + ',' + T.bg + ')"></div>\
       <div class="pp-wname wm wm-' + Wd.id + '" style="top:' + (top + 8) + 'px"><i>' + (TR.id === 'lab' ? 'Testers only' : TR.members ? 'Members Tour' : 'World ' + (w + 1)) + '</i><b>' + esc(Wd.name) + '</b><span>' + esc(Wd.haz.join(' · ')) + '</span></div>'; }).join('');
   var d = pos.map(function(p, i){ return (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' ');
-  var badges = pos.map(function(p, i){ var n = i + 1, L = TR.levels[i], best = tp.best[n], open = n <= tp.lv, cur = n === tp.lv, ace = !!tp.ace[n];
+  var badges = pos.map(function(p, i){ var n = i + 1, L = TR.levels[i], best = tp.best[n], open = opened(TR, tp, n), cur = n === tp.lv, ace = !!tp.ace[n];
     if (hid[Math.floor(i / K)]) return '';
     var cls = 'pp-lv wt-' + WS[Math.min(WS.length - 1, Math.floor(i / K))].theme + (L.sig ? ' sig' : '') + (open ? '' : ' lock') + (cur ? ' cur' : '') + (best != null ? ' done' : '') + (ace ? ' ace' : '');
     return '<button class="' + cls + '" data-lv="' + n + '" style="left:' + p[0] + 'px;top:' + p[1] + 'px" aria-label="Level ' + n + (open ? '' : ', locked') + '">' +
@@ -2517,11 +2524,11 @@ function drawMap(st, TR){
   // the golfer on the map walks: tap him and the joystick comes up, heading for the hole in front of him
   var meEl = box.querySelector('.pp-me'); if (meEl && trailOk() && tp.lv <= N){ meEl.classList.add('tap'); meEl.setAttribute('role', 'button'); meEl.setAttribute('aria-label', 'Walk to hole ' + tp.lv);
     meEl.onclick = function(){ if (trailOk()) openTrail(TR.id, Math.min(N, tp.lv) - 1); }; }
-  box.querySelectorAll('[data-lv]').forEach(function(b){ b.onclick = function(){ var n = +b.getAttribute('data-lv'); var tq = pload().tours[TR.id]; if (n > tq.lv){ var pw = Math.floor((n - 2) / K);
+  box.querySelectorAll('[data-lv]').forEach(function(b){ b.onclick = function(){ var n = +b.getAttribute('data-lv'); var tq = pload().tours[TR.id]; if (!opened(TR, tq, n)){ var pw = Math.floor((n - 2) / K);
       return toastHub((n - 1) % K === 0 && tq.best[n - 1] != null ? wLabel(TR, pw + 1) + ' opens at ' + worldGate(TR, pw) + ' total stars. You have ' + starsThrough(tq, TR, pw) + '.' : 'Clear level ' + (n - 1) + ' at par or better to open it.'); } skipWarn(n, TR.id); }; });
   box.querySelectorAll('[data-cw]').forEach(function(c){ c.onclick = function(){ var w = +c.getAttribute('data-cw'), tq = pload().tours[TR.id], have = starsThrough(tq, TR, w - 1), need = worldGate(TR, w - 1);
     // standing at the gate with the stars: walk up to it, and the clouds part there
-    if (tq.lv > w * K && trailOk()) return openTrail(TR.id, w * K);
+    if (opened(TR, tq, w * K + 1) && trailOk()) return openTrail(TR.id, w * K);
     toastHub('Clouds hide what is next. Reach the gate at the end of ' + wLabel(TR, w - 1) + (have >= need ? '.' : ' with ' + need + ' ★. You have ' + have + '.')); }; });
   // the chip in the corner names the world in view and how much of it is beaten
   var chip = S.ov.querySelector('[data-wchip]'), lastW = -1;
@@ -2789,7 +2796,7 @@ function trailSpec(tid, from){
   var TR = tourOf(tid), K = TR.per || PER, to = from + 1, w = Math.min(TR.worlds.length - 1, Math.floor((to - 1) / K)), th = TR.worlds[w].theme;
   var cross = from >= 1 && from % K === 0, th0 = cross ? TR.worlds[w - 1].theme : th, tp = pload().tours[TR.id];
   var portrait = (window.innerHeight || 800) >= (window.innerWidth || 400);
-  return { key:tid + ':' + to, tid:tid, from:from, to:to, w:w, seed:hstr('trail:' + tid + ':' + to), theme:th, theme0:th0, cross:cross, gateOpen:tp.lv > from, T:THEMES[th] || THEMES.clubhouse, halfW:portrait ? 36 : 46, loot:trailLoot(tid, to), holeTo:to <= TR.levels.length ? courseFoot(to, tid) : null, holeFrom:from >= 1 ? courseFoot(from, tid) : null, greet:from % K === 0 ? greetSpec(tid, w, to) : null };
+  return { key:tid + ':' + to, tid:tid, from:from, to:to, w:w, seed:hstr('trail:' + tid + ':' + to), theme:th, theme0:th0, cross:cross, gateOpen:opened(TR, tp, to), T:THEMES[th] || THEMES.clubhouse, halfW:portrait ? 36 : 46, loot:trailLoot(tid, to), holeTo:to <= TR.levels.length ? courseFoot(to, tid) : null, holeFrom:from >= 1 ? courseFoot(from, tid) : null, greet:from % K === 0 ? greetSpec(tid, w, to) : null };
 }
 /* THE HOLES ON A TRAIL ARE THE REAL HOLES. The hole you just left lies behind you where the walk starts, and the
    hole you are walking to lies beyond the arch, each drawn from its own layout: its carpet, its rails, its water and
@@ -2886,7 +2893,7 @@ function openTrail(tid, from){
       lines:function(who){ var nm = levelName(to, tid), out = ['Hole ' + to + ' is ' + nm + '.', 'Par ' + (L ? L.par : 3) + '.'];
         if (three) out.push('Three stars needs ' + (three === 1 ? 'an ace.' : three + ' strokes.'));
         if (L && L.sig) out.push('It is the signature hole of ' + Wd.name + '.'); return out; },
-      door:function(cb){ var tp = pload().tours[TR.id], open = tp.lv > from, gw = sp.w - 1, have = starsThrough(tp, TR, gw), need = worldGate(TR, gw), T = THEMES[Wd.theme] || {};
+      door:function(cb){ var tp = pload().tours[TR.id], open = opened(TR, tp, to), gw = sp.w - 1, have = starsThrough(tp, TR, gw), need = worldGate(TR, gw), T = THEMES[Wd.theme] || {};
         // the stars are there: this is where the clouds part, and the world gets its name
         var hide = clouded && !open; if (clouded && open){ reveal(TR, sp.w); }
         var door = el('<div class="pp-door" data-door="' + (hide ? 'clouds' : Wd.theme) + '" style="--da:' + (hide ? '#cfd9e8' : T.acc || '#F1D04A') + ';--db:' + (hide ? '#4a5a72' : T.bg || '#20302a') + ';--dc:' + (hide ? '#6d7f99' : T.bg2 || '#34483e') + '">\
@@ -2901,10 +2908,10 @@ function openTrail(tid, from){
         requestAnimationFrame(function(){ door.classList.add('in'); setTimeout(function(){ if (!door.isConnected) return; door.classList.add('fill');
           setTimeout(function(){ if (!door.isConnected) return; door.classList.add(open ? 'open' : 'shut');
             setTimeout(function(){ door.classList.remove('in'); setTimeout(function(){ if (door.isConnected) door.remove(); cb(open); }, 380); }, open ? 900 : 1700); }, 1000); }, 400); }); },
-      arrive:function(){ var tp = pload().tours[TR.id], sw = S.ov.querySelector('.pp-skipw'); if (sw) sw.remove(); stopTrail(); if (tp.lv >= to) startLevel(to, tid); else showHub(tid); },
+      arrive:function(){ var tp = pload().tours[TR.id], sw = S.ov.querySelector('.pp-skipw'); if (sw) sw.remove(); stopTrail(); if (opened(TR, tp, to)) startLevel(to, tid); else showHub(tid); },
       // Skip keeps its button, and says what it leaves behind first: the same list the map's warning reads, off
       // the record as it stands now, so anything already picked up on this walk is not named.
-      skip:function(){ var tp = pload().tours[TR.id], play = tp.lv >= to && !(sp.cross && !sp.gateOpen);
+      skip:function(){ var tp = pload().tours[TR.id], play = opened(TR, tp, to) && !(sp.cross && !sp.gateOpen);
         function leave(){ stopTrail(); if (play) startLevel(to, tid); else showHub(tid); }
         var left = trailLeft(tid, to); if (!left.length || S.ov.querySelector('.pp-skipw')) return leave();
         var list = left.length === 1 ? left[0] : left.slice(0, -1).join(', ') + ' and ' + left[left.length - 1];
@@ -2936,7 +2943,7 @@ function walkFlat(n, tid){
   if (n >= N) return showHub(tid);
   showHub(tid);
   var hub = S.ov.querySelector('.pp-hub'), box = S.ov.querySelector('[data-map]'), me = S.ov.querySelector('.pp-me'), pos = S.mapPos, k = S.mapK || 1;
-  var tp = pload().tours[TR.id], open = tp.lv > n, cross = n % K === 0, w = Math.floor(n / K), Wd = TR.worlds[w];
+  var tp = pload().tours[TR.id], open = opened(TR, tp, n + 1), cross = n % K === 0, w = Math.floor(n / K), Wd = TR.worlds[w];
   var reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
   if (!hub || !box || !me || !pos || !pos[n]){ if (open) startLevel(n + 1, tid); return; }
   if (reduce && !cross){ if (open) startLevel(n + 1, tid); return; }
@@ -3015,7 +3022,7 @@ function startLevel(n, tid){
   if (tid === 'main' && n > GUEST_HOLES && isGuest()) return guestSheet();
   var c = st.cur, back = c && c.tid === tid && c.n === n && c.s > 0;
   if (c && !back){ clearCur(st); psave(st); }   // only a hole in progress on another device can be left this way
-  if (!back && livesNow(st) <= 0 && !tourOf(tid).lab) return outOfLives();
+  if (!back && livesNow(st) <= 0 && !tourOf(tid).lab && !allAccess()) return outOfLives();
   var d = tourDesc(n, S.host, tid), TRs = tourOf(tid);
   reveal(TRs, Math.floor((n - 1) / (TRs.per || PER)));   // standing in a world is seeing it
   S.round = { mode:'ppt', lv:n, tid:tid, i:0, cards:[], holes:[d], title:levelName(n, tid) };
@@ -3076,7 +3083,7 @@ function leaveHole(){
 }
 function restartHole(){
   var P = S.play, R = S.round;
-  if (R.mode === 'ppt' && R.tid !== 'lab' && P.strokes > 0 && P.state !== 'done') return confirmSheet('Restart?', 'You have putted, so a restart costs a life.', 'Restart · lose a life', function(){ var st = pload(); clearCur(st); loseLife(st); if (livesNow(st) <= 0) return showHub(), outOfLives(); playHole(); });
+  if (R.mode === 'ppt' && R.tid !== 'lab' && P.strokes > 0 && P.state !== 'done') return confirmSheet('Restart?', 'You have putted, so a restart costs a life.', 'Restart · lose a life', function(){ var st = pload(); clearCur(st); loseLife(st); if (livesNow(st) <= 0 && !allAccess()) return showHub(), outOfLives(); playHole(); });
   if (R.mode === 'pdaily' && P.strokes > 0) return toast('One scored try a day. Finish this one.');
   if (R.mode === 'ppt'){ var st = pload(); if (st.cur){ clearCur(st); psave(st); } }
   playHole();
@@ -3107,7 +3114,7 @@ function tourOut(holed){
     try{ S.host.sfx && S.host.sfx('holeGood'); }catch(e){}
     if (worldDone) return worldComplete(n, s, par, got, tid);
     var sec = !!P.foundSecret; if (sec){ tp.secret = tp.secret || {}; if (!tp.secret[n]){ tp.secret[n] = 1; psave(st); } }
-    var nextOpen = n < N && tp.lv > n, have = starsThrough(tp, TR, gw), gate = worldGate(TR, gw);
+    var nextOpen = n < N && opened(TR, tp, n + 1), have = starsThrough(tp, TR, gw), gate = worldGate(TR, gw);
     var openLine = n >= N ? 'That is the whole ' + esc(TR.name) + '.' : nextOpen ? (wasLv <= n ? 'Level ' + (n + 1) + ' is open.' : '') :
       esc(wLabel(TR, gw + 1)) + ' opens at ' + gate + ' total stars. You have ' + have + '.';
     return popup('<div class="k">' + (sec ? 'SECRET LINE FOUND' : s === 1 ? 'HOLE IN ONE' : s < par ? 'UNDER PAR' : 'PAR') + '</div><div class="t">' + esc(scoreName(s, par)) + '</div>\
@@ -3125,11 +3132,11 @@ function tourOut(holed){
   return popup('<div class="k">OUT OF STROKES</div><div class="t">Over par</div><div class="s">' + par + ' strokes used and still not down.</div>\
     <div class="pp-lives">' + hearts(st) + '</div><div class="s">' + (livesNow(st) ? livesNow(st) + (livesNow(st) === 1 ? ' life' : ' lives') + ' left' : 'That was your last life.') + '</div>\
     <div class="row"><button class="pt-bt" data-a="map">Map</button><button class="pt-go" data-a="again">' + (livesNow(st) ? 'Try again' : 'Refill') + '</button></div>',
-    { map:function(){ showHub(tid); }, again:function(){ if (livesNow(pload()) > 0) startLevel(n, tid); else { showHub(tid); outOfLives(); } } }, 'over');
+    { map:function(){ showHub(tid); }, again:function(){ if (livesNow(pload()) > 0 || allAccess()) startLevel(n, tid); else { showHub(tid); outOfLives(); } } }, 'over');
 }
 function worldComplete(n, s, par, got, tid){
   var TR = tourOf(tid), PY = PAY[TR.id], K = TR.per || PER, w = Math.floor((n - 1) / K), Wd = TR.worlds[w], last = n === TR.levels.length;
-  var tp = pload().tours[TR.id], have = worldStars(tp, TR, w), total = starsThrough(tp, TR, w), gate = worldGate(TR, w), nx = TR.worlds[w + 1], shut = nx && tp.lv <= n;
+  var tp = pload().tours[TR.id], have = worldStars(tp, TR, w), total = starsThrough(tp, TR, w), gate = worldGate(TR, w), nx = TR.worlds[w + 1], shut = nx && !opened(TR, tp, n + 1);
   return popup('<div class="k">' + (TR.members ? '★ ' + esc(Wd.name.toUpperCase()) + ' COMPLETE' : 'WORLD ' + (w + 1) + ' COMPLETE') + '</div><div class="t">' + esc(Wd.name) + '</div><div class="s">Signature hole beaten in ' + s + ' (par ' + par + ').</div>\
     <div class="pp-reward">New · ' + esc(PY.sigReward[w]) + '<br>New · ' + esc(PY.worldReward[w]) + (PY.finish && last ? '<br>New · ' + esc(PY.finish) : '') + '</div>\
     <div class="pp-coins">+' + got + ' coins · +' + PY.world.toLocaleString() + ' ' + (TR.members ? 'members' : 'world') + ' bonus</div>' +
