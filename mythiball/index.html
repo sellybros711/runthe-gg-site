@@ -1169,6 +1169,14 @@
   body.inroom .screen{padding:10px 0 0;}
   body.inroom h2{margin-bottom:8px;}
   body.inroom .card{padding:10px;}
+  /* ONE COLUMN, ONE WIDTH. The park is held to the window's height so the
+     franchise button stays above the fold, and the panels under it used to
+     run to 880 regardless, so on a desktop the picture sat inset over a
+     wider stack and read as two layouts. Everything under it takes the
+     park's own width. `--ar` is copied onto the card by renderMenu. */
+  body.inroom .card{--homew:min(100%, calc(min(100vh - 360px, 780px) * var(--ar, 1.4545)));}
+  body.inroom .fr-panel, body.inroom .locker, body.inroom .hmodes,
+  body.inroom .wire{max-width:var(--homew);}
   .hero-box{position:relative;aspect-ratio:var(--ar);overflow:hidden;
     border:var(--bd-strong);box-shadow:var(--shadow);background:#0b1015;}
   .hero-box canvas{position:absolute;left:0;top:0;width:100%;height:100%;
@@ -1377,7 +1385,7 @@
      plus the longest word in the blurb set a floor the column refuses to go
      under: at 320px the right hand column ran 8px off the screen. */
   .hmode{display:flex;align-items:center;gap:12px;text-align:left;min-width:0;
-    background:var(--panel);border:var(--bd-strong);
+    background:var(--panel);border:var(--bd-strong);border-radius:var(--r);
     box-shadow:var(--shadow);padding:11px 12px;cursor:pointer;
     font-family:inherit;color:var(--text);
     transition:background 120ms steps(2), transform 100ms steps(1);}
@@ -1385,7 +1393,7 @@
   .hmode:active{transform:translateY(1px);box-shadow:var(--shadow-press);}
   .hmode:focus-visible{outline:3px solid var(--gold);outline-offset:3px;}
   .hmode-art{flex:0 0 auto;width:56px;height:56px;display:grid;place-items:center;
-    background:#f7ecd0;border:var(--bd);}
+    background:#f7ecd0;border:var(--bd);border-radius:var(--r-sm);overflow:hidden;}
   .hmode-art canvas{display:block;width:100%;height:100%;
     image-rendering:var(--pxr);}
   .hmode-txt{min-width:0;}
@@ -8003,7 +8011,9 @@ function renderMenu() {
   const s = el('div','screen');
   const card = el('div','card');
   const things = clubhouseThings();
-  card.appendChild(parkHero());
+  const hero = parkHero();
+  card.appendChild(hero);
+  card.style.setProperty('--ar', hero.style.getPropertyValue('--ar'));
   /* THE FRANCHISE IS THE THING TO PRESS. It used to be one of four signs on
      the wall with no more weight than the chalkboard, and the save's state
      was a sentence at the very bottom of the page under a Delete button. */

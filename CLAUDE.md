@@ -7979,6 +7979,8 @@ phone menu, turning it sideways) assert the park is there, keeps its shape, take
 the width the layout allows, and leaves the franchise button above the fold on a
 desktop.
 
+**On a desktop everything under the park is the park's width** (`--homew` on the card, the park's own height cap, with `--ar` copied onto the card by `renderMenu`), and the mode tiles have the locker cards' rounded corners. An inset picture over a wider stack read as two layouts.
+
 **A phone tile stands up rather than lying down**, keyed on `body.roomfill`, so
 the name holds 16px. **The franchise is the button**, its status read off the
 save by `franchisePanel()`. **A rotation is not a render**: the resize listener

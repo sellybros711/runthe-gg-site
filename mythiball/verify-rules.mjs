@@ -1000,6 +1000,10 @@ async function main() {
             bottom: tabs.bottom, vh: window.innerHeight,
             docW: document.documentElement.scrollWidth, winW: window.innerWidth,
             cta: tabs.width,
+            stack: ['.fr-panel', '.locker', '.hmodes', '.wire']
+              .map(q => document.querySelector(q).getBoundingClientRect())
+              .map(b => [b.left, b.width]),
+            parkL: el.getBoundingClientRect().left,
           };
         });
         const tag = `${w}x${h}`;
@@ -1018,6 +1022,12 @@ async function main() {
         ok(r.cw >= Math.min(r.cta, cap) - 8,
            `${tag}: the park takes everything the layout allows it`,
            `drawn ${Math.round(r.cw)} wide against panel ${Math.round(r.cta)} and budget ${Math.round(cap)}`);
+        /* ONE COLUMN. The stack under the park is the park's own width and
+           starts where it starts, or a desktop reads as a picture inset over a
+           wider page. */
+        ok(r.stack.every(([l, sw]) => Math.abs(sw - r.cw) <= 6 && Math.abs(l - r.parkL) <= 4),
+           `${tag}: everything under the park is the park's width`,
+           `park ${Math.round(r.parkL)}+${Math.round(r.cw)} stack ${r.stack.map(([l, sw]) => Math.round(l) + '+' + Math.round(sw)).join(' ')}`);
         ok(errors.length === 0, `${tag}: no page errors`, errors.join(' | '));
         await pg.close();
       }
