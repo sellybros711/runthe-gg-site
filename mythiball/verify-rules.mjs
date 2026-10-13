@@ -986,66 +986,38 @@ async function main() {
         await pg.evaluate(() => localStorage.clear());
         await pg.goto(URL);
         const r = await pg.evaluate(() => {
-          const el = document.querySelector('.clubhouse canvas');
-          const cv = el.getBoundingClientRect();
-          /* THE ROOM AND THE THING TO PRESS. It used to be the room and
-             the Meet tab, because the tab was the last thing on the page.
-             The page is longer now on purpose, and what a returning player
+          /* THE BALLPARK AND THE THING TO PRESS. What a returning player
              must not have to scroll for is the button that continues their
              franchise. */
+          const el = document.querySelector('.hero-box');
           const tabs = document.querySelector('.bigplay').getBoundingClientRect();
-          const hots = [...document.querySelectorAll('.clubhouse .hot')]
-            .map(b => b.getBoundingClientRect());
-          /* No two things in the room may claim the same pixel. */
-          let overlap = false;
-          for (let i = 0; i < hots.length; i++) {
-            for (let j = i + 1; j < hots.length; j++) {
-              if (hots[i].right > hots[j].left && hots[j].right > hots[i].left
-                  && hots[i].bottom > hots[j].top && hots[j].bottom > hots[i].top) overlap = true;
-            }
-          }
+          const cvs = [...el.querySelectorAll('canvas')];
           return {
-            /* the CONTENT box: the rect carries the 3px border, which is a
-               tenth of a phone-sized room's height and none of a desk one's,
-               so comparing rects makes the shape look wrong only on a phone */
             cw: el.clientWidth, ch: el.clientHeight,
             room: document.body.classList.contains('inroom'),
-            hots: hots.length, overlap,
-            inFrame: hots.every(b => b.left >= cv.left - 1 && b.right <= cv.right + 1
-                                  && b.top >= cv.top - 1 && b.bottom <= cv.bottom + 1),
+            layers: cvs.length,
+            ratio: parseFloat(getComputedStyle(el.parentNode).getPropertyValue('--ar')),
             bottom: tabs.bottom, vh: window.innerHeight,
             docW: document.documentElement.scrollWidth, winW: window.innerWidth,
-            /* The scene is composed to the shape of the window now, so the
-               ratio to keep is the one the layout chose for THIS window. */
-            ratio: ROOM.w / ROOM.h,
+            cta: tabs.width,
           };
         });
         const tag = `${w}x${h}`;
-        ok(r.room, `${tag}: the menu puts the page in room mode`);
+        ok(r.room, `${tag}: the menu puts the page in its wide layout`);
+        ok(r.layers === 2, `${tag}: the park and the players on it`, 'canvases=' + r.layers);
         ok(Math.abs(r.cw / r.ch - r.ratio) < 0.02,
-           `${tag}: the room keeps its shape rather than stretching`,
+           `${tag}: the park keeps its shape rather than stretching`,
            `drawn ${Math.round(r.cw)}x${Math.round(r.ch)} ratio ${(r.cw / r.ch).toFixed(2)} want ${r.ratio.toFixed(2)}`);
-        ok(r.bottom <= r.vh, `${tag}: the room and the button to press are above the fold`,
+        ok(r.bottom <= r.vh, `${tag}: the park and the button to press are above the fold`,
            `bottom=${Math.round(r.bottom)} vh=${r.vh}`);
         ok(r.docW <= r.winW + 1, `${tag}: and the page does not scroll sideways`,
            `doc=${r.docW} win=${r.winW}`);
-        ok(r.hots === 4 && !r.overlap && r.inFrame,
-           `${tag}: four things, none overlapping, all inside the frame`,
-           JSON.stringify({ n: r.hots, overlap: r.overlap, inFrame: r.inFrame }));
-        /* THE ROOM IS NEVER SMALLER THAN IT IS ALLOWED TO BE, which is a
-           property rather than a percentage. It used to be the whole menu,
-           so "fills the window" meant the width and nothing else. There is
-           a franchise scoreboard and a button under it now, and on a SHORT
-           window the height budget is what binds: at 1280x800 the room is
-           78% of the width because going wider would push the button that
-           continues a save below the fold, which is the worse trade.
-           So it has to be limited by ONE of the two, never by neither. */
-        if (w >= 1280) {
-          const cap = Math.min(r.vh - 350, 760);
-          ok(r.cw >= w * 0.82 || r.ch >= cap - 4,
-             `${tag}: the room takes everything the layout allows it`,
-             `drawn ${Math.round(r.cw)} of ${w} wide, ${Math.round(r.ch)} tall against a ${Math.round(cap)} budget`);
-        }
+        /* As big as the layout allows: the panel width, or the height
+           budget, whichever binds. Never neither. */
+        const cap = Math.min(r.vh - 360, 780) * r.ratio;
+        ok(r.cw >= Math.min(r.cta, cap) - 8,
+           `${tag}: the park takes everything the layout allows it`,
+           `drawn ${Math.round(r.cw)} wide against panel ${Math.round(r.cta)} and budget ${Math.round(cap)}`);
         ok(errors.length === 0, `${tag}: no page errors`, errors.join(' | '));
         await pg.close();
       }
@@ -4536,7 +4508,7 @@ async function main() {
             ctaFs: cta ? parseFloat(getComputedStyle(cta).fontSize) : 0,
             ctaTouch: cr ? Math.min(cr.width, cr.height) : 0,
             room: !!document.querySelector('.clubhouse canvas'),
-            strip: !!document.querySelector('.ph-strip'),
+            strip: !!document.querySelector('.hero-box canvas'),
             names: doors.map(d => (d.querySelector('b').textContent || '').trim()),
             lines: doors.map(d => (d.querySelector('span').textContent || '').trim().length),
             icons: doors.filter(d => d.querySelector('canvas')).length,
@@ -4596,7 +4568,7 @@ async function main() {
         ok(r.nameFs >= 16,
            `${sz.what}: the names are set in real type`,
            r.nameFs + 'px');
-        ok(r.strip, `${sz.what}: the clubhouse is there as a strip`, JSON.stringify(r));
+        ok(r.strip, `${sz.what}: the ballpark is there over the menu`, JSON.stringify(r));
         ok(!r.sideways, `${sz.what}: no sideways scroll`, JSON.stringify(r));
         ok(r.errors.length === 0, `${sz.what}: no page errors`, r.errors.join(' | '));
       }
@@ -4608,8 +4580,8 @@ async function main() {
          so what this asserts is that the room is still there rather than
          that nothing else is. */
       const desk = await look(1280, 860, false);
-      ok(desk.doors === 4 && desk.room,
-         'a desktop: still gets the clubhouse room, with the tiles under it',
+      ok(desk.doors === 4 && desk.strip && !desk.room,
+         'a desktop: gets the ballpark too, with the tiles under it',
          JSON.stringify({ tiles: desk.doors, room: desk.room }));
       ok(desk.errors.length === 0, 'a desktop: no page errors', desk.errors.join(' | '));
     }
@@ -4660,7 +4632,7 @@ async function main() {
       await wait(pg, 700);
       const look = () => pg.evaluate(() => ({
         doors: document.querySelectorAll('.hmode').length,
-        room: !!document.querySelector('.clubhouse canvas'),
+        room: !!document.querySelector('.hero-box canvas'),
         over: document.documentElement.scrollWidth - innerWidth,
       }));
       const up = await look();
@@ -4687,10 +4659,11 @@ async function main() {
          did. The phone assertion below is still one or the other, because a
          phone gets no room. */
       ok(desk.room && desk.doors === 4,
-         'stretched to a desktop, the room comes back with the tiles under it',
+         'stretched to a desktop, the park is there with the tiles under it',
          JSON.stringify(desk));
-      ok(again.doors === 4 && !again.room,
-         'and back to a phone gets the menu again', JSON.stringify(again));
+      ok(again.doors === 4 && again.room && up.room && flat.room,
+         'and back to a phone gets the menu again, the park over it every time',
+         JSON.stringify({ up, flat, again }));
       ok(errors.length === 0, 'no page errors', errors.join(' | '));
     }
 
