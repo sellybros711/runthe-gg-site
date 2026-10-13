@@ -33,7 +33,7 @@
  * It never changes a score.
  */
 import PXHD from './pxhd.js?v=1';
-import { ROOMS, RIGS } from './rooms.js?v=1';
+import { ROOMS, RIGS } from './rooms.js?v=2';
 
 /* The rooms a night can be played in, by id. setlist/venues.js says how each is earned and
    setlist/rooms.js what each looks like; this file only draws whichever it is handed. */

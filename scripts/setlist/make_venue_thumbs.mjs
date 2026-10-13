@@ -29,7 +29,7 @@ const OUT = path.join(ROOT, 'setlist/venues');
 const W = 384, H = 240;
 /* How far into the night each picture is taken. Most rooms read best under the rig after dark; a
    few are about the light outside. */
-const PROGRESS = { cabo: .5, rocks: .62, lawn: .7 };
+const PROGRESS = { cabo: .5, rocks: .62, lawn: .7, gorge: .5, farm: .62, greek: .6 };
 
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
   '.png': 'image/png', '.csv': 'text/csv', '.webmanifest': 'application/manifest+json' };
