@@ -109,6 +109,7 @@ function riverAt(C, x, y){ var R = C.rivers; if (!R) return null;
 /* pad: the material grid is a quarter foot, so a ball just short of the deck can read the water beside it;
    the physics asks with a little margin so the deck, not the grid, decides */
 function bridgeAt(C, x, y, pad){ var B = C.bridges; pad = pad || 0; for (var i = 0; i < B.length; i++){ var b = B[i]; if (x >= b.x0 - pad && x <= b.x1 + pad && y >= b.y0 - pad && y <= b.y1 + pad) return b; } return null; }
+function inClimb(C, x, y){ var Z = C.climbs; for (var i = 0; i < Z.length; i++){ var z = Z[i]; if (x >= z.x0 && x <= z.x1 && y >= z.y0 && y <= z.y1) return true; } return false; }
 function bridgeDown(b, tt){ var f = ((tt / b.period + (b.phase || 0)) % 1 + 1) % 1; return f < (b.duty == null ? 0.5 : b.duty); }
 // how far the bridge is lifted, 0 down to 1 up, for the picture: it swings over a quarter second either side of the change
 function bridgeLift(b, tt){ var f = ((tt / b.period + (b.phase || 0)) % 1 + 1) % 1, du = b.duty == null ? 0.5 : b.duty, e = 0.35 / b.period;
@@ -271,7 +272,7 @@ function hitCircle(s, cx, cy, r, e){
    the windmills read: the same putt at the same moment always meets the same blade. */
 function simulate(C, x, y, vx, vy, t0){
   var s = { x:x, y:y, vx:vx, vy:vy }, out = { pts:[[x, y, 0]], holed:false, water:false, out:false, rest:null, ev:[], t:0 };
-  var z = 0, zv = 0, over = false, cr = C.cupR, cx = C.cup[0], cy = C.cup[1], t = 0, n = 0;
+  var climbing = false, z = 0, zv = 0, over = false, cr = C.cupR, cx = C.cup[0], cy = C.cup[1], t = 0, n = 0;
   var rx = x, ry = y;   // where the ball was half a second ago, for the pinned-against-a-rail rest below
   var walls = C.walls, bums = C.bumpers, movs = C.movers, loops = C.loops || [], ramps = C.ramps || [];
   var lastPiece = null;   // the loop or ramp just ridden, so it cannot fire twice on the way out of it
@@ -304,8 +305,12 @@ function simulate(C, x, y, vx, vy, t0){
     var ax = -ROLL * G * gx, ay = -ROLL * G * gy, sp = Math.hypot(s.vx, s.vy), af = fricOf(C, m);
     if (m === M.BELT){ var bl = beltAt(C, s.x, s.y); if (bl){ ax += bl.ax; ay += bl.ay; } }
     var sl = Math.hypot(ax, ay);
+    /* A RAMP LANE HOLDS NOTHING. On the carpet the slope's pull is usually under friction, so a ball that ran
+       out of pace half way up would sit on the ramp. In a climb lane static friction is gone and the rolling
+       drag is a quarter of its usual, so a ball that does not make the top rolls back down and stops at the foot. */
+    if (C.climbs && C.climbs.length && sl > 0.1 && !over && inClimb(C, s.x, s.y)){ af *= 0.25; climbing = true; } else climbing = false;
     if (over){ ax = 0; ay = 0; }   // over the hole the ball is falling, not rolling
-    if (sp < STOP_V && !over && sl <= af){ break; }
+    if (sp < STOP_V && !over && sl <= af && !climbing){ break; }
     if (sp > 1e-9 && !over){ var dvx = -af * s.vx / sp * DT, dvy = -af * s.vy / sp * DT;
       // friction can stop a ball, never send it backwards
       if (sl <= af && dvx * dvx + dvy * dvy >= sp * sp){ s.vx = 0; s.vy = 0; } else { s.vx += dvx; s.vy += dvy; } }
@@ -739,6 +744,7 @@ function buildMini(tplName, seed, themeId, label, extra){
     H.zones.forEach(function(z){ if (z.t === 'rect'){ var a = -z.x1, b = -z.x0; z.x0 = a; z.x1 = b; } else z.x = -z.x; });
     H.comps.forEach(function(c){ if ('x' in c) c.x = -c.x; if ('gx' in c) c.gx = -c.gx; if ('x0' in c) c.x0 = -c.x0; if ('ux' in c) c.ux = -c.ux; if ('nx' in c) c.nx = -c.nx; });
     H.flats.forEach(function(f){ f.x = -f.x; });
+    (H.climbs || []).forEach(function(z){ var a = -z.x1; z.x1 = -z.x0; z.x0 = a; });
     if (H.mill) H.mill.x = -H.mill.x;
   }
   if (extra) ornament(H, r, T, extra);
@@ -761,6 +767,7 @@ function courseFromH(H, tplName, seed, themeId, label){
     secret:H.secret || [], loops:(H.loops || []).map(function(L){ var l = Math.hypot(L.dx, L.dy) || 1; return { x:L.x, y:L.y, dx:L.dx / l, dy:L.dy / l, r:L.r || 0.75, w:L.w || 1.4, off:L.off || 0, vmin:L.vmin }; }),
     ramps:(H.ramps || []).map(function(R){ var l = Math.hypot(R.dx, R.dy) || 1; return { x:R.x, y:R.y, dx:R.dx / l, dy:R.dy / l, w:R.w || 2, h:R.h || 0.4, ang:R.ang || 24, len:R.len || 1.6 }; }),
     rivers:rivers, bridges:bridges, turns:(H.turns || []).map(function(u){ return { x:u.x, y:u.y, r:u.r || 2, omega:(u.omega || 1.2) * PACE }; }),
+    climbs:(H.climbs || []).slice(),
     belts:(H.belts || []).map(function(z){ return { x0:Math.min(z.x0, z.x1), y0:Math.min(z.y0, z.y1), x1:Math.max(z.x0, z.x1), y1:Math.max(z.y0, z.y1), ax:z.ax, ay:z.ay }; }) };
   C.matFn = function(x, y){
     if (inAny(PS, x, y) < 0) return M.OUT;
@@ -932,6 +939,7 @@ function climb(H, x, y0, y1, w, a){ var zl = 0, zh = 0;
     var inx = x >= Math.min.apply(null, xs) && x <= Math.max.apply(null, xs);
     if (inx && Math.abs(Math.max.apply(null, ys) - y1) < 0.6) zh = p.z || 0; if (inx && Math.abs(Math.min.apply(null, ys) - y0) < 0.6) zl = p.z || 0; });
   H.polys.push({ pts:rm(x - w / 2, y0 + 0.3, x + w / 2, y1 - 0.3).pts, z:(zl + zh) / 2 });
+  (H.climbs = H.climbs || []).push({ x0:x - w / 2, x1:x + w / 2, y0:Math.min(y0, y1), y1:Math.max(y0, y1) });
   H.comps.push({ k:'ridge', x:x, y:(y0 + y1) / 2, nx:0, ny:-1, w:Math.abs(y0 - y1) * 0.35, a:a == null ? (zh >= zl ? 0.12 : -0.12) : a }); }
 /* a kicker: a steep ramp that throws the ball, struck firmly and straight, over the next set piece. It is the
    long holes' secret line now, in plain sight: no tunnels. */
