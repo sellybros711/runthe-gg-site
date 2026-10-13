@@ -2823,12 +2823,12 @@
       "sha": "30180c7247719f6c"
     },
     "stage.js": {
-      "v": "9",
-      "sha": "8b9744390f402f33"
+      "v": "10",
+      "sha": "921da04bb6fe4950"
     },
     "venues.js": {
-      "v": "1",
-      "sha": "0900bbba2153bb32"
+      "v": "2",
+      "sha": "e2de218e6c8d793b"
     }
   },
   "soccer/index.html": {
@@ -2937,8 +2937,8 @@
       "sha": "aa371adb6a4d1640"
     },
     "rooms.js": {
-      "v": "1",
-      "sha": "37202ae587b58c69"
+      "v": "2",
+      "sha": "0ea6f22b32981f04"
     }
   },
   "wrestling/ring3d/boot.js": {
