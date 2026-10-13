@@ -33,10 +33,11 @@
  * It never changes a score.
  */
 import PXHD from './pxhd.js?v=1';
+import { ROOMS, RIGS } from './rooms.js?v=1';
 
-export const VENUES = {
-  lawn: { name: 'The Lawn', capacity: 1 },
-};
+/* The rooms a night can be played in, by id. setlist/venues.js says how each is earned and
+   setlist/rooms.js what each looks like; this file only draws whichever it is handed. */
+export { ROOMS };
 
 // ── the camera ─────────────────────────────────────────────────────────────
 const ART = 0.2;                       // feet per pixel
@@ -47,7 +48,6 @@ const WPX = Math.round((X1 - X0) / ART);
 /* The world reaches 120 rows higher than it used to, so the trees behind the stage stand whole and the
    sky shows over them. Everything above the treeline is left empty, and the sky is drawn into it. */
 const OY = 270, HPX = 520;             // pixel row of y=0,z=0, and the world's height in pixels
-const LAWN_FAR = -40;                  // the lawn stops here, hidden behind the treeline
 const sx = x => (x - X0) / ART;
 const sy = (y, z) => (y * SE - z * CE) / ART + OY;
 const depth = (y, z) => y * CE + z * SE;
@@ -398,85 +398,68 @@ function bandFrames(){
 // ── the venue ──────────────────────────────────────────────────────────────
 const DECK = { x0: -14, x1: 14, y0: -14.5, y1: 0, z: 4 };
 const SCREEN = { x0: -10.5, x1: 10.5, y: -14.6, z0: 8.4, z1: 16.6 };
-const TRUSS_Z = 21.5;
+/* The movers along the truss, west to east. */
 const FIX = Array.from({ length: 10 }, (_, i) => -12.6 + i * 2.8);
-const TENT = { x0: 15, x1: 22, y0: 42, y1: 47, z: 6.2 };
-const inTent = (x, y, pad = 0) => x > TENT.x0 - pad && x < TENT.x1 + pad && y > TENT.y0 - pad && y < TENT.y1 + pad + 1;
-const LAMPS = [[-31.8, -2], [31.8, -2], [-31.8, 18], [31.8, 18], [-31.8, 38], [31.8, 38]];
-
-function grassAt(x, y){
-  const n = hash(Math.floor(x * 2.5), Math.floor(y * 2.5), 3), p = hash(Math.floor(x / 2), Math.floor(y / 2), 5);
-  if (n < .018) return ['#f4e9f2', '#f6d65a', '#e98bb4'][(n * 1000 | 0) % 3];
-  if (p < .25) return '#79bc58';
-  if (n > .85) return '#93d06c';
-  return '#86c661';
+/* The kit a room is built with: the stage's own solids and its painter, so every room is lit and
+   outlined the way the lawn is. */
+function kit(G, rand){
+  /* A flat wall facing you at depth y, filled a screen pixel at a time rather than splatted: a back
+     wall the width of the world is three quarters of a million samples through `box`, and this is
+     one per pixel it covers. `fn(x, z)` answers its colour, or null to leave the pixel alone. */
+  const wallN = camN(0, 1, 0), nWall = () => wallN;
+  function wall(y, x0, x1, z0, z1, fn, o){
+    const i0 = Math.max(0, Math.floor(sx(x0))), i1 = Math.min(G.w - 1, Math.ceil(sx(x1)));
+    const j0 = Math.max(0, Math.floor(sy(y, z1))), j1 = Math.min(G.h - 1, Math.ceil(sy(y, z0)));
+    for (let j = j0; j <= j1; j++){
+      const z = (y * SE - (j + .5 - OY) * ART) / CE;
+      if (z < z0 || z > z1) continue;
+      const D = depth(y, z);
+      for (let i = i0; i <= i1; i++){
+        const x = X0 + (i + .5) * ART;
+        if (x < x0 || x > x1) continue;
+        const k = j * G.w + i;
+        if (D <= G.Z[k]) continue;
+        const col = fn(x, z);
+        if (!col) continue;
+        G.Z[k] = D;
+        G.S.g[j][i] = { m: col.indexOf(':') === 1 ? col : 'x:' + col, n: nWall, z: D, dt: (o && o.dt) || 0,
+          gloss: (o && o.gloss) || 0, bias: 0, t: null, tag: '', noCast: (o && o.noCast) || 0 };
+      }
+    }
+  }
+  return { G, rand, box, ell, cap, cyl, wall, hash, STEP, ART, X0, X1, DECK, SCREEN,
+    up: camN(0, 0, 1), sx, sy, depth };
 }
 
-function buildBack(rand){
+function buildBack(rand, R, RIG){
   const G = new Grid(WPX, HPX, 0, 0);
-  const up = camN(0, 0, 1), nUp = () => up;
-  // The lawn, every cell, then everything else stood on it.
+  const K = kit(G, rand);
+  const up = K.up, nUp = () => up;
+  // The ground, every cell, then everything else stood on it.
+  const far = R.far == null ? -40 : R.far, dither = R.dither == null ? .12 : R.dither;
   for (let j = 0; j < HPX; j++){
     const y = (j + .5 - OY) * ART / SE;
-    if (y < LAWN_FAR) continue;
+    if (y < far) continue;
     for (let i = 0; i < WPX; i++){
       const x = X0 + (i + .5) * ART;
-      let col = grassAt(x, y);
-      if (y > -20 && y < -16 && Math.abs(x) < 26) col = '#b9a78a';
-      if (y > 1 && y < 3.2 && Math.abs(x) < 17) col = '#a8a29a';
-      if (Math.abs(x) > 30 && Math.abs(x) < 33.5 && y > -10) col = (Math.floor(y * 2) % 2) ? '#d9cfba' : '#cfc4ad';
-      G.S.g[j][i] = { m: 'x:' + col, n: nUp, z: depth(y, 0), dt: hash(i >> 1, j >> 1, 9) < .12 ? -1 : 0,
-        gloss: 0, bias: 0, t: null, tag: '' };
+      const col = R.ground(K, x, y, i, j);
+      if (!col) continue;
+      G.S.g[j][i] = { m: col.indexOf(':') === 1 ? col : 'x:' + col, n: nUp, z: depth(y, 0),
+        dt: hash(i >> 1, j >> 1, 9) < dither ? -1 : 0, gloss: 0, bias: 0, t: null, tag: '' };
       G.Z[j * WPX + i] = depth(y, 0);
     }
   }
-  // Blankets at the back of the lawn, where the people who came to sit, sit.
-  for (let k = 0; k < 14; k++){
-    const x = -26 + rand() * 52, y = 34 + rand() * 14;
-    const c = SHIRTS[(rand() * SHIRTS.length) | 0], c2 = SHIRTS[(rand() * SHIRTS.length) | 0];
-    if (inTent(x, y, 3)) continue;
-    box(G, x - 2, x + 2, y - 1.4, y + 1.4, 0, .05, (px, py) => 'x:' + ((Math.floor(px) + Math.floor(py)) % 2 ? c : c2));
-  }
-  /* The merch tent at the back of the lawn, stage right: a striped canopy on four poles, a rack of
-     shirts on the back wall and a counter out front. The last row of the crowd is named after it. */
-  {
-    const T = TENT;
-    box(G, T.x0, T.x1, T.y0, T.y0 + .3, 0, T.z, (x, y, z, f) => {
-      if (f === 'front' && z > 2.6 && z < 5.2){
-        const k = Math.floor((x - T.x0) / 1.15);
-        if ((x - T.x0) % 1.15 > .25 && k > 0 && k < 6) return 'x:' + SHIRTS[(k * 5) % SHIRTS.length];
-      }
-      return 'x:#e9e2d2';
-    });
-    for (const [x, y] of [[T.x0, T.y0], [T.x1, T.y0], [T.x0, T.y1], [T.x1, T.y1]]) cap(G, [x, y, 0], [x, y, T.z], .1, 'x:#d8d4cc');
-    box(G, T.x0 - .3, T.x1 + .3, T.y0 - .3, T.y1 + .3, T.z, T.z + .5,
-      x => 'x:' + (Math.floor((x - T.x0) * 1.1) % 2 ? '#f6f1e4' : '#e8505f'));
-    box(G, T.x0 + .6, T.x1 - .6, T.y1 - 1.3, T.y1 - .3, 0, 2.4, (x, y, z, f) => 'x:' + (f === 'top' ? '#8a6a54' : '#5e4636'));
-  }
-  // Trees round the lawn and a stand of them behind the stage.
-  const greens = ['#4f9a48', '#5aab50', '#3f8640'];
-  const tree = (x, y, r, h) => {
-    cyl(G, x, y, .7, 0, h * .55, 'x:#7a5236', null);
-    ell(G, x, y, h, r, r * .9, r * .82, (px, py, pz) => 'x:' + greens[(hash(Math.floor(px * 1.5), Math.floor(pz * 1.5), 2) * 3) | 0]);
-    ell(G, x - r * .5, y + .4, h - r * .35, r * .6, r * .55, r * .55, 'x:#5aab50');
-    ell(G, x + r * .55, y + .3, h - r * .3, r * .6, r * .55, r * .5, 'x:#4f9a48');
-  };
-  /* A treeline right across the back, close enough that its canopy hides where the lawn ends and low
-     enough that the sky shows over it. Uneven on purpose: a skyline of equal trees reads as a fence. */
-  for (let x = X0 - 3; x <= X1 + 3; x += 5.6 + rand() * 1.8){
-    tree(x, -27 - rand() * 6, 5 + rand() * 1.6, 6.5 + rand() * 3.5);
-  }
-  for (const [x, y, r, h] of [[-21, -34, 6, 11], [19, -35, 6.5, 12],
-    [-40, -18, 6, 14], [40, -18, 6, 13], [-40, 4, 5.5, 14], [41, 6, 5.5, 14],
-    [-42, 26, 6, 15], [42, 30, 6, 15], [-38, 46, 5, 13], [40, 50, 5.5, 14]]) tree(x, y, r, h);
-  // Lamp posts up the side paths.
-  for (const [x, y] of LAMPS){
-    cyl(G, x, y, .22, 0, 11, 'x:#3a3a44', null);
-    ell(G, x, y, 11.4, .6, .6, .5, 'x:#f6efd8', { gloss: 2 });
-  }
+  R.build(K);
+  buildRig(G, RIG);
+  return paint(G);
+}
+
+/* The stage house, sized to the room: the back wall, the screen's frame, the deck and its riser, the
+   keys player's stool and third board, the amps, and the towers and truss where the room has them. */
+function buildRig(G, RIG){
   // The stage house: the back wall, the screen's frame, the deck, its skirt and the drum riser.
-  box(G, -15.5, 15.5, -16, -14.8, 0, 19.5, (x, y, z, f) => 'x:' + (f === 'top' ? '#4a4652' : (Math.floor(x * 2) % 2 ? '#3a3742' : '#34313c')));
-  box(G, SCREEN.x0 - .5, SCREEN.x1 + .5, -14.8, -14.6, SCREEN.z0 - .5, SCREEN.z1 + .5, 'x:#1c1b22');
+  box(G, -15.5, 15.5, -16, -14.8, 0, RIG.wallZ, RIG.wall || ((x, y, z, f) => 'x:' + (f === 'top' ? '#4a4652' : (Math.floor(x * 2) % 2 ? '#3a3742' : '#34313c'))));
+  if (RIG.screen) box(G, SCREEN.x0 - .5, SCREEN.x1 + .5, -14.8, -14.6, SCREEN.z0 - .5, SCREEN.z1 + .5, 'x:#1c1b22');
   box(G, DECK.x0, DECK.x1, DECK.y0, DECK.y1, 0, DECK.z, (x, y, z, f) => {
     if (f === 'front') return 'x:' + (Math.floor(x * 1.5) % 2 ? '#26232c' : '#2d2a34');
     // Planks running away from you, and the rug in the middle of them.
@@ -499,16 +482,21 @@ function buildBack(rand){
       : 'x:' + ((Math.floor(pz * 6) % 2) ? '#5a524a' : '#4c4640'));
   }
   // Side towers, the PA hung off them, and the truss across the top.
-  for (const s of [-1, 1]){
+  const TRUSS_Z = RIG.trussZ;
+  if (RIG.towers) for (const s of [-1, 1]){
     for (const dy of [-.6, .6]) for (const dx of [-.6, .6]) cap(G, [s * 15.6 + dx, -.8 + dy, 0], [s * 15.6 + dx, -.8 + dy, TRUSS_Z], .12, 'x:#9ea0aa');
     for (let z = 1; z < TRUSS_Z; z += 1.4) cap(G, [s * 15.6 - .6, -.2, z], [s * 15.6 + .6, -.2, z + 1.2], .07, 'x:#8a8c96');
     box(G, s * 17.6 - 1.4, s * 17.6 + 1.4, -1.6, -.2, 9, 18.5, (x, y, z, f) => f === 'top' ? 'x:#3a3a42'
       : 'x:' + ((Math.floor(z * 2.2) % 3 === 0) ? '#4a4a54' : '#2c2c34'));
   }
-  for (const dy of [-.6, .6]) for (const dz of [-.5, .5]) cap(G, [-16.2, -.8 + dy, TRUSS_Z + dz], [16.2, -.8 + dy, TRUSS_Z + dz], .12, 'x:#a8aab4');
-  for (let x = -16; x < 16; x += 1.2) cap(G, [x, -.2, TRUSS_Z - .5], [x + 1.1, -.2, TRUSS_Z + .5], .06, 'x:#8a8c96');
-  for (const fx of FIX) ell(G, fx, -.8, TRUSS_Z - 1, .35, .35, .4, 'x:#2a2a32', { gloss: 1 });
-  return paint(G);
+  if (RIG.truss){
+    for (const dy of [-.6, .6]) for (const dz of [-.5, .5]) cap(G, [-16.2, -.8 + dy, TRUSS_Z + dz], [16.2, -.8 + dy, TRUSS_Z + dz], .12, 'x:#a8aab4');
+    for (let x = -16; x < 16; x += 1.2) cap(G, [x, -.2, TRUSS_Z - .5], [x + 1.1, -.2, TRUSS_Z + .5], .06, 'x:#8a8c96');
+  } else {
+    // No truss: a pipe along the top of the back wall carries the cans.
+    cap(G, [-15, RIG.fixY, RIG.fixZ + .45], [15, RIG.fixY, RIG.fixZ + .45], .1, 'x:#6a6a74');
+  }
+  for (const fx of FIX) ell(G, fx, RIG.fixY, RIG.fixZ + .2, .35, .35, .4, 'x:#2a2a32', { gloss: 1 });
 }
 
 /* A keyboard on an X stand at sitting height. `along` is the way its keys run: 'x' across the stage
@@ -613,19 +601,25 @@ function skyAt(p){
   return SKY[SKY.length - 1][1];
 }
 
+/* Indoors the room is lit by the house and then by the rig, never by the sky. */
+const INDOOR = [118, 106, 138];
+
 const WORLDS = new Map();
 export function createStage(view, opts = {}){
-  const venue = VENUES[opts.venue] || VENUES.lawn;
+  const vid = ROOMS[opts.venue] ? opts.venue : 'lawn';
+  const R = ROOMS[vid], RIG = Object.assign({}, RIGS[R.rig] || RIGS.shed, R.rigOver || {}), FL = R.floor;
+  const indoor = R.sky === 'indoor';
   const reduce = !!opts.reduce;
   const seed = (opts.seed | 0) || 7;
   const rand = mulberry32(seed ^ 0x5bd1e995);
 
   /* The venue and the band are a second of work on a phone, so a night is built once and shared: the
      crowd shot on the scorecard is the same world the show was just played in. */
-  let W = WORLDS.get(seed);
+  const wkey = vid + ':' + seed;
+  let W = WORLDS.get(wkey);
   if (!W){
-    W = { back: buildBack(mulberry32(seed)), front: buildFront(), frames: bandFrames() };
-    WORLDS.set(seed, W);
+    W = { back: buildBack(mulberry32(seed), R, RIG), front: buildFront(), frames: bandFrames() };
+    WORLDS.set(wkey, W);
     if (WORLDS.size > 2) WORLDS.delete(WORLDS.keys().next().value);
   }
   const { back, front, frames } = W;
@@ -646,14 +640,14 @@ export function createStage(view, opts = {}){
   const crowd = [];
   /* Room to see the lawn between people, the way the putt putt world shows its ground: packed at the
      rail and thinning toward the blankets at the back. */
-  for (let y = 5.5; y < 44; y += 2.3 + (y - 5) * .02){
-    const half = 19 + (y - 5) * .42, gap = 2.9 + (y - 5) * .05;
+  for (let y = FL.y0; y < FL.y1; y += 2.3 + (y - 5) * .02){
+    const half = FL.half(y), gap = FL.gap(y);
     for (let x = -half; x < half; x += gap + rand() * 1.2){
       const c = { x: x + (rand() - .5) * .5, y: y + (rand() - .5) * .5,
         v: (rand() * variants.length) | 0, t: Math.min(1, (y - 5) / 40 * .6 + rand() * .45),
         phase: rand() * Math.PI * 2, jumpy: .4 + rand() * .6,
         phone: rand() < .55, sign: rand() < .035, pose: 'down', until: 0 };
-      if (!inTent(c.x, c.y, 1.5)) crowd.push(c);
+      if (!FL.skip || !FL.skip(c.x, c.y)) crowd.push(c);
     }
   }
   crowd.sort((a, b) => a.y - b.y);
@@ -662,12 +656,12 @@ export function createStage(view, opts = {}){
      of it all is you, in the follow spot. Where you stand is the rank. Nothing here reads a score: the
      page hands over a depth between 0 (the rail) and 1 (the tent). */
   const shot = opts.shot === 'crowd' && opts.you ? opts.you : null;
-  const LAWN_Y0 = 5.5, LAWN_Y1 = 42.5;
+  const LAWN_Y0 = FL.y0, LAWN_Y1 = FL.deep;
   const lawnY = d => LAWN_Y0 + clamp01(d) * (LAWN_Y1 - LAWN_Y0);
   let you = null;
   if (shot){
     const ty = lawnY(shot.d), r2 = mulberry32((shot.seed | 0) || 11);
-    const half = 19 + (ty - 5) * .42, tx = (r2() * 2 - 1) * half * .45;
+    const half = FL.half(ty), tx = (r2() * 2 - 1) * half * .45;
     let bestD = 1e9;
     for (const c of crowd){
       const dd = (c.y - ty) ** 2 * 6 + (c.x - tx) ** 2 * .08;
@@ -794,7 +788,7 @@ export function createStage(view, opts = {}){
     if (reduce) return;
     if (lite) n = n >> 1;
     for (let i = 0; i < n; i++){
-      confetti.push({ x: -15 + Math.random() * 30, y: -3 + Math.random() * 6, z: TRUSS_Z - .5,
+      confetti.push({ x: -15 + Math.random() * 30, y: -3 + Math.random() * 6, z: RIG.trussZ - .5,
         vx: (Math.random() - .5) * 5, vy: 2 + Math.random() * 6, vz: 3 + Math.random() * 6,
         c: (Math.random() * FETTI.length) | 0, ph: Math.random() * 6.3, f: 3 + Math.random() * 5 });
     }
@@ -843,7 +837,7 @@ export function createStage(view, opts = {}){
     const tall = visH / visW > 1.4;
     camY = Math.round(Math.min(Math.max(0, DECK_FRONT - (tall ? .47 : .56) * visH), HPX - visH));
     // The crowd shot sits the back of the lawn on the bottom of the frame and lets the stage fill the top.
-    if (shot) camY = Math.round(Math.min(Math.max(0, sy(TENT.y1 + .5, 0) + 5 - visH), HPX - visH));
+    if (shot) camY = Math.round(Math.min(Math.max(0, sy(FL.back + .5, 0) + 5 - visH), HPX - visH));
     dofA = canvas(Math.max(1, Math.ceil(visW / 3)), Math.max(1, Math.ceil(visH / 3)));
     dof.width = Math.ceil(visW / 4); dof.height = Math.ceil(visH / 4);
     dof.style.cssText = view.style.cssText;
@@ -866,7 +860,8 @@ export function createStage(view, opts = {}){
     return { you: [(px - camX) / visW, (py - 24 - camY) / visH],
       rnd: shot.rnd == null ? null : (P2(0, lawnY(shot.rnd), 0)[1] - camY) / visH };
   }
-  const DECK_FRONT = sy(0, DECK.z), BACK_TOP = sy(-16, 19.5);
+  // A room whose back wall is the picture keeps it sharp higher up (`dofZ`).
+  const DECK_FRONT = sy(0, DECK.z), BACK_TOP = sy(-16, Math.max(RIG.wallZ, R.dofZ || 0));
 
   function palette(){
     const t = clamp01(st.palT);
@@ -963,7 +958,7 @@ export function createStage(view, opts = {}){
     const top = camY - 20, bot = camY + visH + 50, lft = camX - 20, rgt = camX + visW + 20;
     for (const c of crowd){
       c.px = null;
-      if (c.t > st.density * venue.capacity) continue;
+      if (c.t > st.density * (FL.capacity || 1)) continue;
       const [px, py] = P2(c.x, c.y, 0);
       if (py < top || py > bot || px < lft || px > rgt) continue;
       // A pose is held for a while and then reconsidered, so the lawn never moves in lockstep.
@@ -996,6 +991,14 @@ export function createStage(view, opts = {}){
      the picture empty and through the haze of anything light that is already there. Noon blue, a pink
      and orange dusk, and a deep night with the rig's glow coming up behind the trees. */
   function drawSky(t, night, p, show, L){
+    // Indoors there is no sky: whatever the room leaves uncovered is the dark of the hall.
+    if (indoor){
+      g.setTransform(1, 0, 0, 1, -camX, -camY);
+      g.globalCompositeOperation = 'destination-over';
+      g.fillStyle = R.ceiling || '#0c0a14'; g.fillRect(camX, camY, visW, visH);
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      return;
+    }
     const dusk = clamp01(1 - Math.abs(st.sky - .52) / .2);
     const span = Math.max(8, SKY_ROWS - camY), MOON = { x: camX + Math.round(visW * .78), y: camY + 9 };
     g.setTransform(1, 0, 0, 1, -camX, -camY);
@@ -1053,7 +1056,8 @@ export function createStage(view, opts = {}){
   function draw(){
     const t = now / 1000, p = palette();
     const L = st.light, H = st.house, e = st.energy;
-    const night = clamp01((st.sky - .45) / .4);
+    // Indoors it is always night: the house lights stand in for the sun.
+    const night = indoor ? 1 : clamp01((st.sky - .45) / .4);
     // The beat. Everything that pulses pulses on it, and it quickens with the song.
     const bpm = 86 + e * 46, ph = t * bpm / 60, beatN = Math.floor(ph), pulse = Math.exp(-(ph - beatN) * 4.5);
     const show = st.band && H < .5;
@@ -1078,7 +1082,7 @@ export function createStage(view, opts = {}){
     // 2. THE LIGHT falling on it. The sky is the floor of it; the rig adds to it.
     lg.setTransform(1, 0, 0, 1, 0, 0);
     lg.globalCompositeOperation = 'source-over';
-    const sky = skyAt(st.sky);
+    const sky = indoor ? (R.indoor || INDOOR) : skyAt(st.sky);
     lg.fillStyle = rgb(H > .5 ? mixc(sky, [246, 232, 210], H * night * .6) : sky);
     lg.fillRect(0, 0, visW, visH);
     lg.translate(-camX, -camY);
@@ -1101,19 +1105,10 @@ export function createStage(view, opts = {}){
       const [fx, fy] = P2(0, 6, 0);
       pool(lg, fx, fy, 150, mixc(p[0], [255, 255, 255], .5), .3 * L * dark, .4);
     }
-    // Lamp posts and the strings over the lawn, coming on with the dusk.
-    for (const [x, y] of LAMPS){
-      const [px, py] = P2(x, y, 0);
-      pool(lg, px, py, 30, [255, 206, 140], .5 * night);
-    }
-    for (const yy of [14, 30]){
-      for (let x = -30; x <= 30; x += 4.8){
-        const [px, py] = P2(x, yy, 0);
-        pool(lg, px, py, 14, [255, 200, 130], .13 * night);
-      }
-    }
-    // The bulbs under the merch tent.
-    { const [px, py] = P2((TENT.x0 + TENT.x1) / 2, TENT.y1 - 1, 0); pool(lg, px, py, 34, [255, 214, 150], .55 * night); }
+    // The room's own lamps, coming on with the dusk.
+    const F = { t, night, e, L, H, p, pulse, beatN, show, dark, skyP: st.sky,
+      pool: (x, y, z, r, c, a, flat) => { const [px, py] = P2(x, y, z); pool(lg, px, py, r, c, a, flat); } };
+    if (R.light) R.light(F);
     if (you){
       // The follow spot: you, lit like you are in the band.
       const [px, py] = P2(you.x, you.y, 0);
@@ -1132,7 +1127,7 @@ export function createStage(view, opts = {}){
     if (beamA > .008){
       const sp = .25 + e * .6;
       FIX.forEach((fx, i) => {
-        const [px, py] = P2(fx, -.8, TRUSS_Z - 1.2);
+        const [px, py] = P2(fx, RIG.fixY, RIG.fixZ);
         const col = p[(i + beatN) % 2];
         const tx = fx + Math.sin(t * sp + i * .8) * (3 + e * 6) * (i % 2 ? 1 : -1);
         const deep = e > .6 && i % 3 === 0;
@@ -1153,13 +1148,13 @@ export function createStage(view, opts = {}){
       if (now < st.segueUntil){
         const f = 1 - (st.segueUntil - now) / 1500;
         const b2 = P2(-14 + f * 28, -2, DECK.z);
-        cone(bg, P2(0, -.8, TRUSS_Z), b2, 12, [255, 255, 255], .3 * Math.sin(f * Math.PI) * dark);
+        cone(bg, P2(0, RIG.fixY, RIG.fixZ + 1.2), b2, 12, [255, 255, 255], .3 * Math.sin(f * Math.PI) * dark);
         pool(lg, b2[0], b2[1], 26, [255, 255, 255], .5 * Math.sin(f * Math.PI) * dark);
       }
     }
     if (you){
       const [px, py] = P2(you.x, you.y, 0);
-      cone(bg, P2(you.x > 0 ? 15.6 : -15.6, -.8, TRUSS_Z), [px, py], 13, [210, 245, 255], .32 * (.85 + .15 * pulse));
+      cone(bg, P2(you.x > 0 ? 15.6 : -15.6, RIG.fixY, RIG.fixZ + 1.2), [px, py], 13, [210, 245, 255], .32 * (.85 + .15 * pulse));
     }
     /* BACKLIGHTS on the roof of the stage house, firing over the band and out across the lawn: the
        shot every concert film is made of. Where they land they sweep the crowd. */
@@ -1167,7 +1162,7 @@ export function createStage(view, opts = {}){
       const bk = beamA * (e - .2) * 1.6;
       for (let i = 0; i < 6; i++){
         const x0 = -12.5 + i * 5;
-        const a = P2(x0, -15.2, 19.8);
+        const a = P2(x0, -15.2, RIG.wallZ + .3);
         const tx = x0 * .6 + Math.sin(t * (.35 + e * .5) + i * 1.9) * (8 + e * 8);
         const ty = 14 + Math.sin(t * (.27 + e * .3) + i * 1.1) * 10;
         const b = P2(tx, ty, 0);
@@ -1184,6 +1179,8 @@ export function createStage(view, opts = {}){
       pool(bg, sx0, sy0, 90, sc, sa, .32);
       pool(bg, sx0, sy1, 70, sc, sa * .6, .3);
     }
+    if (R.beam) R.beam(Object.assign(F, { cone: (a, b, r, c, al) => cone(bg, P2(...a), P2(...b), r, c, al),
+      pool: (x, y, z, r, c, a, flat) => { const [px, py] = P2(x, y, z); pool(bg, px, py, r, c, a, flat); } }));
     // The haze: the beams are only seen where there is smoke to see them in.
     if (hazePat){
       bg.globalCompositeOperation = 'destination-in';
@@ -1225,9 +1222,9 @@ export function createStage(view, opts = {}){
     eg.clearRect(0, 0, visW, visH);
     eg.translate(-camX, -camY);
     eg.globalCompositeOperation = 'lighter';
-    screen(eg, p, t, pulse);
+    if (RIG.screen) screen(eg, p, t, pulse);
     FIX.forEach((fx, i) => {
-      const [px, py] = P2(fx, -.8, TRUSS_Z - 1.2);
+      const [px, py] = P2(fx, RIG.fixY, RIG.fixZ);
       const col = strobe ? [255, 255, 255] : p[(i + beatN) % 2];
       const on = (strobe ? 1 : (.35 + .65 * L) * (.65 + .35 * pulse)) * (show || L > .1 ? 1 : .3);
       eg.fillStyle = rgb(col, on); eg.fillRect(px - 1, py, 2, 1);
@@ -1240,26 +1237,18 @@ export function createStage(view, opts = {}){
       eg.fillStyle = rgb(p[i % 2], (.25 + .75 * ch) * L * (show ? 1 : .2));
       eg.fillRect(px, py, 1, 1);
     }
-    for (const [x, y] of LAMPS){
-      const [px, py] = P2(x, y, 11.4);
-      eg.fillStyle = rgb([255, 236, 190], .35 + .65 * night); eg.fillRect(px - 1, py - 1, 2, 2);
-    }
-    for (const yy of [14, 30]){
-      for (let x = -30; x <= 30; x += 2.4){
-        const sag = 1.6 * (1 - (x / 30) ** 2);
-        const [px, py] = P2(x, yy, 13 - sag);
-        const tw = .75 + .25 * Math.sin(t * 2.3 + x * 1.7 + yy);
-        eg.fillStyle = rgb([255, 214, 150], (.25 + .75 * night) * tw);
-        eg.fillRect(px, py, 1, 1);
-      }
-    }
-    for (let x = TENT.x0 + .6; x <= TENT.x1 - .6; x += 1.6){
-      const [px, py] = P2(x, TENT.y1 + .2, TENT.z - .2);
-      eg.fillStyle = rgb([255, 222, 160], .4 + .6 * night); eg.fillRect(px, py, 1, 1);
+    if (R.glow){
+      F.dot = (x, y, z, c, a, w = 1, h = 1, ox = 0, oy = 0) => {
+        if (a <= .003) return;
+        const [px, py] = P2(x, y, z); eg.fillStyle = rgb(c, Math.min(1, a)); eg.fillRect(px + ox, py + oy, w, h);
+      };
+      F.halo = (x, y, z, r, c, a, flat) => { const [px, py] = P2(x, y, z); pool(eg, px, py, r, c, a, flat); };
+      F.light = (x, y, z, r, c, a, flat) => { const [px, py] = P2(x, y, z); pool(lg, px, py, r, c, a, flat); };
+      R.glow(F);
     }
     // Where a random draft would be standing: a row of glow stakes across the lawn.
     if (shot && shot.rnd != null){
-      const yr = lawnY(shot.rnd), half = 19 + (yr - 5) * .42;
+      const yr = lawnY(shot.rnd), half = FL.half(yr);
       for (let x = -half; x <= half; x += 1.4){
         const [px, py] = P2(x, yr, .3);
         eg.fillStyle = rgb([200, 236, 255], .3 + .15 * Math.sin(t * 2 + x)); eg.fillRect(px, py, 1, 1);
@@ -1284,7 +1273,7 @@ export function createStage(view, opts = {}){
     // The backlights' lenses on the roof, pointed straight at you.
     if (show && e > .3){
       for (let i = 0; i < 6; i++){
-        const [px, py] = P2(-12.5 + i * 5, -15.2, 19.8);
+        const [px, py] = P2(-12.5 + i * 5, -15.2, RIG.wallZ + .3);
         const col = strobe ? [255, 255, 255] : p[(i + beatN + 1) % 2];
         const on = (e - .2) * L * (.6 + .4 * pulse);
         eg.fillStyle = rgb(col, Math.min(1, on * 1.3)); eg.fillRect(px - 1, py, 3, 1);
@@ -1335,9 +1324,11 @@ export function createStage(view, opts = {}){
     g.globalCompositeOperation = 'lighter';
     g.drawImage(emit, 0, 0);
     // The wall is the biggest light in the room; at full strength in the bloom it fogs the band out.
-    eg.globalCompositeOperation = 'destination-out';
-    eg.fillStyle = 'rgba(0,0,0,.55)';
-    eg.fillRect(SCR.x - camX, SCR.y - camY, LED.w * 2, LED.h * 2);
+    if (RIG.screen){
+      eg.globalCompositeOperation = 'destination-out';
+      eg.fillStyle = 'rgba(0,0,0,.55)';
+      eg.fillRect(SCR.x - camX, SCR.y - camY, LED.w * 2, LED.h * 2);
+    }
     eg.globalCompositeOperation = 'source-over';
     drawSky(t, night, p, show, L);
     g.globalCompositeOperation = 'source-over';
@@ -1416,7 +1407,7 @@ export function createStage(view, opts = {}){
      `progress` is how far through the night the show is, and it is what sets the sun. */
   function cue(ev){
     const ts = performance.now();
-    if (ev.progress != null) st.skyWant = clamp01(ev.progress);
+    if (ev.progress != null) st.skyWant = clamp01(R.skyMap ? R.skyMap(ev.progress) : ev.progress);
     if (ev.kind === 'set'){
       st.band = true; st.bow = false; st.encore = !!ev.encore;
       st.houseWant = 0; st.lightWant = .5; st.energyWant = .3;

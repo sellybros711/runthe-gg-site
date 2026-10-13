@@ -2803,7 +2803,7 @@
   },
   "setlist/index.html": {
     "/setlist/auth.js": {
-      "v": "43",
+      "v": "44",
       "sha": "2bfbddde6b67b5fc"
     },
     "/assets/newsletter.js": {
@@ -2811,20 +2811,24 @@
       "sha": "260c8dc0bc33a527"
     },
     "/setlist/board.js": {
-      "v": "43",
-      "sha": "2e84ebfe3e1acc9f"
+      "v": "44",
+      "sha": "4121a57c1d6730b3"
     },
     "scoring.js": {
-      "v": "43",
+      "v": "44",
       "sha": "76ce0fc843d116ca"
     },
     "dataLoader.js": {
-      "v": "43",
+      "v": "44",
       "sha": "30180c7247719f6c"
     },
     "stage.js": {
-      "v": "8",
-      "sha": "453587288e634bc8"
+      "v": "9",
+      "sha": "8b9744390f402f33"
+    },
+    "venues.js": {
+      "v": "1",
+      "sha": "0900bbba2153bb32"
     }
   },
   "soccer/index.html": {
@@ -2931,6 +2935,10 @@
     "pxhd.js": {
       "v": "1",
       "sha": "aa371adb6a4d1640"
+    },
+    "rooms.js": {
+      "v": "1",
+      "sha": "37202ae587b58c69"
     }
   },
   "wrestling/ring3d/boot.js": {

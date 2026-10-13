@@ -11000,6 +11000,29 @@ node scripts/setlist/check_data.mjs
 node setlist/verify-scoring.mjs
 ```
 
+### Rooms: venues a player earns, and none of them has a name
+
+```
+node scripts/setlist/check_venues.mjs          fields, archive names, rules, no names on screen
+node scripts/setlist/make_venue_thumbs.mjs     render every room to setlist/venues/<id>.png
+```
+
+`setlist/venues.js` is the rules (pure, no imports) and `setlist/rooms.js` the pictures, built with
+the stage's own kit and drawn by `stage.js`. A room changes how the night looks, never a score.
+
+- **No room is named on screen.** The picture is the reward. `archive` holds the venue exactly as
+  `goose_shows.csv` spells it, for joining picks, and is never rendered. Clues use cities, years and
+  lore. `check_venues` fails on a venue name in copy.
+- **Unlocks are derived from the account's `segue_runs` rows** (`board.js venueRows`, which selects
+  `picks` and `rng_seed`), never stored. Only the choice is stored (`segue_venue_v1`), and a choice
+  the rows do not back is the lawn.
+- **A `picks` rule needs a drawable night.** O'Neill's (18 shows) and the Factory Underground have
+  none with a full timed setlist, so their rooms are earned by ladder and season rules instead.
+- **Design inside what the camera sees.** On a phone the show sees x from about -15 to 15 and, on a
+  back wall at y -21.5, z up to about 25. A room's signature has to sit above or behind the stage.
+- **`check-cachebust` does not follow stage.js's imports.** A change to `rooms.js` bumps its `?v=`
+  in `stage.js` and stage.js's `?v=` in `index.html`, together. A new picture bumps `VENUE_ART_V`.
+
 ## Run The Floor, the NBA game
 
 `hoops/`, at `/hoops/`. The football and college football skeleton reskinned for

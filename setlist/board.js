@@ -443,6 +443,24 @@
     } catch (e) { return failThrown('mine', e); }
   }
 
+  /* THE ROWS THE ROOMS ARE EARNED FROM. setlist/venues.js works out which rooms an account has
+     opened from its own filed shows, and two of the things it asks need columns the board never
+     reads: the picks (which nights the songs came from) and the seed (whether it was a daily). A
+     select of its own, so the leaderboard's rows stay as small as they were. Every column here has
+     been on segue_runs since 67_setlist_leaderboard.sql, so this needs no migration. */
+  const VENUE_COLS = 'created_at,band,total,pct_of_best,bustouts,segues,picks,rng_seed';
+  async function venueRows(userId) {
+    if (!userId) return null;
+    try {
+      const q = base() + TABLE + '?select=' + VENUE_COLS +
+        '&user_id=eq.' + encodeURIComponent(userId) + '&order=created_at.desc&limit=2000';
+      const res = await timed(q, { headers: headers() });
+      if (!res.ok) return await fail('venueRows', res);
+      const rows = await res.json().catch(() => null);
+      return Array.isArray(rows) ? rows : null;
+    } catch (e) { return failThrown('venueRows', e); }
+  }
+
   /* The show you drafted before you signed in, taken over now that you are. Returns
      false if it was already owned, which is what stops an id in a URL being enough to
      claim somebody else's. */
@@ -513,7 +531,7 @@
 
   window.SEGUE_BOARD = {
     API_VERSION: 3,
-    submit, top, mine, ranks, placeIn, total, claim, probe, cutoffISO, spread, dayKey,
+    submit, top, mine, venueRows, ranks, placeIn, total, claim, probe, cutoffISO, spread, dayKey,
     syncAttended, forgetAttended,
     SORTS,
     get offline() { return offline; },
