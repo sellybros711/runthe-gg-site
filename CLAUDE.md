@@ -20479,6 +20479,12 @@ a forged 6 buys three lives once and never shortens a clock. A guest's lives sta
 
 What is still not on the server: the Daily Hole has no shared board.
 
+**Some accounts have every hole open for good** (`PUTT_ALL_ACCESS` in `golf/index.html`, `allAccess()` and `opened()`
+in putt.js): every hole of every tour, every world out from under cloud, the Members Tour as a preview, and lives never
+block a hole. It is ASKED, never written: the record's `lv` stays the hole really reached, so the map's golfer, the walk
+home and the server copy keep telling the truth, and taking a name off the list puts the gates back. Every unlock check
+goes through `opened()`, never `tp.lv` directly. check-putt signs in as SlimeyB3 for the ordinary gates.
+
 **A guest plays the first five Tour holes free** (`GUEST_HOLES`). Hole 6 opens a sheet asking them to sign
 in or create an account, and its buttons close the mode and open the page's account sheet. The Daily Hole
 stays open to guests. What a guest played is claimed by the account on the way in (below), then synced.
