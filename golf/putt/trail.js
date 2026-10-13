@@ -486,7 +486,11 @@ function plan(spec){
        that puzzle then does not fit. */
     function room(x, y, r){ for (var i = 0; i < P.things.length; i++){ var t = P.things[i], tr = t.w ? Math.max(t.w, t.d) / 2 : (t.r || 0.5);
         if (!(TREEH[t.k] || LOWR[t.k]) && Math.hypot(t.x - x, t.y - y) < r + tr + 0.4) return false; } return true; }
-    function clearOut(x, y, r){ var gone = P.things.filter(function(t){ return (TREEH[t.k] || LOWR[t.k]) && Math.hypot(t.x - x, t.y - y) < r + (t.r || 0.5) + 0.3; });
+    /* AND IN SIGHT. The camera looks up the land from the near side, so a tall tree a few feet nearer than a puzzle puts
+       its canopy right over it: a crate nobody could see was the first screenshot. clearOut also takes the trees whose
+       canopy stands between it and the camera. */
+    function clearOut(x, y, r){ var gone = P.things.filter(function(t){ if (!(TREEH[t.k] || LOWR[t.k])) return false; if (Math.hypot(t.x - x, t.y - y) < r + (t.r || 0.5) + 0.3) return true;
+        var tall = TREEH[t.k]; return !!tall && t.y > y - 1 && t.y < y + r + (t.h || 10) * 1.15 && Math.abs(t.x - x) < r + (t.cr || tall[2] || 3) + 0.5; });
       if (!gone.length) return; function hit(o){ return gone.some(function(t){ return t.x === o.x && t.y === o.y; }); }
       P.things = P.things.filter(function(t){ return gone.indexOf(t) < 0; }); P.cols = P.cols.filter(function(c){ return !hit(c); });
       for (var u = used.length - 1; u >= 0; u--) if (hit(used[u])) used.splice(u, 1); }
@@ -532,12 +536,14 @@ function plan(spec){
           // the chest comes up just past the spot, so it is never dug up under his feet
           var cxp = ds[0] + ux * 2.3, cyp = ds[1] + uy * 2.3;
           if (!good || steps.length < 5 || !okGround(cxp, cyp, 1.2) || hitThing(cxp, cyp) || !reach(cxp, cyp, 2.2)){ back(S1); continue; }
+          for (var vs = 0; vs < steps.length; vs += 3) clearOut(steps[vs][0], steps[vs][1], 0.6); clearOut(cxp, cyp, 1.5);
           var pd = prize(cxp, cyp, 'dig'); made = { k:'dig', prize:pd.id, spot:[ds[0], ds[1]], steps:steps }; } }
       else if (k === 'plate' || k === 'push'){ var pn = pen(PEN_R + PW + 2.5, 13); if (!pn) continue;
         if (k === 'plate'){ var gx = pn.x, gy2 = pn.y + pn.r, pl = null;
           for (var ps = 0; ps < 300 && !pl; ps++){ var q2 = beside(SL * RQ(), RQ() < 0.5 ? -1 : 1, PW + 1.2 + RQ() * 1.2), dg = Math.hypot(q2[0] - gx, q2[1] - gy2);
             if (dg >= 8 && dg <= 14 && Math.hypot(q2[0] - pn.x, q2[1] - pn.y) > pn.r + 3 && okAt(q2[0], q2[1], 0.9) && reach(q2[0], q2[1], 1.0)) pl = { x:q2[0], y:q2[1], t:PZ_GATE_S + dg * 0.18 }; }
           if (!pl) continue;
+          clearOut(pl.x, pl.y, 1); clearOut(pn.x, pn.y + pn.r, 1.5);
           place('pen', pn.x, pn.y, pn.r, 2.6, { a:pn.a, half:pn.half, th:themeAt(pn.y), gated:1 }); used.push({ x:pn.x, y:pn.y, r:pn.r + 2 }); used.push({ x:pl.x, y:pl.y, r:1.4 });
           var pp = prize(pn.x, pn.y, 'plate', pn); made = { k:'plate', prize:pp.id, pen:pn, plate:pl }; }
         else { var sj = RQ() < 0.5 ? -1 : 1, cy3 = pn.y + pn.r + 1.1, rx2 = pn.x + sj * 3.6, kx3 = JAM_ROCK[themeAt(cy3)] || 'rock';
@@ -545,6 +551,7 @@ function plan(spec){
           var crate = { x:pn.x, y:cy3, x0:pn.x, lo:sj > 0 ? pn.x - 2.6 : pn.x - 0.6, hi:sj > 0 ? pn.x + 0.6 : pn.x + 2.6, rock:sj };
           var fits = okGround(rx2, cy3, 1) && !hitThing(rx2, cy3) && okGround(pn.x - sj * 2.8, cy3, 0.9) && !hitThing(pn.x - sj * 2.8, cy3) && reach(pn.x + sj * 1.9, cy3, 0.7) && reach(pn.x - sj * 3.6, cy3 + 1.5, 1.0);
           if (!fits) continue;
+          clearOut(pn.x, cy3, 3.6);
           place('pen', pn.x, pn.y, pn.r, 2.6, { a:pn.a, half:pn.half, th:themeAt(pn.y) }); used.push({ x:pn.x, y:pn.y, r:pn.r + 3 });
           var rk = place(kx3, rx2, cy3, 0.9, 1.4, { th:themeAt(cy3) }); P.cols.push({ x:rk.x, y:rk.y, r:0.9 });
           var pu = prize(pn.x, pn.y, 'push', pn); made = { k:'push', prize:pu.id, pen:pn, crate:crate }; } }
@@ -1234,8 +1241,9 @@ function run(box, P, pic, api){
   /* ON THE GROUND: the footprints and the spot they lead to (a dark hole once dug), and the plate (gold while it holds
      the gate open). Drawn flat, under everything that stands. */
   function drawPzGround(now){ var Pz = P.puzzle, dark = !!pic.night || /^(volcano|neon|haunted)$/.test(sp.theme);
-    if (Pz.k === 'dig'){ ctx.fillStyle = dark ? 'rgba(255,240,210,.32)' : 'rgba(50,30,12,.38)';
-      Pz.steps.forEach(function(q){ var p = scr(q[0], q[1]); ctx.beginPath(); ctx.ellipse(p[0], p[1], 1.6 * kk, 0.8 * kk, 0, 0, 7); ctx.fill(); });
+    if (Pz.k === 'dig'){ ctx.fillStyle = dark ? 'rgba(255,240,210,.5)' : 'rgba(45,26,8,.6)';
+      // a boot print: a sole and a heel, along the way the tracks go
+      Pz.steps.forEach(function(q){ var p = scr(q[0], q[1]), a = q[2], h = scr(q[0] - Math.cos(a) * 0.36, q[1] - Math.sin(a) * 0.36); ctx.beginPath(); ctx.ellipse(p[0], p[1], 2.2 * kk, 1.15 * kk, 0, 0, 7); ctx.fill(); ctx.beginPath(); ctx.ellipse(h[0], h[1], 1.4 * kk, 0.8 * kk, 0, 0, 7); ctx.fill(); });
       var sp0 = scr(Pz.spot[0], Pz.spot[1]), w = 4 * kk;
       if (PZ.shown){ ctx.fillStyle = 'rgba(30,18,6,.7)'; ctx.beginPath(); ctx.ellipse(sp0[0], sp0[1], w * 1.4, w * 0.6, 0, 0, 7); ctx.fill(); }
       else { ctx.strokeStyle = dark ? 'rgba(255,230,180,.6)' : 'rgba(90,40,10,.7)'; ctx.lineWidth = Math.max(2, kk * 0.9); ctx.beginPath(); ctx.moveTo(sp0[0] - w, sp0[1] - w * 0.45); ctx.lineTo(sp0[0] + w, sp0[1] + w * 0.45); ctx.moveTo(sp0[0] + w, sp0[1] - w * 0.45); ctx.lineTo(sp0[0] - w, sp0[1] + w * 0.45); ctx.stroke(); } }
