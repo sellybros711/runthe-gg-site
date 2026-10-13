@@ -32,14 +32,20 @@
  */
 
 /* The stage house each kind of room gets. The deck, the riser and the band's gear never move.
-   `fixY`/`fixZ` is where the row of movers hangs; `wallZ` is how tall the back wall is. */
+   `fixY`/`fixZ` is where the row of movers hangs; `wallZ` is how tall the back wall is.
+
+   THERE IS NO SCREEN BEHIND THE BAND. Goose tours a light rig, not video: flown diamond pods of truss,
+   each one full of movers and pixel battens. `pods` is where each hangs over the deck, as [x, z] of its
+   centre in feet, with `podR` the half width of the diamond and `podY` how far upstage it hangs. */
+const PODS_V = [[-11.5, 16.2], [-6.9, 14.4], [-2.3, 12.6], [2.3, 12.6], [6.9, 14.4], [11.5, 16.2]];
 export const RIGS = {
-  // Outdoor shed and arena: the truss on two towers with the PA hung off them.
-  shed:    { towers: true, screen: true, truss: true, trussZ: 21.5, wallZ: 19.5, fixY: -.8, fixZ: 20.3 },
-  // A theatre: the same truss and wall, no towers, the room's own proscenium frames it.
-  theatre: { towers: false, screen: true, truss: true, trussZ: 20, wallZ: 19.5, fixY: -.8, fixZ: 18.8 },
-  // A bar: a low back wall, no truss, no screen, a pipe of cans along the top of the wall.
-  club:    { towers: false, screen: false, truss: false, trussZ: 12.5, wallZ: 12.5, fixY: -14.4, fixZ: 12.1 },
+  // Outdoor shed and arena: the truss on two towers with the PA hung off them, six pods in a V.
+  shed:    { towers: true, truss: true, trussZ: 21.5, wallZ: 19.5, fixY: -.8, fixZ: 20.3, pods: PODS_V, podR: 2.2, podY: -12.6 },
+  // A theatre: the same truss, wall and pods, no towers. The room's own proscenium frames it.
+  theatre: { towers: false, truss: true, trussZ: 20, wallZ: 19.5, fixY: -.8, fixZ: 18.8, pods: PODS_V, podR: 2.2, podY: -12.6 },
+  // A bar: a low back wall and no truss. Three small pods on chains, and a pipe of cans along the wall.
+  club:    { towers: false, truss: false, trussZ: 12.5, wallZ: 12.5, fixY: -14.4, fixZ: 12.1,
+             pods: [[-6.4, 10.4], [0, 11.1], [6.4, 10.4]], podR: 1.25, podY: -13.2 },
 };
 
 const SHIRTS = ['#e8505f', '#3f86d8', '#f2efe6', '#4fb36e', '#9b5fd0', '#2e3140', '#ef8a3c', '#2fb3c0',
@@ -176,7 +182,7 @@ function barTable(K, x, y, top){
 // ── the pub ─────────────────────────────────────────────────────────────────
 /* A long narrow bar room in Norwalk, where the band played most in the early years: brick, dark
    wood, a green wainscot with a brass rail, a dartboard and old framed pictures, pendant lamps, and
-   the bar running across the back of the room. The stage is a low corner of it: no truss, no screen. */
+   the bar running across the back of the room. The stage is a low corner of it: no truss, three small pods. */
 const pubWall = (K, x, z) => {
   if (z < 4.2) return z > 3.9 ? '#c8a042' : (Math.floor(x * 1.6) % 2 ? '#2f5a3e' : '#2a5238');
   if (z > 24) return (Math.floor(x / 4) % 2 ? '#3a2a20' : '#33251d');

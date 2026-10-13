@@ -16,7 +16,8 @@
  * cells, each with a material and the way its surface faces. PXHD paints that grid. The world is drawn
  * once into two layers (what stands behind the band, and the gear in front of it); the band and the
  * crowd are small worlds of their own, drawn once per pose and stood in place every frame. Light that
- * moves (the screen, the rig, the dusk) is laid over the top.
+ * moves (the rig and the dusk) is laid over the top. There is no video wall: the band plays in front
+ * of its own light rig, six flown diamond pods of truss, which is what a Goose show looks like.
  *
  * THE BAND IS DRAWN FROM ITS GEAR. A face is two dots. What a fan knows is the yellow kit on its riser,
  * the keys stage left, the rug, the hats and where each player stands. No likeness, and no copy of
@@ -33,7 +34,7 @@
  * It never changes a score.
  */
 import PXHD from './pxhd.js?v=1';
-import { ROOMS, RIGS } from './rooms.js?v=2';
+import { ROOMS, RIGS } from './rooms.js?v=3';
 
 /* The rooms a night can be played in, by id. setlist/venues.js says how each is earned and
    setlist/rooms.js what each looks like; this file only draws whichever it is handed. */
@@ -397,7 +398,6 @@ function bandFrames(){
 
 // ── the venue ──────────────────────────────────────────────────────────────
 const DECK = { x0: -14, x1: 14, y0: -14.5, y1: 0, z: 4 };
-const SCREEN = { x0: -10.5, x1: 10.5, y: -14.6, z0: 8.4, z1: 16.6 };
 /* The movers along the truss, west to east. */
 const FIX = Array.from({ length: 10 }, (_, i) => -12.6 + i * 2.8);
 /* The kit a room is built with: the stage's own solids and its painter, so every room is lit and
@@ -427,7 +427,7 @@ function kit(G, rand){
       }
     }
   }
-  return { G, rand, box, ell, cap, cyl, wall, hash, STEP, ART, X0, X1, DECK, SCREEN,
+  return { G, rand, box, ell, cap, cyl, wall, hash, STEP, ART, X0, X1, DECK,
     up: camN(0, 0, 1), sx, sy, depth };
 }
 
@@ -454,12 +454,15 @@ function buildBack(rand, R, RIG){
   return paint(G);
 }
 
-/* The stage house, sized to the room: the back wall, the screen's frame, the deck and its riser, the
+/* The four corners of a diamond pod, top, right, bottom and left, as [x, z]. */
+function podCorners(cx, cz, r){ return [[cx, cz + r], [cx + r, cz], [cx, cz - r], [cx - r, cz]]; }
+
+/* The stage house, sized to the room: the back wall, the light pods, the deck and its riser, the
    keys player's stool and third board, the amps, and the towers and truss where the room has them. */
 function buildRig(G, RIG){
-  // The stage house: the back wall, the screen's frame, the deck, its skirt and the drum riser.
+  // The stage house: the back wall, the deck, its skirt and the drum riser.
   box(G, -15.5, 15.5, -16, -14.8, 0, RIG.wallZ, RIG.wall || ((x, y, z, f) => 'x:' + (f === 'top' ? '#4a4652' : (Math.floor(x * 2) % 2 ? '#3a3742' : '#34313c'))));
-  if (RIG.screen) box(G, SCREEN.x0 - .5, SCREEN.x1 + .5, -14.8, -14.6, SCREEN.z0 - .5, SCREEN.z1 + .5, 'x:#1c1b22');
+  buildPods(G, RIG);
   box(G, DECK.x0, DECK.x1, DECK.y0, DECK.y1, 0, DECK.z, (x, y, z, f) => {
     if (f === 'front') return 'x:' + (Math.floor(x * 1.5) % 2 ? '#26232c' : '#2d2a34');
     // Planks running away from you, and the rug in the middle of them.
@@ -497,6 +500,31 @@ function buildRig(G, RIG){
     cap(G, [-15, RIG.fixY, RIG.fixZ + .45], [15, RIG.fixY, RIG.fixZ + .45], .1, 'x:#6a6a74');
   }
   for (const fx of FIX) ell(G, fx, RIG.fixY, RIG.fixZ + .2, .35, .35, .4, 'x:#2a2a32', { gloss: 1 });
+}
+
+/* THE PODS. Each is a diamond of box truss hung on a chain: two chords along every edge with the
+   lacing between them, a block at every corner, a mover under the bottom and side corners and one
+   more hung in the middle. The pixels along the truss and the beams out of the movers are drawn every
+   frame (podPixels, and the beams in frame()); this is only the steel. */
+function buildPods(G, RIG){
+  const Y = RIG.podY, r = RIG.podR, top = RIG.truss ? RIG.trussZ : RIG.wallZ;
+  const rad = Math.max(.05, r * .04);
+  for (const [cx, cz] of RIG.pods){
+    const C = podCorners(cx, cz, r);
+    cap(G, [cx, Y, cz + r + .3], [cx, Y, top], rad * .7, 'x:#55555e');
+    for (let k = 0; k < 4; k++){
+      const [ax, az] = C[k], [bx, bz] = C[(k + 1) % 4];
+      for (const dy of [-.28, .28]) cap(G, [ax, Y + dy, az], [bx, Y + dy, bz], rad, 'x:#a8aab4');
+      const n = Math.max(3, Math.round(Math.hypot(bx - ax, bz - az) / .55));
+      for (let i = 0; i < n; i++){
+        const u0 = i / n, u1 = (i + 1) / n;
+        cap(G, [ax + (bx - ax) * u0, Y - .28, az + (bz - az) * u0], [ax + (bx - ax) * u1, Y + .28, az + (bz - az) * u1], rad * .55, 'x:#8a8c96');
+      }
+    }
+    for (const [x, z] of C) box(G, x - .3, x + .3, Y - .32, Y + .32, z - .3, z + .3, 'x:#7a7c86');
+    for (const [x, z] of [C[1], C[2], C[3]]) ell(G, x, Y + .1, z - .55, .34, .34, .38, 'x:#2a2a32', { gloss: 1 });
+    ell(G, cx, Y + .1, cz, .4, .4, .44, 'x:#26262e', { gloss: 1 });
+  }
 }
 
 /* A keyboard on an X stand at sitting height. `along` is the way its keys run: 'x' across the stage
@@ -674,17 +702,25 @@ export function createStage(view, opts = {}){
   // Everybody's first pose up front, so the first frame is not a stall.
   for (let vi = 0; vi < variants.length; vi++) spriteOf(vi, 'down');
 
-  // The screen is a light: a grid of LED cells drawn every frame.
-  const LED = { w: Math.round((SCREEN.x1 - SCREEN.x0) / ART / 2), h: Math.round((SCREEN.z1 - SCREEN.z0) * CE / ART / 2) };
-  const led = canvas(LED.w, LED.h);
-  const ledG = led.getContext('2d');
-  const ledImg = ledG.createImageData(LED.w, LED.h);
-  const SCR = { x: Math.round(sx(SCREEN.x0)), y: Math.round(sy(SCREEN.y, SCREEN.z1)) };
+  /* The pixel battens along every pod's truss: a dot every few inches round the diamond, each knowing
+     its pod and how far round it sits, so a chase can run round one pod or across all of them. */
+  const PODS = RIG.pods.map(([cx, cz], pi) => ({ cx, cz, pi, C: podCorners(cx, cz, RIG.podR) }));
+  const PODPX = [];
+  for (const P of PODS){
+    const n = Math.max(6, Math.round(RIG.podR * 2.4));
+    for (let k = 0; k < 4; k++){
+      const [ax, az] = P.C[k], [bx, bz] = P.C[(k + 1) % 4];
+      for (let i = 0; i < n; i++){
+        const u = (i + .5) / n;
+        PODPX.push({ x: ax + (bx - ax) * u, z: az + (bz - az) * u, pi: P.pi, side: k, a: (k + u) / 4 });
+      }
+    }
+  }
 
   const out = view.getContext('2d');
   /* Five buffers, all the size of what the camera sees. `g` is the world as it is painted; `lg` the
      light falling on it, multiplied in, so a beam's pool turns the rug and the people under it its own
-     colour; `eg` what glows of its own accord (the screen, lenses, bulbs, phones and the beams in the
+     colour; `eg` what glows of its own accord (the pods, lenses, bulbs, phones and the beams in the
      haze), added on top; and two small ones the glow is blurred through for the bloom. */
   let buf = canvas(4, 4), g = buf.getContext('2d');
   let lmap = canvas(4, 4), lg = lmap.getContext('2d');
@@ -868,33 +904,23 @@ export function createStage(view, opts = {}){
     return [mixc(st.palFrom[0], st.pal[0], t), mixc(st.palFrom[1], st.pal[1], t)];
   }
 
-  function screen(c2, p, t, pulse){
-    const d = ledImg.data, e = st.energy, L = st.light, mode = Math.floor(st.mode / 3) % 4;
-    for (let y = 0; y < LED.h; y++){
-      for (let x = 0; x < LED.w; x++){
-        const u = x / LED.w - .5, v = y / LED.h - .5;
-        let s;
-        if (mode === 0) s = .5 + .5 * Math.sin(Math.hypot(u * 2.4, v) * 16 - t * (2 + e * 4));
-        else if (mode === 1) s = (1 - y / LED.h) < Math.abs(Math.sin((x >> 1) * 1.7 + t * (1 + e * 3))) ? 1 : .1;
-        else if (mode === 2) s = .5 + .5 * Math.sin(u * 8 + t * 1.3) * Math.cos(v * 6 - t * 1.1 + Math.sin(u * 4 + t));
-        else s = ((x * 7 + y * 13 + ((t * 6) | 0)) % 17 === 0) ? 1 : .12;
-        const c = mixc(p[0], p[1], .5 + .5 * Math.sin(u * 3 + t * .5));
-        // Held under white, or a pale palette turns the wall into one blown out lamp.
-        const lit = (.12 + .6 * s) * (.3 + .7 * Math.max(L, .25)) * (1 - st.house * .55) * (.82 + .18 * pulse);
-        const i = (y * LED.w + x) * 4;
-        d[i] = c[0] * lit; d[i + 1] = c[1] * lit; d[i + 2] = c[2] * lit; d[i + 3] = 255;
-      }
+  /* The pods' pixels. Four looks, the same four the night cycles through: a chase round each diamond,
+     the pods trading on the beat, a wave across the stage, and a sparkle. Each pod is one colour of the
+     song's pair and its neighbour the other. */
+  function podPixels(c2, p, t, pulse, beatN, strobe){
+    const e = st.energy, L = st.light, mode = Math.floor(st.mode / 3) % 4, Y = RIG.podY;
+    const base = (.3 + .7 * Math.max(L, .2)) * (1 - st.house * .5) * (.8 + .2 * pulse);
+    for (const q of PODPX){
+      let s;
+      if (strobe) s = 1;
+      else if (mode === 0) s = .15 + .85 * Math.max(0, Math.cos((q.a - t * (.25 + e * .5) + q.pi * .17) * Math.PI * 2)) ** 3;
+      else if (mode === 1) s = (q.pi + beatN) % 2 ? .95 : .18;
+      else if (mode === 2) s = .2 + .8 * (.5 + .5 * Math.sin(q.x * .45 - t * (1.5 + e * 2)));
+      else s = ((Math.floor(q.x * 7 + q.z * 13) + ((t * 8) | 0)) % 9 === 0) ? 1 : .2;
+      const col = strobe ? [255, 255, 255] : p[(q.pi + (q.side > 1 ? 1 : 0)) % 2];
+      const [px, py] = P2(q.x, Y + .3, q.z);
+      c2.fillStyle = rgb(col, Math.min(1, s * base)); c2.fillRect(px, py, 1, 1);
     }
-    ledG.putImageData(ledImg, 0, 0);
-    c2.imageSmoothingEnabled = false;
-    c2.drawImage(led, SCR.x, SCR.y, LED.w * 2, LED.h * 2);
-    /* An LED wall is a grid of dots, not stripes: every other column and row dimmed, so it reads as
-       a matrix up close and as a picture from the lawn. */
-    c2.globalCompositeOperation = 'destination-out';
-    c2.fillStyle = 'rgba(0,0,0,.22)';
-    for (let x = SCR.x + 1; x < SCR.x + LED.w * 2; x += 2) c2.fillRect(x, SCR.y, 1, LED.h * 2);
-    for (let y = SCR.y + 1; y < SCR.y + LED.h * 2; y += 2) c2.fillRect(SCR.x, y, LED.w * 2, 1);
-    c2.globalCompositeOperation = 'lighter';
   }
 
   const P2 = (x, y, z) => [Math.round(sx(x)), Math.round(sy(y, z))];
@@ -1093,9 +1119,13 @@ export function createStage(view, opts = {}){
       // A wash across the deck in the song's colour, breathing on the beat.
       const [wx, wy] = P2(0, -7, DECK.z);
       pool(lg, wx, wy, 95, mixc(p[0], [255, 255, 255], .35), (.18 + .32 * L) * dark * (.75 + .25 * pulse), .55);
-      // The screen throws its colour onto the back of the deck.
-      const [sx2, sy2] = P2(0, -13, DECK.z);
-      pool(lg, sx2, sy2, 70, mixc(p[0], p[1], .5), .3 * L * dark, .4);
+      // The pods throw their colour onto the back wall behind them and the deck under them.
+      for (const P of PODS){
+        const [wx2, wy2] = P2(P.cx, -14.7, P.cz);
+        pool(lg, wx2, wy2, 26 * RIG.podR / 2.2, p[P.pi % 2], .32 * L * dark * (.7 + .3 * pulse), .8);
+      }
+      const [sx2, sy2] = P2(0, -12, DECK.z);
+      pool(lg, sx2, sy2, 70, mixc(p[0], p[1], .5), .22 * L * dark, .4);
       // A key light on every player, so the band is the brightest thing in the room.
       for (const [, m] of PLAYERS){
         const [px, py] = P2(m.x, m.y, m.z);
@@ -1144,6 +1174,21 @@ export function createStage(view, opts = {}){
           const ang = Math.sin(t * (.25 + e * .4) + i * 1.3) * .5 + (i - 2.5) * .12;
           cone(bg, base, [base[0] + Math.sin(ang) * 90, base[1] - Math.cos(ang) * 120], 8, p[(i + beatN + 1) % 2], beamA * (e - .3) * 1.8);
         }
+      }
+      /* The pods' movers: out of the bottom corner of each diamond down onto the band, and out of the
+         side corners in a fan that opens wider as the song builds and reaches the crowd at the top. */
+      for (const P of PODS){
+        const sw = Math.sin(t * sp * .8 + P.pi * 1.3), out = P.cx >= 0 ? 1 : -1;
+        const fanned = [[P.C[2], P.cx + sw * (2 + e * 4), -6 + P.pi % 3 * 1.5, DECK.z],
+          [P.C[1], P.C[1][0] + (3 + e * 9) * (.6 + .4 * Math.sin(t * sp + P.pi)), e > .55 ? 6 + sw * 8 : -3, e > .55 ? 0 : DECK.z],
+          [P.C[3], P.C[3][0] - (3 + e * 9) * (.6 + .4 * Math.sin(t * sp + P.pi + 2)), e > .55 ? 6 - sw * 8 : -3, e > .55 ? 0 : DECK.z]];
+        fanned.forEach(([[ax, az], tx, ty, tz], k) => {
+          if (k > 0 && e < .25) return;
+          const col = p[(P.pi + k + beatN) % 2], a = beamA * (k ? .9 : .75) * (.7 + .5 * pulse) * (out === (k === 1 ? 1 : -1) ? 1.1 : 1);
+          const b = P2(tx, ty, tz);
+          cone(bg, P2(ax, RIG.podY + .2, az - .55), b, 4 + e * 4, col, a);
+          pool(lg, b[0], b[1], 10 + e * 4, col, a * 4);
+        });
       }
       if (now < st.segueUntil){
         const f = 1 - (st.segueUntil - now) / 1500;
@@ -1216,13 +1261,23 @@ export function createStage(view, opts = {}){
       g.setTransform(1, 0, 0, 1, 0, 0);
     }
 
-    // 5. WHAT GLOWS: the screen, lenses, bulbs, phones, and the beams in their haze.
+    // 5. WHAT GLOWS: the pods, lenses, bulbs, phones, and the beams in their haze.
     eg.setTransform(1, 0, 0, 1, 0, 0);
     eg.globalCompositeOperation = 'source-over';
     eg.clearRect(0, 0, visW, visH);
     eg.translate(-camX, -camY);
     eg.globalCompositeOperation = 'lighter';
-    if (RIG.screen) screen(eg, p, t, pulse);
+    podPixels(eg, p, t, pulse, beatN, strobe);
+    // The pods' lenses: the movers under each diamond, lit in the colour of their beam.
+    for (const P of PODS){
+      [P.C[2], P.C[1], P.C[3], [P.cx, P.cz + .55]].forEach(([x, z], k) => {
+        const [px, py] = P2(x, RIG.podY + .2, z - .55);
+        const col = strobe ? [255, 255, 255] : p[(P.pi + k + beatN) % 2];
+        const on = (strobe ? 1 : (.3 + .7 * L) * (.6 + .4 * pulse)) * (show || L > .1 ? 1 : .3);
+        eg.fillStyle = rgb(col, on); eg.fillRect(px, py, 1, 1);
+        if (k < 3 && on > .55 && night > .3 && (P.pi + k + beatN) % 3 === 0) glint(eg, px, py, col, on * night * .8, 2);
+      });
+    }
     FIX.forEach((fx, i) => {
       const [px, py] = P2(fx, RIG.fixY, RIG.fixZ);
       const col = strobe ? [255, 255, 255] : p[(i + beatN) % 2];
@@ -1323,12 +1378,6 @@ export function createStage(view, opts = {}){
     eg.drawImage(beams, 0, 0);
     g.globalCompositeOperation = 'lighter';
     g.drawImage(emit, 0, 0);
-    // The wall is the biggest light in the room; at full strength in the bloom it fogs the band out.
-    if (RIG.screen){
-      eg.globalCompositeOperation = 'destination-out';
-      eg.fillStyle = 'rgba(0,0,0,.55)';
-      eg.fillRect(SCR.x - camX, SCR.y - camY, LED.w * 2, LED.h * 2);
-    }
     eg.globalCompositeOperation = 'source-over';
     drawSky(t, night, p, show, L);
     g.globalCompositeOperation = 'source-over';

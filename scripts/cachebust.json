@@ -2823,8 +2823,8 @@
       "sha": "30180c7247719f6c"
     },
     "stage.js": {
-      "v": "10",
-      "sha": "921da04bb6fe4950"
+      "v": "11",
+      "sha": "e3f13345ceddd26f"
     },
     "venues.js": {
       "v": "2",
@@ -2937,8 +2937,8 @@
       "sha": "aa371adb6a4d1640"
     },
     "rooms.js": {
-      "v": "2",
-      "sha": "0ea6f22b32981f04"
+      "v": "3",
+      "sha": "36afe06c5ac503d0"
     }
   },
   "wrestling/ring3d/boot.js": {
