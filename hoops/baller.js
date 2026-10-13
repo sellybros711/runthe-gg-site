@@ -1766,6 +1766,49 @@ function sharpRes(o){
   var s = Math.max(1, Math.round(o.scale || 4));
   return s <= 4 ? Math.max(resFor(o), s) : s % 4 === 0 ? 4 : s % 3 === 0 ? 3 : 4;
 }
+/* A HEAD AND SHOULDERS PORTRAIT for a chip (the top bar, the profile sheet).
+   The figure is traced at the finest resolution in the worker, cut square on
+   the face, and scaled down to the exact device pixels the chip covers with
+   high quality smoothing, so a 34px chip on a phone is about a hundred real
+   pixels of his face, hat and all, rather than sixteen fat cells. Always the
+   default height, so the head sits in the same square for everybody.
+   cb(dataUrl), cached by look and size. */
+var HEADS = {}, HKEYS = [];
+function headUrl(look, opts, css, cb){
+  var o = Object.assign({}, opts || {}, { res: 4, frame: 0, shadow: false, pose: 'stand' });
+  var lk = Object.assign({}, look || {}); delete lk.ht; delete lk.wt;
+  var dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1, px = Math.max(16, Math.round(css * Math.min(3, dpr)));
+  var k = JSON.stringify([normal(lk), o.c1, o.c2, o.num, o.ctx || '', wearKey(o), cwearKey(o), px]);
+  if (HEADS[k]) { cb(HEADS[k]); return; }
+  paintAsync(lk, o, function(g){
+    if (!g) return;
+    var res = 4, w = g.w, h = g.h, top = -1;
+    var on = function(x, y){ return g.d[(y * w + x) * 4 + 3]; };
+    for (var y = 0; y < h && top < 0; y++) for (var x = 0; x < w; x++) if (on(x, y)) { top = y; break; }
+    if (top < 0) return;
+    /* the face: the widest run of the rows a little under the crown, so a
+       hat brim or a ponytail does not pull the frame off centre */
+    var l = w, r = 0;
+    for (var y2 = top + 3 * res; y2 < Math.min(h, top + 9 * res); y2++) for (var x2 = 0; x2 < w; x2++) if (on(x2, y2)) { if (x2 < l) l = x2; if (x2 > r) r = x2; }
+    var cx = r > l ? (l + r) / 2 : w / 2, S = 16 * res, sx = Math.round(cx - S / 2), sy = top - Math.round(1.2 * res);
+    var full = document.createElement('canvas'); full.width = w; full.height = h;
+    full.getContext('2d').putImageData(new ImageData(g.d, w, h), 0, 0);
+    /* halve while it is more than twice the target, then one last smooth step */
+    var src = full, s0x = sx, s0y = sy, sw = S;
+    while (sw / 2 >= px) {
+      var hv = document.createElement('canvas'); hv.width = hv.height = Math.round(sw / 2);
+      var hc = hv.getContext('2d'); hc.imageSmoothingEnabled = true; hc.imageSmoothingQuality = 'high';
+      hc.drawImage(src, s0x, s0y, sw, sw, 0, 0, hv.width, hv.height);
+      src = hv; s0x = 0; s0y = 0; sw = hv.width;
+    }
+    var cv = document.createElement('canvas'); cv.width = cv.height = px;
+    var c = cv.getContext('2d'); c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
+    c.drawImage(src, s0x, s0y, sw, sw, 0, 0, px, px);
+    var u = HEADS[k] = cv.toDataURL('image/png'); HKEYS.push(k);
+    if (HKEYS.length > 12) delete HEADS[HKEYS.shift()];
+    cb(u);
+  }, true);
+}
 var SHARP = {}, SKEYS = [], sharpN = 0;
 function sharpen(sid, sk, look, o){
   var t0 = Date.now();
@@ -2088,7 +2131,7 @@ var API = {
   CAM: { pitch: 30, yaw: DEF_YAW },
   SETS: Object.keys(SETS).reduce(function(m, k){ m[k] = SETS[k].length; return m; }, {}), isFrame: function(p){ return !!ANIM[p]; },
   DEFAULT: DEFAULT, normal: normal, lookFor: lookFor, hash: hash, inkOn: inkOn, contrast: contrast,
-  paint: paint, canvas: canvas, url: url, img: img, breathe: breathe, live: live, warm: warm, _gridData: gridData,
+  paint: paint, canvas: canvas, url: url, img: img, headUrl: headUrl, breathe: breathe, live: live, warm: warm, _gridData: gridData,
   prop: prop, propCanvas: propCanvas, paintAsync: paintAsync, gridCanvas: toCanvas, ramp: ramp, PROPS: Object.keys(PROP_SIZE),
   WEAR_KINDS: WEAR_KINDS, wearNorm: wearNorm, CWEAR_KINDS: CWEAR_KINDS, cwearNorm: cwearNorm,
   /* 1 is the first version with the street look. A page that needs it pins

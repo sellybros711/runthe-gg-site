@@ -108,6 +108,7 @@
   #s-board .bd-tab.on{box-shadow:inset 0 -3px 0 #a8460e,inset 0 2px 0 rgba(255,255,255,.25);}
 
   #s-home #b-start:disabled{background:#202a4a;color:#8fa0d6;box-shadow:0 -3px 0 0 #2d3a66,-3px 0 0 0 #2d3a66,3px 0 0 0 #2d3a66,0 3px 0 0 #2d3a66;}
+
 </style>
 
 <style>
@@ -2580,6 +2581,113 @@
     .dock{left:50%;transform:translateX(-50%);max-width:692px;border-radius:14px 14px 0 0;
       border:1px solid var(--line);border-bottom:0;}
   }
+  /* ══ THE MENUS, RUN THE TOUR'S STRUCTURE IN THE KIT'S MATERIAL ══════════
+     Run The Tour's menus are a few patterns used everywhere: a sheet with its
+     close pinned top right, small uppercase labels over grouped cards of
+     rows (icon, title, a line under it, a chevron), a segmented track with
+     the active choice a filled pill, and stat tiles split by hairlines. This
+     page keeps the kit's square stepped frame and takes those patterns, so
+     every sheet reads as one product with the front page. */
+  .sheet{background:rgba(4,6,12,.78);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);}
+  .sheet .panel{border-radius:0;border:0;background:linear-gradient(180deg,#151b2c,#0c1019 60%);
+    box-shadow:0 -3px 0 0 #2d3a66,0 -6px 0 0 #05070d,inset 0 2px 0 rgba(255,255,255,.05);
+    padding-top:14px;scrollbar-width:thin;}
+  @media(min-width:640px){.sheet .panel{border-radius:0;
+    box-shadow:0 -3px 0 0 #2d3a66,0 3px 0 0 #2d3a66,-3px 0 0 0 #2d3a66,3px 0 0 0 #2d3a66,0 10px 0 0 #05070d,0 30px 60px rgba(0,0,0,.6);}}
+  /* the grab bar a phone sheet wears */
+  .sheet .panel:before{content:'';display:block;width:44px;height:4px;margin:0 auto 10px;background:#2d3a66;}
+  @media(min-width:640px){.sheet .panel:before{display:none;}}
+  .sheet .panel>h2:first-of-type{font-family:var(--display);text-transform:uppercase;letter-spacing:.02em;font-size:26px;
+    line-height:1.05;margin:0 48px 12px 0;}
+  .sheet .panel>h2 .sub{font-family:var(--body);text-transform:none;letter-spacing:0;font-size:13px;color:var(--mut);font-weight:600;}
+  /* THE CLOSE, PINNED. It rides the top of the panel as it scrolls, so the
+     way out of a long sheet is never a scroll away. It presses the sheet's own
+     Close button, so every close keeps doing exactly what it did. */
+  .sh-x{position:sticky;top:0;float:right;z-index:4;width:38px;height:38px;min-height:0;margin:-2px -2px 0 8px;padding:0;
+    display:flex;align-items:center;justify-content:center;border:0;border-radius:0;cursor:pointer;color:#dfe5f5;
+    background:#1d2440;box-shadow:inset 0 0 0 2px #2d3a66,inset 0 2px 0 rgba(255,255,255,.08),0 3px 0 #05070d;}
+  .sh-x:before,.sh-x:after{content:'';position:absolute;width:16px;height:3px;background:currentColor;}
+  .sh-x:before{transform:rotate(45deg);}
+  .sh-x:after{transform:rotate(-45deg);}
+  .sh-x:active{transform:translateY(2px);box-shadow:inset 0 0 0 2px #2d3a66,0 1px 0 #05070d;}
+  .sheet .panel .btnrow button{border-radius:0;}
+
+  /* the top bar's menu button */
+  .abmenu{flex:0 0 auto;width:38px;height:38px;min-height:0;padding:0 10px;display:flex;flex-direction:column;justify-content:center;gap:4px;
+    background:rgba(255,255,255,.05);border:1px solid rgba(232,237,247,.14);border-radius:10px;cursor:pointer;}
+  .abmenu i{display:block;height:2px;background:#dfe5f5;border-radius:1px;}
+  .abmenu:active{opacity:.7;}
+  .appbar .abmenu+.abprof{margin-left:-4px;}
+
+  /* ── the menu ── */
+  .mnu{display:block;}
+  .mn-g{margin:0 0 16px;break-inside:avoid;}
+  .mn-h{font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#8fa0d6;margin:0 0 8px 2px;}
+  .mn-card{background:#111727;margin:0 3px;box-shadow:0 -3px 0 0 #232b44,0 3px 0 0 #232b44,-3px 0 0 0 #232b44,3px 0 0 0 #232b44,0 6px 0 0 #05070d;}
+  .mn-it{appearance:none;display:flex;align-items:center;gap:12px;width:100%;min-height:54px;padding:9px 12px;margin:0;border:0;border-radius:0;
+    border-top:1px solid rgba(255,255,255,.06);background:none;color:var(--ink);text-align:left;cursor:pointer;font:inherit;-webkit-tap-highlight-color:transparent;}
+  .mn-card>.mn-it:first-child{border-top:0;}
+  .mn-it:hover{background:rgba(255,255,255,.04);filter:none;}
+  .mn-it:active{background:rgba(255,255,255,.08);}
+  .mn-ic{flex:0 0 auto;width:34px;height:34px;display:flex;align-items:center;justify-content:center;
+    background:color-mix(in srgb,var(--mc,#ff7a1a) 16%,#0b0f1a);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--mc,#ff7a1a) 45%,#0b0f1a);}
+  .mn-ic svg{width:18px;height:18px;fill:none;stroke:var(--mc,#ff7a1a);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+  .mn-tx{flex:1 1 auto;min-width:0;}
+  .mn-t{display:block;font-size:14.5px;font-weight:800;line-height:1.2;}
+  .mn-s{display:block;font-size:12px;font-weight:600;color:var(--mut);line-height:1.3;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .mn-b{flex:0 0 auto;font-size:10.5px;font-weight:900;letter-spacing:.04em;padding:4px 8px;background:#f2c14e;color:#241a05;white-space:nowrap;}
+  .mn-b.done{background:rgba(52,211,153,.16);color:#6ee7b7;}
+  .mn-ch{flex:0 0 auto;width:8px;height:8px;border-right:2px solid #6f7ba3;border-top:2px solid #6f7ba3;transform:rotate(45deg);margin-right:4px;}
+  .mn-tog{flex:0 0 auto;position:relative;width:42px;height:24px;background:#232b44;box-shadow:inset 0 2px 0 rgba(0,0,0,.4);}
+  .mn-tog:after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;background:#8fa0d6;transition:left .15s,background .15s;}
+  .mn-tog.on{background:#7a5a10;}
+  .mn-tog.on:after{left:21px;background:#f2c14e;}
+  .mn-links{display:flex;flex-wrap:wrap;gap:6px 16px;padding:2px 4px;}
+  .mn-links a{font-size:13px;font-weight:700;color:#aeb8d6;text-decoration:underline;text-decoration-color:rgba(255,255,255,.25);text-underline-offset:3px;}
+  @media(min-width:700px){ #menusheet .panel{max-width:760px;} .mnu{column-count:2;column-gap:18px;} #menusheet .mn-close{display:none;} }
+
+  /* ── the profile hero ── */
+  .phero{clear:both;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;align-items:center;margin:8px 0 14px;padding:14px;
+    background:radial-gradient(120% 140% at 0% 0%,color-mix(in srgb,var(--avc,#2a3350) 34%,transparent),transparent 60%),#111727;
+    margin-left:3px;margin-right:3px;box-shadow:0 -3px 0 0 var(--avm,#2d3a66),0 3px 0 0 var(--avm,#2d3a66),-3px 0 0 0 var(--avm,#2d3a66),3px 0 0 0 var(--avm,#2d3a66),0 7px 0 0 #05070d;}
+  .ph-av{grid-row:1 / span 3;position:relative;width:84px;height:84px;padding:0;border:0;cursor:pointer;
+    background:radial-gradient(circle at 50% 35%,var(--avc,#2a3350),#0b0f18 75%);border-radius:50%;
+    box-shadow:inset 0 0 0 3px var(--avm,#8b6a4a),0 0 0 2px #05070d,0 0 18px color-mix(in srgb,var(--avm,#8b6a4a) 45%,transparent);overflow:hidden;min-height:0;}
+  .ph-av img{width:84px;height:84px;display:block;}
+  .ph-name{font-family:var(--display);font-size:24px;line-height:1;text-transform:uppercase;letter-spacing:.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .ph-rank{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);}
+  .ph-rank b{color:#10131d;background:var(--avm,#8b6a4a);padding:3px 8px;letter-spacing:.1em;}
+  .ph-bar{height:8px;background:#0a0e18;box-shadow:inset 0 0 0 1px #232b44,inset 0 2px 0 rgba(0,0,0,.5);position:relative;}
+  .ph-bar i{position:absolute;left:1px;top:1px;bottom:1px;width:var(--rf,0%);background:linear-gradient(90deg,color-mix(in srgb,var(--avm) 70%,#000),var(--avm));}
+  .ph-foot{font-size:11px;color:var(--mut);margin-top:-2px;}
+  .ph-pills{grid-column:1 / -1;display:flex;gap:8px;margin-top:8px;}
+  .ph-pill{flex:1 1 0;min-height:36px;padding:0 10px;border:0;border-radius:0;font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;
+    color:#f2c14e;background:rgba(242,193,78,.1);box-shadow:inset 0 0 0 2px #8a6a1c;}
+  .ph-pill.teal{color:#5eead4;background:rgba(45,212,191,.08);box-shadow:inset 0 0 0 2px #1f7a6e;}
+  .ph-pill:active{transform:translateY(2px);}
+  #sheet .pf-pcard{display:none !important;}
+
+  /* ── stat tiles split by hairlines, and the tabs as a track ── */
+  #sheet .pstats{gap:2px;background:#232b44;padding:2px;margin:12px 3px;}
+  #sheet .pstat{border:0;border-radius:0;background:#111727;}
+  #sheet .pstat b{font-size:20px;}
+  #sheet .ptabs{gap:0;padding:3px;background:#0a0e18;box-shadow:inset 0 0 0 2px #232b44,inset 0 3px 0 rgba(0,0,0,.4);}
+  #sheet .ptab{border:0;border-radius:0;background:transparent;min-height:38px;font-weight:800;letter-spacing:.03em;}
+  #sheet .ptab.on{background:#f2c14e;color:#241a05;box-shadow:inset 0 2px 0 rgba(255,255,255,.35),0 2px 0 #05070d;}
+  #sheet .ptab.on span{opacity:1;}
+  #sheet .pid,#sheet .acct{border-radius:0;}
+  #sheet .plist li.plisthead{color:#8fa0d6;letter-spacing:.16em;}
+  #s-board .bd-seg button.on{background:#f2c14e;color:#241a05;box-shadow:inset 0 2px 0 rgba(255,255,255,.35),0 2px 0 #05070d;}
+  #s-board .bd-tab{font-weight:800;}
+
+  /* ── the modes sheet, its tiles as menu rows ── */
+  #modesheet .mtile{border-radius:0;border:0;margin:0 3px;
+    box-shadow:0 -3px 0 0 color-mix(in srgb,var(--c,#2d3a66) 50%,#1a2033),0 3px 0 0 color-mix(in srgb,var(--c,#2d3a66) 50%,#1a2033),-3px 0 0 0 color-mix(in srgb,var(--c,#2d3a66) 50%,#1a2033),3px 0 0 0 color-mix(in srgb,var(--c,#2d3a66) 50%,#1a2033),0 6px 0 0 #05070d;}
+  #modesheet .mw-grid{gap:14px;}
+  #modesheet .mtile .mt-chip{border-radius:0;}
+  .mw-pro .td-end button{border-radius:0;border:0;box-shadow:inset 0 0 0 2px #2d3a66;background:#141a2b;min-height:34px;}
+  .mw-pro .td-end button:hover{box-shadow:inset 0 0 0 2px #8fa0d6;}
+  @media (prefers-reduced-motion:reduce){ .mn-tog:after{transition:none;} }
 </style>
 </head>
 <body>
@@ -2606,6 +2714,7 @@
      is the way home from every screen; the button beside it is the career
      record, which is why neither of those is a button on a screen any more. -->
 <div class="appbar">
+  <button class="abmenu" id="ab-menu" type="button" aria-label="Menu" aria-expanded="false"><i></i><i></i><i></i></button>
   <button class="abprof" id="ab-prof" type="button" aria-label="Your profile">
     <span class="abav" id="ab-av"><img src="mark.png?v=1" width="22" height="22" alt="" decoding="async"><i class="abrepf" id="ab-repf"></i></span>
     <span class="abwho"><b id="ab-name">Sign in</b><span id="ab-rank">Walk-On</span></span>
@@ -3428,9 +3537,26 @@
   </div>
 </div>
 
+<!-- ── THE MENU ──────────────────────────────────────────────────────────
+     Run The Tour's: every door in the game in one sheet, in groups, each a
+     row with an icon, what it is, one line on why, and a chevron. Built by
+     renderMenu, because half the rows say something live (today's puzzles,
+     the streak, the sound switch, who is signed in). -->
+<div class="sheet" id="menusheet" role="dialog" aria-modal="true" aria-labelledby="mnu-h">
+  <div class="panel">
+    <h2 id="mnu-h">Menu</h2>
+    <div class="mnu" id="mnu"></div>
+    <div class="btnrow mn-close" style="margin-top:14px"><button id="b-mnu-x" style="flex:1">Close</button></div>
+  </div>
+</div>
+
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="prof-h">
   <div class="panel">
-    <h2 id="prof-h">Career <span class="sub" id="prof-sub"></span></h2>
+    <h2 id="prof-h">Profile <span class="sub" id="prof-sub"></span></h2>
+
+    <!-- THE HERO, Run The Tour's profile header: his face, the name, the
+         Floor Rep rank and how far to the next one. Drawn by renderHero. -->
+    <div class="phero" id="pf-hero"></div>
 
     <!-- WHO THIS IS: your jersey, your name and whether you are Pro, drawn by
          renderIdentity. The jersey is the one piece of the profile you wear, so
@@ -3559,7 +3685,7 @@
 <script src="courts.js?v=2"></script>
 <script src="modes.js?v=9"></script>
 <script src="career.js?v=48"></script>
-<script src="baller.js?v=27"></script>
+<script src="baller.js?v=28"></script>
 <script src="economy.js?v=4"></script>
 <script src="catalog.js?v=5"></script>
 <script src="idles.js?v=2"></script>
@@ -3957,6 +4083,7 @@ function renderCoins(screen){
   if (!on) return;
   var n = 0; try { n = W.wallet.balance(); } catch (e) {}
   $('ab-cn').textContent = n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1) + 'M' : n.toLocaleString('en-US');
+  if (typeof fitBar === 'function') fitBar();
   if (n > abShown && abShown) { cp.classList.remove('bump'); void cp.offsetWidth; cp.classList.add('bump'); }
   abShown = n;
   if (!cp.onclick) cp.onclick = function(){ window.RTF_CAREER_UI.openLocker('shop'); };
@@ -3988,31 +4115,190 @@ function renderProfileChip(keepRep){
   av.style.setProperty('--avc', p && p.c1 ? p.c1 : '#2a3350');
   av.style.setProperty('--rf', Math.round(100 * (rp ? rp.frac : 0)) + '%');
   var B2 = window.RTF_BALLER, W = window.RTF_WARD;
-  if (!B2 || !B2.paintAsync) return;
+  if (!B2 || !B2.headUrl) return;
   /* no player yet: a player in the house colours, not a second logo */
   if (!p) p = { look: B2.DEFAULT, c1: '#e8660f', c2: '#1d1f2b', num: 0, none: true };
-  var o = { c1: p.c1, c2: p.c2, num: p.num || 0, pose: 'stand', res: 2, frame: 0, shadow: false };
+  var o = { c1: p.c1, c2: p.c2, num: p.num || 0 };
   if (!p.none && W && W.dress && W.loadout) { try { o = W.dress(o, 'street', W.loadout('street')); } catch (e) {} }
-  /* the default height, so the head always sits in the same square */
-  var look = Object.assign({}, p.look); delete look.ht; delete look.wt;
-  var key = JSON.stringify([look, o]);
+  var key = JSON.stringify([p.look, o]);
   if (key === avKey) return;
   avKey = key;
-  B2.paintAsync(look, o, function(g){
-    if (!g || avKey !== key) return;
-    var res = 2, w = g.w, top = -1, sx = 0, n = 0;
-    for (var y = 0; y < g.h && top < 0; y++) for (var x = 0; x < w; x++) if (g.d[(y * w + x) * 4 + 3]) { top = y; break; }
-    if (top < 0) return;
-    for (var y2 = top; y2 < top + 7 * res && y2 < g.h; y2++) for (var x2 = 0; x2 < w; x2++) if (g.d[(y2 * w + x2) * 4 + 3]) { sx += x2; n++; }
-    var cx = n ? Math.round(sx / n) : w / 2, S = 16 * res;
-    var full = document.createElement('canvas'); full.width = w; full.height = g.h;
-    full.getContext('2d').putImageData(new ImageData(g.d, w, g.h), 0, 0);
-    var cv = document.createElement('canvas'); cv.width = S; cv.height = S;
-    cv.getContext('2d').drawImage(full, Math.round(cx - S / 2), top - res, S, S, 0, 0, S, S);
+  B2.headUrl(p.look, o, 34, function(u){
+    if (avKey !== key) return;
     var img = av.querySelector('img');
-    if (img) { img.className = 'face'; img.src = cv.toDataURL('image/png'); }
+    if (img) { img.className = 'face'; img.src = u; }
   });
 }
+/* ── THE MENU ─────────────────────────────────────────────────────────────
+   Run The Tour's ≡: every door in the game, in groups. Each row presses the
+   door that already exists (a button, a sheet, another file's open()), so the
+   menu never grows a second way to do anything. Rows that cannot work right
+   now (a module missing) are simply not drawn. */
+var MN_ICO = {
+  career: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.2 4.2-6.3 8-6.3s7 2.1 8 6.3"/>',
+  draft: '<rect x="3" y="4" width="18" height="16"/><path d="M3 9h18M9 4v16"/>',
+  daily: '<rect x="3" y="5" width="18" height="16"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  fix: '<path d="M11 6 5 12l6 6M19 6l-6 6 6 6"/>',
+  pass: '<circle cx="5" cy="12" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="19" cy="18" r="2"/><path d="M7 11l10-4M7 13l10 4"/>',
+  more: '<circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/>',
+  conq: '<path d="M3 18 5 7l4 5 3-7 3 7 4-5 2 11z"/>',
+  prof: '<circle cx="12" cy="9" r="4"/><path d="M5 21c1.3-3.5 4-5.3 7-5.3s5.7 1.8 7 5.3"/><circle cx="12" cy="12" r="10"/>',
+  badge: '<circle cx="12" cy="9" r="6"/><path d="M8.5 14 7 22l5-3 5 3-1.5-8"/>',
+  card: '<rect x="5" y="2" width="14" height="20"/><circle cx="12" cy="10" r="3"/><path d="M8 18h8"/>',
+  fpass: '<path d="M4 6h16v4a2 2 0 0 0 0 4v4H4v-4a2 2 0 0 0 0-4z"/><path d="M14 6v12"/>',
+  flame: '<path d="M12 22c4 0 7-3 7-7 0-4-3-6-4-10-2 2-3 4-3 6-1-1-2-2-2-4-3 3-5 6-5 8 0 4 3 7 7 7z"/>',
+  shop: '<path d="M4 8h16l-1 13H5z"/><path d="M8 8V6a4 4 0 0 1 8 0v2"/>',
+  shirt: '<path d="M8 3 3 6l2 5 3-1v11h8V10l3 1 2-5-5-3a4 4 0 0 1-8 0z"/>',
+  board: '<path d="M4 20V12M10 20V4M16 20v-6M22 20H2"/>',
+  rules: '<path d="M3 5.2h6a3 3 0 0 1 3 3v11a2.4 2.4 0 0 0-2.4-2.4H3zM21 5.2h-6a3 3 0 0 0-3 3v11a2.4 2.4 0 0 1 2.4-2.4H21z"/>',
+  sound: '<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/>',
+  acct: '<rect x="4" y="10" width="16" height="11"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+  home: '<path d="M3 11 12 3l9 8M5 9v12h14V9"/>'
+};
+function mnRow(r){
+  return '<button type="button" class="mn-it" data-mn="' + r.id + '" style="--mc:' + (r.c || '#ff7a1a') + '">'
+    + '<span class="mn-ic"><svg viewBox="0 0 24 24" aria-hidden="true">' + (MN_ICO[r.ico] || '') + '</svg></span>'
+    + '<span class="mn-tx"><span class="mn-t">' + esc(r.t) + '</span>' + (r.s ? '<span class="mn-s">' + esc(r.s) + '</span>' : '') + '</span>'
+    + (r.b ? '<span class="mn-b' + (r.bDone ? ' done' : '') + '">' + esc(r.b) + '</span>' : '')
+    + (r.tog != null ? '<span class="mn-tog' + (r.tog ? ' on' : '') + '" role="switch" aria-checked="' + !!r.tog + '"></span>' : '<span class="mn-ch" aria-hidden="true"></span>')
+    + '</button>';
+}
+var MN_GO = {};
+function renderMenu(){
+  var box = $('mnu');
+  if (!box) return;
+  var st = A && A.state ? A.state() : null, signed = !!(st && st.signedIn);
+  var MU = window.RTF_MODES_UI, CU = window.RTF_CAREER_UI, CD = window.RTF_CARD, DU = window.RTF_DAILY_UI, PU = window.RTF_PASS_UI, SN = window.RTF_SOUND;
+  var cur = null; try { cur = CU && CU.cardPlayer ? CU.cardPlayer() : null; } catch (e) {}
+  var groups = [], go = MN_GO = {};
+  var add = function(g, r, fn){ if (!fn) return; go[r.id] = fn; g.rows.push(r); };
+  var clickId = function(id){ return $(id) ? function(){ var b = $(id); if (b && !b.disabled) b.click(); } : null; };
+  var home = function(fn){ return function(){ if (!$('s-home').classList.contains('active')) { show('s-home'); renderHome(); } fn(); }; };
+
+  var play = { h: 'Play', rows: [] };
+  add(play, { id: 'career', ico: 'career', c: '#ff7a1a', t: 'Career', s: cur ? 'Carry on with ' + (cur.name || 'your player') : 'Build a player. Live an NBA life.' }, CU && CU.open ? function(){ CU.open(); } : clickId('b-career'));
+  add(play, { id: 'draft', ico: 'draft', c: '#60a5fa', t: 'Classic draft', s: 'Five spins. One cap. 82 games.' }, home(function(){ var b = $('b-resume'); if (b && !b.hidden && getComputedStyle(b).display !== 'none') b.click(); else { var s0 = $('b-start'); if (s0 && !s0.disabled) s0.click(); } }));
+  add(play, { id: 'daily', ico: 'daily', c: '#f2c14e', t: 'Daily Draft', s: 'Same five spins for everyone today' }, home(function(){ var b = $('b-daily-go'); if (b) b.click(); }));
+  add(play, { id: 'fix', ico: 'fix', c: '#2dd4bf', t: 'Fix History', s: 'Today’s puzzle. One real team.' }, MU && MU.openFix ? function(){ MU.openFix(); } : null);
+  add(play, { id: 'ps', ico: 'pass', c: '#fb923c', t: 'Six Passes', s: 'Today’s puzzle. Real teammates.' }, MU && MU.openPasses ? function(){ MU.openPasses(); } : null);
+  add(play, { id: 'cq', ico: 'conq', c: '#facc15', t: 'Conquest', s: 'Winners stay on' }, MU && MU.openConquest ? function(){ MU.openConquest(); } : null);
+  add(play, { id: 'more', ico: 'more', c: '#c084fc', t: 'More ways to play', s: 'One Franchise, Decades, Endless' }, home(function(){ openModes(); }));
+  groups.push(play);
+
+  var prog = { h: 'Progress', rows: [] };
+  var rp = repLast || myRepNow();
+  add(prog, { id: 'prof', ico: 'prof', c: '#8fa0d6', t: 'Profile', s: 'Floor Rep ' + (rp && rp.name ? rp.name : 'Walk-On') + ' · your record' }, function(){ openProfile(); });
+  add(prog, { id: 'badges', ico: 'badge', c: '#f2c14e', t: 'Badges', s: 'Every one you have earned, and what is left' }, function(){ openProfile(); showProfileTab('badges'); });
+  if (cur) add(prog, { id: 'card', ico: 'card', c: '#f2c14e', t: 'Player card', s: 'His look, his nameplate, his backdrop' }, CD && CD.openMine ? function(){ CD.openMine(); } : null);
+  add(prog, { id: 'fp', ico: 'fpass', c: '#a78bfa', t: 'Floor Pass', s: 'Sixty tiers this season' }, PU && PU.open ? function(){ PU.open(); } : null);
+  add(prog, { id: 'dy', ico: 'flame', c: '#fb923c', t: 'Daily rewards', s: signed ? 'Streak, the spin and quests' : 'Sign in and every day pays' }, DU && DU.open ? function(){ DU.open(); } : null);
+  groups.push(prog);
+
+  var shop = { h: 'Shop', rows: [] };
+  add(shop, { id: 'shop', ico: 'shop', c: '#f2c14e', t: 'Packs', s: 'Every piece comes from a pack' }, CU && CU.openLocker ? function(){ CU.openLocker('shop'); } : null);
+  add(shop, { id: 'closet', ico: 'shirt', c: '#5eead4', t: 'Closet', s: 'Dress him off court and on' }, CU && CU.openLocker ? function(){ CU.openLocker('street'); } : null);
+  groups.push(shop);
+
+  var rec = { h: 'Records', rows: [] };
+  add(rec, { id: 'board', ico: 'board', c: '#60a5fa', t: 'Leaderboards', s: 'Every mode, today and all time' }, function(){ openBoard(); });
+  groups.push(rec);
+
+  var help = { h: 'Help', rows: [] };
+  add(help, { id: 'howto', ico: 'rules', c: '#8fa0d6', t: 'How to play', s: 'The rules, folded at the foot of the front page' }, home(function(){ var b = $('b-home-howto'); if (b) b.click(); }));
+  groups.push(help);
+
+  var acct = { h: 'Account', rows: [] };
+  add(acct, { id: 'acct', ico: 'acct', c: signed ? '#34d399' : '#ff7a1a', t: signed ? (st.name || 'Signed in') : 'Sign in', s: signed ? 'Your account and where your career is kept' : 'Keep your career, coins and badges on every device' }, function(){ openProfile(); var a = $('pf-acct'); if (a) a.scrollIntoView({ block: 'center' }); });
+  groups.push(acct);
+
+  var set = { h: 'Settings', rows: [] };
+  if (SN && SN.setOn) add(set, { id: 'sound', ico: 'sound', c: '#8fa0d6', t: 'Sound', s: 'The crowd and the scoreboard in Career moments', tog: !!SN.on() }, function(){ SN.setOn(!SN.on()); renderMenu(); });
+  groups.push(set);
+
+  box.innerHTML = groups.filter(function(g){ return g.rows.length; }).map(function(g){
+    return '<section class="mn-g"><div class="mn-h">' + esc(g.h) + '</div><div class="mn-card">' + g.rows.map(mnRow).join('') + '</div></section>';
+  }).join('') + '<section class="mn-g"><div class="mn-h">About</div><div class="mn-links">'
+    + '<a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="/disclaimer.html">Disclaimer</a><a href="/ideas/">Ideas</a><a href="/">More games</a></div></section>';
+  box.querySelectorAll('[data-mn]').forEach(function(b){
+    b.onclick = function(){
+      var id = b.getAttribute('data-mn'), fn = MN_GO[id];
+      if (!fn) return;
+      if (id !== 'sound') closeMenu(true);
+      fn();
+    };
+  });
+}
+function openMenu(){
+  closeProfile(); closeModes(true);
+  renderMenu();
+  sheetReturn = document.activeElement;
+  $('menusheet').classList.add('open');
+  $('ab-menu').setAttribute('aria-expanded', 'true');
+  var first = $('mnu').querySelector('button');
+  if (first) first.focus();
+}
+function closeMenu(quiet){
+  if (!$('menusheet').classList.contains('open')) return;
+  $('menusheet').classList.remove('open');
+  $('ab-menu').setAttribute('aria-expanded', 'false');
+  if (!quiet && sheetReturn && sheetReturn.focus) { try { sheetReturn.focus(); } catch (e) {} }
+  sheetReturn = null;
+}
+
+/* ── THE PROFILE HERO ─────────────────────────────────────────────────────
+   His face big, the name, the Floor Rep tag and the bar to the next rank, and
+   two pills: his card and the Locker. The face opens the closet, the way the
+   golfer does on Run The Tour's profile. */
+var heroKey = '';
+function renderHero(){
+  var box = $('pf-hero');
+  if (!box) return;
+  var st = A && A.state ? A.state() : null, signed = !!(st && st.signedIn);
+  var CD = window.RTF_CARD, CU = window.RTF_CAREER_UI, B2 = window.RTF_BALLER, W = window.RTF_WARD;
+  var p = null; try { p = CD && CD.mine ? CD.mine() : null; } catch (e) {}
+  var rp = repLast = myRepNow(), idx = rp ? rp.idx : 0;
+  var m = CD && CD.metal ? CD.metal(idx) : { a: '#8b6a4a' };
+  var name = signed ? (st.name || 'No name yet') : 'Guest';
+  var rank = rp && rp.name ? rp.name : 'Walk-On';
+  var foot = !rp ? 'Earn badges to climb Floor Rep.' : rp.next ? (Math.max(0, rp.nextAt - rp.pts)) + ' pts to ' + rp.next : 'The top of Floor Rep.';
+  box.style.setProperty('--avm', m.a);
+  box.style.setProperty('--avc', p && p.c1 ? p.c1 : '#2a3350');
+  box.style.setProperty('--rf', Math.round(100 * (rp ? rp.frac : 0)) + '%');
+  box.innerHTML = '<button type="button" class="ph-av" id="ph-av" aria-label="Open the closet"><img alt="" src="mark.png?v=1" style="width:44px;height:44px;margin:20px;image-rendering:pixelated"></button>'
+    + '<div class="ph-name">' + esc(name) + '</div>'
+    + '<div class="ph-rank">Floor Rep <b>' + esc(rank) + '</b>' + (p && p.name ? '<span>' + esc(p.name) + (p.num != null ? ' #' + p.num : '') + '</span>' : '') + '</div>'
+    + '<div><div class="ph-bar"><i></i></div><div class="ph-foot" style="margin-top:5px">' + esc(foot) + '</div></div>'
+    + '<div class="ph-pills">' + (p ? '<button type="button" class="ph-pill" id="ph-card">Player card</button>' : '') + '<button type="button" class="ph-pill teal" id="ph-lock">Closet &amp; shop</button></div>';
+  var lk = $('ph-lock'), cd = $('ph-card'), av = $('ph-av');
+  if (lk) lk.onclick = function(){ if (CU && CU.openLocker) { closeProfile(true); CU.openLocker('street'); } else showProfileTab('locker'); };
+  if (cd) cd.onclick = function(){ if (CD && CD.openMine) CD.openMine(); };
+  if (av) av.onclick = function(){ if (CU && CU.openLocker) { closeProfile(true); CU.openLocker('street'); } };
+  if (!B2 || !B2.headUrl) return;
+  var look = p ? p.look : B2.DEFAULT, o = p ? { c1: p.c1, c2: p.c2, num: p.num || 0 } : { c1: '#e8660f', c2: '#1d1f2b', num: 0 };
+  if (p && W && W.dress && W.loadout) { try { o = W.dress(o, 'street', W.loadout('street')); } catch (e) {} }
+  var key = heroKey = JSON.stringify([look, o]);
+  B2.headUrl(look, o, 84, function(u){
+    if (heroKey !== key) return;
+    var img = box.querySelector('.ph-av img');
+    if (img) { img.removeAttribute('style'); img.src = u; }
+  });
+}
+
+/* EVERY SHEET'S CLOSE, PINNED TOP RIGHT. Added once per sheet at boot; it
+   presses the sheet's own Close so nothing about closing changes. */
+function pinCloses(){
+  document.querySelectorAll('.sheet .panel').forEach(function(pn){
+    if (pn.querySelector(':scope > .sh-x')) return;
+    var close = null;
+    pn.querySelectorAll('button').forEach(function(b){ if (!close && /^b-.*-x$/.test(b.id || '')) close = b; });
+    if (!close) return;
+    var x = document.createElement('button');
+    x.type = 'button'; x.className = 'sh-x'; x.setAttribute('aria-label', 'Close');
+    x.onclick = function(){ close.click(); };
+    pn.insertBefore(x, pn.firstChild);
+  });
+}
+
 /* THE WORDMARK STEPS ASIDE rather than being cut: with a chip and the coins
    beside it a phone has no room for the words, so the ball stays alone. */
 function fitBar(){
@@ -5679,7 +5965,7 @@ function renderIdentity(){
   var sub = (st && st.signedIn) ? kitOf(look.club).name + ' colors · #' + look.num
     : 'Sign in to earn arenas and club colors';
   el.innerHTML = '<span class="jz">' + jerseySvg(look.club, look.num) + '</span>' +
-    '<span class="who"><b>' + esc(name) + (info.pro ? '<i class="pro">PRO</i>' : '') + '</b>' +
+    '<span class="who"><b>Your jersey' + (info.pro ? '<i class="pro">PRO</i>' : '') + '</b>' +
     '<span>' + esc(sub) + '</span></span><span class="go">Locker</span>';
 }
 
@@ -11002,6 +11288,8 @@ function renderCareer(){
 var sheetReturn = null;
 
 function openProfile(){
+  closeMenu(true);
+  renderHero();
   renderIdentity();
   renderCareer();
   renderAccount();
@@ -12064,6 +12352,10 @@ $('bd-lock').onchange = function(){
 /* Tapping the scrim closes it, which is what a sheet is expected to do, but a
    tap INSIDE the panel must not, or every button press dismisses the thing. */
 $('sheet').addEventListener('click', function(ev){ if (ev.target === $('sheet')) closeProfile(); });
+$('menusheet').addEventListener('click', function(ev){ if (ev.target === $('menusheet')) closeMenu(); });
+$('b-mnu-x').onclick = function(){ closeMenu(); };
+$('ab-menu').onclick = function(){ if ($('menusheet').classList.contains('open')) closeMenu(); else openMenu(); };
+pinCloses();
 $('clubsheet').addEventListener('click', function(ev){
   if (ev.target === $('clubsheet')) closeClubs(); });
 $('erasheet').addEventListener('click', function(ev){
@@ -12086,7 +12378,7 @@ $('gamesheet').addEventListener('click', function(ev){
    order does not matter. */
 document.addEventListener('keydown', function(ev){
   if (ev.key !== 'Escape') return;
-  closeProfile(); closeClubs(); closeEras(); closeGame(); closeModes();
+  closeProfile(); closeClubs(); closeEras(); closeGame(); closeModes(); closeMenu();
   if (!$('frg').hidden) frgClose();
 });
 
