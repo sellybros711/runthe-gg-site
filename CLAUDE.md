@@ -20397,7 +20397,11 @@ there, which warns that the trail's rewards are forfeit (`skipWarn`).
 **The holes at each end of a walk are the real holes** (`courseFoot` in putt.js, `feet` and `footAt` in the plan).
 Each is the compiled course rastered to a grid of codes (carpet, fringe, rail, block, cup, water, sand, ice) and
 scaled to fit about 24 ft, laid into the land with its own carpet and wall colours and a flag in the cup. The hole
-just played sits behind the start with its cup on the path's line, so he walks away from it; the next one sits past
+just played sits behind the start with its cup on the path's line, so he walks away from it;
+**ONLY A WORLD STARTS IN A PLAZA** (`spec.plaza`, the trail to a world's first hole, or a trail with no hole
+behind it). Every other walk used to open on the same round sandy clearing, and the owner found it repetitive:
+going from one hole to the next should feel like one path. So off a plaza the path is run back onto the last
+hole's carpet (two points prepended in `plan`) and `start.r` is 1.2, a landing rather than a circle. the next one sits past
 the arch with its tee on the path. A player reported starting the walk from 17 to 18 with nothing behind him.
 
 **A hole started from the map warns before the trail's rewards are forfeit** (`skipWarn`, read off `trailLeft`).
@@ -20471,7 +20475,8 @@ yet beaten on the main tour: a beaten hole's trail is already behind you. A gate
 - **What is on the trail is kept** in the Tour record as `st.trail['tour:to']`: coins (`c`), chests opened
   (`ch`), breakables smashed, the key, the golden ball and the rare things below. `k` is the clearing chest on a
   record from before chests held coins: it reads as opened with its coins already paid. A chest is locked behind
-  a fence on about four trails in ten, the key somewhere off the path. A golden ball on every trail; all of a world's pays 500
+  a fence on more than half the trails that have a clearing chest (`R() < 0.55`), the key somewhere off the path: that
+  key and gate is the walk's little puzzle. A golden ball on every trail; all of a world's pays 500
   coins and a named reward. `pmerge` takes the union and `cloudProg` counts them.
 - **The rare things are fixed to trails** (`trailLoot`, `lootSlots`, main tour only), so every player finds
   them in the same places, further off the path than anything else:

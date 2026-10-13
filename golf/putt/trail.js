@@ -200,6 +200,12 @@ function plan(spec){
     var pp = even(spline(ctrl)), cc = cumOf(pp), gg = spec.cross ? wallLine(pp) : null;
     if (sane(pp, cc, gg, nm)){ path = pp; cum = cc; gy = gg; style = nm; route = rt; } }
   if (!path){ var sx2 = clampR(0, sRange), ax2 = clampR(0, aRange); path = even(spline([[sx2, L + 7], [(sx2 + ax2) / 2, Y0 / 2], [ax2, 7], [ax2, -1]])); cum = cumOf(path); gy = spec.cross ? (wallLine(path) || Math.round(L * 0.72) + 0.5) : null; }
+  /* ONLY A WORLD STARTS IN A PLAZA. Every walk used to set off from the same round clearing behind the hole just
+     played, so every trail opened on the same picture. The owner's call: the start of a world is a circle, and
+     everywhere else the walk leaves the last hole the way a path leaves a green, straight off its carpet. So the
+     path is run back onto the hole behind you, and the start is only a little landing where it meets the carpet. */
+  var plaza = !!spec.plaza || !spec.holeFrom;
+  if (!plaza){ path.unshift([path[0][0], L + 9.6], [path[0][0], L + 8.4]); cum = cumOf(path); }
   var SL = cum[cum.length - 1], archX = path[path.length - 1][0];
   // a point along the walk, the way it is heading there, and a point off to one side (side 1 is the right hand, walking)
   function atS(s){ s = Math.max(0, Math.min(SL, s)); for (var i = 0; i < path.length - 1; i++) if (cum[i + 1] >= s){ var u = (s - cum[i]) / ((cum[i + 1] - cum[i]) || 1); return [path[i][0] + (path[i + 1][0] - path[i][0]) * u, path[i][1] + (path[i + 1][1] - path[i][1]) * u]; } return path[path.length - 1].slice(); }
@@ -210,7 +216,7 @@ function plan(spec){
   function cx(y){ if (y <= 0) return archX; for (var i = path.length - 2; i >= 0; i--) if ((path[i][1] - y) * (path[i + 1][1] - y) <= 0){ var u = (y - path[i][1]) / ((path[i + 1][1] - path[i][1]) || 1e-9); return path[i][0] + (path[i + 1][0] - path[i][0]) * u; } return path[0][0]; }
   function pathD(x, y){ var m = 1e9; for (var i = 0; i < path.length - 1; i++){ var a = path[i], c = path[i + 1]; if (Math.abs(a[1] - y) > 6 && Math.abs(c[1] - y) > 6) continue; m = Math.min(m, segD(x, y, a[0], a[1], c[0], c[1])); } return m; }
   function themeAt(y){ return spec.cross && y > gy ? th0 : th; }
-  var start = { x:path[0][0], y:L + 6, r:7 };
+  var start = { x:path[0][0], y:L + 6, r:plaza ? 7 : 1.2 };
   // the spur and its clearing, off to a side with room: never over another leg of the walk, never across the wall
   var clr = null, spur = [], ys, sx0, sg, sS;
   for (var ct = 0; ct < 120 && !clr; ct++){ var s1 = SL * (0.22 + R() * 0.56), sd = R() < 0.5 ? -1 : 1, crr = 4.5 + R() * 2, cp = beside(s1, sd, 10 + R() * 12), o = atS(s1);
@@ -227,7 +233,8 @@ function plan(spec){
     for (var k = 0; k <= 10; k++){ var t = k / 10, bw = Math.sin(t * Math.PI) * bow; spur.push([sx0 + sdx * t - sdy / sl * bw, ys + sdy * t + sdx / sl * bw]); } }
   // what the clearing holds: a chest most often, else a pile of things to smash
   var clrKind = R() < 0.7 ? 'chest' : 'pile';
-  var locked = !spec.cross && clrKind === 'chest' && R() < 0.4;
+  // the key and the locked gate are the trail's little puzzle: more than half the chests are behind one
+  var locked = !spec.cross && clrKind === 'chest' && R() < 0.55;
   /* THE REAL HOLES AT EACH END (spec.holeTo, spec.holeFrom, rastered by putt.js). The hole you are walking to
      lies beyond the arch with its tee at the path; the hole you just left lies behind the start with its cup
      nearest you. Each is a grid of codes at a quarter of a trail foot, placed by its south west corner. */
@@ -246,7 +253,7 @@ function plan(spec){
     var i = fx | 0, j = fy | 0, u = fx - i, v = fy - j, q = j * DX + i; return (DD[q] * (1 - u) + DD[q + 1] * u) * (1 - v) + (DD[q + DX] * (1 - u) + DD[q + DX + 1] * u) * v; }
   function inClear(x, y, pad){ pad = pad || 0; if (inFoot(x, y, pad + 1.5)) return true; return Math.hypot(x - clr.x, y - clr.y) < clr.r + pad || Math.hypot(x - start.x, y - start.y) < start.r + pad || (y < 3 + pad && y > -16 && Math.abs(x - archX) < 9 + pad); }
 
-  var P = { spec:spec, seed:seed, L:L, b:b, path:path, cum:cum, cx:cx, gy:gy, SL:SL, atS:atS, tanS:tanS, beside:beside, arch:{ x:archX, y:0 }, route:route, themeAt:themeAt, clr:clr, spur:spur, locked:locked, style:style, clrKind:clrKind, start:start, walkD:walkD, inClear:inClear, feet:feet, footAt:memo2(footAt),
+  var P = { spec:spec, seed:seed, L:L, b:b, plaza:plaza, path:path, cum:cum, cx:cx, gy:gy, SL:SL, atS:atS, tanS:tanS, beside:beside, arch:{ x:archX, y:0 }, route:route, themeAt:themeAt, clr:clr, spur:spur, locked:locked, style:style, clrKind:clrKind, start:start, walkD:walkD, inClear:inClear, feet:feet, footAt:memo2(footAt),
     things:[], cols:[], items:[], hazards:[] };
   P.near = function(x, y){ var best = 1e9, out = path[0]; for (var i = 0; i < path.length; i++){ var d = Math.hypot(path[i][0] - x, path[i][1] - y); if (d < best){ best = d; out = path[i]; } } return out; };
 
