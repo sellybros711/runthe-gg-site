@@ -2501,9 +2501,33 @@
   /* Full bar height, not the height of the type inside it. The mark is the way
      home from every screen, so its TAP TARGET is the thing that matters, and a
      22px one is half of what a thumb needs. */
-  .appbar .mark{display:flex;align-items:center;gap:7px;min-width:0;height:100%;
-    background:none;border:0;padding:0 6px 0 0;color:inherit;font-family:inherit;
+  .appbar .mark{display:flex;align-items:center;justify-content:center;gap:7px;min-width:0;height:100%;
+    flex:1 1 auto;overflow:hidden;
+    background:none;border:0;padding:0 4px;color:inherit;font-family:inherit;
     cursor:pointer;min-height:0;}
+  /* the wordmark steps aside when the bar has no room for it (fitBar) */
+  .appbar .mark.nowm .wm{display:none;}
+  /* THE PROFILE PILL, Run The Tour's banner: his own player's head in the
+     frame of his Floor Rep metal, the name and the rank, and the rep bar along
+     the foot of the chip. It opens the profile, which is what the Career
+     button used to do. */
+  .abprof{display:inline-flex;align-items:center;gap:8px;flex:0 1 auto;min-width:0;height:40px;
+    padding:3px 12px 3px 3px;background:rgba(255,255,255,.05);border:1px solid rgba(232,237,247,.14);
+    border-radius:999px;color:var(--ink);cursor:pointer;font-family:inherit;min-height:0;
+    box-shadow:0 3px 10px -5px rgba(0,0,0,.6);}
+  .abprof:active{opacity:.7;}
+  .abav{position:relative;flex:0 0 auto;width:32px;height:32px;border-radius:50%;overflow:hidden;
+    display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 50% 35%,var(--avc,#2a3350),#0b0f18 78%);
+    box-shadow:inset 0 0 0 2px var(--avm,#8b6a4a),0 0 0 1px rgba(0,0,0,.5);}
+  .abav img{width:22px;height:22px;image-rendering:pixelated;display:block;}
+  .abav img.face{width:32px;height:32px;}
+  .abrepf{position:absolute;left:5px;right:5px;bottom:2px;height:3px;border-radius:2px;background:rgba(0,0,0,.6);overflow:hidden;}
+  .abrepf:after{content:'';position:absolute;inset:0;width:var(--rf,0%);background:var(--avm,#8b6a4a);}
+  .abwho{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0;line-height:1;}
+  .abwho b{font-size:13px;font-weight:800;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .abwho span{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--avm,#c9a77f);white-space:nowrap;}
+  @media(max-width:520px){ .abwho{display:none;} .abprof{padding:3px;} }
   /* The logo's ball at 1x. It is 22 pixels drawn at 22 CSS pixels, so a phone scales
      it by 2 or 3, which pixelated keeps as whole cells rather than blurring. */
   .appbar .ball{flex:0 0 auto;width:22px;height:22px;image-rendering:pixelated;display:block;}
@@ -2582,6 +2606,10 @@
      is the way home from every screen; the button beside it is the career
      record, which is why neither of those is a button on a screen any more. -->
 <div class="appbar">
+  <button class="abprof" id="ab-prof" type="button" aria-label="Your profile">
+    <span class="abav" id="ab-av"><img src="mark.png?v=1" width="22" height="22" alt="" decoding="async"><i class="abrepf" id="ab-repf"></i></span>
+    <span class="abwho"><b id="ab-name">Sign in</b><span id="ab-rank">Walk-On</span></span>
+  </button>
   <button class="mark" id="b-mark" aria-label="Run The Floor, back to the home screen">
     <img class="ball" src="mark.png?v=1" width="22" height="22" alt="" decoding="async">
     <span class="wm">Run The <span>Floor</span></span>
@@ -2589,7 +2617,6 @@
   <div class="right">
     <span class="state" id="ab-state" hidden></span>
     <button class="k-coin" id="ab-coins" type="button" aria-label="Your coins. Open the shop" hidden><span class="k-cb" aria-hidden="true"></span><span id="ab-cn">0</span></button>
-    <button class="link" id="ab-action" hidden></button>
   </div>
 </div>
 
@@ -3532,7 +3559,7 @@
 <script src="courts.js?v=2"></script>
 <script src="modes.js?v=9"></script>
 <script src="career.js?v=48"></script>
-<script src="baller.js?v=26"></script>
+<script src="baller.js?v=27"></script>
 <script src="economy.js?v=4"></script>
 <script src="catalog.js?v=5"></script>
 <script src="idles.js?v=2"></script>
@@ -3935,13 +3962,72 @@ function renderCoins(screen){
   if (!cp.onclick) cp.onclick = function(){ window.RTF_CAREER_UI.openLocker('shop'); };
   if (!cp.dataset.wired && W.wallet.onChange) { cp.dataset.wired = '1'; W.wallet.onChange(function(){ renderCoins(); }); }
 }
+/* THE PROFILE PILL. His own player's head, painted in the worker off the
+   player card's player in his street look (so a hat or goggles shows), cut
+   square at the head and cached by look. With no career yet it is the ball. */
+var avKey = '';
+function myRepNow(){
+  try { var D = window.RTF_DAILY, BG = window.RTF_BADGES; if (D && D.rep && BG && BG.evaluate) return D.rep(BG.evaluate(loadCareer() || blankCareer())); } catch (e) {}
+  return null;
+}
+var repLast = null;
+function renderProfileChip(keepRep){
+  var btn = $('ab-prof'), av = $('ab-av');
+  if (!btn || !av) return;
+  if (!btn.onclick) btn.onclick = openProfile;
+  var st = A && A.state ? A.state() : null, signed = !!(st && st.signedIn);
+  var CD = window.RTF_CARD, p = null;
+  try { p = CD && CD.mine ? CD.mine() : null; } catch (e) {}
+  var rp = keepRep && repLast ? repLast : (repLast = myRepNow()), idx = rp ? rp.idx : 0;
+  var m = CD && CD.metal ? CD.metal(idx) : { a: '#8b6a4a' };
+  var rank = rp && rp.name ? rp.name : (CD && CD.RANKS ? CD.RANKS[Math.min(idx, CD.RANKS.length - 1)] : 'Walk-On');
+  $('ab-name').textContent = signed ? (st.name || 'Player') : 'Sign in';
+  $('ab-rank').textContent = rank;
+  btn.setAttribute('aria-label', (signed ? 'Your profile. ' : 'Sign in. ') + 'Floor Rep ' + rank);
+  btn.style.setProperty('--avm', m.a);
+  av.style.setProperty('--avc', p && p.c1 ? p.c1 : '#2a3350');
+  av.style.setProperty('--rf', Math.round(100 * (rp ? rp.frac : 0)) + '%');
+  var B2 = window.RTF_BALLER, W = window.RTF_WARD;
+  if (!B2 || !B2.paintAsync) return;
+  /* no player yet: a player in the house colours, not a second logo */
+  if (!p) p = { look: B2.DEFAULT, c1: '#e8660f', c2: '#1d1f2b', num: 0, none: true };
+  var o = { c1: p.c1, c2: p.c2, num: p.num || 0, pose: 'stand', res: 2, frame: 0, shadow: false };
+  if (!p.none && W && W.dress && W.loadout) { try { o = W.dress(o, 'street', W.loadout('street')); } catch (e) {} }
+  /* the default height, so the head always sits in the same square */
+  var look = Object.assign({}, p.look); delete look.ht; delete look.wt;
+  var key = JSON.stringify([look, o]);
+  if (key === avKey) return;
+  avKey = key;
+  B2.paintAsync(look, o, function(g){
+    if (!g || avKey !== key) return;
+    var res = 2, w = g.w, top = -1, sx = 0, n = 0;
+    for (var y = 0; y < g.h && top < 0; y++) for (var x = 0; x < w; x++) if (g.d[(y * w + x) * 4 + 3]) { top = y; break; }
+    if (top < 0) return;
+    for (var y2 = top; y2 < top + 7 * res && y2 < g.h; y2++) for (var x2 = 0; x2 < w; x2++) if (g.d[(y2 * w + x2) * 4 + 3]) { sx += x2; n++; }
+    var cx = n ? Math.round(sx / n) : w / 2, S = 16 * res;
+    var full = document.createElement('canvas'); full.width = w; full.height = g.h;
+    full.getContext('2d').putImageData(new ImageData(g.d, w, g.h), 0, 0);
+    var cv = document.createElement('canvas'); cv.width = S; cv.height = S;
+    cv.getContext('2d').drawImage(full, Math.round(cx - S / 2), top - res, S, S, 0, 0, S, S);
+    var img = av.querySelector('img');
+    if (img) { img.className = 'face'; img.src = cv.toDataURL('image/png'); }
+  });
+}
+/* THE WORDMARK STEPS ASIDE rather than being cut: with a chip and the coins
+   beside it a phone has no room for the words, so the ball stays alone. */
+function fitBar(){
+  var mk = $('b-mark'), wm = mk && mk.querySelector('.wm');
+  if (!wm) return;
+  mk.classList.remove('nowm');
+  if (wm.scrollWidth > wm.clientWidth + 1 || mk.scrollWidth > mk.clientWidth + 1) mk.classList.add('nowm');
+}
+window.addEventListener('resize', function(){ fitBar(); });
 function renderAppBar(screen){
-  var state = $('ab-state'), action = $('ab-action');
-  if (!state || !action) return;
+  var state = $('ab-state');
+  if (!state) return;
   renderCoins(screen);
-  action.hidden = false;
-  action.textContent = 'Career';
-  action.onclick = openProfile;
+  renderProfileChip();
+  setTimeout(fitBar, 0);
 
   /* NOT ON THE DRAFT SCREEN. The cap HUD sticks directly under this bar and
      says the slot and the money bigger and in more detail, so a chip repeating
@@ -4047,6 +4133,7 @@ function boot(){
          whose profile the page is wearing. */
       arenaChanged();
       profilePull();
+      renderProfileChip();
       if ($('sheet').classList.contains('open')) {
         renderIdentity();
         renderAccount();
@@ -12104,6 +12191,8 @@ window.RTF_PAGE = {
     st.hidden = !text;
     st.className = 'state';
     st.textContent = text || '';
+    renderProfileChip(true);
+    setTimeout(fitBar, 0);
   },
   shareText: function(text){
     if (navigator.share) {
@@ -12152,11 +12241,11 @@ boot();
 <script src="stage3d.js?v=1"></script>
 <script src="scenes.js?v=23"></script>
 <script src="itemart.js?v=3"></script>
-<script src="closet-ui.js?v=9"></script>
-<script src="shop-ui.js?v=5"></script>
+<script src="closet-ui.js?v=10"></script>
+<script src="shop-ui.js?v=6"></script>
 <script src="daily-ui.js?v=3"></script>
 <script src="pass-ui.js?v=3"></script>
-<script src="card-ui.js?v=1"></script>
-<script src="career-ui.js?v=60"></script>
+<script src="card-ui.js?v=2"></script>
+<script src="career-ui.js?v=61"></script>
 </body>
 </html>

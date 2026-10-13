@@ -96,7 +96,7 @@ await page.waitForTimeout(600);
   const after = await page.evaluate(() => ({ text: document.getElementById('ab-cn').textContent, bal: RTF_WARD.wallet.balance() }));
   ok(after.text === after.bal.toLocaleString('en-US') && after.bal === c.bal + 1234, '2 it follows the wallet the moment coins land (' + after.text + ')');
   const bar = await page.evaluate(() => { const a = document.querySelector('.appbar').getBoundingClientRect(), wm = document.querySelector('.appbar .wm'); return { over: [...document.querySelectorAll('.appbar *')].some((e) => e.getBoundingClientRect().right > innerWidth + 1), clip: wm.scrollWidth > wm.clientWidth + 1, h: a.height }; });
-  ok(!bar.over && !bar.clip, '2 at 390px the bar holds the wordmark, the pill and Career without cutting any of them');
+  ok(!bar.over && !bar.clip, '2 at 390px the bar holds the profile pill, the wordmark and the coins without cutting any of them');
 }
 
 /* 1 */

@@ -1741,11 +1741,54 @@ function img(look, opts, cls){
      needs. */
   if (!o.still && o.pose !== 'trophy' && !ANIM[o.pose] && typeof document !== 'undefined' && !reducedNow()) return live(look, o, cls);
   o.frame = 0;
-  var a = url(look, o);
   var still = o.pose === 'trophy' || o.still || !!ANIM[o.pose];
+  /* sharp: a still drawn big is traced fine (sharpRes) in the worker and
+     swapped in. A fine trace is about half a second on a desktop and three
+     times that on a phone, so the coarse one is drawn now and nothing waits.
+     A fine trace already in the cache is used at once. */
+  var sr = still && o.sharp ? sharpRes(o) : 0;
+  if (sr <= resFor(o)) sr = 0;
+  var sk = sr ? keyOf(look, Object.assign({}, o, { res: sr })) : '';
+  delete o.sharp;
+  var a = sr && SHARP[sk] ? SHARP[sk] : url(look, o);
   var b = still ? a : url(look, Object.assign({}, o, { frame: 1 }));
+  var sid = '';
+  if (sr && !SHARP[sk] && typeof document !== 'undefined') { sid = 'S' + (++sharpN); sharpen(sid, sk, look, Object.assign({}, o, { res: sr })); }
   return '<img class="rtf-baller' + (cls ? ' ' + cls : '') + '" src="' + a + '"' + (still ? '' : ' data-b0="' + a + '" data-b1="' + b + '"')
+    + (sid ? ' data-sharp="' + sid + '"' : '')
     + ' width="' + (W * (o.scale || 4)) + '" height="' + (H * (o.scale || 4)) + '" alt="" draggable="false">';
+}
+/* THE FINEST TRACE THAT STILL LANDS ON WHOLE PIXELS: a scale of 4 shown is
+   one fine pixel per CSS pixel at 4, which on a phone is three device pixels
+   a fine pixel, and the stitching on a sleeve or the lens of a pair of
+   goggles reads instead of being one fat cell. */
+function sharpRes(o){
+  var s = Math.max(1, Math.round(o.scale || 4));
+  return s <= 4 ? Math.max(resFor(o), s) : s % 4 === 0 ? 4 : s % 3 === 0 ? 3 : 4;
+}
+var SHARP = {}, SKEYS = [], sharpN = 0;
+function sharpen(sid, sk, look, o){
+  var t0 = Date.now();
+  paintAsync(look, Object.assign({}, o, { _drop: function(){ return Date.now() - t0 > 1500 && !document.querySelector('img[data-sharp="' + sid + '"]'); } }), function(g){
+    if (!g) return;
+    var res = o.res, cv = document.createElement('canvas');
+    cv.width = W * res; cv.height = H * res;
+    var ctx = cv.getContext('2d');
+    if (o.shadow !== false) {
+      ctx.fillStyle = 'rgba(0,0,0,.28)';
+      ctx.beginPath(); ctx.ellipse(22 * res, 63.1 * res, 11 * res, 1.3 * res, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.drawImage(toCanvas(g), 0, 0);
+    var u = SHARP[sk] = cv.toDataURL('image/png'); SKEYS.push(sk);
+    if (SKEYS.length > 24) delete SHARP[SKEYS.shift()];
+    /* the page may not have put the html in yet, or may have redrawn it */
+    var tries = 0;
+    (function put(){
+      var el = document.querySelector('img[data-sharp="' + sid + '"]');
+      if (el) { el.src = u; el.removeAttribute('data-sharp'); return; }
+      if (++tries < 20) setTimeout(put, 50);
+    })();
+  }, true);
 }
 var timer = null, flip = 0;
 function breathe(){
@@ -1834,6 +1877,8 @@ function paintAsync(look, o, cb, first){
 function pump(){
   if (qBusy || !QUEUE.length) return;
   var j = QUEUE.shift(), w = getWorker();
+  /* a sharp still whose figure has been redrawn away is not painted */
+  if (j.o && j.o._drop) { var dr = j.o._drop; j.o = Object.assign({}, j.o); delete j.o._drop; if (dr()) { j.cb(null); pump(); return; } }
   qBusy = true;
   var fin = function(img){ qBusy = false; j.cb(img); pump(); };
   if (w) { var id = ++jobN; jobs[id] = function(img, failed){ if (failed) { qBusy = false; QUEUE.unshift(j); pump(); } else fin(img); }; w.postMessage({ id: id, look: j.look, o: j.o }); return; }

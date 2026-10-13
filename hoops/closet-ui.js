@@ -97,7 +97,7 @@ function pane(host, o){
     if (trying) shown[trying.slot] = trying.id;
     /* the figure stands still while he dresses, and moves while he picks an idle */
     var moving = v.slot === 'idle';
-    var fo = W.dress({ c1: o.c1, c2: o.c2, num: o.num, pose: 'stand', scale: 4, still: !moving }, ctx, shown, true);
+    var fo = W.dress({ c1: o.c1, c2: o.c2, num: o.num, pose: 'stand', scale: 4, still: !moving, sharp: true }, ctx, shown, true);
     if (moving && W.idle) fo = W.idle(fo, ctx, shown, true);
     var fig = B.img(o.look, fo, 'cl-figimg');
     /* picking a nameplate or a backdrop shows the card it goes on */

@@ -79,7 +79,7 @@ function pane(host, o){
   function figFor(it, scale){
     var ctx = it.ctx === 'court' ? 'court' : 'street', lo = W.loadout(ctx);
     lo[it.slot] = it.id;
-    var opts = W.dress({ c1: o.c1, c2: o.c2, num: o.num, pose: 'stand', scale: scale || 3, still: it.slot !== 'idle' }, ctx, lo, true);
+    var opts = W.dress({ c1: o.c1, c2: o.c2, num: o.num, pose: 'stand', scale: scale || 3, still: it.slot !== 'idle', sharp: true }, ctx, lo, true);
     if (it.slot === 'idle' && W.idle) opts = W.idle(opts, ctx, lo, true);
     return B.img(o.look, opts, 'sh-figimg');
   }

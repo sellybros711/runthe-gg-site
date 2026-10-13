@@ -583,7 +583,7 @@ async function main() {
 
     /* THE COPY, ON THE SCREEN RATHER THAN IN THE SOURCE. */
     /* Opened the way a reader opens it, so the note is read off the real sheet. */
-    await two.page.evaluate(() => document.querySelector('#ab-action').click());
+    await two.page.evaluate(() => document.querySelector('#ab-prof').click());
     await two.page.waitForTimeout(150);
     const note = await two.page.evaluate(
       () => (document.querySelector('#pf-store') || {}).textContent || '');

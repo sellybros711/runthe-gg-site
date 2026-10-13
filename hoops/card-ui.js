@@ -269,7 +269,7 @@ function html(p, lo, o){
   var size = o.size || 'full';
   var fig = '';
   if (B && p.look) {
-    var fo = { c1: c1, c2: c2, num: p.num == null ? 0 : p.num, pose: 'stand', scale: size === 'mini' ? 3 : 4, still: size === 'mini' || !!o.still };
+    var fo = { c1: c1, c2: c2, num: p.num == null ? 0 : p.num, pose: 'stand', scale: size === 'mini' ? 3 : 4, still: size === 'mini' || !!o.still, sharp: true };
     if (W && W.dress) fo = W.dress(fo, 'street', lo, o.tryOn !== false);
     else fo.ctx = 'street';
     if (W && W.idle && !fo.still) fo = W.idle(fo, 'street', lo, o.tryOn !== false);

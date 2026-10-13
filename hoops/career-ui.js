@@ -1140,7 +1140,7 @@ function sizeLive(){
     var B = window.RTF_BALLER, fig = root.querySelector('.cr-pfig .rtf-baller'), L = PV.L;
     if (B && fig && L) {
       var k = C.colorsOf(L), tmp = document.createElement('div');
-      tmp.innerHTML = B.img(withSize(C.cleanLook(form.look), { ht: form.ht, wt: form.wt }), idleIf({ c1: k.primary, c2: k.secondary, num: form.num, pose: bstep === 'look' ? 'stand' : 'ball', scale: bstep === 'look' ? 4 : 2, still: true }));
+      tmp.innerHTML = B.img(withSize(C.cleanLook(form.look), { ht: form.ht, wt: form.wt }), idleIf({ c1: k.primary, c2: k.secondary, num: form.num, pose: bstep === 'look' ? 'stand' : 'ball', scale: bstep === 'look' ? 4 : 2, still: true, sharp: true }));
       if (tmp.firstChild) fig.parentNode.replaceChild(tmp.firstChild, fig);
     }
   });

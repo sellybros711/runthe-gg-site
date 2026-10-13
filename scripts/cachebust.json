@@ -2594,7 +2594,7 @@
     },
     "../baller.js": {
       "v": "15",
-      "sha": "bcdbde4e2b2abd36"
+      "sha": "17081e6f8cb1fa30"
     },
     "../sound.js": {
       "v": "2",
@@ -2635,8 +2635,8 @@
       "sha": "97dbcac3f6f8d29d"
     },
     "baller.js": {
-      "v": "26",
-      "sha": "bcdbde4e2b2abd36"
+      "v": "27",
+      "sha": "17081e6f8cb1fa30"
     },
     "economy.js": {
       "v": "4",
@@ -2723,12 +2723,12 @@
       "sha": "dcb77ca252ced228"
     },
     "closet-ui.js": {
-      "v": "9",
-      "sha": "e527bb863e8fb93c"
+      "v": "10",
+      "sha": "3c96ea0f58dd4ef5"
     },
     "shop-ui.js": {
-      "v": "5",
-      "sha": "adecc109a74f9647"
+      "v": "6",
+      "sha": "292f1a2a503dca1d"
     },
     "daily-ui.js": {
       "v": "3",
@@ -2739,12 +2739,12 @@
       "sha": "e1a0b0d12ed4f4d2"
     },
     "card-ui.js": {
-      "v": "1",
-      "sha": "ed8ffc8721479ed1"
+      "v": "2",
+      "sha": "6fd0ae58e83f6712"
     },
     "career-ui.js": {
-      "v": "60",
-      "sha": "51888ee5068ea6c8"
+      "v": "61",
+      "sha": "0e187b144ae96710"
     },
     "data/players.json": {
       "v": "5",
