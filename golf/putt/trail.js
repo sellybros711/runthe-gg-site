@@ -42,7 +42,10 @@
 (function(){
 var API_VERSION = 1;
 var GH = 4.0, ELEV = 42, D2R = Math.PI / 180, SE = Math.sin(ELEV * D2R), CE = Math.cos(ELEV * D2R);
-var TRAIL_L = 110, HALFW = 46, PW = 2.2, VIEW_FT = 60, SPEED = 7, STRIDE = 3.4;   // a stride the legs can be seen to make: about two steps a second each way
+/* HE WALKS AT 10 FT A SECOND, and it was 7. Players found the walk too slow: a trail is two screens and a bend or two,
+   and at 7 it was half a minute of holding a stick. The stride grows with it so the legs still read as walking
+   (a brisk two and a quarter steps a second each way) rather than as a scurry. */
+var TRAIL_L = 110, HALFW = 46, PW = 2.2, VIEW_FT = 60, SPEED = 10, STRIDE = 4.4;
 /* WHAT IS HIDDEN ON A TRAIL LOOKS LIKE WHAT IT IS, never like a coin: a heart, a gem, a putter, a key, a golf
    ball. Each is drawn bigger than a coin and stands in a light of its own colour, so it is seen through the trees
    and known before you reach it. LOOT says how each is drawn, and the list on screen uses the same pictures. */
@@ -72,6 +75,9 @@ function hash(x, y, s){ var h = (x * 374761393 + y * 668265263 + s * 982451653) 
 function vn(x, y, s){ var xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi, u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
   var a = hash(xi, yi, s), b = hash(xi + 1, yi, s), c = hash(xi, yi + 1, s), d = hash(xi + 1, yi + 1, s); return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v; }
 function fbm(x, y, s){ return vn(x, y, s) * 0.55 + vn(x * 2.1, y * 2.1, s + 7) * 0.3 + vn(x * 4.3, y * 4.3, s + 13) * 0.15; }
+/* the last answer for the last point: the ground is built by asking h() and then mat() about the same point, and each
+   asks the creek, the ponds and the holes again, so a function of (x, y) asked twice in a row answers once */
+function memo2(f){ var lx = NaN, ly = NaN, lv; return function(x, y){ if (x === lx && y === ly) return lv; lx = x; ly = y; return lv = f(x, y); }; }
 function sm(a, b, t){ t = Math.max(0, Math.min(1, (t - a) / (b - a))); return t * t * (3 - 2 * t); }
 function segD(x, y, ax, ay, bx, by){ var dx = bx - ax, dy = by - ay, L = dx * dx + dy * dy || 1e-9, t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / L)); return Math.hypot(x - ax - t * dx, y - ay - t * dy); }
 function rng(seed){ var a = seed >>> 0; return function(){ a = (a + 0x6D2B79F5) | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = (t + Math.imul(t ^ t >>> 7, 61 | t)) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
@@ -240,7 +246,7 @@ function plan(spec){
     var i = fx | 0, j = fy | 0, u = fx - i, v = fy - j, q = j * DX + i; return (DD[q] * (1 - u) + DD[q + 1] * u) * (1 - v) + (DD[q + DX] * (1 - u) + DD[q + DX + 1] * u) * v; }
   function inClear(x, y, pad){ pad = pad || 0; if (inFoot(x, y, pad + 1.5)) return true; return Math.hypot(x - clr.x, y - clr.y) < clr.r + pad || Math.hypot(x - start.x, y - start.y) < start.r + pad || (y < 3 + pad && y > -16 && Math.abs(x - archX) < 9 + pad); }
 
-  var P = { spec:spec, seed:seed, L:L, b:b, path:path, cum:cum, cx:cx, gy:gy, SL:SL, atS:atS, tanS:tanS, beside:beside, arch:{ x:archX, y:0 }, route:route, themeAt:themeAt, clr:clr, spur:spur, locked:locked, style:style, clrKind:clrKind, start:start, walkD:walkD, inClear:inClear, feet:feet, footAt:footAt,
+  var P = { spec:spec, seed:seed, L:L, b:b, path:path, cum:cum, cx:cx, gy:gy, SL:SL, atS:atS, tanS:tanS, beside:beside, arch:{ x:archX, y:0 }, route:route, themeAt:themeAt, clr:clr, spur:spur, locked:locked, style:style, clrKind:clrKind, start:start, walkD:walkD, inClear:inClear, feet:feet, footAt:memo2(footAt),
     things:[], cols:[], items:[], hazards:[] };
   P.near = function(x, y){ var best = 1e9, out = path[0]; for (var i = 0; i < path.length; i++){ var d = Math.hypot(path[i][0] - x, path[i][1] - y); if (d < best){ best = d; out = path[i]; } } return out; };
 
@@ -289,7 +295,7 @@ function plan(spec){
   function creekD(x, y){ return creek ? Math.abs(y - creek.cy(x)) - creek.hw * (1 + (vn(x * 0.35, 3, creek.seed) - 0.5) * 0.3) : 1e9; }
   // the deck of a bridge: the walk where it is over the creek
   function deckAt(x, y){ return !!creek && creekD(x, y) < 1.1 && pathD(x, y) < PW + 0.1; }
-  P.creekD = creekD; P.deckAt = deckAt;
+  creekD = memo2(creekD); deckAt = memo2(deckAt); P.creekD = creekD; P.deckAt = deckAt;
   function poolAt(x, y){ for (var i = 0; i < pools.length; i++){ var o = pools[i], u = (x - o.x) / o.rx, v = (y - o.y) / o.ry, w = u * u + v * v + (vn(x * 0.4, y * 0.4, o.seed) - 0.5) * 0.5; if (w < 1) return o; }
     if (creek && creekD(x, y) < 0 && !deckAt(x, y)) return creek; return null; }
   /* THE SHORE FOLLOWS THE PATH. Out at the plan's edge the sea was off camera on a phone for most of a walk,
@@ -308,7 +314,7 @@ function plan(spec){
   function seaEdge(y){ if (!SEA) return 1e9; var f = Math.max(0, Math.min(SEA.length - 1.001, y - SEA_Y0)), i = f | 0, u = f - i; return SEA[i] * (1 - u) + SEA[i + 1] * u; }
   function seaAt(x, y){ if (!P.sea) return false; return P.sea.side * x > seaEdge(y || 0); }
   P.seaEdge = seaEdge;
-  P.poolAt = poolAt; P.seaAt = seaAt;
+  poolAt = memo2(poolAt); P.poolAt = poolAt; P.seaAt = seaAt;
 
   // ---- what stands where. Every tall thing is kept from standing in front of the path, so the golfer is
   // never behind a tree on the way (off the path he can be, and the picture puts him behind it)
@@ -425,8 +431,10 @@ function plan(spec){
     if (t.w){ rx = t.w / 2 + H * 0.18; ry = t.d / 2 + H * 0.12; cx2 = t.x + H * 0.22; cy2 = t.y + H * 0.16; }
     else { var cr = t.cr || t.r * 1.4; rx = cr * 1.05 + 0.4; ry = cr * 0.75 + 0.3; cx2 = t.x + H * 0.2; cy2 = t.y + H * 0.14; }
     if (t.k === 'arch' || t.k === 'wall' || t.k === 'fence' || t.k === 'green') return; SH.push({ x:cx2, y:cy2, rx:rx, ry:ry }); });
-  var SG = {}; SH.forEach(function(o){ for (var x = o.x - o.rx; x <= o.x + o.rx + 6; x += 6) for (var y = o.y - o.ry; y <= o.y + o.ry + 6; y += 6){ var k = (Math.floor(x / 6)) + ',' + (Math.floor(y / 6)); (SG[k] = SG[k] || []).push(o); } });
-  P.shadeAt = function(x, y){ var cs = SG[Math.floor(x / 6) + ',' + Math.floor(y / 6)]; if (!cs) return 0; var v = 0;
+  // keyed by a number, not a string: shadeAt is asked once for every pixel of ground
+  var SG = new Map(), sgk = function(x, y){ return Math.floor(x / 6) * 65536 + Math.floor(y / 6); };
+  SH.forEach(function(o){ for (var x = o.x - o.rx; x <= o.x + o.rx + 6; x += 6) for (var y = o.y - o.ry; y <= o.y + o.ry + 6; y += 6){ var k = sgk(x, y), a = SG.get(k); if (!a) SG.set(k, a = []); a.push(o); } });
+  P.shadeAt = function(x, y){ var cs = SG.get(sgk(x, y)); if (!cs) return 0; var v = 0;
     for (var i = 0; i < cs.length; i++){ var o = cs[i], u = (x - o.x) / o.rx, w = (y - o.y) / o.ry, d = u * u + w * w; if (d < 1) v = Math.max(v, d < 0.7 ? 1 : 0.5); } return v; };
   return P;
 }
@@ -918,11 +926,28 @@ function run(box, P, pic, api){
   /* see: the golfer. What stands in front of him is drawn back at half strength, so he shows through a tree
      the way a player does in a 3D game, and is never lost behind one */
   function occlude(rx, ry, rw, rh, x, y, z0, see){ if (!pic.Z) return; if (see) ctx.globalAlpha = 0.5; var a0 = Math.max(0, Math.floor((rx - ox) / kk)), a1 = Math.min(pic.cv.width - 1, Math.ceil((rx + rw - ox) / kk)), b0 = Math.max(0, Math.floor((ry - oy) / kk)), b1 = Math.min(pic.cv.height - 1, Math.ceil((ry + rh - oy) / kk));
-    var foot = pic.pr(x, y, z0)[1];
+    var foot = pic.pr(x, y, z0)[1], key = a0 + ',' + a1 + ',' + b0 + ',' + b1 + ',' + x + ',' + y + ',' + z0, m = OCC.get(key);
+    // asked twice for the same thing standing in the same place: what stands in front of it is one picture, kept
+    if (m === 0){ m = occMask(a0, a1, b0, b1, y, z0, foot); OCC.set(key, m); }
+    if (m){ ctx.drawImage(m, ox + a0 * kk, oy + b0 * kk, m.width * kk, m.height * kk); ctx.globalAlpha = 1; return; }
+    if (m === false){ ctx.globalAlpha = 1; return; }
+    if (OCC.size > 600) OCC.clear(); OCC.set(key, 0);
     for (var ay = b0; ay <= b1; ay++){ var z = z0 + (foot - ay - 0.5) * ART / CE; if (z < z0) z = z0; var dp = y * CE + z * SE, row = (ay + pic.zy0) * pic.ZW, run = -1;
       for (var ax = a0; ax <= a1 + 1; ax++){ var front = ax <= a1 && pic.Z[row + ax] > dp + 0.35;
         if (front && run < 0) run = ax; else if (!front && run >= 0){ ctx.drawImage(pic.cv, run, ay, ax - run, 1, ox + run * kk, oy + ay * kk, (ax - run) * kk, kk); run = -1; } } }
     ctx.globalAlpha = 1; }
+  /* THE SCENE IN FRONT OF A THING THAT STANDS STILL is the same strips of picture every frame: a run of pixels a row,
+     a drawImage a run, hundreds a frame for a wood of bushes and a chest or two. So the second time the same thing is
+     asked about in the same place, those pixels go into one small picture, transparent wherever the scene is behind
+     it, and it is drawn in one call. The same pixels at the same scale, so the same frame. What moves (the golfer,
+     a bobbing find) asks about a new place each frame and keeps drawing the strips. */
+  var OCC = new Map(), picPx = null;
+  function occMask(a0, a1, b0, b1, y, z0, foot){ var w = a1 - a0 + 1, h = b1 - b0 + 1; if (w <= 0 || h <= 0) return false;
+    if (!picPx) picPx = pic.cv.getContext('2d').getImageData(0, 0, pic.cv.width, pic.cv.height).data;
+    var id = new ImageData(w, h), d = id.data, any = false, cw = pic.cv.width;
+    for (var ay = b0; ay <= b1; ay++){ var z = z0 + (foot - ay - 0.5) * ART / CE; if (z < z0) z = z0; var dp = y * CE + z * SE, row = (ay + pic.zy0) * pic.ZW;
+      for (var ax = a0; ax <= a1; ax++) if (pic.Z[row + ax] > dp + 0.35){ var si = (ay * cw + ax) * 4, di = ((ay - b0) * w + (ax - a0)) * 4; d[di] = picPx[si]; d[di + 1] = picPx[si + 1]; d[di + 2] = picPx[si + 2]; d[di + 3] = picPx[si + 3]; any = true; } }
+    if (!any) return false; var c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').putImageData(id, 0, 0); return c; }
   function drawSprite(sp2, x, y, z, k2, noOcc){ if (!sp2) return; k2 = k2 || 1; var p = scr(x, y, z), w = sp2.cv.width * kk * k2, h = sp2.cv.height * kk * k2, rx = Math.round(p[0] - sp2.ax * kk * k2), ry = Math.round(p[1] - sp2.ay * kk * k2);
     ctx.drawImage(sp2.cv, rx, ry, w, h); if (!noOcc) occlude(rx, ry, w, h, x, y, z); }
   var brkKind = function(t){ return kitOf(t.th || sp.theme).brk; };
@@ -1130,6 +1155,7 @@ function run(box, P, pic, api){
     '<div class="pp-thud"><span data-coins>+0</span><span data-gold></span></div><div class="pp-tlist" data-tlist></div><div class="pp-rbar"><button class="pp-rb pp-talkb" data-talk hidden></button><button class="pp-rb" data-skip></button></div><div class="pp-rhint" data-hint></div><div class="pp-bub" data-bub hidden></div>';
   box.appendChild(ui);
   var stick = ui.querySelector('[data-stick]'), knob = stick && stick.firstChild, way = ui.querySelector('[data-way]'), pin = ui.querySelector('[data-pin]'), bubEl = ui.querySelector('[data-bub]'), hint = ui.querySelector('[data-hint]');
+  var wayB = way.querySelector('b'), wayI = way.querySelector('i'), pinB = pin.querySelector('b'), pinI = pin.querySelector('i');
   hint.textContent = coarse ? 'Drag anywhere to walk' : 'Use the arrow keys or WASD to walk';
   ui.querySelector('[data-skip]').textContent = api.skipLabel || 'Skip';
   /* THERE IS NO AUTO WALK, the owner's call: the walk is the place, so it is walked. Anybody who would rather not
@@ -1282,8 +1308,12 @@ function run(box, P, pic, api){
     stepPlants(dt); draw(tsec, dt);
   }
   function draw(tsec, dt){
-    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = false; ctx.fillStyle = pic.bg || kitOf(sp.theme).g[0]; ctx.fillRect(0, 0, W, H);
-    ctx.drawImage(pic.cv, ox, oy, pic.cv.width * kk, pic.cv.height * kk);
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = false;
+    /* only the part of the picture on the screen is drawn: the whole of it, blown up kk times, is many times the
+       screen on a phone, every frame. The camera is on whole device pixels and kk is whole, so it is the same picture */
+    var cw = pic.cv.width, ch = pic.cv.height, sx0 = Math.max(0, Math.floor(-ox / kk)), sy0 = Math.max(0, Math.floor(-oy / kk)), sx1 = Math.min(cw, Math.ceil((W - ox) / kk)), sy1 = Math.min(ch, Math.ceil((H - oy) / kk));
+    if (!(ox <= 0 && oy <= 0 && ox + cw * kk >= W && oy + ch * kk >= H)){ ctx.fillStyle = pic.bg || kitOf(sp.theme).g[0]; ctx.fillRect(0, 0, W, H); }
+    if (sx1 > sx0 && sy1 > sy0) ctx.drawImage(pic.cv, sx0, sy0, sx1 - sx0, sy1 - sy0, ox + sx0 * kk, oy + sy0 * kk, (sx1 - sx0) * kk, (sy1 - sy0) * kk);
     // everything that moves, far to near
     var ds = [];
     items.forEach(function(t){ if (t.k === 'host') return; if (t.k === 'coin' && !t.out) return; if (t.done && t.k !== 'chest' && t.k !== 'brk') return; if (t.k === 'brk' && t.done) return; ds.push(t); });
@@ -1320,7 +1350,7 @@ function run(box, P, pic, api){
     waypoint();
     if (bubble){ var bp = scr(g.x, g.y, pic.zAt(g.x, g.y) + GH + 0.6); var npc = items.filter(function(t){ return t.k === 'npc'; })[0];
       if (nearNpc && npc) bp = scr(npc.x, npc.y, pic.zAt(npc.x, npc.y) + GH + 0.6);
-      bubEl.style.left = (bp[0] / dpr) + 'px'; bubEl.style.top = (bp[1] / dpr) + 'px'; }
+      put(bubEl.style, 'left', (bp[0] / dpr) + 'px'); put(bubEl.style, 'top', (bp[1] / dpr) + 'px'); }
   }
   /* the console look's last touch, as on a hole: the low sun washing in from the upper left (none at night) and a
      vignette, drawn over the scene and under what flies to the counters. Built once per screen size. */
@@ -1354,7 +1384,12 @@ function run(box, P, pic, api){
     if (!f) f = lastFace; else lastFace = f;
     var shp = scr(g.x, g.y), s = kk; ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(shp[0], shp[1], 5 * s, 2 * s, 0, 0, 7); ctx.fill();
     drawFigure(f, g.x, g.y, true, 'me'); }
-  function waypoint(){ var tx, ty, label, br = cv.getBoundingClientRect();
+  /* A WRITE TO THE PAGE ONLY WHEN IT CHANGES. The waypoint and the speech bubble are asked every frame, and writing
+     the same text or the same position back each time still makes the browser restyle and lay the page out again,
+     and fires every observer on the page (the game's own watches every node added), sixty times a second. */
+  function put(o, k, v){ if (o[k] !== v) o[k] = v; }
+  function cls(el, c, on){ if (el.classList.contains(c) !== on) el.classList.toggle(c, on); }
+  function waypoint(){ var tx, ty, label;
     /* THE ARROW LEADS ALONG THE WALK, not across country. A route that doglegs or doubles back puts the arch over
        the trees, so while there is more than a bend to go the arrow points at the path some way ahead of him, and
        the distance it gives is what is left to walk. Near the end, or at a shut door, it is the place itself. */
@@ -1363,10 +1398,10 @@ function run(box, P, pic, api){
     tx = p[0] / dpr; ty = p[1] / dpr; var M = 34, Wc = W / dpr, Hc = H / dpr, inside = !via && tx > M && tx < Wc - M && ty > M + 110 && ty < Hc - M - 70;
     var d = Math.round(Math.max(left, Math.hypot(goal[0] - g.x, goal[1] - g.y)) * 1.5 / 3);   // trail feet are two thirds of real ones, and yards are three feet
     label = shut ? 'World door' : (api.holeLabel || 'Next hole');
-    if (inside){ way.classList.remove('on'); pin.classList.add('on'); pin.style.left = tx + 'px'; pin.style.top = ty + 'px'; pin.querySelector('b').textContent = label; pin.querySelector('i').textContent = d > 3 ? d + ' yd' : ''; return; }
-    pin.classList.remove('on'); way.classList.add('on'); var cxs = Wc / 2, cys = Hc / 2, vx = tx - cxs, vy = ty - cys, s2 = Math.min((Wc / 2 - M) / Math.abs(vx || 1e-6), (Hc / 2 - M - 90) / Math.abs(vy || 1e-6));
-    way.style.left = (cxs + vx * s2) + 'px'; way.style.top = (cys + vy * s2) + 'px'; way.querySelector('i').style.transform = 'rotate(' + (Math.atan2(vy, vx) * 180 / Math.PI + 90).toFixed(1) + 'deg)';
-    way.querySelector('b').textContent = label + ' · ' + d + ' yd'; }
+    if (inside){ cls(way, 'on', false); cls(pin, 'on', true); put(pin.style, 'left', Math.round(tx) + 'px'); put(pin.style, 'top', Math.round(ty) + 'px'); put(pinB, 'textContent', label); put(pinI, 'textContent', d > 3 ? d + ' yd' : ''); return; }
+    cls(pin, 'on', false); cls(way, 'on', true); var cxs = Wc / 2, cys = Hc / 2, vx = tx - cxs, vy = ty - cys, s2 = Math.min((Wc / 2 - M) / Math.abs(vx || 1e-6), (Hc / 2 - M - 90) / Math.abs(vy || 1e-6));
+    put(way.style, 'left', Math.round(cxs + vx * s2) + 'px'); put(way.style, 'top', Math.round(cys + vy * s2) + 'px'); put(wayI.style, 'transform', 'rotate(' + Math.round(Math.atan2(vy, vx) * 180 / Math.PI + 90) + 'deg)');
+    put(wayB, 'textContent', label + ' · ' + d + ' yd'); }
   // warm every facing of the walk while the trail opens, so turning never waits on a drawing
   try{ var hh = api.host; if (hh && hh.golferWalkWarm) for (var q = 0; q < 8; q++){ var a = q * Math.PI / 4; hh.golferWalkWarm(Math.sin(a), -Math.cos(a)); } }catch(e){}
   requestAnimationFrame(step);

@@ -26,7 +26,7 @@
    tap on every screen called the 3D hole painter with nothing and threw: the whole game stopped
    responding, for everybody, not just testers. Only RTT_PUTT_3D leaves this function. */
 (function(){
-window.RTT_PUTT_3D = { API_VERSION: 1, render: render, slices: slices, ELEV: 42 };
+window.RTT_PUTT_3D = { API_VERSION: 1, render: render, slices: slices, pack: pack, unpack: unpack, ELEV: 42 };
 
 function render(C, opt){ var g = steps(C, opt), r; do { r = g.next(); } while (!r.done); return r.value; }
 function slices(C, opt){ var g = steps(C, opt), out = null;
@@ -59,6 +59,17 @@ function* steps(C, opt){
   var FX = !!opt.fx, WZ = FX ? new Float32Array(W * Hh) : null, HMS = 0.25, HX = 0, HY = 0, HM = null;
   if (FX){ HX = Math.ceil((b[2] - b[0]) / HMS) + 1; HY = Math.ceil((b[3] - b[1]) / HMS) + 1; HM = new Float32Array(HX * HY).fill(-1e9); }
   function camN(nx, ny, nz){ var v0 = nx, v1 = -nz * ce + ny * se, v2 = nz * se + ny * ce, l = Math.sqrt(v0 * v0 + v1 * v1 + v2 * v2) || 1; return [v0 / l, v1 / l, v2 / l]; }
+  // the ground's own splat: the same cell splat() makes with { ti, tj, dt, nl } and the land's extras laid over it,
+  // built only once the pixel is known to be in front, so a hidden one costs no object
+  function splatG(x, y, z, m, n, ti, tj, dt, nl, ge){
+    var sx = Math.floor((x - b[0]) / ART), sy = Math.floor(y * se / ART - z * ce / ART + oy), Dp = y * ce + z * se;
+    if (sx < 0 || sy < 0 || sx >= W || sy >= Hh) return;
+    if (FX){ var hi = Math.round((x - b[0]) / HMS), hj = Math.round((y - b[1]) / HMS); if (hi >= 0 && hj >= 0 && hi < HX && hj < HY && z > HM[hj * HX + hi]) HM[hj * HX + hi] = z; }
+    var k = sy * W + sx; if (Dp <= Z[k]) return; Z[k] = Dp; if (FX) WZ[k] = z;
+    var c = { m:m, n:null, z:Dp, dt:dt, gloss:0, bias:0, t:null, tag:'', nv:n, ti:ti, tj:tj, nl:nl };
+    if (ge) for (var q in ge) c[q] = ge[q];
+    S.g[sy][sx] = c;
+  }
   function splat(x, y, z, m, n, extra){
     var sx = Math.floor((x - b[0]) / ART), sy = Math.floor(y * se / ART - z * ce / ART + oy), Dp = y * ce + z * se;
     if (sx < 0 || sy < 0 || sx >= W || sy >= Hh) return;
@@ -105,12 +116,12 @@ function* steps(C, opt){
   var surf = function(x, y){ var m = inB(x, y) ? C.mats.at(x, y) : M.OUT, tz = TZ(x, y); if (m === M.WATER || m === M.ICE) return CARP - 0.22 + tz; if (m === M.FLOW) return CARP - 0.16 + tz; return CARP + F.h(x, y) * K + tz; };
 
   // ---- the ground, the carpet and the rail, as one height field
-  var GZ = new Float32Array(GX * GY), GM = new Array(GX * GY), GE = new Array(GX * GY), GYG = SC && SC.noGround ? 0 : GY;
+  var TKEY = {}, GZ = new Float32Array(GX * GY), GM = new Array(GX * GY), GE = new Array(GX * GY), GYG = SC && SC.noGround ? 0 : GY;
   for (j = 0; j < GYG; j++){ for (i = 0; i < GX; i++){
     x = b[0] + i * st; y = b[1] + j * st; var k0 = j * GX + i, m = inB(x, y) ? C.mats.at(x, y) : M.OUT;
     if (m !== M.OUT){ var tz0 = TZ(x, y); GZ[k0] = ((m === M.WATER || m === M.ICE) ? CARP - 0.22 : m === M.FLOW ? CARP - 0.16 : CARP + F.h(x, y) * K) + tz0; GM[k0] = m; continue; }
     if (Math.abs(SD[k0]) < RW){ GZ[k0] = RAIL + railTier(x, y); GM[k0] = 'rail'; continue; }
-    if (LD){ var r = LD.mat(x, y); GZ[k0] = LD.h(x, y); GM[k0] = 't:' + r[0]; GE[k0] = r[1]; }
+    if (LD){ var r = LD.mat(x, y); GZ[k0] = LD.h(x, y); GM[k0] = TKEY[r[0]] || (TKEY[r[0]] = 't:' + r[0]); GE[k0] = r[1]; }
     else { GZ[k0] = 0; GM[k0] = 'ground'; }
   } if ((j & 15) === 15) yield; }
   function gzI(i, j){ return GZ[Math.max(0, Math.min(GY - 1, j)) * GX + Math.max(0, Math.min(GX - 1, i))]; }
@@ -122,9 +133,7 @@ function* steps(C, opt){
     var flat = (mm === 'rail' || mm === 'ground') ? 0 : 1, gn = terr ? (LD.gain || 1) : 1, n = camN(-zx * flat * gn, -zy * flat * gn, 1);
     var ti = Math.floor((x - b[0]) / ART), tj = Math.floor((y - b[1]) / ART);
     var key = terr ? mm : mm === 'rail' ? 'rail' : mm === 'ground' ? 'ground' : mm === M.WATER ? 'haz' : mm === M.ICE ? 'ice' : mm === M.MUD ? 'slow' : mm === M.SAND ? 'sand' : mm === M.BELT ? 'belt' : mm === M.FLOW ? 'flow' : 'carpet';
-    var ex2 = { ti:ti, tj:tj, dt:key === 'ground' ? -1 : 0, nl:terr };
-    if (GE[kk]) for (var qq in GE[kk]) ex2[qq] = GE[kk][qq];
-    splat(x, y, z, key, n, ex2);
+    splatG(x, y, z, key, n, ti, tj, key === 'ground' ? -1 : 0, terr, GE[kk]);
     if (z > zs + 0.12){ var ex3 = { ti:ti, tj:tj, nl:terr, dt:-1 }; if (GE[kk]) for (qq in GE[kk]) ex3[qq] = GE[kk][qq];
       // the plinth: where the rail stands over the land (not over another room), the face below its cap is the base
       var ms = GM[Math.min(GY - 1, j + 1) * GX + i], plin = key === 'rail' && typeof ms === 'string' && (ms === 'ground' || ms.charAt(0) === 't');
@@ -238,8 +247,6 @@ function* steps(C, opt){
   for (var jb = 0; jb < JOBS.length; jb++){ JOBS[jb](); yield; }
   // ---- paint, with the theme's colours on the golfer's ramps
   var R = PX.ramp, h3 = P.hash3;
-  for (var yy = 0; yy < Hh; yy++) for (var xx = 0; xx < W; xx++){ var cc = S.g[yy][xx]; if (cc && cc.nv){ cc.n = nfix(cc.nv); } }
-  function nfix(v){ return function(){ return v; }; }
   var y0 = 0; while (y0 < Hh - 1 && S.g[y0].every(function(c){ return !c; })) y0++;
   if (y0 > 0){ S.g = S.g.slice(y0); S.H = Hh - y0; }
   var cv = document.createElement('canvas'); cv.width = W; cv.height = Hh - y0; var ctx = cv.getContext('2d');
@@ -262,14 +269,45 @@ function* steps(C, opt){
       return R(n1 < tt[3] ? (n2 < 0.5 ? tt[1] : tt[2]) : tt[0]); }
     return '#ff00ff';
   };
-  // in bands, each painted with two rows of its neighbours either side (the outline and the contact
-  // shadows read one row up and down) and clipped to its own rows, so the seams are invisible
-  var HH = S.H || (Hh - y0), BAND = 24;
-  for (var ya = 0; ya < HH; ya += BAND){ var yb = Math.min(HH, ya + BAND), a0 = Math.max(0, ya - 2), a1 = Math.min(HH, yb + 2);
-    var view = Object.create(PX.Sprite.prototype); view.W = W; view.H = a1 - a0; view.g = S.g.slice(a0, a1); view.z = S.z;
-    ctx.save(); ctx.beginPath(); ctx.rect(0, ya, W, yb - ya); ctx.clip(); ctx.translate(0, a0);
-    view.paint(ctx, 1, (function(off){ return function(c, x, y){ return rampOf(c, x, y + off); }; })(a0));
-    ctx.restore(); yield; }
+  /* THE PAINT IS PXHD's Sprite.paint, done here into one pixel buffer rather than a fillRect a pixel. It is the
+     same rules in the same order (a tone off the normal against the light, a contact shadow under a part with
+     another in front of it, the inner contour, the soft outline one pixel inside the silhouette), asked once a
+     pixel instead of in four passes, and each pixel's ramp is looked up once instead of three times. A trail is
+     about half a million pixels, and the fillRect a pixel and the ramp lookups were most of the time it took to
+     open one. Every rule only reads its neighbours' parts, never their tones, so a pixel is finished on its own
+     and the bands are only there to give the frame back. LIGHT is PXHD's own light, which it does not export. */
+  var HH = S.H || (Hh - y0), BAND = 48, G = S.g, LIGHT = (function(){ var v = [-0.55, -0.72, 0.72], l = Math.hypot(v[0], v[1], v[2]); return [v[0] / l, v[1] / l, v[2] / l]; })();
+  var IMG = ctx.getImageData(0, 0, W, HH), ID = IMG.data, COLS = {}, SOFT = [], cc0 = null;
+  function colOf(col){ var v = COLS[col]; if (v !== undefined) return v;
+    if (/^#[0-9a-f]{6}$/i.test(col)){ var n = parseInt(col.slice(1), 16); v = [n >> 16, n >> 8 & 255, n & 255, 255]; }
+    else { if (!cc0){ var c0 = document.createElement('canvas'); c0.width = c0.height = 1; cc0 = c0.getContext('2d', { willReadFrequently:true }); }
+      cc0.clearRect(0, 0, 1, 1); cc0.fillStyle = '#000'; cc0.fillStyle = col; cc0.fillRect(0, 0, 1, 1); var q = cc0.getImageData(0, 0, 1, 1).data; v = [q[0], q[1], q[2], q[3]]; }
+    return COLS[col] = v; }
+  function toneAt(c, x, y){ if (c.t != null) return c.t;
+    var n = c.nv ? c.nv : typeof c.n === 'function' ? c.n(x + 0.5, y + 0.5) : [0, 0, 1], l = Math.hypot(n[0], n[1], n[2]) || 1;
+    var d = (n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2]) / l + (c.bias || 0);
+    var t = d > 0.94 ? (c.gloss ? 4 : 3) : d > 0.80 ? 3 : d > 0.40 ? 2 : d > 0.08 ? 1 : 0;
+    if (c.gloss > 1 && d > 0.88) t = 4;
+    return Math.max(0, Math.min(4, t + (c.dt || 0))); }
+  function at(x, y){ var row = G[y]; return row ? row[x] : undefined; }
+  for (var ya = 0; ya < HH; ya += BAND){ var yb = Math.min(HH, ya + BAND);
+    for (var yy = ya; yy < yb; yy++){ var grow = G[yy];
+      for (var xx = 0; xx < W; xx++){ var c = grow[xx]; if (!c) continue;
+        var t = toneAt(c, xx, yy), o;
+        if (!(c.t != null || c.noAO)){ o = at(xx, yy - 1); if (!(o && o.m !== c.m && o.z > c.z && !o.noCast)){ o = grow[xx + 1]; if (!(o && o.m !== c.m && o.z > c.z && !o.noCast)){ o = grow[xx - 1]; if (!(o && o.m !== c.m && o.z > c.z && !o.noCast)) o = null; } }
+          if (o) t = Math.max(0, t - 1); }
+        var r = rampOf(c, xx, yy), arr = Array.isArray(r), col = arr ? r[t] : r;
+        if (arr && !c.nl && c.t == null){ o = at(xx, yy + 1); if (!(o && o.m !== c.m && o.z < c.z && !o.noOut)){ o = grow[xx + 1]; if (!(o && o.m !== c.m && o.z < c.z && !o.noOut)){ o = grow[xx - 1]; if (!(o && o.m !== c.m && o.z < c.z && !o.noOut)) o = null; } }
+          if (o) col = r[Math.min(t, 1)]; }
+        if (arr && !c.noOut && !c.noEdge){ var e1 = at(xx, yy + 1), e2 = grow[xx + 1], e3 = at(xx, yy - 1), e4 = grow[xx - 1];
+          var sh = !e1 || e1.noOut || !e2 || e2.noOut, lit = !e3 || e3.noOut || !e4 || e4.noOut;
+          if (sh || lit) col = sh ? r[Math.max(0, Math.min(t - 1, 1))] : r[Math.max(0, Math.min(t - 1, 2))]; }
+        if (!col) continue;
+        var cv4 = colOf(col); if (cv4[3] < 255){ SOFT.push(xx, yy, col); continue; }
+        var i4 = (yy * W + xx) * 4; ID[i4] = cv4[0]; ID[i4 + 1] = cv4[1]; ID[i4 + 2] = cv4[2]; ID[i4 + 3] = 255; } }
+    yield; }
+  ctx.putImageData(IMG, 0, 0);
+  for (var si = 0; si < SOFT.length; si += 3){ ctx.fillStyle = SOFT[si + 2]; ctx.fillRect(SOFT[si], SOFT[si + 1], 1, 1); }
   var pr = function(x, y, z){ return [(x - b[0]) / ART, y * se / ART - z * ce / ART + oy - y0]; };
   var un = function(px, py, z){ return [px * ART + b[0], (py - oy + y0 + (z || 0) * ce / ART) * ART / se]; };
   if (LD && LD.fog){ ctx.globalAlpha = 0.16; ctx.fillStyle = LD.fogCol || '#8a6fb8';   // ground fog drifting across the land
@@ -283,7 +321,10 @@ function* steps(C, opt){
     var HH2 = Hh - y0, img = ctx.getImageData(0, 0, W, HH2), d = img.data;
     // the sun is low in the upper left, behind the camera's left shoulder: shadows fall toward the lower right
     var lx = -0.62, ly = -0.48, ln = Math.hypot(lx, ly); lx /= ln; ly /= ln; var RISE = 0.78, STEP = HMS, MAXD = 9;
-    var hm = function(x, y){ var i = Math.round((x - b[0]) / HMS), j = Math.round((y - b[1]) / HMS); if (i < 0 || j < 0 || i >= HX || j >= HY) return -1e9; return HM[j * HX + i]; };
+    // Math.round(v) is floor(v + 0.5), and an index under 0 is off the map either way
+    var HB0 = b[0], HB1 = b[1], HIS = 1 / HMS;
+    var HTOP = -1e9; for (var hq0 = 0; hq0 < HM.length; hq0++) if (HM[hq0] > HTOP) HTOP = HM[hq0];
+    var hm = function(x, y){ var fi = (x - HB0) * HIS + 0.5, fj = (y - HB1) * HIS + 0.5; if (fi < 0 || fj < 0) return -1e9; var i = fi | 0, j = fj | 0; if (i >= HX || j >= HY) return -1e9; return HM[j * HX + i]; };
     // haze colour: the land's own background, lifted toward a pale sky
     var hz = (LD && LD.bg) || T.bg, hr = parseInt(hz.slice(1, 3), 16), hg = parseInt(hz.slice(3, 5), 16), hb = parseInt(hz.slice(5, 7), 16);
     // a night world (neon, lava, a churchyard) has no bright sky to fade into: its far land sinks into the dark
@@ -314,7 +355,10 @@ function* steps(C, opt){
         var low = z - gz(wx, wy) < 0.45;
         // the shadow: march toward the sun over the height map, and the deepest crossing sets how dark it is
         var sh = 0;
-        if (low) for (var t = STEP; t < MAXD; t += STEP){ var over = hm(wx + lx * t, wy + ly * t) - (z + 0.05 + t * RISE); if (over > 0){ sh = Math.max(sh, Math.min(1, over / 0.25)); if (sh >= 1) break; } }
+        // hm() written out, and the march stops once the ray is above the tallest thing in the scene: nothing further can shade it
+        if (low) for (var t = STEP; t < MAXD; t += STEP){ var lim = z + 0.05 + t * RISE; if (lim >= HTOP) break;
+          var fi = (wx + lx * t - HB0) * HIS + 0.5, fj = (wy + ly * t - HB1) * HIS + 0.5; if (fi < 0 || fj < 0) continue; var ii = fi | 0, jj = fj | 0; if (ii >= HX || jj >= HY) continue;
+          var over = HM[jj * HX + ii] - lim; if (over > 0){ sh = Math.max(sh, Math.min(1, over / 0.25)); if (sh >= 1) break; } }
         // ambient occlusion: how much of the ground close round it stands higher than it
         var ao = 0; if (low) for (a = 0; a < 8; a++){ var o1 = hm(wx + A8[a][0] * 0.5, wy + A8[a][1] * 0.5) - z, o2 = hm(wx + A8[a][0] * 1.1, wy + A8[a][1] * 1.1) - z;
           ao += Math.max(0, Math.min(1, o1 / 0.5)) * 0.6 + Math.max(0, Math.min(1, o2 / 1.1)) * 0.4; }
@@ -383,6 +427,29 @@ function* steps(C, opt){
     if (sx < 0 || sy < 0 || sx >= W || sy >= Hh) return false; return Z[sy * W + sx] > y * ce + z * se + 0.2; };
   /* the depth of every pixel (Z, W wide, starting y0 rows down), so a trail can draw the golfer and anything
      that moves behind whatever stands in front of it */
-  return { ART:ART, cv:cv, bg:fxBg, sky:fxSky, night:FX && fxNight, pr:pr, un:un, zAt:SC ? function(x, y){ return gz(x, y); } : surf, hid:hid, mill:mill, se:se, ce:ce, K:K, carp:CARP, Z:Z, ZW:W, zy0:y0, b:b };
+  return { ART:ART, cv:cv, bg:fxBg, sky:fxSky, night:FX && fxNight, pr:pr, un:un, zAt:SC ? function(x, y){ return gz(x, y); } : surf, hid:hid, mill:mill, se:se, ce:ce, K:K, carp:CARP, Z:Z, ZW:W, zy0:y0, b:b,
+    // what a scene needs to be put back without rendering it again (pack, unpack): a trail is the same picture every
+    // time it is opened, so putt.js keeps it on the device
+    raw:SC ? { W:W, Hh:Hh, y0:y0, oy:oy, b:b.slice(), ART:ART, se:se, ce:ce, K:K, carp:CARP, GX:GX, GY:GY, st:st, GZ:GZ, Z:Z, bg:fxBg, sky:fxSky, night:FX && fxNight } : null };
 }
+/* PACK AND UNPACK A SCENE. A trail is seconds of work on a phone and comes out the same every time, so it is
+   kept: pack() is plain data (the pixels, the depth of every pixel and the ground's heights) that IndexedDB can
+   hold, and unpack() builds the same result render() hands back, with the same projection and the same ground
+   under it, out of that. Only a scene (a trail) is packed: a hole's ground answers through its course. */
+function pack(o){ var r = o && o.raw; if (!r) return null;
+  var px = o.cv.getContext('2d').getImageData(0, 0, o.cv.width, o.cv.height).data;
+  return { v:1, W:r.W, Hh:r.Hh, y0:r.y0, oy:r.oy, b:r.b, ART:r.ART, se:r.se, ce:r.ce, K:r.K, carp:r.carp, GX:r.GX, GY:r.GY, st:r.st, bg:r.bg, sky:r.sky, night:r.night,
+    cw:o.cv.width, ch:o.cv.height, px:px.buffer.slice(0), Z:r.Z.buffer.slice(0), GZ:r.GZ.buffer.slice(0) }; }
+function unpack(d){ if (!d || d.v !== 1) return null;
+  var W = d.W, Hh = d.Hh, y0 = d.y0, oy = d.oy, b = d.b, ART = d.ART, se = d.se, ce = d.ce, GX = d.GX, GY = d.GY, st = d.st, Z = new Float32Array(d.Z), GZ = new Float32Array(d.GZ);
+  if (Z.length !== W * Hh || GZ.length !== GX * GY || d.px.byteLength !== d.cw * d.ch * 4) return null;
+  var cv = document.createElement('canvas'); cv.width = d.cw; cv.height = d.ch; cv.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(d.px), d.cw, d.ch), 0, 0);
+  function gzI(i, j){ return GZ[Math.max(0, Math.min(GY - 1, j)) * GX + Math.max(0, Math.min(GX - 1, i))]; }
+  function gz(x, y){ return gzI(Math.round((x - b[0]) / st), Math.round((y - b[1]) / st)); }
+  var pr = function(x, y, z){ return [(x - b[0]) / ART, y * se / ART - z * ce / ART + oy - y0]; };
+  var un = function(px, py, z){ return [px * ART + b[0], (py - oy + y0 + (z || 0) * ce / ART) * ART / se]; };
+  var hid = function(x, y, z){ var sx = Math.floor((x - b[0]) / ART), sy = Math.floor(y * se / ART - z * ce / ART + oy);
+    if (sx < 0 || sy < 0 || sx >= W || sy >= Hh) return false; return Z[sy * W + sx] > y * ce + z * se + 0.2; };
+  return { ART:ART, cv:cv, bg:d.bg, sky:d.sky, night:d.night, pr:pr, un:un, zAt:gz, hid:hid, mill:null, se:se, ce:ce, K:d.K, carp:d.carp, Z:Z, ZW:W, zy0:y0, b:b,
+    raw:{ W:W, Hh:Hh, y0:y0, oy:oy, b:b, ART:ART, se:se, ce:ce, K:d.K, carp:d.carp, GX:GX, GY:GY, st:st, GZ:GZ, Z:Z, bg:d.bg, sky:d.sky, night:d.night } }; }
 })();

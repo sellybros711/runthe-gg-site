@@ -60,10 +60,10 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- The Putting Green: a tester preview. It draws nothing until puttOn() opens it (see PUTT_TESTERS). -->
-<script defer src="putt/putt.js?v=62"></script>
+<script defer src="putt/putt.js?v=63"></script>
 <script defer src="putt/land.js?v=6"></script>
-<script defer src="putt/hole3d.js?v=11"></script>
-<script defer src="putt/trail.js?v=20"></script>
+<script defer src="putt/hole3d.js?v=12"></script>
+<script defer src="putt/trail.js?v=21"></script>
 <script defer src="putt/mapland.js?v=4"></script>
 <!-- The course golfer in the profile style, asked through g3dOn(). -->
 <script defer src="golfer3d.js?v=5"></script>
@@ -14853,8 +14853,22 @@ function resumeCareerCard(cs){
 // renders (default camera + grid), so it's the same cache entry, not a second render, and it's built
 // lazily off the paint path because the first build of a tile costs ~100ms.
 let _dArt={};
+/* TODAY'S STRIP IS KEPT ON THE DEVICE. Building it is a 3D terrain render, about half a second of a desktop and two
+   of a phone, and it ran on every visit to the home screen, a moment after the page had painted, so the first
+   thing a player could touch froze under them. It is the same picture all day, so the last one built is kept in
+   localStorage (one course, about 230KB) under a key that names the course and the code that draws it: a change
+   to how a strip is drawn builds a fresh one rather than showing yesterday's drawing. */
+const DART_LS='bag_dart_v1';
+let _dArtV=null;
+function dArtKey(courseKey){ if(_dArtV===null){ try{ const tv=(document.querySelector('script[src*="tracer3d.js"]')||{}).src||'';
+    _dArtV=String(dHash(String(pxTerrainURL)+String(hvGeom)+String(hvBiome)+tv)); }catch(e){ _dArtV='?'; } }
+  return courseKey+'|'+_dArtV; }
+function dArtStored(courseKey){ try{ const hit=JSON.parse(localStorage.getItem(DART_LS)||'null');
+    if(hit && hit.k===dArtKey(courseKey) && typeof hit.u==='string' && hit.u.indexOf('data:image/')===0) return _dArt[courseKey]=hit.u; }catch(e){}
+  return null; }
 function dailyCourseArt(courseKey){
   if(_dArt[courseKey]!==undefined) return _dArt[courseKey];
+  if(dArtStored(courseKey)) return _dArt[courseKey];
   _dArt[courseKey]=null;
   try{
     const c=DAILY_COURSES[courseKey];
@@ -14865,6 +14879,8 @@ function dailyCourseArt(courseKey){
       const seedN=(dHash(courseKey)^Math.imul(idx+1,0x9e3779b1))>>>0;
       const g=hvGeom(seedN, h[0], h[1], courseKey, idx);
       _dArt[courseKey]=pxTerrainURL(g, seedN, hvBiome(courseKey))||null;
+      // only the 3D strip is kept: one built before the 3D module arrived is the stand-in, not the picture
+      if(_dArt[courseKey] && t3dOn()) try{ localStorage.setItem(DART_LS, JSON.stringify({ k:dArtKey(courseKey), u:_dArt[courseKey] })); }catch(e){}
     }
   }catch(e){ _dArt[courseKey]=null; }
   return _dArt[courseKey];
@@ -14903,7 +14919,7 @@ function dailyHeroCard(){
   const cname=c.v?dShort(c.v):'';
   // The art is only DEFERRED the very first time (building a terrain tile costs ~100ms). Once it's built
   // it goes straight into the markup, so re-rendering the home screen can't pop the strip in and out.
-  const artReady=(_dArt[ck]!==undefined)?_dArt[ck]:null;
+  const artReady=(_dArt[ck]!==undefined)?_dArt[ck]:dArtStored(ck);
   const card=$(`<button class="gcard gc-gold${cname?' hasart':''}" aria-label="Play 18, today's round${cname?' at '+esc(cname):''}">
     <div class="gc-top"><div style="min-width:0"><div class="gc-kick">Daily Challenge</div><div class="gc-title">Play 18</div></div>${badge?`<span class="gc-badge">${badge}</span>`:''}</div>
     <div class="gc-mid">${mid}</div>

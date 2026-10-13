@@ -2559,20 +2559,20 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "62",
-      "sha": "c6de93192f35c920"
+      "v": "63",
+      "sha": "a4e847d47382fd5c"
     },
     "putt/land.js": {
       "v": "6",
       "sha": "ae344c7105d10d42"
     },
     "putt/hole3d.js": {
-      "v": "11",
-      "sha": "560bde541ebfffa0"
+      "v": "12",
+      "sha": "9c84d741aaed6650"
     },
     "putt/trail.js": {
-      "v": "20",
-      "sha": "3252dc36765ca29a"
+      "v": "21",
+      "sha": "afb513e26da839e9"
     },
     "putt/mapland.js": {
       "v": "4",

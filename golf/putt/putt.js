@@ -2823,16 +2823,49 @@ function trailKey(sp){ return sp.key + '|' + sp.halfW + '|' + (sp.gateOpen ? 1 :
 // kept on the module, not on S, so a plan survives the mode being closed and opened again
 var TRP = {};
 function trailPlan(sp){ var k = trailKey(sp); if (!TRP[k]){ TRP[k] = window.RTT_PUTT_TRAIL.plan(sp); var ks = Object.keys(TRP); if (ks.length > 12) delete TRP[ks[0]]; } return TRP[k]; }
-// render the trail out of this hole while the hole is played (frame() calls trailTick), a few ms a frame
+/* RENDERED TRAILS ARE KEPT, on the module and on the device. A trail is seconds of work on a phone and is the same
+   picture every time, so it is rendered once: TRC holds the last few for as long as the page is open (closing the
+   mode and opening it again used to render the trail it opens on from scratch, every time), and IndexedDB holds the
+   last few across visits, so a player coming back tomorrow opens on a trail that is already there. TRJ is the one
+   render in progress, kept here too, so leaving the mode part way through a render does not throw the work away.
+   The disk copy is keyed on the trail and on the versions of the files that draw it (TRAIL_V), so a change to any
+   of them renders afresh rather than showing an old picture. Every disk call fails soft: null is "render it". */
+var TRC = {}, TRJ = null, TRC_KEEP = 4, TIDB = null, TIDB_KEEP = 3, TRAIL_V = null;
+function trcPut(k, pic){ TRC[k] = pic; var ks = Object.keys(TRC); if (ks.length > TRC_KEEP) delete TRC[ks[0]]; }
+function trailV(){ if (TRAIL_V) return TRAIL_V;
+  var v = ['putt.js', 'trail.js', 'hole3d.js'].map(function(f){ try{ var e = document.querySelector('script[src*="putt/' + f + '"]'), m = e && /[?&]v=([^&]+)/.exec(e.src); return m ? m[1] : '?'; }catch(e){ return '?'; } });
+  // PXHD lives in the page, which has no version of its own: its palette is what reaches the picture, so a few ramps stand in
+  try{ var R = window.PXHD.ramp; v.push(hstr(['#3a8f4e', '#c08a4e', '#f4efe2', '#2f86c8'].map(function(c){ return R(c).join(); }).join('|'))); }catch(e){ v.push('?'); }
+  return TRAIL_V = v.join('.') + '.' + (window.RTT_PUTT_FX === 'off' ? 0 : 1); }
+function tidb(){ if (TIDB) return TIDB;
+  TIDB = new Promise(function(res){ try{ if (!window.indexedDB) return res(null); var q = indexedDB.open('rtt_putt_trails', 1);
+    q.onupgradeneeded = function(){ try{ q.result.createObjectStore('t'); }catch(e){} }; q.onsuccess = function(){ res(q.result); }; q.onerror = q.onblocked = function(){ res(null); }; }catch(e){ res(null); } });
+  return TIDB; }
+function tidbGet(k){ var H3 = window.RTT_PUTT_3D; if (!H3 || !H3.unpack) return Promise.resolve(null);
+  return tidb().then(function(db){ if (!db) return null; return new Promise(function(res){ try{ var q = db.transaction('t', 'readonly').objectStore('t').get(k + '@' + trailV());
+    q.onsuccess = function(){ var pic = null; try{ pic = q.result ? H3.unpack(q.result.d) : null; }catch(e){ pic = null; } res(pic); }; q.onerror = function(){ res(null); }; }catch(e){ res(null); } }); }).catch(function(){ return null; }); }
+function tidbPut(k, pic){ var H3 = window.RTT_PUTT_3D; if (!H3 || !H3.pack || !pic || !pic.raw) return;
+  var later = window.requestIdleCallback || function(f){ return setTimeout(f, 1200); };
+  later(function(){ tidb().then(function(db){ if (!db) return; var d = null; try{ d = H3.pack(pic); }catch(e){ d = null; } if (!d) return;
+    try{ var tx = db.transaction('t', 'readwrite'), os = tx.objectStore('t'), key = k + '@' + trailV(); os.put({ d:d, at:Date.now() }, key);
+      // keep the newest few: the oldest go, and so does anything written by an older version of the files
+      var all = os.getAllKeys(); all.onsuccess = function(){ var ks = (all.result || []).filter(function(x){ return x !== key; }), stale = ks.filter(function(x){ return String(x).split('@')[1] !== trailV(); });
+        stale.forEach(function(x){ os.delete(x); }); var keep = ks.filter(function(x){ return stale.indexOf(x) < 0; });
+        if (keep.length >= TIDB_KEEP){ var ages = {}, n0 = keep.length; keep.forEach(function(x){ var g = os.get(x); g.onsuccess = function(){ ages[x] = g.result ? g.result.at : 0;
+          if (--n0 === 0) keep.sort(function(a, c){ return ages[a] - ages[c]; }).slice(0, keep.length - (TIDB_KEEP - 1)).forEach(function(x2){ os.delete(x2); }); }; }); } }; }catch(e){} }); }, { timeout:4000 }); }
+// a trail finished rendering: kept here, and on the device
+function trailDone(k, out){ trcPut(k, out); if (out) tidbPut(k, out); }
+// render the trail out of this hole while the hole is played (frame() calls trailTick), a few ms a frame; a copy on the device is used instead
 function trailAhead(tid, from){
   try{ var TR = tourOf(tid); if (!trailOk() || from >= TR.levels.length || from < 0) return; var sp = trailSpec(tid, from), k = trailKey(sp);
-    S.trc = S.trc || {}; if (S.trc[k] !== undefined || (S.trjob && S.trjob.k === k)) return;
-    var P = trailPlan(sp); S.trjob = { k:k, step:window.RTT_PUTT_TRAIL.slices(P) }; }catch(e){ S.trjob = null; } }
-function trailTick(ms){ var J = S.trjob; if (!J || S.v3job) return;
+    if (TRC[k] !== undefined || (TRJ && TRJ.k === k)) return;
+    var P = trailPlan(sp), J = TRJ = { k:k, step:window.RTT_PUTT_TRAIL.slices(P) };
+    tidbGet(k).then(function(pic){ if (pic && TRJ === J){ TRJ = null; trcPut(k, pic); } }); }catch(e){ TRJ = null; } }
+function trailTick(ms){ var J = TRJ; if (!J || S.v3job) return;
   // while aiming a little a frame; once the hole is over and the result is up, nothing else is moving, so more
   var P = S.play; if (P && ((P.state !== 'aim' && P.state !== 'done') || S.held)) return; if (P && P.state === 'done') ms = 10;
-  var out = null; try{ out = J.step(ms || 4); }catch(e){ S.trjob = null; S.trc[J.k] = null; return; }
-  if (out){ S.trjob = null; S.trc[J.k] = out; var ks = Object.keys(S.trc); if (ks.length > 3) delete S.trc[ks[0]]; } }
+  var out = null; try{ out = J.step(ms || 4); }catch(e){ if (TRJ === J) TRJ = null; TRC[J.k] = null; return; }
+  if (out){ if (TRJ === J) TRJ = null; trailDone(J.k, out); } }
 function stopTrail(){ if (S && S.trailCtl){ try{ S.trailCtl.stop(); }catch(e){} S.trailCtl = null; } if (S) cancelAnimationFrame(S.trraf); }
 function goldenOf(st, tid, w){ var TR = tourOf(tid), K = TR.per || PER, have = 0, tr = st.trail || {};
   for (var n = w * K + 1; n <= Math.min(TR.levels.length, w * K + K); n++) if (tr[tid + ':' + n] && tr[tid + ':' + n].g) have++;
@@ -2859,7 +2892,7 @@ function openTrail(tid, from){
   // the world's title card holds while the world loads, and leaves once you are standing in it
   var wbn = S.ov.querySelector('.pp-wban'); function banOut(){ if (wbn) setTimeout(function(){ if (wbn.isConnected) wbn.classList.add('out'); setTimeout(function(){ if (wbn.isConnected) wbn.remove(); }, 700); }, 2200); }
   var box = S.ov.querySelector('[data-tbox]'), P = trailPlan(sp);
-  S.trc = S.trc || {}; var pic = S.trc[k];
+  var pic = TRC[k];
   function go(pic){ if (!S || S.screen !== 'trail' || !box.isConnected) return;
     if (!pic){ return walkFlat(from, tid); }
     var st0 = pload(), rec0 = (st0.trail || {})[sp.key] || {};
@@ -2925,10 +2958,14 @@ function openTrail(tid, from){
   if (pic !== undefined) return go(pic);
   // not rendered yet: say so, and render it at full pace behind a bar
   box.innerHTML = '<div class="pp-tload"><b>Walking out to hole ' + to + '</b><span><u></u></span></div>';
-  var bar = box.querySelector('u'), J = (S.trjob && S.trjob.k === k) ? S.trjob : { k:k, step:window.RTT_PUTT_TRAIL.slices(P) }, n0 = 0; S.trjob = null;
-  (function stepIt(){ if (!S || S.screen !== 'trail' || !box.isConnected) return; var out = null; try{ out = J.step(14); }catch(e){ S.trc[k] = null; box.innerHTML = ''; return go(null); }
+  // a job already under way for this trail carries on where it was (it is kept on the module, so leaving and coming
+  // back loses nothing), and the device's copy, if it has one, takes over the moment it answers
+  var bar = box.querySelector('u'), J = (TRJ && TRJ.k === k) ? TRJ : (TRJ = { k:k, step:window.RTT_PUTT_TRAIL.slices(P) }), n0 = 0, landed = false;
+  function land(out){ if (landed || !S || S.screen !== 'trail' || !box.isConnected) return; landed = true; cancelAnimationFrame(S.trraf); box.innerHTML = ''; go(out); }
+  tidbGet(k).then(function(pic){ if (!pic || landed) return; if (TRJ === J) TRJ = null; trcPut(k, pic); land(pic); });
+  (function stepIt(){ if (landed || !S || S.screen !== 'trail' || !box.isConnected) return; var out = null; try{ out = J.step(14); }catch(e){ if (TRJ === J) TRJ = null; TRC[k] = null; return land(null); }
     n0++; if (bar) bar.style.width = Math.min(96, 8 + n0 * 2.4) + '%';
-    if (out){ S.trc[k] = out; box.innerHTML = ''; return go(out); } S.trraf = requestAnimationFrame(stepIt); })();
+    if (out){ if (TRJ === J) TRJ = null; trailDone(k, out); return land(out); } S.trraf = requestAnimationFrame(stepIt); })();
 }
 function walkTo(n, tid){
   var TR = tourOf(tid), N = TR.levels.length;
