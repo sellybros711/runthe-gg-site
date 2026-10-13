@@ -2353,18 +2353,17 @@ check(!!fanLabel && Number((fanLabel[0].match(/flex:0 0 (\d+)px/) || [])[1]) >= 
    the layout is fixed: the rules are above the band panel now and the loop is
    in the hero. What is left is two steps and a pointer at the tab bar. */
 console.log('the walkthrough');
-check(/const GUIDE_STEPS = \[/.test(gameBare), 'a first visit gets walked through the page');
+check(/const GUIDE_STEPS = \[/.test(gameBare), 'the walkthrough exists');
 check(/id="guide"/.test(gameBare), 'the overlay is in the markup');
 /* IT MUST BE GETTABLE BACK. A walkthrough you can only ever see once is a
    popup; the button under the rules is what makes it a manual. */
 check(/id="guideBtn"/.test(gameBare), 'and can be reopened afterwards');
 check(/if \(e\.target\.closest\('#guideBtn'\)\)\{ openGuide\(0\); return; \}/.test(gameBare),
   'the reopen button is wired');
-/* ONCE. Guarded by a stored key AND an in-session flag, because a home screen
-   re-render would otherwise bring it back after somebody closed it. */
-check(/const GUIDE_KEY = 'segue_guide_v1'/.test(gameBare), 'it remembers being seen');
-check(/!guideAutoTried && !guideSeen\(\)/.test(gameBare),
-  'and cannot reappear later in the same session');
+/* NEVER BY ITSELF (owner's call: no auto tutorial on any game). The button is
+   the only way in, so nothing may call openGuide outside its handler. */
+check(!/requestAnimationFrame\(\(\) => \{ if \(S\.screen === 'home'\) openGuide/.test(gameBare)
+  && !/guideAutoTried/.test(gameBare), 'the walkthrough never opens by itself');
 
 /* EVERY STEP AIMS AT SOMETHING THAT EXISTS. The arrow is positioned from the
    target's measured rect, so a renamed hook does not throw, it silently points

@@ -102,7 +102,7 @@ async function playOne(browser, w, h, dpr, touch, youHome) {
   await pg.evaluate(() => localStorage.clear());
   await pg.goto(URL);
   await pg.evaluate((yh) => {
-    Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
+    Sound.muted = true; PREFS.cutscenes = false; PREFS.tips = false;
     window.confirm = () => true;
     State.gameSpeed = 'fast'; applyGameSpeed();
     State.team = ROSTER.slice().sort(() => Math.random() - 0.5).slice(0, 9).map(c => c.k);
@@ -426,7 +426,7 @@ async function sheets(browser) {
        that is how this game is met. `youHome` puts you in the field first, so
        the pitching cards are the ones drawn and the bullpen is offered. */
     await pg.evaluate(() => {
-      Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = true;
+      Sound.muted = true; PREFS.cutscenes = false; PREFS.tips = true; PREFS.coach_bat = false; PREFS.coach_pitch = false;
       State.gameSpeed = 'fast'; applyGameSpeed();
       State.team = ROSTER.slice(0, 9).map(c => c.k);
       State.teamName = 'Testers';
@@ -478,7 +478,7 @@ async function sheets(browser) {
        arena is shortest when the deck is tallest, so the pessimistic reading
        needs the deck drawn and the log started. */
     await pg.evaluate(() => {
-      PREFS.coach = false;
+      PREFS.tips = false;
       const c = document.querySelector('.coach'); if (c) c.remove();
     });
     await pg.waitForTimeout(3000);

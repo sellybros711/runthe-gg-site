@@ -6342,11 +6342,11 @@ function finishCreate(){
       txt:`<b>${pendMgr}</b> walks with you to the ring from tonight.`});
     window._pendingManagerName=null;
   }
-  // Assign the first season goal. The briefing modal waits until the guided
-  // tour has finished (endTour fires it) so a brand-new player is not reading
-  // two overlays at once. Players who skip the tutorial get it immediately.
+  // Assign the first season goal. The walkthrough no longer runs by itself
+  // (owner's call: no auto tutorial), so the briefing is never deferred for it.
+  // Help > Walkthrough still opens the tour on demand.
   try { assignSeason(); } catch(_){}
-  G.car._briefingDeferred = !G.car.tourDone;
+  G.car._briefingDeferred = false;
   save(); go('career'); toast('Welcome to the business, '+name);
   if(!G.car._briefingDeferred){
     setTimeout(()=>{ try{ showSeasonBriefing(); }catch(_){} }, 900);
@@ -7342,7 +7342,7 @@ function openHelp(){
   const p=(G&&G.prefs)||{};
   const row=(k,label,on)=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:8px;"><span>${label}</span><button class="ghost" style="min-height:44px;padding:6px 14px;" onclick="setPref('${k}')">${on?'On':'Off'}</button></div>`;
   modal('Help', `<p class="log">New here, or want the details?</p>${G&&G.car?`<div class="log" style="margin-top:6px;"><b>Settings</b>${row('untimed','Timing spots',!p.untimed)}${row('noMoments','Milestone cards',!p.noMoments)}${window.RTR_3D&&RTR_3D.ok?`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:8px;"><span>3D ring</span><button class="ghost" style="min-height:44px;padding:6px 14px;" onclick="set3D()">${RTR_3D.on()?'On':'Off'}</button></div>`:''}</div>`:''}`,
-    [{label:'Replay walkthrough',cls:'ghost',fn:()=>{closeModal(); startTour('hub');}},
+    [{label:'Walkthrough',cls:'ghost',fn:()=>{closeModal(); startTour('hub');}},
      {label:'Open the Rulebook',fn:()=>{closeModal(); openRules(0);}}]);
 }
 // a modal you can await, so the game can pause and explain itself before it starts
@@ -8047,12 +8047,8 @@ function renderCareer(){
   renderStoryPanel();
   renderWeek();
   if(c._momToast){ const _t=c._momToast; c._momToast=null; setTimeout(()=>toast(_t),600); }
-  // the manual runs itself once, on the first week you ever see. Re-check on
-  // fire: anything can happen in the 420ms, including the player skipping it.
-  if(!c.tourDone && TOUR_I<0){
-    setTimeout(()=>{ if(G && !G.car.tourDone && TOUR_I<0 && G.screen==='career') startTour('hub'); },420);
-    return;
-  }
+  // The walkthrough used to run itself here on the first week. It is on demand
+  // now (Help > Walkthrough), so the first week goes straight on.
   setTimeout(()=>{ if(showStreakCard()) return; if(!showCeremony()) showMoments(); },400);   // streak, then podium, then moments
 }
 function renderAttrs(){
@@ -10875,9 +10871,8 @@ function decide(head,sub,opts){
       el.classList.remove('on'); el.innerHTML='';
       res(opts[+d.dataset.i]);
     });
-    // the match is already paused here waiting on this promise, so the first
-    // time it happens is the safe moment to explain what a spot even is
-    if(G&&!G.car.decSeen){ setTimeout(()=>startTour('dec'),260); }
+    // The spot explainer no longer opens by itself (no auto tutorials). The
+    // Rulebook in Help explains spots.
   });
 }
 

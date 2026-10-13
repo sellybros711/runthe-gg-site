@@ -75,7 +75,7 @@ async function game(browser, w, h, dpr, mode, youHome) {
   await pg.goto(URL);
   await pg.waitForTimeout(400);
   await pg.evaluate(([m, yh]) => {
-    Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
+    Sound.muted = true; PREFS.cutscenes = false; PREFS.tips = false;
     if (m) { PREFS.smooth = m === 'smooth'; document.body.classList.toggle('smooth', PREFS.smooth); }
     State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
     State.opponent = OPPONENTS[0]; State.innings = 5; State.mode = 'exhibition';
@@ -649,7 +649,7 @@ const main = async () => {
       await pg.goto(URL);
       await pg.waitForTimeout(350);
       const r = await pg.evaluate(() => new Promise((res) => {
-        Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
+        Sound.muted = true; PREFS.cutscenes = false; PREFS.tips = false;
         State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
         const out = []; let i = 0;
         const step = () => {
@@ -804,7 +804,7 @@ const main = async () => {
       await pg.goto(URL);
       await pg.waitForTimeout(350);
       await pg.evaluate(() => {
-        Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
+        Sound.muted = true; PREFS.cutscenes = false; PREFS.tips = false;
         State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Testers';
         State.opponent = OPPONENTS[0]; State.innings = 5; State.mode = 'exhibition';
         startGame({ mode: 'exhibition', youHome: false });

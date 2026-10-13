@@ -3645,7 +3645,6 @@ let GUIDE_AT = 0;
 /* Declared here rather than beside renderHome, which is where it is set: a
    `let` used above its own declaration only works because nothing calls
    renderHome during module evaluation, and that is not a thing to rely on. */
-let guideAutoTried = false;
 const guideEl = () => document.getElementById('guide');
 
 function guideSeen(){ try { return !!localStorage.getItem(GUIDE_KEY); } catch { return false; } }
@@ -3913,8 +3912,8 @@ function renderHome(){
     ${S.error ? `<div class="err">${esc(S.error)}</div>` : ''}
 
     <section class="how">
-      <!-- The walkthrough runs itself on a first visit. This is how anybody
-           gets it back, which is what makes it a manual rather than a popup.
+      <!-- The walkthrough never opens by itself. This button is the only way
+           in, which is what makes it a manual rather than a popup.
            On the heading's own line rather than in a 46px block under the
            list: the list is what has to clear the fold, and a secondary way
            of reading the same rules is not worth a row to itself. -->
@@ -4015,13 +4014,8 @@ function renderHome(){
       <span>Made-up data we use for testing.</span>
     </div>` : ''}`;
 
-  /* ONCE, ON A FIRST VISIT, and guarded by a flag as well as the stored key so
-     that a home screen re-render mid-session cannot bring it back after
-     somebody has closed it. */
-  if (!guideAutoTried && !guideSeen()){
-    guideAutoTried = true;
-    requestAnimationFrame(() => { if (S.screen === 'home') openGuide(0); });
-  }
+  /* The walkthrough no longer opens by itself (owner's call: no auto tutorial
+     on any game). "Show me around" under How it works is the way in. */
 }
 
 // ── reveal ───────────────────────────────────────────────────────────────────

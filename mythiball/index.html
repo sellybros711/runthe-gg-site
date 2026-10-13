@@ -4951,7 +4951,7 @@ function savePrefs() {
       muted: Sound.muted,
       cutscenes: PREFS.cutscenes !== false,
       smooth: PREFS.smooth !== false,
-      coach: PREFS.coach !== false,
+      tips: PREFS.tips === true,
       coach_bat: !!PREFS.coach_bat,
       coach_pitch: !!PREFS.coach_pitch,
       rosterSort: PREFS.rosterSort || 'name',
@@ -8467,12 +8467,12 @@ function renderSettings() {
         (v) => { PREFS.cutscenes = v; });
 
   group('Coaching tips', [{ v:true, label:'On' }, { v:false, label:'Off' }],
-        (v) => (PREFS.coach !== false) === v,
+        (v) => (PREFS.tips === true) === v,
         (v) => {
-          /* Switching them back on means seeing them again, so the two
-             "already shown" marks come off with it. */
-          if (v && PREFS.coach === false) { PREFS.coach_bat = false; PREFS.coach_pitch = false; }
-          PREFS.coach = v;
+          /* Switching them on means seeing them, so the two "already shown"
+             marks come off with it. */
+          if (v && PREFS.tips !== true) { PREFS.coach_bat = false; PREFS.coach_pitch = false; }
+          PREFS.tips = v;
         });
 
   const row = el('div','btn-row');
@@ -11252,7 +11252,10 @@ const COACH = COARSE ? {
     + 'his hit becomes an out. Miss that one and nothing is lost at all.',
   ],
 };
-function coachDue(kind) { return PREFS.coach !== false && !PREFS['coach_' + kind]; }
+/* NO AUTO TUTORIAL (owner's call, every game): the notes are OFF unless the
+   player turns Coaching tips on in Settings. A new key, `tips`, so a save that
+   wrote the old default-on `coach: true` does not switch them back on. */
+function coachDue(kind) { return PREFS.tips === true && !PREFS['coach_' + kind]; }
 function coachShow(kind, steps, then) {
   const arena = document.querySelector('.arena');
   if (!arena || !coachDue(kind) || !State.game || State.game.over) { then(); return; }
@@ -11276,7 +11279,7 @@ function coachShow(kind, steps, then) {
   };
   const done = () => { box.remove(); PREFS['coach_' + kind] = true; savePrefs(); then(); };
   next.onclick = (e) => { e.stopPropagation(); if (++i >= steps.length) done(); else show(); };
-  skip.onclick = (e) => { e.stopPropagation(); PREFS.coach = false; box.remove(); savePrefs(); then(); };
+  skip.onclick = (e) => { e.stopPropagation(); PREFS.tips = false; box.remove(); savePrefs(); then(); };
   show();
 }
 

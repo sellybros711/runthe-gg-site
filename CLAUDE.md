@@ -330,6 +330,30 @@ that it could not tell which module `E` was on a hoops page that is entirely cor
 The rule keys on the comparison rather than on the word, because the stub below it writes
 `API_VERSION:BOARD_VERSION` into itself and would otherwise count as a pin.
 
+## No game opens a tutorial by itself
+
+The owner's call (2026-10-13): a first visit goes straight into the game. Every guide,
+tour and coach card is still there, behind a button, and nothing calls it on a timer, on
+boot or on a first screen. Older sections below that describe a guide "firing once" are
+history; the guide is the same and only the trigger is gone.
+
+| game | the way in |
+|---|---|
+| Run The Tour | Guided Tour in the menu, and the button in How to Play (`replayTour`) |
+| The Perfect Season | Tutorial on the front page (`#b-tut`); `firstRunGuide()` is kept and check-popups drives it |
+| College | Tutorial on the front page (it was always optional) |
+| Run The Floor | Show me around, inside the How to play card (`#b-home-tour`, `frgOpen`) |
+| Run The Diamond | Quick start, at the top of How to play (`#b-how-quick` opens `#sheet-first`) |
+| MythiBall | Settings, Coaching tips (`PREFS.tips`, off unless turned on; the old `coach` key is ignored) |
+| The wrestling game | Help, Walkthrough (`startTour('hub')`); the spot explainer no longer fires mid-match |
+| Segue | Show me around, under How it works (`#guideBtn`) |
+| The arcade | the "?" on every game (it already never auto-opened) |
+
+Still automatic, deliberately, because they are not tutorials: feature announcements (Run
+The Tour's roster hint), the rules sheet the first time a mode is started (Dynasty, the
+Trade Machine), Putt Putt's world greeters, the wrestling tab tips (one toast each), and
+the fantasy lock day reminder.
+
 ## The Perfect Season front page is one switcher and one button
 
 `#s-intro` in `football/index.html`. The quick drafts are one question with three answers,

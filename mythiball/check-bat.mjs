@@ -46,7 +46,7 @@ await pg.goto(URL);
    evaluate that starts a game and swings in it throws on the first pitch.
    Same wait every harness here needs. */
 await pg.evaluate(() => {
-  Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
+  Sound.muted = true; PREFS.cutscenes = false; PREFS.tips = false;
   window.confirm = () => true;
   State.difficulty = 'medium';
   State.team = ROSTER.slice(0, 9).map(c => c.k); State.teamName = 'Bat';

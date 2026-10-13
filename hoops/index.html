@@ -2130,6 +2130,8 @@
      reports rather than performs. A bar that always fills in two seconds is a
      worse lie than three dots, because it looks like information. */
   /* ── the front page: Classic, then Conquest, then the daily puzzles ─────── */
+  .ht-tour{margin:0 0 12px;}
+  .ht-tour .btn{width:auto;padding:8px 14px;font-size:13px;}
   .lgfacts{font-size:12.5px;color:var(--dim);margin:0 0 12px;}
   .lgfacts b{color:var(--mut);font-family:var(--num);font-variant-numeric:tabular-nums;}
   /* ── CLASSIC, the front page's hero ───────────────────────────────────
@@ -2831,6 +2833,7 @@
     <summary><h2>How to play <span class="sub">five spins, one cap, your pace</span></h2>
       <span class="ht-chev" aria-hidden="true"></span></summary>
 
+    <p class="ht-tour"><button class="btn ghost" type="button" id="b-home-tour">Show me around</button></p>
     <p class="lgfacts">Built from <b id="ls-players">-</b> player-seasons, <b id="ls-clubs">-</b>
       team seasons and <b id="ls-teams">-</b> franchises, <span id="home-era">1974 to 2026</span>.</p>
 
@@ -4072,9 +4075,8 @@ function boot(){
       var st = A.state();
       if (st.signedIn && run && run.boardId) A.claim(run.boardId);
     });
-    /* LAST, and after restore(), because it asks whether there is a run and a
-       career before deciding to interrupt anybody. */
-    frgMaybe();
+    /* The first-run guide no longer opens by itself (owner's call: no auto
+       tutorial on any game). "Show me around" in How to play opens it. */
   }).catch(function(err){
     bootFailed('The league did not load: ' + err.message);
   });
@@ -4482,14 +4484,11 @@ function frgFill(){
 /* Shown on the FRONT PAGE only, and only once the data has landed, because
    the button it points at is disabled until then and an arrow at a dead
    control is worse than no arrow. */
-function frgMaybe(){
-  if (frgSeen() || !DATA) return;
-  var c = loadCareer();
-  /* Somebody with a career has played this before on this device and had the
-     guide cleared with their site data. Explaining the game to them is the
-     tour that will not stop. */
-  if (c && c.runs) { frgMark(); return; }
-  if (run) { frgMark(); return; }
+/* The guide on demand, from How to play. Whatever the seen flag says. */
+function frgOpen(){
+  if (!DATA) return;
+  var ht = $('home-howto'); if (ht) ht.open = false;
+  window.scrollTo(0, 0);
   frgFill();
   $('frg').hidden = false;
 }
@@ -12022,6 +12021,7 @@ document.addEventListener('keydown', function(ev){
     ht.scrollIntoView({ block: 'start', behavior: 'smooth' });
   };
   $('b-home-boards').onclick = function(){ openBoard(); };
+  $('b-home-tour').onclick = function(){ frgOpen(); };
 })();
 
 /* THE OTHER MODES' FEATS. Conquest, Fix History and Six Passes file no row,

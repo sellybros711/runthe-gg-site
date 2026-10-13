@@ -43,7 +43,7 @@ for (const tier of TIERS) {
   const r = await pg.evaluate(async ({ tier, want }) => {
     /* A FIXED OPPONENT, because a random club moves this by twenty points:
        that is calibrate's own note, and it is the reason its arm is pinned. */
-    Sound.muted = true; PREFS.cutscenes = false; PREFS.coach = false;
+    Sound.muted = true; PREFS.cutscenes = false; PREFS.tips = false;
     State.difficulty = tier;
     State.gameSpeed = 'fast'; applyGameSpeed();
     State.team = ROSTER.slice(0, 9).map(c => c.k);

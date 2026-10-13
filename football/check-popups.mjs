@@ -73,19 +73,17 @@ async function openPage(init) {
 const guideUp = (page) => page.evaluate(() => { const el = document.getElementById('frg');
   return !!el && !el.hidden; });
 
-console.log('A STRANGER STILL GETS THE GUIDE');
+console.log('A STRANGER IS NOT SHOWN THE GUIDE BY ITSELF');
 {
   const { ctx, page, boom } = await openPage();
-  await page.waitForFunction(() => { const el = document.getElementById('frg');
-    return el && !el.hidden; }, null, { timeout: 12000 }).catch(() => {});
-  ok('a fresh browser with no account is shown the first-run guide', await guideUp(page));
-  const seen = await page.evaluate(() => JSON.parse(localStorage.getItem('ps_seen_v1') || '{}'));
-  await page.evaluate(() => window.__t.frgClose());
-  ok('  and closing it marks it seen', (await page.evaluate(() => window.__t.hasSeen('guide'))) === true,
-    JSON.stringify(seen));
-  await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(2600);
-  ok('  so the next visit does not show it', !(await guideUp(page)));
+  ok('a fresh browser with no account is not shown the first-run guide', !(await guideUp(page)));
+  ok('  the Tutorial button is the way in', await page.evaluate(() => {
+    const b = document.getElementById('b-tut'); return !!b && !!b.offsetParent; }));
+  ok('  and the guide still opens when asked', await page.evaluate(() => {
+    window.__t.setAuth({ ready: true, signedIn: false }); return window.__t.firstRunGuide(); }));
+  await page.evaluate(() => window.__t.frgClose());
+  ok('  and closing it marks it seen', (await page.evaluate(() => window.__t.hasSeen('guide'))) === true);
   ok('  nothing threw', boom.length === 0, boom[0] || '');
   await ctx.close();
 }
