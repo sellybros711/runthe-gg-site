@@ -7938,136 +7938,54 @@ window's rule, the catch window's and the robbery's, arriving a fourth time at
 the one timer every plate appearance goes through. `verify-rules` drives both
 halves in "an at bat starts in its own game".
 
-### A phone gets a MENU, a desktop gets the room
+### The home page is a ballpark, on every width
 
-The home screen is the clubhouse. It is called the clubhouse everywhere the
-player can see and in the code; the seven places a character says "dugout" mean
-the one beside the field during a game and are left alone.
+The home screen used to be a drawn clubhouse room (a desktop) and a strip of
+floorboard (a phone). The owner's verdict: the dugout does not fit. The game is a
+ballpark, so the front door is one. `renderMenu` is one layout for every window:
+`parkHero()`, then the franchise panel, the locker, the four mode tiles and the
+wire.
 
-**These are two designs, not two sizes of one, and that is the whole lesson of
-this screen.** `landscapeRoom()` draws a room: four objects hung on a wall, a
-small sign over each, and a rail underneath that names whatever the pointer is
-on. `renderPhoneMenu()` draws a strip of floor with the team standing on it.
-`renderMenu` picks by `ROOMFILL`. **The HERO is what differs now, and nothing
-under it does**: both then get the franchise panel, the four mode tiles and the
-wire, from the same three functions.
+**The park is `drawField`, the wide camera's own painter, with no game running.**
+So the park on the menu IS the park you play in. `MENU_THEME` is set around that
+one call and `currentTheme()` returns it first; nothing else may set it. A running
+franchise shows its own park ("Home"); otherwise one opponent park is picked per
+visit (`MENU_PARK`) and kept, so a resize does not change the scenery.
 
-**The room cannot carry this screen at phone width, and five attempts is enough
-evidence.** The rail is what tells you what the objects do, and a phone has no
-pointer to drive one, so what arrived was a picture with four labels on it.
-Every fix aimed at SIZE failed, because size was never the fault:
+**The players stand at the real posts** (`fieldGeom`, `fielderPosts`): a batter, a
+pitcher, a catcher and the seven fielders, from `clubhouseCast(10)` (your own
+player bats when you have one). They play one pitch on a 4.2 second loop
+(`heroBeat`): the windup, the swing and a ball off the bat. Reduced motion holds
+the first frame and stops the loop.
 
-| attempt | what came back |
-|---|---|
-| fill the window | a strip of room over half a screen of dead card stock |
-| draw it closer in | legible, and still a picture rather than a menu |
-| make them lockers | four frames holding a bat rack, a clipboard, a framed photo and a chalkboard: four objects of wildly different real size, above two people as tall as one frame. It stopped depicting anything. |
+Five things to know before touching it:
 
-The arithmetic underneath: four modes need four labels a thumb apart and
-readable at arm's length, and four lockers side by side in 358 CSS pixels are 89
-each, which does not hold the word EXHIBITION. Any grid that fixes that stops
-being a room.
+- **Two canvases, one box.** The park is painted once; the people are an overlay
+  repainted at most 30 times a second. `.hero-box` carries `--ar`, the crop's
+  shape, so the two cannot disagree.
+- **Retro draws at the world's block size** (1/PIX) and CSS blows it up with
+  `--pxr`; smooth draws at the size it is shown. `heroCanvas()` is the one place.
+- **`drawField` queues its type on `HUD_Q`** for the game's crisp pass. The hero
+  replays what it queued onto its own canvas and splices it back off, so the
+  game's queue is untouched.
+- **The crop is by window SHAPE**, not the `roomfill` class: an upright window
+  gets the infield (`HERO_TALL`), anything else the whole park. A short window
+  caps the park's height so the franchise button stays near the top.
+- **`.pk-box` was already the pack sheet's class.** The first draft used it and
+  the park came out 620 wide inside an 880 panel. Every hero class is `hero-*`.
 
-**Real text is the point, not a detail.** Everything in a canvas is drawn at
-whatever the browser's scaling leaves it: the room's signs came out at six CSS
-pixels once and nothing in the code said so. A button's label is set in CSS and
-arrives at the size it asks for, and the suite asserts the computed font size
-rather than a number derived from a layout.
+`check-motion`, `check-collection` and `verify-rules` ("the room fills up", the
+phone menu, turning it sideways) assert the park is there, keeps its shape, takes
+the width the layout allows, and leaves the franchise button above the fold on a
+desktop.
 
-Two things are easy to undo by accident:
+**A phone tile stands up rather than lying down**, keyed on `body.roomfill`, so
+the name holds 16px. **The franchise is the button**, its status read off the
+save by `franchisePanel()`. **A rotation is not a render**: the resize listener
+re-renders the menu so the crop follows the phone.
 
-- **A rotation is not a render.** Which menu a window gets is decided once per
-  render, so without the resize and orientationchange listener a phone turned
-  sideways keeps whichever one it had. It used to be the room that went stale
-  that way; now it is the choice between the two. It has already been deleted
-  once by a patch that replaced the block around it, and only the suite noticed.
-- `body.roomfill` is one `matchMedia` in the script that the stylesheet keys
-  off. Write that query out a second time in CSS and the two drift.
-
-The same arithmetic broke the GAME screen sideways: `#field` derives its width
-from a height budget that assumed 265px of furniture above and below, which in a
-390 tall window left 125, so an 844 wide phone drew a 182 wide field. Sideways is
-not short of width, it is short of height, so under `max-height: 560px` the
-furniture goes in a column beside the field instead of above and below it.
-
-#### The room was the whole menu, and a room is not a menu
-
-**The desktop used to be the room and nothing else.** Four objects on a wall,
-and the way to find out what any of them did was to point at one and read a
-rail. That works exactly as well as the phone version did before it was rebuilt,
-which is to say it is a picture with four labels on it, and the argument two
-paragraphs up applies to both. **The room is the HERO now and the tiles are the
-menu under it**, on every width. `check-premium.mjs`'s own rule about a door
-that is drawn versus a door that opens is the same idea: a reader has to be able
-to find the mode.
-
-**The franchise is the button, and what it says is read off the save.** It was
-the second of four identical rows, no louder than How To Play, and it is the
-thing a returning player came back for. `franchisePanel()` reuses the `season`
-thing's own `go`, so there is exactly one place that knows what starting or
-resuming a franchise means, and the line above it (`Year 3`, `2-1`, `Game 4 of
-7`) is read off `State.season` rather than written. **The status used to be
-printed twice**, once there and once in a sentence further down the card, and
-the second copy is gone rather than kept in step.
-
-**Nothing in the copy carries a number that is not counted.** The roster line is
-`ROSTER.length`, the wire's unlock count is counted off `isUnlocked`, and no
-line anywhere invents a batting average. This repo's oldest rule about numbers
-in sentences, on a screen that had no interpolation in it at all.
-
-**The cast is four of them, drawn at random, and each on its own clock.** The
-room stood the FIRST TWO draftable characters on the floor, so every visit was
-the same two people and the clubhouse read as a set. `clubhouseCast()` shuffles
-once per visit and keeps the answer as module state, because **the room repaints
-on every hover**: picked inside the painter, the people would reshuffle each
-time the pointer crossed the bat rack. Each one gets its own period and offset,
-so nothing ever lines up into a machine.
-
-**A pose that decodes to the same drawing is not a frame.** Thirteen of the
-sixty eight characters have no animation strips, so `ready` and `cheer` ARE
-`idle` for them. `castPoses()` asks `v2Frame` for the decoded drawing, which is
-the same lesson the sprite guards learnt when aliasing arrived: a loop swapping
-one frame for an identical one is not animation and nothing would report it.
-
-**They are their own canvas, over the room's.** The room is a detailed drawing
-that changes only when the pointer moves; the people change several times a
-second. In one canvas every breath would repaint the whole clubhouse.
-
-**THE FIRST TICK IS DEFERRED, and that is not tidiness.** `renderMenu` builds
-the whole tree before handing it to the page, so a canvas asked to paint during
-the build is not in the document yet: `runCast`'s `isConnected` guard fired on
-frame one, stopped the loop, and **the clubhouse came up with nobody in it**.
-Nothing threw. `requestAnimationFrame` for the first tick as well as the rest.
-
-**The loop stops the moment the menu is left**, the way the live game and the
-bracket already do, and `REDUCED` (one `matchMedia` beside `ROOMFILL`) holds
-everybody on one frame.
-
-**A phone tile stands up rather than lying down, and that is what buys the type
-its size.** Beside a 46px icon, a half width tile has about 110px of text
-column, which forces the name to 11px. That is the six-pixel signs arriving
-again, so the tiles go to a column and the name holds 16px. **Keyed on
-`body.roomfill`, never on a width**, which is the rule two bullets up: a
-768x1024 tablet is past no width breakpoint and IS the phone menu, so a width
-query gave it the desktop row and a 13px name on a touch screen.
-
-**An existing rule won on order and nothing said so.** The first grid was
-`.modes`, which this page already carries as
-`repeat(auto-fit,minmax(200px,1fr))` about two hundred lines earlier, so a
-two-column grid rendered three across. Everything the redesign added is
-prefixed `hmode`.
-
-**The Meet the players tile is the one whose picture IS what it opens**, two of
-the cast on a pair of card edges. The overlap was .70 of the card, which puts
-the front card's edge at .30 and the back character's centre at .35: a sliver of
-shoulder and a lot of white. **It looked fine in the first screenshot because
-the character drawn there happened to be left biased**, which is luck rather
-than a layout. It is .60 now, edge at .40 against a centre at .30.
-
-**The desktop guards changed on purpose and both say the same thing.** Two
-assertions read "a desktop gets the room and no doors", which was true while the
-room WAS the menu. They ask for `room && doors === 4` now. A guard that still
-demanded zero would be holding the page to a design it no longer has.
+The same height arithmetic broke the GAME screen sideways once: under
+`max-height: 560px` the furniture goes in a column beside the field.
 
 The regression suite, which is the thing to run after editing:
 
