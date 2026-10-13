@@ -852,7 +852,7 @@ function dailyHole(dayKey){
 /* ================================================================= THE PUTT PUTT TOURS: 180 + 18 HOLES */
 /* TWO TOURS. The Putt Putt Tour is everybody's: ten worlds of eighteen, played strictly in order, on
    the game's own evergreen worlds (never a season's theme). The Members Tour is the Tour Pass holder's:
-   eighteen holes on the season's theme, the hardest on the site, paying the most.
+   eighteen holes on the season's theme, each with a trick of its own, paying the most. Anybody may walk it.
 
    Every hole is laid out here by hand, in feet, tee at the bottom and the cup toward the top, and no
    two share a layout. EVERY HOLE HAS SOMETHING TO PLAY: an obstacle, a puzzle or a clock. The set
@@ -1471,38 +1471,48 @@ var LEVELS = [
     climb(H, 3, -12, -16, 2.4); zoneR(H, M.ICE, -7, -18, 7, -21); bumps(H, T, [[-3, -25, 0.7], [3, -26, 0.6]]); jump(H, 0, -30, 0, -1, 3.0, 14, { h:0.9, ang:40 }); zoneR(H, M.WATER, -7, -42, 7, -45); drawb(H, -1.4, -42, 1.4, -45, 3, 0.2, 0.55);
     blk(H, T, -7, -41.4, -1.4, -42); blk(H, T, 1.4, -41.4, 7, -42); spinner(H, T, 1.5, -50, 2.0, 1.4, 2); bumps(H, T, [[-4, -49, 0.6]]); zoneR(H, M.MUD, 3, -56, 7, -58); flatAt(H, -2, -54); return H; } }
 ];
-/* THE MEMBERS TOUR: the season's own eighteen, for Tour Pass holders. Two halves of nine on the
-   season's two themes, every set piece on the site, several at once, on clocks, over the hazard. They
-   are built to be the hardest holes in the game and still beatable without luck: par is the solver's,
-   the same rule as the Putt Putt Tour. */
+/* THE MEMBERS TOUR: the season's own eighteen, for Tour Pass holders, two halves of nine on the season's two
+   themes. Par is the solver's, the same rule as the Putt Putt Tour.
+   HALLOWS NIGHT IS NOT HARDER THAN THE TOUR, IT IS ITS OWN. The owner's call, after its first nine were every
+   set piece at once on a clock over the water and members gave up on hole 1: a season hole does not need to be
+   harder, it needs to be unlike anything else. So each Hallows hole is ONE haunted idea (a gate, a coffin, a
+   cauldron, a belfry bat, a turning parlour floor, a river of brew, a crypt door on a switch, a leap over a
+   grave, the haunted mill) and a few headstones and pumpkins. What it gives on top is the trick or treat bonus
+   (PAY.members.treat). Harvest Moon still packs more into a hole, which check-putt asks of the second world. */
 var MEMBER_WORLDS = [
-  { id:'hallows', name:'Hallows Night', theme:'haunted', blurb:'The season’s front nine, for Tour Pass members.', haz:['Every set piece', 'At once'] },
+  { id:'hallows', name:'Hallows Night', theme:'haunted', blurb:'The season’s front nine, for Tour Pass members.', haz:['One trick a hole', 'Trick or treat'] },
   { id:'harvest', name:'Harvest Moon', theme:'harvest', blurb:'The season’s back nine.', haz:['Every set piece', 'At once'] }
 ];
 var MEMBER_LEVELS = [
-  // ---- HALLOWS NIGHT
-  { par:3, three:2, f:function(T){ var H = hole([rm(-5, 0, 5, -12), rm(-5, -11.9, 5, -15.1), rm(-5, -15, 5, -38)], [0, -2.5], [2.5, -34]); zoneR(H, M.WATER, -5, -12, 5, -15); drawb(H, -1.2, -12, 1.2, -15, 2.6, 0, 0.5); blk(H, T, -5, -11.4, -1.2, -12); blk(H, T, 1.2, -11.4, 5, -12);
-    gateWall(H, T, -22, -5, 5, 1.2, 3.2, 2.4, 0.3, -1); zoneR(H, M.WATER, -5, -27, -1, -31); blk(H, T, -1, -27, -0.7, -31); blk(H, T, -5, -26.7, -0.7, -27); bumps(H, T, [[0.4, -29, 0.6]]); pen(H, T, 2.5, -34);
-    bumps(H, T, [[-2.9, -8.8, 0.5]]); return H; } },
-  { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -14), rm(-7, -18, 7, -40, -1.6)], [0, -2.5], [0, -36]); climb(H, -3.4, -14, -18, 2.2);
-    millAt(H, T, -28, 7, 1.6); zoneR(H, M.WATER, -7, -22, -5, -26); zoneR(H, M.WATER, 1, -22, 7, -26); bowl(H, 0, -36, 1.3, 0.12); board(H, T, 1.8, -37.7, -1.8, -37.7, 0.35); bowl(H, 0, -36, 2.2, 0.15); return H; } },
-  { par:3, three:2, f:function(T){ var H = hole([rm(-4, 0, 4, -10), pg([[-4, -10], [4, -10], [0.8, -13.6], [-0.8, -13.6]]), rm(-0.8, -13.5, 0.8, -17.8), rm(-5, -17.7, 5, -40)], [0, -2.5], [0, -36]);
-    loopAt(H, 0, -15.6, 0, -1, 0.8, 1.6); zoneR(H, M.WATER, -5, -22, 5, -32); zoneR(H, M.GREEN, -0.7, -22, 0.7, -32); slider(H, T, -27, -2.2, 2.2, 2.2, 0.3, 1.2); pen(H, T, 0, -36); bowl(H, 0, -36, 1.3, 0.12); return H; } },
-  { par:3, three:2, f:function(T){ var H = hole([rm(-4, 0, 4, -42)], [0, -2.5], [0, -38]); spinner(H, T, 0, -11, 2, 2.0, 2); spinner(H, T, 0, -19, 2, -2.2, 3); spinner(H, T, 0, -27, 2, 2.4, 2);
-    zoneR(H, M.WATER, -4, -9, -2.6, -31); zoneR(H, M.WATER, 2.6, -9, 4, -31); blk(H, T, -2.9, -9, -2.6, -31); blk(H, T, 2.6, -9, 2.9, -31); pen(H, T, 0, -38); bowl(H, 0, -38, 1.3, 0.12); return H; } },
-  { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -40)], [0, -2.5], [0, -36]); disc(H, -1.5, -13, 2.6, 1.6); disc(H, 1.5, -24, 2.6, -1.6);
-    zoneR(H, M.WATER, -7, -10, -4.4, -28); zoneR(H, M.WATER, 4.4, -10, 7, -28); zoneR(H, M.WATER, 1.4, -15, 4.4, -18.5); zoneR(H, M.WATER, -4.4, -26.5, -1.4, -30); blk(H, T, -4.7, -10, -4.4, -28); blk(H, T, 4.4, -10, 4.7, -28); pen(H, T, 0, -36); bowl(H, 0, -36, 1.3, 0.12); return H; } },
-  { par:4, three:3, f:function(T){ var H = hole([rm(-12, 0, -4, -10), rm(-4, -26, 8, -35, -1.6), rm(-4, -34.9, 8, -38.1, -1.6), rm(-4, -38, 8, -49, -1.6)], [-8, -2.5], [2, -45]);
-    river(H, [[-8, -9.5], [-8, -16], [-2, -19], [4, -19], [4, -26.5]], 1.7, 7.5, 0, -1.6); zoneR(H, M.MUD, 2.4, -26.2, 5.6, -29.2); zoneR(H, M.WATER, -4, -35, 8, -38); drawb(H, 0.8, -35, 3.2, -38, 2.4, 0.4, 0.5); blk(H, T, -4, -34.4, 0.8, -35); blk(H, T, 3.2, -34.4, 8, -35); bumps(H, T, [[6.2, -31.5, 0.6]]); pen(H, T, 2, -45); bowl(H, 2, -45, 1.3, 0.12); return H; } },
-  { par:3, three:2, f:function(T){ var H = hole([rm(-8, 0, 8, -14), rm(-8, -18, 8, -30, 0.8), rm(-8, -34, 8, -46, 1.6)], [0, -2.5], [5, -42]);
-    climb(H, -5.5, -14, -18, 2); climb(H, 5.5, -14, -18, 1.4);
-    climb(H, -5.5, -30, -34, 2.2); blk(H, T, -2.5, -18, -1.2, -30); zoneR(H, M.MUD, -1.2, -22, 8, -24.5); bumps(H, T, [[0, -40, 0.65]]); pen(H, T, 5, -42);
-    return H; } },
-  { par:4, three:3, f:function(T){ var H = hole([rm(-4.5, 0, 4.5, -10), rm(-4.5, -9.9, 4.5, -12.9), rm(-4.5, -12.8, 4.5, -18), rm(-4.5, -17.9, 4.5, -21), rm(-4.5, -20.9, 4.5, -34)], [0, -2.5], [0, -30]);
-    jump(H, 0, -10, 0, -1, 2.3, 9, { h:0.6, ang:34 }); slider(H, T, -15.4, -3, 3, 2.0, 0.2, 1.8); jump(H, 0, -18, 0, -1, 2.4, 9, { h:0.6, ang:34 }); zoneR(H, M.WATER, -4.5, -21, -2, -34); zoneR(H, M.WATER, 2, -21, 4.5, -26); blk(H, T, -2.3, -21, -2, -34); blk(H, T, 2, -21, 2.3, -26); pen(H, T, 0, -30); bowl(H, 0, -30, 1.3, 0.12); return H; } },
-  { par:5, three:4, sig:true, f:function(T){ var H = hole([rm(-5, 0, 5, -12), rm(-7, -16, 7, -28, 0.8), pg([[-7, -28], [7, -28], [0.8, -32], [-0.8, -32]], 0.8), rm(-0.8, -31.9, 0.8, -36.2, 0.8), rm(-5, -36.1, 5, -42, 0.8), rm(-5, -41.9, 5, -45.1, 0.8), rm(-6, -45, 6, -60, 0.8)], [0, -2.5], [2, -56]);
-    climb(H, -1.2, -12, -16, 2.4); disc(H, 0, -22, 2.4, 1.6); zoneR(H, M.WATER, -7, -19, -3, -25); zoneR(H, M.WATER, 3, -19, 7, -25); blk(H, T, -3.3, -19, -3, -25); blk(H, T, 3, -19, 3.3, -25);
-    loopAt(H, 0, -34, 0, -1, 0.8, 1.6); zoneR(H, M.MUD, -5, -36.4, 5, -38.2); jump(H, 0, -42, 0, -1, 2.2, 10, { h:0.9, ang:40 }); millAt(H, T, -50, 6, 1.7); flatAt(H, 2, -56); return H; } },
+  // ---- HALLOWS NIGHT: nine holes, one haunted idea each. Not harder than the tour, just its own.
+  // Graveyard Gate: the iron gate swings on a slow clock. Through it, then weave the headstones to the cup.
+  { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -36)], [0, -2.5], [1.5, -31]); gateWall(H, T, -11, -6, 6, -1.6, 1.6, 3.6, 0, 1);
+    blk(H, T, -3.6, -18, -2.4, -18.6); blk(H, T, 1.6, -21, 2.8, -21.6); blk(H, T, -1.6, -25, -0.4, -25.6); bumps(H, T, [[4.2, -27, 0.6]]); bowl(H, 1.5, -31, 1.8, 0.13); return H; } },
+  // Coffin Drop: roll down the lane into the coffin. Its sides taper in to the cup at the foot.
+  { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -12), pg([[-3, -16], [3, -16], [5.5, -22], [3.5, -38], [-3.5, -38], [-5.5, -22]], -1.2)], [0, -2.5], [0, -34]);
+    climb(H, 2, -12, -16, 2.4); bumps(H, T, [[-1.8, -25, 0.6]]); bowl(H, 0, -34, 1.8, 0.13); return H; } },
+  // Witch's Cauldron: the cup sits in the cauldron, open on both sides. Bring it round and in through a side.
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-4, 0], [4, 0], [8, -6], [8, -30], [4, -34], [-4, -34], [-8, -30], [-8, -6]])], [0, -2.5], [0, -24]);
+    blk(H, T, -2.4, -21.4, 2.4, -21.9); blk(H, T, -2.4, -26.1, 2.4, -26.6); blk(H, T, -2.9, -21.4, -2.4, -22.8); blk(H, T, -2.9, -25.2, -2.4, -26.6); blk(H, T, 2.4, -21.4, 2.9, -22.8); blk(H, T, 2.4, -25.2, 2.9, -26.6);
+    bowl(H, 0, -24, 1.7, 0.14); bumps(H, T, [[-5, -14, 0.6], [5, -14, 0.6]]); return H; } },
+  // Bat Belfry: one bat beats its wings in the stair. Slip past it, up into the bell tower.
+  { par:3, f:function(T){ var H = hole([pg([[-3, 0], [3, 0], [3, -22], [6, -26], [6, -34], [0, -38], [-6, -34], [-6, -26], [-3, -22]])], [0, -2.5], [-1.5, -32]);
+    spinner(H, T, 0, -13, 2.2, 1.2, 2); bumps(H, T, [[2.4, -29, 0.6]]); bowl(H, -1.5, -32, 1.8, 0.13); return H; } },
+  // Haunted Floors: the parlour floor turns under the ball. Read where it will carry you.
+  { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -34)], [0, -2.5], [-2.5, -30]); disc(H, 0, -16, 3.2, 1.1);
+    blk(H, T, 3, -24, 4.2, -24.6); bumps(H, T, [[-4.4, -8, 0.6]]); bowl(H, -2.5, -30, 1.8, 0.13); return H; } },
+  // Brew River: let the brew carry the ball down to the lower court, then putt out.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-12, 0, -4, -10), rm(-6, -26, 6, -38, -0.8)], [-8, -2.5], [2.5, -34]); river(H, [[-8, -9.5], [-8, -16], [-2, -20], [1, -26.5]], 1.8, 7, 0, -0.8);
+    bumps(H, T, [[-2.6, -31, 0.6]]); bowl(H, 2.5, -34, 1.8, 0.13); return H; } },
+  // Crypt Doors: the crypt is shut. Roll over the plate in the grass and the door opens for a few seconds. The plate is on the way, if you aim at the door.
+  { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -34)], [-3, -2.5], [2, -29]); blk(H, T, -6, -18, -1.4, -19.2); blk(H, T, 1.4, -18, 6, -19.2);
+    switchDoor(H, T, -18.6, -1.4, 1.4, -1.6, -10, 5); bumps(H, T, [[3.6, -9, 0.6]]); bowl(H, 2, -29, 1.8, 0.13); return H; } },
+  // Headless Leaps: off the ramp and over the grave. Land among the pumpkins and putt out.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-5, 0, 5, -13), rm(-5, -12.9, 5, -15.4), rm(-5, -15.3, 5, -34)], [0, -2.5], [-1.5, -30]);
+    jump(H, 0, -13, 0, -1, 2.3, 10); bumps(H, T, [[2.2, -21, 0.6], [-3, -24, 0.6], [1, -26.5, 0.55]]); bowl(H, -1.5, -30, 1.8, 0.13); return H; } },
+  // Hallows Night: up the lane to the haunted mill, through its turning sails, down the steps into the churchyard, and putt out under the moon.
+  { par:4, three:3, sig:true, f:function(T){ var H = hole([rm(-5, 0, 5, -12), rm(-7, -16, 7, -40, 0.8), rm(-7, -44, 7, -58)], [0, -2.5], [-3.5, -54]);
+    climb(H, -2, -12, -16, 2.4); millAt(H, T, -24, 7, 1.3); blk(H, T, -7, -33, 3.6, -33.8); climb(H, -4.2, -40, -44, 2.4); bumps(H, T, [[2.5, -38, 0.6], [1.5, -52, 0.55]]); flatAt(H, -3.5, -54); return H; } },
   // ---- HARVEST MOON
   { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -40)], [0, -2.5], [-3, -36]); belt(H, -6, -10, 6, -15, 5, 0); secret(H, 1.02, -25.39, 1.62, -24.79); slider(H, T, -19, -4, 4, 2.0, 0); belt(H, -6, -23, 6, -28, -5, 0); slider(H, T, -31, 4, -4, 2.4, 0.5);
     zoneR(H, M.WATER, -6, -15, -4.5, -23); zoneR(H, M.WATER, 4.5, -15, 6, -23); blk(H, T, -4.8, -15, -4.5, -23); blk(H, T, 4.5, -15, 4.8, -23); pen(H, T, -3, -36); bowl(H, -3, -36, 1.3, 0.12); return H; } },
@@ -1551,7 +1561,7 @@ var LAB_LEVELS = [
     blk(H, T, -6, -17, 2.2, -18.2); bumps(H, T, [[4, -21, 0.55]]); board(H, T, 1, -36, 6, -31); bowl(H, -3, -32, 1.7, 0.12); return H; } }
 ];
 var LAB_NAMES = ['Redan', 'The Cape', 'Biarritz', 'Hairpin', 'The Switch', 'The Drop'];
-var MEMBER_NAMES = ['Graveyard Gate', 'Coffin Drop', 'Witch’s Loop', 'Bat Belfry', 'Haunted Floors', 'Brew River', 'Crypt Doors', 'Headless Leaps', 'Hallows Night',
+var MEMBER_NAMES = ['Graveyard Gate', 'Coffin Drop', 'Witch’s Cauldron', 'Bat Belfry', 'Haunted Floors', 'Brew River', 'Crypt Doors', 'Headless Leaps', 'Hallows Night',
   'Hayride', 'Bog Hop', 'Corn Maze', 'The Mill Race', 'Pie Plate Spin', 'Turkey Trot', 'Log Flume', 'Scarecrow Alley', 'Harvest Moon'];
 var TOUR_NAMES = [
   'First Tee', 'The Slope', 'Bank Shot', 'The Windmill', 'Sand Bar', 'Step Up', 'Slide Rule', 'Causeway', 'The Kicker',
@@ -2174,7 +2184,11 @@ var PAY = {
     worldReward:['Clubhouse Polo', 'Explorer Hat', 'Treasure Trail', 'Gold Nugget Ball', 'Eruption Celebration', 'Snowflake Trail', 'Rainbow Trail', 'High Score Celebration', 'Gold Star Ball', 'Thaw Celebration'] },
   members:{ hole:300, sig:1200, ace:60, world:2500, exclusive:true,
     sigReward:['Hallows Crown (Members only)', 'Harvest Moon Putter (Members only)'],
-    worldReward:['Phantom Trail (Members only)', 'Golden Leaf Ball (Members only)'], finish:'Members Champion Jacket (Members only)' },
+    worldReward:['Phantom Trail (Members only)', 'Golden Leaf Ball (Members only)'], finish:'Members Champion Jacket (Members only)',
+    /* TRICK OR TREAT, the Hallows Night bonus: the first time a Hallows hole is beaten UNDER par it hands out a
+       treat (coins on top of the hole's own), and all nine fill the candy bag for a reward nobody else has.
+       Under par and not just par, so the treat is for playing a hole well rather than for getting round it. */
+    treat:{ w:0, each:150, all:600, reward:'Jack-o’-Lantern Ball (Members only)' } },
   lab:{ hole:0, sig:0, ace:0, world:0, sigReward:[], worldReward:[] }
 };
 var COIN_HOLE = PAY.main.hole, COIN_SIG = PAY.main.sig, COIN_ACE = PAY.main.ace, COIN_WORLD = PAY.main.world, COIN_DAILY = 40, COIN_DAILY_PAR = 40;
@@ -2196,7 +2210,7 @@ function pmerge(st, g){
   Object.keys(g.tours || {}).forEach(function(k){ var a = st.tours[k] = st.tours[k] || {}, b = g.tours[k] || {};
     a.lv = Math.max(a.lv || 1, b.lv || 1); a.best = a.best || {};
     Object.keys(b.best || {}).forEach(function(n){ if (a.best[n] == null || b.best[n] < a.best[n]) a.best[n] = b.best[n]; });
-    ['ace', 'paid', 'wpaid'].forEach(function(f){ a[f] = a[f] || {}; Object.keys(b[f] || {}).forEach(function(n){ if (!a[f][n]) a[f][n] = b[f][n]; }); });
+    ['ace', 'paid', 'wpaid', 'treat'].forEach(function(f){ a[f] = a[f] || {}; Object.keys(b[f] || {}).forEach(function(n){ if (!a[f][n]) a[f][n] = b[f][n]; }); });
     a.tries = a.tries || {}; Object.keys(b.tries || {}).forEach(function(n){ a.tries[n] = Math.max(a.tries[n] || 0, b.tries[n] || 0); }); });
   st.daily = st.daily || {}; Object.keys(g.daily || {}).forEach(function(d){ if (!st.daily[d]) st.daily[d] = g.daily[d]; });
   // what was picked up on the trails between holes: only ever added to
@@ -2244,7 +2258,7 @@ function psave(st){ pwrite(st); cloudPush(); }
 var CLOUD = { uid:null, busy:false, again:false, refused:0 };
 function cloudUid(){ try{ var h = hostOf(); return h.rpc && h.uid ? h.uid() || null : null; }catch(e){ return null; } }
 function cloudProg(st){ var n = 0, c = function(o){ return Object.keys(o || {}).length; };
-  Object.keys(st.tours || {}).forEach(function(k){ var t = st.tours[k] || {}; n += (t.lv || 1) + c(t.best) + c(t.ace) + c(t.paid) + c(t.wpaid); });
+  Object.keys(st.tours || {}).forEach(function(k){ var t = st.tours[k] || {}; n += (t.lv || 1) + c(t.best) + c(t.ace) + c(t.paid) + c(t.wpaid) + c(t.treat); });
   Object.keys(st.trail || {}).forEach(function(k){ var t = st.trail[k] || {}; n += (t.c || []).length + (t.b || []).length + (t.ch || []).length + (t.k ? 1 : 0) + (t.g ? 1 : 0) + (t.key ? 1 : 0) + (t.life ? 1 : 0) + (t.tk ? 1 : 0) + (t.pt ? 1 : 0); });
   n += (st.bank || []).length + (st.tk || []).length + (st.met || []).length + (st.rv || []).length + ((st.pp && st.pp.parts) || []).length + (st.bused || 0) + (st.bspent || 0);
   return n + c(st.daily) + (st.rewards || []).length; }
@@ -2328,6 +2342,11 @@ function membersOpen(){ try{ var h = hostOf(); return !!(h.passActive && h.passA
 function allAccess(){ try{ var h = hostOf(); return !!(h.allAccess && h.allAccess()); }catch(e){ return false; } }
 function opened(TR, tp, n){ return allAccess() || n <= ((tp && tp.lv) || 1); }
 function membersPreview(){ return !!(S && S.memPreview) || allAccess(); }
+/* EVERYBODY CAN WALK HALLOWS NIGHT. The owner's call: the Members world is the best advert the pass has, so
+   anybody may open its tab, walk its trail and look at its map. What is the pass's is PLAYING a hole: walk up
+   to one (or tap it on the map) without the pass and the sheet says what it is, and that the Putt Putt Tour is
+   theirs to play meanwhile. startLevel is that gate, so every way into a hole meets it. */
+function membersCanPlay(){ return membersOpen() || membersPreview(); }
 // the Lab is a tester's only: its tab is not drawn for anybody else
 function labOpen(){ try{ var h = hostOf(); return !!(h.tester && h.tester()); }catch(e){ return false; } }
 /* STARS. Par clears a hole, so most holes can simply be good to play, and birdies come from reading
@@ -2409,7 +2428,7 @@ function wName(TR, w, st){ return revealed(TR, w, st) ? TR.worlds[w].name : CLOU
 function wLabel(TR, w, st){ return TR.members ? (revealed(TR, w, st) ? TR.worlds[w].name : 'The next Members world') : 'World ' + (w + 1); }
 function worldOk(tid){ var TR = TOURS[tid]; if (!TR || TR.lab || tid === 'daily' || !trailOk()) return false;
   var reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){} return !reduce; }
-function worldTour(){ if (window.RTT_PUTT_MAPFIRST) return null; var st = pload(), t = (S && S.tour) || st.view || 'main'; if (t === 'members' && !membersOpen() && !membersPreview()) t = 'main'; return worldOk(t) ? t : worldOk('main') ? 'main' : null; }
+function worldTour(){ if (window.RTT_PUTT_MAPFIRST) return null; var st = pload(), t = (S && S.tour) || st.view || 'main'; return worldOk(t) ? t : worldOk('main') ? 'main' : null; }
 function home(tid){ var t = window.RTT_PUTT_MAPFIRST ? null : tid && worldOk(tid) ? tid : worldTour(); if (!t) return showHub(tid);
   var TR = tourOf(t), tp = pload().tours[TR.id], n = Math.min(TR.levels.length, frontier(tp, TR));
   S.tour = t; var r = openTrail(t, n - 1); if (S.trailTo) S.trailTo.home = true; return r; }
@@ -2418,7 +2437,6 @@ function showHub(tid){
   var st = pload(), dk = today(), dh = dailyHole(dk), dT = THEMES[dh.theme], drec = st.daily[dk];
   // which tour the map shows: the one asked for, else the one last looked at; the Members Tour only when it is open
   if (tid) S.tour = tid; if (!S.tour) S.tour = st.view || 'main';
-  if (S.tour === 'members' && !membersOpen() && !membersPreview()) S.tour = 'main';
   if (S.tour === 'lab' && !labOpen()) S.tour = 'main';
   st.view = S.tour; psave(st);
   var cal = S.tour === 'daily', TR = cal ? TOURS.main : tourOf(S.tour), mem = !cal && !!TR.members, lab = !cal && !!TR.lab;
@@ -2443,7 +2461,8 @@ function showHub(tid){
   var bgb = S.ov.querySelector('[data-bag]'); if (bgb) bgb.onclick = bagSheet;
   var clb = S.ov.querySelector('[data-closet]'); if (clb) clb.onclick = closetSheet;
   S.ov.querySelectorAll('[data-tab]').forEach(function(b){ b.onclick = function(){ var t = b.getAttribute('data-tab'); if (t === S.tour) return;
-    if (t === 'members' && !membersOpen() && !membersPreview()) return membersSheet(); showHub(t); }; });
+    // the Members tab is open to everybody: without the pass it walks you into Hallows Night to look around
+    if (t === 'members' && !membersCanPlay() && worldOk('members')) return home('members'); showHub(t); }; });
   if (cal) drawCal(st); else drawMap(st, TR);
   var clk = S.ov.querySelector('[data-clock]');
   var dc = S.ov.querySelector('[data-dcount]'), dkNow = dk;
@@ -2477,19 +2496,27 @@ function bagSheet(){
   var fu = sh.querySelector('[data-full]'); if (fu) fu.onclick = function(){ var h = S.host; sh.remove(); h.closet(); };
   var ue = sh.querySelector('[data-uneq]'); if (ue) ue.onclick = function(){ var s2 = pload(); s2.pp = s2.pp || { parts:[] }; s2.pp.eq = null; psave(s2); sh.remove(); bagSheet(); };
 }
-/* THE MEMBERS TOUR, SHUT: what it is, what it pays, and the way in. It is the Tour Pass holder's, so
-   there is nothing to buy here with coins, and the pass itself opens at launch. */
-function membersSheet(){
-  var TR = TOURS.members, Pm = PAY.members, tot = (TR.levels.length - 2) * Pm.hole + 2 * Pm.sig + 2 * Pm.world;
-  var sh = el('<div class="pp-sheet pp-memsh"><div class="pp-card"><div class="k">★ MEMBERS TOUR · ' + esc(TR.season.toUpperCase()) + '</div><div class="t">Eighteen of the hardest holes in the game</div>\
-    <div class="m">Two worlds of the season’s own holes, every set piece at once, for Tour Pass members.</div>\
-    <div class="pp-memrw"><b>' + tot.toLocaleString() + ' coins</b> to win, and rewards only members can earn:<br>' + Pm.sigReward.concat(Pm.worldReward).map(function(r){ return esc(r.replace(' (Members only)', '')); }).join(' · ') + ' · ' + esc(Pm.finish.replace(' (Members only)', '')) + '</div>\
-    <button class="pt-go pp-wide pass" disabled>Get Tour Pass<small>Opens the Members Tour, and 6 lives · at launch</small></button>' +
+/* THE MEMBERS TOUR, SHUT: what it is, what it pays, and the way in. Anybody can walk Hallows Night and look
+   at it; this sheet is what meets them at a hole. It sells nothing for coins (the pass opens at launch) and it
+   always says the Putt Putt Tour is theirs to play meanwhile, with a button straight to it. o.n is the hole they
+   walked up to, and o.trail says they were standing on its trail, so Keep looking walks them out again. */
+function membersSheet(o){
+  o = o || {}; var TR = TOURS.members, Pm = PAY.members, tot = (TR.levels.length - 2) * Pm.hole + 2 * Pm.sig + 2 * Pm.world + TR.per * Pm.treat.each + Pm.treat.all;
+  var n = o.n || 1, at = o.n ? 'Hole ' + n + ' · ' + levelName(n, 'members') : 'Hallows Night & Harvest Moon';
+  var sh = el('<div class="pp-sheet pp-memsh"><div class="pp-card"><div class="k">★ MEMBERS TOUR · ' + esc(at.toUpperCase()) + '</div><div class="t">This hole is for Tour Pass members</div>\
+    <div class="m">Eighteen holes of the season you won’t find anywhere else: a crypt door on a switch, a coffin to roll into, a cauldron, a haunted mill. Look around all you like. Playing them takes the pass.</div>\
+    <div class="pp-memrw"><b>' + tot.toLocaleString() + ' coins</b> to win, a <b>trick or treat bonus</b> on every Hallows hole you beat under par, and rewards only members can earn:<br>' + Pm.sigReward.concat(Pm.worldReward, [Pm.treat.reward]).map(function(r){ return esc(r.replace(' (Members only)', '')); }).join(' · ') + ' · ' + esc(Pm.finish.replace(' (Members only)', '')) + '</div>\
+    <button class="pt-go pp-wide pass" disabled>Get Tour Pass<small>Opens the Members Tour, and 6 lives · at launch</small></button>\
+    <div class="m pp-memfree">No pass? The Putt Putt Tour is free to play: 180 holes across ten worlds.</div>\
+    <button class="pt-go pp-wide" data-main>Play the Putt Putt Tour</button>' +
+    (o.trail ? '<button class="pt-bt pp-wide" data-look>Keep looking around</button>' : '') +
     (S.host.tester && S.host.tester() ? '<button class="pt-bt pp-wide" data-prev>Tester preview</button>' : '') +
-    '<button class="pt-bt pp-wide" data-n>Not now</button></div></div>');
+    '<button class="pt-bt pp-wide" data-n>' + (o.trail ? 'Back to the map' : 'Not now') + '</button></div></div>');
   S.ov.appendChild(sh);
-  sh.querySelector('[data-n]').onclick = function(){ sh.remove(); };
-  var pv = sh.querySelector('[data-prev]'); if (pv) pv.onclick = function(){ S.memPreview = true; sh.remove(); showHub('members'); };
+  sh.querySelector('[data-n]').onclick = function(){ sh.remove(); if (o.trail) showHub('members'); };
+  sh.querySelector('[data-main]').onclick = function(){ sh.remove(); S.tour = 'main'; home('main'); };
+  var lk = sh.querySelector('[data-look]'); if (lk) lk.onclick = function(){ sh.remove(); openTrail('members', n - 1); };
+  var pv = sh.querySelector('[data-prev]'); if (pv) pv.onclick = function(){ S.memPreview = true; sh.remove(); if (o.n) startLevel(n, 'members'); else showHub('members'); };
 }
 /* THE MAP: level 1 at the bottom, a dashed path winding up through the worlds, each world on its own
    ground. The golfer stands on the level being played and the map opens scrolled to it. */
@@ -2770,7 +2797,7 @@ var GREETERS = {
     bye:'Go now. Before big melt.' },
   haunted:{ name:'Count Mulligan', role:'Graveyard Keeper', look:{ skin:'porcelain', polo:'black', hat:'black', pants:'grey', hair:'white', hairStyle:'long', cap:true, hatStyle:'tophat', top:'cape', gender:'male' },
     hi:['Good evening. Welcome to Hallows Night.', 'I am Count Mulligan. I never take a second shot. Well. Almost never.'],
-    tip:['Mud slows everything here. Hit it firm.', 'These are the hardest holes of the season. Members only.'],
+    tip:['Every hole here has one trick of its own. Read it and it is kind to you.', 'Beat par on a hole and I have a treat for you. Members play. Everyone may look.'],
     bye:'Do come back. They always do.' },
   harvest:{ name:'Farmer Hayes', role:'Farmer', look:{ skin:'tan', polo:'gold', hat:'tan', pants:'navy', hair:'auburn', hairStyle:'short', cap:true, hatStyle:'straw', gender:'male' },
     hi:['Howdy, and welcome to Harvest Moon!', 'I’m Farmer Hayes. This is my field.'],
@@ -2941,7 +2968,10 @@ function openTrail(tid, from){
         requestAnimationFrame(function(){ door.classList.add('in'); setTimeout(function(){ if (!door.isConnected) return; door.classList.add('fill');
           setTimeout(function(){ if (!door.isConnected) return; door.classList.add(open ? 'open' : 'shut');
             setTimeout(function(){ door.classList.remove('in'); setTimeout(function(){ if (door.isConnected) door.remove(); cb(open); }, 380); }, open ? 900 : 1700); }, 1000); }, 400); }); },
-      arrive:function(){ var tp = pload().tours[TR.id], sw = S.ov.querySelector('.pp-skipw'); if (sw) sw.remove(); stopTrail(); if (opened(TR, tp, to)) startLevel(to, tid); else showHub(tid); },
+      arrive:function(){ var tp = pload().tours[TR.id], sw = S.ov.querySelector('.pp-skipw'); if (sw) sw.remove();
+        // a walker without the pass reaches the hole and is asked, over the trail they are standing on
+        if (TR.members && !membersCanPlay()){ stopTrail(); return membersSheet({ n:to, trail:true }); }
+        stopTrail(); if (opened(TR, tp, to)) startLevel(to, tid); else showHub(tid); },
       // Skip keeps its button, and says what it leaves behind first: the same list the map's warning reads, off
       // the record as it stands now, so anything already picked up on this walk is not named.
       skip:function(){ var tp = pload().tours[TR.id], play = opened(TR, tp, to) && !(sp.cross && !sp.gateOpen);
@@ -3054,7 +3084,7 @@ function skipWarn(n, tid){ var st = pload(), c = st.cur, tr = (st.tours || {})[t
   sh.querySelector('[data-skip]').onclick = function(){ sh.remove(); startLevel(n, tid); }; }
 function startLevel(n, tid){
   var st = pload(); tid = tid || S.tour || 'main';
-  if (tourOf(tid).members && !membersOpen() && !membersPreview()) return membersSheet();
+  if (tourOf(tid).members && !membersCanPlay()) return membersSheet({ n:n, trail:S.screen === 'trail' });
   if (tourOf(tid).lab && !labOpen()) return showHub('main');
   if (tid === 'main' && n > GUEST_HOLES && isGuest()) return guestSheet();
   var c = st.cur, back = c && c.tid === tid && c.n === n && c.s > 0;
@@ -3145,11 +3175,15 @@ function tourOut(holed){
     var got = 0;
     if (!tp.paid[n]){ tp.paid[n] = 1; got += TR.levels[n - 1].sig ? PY.sig : PY.hole; }
     if (s === 1 && !tp.ace[n]){ tp.ace[n] = 1; got += PY.ace; var ac = aceCount(st); if (ACE_REWARD[ac]){ grant(st, ACE_REWARD[ac]); lines.push('New: ' + ACE_REWARD[ac]); } }
+    tp.treat = tp.treat || {}; var TT = PY.treat, treat = TT && gw === TT.w && s < par && !tp.treat[n];
+    if (treat){ tp.treat[n] = 1; got += TT.each; var tk = 0; for (var q = TT.w * K + 1; q <= TT.w * K + K; q++) if (tp.treat[q]) tk++;
+      lines.push('Trick or treat! +' + TT.each + ' bonus coins · ' + tk + ' of ' + K + ' treats');
+      if (tk >= K && st.rewards.indexOf(TT.reward) < 0){ got += TT.all; grant(st, TT.reward); lines.push('The candy bag is full: +' + TT.all + ' coins and the ' + TT.reward.replace(' (Members only)', '')); } }
     var w = Math.floor((n - 1) / K), worldDone = TR.levels[n - 1].sig && !tp.wpaid[w];
     if (worldDone){ tp.wpaid[w] = 1; grant(st, PY.sigReward[w]); grant(st, PY.worldReward[w]); if (PY.finish && n === N) grant(st, PY.finish); }
     psave(st); if (got || worldDone) coins(got + (worldDone ? PY.world : 0), TR.name + ' ' + wl(n, tid));
     try{ S.host.sfx && S.host.sfx('holeGood'); }catch(e){}
-    if (worldDone) return worldComplete(n, s, par, got, tid);
+    if (worldDone) return worldComplete(n, s, par, got, tid, lines);
     var sec = !!P.foundSecret; if (sec){ tp.secret = tp.secret || {}; if (!tp.secret[n]){ tp.secret[n] = 1; psave(st); } }
     var nextOpen = n < N && opened(TR, tp, n + 1), have = starsThrough(tp, TR, gw), gate = worldGate(TR, gw);
     var openLine = n >= N ? 'That is the whole ' + esc(TR.name) + '.' : nextOpen ? (wasLv <= n ? 'Level ' + (n + 1) + ' is open.' : '') :
@@ -3157,7 +3191,7 @@ function tourOut(holed){
     return popup('<div class="k">' + (sec ? 'SECRET LINE FOUND' : s === 1 ? 'HOLE IN ONE' : s < par ? 'UNDER PAR' : 'PAR') + '</div><div class="t">' + esc(scoreName(s, par)) + '</div>\
       <div class="pp-stars">' + starRow(stars) + '</div>' + (stars > had && !first ? '<div class="s">New best on this hole.</div>' : stars < 3 ? '<div class="s">' + (stars === 1 ? (threeOf(par, th) >= par - 1 ? 'Beat par for 3 stars.' : 'Beat par for 2 stars, ' + threeLine(par, th) + ' for 3.') : threeLine(par, th).replace(/^./, function(c){ return c.toUpperCase(); }) + ' for 3 stars.') + '</div>' : '') + '\
       <div class="pp-nums"><span><b>' + s + '</b>Strokes</span><span><b>' + par + '</b>Par</span><span><b>' + fmtPar(s - par) + '</b>To par</span></div>' +
-      (got ? '<div class="pp-coins">+' + got + ' coins</div>' : '<div class="s">Coins land the first time only.</div>') + lines.map(function(t){ return '<div class="s">' + esc(t) + '</div>'; }).join('') +
+      (got ? '<div class="pp-coins">+' + got + ' coins</div>' : '<div class="s">Coins land the first time only.</div>') + (TT && gw === TT.w && !tp.treat[n] ? '<div class="s">Beat par here for a trick or treat bonus.</div>' : '') + lines.map(function(t){ return '<div class="s">' + esc(t) + '</div>'; }).join('') +
       (openLine ? '<div class="s">' + openLine + '</div>' : '') +
       '<div class="row"><button class="pt-bt" data-a="again">Replay</button>' + (nextOpen ? '<button class="pt-go" data-a="next">Next hole</button>' : '<button class="pt-go" data-a="map">Map</button>') + '</div>',
       { again:function(){ startLevel(n, tid); }, next:function(){ walkTo(n, tid); }, map:function(){ showHub(tid); } });
@@ -3171,12 +3205,12 @@ function tourOut(holed){
     <div class="row"><button class="pt-bt" data-a="map">Map</button><button class="pt-go" data-a="again">' + (livesNow(st) ? 'Try again' : 'Refill') + '</button></div>',
     { map:function(){ showHub(tid); }, again:function(){ if (livesNow(pload()) > 0 || allAccess()) startLevel(n, tid); else { showHub(tid); outOfLives(); } } }, 'over');
 }
-function worldComplete(n, s, par, got, tid){
+function worldComplete(n, s, par, got, tid, lines){
   var TR = tourOf(tid), PY = PAY[TR.id], K = TR.per || PER, w = Math.floor((n - 1) / K), Wd = TR.worlds[w], last = n === TR.levels.length;
   var tp = pload().tours[TR.id], have = worldStars(tp, TR, w), total = starsThrough(tp, TR, w), gate = worldGate(TR, w), nx = TR.worlds[w + 1], shut = nx && !opened(TR, tp, n + 1);
   return popup('<div class="k">' + (TR.members ? '★ ' + esc(Wd.name.toUpperCase()) + ' COMPLETE' : 'WORLD ' + (w + 1) + ' COMPLETE') + '</div><div class="t">' + esc(Wd.name) + '</div><div class="s">Signature hole beaten in ' + s + ' (par ' + par + ').</div>\
     <div class="pp-reward">New · ' + esc(PY.sigReward[w]) + '<br>New · ' + esc(PY.worldReward[w]) + (PY.finish && last ? '<br>New · ' + esc(PY.finish) : '') + '</div>\
-    <div class="pp-coins">+' + got + ' coins · +' + PY.world.toLocaleString() + ' ' + (TR.members ? 'members' : 'world') + ' bonus</div>' +
+    <div class="pp-coins">+' + got + ' coins · +' + PY.world.toLocaleString() + ' ' + (TR.members ? 'members' : 'world') + ' bonus</div>' + (lines || []).map(function(t){ return '<div class="s">' + esc(t) + '</div>'; }).join('') +
     '<div class="pp-stars">' + have + ' of ' + worldMax(TR, w) + ' ★</div>' +
     (shut ? '<div class="s">' + esc(wLabel(TR, w + 1)) + ' opens at ' + gate + ' total stars. You have ' + total + '. Replay holes to earn ' + (gate - total) + ' more.</div>' :
      nx ? '<div class="s">' + (revealed(TR, w + 1) ? (TR.members ? esc(nx.name) : 'World ' + (w + 2) + ', ' + esc(nx.name) + ',') + ' is open.' : 'You have the stars. Walk to the gate and the clouds will part.') + '</div>' : '<div class="s">You have finished the ' + esc(TR.name) + '.</div>') +

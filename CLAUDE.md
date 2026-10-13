@@ -20114,7 +20114,7 @@ owner said was not what was being built.
 | | who | holes | worlds |
 |---|---|---|---|
 | Putt Putt Tour (`main`) | everybody | 180 | The Clubhouse, Lost Temple, Pirate Cove, Canyon Mine, Volcano Island, Frozen Peak, Sky Islands, Neon Arcade, Schoolyard, Ice Age, 18 each |
-| Members Tour (`members`) | Tour Pass holders | 18 | Hallows Night and Harvest Moon, nine each: the season's own holes, the hardest in the game |
+| Members Tour (`members`) | Tour Pass holders play; anybody may walk it | 18 | Hallows Night and Harvest Moon, nine each: the season's own holes, one trick a hole on Hallows Night |
 
 **The main tour wears none of the calendar themes**, which belong to the passes and the dailies, and the
 check asserts it. The last hole of each world is the signature hole. **Every hole has an obstacle, a
@@ -20149,9 +20149,23 @@ a bog anywhere else keeps its brown.
 had four holes acable from the tee. Put a bumper on the line the ice opens up, and re-solve.
 **A skin name is global**: the winter theme already had `snowman`, and a second `snowman` in `SKIN`
 silently replaces the first for every theme that uses it.
-**The Members Tour is shut without a pass** (`host.passActive()`): the tab carries a lock and opens a
-sheet about the Tour Pass, never a coin price. A tester gets a preview button (`S.memPreview`). It pays
-more a hole and carries rewards only members can earn (`PAY.members`).
+**Anybody may WALK the Members Tour; only the pass PLAYS it** (`membersCanPlay()`, the owner's call: the
+world is the best advert the pass has). The tab is open to everybody and, without the pass, walks them into
+Hallows Night (or shows its map). Walking up to a hole, tapping one on the map or skipping the trail all reach
+`startLevel`, and without the pass that opens `membersSheet`: what the pass is, never a coin price, and a
+button to the free Putt Putt Tour ("Play the Putt Putt Tour"), plus Keep looking around from a trail. A tester
+gets a preview button (`S.memPreview`). It pays more a hole and carries rewards only members can earn
+(`PAY.members`). Trail coins on a Members trail pay whoever walks it.
+
+**HALLOWS NIGHT IS NOT HARDER THAN THE TOUR, IT IS ITS OWN.** Its first nine were every set piece at once on a
+clock over the water, and the owner and testers could not beat hole 1. A season hole needs to be UNIQUE, not
+hard: each Hallows hole is one haunted idea (an iron gate on a clock, a coffin-shaped court down a lane, a
+cauldron open on both sides, one belfry bat, a turning parlour floor, a river of brew, a crypt door on a switch,
+a leap over a grave, the haunted mill) with headstones and pumpkins. check-putt holds every Hallows hole to at
+most two moving or wet pieces and par 3 (the signature 4). **The trick or treat bonus** (`PAY.members.treat`,
+kept as `tp.treat`, merged like `paid`): the first time a Hallows hole is beaten UNDER par it pays 150 coins on
+top, and all nine pay 600 and the members-only Jack-o'-Lantern Ball. Harvest Moon still packs more into a hole,
+because check-putt asks the second world for more set pieces than the first.
 
 **THREE STARS IS ALWAYS MAKEABLE.** It is two under par (`starsOf`), so on a par 3 it is the ace and
 on a longer hole it is the secret line, unless the hole carries its own target (`three`, read through
@@ -20271,7 +20285,7 @@ It is a Float64Array now. A solver that says Infinity is a claim about the solve
 time to a thousandth of a second, and on a hole with a mill or a spinner that is a different putt: three
 members routes stopped dropping on replay. Nothing about the hole had changed.
 
-**The Members Tour's cups sit in a pen** (`pen()`), three blocks open on one side toward the middle of
+**Harvest Moon's cups sit in a pen** (`pen()`; Hallows Night's do not any more), three blocks open on one side toward the middle of
 the room, so the ball has to be brought round beside the cup and played in sideways. **The first pen opened
 on the far side and cost nothing**: a ball bounced off the end wall rolled straight back into it, so the
 solver still beat most holes in two. Opened sideways, Graveyard Gate went from two putts to three.

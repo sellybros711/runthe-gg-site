@@ -292,6 +292,12 @@ if (!QUICK){
   const mw = TM.levels.filter(L => !L.sig).length / TM.worlds.length * Cn.main.hole + Cn.main.sig + TM.per * Cn.main.ace + Cn.main.world;
   claim(mw === 4000, `the main tour pays 4,000 coins a world, ${mw * P.TOURS.main.worlds.length} in all (${mw} a world)`);
   claim(Cn.members.exclusive && Cn.members.hole > Cn.main.hole && Cn.members.sig > Cn.main.sig && /Members only/.test(Cn.members.finish), 'the Members Tour pays more a hole and carries rewards only members can earn');
+  // HALLOWS NIGHT IS ITS OWN, NOT HARDER: one trick a hole, so no Hallows hole carries more set pieces than the
+  // busiest hole of the tour's middle worlds, it asks no more putts than they do, and the trick or treat bonus is there
+  { const T = Cn.members.treat, kit = n => { const C = P.buildLevel(n, 'members'); return C.movers.length + C.loops.length + C.ramps.length + C.bridges.length + C.turns.length + (C.rivers || []).length + (C.mill ? 1 : 0) + C.zones.filter(z => z.m === M.WATER).length; };
+    const hh = []; for (let n = 1; n <= TB.per; n++) hh.push(kit(n));
+    claim(hh.every(k => k <= 2) && TB.levels.slice(0, TB.per).every(L => L.par <= (L.sig ? 4 : 3)), `Hallows Night: one trick a hole, at most two moving or wet pieces (${hh.join(' ')}), par 3 and a par 4 signature`);
+    claim(T && T.w === 0 && T.each > 0 && T.all > 0 && /Members only/.test(T.reward), 'Hallows Night pays a trick or treat bonus under par, and a members-only reward for all nine'); }
   head(`4. ${DAYS} DAILY HOLES FROM TODAY`);
   const day0 = new Date(Date.UTC(2026, 9, 1));
   const themesSeen = new Set();
@@ -849,14 +855,15 @@ if (!args.includes('--no-browser')){
     claim(r2.lives === 0 && Math.abs(r2.refillAt - Date.now() - 24 * 3600e3) < 120e3 && /\$0\.99/.test(await pg.textContent('.pp-sheet')) && !/coin/i.test(await pg.textContent('.pp-sheet')), 'out of lives: a 24 hour clock, a money refill, no coin price');
     await pg.click('.pp-sheet [data-free]'); await pg.waitForSelector('.pp-map');
     claim((await rec()).lives === 3, 'a tester can refill for free while the checkout is not built');
-    // THE MEMBERS TOUR IS THE TOUR PASS HOLDER'S: shut without a pass, a sheet that sells nothing for coins,
-    // and a tester can look inside without one
-    await pg.click('.pp-tabs [data-tab="members"]'); await pg.waitForSelector('.pp-memsh');
+    // EVERYBODY CAN WALK HALLOWS NIGHT, AND PLAYING IT IS THE PASS'S: without a pass the Members tab opens the
+    // Members world (here, the map: this section runs map first), and walking up to a hole opens a sheet that
+    // sells nothing for coins and sends the player to the free tour
+    await pg.click('.pp-tabs [data-tab="members"]'); await pg.waitForSelector('.pp-mem .pp-map [data-lv="1"]');
+    claim(await pg.evaluate(() => document.querySelectorAll('.pp-lv').length === 9 && document.querySelectorAll('.pp-lv.sig').length === 1 && document.querySelectorAll('.pp-cloudo').length === 1 && !/Harvest Moon/.test(document.querySelector('.pp-map').innerText)), 'without a pass the Members tab still shows Hallows Night: its nine holes and their signature hole, and the second world under cloud, unnamed');
+    await pg.click('.pp-mem .pp-map [data-lv="1"]'); await pg.waitForSelector('.pp-memsh');
     const ms = await pg.textContent('.pp-memsh');
-    claim(/Members only/.test(await pg.evaluate(() => JSON.stringify(window.RTT_PUTT.PAY.members))) && /Get Tour Pass/.test(ms) && !/\d+ coins? to (buy|unlock)/i.test(ms) && await pg.evaluate(() => !document.querySelector('.pp-mem .pp-lv')), 'without a pass the Members tab opens a sheet about the Tour Pass, not the holes');
-    await pg.click('.pp-memsh [data-prev]'); await pg.waitForSelector('.pp-mem .pp-map [data-lv="1"]');
-    claim(await pg.evaluate(() => document.querySelectorAll('.pp-lv').length === 9 && document.querySelectorAll('.pp-lv.sig').length === 1 && document.querySelectorAll('.pp-cloudo').length === 1 && !/Harvest Moon/.test(document.querySelector('.pp-map').innerText)), 'a tester previews the Members Tour: its first nine holes and their signature hole, and the second world under cloud, unnamed');
-    await pg.click('.pp-tabs [data-tab="main"]'); await pg.waitForSelector('.pp-map [data-lv="90"]');
+    claim(/Members only/.test(await pg.evaluate(() => JSON.stringify(window.RTT_PUTT.PAY.members))) && /Get Tour Pass/.test(ms) && !/\d+ coins? to (buy|unlock)/i.test(ms) && /Putt Putt Tour is free/.test(ms) && !!(await pg.$('.pp-memsh [data-main]')) && await pg.evaluate(() => window.RTT_PUTT._state().screen !== 'play'), 'a hole on Hallows Night without a pass opens a sheet about the Tour Pass that also offers the free tour, and the hole does not start');
+    await pg.click('.pp-memsh [data-main]'); await pg.waitForSelector('.pp-map [data-lv="90"]');
     await pg.keyboard.press('Escape'); await pg.keyboard.press('Escape');
     claim(await pg.evaluate(() => !document.querySelector('.pt-ov') && document.body.style.overflow !== 'hidden'), 'Escape twice closes it and gives the page its scroll back');
     // ---- THE 3D HOLE (hole3d.js, land.js): every themed hole, its picture and its projection
