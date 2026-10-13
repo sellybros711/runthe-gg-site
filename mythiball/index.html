@@ -1983,6 +1983,166 @@
   @keyframes mo-qs-tap-pi2{0%,51%{opacity:0;transform:scale(.3);} 53%{opacity:.95;transform:scale(.45);} 67%,100%{opacity:0;transform:scale(1.5);}}
   @keyframes mo-qs-tap-fi{0%,49%{opacity:0;transform:scale(.3);} 51%{opacity:.95;transform:scale(.45);} 66%,100%{opacity:0;transform:scale(1.5);}}
 
+  /* ========================================================== THE CONSOLE
+     Every screen that is not the game is a console front end: the page is a
+     ballpark at night with the lights on, and the cards are menus laid over
+     it. The scorecard cream is kept for the cards themselves, because it is
+     the game's paper and every screen behind them is written for it; what
+     changes is the room they hang in. The game screen keeps its own frame
+     and is untouched by any of this. */
+  html:has(> body:not(.ingame)){background:#0c1b2c;}
+  body:not(.ingame){
+    background:
+      radial-gradient(520px 380px at 8% -6%, rgba(255,226,150,.30), transparent 70%),
+      radial-gradient(520px 380px at 92% -6%, rgba(255,226,150,.30), transparent 70%),
+      radial-gradient(1200px 520px at 50% 118%, rgba(52,140,78,.42), transparent 70%),
+      repeating-linear-gradient(90deg, rgba(255,255,255,.025) 0 1px, transparent 1px 28px),
+      linear-gradient(180deg, #0a1422 0%, #10223a 46%, #0c1b2c 100%);
+    background-attachment:fixed;
+  }
+  /* The top bar is the console's: glass over the lights, the name in the
+     game's red on a cream glow, the controls as pills. */
+  body:not(.ingame) .brand{border-bottom:0;margin-bottom:6px;padding:8px 12px;
+    background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02));
+    border:1px solid rgba(160,195,235,.16);border-radius:var(--r);
+    box-shadow:0 10px 30px -14px rgba(0,0,0,.7);}
+  body:not(.ingame) .brand h1{color:#ff5a4c;text-shadow:0 2px 0 #3b0d0a, 0 0 18px rgba(255,90,76,.35);}
+  body:not(.ingame) .brand .tag{color:#9db3cc;}
+  body:not(.ingame) .brand .motto{color:#c9a96a;border-left-color:rgba(201,169,106,.4);}
+  body:not(.ingame) .brand button{background:rgba(255,255,255,.08);color:#eef3fa;
+    border:1px solid rgba(160,195,235,.26);box-shadow:none;}
+  body:not(.ingame) .brand button:hover{background:rgba(255,255,255,.16);}
+  /* What sits straight on the stage rather than on a card. */
+  body:not(.ingame) .screen > h2{color:#fff3d6;text-shadow:0 2px 0 rgba(0,0,0,.45);
+    display:flex;align-items:center;gap:10px;}
+  body:not(.ingame) .screen > h2::before{content:'';flex:0 0 auto;width:6px;height:1.05em;
+    border-radius:3px;background:linear-gradient(180deg,#ff6a5a,#cf3229);}
+  body:not(.ingame) .screen > h2.verdict::before{content:none;}
+  body:not(.ingame) .screen > h2.verdict.win{color:#5be08f;}
+  body:not(.ingame) .screen > p,body:not(.ingame) .screen > h3{color:#b9c9dc;}
+  body:not(.ingame) .screen > .btn-row .btn.ghost{background:rgba(255,255,255,.1);color:#eef3fa;
+    border-color:rgba(160,195,235,.3);}
+  /* THE FOCUS RING IS THE CONSOLE'S CURSOR. Driven by the arrows or a pad
+     it is a gold glow round whatever is selected, the way a console menu
+     marks the thing the A button will press. A mouse or a finger takes it
+     back off (`padnav` is cleared on any pointer press). */
+  body.padnav:not(.ingame) :is(button,a,[tabindex="0"]):focus-visible{
+    outline:3px solid #ffc94a !important;outline-offset:3px;
+    box-shadow:0 0 0 7px rgba(255,201,74,.22), 0 0 28px rgba(255,201,74,.45) !important;}
+
+  /* ------------------------------------------------------- the home screen
+     THE ATTRACT SCREEN. The park is the picture, framed like a broadcast,
+     and everything under it is a console main menu: one slab to press
+     START on, then tiles that light up when they are selected. */
+  .card.home{background:none;border:0;box-shadow:none;padding:0;}
+  body.inroom .card.home{padding:0;}
+  .card.home .hero-box{border:0;border-radius:18px;
+    box-shadow:0 0 0 2px rgba(255,214,120,.55), 0 0 0 6px rgba(10,20,34,.9),
+      0 0 46px rgba(255,214,120,.22), 0 26px 50px -18px rgba(0,0,0,.85);}
+  .card.home .hero-box::after{content:'';position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(180deg,rgba(6,12,22,.38),transparent 22%,transparent 70%,rgba(6,12,22,.5));}
+  .card.home .hero-tag{z-index:2;border-radius:9px;border:1px solid rgba(255,214,120,.45);
+    background:rgba(8,16,28,.82);backdrop-filter:blur(4px);}
+  .hero-hud{position:absolute;right:10px;top:10px;z-index:2;display:flex;gap:6px;
+    pointer-events:none;}
+  .hero-hud .hh{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:99px;
+    background:rgba(8,16,28,.8);border:1px solid rgba(160,195,235,.28);color:#fff3d6;
+    font-family:var(--font-display);font-size:13px;font-variant-numeric:tabular-nums;
+    backdrop-filter:blur(4px);}
+  .hero-hud .hh i{font-style:normal;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#9db3cc;}
+  .hero-hud .coin{margin-right:0;}
+  body.roomfill .hero-hud{right:7px;top:7px;gap:4px;}
+  body.roomfill .hero-hud .hh{font-size:11px;padding:3px 7px;}
+
+  /* START. The status is a stadium board, amber on black, and the button is
+     the loudest object on the page, with the pad's A drawn into it. */
+  .card.home .fr-stat{background:linear-gradient(180deg,#0b0f16,#151c28);color:#ffcf6b;
+    border:1px solid rgba(255,207,107,.28);border-radius:12px;
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.6), inset 0 0 22px rgba(255,170,40,.08);
+    text-shadow:0 0 10px rgba(255,190,70,.45);}
+  .card.home .fr-stat span{color:#ffe2a6;}
+  .card.home .fr-stat i{color:#fff0c4;}
+  .card.home .fr-stat.empty{color:#ffd78a;letter-spacing:.08em;text-transform:uppercase;font-size:11px;}
+  .card.home .bigplay{border:0;border-radius:14px;padding:18px 18px 18px 14px;
+    background:linear-gradient(180deg,#ff6b4a 0%,#e23a2c 48%,#b71f1a 100%);
+    box-shadow:inset 0 2px 0 rgba(255,255,255,.35), inset 0 -4px 0 rgba(0,0,0,.22),
+      0 0 0 2px rgba(255,214,120,.5), 0 14px 30px -10px rgba(226,58,44,.75);}
+  .card.home .bigplay:hover{background:linear-gradient(180deg,#ff7d5c 0%,#ec4434 48%,#c2241e 100%);}
+  .card.home .bigplay:active{transform:translateY(2px);
+    box-shadow:inset 0 2px 0 rgba(255,255,255,.25), 0 0 0 2px rgba(255,214,120,.5);}
+  .card.home .bigplay .bp-mark{border:0;width:30px;height:30px;border-radius:50%;
+    background:radial-gradient(circle at 40% 35%,#6ff0a0,#1b8a4a 70%);
+    box-shadow:inset 0 -2px 0 rgba(0,0,0,.3), 0 2px 0 rgba(0,0,0,.25);
+    display:grid;place-items:center;position:relative;z-index:2;}
+  .card.home .bigplay .bp-mark::after{content:'A';font-family:var(--font-display);font-weight:900;
+    font-size:15px;color:#fff;line-height:1;}
+  .card.home .bigplay .bp-txt{position:relative;z-index:2;text-shadow:0 2px 0 rgba(90,10,6,.5);}
+  /* The pulse round the slab is a second layer fading in and out, never an
+     animated shadow: opacity is the one property here that costs nothing. */
+  .card.home .fr-panel{position:relative;}
+  .card.home .fr-panel .bigplay{position:relative;}
+
+  /* THE TILES. Dark glass with a coloured edge, cream inset art so the pixel
+     work reads, and a selected state that lights the edge. Each carries its
+     own accent so six tiles are six objects rather than one box six times. */
+  .card.home :is(.lk-btn,.hmode){color:#eef3fa;border:1px solid rgba(160,195,235,.2);
+    border-radius:14px;
+    background:linear-gradient(180deg,rgba(44,72,108,.92),rgba(17,31,52,.96));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.12), 0 14px 26px -14px rgba(0,0,0,.8);}
+  .card.home :is(.lk-btn,.hmode)::before{content:'';position:absolute;left:0;top:10px;bottom:10px;
+    width:4px;border-radius:0 4px 4px 0;background:var(--acc,#ff6a5a);
+    box-shadow:0 0 14px var(--acc,#ff6a5a);}
+  .card.home :is(.lk-btn,.hmode):hover{background:linear-gradient(180deg,rgba(56,88,128,.95),rgba(22,40,66,.97));}
+  .card.home :is(.lk-btn,.hmode):is(:hover,:focus-visible){border-color:var(--acc,#ffc94a);}
+  .card.home :is(.lk-btn,.hmode):focus-visible{outline:2px solid var(--acc,#ffc94a);outline-offset:2px;}
+  .card.home :is(.lk-art,.hmode-art){border:0;border-radius:10px;
+    box-shadow:inset 0 0 0 2px rgba(0,0,0,.18), 0 0 0 2px rgba(255,255,255,.08);}
+  .card.home :is(.lk-txt,.hmode-txt) b{color:#fff3d6;}
+  .card.home :is(.lk-txt,.hmode-txt) span{color:#a9bdd4;}
+  .card.home .lk-btn.ping::after{background:#ffc94a;box-shadow:0 0 0 2px #14263f, 0 0 12px #ffc94a;}
+  .card.home .lk-me{--acc:#5aa9ff;}
+  .card.home .lk-packs{--acc:#ffc94a;}
+  .card.home .hmode-exhibition{--acc:#5be08f;}
+  .card.home .hmode-cup{--acc:#ffb347;}
+  .card.home .hmode-meet{--acc:#c08bff;}
+  .card.home .hmode-howto{--acc:#5fd8e0;}
+  /* The selected tile shows where A goes: a caret at its right edge. */
+  .card.home .hmode::after{content:none;}
+  @media (hover:hover) and (pointer:fine){
+    .card.home :is(.lk-btn,.hmode):is(:hover,:focus-visible) .hmode-txt b::after,
+    .card.home .lk-btn:is(:hover,:focus-visible) .lk-txt b::after{content:' \25B8';color:var(--acc,#ffc94a);}
+  }
+  .card.home .lk-col{color:#9db3cc;}
+  .card.home .lk-col b{color:#fff3d6;}
+  .card.home .lk-col i{background:rgba(255,255,255,.1);height:8px;border-radius:4px;}
+  .card.home .lk-col i::before{background:linear-gradient(90deg,#ff6a5a,#ffc94a);
+    box-shadow:0 0 12px rgba(255,201,74,.6);}
+
+  /* The wire is the ticker under a broadcast, and on a keyboard or a pad it
+     carries the button prompts at its right hand end. */
+  .card.home .wire{border-top:0;padding:9px 12px;border-radius:12px;align-items:center;
+    background:rgba(6,12,22,.62);border:1px solid rgba(160,195,235,.14);}
+  .card.home .wire b{background:#cf3229;color:#fff;padding:3px 7px;border-radius:5px;
+    letter-spacing:.14em;}
+  .card.home .wire > span:not(.padhints){color:#c9d6e5;flex:1 1 auto;min-width:0;}
+  .wire .padhints{display:none;flex:0 0 auto;margin-left:auto;align-items:center;gap:6px;
+    font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8fa6c0;white-space:nowrap;}
+  @media (hover:hover) and (pointer:fine){ .wire .padhints{display:inline-flex;} }
+  body.haspad .wire .padhints{display:inline-flex;}
+  .padhints kbd{font-family:var(--font-display);font-size:10px;color:#fff3d6;min-width:20px;
+    text-align:center;padding:3px 6px;border-radius:6px;background:rgba(255,255,255,.1);
+    border:1px solid rgba(255,255,255,.22);box-shadow:0 2px 0 rgba(0,0,0,.4);}
+  .padhints kbd.pb{border-radius:50%;padding:3px 0;width:20px;}
+  .padhints kbd.pa{background:#1b8a4a;border-color:#5be08f;}
+  body:not(.ingame) .wire span.out{opacity:0;}
+  .card.home .padhints{transition:none;opacity:1;transform:none;}
+  @media (max-width: 640px){ .wire .padhints{display:none !important;} }
+  body.roomfill .card.home .fr-stat.empty{text-transform:none;letter-spacing:.03em;font-size:12px;}
+
+  /* The trophy case and anything else under the home menu sits as a cream
+     card on the stage, as every other screen does. */
+  body.inroom .screen > .card.home + .card{max-width:var(--homew,880px);margin-left:auto;margin-right:auto;}
+
   @media (prefers-reduced-motion: reduce){
     .qs svg *{animation:none !important;}
   }
@@ -5955,6 +6115,128 @@ $('#btn-home').addEventListener('click', () => {
   render();
 });
 
+/* ============================================================================
+   CONSOLE CONTROLS
+   Every screen that is not the game can be driven like a console menu: the
+   arrows (or a pad's d-pad and stick) move a focus ring to the nearest
+   control in that direction, Enter or A presses it, and Escape or B goes
+   back to the main menu. Nothing here touches the game screen, which has
+   its own keys, or a text field, where an arrow means a caret.
+   ============================================================================ */
+const PAD = { seen: false, timer: 0, held: {}, last: 0 };
+const NAV_SEL = 'button:not(:disabled), a[href], [tabindex="0"], select';
+function navOpen() {
+  if (document.body.classList.contains('ingame')) return false;
+  if (State.screen === 'cutscene' || State.screen === 'game') return false;
+  const a = document.activeElement;
+  if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return false;
+  return true;
+}
+function navPool() {
+  /* An open overlay owns the controls, or a pad would walk the focus out
+     from under a pack being opened. */
+  const scrim = [...document.querySelectorAll('.pk-scrim')].pop();
+  const root = scrim || document.body;
+  return [...root.querySelectorAll(NAV_SEL)].filter(b => {
+    if (!scrim && b.closest('.pk-scrim')) return false;
+    const r = b.getBoundingClientRect();
+    return r.width > 4 && r.height > 4 && getComputedStyle(b).visibility !== 'hidden';
+  });
+}
+function navMove(dx, dy) {
+  const pool = navPool();
+  if (!pool.length) return;
+  const cur = pool.includes(document.activeElement) ? document.activeElement : null;
+  document.body.classList.add('padnav');
+  if (!cur) { navFocus(pool.find(b => b.classList.contains('bigplay')) || pool[0]); return; }
+  const a = cur.getBoundingClientRect();
+  const ax = a.left + a.width / 2, ay = a.top + a.height / 2;
+  let best = null, bs = Infinity;
+  for (const b of pool) {
+    if (b === cur) continue;
+    const r = b.getBoundingClientRect();
+    const bx = r.left + r.width / 2, by = r.top + r.height / 2;
+    const along = (bx - ax) * dx + (by - ay) * dy;
+    if (along <= 4) continue;
+    const across = Math.abs((bx - ax) * dy) + Math.abs((by - ay) * dx);
+    /* A control in the same row (or column) wins over a nearer one off to
+       the side: right from a tile is the tile beside it, never the slab
+       above it. */
+    const inBand = dx ? (r.bottom > a.top + 2 && r.top < a.bottom - 2)
+                      : (r.right > a.left + 2 && r.left < a.right - 2);
+    /* Sideways never leaves the row: right from the last tile is nothing,
+       not a jump up to the top bar. Up and down may, so a column that ends
+       still reaches the next row of a different shape. */
+    if (dx && !inBand) continue;
+    const score = along + across * 2.2 + (inBand ? 0 : 4000);
+    if (score < bs) { bs = score; best = b; }
+  }
+  if (best) navFocus(best);
+}
+function navFocus(b) {
+  b.focus({ preventScroll: true });
+  b.scrollIntoView({ block: 'nearest', inline: 'nearest',
+                     behavior: REDUCED.matches ? 'auto' : 'smooth' });
+  Sound.tick && Sound.tick();
+}
+function navBack() {
+  const scrim = [...document.querySelectorAll('.pk-scrim')].pop();
+  if (scrim) {
+    const close = [...scrim.querySelectorAll('button')].find(b => /close|done|back/i.test(b.textContent));
+    if (close) close.click();
+    return;
+  }
+  if (State.screen !== 'menu') $('#btn-home').click();
+}
+document.addEventListener('keydown', (e) => {
+  if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || !navOpen()) return;
+  const dir = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+  if (dir) { e.preventDefault(); navMove(dir[0], dir[1]); return; }
+  if (e.key === 'Escape') { e.preventDefault(); navBack(); }
+});
+/* A mouse or a finger takes the ring back off. */
+document.addEventListener('pointerdown', () => document.body.classList.remove('padnav'), true);
+/* THE PAD. Polled only while one is plugged in, and only between the
+   connect and the disconnect, so a page nobody plugs a controller into
+   never runs a loop for it. The game screen is left to its own controls. */
+function padPoll() {
+  PAD.timer = 0;
+  const pads = navigator.getGamepads ? [...navigator.getGamepads()].filter(Boolean) : [];
+  if (!pads.length) return;
+  const p = pads[0], now = performance.now();
+  const btn = i => !!(p.buttons[i] && p.buttons[i].pressed);
+  const ax = p.axes[0] || 0, ay = p.axes[1] || 0;
+  const want = {
+    l: btn(14) || ax < -0.55, r: btn(15) || ax > 0.55,
+    u: btn(12) || ay < -0.55, d: btn(13) || ay > 0.55,
+    a: btn(0), b: btn(1),
+  };
+  if (navOpen()) {
+    for (const [k, dx, dy] of [['l', -1, 0], ['r', 1, 0], ['u', 0, -1], ['d', 0, 1]]) {
+      const was = PAD.held[k];
+      if (want[k] && (!was || now - was > 260)) { navMove(dx, dy); PAD.held[k] = now; }
+      else if (!want[k]) PAD.held[k] = 0;
+    }
+    if (want.a && !PAD.held.a) {
+      const f = document.activeElement;
+      if (f && f !== document.body && f.click) f.click(); else navMove(0, 1);
+    }
+    if (want.b && !PAD.held.b) navBack();
+  }
+  PAD.held.a = want.a; PAD.held.b = want.b;
+  PAD.timer = requestAnimationFrame(padPoll);
+}
+window.addEventListener('gamepadconnected', () => {
+  PAD.seen = true;
+  document.body.classList.add('haspad');
+  document.querySelectorAll('.padhints').forEach(h => h.replaceWith(padHints()));
+  if (!PAD.timer) PAD.timer = requestAnimationFrame(padPoll);
+});
+window.addEventListener('gamepaddisconnected', () => {
+  const left = navigator.getGamepads ? [...navigator.getGamepads()].filter(Boolean).length : 0;
+  if (!left) { document.body.classList.remove('haspad'); cancelAnimationFrame(PAD.timer); PAD.timer = 0; }
+});
+
 /* Leaving a live game. An exhibition is a pick up game and just stops. A
    season, playoff or cup game COUNTS: it is filed as a loss at the score it
    stood at, and the confirm says so, because the old behaviour recorded
@@ -7975,6 +8257,7 @@ function clubhouseWire() {
   let at = Math.floor(Math.random() * lines.length);
   const line = el('span', null, lines[at]);
   wrap.appendChild(line);
+  wrap.appendChild(padHints());
   /* THE WIRE RUNS. One line out, the next one in, every few seconds, so the
      clubhouse has something happening in it while somebody decides. The
      loop is a timer that checks the line is still on the page and stops
@@ -8001,6 +8284,34 @@ function clubhouseWire() {
   return wrap;
 }
 
+/* THE HUD OVER THE PARK. A console front end keeps what you hold in the
+   corner of the picture rather than in a paragraph under it: the bank,
+   your player's level and how much of the roster is yours. Every figure is
+   read off the save, so nothing here can disagree with the screens it
+   opens. It takes no pointer; the locker under the park is the door. */
+function heroHud() {
+  const hud = el('div', 'hero-hud');
+  hud.setAttribute('aria-hidden', 'true');
+  const all = DRAFTABLE();
+  const have = all.filter(c => isUnlocked(c.k)).length;
+  hud.innerHTML = `<span class="hh">${coinGlyph()}<b>${PROGRESS.coins | 0}</b></span>`
+    + `<span class="hh"><i>Roster</i><b>${have}/${all.length}</b></span>`
+    + (ME ? `<span class="hh"><i>Lv</i><b>${PROGRESS.me.level}</b></span>` : '');
+  return hud;
+}
+/* WHAT THE BUTTONS ARE, said the way a console says it. Only for a
+   keyboard or a pad: a phone has neither, and a prompt naming a key the
+   reader does not have is the coach notes' old mistake. The pad prompt
+   swaps in once a controller has spoken. */
+function padHints() {
+  const h = el('span', 'padhints');
+  h.setAttribute('aria-hidden', 'true');
+  h.innerHTML = PAD.seen
+    ? '<kbd class="pb">\u271A</kbd> Move <kbd class="pb pa">A</kbd> Select'
+    : '<kbd>\u2190</kbd><kbd>\u2192</kbd> Move <kbd>Enter</kbd> Select';
+  return h;
+}
+
 /* THE MENU. One layout for every window: the ballpark on top, the button
    that continues a franchise under it, then the locker, the modes and the
    wire. The phone and the desktop used to be two designs (a drawn clubhouse
@@ -8009,9 +8320,10 @@ function clubhouseWire() {
    is one. */
 function renderMenu() {
   const s = el('div','screen');
-  const card = el('div','card');
+  const card = el('div','card home');
   const things = clubhouseThings();
   const hero = parkHero();
+  hero.querySelector('.hero-box').appendChild(heroHud());
   card.appendChild(hero);
   card.style.setProperty('--ar', hero.style.getPropertyValue('--ar'));
   /* THE FRANCHISE IS THE THING TO PRESS. It used to be one of four signs on

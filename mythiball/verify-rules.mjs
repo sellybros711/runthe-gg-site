@@ -985,6 +985,13 @@ async function main() {
         await pg.goto(URL);
         await pg.evaluate(() => localStorage.clear());
         await pg.goto(URL);
+        /* THE ENTRANCE HAS TO HAVE LANDED. Every unit rises in from a 0.975
+           scale, and a rectangle read mid flight is the animation rather
+           than the layout: on a loaded machine the stack measured 795 under
+           an 815 park and passed or failed on how busy the box was. */
+        await pg.evaluate(() => Promise.all(document.getAnimations()
+          .filter(a => a.effect && a.effect.getComputedTiming().iterations !== Infinity)
+          .map(a => a.finished.catch(() => null))));
         const r = await pg.evaluate(() => {
           /* THE BALLPARK AND THE THING TO PRESS. What a returning player
              must not have to scroll for is the button that continues their

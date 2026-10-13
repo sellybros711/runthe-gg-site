@@ -7981,6 +7981,22 @@ desktop.
 
 **On a desktop everything under the park is the park's width** (`--homew` on the card, the park's own height cap, with `--ar` copied onto the card by `renderMenu`), and the mode tiles have the locker cards' rounded corners. An inset picture over a wider stack read as two layouts.
 
+**Every screen but the game is a console front end.** `body:not(.ingame)` is a ballpark
+at night (dark stage, light tower glows, a green haze at the foot) with the cream cards laid
+over it as menus, and the top bar is glass. The home card is `.card.home`: no paper of its
+own, the park framed like a broadcast with a HUD (`heroHud`: coins, roster, level, read off
+the save), an amber stadium board over a START slab carrying a pad's A, and dark glass tiles
+that each wear an accent (`--acc`). The wire is a ticker and carries button prompts at its
+right end (`padHints`), only under a fine pointer or once a pad has connected.
+
+**Console controls** (`navMove`, `padPoll`): the arrows or a pad's d-pad and stick move focus
+to the nearest control in that direction, Enter or A presses it, Escape or B goes back to
+the main menu (or closes an open pack). They stand down on the game screen, in a cutscene
+and in a text field, and a pack's overlay owns the focus while it is open. The pad is only
+polled between `gamepadconnected` and the last disconnect. A focus ring drawn by them is
+gold (`body.padnav`), and any pointer press takes it off. Text sitting straight on the
+stage (`.screen > h2`, `> p`) is cream; anything new placed outside a card needs the same.
+
 **A phone tile stands up rather than lying down**, keyed on `body.roomfill`, so
 the name holds 16px. **The franchise is the button**, its status read off the
 save by `franchisePanel()`. **A rotation is not a render**: the resize listener
