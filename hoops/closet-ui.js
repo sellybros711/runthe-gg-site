@@ -248,7 +248,7 @@ var CSS = [
 '.cl-fig::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.12) 50%,transparent 62%);background-size:260% 100%;animation:cl-foil 5s ease-in-out infinite;}',
 '.cl-stag{position:absolute;top:0;left:50%;transform:translateX(-50%);background:var(--sc);color:#10131d;font:800 9px/1 var(--k-f-text);letter-spacing:.14em;text-transform:uppercase;padding:4px 10px;line-height:1;}',
 '.cl-fig img{position:relative;}',
-'.cl-figcard{padding:6px;line-height:normal;}',
+'.cl-figcard{padding:11px;line-height:normal;}',
 '.cl-figcard img{width:100%;height:100%;}',
 '.cl-figcard .pc-fig img{height:auto;}',
 '.cl-figcard .pc-card.pc-mini{width:100px;}',

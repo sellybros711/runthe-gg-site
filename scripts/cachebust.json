@@ -2723,8 +2723,8 @@
       "sha": "dcb77ca252ced228"
     },
     "closet-ui.js": {
-      "v": "10",
-      "sha": "3c96ea0f58dd4ef5"
+      "v": "11",
+      "sha": "4f35a9bf9f17946d"
     },
     "shop-ui.js": {
       "v": "6",
@@ -2739,12 +2739,12 @@
       "sha": "e1a0b0d12ed4f4d2"
     },
     "card-ui.js": {
-      "v": "2",
-      "sha": "6fd0ae58e83f6712"
+      "v": "3",
+      "sha": "a462d32b5631c27b"
     },
     "career-ui.js": {
-      "v": "61",
-      "sha": "0e187b144ae96710"
+      "v": "62",
+      "sha": "f9c65e44a3fdcc7d"
     },
     "data/players.json": {
       "v": "5",

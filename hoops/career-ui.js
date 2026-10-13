@@ -2959,7 +2959,7 @@ window.RTF_CAREER_UI = {
   cardPlayer: function(){
     var st = store(), L = st.cur && !st.cur.retired ? st.cur : null, h = (st.hof || [])[0];
     var p = null;
-    if (L) { var k = C.colorsOf(L); p = { look: lookOf(L), name: L.name, num: L.num, pos: L.pos, c1: k.primary, c2: k.secondary }; }
+    if (L) { var k = C.colorsOf(L); p = { look: lookOf(L), name: L.name, num: L.num, pos: L.pos, c1: k.primary, c2: k.secondary, ovr: C.show(C.ovrOf(L)), club: L.team || '' }; }
     else if (h && h.look) p = { look: h.look, name: h.name, num: h.num, pos: h.pos, c1: h.c1, c2: h.c2 };
     if (!p) return null;
     p.name = C.boardName(p.name) ? p.name : (C.cleanName(p.name) || null);

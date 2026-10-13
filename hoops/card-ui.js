@@ -278,34 +278,60 @@ function html(p, lo, o){
   var foil = (plate && plate.rarity === 'legendary') || (bg && bg.rarity === 'legendary') || m.k === 'goat' || m.k === 'icon';
   var num = p.num == null ? '' : String(p.num);
   var sub = [num ? '#' + esc(num) : '', esc(p.pos || '')].filter(Boolean).join(' · ');
-  var front = '<div class="pc-face pc-front">'
+  var club = /^[A-Z]{2,4}$/.test(p.club || '') ? p.club : '';
+  var ovr = p.ovr != null && isFinite(+p.ovr) ? Math.round(+p.ovr) : null;
+  var K = window.RTF_KIT;
+  var ico = function(n, c){ return K && K.iconHtml ? K.iconHtml(n, 2, c) : ''; };
+  /* THE FRONT, a sports card: his rating and position in the corner, the
+     Floor Rep gem across from them, his number behind him in the club's
+     colours, a light on the floor he stands in, and his nameplate with the
+     club's two colours as a stripe above it. */
+  var front = '<div class="pc-face pc-front" style="--c1:' + c1 + ';--c2:' + c2 + '">'
     + '<img class="pc-bg" src="' + bgURL(bg) + '" alt="" draggable="false">'
-    + '<span class="pc-wm" style="--c1:' + c1 + ';--c2:' + c2 + '">' + esc(num) + '</span>'
+    + '<i class="pc-shade"></i>'
+    + '<span class="pc-wm">' + esc(num) + '</span>'
+    + '<i class="pc-spot"></i>'
     + '<span class="pc-fig">' + fig + '</span>'
+    + (ovr != null ? '<span class="pc-ovr"><b>' + ovr + '</b><em>' + esc(p.pos || 'OVR') + '</em>' + (club ? '<i>' + esc(club) + '</i>' : '') + '</span>' : '')
     + '<span class="pc-rank pc-m-' + m.k + '"><i class="pc-pip"></i>' + esc(rank) + '</span>'
     + '<span class="pc-plate" style="--ink:' + plateInk(plate) + '"><img src="' + plateURL(plate) + '" alt="" draggable="false">'
     + '<b class="pc-name' + (plate && (plate.k === 'neon' || plate.k === 'led') ? ' glow' : '') + '">' + esc(p.name || 'Player') + '</b>'
     + '<em class="pc-sub">' + sub + '</em></span>'
+    + '<i class="pc-glare"></i>'
     + (foil && !reduced() ? '<i class="pc-foil"></i>' : '')
     + '</div>';
   var back = '';
   if (size !== 'mini') {
     var s = o.stats || {};
-    var row = function(v, k){ return '<span class="pc-st"><b>' + esc(v) + '</b><em>' + esc(k) + '</em></span>'; };
-    var worn = (CAT ? (CAT.STREET_SLOTS || []) : []).map(function(sl){ var it = CAT.item(lo[sl]); return it && sl !== 'idle' && it.slot === sl && CAT.fits(it, 'street') ? '<span class="pc-wi" style="--rc:' + RCOL[it.rarity] + '">' + (A ? A.icon(it, 'pc-wic') : '') + esc(it.name) + '</span>' : ''; }).join('');
+    var row = function(v, k, n){ return '<span class="pc-st">' + ico(n, '#f2c23a') + '<b>' + esc(v) + '</b><em>' + esc(k) + '</em></span>'; };
+    var worn = (CAT ? (CAT.STREET_SLOTS || []) : []).map(function(sl){ var it = CAT.item(lo[sl]); return it && sl !== 'idle' && it.slot === sl && CAT.fits(it, 'street') ? '<span class="pc-wi" style="--rc:' + RCOL[it.rarity] + '" title="' + esc(it.name) + '" role="img" aria-label="' + esc(it.name) + '">' + (A ? A.icon(it, 'pc-wic') : '') + '</span>' : ''; }).join('');
     var idleIt = CAT && CAT.item(lo.idle); if (idleIt && idleIt.slot !== 'idle') idleIt = null;
+    if (idleIt) worn += '<span class="pc-wi" style="--rc:' + RCOL[idleIt.rarity] + '" title="' + esc(idleIt.name) + '" role="img" aria-label="' + esc(idleIt.name) + '">' + (A ? A.icon(idleIt, 'pc-wic') : '') + '</span>';
+    var rp = o.rep || null;
     back = '<div class="pc-face pc-back" style="--c1:' + c1 + ';--c2:' + c2 + '">'
-      + '<span class="pc-bhead"><b>' + esc(p.name || 'Player') + '</b><em>' + sub + '</em></span>'
-      + '<span class="pc-brank pc-m-' + m.k + '"><i class="pc-pip"></i>Floor Rep: ' + esc(rank) + '</span>'
-      + (o.stats ? '<span class="pc-stats">' + row(s.careers || 0, 'Careers') + row(s.best || 0, 'Best legacy') + row(s.rings || 0, 'Rings')
-        + row(s.mvp || 0, 'MVPs') + row(s.star || 0, 'All-Star') + row(s.badges || 0, 'Badges') + '</span>' : '<span class="pc-note">His record stays on his own device.</span>')
-      + '<span class="pc-wear">' + worn + (idleIt ? '<span class="pc-wi" style="--rc:' + RCOL[idleIt.rarity] + '">' + (A ? A.icon(idleIt, 'pc-wic') : '') + esc(idleIt.name) + '</span>' : '') + '</span>'
+      + '<i class="pc-bstripe"></i>'
+      + '<span class="pc-bhead"><span class="pc-bav" data-pc-head></span><span class="pc-bwho"><b>' + esc(p.name || 'Player') + '</b><em>' + sub + (club ? ' · ' + esc(club) : '') + (ovr != null ? ' · ' + ovr + ' OVR' : '') + '</em></span></span>'
+      + '<span class="pc-brank pc-m-' + m.k + '"><span class="pc-brt"><i class="pc-pip"></i>Floor Rep <b>' + esc(rank) + '</b></span>'
+      + (rp ? '<span class="pc-bbar"><i style="width:' + Math.round(100 * (rp.frac || 0)) + '%"></i></span><span class="pc-bnext">' + (rp.next ? esc(Math.max(0, rp.nextAt - rp.pts) + ' pts to ' + rp.next) : 'The top of Floor Rep') + '</span>' : '') + '</span>'
+      + (o.stats ? '<span class="pc-stats">' + row(s.careers || 0, 'Careers', 'ball') + row(s.best || 0, 'Best legacy', 'star') + row(s.rings || 0, 'Rings', 'ring')
+        + row(s.mvp || 0, 'MVPs', 'trophy') + row(s.star || 0, 'All-Star', 'medal') + row(s.badges || 0, 'Badges', 'shield') + '</span>' : '<span class="pc-note">His record stays with his own account.</span>')
+      + '<span class="pc-wlab">Wearing</span>'
+      + '<span class="pc-wear">' + (worn || '<span class="pc-wnone">Starter clothes</span>') + '</span>'
       + '<span class="pc-bplate" style="--ink:' + plateInk(plate) + '"><img src="' + plateURL(plate) + '" alt="" draggable="false"><b>Run The Floor</b></span>'
       + '<span class="pc-bfoot">Tap to flip</span>'
       + '</div>';
   }
   return '<div class="pc-card pc-' + size + ' pc-m-' + m.k + (foil ? ' foil' : '') + '" data-rank="' + (p.rep | 0) + '"' + (size !== 'mini' ? ' tabindex="0" role="button" aria-label="Player card. Tap to flip."' : '') + '>'
     + '<div class="pc-in">' + front + back + '</div></div>';
+}
+/* the back's face, painted in the worker and put in once it lands */
+function fillHead(el, p, lo){
+  var box = el && el.querySelector('[data-pc-head]');
+  if (!box || !B || !B.headUrl || !p || !p.look) return;
+  var c1 = /^#[0-9a-f]{6}$/i.test(p.c1 || '') ? p.c1 : '#e8660f', c2 = /^#[0-9a-f]{6}$/i.test(p.c2 || '') ? p.c2 : '#1d1f2b';
+  var o = { c1: c1, c2: c2, num: p.num || 0 };
+  if (W && W.dress) o = W.dress(o, 'street', lo || {}, true); else o.ctx = 'street';
+  B.headUrl(p.look, o, 50, function(u){ if (box.isConnected) box.innerHTML = '<img src="' + u + '" alt="">'; });
 }
 
 /* ── the overlay ────────────────────────────────────────────────────────── */
@@ -338,6 +364,8 @@ function show(inner, title){
     if (go === 'career') { var bc = $('b-career'); if (bc) bc.click(); }
   });
   document.addEventListener('keydown', onKey);
+  var pc0 = ov.querySelector('.pc-card'), sh = ov.querySelector('.pc-sheet');
+  if (pc0 && sh) { var mm = metal(+pc0.getAttribute('data-rank') || 0); sh.style.setProperty('--pcl', mm.a); }
   wire(ov.querySelector('.pc-card'));
   var f = ov.querySelector('.pc-card'); if (f) try { f.focus({ preventScroll: true }); } catch (e) {}
   return ov;
@@ -361,9 +389,10 @@ function openMine(){
   var lo = W ? W.loadout('street') : {};
   var st = window.RTF_CAREER_UI && window.RTF_CAREER_UI.cardStats ? window.RTF_CAREER_UI.cardStats() : {};
   st.badges = badgeCount();
-  var el = show('<span class="pc-title">Your player card</span>' + html(p, lo, { tryOn: false, stats: st })
+  var el = show('<span class="pc-title">Your player card</span>' + html(p, lo, { tryOn: false, stats: st, rep: myRep() })
     + '<span class="pc-acts"><button type="button" class="k-btn k-btn-primary" data-dress>Change his card</button><button type="button" class="k-btn k-sec" data-close>Close</button></span>'
     + '<span class="pc-hint">Your nameplate and backdrop are in the closet, under Off court.</span>', 'Your player card');
+  fillHead(el, p, lo);
   var b = el.querySelector('[data-dress]');
   if (b) b.addEventListener('click', function(){
     var CU = window.RTF_CAREER_UI;
@@ -383,11 +412,14 @@ function openFor(row, who){
   var p = cleanPlayer(row && row.player);
   if (!p) return null;
   var lo = row.wear_street && typeof row.wear_street === 'object' ? row.wear_street : {};
-  return show('<span class="pc-title">' + esc(who ? who + '’s player' : 'Player card') + '</span>' + html(p, lo, { tryOn: true })
+  var el = show('<span class="pc-title">' + esc(who ? who + '’s player' : 'Player card') + '</span>' + html(p, lo, { tryOn: true })
     + '<span class="pc-acts"><button type="button" class="k-btn" data-close>Close</button></span>', 'Player card');
+  fillHead(el, p, lo);
+  return el;
 }
 
 /* ── a board row's circle: his head and shoulders ───────────────────────── */
+var bustN = 0;
 function bust(row){
   var p = cleanPlayer(row && row.player);
   if (!p || !B) return '';
@@ -396,7 +428,16 @@ function bust(row){
   if (W && W.dress) fo = W.dress(fo, 'street', lo, true); else fo.ctx = 'street';
   var bgIt = CAT && CAT.item(lo.bg) && CAT.item(lo.bg).slot === 'bg' ? CAT.item(lo.bg) : null;
   var m = metal(p.rep);
-  return '<span class="pc-bust pc-m-' + m.k + '" style="--bb:' + (bgIt ? bgIt.c[0] : fo.c2) + '"><img src="' + B.url(p.look, fo) + '" alt="" draggable="false"></span>';
+  /* the coarse crop now, his face traced fine once the worker has it */
+  var bid = '';
+  if (B.headUrl && typeof document !== 'undefined') {
+    bid = 'pb' + (++bustN);
+    B.headUrl(p.look, fo, 30, function(u){
+      var tries = 0;
+      (function put(){ var el = document.querySelector('img[data-bust="' + bid + '"]'); if (el) { el.src = u; el.className = 'hd'; el.removeAttribute('data-bust'); } else if (++tries < 20) setTimeout(put, 60); })();
+    });
+  }
+  return '<span class="pc-bust pc-m-' + m.k + '" style="--bb:' + (bgIt ? bgIt.c[0] : fo.c2) + '"><img src="' + B.url(p.look, fo) + '" alt="" draggable="false"' + (bid ? ' data-bust="' + bid + '"' : '') + '></span>';
 }
 
 /* ── publishing who he is (140) ─────────────────────────────────────────── */
@@ -432,22 +473,44 @@ function css(){
     '.pc-card.pc-mini{width:150px;cursor:default;}',
     '.pc-in{position:absolute;inset:0;transform-style:preserve-3d;transform:rotateX(var(--rx)) rotateY(var(--ry));transition:transform .5s cubic-bezier(.2,.8,.2,1);}',
     '.pc-card.flip .pc-in{transform:rotateX(var(--rx)) rotateY(calc(180deg + var(--ry)));}',
-    '.pc-face{position:absolute;inset:0;border-radius:14px;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden;',
-    '  border:5px solid var(--pcm-a);box-shadow:0 0 0 2px var(--pcm-b),inset 0 0 0 2px rgba(0,0,0,.45),0 18px 40px rgba(0,0,0,.55);background:#0b0d16;}',
-    '.pc-mini .pc-face{border-width:3px;border-radius:9px;}',
-    '.pc-card:focus-visible .pc-face{box-shadow:0 0 0 2px var(--pcm-b),0 0 0 5px #fff,0 18px 40px rgba(0,0,0,.55);}',
-    '.pc-back{transform:rotateY(180deg);background:linear-gradient(160deg,var(--c2),#090a12 70%);display:flex;flex-direction:column;gap:10px;padding:16px 14px;color:#f4f2ec;}',
+    /* THE FRAME is the kit's: square, stepped at the corners, in his Floor Rep
+       metal with its dark edge outside it, and a bevel of light inside. */
+    '.pc-face{position:absolute;inset:0;border-radius:0;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:0;background:#0b0d16;',
+    '  box-shadow:0 -5px 0 0 var(--pcm-a),0 5px 0 0 var(--pcm-a),-5px 0 0 0 var(--pcm-a),5px 0 0 0 var(--pcm-a),0 -9px 0 0 var(--pcm-b),0 9px 0 0 var(--pcm-b),-9px 0 0 0 var(--pcm-b),9px 0 0 0 var(--pcm-b),0 20px 40px rgba(0,0,0,.6);}',
+    '.pc-face:after{content:"";position:absolute;inset:0;pointer-events:none;z-index:9;box-shadow:inset 0 0 0 2px rgba(0,0,0,.55),inset 0 0 0 4px color-mix(in srgb,var(--pcm-a) 35%,transparent),inset 0 3px 0 4px rgba(255,255,255,.08);}',
+    '.pc-mini .pc-face{box-shadow:0 -3px 0 0 var(--pcm-a),0 3px 0 0 var(--pcm-a),-3px 0 0 0 var(--pcm-a),3px 0 0 0 var(--pcm-a),0 -5px 0 0 var(--pcm-b),0 5px 0 0 var(--pcm-b),-5px 0 0 0 var(--pcm-b),5px 0 0 0 var(--pcm-b);}',
+    '.pc-card:focus-visible .pc-face{outline:3px solid #fff;outline-offset:12px;}',
+    '.pc-back{transform:rotateY(180deg);background:linear-gradient(170deg,color-mix(in srgb,var(--c1) 26%,#10131f),#090b13 62%);display:flex;flex-direction:column;gap:8px;padding:14px 13px 9px;color:#f4f2ec;}',
     '.pc-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;image-rendering:pixelated;}',
-    '.pc-wm{position:absolute;right:6%;top:9%;font-family:var(--k-f-display,Impact,sans-serif);font-size:min(150px,40vw);line-height:.8;color:var(--c1);opacity:.42;',
-    '  -webkit-text-stroke:3px var(--c2);text-shadow:6px 6px 0 rgba(0,0,0,.35);pointer-events:none;}',
-    '.pc-mini .pc-wm{font-size:72px;-webkit-text-stroke:2px var(--c2);}',
+    /* a vignette so the corners hold their words whatever the backdrop is */
+    '.pc-shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(6,7,13,.62),transparent 26%,transparent 62%,rgba(6,7,13,.7) 88%);}',
+    /* his number, solid in the club colour with a hard pixel shadow */
+    '.pc-wm{position:absolute;right:5%;top:12%;font-family:var(--k-f-display,Impact,sans-serif);font-size:min(150px,40vw);line-height:.8;color:var(--c1);opacity:.5;',
+    '  -webkit-text-stroke:3px color-mix(in srgb,var(--c2) 70%,#000);text-shadow:7px 7px 0 rgba(0,0,0,.45);pointer-events:none;mix-blend-mode:screen;}',
+    '.pc-mini .pc-wm{font-size:72px;-webkit-text-stroke:2px var(--c2);text-shadow:4px 4px 0 rgba(0,0,0,.45);}',
+    /* the light he stands in */
+    '.pc-spot{position:absolute;left:12%;right:12%;bottom:12%;height:22%;pointer-events:none;background:radial-gradient(ellipse at 50% 85%,color-mix(in srgb,var(--c1) 45%,transparent),transparent 68%);}',
+    /* the rating, in the corner a sports card keeps it */
+    '.pc-ovr{position:absolute;left:8px;top:8px;z-index:3;display:flex;flex-direction:column;align-items:center;min-width:46px;padding:5px 6px 6px;color:#fff;',
+    '  background:linear-gradient(180deg,color-mix(in srgb,var(--c1) 85%,#000),color-mix(in srgb,var(--c1) 55%,#000));box-shadow:inset 0 0 0 2px rgba(0,0,0,.45),inset 0 2px 0 2px rgba(255,255,255,.18),0 3px 0 #05070d;}',
+    '.pc-ovr b{font-family:var(--k-f-display,Impact,sans-serif);font-weight:400;font-size:30px;line-height:1;text-shadow:2px 2px 0 rgba(0,0,0,.4);}',
+    '.pc-ovr em{font-style:normal;font-family:var(--k-f-pixel,monospace);font-size:8px;margin-top:3px;letter-spacing:.06em;}',
+    '.pc-ovr i{font-style:normal;font-family:var(--k-f-pixel,monospace);font-size:7px;margin-top:4px;padding-top:4px;border-top:2px solid rgba(255,255,255,.3);opacity:.9;}',
+    '.pc-mini .pc-ovr{left:5px;top:5px;min-width:30px;padding:3px 4px;}',
+    '.pc-mini .pc-ovr b{font-size:18px;}.pc-mini .pc-ovr em{font-size:6px;}.pc-mini .pc-ovr i{display:none;}',
+    /* the club stripe over the nameplate */
+    '.pc-plate:before{content:"";position:absolute;left:0;right:0;top:-9px;height:6px;pointer-events:none;background:linear-gradient(180deg,var(--c1) 0 60%,var(--c2) 60%);box-shadow:0 2px 0 rgba(0,0,0,.4);}',
+    '.pc-mini .pc-plate:before{top:-6px;height:4px;}',
+    /* a glare that follows the pointer, on every card, quieter than the foil */
+    '.pc-glare{position:absolute;inset:0;pointer-events:none;z-index:8;background:radial-gradient(circle at var(--gx) var(--gy),rgba(255,255,255,.16),transparent 45%);mix-blend-mode:soft-light;}',
     '.pc-fig{position:absolute;left:50%;bottom:13%;transform:translateX(-50%);width:80%;display:flex;justify-content:center;filter:drop-shadow(0 6px 0 rgba(0,0,0,.35));}',
     '.pc-fig img,.pc-fig canvas{width:100%!important;height:auto!important;image-rendering:pixelated;}',
-    '.pc-rank{position:absolute;left:0;top:10px;display:flex;align-items:center;gap:6px;padding:4px 10px 4px 8px;font-family:var(--k-f-pixel,monospace);font-size:9px;letter-spacing:.04em;',
-    '  text-transform:uppercase;color:#14151b;background:var(--pcm-a);border-radius:0 6px 6px 0;box-shadow:0 2px 0 var(--pcm-b);}',
-    '.pc-mini .pc-rank{font-size:7px;top:6px;padding:3px 7px 3px 5px;}',
+    '.pc-rank{position:absolute;right:8px;top:8px;z-index:3;display:flex;align-items:center;gap:6px;padding:5px 9px 5px 7px;font-family:var(--k-f-pixel,monospace);font-size:8px;letter-spacing:.04em;',
+    '  text-transform:uppercase;color:#14151b;background:linear-gradient(180deg,color-mix(in srgb,var(--pcm-a) 80%,#fff),var(--pcm-a));box-shadow:inset 0 -2px 0 var(--pcm-b),0 3px 0 #05070d;}',
+    '.pc-card:not(:has(.pc-ovr)) .pc-rank{right:auto;left:8px;}',
+    '.pc-mini .pc-rank{font-size:6px;top:5px;right:5px;padding:3px 5px 3px 4px;gap:4px;}',
     '.pc-pip{width:7px;height:7px;background:var(--pcm-b);transform:rotate(45deg);flex:none;}',
-    '.pc-plate{position:absolute;left:4%;right:4%;bottom:3.5%;aspect-ratio:64/14;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--ink);}',
+    '.pc-plate{position:absolute;z-index:3;left:4%;right:4%;bottom:3.5%;aspect-ratio:64/14;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--ink);}',
     '.pc-plate img{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;}',
     '.pc-name{position:relative;font-family:var(--k-f-display,Impact,sans-serif);font-weight:400;font-size:clamp(14px,5.6vw,21px);line-height:1;text-transform:uppercase;letter-spacing:.02em;',
     '  max-width:92%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
@@ -463,17 +526,33 @@ function css(){
     '.pc-m-gold{--pcm-a:#f2c23a;--pcm-b:#8a5a10;}.pc-m-icon{--pcm-a:#b47cff;--pcm-b:#f2c23a;}.pc-m-goat{--pcm-a:#ff7ab8;--pcm-b:#7cf3ff;}',
     '.pc-card.pc-m-goat .pc-face{animation:pc-goat 3s linear infinite;}',
     '@keyframes pc-goat{0%{border-color:#ff7ab8}33%{border-color:#7cf3ff}66%{border-color:#ffd166}100%{border-color:#ff7ab8}}',
-    '.pc-bhead{display:flex;flex-direction:column;gap:2px;}.pc-bhead b{font-family:var(--k-f-display,Impact,sans-serif);font-weight:400;font-size:24px;line-height:1;text-transform:uppercase;}',
-    '.pc-bhead em{font-style:normal;font-family:var(--k-f-pixel,monospace);font-size:9px;color:var(--c1);}',
-    '.pc-brank{align-self:flex-start;display:flex;align-items:center;gap:6px;padding:4px 9px;border-radius:6px;background:var(--pcm-a);color:#14151b;font-family:var(--k-f-pixel,monospace);font-size:8px;text-transform:uppercase;}',
-    '.pc-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}',
-    '.pc-st{display:flex;flex-direction:column;align-items:center;padding:7px 2px;border-radius:8px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);}',
-    '.pc-st b{font-family:var(--k-f-pixel,monospace);font-size:15px;color:#fff;font-variant-numeric:tabular-nums;}.pc-st em{font-style:normal;font-size:10px;opacity:.75;margin-top:3px;text-align:center;}',
+    /* THE BACK: his face, the rank and how far to the next, six tiles split
+       by hairlines, and what he is wearing as a list of pieces. */
+    '.pc-bstripe{position:absolute;left:0;right:0;top:0;height:5px;background:linear-gradient(90deg,var(--c1) 0 70%,var(--c2) 70%);}',
+    '.pc-bhead{display:flex;align-items:center;gap:10px;margin-top:2px;}',
+    '.pc-bav{flex:none;width:50px;height:50px;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 50% 35%,var(--c1),#0b0f18 78%);box-shadow:inset 0 0 0 3px var(--pcm-a),0 0 0 2px #05070d;}',
+    '.pc-bav img{width:50px;height:50px;display:block;}',
+    '.pc-bwho{display:flex;flex-direction:column;gap:4px;min-width:0;}',
+    '.pc-bwho b{font-family:var(--k-f-display,Impact,sans-serif);font-weight:400;font-size:24px;line-height:1;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}',
+    '.pc-bwho em{font-style:normal;font-family:var(--k-f-pixel,monospace);font-size:8px;color:color-mix(in srgb,var(--c1) 55%,#fff);line-height:1.4;}',
+    '.pc-brank{display:flex;flex-direction:column;gap:5px;padding:7px 9px;background:rgba(0,0,0,.35);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--pcm-a) 55%,#14151b);}',
+    '.pc-brt{display:flex;align-items:center;gap:6px;font-family:var(--k-f-pixel,monospace);font-size:8px;text-transform:uppercase;color:rgba(244,242,236,.75);}',
+    '.pc-brt b{color:#14151b;background:var(--pcm-a);padding:3px 6px;font-weight:400;}',
+    '.pc-bbar{height:7px;background:#05070d;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);position:relative;}',
+    '.pc-bbar i{position:absolute;left:1px;top:1px;bottom:1px;max-width:calc(100% - 2px);background:linear-gradient(90deg,var(--pcm-b),var(--pcm-a));}',
+    '.pc-bnext{font-size:10.5px;color:rgba(244,242,236,.7);}',
+    '.pc-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:rgba(255,255,255,.1);padding:2px;}',
+    '.pc-st{display:grid;grid-template-columns:auto auto;justify-content:center;align-items:center;gap:2px 5px;padding:6px 2px 5px;background:#0f1320;}',
+    '.pc-st .k-ico{height:13px;width:auto;}',
+    '.pc-st b{font-family:var(--k-f-pixel,monospace);font-size:13px;color:#fff;font-variant-numeric:tabular-nums;}.pc-st em{grid-column:1 / -1;font-style:normal;font-size:9.5px;opacity:.7;text-align:center;line-height:1.1;}',
     '.pc-note{font-size:12px;opacity:.75;}',
-    '.pc-wear{display:flex;flex-wrap:wrap;gap:5px;align-content:flex-start;overflow:hidden;min-height:0;}',
-    '.pc-wi{display:inline-flex;align-items:center;gap:4px;padding:2px 7px 2px 2px;border-radius:12px;font-size:10px;background:rgba(0,0,0,.35);border:1px solid var(--rc);}',
-    '.pc-wic{width:18px;height:18px;image-rendering:pixelated;}',
-    '.pc-bplate{position:relative;align-self:stretch;aspect-ratio:64/14;display:flex;align-items:center;justify-content:center;color:var(--ink);margin-top:auto;}',
+    '.pc-wlab{font-size:9.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#8fa0d6;}',
+    '.pc-wear{display:flex;flex-wrap:wrap;gap:4px;align-content:flex-start;overflow:hidden;min-height:22px;flex:1 1 0;}',
+    /* each piece a tile in its rarity, so a whole outfit fits on one line or two */
+    '.pc-wi{display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--rc) 22%,#0f1320),#0b0e18);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--rc) 70%,#000);}',
+    '.pc-wic{width:22px;height:22px;image-rendering:pixelated;flex:none;}',
+    '.pc-wnone{font-size:11px;color:rgba(244,242,236,.55);font-style:italic;}',
+    '.pc-bplate{position:relative;align-self:center;flex:none;width:78%;margin-left:auto;margin-right:auto;aspect-ratio:64/14;display:flex;align-items:center;justify-content:center;color:var(--ink);margin-top:auto;}',
     '.pc-bplate img{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;}',
     '.pc-bplate b{position:relative;font-family:var(--k-f-pixel,monospace);font-size:9px;letter-spacing:.08em;text-transform:uppercase;}',
     '.pc-bfoot{font-family:var(--k-f-pixel,monospace);font-size:7px;opacity:.55;text-align:center;}',
@@ -482,16 +561,20 @@ function css(){
     '.pc-ov.out{animation:pc-out .22s ease-in forwards;}',
     '@keyframes pc-in{from{opacity:0}to{opacity:1}}@keyframes pc-out{to{opacity:0}}',
     '.pc-scrim{position:absolute;inset:0;background:radial-gradient(circle at 50% 40%,rgba(30,34,56,.96),rgba(4,5,10,.985));backdrop-filter:blur(3px);}',
-    '.pc-sheet{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px;max-height:100%;overflow:auto;padding:6px;}',
+    '.pc-sheet{position:relative;isolation:isolate;display:flex;flex-direction:column;align-items:center;gap:18px;max-height:100%;overflow:auto;padding:14px 6px;}',
     '.pc-sheet .pc-card{animation:pc-deal .55s cubic-bezier(.2,1.3,.4,1) both;}',
     '@keyframes pc-deal{from{transform:translateY(40px) rotate(-6deg) scale(.86);opacity:0}to{transform:none;opacity:1}}',
     '.pc-title{font-family:var(--k-f-pixel,monospace);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#f2c23a;}',
     '.pc-acts{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}',
     '.pc-hint{font-size:12px;color:rgba(244,242,236,.7);text-align:center;max-width:300px;}',
-    '.pc-empty{max-width:320px;text-align:center;color:#f4f2ec;display:flex;flex-direction:column;gap:12px;align-items:center;background:#141826;border:2px solid #2a3150;border-radius:14px;padding:22px 18px;}',
+    '.pc-empty{max-width:320px;text-align:center;color:#f4f2ec;display:flex;flex-direction:column;gap:12px;align-items:center;background:#141826;border:0;border-radius:0;padding:22px 18px;box-shadow:0 -3px 0 0 #2d3a66,0 3px 0 0 #2d3a66,-3px 0 0 0 #2d3a66,3px 0 0 0 #2d3a66,0 7px 0 0 #05070d;}',
+    /* the sheet the card is dealt onto: a light behind it in his metal */
+    '.pc-sheet:before{content:"";position:absolute;left:50%;top:44%;width:520px;height:520px;margin:-260px 0 0 -260px;pointer-events:none;z-index:-1;',
+    '  background:radial-gradient(circle,color-mix(in srgb,var(--pcl,#f2c23a) 22%,transparent),transparent 62%);}',
     /* the board circle */
     '.pc-bust{display:block;width:100%;height:100%;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 50% 35%,var(--bb),#0b0d16 80%);box-shadow:inset 0 0 0 2px var(--pcm-a);position:relative;}',
     '.pc-bust img{position:absolute;left:50%;top:4%;width:250%;transform:translateX(-50%);image-rendering:pixelated;}',
+    '.pc-bust img.hd{left:0;top:0;width:100%;height:100%;transform:none;image-rendering:auto;}',
     '@media (prefers-reduced-motion:reduce){.pc-in{transition:none}.pc-sheet .pc-card,.pc-ov,.pc-card.pc-m-goat .pc-face{animation:none}}',
   ].join('\n');
   document.head.appendChild(st);
