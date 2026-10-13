@@ -12103,8 +12103,10 @@ function throwPitch(chosenPt, chosenZone, opts) {
   };
   refreshHud();
   runPitchAnimation();
+  /* Your runner, sent between pitches, breaks as the pitcher comes set. */
+  if (playerIsBatting() && g.stealArmed) { g.stealArmed = false; attemptSteal(); }
   /* Their runner may go on this pitch. Same play as your own steal. */
-  if (!playerIsBatting() && cpuStealWants(g, g.bases[0], pitcher)) attemptSteal();
+  if (!playerIsBatting() && cpuStealWants(g, g.bases[0], pitcher)) attemptSteal(0);
 }
 
 /* Install the swing click and space listeners for this pitch. The field
@@ -15661,7 +15663,8 @@ function cameraNow(g, w, h) {
     }
   } else if (stealS) {
     const G2 = fieldGeom();
-    const [bx, by] = simProject(G2, 1, 1);
+    const bagUV = SIM_BASE_UV[stealS.closePlay ? stealS.closePlay.base : 1];
+    const [bx, by] = simProject(G2, bagUV[0], bagUV[1]);
     target = { zoom: 1.30, x: bx, y: by - 8 };
     spdIn = spdOut = 8;
   }
@@ -16676,7 +16679,21 @@ function drawPlateView(ctx, w, h, t, pitch, inWindup, theme) {
   }
 }
 
+/* THE WIDE CAMERA'S PEOPLE ARE SMALLER THAN THE CLOSE SHOT'S. The diamond
+   is drawn at the size it is, and a fielder at 2.6 times stood a third of
+   the way from one base to the next, so ninety feet read as three strides.
+   Every figure the wide camera draws is taken down by WIDE_FIG, which is
+   what makes the bases feel like bases apart. Only the picture moves: the
+   diamond, every run path, every throw and every time are exactly what
+   they were. `FIG_K` is set for the wide pass and handed back to 1 on the
+   way out, so the plate camera, the menu and every card are untouched. */
+const WIDE_FIG = 0.72;
+let FIG_K = 1;
 function drawField(ctx, w, h, t, pitch, inWindup) {
+  try { return drawFieldBody(ctx, w, h, t, pitch, inWindup); }
+  finally { FIG_K = 1; }
+}
+function drawFieldBody(ctx, w, h, t, pitch, inWindup) {
   /* Night sky, crowd, light towers, outfield wall, grass, diamond.
      Everything sized to the field's own w and h so the canvas can be
      resized. A home run shakes the whole camera for half a second. */
@@ -16709,6 +16726,7 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
   }
 
   /* ---------------------------- world pass ---------------------------- */
+  FIG_K = WIDE_FIG;
   const cam = cameraNow(State.game, w, h);
   ctx.save();
   camApply(ctx, cam, w, h);
@@ -17400,8 +17418,8 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
         const mp = simMiniPose(st.sim.run, t, 0.72);
         const [sx, sy] = simProject(field, mp.uv[0], mp.uv[1]);
         drawRunner(ctx, sx, sy - 5, st.runner, 2.5, mp.pose);
-        /* the shortstop takes the throw at the bag */
-        const ss = fielderAt(currentFieldingTeam(), 2);
+        /* the man covering takes the throw at the bag */
+        const ss = fielderAt(currentFieldingTeam(), st.coverPost || 2);
         if (ss) {
           const cp = simMiniPose(st.sim.cover, t, null);
           const [cxp, cyp] = simProject(field, cp.uv[0], cp.uv[1]);
@@ -17416,7 +17434,7 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
           drawBaseball(ctx, bx2, gy2 - bsm[2], gy2);
         }
         if (st.sim.closePlay && t > st.sim.closePlay.at - 0.4 && t < st.sim.closePlay.at + 1.1) {
-          drawUmpCall(ctx, field, 1, st.sim.closePlay.verdict, t - st.sim.closePlay.at);
+          drawUmpCall(ctx, field, st.sim.closePlay.base, st.sim.closePlay.verdict, t - st.sim.closePlay.at);
         }
       }
       if (g.jog && now2 < g.jog.t0 + g.jog.end * 1000) {
@@ -17580,7 +17598,11 @@ function drawField(ctx, w, h, t, pitch, inWindup) {
   }
 
   ctx.restore();
-  drawScreenPass(ctx, w, h, g, theme, cam, cx, cy, r, null);
+  /* The arm chip over the pitcher's head, off his own drawn height: at the
+     wide camera's scale `cy - 26` was the middle of his shirt. */
+  const PGw = fieldGeom();
+  drawScreenPass(ctx, w, h, g, theme, cam, cx, cy, r,
+                 PGw.moundY - 6 - HERO_DRAW_H * 2.6 * WIDE_FIG - 8);
   ctx.restore();
 }
 
@@ -18062,7 +18084,7 @@ function drawRunner(ctx, x, y, character, scale, pose, flip) {
   ctx.restore();
 }
 function drawRunnerAt(ctx, x, y, character, scale, pose) {
-  scale = scale || 3;
+  scale = (scale || 3) * FIG_K;
   const hero = hasHero(character.k);
 
   /* Hero characters use their own animated frames on the field. The run
@@ -18560,7 +18582,8 @@ function renderGame() {
   const stealBtn = el('button','btn ghost','Steal 2nd');
   stealBtn.id = 'steal-btn';
   stealBtn.style.display = 'none';
-  stealBtn.onclick = attemptSteal;
+  stealBtn.title = 'Steal (S)';
+  stealBtn.onclick = pressSteal;
   stealRow.appendChild(stealBtn);
 
   /* Who pitches, whenever you are the side in the field. */
@@ -19108,6 +19131,7 @@ document.addEventListener('keydown', (e) => {
     return;
   }
   if (!playerIsBatting()) return;
+  if ((e.key === 's' || e.key === 'S') && !e.repeat) { pressSteal(); return; }
   const map = { '1': 'contact', '2': 'power', '3': 'bunt' };
   if (!map[e.key]) return;
   State.game.swingMode = map[e.key];
@@ -19170,66 +19194,118 @@ function refreshReleaseButton() {
   if (btn.style.display !== want) btn.style.display = want;
   if (live && btn.textContent !== 'RELEASE') btn.textContent = 'RELEASE';
 }
+/* WHO CAN GO. The lead runner whose next base is open: a man on second
+   takes third when third is empty, otherwise a man on first takes second.
+   Home is not on the menu: a straight steal of home is a once a season play
+   and as a button it would be a coin with a run on one side. Answers the
+   base he is on (0 or 1), or -1. */
+function stealFrom(g) {
+  if (!g || !g.bases) return -1;
+  if (g.bases[1] && !g.bases[2]) return 1;
+  if (g.bases[0] && !g.bases[1]) return 0;
+  return -1;
+}
+/* THE WINDOW IS THE WHOLE GAP BETWEEN PITCHES, not the windup alone. It
+   used to be the 1.3 seconds of windup and nothing else, behind a button
+   that only existed for that long, so most players never saw it once.
+   Now the button is up whenever you bat with a runner who can go: pressed
+   between pitches it SENDS him on the next one (he breaks as the pitcher
+   comes set), pressed during the windup he goes at once, and pressed again
+   before the pitch it calls him back. S does the same from a keyboard. */
+function stealWindow(g) {
+  /* A finished steal is left on the game for the picture to finish with
+     (the slide, the umpire), so a steal in flight is one whose own clock
+     has not run out yet, never one that merely exists. */
+  if (!g || g.over || g.play || !playerIsBatting()) return false;
+  if (g.steal && performance.now() < g.steal.until) return false;
+  if (stealFrom(g) < 0) return false;
+  if (!g.pitch) return true;
+  return !g.pitch.swung && !g.pitch.resolved && performance.now() < g.pitch.windupUntil;
+}
 function refreshStealButton() {
   refreshSendButton();
   refreshPenButton();
   const btn = document.getElementById('steal-btn');
   if (!btn) return;
   const g = State.game;
-  if (!g || g.over || g.play) { btn.style.display = 'none'; return; }
-  /* Only offer a straight steal: runner on 1st going to 2nd, when 2nd is
-     empty. Available only during the windup, before the meter starts. */
-  const canSteal = playerIsBatting() && g.bases[0] && !g.bases[1] && g.pitch && !g.pitch.swung
-                 && performance.now() < g.pitch.windupUntil;
-  btn.style.display = canSteal ? '' : 'none';
-  if (canSteal) btn.textContent = `Steal 2nd · ${g.bases[0].n}`;
+  const can = stealWindow(g);
+  if (!can && g) g.stealArmed = false;
+  const want = can ? '' : 'none';
+  if (btn.style.display !== want) btn.style.display = want;
+  if (!can) return;
+  const from = stealFrom(g);
+  const runner = g.bases[from];
+  const txt = g.stealArmed ? `${runner.n} goes on the pitch` : `Steal ${from ? '3rd' : '2nd'} · ${runner.n}`;
+  if (btn.textContent !== txt) btn.textContent = txt;
+  btn.classList.toggle('selected', !!g.stealArmed);
+}
+function pressSteal() {
+  const g = State.game;
+  if (!stealWindow(g)) return;
+  if (g.pitch) { g.stealArmed = false; attemptSteal(); return; }
+  g.stealArmed = !g.stealArmed;
+  if (g.stealArmed) showCallout('RUNNER GOING', 'sub');
+  refreshStealButton();
 }
 
-function attemptSteal() {
+function attemptSteal(fromIdx) {
   const g = State.game;
-  if (!g || !g.bases[0] || g.bases[1]) return;
+  const from = fromIdx == null ? stealFrom(g) : fromIdx;
+  if (!g || from < 0 || !g.bases[from] || g.bases[from + 1]) return;
   if (!g.pitch || g.pitch.swung || g.play) return;
-  const runner = g.bases[0];
+  const runner = g.bases[from];
   const pitcher = currentPitcher();
   g.pitch.swung = true;
+  g.stealArmed = false;
   endAtBatCleanup();
-  const odds = clamp(0.35 + (runner.spd - 60)/200 - ((pitcher.pit != null ? pitcher.pit : 50) - 55)/300, 0.15, 0.9);
+  /* Third is a shorter throw for the catcher and a longer jump to read, so
+     it costs a little. */
+  const odds = clamp(0.35 + (runner.spd - 60)/200 - ((pitcher.pit != null ? pitcher.pit : 50) - 55)/300
+                     - (from ? 0.05 : 0), 0.15, 0.9);
   const success = Math.random() < odds;
   /* THE PLAY, planned like any other. The runner sprints and slides, the
-     catcher comes up throwing, the shortstop slides over to take it at
-     the bag, and which of the two gets there first IS the outcome: the
-     tag or the dust cloud tells you before the plaque does. */
-  const run = simRunPath(simRunnerPoints(0, 1), simRunnerSpeed(runner) * 1.2, 0, { delay: 0.05 });
+     catcher comes up throwing, the man covering slides over to take it at
+     the bag (the shortstop at second, the third baseman at third), and
+     which of the two gets there first IS the outcome: the tag or the dust
+     cloud tells you before the plaque does. */
+  const to = from + 1;
+  const run = simRunPath(simRunnerPoints(from, to), simRunnerSpeed(runner) * 1.2, 0, { delay: 0.05 });
   const reach = run.reached;
   const arrive = success ? reach + 0.22 : reach - 0.28;
-  const flightT = simThrow([0, -0.02], SIM_BASE_UV[1], 0).T;
-  const th = simThrow([0, -0.02], SIM_BASE_UV[1], Math.max(0.15, arrive - flightT));
-  const ssMan = fielderAt(currentFieldingTeam(), 2);
+  const flightT = simThrow([0, -0.02], SIM_BASE_UV[to], 0).T;
+  const th = simThrow([0, -0.02], SIM_BASE_UV[to], Math.max(0.15, arrive - flightT));
+  const coverPost = to === 1 ? 2 : 5;
+  const coverMan = fielderAt(currentFieldingTeam(), coverPost);
   const G2 = fieldGeom();
-  const ssFrom = simUnproject(G2, G2.cx - G2.rx * 0.42, G2.midY - G2.ry * 0.52);
-  const cover = simRunPath([ssFrom, [1.07, 1.03]], ssMan ? simFielderSpeed(ssMan) : 0.35, 0.1, {});
+  const post = fielderPosts(G2, G2.w).find(q => q.i === coverPost);
+  const coverFrom = simUnproject(G2, post.x, post.y);
+  const bag = to === 1 ? [1.07, 1.03] : [-0.05, 1.04];
+  const cover = simRunPath([coverFrom, bag], coverMan ? simFielderSpeed(coverMan) : 0.35, 0.1, {});
   const end = Math.max(reach, th.arrive) + 1.0;
-  g.steal = { runner, start: performance.now(), until: performance.now() + Math.round(end * 1000),
+  g.steal = { runner, from, to, coverPost, start: performance.now(), until: performance.now() + Math.round(end * 1000),
               sim: { t0: performance.now(), run, th, cover, end,
-                     closePlay: { base: 1, at: Math.max(reach, th.arrive),
+                     closePlay: { base: to, at: Math.max(reach, th.arrive),
                                   verdict: success ? 'SAFE' : 'OUT' } } };
   setTimeout(() => {
     if (State.game === g && g.steal) Sound.play(success ? 'umpsafe' : 'umpout');
   }, Math.round(g.steal.sim.closePlay.at * 1000));
-  addLog(`${runner.n} breaks for 2nd.`);
+  const bagName = to === 1 ? '2nd' : '3rd';
+  addLog(`${runner.n} breaks for ${bagName}.`);
   showCallout('STEAL ATTEMPT', 'sub');
+  refreshStealButton();
   const decideMs = Math.round((Math.max(reach, th.arrive) + 0.25) * 1000);
   setTimeout(() => {
+    if (State.game !== g) return;
     if (success) {
-      g.bases[0] = null;
-      g.bases[1] = runner;
+      g.bases[from] = null;
+      g.bases[to] = runner;
       g.stats.sb[runner.k] = (g.stats.sb[runner.k] || 0) + 1;
-      addLog(`SAFE. ${runner.n} takes 2nd.`);
+      addLog(`SAFE. ${runner.n} takes ${bagName}.`);
       showCallout('STOLEN BASE', 'hit');
     } else {
-      g.bases[0] = null;
+      g.bases[from] = null;
       addOuts(1);
-      addLog(`CAUGHT STEALING. ${runner.n} tagged out. ${g.outs} out.`);
+      addLog(`CAUGHT STEALING. ${runner.n} tagged out at ${bagName}. ${g.outs} out.`);
       showCallout('CAUGHT STEALING', 'strike');
     }
     refreshHud();
@@ -20038,9 +20114,10 @@ function renderHowTo() {
   const run = el('div','card');
   add(run,
       '<h3>Base running</h3>'
-    + '<p>With a runner on first and second base empty, a <b>Steal 2nd</b> button '
-    + 'appears during the windup. Success depends on the runner\'s SPD against the '
-    + 'pitcher\'s CON.</p>'
+    + '<p>With a runner who has an open base ahead of him, a <b>Steal</b> button '
+    + 'shows while you bat (or press <b>S</b>). Press it between pitches and he '
+    + 'goes on the next one. Press it in the windup and he goes now. A man on '
+    + 'second steals third. Success is his SPD against the pitcher\'s PIT.</p>'
     + '<p>Fast runners are aggressive on hits: a quick runner on second will try to '
     + 'score on a single rather than stop at third. Sometimes they get thrown out '
     + 'at the plate. Speed lineups score more and risk more.</p>');

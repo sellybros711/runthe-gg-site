@@ -6143,6 +6143,27 @@ Three.js is a new folder and never a stale cache.
     homer. Unseeded runs of six games differ by more than any dial does.
   Homers count as hits now; they never did.
 
+### Stealing, and the wide camera's people
+
+**The steal is offered for the whole gap between pitches, not the windup alone.**
+It used to be a small button that existed for the 1.3 seconds of windup and only for
+1st to 2nd, so most players never saw it. `stealFrom(g)` names the lead runner with an
+open base ahead (a man on second takes third, else a man on first takes second; home
+is not offered). `stealWindow(g)` is the one rule the button and the S key read:
+pressed between pitches it ARMS the runner (`g.stealArmed`) and he breaks in
+`throwPitch` as the pitcher comes set, pressed in the windup he goes at once, pressed
+again before the pitch it calls him back. Third costs 0.05 of the odds and the third
+baseman covers. **A finished steal stays on `g.steal`** for the picture to finish the
+slide and the umpire, so "a steal is running" is `now < g.steal.until`, never
+`!!g.steal`; asking the latter kept the button hidden for the rest of the game.
+
+**The wide camera draws every figure at `WIDE_FIG` (0.72) of its scale**, through
+`FIG_K` in `drawRunnerAt`, set for the wide pass and handed back to 1 by `drawField`'s
+wrapper. At full size a fielder stood a third of the way between bases, so ninety feet
+read as three strides. Only the picture moves: the diamond, every run path, throw and
+time are unchanged. The plate camera, the menu and every card draw at full size. The
+pitcher's arm chip is placed off his drawn height for the same reason.
+
 ### The collection: ten to start, packs for the middle, feats for the best
 
 ```
