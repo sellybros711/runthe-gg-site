@@ -217,9 +217,12 @@ function plan(spec){
   function pathD(x, y){ var m = 1e9; for (var i = 0; i < path.length - 1; i++){ var a = path[i], c = path[i + 1]; if (Math.abs(a[1] - y) > 6 && Math.abs(c[1] - y) > 6) continue; m = Math.min(m, segD(x, y, a[0], a[1], c[0], c[1])); } return m; }
   function themeAt(y){ return spec.cross && y > gy ? th0 : th; }
   var start = { x:path[0][0], y:L + 6, r:plaza ? 7 : 1.2 };
-  // the spur and its clearing, off to a side with room: never over another leg of the walk, never across the wall
+  /* the spur and its clearing, off to a side with room. Never further out than a phone's camera sees from the path
+     (it was up to 22 ft, and with no spur to it that was a clearing nobody could find): 9.5 to 15 ft, so the trees
+     can hide it from most of the walk but some stretch of the path always has it on screen. Never over another leg
+     of the walk, never across the wall */
   var clr = null, spur = [], ys, sx0, sg, sS;
-  for (var ct = 0; ct < 120 && !clr; ct++){ var s1 = SL * (0.22 + R() * 0.56), sd = R() < 0.5 ? -1 : 1, crr = 4.5 + R() * 2, cp = beside(s1, sd, 10 + R() * 12), o = atS(s1);
+  for (var ct = 0; ct < 120 && !clr; ct++){ var s1 = SL * (0.22 + R() * 0.56), sd = R() < 0.5 ? -1 : 1, crr = 4.5 + R() * 2, cp = beside(s1, sd, 9.5 + R() * 5.5), o = atS(s1);
     if (cp[0] < b[0] + crr + 4 || cp[0] > b[2] - crr - 4 || cp[1] < 12 || cp[1] > L - 6) continue;
     if (pathD(cp[0], cp[1]) < crr + 5 || Math.hypot(cp[0] - start.x, cp[1] - start.y) < crr + start.r + 4) continue;
     if (gy && (Math.abs(cp[1] - gy) < crr + 6 || Math.abs(o[1] - gy) < 12 || (cp[1] - gy) * (o[1] - gy) < 0)) continue;
@@ -394,15 +397,19 @@ function plan(spec){
   function hitThing(x, y){ for (var i = 0; i < P.things.length; i++){ var t = P.things[i], r = BLOCKR[t.k] != null ? BLOCKR[t.k] : t.r; if (t.k === 'arch' || t.k === 'wall' || t.k === 'fence') continue;
       if (t.w){ if (Math.abs(x - t.x) < t.w / 2 + 0.8 && Math.abs(y - t.y) < t.d / 2 + 0.8) return true; } else if (r > 0 && Math.hypot(x - t.x, y - t.y) < r + 0.8) return true; } return false; }
   function chest(x, y, n, o){ var t = item('chest', x, y, o); t.n = n; t.drops = drops(x, y, n); return t; }
-  function hideSpot(minD, maxD){   // just behind a tree or a rock, as seen from the path: north of it, and off the path
+  /* FINDABLE, NOT OBVIOUS. A hidden chest is tucked in at the shoulder of a tree or a rock: behind it and to one
+     side, so a corner of it shows past the trunk, and no further off the path than the camera can see from the
+     path. It used to go straight behind the tree, up to thirty feet out, where the canopy covered all of it and a
+     player could walk the whole trail past it. A tester could not find two of them. */
+  function hideSpot(minD, maxD){
     var cand = P.things.filter(function(t){ var w = walkD(t.x, t.y); return (TREEH[t.k] || LOWR[t.k]) && w > minD - 2 && w < maxD && !inClear(t.x, t.y, 3) && !(gy && Math.abs(t.y - gy) < 8) && t.y > 8 && t.y < L - 4; });
-    for (var tr = 0; tr < 40 && cand.length; tr++){ var t = cand[(R() * cand.length) | 0], hx = t.x + (R() - 0.5) * 1.6, hy = t.y - (t.r || 1) - 1.6 - R() * 1.2;
+    for (var tr = 0; tr < 40 && cand.length; tr++){ var t = cand[(R() * cand.length) | 0], sd = R() < 0.5 ? -1 : 1, hx = t.x + sd * ((t.r || 1) + 1.3 + R() * 0.6), hy = t.y - (t.r || 1) * 0.6 - 0.4 - R() * 0.6;
       if (okSpot(hx, hy, 1.4, minD, maxD + 4)) return [hx, hy]; }
     return spotOff(minD, maxD, 1.4, 80); }
   // ONE CHEST A TRAIL, the owner's call: in the clearing when the clearing holds one, else tucked in behind a tree.
   // The rest of what there is to find is the rare things below, for whoever wants more.
   if (clrKind === 'chest') chest(P.chest.x, P.chest.y, locked ? 18 : 12 + ((R() * 4) | 0), { main:1 });
-  else { var hsp = hideSpot(8, 24) || hideSpot(6, 30) || spotOff(6, 30, 1.2, 200) || [clr.x, clr.y - 1.2]; if (hsp){ chest(hsp[0], hsp[1], 10 + ((R() * 5) | 0)); used.push({ x:hsp[0], y:hsp[1], r:4 }); }
+  else { var hsp = hideSpot(6, 13) || hideSpot(5, 16) || spotOff(5, 14, 1.2, 200) || [clr.x, clr.y - 1.2]; if (hsp){ chest(hsp[0], hsp[1], 10 + ((R() * 5) | 0)); used.push({ x:hsp[0], y:hsp[1], r:4 }); }
     for (var cp2 = 0; cp2 < 4; cp2++){ var xp = clr.x + (cp2 % 2 ? 1 : -1) * 1.3, yp = clr.y + (cp2 < 2 ? -0.9 : 0.9); item('brk', xp, yp, { th:themeAt(yp) }); } }
   if (locked){ for (var tk2 = 0; tk2 < 60; tk2++){ var kq = beside(SL * (0.15 + R() * 0.7), R() < 0.5 ? -1 : 1, 8 + R() * 10), ky = kq[1], kxp = kq[0];
       if (okGround(kxp, ky, 1) && free(kxp, ky, 1) && walkD(kxp, ky) > PW + 3 && !inClear(kxp, ky, 2) && !(gy && Math.abs(ky - gy) < 6)){ item('key', kxp, ky); used.push({ x:kxp, y:ky, r:1 }); break; } } }
@@ -432,6 +439,59 @@ function plan(spec){
 
   // ---- what blocks the golfer: trunks, rocks, buildings, the fence and the wall
   P.things.forEach(function(t){ if (t.k === 'arch' || t.k === 'fence' || t.k === 'wall' || t.k === 'bridge') return; if (PLANT[t.k]) return; var r = BLOCKR[t.k] != null ? BLOCKR[t.k] : t.r; if (r > 0) P.cols.push({ x:t.x, y:t.y, r:r, w:t.w, d:t.d }); });
+  reachable();
+  /* EVERY CHEST THE LIST NAMES CAN BE WALKED TO. Placement only ever asks whether a spot is dry and clear, never
+     whether the golfer can get there, so nothing stops a chest ending up ringed by trunks and rocks, a clearing
+     walled in by trees, or a key on the far side of a pond, and nothing would say so: the list would read Chest and
+     the chest would not be had. Measured, no trail does that today; this is what keeps it so when the kits, the
+     routes or the sizes move. So the plan floods the land from where the walk
+     starts, with the same rules run() walks by but a fatter golfer (0.8 against 0.55, so a gap that only a grid's
+     luck gets through does not count) (trunks, rocks, buildings, water, lava, the wall with its door
+     open, the fence with or without the key), and moves whatever it cannot reach: the key to a reachable spot off
+     the path, a chest to the shoulder of a reachable tree, and its coins onto ground that can be walked over. A
+     clearing nobody can get into loses its lock rather than its chest. check-putt floods every trail again with
+     its own copy of run()'s rules. */
+  function reachable(){
+    var RB = 0.8, RES = 0.5, NX = Math.ceil((b[2] - b[0]) / RES) + 1, NY = Math.ceil((b[3] - b[1]) / RES) + 1, CG = {};
+    function ck(x, y){ return (x / 6 | 0) + ',' + (y / 6 | 0); }
+    P.cols.forEach(function(c){ var ex = c.r + (c.w || 0) / 2 + 1, ey = c.r + (c.d || 0) / 2 + 1; for (var x = c.x - ex; x <= c.x + ex + 6; x += 6) for (var y = c.y - ey; y <= c.y + ey + 6; y += 6){ var k = ck(x, y); (CG[k] = CG[k] || []).push(c); } });
+    function blockedAt(x, y, keyed, skip){ if (x < b[0] + 2.5 || x > b[2] - 2.5 || y > b[3] - 2 || y < -1.2) return true;
+      var o = poolAt(x, y); if (o && (o.k === 'water' || o.k === 'lava')) return true; if (seaAt(x, y)) return true;
+      var cs = CG[ck(x, y)] || []; for (var i = 0; i < cs.length; i++){ var c = cs[i]; if (c.w){ if (Math.abs(x - c.x) < c.w / 2 + RB && Math.abs(y - c.y) < c.d / 2 + RB) return true; } else if (Math.hypot(x - c.x, y - c.y) < c.r + RB) return true; }
+      if (P.gate && Math.abs(y - P.gate.y) < 0.9 + RB && !(Math.abs(x - P.gate.x) < PW + 0.3)) return true;
+      if (P.fence){ var F = P.fence, d = Math.hypot(x - F.x, y - F.y); if (Math.abs(d - F.r) < RB + 0.15){ var a = Math.atan2(y - F.y, x - F.x), da = Math.abs(Math.atan2(Math.sin(a - F.a), Math.cos(a - F.a))); if (!(keyed && da < F.half)) return true; } }
+      for (var j = 0; j < items.length; j++){ var t = items[j]; if (t === skip) continue; if ((t.k === 'chest' || t.k === 'npc') && Math.hypot(x - t.x, y - t.y) < (t.k === 'chest' ? 1.3 : 1.0) + RB) return true; }
+      return false; }
+    function flood(keyed, skip){ var G = new Uint8Array(NX * NY), g0 = atS(2), i0 = Math.round((g0[0] - b[0]) / RES), j0 = Math.round((g0[1] - b[1]) / RES), st = [j0 * NX + i0]; G[st[0]] = 1;
+      while (st.length){ var q = st.pop(), i = q % NX, j = (q / NX) | 0;
+        for (var n = 0; n < 4; n++){ var ii = i + (n === 0 ? 1 : n === 1 ? -1 : 0), jj = j + (n === 2 ? 1 : n === 3 ? -1 : 0); if (ii < 0 || jj < 0 || ii >= NX || jj >= NY) continue; var o = jj * NX + ii; if (G[o]) continue;
+          if (blockedAt(b[0] + ii * RES, b[1] + jj * RES, keyed, skip)){ G[o] = 2; continue; } G[o] = 1; st.push(o); } }
+      return G; }
+    function near(G, x, y, d){ var i0 = Math.floor((x - d - b[0]) / RES), i1 = Math.ceil((x + d - b[0]) / RES), j0 = Math.floor((y - d - b[1]) / RES), j1 = Math.ceil((y + d - b[1]) / RES);
+      for (var j = Math.max(0, j0); j <= Math.min(NY - 1, j1); j++) for (var i = Math.max(0, i0); i <= Math.min(NX - 1, i1); i++) if (G[j * NX + i] === 1 && Math.hypot(b[0] + i * RES - x, b[1] + j * RES - y) < d) return true; return false; }
+    // a reachable cell this far from the path, off the clearings: for a key, or a chest that has to move
+    function cellOff(G, minD, maxD, clearOf){ for (var t = 0; t < 400; t++){ var i = (R() * NX) | 0, j = (R() * NY) | 0; if (G[j * NX + i] !== 1) continue; var x = b[0] + i * RES, y = b[1] + j * RES, wd = walkD(x, y);
+        if (wd < minD || wd > maxD || inClear(x, y, 1.5) || (gy && Math.abs(y - gy) < 6) || y < 6 || y > L - 4 || hitThing(x, y)) continue;
+        if (clearOf && items.some(function(o){ return o !== clearOf && Math.hypot(o.x - x, o.y - y) < 2.5; })) continue; return [x, y]; } return null; }
+    var G0 = flood(false), key = items.filter(function(t){ return t.k === 'key'; })[0];
+    // the key first: on the walkable side of everything, or the lock comes off
+    if (P.fence && (!key || !near(G0, key.x, key.y, 1.3))){ var kp = cellOff(G0, PW + 3, 18, key);
+      if (kp){ if (key){ key.x = kp[0]; key.y = kp[1]; } else key = item('key', kp[0], kp[1]); }
+      else { P.fence = null; P.lockGate = null; P.locked = false; P.things = P.things.filter(function(t){ return t.k !== 'fence'; }); if (key) items.splice(items.indexOf(key), 1); key = null; } }
+    items.filter(function(t){ return t.k === 'chest'; }).forEach(function(c){
+      var G = P.fence && c.main ? flood(true, c) : flood(false, c);
+      if (!near(G, c.x, c.y, 2.4)){
+        // a clearing that cannot be got into: the chest moves out, and a lock with nothing behind it goes
+        if (c.main && P.fence){ P.fence = null; P.lockGate = null; P.locked = false; P.things = P.things.filter(function(t){ return t.k !== 'fence'; }); var kk2 = items.filter(function(t){ return t.k === 'key'; })[0]; if (kk2) items.splice(items.indexOf(kk2), 1); }
+        G = flood(false, c); var trees = P.things.filter(function(t){ return (TREEH[t.k] || LOWR[t.k]) && walkD(t.x, t.y) > 4 && walkD(t.x, t.y) < 14; }), sp = null;
+        for (var tt = 0; tt < 60 && trees.length && !sp; tt++){ var t = trees[(R() * trees.length) | 0], sd = R() < 0.5 ? -1 : 1, hx = t.x + sd * ((t.r || 1) + 1.4), hy = t.y - (t.r || 1) * 0.6 - 0.6;
+          if (near(G, hx, hy, 2.4) && okGround(hx, hy, 1.2) && !hitThing(hx, hy) && !inClear(hx, hy, 1.5)) sp = [hx, hy]; }
+        sp = sp || cellOff(G, 4, 14, c) || cellOff(G, PW + 2, 20, c); if (sp){ c.x = sp[0]; c.y = sp[1]; c.main = 0; c.drops = drops(c.x, c.y, c.n); } }
+      // and every coin it throws lands where it can be picked up
+      var G2 = flood(!!P.fence, c); c.drops = c.drops.filter(function(d){ return near(G2, d[0], d[1], 1.2); });
+      for (var tc = 0; tc < 200 && c.drops.length < c.n; tc++){ var a = R() * 6.283, r = 2.2 + R() * 2.6, dx = c.x + Math.cos(a) * r, dy = c.y + Math.sin(a) * r * 0.8;
+        if (near(G2, dx, dy, 1.2) && okGround(dx, dy, 0.3) && !hitThing(dx, dy)) c.drops.push([dx, dy]); } });
+  }
   /* SHADOWS ON THE GROUND. The light comes from the upper left, the same as the golfer's, so everything tall
      throws a soft shadow down and to the right. It is what sets a tree on the ground rather than over it. */
   var SH = []; P.things.forEach(function(t){ var H = t.h || 1; if (H < 1.6 && !t.w) return; var rx, ry, cx2, cy2;
@@ -1037,7 +1097,8 @@ function run(box, P, pic, api){
         ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(mp[0], mp[1]); ctx.lineTo(mp[0] + Math.cos(an - wd) * len, mp[1] + Math.sin(an - wd) * len); ctx.lineTo(mp[0] + Math.cos(an + wd) * len, mp[1] + Math.sin(an + wd) * len); ctx.closePath(); ctx.fill(); }
       ctx.restore(); }
     var p = scr(t.x, t.y, z), w = sp2.cv.width * kk, h = sp2.cv.height * kk, h2 = Math.round(h * sy), rx = Math.round(p[0] - sp2.ax * kk) + ox2, ry = Math.round(p[1] - sp2.ay * kk * sy);
-    ctx.drawImage(sp2.cv, rx, ry, w, h2); occlude(rx, ry, w, h2, t.x, t.y, z);
+    // a shut chest behind a tree shows through it faintly, the way the golfer does: tucked away, never invisible
+    ctx.drawImage(sp2.cv, rx, ry, w, h2); occlude(rx, ry, w, h2, t.x, t.y, z, e < 0);
     if (e < 0){ var gl = (now * 0.7 + t.x * 0.13) % 1; if (gl < 0.22){ var gu = gl / 0.22, gs = Math.max(2, Math.round(kk)), gp = scr(t.x - 0.9 + gu * 1.8, t.y + 0.9, z + 1.25 + Math.sin(gu * Math.PI) * 0.3);
       ctx.fillStyle = 'rgba(255,255,255,' + Math.sin(gu * Math.PI).toFixed(2) + ')'; ctx.fillRect(Math.round(gp[0] - gs / 2), Math.round(gp[1] - 2 * gs), gs, 4 * gs); ctx.fillRect(Math.round(gp[0] - 2 * gs), Math.round(gp[1] - gs / 2), 4 * gs, gs); } } }
 
@@ -1199,7 +1260,7 @@ function run(box, P, pic, api){
      so a player always knows what they are looking for. Coins are not on it: they come out of the chest. */
   function hudList(){ var el = ui.querySelector('[data-tlist]'), fs = items.filter(function(t){ return LOOT[t.k]; });
     el.innerHTML = fs.length ? '<b>On this trail</b>' + fs.map(function(t){ var nm = t.k === 'trinket' ? t.name || 'Trinket' : t.k === 'part' ? (t.name || 'Putter part') : LOOT[t.k].name;
-      if (t.k === 'chest' && t.drops) nm = 'Chest'; return '<span data-id="' + t.id + '" class="' + (t.done ? 'got' : '') + '"><img alt="" src="' + lootIcon(t) + '">' + nm.replace(/[<>&]/g, '') + '</span>'; }).join('') : ''; }
+      if (t.k === 'chest' && t.drops) nm = 'Chest'; return '<span data-id="' + t.id + '" class="' + (t.done ? 'got' : '') + (t.hint ? ' near' : '') + '"><img alt="" src="' + lootIcon(t) + '">' + nm.replace(/[<>&]/g, '') + '</span>'; }).join('') : ''; }
   function hudChests(){}
   function hudGold(){ var gd = api.golden ? api.golden() : null; ui.querySelector('[data-gold]').textContent = gd ? 'Golden balls ' + gd.have + '/' + gd.total : ''; }
   hudGold(); hudChests(); hudList();
@@ -1299,6 +1360,9 @@ function run(box, P, pic, api){
       if (t.k === 'coin' && (!t.out || (t.fly && tsec < t.fly.t0 + t.fly.dur))) continue;
       if ((t.k === 'coin' || t.k === 'golden' || t.k === 'key' || t.k === 'life' || t.k === 'trinket' || t.k === 'part') && d < 1.3) take(t, tsec);
       else if (t.k === 'chest' && d < 2.6 && (lockOpen || !P.fence || !t.main)) take(t, tsec);
+      // warmer: the first time you come within a few strides of a shut chest it says so, and its row on the list lights
+      if (t.k === 'chest' && !t.done && !t.hint && d < 9){ t.hint = true; if (!bubble || now > bubble.until) say(t.main && P.fence && !lockOpen ? 'Something glints behind that fence.' : 'Something glints nearby.', 2200);
+        var hr = ui.querySelector('[data-tlist] [data-id="' + t.id + '"]'); if (hr) hr.classList.add('near'); }
       else if (t.k === 'brk' && d < 1.5 && spd > 1.5) take(t, tsec); }
     // the local talks when he walks up
     var npc = items.filter(function(t){ return t.k === 'npc'; })[0];

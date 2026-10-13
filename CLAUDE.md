@@ -20478,6 +20478,21 @@ yet beaten on the main tour: a beaten hole's trail is already behind you. A gate
   a fence on more than half the trails that have a clearing chest (`R() < 0.55`), the key somewhere off the path: that
   key and gate is the walk's little puzzle. A golden ball on every trail; all of a world's pays 500
   coins and a named reward. `pmerge` takes the union and `cloudProg` counts them.
+- **The one chest is always findable, never always obvious.** Reported by a player who could not find the chests
+  the list named on two trails. They were there: one 20 ft off the path behind a tree canopy, the other in a
+  locked clearing. So:
+  - a clearing sits 9.5 to 15 ft off the path (it was up to 22), and a hidden chest stands at the SHOULDER of a
+    tree or rock 6 to 13 ft from the path or its spur (`hideSpot`), so it peeks out rather than sitting dead
+    behind it;
+  - a shut chest is drawn see-through where something stands in front of it (`occlude(..., true)` in
+    `drawChest`);
+  - within 9 ft of a shut chest the walk says "Something glints nearby" and the list's chest row glows
+    (`t.hint`, `.near`);
+  - `reachable()` floods the land from the start of the walk with the run time's own colliders and body size,
+    and moves any key, chest or coin it cannot reach. Measured, no trail needs it today; it is what keeps that
+    true when the kits or routes move.
+  `walkD` reads the path within 6 ft in y, so it OVERSTATES distance on a diagonal; measure a trail against the
+  path points, not against it.
 - **The rare things are fixed to trails** (`trailLoot`, `lootSlots`, main tour only), so every player finds
   them in the same places, further off the path than anything else:
   - **Trinkets**, three a world and this game's alone (`TRINKETS`). A world's three pays 300 coins and a
