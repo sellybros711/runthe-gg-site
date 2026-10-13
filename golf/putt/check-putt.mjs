@@ -587,9 +587,10 @@ if (!args.includes('--no-browser')){
         if (!pz.clue || P.items.filter(t => t.k === 'chest').length !== 1) out.solo = false;
         if (!first[pz.k] && f % 18 && !P.spec.greet && P.items.some(t => t.k === 'npc')) first[pz.k] = f; }
       out.first = first;
-      const open = async n => { window.RTT_PUTT.close(); openPutt(); await sleep(200); window.RTT_PUTT._walkTo(n); for (let i = 0; i < 600 && !T(); i++) await sleep(50); await sleep(200); return T(); };
+      // reopening the mode makes a new host, so the payout is watched on whichever host is current
+      const paid = []; let hk = null, hc = null; const hook = () => { const h = S().host; if (h !== hk){ if (hk) hk.coins = hc; hk = h; hc = h.coins; h.coins = n => { paid.push(n); }; } };
+      const open = async n => { window.RTT_PUTT.close(); openPutt(); await sleep(200); hook(); window.RTT_PUTT._walkTo(n); for (let i = 0; i < 600 && !T(); i++) await sleep(50); await sleep(200); hook(); return T(); };
       const visit = async (t, x, y, ms) => { t.goTo(x, y); await sleep(ms || 140); };
-      const h0 = S().host, c0 = h0.coins, paid = []; h0.coins = n => { paid.push(n); };
       const collectAll = async (t, prize) => { await sleep(2600); const cs = t.items().filter(c => c.k === 'coin' && c.ch && c.ch.id === prize.id); for (const c of cs) await visit(t, c.x, c.y, 90); return cs; };
       const away = t => { const P = t.plan(); t.goTo(P.path[0][0], P.path[0][1]); };
       // the local gives the clue
@@ -621,7 +622,7 @@ if (!args.includes('--no-browser')){
         await visit(t, C.x - C.rock * (H + 0.06), C.y); t.stick(C.rock, 0); await sleep(1200); t.stick(0, 0); out.jam = +Math.abs(C.x - C.x0).toFixed(2); out.stillShut = t.blocked(gx, gyy);
         await visit(t, C.x + C.rock * (H + 0.06), C.y); t.stick(-C.rock, 0); await sleep(1800); t.stick(0, 0); out.pushed = +Math.abs(C.x - C.x0).toFixed(2); out.cleared = !t.blocked(gx, gyy);
         paid.length = 0; await visit(t, pen.x, pen.y + 1.9, 200); out.pushOpen = prize.done; const cs = await collectAll(t, prize); out.pushPaid = paid.reduce((a, b) => a + b, 0) === cs.length * TR.COIN_V && cs.length > 0; }
-      h0.coins = c0; window.RTT_PUTT.close(); sbUser = { id:'chk' }; return out; });
+      if (hk) hk.coins = hc; window.RTT_PUTT.close(); sbUser = { id:'chk' }; return out; });
     claim(pzr.pz / pzr.n > 0.4 && pzr.pz / pzr.n < 0.65 && Object.keys(pzr.kinds).length === 4 && Object.values(pzr.kinds).every(v => v >= 8), `about half the trails carry a puzzle, of all four kinds (${pzr.pz} of ${pzr.n}: ${JSON.stringify(pzr.kinds)})`);
     claim(pzr.drops && pzr.solo, `every puzzle has a clue and its own chest of coins, and its trail still has its one chest`);
     claim(pzr.clue, `the local on a puzzle trail gives its clue`);

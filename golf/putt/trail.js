@@ -501,7 +501,8 @@ function plan(spec){
         if (wd >= minD - 1 && wd <= maxD + 2 && okAt(x, y, r) && reach(x, y)){ clearOut(x, y, r); return [x, y]; } } return null; }
     // the prize's coins land round it on ground that can be walked to, and never on a pen's fence
     function pzDrops(x, y, n, pen){ var out = [], a0 = RQ() * 6.283;
-      for (var i = 0; out.length < n && i < n * 30; i++){ var a = a0 + i * 2.39996, r = (pen ? 0.9 : 2.1) + (i % 4) * 0.45 + RQ() * 0.4, dx = x + Math.cos(a) * r, dy = y + Math.sin(a) * r * 0.8;
+      // each ring round it a little wider than the last, so a crowded spot still throws all of them
+      for (var i = 0; out.length < n && i < n * 60; i++){ var a = a0 + i * 2.39996, r = (pen ? 0.9 : 2.1) + (i % 4) * 0.45 + RQ() * 0.4 + (pen ? 0 : Math.floor(i / (n * 4)) * 0.5), dx = x + Math.cos(a) * r, dy = y + Math.sin(a) * r * 0.8;
         if (pen && Math.abs(Math.hypot(dx - pen.x, dy - pen.y) - pen.r) < 0.9) continue; if (pen && Math.hypot(dx - x, dy - y) < 0.5) continue;
         if (okGround(dx, dy, 0.3) && !hitThing(dx, dy) && (pen ? Math.hypot(dx - pen.x, dy - pen.y) < pen.r - 0.6 || reach(dx, dy, 1.2) : reach(dx, dy, 1.2))) out.push([dx, dy]); }
       return out; }
@@ -548,6 +549,8 @@ function plan(spec){
           var rk = place(kx3, rx2, cy3, 0.9, 1.4, { th:themeAt(cy3) }); P.cols.push({ x:rk.x, y:rk.y, r:0.9 });
           var pu = prize(pn.x, pn.y, 'push', pn); made = { k:'push', prize:pu.id, pen:pn, crate:crate }; } }
     }
+    // a chest that could not throw all its coins is not a puzzle worth its bonus: no puzzle on this trail
+    if (made && items.filter(function(t){ return t.id === made.prize; })[0].drops.length < PZ_COINS) made = null;
     if (!made){ back(S9); return; }
     made.th = themeAt(items.filter(function(t){ return t.id === made.prize; })[0].y);
     made.clue = pzClue(made.k, made.th, RQ); made.name = PZ_NAME[made.k];
