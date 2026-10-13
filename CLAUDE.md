@@ -11014,8 +11014,12 @@ the stage's own kit and drawn by `stage.js`. A room changes how the night looks,
   `goose_shows.csv` spells it, for joining picks, and is never rendered. Clues use cities, years and
   lore. `check_venues` fails on a venue name in copy.
 - **Unlocks are derived from the account's `segue_runs` rows** (`board.js venueRows`, which selects
-  `picks` and `rng_seed`), never stored. Only the choice is stored (`segue_venue_v1`), and a choice
-  the rows do not back is the lawn.
+  `picks` and `rng_seed`), never stored. Only the choice is stored (`segue_venue_v1`). **Random is
+  the default**: each show draws an open room (`tonightVenue`), never the same one twice running when
+  there is a choice. A hand pick sticks until changed, and a pick the rows do not back counts as random.
+- **No screen behind the band.** Goose tours a light rig, not video, so every room hangs its pods:
+  six flown diamond truss pods in a V (three small ones in a bar), with pixel battens along the truss
+  and movers fanning out of the corners. `RIGS` in `rooms.js` places them; `stage.js` draws them.
 - **A `picks` rule needs a drawable night.** O'Neill's (18 shows) and the Factory Underground have
   none with a full timed setlist, so their rooms are earned by ladder and season rules instead.
 - **Design inside what the camera sees.** On a phone the show sees x from about -15 to 15 and, on a

@@ -1606,6 +1606,10 @@ gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personali
   .vthumb.on{border-color:var(--teal); box-shadow:0 0 0 3px color-mix(in srgb,var(--teal) 30%, transparent);}
   .vthumb.locked img{filter:grayscale(1) brightness(.5) contrast(1.35);}
   .vthumb.locked.peek{border-color:var(--violet);}
+  .vthumb.vrand{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+    background:linear-gradient(135deg, color-mix(in srgb,var(--violet) 32%, var(--card2, #1c1830)),
+      color-mix(in srgb,var(--teal) 28%, var(--card2, #1c1830))); color:var(--ink);
+    font-size:11px; font-weight:900; letter-spacing:2px; text-transform:uppercase;}
   .vp-say{font-size:12.5px; font-weight:700; color:var(--mut); line-height:1.4; min-height:2.8em;}
   .vbar{display:block; height:5px; border-radius:99px; background:var(--card3); margin-top:6px; overflow:hidden;}
   .vbar span{display:block; height:100%; background:var(--violet); border-radius:99px;}
@@ -3168,7 +3172,7 @@ import {
   budgets, remaining, canPlace, setFull, lenOf, fmtClock,
 } from './scoring.js?v=44';
 import { loadBand, setLabel, setRank, parseCSV } from './dataLoader.js?v=44';
-import { createStage } from './stage.js?v=10';
+import { createStage } from './stage.js?v=11';
 import { VENUE_LIST, VENUE_BY_ID, TIERS, venueProgress, newlyOpen, crowdZones } from './venues.js?v=2';
 
 // ── bands ────────────────────────────────────────────────────────────────────
@@ -4962,11 +4966,14 @@ function drawCrowdFlat(cv, st){
  * knows it and nobody is told. scripts/setlist/check_venues.mjs fails on a venue name in this file.
  *
  * Unlocks are worked out from the account's own filed shows every time (venueProgress), never kept.
- * What is kept is the choice, and a choice the rows do not back is the lawn.
+ * What is kept is the choice. RANDOM IS THE DEFAULT: with nothing set, each show is played in a room
+ * drawn from the ones this account has open, never the same room twice running when there is a
+ * choice. A room picked by hand is kept until it is changed, and a pick the rows do not back counts
+ * as random.
  */
 const VENUE_KEY = 'segue_venue_v1';
 // The pictures are rendered once by scripts/setlist/make_venue_thumbs.mjs; bump this with them.
-const VENUE_ART_V = 1;
+const VENUE_ART_V = 2;
 const venueThumb = id => `/setlist/venues/${id}.png?v=${VENUE_ART_V}`;
 const VSTATE = { rows: null, for: null, busy: false, failed: false };
 
@@ -5009,14 +5016,24 @@ function venueProg(rows){
 }
 function openVenues(){ return new Set(venueProg().filter(p => p.open).map(p => p.id)); }
 
+// 'random', or a room this account has open.
 function chosenVenue(){
-  let id = 'lawn';
-  try { id = localStorage.getItem(VENUE_KEY) || 'lawn'; } catch (e) {}
-  return VENUE_BY_ID[id] && openVenues().has(id) ? id : 'lawn';
+  let id = 'random';
+  try { id = localStorage.getItem(VENUE_KEY) || 'random'; } catch (e) {}
+  return VENUE_BY_ID[id] && openVenues().has(id) ? id : 'random';
 }
 function chooseVenue(id){
-  if (!VENUE_BY_ID[id]) return;
+  if (id !== 'random' && !VENUE_BY_ID[id]) return;
   try { localStorage.setItem(VENUE_KEY, id); } catch (e) {}
+}
+// The room tonight's show is played in: the one picked, or a draw from the open ones.
+let LAST_VENUE = null;
+function tonightVenue(){
+  const pick = chosenVenue();
+  if (pick !== 'random') return (LAST_VENUE = pick);
+  let pool = [...openVenues()];
+  if (pool.length > 1) pool = pool.filter(id => id !== LAST_VENUE);
+  return (LAST_VENUE = pool[Math.floor(Math.random() * pool.length)] || 'lawn');
 }
 
 // A tier's own words, and a room's place in it, which is the only label a room has.
@@ -5032,11 +5049,17 @@ function venuePickerHTML(){
   const open = new Set(prog.filter(p => p.open).map(p => p.id));
   const hint = !ME.signedIn ? 'Sign in to earn new rooms. Every show you build counts.'
     : VSTATE.rows === null && VSTATE.busy ? 'Checking which rooms you have earned...'
-    : `${open.size} of ${VENUE_LIST.length} rooms open. Tap a dark one to see what it takes.`;
+    : `${open.size} of ${VENUE_LIST.length} rooms open. ${cur === 'random' ? 'Each show draws one of them.' : 'Tap a dark one to see what it takes.'}`;
+  const rnd = cur === 'random';
   return `<section class="card vpick">
     <div class="vp-hd"><span class="eyebrow">Where tonight is played</span>
       ${ME.signedIn ? '' : '<button class="btn ghost tiny" type="button" data-venue-auth>Sign in</button>'}</div>
     <div class="vp-row" role="radiogroup" aria-label="Choose tonight's room">
+      <button type="button" class="vthumb vrand${rnd ? ' on' : ''}" data-venue="random" role="radio"
+        aria-checked="${rnd}" aria-label="A random room each show">
+        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 7h4c4 0 6 10 10 10h4M3 17h4c1.6 0 2.8-1.6 3.8-3.6M13.2 9.6C14.2 8.2 15.4 7 17 7h4M18 4l3 3-3 3M18 14l3 3-3 3"/></svg>
+        <span>Random</span></button>
       ${VENUE_LIST.map(v => {
         const on = open.has(v.id);
         return `<button type="button" class="vthumb${on ? '' : ' locked'}${v.id === cur ? ' on' : ''}"
@@ -7252,7 +7275,7 @@ function renderShow(){
   let stage = null;
   // The room is decided once, as the lights go down, so the crowd shot and the share card after it
   // are the same room the show was played in.
-  S.playedVenue = chosenVenue();
+  S.playedVenue = tonightVenue();
   S.venueFresh = undefined;
   try {
     stage = createStage(document.getElementById('simStage'), {
@@ -8484,6 +8507,11 @@ app.addEventListener('click', e => {
   const vBtn = e.target.closest('[data-venue]');
   if (vBtn){
     const id = vBtn.dataset.venue;
+    if (id === 'random'){
+      chooseVenue('random');
+      render();
+      return;
+    }
     if (openVenues().has(id)){
       chooseVenue(id);
       render();
