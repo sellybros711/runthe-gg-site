@@ -20591,6 +20591,40 @@ relights the finished picture and never moves a pixel, so the pixel art stays th
 It costs a little over what the render did before (`check-putt` holds a Tour hole under 900ms with it). The
 render key carries it, so a cached render without it is never shown in its place.
 
+#### A trail is rendered once, and every pass that made it faster is pixel for pixel
+
+Reported by the owner: the mode looks good and is slow. It took a while to load, lagged, and the walk was too slow.
+Measured first. Opening the mode spent 4.5s of a desktop core (about 21s at a phone's 4x throttle) rendering the
+trail it opens on, and did it again every time the mode was closed and opened, because the rendered trails lived on
+`S`, which `close()` throws away.
+
+- **The paint is PXHD's `Sprite.paint`, ported into hole3d.js.** Same rules, same order, written into one pixel
+  buffer. The original did a `fillRect` a pixel and looked each pixel's ramp up three times. A pixel's rules only
+  read its neighbours' parts, never their tones, so each pixel is finished on its own and bands only give the frame
+  back. `LIGHT` is copied from PXHD, which does not export it: change one and change both.
+- **The ground's cells are built only once they are in front** (`splatG`), the land's `t:` keys are interned, the
+  shadow march stops above the scene's tallest point (`HTOP`), and `creekD`, `deckAt`, `poolAt` and `footAt` answer a
+  repeated point from a one-entry memo (`memo2`), because `h()` and `mat()` ask about the same point in a row.
+- **Every one of those was checked as a hash of the pixels and the depth buffer**, over eight trails and twenty two
+  holes, before and after. Identical. Do that again after touching the renderer: a faster picture that is a slightly
+  different picture is the one way this work can go wrong in silence.
+- **Rendered trails are kept** (`TRC` on the module, the newest four) and **on the device** (IndexedDB
+  `rtt_putt_trails`, the newest three, through `RTT_PUTT_3D.pack` and `unpack`). The disk key carries the `?v=` of
+  putt.js, trail.js and hole3d.js and a hash of a few PXHD ramps (`trailV`), so a change to how a trail is drawn
+  renders afresh. **Bump those versions when the picture changes**, or a returning player sees the old drawing.
+  The render in progress (`TRJ`) is on the module too, so leaving the mode mid-render keeps the work.
+- **The walk draws only the part of the picture on screen**, writes to the page only when a value changes
+  (`put`, `cls`), and what stands in front of a thing that stands still is one cached mask (`occMask`) instead of a
+  `drawImage` per row-run: 683 draw calls a walking frame became 81.
+- **He walks at 10 ft a second, and it was 7.** The stride grew with it (3.4 to 4.4) so the legs still read as walking.
+
+Measured after, desktop and 4x: first open 3.0s and 14s, reopening the mode 0.1s and 0.9s, after a reload 0.75s and 1.7s.
+The first open of a trail nobody has rendered is still the slowest thing in the mode.
+
+**The home screen's Play 18 strip is kept too** (`DART_LS` in golf/index.html). It is a 3D terrain render, about
+half a second of a desktop, and it ran a moment after every visit's first paint. The last one is in localStorage
+under a key naming the course and the code that draws it, and only a 3D strip is kept.
+
 ## Run The Tour's tracer is full screen, and the course has a console pass
 
 Asked for by the owner: the Tour Tracer full screen on every device, and the console feel Putt Putt has.
