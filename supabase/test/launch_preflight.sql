@@ -676,7 +676,24 @@ check_rows(sort, migration, what, breaks, ok) as (
   (57, '143_ps_save_put_fix',
       'ps_save_put can actually write a save',
       'NO run is kept against the account in ANY game. Every save is in one browser only.',
-      (select count(*) > 0 from proc where name = 'ps_save_put' and body like '%ps_saves_pkey%'))
+      (select count(*) > 0 from proc where name = 'ps_save_put' and body like '%ps_saves_pkey%')),
+
+  -- 101 wrote a read-own policy and no grant, so every browser read was refused
+  -- with 42501 and row 10 still read yes. Asked of the table's ACL rather than
+  -- with has_table_privilege(), which RAISES on a missing table or role and would
+  -- take this whole report down, the thing the header says nothing here may do.
+  -- PUBLIC (grantee 0) counts too, since authenticated is a member of it.
+  (58, '144_premium_unlocks_grant',
+      'authenticated has SELECT on premium_unlocks',
+      'Receipts read empty and Run The Tour never delivers a bundle buyer''s packs. Postgres logs 42501 all day.',
+      (select count(*) > 0
+       from pg_class c
+       join pg_namespace n on n.oid = c.relnamespace
+       cross join lateral aclexplode(c.relacl) a
+       where n.nspname = 'public' and c.relname = 'premium_unlocks'
+         and a.privilege_type = 'SELECT'
+         and (a.grantee = 0
+              or a.grantee = (select oid from pg_roles where rolname = 'authenticated'))))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on
