@@ -1421,7 +1421,7 @@ function run(box, P, pic, api){
 
   // a line said once what was just found has flown up to the top of the screen, so the bubble never sits on top of it
   function sayLater(txt, ms, wait){ setTimeout(function(){ if (alive) say(txt, ms); }, (reduce ? 0.1 : wait) * 1000); }
-  function say(txt, ms){ bubble = { txt:txt, until:performance.now() + (ms || 3200) }; bubEl.textContent = txt; bubEl.hidden = false; }
+  function say(txt, ms, who){ bubble = { txt:txt, until:performance.now() + (ms || 3200), who:who || null }; bubEl.textContent = txt; bubEl.hidden = false; }
   function burst(x, y, z, cols, n, sz, pow){ pow = pow || 1; for (var i = 0; i < n; i++){ var a = Math.random() * 6.28, sp2 = (2 + Math.random() * 4) * pow; parts.push({ x:x, y:y, z:z, vx:Math.cos(a) * sp2, vy:Math.sin(a) * sp2 * 0.6, vz:(3 + Math.random() * 4) * pow, c:cols[i % cols.length], t:0, sz:sz ? sz * (0.6 + Math.random() * 0.8) : 0 }); } }
   function hudCoins(){ ui.querySelector('[data-coins]').textContent = '+' + coinsGot; }
   /* WHAT IS ON THIS TRAIL, said up front: a list of every find with its picture, ticked off as it is picked up,
@@ -1567,7 +1567,7 @@ function run(box, P, pic, api){
     if (PZ) stepPuzzle(dt, now, tsec);
     // the local talks when he walks up, and on a puzzle trail he gives the clue
     var npc = items.filter(function(t){ return t.k === 'npc'; })[0];
-    if (npc){ var dn = Math.hypot(npc.x - g.x, npc.y - g.y); if (dn < 3.4 && !nearNpc){ nearNpc = true; var ls = api.lines ? api.lines(kitOf(npc.th).who) : []; if (PZ && !PZ.solved) ls = ls.concat([P.puzzle.clue]); say(ls.join(' '), PZ && !PZ.solved ? 8200 : 5200); } else if (dn > 5) nearNpc = false; }
+    if (npc){ var dn = Math.hypot(npc.x - g.x, npc.y - g.y); if (dn < 3.4 && !nearNpc){ nearNpc = true; var ls = api.lines ? api.lines(kitOf(npc.th).who) : []; if (PZ && !PZ.solved) ls = ls.concat([P.puzzle.clue]); say(ls.join(' '), PZ && !PZ.solved ? 8200 : 5200, npc); } else if (dn > 5) nearNpc = false; }
     if (P.fence && !lockOpen){ var df = Math.hypot(g.x - P.lockGate.x, g.y - P.lockGate.y); if (df < 2.4 && (!bubble || now > bubble.until)) say('Locked. The key is somewhere on this trail.', 2200); }
     // the door between worlds
     if (gate && !gate.asked && Math.abs(g.y - P.gate.y) < 3.2 && Math.abs(g.x - P.gate.x) < PW + 3){ gate.asked = true; paused = true; g.vx = g.vy = 0;
@@ -1626,8 +1626,9 @@ function run(box, P, pic, api){
     drawFx(tsec);
     if (flash > 0){ ctx.fillStyle = 'rgba(255,120,40,' + (flash * 0.5).toFixed(2) + ')'; ctx.fillRect(0, 0, W, H); flash = Math.max(0, flash - dt * 2); }
     waypoint();
-    if (bubble){ var bp = scr(g.x, g.y, pic.zAt(g.x, g.y) + GH + 0.6); var npc = items.filter(function(t){ return t.k === 'npc'; })[0];
-      if (nearNpc && npc) bp = scr(npc.x, npc.y, pic.zAt(npc.x, npc.y) + GH + 0.6);
+    /* a bubble stays over WHOEVER SAID IT. A local's line is pinned to the local for as long as it shows, so walking
+       off never drags it along over the golfer; anything the walk says itself sits over the golfer. */
+    if (bubble){ var sp0 = bubble.who || g, bp = scr(sp0.x, sp0.y, pic.zAt(sp0.x, sp0.y) + GH + 0.6);
       put(bubEl.style, 'left', (bp[0] / dpr) + 'px'); put(bubEl.style, 'top', (bp[1] / dpr) + 'px'); }
   }
   /* the console look's last touch, as on a hole: the low sun washing in from the upper left (none at night) and a
