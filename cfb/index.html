@@ -6392,10 +6392,13 @@ async function pfProLoad(){
     /* REACHABLE, AND NOT A BUG. The row that opened this page was drawn from
        premium_products(), which answers through an RPC; this reads the table. A blocked
        request, an expired token or an account comped by hand outside the table all land
-       here, and none of them is a reason to tell somebody their purchase is gone. */
+       here, and none of them is a reason to tell somebody their purchase is gone.
+       IT NEVER PROMISES A RELOAD WILL FIX IT. Until supabase/144 the table had no grant for
+       the signed in role, so every read here was refused and this sentence told every
+       owner a reload would bring the list back, which it never did. */
     list.innerHTML='<p class="dim" style="font-size:12.5px;line-height:1.45;margin:0">'+
-      'Your Pro modes are unlocked. The list of what is in your bundle couldn\'t be loaded '+
-      'just now. Reload the page and it will come back.</p>';
+      'Your Pro modes are unlocked. We couldn\'t show the list of what you own. '+
+      'Your purchase is safe.</p>';
   }else{
     let ends=null, endedOn=null, passEnds=null, passEnded=null, paid=false;
     list.innerHTML=owned.map((k)=>{

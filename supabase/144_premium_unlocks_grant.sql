@@ -1,0 +1,53 @@
+-- 144_premium_unlocks_grant.sql : the signed in role may read its own unlocks
+--
+-- Needs 101 (premium_unlocks). Safe to run twice. Already applied in production
+-- by hand on 2026-10-14; this file records it so a fresh database gets it too.
+--
+-- WHAT WAS WRONG
+-- ---------------------------------------------------------------------------
+-- 101 turned on row level security and wrote one policy, "premium_unlocks read
+-- own", and never granted the table to anybody. A policy narrows a grant, it
+-- does not make one, so every browser read of the table as `authenticated` was
+-- refused with 42501 "permission denied for table premium_unlocks" before the
+-- policy was ever consulted. That is the lesson 70_arcade_card_grants.sql
+-- already wrote down for `subscriptions`, and 124 remembered for
+-- premium_subscriptions, arriving at the one table nobody granted.
+--
+-- Three pages read the table directly and all three failed soft:
+--   golf/index.html maybeBundleRewards()   on every auth event of every signed
+--                                          in Run The Tour tab, which is where
+--                                          production's thousands a day came
+--                                          from. A Run The Bundle buyer got the
+--                                          coins (a security definer RPC) and
+--                                          never the packs (this read).
+--   football/auth.js and cfb/auth.js       premiumUnlocks(), the "Your Pro
+--   premiumUnlocks()                       access" receipt, which drew an empty
+--                                          list and told the player to reload.
+--
+-- Every gate was unaffected: premium_products() and every *_is_pro function is
+-- security definer, and the Stripe webhook writes as service_role, which 70's
+-- default privileges already cover.
+--
+-- WHERE THE GRANT WAS PULLED: nowhere in this repo. Every .sql file was grepped
+-- for a revoke naming premium_unlocks (single line and spread over lines) and
+-- there is none, and no migration ever granted it either. The table had no
+-- client grant from the day 101 created it, unless one was given and taken away
+-- by hand in the dashboard, which leaves no trace here.
+--
+-- WHAT IS GRANTED, AND WHAT IS TAKEN OFF
+-- ---------------------------------------------------------------------------
+-- SELECT to authenticated and nothing else. The read-own policy still limits it
+-- to the caller's rows. anon gets nothing: no page reads this signed out, and
+-- the policy would answer nothing for a null uid anyway. No insert, update or
+-- delete is granted to either role and no policy exists for them, so the
+-- webhook stays the only writer.
+--
+-- TRUNCATE, REFERENCES and TRIGGER come off both browser roles explicitly.
+-- TRUNCATE ignores row level security altogether, so a role holding it can
+-- empty every purchase on the site through the table's own name. Supabase's
+-- usual default privileges hand all three to anon and authenticated on any new
+-- public table, and none of them is something a page needs.
+
+grant select on public.premium_unlocks to authenticated;
+
+revoke truncate, references, trigger on public.premium_unlocks from anon, authenticated;
