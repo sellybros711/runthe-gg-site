@@ -596,6 +596,10 @@ if (!args.includes('--no-browser')){
       // the local gives the clue
       if (first.fire){ const t = await open(first.fire), P = t.plan(), npc = t.items().find(i => i.k === 'npc');
         await visit(t, npc.x, npc.y + 8, 200); await visit(t, npc.x, npc.y + 2.6, 260); out.clue = t.bubble().indexOf(P.puzzle.clue) >= 0;
+        // a bubble stays over the one who said it: walk off while the local is still talking and it does not follow
+        { const at = () => { const v = t.view(), b = document.querySelector('[data-bub]'), q = t.scr(npc.x, npc.y, 0); return { bx:parseFloat(b.style.left), nx:q[0] / (window.devicePixelRatio || 1), hid:b.hidden }; };
+          const a0 = at(); await visit(t, npc.x + 3.2, npc.y + 2.6, 300); const a1 = at();
+          out.bubStays = !a1.hid && Math.abs((a1.bx - a1.nx) - (a0.bx - a0.nx)) < 2 && t.bubble().indexOf(P.puzzle.clue) >= 0; }
         // the lights: no prize until all three are lit, then it opens and pays
         const its = t.items(), prize = its.find(i => i.k === 'prize'), fires = its.filter(i => i.k === 'fire');
         await visit(t, prize.x, prize.y + 2); out.fireHidden = !prize.done && !t.pz().shown;
@@ -626,6 +630,7 @@ if (!args.includes('--no-browser')){
     claim(pzr.pz / pzr.n > 0.4 && pzr.pz / pzr.n < 0.65 && Object.keys(pzr.kinds).length === 4 && Object.values(pzr.kinds).every(v => v >= 8), `about half the trails carry a puzzle, of all four kinds (${pzr.pz} of ${pzr.n}: ${JSON.stringify(pzr.kinds)})`);
     claim(pzr.drops && pzr.solo, `every puzzle has a clue and its own chest of coins, and its trail still has its one chest`);
     claim(pzr.clue, `the local on a puzzle trail gives its clue`);
+    claim(pzr.bubStays, `a local's speech bubble stays over the local when the golfer walks away, never following the golfer`);
     claim(pzr.fireHidden && pzr.twoLit && pzr.allLit && pzr.fireOpen && pzr.firePaid > 0 && pzr.firePaid === pzr.fireWant && pzr.fireRec && pzr.fireKept, `the three lights: no chest until all three are lit, then it opens, pays, and stays solved (${JSON.stringify([pzr.fireHidden, pzr.twoLit, pzr.allLit, pzr.fireOpen, pzr.firePaid, pzr.fireRec, pzr.fireKept])})`);
     claim(pzr.digHidden && pzr.dug && pzr.digPaid, `the footprints: the chest is buried until he stands where they stop, then it comes up and pays (${JSON.stringify([pzr.digHidden, pzr.dug, pzr.digPaid])})`);
     claim(pzr.shut && pzr.opened && pzr.shutAgain && pzr.plateOpen && pzr.staysOpen && pzr.platePaid, `the plate: the pen's gate is shut, opens off the plate, shuts again, and stays open once the chest is had (${JSON.stringify([pzr.shut, pzr.opened, pzr.shutAgain, pzr.plateOpen, pzr.staysOpen, pzr.platePaid])})`);
