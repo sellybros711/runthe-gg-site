@@ -93,6 +93,15 @@ jobs:
       - name: The staff sorts itself
         run: node baseball/check-staff.mjs 60
 
+      # Every step from here on drives a real browser, and each check script
+      # reads require('playwright') first. Its fallback path exists only on a dev
+      # sandbox, so installing this any later crashes the first browser step on a
+      # missing module before it asserts anything. Installed once, here.
+      - name: Playwright and Chromium
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+
       # The squad screen reads as a batting order and a staff. The coach's order is
       # the season's baseline, so it has to cost nothing and nothing may beat it,
       # or Pro could buy runs by moving a man. Pro swaps, reads the cost, and can
@@ -149,8 +158,6 @@ jobs:
       # highlight around the row next to the pick.
       - name: The front page, and the reel under it
         run: |
-          npm install --no-save playwright@1.49.1
-          npx playwright install --with-deps chromium
           node baseball/check-theme.mjs
           node baseball/check-home.mjs
 
@@ -171,8 +178,13 @@ jobs:
       # sharing an id paint each other, a rule nobody can meet is a park nobody
       # sees, and a chosen park the account cannot back must fall back to the home
       # park. All four are silent, so all four are asked of the real page.
+      # Unlike its neighbours this script starts no server of its own and opens
+      # localhost:8080, so one is started for it here.
       - name: Ballparks, their art and their unlocks
-        run: node baseball/check-parks.mjs
+        run: |
+          (python3 -m http.server 8080 >/dev/null 2>&1 &)
+          sleep 1
+          node baseball/check-parks.mjs
 
       # THE PROFILE, and the career it keeps on the server. Every way this fails
       # loses a player's things in silence: a device that never sends its seasons,
