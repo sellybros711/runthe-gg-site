@@ -65,6 +65,7 @@ node golf/check-tracer3d.mjs                every course draws, nothing the ball
 | `trail.js` | a `KIT`, its `LIFE`, a `BUILD` for each new landmark with its `LMSIZE` |
 | `putt.js` again | a `GREETERS` host, three `TRINKETS` and a `TRINKET_COL`, a `DOOR_NAMES` entry and its CSS |
 | `build-cards.mjs` | the signature hole the home card is cut from |
+| `build-home-plates.mjs <theme>` | the First Tee's picture of the world, then its theme in `FT_PLATES` and a bump of `FT_PLATE_V` |
 | `routes.json` | `solve.mjs --tour main --only <the 18> --write`, then each `par` set to what it prints |
 
 **Code**
@@ -74,6 +75,13 @@ node golf/check-tracer3d.mjs                every course draws, nothing the ball
 - Every unlock check goes through `opened()`, never `tp.lv` directly.
 - `pmerge` only adds, and every server call fails soft (null is no opinion).
 - `PUTT_LIVE` is the launch. There is no localStorage override, on purpose.
+- **The First Tee home rides the same switch.** `ftLive()` is `puttOn()`: Putt Putt testers (and everybody once
+  `PUTT_LIVE` is true) get the First Tee, its hubs (`protour`, `putthub`, `me`) and five tabs; everybody else gets
+  the classic home (`scrTitleClassic`, the seven tabs, `tourStepsClassic`, `maybeLoginBonusClassic`). Change the
+  classic home only for a fix: it is retired at launch. The closet (`setup` with `setupEdit`) wears the Me
+  page's dressing room on the same switch (`ftClosetOn`, `body.ftcloset`); a new career's setup does not.
+- The login gift on the First Tee waits to be claimed (`bag_login_pend`, `claimLoginGift`). Never pay it on sight there.
+- **No guide or tour opens by itself** on the First Tee either: its guided tour starts from How to play only.
 - `putt_lives_refill` carries its own copy of `PUTT_TESTERS`: keep the two lists in step.
 - **A heart is three lives**: 9, or 18 with a Tour Pass, and every lost life comes back 24 hours after it went
   (`146_putt_lives_nine.sql`, `st.back`). Deploy 146 before the page that reads `back_at`.
