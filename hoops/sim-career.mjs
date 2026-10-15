@@ -252,7 +252,10 @@ const M = {
   'route: G League, overseas or gap year': 100 * hs.filter((x) => /gleague|overseas/.test(routeOf(x.L).pre)).length / Math.max(1, hs.length),
   'lottery pick': pct(slots.lottery || 0),
   'second round or undrafted': pct((slots.second || 0) + (slots.undrafted || 0)),
-  'All-Star at least once': pct(count((x) => T(x).star > 0)),
+  /* Read off the careers players start, counted equally: high school (Pro)
+     and the generated road on Normal (free). Draft night with a background
+     card, half of the main sweep, is a door no player has had since Phase E. */
+  'All-Star at least once': (() => { const sh = (a) => a.filter((x) => T(x).star > 0).length / Math.max(1, a.length); const g = EX.gen.normal; return 100 * (g.length ? (sh(hs) + sh(g)) / 2 : sh(hs)); })(),
   'MVP at least once': pct(count((x) => T(x).mvp > 0)),
   'a ring': pct(count((x) => T(x).rings > 0)),
   'route: juco or walk-on': 100 * hs.filter((x) => /juco|walkon/.test(routeOf(x.L).pre)).length / Math.max(1, hs.length),
@@ -315,7 +318,7 @@ const TARGETS = [
   ['route: G League, overseas or gap year', 8, 18, 'D'],
   ['lottery pick', 20, 32, 'D'],
   ['second round or undrafted', 30, 45, 'D'],
-  ['All-Star at least once', 22, 35, 'C'],
+  ['All-Star at least once', 20, 25, 'C'],   // the owner's call, 2026-10-15
   ['MVP at least once', 1, 3, 'C'],
   ['a ring', 18, 30, 'C'],
   ['route: juco or walk-on', 4, 10, 'D'],

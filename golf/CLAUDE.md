@@ -81,6 +81,8 @@ node golf/check-tracer3d.mjs                every course draws, nothing the ball
 - The login gift on the First Tee waits to be claimed (`bag_login_pend`, `claimLoginGift`). Never pay it on sight there.
 - **No guide or tour opens by itself** on the First Tee either: its guided tour starts from How to play only.
 - `putt_lives_refill` carries its own copy of `PUTT_TESTERS`: keep the two lists in step.
+- **A heart is three lives**: 9, or 18 with a Tour Pass, and every lost life comes back 24 hours after it went
+  (`146_putt_lives_nine.sql`, `st.back`). Deploy 146 before the page that reads `back_at`.
 - `LIGHT` in `hole3d.js` is copied from PXHD: change one and change both.
 - **When the picture changes, bump the `?v=` of putt.js, trail.js or hole3d.js**, or a returning player
   sees the old cached trail. A renderer speedup must match the old render pixel for pixel: hash the

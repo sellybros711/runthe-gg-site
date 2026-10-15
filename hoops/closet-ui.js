@@ -211,9 +211,12 @@ function pane(host, o){
   cur = { host: host, draw: draw };
 }
 var SRC = { run: 'Draft run', dd: 'Daily Draft', fx: 'Fix History', ps: 'Six Passes', endless: 'Endless puzzle',
-  cq: 'Conquest win', cqclear: 'Conquest cleared', welcome: 'Welcome to the Floor' };
+  cq: 'Conquest win', cqclear: 'Conquest cleared', welcome: 'Welcome to the Floor',
+  daily: 'Daily reward', login: 'Daily login', streak: 'Streak reward', wheel: 'Prize wheel', pass: 'Floor Pass',
+  refund: 'Duplicate refund', exchange: 'Legendary exchange', paid: 'Coins bought' };
 function coinLabel(r){
   if (r.a < 0) { var it = CAT && CAT.item(r.src); return it ? it.name : (r.src || 'Spent'); }
+  if (r.src === 'quest') return /^qw/.test(r.k) ? 'Weekly quest' : 'Daily quest';
   if (r.src === 'career') return /^cf:/.test(r.k) ? 'Career finished' : 'Career season';
   if (r.src === 'badge') {
     var id = r.k.slice(3), BD = window.RTF_BADGES, b = null;

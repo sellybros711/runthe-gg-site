@@ -122,17 +122,30 @@ const fired = {};
   console.log(`  ${all.length} careers, ${cards} cards answered`);
 }
 
+/* Section 2's free careers, for the All-Star band section 8 holds. */
+const FREE = [];
 // ── 2. the shape of a life ─────────────────────────────────────────────────
 section('2. most careers are good ones, a few are great, and the bands hold');
 {
-  /* Two hundred careers put a margin of about two and a half points on a
-     share near fifteen percent, which made the All-Star floor a coin flip on
-     the seed. The bands are read over six hundred random careers. */
-  const rnd = all.filter((x) => x.pol === 'random');
-  for (let i = 200; i < 600; i++) {
-    const r = play('random:' + i, 'random', { pos: C.POS[i % 5], arch: C.ARCH_KEYS[i % 6], bg: C.BG_KEYS[(i >> 1) % 4] });
-    if (r && r.L) rnd.push({ L: r.L, pol: 'random', f: r.L.final });
+  /* THE BANDS ARE READ OFF THE CAREERS PLAYERS START. A free career begins
+     on draft night from a generated road (C.generateRoad), and a Pro one in
+     high school (section 8 holds that one to the same bands). Section 1's
+     draft night with a background card is a door no player has had since
+     Phase E, so it is played for coverage and never measured: it read 15%
+     All-Star while the careers people play read 20 to 23%. Six hundred
+     careers, because two hundred put a margin of about two and a half
+     points on the share. */
+  const rnd = [];
+  for (let i = 0; i < 600; i++) {
+    const L = C.generateRoad({ seed: 'gen:' + i, league, pos: C.POS[i % 5], arch: C.ARCH_KEYS[i % 6] });
+    let guard = 0;
+    while (!L.retired && guard++ < 3000) {
+      if (L.pending.length) C.choose(L, pickFor('random', L, L.pending[0]));
+      else C.step(L);
+    }
+    if (L.retired) rnd.push({ L, pol: 'random', f: L.final });
   }
+  FREE.push(...rnd);
   const share = (f) => rnd.filter(f).length / rnd.length;
   const pct = (a, q) => { const s = a.slice().sort((x, y) => x - y); return s[Math.floor(q * (s.length - 1))]; };
   const mvp = share((x) => x.f.totals.mvp > 0);
@@ -144,10 +157,9 @@ section('2. most careers are good ones, a few are great, and the bands hold');
   const verdicts = new Set(all.map((x) => x.f.verdict));
   console.log(`  MVP ${(mvp * 100).toFixed(1)}%  All-Star ${(star * 100).toFixed(0)}%  Hall ${(hof * 100).toFixed(0)}%`
     + `  seasons p50 ${seasons}  peak ppg p50 ${peakPts}  rookie ppg p50 ${rookie}`);
-  /* An MVP is rare and real, an All-Star is a career's high point for about
-     a third of players, and the Hall is earned. Measured: 1.0%, 30% and 27%. */
+  /* An MVP is rare and real and the Hall is earned. The All-Star band is
+     held in section 8, over free and Pro careers together. */
   ok(mvp > 0.002 && mvp < 0.06, `an MVP is rare but reachable (${(mvp * 100).toFixed(1)}%)`);
-  ok(star > 0.15 && star < 0.5, `All-Star is a high point, not a given (${(star * 100).toFixed(2)}%)`);
   ok(hof > 0.08 && hof < 0.42, `the Hall is earned (${(hof * 100).toFixed(0)}%)`);
   ok(seasons >= 8 && seasons <= 18, `a career runs a decade or so (${seasons})`);
   ok(peakPts >= 12 && peakPts <= 24, `a typical best season is a starter's (${peakPts})`);
@@ -541,7 +553,17 @@ section('8. three hundred careers from high school, and where they land');
   const drafted = picks.filter((p) => p <= 60).length / picks.length;
   console.log(`  MVP ${(mvp * 100).toFixed(1)}%  All-Star ${(star * 100).toFixed(0)}%  Hall ${(hof * 100).toFixed(0)}%  drafted ${(drafted * 100).toFixed(0)}%`);
   ok(mvp < 0.07, `an MVP from the road is as rare as from draft night (${(mvp * 100).toFixed(1)}%)`);
-  ok(hof > 0.08 && hof < 0.42 && star > 0.15 && star < 0.5, 'the Hall and All-Star rates sit in the same bands');
+  ok(hof > 0.08 && hof < 0.42, `the Hall rate sits in section 2's band (${(hof * 100).toFixed(0)}%)`);
+  /* ABOUT ONE CAREER IN FIVE IS AN ALL-STAR: the owner's call, 2026-10-15,
+     20 to 25%. A career is a free one (section 2, the generated road) or a
+     Pro one (here, the road from high school), counted equally. They sit
+     about five points apart, because a played road beats one the game plays
+     for you, so each alone sits on an edge of a five point band. Never move
+     the band to meet the game: tune the game (BAL.star) to the band. */
+  const free = FREE.filter((x) => x.f.totals.star > 0).length / Math.max(1, FREE.length);
+  const both = (free + star) / 2;
+  ok(FREE.length >= 500, `section 2 measured its free careers (${FREE.length})`);
+  ok(both >= 0.20 && both <= 0.25, `about one career in five makes an All-Star team (${(both * 100).toFixed(2)}%: free ${(free * 100).toFixed(2)}, Pro ${(star * 100).toFixed(2)}; band 20 to 25)`);
   ok(drafted > 0.8 && drafted < 1, `most of them are drafted, not all (${(drafted * 100).toFixed(0)}%)`);
   /* A COLLEGE SUMMER IS NOT A PRO SUMMER. The summer card was the league's and
      colYear deals it too, so a freshman read "Your first summer as a pro" over
