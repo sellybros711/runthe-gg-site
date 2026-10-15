@@ -252,10 +252,10 @@ const M = {
   'route: G League, overseas or gap year': 100 * hs.filter((x) => /gleague|overseas/.test(routeOf(x.L).pre)).length / Math.max(1, hs.length),
   'lottery pick': pct(slots.lottery || 0),
   'second round or undrafted': pct((slots.second || 0) + (slots.undrafted || 0)),
-  /* Read off the careers players start: high school (Pro) and the generated
-     road on Normal (free). Draft night with a background card, half of the
-     main sweep, is a door no player has had since Phase E. */
-  'All-Star at least once': (() => { const a = hs.concat(EX.gen.normal); return 100 * a.filter((x) => T(x).star > 0).length / Math.max(1, a.length); })(),
+  /* Read off the careers players start, counted equally: high school (Pro)
+     and the generated road on Normal (free). Draft night with a background
+     card, half of the main sweep, is a door no player has had since Phase E. */
+  'All-Star at least once': (() => { const sh = (a) => a.filter((x) => T(x).star > 0).length / Math.max(1, a.length); const g = EX.gen.normal; return 100 * (g.length ? (sh(hs) + sh(g)) / 2 : sh(hs)); })(),
   'MVP at least once': pct(count((x) => T(x).mvp > 0)),
   'a ring': pct(count((x) => T(x).rings > 0)),
   'route: juco or walk-on': 100 * hs.filter((x) => /juco|walkon/.test(routeOf(x.L).pre)).length / Math.max(1, hs.length),
