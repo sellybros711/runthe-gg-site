@@ -704,12 +704,12 @@ if (!args.includes('--no-browser')){
     // THE WORLDS AHEAD ARE UNDER CLOUD. No name of a world not yet reached shows on the map, the home card or the
     // walk; the gate shut leaves the clouds; the gate with its stars parts them, and only then is the world named.
     const cl = await pg.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), K = 'bag_ppt_v1@cld', T = () => window.RTT_PUTT._trail();
-      const hidden = /Lost Temple|Pirate Cove|Canyon Mine|Volcano Island|Frozen Peak|Sky Islands|Neon Arcade|Schoolyard|Ice Age|Temple Steps/;
+      const hidden = /Lost Temple|Pirate Cove|Canyon Mine|Volcano Island|Frozen Peak|Sky Islands|Neon Arcade|Schoolyard|Ice Age|Candy Works|Temple Steps/;
       const rec = (lv, s) => { const best = {}; for (let n = 1; n <= 18; n++) best[n] = s; return { v:2, lives:3, met:['clubhouse'], tours:{ main:{ lv:lv, best:best, ace:{}, paid:{}, wpaid:{} } } }; };
       window.RTT_PUTT.close(); window.RTT_PUTT_MAPFIRST = true; sbUser = { id:'cld' };
       // short of the stars: 18 pars is 18 stars, under the 40 the gate asks
       localStorage.setItem(K, JSON.stringify(rec(18, 3))); openPutt(); for (let i = 0; i < 100 && !document.querySelector('.pp-map [data-lv="1"]'); i++) await sleep(50);
-      out.map = !hidden.test(document.body.innerText) && document.querySelectorAll('.pp-cloudo').length === 9 && !document.querySelector('.pp-map [data-lv="19"]');
+      out.map = !hidden.test(document.body.innerText) && document.querySelectorAll('.pp-cloudo').length === 10 && !document.querySelector('.pp-map [data-lv="19"]');
       out.card = window.RTT_PUTT.summary().world === 'The Clubhouse';
       window.RTT_PUTT._walkTo(18); for (let i = 0; i < 400 && !T(); i++) await sleep(30); await sleep(200);
       out.walk = !hidden.test(document.body.innerText) && T().clouds() === 'on';
@@ -776,7 +776,7 @@ if (!args.includes('--no-browser')){
     // ---- THE TOUR'S RULES, through the page. Each life is real: a fresh record for a fresh account.
     await pg.evaluate(() => { const st = window.RTT_PUTT._state(); if (st && st.play && st.play.strokes) { st.round.mode = 'x'; } document.querySelector('.pt-ov') && window.RTT_PUTT.close(); sbUser = { id:'chk' }; localStorage.removeItem('bag_ppt_v1@chk'); openPutt(); });
     await pg.waitForSelector('.pp-map [data-lv="1"]');
-    claim(await pg.evaluate(() => document.querySelectorAll('.pp-lv').length === 18 && document.querySelectorAll('.pp-lv.lock').length === 17 && document.querySelectorAll('.pp-lv.sig').length === 1 && document.querySelectorAll('.pp-cloudo').length === 9), 'the map shows world 1\'s 18 holes, its signature hole and only level 1 open, with the nine worlds ahead under cloud');
+    claim(await pg.evaluate(() => document.querySelectorAll('.pp-lv').length === 18 && document.querySelectorAll('.pp-lv.lock').length === 17 && document.querySelectorAll('.pp-lv.sig').length === 1 && document.querySelectorAll('.pp-cloudo').length === 10), 'the map shows world 1\'s 18 holes, its signature hole and only level 1 open, with the ten worlds ahead under cloud');
     // A RECORD SAVED SIGNED OUT IS CLAIMED, NEVER LOST. A player reached hole 18 and came back to hole 1, because
     // the record is keyed by account and a session that opened before sign-in resolved played under the bare key.
     const mrg = await pg.evaluate(async () => { window.RTT_PUTT.close(); const best = {}; for (let n = 1; n <= 17; n++) best[n] = 2;
