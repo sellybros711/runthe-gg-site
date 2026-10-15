@@ -3,7 +3,7 @@
 The port of Run The Tour's user side (`golf/`) into Run The Floor (`hoops/`).
 Nothing in this file is built yet. It is the map, the measured numbers and the
 decisions, written down before any code so the next phases have something to be
-held to. `docs/economy-2026-09-04.md` (the wrestling port) is the playbook and
+held to. `history/2026-10-15-import/docs/economy-2026-09-04.md` in the knowledge base (the wrestling port) is the playbook and
 its two lessons are the spine of this one: coins are a meta currency that never
 scale with the career, and the pass is balanced by a daily cap.
 
