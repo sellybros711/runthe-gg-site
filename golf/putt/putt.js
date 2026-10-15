@@ -1780,13 +1780,17 @@ function worldOf(n, tid){ var TR = tourOf(tid); return TR.worlds[Math.floor((n -
 // the desc a Tour level plays as: the same shape the daily and the themed holes use, so the 3D cache keys work
 function tourDesc(n, host, tid){ var TR = tourOf(tid), W = worldOf(n, tid);
   return { tour:n, tid:TR.id, tpl:TR.tag + n, seed:hstr((TR.id === 'main' ? 'ppt:' : TR.id + ':') + n), theme:W.theme, name:levelName(n, tid) }; }
+/* WHICH STOP OF ITS WORLD A HOLE IS AT (land.js, STOPS): the land round it and the walk to it are built for that stop.
+   '' for a world with no stops, which is built as it always was. */
+function stopOf(th, leg){ var T = window.RTT_PUTT_LAND && window.RTT_PUTT_LAND.stops && window.RTT_PUTT_LAND.stops[th], s = ''; if (!T) return '';
+  for (var i = 0; i < T.length; i++) if (leg >= T[i][0]) s = T[i][1]; return s; }
 function buildLevel(n, tid, theme, name){
   var TR = tourOf(tid), L = TR.levels[n - 1], W = worldOf(n, tid), th = theme || W.theme, T = THEMES[th];
   var H = L.f(T); H.par = L.par;
   var Cx = courseFromH(H, TR.tag + n, hstr((TR.id === 'main' ? 'ppt:' : TR.id + ':') + n), th, name || levelName(n, tid));
   if (TR.secret && SECRETS[n - 1]) Cx.scene = SECRETS[n - 1].scene;   // a secret hole stands in its own place
   // a tour hole knows its place in its world (1 to 18), so the land round it can change as you walk through the world
-  else if (!theme && TR.worlds && TR.worlds.length && !TR.lab) Cx.leg = (n - 1) % (TR.per || PER) + 1;
+  else if (!theme && TR.worlds && TR.worlds.length && !TR.lab){ Cx.leg = (n - 1) % (TR.per || PER) + 1; if (TR.id === 'main') Cx.stop = stopOf(th, Cx.leg); }
   return Cx;
 }
 function buildFrom(desc){ if (desc.custom){ var Hc = desc.custom(THEMES[desc.theme]); Hc.par = Hc.par || 3; return courseFromH(Hc, desc.tpl, desc.seed, desc.theme, desc.name); }
@@ -3079,7 +3083,7 @@ function trailSpec(tid, from){
   var TR = tourOf(tid), K = TR.per || PER, to = from + 1, w = Math.min(TR.worlds.length - 1, Math.floor((to - 1) / K)), th = TR.worlds[w].theme;
   var cross = from >= 1 && from % K === 0, th0 = cross ? TR.worlds[w - 1].theme : th, tp = pload().tours[TR.id];
   var portrait = (window.innerHeight || 800) >= (window.innerWidth || 400);
-  var leg = (to - 1) % K + 1, kitAs = th === 'pirate' && !cross && tid === 'main' ? (leg >= 17 ? 'pirate~cove' : leg >= 13 ? 'pirate~skull' : leg >= 9 ? 'pirate~jungle' : leg >= 5 ? 'pirate~town' : null) : null;   // the walk goes where its holes go (land.js)
+  var leg = (to - 1) % K + 1, st = !cross && tid === 'main' ? stopOf(th, leg) : '', kitAs = st ? th + '~' + st : null;   // the walk goes where its holes go (land.js, STOPS)
   return { fine:false, smooth:fineOn({ theme:th }) && !cross, kitAs:kitAs, secret:tid === 'main' && secretAt(to) ? { i:secretAt(to) } : null, key:tid + ':' + to, tid:tid, from:from, to:to, w:w, seed:hstr('trail:' + tid + ':' + to), theme:th, theme0:th0, cross:cross, plaza:(to - 1) % K === 0, gateOpen:opened(TR, tp, to), T:THEMES[th] || THEMES.clubhouse, halfW:portrait ? 36 : 46, loot:trailLoot(tid, to), holeTo:to <= TR.levels.length ? courseFoot(to, tid) : null, holeFrom:from >= 1 ? courseFoot(from, tid) : null, greet:from % K === 0 ? greetSpec(tid, w, to) : null };
 }
 /* THE HOLES ON A TRAIL ARE THE REAL HOLES. The hole you just left lies behind you where the walk starts, and the
@@ -3588,7 +3592,8 @@ function fxOn(d){ return window.RTT_PUTT_FX !== 'off'; }
 /* THE FINE PICTURE: a world in FINE_WORLDS is painted three times finer, so it reads as clearly as the golfer.
    Pirate Cove is the pilot (the owner, 2026-10-15); the rest follow once it is approved. */
 var FINE_WORLDS = { pirate:1 }, FINE_ART = 1 / 12;
-function fineOn(d){ return !!FINE_WORLDS[d.theme] && window.RTT_PUTT_FINE !== 'off'; }
+// RTT_PUTT_FINE_TEST names one more world to paint fine, so a world's stops can be built and looked at before it joins FINE_WORLDS
+function fineOn(d){ return (!!FINE_WORLDS[d.theme] || window.RTT_PUTT_FINE_TEST === d.theme) && window.RTT_PUTT_FINE !== 'off'; }
 // a fine picture's zoom can round up (camFor), so it is built a little taller than the stage to leave no band below the land
 function v3Opt(d){ var o = { aspect:v3Asp(), fx:fxOn(d) }; if (fineOn(d)){ o.fine = true; o.art = FINE_ART; o.aspect = Math.round(o.aspect * 1.3 * 10) / 10; } return o; }
 function v3Key(d){ return [d.tpl, d.seed, d.theme, d.extra || 0, v3Asp(), fxOn(d) ? 'fx' : '', fineOn(d) ? 'fine' : ''].join('|'); }
@@ -3872,8 +3877,12 @@ function drawAmbient(ctx, C, cam, t){ var A = cam.v3.amb, k = cam.k, ox = cam.ox
     ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, 6.29); ctx.fill(); });
   ctx.restore(); }
 // the birds of the place: gulls over the sea, parrots in the jungle. Each goes round its own circle at its own height
-var FLY_KIND = { gull:{ w:'#f4f6fb', b:'#d8dde6', h:'#f2a03a', n:3, z:10, sz:0.5 }, parrot:{ w:'#e5483a', b:'#2bb04a', h:'#ffd23a', n:4, z:7, sz:0.42 } };
-function drawFlyers(ctx, C, cam, t){ var kind = C.theme === 'pirate' && C.leg >= 9 && C.leg <= 12 ? FLY_KIND.parrot : C.theme === 'pirate' ? FLY_KIND.gull : null; if (!kind) return;
+// a stop names its birds in land.js (FLY['world~stop'] = a kind here). A world adds a kind here when none of these fit
+var FLY_KIND = { gull:{ w:'#f4f6fb', b:'#d8dde6', h:'#f2a03a', n:3, z:10, sz:0.5 }, parrot:{ w:'#e5483a', b:'#2bb04a', h:'#ffd23a', n:4, z:7, sz:0.42 },
+  song:{ w:'#6a4a2e', b:'#8a6a44', h:'#e8a03a', n:4, z:6, sz:0.32 }, crow:{ w:'#1a1820', b:'#24222a', h:'#d8a02a', n:3, z:9, sz:0.4 }, vulture:{ w:'#2a2228', b:'#3a3036', h:'#d89a7a', n:2, z:13, sz:0.6 },
+  bat:{ w:'#2a2230', b:'#3a2e44', h:'#ff4a3a', n:4, z:6, sz:0.32 }, butterfly:{ w:'#ffd23a', b:'#2a2a2a', h:'#ff8ab0', n:5, z:3, sz:0.22 }, drone:{ w:'#2bf0ff', b:'#2a2440', h:'#ff2bd6', n:3, z:8, sz:0.35 },
+  ptero:{ w:'#a0522d', b:'#7a3e22', h:'#e8a03a', n:2, z:14, sz:0.9 }, ember:{ w:'#ff8a1a', b:'#ffd23a', h:'#ff5a1a', n:6, z:4, sz:0.16 } };
+function drawFlyers(ctx, C, cam, t){ var LF = window.RTT_PUTT_LAND && window.RTT_PUTT_LAND.fly, kind = LF && C.stop ? FLY_KIND[LF[C.theme + '~' + C.stop]] : null; if (!kind) return;
   var bx = C.bounds, cx = (bx[0] + bx[2]) / 2, cy = (bx[1] + bx[3]) / 2, rx = (bx[2] - bx[0]) * 0.45, ry = (bx[3] - bx[1]) * 0.4, u = cam.s * kind.sz;
   ctx.save();
   for (var i = 0; i < kind.n; i++){ var dir = ahash(i, C.leg || 1) < 0.5 ? -1 : 1, a = t * (0.12 + ahash(i, 5) * 0.1) * dir + ahash(i, 11) * 6.28;

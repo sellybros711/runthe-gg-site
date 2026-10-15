@@ -10,6 +10,7 @@
    clearAt(x, y) is the distance outside the course's rail (negative inside). B is hole3d.js's kit:
    solid, vox, tube, blob, gz. A theme with no entry here gets plain ground. */
 window.RTT_PUTT_LAND = (function(){
+  var STOPS = {}, FLY = {};   // each world's stops and the birds over them (the end of this file)
   function hash(x, y, s){ var h = (x * 374761393 + y * 668265263 + s * 982451653) | 0; h = Math.imul(h ^ h >>> 13, 1274126177); return ((h ^ h >>> 16) >>> 0) / 4294967296; }
   function vn(x, y, s){ var xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi, u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
     var a = hash(xi, yi, s), b = hash(xi + 1, yi, s), c = hash(xi, yi + 1, s), d = hash(xi + 1, yi + 1, s); return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v; }
@@ -68,7 +69,7 @@ window.RTT_PUTT_LAND = (function(){
       for (var j = 0; j < ny; j++) for (var i = 0; i < nx; i++) A[j * nx + i] = lineD(E[0] + i * st, E[1] + j * st, pts);
       return function(x, y){ var fx = (x - E[0]) / st, fy = (y - E[1]) / st; if (fx < 0 || fy < 0 || fx >= nx - 1 || fy >= ny - 1) return lineD(x, y, pts);
         var i = fx | 0, j = fy | 0, u = fx - i, v = fy - j, k = j * nx + i; return (A[k] * (1 - u) + A[k + 1] * u) * (1 - v) + (A[k + nx] * (1 - u) + A[k + nx + 1] * u) * v; }; }
-    var L = { leg:C.leg || 0, dist:dist, C:C, E:E, P0:P0, P1:P1, cx:cx, cy:cy, seed:seed, spot:spot, spotRect:spotRect, north:north, far:far, side:side, used:used, clearAt:clearAt, route:route, scatter:scatter };
+    var L = { leg:C.leg || 0, stop:C.stop || '', dist:dist, C:C, E:E, P0:P0, P1:P1, cx:cx, cy:cy, seed:seed, spot:spot, spotRect:spotRect, north:north, far:far, side:side, used:used, clearAt:clearAt, route:route, scatter:scatter };
     var bld = (C.scene && BUILD[C.scene]) || BUILD[C.theme], O = bld ? bld(L) : null;   // a secret hole's own place before its world's land
     if (O && O.fill) furnish(L, O);
     return O;
@@ -753,7 +754,9 @@ window.RTT_PUTT_LAND = (function(){
      Cove walks you from where you land to where the captain hides: the landing beach (1 to 4), the port town (5 to 8),
      the jungle path (9 to 12), Skull Rock (13 to 16), and the captain's cove (17 and 18). A hole with no place (a daily,
      a season) stands on the beach, as every Pirate Cove hole did before. */
-  BUILD.pirate = function(L){ var g = L.leg || 0; return g >= 17 ? pirCove(L) : g >= 13 ? pirSkull(L) : g >= 9 ? pirJungle(L) : g >= 5 ? pirTown(L) : pirBeach(L); };
+  BUILD.pirate = function(L){ var s = L.stop; return s === 'cove' ? pirCove(L) : s === 'skull' ? pirSkull(L) : s === 'jungle' ? pirJungle(L) : s === 'town' ? pirTown(L) : pirBeach(L); };
+  STOPS.pirate = [[1, 'beach'], [5, 'town'], [9, 'jungle'], [13, 'skull'], [17, 'cove']];
+  FLY['pirate~beach'] = FLY['pirate~town'] = FLY['pirate~skull'] = FLY['pirate~cove'] = 'gull'; FLY['pirate~jungle'] = 'parrot';
 
   // a palm: a ringed trunk that leans and bends, and seven fronds that sag from the crown
   function pirPalm(B, x, y, H, k, seed){ var zb = B.gz(x, y), lean = (hash(k, seed, 4) - 0.5) * 1.2, top = [x + lean, y - 0.3, zb + H];
@@ -1370,5 +1373,11 @@ window.RTT_PUTT_LAND = (function(){
       mats:{ straw:['#b8955a', '#cca868', '#9a7a44', 0.14], sticks:['#6a4a26', '#9a7a48', '#3e2a16', 0.14, function(c, R, h3){ var a = (c.ti + c.tj) % 5, b = ((c.ti - c.tj) % 6 + 6) % 6, z = c.z || 0;
           if (z > 4.6) return R(h3(c.ti, c.tj, 9) < 0.5 ? '#8a6a3a' : '#a8875a'); return R(a === 0 ? '#9a7a48' : b === 0 ? '#3e2a16' : h3(c.ti >> 1, c.tj, 5) < 0.3 ? '#5a4026' : '#6a4a26'); }] } }; };
 
-  return { make:make };
+  /* EACH WORLD'S OWN STOPS. A world's file (golf/putt/stops/, pasted between these lines by scripts) names where its
+     stops begin, STOPS[world] = [[1, 'first'], [5, 'second'], ...], wraps BUILD[world] to build the land of the stop a hole
+     is at (L.stop), and may name the birds over each stop's holes (FLY['world~stop']). putt.js reads the table (stopOf), so
+     a hole and the walk to it are always at the same stop. */
+  // @@WORLD STOPS BEGIN@@
+  // @@WORLD STOPS END@@
+  return { make:make, stops:STOPS, fly:FLY };
 })();

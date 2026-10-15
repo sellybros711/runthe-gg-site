@@ -164,6 +164,7 @@ function kitOf(th){ return KIT[th] || KIT.clubhouse; }
 /* spec: { seed, theme, theme0 (the world being left, on a trail that crosses), cross, gateOpen, to (hole number),
    carpet: [colour, colour], flag } */
 function plan(spec){
+  if (spec.kitAs && !KIT[spec.kitAs]) spec.kitAs = null;   // a stop with no kit of its own walks in its world's
   var seed = spec.seed >>> 0, R = rng(seed), L = TRAIL_L, th = spec.kitAs || spec.theme, th0 = spec.cross ? (spec.theme0 || th) : th;
   var HW = spec.halfW || HALFW, b = [-HW, -18, HW, L + 16];
   /* NO TWO WALKS ARE THE SAME WALK, AND THEY DO NOT ALL WALK UP THE SCREEN. A trail is laid out the way a course
@@ -1878,5 +1879,9 @@ function run(box, P, pic, api){
   return ctl;
 }
 
+/* EACH WORLD'S STOPS ON THE WALK (golf/putt/stops/, pasted between these lines by scripts): a KIT['world~stop'] a stop, its
+   landmarks' BUILD and LMSIZE, and its life (LIFE_AS). land.js's STOPS names the stops; a stop with no kit here walks in its world's. */
+// @@WORLD STOPS BEGIN@@
+// @@WORLD STOPS END@@
 window.RTT_PUTT_TRAIL = { API_VERSION:API_VERSION, COIN_V:COIN_V, BRK_V:BRK_V, PZ_COINS:PZ_COINS, plan:plan, slices:slices, run:run, GH:GH, TRAIL_L:TRAIL_L, ELEV:ELEV, KIT:KIT };
 })();
