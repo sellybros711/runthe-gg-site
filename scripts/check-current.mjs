@@ -161,6 +161,20 @@ console.log('\n2. Alma Mater, flag current');
   if (r.n < 30) fail('only ' + r.n + ' cards dealt');
   else if (r.gone.length) fail(r.gone.length + ' not on a roster today: ' + r.gone.slice(0, 6).join(', '));
   else ok(r.n + ' cards, every one on a roster today: ' + r.first.join(', ') + ' ...');
+  /* A namesake on the roster feed is not the famous man (a player's report,
+     2026-10-15): the Browns' rookie linebacker Justin Jefferson (Alabama) took
+     the Vikings receiver's card, fame and "Offensive Player of the Year". The
+     famous one is dealt with his own club and school; the rookie is not dealt. */
+  const NAMESAKES = [
+    ['Justin Jefferson', 'NFL', 'Minnesota Vikings', 'LSU'],
+    ['James Harden', 'NBA', null, 'Arizona State'],   // changed clubs: still the same man, still dealt
+  ];
+  for (const [name, sport, team, col] of NAMESAKES) {
+    const rows = await page.evaluate(([n, s]) => window.__rtgPoolRows(n, s), [name, sport]);
+    if (rows.length !== 1) fail(name + ': ' + rows.length + ' rows in the pool, want 1: ' + JSON.stringify(rows));
+    else if ((team && rows[0].team !== team) || rows[0].col !== col) fail(name + ' is dealt as ' + rows[0].team + ', ' + rows[0].col + '; want ' + (team || 'any club') + ', ' + col);
+    else ok(name + ' is dealt once, as the ' + rows[0].team + ' man, ' + col);
+  }
   await close();
 }
 
