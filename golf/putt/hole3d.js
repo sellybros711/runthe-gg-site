@@ -375,6 +375,8 @@ function* steps(C, opt){
         if (sh > 0 && sh < 1) sh = ((px + py) & 1) ? Math.min(1, sh * 1.4) : sh * 0.6;
         // a trail is seen from close in, among trees taller than the golfer: its shadows are lighter, or a wood is a lake of blue
         if (SC) sh *= 0.55;
+        // on a fine picture a tall thing's shadow on open water read as a hard slab of blue: water takes it faintly
+        if (FINE && (cm === 't:sea' || cm === 't:lagoon' || cm === 't:sea0' || cm === 't:foam')) sh *= 0.3;
         // light is warm and bright, shadow is cool and blue, the way a low sun reads
         var sr = 1.07 - sh * 0.47, sg = 1.05 - sh * 0.31, sb = 1.0 - sh * 0.12;
         r = r * sr * ao; g = g * sg * ao; bl = bl * sb * ao;
@@ -393,7 +395,7 @@ function* steps(C, opt){
             if (face > 0.1){ var rimA = Math.min(0.42, face * 0.5) * (sh > 0.5 ? 0.3 : 1) * (night ? 0.6 : 1); r += (255 - r) * rimA; g += (238 - g) * rimA; bl += (200 - bl) * rimA; } } }
         // WATER AND ICE TAKE THE SKY: a sheen of it, stronger toward the far bank where the angle is low, and a few
         // glints where the sun catches a ripple
-        if (cm === 'haz' || cm === 'flow' || cm === 'ice' || cm === 't:water' || cm === 't:ice' || cm === 't:sea' || cm === 't:sea0'){ var fr = 0.1 + 0.16 * (1 - py / HH2); r += (hr - r) * fr; g += (hg - g) * fr; bl += (hb - bl) * fr;
+        if (cm === 'haz' || cm === 'flow' || cm === 'ice' || cm === 't:water' || cm === 't:ice' || cm === 't:sea' || cm === 't:sea0' || cm === 't:lagoon' || cm === 't:jpool'){ var fr = 0.1 + 0.16 * (1 - py / HH2); r += (hr - r) * fr; g += (hg - g) * fr; bl += (hb - bl) * fr;
           if (sh < 0.3 && hq(((px / TR) | 0) >> 1, (py / TR) | 0, 31) < (cm === 'ice' || cm === 't:ice' ? 0.02 : 0.03) && (((px / TR) | 0) & 1) && px % TR === 0 && py % TR === 0){ r = 250; g = 250; bl = 255; } }
         // haze over the far land (the top of the picture) and nothing on the course
         var far = Math.max(0, Math.min(1, (0.42 - py / HH2) / 0.42)), hzA = far * far * 0.26 * (clearAt(wx, wy) > 0.5 ? 1 : 0.35);

@@ -68,7 +68,7 @@ window.RTT_PUTT_LAND = (function(){
       for (var j = 0; j < ny; j++) for (var i = 0; i < nx; i++) A[j * nx + i] = lineD(E[0] + i * st, E[1] + j * st, pts);
       return function(x, y){ var fx = (x - E[0]) / st, fy = (y - E[1]) / st; if (fx < 0 || fy < 0 || fx >= nx - 1 || fy >= ny - 1) return lineD(x, y, pts);
         var i = fx | 0, j = fy | 0, u = fx - i, v = fy - j, k = j * nx + i; return (A[k] * (1 - u) + A[k + 1] * u) * (1 - v) + (A[k + nx] * (1 - u) + A[k + nx + 1] * u) * v; }; }
-    var L = { dist:dist, C:C, E:E, P0:P0, P1:P1, cx:cx, cy:cy, seed:seed, spot:spot, spotRect:spotRect, north:north, far:far, side:side, used:used, clearAt:clearAt, route:route, scatter:scatter };
+    var L = { leg:C.leg || 0, dist:dist, C:C, E:E, P0:P0, P1:P1, cx:cx, cy:cy, seed:seed, spot:spot, spotRect:spotRect, north:north, far:far, side:side, used:used, clearAt:clearAt, route:route, scatter:scatter };
     var bld = (C.scene && BUILD[C.scene]) || BUILD[C.theme], O = bld ? bld(L) : null;   // a secret hole's own place before its world's land
     if (O && O.fill) furnish(L, O);
     return O;
@@ -748,7 +748,196 @@ window.RTT_PUTT_LAND = (function(){
   };
 
   /* ---------------- PIRATE COVE: the cove behind the hole with a ship at anchor, a dock, palms, barrels and a chest on the sand */
-  BUILD.pirate = function(L){
+  /* ---------------- PIRATE COVE IS A JOURNEY. The owner (2026-10-15): the scenery round each hole "needs to vary so it
+     feels like you're moving through the world". A tour hole knows its place in its world (L.leg, 1 to 18), and Pirate
+     Cove walks you from where you land to where the captain hides: the landing beach (1 to 4), the port town (5 to 8),
+     the jungle path (9 to 12), Skull Rock (13 to 16), and the captain's cove (17 and 18). A hole with no place (a daily,
+     a season) stands on the beach, as every Pirate Cove hole did before. */
+  BUILD.pirate = function(L){ var g = L.leg || 0; return g >= 17 ? pirCove(L) : g >= 13 ? pirSkull(L) : g >= 9 ? pirJungle(L) : g >= 5 ? pirTown(L) : pirBeach(L); };
+
+  // a palm: a ringed trunk that leans and bends, and seven fronds that sag from the crown
+  function pirPalm(B, x, y, H, k, seed){ var zb = B.gz(x, y), lean = (hash(k, seed, 4) - 0.5) * 1.2, top = [x + lean, y - 0.3, zb + H];
+    B.vox(x - 3.2, y - 2.8, zb, x + 3.2, y + 2.6, zb + H + 0.8, function(set){ for (var s = 0; s < 8; s++){ var t0 = s / 8, t1 = (s + 1) / 8; B.tube(set, x + lean * t0 * t0, y - 0.3 * t0, zb + H * t0, x + lean * t1 * t1, y - 0.3 * t1, zb + H * t1, 0.2 - t0 * 0.06, 0.2 - t1 * 0.06, s % 2 ? '#8a6a3e' : '#7a5c34'); }
+      for (var f = 0; f < 7; f++){ var a = f / 7 * 6.28 + k, fx = Math.cos(a), fy = Math.sin(a) * 0.7; for (var al = 0; al < 2.5; al += set.st){ var sag = 0.35 - al * al * 0.22, wd = 0.37 * (1 - al / 2.7); for (var o = -wd; o <= wd; o += set.st) set(top[0] + fx * al - fy * o, top[1] + fy * al + fx * o, top[2] + sag, al > 1.5 ? '#3f9a46' : (Math.abs(o) < set.st * 1.5 ? '#5a7a2a' : '#2f8139')); } } }, B.ART); }
+  // a ship: a hull with gunports, a gold rail, two masts, sails bellied by the wind, and the black flag. s scales her
+  function pirShip(B, X, Y, s, zw){ var Lh = 4.8 * s, Wh = 1.5 * s; zw = zw == null ? -0.25 : zw;
+    B.solid(X - Lh - 0.6, Y - Wh - 0.9, zw - 0.4, X + Lh + 0.6, Y + Wh + 0.5, zw + 9.4 * s, function(px, py, pz){ var dx = px - X, dy = py - Y, t = (pz - zw) / s;
+      var u = dx / Lh, hw = Wh * Math.sqrt(Math.max(0, 1 - Math.pow(Math.max(0, Math.abs(u) - 0.35) / 0.65, 2)));
+      if (t < 1.5){ if (Math.abs(u) > 1 || Math.abs(dy) > hw * (0.7 + t / 5)) return null; if (t > 1.32) return '#c9a227'; if (Math.abs(t - 0.9) < 0.08) return '#2a1810';
+        if (Math.abs(t - 0.9) < 0.3 && Math.abs(((dx / s) % 1.1 + 1.1) % 1.1 - 0.55) < 0.14 && dy > hw * 0.6) return '#111'; return (Math.floor(t * 4) % 2) ? '#6b4426' : '#5a3818'; }
+      if (t < 1.65) return (Math.abs(u) < 0.95 && Math.abs(dy) < hw) ? '#a0703c' : null;
+      for (var m = -1; m <= 1; m += 2){ var mx = X + m * 1.6 * s, mt = m < 0 ? 7.6 : 8.6; if (Math.hypot(px - mx, py - Y) < 0.12 * s && t < mt) return '#4a2c16';
+        var sw = (1.6 - (t - 2.4) * 0.05) * s, q = (px - mx) / sw, belly = (1 - q * q) * 0.5 * s;   // the sail bows toward the camera, so the light runs across it
+        if (Math.abs(py - Y - belly) < 0.09 && Math.abs(px - mx) < sw && t > 2.4 && t < mt - 1){ var band = Math.floor((t - 2.4) / 1.05); return Math.abs(q) > 0.86 ? '#cfc3a2' : band % 2 ? '#f4efe2' : '#e9dfc4'; } }
+      if (t > 8.6 && t < 9.2 && px > X + 1.6 * s && px < X + 2.6 * s && Math.abs(py - Y) < 0.06) return (Math.hypot(px - X - 2.05 * s, (t - 8.9) * s) < 0.14 * s) ? '#f4efe2' : '#111';
+      return null; }); }
+  // the small things a pirate leaves about: a barrel (k 0), a crate (1), a cannon (2), a chest (3)
+  function pirProp(B, x, y, k){ var zb = B.gz(x, y);
+    if (k === 0) B.solid(x - 0.45, y - 0.45, zb, x + 0.45, y + 0.45, zb + 1, function(px, py, pz){ var r = Math.hypot(px - x, py - y), t = pz - zb, R = 0.38 + Math.sin(t / 0.95 * 3.14) * 0.06; if (r > R || t > 0.95) return null;
+      return (Math.abs(t - 0.2) < 0.05 || Math.abs(t - 0.75) < 0.05) ? '#3a3a40' : (Math.floor(Math.atan2(py - y, px - x) * 3) % 2 ? '#8f5a2c' : '#7a4a24'); });
+    else if (k === 1) B.solid(x - 0.5, y - 0.5, zb, x + 0.5, y + 0.5, zb + 0.9, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb; if (Math.abs(dx) > 0.45 || Math.abs(dy) > 0.45 || t > 0.85) return null;
+      var e = Math.max(Math.abs(dx), Math.abs(dy)) > 0.38 || t > 0.78 || t < 0.07; return e ? '#6a4420' : (Math.abs(dx - dy) < 0.06 || Math.abs(dx + dy) < 0.06 ? '#6a4420' : '#a8783e'); });
+    else if (k === 2) B.solid(x - 0.8, y - 0.5, zb, x + 0.8, y + 0.5, zb + 0.8, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb;
+      if (Math.abs(dy) < 0.12 && t > 0.25 && t < 0.55 && dx > -0.7 && dx < 0.5) return Math.hypot(dy, t - 0.4) < 0.12 ? '#45454c' : null; if (dx > 0.45 && dx < 0.7 && Math.hypot(dy, t - 0.4) < 0.22) return '#2c2c30';
+      if (Math.abs(Math.abs(dy) - 0.3) < 0.07 && Math.hypot(dx + 0.3, t - 0.25) < 0.25) return '#5a3818'; return null; });
+    else B.solid(x - 0.6, y - 0.45, zb, x + 0.6, y + 0.45, zb + 0.95, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb; if (Math.abs(dx) > 0.55 || Math.abs(dy) > 0.38) return null;
+      if (t > 0.5 && Math.hypot(dy, t - 0.5) > 0.38) return null; if (t > 0.86 && Math.abs(dx) < 0.45) return '#ffd23a';   // gold heaped over the rim
+      if (Math.abs(t - 0.5) < 0.04 || Math.abs(Math.abs(dx) - 0.35) < 0.05) return '#c9a227'; return t > 0.5 ? '#7a4a24' : '#8f5a2c'; }); }
+  function pirLows(B, x, y, i, seed){ var k = hash(i, seed, 23); if (k < 0.5) rockAt(B, x, y, 0.38, ['#7d756c', '#8e867b']); else bush(B, x, y, 0.4, ['#3f9a46', '#2f8139', '#a8c25a']); }
+  function blot(c, f, sd){ return vn(c.ti * f, c.tj * f, sd); }   // a smooth patch field on the land's quarter foot cells
+  var PIR_SEA = ['#1a86c4', '#5ec0e8', '#136a9e', 0.05, function(c, R){ var d = c.dep || 0; return R(d < 1.2 ? '#5ec0e8' : d < 3.5 ? '#1a86c4' : '#136a9e'); }];
+
+  /* 2. THE PORT TOWN: the harbour along the top, a quay of dressed stone and a boardwalk to it, a ship tied up at the
+     quay, the town's shacks either side with their lamps lit, and the cargo stacked about. */
+  function pirTown(L){
+    var E = L.E, P0 = L.P0, P1 = L.P1, seed = L.seed, clearAt = L.clearAt, spot = L.spot, spotRect = L.spotRect;
+    function quayY(x){ return P0[1] - 2.4 - (vn(x * 0.05, 1, seed) - 0.5) * 0.5; }
+    function sea(x, y){ return quayY(x) - y; }
+    var shipX = L.cx + (hash(seed, 2, 3) < 0.5 ? -1 : 1) * Math.min(6.5, (E[2] - E[0]) * 0.16), shipY = Math.max(E[1] + 2.6, quayY(shipX) - 2.7);
+    L.used.push({ x:shipX, y:shipY, r:5 });
+    var shacks = []; for (var i = 0; i < 4; i++){ var r = spotRect(4.6, 3.6, function(x, y){ return L.side(x) * 6 - Math.abs(y - P0[1] - 3) * 0.25 + hash(x | 0, y | 0, seed + 30 + i); }); if (r) shacks.push(r); }
+    var lamps = []; for (i = 0; i < 4; i++){ var lp = spot(0.4, function(x, y){ return -Math.abs(clearAt(x, y) - 1.6) + hash(x * 3 | 0, y * 3 | 0, seed + 40 + i); }, function(x, y){ return sea(x, y) < -0.8; }); if (lp) lamps.push(lp); }
+    var cargo = []; for (i = 0; i < 9; i++){ var q = spot(0.6, function(x, y){ return -Math.abs(clearAt(x, y) - 2.4) * 0.6 + Math.max(0, 4 - Math.abs(sea(x, y) + 1.6)) * 0.3 + hash(x * 3 | 0, y * 3 | 0, seed + 9 + i); }, function(x, y){ return sea(x, y) < -0.9; }); if (q) cargo.push(q); }
+    var ROOF = ['#a8442e', '#2f6f8f', '#7a8a3a', '#8a5a9a'];
+    return {
+      h:function(x, y){ var s = sea(x, y); if (s > 0) return -0.55; return (fbm(x * 0.08, y * 0.1, seed + 2) - 0.45) * 0.4 * sm(1.2, 5, clearAt(x, y)); },
+      mat:function(x, y){ var s = sea(x, y); if (s > 0) return ['sea', { dep:s + 1.2 }]; if (s > -0.7) return ['quay', { u:x }]; if (s > -4.5) return ['boards', { u:y }]; return ['cobble']; },
+      build:function(B){
+        pirShip(B, shipX, shipY, 1, -0.55);
+        shacks.forEach(function(r, n){ var d = r.d, roof = ROOF[(n + (seed & 3)) % 4];
+          house(B, r, { wh:2.3, rh:1.5, chim:n % 2 ? '#6e665e' : null, step:'#8a6a44',
+            wall:function(dx, dy, t){ if (dy > d / 2 - 0.15 && Math.abs(dx) < 0.45 && t < 1.7) return '#3a2412';
+              if (dy > d / 2 - 0.15 && Math.abs(Math.abs(dx) - 1.5) < 0.38 && t > 0.8 && t < 1.55) return Math.abs(t - 1.17) < 0.04 ? '#5a3818' : '#ffcf6a';
+              return (Math.floor((dx + 9) * 2.4) % 2) ? '#b08a5a' : '#9a7648'; },
+            roof:function(dx, dy, t, rr, eave){ return eave ? '#4a2c16' : (Math.floor(t * 4) % 2 ? roof : '#6a2a1e'); } }); });
+        lamps.forEach(function(p){ lamp(B, p.x, p.y, '#2a2420', '#ffd77a'); });
+        cargo.forEach(function(p, i){ pirProp(B, p.x, p.y, i % 3 === 2 ? 0 : i % 3); });
+      },
+      fill:{ on:['cobble'], trees:0.12, lows:0.12, tree:function(B, x, y, i){ pirPalm(B, x, y, 3.6 + hash(i, seed, 21) * 1.2, i * 3 + seed, seed); }, low:function(B, x, y, i){ pirProp(B, x, y, i % 2); } },
+      bg:'#1677b5', gain:1.6,
+      mats:{ sea:PIR_SEA,
+        quay:['#9a958a', '#b8b2a4', '#7a756c', 0.1, function(c, R){ return R((c.ti % 6 === 0 || c.tj % 3 === 0) ? '#7a756c' : '#a8a296'); }],
+        boards:['#9a6a3e', '#b07c48', '#7a5230', 0.1, function(c, R, h3){ var row = c.tj, lap = (c.ti + (row * 7 % 11)) % 14 === 0; return R(lap || row % 3 === 0 ? '#6a4426' : h3(row, c.ti >> 3, 9) < 0.3 ? '#a8763f' : '#946238'); }],
+        // cobbles a foot by three quarters, each row set over half a stone, with a thin line of mortar
+        cobble:['#a89a86', '#c2b49e', '#8a7e6c', 0.12, function(c, R){ var row = Math.floor(c.tj / 3), off = row % 2 ? 2 : 0, col = Math.floor((c.ti + off) / 4);
+          if (c.tj % 3 === 0 || (c.ti + off) % 4 === 0) return R('#7e7262'); var n = hash(col, row, 4); return R(n < 0.3 ? '#b8a890' : n < 0.62 ? '#ac9e88' : '#9e907a'); }] }
+    };
+  }
+
+  /* 3. THE JUNGLE PATH: inland, under the canopy. A rock face behind the hole with a waterfall into a pool, the old fort's
+     wall in ruins with its cannon, and jungle thick on every side. */
+  function pirJungle(L){
+    var E = L.E, P0 = L.P0, P1 = L.P1, seed = L.seed, clearAt = L.clearAt, spot = L.spot, spotRect = L.spotRect;
+    var fallX = L.cx + (hash(seed, 5, 1) < 0.5 ? -1 : 1) * Math.min(5, (P1[0] - P0[0]) * 0.3);
+    function cliffY(x){ return P0[1] - 3.2 - (vn(x * 0.16, 2, seed) - 0.5) * 2.2; }
+    var pool = { x:fallX, y:cliffY(fallX) + 2.2, r:2.4 }; if (clearAt(pool.x, pool.y) < pool.r + 0.6) pool = null; else L.used.push({ x:pool.x, y:pool.y, r:pool.r + 0.4 });
+    function poolD(x, y){ return pool ? 1 - Math.hypot((x - pool.x) / pool.r, (y - pool.y) / (pool.r * 0.7)) + (fbm(x * 0.7, y * 0.7, seed + 3) - 0.5) * 0.2 : -1; }
+    var fort = spotRect(6, 1.4, function(x, y){ return L.side(x) * 4 + hash(x | 0, y | 0, seed + 60) * 2 - Math.abs(y - (P0[1] + P1[1]) / 2) * 0.1; });
+    var gun = fort ? { x:fort.x + 1.4, y:fort.y + 1.3 } : null; if (gun) L.used.push({ x:gun.x, y:gun.y, r:0.8 });
+    return {
+      h:function(x, y){ var cy = cliffY(x), k = sm(0.8, 3, clearAt(x, y)); if (y < cy) return (2.6 + Math.min(5.5, (cy - y) * 0.9) + (fbm(x * 0.3, y * 0.3, seed + 5) - 0.5)) * k; if (poolD(x, y) > 0) return -0.15; return (fbm(x * 0.08, y * 0.1, seed) - 0.42) * 1.3 * sm(1.3, 6, clearAt(x, y)); },
+      mat:function(x, y){ var cy = cliffY(x); if (pool && y < cy && Math.abs(x - pool.x) < 0.9 + (cy - y) * 0.04) return ['fall', { u:x, v:y }]; if (y < cy) return ['cliff', { z:cy - y }];
+        var t = poolD(x, y); if (t > 0) return ['jpool', { dep:t }]; if (t > -0.12) return ['mud']; return ['floor']; },
+      build:function(B){
+        if (fort){ var zb = B.gz(fort.x, fort.y);
+          B.solid(fort.x - 3.1, fort.y - 0.8, zb - 0.1, fort.x + 3.1, fort.y + 0.8, zb + 2.2, function(px, py, pz){ var dx = px - fort.x, dy = py - fort.y, t = pz - zb;
+            var top = 1.4 + Math.sin(dx * 1.7) * 0.25 + (hash(Math.floor(dx * 2) + 9, 3, seed) - 0.5) * 0.6 + (Math.abs(dx) < 0.9 ? 0.5 : 0); if (Math.abs(dy) > 0.6 || Math.abs(dx) > 3 || t > top) return null;
+            var row = Math.floor(t * 2.6), col = Math.floor(dx * 1.6 + (row % 2) * 0.5); if (((t * 2.6) % 1) < 0.12 || ((dx * 1.6 + (row % 2) * 0.5) % 1 + 1) % 1 < 0.08) return '#6a6658';
+            if (t > top - 0.3 && hash(col, row, seed + 2) < 0.6) return '#4f7a2e'; return hash(col, row, seed) < 0.3 ? '#8e8a78' : '#a29e8a'; }); }
+        if (gun) pirProp(B, gun.x, gun.y, 2);
+      },
+      fill:{ on:['floor'], trees:0.62, lows:0.42,
+        tree:function(B, x, y, i){ if (hash(i, seed, 31) < 0.45) pirPalm(B, x, y, 3.8 + hash(i, seed, 32) * 1.8, i * 5 + seed, seed); else broadTree(B, x, y, 3.6 + hash(i, seed, 33) * 1.8, '#4a3624', ['#1f5a26', '#2b6e30', '#3f8a3a'], i); },
+        low:function(B, x, y, i){ var k = hash(i, seed, 34); if (k < 0.55) bush(B, x, y, 0.5, ['#1f6a2a', '#2f8139', '#3f9a46']); else if (k < 0.8) bush(B, x, y, 0.32, ['#e8573a', '#2f8139', '#3f9a46']); else rockAt(B, x, y, 0.4, ['#7a7a68', '#5a6a42']); } },
+      bg:'#2c5a2a', gain:1.9,
+      mats:{ floor:['#3f6a2a', '#4e7a32', '#2f5a22', 0.12, function(c, R){ var a = blot(c, 0.11, seed + 7), b = blot(c, 0.3, seed + 8); return R(a > 0.66 ? '#5e5030' : a > 0.58 ? '#4e5a2c' : b > 0.6 ? '#48742e' : b < 0.3 ? '#365e26' : '#3f6a2a'); }],
+        mud:['#5a4630', '#6e5638', '#463626', 0.1],
+        cliff:['#6e6a5a', '#9a9682', '#4e4a3e', 0.2, function(c, R){ var z = c.z || 0; return R(z > 4.6 ? '#2f5a22' : blot(c, 0.16, seed + 3) > 0.64 ? '#4f7a2e' : ((Math.floor(z * 1.4) % 2) ? '#6e6a5a' : '#7e7a68')); }],
+        fall:['#bfe8f4', '#ffffff', '#7fc8e4', 0.2, function(c, R, h3){ return R(h3(c.ti, (c.tj + c.ti * 3) >> 1, 5) < 0.35 ? '#ffffff' : h3(c.ti, c.tj, 6) < 0.5 ? '#bfe8f4' : '#8fd4ec'); }],
+        jpool:['#2f8f9a', '#6fc8d0', '#1f6a78', 0.06, function(c, R){ var d = c.dep || 0; return R(d < 0.15 ? '#8fdce0' : d < 0.5 ? '#2f8f9a' : '#1f6a78'); }] }
+    };
+  }
+
+  /* 4. SKULL ROCK: the coast turns to rock. Grey stone underfoot, the sea breaking on it, stacks standing out in the
+     water, a wreck on the rocks, and the skull itself, carved out of a headland, looking back at you. */
+  function pirSkull(L){
+    var E = L.E, P0 = L.P0, P1 = L.P1, seed = L.seed, clearAt = L.clearAt, spot = L.spot;
+    var sx0 = hash(seed, 7, 2) < 0.5 ? -1 : 1;
+    function shoreY(x){ return P0[1] - 1.6 - (vn(x * 0.2, 1, seed) - 0.5) * 3.2; }
+    function sea(x, y){ return shoreY(x) - y; }
+    var skull = { x:L.cx + sx0 * Math.min(7.5, (E[2] - E[0]) * 0.22), y:0 }; skull.y = Math.max(E[1] + 3, shoreY(skull.x) - 3.2); L.used.push({ x:skull.x, y:skull.y, r:4 });
+    var stacks = []; for (var i = 0; i < 3; i++){ var sx = L.cx - sx0 * (3 + i * 4 + hash(i, seed, 3) * 2), sy = shoreY(sx) - 1.8 - hash(i, seed, 4) * 2.4; if (sy > E[1] + 0.8) stacks.push({ x:sx, y:sy, h:2.4 + hash(i, seed, 5) * 2.2, r:0.8 + hash(i, seed, 6) * 0.5 }); }
+    var wreck = spot(1.8, function(x, y){ return -Math.abs(sea(x, y) + 0.6) * 2 + L.side(x) * 3 + hash(x | 0, y | 0, seed + 70); }, function(x, y){ return sea(x, y) < 0.4 && sea(x, y) > -2.5; });
+    return {
+      h:function(x, y){ var s = sea(x, y); if (s > 0) return -0.3 - Math.min(0.4, s * 0.1); var rk = fbm(x * 0.35, y * 0.35, seed + 4), k = sm(0, 1.6, -s);
+        return ((rk - 0.45) * 0.9 + (fbm(x * 0.08, y * 0.1, seed + 2) - 0.4)) * sm(1.2, 5, clearAt(x, y)) * k - 0.3 * (1 - k); },
+      mat:function(x, y){ var s = sea(x, y); if (s > 0) return s < 0.5 + Math.sin(x * 1.3) * 0.2 ? ['foam'] : ['sea', { dep:s }]; return fbm(x * 0.3, y * 0.3, seed + 9) > 0.58 ? ['sand'] : ['stone', { u:x }]; },
+      build:function(B){
+        // the skull: a dome of rock with two sockets, a nose, a jaw of teeth, cracks, and a cap of grass
+        (function(){ var X = skull.x, Y = skull.y, zb = -0.4, R = 3.1;
+          B.solid(X - R - 0.4, Y - R, zb, X + R + 0.4, Y + R * 0.9, zb + R * 2.2, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb;
+            var head = Math.hypot(dx / R, dy / (R * 0.85), (t - R * 1.2) / (R * 0.95)), jaw = Math.hypot(dx / (R * 0.7), (dy - 0.3) / (R * 0.7), (t - R * 0.45) / (R * 0.55));
+            var d = Math.min(head, jaw) + (vn(dx * 1.4, t * 1.4, seed) - 0.5) * 0.12; if (d > 1) return null;
+            var front = dy > R * 0.45;
+            if (front && Math.hypot(Math.abs(dx) - R * 0.38, t - R * 1.3) < R * 0.27) return '#1a1612';   // the sockets
+            if (front && Math.abs(dx) < R * 0.13 && t > R * 0.82 && t < R * 1.05 && Math.abs(dx) < (R * 1.05 - t) * 0.6) return '#1a1612';   // the nose
+            if (front && t > R * 0.42 && t < R * 0.66 && Math.abs(dx) < R * 0.5){ return (((dx / (R * 0.13)) % 1 + 1) % 1 < 0.2 || Math.abs(t - R * 0.54) < 0.05) ? '#4a4640' : '#d8d0bc'; }   // the teeth
+            if (t > R * 2.0) return '#4f7a2e'; if (Math.abs(Math.sin(dx * 2.3 + t * 0.7)) < 0.04) return '#5a5650';
+            return (Math.floor(t * 2) + Math.floor(dx * 1.5)) % 3 ? '#8e8a80' : '#a29e92'; }); })();
+        stacks.forEach(function(s, i){ var zb = -0.5;
+          B.solid(s.x - s.r - 0.2, s.y - s.r - 0.2, zb, s.x + s.r + 0.2, s.y + s.r + 0.2, zb + s.h + 0.6, function(px, py, pz){ var t = pz - zb, rr = s.r * (1 - t / (s.h + 1.2) * 0.45) + (vn(px * 2, pz * 2, seed + i) - 0.5) * 0.18;
+            if (Math.hypot(px - s.x, py - s.y) > rr || t > s.h) return null; if (t > s.h - 0.18) return '#4f7a2e'; if (t < 0.6) return '#eef8f8'; return (Math.floor(t * 2.2) % 2) ? '#7a766c' : '#8e8a80'; }); });
+        if (wreck){ var X = wreck.x, Y = wreck.y, zb = -0.3, dir = sx0;   // a hull broken in two, heeled over, one mast stump
+          B.solid(X - 3.2, Y - 1.4, zb - 0.3, X + 3.2, Y + 1.4, zb + 3.2, function(px, py, pz){ var dx = (px - X) * dir, dy = py - Y, t = pz - zb, tilt = t - dx * 0.12;
+            if (Math.abs(dx) < 3 && Math.abs(dy) < 1.15 * Math.sqrt(Math.max(0, 1 - Math.pow(dx / 3, 2))) && tilt < 1.2 && tilt > -0.2){ if (dx > 0.4 && dx < 0.9) return null; if (Math.abs(dy) < 0.85 * Math.sqrt(Math.max(0, 1 - Math.pow(dx / 3, 2))) && tilt > 0.5) return t > 0.9 ? null : '#2a1810';
+              return (Math.floor(tilt * 4) % 2) ? '#5a3a20' : '#4a2e18'; }
+            if (Math.hypot(dx + 1, dy) < 0.13 && t < 2.9 && t > 0.4) return '#3a2412'; return null; }); }
+      },
+      fill:{ on:['stone', 'sand'], trees:0.1, lows:0.32, tree:function(B, x, y, i){ pirPalm(B, x, y, 3.2 + hash(i, seed, 21) * 1.2, i * 7 + seed, seed); },
+        low:function(B, x, y, i){ var k = hash(i, seed, 35); if (k < 0.7) rockAt(B, x, y, 0.35 + hash(i, seed, 36) * 0.25, ['#7a766c', '#8e8a80']); else bush(B, x, y, 0.35, ['#5a7a3a', '#6a8a42', '#a8b85a']); } },
+      bg:'#2a6f9a', gain:2.4,
+      mats:{ sea:['#1f6f9a', '#4ea8d0', '#164f74', 0.05, function(c, R){ var d = c.dep || 0; return R(d < 1 ? '#4ea8d0' : d < 3 ? '#1f6f9a' : '#164f74'); }], foam:['#eef8f8', '#ffffff', '#d6eeee', 0.2],
+        sand:['#d8c08a', '#e6d09c', '#c4aa74', 0.14],
+        stone:['#8a867c', '#a8a498', '#6a665e', 0.1, function(c, R){ var a = blot(c, 0.22, seed + 3), b = blot(c, 0.09, seed + 4); return R(b > 0.68 ? '#5f7a3a' : a < 0.3 ? '#6e6a62' : a > 0.68 ? '#a29e92' : '#8a867c'); }] }
+    };
+  }
+
+  /* 5. THE CAPTAIN'S COVE: a lagoon in the arms of the land, the captain's ship at anchor in it, bigger than any other,
+     and the treasure camp on the sand: chests heaped with gold, the fire, the torches and the flag. */
+  function pirCove(L){
+    var E = L.E, P0 = L.P0, P1 = L.P1, seed = L.seed, clearAt = L.clearAt, spot = L.spot;
+    function shoreY(x){ var u = (x - L.cx) / Math.max(8, (E[2] - E[0]) * 0.5); return P0[1] - 1.6 + u * u * 4.5 - (vn(x * 0.1, 1, seed) - 0.5) * 1.6; }   // the lagoon curls round
+    function sea(x, y){ return shoreY(x) - y; }
+    var shipX = L.cx + (hash(seed, 2, 3) < 0.5 ? -1 : 1) * Math.min(5, (E[2] - E[0]) * 0.12), shipY = Math.max(E[1] + 3.2, shoreY(shipX) - 4.8);
+    L.used.push({ x:shipX, y:shipY, r:6 });
+    var camp = spot(2.2, function(x, y){ return L.side(x) * 4 - Math.abs(y - (P0[1] + P1[1]) / 2) * 0.15 + hash(x | 0, y | 0, seed + 80); }, function(x, y){ return sea(x, y) < -2; });
+    var torches = []; for (var i = 0; i < 4; i++){ var tq = spot(0.4, function(x, y){ return -Math.abs(clearAt(x, y) - 1.8) + hash(x * 3 | 0, y * 3 | 0, seed + 50 + i); }, function(x, y){ return sea(x, y) < -1; }); if (tq) torches.push(tq); }
+    return {
+      h:function(x, y){ var s = sea(x, y); if (s > 0) return -0.2 - Math.min(0.4, s * 0.08); return (fbm(x * 0.09, y * 0.12, seed + 2) - 0.4) * 1.1 * sm(1.2, 5, clearAt(x, y)) * sm(0, 2, -s - 0.6); },
+      mat:function(x, y){ var s = sea(x, y); if (s > 0) return s < 0.3 ? ['foam'] : ['lagoon', { dep:s }]; if (s > -0.9) return ['wet']; return ['sand']; },
+      build:function(B){
+        pirShip(B, shipX, shipY, 1.3, -0.3);
+        if (camp){ var X = camp.x, Y = camp.y, zb = B.gz(X, Y);
+          B.solid(X - 0.5, Y - 0.5, zb - 0.05, X + 0.5, Y + 0.5, zb + 0.9, function(px, py, pz){ var r = Math.hypot(px - X, py - Y), t = pz - zb;   // the fire in its ring of stones
+            if (t < 0.18 && r > 0.34 && r < 0.48) return '#6e665e'; if (t < 0.12 && r < 0.36) return Math.abs(Math.sin((px - X) * 9)) < 0.3 ? '#3a2412' : '#5a3818';
+            if (t >= 0.1 && r < 0.3 * (1 - t / 0.85)) return t < 0.3 ? '#ffd23a' : t < 0.55 ? '#ff8a1a' : '#e5483a'; return null; });
+          pirProp(B, X - 1.4, Y - 0.6, 3); pirProp(B, X + 1.3, Y - 0.9, 3); pirProp(B, X + 0.2, Y - 1.6, 1); pirProp(B, X - 1.6, Y + 0.9, 0);
+          var fx = X + 1.6, fy = Y + 0.8, fz = B.gz(fx, fy);   // the black flag on its pole
+          B.solid(fx - 0.1, fy - 0.1, fz, fx + 1.3, fy + 0.1, fz + 3.2, function(px, py, pz){ var t = pz - fz, dx = px - fx;
+            if (Math.hypot(dx, py - fy) < 0.06 && t < 3.1) return '#4a2c16'; if (Math.abs(py - fy) < 0.05 && dx > 0.05 && dx < 1.2 && t > 2.25 && t < 3.0 - dx * 0.05){ var u = dx - 0.6, v = t - 2.65; return (u * u + v * v < 0.035 || (Math.abs(Math.abs(u) - Math.abs(v)) < 0.04 && Math.abs(u) < 0.25 && v < -0.05)) ? '#f4efe2' : '#151218'; } return null; }); }
+        torches.forEach(function(p){ var zb = B.gz(p.x, p.y);
+          B.solid(p.x - 0.2, p.y - 0.2, zb, p.x + 0.2, p.y + 0.2, zb + 1.7, function(px, py, pz){ var t = pz - zb, r = Math.hypot(px - p.x, py - p.y); if (t < 1.3 && r < 0.06) return '#5a3818';
+            if (t >= 1.25 && t < 1.65 && r < 0.13 * (1 - (t - 1.25) / 0.45)) return t < 1.4 ? '#ffd23a' : '#ff8a1a'; return null; }); });
+      },
+      fill:{ on:['sand'], trees:0.42, lows:0.26, tree:function(B, x, y, i){ pirPalm(B, x, y, 4 + hash(i, seed, 21) * 1.8, i * 3 + seed, seed); }, low:function(B, x, y, i){ pirLows(B, x, y, i, seed); } },
+      bg:'#1a9ab0', gain:2.4,
+      mats:{ sand:['#efd89a', '#f6e4b2', '#dcc384', 0.14], wet:['#cfb67c', '#d8c08a', '#bea46c', 0.1], foam:['#eef8f8', '#ffffff', '#d6eeee', 0.2],
+        lagoon:['#2ab4c8', '#7adce8', '#1a8aa8', 0.05, function(c, R){ var d = c.dep || 0; return R(d < 1 ? '#7adce8' : d < 3 ? '#2ab4c8' : '#1a8aa8'); }] }
+    };
+  }
+
+  // 1. THE LANDING BEACH (and every Pirate Cove hole with no place in the world): the beach, the surf, a ship at anchor off it
+  function pirBeach(L){
     var C = L.C, E = L.E, P0 = L.P0, P1 = L.P1, seed = L.seed, clearAt = L.clearAt, spot = L.spot;
     function shoreY(x){ return P0[1] - 1.4 - (vn(x * 0.12, 1, seed) - 0.5) * 2.6; }
     function sea(x, y){ return shoreY(x) - y; }

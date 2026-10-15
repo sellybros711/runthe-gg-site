@@ -1785,6 +1785,8 @@ function buildLevel(n, tid, theme, name){
   var H = L.f(T); H.par = L.par;
   var Cx = courseFromH(H, TR.tag + n, hstr((TR.id === 'main' ? 'ppt:' : TR.id + ':') + n), th, name || levelName(n, tid));
   if (TR.secret && SECRETS[n - 1]) Cx.scene = SECRETS[n - 1].scene;   // a secret hole stands in its own place
+  // a tour hole knows its place in its world (1 to 18), so the land round it can change as you walk through the world
+  else if (!theme && TR.worlds && TR.worlds.length && !TR.lab) Cx.leg = (n - 1) % (TR.per || PER) + 1;
   return Cx;
 }
 function buildFrom(desc){ if (desc.custom){ var Hc = desc.custom(THEMES[desc.theme]); Hc.par = Hc.par || 3; return courseFromH(Hc, desc.tpl, desc.seed, desc.theme, desc.name); }
@@ -3584,7 +3586,8 @@ function fxOn(d){ return window.RTT_PUTT_FX !== 'off'; }
    Pirate Cove is the pilot (the owner, 2026-10-15); the rest follow once it is approved. */
 var FINE_WORLDS = { pirate:1 }, FINE_ART = 1 / 12;
 function fineOn(d){ return !!FINE_WORLDS[d.theme] && window.RTT_PUTT_FINE !== 'off'; }
-function v3Opt(d){ var o = { aspect:v3Asp(), fx:fxOn(d) }; if (fineOn(d)){ o.fine = true; o.art = FINE_ART; } return o; }
+// a fine picture's zoom can round up (camFor), so it is built a little taller than the stage to leave no band below the land
+function v3Opt(d){ var o = { aspect:v3Asp(), fx:fxOn(d) }; if (fineOn(d)){ o.fine = true; o.art = FINE_ART; o.aspect = Math.round(o.aspect * 1.3 * 10) / 10; } return o; }
 function v3Key(d){ return [d.tpl, d.seed, d.theme, d.extra || 0, v3Asp(), fxOn(d) ? 'fx' : '', fineOn(d) ? 'fine' : ''].join('|'); }
 function v3Get(d, C){
   if (d.real || !v3Ok()) return null; S.v3c = S.v3c || {}; var k = v3Key(d);
