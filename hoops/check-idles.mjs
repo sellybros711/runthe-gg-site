@@ -147,7 +147,7 @@ for (const id of KEYED) {
 
 /* 11 */
 async function browser(){
-  const pw = createRequire('/opt/node22/lib/node_modules/')('playwright');
+  const pw = (() => { try { return require('playwright'); } catch (e) { return createRequire('/opt/node22/lib/node_modules/')('playwright'); } })();
   const CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
   const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.css': 'text/css', '.woff2': 'font/woff2' };
   async function serve(route){

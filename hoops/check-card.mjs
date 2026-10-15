@@ -110,7 +110,7 @@ function playerOk(j){
 }
 
 async function browser(){
-  const pw = require('/opt/node22/lib/node_modules/playwright');
+  const pw = (() => { try { return require('playwright'); } catch (e) { return createRequire('/opt/node22/lib/node_modules/')('playwright'); } })();
   const CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
   const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.webp': 'image/webp' };
   const out = [];
