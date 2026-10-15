@@ -1782,7 +1782,7 @@ function tourDesc(n, host, tid){ var TR = tourOf(tid), W = worldOf(n, tid);
   return { tour:n, tid:TR.id, tpl:TR.tag + n, seed:hstr((TR.id === 'main' ? 'ppt:' : TR.id + ':') + n), theme:W.theme, name:levelName(n, tid) }; }
 /* WHICH STOP OF ITS WORLD A HOLE IS AT (land.js, STOPS): the land round it and the walk to it are built for that stop.
    '' for a world with no stops, which is built as it always was. */
-function stopOf(th, leg){ var T = window.RTT_PUTT_LAND && window.RTT_PUTT_LAND.stops && window.RTT_PUTT_LAND.stops[th], s = ''; if (!T) return '';
+function stopOf(th, leg){ var LD = typeof window !== 'undefined' && window.RTT_PUTT_LAND, T = LD && LD.stops && LD.stops[th], s = ''; if (!T) return '';   // no window: the checks run this in node
   for (var i = 0; i < T.length; i++) if (leg >= T[i][0]) s = T[i][1]; return s; }
 function buildLevel(n, tid, theme, name){
   var TR = tourOf(tid), L = TR.levels[n - 1], W = worldOf(n, tid), th = theme || W.theme, T = THEMES[th];
