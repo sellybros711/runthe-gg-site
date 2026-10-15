@@ -461,7 +461,8 @@ function playRunWith(o, pick) {
 /* CAREER. Whole lives through career.js, from draft night and from high
    school, answered three ways, each filed through the page's own careerFeats.
    The rarest rungs (three MVPs, the scoring record, both rings) turn up a
-   handful of times in nine hundred lives, which is what a ring tier means. */
+   handful of times in nine hundred lives, which is what a ring tier means,
+   and the first two need the prospect below to turn up at all. */
 {
   const CR = require(path.join(HERE, 'career.js'));
   const lg = CR.seedLeague(players);
@@ -469,6 +470,28 @@ function playRunWith(o, pick) {
   const pick = (L, c, pol) => pol === 'first' ? 0 : pol === 'last' ? c.options.length - 1 : (L.steps * 7 + c.key.length * 3 + L.age) % c.options.length;
   for (const start of ['draft', 'hs']) for (const pol of ['first', 'last', 'random']) for (let i = 0; i < N; i++) {
     const L = CR.newLife({ seed: start + pol + 'b' + i, league: lg, start, pos: CR.POS[i % 5], arch: CR.ARCH_KEYS[i % 6], bg: CR.BG_KEYS[(i >> 1) % 4] });
+    let g = 0;
+    while (!L.retired && g++ < 4000) { if (L.pending.length) CR.choose(L, pick(L, L.pending[0], pol)); else CR.step(L); }
+    if (L.history.length) feat(B.careerFeats(CR.featSummary(L)));
+  }
+  /* THE PROSPECT. Somebody after three MVPs or the scoring record does not
+     take the first player the builder hands them. The Start step prints
+     "Scouts grade your ceiling" (career-ui.js grade(): potential 92 or more is
+     an A+), so they build a Shot creator and roll again until it reads A+,
+     then start from either of the builder's two doors: a free career on its
+     generated road (generateRoad, which is what the builder previews), or high
+     school. The blind sweep above starts from whatever it is dealt, so the top
+     rungs were a coin flip on its seeds: over its 900 lives four reached two
+     MVPs and none three, and the record was excused for the same reason.
+     Measured before shipping, over 180 A+ scorers: three MVPs in 10 and
+     38,000 points in 4. A blind life is an A+ about one time in twelve, which
+     is the gap between those numbers and the sweep's. */
+  const PROSPECTS = QUICK ? 20 : 80;
+  for (const pol of ['first', 'last', 'random']) for (let i = 0; i < PROSPECTS; i++) {
+    const o = { league: lg, start: 'hs', pos: CR.POS[i % 5], arch: 'scorer' };
+    let L, k = 0;
+    do L = (i % 2 ? CR.newLife : CR.generateRoad)(Object.assign({ seed: 'scorer' + pol + i + ':' + k++ }, o));
+    while (L.pot < 92 && k < 200);
     let g = 0;
     while (!L.retired && g++ < 4000) { if (L.pending.length) CR.choose(L, pick(L, L.pending[0], pol)); else CR.step(L); }
     if (L.history.length) feat(B.careerFeats(CR.featSummary(L)));
@@ -551,15 +574,6 @@ const EXCUSED = {
      them; the shape bots further down name every one. The top rung is the
      whole set, so it is a collection somebody fills over weeks. */
   'shapes-14': ['grind', () => Object.keys(career.shapes).length >= 8],
-  /* Three MVPs in one Career is the ring rung over one MVP, which the sweep
-     lights. Phase D set the MVP band at 1 to 3 percent of careers, so a third
-     MVP turns up about once in nine hundred blind lives: a coin flip on the
-     seed, which is what made the full sweep red on main. The proof is that
-     the count moved. */
-  /* The record is 38,000 points, past every real career but one, so a blind
-     sweep reaches it a few times in a thousand lives and the full sweep is a
-     coin flip on the seed. The rung under it (30,000) has to light. */
-  'cr-38k': ['grind', () => (career.feats['cr.pts'] || 0) >= 30000],
   'fx-30': ['grind', () => moved('fx.days')],
   'fx-title10': ['grind', () => moved('fx.title')],
   /* The page writes these. */

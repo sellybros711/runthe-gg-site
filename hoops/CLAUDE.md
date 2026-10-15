@@ -795,6 +795,16 @@ in `finish()`, only for a career that reached the league, through `RTF_PAGE.feat
 **`check-badges` plays careers as well as drafts**, two starts and three ways of answering cards,
 and lights the whole shelf.
 
+**The top two rungs need the prospect, not the blind sweep.** Three MVPs (`cr-mvp3`) and
+38,000 points (`cr-38k`) need a ceiling the builder grades A+ (potential 92 or more, `grade()`
+in career-ui.js), and a blind life is that about one time in twelve. So the 900 blind lives
+lit them by luck of the seed: `cr-mvp3` went dark on main with no engine change to explain
+it, and `cr-38k` sat on `EXCUSED` as a coin flip. The prospect bot plays the way a person
+chasing them does: a Shot creator, rolled again until the ceiling reads A+, from both of the
+builder's doors. Measured over 180 such lives: three MVPs in 10, the record in 4. Never
+answer a dark career rung by excusing it or moving its number; ask what a person chasing it
+would build.
+
 **High school and college earn nothing unless they were PLAYED**, the owner's call: Career is
 about the NBA. A generated road (`L.opt.gen`, the free draft-night start) is backstory, so its
 amateur awards are off the trophy shelf (`awardCounts`) and `featSummary` sends no road,
