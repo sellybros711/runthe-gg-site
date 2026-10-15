@@ -1,0 +1,19 @@
+name: Marketing check
+# Every queued post is valid before it can be merged: a known channel, a real publish time, no em or
+# en dash, X under 280 characters, Instagram with an image. See scripts/marketing/publish.mjs.
+on:
+  pull_request:
+    paths: ['marketing/**', 'scripts/marketing/**']
+  push:
+    branches: [main]
+    paths: ['marketing/**', 'scripts/marketing/**']
+  workflow_dispatch:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/marketing/publish.mjs --check
