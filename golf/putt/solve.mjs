@@ -27,7 +27,7 @@ const require = createRequire(import.meta.url);
 const P = require(process.env.PUTT_SRC || './putt.js');   // PUTT_SRC tries a copy of the holes without touching the real file
 const M = P.M;
 
-export function timed(C){ return C.movers.length + C.bridges.length + C.turns.length > 0; }
+export function timed(C){ return C.movers.length + C.bridges.length + C.turns.length + (C.ferries || []).length > 0; }
 /* walking distance to the cup over the course, round walls and blocks, back through tunnels and pipes
    and back over a ramp's jump, so a ball short of a gap does not rank behind one that went in the water */
 // with avoid, the secret zones are walls: a search told to find the obvious line must not rank a ball
@@ -37,7 +37,8 @@ export function geodesic(C, avoid){
   const res = 0.5, b = C.bounds, nx = Math.ceil((b[2] - b[0]) / res) + 1, ny = Math.ceil((b[3] - b[1]) / res) + 1;
   const pass = new Uint8Array(nx * ny), D = new Float64Array(nx * ny).fill(1e9);   // 64 bit: a heap entry read back against a 32 bit copy of itself looks stale, and the search stops spreading
   const solid = (x, y) => C.blocks.some(r => P.inBlock(r, x, y, 0.1)) || C.bumpers.some(u => Math.hypot(x - u.x, y - u.y) < u.r + 0.1);
-  const deck = (x, y) => C.bridges.some(r => x >= r.x0 && x <= r.x1 && y >= r.y0 && y <= r.y1);
+  // a ferry's whole crossing is passable: somewhere along it the deck is under the ball
+  const deck = (x, y) => C.bridges.some(r => x >= r.x0 && x <= r.x1 && y >= r.y0 && y <= r.y1) || (C.ferries || []).some(f => x >= Math.min(f.x0, f.x0 + f.dx) && x <= Math.max(f.x1, f.x1 + f.dx) && y >= Math.min(f.y0, f.y0 + f.dy) && y <= Math.max(f.y1, f.y1 + f.dy));
   for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++){ const x = b[0] + i * res, y = b[1] + j * res, m = C.mats.at(x, y);
     pass[j * nx + i] = ((m !== M.OUT && m !== M.WATER) || deck(x, y)) && !solid(x, y) && !inZ(x, y) ? 1 : 0; }
   const idx = (x, y) => { const i = Math.round((x - b[0]) / res), j = Math.round((y - b[1]) / res); return (i < 0 || j < 0 || i >= nx || j >= ny) ? -1 : j * nx + i; };

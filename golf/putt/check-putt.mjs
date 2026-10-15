@@ -239,7 +239,7 @@ if (!QUICK){
     for (let n = 1; n <= TR.levels.length; n++){ const L = TR.levels[n - 1], C = P.buildLevel(n, TR.id), name = `${TR.id} ${n} ${P.levelName(n, TR.id)}`;
       shapes.add(JSON.stringify((C.polys || [C.poly]).map(q => q.map(p => p.map(v => Math.round(v * 2))))) + C.cup.join() + C.bumpers.length + C.blocks.length + C.movers.length + C.zones.length + C.portals.length + C.loops.length + C.ramps.length);
       // EVERY HOLE HAS SOMETHING IN IT: an obstacle, a puzzle or a moving part, never bare carpet
-      const kit = C.bumpers.length + C.blocks.length + C.movers.length + C.portals.length + C.loops.length + C.ramps.length + C.bridges.length + C.turns.length + (C.belts || []).length + (C.mill ? 1 : 0) + C.zones.length;
+      const kit = C.bumpers.length + C.blocks.length + C.movers.length + C.portals.length + C.loops.length + C.ramps.length + C.bridges.length + C.turns.length + (C.belts || []).length + (C.ferries || []).length + (C.mill ? 1 : 0) + C.zones.length;
       claim(kit > 0, `${name}: has an obstacle`);
       claim(C.mats.at(C.tee[0], C.tee[1]) === M.GREEN && C.mats.at(C.cup[0], C.cup[1]) === M.GREEN, `${name}: tee and cup on the carpet`);
       /* THE OBVIOUS ROUTE never goes through the hole's secret, and it is a birdie: par is that route
@@ -267,7 +267,7 @@ if (!QUICK){
     // HARDER AS IT GOES: each world packs more into a hole than the one before, and asks for more putts
     const per = (fn) => TR.worlds.map((W, w) => { let t = 0; for (let n = w * TR.per + 1; n <= (w + 1) * TR.per; n++) t += fn(n); return t / TR.per; });
     // a rail or a curb is something to aim at, not a set piece, so a thin block is not counted
-    const kitAvg = per(n => { const C = P.buildLevel(n, TR.id); return C.bumpers.length + C.blocks.filter(r => Math.min(r.x1 - r.x0, r.y1 - r.y0) > 0.7).length + C.movers.length + C.portals.length + C.loops.length + C.ramps.length + C.bridges.length + C.turns.length + (C.belts || []).length + (C.mill ? 1 : 0) + C.zones.length; });
+    const kitAvg = per(n => { const C = P.buildLevel(n, TR.id); return C.bumpers.length + C.blocks.filter(r => Math.min(r.x1 - r.x0, r.y1 - r.y0) > 0.7).length + C.movers.length + C.portals.length + C.loops.length + C.ramps.length + C.bridges.length + C.turns.length + (C.belts || []).length + (C.ferries || []).length + (C.mill ? 1 : 0) + C.zones.length; });
     const parAvg = per(n => TR.levels[n - 1].par);
     claim(kitAvg.every((a, w) => !w || a > kitAvg[w - 1]), `${TR.name}: more set pieces a hole world by world (${kitAvg.map(a => a.toFixed(2)).join(', ')})`);
     claim(parAvg[parAvg.length - 1] > parAvg[0], `${TR.name}: the last world asks for more putts than the first (par ${parAvg.map(a => a.toFixed(2)).join(', ')})`);
@@ -276,7 +276,7 @@ if (!QUICK){
      with room for error, a slightly off putt stays dry), and it pays nothing, so it can never be a
      way round the tour's economy. */
   { const TL = P.TOURS.lab;
-    claim(TL && TL.lab && TL.levels.length === 6 && TL.worlds.length === 1 && TL.per === 6, 'the Lab is one world of six prototype holes');
+    claim(TL && TL.lab && TL.levels.length === 8 && TL.worlds.length === 1 && TL.per === 8, 'the Lab is one world of eight prototype holes');
     claim(['hole', 'sig', 'ace', 'world'].every(k => Cn.lab[k] === 0), 'the Lab pays nothing');
     for (let n = 1; n <= TL.levels.length; n++){ const L = TL.levels[n - 1], C = P.buildLevel(n, 'lab'), name = `lab ${n} ${P.levelName(n, 'lab')}`;
       const line = ROUTES['lab:' + n], why = line ? replayRoute(C, line, 'obvious') : 'no route recorded';
