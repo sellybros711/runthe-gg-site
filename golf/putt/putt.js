@@ -110,6 +110,20 @@ function riverAt(C, x, y){ var R = C.rivers; if (!R) return null;
    the physics asks with a little margin so the deck, not the grid, decides */
 function bridgeAt(C, x, y, pad){ var B = C.bridges; pad = pad || 0; for (var i = 0; i < B.length; i++){ var b = B[i]; if (x >= b.x0 - pad && x <= b.x1 + pad && y >= b.y0 - pad && y <= b.y1 + pad) return b; } return null; }
 function inClimb(C, x, y){ var Z = C.climbs; for (var i = 0; i < Z.length; i++){ var z = Z[i]; if (x >= z.x0 && x <= z.x1 && y >= z.y0 && y <= z.y1) return true; } return false; }
+/* THE FERRY. A deck over a channel of hazard that shuttles between two docks on a timetable: it waits at
+   dock A, crosses to B, waits, crosses back. A ball on the deck is carried (friction works on its speed
+   RELATIVE to the deck, the same as the turntable), and when the deck stops at a dock the ball keeps the
+   speed it had and rolls off the leading edge onto the landing there. So a ball never comes to rest on a
+   moving thing: it rides, and it is put ashore. Missing the deck is the hazard under it. */
+/* It pulls away gently and stops hard. Pulling away it gathers speed slower than the carpet's grip can
+   follow, so a ball sitting on the deck stays put; at the far dock it stops dead and the ball rolls on off
+   the leading edge. (A deck that started with a jerk would throw the ball off its back edge.) */
+function ferryPos(f, tt){ var P = 2 * (f.move + f.dwell), u = ((tt / P + (f.phase || 0)) % 1 + 1) % 1 * P, k, v, w;
+  if (u < f.dwell){ k = 0; v = 0; } else if (u < f.dwell + f.move){ w = (u - f.dwell) / f.move; k = w * w; v = 2 * w / f.move; }
+  else if (u < 2 * f.dwell + f.move){ k = 1; v = 0; } else { w = (u - 2 * f.dwell - f.move) / f.move; k = 1 - w * w; v = -2 * w / f.move; }
+  return { ox:f.dx * k, oy:f.dy * k, vx:f.dx * v, vy:f.dy * v, k:k }; }
+function ferryAt(C, x, y, tt, pad){ var F = C.ferries; pad = pad || 0; for (var i = 0; i < F.length; i++){ var f = F[i], q = ferryPos(f, tt);
+  if (x >= f.x0 + q.ox - pad && x <= f.x1 + q.ox + pad && y >= f.y0 + q.oy - pad && y <= f.y1 + q.oy + pad) return { f:f, q:q }; } return null; }
 function bridgeDown(b, tt){ var f = ((tt / b.period + (b.phase || 0)) % 1 + 1) % 1; return f < (b.duty == null ? 0.5 : b.duty); }
 // how far the bridge is lifted, 0 down to 1 up, for the picture: it swings over a quarter second either side of the change
 function bridgeLift(b, tt){ var f = ((tt / b.period + (b.phase || 0)) % 1 + 1) % 1, du = b.duty == null ? 0.5 : b.duty, e = 0.35 / b.period;
@@ -272,20 +286,22 @@ function hitCircle(s, cx, cy, r, e){
    the windmills read: the same putt at the same moment always meets the same blade. */
 function simulate(C, x, y, vx, vy, t0){
   var s = { x:x, y:y, vx:vx, vy:vy }, out = { pts:[[x, y, 0]], holed:false, water:false, out:false, rest:null, ev:[], t:0 };
-  var climbing = false, z = 0, zv = 0, over = false, cr = C.cupR, cx = C.cup[0], cy = C.cup[1], t = 0, n = 0;
+  var onDeck = false, climbing = false, z = 0, zv = 0, over = false, cr = C.cupR, cx = C.cup[0], cy = C.cup[1], t = 0, n = 0;
   var rx = x, ry = y;   // where the ball was half a second ago, for the pinned-against-a-rail rest below
   var walls = C.walls, bums = C.bumpers, movs = C.movers, loops = C.loops || [], ramps = C.ramps || [];
   var lastPiece = null;   // the loop or ramp just ridden, so it cannot fire twice on the way out of it
   for (var di = 0; di < movs.length; di++) if (movs[di].k === 'door') movs[di]._p = null;
   // a stretch of a set piece, played out: each point is [x, y, dt from now, z above the surface]
   function ride(path){ var t1 = t, k = 0; for (var q = 0; q < path.length; q++){ var pp = path[q]; t1 = t + pp[2]; out.pts.push([pp[0], pp[1], t1, 0, pp[3] || 0]); } t = t1; n = 0; }
-  function landAt(xx, yy, tt){ var mm = C.mats.at(xx, yy); if (mm === M.OUT) mm = C.matFn(xx, yy); if (C.bridges.length && mm === M.WATER){ var bb = bridgeAt(C, xx, yy, 0.2); if (bb) mm = bridgeDown(bb, tt) ? M.GREEN : M.WATER; } return mm; }
+  function landAt(xx, yy, tt){ var mm = C.mats.at(xx, yy); if (mm === M.OUT) mm = C.matFn(xx, yy); if (C.bridges.length && mm === M.WATER){ var bb = bridgeAt(C, xx, yy, 0.2); if (bb) mm = bridgeDown(bb, tt) ? M.GREEN : M.WATER; }
+    if (mm === M.WATER && C.ferries.length && ferryAt(C, xx, yy, tt, 0.1)) mm = M.GREEN; return mm; }
   for (;;){
     var m = C.mats.at(s.x, s.y);
     /* The grid is a quarter foot and a ball resting on a rail has its centre 0.07 ft inside it, so the
        nearest grid point can be outside. OUT is only believed once the exact shape agrees. */
     if (m === M.OUT) m = C.matFn(s.x, s.y);
     if (C.bridges.length && m === M.WATER){ var brg = bridgeAt(C, s.x, s.y, 0.2); if (brg) m = bridgeDown(brg, t0 + t) ? M.GREEN : M.WATER; }
+    var deck = (m === M.WATER && C.ferries.length) ? ferryAt(C, s.x, s.y, t0 + t, 0.1) : null; if (deck){ m = M.GREEN; if (!onDeck) out.ev.push([t, 'deck']); } onDeck = !!deck;
     if (m === M.WATER){ out.water = true; out.ev.push([t, 'water']); break; }
     if (m === M.OUT){ out.out = true; out.ev.push([t, 'out']); break; }
     var px0 = s.x, py0 = s.y, rv = m === M.FLOW ? riverAt(C, s.x, s.y) : null, disc = (!rv && C.turns.length) ? turnAt(C, s.x, s.y) : null;
@@ -294,6 +310,11 @@ function simulate(C, x, y, vx, vy, t0){
       var kq = Math.min(1, DT / 0.22), tvx = rv.tx * rv.r.vc, tvy = rv.ty * rv.r.vc;
       s.vx += (tvx - s.vx) * kq; s.vy += (tvy - s.vy) * kq;
       s.vx += rv.ty * rv.lat * 5 * DT; s.vy -= rv.tx * rv.lat * 5 * DT;
+    } else if (deck){
+      // on the ferry: friction works against the ball's speed relative to the deck, so a ball that settles rides it
+      var fvx = deck.q.vx, fvy = deck.q.vy, rfx = s.vx - fvx, rfy = s.vy - fvy, rfs = Math.hypot(rfx, rfy), aff = fricOf(C, M.GREEN);
+      if (rfs > 1e-9){ var df = Math.min(rfs, aff * DT); rfx -= rfx / rfs * df; rfy -= rfy / rfs * df; }
+      s.vx = rfx + fvx; s.vy = rfy + fvy;
     } else if (disc){
       // a turntable: friction works against the ball's speed RELATIVE to the disc, and the spin flings it outward
       var dvx0 = -disc.omega * (s.y - disc.y), dvy0 = disc.omega * (s.x - disc.x), rlx = s.vx - dvx0, rly = s.vy - dvy0, rls = Math.hypot(rlx, rly), afd = fricOf(C, M.GREEN);
@@ -390,8 +411,8 @@ function simulate(C, x, y, vx, vy, t0){
        slope pushes, the rail cancels it, and it sits still while the slope says it should roll. So a
        slow ball that has gone nowhere in half a second has come to rest. Measured, without this the
        bowl, the volcano and the tiers each kept a few putts "rolling" to MAX_T. */
-    if (n % 240 === 0){ if (!over && !rv && !disc && Math.hypot(s.vx, s.vy) < 4 * STOP_V && Math.hypot(s.x - rx, s.y - ry) < 0.02) break; rx = s.x; ry = s.y; }
-    if (t > MAX_T) break;
+    if (n % 240 === 0){ if (!over && !rv && !disc && !deck && Math.hypot(s.vx, s.vy) < 4 * STOP_V && Math.hypot(s.x - rx, s.y - ry) < 0.02) break; rx = s.x; ry = s.y; }
+    if (t > MAX_T){ if (deck){ out.water = true; out.ev.push([t, 'water']); } break; }
   }
   return finishOut();
   function finishOut(){ out.t = t; out.rest = [s.x, s.y]; out.pts.push([s.x, s.y, t]); return out; }
@@ -400,7 +421,7 @@ function simulate(C, x, y, vx, vy, t0){
 /* ============================================================================ a course, assembled */
 function finishCourse(C){
   C.walls = C.walls || []; C.bumpers = C.bumpers || []; C.movers = C.movers || []; C.portals = C.portals || []; C.belts = C.belts || [];
-  C.loops = C.loops || []; C.ramps = C.ramps || []; C.rivers = C.rivers || []; C.bridges = C.bridges || []; C.turns = C.turns || [];
+  C.loops = C.loops || []; C.ramps = C.ramps || []; C.rivers = C.rivers || []; C.bridges = C.bridges || []; C.turns = C.turns || []; C.ferries = C.ferries || [];
   if (!C.polys) C.polys = C.poly ? [C.poly] : []; if (!C.allPts) C.allPts = C.polys.reduce(function(a, p){ return a.concat(p); }, []);
   if (!C.edges) C.edges = C.polys.length > 1 ? unionEdges(C.polys) : C.polys.length ? polyWalls(C.polys[0], 0, 0).map(function(w){ return [w[0], w[1], w[2], w[3]]; }) : [];
   if (!C.tierAt) C.tierAt = function(){ return 0; };
@@ -771,7 +792,7 @@ function courseFromH(H, tplName, seed, themeId, label){
     walls:edges.map(function(e){ return [e[0], e[1], e[2], e[3], 0, 0.72]; }).concat(H.walls), bumpers:H.bumpers, blocks:H.blocks, movers:H.movers.map(paced), portals:H.portals, zones:H.zones, mill:H.mill, seed:seed,
     secret:H.secret || [], loops:(H.loops || []).map(function(L){ var l = Math.hypot(L.dx, L.dy) || 1; return { x:L.x, y:L.y, dx:L.dx / l, dy:L.dy / l, r:L.r || 0.75, w:L.w || 1.4, off:L.off || 0, vmin:L.vmin }; }),
     ramps:(H.ramps || []).map(function(R){ var l = Math.hypot(R.dx, R.dy) || 1; return { x:R.x, y:R.y, dx:R.dx / l, dy:R.dy / l, w:R.w || 2, h:R.h || 0.4, ang:R.ang || 24, len:R.len || 1.6 }; }),
-    rivers:rivers, bridges:bridges, turns:(H.turns || []).map(function(u){ return { x:u.x, y:u.y, r:u.r || 2, omega:(u.omega || 1.2) * PACE }; }),
+    rivers:rivers, bridges:bridges, ferries:(H.ferries || []).map(function(f){ return { x0:f.x0, y0:f.y0, x1:f.x1, y1:f.y1, dx:f.dx, dy:f.dy, move:f.move / PACE, dwell:f.dwell / PACE, phase:f.phase || 0 }; }), turns:(H.turns || []).map(function(u){ return { x:u.x, y:u.y, r:u.r || 2, omega:(u.omega || 1.2) * PACE }; }),
     climbs:(H.climbs || []).slice(),
     belts:(H.belts || []).map(function(z){ return { x0:Math.min(z.x0, z.x1), y0:Math.min(z.y0, z.y1), x1:Math.max(z.x0, z.x1), y1:Math.max(z.y0, z.y1), ax:z.ax, ay:z.ay }; }) };
   C.matFn = function(x, y){
@@ -891,7 +912,7 @@ var WORLDS = [
 function rm(x0, y0, x1, y1, z){ var a = Math.min(x0, x1), b = Math.max(x0, x1), c = Math.max(y0, y1), d = Math.min(y0, y1); return { pts:[[a, c], [b, c], [b, d], [a, d]], z:z || 0 }; }
 function pg(pts, z){ return { pts:pts, z:z || 0 }; }
 function hole(rooms, tee, cup){ var H = T_common(); H.polys = rooms.map(function(r){ return r.pts ? r : { pts:r, z:0 }; }); H.poly = H.polys[0].pts; H.tee = tee; H.cup = cup;
-  H.rivers = []; H.loops = []; H.ramps = []; H.bridges = []; H.turns = []; return H; }
+  H.rivers = []; H.loops = []; H.ramps = []; H.bridges = []; H.turns = []; H.ferries = []; return H; }
 function rectP(w, L, x0){ x0 = x0 || 0; return [[x0 - w / 2, 0], [x0 + w / 2, 0], [x0 + w / 2, -L], [x0 - w / 2, -L]]; }
 function lvH(poly, tee, cup){ var H = T_common(); H.poly = poly; H.tee = tee; H.cup = cup; return H; }
 function bumps(H, T, list){ list.forEach(function(b){ addBumper(H, b[0], b[1], b[2] || 0.75, T.bumper); }); }
@@ -956,6 +977,8 @@ function drawb(H, x0, y0, x1, y1, period, phase, duty){ H.bridges.push({ x0:x0, 
 // a shallow bowl round the cup: a ball arriving a little off line or a little quick is gathered in. It is what
 // lets a long secret line be a skill rather than a fluke (a degree of aim at 30 ft is wider than the cup).
 function bowl(H, x, y, s, a){ H.comps.push({ k:'mound', x:x, y:y, s:s || 1.6, a:-(a || 0.1) }); }
+// a ferry: its deck at dock A, the way to dock B, how long a crossing and a wait take (at the written speed), and where in its timetable it starts
+function ferry(H, x0, y0, x1, y1, dx, dy, move, dwell, phase){ H.ferries.push({ x0:Math.min(x0, x1), y0:Math.min(y0, y1), x1:Math.max(x0, x1), y1:Math.max(y0, y1), dx:dx, dy:dy, move:move || 1.6, dwell:dwell || 1.2, phase:phase || 0 }); }
 function disc(H, x, y, r, omega){ H.turns.push({ x:x, y:y, r:r || 2.2, omega:omega || 1.2 }); }
 /* THE SECRET LINE. A hole can carry a shortcut: a shorter way to the cup that the layout does not
    advertise (a kicker ramp that throws a firm putt over the next set piece, a crack at the end of a wall that only a bank finds, a
@@ -1133,8 +1156,9 @@ var LEVELS = [
   { par:3, f:function(T){ var H = hole([rm(-4.5, 0, 4.5, -36)], [0, -2.5], [0, -32]); blk(H, T, -4.5, -15, -1.4, -16.4); blk(H, T, 1.4, -15, 4.5, -16.4); slider(H, T, -15.7, -2.8, 2.8, 3.2, 0, 1.6); zoneR(H, M.MUD, -4.5, -22, 4.5, -24); zoneR(H, M.GREEN, -1, -22, 1, -24); bowl(H, 0, -32, 1.8, 0.13); return H; } },
   // Level Up: up the ramp lane to the top floor, round the wall, putt out.
   { par:3, three:2, f:function(T){ var H = hole([rm(-5, 0, 5, -14), rm(-7, -18, 7, -34, -2)], [0, -2.5], [-3, -30]); climb(H, 3.4, -14, -18, 2.4); blk(H, T, -7, -24, 3, -25.4); zoneC(H, M.MUD, 1.2, -29.5, 1.1); return H; } },
-  // Escalators: one belt runs up, the next runs back. Aim for where they leave you.
-  { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -34)], [-3, -2.5], [3, -30]); belt(H, -6, -10, 6, -14, 0, 4); belt(H, -6, -20, 6, -24, 0, -4); bumps(H, T, [[0, -17, 0.7], [4.6, -27.4, 0.6]]); bowl(H, 3, -30, 1.8, 0.13); return H; } },
+  // Hover Deck: the tee strip ends at the glitch. Roll onto the hover deck while it waits, ride it across, and it puts you down by the cup strip.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-8, 0, -2, -20.1), rm(-8, -19.9, 14, -24.1), rm(6, -23.9, 14, -44)], [-5, -2.5], [10, -40]); zoneR(H, M.WATER, -8, -20, 6, -24);
+    ferry(H, -8, -19.6, -3.6, -24, 10, 0, 2.2, 1.5, 0); bumps(H, T, [[8, -32, 0.6], [12, -28, 0.55]]); zoneR(H, M.MUD, 6, -42, 8, -44); bowl(H, 10, -40, 1.7, 0.12); return H; } },
   // Loop de Loop: through the loop, then the one clean gap in the static.
   { par:3, f:function(T){ var H = hole([rm(-4, 0, 4, -11), pg([[-4, -11], [4, -11], [0.8, -14.6], [-0.8, -14.6]]), rm(-0.8, -14.5, 0.8, -19.2), rm(-4.5, -19.1, 4.5, -36)], [0, -2.5], [0, -32]);
     loopAt(H, 0, -16.8, 0, -1, 0.9, 1.6); zoneR(H, M.MUD, -4.5, -24, 4.5, -26.5); zoneR(H, M.GREEN, -0.9, -24, 0.9, -26.5); bowl(H, 0, -32, 1.8, 0.13); return H; } },
@@ -1143,8 +1167,9 @@ var LEVELS = [
   // Warp Zone: up, right, up the far side and back, three putts. The secret: the kicker at the top of the first switchback jumps the gap straight into the last one.
   { par:4, f:function(T){ var H = hole([rm(-4, 0, 4, -16), rm(-4, -12, 14, -20), rm(10, -12, 18, -36), rm(-2, -24, 14, -36)], [0, -2.5], [2, -32]); zoneR(H, M.MUD, 10, -20, 18, -22.5); zoneR(H, M.MUD, 14, -27, 18, -29.5); bumps(H, T, [[11, -16, 0.6], [11, -32, 0.6]]);
     jump(H, 1, -19.7, 0, -1, 0.05, 2.4, { m:M.GREEN, h:0.9, ang:40 }); secret(H, -0.3, -19.1, 2.3, -20); bowl(H, 2, -32); return H; } },
-  // Bumper Cars: two cars sliding across the floor, and static at the end.
-  { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -40)], [0, -2.5], [0, -36]); slider(H, T, -14, -3.4, 3.4, 2.2, 0, 2.6); slider(H, T, -24, 3.4, -3.4, 2.9, 0.4, 2.6); zoneR(H, M.MUD, -5, -30, -1.5, -32); zoneR(H, M.MUD, 1.5, -30, 5, -32); bowl(H, 0, -36, 1.8, 0.13); return H; } },
+  // Elevator: roll onto the lift at the bottom of the shaft. It carries you up, stops hard at the top, and you roll off onto the top floor.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-8, 0, -2, -12), rm(-2.1, -6, 3, -30.1), rm(-8, -29.9, 8, -48)], [-5, -2.5], [4, -43]); zoneR(H, M.WATER, -2, -6, 3, -30);
+    ferry(H, -2.4, -6, 3, -10.4, 0, -20, 4.0, 1.5, 0); bumps(H, T, [[-4, -40, 0.6], [6, -36, 0.55]]); zoneR(H, M.MUD, -8, -46, -4, -48); bowl(H, 4, -43, 1.7, 0.12); return H; } },
   // Ramp Jump: off the ramp over the glitch pool, round the post, putt out.
   { par:3, f:function(T){ var H = hole([rm(-4.5, 0, 4.5, -12), rm(-4.5, -11.9, 4.5, -15), rm(-4.5, -14.9, 4.5, -32)], [0, -2.5], [0.6, -25.4]); jump(H, 0, -12, 0, -1, 2.9, 9, { h:0.6, ang:36 }); bumps(H, T, [[-1.8, -22, 0.6]]); zoneR(H, M.WATER, 2.4, -24, 4.5, -27); bowl(H, 0.6, -25.4, 1.2, 0.1); return H; } },
   // Shutter Doors: two shutters on their clocks, round the cabinet, two putts.
@@ -1154,8 +1179,10 @@ var LEVELS = [
     climb(H, -3, -14, -18, 2.2); climb(H, 2.6, -28, -32, 2.2); bumps(H, T, [[-1, -37, 0.6]]);  return H; } },
   // Conveyor Combo: across the belt, then ride the stream down, putt out round the post.
   { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -14), rm(-7, -26, 7, -40, -1.4)], [0, -2.5], [-4, -36]); belt(H, -6, -6, 6, -11, 4, 0); river(H, [[4.5, -13.5], [4.5, -20], [0, -23], [-3, -26.5]], 1.7, 7, 0, -1.4); bumps(H, T, [[0, -31, 0.7]]); bowl(H, -4, -36, 1.8, 0.13); return H; } },
-  // Prize Belt: the belt pushes left; a bank board by the cup sends it home.
-  { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -36)], [0, -2.5], [2, -32]); belt(H, -5, -14, 5, -20, -4.5, 0); bumps(H, T, [[3.2, -25, 0.6]]); board(H, T, 4.46, -32.27, 1.59, -34.44, 0.35); bowl(H, 2, -32, 2.2, 0.15); return H; } },
+  // Platform Jump: off the jump pad over the glitch, and come down on the platform as it slides past. It carries you to the right dock.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-3, 0, 3, -14.1), rm(-8, -13.9, 12, -19.1), rm(6, -18.9, 12, -38)], [0, -2.5], [9, -34]); zoneR(H, M.WATER, -8, -14, 6, -19);
+    jump(H, 0, -13.5, 0, -1, 0.05, 2.4, { m:M.GREEN, h:0.5, ang:30 }); blk(H, T, -3, -12.9, -1.2, -14.1); blk(H, T, 1.2, -12.9, 3, -14.1);
+    ferry(H, -8, -13.6, -3.6, -19, 10, 0, 2.2, 1.2, 0.3); bumps(H, T, [[2, -7, 0.6], [7.5, -27, 0.6]]); bowl(H, 9, -34, 1.7, 0.12); return H; } },
   // Double Loop: two loops in a row, one pace for both.
   { par:3, f:function(T){ var H = hole([rm(-4, 0, 4, -10), pg([[-4, -10], [4, -10], [0.8, -13.6], [-0.8, -13.6]]), rm(-0.8, -13.5, 0.8, -24), rm(-4, -23.9, 4, -36)], [0, -2.5], [0, -32]);
     loopAt(H, 0, -15.6, 0, -1, 0.7, 1.6); loopAt(H, 0, -20.5, 0, -1, 0.7, 1.6); bumps(H, T, [[2.6, -28.5, 0.6]]); return H; } },
@@ -1415,9 +1442,10 @@ var LEVELS = [
   // Drift: the whole middle of the island turns. Ride it round or play past it.
   { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -36)], [0, -2.5], [0, -32]); disc(H, 0, -17, 3.2, 1.5); bumps(H, T, [[-4.6, -12, 0.55], [4.6, -12, 0.55], [-4.6, -22, 0.55], [4.6, -22, 0.55], [0, -26, 0.5]]);
     zoneR(H, M.MUD, -7, -34, -4, -36); zoneR(H, M.MUD, 4, -34, 7, -36); bowl(H, 0, -32); return H; } },
-  // Flight Path: three blimps crossing the island, each on its own clock.
-  { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -40)], [0, -2.5], [-1.5, -36]); slider(H, T, -11, -4, 4, 2.0, 0); slider(H, T, -18, 4, -4, 2.4, 0.3); slider(H, T, -25, -4, 4, 2.8, 0.6);
-    pads(H, [[-5, -14.5, 0.6], [5, -21.5, 0.6]]); bumps(H, T, [[2, -30.5, 0.55], [-4, -6, 0.5]]); zoneR(H, M.MUD, 2.5, -38, 6, -40); bowl(H, -1.5, -36); return H; } },
+  // Floating Island: the island ends at the drop. Roll onto the floating island while it waits, ride it over, and it sets you down on the cup island. Hay and balloons up there.
+  { par:3, three:2, f:function(T){ var H = hole([rm(2, 0, 8, -20.1), rm(-14, -19.9, 8, -24.1), rm(-14, -23.9, -6, -46)], [5, -2.5], [-10, -42]); zoneR(H, M.WATER, -6, -20, 8, -24);
+    ferry(H, 3.6, -19.6, 8, -24, -10, 0, 2.2, 1.5, 0); bumps(H, T, [[4, -10, 0.55], [6.5, -15, 0.5], [-8, -33, 0.6], [-12, -30, 0.55]]); pads(H, [[-7.5, -38, 0.6]]);
+    zoneR(H, M.MUD, -14, -44, -11, -46); zoneR(H, M.MUD, 2, -6, 4, -9); bowl(H, -10, -42, 1.7, 0.12); return H; } },
   // Jet Stream: one wind blows right, the next blows left. Aim for where they leave you.
   { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -36)], [0, -2.5], [-2.5, -32]); belt(H, -6, -10, 6, -14, 5, 0); belt(H, -6, -20, 6, -24, -5, 0);
     bumps(H, T, [[1.5, -17, 0.6], [-4.5, -6, 0.5], [2.5, -28, 0.5]]); zoneR(H, M.MUD, 3, -34, 6, -36); bowl(H, -2.5, -32); return H; } },
@@ -1433,9 +1461,10 @@ var LEVELS = [
   // Cloud Gap: the island is a U, up one side and back down the other. Or find the gap in the middle cloud wall: it lines up with the cup.
   { par:3, f:function(T){ var H = hole([rm(-9, 0, 9, -32)], [-5, -2.5], [5, -10]); blk(H, T, -0.6, 0, 0.6, -6); blk(H, T, -0.6, -7.4, 0.6, -23); secret(H, -0.6, -6, 0.6, -7.4);
     zoneR(H, M.MUD, -9, -26, 9, -27.5); zoneR(H, M.GREEN, -1, -26, 1, -27.5); bumps(H, T, [[-5, -14, 0.6], [-5.5, -20, 0.55], [5, -16, 0.6], [5.5, -22, 0.55], [6.5, -27, 0.6]]); bowl(H, 5, -10); return H; } },
-  // Twin Isles: off one ramp over the drop, then off the next.
-  { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -11), rm(-6, -10.9, 6, -14.1), rm(-6, -14, 6, -25), rm(-6, -24.9, 6, -27.1), rm(-6.5, -27, 6.5, -41)], [0, -2.5], [-2, -36]);
-    jump(H, 0, -11, 0, -1, 3, 12, { h:0.6, ang:34 }); jump(H, 0, -25, 0, -1, 2, 12, { h:0.6, ang:34 }); bumps(H, T, [[2, -19.5, 0.6], [-3.5, -6, 0.5], [1.5, -32, 0.5]]); zoneR(H, M.MUD, 3, -38, 6.5, -41); bowl(H, -2, -36); return H; } },
+  // Leap of Faith: off the ramp over the drop, and land on the floating island as it drifts past. It carries you across, then up to the castle green.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-3, 0, 3, -14.1), rm(-12, -13.9, 8, -19.1), rm(-12, -18.9, -6, -38)], [0, -2.5], [-9, -34]); zoneR(H, M.WATER, -6, -14, 8, -19);
+    jump(H, 0, -13.5, 0, -1, 0.05, 2.4, { m:M.GREEN, h:0.5, ang:30 }); blk(H, T, -3, -12.9, -1.2, -14.1); blk(H, T, 1.2, -12.9, 3, -14.1);
+    ferry(H, 3.6, -13.6, 8, -19, -10, 0, 2.2, 1.2, 0.3); bumps(H, T, [[-2, -7, 0.6], [-7.5, -27, 0.6], [-10.5, -31, 0.5]]); pads(H, [[2, -9, 0.55]]); zoneR(H, M.MUD, -12, -36, -10, -38); bowl(H, -9, -34, 1.7, 0.12); return H; } },
   // Cloud Mill: the windmill's sails swing across the door. The sails decide it.
   { par:3, f:function(T){ var H = hole([rm(-7, 0, 7, -40)], [0, -2.5], [-2, -35]); millAt(H, T, -18, 7, 1.2); bumps(H, T, [[2.5, -29, 0.55], [-4, -8, 0.5], [4, -8, 0.5]]); zoneR(H, M.MUD, -7, -38, -4, -40); bowl(H, -2, -35); return H; } },
   // Castle in the Clouds: up the ramp, past the turning island, over the drawbridge and through the flight path to the castle.
@@ -1643,9 +1672,17 @@ var LAB_LEVELS = [
   // The Drop: three tiers. Down the first step, along the middle terrace to its open end, and down again to the cup.
   { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -36)], [-3, -2.5], [-3, -32]);
     H.comps.push({ k:'ridge', x:0, y:-10, nx:0, ny:-1, w:0.9, a:-0.6 }, { k:'ridge', x:0, y:-24, nx:0, ny:-1, w:0.9, a:-0.6 });
-    blk(H, T, -6, -17, 2.2, -18.2); bumps(H, T, [[4, -21, 0.55]]); board(H, T, 1, -36, 6, -31); bowl(H, -3, -32, 1.7, 0.12); return H; } }
+    blk(H, T, -6, -17, 2.2, -18.2); bumps(H, T, [[4, -21, 0.55]]); board(H, T, 1, -36, 6, -31); bowl(H, -3, -32, 1.7, 0.12); return H; } },
+  // The Ferry: the owner's sketch. Roll up off the tee strip onto the ferry while it waits at the right dock; it carries the ball across the
+  // channel and stops hard at the left dock, putting the ball ashore on the landing. Then putt up the left strip to the cup.
+  { par:3, three:2, f:function(T){ var H = hole([rm(2, 0, 8, -20.1), rm(-14, -19.9, 8, -24.1), rm(-14, -23.9, -6, -44)], [5, -2.5], [-10, -40]); zoneR(H, M.WATER, -6, -20, 8, -24);
+    ferry(H, 3.6, -19.6, 8, -24, -10, 0, 2.2, 1.5, 0); bumps(H, T, [[-8, -32, 0.6]]); bowl(H, -10, -40, 1.7, 0.12); return H; } },
+  // Ferry Jump: the kicker at the top of the tee strip throws the ball over the channel, and it has to come down on the ferry as it crosses.
+  // The far wall of the channel stops it, the ferry carries it to the left dock and puts it ashore, then up the left strip to the cup.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-3, 0, 3, -14.1), rm(-12, -13.9, 8, -19.1), rm(-12, -18.9, -6, -38)], [0, -2.5], [-9, -34]); zoneR(H, M.WATER, -6, -14, 8, -19);
+    jump(H, 0, -13.5, 0, -1, 0.05, 2.4, { m:M.GREEN, h:0.5, ang:30 }); blk(H, T, -3, -12.9, -1.2, -14.1); blk(H, T, 1.2, -12.9, 3, -14.1); ferry(H, 3.6, -13.6, 8, -19, -10, 0, 2.2, 1.2, 0.3); bumps(H, T, [[-2, -7, 0.6], [-7.5, -27, 0.6]]); bowl(H, -9, -34, 1.7, 0.12); return H; } }
 ];
-var LAB_NAMES = ['Redan', 'The Cape', 'Biarritz', 'Hairpin', 'The Switch', 'The Drop'];
+var LAB_NAMES = ['Redan', 'The Cape', 'Biarritz', 'Hairpin', 'The Switch', 'The Drop', 'The Ferry', 'Ferry Jump'];
 var MEMBER_NAMES = ['Graveyard Gate', 'Coffin Drop', 'Witch’s Cauldron', 'Bat Belfry', 'Haunted Floors', 'Brew River', 'Crypt Doors', 'Headless Leaps', 'Hallows Night',
   'Hayride', 'Bog Hop', 'Corn Maze', 'The Mill Race', 'Pie Plate Spin', 'Turkey Trot', 'Log Flume', 'Scarecrow Alley', 'Harvest Moon'];
 var TOUR_NAMES = [
@@ -1655,8 +1692,8 @@ var TOUR_NAMES = [
   'Classroom Doors', 'Creek Run', 'Spinning Tops', 'Long Jump', 'Bleachers', 'Field Trip', 'Crossing Guard', 'Recess Rush', 'Last Bell',
   'Wafer Plank', 'Gumdrop Row', 'Loading Dock', 'Candy Cane Walk', 'Fondue', 'Bonbon Hop', 'Candy Loop', 'Sugar Rush', 'Spill',
   'Two Chutes', 'Cake Stand', 'Twin Whisks', 'Toffee Bridges', 'Chocolate River', 'Stamping Press', 'Double Dip', 'Popping Candy', 'Head Office',
-  'Insert Coin', 'Laser Gate', 'Level Up', 'Escalators', 'Loop de Loop', 'Neon River', 'Warp Zone', 'Bumper Cars', 'Ramp Jump',
-  'Shutter Doors', 'Top Floor', 'Conveyor Combo', 'Prize Belt', 'Double Loop', 'Pac Maze', 'Glitch Bridges', 'Speed Run', 'Grand Prize',
+  'Insert Coin', 'Laser Gate', 'Level Up', 'Hover Deck', 'Loop de Loop', 'Neon River', 'Warp Zone', 'Elevator', 'Ramp Jump',
+  'Shutter Doors', 'Top Floor', 'Conveyor Combo', 'Platform Jump', 'Double Loop', 'Pac Maze', 'Glitch Bridges', 'Speed Run', 'Grand Prize',
   'Gangplank', 'Rock Pool', 'Blowholes', 'Walk the Plank', 'Harbor Gates', 'Lagoon', 'Sandbar', 'Whirlpool', 'Rope Bridges',
   'Cannon Fire', 'Ship Decks', 'Ship’s Wheel', 'Island Hop', 'Riptide', 'Reef Break', 'Treasure Map', 'Broadside', 'Captain’s Cove',
   'Polished Hall', 'Temple Steps', 'Jade Causeway', 'Stone Doors', 'Landslide', 'The Leap', 'Idol Alley', 'Moving Floor', 'Golden Ring',
@@ -1666,7 +1703,7 @@ var TOUR_NAMES = [
   'Lava Lane', 'Fire Pit', 'Basalt Gates', 'Lava Tubes', 'Rolling Rocks', 'Turning Rock', 'Ash Field', 'Lava Switch', 'Magma Loops',
   'Lava Flow', 'Lava Slope', 'River of Fire', 'Crater', 'Eruption', 'Lava Leap', 'Obsidian Bridge', 'Fire Mill', 'The Summit',
   'Cloud Hop', 'Haystacks', 'Bounce House', 'Balloon Field', 'Weather Vane', 'Sky Steps', 'Sky Bridge', 'Hay Bale', 'Drift',
-  'Flight Path', 'Jet Stream', 'Kite Diamond', 'Floating Gates', 'Rainbow Loop', 'Cloud Gap', 'Twin Isles', 'Cloud Mill', 'Castle in the Clouds',
+  'Floating Island', 'Jet Stream', 'Kite Diamond', 'Floating Gates', 'Rainbow Loop', 'Cloud Gap', 'Leap of Faith', 'Cloud Mill', 'Castle in the Clouds',
   'First Freeze', 'Snowman Alley', 'Frozen Ponds', 'Ice Wall', 'Icicles', 'Ice Cave', 'Sled Crossing', 'Snow Bridges', 'Frozen Falls',
   'Ski Lodge', 'Ski Jump', 'Glacier Belt', 'Icicle Gates', 'Ice Loop', 'Spinning Rink', 'Yeti Cave', 'Avalanche', 'Summit Lodge',
   'The Thaw', 'Mammoth Trail', 'Saber Tooth', 'Meltwater', 'Ice Bridge', 'Glacier Mill', 'Boulder Bounce', 'Cave Ledges', 'Frozen Crater',
@@ -1676,7 +1713,7 @@ var TOUR_NAMES = [
 var TOURS = {
   main:{ id:'main', name:'Putt Putt Tour', worlds:WORLDS, levels:LEVELS, names:TOUR_NAMES, tag:'lv', per:PER },
   members:{ id:'members', name:'Members Tour', season:'Hallows & Harvest', worlds:MEMBER_WORLDS, levels:MEMBER_LEVELS, names:MEMBER_NAMES, tag:'mb', per:9, members:true },
-  lab:{ id:'lab', name:'The Lab', worlds:LAB_WORLDS, levels:LAB_LEVELS, names:LAB_NAMES, tag:'lb', per:6, lab:true }
+  lab:{ id:'lab', name:'The Lab', worlds:LAB_WORLDS, levels:LAB_LEVELS, names:LAB_NAMES, tag:'lb', per:8, lab:true }
 };
 function tourOf(id){ return TOURS[id] || TOURS.main; }
 function levelName(n, tid){ var TR = tourOf(tid); return TR.names[n - 1] || ('Hole ' + n); }
@@ -1707,7 +1744,7 @@ var RTT_PUTT = {
   simulate:simulate, speedFor:speedFor, feetFor:feetFor, inBlock:inBlock, starsOf:starsOf, threeOf:threeOf, frontier:frontier, opened:opened, revealed:revealed, allAccess:allAccess, worldGate:worldGate, worldStars:worldStars, starsThrough:starsThrough, fricOf:fricOf, moverAt:moverAt,
   makeField:makeField, finishCourse:finishCourse, inPoly:inPoly,
   greenCharacter:greenCharacter, buildReal:buildReal, spotFor:spotFor, fromHost:fromHost,
-  CAL_THEMES:CAL_THEMES, buildMini:buildMini, buildFrom:buildFrom, LEVELS:LEVELS, WORLDS:WORLDS, TOURS:TOURS, PER:PER, buildLevel:buildLevel, worldOf:worldOf, lvHelpers:{ hole:hole, rm:rm, pg:pg }, lvKit:{ bowl:bowl, board:board, blk:blk, bumps:bumps, climb:climb, secret:secret }, tourDesc:tourDesc, levelName:levelName, themedCourse:themedCourse, dailyHole:dailyHole, dailyLevel:dailyLevel, themeForDay:themeForDay, scoreName:scoreName
+  CAL_THEMES:CAL_THEMES, buildMini:buildMini, buildFrom:buildFrom, LEVELS:LEVELS, WORLDS:WORLDS, TOURS:TOURS, PER:PER, buildLevel:buildLevel, worldOf:worldOf, lvHelpers:{ hole:hole, rm:rm, pg:pg }, lvKit:{ bowl:bowl, board:board, blk:blk, bumps:bumps, climb:climb, secret:secret, ferry:ferry }, tourDesc:tourDesc, levelName:levelName, themedCourse:themedCourse, dailyHole:dailyHole, dailyLevel:dailyLevel, themeForDay:themeForDay, scoreName:scoreName
 };
 /* ================================================================================ THE PICTURE */
 /* Everything static is painted ONCE, onto a pixel grid of ART feet per pixel (the same grid the
@@ -3766,6 +3803,31 @@ function drawPieces(ctx, C, cam, clock){
     for (var q = 0; q < 8; q++){ var a0 = th + q * Math.PI / 4, a1 = a0 + Math.PI / 8, c0 = w2s(cam, u.x, u.y), p0 = w2s(cam, u.x + Math.cos(a0) * u.r, u.y + Math.sin(a0) * u.r), p1 = w2s(cam, u.x + Math.cos(a1) * u.r, u.y + Math.sin(a1) * u.r);
       ctx.fillStyle = q % 2 ? (C.T.wallHi || '#ffd36a') : (C.T.wall || '#e5483a'); ctx.globalAlpha = 0.75; ctx.beginPath(); ctx.moveTo(c0[0], c0[1]); ctx.lineTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.closePath(); ctx.fill(); }
     ctx.globalAlpha = 1; var cc = w2s(cam, u.x, u.y); ctx.fillStyle = '#f5f0e0'; ctx.beginPath(); ctx.arc(cc[0], cc[1], Math.max(3 * d, cam.s * 0.25), 0, 6.29); ctx.fill(); });
+  C.ferries.forEach(function(f){ var q = ferryPos(f, clock), x0 = f.x0 + q.ox, x1 = f.x1 + q.ox, y0 = f.y0 + q.oy, y1 = f.y1 + q.oy, zf = cam.v3 ? cam.v3.zAt((x0 + x1) / 2, (y0 + y1) / 2) : 0;
+    var c = [w2s(cam, x0, y0, zf), w2s(cam, x1, y0, zf), w2s(cam, x1, y1, zf), w2s(cam, x0, y1, zf)], sh = [w2s(cam, x0 + 0.25, y0 - 0.25, zf - 0.3), w2s(cam, x1 + 0.25, y0 - 0.25, zf - 0.3), w2s(cam, x1 + 0.25, y1 - 0.25, zf - 0.3), w2s(cam, x0 + 0.25, y1 - 0.25, zf - 0.3)];
+    ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); sh.forEach(function(p, i){ i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.closePath(); ctx.fill();
+    function poly(q, fill, line){ ctx.fillStyle = fill; ctx.beginPath(); q.forEach(function(p, i){ i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.closePath(); ctx.fill(); if (line){ ctx.strokeStyle = line; ctx.stroke(); } }
+    /* IN SKY ISLANDS IT IS A FLOATING ISLAND, not a ferry: a grassy top with its rock and earth hanging underneath,
+       tapering to a point, drifting over the drop. The same deck to the physics. */
+    if (C.theme === 'sky'){ var mx0 = (x0 + x1) / 2, my0 = (y0 + y1) / 2, rk = [], dep = 2.6;
+      for (var a = 0; a <= 12; a++){ var u = a / 12, ex = x0 + (x1 - x0) * u, cz = zf - 0.15 - dep * Math.sin(u * Math.PI) * (0.75 + 0.25 * Math.sin(u * 9 + f.x0));
+        rk.push(cam.v3 ? w2s(cam, ex, y1, cz) : w2s(cam, ex, y1 + (zf - cz) * 0.55)); }
+      rk.push(c[2]); rk.unshift(c[3]); ctx.lineWidth = Math.max(1, d); poly(rk, '#7a5232', '#4a3020');
+      var mid = rk.slice(1, -1).map(function(p, i){ var q2 = cam.v3 ? w2s(cam, x0 + (x1 - x0) * i / 12, y1, zf - 0.15) : w2s(cam, x0 + (x1 - x0) * i / 12, y1); return [p[0] * 0.45 + q2[0] * 0.55, p[1] * 0.45 + q2[1] * 0.55]; });
+      poly([c[3]].concat(mid).concat([c[2]]), '#9a6e44');
+      poly(c, '#6cbf58', '#3f8a3e'); ctx.fillStyle = '#86d46c'; ctx.beginPath(); ctx.moveTo(c[0][0], c[0][1]); ctx.lineTo(c[1][0], c[1][1]); var ti = [c[1][0] * 0.8 + c[2][0] * 0.2, c[1][1] * 0.8 + c[2][1] * 0.2], tj = [c[0][0] * 0.8 + c[3][0] * 0.2, c[0][1] * 0.8 + c[3][1] * 0.2]; ctx.lineTo(ti[0], ti[1]); ctx.lineTo(tj[0], tj[1]); ctx.closePath(); ctx.fill();
+      return; }
+    // in Neon Arcade it is a hover pad: dark, ringed in neon, glowing underneath
+    if (C.theme === 'neon'){ ctx.save(); ctx.shadowColor = '#2bf0ff'; ctx.shadowBlur = Math.max(6, cam.s * 0.6); poly(c, '#1a1440'); ctx.restore();
+      ctx.lineWidth = Math.max(2, cam.s * 0.14); ctx.strokeStyle = '#2bf0ff'; ctx.beginPath(); c.forEach(function(p, i){ i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.closePath(); ctx.stroke();
+      var ins = c.map(function(p){ var cc = w2s(cam, (x0 + x1) / 2, (y0 + y1) / 2, zf); return [p[0] * 0.7 + cc[0] * 0.3, p[1] * 0.7 + cc[1] * 0.3]; }); ctx.lineWidth = Math.max(1, cam.s * 0.06); ctx.strokeStyle = '#ff2bd6'; ctx.beginPath(); ins.forEach(function(p, i){ i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.closePath(); ctx.stroke();
+      return; }
+    ctx.fillStyle = C.T.carpet || '#2f8f4e'; ctx.strokeStyle = C.T.wallLo || '#3b2a18'; ctx.lineWidth = Math.max(1.5, d * 1.4);
+    ctx.beginPath(); c.forEach(function(p, i){ i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.closePath(); ctx.fill(); ctx.stroke();
+    // the edges the ball crosses on and off are striped; the other two carry a rail
+    var along = Math.abs(f.dx) > Math.abs(f.dy), ends = along ? [[0, 3], [1, 2]] : [[0, 1], [3, 2]], sides = along ? [[0, 1], [3, 2]] : [[0, 3], [1, 2]];
+    ctx.lineWidth = Math.max(2, cam.s * 0.16); ctx.strokeStyle = C.T.wall || '#e5483a'; sides.forEach(function(e){ ctx.beginPath(); ctx.moveTo(c[e[0]][0], c[e[0]][1]); ctx.lineTo(c[e[1]][0], c[e[1]][1]); ctx.stroke(); });
+    ctx.setLineDash([Math.max(3, cam.s * 0.2), Math.max(3, cam.s * 0.2)]); ctx.strokeStyle = C.T.wallHi || '#ffd36a'; ends.forEach(function(e){ ctx.beginPath(); ctx.moveTo(c[e[0]][0], c[e[0]][1]); ctx.lineTo(c[e[1]][0], c[e[1]][1]); ctx.stroke(); }); ctx.setLineDash([]); });
   C.bridges.forEach(function(b){
     var lift = bridgeLift(b, clock), z0 = cam.v3 ? cam.v3.zAt((b.x0 + b.x1) / 2, b.y0 - 0.6) : 0, ang = lift * Math.PI / 2;
     // the deck swings up about its hinge edge
