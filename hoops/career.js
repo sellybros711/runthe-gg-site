@@ -5951,11 +5951,12 @@ const SUMMER_FACTS = [
   ['rec', (L, h) => !!h.t && h.w + h.l > 0, (L, h) => 'The ' + nick(h.t) + ' went ' + h.w + '-' + h.l + '.'],
   ['star', (L, h) => (h.aw || []).indexOf('allstar') >= 0 || (h.aw || []).indexOf('star') >= 0, () => 'You were an All-Star.'],
   ['line', (L, h) => h.pts >= 8, (L, h) => h.pts + ' points, ' + h.reb + ' boards, ' + h.ast + ' assists.'],
-  ['yrs', (L) => yearsWith(L) >= 3, (L) => 'That was year ' + yearsWith(L) + ' with this club.'],
+  ['yrs', (L) => seasonsWithClub(L) >= 3, (L) => 'That was year ' + seasonsWithClub(L) + ' with this club.'],
   ['bench', (L, h) => h.role === 'End of bench' || h.role === 'Rotation', (L, h) => 'You were ' + (h.role === 'Rotation' ? 'a rotation player' : 'at the end of the bench') + '.'],
   ['rings', (L, h) => totals(L).rings >= 1 && h.po !== 'Champion', (L) => { const n = totals(L).rings; return n === 1 ? 'You have one ring. One is not enough.' : 'You have ' + n + ' rings. You want another.'; }],
 ];
-function yearsWith(L) { let n = 0; for (let i = L.history.length - 1; i >= 0 && L.history[i].t === L.history[L.history.length - 1].t; i--) n++; return n; }
+/* Seasons in a row with the club you finished the last one on. */
+function seasonsWithClub(L) { let n = 0; for (let i = L.history.length - 1; i >= 0 && L.history[i].t === L.history[L.history.length - 1].t; i--) n++; return n; }
 const BODY_SAY = [
   [(L) => L.m.health >= 85 && L.age >= 31, ['Nothing hurts, which is new.', 'Your knees are quiet for once.', 'You feel younger than your birthday.']],
   [(L) => L.m.health >= 85, ['Your body feels great.', 'You feel bouncy.', 'Nothing hurts. Enjoy it.', 'Your legs feel brand new.']],
