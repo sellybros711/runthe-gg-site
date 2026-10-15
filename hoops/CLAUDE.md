@@ -68,6 +68,11 @@ The economy has its own suite: `check-economy`, `check-wardrobe`, `check-closet`
 
 **The engine**
 
+- **Career's source is `hoops/career/`**, fifteen parts of one closure; `career.js` is built from
+  them. Edit a part, never `career.js`, then `node hoops/build/career-bundle.mjs`, bump
+  `career.js?v=` and `check-cachebust --update`. CI runs `--check`. A new part is listed in the
+  bundler in closure order. Balance numbers live in `hoops/career/tuning.js`.
+
 - **A box score decomposes the scoreline. It is never a second model.** The same holds for a game
   seven and the bracket: one loop, the one that already existed.
 - **One Career engine, the story engine** (the owner's call, 2026-10-15). There is no story-off
