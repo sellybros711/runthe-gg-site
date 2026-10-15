@@ -612,6 +612,11 @@ var THEMES = {
     bumper:'mammoth', block:'glacier', spinner:'#efe4cc', slider:'glacier', flag:'#c0392b',
     decor:['mammoth', 'glacier'], acc:'#8fd0e0', river:['#4aa8c4', '#c8eef8'], kicker:'#c0392b', loopCol:['#8fd0e0', '#ffffff', '#2f6f80'],
     holes:[] },
+  candy:{ name:'Candy Works', kick:'World 11', bg:'#4a2a1e', bg2:'#58331f', carpet:'#2fae8a', carpet2:'#2a9e7e', wall:'#ff5fa2', wallHi:'#ffa8cc', wallLo:'#9a2a5a', ink:'#1e0e08',
+    haz:'water', hazCol:'#5a2e14', hazCol2:'#8a5230', hazName:'Chocolate', slow:'mud', slowCol:'#f2a65a', slowName:'Taffy', iceCol:'#ffd6e6', iceCol2:'#fff4f8',
+    bumper:'gumball', block:'sugarcube', spinner:'#ffe14a', slider:'wrapper', flag:'#ff3b7a',
+    decor:['gumball', 'sugarcube'], acc:'#ff5fa2', river:['#c2722a', '#f2b46a'], kicker:'#ff3b7a', loopCol:['#ff5fa2', '#ffffff', '#7a1a42'],
+    holes:[] },
   beach:{ light:true, name:'Seashell Shores', kick:'Summer', bg:'#f1dc9c', bg2:'#e8d08a', carpet:'#1ea77d', carpet2:'#1b9a73', wall:'#ffffff', wallHi:'#ffffff', wallLo:'#9fd8e6', ink:'#1b3a4a',
     haz:'water', hazCol:'#22a7e0', hazCol2:'#8fdcff', hazName:'Tide pool', slow:'mud', slowCol:'#f5e2a5', slowName:'Soft sand',
     bumper:'beachball', block:'castle', spinner:'#ffd23f', slider:'surfboard', flag:'#ff5a3c',
@@ -620,7 +625,7 @@ var THEMES = {
 };
 /* the light that comes up out of the cup when the ball drops, one colour a theme (the real greens use gold) */
 var GLOW = { haunted:'#ff8a1f', harvest:'#ffc23d', winter:'#9fe4ff', sweetheart:'#ff5c9a', shamrock:'#7dff7a', spring:'#ffd6ec',
-  firework:'#ff4fd8', clubhouse:'#fff2b0', tour:'#f1d04a', temple:'#7dffd2', pirate:'#ffd23f', canyon:'#ffb347', volcano:'#ff5a1a', frozen:'#bfefff', sky:'#fff6b0', neon:'#39ff14', school:'#ffe36a', iceage:'#aef0ff', beach:'#5ce1ff' };
+  firework:'#ff4fd8', clubhouse:'#fff2b0', tour:'#f1d04a', temple:'#7dffd2', pirate:'#ffd23f', canyon:'#ffb347', volcano:'#ff5a1a', frozen:'#bfefff', sky:'#fff6b0', neon:'#39ff14', school:'#ffe36a', iceage:'#aef0ff', candy:'#ff9ad0', beach:'#5ce1ff' };
 Object.keys(GLOW).forEach(function(k){ if (THEMES[k]) THEMES[k].glow = GLOW[k]; });
 // the themes the calendar hands the Daily Hole (the Clubhouse and Tour Week are Tour worlds only)
 var CAL_THEMES = ['haunted', 'harvest', 'winter', 'sweetheart', 'shamrock', 'spring', 'firework', 'beach'];
@@ -856,8 +861,8 @@ function dailyHole(dayKey){
   var d = dailyShape(dayKey), n = dailyLevel(dayKey);
   return { tour:n, tid:'main', daily:1, tpl:'dly' + n, seed:d.seed, theme:d.theme, name:d.name, day:dayKey };
 }
-/* ================================================================= THE PUTT PUTT TOURS: 180 + 18 HOLES */
-/* TWO TOURS. The Putt Putt Tour is everybody's: ten worlds of eighteen, played strictly in order, on
+/* ================================================================= THE PUTT PUTT TOURS: 198 + 18 HOLES */
+/* TWO TOURS. The Putt Putt Tour is everybody's: eleven worlds of eighteen, played strictly in order, on
    the game's own evergreen worlds (never a season's theme). The Members Tour is the Tour Pass holder's:
    eighteen holes on the season's theme, each with a trick of its own, paying the most. Anybody may walk it.
 
@@ -879,7 +884,8 @@ var WORLDS = [
   { id:'sky', name:'Sky Islands', theme:'sky', blurb:'Islands in the clouds. Ride the wind or jump the gap.', haz:['The drop', 'Wind', 'Bounce pads'] },
   { id:'neon', name:'Neon Arcade', theme:'neon', blurb:'Every machine on a clock. Read the lights.', haz:['Lasers', 'Pinball', 'Power ups'] },
   { id:'school', name:'Schoolyard', theme:'school', blurb:'Recess is on. Swings, slides and the school bus.', haz:['Puddles', 'Sandbox', 'The bus'] },
-  { id:'iceage', name:'Ice Age', theme:'iceage', blurb:'Glaciers, tar pits and a herd on the move.', haz:['Tar pits', 'Glacier ice', 'Mammoths'] }
+  { id:'iceage', name:'Ice Age', theme:'iceage', blurb:'Glaciers, tar pits and a herd on the move.', haz:['Tar pits', 'Glacier ice', 'Mammoths'] },
+  { id:'candy', name:'Candy Works', theme:'candy', blurb:'The factory floor. Taffy, syrup, and a line that never stops.', haz:['Taffy', 'Syrup', 'The line'] }
 ];
 // a room: a rectangle at a height (for the picture; the drop between rooms is crossed by a set piece)
 function rm(x0, y0, x1, y1, z){ var a = Math.min(x0, x1), b = Math.max(x0, x1), c = Math.max(y0, y1), d = Math.min(y0, y1); return { pts:[[a, c], [b, c], [b, d], [a, d]], z:z || 0 }; }
@@ -1477,7 +1483,63 @@ var LEVELS = [
   // Mammoth Peak: up the ramp lane, across the glacier, over the tar pit off the jump, across the ice bridge and past the fang to the top.
   { par:4, three:3, sig:true, f:function(T){ var H = hole([rm(-5, 0, 5, -12), rm(-7, -16, 7, -30, 0.8), rm(-7, -29.9, 7, -33.1, 0.8), rm(-7, -33, 7, -42, 0.8), rm(-7, -41.9, 7, -45.1, 0.8), rm(-7, -45, 7, -58, 0.8)], [0, -2.5], [-2, -54]);
     climb(H, 3, -12, -16, 2.4); zoneR(H, M.ICE, -7, -18, 7, -21); bumps(H, T, [[-3, -25, 0.7], [3, -26, 0.6]]); jump(H, 0, -30, 0, -1, 3.0, 14, { h:0.9, ang:40 }); zoneR(H, M.WATER, -7, -42, 7, -45); drawb(H, -1.4, -42, 1.4, -45, 3, 0.2, 0.55);
-    blk(H, T, -7, -41.4, -1.4, -42); blk(H, T, 1.4, -41.4, 7, -42); spinner(H, T, 1.5, -50, 2.0, 1.4, 2); bumps(H, T, [[-4, -49, 0.6]]); zoneR(H, M.MUD, 3, -56, 7, -58); flatAt(H, -2, -54); return H; } }
+    blk(H, T, -7, -41.4, -1.4, -42); blk(H, T, 1.4, -41.4, 7, -42); spinner(H, T, 1.5, -50, 2.0, 1.4, 2); bumps(H, T, [[-4, -49, 0.6]]); zoneR(H, M.MUD, 3, -56, 7, -58); flatAt(H, -2, -54); return H; } },
+  // ---- 11 CANDY WORKS: the factory floor. Everything on the line moves, and the floor is glazed, pulled and poured.
+  // Clock In: two candy cane gates on their own clocks, glaze between them.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -38)], [0, -2.5], [-2, -34]); gateWall(H, T, -11, -6, 6, -1.4, 1.4, 2.4, 0, 1); zoneR(H, M.ICE, -6, -13, 6, -17);
+    gateWall(H, T, -21, -6, 6, 1.2, 3.8, 2.8, 0.4, -1); bumps(H, T, [[-3, -27, 0.55], [2.5, -29, 0.55], [4, -6, 0.5]]); zoneR(H, M.MUD, -6, -36, 6, -38); bowl(H, -2, -34); return H; } },
+  // Taffy Pull: two strips of taffy across the floor, and a press stamping each gap.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -38)], [0, -2.5], [2, -34]); zoneR(H, M.MUD, -7, -10, 2, -13); slider(H, T, -11.5, 2.6, 6.4, 2.4, 0, 2.0); zoneR(H, M.MUD, -2, -20, 7, -23); slider(H, T, -21.5, -6.4, -2.6, 2.6, 0.5, 2.0);
+    bumps(H, T, [[-3, -16, 0.6], [3.5, -26.5, 0.55], [-4, -29, 0.55]]); pads(H, [[-5.5, -6, 0.6]]); zoneR(H, M.ICE, -7, -25, 7, -27); zoneR(H, M.MUD, 4.5, -36, 7, -38); bowl(H, 2, -34); return H; } },
+  // Gumball Machine: the dispenser turns in the middle, the gumballs sit all round it, and the cup is behind a sugar wall.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -38)], [0, -2.5], [4.5, -34]); spinner(H, T, 0, -18, 2.6, 1.2, 4); blk(H, T, 1.4, -29.4, 7, -30.6); bumps(H, T, [[-3.2, -14.5, 0.55], [3.2, -14.5, 0.55], [-3.2, -21.5, 0.55], [3.2, -21.5, 0.55], [0, -25, 0.5], [-4.5, -29, 0.5]]);
+    pads(H, [[-5.4, -18, 0.6], [5.4, -18, 0.6]]); zoneR(H, M.MUD, -7, -36, -4, -38); bowl(H, 4.5, -34); return H; } },
+  // Syrup River: the syrup pours off the top floor, and a wrapper slides across where it lands.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-12, 0, -4, -10), rm(-4, -28, 8, -42, -1.8)], [-8, -2.5], [4, -38]); river(H, [[-8, -9.5], [-8, -15], [-2, -18], [3, -22], [3, -28.5]], 1.8, 7, 0, -1.8);
+    slider(H, T, -31.5, -2.5, 6.5, 2.6, 0.3, 2.6); zoneR(H, M.ICE, -4, -33.5, 8, -35); zoneR(H, M.WATER, -4, -38, -1, -42); blk(H, T, -1, -38, -0.7, -42); bumps(H, T, [[-10, -6, 0.6], [-6, -6, 0.5], [6.4, -40, 0.5]]); pads(H, [[1, -36.5, 0.6]]); zoneR(H, M.MUD, 6, -40.5, 8, -42); bowl(H, 4, -38); return H; } },
+  // Wafer Bridge: one wafer drawbridge over the chocolate, and a whisk turning on the far side.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -14), rm(-6, -13.9, 6, -17.6), rm(-6, -17.5, 6, -38)], [0, -2.5], [2, -33]); zoneR(H, M.WATER, -6, -14, 6, -17.5); drawb(H, -1.4, -14, 1.4, -17.5, 3.2, 0, 0.55);
+    blk(H, T, -6, -13.4, -1.4, -14); blk(H, T, 1.4, -13.4, 6, -14); zoneR(H, M.ICE, -6, -20, 6, -22); spinner(H, T, 1.5, -25.5, 2.2, 1.4, 2); bumps(H, T, [[-3, -28, 0.6], [3.5, -6, 0.5], [-3.5, -8, 0.5]]); pads(H, [[4.5, -29.5, 0.6]]); zoneR(H, M.MUD, -6, -36, -3, -38); bowl(H, 2, -33); return H; } },
+  // Lollipop Mill: lollipop sails across the door, and a belt behind the house that carries everything sideways.
+  { par:3, f:function(T){ var H = hole([rm(-7, 0, 7, -40)], [0, -2.5], [1, -35]); millAt(H, T, -14, 7, 1.3); belt(H, -7, -24, 7, -27, 3, 0); bumps(H, T, [[-3, -31, 0.55], [3, -8, 0.5], [-3, -8, 0.5]]);
+    zoneR(H, M.MUD, -7, -38, -4, -40); bowl(H, 1, -35); return H; } },
+  // Jawbreakers: a room of jawbreakers that throw the ball back harder than it came.
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-4, 0], [4, 0], [8, -12], [8, -26], [0, -38], [-8, -26], [-8, -12]])], [0, -2.5], [0, -32]); blk(H, T, -1.5, -9, 1.5, -10.5);
+    pads(H, [[-4, -14, 0.7], [4, -14, 0.7], [0, -20, 0.7], [-4, -26, 0.6], [4, -26, 0.6]]); bumps(H, T, [[-6, -20, 0.5], [6, -20, 0.5]]); zoneR(H, M.ICE, -8, -16.5, 8, -17.5); zoneR(H, M.MUD, -8, -12, -5.5, -14); zoneR(H, M.MUD, 5.5, -12, 8, -14); bowl(H, 0, -32); return H; } },
+  // Licorice Ramp: up the licorice lane on the right, round the sugar wall, up the left lane to the top, past the whisk and into the cup's pen from the side.
+  { par:4, three:3, f:function(T){ var H = hole([rm(-6, 0, 6, -14), rm(-6, -18, 6, -30, 0.8), rm(-6, -34, 6, -50, 1.6)], [0, -2.5], [3.5, -45]); climb(H, 3.5, -14, -18, 2.4); climb(H, -3.5, -30, -34, 2.4);
+    blk(H, T, -6, -24.4, -0.4, -25.6); spinner(H, T, -0.5, -40, 2.0, 1.4, 2); pen(H, T, 3.5, -45); bumps(H, T, [[0, -8, 0.6], [-4, -44, 0.5]]); zoneR(H, M.ICE, -6, -20, 6, -21.5); zoneR(H, M.MUD, -6, -48, -3, -50); return H; } },
+  // Mixing Bowl: the floor is a bowl and the bottom of it turns.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -38)], [0, -2.5], [-3, -33]); H.comps.push({ k:'crown', x:0, y:-19, rx:6, ry:6, a:-0.25 }); disc(H, 0, -19, 2.6, 1.3);
+    bumps(H, T, [[-4.6, -14, 0.55], [4.6, -24, 0.55], [3, -29, 0.5], [-4.5, -6, 0.5]]); pads(H, [[4.6, -14, 0.6]]); blk(H, T, -7, -27, -0.6, -28.2); zoneR(H, M.ICE, -7, -9, 7, -10.5); zoneR(H, M.MUD, 3.5, -36, 7, -38); bowl(H, -3, -33); return H; } },
+  // Packing Line: the left line runs up and the right line runs back, with boxes sliding between them.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -40)], [0, -2.5], [0, -36]); belt(H, -7, -8, -2.5, -30, 0, -4); belt(H, 2.5, -8, 7, -30, 0, 4); slider(H, T, -19, -2, 2, 2.4, 0, 1.6);
+    bumps(H, T, [[0, -12, 0.6], [0, -26, 0.6], [-4, -33, 0.5]]); zoneR(H, M.ICE, -7, -31, 7, -32.5); zoneR(H, M.MUD, 4, -38, 7, -40); bowl(H, 0, -36); return H; } },
+  // Cookie Cutter: the cutter slides across the gap in the wall. Or find the crack the dough left: it lines up with the tee and the cup.
+  { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -36)], [2, -2.5], [-4.6, -30]); blk(H, T, -6, -19.4, -2.6, -20.6); blk(H, T, -1.8, -19.4, 1.2, -20.6); blk(H, T, 3.8, -19.4, 6, -20.6); secret(H, -2.6, -19.4, -1.8, -20.6);
+    gateAt(H, T, -20, 1.2, 3.8, 2.6, 0, 1); zoneR(H, M.ICE, -6, -13, 6, -16); bumps(H, T, [[4, -9, 0.6], [-4, -10, 0.55], [2.5, -26, 0.55]]); slider(H, T, -25.5, -5, 1, 2.6, 0.4, 2.0); zoneR(H, M.MUD, 3, -33, 6, -36); bowl(H, -4.6, -30); return H; } },
+  // Caramel Moat: jump the caramel, then bring it round into the pen.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-5, 0, 5, -12), rm(-5, -11.9, 5, -15.1), rm(-6, -15, 6, -36)], [0, -2.5], [3.5, -31]); jump(H, 0, -12, 0, -1, 2.6, 10, { h:0.7, ang:36 });
+    pen(H, T, 3.5, -31); slider(H, T, -22, -4, 4, 2.6, 0.2); bumps(H, T, [[-3, -26, 0.6], [-1, -33, 0.5], [3, -6, 0.5]]); pads(H, [[-4.5, -19, 0.6]]); zoneR(H, M.ICE, -6, -17, 6, -18); zoneR(H, M.MUD, -6, -34, -3.5, -36); return H; } },
+  // The Vault: two doors, two plates. Each putt has to roll over its plate on the way through its door.
+  { par:4, three:3, f:function(T){ var H = hole([rm(-6, 0, 6, -44)], [2.5, -2.5], [-3, -40]); blk(H, T, -6, -18, -1.4, -19.2); blk(H, T, 1.4, -18, 6, -19.2); switchDoor(H, T, -18.6, -1.4, 1.4, 5.1, -5.9, 3.5);
+    blk(H, T, -6, -32, -1.4, -33.2); blk(H, T, 1.4, -32, 6, -33.2); switchDoor(H, T, -32.6, -1.4, 1.4, -2.2, -27, 3.5); bumps(H, T, [[-4.4, -11, 0.6], [3.6, -27, 0.6]]); zoneR(H, M.ICE, -6, -21, 6, -22.5); zoneR(H, M.MUD, 3, -42, 6, -44); bowl(H, -3, -40); return H; } },
+  // Layer Cake: three tiers of cake. Soft off each step, and the middle one is glazed.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -38)], [-3, -2.5], [3, -34]); H.comps.push({ k:'ridge', x:0, y:-10, nx:0, ny:-1, w:0.9, a:-0.6 }, { k:'ridge', x:0, y:-25, nx:0, ny:-1, w:0.9, a:-0.6 });
+    zoneR(H, M.ICE, -6, -13, 6, -22); blk(H, T, -2.2, -17, 6, -18.2); bumps(H, T, [[-4, -21, 0.55], [0, -30, 0.55], [4.5, -6, 0.5]]); pads(H, [[-4.5, -29, 0.6]]); zoneR(H, M.MUD, -6, -36, -3, -38); bowl(H, 3, -34); return H; } },
+  // Sprinkle Storm: a field of sprinkles, and a belt across the middle of it.
+  { par:3, f:function(T){ var H = hole([rm(-7, 0, 7, -40)], [0, -2.5], [-3, -36]); bumps(H, T, [[-2, -9, 0.45], [2.5, -11, 0.45], [-0.5, -14, 0.45], [4, -16, 0.45], [-3.5, -16, 0.45], [1.5, -27, 0.45], [-1.5, -30, 0.45], [4, -31, 0.45]]);
+    belt(H, -7, -20, 7, -23, -4, 0); zoneR(H, M.MUD, 3.5, -38, 7, -40); bowl(H, -3, -36); return H; } },
+  // Quality Control: a gate, a turning floor and a press, one after the other. Time all three, or stop halfway.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -50)], [0, -2.5], [2, -45]); gateWall(H, T, -14, -6, 6, -1.3, 1.3, 2.6, 0, 1); disc(H, 0, -24.5, 2.4, -1.3); blk(H, T, -6, -23.5, -2.6, -25.5); blk(H, T, 2.6, -23.5, 6, -25.5);
+    slider(H, T, -35, -4, 4, 2.6, 0.4); bumps(H, T, [[-3, -18, 0.5], [3.5, -30, 0.5], [-3.5, -40, 0.5]]); zoneR(H, M.ICE, -6, -28, 6, -30); zoneR(H, M.MUD, 4, -48, 6, -50); bowl(H, 2, -45); return H; } },
+  // Night Shift: round the loop, across the belt, and through the gate at the end of the line.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-4, 0, 4, -12), pg([[-4, -12], [4, -12], [0.8, -15.6], [-0.8, -15.6]]), rm(-0.8, -15.5, 0.8, -19.5), rm(-6, -19.4, 6, -38)], [0, -2.5], [2, -35]);
+    loopAt(H, 0, -17.5, 0, -1, 0.65, 1.6); belt(H, -6, -21, 6, -24, 4, 0); gateWall(H, T, -28, -6, 6, -3.6, -1, 2.8, 0.2, -1); bumps(H, T, [[2.4, -6, 0.5], [4, -31, 0.5]]); pads(H, [[-4.6, -25.5, 0.6]]); zoneR(H, M.MUD, -6, -36.5, -3, -38); bowl(H, 2, -35); return H; } },
+  // The Big Batch: up the ramp, across the belt, past the press, over the caramel on the wafer bridge and into the pen.
+  { par:4, three:3, sig:true, f:function(T){ var H = hole([rm(-5, 0, 5, -12), rm(-7, -16, 7, -30, 0.8), rm(-7, -29.9, 7, -33.1, 0.8), rm(-7, -33, 7, -48, 0.8)], [0, -2.5], [-3.5, -43]);
+    climb(H, 3, -12, -16, 2.4); belt(H, -7, -18, 7, -21, -3, 0); slider(H, T, -25, -5, 5, 2.6, 0.2); zoneR(H, M.WATER, -7, -30, 7, -33); drawb(H, -1.4, -30, 1.4, -33, 3, 0.2, 0.55);
+    blk(H, T, -7, -29.4, -1.4, -30); blk(H, T, 1.4, -29.4, 7, -30); pen(H, T, -3.5, -43); bumps(H, T, [[3, -38, 0.6], [-4, -22.5, 0.5], [3.5, -6, 0.5]]); zoneR(H, M.MUD, 3, -46, 7, -48); return H; } }
 ];
 /* THE MEMBERS TOUR: the season's own eighteen, for Tour Pass holders, two halves of nine on the season's two
    themes. Par is the solver's, the same rule as the Putt Putt Tour.
@@ -1591,7 +1653,8 @@ var TOUR_NAMES = [
   'First Bell', 'Hopscotch', 'Four Square', 'Ball Bag', 'Tetherball', 'Twisty Slide', 'Seesaw', 'Sandbox', 'Merry-Go-Round',
   'Bus Lane', 'Car Line', 'Kickball Diamond', 'Lunch Line', 'Jungle Gym', 'Hall Pass', 'Puddle Jump', 'Bell Tower', 'Recess Bell',
   'The Thaw', 'Mammoth Trail', 'Tar Pits', 'Glacier Wall', 'Saber Tooth', 'Cave Painting', 'Woolly Crossing', 'Ice Bridge', 'Meltwater',
-  'Campfire', 'Crevasse Leap', 'Iceberg Drift', 'Saber Pass', 'Tundra Loop', 'Mammoth Herd', 'The Big Melt', 'Avalanche Run', 'Mammoth Peak'];
+  'Campfire', 'Crevasse Leap', 'Iceberg Drift', 'Saber Pass', 'Tundra Loop', 'Mammoth Herd', 'The Big Melt', 'Avalanche Run', 'Mammoth Peak',
+  'Clock In', 'Taffy Pull', 'Gumball Machine', 'Syrup River', 'Wafer Bridge', 'Lollipop Mill', 'Jawbreakers', 'Licorice Ramp', 'Mixing Bowl', 'Packing Line', 'Cookie Cutter', 'Caramel Moat', 'The Vault', 'Layer Cake', 'Sprinkle Storm', 'Quality Control', 'Night Shift', 'The Big Batch'];
 /* THE TOURS. Each is a list of worlds, a list of holes and their names, and what it pays. The Members
    Tour is one world of eighteen in two halves, on the season's theme, and pays the most on the site. */
 var TOURS = {
@@ -1767,6 +1830,12 @@ var SKIN = {
     return ((u * 9 + v * 5) | 0) % 3 ? '#7a5434' : '#8e6440'; },
   glacier:function(u, v){ if (Math.abs(u) > 0.94 || Math.abs(v) > 0.92) return null; if (v < -0.62) return Math.abs(u) > 0.86 ? '#cfeaf2' : '#ffffff';
     var band = ((v + 1) * 4.2 + Math.sin(u * 3) * 0.3) % 1; if (Math.abs(u) > 0.84) return '#5aa8c4'; if (band < 0.12) return '#6fb6d0'; if (Math.abs(u - v * 0.4 - 0.2) < 0.05) return '#e8f8fc'; return band < 0.55 ? '#a8dcea' : '#8fcde0'; },
+  // ---- Candy Works: a gumball with its shine, a sugar cube, a wrapped sweet with its twisted ends
+  gumball:function(u, v){ var r = Math.hypot(u, v); if (r > 0.94) return null; if (r > 0.84) return '#a8164a'; if (Math.hypot(u + 0.3, v + 0.34) < 0.18) return '#ffd0e2'; return u + v < -0.2 ? '#ff4f8f' : '#e8236a'; },
+  sugarcube:function(u, v){ if (Math.abs(u) > 0.92 || Math.abs(v) > 0.92) return null; if (Math.abs(u) > 0.82 || Math.abs(v) > 0.82) return '#d9cfc4';
+    var g = ((u * 13 + 20 | 0) + (v * 13 + 20 | 0) * 7) % 11; if (g === 0) return '#e8e0d6'; return u - v > 0.9 ? '#ffffff' : '#f6f1ea'; },
+  wrapper:function(u, v){ var a = Math.abs(u); if (a > 0.96 || Math.abs(v) > 0.9) return null; if (a > 0.62){ if (Math.abs(v) > (a - 0.62) * 2.4 + 0.12) return null; return ((v * 9 + 20 | 0) % 2) ? '#ffd23f' : '#f0a400'; }
+    if (a > 0.5) return Math.abs(v) < 0.2 ? '#c2185b' : null; if (Math.abs(v) > 0.7) return null; return (((u + v) * 5 + 20 | 0) % 2) ? '#ff5fa2' : '#ffffff'; },
   tiki:function(u, v){ if (Math.abs(u) > 0.55 || Math.abs(v) > 0.95) return null; if (v < -0.75) return Math.abs(u) < 0.45 ? '#3f8a3e' : null;
     if (Math.abs(v + 0.35) < 0.1 && Math.abs(Math.abs(u) - 0.22) < 0.1) return '#f1d04a'; if (Math.abs(v - 0.15) < 0.08 && Math.abs(u) < 0.3) return '#2a1a10';
     if (Math.abs(v - 0.5) < 0.05) return '#5a3818'; return u < -0.15 ? '#a0703c' : '#8a5e30'; }
@@ -1926,6 +1995,8 @@ var CSS = '\
 .wm-school b{font-family:Anton,Impact,sans-serif;font-size:33px;letter-spacing:.05em;text-transform:uppercase;background-image:linear-gradient(180deg,#fff6b0,#ffd23f 55%,#f0a400);-webkit-text-stroke:1px #1f2430;filter:drop-shadow(0 3px 0 #1f2430) drop-shadow(0 5px 0 #e53935) drop-shadow(0 7px 6px rgba(0,0,0,.4))}\
 .wm-iceage i{background:#3a2e22;color:#dcf4fa;border:1px solid #8fd0e0}\
 .wm-iceage b{font-family:Anton,Impact,sans-serif;font-size:34px;letter-spacing:.06em;text-transform:uppercase;background-image:linear-gradient(180deg,#ffffff 0 30%,#bfe9f4 50%,#5aa8c4);-webkit-text-stroke:.9px #2a241c;filter:drop-shadow(0 2px 0 #5a4630) drop-shadow(0 4px 0 #2a241c) drop-shadow(0 0 8px rgba(143,208,224,.6))}\
+.wm-candy i{background:#5a2e14;color:#ffd6e6;border:1px solid #ff5fa2}\
+.wm-candy b{font-family:Anton,Impact,sans-serif;font-size:34px;letter-spacing:.05em;text-transform:uppercase;background-image:linear-gradient(180deg,#ffffff 0 22%,#ffa8cc 45%,#ff3b7a);-webkit-text-stroke:.9px #4a1a2e;filter:drop-shadow(0 2px 0 #9a2a5a) drop-shadow(0 4px 0 #3a1c0c) drop-shadow(0 0 8px rgba(255,154,208,.6))}\
 .wm-hallows i{background:#2a1846;color:#ffad55;border:1px solid #ff8a1f}\
 .wm-hallows b{font-family:Cinzel,serif;font-weight:700;font-size:29px;letter-spacing:.08em;background-image:linear-gradient(180deg,#ffe0b0,#ff8a1f 55%,#c2410c);-webkit-text-stroke:.7px #1a0e2c;filter:drop-shadow(0 2px 0 #1a0e2c) drop-shadow(0 0 8px rgba(160,90,255,.75)) drop-shadow(0 0 16px rgba(120,60,220,.45))}\
 .wm-harvest i{background:#4a2a10;color:#ffd27a;border:1px solid #e0912a}\
@@ -2015,6 +2086,8 @@ var CSS = '\
 .pp-lv.wt-school.lock{background:linear-gradient(180deg,#6a6e76,#4c5058);border-color:#2a2e36;color:#cfd2d8;box-shadow:0 3px 0 rgba(0,0,0,.4)}.pp-lv.wt-school.cur{background:radial-gradient(circle at 42% 35%,#ff8a7a,#e53935 60%,#a3201a);border-color:#ffffff;color:#ffffff;box-shadow:0 0 14px rgba(229,57,53,.85),0 4px 0 rgba(0,0,0,.4)}.pp-lv.wt-school.cur:after{border-radius:13px}\
 .pp-lv.wt-iceage{border-radius:44% 56% 48% 52%/52% 46% 54% 48%;background:radial-gradient(circle at 38% 30%,#ffffff,#bfe9f4 50%,#7fc0d6);border-color:#4a3a28;color:#2a241c}\
 .pp-lv.wt-iceage.lock{background:radial-gradient(circle at 38% 30%,#a89884,#7a6a56);border-color:#4a3a28;color:#efe4cc}.pp-lv.wt-iceage.cur{background:radial-gradient(circle at 40% 35%,#fff4d8,#d9c9a6 55%,#a88a5a);border-color:#2a241c;color:#2a1a0a;box-shadow:0 0 14px rgba(174,240,255,.9),0 4px 0 rgba(0,0,0,.35)}\
+.pp-lv.wt-candy{border-radius:50%;background:repeating-conic-gradient(from 20deg,#ff5fa2 0 30deg,#fff4f8 30deg 60deg);border-color:#9a2a5a;color:#3a1c0c;text-shadow:0 0 3px #fff,0 0 2px #fff}\
+.pp-lv.wt-candy.lock{background:radial-gradient(circle at 38% 30%,#a8683e,#5a2e14);border-color:#3a1c0c;color:#f6d9c4;text-shadow:none}.pp-lv.wt-candy.cur{background:radial-gradient(circle at 40% 35%,#fff4c0,#ffd23f 55%,#e09a10);border-color:#3a1c0c;color:#3a1c0c;box-shadow:0 0 14px rgba(255,154,208,.9),0 4px 0 rgba(0,0,0,.35)}\
 .pp-lv.wt-haunted{border-radius:50% 50% 9px 9px/62% 62% 9px 9px;background:linear-gradient(180deg,#b5b0c6,#7d778f);border-color:#231d30;color:#1b1626}\
 .pp-lv.wt-haunted.lock{background:linear-gradient(180deg,#3b3152,#241c36);border-color:#5d5278;color:#9d93b8}.pp-lv.wt-haunted.cur{background:radial-gradient(circle at 50% 40%,#ffd08a,#ff8a1a);border-color:#2a1606;color:#2a1606}.pp-lv.wt-haunted.cur:after{border-radius:50% 50% 14px 14px/62% 62% 14px 14px}\
 .pp-lv.wt-harvest{background:radial-gradient(ellipse 22% 50% at 50% 50%,rgba(0,0,0,.12),transparent 70%),radial-gradient(ellipse 50% 50% at 22% 50%,rgba(0,0,0,.1),transparent 70%),radial-gradient(ellipse 50% 50% at 78% 50%,rgba(0,0,0,.1),transparent 70%),radial-gradient(circle at 40% 32%,#ffc46a,#ef8a1e 60%,#b8560c);border-color:#5a2e0c;color:#3a1c04}\
@@ -2031,6 +2104,7 @@ var CSS = '\
 .pp-hub[data-wt=neon]{--wa:#ff2bd6;--wi:#ffffff;--wb1:#2a0a3a;--wb2:#0d0b1e;--wt:rgba(13,11,30,.93)}\
 .pp-hub[data-wt=school]{--wa:#ffd23f;--wi:#1f2430;--wb1:#3a4a6a;--wb2:#1f2430;--wt:rgba(31,36,48,.92)}\
 .pp-hub[data-wt=iceage]{--wa:#8fd0e0;--wi:#2a241c;--wb1:#5a4630;--wb2:#2a241c;--wt:rgba(42,36,28,.92)}\
+.pp-hub[data-wt=candy]{--wa:#ff5fa2;--wi:#3a1c0c;--wb1:#7a4422;--wb2:#3a1c0c;--wt:rgba(58,28,12,.92)}\
 .pp-hub[data-wt=haunted]{--wa:#ff9a3a;--wi:#2a1606;--wb1:#3a1f63;--wb2:#1c1438;--wt:rgba(28,20,44,.92)}\
 .pp-hub[data-wt=harvest]{--wa:#f2a93b;--wi:#2b1606;--wb1:#7a4a1e;--wb2:#3a220c;--wt:rgba(52,32,12,.92)}\
 .pp-hub[data-wt] .pp-daily{background:linear-gradient(135deg,var(--wb1),var(--wb2) 62%)!important;box-shadow:0 0 0 2px var(--wa),0 10px 26px rgba(0,0,0,.45);transition:background .4s,box-shadow .4s}\
@@ -2105,6 +2179,7 @@ var CSS = '\
 .pp-door[data-door=clouds] .pp-dl,.pp-door[data-door=clouds] .pp-dr{background:radial-gradient(circle at 30% 25%,#fff 0 46px,transparent 47px),radial-gradient(circle at 75% 55%,#fff 0 58px,transparent 59px),radial-gradient(circle at 35% 80%,#f3f6fb 0 50px,transparent 51px),linear-gradient(180deg,#c9d5e6,#8ea0bb);border-color:#eef3fa}\
 .pp-door[data-door=neon] .pp-dl,.pp-door[data-door=neon] .pp-dr{background:repeating-linear-gradient(0deg,#1a1430 0 14px,#2a2050 14px 18px),#1a1430;border-color:#ff3fd2;box-shadow:0 0 22px #ff3fd2,inset 0 0 18px #3ff0ff}\
 .pp-door[data-door=school] .pp-dl,.pp-door[data-door=school] .pp-dr{background:repeating-linear-gradient(90deg,rgba(0,0,0,.25) 0 2px,transparent 2px 30px),linear-gradient(180deg,#a8321e,#7a2214);border-color:#ffd23f}\
+.pp-door[data-door=candy] .pp-dl,.pp-door[data-door=candy] .pp-dr{background:repeating-linear-gradient(135deg,#ff3b7a 0 14px,#fff4f8 14px 28px);border-color:#7a4422}\
 .pp-door[data-door=iceage] .pp-dl,.pp-door[data-door=iceage] .pp-dr{background:repeating-linear-gradient(170deg,rgba(255,255,255,.35) 0 3px,transparent 3px 26px),linear-gradient(180deg,#dcf4fa,#6fb6d0);border-color:#d9c9a6}\
 .pp-tabs u{display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff5a4e;margin-left:5px;vertical-align:2px;box-shadow:0 0 0 2px rgba(0,0,0,.35)}.pp-tabs .on u{display:none}\
 /* THE DAILY TAB: a month to a page, the page ruled like a wall calendar, the days tear-off sheets on the trail */\
@@ -2188,8 +2263,8 @@ function top(title, sub, right){
    holes, plus rewards nobody else can earn. No coin price anywhere changes. */
 var PAY = {
   main:{ hole:80, sig:280, ace:20, world:2000,
-    sigReward:['Clubhouse Visor', 'Jade Idol Putter', 'Tricorn Hat', 'Miner’s Lamp Cap', 'Lava Ball', 'Ski Goggles', 'Cloud Ball', 'Neon Putter', 'Hall Monitor Cap', 'Mammoth Tusk Putter'],
-    worldReward:['Clubhouse Polo', 'Explorer Hat', 'Treasure Trail', 'Gold Nugget Ball', 'Eruption Celebration', 'Snowflake Trail', 'Rainbow Trail', 'High Score Celebration', 'Gold Star Ball', 'Thaw Celebration'] },
+    sigReward:['Clubhouse Visor', 'Jade Idol Putter', 'Tricorn Hat', 'Miner’s Lamp Cap', 'Lava Ball', 'Ski Goggles', 'Cloud Ball', 'Neon Putter', 'Hall Monitor Cap', 'Mammoth Tusk Putter', 'Lollipop Putter'],
+    worldReward:['Clubhouse Polo', 'Explorer Hat', 'Treasure Trail', 'Gold Nugget Ball', 'Eruption Celebration', 'Snowflake Trail', 'Rainbow Trail', 'High Score Celebration', 'Gold Star Ball', 'Thaw Celebration', 'Sprinkle Trail'] },
   members:{ hole:300, sig:1200, ace:60, world:2500, exclusive:true,
     sigReward:['Hallows Crown (Members only)', 'Harvest Moon Putter (Members only)'],
     worldReward:['Phantom Trail (Members only)', 'Golden Leaf Ball (Members only)'], finish:'Members Champion Jacket (Members only)',
@@ -2515,7 +2590,7 @@ function membersSheet(o){
     <div class="m">Eighteen holes of the season you won’t find anywhere else: a crypt door on a switch, a coffin to roll into, a cauldron, a haunted mill. Look around all you like. Playing them takes the pass.</div>\
     <div class="pp-memrw"><b>' + tot.toLocaleString() + ' coins</b> to win, a <b>trick or treat bonus</b> on every Hallows hole you beat under par, and rewards only members can earn:<br>' + Pm.sigReward.concat(Pm.worldReward, [Pm.treat.reward]).map(function(r){ return esc(r.replace(' (Members only)', '')); }).join(' · ') + ' · ' + esc(Pm.finish.replace(' (Members only)', '')) + '</div>\
     <button class="pt-go pp-wide pass" disabled>Get Tour Pass<small>Opens the Members Tour, and 6 lives · at launch</small></button>\
-    <div class="m pp-memfree">No pass? The Putt Putt Tour is free to play: 180 holes across ten worlds.</div>\
+    <div class="m pp-memfree">No pass? The Putt Putt Tour is free to play: ' + TOURS.main.levels.length + ' holes across ' + TOURS.main.worlds.length + ' worlds.</div>\
     <button class="pt-go pp-wide" data-main>Play the Putt Putt Tour</button>' +
     (o.trail ? '<button class="pt-bt pp-wide" data-look>Keep looking around</button>' : '') +
     (S.host.tester && S.host.tester() ? '<button class="pt-bt pp-wide" data-prev>Tester preview</button>' : '') +
@@ -2678,7 +2753,7 @@ function toastHub(msg){ var t = S.ov.querySelector('.pp-toast'); if (!t){ t = el
    world (a temple's carved stone, a ship's hull, a mine's iron gate, a glacier), and the stars he has
    fill the lock. Enough and it opens; short and it stays shut and says how many more. Tapping anywhere
    skips the walk, and reduced motion skips it outright (the door still says whether it opened). */
-var DOOR_NAMES = { temple:'Temple Door', pirate:'Hull Door', canyon:'Mine Gate', volcano:'Basalt Gate', frozen:'Ice Gate', sky:'Cloud Gate', neon:'Arcade Shutter', school:'School Doors', iceage:'Glacier Gate', haunted:'Crypt Gate', harvest:'Barn Doors', clubhouse:'Clubhouse Door' };
+var DOOR_NAMES = { temple:'Temple Door', pirate:'Hull Door', canyon:'Mine Gate', volcano:'Basalt Gate', frozen:'Ice Gate', sky:'Cloud Gate', neon:'Arcade Shutter', school:'School Doors', iceage:'Glacier Gate', candy:'Factory Gate', haunted:'Crypt Gate', harvest:'Barn Doors', clubhouse:'Clubhouse Door' };
 // the 3D golfer's walk up the trail, drawn while the hole before it is played so the first steps never wait
 function warmWalk(TR, n){ try{ var h = S.host; if (h.golferWalkWarm && n < TR.levels.length) h.golferWalkWarm(0, -1); }catch(e){} }
 /* THE WALK IS A PLACE (golf/putt/trail.js). Winning a hole and pressing Next opens the trail to the next
@@ -2702,9 +2777,10 @@ var TRINKETS = {
   pirate:['Doubloon Marker', 'Spyglass', 'Parrot Feather'], canyon:['Gold Nugget', 'Lucky Horseshoe', 'Prospector Pan'],
   volcano:['Obsidian Shard', 'Ember Stone', 'Fire Opal'], frozen:['Ice Crystal', 'Snow Globe', 'Mitten Tee'],
   sky:['Cloud Feather', 'Kite Charm', 'Weather Vane'], neon:['Arcade Token', 'Joystick Charm', 'Prize Ticket'],
-  school:['Gold Star', 'Apple Eraser', 'Lucky Pencil'], iceage:['Mammoth Tusk', 'Cave Painting', 'Amber Stone']
+  school:['Gold Star', 'Apple Eraser', 'Lucky Pencil'], iceage:['Mammoth Tusk', 'Cave Painting', 'Amber Stone'],
+  candy:['Lucky Gumball', 'Candy Wrapper', 'Sugar Crystal']
 };
-var TRINKET_COL = { clubhouse:'#7ee081', temple:'#3fd0a0', pirate:'#ffd23a', canyon:'#ff9a4a', volcano:'#ff5a3c', frozen:'#a8dcf4', sky:'#ffffff', neon:'#ff2bd6', school:'#ffd23f', iceage:'#8fd0e0' };
+var TRINKET_COL = { clubhouse:'#7ee081', temple:'#3fd0a0', pirate:'#ffd23a', canyon:'#ff9a4a', volcano:'#ff5a3c', frozen:'#a8dcf4', sky:'#ffffff', neon:'#ff2bd6', school:'#ffd23f', iceage:'#8fd0e0', candy:'#ff5fa2' };
 var TRINKET_SET_COINS = 300;
 var PP_PUTTERS = [
   { id:'scope', name:'Scope Putter', worlds:[0, 1, 2], tells:'The aim line reaches four feet further.' },
@@ -2803,6 +2879,10 @@ var GREETERS = {
     hi:['Ugh! Visitor! Welcome to the Ice Age.', 'Me Grok. Me know every cave in valley.'],
     tip:['Glacier ice slide forever. Tar pit keep ball forever. Choose.', 'Mammoths walk where they want. You wait for mammoth.'],
     bye:'Go now. Before big melt.' },
+  candy:{ name:'Wendell', role:'Factory Foreman', look:{ skin:'deep', polo:'white', hat:'red', pants:'wine', hair:'black', hairStyle:'short', cap:true, hatStyle:'flat', gender:'male' },
+    hi:['Hey! Welcome to Candy Works.', 'I’m Wendell. I run the floor.'],
+    tip:['Taffy grabs your ball. Glaze lets it run. Know which is which.', 'The line never stops. Watch a press go round once before you putt.'],
+    bye:'Clock in. And keep your hands off the gumballs.' },
   haunted:{ name:'Count Mulligan', role:'Graveyard Keeper', look:{ skin:'porcelain', polo:'black', hat:'black', pants:'grey', hair:'white', hairStyle:'long', cap:true, hatStyle:'tophat', top:'cape', gender:'male' },
     hi:['Good evening. Welcome to Hallows Night.', 'I am Count Mulligan. I never take a second shot. Well. Almost never.'],
     tip:['Every hole here has one trick of its own. Read it and it is kind to you.', 'Beat par on a hole and I have a treat for you. Members play. Everyone may look.'],
@@ -3917,7 +3997,7 @@ RTT_PUTT._try = function(fn, theme, name){ if (!S) return; var d = { custom:fn, 
 RTT_PUTT.starsOf = starsOf; RTT_PUTT.tourOf = tourOf; RTT_PUTT.lvH = lvH; RTT_PUTT.rectP = rectP; RTT_PUTT.buildFrom = buildFrom;
 /* The home card wears the world you are in: the top band of that world's signature hole, cut from the
    game's own render by build-cards.mjs, so it is the same pixel art as the courses. */
-var CARD_ART = { clubhouse:1, temple:1, pirate:1, canyon:1, volcano:1, frozen:1, sky:1, neon:1, school:1, iceage:1 }, CARD_V = 3;
+var CARD_ART = { clubhouse:1, temple:1, pirate:1, canyon:1, volcano:1, frozen:1, sky:1, neon:1, school:1, iceage:1, candy:1 }, CARD_V = 4;
 RTT_PUTT.cardArt = function(theme){ var t = CARD_ART[theme] ? theme : 'clubhouse';
   return '<img class="gc-art" src="putt/cards/' + t + '.png?v=' + CARD_V + '" alt="" aria-hidden="true">'; };
 RTT_PUTT.COINS = { hole:COIN_HOLE, sig:COIN_SIG, ace:COIN_ACE, world:COIN_WORLD, daily:COIN_DAILY, dailyPar:COIN_DAILY_PAR }; RTT_PUTT.PAY = PAY;

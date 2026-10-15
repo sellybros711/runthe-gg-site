@@ -49,6 +49,7 @@ var PAL={
   neon:{ g:['#0f0c22','#141030','#181338','#1d1742'], sp:[['#ff2bd6',.004],['#00e5ff',.004]], tree:'round', leaf:['#3a0a4a','#5a1a70','#7a2a96','#a64ac8'], trunk:'#2a0a28', path:['#2a2060','#3a2c80'], water:['#008fa0','#00b8cc','#00e5ff','#b8faff'], shadow:.5 },
   school:{ g:['#5f9e45','#6aaa4f','#76b658','#82c262'], sp:[['#ffffff',.004],['#ffd23f',.003]], tree:'round', leaf:['#24552a','#2f6d33','#3f8a3e','#5aa84c'], trunk:'#5a3d26', path:['#d8ccb0','#e4d9c0'], water:['#3a5a76','#4a6e8c','#6a8eaa','#c8dceb'], shadow:.68 },
   iceage:{ g:['#d9e2e8','#e3eaef','#edf2f5','#f6f9fb'], sp:[['#a89884',.012],['#ffffff',.02]], tree:'pine', leaf:['#1e3f30','#28503e','#33624c','#42785c'], snow:'#f6f9fd', trunk:'#4a3626', path:['#b8aa92','#c8bca6'], water:['#141210','#1e1a16','#2c2620','#4a4036'], shadow:.7 },
+  candy:{ g:['#eaa9c0','#f0b8cc','#f5c6d7','#f9d4e2'], sp:[['#ffffff',.012],['#ffd23f',.006]], tree:'round', leaf:['#c2306a','#e0488a','#ff6fa8','#ffa8cc'], trunk:'#f6f1ea', path:['#c98a5a','#d89c6c'], water:['#3a1c0c','#5a2e14','#7a4422','#a8683e'], shadow:.66 },
   harvest:{ g:['#8a7a3a','#9a8a44','#a8984e','#b5a65a'], sp:[['#d07a2a',.012],['#5a3818',.01]], tree:'round', leaf:['#7a2e10','#a8461a','#d06a22','#e8a03a'], trunk:'#3a2416', path:['#c4a46a','#d4b47a'], water:['#2e5a6e','#3a7088','#4f88a0','#c6dde6'], shadow:.6, fog:'#e8a03a' }
 };
 
@@ -351,6 +352,19 @@ WORLD.iceage=function(P,th,seed){
     P.set(X+1,Y+3,hex('#f4ead2')); P.set(X,Y+4,hex('#f4ead2')); P.rect(X+1,Y+4,X+2,Y+6,function(a,b){ P.set(a,b,hex('#5a3c22')); }); P.rect(X+4,Y+4,X+5,Y+6,function(a,b){ P.set(a,b,hex('#5a3c22')); }); }
   forest(P,th,function(x,y){ return x<P.vx0-4||x>P.vx1+4?.9:fbm(x*.04,y*.04,8)>.64?.6:.03; },seed+97,function(x,y){ return P.pathD(x,y)<7||tar(x,y)>-.05||gl(x,y)>-.2||P.clear(x,y,tk); },8,6);
   for(y=0;y<P.h;y++)for(x=0;x<P.w;x++)if(hash(x,y,seed+71)<.003)P.set(x,y,[255,255,255]);
+};
+WORLD.candy=function(P,th,seed){
+  var tk=[], x, y;
+  // a chocolate river down one side, the factory up top with its chimneys, candy cane posts along the trail, and gumdrops in the frosting
+  var riv=function(x,y){ var cx=P.vx0+(P.vx1-P.vx0)*.82+Math.sin(y*.035)*8; return (7-Math.abs(x-cx))/6+(fbm(x*.1,y*.1,seed+5)-.5)*.2; };
+  water(P,th,function(x,y){ return P.pathD(x,y)<6?-1:riv(x,y); },seed+6,false);
+  var fc=spot(P,P.w*.4,P.h*.08,24,14,9,tk); if(fc){ building(P,fc[0],fc[1],24,14,{ wall:'#ff8ab8', roof:'#7a4422', win:'#fff4c0', glow:1 });
+    [5,17].forEach(function(o){ P.rect(fc[0]+o,fc[1]-8,fc[0]+o+3,fc[1],function(a,b){ P.set(a,b,hex((b>>1)%2?'#e8233f':'#fff6f0')); }); }); }
+  for(var yy=10;yy<P.h;yy+=26){ var lx=P.pathX(yy); if(lx==null)continue; [lx-8,lx+8].forEach(function(px){ for(var r=0;r<7;r++)P.set(px,yy+r,hex(((yy+r)>>1)%2?'#e8233f':'#fff6f0')); P.set(px+1,yy,hex('#e8233f')); P.set(px+2,yy+1,hex('#fff6f0')); }); }
+  for(var k=0;k<12;k++){ var q=spot(P,P.w*(.15+.6*hash(k,1,seed)),P.h*hash(k,2,seed),4,4,6,tk); if(!q)continue; var c=['#ff3b7a','#ffd23f','#3fbf9a','#8a5cff'][k%4];
+    P.ell(q[0]+3,q[1]+3.5,2.2,1,function(a,b){ P.shade(a,b,.7); }); P.ell(q[0]+2,q[1]+2,2,1.8,function(a,b,dx,dy){ P.set(a,b,mix(hex(c),[255,255,255],dx+dy<-.6?.45:0)); }); }
+  forest(P,th,function(x,y){ return x<P.vx0-4||x>P.vx1+4?.8:fbm(x*.05,y*.05,7)>.65?.5:.03; },seed+83,function(x,y){ return P.pathD(x,y)<7||riv(x,y)>-.1||P.clear(x,y,tk); },8,6);
+  for(y=0;y<P.h;y++)for(x=0;x<P.w;x++)if(hash(x,y,seed+73)<.004)P.set(x,y,hex(['#ffffff','#ffd23f','#3fbf9a','#8a5cff'][(x+y)&3]));
 };
 WORLD.harvest=function(P,th,seed){
   var tk=[], x, y;

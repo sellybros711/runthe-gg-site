@@ -77,7 +77,7 @@ var PZ_SHARE = 0.5, PZ_COINS = 6, PEN_R = 2.9, PEN_HALF = 0.31, PZ_GATE_S = 4.5,
 var PZ_NAME = { fire:'Light the three', dig:'Buried chest', plate:'Pen and plate', push:'Stuck crate' };
 // what the three lights are in each world, for the clue
 var PZ_LIGHT = { clubhouse:'lanterns', temple:'torches', pirate:'lanterns', canyon:'mine lamps', volcano:'braziers', frozen:'ice lamps', sky:'beacons', neon:'neon lights',
-  school:'lanterns', iceage:'fire pits', haunted:'candles', harvest:'lanterns' };
+  school:'lanterns', iceage:'fire pits', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
 var PZ_FLAME = { neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], frozen:['#6ec8ff', '#e2f6ff'], sky:['#ffd24a', '#fff6c4'] };
 var JAM_ROCK = { neon:'cube', frozen:'rocksnow', iceage:'rocksnow', volcano:'rockdark', haunted:'rockdark' };
 /* THE CLUE, said by the local (or the greeter) on a puzzle trail: a nudge, never the answer. Three ways of saying
@@ -138,6 +138,9 @@ var KIT = {
   iceage:{ g:['#e6edf2', '#f2f6f9', '#d6e0e7', 0.2], p:['#b8aa92', '#c8bca6', '#a89a82'], tree:['pine', 'pine', 'dead'], leaves:['#1e3f30', '#28503e', '#173a2a'], bark:'#4a3626', snow:true,
     low:['rocksnow', 'bushsnow', 'rock'], brk:'ice', haz:'slow', hazC:['#1e1a16', '#3a3028'], bogC:['#1e1a16', '#3a3028'], lm:['mammoth', 'cave', 'tusks'], wall:['#cfeaf2', '#6fb6d0'],
     npc:{ skin:'tan', polo:'gold', hat:'tan', pants:'khaki', hair:'darkbrown', hairStyle:'long', cap:false, gender:'male' }, who:'the cave dweller' },
+  candy:{ g:['#f2b7cc', '#f8c8d9', '#eaa6be', 0.18], p:['#a8683e', '#b87a4c', '#985a32'], paved:true, tree:['broad', 'broad', 'broad'], leaves:['#ff6fa8', '#ffa8cc', '#e0488a'], bark:'#f6f1ea',
+    low:['bush', 'rock', 'bush'], brk:'crate', haz:'slow', hazC:['#f2a65a', '#d88a3e'], bogC:['#f2a65a', '#d88a3e'], lm:['factory', 'gumballs', 'canes'], wall:['#ff8ab8', '#9a2a5a'],
+    npc:{ skin:'medium', polo:'white', hat:'white', pants:'navy', hair:'auburn', hairStyle:'ponytail', cap:false, gender:'female' }, who:'the candy maker' },
   haunted:{ g:['#2e3a2a', '#36442e', '#283224', 0.2], p:['#5d4634', '#6d5440', '#4d3a2a'], tree:['dead', 'dead', 'dead'], leaves:['#3a4a2e', '#4a5a34', '#2e3a24'], bark:'#2b2229',
     low:['tomb', 'rock', 'pumpkin'], brk:'pumpkin', haz:'slow', hazC:['#5d4634', '#4a3628'], lm:['crypt', 'graves', 'fenceyard'], wall:['#4a4652', '#24222a'],
     npc:{ skin:'porcelain', polo:'black', hat:'black', pants:'grey', hair:'white', hairStyle:'long', cap:false, gender:'female' }, who:'the caretaker' },
@@ -645,7 +648,8 @@ var BLOCKR = { pin:0.1, broad:0.6, pine:0.7, palm:0.5, cactus:0.7, dead:0.6, bas
 var LMSIZE = { shed:[9, 6, 11], green:[9, 7, 1], bench:[3, 1.2, 2], lamps:[1, 1, 7], ruin:[10, 3, 9], statue:[3, 3, 8], columns:[8, 5, 9], wreck:[12, 5, 7], boat:[6, 3, 3], barrels:[4, 3, 2.4],
   mesa:[11, 8, 13], tower:[5, 5, 15], cart:[5, 2.5, 3.5], basaltset:[7, 6, 9], vent:[5, 5, 4], skull:[5, 4, 5], igloo:[7, 7, 5], snowman:[3, 3, 5.5], cabin:[9, 6, 11],
   balloon:[6, 6, 16], kite:[3, 3, 12], pillar:[5, 5, 12], cabinets:[8, 2.5, 6.5], sign:[8, 1.5, 11], pylons:[6, 6, 12], crypt:[8, 6, 10], graves:[9, 6, 3], fenceyard:[9, 6, 3],
-  barn:[11, 8, 13], scarecrow:[3, 2, 7], cornfield:[10, 8, 5], school:[12, 8, 13], swings:[8, 3, 6], slide:[4, 6, 5], mammoth:[9, 4, 6.5], cave:[10, 7, 6], tusks:[7, 2, 5] };
+  barn:[11, 8, 13], scarecrow:[3, 2, 7], cornfield:[10, 8, 5], school:[12, 8, 13], swings:[8, 3, 6], slide:[4, 6, 5], mammoth:[9, 4, 6.5], cave:[10, 7, 6], tusks:[7, 2, 5],
+  factory:[11, 8, 13], gumballs:[5, 5, 7], canes:[8, 1.5, 5.5] };
 
 /* ------------------------------------------------------------------------------- the ground */
 function land(P){
@@ -938,6 +942,18 @@ BUILD.cave = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy,
 BUILD.tusks = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ if (Math.abs(dy) > 0.32 || tt < 0) return null;
   for (var s = -1; s <= 1; s += 2){ var cx = s * 2.6, r = Math.hypot(dx - cx, tt); if (Math.abs(r - 3.1 + tt * 0.06) < 0.24 + (3.6 - tt) * 0.06 && s * (dx - cx) <= 0.4 && tt < 4.6) return tt < 0.5 ? '#8a7658' : '#f4ead2'; }
   return null; }, 0.125); };
+// ---- Candy Works: the factory with two striped chimneys, a giant gumball machine, an arch of candy canes
+BUILD.factory = function(B, t){ gable(B, t.x, t.y, t.w - 1, t.d - 1, 7, 3.4, function(dx, dy, tt){ return tt > 6.4 ? '#ffffff' : ((tt * 1.6 | 0) % 2 ? '#ff8ab8' : '#ff9cc4'); }, function(dx){ return (Math.floor(dx * 1.4 + 20) % 2) ? '#7a4422' : '#6a3a1c'; }, '#7a4422');
+  [-2.6, 2.6].forEach(function(cx){ box(B, t.x + cx, t.y - 1, 1.4, 1.4, 13, function(dx, dy, tt){ if (tt < 8 || Math.hypot(dx, dy) > 0.6) return null; return (Math.floor(tt * 1.4) % 2) ? '#e8233f' : '#fff6f0'; }, 0.125); }); };
+BUILD.gumballs = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
+  if (tt < 2.2) return r < 1.4 ? (tt > 1.9 ? '#ffd23f' : '#e8233f') : null; if (tt > 6.2) return r < 0.5 && tt < 6.6 ? '#e8233f' : null;
+  var g = Math.hypot(dx, dy, tt - 4.2); if (g > 2.05) return null; if (g > 1.95) return '#e8f8ff';
+  var k = hash(Math.floor((dx + 3) * 1.6), Math.floor(tt * 1.6) + Math.floor((dy + 3) * 1.6) * 7, 31); return ['#ff3b7a', '#ffd23f', '#3fbf9a', '#8a5cff', '#ff8a1f', '#ffffff'][Math.floor(k * 6)]; }, 0.125); };
+BUILD.canes = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ if (Math.abs(dy) > 0.3 || tt < 0) return null;
+  for (var s = -1; s <= 1; s += 2){ var cx = s * 1.6, d;
+    if (tt < 3.6) d = Math.abs(dx - s * 3.2); else { if (s * (dx - cx) < -0.1 && tt < 3.6) return null; d = Math.abs(Math.hypot(dx - cx, tt - 3.6) - 1.6); if (s * (dx - cx) < 0 && tt < 3.6) d = 9; }
+    if (d < 0.26 && tt < 5.4) return (Math.floor((tt + dx * s) * 2.2) % 2) ? '#e8233f' : '#fff6f0'; }
+  return null; }, 0.125); };
 
 /* ------------------------------------------------------------------------------ ambient life */
 /* EVERY WORLD IS ALIVE AROUND YOU. Nothing here can be touched or picked up and none of it blocks the golfer:
@@ -960,7 +976,8 @@ var LIFE = {
   haunted:{ fly:['bat', 5], ghosts:2, mote:['firefly', 8] },
   harvest:{ fly:['crow', 3], mote:['leaf', 16] },
   school:{ fly:['song', 4], mote:[['leaf', 10], ['butter', 6]] },
-  iceage:{ mote:['snow', 60], fly:['crow', 2] }
+  iceage:{ mote:['snow', 60], fly:['crow', 2] },
+  candy:{ fly:['song', 3], mote:[['petal', 14], ['spark', 10]] }
 };
 // two frames a flyer: wings up, wings down. o body, w wing, h head or beak, l light
 var PIX_FLY = {
