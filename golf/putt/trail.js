@@ -162,6 +162,8 @@ KIT['pirate~cove'] = kitFrom(KIT.pirate, { g:['#efd89a', '#f6e4b2', '#dcc384', 0
 var GPAT = {};
 var LIFE_AS = { 'pirate~jungle':{ fly:['parrot', 5], mote:[['firefly', 14], ['butter', 6]] } };
 function kitOf(th){ return KIT[th] || KIT.clubhouse; }
+// the world a theme on the walk belongs to: a stop's kit is named 'world~stop', and what the world decides (stone bridges, neon) stays the world's
+function baseTh(th){ return String(th || '').split('~')[0]; }
 
 /* ---------------------------------------------------------------------------------- the plan */
 /* spec: { seed, theme, theme0 (the world being left, on a trail that crosses), cross, gateOpen, to (hole number),
@@ -430,7 +432,7 @@ function plan(spec){
       if (okGround(jx, jy, lr) && free(jx, jy, lr + 0.3) && !screensPath(jx, jy, lr, lh)) place(lk, jx, jy, lr, lh); }
   }
   // lamps along the path in the worlds that have them
-  if (kitOf(th).lm.indexOf('lamps') >= 0 || th === 'neon') for (var ls2 = 14; ls2 < SL - 6; ls2 += 22){ var sd2 = (ls2 / 22 | 0) % 2 ? 1 : -1, lq2 = beside(ls2, sd2, PW + 1.3), lx2 = lq2[0], ly2 = lq2[1];
+  if (kitOf(th).lm.indexOf('lamps') >= 0 || baseTh(th) === 'neon') for (var ls2 = 14; ls2 < SL - 6; ls2 += 22){ var sd2 = (ls2 / 22 | 0) % 2 ? 1 : -1, lq2 = beside(ls2, sd2, PW + 1.3), lx2 = lq2[0], ly2 = lq2[1];
     if (free(lx2, ly2, 0.4) && okGround(lx2, ly2, 0.4) && !inClear(lx2, ly2, 1)) place('lamp', lx2, ly2, 0.3, 7); }
 
   // ---- what can be picked up and walked into
@@ -786,8 +788,8 @@ function mats(P){
     carpet:[T.carpet || '#2f8f4e', T.carpet2 || '#2a8246', T.carpet || '#2f8f4e', 0.16], rail:[T.wall || '#f4efe2', T.wallHi || '#ffffff', T.wall || '#f4efe2', 0.1],
     cup:['#141414', '#202020', '#141414', 0],
     // a bridge's deck, planks laid across the walk (stone slabs in the temple and the volcano), and the creek's banks
-    deck:['', '', '', 0, function(c, R, h3){ var st = P.creek && (P.themeAt(P.creek.y0) === 'volcano' || P.themeAt(P.creek.y0) === 'temple'), n = h3(c.ti, c.tj, 31), m = ((c.pl % 2) + 2) % 2;
-      var cols = st ? ['#8a8078', '#9a9088', '#5e564f'] : P.creek && P.themeAt(P.creek.y0) === 'neon' ? ['#2a3a90', '#3a4ab0', '#151c48'] : ['#a8865a', '#b8966a', '#6e5236'];
+    deck:['', '', '', 0, function(c, R, h3){ var st = P.creek && (baseTh(P.themeAt(P.creek.y0)) === 'volcano' || baseTh(P.themeAt(P.creek.y0)) === 'temple'), n = h3(c.ti, c.tj, 31), m = ((c.pl % 2) + 2) % 2;
+      var cols = st ? ['#8a8078', '#9a9088', '#5e564f'] : P.creek && baseTh(P.themeAt(P.creek.y0)) === 'neon' ? ['#2a3a90', '#3a4ab0', '#151c48'] : ['#a8865a', '#b8966a', '#6e5236'];
       return R(n < 0.04 ? cols[2] : m ? cols[0] : cols[1]); }],
     bank:['#8a7a62', '#9a8a70', '#6e624e', 0.3], scorch:['#2a2226', '#3a2e30', '#4a2a22', 0.25]
   };
@@ -881,7 +883,7 @@ BUILD.pumpkin = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y);
     var d = Math.hypot((px - x) / 0.85, (py - y) / 0.7, (pz - zb - 0.45) / 0.5); if (d > 1) return null; return (Math.floor(Math.atan2(py - y, px - x) * 3) % 2) ? '#e8761f' : '#d0621a'; }, 0.125); };
 BUILD.hay = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y);
   B.solid(x - 1.2, y - 0.8, zb, x + 1.2, y + 0.8, zb + 1.5, function(px, py, pz){ if (Math.abs(px - x) > 1.1 || Math.abs(py - y) > 0.7 || pz - zb > 1.4) return null; return Math.abs(Math.abs(px - x) - 0.5) < 0.08 ? '#8a5a2a' : (hash(px * 8 | 0, pz * 8 | 0, 1) < 0.3 ? '#c8a04a' : '#e2bc5c'); }, 0.125); };
-BUILD.lamp = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), pole = t.th === 'neon' ? '#2bf0ff' : '#2a2a30', glow = t.th === 'neon' ? '#ff8ae8' : '#fff3c4';
+BUILD.lamp = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), pole = baseTh(t.th) === 'neon' ? '#2bf0ff' : '#2a2a30', glow = baseTh(t.th) === 'neon' ? '#ff8ae8' : '#fff3c4';
   B.solid(x - 0.6, y - 0.6, zb, x + 0.6, y + 0.6, zb + 7.2, function(px, py, pz){ var tt = pz - zb, r = Math.hypot(px - x, py - y);
     if (tt < 0.4 && r < 0.3) return pole; if (tt < 6 && r < 0.13) return pole; if (tt >= 6 && tt < 7 && r < 0.48) return tt > 6.88 ? pole : glow; return null; }, 0.125); };
 
@@ -897,7 +899,7 @@ BUILD.pin = function(B, t){ var fx = t.x, fy = t.y, fz = B.gz(fx, fy);
   B.solid(fx - 0.3, fy - 0.3, fz, fx + 2.2, fy + 0.3, fz + 5.6, function(px, py, pz){ var tt = pz - fz; if (Math.hypot(px - fx, py - fy) < 0.1 && tt < 5.5) return '#ffffff';
     if (px > fx && px < fx + 2 && tt > 4 && tt < 5.4 && Math.abs(py - fy) < 0.06) return t.col || '#e53935'; return null; }, 0.125); };
 /* a bridge over the creek: a rail either side of the deck, posts along it, in wood or in the world's stone */
-BUILD.bridge = function(B, t){ var x = t.x, y = t.y, tx = t.tx, ty = t.ty, hl = t.half, off = PW + 0.45, zt = B.gz(x, y), stone = t.th === 'volcano' || t.th === 'temple', neon = t.th === 'neon';
+BUILD.bridge = function(B, t){ var x = t.x, y = t.y, tx = t.tx, ty = t.ty, hl = t.half, off = PW + 0.45, zt = B.gz(x, y), stone = baseTh(t.th) === 'volcano' || baseTh(t.th) === 'temple', neon = baseTh(t.th) === 'neon';
   var post = stone ? '#6e665e' : neon ? '#ff2bd6' : '#6e5236', rail = stone ? '#9a9088' : neon ? '#2bf0ff' : '#a8865a', snow = t.th === 'frozen', ext = hl + 0.6;
   var xs = [x - tx * ext, x + tx * ext, x - ty * (off + 0.4), x + ty * (off + 0.4)], ys = [y - ty * ext, y + ty * ext, y + tx * (off + 0.4), y - tx * (off + 0.4)];
   B.solid(Math.min.apply(null, xs) - 0.5, Math.min.apply(null, ys) - 0.5, zt - 1.2, Math.max.apply(null, xs) + 0.5, Math.max.apply(null, ys) + 0.5, zt + 1.7, function(px, py, pz){
@@ -920,7 +922,7 @@ BUILD.wall = function(B, t, i, P){ var kx = kitOf(P.spec.kitAs || P.spec.theme),
 BUILD.fence = function(B, t, i, P){ ringFence(B, P.fence, t.th); };
 // a puzzle's pen: the same fence round its own centre, its gap the gate (or the crate's gap)
 BUILD.pen = function(B, t){ ringFence(B, t, t.th); };
-function ringFence(B, F, th){ var n = 40, kx = kitOf(th), post = kx === KIT.neon ? '#ff2bd6' : '#7a5a3a', rail = kx === KIT.neon ? '#2bf0ff' : '#a8865a';
+function ringFence(B, F, th){ var n = 40, kx = kitOf(th), post = baseTh(th) === 'neon' ? '#ff2bd6' : '#7a5a3a', rail = baseTh(th) === 'neon' ? '#2bf0ff' : '#a8865a';
   for (var k = 0; k < n; k++){ var a0 = k / n * 6.2832, a1 = (k + 1) / n * 6.2832, mid = (a0 + a1) / 2, dA = Math.atan2(Math.sin(mid - F.a), Math.cos(mid - F.a)); if (Math.abs(dA) < F.half + 0.08) continue;
     (function(a0, a1){ var ax = F.x + Math.cos(a0) * F.r, ay = F.y + Math.sin(a0) * F.r, bx = F.x + Math.cos(a1) * F.r, by = F.y + Math.sin(a1) * F.r, zb = B.gz(ax, ay);
       B.solid(Math.min(ax, bx) - 0.2, Math.min(ay, by) - 0.2, zb - 0.1, Math.max(ax, bx) + 0.2, Math.max(ay, by) + 0.2, zb + 2.6, function(px, py, pz){ var tt = pz - zb, sd = segD(px, py, ax, ay, bx, by);
