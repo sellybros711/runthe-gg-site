@@ -15526,7 +15526,9 @@ function homePlayerHeader(){
 const FT_SCREENS=['title','protour','putthub','me'];
 const FT_HUBS=['protour','putthub','me'];
 const FT_AD_SLOT='0000000000';   // the AdSense unit for the First Tee. A placeholder until the account is approved: a house ad stands in
-const FT_PLATE_V=1;              // golf/home/putt-world-*.jpg (golf/build-home-plates.mjs). Bump when they are re-cut
+const FT_PLATE_V=2;              // golf/home/putt-<theme>-*.jpg (golf/build-home-plates.mjs). Bump when they are re-cut
+// the worlds that have a picture for the home's Putt Putt side. A world added without one shows the Clubhouse
+const FT_PLATES=['clubhouse','school','candy','neon','pirate','temple','canyon','volcano','sky','dino','iceage'];
 // THE SWITCH. The First Tee goes live with Putt Putt Tour, on the same flag (PUTT_LIVE) and for the same testers
 // before it (PUTT_TESTERS): owner, 2026-10-15, everything goes live at once. Everybody else keeps the classic home.
 function ftLive(){ try{ return puttOn(); }catch(e){ return false; } }
@@ -15665,7 +15667,9 @@ function ftScene(side){
   if(decorLive()==='spooky'){ try{ spkStyleOnce(); sc.classList.add('spooky');
     sc.insertAdjacentHTML('beforeend',`<div class="ft-spksky"></div><img class="ft-moon" src="${spkMoonURL()}" alt=""><img class="spk-scene-web l" src="${spkWebURL()}" alt=""><img class="spk-scene-web r" src="${spkWebURL()}" alt=""><div class="spk-fog ft-fog"></div>
       <span class="spk-pk ft-pk1">${spkEl('pumpkin',38)}</span><span class="spk-pk ft-pk2" style="animation-delay:1.2s">${spkEl('pumpkin',26)}</span><span class="spk-pk ft-pk3" style="animation-delay:.6s">${spkEl('pumpkin',32)}</span>`); }catch(e){} }
-  try{ const pl=sc.querySelector('.ft-plate'); if(pl) pl.style.backgroundImage=`url(home/putt-world-${ftDesk()?'d':'p'}.jpg?v=${FT_PLATE_V})`; }catch(e){}
+  // the Putt Putt side is the world you are in (the furthest one you have reached and uncovered)
+  try{ const pl=sc.querySelector('.ft-plate'); if(pl){ let th='clubhouse'; try{ const m=window.RTT_PUTT.summary(puttHost()); if(m && FT_PLATES.includes(m.theme)) th=m.theme; }catch(e){}
+    pl.style.backgroundImage=`url(home/putt-${th}-${ftDesk()?'d':'p'}.jpg?v=${FT_PLATE_V})`; } }catch(e){}
   const img=sc.querySelector('.ft-hole'), ck=dailyCourseKey(todayKey());
   const have=(_dArt[ck]!==undefined)?_dArt[ck]:(dArtStored(ck)?_dArt[ck]:undefined);
   if(have) img.src=have;

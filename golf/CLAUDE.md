@@ -65,6 +65,7 @@ node golf/check-tracer3d.mjs                every course draws, nothing the ball
 | `trail.js` | a `KIT`, its `LIFE`, a `BUILD` for each new landmark with its `LMSIZE` |
 | `putt.js` again | a `GREETERS` host, three `TRINKETS` and a `TRINKET_COL`, a `DOOR_NAMES` entry and its CSS |
 | `build-cards.mjs` | the signature hole the home card is cut from |
+| `build-home-plates.mjs <theme>` | the First Tee's picture of the world, then its theme in `FT_PLATES` and a bump of `FT_PLATE_V` |
 | `routes.json` | `solve.mjs --tour main --only <the 18> --write`, then each `par` set to what it prints |
 
 **Code**
