@@ -229,7 +229,7 @@ if (!QUICK){
     const ok = ['', ':sc', ':3'].map(k => ROUTES[TR.id + ':' + n + k]).filter(l => l && l.length <= want).find(l => !replayRoute(C, l));
     claim(!!ok && P.starsOf(ok.length, L.par, L.three) === 3, `${TR.id} ${n} ${P.levelName(n, TR.id)}: three stars (${want === 1 ? 'an ace' : want + ' strokes'}) has a route that replays with room for error`); };
   const TM = P.TOURS.main, TB = P.TOURS.members, Cn = P.PAY;
-  claim(TM.levels.length === 180 && TM.worlds.length === 10 && TM.per === 18, `the main tour is 180 holes in ${TM.worlds.length} worlds of ${TM.per}`);
+  claim(TM.levels.length === 198 && TM.worlds.length === 11 && TM.per === 18, `the main tour is 198 holes in ${TM.worlds.length} worlds of ${TM.per}`);
   claim(TB.levels.length === 18 && TB.worlds.length === 2 && TB.per === 9 && TB.members, `the Members Tour is 18 holes in ${TB.worlds.length} worlds of ${TB.per}`);
   claim(TM.worlds.every(W => P.CAL_THEMES.indexOf(W.theme) < 0), 'the main tour wears none of the calendar themes, which belong to the passes (' + TM.worlds.map(W => W.theme).join(', ') + ')');
   for (const TR of [TM, TB]){
@@ -456,7 +456,7 @@ if (!args.includes('--no-browser')){
     // key, and a golden ball, are picked up and kept in the Tour record; walking through the arch opens the hole; Skip goes straight there.
     // Where two worlds meet a wall stands across the land: with the stars its door opens, short of them it holds.
     const wk = await pg.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), seed = (s, lv) => { const best = {}; for (let n = 1; n <= 18; n++) best[n] = s;
-      localStorage.setItem('bag_ppt_v1@walk', JSON.stringify({ v:2, met:['clubhouse', 'temple', 'pirate'], tours:{ main:{ lv, best, ace:{}, paid:{}, wpaid:{} } } })); };   // greeters met: their section is below
+      localStorage.setItem('bag_ppt_v1@walk', JSON.stringify({ v:2, met:['clubhouse', 'school', 'candy'], tours:{ main:{ lv, best, ace:{}, paid:{}, wpaid:{} } } })); };   // greeters met: their section is below
       const S = () => window.RTT_PUTT._state(), T = () => window.RTT_PUTT._trail(), rec = () => (JSON.parse(localStorage.getItem('bag_ppt_v1@walk')).trail || {});
       const open = async n => { window.RTT_PUTT._walkTo(n); for (let i = 0; i < 400 && !T(); i++) await sleep(50); await sleep(150); return T(); };
       const visit = async (t, x, y) => { t.goTo(x, y + 0.05); await sleep(120); };
@@ -548,11 +548,11 @@ if (!args.includes('--no-browser')){
        pick up lies in the water, every crossing has its bridge and its deck is dry, and the creeks come in the
        worlds' own kinds. Then he really walks across one: the deck holds him and the water either side does not. */
     const cr = await pg.evaluate(async () => { const out = { n:0, kinds:{}, wet:0, inWater:0, bridges:0, crossings:0, dryDeck:true }, sleep = ms => new Promise(r => setTimeout(r, ms)), best = {};
-      for (let n = 1; n <= 180; n++) best[n] = 3;
-      localStorage.setItem('bag_ppt_v1@walk', JSON.stringify({ v:2, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'frozen', 'sky', 'neon', 'school', 'iceage'], tours:{ main:{ lv:180, best, ace:{}, paid:{}, wpaid:{} } } }));
+      for (let n = 1; n <= 198; n++) best[n] = 3;
+      localStorage.setItem('bag_ppt_v1@walk', JSON.stringify({ v:2, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'frozen', 'sky', 'neon', 'school', 'iceage', 'candy'], tours:{ main:{ lv:198, best, ace:{}, paid:{}, wpaid:{} } } }));
       window.RTT_PUTT.close(); sbUser = { id:'walk' }; openPutt(); await sleep(300);
       let firstWater = 0;
-      for (let f = 1; f < 180; f++){ const P = window.RTT_PUTT._trailPlan(f);
+      for (let f = 1; f < 198; f++){ const P = window.RTT_PUTT._trailPlan(f);
         for (const p of P.path){ const o = P.poolAt(p[0], p[1]); if ((o && o.k === 'water') || P.seaAt(p[0], p[1])) out.wet++; }
         if (!P.creek) continue; out.n++; out.kinds[P.creek.k] = 1; if (P.creek.k === 'water' && !firstWater) firstWater = f;
         out.crossings += P.creek.xs.length; out.bridges += P.things.filter(t => t.k === 'bridge').length;
@@ -578,11 +578,11 @@ if (!args.includes('--no-browser')){
        about, never only that it ended: a prize that turns up before its puzzle is done, a gate that never shuts, a crate
        that goes either way, all fail here. And the local on a puzzle trail gives its clue. */
     const pzr = await pg.evaluate(async () => { const out = { n:0, pz:0, kinds:{}, drops:true, solo:true }, sleep = ms => new Promise(r => setTimeout(r, ms)), best = {}, TR = window.RTT_PUTT_TRAIL;
-      for (let n = 1; n <= 180; n++) best[n] = 3;
-      localStorage.setItem('bag_ppt_v1@pzl', JSON.stringify({ v:2, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'frozen', 'sky', 'neon', 'school', 'iceage'], tours:{ main:{ lv:180, best, ace:{}, paid:{}, wpaid:{} } } }));
+      for (let n = 1; n <= 198; n++) best[n] = 3;
+      localStorage.setItem('bag_ppt_v1@pzl', JSON.stringify({ v:2, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'frozen', 'sky', 'neon', 'school', 'iceage', 'candy'], tours:{ main:{ lv:198, best, ace:{}, paid:{}, wpaid:{} } } }));
       window.RTT_PUTT.close(); sbUser = { id:'pzl' }; openPutt(); await sleep(300);
       const S = () => window.RTT_PUTT._state(), T = () => window.RTT_PUTT._trail(), rec = () => (JSON.parse(localStorage.getItem('bag_ppt_v1@pzl')).trail || {}), first = {};
-      for (let f = 1; f < 180; f++){ const P = window.RTT_PUTT._trailPlan(f); out.n++; const pz = P.puzzle; if (!pz) continue; out.pz++; out.kinds[pz.k] = (out.kinds[pz.k] || 0) + 1;
+      for (let f = 1; f < 198; f++){ const P = window.RTT_PUTT._trailPlan(f); out.n++; const pz = P.puzzle; if (!pz) continue; out.pz++; out.kinds[pz.k] = (out.kinds[pz.k] || 0) + 1;
         const pr = P.items.filter(t => t.k === 'prize'); if (pr.length !== 1 || pr[0].drops.length !== TR.PZ_COINS) out.drops = false;
         if (!pz.clue || P.items.filter(t => t.k === 'chest').length !== 1) out.solo = false;
         if (!first[pz.k] && f % 18 && !P.spec.greet && P.items.some(t => t.k === 'npc')) first[pz.k] = f; }
@@ -658,11 +658,11 @@ if (!args.includes('--no-browser')){
       out.back = S().screen === 'trail' && T().host() && T().host().ph === 'idle' && !document.querySelector('.pp-gd');
       // the world is alive: things fly and drift round him, and Pirate Cove has ships sailing on its own sea
       out.alive = T().life().flyers > 0 && T().life().motes > 0;
-      window.RTT_PUTT._walkTo(37); for (let i = 0; i < 600 && !(T() && T().life().theme === 'pirate'); i++) await sleep(50); await sleep(300);
+      window.RTT_PUTT._walkTo(73); for (let i = 0; i < 600 && !(T() && T().life().theme === 'pirate'); i++) await sleep(50); await sleep(300);
       const L3 = T().life(), P3 = T().plan(); out.ships = L3.ships.length; out.afloat = L3.ships.every(q => q.y < P3.b[1] || q.y > P3.b[3] || P3.seaAt(q.x, q.y));
       const y0 = L3.ships[0].y; await sleep(700); out.sails = Math.abs(T().life().ships[0].y - y0) > 0.5;
       // every world's first trail has its greeter, on both tours
-      out.greeters = []; for (let w = 0; w < 10; w++){ const P = window.RTT_PUTT._trailPlan(w * 18); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }
+      out.greeters = []; for (let w = 0; w < 11; w++){ const P = window.RTT_PUTT._trailPlan(w * 18); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }
       for (let w = 0; w < 2; w++){ const P = window.RTT_PUTT._trailPlan(w * 9, 'members'); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }
       out.notMid = !window.RTT_PUTT._trailPlan(5).spec.greet;
       window.RTT_PUTT.close(); window.RTT_PUTT_MAPFIRST = true; sbUser = { id:'chk' }; return out; });
@@ -671,7 +671,7 @@ if (!args.includes('--no-browser')){
     claim(wo.done && wo.met && wo.talkBtn, `tapping through the talk lets the golfer go, it is kept on the record, and Talk plays it again (${wo.done}, ${wo.met}, ${wo.talkBtn})`);
     claim(wo.map && wo.back, `Map opens the map and its World button goes back into the world, where the greeter does not start over (${wo.map}, ${wo.back})`);
     claim(wo.alive && wo.ships === 2 && wo.afloat && wo.sails, `the world is alive round him, and two pirate ships sail Pirate Cove's sea (${wo.alive}, ${wo.ships}, ${wo.afloat}, ${wo.sails})`);
-    claim(wo.greeters.every(Boolean) && wo.notMid, `all ten worlds and both Members worlds have a greeter on their first trail, and only there (${wo.greeters.map(Number).join('')})`);
+    claim(wo.greeters.every(Boolean) && wo.notMid, `all eleven worlds and both Members worlds have a greeter on their first trail, and only there (${wo.greeters.map(Number).join('')})`);
     // THE HOLES AT EACH END OF A WALK ARE THE REAL HOLES: the one you just played behind you, the next one past the arch,
     // each drawn from its own compiled course, with its cup where the course puts it
     const ft = await pg.evaluate(() => { const P = window.RTT_PUTT._trailPlan(17), f = P.feet || [];
@@ -704,12 +704,12 @@ if (!args.includes('--no-browser')){
     // THE WORLDS AHEAD ARE UNDER CLOUD. No name of a world not yet reached shows on the map, the home card or the
     // walk; the gate shut leaves the clouds; the gate with its stars parts them, and only then is the world named.
     const cl = await pg.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), K = 'bag_ppt_v1@cld', T = () => window.RTT_PUTT._trail();
-      const hidden = /Lost Temple|Pirate Cove|Canyon Mine|Volcano Island|Frozen Peak|Sky Islands|Neon Arcade|Schoolyard|Ice Age|Temple Steps/;
+      const hidden = /Lost Temple|Pirate Cove|Canyon Mine|Volcano Island|Frozen Peak|Sky Islands|Neon Arcade|Schoolyard|Ice Age|Candy Works|Front Steps/;
       const rec = (lv, s) => { const best = {}; for (let n = 1; n <= 18; n++) best[n] = s; return { v:2, lives:3, met:['clubhouse'], tours:{ main:{ lv:lv, best:best, ace:{}, paid:{}, wpaid:{} } } }; };
       window.RTT_PUTT.close(); window.RTT_PUTT_MAPFIRST = true; sbUser = { id:'cld' };
       // short of the stars: 18 pars is 18 stars, under the 40 the gate asks
       localStorage.setItem(K, JSON.stringify(rec(18, 3))); openPutt(); for (let i = 0; i < 100 && !document.querySelector('.pp-map [data-lv="1"]'); i++) await sleep(50);
-      out.map = !hidden.test(document.body.innerText) && document.querySelectorAll('.pp-cloudo').length === 9 && !document.querySelector('.pp-map [data-lv="19"]');
+      out.map = !hidden.test(document.body.innerText) && document.querySelectorAll('.pp-cloudo').length === 10 && !document.querySelector('.pp-map [data-lv="19"]');
       out.card = window.RTT_PUTT.summary().world === 'The Clubhouse';
       window.RTT_PUTT._walkTo(18); for (let i = 0; i < 400 && !T(); i++) await sleep(30); await sleep(200);
       out.walk = !hidden.test(document.body.innerText) && T().clouds() === 'on';
@@ -719,12 +719,12 @@ if (!args.includes('--no-browser')){
       // with the stars: the door opens on it, the clouds part and the world is named
       window.RTT_PUTT.close(); localStorage.setItem(K, JSON.stringify(rec(19, 1))); openPutt(); await sleep(300);
       window.RTT_PUTT._walkTo(18); for (let i = 0; i < 400 && !T(); i++) await sleep(30); await sleep(200);
-      out.before = !/Lost Temple/.test(document.querySelector('.pp-tgoal').textContent);
+      out.before = !/Schoolyard/.test(document.querySelector('.pp-tgoal').textContent);
       T().goTo(T().plan().gate.x, T().plan().gate.y + 2); for (let i = 0; i < 100 && !document.querySelector('.pp-door'); i++) await sleep(30);
-      out.named = /Lost Temple/.test((document.querySelector('.pp-door') || {}).textContent || '');
+      out.named = /Schoolyard/.test((document.querySelector('.pp-door') || {}).textContent || '');
       const seen = []; for (let i = 0; i < 200; i++){ const c = T() && T().clouds(); if (seen[seen.length - 1] !== c) seen.push(c); if (c === 'off') break; await sleep(30); }
-      out.parts = seen.join(','); for (let i = 0; i < 150 && !/Lost Temple/.test(document.querySelector('.pp-tgoal').textContent); i++) await sleep(30);
-      out.after = /Lost Temple/.test(document.querySelector('.pp-tgoal').textContent) && (JSON.parse(localStorage.getItem(K)).rv || []).indexOf('main:1') >= 0;
+      out.parts = seen.join(','); for (let i = 0; i < 150 && !/Schoolyard/.test(document.querySelector('.pp-tgoal').textContent); i++) await sleep(30);
+      out.after = /Schoolyard/.test(document.querySelector('.pp-tgoal').textContent) && (JSON.parse(localStorage.getItem(K)).rv || []).indexOf('main:1') >= 0;
       // THE GREETER STOPPED A HAIR SHORT OF TALKING, FOR EVER. Held 3.2 ft and a ten millionth away, they have to talk
       // a greeter waits on their own side of the gate, so walk through it first
       for (let i = 0; i < 100 && document.querySelector('.pp-door'); i++) await sleep(30);
@@ -776,7 +776,7 @@ if (!args.includes('--no-browser')){
     // ---- THE TOUR'S RULES, through the page. Each life is real: a fresh record for a fresh account.
     await pg.evaluate(() => { const st = window.RTT_PUTT._state(); if (st && st.play && st.play.strokes) { st.round.mode = 'x'; } document.querySelector('.pt-ov') && window.RTT_PUTT.close(); sbUser = { id:'chk' }; localStorage.removeItem('bag_ppt_v1@chk'); openPutt(); });
     await pg.waitForSelector('.pp-map [data-lv="1"]');
-    claim(await pg.evaluate(() => document.querySelectorAll('.pp-lv').length === 18 && document.querySelectorAll('.pp-lv.lock').length === 17 && document.querySelectorAll('.pp-lv.sig').length === 1 && document.querySelectorAll('.pp-cloudo').length === 9), 'the map shows world 1\'s 18 holes, its signature hole and only level 1 open, with the nine worlds ahead under cloud');
+    claim(await pg.evaluate(() => document.querySelectorAll('.pp-lv').length === 18 && document.querySelectorAll('.pp-lv.lock').length === 17 && document.querySelectorAll('.pp-lv.sig').length === 1 && document.querySelectorAll('.pp-cloudo').length === 10), 'the map shows world 1\'s 18 holes, its signature hole and only level 1 open, with the ten worlds ahead under cloud');
     // A RECORD SAVED SIGNED OUT IS CLAIMED, NEVER LOST. A player reached hole 18 and came back to hole 1, because
     // the record is keyed by account and a session that opened before sign-in resolved played under the bare key.
     const mrg = await pg.evaluate(async () => { window.RTT_PUTT.close(); const best = {}; for (let n = 1; n <= 17; n++) best[n] = 2;
@@ -865,10 +865,10 @@ if (!args.includes('--no-browser')){
       localStorage.removeItem('bag_ppt_v1'); sbUser = { id:'chk' }; localStorage.removeItem('bag_ppt_v1@chk'); openPutt(); return { sheet, txt, played, toAcct }; });
     await pg.waitForSelector('.pp-map [data-lv="1"]');
     claim(gst.sheet && /Sign in to keep going/.test(gst.txt) && gst.played && gst.toAcct, `a guest plays holes 1 to 5 free, hole 6 asks them to sign in, and the button opens the sign in sheet (sheet ${gst.sheet}, hole 5 played ${gst.played}, sign in ${gst.toAcct})`);
-    // every world painted means every world revealed: a record that has walked through all ten gates
-    await pg.evaluate(() => { window.RTT_PUTT.close(); const K = 'bag_ppt_v1@chk', st = JSON.parse(localStorage.getItem(K)) || { v:2, tours:{} }; st.rv = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(w => 'main:' + w); localStorage.setItem(K, JSON.stringify(st)); openPutt(); });
+    // every world painted means every world revealed: a record that has walked through all eleven gates
+    await pg.evaluate(() => { window.RTT_PUTT.close(); const K = 'bag_ppt_v1@chk', st = JSON.parse(localStorage.getItem(K)) || { v:2, tours:{} }; st.rv = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(w => 'main:' + w); localStorage.setItem(K, JSON.stringify(st)); openPutt(); });
     await pg.waitForSelector('.pp-map [data-lv="1"]');
-    await pg.waitForFunction(() => document.querySelectorAll('.pp-land').length === 10, null, { timeout:15000 }).catch(() => {});
+    await pg.waitForFunction(() => document.querySelectorAll('.pp-land').length === 11, null, { timeout:15000 }).catch(() => {});
     const land = await pg.evaluate(() => [...document.querySelectorAll('.pp-band')].map(b => { const c = b.querySelector('.pp-land'); if (!c) return null;
       const x = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; const cols = new Set(); for (let i = 0; i < x.length; i += 4 * 37) cols.add(x[i] << 16 | x[i + 1] << 8 | x[i + 2]);
       return { cols:cols.size, exact:Math.abs(c.offsetWidth - c.width * 2) < 1 && Math.abs(c.offsetHeight - c.height * 2) < 1, covers:c.offsetWidth >= b.offsetWidth && c.offsetHeight >= b.offsetHeight }; }));
@@ -973,13 +973,13 @@ if (!args.includes('--no-browser')){
         const FA = fa.cv.getContext('2d').getImageData(0, 0, fa.cv.width, fa.cv.height).data, FB = fr.cv.getContext('2d').getImageData(0, 0, fr.cv.width, fr.cv.height).data;
         let fd = fa.cv.width === fr.cv.width && fa.cv.height === fr.cv.height ? 0 : -1; if (!fd) for (let k = 0; k < FA.length; k++) if (FA[k] !== FB[k]) fd++;
         out.fxDiff = fd; out.fxSky = !!(fa.sky && fa.bg); const fms = [];
-        for (let n2 = 1; n2 <= 180; n2 += 18){ const t1 = performance.now(); D3.render(P.buildFrom(P.tourDesc(n2, null, 'main')), { aspect:2, fx:true }); fms.push(performance.now() - t1); }
+        for (let n2 = 1; n2 <= 198; n2 += 18){ const t1 = performance.now(); D3.render(P.buildFrom(P.tourDesc(n2, null, 'main')), { aspect:2, fx:true }); fms.push(performance.now() - t1); }
         fms.sort((x, y) => x - y); out.fxMed = Math.round(fms[fms.length >> 1]); }
       out.ms.sort((x, y) => x - y); out.med = Math.round(out.ms[out.ms.length >> 1]); out.max = Math.round(out.ms[out.ms.length - 1]);
       return out; });
     claim(!!v3, 'the 3D hole module loaded');
     if (v3){
-      claim(v3.n === 72 + 180 + 18 && v3.magenta.length === 0, `all ${v3.n} themed and Tour holes draw in 3D with no unknown material` + (v3.magenta.length ? ': ' + v3.magenta.slice(0, 4).join('; ') : ''));
+      claim(v3.n === 72 + 198 + 18 && v3.magenta.length === 0, `all ${v3.n} themed and Tour holes draw in 3D with no unknown material` + (v3.magenta.length ? ': ' + v3.magenta.slice(0, 4).join('; ') : ''));
       claim(v3.off.length === 0, 'the projection puts open carpet on carpet in every picture, so the ball rolls on what is drawn' + (v3.off.length ? ': ' + v3.off.slice(0, 4).join('; ') : ''));
       claim(v3.sliceDiff === 0 && v3.slices > 20, `rendered a little at a time (${v3.slices} steps) it is the same picture, pixel for pixel` + (v3.sliceDiff ? ': ' + v3.sliceDiff + ' differ' : ''));
       claim(v3.med < 600, `a hole renders in ${v3.med}ms at the median (${v3.max}ms the slowest), on this machine`);

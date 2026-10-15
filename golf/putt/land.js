@@ -1012,5 +1012,37 @@ window.RTT_PUTT_LAND = (function(){
     };
   };
 
+  /* ---------------- CANDY WORKS: a factory yard of pink frosting, a chocolate pond beside the hole, candy cane posts, gumdrops, and lollipops for trees */
+  BUILD.candy = function(L){
+    var seed = L.seed, clearAt = L.clearAt, spot = L.spot, north = L.north;
+    var pond = spot(2.4, function(x, y){ return Math.abs(x - L.cx) * 0.4 + L.side(x) * 3; });
+    function pondD(x, y){ return pond ? 1 - Math.hypot((x - pond.x) / pond.r, (y - pond.y) / (pond.r * 0.7)) + (fbm(x * 0.6, y * 0.6, seed + 3) - 0.5) * 0.25 : -1; }
+    var canes = []; for (var i = 0; i < 3; i++){ var c = spot(0.6, function(x, y){ return north(x, y) * 0.3 + L.side(x) * 2 + hash(x | 0, y | 0, seed + 19 + i); }, function(x, y){ return pondD(x, y) < -0.3; }); if (c) canes.push(c); }
+    function cane(B, X, Y, k){ var zb = B.gz(X, Y), H = 2.4 + hash(k, 5, seed) * 0.8, dir = hash(k, 7, seed) < 0.5 ? 1 : -1, R = 0.45;
+      B.solid(X - 0.8, Y - 0.3, zb, X + 0.8, Y + 0.3, zb + H + R + 0.2, function(px, py, pz){ var dx = (px - X) * dir, dy = py - Y, t = pz - zb, d;
+        if (t < H) d = Math.hypot(dx, dy); else { var a = Math.atan2(t - H, dx - R); d = Math.hypot(Math.hypot(dx - R, t - H) - R, dy); if (a < -0.1) return null; }
+        if (d > 0.13) return null; return (Math.floor((t + dx) * 3.2) % 2) ? '#e8233f' : '#fff6f0'; }); }
+    return {
+      h:function(x, y){ if (pondD(x, y) > 0) return -0.06; return (fbm(x * 0.08, y * 0.08, seed) - 0.42) * 1.1 * sm(1.3, 6, clearAt(x, y)); },
+      mat:function(x, y){ var t = pondD(x, y); if (t > 0) return ['choc', { dep:t }]; if (t > -0.12) return ['rim']; return ['frost']; },
+      build:function(B){ canes.forEach(function(c, k){ cane(B, c.x, c.y, k); }); },
+      fill:{ on:['frost'], trees:0.4, lows:0.3,
+        // a lollipop: a white stick and a swirled disc on top, turned to face the camera
+        tree:function(B, x, y, i){ var zb = B.gz(x, y), H = 2.2 + hash(i, seed, 61) * 1.2, R = 0.9 + hash(i, seed, 62) * 0.4, cols = [['#ff5fa2', '#fff4f8'], ['#ffd23f', '#ff8a1f'], ['#3fbf9a', '#e6fff6'], ['#8a5cff', '#f2e8ff']][Math.floor(hash(i, seed, 63) * 4)];
+          B.solid(x - R, y - 0.25, zb, x + R, y + 0.25, zb + H + R, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb;
+            if (t < H && Math.hypot(dx, dy) < 0.09) return '#f6f1ea';
+            var r = Math.hypot(dx, t - H); if (r > R || Math.abs(dy) > 0.18) return null; if (r > R - 0.1) return cols[0];
+            return ((Math.atan2(t - H, dx) + r * 3.4) % 1.2 + 1.2) % 1.2 < 0.6 ? cols[0] : cols[1]; }); },
+        // gumdrops, and now and then a sugar cube
+        low:function(B, x, y, i){ var k = hash(i, seed, 64), col = ['#ff3b7a', '#ffd23f', '#3fbf9a', '#8a5cff', '#ff8a1f'][Math.floor(hash(i, seed, 65) * 5)];
+          if (k < 0.75){ var zb = B.gz(x, y), r = 0.36;
+            B.solid(x - r, y - r, zb, x + r, y + r, zb + r * 1.3, function(px, py, pz){ var t = (pz - zb) / (r * 1.3), w = r * (1 - t * t * 0.8); return Math.hypot(px - x, py - y) < w ? ((hash(px * 11 | 0, pz * 11 | 0, 7) < 0.12) ? '#ffffff' : col) : null; }); }
+          else rockAt(B, x, y, 0.32, ['#fbf7f2', '#e8e0d6']); } },
+      bg:'#f2b7cc', gain:1.9,
+      mats:{ frost:['#f6c3d5', '#fbd6e3', '#efb0c7', 0.14], rim:['#c98a5a', '#d89c6c', '#b87a4c', 0.1],
+        choc:['#5a2e14', '#7a4422', '#4a2410', 0.08, function(c, R){ return R((c.dep || 0) < 0.12 ? '#7a4422' : (((c.ti * 3 + c.tj * 7) % 31) === 0 ? '#8a5230' : '#5a2e14')); }] }
+    };
+  };
+
   return { make:make };
 })();

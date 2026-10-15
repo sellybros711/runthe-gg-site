@@ -37,8 +37,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "45",
-      "sha": "3d79ebd2a5da0bd9"
+      "v": "46",
+      "sha": "dab817d39e548461"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -289,8 +289,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "45",
-      "sha": "3d79ebd2a5da0bd9"
+      "v": "46",
+      "sha": "dab817d39e548461"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -543,8 +543,8 @@
       "sha": "c51a588b3f3d2559"
     },
     "/arcade/teammates.js": {
-      "v": "46",
-      "sha": "8887a62a189a6e53"
+      "v": "47",
+      "sha": "0472c003127fe2be"
     },
     "/arcade/livecheck.js": {
       "v": "11",
@@ -609,8 +609,8 @@
       "sha": "d1c6424bc81b200b"
     },
     "/arcade/primary.js": {
-      "v": "45",
-      "sha": "3d79ebd2a5da0bd9"
+      "v": "46",
+      "sha": "dab817d39e548461"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -791,8 +791,8 @@
       "sha": "d1c6424bc81b200b"
     },
     "/arcade/primary.js": {
-      "v": "45",
-      "sha": "3d79ebd2a5da0bd9"
+      "v": "46",
+      "sha": "dab817d39e548461"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -961,8 +961,8 @@
       "sha": "42bbabae620fcfbf"
     },
     "/arcade/primary.js": {
-      "v": "45",
-      "sha": "3d79ebd2a5da0bd9"
+      "v": "46",
+      "sha": "dab817d39e548461"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -981,8 +981,8 @@
       "sha": "8eb403844838a3f1"
     },
     "/arcade/jerseys.js": {
-      "v": "45",
-      "sha": "a1baa25950e193d3"
+      "v": "46",
+      "sha": "7e7697412a67f3b8"
     },
     "/arcade/stats.js": {
       "v": "4",
@@ -1227,8 +1227,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "45",
-      "sha": "3d79ebd2a5da0bd9"
+      "v": "46",
+      "sha": "dab817d39e548461"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -1393,8 +1393,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "45",
-      "sha": "3d79ebd2a5da0bd9"
+      "v": "46",
+      "sha": "dab817d39e548461"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -1563,8 +1563,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "45",
-      "sha": "3d79ebd2a5da0bd9"
+      "v": "46",
+      "sha": "dab817d39e548461"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -1809,8 +1809,8 @@
       "sha": "c51a588b3f3d2559"
     },
     "/arcade/teammates.js": {
-      "v": "46",
-      "sha": "8887a62a189a6e53"
+      "v": "47",
+      "sha": "0472c003127fe2be"
     },
     "/arcade/livecheck.js": {
       "v": "11",
@@ -1997,8 +1997,8 @@
       "sha": "549a479b48a6c6e2"
     },
     "/arcade/primary.js": {
-      "v": "45",
-      "sha": "3d79ebd2a5da0bd9"
+      "v": "46",
+      "sha": "dab817d39e548461"
     },
     "/arcade/franchise.js": {
       "v": "1",
@@ -2021,8 +2021,8 @@
       "sha": "8eb403844838a3f1"
     },
     "/arcade/jerseys.js": {
-      "v": "45",
-      "sha": "a1baa25950e193d3"
+      "v": "46",
+      "sha": "7e7697412a67f3b8"
     },
     "/arcade/teamcolors.js": {
       "v": "2",
@@ -2143,20 +2143,6 @@
     "/arcade/fact.js": {
       "v": "6",
       "sha": "aaaa6b4054ff4960"
-    }
-  },
-  "archive/daily-drive/index.html": {
-    "drive_generator.js": {
-      "v": "20260723m",
-      "sha": "08528cfd35451dcc"
-    },
-    "playbook.js": {
-      "v": "20260723m",
-      "sha": "e7b5c63502e2f7bf"
-    },
-    "engine.js": {
-      "v": "20260723m",
-      "sha": "a0cc105557f05cbc"
     }
   },
   "baseball/index.html": {
@@ -2559,24 +2545,24 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "67",
-      "sha": "1a749a1b09027849"
+      "v": "69",
+      "sha": "b1412ba41e2f3d84"
     },
     "putt/land.js": {
-      "v": "6",
-      "sha": "ae344c7105d10d42"
+      "v": "7",
+      "sha": "fbc4bad15d023c87"
     },
     "putt/hole3d.js": {
-      "v": "12",
-      "sha": "9c84d741aaed6650"
+      "v": "13",
+      "sha": "34e77245dac2aa4c"
     },
     "putt/trail.js": {
-      "v": "25",
-      "sha": "101dd61ece576c33"
+      "v": "26",
+      "sha": "37b8e5e2798f83c4"
     },
     "putt/mapland.js": {
-      "v": "4",
-      "sha": "e5d556a2b57cda4e"
+      "v": "5",
+      "sha": "ad178946618ed7d9"
     },
     "golfer3d.js": {
       "v": "5",
@@ -2839,20 +2825,6 @@
     "/gameLogic.js": {
       "v": "0.0.32",
       "sha": "201097f19827a3c0"
-    }
-  },
-  "touchdown/index.html": {
-    "drive_generator.js": {
-      "v": "20260723m",
-      "sha": "08528cfd35451dcc"
-    },
-    "playbook.js": {
-      "v": "20260723m",
-      "sha": "e7b5c63502e2f7bf"
-    },
-    "engine.js": {
-      "v": "20260723m",
-      "sha": "a0cc105557f05cbc"
     }
   },
   "wrestling/booking/index.html": {

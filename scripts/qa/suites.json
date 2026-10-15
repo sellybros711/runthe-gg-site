@@ -1,0 +1,142 @@
+{
+  "_about": "Which checks the QA agent runs for each game. smoke is the quick pass (minutes a game): for a game with a CI workflow it is that workflow's own node steps, so the two agree; football, cfb and wrestling have no workflow, so theirs are chosen here. full adds every other check the globs find. Read by scripts/qa/run.mjs.",
+  "exclude": ["probe_", "tune_", "find_seeds", "render_", "gzip_server", "postgrest_stub", "sim-", "solve", "check-fetch"],
+  "games": {
+    "site": {
+      "name": "Site-wide rules",
+      "smoke": [
+        "node scripts/check-dashes.mjs",
+        "node scripts/check-copy.mjs",
+        "node scripts/check-numbers.mjs",
+        "node scripts/check-cachebust.mjs",
+        "node scripts/check-adsense.mjs",
+        "node scripts/check-contrast.mjs",
+        "node scripts/check-current.mjs"
+      ],
+      "full": []
+    },
+    "football": {
+      "name": "The Perfect Season and the Fantasy Challenge",
+      "ci": false,
+      "smoke": [
+        "node football/check-dynasty.mjs",
+        "node football/check-overtime.mjs",
+        "node football/check-gameday.mjs",
+        "node football/check-badges.mjs --quick",
+        "node football/check-boss.mjs",
+        "node football/check-fantasy.mjs --quick",
+        "node football/check-fullteam.mjs",
+        "node football/check-premium.mjs",
+        "node football/check-popups.mjs"
+      ],
+      "full": ["football/check-*.mjs"]
+    },
+    "cfb": {
+      "name": "College Football and Commissioner Mode",
+      "ci": false,
+      "smoke": [
+        "node cfb/build/test/commish/test_calendar.mjs",
+        "node cfb/build/test/commish/test_docket.mjs",
+        "node cfb/build/test/commish/test_season.mjs",
+        "node cfb/build/test/test_fantasy.mjs --quick",
+        "node cfb/build/test/test_score_parity.mjs",
+        "node cfb/build/test/test_scorelines.mjs",
+        "node cfb/build/test/test_launch.mjs",
+        "node cfb/build/test/test_tutorial.mjs",
+        "node cfb/build/test/commish/test_page.mjs"
+      ],
+      "full": ["cfb/build/test/test_*.mjs", "cfb/build/test/commish/test_*.mjs"]
+    },
+    "hoops": {
+      "name": "Run The Floor",
+      "smoke": [
+        "node hoops/check-posture.mjs",
+        "node hoops/verify.mjs",
+        "node hoops/check-career.mjs --quick",
+        "node hoops/check-saves.mjs",
+        "node hoops/check-sprite.mjs",
+        "node hoops/check-moments.mjs --quick",
+        "node hoops/check-economy.mjs",
+        "node hoops/check-story.mjs --quick",
+        "node hoops/check-rosters.mjs",
+        "node hoops/check-home.mjs"
+      ],
+      "full": ["hoops/check-*.mjs"]
+    },
+    "baseball": {
+      "name": "Run The Diamond",
+      "smoke": [
+        "node baseball/check-atbats.mjs 25000",
+        "node baseball/check-bracket.mjs 150",
+        "node baseball/check-labels.mjs",
+        "node baseball/check-numbers.mjs",
+        "TZ=Asia/Tokyo node baseball/check-daily.mjs",
+        "node baseball/check-staff.mjs 60",
+        "node baseball/check-lineup.mjs",
+        "node baseball/check-resume.mjs",
+        "node baseball/check-run.mjs"
+      ],
+      "full": ["baseball/check-*.mjs"]
+    },
+    "golf": {
+      "name": "Run The Tour and Putt Putt Tour",
+      "smoke": [
+        "node golf/putt/check-putt.mjs --quick",
+        "node golf/check-voice.mjs",
+        "node golf/check-golfer3d.mjs",
+        "node golf/check-tracer3d.mjs"
+      ],
+      "full": ["golf/check-*.mjs", "node golf/putt/check-putt.mjs --days 14"]
+    },
+    "mythiball": {
+      "name": "MythiBall",
+      "smoke": [
+        "node mythiball/check-posture.mjs",
+        "node mythiball/check-rules.mjs 120",
+        "node mythiball/check-reach.mjs --quick",
+        "node mythiball/check-motion.mjs",
+        "node mythiball/check-collection.mjs",
+        "node mythiball/check-skill.mjs --pa 1500 --mode contact",
+        "node mythiball/verify-rules.mjs"
+      ],
+      "full": ["mythiball/check-*.mjs"]
+    },
+    "wrestling": {
+      "name": "The wrestling game",
+      "ci": false,
+      "smoke": [
+        "node wrestling/verify.mjs --quick",
+        "node wrestling/ring3d/check.mjs"
+      ],
+      "full": ["node wrestling/verify.mjs"]
+    },
+    "setlist": {
+      "name": "Segue",
+      "smoke": [
+        "node setlist/verify-scoring.mjs",
+        "node scripts/setlist/check_data.mjs",
+        "node scripts/setlist/check_venues.mjs"
+      ],
+      "full": []
+    },
+    "arcade": {
+      "name": "The arcade",
+      "smoke": [
+        "node scripts/check-sportegories.mjs",
+        "node scripts/check-sportegories-leagues.mjs",
+        "node scripts/check-sportegories-challenge.mjs",
+        "node arcade/crossword/scripts/check-cluebank.mjs",
+        "node scripts/check-crossword-mini.mjs",
+        "node scripts/check-namesakes.mjs",
+        "node scripts/check-howto.mjs",
+        "node scripts/check-freegames.mjs",
+        "node scripts/check-primary.mjs",
+        "node scripts/check-teammates.mjs",
+        "node scripts/check-colleges.mjs",
+        "node scripts/check-facts.mjs",
+        "node scripts/check-packdata.mjs"
+      ],
+      "full": []
+    }
+  }
+}
