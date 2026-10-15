@@ -693,7 +693,15 @@ check_rows(sort, migration, what, breaks, ok) as (
        where n.nspname = 'public' and c.relname = 'premium_unlocks'
          and a.privilege_type = 'SELECT'
          and (a.grantee = 0
-              or a.grantee = (select oid from pg_roles where rolname = 'authenticated'))))
+              or a.grantee = (select oid from pg_roles where rolname = 'authenticated')))),
+
+  -- NINE PUTT PUTT LIVES, EACH ON ITS OWN CLOCK. Without it the page reads the
+  -- 138 answer as a heart a life and one clock for them all. Nothing throws.
+  (59, '146_putt_lives_nine',
+      'Putt Putt lives are three hearts of three, each life back 24 hours after it went',
+      'Lives still work on 138: three a heart, and none come back until all are gone.',
+      (select count(*) > 0 from col where tbl = 'putt_lives' and name = 'back_at')
+      and (select count(*) > 0 from proc where name = 'putt_lives_state' and body like '%back_at%'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

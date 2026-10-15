@@ -2139,7 +2139,7 @@ var CSS = '\
 .pp-hub{position:relative;max-width:none}.pp-hub .pp-map{position:absolute;inset:0;border-top:0;background:#0b1a12}\
 .pp-hdr{position:absolute;left:0;right:0;top:0;z-index:2;display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 26px;background:linear-gradient(rgba(5,10,14,.78),rgba(5,10,14,0));pointer-events:none}\
 .pp-hdr>*{pointer-events:auto}.pp-av{flex:0 0 auto;width:36px;height:36px;border-radius:50%;border:2px solid #F1D04A;background:#1d3a5c no-repeat;background-size:230%;background-position:50% 8%;image-rendering:pixelated;box-shadow:0 2px 0 rgba(0,0,0,.4)}\
-.pp-hdr .pp-hearts{gap:4px}.pp-h{width:21px;height:18px;background:none;clip-path:none;display:block}.pp-h svg{display:block;width:21px;height:18px}.pp-h.on{background:none}\
+.pp-hdr .pp-hearts{gap:4px}.pp-h{width:20px;height:20px;background:none;clip-path:none;display:block}.pp-h svg{display:block;width:20px;height:20px}.pp-h.on{background:none}\
 .pp-hclock{font-size:12px;font-weight:900;color:#ffd0c8;font-variant-numeric:tabular-nums;background:rgba(0,0,0,.45);border-radius:999px;padding:3px 8px}.pp-hclock:empty{display:none}\
 .pp-sp{flex:1}.pp-cpill{display:flex;align-items:center;gap:6px;background:rgba(10,18,26,.82);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:5px 11px;font-weight:900;font-size:14px;color:#fff;font-variant-numeric:tabular-nums}.pp-cpill:before{content:"";width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff3a8,#f1c232 55%,#b8860b)}\
 .pp-cx{width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(10,18,26,.82);color:#fff;font:inherit;font-size:16px;font-weight:900;cursor:pointer;padding:0}\
@@ -2161,16 +2161,16 @@ var CSS = '\
 .pp-pop .pp-coins{display:inline-block;background:rgba(0,0,0,.35);border-radius:999px;padding:6px 14px;font-size:15px;margin:2px 0 10px}.pp-pop .pp-coins:before{content:"";display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:7px;vertical-align:-1px;background:radial-gradient(circle at 35% 35%,#fff3a8,#f1c232 55%,#b8860b)}\
 .pp-pop .row{flex-wrap:nowrap}.pp-pop .row>*{flex:1;padding:13px 10px;border-radius:13px;font-size:15px}.pp-pop .pt-bt{background:#0c1628;border-color:rgba(255,255,255,.16);color:#fff}\
 .pp-pop .pt-go{background:#12a08f;color:#fff}.pp-pop.par .pt-go{background:#F1D04A;color:#1c1606}.pp-pop.over .pt-go{background:#e5483a;color:#fff}\
-.pp-pop .pp-lives{gap:6px}.pp-pop .pp-lives .pp-h,.pp-pop .pp-lives .pp-h svg{width:28px;height:24px}\
+.pp-pop .pp-lives{gap:6px}.pp-pop .pp-lives .pp-h,.pp-pop .pp-lives .pp-h svg{width:28px;height:28px}\
 .pp-sheet.pp-oolf{background:linear-gradient(#173226,#0a1a24);align-items:stretch;justify-content:flex-start;flex-direction:column;padding:0;overflow:auto}\
 .pp-oolf .pp-hdr{position:relative;background:none}.pp-oolb{flex:1;display:flex;flex-direction:column;align-items:center;gap:10px;padding:24px 18px calc(env(safe-area-inset-bottom,0px) + 24px);max-width:420px;width:100%;margin:0 auto;box-sizing:border-box;text-align:center}\
-.pp-oolb .k{font-size:13px;letter-spacing:.18em;font-weight:900;color:#ff6a55;margin-top:18px}.pp-oolb .pp-lives{gap:10px}.pp-oolb .pp-lives .pp-h,.pp-oolb .pp-lives .pp-h svg{width:42px;height:36px}\
+.pp-oolb .k{font-size:13px;letter-spacing:.18em;font-weight:900;color:#ff6a55;margin-top:18px}.pp-oolb .pp-lives{gap:10px}.pp-oolb .pp-lives .pp-h,.pp-oolb .pp-lives .pp-h svg{width:42px;height:42px}\
 .pp-oolb .lbl{font-weight:900;color:#e8f0f6;font-size:14px}.pp-oolb .pp-big{font-size:54px;color:#fbf2e0;line-height:1}.pp-oolb .m{font-size:12.5px;color:#a9bccb;margin:0 0 8px}\
 .pp-oolb .pp-wide{margin:0;border-radius:14px;padding:13px;font-size:16px}.pp-oolb .ref{background:#F1D04A;color:#1c1606}.pp-oolb .pass{background:#12a08f;color:#fff}.pp-oolb .pt-bt{background:transparent;border-color:rgba(255,255,255,.22);color:#fff}.pp-oolb .pt-go[disabled]{opacity:.7}\
 .pp-dres{background:linear-gradient(160deg,#2c1d46,#1a1230)!important;color:#fff!important;border:2px solid #f08a24;display:grid;grid-template-columns:1fr auto;gap:2px 12px;text-align:left}.pp-dres .k{color:#f08a24;grid-column:1}.pp-dres .nm{grid-column:1;font-family:var(--display,inherit);font-size:30px;line-height:1.05}\
 .pp-dres .th{grid-column:2;grid-row:1/4;width:64px;height:96px;border-radius:9px;overflow:hidden;background:#0d1a12}.pp-dres .th canvas{width:100%;height:100%;object-fit:cover;image-rendering:pixelated;display:block}\
 .pp-dres .sc{grid-column:1/3;display:flex;align-items:center;gap:12px;margin-top:6px}.pp-dres .sc b{font-family:var(--display,inherit);font-size:64px;line-height:1;color:#F1D04A;font-weight:400}.pp-dres .sc span{font-size:15px;line-height:1.25}.pp-dres .m{grid-column:1/3}\
-.pt-top.pp-play{gap:8px;background:linear-gradient(#0a1420,#0e1c2a);border-bottom-color:rgba(255,255,255,.1)}.pp-play .pt-x{width:32px;height:32px;border-radius:50%;padding:0;font-size:14px}.pp-play .pp-av{width:30px;height:30px}.pp-play .pt-sc{display:none}.pp-play .pp-hearts{gap:2px}.pp-play .pp-h,.pp-play .pp-h svg{width:15px;height:13px}\
+.pt-top.pp-play{gap:8px;background:linear-gradient(#0a1420,#0e1c2a);border-bottom-color:rgba(255,255,255,.1)}.pp-play .pt-x{width:32px;height:32px;border-radius:50%;padding:0;font-size:14px}.pp-play .pp-av{width:30px;height:30px}.pp-play .pt-sc{display:none}.pp-play .pp-hearts{gap:2px}.pp-play .pp-h,.pp-play .pp-h svg{width:15px;height:15px}\
 .pp-play .pt-hd b{font-size:14px;color:#fbf2e0}.pp-play .pt-hd span{display:inline-block;max-width:100%;box-sizing:border-box;margin-top:3px;background:#F1D04A;color:#1c1606;font-weight:900;border-radius:999px;padding:2px 9px;font-size:11px}\
 .pt-ov>.pp-hdr{position:relative;background:none}\
 .pp-sizer{position:relative;overflow:hidden}.pp-sizer .pp-world{position:absolute;left:50%;top:0;margin:0;transform-origin:top center}\
@@ -2182,7 +2182,7 @@ var CSS = '\
 .pp-hub .pp-daily .t{font-family:var(--display,inherit);font-size:22px;line-height:1.05;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pp-hub .pp-daily .m{font-size:12px;color:#d6cdf0;opacity:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\
 .pp-dends{font-size:12px;color:#d6cdf0}.pp-dends b{font-variant-numeric:tabular-nums;color:#fff;font-weight:900;letter-spacing:.02em}\
 .pp-dside{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:5px}.pp-hub .pp-daily .pp-dside .g{background:#f08a24;color:#2a1606;border-radius:12px;padding:11px 18px;font-size:16px;font-weight:900}.pp-dside .rw{font-size:10.5px;font-weight:900;color:#ffd45e;white-space:nowrap}\
-@media (min-width:900px){.pp-hdr{padding:18px 28px 40px;gap:14px}.pp-av{width:52px;height:52px}.pp-hdr .pp-h,.pp-hdr .pp-h svg{width:30px;height:26px}.pp-hclock{font-size:15px}.pp-cpill{font-size:19px;padding:8px 16px}.pp-cpill:before{width:16px;height:16px}.pp-cx{width:46px;height:46px;font-size:20px}\
+@media (min-width:900px){.pp-hdr{padding:18px 28px 40px;gap:14px}.pp-av{width:52px;height:52px}.pp-hdr .pp-h,.pp-hdr .pp-h svg{width:28px;height:28px}.pp-hclock{font-size:15px}.pp-cpill{font-size:19px;padding:8px 16px}.pp-cpill:before{width:16px;height:16px}.pp-cx{width:46px;height:46px;font-size:20px}\
   .pp-hub .pp-daily{top:84px;max-width:640px;padding:16px 18px;gap:18px;border-radius:22px}.pp-dtile{width:72px}.pp-dtile .dy{font-size:38px}.pp-dk b{font-size:13px}.pp-hub .pp-daily .t{font-size:32px}.pp-hub .pp-daily .m,.pp-dends{font-size:15px}.pp-hub .pp-daily .pp-dside .g{font-size:20px;padding:14px 26px}.pp-dside .rw{font-size:13px}\
   .pp-wchip{left:28px;bottom:24px;font-size:15px;padding:10px 18px}.pp-oolb{max-width:560px;gap:14px}.pp-oolb .pp-big{font-size:84px}}.pp-tabs{position:absolute;z-index:2;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 12px);white-space:nowrap;display:flex;gap:4px;padding:4px;border-radius:999px;background:rgba(10,18,26,.88);border:1px solid rgba(255,255,255,.14)}.pp-tabs button{border:0;border-radius:999px;padding:8px 13px;font:inherit;font-size:12px;font-weight:900;letter-spacing:.04em;background:transparent;color:#cfd8e3;cursor:pointer}.pp-tabs button.on{background:#F1D04A;color:#10241a}.pp-tabs i{font-style:normal;color:#ffd45e}.pp-tabs .on i{color:#7a4d00}.pp-tabs s{text-decoration:none;font-size:11px;margin-left:2px}.pp-mem .pp-map{background:#120c1e}.pp-memsh .pp-card{border:2px solid #f08a24;background:linear-gradient(160deg,#2c1d46,#160f28)}.pp-memsh .k{color:#ffd45e;font-weight:900;font-size:11px;letter-spacing:.12em}.pp-memrw{margin:10px 0;font-size:13px;line-height:1.5;color:#e9e1ff}.pp-memrw b{color:#ffd45e}@media (max-width:899px){.pp-hub .pp-wchip{bottom:calc(env(safe-area-inset-bottom,0px) + 64px)}}@media (min-width:900px){.pp-tabs{bottom:22px}.pp-tabs button{font-size:15px;padding:11px 18px}}.pp-clock{display:flex;align-items:center;gap:5px;margin-left:auto;background:rgba(10,18,26,.85);border:1px solid #f08a24;border-radius:999px;padding:5px 11px;font-weight:900;font-size:14px;color:#fff;font-variant-numeric:tabular-nums}.pp-clock i{width:8px;height:8px;border-radius:50%;background:#f08a24;animation:ppblink 1s steps(2) infinite}@keyframes ppblink{50%{opacity:.25}}.pp-dres .sc .pp-tm{margin-left:14px}.pp-strk{display:flex;align-items:center;gap:6px;background:rgba(10,18,26,.82);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:6px 12px;font-weight:900;font-size:13px;color:#fff}\
 /* EVERY WORLD HAS ITS OWN BUTTONS: ARE MADE OF THAT WORLD. A level on the Clubhouse lawn is a golf ball, in the Temple a carved stone, at Pirate Cove a gold doubloon (a locked one a barrel end), in the Mine a plank sign with its rivets, on the Volcano a lump of basalt with lava round its rim, in Hallows Night a headstone and at Harvest Moon a pumpkin. The daily card, the tabs and the chips follow the world in view. */\
@@ -2334,6 +2334,8 @@ function open(host){
   S = { host:host || {}, ov:ov, prevOverflow:document.body.style.overflow };
   document.body.style.overflow = 'hidden';
   S.onKey = function(e){ onKey(e); }; window.addEventListener('keydown', S.onKey);
+  // GET TOUR PASS, from any sheet: the page's own Tour Pass, with Putt Putt closed behind it
+  ov.addEventListener('click', function(e){ var b = e.target.closest && e.target.closest('[data-pass]'); if (!b) return; var h = S && S.host; if (h && h.pass){ close(); try{ h.pass(); }catch(x){} } });
   syncPutters();
   if (!resumeCur()) showMenu();
   // the account's record may be ahead of this browser's: redraw the map if the merge moved anything
@@ -2373,7 +2375,8 @@ function top(title, sub, right){
      over par       a life goes and the hole restarts. It is decided the moment par strokes are used
                  with the ball still out, so nobody putts out a hole that is already lost.
    Quitting after the first putt costs a life too. The Daily Hole never costs one.
-   3 lives, 6 with a Tour Pass. When the last one goes a 24 hour clock starts and fills them.
+   9 lives, three hearts of three (18, six hearts, with a Tour Pass). Every life comes back 24 hours after it
+   was lost, each on its own clock (the owner's call, 2026-10-15). st.back holds when each lost life returns.
 
    WHAT IS KEPT WHERE: a signed in player's record is on ps_saves and their lives on putt_lives (138),
    on the server's clock. A guest's are in this browser. The Daily Hole board is not built yet. */
@@ -2442,9 +2445,21 @@ function pload(){ var st = null, key = pkey(); try{ st = JSON.parse(praw(key)); 
   if (st.v !== 2){ st.tours = {}; delete st.lv; delete st.best; delete st.ace; delete st.paid; delete st.wpaid; st.v = 2; }
   st.tours = st.tours || {}; Object.keys(TOURS).forEach(function(k){ var t = st.tours[k] = st.tours[k] || {}; t.lv = t.lv || 1; t.best = t.best || {}; t.ace = t.ace || {}; t.paid = t.paid || {}; t.wpaid = t.wpaid || {}; t.tries = t.tries || {}; t.lv = TOURS[k].lab ? TOURS[k].levels.length : frontier(t, TOURS[k]); });
   st.daily = st.daily || {}; st.rewards = st.rewards || []; st.streak = st.streak || { n:0, last:null, best:0 };
-  if (st.lives == null) st.lives = livesMax();
-  if (st.refillAt && Date.now() >= st.refillAt && !st.lsrv){ st.lives = livesMax(); st.refillAt = null; st.lt = Date.now(); psave(st); }
+  lifeFix(st);
   return st; }
+/* NINE LIVES, EACH ON ITS OWN CLOCK. A record from before (st.l9 unset) kept 3 or 6 lives and one clock that
+   started at nought: each of its lives becomes a full heart of three, and the lives it had already lost come
+   back on the old clock if one was running, else 24 hours from now. On this device (a guest, or before the
+   server answers) a life whose time has come is back; once the server has answered (st.lsrv) only its
+   answer moves them, so a wound clock refills nothing. */
+function lifeFix(st){ var mx = livesMax(), now = Date.now(), dirty = false;
+  if (!st.l9){ var l = st.lives == null ? mx : Math.min(mx, st.lives * 3), miss = Math.max(0, mx - l), at = st.refillAt || now + LIFE_MS;
+    st.back = []; for (var i = 0; i < miss; i++) st.back.push(at); st.lives = l; st.l9 = 1; dirty = true; }
+  st.back = (st.back || []).slice().sort(function(a, b){ return a - b; });
+  if (!st.lsrv){ var keep = st.back.filter(function(t){ return t > now; }); if (keep.length !== st.back.length){ st.back = keep; dirty = true; }
+    var want = Math.max(0, mx - st.back.length); if (st.lives !== want){ st.lives = want; dirty = true; } }
+  st.refillAt = st.back.length ? st.back[0] : null;
+  if (dirty){ st.lt = now; pwrite(st); } }
 function psave(st){ pwrite(st); cloudPush(); }
 /* THE RECORD IS THE ACCOUNT'S, ON THE SERVER. A signed in player's record goes up to ps_saves (103, game
    'putt', slot 'tour') after every save and comes down on every open and every sign in, so a cleared
@@ -2469,7 +2484,7 @@ function cloudProg(st){ var n = 0, c = function(o){ return Object.keys(o || {}).
   return n + c(st.daily) + (st.rewards || []).length; }
 // fold a copy of the record into this one: everything earned is kept, lives come from the newer copy
 function cloudMerge(st, g){ if (!g || g.v !== 2 || !g.tours) return st;
-  if (!st.lsrv && (g.lt || 0) > (st.lt || 0)){ st.lives = g.lives; st.refillAt = g.refillAt || null; st.lt = g.lt; }
+  if (!st.lsrv && (g.lt || 0) > (st.lt || 0)){ st.lives = g.lives; st.refillAt = g.refillAt || null; st.back = (g.back || []).slice(); st.l9 = g.l9 || 0; st.lt = g.lt; }
   if ((g.curT || 0) > (st.curT || 0)){ st.cur = g.cur || null; st.curT = g.curT; }
   if (g.streak && g.streak.last && (!st.streak || !st.streak.last || g.streak.last > st.streak.last)) st.streak = Object.assign({}, g.streak, { best:Math.max((st.streak && st.streak.best) || 0, g.streak.best || 0) });
   return pmerge(st, g); }
@@ -2505,7 +2520,11 @@ function cloudPull(){ var uid = cloudUid(); if (!uid) return Promise.resolve(fal
    A database without 138 answers null, and the lives stay on the device as they were. */
 function livesApply(uid, r){ r = cloudRow(r); if (!r || r.lives == null || cloudUid() !== uid) return false;
   var st = pload(), was = st.lives + '|' + st.refillAt;
-  st.lives = +r.lives; st.refillAt = r.refill_at ? Date.parse(r.refill_at) : null; st.lt = Date.now(); st.lsrv = true;
+  if (r.back_at === undefined){   // a database still on 138: three lives a heart, and its one clock fills them all
+    var mx = livesMax(), l = Math.min(mx, +r.lives * 3), at = r.refill_at ? Date.parse(r.refill_at) : Date.now() + LIFE_MS;
+    st.back = []; for (var i = l; i < mx; i++) st.back.push(at); st.lives = l; }
+  else { st.back = (r.back_at || []).map(function(t){ return Date.parse(t); }).sort(function(a, b){ return a - b; }); st.lives = +r.lives; }
+  st.l9 = 1; st.refillAt = st.back.length ? st.back[0] : null; st.lt = Date.now(); st.lsrv = true;
   pwrite(st);
   return was !== st.lives + '|' + st.refillAt; }
 function livesCall(fn, extra){ var uid = cloudUid(); if (!uid) return Promise.resolve(false);
@@ -2527,8 +2546,9 @@ function guestSheet(){
   sh.querySelector('[data-in]').onclick = function(){ go('signin'); };
   sh.querySelector('[data-up]').onclick = function(){ go('signup'); };
   sh.querySelector('[data-n]').onclick = function(){ sh.remove(); }; }
-function livesMax(){ try{ var h = hostOf(); return h.passActive && h.passActive() ? 6 : 3; }catch(e){ return 3; } }
-function loseLife(st){ if (lifeExtra(st) > 0){ st.bspent = (st.bspent || 0) + 1; psave(st); return; } st.lives = Math.max(0, (st.lives == null ? livesMax() : st.lives) - 1); if (st.lives === 0 && !st.refillAt) st.refillAt = Date.now() + LIFE_MS; st.lt = Date.now(); psave(st); livesCall('putt_lives_spend'); }
+function livesMax(){ try{ var h = hostOf(); return h.passActive && h.passActive() ? 18 : 9; }catch(e){ return 9; } }
+var PER_HEART = 3;
+function loseLife(st){ if (lifeExtra(st) > 0){ st.bspent = (st.bspent || 0) + 1; psave(st); return; } if (st.lives == null) st.lives = livesMax(); if (st.lives <= 0) return; st.lives--; st.back = (st.back || []).concat([Date.now() + LIFE_MS]); st.refillAt = st.back[0]; st.l9 = 1; st.lt = Date.now(); psave(st); livesCall('putt_lives_spend'); }
 function coins(n, label){ try{ if (S.host.coins) S.host.coins(n, label); }catch(e){} var b = balStr(); if (b !== '' && S.ov) S.ov.querySelectorAll('[data-bal]').forEach(function(e){ e.textContent = b; }); }   // the wallet at the top moves the moment coins land
 function hms(ms){ ms = Math.max(0, ms); var s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return h + ':' + (m < 10 ? '0' : '') + m + ':' + (x < 10 ? '0' : '') + x; }
 function hm(ms){ var m = Math.max(0, Math.round(ms / 60000)); return Math.floor(m / 60) + 'h ' + (m % 60) + 'm'; }
@@ -2590,13 +2610,19 @@ function frontier(tp, TR){ var K = TR.per || PER, N = TR.levels.length, n = 1;
 function starRow(k, of){ of = of || 3; var o = ''; for (var i = 0; i < of; i++) o += i < k ? '★' : '☆'; return o; }
 function grant(st, name){ if (name && st.rewards.indexOf(name) < 0) st.rewards.push(name); }
 
-var HEART_PX = ['0110110', '1111111', '1111111', '0111110', '0011100', '0001000'];
-function heartSvg(on){ var d = ''; HEART_PX.forEach(function(r, y){ for (var x = 0; x < 7; x++) if (r[x] === '1') d += 'M' + x + ' ' + y + 'h1v1h-1z'; });
-  return '<svg viewBox="0 0 7 6" shape-rendering="crispEdges"><path d="' + d + '" fill="' + (on ? '#e5483a' : '#5b6670') + '"/>' + (on ? '<path d="M1 1h1v1h-1z" fill="#ff9d8a"/>' : '') + '</svg>'; }
-function hearts(st){ var mx = Math.max(livesMax(), st.lives), out = '';
-  for (var i = 0; i < mx; i++) out += '<i class="pp-h' + (i < st.lives ? ' on' : '') + '">' + heartSvg(i < st.lives) + '</i>';
+/* A HEART IS THREE LIVES, drawn as three bands with a gap between them. The top band goes first, so a heart
+   empties from the top down. Band rows: top 0 to 2, middle 4 to 5, bottom 7 to 9 (rows 3 and 6 are the gaps). */
+var HEART_PX = ['0110001100', '1111011110', '1111111111', '..........', '1111111111', '0111111110', '..........', '0011111100', '0001111000', '0000110000'];
+var HEART_BAND = [0, 0, 0, -1, 1, 1, -1, 2, 2, 2];
+function heartSvg(n){ if (n === true) n = PER_HEART; if (!n) n = 0; var on = '', off = '';
+  HEART_PX.forEach(function(r, y){ var b = HEART_BAND[y]; if (b < 0) return; var lit = b >= PER_HEART - n;
+    for (var x = 0; x < r.length; x++) if (r[x] === '1'){ var c = 'M' + x + ' ' + y + 'h1v1h-1z'; if (lit) on += c; else off += c; } });
+  return '<svg viewBox="0 0 10 10" shape-rendering="crispEdges">' + (off ? '<path d="' + off + '" fill="#5b6670"/>' : '') + (on ? '<path d="' + on + '" fill="#e5483a"/>' : '') +
+    (n === PER_HEART ? '<path d="M1 1h1v1h-1zM2 2h1v1h-1z" fill="#ff9d8a"/>' : '') + '</svg>'; }
+function hearts(st){ var mx = Math.max(livesMax(), st.lives || 0), nh = Math.ceil(mx / PER_HEART), out = '';
+  for (var i = 0; i < nh; i++){ var k = Math.max(0, Math.min(PER_HEART, (st.lives || 0) - i * PER_HEART)); out += '<i class="pp-h' + (k ? ' on' : '') + '" title="' + k + ' of ' + PER_HEART + '">' + heartSvg(k) + '</i>'; }
   var x = lifeExtra(st), bk = bankHeld(st);
-  if (x) out += '<i class="pp-h on pp-hx" title="A spare life in play">' + heartSvg(true) + '</i>';
+  if (x) out += '<i class="pp-h on pp-hx" title="A spare life in play">' + heartSvg(1) + '</i>';
   if (bk) out += '<b class="pp-hbank" title="Spare lives banked">+' + bk + '</b>'; return out; }
 function golferImg(cls){ try{ var c = S.host.golfer && S.host.golfer(); if (c && c.toDataURL) return '<img class="' + cls + '" alt="" src="' + c.toDataURL() + '">'; }catch(e){} return ''; }
 function golferUrl(){ try{ var c = S.host.golfer && S.host.golfer(); if (c && c.toDataURL) return c.toDataURL(); }catch(e){} return ''; }
@@ -2706,7 +2732,7 @@ function bagSheet(){
   var ue = sh.querySelector('[data-uneq]'); if (ue) ue.onclick = function(){ var s2 = pload(); s2.pp = s2.pp || { parts:[] }; s2.pp.eq = null; psave(s2); sh.remove(); bagSheet(); };
 }
 /* THE MEMBERS TOUR, SHUT: what it is, what it pays, and the way in. Anybody can walk Hallows Night and look
-   at it; this sheet is what meets them at a hole. It sells nothing for coins (the pass opens at launch) and it
+   at it; this sheet is what meets them at a hole. It sells nothing for coins (the pass is bought with money, on the page's Tour Pass) and it
    always says the Putt Putt Tour is theirs to play meanwhile, with a button straight to it. o.n is the hole they
    walked up to, and o.trail says they were standing on its trail, so Keep looking walks them out again. */
 function membersSheet(o){
@@ -2715,7 +2741,7 @@ function membersSheet(o){
   var sh = el('<div class="pp-sheet pp-memsh"><div class="pp-card"><div class="k">★ MEMBERS TOUR · ' + esc(at.toUpperCase()) + '</div><div class="t">This hole is for Tour Pass members</div>\
     <div class="m">Eighteen holes of the season you won’t find anywhere else: a crypt door on a switch, a coffin to roll into, a cauldron, a haunted mill. Look around all you like. Playing them takes the pass.</div>\
     <div class="pp-memrw"><b>' + tot.toLocaleString() + ' coins</b> to win, a <b>trick or treat bonus</b> on every Hallows hole you beat under par, and rewards only members can earn:<br>' + Pm.sigReward.concat(Pm.worldReward, [Pm.treat.reward]).map(function(r){ return esc(r.replace(' (Members only)', '')); }).join(' · ') + ' · ' + esc(Pm.finish.replace(' (Members only)', '')) + '</div>\
-    <button class="pt-go pp-wide pass" disabled>Get Tour Pass<small>Opens the Members Tour, and 6 lives · at launch</small></button>\
+    <button class="pt-go pp-wide pass" data-pass>Get Tour Pass<small>Opens the Members Tour, and six hearts: 18 lives</small></button>\
     <div class="m pp-memfree">No pass? The Putt Putt Tour is free to play: ' + TOURS.main.levels.length + ' holes across ' + TOURS.main.worlds.length + ' worlds.</div>\
     <button class="pt-go pp-wide" data-main>Play the Putt Putt Tour</button>' +
     (o.trail ? '<button class="pt-bt pp-wide" data-look>Keep looking around</button>' : '') +
@@ -2836,7 +2862,7 @@ function drawCal(st){
 function pastSheet(dk){
   var dh = dailyHole(dk), sh = el('<div class="pp-sheet pp-memsh"><div class="pp-card"><div class="k">★ ' + monthDay(dk) + ' · MISSED</div><div class="t">' + esc(dh.name) + '</div>\
     <div class="m">Every day you missed is still on the calendar. Tour Pass members can go back and play any of them: one scored try each, the same hole everybody played that day.</div>\
-    <button class="pt-go pp-wide pass" disabled>Get Tour Pass<small>Play every past Daily Hole · at launch</small></button>' +
+    <button class="pt-go pp-wide pass" data-pass>Get Tour Pass<small>Play every past Daily Hole</small></button>' +
     (S.host.tester && S.host.tester() ? '<button class="pt-bt pp-wide" data-prev>Tester preview</button>' : '') +
     '<button class="pt-bt pp-wide" data-n>Not now</button></div></div>');
   S.ov.appendChild(sh);
@@ -3302,19 +3328,18 @@ function walkFlat(n, tid){
 /* ------------------------------------------------------------------------------ out of lives */
 function outOfLives(){
   var st = pload(), sh = el('<div class="pp-sheet pp-oolf">' + hdr() + '<div class="pp-oolb"><div class="k">OUT OF LIVES</div><div class="pp-lives">' + hearts(st) + '</div>\
-    <div class="lbl">Full lives in</div><div class="pp-big" data-c>' + hms((st.refillAt || Date.now()) - Date.now()) + '</div>\
-    <div class="m">The clock keeps running while you are away.</div>\
-    <button class="pt-go pp-wide ref" disabled>Refill lives · $0.99<small>Checkout opens at launch</small></button>\
-    <button class="pt-go pp-wide pass" disabled>Get Tour Pass<small>6 lives and 3 of them right away · at launch</small></button>' +
+    <div class="lbl">Next life in</div><div class="pp-big" data-c>' + hms((st.refillAt || Date.now()) - Date.now()) + '</div>\
+    <div class="m">Each life comes back 24 hours after you lost it. The clocks keep running while you are away.</div>\
+    <button class="pt-go pp-wide pass" data-pass>Get Tour Pass<small>Six hearts: 18 lives</small></button>' +
     (bankHeld(st) ? '<button class="pt-go pp-wide" data-spare>Use a spare life<small>' + bankHeld(st) + ' banked from the trails</small></button>' : '') +
     (S.host.tester && S.host.tester() ? '<button class="pt-bt pp-wide" data-free>Tester refill · free</button>' : '') +
     '<button class="pt-bt pp-wide" data-wait>Wait it out</button><div class="m">The Daily Hole never uses a life.</div></div></div>');
   S.ov.appendChild(sh);
-  var c = sh.querySelector('[data-c]'), iv = setInterval(function(){ if (!sh.isConnected) return clearInterval(iv); var s2 = pload(); if (!s2.refillAt){ clearInterval(iv); sh.remove(); showHub(); return; } if (s2.lsrv && Date.now() >= s2.refillAt && !sh._ask){ sh._ask = 1; livesSync().then(function(){ sh._ask = 0; }); } c.textContent = hms(s2.refillAt - Date.now()); }, 1000);
+  var c = sh.querySelector('[data-c]'), iv = setInterval(function(){ if (!sh.isConnected) return clearInterval(iv); var s2 = pload(); if (livesNow(s2) > 0 || !s2.refillAt){ clearInterval(iv); sh.remove(); showHub(); return; } if (s2.lsrv && Date.now() >= s2.refillAt && !sh._ask){ sh._ask = 1; livesSync().then(function(){ sh._ask = 0; }); } c.textContent = hms(s2.refillAt - Date.now()); }, 1000);
   sh.querySelector('[data-wait]').onclick = function(){ sh.remove(); };
   sh.querySelector('[data-x]').onclick = function(){ sh.remove(); };
   var spb = sh.querySelector('[data-spare]'); if (spb) spb.onclick = function(){ var s2 = pload(); if (!bankHeld(s2)) return; s2.bused = (s2.bused || 0) + 1; psave(s2); clearInterval(iv); sh.remove(); showHub(); };
-  var fr = sh.querySelector('[data-free]'); if (fr) fr.onclick = function(){ var s2 = pload(); s2.lives = livesMax(); s2.refillAt = null; s2.lt = Date.now(); psave(s2); livesCall('putt_lives_refill'); sh.remove(); showHub(); };
+  var fr = sh.querySelector('[data-free]'); if (fr) fr.onclick = function(){ var s2 = pload(); s2.lives = livesMax(); s2.back = []; s2.refillAt = null; s2.lt = Date.now(); psave(s2); livesCall('putt_lives_refill'); sh.remove(); showHub(); };
 }
 
 /* ---------------------------------------------------------------------------- a Tour level */
@@ -3502,7 +3527,7 @@ function worldComplete(n, s, par, got, tid, lines){
     '<div class="pp-stars">' + have + ' of ' + worldMax(TR, w) + ' ★</div>' +
     (shut ? '<div class="s">' + esc(wLabel(TR, w + 1)) + ' opens at ' + gate + ' total stars. You have ' + total + '. Replay holes to earn ' + (gate - total) + ' more.</div>' :
      nx ? '<div class="s">' + (revealed(TR, w + 1) ? (TR.members ? esc(nx.name) : 'World ' + (w + 2) + ', ' + esc(nx.name) + ',') + ' is open.' : 'You have the stars. Walk to the gate and the clouds will part.') + '</div>' : '<div class="s">You have finished the ' + esc(TR.name) + '.</div>') +
-    '<div class="s pp-fine">Rewards are saved to your Tour record. They become wearable at launch.</div>\
+    '<div class="s pp-fine">Rewards are saved to your Tour record.</div>\
     <div class="row"><button class="pt-bt" data-a="map">Map</button>' + (nx ? '<button class="pt-go" data-a="next">' + (shut ? 'To the door' : 'Next ' + (TR.members ? 'hole' : 'world')) + ' ▸</button>' : '') + '</div>',
     { map:function(){ showHub(tid); }, next:function(){ walkTo(n, tid); } });
 }

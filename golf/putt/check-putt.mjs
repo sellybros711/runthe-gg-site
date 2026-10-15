@@ -853,12 +853,13 @@ if (!args.includes('--no-browser')){
       return { first, after, scr, lv:s1.lv, sentLv:sent.length ? sent[sent.length - 1].tours.main.lv : null }; });
     claim(lat.first === 1 && lat.after === 30 && lat.scr === 'trail', `the trail moves on to the account's hole when its record lands after the first screen (hole ${lat.first}, then ${lat.after})`);
     claim(lat.lv === 30 && lat.sentLv === 30, `a browser that refuses to save keeps the record in memory and still sends it to the account (hole ${lat.lv}, sent ${lat.sentLv})`);
-    // LIVES ARE THE SERVER'S (138). A fresh browser takes the server's lives, a lost life is spent there, and a
-    // device clock wound past the refill does not fill them: only the server's answer does.
-    const lvs = await pg.evaluate(async () => { const sb0 = sb, calls = [], row = { lives:0, refill_at:new Date(Date.now() + 3600e3).toISOString() };
+    // LIVES ARE THE SERVER'S (138, 146). A fresh browser takes the server's lives and their clocks, a lost life is
+    // spent there, and a device clock wound past them fills nothing: only the server's answer does.
+    const lvs = await pg.evaluate(async () => { const sb0 = sb, calls = [], soon = () => new Date(Date.now() + 3600e3).toISOString(),
+        row = { lives:0, back:Array.from({ length:9 }, soon) }, ans = () => ({ data:[{ lives:row.lives, refill_at:row.back[0] || null, max_lives:9, back_at:row.back.slice() }], error:null });
       sb = { rpc(fn, a){ calls.push(fn);
-        if (fn === 'putt_lives_state') return Promise.resolve({ data:[{ lives:row.lives, refill_at:row.refill_at, max_lives:3 }], error:null });
-        if (fn === 'putt_lives_spend'){ row.lives = Math.max(0, row.lives - 1); return Promise.resolve({ data:[{ lives:row.lives, refill_at:row.refill_at, max_lives:3 }], error:null }); }
+        if (fn === 'putt_lives_state') return Promise.resolve(ans());
+        if (fn === 'putt_lives_spend'){ if (row.lives > 0){ row.lives--; row.back.push(new Date(Date.now() + 24 * 3600e3).toISOString()); } return Promise.resolve(ans()); }
         if (fn === 'ps_save_get') return Promise.resolve({ data:[], error:null });
         if (fn === 'ps_save_put') return Promise.resolve({ data:[{ ok:true }], error:null });
         return Promise.resolve({ data:null, error:{ message:'no' } }); } };
@@ -866,15 +867,15 @@ if (!args.includes('--no-browser')){
       for (let t = 0; t < 100 && !calls.includes('putt_lives_state'); t++) await new Promise(r => setTimeout(r, 50));
       await new Promise(r => setTimeout(r, 100));
       const k = 'bag_ppt_v1@lvs', a = JSON.parse(localStorage.getItem(k) || '{}');
-      a.refillAt = Date.now() - 1000; localStorage.setItem(k, JSON.stringify(a));
+      a.refillAt = Date.now() - 1000; a.back = (a.back || []).map(() => Date.now() - 1000); localStorage.setItem(k, JSON.stringify(a));
       const wound = window.RTT_PUTT.summary(puttHost()).lives;
-      row.lives = 2; await window.RTT_PUTT.sync(puttHost()); window.RTT_PUTT._lose();
+      row.lives = 2; row.back = Array.from({ length:7 }, soon); await window.RTT_PUTT.sync(puttHost()); window.RTT_PUTT._lose();
       for (let t = 0; t < 40 && !calls.includes('putt_lives_spend'); t++) await new Promise(r => setTimeout(r, 50));
       await new Promise(r => setTimeout(r, 100));
       const after = JSON.parse(localStorage.getItem(k)); window.RTT_PUTT.close(); sb = sb0;
-      return { first:a.lives, wound, spent:calls.includes('putt_lives_spend'), after:after.lives, srv:row.lives }; });
+      return { first:a.lives, wound, spent:calls.includes('putt_lives_spend'), after:after.lives, srv:row.lives, clocks:(after.back || []).length }; });
     claim(lvs.first === 0 && lvs.wound === 0, `a fresh browser takes the server's lives, and a wound clock does not refill them (${lvs.first}, then ${lvs.wound})`);
-    claim(lvs.spent && lvs.srv === 1 && lvs.after === 1, `a lost life is spent on the server (server ${lvs.srv}, browser ${lvs.after})`);
+    claim(lvs.spent && lvs.srv === 1 && lvs.after === 1 && lvs.clocks === 8, `a lost life is spent on the server, with a clock of its own (server ${lvs.srv}, browser ${lvs.after}, ${lvs.clocks} clocks)`);
     // A GUEST PLAYS THE FIRST FEW HOLES FREE, then is asked to sign in. The Daily Hole stays open.
     const gst = await pg.evaluate(async () => { const best = {}; for (let n = 1; n <= 8; n++) best[n] = 2;
       localStorage.setItem('bag_ppt_v1', JSON.stringify({ v:2, tours:{ main:{ lv:9, best, ace:{}, paid:{}, wpaid:{} } } })); sbUser = null; window.RTT_PUTT.open(puttHost());
@@ -921,7 +922,9 @@ if (!args.includes('--no-browser')){
     for (let k = 0; k < 2; k++) await putt(0.04);
     await pg.waitForSelector('.pp-pop');
     claim(!(await rec()).cur, 'a finished hole leaves nothing to resume');
-    claim(/Over par/.test(await pg.textContent('.pp-pop')) && (await rec()).lives === 2, 'over par ends the hole the moment par strokes are gone, and takes a life');
+    { const r0 = await rec(); claim(/Over par/.test(await pg.textContent('.pp-pop')) && r0.lives === 8 && (r0.back || []).length === 1 && Math.abs(r0.back[0] - Date.now() - 24 * 3600e3) < 120e3, `over par ends the hole the moment par strokes are gone, and takes one of nine lives, back in 24 hours (${r0.lives} left)`); }
+    { const hs = await pg.evaluate(() => [...document.querySelectorAll('.pp-pop .pp-lives .pp-h')].map(h => h.getAttribute('title')));
+      claim(hs.length === 3 && hs[0] === '3 of 3' && hs[1] === '3 of 3' && hs[2] === '2 of 3', `nine lives are three hearts of three, the last heart emptying from the top (${hs.join(', ')})`); }
     await pg.click('.pp-pop [data-a="again"]');
     const [pw, pa] = await pg.evaluate(() => { const P = window.RTT_PUTT._state().play, C = P.C, a0 = Math.atan2(C.cup[1] - P.ball[1], C.cup[0] - P.ball[0]);
       for (let da = 0; da <= 0.6; da += 0.004) for (const a of [a0 + da, a0 - da]) for (let p = 0.1; p < 1; p += 0.005){ const v = window.RTT_PUTT.speedFor(C, p * 42); if (window.RTT_PUTT.simulate(C, P.ball[0], P.ball[1], Math.cos(a) * v, Math.sin(a) * v, 0).holed) return [p, a]; } return [null, null]; });
@@ -930,18 +933,23 @@ if (!args.includes('--no-browser')){
     const r1 = await rec();
     const pop1 = await pg.textContent('.pp-pop');
     const t1 = (r1.tours || {}).main || {};
-    claim(r1.v === 2 && /HOLE IN ONE/.test(pop1) && t1.lv === 2 && t1.ace && t1.ace[1] && r1.lives === 2, 'under par beats the hole, opens the next, and an ace is marked gold (in the main tour\'s own record)');
+    claim(r1.v === 2 && /HOLE IN ONE/.test(pop1) && t1.lv === 2 && t1.ace && t1.ace[1] && r1.lives === 8, 'under par beats the hole, opens the next, and an ace is marked gold (in the main tour\'s own record)');
     await pg.click('.pp-pop [data-a="again"]');
     await putt(pw, pa); await pg.waitForSelector('.pp-pop');
     claim(/Coins land the first time only/.test(await pg.textContent('.pp-pop')), 'a replay pays nothing');
-    // two more over pars: the last life goes, the 24 hour clock starts, and the sheet offers a refill for money and nothing for coins
+    // two more over pars, with the record down to its last two lives: the last one goes, every lost life is on its
+    // own clock, and the sheet shows the next one back, sells nothing for coins or money, and offers the Tour Pass
+    await pg.evaluate(() => { const k = 'bag_ppt_v1@chk', a = JSON.parse(localStorage.getItem(k)); a.lives = 2; a.back = Array.from({ length:7 }, () => Date.now() + 3 * 3600e3); a.lt = Date.now(); localStorage.setItem(k, JSON.stringify(a)); });
     await pg.click('.pp-pop [data-a="next"]'); await pg.waitForFunction(() => { const S = window.RTT_PUTT._state(); return S.screen === 'play' || window.RTT_PUTT._trail(); }, null, { timeout:60000 }); if (await pg.$('.pp-trail [data-skip]')) await pg.click('.pp-trail [data-skip]'); if (await pg.$('.pp-skipw [data-skip]')) await pg.click('.pp-skipw [data-skip]');
     for (let t = 0; t < 2; t++){ for (let k = 0; k < 3; k++) await putt(0.03); await pg.waitForSelector('.pp-pop'); await pg.click('.pp-pop [data-a="again"]'); }
     await pg.waitForSelector('.pp-sheet');
     const r2 = await rec();
-    claim(r2.lives === 0 && Math.abs(r2.refillAt - Date.now() - 24 * 3600e3) < 120e3 && /\$0\.99/.test(await pg.textContent('.pp-sheet')) && !/coin/i.test(await pg.textContent('.pp-sheet')), 'out of lives: a 24 hour clock, a money refill, no coin price');
+    { const tx = await pg.textContent('.pp-sheet'), last = Math.max.apply(null, r2.back || [0]);
+      claim(r2.lives === 0 && (r2.back || []).length === 9 && Math.abs(last - Date.now() - 24 * 3600e3) < 120e3 && Math.abs(r2.refillAt - Date.now() - 3 * 3600e3) < 120e3
+        && /Next life in/.test(tx) && !/\$|coin/i.test(tx) && !!(await pg.$('.pp-sheet [data-pass]')),
+        `out of lives: each life on its own clock, the next one back shown, no price in coins or money, and the Tour Pass on offer (${(r2.back || []).length} clocks)`); }
     await pg.click('.pp-sheet [data-free]'); await pg.waitForSelector('.pp-map');
-    claim((await rec()).lives === 3, 'a tester can refill for free while the checkout is not built');
+    claim((await rec()).lives === 9, 'a tester can refill for free');
     // EVERYBODY CAN WALK HALLOWS NIGHT, AND PLAYING IT IS THE PASS'S: without a pass the Members tab opens the
     // Members world (here, the map: this section runs map first), and walking up to a hole opens a sheet that
     // sells nothing for coins and sends the player to the free tour
