@@ -129,7 +129,7 @@ const device = () => { global.localStorage = store(); W._reset(); return W; };
 
 /* 7. the page */
 async function browser(){
-  const pw = createRequire('/opt/node22/lib/node_modules/')('playwright');
+  const pw = (() => { try { return require('playwright'); } catch (e) { return createRequire('/opt/node22/lib/node_modules/')('playwright'); } })();
   const CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
   const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.css': 'text/css', '.woff2': 'font/woff2' };
   async function serve(route){
@@ -194,8 +194,13 @@ async function browser(){
   ok(await page.evaluate(() => !document.querySelector('#cr-closet .cl-hist')), '7 a wallet with no coins shows no history');
   await page.evaluate(() => { const st = RTF_AUTH.state; RTF_AUTH.state = () => Object.assign({}, st(), { signedIn: true }); RTF_EARN.run({ madePlayoffs: true, seriesWon: 1, champion: false }, { seed: 4242 }); });
   await page.waitForSelector('#cr-closet .cl-hist');
-  const hist = await page.evaluate(() => ({ line: document.querySelector('#cr-closet .cl-hist li').textContent, coins: document.querySelector('#cr-closet .cl-coins b').textContent, want: String(RTF_ECON.runCoins({ madePlayoffs: true, seriesWon: 1 })) }));
-  ok(/^Draft run/.test(hist.line) && hist.line.endsWith('+' + hist.want) && hist.coins === hist.want, '7 an award lands in the coin history and the balance at once (' + hist.line + ', ' + hist.coins + ')');
+  const hist = await page.evaluate(() => ({ lines: [...document.querySelectorAll('#cr-closet .cl-hist li')].map((l) => l.textContent), coins: document.querySelector('#cr-closet .cl-coins b').textContent, want: String(RTF_ECON.runCoins({ madePlayoffs: true, seriesWon: 1 })) }));
+  /* The run is not the only thing that pays on this press: the daily loop's
+     coin quest settles in the same tick and pays its own line. So the run's
+     line carries the run's award, and the balance is every line it shows. */
+  const runLine = hist.lines.find((l) => /^Draft run/.test(l)) || '';
+  const shown = hist.lines.reduce((s, l) => s + (+((l.match(/\+(\d+)$/) || [])[1] || 0)), 0);
+  ok(runLine.endsWith('+' + hist.want) && +hist.coins.replace(/,/g, '') === shown, '7 an award lands in the coin history and the balance at once (' + hist.lines.join(' | ') + ', ' + hist.coins + ')');
   await page.click('#cr-closet .cl-savefit');
   ok(await page.evaluate(() => document.querySelectorAll('#cr-closet [data-fit]').length === 1), '7 an outfit saves');
   /* on court */

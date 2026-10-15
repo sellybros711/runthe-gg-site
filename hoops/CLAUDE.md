@@ -88,5 +88,8 @@ The economy has its own suite: `check-economy`, `check-wardrobe`, `check-closet`
   others) and drives them in node. Never copy the arithmetic into a guard. Never put a page-level
   call inside a lifted function: it is a ReferenceError in an unrelated suite.
 - A guard that finds nothing must fail, not pass. Every extractor list is asserted.
+- A dark badge in `check-badges` is answered by the bot a person chasing it would be, never by an
+  excuse or a moved number. Three MVPs and 38,000 points need an A+ ceiling, so the career section
+  plays a prospect who rolls until the builder grades it A+; the blind sweep lit them only by seed.
 - `check-saves` and the frozen fixtures are the proof old careers still play. Do not "fix" a failure
   there by updating the fixtures.

@@ -123,6 +123,14 @@ jobs:
       - name: The wardrobe
         run: node hoops/check-wardrobe.mjs
 
+      # The browser checks below load the repo's own playwright, and a sandbox
+      # falls back to its global one. Pinned to the sandbox's version, so the
+      # two run the same browser code.
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+
       # Every idle frame paints on four bodies inside the grid, every loop
       # closes and moves, and the page plays it live (the still under
       # reduced motion).
