@@ -2367,8 +2367,11 @@ const storyOn = (L) => !!(L && L.opt && L.opt.story);
 /* A STORY CAREER IS TUNED TO NARRATIVE.md section 10, measured by
    sim-career.mjs over a thousand careers. The traits, arcs and the build all
    lean a career upward, so the bar is set where the whole of it lands in the
-   bands. A migrated save keeps the old numbers, as it keeps everything. */
-const BAL = { star: 5, dec: 1.4, poTax: 3.5, maxAge: 38, tired: 31 };
+   bands. A migrated save keeps the old numbers, as it keeps everything.
+   The All-Star cut went 5 to 4 on 2026-10-15: at 5 the share had drifted to
+   15% of check-career's 600 random careers (its floor) and 25% of
+   sim-career's thousand, against a band of 22 to 35. At 4 it is 18% and 27%. */
+const BAL = { star: 4, dec: 1.4, poTax: 3.5, maxAge: 38, tired: 31 };
 const bal = (L, k, old) => storyOn(L) ? BAL[k] : old;
 /* DIFFICULTY (Phase E). Normal is every career before this, to the bit: each
    term is a multiply by one or an add of nought. Easy and Hard move how fast
@@ -9365,7 +9368,11 @@ function hofTier(L, score, T) {
   }
   return 'hof_none';
 }
-const HOF_AT = [95, 60, 44];
+/* First ballot is 85, the score VERDICTS and the cr-ballot badge already call
+   First ballot. At 95 a career between them read "First ballot" on its Hall
+   card and "Hall of Famer, in time" as its ending, and first ballot ran 4.7%
+   of sim-career's thousand against a band of 5 to 10. At 85 it is 6.6%. */
+const HOF_AT = [85, 60, 44];
 const GOAT_AT = 158;
 const hofIn = (tier) => tier === 'hof_first' || tier === 'hof_eventual' || tier === 'hof_debate' || tier === 'hof_committee';
 function outcomesOf(L, T, score, tier, jersey) {
