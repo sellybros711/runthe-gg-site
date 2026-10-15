@@ -2145,20 +2145,6 @@
       "sha": "aaaa6b4054ff4960"
     }
   },
-  "archive/daily-drive/index.html": {
-    "drive_generator.js": {
-      "v": "20260723m",
-      "sha": "08528cfd35451dcc"
-    },
-    "playbook.js": {
-      "v": "20260723m",
-      "sha": "e7b5c63502e2f7bf"
-    },
-    "engine.js": {
-      "v": "20260723m",
-      "sha": "a0cc105557f05cbc"
-    }
-  },
   "baseball/index.html": {
     "engine.js": {
       "v": "39",
@@ -2839,20 +2825,6 @@
     "/gameLogic.js": {
       "v": "0.0.32",
       "sha": "201097f19827a3c0"
-    }
-  },
-  "touchdown/index.html": {
-    "drive_generator.js": {
-      "v": "20260723m",
-      "sha": "08528cfd35451dcc"
-    },
-    "playbook.js": {
-      "v": "20260723m",
-      "sha": "e7b5c63502e2f7bf"
-    },
-    "engine.js": {
-      "v": "20260723m",
-      "sha": "a0cc105557f05cbc"
     }
   },
   "wrestling/booking/index.html": {
