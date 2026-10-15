@@ -5,6 +5,7 @@ name: Hoops checks
 # workflow is what that buys. Every command runs locally, unchanged:
 #
 #   node hoops/check-posture.mjs        the game stays out of the indexed site
+#   node hoops/build/career-bundle.mjs --check   career.js is built from hoops/career/
 #   node hoops/build/check-fetch.mjs    the scraper's parsers, against fixtures
 #   node hoops/verify.mjs               draft rules, replay, and the calibration
 #   node hoops/check-badges.mjs         every badge is reachable, against real runs
@@ -66,6 +67,12 @@ jobs:
       # the surface AdSense reviews, and losing it fails nothing on its own.
       - name: Discoverability posture
         run: node hoops/check-posture.mjs
+
+      # career.js is built from hoops/career/. A hand edit to the built file,
+      # or a part the bundler does not list, fails here before anything runs
+      # the engine.
+      - name: Career is its parts
+        run: node hoops/build/career-bundle.mjs --check
 
       # The fetcher can only run where Basketball-Reference is reachable, which
       # is not the dev sandbox, so its parsers are tested against saved markup.
