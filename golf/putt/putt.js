@@ -1442,7 +1442,7 @@ var LEVELS = [
   // Drift: the whole middle of the island turns. Ride it round or play past it.
   { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -36)], [0, -2.5], [0, -32]); disc(H, 0, -17, 3.2, 1.5); bumps(H, T, [[-4.6, -12, 0.55], [4.6, -12, 0.55], [-4.6, -22, 0.55], [4.6, -22, 0.55], [0, -26, 0.5]]);
     zoneR(H, M.MUD, -7, -34, -4, -36); zoneR(H, M.MUD, 4, -34, 7, -36); bowl(H, 0, -32); return H; } },
-  // Sky Ferry: the island ends at the drop. Roll onto the sky ferry while it waits, ride it over, and it sets you down on the cup island. Hay and balloons up there.
+  // Floating Island: the island ends at the drop. Roll onto the floating island while it waits, ride it over, and it sets you down on the cup island. Hay and balloons up there.
   { par:3, three:2, f:function(T){ var H = hole([rm(2, 0, 8, -20.1), rm(-14, -19.9, 8, -24.1), rm(-14, -23.9, -6, -46)], [5, -2.5], [-10, -42]); zoneR(H, M.WATER, -6, -20, 8, -24);
     ferry(H, 3.6, -19.6, 8, -24, -10, 0, 2.2, 1.5, 0); bumps(H, T, [[4, -10, 0.55], [6.5, -15, 0.5], [-8, -33, 0.6], [-12, -30, 0.55]]); pads(H, [[-7.5, -38, 0.6]]);
     zoneR(H, M.MUD, -14, -44, -11, -46); zoneR(H, M.MUD, 2, -6, 4, -9); bowl(H, -10, -42, 1.7, 0.12); return H; } },
@@ -1461,7 +1461,7 @@ var LEVELS = [
   // Cloud Gap: the island is a U, up one side and back down the other. Or find the gap in the middle cloud wall: it lines up with the cup.
   { par:3, f:function(T){ var H = hole([rm(-9, 0, 9, -32)], [-5, -2.5], [5, -10]); blk(H, T, -0.6, 0, 0.6, -6); blk(H, T, -0.6, -7.4, 0.6, -23); secret(H, -0.6, -6, 0.6, -7.4);
     zoneR(H, M.MUD, -9, -26, 9, -27.5); zoneR(H, M.GREEN, -1, -26, 1, -27.5); bumps(H, T, [[-5, -14, 0.6], [-5.5, -20, 0.55], [5, -16, 0.6], [5.5, -22, 0.55], [6.5, -27, 0.6]]); bowl(H, 5, -10); return H; } },
-  // Leap of Faith: off the ramp over the drop, and land on the barge as it drifts past. It carries you to the left dock, then up to the castle green.
+  // Leap of Faith: off the ramp over the drop, and land on the floating island as it drifts past. It carries you across, then up to the castle green.
   { par:3, three:2, f:function(T){ var H = hole([rm(-3, 0, 3, -14.1), rm(-12, -13.9, 8, -19.1), rm(-12, -18.9, -6, -38)], [0, -2.5], [-9, -34]); zoneR(H, M.WATER, -6, -14, 8, -19);
     jump(H, 0, -13.5, 0, -1, 0.05, 2.4, { m:M.GREEN, h:0.5, ang:30 }); blk(H, T, -3, -12.9, -1.2, -14.1); blk(H, T, 1.2, -12.9, 3, -14.1);
     ferry(H, 3.6, -13.6, 8, -19, -10, 0, 2.2, 1.2, 0.3); bumps(H, T, [[-2, -7, 0.6], [-7.5, -27, 0.6], [-10.5, -31, 0.5]]); pads(H, [[2, -9, 0.55]]); zoneR(H, M.MUD, -12, -36, -10, -38); bowl(H, -9, -34, 1.7, 0.12); return H; } },
@@ -1703,7 +1703,7 @@ var TOUR_NAMES = [
   'Lava Lane', 'Fire Pit', 'Basalt Gates', 'Lava Tubes', 'Rolling Rocks', 'Turning Rock', 'Ash Field', 'Lava Switch', 'Magma Loops',
   'Lava Flow', 'Lava Slope', 'River of Fire', 'Crater', 'Eruption', 'Lava Leap', 'Obsidian Bridge', 'Fire Mill', 'The Summit',
   'Cloud Hop', 'Haystacks', 'Bounce House', 'Balloon Field', 'Weather Vane', 'Sky Steps', 'Sky Bridge', 'Hay Bale', 'Drift',
-  'Sky Ferry', 'Jet Stream', 'Kite Diamond', 'Floating Gates', 'Rainbow Loop', 'Cloud Gap', 'Leap of Faith', 'Cloud Mill', 'Castle in the Clouds',
+  'Floating Island', 'Jet Stream', 'Kite Diamond', 'Floating Gates', 'Rainbow Loop', 'Cloud Gap', 'Leap of Faith', 'Cloud Mill', 'Castle in the Clouds',
   'First Freeze', 'Snowman Alley', 'Frozen Ponds', 'Ice Wall', 'Icicles', 'Ice Cave', 'Sled Crossing', 'Snow Bridges', 'Frozen Falls',
   'Ski Lodge', 'Ski Jump', 'Glacier Belt', 'Icicle Gates', 'Ice Loop', 'Spinning Rink', 'Yeti Cave', 'Avalanche', 'Summit Lodge',
   'The Thaw', 'Mammoth Trail', 'Saber Tooth', 'Meltwater', 'Ice Bridge', 'Glacier Mill', 'Boulder Bounce', 'Cave Ledges', 'Frozen Crater',
@@ -3806,6 +3806,22 @@ function drawPieces(ctx, C, cam, clock){
   C.ferries.forEach(function(f){ var q = ferryPos(f, clock), x0 = f.x0 + q.ox, x1 = f.x1 + q.ox, y0 = f.y0 + q.oy, y1 = f.y1 + q.oy, zf = cam.v3 ? cam.v3.zAt((x0 + x1) / 2, (y0 + y1) / 2) : 0;
     var c = [w2s(cam, x0, y0, zf), w2s(cam, x1, y0, zf), w2s(cam, x1, y1, zf), w2s(cam, x0, y1, zf)], sh = [w2s(cam, x0 + 0.25, y0 - 0.25, zf - 0.3), w2s(cam, x1 + 0.25, y0 - 0.25, zf - 0.3), w2s(cam, x1 + 0.25, y1 - 0.25, zf - 0.3), w2s(cam, x0 + 0.25, y1 - 0.25, zf - 0.3)];
     ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); sh.forEach(function(p, i){ i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.closePath(); ctx.fill();
+    function poly(q, fill, line){ ctx.fillStyle = fill; ctx.beginPath(); q.forEach(function(p, i){ i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.closePath(); ctx.fill(); if (line){ ctx.strokeStyle = line; ctx.stroke(); } }
+    /* IN SKY ISLANDS IT IS A FLOATING ISLAND, not a ferry: a grassy top with its rock and earth hanging underneath,
+       tapering to a point, drifting over the drop. The same deck to the physics. */
+    if (C.theme === 'sky'){ var mx0 = (x0 + x1) / 2, my0 = (y0 + y1) / 2, rk = [], dep = 2.6;
+      for (var a = 0; a <= 12; a++){ var u = a / 12, ex = x0 + (x1 - x0) * u, cz = zf - 0.15 - dep * Math.sin(u * Math.PI) * (0.75 + 0.25 * Math.sin(u * 9 + f.x0));
+        rk.push(cam.v3 ? w2s(cam, ex, y1, cz) : w2s(cam, ex, y1 + (zf - cz) * 0.55)); }
+      rk.push(c[2]); rk.unshift(c[3]); ctx.lineWidth = Math.max(1, d); poly(rk, '#7a5232', '#4a3020');
+      var mid = rk.slice(1, -1).map(function(p, i){ var q2 = cam.v3 ? w2s(cam, x0 + (x1 - x0) * i / 12, y1, zf - 0.15) : w2s(cam, x0 + (x1 - x0) * i / 12, y1); return [p[0] * 0.45 + q2[0] * 0.55, p[1] * 0.45 + q2[1] * 0.55]; });
+      poly([c[3]].concat(mid).concat([c[2]]), '#9a6e44');
+      poly(c, '#6cbf58', '#3f8a3e'); ctx.fillStyle = '#86d46c'; ctx.beginPath(); ctx.moveTo(c[0][0], c[0][1]); ctx.lineTo(c[1][0], c[1][1]); var ti = [c[1][0] * 0.8 + c[2][0] * 0.2, c[1][1] * 0.8 + c[2][1] * 0.2], tj = [c[0][0] * 0.8 + c[3][0] * 0.2, c[0][1] * 0.8 + c[3][1] * 0.2]; ctx.lineTo(ti[0], ti[1]); ctx.lineTo(tj[0], tj[1]); ctx.closePath(); ctx.fill();
+      return; }
+    // in Neon Arcade it is a hover pad: dark, ringed in neon, glowing underneath
+    if (C.theme === 'neon'){ ctx.save(); ctx.shadowColor = '#2bf0ff'; ctx.shadowBlur = Math.max(6, cam.s * 0.6); poly(c, '#1a1440'); ctx.restore();
+      ctx.lineWidth = Math.max(2, cam.s * 0.14); ctx.strokeStyle = '#2bf0ff'; ctx.beginPath(); c.forEach(function(p, i){ i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.closePath(); ctx.stroke();
+      var ins = c.map(function(p){ var cc = w2s(cam, (x0 + x1) / 2, (y0 + y1) / 2, zf); return [p[0] * 0.7 + cc[0] * 0.3, p[1] * 0.7 + cc[1] * 0.3]; }); ctx.lineWidth = Math.max(1, cam.s * 0.06); ctx.strokeStyle = '#ff2bd6'; ctx.beginPath(); ins.forEach(function(p, i){ i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.closePath(); ctx.stroke();
+      return; }
     ctx.fillStyle = C.T.carpet || '#2f8f4e'; ctx.strokeStyle = C.T.wallLo || '#3b2a18'; ctx.lineWidth = Math.max(1.5, d * 1.4);
     ctx.beginPath(); c.forEach(function(p, i){ i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.closePath(); ctx.fill(); ctx.stroke();
     // the edges the ball crosses on and off are striped; the other two carry a rail
