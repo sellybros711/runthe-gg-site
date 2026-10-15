@@ -3179,6 +3179,7 @@ function openTrail(tid, from){
   var pic = TRC[k];
   function go(pic){ if (!S || S.screen !== 'trail' || !box.isConnected) return;
     if (!pic){ return walkFlat(from, tid); }
+    setTimeout(function(){ if (S && S.screen === 'trail') holeAhead(tid, to); }, 1200);
     var st0 = pload(), rec0 = (st0.trail || {})[sp.key] || {};
     var three = L ? threeOf(L) : null; banOut();
     S.trailCtl = window.RTT_PUTT_TRAIL.run(box, P, pic, {
@@ -3578,7 +3579,8 @@ function startRound(mode, arg){
    drawn over it through its projection. A real green stays on the flat painter. A blocked or stale
    module, or a render that throws, falls back to the flat painter, so a hole is never blank. */
 function v3Ok(){ return !!(window.RTT_PUTT_3D && window.RTT_PUTT_3D.API_VERSION === 1 && window.RTT_PUTT_LAND && window.PXHD); }
-function v3Asp(){ var r = S.stage && S.stage.getBoundingClientRect(); return r && r.width ? Math.round(Math.min(2.4, r.height / r.width) * 5) / 5 : 1.6; }
+// the last stage's shape is kept, so a hole rendered ahead from a walk (no stage on screen) is the one the hole will ask for
+function v3Asp(){ var r = S.stage && S.stage.isConnected && S.stage.getBoundingClientRect(); if (r && r.width) S.lastAsp = Math.round(Math.min(2.4, r.height / r.width) * 5) / 5; return S.lastAsp || 1.6; }
 /* THE CONSOLE LOOK is on every themed hole (the tours, the Lab and the Daily): sun shadows, soft corners,
    haze over the far land, a grade, and a vignette over the stage. window.RTT_PUTT_FX = 'off' takes it off
    everywhere, so the two can still be compared on one screen. */
@@ -3605,6 +3607,12 @@ function v3Ahead(){
   var R = S.round; if (!R || !v3Ok()) return; var nd = R.holes[R.i + 1]; if (!nd || nd.real || (S.v3c && S.v3c[v3Key(nd)] !== undefined)) return;
   try{ S.v3job = { k:v3Key(nd), step:window.RTT_PUTT_3D.slices(buildFrom(nd), v3Opt(nd)) }; }catch(e){ S.v3job = null; }
 }
+/* THE HOLE AT THE END OF A WALK RENDERS WHILE IT IS WALKED, a few milliseconds a frame, so arriving at it is not a wait.
+   Arriving early is fine: v3Get finishes the half done render rather than start again. */
+function holeAhead(tid, n){ if (!v3Ok() || S.v3job) return; var d; try{ d = tourDesc(n, S.host, tid); }catch(e){ return; } if (!d || d.real || (S.v3c && S.v3c[v3Key(d)] !== undefined)) return;
+  try{ S.v3job = { k:v3Key(d), step:window.RTT_PUTT_3D.slices(buildFrom(d), v3Opt(d)) }; }catch(e){ S.v3job = null; return; }
+  (function tick(){ var J = S && S.v3job; if (!J || S.screen !== 'trail') return; var out = null; try{ out = J.step(3); }catch(e){ S.v3job = null; return; }
+    if (out){ S.v3job = null; S.v3c = S.v3c || {}; S.v3c[J.k] = out; var ks = Object.keys(S.v3c); if (ks.length > 4) delete S.v3c[ks[0]]; return; } requestAnimationFrame(tick); })(); }
 function v3Tick(){
   var J = S.v3job; if (!J) return;
   var P = S.play; if (P && (P.state !== 'aim' || S.held)) return;   // never while the ball rolls or a pull back is held: those are the frames that matter
