@@ -2456,10 +2456,14 @@ function lifeFix(st){ var mx = livesMax(), now = Date.now(), dirty = false;
   if (!st.l9){ var l = st.lives == null ? mx : Math.min(mx, st.lives * 3), miss = Math.max(0, mx - l), at = st.refillAt || now + LIFE_MS;
     st.back = []; for (var i = 0; i < miss; i++) st.back.push(at); st.lives = l; st.l9 = 1; dirty = true; }
   st.back = (st.back || []).slice().sort(function(a, b){ return a - b; });
-  if (!st.lsrv){ var keep = st.back.filter(function(t){ return t > now; }); if (keep.length !== st.back.length){ st.back = keep; dirty = true; }
-    var want = Math.max(0, mx - st.back.length); if (st.lives !== want){ st.lives = want; dirty = true; } }
+  // a life back on this device's clock is a change of lives, and stamped so; the move from an old record is not,
+  // so a fresh browser's record never looks newer than the account's copy it is about to take
+  var moved = false;
+  if (!st.lsrv){ var keep = st.back.filter(function(t){ return t > now; }); if (keep.length !== st.back.length){ st.back = keep; moved = true; }
+    var want = Math.max(0, mx - st.back.length); if (st.lives !== want){ st.lives = want; moved = true; } }
   st.refillAt = st.back.length ? st.back[0] : null;
-  if (dirty){ st.lt = now; pwrite(st); } }
+  if (moved) st.lt = now;
+  if (dirty || moved) pwrite(st); }
 function psave(st){ pwrite(st); cloudPush(); }
 /* THE RECORD IS THE ACCOUNT'S, ON THE SERVER. A signed in player's record goes up to ps_saves (103, game
    'putt', slot 'tour') after every save and comes down on every open and every sign in, so a cleared

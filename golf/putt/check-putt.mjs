@@ -828,8 +828,8 @@ if (!args.includes('--no-browser')){
       for (let t = 0; t < 60 && !(store.tour.payload.tours.main.lv >= 30 && JSON.parse(localStorage.getItem('bag_ppt_v1@cld')).tours.main.ace[7]); t++) await new Promise(r => setTimeout(r, 50));
       const after = JSON.parse(localStorage.getItem('bag_ppt_v1@cld')), srv = store.tour; window.RTT_PUTT.close(); sb = sb0;
       return { open, lives:local.lives, gets:calls.filter(c => c === 'ps_save_get').length, puts:calls.filter(c => c === 'ps_save_put').length, ace:!!after.tours.main.ace[7], srvLv:srv.payload.tours.main.lv, srvLives:srv.payload.lives }; });
-    claim(cld.open >= 30 && cld.lives === 1 && cld.gets >= 1, `a fresh browser takes the account's place and lives from the server (${cld.open} open, ${cld.lives} lives)`);
-    claim(cld.ace && cld.srvLv >= 30 && cld.puts >= 2 && cld.srvLives === 0, `a save the server refuses is merged with what it holds and sent again (ace kept ${cld.ace}, server at hole ${cld.srvLv} with ${cld.srvLives} lives)`);
+    claim(cld.open >= 30 && cld.lives === 3 && cld.gets >= 1, `a fresh browser takes the account's place and lives from the server, an old record's one life read as a heart of three (${cld.open} open, ${cld.lives} lives)`);
+    claim(cld.ace && cld.srvLv >= 30 && cld.puts >= 2 && cld.srvLives === 2, `a save the server refuses is merged with what it holds and sent again (ace kept ${cld.ace}, server at hole ${cld.srvLv} with ${cld.srvLives} lives)`);
     // THE GAME OPENS ON THE TRAIL, AND THE ACCOUNT'S RECORD LANDS AFTER IT. A tester's progress read as reset to
     // level 1: a browser whose copy was behind drew the trail to hole 1 and never looked again once the server's
     // answer arrived. The stand-in answers late on purpose, so the first screen is the stale one.
