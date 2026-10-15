@@ -2546,23 +2546,23 @@
     },
     "putt/putt.js": {
       "v": "73",
-      "sha": "ea98ea990aeaf8d6"
+      "sha": "f50f4f497a772102"
     },
     "putt/land.js": {
       "v": "8",
-      "sha": "c581aeb4c78b51a7"
+      "sha": "507a60b4c9ac8c4c"
     },
     "putt/hole3d.js": {
-      "v": "13",
-      "sha": "34e77245dac2aa4c"
+      "v": "14",
+      "sha": "fbda8419e98348ce"
     },
     "putt/trail.js": {
       "v": "27",
-      "sha": "d3df97d073e5a338"
+      "sha": "84f3423fbcc49f72"
     },
     "putt/mapland.js": {
-      "v": "5",
-      "sha": "ad178946618ed7d9"
+      "v": "6",
+      "sha": "726e707d86cd686a"
     },
     "golfer3d.js": {
       "v": "5",

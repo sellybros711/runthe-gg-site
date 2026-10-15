@@ -863,38 +863,41 @@ window.RTT_PUTT_LAND = (function(){
     };
   };
 
-  /* ---------------- FROZEN PEAK: a snowy mountain behind the hole, a ski lodge at its foot, a frozen tarn, pines and snowmen */
-  BUILD.frozen = function(L){
-    var C = L.C, E = L.E, P0 = L.P0, P1 = L.P1, seed = L.seed, clearAt = L.clearAt, spot = L.spot, spotRect = L.spotRect, north = L.north;
-    var lodge = spotRect(7, 5, function(x, y){ return north(x, y) * 1.1 - Math.abs(x - L.cx) * 0.2; });
-    function ridgeY(x){ return (lodge ? lodge.y - lodge.d / 2 - 1.2 : P0[1] - 3.5) - (vn(x * 0.12, 4, seed) - 0.5) * 3; }
-    var tarn = spot(3, function(x, y){ return Math.abs(x - L.cx) * 0.5 + L.side(x) * 3; }, function(x, y){ return y > ridgeY(x) + 3; });
-    function tarnD(x, y){ return tarn ? 1 - Math.hypot((x - tarn.x) / tarn.r, (y - tarn.y) / (tarn.r * 0.7)) + (fbm(x * 0.5, y * 0.5, seed + 3) - 0.5) * 0.3 : -1; }
-    var men = []; for (var i = 0; i < 3; i++){ var m = spot(0.6, function(x, y){ return -Math.abs(clearAt(x, y) - 2.2) + hash(x * 3 | 0, y * 3 | 0, seed + i); }, function(x, y){ return y > ridgeY(x) + 1.5 && tarnD(x, y) < -0.1; }); if (m) men.push(m); }
-    function snowman(B, sx, sy){ var sz = B.gz(sx, sy);
-      B.solid(sx - 0.7, sy - 0.7, sz, sx + 0.7, sy + 0.7, sz + 2, function(px, py, pz){ var t = pz - sz, r = Math.hypot(px - sx, py - sy);
-        if (Math.hypot(r, t - 0.5) < 0.55 || Math.hypot(r, t - 1.25) < 0.38) return (py - sy > 0.3 && Math.abs(px - sx) < 0.05 && t > 1 && t < 1.5) ? '#1a2a3a' : '#f6f9fd';
-        if (Math.hypot(r, t - 1.8) < 0.27) return (py - sy > 0.22 && Math.abs(px - sx) < 0.05 && Math.abs(t - 1.78) < 0.05) ? '#f28a2a' : '#f6f9fd';
-        if (Math.abs(t - 1.55) < 0.07 && r < 0.38) return '#d62f2f'; return null; }); }
+  /* ---------------- DINO VALLEY: a sandstone cliff behind the hole with a fossil in its layers, a swamp beside it, a long neck or two grazing, palms and ferns */
+  BUILD.dino = function(L){
+    var C = L.C, E = L.E, P0 = L.P0, P1 = L.P1, seed = L.seed, clearAt = L.clearAt, spot = L.spot, north = L.north;
+    function cliffY(x){ return P0[1] - 3.4 - (vn(x * 0.13, 4, seed) - 0.5) * 3; }
+    var sw = spot(2.8, function(x, y){ return Math.abs(x - L.cx) * 0.4 + L.side(x) * 3; }, function(x, y){ return y > cliffY(x) + 3; });
+    function swD(x, y){ return sw ? 1 - Math.hypot((x - sw.x) / sw.r, (y - sw.y) / (sw.r * 0.7)) + (fbm(x * 0.6, y * 0.6, seed + 3) - 0.5) * 0.3 : -1; }
+    var herd = []; for (var i = 0; i < 2; i++){ var m = spot(1.6, function(x, y){ return north(x, y) * 0.4 + L.side(x) * 2 + hash(x | 0, y | 0, seed + 9 + i); }, function(x, y){ return y > cliffY(x) + 2 && swD(x, y) < -0.3; }); if (m) herd.push(m); }
+    // a long neck: a heavy body on four legs, the neck rising to a small head, the tail sweeping down behind
+    function longneck(B, X, Y, k){ var zb = B.gz(X, Y), dir = hash(k, 3, seed) < 0.5 ? 1 : -1;
+      B.solid(X - 2.6, Y - 0.7, zb, X + 2.6, Y + 0.7, zb + 4.2, function(px, py, pz){ var dx = (px - X) * dir, dy = py - Y, t = pz - zb, skin = (Math.floor(px * 6) + Math.floor(pz * 6)) % 3 ? '#6e8458' : '#7e9466';
+        if (t < 1.1 && Math.abs(Math.abs(dx + 0.2) - 0.7) < 0.2 && Math.abs(Math.abs(dy) - 0.33) < 0.18) return '#4a5a3a';
+        if (Math.hypot((dx + 0.2) / 1.25, dy / 0.6, (t - 1.55) / 0.68) < 1) return t < 1.15 ? '#9aa880' : skin;
+        var nx = 0.9 + (t - 1.7) * 0.42; if (t > 1.7 && t < 3.8 && Math.abs(dy) < 0.22 && Math.abs(dx - nx) < 0.26) return skin;
+        if (Math.hypot((dx - 1.95) / 0.4, dy / 0.22, (t - 3.9) / 0.22) < 1) return skin;
+        var tx = -1.3 - (t < 1.7 ? (1.7 - t) * 0.9 : 0); if (dx < -1.2 && dx > -2.6 && Math.abs(dy) < 0.18 && Math.abs(dx - tx) < 0.3 && t > 0.2 && t < 1.8) return skin;
+        return null; }); }
+    function palm(B, x, y, H, k){ var zb = B.gz(x, y), lean = (hash(k, seed, 4) - 0.5) * 1.2, top = [x + lean, y - 0.3, zb + H];
+      B.vox(x - 3.2, y - 2.8, zb, x + 3.2, y + 2.6, zb + H + 0.8, function(set){ for (var s = 0; s < 8; s++){ var t0 = s / 8, t1 = (s + 1) / 8; B.tube(set, x + lean * t0 * t0, y - 0.3 * t0, zb + H * t0, x + lean * t1 * t1, y - 0.3 * t1, zb + H * t1, 0.2 - t0 * 0.06, 0.2 - t1 * 0.06, s % 2 ? '#8a6a3e' : '#7a5c34'); }
+        for (var f = 0; f < 7; f++){ var a = f / 7 * 6.28 + k, fx = Math.cos(a), fy = Math.sin(a) * 0.7; for (var al = 0; al < 2.5; al += set.st){ var sag = 0.35 - al * al * 0.22, wd = 0.37 * (1 - al / 2.7); for (var o = -wd; o <= wd; o += set.st) set(top[0] + fx * al - fy * o, top[1] + fy * al + fx * o, top[2] + sag, al > 1.5 ? '#3f9a46' : '#2f8139'); } } }, B.ART); }
+    function fernAt(B, x, y, k){ var zb = B.gz(x, y), r = 0.55 + hash(k, seed, 61) * 0.3;
+      B.solid(x - r, y - r, zb, x + r, y + r, zb + r * 1.2, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb, d = Math.hypot(dx, dy), a = Math.atan2(dy, dx);
+        if (d > r || t > r * 1.2 * (1 - d / r * 0.6)) return null; if (Math.abs(Math.sin(a * 3.5)) > 0.55) return null; return d < r * 0.4 ? '#2a5a1c' : '#3e7a28'; }); }
     return {
-      h:function(x, y){ var ry = ridgeY(x), z = (fbm(x * 0.07, y * 0.09, seed) - 0.42) * 2 * sm(1.3, 6, clearAt(x, y)), k = sm(0.8, 3, clearAt(x, y));
-        if (y < ry) return (2.4 + Math.min(6, (ry - y) * 0.9) + (fbm(x * 0.25, y * 0.25, seed + 5) - 0.5) * 1.2) * k; if (tarnD(x, y) > 0) return -0.08; return z; },
-      mat:function(x, y){ var ry = ridgeY(x); if (y < ry){ return ['rock', { z:ry - y }]; } var t = tarnD(x, y); if (t > 0) return ['ice', { dep:t }]; return ['snow']; },
-      build:function(B){
-        if (lodge){ var d = lodge.d;
-          house(B, lodge, { wh:2.4, rh:2, chim:'#8a8f99', step:'#8a8f99',
-            wall:function(dx, dy, t){ if (dy > d / 2 - 0.15 && Math.abs(dx) < 0.5 && t < 1.8) return '#3a2412';
-              if (dy > d / 2 - 0.15 && Math.abs(Math.abs(dx) - 2) < 0.45 && t > 0.8 && t < 1.7) return '#ffcf6a';
-              return (Math.floor(t * 3.2) % 2) ? '#8a5432' : '#7a4a2a'; },
-            roof:function(dx, dy, t, rr, eave){ return eave ? '#ffffff' : '#e8f0f8'; } }); }
-        men.forEach(function(m){ snowman(B, m.x, m.y); });
-      },
-      fill:{ on:['snow'], trees:0.5, lows:0.26, tree:function(B, x, y, i){ pineAt(B, x, y, 0.8 + hash(i, seed, 24) * 0.6, i); },
-        low:function(B, x, y, i){ var k = hash(i, seed, 25); if (k < 0.5) bush(B, x, y, 0.42, ['#f6f9fd', '#e4edf6', '#2a6450']); else if (k < 0.8) rockAt(B, x, y, 0.38, ['#e4edf6', '#8a8f99']); else pineAt(B, x, y, 0.35, i); } },
-      bg:'#cfe0ee', gain:2.2,
-      mats:{ snow:['#eef4fb', '#f8fbfe', '#dbe6f2', 0.16],
-        rock:['#8a96a6', '#f3f8fd', '#6a7686', 0.2, function(c, R, h3){ var z = c.z || 0; return R(z > 2.2 || h3(c.ti, c.tj, 4) < 0.35 ? (h3(c.ti, c.tj, 6) < 0.15 ? '#dbe6f2' : '#f3f8fd') : (((c.ti + c.tj) % 5) ? '#8a96a6' : '#6a7686')); }],
-        ice:['#bfe3fa', '#e6f6fe', '#a6d3f0', 0.08, function(c, R){ return R((c.dep || 0) < 0.12 ? '#a6d3f0' : (((c.ti * 3 + c.tj * 7) % 23) === 0 ? '#e6f6fe' : '#bfe3fa')); }] }
+      h:function(x, y){ var cy = cliffY(x), k = sm(0.8, 3, clearAt(x, y)); if (y < cy) return (2.4 + Math.min(5, (cy - y) * 0.85)) * k; if (swD(x, y) > 0) return -0.06; return (fbm(x * 0.07, y * 0.09, seed) - 0.42) * 1.4 * sm(1.3, 6, clearAt(x, y)); },
+      mat:function(x, y){ var cy = cliffY(x); if (y < cy) return ['cliff', { z:cy - y, x:x }]; var t = swD(x, y); if (t > 0) return ['swamp', { dep:t }]; if (t > -0.14) return ['mudrim']; return ['jungle']; },
+      build:function(B){ herd.forEach(function(m, k){ longneck(B, m.x, m.y, k); }); },
+      fill:{ on:['jungle'], trees:0.45, lows:0.34,
+        tree:function(B, x, y, i){ if (hash(i, seed, 51) < 0.6) palm(B, x, y, 2.6 + hash(i, seed, 54) * 1.6, i); else broadTree(B, x, y, 3 + hash(i, seed, 55) * 1.4, '#5a4026', ['#2e6a22', '#3a7a2a', '#24561c'], i); },
+        low:function(B, x, y, i){ var k = hash(i, seed, 52); if (k < 0.55) fernAt(B, x, y, i); else if (k < 0.8) bush(B, x, y, 0.42, ['#3a7a2a', '#2e6a22', '#24561c']); else rockAt(B, x, y, 0.38, ['#c9a46a', '#7a5a34']); } },
+      bg:'#b8d08a', gain:1.8,
+      mats:{ jungle:['#5e7a2e', '#6e8a36', '#4e6a26', 0.18], mudrim:['#7a5a34', '#8a6a40', '#6a4a2a', 0.1],
+        // the cliff: sandstone in bands, and now and then a white bone in a band
+        cliff:['#c9a46a', '#e8cc92', '#9a7a48', 0.2, function(c, R, h3){ var z = c.z || 0, band = Math.floor(z * 1.6 + h3(c.ti >> 2, 0, 3) * 0.5) % 4;
+          if (band === 2 && z < 3.2 && h3(c.ti >> 1, c.tj >> 1, 7) < 0.015) return R('#e8dcc0'); return R(z > 4.2 ? '#5e7a2e' : ['#c9a46a', '#b8935a', '#d8b47a', '#a8834e'][band]); }],
+        swamp:['#4a6a2e', '#86a454', '#3a5824', 0.1, function(c, R){ return R((c.dep || 0) < 0.12 ? '#3a5824' : (((c.ti * 5 + c.tj * 3) % 19) === 0 ? '#86a454' : '#4a6a2e')); }] }
     };
   };
 
@@ -1169,13 +1172,13 @@ window.RTT_PUTT_LAND = (function(){
       bg:'#8fcdf3', gain:1.2,
       mats:{ cloudsea:['#f2f8fd', '#ffffff', '#dcebf6', 0.08, function(c, R){ var f = c.f || 0.5; return R(f > 0.58 ? '#ffffff' : f > 0.46 ? '#eef6fc' : '#cfe3f3'); }] } }; };
 
-  // Inside the Igloo: a snow floor, walls of ice blocks curving up into a dome, furs on the floor and a lamp
-  BUILD['s-igloo'] = function(L){ var R0 = room(L, { floor:'snowf', wall:'iceblocks', wallH:8, gap:2.4 });
+  // The Nest: a floor of straw, walls of woven sticks, and eggs the size of a golfer round the edge
+  BUILD['s-nest'] = function(L){ var R0 = room(L, { floor:'straw', wall:'sticks', wallH:5, gap:2.4 });
     return { h:R0.h, mat:R0.mat,
-      build:function(B){ byWall(L, 3, 19, 3).forEach(function(q, i){ var x = q[0], y = q[1], zb = B.gz(x, y); B.solid(x - 1.4, y - 1, zb, x + 1.4, y + 1, zb + 0.2, function(px, py){ return Math.hypot((px - x) / 1.4, py - y) < 1 ? (i % 2 ? '#8a6a44' : '#c8b490') : null; }); });
-        var l = byWall(L, 1, 29, 2.6)[0]; if (l) cyl(B, l[0], l[1], 0.5, 0.9, function(d, t){ return t > 0.6 ? (d < 0.4 ? '#ffd77a' : '#7a7f88') : '#7a7f88'; }); },
-      bg:'#cfe6f4', gain:1.4,
-      mats:{ snowf:['#eef3f7', '#f8fbfd', '#dde6ec', 0.08], iceblocks:['#bfe3f2', '#dcf4fa', '#9fd0e4', 0.1, function(c, R){ var z = c.z || 0, row = (z * 1.4) | 0; return R(((c.ti + (row % 2) * 3) % 6 === 0 || Math.abs(z * 1.4 - row) < 0.08) ? '#8fc0d8' : '#cfeaf6'); }] } }; };
+      build:function(B){ byWall(L, 5, 23, 2.6).forEach(function(q, i){ blob(B, q[0], q[1], 1.35, 2.1, i % 2 ? ['#ece2c0', '#fbf4dc', '#6a7a3a'] : ['#e2dcb8', '#f4eed2', '#5a6a32']); }); },
+      bg:'#b8d08a', gain:1.5,
+      mats:{ straw:['#b8955a', '#cca868', '#9a7a44', 0.14], sticks:['#6a4a26', '#9a7a48', '#3e2a16', 0.14, function(c, R, h3){ var a = (c.ti + c.tj) % 5, b = ((c.ti - c.tj) % 6 + 6) % 6, z = c.z || 0;
+          if (z > 4.6) return R(h3(c.ti, c.tj, 9) < 0.5 ? '#8a6a3a' : '#a8875a'); return R(a === 0 ? '#9a7a48' : b === 0 ? '#3e2a16' : h3(c.ti >> 1, c.tj, 5) < 0.3 ? '#5a4026' : '#6a4a26'); }] } }; };
 
   return { make:make };
 })();

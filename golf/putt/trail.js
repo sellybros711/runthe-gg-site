@@ -76,10 +76,10 @@ function lootIcon(t){ var key = t.k + (t.col || ''); if (ICONS[key]) return ICON
 var PZ_SHARE = 0.5, PZ_COINS = 6, PEN_R = 2.9, PEN_HALF = 0.31, PZ_GATE_S = 4.5, CRATE_H = 0.8;
 var PZ_NAME = { fire:'Light the three', dig:'Buried chest', plate:'Pen and plate', push:'Stuck crate' };
 // what the three lights are in each world, for the clue
-var PZ_LIGHT = { clubhouse:'lanterns', temple:'torches', pirate:'lanterns', canyon:'mine lamps', volcano:'braziers', frozen:'ice lamps', sky:'beacons', neon:'neon lights',
+var PZ_LIGHT = { clubhouse:'lanterns', temple:'torches', pirate:'lanterns', canyon:'mine lamps', volcano:'braziers', dino:'torches', sky:'beacons', neon:'neon lights',
   school:'lanterns', iceage:'fire pits', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
-var PZ_FLAME = { neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], frozen:['#6ec8ff', '#e2f6ff'], sky:['#ffd24a', '#fff6c4'] };
-var JAM_ROCK = { neon:'cube', frozen:'rocksnow', iceage:'rocksnow', volcano:'rockdark', haunted:'rockdark' };
+var PZ_FLAME = { neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
+var JAM_ROCK = { neon:'cube', iceage:'rocksnow', volcano:'rockdark', haunted:'rockdark' };
 /* THE CLUE, said by the local (or the greeter) on a puzzle trail: a nudge, never the answer. Three ways of saying
    each, picked off the trail, so the same line does not come back trail after trail. */
 var PZ_CLUES = {
@@ -123,9 +123,9 @@ var KIT = {
   volcano:{ g:['#3a3236', '#443a3e', '#2e282c', 0.22], p:['#6a5a52', '#7a6a60', '#5a4c46'], tree:['dead', 'basalt', 'basalt'], leaves:['#3a4a2e', '#4a5a34', '#2e3a24'], bark:'#2b2229',
     low:['rock', 'rockdark', 'ember'], brk:'pot', haz:'lava', dens:0.6, hazC:['#ff6a1a', '#ffc23a'], lm:['basaltset', 'vent', 'skull'], wall:['#4a4046', '#221c20'],
     npc:{ skin:'tan', polo:'black', hat:'black', pants:'grey', hair:'black', hairStyle:'buzz', cap:false, gender:'male' }, who:'the ranger' },
-  frozen:{ g:['#eef4fb', '#f8fbff', '#dfe8f3', 0.2], p:['#c8d6e6', '#d6e2f0', '#b8c8da'], tree:['pine', 'pine', 'pine'], leaves:['#1f4f3e', '#2a6450', '#173e30'], bark:'#4a3626', snow:true,
-    low:['rocksnow', 'bushsnow', 'rocksnow'], brk:'ice', haz:'ice', hazC:['#a8dcf4', '#d4f0ff'], lm:['igloo', 'snowman', 'cabin'], wall:['#dfe8f3', '#9fb2c8'],
-    npc:{ skin:'light', polo:'teal', hat:'white', pants:'navy', hair:'blonde', hairStyle:'long', cap:false, gender:'female' }, who:'the ski patrol' },
+  dino:{ g:['#5e7a2e', '#688632', '#54702a', 0.22], p:['#a8875a', '#b8976a', '#98774c'], tree:['palm', 'broad', 'palm'], leaves:['#2e6a22', '#3a7a2a', '#24561c'], bark:'#5a4026',
+    low:['fern', 'fern', 'rock', 'bush'], brk:'pot', haz:'water', hazC:['#4a6a2e', '#86a454'], waterC:['#3f6a3a', '#7aa65a'], iceC:['#8a4e30', '#b8724a'], lm:['longneck', 'dinoskel', 'nest'], wall:['#c9a46a', '#7a5a34'],
+    npc:{ skin:'medium', polo:'gold', hat:'tan', pants:'khaki', hair:'brown', hairStyle:'ponytail', cap:true, hatStyle:'cap', gender:'female' }, who:'the fossil hunter' },
   sky:{ g:['#f4f6fb', '#ffffff', '#e4e9f4', 0.22], p:['#f7d27a', '#ffe09a', '#e6c066'], tree:['puff', 'puff', 'broad'], leaves:['#8fd3a0', '#a6e0b4', '#7ac08c'], bark:'#c9a46a',
     low:['puffsmall', 'rainbowrock', 'puffsmall'], brk:'crate', haz:null, lm:['balloon', 'kite', 'pillar'], wall:['#ffffff', '#c9d4ea'],
     npc:{ skin:'porcelain', polo:'purple', hat:'white', pants:'stone', hair:'platinum', hairStyle:'curly', cap:false, gender:'female' }, who:'the balloonist' },
@@ -679,7 +679,7 @@ var CHEST_SAY = {
   fence:['There\'s a chest behind that fence.', 'That fence is guarding something.', 'A chest, locked away. Find the key.'],
   clubhouse:['Somebody left a chest by the greens.'], school:['A chest? In the schoolyard?'], candy:['That chest smells like caramel.'],
   neon:['A chest. It\'s blinking.'], pirate:['Treasure! Arr.'], temple:['An old chest. Still shut.'], canyon:['A chest, half buried in the dust.'],
-  volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], frozen:['A chest, frozen shut. Almost.'], iceage:['A chest, older than the ice.'],
+  volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'],
   haunted:['A chest. Don\'t look behind it.'], harvest:['A chest out by the crops.'] };
 var SECRET_SAY = {
   clubhouse:'Word is there\'s a secret hole somewhere on this trail. I\'ve never found it.',
@@ -691,13 +691,13 @@ var SECRET_SAY = {
   canyon:'There\'s a secret hole out here on this trail. Took me years to find it.',
   volcano:'Somewhere on this trail there\'s a secret hole. Watch your step looking.',
   sky:'I saw a secret hole on this trail from my balloon. Can\'t say where.',
-  frozen:'There\'s a secret hole on this trail. Stay warm looking for it.',
+  dino:'I dug up an old map. It says there\'s a secret hole on this trail.',
   iceage:'The old drawings say there\'s a secret hole on this trail.',
   any:'There\'s a secret hole somewhere on this trail. Keep your eyes open.' };
 var SECRET_DONE = 'You found the secret hole on this trail. Not many do.';
 var GOLD_SAY = ['There\'s a golden ball off the path here. Look behind things.', 'Somebody lost a golden ball out here.', 'A golden ball\'s hiding on this trail. Off the path.', 'Keep an eye out. There\'s a golden ball around here.'];
 function sayPick(list, seed){ return list[((seed >>> 0) % list.length)]; }
-var SECRET_KIND = { clubhouse:'shed', school:'school', candy:'factory', neon:'secretdoor', pirate:'mooredship', temple:'secretdoor', canyon:'secretdoor', volcano:'secretdoor', sky:'secretdoor', frozen:'igloo', iceage:'cave' };
+var SECRET_KIND = { clubhouse:'shed', school:'school', candy:'factory', neon:'secretdoor', pirate:'mooredship', temple:'secretdoor', canyon:'secretdoor', volcano:'secretdoor', sky:'secretdoor', dino:'secretdoor', iceage:'cave' };
 var SECRET_HINT = { shed:'The shed door is open a crack.', school:'Somebody left the side door open.', factory:'The factory door is open. Something hums inside.', secretdoor:'There is a way in, behind there.',
   mooredship:'A ship, tied up. The gangplank is down.', igloo:'Somebody built an igloo out here.', cave:'A draft is coming out of that cave.' };
 // landmark footprints: width, depth, height
@@ -705,7 +705,7 @@ var LMSIZE = { shed:[9, 6, 11], green:[9, 7, 1], bench:[3, 1.2, 2], lamps:[1, 1,
   mesa:[11, 8, 13], tower:[5, 5, 15], cart:[5, 2.5, 3.5], basaltset:[7, 6, 9], vent:[5, 5, 4], skull:[5, 4, 5], igloo:[7, 7, 5], snowman:[3, 3, 5.5], cabin:[9, 6, 11],
   balloon:[6, 6, 16], kite:[3, 3, 12], pillar:[5, 5, 12], cabinets:[8, 2.5, 6.5], sign:[8, 1.5, 11], pylons:[6, 6, 12], crypt:[8, 6, 10], graves:[9, 6, 3], fenceyard:[9, 6, 3],
   barn:[11, 8, 13], scarecrow:[3, 2, 7], cornfield:[10, 8, 5], school:[12, 8, 13], swings:[8, 3, 6], slide:[4, 6, 5], mammoth:[9, 4, 6.5], cave:[10, 7, 6], tusks:[7, 2, 5],
-  factory:[11, 8, 13], gumballs:[5, 5, 7], canes:[8, 1.5, 5.5], secretdoor:[6, 4, 5.5], mooredship:[5, 14, 11.5] };
+  factory:[11, 8, 13], gumballs:[5, 5, 7], canes:[8, 1.5, 5.5], secretdoor:[6, 4, 5.5], longneck:[13, 4, 11], dinoskel:[10, 4, 4.5], nest:[6, 6, 2.8], mooredship:[5, 14, 11.5] };
 
 /* ------------------------------------------------------------------------------- the ground */
 function land(P){
@@ -760,8 +760,8 @@ function mats(P){
   function lfn(cols, rip){ return function(c, R, h3){ var n = h3(c.ti, c.tj, 7); return R(((c.ti * 3 + c.tj * 5) % rip) < 2 ? cols[1] : cols[0]); }; }
   var out = {
     g:['', '', '', 0, gfn(k)], g0:['', '', '', 0, gfn(k0)], path:['', '', '', 0, pfn(k)], path0:['', '', '', 0, pfn(k0)],
-    water:['', '', '', 0, lfn((P.sea ? ['#1f8fc8', '#5cc6ee'] : ['#3f86c8', '#6fb3e6']), 13)],
-    lava:['', '', '', 0, lfn(['#ff6a1a', '#ffc23a'], 9)], ice:['', '', '', 0, lfn(['#a8dcf4', '#e2f6ff'], 23)], bog:['', '', '', 0, lfn(k.bogC || ['#5d4634', '#7a6044'], 17)],
+    water:['', '', '', 0, lfn((P.sea ? ['#1f8fc8', '#5cc6ee'] : k.waterC || ['#3f86c8', '#6fb3e6']), 13)],
+    lava:['', '', '', 0, lfn(['#ff6a1a', '#ffc23a'], 9)], ice:['', '', '', 0, lfn(k.iceC || ['#a8dcf4', '#e2f6ff'], 23)], bog:['', '', '', 0, lfn(k.bogC || ['#5d4634', '#7a6044'], 17)],
     sand:['#ecdba4', '#f4e4b4', '#dcc88c', 0.2],
     carpet:[T.carpet || '#2f8f4e', T.carpet2 || '#2a8246', T.carpet || '#2f8f4e', 0.16], rail:[T.wall || '#f4efe2', T.wallHi || '#ffffff', T.wall || '#f4efe2', 0.1],
     cup:['#141414', '#202020', '#141414', 0],
@@ -998,6 +998,26 @@ BUILD.cave = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy,
 BUILD.tusks = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ if (Math.abs(dy) > 0.32 || tt < 0) return null;
   for (var s = -1; s <= 1; s += 2){ var cx = s * 2.6, r = Math.hypot(dx - cx, tt); if (Math.abs(r - 3.1 + tt * 0.06) < 0.24 + (3.6 - tt) * 0.06 && s * (dx - cx) <= 0.4 && tt < 4.6) return tt < 0.5 ? '#8a7658' : '#f4ead2'; }
   return null; }, 0.125); };
+// ---- Dino Valley: a long neck standing over the trees, a skeleton half dug out of the ground, and a nest of eggs
+BUILD.longneck = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hide = function(){ var n = hash(Math.floor(dx * 4), Math.floor(tt * 4) + Math.floor(dy * 4) * 11, 3 + i); return n < 0.2 ? '#5a6e4a' : n > 0.86 ? '#8aa070' : '#6e8458'; };
+  if (tt < 3 && Math.abs(Math.abs(dx + 0.4) - 1.7) < 0.5 && Math.abs(Math.abs(dy) - 0.8) < 0.45) return tt < 0.3 ? '#3a4630' : '#5e7250';
+  if (Math.hypot((dx + 0.4) / 3, dy / 1.5, (tt - 4) / 1.7) < 1) return tt < 3.2 ? '#9aa880' : hide();
+  // the neck rises forward and up to a small head; the tail sweeps back and down
+  var nx = 2.2 + (tt - 4.5) * 0.42; if (tt > 4.5 && tt < 10.2 && Math.abs(dy) < 0.5 && Math.abs(dx - nx) < 0.62 - (tt - 4.5) * 0.04) return hide();
+  if (Math.hypot((dx - 5) / 0.95, dy / 0.5, (tt - 10.3) / 0.5) < 1) return (Math.abs(Math.abs(dy) - 0.3) < 0.1 && Math.abs(tt - 10.45) < 0.1 && dx > 5.1) ? '#1a1a10' : hide();
+  var tx = -3.2 - (tt < 4.4 ? (4.4 - tt) * 1.1 : 0); if (dx < -3 && dx > -6.5 && Math.abs(dy) < 0.42 - (-3 - dx) * 0.06 && Math.abs(dx - tx) < 0.7 && tt > 0.4 && tt < 4.6) return hide();
+  return null; }, 0.25); };
+BUILD.dinoskel = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var bone = tt < 0.3 ? '#cbbf96' : '#f4ead2';
+  if (tt < 0.14) return Math.hypot(dx / 5, dy / 2) < 1 ? '#8a6a44' : null;
+  var sy = Math.sin(dx * 0.5) * 0.3; if (Math.abs(dy - sy) < 0.2 && Math.abs(dx) < 4.2 && Math.abs(tt - (1.6 - Math.abs(dx) * 0.25)) < 0.2) return bone;
+  for (var k = -2; k <= 2; k++){ var rx = k * 0.75 + 0.4; if (Math.abs(dx - rx) < 0.14){ var rr = Math.hypot(dy - sy, tt - 0.2); if (Math.abs(rr - 1.25) < 0.16 && tt < 1.6) return bone; } }
+  if (Math.hypot((dx - 4.6) / 0.8, (dy - sy) / 0.45, (tt - 1) / 0.5) < 1) return Math.abs(tt - 1.05) < 0.08 && dx > 4.8 ? '#5a4a30' : bone;
+  return null; }, 0.125); };
+BUILD.nest = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
+  if (r > 2.2 && r < 2.9 && tt < 1.1 - (r - 2.55) * (r - 2.55) * 3) return hash(Math.floor(dx * 6), Math.floor(dy * 6) + Math.floor(tt * 6) * 7, 4 + i) < 0.5 ? '#8a6a3a' : '#6a4a26';
+  if (r < 2.3 && tt < 0.3) return '#a8875a';
+  var eggs = [[-0.8, -0.3], [0.7, -0.5], [0, 0.8]]; for (var e = 0; e < 3; e++){ var ex = dx - eggs[e][0], ey = dy - eggs[e][1]; if (Math.hypot(ex / 0.62, ey / 0.62, (tt - 0.95) / 0.85) < 1) return Math.sin(ex * 31 + tt * 17) * Math.sin(ey * 23 - tt * 13) > 0.6 ? '#6a7a3a' : (ex < -0.2 ? '#fbf4dc' : '#ece2c0'); }
+  return null; }, 0.125); };
 // ---- the secret entrances that are not a landmark already: a ship tied up beside the path, its gangplank, and a doorway
 function at(B, ox, oy){ var B2 = Object.create(B); B2.gz = function(x, y){ return B.gz(x + ox, y + oy); };
   B2.solid = function(x0, y0, z0, x1, y1, z1, fn, sv){ return B.solid(x0 + ox, y0 + oy, z0, x1 + ox, y1 + oy, z1, function(px, py, pz){ return fn(px - ox, py - oy, pz); }, sv); }; return B2; }
@@ -1037,7 +1057,7 @@ var LIFE = {
   pirate:{ fly:['gull', 4], ships:2 },
   canyon:{ fly:['vulture', 3], mote:['dust', 24], tumble:3 },
   volcano:{ mote:[['ember', 34], ['ash', 26]], smoke:true },
-  frozen:{ mote:['snow', 90], fly:['gull', 2] },
+  dino:{ fly:['ptero', 3], mote:[['firefly', 16], ['leaf', 8]] },
   sky:{ fly:['gull', 3], balloons:3 },
   neon:{ fly:['drone', 3], mote:['spark', 40] },
   haunted:{ fly:['bat', 5], ghosts:2, mote:['firefly', 8] },
@@ -1050,6 +1070,7 @@ var LIFE = {
 var PIX_FLY = {
   bird:[['w.....w', '.w...w.', '..wow..', '...h...'], ['..wow..', '.w.h.w.', 'w.....w']],
   bat:[['w.....w', 'ww...ww', '.wwoww.', '..h.h..'], ['..wow..', '.wwoww.', 'w.h.h.w']],
+  ptero:[['w.......w', 'ww.....ww', '.wwwoww..', '...hhh...'], ['...wow...', '.wwwoww..', 'ww..hhh.w']],
   drone:[['l.....l', 'ooooooo', '..ooo..', '...h...'], ['h.....h', 'ooooooo', '..ooo..', '...l...']]
 };
 var FLY_PAL = {
@@ -1059,6 +1080,7 @@ var FLY_PAL = {
   vulture:{ base:'bird', w:'#2a2228', o:'#3a3036', h:'#d89a7a', sz:1.3, z:[13, 17], v:[4, 5], circle:true },
   crow:{ base:'bird', w:'#1a1820', o:'#24222a', h:'#d8a02a', sz:1, z:[7, 12], v:[6, 8] },
   bat:{ base:'bat', w:'#2a2230', o:'#3a2e44', h:'#ff4a3a', sz:0.9, z:[4, 9], v:[5, 9], flit:true },
+  ptero:{ base:'ptero', w:'#a0522d', o:'#7a3e22', h:'#e8a03a', sz:1.5, z:[12, 17], v:[4, 6], circle:true },
   drone:{ base:'drone', w:'#2bf0ff', o:'#2a2440', h:'#ff2bd6', l:'#2bf0ff', sz:1, z:[8, 12], v:[4, 6] }
 };
 var PIX_BUTTER = [['ww.ww', 'wwbww', '.wbw.'], ['.wbw.', '..b..']], PIX_GHOST = ['..ggg..', '.ggggg.', 'gg.g.gg', 'ggggggg', 'ggggggg', 'ggggggg', 'g.g.g.g'];
@@ -1464,7 +1486,7 @@ function run(box, P, pic, api){
       else if (k === 'dust') sq(m.x, m.y, z, 0.22, '#f0d8b0', 0.7);
       else if (k === 'firefly'){ var gl = Math.max(0, Math.sin(m.life * 2.2 + m.ph)); if (gl > 0.05){ sq(m.x, m.y, z, 0.9, 'rgba(220,255,120,' + (gl * 0.35).toFixed(2) + ')'); sq(m.x, m.y, z, 0.3, '#f4ff9a', gl); } }
       else if (k === 'butter') pixAt(PIX_BUTTER[(Math.floor(m.life * 9 + m.ph) % 2)], { w:m.c, b:'#2a2228', o:m.c }, m.x, m.y, z, 0.24, false); });
-    flyers.forEach(function(f){ var C = FLY_PAL[f.kind], fr = PIX_FLY[C.base][Math.floor(tsec * (f.kind === 'vulture' ? 3 : 8) + (f.ph || 0)) % 2], gz = pic.zAt(f.x, f.y);
+    flyers.forEach(function(f){ var C = FLY_PAL[f.kind], fr = PIX_FLY[C.base][Math.floor(tsec * (f.kind === 'vulture' || f.kind === 'ptero' ? 3 : 8) + (f.ph || 0)) % 2], gz = pic.zAt(f.x, f.y);
       shadowAt(f.x + 1, f.y + 1, 0.9 * C.sz, 0.1); pixAt(fr, C, f.x, f.y, gz + f.z, C.sz * 0.28, f.vx < 0); }); }
 
   // ---- input: a stick under the thumb, or the keys

@@ -567,7 +567,7 @@ if (!args.includes('--no-browser')){
        worlds' own kinds. Then he really walks across one: the deck holds him and the water either side does not. */
     const cr = await pg.evaluate(async () => { const out = { n:0, kinds:{}, wet:0, inWater:0, bridges:0, crossings:0, dryDeck:true }, sleep = ms => new Promise(r => setTimeout(r, ms)), best = {};
       for (let n = 1; n <= 198; n++) best[n] = 3;
-      localStorage.setItem('bag_ppt_v1@walk', JSON.stringify({ v:2, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'frozen', 'sky', 'neon', 'school', 'iceage', 'candy'], tours:{ main:{ lv:198, best, ace:{}, paid:{}, wpaid:{} } } }));
+      localStorage.setItem('bag_ppt_v1@walk', JSON.stringify({ v:2, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy'], tours:{ main:{ lv:198, best, ace:{}, paid:{}, wpaid:{} } } }));
       window.RTT_PUTT.close(); sbUser = { id:'walk' }; openPutt(); await sleep(300);
       let firstWater = 0;
       for (let f = 1; f < 198; f++){ const P = window.RTT_PUTT._trailPlan(f);
@@ -597,7 +597,7 @@ if (!args.includes('--no-browser')){
        that goes either way, all fail here. And the local on a puzzle trail gives its clue. */
     const pzr = await pg.evaluate(async () => { const out = { n:0, pz:0, kinds:{}, drops:true, solo:true }, sleep = ms => new Promise(r => setTimeout(r, ms)), best = {}, TR = window.RTT_PUTT_TRAIL;
       for (let n = 1; n <= 198; n++) best[n] = 3;
-      localStorage.setItem('bag_ppt_v1@pzl', JSON.stringify({ v:2, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'frozen', 'sky', 'neon', 'school', 'iceage', 'candy'], tours:{ main:{ lv:198, best, ace:{}, paid:{}, wpaid:{} } } }));
+      localStorage.setItem('bag_ppt_v1@pzl', JSON.stringify({ v:2, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy'], tours:{ main:{ lv:198, best, ace:{}, paid:{}, wpaid:{} } } }));
       window.RTT_PUTT.close(); sbUser = { id:'pzl' }; openPutt(); await sleep(300);
       const S = () => window.RTT_PUTT._state(), T = () => window.RTT_PUTT._trail(), rec = () => (JSON.parse(localStorage.getItem('bag_ppt_v1@pzl')).trail || {}), first = {};
       for (let f = 1; f < 198; f++){ const P = window.RTT_PUTT._trailPlan(f); out.n++; const pz = P.puzzle; if (!pz) continue; out.pz++; out.kinds[pz.k] = (out.kinds[pz.k] || 0) + 1;
@@ -728,7 +728,7 @@ if (!args.includes('--no-browser')){
     // THE WORLDS AHEAD ARE UNDER CLOUD. No name of a world not yet reached shows on the map, the home card or the
     // walk; the gate shut leaves the clouds; the gate with its stars parts them, and only then is the world named.
     const cl = await pg.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), K = 'bag_ppt_v1@cld', T = () => window.RTT_PUTT._trail();
-      const hidden = /Lost Temple|Pirate Cove|Canyon Mine|Volcano Island|Frozen Peak|Sky Islands|Neon Arcade|Schoolyard|Ice Age|Candy Works|Front Steps/;
+      const hidden = /Lost Temple|Pirate Cove|Canyon Mine|Volcano Island|Dino Valley|Sky Islands|Neon Arcade|Schoolyard|Ice Age|Candy Works|Front Steps/;
       const rec = (lv, s) => { const best = {}; for (let n = 1; n <= 18; n++) best[n] = s; return { v:2, lives:3, met:['clubhouse'], tours:{ main:{ lv:lv, best:best, ace:{}, paid:{}, wpaid:{} } } }; };
       window.RTT_PUTT.close(); window.RTT_PUTT_MAPFIRST = true; sbUser = { id:'cld' };
       // short of the stars: 18 pars is 18 stars, under the 40 the gate asks

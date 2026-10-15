@@ -608,10 +608,10 @@ var THEMES = {
     bumper:'lavarock', block:'basalt', spinner:'#ff8a2a', slider:'basalt', flag:'#ff6a1a',
     decor:['tiki', 'palm', 'lavarock'], acc:'#ff8a2a', river:['#1f8fb8', '#7fd8f0'], kicker:'#ff6a1a', loopCol:['#ff6a1a', '#ffd25a', '#5a1a08'],
     holes:[] },
-  frozen:{ light:true, name:'Frozen Peak', kick:'World 10', bg:'#dbe8f3', bg2:'#cddcea', carpet:'#2e8f6a', carpet2:'#2a8261', wall:'#eef6fc', wallHi:'#ffffff', wallLo:'#8fb1cc', ink:'#1a2c3d',
-    haz:'water', hazCol:'#2a6fb0', hazCol2:'#7fc3f0', hazName:'Glacier melt', slow:'mud', slowCol:'#f4f8fc', slowName:'Snowdrift', iceCol:'#a9dcf5', iceCol2:'#e6f6ff',
-    bumper:'snowman', block:'iceblock', spinner:'#ffffff', slider:'iceblock', flag:'#e53935',
-    decor:['snowman', 'iceblock'], acc:'#7fd8ff', river:['#5aa8d8', '#bfe6fa'], kicker:'#e53935', loopCol:['#9fd6f2', '#ffffff', '#3f6f8f'],
+  dino:{ name:'Dino Valley', kick:'World 10', bg:'#556626', bg2:'#60722c', carpet:'#3e9a4a', carpet2:'#388c43', wall:'#c9a46a', wallHi:'#e8cc92', wallLo:'#7a5a34', ink:'#1e1a0c',
+    haz:'water', hazCol:'#3f6a3a', hazCol2:'#7aa65a', hazName:'Swamp', slow:'mud', slowCol:'#6a4a2a', slowName:'Bog', iceCol:'#8a4e30', iceCol2:'#b8724a',
+    bumper:'dinoegg', block:'fossil', spinner:'#e8dcc0', slider:'log', flag:'#e8572a',
+    decor:['dinoegg', 'fern'], acc:'#b8e04a', river:['#5a8a3e', '#a8c870'], kicker:'#e8572a', loopCol:['#c9a46a', '#f4e6c4', '#6a4a2a'],
     holes:[] },
   sky:{ light:true, name:'Sky Islands', kick:'World 9', bg:'#7fc4ef', bg2:'#8fcdf3', carpet:'#3aa05a', carpet2:'#349150', wall:'#f8f4e8', wallHi:'#ffffff', wallLo:'#b0a88f', ink:'#1d3550',
     haz:'water', hazCol:'#e4f1fb', hazCol2:'#ffffff', hazName:'The drop', slow:'mud', slowCol:'#d9c79a', slowName:'Haystack',
@@ -646,7 +646,7 @@ var THEMES = {
 };
 /* the light that comes up out of the cup when the ball drops, one colour a theme (the real greens use gold) */
 var GLOW = { haunted:'#ff8a1f', harvest:'#ffc23d', winter:'#9fe4ff', sweetheart:'#ff5c9a', shamrock:'#7dff7a', spring:'#ffd6ec',
-  firework:'#ff4fd8', clubhouse:'#fff2b0', tour:'#f1d04a', temple:'#7dffd2', pirate:'#ffd23f', canyon:'#ffb347', volcano:'#ff5a1a', frozen:'#bfefff', sky:'#fff6b0', neon:'#39ff14', school:'#ffe36a', iceage:'#aef0ff', candy:'#ff9ad0', beach:'#5ce1ff' };
+  firework:'#ff4fd8', clubhouse:'#fff2b0', tour:'#f1d04a', temple:'#7dffd2', pirate:'#ffd23f', canyon:'#ffb347', volcano:'#ff5a1a', dino:'#c8f05a', sky:'#fff6b0', neon:'#39ff14', school:'#ffe36a', iceage:'#aef0ff', candy:'#ff9ad0', beach:'#5ce1ff' };
 Object.keys(GLOW).forEach(function(k){ if (THEMES[k]) THEMES[k].glow = GLOW[k]; });
 // the themes the calendar hands the Daily Hole (the Clubhouse and Tour Week are Tour worlds only)
 var CAL_THEMES = ['haunted', 'harvest', 'winter', 'sweetheart', 'shamrock', 'spring', 'firework', 'beach'];
@@ -905,7 +905,7 @@ var WORLDS = [
   { id:'canyon', name:'Canyon Mine', theme:'canyon', blurb:'Ledges over the shafts. Ride the belts or jump the gap.', haz:['The shafts', 'Ore belts', 'Bounce pads'] },
   { id:'volcano', name:'Volcano Island', theme:'volcano', blurb:'Every rock on a clock. Read the lava.', haz:['Basalt gates', 'Bounce rocks', 'Lava'] },
   { id:'sky', name:'Sky Islands', theme:'sky', blurb:'Islands in the clouds. Hay to stop you, blimps to wait for.', haz:['The drop', 'Haystacks', 'Blimps'] },
-  { id:'frozen', name:'Frozen Peak', theme:'frozen', blurb:'Ice that runs on, melt pools that keep it, sleds on the move.', haz:['Melt pools', 'Glacier ice', 'Sleds'] },
+  { id:'dino', name:'Dino Valley', theme:'dino', blurb:'Slick clay that runs on, swamp pools that keep it, logs on the roll.', haz:['Swamp pools', 'Slick clay', 'Rolling logs'] },
   { id:'iceage', name:'Ice Age', theme:'iceage', blurb:'Glacier ice, tar pits, and a herd that never stops.', haz:['Tar pits', 'Glacier ice', 'The herd'] }
 ];
 // a room: a rectangle at a height (for the picture; the drop between rooms is crossed by a set piece)
@@ -1471,60 +1471,60 @@ var LEVELS = [
   { par:3, three:2, sig:true, f:function(T){ var H = hole([rm(-5, 0, 5, -12), rm(-6, -16, 6, -30, 0.6), rm(-6, -29.9, 6, -33.1, 0.6), rm(-6, -33, 6, -48, 0.6)], [0, -2.5], [2, -44]);
     climb(H, -3, -12, -16, 2.4, 0.3); disc(H, 1, -22, 2.4, 1.3); pads(H, [[-4, -25, 0.6]]); zoneR(H, M.WATER, -6, -30, 6, -33); drawb(H, -1.4, -30, 1.4, -33, 3.4, 0.3, 0.55);
     blk(H, T, -6, -29.4, -1.4, -30); blk(H, T, 1.4, -29.4, 6, -30); slider(H, T, -38, -4, 4, 2.6, 0.2); bumps(H, T, [[-3, -41, 0.55], [3.5, -6, 0.5]]); zoneR(H, M.MUD, -6, -47, 6, -48); flatAt(H, 2, -44); return H; } },
-  // ---- 10 FROZEN PEAK: ice that runs on, melt pools that keep what they catch, and sleds that do not stop for anybody.
-  // First Freeze: two bands of ice across the slope, and the snowmen between them.
+  // ---- 10 DINO VALLEY: slick clay that runs on, swamp pools that keep what they catch, and logs that do not stop for anybody.
+  // First Tracks: two bands of slick clay across the slope, and the eggs between them.
   { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -36)], [0, -2.5], [-1.5, -32]); zoneR(H, M.ICE, -6, -9, 6, -13); zoneR(H, M.ICE, -6, -18, 6, -22); bumps(H, T, [[-3, -15.5, 0.6], [3, -15.5, 0.6], [0, -24.5, 0.6], [-4.5, -27, 0.5], [4.5, -6, 0.5]]);
     zoneR(H, M.MUD, -6, -34, 6, -36); zoneR(H, M.MUD, 3.5, -28, 6, -30); bowl(H, -1.5, -32); return H; } },
-  // Snowman Alley: weave through the snowmen while a sled runs up and down the middle.
+  // Egg Alley: weave through the eggs while a log rolls up and down the middle.
   { par:3, f:function(T){ var H = hole([rm(-7, 0, 7, -40)], [0, -2.5], [2, -36]); bumps(H, T, [[-3, -10, 0.7], [3, -14, 0.7], [-2.5, -19, 0.7], [3.5, -23, 0.7], [-3, -28, 0.7]]); vslider(H, T, 0, -12, -24, 3.0, 0);
     zoneR(H, M.ICE, -7, -30, 7, -32); zoneR(H, M.MUD, -7, -38, -4, -40); zoneR(H, M.MUD, 4.5, -6, 7, -9); bowl(H, 2, -36); return H; } },
-  // Frozen Ponds: three melt pools across the slope. Thread them, and keep off the edges.
+  // Swamp Hop: three swamp pools across the slope. Thread them, and keep off the edges.
   { par:3, f:function(T){ var H = hole([rm(-7, 0, 7, -36)], [0, -2.5], [2, -32]); zoneC(H, M.WATER, -3.4, -11.5, 1.5); zoneC(H, M.WATER, 4.8, -20, 1.6); zoneC(H, M.WATER, -4.4, -27, 1.4);
     bumps(H, T, [[1.6, -13, 0.55], [-1.4, -21, 0.55], [4.5, -27, 0.5]]); zoneR(H, M.MUD, -7, -6, -4, -9); zoneR(H, M.MUD, 4, -34, 7, -36); bowl(H, 2, -32); return H; } },
-  // Ice Wall: a gap in the first wall, ice behind it, and a gap at the other end of the second.
+  // Bone Wall: a gap in the first wall, clay behind it, and a gap at the other end of the second.
   { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -38)], [0, -2.5], [-2, -34]); blk(H, T, -6, -11, -1.5, -12.4); blk(H, T, 1.5, -11, 6, -12.4); zoneR(H, M.ICE, -6, -13, 6, -19);
     blk(H, T, -6, -22, 2, -23.4); blk(H, T, 4, -22, 6, -23.4); bumps(H, T, [[0, -28, 0.55], [-4, -29, 0.5], [3.5, -6, 0.5]]); zoneR(H, M.MUD, -6, -36, 6, -38); bowl(H, -2, -34); return H; } },
-  // Icicles: two icicles swinging across the run, and ice between them.
+  // Tail Swipe: two tails swinging across the run, and clay between them.
   { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -40)], [0, -2.5], [1.5, -36]); spinner(H, T, -2, -14, 2.4, 1.4, 2); spinner(H, T, 2, -25, 2.4, -1.6, 2); bumps(H, T, [[3.5, -14, 0.55], [-3.5, -25, 0.55], [-1, -31, 0.5]]);
     zoneR(H, M.ICE, -6, -18.5, 6, -20.5); zoneR(H, M.MUD, -6, -38, -3, -40); zoneR(H, M.MUD, 4, -6, 6, -9); bowl(H, 1.5, -36); return H; } },
-  // Ice Cave: the cup is in the cave, open on one side, and a block of ice slides past its mouth.
+  // Raptor Den: the cup is in the den, open on one side, and a boulder slides past its mouth.
   { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -36)], [0, -2.5], [3.5, -30]); pen(H, T, 3.5, -30); slider(H, T, -21, -4, 4, 2.4, 0); bumps(H, T, [[-3, -12, 0.6], [-4.5, -26, 0.6], [0.6, -24, 0.55]]); pads(H, [[4.6, -12, 0.6]]);
     zoneR(H, M.ICE, -7, -15, 7, -17); zoneR(H, M.MUD, -7, -34, -4, -36); return H; } },
-  // Sled Crossing: sleds cross the run both ways, and two more run up and down it.
+  // Dino Crossing: logs cross the run both ways, and two more roll up and down it.
   { par:3, f:function(T){ var H = hole([rm(-7, 0, 7, -40)], [0, -2.5], [-2, -36]); slider(H, T, -11, -5, 5, 2.4, 0); vslider(H, T, -3.5, -15, -25, 2.6, 0.3); vslider(H, T, 3.5, -25, -15, 2.6, 0.7); slider(H, T, -29, 5, -5, 2.8, 0.5);
     zoneR(H, M.ICE, -7, -17, -5.6, -23); bumps(H, T, [[0, -20, 0.55], [-5, -6, 0.5], [5, -6, 0.5]]); zoneR(H, M.MUD, 2.5, -38, 7, -40); bowl(H, -2, -36); return H; } },
-  // Snow Bridges: two snow bridges over two melt pools, each on its own clock, with ice between. Curbs keep a stray ball out.
+  // Log Bridges: two log bridges over two swamp pools, each on its own clock, with clay between. Curbs keep a stray ball out.
   { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -12), rm(-6, -11.9, 6, -15.6), rm(-6, -15.5, 6, -25), rm(-6, -24.9, 6, -28.6), rm(-6, -28.5, 6, -40)], [0, -2.5], [2, -36]);
     zoneR(H, M.WATER, -6, -12, 6, -15.5); drawb(H, -2.6, -12, 0.2, -15.5, 3.0, 0, 0.55); zoneR(H, M.ICE, -6, -17, 6, -22); zoneR(H, M.WATER, -6, -25, 6, -28.5); drawb(H, 1.2, -25, 4, -28.5, 2.8, 0.4, 0.55);
     blk(H, T, -6, -11.4, -2.6, -12); blk(H, T, 0.2, -11.4, 6, -12); blk(H, T, -6, -24.4, 1.2, -25); blk(H, T, 4, -24.4, 6, -25); bumps(H, T, [[-2, -32, 0.55], [4, -6, 0.5]]); zoneR(H, M.MUD, -6, -38, -3, -40); bowl(H, 2, -36); return H; } },
-  // Frozen Falls: ride the melt down off the glacier to the valley floor, past the pool at the bottom.
+  // Jungle Falls: ride the creek down off the ridge to the valley floor, past the pool at the bottom.
   { par:3, three:2, f:function(T){ var H = hole([rm(-12, 0, -4, -12), rm(-4, -30, 8, -44, -2)], [-8, -2.5], [3, -40]); river(H, [[-8, -11.5], [-8, -16], [0, -18], [4, -22], [4, -26], [0, -30.5]], 1.8, 7.5, 0, -2);
     zoneR(H, M.WATER, -4, -40, -1, -44); blk(H, T, -1, -40, -0.7, -44); zoneR(H, M.ICE, -4, -33, 8, -35); bumps(H, T, [[-10, -6, 0.6], [-6, -6, 0.5], [5.5, -37, 0.55]]); pads(H, [[0, -36.5, 0.6]]); zoneR(H, M.MUD, 5, -42, 8, -44); bowl(H, 3, -40); return H; } },
-  // Ski Lodge: the floor round the fire turns, and the skiers sit all round it.
+  // Dig Site: the floor round the dig turns, and the eggs sit all round it.
   { par:3, f:function(T){ var H = hole([rm(-7, 0, 7, -38)], [0, -2.5], [-2, -34]); disc(H, 0, -18, 3, -1.4); bumps(H, T, [[-4.8, -14, 0.55], [4.8, -14, 0.55], [-4.8, -22, 0.55], [4.8, -22, 0.55], [0, -26.5, 0.5], [2.5, -30, 0.5]]);
     zoneR(H, M.ICE, -7, -8, 7, -10); zoneR(H, M.MUD, 4, -36, 7, -38); bowl(H, -2, -34); return H; } },
-  // Ski Jump: two crevasses in a row, two jumps, and ice on the far side.
+  // Raptor Leap: two ravines in a row, two jumps, and clay on the far side.
   { par:3, three:2, f:function(T){ var H = hole([rm(-5, 0, 5, -10), rm(-5, -9.9, 5, -12.3), rm(-5, -12.2, 5, -18), rm(-5, -17.9, 5, -20.3), rm(-5.5, -20.2, 5.5, -36)], [0, -2.5], [1.5, -31]);
     jump(H, 0, -10, 0, -1, 2.2, 10, { h:0.6, ang:34 }); jump(H, 0, -18, 0, -1, 2.2, 10, { h:0.6, ang:34 }); zoneR(H, M.ICE, -5.5, -22, 5.5, -26); bumps(H, T, [[-2, -28.5, 0.55], [3.5, -6, 0.5]]); zoneR(H, M.MUD, -5.5, -34, 5.5, -36); bowl(H, 1.5, -31); return H; } },
-  // Glacier Belt: one belt drifts left, ice behind it, and the next drifts right.
+  // Mudslide: one slide drifts left, clay behind it, and the next drifts right.
   { par:3, f:function(T){ var H = hole([rm(-7, 0, 7, -38)], [0, -2.5], [2.5, -34]); belt(H, -7, -10, 7, -14, -5, 0); zoneR(H, M.ICE, -7, -14, 7, -18); belt(H, -7, -21, 7, -25, 5, 0);
     bumps(H, T, [[-2, -28, 0.6], [-4.5, -5, 0.5], [4, -30, 0.5]]); zoneR(H, M.MUD, -7, -36, -3, -38); bowl(H, 2.5, -34); return H; } },
-  // Icicle Gates: three gates of ice in the pass, three clocks, and the gaps never line up.
+  // Rib Cage: three gates of bone in the pass, three clocks, and the gaps never line up.
   { par:4, three:3, f:function(T){ var H = hole([rm(-6, 0, 6, -46)], [0, -2.5], [2, -42]); gateWall(H, T, -13, -6, 6, -3.5, -1.3, 2.2, 0, 1); gateWall(H, T, -24, -6, 6, 1.3, 3.5, 2.6, 0.3, -1); gateWall(H, T, -35, -6, 6, -1.1, 1.1, 3.0, 0.6, 1);
     zoneR(H, M.ICE, -6, -15, 6, -17.5); bumps(H, T, [[-3, -18.5, 0.5], [3.5, -29.5, 0.5]]); bowl(H, 2, -42); return H; } },
-  // Ice Loop: round the loop, across the ice, past the icicle.
+  // Fern Loop: round the loop, across the clay, past the tail.
   { par:3, three:2, f:function(T){ var H = hole([rm(-4, 0, 4, -12), pg([[-4, -12], [4, -12], [0.8, -15.6], [-0.8, -15.6]]), rm(-0.8, -15.5, 0.8, -19.5), rm(-6, -19.4, 6, -38)], [0, -2.5], [-2, -34]);
     loopAt(H, 0, -17.5, 0, -1, 0.65, 1.6); zoneR(H, M.ICE, -6, -21, 6, -25); spinner(H, T, 1.5, -28, 2.0, 1.5, 2); bumps(H, T, [[2.4, -6, 0.5], [-4.4, -28, 0.5]]); zoneR(H, M.MUD, -6, -36.5, 6, -38); bowl(H, -2, -34); return H; } },
-  // Spinning Rink: sleds cross top and bottom, and the middle of the rink turns.
+  // Stomping Ground: logs cross top and bottom, and the middle of the ground turns.
   { par:3, f:function(T){ var H = hole([rm(-7, 0, 7, -42)], [0, -2.5], [0, -38]); slider(H, T, -10, -4.5, 4.5, 2.2, 0); disc(H, 0, -19, 2.6, 1.3); slider(H, T, -28, 4.5, -4.5, 2.6, 0.5); pads(H, [[-4.8, -19, 0.6], [4.8, -19, 0.6]]);
     bumps(H, T, [[-3, -33, 0.55], [3, -33, 0.55], [-5, -5, 0.5]]); zoneR(H, M.ICE, -7, -23, 7, -25); zoneR(H, M.MUD, -7, -40, -4, -42); bowl(H, 0, -38); return H; } },
-  // Yeti Cave: the gate in the ice opens off its plate. Or find the crack the yeti left in the wall: it lines up with the tee and the cup.
+  // Rex’s Den: the gate in the bone wall opens off its plate. Or find the crack the rex left in the wall: it lines up with the tee and the cup.
   { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -36)], [0, -2.5], [-4, -27]); blk(H, T, -6, -19.4, -3.6, -20.6); blk(H, T, -2.2, -19.4, -1.4, -20.6); blk(H, T, 1.4, -19.4, 6, -20.6); secret(H, -3.6, -19.4, -2.2, -20.6);
     switchDoor(H, T, -20, -1.4, 1.4, 4.5, -9, 4); pads(H, [[-4.6, -13, 0.6]]); bumps(H, T, [[-2.6, -10, 0.6], [1.2, -25.5, 0.55]]); zoneR(H, M.WATER, 2.5, -23, 6, -27); blk(H, T, 2.2, -23, 2.5, -27); zoneR(H, M.MUD, 3, -33, 6, -36); bowl(H, -4, -27); return H; } },
-  // Avalanche: the whole slope runs down to the cup, ice at the top and drifts to stop you.
+  // Rockslide: the whole slope runs down to the cup, clay at the top and bog to stop you.
   { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -40)], [0, -2.5], [1, -36]); H.comps.push({ k:'plane', gx:0, gy:0.02 }); zoneR(H, M.ICE, -6, -10, 6, -13); zoneR(H, M.MUD, -6, -16, -1, -18.5); zoneR(H, M.MUD, 1, -23, 6, -25.5);
     bumps(H, T, [[2.5, -19.5, 0.6], [-2.5, -28, 0.6], [3.5, -31, 0.5]]); pads(H, [[-4.5, -33, 0.6]]); zoneR(H, M.MUD, -6, -38.5, 6, -40); flatAt(H, 1, -36); bowl(H, 1, -36); return H; } },
-  // Summit Lodge: up the ramp lane, across the ice, over the melt off the jump, across the snow bridge and past the icicle to the top.
+  // The Long Neck: up the ramp lane, across the clay, over the swamp off the jump, across the log bridge and past the tail to the top.
   { par:4, three:3, sig:true, f:function(T){ var H = hole([rm(-5, 0, 5, -12), rm(-7, -16, 7, -30, 0.8), rm(-7, -29.9, 7, -33.1, 0.8), rm(-7, -33, 7, -42, 0.8), rm(-7, -41.9, 7, -45.1, 0.8), rm(-7, -45, 7, -58, 0.8)], [0, -2.5], [-2, -54]);
     climb(H, 3, -12, -16, 2.4); zoneR(H, M.ICE, -7, -18, 7, -21); bumps(H, T, [[-3, -25, 0.7], [3, -26, 0.6]]); jump(H, 0, -30, 0, -1, 3.0, 14, { h:0.9, ang:40 }); zoneR(H, M.WATER, -7, -42, 7, -45); drawb(H, -1.4, -42, 1.4, -45, 3, 0.2, 0.55);
     blk(H, T, -7, -41.4, -1.4, -42); blk(H, T, 1.4, -41.4, 7, -42); spinner(H, T, 1.5, -50, 2.0, 1.4, 2); bumps(H, T, [[-4, -49, 0.6]]); zoneR(H, M.MUD, 3, -56, 7, -58); flatAt(H, -2, -54); return H; } },
@@ -1692,7 +1692,7 @@ var SECRETS = [
   { theme:'clubhouse', at:6, name:'The Potting Shed', scene:'s-shed' }, { theme:'school', at:14, name:'Detention', scene:'s-class' }, { theme:'candy', at:3, name:'Secret Recipe', scene:'s-recipe' },
   { theme:'neon', at:11, name:'Glitch Level', scene:'s-glitch' }, { theme:'pirate', at:8, name:'The Captain’s Deck', scene:'s-ship' }, { theme:'temple', at:16, name:'Treasure Chamber', scene:'s-treasure' },
   { theme:'canyon', at:5, name:'Lost Mine', scene:'s-mine' }, { theme:'volcano', at:13, name:'Lava Tube', scene:'s-lava' }, { theme:'sky', at:9, name:'Above the Clouds', scene:'s-clouds' },
-  { theme:'frozen', at:17, name:'Inside the Igloo', scene:'s-igloo' }, { theme:'iceage', at:7, name:'The Painted Cave', scene:'s-cave' }
+  { theme:'dino', at:17, name:'The Nest', scene:'s-nest' }, { theme:'iceage', at:7, name:'The Painted Cave', scene:'s-cave' }
 ];
 var SECRET_LEVELS = [
   // The Potting Shed: crates stacked down both walls, the mower rolling across the middle, and a crate in front of the cup.
@@ -1724,7 +1724,7 @@ var SECRET_LEVELS = [
   // Above the Clouds: bounce pads on a high island, and the drop on both sides of the last stretch.
   { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -36)], [0, -2.5], [1.5, -32]); pads(H, [[-3, -10, 0.6], [3.5, -14, 0.6], [-2, -19, 0.6]]);
     zoneR(H, M.WATER, -6, -23, -3.4, -28); zoneR(H, M.WATER, 4.6, -23, 6, -28); blk(H, T, -3.7, -23, -3.4, -28); blk(H, T, 4.6, -23, 4.9, -28); blk(H, T, -2, -28.6, 6, -29.6); zoneR(H, M.MUD, -6, -34, -3, -36); bowl(H, 1.5, -32, 1.7, 0.12); return H; } },
-  // Inside the Igloo: a round room of ice, snowballs round the edge, and a block of ice in the middle.
+  // The Nest: a round nest of sticks, eggs round the edge, slick clay across it and a boulder in the middle.
   { par:3, f:function(T){ var H = hole([pg([[-3, 0], [3, 0], [7, -5], [8, -14], [7, -23], [3, -28], [-3, -28], [-7, -23], [-8, -14], [-7, -5]])], [0, -2.5], [0, -24]);
     zoneR(H, M.ICE, -6, -8, 6, -20); blk(H, T, -1.5, -13, 1.5, -15); bumps(H, T, [[-5, -10, 0.55], [5, -18, 0.55], [-3, -21, 0.5]]); blk(H, T, -3, -20.2, 3, -21.2); zoneR(H, M.MUD, -2, -26, 2, -28); bowl(H, 0, -24, 1.7, 0.12); return H; } },
   // The Painted Cave: stalagmites to thread, a patch of ice, and a mammoth asleep across the back, rolling over now and then.
@@ -1762,8 +1762,8 @@ var TOUR_NAMES = [
   'Lava Flow', 'Lava Slope', 'River of Fire', 'Crater', 'Eruption', 'Lava Leap', 'Obsidian Bridge', 'Fire Mill', 'The Summit',
   'Cloud Hop', 'Haystacks', 'Bounce House', 'Balloon Field', 'Weather Vane', 'Sky Steps', 'Sky Bridge', 'Hay Bale', 'Drift',
   'Floating Island', 'Jet Stream', 'Kite Diamond', 'Floating Gates', 'Rainbow Loop', 'Cloud Gap', 'Leap of Faith', 'Cloud Mill', 'Castle in the Clouds',
-  'First Freeze', 'Snowman Alley', 'Frozen Ponds', 'Ice Wall', 'Icicles', 'Ice Cave', 'Sled Crossing', 'Snow Bridges', 'Frozen Falls',
-  'Ski Lodge', 'Ski Jump', 'Glacier Belt', 'Icicle Gates', 'Ice Loop', 'Spinning Rink', 'Yeti Cave', 'Avalanche', 'Summit Lodge',
+  'First Tracks', 'Egg Alley', 'Swamp Hop', 'Bone Wall', 'Tail Swipe', 'Raptor Den', 'Dino Crossing', 'Log Bridges', 'Jungle Falls',
+  'Dig Site', 'Raptor Leap', 'Mudslide', 'Rib Cage', 'Fern Loop', 'Stomping Ground', 'Rex’s Den', 'Rockslide', 'The Long Neck',
   'The Thaw', 'Mammoth Trail', 'Saber Tooth', 'Meltwater', 'Ice Bridge', 'Glacier Mill', 'Boulder Bounce', 'Cave Ledges', 'Frozen Crater',
   'Iceberg Drift', 'The Big Melt', 'Tar Pits', 'Cave Doors', 'Glacier Steps', 'Hailstorm', 'Saber Pass', 'Tundra Loop', 'Mammoth Peak'];
 /* THE TOURS. Each is a list of worlds, a list of holes and their names, and what it pays. The Members
@@ -1918,7 +1918,13 @@ var SKIN = {
     var crack = Math.abs(Math.sin(u * 7 + v * 3)) < 0.12 && e < 0.8; if (crack) return '#ff7a1a'; return (u + v < -0.5) ? '#4a4246' : (e > 0.8 ? '#1f1a1d' : '#332c30'); },
   basalt:function(u, v){ if (Math.abs(u) > 0.92 || Math.abs(v) > 0.9) return null; var col = Math.floor((u + 1) * 3.5), top = -0.9 + (col % 2) * 0.12;
     if (v < top) return null; if (((u + 1) * 3.5) % 1 < 0.09) return '#141113'; if (v < top + 0.12) return '#57505a'; return col % 2 ? '#2e292e' : '#3a343a'; },
-  // ---- Frozen Peak: an ice block (the snowman is the winter theme's)
+  // ---- Dino Valley: a speckled egg, and a block of sandstone with a fossil in it (the ice block stays for anybody who wants it)
+  dinoegg:function(u, v){ var e = ell(u, v * (v < 0 ? 0.92 : 1.1), 0.68, 0.92); if (e > 1) return null;
+    if (Math.sin(u * 37 + v * 19) * Math.sin(u * 13 - v * 29) > 0.62) return '#6a7a3a'; return u < -0.25 ? '#fbf4dc' : (e > 0.8 ? '#cbbf96' : '#ece2c0'); },
+  fossil:function(u, v){ if (Math.abs(u) > 0.92 || Math.abs(v) > 0.9) return null; if (Math.abs(u) > 0.82 || Math.abs(v) > 0.8) return u + v < 0 ? '#e8cc92' : '#7a5a34';
+    var sp = v - Math.sin(u * 3) * 0.18; if (Math.abs(sp) < 0.07 && Math.abs(u) < 0.66) return '#f4ead2';
+    for (var k = -2; k <= 2; k++){ var rx = k * 0.26; if (Math.abs(u - rx) < 0.045 && Math.abs(sp) < 0.36 - Math.abs(k) * 0.05) return '#f4ead2'; }
+    if (Math.hypot(u - 0.72, sp) < 0.12) return '#f4ead2'; return ((v + 1) * 4.5 | 0) % 2 ? '#c9a46a' : '#b8935a'; },
   iceblock:function(u, v){ if (Math.abs(u) > 0.92 || Math.abs(v) > 0.9) return null; if (Math.abs(u) > 0.8 || Math.abs(v) > 0.78) return u + v < 0 ? '#f2fbff' : '#7fb3d4';
     if (Math.abs(u + v + 0.4) < 0.07 || Math.abs(u + v - 0.5) < 0.05) return '#ffffff'; return ((u * 3 + 3) | 0) % 2 ? '#bfe6f8' : '#aedcf2'; },
   // ---- Sky Islands: a cloud, a marble pillar
@@ -2099,8 +2105,8 @@ var CSS = '\
 .wm-canyon b{font-family:Anton,Impact,sans-serif;font-size:34px;letter-spacing:.05em;text-transform:uppercase;background-image:linear-gradient(180deg,#fff0b0,#ffb347 50%,#d9621a);-webkit-text-stroke:.8px #3a1606;filter:drop-shadow(1.5px 1.5px 0 #7a3410) drop-shadow(1.5px 1.5px 0 #5a250a) drop-shadow(1.5px 1.5px 0 #3a1606) drop-shadow(0 4px 4px rgba(0,0,0,.5))}\
 .wm-volcano i{background:#2a0d06;color:#ffb347;border:1px solid #ff6a1a}\
 .wm-volcano b{font-family:Anton,Impact,sans-serif;font-size:34px;letter-spacing:.04em;text-transform:uppercase;background-image:linear-gradient(180deg,#fff7c2,#ffd23f 30%,#ff7a1a 62%,#c8240c);-webkit-text-stroke:.8px #2a0905;filter:drop-shadow(0 2px 0 #2a0905) drop-shadow(0 0 6px rgba(255,90,20,.85)) drop-shadow(0 0 14px rgba(255,60,10,.5))}\
-.wm-frozen i{background:#1d4a6e;color:#e6f6ff;border:1px solid #9fdcff}\
-.wm-frozen b{font-family:"Barlow Semi Condensed",sans-serif;font-weight:800;font-size:32px;letter-spacing:.08em;text-transform:uppercase;font-style:italic;background-image:linear-gradient(180deg,#ffffff 0 40%,#bfe9ff 52%,#6fbbe8);-webkit-text-stroke:.7px #163a5a;filter:drop-shadow(0 2px 0 #163a5a) drop-shadow(0 0 8px rgba(160,225,255,.75))}\
+.wm-dino i{background:#3a2a14;color:#e6f2b0;border:1px solid #b8e04a}\
+.wm-dino b{font-family:Anton,Impact,sans-serif;font-size:34px;letter-spacing:.04em;text-transform:uppercase;background-image:linear-gradient(180deg,#f4f8c8 0 30%,#b8e04a 55%,#6a8a24);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:.7px #2a3a10;filter:drop-shadow(0 2px 0 #2a3a10) drop-shadow(0 0 8px rgba(184,224,74,.5))}\
 .wm-sky i{background:#ffffff;color:#2f6fae;border:1px solid #9fd0f5}\
 .wm-sky b{font-family:Anton,Impact,sans-serif;font-size:33px;letter-spacing:.05em;text-transform:uppercase;background-image:linear-gradient(180deg,#ffe36a,#ff9f3a 55%,#ff5a3c);-webkit-text-stroke:1.2px #ffffff;filter:drop-shadow(0 3px 0 #ffffff) drop-shadow(0 4px 0 #6fb6e6) drop-shadow(0 6px 6px rgba(20,60,110,.35))}\
 .wm-neon i{background:#120a24;color:#39ff14;border:1px solid #39ff14}\
@@ -2190,8 +2196,8 @@ var CSS = '\
 .pp-lv.wt-canyon.lock{background:linear-gradient(160deg,#5a4538,#3a2b22);border-color:#8a6e58;color:#d4bfa8}.pp-lv.wt-canyon.cur{background:radial-gradient(circle at 50% 40%,#fff1b8,#ffb347 50%,#d9761a);border-color:#3d2814;color:#2e1606;box-shadow:0 0 14px rgba(255,179,71,.85),0 4px 0 rgba(0,0,0,.4)}.pp-lv.wt-canyon.cur:after{border-radius:14px}\
 .pp-lv.wt-volcano{background:radial-gradient(circle at 36% 30%,#6a5e63,#2c2427 70%);border-color:#ff7a1a;color:#ffd9b0;box-shadow:0 0 12px rgba(255,106,26,.55),inset 0 0 6px rgba(255,120,30,.35),0 4px 0 rgba(0,0,0,.45)}\
 .pp-lv.wt-volcano.lock{background:radial-gradient(circle at 36% 30%,#3c3437,#1d181a);border-color:#5c5258;color:#9a8f94;box-shadow:0 3px 0 rgba(0,0,0,.4)}.pp-lv.wt-volcano.cur{background:radial-gradient(circle at 40% 35%,#ffe08a,#ff6a1a 55%,#a3290a);border-color:#fff1d6;color:#2a0a02}\
-.pp-lv.wt-frozen{border-radius:6px;background:linear-gradient(135deg,rgba(255,255,255,.75) 0 18%,transparent 19% 60%,rgba(255,255,255,.35) 61% 66%,transparent 67%),linear-gradient(180deg,#d8f1ff,#9fd3f0);border-color:#3f7fae;color:#14304a}\
-.pp-lv.wt-frozen.lock{background:linear-gradient(180deg,#8fa4b8,#62788e);border-color:#3a5066;color:#dbe6f2}.pp-lv.wt-frozen.cur{background:radial-gradient(circle at 45% 35%,#ffffff,#7fd8ff 60%,#2f8fd0);border-color:#14304a;color:#0e2236;box-shadow:0 0 14px rgba(127,216,255,.9),0 4px 0 rgba(0,0,0,.35)}.pp-lv.wt-frozen.cur:after{border-radius:10px}\
+.pp-lv.wt-dino{border-radius:46% 54% 50% 50%/58% 58% 42% 42%;background:radial-gradient(circle at 34% 30%,#fbf4dc,#ece2c0 55%,#cbbf96);border-color:#6a7a3a;color:#2a3a10}\
+.pp-lv.wt-dino.lock{background:radial-gradient(circle at 34% 30%,#a8a088,#7a7460);border-color:#4a4a36;color:#ecead8}.pp-lv.wt-dino.cur{background:radial-gradient(circle at 40% 32%,#ffffff,#d8f07a 55%,#7aa02a);border-color:#2a3a10;color:#1e2a0a;box-shadow:0 0 14px rgba(200,240,90,.85),0 4px 0 rgba(0,0,0,.35)}\
 .pp-lv.wt-sky{border-radius:46% 54% 50% 50%/60% 60% 40% 40%;background:radial-gradient(circle at 40% 30%,#ffffff,#eaf5fd 60%,#c3dff4);border-color:#5a9ccc;color:#1d3550}\
 .pp-lv.wt-sky.lock{background:radial-gradient(circle at 40% 30%,#a9bccb,#7d93a6);border-color:#5a7086;color:#eef4f8}.pp-lv.wt-sky.cur{background:radial-gradient(circle at 40% 30%,#fff6b0,#ffd23f 55%,#ff9f3a);border-color:#ffffff;color:#3a2200;box-shadow:0 0 14px rgba(255,214,63,.9),0 4px 0 rgba(0,0,0,.3)}\
 .pp-lv.wt-neon{border-radius:8px;background:#120a24;border-color:#00e5ff;color:#b8faff;box-shadow:0 0 8px rgba(0,229,255,.7),inset 0 0 6px rgba(0,229,255,.45),0 4px 0 rgba(0,0,0,.5)}\
@@ -2213,7 +2219,7 @@ var CSS = '\
 .pp-hub[data-wt=pirate]{--wa:#f2c443;--wi:#3a2203;--wb1:#16466e;--wb2:#0b2238;--wt:rgba(8,28,48,.9)}\
 .pp-hub[data-wt=canyon]{--wa:#ffb347;--wi:#2e1606;--wb1:#7a4222;--wb2:#3d2010;--wt:rgba(52,26,12,.9)}\
 .pp-hub[data-wt=volcano]{--wa:#ff8a2a;--wi:#2a0a02;--wb1:#4a1e12;--wb2:#1a0f0c;--wt:rgba(26,16,14,.92)}\
-.pp-hub[data-wt=frozen]{--wa:#7fd8ff;--wi:#0e2236;--wb1:#2f5f86;--wb2:#163a5a;--wt:rgba(14,34,54,.9)}\
+.pp-hub[data-wt=dino]{--wa:#b8e04a;--wi:#1e2a0a;--wb1:#5a6a2a;--wb2:#2e3a14;--wt:rgba(30,42,10,.9)}\
 .pp-hub[data-wt=sky]{--wa:#ffd23f;--wi:#3a2200;--wb1:#3f87c4;--wb2:#1d5a90;--wt:rgba(20,52,90,.9)}\
 .pp-hub[data-wt=neon]{--wa:#ff2bd6;--wi:#ffffff;--wb1:#2a0a3a;--wb2:#0d0b1e;--wt:rgba(13,11,30,.93)}\
 .pp-hub[data-wt=school]{--wa:#ffd23f;--wi:#1f2430;--wb1:#3a4a6a;--wb2:#1f2430;--wt:rgba(31,36,48,.92)}\
@@ -2288,7 +2294,7 @@ var CSS = '\
 .pp-door[data-door=pirate] .pp-dl,.pp-door[data-door=pirate] .pp-dr{background:repeating-linear-gradient(90deg,rgba(0,0,0,.28) 0 3px,transparent 3px 34px),linear-gradient(180deg,#8a5a34,#5a3a20);border-color:#2b1a0e}\
 .pp-door[data-door=canyon] .pp-dl,.pp-door[data-door=canyon] .pp-dr{background:repeating-linear-gradient(90deg,#3a3a40 0 10px,transparent 10px 40px),repeating-linear-gradient(0deg,#3a3a40 0 10px,transparent 10px 70px),linear-gradient(180deg,#5a3b22,#2a1a10);border-color:#6e6e76}\
 .pp-door[data-door=volcano] .pp-dl,.pp-door[data-door=volcano] .pp-dr{background:repeating-linear-gradient(35deg,rgba(255,110,30,.5) 0 2px,transparent 2px 38px),linear-gradient(180deg,#3a2c2c,#1a1212);border-color:#ff6a1e}\
-.pp-door[data-door=frozen] .pp-dl,.pp-door[data-door=frozen] .pp-dr{background:linear-gradient(135deg,rgba(255,255,255,.55),transparent 40%,rgba(255,255,255,.3) 60%,transparent 80%),linear-gradient(180deg,#bfe9ff,#6fb6dc);border-color:#e9f8ff}\
+.pp-door[data-door=dino] .pp-dl,.pp-door[data-door=dino] .pp-dr{background:repeating-linear-gradient(90deg,transparent 0 22%,rgba(244,234,210,.85) 22% 27%,transparent 27% 33%),linear-gradient(180deg,#8a6a3a,#4a361c);border-color:#e8cc92}\
 .pp-door[data-door=sky] .pp-dl,.pp-door[data-door=sky] .pp-dr{background:radial-gradient(circle at 30% 20%,#fff 0 40px,transparent 41px),radial-gradient(circle at 70% 60%,#fff 0 52px,transparent 53px),linear-gradient(180deg,#9fd3ff,#e8f5ff);border-color:#ffd45e}\
 .pp-door[data-door=clouds] .pp-dl,.pp-door[data-door=clouds] .pp-dr{background:radial-gradient(circle at 30% 25%,#fff 0 46px,transparent 47px),radial-gradient(circle at 75% 55%,#fff 0 58px,transparent 59px),radial-gradient(circle at 35% 80%,#f3f6fb 0 50px,transparent 51px),linear-gradient(180deg,#c9d5e6,#8ea0bb);border-color:#eef3fa}\
 .pp-door[data-door=neon] .pp-dl,.pp-door[data-door=neon] .pp-dr{background:repeating-linear-gradient(0deg,#1a1430 0 14px,#2a2050 14px 18px),#1a1430;border-color:#ff3fd2;box-shadow:0 0 22px #ff3fd2,inset 0 0 18px #3ff0ff}\
@@ -2377,8 +2383,8 @@ function top(title, sub, right){
    holes, plus rewards nobody else can earn. No coin price anywhere changes. */
 var PAY = {
   main:{ hole:80, sig:280, ace:20, world:2000,
-    sigReward:['Clubhouse Visor', 'Hall Monitor Cap', 'Lollipop Putter', 'Neon Putter', 'Tricorn Hat', 'Jade Idol Putter', 'Miner’s Lamp Cap', 'Lava Ball', 'Cloud Ball', 'Ski Goggles', 'Mammoth Tusk Putter'],
-    worldReward:['Clubhouse Polo', 'Gold Star Ball', 'Sprinkle Trail', 'High Score Celebration', 'Treasure Trail', 'Explorer Hat', 'Gold Nugget Ball', 'Eruption Celebration', 'Rainbow Trail', 'Snowflake Trail', 'Thaw Celebration'] },
+    sigReward:['Clubhouse Visor', 'Hall Monitor Cap', 'Lollipop Putter', 'Neon Putter', 'Tricorn Hat', 'Jade Idol Putter', 'Miner’s Lamp Cap', 'Lava Ball', 'Cloud Ball', 'Dino Egg Ball', 'Mammoth Tusk Putter'],
+    worldReward:['Clubhouse Polo', 'Gold Star Ball', 'Sprinkle Trail', 'High Score Celebration', 'Treasure Trail', 'Explorer Hat', 'Gold Nugget Ball', 'Eruption Celebration', 'Rainbow Trail', 'Footprint Trail', 'Thaw Celebration'] },
   members:{ hole:300, sig:1200, ace:60, world:2500, exclusive:true,
     sigReward:['Hallows Crown (Members only)', 'Harvest Moon Putter (Members only)'],
     worldReward:['Phantom Trail (Members only)', 'Golden Leaf Ball (Members only)'], finish:'Members Champion Jacket (Members only)',
@@ -2873,7 +2879,7 @@ function toastHub(msg){ var t = S.ov.querySelector('.pp-toast'); if (!t){ t = el
    world (a temple's carved stone, a ship's hull, a mine's iron gate, a glacier), and the stars he has
    fill the lock. Enough and it opens; short and it stays shut and says how many more. Tapping anywhere
    skips the walk, and reduced motion skips it outright (the door still says whether it opened). */
-var DOOR_NAMES = { temple:'Temple Door', pirate:'Hull Door', canyon:'Mine Gate', volcano:'Basalt Gate', frozen:'Ice Gate', sky:'Cloud Gate', neon:'Arcade Shutter', school:'School Doors', iceage:'Glacier Gate', candy:'Factory Gate', haunted:'Crypt Gate', harvest:'Barn Doors', clubhouse:'Clubhouse Door' };
+var DOOR_NAMES = { temple:'Temple Door', pirate:'Hull Door', canyon:'Mine Gate', volcano:'Basalt Gate', dino:'Bone Gate', sky:'Cloud Gate', neon:'Arcade Shutter', school:'School Doors', iceage:'Glacier Gate', candy:'Factory Gate', haunted:'Crypt Gate', harvest:'Barn Doors', clubhouse:'Clubhouse Door' };
 // the 3D golfer's walk up the trail, drawn while the hole before it is played so the first steps never wait
 function warmWalk(TR, n){ try{ var h = S.host; if (h.golferWalkWarm && n < TR.levels.length) h.golferWalkWarm(0, -1); }catch(e){} }
 /* THE WALK IS A PLACE (golf/putt/trail.js). Winning a hole and pressing Next opens the trail to the next
@@ -2895,12 +2901,12 @@ function warmWalk(TR, n){ try{ var h = S.host; if (h.golferWalkWarm && n < TR.le
 var TRINKETS = {
   clubhouse:['Brass Ball Marker', 'Club Pennant', 'Scorecard Pencil'], temple:['Jade Idol', 'Sun Disc', 'Carved Tee'],
   pirate:['Doubloon Marker', 'Spyglass', 'Parrot Feather'], canyon:['Gold Nugget', 'Lucky Horseshoe', 'Prospector Pan'],
-  volcano:['Obsidian Shard', 'Ember Stone', 'Fire Opal'], frozen:['Ice Crystal', 'Snow Globe', 'Mitten Tee'],
+  volcano:['Obsidian Shard', 'Ember Stone', 'Fire Opal'], dino:['Raptor Claw', 'Fossil Fern', 'Trilobite'],
   sky:['Cloud Feather', 'Kite Charm', 'Weather Vane'], neon:['Arcade Token', 'Joystick Charm', 'Prize Ticket'],
   school:['Gold Star', 'Apple Eraser', 'Lucky Pencil'], iceage:['Mammoth Tusk', 'Cave Painting', 'Amber Stone'],
   candy:['Lucky Gumball', 'Candy Wrapper', 'Sugar Crystal']
 };
-var TRINKET_COL = { clubhouse:'#7ee081', temple:'#3fd0a0', pirate:'#ffd23a', canyon:'#ff9a4a', volcano:'#ff5a3c', frozen:'#a8dcf4', sky:'#ffffff', neon:'#ff2bd6', school:'#ffd23f', iceage:'#8fd0e0', candy:'#ff5fa2' };
+var TRINKET_COL = { clubhouse:'#7ee081', temple:'#3fd0a0', pirate:'#ffd23a', canyon:'#ff9a4a', volcano:'#ff5a3c', dino:'#b8e04a', sky:'#ffffff', neon:'#ff2bd6', school:'#ffd23f', iceage:'#8fd0e0', candy:'#ff5fa2' };
 var TRINKET_SET_COINS = 300;
 var PP_PUTTERS = [
   { id:'scope', name:'Scope Putter', worlds:[0, 1, 2], tells:'The aim line reaches four feet further.' },
@@ -2979,10 +2985,10 @@ var GREETERS = {
     hi:['Whoa there! It’s hot out here.', 'I’m Ranger Mae. I keep an eye on the volcano.'],
     tip:['Every gate here runs on a clock. Watch the lava, then putt.', 'Step in the lava on the trail and you’re straight back on the path. Trust me.'],
     bye:'Stay cool out there!' },
-  frozen:{ name:'Coach Frost', role:'Ski Coach', look:{ skin:'light', polo:'teal', hat:'red', pants:'navy', hair:'blonde', hairStyle:'long', cap:true, hatStyle:'beanie', gender:'female' },
-    hi:['Brr! Welcome to Frozen Peak.', 'I’m Coach Frost. Ice is my thing.'],
-    tip:['The ball slides a long way on ice. Putt softer than you think.', 'The sleds never stop. Wait for your gap.'],
-    bye:'Now get out there and shred!' },
+  dino:{ name:'Dr. Bones', role:'Fossil Hunter', look:{ skin:'medium', polo:'gold', hat:'tan', pants:'khaki', hair:'brown', hairStyle:'ponytail', cap:true, hatStyle:'cap', gender:'female' },
+    hi:['Welcome to Dino Valley! Mind your step.', 'I’m Dr. Bones. I dig up fossils.'],
+    tip:['Wet clay is slick. Putt softer than you think.', 'The logs never stop rolling. Wait for your gap.'],
+    bye:'Go make some tracks!' },
   sky:{ name:'Skye', role:'Balloon Pilot', look:{ skin:'porcelain', polo:'purple', hat:'white', pants:'stone', hair:'platinum', hairStyle:'curly', cap:true, hatStyle:'propeller', gender:'female' },
     hi:['Look at you, way up in the clouds!', 'I’m Skye. I fly the balloons around here.'],
     tip:['Miss the island and it drops. The hay stops it cold.', 'The blimps keep moving. Watch one go by first.'],
@@ -4217,7 +4223,7 @@ RTT_PUTT._try = function(fn, theme, name){ if (!S) return; var d = { custom:fn, 
 RTT_PUTT.starsOf = starsOf; RTT_PUTT.tourOf = tourOf; RTT_PUTT.lvH = lvH; RTT_PUTT.rectP = rectP; RTT_PUTT.buildFrom = buildFrom;
 /* The home card wears the world you are in: the top band of that world's signature hole, cut from the
    game's own render by build-cards.mjs, so it is the same pixel art as the courses. */
-var CARD_ART = { clubhouse:1, temple:1, pirate:1, canyon:1, volcano:1, frozen:1, sky:1, neon:1, school:1, iceage:1, candy:1 }, CARD_V = 5;
+var CARD_ART = { clubhouse:1, temple:1, pirate:1, canyon:1, volcano:1, dino:1, sky:1, neon:1, school:1, iceage:1, candy:1 }, CARD_V = 6;
 RTT_PUTT.cardArt = function(theme){ var t = CARD_ART[theme] ? theme : 'clubhouse';
   return '<img class="gc-art" src="putt/cards/' + t + '.png?v=' + CARD_V + '" alt="" aria-hidden="true">'; };
 RTT_PUTT.COINS = { hole:COIN_HOLE, sig:COIN_SIG, ace:COIN_ACE, world:COIN_WORLD, daily:COIN_DAILY, dailyPar:COIN_DAILY_PAR }; RTT_PUTT.PAY = PAY;
