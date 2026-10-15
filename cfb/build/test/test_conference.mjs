@@ -219,7 +219,7 @@ console.log('\n=== a conference season, all the way through ===');
      "the boards stay apart" means. */
   const cCount = (await page.textContent('#lb-count')).replace(/\s+/g, ' ').trim();
   ok('and the season is counted on it', /^[1-9]/.test(cCount), cCount);  ok('the blurb says why it is its own board',
-    /not the same competition/.test(await page.textContent('#lb-blurb')));
+    /(?:not|n't) the same competition/.test(await page.textContent('#lb-blurb')));
   await page.screenshot({ path: SS + 'conf_board.png', fullPage: true });
   await page.selectOption('#lb-comp', 'free'); await page.waitForTimeout(2200);
   /* Asked as "this row is not there", not as "nothing is there". The free-play
