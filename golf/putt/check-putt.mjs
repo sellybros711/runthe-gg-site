@@ -294,6 +294,19 @@ if (!QUICK){
     const Cf = P.buildLevel(7, 'lab'), fl = ROUTES['lab:7'], f1 = fl && fl[0], fv = f1 && P.speedFor(Cf, f1[1]);
     const ride = f1 && P.simulate(Cf, Cf.tee[0], Cf.tee[1], Math.cos(f1[0]) * fv, Math.sin(f1[0]) * fv, f1[2]), away = f1 && P.simulate(Cf, Cf.tee[0], Cf.tee[1], Math.cos(f1[0]) * fv, Math.sin(f1[0]) * fv, f1[2] + Cf.ferries[0].move + Cf.ferries[0].dwell);
     claim(!!ride && ride.ev.some(e => e[1] === 'deck') && !ride.water && ride.rest[0] < -6 && !!away && away.water, `the Ferry carries the ball across and puts it ashore, and the same putt with the deck away goes in (ashore at x ${ride ? ride.rest[0].toFixed(1) : '?'}, away wet ${away && away.water})`); }
+  /* THE SECRET HOLES: one a world, in the main tour's world order, each in its own place (C.scene). Same rule as
+     the tours: the recorded route is a birdie with room for error, a slightly off putt stays dry, three stars is
+     makeable. They are free and pay once, and ten beaten wins the Diamond Putter. */
+  { const TS = P.TOURS.secret;
+    claim(TS && TS.secret && TS.levels.length === TM.worlds.length && TS.per === 1 && TS.worlds.every((W, w) => W.theme === TM.worlds[w].theme), `one secret hole a world, in the tour's world order (${TS ? TS.levels.length : 0})`);
+    claim(Cn.secret && Cn.secret.hole > 0 && Cn.secret.ten === 10 && Cn.secret.allReward === 'Diamond Putter', 'a secret hole pays the first time it is beaten, and ten beaten win the Diamond Putter');
+    const scenes = new Set();
+    for (let n = 1; n <= TS.levels.length; n++){ const L = TS.levels[n - 1], C = P.buildLevel(n, 'secret'), name = `secret ${n} ${P.levelName(n, 'secret')}`; scenes.add(C.scene);
+      const line = ROUTES['secret:' + n], why = line ? replayRoute(C, line, 'obvious') : 'no route recorded';
+      claim(!why && (line.length === L.par - 1 || (L.par === 3 && line.length === 1)), `${name}: the obvious route is a birdie: ${line ? line.length : '?'} putts against par ${L.par}` + (why ? ': ' + why : ''));
+      if (line && !why){ const hz = hazardRates(C, line, 80), worst = Math.max(...hz); claim(worst <= 0.34, `${name}: a slightly off putt stays dry (${hz.map(h => Math.round(h * 100) + '%').join(' ')})`); }
+      threeStars(TS, n, C, L); }
+    claim(scenes.size === TS.levels.length && ![...scenes].includes(undefined), `every secret hole is played in a place of its own (${[...scenes].join(', ')})`); }
   const mw = TM.levels.filter(L => !L.sig).length / TM.worlds.length * Cn.main.hole + Cn.main.sig + TM.per * Cn.main.ace + Cn.main.world;
   claim(mw === 4000, `the main tour pays 4,000 coins a world, ${mw * P.TOURS.main.worlds.length} in all (${mw} a world)`);
   claim(Cn.members.exclusive && Cn.members.hole > Cn.main.hole && Cn.members.sig > Cn.main.sig && /Members only/.test(Cn.members.finish), 'the Members Tour pays more a hole and carries rewards only members can earn');
@@ -670,12 +683,18 @@ if (!args.includes('--no-browser')){
       out.greeters = []; for (let w = 0; w < 11; w++){ const P = window.RTT_PUTT._trailPlan(w * 18); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }
       for (let w = 0; w < 2; w++){ const P = window.RTT_PUTT._trailPlan(w * 9, 'members'); out.greeters.push(!!(P.spec.greet && P.items.some(t => t.k === 'host'))); }
       out.notMid = !window.RTT_PUTT._trailPlan(5).spec.greet;
+      out.secrets = []; out.secretElse = []; out.secretAt = [];
+      for (let w = 0; w < 11; w++){ const f = window.RTT_PUTT._secretFrom(w + 1), P = window.RTT_PUTT._trailPlan(f); out.secretAt.push(f - w * 18 + 1);
+        out.secrets.push(!!(P.secret && P.secret.i === w + 1 && P.spur2 && P.spur2.length > 1 && P.secret.reach && P.items.some(t => t.k === 'npc'))); }
+      for (let f = 0; f < 198; f++) if (window.RTT_PUTT._trailPlan(f).secret && out.secretAt[Math.floor(f / 18)] !== f % 18 + 1) out.secretElse.push(f + 1);
       window.RTT_PUTT.close(); window.RTT_PUTT_MAPFIRST = true; sbUser = { id:'chk' }; return out; });
     claim(wo.world && wo.ban && wo.host, `opening the Tour drops the golfer into the world on the trail to the next hole, with its title card and Map top right (${wo.world}, ${wo.ban}, ${wo.host})`);
     claim(wo.talk && wo.face && wo.held, `the world's greeter walks up and talks, with their face in the box, and walking waits for them (${wo.talk}, ${wo.face}, ${wo.held})`);
     claim(wo.done && wo.met && wo.talkBtn, `tapping through the talk lets the golfer go, it is kept on the record, and Talk plays it again (${wo.done}, ${wo.met}, ${wo.talkBtn})`);
     claim(wo.map && wo.back, `Map opens the map and its World button goes back into the world, where the greeter does not start over (${wo.map}, ${wo.back})`);
     claim(wo.alive && wo.ships === 2 && wo.afloat && wo.sails, `the world is alive round him, and two pirate ships sail Pirate Cove's sea (${wo.alive}, ${wo.ships}, ${wo.afloat}, ${wo.sails})`);
+    claim(wo.secrets.every(Boolean) && !wo.secretElse.length, `every world has one walk with a second path to a secret way in that can be walked to, with a local on it, and no other walk has one (${wo.secrets.map(Number).join('')}${wo.secretElse.length ? ', also on ' + wo.secretElse.join(' ') : ''})`);
+    claim(wo.secretAt.every(k => k > 1 && k <= 18) && new Set(wo.secretAt).size === wo.secretAt.length, `the secrets sit on a different walk in each world, never its first (${wo.secretAt.join(' ')})`);
     claim(wo.greeters.every(Boolean) && wo.notMid, `all eleven worlds and both Members worlds have a greeter on their first trail, and only there (${wo.greeters.map(Number).join('')})`);
     // THE HOLES AT EACH END OF A WALK ARE THE REAL HOLES: the one you just played behind you, the next one past the arch,
     // each drawn from its own compiled course, with its cup where the course puts it

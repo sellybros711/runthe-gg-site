@@ -1682,6 +1682,64 @@ var LAB_LEVELS = [
   { par:3, three:2, f:function(T){ var H = hole([rm(-3, 0, 3, -14.1), rm(-12, -13.9, 8, -19.1), rm(-12, -18.9, -6, -38)], [0, -2.5], [-9, -34]); zoneR(H, M.WATER, -6, -14, 8, -19);
     jump(H, 0, -13.5, 0, -1, 0.05, 2.4, { m:M.GREEN, h:0.5, ang:30 }); blk(H, T, -3, -12.9, -1.2, -14.1); blk(H, T, 1.2, -12.9, 3, -14.1); ferry(H, 3.6, -13.6, 8, -19, -10, 0, 2.2, 1.2, 0.3); bumps(H, T, [[-2, -7, 0.6], [-7.5, -27, 0.6]]); bowl(H, -9, -34, 1.7, 0.12); return H; } }
 ];
+/* THE SECRET HOLES. One a world, behind a way in on one of that world's trails (the trail to its tenth hole):
+   a second path off the walk leads to it, and walking into its doorway offers the hole. Each is themed to the
+   place it hides in: the ship's own deck in Pirate Cove, the inside of the cave in Ice Age. They are free (no
+   life), pay 280 coins the first time beaten, and finding them is a collection in the Bag: ten beaten wins the Diamond Putter.
+   Each is played inside its own place (C.scene, built by land.js), never in its world's open land. Nothing names one
+   until it is found. Par is the solver's, the same rule as the tours (routes in routes.json as secret:N). */
+var SECRETS = [
+  { theme:'clubhouse', at:6, name:'The Potting Shed', scene:'s-shed' }, { theme:'school', at:14, name:'Detention', scene:'s-class' }, { theme:'candy', at:3, name:'Secret Recipe', scene:'s-recipe' },
+  { theme:'neon', at:11, name:'Glitch Level', scene:'s-glitch' }, { theme:'pirate', at:8, name:'The Captain’s Deck', scene:'s-ship' }, { theme:'temple', at:16, name:'Treasure Chamber', scene:'s-treasure' },
+  { theme:'canyon', at:5, name:'Lost Mine', scene:'s-mine' }, { theme:'volcano', at:13, name:'Lava Tube', scene:'s-lava' }, { theme:'sky', at:9, name:'Above the Clouds', scene:'s-clouds' },
+  { theme:'frozen', at:17, name:'Inside the Igloo', scene:'s-igloo' }, { theme:'iceage', at:7, name:'The Painted Cave', scene:'s-cave' }
+];
+var SECRET_LEVELS = [
+  // The Potting Shed: crates stacked down both walls, the mower rolling across the middle, and a crate in front of the cup.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-5, 0, 5, -30)], [0, -2.5], [2, -26]); blk(H, T, -5, -8, -2.4, -10); blk(H, T, 2.4, -14, 5, -16); blk(H, T, -5, -20, -1.8, -22);
+    slider(H, T, -12, -3.4, 3.4, 2.4, 0, 2.0); blk(H, T, -0.6, -21.6, 5, -22.8); zoneR(H, M.MUD, -5, -28, -2, -30); bowl(H, 2, -26, 1.7, 0.12); return H; } },
+  // Detention: rows of desks, a gap down one side, and the teacher's chair rolling up and down the front.
+  { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -32)], [0, -2.5], [-3, -28]); blk(H, T, -6, -10, -3.6, -11.2); blk(H, T, -1.2, -10, 1.2, -11.2); blk(H, T, 3.6, -10, 6, -11.2);
+    blk(H, T, -4.8, -16, -2.4, -17.2); blk(H, T, 2.4, -16, 4.8, -17.2); vslider(H, T, 0, -20, -25, 2.6, 0.3, 1.8); bumps(H, T, [[4, -24, 0.5]]); bowl(H, -3, -28, 1.7, 0.12); return H; } },
+  // Secret Recipe: the mixing floor turns in the middle, with a pool of chocolate either side of it.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -34)], [0, -2.5], [0, -30]); disc(H, 0, -17, 2.8, 1.3); zoneC(H, M.WATER, -5, -17, 1.4); zoneC(H, M.WATER, 5, -17, 1.4);
+    bumps(H, T, [[-2.5, -9, 0.55], [2.5, -9, 0.55], [0, -24, 0.5]]); zoneR(H, M.ICE, -7, -26, 7, -27.5); bowl(H, 0, -30, 1.7, 0.12); return H; } },
+  // Glitch Level: a hidden pinball room. The pads throw it, and the posts guard the cup.
+  { par:3, three:2, f:function(T){ var H = hole([pg([[-4, 0], [4, 0], [7, -8], [7, -26], [3, -32], [-3, -32], [-7, -26], [-7, -8]])], [0, -2.5], [0, -28]);
+    pads(H, [[-4, -12, 0.65], [4, -12, 0.65], [0, -18, 0.7]]); bumps(H, T, [[-2, -25, 0.45], [2, -25, 0.45], [-5, -20, 0.5], [5, -20, 0.5]]); bowl(H, 0, -28, 1.7, 0.12); return H; } },
+  // The Captain's Deck: the ship's own deck, bow to the cup. Round the masts, past the cannons and the open hatch to the hold, with a barrel rolling across the waist.
+  { par:3, f:function(T){ var H = hole([pg([[-5, 0], [5, 0], [6, -10], [6, -28], [0, -40], [-6, -28], [-6, -10]])], [0, -2.5], [0, -33]);
+    bumps(H, T, [[0, -11, 0.7], [0, -24, 0.65]]); blk(H, T, -6, -15, -4.4, -17); blk(H, T, 4.4, -19, 6, -21); zoneR(H, M.WATER, -2.6, -17, -0.8, -20); blk(H, T, -2.9, -17, -2.6, -20); blk(H, T, -0.8, -17, -0.5, -20);
+    slider(H, T, -29, -4, 4, 2.6, 0, 1.8); bowl(H, 0, -33, 1.7, 0.12); return H; } },
+  // Treasure Chamber: piles of gold to thread, and the floor of the inner chamber turns.
+  { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -36)], [0, -2.5], [-2, -32]); bumps(H, T, [[-3, -9, 0.8], [3, -12, 0.8], [-2.5, -15, 0.6], [4, -26, 0.6], [-1.6, -28.2, 0.75]]); disc(H, 0, -21, 2.6, -1.2);
+    zoneR(H, M.ICE, -6, -27, 6, -28.5); zoneR(H, M.MUD, 3, -34, 6, -36); bowl(H, -2, -32, 1.7, 0.12); return H; } },
+  // Lost Mine: the cart runs across the old rails, and the ore belt still pushes left.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-5, 0, 5, -36)], [0, -2.5], [2, -32]); slider(H, T, -11, -3.2, 3.2, 2.4, 0, 2.2); belt(H, -5, -17, 5, -21, -4, 0);
+    bumps(H, T, [[-2.5, -25, 0.6]]); blk(H, T, -1, -27.6, 5, -28.8); zoneR(H, M.MUD, -5, -34, -2, -36); bowl(H, 2, -32, 1.7, 0.12); return H; } },
+  // Lava Tube: down the tube, round the loop, past the pools of lava either side.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-4, 0, 4, -12), pg([[-4, -12], [4, -12], [0.8, -15.6], [-0.8, -15.6]]), rm(-0.8, -15.5, 0.8, -19.5), rm(-5, -19.4, 5, -36)], [0, -2.5], [0, -32]);
+    loopAt(H, 0, -17.5, 0, -1, 0.65, 1.6); zoneR(H, M.WATER, -5, -23, -2.2, -27); zoneR(H, M.WATER, 2.2, -23, 5, -27); blk(H, T, -2.5, -23, -2.2, -27); blk(H, T, 2.2, -23, 2.5, -27);
+    bumps(H, T, [[2.5, -6, 0.5], [0, -29, 0.6]]); bowl(H, 0, -32, 1.7, 0.12); return H; } },
+  // Above the Clouds: bounce pads on a high island, and the drop on both sides of the last stretch.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -36)], [0, -2.5], [1.5, -32]); pads(H, [[-3, -10, 0.6], [3.5, -14, 0.6], [-2, -19, 0.6]]);
+    zoneR(H, M.WATER, -6, -23, -3.4, -28); zoneR(H, M.WATER, 4.6, -23, 6, -28); blk(H, T, -3.7, -23, -3.4, -28); blk(H, T, 4.6, -23, 4.9, -28); blk(H, T, -2, -28.6, 6, -29.6); zoneR(H, M.MUD, -6, -34, -3, -36); bowl(H, 1.5, -32, 1.7, 0.12); return H; } },
+  // Inside the Igloo: a round room of ice, snowballs round the edge, and a block of ice in the middle.
+  { par:3, f:function(T){ var H = hole([pg([[-3, 0], [3, 0], [7, -5], [8, -14], [7, -23], [3, -28], [-3, -28], [-7, -23], [-8, -14], [-7, -5]])], [0, -2.5], [0, -24]);
+    zoneR(H, M.ICE, -6, -8, 6, -20); blk(H, T, -1.5, -13, 1.5, -15); bumps(H, T, [[-5, -10, 0.55], [5, -18, 0.55], [-3, -21, 0.5]]); blk(H, T, -3, -20.2, 3, -21.2); zoneR(H, M.MUD, -2, -26, 2, -28); bowl(H, 0, -24, 1.7, 0.12); return H; } },
+  // The Painted Cave: stalagmites to thread, a patch of ice, and a mammoth asleep across the back, rolling over now and then.
+  { par:3, f:function(T){ var H = hole([pg([[-4, 0], [4, 0], [7, -10], [6, -24], [2, -34], [-3, -34], [-7, -22], [-6, -8]])], [0, -2.5], [-1, -30]);
+    bumps(H, T, [[-2.5, -9, 0.5], [2.5, -12, 0.5], [-3.5, -16, 0.45], [3.5, -19, 0.45]]); blk(H, T, -4, -26.2, 2, -27.2); zoneR(H, M.ICE, -6, -20, 6, -22.5); slider(H, T, -25.5, -4, 3, 3.0, 0.2, 2.4);
+    zoneR(H, M.MUD, 2, -32, 5, -34); bowl(H, -1, -30, 1.7, 0.12); return H; } }
+];
+var SECRET_NAMES = SECRETS.map(function(x){ return x.name; });
+var SECRET_WORLDS = SECRETS.map(function(x){ return { id:'s-' + x.theme, name:x.name, theme:x.theme, blurb:'A secret hole.', haz:['Found on a trail'] }; });
+// the trail whose second path leads to a world's secret: the walk to its tenth hole (world w, 0 based: hole w * 18 + 10)
+/* WHICH TRAIL HOLDS A WORLD'S SECRET. Not the same trail in every world, so finding one says nothing about where the
+   next is: `at` is the hole that trail walks to. Never a world's first trail, where the greeter stands. */
+function secretAt(to){ var w = Math.floor((to - 1) / PER), k = (to - 1) % PER + 1; return w < SECRETS.length && SECRETS[w].at === k ? w + 1 : 0; }
+// the trail a secret hole sends you back to: the one its entrance is on
+function secretFrom(i){ return (i - 1) * PER + SECRETS[i - 1].at - 1; }
 var LAB_NAMES = ['Redan', 'The Cape', 'Biarritz', 'Hairpin', 'The Switch', 'The Drop', 'The Ferry', 'Ferry Jump'];
 var MEMBER_NAMES = ['Graveyard Gate', 'Coffin Drop', 'Witch’s Cauldron', 'Bat Belfry', 'Haunted Floors', 'Brew River', 'Crypt Doors', 'Headless Leaps', 'Hallows Night',
   'Hayride', 'Bog Hop', 'Corn Maze', 'The Mill Race', 'Pie Plate Spin', 'Turkey Trot', 'Log Flume', 'Scarecrow Alley', 'Harvest Moon'];
@@ -1713,7 +1771,8 @@ var TOUR_NAMES = [
 var TOURS = {
   main:{ id:'main', name:'Putt Putt Tour', worlds:WORLDS, levels:LEVELS, names:TOUR_NAMES, tag:'lv', per:PER },
   members:{ id:'members', name:'Members Tour', season:'Hallows & Harvest', worlds:MEMBER_WORLDS, levels:MEMBER_LEVELS, names:MEMBER_NAMES, tag:'mb', per:9, members:true },
-  lab:{ id:'lab', name:'The Lab', worlds:LAB_WORLDS, levels:LAB_LEVELS, names:LAB_NAMES, tag:'lb', per:8, lab:true }
+  lab:{ id:'lab', name:'The Lab', worlds:LAB_WORLDS, levels:LAB_LEVELS, names:LAB_NAMES, tag:'lb', per:8, lab:true },
+  secret:{ id:'secret', name:'Secret Holes', worlds:SECRET_WORLDS, levels:SECRET_LEVELS, names:SECRET_NAMES, tag:'sh', per:1, secret:true }
 };
 function tourOf(id){ return TOURS[id] || TOURS.main; }
 function levelName(n, tid){ var TR = tourOf(tid); return TR.names[n - 1] || ('Hole ' + n); }
@@ -1724,7 +1783,9 @@ function tourDesc(n, host, tid){ var TR = tourOf(tid), W = worldOf(n, tid);
 function buildLevel(n, tid, theme, name){
   var TR = tourOf(tid), L = TR.levels[n - 1], W = worldOf(n, tid), th = theme || W.theme, T = THEMES[th];
   var H = L.f(T); H.par = L.par;
-  return courseFromH(H, TR.tag + n, hstr((TR.id === 'main' ? 'ppt:' : TR.id + ':') + n), th, name || levelName(n, tid));
+  var Cx = courseFromH(H, TR.tag + n, hstr((TR.id === 'main' ? 'ppt:' : TR.id + ':') + n), th, name || levelName(n, tid));
+  if (TR.secret && SECRETS[n - 1]) Cx.scene = SECRETS[n - 1].scene;   // a secret hole stands in its own place
+  return Cx;
 }
 function buildFrom(desc){ if (desc.custom){ var Hc = desc.custom(THEMES[desc.theme]); Hc.par = Hc.par || 3; return courseFromH(Hc, desc.tpl, desc.seed, desc.theme, desc.name); }
   if (desc.tour) return desc.daily ? buildLevel(desc.tour, desc.tid, desc.theme, desc.name) : buildLevel(desc.tour, desc.tid); return buildMini(desc.tpl, desc.seed, desc.theme, desc.name, desc.extra || 0); }
@@ -2325,7 +2386,9 @@ var PAY = {
        treat (coins on top of the hole's own), and all nine fill the candy bag for a reward nobody else has.
        Under par and not just par, so the treat is for playing a hole well rather than for getting round it. */
     treat:{ w:0, each:150, all:600, reward:'Jack-o’-Lantern Ball (Members only)' } },
-  lab:{ hole:0, sig:0, ace:0, world:0, sigReward:[], worldReward:[] }
+  lab:{ hole:0, sig:0, ace:0, world:0, sigReward:[], worldReward:[] },
+  // a secret hole pays like a signature hole the first time it is beaten; ten of them beaten wins the Diamond Putter and a bonus
+  secret:{ hole:280, sig:280, ace:20, world:0, sigReward:[], worldReward:[], ten:10, all:1000, allReward:'Diamond Putter' }
 };
 var COIN_HOLE = PAY.main.hole, COIN_SIG = PAY.main.sig, COIN_ACE = PAY.main.ace, COIN_WORLD = PAY.main.world, COIN_DAILY = 40, COIN_DAILY_PAR = 40;
 var LIFE_MS = 24 * 3600 * 1000;
@@ -2354,7 +2417,7 @@ function pmerge(st, g){
     ['c', 'b', 'ch'].forEach(function(f){ if (b[f]){ a[f] = a[f] || []; b[f].forEach(function(v){ if (a[f].indexOf(v) < 0) a[f].push(v); }); } });
     ['k', 'g', 'key', 'life', 'tk', 'pt', 'pz'].forEach(function(f){ if (b[f]) a[f] = 1; }); });
   // the rare things: lists only grow, and the spare life counters only go up, so the larger is the newer
-  ['bank', 'tk', 'met', 'rv'].forEach(function(f){ (g[f] || []).forEach(function(v){ st[f] = st[f] || []; if (st[f].indexOf(v) < 0) st[f].push(v); }); });
+  ['bank', 'tk', 'met', 'rv', 'sf'].forEach(function(f){ (g[f] || []).forEach(function(v){ st[f] = st[f] || []; if (st[f].indexOf(v) < 0) st[f].push(v); }); });
   ['bused', 'bspent'].forEach(function(f){ st[f] = Math.max(st[f] || 0, g[f] || 0); });
   if (g.pp){ st.pp = st.pp || { parts:[] }; st.pp.parts = st.pp.parts || []; (g.pp.parts || []).forEach(function(v){ if (st.pp.parts.indexOf(v) < 0) st.pp.parts.push(v); }); if (!st.pp.eq && g.pp.eq) st.pp.eq = g.pp.eq; }
   st.rewards = st.rewards || []; (g.rewards || []).forEach(function(r){ if (st.rewards.indexOf(r) < 0) st.rewards.push(r); });
@@ -2624,10 +2687,14 @@ function bagSheet(){
     <div class="pp-bsec">' + (cl ? 'Your putters' : 'Putt Putt putters') + '</div>' + puts + (!cl && eq && partsOf(st, eq) >= 3 ? '<button class="pt-bt pp-wide" data-uneq>Play with no special putter</button>' : '') + (cl && S.host.closet ? '<button class="pt-bt pp-wide" data-full>Open the full closet</button>' : '') + '\
     <div class="pp-bsec">Spare lives</div><div class="m">' + (bankHeld(st) ? bankHeld(st) + ' banked. Use one from the out of lives screen.' : 'None banked. A heart turns up on a trail now and then.') + '</div>\
     <div class="pp-bsec">Trinkets and golden balls</div>' + worlds + '\
+    <div class="pp-bsec">Secrets found · ' + secretsFound(st).length + ' of ' + SECRETS.length + '</div>' + (secretsFound(st).length ? secretsFound(st).sort(function(a, b){ return a - b; }).map(function(i){ var won = !!((st.tours.secret || {}).paid || {})[i];
+      return '<div class="pp-bput' + (won ? ' built' : '') + '"><div class="pp-bpn"><b>' + esc(SECRETS[i - 1].name) + '</b><span>' + esc(TR.worlds.filter(function(W){ return W.theme === SECRETS[i - 1].theme; }).map(function(W){ return W.name; })[0] || '') + (won ? ' · beaten' : ' · not beaten yet') + '</span></div><button class="pt-bt" data-sec="' + i + '">Play</button></div>'; }).join('') :
+      '<div class="m">None yet. Some places on the trails can be walked into.</div>') + '\
     <button class="pt-bt pp-wide" data-n>Close</button></div></div>');
   S.ov.appendChild(sh);
   sh.querySelector('[data-n]').onclick = function(){ sh.remove(); };
   sh.querySelectorAll('[data-eq]').forEach(function(b){ b.onclick = function(){ var s2 = pload(); s2.pp = s2.pp || { parts:[] }; s2.pp.eq = b.getAttribute('data-eq'); psave(s2); sh.remove(); bagSheet(); }; });
+  sh.querySelectorAll('[data-sec]').forEach(function(b){ b.onclick = function(){ var i = +b.getAttribute('data-sec'); sh.remove(); S.secretFrom = secretFrom(i); startLevel(i, 'secret'); }; });
   sh.querySelectorAll('[data-peq]').forEach(function(b){ b.onclick = function(){ if (S.host.equipPutter(b.getAttribute('data-peq'))){ sh.remove(); bagSheet(); } }; });
   var fu = sh.querySelector('[data-full]'); if (fu) fu.onclick = function(){ var h = S.host; sh.remove(); h.closet(); };
   var ue = sh.querySelector('[data-uneq]'); if (ue) ue.onclick = function(){ var s2 = pload(); s2.pp = s2.pp || { parts:[] }; s2.pp.eq = null; psave(s2); sh.remove(); bagSheet(); };
@@ -2960,11 +3027,51 @@ function greetSpec(tid, w, to){
 }
 var TRAIL_GOLD_COINS = 500;
 function trailOk(){ var TT = window.RTT_PUTT_TRAIL; return !!(TT && TT.API_VERSION === 1 && v3Ok() && S && S.host && S.host.golferWalk); }
+var TIPS = {
+  secret:['Word is that one has a shortcut. Look around before you putt.', 'There\'s a quicker way through that one. Most folks miss it.', 'Somebody found a quicker line on that one.'],
+  ferry:['The platform out there moves. Wait for it.', 'Time your putt to the moving platform.'],
+  ramp:['There\'s a jump. Give it some pace.', 'Hit the ramp firm. Short won\'t clear it.', 'You\'ll need pace for the jump.'],
+  loop:['There\'s a loop. Hit it firm or it rolls back.', 'Don\'t baby the loop.'],
+  bridge:['The bridge goes up and down. Time it.', 'Wait for the bridge to come down.'],
+  door:['Roll over the plate and the door opens.', 'Find the plate. It opens the door.'],
+  slide:['Things slide across that one. Watch a cycle first.', 'Count the gaps before you putt.', 'Patience. Let the blocks go by.', 'Watch the moving stuff once. Then go.'],
+  spin:['Something spins out there. Time it.', 'Let the arms swing past, then go.'],
+  river:['The river carries the ball. Let it.', 'Put it in the current and let it ride.'],
+  belt:['The belts carry the ball. Use them.', 'Mind which way the belts run.'],
+  turn:['The floor turns. Aim for where it\'ll be.', 'That floor spins. It bends your putt.'],
+  climb:['It\'s uphill. Give it more than you think.', 'There\'s a step up. Don\'t leave it short.'],
+  water:['There\'s water. Don\'t get greedy.', 'Play it safe past the water.', 'Wet costs a stroke. Take the long way if you need to.'],
+  ice:['The ice is quick. Ease off.', 'Go soft on the slick stuff.'],
+  sand:['Stay out of the sand. It eats pace.', 'The sand stops you dead.'],
+  mud:['The slow ground grabs the ball. Hit through it.', 'Give it extra on the slow stuff.', 'That patch is slow. Putt through it or around it.'],
+  bump:['Use the bumpers. They kick hard.', 'Bank it. The bumpers do the work.'],
+  bank:['Play it off the wall.', 'Bank it in. The straight line\'s blocked.', 'Look for the angle off the rails.'],
+  ace:['You can ace it.', 'An ace is out there if you find the line.'] };
+/* WHAT THE LOCAL TELLS YOU ABOUT THE HOLE AHEAD. The name and par are on the screen already, so not those: one
+   thing worth knowing before you putt, read off the hole itself, each in a few wordings picked by the hole's number
+   so the same piece doesn't get the same sentence every time. A hole with a secret line gets a nudge that one is
+   there, never where. */
+function holeTips(n, tid, three){ var C; try{ C = buildLevel(n, tid); }catch(e){ return []; }
+  var mv = C.movers || [], has = function(k){ return mv.some(function(m){ return m.k === k; }); }, zm = {};
+  (C.zones || []).forEach(function(z){ zm[z.m] = 1; });
+  var cand = [];
+  if ((C.ferries || []).length) cand.push('ferry'); if ((C.ramps || []).length) cand.push('ramp'); if ((C.loops || []).length) cand.push('loop');
+  if ((C.bridges || []).length) cand.push('bridge'); if (has('door')) cand.push('door'); if (has('slide') || has('blade')) cand.push('slide');
+  if (has('spin')) cand.push('spin'); if ((C.rivers || []).length) cand.push('river'); if ((C.belts || []).length) cand.push('belt');
+  if ((C.turns || []).length) cand.push('turn'); if (zm[M.WATER]) cand.push('water'); if (zm[M.ICE]) cand.push('ice');
+  if ((C.climbs || []).length) cand.push('climb'); if (zm[M.SAND]) cand.push('sand'); if (zm[M.MUD]) cand.push('mud');
+  if ((C.bumpers || []).length >= 3) cand.push('bump'); if ((C.blocks || []).length) cand.push('bank');
+  // most holes have more than one thing worth saying: which one the local picks is the hole's own, not always the first
+  var out = [], h = (n * 2654435761) >>> 0, line = function(k){ var L = TIPS[k]; return L[(h >>> 3) % L.length]; };
+  if ((C.secret || []).length) out.push(line('secret'));
+  if (cand.length) out.push(line(cand[h % Math.min(cand.length, 2)]));
+  if (out.length < 2 && three === 1) out.push(line('ace'));
+  return out; }
 function trailSpec(tid, from){
   var TR = tourOf(tid), K = TR.per || PER, to = from + 1, w = Math.min(TR.worlds.length - 1, Math.floor((to - 1) / K)), th = TR.worlds[w].theme;
   var cross = from >= 1 && from % K === 0, th0 = cross ? TR.worlds[w - 1].theme : th, tp = pload().tours[TR.id];
   var portrait = (window.innerHeight || 800) >= (window.innerWidth || 400);
-  return { key:tid + ':' + to, tid:tid, from:from, to:to, w:w, seed:hstr('trail:' + tid + ':' + to), theme:th, theme0:th0, cross:cross, plaza:(to - 1) % K === 0, gateOpen:opened(TR, tp, to), T:THEMES[th] || THEMES.clubhouse, halfW:portrait ? 36 : 46, loot:trailLoot(tid, to), holeTo:to <= TR.levels.length ? courseFoot(to, tid) : null, holeFrom:from >= 1 ? courseFoot(from, tid) : null, greet:from % K === 0 ? greetSpec(tid, w, to) : null };
+  return { secret:tid === 'main' && secretAt(to) ? { i:secretAt(to) } : null, key:tid + ':' + to, tid:tid, from:from, to:to, w:w, seed:hstr('trail:' + tid + ':' + to), theme:th, theme0:th0, cross:cross, plaza:(to - 1) % K === 0, gateOpen:opened(TR, tp, to), T:THEMES[th] || THEMES.clubhouse, halfW:portrait ? 36 : 46, loot:trailLoot(tid, to), holeTo:to <= TR.levels.length ? courseFoot(to, tid) : null, holeFrom:from >= 1 ? courseFoot(from, tid) : null, greet:from % K === 0 ? greetSpec(tid, w, to) : null };
 }
 /* THE HOLES ON A TRAIL ARE THE REAL HOLES. The hole you just left lies behind you where the walk starts, and the
    hole you are walking to lies beyond the arch, each drawn from its own layout: its carpet, its rails, its water and
@@ -3068,6 +3175,7 @@ function openTrail(tid, from){
     S.trailCtl = window.RTT_PUTT_TRAIL.run(box, P, pic, {
       host:S.host, found:JSON.parse(JSON.stringify(rec0)), holeLabel:'Hole ' + to, greetDelay:wbn ? 2700 : 400, clouds:clouded,
       skipLabel:sp.cross && !sp.gateOpen ? 'Map' : 'Play hole ' + to,
+      secret:sp.secret ? function(i, resume){ secretFound(i, resume, from); } : null,
       pick:function(kind, id, n){ var st = pload(); st.trail = st.trail || {}; var r = st.trail[sp.key] = st.trail[sp.key] || {}, msg = '';
         if (kind === 'coin'){ r.c = r.c || []; if (r.c.indexOf(id) < 0) r.c.push(id); else n = 0; }
         else if (kind === 'brk'){ r.b = r.b || []; if (r.b.indexOf(id) < 0) r.b.push(id); else n = 0; }
@@ -3092,9 +3200,8 @@ function openTrail(tid, from){
       golden:function(){ return goldenOf(pload(), tid, sp.w); },
       portrait:function(look){ try{ var c = S.host.portrait && S.host.portrait(look); return c && c.toDataURL ? c.toDataURL() : ''; }catch(e){ return ''; } },
       met:function(th){ var st = pload(); st.met = st.met || []; if (st.met.indexOf(th) < 0){ st.met.push(th); psave(st); } if (sp.greet) sp.greet.met = true; },
-      lines:function(who){ var nm = levelName(to, tid), out = ['Hole ' + to + ' is ' + nm + '.', 'Par ' + (L ? L.par : 3) + '.'];
-        if (three) out.push('Three stars needs ' + (three === 1 ? 'an ace.' : three + ' strokes.'));
-        if (L && L.sig) out.push('It is the signature hole of ' + Wd.name + '.'); return out; },
+      secretSeen:function(i){ return (pload().sf || []).indexOf(i) >= 0; },
+      lines:function(){ return clouded || !L ? [] : holeTips(to, tid, three); },
       door:function(cb){ var tp = pload().tours[TR.id], open = opened(TR, tp, to), gw = sp.w - 1, have = starsThrough(tp, TR, gw), need = worldGate(TR, gw), T = THEMES[Wd.theme] || {};
         // the stars are there: this is where the clouds part, and the world gets its name
         var hide = clouded && !open; if (clouded && open){ reveal(TR, sp.w); }
@@ -3224,16 +3331,29 @@ function skipWarn(n, tid){ var st = pload(), c = st.cur, tr = (st.tours || {})[t
   sh.querySelector('[data-n]').onclick = function(){ sh.remove(); };
   sh.querySelector('[data-walk]').onclick = function(){ sh.remove(); openTrail(tid, n - 1); };
   sh.querySelector('[data-skip]').onclick = function(){ sh.remove(); startLevel(n, tid); }; }
+/* A SECRET FOUND: walking into the doorway marks it found (st.sf, a list that only grows) and offers the hole.
+   Keep walking hands the walk back. A secret not yet found cannot be started from anywhere. */
+function secretFound(i, resume, from){ var st = pload(); st.sf = st.sf || []; var first = st.sf.indexOf(i) < 0; if (first){ st.sf.push(i); psave(st); }
+  var won = !!((st.tours.secret || {}).paid || {})[i], n = st.sf.length;
+  try{ S.host.sfx && S.host.sfx(first ? 'holeGood' : 'tap'); }catch(e){}
+  var sh = el('<div class="pp-sheet"><div class="pp-card"><div class="k">' + (first ? 'SECRET HOLE FOUND' : 'SECRET HOLE') + '</div><div class="t">' + esc(SECRETS[i - 1].name) + '</div>\
+    <div class="m">' + (first ? 'You found a way in. Secrets found: ' + n + ' of ' + SECRETS.length + '.' : won ? 'Back again. You have beaten this one.' : 'Back again. Still waiting to be beaten.') + '</div>\
+    <div class="m">Free to play. ' + (won ? 'Coins land the first time only.' : 'Beat it for ' + PAY.secret.hole + ' coins.') + '</div>\
+    <button class="pt-go pp-wide" data-y>Play it</button><button class="pt-bt pp-wide" data-n>Keep walking</button></div></div>');
+  S.ov.appendChild(sh); sh.querySelector('[data-n]').onclick = function(){ sh.remove(); resume(); };
+  sh.querySelector('[data-y]').onclick = function(){ sh.remove(); S.secretFrom = from; startLevel(i, 'secret'); }; }
+function secretsFound(st){ return (st.sf || []).filter(function(i){ return i >= 1 && i <= SECRETS.length; }); }
 function startLevel(n, tid){
   var st = pload(); tid = tid || S.tour || 'main';
   if (tourOf(tid).members && !membersCanPlay()) return membersSheet({ n:n, trail:S.screen === 'trail' });
   if (tourOf(tid).lab && !labOpen()) return showHub('main');
+  if (tourOf(tid).secret && secretsFound(st).indexOf(n) < 0 && !allAccess()) return showHub('main');
   if (tid === 'main' && n > GUEST_HOLES && isGuest()) return guestSheet();
   var c = st.cur, back = c && c.tid === tid && c.n === n && c.s > 0;
   if (c && !back){ clearCur(st); psave(st); }   // only a hole in progress on another device can be left this way
-  if (!back && livesNow(st) <= 0 && !tourOf(tid).lab && !allAccess()) return outOfLives();
+  if (!back && livesNow(st) <= 0 && !tourOf(tid).lab && !tourOf(tid).secret && !allAccess()) return outOfLives();
   var d = tourDesc(n, S.host, tid), TRs = tourOf(tid);
-  reveal(TRs, Math.floor((n - 1) / (TRs.per || PER)));   // standing in a world is seeing it
+  if (!TRs.secret) reveal(TRs, Math.floor((n - 1) / (TRs.per || PER)));   // standing in a world is seeing it
   S.round = { mode:'ppt', lv:n, tid:tid, i:0, cards:[], holes:[d], title:levelName(n, tid) };
   stopTrail(); playHole(); warmWalk(tourOf(tid), n); trailAhead(tid, n);
   if (back) resumeInto(c);
@@ -3276,14 +3396,14 @@ function startDaily(dk){
 }
 // what the bar under the title says during a hole
 function tourSub(R, C, P){
-  if (R.mode === 'ppt'){ var left = C.par - P.strokes; return 'Hole ' + wl(R.lv, R.tid) + ' · Par ' + C.par + ' · ' + (left > 1 ? left + ' strokes left' : 'Last stroke'); }
+  if (R.mode === 'ppt'){ var left = C.par - P.strokes; return (R.tid === 'secret' ? 'Secret hole' : 'Hole ' + wl(R.lv, R.tid)) + ' · Par ' + C.par + ' · ' + (left > 1 ? left + ' strokes left' : 'Last stroke'); }
   if (R.mode === 'pdaily') return R.kick + ' · ' + (R.past ? monthDay(R.day) + ' Daily' : 'Daily Hole') + ' · Par ' + C.par;
   return (C.kind === 'real' ? C.sub : (R.kick || '')) + ' · Par ' + C.par;
 }
 // leaving a hole: free before the first putt, a life after it on the Tour
 function leaveHole(){
   var P = S.play, R = S.round;
-  if (R && R.mode === 'ppt' && R.tid !== 'lab' && P && P.strokes > 0 && P.state !== 'done'){
+  if (R && R.mode === 'ppt' && R.tid !== 'lab' && R.tid !== 'secret' && P && P.strokes > 0 && P.state !== 'done'){
     return confirmSheet('Leave this hole?', 'You have putted, so leaving costs a life.', 'Leave · lose a life', function(){ var st = pload(); clearCur(st); loseLife(st); if (livesNow(st) > 0) home(R.tid); else showHub(); }); }
   if (R && R.mode === 'pdaily' && P && P.strokes > 0 && P.state !== 'done'){
     return confirmSheet('Leave the Daily Hole?', 'You get one scored try a day. Leaving now scores it as a pick up.', 'Leave and score it', function(){ dailyFinish(P.C.par + 3, P.C.par, null); }); }
@@ -3292,7 +3412,7 @@ function leaveHole(){
 }
 function restartHole(){
   var P = S.play, R = S.round;
-  if (R.mode === 'ppt' && R.tid !== 'lab' && P.strokes > 0 && P.state !== 'done') return confirmSheet('Restart?', 'You have putted, so a restart costs a life.', 'Restart · lose a life', function(){ var st = pload(); clearCur(st); loseLife(st); if (livesNow(st) <= 0 && !allAccess()) return showHub(), outOfLives(); playHole(); });
+  if (R.mode === 'ppt' && R.tid !== 'lab' && R.tid !== 'secret' && P.strokes > 0 && P.state !== 'done') return confirmSheet('Restart?', 'You have putted, so a restart costs a life.', 'Restart · lose a life', function(){ var st = pload(); clearCur(st); loseLife(st); if (livesNow(st) <= 0 && !allAccess()) return showHub(), outOfLives(); playHole(); });
   if (R.mode === 'pdaily' && P.strokes > 0) return toast('One scored try a day. Finish this one.');
   if (R.mode === 'ppt'){ var st = pload(); if (st.cur){ clearCur(st); psave(st); } }
   playHole();
@@ -3304,8 +3424,28 @@ function confirmSheet(title, body, yes, fn){
 function popup(html, wire, kind){ var pop = el('<div class="pt-pop pp-pop' + (kind ? ' ' + kind : '') + '">' + html + '</div>'); (S.stage || S.ov).appendChild(pop); if (S.play) S.play.state = 'done';
   pop.querySelectorAll('[data-a]').forEach(function(b){ b.onclick = function(){ wire[b.getAttribute('data-a')](); }; }); return pop; }
 
+/* A SECRET HOLE ENDS: no life either way. The first win pays, and the eleventh secret beaten pays the collection.
+   Back to the trail puts the golfer on the walk the secret was found on. */
+function secretOut(holed){
+  var P = S.play, R = S.round, C = P.C, n = R.lv, st = pload(), tp = st.tours.secret, PY = PAY.secret, s = P.strokes, par = C.par, got = 0, lines = [];
+  clearCur(st); var from = S.secretFrom != null ? S.secretFrom : secretFrom(n);
+  var back = function(){ openTrail('main', from); }, again = function(){ startLevel(n, 'secret'); };
+  if (holed && s <= par){ var first = tp.best[n] == null; tp.best[n] = first ? s : Math.min(tp.best[n], s);
+    if (!tp.paid[n]){ tp.paid[n] = 1; got += PY.hole; } if (s === 1 && !tp.ace[n]){ tp.ace[n] = 1; got += PY.ace; }
+    var beaten = Object.keys(tp.paid).length;
+    if (beaten >= PY.ten && st.rewards.indexOf(PY.allReward) < 0){ got += PY.all; grant(st, PY.allReward); lines.push(PY.ten + ' secret holes beaten: the ' + PY.allReward + ' and +' + PY.all + ' coins.'); }
+    else if (beaten < PY.ten) lines.push((PY.ten - beaten) + ' more secret ' + (PY.ten - beaten === 1 ? 'hole wins' : 'holes win') + ' the ' + PY.allReward + '.');
+    psave(st); if (got) coins(got, 'Secret hole');
+    try{ S.host.sfx && S.host.sfx('holeGood'); }catch(e){}
+    return popup('<div class="k">SECRET HOLE · ' + (s === 1 ? 'HOLE IN ONE' : s < par ? 'UNDER PAR' : 'PAR') + '</div><div class="t">' + esc(scoreName(s, par)) + '</div>      <div class="pp-nums"><span><b>' + s + '</b>Strokes</span><span><b>' + par + '</b>Par</span><span><b>' + beaten + '/' + SECRETS.length + '</b>Secrets beaten</span></div>' +
+      (got ? '<div class="pp-coins">+' + got + ' coins</div>' : '<div class="s">Coins land the first time only.</div>') + lines.map(function(t){ return '<div class="s">' + esc(t) + '</div>'; }).join('') +
+      '<div class="row"><button class="pt-bt" data-a="again">Replay</button><button class="pt-go" data-a="back">Back to the trail</button></div>', { again:again, back:back }); }
+  psave(st);
+  return popup('<div class="k">OUT OF STROKES</div><div class="t">Over par</div><div class="s">' + par + ' strokes used and still not down. Secret holes cost no lives.</div>    <div class="row"><button class="pt-bt" data-a="back">Back to the trail</button><button class="pt-go" data-a="again">Try again</button></div>', { back:back, again:again }, 'over');
+}
 // a Tour hole ends one of three ways
 function tourOut(holed){
+  if (S.round && S.round.tid === 'secret') return secretOut(holed);
   var P = S.play, R = S.round, C = P.C, n = R.lv, tid = R.tid || 'main', TR = tourOf(tid), PY = PAY[TR.id], K = TR.per || PER, N = TR.levels.length;
   var s = P.strokes, par = C.par, st = pload(), tp = st.tours[TR.id], th = TR.levels[n - 1].three;
   clearCur(st); if (TR.lab || !(holed && s <= par)) psave(st);
@@ -4064,6 +4204,8 @@ RTT_PUTT._state = function(){ return S; };
 RTT_PUTT._walkTo = function(n, tid){ return walkTo(n, tid || 'main'); };
 RTT_PUTT._trail = function(){ return S && S.trailCtl; };
 RTT_PUTT._trailPlan = function(from, tid){ return trailPlan(trailSpec(tid || 'main', from)); };
+RTT_PUTT._secretFrom = secretFrom;
+RTT_PUTT._holeTips = function(n, tid){ var L = tourOf(tid || 'main').levels[n - 1]; return holeTips(n, tid || 'main', L ? threeOf(L) : null); };
 RTT_PUTT._loot = trailLoot; RTT_PUTT._bag = function(){ bagSheet(); }; RTT_PUTT._closet = function(){ closetSheet(); }; RTT_PUTT._foot = courseFoot; RTT_PUTT._left = trailLeft;
 RTT_PUTT._covers = function(){ var P = S.play; return P && P.camNow ? golferCovers(P, P.camNow) : null; };
 RTT_PUTT._lose = function(){ loseLife(pload()); };
