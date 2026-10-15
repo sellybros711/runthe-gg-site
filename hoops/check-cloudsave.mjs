@@ -358,27 +358,32 @@ const ROSTER_SIZE = (() => {
  * would make two of the page's rules untestable: startRun's delete and cloudAdoptRun's
  * comparison both exist only because a write can be refused.
  */
-const shelf = { rows: new Map(), calls: [], refused: 0, user: 'user-one' };
-const shelfKey = (g, s) => shelf.user + '/' + g + '/' + s;
+/* A ROW BELONGS TO THE ACCOUNT WHOSE TOKEN SENT IT, as on the real server. Each fake account
+   signs in with its own token (signIn), so a write is filed under whoever was signed in when it
+   went out, not under whoever the test has switched to by the time the request is handled.
+   Filing by the test's current user instead made a slow machine misfile a write sent just
+   before a switch. `hold` parks every put until it is released, for the race in section 9b. */
+const shelf = { rows: new Map(), calls: [], refused: 0, user: 'user-one', hold: null };
+const shelfKey = (u, g, s) => u + '/' + g + '/' + s;
 
-function shelfRpc(fn, body) {
+function shelfRpc(fn, body, user) {
   const g = body.p_game, s = body.p_slot;
   if (fn === 'ps_save_all') {
     const out = [];
     for (const [k, v] of shelf.rows) {
-      if (k.startsWith(shelf.user + '/' + g + '/')) out.push(v);
+      if (k.startsWith(user + '/' + g + '/')) out.push(v);
     }
     out.sort((a, b) => a.slot < b.slot ? -1 : 1);
     return out;
   }
   if (fn === 'ps_save_get') {
-    const v = shelf.rows.get(shelfKey(g, s));
+    const v = shelf.rows.get(shelfKey(user, g, s));
     return v ? [v] : [];
   }
-  if (fn === 'ps_save_drop') { shelf.rows.delete(shelfKey(g, s)); return true; }
+  if (fn === 'ps_save_drop') { shelf.rows.delete(shelfKey(user, g, s)); return true; }
   if (fn === 'ps_save_put') {
     const prog = Math.max(0, Math.floor(body.p_progress || 0));
-    const had = shelf.rows.get(shelfKey(g, s));
+    const had = shelf.rows.get(shelfKey(user, g, s));
     if (had && had.progress > prog) {
       shelf.refused++;
       return [{ ok: false, slot: s, progress: had.progress, payload: had.payload,
@@ -386,7 +391,7 @@ function shelfRpc(fn, body) {
     }
     const row = { ok: true, slot: s, progress: prog, payload: body.p_payload,
       saved_at: new Date().toISOString() };
-    shelf.rows.set(shelfKey(g, s), row);
+    shelf.rows.set(shelfKey(user, g, s), row);
     return [row];
   }
   return null;
@@ -406,7 +411,10 @@ async function serve(route) {
       let body = {};
       try { body = JSON.parse(req.postData() || '{}'); } catch (e) { body = {}; }
       shelf.calls.push(m[1] + ':' + (body.p_slot || ''));
-      return json(shelfRpc(m[1], body));
+      const tok = /^Bearer token-(.+)$/.exec(req.headers()['authorization'] || '');
+      const user = tok ? tok[1] : shelf.user;
+      if (m[1] === 'ps_save_put' && shelf.hold) await shelf.hold.wait;
+      return json(shelfRpc(m[1], body, user));
     }
     /* Anything else on this host is the leaderboard, which this file is not about. */
     if (/count=exact/.test(req.headers()['prefer'] || '')) {
@@ -431,7 +439,7 @@ async function serve(route) {
    two of its functions is enough for every layer under test to believe there is a session. */
 async function signIn(page, userId) {
   await page.evaluate((id) => {
-    window.RTF_AUTH.token = () => 'fake-token';
+    window.RTF_AUTH.token = () => 'token-' + id;
     window.RTF_AUTH.state = () => ({ ready: true, waiting: false, signedIn: true, userId: id });
   }, userId);
 }
@@ -731,6 +739,32 @@ async function main() {
     is(second.owner, 'user-two', 'and the browser records whose copy it is now holding');
     ok(!shelf.rows.has('user-two/rtf/career'),
       'and the previous account\'s career was never pushed onto the new one');
+
+    /* 9b. A WRITE QUEUED BY ONE ACCOUNT NEVER GOES OUT AS THE NEXT. The transport sends one
+       write a slot at a time and builds the next when the wire is free, with whatever token is
+       signed in by then. So on a slow connection a career queued while one reader was signed
+       in could go up under the account signed in after them: their career on somebody else's
+       shelf. The first write is held at the server, a second is queued behind it, the account
+       changes, and then the wire frees. */
+    let release;
+    shelf.hold = { wait: new Promise((r) => { release = r; }) };
+    await signIn(two.page, 'user-one');
+    await two.page.evaluate(() => {
+      const M = window.RTF_PAGE.cloudMode, slot = M.CL().SLOT_CAREER;
+      M.push(slot, () => ({ payload: { probe: 'first, by user-one' }, progress: 1e9 }));
+      M.push(slot, () => ({ payload: { probe: 'queued by user-one' }, progress: 1e9 }));
+    });
+    await two.page.waitForTimeout(200);
+    await signIn(two.page, 'user-two');
+    shelf.hold = null;
+    release();
+    await quiet(two.page);
+    const leaked = shelf.rows.get('user-two/rtf/career');
+    ok(!(leaked && leaked.payload && /user-one/.test(JSON.stringify(leaked.payload))),
+      `a career queued by one account is never sent as the next one (${leaked ? JSON.stringify(leaked.payload).slice(0, 60) : 'nothing sent'})`);
+    const firstRow = shelf.rows.get('user-one/rtf/career');
+    ok(firstRow && firstRow.payload && firstRow.payload.probe === 'first, by user-one',
+      'and the write already on the wire still lands on the account that sent it');
 
     ok(boom.length === 0, 'no page errors: ' + boom.slice(0, 3).join(' | '));
   } finally {
