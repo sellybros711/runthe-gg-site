@@ -3590,8 +3590,8 @@ function v3Asp(){ var r = S.stage && S.stage.isConnected && S.stage.getBoundingC
    everywhere, so the two can still be compared on one screen. */
 function fxOn(d){ return window.RTT_PUTT_FX !== 'off'; }
 /* THE FINE PICTURE: a world in FINE_WORLDS is painted three times finer, so it reads as clearly as the golfer.
-   Pirate Cove is the pilot (the owner, 2026-10-15); the rest follow once it is approved. */
-var FINE_WORLDS = { pirate:1 }, FINE_ART = 1 / 12;
+   Piloted on Pirate Cove; the owner then asked for it on every world (2026-10-15). */
+var FINE_WORLDS = { clubhouse:1, school:1, candy:1, neon:1, pirate:1, temple:1, canyon:1, volcano:1, sky:1, dino:1, iceage:1 }, FINE_ART = 1 / 12;
 // RTT_PUTT_FINE_TEST names one more world to paint fine, so a world's stops can be built and looked at before it joins FINE_WORLDS
 function fineOn(d){ return (!!FINE_WORLDS[d.theme] || window.RTT_PUTT_FINE_TEST === d.theme) && window.RTT_PUTT_FINE !== 'off'; }
 // a fine picture's zoom can round up (camFor), so it is built a little taller than the stage to leave no band below the land

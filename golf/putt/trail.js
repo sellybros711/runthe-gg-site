@@ -1889,6 +1889,1232 @@ function run(box, P, pic, api){
 /* EACH WORLD'S STOPS ON THE WALK (golf/putt/stops/, pasted between these lines by scripts): a KIT['world~stop'] a stop, its
    landmarks' BUILD and LMSIZE, and its life (LIFE_AS). land.js's STOPS names the stops; a stop with no kit here walks in its world's. */
 // @@WORLD STOPS BEGIN@@
+/* ---- The Clubhouse's stops on the walk, the same places its holes stand in (land.js): the first tee with the pro shop and
+   the car park, the practice range, the woods out on the course, the mill creek, and home to the big clubhouse. */
+KIT['clubhouse~tee'] = kitFrom(KIT.clubhouse, { nlm:4, dens:0.75, lm:['cluShop', 'cluCars', 'shed', 'green', 'cluCars', 'bench'] });
+KIT['clubhouse~range'] = kitFrom(KIT.clubhouse, { g:['#86bb62', '#90c46c', '#7cb05a', 0.18], dens:0.2, haz:null, nlm:4, low:['bush', 'bushf', 'bush'], tree:['broad', 'broad', 'broad', 'pine'],
+  lm:['cluBays', 'cluTarget', 'cluYard', 'cluTarget', 'cluBunker', 'cluBays'] });
+KIT['clubhouse~woods'] = kitFrom(KIT.clubhouse, { g:['#4f8a3e', '#5a9646', '#467e36', 0.2], mow:false, gpat:'cluRough', p:['#74777c', '#7e8186', '#6a6d72'], tree:['pine', 'broad', 'pine', 'broad'],
+  leaves:['#2a7438', '#358544', '#215f30'], low:['bush', 'bush', 'rock', 'fern'], dens:1.4, nlm:4, lm:['cluCart', 'cluHut', 'cluGate', 'cluBunker', 'bench'] });
+KIT['clubhouse~mill'] = kitFrom(KIT.clubhouse, { g:['#78ae56', '#84ba60', '#6ca24c', 0.2], mow:false, gpat:'cluMeadow', p:['#cfc2a2', '#dcd0b2', '#bcae8c'], tree:['broad', 'broad', 'broad'],
+  leaves:['#5f9e3e', '#74b04a', '#4e8a34'], low:['bushf', 'bush', 'rock', 'bushf'], haz:'water', hazC:['#3a82b8', '#7cc0e4'], waterC:['#3a82b8', '#7cc0e4'], nlm:3, lm:['cluMill', 'cluWindmill', 'bench', 'cluMill'] });
+KIT['clubhouse~home'] = kitFrom(KIT.clubhouse, { g:['#6eac54', '#78b85e', '#64a24c', 0.18], p:['#e2d8c0', '#ece4d0', '#c8bca0'], paved:true, hazC:['#3a8ec4', '#7cc4e8'], waterC:['#3a8ec4', '#7cc4e8'],
+  nlm:5, lm:['cluClub', 'cluStand', 'cluTerrace', 'cluFlags', 'lamps', 'cluStand'] });
+LIFE_AS['clubhouse~range'] = { fly:['crow', 3], mote:[['butter', 6]] };
+LIFE_AS['clubhouse~woods'] = { fly:['song', 6], mote:[['leaf', 12], ['butter', 4]] };
+LIFE_AS['clubhouse~mill'] = { fly:['song', 3], mote:[['butter', 18], ['petal', 8]] };
+LIFE_AS['clubhouse~home'] = { fly:['gull', 3], mote:[['petal', 12], ['butter', 6]] };
+// the woods' floor and the mill's meadow: smooth patches of green, never a speckle
+GPAT.cluRough = function(c){ var a = vn(c.ti * 0.04, c.tj * 0.04, 71), b = vn(c.ti * 0.12, c.tj * 0.12, 72); return a > 0.68 ? '#5e9a48' : a < 0.3 ? '#447a34' : b > 0.66 ? '#56923f' : '#4f8a3e'; };
+GPAT.cluMeadow = function(c){ var a = vn(c.ti * 0.035, c.tj * 0.035, 73), b = vn(c.ti * 0.14, c.tj * 0.14, 74); return a > 0.7 && b > 0.55 ? '#94c86c' : a > 0.62 ? '#84ba60' : a < 0.3 ? '#6ca24c' : '#78ae56'; };
+
+// a car seen in a bay: body, cabin, windows, wheels, nose toward +y
+function cluCarPx(dx, dy, tt, col){ if (Math.abs(dx) > 0.95 || Math.abs(dy) > 1.9) return null;
+  if (tt < 0.42) return Math.abs(Math.abs(dy) - 1.2) < 0.4 && Math.abs(dx) > 0.7 ? '#1e1e22' : (tt > 0.3 ? '#2a2a30' : null);
+  if (tt < 1.0){ if (dy > 1.75 && Math.abs(dx) > 0.55 && tt > 0.6 && tt < 0.8) return '#fff3c4'; return col; }
+  if (tt < 1.7 && dy > -1.3 && dy < 0.75 && Math.abs(dx) < 0.85 - (tt - 1) * 0.3){ if (tt > 1.58) return col; return Math.abs(dx) > 0.7 - (tt - 1) * 0.3 || dy > 0.6 || dy < -1.15 ? '#9fc8e0' : '#3a4a5a'; }
+  return null; }
+var CLU_CARS = ['#d8433a', '#3a6ec8', '#f4f4f0', '#e8b83a', '#9aa0a8', '#2f8a5a'];
+// the car park by the clubhouse: tarmac, white bays, a kerb, three cars in
+BUILD.cluCars = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2, hd = t.d / 2;
+  for (var k = 0; k < 3; k++){ if (hash(i, k, 7) < 0.25) continue; var c = cluCarPx((dx - (k - 1) * 4.5) / 1.6, (dy + 0.8) / 1.6 * (k % 2 ? 1 : -1), tt / 1.6, CLU_CARS[(i + k * 2) % 6]); if (c) return c; }
+  if (tt > 0.12) return null; if (Math.abs(dx) > hw - 0.25 || Math.abs(dy) > hd - 0.25) return '#c8c4b8';
+  if (Math.abs(((dx + 6.75) % 4.5 + 4.5) % 4.5) < 0.15 && dy < hd - 2) return '#f2f2ec'; return vn(dx * 0.6, dy * 0.6, i) > 0.6 ? '#5f6268' : '#55585e'; }, 0.125); };
+// the pro shop: cream walls, a slate roof, a striped awning over its window
+BUILD.cluShop = function(B, t, i){ gable(B, t.x, t.y, t.w - 1, t.d - 1, 5, 2.6, function(dx, dy, tt){ return tt < 0.5 ? '#b8ae98' : (tt * 1.6 | 0) % 2 ? '#efe6d2' : '#e6dcc6'; },
+  function(dx, dy, tt){ return (tt * 2 | 0) % 2 ? '#56565e' : '#4a4a52'; }, '#7a3a2a');
+  box(B, t.x, t.y + (t.d - 1) / 2 + 0.7, t.w - 1.5, 1.4, 4.6, function(dx, dy, tt){ if (Math.abs(tt - (4.3 - (dy + 0.7) * 0.8)) > 0.14) return null; return Math.floor((dx + 9) * 1.2) % 2 ? '#d8433a' : '#f8f4ec'; }, 0.125); };
+// the covered hitting bays: a green roof on posts, a low back wall, a mat and a basket of balls in each bay
+BUILD.cluBays = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2, hd = t.d / 2, roof = 4.4 + (hd - dy) * 0.18;
+  if (tt > roof && tt < roof + 0.35 && Math.abs(dx) < hw) return Math.abs(dy) > hd - 0.3 ? '#1f4a2c' : (Math.floor(dx * 0.8 + 20) % 2 ? '#2f6b3e' : '#2a6038');
+  var bay = (dx + hw) / (t.w / 4), bf = bay - Math.floor(bay);
+  if (dy < -hd + 0.4 && tt < 1.6) return (tt * 3 | 0) % 2 ? '#e8e2d0' : '#d8d0bc';
+  if ((bf < 0.04 || bf > 0.96 || Math.abs(dx) > hw - 0.25) && Math.abs(dy) > hd - 0.4 && tt < roof) return '#e8e2d0';
+  if (bf > 0.62 && bf < 0.85 && Math.abs(dy + 0.6) < 0.4 && tt < 0.8) return tt > 0.6 ? '#ffffff' : '#2a5a8a';
+  if (tt < 0.12) return bf > 0.2 && bf < 0.55 && Math.abs(dy) < 1 ? '#3f8a4a' : '#c8c0aa'; return null; }); };
+// a target green on the range: a round of short grass, a flag, the balls that landed near it
+BUILD.cluTarget = function(B, t, i){ var col = ['#e53935', '#f1d04a', '#1e88e5'][i % 3]; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx / (t.w / 2), dy / (t.d / 2));
+  if (Math.hypot(dx - 0.6, dy + 0.4) < 0.1 && tt < 5.6) return '#ffffff'; if (dx > 0.6 && dx < 2.4 && Math.abs(dy + 0.4) < 0.06 && tt > 4.3 && tt < 5.5) return col;
+  if (tt > 0.3 || r > 1) return null; if (hash(Math.floor(dx * 4), Math.floor(dy * 4), i) < 0.02) return '#ffffff'; return r > 0.9 ? '#4f9a48' : vn(dx * 0.8, dy * 0.8, i) > 0.6 ? '#66b45e' : '#5fae58'; }, 0.125); };
+// a distance board on two white legs, in its target's colour
+BUILD.cluYard = function(B, t, i){ var col = ['#e53935', '#f1d04a', '#1e88e5'][i % 3]; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ if (Math.abs(dy) > 0.25) return null;
+  if (tt < 3) return Math.abs(Math.abs(dx) - 0.9) < 0.14 ? '#f4f4f4' : null; if (tt > 4.9 || Math.abs(dx) > 1.4) return null; if (Math.abs(dx) > 1.25 || tt < 3.15 || tt > 4.75) return '#f4f4f4';
+  return Math.abs(tt - 3.95) < 0.35 && Math.abs(dx) < 0.8 && (Math.floor((dx + 2) * 4) % 3) ? '#f4f4f4' : col; }, 0.125); };
+// a bunker: raked sand sunk in a lip of grass, the rake left lying in it
+BUILD.cluBunker = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, 1, function(dx, dy, tt){ var r = Math.hypot(dx / (t.w / 2), dy / (t.d / 2)) + (vn(dx * 0.5, dy * 0.5, i) - 0.5) * 0.2; if (r > 1) return null;
+  if (tt > 0.3 && tt < 0.42 && Math.abs(dy - 0.4) < 0.08 && Math.abs(dx - 0.5) < 1.6) return '#c8402e';
+  if (tt > 0.22) return null; if (r > 0.88) return '#5a9646'; return Math.sin(dy * 5 + vn(dx * 0.3, 1, i) * 6) > 0.8 ? '#dcc68a' : '#ecd9a0'; }, 0.125); };
+// a golf cart with its white canopy and a bag strapped on behind
+BUILD.cluCart = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ if (tt < 0.45) return Math.abs(Math.abs(dx) - 1.2) < 0.32 && Math.abs(Math.abs(dy) - 0.95) < 0.15 ? '#1e1e22' : null;
+  if (Math.abs(dy) > 1.05 || Math.abs(dx) > 1.9) return null; if (tt > 3.1 && tt < 3.35) return '#f4f4f0';
+  if (tt > 1 && tt < 3.1 && Math.abs(Math.abs(dx) - 1.5) < 0.08 && Math.abs(Math.abs(dy) - 0.9) < 0.1) return '#9aa0a8';
+  if (tt < 1) return '#f4f4f0'; if (tt < 1.6 && dx < 0.6 && dx > -0.8) return dx < -0.55 ? '#2a5a3a' : (tt < 1.1 ? '#f4f4f0' : null);
+  if (dx < -1.3 && tt < 2.4 && Math.abs(dy) < 0.5) return tt > 2.15 ? '#e8b83a' : '#c8402e'; return null; }, 0.125); };
+// the halfway hut: a timber kiosk, a red roof, a green and white awning over the hatch
+BUILD.cluHut = function(B, t, i){ gable(B, t.x, t.y, t.w - 1, t.d - 1, 4.4, 2.2, function(dx, dy, tt){ return (Math.floor(dx * 1.4 + 20) % 2) ? '#a8784a' : '#986a40'; }, function(dx, dy, tt){ return (tt * 2 | 0) % 2 ? '#a8442e' : '#943a26'; }, '#3a2a1e');
+  box(B, t.x, t.y + (t.d - 1) / 2 + 0.6, t.w - 1.6, 1.2, 4.2, function(dx, dy, tt){ if (Math.abs(tt - (3.9 - (dy + 0.6) * 0.7)) > 0.14) return null; return Math.floor((dx + 9) * 1.2) % 2 ? '#2f7d3e' : '#f8f4ec'; }, 0.125); };
+// a white rail fence along the woods with a five bar gate standing open in it
+BUILD.cluGate = function(B, t, i){ box(B, t.x, t.y, t.w, t.d + 2, t.h, function(dx, dy, tt){ var hw = t.w / 2;
+  if (Math.abs(dx) < 1.4){ var u = dx + 1.3, v = dy, a = 0.9, al = u * Math.cos(a) - v * Math.sin(a), ac = Math.abs(u * Math.sin(a) + v * Math.cos(a));   // the gate, swung open
+    if (ac < 0.1 && al > 0 && al < 2.5 && tt < 2.2 && (Math.abs(tt - 0.5) < 0.1 || Math.abs(tt - 1.2) < 0.1 || Math.abs(tt - 1.9) < 0.1 || al > 2.4 || Math.abs(tt - (0.5 + al * 0.55)) < 0.12)) return '#f4f4f0';
+    return Math.abs(Math.abs(dx) - 1.3) < 0.16 && Math.abs(dy) < 0.16 && tt < 2.6 ? '#dcdcd4' : null; }
+  if (Math.abs(dy) > 0.12) return null; if (((dx + hw) % 2.2 + 2.2) % 2.2 < 0.25 && tt < 2.4) return '#dcdcd4'; return Math.abs(tt - 1) < 0.12 || Math.abs(tt - 2) < 0.12 ? '#f4f4f0' : null; }, 0.125); };
+// the water mill: stone walls, a red tile roof, the wheel down in its mill race
+BUILD.cluMill = function(B, t, i){ var W = t.w - 3.4, cx = t.x - 1.4;
+  gable(B, cx, t.y, W, t.d - 1, 5.8, 3, function(dx, dy, tt){ var row = Math.floor(tt * 1.4), col = Math.floor(dx * 0.8 + (row % 2) * 0.5); if ((tt * 1.4) % 1 < 0.12) return '#8e877a'; return hash(col, row, i + 7) < 0.3 ? '#bfb6a4' : '#cfc6b2'; },
+    function(dx, dy, tt){ return (tt * 2.4 | 0) % 2 ? '#b8482e' : '#a63e28'; }, '#4a2e1c');
+  var wx = cx + W / 2 + 0.9, R = 3.2; box(B, wx, t.y + 0.5, 2, t.d, R * 2 - 0.4, function(dx, dy, tt){ var dz = tt - R + 0.6, r = Math.hypot(dy, dz);   // the wheel turns side on, in the race
+    if (tt < 0.2) return Math.abs(dy) < t.d / 2 - 0.2 && Math.abs(dx) < 0.9 ? (vn(dy, dx, 3) > 0.5 ? '#7cc0e4' : '#3a82b8') : null;
+    if (Math.abs(dx) > 0.5 || r > R) return null; if (r < 0.4) return '#3a2a1e'; if (r > R - 0.35) return Math.abs(dx) > 0.3 ? '#5a3a24' : null;
+    var a = Math.atan2(dz, dy), sp = ((a / (Math.PI / 6)) % 1 + 1) % 1; if (r > R - 1 && sp < 0.2) return '#7a5234'; return Math.abs(dx) > 0.3 && (sp < 0.07 || sp > 0.93) ? '#6a4a2e' : null; }, 0.125); };
+// the windmill on its hill: a white tapering tower, a red cap, four lattice sails facing the camera
+BUILD.cluWindmill = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy), H = 10;
+  if (tt < H){ var R0 = 2.6 - tt * 0.1; if (r > R0) return null; if (dy > R0 - 0.3 && Math.abs(dx) < 0.7 && tt < 2.2) return '#4a2e1c'; if (dy > R0 - 0.3 && Math.abs(dx) < 0.45 && Math.abs(tt - 6) < 0.5) return '#9fd0e8'; return (tt * 1.6 | 0) % 2 ? '#f6f3ea' : '#e8e2d2'; }
+  if (tt < H + 2 && Math.hypot(dx, dy, (tt - H) * 1.1) < 2.1) return Math.floor(dx * 1.5 + 9) % 2 ? '#8a3a2a' : '#7a3222';
+  if (Math.abs(dy - 2.2) > 0.15) return null; var uz = tt - H - 0.9, rr = Math.hypot(dx, uz); if (rr < 0.35) return '#3a2a1e'; if (rr > 5.6) return null;
+  var an = Math.atan2(uz, dx) - 0.4 - i, k = Math.round(an / (Math.PI / 2)), da = an - k * Math.PI / 2, along = rr * Math.cos(da), across = rr * Math.sin(da);
+  if (Math.abs(across) < 0.14) return '#5a3a24'; if (along > 1 && across > 0 && across < 1){ return (along * 1.6) % 1 < 0.15 || (across * 3) % 1 < 0.25 ? '#6a4a2e' : '#f4efe2'; } return null; }, 0.125); };
+// the big clubhouse at the eighteenth: two floors of windows, a green roof, a clock in the gable, the club flag
+BUILD.cluClub = function(B, t, i){ var W = t.w - 1, D = t.d - 1;
+  gable(B, t.x, t.y, W, D, 7.4, 3.2, function(dx, dy, tt){ var wq = ((dx + W / 2) % 2.2 + 2.2) % 2.2;
+    if (dy > D / 2 - 0.3 && wq > 0.6 && wq < 1.6 && Math.abs(dx) > 1.4 && ((tt > 1.6 && tt < 3.6) || (tt > 5 && tt < 6.6))) return Math.abs(wq - 1.1) < 0.08 || Math.abs(tt - 2.6) < 0.08 ? '#ffffff' : '#9fd0e8';
+    if (Math.abs(tt - 4.4) < 0.15) return '#1f4a2c'; return tt < 0.5 ? '#cfc8b6' : (tt * 1.6 | 0) % 2 ? '#f8f5ee' : '#ece7da'; },
+    function(dx, dy, tt){ if (Math.abs(dx) < 1.4 && dy > 0 && tt < 9.4){ var cr = Math.hypot(dx, tt - 8.6); if (cr < 0.75) return cr < 0.6 ? '#fbf6e6' : '#1f4a2c'; return '#f4f1ea'; } return (tt * 2 | 0) % 2 ? '#2f6b3e' : '#2a6038'; }, '#2f5d3a');
+  box(B, t.x + W / 2 + 0.2, t.y + D / 2, 2.2, 0.6, t.h, function(dx, dy, tt){ if (Math.hypot(dx + 0.9, dy) < 0.12 && tt < t.h - 0.1) return '#f4f4f4'; if (dx > -0.85 && dx < 1 && Math.abs(dy) < 0.06 && tt > t.h - 1.6 && tt < t.h - 0.3) return tt < t.h - 0.95 ? '#f1d04a' : '#2f6b3e'; return null; }, 0.125); };
+// a grandstand, back row highest, every seat taken, the club's banner along the top
+BUILD.cluStand = function(B, t, i){ var CR = ['#e53935', '#1e88e5', '#ffffff', '#ffd23f', '#43a047', '#ff8a3c', '#1d2a44', '#f48fb1'], rows = 5, rh = 1;
+  box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2, hd = t.d / 2;
+    if (dy < -hd + 0.4 && tt > rows * rh + 1 && tt < rows * rh + 2.2) return Math.abs(dx) < hw - 0.3 ? (Math.floor(dx * 0.6 + 9) % 2 ? '#2f6b3e' : '#f4f1ea') : null;
+    if (Math.abs(Math.abs(dx) - hw + 0.2) < 0.2 && dy < -hd + 0.4 && tt < rows * rh + 2.2) return '#1d2a44';
+    var row = Math.floor((hd - dy) / (t.d / rows)), top = (row + 1) * rh; if (row < 0 || row >= rows) return null;
+    if (tt < top - 0.15) return Math.abs(dx) > hw - 0.3 ? '#1d2a44' : '#2a3a5a';
+    if (tt < top + 0.9 && ((Math.floor(dx * 1.4 + 30) + row) % 3) !== 0 && Math.abs(dx) < hw - 0.4){ var kk = hash(Math.floor(dx * 1.4 + 30), row, i); return tt > top + 0.62 ? (kk < 0.5 ? '#6a4a30' : '#e8c8a0') : CR[Math.floor(kk * CR.length)]; }
+    return null; }); };
+// the terrace: tables under striped umbrellas on a paved floor
+BUILD.cluTerrace = function(B, t, i){ var cols = ['#d8433a', '#2f6b3e', '#f1d04a', '#1e5aa8']; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){
+  for (var k = 0; k < 3; k++){ var ux = dx - (k - 1) * 3, uy = dy - (k % 2 ? 0.8 : -0.6), r = Math.hypot(ux, uy), col = cols[(i + k) % 4];
+    if (r < 0.1 && tt < 4.4) return '#e8e8e2'; if (tt > 3.6 && tt < 4.6){ var cap = 1.5 * (1 - (tt - 3.6)); if (r < cap && r > cap - 0.3) return Math.floor((Math.atan2(uy, ux) + 4) * 2.55) % 2 ? col : '#ffffff'; }
+    if (Math.abs(tt - 1.4) < 0.1 && r < 0.8) return '#f4f4f0'; if (r > 1.1 && r < 1.4 && tt < 0.9 && Math.floor((Math.atan2(uy, ux) + 4) * 1.3) % 2) return '#7a5a3e'; }
+  if (tt < 0.15 && Math.abs(dx) < t.w / 2 && Math.abs(dy) < t.d / 2) return ((dx + 9) % 1.5 < 0.1 || (dy + 9) % 1.5 < 0.1) ? '#a89878' : '#c8b89a'; return null; }, 0.125); };
+// the club's flags in a row
+BUILD.cluFlags = function(B, t, i){ var C2 = ['#2f6b3e', '#d8433a', '#1e5aa8', '#f1d04a']; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){
+  for (var k = 0; k < 4; k++){ var px = dx + t.w / 2 - 1 - k * 2.2; if (Math.hypot(px, dy) < 0.12 && tt < t.h - 0.2) return tt > t.h - 0.4 ? '#d8b23a' : '#f4f4f4';
+    if (px > 0.05 && px < 1.9 && Math.abs(dy) < 0.06 && tt > t.h - 1.9 - px * 0.08 && tt < t.h - 0.5 - px * 0.08) return C2[(k + i) % 4]; } return null; }, 0.125); };
+LMSIZE.cluCars = [14, 9, 3.2]; LMSIZE.cluShop = [8, 6, 9]; LMSIZE.cluBays = [12, 4.5, 6]; LMSIZE.cluTarget = [7, 6, 6]; LMSIZE.cluYard = [3, 1, 5]; LMSIZE.cluBunker = [7, 5, 1];
+LMSIZE.cluCart = [4, 2.4, 3.5]; LMSIZE.cluHut = [6, 5, 8]; LMSIZE.cluGate = [10, 1.2, 3]; LMSIZE.cluMill = [12, 7, 10]; LMSIZE.cluWindmill = [12, 6, 17];
+LMSIZE.cluClub = [14, 8, 12]; LMSIZE.cluStand = [11, 5, 8]; LMSIZE.cluTerrace = [10, 5, 5]; LMSIZE.cluFlags = [9, 1.5, 11];
+/* SCHOOLYARD'S STOPS ON THE WALK. Its holes go front steps, playground, courtyard, garden, sports field (land.js), and
+   the walks go the same way: the bus loop's blacktop and the school's front, wood chips and the climbing fort, pavers
+   between the classroom wings, the creek and the greenhouse, the track and the bleachers. Each landmark is drawn as
+   its hole twin is, in the hole's own feet, and scaled up to the walk (sch() below). */
+KIT['school~steps'] = kitFrom(KIT.school, { gpat:'schlawn', lm:['schFront', 'schBus', 'schFlag', 'schFront'], nlm:3, low:['bush', 'bush', 'rock'], dens:0.85 });
+KIT['school~play'] = kitFrom(KIT.school, { gpat:'schchips', p:['#ac7843', '#b8844c', '#9e6e3c'], lm:['schFort', 'swings', 'schMerry', 'schFort', 'slide', 'schCourt'], nlm:4, dens:0.55, low:['bush', 'bush', 'rock'], haz:null,
+  wall:['#8a8f99', '#5c6068'] });
+KIT['school~halls'] = kitFrom(KIT.school, { gpat:'schpave', p:['#cfc8ba', '#d6d0c2', '#a8a294'], paved:true, lm:['schWing', 'schTables', 'schCanopy', 'schWing', 'lamps'], nlm:4, dens:0.55, low:['bush', 'bushf', 'bush'], haz:null });
+KIT['school~garden'] = kitFrom(KIT.school, { gpat:'schmeadow', p:['#c8bca4', '#d2c6ae', '#b8ac94'], lm:['schGreenhouse', 'schBeds', 'schSunflowers', 'schBeds'], nlm:4, dens:0.8, tree:['broad', 'broad', 'broad', 'pine'],
+  low:['bushf', 'fern', 'bush', 'rock'], haz:'water', hazC:['#3f94b4', '#8acfe0'], waterC:['#3f94b4', '#8acfe0'] });
+KIT['school~field'] = kitFrom(KIT.school, { gpat:'schturf', p:['#b4553c', '#bc5e44', '#a84e36'], lm:['schBleachers', 'schScoreboard', 'schGoal', 'schFloods'], nlm:4, dens:0.25, low:['bush', 'cone', 'bush', 'rock'], haz:null });
+LIFE_AS['school~garden'] = { fly:['song', 3], mote:[['butter', 16], ['petal', 6]] };
+LIFE_AS['school~field'] = { fly:['crow', 3], mote:['leaf', 8] };
+LIFE_AS['school~halls'] = { fly:['song', 2], mote:['leaf', 10] };
+
+// the stops' ground on the walk, each in smooth patches (vn), never a hashed speckle
+GPAT.schlawn = function(c){ var a = vn(c.ti * 0.05, c.tj * 0.05, 31); return a > 0.7 ? '#5f9e45' : Math.floor(c.tj / 24) % 2 ? '#72b255' : '#68a84c'; };
+GPAT.schchips = function(c){ var a = vn(c.ti * 0.02, c.tj * 0.02, 32), b = vn(c.ti * 0.17, c.tj * 0.17, 33);   // grass, and the wood chip beds the equipment stands in
+  if (a > 0.6) return a < 0.63 ? '#6e4c2c' : b > 0.62 ? '#c08c52' : b < 0.3 ? '#9a6a3a' : '#ac7843'; var g = vn(c.ti * 0.05, c.tj * 0.05, 34); return g > 0.68 ? '#5f9e45' : g < 0.3 ? '#76b658' : '#6aaa4f'; };
+GPAT.schpave = function(c){ var a = vn(c.ti * 0.012, c.tj * 0.012, 35);   // pavers two feet square, with beds of lawn between the walks
+  if (a > 0.62){ var g = vn(c.ti * 0.05, c.tj * 0.05, 36); return g > 0.7 ? '#5f9e45' : Math.floor(c.tj / 24) % 2 ? '#72b255' : '#68a84c'; }
+  if (c.ti % 16 === 0 || c.tj % 16 === 0) return '#a8a294'; var n = vn((c.ti >> 4) * 0.45, (c.tj >> 4) * 0.45, 37); return n > 0.68 ? '#c2b8a6' : n < 0.3 ? '#d8d2c6' : '#cdc6b8'; };
+GPAT.schmeadow = function(c){ var a = vn(c.ti * 0.05, c.tj * 0.05, 38), b = vn(c.ti * 0.14, c.tj * 0.14, 39); return a > 0.7 ? '#5a9a44' : b > 0.7 ? '#7cbc5c' : a < 0.25 ? '#72b255' : '#68a84c'; };
+GPAT.schturf = function(c){ var a = vn(c.ti * 0.045, c.tj * 0.045, 40); return a > 0.72 ? '#5f9e45' : Math.floor(c.ti / 32) % 2 ? '#6eae52' : '#64a449'; };
+
+// a landmark drawn in its hole's feet (dx, dy from its middle, t up), s times the size on the walk
+function sch(B, t, s, w, d, h, fn){ box(B, t.x, t.y, w * s, d * s, h * s, function(dx, dy, tt){ return tt < -0.05 ? null : fn(dx / s, dy / s, tt / s); }, 0.125); }
+function schBrickW(u, t){ var row = Math.floor(t * 4), cu = u * 2 + (row % 2) * 0.5, col = Math.floor(cu);
+  if (t * 4 - row < 0.2 || cu - col < 0.09) return '#c9b49c'; var n = vn(col * 0.37, row * 0.41, 7); return n > 0.66 ? '#9a3624' : n < 0.32 ? '#bd5034' : '#ac422e'; }
+function schPaneW(u, tt){ if (Math.abs(u) > 0.4 || tt < 0.1 || tt > 1.45 || Math.abs(u) < 0.035 || Math.abs(tt - 0.95) < 0.04) return '#f2eee4'; return tt > 1.05 ? '#b8dcef' : (u + tt * 0.5 > 0.35 ? '#a6d0e8' : '#6fa4c8'); }
+
+// the school's front, as at the front steps: brick, two floors of windows, the portico over the steps, the cupola and its bell
+BUILD.schFront = function(B, t){ var w = 12, d = 4, H = 5.6, pw = 5.2;
+  sch(B, t, 1.3, w + 0.2, d + 2.1, H + 3.2, function(dx, dc, tt){ var dy = dc - (2.1 - d) / 2, ax = Math.abs(dx), m, r;
+    if (tt > H - 0.15 && ax < 1 && Math.abs(dy + d / 2) < 1){ var cy = dy + d / 2, ct = tt - H + 0.15; m = Math.max(ax, Math.abs(cy));
+      if (ct < 1.1){ if (m > 0.8) return null; r = Math.hypot(dx, ct - 0.58); if (cy > 0.7 && r < 0.36) return r > 0.3 ? '#2a2a30' : (ax < 0.04 && ct > 0.58 && ct < 0.84) || (Math.abs(ct - 0.58) < 0.04 && dx > 0 && dx < 0.18) ? '#1a1a20' : '#fbf8ee'; return '#efe9dc'; }
+      if (ct < 1.95){ if (ax > 0.56 && Math.abs(cy) > 0.56 && m < 0.74) return '#f6f2ea'; r = Math.hypot(dx, cy); return ct > 1.2 && ct < 1.85 && r < 0.1 + (1.85 - ct) * 0.36 ? '#e2b33a' : null; }
+      if (ct < 2.08) return m < 0.86 ? '#efe9dc' : null; return m < 0.86 * (1 - (ct - 2.08)) ? (ct > 2.95 ? '#e2b33a' : '#c0392b') : null; }
+    if (dy > 0){ if (ax > pw / 2) return null; var top = 0.62 - Math.floor(dy / 0.42) * 0.155; if (tt < top) return (dy % 0.42) > 0.34 ? '#b8b2a6' : '#dcd6ca';
+      if (dy < 1.55 && tt > 3.55){ if (tt < 3.95) return '#efe9dc'; var pt = 3.95 + 1.05 * (1 - ax / (pw / 2)); return tt < pt ? ((dy > 1.38 && tt < pt - 0.16 && tt > 4.04) ? '#ddd5c8' : '#efe9dc') : null; }
+      for (var c = -1.5; c <= 1.5; c++) if (Math.hypot(dx - c * 1.45, dy - 1.15) < 0.2 && tt < 3.55) return '#f6f2ea'; return null; }
+    if (ax > w / 2 || dy < -d || tt > H) return null;
+    if (tt > H - 0.3){ if (dy > -0.35 || dy < -d + 0.35 || ax > w / 2 - 0.35) return '#d8d0c0'; return tt < H - 0.12 ? '#5c6068' : null; }
+    if (dy > -0.12){ if (ax < 0.95 && tt < 2.35) return ax < 0.05 ? '#1c3450' : '#2b5a8a'; if (Math.abs(tt - 2.95) < 0.12 || tt < 0.45) return '#d0c8b8';
+      var fl = tt > 0.9 && tt < 2.45 ? 1 : tt > 3.45 && tt < 5 ? 2 : 0, u = ((dx + 100.85) % 1.7) - 0.85;
+      if (fl && Math.abs(u) < 0.42 && !(fl === 1 && ax < pw / 2 + 0.2) && ax < w / 2 - 0.6) return schPaneW(u, tt - (fl === 1 ? 0.9 : 3.45)); }
+    return schBrickW(dx + dy, tt); }); };
+// the yellow bus parked at the kerb, nose east
+BUILD.schBus = function(B, t){ var Lb = 7.6, Wb = 1.1;
+  sch(B, t, 1.4, Lb + 0.2, 2 * Wb + 0.2, 3, function(u, dy, tt){ var ay = Math.abs(dy), front = u > Lb / 2 - 1.3, w1 = Math.hypot(u - 2.3, tt - 0.4), w2 = Math.hypot(u + 2.2, tt - 0.4);
+    if (tt < 0.8 && ay > Wb - 0.38 && (w1 < 0.4 || w2 < 0.4)) return w1 < 0.16 || w2 < 0.16 ? '#8a8f99' : '#1c1c20';
+    if (tt < 0.35 || ay > Wb || Math.abs(u) > Lb / 2 || (front && tt > 1.75) || tt > 2.9) return null;
+    if (tt > 2.76) return ay < Wb - 0.12 ? '#f2f2ea' : '#e8a818'; if (front && u > Lb / 2 - 0.14 && tt > 0.5 && tt < 1.25) return ay > 0.6 && tt > 0.9 ? '#fff4c0' : '#2a2a30';
+    if (Math.abs(tt - 1.35) < 0.05 || Math.abs(tt - 0.95) < 0.05 || tt < 0.5) return '#1c1c20';
+    if (!front && tt > 1.75 && tt < 2.55){ if (u > Lb / 2 - 1.45) return '#9cc8e0'; if (((u + 20) % 0.95) > 0.13 && u > -Lb / 2 + 0.3) return tt > 2.32 ? '#9cc8e0' : '#2e4a62'; }
+    return '#f2b01e'; }); };
+// the flagpole and the school's navy and gold flag
+BUILD.schFlag = function(B, t){ var H = 7.2;
+  sch(B, t, 1.4, 2.4, 0.8, H + 0.4, function(dx, dy, tt){ dx += 1.0;
+    if (tt < 0.35) return Math.max(Math.abs(dx), Math.abs(dy)) < 0.38 ? '#c8c0b0' : null; if (Math.hypot(dx, dy, tt - H - 0.1) < 0.14) return '#e2b33a';
+    if (Math.hypot(dx, dy) < 0.08 && tt < H) return '#d8dce2'; var v = (tt - (H - 1.35)) / 1.2;
+    if (dx > 0.06 && dx < 2.05 && v > 0 && v < 1 && Math.abs(dy - Math.sin(dx * 2.6) * 0.07 * dx) < 0.07) return dx < 0.3 ? '#f2eee4' : v > 0.36 && v < 0.64 ? '#f2c230' : '#24447e'; return null; }); };
+// the climbing fort with its red and yellow roof and the slide
+BUILD.schFort = function(B, t){ var dk = 2.3;
+  sch(B, t, 1.5, 6.3, 2.8, 5.4, function(dx, dy, tt){ dx -= 0.55; var ax = Math.abs(dx + 0.6), ay = Math.abs(dy), m = Math.max(ax, ay);
+    if (ax > 1.05 && ax < 1.25 && ay > 1.05 && ay < 1.25 && tt < 4.25) return '#2b6a95'; if (m < 1.25 && tt > dk - 0.14 && tt < dk) return '#c8964e';
+    if (m < 1.25 && m > 1.1 && tt >= dk && tt < dk + 0.95){ if (dy > 1.1 && ax < 0.9) return Math.hypot(dx + 0.6, tt - dk - 0.5) < 0.28 ? null : '#e53935'; if (dx > 0.4 && ay < 0.5) return null; return (tt > dk + 0.82 || (((dx + dy) * 4 + 40) | 0) % 2 === 0) ? '#ffd23f' : null; }
+    if (tt > 4.2 && tt < 5.35 && m < 1.45 * (1 - (tt - 4.2) / 1.15)) return ((dx + 0.6 > 0) !== (dy > 0)) ? '#e53935' : '#ffd23f';
+    var sx = dx - 0.65; if (sx > 0 && sx < 3 && ay < 0.5){ var st = dk - 0.1 - sx * (dk - 0.4) / 3; if (tt < st + 0.06 && tt > st - 0.14) return ay > 0.4 ? '#f0a400' : '#ffd23f'; if (ay > 0.4 && tt < st + 0.28 && tt > st) return '#f0a400'; if (sx > 2.6 && tt < st && ay < 0.12) return '#8a8f99'; }
+    if (dx < -1.8 && dx > -2.3){ if (ay > 0.38 && ay < 0.5 && tt < dk + 0.9) return '#8a8f99'; if (ay < 0.4 && ((tt + 0.1) % 0.42) < 0.07 && tt < dk) return '#c9ccd2'; }
+    return null; }); };
+BUILD.schMerry = function(B, t){ sch(B, t, 1.6, 2.4, 2.4, 1.05, function(dx, dy, tt){ var r = Math.hypot(dx, dy), a = Math.atan2(dy, dx);
+  if (tt < 0.18) return r < 0.25 ? '#6a6e76' : null; if (tt < 0.32) return r < 1.12 ? (r > 1.02 ? '#c9ccd2' : ['#e53935', '#ffd23f', '#2b6a95', '#3f9a46'][Math.floor((a + Math.PI) / (Math.PI / 2)) % 4]) : null;
+  if (r < 0.08) return tt < 0.95 ? '#c9ccd2' : null; var q = Math.round(a / (Math.PI / 2)) * (Math.PI / 2);
+  return Math.abs(Math.sin(a - q)) * r < 0.06 && r < 0.98 && r > 0.08 && Math.abs(tt - (0.32 + 0.6 * Math.sin(r / 0.98 * Math.PI))) < 0.08 ? '#c9ccd2' : null; }); };
+// the dodgeball court on its blacktop, its lines, and two balls left on it
+BUILD.schCourt = function(B, t){ box(B, t.x, t.y, t.w, t.d, 1.2, function(dx, dy, tt){ var ax = Math.abs(dx), ay = Math.abs(dy);
+  for (var k = 0; k < 2; k++){ var bx = k ? 1.8 : -2.2, by = k ? 1.4 : -0.8; if (Math.hypot(dx - bx, dy - by, tt - 0.55) < 0.5) return tt > 0.75 && dx < bx ? '#ff8a7a' : '#de3a2e'; }
+  if (tt > 0.08 || ax > t.w / 2 || ay > t.d / 2) return null; if (ax > t.w / 2 - 0.5 || ay > t.d / 2 - 0.5) return '#4e525a';
+  if (ax > t.w / 2 - 0.68 || ay > t.d / 2 - 0.68 || Math.abs(dx) < 0.1 || Math.abs(Math.hypot(dx, dy) - 1.5) < 0.1) return '#f2f2ea'; return '#3f7f8a'; }, 0.125); };
+// a classroom wing: coloured doors and their numbers, lockers, a lamp by each door, the windows upstairs
+BUILD.schWing = function(B, t){ var w = 14, d = 3.4, H = 6.2, DOOR = ['#c0392b', '#2b6a95', '#3f8a4e', '#e2a52a'];
+  sch(B, t, 1.3, w, d + 0.22, H, function(dx, dc, tt){ var dy = dc - (0.22 - d) / 2, k = Math.floor((dx + 2.25) / 4.5), u = dx - k * 4.5;
+    if (dy > 0){ if (Math.abs(u - 0.85) < 0.11 && tt > 1.98 && tt < 2.36 && Math.abs(dx) < w / 2 - 1) return tt > 2.28 || tt < 2.04 ? '#2a2a30' : '#ffe6a0'; return null; }
+    if (tt > H - 0.3){ if (dy > -0.35 || dy < -d + 0.35 || Math.abs(dx) > w / 2 - 0.35) return '#d8d0c0'; return tt < H - 0.12 ? '#5c6068' : null; }
+    if (dy > -0.12 && Math.abs(dx) < w / 2 - 0.5){
+      if (tt < 2.5){ if (Math.abs(u) < 0.6 && tt < 2.12){ if (Math.abs(u) > 0.53 || tt > 2.05) return '#e8e2d4'; if (Math.abs(u - 0.16) < 0.15 && tt > 1.2 && tt < 1.85) return '#9cc8e0'; return DOOR[((k % 4) + 4) % 4]; }
+        if (Math.abs(u) < 0.7 && tt > 2.18 && tt < 2.42) return Math.abs(u) < 0.28 ? '#f6f2ea' : '#d0c8b8';
+        if (Math.abs(u) > 0.8 && Math.abs(u) < 2.05 && tt > 0.15 && tt < 1.95){ var lu = ((u + 9) % 0.42); if (lu < 0.05 || tt < 0.2) return '#22406a'; return '#3a6ea8'; } }
+      if (Math.abs(tt - 2.75) < 0.12) return '#d0c8b8';
+      if (tt > 3.25 && tt < 4.75){ var uu = ((dx + 100.85) % 1.7) - 0.85; if (Math.abs(uu) < 0.42) return schPaneW(uu, tt - 3.25); } }
+    return schBrickW(dx + dy, tt); }); };
+// a covered walkway: a green tin roof on white posts
+BUILD.schCanopy = function(B, t){ sch(B, t, 1.3, 2.6, 10, 3.05, function(dx, dy, tt){ var ax = Math.abs(dx);
+  if (tt > 2.8) return ((dy + 99) % 0.34) < 0.06 ? '#2f6448' : '#3f7a5a'; if (Math.abs(ax - 1) < 0.1 && ((dy + 5.2) % 3) < 0.2) return '#efe9dc'; return null; }); };
+// two picnic tables, green steel
+BUILD.schTables = function(B, t){ sch(B, t, 1.4, 3.6, 1.9, 0.9, function(dx, dy, tt){ var x = Math.abs(dx) - 0.95, ax = Math.abs(x), ay = Math.abs(dy);
+  if (ax < 0.85 && ay < 0.38 && tt > 0.72 && tt < 0.84) return '#3f8a5a'; if (ax < 0.85 && ay > 0.55 && ay < 0.8 && tt > 0.4 && tt < 0.5) return '#3f8a5a';
+  if (Math.abs(ax - 0.65) < 0.06 && Math.abs(ay - Math.max(0, 0.75 - tt * 0.6)) < 0.07 && tt < 0.8) return '#2f6448'; return null; }); };
+// the greenhouse: a brick base, white glazing bars, the plants green low inside, a glass roof
+BUILD.schGreenhouse = function(B, t){ var w = 5.8, d = 3.4, wh = 2.2, rh = 1.3;
+  sch(B, t, 1.5, w, d, wh + rh, function(dx, dy, tt){ var ax = Math.abs(dx), ay = Math.abs(dy); if (ax > w / 2 || ay > d / 2) return null;
+    if (tt > wh){ var rr = (tt - wh) / rh; if (rr > 1 || ay > (d / 2) * (1 - rr)) return null; return (((dx + 50) % 0.7) < 0.08|| rr < 0.07 || rr > 0.93) ? '#e2e4dc' : (vn(dx * 0.9, rr * 3, 4) > 0.6 ? '#6aa8a2' : '#558f8a'); }
+    if (tt < 0.45) return schBrickW(dx + dy, tt); if (dy > d / 2 - 0.12 && ax < 0.45 && tt < 1.95) return ax > 0.4 || tt > 1.9 ? '#f2f2ea' : '#9ccfc6';
+    if (((dx + 50) % 0.7) < 0.07 || ((dy + 50) % 0.7) < 0.07 || Math.abs(tt - 1.3) < 0.04 || tt > wh - 0.07) return '#f2f2ea';
+    return tt < 1.1 ? (vn(dx * 1.4, tt * 2, 5) > 0.5 ? '#5f9e6a' : '#76b27e') : (tt > 1.75 ? '#a8dcd4' : '#8ccac2'); }); };
+// two raised beds side by side: lettuces in one, tomatoes on canes in the other
+BUILD.schBeds = function(B, t, i){ sch(B, t, 1.4, 6.8, 1.6, 1.5, function(dx, dy, tt){ var side = dx < 0 ? 0 : 1, k = (side + i) % 3, bx = dx - (side ? 1.7 : -1.7), ax = Math.abs(bx), ay = Math.abs(dy);
+  if (ax > 1.55 || ay > 0.7) return null; if (ax > 1.42 || ay > 0.57) return tt < 0.45 ? (tt > 0.38 ? '#8a6436' : '#a8783e') : null; if (tt < 0.38) return '#4a3424';
+  var cx = Math.round((bx + 1.05) / 0.52) * 0.52 - 1.05, ry = dy > 0 ? 0.27 : -0.27, d0 = Math.hypot(bx - cx, dy - ry);
+  if (k === 1){ if (d0 < 0.05 && tt < 1.45) return '#b89a64'; if (d0 < 0.2 && tt > 0.6 && tt < 1.4) return vn(bx * 6, tt * 6, 3) > 0.72 ? '#e53935' : '#3f8a3e'; return null; }
+  var bump = Math.hypot((bx - cx) / 0.22, (dy - ry) / 0.22, (tt - 0.42) / (k === 2 ? 0.42 : 0.28)); if (bump > 1) return null;
+  if (k === 2) return tt > 0.62 ? ['#f48fb1', '#ffd23f', '#ffffff', '#b39ddb'][Math.floor((bx + 2) / 0.52) % 4] : '#3f8a3e'; return tt > 0.55 ? '#9ad05a' : '#6ab04a'; }); };
+BUILD.schSunflowers = function(B, t, i){ var F = []; for (var k = 0; k < 4; k++) F.push([(hash(k, i, 1) - 0.5) * 1.6, (hash(k, i, 2) - 0.5) * 0.8, 2.3 + hash(k, i, 3) * 0.9]);
+  sch(B, t, 1.4, 2.6, 1.8, 3.6, function(dx, dy, tt){ for (var k = 0; k < F.length; k++){ var f = F[k], x = dx - f[0], y = dy - f[1], dh = Math.hypot(x, tt - f[2]);
+    if (Math.abs(y - 0.12) < 0.07 && dh < 0.46) return dh < 0.2 ? '#6a4024' : '#ffc61a'; if (Math.hypot(x, y) < 0.07 && tt < f[2]) return '#4f8a2e';
+    if (Math.abs(tt - f[2] * 0.55) < 0.06 && Math.abs(y) < 0.09 && Math.abs(x) < 0.32) return '#3f8a3e'; } return null; }); };
+// the bleachers: five tiers of aluminium seats rising to the back, a rail along the top
+BUILD.schBleachers = function(B, t){ var n = 5, td = 0.62, tr = 0.5, d = n * td, w = 9;
+  sch(B, t, 1.4, w, d, n * tr + 1.1, function(dx, dy, tt){ var ax = Math.abs(dx), back = d / 2 - dy, k = Math.floor(back / td);
+    if (ax > w / 2 - 0.08) return tt < (k + 1) * tr ? '#6a6e76' : null; if (k >= n || k < 0) return null;
+    if (k === n - 1 && tt > n * tr && tt < n * tr + 1 && (tt > n * tr + 0.9 || ((dx + 99) % 1.8) < 0.1) && back > d - 0.14) return '#8a8f99';
+    var top = (k + 1) * tr; if (tt > top) return null; if (tt > top - 0.1) return (back % td) > td - 0.1 ? '#a8adb5' : '#d8dce2'; return '#5a5e66'; }); };
+// the scoreboard: HOME and GUEST lit in amber, the clock between, the school's colours on top
+BUILD.schScoreboard = function(B, t){ var b0 = 3.6;
+  sch(B, t, 1.5, 5.8, 0.6, b0 + 2.5, function(dx, dy, tt){ var ax = Math.abs(dx);
+    if (tt < b0) return Math.abs(ax - 1.9) < 0.14 && Math.abs(dy) < 0.14 ? '#5c6068' : null; if (ax > 2.8) return null;
+    if (tt > b0 + 2.05) return tt > b0 + 2.4 ? null : ax > 2.7 ? '#24447e' : '#f2c230';
+    if (dy < 0.18 || ax > 2.65 || tt < b0 + 0.15 || tt > b0 + 1.95) return '#24447e'; if (tt > b0 + 1.45) return ax > 1.1 && ax < 2.5 ? '#f2f2ea' : '#24447e';
+    var u = ax - 1.8, v = tt - b0 - 0.75; if (Math.abs(u) < 0.62 && Math.abs(v) < 0.55) return (Math.abs(Math.abs(u) - 0.2) < 0.07 && Math.abs(v) < 0.45) || (Math.abs(Math.abs(v) - 0.42) < 0.07 && Math.abs(u) < 0.2) ? '#ffc23a' : '#1c2a24';
+    if (ax < 0.7 && Math.abs(v - 0.15) < 0.35) return Math.abs(v - 0.15) < 0.07 && ax < 0.5 ? '#ffc23a' : '#1c2a24'; return '#24447e'; }); };
+// a football goal: white posts and bar, the net sloping back
+BUILD.schGoal = function(B, t){ var gw = 2.4, gh = 1.6, gd = 1.2;
+  sch(B, t, 1.6, 2 * gw + 0.2, gd + 0.2, gh + 0.1, function(dx, dc, tt){ var ax = Math.abs(dx), dy = dc - gd / 2 + 0.1;
+    if (dy > -0.1 && ((Math.abs(ax - gw) < 0.08 && tt < gh) || (Math.abs(tt - gh) < 0.08 && ax < gw))) return '#f6f6f0';
+    var back = -dy / gd; if (back < 0 || back > 1 || ax > gw) return null; var top = gh * (1 - back * 0.65); if (tt > top) return null;
+    if (!(Math.abs(tt - top) < 0.07 || Math.abs(ax - gw) < 0.05)) return null; return (((dx + 99) % 0.24) < 0.05 || ((tt + dy + 99) % 0.24) < 0.05) ? '#e8e8e2' : null; }); };
+// a floodlight tower: a grey mast, a bank of lamps at the top facing the field
+BUILD.schFloods = function(B, t){ var H = 9; sch(B, t, 1.3, 2, 0.7, H + 0.95, function(dx, dy, tt){
+  if (tt < H) return Math.hypot(dx, dy) < 0.14 + (H - tt) * 0.006 ? '#8a8f99' : null;
+  if (Math.abs(dx) < 0.95 && Math.abs(dy) < 0.15){ var u = ((dx + 9) % 0.55) - 0.275, v = ((tt - H + 9) % 0.45) - 0.225; return dy > 0.03 && Math.hypot(u, v) < 0.17 ? '#fff6d8' : '#5c6068'; } return null; }); };
+LMSIZE.schFront = [16, 8, 11.5]; LMSIZE.schBus = [11, 3.2, 4.2]; LMSIZE.schFlag = [3.4, 1.2, 10.6]; LMSIZE.schFort = [9.5, 4.2, 8.1]; LMSIZE.schMerry = [3.9, 3.9, 1.7];
+LMSIZE.schCourt = [10, 7, 1.2]; LMSIZE.schWing = [18.2, 4.7, 8.1]; LMSIZE.schCanopy = [3.4, 13, 4]; LMSIZE.schTables = [5, 2.7, 1.3]; LMSIZE.schGreenhouse = [8.7, 5.1, 5.3];
+LMSIZE.schBeds = [9.6, 2.3, 2.1]; LMSIZE.schSunflowers = [3.6, 2.5, 5]; LMSIZE.schBleachers = [12.6, 4.4, 5.1]; LMSIZE.schScoreboard = [8.7, 1, 9.2]; LMSIZE.schGoal = [8, 2.1, 2.7]; LMSIZE.schFloods = [2.6, 1, 13];
+/* ---- CANDY WORKS' STOPS ON THE WALK, the same things the holes stand among (land.js): the factory gate's yard and dock,
+   the sweet gardens and their fondue fountain, the mixing hall's vats, chutes and cake, the chocolate river's press and
+   dipping pots, and the head office under its chimneys. Each walk is planned with its stop's kit. */
+KIT['candy~gate'] = kitFrom(KIT.candy, { g:['#f6c3d5', '#fbd4e2', '#efb2c8', 0.2], gpat:'cndfrost', p:['#e2c49a', '#ead0aa', '#c8a878'], paved:true, tree:['cndlolly'],
+  low:['cndgum', 'cndgum', 'cndgum', 'cndbox'], haz:null, dens:0.6, nlm:4, lm:['factory', 'cnddock', 'gumballs', 'canes', 'lamps'] });
+KIT['candy~garden'] = kitFrom(KIT.candy, { g:['#a8e0bc', '#bdeacd', '#94d3a9', 0.2], gpat:'cndmint', p:['#fbf6ee', '#ffffff', '#ece4d8'], paved:false, tree:['cndlolly', 'broad', 'cndlolly', 'broad'],
+  leaves:['#ffa8d0', '#ffc8e2', '#f088b8'], bark:'#f6f1ea', low:['cndbonbon', 'bush', 'cndgum'], haz:'water', hazC:['#5a2a12', '#8a5030'], waterC:['#5a2a12', '#8a5030'], dens:0.95, nlm:3,
+  lm:['cndfountain', 'canes', 'cndfountain', 'gumballs'], wall:['#a8e0bc', '#4f9a6a'] });
+KIT['candy~mixing'] = kitFrom(KIT.candy, { g:['#f8eef2', '#f2c6d6', '#ddc8d0', 0.2], gpat:'cndtile', p:['#9a9ea6', '#aab0b8', '#7a7e86'], paved:true, tree:['cndvat', 'cndpipe', 'cndvat'],
+  low:['cndsack', 'cndbox', 'cndsack'], brk:'crate', haz:'slow', hazC:['#f2dc9a', '#e2c27a'], bogC:['#f2dc9a', '#e2c27a'], dens:0.3, nlm:4, lm:['cndwhisks', 'cndchute', 'cndcake', 'cndwhisks', 'cndchute'], wall:['#ff9cc4', '#5a2a3e'] });
+KIT['candy~river'] = kitFrom(KIT.candy, { g:['#e2ac68', '#ecbe80', '#d49a58', 0.2], gpat:'cndcaramel', p:['#ecc070', '#f4d088', '#b8863a'], paved:false, plank:true, tree:['cndlolly', 'cndcane', 'cndlolly'],
+  low:['cndkiss', 'cndgum', 'cndkiss'], haz:'water', hazC:['#5a2a12', '#8a5030'], waterC:['#5a2a12', '#8a5030'], dens:0.55, nlm:3, lm:['cndpress', 'cnddip', 'cndpress', 'canes'], wall:['#e0a040', '#8a5a22'] });
+KIT['candy~office'] = kitFrom(KIT.candy, { g:['#9fd8b0', '#acdfbb', '#8ccc9f', 0.2], gpat:'cndlawn', p:['#fdf3f7', '#ffffff', '#f4b8d0'], paved:true, tree:['cndlolly', 'cndlolly', 'cndcane'],
+  low:['cndpop', 'cndgum', 'cndpop'], haz:null, dens:0.45, nlm:4, lm:['cndoffice', 'cndstack', 'lamps', 'cndstack'], wall:['#ffb3cf', '#c85a8a'] });
+LIFE_AS['candy~garden'] = { fly:['song', 2], mote:[['butter', 16], ['petal', 12]] };
+LIFE_AS['candy~mixing'] = { mote:[['dust', 24], ['spark', 10]] };
+LIFE_AS['candy~river'] = { fly:['song', 4], mote:[['spark', 8], ['petal', 6]] };
+LIFE_AS['candy~office'] = { fly:['song', 3], mote:[['spark', 26]] };
+
+// the stops' ground: smooth patches of frosting, mint, caramel and lawn, and the hall's tiles (an eighth of a foot a cell)
+function cndPatch(c, sd, cols){ var a = vn(c.ti * 0.045, c.tj * 0.045, sd), b = vn(c.ti * 0.12, c.tj * 0.12, sd + 1); return a > 0.64 ? cols[1] : a < 0.34 ? cols[2] : b > 0.68 ? cols[3] : cols[0]; }
+GPAT.cndfrost = function(c){ return cndPatch(c, 51, ['#f6c3d5', '#fbd4e2', '#efb2c8', '#f9cbdc']); };
+GPAT.cndmint = function(c){ return cndPatch(c, 53, ['#a8e0bc', '#bdeacd', '#94d3a9', '#b2e4c4']); };
+GPAT.cndcaramel = function(c){ return cndPatch(c, 55, ['#e2ac68', '#ecbe80', '#d49a58', '#e8b674']); };
+GPAT.cndlawn = function(c){ var st = Math.floor(c.ti / 20) % 2, n = vn(c.ti * 0.05, c.tj * 0.05, 57); return st ? (n > 0.66 ? '#acdfbb' : '#9fd8b0') : (n > 0.66 ? '#98d2a9' : '#8ccc9f'); };
+GPAT.cndtile = function(c){ if (c.ti % 16 === 0 || c.tj % 16 === 0) return '#ddc8d0'; var ch = (Math.floor(c.ti / 16) + Math.floor(c.tj / 16)) % 2, w = vn(c.ti * 0.04, c.tj * 0.04, 59) > 0.66;
+  return ch ? (w ? '#f0e2e8' : '#f8eef2') : (w ? '#ecbccd' : '#f2c6d6'); };
+
+var CND_GUMS = ['#ff3b7a', '#ffd23f', '#3fbf9a', '#8a5cff', '#ff8a1f'], CND_SWIRL = [['#ff5fa2', '#fff4f8'], ['#ffd23f', '#ff8a1f'], ['#3fbf9a', '#e6fff6'], ['#8a5cff', '#f2e8ff']];
+function cndHi(col){ var n = parseInt(col.slice(1), 16); return '#' + ((1 << 24) + (Math.min(255, (n >> 16) + 70) << 16) + (Math.min(255, (n >> 8 & 255) + 70) << 8) + Math.min(255, (n & 255) + 70)).toString(16).slice(1); }
+function cndStripe(v){ return ((Math.floor(v) % 2) + 2) % 2 ? '#e8233f' : '#fff6f0'; }
+TREEH.cndlolly = [6, 2.5, 2.4]; TREEH.cndcane = [5.5, 1.5, 1.4]; TREEH.cndvat = [5, 1.5, 2.2]; TREEH.cndpipe = [10, 3, 1.6];
+BLOCKR.cndlolly = 0.3; BLOCKR.cndcane = 0.3; BLOCKR.cndvat = 1.6; BLOCKR.cndpipe = 1.1;
+LOWR.cndgum = 0.8; LOWH.cndgum = 1.1; LOWR.cndbox = 0.8; LOWH.cndbox = 1.5; LOWR.cndbonbon = 0.9; LOWH.cndbonbon = 1; LOWR.cndsack = 0.8; LOWH.cndsack = 1.3; LOWR.cndkiss = 0.8; LOWH.cndkiss = 1.3; LOWR.cndpop = 0.8; LOWH.cndpop = 1;
+// a lollipop: a white stick and a swirled disc turned to the camera
+BUILD.cndlolly = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), H = t.h - t.cr * 0.8, R = t.cr * 0.85, cols = CND_SWIRL[i % 4];
+  B.solid(x - R, y - 0.4, zb, x + R, y + 0.4, zb + H + R, function(px, py, pz){ var dx = px - x, dy = py - y, tt = pz - zb; if (tt < H && Math.hypot(dx, dy) < 0.18) return '#f6f1ea';
+    var r = Math.hypot(dx, tt - H); if (r > R || Math.abs(dy) > 0.3) return null; if (r > R - 0.2) return cols[0]; return ((Math.atan2(tt - H, dx) + r * 1.6) % 1.2 + 1.2) % 1.2 < 0.6 ? cols[0] : cols[1]; }, 0.125); };
+// a candy cane standing like a tree, hooked one way or the other
+BUILD.cndcane = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), H = t.h - 1, R = 0.9, dir = i % 2 ? 1 : -1;
+  B.solid(x - 1.3, y - 0.4, zb, x + 1.3, y + 0.4, zb + H + R + 0.4, function(px, py, pz){ var dx = (px - x) * dir, dy = py - y, tt = pz - zb, d;
+    if (tt < H) d = Math.hypot(dx, dy); else { if (Math.atan2(tt - H, dx - R) < -0.1) return null; d = Math.hypot(Math.hypot(dx - R, tt - H) - R, dy); }
+    return d < 0.3 ? cndStripe((tt + dx) * 1.4) : null; }, 0.125); };
+// a steel vat of batter, its whisk on a shaft from the motor
+BUILD.cndvat = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), R = 1.8, top = Math.min(t.h, 5.5);
+  B.solid(x - R, y - R, zb, x + R, y + R, zb + top + 2.2, function(px, py, pz){ var dx = px - x, dy = py - y, r = Math.hypot(dx, dy), tt = pz - zb;
+    if (tt < 3){ if (r > R) return null; if (tt > 2.75) return r > R - 0.25 ? '#e4e8ee' : (i % 2 ? '#f2dc9a' : '#6a3518'); return Math.abs(tt - 1) < 0.12 || Math.abs(tt - 2.1) < 0.12 ? '#8a8e96' : (dx < -0.6 ? '#c8ccd2' : '#b4b8c0'); }
+    if (tt > top && tt < top + 1.2) return Math.abs(dx) < 0.7 && Math.abs(dy) < 0.6 ? (tt > top + 1 ? '#e8233f' : '#ff8ab8') : null;
+    if (r < 0.15) return '#c8ccd2'; for (var w = 0; w < 3; w++){ var a = w * 1.05 + i, u = dx * Math.cos(a) + dy * Math.sin(a), v = -dx * Math.sin(a) + dy * Math.cos(a);
+      if (Math.abs(v) < 0.1 && Math.abs(Math.hypot(u / 0.8, (tt - 3) / 1.3) - 1) < 0.12) return '#dfe3ea'; } return null; }, 0.125); };
+// a sugar silo: a tall tank striped pink and white, a cap and a ladder
+BUILD.cndpipe = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), H = t.h, R = 1.3;
+  B.solid(x - R - 0.3, y - R, zb, x + R + 0.3, y + R + 0.3, zb + H + 1, function(px, py, pz){ var dx = px - x, dy = py - y, r = Math.hypot(dx, dy), tt = pz - zb;
+    if (tt < 1.2) return Math.abs(Math.abs(dx) - 0.9) < 0.15 && Math.abs(Math.abs(dy) - 0.9) < 0.15 ? '#8a8e96' : null;
+    if (dy > R && Math.abs(dx - 0.5) < 0.35 && tt < H){ if (Math.abs(Math.abs(dx - 0.5) - 0.3) < 0.06 || ((tt % 0.6) + 0.6) % 0.6 < 0.08) return '#7a7e86'; return null; }
+    if (tt > H){ var rr = R * (1 - (tt - H)); return r < rr ? '#e8233f' : null; } if (r > R) return null;
+    return Math.abs(tt - H + 0.3) < 0.15 ? '#fff6f0' : (Math.floor((tt - 1.2) / 1.4) % 2 ? '#ff9cc4' : '#fff4f8'); }, 0.125); };
+// the low things: a gumdrop, a box of sweets, a bonbon, a sack of sugar, a chocolate drop, a heap of popping candy
+BUILD.cndgum = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), r = 0.75, col = CND_GUMS[i % 5], hi = cndHi(col);
+  B.solid(x - r, y - r, zb - 0.05, x + r, y + r, zb + r * 1.35, function(px, py, pz){ var tt = (pz - zb) / (r * 1.35), w = r * (1 - tt * tt * 0.8), d = Math.hypot(px - x, py - y); if (d > w) return null; return tt > 0.75 && d < w * 0.7 ? hi : col; }, 0.125); };
+BUILD.cndbox = function(B, t, i){ var s = 1.3, col = ['#ff8ab8', '#8fd8f0', '#ffd23f'][i % 3];
+  box(B, t.x, t.y, s + 0.1, s + 0.1, s + 0.35, function(dx, dy, tt){ if (tt > s) return Math.abs(dy) < 0.1 && Math.abs(Math.abs(dx) - 0.22) < 0.18 && tt < s + 0.32 ? '#fff6f0' : null;
+    if (Math.abs(dx) > s / 2 || Math.abs(dy) > s / 2 || tt < 0) return null; return Math.abs(dx) < 0.12 || Math.abs(dy) < 0.12 ? '#fff6f0' : col; }, 0.125); };
+BUILD.cndbonbon = function(B, t, i){ var col = ['#e8233f', '#ffc83a', '#8a5cff', '#3fbf9a'][i % 4], r = 0.55;
+  box(B, t.x, t.y, 2.6, 1.2, 1.2, function(dx, dy, tt){ var z = tt - r; if (Math.hypot(dx, dy, z) < r) return z > r * 0.4 && dx < 0 ? cndHi(col) : col;
+    var a = Math.abs(dx) - r * 0.8; if (a > 0 && a < 0.75 && Math.hypot(dy, z) < 0.1 + a * 0.45) return a > 0.2 ? '#fff6f0' : col; return null; }, 0.125); };
+BUILD.cndsack = function(B, t, i){ box(B, t.x, t.y, 1.6, 1.4, 1.6, function(dx, dy, tt){ var w = 0.7 - Math.max(0, tt - 0.9) * 0.45; if (Math.hypot(dx / w, dy / (w * 0.85)) > 1 || tt > 1.5 || tt < 0) return null;
+  if (tt > 1.15 && tt < 1.25) return '#a8323a'; return Math.abs(tt - 0.55) < 0.22 && dy > 0.2 && Math.abs(dx) < 0.35 ? '#ff5fa2' : '#f4ead8'; }, 0.125); };
+BUILD.cndkiss = function(B, t, i){ box(B, t.x, t.y, 1.5, 1.5, 1.4, function(dx, dy, tt){ var u = tt / 1.3, w = 0.7 * (u < 0.3 ? 1 : 1 - (u - 0.3) / 0.7 * 0.95); if (tt < 0 || u > 1 || Math.hypot(dx, dy) > w) return null;
+  return u > 0.55 && dx < 0 ? '#8a5030' : '#5a2a12'; }, 0.125); };
+BUILD.cndpop = function(B, t, i){ var P = ['#ff3b7a', '#3fd0ff', '#ffd23f', '#9a6aff', '#5ae08a'];
+  box(B, t.x, t.y, 1.6, 1.6, 1.2, function(dx, dy, tt){ for (var k = 0; k < 4; k++){ var a = k * 1.9 + i, cx = Math.cos(a) * 0.4 * (k ? 1 : 0), cy = Math.sin(a) * 0.3 * (k ? 1 : 0), hh = k ? 0.65 : 1.05, u = tt / hh;
+    if (u >= 0 && u < 1 && Math.abs(dx - cx) + Math.abs(dy - cy) < 0.3 * (1 - u * 0.7)){ var col = P[(i + k) % 5]; return u > 0.6 ? cndHi(col) : col; } } return null; }, 0.125); };
+
+/* the landmarks */
+// the loading dock: a stretch of the works' pink wall with two roll doors, the dock in front of them, boxes waiting on it
+BUILD.cnddock = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2;
+  if (dy < -1.6){ if (Math.abs(dx) > hw) return null; if (tt > t.h - 0.6) return dy > -1.9 ? '#fff6f0' : '#5a2e14';
+    for (var k = -1; k <= 1; k += 2){ var ddx = dx - k * 2.1; if (Math.abs(ddx) < 1.6 && tt < 4.2 && dy > -1.9){ if (Math.abs(ddx) > 1.4 || tt > 4) return '#fff6f0'; return (Math.floor(tt * 3) % 2) ? '#e6dcd6' : '#cfc4be'; } }
+    return Math.abs(Math.abs(dx) - hw) < 0.4 ? '#fff6f0' : (Math.floor(tt / 1.2) % 2 ? '#ff9cc4' : '#ff8ab8'); }
+  if (dy < 0.6 && tt < 1.3 && Math.abs(dx) < hw - 0.3) return tt > 1.1 ? '#e2c49a' : (Math.floor(dx) % 2 ? '#c8a878' : '#d4b48a');
+  var bxs = [[-2.6, -0.6, 0], [-1.3, -0.6, 1], [1.8, -0.4, 2], [-2, -0.6, 1]];
+  for (var q = 0; q < 4; q++){ var b = bxs[q], z0 = q === 3 ? 2.4 : 1.3, s = 1.1; if (Math.abs(dx - b[0]) < s / 2 && Math.abs(dy - b[1]) < s / 2 && tt > z0 && tt < z0 + s)
+    return Math.abs(dx - b[0]) < 0.1 || Math.abs(dy - b[1]) < 0.1 ? '#fff6f0' : ['#8fd8f0', '#ffd23f', '#ff8ab8'][b[2]]; }
+  return null; }, 0.125); };
+// the fondue fountain: chocolate in a round pool, a white column, two bowls pouring
+BUILD.cndfountain = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy), a = Math.atan2(dy, dx), choc = (Math.floor(a * 5 + tt) % 2) ? '#7a4422' : '#5e3018';
+  if (tt < 0.8){ if (r > 3.3) return null; if (r > 2.95) return '#f4e6d0'; return tt < 0.55 ? (vn(dx * 1.2, dy * 1.2, i) > 0.7 ? '#764020' : '#5a2a12') : null; }
+  if (r < 0.3) return '#f4e6d0';
+  if (tt > 3 && tt < 3.35 && r < 1.8) return r > 1.55 || tt < 3.12 ? '#f4e6d0' : '#5a2a12'; if (tt >= 0.8 && tt <= 3 && r > 1.55 && r < 1.75) return choc;
+  if (tt > 4.6 && tt < 4.9 && r < 1) return r > 0.82 || tt < 4.7 ? '#f4e6d0' : '#5a2a12'; if (tt >= 3.35 && tt <= 4.6 && r > 0.82 && r < 1) return choc;
+  if (tt >= 4.9 && r < 0.4 * (1 - (tt - 4.9) / 1.2)) return '#7a4422'; return null; }, 0.125); };
+// the twin whisks: two vats under a gantry, a motor over each, the whisk down on its shaft
+BUILD.cndwhisks = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2;
+  if (Math.abs(Math.abs(dx) - (hw - 0.3)) < 0.3 && Math.abs(dy + 0.2) < 0.3 && tt < 8.6) return '#e8233f';
+  if (tt > 8.2 && tt < 8.9 && Math.abs(dy + 0.2) < 0.4 && Math.abs(dx) < hw) return Math.abs(tt - 8.55) < 0.12 ? (((Math.floor((dx + tt) * 2) % 2) + 2) % 2 ? '#ffd23f' : '#2a2a2a') : '#e8233f';
+  for (var k = -1; k <= 1; k += 2){ var vx = dx - k * 2.2, r = Math.hypot(vx, dy);
+    if (tt < 3){ if (r > 1.8) continue; if (tt > 2.75) return r > 1.55 ? '#e4e8ee' : (k < 0 ? '#6a3518' : '#f2dc9a'); return Math.abs(tt - 1) < 0.12 || Math.abs(tt - 2.1) < 0.12 ? '#8a8e96' : (vx < -0.6 ? '#c8ccd2' : '#b4b8c0'); }
+    if (tt > 7 && tt < 8.2 && Math.abs(vx) < 0.7 && Math.abs(dy + 0.2) < 0.6) return '#ff8ab8';
+    if (r < 0.14 && tt < 7) return '#c8ccd2';
+    for (var w = 0; w < 3; w++){ var a = w * 1.05 + k, u = vx * Math.cos(a) + dy * Math.sin(a), v = -vx * Math.sin(a) + dy * Math.cos(a); if (Math.abs(v) < 0.1 && Math.abs(Math.hypot(u / 0.8, (tt - 3) / 1.4) - 1) < 0.12) return '#dfe3ea'; } }
+  return null; }, 0.125); };
+// a chute: a striped hopper on legs, the sweets heaped in it, a spout pouring into a bin
+BUILD.cndchute = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy + 0.3);
+  if (tt < 5.5 && Math.abs(Math.abs(dx) - 1.6) < 0.18 && Math.abs(Math.abs(dy + 0.3) - 1.6) < 0.18) return '#8a8e96';
+  if (tt > 5.5 && tt < 9){ var rr = 0.5 + (tt - 5.5) * 0.55; if (r < rr && r > rr - 0.25) return Math.floor((tt - 5.5) * 1.3) % 2 ? '#ff8ab8' : '#fff6f0'; if (r < rr && tt > 8.4 && tt < 8.4 + (1 - r / rr) * 0.8) return CND_GUMS[(Math.floor(dx * 3) + Math.floor(dy * 3) * 3 + 50) % 5]; return null; }
+  if (tt > 3 && tt <= 5.5 && r < 0.35) return '#c8ccd2';
+  if (tt < 1.6){ if (Math.abs(dx) > 1.1 || Math.abs(dy - 0.4) > 0.9) return null; if (tt > 1.2) return CND_GUMS[(Math.floor(dx * 3) + Math.floor(dy * 3) * 3 + 50) % 5]; return Math.abs(Math.abs(dx) - 1.05) < 0.06 ? '#8a8e96' : '#b4b8c0'; }
+  return null; }, 0.125); };
+// the cake stand: a pink cake in three tiers on a white stand, a cherry on top
+BUILD.cndcake = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
+  if (tt < 1.4) return r < 0.3 || (tt < 0.25 && r < 1.1) ? '#fff6f0' : null; if (tt < 1.6) return r < 2.3 ? '#fff6f0' : null;
+  var T = [[1.6, 3.1, 2], [3.1, 4.4, 1.5], [4.4, 5.5, 1]];
+  for (var q = 0; q < 3; q++){ var z = T[q]; if (tt >= z[0] && tt < z[1] && r < z[2]) return tt > z[1] - 0.22 || (Math.abs(tt - z[1] + 0.45) < 0.15 && Math.sin(Math.atan2(dy, dx) * 9) > 0) ? '#fff6f0' : (q % 2 ? '#ffd0e0' : '#ff9cc4'); }
+  return Math.hypot(r, tt - 5.85) < 0.38 ? '#e8233f' : null; }, 0.125); };
+// the stamping press: a red frame, the head on its piston over a belt of fresh stamped sweets
+BUILD.cndpress = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2 - 0.2;
+  if (tt < 1.6){ if (Math.abs(dx) > hw || Math.abs(dy) > 1.7) return null; return tt > 1.4 ? '#a8acb4' : (Math.abs(tt - 0.7) < 0.12 ? '#ffd23f' : '#8a8e96'); }
+  if (tt < 1.85 && Math.abs(dy) < 0.8 && Math.abs(dx) < hw) return (Math.floor(dx * 3) % 2) ? '#3a3e46' : '#2a2e36';
+  if (tt < 2.1 && Math.abs(dy) < 0.5){ var cx = ((dx + 30) % 1.4) - 0.7; if (Math.hypot(cx, dy) < 0.42 && dx > 0.3) return '#ff5fa2'; }
+  if (Math.abs(Math.abs(dx) - (hw - 0.4)) < 0.4 && Math.abs(dy) < 0.5 && tt < 7.6) return '#e8233f';
+  if (tt > 6.6 && tt < 7.8 && Math.abs(dx) < hw && Math.abs(dy) < 0.7) return Math.abs(tt - 7.2) < 0.18 ? (((Math.floor((dx + tt) * 2) % 2) + 2) % 2 ? '#ffd23f' : '#2a2a2a') : '#e8233f';
+  if (Math.hypot(dx, dy) < 0.3 && tt > 4 && tt <= 6.6) return '#c8ccd2';
+  if (Math.abs(dx) < 1.1 && Math.abs(dy) < 0.8 && tt > 3.1 && tt <= 4) return tt < 3.3 ? '#3a3e46' : '#5a5e66';
+  if (tt > 7.8 && tt < 8.4 && Math.hypot(dx, dy) < 0.35) return '#ffb02a'; return null; }, 0.125); };
+// the dipping pots: two on their burners, one of dark chocolate and one of white
+BUILD.cnddip = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ for (var k = -1; k <= 1; k += 2){ var r = Math.hypot(dx - k * 1.5, dy);
+    if (tt < 0.6){ if (r < 1) return '#3a3e46'; continue; } if (r > 1.35) continue; if (tt > 2.2) return tt < 2.45 ? (r > 1.15 ? '#e4e8ee' : (k < 0 ? '#5a2a12' : '#f4e6d0')) : null;
+    return Math.abs(tt - 1.4) < 0.1 ? '#8a8e96' : '#c8ccd2'; } return null; }, 0.125); };
+// the head office: pink, white pilasters, lit windows, a clock over the gold door, a dome and a gold spire
+BUILD.cndoffice = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = t.w / 2 - 0.4, hd = t.d / 2 - 0.6, H = 9.5, adx = Math.abs(dx);
+  if (tt > H){ var r = Math.hypot(dx, dy); if (tt < H + 0.4) return adx < hw + 0.3 && Math.abs(dy) < hd + 0.3 ? '#5a2e14' : null;
+    if (Math.hypot(r, (tt - H - 0.4) * 1.1) < 2.1) return Math.abs(Math.sin(Math.atan2(dy, dx) * 4)) < 0.15 ? '#fff6f0' : '#ff8ab8'; if (r < 0.15 && tt < t.h) return '#ffc83a'; return null; }
+  if (adx > hw || Math.abs(dy) > hd) return null; var front = dy > hd - 0.3;
+  if (front && tt > H - 0.8 - 0.6 * Math.max(0, Math.sin(dx * 1.4 + 1))) return '#fff6f0'; if (tt < 0.6) return '#c85a8a';
+  if (Math.abs(adx - hw) < 0.45 || (front && Math.abs(adx - 2) < 0.25)) return '#fff6f0';
+  if (front){ if (adx < 1.3 && tt < 3.8) return adx > 1.12 || tt > 3.6 ? '#ffc83a' : '#6a3518';
+    var cr = Math.hypot(dx, tt - 6.9); if (cr < 1.15){ if (cr > 0.95) return '#ffc83a'; if ((adx < 0.08 && tt > 6.9 && tt < 7.7) || (Math.abs(tt - 6.9) < 0.08 && dx > 0 && dx < 0.6)) return '#2a1a20'; return '#fffaf2'; }
+    if (adx > 2.4){ var wu = ((adx - 2.4) % 2.2) - 1.1; for (var q = 0; q < 2; q++){ var wz = q ? 6.4 : 2.6; if (Math.abs(wu) < 0.55 && Math.abs(tt - wz) < 0.95) return Math.abs(wu) > 0.43 || Math.abs(tt - wz) > 0.82 ? '#fff6f0' : (tt > wz ? '#ffe9a8' : '#ffd77a'); } } }
+  return Math.floor(tt / 1.3) % 2 ? '#ffb3cf' : '#ffa6c6'; }); };
+// a factory chimney striped red and white, pink smoke puffing out of it
+BUILD.cndstack = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy), H = 12;
+  if (tt < H){ if (tt > H - 0.7) return r < 1.55 && r > 1 ? '#5a2e14' : null; return r < 1.2 ? cndStripe(tt / 1.3) : null; }
+  var p = Math.min(Math.hypot(dx * 1.1, (tt - 13.2) * 1.2), Math.hypot((dx - 0.6) * 0.9, (tt - 14.8) * 1.1) - 0.2) + (vn(dx * 1.5, tt * 1.5, i) - 0.5) * 0.3; if (p < 1.3 && Math.abs(dy) < 1.2) return tt > 14 ? '#fff4f8' : '#f8c8dc'; return null; }); };
+LMSIZE.cnddock = [9, 5, 6.5]; LMSIZE.cndfountain = [7, 7, 6.2]; LMSIZE.cndwhisks = [9, 4, 9]; LMSIZE.cndchute = [5, 5, 9.5]; LMSIZE.cndcake = [5, 5, 6.3];
+LMSIZE.cndpress = [7, 4, 8.5]; LMSIZE.cnddip = [6, 3, 2.6]; LMSIZE.cndoffice = [12, 7, 13.5]; LMSIZE.cndstack = [4, 3, 16];
+// ---- Neon Arcade's stops on the walk, the same places its holes stand in (land.js): the pavement out front under the marquee,
+// the cabinet rows on their carpet with the Neon River, the racing and rhythm games, the prize counter and its claw machines, and the roof
+// over the night skyline. Every kit drops the world's grid floor for its own ground.
+KIT['neon~front'] = kitFrom(KIT.neon, { g:['#3a3352', '#433c5c', '#2e2844', 0.2], grid:false, gpat:'neopave', p:['#5a5070', '#625878', '#4a4262'], paved:true,
+  tree:['neoPalm', 'neoPalm', 'pylon'], low:['neoBollard', 'cone', 'neoBollard'], dens:0.4, neoNoFl:true, nlm:4, lm:['neoMarquee', 'neoBooth', 'sign', 'neoMarquee', 'neoBooth'] });
+KIT['neon~floor'] = kitFrom(KIT.neon, { g:['#16123a', '#1c1846', '#100c2c', 0.2], grid:false, gpat:'neocarpet', p:['#6a1a52', '#7a2462', '#4e1040'],
+  tree:['cab', 'cab', 'cab', 'pylon'], low:['neoStool', 'neoStool', 'cube'], dens:0.36, neoNoFl:true, haz:'water', hazC:['#2a5ae0', '#2bf0ff'], waterC:['#2a5ae0', '#2bf0ff'],
+  nlm:5, lm:['neoCabRow', 'neoPortal', 'neoCabRow', 'neoHockey', 'neoCabRow'] });
+KIT['neon~race'] = kitFrom(KIT.neon, { g:['#18142c', '#1e1a36', '#141026', 0.2], grid:false, gpat:'neodeck', p:['#2a2836', '#323040', '#22202c'],
+  tree:['neoRacer', 'cab', 'neoRacer', 'pylon'], low:['neoPad', 'neoStool', 'cone'], dens:0.3, neoNoFl:true, nlm:4, lm:['neoGantry', 'neoRacers', 'neoDance', 'neoStart', 'neoRacers'] });
+KIT['neon~prize'] = kitFrom(KIT.neon, { g:['#0c0c2a', '#10102e', '#08081e', 0.2], grid:false, gpat:'neomaze', p:['#1a2a8a', '#22339a', '#121e6a'],
+  tree:['neoClaw', 'neoClaw', 'cab'], low:['neoGum', 'neoStool', 'cube'], dens:0.3, neoNoFl:true, nlm:4, lm:['neoCounter', 'neoClaws', 'neoCounter', 'neoClaws'] });
+KIT['neon~roof'] = kitFrom(KIT.neon, { g:['#211a32', '#26232f', '#1c162c', 0.2], grid:false, gpat:'neotar', p:['#6a5a4a', '#7a6a58', '#4a3e32'], plank:true,
+  tree:['neoMast', 'neoMast', 'pylon'], low:['neoAC', 'neoAC', 'neoVent'], dens:0.12, neoNoFl:true, nlm:4, lm:['neoTower', 'neoSign', 'neoTank', 'neoTrophy', 'neoTower'], wall:['#8a84a0', '#3a3248'] });
+LIFE_AS['neon~front'] = { fly:['drone', 3], mote:['spark', 26] };
+LIFE_AS['neon~floor'] = { fly:['drone', 2], mote:['spark', 44] };
+LIFE_AS['neon~race'] = { fly:['drone', 4], mote:['spark', 50] };
+LIFE_AS['neon~prize'] = { fly:['drone', 2], mote:[['petal', 22], ['spark', 18]] };   // confetti over the prize counter
+LIFE_AS['neon~roof'] = { fly:['bat', 4], mote:[['spark', 12], ['firefly', 10]] };
+
+// the ground of each stop, an eighth of a foot a cell
+// the pavement out front: slabs three feet square, purple at night
+GPAT.neopave = function(c){ if (c.ti % 24 === 0 || c.tj % 24 === 0) return '#2a2440'; var a = vn(c.ti * 0.03, c.tj * 0.03, 3); return a > 0.64 ? '#433c5c' : a < 0.34 ? '#342e4a' : '#3a3352'; };
+// arcade carpet: midnight blue, squiggles of cyan and pink, a yellow ring here and there
+GPAT.neocarpet = function(c){ var x = c.ti / 8, y = c.tj / 8, a = vn(x * 0.25, y * 0.25, 2), s1 = Math.abs(Math.sin(x * 0.5 + Math.sin(y * 0.32) * 2.2)), s2 = Math.abs(Math.sin(y * 0.45 + Math.sin(x * 0.3 + 1) * 2.4));
+  var gx = Math.floor(x / 3.5), gy = Math.floor(y / 3.5), rr = Math.hypot(x - gx * 3.5 - 1.75, y - gy * 3.5 - 1.75);
+  if (s1 < 0.07 && a > 0.55) return '#22b8d0'; if (s2 < 0.07 && a < 0.4) return '#d02ab0'; if (hash(gx, gy, 5) < 0.14 && rr > 0.4 && rr < 0.7) return '#ffe02b';
+  return a > 0.6 ? '#1c1846' : '#16123a'; };
+// the racing floor: dark rubber with thin violet stripes on the slant
+GPAT.neodeck = function(c){ var x = c.ti / 8, y = c.tj / 8, a = vn(x * 0.2, y * 0.2, 4); if (Math.abs(((x + y) % 8 + 8) % 8 - 4) < 0.12) return '#3a2a6a'; return a > 0.62 ? '#1e1a36' : a < 0.34 ? '#141026' : '#18142c'; };
+// a maze in blue on the floor, four feet a square, pellets down the lanes
+GPAT.neomaze = function(c){ var gi = Math.floor(c.ti / 32), gj = Math.floor(c.tj / 32), li = c.ti - gi * 32, lj = c.tj - gj * 32;
+  var e = (hash(gi, gj, 11) < 0.5 && li >= 28) || (hash(gi - 1, gj, 11) < 0.5 && li <= 3), s = (hash(gi, gj, 12) < 0.45 && lj >= 28) || (hash(gi, gj - 1, 12) < 0.45 && lj <= 3);
+  if (e || s) return ((e && (li === 28 || li === 29 || li === 2 || li === 3)) || (s && (lj === 28 || lj === 29 || lj === 2 || lj === 3))) ? '#2a3cc0' : '#0a0a24';
+  if (Math.abs(li - 16) < 2 && Math.abs(lj - 16) < 2) return '#c8a880'; return vn(c.ti * 0.02, c.tj * 0.02, 6) > 0.62 ? '#10102e' : '#0c0c2a'; };
+// the roof: tar in soft patches, a seam every five feet
+GPAT.neotar = function(c){ if (c.tj % 40 === 0) return '#1a1426'; var a = vn(c.ti * 0.02, c.tj * 0.02, 7), b = vn(c.ti * 0.07, c.tj * 0.07, 8); return a > 0.68 ? '#2a2240' : a < 0.3 ? '#1c162c' : b > 0.64 ? '#241c38' : '#211a32'; };
+
+var NEO_TFONT = { A:['.#.', '#.#', '###', '#.#', '#.#'], R:['##.', '#.#', '##.', '#.#', '#.#'], C:['.##', '#..', '#..', '#..', '.##'], D:['##.', '#.#', '#.#', '#.#', '##.'], E:['###', '#..', '##.', '#..', '###'],
+  P:['##.', '#.#', '##.', '#..', '#..'], I:['###', '.#.', '.#.', '.#.', '###'], Z:['###', '..#', '.#.', '#..', '###'], S:['.##', '#..', '.#.', '..#', '##.'] };
+// is this point of a word lit? u across from its left edge, v up from its foot, s one dot
+function neoTWord(w, u, v, s){ var i = Math.floor(u / (s * 4)), du = u - i * s * 4; if (u < 0 || i >= w.length || du >= s * 3 || v < 0 || v >= s * 5) return false;
+  return NEO_TFONT[w.charAt(i)][4 - Math.floor(v / s)].charAt(Math.floor(du / s)) === '#'; }
+var NEO_TGLOW = ['#ff2bd6', '#2bf0ff', '#ffe02b', '#7cff4a', '#ff7a2b', '#a46bff'], NEO_TPLUSH = ['#ff8ab8', '#7ec8ff', '#ffe02b', '#7cff4a', '#ffb02b', '#c8a0ff', '#ffffff'];
+TREEH.neoPalm = [9, 3, 3.2]; TREEH.neoRacer = [5, 0.2, 2.2]; TREEH.neoClaw = [6.4, 0.2, 1.8]; TREEH.neoMast = [9, 5, 1.2];
+LOWR.neoBollard = 0.5; LOWH.neoBollard = 2.2; LOWR.neoStool = 0.7; LOWH.neoStool = 2.2; LOWR.neoPad = 1.4; LOWH.neoPad = 0.4; LOWR.neoGum = 0.7; LOWH.neoGum = 3;
+LOWR.neoAC = 1.4; LOWH.neoAC = 2.4; LOWR.neoVent = 0.6; LOWH.neoVent = 2;
+
+// out front: the arcade's frontage, the doors lit, ARCADE across the marquee in bulbs, neon tubes above
+BUILD.neoMarquee = function(B, t, i){ var w2 = t.w / 2 - 0.1, wd = 23 * 0.42;
+  box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var ax = Math.abs(dx); if (ax > w2) return null;
+    if (tt > 5 && tt < 7.8 && dy < t.d / 2 - 0.1){ if (tt < 5.3 || tt > 7.5) return ((dx * 2 + 40) | 0) % 2 ? '#fff0b0' : '#ffb02b'; return neoTWord('ARCADE', dx + wd / 2, tt - 5.35, 0.42) ? (dy > t.d / 2 - 0.6 ? '#ff2bd6' : '#ff8ae8') : '#1a0f33'; }
+    if (dy > t.d / 2 - 1.2) return null; if (tt > 9.6) return '#2bf0ff';
+    if (tt > 7.8) return Math.abs(((dx + 40) % 2.5) - 1.25) < 0.15 ? (Math.floor((dx + 40) / 2.5) % 2 ? '#2bf0ff' : '#ff2bd6') : '#221a3a';
+    if (tt < 0.4) return '#3a2f55'; var dd = Math.abs(ax - 3.4); if (dd < 1.5 && tt < 4.2){ if (dd > 1.3 || tt > 3.95 || dd < 0.1) return '#ff2bd6'; return '#ffe6c8'; }
+    return '#2a2244'; }); };
+// the ticket booth: a striped kiosk, a lit window, a striped cone of a roof with a gold knob
+BUILD.neoBooth = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){
+  if (tt > 4.2){ var r = (tt - 4.2) / 1.6; if (r < 1 && Math.hypot(dx, dy) < 1.9 * (1 - r)) return (Math.floor((Math.atan2(dy, dx) + 4) * 2.5) % 2) ? '#ff2bd6' : '#fff2fa'; if (r >= 1 && Math.hypot(dx, dy) < 0.25) return '#ffe02b'; return null; }
+  if (Math.abs(dx) > 1.5 || Math.abs(dy) > 1.4) return null; if (dy > 1.2 && Math.abs(dx) < 1.0 && tt > 2 && tt < 3.6) return Math.abs(dx) > 0.88 || Math.abs(tt - 2.8) < 0.08 ? '#c9a227' : '#ffe9a0';
+  if (dy > 1.2 && Math.abs(tt - 1.9) < 0.1) return '#c9a227'; return (Math.floor((dx + 4) * 1.6) % 2) ? '#c8402e' : '#e8d8c0'; }); };
+// a neon palm: a dark trunk ringed with light, teal fronds, a planter with a glowing rim
+BUILD.neoPalm = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), H = t.h, lean = (hash(i, 1, 2) - 0.5) * 2, tx = x + lean, R = t.cr || 3.2, ring = pick(i, ['#ff2bd6', '#2bf0ff', '#a46bff']);
+  B.vox(x - R - 2, y - R - 1, zb - 0.1, x + R + 2, y + R + 1, zb + H + 1.5, function(set){
+    B.tube(set, x, y, zb, x, y, zb + 1, 1, 1.1, function(u){ return u > 0.85 ? ring : '#2a2440'; });
+    for (var s = 0; s < 10; s++){ var u0 = s / 10, u1 = (s + 1) / 10; B.tube(set, x + lean * u0 * u0, y, zb + 1 + (H - 1) * u0, x + lean * u1 * u1, y, zb + 1 + (H - 1) * u1, 0.4 - u0 * 0.12, 0.4 - u1 * 0.12, s % 3 === 1 ? ring : '#2a2238'); }
+    for (var f = 0; f < 7; f++){ var a = f / 7 * 6.28 + hash(i, f, 4), ex = tx + Math.cos(a) * R, ey = y + Math.sin(a) * R * 0.7, mx = tx + Math.cos(a) * R * 0.5, my = y + Math.sin(a) * R * 0.35;
+      B.tube(set, tx, y, zb + H, mx, my, zb + H + 0.8, 0.3, 0.24, f % 2 ? '#1f8a7a' : '#176a62'); B.tube(set, mx, my, zb + H + 0.8, ex, ey, zb + H - 1.2, 0.24, 0.1, f % 3 ? '#1f8a7a' : '#2bf0ff'); } }, 0.25); };
+// a bollard with a lit cap
+BUILD.neoBollard = function(B, t, i){ var c = pick(i, NEO_TGLOW); box(B, t.x, t.y, 1, 1, 2.2, function(dx, dy, tt){ var r = Math.hypot(dx, dy); if (r > 0.38) return null; return tt > 1.8 ? c : (tt * 2 | 0) % 2 ? '#2a2440' : '#3a3456'; }, 0.125); };
+// the cabinet rows: four cabinets shoulder to shoulder
+BUILD.neoCabRow = function(B, t, i){ for (var k = 0; k < 4; k++) cabinet(B, t.x - 3.6 + k * 2.4, t.y, i + k); };
+// a bar stool: a chrome post and a round seat in a neon colour
+BUILD.neoStool = function(B, t, i){ var c = pick(i, NEO_TGLOW); box(B, t.x, t.y, 1.6, 1.6, 2.2, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
+  if (tt > 1.8) return r < 0.7 ? (tt > 2.0 ? c : '#2a2440') : null; if (tt < 0.2) return r < 0.55 ? '#9a98b0' : null; return r < 0.15 ? '#c8c6dc' : null; }, 0.125); };
+// the warp gate: a ring on its end, gold and pink, swirling violet and cyan inside
+BUILD.neoPortal = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var z = tt - 4, r = Math.hypot(dx, z), a = Math.atan2(z, dx);
+  if (tt < 0.6) return Math.abs(dx) < 2.6 && Math.abs(dy) < 0.9 ? '#2a2440' : null; if (r > 3.4) return null;
+  if (r > 2.8) return Math.abs(dy) < 0.8 ? ((Math.floor(a * 4 + 9) % 2) ? '#ff2bd6' : '#ffe02b') : null; if (Math.abs(dy) > 0.15) return null;
+  var sw = (a + r * 1.6) / 6.283 * 3; sw = sw - Math.floor(sw); return sw < 0.33 ? '#a46bff' : sw < 0.66 ? '#2bf0ff' : '#1a0f44'; }); };
+// an air hockey table: four legs, a pink rim, an ice blue top with its centre line and circle
+BUILD.neoHockey = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var ax = Math.abs(dx), ay = Math.abs(dy);
+  if (tt < 1.7) return Math.abs(ax - 1.8) < 0.2 && Math.abs(ay - 0.9) < 0.2 ? '#2a2440' : null; if (ax > 2.35 || ay > 1.3) return null;
+  if (ax > 2.15 || ay > 1.1) return tt > 2.1 ? '#ff2bd6' : '#2a2440'; if (tt > 2.05) return null; if (ax < 0.08 || Math.abs(Math.hypot(dx, dy) - 0.6) < 0.08) return '#e5483a'; return '#bfefff'; }, 0.125); };
+// a sit in racer seen from behind: the bucket seat, the wheel, the screen hood lit up beyond
+function neoRacerAt(B, x, y, i){ var c = pick(i, NEO_TGLOW); box(B, x, y, 2.6, 4, 4.8, function(dx, dy, tt){ var ax = Math.abs(dx);
+  if (tt < 0.5) return ax < 1.25 && Math.abs(dy) < 1.9 ? (ax > 1.05 || Math.abs(dy) > 1.7 ? c : '#2a2440') : null;
+  if (dy < -0.7){ if (ax > 1.25 || tt > 4.6) return null; if (dy > -1.0 && ax < 1.0 && tt > 2.2 && tt < 4.0) return (Math.floor((tt - 2.2) * 5 + dx * 2) % 4 === 0) ? c : tt < 2.9 ? '#2a2a40' : '#2a6ae8'; if (tt > 4.1) return '#fff2fa'; return ax > 1.05 ? c : '#1a1233'; }
+  if (dy < 0.1){ if (Math.abs(dy + 0.3) < 0.15 && Math.abs(Math.hypot(dx, tt - 2.4) - 0.5) < 0.1) return '#c8c6dc'; if (ax < 0.15 && tt < 2.3 && dy < -0.2) return '#2a2440'; return null; }
+  if (ax > 0.85) return null; if (tt < 1.6) return dy < 1.6 ? '#2a2440' : null; if (tt < 1.9 && dy < 1.5) return '#e5483a'; if (dy > 1.1 && dy < 1.6 && tt < 3.8) return ax > 0.7 ? '#141018' : '#e5483a'; return null; }, 0.25); }
+BUILD.neoRacer = function(B, t, i){ neoRacerAt(B, t.x, t.y, i); };
+BUILD.neoRacers = function(B, t, i){ neoRacerAt(B, t.x - 1.7, t.y, i); neoRacerAt(B, t.x + 1.7, t.y, i + 1); };
+// the checkered gantry over the floor, posts striped pink
+BUILD.neoGantry = function(B, t){ var w2 = t.w / 2; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var ax = Math.abs(dx);
+  if (Math.abs(ax - w2 + 0.5) < 0.35) return Math.abs(dy) < 0.35 ? ((tt * 1.2 | 0) % 2 ? '#c8c6dc' : '#ff2bd6') : null;
+  if (tt < 6 || ax > w2 - 0.5 || Math.abs(dy) > 0.25) return null; if (tt > 7.6 || tt < 6.2) return '#ff2bd6'; return ((Math.floor((dx + 40) * 1.4) + Math.floor(tt * 1.4)) % 2) ? '#f4f2fa' : '#141018'; }); };
+// a dance pad: nine tiles in a steel frame, the four arrows lit
+function neoPadAt(B, x, y){ box(B, x, y, 2.8, 2.8, 0.4, function(dx, dy){ var ax = Math.abs(dx), ay = Math.abs(dy); if (ax > 1.35 || ay > 1.35) return null; if (ax > 1.2 || ay > 1.2) return '#9a98b0';
+  var iu = dx < -0.42 ? -1 : dx > 0.42 ? 1 : 0, iv = dy < -0.42 ? -1 : dy > 0.42 ? 1 : 0; if (Math.abs(ax - 0.42) < 0.06 || Math.abs(ay - 0.42) < 0.06) return '#141018';
+  if (iu && iv) return '#2a2440'; if (!iu && !iv) return '#3a3456'; var lu = dx - iu * 0.82, lv = dy - iv * 0.82, al = iu ? lu * iu : lv * iv, ac = iu ? Math.abs(lv) : Math.abs(lu);
+  return ac < 0.24 - al * 0.9 && al > -0.24 ? (iv < 0 ? '#ff2bd6' : iv > 0 ? '#2bf0ff' : iu < 0 ? '#ffe02b' : '#7cff4a') : '#2a2440'; }, 0.125); }
+BUILD.neoPad = function(B, t){ neoPadAt(B, t.x, t.y); };
+BUILD.neoDance = function(B, t){ neoPadAt(B, t.x - 1.6, t.y); neoPadAt(B, t.x + 1.6, t.y); };
+// the start lights: red, yellow, green on a chrome pole
+BUILD.neoStart = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy); if (tt < 4.4) return r < 0.2 ? '#c8c6dc' : null;
+  if (Math.abs(dx) > 0.6 || Math.abs(dy) > 0.45) return null; var L = ['#ff3a3a', '#ffe02b', '#7cff4a']; for (var j = 0; j < 3; j++) if (Math.hypot(dx, tt - 6.4 + j * 0.8) < 0.3 && dy > 0) return L[j]; return '#141018'; }, 0.125); };
+// the prize counter: a glass case of prizes, and behind it the shelves of plush to the ceiling with PRIZES lit over them
+BUILD.neoCounter = function(B, t){ var w2 = t.w / 2 - 0.2, wd = 23 * 0.36;
+  function plush(u, v, k){ var i = Math.floor(u / 1.0), r = Math.hypot(u - i - 0.5, v - 0.45); return r < 0.45 ? NEO_TPLUSH[(hash(i, k, 3) * 7) | 0] : null; }
+  box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var ax = Math.abs(dx); if (ax > w2) return null;
+    if (dy > 0.2){ if (tt > 2.8) return null; if (tt < 1.5) return dy > t.d / 2 - 0.4 && Math.abs(tt - 0.8) < 0.1 ? '#2bf0ff' : '#2a1a4a';   // the counter
+      if (ax > w2 - 0.15 || tt > 2.65 || dy > t.d / 2 - 0.15) return (dy > t.d / 2 - 0.15 && tt < 2.65 && ax < w2 - 0.15) ? null : '#9fe8ff'; return tt < 2.1 ? plush(dx + 40, tt - 1.5, 9) : null; }
+    if (dy < -0.4){ if (tt > 6.4){ if (dy < -0.9) return tt > 8.6 ? '#2bf0ff' : '#1a0f33'; return neoTWord('PRIZES', dx + wd / 2, tt - 6.7, 0.36) ? '#ff2bd6' : null; }   // the wall of prizes
+      var sh = tt % 1.5; if (sh < 0.15) return '#5a3a8a'; if (dy > -0.9) return plush(dx + 40, sh - 0.15, Math.floor(tt / 1.5)); return '#2a1a4a'; }
+    return null; }); };
+// a claw machine: a lit cabinet, a glass box with a heap of plush and the claw hanging over it
+function neoClawAt(B, x, y, i){ var c = pick(i, NEO_TGLOW); box(B, x, y, 2.6, 2.6, 6.4, function(dx, dy, tt){ var m = Math.max(Math.abs(dx), Math.abs(dy)); if (m > 1.25) return null;
+  if (tt < 2.4){ if (dy > 1.0 && Math.abs(dx + 0.5) < 0.25 && Math.abs(tt - 1.0) < 0.25) return '#ffe02b'; return m > 1.08 ? c : '#2a1a4a'; }
+  if (tt > 5.6) return tt > 6.2 ? '#1a0f33' : dy > 1.0 ? '#fff2fa' : c; if (Math.abs(dx) > 1.12 && Math.abs(dy) > 1.12) return '#c8c6dc';
+  if (tt < 3.1){ var b = Math.hypot(((dx * 2) % 1 + 1) % 1 - 0.5, ((dy * 2) % 1 + 1) % 1 - 0.5); return b < 0.42 && m < 1.1 ? NEO_TPLUSH[(hash(Math.floor(dx * 2), Math.floor(dy * 2), i) * 7) | 0] : null; }
+  var rr = Math.hypot(dx, dy); if (rr < 0.08 && tt > 4.4) return '#c8c6dc'; if (tt > 3.9 && tt < 4.4 && rr < 0.42 && rr > 0.24) return '#c8c6dc'; return null; }, 0.125); }
+BUILD.neoClaw = function(B, t, i){ neoClawAt(B, t.x, t.y, i); };
+BUILD.neoClaws = function(B, t, i){ for (var k = 0; k < 3; k++) neoClawAt(B, t.x - 2.7 + k * 2.7, t.y, i + k); };
+// a gumball machine: a red stand, a glass globe of colour
+BUILD.neoGum = function(B, t, i){ box(B, t.x, t.y, 1.6, 1.6, 3, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
+  if (tt < 1.3) return r < 0.4 + (tt < 0.2 ? 0.2 : 0) ? (tt > 0.7 && tt < 1.0 && dy > 0.25 ? '#c8c6dc' : '#e5483a') : null;
+  var s = Math.hypot(r, tt - 2.0); if (s < 0.75){ if (s > 0.66) return '#e8f6ff'; return NEO_TPLUSH[(hash(Math.floor(dx * 4) + 9, Math.floor(tt * 4), Math.floor(dy * 4) + i) * 6) | 0]; }
+  if (tt > 2.65 && r < 0.22) return '#e5483a'; return null; }, 0.125); };
+// the roof: a tower across the street, its windows lit, a red light on its roof
+BUILD.neoTower = function(B, t, i){ var w2 = t.w / 2, d2 = t.d / 2; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){
+  if (Math.abs(dx) > w2 - 0.2 || Math.abs(dy) > d2 - 0.2){ return null; } if (tt > t.h - 1.2) return Math.hypot(dx, dy) < 0.3 ? (tt > t.h - 0.5 ? '#ff3a3a' : '#6a6480') : null;
+  if (tt > t.h - 1.6) return '#2a2640'; var u = dx + w2, ci = Math.floor(u / 1.2), ri = Math.floor(tt / 1.6), win = (u % 1.2) > 0.4 && (tt % 1.6) > 0.6 && Math.abs(dx) < w2 - 0.6 && tt > 1.6;
+  if (win && (dy > d2 - 0.5 || Math.abs(dx) > w2 - 0.5)) return hash(ci, ri, i) < 0.42 ? (hash(ci, ri, i + 7) < 0.7 ? '#ffe2a0' : '#9ad8ff') : '#12122a'; return i % 2 ? '#1c1a30' : '#221e38'; }, 0.25); };
+// the water tower: a tank of staves on four legs, a cone of a roof
+BUILD.neoTank = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
+  if (tt < 5.2){ if (Math.abs(Math.abs(dx) - 1.6) < 0.2 && Math.abs(Math.abs(dy) - 1.6) < 0.2) return '#4a4458'; if (Math.abs(tt - 2.8) < 0.12 && Math.max(Math.abs(dx), Math.abs(dy)) < 1.75 && (Math.abs(Math.abs(dx) - 1.6) < 0.12 || Math.abs(Math.abs(dy) - 1.6) < 0.12)) return '#4a4458'; return null; }
+  if (tt < 9.6){ if (r > 2.3) return null; if (Math.abs(tt - 6.2) < 0.12 || Math.abs(tt - 8.6) < 0.12) return '#2a2440'; return (Math.floor((Math.atan2(dy, dx) + 4) * 7) % 2) ? '#6a4a34' : '#5a3e2c'; }
+  return r < 2.5 * (1 - (tt - 9.6) / 2.2) ? '#3a3248' : null; }); };
+// the grand prize: a gold cup on a plinth with pink lights
+BUILD.neoTrophy = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
+  if (tt < 2) return Math.abs(dx) < 1.6 && Math.abs(dy) < 1.5 ? (Math.abs(tt - 1.7) < 0.12 || Math.abs(tt - 0.3) < 0.12 ? '#ff2bd6' : '#2a2440') : null;
+  if (tt < 2.5) return r < 1.0 ? '#c9a227' : null; if (tt < 4.4) return r < 0.25 + Math.max(0, 3.1 - tt) * 0.9 ? '#e8c23a' : null;
+  if (tt < 7.6){ var rb = 0.5 + Math.sqrt(Math.max(0, (tt - 4.4) / 3.2)) * 1.2; if (r < rb && r > rb - 0.25) return tt > 7.35 ? '#ffe9a0' : Math.abs(tt - 6.5) < 0.15 ? '#c9a227' : '#ffd23a';
+    if (Math.abs(dy) < 0.2 && Math.abs(Math.hypot(Math.abs(dx) - rb - 0.5, tt - 6.4) - 0.6) < 0.14) return '#e8c23a'; } return null; }, 0.125); };
+// ARCADE in big letters on a lattice frame, as it stands on the arcade's roof
+BUILD.neoSign = function(B, t){ var s = 0.46, wd = 23 * s; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var u = dx + wd / 2;
+  if (tt < 3.6){ var q = ((u % 2) + 2) % 2; return dy < 0 && Math.abs(dy) < 0.6 && u > 0 && u < wd && (Math.abs(q - 1) < 0.12 || Math.abs(Math.abs(q - 1) - tt * 0.27) < 0.12) ? '#6a6480' : null; }
+  if (Math.abs(dy) > 0.5) return null; return neoTWord('ARCADE', u, tt - 3.8, s) ? (dy > 0.2 ? '#ff2bd6' : '#ff8ae8') : null; }, 0.25); };
+// a radio mast: a lattice of grey, a red light on top
+BUILD.neoMast = function(B, t, i){ var H = t.h; box(B, t.x, t.y, 2, 2, H + 0.5, function(dx, dy, tt){ var w = 0.7 * (1 - tt / (H + 1)), ax = Math.abs(dx), ay = Math.abs(dy);
+  if (tt > H) return Math.hypot(dx, dy) < 0.3 ? '#ff3a3a' : null; if (Math.abs(ax - w) < 0.1 && Math.abs(ay - w) < 0.1) return '#8a84a0';
+  if ((Math.abs(ax - w) < 0.08 || Math.abs(ay - w) < 0.08) && ax <= w + 0.1 && ay <= w + 0.1 && Math.abs(((tt % 1.4) + 1.4) % 1.4 - 0.7) < 0.08) return '#6a6480'; return null; }, 0.125); };
+// an air conditioner: a grey box, its fan in the top, a grille on the front
+BUILD.neoAC = function(B, t){ box(B, t.x, t.y, 3, 2.2, 2.4, function(dx, dy, tt){ if (Math.abs(dx) > 1.4 || Math.abs(dy) > 1.0) return null;
+  if (tt > 2.2){ var r = Math.hypot(dx - 0.4, dy); if (r < 0.75) return (Math.floor(Math.atan2(dy, dx - 0.4) * 1.9 + 7) % 2) ? '#2a2836' : '#6a6878'; }
+  if (dy > 0.85 && dx < -0.1 && tt > 0.4 && tt < 1.9) return (tt * 5 | 0) % 2 ? '#4a4858' : '#7a7888'; return '#8a889a'; }, 0.125); };
+// a vent pipe with its cap
+BUILD.neoVent = function(B, t){ box(B, t.x, t.y, 1.4, 1.4, 2, function(dx, dy, tt){ var r = Math.hypot(dx, dy); if (tt > 1.6) return r < 0.62 ? '#6a6878' : null; return r < 0.35 ? '#8a889a' : null; }, 0.125); };
+LMSIZE.neoMarquee = [14, 4, 10]; LMSIZE.neoBooth = [4, 4, 6]; LMSIZE.neoCabRow = [10, 2, 5.4]; LMSIZE.neoPortal = [7, 2, 7.6]; LMSIZE.neoHockey = [5, 3, 2.4];
+LMSIZE.neoRacers = [6, 4, 4.8]; LMSIZE.neoGantry = [12, 1.6, 8]; LMSIZE.neoDance = [6, 3, 0.4]; LMSIZE.neoStart = [1.4, 1.2, 7.4];
+LMSIZE.neoCounter = [12, 4, 9]; LMSIZE.neoClaws = [8, 2.6, 6.4]; LMSIZE.neoTower = [8, 6, 22]; LMSIZE.neoTank = [5, 5, 12]; LMSIZE.neoTrophy = [4, 4, 8]; LMSIZE.neoSign = [12, 2, 6.4];
+/* ---- Lost Temple's stops on the walk, the same places its holes stand in (land.js): the explorers' camp under the outer
+   gate, the overgrown ruins and the landslide, the gorge with its falls and cut stairs, the great temple and its guardians,
+   and the sanctum with its gold. Every stop is old dressed stone, moss and jade, where Pirate Cove's jungle is palms and a fort. */
+KIT['temple~camp'] = kitFrom(KIT.temple, { g:['#3b6a2e', '#42722f', '#34602b', 0.2], gpat:'tmpgrass', p:['#8a6e4a', '#9a7c54', '#7a6040'], paved:false, tree:['tmpvine', 'tmpvine', 'broad'],
+  low:['fern', 'bush', 'fern', 'rock'], hazC:['#2f8f7a', '#5cc0a0'], waterC:['#2f8f7a', '#5cc0a0'], nlm:4, lm:['tmpTent', 'tmpGate', 'tmpCamp', 'tmpTent'], dens:1.2 });
+KIT['temple~ruins'] = kitFrom(KIT.temple, { g:['#3b6a2e', '#42722f', '#34602b', 0.2], gpat:'tmpruin', tree:['tmpvine', 'broad', 'tmpvine'], low:['fern', 'rock', 'fern', 'bush'],
+  hazC:['#2fb58f', '#7fe0c0'], waterC:['#2fb58f', '#7fe0c0'], nlm:4, lm:['tmpHead', 'ruin', 'tmpScree', 'columns'], dens:1.1 });
+KIT['temple~gorge'] = kitFrom(KIT.temple, { g:['#3b6a2e', '#42722f', '#34602b', 0.2], gpat:'tmpgorge', p:['#a8987a', '#b8a888', '#8a7c62'], paved:false, tree:['tmpvine', 'broad', 'tmpvine'],
+  low:['fern', 'rock', 'fern', 'bush'], haz:'water', hazC:['#2f8f9a', '#6fc8d0'], waterC:['#2f8f9a', '#7fd0d4'], nlm:4, lm:['tmpFalls', 'tmpFalls', 'ruin', 'tmpFalls'], dens:1.1, wall:['#a8987a', '#6a604c'] });
+KIT['temple~steps'] = kitFrom(KIT.temple, { g:['#a69c72', '#b3a97e', '#958b63', 0.2], gpat:'tmpplaza', p:['#c2b78c', '#cfc49a', '#a69c72'], tree:['broad', 'tmpvine'], low:['rock', 'fern'],
+  hazC:['#2fb58f', '#7fe0c0'], waterC:['#2fb58f', '#7fe0c0'], nlm:5, lm:['tmpPyramid', 'tmpGuard', 'tmpBrazier', 'tmpSerpent', 'tmpGuard'], dens:0.45 });
+KIT['temple~sanctum'] = kitFrom(KIT.temple, { g:['#8a8060', '#958b63', '#7b7354', 0.2], gpat:'tmpsanct', p:['#cfc49a', '#ddd2a6', '#b8962e'], paved:true, tree:['tmppillar', 'tmppillar'], low:['tmpcoins', 'rock', 'tmpcoins'],
+  haz:null, nlm:5, lm:['tmpIdol', 'tmpGold', 'tmpBrazier', 'tmpGold', 'tmpBrazier'], dens:0.13, wall:['#8a8060', '#4a4436'] });
+LIFE_AS['temple~camp'] = { fly:['parrot', 4], mote:[['firefly', 14], ['butter', 6]] };
+LIFE_AS['temple~ruins'] = { fly:['song', 3], mote:[['butter', 12], ['leaf', 8]] };
+LIFE_AS['temple~gorge'] = { fly:['song', 4], mote:[['leaf', 10], ['firefly', 8]] };
+LIFE_AS['temple~steps'] = { fly:['crow', 3], mote:[['dust', 14], ['butter', 4]] };
+LIFE_AS['temple~sanctum'] = { fly:['bat', 5], mote:[['dust', 18], ['ember', 10]] };
+
+// the temple's ground on the walk: soft patches of green, an old floor coming up through it, rock and moss by the river,
+// the plaza's flagstones, and the sanctum's polished slabs
+GPAT.tmpgrass = function(c){ var a = vn(c.ti * 0.045, c.tj * 0.045, 7), b = vn(c.ti * 0.13, c.tj * 0.13, 8); return a > 0.7 ? '#4a6230' : b > 0.64 ? '#42722f' : b < 0.3 ? '#34602b' : '#3b6a2e'; };
+GPAT.tmpruin = function(c){ var f = vn(c.ti * 0.022, c.tj * 0.022, 11); if (f > 0.64){ var i = Math.floor(c.ti / 12), j = Math.floor(c.tj / 12), m = vn(c.ti * 0.07, c.tj * 0.07, 12);
+    if (c.ti % 12 === 0 || c.tj % 12 === 0) return m > 0.5 ? '#46682e' : '#7a7254'; return m > 0.66 ? '#5a7a3a' : vn(i * 0.7, j * 0.7, 13) > 0.5 ? '#9a9068' : '#8e8462'; }
+  return GPAT.tmpgrass(c); };
+GPAT.tmpgorge = function(c){ var r = vn(c.ti * 0.03, c.tj * 0.03, 21); if (r > 0.62){ var a = vn(c.ti * 0.1, c.tj * 0.1, 22); return a > 0.66 ? '#b4a484' : a < 0.35 ? '#968868' : '#a8987a'; } return GPAT.tmpgrass(c); };
+GPAT.tmpplaza = function(c){ var row = Math.floor(c.tj / 16), off = row % 2 ? 8 : 0, i = Math.floor((c.ti + off) / 16);
+  if (c.tj % 16 === 0 || (c.ti + off) % 16 === 0) return vn(c.ti * 0.06, c.tj * 0.06, 31) > 0.68 ? '#5a7a3a' : '#8a8260'; var n = vn(i * 0.9, row * 0.9, 32); return n > 0.66 ? '#b9ae84' : n < 0.33 ? '#958b63' : '#a69c72'; };
+GPAT.tmpsanct = function(c){ var row = Math.floor(c.tj / 16), off = row % 2 ? 8 : 0, i = Math.floor((c.ti + off) / 16);
+  if (c.tj % 16 === 0 || (c.ti + off) % 16 === 0) return '#5e5644'; var n = vn(i * 0.9, row * 0.9, 41), s = vn(c.ti * 0.05, c.tj * 0.05, 42); return s > 0.74 ? '#9e9472' : n > 0.6 ? '#9a9070' : n < 0.35 ? '#7e7456' : '#8a8060'; };
+
+// dressed stone on a landmark: courses of blocks, each its own shade, moss in soft patches
+function tmpAsh(u, t, sd){ var row = Math.floor(t / 0.8), uu = u + (row % 2) * 0.8 + 40, col = Math.floor(uu / 1.6);
+  if (t - row * 0.8 < 0.12 || uu - col * 1.6 < 0.12) return '#6a6448'; if (vn(u * 0.5, t * 0.6, sd) > 0.72) return '#56803e'; return vn(col * 0.83, row * 0.71, sd + 3) > 0.5 ? '#a69c72' : '#978d64'; }
+// a jungle tree with vines down from its crown, and a stone pillar for the sanctum's hall
+TREEH.tmpvine = [12, 5, 4.2]; TREEH.tmppillar = [9, 3, 1.4];
+BUILD.tmpvine = function(B, t, i){ BUILD.broad(B, t, i); var x = t.x, y = t.y, zb = B.gz(x, y), H = t.h, R = t.cr, cz = zb + H * 0.64;
+  B.vox(x - R * 1.4, y - R * 1.2, zb, x + R * 1.4, y + R * 1.2, cz, function(set){ for (var v = 0; v < 5; v++){ var a = hash(i, v, 41) * 6.28, r = R * (0.8 + hash(v, i, 42) * 0.35), vx = x + Math.cos(a) * r, vy = y + Math.abs(Math.sin(a)) * r * 0.6, len = 2.5 + hash(i, v, 43) * 3.5;
+    B.tube(set, vx, vy, cz - 0.4, vx + 0.2, vy, cz - 0.4 - len, 0.14, 0.1, v % 2 ? '#3f7a2e' : '#2f6a28'); } }, 0.25); };
+BUILD.tmppillar = function(B, t, i){ var H = t.h; box(B, t.x, t.y, 2.2, 2.2, H, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
+  if (tt < 0.6 || tt > H - 0.7) return Math.max(Math.abs(dx), Math.abs(dy)) < 1.05 ? (Math.abs(tt - H + 0.5) < 0.12 ? '#c9a227' : tt > H - 0.3 ? '#a69c72' : '#8a8060') : null; if (r > 0.75) return null;
+  if (Math.abs(tt - H * 0.6) < 0.18) return '#c9a227'; return (Math.floor(Math.atan2(dy, dx) * 2.6 + 9) % 2) ? '#9a9070' : '#8a8060'; }); };
+LOWR.tmpcoins = 0.8; LOWH.tmpcoins = 0.8;
+BUILD.tmpcoins = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y); B.solid(x - 0.8, y - 0.7, zb - 0.05, x + 0.8, y + 0.7, zb + 0.6, function(px, py, pz){ var d = Math.hypot((px - x) / 0.75, (py - y) / 0.6, (pz - zb) / 0.5);
+  return d < 1 ? (vn(px * 6, py * 6 + pz * 4, i) > 0.6 ? '#fff0a0' : '#e0a818') : null; }, 0.125); };
+
+// the camp: a ridge tent, its door to the camera
+BUILD.tmpTent = function(B, t, i){ var cv = i % 2 ? ['#d8c89a', '#c4b484'] : ['#c8b67e', '#b4a26c'];
+  box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = 2.4 * (1 - tt / 3.6); if (Math.abs(dx) < 0.1 && dy > 1.9 && dy < 2.5 && tt < 4) return '#5a3818';
+    if (tt > 3.6 || Math.abs(dy) > 2 || Math.abs(dx) > hw) return null; if (dy > 1.85 && Math.abs(dx) < (3.6 - tt) * 0.3 && tt < 2.7) return '#2a2016'; if (Math.abs(dx) < 0.1) return '#8a7a54'; return dx < 0 ? cv[0] : cv[1]; }); };
+// the camp's middle: the fire in its ring, crates and a barrel, a log to sit on
+BUILD.tmpCamp = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
+  if (tt < 0.3 && r > 0.75 && r < 1.05) return (Math.floor(Math.atan2(dy, dx) * 2.6) % 2) ? '#6e665e' : '#857c70'; if (tt < 0.25 && r < 0.75) return '#3a2412';
+  if (tt >= 0.2 && r < 0.6 * (1 - tt / 1.8)) return tt < 0.6 ? '#ffd23a' : tt < 1.1 ? '#ff8a1a' : '#e5483a';
+  var cx = dx + 1.7, cy = dy + 1.2; if (Math.abs(cx) < 0.6 && Math.abs(cy) < 0.6 && tt < 1.1) return Math.max(Math.abs(cx), Math.abs(cy)) > 0.5 || tt > 1 || Math.abs(cx - cy) < 0.08 ? '#6a4420' : '#a8783e';   // a crate
+  var bx = dx - 1.8, by = dy + 0.9; if (Math.hypot(bx, by) < 0.5 && tt < 1.2) return Math.abs(tt - 0.25) < 0.08 || Math.abs(tt - 0.95) < 0.08 ? '#3a3a40' : '#8f5a2c';   // a barrel
+  if (Math.abs(dy - 1.5) < 0.32 && Math.abs(dx) < 1.3 && Math.hypot(dy - 1.5, tt - 0.3) < 0.32) return Math.abs(dx) > 1.2 ? '#c8a070' : '#6e4a2a';   // a log
+  return null; }, 0.125); };
+// the temple's outer gate: two pillars, a lintel with a face cut in it, stone doors (one pushed open), vines down the front
+BUILD.tmpGate = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var ax = Math.abs(dx), ady = Math.abs(dy);
+  if (tt > 7 && tt < 9 && ax < 6.8 && ady < 1.2){ if (dy > 1 && ax < 1.6 && tt > 7.3 && tt < 8.7){ if (Math.hypot(ax - 0.7, tt - 8.05) < 0.22) return '#3fd0a0'; if (ax < 0.9 && Math.abs(tt - 7.55) < 0.08) return '#3a3424'; if (ax > 1.45 || tt > 8.55 || tt < 7.45) return '#7b7354'; return '#c2b78c'; }
+    if (tt > 8.7 && vn(dx * 0.8, 1, i) > 0.45) return '#4f7a3a'; return tmpAsh(dx, tt, i); }
+  if (ax > 3.6 && ax < 6 && ady < 1.1 && tt < 7) return tmpAsh(dx + (dx > 0 ? dy : -dy), tt, i + 1);
+  if (dy > 1.1 && dy < 1.35 && ax < 6.2 && tt > 4 && tt < 7){ var vl = 7 - (1 + vn(dx * 1.6, 3, i + 5) * 3.6); if (tt > vl && Math.abs(Math.sin(dx * 3.2)) < 0.45) return vn(dx * 2.5, tt, 8) > 0.5 ? '#3f8a3a' : '#2f6a28'; }
+  if (ady < 0.25 && ax < 3.6 && tt < 7){ if (dx > 0.4 && dx < 1.9) return null; var p2 = dx < 0.4 ? dx + 1.6 : dx - 2.75; if (Math.abs(Math.abs(p2) - 1.55) < 0.14 || tt > 6.75 || Math.abs(tt - 3.4) < 0.1) return '#6f6a4e'; return '#958b63'; }
+  if (dy < -0.1 && ady < 0.8 && ax < 3.6 && tt < 7) return '#14110a'; return null; }); };
+// a stone head of Idol Alley, sunk to the chin: jade eyes, a band of gold, moss on the crown
+BUILD.tmpHead = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var ax = Math.abs(dx), w = tt < 3.6 ? 1.9 : 1.9 - (tt - 3.6) * 0.8;
+  if (ax > w || Math.abs(dy) > 1.5 || tt > 4.6) return null; if (tt > 3.9) return vn(dx, dy, i) > 0.45 ? '#56803e' : '#a69c72'; if (tt > 3.6) return '#c9a227';
+  if (dy > 1.3){ if (Math.abs(tt - 2.8) < 0.28 && Math.abs(ax - 0.75) < 0.32) return tt > 2.8 ? '#7fe0c0' : '#2fb58f'; if (Math.abs(tt - 3.3) < 0.09 && ax < 1.5) return '#6f6a4e';
+    if (ax < 0.22 && tt > 1.9 && tt < 2.6) return '#b3a97e'; if (Math.abs(tt - 1.4) < 0.11 && ax < 0.8) return '#3a3424'; }
+  if (vn(dx * 0.8, tt * 0.8, i + 4) > 0.7) return '#56803e'; return Math.floor(tt / 0.9) % 2 ? '#a69c72' : '#978d64'; }); };
+// the landslide: a heap of scree and boulders come down out of the jungle
+BUILD.tmpScree = function(B, t, i){ var R0 = [[-2.4, -1, 1.6], [1.2, -1.6, 1.9], [3, 0.8, 1.1], [-0.4, 1.2, 1.2], [-3.4, 1.6, 0.9]];
+  box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hp = 2.4 * (1 - Math.hypot(dx / 5, dy / 3.5)) + (vn(dx * 0.9, dy * 0.9, i) - 0.5) * 0.5; if (tt < hp) return vn(dx * 1.6, dy * 1.6 + tt, i + 2) > 0.6 ? '#a29c86' : '#8a8470';
+    for (var k = 0; k < R0.length; k++){ var q = R0[k], d = Math.hypot(dx - q[0], dy - q[1], (tt - hp * 0.6 - q[2] * 0.6) * 1.2); if (d < q[2]) return vn(dx * 2, tt * 2, i + k) > 0.55 ? '#9a9480' : '#76705e'; } return null; }); };
+// the gorge: a cliff with the falls down one side into a pool, the temple's stairs cut up the other, jungle on top
+BUILD.tmpFalls = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){
+  if (dy > 0.8){ var pd = Math.hypot((dx + 2.2) / 2.8, (dy - 2.4) / 1.3); if (pd < 1 && tt < 0.3) return pd > 0.86 ? '#968868' : (pd < 0.4 ? '#ffffff' : '#2f8f9a'); if (dy > 1) return null; }
+  var top = t.h * (0.8 + (vn(dx * 0.4, 2, i) - 0.5) * 0.3), d = Math.hypot(dx / (t.w / 2), (dy + 1.2) / (t.d / 2 * 0.75)) + (vn(dx * 0.8, tt * 0.8, i + 3) - 0.5) * 0.18; if (d > 1 || tt > top) return null;
+  if (Math.abs(dx + 2.2) < 1 && d > 0.72) return vn(dx * 3, tt * 0.4, i + 5) > 0.5 ? '#ffffff' : '#bfe8f4';   // the falling water
+  if (Math.abs(dx - 2.4) < 1 && d > 0.72 && tt < top - 0.6) return (tt % 0.6) < 0.18 ? '#7b7354' : '#ddd2a6';   // the stairs
+  if (tt > top - 0.6) return '#4f7a3a'; return (Math.floor(tt * 0.9) % 3) === 0 ? '#968868' : '#a8987a'; }); };
+// the great temple: five tiers, the stair up the middle, the shrine on top with gold along its ridge
+BUILD.tmpPyramid = function(B, t, i){ var W = t.w, D = t.d, NT = 5, TH = 2, TS = (D / 2 - 1.6) / NT, top = NT * TH;
+  box(B, t.x, t.y, W, D, t.h, function(dx, dy, tt){ var ax = Math.abs(dx);
+    var sf = D / 2, sl = top / (sf - (D / 2 - NT * TS)), st = (sf - dy) * sl;
+    if (ax < 2 && dy < sf && tt < st && tt < top + 0.05 && dy > -D / 2 + 1){ if (ax > 1.55) return tt > st - 0.6 ? '#8f8766' : null; return (tt % 0.55) < 0.14 ? '#7b7354' : '#c2b78c'; }
+    var k = Math.floor(tt / TH); if (k < NT){ var hw = W / 2 - k * (W / 2 - 3) / NT, hd = D / 2 - k * TS; if (ax > hw || Math.abs(dy) > hd) return null; if (tt % TH > TH - 0.25) return '#c2b78c'; return tmpAsh(ax > hw - 0.4 ? dy : dx, tt, i); }
+    var u = tt - top; if (ax > 2.6 || Math.abs(dy) > 2 || u > 3.6) return null; if (dy > 1.6 && ax < 0.8 && u < 2.2) return '#120e08'; if (u > 3.1) return Math.abs(dy) < 0.4 ? '#c9a227' : '#a69c72'; if (u > 2.8) return '#7b7354';
+    return tmpAsh(dx, u, i + 2); }); };
+// a guardian on his plinth: a robed figure, jade eyes, a tall headdress banded in gold and jade
+BUILD.tmpGuard = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var ax = Math.abs(dx);
+  if (tt < 1.2) return Math.max(ax, Math.abs(dy)) < 1.4 ? (tt > 1 ? '#c2b78c' : '#8f8766') : null; if (Math.abs(dy) > 0.8) return null; var u = tt - 1.2;
+  if (u < 3.6){ if (ax > 0.95 - u * 0.06) return null; if (Math.abs(u - 2.5) < 0.18) return '#c9a227'; return Math.floor(u * 1.6) % 2 ? '#a69c72' : '#978d64'; }
+  if (u < 4.8){ if (ax > 0.65) return null; if (dy > 0.6 && Math.abs(u - 4.2) < 0.13 && Math.abs(ax - 0.28) < 0.12) return '#3fd0a0'; return '#b3a97e'; }
+  if (ax > 0.9 - (u - 4.8) * 0.4 || u > 6.4) return null; return Math.floor(u * 3) % 2 ? '#c9a227' : '#2fb58f'; }); };
+// a brazier: a stone pedestal and bowl, and the fire in it
+BUILD.tmpBrazier = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
+  if (tt < 0.3) return r < 0.85 ? '#8a8060' : null; if (tt < 1.9) return r < 0.4 ? (Math.floor(tt * 3) % 2 ? '#a69c72' : '#978d64') : null;
+  if (tt < 2.5) return r < 0.4 + (tt - 1.9) * 1.1 ? (r > 0.25 + (tt - 1.9) * 1.1 || tt < 2.0 ? (Math.abs(tt - 2.3) < 0.07 ? '#c9a227' : '#a69c72') : '#3a2412') : null;
+  if (r < 0.65 * (1 - (tt - 2.5) / 1.3)) return tt < 2.8 ? '#ffd23a' : tt < 3.2 ? '#ff8a1a' : '#e5483a'; return null; }, 0.125); };
+// the stone serpent: an S along the ground, its head reared up, jade eyes
+BUILD.tmpSerpent = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var cy = Math.sin(dx * 0.75) * 1.1, r = 0.5 - Math.max(0, -dx - 2.6) * 0.2;
+  if (dx < 3.4 && dx > -4.4 && Math.hypot(dy - cy, tt - r) < r) return (Math.floor((dx + 6) * 2.2) % 2) ? '#4f8a5a' : '#a69c72';
+  var hx = dx - 3.8, ht = tt - 1.7, hy = dy - Math.sin(3.8 * 0.75) * 1.1; if (Math.hypot(hx * 0.9, hy, ht) < 0.7 || (hx < 0.1 && hx > -0.6 && Math.abs(hy) < 0.45 && tt < 1.7)) return hy > 0.3 && Math.abs(ht - 0.15) < 0.15 && Math.abs(hx) < 0.35 ? '#3fd0a0' : '#8a9a6a';
+  return null; }, 0.125); };
+// the sanctum's heart: three gold edged steps, and the idol sitting on top in gold, jade in its eyes
+BUILD.tmpIdol = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var ax = Math.abs(dx), st = Math.floor(tt / 0.5);
+  if (st < 3){ if (ax > 3.8 - st * 0.6 || Math.abs(dy) > 2.8 - st * 0.5) return null; return (tt % 0.5) > 0.4 ? '#c9a227' : '#5e5644'; }
+  var u = tt - 1.5; var body = Math.hypot(dx / 1.5, dy / 1.1, (u - 1.2) / 1.4), head = Math.hypot(dx / 0.8, dy / 0.75, (u - 3.3) / 0.8);
+  if (head < 1){ if (dy > 0.5 && Math.abs(u - 3.4) < 0.14 && Math.abs(ax - 0.3) < 0.13) return '#3fd0a0'; return u > 3.7 ? '#ffe680' : '#e8b923'; }
+  if (u > 3.9 && u < 5.6 && ax < 1 - (u - 3.9) * 0.55 && Math.abs(dy) < 0.5) return Math.floor(u * 4) % 2 ? '#ffd23a' : '#c9a227';
+  if (body < 1) return Math.abs(u - 1.25) < 0.1 ? '#c9a227' : (dx < -0.3 ? '#d8a820' : '#f0c43a'); return null; }, 0.125); };
+// gold heaped on the floor, a chest open on top
+BUILD.tmpGold = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var d = Math.hypot(dx / 2.8, dy / 2.2, tt / 1.8);
+  var cx = dx - 0.6, cy = dy - 0.4, cz = tt - 1.2; if (Math.abs(cx) < 0.9 && Math.abs(cy) < 0.6 && cz > 0 && cz < 1.2){ if (cz > 0.95) return '#ffd23a'; return Math.abs(cz - 0.6) < 0.07 || Math.abs(Math.abs(cx) - 0.55) < 0.07 ? '#c9a227' : '#7a4a24'; }
+  if (d > 1) return null; return vn(dx * 3, dy * 3 + tt * 2, i) > 0.62 ? '#fff0a0' : vn(dx * 1.5, dy * 1.5, i + 1) > 0.5 ? '#ffd23a' : '#e0a818'; }, 0.125); };
+LMSIZE.tmpTent = [6, 5, 4.2]; LMSIZE.tmpCamp = [6, 5, 2]; LMSIZE.tmpGate = [14, 3, 9.2]; LMSIZE.tmpHead = [4.4, 3.4, 4.8]; LMSIZE.tmpScree = [10, 7, 4.5]; LMSIZE.tmpFalls = [12, 8, 11];
+LMSIZE.tmpPyramid = [18, 12, 14]; LMSIZE.tmpGuard = [3, 3, 8]; LMSIZE.tmpBrazier = [2, 2, 3.8]; LMSIZE.tmpSerpent = [10, 4, 2.6]; LMSIZE.tmpIdol = [8, 6, 7.2]; LMSIZE.tmpGold = [6, 5, 2.6];
+/* ---- Canyon Mine's stops on the walk, the same places its holes stand in (land.js): the desert trail with its buttes and
+   trestle, the mine's mouth and headframe, the camp with its stamp mill, tents and water tower, the river gorge, and the
+   ghost town by the gold vein. The world's own ground is smooth patches now (a hashed speckle reads as grit at this scale). */
+function cnyPatch(c, sd, k){ var a = vn(c.ti * 0.018, c.tj * 0.018, sd), b = vn(c.ti * 0.05, c.tj * 0.05, sd + 1); return a > 0.7 ? k[3] : a < 0.28 ? k[2] : b > 0.64 ? k[1] : k[0]; }
+GPAT.cnysand = function(c){ return cnyPatch(c, 31, ['#c8865a', '#d49668', '#b8784e', '#c69866']); };
+GPAT.cnytail = function(c){ return cnyPatch(c, 32, ['#a8704a', '#b47e56', '#94603e', '#9a9488']); };
+GPAT.cnycamp = function(c){ return cnyPatch(c, 33, ['#c49a6a', '#d0a87a', '#b08a5c', '#a88a62']); };
+GPAT.cnybank = function(c){ return cnyPatch(c, 34, ['#c8885a', '#d49868', '#b87a4e', '#a89a5a']); };
+GPAT.cnydust = function(c){ return cnyPatch(c, 35, ['#b49a78', '#c2aa88', '#a08868', '#a89070']); };
+KIT.canyon.gpat = 'cnysand';
+KIT['canyon~trail'] = kitFrom(KIT.canyon, { lm:['cnyButte', 'cnyTrestle', 'mesa', 'cnyButte', 'cnyTrestle'], nlm:3, dens:0.6 });
+KIT['canyon~mine'] = kitFrom(KIT.canyon, { g:['#a8704a', '#b47e56', '#94603e', 0.2], gpat:'cnytail', tree:['cactus', 'dead', 'cactus', 'cactus'], bark:'#5a4030', low:['rock', 'rockdark', 'rock', 'bushdry'],
+  lm:['cnyPortal', 'cnyHead', 'cart', 'cnyTailing', 'lamps'], nlm:4, dens:0.35, wall:['#7a5040', '#4e3228'] });
+KIT['canyon~camp'] = kitFrom(KIT.canyon, { g:['#c49a6a', '#d0a87a', '#b08a5c', 0.2], gpat:'cnycamp', tree:['cactus', 'cactus', 'broad'], leaves:['#4a6a4a', '#3a5a40', '#5e7e52'], bark:'#5a4030',
+  low:['rock', 'bushdry', 'rock'], lm:['cnyMill', 'cnyTents', 'tower', 'cnyMill', 'cnyTents', 'lamps'], nlm:5, dens:0.5 });
+KIT['canyon~gorge'] = kitFrom(KIT.canyon, { g:['#c8885a', '#d49868', '#b87a4e', 0.2], gpat:'cnybank', tree:['broad', 'cactus', 'broad'], leaves:['#8aa848', '#a4bc58', '#6e9038'], bark:'#6a5440',
+  low:['bush', 'rock', 'bushdry'], haz:'water', hazC:['#3f8f8a', '#7ac4b4'], waterC:['#3f8f8a', '#7ac4b4'], lm:['cnyButte', 'mesa', 'cnyButte', 'cart'], nlm:3, dens:0.65 });
+KIT['canyon~lode'] = kitFrom(KIT.canyon, { g:['#b49a78', '#c2aa88', '#a08868', 0.2], gpat:'cnydust', p:['#9a8466', '#a89272', '#8a765a'], tree:['dead', 'cactus', 'dead', 'cactus'], bark:'#3a302c',
+  low:['bushdry', 'rock', 'rockdark'], lm:['cnyFront', 'cnyVein', 'cnyFront', 'cnyFront', 'cart'], nlm:5, dens:0.4, wall:['#5a4a42', '#2e2420'] });
+LIFE_AS['canyon~mine'] = { fly:['bat', 3], mote:['dust', 16] };
+LIFE_AS['canyon~camp'] = { fly:['crow', 3], mote:['dust', 16] };
+LIFE_AS['canyon~gorge'] = { fly:['song', 4], mote:[['butter', 8], ['dust', 8]] };
+LIFE_AS['canyon~lode'] = { fly:['vulture', 3], mote:['dust', 30], tumble:4 };
+
+var CNY_STRATA = ['#b4643c', '#c47a4a', '#9a4e30', '#d08e5a', '#a85a38'];
+function cnyStrata(tt, dx, i, cols){ var w = tt * 0.9 + (vn(dx * 0.15, tt * 0.3, i) - 0.5) * 1.1; return (cols || CNY_STRATA)[((Math.floor(w) % 5) + 5) % 5]; }
+// a butte: a red column banded with strata, its cap flat and scrubby, a skirt of scree at its foot
+BUILD.cnyButte = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var u = Math.hypot(dx / (t.w / 2), dy / (t.d / 2)) + (vn(dx * 0.5, dy * 0.5 + tt * 0.2, i) - 0.5) * 0.16, top = t.h * (0.92 + vn(dx * 0.3, dy * 0.3, i + 2) * 0.08);
+  if (tt > top) return null; var r = tt < t.h * 0.18 ? 1 - tt / (t.h * 0.18) * 0.38 : 0.62; if (u > r) return null;
+  if (tt > top - 0.4) return vn(dx * 0.6, dy * 0.6, i + 3) > 0.6 ? '#a89a5a' : '#c89a62'; return cnyStrata(tt, dx, i); }); };
+// a length of trestle carrying the line: timber bents braced crosswise, sleepers and two rails on top
+BUILD.cnyTrestle = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var H = t.h - 0.6, b = (((dx + t.w / 2) / 1.6) % 1 + 1) % 1;
+  if (tt > H && tt < H + 0.25 && Math.abs(dy) < 1.1) return (((dx * 1.4) % 1) + 1) % 1 < 0.45 ? '#6a4628' : Math.abs(dy) < 0.4 ? '#5a3c22' : null;
+  if (tt >= H + 0.25 && tt < H + 0.45 && Math.abs(Math.abs(dy) - 0.7) < 0.1) return '#a4a4ac';
+  if (tt <= H && (b < 0.1 || b > 0.94)){ if (Math.abs(Math.abs(dy) - 0.9 + (H - tt) * 0.06) < 0.14) return '#7a5230'; if (Math.abs(Math.abs(dy) - Math.abs(((tt / 1.4) % 1) - 0.5) * 1.8) < 0.12 && Math.abs(dy) < 0.9) return '#6a4426'; }
+  if (tt <= H && Math.abs(Math.abs(dy) - 0.85) < 0.1 && Math.abs(tt - H * 0.5) < 0.1) return '#6a4426'; return null; }); };
+// the mine's mouth: a knob of rock, the timber portal in its face, the dark way in, the rails running out
+BUILD.cnyPortal = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var fy = t.d / 2 - 1.2;
+  if (dy > fy){ if (dy < fy + 0.5 && tt < 4.2){ var ax = Math.abs(dx); if (ax < 1.4 && tt < 3.4) return dy < fy + 0.2 ? '#140e0a' : null; if (ax < 2 && tt >= 3.4) return Math.abs(tt - 3.8) < 0.06 ? '#5a3c22' : '#8a5a30'; if (ax < 2) return (Math.floor(tt * 2) % 2) ? '#7a4a24' : '#6e4220'; }
+    if (tt < 0.15 && dy >= fy + 0.5){ var ax2 = Math.abs(dx); if (Math.abs(ax2 - 0.7) < 0.1) return '#a4a4ac'; if (ax2 < 1 && (((dy * 1.4) % 1) + 1) % 1 < 0.4) return '#6a4628'; } return null; }
+  var d = Math.hypot(dx / (t.w / 2), (dy + 0.6) / (t.d / 2 - 0.6), tt / t.h) + (vn(dx * 0.6, tt * 0.6, i) - 0.5) * 0.15; if (d > 1) return null; if (tt > t.h * 0.86) return '#9a8a5a'; return cnyStrata(tt, dx, i, ['#7a5040', '#8a5e48', '#6a4436', '#9a6e52', '#5e3c30']); }); };
+// a headframe over the shaft: four timber legs leaning in, braced, and the sheave wheel on top
+BUILD.cnyHead = function(B, t){ var x = t.x, y = t.y, zb = B.gz(x, y), H = t.h - 2;
+  B.vox(x - t.w / 2, y - t.d / 2, zb - 0.1, x + t.w / 2, y + t.d / 2, zb + t.h, function(set){
+    for (var a = 0; a < 4; a++){ var lx = x + (a & 1 ? 1 : -1) * 2, ly = y + (a & 2 ? 1 : -1) * 1.8; B.tube(set, lx, ly, zb, x + (lx - x) * 0.3, y + (ly - y) * 0.3, zb + H, 0.24, 0.2, '#6a4426'); }
+    for (var h = 2.5; h < H; h += 2.8){ var f = 1 - h / H * 0.7; B.tube(set, x - 2 * f, y + 1.8 * f, zb + h, x + 2 * f, y + 1.8 * f, zb + h, 0.14, 0.14, '#7a5230'); B.tube(set, x - 2 * f, y - 1.8 * f, zb + h, x + 2 * f, y - 1.8 * f, zb + h, 0.14, 0.14, '#7a5230'); }
+    for (var an = 0; an < 6.28; an += 0.05){ set(x + Math.cos(an) * 1.5, y, zb + H + 1.2 + Math.sin(an) * 1.5, '#3a3a40'); set(x + Math.cos(an) * 1.38, y, zb + H + 1.2 + Math.sin(an) * 1.38, '#4a4a52'); }
+    for (var sp = 0; sp < 3; sp++){ var sa = sp * 1.047; B.tube(set, x - Math.cos(sa) * 1.4, y, zb + H + 1.2 - Math.sin(sa) * 1.4, x + Math.cos(sa) * 1.4, y, zb + H + 1.2 + Math.sin(sa) * 1.4, 0.08, 0.08, '#4a4a52'); }
+    B.tube(set, x, y, zb + H + 1.2, x, y, zb + 0.5, 0.06, 0.06, '#2a2a2e'); B.blob(set, x, y, zb + 0.2, 1.4, 1.2, 0.3, '#3a2a1c'); }, 0.125); };
+// a heap of grey tailings tipped off the line, a cart left at the top of it
+BUILD.cnyTailing = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var d = Math.hypot(dx / (t.w / 2), dy / (t.d / 2)), top = t.h * (1 - d * d) * (0.9 + vn(dx, dy, i) * 0.2);
+  if (tt > top) return null; return vn(dx * 0.8, tt * 1.4, i + 1) > 0.62 ? '#b0a27a' : tt < 0.3 ? '#86807a' : '#9a9488'; }); };
+// the stamp mill: a tall plank mill stepped down the slope, a tin roof gone to rust in places, its stack, the stamps showing in the open bay
+BUILD.cnyMill = function(B, t, i){ var wall = function(dx, dy, tt){ return (Math.floor((dx + 20) * 1.3) % 2) ? '#8a6440' : '#7a5636'; }, roof = function(dx, dy, tt){ return (Math.floor((dx + 20) * 2) % 2) ? '#8a8a90' : (vn(dx * 0.6, tt * 0.6, i) > 0.6 ? '#a8603a' : '#7a7a82'); };
+  gable(B, t.x, t.y - t.d * 0.2, t.w - 2, t.d * 0.5, 6.4, 2.6, wall, roof, '#2a1a10');
+  gable(B, t.x, t.y + t.d * 0.26, t.w - 1, t.d * 0.4, 3.6, 1.6, function(dx, dy, tt){ if (dy > t.d * 0.2 - 0.4 && Math.abs(dx) < 2.6 && tt > 0.6 && tt < 3.2) return (((dx + 20) * 1.6) | 0) % 2 ? '#9a9aa2' : '#1a120c'; return wall(dx, dy, tt); }, roof, '#2a1a10');
+  box(B, t.x + t.w * 0.28, t.y - t.d * 0.3, 1, 1, t.h, function(dx, dy, tt){ return Math.hypot(dx, dy) < 0.45 ? (tt > t.h - 0.6 ? '#2a2a2e' : '#5a5a62') : null; }, 0.125); };
+// the miners' tents round a fire: two canvas A tents, their flaps open, and the fire in its ring of stones
+BUILD.cnyTents = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ for (var k = -1; k <= 1; k += 2){ var cx = dx - k * 2.4, cy = dy + 0.4 * k, w = 1.7, d = 2.2, h = 3.2;
+    if (Math.abs(cy) < d && Math.abs(cx) < w){ var roof = h * (1 - Math.abs(cx) / w); if (tt < roof){ if (cy > d - 0.2 && Math.abs(cx) < (roof - tt) * 0.3 + 0.05 && tt < h * 0.8) return '#3a2a1c'; return Math.abs(cx) < 0.12 ? '#cfc2a0' : k > 0 ? '#efe6cf' : '#e6dcc0'; } } }
+  var fx = dx, fy = dy - 1.6, r = Math.hypot(fx, fy); if (tt < 0.4 && r > 0.7 && r < 1) return '#7a7068'; if (tt < 0.25 && r < 0.7) return '#3a2412'; if (tt >= 0.2 && r < 0.6 * (1 - tt / 1.6)) return tt < 0.6 ? '#ffd23a' : tt < 1 ? '#ff8a1a' : '#e5483a';
+  return null; }, 0.125); };
+// a false front on the ghost town's street: a plank house grey with age, its tall square face, the sign flaking, a sagging porch roof, no glass left
+BUILD.cnyFront = function(B, t, i){ var w = t.w - 1, d = t.d - 2.4, wh = 5.4, roofC = function(dx, dy, tt){ return (Math.floor(tt * 2.4) % 2) ? '#5a524a' : '#6a6056'; };
+  gable(B, t.x, t.y - 0.8, w, d, wh, 1.8, function(dx, dy, tt){ return (Math.floor((dx + 20) * 1.4) % 2) ? '#8a8276' : '#7a7266'; }, roofC, '#1e1814');
+  var fy = -0.8 + d / 2 + 0.25, top = wh + 2.6 + (i % 2) * 0.6;
+  box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var u = dy - fy;
+    if (u > -0.2 && u < 0.2){ var tp = top - (Math.abs(dx) > w * 0.3 ? 0.7 : 0); if (Math.abs(dx) > w / 2 || tt > tp) return null;
+      if (tt > wh + 0.5 && tt < wh + 1.7 && Math.abs(dx) < w * 0.38) return Math.abs(tt - wh - 1.1) < 0.12 && ((((dx + 20) * 2) | 0) % 3) ? '#5a3c2a' : vn(dx * 0.8, tt * 0.8, i + 4) > 0.55 ? '#c49a6a' : '#d8b88a';
+      if (tt < 3.6 && Math.abs(dx) < 0.9) return '#1e1814'; if (tt > 1.6 && tt < 3.6 && Math.abs(Math.abs(dx) - w * 0.32) < 0.65) return vn(dx * 2, tt * 2, i) > 0.6 ? '#3a4a52' : '#1a1612';
+      return (Math.floor((tt + 20) * 1.6) % 2) ? '#aa9e8c' : '#988c7a'; }
+    if (u >= 0.2 && u < 1.6){ if (tt > 3.9 && tt < 4.2 - u * 0.15 && Math.abs(dx) < w / 2) return (Math.floor((dx + 20) * 1.6) % 2) ? '#6a5e50' : '#5a5046';
+      if (Math.abs(Math.abs(dx) - w / 2 + 0.3) < 0.15 && Math.abs(u - 1.4) < 0.15 && tt < 4) return '#5a5046'; if (tt < 0.25) return '#6a5e50'; } return null; }); };
+// the gold vein: a dark knob of rock threaded with gold, and the riveted blast door in its face
+BUILD.cnyVein = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var fy = t.d / 2 - 1.4;
+  if (dy > fy){ var r = Math.hypot(dx, tt - 2.2); if (dy < fy + 0.6 && r < 2.2){ if (r > 1.85) return (Math.floor(Math.atan2(tt - 2.2, dx) * 3 + 9) % 2) ? '#8a8680' : '#9a968e'; if (dy > fy + 0.4) return r < 0.6 && (Math.abs(r - 0.52) < 0.08 || Math.abs(dx) < 0.07 || Math.abs(tt - 2.2) < 0.07) ? '#c9a227' : null;
+      if (Math.abs(r - 1.6) < 0.1 && Math.floor(Math.atan2(tt - 2.2, dx) * 6 + 20) % 2 === 0) return '#3a3a40'; return Math.abs(dx) < 0.06 ? '#3a3a40' : '#6a6e76'; } return null; }
+  var d = Math.hypot(dx / (t.w / 2), (dy + 0.7) / (t.d / 2 - 0.7), tt / t.h) + (vn(dx * 0.6, tt * 0.6, i) - 0.5) * 0.15; if (d > 1) return null;
+  var v = vn(dx * 0.35 + tt * 0.2, tt * 0.45 - dx * 0.1, i + 8); if (Math.abs(v - 0.5) < 0.04 || Math.abs(v - 0.3) < 0.025) return vn(dx * 2, tt * 2, 2) > 0.5 ? '#ffd23a' : '#d8a82a';
+  return cnyStrata(tt, dx, i, ['#5a4a42', '#4e403a', '#665448', '#46382e', '#54463c']); }); };
+LMSIZE.cnyButte = [9, 7, 12]; LMSIZE.cnyTrestle = [11, 3, 5]; LMSIZE.cnyPortal = [10, 8, 8]; LMSIZE.cnyHead = [5, 5, 14]; LMSIZE.cnyTailing = [7, 5, 3];
+LMSIZE.cnyMill = [10, 8, 12]; LMSIZE.cnyTents = [10, 6, 4]; LMSIZE.cnyFront = [8, 7, 9]; LMSIZE.cnyVein = [10, 8, 8];
+// ---- Volcano Island's walks go where its holes go (land.js): the black sand beach, the foothills and the tiki village, the lava
+// fields, the crater's rim, the summit. Each kit's ground, trees and landmarks are the ones round that stop's holes.
+KIT['volcano~beach'] = kitFrom(KIT.volcano, { g:['#2e2b2f', '#3c383c', '#262326', 0.2], sandC:['#2e2b2f', '#3c383c', '#262326', 0.2], gpat:'volsand', sea:true, seaC:['#1d5f86', '#3a8ab0'], tree:['palm', 'palm', 'palm', 'basalt'],
+  leaves:['#2f8139', '#3f9a46', '#246e30'], bark:'#6a5a3e', low:['rockdark', 'bush', 'rockdark', 'shell'], dens:0.75, nlm:3, lm:['basaltset', 'volCanoe', 'volTiki', 'basaltset'] });
+KIT['volcano~village'] = kitFrom(KIT.volcano, { g:['#3d5a2c', '#4f6a34', '#33482a', 0.2], gpat:'volmoss', p:['#4a3a38', '#5a4844', '#3a2c2a'], tree:['palm', 'broad', 'palm', 'broad'],
+  leaves:['#1f5a26', '#2b6e30', '#3f8a3a'], bark:'#4a3624', low:['fern', 'bush', 'rockdark', 'fern'], haz:'water', hazC:['#3a9aa0', '#8ad0d0'], waterC:['#3a9aa0', '#8ad0d0'],
+  dens:0.95, nlm:5, lm:['volHut', 'volTiki', 'volHut', 'volHut', 'volTiki'], wall:['#7a5a34', '#4a3420'] });
+KIT['volcano~fields'] = kitFrom(KIT.volcano, { g:['#2a2427', '#3a3236', '#1e1a1d', 0.2], gpat:'volrope', tree:['dead', 'basalt', 'dead'], low:['rockdark', 'ember', 'rockdark'],
+  dens:0.45, nlm:4, lm:['volCone', 'vent', 'basaltset', 'volCone'] });
+KIT['volcano~crater'] = kitFrom(KIT.volcano, { g:['#5e585c', '#6e686c', '#4e484c', 0.2], gpat:'volash', p:['#7a7276', '#8a8286', '#6a6266'], tree:['basalt', 'basalt', 'dead'],
+  low:['rockdark', 'volShard', 'rock'], dens:0.4, nlm:4, lm:['volShards', 'vent', 'volShards', 'basaltset'], wall:['#5e585c', '#2e282c'] });
+KIT['volcano~summit'] = kitFrom(KIT.volcano, { g:['#3a2a2a', '#4a2e28', '#2a2022', 0.2], gpat:'volcinder', tree:['basalt', 'basalt', 'dead'], low:['ember', 'volShard', 'rockdark'],
+  p:['#5a4440', '#6a524c', '#4a3834'], dens:0.24, nlm:3, lm:['volShrine', 'vent', 'volShards'] });
+LIFE_AS['volcano~beach'] = { fly:['gull', 4], mote:['ash', 10] };
+LIFE_AS['volcano~village'] = { fly:['parrot', 4], mote:[['butter', 6], ['ash', 8]] };
+LIFE_AS['volcano~fields'] = { fly:['vulture', 2], mote:[['ember', 34], ['ash', 22]], smoke:true };
+LIFE_AS['volcano~crater'] = { mote:[['ember', 26], ['ash', 36]], smoke:true };
+LIFE_AS['volcano~summit'] = { mote:[['ember', 50], ['ash', 20]], smoke:true };
+// the stops' ground on the walk, in smooth patches like the holes': black sand, green moss, ropey black rock with red cracks, ash with sulphur, cinder
+GPAT.volsand = function(c){ var a = vn(c.ti * 0.05, c.tj * 0.05, 61), b = vn(c.ti * 0.16, c.tj * 0.16, 62); return b > 0.76 ? '#3e4636' : a > 0.66 ? '#3c383c' : a < 0.3 ? '#252226' : '#2e2b2f'; };
+GPAT.volmoss = function(c){ var a = vn(c.ti * 0.05, c.tj * 0.05, 63), b = vn(c.ti * 0.15, c.tj * 0.15, 64); return a > 0.7 ? '#5a4a34' : a > 0.6 ? '#4f6a34' : b < 0.28 ? '#33482a' : b > 0.72 ? '#47663a' : '#3d5a2c'; };
+GPAT.volrope = function(c){ var a = vn(c.ti * 0.035, c.tj * 0.035, 65), cr = Math.abs(vn(c.ti * 0.025, c.tj * 0.025, 66) - 0.5), rope = Math.sin(c.ti * 0.25 + c.tj * 0.1 + vn(c.ti * 0.02, c.tj * 0.02, 67) * 14);
+  if (cr < 0.012 && vn(c.ti * 0.01, c.tj * 0.01, 68) > 0.45) return cr < 0.006 ? '#ffb43a' : '#e0480e'; return a > 0.68 ? (rope > 0.4 ? '#4a4044' : '#3e3539') : a < 0.3 ? '#1c181b' : rope > 0.6 ? '#332c30' : '#2a2427'; };
+GPAT.volash = function(c){ var a = vn(c.ti * 0.045, c.tj * 0.045, 69), s = vn(c.ti * 0.02, c.tj * 0.02, 70); return s > 0.8 ? (a > 0.55 ? '#c8b448' : '#a8983c') : a > 0.78 ? '#7a6e5a' : a > 0.6 ? '#6e686c' : a < 0.3 ? '#4e484c' : '#5e585c'; };
+GPAT.volcinder = function(c){ var a = vn(c.ti * 0.035, c.tj * 0.035, 71), b = vn(c.ti * 0.08, c.tj * 0.08, 72); return a > 0.72 ? '#5a3424' : a > 0.6 ? '#4a2e28' : b < 0.3 ? '#2a2022' : '#3a2a2a'; };
+// an obsidian shard to walk past (a low): a black glass blade with a violet sheen on its lit face
+BUILD.volShard = function(B, t, i){ var x = t.x, y = t.y, lean = (hash(i, 3, 7) - 0.5) * 0.5;
+  B.solid(x - 0.9, y - 0.7, B.gz(x, y) - 0.1, x + 0.9, y + 0.7, B.gz(x, y) + 1.5, function(px, py, pz){ var tt = pz - B.gz(x, y), dx = px - x - lean * tt, dy = py - y, w = 0.55 * (1 - tt / 1.45);
+    if (Math.abs(dx) + Math.abs(dy) * 1.2 > w) return null; return dx + dy * 0.4 > w * 0.3 ? '#6a5a8e' : dx < -w * 0.25 ? '#0c0a12' : '#221d2c'; }, 0.125); };
+LOWR.volShard = 0.7; LOWH.volShard = 1.5;
+// a tiki hut: a round wall of bamboo with its doorway to the front, the fire showing inside, a tall thatched cone with a top knot
+BUILD.volHut = function(B, t, i){ var r = 2.6, wh = 3.2, rh = 4.6, R2 = r + 0.8; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var d = Math.hypot(dx, dy), a = Math.atan2(dy, dx);
+  if (tt >= wh - 0.5){ var rr = (tt - wh + 0.5) / rh; if (d < R2 * (1 - rr)){ if (d < R2 * (1 - rr) - 0.6) return null; var ring = Math.floor(tt * 1.6 + vn(a * 4, 1, i) * 0.6);
+    return rr < 0.06 ? '#5a4020' : rr > 0.88 ? '#4a3018' : ring % 3 === 0 ? '#7a5a2c' : ring % 3 === 1 ? '#9a7638' : '#8a6830'; } return null; }
+  if (d > r || d < r - 0.35) return null; if (dy > 0 && Math.abs(dx) < 0.8 && tt < 2.6) return d < r - 0.2 ? '#ff9a2a' : null;   // the doorway, the fire's light on the far wall
+  return Math.floor((a + 4) * r * 2.4) % 2 ? '#b8945a' : '#9a7444'; }); };
+// a tiki between two torches: a carved post with a face, painted bands and a crown
+BUILD.volTiki = function(B, t, i){ var H = 6.4; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var ax = Math.abs(dx), u = tt / H;
+  if (Math.abs(ax - 1.9) < 0.12 && Math.abs(dy) < 0.12 && tt < 3.4) return (tt * 2 | 0) % 2 ? '#7a5a34' : '#5a3818';   // the torches
+  if (Math.abs(ax - 1.9) < 0.3 && Math.abs(dy) < 0.3 && tt >= 3.4 && tt < 3.7) return '#3d2614';
+  if (Math.hypot(ax - 1.9, dy) < 0.3 * (1 - (tt - 3.7) / 0.9) && tt >= 3.7) return tt > 4.1 ? '#ffd25a' : '#ff7a1a';
+  var hw = u > 0.86 ? 1.25 : 1.05; if (ax > hw || Math.abs(dy) > 0.85 || tt > H) return null;
+  if (dy > 0.6){ if (u > 0.62 && u < 0.75 && Math.abs(ax - 0.5) < 0.3) return (u > 0.66 && u < 0.71 && Math.abs(ax - 0.5) < 0.14) ? '#f4e8c8' : '#1a1210';
+    if (u > 0.49 && u < 0.62 && ax < 0.2) return '#5a3a22'; if (u > 0.36 && u < 0.47 && ax < 0.75) return Math.abs(u - 0.415) < 0.02 ? '#1a1210' : '#e8dcc0'; }
+  if (Math.abs(u - 0.84) < 0.025 || Math.abs(u - 0.28) < 0.025) return '#c8402e'; return (tt * 1.2 | 0) % 2 ? '#7a5030' : '#6a4428'; }, 0.125); };
+// an outrigger canoe drawn up on the sand
+BUILD.volCanoe = function(B, t, i){ var dir = i % 2 ? 1 : -1; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var u = dx * dir / 3.8, hw = 0.65 * Math.sqrt(Math.max(0, 1 - u * u));
+  if (Math.abs(dy - 0.4) < hw && tt < 1 + u * u * 0.6){ if (Math.abs(dy - 0.4) < hw - 0.18 && tt > 0.35) return null; return tt > 0.8 ? '#d8b47a' : Math.abs(tt - 0.45) < 0.08 ? '#c8402e' : '#8a5a30'; }
+  if (Math.abs(dy + 1.1) < 0.2 && Math.abs(dx) < 2.4 && tt < 0.45) return '#a07a48';
+  if (Math.abs(Math.abs(dx) - 1.3) < 0.12 && dy < 0.4 && dy > -1.1 && Math.abs(tt - 0.7) < 0.12) return '#6a4a2a'; return null; }, 0.125); };
+// a spatter cone: a heap of red black cinder with a glowing throat
+BUILD.volCone = function(B, t, i){ var R = t.w / 2, H = t.h; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var d = Math.hypot(dx, dy), rad = R * (1 - tt / H * 0.62) + (vn(Math.atan2(dy, dx) * 2.5, tt, i) - 0.5) * 0.4;
+  if (d > rad) return null; if (d < R * 0.26 && tt > H - 1.2) return tt > H - 0.8 ? null : '#ffb43a'; if (tt > H - 0.5) return '#8a3a1e'; return vn(dx, dy + tt, i + 3) > 0.55 ? '#4a2e26' : '#33282a'; }); };
+// obsidian standing in blades: a lit face with a violet sheen, the others near black
+BUILD.volShards = function(B, t, i){ var Q = []; for (var k = 0; k < 5; k++){ var a = hash(i, k, 61) * 6.28, r = k ? 0.8 + hash(k, i, 62) * 1 : 0; Q.push([Math.cos(a) * r, Math.sin(a) * r * 0.7, k ? 2.2 + hash(k, i, 63) * 2 : 5.4, k ? 0.6 : 0.95, (hash(i, k, 64) - 0.5) * 0.5]); }
+  box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ for (var k = 0; k < Q.length; k++){ var q = Q[k]; if (tt > q[2]) continue; var ex = dx - q[0] - q[4] * tt, ey = dy - q[1], w = q[3] * (1 - tt / q[2]);
+    if (Math.abs(ex) + Math.abs(ey) < w) return ex + ey * 0.4 > w * 0.3 ? '#6a5a8e' : ex < -w * 0.25 ? '#0c0a12' : '#221d2c'; } return null; }, 0.125); };
+// the fire shrine at the summit: a stone platform, a stone tiki at the back, a brazier burning at each front corner
+BUILD.volShrine = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var ax = Math.abs(dx);
+  if (tt < 0.9){ if (ax > 4.2 || Math.abs(dy) > 2.8 || (dy > 1.8 && tt > 0.45)) return null; return (Math.abs(((dx + 20) % 1.6) - 0.8) > 0.74 || Math.abs(tt - 0.45) < 0.06) ? '#2a2427' : '#4a4246'; }
+  var bx = ax - 3.2, by = dy - 1.2; if (Math.hypot(bx, by) < 0.3 && tt < 3.4) return '#3a3337';
+  if (Math.hypot(bx, by) < 0.75 && tt >= 3.4 && tt < 3.9) return '#1e1a1d'; if (Math.hypot(bx, by) < 0.6 * (1 - (tt - 3.9) / 1.4) && tt >= 3.9) return tt > 4.5 ? '#ffd25a' : '#ff7a1a';
+  var u = (tt - 0.9) / 5.6, hy = dy + 1.4; if (ax > (u > 0.86 ? 1.25 : 1.05) || Math.abs(hy) > 0.8 || u > 1) return null;
+  if (hy > 0.55){ if (u > 0.62 && u < 0.75 && Math.abs(ax - 0.5) < 0.3) return (u > 0.66 && u < 0.71 && Math.abs(ax - 0.5) < 0.14) ? '#ff7a1a' : '#141113';
+    if (u > 0.36 && u < 0.47 && ax < 0.75) return Math.abs(u - 0.415) < 0.02 ? '#141113' : '#8a8086'; }
+  return (tt * 1.4 | 0) % 2 ? '#5a5056' : '#4a4246'; }, 0.125); };
+LMSIZE.volHut = [8, 8, 8.4]; LMSIZE.volTiki = [5, 2, 6.5]; LMSIZE.volCanoe = [8, 3, 1.6]; LMSIZE.volCone = [6, 6, 4]; LMSIZE.volShards = [5, 4, 5.6]; LMSIZE.volShrine = [9, 6, 6.6];
+/* ---- Sky Islands' stops on the walk (land.js, STOPS.sky): the launch meadow, the cloud docks, the floating gardens, the old
+   sky ruins and the castle in the clouds. Each walk is on the same ground as its holes (grass, boards, garden, flagstones),
+   with the same things standing about at walk scale, and the clouds showing through where the island ends or has cracked. */
+// grass in smooth patches, the way the holes paint it: base, lighter, darker, and a fourth colour for the odd big patch
+function skyGrassAt(c, C, sd){ var a = vn(c.ti * 0.03, c.tj * 0.03, sd), b = vn(c.ti * 0.085, c.tj * 0.085, sd + 1); return a > 0.72 ? C[3] : a < 0.28 ? C[2] : b > 0.64 ? C[1] : b < 0.3 ? C[2] : C[0]; }
+GPAT.skymeadow = function(c){ return skyGrassAt(c, ['#66b952', '#74c45c', '#58a848', '#9ccc5a'], 61); };
+GPAT.skydocks = function(c){ return skyGrassAt(c, ['#62b450', '#70c05a', '#55a446', '#8cc45a'], 63); };
+GPAT.skycastle = function(c){ return skyGrassAt(c, ['#5fae4c', '#6cba56', '#529f44', '#86c25e'], 65); };
+// the gardens: grass, and beds of pink, yellow and violet flowers in drifts through it
+GPAT.skygarden = function(c){ var f = vn(c.ti * 0.035, c.tj * 0.035, 67); if (f > 0.76){ var a = vn(c.ti * 0.012, c.tj * 0.012, 68);
+  return f < 0.785 ? '#4f9a42' : a > 0.5 ? '#f48aae' : '#ffd23f'; } return skyGrassAt(c, ['#5cb24c', '#6abe56', '#4fa042', '#7cc85e'], 66); };
+// the ruins: worn white flagstones two feet by one and a half, grass winning in patches
+GPAT.skyruins = function(c){ var g = vn(c.ti * 0.03, c.tj * 0.03, 71); if (g < 0.38) return skyGrassAt(c, ['#6ab454', '#78c05e', '#5aa44a', '#94c86a'], 72);
+  var row = Math.floor(c.tj / 12), off = row % 2 ? 8 : 0; if (c.tj % 12 === 0 || (c.ti + off) % 16 === 0) return g < 0.46 ? '#7ab060' : '#c2b8a0';
+  var a = vn(c.ti * 0.05, c.tj * 0.05, 73); return a > 0.65 ? '#ece6d6' : a < 0.35 ? '#d6ceb8' : '#e2dccb'; };
+
+var SKY_LEAF = ['#3f9a46', '#5bb352', '#2f8139'], SKY_BLOSSOM = ['#f4a7c0', '#f8c4d6', '#e88aa8'];
+KIT['sky~meadow'] = kitFrom(KIT.sky, { g:['#66b952', '#74c45c', '#58a848', 0.2], gpat:'skymeadow', p:['#d8c48e', '#e2d09c', '#c8b07a'], tree:['broad', 'broad', 'broad'], leaves:SKY_LEAF, bark:'#6a4a2a',
+  low:['bush', 'hay', 'bush', 'rock'], dens:0.2, sea:true, seaC:['#e2ecf7', '#ffffff'], nlm:4, lm:['skyBalloonPad', 'skyHaystacks', 'skyBalloonPad', 'skyWindsock'], wall:['#e8e2d0', '#a99c7c'] });
+KIT['sky~docks'] = kitFrom(KIT.sky, { g:['#62b450', '#70c05a', '#55a446', 0.2], gpat:'skydocks', p:['#a8763f', '#b4824a', '#7a5230'], plank:true, tree:['broad', 'broad', 'pine'], leaves:SKY_LEAF, bark:'#6a4a2a',
+  low:['bush', 'rock', 'bush', 'hay'], dens:0.16, sea:true, seaC:['#e2ecf7', '#ffffff'], nlm:5, lm:['skyMast', 'skyOffice', 'skyCargo', 'lamps', 'skyCargo'], wall:['#e8e2d0', '#3f7fb5'] });
+KIT['sky~gardens'] = kitFrom(KIT.sky, { g:['#5cb24c', '#6abe56', '#4fa042', 0.2], gpat:'skygarden', p:['#e2dac6', '#ece6d6', '#c2b8a0'], paved:true, tree:['broad', 'broad', 'puff'], leaves:SKY_BLOSSOM, bark:'#6a4a2a',
+  low:['bush', 'fern', 'bush'], haz:'water', hazC:['#3fa8c8', '#9fe0ee'], waterC:['#3fa8c8', '#9fe0ee'], dens:0.7, nlm:4, lm:['skyTerrace', 'skyIsleTree', 'kite', 'skyIsleTree'], wall:['#e2dac6', '#9a8468'] });
+KIT['sky~ruins'] = kitFrom(KIT.sky, { g:['#e2dccb', '#ece6d6', '#d6ceb8', 0.2], gpat:'skyruins', p:['#e8e2d2', '#f2eee2', '#c8bea6'], paved:true, tree:['broad', 'broad', 'puff'], leaves:['#5aa84c', '#7cc066', '#4a9440'], bark:'#6a4a2a',
+  low:['skyStone', 'bush', 'skyStone'], haz:'water', hazC:['#e8f0f9', '#ffffff'], waterC:['#dfe9f6', '#ffffff'], dens:0.3, nlm:4, lm:['skyGate', 'skyColumns', 'skyRainbow', 'skyColumns'], wall:['#e8e2d2', '#b8ae96'] });
+KIT['sky~castle'] = kitFrom(KIT.sky, { g:['#5fae4c', '#6cba56', '#529f44', 0.2], gpat:'skycastle', p:['#d0c8b4', '#e2dccb', '#b0a68e'], paved:true, tree:['pine', 'broad', 'pine'], leaves:SKY_LEAF, bark:'#6a4a2a',
+  low:['bush', 'skyStone', 'bush'], dens:0.22, sea:true, seaC:['#e2ecf7', '#ffffff'], nlm:3, lm:['skyCastle', 'skyMill', 'lamps'], wall:['#f4f0e4', '#3f7fd5'] });
+LIFE_AS['sky~meadow'] = { fly:['song', 4], balloons:4, mote:['butter', 8] };
+LIFE_AS['sky~docks'] = { fly:['gull', 5], balloons:2 };
+LIFE_AS['sky~gardens'] = { fly:['song', 3], mote:[['butter', 12], ['petal', 14]], balloons:1 };
+LIFE_AS['sky~ruins'] = { fly:['crow', 3], balloons:1 };
+LIFE_AS['sky~castle'] = { fly:['gull', 4], balloons:2, mote:['butter', 6] };
+
+LMSIZE.skyBalloonPad = [7, 7, 14]; LMSIZE.skyHaystacks = [8, 5, 4]; LMSIZE.skyWindsock = [4, 2, 7]; LMSIZE.skyMast = [16, 6, 14]; LMSIZE.skyOffice = [9, 6, 13]; LMSIZE.skyCargo = [6, 4, 3];
+LMSIZE.skyTerrace = [11, 8, 7]; LMSIZE.skyIsleTree = [7, 7, 15]; LMSIZE.skyGate = [9, 2.4, 9]; LMSIZE.skyColumns = [10, 3, 7.5]; LMSIZE.skyRainbow = [17, 3, 9]; LMSIZE.skyCastle = [18, 9, 20]; LMSIZE.skyMill = [11, 6, 17];
+LOWR.skyStone = 1; LOWH.skyStone = 1.2;
+
+// a balloon's envelope in twelve gores with a band round it, its basket and ropes, at walk scale: zb is the basket's floor
+var SKY_ENV = [['#ff5a3c', '#ffd23f', '#ffffff'], ['#3fa7e0', '#ffffff', '#ffd23f'], ['#a86ad8', '#ffffff', '#ff8ab0'], ['#7dd56f', '#ffd23f', '#ff5a3c']];
+function skyEnvelope(B, x, y, zb, s, cols){ var R0 = 2.6 * s, cz = zb + 6 * s, mz = zb + 3 * s;
+  B.solid(x - R0 - 0.2, y - R0 - 0.2, zb, x + R0 + 0.2, y + R0 + 0.2, cz + R0 + 0.2, function(px, py, pz){ var dx = px - x, dy = py - y, r = Math.hypot(dx, dy), t = pz - zb;
+    if (t < 1.2 * s) return Math.max(Math.abs(dx), Math.abs(dy)) < 0.8 * s ? (t > 1.05 * s ? '#5a3a1e' : (Math.floor(t / s * 5) % 2 ? '#b08a52' : '#9a7444')) : null;
+    if (pz < mz){ var k = (t - 1.2 * s) / (mz - zb - 1.2 * s), cr = 0.7 * s + k * 0.2 * s; if (k > 0.8 && r < 0.4 * s) return '#3a3a40'; return (Math.abs(Math.abs(dx) - cr) < 0.1 && Math.abs(Math.abs(dy) - cr) < 0.1) ? '#4a3a2a' : null; }
+    var rad = pz > cz ? Math.sqrt(Math.max(0, R0 * R0 - (pz - cz) * (pz - cz))) : R0 * (0.3 + 0.7 * Math.sin((pz - mz) / (cz - mz) * 1.5708)); if (r > rad) return null;
+    if (Math.abs(pz - cz + 0.6 * s) < 0.28 * s) return cols[2]; return Math.floor((Math.atan2(dy, dx) + 3.1416) / 6.2832 * 12) % 2 ? cols[0] : cols[1]; }, 0.2); }
+// a balloon standing ready on the meadow, tied down with sandbags at the corners of its basket
+BUILD.skyBalloonPad = function(B, t, i){ skyEnvelope(B, t.x, t.y, B.gz(t.x, t.y), 1, SKY_ENV[i % 4]);
+  box(B, t.x, t.y, t.w, t.d, 1, function(dx, dy, tt){ for (var k = 0; k < 4; k++){ var sx = (k & 1 ? 1 : -1) * 2.2, sy = (k & 2 ? 1 : -1) * 2.2; if (Math.hypot(dx - sx, dy - sy, (tt - 0.3) * 1.3) < 0.42) return '#c8a868'; } return null; }, 0.125); };
+// three haystacks and a round bale
+function skyStack(B, x, y, s){ box(B, x, y, 2.4 * s, 2.4 * s, 3.4 * s, function(dx, dy, tt){ var t = tt / s, r = Math.hypot(dx, dy) / s, w = 1.15 * Math.sqrt(Math.max(0, 1 - Math.pow(t / 3.2, 2.2)));
+  if (r > w) return null; if (t > 2.9) return '#c89a3a'; return Math.floor(t * 2.2 + vn(dx * 2, dy * 2, 5) * 0.8) % 2 ? '#e2bc5c' : '#d4aa48'; }, 0.125); }
+BUILD.skyHaystacks = function(B, t, i){ skyStack(B, t.x - 2.4, t.y - 0.8, 1); skyStack(B, t.x + 0.4, t.y - 1.2, 0.85); skyStack(B, t.x + 2.6, t.y + 0.4, 0.7);
+  box(B, t.x - 0.6, t.y + 1.4, 2.4, 1.6, 1.6, function(dx, dy, tt){ var r = Math.hypot(dy, tt - 0.75); if (r > 0.75 || Math.abs(dx) > 1.1) return null; if (Math.abs(dx) > 1) return Math.floor(r * 8) % 2 ? '#c89a3a' : '#e2bc5c'; return Math.abs(Math.abs(dx) - 0.45) < 0.08 ? '#8a5a2a' : '#dcb452'; }, 0.125); };
+// the launch flag: a pole and a striped windsock streaming east
+BUILD.skyWindsock = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ if (Math.hypot(dx + 1.4, dy) < 0.12 && tt < 6.6) return '#e8e2d0';
+  var u = dx + 1.3, rr = 0.42 - u * 0.1; if (u > 0 && u < 3 && Math.hypot(dy, tt - 6 + u * 0.15) < rr) return Math.floor(u * 1.6) % 2 ? '#ff5a3c' : '#ffffff'; return null; }, 0.125); };
+// the mooring mast with an airship tied up to it, nose in: a cream envelope with a red band, fins, the gondola with its windows lit
+BUILD.skyMast = function(B, t, i){ var mx = t.x + t.w / 2 - 1.4, dir = -1;
+  box(B, mx, t.y, 2.4, 2.4, t.h, function(dx, dy, tt){ var w = 1 - tt * 0.05; if (tt > 11.6) return Math.hypot(dx, dy) < 0.5 ? (tt > 12.6 ? '#d8402e' : '#3a3a40') : null;
+    if (Math.abs(Math.abs(dx) - w) < 0.14 && Math.abs(Math.abs(dy) - w) < 0.14) return '#4a4a52'; if ((Math.abs(Math.abs(dx) - w) < 0.1 || Math.abs(Math.abs(dy) - w) < 0.1) && Math.abs((tt % 2) - 1) < 0.1 && Math.max(Math.abs(dx), Math.abs(dy)) <= w + 0.14) return '#5a5a62'; return null; }, 0.125);
+  var X = mx - 6.6, Z = 10.2, a = 5.6, rb = 1.9;
+  box(B, X, t.y, 2 * a + 1.2, rb * 2 + 1.6, Z + rb + 0.6, function(dx, dy, tt){ var u = dx * -dir, dz = tt - Z; var e = Math.hypot(u / a, dy / rb, dz / rb);
+    if (e < 1){ if (Math.abs(u / a - 0.55) < 0.06 || Math.abs(u / a + 0.62) < 0.05) return '#d8402e'; return Math.floor((Math.atan2(dz, dy) + 3.1416) * 2.6) % 2 ? '#f2ead8' : '#e6dcc4'; }
+    if (u < -a * 0.62 && u > -a - 0.5){ var k = (-a * 0.62 - u) / (a * 0.38 + 0.5), fh = rb * (0.5 + k * 0.7); if ((Math.abs(dy) < 0.12 && Math.abs(dz) < fh) || (Math.abs(dz) < 0.12 && Math.abs(dy) < fh)) return Math.abs(dz) > fh - 0.4 || Math.abs(dy) > fh - 0.4 ? '#d8402e' : '#c9bfa6'; }
+    var gz = dz + rb + 1; if (Math.abs(u) < 1.8 && Math.abs(dy) < 0.6 && Math.abs(gz) < 0.5){ if (dy > 0.45 && Math.abs(gz) < 0.18 && ((u + 4) % 0.8) < 0.45) return '#ffe08a'; return gz > 0.35 ? '#5a3a1e' : '#8a5a34'; }
+    if (Math.abs(dy) < 0.1 && Math.abs(Math.abs(u) - 1) < 0.1 && gz >= 0.5 && gz < 1) return '#4a3a2a'; return null; }); };
+// the dock office: a white gabled shed with a blue roof and the weather vane on its ridge
+BUILD.skyOffice = function(B, t, i){ gable(B, t.x, t.y, t.w - 1.6, t.d - 1, 5, 3, function(dx, dy, tt){ return Math.floor((dx + 20) * 1.4) % 2 ? '#e8e2d0' : '#dcd4bc'; }, function(dx, dy, tt){ return (tt * 2.6 | 0) % 2 ? '#3f7fb5' : '#346c9c'; }, '#4a2e1c');
+  box(B, t.x, t.y, 4, 2, t.h, function(dx, dy, tt){ var z = tt - 8.2; if (z < 0) return null; if (Math.hypot(dx, dy) < 0.09 && z < 3.4) return '#2a2a30';
+    if (Math.abs(z - 2) < 0.08 && ((Math.abs(dy) < 0.08 && Math.abs(dx) < 1) || (Math.abs(dx) < 0.08 && Math.abs(dy) < 0.9))) return '#2a2a30';
+    if (Math.abs(dy) < 0.08 && Math.abs(z - 2.9) < 0.1 && Math.abs(dx) < 1.6) return '#e0b040'; if (Math.abs(dy) < 0.08 && dx > 1.1 && dx < 1.9 && Math.abs(z - 2.9) < (1.9 - dx) * 0.5) return '#e0b040';
+    if (Math.abs(dy) < 0.08 && dx < -1 && dx > -1.9 && z > 2.9 && z < 2.9 + (dx + 1.9) * 0.8) return '#e0b040'; return null; }, 0.125); };
+// cargo for the airships: hay bales and crates stacked by the boards
+BUILD.skyCargo = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){
+  if (dx < 0.4){ var cx = dx + 1.4, k = tt > 1.3 ? 1 : 0, ox = k ? 0.5 : 0; if (Math.abs(cx - ox) < 1.3 && Math.abs(dy) < 0.9 && tt < 1.3 + k * 1.2 && (!k || Math.abs(cx - ox) < 1)){ var r = Math.hypot(dy, (tt % 1.3) - 0.65); return Math.abs(Math.abs(cx - ox) - 0.5) < 0.07 ? '#8a5a2a' : '#dcb452'; } }
+  var qx = dx - 1.6; if (Math.abs(qx) < 0.9 && Math.abs(dy) < 0.9 && tt < 1.7){ var e = Math.max(Math.abs(qx), Math.abs(dy)) > 0.78 || tt > 1.55 || tt < 0.12; return e || Math.abs(qx - (tt - 0.85)) < 0.1 ? '#6a4420' : '#a8783e'; }
+  return null; }, 0.125); };
+// a raised garden terrace of pale rock with a pool on top, its water spilling down the front into a pool at its foot
+BUILD.skyTerrace = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var top = 4.4 + (vn(dx * 0.5, 3, i) - 0.5) * 0.8, rx = t.w / 2 - 0.4, ry = t.d / 2 - 1.8;
+  if (dy > ry - 0.2){ var pd = Math.hypot(dx / 2.6, (dy - ry - 1) / 1.1); if (pd < 1 && tt < 0.25) return pd > 0.85 ? '#cfc6b0' : (vn(dx * 3, dy * 3, i) > 0.62 ? '#9fe0ee' : '#3fa8c8'); if (dy > ry) return null; }
+  var d = Math.hypot(dx / rx, (dy + 0.6) / (ry + 0.6)) + (vn(dx * 0.8, tt * 0.8, i + 3) - 0.5) * 0.15; if (d > 1 || tt > top) return null;
+  if (Math.abs(dx) < 1 && d > 0.8) return vn(dx * 4, tt * 0.7, i + 5) > 0.55 ? '#ffffff' : '#bfe8f4';   // the water down the face
+  if (tt > top - 0.35) return Math.hypot(dx / 2.4, (dy + 0.8) / 1.4) < 1 ? '#3fa8c8' : (vn(dx * 0.6, dy * 0.6, i) > 0.62 ? '#f48aae' : '#5fae4e');
+  return Math.floor(tt * 1.3 + vn(dx, dy, i) * 0.6) % 2 ? '#c8b494' : '#b8a07e'; }); };
+// a little floating island hovering over the path's edge, a tree on it and a trickle of water off one side
+BUILD.skyIsleTree = function(B, t, i){ var zt = 5.4, r = 2.6, x = t.x, y = t.y;
+  box(B, x, y, t.w, t.d, t.h, function(dx, dy, tt){ var a = Math.atan2(dy, dx), rr = Math.hypot(dx, dy * 1.15) / (r * (0.88 + vn(a * 1.6 + 3, i, 7) * 0.24));
+    if (Math.abs(dx - 1.4) < 0.35 && dy > 1.2 && dy < 1.7 && tt < zt - 0.2 && tt > 0.4) return vn(dx * 6, tt * 0.8, i) > 0.5 ? '#ffffff' : '#bfe8f4';   // the trickle
+    if (rr > 1) return null; var dz = zt - tt, d = r * 1.6 * (1 - Math.pow(rr, 1.6)); if (dz < 0 || dz > d) return null; if (dz < 0.35) return '#5fae4e'; if (dz < 0.8) return '#6a4a2c'; return Math.floor(dz * 1.4) % 2 ? '#c8b494' : '#b8a07e'; });
+  var kx = kitOf(t.th); BUILD.broad({ vox:B.vox, tube:B.tube, blob:B.blob, solid:B.solid, gz:function(){ return B.gz(x, y) + zt; } }, { th:t.th, x:x - 0.3, y:y - 0.3, h:7, cr:2.6 }, i); };
+// the old gate: two fluted pillars and a lintel with a gold sun on it
+BUILD.skyGate = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ if (Math.abs(dy) > 1) return null;
+  if (tt > 7 && tt < 8.6 && Math.abs(dx) < 4.2){ if (dy > 0.6 && Math.hypot(dx, tt - 7.8) < 0.55) return '#ffd23f'; return tt > 8.3 ? '#cfc6b0' : '#e8e2d2'; } if (tt > 6.5 && tt <= 7 && Math.abs(dx) < 3.8) return '#ddd6c4';
+  if (Math.abs(Math.abs(dx) - 3) < 0.85 && tt <= 6.5){ if (tt < 0.6) return '#cfc6b0'; var r = Math.hypot(Math.abs(dx) - 3, dy); if (r > 0.75) return null; return Math.floor((Math.atan2(dy, Math.abs(dx) - 3) + 3.1416) * 2.2) % 2 ? '#f2eee2' : '#ddd6c4'; } return null; }); };
+// a row of marble columns, two standing, the rest broken off, and a drum fallen in the grass
+BUILD.skyColumns = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ for (var k = 0; k < 4; k++){ var cx = -3.6 + k * 2.4, H = k % 3 === 0 ? 7 : 2 + hash(i, k, 3) * 3, top = k % 3 === 0 ? H : H - 0.3 + vn(dx * 4, dy * 4, k) * 0.6;
+    if (Math.abs(dx - cx) < 1 && Math.abs(dy) < 1 && tt <= top){ if (tt < 0.5 || (k % 3 === 0 && tt > H - 0.5)) return Math.max(Math.abs(dx - cx), Math.abs(dy)) < 0.95 ? '#e8e2d2' : null; var r = Math.hypot(dx - cx, dy); if (r > 0.7) return null; return Math.floor((Math.atan2(dy, dx - cx) + 3.1416) * 2.2) % 2 ? '#f2eee2' : '#ddd6c4'; } }
+  if (Math.hypot(dy - 1.1, tt - 0.6) < 0.6 && Math.abs(dx - 1) < 1) return Math.abs(dx - 1) > 0.9 ? '#ddd6c4' : '#ece6d8'; return null; }); };
+var SKY_RAIN = ['#ff5a5a', '#ff9a3a', '#ffd23f', '#6ad26a', '#3fa7e0', '#7a6ad8'];
+// a rainbow standing out of a cloud at each end
+BUILD.skyRainbow = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var R0 = 7.6, d = Math.hypot(dx, tt + 0.4), k = (R0 - d) / 0.55;
+  if (Math.abs(dy) < 0.3 && k >= 0 && k < 6) return SKY_RAIN[k | 0];
+  for (var s = -1; s <= 1; s += 2){ var cx = s * 6.1; if (Math.hypot((dx - cx) / 2.4, dy / 1.4, (tt - 0.6) / 1.4) < 1 || Math.hypot((dx - cx - s * 1.2) / 1.4, dy / 1.2, (tt - 1.5) / 1.1) < 1) return vn(dx * 2, tt * 2, 4) > 0.6 ? '#eef4fb' : '#ffffff'; }
+  return null; }, 0.2); };
+// the castle front: a white curtain wall with its gate and battlements, a tower at each end and two behind, blue and red spires, lit windows
+function skyTower(B, x, y, r, H, roof){ box(B, x, y, 2 * r + 0.6, 2 * r + 0.6, H + r * 2.6 + 2, function(dx, dy, tt){ var rr = Math.hypot(dx, dy);
+  if (tt < H){ if (rr > r) return null; if (dy > r * 0.6 && Math.abs(dx) < 0.3 && Math.abs(((tt + 1) % 3) - 1.5) < 0.5 && tt > 2) return '#ffd77a'; return Math.floor(tt * 1.1) % 2 ? '#f4f0e4' : '#e8e2d2'; }
+  if (tt < H + 0.6) return rr < r + 0.3 ? '#ddd6c4' : null; var k = (tt - H - 0.6) / (r * 2.4); if (k < 1) return rr < (r + 0.3) * (1 - k) ? (Math.floor(Math.atan2(dy, dx) * 2.5 + 8) % 2 ? roof[0] : roof[1]) : null;
+  if (rr < 0.1 && tt < H + r * 2.4 + 1.8) return '#3a3a40'; if (Math.abs(dy) < 0.08 && dx > 0 && dx < 1.2 && tt > H + r * 2.4 + 1.1 && tt < H + r * 2.4 + 1.7 - dx * 0.4) return '#ff5a3c'; return null; }); }
+BUILD.skyCastle = function(B, t, i){ var q = t.w / 18, hw = t.w / 2 - 1.8 * q, fy = t.y + t.d / 2 - 1.2 * q, BL = ['#3f7fd5', '#346cb8'], RD = ['#d8402e', '#b8342a'];
+  skyTower(B, t.x, t.y - 1.4 * q, 2.4 * q, 9.5 * q, BL); skyTower(B, t.x - hw * 0.55, t.y - 0.8 * q, 1.4 * q, 8 * q, RD); skyTower(B, t.x + hw * 0.55, t.y - 0.8 * q, 1.4 * q, 8 * q, RD);
+  box(B, t.x, fy, 2 * hw, 1.4 * q, 7 * q, function(dx, dy, tt){ if (Math.abs(dy) > 0.6 * q) return null; dx /= q; tt /= q; if (tt > 5.6){ if (tt > 6.6 || Math.floor((dx + 40) * 0.8) % 2) return null; }
+    if (Math.abs(dx) < 1.5 && tt < 3.8 && (tt < 2.6 || Math.hypot(dx, tt - 2.6) < 1.5)) return dy > 0.4 * q ? '#6a4a2c' : null; if (dy > 0.4 * q && Math.abs(Math.abs(dx) - 4) < 0.35 && tt > 2.6 && tt < 4.2) return '#ffd77a';
+    var row = Math.floor(tt * 1.1), col = Math.floor(dx * 0.7 + (row % 2) * 0.5); return ((tt * 1.1) % 1) < 0.1 ? '#cfc6b0' : (hash(col, row, 7) < 0.3 ? '#e8e2d2' : '#f4f0e4'); });
+  skyTower(B, t.x - hw, fy, 1.8 * q, 7.4 * q, BL); skyTower(B, t.x + hw, fy, 1.8 * q, 7.4 * q, BL); };
+// the cloud mill: a white tower, a red cap, four sails facing the path
+BUILD.skyMill = function(B, t, i){ var q = t.h / 13; box(B, t.x, t.y, 3.4 * q, 3.4 * q, 9.4 * q, function(dx, dy, tt){ dx /= q; dy /= q; tt /= q; var r = Math.hypot(dx, dy), w = 1.6 - tt / 7.6 * 0.5;
+  if (tt < 7.6){ if (r > w) return null; if (dy > w * 0.7 && Math.abs(dx) < 0.45 && tt < 1.8) return '#4a2e1c'; if (dy > w * 0.6 && Math.abs(dx) < 0.3 && Math.abs(tt - 4.4) < 0.4) return '#ffd77a'; return Math.floor(tt * 1.2) % 2 ? '#f4f0e4' : '#e8e2d2'; }
+  return r < 1.3 * (1 - (tt - 7.6) / 1.8 * 0.8) ? '#8a3a2a' : null; });
+  var hz = 7.2, ang = 0.4 + hash(i, 9, 9); box(B, t.x, t.y + 1.6 * q, 9.6 * q, 1, 13 * q, function(dx, dy, tt){ dx /= q; tt /= q; var dz = tt - hz; if (Math.abs(dy) > 0.2) return null; if (Math.hypot(dx, dz) < 0.35) return '#5a3a1e';
+    for (var s = 0; s < 4; s++){ var a = ang + s * 1.5708, ux = Math.cos(a), uz = Math.sin(a), al = dx * ux + dz * uz, ac = -dx * uz + dz * ux;
+      if (al > 0.3 && al < 4.6){ if (Math.abs(ac) < 0.12) return '#6a4a2c'; if (ac > 0.12 && ac < 1){ return Math.abs(((al * 1.5) % 1) - 0.5) < 0.1 || ac > 0.9 ? '#8a6a44' : '#f4efe2'; } } } return null; }, 0.125); };
+// a worn block of white stone, half sunk in the grass
+BUILD.skyStone = function(B, t, i){ rockAt(B, t.x, t.y, 1, ['#e4dece', '#d0c8b4', '#ece6d8'], i); };
+/* ---- Dino Valley's stops on the walk, the same places its holes stand in (land.js): the fern meadow under the bone wall,
+   the swamp below the falls, the fossil cliffs and the dig, the rex's jungle, and the long neck valley under the volcano.
+   Each walk takes its stop's ground, trees, lows, water and landmarks, so the way in looks like the holes it leads to. */
+KIT['dino~meadow'] = kitFrom(KIT.dino, { g:['#6e9a3a', '#82ac46', '#5a8430', 0.2], gpat:'dinmeadow', p:['#b8976a', '#c8a77a', '#a8875a'], tree:['dinTreefern', 'dinCycad', 'dinTreefern'],
+  leaves:['#3e7426', '#5a8a2e', '#2e6420'], bark:'#5e4428', low:['fern', 'fern', 'bush', 'rock'], hazC:['#4a7442', '#7aa65a'], waterC:['#4a7442', '#7aa65a'], dens:0.65, lm:['dinBluff', 'nest', 'dinBluff', 'nest', 'dinoskel'], nlm:3, wall:['#d8b47a', '#a8834e'] });
+KIT['dino~swamp'] = kitFrom(KIT.dino, { g:['#4e6a2e', '#5e5a30', '#3e5a26', 0.2], gpat:'dinswamp', p:['#7a6a48', '#8a7a56', '#6a5a3e'], tree:['dinCypress', 'dinCypress', 'dinTreefern'],
+  leaves:['#1e4a24', '#2e5e2c', '#4a7a3a'], bark:'#6a5640', low:['dinReeds', 'fern', 'dinReeds', 'bush'], hazC:['#2c4630', '#4a6a3e'], waterC:['#2c4630', '#4a6a3e'], dens:1.05,
+  lm:['dinLogs', 'longneck', 'falls', 'dinLogs'], nlm:4, wall:['#5a6a3c', '#3a4a2a'] });
+KIT['dino~dig'] = kitFrom(KIT.dino, { g:['#cfa46e', '#dcb684', '#bc8f5a', 0.2], gpat:'dindig', p:['#e2c89a', '#ecd4aa', '#d2b88a'], tree:['dinAraucaria', 'dinCycad'],
+  leaves:['#24502a', '#33663a', '#2e5e34'], bark:'#6e5038', low:['rock', 'dinBones', 'rock', 'bushdry', 'rock', 'bushdry'], haz:'slow', hazC:['#5e4028', '#6e4e30'], bogC:['#5e4028', '#6e4e30'], dens:0.55,
+  lm:['dinTent', 'dinPit', 'mesa', 'dinPit'], nlm:4, wall:['#b8693e', '#7a4428'] });
+KIT['dino~rex'] = kitFrom(KIT.dino, { g:['#3e6a2a', '#4a7630', '#2f5a22', 0.2], gpat:'dinrex', p:['#6a5436', '#7a6440', '#5a4630'], tree:['broad', 'dinTreefern', 'broad', 'dinCycad'],
+  leaves:['#1f5a26', '#2b6e30', '#3f8a3a'], bark:'#4a3624', low:['fern', 'fern', 'bush', 'fern', 'dinBones', 'bush'], haz:'slow', hazC:['#3a2e1c', '#4a3a24'], bogC:['#3a2e1c', '#4a3a24'], dens:1.35,
+  lm:['dinDen', 'dinRex', 'nest'], nlm:3, wall:['#6e6a5e', '#4a4640'] });
+KIT['dino~valley'] = kitFrom(KIT.dino, { g:['#9aa250', '#b0b064', '#86923e', 0.2], gpat:'dinvalley', p:['#b8a27a', '#c8b28a', '#a8926a'], tree:['dinAraucaria', 'dinAraucaria', 'dinCycad'],
+  leaves:['#24502a', '#33663a', '#2e5e34'], bark:'#6e5038', low:['rock', 'fern', 'bushdry', 'rock'], hazC:['#3a8aa0', '#7ac0cc'], waterC:['#3a8aa0', '#7ac0cc'], dens:0.45,
+  lm:['dinVolcano', 'longneck', 'longneck', 'dinBoulders'], nlm:4, wall:['#6a5e5e', '#4a4044'] });
+LIFE_AS['dino~meadow'] = { fly:['ptero', 2], mote:[['butter', 12], ['leaf', 6]] };
+LIFE_AS['dino~swamp'] = { fly:['ptero', 2], mote:[['firefly', 26], ['butter', 4]] };
+LIFE_AS['dino~dig'] = { fly:['ptero', 3], mote:['dust', 20] };
+LIFE_AS['dino~rex'] = { fly:['ptero', 2], mote:[['firefly', 14], ['leaf', 10]] };
+LIFE_AS['dino~valley'] = { fly:['ptero', 5], mote:[['ash', 18], ['leaf', 4]] };
+
+// the ground of each stop, in smooth patches the size of the holes' own
+function dinG(c, sd, cols){ var a = vn(c.ti * 0.022, c.tj * 0.022, sd), b = vn(c.ti * 0.06, c.tj * 0.06, sd + 1); return a > 0.66 ? cols[1] : a < 0.3 ? cols[2] : b > 0.64 ? cols[3] : b < 0.3 ? cols[4] : cols[0]; }
+/* the rex's tracks: lines of three toed prints walking up the screen, a line every gap feet across, each wandering a
+   little. A print is sz feet long, one every st feet, left and right in turn. */
+function dinTrack(c, gap, st, sz){ var x = c.ti / 8, y = c.tj / 8, u = x - Math.sin(y * 0.045) * 9, k = Math.round(u / gap), lx = u - k * gap;
+  if (Math.abs(lx) > st * 0.3 + sz) return false; var n = Math.round(y / st), side = (n & 1) ? 1 : -1, pu = (n * st - y) / sz, pv = (lx - side * st * 0.17) / sz;
+  if (Math.hypot(pu + 0.32, pv * 1.1) < 0.36) return true;
+  for (var t = -1; t <= 1; t++){ var an = t * 0.5, ca = Math.cos(an), sa = Math.sin(an), qu = pu * ca + pv * sa, qv = -pu * sa + pv * ca; if (qu > -0.1 && qu < 0.75 - Math.abs(t) * 0.12 && Math.abs(qv) < 0.13 * (1 - qu * 0.6)) return true; }
+  return false; }
+GPAT.dinmeadow = function(c){ return dinG(c, 11, ['#6e9a3a', '#86ae48', '#5a8632', '#78a440', '#628e36']); };
+GPAT.dinswamp = function(c){ return dinG(c, 12, ['#4e6a2e', '#5e5a30', '#3e5a26', '#58763a', '#466228']); };
+GPAT.dindig = function(c){ return dinG(c, 13, ['#cfa46e', '#dcb684', '#bc8f5a', '#d6ac74', '#c49a64']); };
+GPAT.dinrex = function(c){ return dinTrack(c, 26, 4.2, 1.7) ? '#3a2e1c' : dinG(c, 14, ['#3e6a2a', '#5a5030', '#2f5a22', '#4a7630', '#36602a']); };
+GPAT.dinvalley = function(c){ return dinG(c, 15, ['#9aa250', '#b0b064', '#86923e', '#a4aa58', '#8e9846']); };
+
+// the plants: a tree fern, a cycad, a swamp cypress, a monkey puzzle, and horsetails to walk through
+TREEH.dinTreefern = [8, 3, 3.2]; TREEH.dinCycad = [3, 1.6, 2.4]; TREEH.dinCypress = [12, 4, 3.6]; TREEH.dinAraucaria = [14, 4, 3.4];
+BLOCKR.dinTreefern = 0.5; BLOCKR.dinCycad = 0.8; BLOCKR.dinCypress = 0.8; BLOCKR.dinAraucaria = 0.6;
+LOWR.dinReeds = 0.9; LOWH.dinReeds = 2.4; PLANT.dinReeds = 1; LOWR.dinBones = 1; LOWH.dinBones = 0.8; BLOCKR.dinBones = 0;
+BUILD.dinTreefern = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), H = t.h, R = t.cr, tx = x + (hash(i, 4, 83) - 0.5) * 1.2;
+  B.vox(x - R - 1.5, y - R - 1.5, zb - 0.2, x + R + 1.5, y + R + 1.5, zb + H + 1.6, function(set){
+    B.tube(set, x, y, zb, tx, y, zb + H, 0.42, 0.32, function(u, z){ return vn(z * 1.5, i, 84) < 0.45 ? '#4a3420' : '#5e4428'; });
+    for (var f = 0; f < 9; f++){ var a = f / 9 * 6.28 + i, fx = Math.cos(a), fy = Math.sin(a) * 0.72;
+      for (var al = 0; al < R * 1.05; al += set.st){ var q = al / (R * 1.05), sag = R * (0.46 * q - 0.5 * q * q), wd = 0.75 * Math.sin(q * 3.14) + 0.08;
+        for (var o = -wd; o <= wd; o += set.st){ if (Math.abs(o) > set.st * 1.5 && ((q * 9 + Math.abs(o) * 1.4) % 1) > 0.72) continue;
+          set(tx + fx * al - fy * o, y + fy * al + fx * o, zb + H + sag, Math.abs(o) < set.st * 1.5 ? '#3c6a1e' : q > 0.6 ? '#7aae3e' : '#5c9430'); } } } }, 0.25); };
+BUILD.dinCycad = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), H = t.h, R = t.cr;
+  B.vox(x - R - 0.8, y - R - 0.8, zb - 0.2, x + R + 0.8, y + R + 0.8, zb + H + R + 0.6, function(set){
+    B.tube(set, x, y, zb, x, y, zb + H, 0.75, 0.6, function(u, z){ return (Math.floor((z - zb) * 2.4) % 2) ? '#6a5232' : '#836640'; });
+    for (var f = 0; f < 12; f++){ var a = f / 12 * 6.28 + i * 0.7, up = 0.45 + hash(f, i, 81) * 0.5, len = R * (0.9 + hash(i, f, 82) * 0.25), fx = Math.cos(a), fy = Math.sin(a) * 0.75;
+      for (var al = 0; al < len; al += set.st){ var z = zb + H + al * up - al * al * 0.09, wd = 0.42 * (1 - al / (len + 0.3));
+        for (var o = -wd; o <= wd; o += set.st) set(x + fx * al - fy * o, y + fy * al + fx * o, z, Math.abs(o) < set.st ? '#4a6a22' : al > len * 0.6 ? '#5a8a2e' : '#3e7426'); } }
+    B.blob(set, x, y, zb + H + 0.25, 0.6, 0.6, 0.5, '#b8702a'); }, 0.25); };
+BUILD.dinCypress = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), H = t.h, R = t.cr;
+  B.vox(x - R - 1.2, y - R - 1.2, zb - 0.4, x + R + 1.2, y + R + 1.2, zb + H + 1.2, function(set){
+    for (var r = 0; r < 5; r++){ var a = r * 1.26 + i; B.tube(set, x + Math.cos(a) * 1.3, y + Math.sin(a) * 1, zb - 0.2, x, y, zb + 2.6, 0.32, 0.22, '#5a4a36'); }   // the buttress roots
+    B.tube(set, x, y, zb - 0.2, x, y, zb + H * 0.92, 0.7, 0.28, '#6a5640');
+    for (var q = 0; q < 4; q++){ var cz = zb + H * (0.44 + q * 0.16), rr = R * (1.05 - q * 0.2), ox = (hash(q, i, 85) - 0.5) * 1.2;
+      B.blob(set, x + ox, y, cz, rr, rr * 0.8, 1.0, function(px, py, pz){ var n = vn(px * 0.9, py * 0.9 + pz * 1.2, 86); return n < 0.3 ? '#1e4a24' : n > 0.72 ? '#4a7a3a' : '#2e5e2c'; }); }
+    for (var m = 0; m < 8; m++){ var ma = hash(m, i, 87) * 6.28, mr = R * (0.5 + hash(i, m, 88) * 0.45), mx = x + Math.cos(ma) * mr, my = y + Math.sin(ma) * mr * 0.8, mz = zb + H * 0.44 - 0.8;   // moss hanging off the boughs
+      B.tube(set, mx, my, mz, mx, my, mz - 1.5 - hash(m, i, 89) * 1.2, 0.16, 0.07, '#94a46e'); } }, 0.25); };
+BUILD.dinAraucaria = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y), H = t.h, R = t.cr;
+  B.vox(x - R - 1, y - R - 1, zb - 0.2, x + R + 1, y + R + 1, zb + H + 1.2, function(set){
+    B.tube(set, x, y, zb, x, y, zb + H, 0.55, 0.22, function(u, z){ return vn(z, i, 90) < 0.5 ? '#6e5038' : '#7e5e42'; });
+    for (var q = 0; q < 3; q++){ var z0 = zb + H * (0.62 + q * 0.13), rr = R * (1 - q * 0.24);
+      for (var b = 0; b < 7; b++){ var a = b / 7 * 6.28 + q + i, ex = x + Math.cos(a) * rr, ey = y + Math.sin(a) * rr * 0.8;
+        B.tube(set, x, y, z0, ex, ey, z0 + 0.8, 0.14, 0.1, '#5a4030');
+        B.blob(set, (x + ex * 2) / 3, (y + ey * 2) / 3, z0 + 0.9, rr * 0.42, rr * 0.36, 0.7, function(px, py, pz){ return vn(px * 1.2, py * 1.2 + pz, 91) < 0.4 ? '#24502a' : '#33663a'; }); } }
+    B.blob(set, x, y, zb + H, R * 0.38, R * 0.32, 0.8, '#2e5e34'); }, 0.25); };
+BUILD.dinReeds = function(B, t, i){ var x = t.x, y = t.y, zb = B.gz(x, y);
+  B.vox(x - 1.2, y - 1, zb - 0.1, x + 1.2, y + 1, zb + 2.6, function(set){ for (var k = 0; k < 9; k++){ var a = hash(k, i, 97) * 6.28, r = hash(i, k, 98) * 0.7, sx = x + Math.cos(a) * r, sy = y + Math.sin(a) * r * 0.7, h = 1.4 + hash(k, i, 99) * 1;
+    B.tube(set, sx, sy, zb, sx + Math.cos(a) * 0.25, sy, zb + h, 0.13, 0.09, function(u, z){ return ((z - zb) * 2.6 | 0) % 3 === 0 ? '#3a4a22' : '#6a8a3a'; }); } }, 0.125); };
+// a heap of bones: a thigh bone across two ribs, and every other one a skull
+BUILD.dinBones = function(B, t, i){ var a = hash(i, 2, 77) * 3.14, ca = Math.cos(a), sa = Math.sin(a), s = 1.4;
+  box(B, t.x, t.y, 3, 3, 1.2, function(dx, dy, tt){ var u = (dx * ca + dy * sa) / s, v = (-dx * sa + dy * ca) / s, w = tt / s;
+    if (Math.abs(v) < 0.1 && Math.abs(u) < 0.8 && w < 0.2) return '#ece0c0'; if (Math.hypot(Math.abs(u) - 0.85, v) < 0.17 && w < 0.26) return '#f4ead2';
+    if (Math.abs(Math.hypot(u + 0.1, w) - 0.5) < 0.08 && Math.abs(Math.abs(v) - 0.35) < 0.08) return '#ddd0aa';
+    if (i % 2 && Math.hypot((u - 0.2) / 0.45, (v - 0.6) / 0.3, w / 0.32) < 1) return Math.hypot(u - 0.3, v - 0.8, w - 0.12) < 0.1 ? '#3a2e22' : '#f1e6c8';
+    return null; }, 0.125); };
+
+// the landmarks: the bone wall, fallen logs, the diggers' tent and their pit, the rex and his den, the volcano and its rockslide
+LMSIZE.dinBluff = [12, 5, 6]; LMSIZE.dinLogs = [10, 5, 2.4]; LMSIZE.dinTent = [7, 6, 5]; LMSIZE.dinPit = [9, 7, 2.4]; LMSIZE.dinRex = [17, 4.5, 8.6]; LMSIZE.dinDen = [10, 7, 7];
+LMSIZE.dinVolcano = [22, 16, 16]; LMSIZE.dinBoulders = [9, 5, 3];
+// the bone wall: a sandstone bluff in wandering bands, grass on its crown, and a skeleton set in its face, standing proud of it
+BUILD.dinBluff = function(B, t, i){ var hw = t.w / 2, hd = t.d / 2, H = t.h;
+  box(B, t.x, t.y, t.w, t.d + 0.6, H, function(dx, dy, tt){ var top = H - 0.6 + vn(dx * 0.4, 3, i) * 0.6, front = hd - tt * 0.1, ex = Math.pow(Math.abs(dx) / (hw - 0.3 - tt * 0.05), 4) + Math.pow(Math.abs(dy) / hd, 4);
+    var sp = H * 0.48 + Math.sin(dx * 0.5) * 0.25, fx = dx + 0.6;
+    if (dy > front - 0.4 && dy < front + 0.3 && Math.abs(dx) < hw - 0.8 && tt < top - 0.5){ var bone = (Math.abs(tt - sp) < 0.16 && Math.abs(fx) < 3.4) || Math.hypot((fx - 4) / 0.6, (tt - sp - 0.1) / 0.4) < 1;
+      for (var r = -3; r <= 3 && !bone; r++) if (Math.abs(fx - r * 0.75) < 0.12 && tt < sp && tt > sp - 1.3 + Math.abs(r) * 0.1) bone = true;
+      if (bone) return Math.hypot(fx - 4.15, tt - sp - 0.18) < 0.15 ? '#4a3a24' : '#f1e6c8'; }
+    if (ex > 1 || tt > top || dy > front) return null;
+    if (tt > top - 0.35) return vn(dx * 0.8, dy * 0.8, i + 3) > 0.45 ? '#6e9a3a' : '#5a8430';
+    var z = tt + (vn(dx * 0.35, tt * 0.2, i + 5) - 0.5) * 0.9, b = Math.floor(z * 0.9); return ['#d8b47a', '#c9a46a', '#e2c48a', '#b8935a'][((b % 4) + 4) % 4]; }); };
+// fallen logs, one across another, moss on their backs and their cut ends pale
+BUILD.dinLogs = function(B, t, i){ var zb = B.gz(t.x, t.y);
+  B.vox(t.x - 5, t.y - 2.5, zb - 0.5, t.x + 5, t.y + 2.5, zb + 2.6, function(set){ [[-4.2, -0.8, 3.6, 0.6, 0.7], [-2.6, 1.4, 2.4, -1.5, 0.5], [0.8, -1.8, 4.3, 1.4, 0.45]].forEach(function(q, k){ var r = q[4], zc = zb + r * 0.8 + (k === 1 ? 0.75 : 0);
+    B.tube(set, t.x + q[0], t.y + q[1], zc, t.x + q[2], t.y + q[3], zc, r, r * 0.85, function(u, z){ if (u <= 0.001 || u >= 0.999) return '#c8a878'; return z > zc + r * 0.55 ? (vn(u * 7, k, 95) < 0.5 ? '#5e7a32' : '#6e8a3a') : (vn(u * 12, z * 3, 96) < 0.5 ? '#5a4028' : '#6e5236'); }); }); }, 0.25); };
+// the diggers' tent, end on with its flap open, a crate beside it and a lamp on a pole
+BUILD.dinTent = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = 2.4, hd = 2.2, h = 3.6;
+  if (Math.abs(dx - 2.9) < 0.6 && Math.abs(dy - 1.8) < 0.6 && tt < 1.1) return (Math.max(Math.abs(dx - 2.9), Math.abs(dy - 1.8)) > 0.5 || tt > 1 || tt < 0.1) ? '#6a4420' : '#a8783e';
+  if (Math.hypot(dx + 2.9, dy - 2.2) < 0.1 && tt < 4.1) return '#3a3028'; if (Math.hypot(dx + 2.9, dy - 2.2, tt - 4.3) < 0.3) return '#ffcf6a';
+  if (Math.abs(dx) > hw || Math.abs(dy) > hd) return null; var roof = h * (1 - Math.abs(dx) / hw); if (tt > roof) return null;
+  if (tt > roof - 0.22) return (Math.floor((dy + 9) * 1.1) % 2) ? '#ece2c2' : '#d8c89e';
+  if (dy > hd - 0.2) return Math.abs(dx) < roof * 0.34 ? '#2e2418' : '#e2d6b2'; return null; }); };
+// the dig: a pit strung into squares between four stakes, a rib cage lying in it, and the spoil heaped behind
+BUILD.dinPit = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hw = 3.6, hd = 2.2, ax = Math.abs(dx), ay = Math.abs(dy);
+  if (Math.abs(ax - hw) < 0.12 && Math.abs(ay - hd) < 0.12 && tt < 1.2) return '#a8835a';
+  if (((Math.abs(ax - hw) < 0.06 && ay < hd) || (Math.abs(ay - hd) < 0.06 && ax < hw) || (Math.abs(dx) < 0.06 && ay < hd)) && Math.abs(tt - 1) < 0.07) return '#f4efe2';
+  if (ax < hw && ay < hd){ if (tt < 0.1) return vn(dx * 0.8, dy * 0.8, i) > 0.5 ? '#8a5e3a' : '#7c5434';
+    if (Math.abs(dy) < 0.18 && ax < 2.6 && Math.abs(tt - 0.4) < 0.18) return '#f1e6c8';
+    for (var r = -3; r <= 3; r++) if (Math.abs(dx - r * 0.7) < 0.12 && Math.abs(Math.hypot(dy, tt / 1.4) - 1.3) < 0.16) return '#ece0c0';
+    if (Math.hypot((dx - 3) / 0.7, dy / 0.45, (tt - 0.35) / 0.4) < 1) return '#f4ead2'; return null; }
+  var sp = Math.max(ax - hw, ay - hd); if (sp < 1.1 && dy < 0 && tt < 0.9 * (1 - sp / 1.1) + vn(dx, dy, i + 2) * 0.3) return '#b48650';
+  return null; }); };
+// the rex: a big head and a jaw of teeth, two strong legs, little arms, the tail held out behind. q scales him
+BUILD.dinRex = function(B, t, i){ var q = 2.5, dir = i % 2 ? 1 : -1;
+  box(B, t.x, t.y, t.w, t.d, t.h, function(px, py, pz){ var dx = px * dir / q, dy = py / q, tt = pz / q, ay = Math.abs(dy);
+    function hide(c){ if (tt < c - 0.3) return '#b8a46e'; return vn(dx * 2.4, tt * 0.6, 93) > 0.64 ? '#4a4626' : vn(px * 0.8, pz * 0.8 + py, 94) > 0.6 ? '#76703e' : '#625e32'; }
+    if (ay > 0.18 && ay < 0.58){ if (Math.hypot((dx + 0.2) / 0.6, (ay - 0.38) / 0.2, (tt - 1.55) / 0.62) < 1) return hide(1.55);
+      if (segD(dx, tt, -0.05, 1.1, -0.3, 0.2) < 0.17 && Math.abs(ay - 0.38) < 0.15) return '#5a5630'; if (tt < 0.18 && dx > -0.5 && dx < 0.2 && Math.abs(ay - 0.38) < 0.17) return '#4a4426'; }
+    var bc = 2.0 + dx * 0.18; if (Math.hypot(dx / 1.3, dy / 0.6, (tt - bc) / 0.62) < 1) return hide(bc);
+    if (Math.hypot((dx - 1.1) / 0.5, dy / 0.38, (tt - 2.45) / 0.48) < 1) return hide(2.45);
+    var hd = Math.hypot((dx - 1.75) / 0.68, dy / 0.33, (tt - 2.78) / 0.32), jw = Math.hypot((dx - 1.8) / 0.58, dy / 0.27, (tt - 2.44) / 0.15);
+    if (hd < 1 || jw < 1){ if (tt > 2.49 && tt < 2.57 && dx > 1.4) return ((dx * 12 | 0) % 2 && ay > 0.12) ? '#f4ead2' : '#3a1a14'; if (ay > 0.2 && Math.hypot(dx - 1.62, tt - 2.9) < 0.07) return '#ffcf3a'; return hide(hd < 1 ? 2.7 : 2.6); }
+    if (Math.abs(ay - 0.42) < 0.08 && segD(dx, tt, 0.85, 2.05, 1.12, 1.72) < 0.07) return '#5a5630';
+    if (dx < -0.9 && dx > -3.3){ var u = (-0.9 - dx) / 2.4, tc = 1.84 - u * 0.6, r = 0.48 * (1 - u) + 0.06; if (Math.hypot(dy, tt - tc) < r) return hide(tc); }
+    return null; }, 0.125); };
+// the den: a dome of stone, ferns on its crown, and the dark mouth of the den in its face
+BUILD.dinDen = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var d = Math.hypot(dx / (t.w / 2), (dy + 0.5) / (t.d / 2 - 0.5), tt / t.h) + (vn(dx * 0.6, tt * 0.6, i) - 0.5) * 0.16;
+  if (d > 1) return null; if (dy > 0.3 && Math.abs(dx) < 1.6 && tt < 3.2 * Math.sqrt(Math.max(0, 1 - (dx / 1.6) * (dx / 1.6)))) return '#18130f';
+  if (tt > t.h * 0.78) return vn(dx, dy, i + 3) > 0.4 ? '#3f6a2a' : '#4f7a2e'; var n = vn(dx * 0.5, tt * 0.5, i + 5); return n > 0.66 ? '#4f7a2e' : n < 0.3 ? '#5e5a50' : '#6e6a5e'; }); };
+// the volcano: a cone of basalt, the crater glowing, lava down its face, and smoke rolling off the top
+BUILD.dinVolcano = function(B, t, i){ var Hc = t.h - 4;
+  box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx / (t.w / 2), (dy + 1) / (t.d / 2 - 1));
+    if (tt > Hc - 0.3){ for (var p = 0; p < 3; p++){ var pz = Hc + 0.7 + p * 0.85, px = -p * 0.8, rr = 0.8 + p * 0.3; if (Math.hypot(dx - px, (dy + 1) * 1.2, tt - pz) < rr) return vn(dx * 1.2, tt * 1.2, i) > 0.5 ? '#8a8480' : '#a29c96'; } }
+    if (r > 1) return null; var top = r < 0.16 ? Hc - (0.16 - r) * 6 : Hc * (1 - (r - 0.16) / 0.84); if (tt > top) return null;
+    if (r < 0.16) return vn(dx * 2, dy * 2, i + 1) > 0.5 ? '#ffc23a' : '#ff6a1a';
+    if (dy > -1 && Math.abs(dx - Math.sin(tt * 0.8 + i) * 0.5) < 0.4 + (Hc - tt) * 0.03) return tt > top - 0.3 ? (vn(dx * 2, tt * 2, i + 2) > 0.5 ? '#ffc23a' : '#ff7a1a') : '#4a4044';
+    if (tt < 0.6) return '#6a7a3a'; var n = vn(dx * 0.6, tt * 0.6, i + 4); return n > 0.68 ? '#6e6262' : n < 0.3 ? '#4e4446' : '#5e5254'; }); };
+// the rockslide: boulders tumbled down together, the big ones behind
+BUILD.dinBoulders = function(B, t, i){ var R3 = [[-2.6, -0.6, 1.3], [-0.4, -1, 1.6], [1.9, -0.5, 1.1], [3.1, 0.6, 0.8], [0.8, 1.4, 0.7], [-3.3, 1.2, 0.6]];
+  box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ for (var k = 0; k < R3.length; k++){ var q = R3[k], d = Math.hypot(dx - q[0], (dy - q[1]) * 1.15, tt / 0.9 - q[2] * 0.3) + (vn(dx * 1.5, tt * 1.5, i + k) - 0.5) * 0.25;
+    if (d < q[2]) return tt > q[2] * 0.95 ? '#a29a8a' : vn(dx * 2, dy * 2 + tt, k) > 0.6 ? '#7a7266' : '#8e8678'; } return null; }); };
+/* ---- Ice Age's stops on the walk, the same places its holes stand in (land.js): the thawing tundra and its herd, the
+   glacier's edge with its seracs, its ice arch and its mill, the melt lake's shore with its bergs and its tar pits, the
+   painted cliff and the cave people's camp, and Mammoth Peak with the whole herd under it. */
+KIT['iceage~tundra'] = kitFrom(KIT.iceage, { gpat:'iceTundra', low:['rocksnow', 'bushdry', 'bushsnow', 'bushdry', 'rock'], haz:'water', hazC:['#5ab4d6', '#bfe8f4'], waterC:['#5ab4d6', '#bfe8f4'],
+  dens:0.3, nlm:3, lm:['iceHerd', 'iceSaber', 'iceHerd', 'tusks'] });
+KIT['iceage~glacier'] = kitFrom(KIT.iceage, { g:['#e8f2f7', '#f6fbfd', '#cfe4ee', 0.2], gpat:'iceGlacier', p:['#c8d4dc', '#d8e2e8', '#b4c2cc'], tree:['pine', 'pine', 'pine'], low:['rocksnow', 'iceChunk', 'rocksnow'],
+  haz:'ice', iceC:['#8fcde0', '#c8ecf6'], dens:0.14, nlm:4, lm:['iceSeracs', 'iceArch', 'iceMill', 'iceErratic', 'iceSeracs'], wall:['#c8ecf6', '#5aa4c8'] });
+KIT['iceage~lake'] = kitFrom(KIT.iceage, { g:['#d8dcd8', '#e8ecec', '#c4c8c4', 0.2], gpat:'iceThaw', p:['#a89a86', '#b8aa94', '#968a76'], tree:['dead', 'pine', 'dead', 'pine'], low:['rock', 'bushdry', 'rocksnow'],
+  haz:'ice', iceC:['#6cc4e2', '#d4f0f8'], dens:0.32, nlm:4, lm:['iceTarpit', 'iceBergs', 'iceTarpit', 'iceBergs', 'tusks'] });
+KIT['iceage~caves'] = kitFrom(KIT.iceage, { gpat:'iceTrod', p:['#9a8468', '#a8927a', '#8a7458'], haz:null, dens:0.35, nlm:5, low:['rocksnow', 'rock', 'bushsnow'],
+  lm:['iceCliff', 'iceCamp', 'iceCliff', 'cave', 'iceCamp'], wall:['#a89c8c', '#5e5448'] });
+KIT['iceage~peak'] = kitFrom(KIT.iceage, { gpat:'icePow', haz:'ice', iceC:['#a8dcf0', '#e2f6ff'], dens:0.4, nlm:4, low:['rocksnow', 'bushsnow', 'bushdry'],
+  lm:['icePeakRock', 'iceHerd', 'tusks', 'iceHerd', 'icePeakRock'] });
+LIFE_AS['iceage~tundra'] = { mote:['snow', 30], fly:['crow', 3] };
+LIFE_AS['iceage~glacier'] = { mote:['snow', 70], fly:['crow', 2] };
+LIFE_AS['iceage~lake'] = { mote:['snow', 24], fly:['vulture', 3] };
+LIFE_AS['iceage~caves'] = { mote:[['snow', 40], ['ember', 12]], fly:['bat', 4] };
+LIFE_AS['iceage~peak'] = { mote:['snow', 90], fly:['crow', 2] };
+
+// the ground of each stop, in broad smooth patches (an eighth of a foot a cell, so a patch is a few feet across)
+function iceF(c, a, b, s){ return vn(c.ti * a, c.tj * a, s) * 0.65 + vn(c.ti * b, c.tj * b, s + 1) * 0.35; }
+GPAT.iceTundra = function(c){ var f = iceF(c, 0.03, 0.09, 21), b = vn(c.ti * 0.06, c.tj * 0.06, 23);   // the thaw: snow in drifts, the old grass through it, moss where it is wettest
+  return f > 0.54 ? (b > 0.62 ? '#f8fbfd' : '#eef3f7') : f > 0.5 ? '#d6dcd6' : f > 0.42 ? (b > 0.55 ? '#9c9878' : '#8e8a6a') : b > 0.6 ? '#6e7a56' : '#7e7a5a'; };
+GPAT.iceGlacier = function(c){ var a = iceF(c, 0.025, 0.08, 31), b = vn(c.ti * 0.07, c.tj * 0.07, 33);   // thin snow over blue ice
+  return a > 0.64 ? (b > 0.5 ? '#a8d8ea' : '#bfe4f0') : a > 0.59 ? '#d8eef6' : b > 0.7 ? '#f8fbfd' : '#eaf2f6'; };
+GPAT.iceThaw = function(c){ var f = iceF(c, 0.03, 0.09, 41), b = vn(c.ti * 0.06, c.tj * 0.06, 43);   // slush, mud and the last of the snow by the lake
+  return f > 0.56 ? '#eef3f7' : f > 0.5 ? '#d4dad8' : f > 0.4 ? (b > 0.55 ? '#a8a6a0' : '#b8b6ae') : b > 0.6 ? '#7e7a5a' : '#6e6052'; };
+GPAT.iceTrod = function(c){ var a = iceF(c, 0.025, 0.08, 51), b = vn(c.ti * 0.07, c.tj * 0.07, 53);   // a camp's snow, trodden through to the earth
+  return a > 0.66 ? (b > 0.5 ? '#9a8468' : '#8a7458') : a > 0.6 ? '#c8c4b8' : b > 0.7 ? '#f6f9fb' : '#e8eef2'; };
+GPAT.icePow = function(c){ var a = iceF(c, 0.025, 0.08, 61), b = vn(c.ti * 0.07, c.tj * 0.07, 63);   // deep snow under the peak, blue in its hollows
+  return a < 0.3 ? (b > 0.55 ? '#a8985e' : '#c8c2a8') : a > 0.64 ? '#dce6ef' : b > 0.7 ? '#f8fbfd' : '#eef3f7'; };
+
+// a landmark drawn at its first size (w0 across) and grown to the size LMSIZE gives it, so the walk's scale can change in one place
+function iceQ(t, w0, fn){ var q = t.w / w0; return function(dx, dy, tt){ return fn(dx / q, dy / q, tt / q); }; }
+// a woolly mammoth at s times the hole's size, facing dir: the same beast the holes have, its fur in smooth patches
+function iceMamFn(s, dir, k){ return function(dx0, dy0, tt){ var dx = dx0 * dir / s, dy = dy0 / s, t = tt / s;
+  var n = vn(dx0 * 1.3, tt * 1.3 + dy0 * 0.7, k + 5), fur = n < 0.34 ? '#5e3e24' : n > 0.7 ? '#9a6c42' : '#7a5232';
+  if (t < 0.8 && Math.abs(Math.abs(dx) - 0.55) < 0.19 && Math.abs(Math.abs(dy) - 0.3) < 0.17) return t < 0.12 ? '#3a281a' : t < 0.3 ? '#5e3e24' : fur;
+  if (Math.hypot(dx / 1.02, dy / 0.6, (t - 1.2) / 0.62) < 1) return t < 0.75 ? '#5e3e24' : fur;
+  if (Math.hypot((dx - 0.4) / 0.5, dy / 0.45, (t - 1.72) / 0.32) < 1) return '#5e3e24';
+  if (Math.hypot((dx - 1.05) / 0.44, dy / 0.4, (t - 1.48) / 0.46) < 1) return (Math.abs(Math.abs(dy) - 0.2) < 0.06 && Math.abs(t - 1.6) < 0.06 && dx > 1.25) ? '#1a120c' : fur;
+  var tc = 1.42 + (t < 0.6 ? (0.6 - t) * 0.55 : 0); if (Math.abs(dy) < 0.12 && t > 0.3 && t < 1.35 && Math.abs(dx - tc) < 0.12) return '#6a4a2e';
+  if (Math.abs(Math.abs(dy) - 0.22) < 0.07 && dx > 1.2 && dx < 1.9 && Math.abs(t - (0.95 + (dx - 1.2) * (dx - 1.2) * 1.3)) < 0.08) return '#f4ead2';
+  if (dx < -0.95 && dx > -1.25 && Math.abs(dy) < 0.06 && Math.abs(t - (1.1 - (-0.95 - dx) * 1.2)) < 0.07) return '#5e3e24';
+  return null; }; }
+// a few of the herd together, big and small, not all facing the same way
+BUILD.iceHerd = function(B, t, i){ var M = [[-3.6, -1.2, 2.5], [2.8, -2, 2.9], [0.2, 1.7, 2.1]], q = t.w / 16;
+  M.forEach(function(m, k){ var s = m[2] * q; m = [m[0] * q, m[1] * q]; dir = hash(i, k, 7) < 0.5 ? 1 : -1; box(B, t.x + m[0], t.y + m[1], 4.4 * s, 1.8 * s, 2.4 * s, iceMamFn(s, dir, i * 3 + k), 0.125); }); };
+// the saber tooth on its boulder, watching the path
+BUILD.iceSaber = function(B, t, i){ var s = 2.4 * t.w / 8, dir = hash(i, 2, 9) < 0.5 ? 1 : -1;
+  box(B, t.x, t.y, 3.4 * s, 2.2 * s, 2.2 * s, function(dx0, dy0, tt){ var dx = dx0 * dir / s, dy = dy0 / s, t2 = tt / s;
+    var d = Math.hypot(dx / 1.2, dy, t2 / 0.95) + (vn(dx0 * 0.9, tt * 0.9, 7) - 0.5) * 0.14;
+    if (d < 1) return t2 > 0.82 ? '#e8f0f6' : vn(dx0 * 0.7, tt * 0.7 + dy0, 3) < 0.4 ? '#6e7480' : '#868c96';
+    if (Math.hypot(dx / 0.62, dy / 0.3, (t2 - 1.13) / 0.2) < 1) return t2 < 1.02 ? '#a8804a' : '#c8a064';
+    if (Math.hypot((dx - 0.6) / 0.24, dy / 0.22, (t2 - 1.32) / 0.2) < 1) return (Math.abs(Math.abs(dy) - 0.09) < 0.04 && t2 > 1.36 && dx > 0.72) ? '#2a201a' : '#c8a064';
+    if (Math.abs(Math.abs(dy) - 0.07) < 0.035 && dx > 0.74 && dx < 0.82 && t2 > 1.04 && t2 < 1.2) return '#ffffff';
+    if (Math.abs(dy - 0.28) < 0.06 && dx < -0.5 && dx > -0.95 && Math.abs(t2 - 1.02) < 0.06) return '#a8804a';
+    return null; }, 0.125); };
+// seracs: blocks of glacier ice standing where the ice broke, leaning, cracked, snow on their tops
+function iceBlockFn(w, h, k){ var lean = (hash(k, 3, 9) - 0.5) * 0.5; return function(dx0, dy, tt){ var t = tt / h, dx = dx0 - lean * tt * 0.3, r = w * (1 - t * 0.35);
+  if (t > 1 || Math.abs(dx) + Math.abs(dy) * 0.6 > r * 1.15 || Math.max(Math.abs(dx), Math.abs(dy)) > r) return null;
+  if (t > 0.9 - vn(dx0 * 0.6, dy * 0.6, k) * 0.12) return '#f6fbfd'; if (Math.abs(Math.sin(dx * 0.9 + tt * 0.6 + k)) < 0.05) return '#5aa4c4';
+  return vn(dx0 * 0.5, tt * 0.5 + dy, k + 2) < 0.45 ? '#9fd8ea' : '#bfe6f2'; }; }
+BUILD.iceSeracs = function(B, t, i){ var S = [[-3.2, -0.8, 1.6, 7.5], [0, -1.4, 2, 9], [3.1, -0.4, 1.5, 6], [-1.4, 1.4, 1, 3.6], [1.8, 1.6, 0.8, 2.6]];
+  var g = t.w / 11; S.forEach(function(q, k){ box(B, t.x + q[0] * g, t.y + q[1] * g, (q[2] * 2 + 1.2) * g, q[2] * 2 * g, q[3] * g, iceBlockFn(q[2] * g, q[3] * g, i * 5 + k), 0.125); }); };
+BUILD.iceChunk = function(B, t, i){ box(B, t.x, t.y, 1.8, 1.4, 1.4, iceBlockFn(0.7, 1.3, i), 0.125); };
+LOWR.iceChunk = 0.9; LOWH.iceChunk = 1.4;
+// the ice bridge: an arch of blue ice the meltwater cut, snow along its back
+BUILD.iceArch = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, iceQ(t, 9, function(dx, dy, tt){ if (Math.abs(dy) > 0.9 - tt * 0.05) return null;
+  var o = Math.hypot(dx / 4.3, tt / 4.2), n = Math.hypot(dx / 2.9, tt / 2.8); if (o > 1 || n < 1) return null; if (o > 0.92 && tt > 1.2) return '#f6fbfd';
+  return vn(dx * 0.8, tt * 0.8, i) < 0.42 ? '#8fd0e6' : '#b8e4f2'; }), 0.125); };
+// the glacier mill: a shaft in the ice, the meltwater swirling round and down it, a rim of ice round its lip
+BUILD.iceMill = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, iceQ(t, 6, function(dx, dy, tt){ var r = Math.hypot(dx, dy * 1.2), a = Math.atan2(dy, dx); if (r > 2.7) return null;
+  if (r > 2.1) return tt < 0.55 - (r - 2.1) * 0.8 ? (vn(a * 2, tt, i) < 0.5 ? '#c8ecf6' : '#a8dcea') : null; if (tt > 0.1) return null;
+  var sw = ((a / 6.283 * 2 + r * 0.6) % 1 + 1) % 1; return r < 0.5 ? '#123a5a' : sw < 0.2 ? '#8fd8ee' : r < 1.2 ? '#1a5a84' : '#2a8ab8'; }), 0.125); };
+// a boulder the ice carried here and left: grey granite, rounded, snow on its crown
+BUILD.iceErratic = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, iceQ(t, 5, function(dx, dy, tt){ var d = Math.hypot(dx / 2.3, dy / 1.8, tt / 3.4) + (vn(dx * 0.8, tt * 0.8, i + 4) - 0.5) * 0.12;
+  if (d > 1) return null; if (tt > 2.6 + vn(dx, dy, i) * 0.5) return '#f2f7fa'; return vn(dx * 0.6, tt * 0.6 + dy, i) < 0.42 ? '#7a7a82' : '#9a9aa2'; }), 0.125); };
+// a tar pit on the lake shore, and the bones of a mammoth that went in and never came out
+BUILD.iceTarpit = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, iceQ(t, 8, function(dx, dy, tt){ var e = Math.hypot(dx / 3.6, dy / 2.5);
+  var m = dx - 0.6, s = 2;
+  if (Math.hypot((m - 0.5 * s) / (0.42 * s), dy / (0.36 * s), tt / (0.4 * s)) < 1) return Math.abs(Math.abs(dy) - 0.13 * s) < 0.1 && tt > 0.3 && m > 0.7 * s ? '#3a3028' : '#e6dcc0';
+  if (Math.abs(Math.abs(dy) - 0.2 * s) < 0.12 && m > 0.7 * s && m < 1.5 * s && Math.abs(tt - (0.1 * s + (m / s - 0.7) * (m / s - 0.7) * 1.6 * s)) < 0.14) return '#f4ead2';
+  for (var r = 0; r < 4; r++){ var rx = (-0.2 - r * 0.32) * s; if (Math.abs(m - rx) < 0.1 && Math.abs(Math.hypot(dy, tt + 0.4) - 1.24) < 0.12 && tt > 0) return '#d8ccae'; }
+  if (e > 1 || tt > 0.12) return null; if (e > 0.88) return '#4a3c2e'; return vn(dx * 0.7, dy * 0.7, i + 2) > 0.7 ? '#3a3a46' : '#1a1714'; }), 0.125); };
+// a frozen pond with the bergs it caught standing in it
+BUILD.iceBergs = function(B, t, i){ var G = [[-1.5, -0.6, 1.4, 4], [1.8, 0.5, 1, 2.6]];
+  box(B, t.x, t.y, t.w, t.d, t.h, iceQ(t, 9, function(dx, dy, tt){ for (var k = 0; k < 2; k++){ var g = G[k], x = dx - g[0], y = dy - g[1], u = tt / g[3];
+      var rr = g[2] * (1 - Math.pow(Math.max(0, u), 1.6) * 0.65) * (0.85 + vn(Math.atan2(y, x) * 1.3 + 3, tt * 0.4, i + k) * 0.3); if (u <= 1 && Math.hypot(x, y * 1.15) < rr) return u > 0.78 || vn(x * 0.6, y * 0.6 + tt, k + 4) > 0.72 ? '#f6fbfd' : vn(x * 0.5, tt * 0.7, k) < 0.42 ? '#a8dcee' : '#d4f0f8'; }
+    var e = Math.hypot(dx / 4.4, dy / 3.3); if (e > 1 || tt > 0.1) return null; return e > 0.9 ? '#e4f4fa' : vn(dx * 0.4, dy * 0.4, i + 7) > 0.6 ? '#bfe8f4' : '#8fd0e6'; }), 0.125); };
+// the painted cliff: a crag with a cave mouth in it, the herd painted on its face in ochre and soot, torches at the mouth
+BUILD.iceCliff = function(B, t, i){ var ink = hash(i, 3, 5) < 0.6 ? '#c8582e' : '#2a201a';
+  box(B, t.x, t.y, t.w, t.d, t.h, iceQ(t, 12, function(dx, dy, tt){
+    for (var s = -1; s <= 1; s += 2){ var tx = dx - (1.6 + s * 2), ty = dy - 1.9; var r = Math.hypot(tx, ty); if (r < 0.1 && tt < 2.6) return '#e8dcc0'; if (r < 0.26 * (1 - (tt - 2.6) / 0.7) && tt >= 2.6 && tt < 3.3) return tt < 2.9 ? '#ffd23a' : '#ff8a1a'; }   // the torches
+    var top = 6.6 * Math.sqrt(Math.max(0, 1 - Math.pow(dx / 6, 2))) + (vn(dx * 0.5, 1, i) - 0.5) * 1.2; if (tt > top || dy > 1.2 || dy < -2.4 + tt * 0.15) return null;
+    if (Math.abs(dx) > 5.8 * (1 - Math.pow(tt / 7.5, 2) * 0.3)) return null;
+    var mouth = Math.hypot((dx - 1.6) / 1.3, tt / 2.6) < 1; if (mouth) return dy > 0.6 ? null : '#14100e';
+    if (tt > top - 0.6) return '#f2f6f9';
+    if (dy > 0.95){ var m = dx + 3; if (Math.hypot(m / 1.2, (tt - 2.4) / 0.6) < 1 || Math.hypot((m + 0.45) / 0.5, (tt - 2.9) / 0.42) < 1 || Math.hypot((m - 1.25) / 0.42, (tt - 2.5) / 0.42) < 1) return ink;
+      if (tt > 1.3 && tt < 2 && [-0.85, -0.45, 0.35, 0.7].some(function(q){ return Math.abs(m - q) < 0.12; })) return ink;
+      if (Math.abs(tt - (2.1 + (m - 1.35) * (m - 1.35) * 1.1)) < 0.08 && m > 1.35 && m < 2.05) return '#efe6d0';
+      var hx = dx + 5, hz = tt - 3.4; if (Math.hypot(hx / 0.2, hz / 0.24) < 1) return '#b8502e'; }
+    return vn(dx * 0.5, tt * 0.6, i + 3) < 0.4 ? '#7a6e62' : vn(dx * 1.1, tt, i) > 0.62 ? '#a89c8c' : '#8e8274'; }), 0.125); };
+// the cave people's camp: two tents of hide on poles of bone, the fire between them, a skin stretched on a rack
+function iceTentFn(R, H, k){ return function(dx, dy, tt){ var r = Math.hypot(dx, dy), rr = R * (1 - tt / H);
+  if (tt > H * 0.85){ for (var q = 0; q < 4; q++){ var qa = q * 1.57 + 0.4; if (Math.hypot(dx - Math.cos(qa) * (tt - H * 0.85) * 0.5, dy - Math.sin(qa) * (tt - H * 0.85) * 0.5) < 0.1 && tt < H + 0.7) return '#efe4c8'; } }
+  if (r > rr || r < rr - 0.25 || tt > H) return null; if (dy > 0 && Math.abs(dx) < 0.5 * (1 - tt / 2) && tt < 2) return '#2a1c12';
+  var a = Math.atan2(dy, dx); if (Math.abs(Math.sin(a * 3 + k)) < 0.05 || Math.abs(tt - H * 0.35) < 0.06) return '#5a3c22'; return vn(a * 2 + k, tt * 0.8, k) < 0.4 ? '#a8865a' : '#bc9a6a'; }; }
+BUILD.iceCamp = function(B, t, i){ var q = t.w / 10; function bx(ox, oy, w, d, h, fn){ box(B, t.x + ox * q, t.y + oy * q, w * q, d * q, h * q, function(dx, dy, tt){ return fn(dx / q, dy / q, tt / q); }, 0.125); }
+  bx(-2.6, -1.2, 4, 4, 4.4, iceTentFn(1.9, 3.8, i)); bx(2.5, -1.6, 3.6, 3.6, 3.8, iceTentFn(1.7, 3.3, i + 3));
+  bx(0, 1.4, 1.6, 1.6, 1.4, function(dx, dy, tt){ var r = Math.hypot(dx, dy); if (tt < 0.3 && r > 0.5 && r < 0.75) return '#6e665e'; if (tt < 0.18 && r < 0.55) return '#3a2412';
+    if (tt >= 0.15 && r < 0.45 * (1 - tt / 1.3)) return tt < 0.45 ? '#ffd23a' : tt < 0.85 ? '#ff8a1a' : '#e5483a'; return null; });
+  bx(3.6, 1.6, 2.4, 0.5, 2.6, function(dx, dy, tt){ if (Math.abs(dy) > 0.15) return null; if (Math.abs(Math.abs(dx) - 1) < 0.08 && tt < 2.4) return '#e8dcc0'; if (tt > 2.25 && tt < 2.4 && Math.abs(dx) < 1.1) return '#e8dcc0';
+    if (Math.abs(dx) < 0.85 && tt > 0.8 && tt < 2.25 && Math.abs(dx) < 0.85 - Math.abs(tt - 1.5) * 0.35) return vn(dx * 1.5, tt * 1.5, i) < 0.45 ? '#8a6038' : '#a8784a'; return null; }); };
+// a crag of the peak itself: rock low down in bands, snow from its shoulders up
+BUILD.icePeakRock = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var a = Math.atan2(dy, dx), u = tt / t.h;
+  var rr = t.w * 0.5 * (1 - u) * (0.82 + vn(a * 1.6 + 4, tt * 0.35, i) * 0.36); if (Math.hypot(dx, dy * 1.25) > rr || u > 1) return null;
+  if (u > 0.5 - vn(a * 2, 1, i) * 0.15) return vn(dx * 0.5, tt * 0.5, i + 2) > 0.66 ? '#dce8f2' : '#f6fbfd';
+  return vn(a * 3, tt * 0.9, i + 5) < 0.38 ? '#6e7280' : vn(dx * 0.8, tt * 0.8, i) > 0.6 ? '#a8acb6' : '#8a8e9a'; }, 0.25); };
+// the walk is drawn bigger than a hole (a shed is 9 by 6 by 11), and these stand among pines twice a man's height and more
+LMSIZE.iceHerd = [21, 10.5, 10]; LMSIZE.iceSaber = [10, 6.8, 6.8]; LMSIZE.iceSeracs = [15, 8, 12.3]; LMSIZE.iceArch = [13.5, 3, 6.6]; LMSIZE.iceMill = [8.4, 7, 0.8]; LMSIZE.iceErratic = [7.5, 6, 5.4];
+LMSIZE.iceTarpit = [13, 9.8, 5.5]; LMSIZE.iceBergs = [15, 11.7, 7]; LMSIZE.iceCliff = [17, 7, 10.5]; LMSIZE.iceCamp = [15, 10.5, 7.5]; LMSIZE.icePeakRock = [16, 13, 19];
 // @@WORLD STOPS END@@
 window.RTT_PUTT_TRAIL = { API_VERSION:API_VERSION, COIN_V:COIN_V, BRK_V:BRK_V, PZ_COINS:PZ_COINS, plan:plan, slices:slices, run:run, GH:GH, TRAIL_L:TRAIL_L, ELEV:ELEV, KIT:KIT };
 })();

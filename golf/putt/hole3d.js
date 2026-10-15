@@ -77,6 +77,10 @@ function* steps(C, opt){
     var c = { m:m, n:null, z:Dp, dt:dt, gloss:0, bias:0, t:null, tag:'', nv:n, ti:ti, tj:tj, nl:nl };
     if (ge) for (var q in ge) c[q] = ge[q];
     S.g[sy][sx] = c;
+    /* A FINE PICTURE LAYS ONE GROUND POINT A PIXEL, so on a slope that rises away from the camera (rise over run about 0.45
+       to 1.4) its rows draw further apart than a pixel and the stage showed through between them as stripes. A pixel left
+       empty right under a point takes that point, a hair further away, so any real point there still wins. */
+    if (FINE && sy + 1 < Hh){ var k2 = k + W; if (Z[k2] < -1e8){ Z[k2] = Dp - 0.01; if (FX) WZ[k2] = z; S.g[sy + 1][sx] = c; } }
   }
   function splat(x, y, z, m, n, extra){
     var sx = Math.floor((x - b[0]) / ART + EPS), sy = Math.floor(y * se / ART - z * ce / ART + oy), Dp = y * ce + z * se;
