@@ -81,7 +81,8 @@ notes there.
 
 - In a cloud session it is cloned at `/home/user/runthe-gg-kb`. If it is not, attach it with
   add_repo before a design task. A small code fix can go ahead without it.
-- Look things up by reading `_index.md` first, then open only the notes the task needs.
+- The `kb` skill (`.claude/skills/kb/SKILL.md`) has the steps: how to reach it, look things up
+  with `node scripts/find.mjs <words>`, and write back.
 - After a meaningful change to a game, update its note there by pull request. Claude merges its own
   vault PRs once `vault-check` is green (that repo's `CLAUDE.md` has the rules).
 - Never put session logs or progress notes in any `CLAUDE.md`. Decisions go in the knowledge base.
