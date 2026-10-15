@@ -12553,15 +12553,15 @@ function render(){
   // opaque status-bar mask (mounted once on <body>, persists across renders) so scrolling content
   // never smears under the translucent iOS status bar.
   if(!document.getElementById('topmask')){ const tm=document.createElement('div'); tm.id='topmask'; tm.className='topmask'; document.body.appendChild(tm); }
-  const ftm=ftOn(); document.body.classList.toggle('ftmode', ftm);
-  if(!ftm) app.appendChild(header());
+  const ftm=ftOn(), ftc=ftClosetOn(); document.body.classList.toggle('ftmode', ftm); document.body.classList.toggle('ftcloset', ftc);
+  if(!ftm && !ftc) app.appendChild(header());
   const card=$(`<main class="card"></main>`);
   const screen=$(`<div class="screen scr-${S.screen}${['title','draft','season','setup','offseason','build','summary','dailyintro','dailyprev','dailyround','dailyresult','playoffwatch','rules','h2hhome','h2hlobby','h2hdraft','h2hplay','h2hpreview','h2hwatch','h2hresult','h2hboard'].includes(S.screen)?' wide':''}"></div>`);
   card.appendChild(screen);
   app.appendChild(card);
   // CS483/483c: the season-summary + off-season are focused, one-screen action pages, skip the footer link
   // row there (About/Privacy/Terms/Feedback all stay in the ≡ menu) so they fit without scrolling.
-  if(!ftm && S.screen!=='summary' && S.screen!=='offseason') app.appendChild(footer());
+  if(!ftm && !ftc && S.screen!=='summary' && S.screen!=='offseason') app.appendChild(footer());
   // returning from a Google redirect, the token exchange + profile fetch take a few network
   // round-trips. Show a visible "finishing" pill so the wait reads as in-progress instead of
   // "sign-in is broken" (otherwise the confirmation can land mid-sim and feel like a bug).
@@ -15531,6 +15531,7 @@ const FT_PLATE_V=1;              // golf/home/putt-world-*.jpg (golf/build-home-
 // before it (PUTT_TESTERS): owner, 2026-10-15, everything goes live at once. Everybody else keeps the classic home.
 function ftLive(){ try{ return puttOn(); }catch(e){ return false; } }
 function ftOn(){ return FT_SCREENS.includes(S.screen) && ftLive(); }
+function ftClosetOn(){ try{ return S.screen==='setup' && !!S.setupEdit && ftLive(); }catch(e){ return false; } }
 function ftDesk(){ try{ return matchMedia('(min-width: 900px) and (min-height: 560px)').matches; }catch(e){ return false; } }
 function ftGo(scr){ S.overlay=null; S.screen=scr; render(); }
 // the pixel check, drawn on the game's 18 by 18 icon grid and shaded by its medal renderer
@@ -15661,6 +15662,9 @@ function ftScene(side){
     ${putt?`<div class="ft-half ft-putt"><div class="ft-plate"></div><div class="ft-haze"></div></div>`:''}
     <div class="ft-seam"><i></i></div><div class="ft-shade"></div></div>`);
   ftClouds(sc);
+  if(decorLive()==='spooky'){ try{ spkStyleOnce(); sc.classList.add('spooky');
+    sc.insertAdjacentHTML('beforeend',`<div class="ft-spksky"></div><img class="ft-moon" src="${spkMoonURL()}" alt=""><img class="spk-scene-web l" src="${spkWebURL()}" alt=""><img class="spk-scene-web r" src="${spkWebURL()}" alt=""><div class="spk-fog ft-fog"></div>
+      <span class="spk-pk ft-pk1">${spkEl('pumpkin',38)}</span><span class="spk-pk ft-pk2" style="animation-delay:1.2s">${spkEl('pumpkin',26)}</span><span class="spk-pk ft-pk3" style="animation-delay:.6s">${spkEl('pumpkin',32)}</span>`); }catch(e){} }
   try{ const pl=sc.querySelector('.ft-plate'); if(pl) pl.style.backgroundImage=`url(home/putt-world-${ftDesk()?'d':'p'}.jpg?v=${FT_PLATE_V})`; }catch(e){}
   const img=sc.querySelector('.ft-hole'), ck=dailyCourseKey(todayKey());
   const have=(_dArt[ck]!==undefined)?_dArt[ck]:(dArtStored(ck)?_dArt[ck]:undefined);
@@ -15920,31 +15924,34 @@ function scrTitle(){
   const root=$(`<div class="ft ft-home${putt?'':' solo'}"></div>`);
   root.appendChild(ftScene());
   root.appendChild(ftTopBar());
-  // your golfer, on the tee
-  const h=desk?Math.round(Math.max(220,Math.min(380,innerHeight*0.38))):Math.round(Math.max(130,Math.min(240,innerHeight*0.27)));
+  // your golfer, on the tee. On a phone the tag, the pin strip and the gift note stack under the golfer, so the
+  // golfer takes what is left above the doors (and the tab bar, the doors and their play buttons below)
+  const pend=loginPend();
+  const h=desk?Math.round(Math.max(220,Math.min(380,innerHeight*0.38))):Math.round(Math.max(104,Math.min(236,innerHeight-450-(pend?54:0))));
   const tee=$(`<div class="ft-tee"><div class="ft-teebox"></div><div class="ft-markers"><i></i><i></i></div><button type="button" class="ft-fig" aria-label="Your golfer. Open the closet">${pxFigureHTML(S.look,h)}${decorLive()==='spooky'?(spkStyleOnce(),'<span class="ft-pk">'+spkEl('pumpkin',22)+'</span>'):''}</button></div>`);
   tee.querySelector('.ft-fig').onclick=()=>ftCloset();
   tee.appendChild(ftTag(desk));
   root.appendChild(tee);
-  // today's pin sheet: a card on a desktop, a strip of pins that opens into the card on a phone
-  const pend=loginPend();
+  // today's pin sheet: a card on a desktop, a strip of pins under the bag tag that opens into the card on a phone
   if(pend){ const n=$(`<button type="button" class="ft-giftnote"><span class="ft-gi">${ftIcon('gift')}</span><span><b>Your day ${pend.n} gift is here</b>${esc(loginRewLabel(pend.rew))}. Tap to open it.</span></button>`);
-    n.onclick=()=>{ ftBurst(n); claimLoginGift(); }; root.appendChild(n); root.classList.add('has-gift'); }
-  root.appendChild(desk?ftSheet(false):ftSheet(true));
+    n.onclick=()=>{ ftBurst(n); claimLoginGift(); }; (desk?root:tee).appendChild(n); root.classList.add('has-gift'); }
+  (desk?root:tee).appendChild(desk?ftSheet(false):ftSheet(true));
   // the two doors
   const cs=careerSaveInfo(), ri=resumeInfo();
   let pc=[]; try{ if(cs && !cs.ended) pc.push(`<span class="ft-chip g">${cs.circuitMode?'Legend Circuit':'Career'} · Yr ${cs.year||1}</span>`); else if(ri) pc.push(`<span class="ft-chip g">Golfer ${ri.n} of 8</span>`); }catch(e){}
   try{ const d=ftPins()[0]; pc.push(`<span class="ft-chip">${d.state==='done'?'Play 18 · '+d.val:d.sub.replace(' at today\'s course','')}</span>`); }catch(e){}
   try{ if(spotlightLiveToday()) pc.push(`<span class="ft-chip">Spotlight live</span>`); }catch(e){}
-  const pro=$(`<button type="button" class="ft-door pro" data-side="pro"><span class="ft-dk"><span class="ft-long">Career · Head to Head · Play 18</span><span class="ft-short">Career · H2H · Play 18</span></span><span class="ft-dt">Pro Tour</span><span class="ft-row">${pc.join('')}</span><span class="ft-go">Step onto the tour ›</span></button>`);
-  pro.onclick=()=>ftGo('protour'); root.appendChild(pro);
+  const pp=ftProPlay();
+  const pro=$(`<div class="ft-door pro" data-side="pro"><button type="button" class="ft-dbtn" aria-label="Pro Tour: career, head to head and Play 18"><span class="ft-dk"><span class="ft-long">Career · Head to Head · Play 18</span><span class="ft-short">Career · H2H · Play 18</span></span><span class="ft-dt">Pro Tour</span><span class="ft-row">${pc.join('')}</span><span class="ft-go">Step onto the tour ›</span></button><button type="button" class="ft-play" aria-label="Play ${esc(pp.what)}"><i class="ft-tri"></i><span>Play</span><small>${esc(pp.what)}</small></button></div>`);
+  pro.querySelector('.ft-dbtn').onclick=()=>ftGo('protour'); pro.querySelector('.ft-play').onclick=pp.go; root.appendChild(pro);
   if(putt){ let m=null; try{ m=window.RTT_PUTT.summary(puttHost()); }catch(e){}
     const hearts=m?ftHearts(m.lives,m.max):'';
-    const door=$(`<button type="button" class="ft-door putt" data-side="putt"><span class="ft-dk">Worlds · Stars · Members</span><span class="ft-dt">Putt Putt</span><span class="ft-row">${m?`<span class="ft-chip">${hearts}</span><span class="ft-chip g">${esc(m.world)} · hole ${m.lv}</span>`:''}</span><span class="ft-go">Into the world ›</span></button>`);
-    door.onclick=()=>ftGo('putthub'); root.appendChild(door); }
+    const door=$(`<div class="ft-door putt" data-side="putt"><button type="button" class="ft-dbtn" aria-label="Putt Putt: worlds, stars and the Members Tour"><span class="ft-dk">Worlds · Stars · Members</span><span class="ft-dt">Putt Putt</span><span class="ft-row">${m?`<span class="ft-chip">${hearts}</span><span class="ft-chip g">${esc(m.world)} · hole ${m.lv}</span>`:''}</span><span class="ft-go">Into the world ›</span></button><button type="button" class="ft-play" aria-label="Play Putt Putt"><i class="ft-tri"></i><span>Play</span><small>${m?'Hole '+m.lv:'Putt Putt'}</small></button></div>`);
+    door.querySelector('.ft-dbtn').onclick=()=>ftGo('putthub');
+    door.querySelector('.ft-play').onclick=()=>{ try{ track('home_play_putt'); }catch(e){} openPutt(); }; root.appendChild(door); }
   // desktop: the seam leans toward the other side while you hover one
   root.querySelectorAll('.ft-door').forEach(d=>{ const on=()=>root.setAttribute('data-hov',d.getAttribute('data-side')), off=()=>root.removeAttribute('data-hov');
-    d.addEventListener('mouseenter',on); d.addEventListener('mouseleave',off); d.addEventListener('focus',on); d.addEventListener('blur',off); });
+    d.addEventListener('mouseenter',on); d.addEventListener('mouseleave',off); d.addEventListener('focusin',on); d.addEventListener('focusout',off); });
   const ad=ftAd('home'); if(ad){ root.appendChild(ad); root.classList.add('has-ad'); }
   if(S.ftSheetOpen && !desk){ const scrim=$(`<div class="ft-scrim"></div>`); scrim.onclick=()=>{ S.ftSheetOpen=false; render(); };
     const box=$(`<div class="ft-sheetbox" role="dialog" aria-label="Today's pin sheet"><div class="ft-grab"></div></div>`); box.appendChild(ftSheet(false));
@@ -15955,6 +15962,18 @@ function scrTitle(){
   // the popups the home has always owed (welcome, season launch, roster arrow, and so on); the login gift is no longer one of them
   setTimeout(function(){ try{ flushPendingWelcome(); }catch(e){} try{ maybeS1LaunchPopup(); }catch(e){} try{ maybeS1EndPopup(); }catch(e){} try{ maybeSpookyPopup(); }catch(e){} try{ maybePassSettleNote(); }catch(e){} try{ maybeRosterPop(); }catch(e){} try{ maybeArcadeAd(); }catch(e){} }, 420);
 }
+function ftProPlay(){
+  try{ const list=homeModeList().filter(m=>['career','daily','spot'].includes(m.id)), hero=homeHeroPick(list), cs=careerSaveInfo(), ri=resumeInfo();
+    const go=(fn)=>()=>{ try{ track('home_play_pro',{mode:hero&&hero.id}); }catch(e){} fn(); };
+    if(hero && hero.id==='daily') return {what:'Play 18', go:go(startDailyChallenge)};
+    if(hero && hero.id==='spot') return {what:'Spotlight', go:go(startSpotlight)};
+    if(hero && hero.id==='career'){
+      if(cs && !cs.ended) return {what:`Career · Yr ${cs.year||1}`, go:go(resumeCareer)};
+      if(ri) return {what:'Your draft', go:go(restoreResume)};
+      return {what:'New career', go:go(()=>{ homeSetLastMode('career'); reset(); S.mode='easy'; S.screen='setup'; render(); })};
+    }
+  }catch(e){}
+  return {what:'Pro Tour', go:()=>ftGo('protour')}; }
 function ftHearts(lives,max){ lives=lives|0; max=max||9; const nh=Math.ceil(Math.max(max,lives)/3); let o='';
   for(let i=0;i<nh;i++){ const k=Math.max(0,Math.min(3,lives-i*3)); o+=`<span class="ft-heart" style="opacity:${k?0.45+0.55*k/3:0.3}">♥</span>`; }
   return o+`<span class="ft-hn">${lives}/${max}</span>`; }
@@ -16078,7 +16097,7 @@ function ftKeyNav(e){
   const els=[...root.querySelectorAll('button, a[href]')].filter(el=>{ const r=el.getBoundingClientRect(); return r.width>4 && r.height>4 && getComputedStyle(el).visibility!=='hidden'; });
   if(!els.length) return; e.preventDefault();
   const cur=document.activeElement && els.includes(document.activeElement) ? document.activeElement : null;
-  if(!cur){ (root.querySelector('.ft-door.pro')||els[0]).focus(); return; }
+  if(!cur){ (root.querySelector('.ft-door.pro .ft-play')||els[0]).focus(); return; }
   const a=cur.getBoundingClientRect(), ax=a.left+a.width/2, ay=a.top+a.height/2; let best=null, bs=1e9;
   els.forEach(el=>{ if(el===cur) return; const r=el.getBoundingClientRect(), dx=r.left+r.width/2-ax, dy=r.top+r.height/2-ay;
     const along=dx*dir[0]+dy*dir[1]; if(along<=4) return; const across=Math.abs(dx*dir[1]-dy*dir[0]); const sc=along+across*2.2; if(sc<bs){ bs=sc; best=el; } });
@@ -16115,6 +16134,14 @@ function ftStyleOnce(){ if(document.getElementById('ft-css')) return; const st=d
 .ft-scene.solo .ft-seam{display:none}
 .ft-shade{position:absolute;left:0;right:0;bottom:0;height:45%;background:linear-gradient(transparent,rgba(4,14,9,.75));pointer-events:none}
 .ft-home[data-hov=pro] .ft-putt,.ft-home[data-hov=putt] .ft-pro{filter:brightness(.45) saturate(.5)}
+/* Halloween: a moonlit dusk, the webs and pumpkins the classic home had, and a low fog */
+.ft-spksky{position:absolute;left:0;right:0;top:0;height:47%;pointer-events:none;background:linear-gradient(180deg,rgba(20,8,40,.9),rgba(54,24,86,.66) 45%,rgba(150,64,70,.22) 85%,transparent)}
+.ft-scene.spooky .ft-haze{background:linear-gradient(rgba(214,110,70,.75),transparent)}
+.ft-moon{position:absolute;top:calc(env(safe-area-inset-top,0px) + 58px);left:6%;width:min(17vw,120px);image-rendering:pixelated;filter:drop-shadow(0 0 24px rgba(255,236,170,.45))}
+.ft-scene .spk-scene-web{opacity:.5}
+.ft-scene .spk-pk{display:block}
+.ft-pk1{left:4%;top:45%} .ft-pk2{left:15%;top:48.5%} .ft-pk3{right:5%;top:46%}
+.ft-fog{top:40%;bottom:auto;height:24%;opacity:.85}
 
 /* the top bar */
 .ft-tb{position:absolute;z-index:20;left:0;right:0;top:0;display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 10px) max(14px,env(safe-area-inset-right,0px)) 8px max(14px,env(safe-area-inset-left,0px))}
@@ -16158,9 +16185,15 @@ function ftStyleOnce(){ if(document.getElementById('ft-css')) return; const st=d
 
 /* the doors */
 .ft-home{--ftad:12px} .ft-home.has-ad{--ftad:66px}
-.ft-door{position:absolute;z-index:12;bottom:calc(var(--botnav-space,0px) + var(--ftad));width:46%;background:none;border:0;padding:0;text-align:left;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.ft-door{position:absolute;z-index:12;bottom:calc(var(--botnav-space,0px) + var(--ftad));width:46%;text-align:left;display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.ft-dbtn{display:flex;flex-direction:column;align-items:inherit;gap:4px;background:none;border:0;padding:0;text-align:inherit;color:inherit}
+.ft-play{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 16px 0 14px;border:0;border-radius:12px;background:linear-gradient(180deg,#f8dc63,#d39f1d);color:#2a1a00!important;box-shadow:0 8px 20px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.6),inset 0 -3px 0 rgba(0,0,0,.15);font:400 22px/1 var(--display);text-transform:uppercase;white-space:nowrap}
+.ft-play small{font:800 10px var(--body);letter-spacing:.5px;opacity:.75;max-width:92px;overflow:hidden;text-overflow:ellipsis}
+.ft-tri{width:0;height:0;border-style:solid;border-width:7px 0 7px 11px;border-color:transparent transparent transparent #2a1a00;flex:none}
+.ft-play:active{transform:translateY(1px)}
 .ft-door.pro{left:max(14px,env(safe-area-inset-left,0px))}
 .ft-door.putt{right:max(14px,env(safe-area-inset-right,0px));align-items:flex-end;text-align:right}
+@media (max-width:360px){ .ft-play small{display:none} }
 .ft-home.solo .ft-door.pro{width:auto;right:14px}
 .ft-long{display:none} .ft-short{display:inline}
 .ft-dk{font:800 9px var(--body);white-space:nowrap;letter-spacing:2px;text-transform:uppercase;color:var(--gold);text-shadow:0 2px 6px rgba(0,0,0,.6)}
@@ -16232,12 +16265,14 @@ function ftStyleOnce(){ if(document.getElementById('ft-css')) return; const st=d
 .ft-house b{display:block;font:800 13px var(--body)}
 .ft-adgo{margin-left:auto;background:#3fd06b;color:#062010;border-radius:7px;padding:5px 9px;font:800 12px var(--body);white-space:nowrap}
 
-/* phone home: a column from the top bar down to the tab bar */
-.ft-home .ft-strip{top:auto;bottom:calc(var(--botnav-space,0px) + var(--ftad) + clamp(78px,12vh,104px))}
-.ft-home.has-gift .ft-giftnote{bottom:calc(var(--botnav-space,0px) + var(--ftad) + clamp(78px,12vh,104px) + 82px)}
+/* phone home: one column under the top bar (the golfer, the bag tag, the gift note, the pin strip), and the
+   doors with their play buttons over the tab bar */
+.ft-tee .ft-strip,.ft-tee .ft-giftnote{position:relative;left:auto;right:auto;top:auto;bottom:auto;width:calc(100vw - 24px);max-width:520px;margin-top:10px}
+.ft-tee .ft-giftnote{margin-top:8px;padding:6px 12px 6px 9px}
+.ft-tee .ft-giftnote b{font-size:15px}
 
 /* hubs */
-.ft-hub .ft-body{position:absolute;z-index:10;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 56px);bottom:var(--botnav-space,0px);overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px max(14px,env(safe-area-inset-right,0px)) 26px max(14px,env(safe-area-inset-left,0px))}
+.ft-hub .ft-body{position:absolute;z-index:10;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 56px);bottom:var(--botnav-space,0px);overflow-x:hidden;overflow-y:auto;overscroll-behavior-x:none;-webkit-overflow-scrolling:touch;padding:6px max(14px,env(safe-area-inset-right,0px)) 26px max(14px,env(safe-area-inset-left,0px))}
 .ft-hhead{margin:4px 0 12px}
 .ft-ht{font:400 46px/.92 var(--display);text-transform:uppercase;margin:4px 0 0;text-shadow:0 8px 30px rgba(0,0,0,.6);color:var(--cream)}
 .ft-hub.ft-protour .ft-half.ft-putt{display:none} .ft-hub.ft-protour .ft-half.ft-pro{clip-path:none}
@@ -16281,7 +16316,7 @@ function ftStyleOnce(){ if(document.getElementById('ft-css')) return; const st=d
 .ft-stage{position:relative;height:262px;margin:8px auto 0;max-width:420px}
 .ft-stage .ft-fig{position:absolute;left:50%;top:0;transform:translateX(-50%)}
 .ft-plinth{position:absolute;left:50%;transform:translateX(-50%);bottom:4px;width:220px;height:52px;border-radius:50%;background:radial-gradient(ellipse at 50% 35%,#5a3a26,#2c1a10 70%);box-shadow:0 0 0 3px var(--brass),0 12px 26px rgba(0,0,0,.6)}
-.ft-spot{position:absolute;inset:-20px -40px;background:radial-gradient(ellipse 40% 60% at 50% 30%,rgba(255,226,160,.18),transparent 70%)}
+.ft-spot{position:absolute;inset:-20px 0;background:radial-gradient(ellipse 40% 60% at 50% 30%,rgba(255,226,160,.18),transparent 70%)}
 .ft-slots{position:absolute;top:6px;display:grid;gap:7px}
 .ft-slots.l{left:0} .ft-slots.r{right:0}
 .ft-slot{display:flex;align-items:center;gap:8px;background:none;border:0;padding:0}
@@ -16320,6 +16355,10 @@ function ftStyleOnce(){ if(document.getElementById('ft-css')) return; const st=d
   .ft-chip{font-size:14px;padding:5px 10px;border-radius:8px}
   .ft-heart{font-size:15px}
   .ft-go{display:inline-block}
+  .ft-play{height:54px;padding:0 22px 0 18px;font-size:28px;border-radius:14px} .ft-play small{font-size:12px;max-width:none}
+  .ft-tri{border-width:9px 0 9px 14px}
+  .ft-moon{top:84px;left:9%;width:110px}
+  .ft-pk1{left:3%;top:47%} .ft-pk2{left:9%;top:50%} .ft-pk3{right:30%;top:47%}
   .ft-door:hover .ft-go,.ft-door:focus-visible .ft-go{color:var(--gold)}
   .ft-home .ft-sheet{position:absolute;z-index:14;right:56px;top:96px;width:360px}
   .ft-home.has-gift .ft-sheet{top:160px}
@@ -16345,6 +16384,42 @@ function ftStyleOnce(){ if(document.getElementById('ft-css')) return; const st=d
   .ft-mescr .ft-mlist{grid-column:3;max-width:none}
   .ft-mescr .foot{grid-column:1/-1;max-width:none}
   body.ftmode #rttnav{display:none}
+}
+/* THE CLOSET on the First Tee: the dressing room from Me. Wood walls, a brass ringed plinth, glass tiles */
+body.ftcloset{--brass:#d8b45a;--glt:rgba(244,227,201,.22);--soft:#d8c3a0;background:#1a0f0a}
+body.ftcloset #app{padding-top:env(safe-area-inset-top,0px)}
+body.ftcloset .topmask{background:#2a1a11}
+body.ftcloset::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(ellipse 70% 32% at 50% 18%,rgba(255,226,160,.22),transparent 70%),repeating-linear-gradient(90deg,transparent 0 58px,rgba(0,0,0,.22) 58px 60px),linear-gradient(180deg,#3a2418,#24160f 70%,#1a0f0a)}
+body.ftcloset .card{background:none!important;border:0!important;box-shadow:none!important}
+body.ftcloset .retro-creator{max-width:520px;border:0;background:none;box-shadow:none;padding:8px 14px 0}
+body.ftcloset .retro-title{font:400 40px/.95 var(--display);letter-spacing:0;text-transform:uppercase;background:none;-webkit-text-fill-color:#f6e4b8;color:#f6e4b8;text-shadow:0 6px 24px rgba(0,0,0,.6)}
+body.ftcloset .retro-title::before{content:'Your locker';display:block;font:800 10px var(--body);letter-spacing:2px;color:var(--brass);-webkit-text-fill-color:var(--brass);margin-bottom:4px}
+body.ftcloset .retro-sub{color:#d8bf97;font:600 12px var(--body);margin:4px 0 8px}
+body.ftcloset .setup-shop .shop-sticky{top:env(safe-area-inset-top,0px);background:rgba(38,23,15,.86);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-radius:0 0 14px 14px;border-bottom:1px solid rgba(216,180,90,.35);box-shadow:0 10px 16px -10px rgba(0,0,0,.7);margin:0 -14px 6px;padding:6px 14px 8px}
+body.ftcloset .shop-preview::before{background:radial-gradient(60% 80% at 50% 0%,rgba(255,226,160,.26),rgba(255,226,160,.06) 55%,transparent 75%)}
+body.ftcloset .shop-preview::after{height:34px;bottom:-4px;width:min(62%,230px);background:radial-gradient(ellipse at 50% 35%,#5a3a26,#2c1a10 70%);box-shadow:0 0 0 3px var(--brass),0 10px 22px rgba(0,0,0,.6)}
+body.ftcloset .cb-hd{color:var(--brass)} body.ftcloset .cb-none{color:#bfa682}
+body.ftcloset .closet-abtn{border-radius:10px;border:1px solid rgba(216,180,90,.5);background:rgba(255,255,255,.05);color:#f4e3c9}
+body.ftcloset .closet-abtn.ca-store{background:linear-gradient(180deg,#f8dc63,#d39f1d);border:0;color:#2a1a00}
+body.ftcloset .closet-abtn.ca-best{border-color:rgba(216,180,90,.5);color:var(--gold)}
+body.ftcloset .segrow{background:rgba(0,0,0,.28);border:1px solid rgba(216,180,90,.28)}
+body.ftcloset .segrow button{color:#d8bf97}
+body.ftcloset .segrow button.on{background:linear-gradient(180deg,#e7c76c,#b8891f);color:#2a1a00}
+body.ftcloset .catchip{border-color:rgba(216,180,90,.3);background:rgba(255,255,255,.04);color:#e9d6b5}
+body.ftcloset .catchip.on{border-color:var(--gold);background:rgba(241,208,74,.16);color:var(--gold)}
+body.ftcloset .stile{border-radius:12px;border:1px solid rgba(216,180,90,.3);background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(0,0,0,.18));box-shadow:0 8px 18px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.08)}
+body.ftcloset .stile.own{border-color:rgba(216,180,90,.42);background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(0,0,0,.16))}
+body.ftcloset .stile.eq{border-color:var(--gold);background:linear-gradient(180deg,rgba(241,208,74,.2),rgba(0,0,0,.12));box-shadow:0 0 0 1px var(--gold),0 8px 18px rgba(0,0,0,.3)}
+body.ftcloset .sthumb{background:rgba(0,0,0,.35);box-shadow:inset 0 0 0 2px rgba(216,180,90,.55);border:0}
+body.ftcloset .sfoot.own{color:#d8bf97}
+body.ftcloset .setup-shopbtn{border-color:rgba(216,180,90,.45)!important;background:rgba(255,255,255,.05)!important;color:var(--gold)!important}
+body.ftcloset .accboost{border-color:rgba(216,180,90,.3);background:rgba(0,0,0,.2)}
+body.ftcloset .setup-actionbar{border-top:1px solid rgba(216,180,90,.3);background:linear-gradient(180deg,rgba(26,15,10,0),#1f130c 34%)}
+body.ftcloset .setup-actionbar .btn.ghost{border-color:rgba(216,180,90,.45);color:#f4e3c9;background:rgba(255,255,255,.04)}
+@media (min-width:900px){
+  body.ftcloset .retro-creator{max-width:760px}
+  body.ftcloset .closet-sticky .shop-preview{height:230px!important} body.ftcloset .closet-sticky .shop-preview .avatarfig{height:230px!important;width:184px!important}
+  body.ftcloset .retro-title{font-size:64px}
 }
 /* the tab bar's ticket for the Pass, and room for the home's ad slot under the doors */
 body.ftmode #app{padding:0}
@@ -16608,8 +16683,9 @@ function catPlural(label){
 function scrSetup(){
   const guest=!sbSignedIn();
   const editing=!!S.setupEdit;   // CS356c: editing the profile golfer from the Trophy Room (not starting a career)
+  const ftc=ftClosetOn(); if(ftc) ftStyleOnce();   // the First Tee's closet is the Me page's dressing room
   const wrap=$(`<div class="retro-creator setup-shop"></div>`);
-  wrap.appendChild($(`<div class="retro-title">▸ ${editing?'Your Closet':'Create Your Golfer'}</div>`));
+  wrap.appendChild($(`<div class="retro-title">${ftc?'The Closet':'▸ '+(editing?'Your Closet':'Create Your Golfer')}</div>`));
   wrap.appendChild($(`<div class="retro-sub">${editing?(guest?'Designing your golfer is part of a free account':'Your closet &middot; dress your golfer with everything you own'):((S.special?'Monthly Spotlight':(S.daily?'Play 18':'Career Mode'))+(guest?' &middot; sign in to design your golfer':' &middot; style your golfer, then build your skills'))}</div>`));
 
   // A signed-out player does not design a golfer. Not the appearance chips, not the skin slider, not the
