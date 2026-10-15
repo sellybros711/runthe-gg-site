@@ -29,9 +29,9 @@ export async function play(page, t) {
   await t.until(() => /YOUR ROSTER IS SET/i.test(document.body.innerText), 20000);
   await t.hold(2500);
   await t.tap('#b-playball');
-  const end = Date.now() + 70000;
+  // Counted in steps, not the machine's clock: the recorder runs the page on its own time.
   let fast = false;
-  while (Date.now() < end && !(await page.$('#s-over.on'))) {
+  for (let n = 0; n < 200 && !(await page.$('#s-over.on')); n++) {
     if (await page.$('#sheet-trade.on')) {
       await t.hold(1600);
       const i = await bestOffer(page);

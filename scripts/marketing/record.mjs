@@ -14,9 +14,15 @@
      export async function play(page, t) {}          what the clip shows
      export const seconds = 20;                      optional: the most it may run
      export const hide = ['/baseball/board.js'];     optional: files served as missing (see below)
+     export const viewport = { width: 504, height: 896 };   optional: CSS pixels, 9:16 (432x768 default)
 
    `t` holds the helpers: t.tap(locator or selector) moves a visible finger there and taps it,
-   t.hold(ms) pauses on screen, t.until(fn, ms) waits for something on the page.
+   t.hold(ms) pauses on screen, t.until(fn, ms) waits for something on the page. All three count
+   the PAGE's time, not the machine's (see THE CLOCK below), so a shot reads the same on any computer.
+
+   A bigger viewport fits more of a screen at once and draws it smaller. A draft whose board and
+   choices do not fit on one phone screen wants one, or the clip spends its time scrolling past
+   the thing it is about.
 
    The page is served from disk, the way the site's own browser checks do it, so a clip shows the
    code in this checkout and nothing on the network. That also means no real account, no real
@@ -27,21 +33,30 @@
    gets a 404 for it, which every game here treats as "no board" and draws as a plain dash. Never
    stub a server with made-up answers: a rank or a count on camera has to be real.
 
+   THE CLOCK. A frame is taken every 1/30 of a second of the page's own time, however long the
+   machine takes to draw it. The browser's clock is paused between frames (virtual time) and each
+   frame is drawn on request (begin-frame control), so timers, requestAnimationFrame and CSS
+   animations all move exactly one frame's worth per frame. The first version filmed with Chrome's
+   screencast, which sends a frame whenever it manages to draw one: at full phone resolution that
+   was about 20 a second, unevenly, and the owner called the clips laggy (2026-10-15). This way a
+   slow machine only makes a recording take longer, never look worse.
+
    The output is H.264 1080x1920 at 30 fps with a silent audio track, which X, Instagram Reels and
    Facebook all take. publish.mjs --check reads the result and refuses anything they would not.
 
-   Needs Playwright (npm install --no-save playwright, or the sandbox's global copy) and ffmpeg. */
+   Needs Playwright (npm install --no-save playwright, or the sandbox's global copy), Chromium's
+   headless shell (npx playwright install chromium-headless-shell) and ffmpeg. */
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const args = process.argv.slice(2);
 const opt = (f, d) => { const i = args.indexOf(f); return i < 0 ? d : args[i + 1]; };
 const name = args.find((a, i) => !a.startsWith('--') && !['--out', '--speed'].includes(args[i - 1]));
-if (!name) { console.error('usage: node scripts/marketing/record.mjs <shot> [--out marketing/clips/x.mp4] [--keep]'); process.exit(2); }
+if (!name) { console.error('usage: node scripts/marketing/record.mjs <shot> [--out marketing/clips/x.mp4] [--speed 1.5] [--keep]'); process.exit(2); }
 const shotFile = path.join(ROOT, 'scripts/marketing/shots', `${name}.mjs`);
 if (!fs.existsSync(shotFile)) {
   const have = fs.readdirSync(path.dirname(shotFile)).filter((f) => f.endsWith('.mjs')).map((f) => f.slice(0, -4));
@@ -52,10 +67,12 @@ const day = new Date().toISOString().slice(0, 10);
 const out = path.resolve(ROOT, opt('--out', `marketing/clips/${day}-${name}.mp4`));
 const SPEED = Math.max(0.25, +opt('--speed', 1) || 1);
 const FFMPEG = process.env.FFMPEG || 'ffmpeg';
-const CHROME = process.env.PS_CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 
-// A phone: 432x768 CSS pixels at 2.5x is exactly 1080x1920, so frames need no scaling.
-const VIEW = { width: 432, height: 768 }, DPR = 2.5, W = 1080, H = 1920;
+// The frame is always 1080x1920. The page's CSS size sets how much fits on it.
+const W = 1080, H = 1920, FPS = 30, FRAME = 1000 / FPS;
+const VIEW = shot.viewport || { width: 432, height: 768 };
+if (VIEW.width * 16 !== VIEW.height * 9) { console.error(`viewport ${VIEW.width}x${VIEW.height} is not 9:16`); process.exit(2); }
+const DPR = W / VIEW.width;
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css',
   '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json',
   '.woff2': 'font/woff2', '.woff': 'font/woff', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.gif': 'image/gif',
@@ -80,11 +97,41 @@ let pw;
 try { pw = await import('playwright'); } catch {
   console.error('Playwright is not installed. Run: npm install --no-save playwright'); process.exit(2);
 }
-// Without the flag Chrome's screencast sends CSS pixels (432x768) whatever the page's scale factor.
-const browser = await pw.chromium.launch({ args: [`--force-device-scale-factor=${DPR}`], ...(fs.existsSync(CHROME) ? { executablePath: CHROME } : {}) });
-const context = await browser.newContext({ viewport: VIEW, deviceScaleFactor: DPR, isMobile: true, hasTouch: true });
-await context.addInitScript(FINGER);
-const page = await context.newPage();
+/* Begin-frame control is a headless-shell feature, so this launches the shell itself and attaches
+   Playwright to it: Playwright's own launch cannot open a page that waits to be told to draw. */
+function findShell() {
+  if (process.env.PS_HEADLESS) return process.env.PS_HEADLESS;
+  for (const base of ['/opt/pw-browsers', path.join(os.homedir(), '.cache/ms-playwright')]) {
+    if (!fs.existsSync(base)) continue;
+    for (const d of fs.readdirSync(base).filter((x) => x.startsWith('chromium_headless_shell')).sort().reverse()) {
+      for (const f of ['chrome-linux/headless_shell', 'chrome-headless-shell-linux64/chrome-headless-shell', 'chrome-mac/headless_shell']) {
+        if (fs.existsSync(path.join(base, d, f))) return path.join(base, d, f);
+      }
+    }
+  }
+  return null;
+}
+const SHELL = findShell();
+if (!SHELL) { console.error('No Chromium headless shell. Run: npx playwright install chromium-headless-shell (or set PS_HEADLESS)'); process.exit(2); }
+const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'clip-profile-'));
+const proc = spawn(SHELL, ['--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-sandbox',
+  '--deterministic-mode', '--enable-begin-frame-control', '--disable-threaded-animation', '--disable-threaded-scrolling',
+  '--run-all-compositor-stages-before-draw', `--force-device-scale-factor=${DPR}`, 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe'] });
+const wsUrl = await new Promise((res, rej) => {
+  let buf = '';
+  proc.stderr.on('data', (d) => { buf += d; const m = buf.match(/DevTools listening on (ws:\/\/\S+)/); if (m) res(m[1]); });
+  proc.on('exit', (c) => rej(new Error(`the headless shell exited (${c}): ${buf.slice(-300)}`)));
+  setTimeout(() => rej(new Error('the headless shell did not start')), 20000);
+});
+const browser = await pw.chromium.connectOverCDP(wsUrl);
+const context = browser.contexts()[0];
+const opened = context.waitForEvent('page');
+await (await browser.newBrowserCDPSession()).send('Target.createTarget', { url: 'about:blank', enableBeginFrameControl: true });
+const page = await opened;
+const cdp = await context.newCDPSession(page);
+await cdp.send('Emulation.setDeviceMetricsOverride', { width: VIEW.width, height: VIEW.height, deviceScaleFactor: DPR, mobile: true });
+await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+await page.addInitScript(FINGER);
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e).slice(0, 200)));
 await page.route('**/*', async (r) => {
@@ -99,75 +146,116 @@ await page.route('**/*', async (r) => {
   await r.fulfill({ status: 200, contentType: TYPES[path.extname(f)] || 'application/octet-stream', body: fs.readFileSync(f) });
 });
 
+/* ---- the clock: one frame at a time, forever, until the shot is done --------------------------- */
+let now = 0, ticks = Number(process.hrtime.bigint()) / 1e6, rolling = false, rolledAt = 0, written = 0, last = null, stop = false;
+let ff = null, pumpError = null;
+const keepDir = args.includes('--keep') ? fs.mkdtempSync(path.join(os.tmpdir(), `clip-${name}-`)) : null;
+let waiters = [];
+const nextFrame = () => new Promise((res, rej) => { if (pumpError) rej(pumpError); else waiters.push({ res, rej }); });
+await cdp.send('Emulation.setVirtualTimePolicy', { policy: 'pause' });
+const advance = (ms) => new Promise((res) => {
+  cdp.once('Emulation.virtualTimeBudgetExpired', res);
+  cdp.send('Emulation.setVirtualTimePolicy', { policy: 'advance', budget: ms });
+});
+async function write(buf) {
+  if (keepDir) fs.writeFileSync(path.join(keepDir, `f${String(written).padStart(5, '0')}.jpg`), buf);
+  written++;
+  if (!ff.stdin.write(buf)) await new Promise((r) => ff.stdin.once('drain', r));
+}
+const pump = (async () => {
+  try {
+    while (!stop) {
+      await advance(FRAME);
+      now += FRAME; ticks += FRAME;
+      const f = await cdp.send('HeadlessExperimental.beginFrame',
+        { frameTimeTicks: ticks, interval: FRAME, ...(rolling ? { screenshot: { format: 'jpeg', quality: 92 } } : {}) });
+      if (rolling) {
+        // A frame with nothing new to draw repeats the last one, so the clip keeps time.
+        if (f.screenshotData) last = Buffer.from(f.screenshotData, 'base64');
+        if (last) await write(last);
+      }
+      const w = waiters; waiters = [];
+      for (const x of w) x.res();
+    }
+  } catch (e) {
+    pumpError = e;
+    for (const x of waiters) x.rej(e);
+  }
+})();
+
+const frames = async (n) => { for (let i = 0; i < n; i++) await nextFrame(); };
+const hold = async (ms) => { const end = now + ms; while (now < end) await nextFrame(); };
+const onScreen = (box) => box && box.y >= 64 && box.y + box.height <= VIEW.height - 8;
 const t = {
-  hold: (ms) => page.waitForTimeout(ms),
-  async until(fn, ms = 15000, arg) { await page.waitForFunction(fn, arg, { timeout: ms }); },
-  /* A tap the viewer can follow: a beat to see where it goes, the tap, a beat to see what it did. */
+  hold,
+  async until(fn, ms = 15000, arg) {
+    const end = now + ms;
+    while (!(await page.evaluate(fn, arg))) {
+      if (now > end) throw new Error(`waited ${ms / 1000}s of page time for: ${String(fn).slice(0, 120)}`);
+      await frames(3);
+    }
+  },
+  /* A tap the viewer can follow: a beat to see where it goes, the tap, a beat to see what it did.
+     The page only scrolls when the target is not already in full view, so a screen that fits
+     stays still. Then to the middle, not just into view: a sticky header can cover the top edge. */
   async tap(target, { before = 250, after = 450 } = {}) {
     const loc = typeof target === 'string' ? page.locator(target).first() : target;
-    // To the middle of the screen, not just into it: a sticky header can cover the top edge.
-    await loc.evaluate((el) => el.scrollIntoView({ block: 'center', behavior: 'instant' }));
-    await page.waitForTimeout(350);
-    const box = await loc.boundingBox();
+    let box = await loc.boundingBox();
+    if (!onScreen(box)) {
+      await loc.evaluate((el) => el.scrollIntoView({ block: 'center', behavior: 'smooth' }));
+      // A long smooth scroll takes a while: tap only once the target has stopped moving.
+      for (let prev = null, i = 0; i < 40; i++) {
+        await hold(100);
+        box = await loc.boundingBox();
+        if (prev && box && Math.abs(box.y - prev.y) < 0.5) break;
+        prev = box;
+      }
+    }
     if (!box) throw new Error(`nothing on screen to tap: ${target}`);
-    await page.waitForTimeout(before);
-    const x = box.x + box.width / 2, y = box.y + box.height / 2;
+    await hold(before);
     // page.mouse fires the pointer events the finger listens for; touchscreen.tap does not.
-    await page.mouse.click(x, y);
-    await page.waitForTimeout(after);
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await hold(after);
   },
 };
 
-await page.goto(`http://local.test${shot.page}`, { waitUntil: 'domcontentloaded' });
-if (shot.setup) await shot.setup(page, t);
+let failed;
+try {
+  await page.goto(`http://local.test${shot.page}`, { waitUntil: 'domcontentloaded' });
+  if (shot.setup) await shot.setup(page, t);
+} catch (e) { failed = e; }
 
-/* The camera. Chrome's screencast sends a frame only when the screen changes, each stamped with
-   its time, so a still moment costs nothing and the timing is the page's own. */
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), `clip-${name}-`));
-const frames = [];
-const cdp = await context.newCDPSession(page);
-cdp.on('Page.screencastFrame', async (f) => {
-  const file = path.join(dir, `f${String(frames.length).padStart(5, '0')}.jpg`);
-  fs.writeFileSync(file, Buffer.from(f.data, 'base64'));
-  frames.push({ file, at: f.metadata.timestamp });
-  await cdp.send('Page.screencastFrameAck', { sessionId: f.sessionId }).catch(() => {});
-});
-await cdp.send('Page.startScreencast', { format: 'jpeg', quality: 92, maxWidth: W, maxHeight: H, everyNthFrame: 1 });
-const started = Date.now() / 1000;
-const limit = (shot.seconds || 60) * 1000;
-let failed, timer;
-await Promise.race([
-  shot.play(page, t).catch((e) => { failed = e; }),
-  new Promise((res) => { timer = setTimeout(() => { console.log(`stopped at the shot's ${limit / 1000}s limit`); res(); }, limit); }),
-]);
-clearTimeout(timer);
-await page.waitForTimeout(400);
-const stopped = Date.now() / 1000;
-await cdp.send('Page.stopScreencast');
-await browser.close();
-if (failed) { console.error(`the shot failed: ${failed.message}`); process.exit(1); }
-if (frames.length < 2) { console.error('the screen never changed, so there is nothing to cut'); process.exit(1); }
-
-/* Each frame is held until the next one arrived, the last until the camera stopped. The first frame
-   starts the clip, so the setup never shows. */
-const list = [];
-for (let i = 0; i < frames.length; i++) {
-  const next = i + 1 < frames.length ? frames[i + 1].at : stopped;
-  list.push(`file '${frames[i].file}'`, `duration ${Math.max(0.001, (next - frames[i].at) / SPEED).toFixed(4)}`);
+/* The camera rolls from here. The setup never shows. */
+if (!failed) {
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  ff = spawn(FFMPEG, ['-y', '-loglevel', 'error',
+    '-f', 'image2pipe', '-c:v', 'mjpeg', '-framerate', String(FPS * SPEED), '-i', '-',
+    '-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=stereo',
+    '-vf', `scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2:color=black,format=yuv420p`,
+    '-c:v', 'libx264', '-profile:v', 'high', '-preset', 'slow', '-crf', '20', '-r', String(FPS),
+    '-c:a', 'aac', '-b:a', '64k', '-shortest', '-movflags', '+faststart', out], { stdio: ['pipe', 'inherit', 'inherit'] });
+  const ffDone = new Promise((res) => ff.on('exit', res));
+  rolling = true; rolledAt = now;
+  const limit = (shot.seconds || 60) * 1000;
+  try {
+    await Promise.race([
+      shot.play(page, t),
+      (async () => { while (now - rolledAt < limit) await frames(FPS); console.log(`stopped at the shot's ${limit / 1000}s limit`); })(),
+    ]);
+    await hold(400);
+  } catch (e) { failed = e; }
+  rolling = false;
+  ff.stdin.end();
+  const code = await ffDone;
+  if (code !== 0 && !failed) failed = new Error(`ffmpeg exited ${code}`);
 }
-list.push(`file '${frames[frames.length - 1].file}'`);
-fs.writeFileSync(path.join(dir, 'list.txt'), list.join('\n') + '\n');
-fs.mkdirSync(path.dirname(out), { recursive: true });
-const ff = spawnSync(FFMPEG, ['-y', '-loglevel', 'error',
-  '-f', 'concat', '-safe', '0', '-i', path.join(dir, 'list.txt'),
-  '-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=stereo',
-  '-vf', `scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2:color=black,fps=30,format=yuv420p`,
-  '-c:v', 'libx264', '-profile:v', 'high', '-preset', 'slow', '-crf', '21', '-r', '30',
-  '-c:a', 'aac', '-b:a', '64k', '-shortest', '-movflags', '+faststart', out], { stdio: 'inherit' });
-if (ff.status !== 0) { console.error(`ffmpeg failed (${ff.error ? ff.error.message : 'exit ' + ff.status})`); process.exit(1); }
-if (!args.includes('--keep')) fs.rmSync(dir, { recursive: true, force: true });
-else console.log(`raw frames kept in ${dir}`);
-
+stop = true;
+await pump.catch(() => {});
+await browser.close().catch(() => {});
+proc.kill();
+fs.rmSync(profile, { recursive: true, force: true });
+if (failed) { console.error(`the shot failed: ${failed.message}`); process.exit(1); }
+if (keepDir) console.log(`raw frames kept in ${keepDir}`);
 const size = fs.statSync(out).size / 1048576;
-console.log(`${path.relative(ROOT, out)}: ${((stopped - started) / SPEED).toFixed(1)}s${SPEED !== 1 ? ` at ${SPEED}x` : ''}, ${frames.length} frames, ${size.toFixed(1)} MB`);
+console.log(`${path.relative(ROOT, out)}: ${(written / FPS / SPEED).toFixed(1)}s${SPEED !== 1 ? ` at ${SPEED}x` : ''}, ${written} frames, ${size.toFixed(1)} MB`);
 if (errors.length) console.log(`the page threw ${errors.length} error(s) while recording; watch the clip before using it:\n  ${errors.slice(0, 5).join('\n  ')}`);
