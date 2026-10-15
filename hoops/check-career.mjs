@@ -371,10 +371,10 @@ section('5c. real people: on the court, and in the room on a story career');
   /* The invented locker room: three a club, named, never a real player. */
   const L = C.newLife({ seed: 'locker', league });
   L.team = 'BOS';
-  L.opt.story = 0; /* a career from before the story engine: no real room to read */
+  L.stage = 'col'; /* off the league there is no real room to read */
   const lk = C.lockerOf(L);
   const realNames = new Set(ROWS.map((r) => r.n || r.name));
-  ok(lk.length === 3 && lk.every((m) => m.n && !realNames.has(m.n)), `off a story career, every club carries three invented teammates (${lk.map((m) => m.n).join(', ')})`);
+  ok(lk.length === 3 && lk.every((m) => m.n && !realNames.has(m.n)), `off the league, every club carries three invented teammates (${lk.map((m) => m.n).join(', ')})`);
   /* A story career in the league reads the REAL room instead (the owner's
      call, 2026-10): the oldest man, the youngest, and the best of the rest,
      all on the club's roster right now, and {topp} a real man elsewhere. */
@@ -777,8 +777,6 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
   ok(C.recall(son, 'origin.father').v === T.pts, 'and the points to pass are his father\'s real points');
   const coachDad = JSON.stringify(dad.league.coach), coachSon = JSON.stringify(son.league.coach);
   ok(coachDad !== coachSon && Object.keys(son.league.coach).length === 30, 'the league he starts in is his father\'s, played forward');
-  const noSon = C.newLife({ seed: 'x', league, parent: par, story: false });
-  ok(!noSon.parent, 'a career from before the story engine never takes a father');
   /* Every challenge reads the career, and a challenge that fixes the
      difficulty fixes it. */
   const hard = C.newLife({ seed: 'ch', league, challenge: 'ch_hard', diff: 'easy' });
@@ -813,8 +811,8 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
   const small = C.newLife({ seed: 'size', pos: 'C', arch: 'c_rim', ht: 81, wt: 225, league });
   ok(tall.rt.reb > small.rt.reb && tall.rt.ath < small.rt.ath && tall.dur < small.dur, `a big center rebounds more, moves less and breaks down sooner (reb ${tall.rt.reb}/${small.rt.reb}, ath ${tall.rt.ath}/${small.rt.ath}, dur ${tall.dur}/${small.dur})`);
   ok(tall.ht === 88 && tall.wt === 290 && C.newLife({ seed: 'size', pos: 'PG', ht: 90, league }).ht === 78, 'a size outside the position is held to its range');
-  const old = C.newLife({ seed: 'size:old', pos: 'SF', arch: 'twoway', league, story: false });
-  ok(old.ht == null && C.ARCHES[old.arch].name === 'Two-way wing', 'a career without a size or with an old archetype is the same player it was');
+  const old = C.newLife({ seed: 'size:old', pos: 'SF', arch: 'twoway', league });
+  ok(old.ht === 79 && C.ARCHES[old.arch].name === 'Two-way wing', `a career with no size picked stands at the middle of its position, and an old archetype still reads (${old.ht})`);
 }
 
 /* The rotation adds up, you are in it once, and the league moves around you. */

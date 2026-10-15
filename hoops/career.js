@@ -42,7 +42,7 @@ const E = (typeof require !== 'undefined')
   : window.RTF_ENGINE;
 
 const CAREER_API_VERSION = 1;
-const LIFE_VERSION = 2;
+const LIFE_VERSION = 3;
 
 // ─── the league ─────────────────────────────────────────────────────────────
 
@@ -2202,13 +2202,14 @@ function newLife(opts) {
     life: { rel: 'single', kids: 0, since: 0 }, rival: null,
     look: cleanLook(o.look), rep: { fans: 50, resp: 50 },
     season: null, seasonsDone: 0, retired: false, final: null, steps: 0,
-    mem: {}, people: {}, traits: rollTraits(seed), opt: { legend: o.legend !== false, moments: o.moments !== false },
+    mem: {}, people: {}, traits: rollTraits(seed), opt: { legend: o.legend !== false, moments: true },
   };
-  if (o.story !== false) L.opt.story = STORY_VERSION;
-  /* A DUEL CAREER: the game is the team's and the moment is yours (see
-     duelOn). Only a story career gets it, so the story-off replay of 1,000
-     careers stays byte identical, and migrate never sets it. */
-  if (o.story !== false && o.duel !== false) L.opt.duel = 1;
+  /* EVERY CAREER IS A STORY CAREER, and a duel career: the game is the
+     team's and the moment is yours (see duelOn). The original engine retired
+     on 2026-10-15 (the owner's call); an old save is brought over by
+     migrate. */
+  L.opt.story = STORY_VERSION;
+  L.opt.duel = 1;
   /* Last season's lines, for the rotation screen and the Saturday contests. */
   if (L.opt.story && league.lines) L.league.lines = league.lines;
   /* The season the rosters are real for, and who coaches each club then. A
@@ -2317,14 +2318,17 @@ function newLife(opts) {
    written as `v: 1` and never read, so there was no way to give an old career a
    field a new feature needs. migrate() is called by the page on every load and
    on every cloud adopt, before anything else touches the career. It is
-   idempotent (a second call changes nothing) and it never moves a number the
-   season sim reads, so an old career plays on exactly as it would have.
+   idempotent (a second call changes nothing). Up to version 2 it never moved
+   a number the season sim reads; version 3 does on purpose: it makes an old
+   career a story career (the original engine retired, 2026-10-15), so it
+   plays on as the story engine plays it.
 
    v2 adds the story engine's containers:
      mem     { key: { y, v } }  what the career remembers, stamped with the year
      people  { id: { role, n, met, rel, notes } }  the invented people met
      traits  { name: { has, known } }  hidden traits, rolled off the seed
-     opt     { legend }  per-career settings */
+     opt     { legend }  per-career settings
+   v3 sets opt.story, opt.duel and opt.moments on every career. */
 const TRAITS = ['clutch', 'coachable', 'injuryProne', 'lateBloomer', 'lockerVoice', 'gymRat', 'hothead', 'bigStage', 'ironMan', 'filmJunkie', 'spender', 'saver', 'showman', 'loyal', 'mercenary'];
 /* A trait a career has, off its own stream so rolling it moves no other draw.
    Pairs that contradict each other are settled the same way every time. */
@@ -2353,6 +2357,11 @@ function migrate(L) {
     if (f.rivalWins) remember(L, 'rival.beat', f.rivalWins);
   }
   for (const k of TRAITS) if (!L.traits[k]) L.traits[k] = { has: false, known: false };
+  /* Version 3: the original engine retired (2026-10-15, the owner's call).
+     A career from before the story engine becomes a story career, a duel
+     career and a career with moments, and plays on from here as one. Its numbers from now on are the
+     story engine's, not the ones the old engine would have dealt. */
+  if (v < 3) { L.opt.story = STORY_VERSION; L.opt.duel = 1; L.opt.moments = true; }
   L.v = LIFE_VERSION;
   return L;
 }
