@@ -525,7 +525,42 @@ window.GA_ID='G-L29P5MRWKE';
      of the time. A player wrote in about it. */
   ENT.forEach(function(e){ if(!e) return; addPlayer(e.name, e.sport, e.col, (e.pt || (e.t&&e.t.length?e.t[0]:null)), e.f||0, 0, e); });
   var ROS=(window.RTG_ROSTERS && Array.isArray(window.RTG_ROSTERS.players)) ? window.RTG_ROSTERS.players : null;
-  if(ROS){ ROS.forEach(function(p){ if(p) addPlayer(p.n, p.s, p.col, p.t, 0, 1); }); }
+  /* A ROSTER ROW MEETS THE CORPUS BY NAME, SO ASK WHETHER IT IS THE SAME MAN.
+     The Browns signed a rookie linebacker named Justin Jefferson out of
+     Alabama. The corpus Justin Jefferson (Vikings, LSU) has no college on
+     file, so the rookie's row took his slot, his fame and his fact line: the
+     card said "Offensive Player of the Year" under a man who never played a
+     snap. A player wrote in about it.
+     samePerson() in data.js is no help here: the feed's positions are coarse
+     ("Guard") and its club is today's, so James Harden on the Cavaliers
+     would fail it. So: a shared club or number is the same man. Otherwise he
+     is a namesake when the corpus man was done before 2010, when one plays
+     offense and the other defense, or when the corpus career began years
+     before this man's first season. A namesake stays out of the pool: the
+     name on the card means the famous one. */
+  var BY_NAME={}; ENT.forEach(function(e){ if(e && TEAM_SPORTS[e.sport]) (BY_NAME[e.name+'|'+e.sport]=BY_NAME[e.name+'|'+e.sport]||[]).push(e); });
+  var ROS_YEAR=(function(){ var y=parseInt(String((window.RTG_ROSTERS||{}).updated||'').slice(0,4),10); return y>1900 ? y : new Date().getFullYear(); })();
+  var NFL_D=/linebacker|defensive|cornerback|safety|nose tackle|edge/i, NFL_O=/quarterback|running back|wide receiver|tight end|offensive|tackle|guard|center|fullback/i;
+  function nflSide(pos){ pos=String(pos||''); return NFL_D.test(pos) ? 'D' : NFL_O.test(pos) ? 'O' : ''; }
+  function has(arr, v){ return v!=null && v!=='' && (arr||[]).indexOf(v)!==-1; }
+  function namesake(e, p){
+    if(has(e.t, p.t) || has(e.j, p.j)) return false;
+    var d=e.decade||[];
+    if(d.length && d[d.length-1]<2010) return true;
+    if(p.s==='NFL'){ var a=nflSide(e.pos), b=nflSide(p.p); if(a && b && a!==b) return true; }
+    if(d.length && typeof p.exp==='number' && d[0]+9 < ROS_YEAR-p.exp-1) return true;
+    return false;
+  }
+  function rosterEnt(p){
+    var es=BY_NAME[p.n+'|'+p.s]; if(!es) return { ent:null, namesake:false };
+    for(var i=0;i<es.length;i++){ if(!namesake(es[i], p)) return { ent:es[i], namesake:false }; }
+    return { ent:null, namesake:true };
+  }
+  if(ROS){ ROS.forEach(function(p){
+    if(!p) return;
+    var m=rosterEnt(p); if(m.namesake) return;
+    addPlayer(p.n, p.s, p.col, p.t, m.ent ? (m.ent.f||0) : 0, 1, m.ent);
+  }); }
   /* Who is on a club TODAY, by name: rosters.js is the authority. A corpus
      player who is still playing was added above with act 0, because the
      corpus row arrives first and the roster row is then a duplicate. */
@@ -687,6 +722,10 @@ window.GA_ID='G-L29P5MRWKE';
     var e=(POOL.filter(function(q){ return q.name===r.name && q.sport===r.sport; })[0]||{})._ent;
     return { target: e || { name:r.name, sport:r.sport }, col: r.col, schools: r.opts }; }); };
 
+  /* Read-only view of who the pool holds under a name, for scripts/check-current.mjs. */
+  window.__rtgPoolRows = function(name, sport){ return POOL.filter(function(q){ return q.name===name && q.sport===sport; }).map(function(q){
+    return { team: q.team, col: q.col, aw: (q._ent && q._ent.aw) || [] }; }); };
+
   var idx=0, run=0, done=false, busy=false, started=false, startTs=0, elapsed=0, charged=false, attemptFirst=false;
   var choicesEl=document.getElementById('choices');
   /* The pool rows are trimmed down to what the round needs, so the fact line
@@ -788,6 +827,10 @@ window.GA_ID='G-L29P5MRWKE';
   function showFact(r){
     if(!factEl) return;
     var e = FACT_BY_NAME[r.name+'|'+r.sport];
+    // Only the record this round's player was dealt from: a fact about a
+    // namesake is a false thing said about this player.
+    var row = POOL.filter(function(q){ return q.name===r.name && q.sport===r.sport; })[0];
+    if(e && (!row || row._ent!==e)) e = null;
     // The round just asked about the college, so a college fact would be a
     // restatement rather than something new.
     var line = (e && window.RTGFact) ? RTGFact.of(e, { seed: idx, skip:{ col:1 } }) : null;
