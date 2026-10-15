@@ -2545,20 +2545,20 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "74",
-      "sha": "30a5f24d5b48d416"
+      "v": "79",
+      "sha": "391be5f56e9b9955"
     },
     "putt/land.js": {
-      "v": "8",
-      "sha": "507a60b4c9ac8c4c"
+      "v": "12",
+      "sha": "16836a5c5d24da69"
     },
     "putt/hole3d.js": {
-      "v": "14",
-      "sha": "fbda8419e98348ce"
+      "v": "16",
+      "sha": "62a0821ec99b53c3"
     },
     "putt/trail.js": {
-      "v": "27",
-      "sha": "84f3423fbcc49f72"
+      "v": "35",
+      "sha": "820caa939067d0e8"
     },
     "putt/mapland.js": {
       "v": "6",

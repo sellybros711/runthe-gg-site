@@ -582,7 +582,10 @@ if (!args.includes('--no-browser')){
         t.goTo(c.x - c.t[0] * (c.half + 2.5), c.y - c.t[1] * (c.half + 2.5)); await sleep(150); const s0 = side(...t.pos());
         t.stick(c.t[0], c.t[1]); await sleep(1600); t.stick(0, 0); out.over = side(...t.pos()) !== s0;
         // and off the side of the deck: the water holds him
-        t.goTo(c.x, c.y); await sleep(150); const q0 = t.pos(), nx = -c.t[1], ny = c.t[0];
+        // set down on the crossing and left until the walk across has stopped carrying him: a busy page can drift him a
+        // fraction of a foot toward the bank, where a slanted creek leaves dry land beside the deck
+        for (let i = 0; i < 30; i++){ t.goTo(c.x, c.y); await sleep(150); const q = t.pos(); if (Math.hypot(q[0] - c.x, q[1] - c.y) < 0.03) break; }
+        const q0 = t.pos(), nx = -c.t[1], ny = c.t[0];
         // pushed square off the side of the deck he never gets into the water, and gets no further than its edge
         let dry = true, far = 0; t.stick(nx, ny); for (let k = 0; k < 12; k++){ await sleep(100); const q = t.pos(); if (P.poolAt(q[0], q[1])) dry = false; far = Math.max(far, (q[0] - q0[0]) * nx + (q[1] - q0[1]) * ny); } t.stick(0, 0);
         out.held = dry && far < 2.8; out.hi = [dry, +far.toFixed(2), firstWater]; }
