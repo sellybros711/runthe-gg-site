@@ -148,13 +148,23 @@ var KIT = {
     low:['hay', 'pumpkin', 'bush'], brk:'hay', haz:'slow', hazC:['#6a4e2e', '#5a4024'], lm:['barn', 'scarecrow', 'cornfield'], wall:['#8b4a1e', '#5a2e10'],
     npc:{ skin:'tan', polo:'gold', hat:'stone', pants:'navy', hair:'auburn', hairStyle:'short', cap:true, hatStyle:'cap', gender:'male' }, who:'the farmer' }
 };
+/* A WORLD'S WALKS TRAVEL WITH ITS HOLES. Pirate Cove's holes go beach, town, jungle, Skull Rock, cove (land.js), and the walks
+   between them go the same way: putt.js names the stop (spec.kitAs), and the walk is planned with that stop's kit. Only the
+   kit changes; everything that asks which world this is still reads the world (spec.theme). */
+function kitFrom(base, o){ var k = {}; for (var q in base) k[q] = base[q]; for (q in o) k[q] = o[q]; return k; }
+KIT['pirate~town'] = kitFrom(KIT.pirate, { g:['#a89a86', '#b8aa94', '#988a76', 0.2], dens:0.45, low:['rock', 'shell', 'rock'], lm:['barrels', 'boat', 'lamps'] });
+KIT['pirate~jungle'] = kitFrom(KIT.pirate, { g:['#3f6a2a', '#4e7a32', '#2f5a22', 0.22], p:['#8a6a44', '#9a7a52', '#7a5a38'], plank:false, sea:false, tree:['broad', 'palm', 'broad'],
+  leaves:['#1f5a26', '#2b6e30', '#174a20'], bark:'#4a3624', low:['fern', 'bush', 'fern', 'rock'], haz:'water', hazC:['#2f8f9a', '#6fc8d0'], waterC:['#2f8f9a', '#6fc8d0'], lm:['ruin', 'statue', 'barrels'], dens:1.35, wall:['#a29e8a', '#6a6658'] });
+KIT['pirate~skull'] = kitFrom(KIT.pirate, { g:['#8a867c', '#9a968a', '#7a766c', 0.25], p:['#d8c08a', '#e6d09c', '#c4aa74'], plank:false, dens:0.35, low:['rock', 'rock', 'shell'], lm:['skullrock', 'wreck', 'barrels'], wall:['#8e8a80', '#5a5650'] });
+KIT['pirate~cove'] = kitFrom(KIT.pirate, { g:['#efd89a', '#f6e4b2', '#dcc384', 0.25], dens:1.25, lm:['wreck', 'barrels', 'boat'] });
+var LIFE_AS = { 'pirate~jungle':{ fly:['parrot', 5], mote:[['firefly', 14], ['butter', 6]] } };
 function kitOf(th){ return KIT[th] || KIT.clubhouse; }
 
 /* ---------------------------------------------------------------------------------- the plan */
 /* spec: { seed, theme, theme0 (the world being left, on a trail that crosses), cross, gateOpen, to (hole number),
    carpet: [colour, colour], flag } */
 function plan(spec){
-  var seed = spec.seed >>> 0, R = rng(seed), L = TRAIL_L, th = spec.theme, th0 = spec.cross ? (spec.theme0 || th) : th;
+  var seed = spec.seed >>> 0, R = rng(seed), L = TRAIL_L, th = spec.kitAs || spec.theme, th0 = spec.cross ? (spec.theme0 || th) : th;
   var HW = spec.halfW || HALFW, b = [-HW, -18, HW, L + 16];
   /* NO TWO WALKS ARE THE SAME WALK, AND THEY DO NOT ALL WALK UP THE SCREEN. A trail is laid out the way a course
      is routed: from the hole you left to the next tee by a dogleg, by switchbacks across the whole width, by a
@@ -260,7 +270,7 @@ function plan(spec){
   /* the secret clearing: the far side of the walk from the chest's, with room for the entrance, and always a
      path out to it so it reads as a place to go. The path ends at the doorway. */
   var sc = null, spur2 = [];
-  if (spec.secret){ var sk = SECRET_KIND[th] || 'secretdoor', ssz = LMSIZE[sk] || [6, 4, 5.5], srr = Math.max(ssz[0], ssz[1]) / 2 + 1.5;
+  if (spec.secret){ var sk = SECRET_KIND[spec.theme] || 'secretdoor', ssz = LMSIZE[sk] || [6, 4, 5.5], srr = Math.max(ssz[0], ssz[1]) / 2 + 1.5;
     for (var st2 = 0; st2 < 200 && !sc; st2++){ var s2 = SL * (0.2 + R() * 0.6), sd2 = st2 < 120 ? -sg : (R() < 0.5 ? -1 : 1), cp2 = beside(s2, sd2, srr + 6 + R() * 6), o3 = atS(s2);
       if (cp2[0] < b[0] + srr + 4 || cp2[0] > b[2] - srr - 4 || cp2[1] < 14 || cp2[1] > L - 8) continue;
       if (pathD(cp2[0], cp2[1]) < srr + 4 || Math.hypot(cp2[0] - clr.x, cp2[1] - clr.y) < srr + clr.r + 6 || Math.hypot(cp2[0] - start.x, cp2[1] - start.y) < srr + start.r + 4) continue;
@@ -580,7 +590,7 @@ function plan(spec){
     if (made && items.filter(function(t){ return t.id === made.prize; })[0].drops.length < PZ_COINS) made = null;
     if (!made){ back(S9); return; }
     made.th = themeAt(items.filter(function(t){ return t.id === made.prize; })[0].y);
-    made.clue = pzClue(made.k, made.th, RQ); made.name = PZ_NAME[made.k];
+    made.clue = pzClue(made.k, String(made.th).split('~')[0], RQ); made.name = PZ_NAME[made.k];
     P.puzzle = made; if (made.pen) P.pen = Object.assign({ gated:made.k === 'plate' }, made.pen);
     // the local stands near the start of the walk on a puzzle trail, so the clue comes before the puzzle does
     if (npc) for (var tn2 = 0; tn2 < 40; tn2++){ var nq2 = beside(SL * (0.06 + RQ() * 0.14), RQ() < 0.5 ? -1 : 1, PW + 1.6), nx2 = nq2[0], ny2 = nq2[1];
@@ -705,7 +715,7 @@ var LMSIZE = { shed:[9, 6, 11], green:[9, 7, 1], bench:[3, 1.2, 2], lamps:[1, 1,
   mesa:[11, 8, 13], tower:[5, 5, 15], cart:[5, 2.5, 3.5], basaltset:[7, 6, 9], vent:[5, 5, 4], skull:[5, 4, 5], igloo:[7, 7, 5], snowman:[3, 3, 5.5], cabin:[9, 6, 11],
   balloon:[6, 6, 16], kite:[3, 3, 12], pillar:[5, 5, 12], cabinets:[8, 2.5, 6.5], sign:[8, 1.5, 11], pylons:[6, 6, 12], crypt:[8, 6, 10], graves:[9, 6, 3], fenceyard:[9, 6, 3],
   barn:[11, 8, 13], scarecrow:[3, 2, 7], cornfield:[10, 8, 5], school:[12, 8, 13], swings:[8, 3, 6], slide:[4, 6, 5], mammoth:[9, 4, 6.5], cave:[10, 7, 6], tusks:[7, 2, 5],
-  factory:[11, 8, 13], gumballs:[5, 5, 7], canes:[8, 1.5, 5.5], secretdoor:[6, 4, 5.5], longneck:[13, 4, 11], dinoskel:[10, 4, 4.5], nest:[6, 6, 2.8], mooredship:[5, 14, 11.5] };
+  factory:[11, 8, 13], gumballs:[5, 5, 7], canes:[8, 1.5, 5.5], secretdoor:[6, 4, 5.5], skullrock:[5, 4, 5], longneck:[13, 4, 11], dinoskel:[10, 4, 4.5], nest:[6, 6, 2.8], mooredship:[5, 14, 11.5] };
 
 /* ------------------------------------------------------------------------------- the ground */
 function land(P){
@@ -713,7 +723,7 @@ function land(P){
   function kAt(y){ return kitOf(P.themeAt(y)); }
   return {
     gain:1.4,
-    bg:kitOf(sp.theme).g[0],
+    bg:kitOf(sp.kitAs || sp.theme).g[0],
     // a hole is flat ground, its rails and blocks stand up off it, its water and cup sit down in it
     h:function(x, y){ var fc = P.footAt(x, y); if (fc) return fc.c === 10 ? 0.42 : fc.c === 11 ? 0.55 : fc.c === 12 ? -0.3 : (fc.c === 5 || fc.c === 9) ? -0.3 : 0.05;
       var wd = P.walkD(x, y), z = (fbm(x * 0.045, y * 0.045, seed) - 0.45) * 2.4 * sm(PW + 0.5, PW + 7, wd);
@@ -728,17 +738,17 @@ function land(P){
       var wd = P.walkD(x, y), sh = P.shadeAt(x, y) * (P.fx ? 0.4 : 1), ex = sh ? { sh:sh } : null;   // under the console look the sun casts the real shadow, so the painted one is only a contact shade
       if (!P.feet.length && y < -1.5 && y > -16 && Math.abs(x - P.arch.x) < 7.5) return [Math.abs(x - P.arch.x) > 6.6 || y < -15.2 || y > -2.3 ? 'rail' : 'carpet'];
       var dc = Math.hypot(x - P.clr.x, y - P.clr.y) - P.clr.r, ds = Math.hypot(x - P.start.x, y - P.start.y) - (P.start.r - 1), dIn = Math.min(wd - PW, dc, ds);
-      if (dIn < 0){ if (dIn > -0.35){ ex = ex || {}; ex.edge = 1; } return [P.themeAt(y) === sp.theme ? 'path' : 'path0', ex]; }
+      if (dIn < 0){ if (dIn > -0.35){ ex = ex || {}; ex.edge = 1; } return [P.themeAt(y) === (sp.kitAs || sp.theme) ? 'path' : 'path0', ex]; }
       if (P.sea && P.sea.side * x > P.seaEdge(y) - 3.5) return ['sand', ex];
       if (dIn < 0.3){ ex = ex || {}; ex.edge = 1; }
       var fb = vn(x * 0.22, y * 0.22, seed + 77); if (fb > 0.74 && dIn > 1.2){ ex = ex || {}; ex.fl = Math.min(0.55, (fb - 0.74) * 4); }
-      return [P.themeAt(y) === sp.theme ? 'g' : 'g0', ex]; },
+      return [P.themeAt(y) === (sp.kitAs || sp.theme) ? 'g' : 'g0', ex]; },
     build:function(B){ P.things.forEach(function(t, i){ if (PLANT[t.k]) return; try{ (BUILD[t.k] || BUILD.rock)(B, t, i, P); }catch(e){} }); },
     mats:mats(P)
   };
 }
 function mats(P){
-  var k = kitOf(P.spec.theme), k0 = kitOf(P.themeAt(P.L)), T = P.spec.T || {};
+  var k = kitOf(P.spec.kitAs || P.spec.theme), k0 = kitOf(P.themeAt(P.L)), T = P.spec.T || {};
   // the ground darkens where something throws its shadow on it (c.sh), and grass grows flowers in beds
   function shd(col, f){ var n = parseInt(col.slice(1), 16), r = n >> 16, g2 = n >> 8 & 255, b2 = n & 255; f = 1 - f; return '#' + ((1 << 24) + (Math.round(r * f * 0.92) << 16) + (Math.round(g2 * f) << 8) + Math.round(b2 * Math.min(1, f * 1.08))).toString(16).slice(1); }
   var FL = ['#f7e36b', '#ffffff', '#f48fb1', '#b39ddb'];
@@ -889,7 +899,7 @@ BUILD.bridge = function(B, t){ var x = t.x, y = t.y, tx = t.tx, ty = t.ty, hl = 
     if (stone && tt < 1.15 && tt > 0) return (Math.floor(u * 2) + Math.floor(tt * 3)) % 2 ? rail : post;
     return null; }, 0.125); };
 /* the wall between two worlds, the width of the land with a doorway on the path, in the new world's stone */
-BUILD.wall = function(B, t, i, P){ var kx = kitOf(P.spec.theme), y = t.y, gx = t.gx, b = P.b, c1 = kx.wall[0], c2 = kx.wall[1];
+BUILD.wall = function(B, t, i, P){ var kx = kitOf(P.spec.kitAs || P.spec.theme), y = t.y, gx = t.gx, b = P.b, c1 = kx.wall[0], c2 = kx.wall[1];
   for (var x0 = b[0]; x0 < b[2]; x0 += 8){ var x1 = Math.min(b[2], x0 + 8); (function(x0, x1){ var zb = B.gz((x0 + x1) / 2, y);
     B.solid(x0, y - 0.9, zb - 0.6, x1, y + 0.9, zb + 7.4, function(px, py, pz){ var dx = Math.abs(px - gx), tt = pz - zb; if (Math.abs(py - y) > 0.8) return null;
       if (dx < PW + 0.4) return null;   // the doorway
@@ -942,6 +952,10 @@ BUILD.basaltset = function(B, t, i){ for (var k = 0; k < 5; k++) BUILD.basalt(B,
 BUILD.vent = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy), out = 2.4 * (1 - tt / t.h * 0.6), inn = 1.1; if (r > out) return null; if (r < inn) return tt < 0.6 ? (r < 0.8 ? '#ffb43a' : '#ff5a1a') : null; return (tt * 2 | 0) % 2 ? '#3a3236' : '#2a2428'; }); };
 BUILD.skull = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var d = Math.hypot(dx / 2.3, dy / 1.8, (tt - 2.6) / 2.4); if (d > 1) return null;
   if (dy > 0.9 && tt > 2.4 && tt < 3.6 && Math.abs(Math.abs(dx) - 0.9) < 0.45) return '#ff6a1a'; if (dy > 1 && tt < 1.5 && (dx * 3 | 0) % 2) return '#2a2428'; return '#d8d0c4'; }); };
+// Skull Rock's own skull: grey stone, dark sockets, a row of teeth, grass on the crown
+BUILD.skullrock = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var d = Math.hypot(dx / 2.3, dy / 1.8, (tt - 2.6) / 2.4); if (d > 1) return null;
+  if (dy > 0.9 && tt > 2.4 && tt < 3.6 && Math.abs(Math.abs(dx) - 0.9) < 0.45) return '#1a1612'; if (dy > 1 && tt > 1 && tt < 1.6 && Math.abs(dx) < 1.2) return ((dx * 3.4 | 0) % 2) ? '#d8d0bc' : '#5a5650';
+  if (tt > 4.4) return '#4f7a2e'; return ((tt * 2 | 0) + (dx * 1.5 | 0)) % 3 ? '#8e8a80' : '#a29e92'; }); };
 BUILD.igloo = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var d = Math.hypot(dx / 3.3, dy / 3.3, tt / 4.6); if (dy > 2.2 && Math.abs(dx) < 1.1 && tt < 2.6) return tt < 2 && Math.abs(dx) < 0.7 ? null : '#e8f2fb';
   if (d > 1) return null; return (Math.floor(tt / 0.8) % 2 ? (Math.floor((Math.atan2(dy, dx) + 4) * 2.5) % 2) : (Math.floor((Math.atan2(dy, dx) + 4) * 2.5 + 0.5) % 2)) ? '#f6f9fd' : '#cfdcea'; }); };
 BUILD.snowman = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
@@ -1116,12 +1130,14 @@ var BALLOON_COLS = [['#ff5a7a', '#ffd23a'], ['#2bb0ff', '#ffffff'], ['#7a5cff', 
 function sceneC(P){ var T = P.spec.T || {}; return { T:T, field:{ h:function(){ return 0; } }, poly:[[0, 0], [1, 0], [1, 1]], allPts:[[0, 0], [1, 1]], mats:{ at:function(){ return 0; } }, bounds:[1e9, 1e9, -1e9, -1e9], seed:P.seed,
   bumpers:[], blocks:[], ramps:[], loops:[], movers:[] }; }
 function slices(P){ var H3 = window.RTT_PUTT_3D; if (!H3) return null; P.fx = window.RTT_PUTT_FX !== 'off';
-  return H3.slices(sceneC(P), { elev:ELEV, art:TART, fx:P.fx, scene:{ b:P.b, land:land(P), zMax:20, clearAt:function(x, y){ return P.walkD(x, y) - PW - 0.5; } } }); }
+  return H3.slices(sceneC(P), { elev:ELEV, art:artOf(P), fine:!!P.spec.fine, tcell:TART, fx:P.fx, scene:{ b:P.b, land:land(P), zMax:20, clearAt:function(x, y){ return P.walkD(x, y) - PW - 0.5; } } }); }
 /* one dynamic thing (a chest, a crate, a gate leaf) rendered on its own, lit and outlined like the scene */
 var PROPS = {};
-function propSprite(key, P, buildFn, w, d, h){ if (PROPS[key] !== undefined) return PROPS[key]; var H3 = window.RTT_PUTT_3D; if (!H3) return null;
+// a fine walk (putt.js, FINE_WORLDS) is painted twice as finely, and its props with it, so nothing on it is coarser than the rest
+function artOf(P){ return P.spec.fine ? TART / 2 : TART; }
+function propSprite(key, P, buildFn, w, d, h){ if (P.spec.fine) key += '|fine'; if (PROPS[key] !== undefined) return PROPS[key]; var H3 = window.RTT_PUTT_3D; if (!H3) return null;
   var b = [-w / 2 - 1, -d / 2 - 1, w / 2 + 1, d / 2 + 1], land0 = { build:function(B){ buildFn(B); }, mats:{}, h:function(){ return 0; }, mat:function(){ return ['g']; } };
-  try{ var r = H3.render(sceneC(P), { elev:ELEV, art:TART, scene:{ b:b, land:land0, zMax:h + 1, noGround:true } }); var o = r.pr(0, 0, 0); PROPS[key] = { cv:r.cv, ax:o[0], ay:o[1] }; }catch(e){ PROPS[key] = null; }
+  try{ var r = H3.render(sceneC(P), { elev:ELEV, art:artOf(P), fine:!!P.spec.fine, tcell:TART, scene:{ b:b, land:land0, zMax:h + 1, noGround:true } }); var o = r.pr(0, 0, 0); PROPS[key] = { cv:r.cv, ax:o[0], ay:o[1] }; }catch(e){ PROPS[key] = null; }
   return PROPS[key]; }
 var BRK = {
   crate:function(B, x, y){ box(B, x, y, 1.6, 1.6, 1.6, function(dx, dy, tt){ var e = Math.abs(dx) > 0.62 || Math.abs(dy) > 0.62 || tt > 1.4 || tt < 0.2, cr = Math.abs(Math.abs(dx) - Math.abs(tt - 0.8)) < 0.14; if (Math.abs(dx) > 0.75 || Math.abs(dy) > 0.75 || tt > 1.55) return null; return e || cr ? '#8a5a2a' : '#c08a4e'; }, 0.125); },
@@ -1176,7 +1192,7 @@ function chestFn(lid, sv){ var th = lid * 1.8, ct = Math.cos(th), st = Math.sin(
     if (band(dx)) return w > dome - 0.08 ? IRON[2] : IRON[1];
     if (endK > 0.35) return Math.hypot(vc, w - 0.25) < 0.18 ? GOLD[1] : WOOD[0];   // the rounded end caps, a gold boss in each
     return wood(dx, vc * 1.4 + 2, 0.25); }, sv || 0.0625); }; }
-function gateFn(open, P){ var kx = kitOf(P.spec.theme), c1 = kx.wall[0], c2 = kx.wall[1];
+function gateFn(open, P){ var kx = kitOf(P.spec.kitAs || P.spec.theme), c1 = kx.wall[0], c2 = kx.wall[1];
   return function(B){ box(B, 0, 0, PW * 2 + 1, 1.2, 6.8, function(dx, dy, tt){ if (Math.abs(dy) > 0.25) return null; var half = PW + 0.4;
     if (open){ var leaf = Math.abs(Math.abs(dx) - half) < 0.25 && tt < 6.4; return leaf ? c2 : null; }
     if (Math.abs(dx) > half || tt > 6.4) return null; if (Math.abs(dx) < 0.1) return c2; return (Math.floor(dx / 0.55) % 2 && tt < 6.1 && tt > 0.3) ? '#3a2a1a' : c1; }, 0.125); }; }
@@ -1191,7 +1207,27 @@ function lockGateFn(open){ return function(B){ box(B, 0, 0, 3.4, 1, 3, function(
   if (Math.abs(dx) < 0.3 && Math.abs(tt - 1.4) < 0.3) return '#ffd23a'; return (Math.abs(tt - 0.6) < 0.12 || Math.abs(tt - 2.2) < 0.12 || (dx * 2.5 | 0) % 2 === 0) ? '#7a5a3a' : null; }, 0.125); }; }
 
 /* -------------------------------------------------------------------------------- the walk */
+/* A SMOOTHED WALK (spec.smooth): a walk is too big a scene to paint more finely in the time a player waits, so a fine world's
+   walk is painted as before and then doubled with Scale2x, which turns each pixel into four and follows the diagonals, so
+   edges stop stepping. The depth buffer is doubled with it (nearest), so what stands in front still hides the golfer. */
+var UP2 = typeof WeakMap === 'function' ? new WeakMap() : null;
+function up2(pic){ if (!pic || !pic.cv) return pic; var hit = UP2 && UP2.get(pic); if (hit) return hit;
+  var w = pic.cv.width, h = pic.cv.height, src = pic.cv.getContext('2d').getImageData(0, 0, w, h), S32 = new Uint32Array(src.data.buffer);
+  var cv = document.createElement('canvas'); cv.width = w * 2; cv.height = h * 2; var cx = cv.getContext('2d'), out = cx.createImageData(w * 2, h * 2), O = new Uint32Array(out.data.buffer), W2 = w * 2;
+  for (var y = 0; y < h; y++) for (var x = 0; x < w; x++){ var p = S32[y * w + x], a = y ? S32[(y - 1) * w + x] : p, b = x < w - 1 ? S32[y * w + x + 1] : p, c = x ? S32[y * w + x - 1] : p, d = y < h - 1 ? S32[(y + 1) * w + x] : p;
+    var o = (y * 2) * W2 + x * 2;
+    O[o] = (c === a && c !== d && a !== b) ? a : p; O[o + 1] = (a === b && a !== c && b !== d) ? b : p;
+    O[o + W2] = (d === c && d !== b && c !== a) ? c : p; O[o + W2 + 1] = (b === d && b !== a && d !== c) ? d : p; }
+  cx.putImageData(out, 0, 0);
+  var r = {}; for (var q in pic) r[q] = pic[q]; r.cv = cv; r.ART = (pic.ART || window.RTT_PUTT.ART) / 2;
+  r.pr = function(x, y, z){ var v = pic.pr(x, y, z); return [v[0] * 2, v[1] * 2]; };
+  if (pic.un) r.un = function(px, py, z){ return pic.un(px / 2, py / 2, z); };
+  if (pic.Z && pic.ZW){ var ZW = pic.ZW, ZH = Math.floor(pic.Z.length / ZW), Z2 = new Float32Array(ZW * 2 * ZH * 2);
+    for (var j = 0; j < ZH * 2; j++){ var sr = (j >> 1) * ZW, dr = j * ZW * 2; for (var i = 0; i < ZW * 2; i++) Z2[dr + i] = pic.Z[sr + (i >> 1)]; }
+    r.Z = Z2; r.ZW = ZW * 2; r.zy0 = (pic.zy0 || 0) * 2; }
+  if (UP2) UP2.set(pic, r); return r; }
 function run(box, P, pic, api){
+  if (P.spec.smooth) pic = up2(pic);
   var cv = document.createElement('canvas'); cv.className = 'pp-tcv'; box.appendChild(cv);
   var ctx = cv.getContext('2d'), alive = true, dpr = Math.min(3, window.devicePixelRatio || 1), W = 0, H = 0, kk = 1, ox = 0, oy = 0, ART = pic.ART || window.RTT_PUTT.ART;
   var found = api.found || {}, coinsGot = 0, pick = api.pick, sp = P.spec;
@@ -1417,7 +1453,7 @@ function run(box, P, pic, api){
 
   // ---- the life around him (LIFE): seeded where it is placed, free running once it moves
   // under cloud the new world's birds and set pieces would give it away, so the walk keeps the old world's (no ships: the sea is the new world's)
-  var lifeTh = api.clouds && sp.theme0 ? sp.theme0 : sp.theme, life = LIFE[lifeTh] || {}; if (lifeTh !== sp.theme){ life = Object.assign({}, life); delete life.ships; }
+  var lifeTh = api.clouds && sp.theme0 ? sp.theme0 : sp.theme, life = (lifeTh === sp.theme && sp.kitAs && LIFE_AS[sp.kitAs]) || LIFE[lifeTh] || {}; if (lifeTh !== sp.theme){ life = Object.assign({}, life); delete life.ships; }
   var LR = rng(P.seed ^ 0x51f3), reduce = false; try{ reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
   function rr(a, b){ return a + LR() * (b - a); }
   var flyers = [], motes = [], ships = [], balloons = [], tumbles = [], ghosts = [], puffs = [], puffT = 0;
@@ -1705,7 +1741,7 @@ function run(box, P, pic, api){
     /* only the part of the picture on the screen is drawn: the whole of it, blown up kk times, is many times the
        screen on a phone, every frame. The camera is on whole device pixels and kk is whole, so it is the same picture */
     var cw = pic.cv.width, ch = pic.cv.height, sx0 = Math.max(0, Math.floor(-ox / kk)), sy0 = Math.max(0, Math.floor(-oy / kk)), sx1 = Math.min(cw, Math.ceil((W - ox) / kk)), sy1 = Math.min(ch, Math.ceil((H - oy) / kk));
-    if (!(ox <= 0 && oy <= 0 && ox + cw * kk >= W && oy + ch * kk >= H)){ ctx.fillStyle = pic.bg || kitOf(sp.theme).g[0]; ctx.fillRect(0, 0, W, H); }
+    if (!(ox <= 0 && oy <= 0 && ox + cw * kk >= W && oy + ch * kk >= H)){ ctx.fillStyle = pic.bg || kitOf(sp.kitAs || sp.theme).g[0]; ctx.fillRect(0, 0, W, H); }
     if (sx1 > sx0 && sy1 > sy0) ctx.drawImage(pic.cv, sx0, sy0, sx1 - sx0, sy1 - sy0, ox + sx0 * kk, oy + sy0 * kk, (sx1 - sx0) * kk, (sy1 - sy0) * kk);
     if (PZ) drawPzGround(tsec);
     // everything that moves, far to near

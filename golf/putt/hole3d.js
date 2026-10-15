@@ -45,7 +45,7 @@ function* steps(C, opt){
      and the carpet's tufts and the water's glints are worked out on that cell (TR pixels across) with a glint one pixel
      wide inside it. The ground is laid one point a pixel (its rows still overlap at this camera), and no solid is
      sampled coarser than its pixels. Without opt.fine every one of these is exactly what it was. */
-  var FINE = !!opt.fine, TCELL = FINE ? 0.25 : ART, TR = Math.max(1, Math.round(TCELL / ART));
+  var FINE = !!opt.fine, TCELL = opt.tcell || (FINE ? 0.25 : ART), TR = Math.max(1, Math.round(TCELL / ART));
   // a twelfth of a foot is not exact in floating point, so a point laid on column i can land a hair under it and leave a gap
   var EPS = FINE ? 1e-6 : 0;
   var AP = C.allPts || C.poly, pxs = AP.map(function(p){ return p[0]; }), pys = AP.map(function(p){ return p[1]; });

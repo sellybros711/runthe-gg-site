@@ -3079,7 +3079,8 @@ function trailSpec(tid, from){
   var TR = tourOf(tid), K = TR.per || PER, to = from + 1, w = Math.min(TR.worlds.length - 1, Math.floor((to - 1) / K)), th = TR.worlds[w].theme;
   var cross = from >= 1 && from % K === 0, th0 = cross ? TR.worlds[w - 1].theme : th, tp = pload().tours[TR.id];
   var portrait = (window.innerHeight || 800) >= (window.innerWidth || 400);
-  return { secret:tid === 'main' && secretAt(to) ? { i:secretAt(to) } : null, key:tid + ':' + to, tid:tid, from:from, to:to, w:w, seed:hstr('trail:' + tid + ':' + to), theme:th, theme0:th0, cross:cross, plaza:(to - 1) % K === 0, gateOpen:opened(TR, tp, to), T:THEMES[th] || THEMES.clubhouse, halfW:portrait ? 36 : 46, loot:trailLoot(tid, to), holeTo:to <= TR.levels.length ? courseFoot(to, tid) : null, holeFrom:from >= 1 ? courseFoot(from, tid) : null, greet:from % K === 0 ? greetSpec(tid, w, to) : null };
+  var leg = (to - 1) % K + 1, kitAs = th === 'pirate' && !cross && tid === 'main' ? (leg >= 17 ? 'pirate~cove' : leg >= 13 ? 'pirate~skull' : leg >= 9 ? 'pirate~jungle' : leg >= 5 ? 'pirate~town' : null) : null;   // the walk goes where its holes go (land.js)
+  return { fine:false, smooth:fineOn({ theme:th }) && !cross, kitAs:kitAs, secret:tid === 'main' && secretAt(to) ? { i:secretAt(to) } : null, key:tid + ':' + to, tid:tid, from:from, to:to, w:w, seed:hstr('trail:' + tid + ':' + to), theme:th, theme0:th0, cross:cross, plaza:(to - 1) % K === 0, gateOpen:opened(TR, tp, to), T:THEMES[th] || THEMES.clubhouse, halfW:portrait ? 36 : 46, loot:trailLoot(tid, to), holeTo:to <= TR.levels.length ? courseFoot(to, tid) : null, holeFrom:from >= 1 ? courseFoot(from, tid) : null, greet:from % K === 0 ? greetSpec(tid, w, to) : null };
 }
 /* THE HOLES ON A TRAIL ARE THE REAL HOLES. The hole you just left lies behind you where the walk starts, and the
    hole you are walking to lies beyond the arch, each drawn from its own layout: its carpet, its rails, its water and
@@ -3102,7 +3103,7 @@ function courseFoot(n, tid){ var key = tid + ':' + n; if (FOOT[key] !== undefine
     return FOOT[key] = { k:k, st:st, W:W, H:H, x0:x0, y0:y0, codes:codes, cup:C.cup.slice(), tee:C.tee.slice(), n:n,
       T:{ carpet:T.carpet || '#2f8f4e', carpet2:T.carpet2 || '#2a8246', wall:T.wall || '#f4efe2', wallHi:T.wallHi || '#ffffff', block:T.wallLo || '#a99c7c', flag:T.flag || '#e53935' } };
   }catch(e){ return FOOT[key] = null; } }
-function trailKey(sp){ return sp.key + '|' + sp.halfW + '|' + (sp.gateOpen ? 1 : 0) + (sp.greet ? '|g' : ''); }
+function trailKey(sp){ return sp.key + '|' + sp.halfW + '|' + (sp.gateOpen ? 1 : 0) + (sp.greet ? '|g' : '') + (sp.fine ? '|f' : ''); }
 // kept on the module, not on S, so a plan survives the mode being closed and opened again
 var TRP = {};
 function trailPlan(sp){ var k = trailKey(sp); if (!TRP[k]){ TRP[k] = window.RTT_PUTT_TRAIL.plan(sp); var ks = Object.keys(TRP); if (ks.length > 12) delete TRP[ks[0]]; } return TRP[k]; }
