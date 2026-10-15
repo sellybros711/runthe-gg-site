@@ -37,6 +37,12 @@ const LIVE = process.env.MARKETING_LIVE === 'true';
 const CHANNELS = ['x', 'facebook', 'instagram', 'reddit', 'newsletter'];
 const AUTO = ['x', 'facebook', 'instagram'];
 const env = process.env;
+// X charges per post, and a post carrying a link costs about 13 times a plain one ($0.20 against
+// $0.015, 2026-10). The owner's budget (2026-10-15): at most this many X posts with a link in any one
+// week, Monday to Sunday UTC. The rest are plain text that points to the link in the bio.
+const X_LINK_POSTS_PER_WEEK = 3;
+// Built from code points so this file obeys the rule it enforces (check-dashes reads escapes too).
+const DASHES = new RegExp(`[${String.fromCharCode(0x2013, 0x2014)}]|&(m|n)dash;`);
 
 function parse(file) {
   const text = fs.readFileSync(file, 'utf8');
@@ -54,7 +60,7 @@ function problems(p) {
   if (!CHANNELS.includes(fm.channel)) out.push(`channel must be one of ${CHANNELS.join(', ')}`);
   if (!fm.publish_at || isNaN(Date.parse(fm.publish_at))) out.push('publish_at must be a date and time, e.g. 2026-10-20T16:00:00Z');
   if (!p.body) out.push('the post has no text');
-  if (/[\u2013\u2014]|&mdash;|&ndash;/.test(p.text)) out.push('contains an em or en dash');
+  if (DASHES.test(p.text)) out.push('contains an em or en dash');
   if (/[\u201C\u201D\u2018]/.test(p.body)) out.push('contains a curly quote (paste artifact)');
   for (const u of [fm.link, fm.image].filter(Boolean)) if (!/^https:\/\//.test(u)) out.push(`not an https URL: ${u}`);
   if (fm.channel === 'x') {
@@ -112,6 +118,16 @@ const NEEDS = { x: ['X_API_KEY', 'X_API_SECRET', 'X_ACCESS_TOKEN', 'X_ACCESS_SEC
 const posts = fs.existsSync(QUEUE) ? fs.readdirSync(QUEUE).filter((f) => f.endsWith('.md') && f !== 'README.md').sort().map((f) => parse(path.join(QUEUE, f))) : [];
 let bad = 0;
 for (const p of posts) { const e = problems(p); if (e.length) { bad++; console.log(`INVALID ${path.basename(p.file)}: ${e.join('; ')}`); } }
+
+// The week counts what already went out, so a later batch cannot top a week back up past the cap.
+const hasLink = (p) => p.fm && p.fm.channel === 'x' && (p.fm.link || /https?:\/\//.test(p.body));
+const weekOf = (iso) => { const d = new Date(Date.parse(iso)); d.setUTCHours(0, 0, 0, 0); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); return d.toISOString().slice(0, 10); };
+const sent = fs.existsSync(DONE) ? fs.readdirSync(DONE).filter((f) => f.endsWith('.md')).map((f) => parse(path.join(DONE, f))) : [];
+const linkWeeks = {};
+for (const p of [...posts, ...sent]) if (hasLink(p) && !isNaN(Date.parse(p.fm.publish_at))) (linkWeeks[weekOf(p.fm.publish_at)] ||= []).push(path.basename(p.file));
+for (const [wk, names] of Object.entries(linkWeeks)) if (names.length > X_LINK_POSTS_PER_WEEK) {
+  bad++; console.log(`OVER BUDGET week of ${wk}: ${names.length} X posts with a link, the limit is ${X_LINK_POSTS_PER_WEEK} (${names.join(', ')}). Drop the link from the rest.`);
+}
 if (CHECK) { console.log(bad ? `\n${bad} post(s) need fixing.` : `${posts.length} queued post(s) valid.`); process.exit(bad ? 1 : 0); }
 
 const now = Date.now();
