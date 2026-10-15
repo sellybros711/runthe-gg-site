@@ -74,6 +74,12 @@ node golf/check-tracer3d.mjs                every course draws, nothing the ball
 - Every unlock check goes through `opened()`, never `tp.lv` directly.
 - `pmerge` only adds, and every server call fails soft (null is no opinion).
 - `PUTT_LIVE` is the launch. There is no localStorage override, on purpose.
+- **The First Tee home rides the same switch.** `ftLive()` is `puttOn()`: Putt Putt testers (and everybody once
+  `PUTT_LIVE` is true) get the First Tee, its hubs (`protour`, `putthub`, `me`) and five tabs; everybody else gets
+  the classic home (`scrTitleClassic`, the seven tabs, `tourStepsClassic`, `maybeLoginBonusClassic`). Change the
+  classic home only for a fix: it is retired at launch.
+- The login gift on the First Tee waits to be claimed (`bag_login_pend`, `claimLoginGift`). Never pay it on sight there.
+- **No guide or tour opens by itself** on the First Tee either: its guided tour starts from How to play only.
 - `putt_lives_refill` carries its own copy of `PUTT_TESTERS`: keep the two lists in step.
 - `LIGHT` in `hole3d.js` is copied from PXHD: change one and change both.
 - **When the picture changes, bump the `?v=` of putt.js, trail.js or hole3d.js**, or a returning player
