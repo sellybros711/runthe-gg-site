@@ -198,7 +198,9 @@ function* steps(C, opt){
     for (var z = cz - rz; z <= cz + rz; z += s) for (var y = cy - ry; y <= cy + ry; y += s) for (var x = cx - rx; x <= cx + rx; x += s){
       var u = (x - cx) / rx, v = (y - cy) / ry, w = (z - cz) / rz; if (u * u + v * v + w * w < 1) set(x, y, z, typeof col === 'function' ? col(x, y, z) : col); }
   }
-  var B = { solid:solid, vox:vox, tube:tube, blob:blob, gz:gz, ART:ART, clearAt:clearAt, T:T };
+  // a lamp, a torch or a fire says where it is (B.light), so a living hole (putt.js, drawAmbient) can make its glow flicker
+  var LIGHTS = [];
+  var B = { solid:solid, vox:vox, tube:tube, blob:blob, gz:gz, ART:ART, clearAt:clearAt, T:T, light:function(x, y, z, col){ LIGHTS.push([x, y, z, col || '#ffb84a']); } };
 
   // ---- the hole's own pieces
   var LATHE = { pumpkin:1, ghost:1, pine:1, snowman:1, egg:1, snowball:1, beachball:1, pie:1, potgold:1, umbrella:1, cloud:1, neonpost:1, kickball:1, gumball:1, dinoegg:1, clover:0, star:0 };
@@ -437,7 +439,13 @@ function* steps(C, opt){
     if (sx < 0 || sy < 0 || sx >= W || sy >= Hh) return false; return Z[sy * W + sx] > y * ce + z * se + 0.2; };
   /* the depth of every pixel (Z, W wide, starting y0 rows down), so a trail can draw the golfer and anything
      that moves behind whatever stands in front of it */
-  return { ART:ART, cv:cv, bg:fxBg, sky:fxSky, night:FX && fxNight, pr:pr, un:un, zAt:SC ? function(x, y){ return gz(x, y); } : surf, hid:hid, mill:mill, se:se, ce:ce, K:K, carp:CARP, Z:Z, ZW:W, zy0:y0, b:b,
+  /* WHAT A LIVING HOLE MOVES (a fine picture only): a sample of the water's pixels, which glint in turn, and the lights. The
+     picture itself is never touched again; putt.js draws over it. */
+  var amb = null;
+  if (FINE && !SC){ amb = { water:[], lights:LIGHTS }; var WSET = { haz:1, flow:1, 't:sea':1, 't:lagoon':1, 't:jpool':1, 't:water':1, 't:sea0':1 }, nr = Math.min(S.g.length, cv.height);
+    for (var ay = 0; ay < nr; ay++){ var grow = S.g[ay]; if (!grow) continue; for (var ax = 0; ax < W; ax++){ var gc = grow[ax]; if (!gc || !WSET[gc.m]) continue;
+      var hh = Math.imul(ax, 374761393) + Math.imul(ay, 668265263) | 0; hh = Math.imul(hh ^ (hh >>> 13), 1274126177); if (((hh ^ (hh >>> 16)) >>> 0) / 4294967296 < 0.01) amb.water.push(ax, ay); } } }
+  return { amb:amb, ART:ART, cv:cv, bg:fxBg, sky:fxSky, night:FX && fxNight, pr:pr, un:un, zAt:SC ? function(x, y){ return gz(x, y); } : surf, hid:hid, mill:mill, se:se, ce:ce, K:K, carp:CARP, Z:Z, ZW:W, zy0:y0, b:b,
     // what a scene needs to be put back without rendering it again (pack, unpack): a trail is the same picture every
     // time it is opened, so putt.js keeps it on the device
     raw:SC ? { W:W, Hh:Hh, y0:y0, oy:oy, b:b.slice(), ART:ART, se:se, ce:ce, K:K, carp:CARP, GX:GX, GY:GY, st:st, GZ:GZ, Z:Z, bg:fxBg, sky:fxSky, night:FX && fxNight } : null };

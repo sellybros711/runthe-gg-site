@@ -123,7 +123,7 @@ window.RTT_PUTT_LAND = (function(){
         if (ends < 0.11 && t < 1) return cap && t > 0.92 ? cap : post;
         if (sd < 0.09 && (Math.abs(t - 0.45) < 0.07 || Math.abs(t - 0.85) < 0.07)) return cap && t > 0.88 ? cap : rail; return null; }); }
   }
-  function lamp(B, x, y, pole, glow){ var zb = B.gz(x, y);
+  function lamp(B, x, y, pole, glow){ var zb = B.gz(x, y); if (B.light) B.light(x, y, zb + 1.6, glow);
     B.solid(x - 0.3, y - 0.3, zb, x + 0.3, y + 0.3, zb + 1.8, function(px, py, pz){ var t = pz - zb, r = Math.hypot(px - x, py - y);
       if (t < 1.45 && r < 0.07) return pole; if (t >= 1.45 && t < 1.75 && r < 0.17) return t > 1.68 || r > 0.13 ? pole : glow; return null; }); }
   // a ground colour that varies in patches: base, two alternates, and how often the alternates show
@@ -918,6 +918,7 @@ window.RTT_PUTT_LAND = (function(){
       build:function(B){
         pirShip(B, shipX, shipY, 1.3, -0.3);
         if (camp){ var X = camp.x, Y = camp.y, zb = B.gz(X, Y);
+          if (B.light) B.light(X, Y, zb + 0.5, '#ff8a2a');
           B.solid(X - 0.5, Y - 0.5, zb - 0.05, X + 0.5, Y + 0.5, zb + 0.9, function(px, py, pz){ var r = Math.hypot(px - X, py - Y), t = pz - zb;   // the fire in its ring of stones
             if (t < 0.18 && r > 0.34 && r < 0.48) return '#6e665e'; if (t < 0.12 && r < 0.36) return Math.abs(Math.sin((px - X) * 9)) < 0.3 ? '#3a2412' : '#5a3818';
             if (t >= 0.1 && r < 0.3 * (1 - t / 0.85)) return t < 0.3 ? '#ffd23a' : t < 0.55 ? '#ff8a1a' : '#e5483a'; return null; });
@@ -925,7 +926,7 @@ window.RTT_PUTT_LAND = (function(){
           var fx = X + 1.6, fy = Y + 0.8, fz = B.gz(fx, fy);   // the black flag on its pole
           B.solid(fx - 0.1, fy - 0.1, fz, fx + 1.3, fy + 0.1, fz + 3.2, function(px, py, pz){ var t = pz - fz, dx = px - fx;
             if (Math.hypot(dx, py - fy) < 0.06 && t < 3.1) return '#4a2c16'; if (Math.abs(py - fy) < 0.05 && dx > 0.05 && dx < 1.2 && t > 2.25 && t < 3.0 - dx * 0.05){ var u = dx - 0.6, v = t - 2.65; return (u * u + v * v < 0.035 || (Math.abs(Math.abs(u) - Math.abs(v)) < 0.04 && Math.abs(u) < 0.25 && v < -0.05)) ? '#f4efe2' : '#151218'; } return null; }); }
-        torches.forEach(function(p){ var zb = B.gz(p.x, p.y);
+        torches.forEach(function(p){ var zb = B.gz(p.x, p.y); if (B.light) B.light(p.x, p.y, zb + 1.45, '#ff9a2a');
           B.solid(p.x - 0.2, p.y - 0.2, zb, p.x + 0.2, p.y + 0.2, zb + 1.7, function(px, py, pz){ var t = pz - zb, r = Math.hypot(px - p.x, py - p.y); if (t < 1.3 && r < 0.06) return '#5a3818';
             if (t >= 1.25 && t < 1.65 && r < 0.13 * (1 - (t - 1.25) / 0.45)) return t < 1.4 ? '#ffd23a' : '#ff8a1a'; return null; }); });
       },

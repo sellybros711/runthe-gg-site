@@ -3829,7 +3829,7 @@ function frame(){
     // the console look carries the land past the picture's edges: haze and sky above the far land, the near land into the dark below
     if (sk && cam.oy > 0){ var gs = ctx.createLinearGradient(0, 0, 0, cam.oy + 1); gs.addColorStop(0, sk.sky); gs.addColorStop(1, sk.top); ctx.fillStyle = gs; ctx.fillRect(0, 0, W, cam.oy + 1); }
     if (sk && cam.oy + ph < H){ var gb = ctx.createLinearGradient(0, cam.oy + ph - 1, 0, H); gb.addColorStop(0, sk.bot); gb.addColorStop(1, bg); ctx.fillStyle = gb; ctx.fillRect(0, cam.oy + ph - 1, W, H - cam.oy - ph + 1); }
-    ctx.drawImage(cam.v3.cv, cam.ox, cam.oy, cam.v3.cv.width * cam.k, ph); }
+    ctx.drawImage(cam.v3.cv, cam.ox, cam.oy, cam.v3.cv.width * cam.k, ph); if (cam.v3.amb) drawAmbient(ctx, C, cam, performance.now() / 1000); }
   else { var o = w2s(cam, C.bounds[0], C.bounds[1]), k = cam.s * ART;
     ctx.drawImage(P.art, Math.round(o[0]), Math.round(o[1]), Math.round(P.art.width * k), Math.round(P.art.height * k)); }
   if (C.movers.length) (cam.v3 ? drawMovers3 : drawMovers)(ctx, C, cam, clock);
@@ -3843,11 +3843,41 @@ function frame(){
   // the golfer stands at the ball while aiming, and holds the follow through a moment once it is struck
   if ((P.state === 'aim' && !(P.intro && performance.now() - P.intro < 1300)) || (P.state === 'roll' && (gnow() - P.shotStart) / PLAY_RATE < 900)) drawGolfer(ctx, P, cam);
   if (!hidden) drawBall(ctx, cam, bx, by, falling, bz);
+  if (cam.v3 && cam.v3.amb) drawFlyers(ctx, C, cam, performance.now() / 1000);
   if (P.fx && cam.v3) drawFxScreen(ctx, W, H, cam.v3.night);
   readChip(P, bx, by);
 }
 /* the console look's last touch, drawn over the stage in screen pixels: the low sun's warm light washing in
    from the upper left, and a vignette that holds the eye on the hole. Built once per stage size. */
+/* A LIVING HOLE (a fine world). The picture is painted once and stands still; over it, every frame: the water glints, a
+   few of its sampled pixels at a time catching the sun and letting it go, and every lamp, torch and fire glows and
+   flickers. Then the birds of the place go round overhead (drawFlyers), with their shadows on the ground. None of it
+   is anything the ball can touch. */
+function ahash(i, s){ var h = Math.imul(i, 374761393) + Math.imul(s, 668265263) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
+function drawAmbient(ctx, C, cam, t){ var A = cam.v3.amb, k = cam.k, ox = cam.ox, oy = cam.oy, w = A.water, sz = Math.max(1, Math.round(k));
+  ctx.save(); ctx.fillStyle = '#ffffff';
+  for (var i = 0, n = w.length / 2; i < n; i++){ var ph = ahash(i, 7) * 6.28, sp = 0.6 + ahash(i, 9) * 0.9, v = Math.sin(t * sp + ph); if (v < 0.86) continue;
+    ctx.globalAlpha = Math.min(0.9, (v - 0.86) * 7); ctx.fillRect(ox + w[i * 2] * k, oy + w[i * 2 + 1] * k, sz * (ahash(i, 3) < 0.3 ? 2 : 1), sz); }
+  ctx.globalCompositeOperation = 'lighter';
+  A.lights.forEach(function(L, j){ var p = w2s(cam, L[0], L[1], L[2]), f = 0.78 + 0.14 * Math.sin(t * 9.1 + j * 2.3) + 0.08 * Math.sin(t * 23.7 + j), r = cam.s * 1.35 * f;
+    var g = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], r); g.addColorStop(0, L[3]); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.globalAlpha = (cam.v3.night ? 0.6 : 0.32) * f; ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, 6.29); ctx.fill(); });
+  ctx.restore(); }
+// the birds of the place: gulls over the sea, parrots in the jungle. Each goes round its own circle at its own height
+var FLY_KIND = { gull:{ w:'#f4f6fb', b:'#d8dde6', h:'#f2a03a', n:3, z:10, sz:0.5 }, parrot:{ w:'#e5483a', b:'#2bb04a', h:'#ffd23a', n:4, z:7, sz:0.42 } };
+function drawFlyers(ctx, C, cam, t){ var kind = C.theme === 'pirate' && C.leg >= 9 && C.leg <= 12 ? FLY_KIND.parrot : C.theme === 'pirate' ? FLY_KIND.gull : null; if (!kind) return;
+  var bx = C.bounds, cx = (bx[0] + bx[2]) / 2, cy = (bx[1] + bx[3]) / 2, rx = (bx[2] - bx[0]) * 0.45, ry = (bx[3] - bx[1]) * 0.4, u = cam.s * kind.sz;
+  ctx.save();
+  for (var i = 0; i < kind.n; i++){ var dir = ahash(i, C.leg || 1) < 0.5 ? -1 : 1, a = t * (0.12 + ahash(i, 5) * 0.1) * dir + ahash(i, 11) * 6.28;
+    var x = cx + Math.cos(a) * rx * (0.5 + ahash(i, 13) * 0.5), y = cy + Math.sin(a) * ry * (0.5 + ahash(i, 17) * 0.5), z = kind.z + ahash(i, 19) * 4;
+    var gz = cam.v3.zAt(x, y), sh = w2s(cam, x + 1.2, y + 1.2, gz), p = w2s(cam, x, y, z), up = Math.sin(t * 7 + i * 2) > 0, hx = -Math.sin(a) * dir;
+    ctx.globalAlpha = 0.18; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(sh[0], sh[1], u * 1.6, u * 0.5, 0, 0, 6.29); ctx.fill(); ctx.globalAlpha = 1;
+    // a body, two wings (up or down) and a head the way it flies
+    ctx.fillStyle = kind.b; ctx.fillRect(p[0] - u * 0.6, p[1] - u * 0.3, u * 1.2, u * 0.6);
+    ctx.fillStyle = kind.w; if (up){ ctx.fillRect(p[0] - u * 1.8, p[1] - u * 1.1, u * 1.2, u * 0.4); ctx.fillRect(p[0] + u * 0.6, p[1] - u * 1.1, u * 1.2, u * 0.4); ctx.fillRect(p[0] - u * 0.9, p[1] - u * 0.7, u * 0.4, u * 0.4); ctx.fillRect(p[0] + u * 0.5, p[1] - u * 0.7, u * 0.4, u * 0.4); }
+    else { ctx.fillRect(p[0] - u * 1.8, p[1] + u * 0.1, u * 1.2, u * 0.4); ctx.fillRect(p[0] + u * 0.6, p[1] + u * 0.1, u * 1.2, u * 0.4); }
+    ctx.fillStyle = kind.h; ctx.fillRect(p[0] + (hx >= 0 ? u * 0.6 : -u * 1.0), p[1] - u * 0.2, u * 0.4, u * 0.4); }
+  ctx.restore(); }
 function drawFxScreen(ctx, W, H, night){
   var k = W + 'x' + H + (night ? 'n' : ''); if (!S.fxScr || S.fxScr.k !== k){ var c = document.createElement('canvas'); c.width = W; c.height = H; var x = c.getContext('2d');
     // a night world gets no sun: only the vignette
