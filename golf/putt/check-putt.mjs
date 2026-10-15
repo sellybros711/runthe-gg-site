@@ -456,7 +456,7 @@ if (!args.includes('--no-browser')){
     // key, and a golden ball, are picked up and kept in the Tour record; walking through the arch opens the hole; Skip goes straight there.
     // Where two worlds meet a wall stands across the land: with the stars its door opens, short of them it holds.
     const wk = await pg.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), seed = (s, lv) => { const best = {}; for (let n = 1; n <= 18; n++) best[n] = s;
-      localStorage.setItem('bag_ppt_v1@walk', JSON.stringify({ v:2, met:['clubhouse', 'temple', 'pirate'], tours:{ main:{ lv, best, ace:{}, paid:{}, wpaid:{} } } })); };   // greeters met: their section is below
+      localStorage.setItem('bag_ppt_v1@walk', JSON.stringify({ v:2, met:['clubhouse', 'school', 'candy'], tours:{ main:{ lv, best, ace:{}, paid:{}, wpaid:{} } } })); };   // greeters met: their section is below
       const S = () => window.RTT_PUTT._state(), T = () => window.RTT_PUTT._trail(), rec = () => (JSON.parse(localStorage.getItem('bag_ppt_v1@walk')).trail || {});
       const open = async n => { window.RTT_PUTT._walkTo(n); for (let i = 0; i < 400 && !T(); i++) await sleep(50); await sleep(150); return T(); };
       const visit = async (t, x, y) => { t.goTo(x, y + 0.05); await sleep(120); };
@@ -658,7 +658,7 @@ if (!args.includes('--no-browser')){
       out.back = S().screen === 'trail' && T().host() && T().host().ph === 'idle' && !document.querySelector('.pp-gd');
       // the world is alive: things fly and drift round him, and Pirate Cove has ships sailing on its own sea
       out.alive = T().life().flyers > 0 && T().life().motes > 0;
-      window.RTT_PUTT._walkTo(37); for (let i = 0; i < 600 && !(T() && T().life().theme === 'pirate'); i++) await sleep(50); await sleep(300);
+      window.RTT_PUTT._walkTo(73); for (let i = 0; i < 600 && !(T() && T().life().theme === 'pirate'); i++) await sleep(50); await sleep(300);
       const L3 = T().life(), P3 = T().plan(); out.ships = L3.ships.length; out.afloat = L3.ships.every(q => q.y < P3.b[1] || q.y > P3.b[3] || P3.seaAt(q.x, q.y));
       const y0 = L3.ships[0].y; await sleep(700); out.sails = Math.abs(T().life().ships[0].y - y0) > 0.5;
       // every world's first trail has its greeter, on both tours
@@ -704,7 +704,7 @@ if (!args.includes('--no-browser')){
     // THE WORLDS AHEAD ARE UNDER CLOUD. No name of a world not yet reached shows on the map, the home card or the
     // walk; the gate shut leaves the clouds; the gate with its stars parts them, and only then is the world named.
     const cl = await pg.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), K = 'bag_ppt_v1@cld', T = () => window.RTT_PUTT._trail();
-      const hidden = /Lost Temple|Pirate Cove|Canyon Mine|Volcano Island|Frozen Peak|Sky Islands|Neon Arcade|Schoolyard|Ice Age|Candy Works|Temple Steps/;
+      const hidden = /Lost Temple|Pirate Cove|Canyon Mine|Volcano Island|Frozen Peak|Sky Islands|Neon Arcade|Schoolyard|Ice Age|Candy Works|Front Steps/;
       const rec = (lv, s) => { const best = {}; for (let n = 1; n <= 18; n++) best[n] = s; return { v:2, lives:3, met:['clubhouse'], tours:{ main:{ lv:lv, best:best, ace:{}, paid:{}, wpaid:{} } } }; };
       window.RTT_PUTT.close(); window.RTT_PUTT_MAPFIRST = true; sbUser = { id:'cld' };
       // short of the stars: 18 pars is 18 stars, under the 40 the gate asks
@@ -719,12 +719,12 @@ if (!args.includes('--no-browser')){
       // with the stars: the door opens on it, the clouds part and the world is named
       window.RTT_PUTT.close(); localStorage.setItem(K, JSON.stringify(rec(19, 1))); openPutt(); await sleep(300);
       window.RTT_PUTT._walkTo(18); for (let i = 0; i < 400 && !T(); i++) await sleep(30); await sleep(200);
-      out.before = !/Lost Temple/.test(document.querySelector('.pp-tgoal').textContent);
+      out.before = !/Schoolyard/.test(document.querySelector('.pp-tgoal').textContent);
       T().goTo(T().plan().gate.x, T().plan().gate.y + 2); for (let i = 0; i < 100 && !document.querySelector('.pp-door'); i++) await sleep(30);
-      out.named = /Lost Temple/.test((document.querySelector('.pp-door') || {}).textContent || '');
+      out.named = /Schoolyard/.test((document.querySelector('.pp-door') || {}).textContent || '');
       const seen = []; for (let i = 0; i < 200; i++){ const c = T() && T().clouds(); if (seen[seen.length - 1] !== c) seen.push(c); if (c === 'off') break; await sleep(30); }
-      out.parts = seen.join(','); for (let i = 0; i < 150 && !/Lost Temple/.test(document.querySelector('.pp-tgoal').textContent); i++) await sleep(30);
-      out.after = /Lost Temple/.test(document.querySelector('.pp-tgoal').textContent) && (JSON.parse(localStorage.getItem(K)).rv || []).indexOf('main:1') >= 0;
+      out.parts = seen.join(','); for (let i = 0; i < 150 && !/Schoolyard/.test(document.querySelector('.pp-tgoal').textContent); i++) await sleep(30);
+      out.after = /Schoolyard/.test(document.querySelector('.pp-tgoal').textContent) && (JSON.parse(localStorage.getItem(K)).rv || []).indexOf('main:1') >= 0;
       // THE GREETER STOPPED A HAIR SHORT OF TALKING, FOR EVER. Held 3.2 ft and a ten millionth away, they have to talk
       // a greeter waits on their own side of the gate, so walk through it first
       for (let i = 0; i < 100 && document.querySelector('.pp-door'); i++) await sleep(30);
