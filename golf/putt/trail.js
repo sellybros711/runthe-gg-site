@@ -2740,15 +2740,15 @@ GPAT.skyruins = function(c){ var g = vn(c.ti * 0.03, c.tj * 0.03, 71); if (g < 0
   var a = vn(c.ti * 0.05, c.tj * 0.05, 73); return a > 0.65 ? '#ece6d6' : a < 0.35 ? '#d6ceb8' : '#e2dccb'; };
 
 var SKY_LEAF = ['#3f9a46', '#5bb352', '#2f8139'], SKY_BLOSSOM = ['#f4a7c0', '#f8c4d6', '#e88aa8'];
-KIT['sky~meadow'] = kitFrom(KIT.sky, { g:['#66b952', '#74c45c', '#58a848', 0.2], gpat:'skymeadow', p:['#d8c48e', '#e2d09c', '#c8b07a'], tree:['broad', 'broad', 'broad'], leaves:SKY_LEAF, bark:'#6a4a2a',
+KIT['sky~meadow'] = kitFrom(KIT.sky, { sandC:['#f4f7fb', '#ffffff', '#e2e9f2', 0.2], g:['#66b952', '#74c45c', '#58a848', 0.2], gpat:'skymeadow', p:['#d8c48e', '#e2d09c', '#c8b07a'], tree:['broad', 'broad', 'broad'], leaves:SKY_LEAF, bark:'#6a4a2a',
   low:['bush', 'hay', 'bush', 'rock'], dens:0.2, sea:true, seaC:['#e2ecf7', '#ffffff'], nlm:4, lm:['skyBalloonPad', 'skyHaystacks', 'skyBalloonPad', 'skyWindsock'], wall:['#e8e2d0', '#a99c7c'] });
-KIT['sky~docks'] = kitFrom(KIT.sky, { g:['#62b450', '#70c05a', '#55a446', 0.2], gpat:'skydocks', p:['#a8763f', '#b4824a', '#7a5230'], plank:true, tree:['broad', 'broad', 'pine'], leaves:SKY_LEAF, bark:'#6a4a2a',
+KIT['sky~docks'] = kitFrom(KIT.sky, { sandC:['#f4f7fb', '#ffffff', '#e2e9f2', 0.2], g:['#62b450', '#70c05a', '#55a446', 0.2], gpat:'skydocks', p:['#a8763f', '#b4824a', '#7a5230'], plank:true, tree:['broad', 'broad', 'pine'], leaves:SKY_LEAF, bark:'#6a4a2a',
   low:['bush', 'rock', 'bush', 'hay'], dens:0.16, sea:true, seaC:['#e2ecf7', '#ffffff'], nlm:5, lm:['skyMast', 'skyOffice', 'skyCargo', 'lamps', 'skyCargo'], wall:['#e8e2d0', '#3f7fb5'] });
 KIT['sky~gardens'] = kitFrom(KIT.sky, { g:['#5cb24c', '#6abe56', '#4fa042', 0.2], gpat:'skygarden', p:['#e2dac6', '#ece6d6', '#c2b8a0'], paved:true, tree:['broad', 'broad', 'puff'], leaves:SKY_BLOSSOM, bark:'#6a4a2a',
   low:['bush', 'fern', 'bush'], haz:'water', hazC:['#3fa8c8', '#9fe0ee'], waterC:['#3fa8c8', '#9fe0ee'], dens:0.7, nlm:4, lm:['skyTerrace', 'skyIsleTree', 'kite', 'skyIsleTree'], wall:['#e2dac6', '#9a8468'] });
 KIT['sky~ruins'] = kitFrom(KIT.sky, { g:['#e2dccb', '#ece6d6', '#d6ceb8', 0.2], gpat:'skyruins', p:['#e8e2d2', '#f2eee2', '#c8bea6'], paved:true, tree:['broad', 'broad', 'puff'], leaves:['#5aa84c', '#7cc066', '#4a9440'], bark:'#6a4a2a',
   low:['skyStone', 'bush', 'skyStone'], haz:'water', hazC:['#e8f0f9', '#ffffff'], waterC:['#dfe9f6', '#ffffff'], dens:0.3, nlm:4, lm:['skyGate', 'skyColumns', 'skyRainbow', 'skyColumns'], wall:['#e8e2d2', '#b8ae96'] });
-KIT['sky~castle'] = kitFrom(KIT.sky, { g:['#5fae4c', '#6cba56', '#529f44', 0.2], gpat:'skycastle', p:['#d0c8b4', '#e2dccb', '#b0a68e'], paved:true, tree:['pine', 'broad', 'pine'], leaves:SKY_LEAF, bark:'#6a4a2a',
+KIT['sky~castle'] = kitFrom(KIT.sky, { sandC:['#f4f7fb', '#ffffff', '#e2e9f2', 0.2], g:['#5fae4c', '#6cba56', '#529f44', 0.2], gpat:'skycastle', p:['#d0c8b4', '#e2dccb', '#b0a68e'], paved:true, tree:['pine', 'broad', 'pine'], leaves:SKY_LEAF, bark:'#6a4a2a',
   low:['bush', 'skyStone', 'bush'], dens:0.22, sea:true, seaC:['#e2ecf7', '#ffffff'], nlm:3, lm:['skyCastle', 'skyMill', 'lamps'], wall:['#f4f0e4', '#3f7fd5'] });
 LIFE_AS['sky~meadow'] = { fly:['song', 4], balloons:4, mote:['butter', 8] };
 LIFE_AS['sky~docks'] = { fly:['gull', 5], balloons:2 };

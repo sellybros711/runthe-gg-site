@@ -2568,7 +2568,7 @@ window.RTT_PUTT_LAND = (function(){
             if (t < 0.7) return Math.abs(Math.abs(dx) - 1.05) < 0.12 && Math.abs(Math.abs(dy) - 0.5) < 0.12 ? '#2a2440' : null;
             if (Math.abs(dx) > 1.32 || Math.abs(dy) > 0.74) return null; if (Math.abs(dx) > 1.22 || Math.abs(dy) > 0.64) return t > 0.86 ? '#ff2bd6' : '#2a2440';
             if (t > 0.86) return null; if (Math.abs(dx) < 0.04 || Math.abs(Math.hypot(dx, dy) - 0.3) < 0.04) return '#e5483a'; if (Math.hypot(dx - 0.5, dy) < 0.13) return '#141018'; return '#bfefff'; }); }
-        stools.forEach(function(p, i){ neoStool(B, p.x, p.y, NEO_GLOW[(i + seed) % 6]); });
+        stools.forEach(function(p, i){ neoStool(B, p.x, p.y, NEO_GLOW[((i + seed) % 6 + 6) % 6]); });
       },
       fill:{ on:['carpet'], trees:0, lows:0.05, tree:function(){}, low:function(B, x, y, i){ neoLow(B, x, y, i, seed); } },
       bg:'#100c26', gain:0.8,
@@ -2602,7 +2602,7 @@ window.RTT_PUTT_LAND = (function(){
       mat:function(x, y){ var d = clearAt(x, y), p = padAt(x, y); if (p) return ['pad', { u:p[0], v:p[1] }];
         if (d > T0 && d < T1) return d < T0 + 0.35 || d > T1 - 0.35 ? ['kerb', { u:x + y }] : ['track', { u:x - y, d:d }]; return ['deck']; },
       build:function(B){
-        racers.forEach(function(q, k){ var X = q.x, Y = q.y, zb = B.gz(X, Y), g = NEO_GLOW[(k + seed) % 6];   // a sit in racer: the screen hood, the wheel, the bucket seat, facing away from you
+        racers.forEach(function(q, k){ var X = q.x, Y = q.y, zb = B.gz(X, Y), g = NEO_GLOW[((k + seed) % 6 + 6) % 6];   // a sit in racer: the screen hood, the wheel, the bucket seat, facing away from you
           if (B.light) B.light(X, Y - 0.6, zb + 2.0, g);
           B.solid(X - 0.85, Y - 1.3, zb, X + 0.85, Y + 1.3, zb + 2.5, function(px, py, pz){ var dx = px - X, a = py - Y, t = pz - zb, ax = Math.abs(dx);
             if (t < 0.25) return ax < 0.8 && Math.abs(a) < 1.25 ? (ax > 0.7 || Math.abs(a) > 1.15 ? g : '#2a2440') : null;
@@ -2665,7 +2665,7 @@ window.RTT_PUTT_LAND = (function(){
           B.solid(cx - hw - 0.5, wy - 0.5, zw, cx + hw + 0.5, wy + 0.6, zw + 5.6, function(px, py, pz){ var t = pz - zw, dy = py - wy;
             if (t > 4.0){ if (dy < 0.1) return t > 5.5 ? '#2bf0ff' : '#1a0f33'; return neoWord('PRIZES', px - wx, t - 4.2, 0.26) && dy < 0.3 ? '#ff2bd6' : null; }
             var sh = t % 0.9; if (sh < 0.1) return dy < 0.6 ? '#5a3a8a' : null; if (dy > 0.1){ var p = plush(px - cx + 40, sh - 0.1, Math.floor(t / 0.9)); return p && dy < 0.55 ? p : null; } return '#2a1a4a'; }); }
-        claws.forEach(function(q, k){ var X = q.x, Y = q.y, zb = B.gz(X, Y), g = NEO_GLOW[(k + seed) % 6];   // a claw machine: glass box of prizes on a lit cabinet, the claw hanging
+        claws.forEach(function(q, k){ var X = q.x, Y = q.y, zb = B.gz(X, Y), g = NEO_GLOW[((k + seed) % 6 + 6) % 6];   // a claw machine: glass box of prizes on a lit cabinet, the claw hanging
           if (B.light) B.light(X, Y, zb + 3.0, g);
           B.solid(X - 0.8, Y - 0.8, zb, X + 0.8, Y + 0.8, zb + 3.25, function(px, py, pz){ var dx = px - X, dy = py - Y, t = pz - zb, m = Math.max(Math.abs(dx), Math.abs(dy));
             if (m > 0.75) return null; if (t < 1.2){ if (dy > 0.6 && t > 0.9 && Math.hypot(dx - 0.3, t - 1.05) < 0.08) return '#e5483a'; return m > 0.64 ? g : (dy > 0.6 && Math.abs(dx + 0.3) < 0.12 && Math.abs(t - 0.5) < 0.12 ? '#ffe02b' : '#2a1a4a'); }
@@ -3698,8 +3698,8 @@ window.RTT_PUTT_LAND = (function(){
       h:I.h, mat:I.mat,
       build:function(B){
         skyFar(L, I, B);
-        up.forEach(function(p, n){ skyBalloon(B, p.x, p.y, B.gz(p.x, p.y), 1.15, SKY_BALLOON[(n + seed) % 5], true); });
-        aloft.forEach(function(p, n){ skyBalloon(B, p.x, p.y, 2.2 + n * 1.6, 0.95, SKY_BALLOON[(n + seed + 3) % 5], true); });
+        up.forEach(function(p, n){ skyBalloon(B, p.x, p.y, B.gz(p.x, p.y), 1.15, SKY_BALLOON[((n + seed) % 5 + 5) % 5], true); });
+        aloft.forEach(function(p, n){ skyBalloon(B, p.x, p.y, 2.2 + n * 1.6, 0.95, SKY_BALLOON[((n + seed + 3) % 5 + 5) % 5], true); });
         stacks.forEach(function(p, n){ skyHay(B, p.x, p.y, n % 3 === 2 ? 1 : 0, 0.9 + hash(n, seed, 5) * 0.3); });
         if (flag){ var zb = B.gz(flag.x, flag.y);   // the launch flag: a striped windsock on a pole, blowing east
           B.solid(flag.x - 0.15, flag.y - 0.2, zb, flag.x + 1.3, flag.y + 0.2, zb + 2.8, function(px, py, pz){ var t = pz - zb, dx = px - flag.x;

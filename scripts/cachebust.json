@@ -2549,16 +2549,16 @@
       "sha": "391be5f56e9b9955"
     },
     "putt/land.js": {
-      "v": "11",
-      "sha": "12c8c0970c3695bc"
+      "v": "12",
+      "sha": "16836a5c5d24da69"
     },
     "putt/hole3d.js": {
       "v": "16",
       "sha": "62a0821ec99b53c3"
     },
     "putt/trail.js": {
-      "v": "34",
-      "sha": "c5cd82ac6c4e4c98"
+      "v": "35",
+      "sha": "820caa939067d0e8"
     },
     "putt/mapland.js": {
       "v": "6",
