@@ -5614,11 +5614,24 @@ function loginRewLabel(o){ if(!o) return '';
 // Fires from the sbApply post-cloudPull chain (covers a fresh sign-in AND app-open while already signed in),
 // so the popup shows the first time an account is seen each day. Grants on detect (idempotent via `day`),
 // then opens the celebratory popup.
+// the daily popup, as it was: paid on sight, then shown. Everybody not on the First Tee.
+function maybeLoginBonusClassic(s){ const t=todayKey();
+  const n=((s.n||0)%7)+1;                            // advance the 7-day loop (a missed day doesn't reset it)
+  const rew=loginReward(n); grantLoginReward(rew);   // grant now (idempotent by day) regardless of display
+  loginSave({day:t, n:n});
+  S.loginReward=rew;
+  try{ track('login_bonus',{day:n,kind:rew.kind}); }catch(e){}
+  // Sequencing (owner): the Season 1 launch popup always shows FIRST. If it's still pending, or any
+  // other popup is already up, DEFER this login bonus so the two don't clobber each other: it opens
+  // when the season popup is dismissed (or on the next clean title render) via flushPendingLogin().
+  if(S.overlay || s1LaunchPending() || welcomePackPending()){ S._loginPending=true; return; }
+  S.overlay='login'; try{ render(); }catch(e){} }
 function maybeLoginBonus(){ if(!sbSignedIn()) return; const t=todayKey(); let s=loginState();
   if(s.day===t) return;                              // already claimed today
   // THE GIFT WAITS ON THE PIN SHEET (owner, 2026-10-15): it is set aside, not paid, and the First Tee says a
   // reward is there to claim (claimLoginGift pays it and opens the calendar). One never opened is paid here,
   // quietly, the next day the account is seen, so nobody loses a day's gift.
+  if(!ftLive()) return maybeLoginBonusClassic(s);
   const old=LS.get(acctKey('bag_login_pend'),null);
   if(old && old.day && old.day!==t && s.day!==old.day){ grantLoginReward(old.rew); loginSave({day:old.day, n:old.n}); s=loginState(); }
   const n=((s.n||0)%7)+1;                            // advance the 7-day loop (a missed day doesn't reset it)
@@ -12700,6 +12713,7 @@ function render(){
   // handlers read live state so the persisted node is never stale.
   try{
     let nav=document.getElementById('rttnav');
+    if(nav && nav.getAttribute('data-ft')!==(ftLive()?'1':'0')){ nav.remove(); nav=null; }
     if(!nav){ nav=bottomNav(); document.body.appendChild(nav); navWatchdog(nav); }
     nav.classList.toggle('navhide', !showNav);
     if(showNav) navSetActive(nav);
@@ -12733,20 +12747,28 @@ const NAV_H2H_SCR=['h2hhome','h2hlobby','h2hdraft','h2hplay','h2hpreview','h2hwa
 // persisted node is never stale; navSetActive() refreshes the highlighted tab in place each render.
 function bottomNav(){
   // THE FIRST TEE's tabs (owner, 2026-10-15): Home, Pro Tour, the Pass, Putt Putt, Me
-  const tabs=[
+  const ft=ftLive();
+  const tabs=ft?[
     {id:'home',    ico:'home',  label:'Home',      go:()=>ftGo('title')},
     {id:'protour', ico:'flag',  label:'Pro Tour',  go:()=>ftGo('protour')},
     {id:'putthub', ico:'green', label:'Putt Putt', go:()=>ftGo('putthub')},
     {id:'me',      ico:'user',  label:'Me',        go:()=>ftGo('me')},
+  ]:[
+    {id:'home',   ico:'home',   label:'Home',        go:()=>{ S.overlay=null; S.screen='title'; render(); }},
+    {id:'daily',   ico:'calendar', label:'Daily',  go:()=>{ S.overlay=null; startDailyChallenge(); }},
+    {id:'career', ico:'flag',   label:'Career',      go:()=>{ S.overlay=null; const cs=careerSaveInfo(); if(cs){ if(cs.ended && typeof viewEndedCareer==='function') viewEndedCareer(); else resumeCareer(); } else { reset(); S.mode='easy'; S.screen='setup'; render(); } }},
+    {id:'profile', ico:'user',   label:'Profile',  go:()=>{ S.overlay='record'; render(); }},   // CS455: Trophy Room = your profile
+    {id:'online',  ico:'globe',  label:'Online',   go:()=>{ S.overlay=null; openH2H(); }},
+    {id:'shop',    ico:'cart',   label:'Shop',     go:()=>{ S.overlay='shop'; render(); }},     // CS455: was Leaderboard
   ];
-  const nav=$(`<nav id="rttnav" class="botnav" role="navigation" aria-label="Main navigation"><div class="botnav-in"></div></nav>`);
+  const nav=$(`<nav id="rttnav" class="botnav" role="navigation" aria-label="Main navigation" data-ft="${ft?1:0}"><div class="botnav-in"></div></nav>`);
   const inner=nav.querySelector('.botnav-in');
   const mk=(t)=>{
     const b=$(`<button type="button" data-nav="${t.id}" aria-label="${t.label}">${ic(t.ico)}<span>${t.label}</span></button>`);
     b.onclick=()=>{ try{ track('botnav',{tab:t.id}); }catch(e){} t.go(); };
     inner.appendChild(b);
   };
-  tabs.slice(0,2).forEach(mk);
+  tabs.slice(0,ft?2:3).forEach(mk);
   // The Tour Pass is the raised gold centre button (owner) - the six tabs keep their slots, and the
   // season track gets the one spot the thumb naturally lands on.
   if(passEnabled()){
@@ -12754,7 +12776,7 @@ function bottomNav(){
     fab.onclick=()=>{ try{ track('botnav',{tab:'pass'}); }catch(e){} S.overlay='tourpass'; render(); };
     inner.appendChild(fab);
   }
-  tabs.slice(2).forEach(mk);
+  tabs.slice(ft?2:3).forEach(mk);
   return nav;
 }
 // CS516-nav: self-healing watchdog for the recurring iOS bug where the position:fixed bar stops tracking
@@ -12814,6 +12836,7 @@ function navWatchdog(nav){
 }
 // which tab is active for the current screen/overlay (a non-leaderboard overlay → none highlighted)
 function navActiveTab(){
+  if(!ftLive()) return navActiveTabClassic();
   const scr=S.screen, ov=S.overlay;
   if(ov==='tourpass') return 'pass';
   if(ov==='record'||ov==='shop'||ov==='menu') return 'me';
@@ -12822,6 +12845,19 @@ function navActiveTab(){
   if(scr==='protour'||NAV_CAREER_SCR.includes(scr)||NAV_DAILY_SCR.includes(scr)||NAV_H2H_SCR.includes(scr)||scr==='rules') return 'protour';
   if(scr==='putthub') return 'putthub';
   if(scr==='me'||scr==='setup') return 'me';
+  return '';
+}
+function navActiveTabClassic(){
+  const scr=S.screen, ov=S.overlay;
+  if(ov==='record') return 'profile';   // CS455
+  if(ov==='shop') return 'shop';
+  if(ov==='tourpass') return 'pass';
+  if(ov) return '';
+  if(scr==='title') return 'home';
+  if(NAV_CAREER_SCR.includes(scr)) return 'career';
+  if(NAV_DAILY_SCR.includes(scr)) return 'daily';
+  if(NAV_H2H_SCR.includes(scr)) return 'online';
+
   return '';
 }
 function navSetActive(nav){
@@ -12838,7 +12874,8 @@ function navSetActive(nav){
   nav.querySelectorAll('[data-nav]').forEach(b=>{ const id=b.getAttribute('data-nav'), on=id===active;
     b.classList.toggle('on', on); if(on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current');
     let gift=false; try{ gift=!!loginPend(); }catch(e){}
-    const want=(id==='me' && (nFree>0 || newN>0 || gift)) || (id==='pass' && passClaim>0) || (id==='protour' && dailyTodo);
+    const want=(id==='me' && (nFree>0 || newN>0 || gift)) || (id==='pass' && passClaim>0) || (id==='protour' && dailyTodo)
+      || (id==='shop' && nFree>0) || (id==='profile' && newN>0) || (id==='daily' && dailyTodo);
     const num=(id==='pass' && passClaim>0) ? String(Math.min(99,passClaim)) : '';
     let dot=b.querySelector('.navdot');
     if(want && !dot){ dot=document.createElement('span'); dot.className='navdot'; b.appendChild(dot); }
@@ -15274,7 +15311,32 @@ const TOUR_KEY='bag_tour_done';
 var _tourI=0, _tourList=null, _tourKey=TOUR_KEY;
 function tourSeen(){ try{ return !!LS.get(TOUR_KEY,false); }catch(e){ return true; } }
 function tourRunning(){ return !!document.getElementById('tourdim'); }
-function tourSteps(){ return [
+function tourStepsClassic(){ return [
+  { title:'Welcome to Run The Tour',
+    body:'Build one golfer and play out their whole career. Thirty seasons, four majors a year and a world ranking to climb. Can you go down as the greatest of all time?',
+    target:null },
+  { title:'Career is the game',
+    body:'Draft your golfer one skill at a time from real pros, then take them through thirty seasons. Win majors, make the team cups, and hang on when age starts taking your distance.',
+    target:'#rttnav [data-nav="career"]' },
+  { title:'A round a day',
+    body:'One course, same for everybody. Three tries to beat the tour average. Five minutes, and the fastest way to learn how a round plays.',
+    target:'#rttnav [data-nav="daily"]' },
+  { title:'Your season track',
+    body:'Everything you play feeds this. Sixty tiers of rewards, free the whole way down, with a paid lane if you want the rest of it.',
+    target:'#rttnav [data-nav="pass"]' },
+  { title:'What you earn',
+    body:'Coins, packs and gear live in the Shop. Rewards from every mode drop here.',
+    target:'#rttnav [data-nav="shop"]' },
+  { title:'Your record',
+    body:'Trophies, achievements, the majors leaderboard, your career history and every lifetime stat live in Profile. Come back here to see where the run stands.',
+    target:'#rttnav [data-nav="profile"]' },
+  { title:'Start here',
+    body:'Play one Daily round first. It takes five minutes and teaches you the swing, the courses and the scoring, so you start your career already knowing the ropes.',
+    target:'#rttnav [data-nav="daily"]',
+    cta:'▶ Play my first round',
+    act:function(){ try{ track('tour_cta'); }catch(e){} startDailyChallenge(); } }
+]; }
+function tourSteps(){ if(!ftLive()) return tourStepsClassic(); return [
   { title:'Welcome to Run The Tour',
     body:'This is your golfer, on the first tee. Two tours start from here: the Pro Tour, where you build a career, and Putt Putt, where you play every putt yourself.',
     target:'.ft-home .ft-fig' },
@@ -15465,7 +15527,10 @@ const FT_SCREENS=['title','protour','putthub','me'];
 const FT_HUBS=['protour','putthub','me'];
 const FT_AD_SLOT='0000000000';   // the AdSense unit for the First Tee. A placeholder until the account is approved: a house ad stands in
 const FT_PLATE_V=1;              // golf/home/putt-world-*.jpg (golf/build-home-plates.mjs). Bump when they are re-cut
-function ftOn(){ return FT_SCREENS.includes(S.screen); }
+// THE SWITCH. The First Tee goes live with Putt Putt Tour, on the same flag (PUTT_LIVE) and for the same testers
+// before it (PUTT_TESTERS): owner, 2026-10-15, everything goes live at once. Everybody else keeps the classic home.
+function ftLive(){ try{ return puttOn(); }catch(e){ return false; } }
+function ftOn(){ return FT_SCREENS.includes(S.screen) && ftLive(); }
 function ftDesk(){ try{ return matchMedia('(min-width: 900px) and (min-height: 560px)').matches; }catch(e){ return false; } }
 function ftGo(scr){ S.overlay=null; S.screen=scr; render(); }
 // the pixel check, drawn on the game's 18 by 18 icon grid and shaded by its medal renderer
@@ -15612,7 +15677,7 @@ function ftPassInfo(){ if(!passEnabled()) return null; const si=sbSignedIn(); le
   return {tier, pct, claim, si}; }
 function ftEvent(){ try{
   if(hlLive()){ const c=hlDropCount(), d=hlDaysLeft(); return {name:'Haunted Links', txt:`${c.own} of ${c.tot}`, pct:c.tot?c.own/c.tot*100:0, days:d, go:()=>{ S.overlay='haunted'; render(); }}; }
-  if(wcLive()) return {name:'Winter Classic', txt:'Open today\'s door', pct:0, days:null, go:()=>{ S.overlay='winter'; render(); }};
+  if(wcLive()){ const n=wcTodo(), d=wcDay(); return {name:'Winter Classic', txt:n>0?`${n} to open`:`${wcDoorsOpened()} of ${WC_LAST_DOOR} doors`, pct:wcDoorsOpened()/WC_LAST_DOOR*100, days:Math.max(0,WC_END_DAY-d+1), go:()=>{ S.overlay='winter'; render(); }}; }
 }catch(e){} return null; }
 function ftTopBar(opt){ opt=opt||{};
   const si=sbSignedIn(), tb=$(`<header class="ft-tb"></header>`);
@@ -15652,14 +15717,202 @@ function ftTag(full){
   return tag; }
 function ftCloset(cat){ try{ track('home_open_closet'); }catch(e){} S.shopPreview=null; S.overlay=null; S.setupEdit=true; S.setupReturn={screen:S.screen, overlay:null}; S.screen='setup'; S.setupCat=cat||'shirt'; render(); }
 
-// an ad slot: the AdSense unit once the slot is real, a house ad for RunThe.GG until then
+// an ad slot: the AdSense unit once the slot is real. Until then the Pro Tour hub and Me carry a house ad for
+// RunThe.GG, and the home carries nothing (owner: the house ad is not for the home)
+function ftAdLive(){ return !!FT_AD_SLOT && !/^0+$/.test(FT_AD_SLOT); }
 function ftAd(where){
-  if(FT_AD_SLOT && !/^0+$/.test(FT_AD_SLOT)){ const w=$(`<div class="ft-ad ft-ad-${where}"><span class="ft-adl">Advertisement</span><ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="${FT_AD_SLOT}" data-ad-format="horizontal" data-full-width-responsive="true"></ins></div>`);
+  if(ftAdLive()){ const w=$(`<div class="ft-ad ft-ad-${where}"><span class="ft-adl">Advertisement</span><ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="${FT_AD_SLOT}" data-ad-format="horizontal" data-full-width-responsive="true"></ins></div>`);
     setTimeout(()=>{ try{ const ins=w.querySelector('ins'); if(ins.isConnected && !ins.hasAttribute('data-adsbygoogle-status')) (window.adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){} }, 0); return w; }
+  if(where==='home') return null;
   return $(`<a class="ft-ad ft-ad-${where} ft-house" href="/" target="_blank" rel="noopener"><img src="/assets/runthegames-icon_192.png" alt="" width="32" height="32" loading="lazy"><span><b>More games at RunThe.GG</b>One free account plays them all</span><span class="ft-adgo">Play ↗</span></a>`); }
 
+/* THE CLASSIC HOME: what everybody who is not on the First Tee still sees, kept exactly as it was. */
+function scrTitleClassic(){
+  if(!S.daily) restoreProfileIdentity();   // self-heal: a Legend round swaps S.look/S.name to the legend's frozen identity; any path back to the title must show (and never later persist) anything but the PROFILE look
+  reconcileDailyAttempts();   // self-heal "attempts left" against the server before it's even displayed below
+  // CS363: pixel-art dusk-course backdrop (matches the game's pixel theme) instead of the old smooth vector scene
+  let sceneHtml=''; try{ sceneHtml=titleSceneHTML(); }catch(e){}
+  const scene=$(`<div class="scene" aria-hidden="true">${sceneHtml}</div>`);
+  add(scene);
+  // seasonal decor: webs and pumpkins in the scene, and the hidden things to find on the home screen
+  if(decorLive()==='spooky'){ try{ spkStyleOnce(); scene.insertAdjacentHTML('beforeend',spookySceneHTML()); }catch(e){} try{ spookyHomeEggs().forEach(b=>app.appendChild(b)); }catch(e){} }
+  const w=$(`<div class="titlewrap center"></div>`);
+  // 5: returning players get their golfer + name (4) instead of the marketing hero; first-run keeps the pitch.
+  const returning=homeReturning();
+  // returning players get a header ROW (golfer + name on the left, the quick pills on the right on
+  // desktop); the first-run marketing hero keeps its own centred stack, untouched.
+  const head=returning?$(`<div class="homehead"></div>`):null;
+  if(returning){
+    head.appendChild(homePlayerHeader());
+    w.appendChild(head);
+  } else {
+    w.appendChild($(`<div class="herotag center">A RunThe.GG Game</div>`));
+    w.appendChild($(`<h1 id="herohead" class="hero" style="white-space:nowrap;font-size:46px"><span class="hr1">Build the </span><span class="hr2">Perfect Golfer</span></h1>`));
+  }
+  // CS374: one big single-line headline - fit the text to fill the width so it reads large on any device
+  // (Anton loads async / may fall back, so measure & scale rather than trust a fixed clamp).
+  if(!returning){
+    scheduleFitHero();
+    w.appendChild($(`<div class="herorule" aria-hidden="true"><span></span><svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="4.6" fill="none" stroke="#F1D04A" stroke-width="1"/><circle cx="5.5" cy="5.5" r="1.5" fill="#F1D04A"/></svg><span></span></div>`));
+  }
+  // CS473: brand-new player (guest, no history, no auto sign-in) → a focused first-run path.
+  // CS287: the "30-Year Career Simulation" badge is replaced by the How to Play button in this spot (owner)
+  // CS303: a "Daily Quests" button sits beside it (owner: no auto-pop-up - open the challenges panel here)
+  // Skip this row on the first-run screen so the intro panel stands alone, uncluttered (owner).
+  /* THE QUICK BAR: four equal tiles in one strip, each an icon over a short label. These used to be
+     four pills of three different designs (a pink wheel pill, a gold How to Play, two cream newspaper
+     boxes) that wrapped three and one on a phone, so the last one sat alone on a line of its own and
+     the row read as leftovers rather than a control (owner). One shape, one row, at every width: the
+     colour lives in each icon, and the wheel alone glows when a spin is waiting. */
+  { const hw=$(`<div class="homehead-act hqbar" role="group" aria-label="Quick links"></div>`);
+    const qb=(cls,icon,label,aria,fn,badge)=>{ const b=$(`<button type="button" class="hq${cls?' '+cls:''}" aria-label="${esc(aria)}"><span class="hqi" aria-hidden="true">${icon}${badge||''}</span><span class="hql">${label}</span></button>`); b.onclick=fn; hw.appendChild(b); return b; };
+    // Prize Wheel lives here too (owner: no full-size tile for it)
+    if(wheelEnabled()){ const avail=wheelAvail(), free=wheelFreeReady(), on=sbSignedIn();
+      const lab=!on?'Prize wheel':avail>0?(free&&avail===1?'Free spin':'Spin'):'Wheel';
+      qb('wheel'+(avail>0?' ready':''), wheelMiniSVG(), lab,
+         'Prize Wheel'+(avail>0?', '+avail+' spin'+(avail>1?'s':'')+' ready':', next free spin tomorrow'), openWheel,
+         (on&&avail>1)?`<span class="hqn">${avail}</span>`:''); }
+    qb('howto', pxMedalSVG(PXICONS.book,'#F1D04A'), 'How to play', 'How to Play', openRules);
+    // the newsletter carries its unread count on the icon
+    { const nn=newsUnseenCount();
+      qb('news', pxMedalSVG(PXICONS.scroll,'#f4e3c9'), "What's new", "What's New"+(nn?', '+nn+' unread':''), openWhatsNew,
+         nn?`<span class="hqn">${nn}</span>`:''); }
+    // Roster Updates: the weekly in-season rating refresh (owner)
+    { const ru=qb('roster', pxMedalSVG(PXICONS.chartup,'#6fd3ff'), 'Rosters', 'Roster Updates', openRosterUpdates,
+         rosterUpdUnseen()?'<span class="hqd"></span>':'');
+      ru.setAttribute('data-rosterbtn',''); }
+    // The next season's countdown, under the quick bar in a season's last 14 days, and only for a season
+    // that has been written (an unauthored one would count down to a pass with nothing on it). It names the
+    // NUMBER and nothing else: what the next season holds is still not shown before it starts (owner).
+    let qwrap=hw; const ssn=passSeason(), nx=ssn.n+1;
+    if(PASS_SEASONS[nx] && ssn.daysLeft<=14){
+      hw.classList.remove('homehead-act');
+      qwrap=$(`<div class="homehead-act hqwrap"></div>`); qwrap.appendChild(hw);
+      const acc=(PASS_SEASONS[nx].accent)||'#a24be0';
+      const cd=$(`<button type="button" class="hqcd" style="--acc:${acc}" aria-label="Season ${nx} countdown, opens the Tour Pass"><span class="hqcdl">Season ${nx} starts in</span><span class="hqcdt" aria-live="off"></span></button>`);
+      cd.onclick=function(){ S.overlay='tourpass'; render(); };
+      qwrap.appendChild(cd);
+      const tt=cd.querySelector('.hqcdt'), pad=function(v){ return v<10?'0'+v:String(v); };
+      // The first tick runs while the home screen is still being built, before the button is in the page,
+      // so the stop is only for a button that WAS on screen and has since been thrown away by a render.
+      let seen=false;
+      const tick=function(){
+        if(cd.isConnected) seen=true; else if(seen){ clearInterval(iv); return; }
+        const sec=Math.max(0, Math.floor((passSeasonEndMs(ssn.n)-Date.now())/1000));
+        // At zero the home screen redraws itself, so Season 2 (and its launch popup) arrives on the second.
+        // It waits for the game's own season to have turned, which is the same Eastern midnight, so a
+        // rounding gap can never redraw the old season. A popup open on top is left alone: closing it redraws.
+        if(sec<=0){ tt.textContent='00h 00m 00s';
+          if(passSeason().n===ssn.n) return;
+          clearInterval(iv);
+          if(cd.isConnected && S.screen==='title' && !S.overlay){ try{ render(); }catch(e){} }
+          return; }
+        const d=Math.floor(sec/86400), h=Math.floor(sec/3600)%24, m=Math.floor(sec/60)%60, x=sec%60;
+        tt.textContent=(d?d+'d ':'')+pad(h)+'h '+pad(m)+'m '+pad(x)+'s';
+      };
+      const iv=setInterval(tick,1000); tick();
+    }
+    (head||w).appendChild(qwrap); }   // (daily quests moved to the compact nav row below, which carries the "still to do" dot)
+  // (career bests moved off the top onto the new-career card, see careerHeroCard)
+  const stack=$(`<div class="stack"></div>`);
+  const ri=resumeInfo();
+  const cs=careerSaveInfo();
+  // CS473: brand-new player → the focused first-run path instead of the full menu (until they play or skip).
+  // (the old first-run panel is retired: a brand-new player now gets the REAL home screen with the
+  // guided tour running over it, so the arrows point at the actual tabs and they finish the intro
+  // already oriented on the interface instead of being dropped onto it cold.)
+  // Season 1 launch announcement (returning players, once), fires after this render settles, and only
+  // when no other overlay (e.g. the login bonus) is up; retried on later title renders until shown.
+  setTimeout(function(){ try{ flushPendingWelcome(); }catch(e){} try{ maybeS1LaunchPopup(); }catch(e){} try{ flushPendingLogin(); }catch(e){} try{ maybeS1EndPopup(); }catch(e){} try{ maybeSpookyPopup(); }catch(e){} try{ maybePassSettleNote(); }catch(e){} try{ maybeRosterPop(); }catch(e){} try{ maybeArcadeAd(); }catch(e){} }, 420);
+  // ════════════════════════════════════════════════════════════════════
+  // Home = ONE HERO + a rail. Whatever you were last playing becomes the big
+  // card (mid-career it's "Resume Year 12", first thing in the morning it's
+  // "Play 18"); every other mode rides a rail under it - which scrolls
+  // sideways on a phone and becomes the right-hand column on a desktop, so
+  // the page fills the width instead of sitting in a 520px strip.
+  // The daily companions (streak calendar, weekly goals, free-Legend hook)
+  // live in the Play-18 flow, not here.
+  // ════════════════════════════════════════════════════════════════════
+  const modes=homeModeList();
+  const hero=homeHeroPick(modes);
+  const main=$(`<div class="homemain"></div>`);
+  const heroSlot=$(`<div class="homehero"></div>`);
+  if(hero){ const hc=hero.make({hero:true}); hc.classList.add('heroc'); heroSlot.appendChild(hc); }
+  main.appendChild(heroSlot);
+  const rest=modes.filter(m=>m!==hero);
+  if(rest.length){
+    const side=$(`<div class="homeside"><div class="rail-lab">Also today<i></i></div><div class="homerail"></div></div>`);
+    const rail=side.querySelector('.homerail');
+    rest.forEach(m=>{ const c=m.make({rail:true}); c.classList.add('railc'); if(m.id==='haunted'||m.id==='winter') c.classList.add('hl-rail'); rail.appendChild(c); });
+    main.appendChild(side);
+  }
+  w.appendChild(main);
+  // extras that aren't modes: a stale build draft still wants a way to start over, and a dormant
+  // Spotlight gets a one-line tease so the month's event isn't invisible. On desktop these sit under
+  // the hero (filling the left column); on a phone they just follow the rail.
+  const extras=$(`<div class="homeextras"></div>`);
+  // Haunted Links on a desktop sits in the left column under the hero (it replaces the drop banner
+  // there); the rail copy is hidden at that width. A phone keeps the rail copy and the banner.
+  const evm=rest.find(m=>m.id==='haunted'||m.id==='winter'), hlHere=!!evm;
+  if(evm){ try{ const hc=evm.make({}); hc.classList.add('hl-left'); extras.appendChild(hc); }catch(e){} }
+  if(ri && !cs){
+    const go=$(`<button class="btn ghost">New Career<span class="sub">Build a new golfer</span></button>`);
+    go.onclick=()=>{homeSetLastMode('career');reset();S.mode='easy';S.screen='setup';render();};
+    stack.appendChild(go);
+  }
+  if(!spotlightLiveToday()){
+    const ns=nextSpotlight();
+    stack.appendChild($(`<div class="small center" style="color:var(--muted);margin-top:6px">★ Next Monthly Spotlight: <b style="color:var(--gold)">${esc(dShort(DAILY_COURSES[ns.key].v))}</b> · ${fmtDayKey(ns.liveDayKey)}</div>`));
+  }
+  if(stack.children.length) extras.appendChild(stack);
+  // ── LIVE THEMED DROP promo: shows whenever a windowed drop is live (Summer Smash now, Spooky in Oct...),
+  // routes straight to the Pro Shop's Drops tab. Fully data-driven off the DROPS registry. ──
+  try{ const ld=liveThemedDrop();
+    if(ld){ const pr=dropProgress(ld), done=pr.own>=pr.tot;
+      const db=$(`<button class="homedrop${hlHere&&(ld.id==='spooky'||ld.id==='winter')?' hd-hl':''}" style="--dacc:${ld.accent}">
+        <span class="hd-dot"></span>
+        <span class="hd-txt"><b>${esc(ld.name)} is LIVE</b><span>${(typeof dropClaimable==='function'&&dropClaimable(ld))?'🏆 COMPLETE · tap to CLAIM your reward!':done?'✓ Collection complete!':`Collect all ${pr.tot} · you have ${pr.own} · ends ${_DROP_MON[ld.window[1][0]-1]} ${ld.window[1][1]}`}</span></span>
+        <span class="hd-go">▸</span>`);
+      db.onclick=()=>{ track('home_drop_promo',{id:ld.id}); S.overlay='shop'; S.shopSec='drops'; S.shopDrop=ld.id; render(); };
+      extras.appendChild(db); } }catch(e){}
+  if(extras.children.length) main.appendChild(extras);
+  // ── destinations, promoted to prominent nav tiles (Leaderboard / Trophy Room / Pro Shop stand out) ──
+  const sec=$(`<div class="home-nav compact"></div>`);
+  const signedIn=sbSignedIn();
+  // CS454: each tile carries its own accent + a pixel icon (pxMedalSVG tints the 18x18 sprite to the accent).
+  const navRgba=(hex,a)=>{ hex=hex.replace('#',''); const r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16); return `rgba(${r},${g},${b},${a})`; };
+  const mkTile=(pxrows,acc,label,sub,fn,opts)=>{ opts=opts||{};
+    const svg=pxMedalSVG(pxrows,acc), dot=opts.dot, wide=opts.wide;
+    const tileStyle=`--acc:${acc};border:1.5px solid ${navRgba(acc,.34)};background:linear-gradient(160deg,${navRgba(acc,.13)},rgba(6,18,12,.5))`;
+    const chipStyle=`background:${navRgba(acc,.18)};border:1px solid ${navRgba(acc,.4)}`;
+    const b=$(`<button type="button" class="navtile${wide?' wide':''}" aria-label="${esc(label)}${dot?' · new items':''}" style="${tileStyle}">
+      <span class="nichip" aria-hidden="true" style="${chipStyle}">${svg}</span>
+      <span class="ntext"><span class="nl">${esc(label)}</span>${sub?`<span class="ns">${sub}</span>`:''}</span>
+      ${wide?'<span class="ngo" aria-hidden="true">↗</span>':''}${dot?'<span class="ndot"></span>':''}</button>`);
+    b.onclick=fn; sec.appendChild(b); };
+  // CS290: Challenges is now a prominent nav tile (was buried in the ≡ menu) - daily quests + weekly
+  // challenges - daily/weekly quests feed your Tour Rep tier + earn coins / mulli-spins.
+  // Compact icon row (owner: reduce home scrolling) - short labels, no sub-lines; the dots still flag
+  // anything waiting (new gear / a free pack), and every one of these also lives in the bottom nav or menu.
+  const _dq=(signedIn && typeof dailyQuests==='function')?dailyQuests():null;
+  const _dqLeft=_dq?DAILY_QUEST_DEFS.filter(d=>!_dq[d.k]).length:0;
+  mkTile(PXI.target,'#16b5a6','Quests','', ()=>{S.overlay='challenges';render();}, {dot:_dqLeft>0});
+  mkTile(PXI.podium,'#4aa3ff','Ranks','', ()=>{S.overlay='leaderboard';render();});
+  mkTile(PXI.cup,'#F1D04A','Profile','', ()=>{S.overlay='record';render();});
+  if(SHOP_ENABLED){ const nFree=((typeof packIsFree==='function')&&packIsFree()?1:0)+((typeof packCredits==='function')?(packCredits('base')+packCredits('tour')+packCredits('champ')+(liveSeasonalPackId()?packCredits('seasonal'):0)):0);
+    const shopNew=((typeof cosNewTotal==='function')&&cosNewTotal()>0)||nFree>0;   // CS423: NEW-item dot on the Pro Shop tile (leads to the gear)
+    mkTile(PXI.cart,'#3fbf7a','Shop','', ()=>{S.overlay='shop'; if(nFree>0)S.shopSec='packs'; render();}, {dot:shopNew}); }
+  mkTile(PXI.gift,'#b06be0','Invite','', ()=>{ referralShare(); });   // CS403: refer a friend -> free packs
+  // (How to Play moved up under the hero, CS287)
+  w.appendChild(sec);
+  // CS303: the once-a-day challenges pop-up is removed (owner) - the "🎯 Daily Quests" button under the hero opens it.
+  const credit=$(`<div class="small muted center homecredit" style="margin-top:11px;line-height:1.5">Player ratings derived from DataGolf data. Not affiliated with the PGA Tour, DataGolf, or any player.</div>`);
+  w.appendChild(credit);
+  add(w);
+}
 /* ── THE FIRST TEE ──────────────────────────────────────────────────────────────────────────────── */
 function scrTitle(){
+  if(!ftLive()) return scrTitleClassic();
   if(!S.daily) restoreProfileIdentity();   // a Legend round swaps the look to the legend's; the home must show the player's own
   reconcileDailyAttempts();
   ftStyleOnce();
@@ -15683,7 +15936,7 @@ function scrTitle(){
   let pc=[]; try{ if(cs && !cs.ended) pc.push(`<span class="ft-chip g">${cs.circuitMode?'Legend Circuit':'Career'} · Yr ${cs.year||1}</span>`); else if(ri) pc.push(`<span class="ft-chip g">Golfer ${ri.n} of 8</span>`); }catch(e){}
   try{ const d=ftPins()[0]; pc.push(`<span class="ft-chip">${d.state==='done'?'Play 18 · '+d.val:d.sub.replace(' at today\'s course','')}</span>`); }catch(e){}
   try{ if(spotlightLiveToday()) pc.push(`<span class="ft-chip">Spotlight live</span>`); }catch(e){}
-  const pro=$(`<button type="button" class="ft-door pro" data-side="pro"><span class="ft-dk">Career · Head to Head · Play 18</span><span class="ft-dt">Pro Tour</span><span class="ft-row">${pc.join('')}</span><span class="ft-go">Step onto the tour ›</span></button>`);
+  const pro=$(`<button type="button" class="ft-door pro" data-side="pro"><span class="ft-dk"><span class="ft-long">Career · Head to Head · Play 18</span><span class="ft-short">Career · H2H · Play 18</span></span><span class="ft-dt">Pro Tour</span><span class="ft-row">${pc.join('')}</span><span class="ft-go">Step onto the tour ›</span></button>`);
   pro.onclick=()=>ftGo('protour'); root.appendChild(pro);
   if(putt){ let m=null; try{ m=window.RTT_PUTT.summary(puttHost()); }catch(e){}
     const hearts=m?ftHearts(m.lives,m.max):'';
@@ -15692,7 +15945,7 @@ function scrTitle(){
   // desktop: the seam leans toward the other side while you hover one
   root.querySelectorAll('.ft-door').forEach(d=>{ const on=()=>root.setAttribute('data-hov',d.getAttribute('data-side')), off=()=>root.removeAttribute('data-hov');
     d.addEventListener('mouseenter',on); d.addEventListener('mouseleave',off); d.addEventListener('focus',on); d.addEventListener('blur',off); });
-  root.appendChild(ftAd('home'));
+  const ad=ftAd('home'); if(ad){ root.appendChild(ad); root.classList.add('has-ad'); }
   if(S.ftSheetOpen && !desk){ const scrim=$(`<div class="ft-scrim"></div>`); scrim.onclick=()=>{ S.ftSheetOpen=false; render(); };
     const box=$(`<div class="ft-sheetbox" role="dialog" aria-label="Today's pin sheet"><div class="ft-grab"></div></div>`); box.appendChild(ftSheet(false));
     root.appendChild(scrim); root.appendChild(box); }
@@ -15709,6 +15962,7 @@ function ftHearts(lives,max){ lives=lives|0; max=max||9; const nh=Math.ceil(Math
 /* ── PRO TOUR: the career, Play 18, head to head and the Spotlight, each the card the game already builds,
    worn in the hub's glass. Today's course sits on a brass plaque; the ad slot is at the foot. ── */
 function scrProTour(){
+  if(!ftLive()){ S.screen='title'; return scrTitleClassic(); }
   ftStyleOnce();
   const root=$(`<div class="ft ft-hub ft-protour"></div>`);
   root.appendChild(ftScene()); root.appendChild(ftTopBar({back:true}));
@@ -15732,6 +15986,7 @@ function scrProTour(){
 /* ── PUTT PUTT: the scorecard. Your world, your hole, your hearts, the way in, the Daily Hole and the
    Members Tour. Everything inside is the Putt Putt module's own (openPutt). ── */
 function scrPuttHub(){
+  if(!ftLive()){ S.screen='title'; return scrTitleClassic(); }
   ftStyleOnce();
   const root=$(`<div class="ft ft-hub ft-putthub"></div>`);
   root.appendChild(ftScene()); root.appendChild(ftTopBar({back:true}));
@@ -15757,6 +16012,7 @@ function hmShort(ms){ const m=Math.max(0,Math.round(ms/60000)); return Math.floo
 /* ── ME: the dressing room. Your golfer on a plinth, the eight things they wear around them, the closet
    one tap away, and everything that is not a tour underneath, settings and the site's links last. ── */
 function scrMe(){
+  if(!ftLive()){ S.screen='title'; return scrTitleClassic(); }
   ftStyleOnce();
   const si=sbSignedIn(), L=S.look||DEFLOOK;
   const root=$(`<div class="ft ft-hub ft-mescr"><div class="ft-wood"></div></div>`);
@@ -15797,6 +16053,7 @@ function scrMe(){
   const ml=$(`<div class="ft-mlist"></div>`);
   rows.forEach(r=>{ const b=$(`<button type="button" class="ft-mrow"><span class="ft-mi">${ftIcon(r[0])}</span><span class="ft-mt">${r[1]}${r[2]?`<small>${esc(r[2])}</small>`:''}</span>${r[4]?'<span class="ft-dot"></span>':''}</button>`); b.onclick=r[3]; ml.appendChild(b); });
   body.appendChild(ml);
+  const mad=ftAd('me'); if(mad) body.appendChild(mad);
   body.appendChild(footer({noAd:true}));
   root.appendChild(body); add(root);
 }
@@ -15900,11 +16157,13 @@ function ftStyleOnce(){ if(document.getElementById('ft-css')) return; const st=d
 .ft-look{font:800 10px var(--body)!important;letter-spacing:1px;text-transform:uppercase;color:#2a1a00!important;background:var(--brass);border:0;border-radius:6px;padding:4px 8px;white-space:nowrap}
 
 /* the doors */
-.ft-door{position:absolute;z-index:12;bottom:calc(var(--botnav-space,0px) + 66px);width:46%;background:none;border:0;padding:0;text-align:left;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.ft-home{--ftad:12px} .ft-home.has-ad{--ftad:66px}
+.ft-door{position:absolute;z-index:12;bottom:calc(var(--botnav-space,0px) + var(--ftad));width:46%;background:none;border:0;padding:0;text-align:left;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
 .ft-door.pro{left:max(14px,env(safe-area-inset-left,0px))}
 .ft-door.putt{right:max(14px,env(safe-area-inset-right,0px));align-items:flex-end;text-align:right}
 .ft-home.solo .ft-door.pro{width:auto;right:14px}
-.ft-dk{font:800 9px var(--body);letter-spacing:2px;text-transform:uppercase;color:var(--gold);text-shadow:0 2px 6px rgba(0,0,0,.6)}
+.ft-long{display:none} .ft-short{display:inline}
+.ft-dk{font:800 9px var(--body);white-space:nowrap;letter-spacing:2px;text-transform:uppercase;color:var(--gold);text-shadow:0 2px 6px rgba(0,0,0,.6)}
 .ft-dt{font:400 clamp(30px,9.5vw,40px)/.92 var(--display);text-transform:uppercase;text-shadow:0 6px 24px rgba(0,0,0,.6)}
 .ft-row{display:flex;flex-wrap:wrap;gap:5px}
 .ft-door.putt .ft-row{justify-content:flex-end}
@@ -15974,8 +16233,8 @@ function ftStyleOnce(){ if(document.getElementById('ft-css')) return; const st=d
 .ft-adgo{margin-left:auto;background:#3fd06b;color:#062010;border-radius:7px;padding:5px 9px;font:800 12px var(--body);white-space:nowrap}
 
 /* phone home: a column from the top bar down to the tab bar */
-.ft-home .ft-strip{top:auto;bottom:calc(var(--botnav-space,0px) + 66px + clamp(78px,12vh,104px))}
-.ft-home.has-gift .ft-giftnote{bottom:calc(var(--botnav-space,0px) + 66px + clamp(78px,12vh,104px) + 82px)}
+.ft-home .ft-strip{top:auto;bottom:calc(var(--botnav-space,0px) + var(--ftad) + clamp(78px,12vh,104px))}
+.ft-home.has-gift .ft-giftnote{bottom:calc(var(--botnav-space,0px) + var(--ftad) + clamp(78px,12vh,104px) + 82px)}
 
 /* hubs */
 .ft-hub .ft-body{position:absolute;z-index:10;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 56px);bottom:var(--botnav-space,0px);overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px max(14px,env(safe-area-inset-right,0px)) 26px max(14px,env(safe-area-inset-left,0px))}
@@ -16000,6 +16259,7 @@ function ftStyleOnce(){ if(document.getElementById('ft-css')) return; const st=d
 .ft-plaque{display:inline-flex;flex-direction:column;gap:2px;margin:16px 0 0;padding:10px 16px;border-radius:8px;background:linear-gradient(180deg,#e7c76c,#b8891f);color:#2a1a00;box-shadow:0 10px 24px rgba(0,0,0,.4);font:800 11px var(--body);letter-spacing:1.5px;text-transform:uppercase}
 .ft-plaque b{font:700 19px var(--serif);letter-spacing:1px;text-transform:none}
 .ft-hub .ft-ad{position:relative;left:auto;right:auto;bottom:auto;margin-top:18px;max-width:640px}
+.ft-mescr .ft-ad{grid-column:1/-1;max-width:420px;margin:16px auto 0}
 .ft-score{max-width:560px;border-radius:16px;overflow:hidden;background:linear-gradient(180deg,rgba(84,58,128,.72),rgba(46,32,78,.82));-webkit-backdrop-filter:blur(16px) saturate(1.2);backdrop-filter:blur(16px) saturate(1.2);border:1px solid rgba(220,200,255,.25);box-shadow:0 18px 40px rgba(0,0,0,.4)}
 .ft-stop{position:relative;min-height:120px;display:flex;align-items:flex-end;padding:14px 16px;overflow:hidden}
 .ft-stop .gc-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;image-rendering:pixelated;opacity:.55}
@@ -16044,6 +16304,7 @@ function ftStyleOnce(){ if(document.getElementById('ft-css')) return; const st=d
 /* a desktop: the scene spreads, the sheet is a card, the doors are big, and there is no tab bar */
 @media (min-width:900px) and (min-height:560px){
   .ft-desk{display:inline-flex!important}
+  .ft-long{display:inline} .ft-short{display:none}
   .ft-tb{padding:14px 34px}
   .ft-word{font-size:15px}
   .ft-c3d{perspective:760px}
@@ -16052,7 +16313,7 @@ function ftStyleOnce(){ if(document.getElementById('ft-css')) return; const st=d
   .ft-home[data-hov=pro]{--ftS:58%} .ft-home[data-hov=putt]{--ftS:42%}
   .ft-tee{top:auto;bottom:70px}
   .ft-tag{padding:12px 18px 12px 14px} .ft-nm{font-size:22px} .ft-meta{font-size:13px} .ft-stk{font-size:12px}
-  .ft-door{bottom:84px;width:min(34vw,440px)}
+  .ft-door{bottom:64px;width:min(34vw,440px)}
   .ft-door.pro{left:64px} .ft-door.putt{right:64px}
   .ft-dk{font-size:13px;letter-spacing:3px}
   .ft-dt{font-size:clamp(56px,5.4vw,80px)}
@@ -16062,9 +16323,9 @@ function ftStyleOnce(){ if(document.getElementById('ft-css')) return; const st=d
   .ft-door:hover .ft-go,.ft-door:focus-visible .ft-go{color:var(--gold)}
   .ft-home .ft-sheet{position:absolute;z-index:14;right:56px;top:96px;width:360px}
   .ft-home.has-gift .ft-sheet{top:160px}
-  .ft-home .ft-giftnote{left:auto;right:56px;top:94px;bottom:auto;width:360px}
+  .ft-home .ft-giftnote,.ft-home.has-gift .ft-giftnote{left:auto;right:56px;top:94px;bottom:auto;width:360px}
   .ft-home .ft-ad{left:50%;right:auto;transform:translateX(-50%);bottom:12px;width:min(468px,40vw)}
-  .ft-home .ft-tee{bottom:76px}
+  .ft-home .ft-tee{bottom:24px} .ft-home.has-ad .ft-tee{bottom:76px}
   .ft-hub .ft-body{top:76px;bottom:0;padding:10px 56px 40px}
   .ft-ht{font-size:96px}
   .ft-cards{max-width:660px}
@@ -22816,7 +23077,7 @@ function cutscenesOn(){
    override, because a localStorage flag is a switch any visitor can flip from the console.
    To LAUNCH: set PUTT_LIVE to true. The module draws nothing until it is opened, so the script tag
    costs everybody else one cached download and no screen. -------------------------------------- */
-var PUTT_LIVE=true;   // live with the First Tee home (owner, 2026-10-15)
+var PUTT_LIVE=false;   // the launch: Putt Putt Tour and the First Tee home go live together
 const PUTT_API=1;                                         // the putt.js API this page was written against
 var PUTT_TESTERS=['csel8','runnyj','malikwillislover','slimeyb3','jordantest'];      // tester accounts (lowercased usernames)
 var PUTT_ALL_ACCESS=['csel8','runnyj','malikwillislover'];   // every Putt Putt hole open for good, whatever the record says (lowercased usernames)
@@ -22910,8 +23171,8 @@ function puttCard(){
   const dl=m.daily.done?`<span style="color:#7ee2a8">Daily Hole done · ${m.daily.s} (par ${m.daily.par})</span>`:`Daily Hole · ${esc(m.daily.name)}`;
   const out=m.lives<=0;
   let art=''; try{ art=window.RTT_PUTT.cardArt(m.theme); }catch(e){}
-  const c=$(`<button class="gcard gc-putt" aria-label="Putt Putt Tour">${art}
-    <div class="gc-top"><div style="min-width:0"><div class="gc-kick">⛳ Putt Putt</div><div class="gc-title">Putt Putt Tour</div></div><span class="gc-badge">LV ${m.lv}</span></div>
+  const c=$(`<button class="gcard gc-putt" aria-label="Putt Putt Tour, tester preview">${art}
+    <div class="gc-top"><div style="min-width:0"><div class="gc-kick">⛳ Tester preview</div><div class="gc-title">Putt Putt Tour</div></div><span class="gc-badge">LV ${m.lv}</span></div>
     <div class="gc-mid">${dl}<br>${esc(m.world)} · ${hearts}${out&&m.refillAt?` <span class="small">full in ${Math.ceil((m.refillAt-Date.now())/3600000)}h</span>`:''}</div>
     <div class="gc-row"><span class="gc-go">${out?'Refill ▸':'Play ▸'}</span></div></button>`);
   c.onclick=openPutt;
