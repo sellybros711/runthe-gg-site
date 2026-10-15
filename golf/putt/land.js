@@ -69,7 +69,7 @@ window.RTT_PUTT_LAND = (function(){
       return function(x, y){ var fx = (x - E[0]) / st, fy = (y - E[1]) / st; if (fx < 0 || fy < 0 || fx >= nx - 1 || fy >= ny - 1) return lineD(x, y, pts);
         var i = fx | 0, j = fy | 0, u = fx - i, v = fy - j, k = j * nx + i; return (A[k] * (1 - u) + A[k + 1] * u) * (1 - v) + (A[k + nx] * (1 - u) + A[k + nx + 1] * u) * v; }; }
     var L = { dist:dist, C:C, E:E, P0:P0, P1:P1, cx:cx, cy:cy, seed:seed, spot:spot, spotRect:spotRect, north:north, far:far, side:side, used:used, clearAt:clearAt, route:route, scatter:scatter };
-    var O = BUILD[C.theme] ? BUILD[C.theme](L) : null;
+    var bld = (C.scene && BUILD[C.scene]) || BUILD[C.theme], O = bld ? bld(L) : null;   // a secret hole's own place before its world's land
     if (O && O.fill) furnish(L, O);
     return O;
   }
@@ -863,38 +863,41 @@ window.RTT_PUTT_LAND = (function(){
     };
   };
 
-  /* ---------------- FROZEN PEAK: a snowy mountain behind the hole, a ski lodge at its foot, a frozen tarn, pines and snowmen */
-  BUILD.frozen = function(L){
-    var C = L.C, E = L.E, P0 = L.P0, P1 = L.P1, seed = L.seed, clearAt = L.clearAt, spot = L.spot, spotRect = L.spotRect, north = L.north;
-    var lodge = spotRect(7, 5, function(x, y){ return north(x, y) * 1.1 - Math.abs(x - L.cx) * 0.2; });
-    function ridgeY(x){ return (lodge ? lodge.y - lodge.d / 2 - 1.2 : P0[1] - 3.5) - (vn(x * 0.12, 4, seed) - 0.5) * 3; }
-    var tarn = spot(3, function(x, y){ return Math.abs(x - L.cx) * 0.5 + L.side(x) * 3; }, function(x, y){ return y > ridgeY(x) + 3; });
-    function tarnD(x, y){ return tarn ? 1 - Math.hypot((x - tarn.x) / tarn.r, (y - tarn.y) / (tarn.r * 0.7)) + (fbm(x * 0.5, y * 0.5, seed + 3) - 0.5) * 0.3 : -1; }
-    var men = []; for (var i = 0; i < 3; i++){ var m = spot(0.6, function(x, y){ return -Math.abs(clearAt(x, y) - 2.2) + hash(x * 3 | 0, y * 3 | 0, seed + i); }, function(x, y){ return y > ridgeY(x) + 1.5 && tarnD(x, y) < -0.1; }); if (m) men.push(m); }
-    function snowman(B, sx, sy){ var sz = B.gz(sx, sy);
-      B.solid(sx - 0.7, sy - 0.7, sz, sx + 0.7, sy + 0.7, sz + 2, function(px, py, pz){ var t = pz - sz, r = Math.hypot(px - sx, py - sy);
-        if (Math.hypot(r, t - 0.5) < 0.55 || Math.hypot(r, t - 1.25) < 0.38) return (py - sy > 0.3 && Math.abs(px - sx) < 0.05 && t > 1 && t < 1.5) ? '#1a2a3a' : '#f6f9fd';
-        if (Math.hypot(r, t - 1.8) < 0.27) return (py - sy > 0.22 && Math.abs(px - sx) < 0.05 && Math.abs(t - 1.78) < 0.05) ? '#f28a2a' : '#f6f9fd';
-        if (Math.abs(t - 1.55) < 0.07 && r < 0.38) return '#d62f2f'; return null; }); }
+  /* ---------------- DINO VALLEY: a sandstone cliff behind the hole with a fossil in its layers, a swamp beside it, a long neck or two grazing, palms and ferns */
+  BUILD.dino = function(L){
+    var C = L.C, E = L.E, P0 = L.P0, P1 = L.P1, seed = L.seed, clearAt = L.clearAt, spot = L.spot, north = L.north;
+    function cliffY(x){ return P0[1] - 3.4 - (vn(x * 0.13, 4, seed) - 0.5) * 3; }
+    var sw = spot(2.8, function(x, y){ return Math.abs(x - L.cx) * 0.4 + L.side(x) * 3; }, function(x, y){ return y > cliffY(x) + 3; });
+    function swD(x, y){ return sw ? 1 - Math.hypot((x - sw.x) / sw.r, (y - sw.y) / (sw.r * 0.7)) + (fbm(x * 0.6, y * 0.6, seed + 3) - 0.5) * 0.3 : -1; }
+    var herd = []; for (var i = 0; i < 2; i++){ var m = spot(1.6, function(x, y){ return north(x, y) * 0.4 + L.side(x) * 2 + hash(x | 0, y | 0, seed + 9 + i); }, function(x, y){ return y > cliffY(x) + 2 && swD(x, y) < -0.3; }); if (m) herd.push(m); }
+    // a long neck: a heavy body on four legs, the neck rising to a small head, the tail sweeping down behind
+    function longneck(B, X, Y, k){ var zb = B.gz(X, Y), dir = hash(k, 3, seed) < 0.5 ? 1 : -1;
+      B.solid(X - 2.6, Y - 0.7, zb, X + 2.6, Y + 0.7, zb + 4.2, function(px, py, pz){ var dx = (px - X) * dir, dy = py - Y, t = pz - zb, skin = (Math.floor(px * 6) + Math.floor(pz * 6)) % 3 ? '#6e8458' : '#7e9466';
+        if (t < 1.1 && Math.abs(Math.abs(dx + 0.2) - 0.7) < 0.2 && Math.abs(Math.abs(dy) - 0.33) < 0.18) return '#4a5a3a';
+        if (Math.hypot((dx + 0.2) / 1.25, dy / 0.6, (t - 1.55) / 0.68) < 1) return t < 1.15 ? '#9aa880' : skin;
+        var nx = 0.9 + (t - 1.7) * 0.42; if (t > 1.7 && t < 3.8 && Math.abs(dy) < 0.22 && Math.abs(dx - nx) < 0.26) return skin;
+        if (Math.hypot((dx - 1.95) / 0.4, dy / 0.22, (t - 3.9) / 0.22) < 1) return skin;
+        var tx = -1.3 - (t < 1.7 ? (1.7 - t) * 0.9 : 0); if (dx < -1.2 && dx > -2.6 && Math.abs(dy) < 0.18 && Math.abs(dx - tx) < 0.3 && t > 0.2 && t < 1.8) return skin;
+        return null; }); }
+    function palm(B, x, y, H, k){ var zb = B.gz(x, y), lean = (hash(k, seed, 4) - 0.5) * 1.2, top = [x + lean, y - 0.3, zb + H];
+      B.vox(x - 3.2, y - 2.8, zb, x + 3.2, y + 2.6, zb + H + 0.8, function(set){ for (var s = 0; s < 8; s++){ var t0 = s / 8, t1 = (s + 1) / 8; B.tube(set, x + lean * t0 * t0, y - 0.3 * t0, zb + H * t0, x + lean * t1 * t1, y - 0.3 * t1, zb + H * t1, 0.2 - t0 * 0.06, 0.2 - t1 * 0.06, s % 2 ? '#8a6a3e' : '#7a5c34'); }
+        for (var f = 0; f < 7; f++){ var a = f / 7 * 6.28 + k, fx = Math.cos(a), fy = Math.sin(a) * 0.7; for (var al = 0; al < 2.5; al += set.st){ var sag = 0.35 - al * al * 0.22, wd = 0.37 * (1 - al / 2.7); for (var o = -wd; o <= wd; o += set.st) set(top[0] + fx * al - fy * o, top[1] + fy * al + fx * o, top[2] + sag, al > 1.5 ? '#3f9a46' : '#2f8139'); } } }, B.ART); }
+    function fernAt(B, x, y, k){ var zb = B.gz(x, y), r = 0.55 + hash(k, seed, 61) * 0.3;
+      B.solid(x - r, y - r, zb, x + r, y + r, zb + r * 1.2, function(px, py, pz){ var dx = px - x, dy = py - y, t = pz - zb, d = Math.hypot(dx, dy), a = Math.atan2(dy, dx);
+        if (d > r || t > r * 1.2 * (1 - d / r * 0.6)) return null; if (Math.abs(Math.sin(a * 3.5)) > 0.55) return null; return d < r * 0.4 ? '#2a5a1c' : '#3e7a28'; }); }
     return {
-      h:function(x, y){ var ry = ridgeY(x), z = (fbm(x * 0.07, y * 0.09, seed) - 0.42) * 2 * sm(1.3, 6, clearAt(x, y)), k = sm(0.8, 3, clearAt(x, y));
-        if (y < ry) return (2.4 + Math.min(6, (ry - y) * 0.9) + (fbm(x * 0.25, y * 0.25, seed + 5) - 0.5) * 1.2) * k; if (tarnD(x, y) > 0) return -0.08; return z; },
-      mat:function(x, y){ var ry = ridgeY(x); if (y < ry){ return ['rock', { z:ry - y }]; } var t = tarnD(x, y); if (t > 0) return ['ice', { dep:t }]; return ['snow']; },
-      build:function(B){
-        if (lodge){ var d = lodge.d;
-          house(B, lodge, { wh:2.4, rh:2, chim:'#8a8f99', step:'#8a8f99',
-            wall:function(dx, dy, t){ if (dy > d / 2 - 0.15 && Math.abs(dx) < 0.5 && t < 1.8) return '#3a2412';
-              if (dy > d / 2 - 0.15 && Math.abs(Math.abs(dx) - 2) < 0.45 && t > 0.8 && t < 1.7) return '#ffcf6a';
-              return (Math.floor(t * 3.2) % 2) ? '#8a5432' : '#7a4a2a'; },
-            roof:function(dx, dy, t, rr, eave){ return eave ? '#ffffff' : '#e8f0f8'; } }); }
-        men.forEach(function(m){ snowman(B, m.x, m.y); });
-      },
-      fill:{ on:['snow'], trees:0.5, lows:0.26, tree:function(B, x, y, i){ pineAt(B, x, y, 0.8 + hash(i, seed, 24) * 0.6, i); },
-        low:function(B, x, y, i){ var k = hash(i, seed, 25); if (k < 0.5) bush(B, x, y, 0.42, ['#f6f9fd', '#e4edf6', '#2a6450']); else if (k < 0.8) rockAt(B, x, y, 0.38, ['#e4edf6', '#8a8f99']); else pineAt(B, x, y, 0.35, i); } },
-      bg:'#cfe0ee', gain:2.2,
-      mats:{ snow:['#eef4fb', '#f8fbfe', '#dbe6f2', 0.16],
-        rock:['#8a96a6', '#f3f8fd', '#6a7686', 0.2, function(c, R, h3){ var z = c.z || 0; return R(z > 2.2 || h3(c.ti, c.tj, 4) < 0.35 ? (h3(c.ti, c.tj, 6) < 0.15 ? '#dbe6f2' : '#f3f8fd') : (((c.ti + c.tj) % 5) ? '#8a96a6' : '#6a7686')); }],
-        ice:['#bfe3fa', '#e6f6fe', '#a6d3f0', 0.08, function(c, R){ return R((c.dep || 0) < 0.12 ? '#a6d3f0' : (((c.ti * 3 + c.tj * 7) % 23) === 0 ? '#e6f6fe' : '#bfe3fa')); }] }
+      h:function(x, y){ var cy = cliffY(x), k = sm(0.8, 3, clearAt(x, y)); if (y < cy) return (2.4 + Math.min(5, (cy - y) * 0.85)) * k; if (swD(x, y) > 0) return -0.06; return (fbm(x * 0.07, y * 0.09, seed) - 0.42) * 1.4 * sm(1.3, 6, clearAt(x, y)); },
+      mat:function(x, y){ var cy = cliffY(x); if (y < cy) return ['cliff', { z:cy - y, x:x }]; var t = swD(x, y); if (t > 0) return ['swamp', { dep:t }]; if (t > -0.14) return ['mudrim']; return ['jungle']; },
+      build:function(B){ herd.forEach(function(m, k){ longneck(B, m.x, m.y, k); }); },
+      fill:{ on:['jungle'], trees:0.45, lows:0.34,
+        tree:function(B, x, y, i){ if (hash(i, seed, 51) < 0.6) palm(B, x, y, 2.6 + hash(i, seed, 54) * 1.6, i); else broadTree(B, x, y, 3 + hash(i, seed, 55) * 1.4, '#5a4026', ['#2e6a22', '#3a7a2a', '#24561c'], i); },
+        low:function(B, x, y, i){ var k = hash(i, seed, 52); if (k < 0.55) fernAt(B, x, y, i); else if (k < 0.8) bush(B, x, y, 0.42, ['#3a7a2a', '#2e6a22', '#24561c']); else rockAt(B, x, y, 0.38, ['#c9a46a', '#7a5a34']); } },
+      bg:'#b8d08a', gain:1.8,
+      mats:{ jungle:['#5e7a2e', '#6e8a36', '#4e6a26', 0.18], mudrim:['#7a5a34', '#8a6a40', '#6a4a2a', 0.1],
+        // the cliff: sandstone in bands, and now and then a white bone in a band
+        cliff:['#c9a46a', '#e8cc92', '#9a7a48', 0.2, function(c, R, h3){ var z = c.z || 0, band = Math.floor(z * 1.6 + h3(c.ti >> 2, 0, 3) * 0.5) % 4;
+          if (band === 2 && z < 3.2 && h3(c.ti >> 1, c.tj >> 1, 7) < 0.015) return R('#e8dcc0'); return R(z > 4.2 ? '#5e7a2e' : ['#c9a46a', '#b8935a', '#d8b47a', '#a8834e'][band]); }],
+        swamp:['#4a6a2e', '#86a454', '#3a5824', 0.1, function(c, R){ return R((c.dep || 0) < 0.12 ? '#3a5824' : (((c.ti * 5 + c.tj * 3) % 19) === 0 ? '#86a454' : '#4a6a2e')); }] }
     };
   };
 
@@ -1043,6 +1046,139 @@ window.RTT_PUTT_LAND = (function(){
         choc:['#5a2e14', '#7a4422', '#4a2410', 0.08, function(c, R){ return R((c.dep || 0) < 0.12 ? '#7a4422' : (((c.ti * 3 + c.tj * 7) % 31) === 0 ? '#8a5230' : '#5a2e14')); }] }
     };
   };
+
+  /* ================================================================ THE SECRET HOLES' OWN PLACES
+     A secret hole is played inside the place it was found in, not in its world's open land: on the ship's deck
+     at sea, inside the cave, in the shed. C.scene names the place. An inside is a floor with walls rising
+     round the north and the sides only (the camera looks from the south, so a wall on the near side would stand
+     between it and the green), and the place's own things stand against those walls. */
+  function room(L, o){ var ca = L.clearAt, P1 = L.P1, g = o.gap || 3;
+    function wk(x, y){ var k = sm(g, g + 1.6, ca(x, y)); if (y > P1[1] + 1) k *= 0.12; return k; }
+    return { wk:wk, h:function(x, y){ var k = wk(x, y); return k * o.wallH + (1 - k) * (o.floorH ? o.floorH(x, y) : 0); },
+      mat:function(x, y){ var k = wk(x, y); return k > 0.45 ? [o.wall, { z:k * o.wallH, n:y < L.P0[1] - 1 ? 1 : 0 }] : [o.floor]; } }; }
+  function cyl(B, x, y, r, h, fn){ var zb = B.gz(x, y); B.solid(x - r, y - r, zb, x + r, y + r, zb + h, function(px, py, pz){ var d = Math.hypot(px - x, py - y); return d < r ? fn(d / r, pz - zb, px - x) : null; }); }
+  function blob(B, x, y, r, hh, cols){ var zb = B.gz(x, y); B.solid(x - r, y - r, zb, x + r, y + r, zb + hh, function(px, py, pz){ var d = Math.hypot((px - x) / r, (py - y) / r, (pz - zb) / hh); return d < 1 ? cols[(Math.floor(px * 5) + Math.floor(pz * 5) + Math.floor(py * 5)) % cols.length] : null; }); }
+  // spots against the back and side walls, where the place's own things stand
+  function byWall(L, n, salt, pad){ var out = [], P0 = L.P0, P1 = L.P1; for (var i = 0; i < n * 6 && out.length < n; i++){ var side = hash(i, salt, L.seed) < 0.6 ? 0 : hash(i, salt + 1, L.seed) < 0.5 ? -1 : 1;
+      var x = side === 0 ? P0[0] + (P1[0] - P0[0]) * hash(i, salt + 2, L.seed) : side < 0 ? P0[0] - pad : P1[0] + pad, y = side === 0 ? P0[1] - pad : P0[1] + (P1[1] - P0[1]) * 0.75 * hash(i, salt + 3, L.seed);
+      if (L.clearAt(x, y) < 1.6 || out.some(function(q){ return Math.hypot(q[0] - x, q[1] - y) < 2.4; })) continue; out.push([x, y]); } return out; }
+
+  // the Captain's Deck: the sea all round the ship, the hull and its gunwale hugging the deck, and the rigging beyond the bow
+  BUILD['s-ship'] = function(L){ var ca = L.clearAt, seed = L.seed, P0 = L.P0, cx = L.cx;
+    return { h:function(x, y){ var c = ca(x, y); if (c < 1.4) return 1.3; if (c < 2.2) return 0.9 - (c - 1.4) * 1.5; return -0.5 + (fbm(x * 0.2 + seed, y * 0.25, seed) - 0.5) * 0.25; },
+      mat:function(x, y){ var c = ca(x, y); if (c < 1.4) return ['gunwale']; if (c < 2.2) return ['hull']; return ['sea', { f:fbm(x * 0.3, y * 0.4, seed) }]; },
+      build:function(B){ var mx = cx, my = P0[1] - 3;
+        // the bowsprit, the foremast, its yard and sail, the rigging down to the rail, and the crow's nest
+        B.solid(mx - 0.25, my - 0.25, 0, mx + 0.25, my + 0.25, 15, function(px, py, pz){ if (Math.hypot(px - mx, py - my) < 0.22) return '#4a301a'; return null; });
+        B.solid(mx - 4, my - 0.4, 6, mx + 4, my + 0.4, 13, function(px, py, pz){ var dx = Math.abs(px - mx); if (pz > 12.3 && pz < 12.6) return '#5a3a1e';
+          if (pz > 7 && pz < 12.3 && dx < 3.6 - (12.3 - pz) * 0.1 && Math.abs(py - my - 0.3 * Math.sin((pz - 7) / 5.3 * Math.PI)) < 0.2) return (pz > 9.2 && pz < 10.1) ? '#c8402e' : '#fbf3dc'; return null; });
+        cyl(B, mx, my, 1.1, 14.6, function(d, t){ return t > 13.8 && t < 14.6 && d > 0.75 ? '#5a3a1e' : null; });
+        B.solid(mx - 0.2, my - 6, 1, mx + 0.2, my, 4, function(px, py, pz){ var u = (my - py) / 6; return Math.abs(pz - (1.2 + u * 2.4)) < 0.16 && Math.abs(px - mx) < 0.16 ? '#4a301a' : null; });
+        // a gull or two on the water, and a far ship on the horizon
+        blob(B, P0[0] - 9, P0[1] - 10, 2.6, 3.4, ['#5a3a1e', '#6a4424']); B.solid(P0[0] - 9.15, P0[1] - 10.15, 3, P0[0] - 8.85, P0[1] - 9.85, 8, function(){ return '#4a301a'; });
+        B.solid(P0[0] - 11, P0[1] - 10.2, 4.5, P0[0] - 7, P0[1] - 9.8, 7.5, function(px, py, pz){ return Math.abs(px - (P0[0] - 9)) < (7.5 - pz) * 0.8 ? '#fbf3dc' : null; }); },
+      bg:'#2a7fae', gain:1.6,
+      mats:{ sea:['#1f6f9e', '#2e8ac0', '#18608a', 0.12, function(c, R){ var f = c.f || 0.5; return R(f > 0.62 ? '#5cb3e0' : f > 0.55 ? '#2e8ac0' : (c.ti + c.tj * 3) % 23 === 0 ? '#8fd0f0' : '#1f6f9e'); }],
+        hull:['#5a3a1e', '#6a4424', '#4a301a', 0.1, function(c, R){ return R((c.tj % 3) ? '#6a4424' : '#4a301a'); }],
+        gunwale:['#8a6a44', '#9a7a52', '#7a5a34', 0.08, function(c, R){ return R((c.ti % 5) ? '#8a6a44' : '#6a4a2a'); }] } }; };
+
+  // the Painted Cave: dark stone, its walls painted with the herd, stalagmites, glowing crystals and a campfire
+  BUILD['s-cave'] = function(L){ var R0 = room(L, { floor:'cfloor', wall:'cwall', wallH:7, gap:2.5 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ byWall(L, 7, 11, 3.5).forEach(function(q, i){ var x = q[0], y = q[1], zb = B.gz(x, y), hh = 1.6 + hash(i, 4, L.seed) * 1.6;
+          B.solid(x - 0.6, y - 0.6, zb, x + 0.6, y + 0.6, zb + hh, function(px, py, pz){ return Math.hypot(px - x, py - y) < 0.55 * (1 - (pz - zb) / hh) ? ((pz * 4 | 0) % 2 ? '#5a4e44' : '#4a4038') : null; }); });
+        byWall(L, 4, 21, 2.6).forEach(function(q){ var x = q[0], y = q[1], zb = B.gz(x, y); B.solid(x - 0.5, y - 0.5, zb, x + 0.5, y + 0.5, zb + 1.4, function(px, py, pz){ var a = Math.abs(px - x) + Math.abs(py - y) * 0.6; return a < 0.45 * (1 - (pz - zb) / 1.4) ? '#8fe8ff' : null; }); });
+        var f = byWall(L, 1, 31, 4)[0]; if (f){ var zf = B.gz(f[0], f[1]); B.solid(f[0] - 0.8, f[1] - 0.8, zf, f[0] + 0.8, f[1] + 0.8, zf + 1.3, function(px, py, pz){ var d = Math.hypot(px - f[0], py - f[1]), t = pz - zf; if (t < 0.25) return d < 0.75 ? '#4a3626' : null; return d < 0.5 * (1 - (t - 0.25) / 1.05) ? (t > 0.8 ? '#ffd23f' : '#ff7a1a') : null; }); } },
+      bg:'#120e0c', gain:2,
+      mats:{ cfloor:['#3a322c', '#443a32', '#2e2822', 0.12],
+        cwall:['#5a4e44', '#6a5c50', '#4a4038', 0.18, function(c, R){ var z = c.z || 0;
+          if (c.n && z > 2.2 && z < 4.6 && hash(c.ti >> 1, c.tj >> 1, 7) < 0.16) return R(hash(c.ti, c.tj, 9) < 0.5 ? '#b5452e' : '#e0b070');
+          return R(((c.ti + (z * 2 | 0)) % 7) ? '#5a4e44' : '#4a4038'); }] } }; };
+
+  // the Potting Shed: plank floor and walls, shelves of clay pots, a wheelbarrow, sacks
+  BUILD['s-shed'] = function(L){ var R0 = room(L, { floor:'boards', wall:'shedwall', wallH:6.5, gap:2.4 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ byWall(L, 6, 12, 2.8).forEach(function(q, i){ var x = q[0], y = q[1], zb = B.gz(x, y);
+          if (i % 2) cyl(B, x, y, 0.55, 0.9, function(d, t){ return t > 0.75 ? (d < 0.8 ? '#4a3626' : '#b8643a') : '#c8743e'; });
+          else blob(B, x, y, 0.7, 0.9, ['#d8c8a0', '#c8b890']); });
+        byWall(L, 1, 22, 3.4).forEach(function(q){ var x = q[0], y = q[1], zb = B.gz(x, y); B.solid(x - 1.2, y - 0.7, zb, x + 1.2, y + 0.7, zb + 1.2, function(px, py, pz){ var t = pz - zb;
+          if (Math.abs(px - x + 0.7) < 0.35 && Math.hypot(py - y, t - 0.35) < 0.35) return '#2a2a2a'; if (t > 0.5 && t < 1.1 && Math.abs(px - x - 0.2) < 0.85 && Math.abs(py - y) < 0.6) return t > 1.0 ? '#2f6b3e' : '#3f8a4e'; return null; }); }); },
+      bg:'#2a1c10', gain:1.8,
+      mats:{ boards:['#9a7a52', '#a8885e', '#8a6a44', 0.08, function(c, R){ return R((c.tj % 4) ? ((c.ti + (c.tj >> 2) * 7) % 13 ? '#9a7a52' : '#7a5a34') : '#7a5a34'); }],
+        shedwall:['#7a5a34', '#8a6a44', '#6a4a2a', 0.1, function(c, R){ var z = c.z || 0; if (c.n && Math.abs(z - 3) < 0.15) return R('#4a301a'); return R((c.ti % 4) ? '#7a5a34' : '#5a3a1e'); }] } }; };
+
+  // Detention: a checked floor, painted walls with the chalkboard along the back, desks and chairs round the room
+  BUILD['s-class'] = function(L){ var R0 = room(L, { floor:'lino', wall:'cwallp', wallH:7, gap:2.6 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ byWall(L, 7, 13, 3.2).forEach(function(q){ var x = q[0], y = q[1], zb = B.gz(x, y); B.solid(x - 1, y - 0.8, zb, x + 1, y + 0.8, zb + 1.4, function(px, py, pz){ var t = pz - zb;
+          if (t > 1.05 && t < 1.25 && Math.abs(px - x) < 0.95 && Math.abs(py - y + 0.2) < 0.5) return '#c8a06a'; if (t < 1.05 && Math.abs(Math.abs(px - x) - 0.8) < 0.08 && Math.abs(Math.abs(py - y + 0.2) - 0.4) < 0.08) return '#7a7f88';
+          if (t < 0.85 && t > 0.6 && Math.abs(px - x) < 0.45 && Math.abs(py - y - 0.55) < 0.3) return '#2b6a95'; return null; }); }); },
+      bg:'#3a3e46', gain:1.7,
+      mats:{ lino:['#d8d4c8', '#e4e0d4', '#c8c4b8', 0.06, function(c, R){ return R(((c.ti >> 2) + (c.tj >> 2)) % 2 ? '#d8d4c8' : '#a8b4c0'); }],
+        cwallp:['#e8dcc0', '#f2e8d0', '#d8ccb0', 0.06, function(c, R){ var z = c.z || 0; if (c.n && z > 2 && z < 5){ if (hash(c.ti, c.tj >> 1, 3) < 0.05) return R('#f4f4ee'); return R('#2f5a40'); } return R(z < 1 ? '#8a7a5a' : '#e8dcc0'); }] } }; };
+
+  // Secret Recipe: steel plate underfoot, pink brick walls, chocolate vats and the pipes between them
+  BUILD['s-recipe'] = function(L){ var R0 = room(L, { floor:'plate', wall:'pbrick', wallH:7.5, gap:2.6 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ byWall(L, 4, 14, 4).forEach(function(q){ cyl(B, q[0], q[1], 1.5, 3.2, function(d, t){ if (t > 3) return d < 0.86 ? '#5a2e14' : '#c8ccd2'; return (Math.floor(t * 2) % 2) ? '#c8ccd2' : '#a8acb4'; }); });
+        byWall(L, 3, 24, 2.4).forEach(function(q){ var x = q[0], y = q[1], zb = B.gz(x, y); B.solid(x - 0.3, y - 0.3, zb, x + 0.3, y + 0.3, zb + 6, function(px, py){ return Math.hypot(px - x, py - y) < 0.25 ? '#ff5fa2' : null; }); }); },
+      bg:'#3a1c2a', gain:1.7,
+      mats:{ plate:['#8a8e96', '#9a9ea6', '#7a7e86', 0.06, function(c, R){ return R(((c.ti + c.tj) % 4 === 0 || (c.ti - c.tj + 400) % 4 === 0) ? '#a8acb4' : '#8a8e96'); }],
+        pbrick:['#d8487a', '#e8588a', '#c8386a', 0.1, function(c, R){ var z = c.z || 0, row = (z * 3) | 0; return R(((c.ti + (row % 2) * 2) % 4 === 0 || Math.abs(z * 3 - row) < 0.12) ? '#f4d8e0' : '#d8487a'); }] } }; };
+
+  // Glitch Level: no ground at all, a neon grid in the dark, and blocks of glitch hanging in it
+  BUILD['s-glitch'] = function(L){ var seed = L.seed;
+    return { h:function(x, y){ return -0.8; }, mat:function(x, y){ return ['grid']; },
+      build:function(B){ for (var i = 0; i < 14; i++){ var a = hash(i, 1, seed) * 6.283, d = 6 + hash(i, 2, seed) * 14, x = L.cx + Math.cos(a) * (L.P1[0] - L.P0[0]) / 2 + Math.cos(a) * d, y = L.cy + Math.sin(a) * (L.P1[1] - L.P0[1]) / 2 + Math.sin(a) * d;
+          if (y > L.P1[1] || L.clearAt(x, y) < 2.5) continue; var zb = 1 + hash(i, 3, seed) * 5, s = 0.5 + hash(i, 4, seed) * 1.2, col = ['#ff2bd6', '#2bf0ff', '#39ff14', '#ffe600'][i % 4];
+          B.solid(x - s, y - s, zb, x + s, y + s, zb + s * 2, function(px, py, pz){ return hash(px * 6 | 0, pz * 6 | 0, 5) < 0.12 ? '#ffffff' : col; }); } },
+      bg:'#05030f', gain:1,
+      mats:{ grid:['#0a0618', '#0e0a22', '#06040f', 0.04, function(c, R){ return R(c.ti % 8 === 0 || c.tj % 8 === 0 ? ((c.ti + c.tj) % 16 < 8 ? '#ff2bd6' : '#2bf0ff') : '#0a0618'); }] } }; };
+
+  // Treasure Chamber: flagstones, carved walls, heaps of gold, chests and torches
+  BUILD['s-treasure'] = function(L){ var R0 = room(L, { floor:'flags', wall:'carved', wallH:7, gap:2.6 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ byWall(L, 6, 15, 3.4).forEach(function(q, i){ if (i % 3 === 2){ var x = q[0], y = q[1], zb = B.gz(x, y); B.solid(x - 1, y - 0.6, zb, x + 1, y + 0.6, zb + 1.2, function(px, py, pz){ var t = pz - zb; return t > 0.75 ? (Math.abs(px - x) < 0.12 ? '#ffd23f' : '#6a3a1a') : (Math.abs(t - 0.5) < 0.08 ? '#ffd23f' : '#7a4a22'); }); }
+          else blob(B, q[0], q[1], 1.4 + hash(i, 5, L.seed), 1.2, ['#ffd23f', '#f0b020', '#ffe680', '#e0a010']); });
+        byWall(L, 3, 25, 2.2).forEach(function(q){ var x = q[0], y = q[1], zb = B.gz(x, y); B.solid(x - 0.3, y - 0.3, zb, x + 0.3, y + 0.3, zb + 3.4, function(px, py, pz){ var t = pz - zb, d = Math.hypot(px - x, py - y); if (t > 2.6) return d < 0.28 * (1 - (t - 2.6) / 0.8) ? (t > 3 ? '#ffd23f' : '#ff7a1a') : null; return d < 0.12 ? '#4a3626' : null; }); }); },
+      bg:'#1c1a12', gain:1.9,
+      mats:{ flags:['#a69c72', '#b9ae84', '#968c62', 0.1, function(c, R){ return R((c.ti % 6 === 0 || c.tj % 5 === 0) ? '#7a7050' : '#a69c72'); }],
+        carved:['#8a8060', '#9a9070', '#7a7050', 0.14, function(c, R){ var z = c.z || 0; if (c.n && Math.abs(z - 3.5) < 0.6 && (c.ti % 6) < 2) return R('#c8a040'); return R(((z * 2 | 0) % 2) ? '#8a8060' : '#7a7050'); }] } }; };
+
+  // Lost Mine: dirt underfoot, rock walls held up by timber frames, the old rails and a lantern or two
+  BUILD['s-mine'] = function(L){ var R0 = room(L, { floor:'dirt', wall:'minewall', wallH:6.5, gap:2.4 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ byWall(L, 3, 16, 2.4).forEach(function(q){ var x = q[0], y = q[1], zb = B.gz(x, y); B.solid(x - 0.3, y - 0.3, zb, x + 0.3, y + 0.3, zb + 2.6, function(px, py, pz){ var t = pz - zb, d = Math.hypot(px - x, py - y); if (t > 2) return d < 0.3 ? (t > 2.3 ? '#ffd77a' : '#3a2a1a') : null; return d < 0.08 ? '#3a2a1a' : null; }); });
+        var c = byWall(L, 1, 26, 3.8)[0]; if (c){ var zb = B.gz(c[0], c[1]); B.solid(c[0] - 1.4, c[1] - 0.9, zb, c[0] + 1.4, c[1] + 0.9, zb + 1.6, function(px, py, pz){ var t = pz - zb;
+          if (t < 0.5) return Math.abs(Math.abs(px - c[0]) - 0.9) < 0.3 && Math.abs(Math.abs(py - c[1]) - 0.7) < 0.2 ? '#2a2a2a' : null; if (t > 1.3) return Math.abs(px - c[0]) < 1.2 && Math.abs(py - c[1]) < 0.7 ? '#8a6a44' : null; return '#6a4a2a'; }); } },
+      bg:'#1a120a', gain:1.9,
+      mats:{ dirt:['#6a4e34', '#7a5e40', '#5a4028', 0.14, function(c, R){ return R((c.ti % 9 === 0 && c.tj % 2 === 0) ? '#8a8a8a' : '#6a4e34'); }],
+        minewall:['#6e4a2a', '#7e5a36', '#5e3e22', 0.16, function(c, R){ var z = c.z || 0; if (c.ti % 14 < 2) return R('#8a6a44'); if (c.n && Math.abs(z - 5) < 0.3) return R('#8a6a44'); if (hash(c.ti, c.tj, 13) < 0.02) return R('#ffd23f'); return R('#6e4a2a'); }] } }; };
+
+  // Lava Tube: basalt all round, and lava glowing along channels in the floor of the tube
+  BUILD['s-lava'] = function(L){ var R0 = room(L, { floor:'basaltf', wall:'basaltw', wallH:7, gap:3.2 }), ca = L.clearAt, seed = L.seed;
+    return { h:function(x, y){ var c = ca(x, y); if (c > 1.4 && c < 2.6 && y <= L.P1[1]) return -0.15; return R0.h(x, y); },
+      mat:function(x, y){ var c = ca(x, y); if (c > 1.4 && c < 2.6 && y <= L.P1[1]) return ['lavaf', { f:fbm(x * 0.4, y * 0.4, seed) }]; return R0.mat(x, y); },
+      build:function(B){ byWall(L, 6, 17, 3.8).forEach(function(q, i){ blob(B, q[0], q[1], 1 + hash(i, 6, seed), 1.3, ['#2a2427', '#3b383f', '#1f1a1d']); }); },
+      bg:'#200a06', gain:2,
+      mats:{ basaltf:['#2a2427', '#323036', '#1f1a1d', 0.1], basaltw:['#3b383f', '#45414a', '#2a272c', 0.14, function(c, R){ var z = c.z || 0; return R(z < 1.2 && hash(c.ti, c.tj, 5) < 0.08 ? '#ff5a1a' : ((c.ti + (z * 2 | 0)) % 6 ? '#3b383f' : '#2a272c')); }],
+        lavaf:['#d84a14', '#ff7a1a', '#b0300c', 0.06, function(c, R){ var f = c.f || 0.5; return R(f > 0.6 ? '#ffd25a' : f > 0.5 ? '#ff7a1a' : '#d84a14'); }] } }; };
+
+  // Above the Clouds: nothing below but a sea of cloud, puffs drifting past, and an island far off
+  BUILD['s-clouds'] = function(L){ var seed = L.seed;
+    return { h:function(x, y){ return -1.4 + fbm(x * 0.12, y * 0.12, seed) * 1.6; }, mat:function(x, y){ return ['cloudsea', { f:fbm(x * 0.12, y * 0.12, seed) }]; },
+      build:function(B){ byWall(L, 6, 18, 5).forEach(function(q, i){ blob(B, q[0], q[1], 1.6 + hash(i, 7, seed) * 1.4, 1.6, ['#ffffff', '#eef6fc', '#f8fbfd']); });
+        var q = byWall(L, 1, 28, 12)[0]; if (q){ blob(B, q[0], q[1], 3.4, 2.2, ['#5fb24e', '#6cbf58', '#79ca62']); var zb = B.gz(q[0], q[1]) + 1.6; B.solid(q[0] - 0.8, q[1] - 0.8, zb, q[0] + 0.8, q[1] + 0.8, zb + 4, function(px, py, pz){ return Math.hypot(px - q[0], py - q[1]) < 0.7 * (1 - (pz - zb) / 4) ? '#e74c3c' : null; }); } },
+      bg:'#8fcdf3', gain:1.2,
+      mats:{ cloudsea:['#f2f8fd', '#ffffff', '#dcebf6', 0.08, function(c, R){ var f = c.f || 0.5; return R(f > 0.58 ? '#ffffff' : f > 0.46 ? '#eef6fc' : '#cfe3f3'); }] } }; };
+
+  // The Nest: a floor of straw, walls of woven sticks, and eggs the size of a golfer round the edge
+  BUILD['s-nest'] = function(L){ var R0 = room(L, { floor:'straw', wall:'sticks', wallH:5, gap:2.4 });
+    return { h:R0.h, mat:R0.mat,
+      build:function(B){ byWall(L, 5, 23, 2.6).forEach(function(q, i){ blob(B, q[0], q[1], 1.35, 2.1, i % 2 ? ['#ece2c0', '#fbf4dc', '#6a7a3a'] : ['#e2dcb8', '#f4eed2', '#5a6a32']); }); },
+      bg:'#b8d08a', gain:1.5,
+      mats:{ straw:['#b8955a', '#cca868', '#9a7a44', 0.14], sticks:['#6a4a26', '#9a7a48', '#3e2a16', 0.14, function(c, R, h3){ var a = (c.ti + c.tj) % 5, b = ((c.ti - c.tj) % 6 + 6) % 6, z = c.z || 0;
+          if (z > 4.6) return R(h3(c.ti, c.tj, 9) < 0.5 ? '#8a6a3a' : '#a8875a'); return R(a === 0 ? '#9a7a48' : b === 0 ? '#3e2a16' : h3(c.ti >> 1, c.tj, 5) < 0.3 ? '#5a4026' : '#6a4a26'); }] } }; };
 
   return { make:make };
 })();

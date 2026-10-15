@@ -76,10 +76,10 @@ function lootIcon(t){ var key = t.k + (t.col || ''); if (ICONS[key]) return ICON
 var PZ_SHARE = 0.5, PZ_COINS = 6, PEN_R = 2.9, PEN_HALF = 0.31, PZ_GATE_S = 4.5, CRATE_H = 0.8;
 var PZ_NAME = { fire:'Light the three', dig:'Buried chest', plate:'Pen and plate', push:'Stuck crate' };
 // what the three lights are in each world, for the clue
-var PZ_LIGHT = { clubhouse:'lanterns', temple:'torches', pirate:'lanterns', canyon:'mine lamps', volcano:'braziers', frozen:'ice lamps', sky:'beacons', neon:'neon lights',
+var PZ_LIGHT = { clubhouse:'lanterns', temple:'torches', pirate:'lanterns', canyon:'mine lamps', volcano:'braziers', dino:'torches', sky:'beacons', neon:'neon lights',
   school:'lanterns', iceage:'fire pits', candy:'lanterns', haunted:'candles', harvest:'lanterns' };
-var PZ_FLAME = { neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], frozen:['#6ec8ff', '#e2f6ff'], sky:['#ffd24a', '#fff6c4'] };
-var JAM_ROCK = { neon:'cube', frozen:'rocksnow', iceage:'rocksnow', volcano:'rockdark', haunted:'rockdark' };
+var PZ_FLAME = { neon:['#2bf0ff', '#c8fbff'], haunted:['#7cff8a', '#d8ffd8'], sky:['#ffd24a', '#fff6c4'] };
+var JAM_ROCK = { neon:'cube', iceage:'rocksnow', volcano:'rockdark', haunted:'rockdark' };
 /* THE CLUE, said by the local (or the greeter) on a puzzle trail: a nudge, never the answer. Three ways of saying
    each, picked off the trail, so the same line does not come back trail after trail. */
 var PZ_CLUES = {
@@ -123,9 +123,9 @@ var KIT = {
   volcano:{ g:['#3a3236', '#443a3e', '#2e282c', 0.22], p:['#6a5a52', '#7a6a60', '#5a4c46'], tree:['dead', 'basalt', 'basalt'], leaves:['#3a4a2e', '#4a5a34', '#2e3a24'], bark:'#2b2229',
     low:['rock', 'rockdark', 'ember'], brk:'pot', haz:'lava', dens:0.6, hazC:['#ff6a1a', '#ffc23a'], lm:['basaltset', 'vent', 'skull'], wall:['#4a4046', '#221c20'],
     npc:{ skin:'tan', polo:'black', hat:'black', pants:'grey', hair:'black', hairStyle:'buzz', cap:false, gender:'male' }, who:'the ranger' },
-  frozen:{ g:['#eef4fb', '#f8fbff', '#dfe8f3', 0.2], p:['#c8d6e6', '#d6e2f0', '#b8c8da'], tree:['pine', 'pine', 'pine'], leaves:['#1f4f3e', '#2a6450', '#173e30'], bark:'#4a3626', snow:true,
-    low:['rocksnow', 'bushsnow', 'rocksnow'], brk:'ice', haz:'ice', hazC:['#a8dcf4', '#d4f0ff'], lm:['igloo', 'snowman', 'cabin'], wall:['#dfe8f3', '#9fb2c8'],
-    npc:{ skin:'light', polo:'teal', hat:'white', pants:'navy', hair:'blonde', hairStyle:'long', cap:false, gender:'female' }, who:'the ski patrol' },
+  dino:{ g:['#5e7a2e', '#688632', '#54702a', 0.22], p:['#a8875a', '#b8976a', '#98774c'], tree:['palm', 'broad', 'palm'], leaves:['#2e6a22', '#3a7a2a', '#24561c'], bark:'#5a4026',
+    low:['fern', 'fern', 'rock', 'bush'], brk:'pot', haz:'water', hazC:['#4a6a2e', '#86a454'], waterC:['#3f6a3a', '#7aa65a'], iceC:['#8a4e30', '#b8724a'], lm:['longneck', 'dinoskel', 'nest'], wall:['#c9a46a', '#7a5a34'],
+    npc:{ skin:'medium', polo:'gold', hat:'tan', pants:'khaki', hair:'brown', hairStyle:'ponytail', cap:true, hatStyle:'cap', gender:'female' }, who:'the fossil hunter' },
   sky:{ g:['#f4f6fb', '#ffffff', '#e4e9f4', 0.22], p:['#f7d27a', '#ffe09a', '#e6c066'], tree:['puff', 'puff', 'broad'], leaves:['#8fd3a0', '#a6e0b4', '#7ac08c'], bark:'#c9a46a',
     low:['puffsmall', 'rainbowrock', 'puffsmall'], brk:'crate', haz:null, lm:['balloon', 'kite', 'pillar'], wall:['#ffffff', '#c9d4ea'],
     npc:{ skin:'porcelain', polo:'purple', hat:'white', pants:'stone', hair:'platinum', hairStyle:'curly', cap:false, gender:'female' }, who:'the balloonist' },
@@ -257,6 +257,19 @@ function plan(spec){
   var spurOn = R() < 0.55;
   if (spurOn){ var sdx = clr.x - sx0, sdy = clr.y - ys, sl = Math.hypot(sdx, sdy) || 1, bow = (R() < 0.5 ? -1 : 1) * 2.2;
     for (var k = 0; k <= 10; k++){ var t = k / 10, bw = Math.sin(t * Math.PI) * bow; spur.push([sx0 + sdx * t - sdy / sl * bw, ys + sdy * t + sdx / sl * bw]); } }
+  /* the secret clearing: the far side of the walk from the chest's, with room for the entrance, and always a
+     path out to it so it reads as a place to go. The path ends at the doorway. */
+  var sc = null, spur2 = [];
+  if (spec.secret){ var sk = SECRET_KIND[th] || 'secretdoor', ssz = LMSIZE[sk] || [6, 4, 5.5], srr = Math.max(ssz[0], ssz[1]) / 2 + 1.5;
+    for (var st2 = 0; st2 < 200 && !sc; st2++){ var s2 = SL * (0.2 + R() * 0.6), sd2 = st2 < 120 ? -sg : (R() < 0.5 ? -1 : 1), cp2 = beside(s2, sd2, srr + 6 + R() * 6), o3 = atS(s2);
+      if (cp2[0] < b[0] + srr + 4 || cp2[0] > b[2] - srr - 4 || cp2[1] < 14 || cp2[1] > L - 8) continue;
+      if (pathD(cp2[0], cp2[1]) < srr + 4 || Math.hypot(cp2[0] - clr.x, cp2[1] - clr.y) < srr + clr.r + 6 || Math.hypot(cp2[0] - start.x, cp2[1] - start.y) < srr + start.r + 4) continue;
+      if (gy && (Math.abs(cp2[1] - gy) < srr + 6 || (cp2[1] - gy) * (o3[1] - gy) < 0)) continue;
+      if (spurD(cp2[0], cp2[1]) < srr + 3) continue;
+      sc = { x:cp2[0], y:cp2[1] - 1, r:srr, kind:sk, w:ssz[0], d:ssz[1], h:ssz[2], s:s2, ox:o3[0], oy:o3[1] }; }
+    if (sc){ var my = sk === 'mooredship' ? sc.y : sc.y + sc.d / 2 + 0.9, mx = sk === 'mooredship' ? sc.x + (sc.ox < sc.x ? -1 : 1) * (sc.w / 2 + 1.6) : sc.x;
+      sc.mx = mx; sc.my = my; var tdx = mx - sc.ox, tdy = my - sc.oy, tl = Math.hypot(tdx, tdy) || 1, bw2 = (R() < 0.5 ? -1 : 1) * 1.6;
+      for (var k2 = 0; k2 <= 12; k2++){ var t2 = k2 / 12, bb2 = Math.sin(t2 * Math.PI) * bw2; spur2.push([sc.ox + tdx * t2 - tdy / tl * bb2, sc.oy + tdy * t2 + tdx / tl * bb2]); } } }
   // what the clearing holds: a chest most often, else a pile of things to smash
   var clrKind = R() < 0.7 ? 'chest' : 'pile';
   // the key and the locked gate are the trail's little puzzle: more than half the chests are behind one
@@ -271,15 +284,16 @@ function plan(spec){
   function footAt(x, y){ for (var i = 0; i < feet.length; i++){ var o = feet[i], f = o.f, ii = Math.round((x - o.X0) / 0.25), jj = Math.round((y - o.Y0) / 0.25);
       if (ii >= 0 && jj >= 0 && ii < f.W && jj < f.H){ var c = f.codes[jj * f.W + ii]; if (c) return { c:c, i:i }; } } return null; }
   function inFoot(x, y, pad){ for (var i = 0; i < feet.length; i++){ var o = feet[i]; if (x > o.X0 - pad && x < o.X0 + o.w + pad && y > o.Y0 - pad && y < o.Y0 + o.h + pad) return true; } return false; }
-  function spurD(x, y){ var m = 1e9; if (spur.length < 2) return m; for (var i = 0; i < spur.length - 1; i++) m = Math.min(m, segD(x, y, spur[i][0], spur[i][1], spur[i + 1][0], spur[i + 1][1])); return m; }
+  function spurD(x, y){ var m = 1e9; for (var i = 0; i < spur.length - 1; i++) m = Math.min(m, segD(x, y, spur[i][0], spur[i][1], spur[i + 1][0], spur[i + 1][1]));
+    for (var i3 = 0; i3 < spur2.length - 1; i3++) m = Math.min(m, segD(x, y, spur2[i3][0], spur2[i3][1], spur2[i3 + 1][0], spur2[i3 + 1][1])); return m; }
   // a field of how far each point is from the path, the spur and the clearings, read back smoothly
   var DS = 1, DX = Math.ceil((b[2] - b[0]) / DS) + 1, DY = Math.ceil((b[3] - b[1]) / DS) + 1, DD = new Float32Array(DX * DY);
   for (var j = 0; j < DY; j++) for (var i2 = 0; i2 < DX; i2++){ var x = b[0] + i2 * DS, yy = b[1] + j * DS; DD[j * DX + i2] = Math.min(pathD(x, yy), spurD(x, yy) + 0.4); }
   function walkD(x, y){ var fx = (x - b[0]) / DS, fy = (y - b[1]) / DS; if (fx < 0 || fy < 0 || fx >= DX - 1 || fy >= DY - 1) return 99;
     var i = fx | 0, j = fy | 0, u = fx - i, v = fy - j, q = j * DX + i; return (DD[q] * (1 - u) + DD[q + 1] * u) * (1 - v) + (DD[q + DX] * (1 - u) + DD[q + DX + 1] * u) * v; }
-  function inClear(x, y, pad){ pad = pad || 0; if (inFoot(x, y, pad + 1.5)) return true; return Math.hypot(x - clr.x, y - clr.y) < clr.r + pad || Math.hypot(x - start.x, y - start.y) < start.r + pad || (y < 3 + pad && y > -16 && Math.abs(x - archX) < 9 + pad); }
+  function inClear(x, y, pad){ pad = pad || 0; if (inFoot(x, y, pad + 1.5)) return true; if (sc && Math.hypot(x - sc.x, y - sc.y) < sc.r + pad) return true; return Math.hypot(x - clr.x, y - clr.y) < clr.r + pad || Math.hypot(x - start.x, y - start.y) < start.r + pad || (y < 3 + pad && y > -16 && Math.abs(x - archX) < 9 + pad); }
 
-  var P = { spec:spec, seed:seed, L:L, b:b, plaza:plaza, path:path, cum:cum, cx:cx, gy:gy, SL:SL, atS:atS, tanS:tanS, beside:beside, arch:{ x:archX, y:0 }, route:route, themeAt:themeAt, clr:clr, spur:spur, locked:locked, style:style, clrKind:clrKind, start:start, walkD:walkD, inClear:inClear, feet:feet, footAt:memo2(footAt),
+  var P = { spec:spec, seed:seed, L:L, b:b, plaza:plaza, path:path, cum:cum, cx:cx, gy:gy, SL:SL, atS:atS, tanS:tanS, beside:beside, arch:{ x:archX, y:0 }, route:route, themeAt:themeAt, clr:clr, spur:spur, spur2:spur2, locked:locked, style:style, clrKind:clrKind, start:start, walkD:walkD, inClear:inClear, feet:feet, footAt:memo2(footAt),
     things:[], cols:[], items:[], hazards:[] };
   P.near = function(x, y){ var best = 1e9, out = path[0]; for (var i = 0; i < path.length; i++){ var d = Math.hypot(path[i][0] - x, path[i][1] - y); if (d < best){ best = d; out = path[i]; } } return out; };
 
@@ -381,6 +395,9 @@ function plan(spec){
     P.lockGate = { x:clr.x + Math.cos(gA) * fr, y:clr.y + Math.sin(gA) * fr, a:gA };
     place('fence', clr.x, clr.y, 0.1, 2.6);
   }
+  if (sc){ place(sc.kind, sc.x, sc.y, Math.max(sc.w, sc.d) / 2 + 0.3, sc.h, { w:sc.w, d:sc.d, th:themeAt(sc.y), secret:1, face:sc.ox < sc.x ? -1 : 1 });
+    if (sc.kind === 'mooredship') place('gangplank', (sc.x + sc.mx) / 2, sc.y, 0.1, 0.6, { th:themeAt(sc.y), face:sc.ox < sc.x ? -1 : 1 });
+    P.secret = { x:sc.mx, y:sc.my, r:1.5, i:spec.secret.i, kind:sc.kind, hint:SECRET_HINT[sc.kind] || SECRET_HINT.secretdoor }; used.push({ x:sc.mx, y:sc.my, r:1.6 }); }
   // landmarks: one or two of the world's, beside the path in open ground
   var lms = kitOf(th).lm, nlm = 2 + (R() < 0.4 ? 1 : 0);
   for (var li = 0; li < nlm; li++){ var kind = lms[(seed + li) % lms.length];
@@ -621,6 +638,11 @@ function plan(spec){
       var G2 = flood(!!P.fence, c); c.drops = c.drops.filter(function(d){ return near(G2, d[0], d[1], 1.2); });
       for (var tc = 0; tc < 200 && c.drops.length < c.n; tc++){ var a = R() * 6.283, r = 2.2 + R() * 2.6, dx = c.x + Math.cos(a) * r, dy = c.y + Math.sin(a) * r * 0.8;
         if (near(G2, dx, dy, 1.2) && okGround(dx, dy, 0.3) && !hitThing(dx, dy)) c.drops.push([dx, dy]); } });
+    // the secret's doorway: walkable to, or the trees and rocks along its path come out
+    if (P.secret){ var GS = flood(!!P.fence), on2 = function(x, y, r){ return P.spur2.some(function(q){ return Math.hypot(q[0] - x, q[1] - y) < r + 1.8; }) || Math.hypot(P.secret.x - x, P.secret.y - y) < r + 1.8; };
+      if (!near(GS, P.secret.x, P.secret.y, 1.3)){ P.things = P.things.filter(function(t){ return !((TREEH[t.k] || LOWR[t.k]) && on2(t.x, t.y, t.r || 0.6)); });
+        P.cols = P.cols.filter(function(c){ return c.w || (c.r || 0) > 1.6 || !on2(c.x, c.y, c.r || 0.6); }); GS = flood(!!P.fence); }
+      P.secret.reach = near(GS, P.secret.x, P.secret.y, 1.3); }
   }
   /* SHADOWS ON THE GROUND. The light comes from the upper left, the same as the golfer's, so everything tall
      throws a soft shadow down and to the right. It is what sets a tree on the ground rather than over it. */
@@ -644,12 +666,46 @@ var LOWH = { bush:1.8, bushf:1.8, rock:1.4, fern:1.6, shell:0.4, bushdry:1.2, ro
    and as the golfer pushes through it the leaves bend away from him, rustle, and spring back once he is past. */
 var PLANT = { bush:1, bushf:1, fern:1, bushdry:1, bushsnow:1 };
 var BLOCKR = { pin:0.1, broad:0.6, pine:0.7, palm:0.5, cactus:0.7, dead:0.6, basalt:1.2, puff:0.8, pylon:0.8, cab:1.1, corn:0.5, lamp:0.3, shell:0, ember:0, bushf:0.9 };
+/* THE SECRET ENTRANCES. One trail a world carries a second path to a clearing on the far side of the walk with
+   a way in at the end of it: walk into the doorway and the game offers that world's secret hole. Most are a
+   landmark the world already has (the shed, the school, the factory, the igloo, the cave); Pirate Cove's is a
+   ship moored at the end of the path, and the rest a doorway in a mound of the world's own stone. The door is on
+   the side that faces back down the walk (+y), so it is always the side the camera sees. */
+/* WHAT THE TRAIL SAYS. One line a trail, picked by its seed from a pool in the world's own voice, so walking up to
+   the chest is never the same sentence twice in a row. The local on a secret trail tells you there is a secret hole
+   on it, never where; on any other trail he tells you about the golden ball if it is still out there. */
+var CHEST_SAY = {
+  any:['Is that a chest?', 'Hold on. What\'s that?', 'Something shiny, just off the path.', 'Treasure. Over there.', 'That looks worth a look.'],
+  fence:['There\'s a chest behind that fence.', 'That fence is guarding something.', 'A chest, locked away. Find the key.'],
+  clubhouse:['Somebody left a chest by the greens.'], school:['A chest? In the schoolyard?'], candy:['That chest smells like caramel.'],
+  neon:['A chest. It\'s blinking.'], pirate:['Treasure! Arr.'], temple:['An old chest. Still shut.'], canyon:['A chest, half buried in the dust.'],
+  volcano:['A chest. Still warm.'], sky:['A chest, way up here?'], dino:['A chest by the nest. Don\'t wake anybody.'], iceage:['A chest, older than the ice.'],
+  haunted:['A chest. Don\'t look behind it.'], harvest:['A chest out by the crops.'] };
+var SECRET_SAY = {
+  clubhouse:'Word is there\'s a secret hole somewhere on this trail. I\'ve never found it.',
+  school:'Kids say there\'s a secret hole on this trail. Don\'t tell the principal.',
+  candy:'There\'s a secret hole on this trail. The foreman doesn\'t know.',
+  neon:'There\'s a hidden level on this trail. Most players walk right past it.',
+  pirate:'There be a secret hole on this trail. That\'s all I\'ll say.',
+  temple:'The old maps mark a secret hole on this trail. Nobody\'s found it lately.',
+  canyon:'There\'s a secret hole out here on this trail. Took me years to find it.',
+  volcano:'Somewhere on this trail there\'s a secret hole. Watch your step looking.',
+  sky:'I saw a secret hole on this trail from my balloon. Can\'t say where.',
+  dino:'I dug up an old map. It says there\'s a secret hole on this trail.',
+  iceage:'The old drawings say there\'s a secret hole on this trail.',
+  any:'There\'s a secret hole somewhere on this trail. Keep your eyes open.' };
+var SECRET_DONE = 'You found the secret hole on this trail. Not many do.';
+var GOLD_SAY = ['There\'s a golden ball off the path here. Look behind things.', 'Somebody lost a golden ball out here.', 'A golden ball\'s hiding on this trail. Off the path.', 'Keep an eye out. There\'s a golden ball around here.'];
+function sayPick(list, seed){ return list[((seed >>> 0) % list.length)]; }
+var SECRET_KIND = { clubhouse:'shed', school:'school', candy:'factory', neon:'secretdoor', pirate:'mooredship', temple:'secretdoor', canyon:'secretdoor', volcano:'secretdoor', sky:'secretdoor', dino:'secretdoor', iceage:'cave' };
+var SECRET_HINT = { shed:'The shed door is open a crack.', school:'Somebody left the side door open.', factory:'The factory door is open. Something hums inside.', secretdoor:'There is a way in, behind there.',
+  mooredship:'A ship, tied up. The gangplank is down.', igloo:'Somebody built an igloo out here.', cave:'A draft is coming out of that cave.' };
 // landmark footprints: width, depth, height
 var LMSIZE = { shed:[9, 6, 11], green:[9, 7, 1], bench:[3, 1.2, 2], lamps:[1, 1, 7], ruin:[10, 3, 9], statue:[3, 3, 8], columns:[8, 5, 9], wreck:[12, 5, 7], boat:[6, 3, 3], barrels:[4, 3, 2.4],
   mesa:[11, 8, 13], tower:[5, 5, 15], cart:[5, 2.5, 3.5], basaltset:[7, 6, 9], vent:[5, 5, 4], skull:[5, 4, 5], igloo:[7, 7, 5], snowman:[3, 3, 5.5], cabin:[9, 6, 11],
   balloon:[6, 6, 16], kite:[3, 3, 12], pillar:[5, 5, 12], cabinets:[8, 2.5, 6.5], sign:[8, 1.5, 11], pylons:[6, 6, 12], crypt:[8, 6, 10], graves:[9, 6, 3], fenceyard:[9, 6, 3],
   barn:[11, 8, 13], scarecrow:[3, 2, 7], cornfield:[10, 8, 5], school:[12, 8, 13], swings:[8, 3, 6], slide:[4, 6, 5], mammoth:[9, 4, 6.5], cave:[10, 7, 6], tusks:[7, 2, 5],
-  factory:[11, 8, 13], gumballs:[5, 5, 7], canes:[8, 1.5, 5.5] };
+  factory:[11, 8, 13], gumballs:[5, 5, 7], canes:[8, 1.5, 5.5], secretdoor:[6, 4, 5.5], longneck:[13, 4, 11], dinoskel:[10, 4, 4.5], nest:[6, 6, 2.8], mooredship:[5, 14, 11.5] };
 
 /* ------------------------------------------------------------------------------- the ground */
 function land(P){
@@ -704,8 +760,8 @@ function mats(P){
   function lfn(cols, rip){ return function(c, R, h3){ var n = h3(c.ti, c.tj, 7); return R(((c.ti * 3 + c.tj * 5) % rip) < 2 ? cols[1] : cols[0]); }; }
   var out = {
     g:['', '', '', 0, gfn(k)], g0:['', '', '', 0, gfn(k0)], path:['', '', '', 0, pfn(k)], path0:['', '', '', 0, pfn(k0)],
-    water:['', '', '', 0, lfn((P.sea ? ['#1f8fc8', '#5cc6ee'] : ['#3f86c8', '#6fb3e6']), 13)],
-    lava:['', '', '', 0, lfn(['#ff6a1a', '#ffc23a'], 9)], ice:['', '', '', 0, lfn(['#a8dcf4', '#e2f6ff'], 23)], bog:['', '', '', 0, lfn(k.bogC || ['#5d4634', '#7a6044'], 17)],
+    water:['', '', '', 0, lfn((P.sea ? ['#1f8fc8', '#5cc6ee'] : k.waterC || ['#3f86c8', '#6fb3e6']), 13)],
+    lava:['', '', '', 0, lfn(['#ff6a1a', '#ffc23a'], 9)], ice:['', '', '', 0, lfn(k.iceC || ['#a8dcf4', '#e2f6ff'], 23)], bog:['', '', '', 0, lfn(k.bogC || ['#5d4634', '#7a6044'], 17)],
     sand:['#ecdba4', '#f4e4b4', '#dcc88c', 0.2],
     carpet:[T.carpet || '#2f8f4e', T.carpet2 || '#2a8246', T.carpet || '#2f8f4e', 0.16], rail:[T.wall || '#f4efe2', T.wallHi || '#ffffff', T.wall || '#f4efe2', 0.1],
     cup:['#141414', '#202020', '#141414', 0],
@@ -942,6 +998,37 @@ BUILD.cave = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy,
 BUILD.tusks = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ if (Math.abs(dy) > 0.32 || tt < 0) return null;
   for (var s = -1; s <= 1; s += 2){ var cx = s * 2.6, r = Math.hypot(dx - cx, tt); if (Math.abs(r - 3.1 + tt * 0.06) < 0.24 + (3.6 - tt) * 0.06 && s * (dx - cx) <= 0.4 && tt < 4.6) return tt < 0.5 ? '#8a7658' : '#f4ead2'; }
   return null; }, 0.125); };
+// ---- Dino Valley: a long neck standing over the trees, a skeleton half dug out of the ground, and a nest of eggs
+BUILD.longneck = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var hide = function(){ var n = hash(Math.floor(dx * 4), Math.floor(tt * 4) + Math.floor(dy * 4) * 11, 3 + i); return n < 0.2 ? '#5a6e4a' : n > 0.86 ? '#8aa070' : '#6e8458'; };
+  if (tt < 3 && Math.abs(Math.abs(dx + 0.4) - 1.7) < 0.5 && Math.abs(Math.abs(dy) - 0.8) < 0.45) return tt < 0.3 ? '#3a4630' : '#5e7250';
+  if (Math.hypot((dx + 0.4) / 3, dy / 1.5, (tt - 4) / 1.7) < 1) return tt < 3.2 ? '#9aa880' : hide();
+  // the neck rises forward and up to a small head; the tail sweeps back and down
+  var nx = 2.2 + (tt - 4.5) * 0.42; if (tt > 4.5 && tt < 10.2 && Math.abs(dy) < 0.5 && Math.abs(dx - nx) < 0.62 - (tt - 4.5) * 0.04) return hide();
+  if (Math.hypot((dx - 5) / 0.95, dy / 0.5, (tt - 10.3) / 0.5) < 1) return (Math.abs(Math.abs(dy) - 0.3) < 0.1 && Math.abs(tt - 10.45) < 0.1 && dx > 5.1) ? '#1a1a10' : hide();
+  var tx = -3.2 - (tt < 4.4 ? (4.4 - tt) * 1.1 : 0); if (dx < -3 && dx > -6.5 && Math.abs(dy) < 0.42 - (-3 - dx) * 0.06 && Math.abs(dx - tx) < 0.7 && tt > 0.4 && tt < 4.6) return hide();
+  return null; }, 0.25); };
+BUILD.dinoskel = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var bone = tt < 0.3 ? '#cbbf96' : '#f4ead2';
+  if (tt < 0.14) return Math.hypot(dx / 5, dy / 2) < 1 ? '#8a6a44' : null;
+  var sy = Math.sin(dx * 0.5) * 0.3; if (Math.abs(dy - sy) < 0.2 && Math.abs(dx) < 4.2 && Math.abs(tt - (1.6 - Math.abs(dx) * 0.25)) < 0.2) return bone;
+  for (var k = -2; k <= 2; k++){ var rx = k * 0.75 + 0.4; if (Math.abs(dx - rx) < 0.14){ var rr = Math.hypot(dy - sy, tt - 0.2); if (Math.abs(rr - 1.25) < 0.16 && tt < 1.6) return bone; } }
+  if (Math.hypot((dx - 4.6) / 0.8, (dy - sy) / 0.45, (tt - 1) / 0.5) < 1) return Math.abs(tt - 1.05) < 0.08 && dx > 4.8 ? '#5a4a30' : bone;
+  return null; }, 0.125); };
+BUILD.nest = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy);
+  if (r > 2.2 && r < 2.9 && tt < 1.1 - (r - 2.55) * (r - 2.55) * 3) return hash(Math.floor(dx * 6), Math.floor(dy * 6) + Math.floor(tt * 6) * 7, 4 + i) < 0.5 ? '#8a6a3a' : '#6a4a26';
+  if (r < 2.3 && tt < 0.3) return '#a8875a';
+  var eggs = [[-0.8, -0.3], [0.7, -0.5], [0, 0.8]]; for (var e = 0; e < 3; e++){ var ex = dx - eggs[e][0], ey = dy - eggs[e][1]; if (Math.hypot(ex / 0.62, ey / 0.62, (tt - 0.95) / 0.85) < 1) return Math.sin(ex * 31 + tt * 17) * Math.sin(ey * 23 - tt * 13) > 0.6 ? '#6a7a3a' : (ex < -0.2 ? '#fbf4dc' : '#ece2c0'); }
+  return null; }, 0.125); };
+// ---- the secret entrances that are not a landmark already: a ship tied up beside the path, its gangplank, and a doorway
+function at(B, ox, oy){ var B2 = Object.create(B); B2.gz = function(x, y){ return B.gz(x + ox, y + oy); };
+  B2.solid = function(x0, y0, z0, x1, y1, z1, fn, sv){ return B.solid(x0 + ox, y0 + oy, z0, x1 + ox, y1 + oy, z1, function(px, py, pz){ return fn(px - ox, py - oy, pz); }, sv); }; return B2; }
+BUILD.mooredship = function(B, t){ shipFn(1)(at(B, t.x, t.y)); };
+BUILD.gangplank = function(B, t){ box(B, t.x, t.y, 3.4, 1.2, 1.6, function(dx, dy, tt){ var u = (dx * t.face + 1.7) / 3.4; if (Math.abs(dy) > 0.5 || u < 0 || u > 1) return null;
+  var top = 0.2 + u * 1.2; if (tt > top || tt < top - 0.18) return null; return (Math.floor(u * 9) % 2) ? '#8a6a44' : '#7a5a34'; }, 0.125); };
+BUILD.secretdoor = function(B, t, i){ var K = kitOf(t.th), hi = K.wall[0], lo = K.wall[1];
+  box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var d = Math.hypot(dx / (t.w / 2), dy / (t.d / 2), tt / t.h) + (vn(dx * 0.8, tt * 0.8, i + 3) - 0.5) * 0.14; if (d > 1) return null;
+    var door = dy > 0 && Math.abs(dx) < 1.1 && tt < 2.4 * (1 - Math.pow(dx / 1.1, 2) * 0.35); if (door) return d > 0.82 ? null : '#120e0c';
+    if (dy > 0 && Math.abs(dx) < 1.5 && tt < 2.9 && d > 0.8) return lo;
+    return ((tt * 1.3 + dx * 0.4) | 0) % 2 ? hi : lo; }, 0.25); };
 // ---- Candy Works: the factory with two striped chimneys, a giant gumball machine, an arch of candy canes
 BUILD.factory = function(B, t){ gable(B, t.x, t.y, t.w - 1, t.d - 1, 7, 3.4, function(dx, dy, tt){ return tt > 6.4 ? '#ffffff' : ((tt * 1.6 | 0) % 2 ? '#ff8ab8' : '#ff9cc4'); }, function(dx){ return (Math.floor(dx * 1.4 + 20) % 2) ? '#7a4422' : '#6a3a1c'; }, '#7a4422');
   [-2.6, 2.6].forEach(function(cx){ box(B, t.x + cx, t.y - 1, 1.4, 1.4, 13, function(dx, dy, tt){ if (tt < 8 || Math.hypot(dx, dy) > 0.6) return null; return (Math.floor(tt * 1.4) % 2) ? '#e8233f' : '#fff6f0'; }, 0.125); }); };
@@ -970,7 +1057,7 @@ var LIFE = {
   pirate:{ fly:['gull', 4], ships:2 },
   canyon:{ fly:['vulture', 3], mote:['dust', 24], tumble:3 },
   volcano:{ mote:[['ember', 34], ['ash', 26]], smoke:true },
-  frozen:{ mote:['snow', 90], fly:['gull', 2] },
+  dino:{ fly:['ptero', 3], mote:[['firefly', 16], ['leaf', 8]] },
   sky:{ fly:['gull', 3], balloons:3 },
   neon:{ fly:['drone', 3], mote:['spark', 40] },
   haunted:{ fly:['bat', 5], ghosts:2, mote:['firefly', 8] },
@@ -983,6 +1070,7 @@ var LIFE = {
 var PIX_FLY = {
   bird:[['w.....w', '.w...w.', '..wow..', '...h...'], ['..wow..', '.w.h.w.', 'w.....w']],
   bat:[['w.....w', 'ww...ww', '.wwoww.', '..h.h..'], ['..wow..', '.wwoww.', 'w.h.h.w']],
+  ptero:[['w.......w', 'ww.....ww', '.wwwoww..', '...hhh...'], ['...wow...', '.wwwoww..', 'ww..hhh.w']],
   drone:[['l.....l', 'ooooooo', '..ooo..', '...h...'], ['h.....h', 'ooooooo', '..ooo..', '...l...']]
 };
 var FLY_PAL = {
@@ -992,6 +1080,7 @@ var FLY_PAL = {
   vulture:{ base:'bird', w:'#2a2228', o:'#3a3036', h:'#d89a7a', sz:1.3, z:[13, 17], v:[4, 5], circle:true },
   crow:{ base:'bird', w:'#1a1820', o:'#24222a', h:'#d8a02a', sz:1, z:[7, 12], v:[6, 8] },
   bat:{ base:'bat', w:'#2a2230', o:'#3a2e44', h:'#ff4a3a', sz:0.9, z:[4, 9], v:[5, 9], flit:true },
+  ptero:{ base:'ptero', w:'#a0522d', o:'#7a3e22', h:'#e8a03a', sz:1.5, z:[12, 17], v:[4, 6], circle:true },
   drone:{ base:'drone', w:'#2bf0ff', o:'#2a2440', h:'#ff2bd6', l:'#2bf0ff', sz:1, z:[8, 12], v:[4, 6] }
 };
 var PIX_BUTTER = [['ww.ww', 'wwbww', '.wbw.'], ['.wbw.', '..b..']], PIX_GHOST = ['..ggg..', '.ggggg.', 'gg.g.gg', 'ggggggg', 'ggggggg', 'ggggggg', 'g.g.g.g'];
@@ -1397,7 +1486,7 @@ function run(box, P, pic, api){
       else if (k === 'dust') sq(m.x, m.y, z, 0.22, '#f0d8b0', 0.7);
       else if (k === 'firefly'){ var gl = Math.max(0, Math.sin(m.life * 2.2 + m.ph)); if (gl > 0.05){ sq(m.x, m.y, z, 0.9, 'rgba(220,255,120,' + (gl * 0.35).toFixed(2) + ')'); sq(m.x, m.y, z, 0.3, '#f4ff9a', gl); } }
       else if (k === 'butter') pixAt(PIX_BUTTER[(Math.floor(m.life * 9 + m.ph) % 2)], { w:m.c, b:'#2a2228', o:m.c }, m.x, m.y, z, 0.24, false); });
-    flyers.forEach(function(f){ var C = FLY_PAL[f.kind], fr = PIX_FLY[C.base][Math.floor(tsec * (f.kind === 'vulture' ? 3 : 8) + (f.ph || 0)) % 2], gz = pic.zAt(f.x, f.y);
+    flyers.forEach(function(f){ var C = FLY_PAL[f.kind], fr = PIX_FLY[C.base][Math.floor(tsec * (f.kind === 'vulture' || f.kind === 'ptero' ? 3 : 8) + (f.ph || 0)) % 2], gz = pic.zAt(f.x, f.y);
       shadowAt(f.x + 1, f.y + 1, 0.9 * C.sz, 0.1); pixAt(fr, C, f.x, f.y, gz + f.z, C.sz * 0.28, f.vx < 0); }); }
 
   // ---- input: a stick under the thumb, or the keys
@@ -1437,7 +1526,9 @@ function run(box, P, pic, api){
   var goalS = P.cum[P.cum.length - 1];
 
   // a line said once what was just found has flown up to the top of the screen, so the bubble never sits on top of it
-  function sayLater(txt, ms, wait){ setTimeout(function(){ if (alive) say(txt, ms); }, (reduce ? 0.1 : wait) * 1000); }
+  // the local's second thing to say: after the first has been read, and never over something else being said
+  function npcLater(txt, wait, who){ setTimeout(function(){ if (alive && (!bubble || bubble.who === who || performance.now() > bubble.until)) say(txt, 5200, who); }, wait * 1000); }
+  function sayLater(txt, ms, wait, who){ setTimeout(function(){ if (alive) say(txt, ms, who); }, (reduce ? 0.1 : wait) * 1000); }
   function say(txt, ms, who){ bubble = { txt:txt, until:performance.now() + (ms || 3200), who:who || null }; bubEl.textContent = txt; bubEl.hidden = false; }
   function burst(x, y, z, cols, n, sz, pow){ pow = pow || 1; for (var i = 0; i < n; i++){ var a = Math.random() * 6.28, sp2 = (2 + Math.random() * 4) * pow; parts.push({ x:x, y:y, z:z, vx:Math.cos(a) * sp2, vy:Math.sin(a) * sp2 * 0.6, vz:(3 + Math.random() * 4) * pow, c:cols[i % cols.length], t:0, sz:sz ? sz * (0.6 + Math.random() * 0.8) : 0 }); } }
   function hudCoins(){ ui.querySelector('[data-coins]').textContent = '+' + coinsGot; }
@@ -1541,6 +1632,7 @@ function run(box, P, pic, api){
       if ((found.b || []).indexOf(t.id) < 0){ (found.b = found.b || []).push(t.id); coinsGot += BRK_V; hudCoins(); pick('brk', t.id, BRK_V); burst(t.x, t.y, z + 1, ['#ffd23a'], 4); collect({ x:t.x, y:t.y, k:'coin', id:t.id }, now, 'coin'); floatText('+' + BRK_V, t.x, t.y, z + 2); } else pick('brk', t.id, 0); } }
 
   var last = performance.now(), lastSafe = 0, nearNpc = false;
+  function j7(t){ return Math.round(t.x * 7 + t.y * 13); }
   function step(){ if (!alive) return; requestAnimationFrame(step);
     var now = performance.now(), dt = Math.min(0.05, (now - last) / 1000); last = now; var tsec = now / 1000;
     // where the stick asks him to go, on the screen, made a direction on the ground: up the screen is further than it looks
@@ -1578,18 +1670,30 @@ function run(box, P, pic, api){
       else if (t.k === 'chest' && d < 2.6 && (lockOpen || !P.fence || !t.main)) take(t, tsec);
       else if (t.k === 'prize' && d < 2.6 && prizeShown()) take(t, tsec);
       // warmer: the first time you come within a few strides of a shut chest it says so, and its row on the list lights
-      if (t.k === 'chest' && !t.done && !t.hint && d < 9){ t.hint = true; if (!bubble || now > bubble.until) say(t.main && P.fence && !lockOpen ? 'Something glints behind that fence.' : 'Something glints nearby.', 2200);
+      if (t.k === 'chest' && !t.done && !t.hint && d < 9){ t.hint = true; if (!bubble || now > bubble.until) say(t.main && P.fence && !lockOpen ? sayPick(CHEST_SAY.fence, P.seed) : sayPick((CHEST_SAY[P.spec.theme] || []).concat(CHEST_SAY.any), P.seed + j7(t)), 2200);
         var hr = ui.querySelector('[data-tlist] [data-id="' + t.id + '"]'); if (hr) hr.classList.add('near'); }
       else if (t.k === 'brk' && d < 1.5 && spd > 1.5) take(t, tsec); }
     if (PZ) stepPuzzle(dt, now, tsec);
     // the local talks when he walks up, and on a puzzle trail he gives the clue
     var npc = items.filter(function(t){ return t.k === 'npc'; })[0];
-    if (npc){ var dn = Math.hypot(npc.x - g.x, npc.y - g.y); if (dn < 3.4 && !nearNpc){ nearNpc = true; var ls = api.lines ? api.lines(kitOf(npc.th).who) : []; if (PZ && !PZ.solved) ls = ls.concat([P.puzzle.clue]); say(ls.join(' '), PZ && !PZ.solved ? 8200 : 5200, npc); } else if (dn > 5) nearNpc = false; }
+    if (npc){ var dn = Math.hypot(npc.x - g.x, npc.y - g.y); if (dn < 3.4 && !nearNpc){ nearNpc = true; var ls = [], gold = items.filter(function(t){ return t.k === 'golden' && !t.done; })[0], word = '';
+        // what he knows about this trail is said on its own, and then what he knows about the hole
+        if (P.secret) word = (api.secretSeen && api.secretSeen(P.secret.i) ? SECRET_DONE : SECRET_SAY[P.spec.theme] || SECRET_SAY.any);
+        else if (gold) word = sayPick(GOLD_SAY, P.seed);
+        ls = ls.concat(api.lines ? api.lines() : []);
+        // an unsolved puzzle's clue is what you need right now, so it comes first and the rest after
+        if (PZ && !PZ.solved){ say(P.puzzle.clue, 8200, npc); var rest = (word ? [word] : []).concat(ls); if (rest.length) npcLater(rest.join(' '), 8.4, npc); }
+        else if (word){ say(word, 3600, npc); if (ls.length) npcLater(ls.join(' '), 3.7, npc); } else if (ls.length) say(ls.join(' '), 5200, npc); } else if (dn > 5) nearNpc = false; }
     if (P.fence && !lockOpen){ var df = Math.hypot(g.x - P.lockGate.x, g.y - P.lockGate.y); if (df < 2.4 && (!bubble || now > bubble.until)) say('Locked. The key is somewhere on this trail.', 2200); }
     // the door between worlds
     if (gate && !gate.asked && Math.abs(g.y - P.gate.y) < 3.2 && Math.abs(g.x - P.gate.x) < PW + 3){ gate.asked = true; paused = true; g.vx = g.vy = 0;
       api.door(function(open){ gate.open = open; paused = false; if (open && cloud) cloud.part = performance.now() / 1000; }); }
     if (gate && gate.asked && !gate.open && Math.abs(g.y - P.gate.y) > 7) gate.asked = false;
+    // the secret entrance: a word coming near it, and walking into its doorway offers the hole
+    if (P.secret && api.secret){ var dsx = Math.hypot(g.x - P.secret.x, g.y - P.secret.y);
+      if (dsx < 9 && !P.secret.hinted){ P.secret.hinted = true; if (!bubble || now > bubble.until) say(P.secret.hint, 2600); }
+      if (dsx < P.secret.r && !P.secret.inside){ P.secret.inside = true; paused = true; g.vx = g.vy = 0; api.secret(P.secret.i, function(){ paused = false; }); }
+      else if (dsx > P.secret.r + 1.5) P.secret.inside = false; }
     // the arch: the hole
     if (g.y < 1.2 && Math.abs(g.x - P.arch.x) < 3.6 && !ended){ ended = true; api.arrive(); return; }
     if (bubble && now > bubble.until){ bubble = null; bubEl.hidden = true; }
