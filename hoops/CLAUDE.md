@@ -46,7 +46,7 @@ node hoops/check-cloudsave.mjs    the run, the career and the daily on two devic
 node hoops/check-arenas.mjs       arenas, the camera and the Locker
 node hoops/check-rosters.mjs      the roster file, the season, the handover
 node hoops/build/check-fetch.mjs  the scrapers' parsers against saved markup
-node hoops/build/replay-careers.mjs --story off --against base.json   old careers byte identical
+node hoops/build/replay-careers.mjs --against base.json   a refactor moves no career, old saves included
 ```
 
 The economy has its own suite: `check-economy`, `check-wardrobe`, `check-closet`, `check-earn`,
@@ -70,9 +70,12 @@ The economy has its own suite: `check-economy`, `check-wardrobe`, `check-closet`
 
 - **A box score decomposes the scoreline. It is never a second model.** The same holds for a game
   seven and the bracket: one loop, the one that already existed.
-- **Story features sit behind `storyOn`.** `replay-careers --story off` must stay byte identical.
-- **A save is versioned and migrated** (`LIFE_VERSION`). `migrate()` never moves a number the sim
-  reads. Never regenerate `hoops/build/fixtures/` with the current engine.
+- **One Career engine, the story engine** (the owner's call, 2026-10-15). There is no story-off
+  career and no `storyOn` branch to add. A refactor proves itself with `replay-careers --against`,
+  byte identical over 1,000 careers and the six old saves.
+- **A save is versioned and migrated** (`LIFE_VERSION`). An old save must load, keep who it was and
+  play on to a retirement (`check-saves`). Never regenerate `hoops/build/fixtures/` with the
+  current engine.
 - `legacyScore` is integer arithmetic, because the server derives the same score and they must agree.
 - A season is named for the year it ENDS: 2026 is 2025-26.
 

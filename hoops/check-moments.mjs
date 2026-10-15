@@ -155,18 +155,16 @@ section('2c. the hold, the launch and the lane, as rules');
   ok(CT.laneWindow(90) > w && w > CT.laneWindow(40), 'a better defender sees the hands sooner');
 }
 
-section('3. moments are for careers started since they existed');
+section('3. every career has moments, an old save too');
 {
   const FX = JSON.parse(fs.readFileSync(path.join(HERE, 'build/fixtures/career-v1-saves.json'), 'utf8'));
   let dealt = 0;
   for (const k in FX.saves) {
     const L = play(C.migrate(clone(FX.saves[k])), 600);
-    ok(!L.opt.moments, `${k}: a migrated save is not given moments`);
+    ok(L.opt.moments === true, `${k}: a migrated save plays with moments, like every career (the original engine retired, 2026-10-15)`);
     dealt += (L.log || []).filter((e) => /at the horn|Dunked on|chase-down|last stop|free throws to beat/.test(e.t)).length;
   }
-  ok(dealt === 0, `and none is ever dealt to one (${dealt})`);
-  const off = play(C.newLife({ seed: 'nomo', start: 'draft', moments: false }), 1500);
-  ok(off.opt.moments === false, 'a career can be started without them');
+  ok(dealt > 0, `and they come up in one (${dealt})`);
   let n = 0, two = 0;
   for (let k = 0; k < 60; k++) {
     const L = C.newLife({ seed: 'mo' + k, start: 'draft' });
@@ -183,7 +181,7 @@ section('3. moments are for careers started since they existed');
 section('3b. a duel career: the game is the team\'s, the moment is yours');
 {
   ok(C.newLife({ seed: 'd0', start: 'draft' }).opt.duel === 1, 'a new story career is a duel career');
-  ok(!C.newLife({ seed: 'd0', start: 'draft', story: false }).opt.duel, 'a story-off career is not (the replay of 1,000 careers stays byte identical)');
+  ok(C.migrate(clone(JSON.parse(fs.readFileSync(path.join(HERE, 'build/fixtures/career-v1-saves.json'), 'utf8')).saves.nba_mid)).opt.duel === 1, 'and so is a career from before the story engine, once it loads');
   let nights = 0, match = 0, g7 = { MW: 0, ML: 0, mW: 0, mL: 0 }, read = { best: 0, bestN: 0, worst: 0, worstN: 0 }, looks = 0;
   for (let k = 0; k < 500 && (nights < 120 || g7.ML + g7.mW < 20); k++) {
     const L = C.newLife({ seed: 'dl' + k, start: k % 4 ? 'draft' : 'hs' });

@@ -1605,8 +1605,8 @@ function tabsHtml(L){
   else body = trophies(L);
   var TI = { log: 'clip', team: 'shirt', seasons: 'chart', trophies: 'trophy', people: 'people', legacy: 'crown', news: 'paper' };
   var t = function(id, name){ var on = tab === id; return '<button class="k-tab k-itab" role="tab" aria-selected="' + on + '" data-tab="' + id + '">' + K.iconHtml(TI[id], 2) + '<span>' + name + '</span></button>'; };
-  return '<div class="k-panel cr-sec cr-tabsec"><div class="k-tabs k-itabs cr-tabs" role="tablist">' + t('log', 'Story') + (L.opt && L.opt.story && C.rotationOf && C.rotationOf(L) ? t('team', 'Team') : '') + t('seasons', 'Seasons') + t('trophies', 'Trophies')
-    + (L.opt && L.opt.story ? t('people', 'People') + t('legacy', 'Legacy') + t('news', 'News') : '') + '</div>'
+  return '<div class="k-panel cr-sec cr-tabsec"><div class="k-tabs k-itabs cr-tabs" role="tablist">' + t('log', 'Story') + (C.rotationOf && C.rotationOf(L) ? t('team', 'Team') : '') + t('seasons', 'Seasons') + t('trophies', 'Trophies')
+    + t('people', 'People') + t('legacy', 'Legacy') + t('news', 'News') + '</div>'
     + '<div role="tabpanel">' + body + '</div></div>';
 }
 /* YOUR CLUB: the thirteen in rotation order, where you stand, and the
@@ -1660,7 +1660,7 @@ function legacyHtml(L){
   var out = '<div class="cr-leg"><div><b>' + esc(v.rung) + '</b><span>Today</span></div>'
     + '<div><b>' + (v.next ? '+' + v.next.need : 'Top') + '</b><span>' + esc(v.next ? 'To ' + v.next.name : 'Of the ladder') + '</span></div>'
     + '<div><b>' + v.hof + '%</b><span>Hall chance</span></div></div>';
-  if (C.routesOf && C.storyOn(L)) {
+  if (C.routesOf) {
     var road = [L.origin ? C.ORIGINS[L.origin].name : null].concat(C.routesOf(L).map(function(k){ return C.ROUTES[k][0]; })).filter(Boolean);
     if (road.length) out += '<h3 class="cr-sub">Your road</h3><p class="cr-road">' + esc(road.join(' · ')) + '</p>';
   }
@@ -2325,7 +2325,7 @@ function finish(){
     story: C.careerStory ? C.careerStory(L) : null,
     ids: f.ending ? { tier: f.ending.tier, outs: f.ending.outcomes || [], secret: f.ending.secret || null,
       routes: C.routesOf ? C.routesOf(L) : [], origin: L.origin || null } : null,
-    lg: C.leagueEnd && C.storyOn(L) ? trimLeague(C.leagueEnd(L)) : null,
+    lg: C.leagueEnd ? trimLeague(C.leagueEnd(L)) : null,
     diff: L.opt && L.opt.diff ? L.opt.diff : null,
     ch: C.challengeOf && C.challengeOf(L) ? { id: L.challenge, met: C.challengeOf(L).met } : null };
   var easy = card.diff === 'easy';
