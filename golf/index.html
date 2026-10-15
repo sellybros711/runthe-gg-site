@@ -5614,13 +5614,32 @@ function loginRewLabel(o){ if(!o) return '';
 // Fires from the sbApply post-cloudPull chain (covers a fresh sign-in AND app-open while already signed in),
 // so the popup shows the first time an account is seen each day. Grants on detect (idempotent via `day`),
 // then opens the celebratory popup.
-function maybeLoginBonus(){ if(!sbSignedIn()) return; const t=todayKey(), s=loginState();
-  if(s.day===t) return;                              // already claimed today
+// the daily popup, as it was: paid on sight, then shown. Everybody not on the First Tee.
+function maybeLoginBonusClassic(s){ const t=todayKey();
   const n=((s.n||0)%7)+1;                            // advance the 7-day loop (a missed day doesn't reset it)
   const rew=loginReward(n); grantLoginReward(rew);   // grant now (idempotent by day) regardless of display
   loginSave({day:t, n:n});
   S.loginReward=rew;
   try{ track('login_bonus',{day:n,kind:rew.kind}); }catch(e){}
+  // Sequencing (owner): the Season 1 launch popup always shows FIRST. If it's still pending, or any
+  // other popup is already up, DEFER this login bonus so the two don't clobber each other: it opens
+  // when the season popup is dismissed (or on the next clean title render) via flushPendingLogin().
+  if(S.overlay || s1LaunchPending() || welcomePackPending()){ S._loginPending=true; return; }
+  S.overlay='login'; try{ render(); }catch(e){} }
+function maybeLoginBonus(){ if(!sbSignedIn()) return; const t=todayKey(); let s=loginState();
+  if(s.day===t) return;                              // already claimed today
+  // THE GIFT WAITS ON THE PIN SHEET (owner, 2026-10-15): it is set aside, not paid, and the First Tee says a
+  // reward is there to claim (claimLoginGift pays it and opens the calendar). One never opened is paid here,
+  // quietly, the next day the account is seen, so nobody loses a day's gift.
+  if(!ftLive()) return maybeLoginBonusClassic(s);
+  const old=LS.get(acctKey('bag_login_pend'),null);
+  if(old && old.day && old.day!==t && s.day!==old.day){ grantLoginReward(old.rew); loginSave({day:old.day, n:old.n}); s=loginState(); }
+  const n=((s.n||0)%7)+1;                            // advance the 7-day loop (a missed day doesn't reset it)
+  const rew=loginReward(n);
+  LS.set(acctKey('bag_login_pend'),{day:t, n:n, rew:rew});
+  try{ track('login_bonus',{day:n,kind:rew.kind}); }catch(e){}
+  if(S.screen==='title' && !S.overlay){ try{ render(); }catch(e){} }
+  return;
   // Sequencing (owner): the Season 1 launch popup always shows FIRST. If it's still pending, or any
   // other popup is already up, DEFER this login bonus so the two don't clobber each other: it opens
   // when the season popup is dismissed (or on the next clean title render) via flushPendingLogin().
@@ -12379,7 +12398,8 @@ function header(){
   h.appendChild(bar);
   return h;
 }
-function footer(){
+function footer(opt){
+  opt=opt||{};
   const f=$(`<div class="foot"></div>`);
   // CS474 declutter: the full footer (Send Feedback + Add to Home + cross-promo pills) is heavy and was
   // repeating on EVERY screen. Show it only on the title/home (where a first-time visitor sees it); every
@@ -12408,7 +12428,7 @@ function footer(){
          data-ad-slot="0000000000" data-ad-format="horizontal"
          data-full-width-responsive="true"></ins>
   </div>`);
-  f.appendChild(adWrap);
+  if(!opt.noAd) f.appendChild(adWrap);
   try{
     const ins=adWrap.querySelector('ins.adsbygoogle');
     const slot=ins && ins.getAttribute('data-ad-slot');
@@ -12533,14 +12553,15 @@ function render(){
   // opaque status-bar mask (mounted once on <body>, persists across renders) so scrolling content
   // never smears under the translucent iOS status bar.
   if(!document.getElementById('topmask')){ const tm=document.createElement('div'); tm.id='topmask'; tm.className='topmask'; document.body.appendChild(tm); }
-  app.appendChild(header());
+  const ftm=ftOn(); document.body.classList.toggle('ftmode', ftm);
+  if(!ftm) app.appendChild(header());
   const card=$(`<main class="card"></main>`);
   const screen=$(`<div class="screen scr-${S.screen}${['title','draft','season','setup','offseason','build','summary','dailyintro','dailyprev','dailyround','dailyresult','playoffwatch','rules','h2hhome','h2hlobby','h2hdraft','h2hplay','h2hpreview','h2hwatch','h2hresult','h2hboard'].includes(S.screen)?' wide':''}"></div>`);
   card.appendChild(screen);
   app.appendChild(card);
   // CS483/483c: the season-summary + off-season are focused, one-screen action pages, skip the footer link
   // row there (About/Privacy/Terms/Feedback all stay in the ≡ menu) so they fit without scrolling.
-  if(S.screen!=='summary' && S.screen!=='offseason') app.appendChild(footer());
+  if(!ftm && S.screen!=='summary' && S.screen!=='offseason') app.appendChild(footer());
   // returning from a Google redirect, the token exchange + profile fetch take a few network
   // round-trips. Show a visible "finishing" pill so the wait reads as in-progress instead of
   // "sign-in is broken" (otherwise the confirmation can land mid-sim and feel like a bug).
@@ -12619,7 +12640,7 @@ function render(){
   // screenshot, not just from analytics we might never see).
   HV_FULL=null;   // the full-screen tracer is the round screen's to claim, per render (see hvFullFrame)
   try{
-    ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,qschool:scrQSchool,entry:scrEntry,season:scrSeason,summary:scrSummary,recap:scrRecap,careerend:scrCareerEnd,circuitend:scrCircuitEnd,rules:scrRules,dailyintro:scrDailyIntro,dailyprev:scrDailyPreview,dailyround:scrDailyRound,dailyresult:scrDailyResult,playoffwatch:scrPlayoffWatch,h2hhome:scrH2HHome,h2hlobby:scrH2HLobby,h2hdraft:scrH2HDraft,h2hplay:scrH2HPlay,h2hpreview:scrH2HPreview,h2hwatch:scrH2HWatch,h2hresult:scrH2HResult,h2hboard:scrH2HBoard})[S.screen]();
+    ({title:scrTitle,protour:scrProTour,putthub:scrPuttHub,me:scrMe,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,qschool:scrQSchool,entry:scrEntry,season:scrSeason,summary:scrSummary,recap:scrRecap,careerend:scrCareerEnd,circuitend:scrCircuitEnd,rules:scrRules,dailyintro:scrDailyIntro,dailyprev:scrDailyPreview,dailyround:scrDailyRound,dailyresult:scrDailyResult,playoffwatch:scrPlayoffWatch,h2hhome:scrH2HHome,h2hlobby:scrH2HLobby,h2hdraft:scrH2HDraft,h2hplay:scrH2HPlay,h2hpreview:scrH2HPreview,h2hwatch:scrH2HWatch,h2hresult:scrH2HResult,h2hboard:scrH2HBoard})[S.screen]();
   }catch(err){
     HV_FULL=null;
     console.error('[RunTheTour] screen render failed:', S.screen, err);
@@ -12692,6 +12713,7 @@ function render(){
   // handlers read live state so the persisted node is never stale.
   try{
     let nav=document.getElementById('rttnav');
+    if(nav && nav.getAttribute('data-ft')!==(ftLive()?'1':'0')){ nav.remove(); nav=null; }
     if(!nav){ nav=bottomNav(); document.body.appendChild(nav); navWatchdog(nav); }
     nav.classList.toggle('navhide', !showNav);
     if(showNav) navSetActive(nav);
@@ -12702,6 +12724,7 @@ function render(){
   // lock the page behind an open overlay so background scroll can't bleed through / fight the overlay
   document.body.classList.toggle('ovopen', !!S.overlay);
   syncOverlayBack();   // keep a history guard while an overlay is open so the mobile Back button closes it (not the game)
+  syncHubBack();       // and one while a First Tee hub is open, so Back returns to the tee
   // keep your place when re-rendering the same view (e.g. picking customization swatches, async
   // leaderboard loads); only jump to top when the view actually changes.
   const nowOv=app.querySelector('.ov');
@@ -12723,7 +12746,14 @@ const NAV_H2H_SCR=['h2hhome','h2hlobby','h2hdraft','h2hplay','h2hpreview','h2hwa
 // CS430: the nav is built ONCE and kept mounted (see render). Handlers read live S at click time, so a
 // persisted node is never stale; navSetActive() refreshes the highlighted tab in place each render.
 function bottomNav(){
-  const tabs=[
+  // THE FIRST TEE's tabs (owner, 2026-10-15): Home, Pro Tour, the Pass, Putt Putt, Me
+  const ft=ftLive();
+  const tabs=ft?[
+    {id:'home',    ico:'home',  label:'Home',      go:()=>ftGo('title')},
+    {id:'protour', ico:'flag',  label:'Pro Tour',  go:()=>ftGo('protour')},
+    {id:'putthub', ico:'green', label:'Putt Putt', go:()=>ftGo('putthub')},
+    {id:'me',      ico:'user',  label:'Me',        go:()=>ftGo('me')},
+  ]:[
     {id:'home',   ico:'home',   label:'Home',        go:()=>{ S.overlay=null; S.screen='title'; render(); }},
     {id:'daily',   ico:'calendar', label:'Daily',  go:()=>{ S.overlay=null; startDailyChallenge(); }},
     {id:'career', ico:'flag',   label:'Career',      go:()=>{ S.overlay=null; const cs=careerSaveInfo(); if(cs){ if(cs.ended && typeof viewEndedCareer==='function') viewEndedCareer(); else resumeCareer(); } else { reset(); S.mode='easy'; S.screen='setup'; render(); } }},
@@ -12731,14 +12761,14 @@ function bottomNav(){
     {id:'online',  ico:'globe',  label:'Online',   go:()=>{ S.overlay=null; openH2H(); }},
     {id:'shop',    ico:'cart',   label:'Shop',     go:()=>{ S.overlay='shop'; render(); }},     // CS455: was Leaderboard
   ];
-  const nav=$(`<nav id="rttnav" class="botnav" role="navigation" aria-label="Main navigation"><div class="botnav-in"></div></nav>`);
+  const nav=$(`<nav id="rttnav" class="botnav" role="navigation" aria-label="Main navigation" data-ft="${ft?1:0}"><div class="botnav-in"></div></nav>`);
   const inner=nav.querySelector('.botnav-in');
   const mk=(t)=>{
     const b=$(`<button type="button" data-nav="${t.id}" aria-label="${t.label}">${ic(t.ico)}<span>${t.label}</span></button>`);
     b.onclick=()=>{ try{ track('botnav',{tab:t.id}); }catch(e){} t.go(); };
     inner.appendChild(b);
   };
-  tabs.slice(0,3).forEach(mk);
+  tabs.slice(0,ft?2:3).forEach(mk);
   // The Tour Pass is the raised gold centre button (owner) - the six tabs keep their slots, and the
   // season track gets the one spot the thumb naturally lands on.
   if(passEnabled()){
@@ -12746,7 +12776,7 @@ function bottomNav(){
     fab.onclick=()=>{ try{ track('botnav',{tab:'pass'}); }catch(e){} S.overlay='tourpass'; render(); };
     inner.appendChild(fab);
   }
-  tabs.slice(3).forEach(mk);
+  tabs.slice(ft?2:3).forEach(mk);
   return nav;
 }
 // CS516-nav: self-healing watchdog for the recurring iOS bug where the position:fixed bar stops tracking
@@ -12806,6 +12836,18 @@ function navWatchdog(nav){
 }
 // which tab is active for the current screen/overlay (a non-leaderboard overlay → none highlighted)
 function navActiveTab(){
+  if(!ftLive()) return navActiveTabClassic();
+  const scr=S.screen, ov=S.overlay;
+  if(ov==='tourpass') return 'pass';
+  if(ov==='record'||ov==='shop'||ov==='menu') return 'me';
+  if(ov) return '';
+  if(scr==='title') return 'home';
+  if(scr==='protour'||NAV_CAREER_SCR.includes(scr)||NAV_DAILY_SCR.includes(scr)||NAV_H2H_SCR.includes(scr)||scr==='rules') return 'protour';
+  if(scr==='putthub') return 'putthub';
+  if(scr==='me'||scr==='setup') return 'me';
+  return '';
+}
+function navActiveTabClassic(){
   const scr=S.screen, ov=S.overlay;
   if(ov==='record') return 'profile';   // CS455
   if(ov==='shop') return 'shop';
@@ -12831,7 +12873,9 @@ function navSetActive(nav){
   let dailyTodo=false; try{ dailyTodo=!PRACTICE && dailyAttempts()===0 && dailyAttemptsLeft()>0; }catch(e){}
   nav.querySelectorAll('[data-nav]').forEach(b=>{ const id=b.getAttribute('data-nav'), on=id===active;
     b.classList.toggle('on', on); if(on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current');
-    const want=(id==='shop' && nFree>0) || (id==='profile' && newN>0) || (id==='pass' && passClaim>0) || (id==='daily' && dailyTodo);
+    let gift=false; try{ gift=!!loginPend(); }catch(e){}
+    const want=(id==='me' && (nFree>0 || newN>0 || gift)) || (id==='pass' && passClaim>0) || (id==='protour' && dailyTodo)
+      || (id==='shop' && nFree>0) || (id==='profile' && newN>0) || (id==='daily' && dailyTodo);
     const num=(id==='pass' && passClaim>0) ? String(Math.min(99,passClaim)) : '';
     let dot=b.querySelector('.navdot');
     if(want && !dot){ dot=document.createElement('span'); dot.className='navdot'; b.appendChild(dot); }
@@ -15267,7 +15311,7 @@ const TOUR_KEY='bag_tour_done';
 var _tourI=0, _tourList=null, _tourKey=TOUR_KEY;
 function tourSeen(){ try{ return !!LS.get(TOUR_KEY,false); }catch(e){ return true; } }
 function tourRunning(){ return !!document.getElementById('tourdim'); }
-function tourSteps(){ return [
+function tourStepsClassic(){ return [
   { title:'Welcome to Run The Tour',
     body:'Build one golfer and play out their whole career. Thirty seasons, four majors a year and a world ranking to climb. Can you go down as the greatest of all time?',
     target:null },
@@ -15289,6 +15333,31 @@ function tourSteps(){ return [
   { title:'Start here',
     body:'Play one Daily round first. It takes five minutes and teaches you the swing, the courses and the scoring, so you start your career already knowing the ropes.',
     target:'#rttnav [data-nav="daily"]',
+    cta:'▶ Play my first round',
+    act:function(){ try{ track('tour_cta'); }catch(e){} startDailyChallenge(); } }
+]; }
+function tourSteps(){ if(!ftLive()) return tourStepsClassic(); return [
+  { title:'Welcome to Run The Tour',
+    body:'This is your golfer, on the first tee. Two tours start from here: the Pro Tour, where you build a career, and Putt Putt, where you play every putt yourself.',
+    target:'.ft-home .ft-fig' },
+  { title:'The Pro Tour',
+    body:'Draft your golfer one skill at a time from real pros, then take them through thirty seasons. Play 18, Head to Head and the Spotlight live here too.',
+    target:'.ft-home .ft-door.pro' },
+  { title:'Putt Putt',
+    body:'Mini golf you play shot by shot, world after world. Every hole has its own trick. A heart is three lives.',
+    target:'.ft-home .ft-door.putt' },
+  { title:'Today\'s pin sheet',
+    body:'Everything worth doing today, in one place: Play 18, your free spin, your login gift, the daily quests and the Daily Hole. It resets at midnight Eastern.',
+    target:'.ft-home .ft-sheet, .ft-home .ft-strip' },
+  { title:'Your season track',
+    body:'Everything you play feeds this. Tiers of rewards, free the whole way down, with a paid lane if you want the rest of it.',
+    target:'.ft-tb .ft-ticket, #rttnav [data-nav="pass"]' },
+  { title:'Me',
+    body:'Your locker: the closet, the Pro Shop, your trophies, quests, the Prize Wheel and your settings.',
+    target:'.ft-tb .ft-me, #rttnav [data-nav="me"]' },
+  { title:'Start here',
+    body:'Play one round of Play 18 first. It takes five minutes and teaches you the swing, the courses and the scoring.',
+    target:'.ft-home .ft-door.pro',
     cta:'▶ Play my first round',
     act:function(){ try{ track('tour_cta'); }catch(e){} startDailyChallenge(); } }
 ]; }
@@ -15319,11 +15388,13 @@ function tourStyleOnce(){ if(document.getElementById('tourcss')) return;
    +'.tc-next{flex:1 1 auto;margin:0}'
    +'@media (prefers-reduced-motion:reduce){.tourarrow span{animation:none!important}.tourhole{transition:none}}';
   document.head.appendChild(st); }
+// the first match that is actually on screen, so one selector can name the phone's tab and the desktop's top bar
+function tourFind(sel){ try{ return [...document.querySelectorAll(sel)].find(e=>{ const r=e.getBoundingClientRect(); return r.width>2&&r.height>2; })||null; }catch(e){ return null; } }
 function tourPlace(){
   const dim=document.getElementById('tourdim'); if(!dim||!_tourList) return;
   const st=_tourList[_tourI]||{};
   const hole=dim.querySelector('.tourhole'), card=dim.querySelector('.tourcard'), arrow=dim.querySelector('.tourarrow');
-  const el=st.target?document.querySelector(st.target):null;
+  const el=st.target?tourFind(st.target):null;
   const vh=window.innerHeight, vw=window.innerWidth, ch=card.offsetHeight;
   if(!el){   // no target (or it isn't on this screen): centre the card, no spotlight, no arrow
     dim.classList.add('solid'); hole.style.display='none'; arrow.style.display='none';
@@ -15444,7 +15515,219 @@ function homePlayerHeader(){
     fig.onclick=go; fig.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(); } }; }
   return box;
 }
-function scrTitle(){
+/* ════ THE FIRST TEE: the golf home, and the hubs it opens (owner's call, 2026-10-15) ═══════════════════
+   One screen, an app rather than a page. Your golfer stands on a tee in the middle with their bag tag.
+   Behind them the ground splits along a gold seam: today's Play 18 hole on one side (the Pro Tour), the
+   Putt Putt world on the other. Each side is a door into its hub. Today's dailies sit on one pin sheet;
+   the login gift waits there to be claimed. Me is the dressing room: your golfer and the closet first,
+   everything that is not a tour after. The knowledge base has the why:
+   games/golf/decisions/2026-10-15-golf-home-first-tee.md. These four screens draw their own top bar and
+   no website footer; every other screen keeps the header it always had. */
+const FT_SCREENS=['title','protour','putthub','me'];
+const FT_HUBS=['protour','putthub','me'];
+const FT_AD_SLOT='0000000000';   // the AdSense unit for the First Tee. A placeholder until the account is approved: a house ad stands in
+const FT_PLATE_V=1;              // golf/home/putt-world-*.jpg (golf/build-home-plates.mjs). Bump when they are re-cut
+// THE SWITCH. The First Tee goes live with Putt Putt Tour, on the same flag (PUTT_LIVE) and for the same testers
+// before it (PUTT_TESTERS): owner, 2026-10-15, everything goes live at once. Everybody else keeps the classic home.
+function ftLive(){ try{ return puttOn(); }catch(e){ return false; } }
+function ftOn(){ return FT_SCREENS.includes(S.screen) && ftLive(); }
+function ftDesk(){ try{ return matchMedia('(min-width: 900px) and (min-height: 560px)').matches; }catch(e){ return false; } }
+function ftGo(scr){ S.overlay=null; S.screen=scr; render(); }
+// the pixel check, drawn on the game's 18 by 18 icon grid and shaded by its medal renderer
+const FT_CHECK=["..................","..................","..................","..............hh..",".............hmm..","............hmmd..","...........hmmd...","..hh......hmmd....","..mmh....hmmd.....","..dmmh..hmmd......","...dmmhhmmd.......","....dmmmmd........",".....dmmd.........","......dd..........","..................","..................","..................",".................."];
+function ftIcon(k){ try{
+  if(k==='flag')   return pxMedalSVG(PXICONS.flag,'#d0433a');
+  if(k==='wheel')  return ic('wheel',{size:'100%'});
+  if(k==='gift')   return pxMedalSVG(PXI.gift,'#d0433a');
+  if(k==='scroll') return pxMedalSVG(PXICONS.scroll,'#d6a45a');
+  if(k==='green')  return pxMedalSVG(PXICONS.green,'#5fbf4a');
+  if(k==='fire')   return pxMedalSVG(PXICONS.fire,'#ff7a2b');
+  if(k==='snow')   return pxMedalSVG(PXICONS.snow,'#a9dcff');
+  if(k==='bolt')   return pxMedalSVG(PXICONS.bolt,'#c9b2ff');
+  if(k==='check')  return pxMedalSVG(FT_CHECK,'#2fa564');
+  if(k==='ticket') return pxMedalSVG(PXICONS.ticket,'#F1D04A');
+  if(k==='star')   return pxMedalSVG(PXI.star,'#F1D04A');
+  if(k==='trophy') return pxMedalSVG(PXICONS.trophy,'#F1D04A');
+  if(k==='cart')   return pxMedalSVG(PXI.cart,'#3fbf7a');
+  if(k==='book')   return pxMedalSVG(PXICONS.book,'#F1D04A');
+  if(k==='news')   return pxMedalSVG(PXICONS.scroll,'#f4e3c9');
+  if(k==='chart')  return pxMedalSVG(PXICONS.chartup,'#6fd3ff');
+  if(k==='gear')   return pxMedalSVG(PXICONS.gear,'#c9d6c8');
+  if(k==='user')   return pxMedalSVG(PXICONS.user,'#c9d6c8');
+  if(k==='invite') return pxMedalSVG(PXI.gift,'#b06be0');
+  return '';
+}catch(e){ return ''; } }
+
+/* THE LOGIN GIFT WAITS TO BE CLAIMED (owner: the pin sheet carries it, as long as it is obvious there is a
+   reward to claim). maybeLoginBonus() no longer pays on sight and pops a sheet: it sets today's gift aside
+   (bag_login_pend) and the pin sheet, a gold note and the Me tab say so. Claiming pays it and opens the
+   7 day calendar as the celebration. A gift nobody opened is paid quietly the next day, so nothing is lost. */
+function loginPend(){ if(!sbSignedIn()) return null; const p=LS.get(acctKey('bag_login_pend'),null);
+  if(!p||typeof p!=='object'||p.day!==todayKey()) return null;
+  if(loginState().day===p.day){ LS.set(acctKey('bag_login_pend'),null); return null; }   // claimed on another device
+  return p; }
+function claimLoginGift(){ const p=loginPend(); if(!p) return false;
+  grantLoginReward(p.rew); loginSave({day:p.day, n:p.n}); LS.set(acctKey('bag_login_pend'),null);
+  try{ track('login_bonus_claim',{day:p.n,kind:p.rew.kind}); }catch(e){}
+  S.loginReward=p.rew; S.overlay='login'; render(); return true; }
+
+/* THE PIN SHEET: every daily reason to play, read off the game's own state each render. */
+function ftPins(){
+  const si=sbSignedIn(), pins=[];
+  let datt=0, dleft=0, dwon=false, beat='', st=0;
+  try{ datt=dailyAttempts(); dleft=dailyAttemptsLeft(); const b=dailyBest(); dwon=!!(b&&b.avg!=null&&b.total<b.avg);
+    const ck=dailyCourseKey(todayKey()), c=DAILY_COURSES[ck]||{}; beat=(c.par!=null)?(c.par+dTourAvg(c)).toFixed(1):''; st=streakDisplay(); }catch(e){}
+  const played=datt>0, hot=st>0 && !played && !PRACTICE;
+  pins.push({id:'p18', icon:'flag', name:'Play 18',
+    sub: played ? (dwon?'You beat the pro today':'Played today') : (beat?`Beat ${beat} at today's course`:'Today\'s round'),
+    state: played?'done':(hot?'hot':'ready'), val: played?(dwon?'Beaten':'Played'):(hot?'Streak!':(dleft>=99?'Play':`${dleft} ${dleft===1?'try':'tries'}`)),
+    go: startDailyChallenge, short:'Play 18'});
+  if(wheelEnabled()){
+    if(!si) pins.push({id:'spin', icon:'wheel', name:'Free spin', sub:'Sign in to spin the Prize Wheel', state:'lock', val:'Sign in', go:openWheel, short:'Spin'});
+    else { const free=wheelFreeReady(), bank=wheelBanked();
+      pins.push({id:'spin', icon:'wheel', name:'Free spin', sub: free?'The Prize Wheel':(bank?`${bank} banked spin${bank===1?'':'s'} to use`:'Next free spin at midnight ET'),
+        state: free?'ready':'done', val: free?'Ready':(bank?`${bank} banked`:'Spun'), go:openWheel, short:'Spin'}); }
+  }
+  if(si){ const p=loginPend(), ls=loginState(), today=ls.day===todayKey();
+    if(p) pins.push({id:'gift', icon:'gift', name:'Login gift', sub:`Day ${p.n} of 7 · ${loginRewLabel(p.rew)} is waiting`, state:'claim', val:'Claim', go:claimLoginGift, short:'Gift'});
+    else if(today) pins.push({id:'gift', icon:'gift', name:'Login gift', sub:`Day ${ls.n} of 7 · ${loginRewLabel(loginReward(ls.n))}`, state:'done', val:'Collected', go:()=>{ S.loginReward=loginReward(ls.n); S.overlay='login'; render(); }, short:'Gift'});
+  } else pins.push({id:'gift', icon:'gift', name:'Login gift', sub:'Sign in for a gift every day', state:'lock', val:'Sign in', go:()=>{ S.overlay='account'; S.acctMode='signup'; S.acctErr=''; render(); }, short:'Gift'});
+  if(si){ let q={}; try{ q=dailyQuests()||{}; }catch(e){}
+    const n=DAILY_QUEST_DEFS.filter(d=>q[d.k]).length, tot=DAILY_QUEST_DEFS.length, next=DAILY_QUEST_DEFS.find(d=>!q[d.k]);
+    pins.push({id:'quests', icon:'scroll', name:'Daily quests', sub: n>=tot?`All ${tot} done · +${DAILY_QUEST_XP} Tour Rep`:(next?next.label:''), state: n>=tot?'done':'part', part:n, of:tot, val:`${n} of ${tot}`,
+      go:()=>{ S.overlay='challenges'; render(); }, short:'Quests'}); }
+  try{ if(puttOn()){ const m=window.RTT_PUTT.summary(puttHost()), d=m.daily||{};
+    pins.push({id:'dhole', icon:'green', name:'Daily Hole', sub: d.done?`${esc(d.name||'Done')} · ${d.s} on a par ${d.par}`:`${esc(d.name||'Today\'s hole')} · +${window.RTT_PUTT.COINS.daily} coins`,
+      state: d.done?'done':'ready', val: d.done?'Done':'Ready', go:openPutt, short:'Hole'}); } }catch(e){}
+  return pins;
+}
+function ftPinTile(p){
+  let q=''; if(p.state==='part'){ q='<span class="ft-pq">'; for(let i=0;i<(p.of||4);i++) q+=`<i${i<p.part?' class="on"':''}></i>`; q+='</span>'; }
+  return `<span class="ft-pf ${p.state}" aria-hidden="true"><span class="ft-pi">${ftIcon(p.icon)}</span>${p.state==='done'?`<span class="ft-ck">${ftIcon('check')}</span>`:''}${q}</span>`; }
+function ftWeekNext(){ try{ const w=streakWeekState(), n=Math.min(7,(w.days||0)+1), k=STREAK_WEEK_TRACK[n];
+  const lab={coins:'coins', mulligan:'a Mulli-Spin', basepack:'a Base pack', tourpack:'a Tour pack'}[k]||'a reward';
+  return { days:w.days||0, played:w.lastDay===todayKey(), next:(w.days||0)>=7?'Week complete':`Day ${n}: ${lab}` }; }catch(e){ return null; } }
+function ftSheet(compact){
+  const pins=ftPins(), done=pins.filter(p=>p.state==='done').length, claims=pins.filter(p=>p.state==='claim').length, all=pins.length&&done===pins.length;
+  const reset=(()=>{ try{ return dCd('hm'); }catch(e){ return ''; } })();
+  if(compact){
+    const el=$(`<button type="button" class="ft-strip" aria-label="Today's pin sheet, ${done} of ${pins.length} done${claims?', '+claims+' to claim':''}">
+      <span class="ft-sh"><span>Today's pin sheet · <b>${done} of ${pins.length}</b>${claims?` · <b class="ft-gold">${claims} to claim</b>`:''}</span><span>${all?'Back at midnight':(reset?'Resets in '+reset:'')}</span></span>
+      <span class="ft-pins">${pins.map(p=>`<span class="ft-pin">${ftPinTile(p)}<span>${esc(p.short)}</span></span>`).join('')}</span></button>`);
+    el.onclick=()=>{ S.ftSheetOpen=true; render(); };
+    return el; }
+  const wk=sbSignedIn()?ftWeekNext():null;
+  let wkHtml=''; if(wk){ let pips=''; for(let i=1;i<=7;i++) pips+=`<i class="${i<=wk.days?'on':(i===wk.days+1?'next':'')}"></i>`; wkHtml=`<div class="ft-ftr"><span>Streak week <span class="ft-wk">${pips}</span></span><b>${esc(wk.next)}</b></div>`; }
+  let chal=''; try{ if(sbSignedIn()){ const n=weekChalDoneCount(), t=weeklySet().length; chal=`<div class="ft-ftr"><span>${n} of ${t} weekly challenges · new every Thursday</span></div>`; } }catch(e){}
+  const el=$(`<section class="ft-sheet${all?' cleared':''}" aria-label="Today's pin sheet">
+    <div class="ft-shd"><div><div class="ft-k">Today's pin sheet</div><div class="ft-t">${all?'Sheet cleared':(pins.length===5?'Five pins today':pins.length+' pins today')}</div>${claims?`<span class="ft-claimchip">${ftIcon('gift')}${claims} to claim</span>`:''}</div>
+      <div class="ft-c"><b>${done} of ${pins.length}</b>${all?'back at midnight':(reset?'resets in '+reset:'')}</div></div>
+    <div class="ft-rows"></div>${(wkHtml||chal)?`<div class="ft-sft">${wkHtml}${chal}</div>`:''}<div class="ft-stamp" aria-hidden="true">Cleared</div></section>`);
+  const rows=el.querySelector('.ft-rows');
+  pins.forEach(p=>{ const r=$(`<button type="button" class="ft-prow ${p.state}">${ftPinTile(p)}<span class="ft-pt"><b>${esc(p.name)}</b><span>${p.sub}</span></span><span class="ft-pv">${esc(p.val)}</span></button>`);
+    r.onclick=()=>{ if(p.state==='claim') ftBurst(r); try{ track('ft_pin',{id:p.id,state:p.state}); }catch(e){} S.ftSheetOpen=false; p.go(); };
+    rows.appendChild(r); });
+  return el;
+}
+// pixel confetti from a claimed pin, drawn the way the game draws: a tiny canvas scaled up crisp
+function ftBurst(from){ try{ if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const r=from.getBoundingClientRect(), c=document.createElement('canvas'); c.width=60; c.height=60; c.className='ft-confetti';
+  c.style.left=(r.left+28-150)+'px'; c.style.top=(r.top+r.height/2-150)+'px'; document.body.appendChild(c);
+  const g=c.getContext('2d'), P=[], cols=['#F1D04A','#d0433a','#5fbf4a','#fff1d6','#b69bff'];
+  for(let i=0;i<40;i++){ const a=Math.random()*Math.PI*2, v=0.8+Math.random()*1.8; P.push({x:30,y:30,vx:Math.cos(a)*v,vy:Math.sin(a)*v-1.2,c:cols[i%cols.length]}); }
+  let t=0; (function step(){ g.clearRect(0,0,60,60); P.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.vy+=0.08; g.fillStyle=p.c; g.fillRect(Math.round(p.x),Math.round(p.y),1,1); }); if(++t<45) requestAnimationFrame(step); else c.remove(); })();
+}catch(e){} }
+
+/* THE SCENE: one sky over two grounds. The Pro Tour side is today's Play 18 signature hole (the same tile
+   the Daily card shows, cached by dailyCourseArt), laid back in perspective. The Putt Putt side is a picture
+   of the world, cut by golf/build-home-plates.mjs. --s is where the seam sits (50% at rest). */
+function ftClouds(root){ root.querySelectorAll('canvas[data-cloud]').forEach((c,ci)=>{ try{
+  const x=c.getContext('2d'), W=c.width, H=c.height; let seed=ci*97+13; const rnd=()=>{ seed=(seed*16807)%2147483647; return seed/2147483647; };
+  const base=H*0.78, blobs=[], n=5+Math.floor(rnd()*3);
+  for(let i=0;i<n;i++){ const t=(i+0.5)/n, r=H*(0.22+0.42*Math.sin(Math.PI*t)*(0.7+0.3*rnd())); blobs.push([W*(0.08+0.84*t),base-r*0.35,r]); }
+  for(let py=0;py<H;py++) for(let px=0;px<W;px++){ if(py>base) continue; let best=-1e9;
+    blobs.forEach(b=>{ const d=b[2]-Math.hypot(px-b[0],py-b[1]); if(d>best) best=d; }); if(best<0) continue;
+    const lit=(py<base-H*0.32)||(best<1.6&&py<base-H*0.15);
+    x.fillStyle = py>base-2 ? '#c98f6a' : (lit ? '#fff0d8' : (py>base-H*0.2 ? '#e2b48c' : '#f6d9b2')); x.fillRect(px,py,1,1); }
+}catch(e){} }); }
+function ftScene(side){
+  const putt=(()=>{ try{ return puttOn(); }catch(e){ return false; } })();
+  const sc=$(`<div class="ft-scene${putt?'':' solo'}" aria-hidden="true">
+    <div class="ft-sky"></div>
+    <canvas class="ft-cloud" data-cloud width="64" height="18" style="left:8%;top:9%;width:26%"></canvas>
+    <canvas class="ft-cloud" data-cloud width="48" height="14" style="left:58%;top:15%;width:17%;opacity:.7"></canvas>
+    <canvas class="ft-cloud" data-cloud width="40" height="12" style="left:80%;top:6%;width:16%;opacity:.6"></canvas>
+    <div class="ft-half ft-pro"><div class="ft-far"></div><div class="ft-c3d"><img class="ft-hole" alt=""></div><div class="ft-haze"></div></div>
+    ${putt?`<div class="ft-half ft-putt"><div class="ft-plate"></div><div class="ft-haze"></div></div>`:''}
+    <div class="ft-seam"><i></i></div><div class="ft-shade"></div></div>`);
+  ftClouds(sc);
+  try{ const pl=sc.querySelector('.ft-plate'); if(pl) pl.style.backgroundImage=`url(home/putt-world-${ftDesk()?'d':'p'}.jpg?v=${FT_PLATE_V})`; }catch(e){}
+  const img=sc.querySelector('.ft-hole'), ck=dailyCourseKey(todayKey());
+  const have=(_dArt[ck]!==undefined)?_dArt[ck]:(dArtStored(ck)?_dArt[ck]:undefined);
+  if(have) img.src=have;
+  else setTimeout(()=>{ try{ if(!img.isConnected) return; const u=dailyCourseArt(ck); if(u) img.src=u; }catch(e){} }, 60);   // ~100ms to build, so after the first paint
+  return sc;
+}
+
+/* THE TOP BAR: the wordmark, an event pennant, the 2x XP clock, Legend tokens and coins, the Tour Pass
+   ticket (tier, bar, a claim badge) and your golfer's face for Me. The ticket and face are desktop's; on a
+   phone those two jobs are in the tab bar. */
+function ftPassInfo(){ if(!passEnabled()) return null; const si=sbSignedIn(); let tier=0, pct=0, claim=0;
+  if(si){ try{ const s=passState(); tier=passTierShown(s.xp); const a=passXpForTierX(tier), b=passXpForTierX(tier+1); pct=b>a?Math.max(0,Math.min(100,(s.xp-a)/(b-a)*100)):100; claim=passClaimable(); }catch(e){} }
+  return {tier, pct, claim, si}; }
+function ftEvent(){ try{
+  if(hlLive()){ const c=hlDropCount(), d=hlDaysLeft(); return {name:'Haunted Links', txt:`${c.own} of ${c.tot}`, pct:c.tot?c.own/c.tot*100:0, days:d, go:()=>{ S.overlay='haunted'; render(); }}; }
+  if(wcLive()){ const n=wcTodo(), d=wcDay(); return {name:'Winter Classic', txt:n>0?`${n} to open`:`${wcDoorsOpened()} of ${WC_LAST_DOOR} doors`, pct:wcDoorsOpened()/WC_LAST_DOOR*100, days:Math.max(0,WC_END_DAY-d+1), go:()=>{ S.overlay='winter'; render(); }}; }
+}catch(e){} return null; }
+function ftTopBar(opt){ opt=opt||{};
+  const si=sbSignedIn(), tb=$(`<header class="ft-tb"></header>`);
+  if(opt.back){ const b=$(`<button type="button" class="ft-back">‹ Home</button>`); b.onclick=()=>ftGo('title'); tb.appendChild(b); }
+  else tb.appendChild($(`<div class="ft-word">Run The <span>Tour</span></div>`));
+  const ev=ftEvent();
+  if(ev && !opt.back){ const p=$(`<button type="button" class="ft-pennant"><b>${esc(ev.name)}</b> ${esc(ev.txt)}${ev.pct?`<span class="ft-mini"><i style="width:${ev.pct.toFixed(0)}%"></i></span>`:''}${ev.days!=null?` ${ev.days} day${ev.days===1?'':'s'}`:''}</button>`); p.onclick=ev.go; tb.appendChild(p); }
+  tb.appendChild($(`<span class="ft-sp"></span>`));
+  try{ if(si && xpBoostActive()){ const ms=xpBoostMs(), m=Math.floor(ms/60000), s=Math.floor(ms/1000)%60;
+    tb.appendChild($(`<span class="ft-boost" title="2x Pass XP running">${ftIcon('bolt')}<span>2× XP ${m}:${String(s).padStart(2,'0')}</span></span>`)); } }catch(e){}
+  try{ const hasLeg=si && hasFreeLegends(); const n=hasLeg?legendTokensUnused().length:0;
+    const leg=$(`<button type="button" class="ft-pill" aria-label="${n} Legend tokens">${ic('legendtoken',{size:'16px'})}${n}</button>`);
+    leg.onclick=()=>{ if(si && n) startDailyChallenge(); else { S.overlay='account'; S.acctMode='signup'; S.acctErr=''; render(); } }; tb.appendChild(leg); }catch(e){}
+  if(SHOP_ENABLED){ const bal=si?coinBalance():0; const c=$(`<button type="button" class="ft-pill" aria-label="Coins: ${coinFmt(bal)}">${ic('coin',{size:'16px'})}${coinShort(bal)}</button>`);
+    c.onclick=()=>{ S.overlay='shop'; S.shopSec='packs'; render(); }; tb.appendChild(c); }
+  const pi=ftPassInfo();
+  if(pi){ const t=$(`<button type="button" class="ft-ticket ft-desk">Tour Pass <span class="ft-tbar"><i style="width:${pi.pct.toFixed(0)}%"></i></span> ${pi.tier}${pi.claim?`<span class="ft-badge">${Math.min(99,pi.claim)}</span>`:''}</button>`);
+    t.onclick=()=>{ S.overlay='tourpass'; render(); }; tb.appendChild(t); }
+  const meDot=ftMeDot();
+  const me=$(`<button type="button" class="ft-me ft-desk" aria-label="Me: your golfer, the closet and settings">${pxAvatarChip(S.look,30)}${meDot?'<span class="ft-badge dot"></span>':''}</button>`);
+  me.onclick=()=>ftGo('me'); tb.appendChild(me);
+  return tb; }
+function ftMeDot(){ try{ if(!sbSignedIn()) return false; if(cosNewTotal()>0) return true; if(packIsFree()) return true;
+  if(typeof packCredits==='function' && (packCredits('base')+packCredits('tour')+packCredits('champ'))>0) return true; }catch(e){} return false; }
+
+/* THE BAG TAG: name, rank, record and the play streak, which burns while it is on the line. */
+function ftTag(full){
+  const nm=(S.name&&String(S.name).trim())||'Your golfer';
+  let meta=[]; try{ const t=repTier(); if(t&&t.tier) meta.push(esc(t.tier.name)); }catch(e){}
+  try{ const lt=(career()||{}).lt||{}; if(lt.wins) meta.push(`${lt.wins} win${lt.wins===1?'':'s'}`); if(lt.majors) meta.push(`${lt.majors} major${lt.majors===1?'':'s'}`); }catch(e){}
+  let stk=''; try{ if(!PRACTICE){ const st=streakDisplay(), fz=streakFreezes(), played=dailyAttempts()>0;
+    if(st>0) stk = !played ? `<div class="ft-stk hot">${ftIcon('fire')}<span><b>${st}</b>-day streak on the line · ${dCd('hm')}</span></div>`
+                          : `<div class="ft-stk">${ftIcon('fire')}<span><b>${st}</b>-day streak safe</span>${fz?`<span class="ft-frz">${ftIcon('snow')}${fz} freeze${fz===1?'':'s'}</span>`:''}</div>`;
+    else stk=`<div class="ft-stk">${ftIcon('fire')}<span>Play 18 to start a streak</span></div>`; } }catch(e){}
+  const tag=$(`<div class="ft-tag"><span class="ft-grom" aria-hidden="true"></span><div class="ft-tagt"><div class="ft-nm">${esc(nm)}</div>${meta.length?`<div class="ft-meta">${meta.join(' · ')}</div>`:''}${stk}</div>${full?'<button type="button" class="ft-look">Change look</button>':''}</div>`);
+  const lk=tag.querySelector('.ft-look'); if(lk) lk.onclick=e=>{ e.stopPropagation(); ftCloset(); };
+  return tag; }
+function ftCloset(cat){ try{ track('home_open_closet'); }catch(e){} S.shopPreview=null; S.overlay=null; S.setupEdit=true; S.setupReturn={screen:S.screen, overlay:null}; S.screen='setup'; S.setupCat=cat||'shirt'; render(); }
+
+// an ad slot: the AdSense unit once the slot is real. Until then the Pro Tour hub and Me carry a house ad for
+// RunThe.GG, and the home carries nothing (owner: the house ad is not for the home)
+function ftAdLive(){ return !!FT_AD_SLOT && !/^0+$/.test(FT_AD_SLOT); }
+function ftAd(where){
+  if(ftAdLive()){ const w=$(`<div class="ft-ad ft-ad-${where}"><span class="ft-adl">Advertisement</span><ins class="adsbygoogle" data-ad-client="ca-pub-5952069078178257" data-ad-slot="${FT_AD_SLOT}" data-ad-format="horizontal" data-full-width-responsive="true"></ins></div>`);
+    setTimeout(()=>{ try{ const ins=w.querySelector('ins'); if(ins.isConnected && !ins.hasAttribute('data-adsbygoogle-status')) (window.adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){} }, 0); return w; }
+  if(where==='home') return null;
+  return $(`<a class="ft-ad ft-ad-${where} ft-house" href="/" target="_blank" rel="noopener"><img src="/assets/runthegames-icon_192.png" alt="" width="32" height="32" loading="lazy"><span><b>More games at RunThe.GG</b>One free account plays them all</span><span class="ft-adgo">Play ↗</span></a>`); }
+
+/* THE CLASSIC HOME: what everybody who is not on the First Tee still sees, kept exactly as it was. */
+function scrTitleClassic(){
   if(!S.daily) restoreProfileIdentity();   // self-heal: a Legend round swaps S.look/S.name to the legend's frozen identity; any path back to the title must show (and never later persist) anything but the PROFILE look
   reconcileDailyAttempts();   // self-heal "attempts left" against the server before it's even displayed below
   // CS363: pixel-art dusk-course backdrop (matches the game's pixel theme) instead of the old smooth vector scene
@@ -15627,6 +15910,446 @@ function scrTitle(){
   w.appendChild(credit);
   add(w);
 }
+/* ── THE FIRST TEE ──────────────────────────────────────────────────────────────────────────────── */
+function scrTitle(){
+  if(!ftLive()) return scrTitleClassic();
+  if(!S.daily) restoreProfileIdentity();   // a Legend round swaps the look to the legend's; the home must show the player's own
+  reconcileDailyAttempts();
+  ftStyleOnce();
+  const putt=(()=>{ try{ return puttOn(); }catch(e){ return false; } })(), desk=ftDesk();
+  const root=$(`<div class="ft ft-home${putt?'':' solo'}"></div>`);
+  root.appendChild(ftScene());
+  root.appendChild(ftTopBar());
+  // your golfer, on the tee
+  const h=desk?Math.round(Math.max(220,Math.min(380,innerHeight*0.38))):Math.round(Math.max(130,Math.min(240,innerHeight*0.27)));
+  const tee=$(`<div class="ft-tee"><div class="ft-teebox"></div><div class="ft-markers"><i></i><i></i></div><button type="button" class="ft-fig" aria-label="Your golfer. Open the closet">${pxFigureHTML(S.look,h)}${decorLive()==='spooky'?(spkStyleOnce(),'<span class="ft-pk">'+spkEl('pumpkin',22)+'</span>'):''}</button></div>`);
+  tee.querySelector('.ft-fig').onclick=()=>ftCloset();
+  tee.appendChild(ftTag(desk));
+  root.appendChild(tee);
+  // today's pin sheet: a card on a desktop, a strip of pins that opens into the card on a phone
+  const pend=loginPend();
+  if(pend){ const n=$(`<button type="button" class="ft-giftnote"><span class="ft-gi">${ftIcon('gift')}</span><span><b>Your day ${pend.n} gift is here</b>${esc(loginRewLabel(pend.rew))}. Tap to open it.</span></button>`);
+    n.onclick=()=>{ ftBurst(n); claimLoginGift(); }; root.appendChild(n); root.classList.add('has-gift'); }
+  root.appendChild(desk?ftSheet(false):ftSheet(true));
+  // the two doors
+  const cs=careerSaveInfo(), ri=resumeInfo();
+  let pc=[]; try{ if(cs && !cs.ended) pc.push(`<span class="ft-chip g">${cs.circuitMode?'Legend Circuit':'Career'} · Yr ${cs.year||1}</span>`); else if(ri) pc.push(`<span class="ft-chip g">Golfer ${ri.n} of 8</span>`); }catch(e){}
+  try{ const d=ftPins()[0]; pc.push(`<span class="ft-chip">${d.state==='done'?'Play 18 · '+d.val:d.sub.replace(' at today\'s course','')}</span>`); }catch(e){}
+  try{ if(spotlightLiveToday()) pc.push(`<span class="ft-chip">Spotlight live</span>`); }catch(e){}
+  const pro=$(`<button type="button" class="ft-door pro" data-side="pro"><span class="ft-dk"><span class="ft-long">Career · Head to Head · Play 18</span><span class="ft-short">Career · H2H · Play 18</span></span><span class="ft-dt">Pro Tour</span><span class="ft-row">${pc.join('')}</span><span class="ft-go">Step onto the tour ›</span></button>`);
+  pro.onclick=()=>ftGo('protour'); root.appendChild(pro);
+  if(putt){ let m=null; try{ m=window.RTT_PUTT.summary(puttHost()); }catch(e){}
+    const hearts=m?ftHearts(m.lives,m.max):'';
+    const door=$(`<button type="button" class="ft-door putt" data-side="putt"><span class="ft-dk">Worlds · Stars · Members</span><span class="ft-dt">Putt Putt</span><span class="ft-row">${m?`<span class="ft-chip">${hearts}</span><span class="ft-chip g">${esc(m.world)} · hole ${m.lv}</span>`:''}</span><span class="ft-go">Into the world ›</span></button>`);
+    door.onclick=()=>ftGo('putthub'); root.appendChild(door); }
+  // desktop: the seam leans toward the other side while you hover one
+  root.querySelectorAll('.ft-door').forEach(d=>{ const on=()=>root.setAttribute('data-hov',d.getAttribute('data-side')), off=()=>root.removeAttribute('data-hov');
+    d.addEventListener('mouseenter',on); d.addEventListener('mouseleave',off); d.addEventListener('focus',on); d.addEventListener('blur',off); });
+  const ad=ftAd('home'); if(ad){ root.appendChild(ad); root.classList.add('has-ad'); }
+  if(S.ftSheetOpen && !desk){ const scrim=$(`<div class="ft-scrim"></div>`); scrim.onclick=()=>{ S.ftSheetOpen=false; render(); };
+    const box=$(`<div class="ft-sheetbox" role="dialog" aria-label="Today's pin sheet"><div class="ft-grab"></div></div>`); box.appendChild(ftSheet(false));
+    root.appendChild(scrim); root.appendChild(box); }
+  add(root);
+  // seasonal finds keep their spots on the home screen
+  if(decorLive()==='spooky'){ try{ spkStyleOnce(); spookyHomeEggs().forEach(b=>app.appendChild(b)); }catch(e){} }
+  // the popups the home has always owed (welcome, season launch, roster arrow, and so on); the login gift is no longer one of them
+  setTimeout(function(){ try{ flushPendingWelcome(); }catch(e){} try{ maybeS1LaunchPopup(); }catch(e){} try{ maybeS1EndPopup(); }catch(e){} try{ maybeSpookyPopup(); }catch(e){} try{ maybePassSettleNote(); }catch(e){} try{ maybeRosterPop(); }catch(e){} try{ maybeArcadeAd(); }catch(e){} }, 420);
+}
+function ftHearts(lives,max){ lives=lives|0; max=max||9; const nh=Math.ceil(Math.max(max,lives)/3); let o='';
+  for(let i=0;i<nh;i++){ const k=Math.max(0,Math.min(3,lives-i*3)); o+=`<span class="ft-heart" style="opacity:${k?0.45+0.55*k/3:0.3}">♥</span>`; }
+  return o+`<span class="ft-hn">${lives}/${max}</span>`; }
+
+/* ── PRO TOUR: the career, Play 18, head to head and the Spotlight, each the card the game already builds,
+   worn in the hub's glass. Today's course sits on a brass plaque; the ad slot is at the foot. ── */
+function scrProTour(){
+  if(!ftLive()){ S.screen='title'; return scrTitleClassic(); }
+  ftStyleOnce();
+  const root=$(`<div class="ft ft-hub ft-protour"></div>`);
+  root.appendChild(ftScene()); root.appendChild(ftTopBar({back:true}));
+  const body=$(`<div class="ft-body"><div class="ft-hhead"><div class="ft-k">Career · Head to Head · Play 18</div><h1 class="ft-ht">Pro Tour</h1></div><div class="ft-cards"></div></div>`);
+  const cards=body.querySelector('.ft-cards'), list=homeModeList().filter(m=>['career','daily','online','spot'].includes(m.id));
+  const hero=homeHeroPick(list); const order=hero?[hero].concat(list.filter(m=>m!==hero)):list;
+  order.forEach(m=>{ try{ const c=m.make({rail:false}); cards.appendChild(c); }catch(e){} });
+  const cs=careerSaveInfo(), ri=resumeInfo();
+  if(ri && !cs){ const go=$(`<button type="button" class="ft-link">New career · build a new golfer</button>`); go.onclick=()=>{ homeSetLastMode('career'); reset(); S.mode='easy'; S.screen='setup'; render(); }; cards.appendChild(go); }
+  const links=$(`<div class="ft-links"></div>`);
+  [['Leaderboards',()=>{ S.overlay='leaderboard'; render(); }],['Course Records',()=>{ S.overlay='courserecords'; render(); }],['Course Passport',()=>{ S.overlay='passport'; render(); }],['How to play',openRules]]
+    .forEach(([t,f])=>{ const b=$(`<button type="button" class="ft-chipbtn">${t}</button>`); b.onclick=f; links.appendChild(b); });
+  try{ if(sbSignedIn() && hasFreeLegends()){ const n=legendTokensUnused().length, b=$(`<button type="button" class="ft-chipbtn">${ic('legendtoken',{size:'14px'})} ${n} Legend token${n===1?'':'s'}: a free Play 18</button>`); b.onclick=startDailyChallenge; links.appendChild(b); } }catch(e){}
+  try{ if(!spotlightLiveToday()){ const ns=nextSpotlight(); links.appendChild($(`<span class="ft-note">Next Monthly Spotlight: <b>${esc(dShort(DAILY_COURSES[ns.key].v))}</b></span>`)); } }catch(e){}
+  cards.appendChild(links);
+  try{ const ck=dailyCourseKey(todayKey()), c=DAILY_COURSES[ck]; if(c&&c.v) body.appendChild($(`<div class="ft-plaque"><span>Today's course</span><b>${esc(dShort(c.v))}</b><span>Par ${c.par} · ${esc(dCondLabel(dailyConditions(todayKey(),ck)))}</span></div>`)); }catch(e){}
+  body.appendChild(ftAd('hub'));
+  root.appendChild(body); add(root);
+}
+
+/* ── PUTT PUTT: the scorecard. Your world, your hole, your hearts, the way in, the Daily Hole and the
+   Members Tour. Everything inside is the Putt Putt module's own (openPutt). ── */
+function scrPuttHub(){
+  if(!ftLive()){ S.screen='title'; return scrTitleClassic(); }
+  ftStyleOnce();
+  const root=$(`<div class="ft ft-hub ft-putthub"></div>`);
+  root.appendChild(ftScene()); root.appendChild(ftTopBar({back:true}));
+  const body=$(`<div class="ft-body"><div class="ft-hhead"><div class="ft-k">Worlds · Stars · Members</div><h1 class="ft-ht">Putt Putt</h1></div></div>`);
+  let m=null; try{ if(puttOn()) m=window.RTT_PUTT.summary(puttHost()); }catch(e){}
+  if(!m){ body.appendChild($(`<div class="ft-card"><b>Putt Putt Tour did not load.</b><p>Check your connection and open it again.</p></div>`)); root.appendChild(body); add(root); return; }
+  let art=''; try{ art=window.RTT_PUTT.cardArt(m.theme); }catch(e){}
+  const d=m.daily||{}, out=m.lives<=0;
+  const card=$(`<div class="ft-score">
+    <div class="ft-stop">${art}<div class="ft-stopt"><div class="ft-k">Hole ${m.lv} of ${m.levels}</div><div class="ft-st">${esc(m.world)}</div><div class="ft-sl">${ftHearts(m.lives,m.max)}${out&&m.refillAt?` · next life in ${esc(hmShort(m.refillAt-Date.now()))}`:''}</div></div></div>
+    <button type="button" class="ft-big">Into the world <small>${out?'Out of lives: the Daily Hole is free':'Hole '+m.lv}</small></button>
+    <button type="button" class="ft-srow" data-k="daily"><span><b>Daily Hole · ${esc(d.name||'Today')}</b><span>${d.done?`Done · ${d.s} on a par ${d.par}`:'Timed, one try, never costs a life'}</span></span><span class="ft-sv">${d.done?'Done':'+'+window.RTT_PUTT.COINS.daily+' coins'}</span></button>
+    <button type="button" class="ft-srow" data-k="members"><span><b>Members Tour</b><span>Hallows Night · Harvest Moon</span></span><span class="ft-sv">${m.members?'Open':'Tour Pass'}</span></button>
+    <div class="ft-srow ft-static"><span><b>Lives</b><span>A heart is three lives. Each comes back 24 hours after you lose it.${m.max<18?' A Tour Pass carries six hearts.':''}</span></span><span class="ft-sv">${m.lives}/${m.max}</span></div>
+  </div>`);
+  card.querySelector('.ft-big').onclick=openPutt;
+  card.querySelector('[data-k="daily"]').onclick=openPutt;
+  card.querySelector('[data-k="members"]').onclick=()=>{ if(m.members) openPutt(); else { S.overlay='tourpass'; render(); } };
+  body.appendChild(card); root.appendChild(body); add(root);
+}
+function hmShort(ms){ const m=Math.max(0,Math.round(ms/60000)); return Math.floor(m/60)+'h '+(m%60)+'m'; }
+
+/* ── ME: the dressing room. Your golfer on a plinth, the eight things they wear around them, the closet
+   one tap away, and everything that is not a tour underneath, settings and the site's links last. ── */
+function scrMe(){
+  if(!ftLive()){ S.screen='title'; return scrTitleClassic(); }
+  ftStyleOnce();
+  const si=sbSignedIn(), L=S.look||DEFLOOK;
+  const root=$(`<div class="ft ft-hub ft-mescr"><div class="ft-wood"></div></div>`);
+  root.appendChild(ftTopBar({back:true}));
+  const body=$(`<div class="ft-body"></div>`);
+  body.appendChild($(`<div class="ft-mehead"><div class="ft-k">Your locker</div></div>`));
+  body.appendChild(ftTag(false));
+  const th=(fn)=>{ try{ const h=fn(); const m=/src="([^"]+)"/.exec(h||''); return m?`<img src="${m[1]}" alt="">`:''; }catch(e){ return ''; } };
+  const slots=[
+    ['hw','Headwear', ()=>th(()=>pxItemThumb('hw', L.cap===false?'none':(L.hatStyle||'cap')))],
+    ['ew','Eyewear',  ()=>th(()=>pxItemThumb('ew', L.eyewear||'none'))],
+    ['top','Outerwear',()=>th(()=>pxItemThumb('top', L.top||'none'))],
+    ['leg','Legwear', ()=>th(()=>pxItemThumb('leg', L.leg||'none'))],
+    ['club','Clubs',  ()=>th(()=>pxClubThumb(L.club||'driver'))],
+    ['putter','Putter',()=>th(()=>pxClubThumb('pu_'+(puttEquippedId()||'stock')))],
+    ['ball','Ball',   ()=>th(()=>pxBallThumb(L.ball||'classic'))],
+    ['cleats','Cleats',()=>th(()=>pxCleatsThumb(L.cleats||'none'))] ];
+  const stage=$(`<div class="ft-stage"><div class="ft-spot"></div><div class="ft-plinth"></div><button type="button" class="ft-fig" aria-label="Your golfer. Open the closet">${pxFigureHTML(L, ftDesk()?380:230)}</button><div class="ft-slots l"></div><div class="ft-slots r"></div></div>`);
+  stage.querySelector('.ft-fig').onclick=()=>ftCloset();
+  slots.forEach((s,i)=>{ const b=$(`<button type="button" class="ft-slot" aria-label="${s[1]}"><span class="ft-sth">${s[2]()||''}</span><span class="ft-stx"><small>${s[1]}</small></span></button>`);
+    b.onclick=()=>ftCloset(s[0]); stage.querySelector(i<4?'.ft-slots.l':'.ft-slots.r').appendChild(b); });
+  body.appendChild(stage);
+  const newN=(()=>{ try{ return cosNewTotal(); }catch(e){ return 0; } })();
+  const lk=$(`<button type="button" class="ft-big">Change look <small>${newN?`${newN} new in your closet`:'The closet'}</small></button>`); lk.onclick=()=>ftCloset(); body.appendChild(lk);
+  let freePack=false; try{ freePack=si && (packIsFree() || (typeof packCredits==='function' && (packCredits('base')+packCredits('tour')+packCredits('champ'))>0)); }catch(e){}
+  if(SHOP_ENABLED){ const ps=$(`<button type="button" class="ft-pack${freePack?' on':''}"><span class="ft-gi">${ftIcon(freePack?'gift':'cart')}</span><span><b>${freePack?'A free pack is waiting':'Pro Shop'}</b>${freePack?'Open it in the Pro Shop':'Packs, gear and coins'}</span><span class="ft-go">Pro Shop ›</span></button>`);
+    ps.onclick=()=>{ S.overlay='shop'; if(freePack) S.shopSec='packs'; render(); }; body.appendChild(ps); }
+  const rows=[
+    ['trophy','Trophy Room', si?'Your profile':'Sign in to keep your record', ()=>{ S.overlay='record'; render(); }],
+    ['scroll','Challenges', (()=>{ try{ return si?`${weekChalDoneCount()} of ${weeklySet().length} this week`:'Sign in for quests'; }catch(e){ return ''; } })(), ()=>{ S.overlay='challenges'; render(); }],
+    ['chart','Leaderboards', '', ()=>{ S.overlay='leaderboard'; render(); }],
+    ['wheel','Prize Wheel', (()=>{ try{ const a=wheelAvail(); return a?`${a} spin${a===1?'':'s'} ready`:(si?'Next free spin at midnight ET':'Sign in to spin'); }catch(e){ return ''; } })(), openWheel],
+    ['invite','Invite a friend', 'You both get a free pack', ()=>referralShare()],
+    ['news',"What's new", (()=>{ const n=newsUnseenCount(); return n?`${n} new`:''; })(), openWhatsNew, newsUnseenCount()>0],
+    ['chart','Roster updates', '', openRosterUpdates, (()=>{ try{ return rosterUpdUnseen(); }catch(e){ return false; } })()],
+    ['book','How to play', '', openRules],
+    ['gear','Settings and account', si?(sbUsername||'Signed in'):'Sign in or create an account', ()=>{ S.overlay='menu'; render(); }] ];
+  const ml=$(`<div class="ft-mlist"></div>`);
+  rows.forEach(r=>{ const b=$(`<button type="button" class="ft-mrow"><span class="ft-mi">${ftIcon(r[0])}</span><span class="ft-mt">${r[1]}${r[2]?`<small>${esc(r[2])}</small>`:''}</span>${r[4]?'<span class="ft-dot"></span>':''}</button>`); b.onclick=r[3]; ml.appendChild(b); });
+  body.appendChild(ml);
+  const mad=ftAd('me'); if(mad) body.appendChild(mad);
+  body.appendChild(footer({noAd:true}));
+  root.appendChild(body); add(root);
+}
+
+/* BACK STEPS BACK. A hub keeps one guard entry in the history while it is open (the same way an overlay
+   does, syncOverlayBack), so the phone's Back closes the hub onto the First Tee instead of leaving. */
+var _hubHist=false, _hubClosing=false;
+function syncHubBack(){
+  try{ const inHub=FT_HUBS.includes(S.screen);
+    if(inHub && !_hubHist){ history.pushState({rttHub:1},''); _hubHist=true; }
+    else if(!inHub && _hubHist){ _hubHist=false; if(!_hubClosing) history.back(); } }catch(e){}
+  _hubClosing=false; }
+
+/* ARROW KEYS on a desktop move the gold focus ring between whatever can be pressed on a First Tee screen,
+   nearest in the direction pressed. Enter presses it, Escape steps back. No button prompts are drawn. */
+function ftKeyNav(e){
+  if(!ftOn() || S.overlay || e.altKey || e.ctrlKey || e.metaKey) return;
+  const tag=(document.activeElement&&document.activeElement.tagName)||''; if(/INPUT|TEXTAREA|SELECT/.test(tag)) return;
+  if(e.key==='Escape' && FT_HUBS.includes(S.screen)){ e.preventDefault(); ftGo('title'); return; }
+  const dir={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key]; if(!dir) return;
+  const root=document.querySelector('.ft'); if(!root) return;
+  const els=[...root.querySelectorAll('button, a[href]')].filter(el=>{ const r=el.getBoundingClientRect(); return r.width>4 && r.height>4 && getComputedStyle(el).visibility!=='hidden'; });
+  if(!els.length) return; e.preventDefault();
+  const cur=document.activeElement && els.includes(document.activeElement) ? document.activeElement : null;
+  if(!cur){ (root.querySelector('.ft-door.pro')||els[0]).focus(); return; }
+  const a=cur.getBoundingClientRect(), ax=a.left+a.width/2, ay=a.top+a.height/2; let best=null, bs=1e9;
+  els.forEach(el=>{ if(el===cur) return; const r=el.getBoundingClientRect(), dx=r.left+r.width/2-ax, dy=r.top+r.height/2-ay;
+    const along=dx*dir[0]+dy*dir[1]; if(along<=4) return; const across=Math.abs(dx*dir[1]-dy*dir[0]); const sc=along+across*2.2; if(sc<bs){ bs=sc; best=el; } });
+  if(best){ best.focus(); try{ best.scrollIntoView({block:'nearest'}); }catch(x){} } }
+try{ window.addEventListener('keydown', ftKeyNav); }catch(e){}
+// the First Tee is laid out for the screen it is on: a phone turned into a desktop-sized window (or back) is redrawn
+// putt.js loads deferred, after the first draw: redraw a First Tee screen once it is here, so the Putt Putt side appears
+try{ window.addEventListener('load', ()=>{ try{ if(ftOn() && !S.overlay && puttOn()) render(); }catch(e){} }); }catch(e){}
+var _ftDeskWas=null; try{ window.addEventListener('resize', ()=>{ const d=ftDesk(); if(_ftDeskWas!==null && d!==_ftDeskWas && ftOn() && !S.overlay) render(); _ftDeskWas=d; }); }catch(e){}
+function ftStyleOnce(){ if(document.getElementById('ft-css')) return; const st=document.createElement('style'); st.id='ft-css'; st.textContent=`@property --ftS{syntax:'<percentage>';inherits:true;initial-value:50%}
+/* THE FIRST TEE. Frosted glass tinted by its world, cream type, gold for what you press (owner: neither
+   paper nor dark). A phone lays the home out as a column; a desktop (900 wide and 560 tall) spreads it. */
+.ft{--ftS:50%;--glt:rgba(244,227,201,.22);--soft:#c9d6c8;--brass:#d8b45a;--sky1:#10283a;--sky2:#2c5866;--sky3:#e9b873;
+  position:fixed;inset:0;z-index:1;overflow:hidden;color:var(--cream);font-family:var(--body);background:var(--sky1);transition:--ftS .7s cubic-bezier(.7,0,.2,1)}
+.ft button{font-family:inherit;color:inherit;cursor:pointer}
+.ft button:focus-visible,.ft a:focus-visible{outline:3px solid var(--gold);outline-offset:3px;border-radius:12px}
+.ft-scene{position:absolute;inset:0}
+.ft-sky{position:absolute;inset:0;background:linear-gradient(180deg,var(--sky1) 0%,var(--sky2) 22%,#8c8a6d 33%,var(--sky3) 38%,#d99a57 42%,#2a4a2c 43%)}
+.ft-cloud{position:absolute;image-rendering:pixelated;height:auto;aspect-ratio:64/18}
+@media (prefers-reduced-motion:no-preference){ .ft-cloud{animation:ftDrift 90s linear infinite alternate} }
+@keyframes ftDrift{from{transform:translateX(-30px)}to{transform:translateX(60px)}}
+.ft-half{position:absolute;inset:0;transition:filter .5s ease}
+.ft-half.ft-pro{clip-path:polygon(0 0,calc(var(--ftS) + 3%) 0,calc(var(--ftS) - 3%) 100%,0 100%)}
+.ft-half.ft-putt{clip-path:polygon(calc(var(--ftS) + 3%) 0,100% 0,100% 100%,calc(var(--ftS) - 3%) 100%)}
+.ft-scene.solo .ft-half.ft-pro{clip-path:none}
+.ft-far{position:absolute;left:0;right:0;top:42%;height:9%;background:linear-gradient(#8a8f5a,#4f7a3a 40%,#2c5a2a)}
+.ft-c3d{position:absolute;left:0;right:0;top:43%;bottom:0;perspective:620px;perspective-origin:50% 0%;overflow:hidden}
+.ft-hole{position:absolute;left:50%;bottom:-8%;width:220vw;max-width:none;transform-origin:50% 100%;transform:translateX(-50%) rotateX(58deg);image-rendering:pixelated}
+.ft-hole:not([src]){display:none}
+.ft-plate{position:absolute;left:0;right:0;top:41%;bottom:0;background:#2a4a2c center 60%/cover no-repeat}
+.ft-haze{position:absolute;left:0;right:0;top:41%;height:10%;background:linear-gradient(rgba(233,184,115,.88),transparent);pointer-events:none}
+.ft-seam{position:absolute;inset:0;pointer-events:none}
+.ft-seam i{position:absolute;top:0;bottom:0;left:var(--ftS);width:3px;margin-left:-1.5px;transform:skewX(-1.6deg);background:linear-gradient(transparent 42%,rgba(241,208,74,.9) 52%,rgba(241,208,74,.9) 92%,transparent);box-shadow:0 0 18px rgba(241,208,74,.55)}
+.ft-scene.solo .ft-seam{display:none}
+.ft-shade{position:absolute;left:0;right:0;bottom:0;height:45%;background:linear-gradient(transparent,rgba(4,14,9,.75));pointer-events:none}
+.ft-home[data-hov=pro] .ft-putt,.ft-home[data-hov=putt] .ft-pro{filter:brightness(.45) saturate(.5)}
+
+/* the top bar */
+.ft-tb{position:absolute;z-index:20;left:0;right:0;top:0;display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 10px) max(14px,env(safe-area-inset-right,0px)) 8px max(14px,env(safe-area-inset-left,0px))}
+.ft-word{font:900 13px var(--serif);letter-spacing:3px;text-transform:uppercase;white-space:nowrap;text-shadow:0 2px 8px rgba(0,0,0,.5)}
+.ft-word span{color:var(--gold)}
+.ft-sp{flex:1}
+.ft-pill{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 10px;border-radius:99px;background:rgba(6,20,14,.55);border:1px solid rgba(244,227,201,.16);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);font:800 13px var(--body);font-variant-numeric:tabular-nums}
+.ft-boost{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 9px;border-radius:99px;background:rgba(90,51,168,.75);border:1px solid rgba(200,170,255,.4);font:800 12px var(--body);color:#eadcff;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ft-boost svg{width:15px;height:15px}
+.ft-pennant{display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 24px 0 12px;border:0;background:linear-gradient(90deg,#5b1f0e,#2d1030);color:#ffd2a6;font:700 12px var(--body);clip-path:polygon(0 0,100% 0,93% 50%,100% 100%,0 100%);white-space:nowrap}
+.ft-pennant b{color:#ff9a4d}
+.ft-mini{display:inline-block;width:48px;height:5px;border-radius:3px;background:rgba(255,255,255,.18);overflow:hidden}
+.ft-mini i{display:block;height:100%;background:#ff9a4d}
+.ft-ticket{position:relative;display:inline-flex;align-items:center;gap:9px;height:38px;padding:0 14px 0 12px;border-radius:10px;border:0;background:linear-gradient(180deg,#f8dc63,#d39f1d);color:#2a1a00!important;font:800 13px var(--body);letter-spacing:.5px;text-transform:uppercase;box-shadow:0 6px 18px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.6)}
+.ft-tbar{width:64px;height:6px;border-radius:3px;background:rgba(0,0,0,.2);overflow:hidden}
+.ft-tbar i{display:block;height:100%;background:#2a1a00}
+.ft-me{position:relative;width:42px;height:42px;padding:0;border-radius:50%;border:2px solid var(--brass);background:rgba(6,20,14,.6);display:grid;place-items:center;overflow:visible}
+.ft-badge{position:absolute;top:-7px;right:-7px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#e2463f;color:#fff;font:800 12px/20px var(--body);text-align:center}
+.ft-badge.dot{min-width:11px;height:11px;padding:0;top:-2px;right:-2px}
+.ft-back{display:inline-flex;align-items:center;height:36px;padding:0 15px;border-radius:99px;background:rgba(6,20,14,.6);border:1px solid rgba(244,227,201,.2);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);font:800 13px var(--body);letter-spacing:1px;text-transform:uppercase}
+.ft-desk{display:none!important}
+
+/* the golfer on the tee, and the bag tag */
+.ft-tee{position:absolute;z-index:10;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;top:calc(env(safe-area-inset-top,0px) + 64px)}
+.ft-fig{position:relative;z-index:2;background:none;border:0;padding:0;filter:drop-shadow(0 16px 16px rgba(0,0,0,.45))}
+.ft-teebox{position:absolute;z-index:1;left:50%;transform:translateX(-50%);bottom:calc(var(--tagh,64px) - 16px);width:72%;aspect-ratio:300/70;border-radius:50%;background:radial-gradient(ellipse at 50% 40%,#7fc35a,#4e9a3a 55%,#2e6b28 72%,transparent 74%)}
+.ft-markers{display:none}
+.ft-pk{position:absolute;right:-6px;bottom:6px}
+.ft-tag{position:relative;z-index:3;display:inline-flex;align-items:center;gap:12px;text-align:left;margin-top:-6px;background:linear-gradient(180deg,#4b2c1d,#3b2216);border-radius:12px;padding:9px 14px 9px 11px;box-shadow:0 14px 30px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.08);outline:1px dashed rgba(216,180,90,.45);outline-offset:-5px;max-width:calc(100vw - 32px)}
+.ft-grom{width:18px;height:18px;flex:none;border-radius:50%;background:radial-gradient(circle,#2b170e 34%,var(--brass) 38%,#8d6a22 70%)}
+.ft-nm{font:900 17px/1 var(--serif);letter-spacing:2px;color:#f6e4b8;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ft-meta{font:700 11px/1.2 var(--body);letter-spacing:1px;text-transform:uppercase;color:#d8bf97;margin-top:4px}
+.ft-stk{display:flex;align-items:center;gap:5px;margin-top:5px;font:800 10.5px var(--body);letter-spacing:.5px;text-transform:uppercase;color:#d8bf97;font-variant-numeric:tabular-nums}
+.ft-stk svg{width:15px;height:15px;flex:none}
+.ft-stk.hot{color:#ffcf9e}
+@media (prefers-reduced-motion:no-preference){ .ft-stk.hot svg{animation:ftFlick 1.1s steps(2) infinite} }
+@keyframes ftFlick{50%{transform:scale(1.15) translateY(-1px)}}
+.ft-frz{display:inline-flex;align-items:center;gap:3px;color:#a9dcff}
+.ft-frz svg{width:13px;height:13px}
+.ft-look{font:800 10px var(--body)!important;letter-spacing:1px;text-transform:uppercase;color:#2a1a00!important;background:var(--brass);border:0;border-radius:6px;padding:4px 8px;white-space:nowrap}
+
+/* the doors */
+.ft-home{--ftad:12px} .ft-home.has-ad{--ftad:66px}
+.ft-door{position:absolute;z-index:12;bottom:calc(var(--botnav-space,0px) + var(--ftad));width:46%;background:none;border:0;padding:0;text-align:left;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.ft-door.pro{left:max(14px,env(safe-area-inset-left,0px))}
+.ft-door.putt{right:max(14px,env(safe-area-inset-right,0px));align-items:flex-end;text-align:right}
+.ft-home.solo .ft-door.pro{width:auto;right:14px}
+.ft-long{display:none} .ft-short{display:inline}
+.ft-dk{font:800 9px var(--body);white-space:nowrap;letter-spacing:2px;text-transform:uppercase;color:var(--gold);text-shadow:0 2px 6px rgba(0,0,0,.6)}
+.ft-dt{font:400 clamp(30px,9.5vw,40px)/.92 var(--display);text-transform:uppercase;text-shadow:0 6px 24px rgba(0,0,0,.6)}
+.ft-row{display:flex;flex-wrap:wrap;gap:5px}
+.ft-door.putt .ft-row{justify-content:flex-end}
+.ft-chip{display:inline-flex;align-items:center;gap:4px;font:700 11px var(--body);background:rgba(6,20,14,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid rgba(244,227,201,.14);border-radius:7px;padding:3px 7px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ft-chip.g{background:rgba(241,208,74,.92);color:#2a1a00;border:0}
+.ft-heart{color:#ff4d6d;font-size:12px}
+.ft-hn{margin-left:3px;opacity:.85}
+.ft-go{display:none;margin-top:8px;font:800 14px var(--body);letter-spacing:1.5px;text-transform:uppercase;border-bottom:2px solid var(--gold);padding-bottom:3px}
+
+/* the pin sheet: one glass card. A phone shows a strip of the five pins that opens into it */
+.ft-sheet,.ft-strip{background:linear-gradient(180deg,rgba(62,78,58,.72),rgba(38,52,42,.8));-webkit-backdrop-filter:blur(16px) saturate(1.25);backdrop-filter:blur(16px) saturate(1.25);color:var(--cream);border:1px solid var(--glt);box-shadow:0 18px 40px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.12)}
+.ft-strip{position:absolute;z-index:14;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));border-radius:14px;padding:8px 10px;text-align:left;display:block}
+.ft-sh{display:flex;justify-content:space-between;gap:8px;font:800 9.5px var(--body);letter-spacing:1.2px;text-transform:uppercase;color:var(--soft)}
+.ft-sh b{color:var(--cream)} .ft-gold{color:var(--gold)!important}
+.ft-pins{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:2px;margin-top:6px}
+.ft-pin{display:flex;flex-direction:column;align-items:center;gap:3px;font:800 8.5px var(--body);letter-spacing:.3px;text-transform:uppercase;color:var(--soft)}
+.ft-pf{position:relative;width:34px;height:34px;flex:none;border-radius:8px;display:grid;place-items:center;background:rgba(255,255,255,.1);box-shadow:inset 0 0 0 2px rgba(244,227,201,.2),inset 0 -3px 0 rgba(0,0,0,.18)}
+.ft-pi{width:24px;height:24px;display:grid;place-items:center} .ft-pi svg{width:24px;height:24px}
+.ft-pf.ready{background:rgba(241,208,74,.28);box-shadow:inset 0 0 0 2px var(--gold),inset 0 -3px 0 rgba(0,0,0,.18)}
+.ft-pf.hot{background:rgba(232,100,44,.38);box-shadow:inset 0 0 0 2px #ff8a4a,inset 0 -3px 0 rgba(0,0,0,.18)}
+.ft-pf.claim{background:rgba(241,208,74,.45);box-shadow:inset 0 0 0 2px var(--gold)}
+.ft-pf.done{background:rgba(255,255,255,.06)} .ft-pf.done .ft-pi{opacity:.45}
+.ft-pf.lock .ft-pi{opacity:.55}
+.ft-ck{position:absolute;right:-6px;bottom:-6px;width:19px;height:19px} .ft-ck svg{width:19px;height:19px;filter:drop-shadow(0 1px 0 rgba(0,0,0,.35))}
+.ft-pq{position:absolute;left:4px;right:4px;bottom:3px;display:grid;grid-template-columns:repeat(4,1fr);gap:2px}
+.ft-pq i{height:4px;background:rgba(255,255,255,.18)} .ft-pq i.on{background:#2fa564}
+.ft-pf.part .ft-pi{margin-top:-6px} .ft-pf.part .ft-pi svg{width:19px;height:19px}
+@media (prefers-reduced-motion:no-preference){ .ft-pf.ready{animation:ftRing 2.2s ease-in-out infinite} .ft-pf.claim{animation:ftGift 1.6s ease-in-out infinite} .ft-pf.claim .ft-pi{animation:ftWiggle 1.6s steps(4) infinite} }
+@keyframes ftRing{50%{box-shadow:inset 0 0 0 2px var(--gold),0 0 0 5px rgba(241,208,74,.3)}}
+@keyframes ftGift{50%{box-shadow:inset 0 0 0 2px var(--gold),0 0 18px rgba(241,208,74,.7)}}
+@keyframes ftWiggle{25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
+.ft-sheet{position:relative;border-radius:12px;overflow:hidden;text-align:left}
+.ft-shd{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;padding:12px 15px 9px;border-bottom:1px solid var(--glt)}
+.ft-k{font:800 10px var(--body);letter-spacing:2px;text-transform:uppercase;color:var(--gold)}
+.ft-t{font:400 22px/1 var(--display);text-transform:uppercase;margin-top:2px}
+.ft-c{text-align:right;font:800 11px/1.3 var(--body);letter-spacing:1px;text-transform:uppercase;color:var(--soft);font-variant-numeric:tabular-nums}
+.ft-c b{display:block;font:400 21px/1 var(--display);color:var(--cream);letter-spacing:0}
+.ft-claimchip{display:inline-flex;align-items:center;gap:5px;margin-top:5px;background:var(--gold);color:#2a1a00;border-radius:6px;padding:2px 8px;font:800 10.5px var(--body);letter-spacing:1px;text-transform:uppercase}
+.ft-claimchip svg{width:14px;height:14px}
+.ft-prow{display:grid;grid-template-columns:34px 1fr auto;gap:11px;align-items:center;width:100%;padding:8px 15px;background:none;border:0;border-bottom:1px solid rgba(244,227,201,.1);text-align:left}
+.ft-prow:last-child{border-bottom:0}
+.ft-prow:hover{background:rgba(255,255,255,.05)}
+.ft-pt b{display:block;font:700 15px/1.15 var(--body)} .ft-pt span{display:block;font:600 11.5px/1.25 var(--body);color:var(--soft)}
+.ft-pv{font:800 10.5px var(--body);letter-spacing:1px;text-transform:uppercase;color:var(--soft);text-align:right;white-space:nowrap}
+.ft-prow.hot .ft-pv{color:#ffa36b} .ft-prow.ready .ft-pv{color:var(--gold)} .ft-prow.done b{color:var(--soft)}
+.ft-prow.claim{background:linear-gradient(90deg,rgba(241,208,74,.18),transparent 70%)}
+.ft-prow.claim .ft-pv{color:#2a1a00;background:var(--gold);border-radius:6px;padding:3px 8px}
+.ft-sft{padding:8px 15px 11px;background:rgba(0,0,0,.14);border-top:1px solid rgba(244,227,201,.12);display:grid;gap:6px;font:600 11.5px var(--body);color:var(--soft)}
+.ft-ftr{display:flex;align-items:center;justify-content:space-between;gap:10px} .ft-ftr b{color:var(--cream);text-align:right}
+.ft-wk{display:inline-flex;gap:3px;vertical-align:middle;margin-left:4px} .ft-wk i{width:12px;height:12px;border-radius:3px;background:rgba(255,255,255,.16)} .ft-wk i.on{background:var(--cream)} .ft-wk i.next{background:var(--gold)}
+.ft-stamp{position:absolute;right:80px;top:150px;transform:rotate(-12deg);border:3px solid #ff8a7a;color:#ff8a7a;border-radius:8px;padding:3px 10px;font:400 20px/1 var(--display);text-transform:uppercase;opacity:0;pointer-events:none;background:rgba(0,0,0,.18)}
+.ft-sheet.cleared .ft-stamp{opacity:.9}
+.ft-giftnote{position:absolute;z-index:16;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));display:flex;align-items:center;gap:10px;padding:7px 12px 7px 9px;border-radius:12px;border:0;background:linear-gradient(180deg,#f8dc63,#d39f1d);color:#2a1a00!important;box-shadow:0 12px 30px rgba(0,0,0,.45);font:600 12px/1.25 var(--body);text-align:left}
+.ft-giftnote b{display:block;font:400 16px/1 var(--display);text-transform:uppercase}
+.ft-gi{width:30px;height:30px;flex:none} .ft-gi svg{width:30px;height:30px}
+.ft-scrim{position:absolute;inset:0;z-index:30;background:rgba(3,10,6,.55)}
+.ft-sheetbox{position:absolute;z-index:31;left:0;right:0;bottom:var(--botnav-space,0px);padding:8px max(10px,env(safe-area-inset-left,0px)) 10px}
+.ft-grab{width:40px;height:5px;border-radius:3px;background:rgba(244,227,201,.35);margin:0 auto 8px}
+@media (prefers-reduced-motion:no-preference){ .ft-sheetbox{animation:ftUp .35s cubic-bezier(.2,.8,.2,1)} }
+@keyframes ftUp{from{transform:translateY(60%);opacity:0}}
+.ft-confetti{position:fixed;z-index:200;width:300px;height:300px;pointer-events:none;image-rendering:pixelated}
+.ft-ad{position:absolute;z-index:13;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));bottom:calc(var(--botnav-space,0px) + 8px);min-height:50px;display:flex;align-items:center;justify-content:center;border-radius:10px;overflow:hidden}
+.ft-adl{position:absolute;top:2px;left:6px;font:700 8px var(--body);letter-spacing:1px;text-transform:uppercase;opacity:.5}
+.ft-house{gap:10px;justify-content:flex-start;padding:6px 10px;text-decoration:none;color:var(--cream);background:linear-gradient(90deg,rgba(13,26,64,.85),rgba(8,20,40,.85));border:1px solid rgba(120,150,255,.25);font:600 11px/1.25 var(--body)}
+.ft-house img{width:32px;height:32px;border-radius:7px;flex:none}
+.ft-house b{display:block;font:800 13px var(--body)}
+.ft-adgo{margin-left:auto;background:#3fd06b;color:#062010;border-radius:7px;padding:5px 9px;font:800 12px var(--body);white-space:nowrap}
+
+/* phone home: a column from the top bar down to the tab bar */
+.ft-home .ft-strip{top:auto;bottom:calc(var(--botnav-space,0px) + var(--ftad) + clamp(78px,12vh,104px))}
+.ft-home.has-gift .ft-giftnote{bottom:calc(var(--botnav-space,0px) + var(--ftad) + clamp(78px,12vh,104px) + 82px)}
+
+/* hubs */
+.ft-hub .ft-body{position:absolute;z-index:10;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 56px);bottom:var(--botnav-space,0px);overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px max(14px,env(safe-area-inset-right,0px)) 26px max(14px,env(safe-area-inset-left,0px))}
+.ft-hhead{margin:4px 0 12px}
+.ft-ht{font:400 46px/.92 var(--display);text-transform:uppercase;margin:4px 0 0;text-shadow:0 8px 30px rgba(0,0,0,.6);color:var(--cream)}
+.ft-hub.ft-protour .ft-half.ft-putt{display:none} .ft-hub.ft-protour .ft-half.ft-pro{clip-path:none}
+.ft-hub.ft-putthub .ft-half.ft-pro{display:none} .ft-hub.ft-putthub .ft-half.ft-putt{clip-path:none}
+.ft-hub .ft-seam{display:none}
+.ft-hub .ft-shade{height:100%;background:linear-gradient(rgba(4,14,9,.25),rgba(4,14,9,.62))}
+@media (prefers-reduced-motion:no-preference){ .ft-hub .ft-body{animation:ftRise .45s cubic-bezier(.2,.8,.2,1)} .ft-hub .ft-scene{animation:ftZoom .7s cubic-bezier(.2,.8,.2,1)} }
+@keyframes ftRise{from{transform:translateY(24px);opacity:0}}
+@keyframes ftZoom{from{transform:scale(1.06);filter:brightness(.7)}}
+.ft-cards{display:grid;gap:10px;max-width:640px}
+.ft-cards .gcard,.ft-cards .resumecard{width:100%;max-width:none;margin:0;background:linear-gradient(180deg,rgba(56,84,58,.72),rgba(34,56,40,.82))!important;-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2);border:1px solid var(--glt)!important;box-shadow:0 16px 36px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.12)!important;color:var(--cream)!important}
+.ft-cards .gcard .gc-title,.ft-cards .gcard .gc-mid,.ft-cards .resumecard *{color:var(--cream)}
+.ft-cards .gcard .gc-kick{color:var(--gold)}
+.ft-cards .gc-go{background:var(--gold)!important;color:#2a1a00!important}
+.ft-links{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}
+.ft-chipbtn{display:inline-flex;align-items:center;gap:5px;font:700 13px var(--body);background:rgba(6,20,14,.62);border:1px solid rgba(244,227,201,.18);border-radius:8px;padding:7px 11px}
+.ft-note{font:600 12px var(--body);color:var(--soft);align-self:center} .ft-note b{color:var(--gold)}
+.ft-link{background:none;border:0;padding:6px 0;font:800 13px var(--body);letter-spacing:1px;text-transform:uppercase;text-align:left;color:var(--gold)!important}
+.ft-plaque{display:inline-flex;flex-direction:column;gap:2px;margin:16px 0 0;padding:10px 16px;border-radius:8px;background:linear-gradient(180deg,#e7c76c,#b8891f);color:#2a1a00;box-shadow:0 10px 24px rgba(0,0,0,.4);font:800 11px var(--body);letter-spacing:1.5px;text-transform:uppercase}
+.ft-plaque b{font:700 19px var(--serif);letter-spacing:1px;text-transform:none}
+.ft-hub .ft-ad{position:relative;left:auto;right:auto;bottom:auto;margin-top:18px;max-width:640px}
+.ft-mescr .ft-ad{grid-column:1/-1;max-width:420px;margin:16px auto 0}
+.ft-score{max-width:560px;border-radius:16px;overflow:hidden;background:linear-gradient(180deg,rgba(84,58,128,.72),rgba(46,32,78,.82));-webkit-backdrop-filter:blur(16px) saturate(1.2);backdrop-filter:blur(16px) saturate(1.2);border:1px solid rgba(220,200,255,.25);box-shadow:0 18px 40px rgba(0,0,0,.4)}
+.ft-stop{position:relative;min-height:120px;display:flex;align-items:flex-end;padding:14px 16px;overflow:hidden}
+.ft-stop .gc-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;image-rendering:pixelated;opacity:.55}
+.ft-stopt{position:relative}
+.ft-st{font:400 34px/1 var(--display);text-transform:uppercase;text-shadow:0 4px 14px rgba(0,0,0,.5)}
+.ft-sl{margin-top:4px;font:700 13px var(--body)}
+.ft-big{display:flex;justify-content:space-between;align-items:center;gap:10px;width:calc(100% - 28px);margin:12px 14px 4px;padding:13px 16px;border:0;border-radius:11px;background:linear-gradient(180deg,#f8dc63,#d39f1d);color:#2a1a00!important;font:400 23px var(--display);text-transform:uppercase;box-shadow:0 6px 14px rgba(0,0,0,.25)}
+.ft-big small{font:800 11px var(--body);letter-spacing:1px}
+.ft-srow{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;padding:11px 16px;background:none;border:0;border-top:1px dashed rgba(220,200,255,.22);text-align:left}
+.ft-srow b{display:block;font:700 15px var(--body)} .ft-srow > span > span{display:block;font:600 12px var(--body);color:#d4c8ec}
+.ft-sv{font:800 11px var(--body);letter-spacing:1px;text-transform:uppercase;color:var(--gold);white-space:nowrap}
+.ft-card{max-width:520px;padding:16px;border-radius:14px;background:rgba(6,20,14,.7);border:1px solid var(--glt)}
+
+/* Me, the dressing room */
+.ft-mescr .ft-wood{position:absolute;inset:0;background:radial-gradient(ellipse 60% 30% at 50% 26%,rgba(255,226,160,.26),transparent 70%),repeating-linear-gradient(90deg,transparent 0 58px,rgba(0,0,0,.22) 58px 60px),linear-gradient(180deg,#3a2418,#24160f 70%,#1a0f0a)}
+.ft-mehead{text-align:center}
+.ft-mehead .ft-k{color:var(--brass)}
+.ft-mescr .ft-body > .ft-tag{display:flex;width:max-content;margin:10px auto 0}
+.ft-stage{position:relative;height:262px;margin:8px auto 0;max-width:420px}
+.ft-stage .ft-fig{position:absolute;left:50%;top:0;transform:translateX(-50%)}
+.ft-plinth{position:absolute;left:50%;transform:translateX(-50%);bottom:4px;width:220px;height:52px;border-radius:50%;background:radial-gradient(ellipse at 50% 35%,#5a3a26,#2c1a10 70%);box-shadow:0 0 0 3px var(--brass),0 12px 26px rgba(0,0,0,.6)}
+.ft-spot{position:absolute;inset:-20px -40px;background:radial-gradient(ellipse 40% 60% at 50% 30%,rgba(255,226,160,.18),transparent 70%)}
+.ft-slots{position:absolute;top:6px;display:grid;gap:7px}
+.ft-slots.l{left:0} .ft-slots.r{right:0}
+.ft-slot{display:flex;align-items:center;gap:8px;background:none;border:0;padding:0}
+.ft-slots.l .ft-slot{flex-direction:row-reverse}
+.ft-sth{width:46px;height:46px;flex:none;border-radius:9px;background:rgba(0,0,0,.35);box-shadow:inset 0 0 0 2px rgba(216,180,90,.55),0 6px 14px rgba(0,0,0,.35);display:grid;place-items:center;overflow:hidden}
+.ft-sth img{max-width:36px;max-height:36px;image-rendering:pixelated}
+.ft-stx{display:none}
+.ft-mescr .ft-big{width:100%;max-width:420px;margin:12px auto 0}
+.ft-pack{display:flex;align-items:center;gap:10px;width:100%;max-width:420px;margin:12px auto 0;padding:10px 12px;border-radius:12px;border:1px solid rgba(216,180,90,.3);background:rgba(255,255,255,.05);text-align:left;font:600 12px/1.3 var(--body)}
+.ft-pack b{display:block;font:700 15px var(--body)}
+.ft-pack.on{background:linear-gradient(90deg,#5b1f0e,#3b1a2e);border-color:rgba(255,150,80,.4)}
+.ft-pack .ft-go{display:inline;margin:0 0 0 auto;border:0;padding:0;font-size:12px;color:var(--gold);white-space:nowrap}
+.ft-mlist{display:grid;grid-template-columns:1fr 1fr;gap:7px;max-width:420px;margin:14px auto 0}
+.ft-mrow{position:relative;display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(216,180,90,.2);text-align:left;font:700 13px/1.2 var(--body)}
+.ft-mi{width:22px;height:22px;flex:none} .ft-mi svg{width:22px;height:22px}
+.ft-mt small{display:block;font:800 9.5px var(--body);letter-spacing:.8px;text-transform:uppercase;color:var(--brass);margin-top:2px}
+.ft-dot{position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:50%;background:#ff6b74}
+.ft-mescr .foot{max-width:420px;margin:18px auto 0;background:none}
+
+/* a desktop: the scene spreads, the sheet is a card, the doors are big, and there is no tab bar */
+@media (min-width:900px) and (min-height:560px){
+  .ft-desk{display:inline-flex!important}
+  .ft-long{display:inline} .ft-short{display:none}
+  .ft-tb{padding:14px 34px}
+  .ft-word{font-size:15px}
+  .ft-c3d{perspective:760px}
+  .ft-hole{width:150vw}
+  .ft-seam i{transform:skewX(-5.5deg)}
+  .ft-home[data-hov=pro]{--ftS:58%} .ft-home[data-hov=putt]{--ftS:42%}
+  .ft-tee{top:auto;bottom:70px}
+  .ft-tag{padding:12px 18px 12px 14px} .ft-nm{font-size:22px} .ft-meta{font-size:13px} .ft-stk{font-size:12px}
+  .ft-door{bottom:64px;width:min(34vw,440px)}
+  .ft-door.pro{left:64px} .ft-door.putt{right:64px}
+  .ft-dk{font-size:13px;letter-spacing:3px}
+  .ft-dt{font-size:clamp(56px,5.4vw,80px)}
+  .ft-chip{font-size:14px;padding:5px 10px;border-radius:8px}
+  .ft-heart{font-size:15px}
+  .ft-go{display:inline-block}
+  .ft-door:hover .ft-go,.ft-door:focus-visible .ft-go{color:var(--gold)}
+  .ft-home .ft-sheet{position:absolute;z-index:14;right:56px;top:96px;width:360px}
+  .ft-home.has-gift .ft-sheet{top:160px}
+  .ft-home .ft-giftnote,.ft-home.has-gift .ft-giftnote{left:auto;right:56px;top:94px;bottom:auto;width:360px}
+  .ft-home .ft-ad{left:50%;right:auto;transform:translateX(-50%);bottom:12px;width:min(468px,40vw)}
+  .ft-home .ft-tee{bottom:24px} .ft-home.has-ad .ft-tee{bottom:76px}
+  .ft-hub .ft-body{top:76px;bottom:0;padding:10px 56px 40px}
+  .ft-ht{font-size:96px}
+  .ft-cards{max-width:660px}
+  .ft-protour .ft-body{display:grid;grid-template-columns:minmax(0,1fr) 660px;grid-template-rows:auto 1fr;column-gap:40px}
+  .ft-protour .ft-hhead{grid-column:1;grid-row:1}
+  .ft-protour .ft-cards{grid-column:2;grid-row:1/3}
+  .ft-protour .ft-plaque{grid-column:1;grid-row:2;align-self:end;justify-self:start}
+  .ft-protour .ft-ad{grid-column:2}
+  .ft-mescr .ft-body{display:grid;grid-template-columns:320px minmax(0,1fr) 380px;column-gap:28px;align-items:start;padding-top:20px}
+  .ft-mescr .ft-mehead{grid-column:1;text-align:left} .ft-mescr .ft-body > .ft-tag{grid-column:1;margin:10px 0 0}
+  .ft-mescr .ft-stage{grid-column:2;grid-row:1/5;height:420px;max-width:none;width:100%}
+  .ft-mescr .ft-plinth{width:340px;height:80px}
+  .ft-mescr .ft-sth{width:62px;height:62px} .ft-mescr .ft-sth img{max-width:48px;max-height:48px}
+  .ft-mescr .ft-stx{display:flex;flex-direction:column;font:700 13px var(--body)} .ft-stx small{font:800 10px var(--body);letter-spacing:1.5px;text-transform:uppercase;color:var(--brass)}
+  .ft-mescr .ft-slots{gap:14px;top:40px}
+  .ft-mescr .ft-big,.ft-mescr .ft-pack{grid-column:3;max-width:none;margin:12px 0 0}
+  .ft-mescr .ft-mlist{grid-column:3;max-width:none}
+  .ft-mescr .foot{grid-column:1/-1;max-width:none}
+  body.ftmode #rttnav{display:none}
+}
+/* the tab bar's ticket for the Pass, and room for the home's ad slot under the doors */
+body.ftmode #app{padding:0}
+body.ftmode .topmask{display:none}
+`; document.head.appendChild(st); }
 function startRoll(){
   clearInterval(rollTimer);
   let i=0;
@@ -22354,7 +23077,7 @@ function cutscenesOn(){
    override, because a localStorage flag is a switch any visitor can flip from the console.
    To LAUNCH: set PUTT_LIVE to true. The module draws nothing until it is opened, so the script tag
    costs everybody else one cached download and no screen. -------------------------------------- */
-var PUTT_LIVE=false;
+var PUTT_LIVE=false;   // the launch: Putt Putt Tour and the First Tee home go live together
 const PUTT_API=1;                                         // the putt.js API this page was written against
 var PUTT_TESTERS=['csel8','runnyj','malikwillislover','slimeyb3','jordantest'];      // tester accounts (lowercased usernames)
 var PUTT_ALL_ACCESS=['csel8','runnyj','malikwillislover'];   // every Putt Putt hole open for good, whatever the record says (lowercased usernames)
@@ -43492,7 +44215,8 @@ function syncOverlayBack(){
 }
 try{ window.addEventListener('popstate',function(){
   if(S.overlay==='account' && nameChangeRequired()){ try{ history.pushState({rttOv:1},''); }catch(e){} return; }   // a forced rename can't be backed out of
-  if(S.overlay){ _ovClosing=true; _ovHist=false; S.overlay=null; try{render();}catch(e){} } }); }catch(e){}
+  if(S.overlay){ _ovClosing=true; _ovHist=false; S.overlay=null; try{render();}catch(e){} return; }
+  if(_hubHist && FT_HUBS.includes(S.screen)){ _hubClosing=true; _hubHist=false; S.screen='title'; try{render();}catch(e){} } }); }catch(e){}
 // Service worker: network-first for the HTML so a new deploy reaches players without a manual ?v= cache-bust,
 // with a cached copy as the offline fallback. Feature-detected + fully guarded; never blocks or breaks the game.
 if('serviceWorker' in navigator){ try{ window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }catch(e){} }
