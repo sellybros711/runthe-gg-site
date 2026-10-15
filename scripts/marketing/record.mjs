@@ -5,6 +5,7 @@
    node scripts/marketing/record.mjs football                 run shots/football.mjs
    node scripts/marketing/record.mjs football --out marketing/clips/2026-10-16-football.mp4
    node scripts/marketing/record.mjs football --keep          also keep the raw frames, to look at
+   node scripts/marketing/record.mjs football --speed 1.5     play it back faster (a long draft, a short clip)
 
    A SHOT is a module in scripts/marketing/shots/ that plays one moment of one game:
 
@@ -12,6 +13,7 @@
      export async function setup(page, t) {}         before the camera rolls (dismiss a card, sign in)
      export async function play(page, t) {}          what the clip shows
      export const seconds = 20;                      optional: the most it may run
+     export const hide = ['/baseball/board.js'];     optional: files served as missing (see below)
 
    `t` holds the helpers: t.tap(locator or selector) moves a visible finger there and taps it,
    t.hold(ms) pauses on screen, t.until(fn, ms) waits for something on the page.
@@ -19,6 +21,11 @@
    The page is served from disk, the way the site's own browser checks do it, so a clip shows the
    code in this checkout and nothing on the network. That also means no real account, no real
    player and no real data appears on camera: the clip is a stranger playing as a guest.
+
+   A recording has no network, so anything that reaches a server says it could not: a leaderboard
+   tile reading "unreachable" is a bug on camera. A shot lists such a script in `hide` and the page
+   gets a 404 for it, which every game here treats as "no board" and draws as a plain dash. Never
+   stub a server with made-up answers: a rank or a count on camera has to be real.
 
    The output is H.264 1080x1920 at 30 fps with a silent audio track, which X, Instagram Reels and
    Facebook all take. publish.mjs --check reads the result and refuses anything they would not.
@@ -33,7 +40,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const args = process.argv.slice(2);
 const opt = (f, d) => { const i = args.indexOf(f); return i < 0 ? d : args[i + 1]; };
-const name = args.find((a) => !a.startsWith('--') && args[args.indexOf(a) - 1] !== '--out');
+const name = args.find((a, i) => !a.startsWith('--') && !['--out', '--speed'].includes(args[i - 1]));
 if (!name) { console.error('usage: node scripts/marketing/record.mjs <shot> [--out marketing/clips/x.mp4] [--keep]'); process.exit(2); }
 const shotFile = path.join(ROOT, 'scripts/marketing/shots', `${name}.mjs`);
 if (!fs.existsSync(shotFile)) {
@@ -43,6 +50,7 @@ if (!fs.existsSync(shotFile)) {
 const shot = await import(pathToFileURL(shotFile).href);
 const day = new Date().toISOString().slice(0, 10);
 const out = path.resolve(ROOT, opt('--out', `marketing/clips/${day}-${name}.mp4`));
+const SPEED = Math.max(0.25, +opt('--speed', 1) || 1);
 const FFMPEG = process.env.FFMPEG || 'ffmpeg';
 const CHROME = process.env.PS_CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 
@@ -85,12 +93,12 @@ await page.route('**/*', async (r) => {
   if (u.hostname !== 'local.test') return r.abort();
   let rel = decodeURIComponent(u.pathname);
   if (rel.endsWith('/')) rel += 'index.html';
+  if ((shot.hide || []).includes(rel)) return r.fulfill({ status: 404, body: '' });
   const f = path.join(ROOT, rel);
   if (!f.startsWith(ROOT) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) return r.fulfill({ status: 404, body: '' });
   await r.fulfill({ status: 200, contentType: TYPES[path.extname(f)] || 'application/octet-stream', body: fs.readFileSync(f) });
 });
 
-const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
 const t = {
   hold: (ms) => page.waitForTimeout(ms),
   async until(fn, ms = 15000, arg) { await page.waitForFunction(fn, arg, { timeout: ms }); },
@@ -127,11 +135,12 @@ cdp.on('Page.screencastFrame', async (f) => {
 await cdp.send('Page.startScreencast', { format: 'jpeg', quality: 92, maxWidth: W, maxHeight: H, everyNthFrame: 1 });
 const started = Date.now() / 1000;
 const limit = (shot.seconds || 60) * 1000;
-let failed;
+let failed, timer;
 await Promise.race([
   shot.play(page, t).catch((e) => { failed = e; }),
-  sleep(limit).then(() => console.log(`stopped at the shot's ${limit / 1000}s limit`)),
+  new Promise((res) => { timer = setTimeout(() => { console.log(`stopped at the shot's ${limit / 1000}s limit`); res(); }, limit); }),
 ]);
+clearTimeout(timer);
 await page.waitForTimeout(400);
 const stopped = Date.now() / 1000;
 await cdp.send('Page.stopScreencast');
@@ -144,7 +153,7 @@ if (frames.length < 2) { console.error('the screen never changed, so there is no
 const list = [];
 for (let i = 0; i < frames.length; i++) {
   const next = i + 1 < frames.length ? frames[i + 1].at : stopped;
-  list.push(`file '${frames[i].file}'`, `duration ${Math.max(0.001, next - frames[i].at).toFixed(4)}`);
+  list.push(`file '${frames[i].file}'`, `duration ${Math.max(0.001, (next - frames[i].at) / SPEED).toFixed(4)}`);
 }
 list.push(`file '${frames[frames.length - 1].file}'`);
 fs.writeFileSync(path.join(dir, 'list.txt'), list.join('\n') + '\n');
@@ -160,5 +169,5 @@ if (!args.includes('--keep')) fs.rmSync(dir, { recursive: true, force: true });
 else console.log(`raw frames kept in ${dir}`);
 
 const size = fs.statSync(out).size / 1048576;
-console.log(`${path.relative(ROOT, out)}: ${(stopped - started).toFixed(1)}s, ${frames.length} frames, ${size.toFixed(1)} MB`);
+console.log(`${path.relative(ROOT, out)}: ${((stopped - started) / SPEED).toFixed(1)}s${SPEED !== 1 ? ` at ${SPEED}x` : ''}, ${frames.length} frames, ${size.toFixed(1)} MB`);
 if (errors.length) console.log(`the page threw ${errors.length} error(s) while recording; watch the clip before using it:\n  ${errors.slice(0, 5).join('\n  ')}`);
