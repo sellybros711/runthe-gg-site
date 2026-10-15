@@ -201,6 +201,21 @@ async function browser(){
   const runLine = hist.lines.find((l) => /^Draft run/.test(l)) || '';
   const shown = hist.lines.reduce((s, l) => s + (+((l.match(/\+(\d+)$/) || [])[1] || 0)), 0);
   ok(runLine.endsWith('+' + hist.want) && +hist.coins.replace(/,/g, '') === shown, '7 an award lands in the coin history and the balance at once (' + hist.lines.join(' | ') + ', ' + hist.coins + ')');
+  /* Every coin source has a name in the history. The sources are read off
+     every award and daily grant in the game's files, so a new one is caught
+     the day it is added; a line that says only "Coins" is one nobody named. */
+  const SRCS = new Set();
+  for (const f of fs.readdirSync(HERE).filter((x) => /\.js$/.test(x))) {
+    const t = fs.readFileSync(path.join(HERE, f), 'utf8');
+    for (const re of [/X\.award\([^;]*?'([a-z]+)'\s*,\s*\{\s*t:/g, /X\.award\([^;]*?,\s*'([a-z]+)'\)/g, /grant\(st, w, [^;]*?'([a-z]+)', t\)/g])
+      for (const m of t.matchAll(re)) SRCS.add(m[1]);
+  }
+  ok(SRCS.size >= 8, '7 the coin sources are found in the game files (' + [...SRCS].join(', ') + ')');
+  const unnamed = await page.evaluate((srcs) => {
+    srcs.forEach((s, i) => RTF_WALLET.award((s === 'quest' ? 'qd:' : 'lbl:') + s + ':' + i, 1, s));
+    return [...document.querySelectorAll('#cr-closet .cl-hist li span')].map((x) => x.textContent).filter((x) => x === 'Coins');
+  }, [...SRCS]);
+  ok(!unnamed.length, '7 every coin source has a name in the history (' + unnamed.length + ' read "Coins")');
   await page.click('#cr-closet .cl-savefit');
   ok(await page.evaluate(() => document.querySelectorAll('#cr-closet [data-fit]').length === 1), '7 an outfit saves');
   /* on court */
