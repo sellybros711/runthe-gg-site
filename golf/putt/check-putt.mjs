@@ -288,7 +288,12 @@ if (!QUICK){
     const bl = Math.hypot(0 - C.tee[0], -18.8 - C.tee[1]), blind = P.simulate(C, C.tee[0], C.tee[1], (0 - C.tee[0]) / bl * v, (-18.8 - C.tee[1]) / bl * v, 0);
     claim(!!dr && blind.pts.every(p => p[1] > -19.3) && !blind.ev.some(e => e[1] === 'plate'), 'the Switch door holds a putt that never touched its plate');
     const sl = ROUTES['lab:5'], f = sl && sl[0], sv = f && P.speedFor(C, f[1]), first = f && P.simulate(C, C.tee[0], C.tee[1], Math.cos(f[0]) * sv, Math.sin(f[0]) * sv, f[2]);
-    claim(!!first && first.ev.some(e => e[1] === 'plate') && first.pts.some(p => p[1] < -19.3), 'the Switch route rolls over the plate and through the door it opened'); }
+    claim(!!first && first.ev.some(e => e[1] === 'plate') && first.pts.some(p => p[1] < -19.3), 'the Switch route rolls over the plate and through the door it opened');
+    /* THE FERRY: the recorded first putt rolls onto the deck, rides it across and is put ashore on the landing
+       past the left dock (x < -6). The same putt struck when the deck is at the far dock goes in the hazard. */
+    const Cf = P.buildLevel(7, 'lab'), fl = ROUTES['lab:7'], f1 = fl && fl[0], fv = f1 && P.speedFor(Cf, f1[1]);
+    const ride = f1 && P.simulate(Cf, Cf.tee[0], Cf.tee[1], Math.cos(f1[0]) * fv, Math.sin(f1[0]) * fv, f1[2]), away = f1 && P.simulate(Cf, Cf.tee[0], Cf.tee[1], Math.cos(f1[0]) * fv, Math.sin(f1[0]) * fv, f1[2] + Cf.ferries[0].move + Cf.ferries[0].dwell);
+    claim(!!ride && ride.ev.some(e => e[1] === 'deck') && !ride.water && ride.rest[0] < -6 && !!away && away.water, `the Ferry carries the ball across and puts it ashore, and the same putt with the deck away goes in (ashore at x ${ride ? ride.rest[0].toFixed(1) : '?'}, away wet ${away && away.water})`); }
   const mw = TM.levels.filter(L => !L.sig).length / TM.worlds.length * Cn.main.hole + Cn.main.sig + TM.per * Cn.main.ace + Cn.main.world;
   claim(mw === 4000, `the main tour pays 4,000 coins a world, ${mw * P.TOURS.main.worlds.length} in all (${mw} a world)`);
   claim(Cn.members.exclusive && Cn.members.hole > Cn.main.hole && Cn.members.sig > Cn.main.sig && /Members only/.test(Cn.members.finish), 'the Members Tour pays more a hole and carries rewards only members can earn');

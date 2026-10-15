@@ -1156,8 +1156,9 @@ var LEVELS = [
   { par:3, f:function(T){ var H = hole([rm(-4.5, 0, 4.5, -36)], [0, -2.5], [0, -32]); blk(H, T, -4.5, -15, -1.4, -16.4); blk(H, T, 1.4, -15, 4.5, -16.4); slider(H, T, -15.7, -2.8, 2.8, 3.2, 0, 1.6); zoneR(H, M.MUD, -4.5, -22, 4.5, -24); zoneR(H, M.GREEN, -1, -22, 1, -24); bowl(H, 0, -32, 1.8, 0.13); return H; } },
   // Level Up: up the ramp lane to the top floor, round the wall, putt out.
   { par:3, three:2, f:function(T){ var H = hole([rm(-5, 0, 5, -14), rm(-7, -18, 7, -34, -2)], [0, -2.5], [-3, -30]); climb(H, 3.4, -14, -18, 2.4); blk(H, T, -7, -24, 3, -25.4); zoneC(H, M.MUD, 1.2, -29.5, 1.1); return H; } },
-  // Escalators: one belt runs up, the next runs back. Aim for where they leave you.
-  { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -34)], [-3, -2.5], [3, -30]); belt(H, -6, -10, 6, -14, 0, 4); belt(H, -6, -20, 6, -24, 0, -4); bumps(H, T, [[0, -17, 0.7], [4.6, -27.4, 0.6]]); bowl(H, 3, -30, 1.8, 0.13); return H; } },
+  // Hover Deck: the tee strip ends at the glitch. Roll onto the hover deck while it waits, ride it across, and it puts you down by the cup strip.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-8, 0, -2, -20.1), rm(-8, -19.9, 14, -24.1), rm(6, -23.9, 14, -44)], [-5, -2.5], [10, -40]); zoneR(H, M.WATER, -8, -20, 6, -24);
+    ferry(H, -8, -19.6, -3.6, -24, 10, 0, 2.2, 1.5, 0); bumps(H, T, [[8, -32, 0.6], [12, -28, 0.55]]); zoneR(H, M.MUD, 6, -42, 8, -44); bowl(H, 10, -40, 1.7, 0.12); return H; } },
   // Loop de Loop: through the loop, then the one clean gap in the static.
   { par:3, f:function(T){ var H = hole([rm(-4, 0, 4, -11), pg([[-4, -11], [4, -11], [0.8, -14.6], [-0.8, -14.6]]), rm(-0.8, -14.5, 0.8, -19.2), rm(-4.5, -19.1, 4.5, -36)], [0, -2.5], [0, -32]);
     loopAt(H, 0, -16.8, 0, -1, 0.9, 1.6); zoneR(H, M.MUD, -4.5, -24, 4.5, -26.5); zoneR(H, M.GREEN, -0.9, -24, 0.9, -26.5); bowl(H, 0, -32, 1.8, 0.13); return H; } },
@@ -1166,8 +1167,9 @@ var LEVELS = [
   // Warp Zone: up, right, up the far side and back, three putts. The secret: the kicker at the top of the first switchback jumps the gap straight into the last one.
   { par:4, f:function(T){ var H = hole([rm(-4, 0, 4, -16), rm(-4, -12, 14, -20), rm(10, -12, 18, -36), rm(-2, -24, 14, -36)], [0, -2.5], [2, -32]); zoneR(H, M.MUD, 10, -20, 18, -22.5); zoneR(H, M.MUD, 14, -27, 18, -29.5); bumps(H, T, [[11, -16, 0.6], [11, -32, 0.6]]);
     jump(H, 1, -19.7, 0, -1, 0.05, 2.4, { m:M.GREEN, h:0.9, ang:40 }); secret(H, -0.3, -19.1, 2.3, -20); bowl(H, 2, -32); return H; } },
-  // Bumper Cars: two cars sliding across the floor, and static at the end.
-  { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -40)], [0, -2.5], [0, -36]); slider(H, T, -14, -3.4, 3.4, 2.2, 0, 2.6); slider(H, T, -24, 3.4, -3.4, 2.9, 0.4, 2.6); zoneR(H, M.MUD, -5, -30, -1.5, -32); zoneR(H, M.MUD, 1.5, -30, 5, -32); bowl(H, 0, -36, 1.8, 0.13); return H; } },
+  // Elevator: roll onto the lift at the bottom of the shaft. It carries you up, stops hard at the top, and you roll off onto the top floor.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-8, 0, -2, -12), rm(-2.1, -6, 3, -30.1), rm(-8, -29.9, 8, -48)], [-5, -2.5], [4, -43]); zoneR(H, M.WATER, -2, -6, 3, -30);
+    ferry(H, -2.4, -6, 3, -10.4, 0, -20, 4.0, 1.5, 0); bumps(H, T, [[-4, -40, 0.6], [6, -36, 0.55]]); zoneR(H, M.MUD, -8, -46, -4, -48); bowl(H, 4, -43, 1.7, 0.12); return H; } },
   // Ramp Jump: off the ramp over the glitch pool, round the post, putt out.
   { par:3, f:function(T){ var H = hole([rm(-4.5, 0, 4.5, -12), rm(-4.5, -11.9, 4.5, -15), rm(-4.5, -14.9, 4.5, -32)], [0, -2.5], [0.6, -25.4]); jump(H, 0, -12, 0, -1, 2.9, 9, { h:0.6, ang:36 }); bumps(H, T, [[-1.8, -22, 0.6]]); zoneR(H, M.WATER, 2.4, -24, 4.5, -27); bowl(H, 0.6, -25.4, 1.2, 0.1); return H; } },
   // Shutter Doors: two shutters on their clocks, round the cabinet, two putts.
@@ -1177,8 +1179,10 @@ var LEVELS = [
     climb(H, -3, -14, -18, 2.2); climb(H, 2.6, -28, -32, 2.2); bumps(H, T, [[-1, -37, 0.6]]);  return H; } },
   // Conveyor Combo: across the belt, then ride the stream down, putt out round the post.
   { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -14), rm(-7, -26, 7, -40, -1.4)], [0, -2.5], [-4, -36]); belt(H, -6, -6, 6, -11, 4, 0); river(H, [[4.5, -13.5], [4.5, -20], [0, -23], [-3, -26.5]], 1.7, 7, 0, -1.4); bumps(H, T, [[0, -31, 0.7]]); bowl(H, -4, -36, 1.8, 0.13); return H; } },
-  // Prize Belt: the belt pushes left; a bank board by the cup sends it home.
-  { par:3, f:function(T){ var H = hole([rm(-5, 0, 5, -36)], [0, -2.5], [2, -32]); belt(H, -5, -14, 5, -20, -4.5, 0); bumps(H, T, [[3.2, -25, 0.6]]); board(H, T, 4.46, -32.27, 1.59, -34.44, 0.35); bowl(H, 2, -32, 2.2, 0.15); return H; } },
+  // Platform Jump: off the jump pad over the glitch, and come down on the platform as it slides past. It carries you to the right dock.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-3, 0, 3, -14.1), rm(-8, -13.9, 12, -19.1), rm(6, -18.9, 12, -38)], [0, -2.5], [9, -34]); zoneR(H, M.WATER, -8, -14, 6, -19);
+    jump(H, 0, -13.5, 0, -1, 0.05, 2.4, { m:M.GREEN, h:0.5, ang:30 }); blk(H, T, -3, -12.9, -1.2, -14.1); blk(H, T, 1.2, -12.9, 3, -14.1);
+    ferry(H, -8, -13.6, -3.6, -19, 10, 0, 2.2, 1.2, 0.3); bumps(H, T, [[2, -7, 0.6], [7.5, -27, 0.6]]); bowl(H, 9, -34, 1.7, 0.12); return H; } },
   // Double Loop: two loops in a row, one pace for both.
   { par:3, f:function(T){ var H = hole([rm(-4, 0, 4, -10), pg([[-4, -10], [4, -10], [0.8, -13.6], [-0.8, -13.6]]), rm(-0.8, -13.5, 0.8, -24), rm(-4, -23.9, 4, -36)], [0, -2.5], [0, -32]);
     loopAt(H, 0, -15.6, 0, -1, 0.7, 1.6); loopAt(H, 0, -20.5, 0, -1, 0.7, 1.6); bumps(H, T, [[2.6, -28.5, 0.6]]); return H; } },
@@ -1438,9 +1442,10 @@ var LEVELS = [
   // Drift: the whole middle of the island turns. Ride it round or play past it.
   { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -36)], [0, -2.5], [0, -32]); disc(H, 0, -17, 3.2, 1.5); bumps(H, T, [[-4.6, -12, 0.55], [4.6, -12, 0.55], [-4.6, -22, 0.55], [4.6, -22, 0.55], [0, -26, 0.5]]);
     zoneR(H, M.MUD, -7, -34, -4, -36); zoneR(H, M.MUD, 4, -34, 7, -36); bowl(H, 0, -32); return H; } },
-  // Flight Path: three blimps crossing the island, each on its own clock.
-  { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -40)], [0, -2.5], [-1.5, -36]); slider(H, T, -11, -4, 4, 2.0, 0); slider(H, T, -18, 4, -4, 2.4, 0.3); slider(H, T, -25, -4, 4, 2.8, 0.6);
-    pads(H, [[-5, -14.5, 0.6], [5, -21.5, 0.6]]); bumps(H, T, [[2, -30.5, 0.55], [-4, -6, 0.5]]); zoneR(H, M.MUD, 2.5, -38, 6, -40); bowl(H, -1.5, -36); return H; } },
+  // Sky Ferry: the island ends at the drop. Roll onto the sky ferry while it waits, ride it over, and it sets you down on the cup island. Hay and balloons up there.
+  { par:3, three:2, f:function(T){ var H = hole([rm(2, 0, 8, -20.1), rm(-14, -19.9, 8, -24.1), rm(-14, -23.9, -6, -46)], [5, -2.5], [-10, -42]); zoneR(H, M.WATER, -6, -20, 8, -24);
+    ferry(H, 3.6, -19.6, 8, -24, -10, 0, 2.2, 1.5, 0); bumps(H, T, [[4, -10, 0.55], [6.5, -15, 0.5], [-8, -33, 0.6], [-12, -30, 0.55]]); pads(H, [[-7.5, -38, 0.6]]);
+    zoneR(H, M.MUD, -14, -44, -11, -46); zoneR(H, M.MUD, 2, -6, 4, -9); bowl(H, -10, -42, 1.7, 0.12); return H; } },
   // Jet Stream: one wind blows right, the next blows left. Aim for where they leave you.
   { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -36)], [0, -2.5], [-2.5, -32]); belt(H, -6, -10, 6, -14, 5, 0); belt(H, -6, -20, 6, -24, -5, 0);
     bumps(H, T, [[1.5, -17, 0.6], [-4.5, -6, 0.5], [2.5, -28, 0.5]]); zoneR(H, M.MUD, 3, -34, 6, -36); bowl(H, -2.5, -32); return H; } },
@@ -1456,9 +1461,10 @@ var LEVELS = [
   // Cloud Gap: the island is a U, up one side and back down the other. Or find the gap in the middle cloud wall: it lines up with the cup.
   { par:3, f:function(T){ var H = hole([rm(-9, 0, 9, -32)], [-5, -2.5], [5, -10]); blk(H, T, -0.6, 0, 0.6, -6); blk(H, T, -0.6, -7.4, 0.6, -23); secret(H, -0.6, -6, 0.6, -7.4);
     zoneR(H, M.MUD, -9, -26, 9, -27.5); zoneR(H, M.GREEN, -1, -26, 1, -27.5); bumps(H, T, [[-5, -14, 0.6], [-5.5, -20, 0.55], [5, -16, 0.6], [5.5, -22, 0.55], [6.5, -27, 0.6]]); bowl(H, 5, -10); return H; } },
-  // Twin Isles: off one ramp over the drop, then off the next.
-  { par:3, three:2, f:function(T){ var H = hole([rm(-6, 0, 6, -11), rm(-6, -10.9, 6, -14.1), rm(-6, -14, 6, -25), rm(-6, -24.9, 6, -27.1), rm(-6.5, -27, 6.5, -41)], [0, -2.5], [-2, -36]);
-    jump(H, 0, -11, 0, -1, 3, 12, { h:0.6, ang:34 }); jump(H, 0, -25, 0, -1, 2, 12, { h:0.6, ang:34 }); bumps(H, T, [[2, -19.5, 0.6], [-3.5, -6, 0.5], [1.5, -32, 0.5]]); zoneR(H, M.MUD, 3, -38, 6.5, -41); bowl(H, -2, -36); return H; } },
+  // Leap of Faith: off the ramp over the drop, and land on the barge as it drifts past. It carries you to the left dock, then up to the castle green.
+  { par:3, three:2, f:function(T){ var H = hole([rm(-3, 0, 3, -14.1), rm(-12, -13.9, 8, -19.1), rm(-12, -18.9, -6, -38)], [0, -2.5], [-9, -34]); zoneR(H, M.WATER, -6, -14, 8, -19);
+    jump(H, 0, -13.5, 0, -1, 0.05, 2.4, { m:M.GREEN, h:0.5, ang:30 }); blk(H, T, -3, -12.9, -1.2, -14.1); blk(H, T, 1.2, -12.9, 3, -14.1);
+    ferry(H, 3.6, -13.6, 8, -19, -10, 0, 2.2, 1.2, 0.3); bumps(H, T, [[-2, -7, 0.6], [-7.5, -27, 0.6], [-10.5, -31, 0.5]]); pads(H, [[2, -9, 0.55]]); zoneR(H, M.MUD, -12, -36, -10, -38); bowl(H, -9, -34, 1.7, 0.12); return H; } },
   // Cloud Mill: the windmill's sails swing across the door. The sails decide it.
   { par:3, f:function(T){ var H = hole([rm(-7, 0, 7, -40)], [0, -2.5], [-2, -35]); millAt(H, T, -18, 7, 1.2); bumps(H, T, [[2.5, -29, 0.55], [-4, -8, 0.5], [4, -8, 0.5]]); zoneR(H, M.MUD, -7, -38, -4, -40); bowl(H, -2, -35); return H; } },
   // Castle in the Clouds: up the ramp, past the turning island, over the drawbridge and through the flight path to the castle.
@@ -1686,8 +1692,8 @@ var TOUR_NAMES = [
   'Classroom Doors', 'Creek Run', 'Spinning Tops', 'Long Jump', 'Bleachers', 'Field Trip', 'Crossing Guard', 'Recess Rush', 'Last Bell',
   'Wafer Plank', 'Gumdrop Row', 'Loading Dock', 'Candy Cane Walk', 'Fondue', 'Bonbon Hop', 'Candy Loop', 'Sugar Rush', 'Spill',
   'Two Chutes', 'Cake Stand', 'Twin Whisks', 'Toffee Bridges', 'Chocolate River', 'Stamping Press', 'Double Dip', 'Popping Candy', 'Head Office',
-  'Insert Coin', 'Laser Gate', 'Level Up', 'Escalators', 'Loop de Loop', 'Neon River', 'Warp Zone', 'Bumper Cars', 'Ramp Jump',
-  'Shutter Doors', 'Top Floor', 'Conveyor Combo', 'Prize Belt', 'Double Loop', 'Pac Maze', 'Glitch Bridges', 'Speed Run', 'Grand Prize',
+  'Insert Coin', 'Laser Gate', 'Level Up', 'Hover Deck', 'Loop de Loop', 'Neon River', 'Warp Zone', 'Elevator', 'Ramp Jump',
+  'Shutter Doors', 'Top Floor', 'Conveyor Combo', 'Platform Jump', 'Double Loop', 'Pac Maze', 'Glitch Bridges', 'Speed Run', 'Grand Prize',
   'Gangplank', 'Rock Pool', 'Blowholes', 'Walk the Plank', 'Harbor Gates', 'Lagoon', 'Sandbar', 'Whirlpool', 'Rope Bridges',
   'Cannon Fire', 'Ship Decks', 'Ship’s Wheel', 'Island Hop', 'Riptide', 'Reef Break', 'Treasure Map', 'Broadside', 'Captain’s Cove',
   'Polished Hall', 'Temple Steps', 'Jade Causeway', 'Stone Doors', 'Landslide', 'The Leap', 'Idol Alley', 'Moving Floor', 'Golden Ring',
@@ -1697,7 +1703,7 @@ var TOUR_NAMES = [
   'Lava Lane', 'Fire Pit', 'Basalt Gates', 'Lava Tubes', 'Rolling Rocks', 'Turning Rock', 'Ash Field', 'Lava Switch', 'Magma Loops',
   'Lava Flow', 'Lava Slope', 'River of Fire', 'Crater', 'Eruption', 'Lava Leap', 'Obsidian Bridge', 'Fire Mill', 'The Summit',
   'Cloud Hop', 'Haystacks', 'Bounce House', 'Balloon Field', 'Weather Vane', 'Sky Steps', 'Sky Bridge', 'Hay Bale', 'Drift',
-  'Flight Path', 'Jet Stream', 'Kite Diamond', 'Floating Gates', 'Rainbow Loop', 'Cloud Gap', 'Twin Isles', 'Cloud Mill', 'Castle in the Clouds',
+  'Sky Ferry', 'Jet Stream', 'Kite Diamond', 'Floating Gates', 'Rainbow Loop', 'Cloud Gap', 'Leap of Faith', 'Cloud Mill', 'Castle in the Clouds',
   'First Freeze', 'Snowman Alley', 'Frozen Ponds', 'Ice Wall', 'Icicles', 'Ice Cave', 'Sled Crossing', 'Snow Bridges', 'Frozen Falls',
   'Ski Lodge', 'Ski Jump', 'Glacier Belt', 'Icicle Gates', 'Ice Loop', 'Spinning Rink', 'Yeti Cave', 'Avalanche', 'Summit Lodge',
   'The Thaw', 'Mammoth Trail', 'Saber Tooth', 'Meltwater', 'Ice Bridge', 'Glacier Mill', 'Boulder Bounce', 'Cave Ledges', 'Frozen Crater',

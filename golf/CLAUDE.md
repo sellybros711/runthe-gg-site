@@ -51,6 +51,8 @@ node golf/check-tracer3d.mjs                every course draws, nothing the ball
 - Routes are recorded at full precision. Never round them.
 - A Hallows Night hole has at most two moving or wet pieces and par 3 (the signature 4).
 - Every hole stays under 34% wet or out in `fair.mjs`, and each tour's mean under 10%.
+- **A ball never comes to rest on a ferry.** A deck pulls away gently and stops hard, so the ball is put
+  ashore; a ferry hole's deck overlaps the land at each dock and its channel is walled on its long sides.
 - **A skin name is global.** A second `snowman` in `SKIN` silently replaces the first everywhere.
 - Never put a real course name on screen.
 
