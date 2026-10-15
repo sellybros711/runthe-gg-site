@@ -1,6 +1,8 @@
 name: Marketing check
 # Every queued post is valid before it can be merged: a known channel, a real publish time, no em or
-# en dash, X under 280 characters, Instagram with an image. See scripts/marketing/publish.mjs.
+# en dash, X under 280 characters, Instagram with a video or an image, a clip the platforms will take,
+# a video caption of twenty words at most and none of the phrases that read as machine-written. See
+# scripts/marketing/publish.mjs.
 on:
   pull_request:
     paths: ['marketing/**', 'scripts/marketing/**']
