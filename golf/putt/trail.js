@@ -782,7 +782,7 @@ function mats(P){
     g:['', '', '', 0, gfn(k)], g0:['', '', '', 0, gfn(k0)], path:['', '', '', 0, pfn(k)], path0:['', '', '', 0, pfn(k0)],
     water:['', '', '', 0, lfn((P.sea ? k.seaC || ['#1f8fc8', '#5cc6ee'] : k.waterC || ['#3f86c8', '#6fb3e6']), 13)],
     lava:['', '', '', 0, lfn(['#ff6a1a', '#ffc23a'], 9)], ice:['', '', '', 0, lfn(k.iceC || ['#a8dcf4', '#e2f6ff'], 23)], bog:['', '', '', 0, lfn(k.bogC || ['#5d4634', '#7a6044'], 17)],
-    sand:['#ecdba4', '#f4e4b4', '#dcc88c', 0.2],
+    sand:k.sandC || ['#ecdba4', '#f4e4b4', '#dcc88c', 0.2],   // the shore by a sea: a stop can give its own (black sand on a volcano)
     carpet:[T.carpet || '#2f8f4e', T.carpet2 || '#2a8246', T.carpet || '#2f8f4e', 0.16], rail:[T.wall || '#f4efe2', T.wallHi || '#ffffff', T.wall || '#f4efe2', 0.1],
     cup:['#141414', '#202020', '#141414', 0],
     // a bridge's deck, planks laid across the walk (stone slabs in the temple and the volcano), and the creek's banks
