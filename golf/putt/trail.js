@@ -152,11 +152,11 @@ var KIT = {
    between them go the same way: putt.js names the stop (spec.kitAs), and the walk is planned with that stop's kit. Only the
    kit changes; everything that asks which world this is still reads the world (spec.theme). */
 function kitFrom(base, o){ var k = {}; for (var q in base) k[q] = base[q]; for (q in o) k[q] = o[q]; return k; }
-KIT['pirate~town'] = kitFrom(KIT.pirate, { g:['#a89a86', '#b8aa94', '#988a76', 0.2], dens:0.45, low:['rock', 'shell', 'rock'], lm:['barrels', 'boat', 'lamps'] });
+KIT['pirate~town'] = kitFrom(KIT.pirate, { g:['#ac9e88', '#b8a890', '#9e907a', 0.2], gpat:'cobble', nlm:5, dens:0.22, low:['rock', 'shell', 'rock'], lm:['shack', 'barrels', 'shack', 'lamps', 'shack', 'boat'] });
 KIT['pirate~jungle'] = kitFrom(KIT.pirate, { g:['#3f6a2a', '#4e7a32', '#2f5a22', 0.22], p:['#8a6a44', '#9a7a52', '#7a5a38'], plank:false, sea:false, tree:['broad', 'palm', 'broad'],
-  leaves:['#1f5a26', '#2b6e30', '#174a20'], bark:'#4a3624', low:['fern', 'bush', 'fern', 'rock'], haz:'water', hazC:['#2f8f9a', '#6fc8d0'], waterC:['#2f8f9a', '#6fc8d0'], lm:['ruin', 'statue', 'barrels'], dens:1.35, wall:['#a29e8a', '#6a6658'] });
-KIT['pirate~skull'] = kitFrom(KIT.pirate, { g:['#8a867c', '#9a968a', '#7a766c', 0.25], p:['#d8c08a', '#e6d09c', '#c4aa74'], plank:false, dens:0.35, low:['rock', 'rock', 'shell'], lm:['skullrock', 'wreck', 'barrels'], wall:['#8e8a80', '#5a5650'] });
-KIT['pirate~cove'] = kitFrom(KIT.pirate, { g:['#efd89a', '#f6e4b2', '#dcc384', 0.25], dens:1.25, lm:['wreck', 'barrels', 'boat'] });
+  leaves:['#1f5a26', '#2b6e30', '#174a20'], bark:'#4a3624', low:['fern', 'bush', 'fern', 'rock'], haz:'water', hazC:['#2f8f9a', '#6fc8d0'], waterC:['#2f8f9a', '#6fc8d0'], gpat:'floor', nlm:4, lm:['falls', 'fortwall', 'falls', 'statue'], dens:1.35, wall:['#a29e8a', '#6a6658'] });
+KIT['pirate~skull'] = kitFrom(KIT.pirate, { g:['#8a867c', '#9a968a', '#7a766c', 0.25], p:['#d8c08a', '#e6d09c', '#c4aa74'], plank:false, dens:0.35, gpat:'stone', nlm:4, low:['rock', 'rock', 'shell'], lm:['skullrock', 'stacks', 'wreck', 'stacks'], wall:['#8e8a80', '#5a5650'] });
+KIT['pirate~cove'] = kitFrom(KIT.pirate, { g:['#efd89a', '#f6e4b2', '#dcc384', 0.25], dens:1.25, seaC:['#2ab4c8', '#7adce8'], nlm:3, lm:['camp', 'wreck', 'camp', 'barrels'] });
 var LIFE_AS = { 'pirate~jungle':{ fly:['parrot', 5], mote:[['firefly', 14], ['butter', 6]] } };
 function kitOf(th){ return KIT[th] || KIT.clubhouse; }
 
@@ -409,7 +409,7 @@ function plan(spec){
     if (sc.kind === 'mooredship') place('gangplank', (sc.x + sc.mx) / 2, sc.y, 0.1, 0.6, { th:themeAt(sc.y), face:sc.ox < sc.x ? -1 : 1 });
     P.secret = { x:sc.mx, y:sc.my, r:1.5, i:spec.secret.i, kind:sc.kind, hint:SECRET_HINT[sc.kind] || SECRET_HINT.secretdoor }; used.push({ x:sc.mx, y:sc.my, r:1.6 }); }
   // landmarks: one or two of the world's, beside the path in open ground
-  var lms = kitOf(th).lm, nlm = 2 + (R() < 0.4 ? 1 : 0);
+  var lms = kitOf(th).lm, nlm = kitOf(th).nlm || (2 + (R() < 0.4 ? 1 : 0));   // a stop that is a place (a town) can ask for more
   for (var li = 0; li < nlm; li++){ var kind = lms[(seed + li) % lms.length];
     for (var tries = 0; tries < 40; tries++){ var lq = (li === 0 && midPt && !kmid.haz && tries < 6) ? [midPt[0] + (R() - 0.5) * 4, midPt[1] + (R() - 0.5) * 4] : beside(18 + R() * (SL - 30), R() < 0.5 ? -1 : 1, 8 + R() * 16), ly = lq[1], lx = lq[0], sz = LMSIZE[kind] || [5, 5, 8];
       var rr = Math.max(sz[0], sz[1]) / 2 + 0.5; if (walkD(lx, ly) < rr + 2 || inClear(lx, ly, rr + 2) || !okGround(lx, ly, rr) || !free(lx, ly, rr + 1) || (gy && Math.abs(ly - gy) < rr + 3)) continue;
@@ -715,7 +715,7 @@ var LMSIZE = { shed:[9, 6, 11], green:[9, 7, 1], bench:[3, 1.2, 2], lamps:[1, 1,
   mesa:[11, 8, 13], tower:[5, 5, 15], cart:[5, 2.5, 3.5], basaltset:[7, 6, 9], vent:[5, 5, 4], skull:[5, 4, 5], igloo:[7, 7, 5], snowman:[3, 3, 5.5], cabin:[9, 6, 11],
   balloon:[6, 6, 16], kite:[3, 3, 12], pillar:[5, 5, 12], cabinets:[8, 2.5, 6.5], sign:[8, 1.5, 11], pylons:[6, 6, 12], crypt:[8, 6, 10], graves:[9, 6, 3], fenceyard:[9, 6, 3],
   barn:[11, 8, 13], scarecrow:[3, 2, 7], cornfield:[10, 8, 5], school:[12, 8, 13], swings:[8, 3, 6], slide:[4, 6, 5], mammoth:[9, 4, 6.5], cave:[10, 7, 6], tusks:[7, 2, 5],
-  factory:[11, 8, 13], gumballs:[5, 5, 7], canes:[8, 1.5, 5.5], secretdoor:[6, 4, 5.5], skullrock:[5, 4, 5], longneck:[13, 4, 11], dinoskel:[10, 4, 4.5], nest:[6, 6, 2.8], mooredship:[5, 14, 11.5] };
+  factory:[11, 8, 13], gumballs:[5, 5, 7], canes:[8, 1.5, 5.5], secretdoor:[6, 4, 5.5], skullrock:[9, 7, 9], shack:[10, 7, 11], falls:[11, 8, 11], fortwall:[8, 2.6, 4.2], stacks:[6, 4, 7], camp:[9, 7, 9], longneck:[13, 4, 11], dinoskel:[10, 4, 4.5], nest:[6, 6, 2.8], mooredship:[5, 14, 11.5] };
 
 /* ------------------------------------------------------------------------------- the ground */
 function land(P){
@@ -755,6 +755,10 @@ function mats(P){
   function gfn(kk){ return function(c, R, h3){ var n1 = h3(c.ti >> 1, c.tj >> 1, 11), n2 = h3(c.ti, c.tj, 12), g = kk.g, col;
     if (kk.grid && ((c.ti % 32) === 0 || (c.tj % 24) === 0)) col = '#3a2a8a';
     else if (c.fl && !kk.grid && h3(c.ti >> 1, c.tj >> 1, 21) < c.fl){ var fq = h3(c.ti >> 1, c.tj >> 1, 22); col = kk.snow ? '#ffffff' : ((c.ti & 1) + (c.tj & 1) === 1 || fq < 0.3) ? FL[(fq * 4 * FL.length | 0) % FL.length] : shd(g[0], 0.2); }   // a bed of flowers, each a petal or two on a dark stem
+    else if (kk.gpat === 'cobble'){ var qi = c.ti >> 1, qj = c.tj >> 1, rw = Math.floor(qj / 3), of = rw % 2 ? 2 : 0;   // cobbles a foot by three quarters, as in the town's holes
+      col = (qj % 3 === 0 || (qi + of) % 4 === 0) ? '#7e7262' : (function(n){ return n < 0.3 ? '#b8a890' : n < 0.62 ? '#ac9e88' : '#9e907a'; })(hash(Math.floor((qi + of) / 4), rw, 4)); }
+    else if (kk.gpat === 'stone'){ var sa = vn(c.ti * 0.11, c.tj * 0.11, 3), sb = vn(c.ti * 0.045, c.tj * 0.045, 4); col = sb > 0.68 ? '#5f7a3a' : sa < 0.3 ? '#6e6a62' : sa > 0.68 ? '#a29e92' : '#8a867c'; }
+    else if (kk.gpat === 'floor'){ var fa = vn(c.ti * 0.055, c.tj * 0.055, 7), fb = vn(c.ti * 0.15, c.tj * 0.15, 8); col = fa > 0.66 ? '#5e5030' : fa > 0.58 ? '#4e5a2c' : fb > 0.6 ? '#48742e' : fb < 0.3 ? '#365e26' : '#3f6a2a'; }
     else if (n2 < 0.012) col = kk.snow ? '#ffffff' : g[1];
     else if (kk.mow) col = (Math.floor(c.tj / 14) % 2) ? (n2 < 0.3 ? g[1] : g[0]) : (n2 < 0.3 ? g[0] : g[2]);
     else col = n1 < g[3] ? (n2 < 0.5 ? g[1] : g[2]) : g[0];
@@ -770,7 +774,7 @@ function mats(P){
   function lfn(cols, rip){ return function(c, R, h3){ var n = h3(c.ti, c.tj, 7); return R(((c.ti * 3 + c.tj * 5) % rip) < 2 ? cols[1] : cols[0]); }; }
   var out = {
     g:['', '', '', 0, gfn(k)], g0:['', '', '', 0, gfn(k0)], path:['', '', '', 0, pfn(k)], path0:['', '', '', 0, pfn(k0)],
-    water:['', '', '', 0, lfn((P.sea ? ['#1f8fc8', '#5cc6ee'] : k.waterC || ['#3f86c8', '#6fb3e6']), 13)],
+    water:['', '', '', 0, lfn((P.sea ? k.seaC || ['#1f8fc8', '#5cc6ee'] : k.waterC || ['#3f86c8', '#6fb3e6']), 13)],
     lava:['', '', '', 0, lfn(['#ff6a1a', '#ffc23a'], 9)], ice:['', '', '', 0, lfn(k.iceC || ['#a8dcf4', '#e2f6ff'], 23)], bog:['', '', '', 0, lfn(k.bogC || ['#5d4634', '#7a6044'], 17)],
     sand:['#ecdba4', '#f4e4b4', '#dcc88c', 0.2],
     carpet:[T.carpet || '#2f8f4e', T.carpet2 || '#2a8246', T.carpet || '#2f8f4e', 0.16], rail:[T.wall || '#f4efe2', T.wallHi || '#ffffff', T.wall || '#f4efe2', 0.1],
@@ -952,8 +956,32 @@ BUILD.basaltset = function(B, t, i){ for (var k = 0; k < 5; k++) BUILD.basalt(B,
 BUILD.vent = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var r = Math.hypot(dx, dy), out = 2.4 * (1 - tt / t.h * 0.6), inn = 1.1; if (r > out) return null; if (r < inn) return tt < 0.6 ? (r < 0.8 ? '#ffb43a' : '#ff5a1a') : null; return (tt * 2 | 0) % 2 ? '#3a3236' : '#2a2428'; }); };
 BUILD.skull = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var d = Math.hypot(dx / 2.3, dy / 1.8, (tt - 2.6) / 2.4); if (d > 1) return null;
   if (dy > 0.9 && tt > 2.4 && tt < 3.6 && Math.abs(Math.abs(dx) - 0.9) < 0.45) return '#ff6a1a'; if (dy > 1 && tt < 1.5 && (dx * 3 | 0) % 2) return '#2a2428'; return '#d8d0c4'; }); };
+// ---- Pirate Cove's stops on the walk, the same things the holes stand among (land.js): the town's shacks, the jungle's waterfall and the
+// old fort's wall, Skull Rock's sea stacks, and the captain's treasure camp
+var SHACK_ROOF = ['#a8442e', '#2f6f8f', '#7a8a3a', '#8a5a9a'];
+BUILD.shack = function(B, t, i){ var rf = SHACK_ROOF[i % 4]; gable(B, t.x, t.y, t.w - 1, t.d - 1, 5.6, 3.2, function(dx, dy, tt){ return (Math.floor((dx + 20) * 1.4) % 2) ? '#b08a5a' : '#9a7648'; },
+  function(dx, dy, tt){ return (tt * 2.6 | 0) % 2 ? rf : '#6a2a1e'; }, '#3a2412'); };
+BUILD.falls = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){
+  if (dy > 0.8){ var pd = Math.hypot(dx / 2.8, (dy - 2.1) / 1.2); if (pd < 1 && tt < 0.3) return pd > 0.86 ? '#6e6a5a' : (hash(Math.floor(dx * 4), Math.floor(dy * 4), i) < 0.12 ? '#8fdce0' : '#2f8f9a'); if (dy > 1) return null; }
+  var top = t.h * (0.75 + (vn(dx * 0.5, 2, i) - 0.5) * 0.4), d = Math.hypot(dx / (t.w / 2), (dy + 1.2) / (t.d / 2 * 0.75)) + (vn(dx * 0.9, tt * 0.9, i + 3) - 0.5) * 0.22; if (d > 1 || tt > top) return null;
+  if (Math.abs(dx) < 1 && d > 0.78) return hash(Math.floor(dx * 5), Math.floor(tt * 3 - dx * 2), i + 5) < 0.4 ? '#ffffff' : '#bfe8f4';   // the falling water down the face
+  if (tt > top - 0.5) return '#4f7a2e'; return (Math.floor(tt * 1.3) % 2) ? '#6e6a5a' : '#7e7a68'; }); };
+BUILD.fortwall = function(B, t, i){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){
+  if (dy > 0.4 && Math.abs(dx - 1.6) < 1.2 && tt < 1.2){ var cx = dx - 1.6; if (Math.abs(cx) < 0.9 && Math.hypot(dy - 0.9, tt - 0.75) < 0.26) return '#45454c'; if (Math.abs(Math.abs(cx) - 0.55) < 0.12 && Math.hypot(dy - 0.9, tt - 0.4) < 0.42) return '#5a3818'; return null; }   // the cannon
+  if (Math.abs(dy) > 0.5) return null; var top = 2.8 + Math.sin(dx * 1.3) * 0.4 + (hash(Math.floor(dx * 1.5) + 9, 3, i) - 0.5) * 1 + (((dx + 9) * 1.2 | 0) % 2 ? 0.5 : 0); if (tt > top) return null;
+  var row = Math.floor(tt * 2), col = Math.floor(dx * 1.2 + (row % 2) * 0.5); if ((tt * 2) % 1 < 0.12) return '#6a6658'; if (tt > top - 0.35 && hash(col, row, i) < 0.6) return '#4f7a2e';
+  return hash(col, row, i + 1) < 0.3 ? '#8e8a78' : '#a29e8a'; }); };
+BUILD.stacks = function(B, t, i){ var P2 = [[-1.6, -0.6, 6.4, 1.2], [1.4, 0.4, 4.6, 1], [2.6, -1, 3.2, 0.7]];
+  box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ for (var s = 0; s < 3; s++){ var q = P2[s], rr = q[3] * (1 - tt / (q[2] + 1.6) * 0.4) + (vn(dx * 2, tt * 2, i + s) - 0.5) * 0.2;
+    if (Math.hypot(dx - q[0], dy - q[1]) < rr && tt < q[2]) return tt > q[2] - 0.25 ? '#4f7a2e' : tt < 0.35 ? '#eef8f8' : (Math.floor(tt * 1.8) % 2 ? '#7a766c' : '#8e8a80'); } return null; }); };
+BUILD.camp = function(B, t, i){ var q = t.w / 6; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ dx /= q; dy /= q; tt /= q; var r = Math.hypot(dx, dy);
+  if (r < 0.9 && tt < 0.3 && r > 0.6) return '#6e665e'; if (r < 0.62 && tt < 1.4 && r < 0.55 * (1 - tt / 1.4)) return tt < 0.15 ? '#3a2412' : tt < 0.5 ? '#ffd23a' : tt < 0.9 ? '#ff8a1a' : '#e5483a';   // the fire
+  for (var c = -1; c <= 1; c += 2){ var cx = dx - c * 1.9, cy = dy + 0.6; if (Math.abs(cx) < 0.8 && Math.abs(cy) < 0.55 && tt < 1.25){ if (tt > 1.05) return '#ffd23a'; if (Math.abs(tt - 0.7) < 0.06 || Math.abs(Math.abs(cx) - 0.5) < 0.07) return '#c9a227'; return tt > 0.7 ? '#7a4a24' : '#8f5a2c'; } }   // two chests of gold
+  var fx = dx + 2.2, fy = dy - 1.4; if (Math.hypot(fx, fy) < 0.09 && tt < 5.8) return '#4a2c16';
+  if (Math.abs(fy) < 0.06 && fx > 0.05 && fx < 2 && tt > 4.4 && tt < 5.7){ var u = fx - 1, v = tt - 5.05; return (u * u + v * v < 0.1 || (Math.abs(Math.abs(u) - Math.abs(v)) < 0.07 && Math.abs(u) < 0.4 && v < -0.1)) ? '#f4efe2' : '#151218'; }   // the black flag
+  return null; }, 0.125); };
 // Skull Rock's own skull: grey stone, dark sockets, a row of teeth, grass on the crown
-BUILD.skullrock = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var d = Math.hypot(dx / 2.3, dy / 1.8, (tt - 2.6) / 2.4); if (d > 1) return null;
+BUILD.skullrock = function(B, t){ var q = t.w / 5; box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ dx /= q; dy /= q; tt /= q; var d = Math.hypot(dx / 2.3, dy / 1.8, (tt - 2.6) / 2.4); if (d > 1) return null;
   if (dy > 0.9 && tt > 2.4 && tt < 3.6 && Math.abs(Math.abs(dx) - 0.9) < 0.45) return '#1a1612'; if (dy > 1 && tt > 1 && tt < 1.6 && Math.abs(dx) < 1.2) return ((dx * 3.4 | 0) % 2) ? '#d8d0bc' : '#5a5650';
   if (tt > 4.4) return '#4f7a2e'; return ((tt * 2 | 0) + (dx * 1.5 | 0)) % 3 ? '#8e8a80' : '#a29e92'; }); };
 BUILD.igloo = function(B, t){ box(B, t.x, t.y, t.w, t.d, t.h, function(dx, dy, tt){ var d = Math.hypot(dx / 3.3, dy / 3.3, tt / 4.6); if (dy > 2.2 && Math.abs(dx) < 1.1 && tt < 2.6) return tt < 2 && Math.abs(dx) < 0.7 ? null : '#e8f2fb';

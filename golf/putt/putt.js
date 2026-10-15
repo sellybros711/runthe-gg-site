@@ -4261,6 +4261,7 @@ RTT_PUTT.open = open; RTT_PUTT.close = close; RTT_PUTT.paintCourse = paintCourse
 RTT_PUTT._state = function(){ return S; };
 RTT_PUTT._walkTo = function(n, tid){ return walkTo(n, tid || 'main'); };
 RTT_PUTT._trail = function(){ return S && S.trailCtl; };
+RTT_PUTT._trailPic = function(){ var k = S && S.trailTo ? trailKey(trailSpec(S.trailTo.tid, S.trailTo.to - 1)) : null; return k ? TRC[k] : null; };
 RTT_PUTT._trailPlan = function(from, tid){ return trailPlan(trailSpec(tid || 'main', from)); };
 RTT_PUTT._secretFrom = secretFrom;
 RTT_PUTT._holeTips = function(n, tid){ var L = tourOf(tid || 'main').levels[n - 1]; return holeTips(n, tid || 'main', L ? threeOf(L) : null); };
