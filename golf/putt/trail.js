@@ -1504,6 +1504,8 @@ function run(box, P, pic, api){
   var goalS = P.cum[P.cum.length - 1];
 
   // a line said once what was just found has flown up to the top of the screen, so the bubble never sits on top of it
+  // the local's second thing to say: after the first has been read, and never over something else being said
+  function npcLater(txt, wait, who){ setTimeout(function(){ if (alive && (!bubble || bubble.who === who || performance.now() > bubble.until)) say(txt, 5200, who); }, wait * 1000); }
   function sayLater(txt, ms, wait, who){ setTimeout(function(){ if (alive) say(txt, ms, who); }, (reduce ? 0.1 : wait) * 1000); }
   function say(txt, ms, who){ bubble = { txt:txt, until:performance.now() + (ms || 3200), who:who || null }; bubEl.textContent = txt; bubEl.hidden = false; }
   function burst(x, y, z, cols, n, sz, pow){ pow = pow || 1; for (var i = 0; i < n; i++){ var a = Math.random() * 6.28, sp2 = (2 + Math.random() * 4) * pow; parts.push({ x:x, y:y, z:z, vx:Math.cos(a) * sp2, vy:Math.sin(a) * sp2 * 0.6, vz:(3 + Math.random() * 4) * pow, c:cols[i % cols.length], t:0, sz:sz ? sz * (0.6 + Math.random() * 0.8) : 0 }); } }
@@ -1656,8 +1658,10 @@ function run(box, P, pic, api){
         // what he knows about this trail is said on its own, and then what he knows about the hole
         if (P.secret) word = (api.secretSeen && api.secretSeen(P.secret.i) ? SECRET_DONE : SECRET_SAY[P.spec.theme] || SECRET_SAY.any);
         else if (gold) word = sayPick(GOLD_SAY, P.seed);
-        ls = ls.concat(api.lines ? api.lines() : []); if (PZ && !PZ.solved) ls = ls.concat([P.puzzle.clue]); var lms = PZ && !PZ.solved ? 8200 : 5200;
-        if (word){ say(word, 3600, npc); if (ls.length) sayLater(ls.join(' '), lms, 3.7, npc); } else if (ls.length) say(ls.join(' '), lms, npc); } else if (dn > 5) nearNpc = false; }
+        ls = ls.concat(api.lines ? api.lines() : []);
+        // an unsolved puzzle's clue is what you need right now, so it comes first and the rest after
+        if (PZ && !PZ.solved){ say(P.puzzle.clue, 8200, npc); var rest = (word ? [word] : []).concat(ls); if (rest.length) npcLater(rest.join(' '), 8.4, npc); }
+        else if (word){ say(word, 3600, npc); if (ls.length) npcLater(ls.join(' '), 3.7, npc); } else if (ls.length) say(ls.join(' '), 5200, npc); } else if (dn > 5) nearNpc = false; }
     if (P.fence && !lockOpen){ var df = Math.hypot(g.x - P.lockGate.x, g.y - P.lockGate.y); if (df < 2.4 && (!bubble || now > bubble.until)) say('Locked. The key is somewhere on this trail.', 2200); }
     // the door between worlds
     if (gate && !gate.asked && Math.abs(g.y - P.gate.y) < 3.2 && Math.abs(g.x - P.gate.x) < PW + 3){ gate.asked = true; paused = true; g.vx = g.vy = 0;
