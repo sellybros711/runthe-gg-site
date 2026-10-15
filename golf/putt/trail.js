@@ -157,6 +157,9 @@ KIT['pirate~jungle'] = kitFrom(KIT.pirate, { g:['#3f6a2a', '#4e7a32', '#2f5a22',
   leaves:['#1f5a26', '#2b6e30', '#174a20'], bark:'#4a3624', low:['fern', 'bush', 'fern', 'rock'], haz:'water', hazC:['#2f8f9a', '#6fc8d0'], waterC:['#2f8f9a', '#6fc8d0'], gpat:'floor', nlm:4, lm:['falls', 'fortwall', 'falls', 'statue'], dens:1.35, wall:['#a29e8a', '#6a6658'] });
 KIT['pirate~skull'] = kitFrom(KIT.pirate, { g:['#8a867c', '#9a968a', '#7a766c', 0.25], p:['#d8c08a', '#e6d09c', '#c4aa74'], plank:false, dens:0.35, gpat:'stone', nlm:4, low:['rock', 'rock', 'shell'], lm:['skullrock', 'stacks', 'wreck', 'stacks'], wall:['#8e8a80', '#5a5650'] });
 KIT['pirate~cove'] = kitFrom(KIT.pirate, { g:['#efd89a', '#f6e4b2', '#dcc384', 0.25], dens:1.25, seaC:['#2ab4c8', '#7adce8'], nlm:3, lm:['camp', 'wreck', 'camp', 'barrels'] });
+/* a stop's own ground on the walk: GPAT[name](c, kit) gives the colour of a cell (c.ti, c.tj, an eighth of a foot each).
+   Smooth patches (vn) read well on a walk; a hashed cell is a speckle. */
+var GPAT = {};
 var LIFE_AS = { 'pirate~jungle':{ fly:['parrot', 5], mote:[['firefly', 14], ['butter', 6]] } };
 function kitOf(th){ return KIT[th] || KIT.clubhouse; }
 
@@ -760,6 +763,7 @@ function mats(P){
       col = (qj % 3 === 0 || (qi + of) % 4 === 0) ? '#7e7262' : (function(n){ return n < 0.3 ? '#b8a890' : n < 0.62 ? '#ac9e88' : '#9e907a'; })(hash(Math.floor((qi + of) / 4), rw, 4)); }
     else if (kk.gpat === 'stone'){ var sa = vn(c.ti * 0.11, c.tj * 0.11, 3), sb = vn(c.ti * 0.045, c.tj * 0.045, 4); col = sb > 0.68 ? '#5f7a3a' : sa < 0.3 ? '#6e6a62' : sa > 0.68 ? '#a29e92' : '#8a867c'; }
     else if (kk.gpat === 'floor'){ var fa = vn(c.ti * 0.055, c.tj * 0.055, 7), fb = vn(c.ti * 0.15, c.tj * 0.15, 8); col = fa > 0.66 ? '#5e5030' : fa > 0.58 ? '#4e5a2c' : fb > 0.6 ? '#48742e' : fb < 0.3 ? '#365e26' : '#3f6a2a'; }
+    else if (kk.gpat && GPAT[kk.gpat]) col = GPAT[kk.gpat](c, kk);   // a world's own ground pattern (its stops file)
     else if (n2 < 0.012) col = kk.snow ? '#ffffff' : g[1];
     else if (kk.mow) col = (Math.floor(c.tj / 14) % 2) ? (n2 < 0.3 ? g[1] : g[0]) : (n2 < 0.3 ? g[0] : g[2]);
     else col = n1 < g[3] ? (n2 < 0.5 ? g[1] : g[2]) : g[0];
