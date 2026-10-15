@@ -758,7 +758,8 @@ function mats(P){
   var FL = ['#f7e36b', '#ffffff', '#f48fb1', '#b39ddb'];
   function gfn(kk){ return function(c, R, h3){ var n1 = h3(c.ti >> 1, c.tj >> 1, 11), n2 = h3(c.ti, c.tj, 12), g = kk.g, col;
     if (kk.grid && ((c.ti % 32) === 0 || (c.tj % 24) === 0)) col = '#3a2a8a';
-    else if (c.fl && !kk.grid && h3(c.ti >> 1, c.tj >> 1, 21) < c.fl){ var fq = h3(c.ti >> 1, c.tj >> 1, 22); col = kk.snow ? '#ffffff' : ((c.ti & 1) + (c.tj & 1) === 1 || fq < 0.3) ? FL[(fq * 4 * FL.length | 0) % FL.length] : shd(g[0], 0.2); }   // a bed of flowers, each a petal or two on a dark stem
+    // no flower beds on a stop's own ground (cobbles, tiles, desert): they read as flecks on it
+    else if (c.fl && !kk.grid && !kk.gpat && h3(c.ti >> 1, c.tj >> 1, 21) < c.fl){ var fq = h3(c.ti >> 1, c.tj >> 1, 22); col = kk.snow ? '#ffffff' : ((c.ti & 1) + (c.tj & 1) === 1 || fq < 0.3) ? FL[(fq * 4 * FL.length | 0) % FL.length] : shd(g[0], 0.2); }   // a bed of flowers, each a petal or two on a dark stem
     else if (kk.gpat === 'cobble'){ var qi = c.ti >> 1, qj = c.tj >> 1, rw = Math.floor(qj / 3), of = rw % 2 ? 2 : 0;   // cobbles a foot by three quarters, as in the town's holes
       col = (qj % 3 === 0 || (qi + of) % 4 === 0) ? '#7e7262' : (function(n){ return n < 0.3 ? '#b8a890' : n < 0.62 ? '#ac9e88' : '#9e907a'; })(hash(Math.floor((qi + of) / 4), rw, 4)); }
     else if (kk.gpat === 'stone'){ var sa = vn(c.ti * 0.11, c.tj * 0.11, 3), sb = vn(c.ti * 0.045, c.tj * 0.045, 4); col = sb > 0.68 ? '#5f7a3a' : sa < 0.3 ? '#6e6a62' : sa > 0.68 ? '#a29e92' : '#8a867c'; }
