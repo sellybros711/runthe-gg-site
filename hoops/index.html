@@ -11699,10 +11699,21 @@ function cloudReady(){
 
 /* Queued per slot by the transport, so a draft signing five men in a minute
    sends the state as it stands when the wire is free rather than five writes
-   racing each other to one row. */
+   racing each other to one row.
+
+   A WRITE GOES OUT AS THE ACCOUNT THAT QUEUED IT OR NOT AT ALL. The transport
+   builds a queued write when the wire frees and sends it with whatever token is
+   signed in then, so on a slow connection a career queued by one reader could
+   land on the shelf of whoever signed in after them. The write remembers who
+   queued it and is dropped if that has changed (check-cloudsave 9b). */
 function cloudPush(slot, build){
   if (!cloudReady()) return null;
-  try { return SV.queue(CL.GAME, slot, build); } catch (e) { return null; }
+  var who = (A.state && A.state().userId) || null;
+  var guarded = function(){
+    if (((A.state && A.state().userId) || null) !== who) return null;
+    return build();
+  };
+  try { return SV.queue(CL.GAME, slot, guarded); } catch (e) { return null; }
 }
 
 function cloudPushRun(){
