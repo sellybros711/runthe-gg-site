@@ -40,6 +40,14 @@ function* steps(C, opt){
   var T = C.T, F = C.field, elev = opt.elev || 42;
   var D2R = Math.PI / 180, se = Math.sin(elev * D2R), ce = Math.cos(elev * D2R);
   var SC = opt.scene || null;   // a scene with no course in it (a trail, or one prop): its own bounds and land
+  /* FINE (opt.fine): a picture painted on a finer grid (opt.art, a twelfth of a foot) so a hole reads as clearly as the
+     golfer does. The textures keep their size in the world, not in pixels: the land's cells (ti, tj) stay a quarter foot,
+     and the carpet's tufts and the water's glints are worked out on that cell (TR pixels across) with a glint one pixel
+     wide inside it. The ground is laid one point a pixel (its rows still overlap at this camera), and no solid is
+     sampled coarser than its pixels. Without opt.fine every one of these is exactly what it was. */
+  var FINE = !!opt.fine, TCELL = FINE ? 0.25 : ART, TR = Math.max(1, Math.round(TCELL / ART));
+  // a twelfth of a foot is not exact in floating point, so a point laid on column i can land a hair under it and leave a gap
+  var EPS = FINE ? 1e-6 : 0;
   var AP = C.allPts || C.poly, pxs = AP.map(function(p){ return p[0]; }), pys = AP.map(function(p){ return p[1]; });
   var TZ = C.tierAt || function(){ return 0; };
   var b = [Math.min.apply(null, pxs) - 11, Math.min.apply(null, pys) - 15, Math.max.apply(null, pxs) + 11, Math.max.apply(null, pys) + 5];
@@ -62,7 +70,7 @@ function* steps(C, opt){
   // the ground's own splat: the same cell splat() makes with { ti, tj, dt, nl } and the land's extras laid over it,
   // built only once the pixel is known to be in front, so a hidden one costs no object
   function splatG(x, y, z, m, n, ti, tj, dt, nl, ge){
-    var sx = Math.floor((x - b[0]) / ART), sy = Math.floor(y * se / ART - z * ce / ART + oy), Dp = y * ce + z * se;
+    var sx = Math.floor((x - b[0]) / ART + EPS), sy = Math.floor(y * se / ART - z * ce / ART + oy), Dp = y * ce + z * se;
     if (sx < 0 || sy < 0 || sx >= W || sy >= Hh) return;
     if (FX){ var hi = Math.round((x - b[0]) / HMS), hj = Math.round((y - b[1]) / HMS); if (hi >= 0 && hj >= 0 && hi < HX && hj < HY && z > HM[hj * HX + hi]) HM[hj * HX + hi] = z; }
     var k = sy * W + sx; if (Dp <= Z[k]) return; Z[k] = Dp; if (FX) WZ[k] = z;
@@ -71,7 +79,7 @@ function* steps(C, opt){
     S.g[sy][sx] = c;
   }
   function splat(x, y, z, m, n, extra){
-    var sx = Math.floor((x - b[0]) / ART), sy = Math.floor(y * se / ART - z * ce / ART + oy), Dp = y * ce + z * se;
+    var sx = Math.floor((x - b[0]) / ART + EPS), sy = Math.floor(y * se / ART - z * ce / ART + oy), Dp = y * ce + z * se;
     if (sx < 0 || sy < 0 || sx >= W || sy >= Hh) return;
     if (FX){ var hi = Math.round((x - b[0]) / HMS), hj = Math.round((y - b[1]) / HMS); if (hi >= 0 && hj >= 0 && hi < HX && hj < HY && z > HM[hj * HX + hi]) HM[hj * HX + hi] = z; }
     var k = sy * W + sx; if (Dp <= Z[k]) return; Z[k] = Dp; if (FX) WZ[k] = z;
@@ -81,7 +89,7 @@ function* steps(C, opt){
   }
 
   // ---- the distance to the rail, worked out once on the ground grid rather than at every question
-  var st = SC ? ART : ART / 2, GX = Math.round((b[2] - b[0]) / st) + 1, GY = Math.round((b[3] - b[1]) / st) + 1, GY0 = GY;
+  var st = SC || FINE ? ART : ART / 2, GX = Math.round((b[2] - b[0]) / st) + 1, GY = Math.round((b[3] - b[1]) / st) + 1, GY0 = GY;
   var SD = new Float32Array(GX * GY), Q = C.poly;
   // the signed distance to the course's outline: the union of its rooms, so a mouth between two is open
   var PS = C.polys || [Q], ED = C.edges;
@@ -131,7 +139,7 @@ function* steps(C, opt){
     var zx = (gzI(i + 1, j) - gzI(i - 1, j)) / (2 * st), zy = (gzI(i, j + 1) - gzI(i, j - 1)) / (2 * st);
     var terr = typeof mm === 'string' && mm.charAt(0) === 't';
     var flat = (mm === 'rail' || mm === 'ground') ? 0 : 1, gn = terr ? (LD.gain || 1) : 1, n = camN(-zx * flat * gn, -zy * flat * gn, 1);
-    var ti = Math.floor((x - b[0]) / ART), tj = Math.floor((y - b[1]) / ART);
+    var ti = Math.floor((x - b[0]) / TCELL), tj = Math.floor((y - b[1]) / TCELL);
     var key = terr ? mm : mm === 'rail' ? 'rail' : mm === 'ground' ? 'ground' : mm === M.WATER ? 'haz' : mm === M.ICE ? 'ice' : mm === M.MUD ? 'slow' : mm === M.SAND ? 'sand' : mm === M.BELT ? 'belt' : mm === M.FLOW ? 'flow' : 'carpet';
     splatG(x, y, z, key, n, ti, tj, key === 'ground' ? -1 : 0, terr, GE[kk]);
     if (z > zs + 0.12){ var ex3 = { ti:ti, tj:tj, nl:terr, dt:-1 }; if (GE[kk]) for (qq in GE[kk]) ex3[qq] = GE[kk][qq];
@@ -163,14 +171,14 @@ function* steps(C, opt){
   function solid(){ var a = arguments; JOBS.push(function(){ solidNow.apply(null, a); }); }
   function vox(){ var a = arguments; JOBS.push(function(){ voxNow.apply(null, a); }); }
   function solidNow(x0, y0, z0, x1, y1, z1, fn, sv){
-    sv = sv || ART / 2;
+    sv = sv || ART / 2; if (FINE && sv > ART * 0.7) sv = ART * 0.7;
     var nx = Math.ceil((x1 - x0) / sv) + 1, ny = Math.ceil((y1 - y0) / sv) + 1, nz = Math.ceil((z1 - z0) / sv) + 1, A = new Array(nx * ny * nz);
     for (var k = 0; k < nz; k++) for (var j = 0; j < ny; j++) for (var i = 0; i < nx; i++) A[(k * ny + j) * nx + i] = fn(x0 + i * sv, y0 + j * sv, z0 + k * sv);
     emit(A, nx, ny, nz, x0, y0, z0, sv);
   }
   // vox(box, draw): draw(set) writes voxels itself, so a tree is the cost of its branches rather than its box.
   function voxNow(x0, y0, z0, x1, y1, z1, draw, sv){
-    sv = sv || ART / 2;
+    sv = sv || ART / 2; if (FINE && sv > ART * 0.7) sv = ART * 0.7;
     var nx = Math.ceil((x1 - x0) / sv) + 1, ny = Math.ceil((y1 - y0) / sv) + 1, nz = Math.ceil((z1 - z0) / sv) + 1, A = new Array(nx * ny * nz);
     var set = function(x, y, z, c){ var i = Math.round((x - x0) / sv), j = Math.round((y - y0) / sv), k = Math.round((z - z0) / sv);
       if (i < 0 || j < 0 || k < 0 || i >= nx || j >= ny || k >= nz) return; A[(k * ny + j) * nx + i] = c; };
@@ -372,7 +380,7 @@ function* steps(C, opt){
         r = r * sr * ao; g = g * sg * ao; bl = bl * sb * ao;
         // THE CARPET HAS A NAP: it is laid in broad strips that catch the light a little differently, with a tuft here
         // and there, so it reads as a surface under the sun and not as a flat fill
-        if (cm === 'carpet'){ var nap = ((Math.floor(wy / 2.4) & 1) ? 0.965 : 1.03) * (hq(px, py, 41) < 0.09 ? 0.93 : 1); r *= nap; g *= nap; bl *= nap; }
+        if (cm === 'carpet'){ var nap = ((Math.floor(wy / 2.4) & 1) ? 0.965 : 1.03) * (hq((px / TR) | 0, (py / TR) | 0, 41) < 0.09 ? 0.93 : 1); r *= nap; g *= nap; bl *= nap; }
         // the sun's wash across the scene
         var wsh = Math.max(-1, Math.min(1, ((wx - mx0) * lx + (wy - my0) * ly) / span)) * (night ? 0.03 : 0.07) + 1; r *= wsh; g *= wsh; bl *= wsh;
         // A LIT RIM ALONG WHAT STANDS UP. Where something stands in front of what is behind it (the scene two
@@ -386,7 +394,7 @@ function* steps(C, opt){
         // WATER AND ICE TAKE THE SKY: a sheen of it, stronger toward the far bank where the angle is low, and a few
         // glints where the sun catches a ripple
         if (cm === 'haz' || cm === 'flow' || cm === 'ice' || cm === 't:water' || cm === 't:ice' || cm === 't:sea' || cm === 't:sea0'){ var fr = 0.1 + 0.16 * (1 - py / HH2); r += (hr - r) * fr; g += (hg - g) * fr; bl += (hb - bl) * fr;
-          if (sh < 0.3 && hq(px >> 1, py, 31) < (cm === 'ice' || cm === 't:ice' ? 0.02 : 0.03) && (px & 1)){ r = 250; g = 250; bl = 255; } }
+          if (sh < 0.3 && hq(((px / TR) | 0) >> 1, (py / TR) | 0, 31) < (cm === 'ice' || cm === 't:ice' ? 0.02 : 0.03) && (((px / TR) | 0) & 1) && px % TR === 0 && py % TR === 0){ r = 250; g = 250; bl = 255; } }
         // haze over the far land (the top of the picture) and nothing on the course
         var far = Math.max(0, Math.min(1, (0.42 - py / HH2) / 0.42)), hzA = far * far * 0.26 * (clearAt(wx, wy) > 0.5 ? 1 : 0.35);
         r += (hr - r) * hzA; g += (hg - g) * hzA; bl += (hb - bl) * hzA;

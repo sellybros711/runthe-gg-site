@@ -3580,12 +3580,17 @@ function v3Asp(){ var r = S.stage && S.stage.getBoundingClientRect(); return r &
    haze over the far land, a grade, and a vignette over the stage. window.RTT_PUTT_FX = 'off' takes it off
    everywhere, so the two can still be compared on one screen. */
 function fxOn(d){ return window.RTT_PUTT_FX !== 'off'; }
-function v3Key(d){ return [d.tpl, d.seed, d.theme, d.extra || 0, v3Asp(), fxOn(d) ? 'fx' : ''].join('|'); }
+/* THE FINE PICTURE: a world in FINE_WORLDS is painted three times finer, so it reads as clearly as the golfer.
+   Pirate Cove is the pilot (the owner, 2026-10-15); the rest follow once it is approved. */
+var FINE_WORLDS = { pirate:1 }, FINE_ART = 1 / 12;
+function fineOn(d){ return !!FINE_WORLDS[d.theme] && window.RTT_PUTT_FINE !== 'off'; }
+function v3Opt(d){ var o = { aspect:v3Asp(), fx:fxOn(d) }; if (fineOn(d)){ o.fine = true; o.art = FINE_ART; } return o; }
+function v3Key(d){ return [d.tpl, d.seed, d.theme, d.extra || 0, v3Asp(), fxOn(d) ? 'fx' : '', fineOn(d) ? 'fine' : ''].join('|'); }
 function v3Get(d, C){
   if (d.real || !v3Ok()) return null; S.v3c = S.v3c || {}; var k = v3Key(d);
   // the hole being asked for is half rendered already: finish that rather than start again
   if (S.v3job && S.v3job.k === k){ var J = S.v3job, o = null; S.v3job = null; try{ while (!(o = J.step(1e9))); S.v3c[k] = o; }catch(e){ S.v3c[k] = null; } }
-  if (S.v3c[k] === undefined){ try{ S.v3c[k] = window.RTT_PUTT_3D.render(C || buildFrom(d), { aspect:v3Asp(), fx:fxOn(d) }); }catch(e){ try{ console.warn('putt 3D hole failed, drawing it flat', e); }catch(_){} S.v3c[k] = null; }
+  if (S.v3c[k] === undefined){ try{ S.v3c[k] = window.RTT_PUTT_3D.render(C || buildFrom(d), v3Opt(d)); }catch(e){ try{ console.warn('putt 3D hole failed, drawing it flat', e); }catch(_){} S.v3c[k] = null; }
     var ks = Object.keys(S.v3c); if (ks.length > 4) delete S.v3c[ks[0]]; }
   return S.v3c[k];
 }
@@ -3594,7 +3599,7 @@ function v3Get(d, C){
 // for over a second in the middle of somebody's putt.
 function v3Ahead(){
   var R = S.round; if (!R || !v3Ok()) return; var nd = R.holes[R.i + 1]; if (!nd || nd.real || (S.v3c && S.v3c[v3Key(nd)] !== undefined)) return;
-  try{ S.v3job = { k:v3Key(nd), step:window.RTT_PUTT_3D.slices(buildFrom(nd), { aspect:v3Asp(), fx:fxOn(nd) }) }; }catch(e){ S.v3job = null; }
+  try{ S.v3job = { k:v3Key(nd), step:window.RTT_PUTT_3D.slices(buildFrom(nd), v3Opt(nd)) }; }catch(e){ S.v3job = null; }
 }
 function v3Tick(){
   var J = S.v3job; if (!J) return;
@@ -3674,7 +3679,12 @@ function camFor(P){
     var V = P.v3, xs = C.allPts.map(function(p){ return p[0]; }), ys = C.allPts.map(function(p){ return p[1]; });
     var x0 = Math.min.apply(null, xs) - 6.5, x1 = Math.max.apply(null, xs) + 6.5, y0 = Math.min.apply(null, ys) - 5, y1 = Math.max.apply(null, ys) + 3, zc = 0.35;   // room for the land round it, which is half the point
     var a0 = V.pr(x0, y0, zc + 1.2), a1 = V.pr(x1, y1, zc);
-    var fitK = Math.max(1, Math.floor(Math.min(W / (a1[0] - a0[0]), H / (a1[1] - a0[1])))), widK = Math.max(1, Math.floor(W / (a1[0] - a0[0])));
+    var fitX = Math.min(W / (a1[0] - a0[0]), H / (a1[1] - a0[1])), widX = W / (a1[0] - a0[0]);
+    /* a fine picture's pixels are a third the size, so a whole step of zoom is three times the jump: rounding down
+       left a band of stage round the land. It rounds to the nearest step instead, as long as that crops no more
+       than the margin of land the fit already allows (6.5 ft a side), never the course. */
+    var rnd = function(v){ return V.ART < 0.2 && Math.round(v) <= v * 1.12 ? Math.round(v) : Math.floor(v); };
+    var fitK = Math.max(1, rnd(fitX)), widK = Math.max(1, rnd(widX));
     /* A HOLE TALLER THAN THE SCREEN IS FOLLOWED. It opens on the whole hole for a moment, so the route is
        read, then the camera comes in to fill the width and rides with the ball. Overview puts it back.
        ONLY ON A PORTRAIT SCREEN. On a landscape one (a desktop) the whole hole already fits at a size that
@@ -3685,7 +3695,7 @@ function camFor(P){
     var cxA = (a0[0] + a1[0]) / 2, cyA = (a0[1] + a1[1]) / 2, ox = Math.round(W / 2 - cxA * kk), oy = Math.round(H / 2 - cyA * kk), iw = V.cv.width * kk, ih = V.cv.height * kk;
     if (follow && P.view){ var vp = V.pr(P.view[0], P.view[1], V.zAt(P.view[0], P.view[1]) + (P.view[2] || 0)); ox = Math.round(W / 2 - vp[0] * kk); oy = Math.round(H * 0.58 - vp[1] * kk); }
     ox = iw >= W ? clamp(ox, W - iw, 0) : Math.round((W - iw) / 2); oy = ih >= H ? clamp(oy, H - ih, 0) : Math.round((H - ih) / 2);
-    return { v3:V, k:kk, ox:ox, oy:oy, s:kk / ART, follow:follow, canFollow:canFollow };
+    return { v3:V, k:kk, ox:ox, oy:oy, s:kk / (V.ART || ART), follow:follow, canFollow:canFollow };
   }
   if (C.kind !== 'real'){
     var s = Math.min(W / (b[2] - b[0] - 4), H / (b[3] - b[1] - 4));
