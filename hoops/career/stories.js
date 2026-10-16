@@ -775,10 +775,12 @@ story({
     tag: 'Your phone', t: 'The Olympic roster is out.', x: (L) => recall(L, 'intl.flag') ? 'You played for your country every summer. The federation names you captain.' : 'You skipped a national team window once. The federation left you off the roster.',
     o: [O('Make the call home', { morale: 5 }, '', { sub: 'Say something', do: (L) => { if (recall(L, 'intl.flag')) { bump(L, { fame: 4 }); return 'Your mom cries on the phone. The whole country is watching in August.'; } bump(L, { morale: -6 }); return 'You call the federation president. He doesn\'t pick up.'; } }),
       O('Post about it', { fame: 2 }, '', { sub: 'Go public', do: (L) => recall(L, 'intl.flag') ? 'A photo in the national jersey. Your most liked post ever.' : 'A long post about loyalty. It starts a week of arguments back home.' })] },
-  pay_cc_dm: { at: 'off', req: { seasons: [3, null] }, when: (L) => !!(recall(L, 'cc.help') || recall(L, 'arc.cc.growth')), w: 5, cb: 'cc.help',
-    tag: 'Your phone', t: 'A rookie DMs you at 2 a.m.', x: 'He can\'t sleep. He saw you talk about getting help once. He asks if it really works.',
-    o: [O('Call him right now', { morale: 6, trust: 4 }, 'An hour on the phone. He books his first session in the morning.', { sub: 'Pay it forward', set: 'pay.cc.called' }),
-      O('Send him your counselor\'s number', { morale: 3 }, 'He sends back a thumbs up. A month later, a longer message.', { sub: 'Point him the right way' })] },
+  /* The rookie who writes at 2 a.m. writes to the vet who asked for help
+     himself, or who once took a rookie under his wing. */
+  pay_cc_dm: { at: 'off', req: { seasons: [3, null] }, when: (L) => !!(recall(L, 'cc.help') || recall(L, 'arc.cc.growth') || recall(L, 'mentored.rookie') || recall(L, 'arc.mentor2.mentor') || recall(L, 'arc.mentor2.both')), w: 5, cb: 'cc.help',
+    tag: 'Your phone', t: 'A rookie DMs you at 2 a.m.', x: (L) => recall(L, 'cc.help') || recall(L, 'arc.cc.growth') ? 'He can\'t sleep. He saw you talk about getting help once. He asks if it really works.' : 'He can\'t sleep. He says you\'re the only vet who ever asked how he was doing.',
+    o: [O('Call him right now', { morale: 6, trust: 4 }, 'An hour on the phone. By the end he\'s laughing.', { sub: 'Pay it forward', set: 'pay.cc.called' }),
+      O('Send him a counselor\'s number', { morale: 3 }, 'He sends back a thumbs up. A month later, a longer message.', { sub: 'Point him the right way' })] },
   pay_captain_home: { at: 'off', req: { seasons: [4, null] }, when: (L) => !!(recall(L, 'col.captain') || recall(L, 'col.senior')), w: 3, rar: 'uncommon',
     tag: 'Your phone', t: '{school} wants to hang your jersey.', x: 'Your old coach calls. They want you back for a night in February.',
     o: [O('Fly in for it', { morale: 8, fame: 2 }, 'The students chant the old chant. Your old managers are in the front row.', { sub: 'Be there in person', set: 'pay.jersey.home' }),

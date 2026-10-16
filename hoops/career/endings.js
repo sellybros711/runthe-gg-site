@@ -64,11 +64,11 @@ function onTopCard(L) {
     id: 'ontop', kind: 'event', key: 'ontop', eyebrow: 'The summer', scene: 'Home',
     title: 'You just won ' + won + '. Walk away?', text: 'You\'re ' + L.age + '. Nobody would blame you. Nobody would forget it either.',
     ctx: { won },
-    options: [{ label: 'Walk away on top', hint: 'Leave them wanting more' }, { label: 'Keep playing', hint: 'There\'s more in the tank' }],
+    options: [{ label: 'Keep playing', hint: 'There\'s more in the tank' }, { label: 'Walk away on top', hint: 'Leave them wanting more' }],
   });
 }
 ANSWER.ontop = function(L, card, i, opt, rng, beats) {
-  if (i === 0) {
+  if (i === 1) {
     remember(L, 'end.top', card.ctx.won);
     retire(L, beats, 'Walked away on top at ' + L.age + ', fresh off ' + card.ctx.won + '.');
     return said('One press conference. No farewell tour. You leave while they still want more.', 'gold');
