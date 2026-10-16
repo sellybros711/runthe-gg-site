@@ -1,7 +1,7 @@
 /* Run The Floor: Career, one NBA life from draft night to the Hall of Fame.
  *
  * THE SOURCE IS THIS FOLDER. hoops/career.js is built from these parts, in
- * the order hoops/build/career-bundle.mjs lists, into one closure: a name in
+ * the order hoops/build/bundle.mjs lists, into one closure: a name in
  * one part is read in any other. Balance numbers are in tuning.js.
  *
  * Headless and dependency-free apart from engine.js, so every rule in here can

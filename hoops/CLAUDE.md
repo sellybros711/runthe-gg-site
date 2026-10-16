@@ -68,10 +68,13 @@ The economy has its own suite: `check-economy`, `check-wardrobe`, `check-closet`
 
 **The engine**
 
-- **Career's source is `hoops/career/`**, fifteen parts of one closure; `career.js` is built from
-  them. Edit a part, never `career.js`, then `node hoops/build/career-bundle.mjs`, bump
-  `career.js?v=` and `check-cachebust --update`. CI runs `--check`. A new part is listed in the
-  bundler in closure order. Balance numbers live in `hoops/career/tuning.js`.
+- **Two scripts are built from parts.** `hoops/career/` builds `career.js` and `hoops/page/` builds
+  `page.js` (the page's own script, inline in `index.html` until 2026-10-16). Edit a part, never a
+  built file, then `node hoops/build/bundle.mjs`, bump its `?v=` and `check-cachebust --update`.
+  CI runs `--check`. A new part is listed in `bundle.mjs` in closure order. Balance numbers live
+  in `hoops/career/tuning.js`.
+- **A check that reads the page's code reads `pageSource()`** (`hoops/build/page-source.mjs`): the
+  page with `page.js` put back inline. Reading `index.html` alone finds no function and no copy.
 
 - **A box score decomposes the scoreline. It is never a second model.** The same holds for a game
   seven and the bracket: one loop, the one that already existed.

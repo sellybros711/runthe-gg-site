@@ -26,6 +26,7 @@ const E = require(path.join(HERE, 'engine.js'));
 const R = require(path.join(HERE, 'run.js'));
 import { AWARDS } from './build/fetch-awards.mjs';
 import { scriptBlocks, stripComments, stringLiterals } from '../scripts/check-copy.mjs';
+import { pageSource } from './build/page-source.mjs';
 
 const players = JSON.parse(fs.readFileSync(path.join(HERE, 'data', 'players.json'), 'utf8'));
 const chemistry = JSON.parse(fs.readFileSync(path.join(HERE, 'data', 'chemistry.json'), 'utf8'));
@@ -162,7 +163,7 @@ for (const slot of E.SLOTS) {
      direction nobody checks: somebody lightens the door, the contrast gets
      easier, and the guard goes on asserting against a colour that is not on
      the page any more. */
-  const pageSrc = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+  const pageSrc = pageSource();
   /* The door is a tile in the More ways to play grid now (.mtile), and the
      club's accent is on its name exactly as it was on the old door's. */
   const doorRule = /\.mtile \.mt-main\{[^}]*?background:(#[0-9a-f]{3,6});/i.exec(pageSrc);
@@ -200,7 +201,7 @@ for (const slot of E.SLOTS) {
  * Read as text rather than executed, which is all this needs to answer.
  */
 {
-  const src = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+  const src = pageSource();
 
   /* POS_COL is the page's own answer to which positions get painted, and it
      maps each to the custom property that holds its colour. GF and FC share a
@@ -326,7 +327,7 @@ for (const slot of E.SLOTS) {
      copy of the labels because it is one self-contained file, so an award added
      to the fetcher and not to the page renders as a raw "smoy" on a gold plate.
      Read as text rather than executed, which is all this needs to answer. */
-  const pageSrc = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+  const pageSrc = pageSource();
   const labels = /var AWARD_LABEL = \{([\s\S]*?)\};/.exec(pageSrc);
   ok(!!labels, 'the page has an award label table');
   if (labels) {
@@ -917,7 +918,7 @@ isLineup(unnamed.length, 0, 'every real championship lineup is recognised as som
  * missing field printing "undefined" on the fit card.
  */
 {
-  const pageSrcAll = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+  const pageSrcAll = pageSource();
   /* Built from char codes, because this repo's dash checker refuses the
      characters and their escapes alike, in a checker's source too. */
   const DASHES = new RegExp('[' + String.fromCharCode(8211, 8212) + ']');
@@ -1291,7 +1292,7 @@ ok(bestWins > worstWins + 20,
      Block comments only: a line comment strip would eat the rest of any line
      holding a `https://` and could swallow a real read with it. My mention
      was a block comment and so is every long one in this repo. */
-  const src = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8')
+  const src = pageSource()
     .replace(/\/\*[\s\S]*?\*\//g, ' ');
   const read = new Set();
   for (const m of src.matchAll(/\bout\.([A-Za-z_$][\w$]*)/g)) read.add(m[1]);
@@ -1420,7 +1421,7 @@ ok(bestWins > worstWins + 20,
  * them missing a holder is two courts in one game.
  */
 {
-  const src = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+  const src = pageSource();
 
   const club = /body\.clubbed \.court\{([^}]*)\}/.exec(src);
   ok(!!club, 'a club still repaints the court');
@@ -1485,7 +1486,7 @@ ok(bestWins > worstWins + 20,
  * unused variable is the next person's invitation.
  */
 {
-  const pages = ['index.html', 'how-to-play.html'];
+  const pages = ['index.html', 'page.js', 'how-to-play.html'];
   for (const page of pages) {
     const raw = fs.readFileSync(path.join(HERE, page), 'utf8');
     /* Comments out first. This very section names the thing it forbids, and
@@ -1511,7 +1512,7 @@ ok(bestWins > worstWins + 20,
 
   /* The utility class went with the variable. `.mono` pointing at a face that
      is not a monospace is a name that lies to whoever reads the markup. */
-  const idx = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+  const idx = pageSource();
   ok(!/class="[^"]*\bmono\b/.test(idx), 'and nothing in the markup is still called mono');
 }
 
@@ -1546,7 +1547,7 @@ ok(bestWins > worstWins + 20,
  * carried a hand-written duplicate of the curve it was sweeping.
  */
 {
-  const pageSrc = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+  const pageSrc = pageSource();
 
   /* Brace-matched rather than regexed to a closing line, because two of these
      hold an object literal and a `}` at the start of a line inside one would
@@ -1888,7 +1889,7 @@ ok(bestWins > worstWins + 20,
 {
   const sql = fs.readFileSync(path.join(HERE, '..', 'supabase', '108_hoops_leaderboard.sql'), 'utf8');
   const boardSrc = fs.readFileSync(path.join(HERE, 'board.js'), 'utf8');
-  const pageSrc = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+  const pageSrc = pageSource();
 
   /* Read as `NAME constant int := 82;`, which is the one form that file uses.
      A miss answers undefined and fails the comparison below rather than
