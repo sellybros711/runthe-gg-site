@@ -32,6 +32,22 @@
   const cam=p=>[p[0],-p[1]*ce+p[2]*se,p[1]*se+p[2]*ce], camv=cam;
   const ellipsoid=(c,ax,r,mat,o)=>({k:'e',c:cam(c),u:ax.map(camv),r,mat,o:o||{}});
   const capsule=(a,b,r,mat,o)=>({k:'c',a:cam(a),b:cam(b),r,mat,o:o||{}});
+  // A SMOOTH SURFACE, for the menu golfer only: f(world point) is the signed distance to it, and it is ray marched.
+  // It draws what ellipsoids and capsules cannot: a ring, a brim that curves down at its sides, curls carved into
+  // one head of hair, a duck's neck grown out of its float. c and R bound it. o.mf(p, n) may answer [material, dt].
+  const field=(c,R,f,mat,o)=>({k:'f',c:cam(c),R,f,mat,o:o||{}});
+  const sdE=(p,c,AX,R)=>{ const q=sub(p,c), a=dot(q,AX[0])/R[0], b=dot(q,AX[1])/R[1], d=dot(q,AX[2])/R[2];
+    const k0=Math.hypot(a,b,d), k1=Math.hypot(a/R[0],b/R[1],d/R[2]); return k1<1e-6?-Math.min(...R):k0*(k0-1)/k1; };
+  const sdCap=(p,a,b,r)=>{ const pa=sub(p,a), ba=sub(b,a), h=Math.max(0,Math.min(1,dot(pa,ba)/dot(ba,ba))); return Math.hypot(...sub(pa,sc(ba,h)))-r; };
+  const smin=(a,b,k)=>{ const h=Math.max(k-Math.abs(a-b),0)/k; return Math.min(a,b)-h*h*k/4; };
+  function hitF(P,x,y){ const e2=P.R*P.R-(x-P.c[0])**2-(y-P.c[1])**2; if(e2<=0) return null;
+    const f=z=>P.f(cam([x,y,z])), z1=P.c[2]-Math.sqrt(e2); let z=P.c[2]+Math.sqrt(e2), d=f(z);
+    for(let i=0;i<160&&z>z1;i++){ if(d<0.01) break; z-=Math.max(d*0.7,0.02); d=f(z); }
+    if(d>=0.01||z<=z1) return null;
+    const p=cam([x,y,z]), e=0.03, g=[0,1,2].map(i=>{ const a=p.slice(), b=p.slice(); a[i]+=e; b[i]-=e; return P.f(a)-P.f(b); }), nw=norm(g);
+    const h={D:z,n:cam(nw)}, mm=P.o.mf&&P.o.mf(p,nw);
+    if(mm){ h.m=mm[0]||P.mat; h.dt=mm[1]||0; h.gloss=P.o.gloss||0; }
+    return h; }
   function hitE(P,x,y){ const d=[x-P.c[0],y-P.c[1],1000-P.c[2]], dir=[0,0,-1];
     const lo=P.u.map((u,i)=>dot(d,u)/P.r[i]), ld=P.u.map((u,i)=>dot(dir,u)/P.r[i]);
     const A=dot(ld,ld),B=2*dot(lo,ld),C=dot(lo,lo)-1,disc=B*B-4*A*C; if(disc<0) return null;
@@ -336,13 +352,21 @@
     const capTop=under?0.24:9;
     const base=(R,c,o)=>out.push(ellipsoid(c||hc,AXh,R,'hair',Object.assign({gloss:1,bias:-.08,cut:l=>l[1]>thr(l)&&l[1]<capTop},o||{})));
     const S=hr;
-    if(style==='afro'){ if(under) base([S*1.13,S*1.1,S*1.15]); else base([S*1.32,S*1.28,S*1.36],add(hc,sc(hup,1.4)),{cut:l=>l[1]>thr(l)-0.08}); }
+    // CURLS: one head of hair with the curls carved into it, so they run into each other as hair does. Each curl is
+    // a rounded lobe of a wave over the head's surface, the grooves between them drawn a shade darker.
+    const curls=(R,c,fq,amp,lo)=>{ const amp2=amp*0.35, wave=q=>{ const u=norm(q);
+        const w=Math.sin(fq*u[0]+1.3)*Math.sin(fq*u[1]+0.4)*Math.sin(fq*u[2]+2.1)+0.25*Math.sin(fq*1.4*(u[0]+u[2])+0.7)*Math.sin(fq*1.4*u[1]+1.9);
+        return amp*Math.sqrt(Math.min(1,Math.abs(w)*1.25)); };
+      const loc=p=>{ const q=sub(p,c); return [dot(q,look)/R[0],dot(q,hup)/R[1],dot(q,Lf)/R[2]]; };
+      out.push(field(c,Math.max(...R)+amp+1,p=>{ const q=sub(p,c), l=loc(p);
+          return Math.max(sdE(p,c,AXh,R)-wave(q),(thr(l)+lo-l[1])*R[1]); },'hair',
+        {gloss:1,bias:-.08,mf:p=>{ const d=wave(sub(p,c)); return ['hair',d<amp2?-1:d>amp*0.9?1:0]; }})); };
+    if(style==='afro'){ if(under) base([S*1.13,S*1.1,S*1.15]); else curls([S*1.26,S*1.22,S*1.3],add(hc,sc(hup,1.4)),7,1.3,-0.08); }
     else if(style==='buzz') base([S*1.025,S*1.065,S*1.022],null,{dt:-1});
     else if(style==='mohawk'){ if(!under){ base([S*1.03,S*1.065,S*1.03],null,{dt:-1,cut:l=>l[1]>thr(l)+0.05&&Math.abs(l[2])<0.2});
         out.push(ellipsoid(add(hc,sc(hup,hr*0.98),sc(look,-0.2)),AXh,[hr*1.0,4.4,1.75],'hair',{gloss:1,cut:l=>l[1]>-0.55})); } else base([S*1.025,S*1.065,S*1.022],null,{dt:-1}); }
+    else if(style==='curly'&&!under) curls([S*1.04,S*1.07,S*1.04],hc,6,1.5,0);
     else { const vol=style==='curly'?1.08:1.045; base([S*vol,S*(vol+0.025),S*vol]);
-      if(style==='curly'&&!under) for(let i=0;i<9;i++){ const a=i/9*2*Math.PI, d=norm(add(sc(hup,0.62),sc(look,0.62*Math.cos(a)),sc(Lf,0.7*Math.sin(a))));
-        out.push(ellipsoid(add(hc,sc(d,hr*1.06)),AXh,[1.9,1.7,1.9],'hair',{gloss:1})); }
       if(style==='swoop'&&!under) out.push(ellipsoid(add(hc,sc(look,hr*0.55),sc(hup,hr*0.74),sc(Lf,hr*0.2)),AXh,[hr*0.6,hr*0.32,hr*0.72],'hair',{gloss:1,bias:-.05}));
       if(style==='spiky'&&!under) for(let i=0;i<7;i++){ const a=(i/7)*2*Math.PI, d=norm(add(sc(hup,1),sc(look,0.5*Math.cos(a)),sc(Lf,0.5*Math.sin(a))));
         out.push(ellipsoid(add(hc,sc(d,hr*1.0)),[d,norm(cross(d,Lf)),norm(cross(d,cross(d,Lf)))],[2.6,1.1,1.1],'hair',{gloss:1})); }
@@ -368,7 +392,22 @@
       out.push(ellipsoid(add(hc,sc(d,hr*1.0)),[d,norm(cross(d,Lf)),norm(cross(d,cross(d,Lf)))],[2.6,1.1,1.1],'hair',{gloss:1})); }
     }
     const lift=MO?hr*0.16:0;
-    if(cap){ out.push(ellipsoid(add(hc,sc(hup,hr*0.18+lift)),[look,hup,Lf],[hr*1.06,hr*0.95,hr*1.06],'hat',{cut:l=>l[1]>-0.12}));
+    // THE MENU CAP: a six panel crown that comes down over the hair at the temples and the back, its seams sewn in,
+    // and a pre-curved brim that pitches down and bends down at its sides, as a real golf cap's does. One piece
+    // (field) so it reads as a brim from the front, its underside a shade darker.
+    if(cap&&MO){ const AXc=[look,hup,Lf], cw=style==='afro'?1.19:1.07, cc=add(hc,sc(hup,hr*0.12)), CR=[hr*cw,hr*1.12,hr*cw], rim=l=>l[1]>0.07-0.12*(1-l[0]);
+      out.push(ellipsoid(cc,AXc,CR,'hat',{cut:rim}));
+      for(let k=0;k<3;k++){ const a=k*Math.PI/3+Math.PI/6;   // the panel seams, over the crown from rim to button
+        out.push(over(cc,AXc,CR,'hat',l=>rim(l)&&Math.abs(l[0]*Math.sin(a)-l[2]*Math.cos(a))<0.025&&l[1]>0.12,{dt:-1,noCast:1})); }
+      out.push(ellipsoid(add(cc,sc(hup,CR[1]-0.3)),AXc,[1.15,0.75,1.15],'hatbtn'));
+      const Cb=add(hc,sc(hup,hr*(0.24-1.169))), RB=[hr*4.0,hr*1.2,hr*2.0];
+      out.push(field(add(hc,sc(look,hr*1.2)),hr*1.45,p=>{ const q=sub(p,hc), a=dot(q,look), sd=dot(q,Lf);
+          const shell=Math.abs(sdE(p,Cb,AXc,RB))-0.42, foot=(Math.hypot((a-hr*0.9)/(hr*1.0),sd/(hr*(cw+0.09)))-1)*hr*1.0;
+          return Math.max(shell,foot,hr*0.55-a); },'hat',{mf:(p,n)=>dot(n,hup)<-0.2?['hat',-1]:null}));
+      const pc=add(cc,sc(look,hr*(cw-0.15)),sc(hup,hr*0.45));
+      out.push(ellipsoid(pc,AXc,[0.62,2.5,2.7],'patch',{t:2,cut:l=>Math.abs(l[1])<0.7&&Math.abs(l[2])<0.7}));
+      out.push(ellipsoid(add(pc,sc(look,0.38)),AXc,[0.5,0.62,1.05],'patchmark',{t:2,noCast:1})); }
+    else if(cap){ out.push(ellipsoid(add(hc,sc(hup,hr*0.18+lift)),[look,hup,Lf],[hr*1.06,hr*0.95,hr*1.06],'hat',{cut:l=>l[1]>-0.12}));
       out.push(MO?ellipsoid(add(hc,sc(look,hr*0.98),sc(hup,hr*0.0+lift)),[look,hup,Lf],[hr*1.0,0.85,hr*1.0],'hat',{dt:-1,cut:l=>l[0]>-0.2})
         :ellipsoid(add(hc,sc(look,hr*0.95),sc(hup,hr*0.02+lift)),[look,hup,Lf],[hr*0.75,0.75,hr*0.82],'hat',{dt:-1,cut:l=>l[0]>-0.15}));
       out.push(ellipsoid(add(hc,sc(hup,hr*1.1+lift)),[look,hup,Lf],[1.1,0.8,1.1],'hatbtn'));
@@ -376,7 +415,7 @@
         out.push(ellipsoid(pc,[look,hup,Lf],[0.62,2.5,2.7],'patch',{t:2,cut:l=>Math.abs(l[1])<0.7&&Math.abs(l[2])<0.7}));
         out.push(ellipsoid(add(pc,sc(look,0.2)),[look,hup,Lf],[0.5,0.62,1.05],'patchmark',{t:2,noCast:1})); }
       else out.push(ellipsoid(add(hc,sc(look,hr*0.95),sc(hup,hr*0.48)),[look,hup,Lf],[0.6,1.5,2.0],'patch',{t:2})); }
-    if(visor&&MO){ const R=(style==='afro'?1.4:style==='curly'?1.14:1.1)*hr;   // the band sits outside the hair, the brim like the cap's
+    if(visor&&MO){ const R=(style==='afro'?1.48:style==='curly'?1.25:1.1)*hr;   // the band sits outside the hair, the brim like the cap's
       out.push(ellipsoid(add(hc,sc(hup,hr*0.28)),[look,hup,Lf],[R,1.35,R],'hat',{gloss:1}));
       out.push(ellipsoid(add(hc,sc(look,R*0.93),sc(hup,hr*0.24)),[look,hup,Lf],[hr*0.95,0.8,hr*0.95],'hat',{dt:-1,cut:l=>l[0]>-0.15})); }
     else if(visor){ out.push(ellipsoid(add(hc,sc(hup,hr*0.3)),[look,hup,Lf],[hr*1.04,1.1,hr*1.04],'hat'));
@@ -638,14 +677,16 @@
     let tag='';   // the item the parts being pushed belong to, so a tile can draw it alone (MO.only)
     const HD=(MO?MO.K:1)>=2, parts=[], push=p=>{ if(tag) p.o.item=tag; parts.push(p); }, top=gear.top, tpal=gear.topPal||{}, cl=gear.cleats, lg=gear.legPal;
     const body=top==='shacket'?'plaid':'shirt', AX=[F,U,T], blz=top==='blazer'||top==='ppchampjacket';
+    // THE BUILD: a lean golfer. BW narrows the torso, hips and belt, AW brings the arms, hands and club in to match.
+    const BW=0.84, AW=0.87;
     // shoes and legs
-    for(const s of [1,-1]){ const t=4.15*s; tag=lg?'leg':'pants';
-      if(lg){ const knee=P(0.4,9.2,t*1.02); push(capsule(P(0,15.8,t),knee,3.85,'pants')); push(ellipsoid(add(knee,sc(U,-0.6)),AX,[3.9,1.9,3.9],'pants',{dt:-1})); push(capsule(add(knee,sc(U,-1.6)),P(0,3.2,t),2.7,'sock')); }
-      else { push(capsule(P(0,15.8,t),P(0.15,9.4,t*1.01),3.75,'pants')); push(capsule(P(0.15,9.4,t*1.01),P(0.1,4.6,t*1.02),3.3,'pants'));
-        if(HD){ push(capsule(P(3.7,14.6,t),P(3.55,9.4,t*1.01),0.45,'pants',{dt:1,noCast:1})); push(capsule(P(3.55,9.4,t*1.01),P(3.25,5.0,t*1.02),0.42,'pants',{dt:1,noCast:1})); } }
+    for(const s of [1,-1]){ const t=3.6*s; tag=lg?'leg':'pants';
+      if(lg){ const knee=P(0.4,9.2,t*1.02); push(capsule(P(0,15.8,t),knee,3.3,'pants')); push(ellipsoid(add(knee,sc(U,-0.6)),AX,[3.35,1.9,3.35],'pants',{dt:-1})); push(capsule(add(knee,sc(U,-1.6)),P(0,3.2,t),2.35,'sock')); }
+      else { push(capsule(P(0,15.8,t),P(0.15,9.4,t*1.01),3.2,'pants')); push(capsule(P(0.15,9.4,t*1.01),P(0.1,4.6,t*1.02),2.8,'pants'));
+        if(HD){ push(capsule(P(3.15,14.6,t),P(3.0,9.4,t*1.01),0.42,'pants',{dt:1,noCast:1})); push(capsule(P(3.0,9.4,t*1.01),P(2.75,5.0,t*1.02),0.4,'pants',{dt:1,noCast:1})); } }
       tag='';
       // a golf shoe, toes turned out a little as a golfer stands, so its saddle and laces show
-      const z=4.4*s, sole=cl?'x:'+cl.sole:'sole', sad='x:'+gear.saddleHex, toe=12*D2R;
+      const z=3.95*s, sole=cl?'x:'+cl.sole:'sole', sad='x:'+gear.saddleHex, toe=12*D2R;
       const Fs=norm(add(sc(F,Math.cos(toe)),sc(T,s*Math.sin(toe)))), Ts=norm(cross(Fs,U)), AXs=[Fs,U,Ts], b0=P(0.2,0,z);
       const Q=(f,u,t)=>add(b0,sc(Fs,f),sc(U,u),sc(Ts,t||0)), n0=parts.length;
       if(cl&&CLEAT_MENU[cl.id]) CLEAT_MENU[cl.id](push,Q,AXs,s,cl.pal,HD); else {
@@ -661,18 +702,18 @@
       if(HD) for(const k of [0.9,1.85,2.8]) push(capsule(Q(k,3.2+0.09*(2.8-k),-1.15),Q(k,3.2+0.09*(2.8-k),1.15),0.28,'lace',{noCast:1})); }
       for(let i=n0;i<parts.length;i++){ parts[i].o.item='shoe'; parts[i].o.side=s; } }
     // hips and belt
-    tag=lg?'leg':'pants'; push(ellipsoid(P(0,15.6,0),AX,[4.55,3.1,8.5],'pants')); tag='';
-    push(ellipsoid(P(0.05,17.75,0),AX,[4.95,0.72,8.95],'belt',{gloss:1}));
-    if(HD){ push(ellipsoid(P(4.95,17.75,0),AX,[0.5,0.85,1.15],'x:#d6a640',{gloss:2,noCast:1})); push(ellipsoid(P(5.2,17.75,0),AX,[0.4,0.42,0.6],'belt',{noCast:1})); }
+    tag=lg?'leg':'pants'; push(ellipsoid(P(0,15.6,0),AX,[4.4,3.1,8.5*BW],'pants')); tag='';
+    push(ellipsoid(P(0.05,17.75,0),AX,[4.8,0.72,8.95*BW],'belt',{gloss:1}));
+    if(HD){ push(ellipsoid(P(4.8,17.75,0),AX,[0.5,0.85,1.15],'x:#d6a640',{gloss:2,noCast:1})); push(ellipsoid(P(5.05,17.75,0),AX,[0.4,0.42,0.6],'belt',{noCast:1})); }
     // THE SHIRT. A tall ellipsoid trimmed top and bottom (nearly straight sides, no barrel), sloped shoulders, a
     // little blousing where it tucks into the belt, and tension folds from each armpit toward the buckle.
     // The menu's phase (0 to 1) breathes it: the chest swells a touch, the shoulders lift, the folds drift.
     const ph=(MO?MO.phase:0)*2*Math.PI, br=Math.sin(ph), sw=Math.sin(ph+1.1);
     const jacket=top==='cardigan'||blz||top==='shacket'; tag=jacket?'top':'shirt';
-    const tc=P(0,27,0), TR=[4.75*(1+0.012*br),22,8.55*(1+0.014*br)], lo=-(27-17.4)/22, hi=(33.6-27)/22, inT=l=>l[1]>lo&&l[1]<hi;
+    const tc=P(0,27,0), TR=[4.6*(1+0.012*br),22,8.55*BW*(1+0.014*br)], lo=-(27-17.4)/22, hi=(33.6-27)/22, inT=l=>l[1]>lo&&l[1]<hi;
     push(ellipsoid(tc,AX,TR,body,{cut:inT}));
-    for(const s of [1,-1]) push(capsule(P(-0.2,32.5+0.12*br,2.8*s),P(-0.2,30.5+0.15*br,7.7*s),2.35,body));    // the shoulders, sloping
-    push(ellipsoid(P(0.2,19.0,0),AX,[4.95,1.35,8.75+0.08*sw],body,{dt:0}));                                     // blousing over the belt
+    for(const s of [1,-1]) push(capsule(P(-0.2,32.5+0.12*br,2.6*s),P(-0.2,30.6+0.15*br,6.5*s),2.1,body));    // the shoulders, sloping
+    push(ellipsoid(P(0.2,19.0,0),AX,[4.8,1.35,8.75*BW+0.08*sw],body,{dt:0}));                                     // blousing over the belt
     push(capsule(P(0.3,32.2,0),P(0.6,35.8,0),2.85,'skin',{dt:-1}));                                              // the neck, under the head
     push(ellipsoid(P(0.7,33.5,0),AX,[3.7,1.15,4.7],body,{dt:1}));                                                // the collar
     if(HD&&!blz){ const d=0.02*sw;
@@ -708,7 +749,7 @@
     if(scare&&!jacket){ const pc=P(4.6,24.2,-3.2);   // a burlap patch on the chest, stitched at its corners
       push(ellipsoid(pc,AX,[0.4,1.55,1.5],'x:#a8844e',{noCast:1}));
       for(const a of [-1,1]) for(const b of [-1,1]) push(ellipsoid(add(pc,sc(F,0.25),sc(U,1.2*a),sc(T,1.15*b)),AX,[0.3,0.32,0.32],'x:#5a4428',{noCast:1}));
-      push(ellipsoid(P(3.6,10.2,4.15),AX,[0.45,1.5,1.45],'x:#8a6a3c',{noCast:1})); }        // and one on the knee
+      push(ellipsoid(P(3.1,10.2,3.6),AX,[0.45,1.4,1.3],'x:#8a6a3c',{noCast:1})); }        // and one on the knee
     if(zomb&&!jacket){ const skn='skin', fr='x:#2e241a', n=(u,t)=>0.35*Math.sin(u*90+t*23)+0.25*Math.sin(u*37-t*61);   // ragged edges
       const tear=(u0,t0,ru,rt)=>l=>{ const a=(l[1]-u0)/ru, b=(l[2]-t0)/rt, du=0.8*a+0.6*b, dt2=-0.6*a+0.8*b; return du*du*2.4+dt2*dt2*0.55+n(l[1],l[2])<1; };   // a rip, on the diagonal
       const ring=(u0,t0,ru,rt)=>l=>{ const a=(l[1]-u0)/ru, b=(l[2]-t0)/rt, du=0.8*a+0.6*b, dt2=-0.6*a+0.8*b, d=du*du*2.4+dt2*dt2*0.55+n(l[1],l[2]); return d>=1&&d<1.6; };
@@ -719,14 +760,14 @@
       push(over(tc,AX,TR.map(v=>v*1.01),skn,l=>inT(l)&&l[0]>0.1&&l[1]<-0.37&&((l[2]*7+9)%2)<0.9&&l[1]<-0.37-0.04*Math.abs(Math.sin(l[2]*11)),{noCast:1}));   // the hem, torn into strips
     }
     for(const s of [1,-1]){ const hold=s===dom, slv=blz?'x:'+tpal['1']:body;
-      const sh=P(-0.2,30.0+0.15*br,9.2*s), el=hold?P(0.9,23.0,10.5*s):P(0.4,23.0,10.4*s), wr=hold?P(2.4,17.7,11.0*s):P(1.3,17.3,10.9*s);
+      const sh=P(-0.2,30.0+0.15*br,9.2*AW*s), el=hold?P(0.9,23.0,10.5*AW*s):P(0.4,23.0,10.4*AW*s), wr=hold?P(2.4,17.7,11.0*AW*s):P(1.3,17.3,10.9*AW*s);
       const se=add(sh,sc(sub(el,sh),0.48)), mid=add(el,sc(sub(wr,el),0.45)), flap=sc(F,0.12*sw*s);
-      if(blz){ push(capsule(sh,el,2.4,slv)); push(capsule(el,wr,2.05,slv));
-        if(top==='ppchampjacket'&&HD) for(const k of [0.1,0.22]) push(ellipsoid(add(wr,sc(sub(el,wr),k),sc(T,1.95*s),sc(F,-0.3)),AX,[0.42,0.42,0.42],'x:'+tpal['4'],{gloss:3,noCast:1})); }   // gold cuff buttons
-      else { push(capsule(sh,add(se,flap),2.65,slv)); if(HD) push(capsule(add(sh,sc(sub(se,sh),0.78)),add(se,flap),2.78,slv,{dt:-1,noCast:1}));   // the sleeve, its hem moving a little
-        if(HD) push(over(add(sh,sc(sub(se,sh),0.45)),AX,[2.75,2.75,2.75],slv,l=>Math.abs(l[1]+0.35*l[0]*s-0.1)<0.07&&l[0]>-0.2,{dt:-1,noCast:1}));   // a crease across the sleeve
-        push(capsule(se,el,1.72,'skin')); push(ellipsoid(el,AX,[1.65,1.6,1.7],'skin'));                                  // the upper arm and elbow
-        push(capsule(el,mid,1.62,'skin')); push(capsule(mid,wr,1.3,'skin'));                                             // the forearm, to the wrist
+      if(blz){ push(capsule(sh,el,2.15,slv)); push(capsule(el,wr,1.85,slv));
+        if(top==='ppchampjacket'&&HD) for(const k of [0.1,0.22]) push(ellipsoid(add(wr,sc(sub(el,wr),k),sc(T,1.75*s),sc(F,-0.3)),AX,[0.4,0.4,0.4],'x:'+tpal['4'],{gloss:3,noCast:1})); }   // gold cuff buttons
+      else { push(capsule(sh,add(se,flap),2.3,slv)); if(HD) push(capsule(add(sh,sc(sub(se,sh),0.78)),add(se,flap),2.42,slv,{dt:-1,noCast:1}));   // the sleeve, its hem moving a little
+        if(HD) push(over(add(sh,sc(sub(se,sh),0.45)),AX,[2.4,2.4,2.4],slv,l=>Math.abs(l[1]+0.35*l[0]*s-0.1)<0.07&&l[0]>-0.2,{dt:-1,noCast:1}));   // a crease across the sleeve
+        push(capsule(se,el,1.6,'skin')); push(ellipsoid(el,AX,[1.55,1.5,1.6],'skin'));                                  // the upper arm and elbow
+        push(capsule(el,mid,1.5,'skin')); push(capsule(mid,wr,1.22,'skin'));                                             // the forearm, to the wrist
         if(scare){ const strw='x:'+(bp.straw||'#d8b04e'), dk='x:#a8843a';   // straw arms, tufts out of the sleeve and the cuff
           for(let k=0;k<6;k++){ const a=k*Math.PI/3, o=add(sc(F,Math.cos(a)*1.9),sc(T,Math.sin(a)*1.9*s));
             push(capsule(add(se,o),add(se,sc(o,1.35),sc(U,-1.4)),0.32,k%2?strw:dk,{noCast:1}));
@@ -744,29 +785,36 @@
     if(top==='cape'){ tag='top';
       // the sheet: one shell behind the golfer, cut to a flare (narrow at the shoulders, wide at the calves), with a
       // red lining a touch inside it, which is what shows past the arms and legs from the front
-      const cc=P(-3.8,14,0), CR=[4.2,30,16.5], zl=l=>0.885-(l[1]+0.27)*0.342, keep=l=>l[0]<0.1&&l[1]<0.65&&l[1]>-0.29&&Math.abs(l[2])<zl(l);
+      const cc=P(-3.8,14,0), CR=[4.2,30,16.5*BW], zl=l=>0.885-(l[1]+0.27)*0.342, keep=l=>l[0]<0.1&&l[1]<0.65&&l[1]>-0.29&&Math.abs(l[2])<zl(l);
       push(ellipsoid(cc,AX,CR,'x:'+tpal['1'],{cut:keep}));
       push(ellipsoid(add(cc,sc(F,0.3)),AX,CR.map(v=>v*0.96),'x:'+tpal['4'],{cut:keep,dt:-1}));
-      push(ellipsoid(P(-0.8,32.7,0),AX,[5.0,1.9,9.6],'x:'+tpal['1'],{cut:l=>l[0]<0.45}));                        // over the shoulders
+      push(ellipsoid(P(-0.8,32.7,0),AX,[5.0,1.9,9.6*BW],'x:'+tpal['1'],{cut:l=>l[0]<0.45}));                        // over the shoulders
       push(ellipsoid(P(-2.6,36.4,0),AX,[2.2,3.4,7.0],'x:'+tpal['4'],{cut:l=>l[0]<0.3&&l[1]>-0.6}));               // the high collar
       for(const s of [1,-1]) push(capsule(P(-1.8,34.0,4.6*s),P(-1.4,40.2,7.4*s),0.95,'x:'+tpal['4'],{gloss:1}));   // its two points
       for(const s of [1,-1]) push(ellipsoid(P(4.6,32.6,3.2*s),AX,[0.7,0.8,0.8],'x:'+tpal['5'],{gloss:3,noCast:1}));
       push(capsule(P(4.7,32.6,-3.0),P(4.7,32.6,3.0),0.2,'x:'+tpal['5'],{noCast:1}));
       tag=''; }
     // THE RUBBER DUCKY FLOATIE: an inflated ring round the waist with the duck's head and beak at the front
-    if(top==='duckfloatie'){ tag='top'; const fc=P(0.4,18.6,0), ring=a=>add(fc,sc(F,7.4*Math.cos(a)),sc(T,11.2*Math.sin(a)));
-      const N=26; for(let i=0;i<N;i++) push(capsule(ring(i/N*2*Math.PI),ring((i+1)/N*2*Math.PI),2.5,'x:'+tpal['1'],{gloss:2,bias:.15}));
-      for(let i=0;i<N;i+=2) push(capsule(add(ring(i/N*2*Math.PI),sc(U,1.9)),add(ring((i+1)/N*2*Math.PI),sc(U,1.9)),0.7,'x:'+tpal['3'],{noCast:1}));   // the shine
-      const ha=-28*D2R, rp=ring(ha), o2=norm(add(sc(F,Math.cos(ha)),sc(T,Math.sin(ha)))), sd2=norm(cross(o2,U)), hd=add(rp,sc(U,5.0),sc(o2,0.6));
-      push(capsule(add(rp,sc(U,1.2)),hd,1.6,'x:'+tpal['1'],{gloss:1})); push(ellipsoid(hd,[o2,U,sd2],[2.9,2.7,2.7],'x:'+tpal['1'],{gloss:2}));
-      push(ellipsoid(add(hd,sc(o2,2.8),sc(U,-0.5)),[o2,U,sd2],[1.8,0.65,1.2],'x:'+tpal['4'],{gloss:2}));
+    // One inflated body (field): the tube, the duck's neck and head grown out of it, its beak, and a tail at the
+    // back. The seam round the outside of the tube is moulded in.
+    if(top==='duckfloatie'){ tag='top'; const fc=P(0.4,18.6,0), Ra=7.4, Rb=11.2*BW, rt=2.6, ring=a=>add(fc,sc(F,Ra*Math.cos(a)),sc(T,Rb*Math.sin(a)));
+      const ha=-28*D2R, rp=ring(ha), o2=norm(add(sc(F,Math.cos(ha)),sc(T,Math.sin(ha)))), sd2=norm(cross(o2,U)), hd=add(rp,sc(U,5.0),sc(o2,0.6)), AXd=[o2,U,sd2];
+      const bk=add(hd,sc(o2,2.8),sc(U,-0.5)), tl=add(ring(ha+Math.PI),sc(U,2.2),sc(o2,-0.6));
+      const tube=p=>{ const q=sub(p,fc), a=dot(q,F), b=dot(q,T), h=dot(q,U), t=Math.atan2(b/Rb,a/Ra); return Math.hypot(a-Ra*Math.cos(t),b-Rb*Math.sin(t),h)-rt; };
+      const duck=p=>smin(smin(tube(p),sdCap(p,add(rp,sc(U,1.2)),hd,1.75),1.8),smin(sdE(p,hd,AXd,[2.9,2.7,2.7]),sdE(p,tl,AXd,[1.6,2.0,1.1]),0.1),1.4);
+      const beak=p=>sdE(p,bk,AXd,[1.8,0.65,1.2]);
+      const box=[]; for(const i of [1,-1]) for(const j of [1,-1]) for(const u of [-rt-0.5,10]) box.push(add(fc,sc(F,i*(Ra+rt+3)),sc(T,j*(Rb+rt+0.5)),sc(U,u)));
+      push(field(fc,Math.max(Ra,Rb)+rt+9,p=>Math.min(duck(p),beak(p)),'x:'+tpal['1'],{gloss:2,bias:.15,pts:box,mf:p=>{
+          if(beak(p)<duck(p)) return ['x:'+tpal['4'],0];
+          const q=sub(p,fc), a=dot(q,F)/Ra, b=dot(q,T)/Rb, h=dot(q,U);
+          return Math.abs(h)<0.22&&a*a+b*b>1.05&&tube(p)<0.2?['x:'+tpal['1'],-1]:null; }}));
       for(const s of [1,-1]) push(ellipsoid(add(hd,sc(o2,2.1),sc(U,0.9),sc(sd2,1.35*s)),[o2,U,sd2],[0.5,0.6,0.5],'x:'+tpal['5'],{noCast:1}));
       tag=''; }
     // the club, gripped in the dominant hand, its head on the grass just outside that foot
     if(gear.ballC){ const bp=P(6.2,3.2,-10.2*dom); push(capsule(P(6.2,0.2,-10.2*dom),P(6.2,1.5,-10.2*dom),0.32,'x:#e8ebf0'));   // the tee
       push(ellipsoid(add(bp,sc(U,-1.0)),AX,[0.8,0.35,0.8],'x:#e8ebf0'));
       if(gear.ballId) ppBall(push,bp,AX,U,T,gear.ballId,PXG_BALL_PAL[gear.ballId]); else push(ellipsoid(bp,AX,[1.8,1.8,1.8],'x:'+gear.ballC,{gloss:3})); }
-    const hands=add(P(2.75,16.0,11.15*dom)), clubHead=P(3.8,1.3,12.9*dom), out=sc(T,dom);
+    const hands=add(P(2.75,16.0,11.15*AW*dom)), clubHead=P(3.8,1.3,12.9*AW*dom), out=sc(T,dom);
     const id=gear.club||'driver', c0=parts.length;
     if(NOVELTY[id]||id==='pu_magicwand'){ profileNovelty(push,hands,clubHead,F,U,out,id==='pu_magicwand'?'wand':id,gear.clubPal||{}); }
     else if(PP_PUTTER[id]) ppPutter(push,id,gear.clubPal||{},hands,norm(sub(clubHead,hands)),add(clubHead,sc(U,-1.3)),[F,U,out],1,0);
@@ -1114,10 +1162,12 @@
     // each part's box on the screen, so a cell only tests the parts that can reach it
     for(const p of parts){ if(p.k==='e'){ const m=Math.max(...p.r); p.bb=[p.c[0]-m,p.c[1]-m,p.c[0]+m,p.c[1]+m]; }
       else if(p.k==='v') p.bb=p.bb2;
+      else if(p.k==='f'){ p.bb=[p.c[0]-p.R,p.c[1]-p.R,p.c[0]+p.R,p.c[1]+p.R];
+        if(p.o.pts){ const q=p.o.pts.map(cam); p.bb=[Math.min(...q.map(v=>v[0])),Math.min(...q.map(v=>v[1])),Math.max(...q.map(v=>v[0])),Math.max(...q.map(v=>v[1]))]; } }
       else p.bb=[Math.min(p.a[0],p.b[0])-p.r,Math.min(p.a[1],p.b[1])-p.r,Math.max(p.a[0],p.b[0])+p.r,Math.max(p.a[1],p.b[1])+p.r]; }
     for(let y=0;y<GH*K;y++){ const Y=(y+.5)/K-OY, row=parts.filter(p=>Y>=p.bb[1]&&Y<=p.bb[3]); if(!row.length) continue;
      for(let x=0;x<GW*K;x++){ const X=(x+.5)/K-OX; let best=null,bp=null;
-      for(const p of row){ if(p.k==='v'||X<p.bb[0]||X>p.bb[2]) continue; const h=p.k==='e'?hitE(p,X,Y):hitC(p,X,Y); if(h&&(!best||h.D>best.D)){best=h;bp=p} }
+      for(const p of row){ if(p.k==='v'||X<p.bb[0]||X>p.bb[2]) continue; const h=p.k==='e'?hitE(p,X,Y):p.k==='f'?hitF(p,X,Y):hitC(p,X,Y); if(h&&(!best||h.D>best.D)){best=h;bp=p} }
       for(const p of row){ if(p.k!=='v'||X<p.bb[0]||X>p.bb[2]) continue; const h=hitV(p,X,Y,best?best.D:null); if(h&&(!best||h.D>best.D)){best=h;bp=p} }
       if(best){ const n=best.n, o=bp.o; s.g[y][x]={m:best.m||bp.mat,n:()=>n,z:best.D,dt:best.m?best.dt:(o.dt||0),gloss:best.m?best.gloss:(o.gloss||0),bias:o.bias||0,t:o.t!=null?o.t:null,noCast:o.noCast||0,tag:''}; } } }
     const put=(p,m,w,h,ox,oy)=>{ w=w||1; h=h||1; const c=cam(p),x0=Math.floor((c[0]+OX)*K)+(ox|0),y0=Math.floor((c[1]+OY)*K)+(oy|0);
