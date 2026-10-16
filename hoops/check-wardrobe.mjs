@@ -149,6 +149,13 @@ for (const build of ['lean', 'standard', 'strong']) for (const pose of ['stand',
   ok(!n.band && !n.cshoes && n.knee && same(n.knee.c, ['#123456']), '5 a court shape that is not one is dropped, and a street-only shoe never goes on court');
   ok(B.cwearNorm({}) === null && B.cwearNorm(null) === null, '5 no court wear is no court wear');
   ok(same(B.paint(LOOK, Object.assign({ faceless: 1, cwear: all }, UNI)), B.paint(LOOK, Object.assign({ faceless: 1 }, UNI))), '8 a real player wears nothing from the court catalogue');
+  /* every real man is drawn in the one warm tone, whatever look he was hashed */
+  const headOf = (lk) => { const parts = B.paint(lk, Object.assign({ faceless: 1, parts: 1 }, UNI)), cols = B.paint(lk, Object.assign({ faceless: 1 }, UNI)), out = new Set();
+    parts.forEach((r, y) => r.forEach((p, x) => { if (p === 'head' && cols[y][x]) out.add(cols[y][x]); })); return [...out].sort(); };
+  const h0 = headOf(Object.assign({}, LOOK, { skin: 0 })), h7 = headOf(Object.assign({}, LOOK, { skin: 7 }));
+  const rgb = (c) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
+  const warm = h0.length > 2 && h0.every((c) => /^#[0-9a-f]{6}$/i.test(c)) && h0.filter((c) => { const [r, , bl] = rgb(c); return r > bl + 12; }).length >= h0.length * 0.6;
+  ok(h0.length > 2 && same(h0, h7) && warm, '8 every real player has the same warm skin, never a tone of his own (' + h0.slice(0, 3).join(' ') + ')');
   const src = require('node:fs').readFileSync(new URL('./baller.js', import.meta.url), 'utf8');
   ok(/cwearKey\(o\)/.test(src.match(/function keyOf\([^]*?\n/)[0]) && /cwearKey\(o\)/.test(src.match(/var key = JSON\.stringify\(\[normal\(look\)[^\n]*/)[0]), '6 the court outfit is in the url key and the live frame key');
 }
