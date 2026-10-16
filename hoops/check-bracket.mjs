@@ -43,6 +43,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { pageSource } from './build/page-source.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
@@ -63,7 +64,7 @@ const is = (a, b, what) => ok(JSON.stringify(a) === JSON.stringify(b),
 const is0 = (n, what) => ok(n === 0, `${what}\n      ${n} failures`);
 const head = (s) => console.log('\n' + s + '\n' + '-'.repeat(s.length));
 
-const pageSrc = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+const pageSrc = pageSource();
 
 /* THE FUNCTIONS ARE LIFTED OUT OF THE SHIPPED PAGE, never copied here, which
    is verify.mjs's own rule and mythiball's hardest-won one: a hand written

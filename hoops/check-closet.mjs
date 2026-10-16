@@ -23,6 +23,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { pageSource } from './build/page-source.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(HERE, '..');
@@ -122,7 +123,7 @@ const device = () => { global.localStorage = store(); W._reset(); return W; };
   X.award(wa, 'k1', 100, 'x', { t: 1 }); X.award(wb, 'k2', 50, 'x', { t: 2 });
   ok(X.balance(CLm.modeMerge('wallet', wa, wb)) === 150, '6 the shelf merges the coins with the ledger\'s own merge');
   ok(CLm.modeProgress('wallet', { v: CLm.modeMerge('wallet', wa, wb) }) >= CLm.modeProgress('wallet', { v: wa }), '6 the coins\' progress only grows');
-  ok(CLm.API_VERSION === 6 && /NEED_CLOUD = 6/.test(fs.readFileSync(new URL('./index.html', import.meta.url), 'utf8')), '6 the page pins the shelf it knows the slots of');
+  ok(CLm.API_VERSION === 6 && /NEED_CLOUD = 6/.test(pageSource()), '6 the page pins the shelf it knows the slots of');
   ok(/RTF_WARD\.reload\(\)/.test(fs.readFileSync(new URL('./modes-ui.js', import.meta.url), 'utf8')), '6 a copy pulled from the shelf is read again by the closet');
   delete global.window;
 }

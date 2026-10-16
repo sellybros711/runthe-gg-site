@@ -31,6 +31,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { pageSource } from './build/page-source.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
@@ -275,7 +276,7 @@ ok(sawAGain, 'no merge in 220 ever gained a badge, so the superset claim is vacu
    cannot reach from node, so the wiring is read: a pull that nothing calls is a feature that
    never runs, and it looks exactly like an account with nothing on the shelf. */
 {
-  const page = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+  const page = pageSource();
   /* THE SPAN IS AN ARGUMENT BECAUSE recordRun IS A HUNDRED AND FIFTY LINES. Written as one
      window for every function, the two career assertions below reported a page that does not
      push at all, which is a reader failing rather than a defect and is the shape three
@@ -310,7 +311,7 @@ ok(sawAGain, 'no merge in 220 ever gained a badge, so the superset claim is vacu
    "nothing here is sent anywhere", which was true for a year and is not true now. A page
    claiming a record is private while it is on a server is the worst kind of stale copy. */
 {
-  const page = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+  const page = pageSource();
   const i = page.indexOf('function renderCareerNote(');
   const note = i >= 0 ? page.slice(i, i + 900) : '';
   ok(i >= 0, 'the page says where the career is kept, in a function rather than in markup');

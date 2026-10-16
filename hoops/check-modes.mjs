@@ -27,6 +27,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { pageSource } from './build/page-source.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(HERE, '..');
@@ -748,7 +749,7 @@ section('6. the copy and the SQL agree with the constants');
 
   const sql = fs.readFileSync(path.join(ROOT, 'supabase/116_hoops_modes.sql'), 'utf8');
   ok(sql.includes("date '" + M.DAILY_EPOCH + "'"), `116 counts days from ${M.DAILY_EPOCH}, as modes.js does`);
-  const page = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+  const page = pageSource();
   ok(page.includes("var DAILY_EPOCH = '" + M.DAILY_EPOCH + "'"), 'and so does the page');
   ok(sql.includes('v_passes > ' + M.PS.CLOCK), `116 refuses a chain past the ${M.PS.CLOCK} pass shot clock`);
   ok(sql.includes('p_lives > ' + M.CQ.LIVES), `116 refuses more than ${M.CQ.LIVES} lives`);

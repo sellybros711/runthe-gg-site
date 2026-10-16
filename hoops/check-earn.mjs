@@ -20,6 +20,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { pageSource } from './build/page-source.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -136,7 +137,7 @@ const out = (p, s, c) => ({ madePlayoffs: p, seriesWon: s, champion: c });
 /* 7. the game asks it */
 {
   const read = (f) => fs.readFileSync(path.join(HERE, f), 'utf8');
-  const page = read('index.html'), mu = read('modes-ui.js'), cu = read('career-ui.js');
+  const page = pageSource(), mu = read('modes-ui.js'), cu = read('career-ui.js');
   const at = (s, a) => s.indexOf(a);
   const rr = page.slice(at(page, 'function recordRun('), at(page, 'function earnRun('));
   ok(/var coins = earnRun\(out, c\)/.test(rr), '7 a finished run asks for its coins');

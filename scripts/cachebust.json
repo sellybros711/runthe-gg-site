@@ -2617,8 +2617,8 @@
       "sha": "814d6471760c59b4"
     },
     "career.js": {
-      "v": "53",
-      "sha": "a444814fffcf3a56"
+      "v": "54",
+      "sha": "80071af4ab569f3d"
     },
     "baller.js": {
       "v": "26",
@@ -2676,6 +2676,10 @@
       "v": "6",
       "sha": "ef1dc4f60b3b480b"
     },
+    "page.js": {
+      "v": "1",
+      "sha": "c47f04e7c4946094"
+    },
     "modes-ui.js": {
       "v": "27",
       "sha": "bc4fd85f6f528926"
@@ -2731,18 +2735,6 @@
     "career-ui.js": {
       "v": "61",
       "sha": "5ffad972cd17a212"
-    },
-    "data/players.json": {
-      "v": "5",
-      "sha": "16037dd46b6ac2f9"
-    },
-    "data/chemistry.json": {
-      "v": "1",
-      "sha": "92660036068e82d5"
-    },
-    "data/teams.json": {
-      "v": "4",
-      "sha": "2fd302df45789fe0"
     }
   },
   "ideas/index.html": {
@@ -2883,6 +2875,20 @@
     "poses.js": {
       "v": "1",
       "sha": "cc3b1662c7b56f34"
+    }
+  },
+  "hoops/page.js": {
+    "data/players.json": {
+      "v": "5",
+      "sha": "16037dd46b6ac2f9"
+    },
+    "data/chemistry.json": {
+      "v": "1",
+      "sha": "92660036068e82d5"
+    },
+    "data/teams.json": {
+      "v": "4",
+      "sha": "2fd302df45789fe0"
     }
   },
   "mythiball/proto3d/main.js": {
