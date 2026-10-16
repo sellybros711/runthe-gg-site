@@ -60,10 +60,10 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- The Putting Green: a tester preview. It draws nothing until puttOn() opens it (see PUTT_TESTERS). -->
-<script defer src="putt/putt.js?v=79"></script>
+<script defer src="putt/putt.js?v=80"></script>
 <script defer src="putt/land.js?v=12"></script>
 <script defer src="putt/hole3d.js?v=16"></script>
-<script defer src="putt/trail.js?v=35"></script>
+<script defer src="putt/trail.js?v=36"></script>
 <script defer src="putt/mapland.js?v=6"></script>
 <!-- The course golfer in the profile style, asked through g3dOn(). -->
 <script defer src="golfer3d.js?v=5"></script>
@@ -19302,7 +19302,8 @@ function hvAddressGolfer(hole, holeIdx, courseKey, look){
   let anch=g3?g3.ball:(useSw4?(PXG_SW4_ANCH.N||[12,18]):dir8Anchor('N','full', !!look.lefty));
   if(useSw4) anch=[anch[0], anch[1]+SW4_HR];
   const x0=A[0]-GW*(anch[0]/W), y0=A[1]-GH*(anch[1]/H);   // stands over the ball facing up the hole (no rotation)
-  return `<g class="hvswing hvsw-full"><image class="hvsw hvsw-static" href="${addr}" x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${GW.toFixed(1)}" height="${GH.toFixed(1)}" preserveAspectRatio="none"/></g>`;
+  const fx=fxOf(look), glow=fx?' hvsw-glow':'', gsty=fx?` style="--fxc:${fx.col};animation-delay:${auraPhase().toFixed(3)}s"`:'';   // the aura glows at address as it does on the swing
+  return `<g class="hvswing hvsw-full${glow}"${gsty}><image class="hvsw hvsw-static" href="${addr}" x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${GW.toFixed(1)}" height="${GH.toFixed(1)}" preserveAspectRatio="none"/></g>`;
 }
 // in the Pro Shop, preview pending COLOR purchases live (worn gear is dropped, so only colors preview)
 // true in the Pro Shop overlay AND the customization (setup) screen, which share the tile/preview UI
@@ -23194,8 +23195,14 @@ function g3dOn(){
 // it in its own finish (its sprite is registered as pu_<id>), and The Magic Wand is the wand.
 function puttLook(look){ try{ const mine=look===S.look, id=mine?puttEquippedId():(look&&look.putter); const p=PUTTERS_BY[id]; if(!p) return look;
   return Object.assign({},look,{club:p.shape==='wand'?'wand':'pu_'+p.id}); }catch(e){ return look; } }
+// ONE GOLFER IN EVERY MODE. The look a mode draws: the putter you equipped on every green and every walk (both
+// games), and the career's age stamped on, so a copy of the look still greys and tans like the golfer it came from,
+// and the 3D golfer's cache (keyed on the look) draws a new golfer at a birthday instead of keeping last year's.
+function modeLook(look,kind){ let L=look||S.look||DEFLOOK; const age=avAgeOf(L);
+  if(kind==='putt'||kind==='walk') L=puttLook(L);
+  return (age>0&&L.age==null)?withAge(L,age):L; }
 function g3dSet(look,vx,vy,kind){
-  if(kind==='putt') look=puttLook(look);
+  look=modeLook(look,kind);
   try{ const a=Math.atan2(vx,-vy)*180/Math.PI; const r=window.RTT_G3D.set(look,a,kind); window.RTT_G3D.warm(look,kind); return r; }
   catch(e){ return null; }
 }
@@ -23211,16 +23218,21 @@ function puttHost(){
   return { courses:DAILY_COURSES, keys:DAILY_KEYS, dHash:dHash, hvGeom:hvGeom, hvBiome:hvBiome,
     todayKey:todayKey, dailyCourseKey:dailyCourseKey,
     sfx:function(n){ try{ sfx(n); }catch(e){} }, buzz:function(p){ try{ buzz(p); }catch(e){} },
-    golfer:function(){ return pxGolferCanvas(S.look,{noBall:true}); },
+    golfer:function(){ return pxGolferCanvas(modeLook(S.look,'putt'),{noBall:true}); },
+    // the same golfer as the page's own figure, putter in hand and wearing its aura (the map and the header)
+    // (the class sizes it, so the figure's own fixed height is taken off)
+    figure:function(cls){ try{ return pxFigureHTML(modeLook(S.look,'putt'),56).replace('class="pxfigsm','class="'+(cls||'')+' pxfigsm').replace('height:56px;width:auto;','width:auto;'); }catch(e){ return ''; } },
+    // the aura's colour, for a golfer drawn on a canvas: it glows as the course golfer's does (hvswGlow)
+    aura:function(){ try{ const f=fxOf(S.look); return f?f.col:null; }catch(e){ return null; } },
     // a Putt Putt greeter's face for the dialogue box: the profile picture renderer, in their look
     portrait:function(look){ try{ return pxGolferCanvas(Object.assign({},DEFLOOK,look||{}),{noBall:true}); }catch(e){ return null; } },
     // the 3D modelled golfer the tracer plays with, standing side-on to the putt: address, take back, through
     golfer3:function(vx,vy){ return g3dOn()?g3dSet(S.look,vx,vy,'putt'):null; },
     // the same golfer walking the tour map: one frame of the step (0 to 7), facing the screen vector, drawn on first ask
-    golferWalk:function(vx,vy,i){ try{ if(!g3dOn()||!window.RTT_G3D.frame) return null; return window.RTT_G3D.frame(S.look,Math.atan2(vx,-vy)*180/Math.PI,'walk',i); }catch(e){ return null; } },
-    golferWalkHas:function(vx,vy,i){ try{ return !!(g3dOn()&&window.RTT_G3D.has&&window.RTT_G3D.has(S.look,Math.atan2(vx,-vy)*180/Math.PI,'walk',i)); }catch(e){ return false; } },
-    golferWalkWarm:function(vx,vy){ try{ if(g3dOn()&&window.RTT_G3D.warmAim) window.RTT_G3D.warmAim(S.look,Math.atan2(vx,-vy)*180/Math.PI,'walk'); }catch(e){} },
-    // the Tour's record is kept per account, coins land in the game's own wallet, a Tour Pass means 6 lives
+    golferWalk:function(vx,vy,i){ try{ if(!g3dOn()||!window.RTT_G3D.frame) return null; return window.RTT_G3D.frame(modeLook(S.look,'walk'),Math.atan2(vx,-vy)*180/Math.PI,'walk',i); }catch(e){ return null; } },
+    golferWalkHas:function(vx,vy,i){ try{ return !!(g3dOn()&&window.RTT_G3D.has&&window.RTT_G3D.has(modeLook(S.look,'walk'),Math.atan2(vx,-vy)*180/Math.PI,'walk',i)); }catch(e){ return false; } },
+    golferWalkWarm:function(vx,vy){ try{ if(g3dOn()&&window.RTT_G3D.warmAim) window.RTT_G3D.warmAim(modeLook(S.look,'walk'),Math.atan2(vx,-vy)*180/Math.PI,'walk'); }catch(e){} },
+    // the Tour's record is kept per account, coins land in the game's own wallet, a Tour Pass means 18 lives
     storeKey:function(k){ return acctKey(k); },
     // the record is the account's: who is signed in, the server call the Tour saves through, and the sign in sheet
     uid:function(){ try{ return (sbUser&&sbUser.id)||null; }catch(e){ return null; } },
@@ -30024,8 +30036,13 @@ function drawPlayerCard(ctx,W,H,o){
   //    whole 8px a sprite pixel (two of the card's cells) so his pixels are square and sit on its grid
   try{ const glf=pxGolferCanvas(o.look), gsc=glf.height/PXG_H, SP=8, r1=34, rows=Math.min(r1,Math.floor(ih*U/SP)), r0=r1-rows;
     ctx.save(); ctx.beginPath(); ctx.rect(ix*U,iy*U,iw*U,ih*U); ctx.clip();
-    ctx.drawImage(glf, 0, Math.round(r0*gsc), glf.width, Math.round(rows*gsc),
-      Math.round((ix+iw/2)*U - PXG_W*SP/2), (iy+ih)*U - rows*SP, PXG_W*SP, rows*SP);
+    const gx=Math.round((ix+iw/2)*U - PXG_W*SP/2), gy=(iy+ih)*U - rows*SP;
+    // an aura is a rim of its colour one sprite pixel round the golfer, square on the card's grid like the rest
+    const fx=fxOf(o.look); if(fx){ const rim=document.createElement('canvas'); rim.width=glf.width; rim.height=glf.height; const rc=rim.getContext('2d');
+      rc.drawImage(glf,0,0); rc.globalCompositeOperation='source-in'; rc.fillStyle=fx.col; rc.fillRect(0,0,rim.width,rim.height);
+      ctx.globalAlpha=0.7; for(const d of [[-1,0],[1,0],[0,-1],[0,1]]) ctx.drawImage(rim, 0, Math.round(r0*gsc), rim.width, Math.round(rows*gsc), gx+d[0]*SP, gy+d[1]*SP, PXG_W*SP, rows*SP);
+      ctx.globalAlpha=1; }
+    ctx.drawImage(glf, 0, Math.round(r0*gsc), glf.width, Math.round(rows*gsc), gx, gy, PXG_W*SP, rows*SP);
     ctx.restore(); }catch(e){}
   // 5. everything on top
   const top=P.grid(GW,GH), txt=P.grid(GW,GH);
@@ -42526,7 +42543,7 @@ const PENDING_SEASONS_KEY='bag_pending_seasons';
 // CS393: a minimal golfer-appearance snapshot for the public boards - only the keys the pixel figure reads
 // (drops _ts/acc/caddie/country/title, which don't affect the rendered golfer). Keeps the payload tiny.
 function lookForBoard(look){ const L=look||S.look||DEFLOOK; const o={};
-  ['skin','skinTone','hair','hairStyle','polo','pants','shoes','cap','hatStyle','hat','shirtPat','hatPat','eyewear','club','top','leg','fx','ball','cleats','lefty','gender','plate','cardbg','body'].forEach(k=>{ if(L[k]!==undefined) o[k]=L[k]; });
+  ['skin','skinTone','hair','hairStyle','polo','pants','shoes','cap','hatStyle','hat','shirtPat','hatPat','eyewear','club','top','leg','fx','ball','cleats','lefty','gender','plate','cardbg','body','putter'].forEach(k=>{ if(L[k]!==undefined) o[k]=L[k]; });
   // ITEM 20: carry the golfer's AGE, so a board shows a rookie and a grey-templed veteran as what they are.
   try{ if(!S.daily && typeof playerAge==='function'){ const a=playerAge(); if(a>0) o.age=a; } }catch(e){}
   try{ if(!look){ const sc=passStampsCode(); if(sc) o.stamps=sc; } }catch(e){}   // your own Tour Pass stamps, shown on your card to other players

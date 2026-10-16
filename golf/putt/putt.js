@@ -2636,11 +2636,22 @@ function hearts(st){ var mx = Math.max(livesMax(), st.lives || 0), nh = Math.cei
   if (bk) out += '<b class="pp-hbank" title="Spare lives banked">+' + bk + '</b>'; return out; }
 function golferImg(cls){ try{ var c = S.host.golfer && S.host.golfer(); if (c && c.toDataURL) return '<img class="' + cls + '" alt="" src="' + c.toDataURL() + '">'; }catch(e){} return ''; }
 function golferUrl(){ try{ var c = S.host.golfer && S.host.golfer(); if (c && c.toDataURL) return c.toDataURL(); }catch(e){} return ''; }
+// the golfer on the map is the page's own figure, putter in hand and wearing its aura, sized by the class
+function golferFig(cls){ try{ var f = S.host.figure && S.host.figure(cls); if (f) return f; }catch(e){} return golferImg(cls); }
+// the round picture in the header and the play bar: an aura is a glow round the ring in its colour
+function avStyle(u){ var a = null; try{ a = S.host.aura && S.host.aura(); }catch(e){}
+  return (u ? 'background-image:url(' + u + ');' : '') + (a ? 'box-shadow:0 2px 0 rgba(0,0,0,.4),0 0 10px ' + a + ',0 0 3px ' + a : ''); }
+// the same aura on a golfer drawn on a canvas: the pulse the course golfer has (hvswGlow), 2.4 s, its colour,
+// k pixels to a figure pixel. Still, and at its middle, when the player asks for less motion.
+function auraGlow(ctx, k, t){ var a = null; try{ a = S.host.aura && S.host.aura(); }catch(e){} if (!a) return;
+  var still = false; try{ still = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+  var u = still ? 0.5 : 0.5 - 0.5 * Math.cos((t == null ? performance.now() / 1000 : t) / 2.4 * 2 * Math.PI);
+  ctx.shadowColor = a; ctx.shadowBlur = Math.max(2, (1 + 3 * u) * k); ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0; }
 function balStr(){ try{ if (S.host.balance) return Number(S.host.balance()).toLocaleString(); }catch(e){} return ''; }
 /* THE HEADER FLOATS OVER THE MAP, as the mockup drew it: your golfer in a gold ring, your hearts,
    the refill clock when one is running, your coins and a close button. */
 function hdr(right){ var u = golferUrl(), b = balStr();
-  return '<div class="pp-hdr"><i class="pp-av" style="' + (u ? 'background-image:url(' + u + ')' : '') + '"></i><span class="pp-hearts" data-hearts>' + hearts(pload()) + '</span><span class="pp-hclock" data-clock></span><span class="pp-sp"></span>' +
+  return '<div class="pp-hdr"><i class="pp-av" style="' + avStyle(u) + '"></i><span class="pp-hearts" data-hearts>' + hearts(pload()) + '</span><span class="pp-hclock" data-clock></span><span class="pp-sp"></span>' +
     (right != null ? right : (b !== '' ? '<span class="pp-cpill" data-bal>' + b + '</span>' : '')) + '<button class="pp-cx" data-x aria-label="Close">✕</button></div>'; }
 // a small top view of a hole, off the flat painter, for the Daily card
 var THUMBS = {};
@@ -2792,7 +2803,7 @@ function drawMap(st, TR){
   var k = Math.max(1, (box.clientWidth || 390) / (W + 380)); S.mapK = k; S.mapPos = pos; S.mapWS = WS;
   box.innerHTML = '<div class="pp-sizer" style="height:' + Math.ceil(H * k) + 'px"><div class="pp-world" style="height:' + H + 'px;width:' + W + 'px;transform:translateX(-50%) scale(' + k + ')">' + bands +
     '<svg class="pp-path" width="' + W + '" height="' + H + '"><path d="' + d + '"/></svg>' + badges + clouds +
-    '<div class="pp-me" style="left:' + (cp[0] > W / 2 + 50 ? cp[0] - 76 : cp[0] + 34) + 'px;top:' + (cp[1] + 22) + 'px">' + golferImg('pp-meimg') + '</div></div></div>';
+    '<div class="pp-me" style="left:' + (cp[0] > W / 2 + 50 ? cp[0] - 76 : cp[0] + 34) + 'px;top:' + (cp[1] + 22) + 'px">' + golferFig('pp-meimg') + '</div></div></div>';
   // the golfer on the map walks: tap him and the joystick comes up, heading for the hole in front of him
   var meEl = box.querySelector('.pp-me'); if (meEl && trailOk() && tp.lv <= N){ meEl.classList.add('tap'); meEl.setAttribute('role', 'button'); meEl.setAttribute('aria-label', 'Walk to hole ' + tp.lv);
     meEl.onclick = function(){ if (trailOk()) openTrail(TR.id, Math.min(N, tp.lv) - 1); }; }
@@ -2853,7 +2864,7 @@ function drawCal(st){
   var cp = pos[pos.length - 1], k = Math.max(1, (box.clientWidth || 390) / (W + 380)); S.mapK = k;
   box.innerHTML = '<div class="pp-sizer" style="height:' + Math.ceil(H * k) + 'px"><div class="pp-world pp-calw" style="height:' + H + 'px;width:' + W + 'px;transform:translateX(-50%) scale(' + k + ')">' + bands +
     '<svg class="pp-path" width="' + W + '" height="' + H + '"><path d="' + dpath + '"/>' + (walked ? '<path class="walk" d="' + walked + '"/>' : '') + '</svg>' + pages +
-    '<div class="pp-me" style="left:' + (cp[0] > W / 2 + 50 ? cp[0] - 76 : cp[0] + 34) + 'px;top:' + (cp[1] + 22) + 'px">' + golferImg('pp-meimg') + '</div></div></div>';
+    '<div class="pp-me" style="left:' + (cp[0] > W / 2 + 50 ? cp[0] - 76 : cp[0] + 34) + 'px;top:' + (cp[1] + 22) + 'px">' + golferFig('pp-meimg') + '</div></div></div>';
   box.querySelectorAll('[data-day]').forEach(function(b){ b.onclick = function(){ var d = b.getAttribute('data-day'), r = pload().daily[d];
     if (r && r.done) return dailyResult(null, d);
     if (d === today()) return startDaily();
@@ -3673,7 +3684,7 @@ function playHole(){
     <div class="pt-bar">' + (C.kind === 'real' ? '<button class="pt-bt" data-l aria-label="Aim left">◂</button><button class="pt-bt" data-r aria-label="Aim right">▸</button>' : '') +
     '<div class="pt-hint" data-hint></div><button class="pt-bt" data-ov hidden aria-label="See the whole hole">Overview</button><button class="pt-bt" data-restart aria-label="Restart the hole">↺</button></div>';
   if (R.mode === 'ppt'){ var tp = S.ov.querySelector('.pt-top'), u = golferUrl(); tp.classList.add('pp-play'); var bx = tp.querySelector('[data-x]'); bx.textContent = '✕'; bx.setAttribute('aria-label', 'Leave the hole');
-    bx.insertAdjacentHTML('afterend', '<i class="pp-av" style="' + (u ? 'background-image:url(' + u + ')' : '') + '"></i><span class="pp-hearts">' + hearts(pload()) + '</span>'); }
+    bx.insertAdjacentHTML('afterend', '<i class="pp-av" style="' + avStyle(u) + '"></i><span class="pp-hearts">' + hearts(pload()) + '</span>'); }
   if (R.mode === 'pdaily'){ var tb = S.ov.querySelector('.pt-top'); if (tb) tb.insertAdjacentHTML('beforeend', '<span class="pp-clock" aria-label="Time"><i></i><b data-dclock>0:00.0</b></span>'); S.clockEl = null; }
   S.ov.querySelector('[data-x]').onclick = function(){ leaveHole(); };
   S.ov.querySelector('[data-restart]').onclick = function(){ restartHole(); };
@@ -4238,15 +4249,16 @@ function drawGolfer0(ctx, P, cam, measure){
       if (im.complete && im.naturalWidth){ var hg = (P.C.kind === 'real' ? 3.4 : 3.1) * cam.s, kk = hg / g.fig, bp = w2s(cam, at[0], at[1]);
         var rx = Math.round(bp[0] - g.ball[0] * kk), ry = Math.round(bp[1] - g.ball[1] * kk), rw = Math.round(g.W * kk), rh = Math.round(g.H * kk);
         if (measure) return [rx, ry, rw, rh];
-        ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(im, rx, ry, rw, rh); ctx.restore(); }
+        ctx.save(); ctx.imageSmoothingEnabled = false; auraGlow(ctx, kk); ctx.drawImage(im, rx, ry, rw, rh); ctx.restore(); }
       return null; } }   // still loading: draw nothing this frame rather than flash the flat golfer
-  if (!h.golfer || P.state !== 'aim') return null;
+  // the flat golfer (no 3D module) stays where it stood to putt until the ball is at rest, rather than vanish
+  if (!h.golfer) return null;
   if (!S.gcv){ try{ S.gcv = h.golfer(); }catch(e){ S.gcv = null; } }
   var g = S.gcv; if (!g || !g.width) return null;
   var hgt = (P.C.kind === 'real' ? 3.4 : cam.v3 ? 3.1 : 2.9) * cam.s, k = hgt / g.height, w = Math.round(g.width * k), hh = Math.round(g.height * k);
-  var b = w2s(cam, P.ball[0], P.ball[1]), side = Math.cos(P.aimAng) >= 0 ? -1 : 1;
+  var b = w2s(cam, at[0], at[1]), side = Math.cos(ang) >= 0 ? -1 : 1;
   if (measure) return [Math.round(b[0] + side * (w * 0.42)) - w / 2, Math.round(b[1] - hh * 0.9), w, hh];
-  ctx.save(); ctx.imageSmoothingEnabled = false;
+  ctx.save(); ctx.imageSmoothingEnabled = false; auraGlow(ctx, k);
   ctx.translate(Math.round(b[0] + side * (w * 0.42)), Math.round(b[1] - hh * 0.9));
   if (side > 0){ ctx.scale(-1, 1); ctx.drawImage(g, -w / 2, 0, w, hh); } else ctx.drawImage(g, -w / 2, 0, w, hh);
   ctx.restore();

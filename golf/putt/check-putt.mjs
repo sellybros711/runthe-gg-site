@@ -585,10 +585,16 @@ if (!args.includes('--no-browser')){
         // set down on the crossing and left until the walk across has stopped carrying him: a busy page can drift him a
         // fraction of a foot toward the bank, where a slanted creek leaves dry land beside the deck
         for (let i = 0; i < 30; i++){ t.goTo(c.x, c.y); await sleep(150); const q = t.pos(); if (Math.hypot(q[0] - c.x, q[1] - c.y) < 0.03) break; }
-        const q0 = t.pos(), nx = -c.t[1], ny = c.t[0];
-        // pushed square off the side of the deck he never gets into the water, and gets no further than its edge
+        // the creek crosses the path at a slant, so on one side of the crossing the bank can come right up to the deck:
+        // he is pushed off the side where the deck meets water, read off the ground from where he actually stands
+        const q0 = t.pos(), sideTo = sg => { for (let d = 0.1; d < 5; d += 0.1){ const x = q0[0] - c.t[1] * sg * d, y = q0[1] + c.t[0] * sg * d;
+            if (P.poolAt(x, y)) return d; if (!P.deckAt(x, y)) return 99; } return 99; },
+          sg = sideTo(1) <= sideTo(-1) ? 1 : -1, nx = -c.t[1] * sg, ny = c.t[0] * sg;
+        // pushed square off that side of the deck he reaches its edge and never sets foot in the water. Held against the
+        // water he may slide along the edge and off the end of the bridge onto the bank (how soon depends on the frame
+        // rate), which is walking, not swimming, so how far he ends up is not asked
         let dry = true, far = 0; t.stick(nx, ny); for (let k = 0; k < 12; k++){ await sleep(100); const q = t.pos(); if (P.poolAt(q[0], q[1])) dry = false; far = Math.max(far, (q[0] - q0[0]) * nx + (q[1] - q0[1]) * ny); } t.stick(0, 0);
-        out.held = dry && far < 2.8; out.hi = [dry, +far.toFixed(2), firstWater]; }
+        out.held = dry && far > 1; out.hi = [dry, +far.toFixed(2), firstWater, sg]; }
       window.RTT_PUTT.close(); sbUser = { id:'chk' }; return out; });
     claim(cr.n >= 25 && Object.keys(cr.kinds).length >= 3 && cr.wet === 0 && cr.inWater === 0 && cr.bridges === cr.crossings && cr.dryDeck,
       `creeks cross ${cr.n} trails of the tour in ${Object.keys(cr.kinds).join(', ')}: the walk is never wet, nothing lies in the water, and every crossing has a dry bridge (${cr.wet} wet, ${cr.inWater} in water, ${cr.bridges}/${cr.crossings} bridged)`);
