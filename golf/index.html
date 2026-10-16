@@ -59,8 +59,8 @@
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
-<!-- The Putting Green: a tester preview. It draws nothing until puttOn() opens it (see PUTT_TESTERS). -->
-<script defer src="putt/putt.js?v=86"></script>
+<!-- Putt Putt Tour. It draws nothing until puttOn() opens it (see PUTT_TESTERS and PUTT_LIVE). -->
+<script defer src="putt/putt.js?v=87"></script>
 <script defer src="putt/land.js?v=12"></script>
 <script defer src="putt/hole3d.js?v=16"></script>
 <script defer src="putt/trail.js?v=37"></script>
@@ -15798,13 +15798,22 @@ function ftTag(full){
   const nm=(S.name&&String(S.name).trim())||'Your golfer';
   let meta=[]; try{ const t=repTier(); if(t&&t.tier) meta.push(esc(t.tier.name)); }catch(e){}
   try{ const lt=(career()||{}).lt||{}; if(lt.wins) meta.push(`${lt.wins} win${lt.wins===1?'':'s'}`); if(lt.majors) meta.push(`${lt.majors} major${lt.majors===1?'':'s'}`); }catch(e){}
-  let stk=''; try{ if(!PRACTICE){ const st=streakDisplay(), fz=streakFreezes(), played=dailyAttempts()>0;
+  let stk=''; try{ if(!PRACTICE){ const st=streakDisplay(), fz=streakFreezes(), played=dailyAttempts()>0||((LS.get(acctKey('bag_streak'),null)||{}).last===todayKey());   // the Putt Putt Daily Hole keeps it too
     if(st>0) stk = !played ? `<div class="ft-stk hot">${ftIcon('fire')}<span><b>${st}</b>-day streak on the line · ${dCd('hm')}</span></div>`
                           : `<div class="ft-stk">${ftIcon('fire')}<span><b>${st}</b>-day streak safe</span>${fz?`<span class="ft-frz">${ftIcon('snow')}${fz} freeze${fz===1?'':'s'}</span>`:''}</div>`;
-    else stk=`<div class="ft-stk">${ftIcon('fire')}<span>Play 18 to start a streak</span></div>`; } }catch(e){}
+    else stk=`<div class="ft-stk">${ftIcon('fire')}<span>Play today to start a streak</span></div>`; } }catch(e){}
   const tag=$(`<div class="ft-tag"><span class="ft-grom" aria-hidden="true"></span><div class="ft-tagt"><div class="ft-nm">${esc(nm)}</div>${meta.length?`<div class="ft-meta">${meta.join(' · ')}</div>`:''}${stk}</div>${full?'<button type="button" class="ft-look">Change look</button>':''}</div>`);
   const lk=tag.querySelector('.ft-look'); if(lk) lk.onclick=e=>{ e.stopPropagation(); ftCloset(); };
   return tag; }
+// THE CAREER CARD: one golfer, two tours. The Pro Tour's record and Putt Putt's side by side, under the name
+// tag on Me, each number read off its own record (career().lt, and Putt Putt's achStats)
+function ftRecord(){
+  let lt={}; try{ lt=(career()||{}).lt||{}; }catch(e){}
+  let pp={}; try{ if(puttOn()) pp=window.RTT_PUTT.achStats(puttHost())||{}; }catch(e){}
+  const n=v=>Number(v||0).toLocaleString(), cell=(v,l)=>`<span class="ft-rc"><b>${n(v)}</b><small>${l}</small></span>`;
+  const one=(v,a,b)=>v===1?a:b;
+  return $(`<div class="ft-rec"><div class="ft-rh"><div class="ft-k">Pro Tour</div><div class="ft-rr">${cell(lt.seasons,one(lt.seasons,'season','seasons'))}${cell(lt.wins,one(lt.wins,'win','wins'))}${cell(lt.majors,one(lt.majors,'major','majors'))}</div></div>
+    <div class="ft-rh"><div class="ft-k">Putt Putt</div><div class="ft-rr">${cell(pp.pp_stars,one(pp.pp_stars,'star','stars'))}${cell(pp.pp_aces,one(pp.pp_aces,'ace','aces'))}${cell(pp.pp_worlds,one(pp.pp_worlds,'world','worlds'))}</div></div></div>`); }
 function ftCloset(cat){ try{ track('home_open_closet'); }catch(e){} S.shopPreview=null; S.overlay=null; S.setupEdit=true; S.setupReturn={screen:S.screen, overlay:null}; S.screen='setup'; S.setupCat=cat||'shirt'; render(); }
 
 // an ad slot: the AdSense unit once the slot is real. Until then the Pro Tour hub and Me carry a house ad for
@@ -16127,6 +16136,7 @@ function scrMe(){
   const body=$(`<div class="ft-body"></div>`);
   body.appendChild($(`<div class="ft-mehead"><div class="ft-k">Your locker</div></div>`));
   body.appendChild(ftTag(false));
+  body.appendChild(ftRecord());
   const th=(fn)=>{ try{ const h=fn(); const m=/src="([^"]+)"/.exec(h||''); return m?`<img src="${m[1]}" alt="">`:''; }catch(e){ return ''; } };
   const slots=[
     ['hw','Headwear', ()=>th(()=>pxItemThumb('hw', L.cap===false?'none':(L.hatStyle||'cap')))],
@@ -16261,6 +16271,8 @@ function ftStyleOnce(){ if(document.getElementById('ft-css')) return; const st=d
 .ft-tag{position:relative;z-index:3;display:inline-flex;align-items:center;gap:12px;text-align:left;margin-top:-6px;background:linear-gradient(180deg,#4b2c1d,#3b2216);border-radius:12px;padding:9px 14px 9px 11px;box-shadow:0 14px 30px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.08);outline:1px dashed rgba(216,180,90,.45);outline-offset:-5px;max-width:calc(100vw - 32px)}
 .ft-grom{width:18px;height:18px;flex:none;border-radius:50%;background:radial-gradient(circle,#2b170e 34%,var(--brass) 38%,#8d6a22 70%)}
 .ft-nm{font:900 17px/1 var(--serif);letter-spacing:2px;color:#f6e4b8;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ft-rec{position:relative;z-index:3;display:flex;gap:8px;margin:10px auto 0;max-width:420px}.ft-rh{flex:1 1 0;min-width:0;background:rgba(0,0,0,.28);border-radius:10px;padding:7px 8px 8px;box-shadow:inset 0 0 0 1px rgba(216,180,90,.22)}
+.ft-rh .ft-k{text-align:center}.ft-rr{display:flex;justify-content:space-around;margin-top:4px}.ft-rc{display:flex;flex-direction:column;align-items:center;min-width:0}.ft-rc b{font:800 19px/1 var(--body);color:#fff3d6}.ft-rc small{font:700 10px/1.2 var(--body);letter-spacing:.6px;text-transform:uppercase;color:#d8bf97;margin-top:3px}
 .ft-meta{font:700 11px/1.2 var(--body);letter-spacing:1px;text-transform:uppercase;color:#d8bf97;margin-top:4px}
 .ft-stk{display:flex;align-items:center;gap:5px;margin-top:5px;font:800 10.5px var(--body);letter-spacing:.5px;text-transform:uppercase;color:#d8bf97;font-variant-numeric:tabular-nums}
 .ft-stk svg{width:15px;height:15px;flex:none}
@@ -23365,6 +23377,8 @@ function puttHost(){
     // the aura's colour, for a golfer drawn on a canvas: it glows as the course golfer's does (hvswGlow)
     aura:function(){ try{ const f=fxOf(S.look); return f?f.col:null; }catch(e){ return null; } },
     // a Putt Putt greeter's face for the dialogue box: the profile picture renderer, in their look
+    // the menus' 3D head chip, as an <img> (a pending one is filled in when the page is idle), or '' without it
+    chip:function(look){ try{ const g=g3dPic(look?Object.assign({},DEFLOOK,look):modeLook(S.look,'putt'),'chip'); return g?`<img ${g3dSrc(g)} alt="">`:''; }catch(e){ return ''; } },
     portrait:function(look){ try{ return pxGolferCanvas(Object.assign({},DEFLOOK,look||{}),{noBall:true}); }catch(e){ return null; } },
     // the 3D modelled golfer the tracer plays with, standing side-on to the putt: address, take back, through
     golfer3:function(vx,vy){ return g3dOn()?g3dSet(S.look,vx,vy,'putt'):null; },
