@@ -10133,6 +10133,13 @@ const MILESTONE_ITEMS=[
   {id:'mi_career',   slot:'driver',name:"Legend's Driver",     rarity:'exclusive',boost:{dist:5,acc:3},when:m=>(m.careersCompleted||0)>=1,note:'Complete a career'}
 ];
 const ACC_BY_ID={}; ACCESSORIES.concat(MILESTONE_ITEMS).forEach(a=>ACC_BY_ID[a.id]=a);
+/* MILESTONE GEAR (the owner, 2026-10-16: "real items"). Three milestone items are now worn in the closet, each with
+   the boost its old row carries (the rows above stay as they are, frozen in the boost baseline). Earning the
+   milestone owns the item (grantMilestoneItems), so a golfer who earned one before gets it on their next load.
+   The two charms (Rookie Ball-Marker, Grand Slam Signet) have no slot and stay data only. Never sold, never in a
+   pack: CARD_EARN prices them 0 and shows how to earn them. */
+const MILESTONE_GEAR={ mi_no1:'hw:no1cap', mi_major:'bl:majormarker', mi_career:'cl:legenddriver' };
+const MILESTONE_GEAR_HINT={ mi_no1:'Reach World No.1', mi_major:'Win a major', mi_career:'Complete a career' };
 function accById(id){ return ACC_BY_ID[id]||null; }
 // ---- economy ----
 function coinState(){ let s=LS.get(acctKey('bag_coins'),null)||{}; s.spent=s.spent||0; s.seen=s.seen||0; s.owned=(s.owned&&typeof s.owned==='object')?s.owned:{};
@@ -11281,7 +11288,8 @@ function maybeFirstBuySpin(){ try{
     try{ toast('<b style="color:#ff7ab8">🎡 Thanks for the support!</b><br><span class="small">Your first purchase earned a free Prize Wheel spin.</span>', 5200); render(); }catch(e){}
   }).catch(function(){ _firstBuyBusy=false; });
 }catch(e){ _firstBuyBusy=false; } }
-function grantMilestoneItems(s){ const m=achMetrics(); MILESTONE_ITEMS.forEach(mi=>{ try{ if(!s.owned[mi.id] && mi.when(m)) s.owned[mi.id]=1; }catch(e){} }); }
+function grantMilestoneItems(s){ const m=achMetrics(); MILESTONE_ITEMS.forEach(mi=>{ try{ if(!s.owned[mi.id] && mi.when(m)) s.owned[mi.id]=1; }catch(e){} });
+  for(const id in MILESTONE_GEAR){ if(s.owned[id] && !s.owned[MILESTONE_GEAR[id]]) s.owned[MILESTONE_GEAR[id]]=1; } }
 // Legend gear (earn:true special shirts) is auto-granted to owned once its hard req is met, so it's a true unlock.
 function grantUnlockShirts(s){ const m=badgeMetrics(); COSMETIC_SHIRTS.forEach(cs=>{ if(!cs.earn) return; try{ if(cs.req(m)){ if(!s.owned['sh:'+cs.id]) s.owned['sh:'+cs.id]=1; if(!s.owned['ht:'+cs.id]) s.owned['ht:'+cs.id]=1; } }catch(e){} }); }   // an earned colorway unlocks for shirt AND hat
 // reconcile: self-heal earned total, grant milestone gear, toast newly-earned coins. Runs on load +
@@ -11473,7 +11481,9 @@ const PXBALL=[
   {id:'acorn',        name:'Acorn',           hist:'Season 2 Tour Pass',         price:0, col:'#c08a4a', tracer:{g:'rgba(192,138,74,.5)', c:'#f0d2a4'}},
   {id:'jackolantern', name:'Jack-o\'-Lantern', hist:'Season 2 Tour Pass',        price:0, col:'#f08a1e', tracer:{g:'rgba(240,138,30,.6)', c:'#ffd27a'}},
   // the Spooky Szn hunt prize: price 0, so it is never in a pack, the shop or the shard exchange (HUNT_PRIZES)
-  {id:'blackcat',     name:'Black Cat Ball',   hist:'Haunted Links hunt prize',      price:0, col:'#2a2433', tracer:{g:'rgba(150,120,200,.5)', c:'#ffd23a'}} ];
+  {id:'blackcat',     name:'Black Cat Ball',   hist:'Haunted Links hunt prize',      price:0, col:'#2a2433', tracer:{g:'rgba(150,120,200,.5)', c:'#ffd23a'}},
+  // milestone gear (MILESTONE_GEAR): earned with a first major, never sold
+  {id:'majormarker',  name:'Major Marker Ball', hist:'Win a major',                  price:0, col:'#e2b93b', tracer:{g:'rgba(226,185,59,.55)', c:'#fff2b8'}} ];
 const PXBALL_BY={}; PXBALL.forEach(function(o){ PXBALL_BY[o.id]=o; });
 function ballOf(look){ var id=(look&&look.ball)||'none'; return (id&&id!=='none'&&PXBALL_BY[id])?PXBALL_BY[id]:null; }
 /* ==== PLAYER CARDS (owner): a collectible flip card of your golfer. Customize the NAMEPLATE + CARD
@@ -11994,6 +12004,8 @@ const CARD_EARN={
  'cb:aerial':      {hint:'Win 5 tour events', req:()=>{const m=_cardLt(); return !!m&&m.wins>=5;}},
  'cb:goat':        {hint:'Reach the Icon Tour Rep rank', req:()=>{try{return repAtLeast('Icon');}catch(e){return false;}}},
 };
+// milestone gear (MILESTONE_GEAR): the hint is the milestone's own note, and the item is owned once the milestone is
+Object.keys(MILESTONE_GEAR).forEach(id=>{ const mi=MILESTONE_ITEMS.find(x=>x.id===id); CARD_EARN[MILESTONE_GEAR[id]]={hint:MILESTONE_GEAR_HINT[id]||mi.note, req:()=>{ try{ return !!coinState().owned[id]; }catch(e){ return false; } }}; });
 // ---- cosmetics (colors + patterns) are PURCHASED too (same coin economy, namespaced owned keys) ----
 // keys: sh:<shirt>  sp:<pattern>  ht:<hat color>  pt:<pants>  so:<shoes>  fx:<effect>. Free defaults below.
 // CS353: the 6 BASIC shirt/hat colors are FREE (so the retro creator always offers a shirt + hat color pick);
@@ -12022,6 +12034,7 @@ function cosmeticPriceBase(cat,id){
   // A Tour Pass exclusive is never priced. Headwear and eyewear fall back to a default price when an id is
   // not in their list, so without this a pass hat would quietly turn up in packs and in the shop.
   if(passItemOf(cat,id)) return 0;
+  if(CARD_EARN[cosKey(cat,id)]) return 0;   // earned (player-card unlocks, milestone gear): never priced, so never in a pack
   if(cat==='shirt'){ const cs=COSMETIC_SHIRTS.find(s=>s.id===id); return (cs&&cs.earn)?0:4000; }   // ALL colors one flat price (owner); earned colorways free (achievement-unlocked)
   if(cat==='pat')   return (typeof PXPAT_BY!=='undefined'&&PXPAT_BY[id])?PXPAT_BY[id].price:0;
   if(cat==='hat'){ const cs=COSMETIC_SHIRTS.find(s=>s.id===id); return (cs&&cs.earn)?0:4000; }   // hat colors share the shirt color list, same flat price
@@ -12133,6 +12146,8 @@ const COS_BOOST={
 // accuracy). These are ADDED: a boost written above is frozen and never lowered, removed or moved (the owner's boost
 // rule; golf/check-boosts.mjs holds the baseline). An item that sat above its rung keeps what it had.
 Object.assign(COS_BOOST,{
+  // milestone gear: the same boosts as their MILESTONE_ITEMS rows
+  'hw:no1cap':{clu:3,app:3}, 'bl:majormarker':{app:3}, 'cl:legenddriver':{dist:5,acc:3},
   // headwear
   'hw:tweed':{app:2,clu:1}, 'hw:straw':{scr:2,clu:1}, 'hw:laurel':{clu:2,app:2}, 'hw:backwards':{clu:1,scr:1}, 'hw:pirate':{scr:2,bnk:1}, 'hw:grad':{app:1,acc:1}, 'hw:witch':{put:2,sht:1}, 'hw:reaperhood':{clu:2,put:2}, 'hw:elf':{sht:1,scr:1}, 'hw:antlers':{dist:2,acc:1}, 'hw:football':{dist:2,clu:1}, 'hw:floppy':{acc:1,scr:1}, 'hw:knight':{clu:2,bnk:2}, 'hw:turkey':{scr:2,sht:1},
   // eyewear
@@ -12226,7 +12241,7 @@ function cosmeticItems(cat){
   if(cat==='pat')   return [{id:'none',name:'None',pat:'none'}].concat(PXPAT.map(p=>({id:p.id,name:p.name,pat:p.id,hist:p.hist})));
   if(cat==='pants') return PANTS.map(o=>({id:o.id,name:cosTitle(o.id),col:o.a}));
   if(cat==='shoes') return SHOES.map(o=>({id:o.id,name:cosTitle(o.id),col:o.a}));
-  if(cat==='hw')    return [{id:'none',name:'No Hat',hw:1},{id:'cap',name:'Ball Cap',hw:1},{id:'visor',name:'Visor',hw:1},{id:'bucket',name:'Bucket Hat',hw:1,hist:'Rainy-day links staple'},{id:'flat',name:'Flat Cap',hw:1,hist:'Early-1900s golf classic'},{id:'cowboy',name:'Cowboy Hat',hw:1,hist:'Yeehaw off the tee'},{id:'wizard',name:'Wizard Hat',hw:1,hist:'Magic on the greens'},{id:'crown',name:'Champion Crown',hw:1,hist:'Rule the leaderboard'},{id:'party',name:'Party Hat',hw:1,hist:'Every round is a celebration'},{id:'tophat',name:'Top Hat',hw:1,hist:'Dapper on the fairway'},{id:'propeller',name:'Propeller Beanie',hw:1,hist:'Pure fun'},{id:'headband',name:'Sweatband',hw:1,hist:'Clutch under pressure'},{id:'beanie',name:'Knit Beanie',hw:1,hist:'Cold-morning warmup'},{id:'fedora',name:'Fedora',hw:1,hist:'Old-school cool'},{id:'sombrero',name:'Sombrero',hw:1,hist:'Sun-drenched swagger'},{id:'halo',name:'Halo',hw:1,hist:'Angel of the greens'},{id:'viking',name:'Viking Helmet',hw:1,hist:'Conquer the course'},{id:'chef',name:'Chef Hat',hw:1,hist:'Cooking up birdies'},{id:'beret',name:'Beret',hw:1,hist:'Artist of the short game'},{id:'headphones',name:'Headphones',hw:1,hist:'In the zone'},{id:'flatbrim',name:'Snapback',hw:1,hist:'Flat-brim flex'},{id:'santa',name:'Santa Hat',hw:1,hist:'Season\u2019s greetings'},{id:'safari',name:'Safari Hat',hw:1,hist:'On expedition'},{id:'tweed',name:'Tweed Cap',hw:1,hist:'Old-money links tweed'},{id:'straw',name:'Straw Boater',hw:1,hist:'Roaring-20s summer golf'},{id:'laurel',name:'Laurel Wreath',hw:1,hist:'Crown of champions'},{id:'backwards',name:'Backwards Cap',hw:1,hist:'Rally-cap energy'},{id:'pirate',name:'Pirate Tricorn',hw:1,hist:'X marks the pin'},{id:'grad',name:'Graduation Cap',hw:1,hist:'Top of the class'},{id:'witch',name:'Witch Hat',hw:1,hist:'Brews birdies at midnight'},{id:'reaperhood',name:'Reaper Hood',hw:1,hist:'Comes for every pin'},{id:'elf',name:'Elf Hat',hw:1,hist:'Workshop-approved'},{id:'antlers',name:'Antlers',hw:1,hist:'Leading the sleigh'},{id:'football',name:'Football Helmet',hw:1,hist:'Built for contact'},{id:'floppy',name:'Sun Floppy Hat',hw:1,hist:'Beach-day shade'},{id:'knight',name:'Knight\u2019s Helm',hw:1,hist:'Armored up the fairway'},{id:'turkey',name:'Turkey Hat',hw:1,hist:'Seconds, anyone?'},{id:'harvestbeanie',name:'Harvest Knit',hw:1,hist:'Season 2 Tour Pass'},{id:'scarecrow',name:'Scarecrow Hat',hw:1,hist:'Season 2 Tour Pass'},{id:'horns',name:'Devil Horns',hw:1,hist:'Season 2 Tour Pass'},{id:'pilgrim',name:'Pilgrim Hat',hw:1,hist:'Season 2 Tour Pass'}];
+  if(cat==='hw')    return [{id:'none',name:'No Hat',hw:1},{id:'cap',name:'Ball Cap',hw:1},{id:'visor',name:'Visor',hw:1},{id:'bucket',name:'Bucket Hat',hw:1,hist:'Rainy-day links staple'},{id:'flat',name:'Flat Cap',hw:1,hist:'Early-1900s golf classic'},{id:'cowboy',name:'Cowboy Hat',hw:1,hist:'Yeehaw off the tee'},{id:'wizard',name:'Wizard Hat',hw:1,hist:'Magic on the greens'},{id:'crown',name:'Champion Crown',hw:1,hist:'Rule the leaderboard'},{id:'party',name:'Party Hat',hw:1,hist:'Every round is a celebration'},{id:'tophat',name:'Top Hat',hw:1,hist:'Dapper on the fairway'},{id:'propeller',name:'Propeller Beanie',hw:1,hist:'Pure fun'},{id:'headband',name:'Sweatband',hw:1,hist:'Clutch under pressure'},{id:'beanie',name:'Knit Beanie',hw:1,hist:'Cold-morning warmup'},{id:'fedora',name:'Fedora',hw:1,hist:'Old-school cool'},{id:'sombrero',name:'Sombrero',hw:1,hist:'Sun-drenched swagger'},{id:'halo',name:'Halo',hw:1,hist:'Angel of the greens'},{id:'viking',name:'Viking Helmet',hw:1,hist:'Conquer the course'},{id:'chef',name:'Chef Hat',hw:1,hist:'Cooking up birdies'},{id:'beret',name:'Beret',hw:1,hist:'Artist of the short game'},{id:'headphones',name:'Headphones',hw:1,hist:'In the zone'},{id:'flatbrim',name:'Snapback',hw:1,hist:'Flat-brim flex'},{id:'santa',name:'Santa Hat',hw:1,hist:'Season\u2019s greetings'},{id:'safari',name:'Safari Hat',hw:1,hist:'On expedition'},{id:'tweed',name:'Tweed Cap',hw:1,hist:'Old-money links tweed'},{id:'straw',name:'Straw Boater',hw:1,hist:'Roaring-20s summer golf'},{id:'laurel',name:'Laurel Wreath',hw:1,hist:'Crown of champions'},{id:'backwards',name:'Backwards Cap',hw:1,hist:'Rally-cap energy'},{id:'pirate',name:'Pirate Tricorn',hw:1,hist:'X marks the pin'},{id:'grad',name:'Graduation Cap',hw:1,hist:'Top of the class'},{id:'witch',name:'Witch Hat',hw:1,hist:'Brews birdies at midnight'},{id:'reaperhood',name:'Reaper Hood',hw:1,hist:'Comes for every pin'},{id:'elf',name:'Elf Hat',hw:1,hist:'Workshop-approved'},{id:'antlers',name:'Antlers',hw:1,hist:'Leading the sleigh'},{id:'football',name:'Football Helmet',hw:1,hist:'Built for contact'},{id:'floppy',name:'Sun Floppy Hat',hw:1,hist:'Beach-day shade'},{id:'knight',name:'Knight\u2019s Helm',hw:1,hist:'Armored up the fairway'},{id:'turkey',name:'Turkey Hat',hw:1,hist:'Seconds, anyone?'},{id:'harvestbeanie',name:'Harvest Knit',hw:1,hist:'Season 2 Tour Pass'},{id:'scarecrow',name:'Scarecrow Hat',hw:1,hist:'Season 2 Tour Pass'},{id:'horns',name:'Devil Horns',hw:1,hist:'Season 2 Tour Pass'},{id:'pilgrim',name:'Pilgrim Hat',hw:1,hist:'Season 2 Tour Pass'},{id:'no1cap',name:'World No.1 Cap',hw:1,hist:'Reach World No.1'}];
   if(cat==='ew')    return [{id:'none',name:'None',ew:1},{id:'shades',name:'Shooter Shades',ew:1,hist:'Ice-cold Sunday stare'},{id:'heart',name:'Heart Shades',ew:1,hist:'Crowd charmer'},{id:'star',name:'Star Shades',ew:1,hist:'Superstar swagger'},{id:'threed',name:'3D Glasses',ew:1,hist:'See the line in 3D'},{id:'monocle',name:'Monocle',ew:1,hist:'Distinguished gentleman'},{id:'aviators',name:'Aviators',ew:1,hist:'Top-gun style'},{id:'round',name:'Round Glasses',ew:1,hist:'Retro intellectual'},{id:'goggles',name:'Ski Goggles',ew:1,hist:'Downhill focus'},{id:'eyepatch',name:'Eye Patch',ew:1,hist:'Pirate of the fairways'},{id:'visorband',name:'Shield Shades',ew:1,hist:'Wraparound cool'},{id:'prismshades',name:'Prism Shades',ew:1,hist:'Refract the sun'},{id:'goldshades',name:'Gilded Shades',ew:1,hist:'24-karat stare'},{id:'beach',name:'Beach Shades',ew:1,hist:'Boardwalk cool'},{id:'eyeblack',name:'Eye Black',ew:1,hist:'Game face on'},{id:'wayfarer',name:'Wayfarers',ew:1,hist:'Timeless clubhouse classic'},{id:'sport',name:'Sport Wraps',ew:1,hist:'Built for the wind'},{id:'cateye',name:'Cat-Eye Glasses',ew:1,hist:'Vintage flair'},{id:'readers',name:'Half-Rim Readers',ew:1,hist:'Reading every break'},{id:'rose',name:'Rose-Tinted Glasses',ew:1,hist:'Every round looks great'},{id:'steampunk',name:'Brass Goggles',ew:1,hist:'Inventor of the stinger'},{id:'cyber',name:'Cyber Visor',ew:1,hist:'Scanning the fairway'},{id:'patriot',name:'Patriot Shades',ew:1,hist:'Playing for the flag'},{id:'groucho',name:'Disguise Glasses',ew:1,hist:'Incognito round'},{id:'diamond',name:'Diamond Shades',ew:1,hist:'Ice in the veins'},{id:'ghoulglow',name:'Ghoul Glow Specs',ew:1,hist:'Season 2 Tour Pass'}];
   if(cat==='fx')    return [{id:'none',name:'None',fx:'none'}].concat(PXFX.map(function(f){ return {id:f.id,name:f.name,fx:f.id,hist:f.hist,col:f.col}; }));   // CS410
   if(cat==='body')  return [{id:'none',name:'No Skin',body:1},{id:'zombie',name:'Zombie',body:1,hist:'Haunted Links collection reward'},{id:'pumpkinhead',name:'Pumpkin Head',body:1,hist:'Season 2 Tour Pass, tier 60'}];
@@ -16885,7 +16900,7 @@ function scrSetup(){
     let tiles;
     if(isLook){ tiles=setupLookTiles(cat); }
     else {   // LOCKER: show only the items you OWN in this category, tap to equip. No buying here.
-      tiles=cosmeticItems(cat).filter(o=>cosOwned(cat,o.id) || (cat==='putter' && PUTTERS_BY[o.id] && PUTTERS_BY[o.id].kind==='pp') || ((cat==='plate'||cat==='cardbg') && (CARD_EARN[cosKey(cat,o.id)]||cosRewardOnly(cat,o.id)))).map(o=>cosTileHTML(cat,o));   // card cosmetics also show LOCKED earned + collection-reward items with how to earn them
+      tiles=cosmeticItems(cat).filter(o=>cosOwned(cat,o.id) || (cat==='putter' && PUTTERS_BY[o.id] && PUTTERS_BY[o.id].kind==='pp') || ((cat==='plate'||cat==='cardbg') && (CARD_EARN[cosKey(cat,o.id)]||cosRewardOnly(cat,o.id))) || (Object.values(MILESTONE_GEAR).indexOf(cosKey(cat,o.id))>=0)).map(o=>cosTileHTML(cat,o));   // card cosmetics also show LOCKED earned + collection-reward items with how to earn them
     }
     const catLabel=(cats.find(c=>c[0]===cat)||[,cat])[1];
     grid.innerHTML=emojifyIcons(tiles.length?tiles.join('')
@@ -17152,9 +17167,9 @@ const PXG_CLUB_PAL={ scepter:{'4':'#f2d24a','5':'#c9a52a','6':'#fff7cc','A':'#e3
 // A club is a single equippable item that (a) your golfer holds and (b) gives a boost. Stock clubs are
 // free, store clubs are coin-buyable, pack clubs come from packs/shards. Recolor variants reuse a base
 // sprite (driver/wood/iron/wedge/putter), tinted by a per-id PXG_CLUB_PAL finish so each reads unique.
-const CLUB_RECOLOR={steeldriver:'driver',finderdriver:'driver',speeddriver:'driver',tourwood:'wood',forgediron:'iron',bladeirons:'iron',milledwedge:'wedge',sandwedge:'wedge',lobwedge:'wedge',mallet:'putter',scoringiron:'iron',onyxdriver:'driver',emeraldirons:'iron',frostdriver:'driver',rubywedge:'wedge',sapphireputter:'putter',voidputter:'putter',rosewood:'wood',scramblewedge:'wedge',golden:'driver',platinum:'driver',diamond:'driver'};
+const CLUB_RECOLOR={steeldriver:'driver',finderdriver:'driver',speeddriver:'driver',tourwood:'wood',forgediron:'iron',bladeirons:'iron',milledwedge:'wedge',sandwedge:'wedge',lobwedge:'wedge',mallet:'putter',scoringiron:'iron',onyxdriver:'driver',emeraldirons:'iron',frostdriver:'driver',rubywedge:'wedge',sapphireputter:'putter',voidputter:'putter',rosewood:'wood',scramblewedge:'wedge',golden:'driver',platinum:'driver',diamond:'driver',legenddriver:'driver'};
 Object.keys(CLUB_RECOLOR).forEach(function(id){ PXG_CLUBS[id]=PXG_CLUBS[CLUB_RECOLOR[id]]; });
-Object.assign(PXG_CLUB_PAL, {steeldriver:{"H":"#c7cdd6","F":"#e8ebf0","S":"#f4f7fa","G":"#6f7884"},finderdriver:{"H":"#39b56b","F":"#bff0d0","S":"#5ad08a","G":"#14663a"},speeddriver:{"H":"#e14a33","F":"#3d434d","S":"#e14a33","G":"#14171c","l":"#9aa2ad"},tourwood:{"H":"#e6c34a","F":"#fff0b0","S":"#ffe98a","G":"#8a6a12"},forgediron:{"H":"#b7bdc6","F":"#dfe4ea","S":"#eef1f5","G":"#5a626c"},bladeirons:{"H":"#20242c","F":"#e14a33","S":"#3a3f48","G":"#12151a"},milledwedge:{"H":"#cfd3da","F":"#f0f3f7","S":"#e2e6ec","G":"#7a828c"},sandwedge:{"H":"#d9c58a","F":"#f4ecd0","S":"#e8dcb0","G":"#8a7638"},lobwedge:{"H":"#20242c","F":"#e14a33","S":"#3a3f48","G":"#12151a"},mallet:{"H":"#cfd3da","F":"#f0f3f7","S":"#e2e6ec","G":"#7a828c"},scoringiron:{"H":"#c7cdd6","F":"#e8ebf0","S":"#f4f7fa","G":"#6f7884"},onyxdriver:{"H":"#2a2d34","F":"#4a4d54","S":"#5a5d64","G":"#14161b"},emeraldirons:{"H":"#2fae6a","F":"#7de0a8","S":"#40c884","G":"#0e5a34"},frostdriver:{"H":"#a8e0ec","F":"#e6faff","S":"#c8eef8","G":"#4a7a8a"},rubywedge:{"H":"#e0455a","F":"#ff8a9a","S":"#ff5a70","G":"#7a1826"},sapphireputter:{"H":"#3a7bd6","F":"#8ab4f0","S":"#5a9bf0","G":"#182a5a"},voidputter:{"H":"#6a4a9a","F":"#a888d8","S":"#8060b8","G":"#2a1a4a"},rosewood:{"H":"#e8b0a0","F":"#ffd8c8","S":"#f0c4b4","G":"#8a5a4a"},scramblewedge:{"H":"#e6c34a","F":"#fff0b0","S":"#ffe98a","G":"#8a6a12"},golden:{"H":"#e6b93c","F":"#ffe98a","S":"#fff4c4","G":"#a87b10"},platinum:{"H":"#dfe4ea","F":"#ffffff","S":"#f4f7fa","G":"#9aa4b2"},diamond:{"H":"#bfeaf5","F":"#ffffff","S":"#e6fbff","G":"#6fa8c0"},glizzy:{"D":"#c05a2e","E":"#8f3d1c","B":"#e8b060","C":"#b5803a","M":"#f0cc30"},poolnoodle:{"N":"#38cce6","n":"#1f93aa","W":"#c8f4fc","O":"#0e5462"}});
+Object.assign(PXG_CLUB_PAL, {legenddriver:{"H":"#1c1a22","F":"#e2b93b","S":"#f2e3b0","G":"#8a6a1a"},steeldriver:{"H":"#c7cdd6","F":"#e8ebf0","S":"#f4f7fa","G":"#6f7884"},finderdriver:{"H":"#39b56b","F":"#bff0d0","S":"#5ad08a","G":"#14663a"},speeddriver:{"H":"#e14a33","F":"#3d434d","S":"#e14a33","G":"#14171c","l":"#9aa2ad"},tourwood:{"H":"#e6c34a","F":"#fff0b0","S":"#ffe98a","G":"#8a6a12"},forgediron:{"H":"#b7bdc6","F":"#dfe4ea","S":"#eef1f5","G":"#5a626c"},bladeirons:{"H":"#20242c","F":"#e14a33","S":"#3a3f48","G":"#12151a"},milledwedge:{"H":"#cfd3da","F":"#f0f3f7","S":"#e2e6ec","G":"#7a828c"},sandwedge:{"H":"#d9c58a","F":"#f4ecd0","S":"#e8dcb0","G":"#8a7638"},lobwedge:{"H":"#20242c","F":"#e14a33","S":"#3a3f48","G":"#12151a"},mallet:{"H":"#cfd3da","F":"#f0f3f7","S":"#e2e6ec","G":"#7a828c"},scoringiron:{"H":"#c7cdd6","F":"#e8ebf0","S":"#f4f7fa","G":"#6f7884"},onyxdriver:{"H":"#2a2d34","F":"#4a4d54","S":"#5a5d64","G":"#14161b"},emeraldirons:{"H":"#2fae6a","F":"#7de0a8","S":"#40c884","G":"#0e5a34"},frostdriver:{"H":"#a8e0ec","F":"#e6faff","S":"#c8eef8","G":"#4a7a8a"},rubywedge:{"H":"#e0455a","F":"#ff8a9a","S":"#ff5a70","G":"#7a1826"},sapphireputter:{"H":"#3a7bd6","F":"#8ab4f0","S":"#5a9bf0","G":"#182a5a"},voidputter:{"H":"#6a4a9a","F":"#a888d8","S":"#8060b8","G":"#2a1a4a"},rosewood:{"H":"#e8b0a0","F":"#ffd8c8","S":"#f0c4b4","G":"#8a5a4a"},scramblewedge:{"H":"#e6c34a","F":"#fff0b0","S":"#ffe98a","G":"#8a6a12"},golden:{"H":"#e6b93c","F":"#ffe98a","S":"#fff4c4","G":"#a87b10"},platinum:{"H":"#dfe4ea","F":"#ffffff","S":"#f4f7fa","G":"#9aa4b2"},diamond:{"H":"#bfeaf5","F":"#ffffff","S":"#e6fbff","G":"#6fa8c0"},glizzy:{"D":"#c05a2e","E":"#8f3d1c","B":"#e8b060","C":"#b5803a","M":"#f0cc30"},poolnoodle:{"N":"#38cce6","n":"#1f93aa","W":"#c8f4fc","O":"#0e5462"}});
 const CLUBS=[
  {id:'driver',name:'Starter Clubs',rar:'common',kind:'free',b:{dist:1},hist:'Your first full matched set, free forever'},
  {id:'steeldriver',name:'Titanium Clubs',tag:'Titanium',rar:'rare',kind:'store',b:{dist:3},hist:'Aerospace-grade, driver to putter'},
@@ -17191,7 +17206,9 @@ const CLUBS=[
  {id:'coffin',name:'Scythe Clubs',tag:'Scythe',rar:'epic',kind:'pack',b:{dist:3,scr:1},hist:'Reaps the whole field'},   // was Coffin Clubs; the id stays so owners keep it
  // Season 2 Tour Pass exclusives. Style only: a pass piece carries no stat boost, so the pass never sells power.
  {id:'broomstick',name:'Broomstick Clubs',tag:'Broomstick',rar:'epic',kind:'pass',b:{},hist:'Season 2 Tour Pass'},
- {id:'pitchfork',name:'Pitchfork Clubs',tag:'Pitchfork',rar:'epic',kind:'pass',b:{},hist:'Season 2 Tour Pass'}];
+ {id:'pitchfork',name:'Pitchfork Clubs',tag:'Pitchfork',rar:'epic',kind:'pass',b:{},hist:'Season 2 Tour Pass'},
+ // milestone gear (MILESTONE_GEAR): earned by completing a career, never sold
+ {id:'legenddriver',name:'Legend\'s Driver',tag:'Legend',rar:'legendary',kind:'earn',b:{dist:5,acc:3},hist:'Complete a career'}];
 const CLUBS_BY={}; CLUBS.forEach(function(c){ CLUBS_BY[c.id]=c; });
 // ============ PUTTERS (owner): their own closet slot, apart from the club sets ============
 // You equip any putter you own (look.putter), and it is the putter in both games. In Run The Tour it adds its
@@ -18220,6 +18237,12 @@ const PXG_S2_HAT_PAL={
   turkey:{'1':'#b8652a','2':'#8a4418','3':'#e39a52','4':'#f2ecd6','5':'#efe3c4'},
 };
 Object.assign(PXG_HATS, PXG_S2_HATS); Object.assign(PXG_HERITAGE_HAT_PAL, PXG_S2_HAT_PAL);
+// the World No.1 Cap (milestone gear): the Ball Cap's shape in black with dark seams, a gold button and brim, and a
+// gold 1 on the front panel
+PXG_HATS.no1cap=(function(){ const m=PXG_CAP.map(function(r,y){ return r.replace(/c/g,'1').replace(/w/g,'3').replace(/b/g,(y===4||y===13)?'2':'5').split(''); });
+  [[7,17],[7,18],[8,18],[9,18],[10,18],[10,17],[10,19]].forEach(function(q){ if(m[q[0]][q[1]]!=='.') m[q[0]][q[1]]='4'; });
+  return m.map(function(a){ return a.join(''); }); })();
+PXG_HERITAGE_HAT_PAL.no1cap={'1':'#1f1d26','2':'#d9ae32','3':'#2c2a34','4':'#f6d65a','5':'#121017'};
 PXG_HAT_OPEN.horns=1;   // horns perch on the hair like the antlers, so the hair is not clipped under them
 // Eyewear paints off PXG_NOV: I frame, r green lens, N deep green, L glint.
 const PXG_S2_EW={
@@ -18248,6 +18271,9 @@ Object.assign(PXG_BALL, PXG_S2_BALL); Object.assign(PXG_BALL_PAL, PXG_S2_BALL_PA
 // The Spooky Szn hunt prize (owner, Oct 2026): a black cat with two ears and yellow eyes. Never sold.
 PXG_BALL.blackcat=pxgRows([[46,35,'o..o'],[47,35,'oooo'],[48,34,'ohCCCo'],[49,34,'oyCCyo'],[50,34,'oCnnCo'],[51,34,'oCCCso'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
 PXG_BALL_PAL.blackcat={o:'#08060c',C:'#2a2433',h:'#5e5470',s:'#16121c',y:'#ffd23a',n:'#e87a9a',T:'#e8ebf0'};
+// the Major Marker Ball (milestone gear): a white ball ringed in gold, with a gold marker line around it
+PXG_BALL.majormarker=pxgRows([[46,35,'oooo'],[47,34,'oWhWWo'],[48,34,'oGGGGo'],[49,34,'oWWWWo'],[50,34,'oWWWso'],[51,35,'oooo'],[52,35,'TTTT'],[53,36,'TT'],[54,36,'T']]);
+PXG_BALL_PAL.majormarker={o:'#8a6a12',W:'#f6f3ea',h:'#ffffff',G:'#e2b93b',s:'#cfc8b4',T:'#e8ebf0'};
 // Haunted Links grew from seven pieces to fourteen (owner, Oct 2026). Sparse rows like the Season 2 pieces.
 // Grim Reaper Hood: a deep cowl that hangs past the ears to a collar under the chin, the face left in its
 // shadow. It is not an open hat, so the hair underneath is clipped like any hood.
@@ -38619,7 +38645,7 @@ function cosTileHTML(cat,o){
   }
   const cardE=(typeof CARD_EARN!=='undefined')&&CARD_EARN[cosKey(cat,o.id)];
   if(cardE && !owned){   // earned player-card plate/background: show HOW to earn it, never a buy
-    const sub=`<span style="color:#c9a520">🔒 ${esc(cardE.hint)}</span>`;
+    const sub=(bt?shopBoostTxt(bt)+' · ':'')+`<span style="color:#c9a520">🔒 ${esc(cardE.hint)}</span>`;   // milestone gear shows its boost too
     return shopTile({thumb,name:o.name,state:'lock',noFoot:true,sub,data:`data-tile data-kind="cos-req" data-req="${esc(cardE.hint)}"`});
   }
   const passIt=passItemOf(cat,o.id);
