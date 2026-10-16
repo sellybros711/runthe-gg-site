@@ -2587,8 +2587,8 @@
       "sha": "fbf8ac8bab981947"
     },
     "../court.js": {
-      "v": "9",
-      "sha": "d2d666cb28da001f"
+      "v": "14",
+      "sha": "5b6219d1757dea64"
     },
     "../ticker.js": {
       "v": "2",
@@ -2693,8 +2693,8 @@
       "sha": "fbf8ac8bab981947"
     },
     "court.js": {
-      "v": "13",
-      "sha": "d2d666cb28da001f"
+      "v": "14",
+      "sha": "5b6219d1757dea64"
     },
     "ticker.js": {
       "v": "2",
