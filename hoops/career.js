@@ -3378,6 +3378,8 @@ function rollInjury(L, chunk, beats) {
     : pick(rng, ['high ankle sprain', 'strained calf', 'groin strain']);
   const g = major ? 30 + Math.floor(rng() * 26) : 10 + Math.floor(rng() * 12);
   s.injury = { from, until: from + g, kind, pendingDecision: true };
+  /* Some major injuries end a career (endings.js), read on their own stream. */
+  if (major && L.stage === 'nba' && L.seasonsDone >= 1 && rngAt(L, 'careerend:' + chunk)() < careerEndP(L)) { L.pending.push(careerInjuryCard(L, kind)); return; }
   L.pending.push({
     id: 'injury', kind: 'event', key: 'injury:' + chunk, eyebrow: 'Injury report', scene: "The trainer's room",
     title: "It's a " + kind + '. Now what?',
@@ -3399,7 +3401,7 @@ ANSWER.injury = function(L, card, i, opt, rng, beats, touch, touches) {
   const s = L.season, inj = s && s.injury;
   const g = card.ctx.g;
   if (inj) {
-    if (card.ctx.major) remember(L, 'inj.major', L.age);
+    if (card.ctx.major) { remember(L, 'inj.major', L.age); remember(L, 'inj.majors', ((L.mem['inj.majors'] && L.mem['inj.majors'].v) || 0) + 1); }
     if (card.ctx.major) {
       if (i === 0) { inj.until = inj.from + g; bump(L, { ath: -2, health: -8 }); text = 'The surgery goes well. Now comes the long part.'; }
       else if (i === 1) {
@@ -4485,13 +4487,23 @@ function retireCard(L) {
     options: [
       { label: 'Play one more season', hint: "See what's left" },
       { label: 'Retire', hint: 'Go out on your own terms' },
-    ],
+    ].concat(L.age >= 32 && !L.flags.finale ? [{ label: 'One last year in Europe', hint: 'Finish somewhere new' }] : []),
   };
 }
 /* The answers to the retirement question (choose() runs them). */
 ANSWER.retire = function(L, card, i, opt, rng, beats, touch, touches) {
   let text = '', tone = '', made = null, won = null, shots = null, contest = null;
   if (i === 1) { L.pending = []; retire(L, beats); text = 'You walk away.'; tone = 'gold'; }
+  else if (i === 2) {
+    /* The overseas finale (endings.js): a year abroad, then the end. */
+    L.flags.finale = L.year;
+    remember(L, 'end.finale', true);
+    L.pending = L.pending.filter((c) => c.id !== 'fa' && c.id !== 'nooffer' && c.id !== 'extension');
+    L.team = null;
+    L.contract = { years: 1, total: 1, salary: 1.2, kind: 'overseas', start: L.year + 1 };
+    text = 'A club in Europe offers a year and a big apartment. You say yes before the call ends.'; tone = 'gold';
+    logIt(L, 'Signed overseas for one last season.', '');
+  }
   else { text = varyRes(L, card, 'retire_more', 'One more year. Let\'s go.'); bump(L, { morale: 3 }); }
   return { text, tone, made, won, shots, contest };
 };
@@ -4502,7 +4514,7 @@ function offseason(L, beats) {
   buildCards(L);
   if (!L.pending.some((c) => /^build_/.test(c.id))) nicknameCard(L);
   /* Contracts. */
-  const c = L.contract;
+  let c = L.contract;
   if (c) c.years--;
   const o = ovrOf(L);
   if (L.flags.tradeAsk && c && c.years > 0) {
@@ -4517,6 +4529,10 @@ function offseason(L, beats) {
   }
   if (L.age >= BAL.maxAge) { retire(L, beats, 'The body made the call at ' + L.age + '.'); return; }
   if (L.flags.farewell === L.year) { retire(L, beats, 'Retired at ' + L.age + ' after a farewell season.'); return; }
+  /* The other ways out (endings.js): cut with a deal still running, or the
+     question of walking away on top. */
+  if (waiveCheck(L, beats)) c = null;
+  onTopCard(L);
   const tired = L.age >= BAL.tired || (L.age >= 31 && o < 70);
   if (c && c.years === 1 && c.kind === 'rookie' && o >= 66) {
     const sal = round1(marketSalary(L, o + 2) * 0.97);
@@ -4556,6 +4572,7 @@ function offseason(L, beats) {
         options: [
           { label: 'Retire', hint: 'It was a real career' },
           { label: 'Play overseas', hint: 'A year away, then try again' },
+          { label: 'Wait for a ten day', hint: 'One more phone call' },
         ],
       });
     } else {
@@ -4564,13 +4581,15 @@ function offseason(L, beats) {
   } else if (tired) {
     L.pending.push(retireCard(L));
   }
-  /* Something off the court, most summers. */
+  /* Something off the court, most summers, and now and then the brands. */
+  brandCard(L);
   queueEvents(L, 'off', 1);
 }
 /* The answers to no offer this summer (choose() runs them). */
 ANSWER.nooffer = function(L, card, i, opt, rng, beats, touch, touches) {
   let text = '', tone = '', made = null, won = null, shots = null, contest = null;
   if (i === 0) { L.pending = []; retire(L, beats); text = 'You walk away.'; tone = 'gold'; }
+  else if (i === 2) return tenDay(L, beats, rng);
   else {
     L.flags.overseas = (L.flags.overseas || 0) + 1;
     if (L.history.length && !recall(L, 'route.detour.left')) remember(L, 'route.detour.left', true);
@@ -6330,6 +6349,26 @@ function summerFrame(L) {
   if (h.po === 'R1') return SUMMER_FRAME.out;
   if (h.po === 'Missed' || h.po === 'Play-in') return SUMMER_FRAME.missed;
   return pick(figRng(L, 'sframe:' + L.year), SUMMER_FRAME.plain);
+}
+/* An eventful year: a new club, half a season lost, a ring or an MVP. */
+function eventful(L) {
+  const H = L.history, h = H[H.length - 1], p = H[H.length - 2];
+  if (!h) return true;
+  return h.gp < 55 || h.po === 'Champion' || (h.aw || []).indexOf('mvp') >= 0 || !!(p && p.t !== h.t) || h.t !== L.team;
+}
+const ASK_P = 0.5;
+const askSummer = (L) => L.seasonsDone < 2 || eventful(L) || rngAt(L, 'ask:summer')() < ASK_P;
+const askGoal = (L) => L.seasonsDone < 2 || eventful(L) || rngAt(L, 'ask:goal')() < ASK_P;
+/* The summer nobody asked about: the plan offered first that is not last
+   summer's, so it never grinds one plan stale, said in a line. */
+function quietSummer(L) {
+  const ks = summerKeys(L);
+  L.flags.summerOff = ks;
+  const last = L.flags.summerRun && L.flags.summerRun.k;
+  const k = ks.find((x) => x !== last) || ks[0];
+  if (!k) return;
+  const t = summerChoose(L, k, rngAt(L, 'quietsummer'));
+  logIt(L, 'Summer: ' + SUMMER[k].l.toLowerCase() + '. ' + t, '');
 }
 function summerKeys(L) {
   const H = L.history, h = H[H.length - 1];
@@ -11698,7 +11737,7 @@ function pay(L, beats) {
   const sal = c.salary;
   const fame = L.m.fame;
   const endorse = round1((fame > 45 ? Math.pow(fame - 45, 1.6) * 0.035 : 0) * AGENTS[L.agent].endorse
-    * (BIG_MARKET[L.team] ? 1.3 : 1) + (L.endorseBonus || 0));
+    * (BIG_MARKET[L.team] ? 1.3 : 1) + (L.endorseBonus || 0) + dealIncome(L));
   L.endorse = endorse;
   L.earned = round1(L.earned + sal + endorse);
   const habit = trait(L, 'spender') ? 0.05 : trait(L, 'saver') ? -0.03 : 0;
@@ -11728,6 +11767,7 @@ function closeSeason(L, beats) {
   rp.fans = Math.round(50 + (rp.fans - 50) * 0.8);
   rp.resp = Math.round(50 + (rp.resp - 50) * 0.8);
   milestones(L, before, beats);
+  dealsSeason(L, beats);
   sayPassed(L, before, beats);
   saySeasonComp(L, beats);
   sayShadeShift(L);
@@ -11761,6 +11801,7 @@ function overseasYear(L, beats) {
   L.season = null;
   L.contract = null;
   L.phase = 'off';
+  if (L.flags.finale) { retire(L, beats, 'Played one last season in Europe. Retired at ' + L.age + '.'); return; }
   /* A stashed pick comes back to the club that holds his rights. */
   if (L.flags.rights) {
     const c = L.flags.rights;
@@ -11803,8 +11844,13 @@ function newYear(L, beats) {
 function openYear(L) {
   if (!L.team) return;
   newSeason(L);
-  L.pending.push(summerCard(L));
-  goalCard(L);
+  /* The summer and the goal are asked some years, not every year (the
+     owner's call, 2026-10-16): always the first two summers, after a season
+     that changed something (a new club, a missed half season, a ring), and
+     otherwise about half the time. A summer not asked is spent on the plan
+     the career would pick (quietSummer), so a player grows the same. */
+  if (askSummer(L)) L.pending.push(summerCard(L)); else quietSummer(L);
+  if (askGoal(L)) goalCard(L);
   if (L.seasonsDone > 0) queueEvents(L, 'pre', rngAt(L, 'n:pre')() < 0.6 ? 1 : 0);
   rollInjury(L, 'early', []);
 }
@@ -12182,6 +12228,206 @@ ANSWER.shoemove = function(L, card, i) {
   return said('You sign with ' + b.n + '. The first colorway sells out in nine minutes.', 'gold');
 };
 
+// ─── endorsement deals ──────────────────────────────────────────────────────
+
+/* DEALS, the owner's call of 2026-10-16: offers built from who you are, from
+   brands that are goofy puns on real ones (never a real brand's name). Some
+   summers, when you are famous enough to sell something, the brands whose
+   pitch fits your career line up: the clutch shot sells a sports drink, the
+   iron man sells a mattress, a third club sells a travel app. Each card shows
+   three, with why they want you.
+
+   A deal pays every season it runs (pay() adds it to the endorsements), and a
+   brand walks away when the locker room and the league stop trusting you.
+   `L.deals` holds them: { id, n, pay, until }. Nothing is dealt on the old
+   saves' random streams: the card draws on its own (rngAt 'deals'). */
+
+const T_ = (L) => totals(L);
+
+const DEALS = [
+  { id: 'gator', n: 'Gatorgaid', what: 'sports drink', fit: (L) => (recall(L, 'g7.made') ? 3 : 0) + (trait(L, 'clutch') ? 3 : 0) + (T_(L).star ? 1 : 0), why: 'They want the sweat dripping in slow motion.' },
+  { id: 'farmer', n: 'State Farmer', what: 'insurance', fit: (L) => (L.age >= 30 ? 2 : 0) + (repOf(L).resp > 58 ? 2 : 0) + (trait(L, 'loyal') ? 2 : 0), why: 'Like a good neighbor, you\'re always there. The khakis are non-negotiable.' },
+  { id: 'firmly', n: 'Mattress Firmly', what: 'mattresses', fit: (L) => (trait(L, 'ironMan') ? 3 : 0) + (recall(L, 'move.rest') ? 3 : 0) + (L.dur >= 70 ? 1 : 0), why: '"Rest like a pro." They saw how much you sit back to backs.' },
+  { id: 'bellow', n: 'Taco Bellow', what: 'fast food', fit: (L) => (personaOf(L) === 'Fan favorite' ? 3 : 0) + (personaOf(L) === 'Showman' ? 2 : 0) + (L.age <= 25 ? 1 : 0), why: 'You yell the slogan into a canyon. That\'s the whole ad.' },
+  { id: 'chunky', n: 'Chunky Soup Mom', what: 'soup', fit: (L) => (L.flags.momHouse ? 4 : 0) + (recall(L, 'family.house') ? 2 : 0), why: 'Your mom is in it. Your mom is better at it than you.' },
+  { id: 'spicy', n: 'Old Spicy', what: 'body wash', fit: (L) => (L.age >= 31 ? 3 : 0) + (L.history.length >= 9 ? 2 : 0), why: 'Look at your game. Now back to them. Now back to your game.' },
+  { id: 'wheat', n: 'Wheatlies', what: 'cereal box', fit: (L) => T_(L).mvp * 3 + T_(L).rings * 2 + T_(L).fmvp, why: 'Your face on the box. Breakfast of people who win things.' },
+  { id: 'shoulder', n: 'Head & Shoulder Pads', what: 'shampoo', fit: (L) => (L.pos === 'C' || L.pos === 'PF' ? 2 : 0) + (L.rt.reb >= 75 ? 2 : 0) + (recall(L, 'move.body') ? 1 : 0), why: 'No flakes, no fouls. You flip your hair after a rebound.' },
+  { id: 'gecko', n: 'Geck-O Insurance', what: 'car insurance', fit: (L) => (L.pos === 'PG' ? 2 : 0) + (L.rt.pla >= 75 ? 2 : 0) + (repOf(L).fans > 50 ? 1 : 0), why: 'A lizard with an accent asks you for a lob. You throw it.' },
+  { id: 'kiya', n: 'Kiya Motors', what: 'cars', fit: (L) => (T_(L).star >= 2 ? 3 : 0) + (L.rt.ath >= 78 ? 2 : 0), why: 'You jump over the car. They insist the car is not a metaphor.' },
+  { id: 'airbee', n: 'AirBnBee', what: 'a travel app', fit: (L) => (clubsOf(L) >= 3 ? 4 : clubsOf(L) === 2 ? 1 : 0) + (recall(L, 'route.detour.left') ? 2 : 0), why: 'You\'ve lived in a lot of cities. They want you to rate them.' },
+  { id: 'peloathon', n: 'Peloathon', what: 'exercise bikes', fit: (L) => (recall(L, 'move.body') ? 3 : 0) + (trait(L, 'gymRat') ? 3 : 0) + (L.eth >= 75 ? 1 : 0), why: 'An instructor screams your name at five in the morning. On purpose.' },
+  { id: 'crox', n: 'Crox', what: 'rubber clogs', fit: (L) => (trait(L, 'showman') ? 3 : 0) + (personaOf(L) === 'Loose cannon' ? 2 : 0) + (L.flags.pod ? 1 : 0), why: 'A clog with your number on the strap. You wear them to the arena.' },
+  { id: 'subwaye', n: 'Subwaye', what: 'sandwiches', fit: (L) => (L.stage === 'nba' && L.history.length <= 3 ? 3 : 0) + (recall(L, 'move.body') === 'bulk' ? 2 : 0), why: 'Eat fresh. Eat a lot. Rookies are their whole thing.' },
+  { id: 'dish', n: 'DoorDish', what: 'food delivery', fit: (L) => (L.team && !BIG_MARKET[L.team] ? 2 : 0) + (repOf(L).fans > 55 ? 2 : 0), why: 'You deliver a pizza to a fan in your city. He doesn\'t believe it\'s you.' },
+  { id: 'boze', n: 'Boze', what: 'headphones', fit: (L) => (personaOf(L) === 'Quiet assassin' ? 4 : 0) + (personaOf(L) === 'Low profile' ? 2 : 0) + (recall(L, 'arc.pf.tuned') ? 2 : 0), why: 'You walk into the arena and hear nothing. That\'s the ad.' },
+];
+const DEAL_BY = Object.fromEntries(DEALS.map((d) => [d.id, d]));
+/* What a brand pays a year, off your fame and your market. */
+function brandPay(L, d) {
+  const base = 0.25 + Math.max(0, L.m.fame - 45) * 0.03;
+  return round1(base * (BIG_MARKET[L.team] ? 1.25 : 1) * AGENTS[L.agent].endorse * (d.fit(L) >= 4 ? 1.3 : 1));
+}
+const dealsNow = (L) => (L.deals || []).filter((x) => x.until >= L.year);
+/* The money the running deals pay this season (pay() reads it). */
+const dealIncome = (L) => round1(dealsNow(L).reduce((a, x) => a + x.pay, 0));
+
+/* THE CARD. Some summers (DEAL_P), when you are well known, have at most two
+   deals running and a brand fits who you are. */
+const DEAL_P = 0.4;
+function brandCard(L) {
+  if (L.stage !== 'nba' || !L.team || L.m.fame < 50 || dealsNow(L).length >= 2) return;
+  const r = rngAt(L, 'deals');
+  if (r() >= DEAL_P) return;
+  const have = new Set((L.deals || []).map((x) => x.id));
+  const fits = DEALS.filter((d) => !have.has(d.id)).map((d) => ({ d, v: d.fit(L) + r() * 1.5 })).filter((x) => x.v >= 2)
+    .sort((a, b) => b.v - a.v).slice(0, 3);
+  if (!fits.length) return;
+  const list = fits.map((x) => ({ id: x.d.id, pay: brandPay(L, x.d), years: 2 + Math.floor(r() * 2) }));
+  L.pending.push({
+    id: 'deal', kind: 'event', key: 'deal:' + L.year, eyebrow: 'Endorsements', scene: 'Your agent\'s office',
+    title: list.length === 1 ? 'A brand wants you.' : wordNum(list.length) + ' brands want you.',
+    text: '{agent:first} has the decks printed out. "Pick one. Or don\'t. Your face, your call."',
+    ctx: { list },
+    options: list.map((x) => ({ label: 'Sign with ' + DEAL_BY[x.id].n, hint: DEAL_BY[x.id].what + ' · ' + money(x.pay) + ' a year · ' + x.years + ' years' }))
+      .concat([{ label: 'Turn them all down', hint: 'Keep your face your own' }]),
+  });
+}
+ANSWER.deal = function(L, card, i) {
+  const x = card.ctx.list[i];
+  if (!x) { bump(L, { trust: 2 }); return said('You pass on all of them. {agent:first} sighs and files the decks.'); }
+  const d = DEAL_BY[x.id];
+  (L.deals = L.deals || []).push({ id: x.id, n: d.n, pay: x.pay, until: L.year + x.years });
+  bump(L, { fame: 3 });
+  logIt(L, 'Signed with ' + d.n + ': ' + money(x.pay) + ' a year for ' + x.years + ' years.', 'gold');
+  return said('You sign with ' + d.n + '. The ' + d.what + ' commercial shoots in a week. ' + d.why, 'gold');
+};
+/* A brand walks when nobody trusts you anymore, or you are banned. Read at
+   the close of a season. */
+function dealsSeason(L, beats) {
+  for (const x of dealsNow(L)) {
+    if (L.flags.banned || L.m.trust < 20) {
+      x.until = L.year - 1;
+      x.dropped = L.year;
+      const t = DEAL_BY[x.id].n + ' drops you. Their statement is two sentences long.';
+      logIt(L, t, 'bad');
+      beats.push({ kind: 'deal', text: t, tone: 'bad' });
+    }
+  }
+}
+/* For the Hall card: the brands that sold your face. */
+const dealNames = (L) => (L.deals || []).filter((x) => !x.dropped).map((x) => x.n);
+
+// ─── more ways out ──────────────────────────────────────────────────────────
+
+/* ENDINGS, the owner's call of 2026-10-15 and 2026-10-16: a career is limitless
+   in what it can be and still ends, at a retirement or when the league is done
+   with you. Before this, nearly every career ended on the retirement card or a
+   summer nobody called. These are the other ways real careers end:
+
+     careerInjury  a major injury that ends it. Far likelier the worse your
+                   health is (the owner's call), and likelier with age and an
+                   injury prone body. Read on its own stream, so an injury that
+                   does not end a career is the injury it always was.
+     onTop         a ring or an MVP past thirty, and the question of whether
+                   to walk away while you are the best version of yourself
+     waived        the club cuts a man who has fallen out of its rotation, with
+                   a contract still running; then free agency, and if nobody
+                   calls, a last wait for a ten day contract
+     finale        one last season in Europe, offered on the retirement card */
+
+/* THE CAREER ENDING INJURY, per major injury, off how healthy the body is.
+   The health meter refills every summer, so the body is read as durability
+   and the meter together (bodyOf), less for every major injury already
+   taken. A sound body (80 and up) almost never ends this way; a worn one
+   (40) does about one major injury in four. Age adds to it. */
+const bodyOf = (L) => 0.6 * L.dur + 0.4 * L.m.health - 8 * ((L.mem && L.mem['inj.majors'] && L.mem['inj.majors'].v) || 0);
+function careerEndP(L) {
+  return clamp(0.01 + Math.max(0, 80 - bodyOf(L)) * 0.006 + Math.max(0, L.age - 30) * 0.01
+    + (trait(L, 'injuryProne') ? 0.03 : 0) - (trait(L, 'ironMan') ? 0.03 : 0), 0.005, 0.4);
+}
+function careerInjuryCard(L, kind) {
+  return {
+    id: 'careerinj', kind: 'event', key: 'careerinj', eyebrow: 'Injury report', scene: 'The surgeon\'s office',
+    title: 'It\'s worse than a ' + kind + '.',
+    text: 'Dr. {doctor:last} doesn\'t sit down. "You can walk normally again. Playing is a different question."',
+    ctx: { kind },
+    options: [
+      { label: 'Retire', hint: 'Walk away with your body' },
+      { label: 'Try to come back', hint: 'A year of rehab. No promises.' },
+    ],
+  };
+}
+ANSWER.careerinj = function(L, card, i, opt, rng, beats) {
+  if (i === 0) {
+    remember(L, 'end.injury', card.ctx.kind);
+    retire(L, beats, 'An injury ended it at ' + L.age + '.');
+    return said('You call {agent:first} from the parking lot. Then your mom.', 'gold');
+  }
+  remember(L, 'end.comeback', L.year);
+  const s = L.season;
+  if (s && s.injury) s.injury.until = GAMES + 1;
+  bump(L, { ath: -6, dur: -12, health: -10, morale: -6 });
+  logIt(L, 'Out for the season. A long road back.', 'bad');
+  return said('The rest of the season is a rehab room. Your teammates send videos.', 'bad');
+};
+
+/* WALK AWAY ON TOP. Once, the summer after a ring or an MVP, past thirty. */
+function onTopCard(L) {
+  if (L.age < 31 || L.flags.onTop) return;
+  const h = L.history[L.history.length - 1];
+  if (!h || (h.po !== 'Champion' && (h.aw || []).indexOf('mvp') < 0)) return;
+  if (rngAt(L, 'ontop')() >= 0.5) return;
+  L.flags.onTop = L.year;
+  const won = h.po === 'Champion' ? 'a ring' : 'the MVP';
+  L.pending.unshift({
+    id: 'ontop', kind: 'event', key: 'ontop', eyebrow: 'The summer', scene: 'Home',
+    title: 'You just won ' + won + '. Walk away?', text: 'You\'re ' + L.age + '. Nobody would blame you. Nobody would forget it either.',
+    ctx: { won },
+    options: [{ label: 'Walk away on top', hint: 'Leave them wanting more' }, { label: 'Keep playing', hint: 'There\'s more in the tank' }],
+  });
+}
+ANSWER.ontop = function(L, card, i, opt, rng, beats) {
+  if (i === 0) {
+    remember(L, 'end.top', card.ctx.won);
+    retire(L, beats, 'Walked away on top at ' + L.age + ', fresh off ' + card.ctx.won + '.');
+    return said('One press conference. No farewell tour. You leave while they still want more.', 'gold');
+  }
+  bump(L, { morale: 4 });
+  return said('You tell {gm} you\'re not done. He was hoping you\'d say that.');
+};
+
+/* WAIVED. A man past twenty-nine, far out of his club's rotation, with a
+   deal still running: some summers the club eats the money. */
+function waiveCheck(L, beats) {
+  const c = L.contract;
+  if (!L.team || !c || c.years <= 0 || L.age < 29) return false;
+  if (effOvr(L) > rotationBar(clubNet(L, L.team)) - 12) return false;
+  if (rngAt(L, 'waive')() >= 0.5) return false;
+  const t = 'The ' + E.teamName(L.team) + ' waive you. They\'ll pay out the deal. They just don\'t want you on the floor.';
+  remember(L, 'end.waived', L.team);
+  beats.push({ kind: 'cut', text: t, tone: 'bad' });
+  logIt(L, 'Waived by the ' + E.teamName(L.team) + '.', 'bad');
+  L.team = null;
+  L.contract = null;
+  bump(L, { morale: -10, fame: -3 });
+  return true;
+}
+/* The ten day wait, from the summer nobody called. */
+function tenDay(L, beats, rng) {
+  const p = clamp(0.3 + (ovrOf(L) - 60) * 0.03, 0.05, 0.75);
+  if (ok(rng, p)) {
+    const to = CLUBS.slice().sort((a, b) => clubNet(L, a) - clubNet(L, b) || (a < b ? -1 : 1))[Math.floor(rng() * 8)];
+    L.contract = { years: 1, total: 1, salary: round1(capFor(L.year) * MIN_PCT), kind: 'min', start: L.year + 1 };
+    joinTeam(L, to, false);
+    remember(L, 'end.tenday', to);
+    logIt(L, 'A ten day contract with the ' + E.teamName(to) + ', then the rest of the season.', 'gold');
+    return said('January. Your phone buzzes at six in the morning. A ten day with the ' + nick(to) + '. Then another. Then the rest of the season.', 'gold');
+  }
+  retire(L, beats, 'Cut, and never signed again. Retired at ' + L.age + '.');
+  return said('You keep your bag packed until March. Nobody calls.', 'bad');
+}
+
 // ─── public ─────────────────────────────────────────────────────────────────
 
 /* The one copy of the Career board's name rule (130's p_player check): a
@@ -12460,6 +12706,8 @@ function careerStory(L) {
     if (L.parent) end.push(T.pts > L.parent.pts ? 'You passed your father\'s ' + L.parent.pts.toLocaleString('en-US') + ' points.' : 'Your father finished with more points: ' + L.parent.pts.toLocaleString('en-US') + '.');
     out.push({ h: 'The end', p: end.join(' ') });
   }
+  const dn = dealNames(L);
+  if (dn.length) out.push({ h: 'Your face sold', p: listWords(dn) + '.' });
   const cc = H.length ? careerComps(L) : [];
   if (cc.length) out.push({ h: 'Who you were like', p: 'Your career reads like ' + listWords(cc) + '.' });
   if (f.epilogue) out.push({ h: 'Years later', p: f.epilogue });
@@ -12518,7 +12766,7 @@ const fatherYears = (L) => L.parent ? L.parent.seasons : 9;
 const yearsWord = (n) => n === 1 ? 'one season' : (NUMWORDS[n] ? NUMWORDS[n].toLowerCase() : n) + ' seasons';
 
 const publicAPI = {
-  generateRoad, tradeTo, roadStory, careerStory, shadesOf, careerComps, cleanParent, leagueEnd, LEGACY_LEAGUE,
+  generateRoad, tradeTo, roadStory, careerStory, shadesOf, careerComps, DEALS, careerEndP, bodyOf, dealIncome, cleanParent, leagueEnd, LEGACY_LEAGUE,
   DIFFS, DIFF_KEYS, CHALLENGES, CHALLENGE_KEYS, challengeOf,
   CAREER_API_VERSION, LIFE_VERSION,
   CONF, CLUBS, confOf, POS, POS_NAME, RATINGS, RATING_NAME, RATING_SHORT, WEIGHTS,

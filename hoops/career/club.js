@@ -681,6 +681,26 @@ function summerFrame(L) {
   if (h.po === 'Missed' || h.po === 'Play-in') return SUMMER_FRAME.missed;
   return pick(figRng(L, 'sframe:' + L.year), SUMMER_FRAME.plain);
 }
+/* An eventful year: a new club, half a season lost, a ring or an MVP. */
+function eventful(L) {
+  const H = L.history, h = H[H.length - 1], p = H[H.length - 2];
+  if (!h) return true;
+  return h.gp < 55 || h.po === 'Champion' || (h.aw || []).indexOf('mvp') >= 0 || !!(p && p.t !== h.t) || h.t !== L.team;
+}
+const ASK_P = 0.5;
+const askSummer = (L) => L.seasonsDone < 2 || eventful(L) || rngAt(L, 'ask:summer')() < ASK_P;
+const askGoal = (L) => L.seasonsDone < 2 || eventful(L) || rngAt(L, 'ask:goal')() < ASK_P;
+/* The summer nobody asked about: the plan offered first that is not last
+   summer's, so it never grinds one plan stale, said in a line. */
+function quietSummer(L) {
+  const ks = summerKeys(L);
+  L.flags.summerOff = ks;
+  const last = L.flags.summerRun && L.flags.summerRun.k;
+  const k = ks.find((x) => x !== last) || ks[0];
+  if (!k) return;
+  const t = summerChoose(L, k, rngAt(L, 'quietsummer'));
+  logIt(L, 'Summer: ' + SUMMER[k].l.toLowerCase() + '. ' + t, '');
+}
 function summerKeys(L) {
   const H = L.history, h = H[H.length - 1];
   const r = figRng(L, 'summer:' + L.year);
