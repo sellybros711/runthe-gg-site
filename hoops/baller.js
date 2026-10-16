@@ -1830,8 +1830,12 @@ function getWorker(){
    can go to the front of it. Off the main thread if we can, one per idle
    moment if not. */
 var QUEUE = [], qBusy = false;
+/* first: true for the front, 2 for soon (behind everything asked for the
+   front or soon, ahead of the background), anything else for the back */
 function paintAsync(look, o, cb, first){
-  QUEUE[first ? 'unshift' : 'push']({ look: look, o: o, cb: cb });
+  var j = { look: look, o: o, cb: cb, u: !!first };
+  if (first === 2) { var i = 0; while (i < QUEUE.length && QUEUE[i].u) i++; QUEUE.splice(i, 0, j); }
+  else QUEUE[first ? 'unshift' : 'push'](j);
   pump();
 }
 function pump(){

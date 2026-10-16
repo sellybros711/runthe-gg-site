@@ -394,6 +394,29 @@ async function browser() {
     ok(names.length >= 8, `the ceremonies are there (${names.join(', ')})`);
     ok(out.every((r) => r.ms > 0 && r.ms < 9000), `${reduced ? 'reduced motion' : 'with motion'}: every ceremony ends (${out.map((r) => r.name + ' ' + Math.round(r.ms)).join(', ')})`);
     ok(out.every((r) => r.l3 === 'Test Name'), 'and names the player on the lower third');
+    /* THE ROOM IS NEVER SQUEEZED. A ceremony drew its whole room into the top
+       of the frame and then its floor again below, so the walkout and the
+       enshrinement showed two floors with a seam between. Every draw of the
+       room's picture keeps its height. */
+    if (!reduced) {
+      const sq = await page.evaluate(({ ME }) => new Promise((done) => {
+        const host = document.getElementById('h'); host.innerHTML = '';
+        const P = CanvasRenderingContext2D.prototype, orig = P.drawImage, bad = [];
+        let st = null;
+        P.drawImage = function(img){
+          if (st && (img === st.room || img === st.soft)) {
+            const a = arguments, R = img === st.soft ? st.R : 1;
+            const sh = a.length >= 9 ? a[4] : img.height, dh = a.length >= 9 ? a[8] : a.length >= 5 ? a[4] : img.height / R;
+            if (Math.abs(sh / R - dh) > 0.5) bad.push(Math.round(sh / R) + ' into ' + Math.round(dh));
+          }
+          return orig.apply(this, arguments);
+        };
+        const live = window.RTF_COURT.ceremony(host, 'debut', { name: 'Test Name', num: 34, pick: 7, teamName: 'Milwaukee Bucks', nick: 'Bucks', year: 2030, c1: ME.c1, c2: ME.c2, commish: 'Invented Person', from: 2025, to: 2040 }, { room: 'nba', me: ME, done: () => {} });
+        st = live.stage;
+        setTimeout(() => { P.drawImage = orig; live.stop(); done({ bad, soft: !!st.soft }); }, 900);
+      }), { ME });
+      ok(sq.bad.length === 0 && !sq.soft, `a ceremony draws its room once, unsqueezed and sharp (${sq.bad.slice(0, 2).join(', ') || 'never squeezed'}${sq.soft ? ', blurred' : ''})`);
+    }
     const tk = await page.evaluate(() => new Promise((done) => {
       const games = []; for (let g = 1; g <= 27; g++) games.push({ n: g, opp: 'BOS', home: g % 2 === 0, won: g % 3 !== 0, pts: g === 9 ? 41 : 18, reb: 6, ast: 4, out: g === 14, key: g === 9 });
       const d = { kind: 'rs', label: 'Games 1 to 27', team: 'MIL', c1: '#00471B', c2: '#EEE1C6', w0: 0, l0: 0, games, news: ['the Lakers fire their coach.'] };
@@ -563,7 +586,7 @@ async function browser() {
         iv = setInterval(() => {
           const st = m.stage, kk = cv.offsetHeight / st.ch;
           const armed = !!document.querySelector('#cc .ct-ctl[data-armed]');
-          S.push({ armed, line: Math.round((host.getBoundingClientRect().top + cv.offsetTop + st.fy * kk) * 10) / 10, who: (st.state.actors || []).map(key) });
+          S.push({ armed, cast: st.castDrawn || 0, line: Math.round((host.getBoundingClientRect().top + cv.offsetTop + st.fy * kk) * 10) / 10, who: (st.state.actors || []).map(key) });
           const ctl = document.querySelector('#cc .ct-ctl[data-armed]');
           if (ctl && !ctl.dataset.hit) { ctl.dataset.hit = '1'; setTimeout(() => { ctl.querySelector('.ct-go').click(); delete ctl.dataset.hit; }, 450); }
         }, 40);
@@ -581,6 +604,10 @@ async function browser() {
     ok(res.every((r) => r.moved === 0), `13 the floor line holds from the first press to the end (${res.filter((r) => r.moved !== 0).map((r) => r.kind + ' ' + r.moved + 'px').join(', ') || 'every kind'})`);
     ok(res.every((r) => r.lost === 0), `13 nobody on the floor at the press leaves it before the end (${res.filter((r) => r.lost).map((r) => r.kind).join(', ') || 'every kind'})`);
     ok(res.filter((r) => /:lose/.test(r.kind)).every((r) => r.most > r.atPress), `13 a stop that still loses shows their man tipping it in (${res.filter((r) => /:lose/.test(r.kind)).map((r) => r.kind + ' ' + r.atPress + '->' + r.most).join(', ')})`);
+    /* AND THE REST OF THE FLOOR IS THERE: the other men, both kits, behind
+       the play (a free throw was one man and a hoop) */
+    const castMax = (r) => Math.max(0, ...r.S.map((x) => x.cast));
+    ok(res.every((r) => castMax(r) >= (/^steal/.test(r.kind) ? 2 : 4)), `13 the rest of the floor is on it (${res.map((r) => r.kind + ' ' + castMax(r)).join(', ')})`);
     ok(!boom.length, '13 and nothing threw (' + boom.join(' | ') + ')');
     await ctx.close();
   }
