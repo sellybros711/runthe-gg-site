@@ -389,6 +389,10 @@ if (!args.includes('--no-browser')){
     // a tester who is NOT on PUTT_ALL_ACCESS, so every gate below is the one an ordinary player meets
     await pg.evaluate(() => { sbUsername = 'SlimeyB3'; });
     claim(await pg.evaluate(() => puttOn() && homeModeList().some(m => m.id === 'putt')), 'signed in as a tester: the door is there');
+    // A tester holds the Tour Pass by default (passTester). Everything below tests the player with no pass, so
+    // the tester's pass is put away for the rest of the check.
+    claim(await pg.evaluate(() => { const on = dailyPassActive() && puttHost().passActive(); sbUsername = 'somebody'; const off = !dailyPassActive(); sbUsername = 'SlimeyB3'; passTester = () => false; return on && off && !dailyPassActive(); }),
+      'a tester holds the Tour Pass by default, and nobody else does');
     // EVERY HOLE OPEN for the accounts on PUTT_ALL_ACCESS, asked and never written: the record keeps the real hole
     const aa = await pg.evaluate(() => { const P = window.RTT_PUTT, T = P.TOURS.main, tp = { lv:1, best:{} }, o = {}; P.close && P.close(); P.summary(puttHost());
       o.plain = { all:P.allAccess(), open40:P.opened(T, tp, 40), shown:P.revealed(T, 5, { tours:{ main:tp }, rv:[] }) };
