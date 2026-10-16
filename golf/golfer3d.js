@@ -1005,10 +1005,12 @@
           const q=u-Math.abs(v)*0.9; if(Math.abs(((q%0.24)+0.24)%0.24-0.12)<0.025) return {c:P.l,gloss:3};
           return {c:P.L,gloss:3}; } } }
       return {c:p[1]>0.55?P.h:P.C}; } },
-    ppjackolantern:{ stem:1, f:(p,P)=>{ const ph=Math.atan2(p[0],p[2]), rb=Math.abs(((ph*8/(2*Math.PI))%1+1)%1-0.5);
-      if(p[2]>0.3){ const x=p[0]*1.05, y=p[1]; const at=(x,y)=>jackEye(x,y)||jackEye(-x,y)||jackMouth(x,y)||(y>-0.12&&y<0.06&&Math.abs(x)<0.09-(y+0.12)*0.4);
-        if(at(x,y)) return {c:at(x*1.25,y*1.18+0.02)?P.Y:P.y,dt:1,gloss:0}; if(at(x*0.92,y*0.94)) return {c:P.o}; }
-      return {c:rb>0.42&&Math.abs(p[1])<0.92?P.s:P.C,gloss:2}; } } };
+    // an iron lantern cage: eight bars, a band round its middle and caps top and bottom, purple glass between them
+    // and a white-violet flame burning at the heart of the face that looks at you
+    pphallowslantern:{ f:(p,P)=>{ const ph=Math.atan2(p[0],p[2]), rb=Math.abs(((ph*8/(2*Math.PI))%1+1)%1-0.5);
+      if(rb>0.4||Math.abs(p[1])<0.07||Math.abs(p[1])>0.84) return {c:P.o,gloss:3};
+      if(p[2]>0.72&&Math.hypot(p[0],p[1]+0.08)<0.3) return {c:P.W,dt:1,gloss:0};
+      return {c:p[2]>0.35?P.L:P.P,dt:1,gloss:1}; } } };
   // the menu golfer's teed ball, painted with its motif: p is (x right, y up, z front) of the ball facing the camera
   function ppBall(push,bp,AX,U,T,id,P){ const B=BALL_PP[id], ry=B.ry||1, c=add(bp,sc(U,1.8*(ry-1)));
     push(ellipsoid(c,AX,[1.8,1.8*ry,1.8],'x:'+P.C,{gloss:3,paint:l=>{ const q=B.f([-l[2],l[1],l[0]],P); return {m:'x:'+q.c,dt:q.dt||0,gloss:q.gloss!=null?q.gloss:3,n:q.n?[q.n[2],q.n[1],-q.n[0]]:null}; }}));

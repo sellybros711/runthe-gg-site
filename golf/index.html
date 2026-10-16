@@ -10622,7 +10622,7 @@ const PASS_SEASONS={
                5:{cat:'pat',id:'spiderweb',name:'Spider Web Print'},
                8:{cat:'ball',id:'acorn',name:'Acorn Ball'},
               10:{cat:'club',id:'broomstick',name:'Broomstick Clubs'},
-              11:{cat:'ball',id:'jackolantern',name:'Jack-o-Lantern Ball'},
+              11:{cat:'ball',id:'jackolantern',name:'Jack-o\'-Lantern Ball'},
               13:{cat:'hw',id:'harvestbeanie',name:'Harvest Knit'},
               15:{cat:'ew',id:'ghoulglow',name:'Ghoul Glow Specs'},
               18:{cat:'pat',id:'flannel',name:'Harvest Flannel'},
@@ -11494,7 +11494,7 @@ const PP_REWARDS=[
  {cat:'putter',id:'ppharvest',name:'Harvest Moon Putter',hist:'A Members Tour prize'},
  {cat:'ball',id:'ppgoldleaf',name:'Golden Leaf Ball',hist:'A Members Tour prize',col:'#b8501a',tracer:{g:'rgba(184,80,26,.5)',c:'#e88a4a'}},
  {cat:'top',id:'ppchampjacket',name:'Members Champion Jacket',hist:'A Members Tour prize'},
- {cat:'ball',id:'ppjackolantern',name:'Jack-o-Lantern Ball',hist:'The Members Tour candy bag prize',col:'#e8701a',tracer:{g:'rgba(232,112,26,.5)',c:'#ffa84a'}},
+ {cat:'ball',id:'pphallowslantern',name:'Hallows Lantern Ball',hist:'The Members Tour candy bag prize',col:'#7a4ad8',tracer:{g:'rgba(122,74,216,.5)',c:'#b48cff'}},
  {cat:'putter',id:'ppdiamond',name:'Diamond Putter',hist:'The secret holes prize'} ];
 const PP_REWARD_PK={hw:'hw',ew:'ew',ball:'bl',cleats:'ct',putter:'pu',top:'tp'};
 const PP_REWARD_BY={}; PP_REWARDS.forEach(function(o){ o.key=PP_REWARD_PK[o.cat]+':'+o.id; PP_REWARD_BY[o.key]=o; });
@@ -11521,7 +11521,7 @@ const PXBALL=[
   // SEASON 2: the Harvest Classic drop's cranberry, and two Tour Pass balls (price 0, see PASS_SEASONS)
   {id:'cranberry',    name:'Cranberry',       hist:'Tart off the tee',           price:13000, col:'#b0162e', tracer:{g:'rgba(176,22,46,.5)',  c:'#ff9aa6'}},
   {id:'acorn',        name:'Acorn',           hist:'Season 2 Tour Pass',         price:0, col:'#c08a4a', tracer:{g:'rgba(192,138,74,.5)', c:'#f0d2a4'}},
-  {id:'jackolantern', name:'Jack-o-Lantern', hist:'Season 2 Tour Pass',        price:0, col:'#f08a1e', tracer:{g:'rgba(240,138,30,.6)', c:'#ffd27a'}},
+  {id:'jackolantern', name:'Jack-o\'-Lantern', hist:'Season 2 Tour Pass',        price:0, col:'#f08a1e', tracer:{g:'rgba(240,138,30,.6)', c:'#ffd27a'}},
   // the Spooky Szn hunt prize: price 0, so it is never in a pack, the shop or the shard exchange (HUNT_PRIZES)
   {id:'blackcat',     name:'Black Cat Ball',   hist:'Haunted Links hunt prize',      price:0, col:'#2a2433', tracer:{g:'rgba(150,120,200,.5)', c:'#ffd23a'}},
   // milestone gear (MILESTONE_GEAR): earned with a first major, never sold
@@ -12216,7 +12216,7 @@ Object.assign(COS_BOOST,{
   'hw:ppvisor':{acc:2}, 'hw:pphallcap':{clu:2}, 'hw:pptricorn':{dist:2}, 'hw:ppminer':{app:2}, 'hw:ppexplorer':{bnk:2}, 'hw:pphallowscrown':{scr:2},
   'ew:pppixelshades':{app:2}, 'ew:ppeyepatch':{acc:2}, 'ew:ppaviatorgoggles':{clu:2}, 'ew:ppsnowgoggles':{sht:2}, 'ew:ppphantommask':{dist:2},
   'bl:ppgoldstar':{sht:2}, 'bl:ppsprinkle':{scr:2}, 'bl:ppnugget':{dist:2}, 'bl:pplava':{dist:2}, 'bl:ppcloud':{acc:2}, 'bl:ppdinoegg':{scr:2},
-  'bl:ppgoldleaf':{app:2}, 'bl:ppjackolantern':{bnk:2},
+  'bl:ppgoldleaf':{app:2}, 'bl:pphallowslantern':{bnk:2},
   'ct:ppclubhouse':{sht:2}, 'ct:pplavarock':{bnk:2}, 'ct:ppdinoclaw':{sht:2}
 });
 function cosBoost(cat,id){ return COS_BOOST[cosKey(cat,id)]||null; }
@@ -18460,9 +18460,9 @@ PXG_BALL_PAL.ppnugget={o:'#4a2e08',C:'#eebc2c',h:'#fff0a0',s:'#c08818',d:'#8a5a1
 // Golden Leaf Ball
 PXG_BALL.ppgoldleaf=pxgRows([[47,35,'oooL'],[48,34,'ohCLLo'],[49,34,'oCLlLo'],[50,34,'oLlLCo'],[51,34,'vLCCso'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
 PXG_BALL_PAL.ppgoldleaf={o:'#4a1e06',C:'#b8501a',h:'#e88a4a',s:'#8a3610',L:'#ffd23a',l:'#d98a10',v:'#ffd23a',T:'#e8ebf0'};
-// Jack-o-Lantern Ball
-PXG_BALL.ppjackolantern=pxgRows([[46,37,'g'],[47,35,'oogo'],[48,34,'oYhCYo'],[49,33,'GoCCCCoG'],[50,34,'oyCCyo'],[51,34,'osYYso'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
-PXG_BALL_PAL.ppjackolantern={o:'#3a1404',C:'#e8701a',h:'#ffa84a',s:'#b04a0a',y:'#ffd23a',Y:'#fff6b0',g:'#3f7a2a',G:'#ffb030',T:'#e8ebf0'};
+// Hallows Lantern Ball: an iron lantern cage round a ghostly purple flame, so it reads apart from the Tour Pass pumpkin
+PXG_BALL.pphallowslantern=pxgRows([[46,36,'oo'],[47,35,'oPPo'],[48,34,'oPLLPo'],[49,33,'GoLWWLoG'],[50,34,'oPLLPo'],[51,34,'ooPPoo'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
+PXG_BALL_PAL.pphallowslantern={o:'#24202c',C:'#7a4ad8',P:'#5a2fa8',L:'#b48cff',W:'#f4ecff',s:'#3a3346',G:'#b48cff',T:'#e8ebf0'};
 // Clubhouse Cleats
 PXG_CLEATS.ppclubhouse=pxgRows([[50,15,'kYYyk.....kYYyk'],[51,13,'kMgYyyMMk.kMgYyyMMk'],[52,13,'kTHMgMTLk.kTHMgMTLk'],[53,13,'kHTTTTTLk.kHTTTTTLk'],[54,13,'kHCcCCCLk.kHCcCCCLk'],[55,13,'kskskskSk.kskskskSk']]);
 PXG_CLEATS_PAL.ppclubhouse={k:'#181019',T:'#ece4cc',H:'#fffbee',L:'#bfb28c',M:'#1f5a36',g:'#3f8a54',Y:'#ffd65a',y:'#b8862a',C:'#123d24',c:'#a8f0bc',s:'#e6c25a',S:'#b8862a'};

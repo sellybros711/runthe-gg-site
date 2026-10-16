@@ -102,7 +102,7 @@ head('1b. EVERY REWARD IS A CLOSET ITEM');
   const bare = paid.map(n => n.replace(' (Members only)', ''));
   claim(bare.every(n => names.includes(n)) && names.every(n => bare.includes(n)), `every name the tours pay (${paid.length}) is one reward item, and every item is paid by a tour`);
   claim(new Set(items.map(r => r.key)).size === items.length && items.every(r => /^(hw|ew|bl|ct|pu|tp):pp[a-z]+$/.test(r.key)), 'each maps to its own pp item key (cat:id)');
-  claim(paid.includes('Jack-o-Lantern Ball (Members only)') && !paid.some(n => /Jack-o\W+Lantern/.test(n) && n.indexOf('Jack-o-Lantern') < 0), 'the Jack-o-Lantern Ball is paid with a plain hyphen');
+  claim(paid.includes('Hallows Lantern Ball (Members only)') && !paid.some(n => /Jack-o/.test(n)), 'the Members candy bag pays the Hallows Lantern Ball, not a second Jack-o-Lantern');
   const had = globalThis.localStorage, mem = {};
   globalThis.localStorage = { getItem: k => (k in mem ? mem[k] : null), setItem: (k, v) => { mem[k] = String(v); }, removeItem: k => { delete mem[k]; } };
   const owns = rec => { if (rec) mem.bag_ppt_v1 = JSON.stringify(rec); else delete mem.bag_ppt_v1; return items.filter(r => P.rewardOwned(r.key)).map(r => r.name); };
@@ -112,10 +112,10 @@ head('1b. EVERY REWARD IS A CLOSET ITEM');
   claim(owns({ v:2, tours:{ main:{ best:{ 18:9 } } } }).length === 0, 'the signature hole over par owns nothing');
   const old = { 'Clubhouse Polo':'Clubhouse Cleats', 'Sprinkle Trail':'Sprinkle Ball', 'High Score Celebration':'Pixel Shades', 'Treasure Trail':'Pirate Eyepatch',
     'Eruption Celebration':'Lava Rock Cleats', 'Rainbow Trail':'Aviator Goggles', 'Footprint Trail':'Dino Claw Cleats', 'Thaw Celebration':'Snow Goggles',
-    'Phantom Trail (Members only)':'Phantom Mask', 'Jack-o’-Lantern Ball (Members only)':'Jack-o-Lantern Ball' };
+    'Phantom Trail (Members only)':'Phantom Mask', 'Jack-o’-Lantern Ball (Members only)':'Hallows Lantern Ball' };
   claim(Object.keys(old).every(o => owns({ v:2, tours:{}, rewards:[o] }).join() === old[o]), 'each old reward name on a saved record owns its new item');
   const nine = {}; for (let i = 1; i <= 9; i++) nine[i] = 1;
-  claim(owns({ v:2, tours:{ members:{ treat:nine } } }).join() === 'Jack-o-Lantern Ball', 'a full candy bag owns the Jack-o-Lantern Ball');
+  claim(owns({ v:2, tours:{ members:{ treat:nine } } }).join() === 'Hallows Lantern Ball', 'a full candy bag owns the Hallows Lantern Ball');
   const ten = {}; for (let i = 1; i <= P.PAY.secret.ten; i++) ten[i] = 1;
   claim(owns({ v:2, tours:{ secret:{ paid:ten } } }).join() === 'Diamond Putter', `${P.PAY.secret.ten} secret holes beaten owns the Diamond Putter`);
   delete ten[P.PAY.secret.ten]; claim(owns({ v:2, tours:{ secret:{ paid:ten } } }).length === 0, 'one fewer owns nothing');

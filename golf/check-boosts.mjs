@@ -409,7 +409,7 @@ try {
     const WANT = { 'hw:ppvisor': { acc: 2 }, 'hw:pphallcap': { clu: 2 }, 'hw:pptricorn': { dist: 2 }, 'hw:ppminer': { app: 2 }, 'hw:ppexplorer': { bnk: 2 },
       'hw:pphallowscrown': { scr: 2 }, 'ew:pppixelshades': { app: 2 }, 'ew:ppeyepatch': { acc: 2 }, 'ew:ppaviatorgoggles': { clu: 2 }, 'ew:ppsnowgoggles': { sht: 2 },
       'ew:ppphantommask': { dist: 2 }, 'bl:ppgoldstar': { sht: 2 }, 'bl:ppsprinkle': { scr: 2 }, 'bl:ppnugget': { dist: 2 }, 'bl:pplava': { dist: 2 }, 'bl:ppcloud': { acc: 2 },
-      'bl:ppdinoegg': { scr: 2 }, 'bl:ppgoldleaf': { app: 2 }, 'bl:ppjackolantern': { bnk: 2 }, 'ct:ppclubhouse': { sht: 2 }, 'ct:pplavarock': { bnk: 2 }, 'ct:ppdinoclaw': { sht: 2 },
+      'bl:ppdinoegg': { scr: 2 }, 'bl:ppgoldleaf': { app: 2 }, 'bl:pphallowslantern': { bnk: 2 }, 'ct:ppclubhouse': { sht: 2 }, 'ct:pplavarock': { bnk: 2 }, 'ct:ppdinoclaw': { sht: 2 },
       'pu:pplollipop': { put: 2 }, 'pu:ppneon': { put: 2 }, 'pu:ppjadeidol': { put: 2 }, 'pu:pptusk': { put: 2 }, 'pu:ppharvest': { put: 2 }, 'pu:ppdiamond': { put: 4 },
       'tp:ppchampjacket': null };
     const R = await page.evaluate((WANT) => {
@@ -452,7 +452,7 @@ try {
     ok('a fresh record owns none', R.fresh.length === 0, R.fresh);
     ok('world 1 cleared owns the Clubhouse Visor and the Clubhouse Cleats', R.world1.join() === 'Clubhouse Visor,Clubhouse Cleats', R.world1);
     ok('world 1 signature hole beaten (no payout on the record) owns the same two', R.sig1.join() === 'Clubhouse Visor,Clubhouse Cleats', R.sig1);
-    ok('an old reward name on the record owns its item', R.old.sort().join() === 'Jack-o-Lantern Ball,Phantom Mask,Snow Goggles', R.old);
+    ok('an old reward name on the record owns its item', R.old.sort().join() === 'Hallows Lantern Ball,Phantom Mask,Snow Goggles', R.old);
     ok('the secret holes owns the Diamond Putter', R.secret.join() === 'Diamond Putter', R.secret);
     ok('the Members Tour cleared owns its five', R.members.sort().join() === 'Golden Leaf Ball,Hallows Crown,Harvest Moon Putter,Members Champion Jacket,Phantom Mask', R.members);
     ok('the Clubhouse Visor won moves Accuracy by 2, and not won moves nothing', R.wear === 2 && R.wearLocked === 0, [R.wear, R.wearLocked]);

@@ -2401,7 +2401,7 @@ var PAY = {
     /* TRICK OR TREAT, the Hallows Night bonus: the first time a Hallows hole is beaten UNDER par it hands out a
        treat (coins on top of the hole's own), and all nine fill the candy bag for a reward nobody else has.
        Under par and not just par, so the treat is for playing a hole well rather than for getting round it. */
-    treat:{ w:0, each:150, all:600, reward:'Jack-o-Lantern Ball (Members only)' } },
+    treat:{ w:0, each:150, all:600, reward:'Hallows Lantern Ball (Members only)' } },
   lab:{ hole:0, sig:0, ace:0, world:0, sigReward:[], worldReward:[] },
   // a secret hole pays like a signature hole the first time it is beaten; ten of them beaten wins the Diamond Putter and a bonus
   secret:{ hole:280, sig:280, ace:20, world:0, sigReward:[], worldReward:[], ten:10, all:1000, allReward:'Diamond Putter' }
@@ -2424,10 +2424,10 @@ var REWARD_ITEM = {
   'Pirate Eyepatch':'ew:ppeyepatch', 'Explorer Hat':'hw:ppexplorer', 'Gold Nugget Ball':'bl:ppnugget', 'Lava Rock Cleats':'ct:pplavarock',
   'Aviator Goggles':'ew:ppaviatorgoggles', 'Dino Claw Cleats':'ct:ppdinoclaw', 'Snow Goggles':'ew:ppsnowgoggles',
   'Hallows Crown':'hw:pphallowscrown', 'Harvest Moon Putter':'pu:ppharvest', 'Phantom Mask':'ew:ppphantommask', 'Golden Leaf Ball':'bl:ppgoldleaf',
-  'Members Champion Jacket':'tp:ppchampjacket', 'Jack-o-Lantern Ball':'bl:ppjackolantern', 'Diamond Putter':'pu:ppdiamond' };
+  'Members Champion Jacket':'tp:ppchampjacket', 'Hallows Lantern Ball':'bl:pphallowslantern', 'Diamond Putter':'pu:ppdiamond' };
 var REWARD_OLD = { 'Clubhouse Polo':'Clubhouse Cleats', 'Sprinkle Trail':'Sprinkle Ball', 'High Score Celebration':'Pixel Shades',
   'Treasure Trail':'Pirate Eyepatch', 'Eruption Celebration':'Lava Rock Cleats', 'Rainbow Trail':'Aviator Goggles', 'Footprint Trail':'Dino Claw Cleats',
-  'Thaw Celebration':'Snow Goggles', 'Phantom Trail':'Phantom Mask', 'Jack-o’-Lantern Ball':'Jack-o-Lantern Ball' };
+  'Thaw Celebration':'Snow Goggles', 'Phantom Trail':'Phantom Mask', 'Jack-o’-Lantern Ball':'Hallows Lantern Ball', 'Jack-o-Lantern Ball':'Hallows Lantern Ball' };
 function rewardName(r){ var b = String(r || '').replace(' (Members only)', ''); return REWARD_OLD[b] || b; }
 /* WHAT PAYS EACH ONE: a world's two names pay when its signature hole is beaten (which clears the world), the
    Members Tour's finish when its last world is cleared, the candy bag when every hole of its world has had its
