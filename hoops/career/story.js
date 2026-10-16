@@ -573,6 +573,26 @@ function storyAfterCard(L) {
     options: open.map((p) => ({ label: p[1], hint: p[2] })),
   };
 }
+/* The answers to life after basketball (choose() runs them). */
+ANSWER.after = function(L, card, i, opt, rng, beats, touch, touches) {
+  let text = '', tone = '', made = null, won = null, shots = null, contest = null;
+  if (card.ctx && card.ctx.paths) {
+    const path = card.ctx.paths[i];
+    L.final = legacy(L);
+    L.final.path = path;
+    L.final.after = AFTER_PATHS.find((p) => p[0] === path)[1] + '.';
+    text = 'New city, new chapter.'; tone = 'gold';
+    if (!dealNamed(L, 'post', 'ep_' + path)) finishLife(L, '');
+    return { text, tone, made, won, shots, contest };
+  }
+  L.retired = true;
+  L.phase = 'retired';
+  L.final = legacy(L);
+  L.final.after = chooseAfter(L, i, rng);
+  text = L.final.after; tone = 'gold';
+  logIt(L, text, 'gold');
+  return { text, tone, made, won, shots, contest };
+};
 /* The career ends here, after the epilogue and, rarely, one last shot. */
 function finishLife(L, text) {
   if (L.final && text) { L.final.epilogue = say(L, text); L.final.after = L.final.epilogue; }
