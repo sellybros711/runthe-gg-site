@@ -192,6 +192,9 @@ var CSS = [
 '.st3 .st-l2{z-index:5;}',
 '.sc-3d::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:5;background:radial-gradient(ellipse 80% 75% at 50% 55%,rgba(3,4,10,0) 58%,rgba(3,4,10,.55) 100%);}',
 '.scov.s3 .sc-cast{display:block;inset:0;top:0;bottom:0;z-index:auto;}',
+/* the camera: the room and the cast move as one picture (a medium shot is a
+   whole-pixel scale of both), so the figures stay between the furniture */
+'.sc-lens{position:absolute;inset:0;transform-origin:0 0;}',
 '.scov.s3 .sc-cast img,.scov.s3 .sc-cast canvas{position:absolute;max-height:none;filter:none;}',
 '.scov.s3 .sc-cast .st-sh{z-index:2;opacity:1;animation:none;}',
 '.scov.s3:has(.sc-3d) .sc-hud{background:#05070d;box-shadow:0 3px 0 0 #0b0e1a;}',
@@ -425,7 +428,38 @@ function fit3(ov){
     sh.style.width = 30 * pl.k + 'px'; sh.style.height = 10 * pl.k + 'px';
     sh.style.zIndex = slot === 'main' ? 4 : 2;
   }
+  lens(ov);
   return true;
+}
+/* THE CAMERA CUTS TO WHOEVER IS TALKING. Every beat used to be one wide
+   shot of the whole room, two small men in it. A beat after the room has
+   been shown cuts to a medium shot on the speaker (or on you, when you are
+   the one asked): the room and the cast scaled together by a whole number of
+   device pixels a fine pixel, so nothing is resampled soft, and held so the
+   room still fills the frame. The first beat in a room stays wide, to show
+   where you are. ov._shot names the figure's slot, or nothing for wide. */
+var SHOT_ZOOM = 1.75;
+function lens(ov){
+  var L = ov.querySelector('.sc-lens'); if (!L) return;
+  L.style.transform = '';
+  var slot = ov._shot, rm = ov.querySelector('.sc-3d'), st = ov.querySelector('.sc-stage');
+  if (!slot || !rm || !st) return;
+  var fig = ov.querySelector('.sc-cast [data-slot="' + slot + '"]'), box = rm.querySelector('.st3');
+  if (!fig || !fig.style.width || !box || !box.style.width) return;
+  var pl = plan3(ov); if (!pl) return;
+  var q = Math.max(1, Math.round(pl.k / pl.r * pl.dpr)), s = Math.round(SHOT_ZOOM * q) / q;
+  if (s < 1.2) return;
+  var n = function(v){ return parseFloat(v) || 0; };
+  var W = st.clientWidth, H = st.clientHeight;
+  var px = n(fig.style.left) + n(fig.style.width) / 2, py = n(fig.style.top) + n(fig.style.height) * 0.4;
+  var tx = W / 2 - s * px, ty = pl.hh + (H - pl.hh) * 0.46 - s * py;
+  var bl = n(box.style.left), bt = n(box.style.top), bw = n(box.style.width), bh = n(box.style.height);
+  tx = Math.min(-s * bl, Math.max(W - s * (bl + bw), tx));
+  ty = Math.min(-s * bt, Math.max(H - s * (bt + bh), ty));
+  /* the room's first fine pixel on a whole device pixel, so all of them are */
+  tx = Math.round((s * bl + tx) * pl.dpr) / pl.dpr - s * bl;
+  ty = Math.round((s * bt + ty) * pl.dpr) / pl.dpr - s * bt;
+  L.style.transform = 'translate(' + tx.toFixed(3) + 'px,' + ty.toFixed(3) + 'px) scale(' + s + ')';
 }
 function roomHTML(room, c){
   if (K && STAGE_ROOM[room] && S3()) return stageHTML(room, c);
@@ -1078,7 +1112,7 @@ function play(beats, ctx, opts){
   if (!ov) {
     ov = document.createElement('div');
     ov.className = 'scov'; ov.id = 'scov';
-    ov.innerHTML = '<div class="sc-stage"><div class="sc-rooms"></div><div class="sc-cast"></div><div class="sc-conf"></div>'
+    ov.innerHTML = '<div class="sc-stage"><div class="sc-lens"><div class="sc-rooms"></div><div class="sc-cast"></div></div><div class="sc-conf"></div>'
       + '<div class="sc-hud"><span class="sc-out"><i></i><span></span></span><span class="sc-when"></span><button class="sc-skip" type="button">Skip</button></div></div>'
       + '<div class="sc-cap"><div class="sc-who"><b></b><span></span></div><div class="sc-body"></div><p class="sc-tap">Tap to continue</p></div>';
     document.body.appendChild(ov);
@@ -1286,7 +1320,9 @@ function play(beats, ctx, opts){
     var bt = list[i];
     stopType();
     choosing = false;
+    var was = room;
     setRoom(bt); setCast(bt); setShot(bt); setTape(bt); plate(bt);
+    frame(bt, was !== room);
     $('.sc-when').textContent = ctx.when || '';
     var body = $('.sc-body');
     $('.sc-skip').hidden = false;
@@ -1316,6 +1352,16 @@ function play(beats, ctx, opts){
       tx.innerHTML = esc(full.slice(0, shown)) + '<span class="sc-caret">|</span>';
     }, 18);
     bt._full = full; bt._feed = feed;
+  }
+  /* which shot this beat is: wide when the room is new, a court shot or the
+     tale of the tape is up, or in the studio (the desk and the wall are the
+     picture); else the speaker if he is drawn, else you */
+  function frame(bt, fresh){
+    var has = function(sl){ return !!ov.querySelector('.sc-cast [data-slot="' + sl + '"]'); };
+    var sd = SPEAKER[bt.who];
+    ov._shot = fresh || bt.shot || bt.tape || roomName === 'studio' ? null
+      : !bt.choice && sd && has('host') ? 'host' : has('main') ? 'main' : has('host') ? 'host' : null;
+    lens(ov);
   }
   function paintChoice(bt){
     var card = opts.card && opts.card();
