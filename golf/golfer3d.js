@@ -32,6 +32,22 @@
   const cam=p=>[p[0],-p[1]*ce+p[2]*se,p[1]*se+p[2]*ce], camv=cam;
   const ellipsoid=(c,ax,r,mat,o)=>({k:'e',c:cam(c),u:ax.map(camv),r,mat,o:o||{}});
   const capsule=(a,b,r,mat,o)=>({k:'c',a:cam(a),b:cam(b),r,mat,o:o||{}});
+  // A SMOOTH SURFACE, for the menu golfer only: f(world point) is the signed distance to it, and it is ray marched.
+  // It draws what ellipsoids and capsules cannot: a ring, a brim that curves down at its sides, curls carved into
+  // one head of hair, a duck's neck grown out of its float. c and R bound it. o.mf(p, n) may answer [material, dt].
+  const field=(c,R,f,mat,o)=>({k:'f',c:cam(c),R,f,mat,o:o||{}});
+  const sdE=(p,c,AX,R)=>{ const q=sub(p,c), a=dot(q,AX[0])/R[0], b=dot(q,AX[1])/R[1], d=dot(q,AX[2])/R[2];
+    const k0=Math.hypot(a,b,d), k1=Math.hypot(a/R[0],b/R[1],d/R[2]); return k1<1e-6?-Math.min(...R):k0*(k0-1)/k1; };
+  const sdCap=(p,a,b,r)=>{ const pa=sub(p,a), ba=sub(b,a), h=Math.max(0,Math.min(1,dot(pa,ba)/dot(ba,ba))); return Math.hypot(...sub(pa,sc(ba,h)))-r; };
+  const smin=(a,b,k)=>{ const h=Math.max(k-Math.abs(a-b),0)/k; return Math.min(a,b)-h*h*k/4; };
+  function hitF(P,x,y){ const e2=P.R*P.R-(x-P.c[0])**2-(y-P.c[1])**2; if(e2<=0) return null;
+    const f=z=>P.f(cam([x,y,z])), z1=P.c[2]-Math.sqrt(e2); let z=P.c[2]+Math.sqrt(e2), d=f(z);
+    for(let i=0;i<160&&z>z1;i++){ if(d<0.01) break; z-=Math.max(d*0.7,0.02); d=f(z); }
+    if(d>=0.01||z<=z1) return null;
+    const p=cam([x,y,z]), e=0.03, g=[0,1,2].map(i=>{ const a=p.slice(), b=p.slice(); a[i]+=e; b[i]-=e; return P.f(a)-P.f(b); }), nw=norm(g);
+    const h={D:z,n:cam(nw)}, mm=P.o.mf&&P.o.mf(p,nw);
+    if(mm){ h.m=mm[0]||P.mat; h.dt=mm[1]||0; h.gloss=P.o.gloss||0; }
+    return h; }
   function hitE(P,x,y){ const d=[x-P.c[0],y-P.c[1],1000-P.c[2]], dir=[0,0,-1];
     const lo=P.u.map((u,i)=>dot(d,u)/P.r[i]), ld=P.u.map((u,i)=>dot(dir,u)/P.r[i]);
     const A=dot(ld,ld),B=2*dot(lo,ld),C=dot(lo,lo)-1,disc=B*B-4*A*C; if(disc<0) return null;
@@ -229,13 +245,21 @@
     const capTop=under?0.24:9;
     const base=(R,c,o)=>out.push(ellipsoid(c||hc,AXh,R,'hair',Object.assign({gloss:1,bias:-.08,cut:l=>l[1]>thr(l)&&l[1]<capTop},o||{})));
     const S=hr;
-    if(style==='afro'){ if(under) base([S*1.13,S*1.1,S*1.15]); else base([S*1.32,S*1.28,S*1.36],add(hc,sc(hup,1.4)),{cut:l=>l[1]>thr(l)-0.08}); }
+    // CURLS: one head of hair with the curls carved into it, so they run into each other as hair does. Each curl is
+    // a rounded lobe of a wave over the head's surface, the grooves between them drawn a shade darker.
+    const curls=(R,c,fq,amp,lo)=>{ const amp2=amp*0.35, wave=q=>{ const u=norm(q);
+        const w=Math.sin(fq*u[0]+1.3)*Math.sin(fq*u[1]+0.4)*Math.sin(fq*u[2]+2.1)+0.25*Math.sin(fq*1.4*(u[0]+u[2])+0.7)*Math.sin(fq*1.4*u[1]+1.9);
+        return amp*Math.sqrt(Math.min(1,Math.abs(w)*1.25)); };
+      const loc=p=>{ const q=sub(p,c); return [dot(q,look)/R[0],dot(q,hup)/R[1],dot(q,Lf)/R[2]]; };
+      out.push(field(c,Math.max(...R)+amp+1,p=>{ const q=sub(p,c), l=loc(p);
+          return Math.max(sdE(p,c,AXh,R)-wave(q),(thr(l)+lo-l[1])*R[1]); },'hair',
+        {gloss:1,bias:-.08,mf:p=>{ const d=wave(sub(p,c)); return ['hair',d<amp2?-1:d>amp*0.9?1:0]; }})); };
+    if(style==='afro'){ if(under) base([S*1.13,S*1.1,S*1.15]); else curls([S*1.26,S*1.22,S*1.3],add(hc,sc(hup,1.4)),7,1.3,-0.08); }
     else if(style==='buzz') base([S*1.025,S*1.065,S*1.022],null,{dt:-1});
     else if(style==='mohawk'){ if(!under){ base([S*1.03,S*1.065,S*1.03],null,{dt:-1,cut:l=>l[1]>thr(l)+0.05&&Math.abs(l[2])<0.2});
         out.push(ellipsoid(add(hc,sc(hup,hr*0.98),sc(look,-0.2)),AXh,[hr*1.0,4.4,1.75],'hair',{gloss:1,cut:l=>l[1]>-0.55})); } else base([S*1.025,S*1.065,S*1.022],null,{dt:-1}); }
+    else if(style==='curly'&&!under) curls([S*1.04,S*1.07,S*1.04],hc,6,1.5,0);
     else { const vol=style==='curly'?1.08:1.045; base([S*vol,S*(vol+0.025),S*vol]);
-      if(style==='curly'&&!under) for(let i=0;i<9;i++){ const a=i/9*2*Math.PI, d=norm(add(sc(hup,0.62),sc(look,0.62*Math.cos(a)),sc(Lf,0.7*Math.sin(a))));
-        out.push(ellipsoid(add(hc,sc(d,hr*1.06)),AXh,[1.9,1.7,1.9],'hair',{gloss:1})); }
       if(style==='swoop'&&!under) out.push(ellipsoid(add(hc,sc(look,hr*0.55),sc(hup,hr*0.74),sc(Lf,hr*0.2)),AXh,[hr*0.6,hr*0.32,hr*0.72],'hair',{gloss:1,bias:-.05}));
       if(style==='spiky'&&!under) for(let i=0;i<7;i++){ const a=(i/7)*2*Math.PI, d=norm(add(sc(hup,1),sc(look,0.5*Math.cos(a)),sc(Lf,0.5*Math.sin(a))));
         out.push(ellipsoid(add(hc,sc(d,hr*1.0)),[d,norm(cross(d,Lf)),norm(cross(d,cross(d,Lf)))],[2.6,1.1,1.1],'hair',{gloss:1})); }
@@ -261,7 +285,22 @@
       out.push(ellipsoid(add(hc,sc(d,hr*1.0)),[d,norm(cross(d,Lf)),norm(cross(d,cross(d,Lf)))],[2.6,1.1,1.1],'hair',{gloss:1})); }
     }
     const lift=MO?hr*0.16:0;
-    if(cap){ out.push(ellipsoid(add(hc,sc(hup,hr*0.18+lift)),[look,hup,Lf],[hr*1.06,hr*0.95,hr*1.06],'hat',{cut:l=>l[1]>-0.12}));
+    // THE MENU CAP: a six panel crown that comes down over the hair at the temples and the back, its seams sewn in,
+    // and a pre-curved brim that pitches down and bends down at its sides, as a real golf cap's does. One piece
+    // (field) so it reads as a brim from the front, its underside a shade darker.
+    if(cap&&MO){ const AXc=[look,hup,Lf], cw=style==='afro'?1.19:1.07, cc=add(hc,sc(hup,hr*0.12)), CR=[hr*cw,hr*1.12,hr*cw], rim=l=>l[1]>0.07-0.12*(1-l[0]);
+      out.push(ellipsoid(cc,AXc,CR,'hat',{cut:rim}));
+      for(let k=0;k<3;k++){ const a=k*Math.PI/3+Math.PI/6;   // the panel seams, over the crown from rim to button
+        out.push(over(cc,AXc,CR,'hat',l=>rim(l)&&Math.abs(l[0]*Math.sin(a)-l[2]*Math.cos(a))<0.025&&l[1]>0.12,{dt:-1,noCast:1})); }
+      out.push(ellipsoid(add(cc,sc(hup,CR[1]-0.3)),AXc,[1.15,0.75,1.15],'hatbtn'));
+      const Cb=add(hc,sc(hup,hr*(0.24-1.169))), RB=[hr*4.0,hr*1.2,hr*2.0];
+      out.push(field(add(hc,sc(look,hr*1.2)),hr*1.45,p=>{ const q=sub(p,hc), a=dot(q,look), sd=dot(q,Lf);
+          const shell=Math.abs(sdE(p,Cb,AXc,RB))-0.42, foot=(Math.hypot((a-hr*0.9)/(hr*1.0),sd/(hr*(cw+0.09)))-1)*hr*1.0;
+          return Math.max(shell,foot,hr*0.55-a); },'hat',{mf:(p,n)=>dot(n,hup)<-0.2?['hat',-1]:null}));
+      const pc=add(cc,sc(look,hr*(cw-0.15)),sc(hup,hr*0.45));
+      out.push(ellipsoid(pc,AXc,[0.62,2.5,2.7],'patch',{t:2,cut:l=>Math.abs(l[1])<0.7&&Math.abs(l[2])<0.7}));
+      out.push(ellipsoid(add(pc,sc(look,0.38)),AXc,[0.5,0.62,1.05],'patchmark',{t:2,noCast:1})); }
+    else if(cap){ out.push(ellipsoid(add(hc,sc(hup,hr*0.18+lift)),[look,hup,Lf],[hr*1.06,hr*0.95,hr*1.06],'hat',{cut:l=>l[1]>-0.12}));
       out.push(MO?ellipsoid(add(hc,sc(look,hr*0.98),sc(hup,hr*0.0+lift)),[look,hup,Lf],[hr*1.0,0.85,hr*1.0],'hat',{dt:-1,cut:l=>l[0]>-0.2})
         :ellipsoid(add(hc,sc(look,hr*0.95),sc(hup,hr*0.02+lift)),[look,hup,Lf],[hr*0.75,0.75,hr*0.82],'hat',{dt:-1,cut:l=>l[0]>-0.15}));
       out.push(ellipsoid(add(hc,sc(hup,hr*1.1+lift)),[look,hup,Lf],[1.1,0.8,1.1],'hatbtn'));
@@ -269,7 +308,7 @@
         out.push(ellipsoid(pc,[look,hup,Lf],[0.62,2.5,2.7],'patch',{t:2,cut:l=>Math.abs(l[1])<0.7&&Math.abs(l[2])<0.7}));
         out.push(ellipsoid(add(pc,sc(look,0.2)),[look,hup,Lf],[0.5,0.62,1.05],'patchmark',{t:2,noCast:1})); }
       else out.push(ellipsoid(add(hc,sc(look,hr*0.95),sc(hup,hr*0.48)),[look,hup,Lf],[0.6,1.5,2.0],'patch',{t:2})); }
-    if(visor&&MO){ const R=(style==='afro'?1.4:style==='curly'?1.14:1.1)*hr;   // the band sits outside the hair, the brim like the cap's
+    if(visor&&MO){ const R=(style==='afro'?1.48:style==='curly'?1.25:1.1)*hr;   // the band sits outside the hair, the brim like the cap's
       out.push(ellipsoid(add(hc,sc(hup,hr*0.28)),[look,hup,Lf],[R,1.35,R],'hat',{gloss:1}));
       out.push(ellipsoid(add(hc,sc(look,R*0.93),sc(hup,hr*0.24)),[look,hup,Lf],[hr*0.95,0.8,hr*0.95],'hat',{dt:-1,cut:l=>l[0]>-0.15})); }
     else if(visor){ out.push(ellipsoid(add(hc,sc(hup,hr*0.3)),[look,hup,Lf],[hr*1.04,1.1,hr*1.04],'hat'));
@@ -637,12 +676,19 @@
       push(capsule(P(4.7,32.6,-3.0),P(4.7,32.6,3.0),0.2,'x:'+tpal['5'],{noCast:1}));
       tag=''; }
     // THE RUBBER DUCKY FLOATIE: an inflated ring round the waist with the duck's head and beak at the front
-    if(top==='duckfloatie'){ tag='top'; const fc=P(0.4,18.6,0), ring=a=>add(fc,sc(F,7.4*Math.cos(a)),sc(T,11.2*BW*Math.sin(a)));
-      const N=26; for(let i=0;i<N;i++) push(capsule(ring(i/N*2*Math.PI),ring((i+1)/N*2*Math.PI),2.5,'x:'+tpal['1'],{gloss:2,bias:.15}));
-      for(let i=0;i<N;i+=2) push(capsule(add(ring(i/N*2*Math.PI),sc(U,1.9)),add(ring((i+1)/N*2*Math.PI),sc(U,1.9)),0.7,'x:'+tpal['3'],{noCast:1}));   // the shine
-      const ha=-28*D2R, rp=ring(ha), o2=norm(add(sc(F,Math.cos(ha)),sc(T,Math.sin(ha)))), sd2=norm(cross(o2,U)), hd=add(rp,sc(U,5.0),sc(o2,0.6));
-      push(capsule(add(rp,sc(U,1.2)),hd,1.6,'x:'+tpal['1'],{gloss:1})); push(ellipsoid(hd,[o2,U,sd2],[2.9,2.7,2.7],'x:'+tpal['1'],{gloss:2}));
-      push(ellipsoid(add(hd,sc(o2,2.8),sc(U,-0.5)),[o2,U,sd2],[1.8,0.65,1.2],'x:'+tpal['4'],{gloss:2}));
+    // One inflated body (field): the tube, the duck's neck and head grown out of it, its beak, and a tail at the
+    // back. The seam round the outside of the tube is moulded in.
+    if(top==='duckfloatie'){ tag='top'; const fc=P(0.4,18.6,0), Ra=7.4, Rb=11.2*BW, rt=2.6, ring=a=>add(fc,sc(F,Ra*Math.cos(a)),sc(T,Rb*Math.sin(a)));
+      const ha=-28*D2R, rp=ring(ha), o2=norm(add(sc(F,Math.cos(ha)),sc(T,Math.sin(ha)))), sd2=norm(cross(o2,U)), hd=add(rp,sc(U,5.0),sc(o2,0.6)), AXd=[o2,U,sd2];
+      const bk=add(hd,sc(o2,2.8),sc(U,-0.5)), tl=add(ring(ha+Math.PI),sc(U,2.2),sc(o2,-0.6));
+      const tube=p=>{ const q=sub(p,fc), a=dot(q,F), b=dot(q,T), h=dot(q,U), t=Math.atan2(b/Rb,a/Ra); return Math.hypot(a-Ra*Math.cos(t),b-Rb*Math.sin(t),h)-rt; };
+      const duck=p=>smin(smin(tube(p),sdCap(p,add(rp,sc(U,1.2)),hd,1.75),1.8),smin(sdE(p,hd,AXd,[2.9,2.7,2.7]),sdE(p,tl,AXd,[1.6,2.0,1.1]),0.1),1.4);
+      const beak=p=>sdE(p,bk,AXd,[1.8,0.65,1.2]);
+      const box=[]; for(const i of [1,-1]) for(const j of [1,-1]) for(const u of [-rt-0.5,10]) box.push(add(fc,sc(F,i*(Ra+rt+3)),sc(T,j*(Rb+rt+0.5)),sc(U,u)));
+      push(field(fc,Math.max(Ra,Rb)+rt+9,p=>Math.min(duck(p),beak(p)),'x:'+tpal['1'],{gloss:2,bias:.15,pts:box,mf:p=>{
+          if(beak(p)<duck(p)) return ['x:'+tpal['4'],0];
+          const q=sub(p,fc), a=dot(q,F)/Ra, b=dot(q,T)/Rb, h=dot(q,U);
+          return Math.abs(h)<0.22&&a*a+b*b>1.05&&tube(p)<0.2?['x:'+tpal['1'],-1]:null; }}));
       for(const s of [1,-1]) push(ellipsoid(add(hd,sc(o2,2.1),sc(U,0.9),sc(sd2,1.35*s)),[o2,U,sd2],[0.5,0.6,0.5],'x:'+tpal['5'],{noCast:1}));
       tag=''; }
     // the club, gripped in the dominant hand, its head on the grass just outside that foot
@@ -825,10 +871,12 @@
     // each part's box on the screen, so a cell only tests the parts that can reach it
     for(const p of parts){ if(p.k==='e'){ const m=Math.max(...p.r); p.bb=[p.c[0]-m,p.c[1]-m,p.c[0]+m,p.c[1]+m]; }
       else if(p.k==='v') p.bb=p.bb2;
+      else if(p.k==='f'){ p.bb=[p.c[0]-p.R,p.c[1]-p.R,p.c[0]+p.R,p.c[1]+p.R];
+        if(p.o.pts){ const q=p.o.pts.map(cam); p.bb=[Math.min(...q.map(v=>v[0])),Math.min(...q.map(v=>v[1])),Math.max(...q.map(v=>v[0])),Math.max(...q.map(v=>v[1]))]; } }
       else p.bb=[Math.min(p.a[0],p.b[0])-p.r,Math.min(p.a[1],p.b[1])-p.r,Math.max(p.a[0],p.b[0])+p.r,Math.max(p.a[1],p.b[1])+p.r]; }
     for(let y=0;y<GH*K;y++){ const Y=(y+.5)/K-OY, row=parts.filter(p=>Y>=p.bb[1]&&Y<=p.bb[3]); if(!row.length) continue;
      for(let x=0;x<GW*K;x++){ const X=(x+.5)/K-OX; let best=null,bp=null;
-      for(const p of row){ if(p.k==='v'||X<p.bb[0]||X>p.bb[2]) continue; const h=p.k==='e'?hitE(p,X,Y):hitC(p,X,Y); if(h&&(!best||h.D>best.D)){best=h;bp=p} }
+      for(const p of row){ if(p.k==='v'||X<p.bb[0]||X>p.bb[2]) continue; const h=p.k==='e'?hitE(p,X,Y):p.k==='f'?hitF(p,X,Y):hitC(p,X,Y); if(h&&(!best||h.D>best.D)){best=h;bp=p} }
       for(const p of row){ if(p.k!=='v'||X<p.bb[0]||X>p.bb[2]) continue; const h=hitV(p,X,Y,best?best.D:null); if(h&&(!best||h.D>best.D)){best=h;bp=p} }
       if(best){ const n=best.n, o=bp.o; s.g[y][x]={m:best.m||bp.mat,n:()=>n,z:best.D,dt:best.m?best.dt:(o.dt||0),gloss:best.m?best.gloss:(o.gloss||0),bias:o.bias||0,t:o.t!=null?o.t:null,noCast:o.noCast||0,tag:''}; } } }
     const put=(p,m,w,h,ox,oy)=>{ w=w||1; h=h||1; const c=cam(p),x0=Math.floor((c[0]+OX)*K)+(ox|0),y0=Math.floor((c[1]+OY)*K)+(oy|0);
