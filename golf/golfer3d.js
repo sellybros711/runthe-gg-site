@@ -809,40 +809,76 @@
       case 'diamond': return a+b<1;
       default: return x*x+y*y<1; } }
   function ewSize(t){ return t==='trapbig'?[2.25,2.3]:t==='aviator'?[2.05,2.1]:t==='half'?[1.15,1.95]:t==='heart'||t==='star'?[2.0,2.0]:t==='diamond'?[1.95,1.95]:t==='round'?[1.75,1.75]:[1.55,2.05]; }
+  // GLASSES AS THE REAL THINGS. Acetate frames (wayfarers, shades, cat-eyes) are thick and deep with rivets at the
+  // hinges; wire frames (aviators, round, readers) are thin with nose pads; readers are half rims worn low; tinted
+  // lenses darken toward the top; the sport, cyber and visor lenses are one shield wrapped round the face; ski goggles
+  // are one wide lens in a foam frame on a strap, steampunk goggles brass cups with rings and rivets; the patch is
+  // domed on a strap across the head; the Groucho is a nose, a moustache and brows on heavy black frames.
+  const EW_METAL={aviators:1,goldshades:1,round:1,readers:1,rose:1,monocle:1,ghoulglow:1,star:1,diamond:1,heart:1};
+  const EW_CLEAR={readers:1,threed:0};
   function eyewear3D(M,ew,map,P){ const out=[], {hc,look:lk,hup,Lf,hr}=M, t=EW_SHAPE[ew]||'rect', col=ewColours(map,P);
     const face=(v,h,off)=>add(hc,sc(lk,Math.sqrt(Math.max(0,hr*hr-v*v-h*h))+(off||0)),sc(Lf,h),sc(hup,v));
-    const AXl=[lk,hup,Lf], EV=-1.5, EH=3.0, OFF=1.05;
-    const temples=(fr,y0)=>{ for(const sd of [1,-1]){ let prev=add(face(y0,sd*(EH+ewSize(t)[1]*0.95),OFF*0.8));
-        for(const a of [62,80,96]){ const r=a*D2R, q=add(hc,sc(lk,Math.cos(r)*hr*1.06),sc(Lf,sd*Math.sin(r)*hr*1.06),sc(hup,y0-0.25*(a-62)/34));
-          out.push(capsule(prev,q,0.3,fr,{gloss:2,noCast:1})); prev=q; } } };
-    const strap=(m,v,w)=>out.push(ellipsoid(add(hc,sc(hup,v)),[lk,hup,Lf],[hr*1.07,w,hr*1.07],m,{noCast:1,cut:l=>l[0]<0.75}));
-    if(t==='shield'){ // one wrap-round lens, curved to the head
-      out.push(ellipsoid(add(hc,sc(hup,EV+0.5)),[lk,hup,Lf],[hr*1.13,1.75,hr*1.1],col.lens,{gloss:3,noCast:1,cut:l=>l[0]>0.55}));
-      out.push(ellipsoid(add(hc,sc(hup,EV+2.15)),[lk,hup,Lf],[hr*1.12,0.42,hr*1.09],col.frame,{gloss:2,noCast:1,cut:l=>l[0]>0.5}));
-      if(ew==='visorband') strap(col.frame,EV+0.6,0.9); else temples(col.frame,EV+1.2);
+    const AXl=[lk,hup,Lf], metal=!!EW_METAL[ew], EV=ew==='readers'?-2.3:-1.5, EH=3.0, OFF=1.05, fw=metal?0.3:0.62, fd=metal?0.32:0.62;
+    const temples=(fr,y0,r)=>{ for(const sd of [1,-1]){ let prev=add(face(y0,sd*(EH+ewSize(t)[1]*0.95),OFF*0.8));
+        for(const a of [62,80,96]){ const ra=a*D2R, q=add(hc,sc(lk,Math.cos(ra)*hr*1.06),sc(Lf,sd*Math.sin(ra)*hr*1.06),sc(hup,y0-0.25*(a-62)/34));
+          out.push(capsule(prev,q,r||(metal?0.26:0.42),fr,{gloss:2,noCast:1})); prev=q; } } };
+    const strap=(m,v,w,tilt)=>{ const up=tilt?norm(add(hup,sc(Lf,tilt))):hup, side=norm(cross(up,lk)), fw2=norm(cross(side,up));
+      out.push(ellipsoid(add(hc,sc(up,v)),[fw2,up,side],[hr*1.07,w,hr*1.07],m,{noCast:1,cut:l=>l[0]<0.8})); };
+    // ONE SHIELD round the face: a shell at the face's radius, cut to a band across the eyes, notched over the nose
+    const shield=(lens,frame,top,bot,span)=>{ const C=add(hc,sc(hup,EV)), R=hr+0.85;
+      out.push(field(add(C,sc(lk,R*0.7)),R*1.2,p=>{ const q=sub(p,C), a=dot(q,lk), y=dot(q,hup), sd=dot(q,Lf), th=Math.atan2(sd,a), rr=Math.hypot(a,sd);
+          const yb=bot+(Math.abs(th)<0.32?(0.32-Math.abs(th))*5.2:0);                                  // up over the nose
+          return Math.max(Math.abs(rr-R)-0.32,Math.abs(th)-span,y-top,yb-y); },lens,{gloss:3,mf:(p,n)=>{ const y=dot(sub(p,C),hup);
+          return y>top-0.45?[frame,0]:[lens,y>(top+bot)/2?-1:0]; }})); };
+    if(t==='shield'){
+      if(ew==='cyber'){ shield(col.lens,col.frame,1.0,-1.1,1.05); out.push(field(add(hc,sc(hup,EV),sc(lk,hr)),hr*1.2,p=>{ const q=sub(p,add(hc,sc(hup,EV))); return Math.max(Math.abs(Math.hypot(dot(q,lk),dot(q,Lf))-hr-1.22)-0.12,Math.abs(dot(q,hup)+0.1)-0.18,Math.abs(Math.atan2(dot(q,Lf),dot(q,lk)))-0.95); },'x:#ffe8f4',{gloss:3})); strap(col.frame,EV+0.2,0.7); }
+      else if(ew==='visorband'){ shield(col.lens,col.frame,1.4,-1.3,1.12); strap(col.frame,EV+0.4,0.9); }
+      else { shield(col.lens,col.frame,1.3,-1.4,0.98); temples(col.frame,EV+1.0,0.4); }
       return out; }
-    if(t==='goggle'){ strap(col.frame,EV+0.1,1.05);
-      for(const sd of [1,-1]){ const c=face(EV,sd*EH,0.9); out.push(ellipsoid(c,AXl,[1.25,2.25,2.25],col.frame,{gloss:2,noCast:1,cut:l=>l[0]>-0.2}));
-        out.push(ellipsoid(add(c,sc(lk,1.0)),AXl,[0.35,1.6,1.6],col.lens,{gloss:3,noCast:1})); }
+    if(t==='goggle'){
+      if(ew==='goggles'){ // ski goggles: one wide curved lens in a foam frame, a strap round the head
+        strap(col.frame,EV+0.1,1.3); const C=add(hc,sc(hup,EV)), R=hr*1.04+1.3;
+        out.push(field(add(C,sc(lk,R*0.7)),R*1.2,p=>{ const q=sub(p,C), a=dot(q,lk), y=dot(q,hup), sd=dot(q,Lf), th=Math.atan2(sd,a);
+            return rbox(Math.hypot(a,sd)-R,Math.max(Math.abs(th)/1.05*5-3.4,Math.abs(y+(Math.abs(th)<0.3?(0.3-Math.abs(th))*2:0)*0.5)-2.3),0.7); },col.frame,{gloss:1,mf:(p,n)=>{ const q=sub(p,C), y=dot(q,hup), th=Math.atan2(dot(q,Lf),dot(q,lk));
+            return Math.abs(y)<1.65&&Math.abs(th)<0.86&&dot(n,lk)>0.6?[col.lens,y>0.3?1:0]:null; }}));
+        return out; }
+      strap('x:#5a3a22',EV+0.1,1.05);   // steampunk: brass cups on a leather strap, a glass ring and rivets round each
+      for(const sd of [1,-1]){ const c=face(EV,sd*EH,0.9); out.push(ellipsoid(c,AXl,[1.25,2.25,2.25],col.frame,{gloss:3,noCast:1,cut:l=>l[0]>-0.2}));
+        out.push(ellipsoid(add(c,sc(lk,1.05)),AXl,[0.35,1.6,1.6],col.lens,{gloss:3,noCast:1}));
+        out.push(field(add(c,sc(lk,1.0)),3,p=>{ const q=sub(p,add(c,sc(lk,1.0))); return Math.hypot(Math.hypot(dot(q,hup),dot(q,Lf))-1.75,dot(q,lk))-0.42; },col.frame,{gloss:3}));
+        for(let k=0;k<8;k++){ const a=k*Math.PI/4; out.push(ellipsoid(add(c,sc(lk,1.1),sc(hup,2.05*Math.cos(a)),sc(Lf,2.05*Math.sin(a))),AXl,[0.3,0.3,0.3],'x:#6a4a1c',{gloss:2,noCast:1})); } }
       out.push(capsule(face(EV,1.6,1.4),face(EV,-1.6,1.4),0.55,col.frame,{gloss:2,noCast:1})); return out; }
-    if(t==='patch'){ strap(col.frame,EV+1.4,0.32); const c=face(EV,EH,0.5);
-      out.push(ellipsoid(c,AXl,[0.6,2.0,1.9],col.frame,{gloss:1,noCast:1})); return out; }
-    const [h,w]=ewSize(t), sides=t==='mono'?[1]:[1,-1];
+    if(t==='patch'){ strap(col.frame,EV+1.6,0.3,0.55); const c=face(EV,EH,0.35);   // the patch, domed over the eye, its strap across the head
+      out.push(field(c,3.5,p=>{ const q=sub(p,c), a=dot(q,lk), y=dot(q,hup), sd=dot(q,Lf); return Math.max(Math.hypot(a*2.4,y/1.05,sd/1.15)-2.1,-a-0.2); },col.frame,{gloss:1,mf:(p,n)=>{ const q=sub(p,c), y=dot(q,hup), sd=dot(q,Lf); return Math.hypot(y/1.05,sd/1.15)>1.7?[col.frame,1]:null; }}));
+      return out; }
+    const [h,w]=ewSize(t), sides=t==='mono'?[1]:[1,-1], tinted=!EW_CLEAR[ew]&&ew!=='threed';
     for(const sd of sides){ const c=face(EV,sd*EH,OFF), K=1.5;
       const lensCut=l=>inShape(t,l[1]*K,l[2]*K*sd,sd);
-      out.push(ellipsoid(c,AXl,[0.26,h*K,w*K],col.lens,{gloss:3,noCast:1,cut:lensCut}));
-      const g=0.42, ho=h+g, wo=w+g;                                                       // the frame: the outline of the lens, g wide
-      out.push(ellipsoid(add(c,sc(lk,0.05)),AXl,[0.36,ho*K,wo*K],col.frame,{gloss:2,noCast:1,cut:l=>{ const yo=l[1]*K, xo=l[2]*K*sd;
-        return inShape(t,yo,xo,sd)&&!inShape(t,yo*ho/h,xo*wo/w,sd); }}));
+      const lens=ew==='threed'?(sd>0?'x:#e0453a':'x:#3a8be0'):col.lens;
+      out.push(ellipsoid(c,AXl,[0.26,h*K,w*K],lens,{gloss:3,noCast:1,cut:lensCut}));
+      if(tinted) out.push(ellipsoid(add(c,sc(lk,0.04)),AXl,[0.27,h*K,w*K],lens,{gloss:3,noCast:1,dt:-1,cut:l=>lensCut(l)&&l[1]>0.15}));   // darker toward the top
+      const g=fw, ho=h+g, wo=w+g, half=ew==='readers';                                    // the frame: the outline of the lens
+      out.push(ellipsoid(add(c,sc(lk,0.05)),AXl,[fd,ho*K,wo*K],col.frame,{gloss:2,noCast:1,cut:l=>{ const yo=l[1]*K, xo=l[2]*K*sd;
+        return (!half||yo<0.1)&&inShape(t,yo,xo,sd)&&!inShape(t,yo*ho/h,xo*wo/w,sd); }}));
+      if(half) out.push(capsule(face(EV+h*0.05,sd*(EH-w),OFF+0.1),face(EV+h*0.05,sd*(EH+w),OFF+0.1),0.2,col.frame,{gloss:2,noCast:1}));   // the readers' top line
+      if(t==='cat') out.push(field(face(EV+h*0.85,sd*(EH+w*0.95),OFF),2.4,p=>{ const q=sub(p,face(EV+h*0.85,sd*(EH+w*0.95),OFF)), y=dot(q,hup), x=dot(q,Lf)*sd, a=dot(q,lk);
+          return Math.max(Math.abs(a)-fd*0.8,-y-0.2,y-0.9-x*0.7,x-1.6,-x-0.6); },col.frame,{gloss:2}));      // the swept up wing
+      if(!metal&&t!=='cat') out.push(ellipsoid(face(EV+h*0.75,sd*(EH+w+0.2),OFF+0.35),AXl,[0.2,0.32,0.32],'x:#e8e4d8',{gloss:3,noCast:1}));   // a rivet at the hinge
+      if(metal&&t!=='mono') out.push(ellipsoid(face(EV-h*0.35,sd*(EH-w+0.2),OFF+0.05),AXl,[0.35,0.42,0.3],'x:#f2f0ea',{gloss:3,noCast:1}));   // a nose pad
       out.push(ellipsoid(add(c,sc(lk,0.3),sc(hup,h*0.45),sc(Lf,sd*w*0.4)),AXl,[0.15,0.32,0.45],'x:#ffffff',{noCast:1}));   // a glint on the glass
     }
     if(t==='mono'){ const c=face(EV,EH,OFF); out.push(capsule(add(c,sc(hup,-h-0.3)),add(hc,sc(lk,hr*0.6),sc(Lf,hr*0.75),sc(hup,-hr*1.25)),0.22,col.frame,{gloss:2,noCast:1})); return out; }
-    out.push(capsule(face(EV+0.35,EH-w-0.1,OFF+0.1),face(EV+0.35,-(EH-w-0.1),OFF+0.1),0.32,col.frame,{gloss:2,noCast:1}));   // the bridge
+    out.push(capsule(face(EV+0.35,EH-w-0.1,OFF+0.1),face(EV+0.35,-(EH-w-0.1),OFF+0.1),metal?0.24:0.42,col.frame,{gloss:2,noCast:1}));   // the bridge
     if(t==='aviator') out.push(capsule(face(EV+h*0.9,EH-w*0.4,OFF),face(EV+h*0.9,-(EH-w*0.4),OFF),0.24,col.frame,{gloss:2,noCast:1}));   // the brow bar
     temples(col.frame,EV+h*0.45);
-    if(t==='groucho'){ out.push(ellipsoid(face(EV-2.4,0,0.6),AXl,[1.6,1.5,1.25],'x:#e8a08a',{gloss:1}));                     // the nose
-      out.push(ellipsoid(face(EV-4.0,0,0.25),AXl,[0.8,0.75,2.6],'x:#2a1d16',{noCast:1}));                                  // the moustache
-      for(const sd of [1,-1]) out.push(ellipsoid(face(EV+h+0.6,sd*EH,0.5),AXl,[0.7,0.55,1.7],'x:#2a1d16',{noCast:1})); }   // the brows
+    if(t==='groucho'){ const hair='x:#2a1d16', nose=face(EV-2.2,0,1.2);
+      out.push(field(nose,4,p=>{ const q=sub(p,nose), a=dot(q,lk), y=dot(q,hup), sd=dot(q,Lf);
+          return smin(Math.hypot(a,y+0.6,sd)-1.55,Math.hypot(a*1.6+0.6,y-1.4,sd*1.4)-0.8,1.2); },'x:#e8a08a',{gloss:2}));                    // the big nose
+      const mc=face(EV-4.1,0,0.55);
+      out.push(field(mc,4.5,p=>{ const q=sub(p,mc), a=dot(q,lk), y=dot(q,hup), sd=dot(q,Lf), u=Math.abs(sd);
+          return Math.max(Math.hypot(a*1.5,(y+0.06*u*u)*1.25,u/2.9)-1,-a-0.7); },hair,{mf:p=>{ const sd=dot(sub(p,mc),Lf); return [hair,Math.sin(sd*5)>0.4?1:0]; }}));   // the moustache, bushy
+      for(const sd of [1,-1]){ const bc=face(EV+h+0.85,sd*EH,0.6);
+        out.push(field(bc,3,p=>{ const q=sub(p,bc), a=dot(q,lk), y=dot(q,hup), x=dot(q,Lf)*sd; return Math.hypot(a*1.6,(y-0.12*x)*1.4,x/2.0)-0.85; },hair,{})); } }   // the brows
     return out; }
 
   /* MODELLED HATS for the menu golfer: the shapes a hull spun from the flat art cannot hold. Colours come from the
