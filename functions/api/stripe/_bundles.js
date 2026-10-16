@@ -267,6 +267,25 @@ export function bucketByKey(key) {
   return Object.prototype.hasOwnProperty.call(BUCKETS, key) ? BUCKETS[key] : null;
 }
 
+/* PUTT PUTT LIVES, $4.99 for nine lives back, SHIPPED DARK (PUTT_LIVES_ENABLED).
+ * The owner's call (2026-10-16), and it supersedes "no paid refill at launch".
+ *
+ * A CONSUMABLE, like a coin bucket: bought as often as anybody runs out. It is
+ * sold only to a signed in player who is missing at least `lives` lives on the
+ * server (checkout answers 409 lives_left otherwise), so nobody pays for lives
+ * they could not hold. The webhook files the paid session in putt_lives_buys
+ * (supabase/149_putt_lives_buy.sql) through putt_lives_buy, keyed on the
+ * session, and that same call cancels the clocks of the lives it hands back.
+ * Lives are the server's (146): the page only ever reads them.
+ *
+ * OFF IS NOT THE ONLY GATE. It needs STRIPE_PRICE_PUTT_LIVES set (503 without)
+ * and 149 deployed (the webhook fails loudly without it and Stripe retries).
+ * golf/putt/putt.js carries the switch, the lives and the price for the page,
+ * and scripts/stripe/check-putt-lives.mjs holds the two copies together. */
+export const PUTT_LIVES_ENABLED = false;
+export const PUTT_LIVES = { name: 'Putt Putt Lives', envPrice: 'STRIPE_PRICE_PUTT_LIVES', cents: 499, lives: 9 };
+export const PUTT_LIVES_RETURN = '/golf/';
+
 /* THE PASS SEASON, the same arithmetic as hoops/pass.js: sixty Eastern days
  * from the epoch, ending at the Eastern midnight after the last day. A grant
  * bought on the last evening still runs to that midnight. check-floor-money.mjs
