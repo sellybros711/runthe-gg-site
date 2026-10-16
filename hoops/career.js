@@ -6371,7 +6371,9 @@ function quietSummer(L) {
   const ks = summerKeys(L);
   L.flags.summerOff = ks;
   const last = L.flags.summerRun && L.flags.summerRun.k;
-  const grow = (x) => Object.values(SUMMER[x].fx || {}).reduce((a, v) => a + v, 0) - (SUMMER[x].cash ? 0.5 : 0);
+  /* Growth as his overall reads it: a center's playmaking counts for less. */
+  const w = WEIGHTS[L.pos] || WEIGHTS.SF;
+  const grow = (x) => Object.keys(SUMMER[x].fx || {}).reduce((a, k) => a + SUMMER[x].fx[k] * (w[k] || 0), 0) - (SUMMER[x].cash ? 0.05 : 0);
   const hurt = ks.indexOf('rehab') >= 0 || L.m.health < 60;
   const pool = ks.filter((x) => x !== last && (!SUMMER[x].cash || L.cash >= SUMMER[x].cash * 3));
   /* A veteran rests every other quiet summer, the way a player answering the
