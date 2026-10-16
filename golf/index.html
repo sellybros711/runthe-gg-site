@@ -60,7 +60,7 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- The Putting Green: a tester preview. It draws nothing until puttOn() opens it (see PUTT_TESTERS). -->
-<script defer src="putt/putt.js?v=84"></script>
+<script defer src="putt/putt.js?v=85"></script>
 <script defer src="putt/land.js?v=12"></script>
 <script defer src="putt/hole3d.js?v=16"></script>
 <script defer src="putt/trail.js?v=36"></script>
@@ -16119,7 +16119,7 @@ function scrPuttHub(){
     <button type="button" class="ft-big">Into the world <small>${out?'Out of lives: the Daily Hole is free':'Hole '+m.lv}</small></button>
     <button type="button" class="ft-srow" data-k="daily"><span><b>Daily Hole · ${esc(d.name||'Today')}</b><span>${d.done?`Done · ${d.s} on a par ${d.par}`:'Timed, one try, never costs a life'}</span></span><span class="ft-sv">${d.done?'Done':'+'+window.RTT_PUTT.COINS.daily+' coins'}</span></button>
     <button type="button" class="ft-srow" data-k="members"><span><b>Members Tour</b><span>Hallows Night · Harvest Moon</span></span><span class="ft-sv">${m.members?'Open':'Tour Pass'}</span></button>
-    <div class="ft-srow ft-static"><span><b>Lives</b><span>A heart is three lives. Each comes back 24 hours after you lose it.${(function(){ const PL=puttPassLives(); return PL&&m.max<PL.pass?` A Tour Pass doubles them: ${PL.pass} lives.`:''; })()}</span></span><span class="ft-sv">${m.lives}/${m.max}</span></div>
+    <div class="ft-srow ft-static"><span><b>Lives</b><span>A heart is three lives. Each comes back 24 hours after you lose it.${(function(){ const PL=puttPassLives(); return PL&&m.max<PL.pass?` ${puttHeartIcon()} A Tour Pass doubles them: ${PL.pass} lives.`:''; })()}</span></span><span class="ft-sv">${m.lives}/${m.max}</span></div>
   </div>`);
   card.querySelector('.ft-big').onclick=openPutt;
   card.querySelector('[data-k="daily"]').onclick=openPutt;
@@ -38158,18 +38158,20 @@ function passHeroNode(ssn, opts){
 // Putt Putt's lives with and without the pass, from the module, so the pitch is the game's own numbers.
 // Null before Putt Putt is live for this player (the one launch: it shows when the switch flips).
 function puttPassLives(){ try{ const L=ftLive()&&window.RTT_PUTT&&window.RTT_PUTT.LIVES; return L&&L.pass>L.free?L:null; }catch(e){ return null; } }
+// Putt Putt's three-band heart (a heart is three lives), the one icon for every double lives line
+function puttHeartIcon(sz){ try{ const svg=window.RTT_PUTT&&window.RTT_PUTT.heart?window.RTT_PUTT.heart():''; return svg?`<span class="pp-hic" style="display:inline-block;width:${sz||'1em'};height:${sz||'1em'};vertical-align:-0.15em;line-height:0">${svg.replace('<svg ','<svg width="100%" height="100%" ')}</span>`:'❤️'; }catch(e){ return '❤️'; } }
 // The Pro perk stack (the $14.99 value story), used on both the sales page and the in-track upsell.
 function passPerksHTML(){
   const PL=puttPassLives();
   const rows=[
-    ...(PL?[['putter','Double lives in Putt Putt Tour',PL.pass+' lives instead of '+PL.free+', and the Members Tour']]:[]),
+    ...(PL?[['heart','Double lives in Putt Putt Tour',PL.pass+' lives instead of '+PL.free+', and the Members Tour']]:[]),
     ['crown','Every PRO reward, all '+PASS_TIERS+' tiers','Packs, shards, coins and '+passProExclusivesTxt()],
     ['target','Unlimited daily plays','Play Beat the Pro as much as you want, all season'],
     ['coin','+'+coinFmt(TOURPASS.coins)+' coins instantly','Straight into your wallet the moment you buy'],
     ['cart',TOURPASS.packs+' seasonal packs on the spot','Rip them in the Pro Shop whenever you want'],
     ['bolt',PASS_REWARD_MULT+'× coins in Play 18, Career and Head to Head','Rounds, seasons, sponsor briefs and wins pay more, all season'],
     ['clock','Fast simulation','The quickest sim pace in career mode. Blow through a season in half the time']];
-  return rows.map(r=>`<div class="tps-perk"><span class="tps-pi">${ic(r[0],{size:'20px'})}</span><div><b>${esc(r[1])}</b><span>${esc(r[2])}</span></div></div>`).join('');
+  return rows.map(r=>`<div class="tps-perk"><span class="tps-pi">${r[0]==='heart'?puttHeartIcon('20px'):ic(r[0],{size:'20px'})}</span><div><b>${esc(r[1])}</b><span>${esc(r[2])}</span></div></div>`).join('');
 }
 // The giant, unmissable price CTA.
 function passBuyButtonHTML(label){
@@ -38193,7 +38195,7 @@ function overlayTourPass(screen){
       <div class="tps-lane"><div class="tps-lname">FREE</div><div class="tps-lbig">$0</div><ul class="tps-ll">
         <li><i>✓</i>All 60 tiers of the free lane</li><li><i>✓</i>Packs, shards and coins</li>${(function(){ const n=passLootSummary('free').cos.length; return n?`<li><i>✓</i>${n} ${esc(passSeasonDef().freeKind)}</li>`:''; })()}</ul></div>
       <div class="tps-lane pro"><div class="tps-lname">PRO</div><div class="tps-lbig">$${TOURPASS.usd.toFixed(2)}</div><ul class="tps-ll">
-        <li><i>★</i>Everything in FREE</li><li><i>★</i>All ${PASS_TIERS} PRO rewards</li><li><i>★</i>Unlimited daily plays</li>${puttPassLives()?`<li><i>★</i>Double lives in Putt Putt</li>`:''}<li><i>★</i>${PASS_REWARD_MULT}× coins all season</li><li><i>★</i>Fast simulation</li></ul></div>
+        <li><i>★</i>Everything in FREE</li><li><i>★</i>All ${PASS_TIERS} PRO rewards</li><li><i>★</i>Unlimited daily plays</li>${puttPassLives()?`<li><i>${puttHeartIcon()}</i>Double lives in Putt Putt</li>`:''}<li><i>★</i>${PASS_REWARD_MULT}× coins all season</li><li><i>★</i>Fast simulation</li></ul></div>
       </div></div>`));
     ov.appendChild($(`<div class="tps-sec"><div class="tps-h">WHAT THE PASS UNLOCKS</div><div class="tps-perks">${passPerksHTML()}</div></div>`));
     const cta=$(`<div class="tps-cta">
@@ -41292,7 +41294,7 @@ function bucketShopNode(focus){
     pc.appendChild($('<div class="tphead" style="font-family:var(--display);font-size:24px;text-align:center;--tp-acc:'+passCol+'">'+esc(passThemeName())+'</div>'));
     pc.appendChild($('<div class="small" style="text-align:center;color:#cfe6d8;margin:2px 0 8px">A 60-day season pass · '+ssn.daysLeft+' day'+(ssn.daysLeft>1?'s':'')+' left in Season '+ssn.n+'</div>'));
     var perks=$('<div style="display:flex;flex-direction:column;gap:5px;margin:0 auto;max-width:300px"></div>');
-    [['🎟️','Unlocks the PRO lane of the Season '+ssn.n+' Tour Pass track'],['♾️','Unlimited daily plays at any course'],['🪙','+'+coinFmt(TOURPASS.coins)+' coins, instantly'],['🎁',TOURPASS.packs+' seasonal packs'],['⭐','Earn '+PASS_REWARD_MULT+'× coins in Play 18, Career and Head to Head'],['🕒','Fast sim: the quickest pace in Career Mode']].concat((function(){ var PL=puttPassLives(); return PL?[['❤️','Double lives in Putt Putt: '+PL.pass+', not '+PL.free]]:[]; })()).forEach(function(p){
+    [['🎟️','Unlocks the PRO lane of the Season '+ssn.n+' Tour Pass track'],['♾️','Unlimited daily plays at any course'],['🪙','+'+coinFmt(TOURPASS.coins)+' coins, instantly'],['🎁',TOURPASS.packs+' seasonal packs'],['⭐','Earn '+PASS_REWARD_MULT+'× coins in Play 18, Career and Head to Head'],['🕒','Fast sim: the quickest pace in Career Mode']].concat((function(){ var PL=puttPassLives(); return PL?[[puttHeartIcon('16px'),'Double lives in Putt Putt: '+PL.pass+', not '+PL.free]]:[]; })()).forEach(function(p){
       perks.appendChild($('<div class="small" style="display:flex;gap:8px;align-items:center;color:#eaf5ee"><span style="flex:0 0 auto">'+p[0]+'</span><span>'+esc(p[1])+'</span></div>'));
     });
     pc.appendChild(perks);

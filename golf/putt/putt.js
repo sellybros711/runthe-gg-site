@@ -2148,7 +2148,7 @@ var CSS = '\
 .pp-hdr>*{pointer-events:auto}.pp-av{flex:0 0 auto;width:36px;height:36px;border-radius:50%;border:2px solid #F1D04A;background:#1d3a5c no-repeat;background-size:230%;background-position:50% 8%;image-rendering:pixelated;box-shadow:0 2px 0 rgba(0,0,0,.4)}\
 .pp-hdr .pp-hearts{gap:4px}.pp-h{width:20px;height:20px;background:none;clip-path:none;display:block}.pp-h svg{display:block;width:20px;height:20px}.pp-h.on{background:none}\
 .pp-hclock{font-size:12px;font-weight:900;color:#ffd0c8;font-variant-numeric:tabular-nums;background:rgba(0,0,0,.45);border-radius:999px;padding:3px 8px}.pp-hclock:empty{display:none}\
-.pp-sp{flex:1}.pp-x2s{color:#ffd23a;font-weight:800}.pp-x2b{margin:14px auto 4px;max-width:340px;padding:10px 14px;border-radius:12px;background:rgba(241,182,42,.12);border:1px solid rgba(241,182,42,.45);color:#ffe9a8;font-size:13px;line-height:1.35;text-align:center}.pp-x2b b{display:block;font-size:17px;letter-spacing:.02em;color:#ffd23a;margin-bottom:2px}.pp-x2{border:0;border-radius:999px;padding:4px 9px;font:900 11px/1 inherit;letter-spacing:.04em;color:#2a1a04;background:linear-gradient(#ffe27a,#f1b62a);box-shadow:0 2px 8px rgba(241,182,42,.35);cursor:pointer;white-space:nowrap}@media (min-width:900px){.pp-x2{font-size:14px;padding:6px 12px}}.pp-cpill{display:flex;align-items:center;gap:6px;background:rgba(10,18,26,.82);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:5px 11px;font-weight:900;font-size:14px;color:#fff;font-variant-numeric:tabular-nums}.pp-cpill:before{content:"";width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff3a8,#f1c232 55%,#b8860b)}\
+.pp-sp{flex:1}.pp-x2s{color:#ffd23a;font-weight:800}.pp-x2b{margin:14px auto 4px;max-width:340px;padding:10px 14px;border-radius:12px;background:rgba(241,182,42,.12);border:1px solid rgba(241,182,42,.45);color:#ffe9a8;font-size:13px;line-height:1.35;text-align:center}.pp-x2b b{display:block;font-size:17px;letter-spacing:.02em;color:#ffd23a;margin-bottom:2px}.pp-x2h{display:inline-block;width:14px;height:14px;vertical-align:-3px;margin-right:4px}.pp-x2h svg{display:block;width:100%;height:100%}.pp-x2b .pp-x2h{width:30px;height:30px;margin:0 auto 4px;display:block}.pp-x2s .pp-x2h{width:16px;height:16px;vertical-align:-3px}@media (min-width:900px){.pp-x2 .pp-x2h{width:18px;height:18px}}.pp-x2{border:0;border-radius:999px;padding:4px 9px;font:900 11px/1 inherit;letter-spacing:.04em;color:#2a1a04;background:linear-gradient(#ffe27a,#f1b62a);box-shadow:0 2px 8px rgba(241,182,42,.35);cursor:pointer;white-space:nowrap}@media (min-width:900px){.pp-x2{font-size:14px;padding:6px 12px}}.pp-cpill{display:flex;align-items:center;gap:6px;background:rgba(10,18,26,.82);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:5px 11px;font-weight:900;font-size:14px;color:#fff;font-variant-numeric:tabular-nums}.pp-cpill:before{content:"";width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff3a8,#f1c232 55%,#b8860b)}\
 .pp-cx{width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(10,18,26,.82);color:#fff;font:inherit;font-size:16px;font-weight:900;cursor:pointer;padding:0}\
 .pp-hub .pp-daily{position:absolute;z-index:2;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 58px);margin:0;max-width:536px;margin:0 auto;grid-template-columns:auto 1fr auto;gap:2px 12px;background:linear-gradient(160deg,#2c1d46,#1a1230)!important;color:#fff!important;border:2px solid #f08a24!important;border-radius:18px;padding:12px}\
 .pp-daily .th{grid-column:1;grid-row:1/4;width:44px;height:66px;border-radius:7px;background:#0d1a12;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}.pp-daily .th canvas{width:100%;height:100%;object-fit:cover;image-rendering:pixelated;display:block}\
@@ -2656,7 +2656,7 @@ function balStr(){ try{ if (S.host.balance) return Number(S.host.balance()).toLo
    the refill clock when one is running, your coins and a close button. */
 function hdr(right){ var u = golferUrl(), b = balStr();
   return '<div class="pp-hdr"><i class="pp-av" style="' + avStyle(u) + '"></i><span class="pp-hearts" data-hearts>' + hearts(pload()) + '</span>' +
-    (membersOpen() ? '' : '<button class="pp-x2" data-pass aria-label="' + esc(passLivesLine()) + '">2× lives</button>') + '<span class="pp-hclock" data-clock></span><span class="pp-sp"></span>' +
+    (membersOpen() ? '' : '<button class="pp-x2" data-pass aria-label="' + esc(passLivesLine()) + '"><i class="pp-x2h">' + heartSvg(PER_HEART) + '</i>2× lives</button>') + '<span class="pp-hclock" data-clock></span><span class="pp-sp"></span>' +
     (right != null ? right : (b !== '' ? '<span class="pp-cpill" data-bal>' + b + '</span>' : '')) + '<button class="pp-cx" data-x aria-label="Close">✕</button></div>'; }
 // a small top view of a hole, off the flat painter, for the Daily card
 var THUMBS = {};
@@ -3358,7 +3358,7 @@ function outOfLives(){
   var st = pload(), sh = el('<div class="pp-sheet pp-oolf">' + hdr() + '<div class="pp-oolb"><div class="k">OUT OF LIVES</div><div class="pp-lives">' + hearts(st) + '</div>\
     <div class="lbl">Next life in</div><div class="pp-big" data-c>' + hms((st.refillAt || Date.now()) - Date.now()) + '</div>\
     <div class="m">Each life comes back 24 hours after you lost it. The clocks keep running while you are away.</div>\
-    ' + (membersOpen() ? '' : '<div class="pp-x2b"><b>Double your lives</b>The Tour Pass gives you ' + LIVES_PASS + ' lives, not ' + LIVES_FREE + '. It opens the Members Tour too.</div>\
+    ' + (membersOpen() ? '' : '<div class="pp-x2b"><i class="pp-x2h">' + heartSvg(PER_HEART) + '</i><b>Double your lives</b>The Tour Pass gives you ' + LIVES_PASS + ' lives, not ' + LIVES_FREE + '. It opens the Members Tour too.</div>\
     <button class="pt-go pp-wide pass" data-pass>Get Tour Pass<small>' + LIVES_PASS + ' lives</small></button>') +
     (bankHeld(st) ? '<button class="pt-go pp-wide" data-spare>Use a spare life<small>' + bankHeld(st) + ' banked from the trails</small></button>' : '') +
     (S.host.tester && S.host.tester() ? '<button class="pt-bt pp-wide" data-free>Tester refill · free</button>' : '') +
@@ -3548,7 +3548,7 @@ function tourOut(holed){
   loseLife(st);
   return popup('<div class="k">OUT OF STROKES</div><div class="t">Over par</div><div class="s">' + par + ' strokes used and still not down.</div>\
     <div class="pp-lives">' + hearts(st) + '</div><div class="s">' + (livesNow(st) ? livesNow(st) + (livesNow(st) === 1 ? ' life' : ' lives') + ' left' : 'That was your last life.') + '</div>' +
-    (membersOpen() ? '' : '<div class="s pp-x2s">' + esc(passLivesLine()) + '</div>' + (livesNow(st) <= PER_HEART ? '<button class="pt-go pp-wide pass" data-pass>Get Tour Pass<small>' + LIVES_PASS + ' lives</small></button>' : '')) +
+    (membersOpen() ? '' : '<div class="s pp-x2s"><i class="pp-x2h">' + heartSvg(PER_HEART) + '</i> ' + esc(passLivesLine()) + '</div>' + (livesNow(st) <= PER_HEART ? '<button class="pt-go pp-wide pass" data-pass>Get Tour Pass<small>' + LIVES_PASS + ' lives</small></button>' : '')) +
     '<div class="row"><button class="pt-bt" data-a="map">Map</button><button class="pt-go" data-a="again">' + (livesNow(st) ? 'Try again' : 'Refill') + '</button></div>',
     { map:function(){ showHub(tid); }, again:function(){ if (livesNow(pload()) > 0 || allAccess()) startLevel(n, tid); else { showHub(tid); outOfLives(); } } }, 'over');
 }
@@ -4337,6 +4337,7 @@ function scorecard(){
 RTT_PUTT.open = open; RTT_PUTT.close = close; RTT_PUTT.paintCourse = paintCourse; RTT_PUTT.SKIN = SKIN;
 RTT_PUTT._state = function(){ return S; };
 RTT_PUTT.LIVES = { free:LIVES_FREE, pass:LIVES_PASS };
+RTT_PUTT.heart = function(n){ return heartSvg(n == null ? PER_HEART : n); };   // the three-band heart, for the page's double lives pitch
 RTT_PUTT._walkTo = function(n, tid){ return walkTo(n, tid || 'main'); };
 RTT_PUTT._trail = function(){ return S && S.trailCtl; };
 RTT_PUTT._trailPic = function(){ var k = S && S.trailTo ? trailKey(trailSpec(S.trailTo.tid, S.trailTo.to - 1)) : null; return k ? TRC[k] : null; };
