@@ -1894,6 +1894,14 @@ window.GA_ID='G-L29P5MRWKE';
     box-shadow:0 5px 14px rgba(0,0,0,.55); white-space:nowrap}
   .ovrchip b{font-family:var(--mono); font-weight:800; font-size:19px; color:var(--tc,#cd7f32); line-height:1; transition:color .2s}
   .ovrchip i{font:800 8.5px/1 var(--body); letter-spacing:.13em; color:var(--tc,#cd7f32); font-style:normal; opacity:.92}
+  /* ICON (100 and up): a prism border, the number and label in the prism, a slow sheen across them */
+  :root{ --prism:linear-gradient(100deg,#ff9bd6,#c59bff 22%,#7fe3ff 44%,#9ff5c8 64%,#ffe27a 82%,#ff9bd6) }
+  .ovrchip.icon,.pcovr.icon{border-color:transparent; background:linear-gradient(rgba(6,16,26,.95),rgba(6,16,26,.95)) padding-box, var(--prism) border-box;
+    box-shadow:0 5px 14px rgba(0,0,0,.55), 0 0 16px rgba(127,227,255,.38)}
+  .ovrchip.icon b,.ovrchip.icon i,.pcovr.icon b,.pcovr.icon span{background:var(--prism); background-size:220% 100%; -webkit-background-clip:text; background-clip:text;
+    color:transparent; animation:prismsheen 4.5s linear infinite}
+  @keyframes prismsheen{ from{background-position:0% 0} to{background-position:220% 0} }
+  @media (prefers-reduced-motion: reduce){ .ovrchip.icon b,.ovrchip.icon i,.pcovr.icon b,.pcovr.icon span{animation:none} }
   .heroname{font-family:var(--serif); font-weight:700; font-size:17px; color:var(--oncard); margin-top:9px; text-align:center; line-height:1.1; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .herometa{font:800 9.5px/1 var(--body); letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-top:5px}
   .radarwrap{flex:0 1 auto; min-width:0; display:flex; justify-content:center}
@@ -12292,7 +12300,14 @@ function buildPlayer(o){const p={name:S.name||'Your Golfer',you:true};
   p.skill=ovrFromSkills(p, p._over); return p;}
 
 /* ---------- build identity ---------- */
+/* ICON: the tier above ELITE, for an overall of 100 and up. Only the player's own career golfer gets there (world
+   golfers and the Daily clamp at 99). A prism instead of one colour: c is its solid colour (the rating web), and
+   the chip, the player card and the share card wear the full prism. It rides the First Tee switch, so it goes live
+   with the new home. */
+const ICON_PRISM=['#ff9bd6','#c59bff','#7fe3ff','#9ff5c8','#ffe27a'];
+function ovrIcon(o){ try{ return o>=100 && ftLive(); }catch(e){ return false; } }
 function ovrTier(o){
+  if(ovrIcon(o)) return {c:'#7fe3ff', glow:'0 0 16px rgba(127,227,255,.55)', lab:'ICON', icon:true};
   if(o>=90) return {c:'#35d6a0', glow:'0 0 14px rgba(53,214,160,.45)', lab:'ELITE'};
   if(o>=86) return {c:'#F1D04A', glow:'0 0 12px rgba(241,208,74,.40)', lab:'GOLD'};
   if(o>=82) return {c:'#c7ced8', glow:'none', lab:'SILVER'};
@@ -13984,7 +13999,7 @@ function playerCardHTML(cv){
         <img class="pcbg" src="${pxCardBgURL(bg)}" alt="">
         <div class="pcscrim"></div>
         ${cv.rep?`<div class="pctier">${esc(cv.rep)}</div>`:''}
-        ${cv.ovr!=null?`<div class="pcovr"><b>${cv.ovr}</b><span>OVR</span></div>`:''}
+        ${cv.ovr!=null?(ovrIcon(+cv.ovr)?`<div class="pcovr icon"><b>${cv.ovr}</b><span>ICON</span></div>`:`<div class="pcovr"><b>${cv.ovr}</b><span>OVR</span></div>`):''}
         <div class="pcgolfer">${pxFigureHTML(cv.look,280)}</div>
         <div class="pcplate" style="${plateCss(plate)}">${(function(){ try{ return cv.self?passStampsHTML(null,'pcstamps'):passStampsHTML(passStampsDecode(cv.look&&cv.look.stamps),'pcstamps'); }catch(e){ return ''; } })()}<div class="pcpn">${proNameHTML(cv.name, cv.self?(sbUser&&sbUser.id):cv.uid)}</div>${sub?`<div class="pcps">${esc(sub)}</div>`:''}</div>
       </div>
@@ -19710,7 +19725,7 @@ function buildHero(){
   const node=$(`<div class="buildhero">
     <div class="herocol">
       <div class="herofig${sbSignedIn()?' hasfull':''}">${avatarShowHTML()}
-        <div class="ovrchip" style="--tc:${t.c}"><b>${ovr}</b><i>${t.lab}</i></div></div>
+        <div class="ovrchip${t.icon?' icon':''}" style="--tc:${t.c}"><b>${ovr}</b><i>${t.lab}</i></div></div>
       <div class="heroname">${esc(S.name||'Your Golfer')}</div>
       <div class="herometa">${filledCount()}/8 drafted</div>
     </div>
@@ -30225,10 +30240,11 @@ function drawPlayerCard(ctx,W,H,o){
   for(let y=wy;y<wy+wh;y++) for(let x=wx;x<wx+ww;x++){ const d=Math.min(x-wx,y-wy,wx+ww-1-x,wy+wh-1-y);
     if(d===0||d===3) top.put(x,y,P.K); else if(d<=2) top.put(x,y,(x-wx+y-wy<(ww+wh)/2)?P.GOLD[1]:P.GOLD[4]); }
   // the OVR shield on the window's corner
-  { const ov=''+(o.ovr==null?'':o.ovr), bw=ovrShieldW(ov), bx=206-bw, by=170, bh=32;   // 100 and up: wider, right edge fixed
+  { const ov=''+(o.ovr==null?'':o.ovr), bw=ovrShieldW(ov), bx=206-bw, by=170, bh=32, icon=ovrIcon(+o.ovr);   // 100 and up: wider, right edge fixed
     for(let y=by;y<by+bh;y++){ const inset=y>by+bh-10?Math.round((y-(by+bh-10))*1.4):0;
-      for(let x=bx+inset;x<bx+bw-inset;x++){ const j=y-by; top.put(x,y, j<2?P.GOLD[0]:j<12?P.GOLD[2]:j<22?P.GOLD[3]:P.GOLD[4]); } }
-    P.text(top,'OVR',bx+Math.round((bw-P.textW('OVR'))/2),by+3,{color:'#5a3a08'});
+      for(let x=bx+inset;x<bx+bw-inset;x++){ const j=y-by;
+        top.put(x,y, icon?ICON_PRISM[Math.floor(((x-bx)+(y-by)*0.6)/7)%ICON_PRISM.length]:j<2?P.GOLD[0]:j<12?P.GOLD[2]:j<22?P.GOLD[3]:P.GOLD[4]); } }   // ICON: prism bands on the diagonal
+    const lab=icon?'ICON':'OVR'; P.text(top,lab,bx+Math.round((bw-P.textW(lab))/2),by+3,{color:icon?'#1b1430':'#5a3a08'});
     const os=P.textW(ov,{scale:2,bold:true})<=bw-4?2:1;
     P.text(top,ov,bx+Math.round((bw-P.textW(ov,{scale:os,bold:true}))/2),by+12,{scale:os,bold:true,color:'#2a1604'}); }
   // the name, on the equipped nameplate when there is one
