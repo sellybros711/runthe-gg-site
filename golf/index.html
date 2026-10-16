@@ -66,7 +66,7 @@
 <script defer src="putt/trail.js?v=36"></script>
 <script defer src="putt/mapland.js?v=6"></script>
 <!-- The course golfer in the profile style, asked through g3dOn(). -->
-<script defer src="golfer3d.js?v=6"></script>
+<script defer src="golfer3d.js?v=7"></script>
 <script defer src="tracer3d.js?v=2"></script>
 <!-- Google Consent Mode v2 defaults. Advertising storage is denied until the certified CMP (loaded by
      the AdSense tag below) records the user's choice; the CMP then updates these signals automatically,
@@ -16582,6 +16582,7 @@ function headwearRow(){
 // tile grid, so creating a golfer feels the same as shopping. Look (skin/hair/style/handedness) is free for
 // everyone; Apparel/Accessories/Details need an account. CAREER-ONLY entry (other modes use your saved golfer).
 function pxStyleThumb(id){ const base=Object.assign({},S.look||DEFLOOK); base.hairStyle=id; base.cap=false;   // cap off so the hair shows
+  { const g=g3dPic(base,'chip'); if(g) return g3dTile(g); }
   return `<span class="sthumb px" style="overflow:hidden;background:#0c1f16;padding:0">${pxCropImg(pxGolferURL(base),3,48)}</span>`; }
 function setupLookTiles(cat){
   const tiles=[], sw=(bg)=>`<span class="sthumb color" style="background:${bg}"></span>`;
@@ -16614,7 +16615,7 @@ function skinSliderNode(){
 // Every tile in the catalog is drawn by PXHD.renderMap: the same light from the top left, the same hue
 // shifted ramps and the same soft outline as the golfer wearing it, so the tile and the sprite agree.
 function pxThumbFrom(cv){ return cv?`<span class="sthumb"><img src="${cv.toDataURL()}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`:pxNoneThumb(); }
-function pxClubThumb(id){ if(String(id).indexOf('pu_')!==0&&PXG_CLUBS[id]){ const g=g3dPic(g3dItemLook({club:id}),'club'); if(g) return g3dTile(g); }
+function pxClubThumb(id){ if(PXG_CLUBS[id]){ const g=g3dPic(g3dItemLook({club:id}),'club'); if(g) return g3dTile(g); }
   const map=PXG_CLUBS[id]||PXG_CLUBS.driver; const pal=PXG_CLUB_PAL[id]; const P={l:PXG_FIX.l,g:PXG_FIX.g,G:PXG_FIX.G,H:PXG_FIX.H,F:PXG_FIX.F,S:'#e8ebf0'};
   const col=(ch)=>{ if(ch==='.'||ch===' ')return null; return (pal&&pal[ch])||P[ch]||null; };
   // zoom onto the club's DISTINCTIVE parts: bbox of everything except the generic shaft ('l'), so a
@@ -16633,7 +16634,8 @@ function pxBagThumb(club,tier){ const map=PXG_CLUBS[BAG_SHAPE[club]]||PXG_CLUBS.
   if(BAG_TIER_ACC[club]){ pal.S=BAG_TIER_ACC[club]; if(tier===2) pal.H=BAG_TIER_ACC[club]; }   // optional per-club accent glint
   return pxThumbFrom(PXHD.renderMap(map,ch=>pal[ch]||null,{crop:[31,39,44,56],fitSkip:'l',gloss:2,px:5})); }
 // CS414: ball thumbnail (a zoomed crop of the teed-ball sprite; 'none' → an empty-outline placeholder)
-function pxBallThumb(id){ const map=PXG_BALL[id], pal=PXG_BALL_PAL[id];
+function pxBallThumb(id){ if(PXG_BALL[id]){ const g=g3dPic(g3dItemLook({ball:id}),'ball'); if(g) return g3dTile(g); }
+  const map=PXG_BALL[id], pal=PXG_BALL_PAL[id];
   if(!map||!pal) return `<span class="sthumb color" style="background:#12251b;display:flex;align-items:center;justify-content:center;color:#5e7468;font:700 10px var(--body)">None</span>`;
   return pxThumbFrom(PXHD.renderMap(map,ch=>ch==='T'?{hex:pal.T||'#e8ebf0',t:3}:(pal[ch]||null),{crop:[32,46,41,55],fitSkip:'T',gloss:2,px:8})); }   /* the ball is six wide at x 34, so 32 centres it */
 // CS414: rocket-cleats thumbnail (a zoomed crop of the boot overlay; 'none' → empty placeholder)
@@ -16641,7 +16643,8 @@ function pxCleatsThumb(id){ if(!PXG_CLEATS[id]) return `<span class="sthumb colo
   const g=g3dPic(g3dItemLook({cleats:id}),'shoe'); if(g) return g3dTile(g);
   return pxShoeThumb(Object.assign({},S.look||DEFLOOK,{cleats:id})); }
 // One shoe as the golfer wears it (the trail-side foot), drawn by PXHD and cropped close.
-function pxShoeThumb(look){ try{ const src=pxGolferCanvas(look,{only:'shoe',noClub:true,noBall:true}), c=src.width/PXG_W;
+function pxShoeThumb(look){ { const g=g3dPic(g3dItemLook({shoes:look.shoes,cleats:look.cleats||''}),'shoe'); if(g) return g3dTile(g); }
+  try{ const src=pxGolferCanvas(look,{only:'shoe',noClub:true,noBall:true}), c=src.width/PXG_W;
     const cv=document.createElement('canvas'), x0=23, y0=48, w=11, h=8; cv.width=w*c; cv.height=h*c;
     cv.getContext('2d').drawImage(src,x0*c,y0*c,cv.width,cv.height,0,0,cv.width,cv.height); return pxThumbFrom(cv); }catch(e){ return pxNoneThumb(); } }
 // A hat colour is the redrawn ball cap in that colour, the same picture the Ball Cap tile shows.
@@ -16655,6 +16658,7 @@ function pxNoneThumb(){ return `<span class="sthumb color" style="background:#12
 function pxItemThumb(cat,id){
   if(!id||id==='none') return pxNoneThumb();
   const look=S.look||DEFLOOK, av=avLook(look);
+  if((cat==='top'&&PXG_TOPS[id])||(cat==='leg'&&PXG_LEGS[id])){ const g=g3dPic(g3dItemLook(cat==='top'?{top:id}:{leg:id}),cat); if(g) return g3dTile(g); }
   if(cat==='hw'||(cat==='ew'&&PXG_EYEWEAR[id])){ const g=g3dPic(g3dItemLook(cat==='hw'?{cap:true,hatStyle:id,hat:look.hat||DEFLOOK.hat}:{eyewear:id}),cat==='hw'?'hat':'ew'); if(g) return g3dTile(g); }
   // The tile shows the item exactly as the golfer wears it: drawn by PXHD on your golfer, then only
   // that item's own pixels kept and cropped. An authored map painted flat would be a second, older
@@ -38595,6 +38599,7 @@ function cosThumbHTML(cat,o){
      : (cat==='cleats') ? pxCleatsThumb(o.id)
      : (cat==='pat') ? pxPatThumb(o.id)
      : (cat==='hw'||cat==='ew'||cat==='top'||cat==='leg') ? pxItemThumb(cat,o.id)
+     : (cat==='body'&&g3dMenuOn()) ? (function(){ const g=g3dPic(Object.assign({},S.look||DEFLOOK,{body:o.id==='none'?'':o.id}),'fig'); return g?`<span class="sthumb px" style="padding:0;overflow:hidden;background:#0c1f16"><img ${g3dSrc(g)} alt="" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated"></span>`:''; })()
      : (cat==='body') ? `<span class="sthumb px" style="padding:0;overflow:hidden;background:#0c1f16"><img src="${pxGolferURL(Object.assign({},S.look||DEFLOOK,{body:o.id==='none'?'':o.id}))}" alt="" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated"></span>`
      : (cat==='cardbg') ? `<span class="sthumb" style="padding:0;overflow:hidden"><img src="${pxCardBgURL(o.id)}" alt="" style="width:100%;height:100%;object-fit:cover;image-rendering:pixelated"></span>`
      : (cat==='plate') ? `<span class="sthumb color" style="${plateCss(o.id)};display:flex;align-items:center;justify-content:center"><span style="font-weight:900;font-size:8.5px;letter-spacing:.06em">NAME</span></span>`
