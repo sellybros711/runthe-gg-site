@@ -45,6 +45,11 @@
   const sdE=(p,c,AX,R)=>{ const q=sub(p,c), a=dot(q,AX[0])/R[0], b=dot(q,AX[1])/R[1], d=dot(q,AX[2])/R[2];
     const k0=Math.hypot(a,b,d), k1=Math.hypot(a/R[0],b/R[1],d/R[2]); return k1<1e-6?-Math.min(...R):k0*(k0-1)/k1; };
   const sdCap=(p,a,b,r)=>{ const pa=sub(p,a), ba=sub(b,a), h=Math.max(0,Math.min(1,dot(pa,ba)/dot(ba,ba))); return Math.hypot(...sub(pa,sc(ba,h)))-r; };
+  // a cone from a (radius ra) to b (radius rb), cut flat at both ends
+  const sdCone=(p,a,b,ra,rb)=>{ const ba=sub(b,a), pa=sub(p,a), baba=dot(ba,ba), papa=dot(pa,pa), paba=dot(pa,ba)/baba, rba=rb-ra;
+    const x=Math.sqrt(Math.max(0,papa-paba*paba*baba)), cax=Math.max(0,x-(paba<0.5?ra:rb)), cay=Math.abs(paba-0.5)-0.5;
+    const k=rba*rba+baba, f=Math.max(0,Math.min(1,(rba*(x-ra)+paba*baba)/k)), cbx=x-ra-f*rba, cby=paba-f, sg=(cbx<0&&cay<0)?-1:1;
+    return sg*Math.sqrt(Math.min(cax*cax+cay*cay*baba,cbx*cbx+cby*cby*baba)); };
   const smin=(a,b,k)=>{ const h=Math.max(k-Math.abs(a-b),0)/k; return Math.min(a,b)-h*h*k/4; };
   // THE MENU CAP: a six panel crown that comes down over the hair at the temples and the back, its seams sewn in,
   // and a pre-curved brim that pitches down and bends down at its sides, as a real golf cap's does. One piece
@@ -626,7 +631,12 @@
     for(const s of [1,-1]) push(capsule(P(-0.2,32.5+0.12*br,2.6*s),P(-0.2,30.6+0.15*br,6.5*s),2.1,body));    // the shoulders, sloping
     push(ellipsoid(P(0.2,19.0,0),AX,[4.8,1.35,8.75*BW+0.08*sw],body,{dt:0}));                                     // blousing over the belt
     push(capsule(P(0.3,32.2,0),P(0.6,35.8,0),2.85,'skin',{dt:-1}));                                              // the neck, under the head
-    push(ellipsoid(P(0.7,33.5,0),AX,[3.7,1.15,4.7],body,{dt:1}));                                                // the collar
+    // the collar: a jacket's or the cape's is the old soft roll; a polo's is a real band round the neck, open at the front
+    const polo=!jacket&&top!=='blazer';
+    if(!polo||!HD) push(ellipsoid(P(0.7,33.5,0),AX,[3.7,1.15,4.7],body,{dt:1}));
+    else { const n0=P(0.45,32.9,0), n1=P(0.6,34.5,0);
+      push(field(add(n0,sc(U,0.8)),5.5,p=>{ const q=sub(p,n0), a=dot(q,F), sd=dot(q,T);
+          return Math.max(Math.abs(sdCone(p,n0,n1,3.55,3.2))-0.32,-(a-2.2+Math.abs(sd)*1.4)); },'polo',{mf:p=>dot(sub(p,n0),U)>1.35?['polo',1]:null})); }
     if(HD&&top!=='blazer'){ const d=0.02*sw;
       // folds: two from each armpit in toward the buckle, and creases just above the belt
       for(const s of [1,-1]){
@@ -639,8 +649,11 @@
     else if(top==='blazer'){ push(over(tc,AX,TR,'x:'+tpal['6'],l=>inT(l)&&l[0]>0.25&&l[1]>0.0&&Math.abs(l[2])<0.5*(l[1]+0.05)));
       push(over(tc,AX,TR.map(v=>v*1.01),'x:'+tpal['7'],l=>inT(l)&&l[0]>0.25&&l[1]>-0.1&&Math.abs(l[2])<0.07));
       for(const u of [20.6,22.6]) push(ellipsoid(P(4.85,u,0),AX,[0.5,0.5,0.5],'x:'+tpal['4'],{gloss:2,noCast:1})); }
-    else if(HD){ // the polo: collar points, a placket and two buttons, in their own material so the seams are drawn
-      for(const s of [1,-1]) push(ellipsoid(P(4.2,32.4,1.9*s),AX,[0.65,1.35,1.55],'polo',{dt:1,noCast:1}));
+    else if(HD){ // the polo: the collar folded down into two flat points on the chest, outlined; a placket and two buttons
+      const tri=(x,y,a,b,c)=>{ const e=(p,q)=>(q[0]-p[0])*(y-p[1])-(q[1]-p[1])*(x-p[0]); const d1=e(a,b),d2=e(b,c),d3=e(c,a); return (d1>=0&&d2>=0&&d3>=0)||(d1<=0&&d2<=0&&d3<=0); };
+      for(const s of [1,-1]){ const A=[0.06*s,0.305], B=[0.46*s,0.31], C=[0.32*s,0.19], A2=[0.1*s,0.3], B2=[0.42*s,0.302], C2=[0.315*s,0.205];
+        push(over(tc,AX,TR.map(v=>v*1.012),'polo',l=>l[0]>0.25&&tri(l[2],l[1],A,B,C),{noCast:1,dt:-1}));                 // its edge
+        push(over(tc,AX,TR.map(v=>v*1.02),'polo',l=>l[0]>0.25&&tri(l[2],l[1],A2,B2,C2),{noCast:1,dt:1})); }              // the flap
       push(over(tc,AX,TR,'polo',l=>inT(l)&&l[0]>0.45&&Math.abs(l[2])<0.075&&l[1]>0.1&&l[1]<0.29));
       for(const u of [30.0,28.2]) push(ellipsoid(P(4.82,u,0),AX,[0.42,0.45,0.45],'polo',{dt:-1,gloss:2,noCast:1})); }
     // THE ARMS, at rest. Each joins the body only at the shoulder and hangs clear of the shirt. The dominant hand
@@ -664,8 +677,12 @@
       const sh=P(-0.2,30.0+0.15*br,9.2*AW*s), el=hold?P(0.9,23.0,10.5*AW*s):P(0.4,23.0,10.4*AW*s), wr=hold?P(2.4,17.7,11.0*AW*s):P(1.3,17.3,10.9*AW*s);
       const se=add(sh,sc(sub(el,sh),0.48)), mid=add(el,sc(sub(wr,el),0.45)), flap=sc(F,0.12*sw*s);
       if(top==='blazer'){ push(capsule(sh,el,2.15,slv)); push(capsule(el,wr,1.85,slv)); }
-      else { push(capsule(sh,add(se,flap),2.3,slv)); if(HD) push(capsule(add(sh,sc(sub(se,sh),0.78)),add(se,flap),2.42,slv,{dt:-1,noCast:1}));   // the sleeve, its hem moving a little
-        if(HD) push(over(add(sh,sc(sub(se,sh),0.45)),AX,[2.4,2.4,2.4],slv,l=>Math.abs(l[1]+0.35*l[0]*s-0.1)<0.07&&l[0]>-0.2,{dt:-1,noCast:1}));   // a crease across the sleeve
+      else { // THE SLEEVE: a short tube from inside the shoulder, a touch wider at the hem, cut square there with the hem
+        // stitched a finger above the edge and a fold across it; the hem swings a little with the breath
+        const s0=add(sh,sc(norm(sub(sh,se)),1.2),sc(U,0.4)), s1=add(se,flap), L2=dot(sub(s1,s0),sub(s1,s0));
+        push(field(add(s0,sc(sub(s1,s0),0.5)),Math.sqrt(L2)/2+3.2,p=>sdCone(p,s0,s1,2.15,2.4)-0.12,slv,{mf:p=>{ const t=dot(sub(p,s0),sub(s1,s0))/L2;
+          if(t>0.985||(t>0.82&&t<0.87)) return [slv,-1];                                       // the open hem and its stitching
+          return HD&&Math.abs(t-0.5-0.12*dot(sub(p,s0),U)*s)<0.035?[slv,-1]:null; }}));       // a fold across it
         push(capsule(se,el,1.6,'skin')); push(ellipsoid(el,AX,[1.55,1.5,1.6],'skin'));                                  // the upper arm and elbow
         push(capsule(el,mid,1.5,'skin')); push(capsule(mid,wr,1.22,'skin'));                                             // the forearm, to the wrist
         if(scare){ const strw='x:'+(bp.straw||'#d8b04e'), dk='x:#a8843a';   // straw arms, tufts out of the sleeve and the cuff
