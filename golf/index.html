@@ -9988,7 +9988,7 @@ function sgCardHTML(sg, opts){
    In-game currency + a shop of equippable gear that grants small stat boosts. Design guarantees:
    - Coins are DERIVED from permanent progress (achievements + lifetime milestones) minus a `spent`
      counter, so they can never be farmed by replaying and stay identical across devices.
-   - Boosts apply in SOLO play only: they're baked in buildPlayer(), which feeds Career + Daily; online
+   - Boosts apply in the CAREER only: they're baked in buildPlayer() when S.daily is false (the Daily is neutral); online
      H2H builds its own draft and never calls buildPlayer, so bought gear can't touch ranked / the H2H
      board. Per-skill + total caps keep career from being trivialized.
    - Account-scoped (acctKey) + cloud-synced. Signed-in feature (like achievements). ------------------- */
@@ -11272,8 +11272,8 @@ function accBuy(id){ const it=accById(id); if(!it) return {ok:false,msg:'Unknown
 }
 // ---- boosts: summed over equipped gear, clamped per-skill + total (SOLO ONLY via buildPlayer) ----
 function accBoost(){ if(!SHOP_ENABLED) return {};   // shelved: equipped gear gives no boost while the economy is disabled
-  // CS378: boosts come ONLY from gear you can currently see & control - the worn cosmetics (headwear /
-  // eyewear / patterns / special shirts) and the golf bag. The legacy per-slot ACCESSORIES catalog
+  // CS378: boosts come ONLY from gear you can currently see & control - the worn cosmetics (headwear, eyewear,
+  // heritage patterns, the putter, and since the ladder of 2026-10-16 the ball and cleats) and the club set. The legacy per-slot ACCESSORIES catalog
   // (glove/shoes/driver/putter/ball/charm + milestone gear stored in look.acc) is no longer exposed by the
   // shop, so summing it credited invisible boosts the player never equipped (and double-counted headwear/
   // eyewear against the cosmetic system) - which read as "boosts from clubs I don't even own".
@@ -11285,8 +11285,20 @@ function accBoost(){ if(!SHOP_ENABLED) return {};   // shelved: equipped gear gi
   // enforce the total cap by trimming largest-first if needed
   total=Object.values(out).reduce((a,b)=>a+b,0);
   while(total>ACC_TOTAL_CAP){ let mk=null; for(const k in out){ if(out[k]>0 && (mk===null||out[k]>out[mk])) mk=k; } if(mk===null) break; out[mk]--; total--; }
+  // collection sets ride on top of the capped gear, outside its caps (setBoostRows)
+  setBoostRows().forEach(r=>{ for(const k in r.b) out[k]=(out[k]||0)+r.b[k]; });
+  for(const k in out) if(!out[k]) delete out[k];
   return out;
 }
+// COLLECTION SETS (the owner's pick, 2026-10-16): a finished collection is +1 on its own stat for good, wherever gear
+// counts (the career and an exhibition Head to Head), outside the gear caps. One stat a collection, so the eight cover
+// all eight. A themed drop's pieces stay owned out of season, so its set does too.
+const COLLECTION_SETS={drop1:'acc', drop2:'clu', rungames:'app', summer:'scr', spooky:'put', winter:'sht', harvest:'bnk', biggame:'dist'};
+const SET_STAT_MAX=1;   // what a finished collection adds to its stat (and all sets can add to one)
+function setBoostRows(){ const rows=[]; if(!SHOP_ENABLED) return rows; const per={};
+  try{ for(const id in COLLECTION_SETS){ const d=dropById(id), k=COLLECTION_SETS[id]; if(!d) continue; const pr=dropProgress(d);
+    if(pr.tot>0 && pr.own>=pr.tot && (per[k]||0)<SET_STAT_MAX){ per[k]=(per[k]||0)+1; rows.push({drop:id, name:d.name, b:{[k]:SET_STAT_MAX}}); } } }catch(e){}
+  return rows; }
 function accBoostTotal(){ const b=accBoost(); return Object.values(b).reduce((a,x)=>a+x,0); }
 // CS410, the EFFECT LAYER: animated glow auras (legendary cosmetics) + a matching hole-view tracer skin.
 // An effect is a DISPLAY-layer treatment (animated CSS drop-shadow on the avatar img + the shot tracer color),
@@ -12062,11 +12074,26 @@ const COS_BOOST={
   'cl:steeldriver':{dist:3}, 'cl:finderdriver':{acc:3}, 'cl:speeddriver':{dist:4,acc:-1}, 'cl:tourwood':{dist:2,app:1},
   'cl:forgediron':{app:3}, 'cl:bladeirons':{app:4,scr:-1}, 'cl:milledwedge':{sht:2,bnk:1}, 'cl:sandwedge':{bnk:3},
   'cl:lobwedge':{sht:3,scr:1,dist:-1}, 'cl:mallet':{put:3}, 'cl:scoringiron':{app:3,scr:1},
-  'cl:persimmon':{dist:3,acc:1}, 'cl:blade':{put:3}, 'cl:excalibur':{dist:5,acc:1}, 'cl:wand':{put:5}, 'cl:hockey':{put:4,scr:1},
+  'cl:persimmon':{dist:3,acc:1}, 'cl:blade':{put:4}, 'cl:excalibur':{dist:5,acc:1}, 'cl:wand':{put:5}, 'cl:hockey':{put:4,scr:1},
   'cl:scepter':{put:4,app:1}, 'cl:candycane':{put:3,clu:1}, 'cl:onyxdriver':{dist:5}, 'cl:emeraldirons':{app:5},
   'cl:frostdriver':{dist:3,acc:1}, 'cl:rubywedge':{sht:3,bnk:1,dist:-1}, 'cl:sapphireputter':{put:3,clu:1},
   'cl:voidputter':{put:4,scr:1}, 'cl:rosewood':{dist:2,app:2}, 'cl:scramblewedge':{scr:4,sht:1}, 'cl:golden':{dist:2,app:2,put:2}, 'cl:platinum':{acc:2,app:2,put:2}, 'cl:diamond':{dist:1,acc:1,app:1,sht:1,put:1,clu:1}, 'cl:glizzy':{sht:2,scr:1,clu:2}, 'cl:coffin':{dist:3,scr:1}, 'cl:poolnoodle':{scr:2,clu:2}
 };
+// THE LADDER (the owner's pick, 2026-10-16): an item carries the power its rarity buys. An accessory is worth 1, 2, 3
+// or 4 points from common to legendary, a club set 1, 3, 4 or 5, and an item that can only be earned counts as rare.
+// Balls and cleats count as gear, and their boosts lean on the stats gear barely touched (bunker, short game,
+// accuracy). These are ADDED: a boost written above is frozen and never lowered, removed or moved (the owner's boost
+// rule; golf/check-boosts.mjs holds the baseline). An item that sat above its rung keeps what it had.
+Object.assign(COS_BOOST,{
+  // headwear
+  'hw:tweed':{app:2,clu:1}, 'hw:straw':{scr:2,clu:1}, 'hw:laurel':{clu:2,app:2}, 'hw:backwards':{clu:1,scr:1}, 'hw:pirate':{scr:2,bnk:1}, 'hw:grad':{app:1,acc:1}, 'hw:witch':{put:2,sht:1}, 'hw:reaperhood':{clu:2,put:2}, 'hw:elf':{sht:1,scr:1}, 'hw:antlers':{dist:2,acc:1}, 'hw:football':{dist:2,clu:1}, 'hw:floppy':{acc:1,scr:1}, 'hw:knight':{clu:2,bnk:2}, 'hw:turkey':{scr:2,sht:1},
+  // eyewear
+  'ew:prismshades':{app:2,put:2}, 'ew:goldshades':{clu:2,app:1}, 'ew:beach':{acc:1,scr:1}, 'ew:eyeblack':{clu:1,dist:1}, 'ew:wayfarer':{app:1,clu:1}, 'ew:sport':{acc:1,dist:1}, 'ew:cateye':{put:1,app:1}, 'ew:readers':{put:1}, 'ew:rose':{clu:1,put:1}, 'ew:steampunk':{app:2,sht:1}, 'ew:cyber':{acc:2,app:1}, 'ew:patriot':{clu:2,acc:1}, 'ew:groucho':{scr:2,sht:1}, 'ew:diamond':{clu:2,put:2},
+  // balls
+  'bl:featherie':{sht:2,scr:1}, 'bl:comet':{app:2,sht:2}, 'bl:red':{clu:1}, 'bl:neon':{dist:1,app:1}, 'bl:marble':{put:1,app:1}, 'bl:eight':{scr:1,bnk:1}, 'bl:gold':{app:2,put:1}, 'bl:frost':{acc:2,sht:1}, 'bl:obsidian':{dist:2,scr:1}, 'bl:flamingo':{sht:1,scr:1}, 'bl:ghost':{scr:1,bnk:1}, 'bl:eyeball':{app:1,put:1}, 'bl:snowball':{sht:1,bnk:1}, 'bl:pigskin':{dist:2,scr:1}, 'bl:rungames':{app:2,scr:1}, 'bl:cranberry':{sht:1,bnk:1}, 'bl:blackcat':{scr:1,bnk:1},
+  // cleats
+  'ct:saddle':{acc:1}, 'ct:sunday':{clu:1,acc:1}, 'ct:neon':{dist:1,acc:1}, 'ct:golden':{acc:2,bnk:1}, 'ct:rocket':{dist:2,acc:2}, 'ct:phantom':{bnk:2,acc:2}, 'ct:bone':{bnk:2,sht:1}, 'ct:rungames':{acc:1,dist:1}
+});
 function cosBoost(cat,id){ return COS_BOOST[cosKey(cat,id)]||null; }
 // the WORN, OWNED, boost-carrying cosmetics right now - the single source of truth the boost math AND the
 // on-screen "active boosts" breakdown both read, so the display can never drift from what's applied.
@@ -12075,6 +12102,7 @@ function cosmeticBoostRows(){ const rows=[]; const L=S.look||{};
     const o=(cosmeticItems(cat)||[]).find(x=>x.id===id); rows.push({cat,id,name:(o&&o.name)||id,b}); };
   if(L.cap) push('hw', L.hatStyle||'cap');   // headwear boost only counts while a hat is actually worn
   push('ew', L.eyewear); push('pat', L.shirtPat); push('putter', puttEquippedId());   // colors never boost (owner), so shirt color isn't read
+  push('ball', L.ball); push('cleats', L.cleats);   // the ladder (2026-10-16): balls and cleats are gear
   return rows;
 }
 function cosmeticBoost(){ const o={}; cosmeticBoostRows().forEach(r=>{ for(const k in r.b) o[k]=(o[k]||0)+r.b[k]; }); return o; }
@@ -12199,19 +12227,22 @@ function buildPlayer(o){const p={name:S.name||'Your Golfer',you:true};
   // (situational major/venue bonuses are added to your event overall in the sim, not here). Clamped so a
   // boost can't push a rating out of range or a -1 (Two Shot Lynch) below the floor.
   const cad=equippedCaddie();
-  if(cad && cad.power.base){ for(const k in cad.power.base){ if(p[k]!=null) p[k]=Math.max(40,Math.min(99, p[k]+cad.power.base[k])); } p._caddie=cad.id; }
+  // Past 99 (the owner's call, 2026-10-16): in the career a caddie, coaching and gear may each carry a stat past 99.
+  // Each is held by its own cap (a caddie's few points, an effect's amount, ACC_SKILL_CAP and SET_STAT_MAX), so only
+  // the floor clamps here. The Daily keeps every stat at 99, as it always has.
+  const top=S.daily?99:Infinity;
+  if(cad && cad.power.base){ for(const k in cad.power.base){ if(p[k]!=null) p[k]=Math.max(40,Math.min(top, p[k]+cad.power.base[k])); } p._caddie=cad.id; }
   // CS325: temporary career-decision effects (injuries / coaching boosts) - display side; career only.
   // The SIM applies the same delta as a course-fit-weighted eo nudge in beginEvent (see careerFxEo).
   // o.noFx: the golfer the season sim plays, which takes these as careerFxEo in beginEvent instead (seasonMeSync)
-  if(!(o&&o.noFx) && typeof careerFxOn==='function' && careerFxOn()){ for(const c of CATS){ const d=careerSkillFx(c.k); if(d && p[c.k]!=null) p[c.k]=Math.max(40,Math.min(99, p[c.k]+d)); } }
-  // equipped accessory/bag boosts LAST. Applied in CAREER only (Daily/Spotlight/Legend set S.daily=true and stay
-  // a neutral field). Online H2H uses its own path (h2hSkills), not buildPlayer. Gear is the ONE thing that may
-  // push an effective rating past 99 (up to 99+ACC_SKILL_CAP), so a fully-kitted OVR can read over 99.
-  let over=false;
-  if(!S.daily){ const ab=accBoost(); for(const k in ab){ if(p[k]!=null) p[k]=Math.max(40,Math.min(99+ACC_SKILL_CAP, p[k]+ab[k])); }
-    if(accBoostTotal()>0){ p._gear=1; over=true; } }
+  if(!(o&&o.noFx) && typeof careerFxOn==='function' && careerFxOn()){ for(const c of CATS){ const d=careerSkillFx(c.k); if(d && p[c.k]!=null) p[c.k]=Math.max(40,Math.min(top, p[c.k]+d)); } }
+  // equipped gear and collection sets LAST. Applied in CAREER only (Daily/Spotlight/Legend set S.daily=true and stay
+  // a neutral field). Online H2H uses its own path (h2hSkills), not buildPlayer.
+  if(!S.daily){ const ab=accBoost(); for(const k in ab){ if(p[k]!=null) p[k]=Math.max(40, p[k]+ab[k]); }
+    if(accBoostTotal()>0) p._gear=1; }
+  p._over=!S.daily;   // the career golfer's overall may read past 99 (ovrFromSkills allowOver); the Daily's never does
   p.country=(S.look&&S.look.country)||'United States'; p.nation=playerNation();
-  p.skill=ovrFromSkills(p, over); return p;}
+  p.skill=ovrFromSkills(p, p._over); return p;}
 
 /* ---------- build identity ---------- */
 function ovrTier(o){
@@ -12975,7 +13006,7 @@ function scrRules(){
     ['🆚','Four modes','1v1, Best Ball and Scramble (2v2 teams), and Free-for-All (4 players). Everyone drafts their own golfer.'],
     ['⚡','Quick or private','Quick Match finds you an opponent, or create a private room and share the code with friends. A private host can open the room to the public to fill empty seats.'],
     ['⛳','Watch it play out','Every golfer plays the same course on the tracer. A tie goes to a sudden-death playoff until someone wins outright.'],
-    ['📊','W/L leaderboards','Each mode has its own win/loss leaderboard. Online is a fair fight, gear boosts apply only in career and the daily, never here.'],
+    ['📊','W/L leaderboards','Each mode has its own win/loss leaderboard. Online is a fair fight. Gear boosts count in Career, never here.'],
   ]);
 
   perkSection('🏅 Progress & Rewards','var(--gold)','Level up your profile',null,[
@@ -16668,7 +16699,7 @@ function closetRandomOutfit(){
 }
 // best outfit: per boost-carrying category, equip the owned item with the highest NET boost (ties keep your pick)
 function closetBestOutfit(){
-  ['hw','ew','pat','club','putter'].forEach(cat=>{ try{
+  ['hw','ew','pat','club','putter','ball','cleats'].forEach(cat=>{ try{
     const own=(cosmeticItems(cat)||[]).filter(o=>cosOwned(cat,o.id)); if(!own.length) return;
     let best=null, bs=-1e9;
     own.forEach(o=>{ const b=cosBoost(cat,o.id)||{}; let s=0; for(const k in b) s+=b[k];
@@ -17095,7 +17126,7 @@ const CLUBS=[
  {id:'mallet',name:'Pure Roll Clubs',tag:'Pure Roll',rar:'rare',kind:'store',b:{put:3},hist:'A forgiving high-MOI set, pure roll'},
  {id:'scoringiron',name:'Scoring Clubs',tag:'Scoring',rar:'epic',kind:'store',b:{app:3,scr:1},hist:'Flag-hunting from everywhere'},
  {id:'persimmon',name:'Wooden Clubs',tag:'Wooden',rar:'epic',kind:'pack',b:{dist:3,acc:1},hist:'Hand-turned persimmon & hickory, the classic set'},
- {id:'blade',name:'Heritage Clubs',tag:'Heritage',rar:'epic',kind:'pack',b:{put:3},hist:'Milled carbon-steel classics'},
+ {id:'blade',name:'Heritage Clubs',tag:'Heritage',rar:'epic',kind:'pack',b:{put:4},hist:'Milled carbon-steel classics'},
  {id:'excalibur',name:'Excalibur Clubs',tag:'Excalibur',rar:'legendary',kind:'pack',b:{dist:5,acc:1},hist:'The sword in the fairway'},
  {id:'wand',name:'Wizard Clubs',tag:'Wizard',rar:'legendary',kind:'pack',b:{put:5},hist:'Wands and staffs, sink everything like magic'},
  {id:'hockey',name:'Hockey Clubs',tag:'Hockey',rar:'legendary',kind:'pack',b:{put:4,scr:1},hist:'A full set of hockey sticks, trouble all week'},
@@ -17134,9 +17165,9 @@ const PUTTERS=[
  {id:'copper',name:'Copper Tour Blade',rar:'epic',kind:'pack',b:{put:3},reach:2,shape:'putter',pal:{H:'#b5652a',F:'#e39a5c',S:'#ffd0a3',G:'#6a3410'},hist:'Soft copper inlay, a tour player\'s touch'},
  {id:'magicwand',name:'The Magic Wand',rar:'legendary',kind:'pack',b:{put:4},reach:3,shape:'wand',pal:null,hist:'It just goes in'},
  {id:'goldplated',name:'Gold Plated Putter',rar:'legendary',kind:'pack',b:{put:4,clu:1},reach:3,shape:'putter',pal:{H:'#c99a1a',F:'#ffe98a',S:'#fff6c4',G:'#7a5a08'},hist:'Twenty four karat, made for Sunday'},
- {id:'scope',name:'Scope Putter',rar:'epic',kind:'pp',b:{put:2},reach:2,perk:'scope',shape:'putter',pal:{H:'#1f8fd6',F:'#7fd0ff',S:'#e0f4ff',G:'#0a3a5a'},hist:'Putt Putt: the aim line reaches four feet further'},
- {id:'bank',name:'Bank Shot Putter',rar:'epic',kind:'pp',b:{put:2},reach:2,perk:'bank',shape:'putter',pal:{H:'#2e9e52',F:'#8fe0a8',S:'#e2ffe9',G:'#0e4a24'},hist:'Putt Putt: the aim line bends off the walls'},
- {id:'buoy',name:'Lifeguard Putter',rar:'epic',kind:'pp',b:{put:2},reach:2,perk:'buoy',shape:'putter',pal:{H:'#e5483a',F:'#ffffff',S:'#ffd0cb',G:'#7a1a12'},hist:'Putt Putt: once a hole, water costs no stroke'}];
+ {id:'scope',name:'Scope Putter',rar:'epic',kind:'pp',b:{put:3},reach:2,perk:'scope',shape:'putter',pal:{H:'#1f8fd6',F:'#7fd0ff',S:'#e0f4ff',G:'#0a3a5a'},hist:'Putt Putt: the aim line reaches four feet further'},
+ {id:'bank',name:'Bank Shot Putter',rar:'epic',kind:'pp',b:{put:3},reach:2,perk:'bank',shape:'putter',pal:{H:'#2e9e52',F:'#8fe0a8',S:'#e2ffe9',G:'#0e4a24'},hist:'Putt Putt: the aim line bends off the walls'},
+ {id:'buoy',name:'Lifeguard Putter',rar:'epic',kind:'pp',b:{put:3},reach:2,perk:'buoy',shape:'putter',pal:{H:'#e5483a',F:'#ffffff',S:'#ffd0cb',G:'#7a1a12'},hist:'Putt Putt: once a hole, water costs no stroke'}];
 const PUTTERS_BY={}; PUTTERS.forEach(function(p){ PUTTERS_BY[p.id]=p; if(p.b && Object.keys(p.b).length) COS_BOOST['pu:'+p.id]=p.b; PXG_CLUBS['pu_'+p.id]=PXG_CLUBS[p.shape]; if(p.pal) PXG_CLUB_PAL['pu_'+p.id]=p.pal; else if(PXG_CLUB_PAL[p.shape]) PXG_CLUB_PAL['pu_'+p.id]=PXG_CLUB_PAL[p.shape]; });
 const PUTTER_REACH_FT=[5,7,9,11];   // the Putt Putt aim line at each reach (putt.js AIM_FEET)
 // the equipped putter, only if it is owned (a synced choice this device has no record of falls back to Stock)
@@ -19413,12 +19444,13 @@ function accBoostSummaryNode(){
   const node=$(`<div class="accboost"></div>`);
   const clubs=(typeof bagBoostRows==='function')?bagBoostRows():[];
   const worn=(typeof cosmeticBoostRows==='function')?cosmeticBoostRows():[];
-  if(!order.length && !clubs.length && !worn.length){
+  const sets=setBoostRows();
+  if(!order.length && !clubs.length && !worn.length && !sets.length){
     node.appendChild($(`<div class="small muted">No boosts on yet. Gear up and give your golfer an edge.</div>`));
     return node;
   }
   const total=order.reduce((a,k)=>a+b[k],0);
-  let raw=0; clubs.concat(worn).forEach(r=>{ for(const k in r.b) raw+=r.b[k]; });
+  let raw=0; clubs.concat(worn,sets).forEach(r=>{ for(const k in r.b) raw+=r.b[k]; });
   // compact summary (owner: "way too much reading"): one line + the per-skill chips; the per-item
   // breakdown lives behind a details expander.
   node.appendChild($(`<div class="small" style="margin-bottom:6px"><b style="color:var(--gold)">Active boosts</b> · <b style="color:${total>=0?'#41dea6':'#e2554e'}">${total>=0?'+':''}${total}</b> total <span class="muted">·${raw>total?' capped at +'+ACC_TOTAL_CAP+' ·':''} Career only</span></div>`));
@@ -19427,13 +19459,14 @@ function accBoostSummaryNode(){
     order.forEach(k=>{ const v=b[k]; chips.appendChild($(`<span class="boostchip" style="${v<0?'color:#e2554e;border-color:rgba(226,85,78,.4)':''}">${v>=0?'+':''}${v} ${esc(CATS.find(c=>c.k===k).short)}</span>`)); });
     node.appendChild(chips);
   }
-  if(clubs.length||worn.length){
+  if(clubs.length||worn.length||sets.length){
     const det=$(`<details style="margin-top:7px"><summary class="small" style="cursor:pointer;color:var(--gold);font-weight:700;list-style:none">What's boosting you ▾</summary></details>`);
     det.open=!!S.boostDetOpen; det.addEventListener('toggle',()=>{ S.boostDetOpen=det.open; });
     const inner=$(`<div style="padding-top:4px"></div>`);
     const rowTxt=r=>`<b style="color:var(--oncard)">${esc(r.name)}</b> ${shopBoostTxt(r.b)}`;
     if(clubs.length) inner.appendChild($(`<div class="small" style="margin:3px 0;line-height:1.6"><span style="color:var(--gold);font-weight:800;letter-spacing:.04em">CLUBS</span> · ${clubs.map(rowTxt).join(' <span class="muted">·</span> ')}</div>`));
     if(worn.length) inner.appendChild($(`<div class="small" style="margin:3px 0;line-height:1.6"><span style="color:var(--gold);font-weight:800;letter-spacing:.04em">APPAREL</span> · ${worn.map(rowTxt).join(' <span class="muted">·</span> ')}</div>`));
+    if(sets.length) inner.appendChild($(`<div class="small" style="margin:3px 0;line-height:1.6"><span style="color:var(--gold);font-weight:800;letter-spacing:.04em">COLLECTIONS</span> · ${sets.map(rowTxt).join(' <span class="muted">·</span> ')} <span class="muted">(on top of the cap)</span></div>`));
     inner.appendChild($(`<div class="small muted" style="margin-top:3px">Boosts apply in Career · the Daily &amp; ranked online stay neutral.</div>`));
     det.appendChild(inner); node.appendChild(det);
   }
@@ -19545,7 +19578,7 @@ function radPt(i,r){ return [RAD_CX+Math.cos(radAng(i))*r, RAD_CY+Math.sin(radAn
 // effects on the career draft, gear on an exhibition Head to Head), so its centre OVR is the chip's number.
 // over: the overall may read past 99 (gear on). Any other slots draw as drafted.
 function radarGolfer(slots){
-  try{ if(slots===S.slots){ const p=buildPlayer(); return {vals:CATS.map(c=>p[c.k]), over:!!p._gear}; }
+  try{ if(slots===S.slots){ const p=buildPlayer(); return {vals:CATS.map(c=>p[c.k]), over:!!p._over}; }
     if(S.h2h && slots===S.h2h.slots){ const s=h2hSkills(); return {vals:CATS.map(c=>s[c.k]), over:h2hMatchBoosted(S.h2h.seed)}; } }catch(e){}
   return {vals:CATS.map(c=> slots[c.k]? slots[c.k].value : REPLACEMENT), over:false}; }
 function dynRadar(slots){
@@ -20279,7 +20312,7 @@ let _prevScTotal=null;   // your last-rendered rounded to-par, for the scorecard
 // careerFxEo, once (the snapshot used to carry any active at the season's start as well, so they counted twice).
 function seasonMeSync(){ const me=S.season&&S.season.me; if(!me||S.daily) return; let p; try{ p=buildPlayer({noFx:true}); }catch(e){ return; }
   CATS.forEach(c=>{ me[c.k]=p[c.k]; }); me.skill=p.skill;
-  if(p._gear) me._gear=1; else delete me._gear; if(p._caddie) me._caddie=p._caddie; else delete me._caddie; }
+  if(p._gear) me._gear=1; else delete me._gear; if(p._caddie) me._caddie=p._caddie; else delete me._caddie; me._over=p._over; }
 function beginEvent(){
   seasonMeSync();
   let evt=S.schedule[S.evtIndex];
@@ -28912,7 +28945,7 @@ function bracketGroupStakes(){
     `<div class="bst l">Bottom ${BRACKET_GROUP_SIZE-BRACKET_ADV} → season over</div></div>`;
 }
 function bracketOvr(o){
-  try{ const v=Math.round(ovrFromSkills(o.p, !!(o.p&&o.p._gear))); if(isFinite(v)&&v>0) return v; }catch(e){}   // your gear may carry you past 99, as on every other screen
+  try{ const v=Math.round(ovrFromSkills(o.p, !!(o.p&&o.p._over))); if(isFinite(v)&&v>0) return v; }catch(e){}   // your career golfer may read past 99, as on every other screen
   return (o.p&&isFinite(o.p.skill))?Math.round(o.p.skill):null;
 }
 function bracketFaceoff(me, opp, showOvr){
@@ -41431,6 +41464,7 @@ function overlayShop(screen){
           <div class="drop-name">${esc(d.name)}</div>
           <div class="drop-meta">${d.window?(live?`<span class="droplive">● LIVE NOW</span> · ends ${_DROP_MON[d.window[1][0]-1]} ${d.window[1][1]}`:`⏳ ${esc(dropReturnsLabel(d))} · ${esc(dropWindowLabel(d))}`):'Always available'}</div>
           <div class="drop-progress"><div class="drop-bar"><i style="width:${Math.round(pr.own/pr.tot*100)}%"></i></div><span>${claimable?'🏆 COMPLETE':done?'✓ COMPLETE':pr.own+' / '+pr.tot}</span></div>
+          ${COLLECTION_SETS[d.id]?`<div class="drop-meta">${done?'Set bonus':'Finish it for'} +${SET_STAT_MAX} ${esc(CAT_LABEL[COLLECTION_SETS[d.id]])} in Career, for good</div>`:''}
           ${claimable?'<div style="margin-top:9px"><span class="drop-claimpill">🏆 CLAIM ▸</span></div>':''}
           <span class="drop-go">▸</span>
         </button>`);
@@ -43420,7 +43454,7 @@ function h2hBeginDraft(){
 function h2hGolfersLeft(){ return GOLFERS.length-(S.h2h.revealed?S.h2h.revealed.size:0); }
 function h2hFilled(){ let n=0; for(const c of CATS) if(S.h2h.slots[c.k])n++; return n; }
 function h2hSkills(){ const s={}; for(const c of CATS) s[c.k]=S.h2h.slots[c.k]?S.h2h.slots[c.k].value:REPLACEMENT;
-  if(h2hMatchBoosted(S.h2h&&S.h2h.seed)){ const ab=accBoost(); for(const c of CATS){ if(ab[c.k]) s[c.k]=Math.max(40,Math.min(99+ACC_SKILL_CAP, s[c.k]+ab[c.k])); } }   // exhibition: bake YOUR gear into the submitted draft
+  if(h2hMatchBoosted(S.h2h&&S.h2h.seed)){ const ab=accBoost(); for(const c of CATS){ if(ab[c.k]) s[c.k]=Math.max(40,Math.min(99+ACC_SKILL_CAP+SET_STAT_MAX, s[c.k]+ab[c.k])); } }   // exhibition: bake YOUR gear into the submitted draft
   return s; }
 function h2hOvr(){ return Math.round(ovrFromSkills(h2hSkills(), h2hMatchBoosted(S.h2h&&S.h2h.seed))); }   // an exhibition plays with gear, so it may read past 99
 function h2hReveal(){

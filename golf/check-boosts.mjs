@@ -50,7 +50,9 @@ const FIX = () => {
     // the club with no boost (a pass club today), so a closet can be bare
     bareClub() { const c = CLUBS.find((x) => !cosBoost('club', x.id)); return c ? c.id : null; },
     naked() { const bc = this.bareClub(); if (bc) this.own(['cl:' + bc]);
-      S.look = Object.assign({}, DEFLOOK, { cap: false, hatStyle: 'cap', eyewear: 'none', shirtPat: 'none', putter: 'stock', club: bc || 'driver', caddie: '' }); },
+      S.look = Object.assign({}, DEFLOOK, { cap: false, hatStyle: 'cap', eyewear: 'none', shirtPat: 'none', putter: 'stock', club: bc || 'driver', ball: 'none', cleats: 'none', caddie: '' }); },
+    // what finished collections add (setBoostRows), the same whatever is worn
+    sets() { const o = {}; setBoostRows().forEach((r) => { for (const k in r.b) o[k] = (o[k] || 0) + r.b[k]; }); return o; },
     boosted() { const out = []; COS_CATS.forEach((c) => (cosmeticItems(c.k) || []).forEach((o) => { if (o.id === 'none') return; const b = cosBoost(c.k, o.id); if (b) out.push({ cat: c.k, id: o.id, key: cosKey(c.k, o.id), b: Object.assign({}, b) }); })); return out; },
     wear(cat, id) { cosEquip(cat, id); if (cat === 'hw') { S.look.cap = true; S.look.hatStyle = id; } },
     stats() { const p = buildPlayer(); const o = {}; CATS.forEach((c) => { o[c.k] = p[c.k]; }); return { st: o, ovr: p.skill, gear: !!p._gear }; },
@@ -75,6 +77,7 @@ const capRef = (sum, sc, tc) => { const o = {}; for (const k in sum) { const v =
   let t = Object.values(o).reduce((a, b) => a + b, 0);
   while (t > tc) { let mk = null; for (const k in o) if (o[k] > 0 && (mk === null || o[k] > o[mk])) mk = k; if (mk === null) break; o[mk]--; if (!o[mk]) delete o[mk]; t--; }
   return o; };
+const plusSets = (o, sets) => { const r = Object.assign({}, o); for (const k in sets || {}) r[k] = (r[k] || 0) + sets[k]; return r; };
 const same = (a, b) => { const ka = Object.keys(a).filter((k) => a[k]), kb = Object.keys(b).filter((k) => b[k]); return ka.length === kb.length && ka.every((k) => a[k] === b[k]); };
 
 const b = await chromium.launch();
@@ -115,14 +118,14 @@ try {
     const rows = items.map((it) => { __B.naked(); const before = __B.stats(); __B.wear(it.cat, it.id);
       const after = __B.stats(), ab = accBoost(), moved = {};
       for (const k in after.st) if (after.st[k] !== before.st[k]) moved[k] = after.st[k] - before.st[k];
-      return { key: it.key, b: it.b, moved, ab: Object.assign({}, ab) }; });
+      return { key: it.key, b: it.b, moved, ab: Object.assign({}, ab), sets: __B.sets() }; });
     // an item worn but not owned gives nothing
     __B.init(); __B.raw(80); __B.naked(); const it = items.find((i) => i.cat === 'hw' && !FREE_COSMETICS[i.key]); const s0 = __B.stats();
     if (it) __B.wear(it.cat, it.id); const s1 = __B.stats();
     return { rows, bare: __B.bareClub(), unowned: { key: it && it.key, same: JSON.stringify(s0.st) === JSON.stringify(s1.st) } };
   });
   ok('a bare closet exists (a club with no boost)', !!every.bare, every.bare);
-  const miss = every.rows.filter((r) => !same(r.moved, capRef(r.b, C.sc, C.tc)) || !same(r.ab, capRef(r.b, C.sc, C.tc)));
+  const miss = every.rows.filter((r) => !same(r.moved, capRef(r.b, C.sc, C.tc)) || !same(r.ab, plusSets(capRef(r.b, C.sc, C.tc), r.sets)));
   ok(every.rows.length + ' boost items each reach the golfer exactly', miss.length === 0, miss.slice(0, 6).map((r) => r.key + ' carries ' + JSON.stringify(r.b) + ' moved ' + JSON.stringify(r.moved)));
   const byCat = {}; every.rows.forEach((r) => { const c = r.key.split(':')[0]; byCat[c] = (byCat[c] || 0) + 1; });
   info('boost items by closet slot', byCat);
@@ -140,16 +143,16 @@ try {
       Object.keys(by).forEach((cat) => { if (R() < 0.2) return; const it = by[cat][Math.floor(R() * by[cat].length)]; __B.wear(it.cat, it.id); worn.push(it); });
       const sum = {}; worn.forEach((i) => { for (const k in i.b) sum[k] = (sum[k] || 0) + i.b[k]; });
       const rows = cosmeticBoostRows().length + bagBoostRows().length;
-      out.push({ worn: worn.map((i) => i.key), sum, ab: Object.assign({}, accBoost()), rows }); }
+      out.push({ worn: worn.map((i) => i.key), sum, ab: Object.assign({}, accBoost()), rows, sets: __B.sets() }); }
     // the club level bonus: 45 reps on the worn club is level 9, +3 on its primary stat
     __B.naked(); const club = items.find((i) => i.cat === 'club' && Object.keys(i.b).length === 1); __B.wear('club', club.id);
     S.career = { clubReps: { [club.id]: 45 } }; const lv = Object.assign({}, accBoost()); S.career = null;
-    return { out, lv, club };
+    return { out, lv, club, sets: __B.sets() };
   }, 300);
-  const sbad = stack.out.filter((t) => !same(t.ab, capRef(t.sum, C.sc, C.tc)) || t.rows !== t.worn.length);
+  const sbad = stack.out.filter((t) => !same(t.ab, plusSets(capRef(t.sum, C.sc, C.tc), t.sets)) || t.rows !== t.worn.length);
   ok('300 random closets match the capped sum and list every worn item', sbad.length === 0, sbad.slice(0, 3));
   const lvSum = Object.assign({}, stack.club.b); const pk = Object.keys(lvSum)[0]; lvSum[pk] += 3;
-  ok('a level 9 club adds +3 on its primary stat', same(stack.lv, capRef(lvSum, C.sc, C.tc)), { club: stack.club.key, got: stack.lv });
+  ok('a level 9 club adds +3 on its primary stat', same(stack.lv, plusSets(capRef(lvSum, C.sc, C.tc), stack.sets)), { club: stack.club.key, got: stack.lv });
   const capHit = stack.out.filter((t) => Object.values(t.sum).reduce((a, x) => a + x, 0) > C.tc).length;
   info('closets past the +' + C.tc + ' total cap', capHit + ' of 300');
 
@@ -164,10 +167,10 @@ try {
     let seed = 11; const R = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
     const out = []; for (let t = 0; t < n; t++) { const raw = {}; CATS.forEach((c) => { raw[c.k] = 60 + Math.floor(R() * 40); }); __B.raw(raw); __B.naked();
       if (t % 3) Object.keys(by).forEach((cat) => { const it = by[cat][Math.floor(R() * by[cat].length)]; __B.wear(it.cat, it.id); });
-      const s = __B.stats(); out.push({ st: s.st, ovr: s.ovr, gear: accBoostTotal() > 0 }); }
+      const s = __B.stats(); out.push({ st: s.st, ovr: s.ovr, gear: true }); }   // a career golfer may read past 99
     return out; }, 200);
   const obad = ovrs.filter((o) => Math.abs(o.ovr - ovrRef(o.st, o.gear)) > 1e-9);
-  ok('200 golfers: overall = weighted mean less the imbalance penalty, 99 cap lifted only by gear', obad.length === 0, obad.slice(0, 2));
+  ok('200 career golfers: overall = weighted mean less the imbalance penalty, ceiling 112', obad.length === 0, obad.slice(0, 2));
   ok('every overall is a finite number', ovrs.every((o) => Number.isFinite(o.ovr)));
 
   /* ------------------------------------------------------------------ WHERE */
@@ -187,6 +190,44 @@ try {
   ok('Daily: no gear', Object.keys(plus(where.daily)).length === 0, plus(where.daily));
   ok('ranked Head to Head: no gear', Object.keys(plus(where.ranked)).length === 0, plus(where.ranked));
   ok('exhibition Head to Head (opt in, off the record): gear on', same(plus(where.exh), where.ab), plus(where.exh));
+
+  /* ------------------------------------------------------------------ SETS */
+  head('SETS: a finished collection is +1 on its stat, on top of the capped gear');
+  const sets = await page.evaluate(() => {
+    __B.init(); __B.raw(80); const items = __B.boosted(); __B.own(items.map((i) => i.key)); __B.naked();
+    const out = {};
+    for (const id in COLLECTION_SETS) { const d = dropById(id); const k = COLLECTION_SETS[id];
+      __B.init(); __B.raw(80); __B.naked();
+      const keys = d.items.map((ci) => cosKey(ci[0], ci[1])); __B.own(keys.slice(0, -1)); const part = __B.stats().st[k];
+      __B.own(keys); const full = __B.stats().st[k];
+      out[id] = { stat: k, part, full, n: keys.length }; }
+    // with the gear cap binding, the set still lands on top: wear the strongest putting closet, then finish Haunted Links
+    __B.init(); __B.raw(80); __B.own(items.map((i) => i.key)); __B.naked();
+    ['hw:halo', 'ew:prismshades', 'pu:goldplated', 'cl:wand', 'bl:marble'].forEach((k) => { const it = items.find((i) => i.key === k); if (it) __B.wear(it.cat, it.id); });
+    const capped = __B.stats().st.put; __B.own(dropById('spooky').items.map((ci) => cosKey(ci[0], ci[1]))); const over = __B.stats().st.put;
+    S.setupEdit = true; S.screen = 'setup'; S.overlay = null; render();
+    const listed = [...document.querySelectorAll('.cb-row')].map((e) => e.textContent.trim());
+    return { out, capped, over, listed, eight: Object.keys(COLLECTION_SETS).length, stats: new Set(Object.values(COLLECTION_SETS)).size };
+  });
+  ok('eight collections cover eight different stats', sets.eight === 8 && sets.stats === 8, sets);
+  const sbad2 = Object.entries(sets.out).filter(([, v]) => v.part !== 80 || v.full !== 81);
+  ok('each collection adds +1 on its stat only when every piece is owned', sbad2.length === 0, sbad2.slice(0, 3));
+  ok('a set lands on top of a gear cap that already binds (Putting ' + sets.capped + ' then ' + sets.over + ')', sets.capped === 85 && sets.over === 86, sets);
+
+  /* ------------------------------------------------------------------ PAST 99 */
+  head('PAST 99: a caddie and coaching carry a stat past 99 in the career, never in the Daily');
+  const past = await page.evaluate(() => {
+    __B.init(); __B.raw(98); __B.naked();
+    const keep = caddieUnlocked; caddieUnlocked = () => true;
+    const cad = CADDIES.find((c) => c.power && c.power.base && c.power.base.app === 2); S.look.caddie = cad.id;
+    const career = __B.stats(); S.daily = true; const daily = __B.stats(); S.daily = false;
+    S.look.caddie = ''; caddieUnlocked = keep;
+    S.career = { fx: [{ k: 'skill', skill: 'put', amt: 3, ev: 5, label: 'Coaching', tone: 'good' }] }; const fx = __B.stats(); S.career = null;
+    return { cad: cad.id, career: career.st.app, careerOvr: career.ovr, daily: daily.st.app, fx: fx.st.put };
+  });
+  ok('a +2 Approach caddie on a 98 reads 100 in the career (' + past.cad + ')', past.career === 100, past);
+  ok('and 99 in the Daily, as always', past.daily === 99, past.daily);
+  ok('+3 coaching on a 98 reads 101', past.fx === 101, past.fx);
 
   /* ------------------------------------------------------------------ SIM */
   head('SIM: the golfer the season plays is the golfer the screens show');
@@ -224,12 +265,13 @@ try {
   /* ------------------------------------------------------------------ SCREENS */
   // a golfer whose boosted stats are all different from the raw ones, and an all-99 golfer in the
   // strongest closet for the over-99 pass
-  const dress = async (raw, best) => page.evaluate(([raw, best]) => {
+  const dress = async (raw, best, allSets) => page.evaluate(([raw, best, allSets]) => {
     __B.init(); reset(); __B.init(); S.name = 'Boost Check'; __B.raw(raw);
     const items = __B.boosted(); __B.own(items.map((i) => i.key)); __B.naked();
+    if (allSets) for (const id in COLLECTION_SETS) __B.own(dropById(id).items.map((ci) => cosKey(ci[0], ci[1])));
     best.forEach((k) => { const it = items.find((i) => i.key === k); if (it) __B.wear(it.cat, it.id); });
     const s = __B.stats(); return { st: s.st, ovr: Math.round(s.ovr), ab: Object.assign({}, accBoost()) };
-  }, [raw, best]);
+  }, [raw, best, !!allSets]);
   const readScreens = async () => page.evaluate(() => {
     const R = {}; const num = (el) => el ? +String(el.textContent).replace(/[^0-9]/g, '') : null;
     S.overlay = null; S.screen = 'build'; render();
@@ -271,6 +313,7 @@ try {
   head('OVER 99: the strongest closet on an all-99 golfer');
   const top = await page.evaluate(() => {
     __B.init(); const items = __B.boosted(); __B.own(items.map((i) => i.key)); __B.raw(99);
+    for (const id in COLLECTION_SETS) __B.own(dropById(id).items.map((ci) => cosKey(ci[0], ci[1])));   // every set finished
     // the strongest closet: coordinate ascent on the page's own overall
     const slots = {}; items.forEach((i) => { (slots[i.cat] = slots[i.cat] || [null]).push(i); });
     __B.naked(); let best = buildPlayer().skill; const pick = {};
@@ -280,7 +323,7 @@ try {
     __B.naked(); for (const c in pick) if (pick[c]) __B.wear(c, pick[c].id);
     return { pick: Object.values(pick).filter(Boolean).map((i) => i.key), ovr: buildPlayer().skill };
   });
-  const big = await dress(99, top.pick);
+  const big = await dress(99, top.pick, true);
   info('strongest closet', { pick: top.pick, ovr: big.ovr, st: big.st });
   ok('the overall passes 99', big.ovr > 99, big.ovr);
   ok('a stat passes 99', Math.max(...Object.values(big.st)) > 99, big.st);
