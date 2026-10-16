@@ -6362,13 +6362,20 @@ function eventful(L) {
 const ASK_P = 0.5;
 const askSummer = (L) => L.seasonsDone < 2 || eventful(L) || rngAt(L, 'ask:summer')() < ASK_P;
 const askGoal = (L) => L.seasonsDone < 2 || eventful(L) || rngAt(L, 'ask:goal')() < ASK_P;
-/* The summer nobody asked about: the plan offered first that is not last
-   summer's, so it never grinds one plan stale, said in a line. */
+/* The summer nobody asked about is the one a player who wanted to get
+   better would pick: the rehab when he is hurt, otherwise the plan offered
+   that grows him most, never last summer's twice running. Taking the first
+   plan offered (rest, for a veteran) quietly cost players growth: the sweep's
+   ring share fell from 19.5% to 17.2% until it read this way. */
 function quietSummer(L) {
   const ks = summerKeys(L);
   L.flags.summerOff = ks;
   const last = L.flags.summerRun && L.flags.summerRun.k;
-  const k = ks.find((x) => x !== last) || ks[0];
+  const grow = (x) => Object.values(SUMMER[x].fx || {}).reduce((a, v) => a + v, 0) - (SUMMER[x].cash ? 0.5 : 0);
+  const hurt = ks.indexOf('rehab') >= 0 || L.m.health < 60;
+  const pool = ks.filter((x) => x !== last && (!SUMMER[x].cash || L.cash >= SUMMER[x].cash * 3));
+  const k = hurt && ks.indexOf('rehab') >= 0 ? 'rehab'
+    : pool.slice().sort((a, b) => grow(b) - grow(a) || ks.indexOf(a) - ks.indexOf(b))[0] || ks[0];
   if (!k) return;
   const t = summerChoose(L, k, rngAt(L, 'quietsummer'));
   logIt(L, 'Summer: ' + SUMMER[k].l.toLowerCase() + '. ' + t, '');
