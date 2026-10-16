@@ -344,7 +344,7 @@ const ACTS = {
   trainer: {
     name: 'Hire a personal trainer', blurb: 'Work ethic and durability.', cost: (L) => round1(0.25 + capFor(L.year) * 0.002),
     when: () => true,
-    run(L) { bump(L, { eth: 5, dur: 2, health: 3 }); return '{trainer} has you up at six every day. You hate him. It works.'; },
+    run(L) { bump(L, { eth: 5, dur: 2, health: 3 }); return '{trainer} has you up at six every day. You hate it. It works.'; },
   },
   vacation: {
     name: 'Take a real vacation', blurb: 'Health and morale.', cost: (L) => round1(0.15 + capFor(L.year) * 0.001),
@@ -375,7 +375,7 @@ function actsOpen(L) {
   const used = (L.flags.acts && L.flags.acts.y === L.year) ? L.flags.acts : {};
   return Object.keys(ACTS).map((id) => {
     const a = ACTS[id], cost = a.cost(L);
-    return { id, name: say(L, a.name), blurb: say(L, a.blurb), cost, used: !!used[id], ok: a.when(L) && !used[id] && L.cash >= cost };
+    return { id, group: a.group || 'life', name: say(L, a.name), blurb: say(L, a.blurb), cost, used: !!used[id], ok: a.when(L) && !used[id] && L.cash >= cost };
   }).filter((a) => ACTS[a.id].when(L));
 }
 function act(L, id) {
