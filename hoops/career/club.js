@@ -687,33 +687,13 @@ function eventful(L) {
   if (!h) return true;
   return h.gp < 55 || h.po === 'Champion' || (h.aw || []).indexOf('mvp') >= 0 || !!(p && p.t !== h.t) || h.t !== L.team;
 }
+/* The goal is asked some years (the owner's call, 2026-10-16): always the
+   first two seasons, after an eventful year, otherwise about half the time.
+   The summer was made occasional too and went back to every year: a summer
+   not asked cost the sweep's ring share (19.5% to 17.3%) however the quiet
+   summer was chosen, so the owner's fallback stands. */
 const ASK_P = 0.5;
-const askSummer = (L) => L.seasonsDone < 2 || eventful(L) || rngAt(L, 'ask:summer')() < ASK_P;
 const askGoal = (L) => L.seasonsDone < 2 || eventful(L) || rngAt(L, 'ask:goal')() < ASK_P;
-/* The summer nobody asked about is the one a sensible player would pick:
-   the rehab when he is hurt, rest every other summer past thirty, otherwise
-   the plan offered that grows him most, never last summer's twice running.
-   It is held by sim-career's ring share: a quiet summer that never rested a
-   veteran dropped it from 19.5% to 17.3%. */
-function quietSummer(L) {
-  const ks = summerKeys(L);
-  L.flags.summerOff = ks;
-  const last = L.flags.summerRun && L.flags.summerRun.k;
-  /* Growth as his overall reads it: a center's playmaking counts for less. */
-  const w = WEIGHTS[L.pos] || WEIGHTS.SF;
-  const grow = (x) => Object.keys(SUMMER[x].fx || {}).reduce((a, k) => a + SUMMER[x].fx[k] * (w[k] || 0), 0) - (SUMMER[x].cash ? 0.05 : 0);
-  const hurt = ks.indexOf('rehab') >= 0 || L.m.health < 60;
-  const pool = ks.filter((x) => x !== last && (!SUMMER[x].cash || L.cash >= SUMMER[x].cash * 3));
-  /* A veteran rests every other quiet summer, the way a player answering the
-     card does: rest slows the decline (restYears), which is where late rings
-     come from. Never resting cost the sweep its ring share. */
-  const k = hurt && ks.indexOf('rehab') >= 0 ? 'rehab'
-    : L.age >= 30 && ks.indexOf('rest') >= 0 && last !== 'rest' ? 'rest'
-    : pool.slice().sort((a, b) => grow(b) - grow(a) || ks.indexOf(a) - ks.indexOf(b))[0] || ks[0];
-  if (!k) return;
-  const t = summerChoose(L, k, rngAt(L, 'quietsummer'));
-  logIt(L, 'Summer: ' + SUMMER[k].l.toLowerCase() + '. ' + t, '');
-}
 function summerKeys(L) {
   const H = L.history, h = H[H.length - 1];
   const r = figRng(L, 'summer:' + L.year);

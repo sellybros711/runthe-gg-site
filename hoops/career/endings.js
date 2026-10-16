@@ -52,9 +52,13 @@ ANSWER.careerinj = function(L, card, i, opt, rng, beats) {
   return said('The rest of the season is a rehab room. Your teammates send videos.', 'bad');
 };
 
-/* WALK AWAY ON TOP. Once, the summer after a ring or an MVP, past thirty. */
+/* WALK AWAY ON TOP. Once, the summer after a ring or an MVP, for a man past
+   his peak (33 or older, his overall below his best): the way real careers
+   end on top. Asked of a man still climbing, it cut the greatest careers
+   short in the sweep. */
 function onTopCard(L) {
-  if (L.age < 31 || L.flags.onTop) return;
+  if (L.age < 33 || L.flags.onTop) return;
+  if (ovrOf(L) >= Math.max(...L.history.map((h) => h.ovr || 0)) - 2) return;
   const h = L.history[L.history.length - 1];
   if (!h || (h.po !== 'Champion' && (h.aw || []).indexOf('mvp') < 0)) return;
   if (rngAt(L, 'ontop')() >= 0.5) return;

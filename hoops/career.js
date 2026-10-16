@@ -6359,33 +6359,13 @@ function eventful(L) {
   if (!h) return true;
   return h.gp < 55 || h.po === 'Champion' || (h.aw || []).indexOf('mvp') >= 0 || !!(p && p.t !== h.t) || h.t !== L.team;
 }
+/* The goal is asked some years (the owner's call, 2026-10-16): always the
+   first two seasons, after an eventful year, otherwise about half the time.
+   The summer was made occasional too and went back to every year: a summer
+   not asked cost the sweep's ring share (19.5% to 17.3%) however the quiet
+   summer was chosen, so the owner's fallback stands. */
 const ASK_P = 0.5;
-const askSummer = (L) => L.seasonsDone < 2 || eventful(L) || rngAt(L, 'ask:summer')() < ASK_P;
 const askGoal = (L) => L.seasonsDone < 2 || eventful(L) || rngAt(L, 'ask:goal')() < ASK_P;
-/* The summer nobody asked about is the one a sensible player would pick:
-   the rehab when he is hurt, rest every other summer past thirty, otherwise
-   the plan offered that grows him most, never last summer's twice running.
-   It is held by sim-career's ring share: a quiet summer that never rested a
-   veteran dropped it from 19.5% to 17.3%. */
-function quietSummer(L) {
-  const ks = summerKeys(L);
-  L.flags.summerOff = ks;
-  const last = L.flags.summerRun && L.flags.summerRun.k;
-  /* Growth as his overall reads it: a center's playmaking counts for less. */
-  const w = WEIGHTS[L.pos] || WEIGHTS.SF;
-  const grow = (x) => Object.keys(SUMMER[x].fx || {}).reduce((a, k) => a + SUMMER[x].fx[k] * (w[k] || 0), 0) - (SUMMER[x].cash ? 0.05 : 0);
-  const hurt = ks.indexOf('rehab') >= 0 || L.m.health < 60;
-  const pool = ks.filter((x) => x !== last && (!SUMMER[x].cash || L.cash >= SUMMER[x].cash * 3));
-  /* A veteran rests every other quiet summer, the way a player answering the
-     card does: rest slows the decline (restYears), which is where late rings
-     come from. Never resting cost the sweep its ring share. */
-  const k = hurt && ks.indexOf('rehab') >= 0 ? 'rehab'
-    : L.age >= 30 && ks.indexOf('rest') >= 0 && last !== 'rest' ? 'rest'
-    : pool.slice().sort((a, b) => grow(b) - grow(a) || ks.indexOf(a) - ks.indexOf(b))[0] || ks[0];
-  if (!k) return;
-  const t = summerChoose(L, k, rngAt(L, 'quietsummer'));
-  logIt(L, 'Summer: ' + SUMMER[k].l.toLowerCase() + '. ' + t, '');
-}
 function summerKeys(L) {
   const H = L.history, h = H[H.length - 1];
   const r = figRng(L, 'summer:' + L.year);
@@ -11862,12 +11842,8 @@ function newYear(L, beats) {
 function openYear(L) {
   if (!L.team) return;
   newSeason(L);
-  /* The summer and the goal are asked some years, not every year (the
-     owner's call, 2026-10-16): always the first two summers, after a season
-     that changed something (a new club, a missed half season, a ring), and
-     otherwise about half the time. A summer not asked is spent on the plan
-     the career would pick (quietSummer), so a player grows the same. */
-  if (askSummer(L)) L.pending.push(summerCard(L)); else quietSummer(L);
+  L.pending.push(summerCard(L));
+  /* The goal is asked some years (askGoal). */
   if (askGoal(L)) goalCard(L);
   if (L.seasonsDone > 0) queueEvents(L, 'pre', rngAt(L, 'n:pre')() < 0.6 ? 1 : 0);
   rollInjury(L, 'early', []);
@@ -12390,9 +12366,13 @@ ANSWER.careerinj = function(L, card, i, opt, rng, beats) {
   return said('The rest of the season is a rehab room. Your teammates send videos.', 'bad');
 };
 
-/* WALK AWAY ON TOP. Once, the summer after a ring or an MVP, past thirty. */
+/* WALK AWAY ON TOP. Once, the summer after a ring or an MVP, for a man past
+   his peak (33 or older, his overall below his best): the way real careers
+   end on top. Asked of a man still climbing, it cut the greatest careers
+   short in the sweep. */
 function onTopCard(L) {
-  if (L.age < 31 || L.flags.onTop) return;
+  if (L.age < 33 || L.flags.onTop) return;
+  if (ovrOf(L) >= Math.max(...L.history.map((h) => h.ovr || 0)) - 2) return;
   const h = L.history[L.history.length - 1];
   if (!h || (h.po !== 'Champion' && (h.aw || []).indexOf('mvp') < 0)) return;
   if (rngAt(L, 'ontop')() >= 0.5) return;

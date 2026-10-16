@@ -1361,7 +1361,7 @@ section('18. your moves: every one is open somewhere, does what it says, and a c
   ok(contenderAsk > 0 && contenderTo > 0, `asking out to a contender gets you traded in the summer (${contenderTo} of ${contenderAsk})`);
 }
 
-section('19. deals from who you are, more ways out, and summers asked some years');
+section('19. deals from who you are, more ways out, and goals asked some years');
 {
   /* Stage D, E and F of the paths (the owner's calls, 2026-10-16). Played by
      the plain answering bot, so the careers are the careers anyone gets. */
@@ -1401,7 +1401,7 @@ section('19. deals from who you are, more ways out, and summers asked some years
   const P = (dur, health) => C.careerEndP({ dur, m: { health }, age: 29, mem: {}, traits: {} });
   ok(P(40, 60) > P(65, 90) * 2.5 && P(65, 90) > P(90, 100), `a worn body is far likelier to end on an injury (${P(40, 60).toFixed(3)}, ${P(65, 90).toFixed(3)}, ${P(90, 100).toFixed(3)})`);
   ok(careerInj > 0, `the career ending injury card is dealt (${careerInj})`);
-  ok(summers / seasons > 0.5 && summers / seasons < 0.85, `the summer is asked some years, not every year (${(summers / seasons).toFixed(2)} a season)`);
+  ok(summers / seasons > 0.9, `the summer is asked every year (${(summers / seasons).toFixed(2)} a season)`);
   ok(goals / seasons > 0.45 && goals / seasons < 0.85, `the goal is asked some years, not every year (${(goals / seasons).toFixed(2)} a season)`);
 }
 

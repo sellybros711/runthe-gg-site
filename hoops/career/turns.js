@@ -318,12 +318,8 @@ function newYear(L, beats) {
 function openYear(L) {
   if (!L.team) return;
   newSeason(L);
-  /* The summer and the goal are asked some years, not every year (the
-     owner's call, 2026-10-16): always the first two summers, after a season
-     that changed something (a new club, a missed half season, a ring), and
-     otherwise about half the time. A summer not asked is spent on the plan
-     the career would pick (quietSummer), so a player grows the same. */
-  if (askSummer(L)) L.pending.push(summerCard(L)); else quietSummer(L);
+  L.pending.push(summerCard(L));
+  /* The goal is asked some years (askGoal). */
   if (askGoal(L)) goalCard(L);
   if (L.seasonsDone > 0) queueEvents(L, 'pre', rngAt(L, 'n:pre')() < 0.6 ? 1 : 0);
   rollInjury(L, 'early', []);
