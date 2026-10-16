@@ -1703,8 +1703,14 @@ function offers(L) {
     out.push(offerFor(L, L.team, Math.min(5, yrsFor() + 1), Math.max(minSal, round1(base * (1.02 + rng() * 0.05))), true));
     used[L.team] = 1;
   }
+  /* Chasing a ring (a move): the best contender that will have you calls
+     first, at the minimum, on top of the offers a summer brings. */
+  if (L.flags.ringChase && L.flags.ringChase >= L.year - 1) {
+    const c = contenders(L, 3).find((x) => !used[x]);
+    if (c) { out.unshift(Object.assign(offerFor(L, c, 1, minSal, false), { chase: true })); used[c] = 1; }
+  }
   const pool = CLUBS.filter((c) => !used[c]);
-  while (out.length < n && pool.length) {
+  while (out.length < n + (out.some((f) => f.chase) ? 1 : 0) && pool.length) {
     const c = weighted(rng, pool, (x) => 1 + Math.abs(clubNet(L, x)) * 0.15);
     pool.splice(pool.indexOf(c), 1);
     const net = clubNet(L, c);
@@ -1740,7 +1746,7 @@ function faCard(L, list, why) {
     ctx: { offers: list },
     options: list.map((f) => ({
       label: (f.own ? 'Re-sign with the ' : 'Sign with the ') + nick(f.club),
-      hint: f.years + ' years, ' + money(f.salary) + ' a year · ' + f.role + ' · ' + f.tier,
+      hint: (f.chase ? 'The ring chase · ' : '') + f.years + (f.years === 1 ? ' year, ' : ' years, ') + money(f.salary) + ' a year · ' + f.role + ' · ' + f.tier,
       club: f.club,
     })),
   };
@@ -1788,7 +1794,9 @@ function offseason(L, beats) {
   const o = ovrOf(L);
   if (L.flags.tradeAsk && c && c.years > 0) {
     const rng = rngAt(L, 'tradeask');
-    const to = weighted(rng, CLUBS.filter((x) => x !== L.team), (x) => 2 + clubNet(L, x) + 6);
+    /* Asked out to a contender (a move): only the league's best four. */
+    const to = L.flags.tradeAsk === 'contender' ? weighted(rng, contenders(L, 4), (x) => 2 + clubNet(L, x))
+      : weighted(rng, CLUBS.filter((x) => x !== L.team), (x) => 2 + clubNet(L, x) + 6);
     L.flags.tradeAsk = false;
     joinTeam(L, to, true);
     beats.push(Object.assign({ kind: 'trade', text: 'Your request is granted. Traded to the ' + E.teamName(to) + '.', tone: 'gold', from: TRADED && TRADED.from, to, how: 'ask', when: 'summer' }, TRADED && TRADED.from ? tradePeople(L, TRADED.from) : {}));

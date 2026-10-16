@@ -1315,6 +1315,52 @@ section('11. Phase E: the generated road, a son, difficulty and challenges');
   ok(Object.keys(C.TEAM_KINDS).every((k) => C.TEAM_KINDS[k].every((id) => C.TEAM_EV[id])), 'every situation has its cards');
 }
 
+section('18. your moves: every one is open somewhere, does what it says, and a career still ends');
+{
+  /* MOVES (the owner's call, 2026-10-16). A player who takes every move he is
+     offered, the first time each is open and then now and then, must reach
+     every one, never read a broken line, and still come to an end. */
+  const N = QUICK ? 60 : 150;
+  const took = {}, bad = [], groups = new Set(['team', 'court', 'body', 'brand', 'life']);
+  let ended = 0, chaseOffer = 0, contenderTo = 0, contenderAsk = 0;
+  for (let i = 0; i < N; i++) {
+    const L = C.newLife({ seed: 'mv' + i, league, start: i % 3 ? 'draft' : 'hs', pos: C.POS[i % 5] });
+    let g = 0;
+    try {
+      while (!L.retired && g++ < 5000) {
+        if (!L.pending.length) {
+          const open = C.actsOpen(L).filter((a) => a.ok && a.id !== 'coach' && a.id !== 'trade');
+          for (const a of open) if (!groups.has(a.group)) bad.push(a.id + ' has no group');
+          const a = open.find((x) => !took[x.id]) || open[(L.steps + L.age) % Math.max(1, open.length)];
+          if (a && (L.steps % 3 === 0 || !took[a.id])) {
+            if (a.id === 'contender') contenderAsk++;
+            const r = C.act(L, a.id);
+            if (!r) bad.push(a.id + ' was open and did nothing');
+            else { took[a.id] = (took[a.id] || 0) + 1; if (DASH.test(r.text) || /undefined|NaN|\{[a-z]/.test(r.text)) bad.push(a.id + ': ' + r.text); }
+            continue;
+          }
+          const t0 = L.team, asked = L.flags.tradeAsk === 'contender';
+          C.step(L);
+          if (asked && L.team !== t0 && L.team && C.clubTier && L.flags.tradeAsk === false) contenderTo++;
+        } else {
+          const c = L.pending[0];
+          if (c.id === 'fa' && c.ctx && c.ctx.offers.some((f) => f.chase)) chaseOffer++;
+          C.choose(L, (L.steps * 7 + c.key.length * 3 + L.age) % c.options.length);
+          if (L.last && (DASH.test(L.last.text || '') || /undefined|NaN|\{[a-z]/.test(L.last.text || ''))) bad.push(c.id + ': ' + L.last.text);
+        }
+      }
+    } catch (e) { bad.push('crash: ' + e.message); }
+    if (L.retired) ended++;
+  }
+  const moves = Object.keys(C.ACTS).filter((k) => k !== 'coach' && k !== 'trade'), dark = moves.filter((k) => !took[k]);
+  ok(moves.length >= 20, `there are moves to make (${moves.length})`);
+  ok(!dark.length, `every move is open to somebody (${dark.join(', ') || 'all ' + moves.length})`);
+  ok(ended === N, `a career of moves still ends (${ended} of ${N})`);
+  ok(!bad.length, `every move reads clean and does something (${bad.slice(0, 3).join(' | ') || 'all'})`);
+  ok(chaseOffer > 0, `chasing a ring brings a contender's call in free agency (${chaseOffer})`);
+  ok(contenderAsk > 0 && contenderTo > 0, `asking out to a contender gets you traded in the summer (${contenderTo} of ${contenderAsk})`);
+}
+
 if (!QUICK) await browser();
 
 console.log('');
