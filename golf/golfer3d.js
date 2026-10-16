@@ -1230,7 +1230,7 @@
     if(cleats) shoes=cleats.main||shoes;
     const pat=(!top||top==='duckfloatie'||top==='cape')&&look.shirtPat&&PXPAT_BY[look.shirtPat]?look.shirtPat:''; let patFn=null;
     if(pat){ const pd=PXPAT_BY[pat]; if(pd.fixed){const cols=pd.cols||[];patFn=(x,y)=>cols[pd.f(x,y)|0]||cols[0]||null}
-      else { const light=pxLum(shirt)>0.55,a1=pxShade(shirt,light?-52:46),a2=pxShade(shirt,light?-90:82); patFn=(x,y)=>{const a=pd.f(x,y);return a?(a===2?a2:a1):null}; } }
+      else { const light=pxLum(shirt)>0.55, k=MO?1.7:1, a1=pxShade(shirt,Math.round((light?-52:46)*k)),a2=pxShade(shirt,Math.round((light?-90:82)*k)); patFn=(x,y)=>{const a=pd.f(x,y);return a?(a===2?a2:a1):null}; } }   // the menu lights the cloth, so its tints are stronger
     // a body skin's rags: its tears are placed on the profile torso, so the torso's cells are mapped onto it
     const bodySkin=(look.body&&typeof BODY_SKINS!=='undefined'&&BODY_SKINS[look.body])||null;
     if(bodySkin&&bodySkin.rags&&!MO){ const t0=cam(M.tc), under=patFn, tx=t0[0]+OX, ty=t0[1]+OY;
@@ -1242,8 +1242,14 @@
       glove:ramp('#f7f8f5',{spread:.8}),hair:PQ.hairRamp(av.hairHex),sole:ramp('#e8e2d4'),polo:ramp(av.shirtHex),saddle:ramp(shoes)};
     const fixed={socket:mix(R.skin[3]||R.skin[2],'#141410',.55),pupil:av.pupilHex||mix(R.hair[0],'#1a1018',.6),brow:R.hair[0],mouth:av.mouthHex||mix(R.skin[1],'#7a2a34',.30),glint:'#fbfaf2',blush:mix(R.skin[2],'#e0586a',.22),lace:mix(ramp(shoes)[1],'#000000',.25)};
     const rc=new Map(), rampOf=h=>{ let r=rc.get(h); if(!r){ r=ramp(h); rc.set(h,r); } return r; };
-    const PK=Math.max(1,Math.round(K/2)); s.paint(ctx,1,(c,x0,y0)=>{const m=c.m, x=Math.floor(x0/PK), y=Math.floor(y0/PK);
-      if((m==='shirt'||m==='polo')&&patFn&&!(m==='shirt'&&top&&top!=='duckfloatie'&&top!=='cape')){const h=patFn(x,y);if(h)return rampOf(h)}
+    const PK=Math.max(1,Math.round(K/2));
+    // THE MENU'S PATTERNS WRAP THE CLOTH. A cell is turned back into its point on the body, and the pattern is read
+    // by the distance round the torso (its angle times its girth) and the height, so stripes run round the body and
+    // down the sleeves rather than lying flat on the picture. PC is a pattern cell, in units.
+    const PC=0.9, wrapAt=(x0,y0,z)=>{ const w=cam([(x0+.5)/K-OX,(y0+.5)/K-OY,z]), q=sub(w,M.tc);
+      return [Math.floor(Math.atan2(dot(q,M.T),dot(q,M.F))*7.4/PC+4000), Math.floor((44-w[1])/PC)]; };
+    s.paint(ctx,1,(c,x0,y0)=>{const m=c.m, x=Math.floor(x0/PK), y=Math.floor(y0/PK);
+      if((m==='shirt'||m==='polo')&&patFn&&!(m==='shirt'&&top&&top!=='duckfloatie'&&top!=='cape')){ const uv=MO?wrapAt(x0,y0,c.z):[x,y], h=patFn(uv[0],uv[1]); if(h) return rampOf(h); }
       if(m==='plaid'){ const a=(x%5===0), b=(y%5===0); return rampOf(a&&b?plaidC[2]:(a||b)?plaidC[1]:plaidC[0]); }
       if(m==='sock'){ const d=((x+y)%4===0)||(((x-y)%4+4)%4===0); return rampOf(d?(lp['4']||'#9a4436'):(y%5===0?(lp['5']||lp['3']):(lp['3']||'#ded3b4'))); }
       if(R[m])return R[m]; if(fixed[m])return fixed[m]; if(m.startsWith('x:'))return rampOf(m.slice(2)); return '#ff00ff'});
