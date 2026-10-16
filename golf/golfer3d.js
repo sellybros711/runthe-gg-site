@@ -63,6 +63,9 @@
     const X=h=>'x:'+h, grip=(c,r)=>push(capsule(along(-2.6),along(3.6),r||0.95,X(c||'#26262e')));
     const shaft=(c,r,from)=>push(capsule(along(from==null?3.6:from),head,r||0.6,X(c||'#c4ccd4'),{gloss:2}));
     const AX=[face,cdir,n3];
+    // at one cell a unit the head is turned square to the camera (heel to toe across the screen), so it reads as itself
+    if(PP_PUTTER[id]){ const u0=norm(add(V(0,1,0),sc(cdir,-1))), sd=V(1,0,0), up=norm(sub(u0,sc(sd,dot(u0,sd)))), k=1.35;
+      ppPutter(push,id,pal,hands,cdir,add(head,sc(up,-1.15),sc(sd,-1.9*k)),[norm(cross(sd,up)),up,sd],k,1); return; }
     if(NOVELTY[id]){
       if(id==='scepter'){ push(ellipsoid(along(-3.1),AX,[1,1,1],X(pal['4']),{gloss:2})); push(capsule(along(-2.8),head,0.72,X(pal['4']),{gloss:2}));
         push(ellipsoid(head,AX,[2.3,2.3,2.3],X(pal['4']),{gloss:2})); push(ellipsoid(add(head,sc(face,1.9)),AX,[1.05,1.05,1.05],X(pal.A),{gloss:3}));
@@ -119,6 +122,104 @@
       push(over(head,AX,[2.2,1.8,3.2],X(wood?pal.B:kit?pal.G:'#2d323c'),l=>l[1]>0.62)); }
   }
   const mix2=(a,b,t)=>{ try{ return PQ.mix(a,b,t); }catch(e){ return a; } };
+
+  /* THE PUTT PUTT WORLD PUTTERS (pu_pp...), modelled as what they are and the same in both models: a swirled
+     lollipop on a striped candy stick, a neon tube mallet, a carved jade idol with gold eyes, a mammoth tusk curving
+     along the grass from a frosted collar, a harvest moon crescent, and a brilliant-cut diamond on platinum. A head
+     is built in its own frame: G on the grass at the heel, AX=[fw,up,sd] (sd runs heel to toe), k its scale and lo
+     for the course golfer. The grip and shaft run from the hands A down cdir to the head, in each putter's finish. */
+  const PP_PUTTER={pu_pplollipop:1,pu_ppneon:1,pu_ppjadeidol:1,pu_pptusk:1,pu_ppharvest:1,pu_ppdiamond:1};
+  // a convex block or gem as a raymarched volume: inside every plane {n:[s,u,f],d}, painted by the facet nearest the ray
+  function polyV(O,AX,k,box,planes){ planes.forEach(p=>{ const l=Math.hypot(...p.n); p.n=p.n.map(v=>v/l); p.d/=l; });
+    const g=camv(AX[0]), h=camv(AX[1]), l=camv(AX[2]), Oc=cam(O), B={s:box.s.map(v=>v*k),u:box.u.map(v=>v*k),f:box.f.map(v=>v*k)};
+    const test=(s,u,f)=>{ s/=k; u/=k; f/=k; let best=null,bd=-1e9; for(const p of planes){ const v=p.n[0]*s+p.n[1]*u+p.n[2]*f-p.d; if(v>0) return null; if(v>bd){ bd=v; best=p; } }
+      return {r:{m:'x:'+(typeof best.c==='function'?best.c(s,u,f):best.c),dt:best.dt||0,gloss:best.gloss!=null?best.gloss:2},n:best.n}; };
+    let bb=[1e9,1e9,-1e9,-1e9]; for(const a of B.s) for(const b of B.u) for(const c of B.f){ const p=add(Oc,sc(l,a),sc(h,b),sc(g,c)); bb=[Math.min(bb[0],p[0]),Math.min(bb[1],p[1]),Math.max(bb[2],p[0]),Math.max(bb[3],p[1])]; }
+    return {k:'v',O:Oc,g,h,l,test,mat:'x:#ffffff',o:{},box:B,bb2:bb}; }
+  // a bevelled box: its six faces and twelve chamfers, each face painted by c(face) (a colour or a function of s,u,f)
+  function ppBox(s0,s1,u0,u1,fh,bev,c){ const P=[], sm=(s0+s1)/2, um=(u0+u1)/2, hs=(s1-s0)/2, hu=(u1-u0)/2;
+    for(const [n,d,key] of [[[1,0,0],hs,'s'],[[-1,0,0],hs,'s'],[[0,1,0],hu,'top'],[[0,-1,0],hu,'bot'],[[0,0,1],fh,'f'],[[0,0,-1],fh,'f']]) P.push({n,d,c:c(key)});
+    for(const [a,b] of [[0,1],[0,2],[1,2]]) for(const x of [1,-1]) for(const y of [1,-1]){ const n=[0,0,0]; n[a]=x; n[b]=y; const hh=[hs,hu,fh]; P.push({n,d:hh[a]+hh[b]-bev,c:c('bev')}); }
+    return {planes:P.map(p=>({n:p.n,d:p.d+p.n[0]*sm+p.n[1]*um,c:p.c,gloss:p.gloss})),centre:[sm,um]}; }
+  function ppPutter(push,id,pal,A,cdir,G,AX,k,lo){
+    const X=h=>'x:'+h, [fw,up,sd]=AX, L=(f,u,s)=>add(G,sc(fw,f*k),sc(up,u*k),sc(sd,s*k)), along=t=>add(A,sc(cdir,t));
+    const E=(f,u,s,R,c,o)=>push(ellipsoid(L(f,u,s),AX,R.map(v=>v*k),X(c),o)), Cp=(a,b,r,c,o)=>push(capsule(L(...a),L(...b),r*k,X(c),o));
+    const g0=lo?-2.6:-1.1, gr=lo?0.95:0.92, sr=lo?0.6:0.36;
+    const grip=(c,band)=>{ push(capsule(along(g0),along(3.6),gr,X(c))); if(band) for(const t of [g0+0.5,3.0]) push(capsule(along(t-0.25),along(t+0.25),gr*1.06,X(band),{gloss:2})); };
+    const shaft=(to,c,o)=>push(capsule(along(3.6),to,sr,X(c),Object.assign({gloss:2},o||{})));
+    const stripes=(to,c1,c2,n)=>{ const a=along(3.6), d=sub(to,a); for(let i=0;i<n;i++) push(capsule(add(a,sc(d,i/n)),add(a,sc(d,(i+1)/n)),sr*1.15,X(i%2?c2:c1),{gloss:2})); };
+    const s0=lo?0:0.2, f1=lo?1:0;   // the course golfer's head sits a little nearer the heel
+    if(id==='pu_pplollipop'){ // a lollipop: a white disc swirled pink, standing on its edge, on a striped candy stick
+      const c=[0,2.75,1.75+s0], R=[0.7,2.7,2.7]; grip(pal.K||'#ff4f9a');
+      stripes(L(...c),pal.K||'#ff4f9a',pal.L||'#fff4f8',lo?9:11);
+      push(ellipsoid(L(...c),AX,R.map(v=>v*k),X(pal.W||'#fff1f7'),{gloss:2}));
+      push(over(L(...c),AX,R.map(v=>v*k),X(pal.P||'#f0287e'),l=>{ const r=Math.hypot(l[1],l[2]); if(r>0.94) return false; const a=Math.atan2(l[1],l[2]); return (((a/(2*Math.PI)+r*(lo?1.0:1.5))%1)+1)%1<0.5; },{gloss:2}));
+      push(over(L(...c),AX,R.map(v=>v*k*1.01),X(pal.l||'#ff8fc0'),l=>Math.hypot(l[1],l[2])>0.94&&Math.abs(l[0])<0.75,{gloss:1}));   // the rolled rim
+      for(const z of [1,-1]) E(0.62*z,3.8,1.0+s0,[0.2,0.5,0.32],pal.h||'#ffffff',{gloss:3,noCast:1});
+      return; }
+    if(id==='pu_ppneon'){ // a neon sign of a mallet: a black box framed in a lit magenta tube, a cyan bar across it and a cyan sight line
+      const bx=ppBox(0,3.8,0.05,2.25,0.75,0.32,()=>pal.k||'#120a1e'); grip(pal.G||'#14101e',pal.c||'#7ff6ff');
+      shaft(L(0,2.2,0.7+s0),pal.l||'#3a3350');
+      push(capsule(L(0,2.15,0.7+s0),L(0,2.65,0.7+s0),0.55*k,X(pal.C||'#00c8e8'),{gloss:3,bias:.4,noCast:1}));   // a lit ferrule
+      push(polyV(L(0,0,s0),AX,k,{s:[-0.2,4],u:[-0.1,2.4],f:[-0.9,0.9]},bx.planes));
+      const tube=(pts,c,glow,r)=>{ for(let i=1;i<pts.length;i++){ Cp(pts[i-1],pts[i],r+0.07,glow,{noCast:1}); Cp(pts[i-1],pts[i],r,c,{gloss:3,bias:.5,noCast:1}); } };
+      for(const z of [0.8,-0.8]){ const pts=[], u0=0.38, u1=1.92, a0=0.4+s0, a1=3.4+s0, rr=0.32;
+        const arc=(cu,cs,b0)=>{ for(let i=0;i<=3;i++){ const b=(b0+i*30)*D2R; pts.push([z,cu+rr*Math.sin(b),cs+rr*Math.cos(b)]); } };
+        arc(u1-rr,a1-rr,0); arc(u1-rr,a0+rr,90); arc(u0+rr,a0+rr,180); arc(u0+rr,a1-rr,270); pts.push(pts[0]);
+        tube(pts,pal.m||'#ff4fe0',pal.M||'#d10fb4',lo?0.42:0.25);
+        tube([[z,1.15,1.05+s0],[z,1.15,2.75+s0]],pal.c||'#7ff6ff',pal.C||'#00c8e8',0.22); }
+      tube([[0,2.32,1.3+s0],[0,2.32,3.4+s0]],pal.c||'#7ff6ff',pal.C||'#00c8e8',0.22);
+      return; }
+    if(id==='pu_ppjadeidol'){ // a carved jade idol: a squat block head with a crown of nubs, a brow, a broad nose, a grim mouth and gold eyes
+      const J=pal.J||'#1d8a56', j=pal.j||'#5fd496', d=pal.d||'#0f4f30', Y=pal.Y||'#ffd34a', H=lo?3.4:4.0, W=lo?3.4:3.8;
+      const face=(s,u)=>{ const x=s-W/2;   // the carving, on the front and the back
+        if(u>H*0.66&&u<H*0.72) return d;
+        if(Math.abs(x)>0.3&&Math.abs(x)<1.45&&u>H*0.44&&u<H*0.64) return d;
+        if(Math.abs(x)<0.32&&u>H*0.36&&u<H*0.64) return j;
+        if(Math.abs(x)<1.15&&u>H*0.17&&u<H*0.29) return Math.abs(x)<1.0&&u>H*0.2&&u<H*0.26&&(Math.floor((x+1)*2.5)%2===0)?j:d;
+        return J; };
+      const bx=ppBox(0,W,0.05,H,1.25,0.4,key=>key==='f'?(s,u)=>face(s,u):key==='top'||key==='bev'?j:key==='s'?(s,u)=>(Math.floor(u*1.6)%2?J:d):d);
+      grip(pal.G||'#3a2412'); shaft(L(0,H,W/2+s0),pal.l||'#c9a227',{gloss:3});
+      push(polyV(L(0,0,s0),AX,k,{s:[-0.2,W+0.2],u:[-0.1,H+0.2],f:[-1.4,1.4]},bx.planes));
+      for(const s of [0.55,W-0.55]) E(0,H+0.35,s+s0,[0.85,0.5,0.5],j,{gloss:2});
+      E(0,H+0.3,W/2+s0,[0.7,0.55,0.7],Y,{gloss:3});                                   // a gold collar where the shaft goes in
+      for(const z of [1,-1]) for(const x of [-0.85,0.85]) E(z*1.18,H*0.54,W/2+x+s0,lo?[0.3,0.42,0.42]:[0.28,0.34,0.36],Y,{gloss:3,noCast:1,bias:.3});
+      return; }
+    if(id==='pu_pptusk'){ // a mammoth tusk lying along the grass, its root in a frosted collar at the shaft, its point curling up
+      const I=pal.I||'#f7eed4', i0=pal.i||'#d2bf90', hh=pal.h||'#fffdf5', F=pal.F||'#eaf8ff', f=pal.f||'#9fd4f2';
+      grip(f,F); shaft(L(0,1.9,0.05+s0),pal.w||'#7a5634',{gloss:1});
+      const N=12, pt=t=>[1.6*t*t,0.95+(lo?1.9:2.2)*Math.pow(t,2.6),0.5+s0+(lo?4.6:5.4)*t], rad=t=>(lo?1.3:1.1)*(1-t*0.84);
+      for(let n=1;n<=N;n++){ const a=(n-1)/N, b=n/N; Cp(pt(a),pt(b),rad(b),n>N-2?hh:I,{gloss:2}); }
+      for(const t of [0.2,0.38,0.56]){ const p=pt(t), q=pt(t+0.025); Cp(p,q,rad(t)*1.07,i0,{noCast:1}); }
+      E(0,0.95,0.38+s0,[1.28,1.28,0.42],F,{gloss:3});                                  // the frosted collar
+      for(let n=0;n<8;n++){ const a=n*45*D2R; E(1.25*Math.cos(a),0.95+1.25*Math.sin(a),0.38+s0,[0.32,0.32,0.5],n%2?f:F,{gloss:3,noCast:1}); }
+      return; }
+    if(id==='pu_ppharvest'){ // a harvest moon: a fat golden crescent on its back, horns up, with craters and a lit inner rim
+      const c=[0,2.7,2.0+s0], R=[0.8,2.6,2.6], bite=l=>Math.hypot(l[1]-0.42,l[2]-0.38);
+      grip(pal.G||'#5a2f0c'); shaft(L(0,3.5,0.15+s0),pal.l||'#b8732a');
+      push(ellipsoid(L(...c),AX,R.map(v=>v*k),X(pal.Y||'#ffbf1f'),{gloss:2,cut:l=>bite(l)>0.74}));
+      push(over(L(...c),AX,R.map(v=>v*k),X(pal.A||'#d9700f'),l=>bite(l)>0.74&&Math.hypot(l[1],l[2])>0.8,{gloss:1}));
+      push(over(L(...c),AX,R.map(v=>v*k*1.01),X(pal.h||'#fff2b0'),l=>bite(l)>0.74&&bite(l)<0.84&&Math.hypot(l[1],l[2])<0.8,{gloss:3,noCast:1}));
+      for(const [u,s,r] of [[-0.5,-0.3,0.13],[-0.6,0.3,0.1],[-0.05,-0.6,0.1],[0.45,-0.62,0.08]]) push(over(L(...c),AX,R.map(v=>v*k*1.012),X(pal.A||'#d9700f'),l=>Math.hypot(l[1]-u,l[2]-s)<r*(lo?1.5:1)&&bite(l)>0.74,{noCast:1}));
+      return; }
+    if(id==='pu_ppdiamond'){ // a brilliant-cut diamond, table up and point down, on a platinum shaft, throwing glints
+      const Rg=lo?2.5:2.8, Ht=lo?0.85:0.95, Hp=lo?2.25:2.5, gd=0.14, ce=Math.cos(50*D2R), se=Math.sin(50*D2R), c2=Math.cos(38*D2R), s2=Math.sin(38*D2R), P=[];
+      const W=pal.W||'#ffffff', w=pal.w||'#d6f8ff', B=pal.B||'#8fe0f6', b=pal.b||'#4aa8d8';
+      P.push({n:[0,1,0],d:Ht,c:W,gloss:3});
+      for(let i=0;i<8;i++){ const a=i*45*D2R, a2=a+22.5*D2R;
+        P.push({n:[Math.cos(a)*ce,se,Math.sin(a)*ce],d:Rg*ce+gd*se,c:i%2?w:B,gloss:3});
+        P.push({n:[Math.cos(a2)*c2,s2,Math.sin(a2)*c2],d:Rg*c2+gd*s2,c:i%2?W:w,gloss:3});
+        for(const [az,hp,c] of [[a,Hp,i%2?b:B],[a2,Hp*0.93,i%2?B:w]]){ const n=[Math.cos(az)*hp,-Rg,Math.sin(az)*hp]; P.push({n,d:Rg*hp+gd*Rg,c,gloss:3}); }
+        P.push({n:[Math.cos(a2),0,Math.sin(a2)],d:Rg,c:W,gloss:3}); P.push({n:[Math.cos(a),0,Math.sin(a)],d:Rg,c:W,gloss:3}); }
+      const O=[0,Hp+0.05,Rg+0.1+s0];
+      grip(pal.G||'#2a2f3a',pal.D||'#bff4ff'); shaft(L(O[0],O[1]+Ht+0.2,O[2]),pal.l||'#eef2f7',{gloss:3});
+      Cp([0,O[1]+Ht,O[2]],[0,O[1]+Ht+0.55,O[2]],0.62,pal.l||'#eef2f7',{gloss:3});        // the platinum setting
+      push(polyV(L(...O),AX,k,{s:[-Rg-0.2,Rg+0.2],u:[-Hp-0.3,Ht+0.2],f:[-Rg-0.2,Rg+0.2]},P));
+      const glint=(f,u,s,z)=>{ const o={gloss:3,noCast:1,t:4}; Cp([f,u,s-z],[f,u,s+z],lo?0.34:0.17,W,o); Cp([f,u-z,s],[f,u+z,s],lo?0.34:0.17,W,o); if(!lo) E(f,u,s,[0.3,0.3,0.3],W,o); };
+      if(lo) glint(Rg,O[1]+1.4,O[2]+Rg*0.8,1.2);
+      else { glint(Rg+0.4,O[1]+1.7,O[2]+Rg*0.75,1.0); glint(Rg+0.4,O[1]-0.9,O[2]-Rg*0.85,0.65); glint(Rg+0.4,O[1]+0.2,O[2]+Rg+0.9,0.45); }
+      return; }
+  }
 
   function model(aimV,lefty,kind,pose,gear){
     gear=gear||{};
@@ -649,6 +750,7 @@
     const hands=add(P(2.75,16.0,11.15*dom)), clubHead=P(3.8,1.3,12.9*dom), out=sc(T,dom);
     const id=gear.club||'driver', c0=parts.length;
     if(NOVELTY[id]||id==='pu_magicwand'){ profileNovelty(push,hands,clubHead,F,U,out,id==='pu_magicwand'?'wand':id,gear.clubPal||{}); }
+    else if(PP_PUTTER[id]) ppPutter(push,id,gear.clubPal||{},hands,norm(sub(clubHead,hands)),add(clubHead,sc(U,-1.3)),[F,U,out],1,0);
     else profileClub(push,hands,clubHead,F,U,id,gear.clubPal||{},out);
     for(let i=c0;i<parts.length;i++) parts[i].o.item='club';
     // the head: on the collar, the profile's size
