@@ -388,7 +388,7 @@
     const kit=!!(pal&&pal.H), X=h=>'x:'+h;
     const out0=sub(h0,hands); const out=outV?norm(outV):norm([out0[0],0,out0[2]]), cdir=norm(sub(h0,hands));
     const along=t=>add(hands,sc(cdir,t)), hoselTop=add(h0,sc(U,1.6),sc(out,-0.25));
-    push(capsule(along(-1.6),along(3.6),0.92,X(kit&&pal.G?pal.G:'#26262e')));                               // the grip
+    push(capsule(along(-1.1),along(3.6),0.92,X(kit&&pal.G?pal.G:'#26262e')));                               // the grip
     push(capsule(along(3.6),hoselTop,0.33,X((pal&&pal.l)||'#c4ccd4'),{gloss:2}));                           // the shaft
     push(capsule(add(hoselTop,sc(cdir,-0.3)),hoselTop,0.45,'x:#1b1d22'));                                    // the ferrule
     const AXc=[F,U,out];
@@ -424,9 +424,9 @@
     const sd=norm(sub(out,sc(d,dot(out,d)))), fw=norm(cross(sd,d)), AXd=[d,sd,fw];
     const ring=(t,r,c,h)=>push(ellipsoid(at(t),AXd,[h||0.35,r,r],X(c),{gloss:2}));
     if(id==='excalibur'){ // a longsword, point down: pommel, wrapped grip, crossguard with its gem, a tapering blade
-      push(ellipsoid(at(-2.7),AXd,[0.85,0.95,0.95],X(pal.P),{gloss:3}));
-      push(capsule(at(-2.2),at(1.5),0.62,X(pal.g)));
-      for(const t of [-1.4,-0.2,1.0]) ring(t,0.68,pal.x,0.16);
+      push(ellipsoid(at(-2.0),AXd,[0.85,0.95,0.95],X(pal.P),{gloss:3}));
+      push(capsule(at(-1.6),at(1.5),0.62,X(pal.g)));
+      for(const t of [-1.1,1.1]) ring(t,0.68,pal.x,0.16);
       const g0=at(2.1); push(capsule(add(g0,sc(sd,-3.0)),add(g0,sc(sd,3.0)),0.5,X(pal.X),{gloss:3}));
       for(const k of [-1,1]) push(ellipsoid(add(g0,sc(sd,3.1*k),sc(d,0.45)),AXd,[0.6,0.45,0.45],X(pal.X),{gloss:3}));
       push(ellipsoid(add(g0,sc(fw,0.45)),AXd,[0.55,0.55,0.35],X(pal.M),{gloss:3,noCast:1}));
@@ -437,8 +437,8 @@
       push(capsule(add(at(b0+0.3),sc(sd,1.05),sc(fw,0.15)),add(at(b0+len*0.7),sc(sd,0.45),sc(fw,0.15)),0.13,X(pal.l),{noCast:1}));   // a lit edge
       return; }
     if(id==='coffin'){ // the scythe: a wooden snath with two nibs, and a long curved blade on the grass
-      push(capsule(at(-2.6),at(L-0.6),0.62,X(pal.W),{gloss:1}));
-      for(const t of [-1.2,4.2]) push(capsule(at(t),add(at(t+0.4),sc(fw,1.9),sc(sd,0.3)),0.42,X(pal.w)));
+      push(capsule(at(-1.3),at(L-0.6),0.62,X(pal.W),{gloss:1}));
+      for(const t of [4.2]) push(capsule(at(t),add(at(t+0.4),sc(fw,1.9),sc(sd,0.3)),0.42,X(pal.w)));
       const base=add(at(L-1.0)), dir=norm(add(sd,sc(fw,0.2))); let prev=base;   // the blade sweeps away from the body
       push(ellipsoid(base,AXd,[0.9,0.9,0.9],X(pal.G),{gloss:2}));                                          // the collar
       for(let i=1;i<=10;i++){ const k=i/10, p=add(base,sc(dir,9.5*k),sc(U,1.6*k*k)), w=1.75*(1-0.7*k)+0.15;
@@ -448,8 +448,8 @@
         prev=p; }
       return; }
     if(id==='scepter'){ // a royal sceptre, its jewelled orb on the grass
-      push(ellipsoid(at(-2.9),AXd,[0.9,0.9,0.9],X(pal['4']),{gloss:3})); push(ellipsoid(at(-3.7),AXd,[0.5,0.5,0.5],X(pal.A),{gloss:3}));
-      push(capsule(at(-2.4),at(L-3.4),0.55,X(pal['4']),{gloss:3}));
+      push(ellipsoid(at(-1.9),AXd,[0.9,0.9,0.9],X(pal['4']),{gloss:3})); push(ellipsoid(at(-2.7),AXd,[0.5,0.5,0.5],X(pal.A),{gloss:3}));
+      push(capsule(at(-1.4),at(L-3.4),0.55,X(pal['4']),{gloss:3}));
       for(const t of [3,6.5,10]) ring(t,0.72,pal['5'],0.22);
       const o=at(L-1.8); push(ellipsoid(at(L-3.6),AXd,[0.5,1.25,1.25],X(pal['5']),{gloss:2}));
       push(ellipsoid(o,AXd,[1.8,1.8,1.8],X(pal['4']),{gloss:3}));
@@ -457,13 +457,13 @@
       for(const v of [fw,sd,sc(sd,-1)]) push(ellipsoid(add(o,sc(v,1.75)),[v,d,norm(cross(v,d))],[0.45,0.7,0.6],X(pal.A),{gloss:3,noCast:1}));
       return; }
     if(id==='candycane'){ // a striped cane, the hook curling forward at the grass
-      const pts=[]; for(let i=0;i<=10;i++) pts.push(at(-2.6+(L-2.2+2.6)*i/10));
+      const pts=[]; for(let i=0;i<=10;i++) pts.push(at(-1.3+(L-2.2+1.3)*i/10));
       const c=add(at(L-2.2),sc(sd,2.0)); for(let i=1;i<=7;i++){ const a=i*Math.PI/7; pts.push(add(c,sc(sd,-2.0*Math.cos(a)),sc(d,2.0*Math.sin(a)))); }
       for(let i=1;i<pts.length;i++) push(capsule(pts[i-1],pts[i],0.75,X(i%2?pal.L:pal.K),{gloss:2}));
       return; }
     if(id==='wand'){ // a wizard's wand with gold bands, a gold star at its end and sparkles
-      push(capsule(at(-2.6),at(L-2.6),0.5,X(pal.l),{gloss:2}));
-      for(const t of [-1.6,1.6,L*0.5]) ring(t,0.62,pal.b,0.25);
+      push(capsule(at(-1.3),at(L-2.6),0.5,X(pal.l),{gloss:2}));
+      for(const t of [1.8,L*0.5]) ring(t,0.62,pal.b,0.25);
       const s0=at(L-1.4), pl=[sd,up];
       push(ellipsoid(s0,[fw,sd,d],[0.55,1.0,1.0],X(pal.T),{gloss:3}));
       for(let i=0;i<5;i++){ const a=(i*72+180)*D2R, v=norm(add(sc(sd,Math.sin(a)),sc(up,Math.cos(a))));
@@ -471,33 +471,33 @@
       for(const [a,b] of [[2.6,0.8],[-2.2,1.6],[1.4,-2.4]]) push(ellipsoid(add(s0,sc(sd,a),sc(up,b)),AXd,[0.32,0.32,0.32],X(pal.s),{noCast:1}));
       return; }
     if(id==='hockey'){ // a wooden stick, taped, its blade along the grass
-      push(capsule(at(-2.6),at(L-1.0),0.62,X(pal.H),{gloss:1}));
-      push(capsule(at(-2.2),at(-0.4),0.7,X(pal.K)));
+      push(capsule(at(-1.3),at(L-1.0),0.62,X(pal.H),{gloss:1}));
+      push(capsule(at(-1.2),at(0.8),0.7,X(pal.K)));
       const h0=at(L-1.0), bd=norm(add(sd,sc(fw,0.25))), bc=add(h0,sc(bd,2.9),sc(U,-0.1));
       push(capsule(h0,add(h0,sc(bd,1.2)),0.65,X(pal.W)));
       push(ellipsoid(bc,[bd,U,fw],[3.4,1.0,0.45],X(pal.W),{gloss:1}));
       push(over(bc,[bd,U,fw],[3.4,1.0,0.45],X(pal.t),l=>l[0]>-0.1&&l[0]<0.6));
       return; }
     if(id==='glizzy'){ // a hot dog in its bun, mustard on top, for a club head
-      push(capsule(at(-2.6),at(1.6),0.85,X('#26262e'))); push(capsule(at(1.6),at(L-1.8),0.42,X('#c4ccd4'),{gloss:2}));
+      push(capsule(at(-1.3),at(1.6),0.85,X('#26262e'))); push(capsule(at(1.6),at(L-1.8),0.42,X('#c4ccd4'),{gloss:2}));
       const hc=add(at(L-1.2),sc(sd,1.6)), AXh=[sd,U,fw];
       push(ellipsoid(add(hc,sc(U,-0.25)),AXh,[3.2,1.0,1.35],X(pal.B),{gloss:1}));
       push(capsule(add(hc,sc(sd,-3.6),sc(U,0.25)),add(hc,sc(sd,3.6),sc(U,0.25)),0.82,X(pal.D),{gloss:2}));
       for(let i=0;i<7;i++){ const x=-2.7+i*0.9; push(ellipsoid(add(hc,sc(sd,x),sc(U,1.05),sc(fw,(i%2?0.3:-0.3))),AXh,[0.55,0.22,0.3],X(pal.M),{noCast:1})); }
       return; }
     if(id==='poolnoodle'){ // a foam pool noodle, bending as it meets the grass
-      const pts=[]; for(let i=0;i<=8;i++){ const k=i/8; pts.push(add(at(-3+(L+0.2)*k),sc(sd,3.4*k*k*k))); }
+      const pts=[]; for(let i=0;i<=8;i++){ const k=i/8; pts.push(add(at(0.5+(L-3.3)*k),sc(sd,3.4*k*k*k))); }
       for(let i=1;i<pts.length;i++) push(capsule(pts[i-1],pts[i],1.3,X(i%3===0?pal.n:pal.N),{gloss:1}));
       push(ellipsoid(pts[0],AXd,[0.4,1.0,1.0],X(pal.O)));
       return; }
     if(id==='broomstick'){ // a witch's broom: a wooden handle, a red binding and a straw bundle
-      push(capsule(at(-2.6),at(L-5.0),0.58,X(pal.W),{gloss:1}));
+      push(capsule(at(-1.3),at(L-5.0),0.58,X(pal.W),{gloss:1}));
       push(ellipsoid(at(L-5.0),AXd,[0.65,1.0,1.0],X(pal.R),{gloss:2}));
       for(let i=0;i<6;i++){ const k=i/5, c=at(L-4.4+4.0*k); push(ellipsoid(c,AXd,[0.75,1.2+2.0*k,1.0+1.0*k],X(i%2?pal.y:pal.Y),{gloss:1})); }
       for(const k of [-1.8,-0.6,0.6,1.8]) push(capsule(add(at(L-3),sc(sd,k*0.8)),add(at(L-0.1),sc(sd,k*1.5)),0.22,X(pal.y),{noCast:1}));
       return; }
     if(id==='pitchfork'){ // a wooden shaft, a steel crossbar and three tines down to the grass
-      push(capsule(at(-2.6),at(L-4.6),0.55,X(pal.W),{gloss:1}));
+      push(capsule(at(-1.3),at(L-4.6),0.55,X(pal.W),{gloss:1}));
       const cb=at(L-4.6); push(ellipsoid(cb,AXd,[0.55,0.8,0.8],X(pal.G),{gloss:2}));
       push(capsule(add(cb,sc(sd,-2.3)),add(cb,sc(sd,2.3)),0.45,X(pal.G),{gloss:2}));
       for(const k of [-2.3,0,2.3]){ const t0=add(cb,sc(sd,k)); push(capsule(t0,add(t0,sc(d,4.2)),0.36,X(pal.S),{gloss:3}));
@@ -574,6 +574,8 @@
         push(capsule(el,mid,1.62,'skin')); push(capsule(mid,wr,1.3,'skin')); }                                           // the forearm, to the wrist
       const hand=add(wr,sc(U,-1.5),sc(F,hold?0.35:0.15));
       push(ellipsoid(hand,AX,[1.75,2.0,1.55],hold?'skin':'glove'));                                                       // a closed hand
+      if(hold){ for(let k=0;k<4;k++) push(ellipsoid(add(hand,sc(F,1.45),sc(U,0.95-k*0.62),sc(T,s*0.15)),AX,[0.55,0.42,0.75],'skin',{dt:k===0?1:0}));   // the fingers round the grip
+        push(ellipsoid(add(hand,sc(F,0.9),sc(U,1.35),sc(T,-s*0.35)),AX,[0.75,0.5,0.6],'skin',{dt:1})); }                                // the thumb over the top
       if(!hold) push(over(hand,AX,[1.75,2.0,1.55],'x:#d8d4c8',l=>l[1]>0.55,{noCast:1}));                                  // the glove's cuff
     }
     tag='';
