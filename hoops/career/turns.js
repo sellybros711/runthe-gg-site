@@ -241,6 +241,9 @@ function closeSeason(L, beats) {
   rp.fans = Math.round(50 + (rp.fans - 50) * 0.8);
   rp.resp = Math.round(50 + (rp.resp - 50) * 0.8);
   milestones(L, before, beats);
+  sayPassed(L, before, beats);
+  saySeasonComp(L, beats);
+  sayShadeShift(L);
   rivalSeason(L, beats);
   traitSeason(L, beats);
   badgeSeason(L, beats);

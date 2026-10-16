@@ -1044,6 +1044,44 @@ if (!args.includes('--no-browser')){
     await pg.waitForFunction(() => { const P = window.RTT_PUTT._state().play; return P && (P.v3 || P.art); }, null, { timeout:60000 });
     claim(await pg.evaluate(() => { const P = window.RTT_PUTT._state().play; return !P.v3 && !!P.art; }), 'a 3D render that throws falls back to the flat hole');
     await pg.evaluate(() => { window.RTT_PUTT_3D.render = window.__keep; });
+    /* ACHIEVEMENTS IN THE TROPHY ROOM. Putt Putt hands the page its own list, built from its worlds, so a new world
+       brings its set with it; they are read off the record, so a player has what they already did; the Rep ranks sit
+       on fixed points, so adding achievements never drops anybody a rank; G.O.A.T. is the Pro Tour's own; and the
+       tour keeps growing, so nothing says "every world" (owner, 2026-10-15). */
+    const ac = await pg.evaluate(() => { const T = window.RTT_PUTT, r = {}, keepU = sbUser, keepN = sbUsername, keepOn = puttOn;
+      sbUser = { id:'achk' }; sbUsername = 'achk'; puttOn = () => true;
+      r.tiers = REP_TIERS.map(t => t.at).join(',');
+      const best = {}, ace = {}; for (let n = 1; n <= 18; n++) best[n] = 1; ace[1] = 1;
+      localStorage.setItem(acctKey('bag_ppt_v1'), JSON.stringify({ v:2, tours:{ main:{ lv:19, best, ace, paid:{}, wpaid:{} } } }));
+      const fresh = evaluateAch().map(a => a.id), defs = T.achDefs(), worlds = Math.ceil(T.summary(puttHost()).levels / 18);
+      r.perWorld = defs.filter(d => /^pp_wc_/.test(d.id)).length === worlds && defs.filter(d => /^pp_wp_/.test(d.id)).length === worlds;
+      r.retro = ['pp_holes_10', 'pp_worlds_1', 'pp_perfect_1', 'pp_aces_1', 'pp_wc_clubhouse', 'pp_wp_clubhouse'].every(id => fresh.indexOf(id) >= 0);
+      r.notYet = fresh.indexOf('pp_wc_school') < 0 && fresh.indexOf('pp_holes_25') < 0;
+      r.inRoom = ACH.filter(a => a.pp).length === defs.length + ACH_TWO_TOURS.length && ACH_BY_CAT.some(c => c.cat === 'Putt Putt Worlds');
+      r.goat = ACH_TOUR_TOTAL === ACH.filter(a => !a.pp).length && achTourCount() <= ACH_TOUR_TOTAL;
+      r.words = ACH.filter(a => a.pp && (/every world|all (the )?worlds/i.test(a.name + ' ' + a.desc) || [...a.name + a.desc].some(c => c.charCodeAt(0) === 8211 || c.charCodeAt(0) === 8212))).map(a => a.id);   // the two dashes, by code
+      localStorage.removeItem(acctKey('bag_ach')); localStorage.removeItem(acctKey('bag_ppt_v1')); sbUser = keepU; sbUsername = keepN; puttOn = keepOn;
+      return r; });
+    claim(ac.tiers === '0,391,978,1760,2737,3910,5279,6843,8602,10557,12903,15640,18377,21505,24633,28152,31671,35190,37732', `the Tour Rep ranks sit on fixed points, where they were before Putt Putt's achievements (${ac.tiers})`);
+    claim(ac.perWorld && ac.inRoom, 'each Putt Putt world brings its own achievements, and they and the Two Tours ones are in the Trophy Room');
+    claim(ac.retro && ac.notYet, 'Putt Putt achievements are read off the record: a cleared, perfect world unlocks its own at once, and only those');
+    claim(ac.goat, 'G.O.A.T. counts the Pro Tour achievements alone, so a new Putt Putt world never moves it');
+    claim(ac.words.length === 0, 'no Putt Putt achievement says "every world" or carries a dash' + (ac.words.length ? ': ' + ac.words.join(', ') : ''));
+    /* ONE PROGRESSION. With Putt Putt the day's quests carry its Daily Hole and the week's challenges a Putt Putt slot,
+       and what is played here feeds them and the one play streak; without it nothing changes. A guest's coins are held
+       on the browser and paid once at sign-in, not dropped. */
+    const pg2 = await pg.evaluate(() => { const r = {}, keepU = sbUser, keepN = sbUsername, keepOn = puttOn;
+      try{ localStorage.removeItem('bag_coins_held'); }catch(e){}
+      sbUser = null; puttOn = () => true; const H = puttHost(); H.coins(60, 'chk'); r.held = heldGuestCoins();
+      sbUser = { id:'pchk' }; sbUsername = 'pchk'; const b0 = coinBalance(); flushHeldCoins(); r.gain = coinBalance() - b0; r.once = flushHeldCoins() === 0 && heldGuestCoins() === 0;
+      r.quest = dailyQuestDefs().some(d => d.k === 'putt'); const pp = weeklySet().filter(c => c.mode === 'putt'); r.slot = pp.length === 1 && weeklySet().length === 4;
+      H.quest(pp[0].metric, pp[0].target); r.week = !!weekChal().done[pp[0].id]; H.questDaily(); r.dq = !!dailyQuests().putt;
+      H.dayPlayed(); r.streak = (LS.get(acctKey('bag_streak'), {}) || {}).last === todayKey();
+      puttOn = () => false; r.off = dailyQuestDefs().length === 4 && weeklySet().length === 4;
+      sbUser = keepU; sbUsername = keepN; puttOn = keepOn; return r; });
+    claim(pg2.held === 60 && pg2.gain === 60 && pg2.once, `a guest's Putt Putt coins are held and paid once at sign-in (${JSON.stringify(pg2)})`);
+    claim(pg2.quest && pg2.slot && pg2.week && pg2.dq && pg2.streak, 'with Putt Putt the daily quests carry its Daily Hole, the week\'s fourth challenge is Putt Putt\'s (still four, the same payouts), and both count, as does the play streak');
+    claim(pg2.off, 'without Putt Putt the daily quests and weekly challenges are as they were');
     claim(errs.length === 0, 'no page errors' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
     await b.close(); srv.close();
   }

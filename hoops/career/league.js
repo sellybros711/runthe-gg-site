@@ -4,6 +4,7 @@
    real spread. `rows` is the data's player-seasons; only the newest season is
    read. A club with nobody in it reads as average rather than as nothing. */
 function seedLeague(rows, rosters) {
+  COMPS = buildComps(rows);
   let latest = 0;
   for (const r of rows || []) if (r.s > latest) latest = r.s;
   /* TODAY'S ROSTERS. A career joins the season after the data's newest, and

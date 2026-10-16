@@ -35,6 +35,7 @@ const BUNDLES = [
       'basics',        // the league's clubs list, the player: positions, ratings, archetypes, sizes; small helpers
       'league',        // club strength, name pools, the coaching carousel, the rosters, the front office
       'people',        // who a line is about: the locker room, the tokens, say()
+      'comps',         // the real players you are set beside: shades, a season's twin, the men you pass
       'life',          // a new life, the save and how an old one is brought forward
       'season',        // draft night, a season, the awards, the playoffs and moments, the offseason, the legacy
       'events',        // the NBA event catalog, the press room, the people around you, milestones

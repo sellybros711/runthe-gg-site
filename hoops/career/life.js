@@ -143,11 +143,13 @@ function newLife(opts) {
     const rn = (k) => k === 'iq' ? 'basketball IQ' : RATING_NAME[k].toLowerCase();
     if (L.flags.sig) logIt(L, 'Your ' + rn(L.flags.sig.up[0]) + ' is ahead of your age. Your ' + rn(L.flags.sig.down) + ' is behind it.', '');
     queueEvents(L, 'hs_sum', 1, AM_EVENTS);
+    sayShades(L);
     sayAll(L);
     return L;
   }
   logIt(L, L.name + ', ' + POS_NAME[pos].toLowerCase() + '. ' + bg.name + '. Age ' + L.age + '.', 'gold');
   chStock(L);
+  sayShades(L);
   L.pending.push(combineCard(L));
   sayAll(L);
   return L;
