@@ -1119,6 +1119,13 @@ if (!args.includes('--no-browser')){
     claim(db.posted && db.rows, `a Daily Hole played on its day posts to the board once, with the golfer's look, and the card shows the day's rows (${JSON.stringify(db)})`);
     claim(db.lateQuiet, 'a Daily Hole played late from the calendar never posts');
     claim(db.down, 'a server without the board yet says it is on its way, and nothing breaks');
+    // the celebration: a putt that drops is a cheer before the card, an ace a longer one, and the stock ball is white
+    await pg.evaluate(() => { if (!document.querySelector('.pt-ov')) openPutt(); window.RTT_PUTT._level(1); });
+    await pg.waitForFunction(() => { const P = window.RTT_PUTT._state().play; return P && P.state === 'aim'; }, null, { timeout:120000 });
+    const ch = await pg.evaluate(() => new Promise(res => { const S = window.RTT_PUTT._state(); window.RTT_PUTT._putt(4.34586983746588, 37); let c0 = null, saw = false;
+      const tick = () => { const st = S.play && S.play.state; if (st === 'cheer'){ saw = true; if (c0 == null) c0 = performance.now(); }
+        if (c0 != null && (S.screen !== 'play' || st === 'done')) return res({ saw, ms:Math.round(performance.now() - c0) }); requestAnimationFrame(tick); }; requestAnimationFrame(tick); }));
+    claim(ch.saw && ch.ms >= 1800 && ch.ms < 4000, `a hole in one is celebrated for about two seconds before the card (${JSON.stringify(ch)})`);
     claim(errs.length === 0, 'no page errors' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
     await b.close(); srv.close();
   }

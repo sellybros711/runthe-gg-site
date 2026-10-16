@@ -173,6 +173,9 @@ const md = await pg.evaluate(() => {
   // the age reaches a putt (a copy of the look) and a walk, and turns the 3D cache over at a birthday
   playerAge = () => 52; r.puttAge = modeLook(S.look, 'putt').age; r.walkAge = modeLook(S.look, 'walk').age;
   const old = H.golfer3(1, 0).urls[0]; playerAge = () => 22; const young = H.golfer3(1, 0).urls[0]; r.ageDraws = old !== young;
+  // the ball you wear is the ball you putt with in Putt Putt; no ball is the white one. The celebration's frame stands facing you.
+  { const kb = S.look.ball; S.look.ball = 'flamingo'; const ba = H.ballArt(); r.ballArt = !!(ba && ba.cv && ba.cv.width > 0 && ba.tint);
+    S.look.ball = 'none'; r.noBall = H.ballArt() === null; S.look.ball = kb; const ch = H.golferCheer(); r.cheer = !!(ch && ch.url && ch.fig > 0); }
   // a leaderboard look carries the putter, so other players see the one you putt with
   r.board = lookForBoard(S.look).putter;
   cosOwned = keepCos; playerAge = keepAge; S.year = keepYear; S.look = Object.assign({}, DEFLOOK);
@@ -184,6 +187,8 @@ ok('the golfer on the Putt Putt map wears its aura, sized by its class', md.figA
 ok('a golfer drawn on a canvas is handed its aura colour, and none without one', md.auraCol === md.gold && md.noAura === null, [md.auraCol, md.noAura]);
 ok('the age reaches the putt and the walk', md.puttAge === 52 && md.walkAge === 52, [md.puttAge, md.walkAge]);
 ok('a birthday draws a new 3D golfer rather than the cached one', md.ageDraws === true);
+ok('the ball you wear is painted for the Putt Putt green, and no ball is the white one', md.ballArt === true && md.noBall === true, [md.ballArt, md.noBall]);
+ok('the hole-out celebration has a golfer facing you', md.cheer === true);
 ok('a leaderboard look carries the putter', md.board === md.a, md.board);
 
 head('5. THE MENU GOLFER: testers only on the First Tee switch, every item drawn alone, nothing magenta');

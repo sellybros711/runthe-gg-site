@@ -3579,11 +3579,11 @@ function worldComplete(n, s, par, got, tid, lines){
    one score. The clock starts on the first frame the hole is drawn (not on the first putt, or a player
    could study it for free) and stops when the ball drops. Fewer strokes still win; the time breaks the
    tie. A pick up has no time. */
-function dailyMs(P){ return P.t0 ? Math.round(performance.now() - P.t0) : null; }
+function dailyMs(P){ return P.tEnd != null ? P.tEnd : P.t0 ? Math.round(performance.now() - P.t0) : null; }
 function clockTxt(ms){ if (ms == null) return ''; var t = Math.floor(ms / 100), m = Math.floor(t / 600), sec = Math.floor(t / 10) % 60; return m + ':' + (sec < 10 ? '0' : '') + sec + '.' + (t % 10); }
 function dailyClock(P){
   if (!P.t0) P.t0 = performance.now();
-  if (P.state === 'done') return;
+  if (P.state === 'done' || P.state === 'cheer') return;
   var el = S.clockEl && S.clockEl.isConnected ? S.clockEl : (S.clockEl = S.ov.querySelector('[data-dclock]'));
   if (!el) return; var txt = clockTxt(performance.now() - P.t0); if (el.textContent !== txt) el.textContent = txt;
 }
@@ -3639,6 +3639,8 @@ function dailyResult(got, dk){
 /* ---------------------------------------------------------------------------------- a round */
 var TOUR_FT = [5, 8, 10, 12, 15, 18, 22, 28, 36];
 function startRound(mode, arg){
+  S.ballArt = undefined;   // the ball is read again each round, so a change in the closet shows
+  setTimeout(function(){ try{ var f = S.host.golferCheer && S.host.golferCheer(); if (f && f.url) imgOf(f.url); }catch(e){} }, 400);   // the celebration's frame, drawn and decoded before it is needed
   var R = { mode:mode, i:0, cards:[], holes:[] };
   if (mode === 'daily'){ var d = dailyHole(today()); R.holes = [d]; R.title = d.name; R.kick = THEMES[d.theme].name + ' · Daily hole'; }
   else if (mode === 'course'){ R.holes = themedCourse(arg); R.title = THEMES[arg].name; R.theme = arg; }
@@ -3887,6 +3889,7 @@ function frame(){
   var P = S.play, C = P.C, ctx = S.cv.getContext('2d'), W = S.cv.width, H = S.cv.height, now = gnow() / 1000, clock = now - P.clock0;
   v3Tick(); trailTick(4);
   if (S.round.mode === 'pdaily') dailyClock(P);
+  if (P.state === 'cheer' && (gnow() - P.cheerAt) / PLAY_RATE > (P.cheerAce ? CHEER_ACE : CHEER_MS)){ P.state = 'aim'; cancelAnimationFrame(S.raf); return holeOut(); }
   // where the ball is: at rest, or partway along the putt it is playing back
   var bx = P.ball[0], by = P.ball[1], falling = 0, bz = 0, hidden = false;
   if (P.state === 'roll'){
@@ -3931,7 +3934,9 @@ function frame(){
   if (P.state === 'aim') drawAim(ctx, P, cam);
   // the golfer stands at the ball while aiming, and holds the follow through a moment once it is struck
   if ((P.state === 'aim' && !(P.intro && performance.now() - P.intro < 1300)) || (P.state === 'roll' && (gnow() - P.shotStart) / PLAY_RATE < 900)) drawGolfer(ctx, P, cam);
-  if (!hidden) drawBall(ctx, cam, bx, by, falling, bz);
+  if (P.state === 'roll' && !hidden) drawRollTrail(ctx, cam, P, bx, by, bz);
+  if (P.state === 'cheer') drawCheer(ctx, P, cam, (gnow() - P.cheerAt) / PLAY_RATE / 1000);
+  else if (!hidden) drawBall(ctx, cam, bx, by, falling, bz);
   if (cam.v3 && cam.v3.amb) drawFlyers(ctx, C, cam, performance.now() / 1000);
   if (P.fx && cam.v3) drawFxScreen(ctx, W, H, cam.v3.night);
   readChip(P, bx, by);
@@ -3986,7 +3991,8 @@ function settle(){
   else if (sh.water || sh.out){ P.strokes++; P.ball = P.prev.slice(); toast(sh.water ? ((C.T && C.T.hazName) || 'Water') + '. One stroke, and it goes back.' : 'Out. One stroke, and it goes back.'); }
   else P.ball = sh.rest.slice();
   P.state = 'aim'; P.shot = null;
-  if (sh.holed){ return holeOut(); }
+  if (sh.holed){ if (S.round.mode === 'pdaily' && P.t0) P.tEnd = Math.round(performance.now() - P.t0);
+    P.state = 'cheer'; P.cheerAt = gnow(); P.cheerAce = P.strokes === 1; return; }
   saveCur(P, P.ball);
   if (S.round.mode === 'ppt' && P.strokes >= C.par){ P.state = 'done'; return tourOut(false); }
   if (P.strokes >= P.cap){ return holeOut(true); }
@@ -4202,10 +4208,58 @@ function drawBall(ctx, cam, x, y, fall, bz){
       ctx.save(); ctx.globalAlpha = 0.55; ctx.setLineDash([Math.max(2, r * 0.6), Math.max(2, r * 0.45)]);
       ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(1.5, S.dpr * 1.2); ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, 6.29); ctx.stroke(); ctx.restore(); return; }
   } else { ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.arc(p[0] + r * 0.35, p[1] + r * 0.4, r, 0, 6.29); ctx.fill(); if (bz) p = [p[0], p[1] - bz * cam.s * 0.8]; }
+  var art = ballArt();
+  if (art){ var bw = r * 2 * art.k; ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(art.cv, Math.round(p[0] - bw / 2), Math.round(p[1] - bw / 2), Math.round(bw), Math.round(bw)); ctx.restore(); return; }
   ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, 6.29); ctx.fill();
   ctx.strokeStyle = 'rgba(30,40,30,.55)'; ctx.lineWidth = Math.max(1, S.dpr * 0.8); ctx.stroke();
   ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.beginPath(); ctx.arc(p[0] - r * 0.3, p[1] - r * 0.3, r * 0.3, 0, 6.29); ctx.fill();
 }
+/* YOUR BALL IS THE ONE YOU PUTT WITH: the ball worn in the closet, painted from its own art by the page
+   (host.ballArt, a canvas of the ball and its tint, k the art's width over the ball's). Looks only: a
+   ball's Pro Tour boost does nothing here. No ball, or no page, is the white ball. One read a round. */
+function ballArt(){ if (S.ballArt === undefined){ S.ballArt = null; try{ var a = S.host.ballArt && S.host.ballArt(); if (a && a.cv && a.cv.width) S.ballArt = a; }catch(e){} }
+  return S.ballArt; }
+/* THE ROLL LEAVES A TRAIL: the last third of a second of the ball's path, a soft streak in the ball's own
+   colour that thins and fades toward its tail. Everybody's ball has it; there is no trail to pick. */
+var TRAIL_S = 0.32;
+function drawRollTrail(ctx, cam, P, bx, by, bz){
+  var el = (gnow() - P.shotStart) / 1000, pts = P.shot.pts, V = cam.v3, art = ballArt(), col = (art && art.tint) || '#ffffff';
+  var at = function(t){ var i = 0; while (i < pts.length - 1 && pts[i + 1][2] <= t) i++; var a = pts[i], b = pts[Math.min(pts.length - 1, i + 1)];
+    if (a[3] || b[3]) return null; var f = b[2] > a[2] ? clamp((t - a[2]) / (b[2] - a[2]), 0, 1) : 1;
+    return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, (a[4] || 0) + ((b[4] || 0) - (a[4] || 0)) * f]; };
+  var scr = function(q){ var r = Math.max(BALL_R * cam.s, 3.6 * S.dpr); if (!V) return w2s(cam, q[0], q[1]);
+    var s0 = w2s(cam, q[0], q[1], V.zAt(q[0], q[1]) + q[2]); return [s0[0], s0[1] - r * V.ce]; };
+  var r0 = Math.max(BALL_R * cam.s, 3.6 * S.dpr), N = 10, prev = scr([bx, by, bz || 0]);
+  ctx.save(); ctx.lineCap = 'round'; ctx.strokeStyle = col;
+  for (var k = 1; k <= N; k++){ var q = at(el - TRAIL_S * k / N); if (!q) break; var c = scr(q), u = 1 - k / (N + 1);
+    if (Math.hypot(c[0] - prev[0], c[1] - prev[1]) > r0 * 6) break;   // a jump or a teleport: no streak across it
+    ctx.globalAlpha = 0.5 * u; ctx.lineWidth = Math.max(1, r0 * 1.5 * u); ctx.beginPath(); ctx.moveTo(prev[0], prev[1]); ctx.lineTo(c[0], c[1]); ctx.stroke(); prev = c; }
+  ctx.restore(); }
+/* THE CELEBRATION. When a putt drops, your golfer turns to face you and hops for joy where they putted from,
+   and confetti in the world's colours bursts out of the cup. An ace is bigger: more hops, more confetti and
+   gold in it. Everybody's golfer does it; there is no celebration to pick. The card follows when it ends,
+   and the Daily Hole's clock stopped at the drop. */
+var CHEER_MS = 1300, CHEER_ACE = 2100;
+function drawCheer(ctx, P, cam, t){
+  var C = P.C, d = S.dpr, cup = w2s(cam, C.cup[0], C.cup[1], cam.v3 ? cam.v3.zAt(C.cup[0], C.cup[1]) : undefined), ace = P.cheerAce;
+  var cols = [(C.T && C.T.flag) || '#ff5a5a', (C.T && C.T.glow) || '#fff2b0', '#ffffff', ace ? '#F1D04A' : '#5bcfe8', ace ? '#ffd23f' : '#ff9f43'];
+  var n = ace ? 72 : 44, g = 480 * d;   // pixels a second squared
+  ctx.save();
+  for (var i = 0; i < n; i++){ var sd = (i * 0.6180339) % 1, an = -Math.PI / 2 + (sd - 0.5) * 2.2, v = (170 + 170 * ((i * 0.37) % 1)) * d * (ace ? 1.2 : 1);
+    var tt = Math.max(0, t - (i % 3) * 0.04), x = cup[0] + Math.cos(an) * v * tt, y = cup[1] + Math.sin(an) * v * tt + 0.5 * g * tt * tt;
+    var life = ace ? 1.9 : 1.2, a = clamp(1 - tt / life, 0, 1); if (a <= 0) continue;
+    var w = Math.max(2, (3 + 2.5 * sd) * d), h = w * (0.5 + 0.5 * Math.abs(Math.sin(tt * 9 + i)));
+    ctx.globalAlpha = a; ctx.fillStyle = cols[i % cols.length]; ctx.fillRect(Math.round(x - w / 2), Math.round(y - h / 2), Math.round(w), Math.max(1, Math.round(h))); }
+  ctx.restore();
+  var f = null; try{ f = S.host.golferCheer && S.host.golferCheer(); }catch(e){ f = null; }
+  if (!f || !f.url) return;
+  var im = imgOf(f.url); if (!im.complete || !im.naturalWidth) return;
+  var hops = ace ? 3 : 2, span = ace ? 1.5 : 0.9, u = t < span ? Math.abs(Math.sin(t / span * hops * Math.PI)) : 0;
+  var at = P.prev || P.ball, hg = 3.1 * cam.s, kk = hg / f.fig, bp = w2s(cam, at[0], at[1], cam.v3 ? cam.v3.zAt(at[0], at[1]) : undefined);
+  var lift = u * hg * 0.4, sq = t < span && u < 0.15 ? 0.9 : 1, rw = Math.round(f.W * kk), rh = Math.round(f.H * kk * sq);
+  var rx = Math.round(bp[0] - f.ball[0] * kk), ry = Math.round(bp[1] - f.ball[1] * kk * sq - lift);
+  ctx.save(); ctx.fillStyle = 'rgba(0,0,0,' + (0.28 - 0.14 * u) + ')'; ctx.beginPath(); ctx.ellipse(bp[0], bp[1], hg * (0.2 - 0.06 * u), hg * 0.07, 0, 0, 6.29); ctx.fill();
+  ctx.imageSmoothingEnabled = false; auraGlow(ctx, kk); ctx.drawImage(im, rx, ry, rw, rh); ctx.restore(); }
 function drawTrail(ctx, cam, pts){
   ctx.fillStyle = 'rgba(255,255,255,.28)';
   for (var i = 0; i < pts.length; i += 4){ var p = w2s(cam, pts[i][0], pts[i][1]); ctx.fillRect(p[0] - S.dpr, p[1] - S.dpr, 2 * S.dpr, 2 * S.dpr); }
@@ -4352,6 +4406,7 @@ RTT_PUTT._trailPlan = function(from, tid){ return trailPlan(trailSpec(tid || 'ma
 RTT_PUTT._secretFrom = secretFrom;
 RTT_PUTT._holeTips = function(n, tid){ var L = tourOf(tid || 'main').levels[n - 1]; return holeTips(n, tid || 'main', L ? threeOf(L) : null); };
 RTT_PUTT._loot = trailLoot; RTT_PUTT._bag = function(){ bagSheet(); }; RTT_PUTT._closet = function(){ closetSheet(); }; RTT_PUTT._foot = courseFoot; RTT_PUTT._left = trailLeft;
+RTT_PUTT._putt = function(ang, ft){ var P = S && S.play; if (!P || P.state !== 'aim') return false; P.aimAng = ang; P.pow = ft / maxFt(P.C); strike(); return true; };
 RTT_PUTT._covers = function(){ var P = S.play; return P && P.camNow ? golferCovers(P, P.camNow) : null; };
 RTT_PUTT._lose = function(){ loseLife(pload()); };
 RTT_PUTT._dailyFinish = function(s, par, ms){ return dailyFinish(s, par, ms); };
