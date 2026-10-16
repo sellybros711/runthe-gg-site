@@ -2,6 +2,13 @@ const E = (typeof require !== 'undefined')
   ? require('./engine.js')
   : window.RTF_ENGINE;
 
+/* THE SYSTEM CARDS' ANSWERS, by card id. A card the engine builds by hand (the combine,
+   free agency, an injury, retirement and the rest) registers what each of its answers does
+   here, beside the function that builds it, so a card's question and its answers are read
+   in one place. choose() runs the entry; every other card is an event answered by its own
+   data. Each entry returns { text, tone, made, won, shots, contest }. */
+const ANSWER = {};
+
 const CAREER_API_VERSION = 1;
 const LIFE_VERSION = 3;
 

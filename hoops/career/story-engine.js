@@ -948,6 +948,12 @@ function buildCards(L) {
       options: [{ label: 'Move to ' + alt[0], hint: 'Overall ' + ovT(L, overall(L.rt, alt[0])) + ' there' }, { label: 'Stay at ' + L.pos, hint: 'It\'s your position' }] });
   }
 }
+/* The answers to the build cards (choose() runs them). */
+ANSWER.build_sig = ANSWER.build_arch = ANSWER.build_pos = function(L, card, i, opt, rng, beats, touch, touches) {
+  let text = '', tone = '', made = null, won = null, shots = null, contest = null;
+  text = chooseBuild(L, card, i) || ''; tone = 'good';
+  return { text, tone, made, won, shots, contest };
+};
 function chooseBuild(L, card, i) {
   if (card.id === 'build_sig') { const k = card.ctx.ks[i]; L.sig = { k, name: SIGS[k][0], y: L.year }; logIt(L, 'Signature move: ' + SIGS[k][0] + '.', 'gold'); bump(L, { fame: 3 }); return SIGS[k][1]; }
   if (card.id === 'build_arch') { if (i === 0) { const was = ARCHES[L.arch].name; L.arch = card.ctx.to; logIt(L, 'From ' + was.toLowerCase() + ' to ' + ARCHES[L.arch].name.toLowerCase() + '.', 'good'); return 'New reports, new role. You\'re a ' + ARCHES[L.arch].name.toLowerCase() + ' now.'; } bump(L, { morale: 2 }); return 'You know who you are. Let them write what they want.'; }
@@ -1185,6 +1191,13 @@ function nicknameCard(L) {
     text: '{pbp} said it once on a late call. Now the whole arena says it.', ctx: { nm },
     options: [{ label: 'Own it', hint: 'Stitch it on your shoes' }, { label: 'Ask them to drop it', hint: 'You\'ve got a name already' }] });
 }
+/* The answers to a nickname (choose() runs them). */
+ANSWER.nickname = function(L, card, i, opt, rng, beats, touch, touches) {
+  let text = '', tone = '', made = null, won = null, shots = null, contest = null;
+  if (i === 0) { L.nick = card.ctx.nm; logIt(L, 'They call you ' + L.nick + '.', 'gold'); feed(L, 'nick', L.name + ' has a name now: ' + L.nick + '.'); text = 'It sticks. By summer, kids at camp are calling you it.'; tone = 'gold'; }
+  else { text = 'They mostly drop it.'; }
+  return { text, tone, made, won, shots, contest };
+};
 
 /* GOALS. Before each season a story career picks one thing to chase, from
    three that fit where it is. Met or missed, it is said at the end. */
@@ -1264,6 +1277,12 @@ function goalCard(L) {
   L.pending.push({ id: 'goal', kind: 'event', key: 'goal:' + L.year, scene: who === 'self' ? 'Home' : who === 'gm' ? 'GM\'s office' : who === 'agent' ? 'Agent\'s office' : who === 'beat' ? 'Media day' : who === 'trainer' ? 'The weight room' : 'Sunday dinner', eyebrow: calendar(L, 'pre'), title: freshPick(L, 'gt:' + who, A[0], r),
     text: text + back, ctx: { ks, who }, options: ks.map((k) => ({ label: GOALS[k][0], hint: GOAL_HINT[k] })) });
 }
+/* The answers to the season's goal (choose() runs them). */
+ANSWER.goal = function(L, card, i, opt, rng, beats, touch, touches) {
+  let text = '', tone = '', made = null, won = null, shots = null, contest = null;
+  L.season.goal = card.ctx.ks[i]; L.season.goalWho = card.ctx.who || null; text = pick(rng, ['Locked in. April will tell.', 'You said it out loud. No taking it back.', 'It\'s written down. Now go get it.']);
+  return { text, tone, made, won, shots, contest };
+};
 const GOAL_SAID = {
   gm: ['{gm} brings it up at the exit meeting, grinning.', '{gm} brings it up at the exit meeting. He isn\'t grinning.'],
   agent: ['{agent} cashes the bonus clause that same week.', '{agent} says the bonus can wait a year.'],

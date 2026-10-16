@@ -172,6 +172,13 @@ const E = (typeof require !== 'undefined')
   ? require('./engine.js')
   : window.RTF_ENGINE;
 
+/* THE SYSTEM CARDS' ANSWERS, by card id. A card the engine builds by hand (the combine,
+   free agency, an injury, retirement and the rest) registers what each of its answers does
+   here, beside the function that builds it, so a card's question and its answers are read
+   in one place. choose() runs the entry; every other card is an event answered by its own
+   data. Each entry returns { text, tone, made, won, shots, contest }. */
+const ANSWER = {};
+
 const CAREER_API_VERSION = 1;
 const LIFE_VERSION = 3;
 
@@ -2587,6 +2594,12 @@ function interviewCard(L, clubs, n) {
     options: q.a.map((x) => ({ label: x[0], hint: x[4] })),
   };
 }
+/* The answers to a combine interview (choose() runs them). */
+ANSWER.interview = function(L, card, i, opt, rng, beats, touch, touches) {
+  let text = '', tone = '', made = null, won = null, shots = null, contest = null;
+  ({ text, tone } = chooseInterview(L, card, i, rng));
+  return { text, tone, made, won, shots, contest };
+};
 function pworkoutCard(L) {
   const I = intrOf(L);
   const clubs = (L.flags.cmbClubs || []).slice().sort((a, b) => (I[b] || 0) - (I[a] || 0));
@@ -2601,6 +2614,12 @@ function pworkoutCard(L) {
     ],
   };
 }
+/* The answers to a private workout (choose() runs them). */
+ANSWER.pworkout = function(L, card, i, opt, rng, beats, touch, touches) {
+  let text = '', tone = '', made = null, won = null, shots = null, contest = null;
+  ({ text, tone } = choosePworkout(L, card, i, rng));
+  return { text, tone, made, won, shots, contest };
+};
 function combineCard(L) {
   return {
     id: 'combine', kind: 'event', key: 'combine', eyebrow: 'Draft combine', scene: 'Testing day', title: 'Every team is watching. How much do you show?',
@@ -2613,6 +2632,23 @@ function combineCard(L) {
     ],
   };
 }
+/* The answers to the combine (choose() runs them). */
+ANSWER.combine = function(L, card, i, opt, rng, beats, touch, touches) {
+  let text = '', tone = '', made = null, won = null, shots = null, contest = null;
+  if (card.ctx && card.ctx.story) { ({ text, tone } = chooseCombine(L, i, rng)); return { text, tone, made, won, shots, contest }; }
+  const r = rng();
+  if (i === 0) {
+    const fit = (L.rt.ath + L.rt.sho) / 2;
+    if (r < clamp(0.3 + (fit - 55) * 0.012, 0.15, 0.85)) { L.flags.stock = (L.flags.stock || 0) + 3; text = 'You test off the charts. By dinner your agent\'s phone won\'t stop.'; tone = 'good'; }
+    else { L.flags.stock = (L.flags.stock || 0) - 2.5; text = 'Nothing jumps off the sheet. A few teams cool on you.'; tone = 'bad'; }
+  } else if (i === 1) {
+    if (r < clamp(0.35 + (L.rt.sho - 55) * 0.015, 0.1, 0.9)) { L.flags.stock = (L.flags.stock || 0) + 1.8; text = 'Forty-one of fifty. The scouts stop talking.'; tone = 'good'; }
+    else { L.flags.stock = (L.flags.stock || 0) - 1; text = 'Cold day. It happens, and somebody writes it down.'; tone = 'bad'; }
+  } else { text = 'You stay home. Your stock doesn\'t move.'; }
+  L.pending.unshift(workoutCard(L));
+  queueEvents(L, 'predraft', 1 + (rng() < 0.4 ? 1 : 0));
+  return { text, tone, made, won, shots, contest };
+};
 function workoutCard(L) {
   const order = draftOrder(L);
   const proj = projectedPick(L);
@@ -2630,6 +2666,21 @@ function workoutCard(L) {
       hint: 'They pick ' + ordinal(x.slot) + '. ' + clubTier(clubNet(L, x.club)) + '.', club: x.club, slot: x.slot })),
   };
 }
+/* The answers to a pre-draft workout (choose() runs them). */
+ANSWER.workout = function(L, card, i, opt, rng, beats, touch, touches) {
+  let text = '', tone = '', made = null, won = null, shots = null, contest = null;
+  const c = opt.club;
+  const theirs = opt.slot;
+  const proj = projectedPick(L);
+  if (theirs < proj - 4) {
+    if (rng() < 0.45) { L.flags.stock = (L.flags.stock || 0) + 2; L.flags.promise = { club: c, slot: theirs }; text = 'You blow them away. They promise to take you at ' + ordinal(theirs) + '.'; tone = 'gold'; }
+    else { text = 'Good workout, but they\'ve got somebody else in mind at ' + ordinal(theirs) + '.'; }
+  } else {
+    L.flags.promise = { club: c, slot: theirs }; text = 'They love you. If you\'re still there, you\'re theirs.'; tone = 'good';
+  }
+  L.pending.unshift(agentCard(L));
+  return { text, tone, made, won, shots, contest };
+};
 const AGENT_HINT = { power: 'Biggest deals, biggest cut', boutique: 'Smaller cut, knows your family', cousin: "Free, and he's never done this" };
 function agentCard(L) {
   return {
@@ -2639,6 +2690,15 @@ function agentCard(L) {
     options: Object.keys(AGENTS).map((k) => ({ label: 'Sign with ' + agentNameFor(L, k), hint: AGENT_HINT[k], agent: k })),
   };
 }
+/* The answers to picking an agent (choose() runs them). */
+ANSWER.agent = function(L, card, i, opt, rng, beats, touch, touches) {
+  let text = '', tone = '', made = null, won = null, shots = null, contest = null;
+  L.agent = opt.agent;
+  text = say(L, '{agent}') + ' it is.';
+  if (L.agent === 'cousin') bump(L, { morale: 8 });
+  L.phase = 'draft';
+  return { text, tone, made, won, shots, contest };
+};
 /* A rookie deal, off the slot. Pick 1 is about seven percent of the cap and the
    scale falls to about one and a half by pick 30. Second rounders and the
    undrafted sign for the minimum. */
@@ -2796,6 +2856,47 @@ function runDraft(L, beats) {
      whatever the summer has queued, because it happens tonight. */
   if (round === 1) L.pending.unshift(presserCard(L, 'draft'));
 }
+/* The answers to going undrafted (choose() runs them). */
+ANSWER.undrafted = function(L, card, i, opt, rng, beats, touch, touches) {
+  let text = '', tone = '', made = null, won = null, shots = null, contest = null;
+  if (card.ctx && card.ctx.story) {
+    if (!opt.club) {
+      L.flags.overseas = (L.flags.overseas || 0) + 1;
+      L.contract = { years: 1, total: 1, salary: 0.8, kind: 'overseas', start: L.year };
+      L.phase = 'drafted';
+      text = 'A one-year deal in Europe. Real money, real minutes.';
+      logIt(L, 'Signed overseas after going undrafted.', '');
+      return { text, tone, made, won, shots, contest };
+    }
+    /* The floor is 5%: a player too weak to be drafted almost never talks
+       his way onto a roster from Summer League. At 10% the high school
+       road reached the league 94.9% of the time over 3,000 careers, on
+       the 95% ceiling, so CI's 1,000 flapped with any change to the
+       seeds. At 5% it is 94.4 on CI's sample and 94.3 on 1,500 roads. */
+    const pSL = clamp(0.04 + (ovrOf(L) - 58) * 0.033 + (L.m.fame - 20) * 0.003, 0.05, 0.85);
+    if (rng() >= pSL) {
+      L.flags.overseas = (L.flags.overseas || 0) + 1;
+      L.contract = { years: 1, total: 1, salary: 0.6, kind: 'overseas', start: L.year };
+      L.phase = 'drafted';
+      text = 'Five games in Las Vegas. Good ones. The ' + nick(opt.club) + ' go another way. You sign overseas.';
+      tone = 'bad';
+      logIt(L, 'Cut after Summer League. Signed overseas.', 'bad');
+      return { text, tone, made, won, shots, contest };
+    }
+    remember(L, 'sl.made', true);
+  }
+  L.contract = { years: 1, total: 1, salary: round1(capFor(L.year) * MIN_PCT), kind: 'min', start: L.year };
+  /* A two-way deal is mostly G League nights, until the club converts it. */
+  if (card.ctx && card.ctx.story) L.contract.tw = 1;
+  joinTeam(L, opt.club, false);
+  L.draft = { pick: null, round: null, team: opt.club };
+  text = L.contract.tw ? 'Two-way deal with the ' + E.teamName(opt.club) + '. Most nights you\'ll be in the G League. Prove you belong.'
+    : 'Two-way deal with the ' + E.teamName(opt.club) + '. Prove it.'; tone = 'good';
+  logIt(L, text, 'good');
+  L.phase = 'drafted';
+  openYear(L);
+  return { text, tone, made, won, shots, contest };
+};
 
 /* THE LAST TIME YOU WERE TRADED, for the scene that tells you. It lives
    outside the save on purpose: it is about this press of a button, and the
@@ -3058,6 +3159,29 @@ function rollInjury(L, chunk, beats) {
     ],
   });
 }
+/* The answers to an injury (choose() runs them). */
+ANSWER.injury = function(L, card, i, opt, rng, beats, touch, touches) {
+  let text = '', tone = '', made = null, won = null, shots = null, contest = null;
+  const s = L.season, inj = s && s.injury;
+  const g = card.ctx.g;
+  if (inj) {
+    if (card.ctx.major) remember(L, 'inj.major', L.age);
+    if (card.ctx.major) {
+      if (i === 0) { inj.until = inj.from + g; bump(L, { ath: -2, health: -8 }); text = 'The surgery goes well. Now comes the long part.'; }
+      else if (i === 1) {
+        if (rng() < 0.55) { inj.until = inj.from + Math.round(g * 0.6); bump(L, { health: -6 }); text = 'You\'re back early, and it holds.'; tone = 'good'; }
+        else { inj.until = inj.from + Math.round(g * 1.3); bump(L, { ath: -4, health: -14, dur: -6 }); text = 'It doesn\'t hold. Now you need the surgery anyway.'; tone = 'bad'; }
+      } else { bump(L, { cash: -Math.min(0.6, L.cash * 0.2) }); inj.until = inj.from + Math.round(g * 0.85); bump(L, { ath: -1 }); text = 'The specialist finds a better plan. You\'re back a little sooner.'; tone = 'good'; }
+    } else if (i === 0) {
+      if (rng() < 0.6) { inj.until = inj.from + Math.ceil(g / 2); bump(L, { trust: 4 }); text = 'Back in half the time. Your teammates notice.'; tone = 'good'; }
+      else { inj.until = inj.from + g + 6; bump(L, { health: -8 }); text = 'You make it worse. Now you\'re out longer.'; tone = 'bad'; }
+    } else { inj.until = inj.from + g; bump(L, { health: 6 }); text = varyRes(L, card, 'inj_rest', 'You give it time. It heals right.'); }
+    inj.pendingDecision = false;
+    const missed = inj.until - inj.from;
+    logIt(L, 'Out ' + missed + ' games with a ' + inj.kind + '.', 'bad');
+  }
+  return { text, tone, made, won, shots, contest };
+};
 
 /* Games from..to. The club plays every one; you play the ones you are healthy
    for. Your line is drawn game by game, so a night of forty is a night of
@@ -3243,6 +3367,23 @@ function allStarCheck(L, beats) {
     ],
   });
 }
+/* The answers to All-Star Saturday (choose() runs them). */
+ANSWER.allstar = function(L, card, i, opt, rng, beats, touch, touches) {
+  let text = '', tone = '', made = null, won = null, shots = null, contest = null;
+  if (i === 0) {
+    if (rng() < clamp((L.rt.ath - 60) * 0.025, 0.05, 0.85)) { L.flags.dunk = (L.flags.dunk || 0) + 1; bump(L, { fame: 10 }); text = 'You jump over a car. The building loses it. Dunk champ.'; tone = 'gold'; }
+    else { bump(L, { fame: 2 }); text = 'You miss your best dunk twice. The judges are kind.'; }
+    contest = contestField(L, 'dunk', tone === 'gold');
+  } else if (i === 1) {
+    if (rng() < clamp((L.rt.sho - 65) * 0.025, 0.05, 0.85)) { L.flags.threes = (L.flags.threes || 0) + 1; bump(L, { fame: 8 }); text = 'You drain the whole money-ball rack. Three-point champ.'; tone = 'gold'; }
+    else { bump(L, { fame: 2 }); text = 'Out in the first round. You laugh it off with the guys.'; }
+    contest = contestField(L, 'three', tone === 'gold');
+  } else { bump(L, { health: 6 }); text = 'You skip Saturday. Fresh legs for the second half.'; }
+  logIt(L, text, tone);
+  // the field is display, so a career from before it keeps its log as it was
+  if (contest) logIt(L, contestLine(contest), tone);
+  return { text, tone, made, won, shots, contest };
+};
 
 /* The field and the scores of a Saturday contest you entered. The result is
    drawn before this runs; this only names who you were up against and writes
@@ -3701,6 +3842,15 @@ function queueMoment(L, chunk) {
     options: opts.map((o) => ({ label: o.label, hint: o.hint })),
   });
 }
+/* The answers to a playable moment (choose() runs them). */
+ANSWER.moment = function(L, card, i, opt, rng, beats, touch, touches) {
+  let text = '', tone = '', made = null, won = null, shots = null, contest = null;
+  const r = momentResolve(L, card, i, rng, touch, touches);
+  text = r.text; tone = r.tone; made = r.made;
+  if (r.won != null) won = r.won;
+  if (r.shots) shots = r.shots;
+  return { text, tone, made, won, shots, contest };
+};
 /* What a duel night says, by what you did and how the game went. The made
    key is the shot (or the stop) and W or L is the box score. */
 const DUEL_TEXT = {
@@ -3836,6 +3986,32 @@ function clutchCard(L, cur, home) {
     options: opts.map((o) => ({ label: o.label, hint: feel(L.rt[o.rate], "That's your shot", 'A fair look', 'Not your strength') })),
   };
 }
+/* The answers to Game 7's last shot (choose() runs them). */
+ANSWER.clutch = function(L, card, i, opt, rng, beats, touch, touches) {
+  let text = '', tone = '', made = null, won = null, shots = null, contest = null;
+  const o = clutchOptions(L, card.ctx && card.ctx.look)[i];
+  const cur = L.season.po.cur;
+  made = rng() < touched(o.p, touch, L);
+  cur.waiting = false;
+  if (duelOn(L) && card.ctx && card.ctx.look) {
+    const d = duelGame(L, seriesP(L, L.team, cur.opp, !!card.ctx.home), made, rng, card, i, beats, 'Game 7');
+    won = d.won;
+    cur.games.push(won ? 1 : 0);
+    if (won) cur.w = 4; else cur.l = 4;
+    if (made) { bump(L, { fame: 6 }); remember(L, 'g7.made', true); if (won) { L.flags.g7 = (L.flags.g7 || 0) + 1; clutchHit(L, beats); } }
+    bump(L, { fame: won ? 4 : 0, morale: (won ? 8 : -8) + (made ? 3 : -3) });
+    text = d.text; tone = made ? 'gold' : 'bad';
+    logIt(L, 'Game 7 against the ' + nick(cur.opp) + ': ' + (made ? (won ? 'hit the winner.' : 'hit the shot. They answered.') : won ? 'missed it. ' + ((card.ctx && card.ctx.mate) || 'The bench') + ' saved it.' : 'missed the last shot.'), won ? 'gold' : 'bad');
+    endSeries(L, beats);
+    return { text, tone, made, won, shots, contest };
+  }
+  cur.games.push(made ? 1 : 0);
+  if (made) { cur.w = 4; L.flags.g7 = (L.flags.g7 || 0) + 1; clutchHit(L, beats); remember(L, 'g7.made', true); bump(L, { fame: 10, morale: 10 }); text = 'Good! Series over. You\'ll be watching that one for the rest of your life.'; tone = 'gold'; }
+  else { cur.l = 4; bump(L, { morale: -10 }); text = 'No good. The whole building goes quiet.'; tone = 'bad'; }
+  logIt(L, 'Game 7 against the ' + nick(cur.opp) + ': ' + (made ? 'hit the winner.' : 'missed the last shot.'), made ? 'gold' : 'bad');
+  endSeries(L, beats);
+  return { text, tone, made, won, shots, contest };
+};
 /* The last possession of a duel game, told by what you did and how it went. */
 const G7_TEXT = {
   shot: { MW: 'Good! Series over. You\'ll watch that one for the rest of your life.', ML: 'Good! Then they go the length of the floor in 1.4 seconds. Series over the wrong way.',
@@ -4048,6 +4224,19 @@ function faCard(L, list, why) {
     })),
   };
 }
+/* The answers to free agency (choose() runs them). */
+ANSWER.fa = function(L, card, i, opt, rng, beats, touch, touches) {
+  let text = '', tone = '', made = null, won = null, shots = null, contest = null;
+  const f = card.ctx.offers[i];
+  const old = L.team;
+  L.contract = { years: f.years, total: f.years, salary: f.salary, kind: 'vet', start: L.year + 1 };
+  if (f.club !== old) joinTeam(L, f.club, false);
+  text = (f.club === old ? 'Re-signed with the ' : 'Signed with the ') + E.teamName(f.club) + '. ' + f.years + ' years, ' + money(f.salary) + ' a year.';
+  tone = 'gold';
+  if (f.club === old) logIt(L, text, 'gold');
+  bump(L, { morale: 5 });
+  return { text, tone, made, won, shots, contest };
+};
 function retireCard(L) {
   return {
     id: 'retire', kind: 'event', key: 'retire',
@@ -4059,6 +4248,13 @@ function retireCard(L) {
     ],
   };
 }
+/* The answers to the retirement question (choose() runs them). */
+ANSWER.retire = function(L, card, i, opt, rng, beats, touch, touches) {
+  let text = '', tone = '', made = null, won = null, shots = null, contest = null;
+  if (i === 1) { L.pending = []; retire(L, beats); text = 'You walk away.'; tone = 'gold'; }
+  else { text = varyRes(L, card, 'retire_more', 'One more year. Let\'s go.'); bump(L, { morale: 3 }); }
+  return { text, tone, made, won, shots, contest };
+};
 
 function offseason(L, beats) {
   const s = L.season;
@@ -4129,6 +4325,32 @@ function offseason(L, beats) {
   /* Something off the court, most summers. */
   queueEvents(L, 'off', 1);
 }
+/* The answers to no offer this summer (choose() runs them). */
+ANSWER.nooffer = function(L, card, i, opt, rng, beats, touch, touches) {
+  let text = '', tone = '', made = null, won = null, shots = null, contest = null;
+  if (i === 0) { L.pending = []; retire(L, beats); text = 'You walk away.'; tone = 'gold'; }
+  else {
+    L.flags.overseas = (L.flags.overseas || 0) + 1;
+    if (L.history.length && !recall(L, 'route.detour.left')) remember(L, 'route.detour.left', true);
+    L.team = null;
+    L.contract = { years: 1, total: 1, salary: 0.8, kind: 'overseas', start: L.year + 1 };
+    text = 'A year in Europe. Big minutes and a second chance.';
+    logIt(L, 'Signed overseas for a year.', '');
+  }
+  return { text, tone, made, won, shots, contest };
+};
+/* The answers to an extension offer (choose() runs them). */
+ANSWER.extension = function(L, card, i, opt, rng, beats, touch, touches) {
+  let text = '', tone = '', made = null, won = null, shots = null, contest = null;
+  if (i === 0) {
+    const yrs = card.ctx.years || 5;
+    L.contract = { years: yrs + 1, total: yrs, salary: L.contract.salary, next: card.ctx.sal, kind: 'vet', start: L.year };
+    text = 'Signed. ' + yrs + ' years, ' + money(card.ctx.sal) + ' a year.'; tone = 'gold';
+    logIt(L, 'Signed an extension: ' + yrs + ' years, ' + money(card.ctx.sal) + ' a year.', 'gold');
+    bump(L, { morale: 6, trust: 6 });
+  } else { text = 'You bet on yourself. Next summer, the price goes up.'; bump(L, { fame: 2 }); }
+  return { text, tone, made, won, shots, contest };
+};
 
 /* Retiring is two moments: the press conference, which is here, and the
    rest of your life, which is the `after` card it leaves on the table. The
@@ -5263,6 +5485,12 @@ function coachTalkCard(L) {
     options: opts.slice(0, 4).map((o) => ({ label: o.label, hint: o.hint })),
   };
 }
+/* The answers to a talk with the coach (choose() runs them). */
+ANSWER.coach_talk = function(L, card, i, opt, rng, beats, touch, touches) {
+  let text = '', tone = '', made = null, won = null, shots = null, contest = null;
+  text = chooseCoachTalk(L, card, i, rng);
+  return { text, tone, made, won, shots, contest };
+};
 function coachP(L, k) {
   const role = roleOf(L), st = coachStyle(L), perf = perfOf(L);
   const ageAdj = L.age <= 24 ? st.young : L.age >= 30 ? -st.young : 0;
@@ -5363,6 +5591,12 @@ function roleReview(L, beats, when) {
     });
   }
 }
+/* The answers to the coach's review (choose() runs them). */
+ANSWER.coach_review = function(L, card, i, opt, rng, beats, touch, touches) {
+  let text = '', tone = '', made = null, won = null, shots = null, contest = null;
+  text = chooseCoachReview(L, i, rng);
+  return { text, tone, made, won, shots, contest };
+};
 function chooseCoachReview(L, i, rng) {
   if (i === 0) { bump(L, { trust: 5, eth: 3 }); return 'Extra film, extra shots. He catches you in the gym at seven a.m.'; }
   if (i === 1) { const r = weakSpot(L); L.focus = { k: r, y: L.year }; bump(L, { trust: 4 }); return 'He names it: ' + RATING_NAME[r].toLowerCase() + '. He pulls up the clips. That\'s your project now.'; }
@@ -5698,6 +5932,12 @@ function deadlineCard(L, why, dests) {
     ],
   };
 }
+/* The answers to the trade deadline (choose() runs them). */
+ANSWER.deadline = function(L, card, i, opt, rng, beats, touch, touches) {
+  let text = '', tone = '', made = null, won = null, shots = null, contest = null;
+  text = chooseDeadline(L, card, i, rng); tone = L.team !== card.ctx.from ? 'gold' : '';
+  return { text, tone, made, won, shots, contest };
+};
 /* Seasons in a row with the club you are on now. */
 function tenure(L) {
   let n = 0;
@@ -5958,6 +6198,20 @@ function summerCard(L) {
     options: ks.map((k) => { const P = SUMMER[k], rook = P.l0 && L.seasonsDone === 0; return { label: rook ? P.l0 : P.l, hint: rook ? P.h0 : P.hy && L.age <= 24 ? P.hy : P.h }; }),
   };
 }
+/* The answers to the summer (choose() runs them). */
+ANSWER.training = function(L, card, i, opt, rng, beats, touch, touches) {
+  let text = '', tone = '', made = null, won = null, shots = null, contest = null;
+  if (card.ctx && card.ctx.ks) { text = summerChoose(L, card.ctx.ks[i], rng); tone = 'good'; return { text, tone, made, won, shots, contest }; }
+  const t = TRAIN[i];
+  const young = L.age <= 24 ? 1 : L.age <= 28 ? 0.8 : 0.6;
+  if (t) {
+    const d = {};
+    for (const k in t) d[k] = Math.round(t[k] * young * (0.7 + rng() * 0.6));
+    bump(L, d);
+    text = 'A good summer. It shows the first week of camp.'; tone = 'good';
+  } else { bump(L, { health: 18 }); L.flags.restYears = (L.flags.restYears || 0) + 1; text = 'You actually rest. You feel twenty-two again.'; tone = 'good'; }
+  return { text, tone, made, won, shots, contest };
+};
 function summerChoose(L, k, rng) {
   const P = SUMMER[k];
   const young = L.age <= 24 ? 1 : L.age <= 28 ? 0.8 : 0.6;
@@ -6933,6 +7187,12 @@ function buildCards(L) {
       options: [{ label: 'Move to ' + alt[0], hint: 'Overall ' + ovT(L, overall(L.rt, alt[0])) + ' there' }, { label: 'Stay at ' + L.pos, hint: 'It\'s your position' }] });
   }
 }
+/* The answers to the build cards (choose() runs them). */
+ANSWER.build_sig = ANSWER.build_arch = ANSWER.build_pos = function(L, card, i, opt, rng, beats, touch, touches) {
+  let text = '', tone = '', made = null, won = null, shots = null, contest = null;
+  text = chooseBuild(L, card, i) || ''; tone = 'good';
+  return { text, tone, made, won, shots, contest };
+};
 function chooseBuild(L, card, i) {
   if (card.id === 'build_sig') { const k = card.ctx.ks[i]; L.sig = { k, name: SIGS[k][0], y: L.year }; logIt(L, 'Signature move: ' + SIGS[k][0] + '.', 'gold'); bump(L, { fame: 3 }); return SIGS[k][1]; }
   if (card.id === 'build_arch') { if (i === 0) { const was = ARCHES[L.arch].name; L.arch = card.ctx.to; logIt(L, 'From ' + was.toLowerCase() + ' to ' + ARCHES[L.arch].name.toLowerCase() + '.', 'good'); return 'New reports, new role. You\'re a ' + ARCHES[L.arch].name.toLowerCase() + ' now.'; } bump(L, { morale: 2 }); return 'You know who you are. Let them write what they want.'; }
@@ -7170,6 +7430,13 @@ function nicknameCard(L) {
     text: '{pbp} said it once on a late call. Now the whole arena says it.', ctx: { nm },
     options: [{ label: 'Own it', hint: 'Stitch it on your shoes' }, { label: 'Ask them to drop it', hint: 'You\'ve got a name already' }] });
 }
+/* The answers to a nickname (choose() runs them). */
+ANSWER.nickname = function(L, card, i, opt, rng, beats, touch, touches) {
+  let text = '', tone = '', made = null, won = null, shots = null, contest = null;
+  if (i === 0) { L.nick = card.ctx.nm; logIt(L, 'They call you ' + L.nick + '.', 'gold'); feed(L, 'nick', L.name + ' has a name now: ' + L.nick + '.'); text = 'It sticks. By summer, kids at camp are calling you it.'; tone = 'gold'; }
+  else { text = 'They mostly drop it.'; }
+  return { text, tone, made, won, shots, contest };
+};
 
 /* GOALS. Before each season a story career picks one thing to chase, from
    three that fit where it is. Met or missed, it is said at the end. */
@@ -7249,6 +7516,12 @@ function goalCard(L) {
   L.pending.push({ id: 'goal', kind: 'event', key: 'goal:' + L.year, scene: who === 'self' ? 'Home' : who === 'gm' ? 'GM\'s office' : who === 'agent' ? 'Agent\'s office' : who === 'beat' ? 'Media day' : who === 'trainer' ? 'The weight room' : 'Sunday dinner', eyebrow: calendar(L, 'pre'), title: freshPick(L, 'gt:' + who, A[0], r),
     text: text + back, ctx: { ks, who }, options: ks.map((k) => ({ label: GOALS[k][0], hint: GOAL_HINT[k] })) });
 }
+/* The answers to the season's goal (choose() runs them). */
+ANSWER.goal = function(L, card, i, opt, rng, beats, touch, touches) {
+  let text = '', tone = '', made = null, won = null, shots = null, contest = null;
+  L.season.goal = card.ctx.ks[i]; L.season.goalWho = card.ctx.who || null; text = pick(rng, ['Locked in. April will tell.', 'You said it out loud. No taking it back.', 'It\'s written down. Now go get it.']);
+  return { text, tone, made, won, shots, contest };
+};
 const GOAL_SAID = {
   gm: ['{gm} brings it up at the exit meeting, grinning.', '{gm} brings it up at the exit meeting. He isn\'t grinning.'],
   agent: ['{agent} cashes the bonus clause that same week.', '{agent} says the bonus can wait a year.'],
@@ -9390,6 +9663,26 @@ function storyAfterCard(L) {
     options: open.map((p) => ({ label: p[1], hint: p[2] })),
   };
 }
+/* The answers to life after basketball (choose() runs them). */
+ANSWER.after = function(L, card, i, opt, rng, beats, touch, touches) {
+  let text = '', tone = '', made = null, won = null, shots = null, contest = null;
+  if (card.ctx && card.ctx.paths) {
+    const path = card.ctx.paths[i];
+    L.final = legacy(L);
+    L.final.path = path;
+    L.final.after = AFTER_PATHS.find((p) => p[0] === path)[1] + '.';
+    text = 'New city, new chapter.'; tone = 'gold';
+    if (!dealNamed(L, 'post', 'ep_' + path)) finishLife(L, '');
+    return { text, tone, made, won, shots, contest };
+  }
+  L.retired = true;
+  L.phase = 'retired';
+  L.final = legacy(L);
+  L.final.after = chooseAfter(L, i, rng);
+  text = L.final.after; tone = 'gold';
+  logIt(L, text, 'gold');
+  return { text, tone, made, won, shots, contest };
+};
 /* The career ends here, after the epilogue and, rarely, one last shot. */
 function finishLife(L, text) {
   if (L.final && text) { L.final.epilogue = say(L, text); L.final.after = L.final.epilogue; }
@@ -10835,230 +11128,12 @@ function choose(L, i, extra) {
   let text = '', tone = '', beats = [], made = null, won = null, shots = null, contest = null;
   L.pending.shift();
   const road = card.id === 'presser' ? choosePresser(L, card, opt, rng) : chooseAm(L, card, i, opt, rng, beats, touch);
-  if (road) { text = road.text; tone = road.tone; if (road.made != null) made = road.made; if (road.won != null) won = road.won; } else switch (card.id) {
-    case 'combine': {
-      if (card.ctx && card.ctx.story) { ({ text, tone } = chooseCombine(L, i, rng)); break; }
-      const r = rng();
-      if (i === 0) {
-        const fit = (L.rt.ath + L.rt.sho) / 2;
-        if (r < clamp(0.3 + (fit - 55) * 0.012, 0.15, 0.85)) { L.flags.stock = (L.flags.stock || 0) + 3; text = 'You test off the charts. By dinner your agent\'s phone won\'t stop.'; tone = 'good'; }
-        else { L.flags.stock = (L.flags.stock || 0) - 2.5; text = 'Nothing jumps off the sheet. A few teams cool on you.'; tone = 'bad'; }
-      } else if (i === 1) {
-        if (r < clamp(0.35 + (L.rt.sho - 55) * 0.015, 0.1, 0.9)) { L.flags.stock = (L.flags.stock || 0) + 1.8; text = 'Forty-one of fifty. The scouts stop talking.'; tone = 'good'; }
-        else { L.flags.stock = (L.flags.stock || 0) - 1; text = 'Cold day. It happens, and somebody writes it down.'; tone = 'bad'; }
-      } else { text = 'You stay home. Your stock doesn\'t move.'; }
-      L.pending.unshift(workoutCard(L));
-      queueEvents(L, 'predraft', 1 + (rng() < 0.4 ? 1 : 0));
-      break;
-    }
-    case 'workout': {
-      const c = opt.club;
-      const theirs = opt.slot;
-      const proj = projectedPick(L);
-      if (theirs < proj - 4) {
-        if (rng() < 0.45) { L.flags.stock = (L.flags.stock || 0) + 2; L.flags.promise = { club: c, slot: theirs }; text = 'You blow them away. They promise to take you at ' + ordinal(theirs) + '.'; tone = 'gold'; }
-        else { text = 'Good workout, but they\'ve got somebody else in mind at ' + ordinal(theirs) + '.'; }
-      } else {
-        L.flags.promise = { club: c, slot: theirs }; text = 'They love you. If you\'re still there, you\'re theirs.'; tone = 'good';
-      }
-      L.pending.unshift(agentCard(L));
-      break;
-    }
-    case 'interview': { ({ text, tone } = chooseInterview(L, card, i, rng)); break; }
-    case 'pworkout': { ({ text, tone } = choosePworkout(L, card, i, rng)); break; }
-    case 'agent': {
-      L.agent = opt.agent;
-      text = say(L, '{agent}') + ' it is.';
-      if (L.agent === 'cousin') bump(L, { morale: 8 });
-      L.phase = 'draft';
-      break;
-    }
-    case 'undrafted': {
-      if (card.ctx && card.ctx.story) {
-        if (!opt.club) {
-          L.flags.overseas = (L.flags.overseas || 0) + 1;
-          L.contract = { years: 1, total: 1, salary: 0.8, kind: 'overseas', start: L.year };
-          L.phase = 'drafted';
-          text = 'A one-year deal in Europe. Real money, real minutes.';
-          logIt(L, 'Signed overseas after going undrafted.', '');
-          break;
-        }
-        /* The floor is 5%: a player too weak to be drafted almost never talks
-           his way onto a roster from Summer League. At 10% the high school
-           road reached the league 94.9% of the time over 3,000 careers, on
-           the 95% ceiling, so CI's 1,000 flapped with any change to the
-           seeds. At 5% it is 94.4 on CI's sample and 94.3 on 1,500 roads. */
-        const pSL = clamp(0.04 + (ovrOf(L) - 58) * 0.033 + (L.m.fame - 20) * 0.003, 0.05, 0.85);
-        if (rng() >= pSL) {
-          L.flags.overseas = (L.flags.overseas || 0) + 1;
-          L.contract = { years: 1, total: 1, salary: 0.6, kind: 'overseas', start: L.year };
-          L.phase = 'drafted';
-          text = 'Five games in Las Vegas. Good ones. The ' + nick(opt.club) + ' go another way. You sign overseas.';
-          tone = 'bad';
-          logIt(L, 'Cut after Summer League. Signed overseas.', 'bad');
-          break;
-        }
-        remember(L, 'sl.made', true);
-      }
-      L.contract = { years: 1, total: 1, salary: round1(capFor(L.year) * MIN_PCT), kind: 'min', start: L.year };
-      /* A two-way deal is mostly G League nights, until the club converts it. */
-      if (card.ctx && card.ctx.story) L.contract.tw = 1;
-      joinTeam(L, opt.club, false);
-      L.draft = { pick: null, round: null, team: opt.club };
-      text = L.contract.tw ? 'Two-way deal with the ' + E.teamName(opt.club) + '. Most nights you\'ll be in the G League. Prove you belong.'
-        : 'Two-way deal with the ' + E.teamName(opt.club) + '. Prove it.'; tone = 'good';
-      logIt(L, text, 'good');
-      L.phase = 'drafted';
-      openYear(L);
-      break;
-    }
-    case 'training': {
-      if (card.ctx && card.ctx.ks) { text = summerChoose(L, card.ctx.ks[i], rng); tone = 'good'; break; }
-      const t = TRAIN[i];
-      const young = L.age <= 24 ? 1 : L.age <= 28 ? 0.8 : 0.6;
-      if (t) {
-        const d = {};
-        for (const k in t) d[k] = Math.round(t[k] * young * (0.7 + rng() * 0.6));
-        bump(L, d);
-        text = 'A good summer. It shows the first week of camp.'; tone = 'good';
-      } else { bump(L, { health: 18 }); L.flags.restYears = (L.flags.restYears || 0) + 1; text = 'You actually rest. You feel twenty-two again.'; tone = 'good'; }
-      break;
-    }
-    case 'injury': {
-      const s = L.season, inj = s && s.injury;
-      const g = card.ctx.g;
-      if (inj) {
-        if (card.ctx.major) remember(L, 'inj.major', L.age);
-        if (card.ctx.major) {
-          if (i === 0) { inj.until = inj.from + g; bump(L, { ath: -2, health: -8 }); text = 'The surgery goes well. Now comes the long part.'; }
-          else if (i === 1) {
-            if (rng() < 0.55) { inj.until = inj.from + Math.round(g * 0.6); bump(L, { health: -6 }); text = 'You\'re back early, and it holds.'; tone = 'good'; }
-            else { inj.until = inj.from + Math.round(g * 1.3); bump(L, { ath: -4, health: -14, dur: -6 }); text = 'It doesn\'t hold. Now you need the surgery anyway.'; tone = 'bad'; }
-          } else { bump(L, { cash: -Math.min(0.6, L.cash * 0.2) }); inj.until = inj.from + Math.round(g * 0.85); bump(L, { ath: -1 }); text = 'The specialist finds a better plan. You\'re back a little sooner.'; tone = 'good'; }
-        } else if (i === 0) {
-          if (rng() < 0.6) { inj.until = inj.from + Math.ceil(g / 2); bump(L, { trust: 4 }); text = 'Back in half the time. Your teammates notice.'; tone = 'good'; }
-          else { inj.until = inj.from + g + 6; bump(L, { health: -8 }); text = 'You make it worse. Now you\'re out longer.'; tone = 'bad'; }
-        } else { inj.until = inj.from + g; bump(L, { health: 6 }); text = varyRes(L, card, 'inj_rest', 'You give it time. It heals right.'); }
-        inj.pendingDecision = false;
-        const missed = inj.until - inj.from;
-        logIt(L, 'Out ' + missed + ' games with a ' + inj.kind + '.', 'bad');
-      }
-      break;
-    }
-    case 'allstar': {
-      if (i === 0) {
-        if (rng() < clamp((L.rt.ath - 60) * 0.025, 0.05, 0.85)) { L.flags.dunk = (L.flags.dunk || 0) + 1; bump(L, { fame: 10 }); text = 'You jump over a car. The building loses it. Dunk champ.'; tone = 'gold'; }
-        else { bump(L, { fame: 2 }); text = 'You miss your best dunk twice. The judges are kind.'; }
-        contest = contestField(L, 'dunk', tone === 'gold');
-      } else if (i === 1) {
-        if (rng() < clamp((L.rt.sho - 65) * 0.025, 0.05, 0.85)) { L.flags.threes = (L.flags.threes || 0) + 1; bump(L, { fame: 8 }); text = 'You drain the whole money-ball rack. Three-point champ.'; tone = 'gold'; }
-        else { bump(L, { fame: 2 }); text = 'Out in the first round. You laugh it off with the guys.'; }
-        contest = contestField(L, 'three', tone === 'gold');
-      } else { bump(L, { health: 6 }); text = 'You skip Saturday. Fresh legs for the second half.'; }
-      logIt(L, text, tone);
-      // the field is display, so a career from before it keeps its log as it was
-      if (contest) logIt(L, contestLine(contest), tone);
-      break;
-    }
-    case 'clutch': {
-      const o = clutchOptions(L, card.ctx && card.ctx.look)[i];
-      const cur = L.season.po.cur;
-      made = rng() < touched(o.p, touch, L);
-      cur.waiting = false;
-      if (duelOn(L) && card.ctx && card.ctx.look) {
-        const d = duelGame(L, seriesP(L, L.team, cur.opp, !!card.ctx.home), made, rng, card, i, beats, 'Game 7');
-        won = d.won;
-        cur.games.push(won ? 1 : 0);
-        if (won) cur.w = 4; else cur.l = 4;
-        if (made) { bump(L, { fame: 6 }); remember(L, 'g7.made', true); if (won) { L.flags.g7 = (L.flags.g7 || 0) + 1; clutchHit(L, beats); } }
-        bump(L, { fame: won ? 4 : 0, morale: (won ? 8 : -8) + (made ? 3 : -3) });
-        text = d.text; tone = made ? 'gold' : 'bad';
-        logIt(L, 'Game 7 against the ' + nick(cur.opp) + ': ' + (made ? (won ? 'hit the winner.' : 'hit the shot. They answered.') : won ? 'missed it. ' + ((card.ctx && card.ctx.mate) || 'The bench') + ' saved it.' : 'missed the last shot.'), won ? 'gold' : 'bad');
-        endSeries(L, beats);
-        break;
-      }
-      cur.games.push(made ? 1 : 0);
-      if (made) { cur.w = 4; L.flags.g7 = (L.flags.g7 || 0) + 1; clutchHit(L, beats); remember(L, 'g7.made', true); bump(L, { fame: 10, morale: 10 }); text = 'Good! Series over. You\'ll be watching that one for the rest of your life.'; tone = 'gold'; }
-      else { cur.l = 4; bump(L, { morale: -10 }); text = 'No good. The whole building goes quiet.'; tone = 'bad'; }
-      logIt(L, 'Game 7 against the ' + nick(cur.opp) + ': ' + (made ? 'hit the winner.' : 'missed the last shot.'), made ? 'gold' : 'bad');
-      endSeries(L, beats);
-      break;
-    }
-    case 'moment': {
-      const r = momentResolve(L, card, i, rng, touch, touches);
-      text = r.text; tone = r.tone; made = r.made;
-      if (r.won != null) won = r.won;
-      if (r.shots) shots = r.shots;
-      break;
-    }
-    case 'extension': {
-      if (i === 0) {
-        const yrs = card.ctx.years || 5;
-        L.contract = { years: yrs + 1, total: yrs, salary: L.contract.salary, next: card.ctx.sal, kind: 'vet', start: L.year };
-        text = 'Signed. ' + yrs + ' years, ' + money(card.ctx.sal) + ' a year.'; tone = 'gold';
-        logIt(L, 'Signed an extension: ' + yrs + ' years, ' + money(card.ctx.sal) + ' a year.', 'gold');
-        bump(L, { morale: 6, trust: 6 });
-      } else { text = 'You bet on yourself. Next summer, the price goes up.'; bump(L, { fame: 2 }); }
-      break;
-    }
-    case 'fa': {
-      const f = card.ctx.offers[i];
-      const old = L.team;
-      L.contract = { years: f.years, total: f.years, salary: f.salary, kind: 'vet', start: L.year + 1 };
-      if (f.club !== old) joinTeam(L, f.club, false);
-      text = (f.club === old ? 'Re-signed with the ' : 'Signed with the ') + E.teamName(f.club) + '. ' + f.years + ' years, ' + money(f.salary) + ' a year.';
-      tone = 'gold';
-      if (f.club === old) logIt(L, text, 'gold');
-      bump(L, { morale: 5 });
-      break;
-    }
-    case 'after': {
-      if (card.ctx && card.ctx.paths) {
-        const path = card.ctx.paths[i];
-        L.final = legacy(L);
-        L.final.path = path;
-        L.final.after = AFTER_PATHS.find((p) => p[0] === path)[1] + '.';
-        text = 'New city, new chapter.'; tone = 'gold';
-        if (!dealNamed(L, 'post', 'ep_' + path)) finishLife(L, '');
-        break;
-      }
-      L.retired = true;
-      L.phase = 'retired';
-      L.final = legacy(L);
-      L.final.after = chooseAfter(L, i, rng);
-      text = L.final.after; tone = 'gold';
-      logIt(L, text, 'gold');
-      break;
-    }
-    case 'retire': {
-      if (i === 1) { L.pending = []; retire(L, beats); text = 'You walk away.'; tone = 'gold'; }
-      else { text = varyRes(L, card, 'retire_more', 'One more year. Let\'s go.'); bump(L, { morale: 3 }); }
-      break;
-    }
-    case 'nooffer': {
-      if (i === 0) { L.pending = []; retire(L, beats); text = 'You walk away.'; tone = 'gold'; }
-      else {
-        L.flags.overseas = (L.flags.overseas || 0) + 1;
-        if (L.history.length && !recall(L, 'route.detour.left')) remember(L, 'route.detour.left', true);
-        L.team = null;
-        L.contract = { years: 1, total: 1, salary: 0.8, kind: 'overseas', start: L.year + 1 };
-        text = 'A year in Europe. Big minutes and a second chance.';
-        logIt(L, 'Signed overseas for a year.', '');
-      }
-      break;
-    }
-    case 'goal': L.season.goal = card.ctx.ks[i]; L.season.goalWho = card.ctx.who || null; text = pick(rng, ['Locked in. April will tell.', 'You said it out loud. No taking it back.', 'It\'s written down. Now go get it.']); break;
-    case 'deadline': text = chooseDeadline(L, card, i, rng); tone = L.team !== card.ctx.from ? 'gold' : ''; break;
-    case 'coach_talk': text = chooseCoachTalk(L, card, i, rng); break;
-    case 'coach_review': text = chooseCoachReview(L, i, rng); break;
-    case 'nickname':
-      if (i === 0) { L.nick = card.ctx.nm; logIt(L, 'They call you ' + L.nick + '.', 'gold'); feed(L, 'nick', L.name + ' has a name now: ' + L.nick + '.'); text = 'It sticks. By summer, kids at camp are calling you it.'; tone = 'gold'; }
-      else { text = 'They mostly drop it.'; }
-      break;
-    case 'build_sig': case 'build_arch': case 'build_pos':
-      text = chooseBuild(L, card, i) || ''; tone = 'good';
-      break;
-    default: {
+  if (road) { text = road.text; tone = road.tone; if (road.made != null) made = road.made; if (road.won != null) won = road.won; } else {
+    /* A system card answers through its entry in ANSWER, beside the function that builds it.
+       Everything else is an event, answered by its own data. */
+    const sys = ANSWER[card.id];
+    if (sys) ({ text, tone, made, won, shots, contest } = sys(L, card, i, opt, rng, beats, touch, touches));
+    else {
       const ev = evById(card.id);
       if (!card.take) watchPick(L, card.id, i, beats);
       if (ev && card.take && ev.takes && ev.takes[card.take - 1]) {

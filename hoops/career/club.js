@@ -77,6 +77,12 @@ function coachTalkCard(L) {
     options: opts.slice(0, 4).map((o) => ({ label: o.label, hint: o.hint })),
   };
 }
+/* The answers to a talk with the coach (choose() runs them). */
+ANSWER.coach_talk = function(L, card, i, opt, rng, beats, touch, touches) {
+  let text = '', tone = '', made = null, won = null, shots = null, contest = null;
+  text = chooseCoachTalk(L, card, i, rng);
+  return { text, tone, made, won, shots, contest };
+};
 function coachP(L, k) {
   const role = roleOf(L), st = coachStyle(L), perf = perfOf(L);
   const ageAdj = L.age <= 24 ? st.young : L.age >= 30 ? -st.young : 0;
@@ -177,6 +183,12 @@ function roleReview(L, beats, when) {
     });
   }
 }
+/* The answers to the coach's review (choose() runs them). */
+ANSWER.coach_review = function(L, card, i, opt, rng, beats, touch, touches) {
+  let text = '', tone = '', made = null, won = null, shots = null, contest = null;
+  text = chooseCoachReview(L, i, rng);
+  return { text, tone, made, won, shots, contest };
+};
 function chooseCoachReview(L, i, rng) {
   if (i === 0) { bump(L, { trust: 5, eth: 3 }); return 'Extra film, extra shots. He catches you in the gym at seven a.m.'; }
   if (i === 1) { const r = weakSpot(L); L.focus = { k: r, y: L.year }; bump(L, { trust: 4 }); return 'He names it: ' + RATING_NAME[r].toLowerCase() + '. He pulls up the clips. That\'s your project now.'; }
@@ -512,6 +524,12 @@ function deadlineCard(L, why, dests) {
     ],
   };
 }
+/* The answers to the trade deadline (choose() runs them). */
+ANSWER.deadline = function(L, card, i, opt, rng, beats, touch, touches) {
+  let text = '', tone = '', made = null, won = null, shots = null, contest = null;
+  text = chooseDeadline(L, card, i, rng); tone = L.team !== card.ctx.from ? 'gold' : '';
+  return { text, tone, made, won, shots, contest };
+};
 /* Seasons in a row with the club you are on now. */
 function tenure(L) {
   let n = 0;
@@ -772,6 +790,20 @@ function summerCard(L) {
     options: ks.map((k) => { const P = SUMMER[k], rook = P.l0 && L.seasonsDone === 0; return { label: rook ? P.l0 : P.l, hint: rook ? P.h0 : P.hy && L.age <= 24 ? P.hy : P.h }; }),
   };
 }
+/* The answers to the summer (choose() runs them). */
+ANSWER.training = function(L, card, i, opt, rng, beats, touch, touches) {
+  let text = '', tone = '', made = null, won = null, shots = null, contest = null;
+  if (card.ctx && card.ctx.ks) { text = summerChoose(L, card.ctx.ks[i], rng); tone = 'good'; return { text, tone, made, won, shots, contest }; }
+  const t = TRAIN[i];
+  const young = L.age <= 24 ? 1 : L.age <= 28 ? 0.8 : 0.6;
+  if (t) {
+    const d = {};
+    for (const k in t) d[k] = Math.round(t[k] * young * (0.7 + rng() * 0.6));
+    bump(L, d);
+    text = 'A good summer. It shows the first week of camp.'; tone = 'good';
+  } else { bump(L, { health: 18 }); L.flags.restYears = (L.flags.restYears || 0) + 1; text = 'You actually rest. You feel twenty-two again.'; tone = 'good'; }
+  return { text, tone, made, won, shots, contest };
+};
 function summerChoose(L, k, rng) {
   const P = SUMMER[k];
   const young = L.age <= 24 ? 1 : L.age <= 28 ? 0.8 : 0.6;
