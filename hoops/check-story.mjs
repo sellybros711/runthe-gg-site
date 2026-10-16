@@ -423,6 +423,44 @@ section('15. nothing reads the same twice: the summer, the goal and the answers'
   ok(rookPlain > 0 && laterAgain > 0, `the first summer offers it plain and a later one says again (${rookPlain} plain, ${laterAgain} again)`);
 }
 
+section('17. an answer matters later: every remembered answer is read, every arc forks on it');
+{
+  /* ANSWERS THAT MATTER (the owner's call, 2026-10-16). Measured before:
+     81 of 103 keys an answer remembers were never read again, and 14 arcs
+     started the same way whatever the player said. Read off the parts, so a
+     new card that remembers something nobody reads fails here. */
+  const DIR = path.join(HERE, 'career');
+  const src = fs.readdirSync(DIR).filter((f) => f.endsWith('.js')).map((f) => fs.readFileSync(path.join(DIR, f), 'utf8')).join('\n');
+  const set = new Set();
+  for (const m of src.matchAll(/\bset: '([^']+)'/g)) set.add(m[1]);
+  for (const m of src.matchAll(/\bset: \[([^\]]*)\]/g)) for (const k of m[1].matchAll(/'([^']+)'/g)) set.add(k[1]);
+  const read = new Set(Object.keys(C.CALLBACKS));
+  for (const m of src.matchAll(/recall\(L, '([^']+)'/g)) read.add(m[1]);
+  for (const m of src.matchAll(/\bcb: '([^']+)'/g)) read.add(m[1]);
+  for (const m of src.matchAll(/\b(?:mem|notMem): \[([^\]]*)\]/g)) for (const k of m[1].matchAll(/'([^']+)'/g)) read.add(k[1]);
+  const unread = [...set].filter((k) => !read.has(k)).sort();
+  ok(set.size > 80, `the answers' memories are found (${set.size})`);
+  ok(!unread.length, `every memory an answer leaves is read again (${unread.join(', ') || 'all ' + set.size})`);
+  /* A card whose every answer starts the same arc must start it differently
+     (its data, or what it remembers), and every field an answer hands an arc
+     is read by the arc. */
+  const blocks = src.split(/\n  (?=[a-z][a-z0-9_]*: \{)/);
+  const same = [], fields = [];
+  for (const b of blocks) {
+    const id = b.slice(0, b.indexOf(':'));
+    const opts = b.split(/\bO\(/).slice(1);
+    if (opts.length < 2) continue;
+    const starts = opts.map((o) => { const m = o.match(/start: \[('[a-z0-9]+')[^\]]*?(\{[^}]*\})?\]/); return m ? { arc: m[1], d: m[2] || '', set: (o.match(/\bset: (\[[^\]]*\]|'[^']+')/) || [])[1] || '' } : null; });
+    for (const st of starts) if (st && st.d) for (const f of st.d.matchAll(/([a-z]+): /g)) fields.push([id, st.arc.slice(1, -1), f[1]]);
+    if (starts.every(Boolean) && new Set(starts.map((x) => x.arc)).size === 1 && new Set(starts.map((x) => x.d + '|' + x.set)).size === 1) same.push(id);
+  }
+  ok(blocks.length > 300, `the cards are found (${blocks.length})`);
+  ok(!same.length, `no card starts the same arc the same way whatever you answer (${same.join(', ') || 'none'})`);
+  const unreadF = fields.filter(([, arc, f]) => !new RegExp("arcData\\(L, '" + arc + "'\\)\\." + f + '\\b|arcData\\(L, \'' + arc + "'\\);?[^\\n]*\\b" + f + '\\b').test(src)).map((x) => x.join('.'));
+  ok(fields.length > 20, `the data answers hand to arcs is found (${fields.length})`);
+  ok(!unreadF.length, `every field an answer hands an arc is read by it (${[...new Set(unreadF)].join(', ') || 'all'})`);
+}
+
 section('16. the bracket is the one the engine played');
 {
   /* The playoff screen draws the whole bracket off bracketOf. Every series
