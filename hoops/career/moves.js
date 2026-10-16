@@ -156,7 +156,7 @@ Object.assign(ACTS, {
     when: (L) => !!(L.phase === 'off' && L.seasonsDone >= 2 && !recall(L, 'move.position')),
     run(L) {
       const i = POS.indexOf(L.pos), opts = [i - 1, i + 1].filter((k) => k >= 0 && k < POS.length).map((k) => POS[k]);
-      L.pending.push(moveCard('posmove', 'posmove', 'The summer', 'The gym', 'Where do you want to play?', '{coach} is open to it. "Show me in camp," he says.',
+      L.pending.push(moveCard('posmove', 'posmove', 'The summer', 'The gym', 'Where do you want to play?', 'The coaches are open to it. "Show me in camp," they say.',
         opts.map((p) => ({ label: 'Move to ' + POS_NAME[p].toLowerCase(), hint: p === 'C' || p === 'PF' ? 'Bigger, closer to the rim' : 'Smaller, more ball in your hands' })).concat([{ label: 'Stay where you are', hint: 'It\'s your spot' }]), { opts }));
       return 'You spend a week watching film of yourself at a new spot.';
     },
