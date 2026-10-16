@@ -204,14 +204,15 @@ try {
     // with the gear cap binding, the set still lands on top: wear the strongest putting closet, then finish Haunted Links
     __B.init(); __B.raw(80); __B.own(items.map((i) => i.key)); __B.naked();
     ['hw:halo', 'ew:prismshades', 'pu:goldplated', 'cl:wand', 'bl:marble'].forEach((k) => { const it = items.find((i) => i.key === k); if (it) __B.wear(it.cat, it.id); });
-    const capped = __B.stats().st.put; __B.own(dropById('spooky').items.map((ci) => cosKey(ci[0], ci[1]))); const over = __B.stats().st.put;
+    const capped = __B.stats().st.put, capLabel = accBoostSummaryNode().textContent; __B.own(dropById('spooky').items.map((ci) => cosKey(ci[0], ci[1]))); const over = __B.stats().st.put;
     S.setupEdit = true; S.screen = 'setup'; S.overlay = null; render();
     const listed = [...document.querySelectorAll('.cb-row')].map((e) => e.textContent.trim());
-    return { out, capped, over, listed, eight: Object.keys(COLLECTION_SETS).length, stats: new Set(Object.values(COLLECTION_SETS)).size };
+    return { out, capped, over, listed, capLabel, eight: Object.keys(COLLECTION_SETS).length, stats: new Set(Object.values(COLLECTION_SETS)).size };
   });
   ok('eight collections cover eight different stats', sets.eight === 8 && sets.stats === 8, sets);
   const sbad2 = Object.entries(sets.out).filter(([, v]) => v.part !== 80 || v.full !== 81);
   ok('each collection adds +1 on its stat only when every piece is owned', sbad2.length === 0, sbad2.slice(0, 3));
+  ok('the closet says which cap bit (a stat over +' + C.sc + ')', new RegExp('capped at \\+' + C.sc + ' a stat').test(sets.capLabel), sets.capLabel.slice(0, 120));
   ok('a set lands on top of a gear cap that already binds (Putting ' + sets.capped + ' then ' + sets.over + ')', sets.capped === 85 && sets.over === 86, sets);
 
   /* ------------------------------------------------------------------ PAST 99 */

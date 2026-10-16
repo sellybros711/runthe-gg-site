@@ -19451,9 +19451,13 @@ function accBoostSummaryNode(){
   }
   const total=order.reduce((a,k)=>a+b[k],0);
   let raw=0; clubs.concat(worn,sets).forEach(r=>{ for(const k in r.b) raw+=r.b[k]; });
+  // say which cap bit: a stat past +ACC_SKILL_CAP, the +ACC_TOTAL_CAP total, or both (sets sit outside both)
+  const gsum={}; clubs.concat(worn).forEach(r=>{ for(const k in r.b) gsum[k]=(gsum[k]||0)+r.b[k]; });
+  const statHit=Object.values(gsum).some(v=>v>ACC_SKILL_CAP), totHit=Object.values(gsum).reduce((a,v)=>a+Math.max(-ACC_SKILL_CAP,Math.min(ACC_SKILL_CAP,v)),0)>ACC_TOTAL_CAP;
+  const capTxt=statHit&&totHit?`capped at +${ACC_SKILL_CAP} a stat and +${ACC_TOTAL_CAP} in all`:statHit?`capped at +${ACC_SKILL_CAP} a stat`:totHit?`capped at +${ACC_TOTAL_CAP} in all`:'';
   // compact summary (owner: "way too much reading"): one line + the per-skill chips; the per-item
   // breakdown lives behind a details expander.
-  node.appendChild($(`<div class="small" style="margin-bottom:6px"><b style="color:var(--gold)">Active boosts</b> · <b style="color:${total>=0?'#41dea6':'#e2554e'}">${total>=0?'+':''}${total}</b> total <span class="muted">·${raw>total?' capped at +'+ACC_TOTAL_CAP+' ·':''} Career only</span></div>`));
+  node.appendChild($(`<div class="small" style="margin-bottom:6px"><b style="color:var(--gold)">Active boosts</b> · <b style="color:${total>=0?'#41dea6':'#e2554e'}">${total>=0?'+':''}${total}</b> total <span class="muted">·${capTxt?' '+capTxt+' ·':''} Career only</span></div>`));
   if(order.length){
     const chips=$(`<div class="boostchips" style="margin-top:2px"></div>`);
     order.forEach(k=>{ const v=b[k]; chips.appendChild($(`<span class="boostchip" style="${v<0?'color:#e2554e;border-color:rgba(226,85,78,.4)':''}">${v>=0?'+':''}${v} ${esc(CATS.find(c=>c.k===k).short)}</span>`)); });
