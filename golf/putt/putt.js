@@ -3889,7 +3889,7 @@ function frame(){
   var P = S.play, C = P.C, ctx = S.cv.getContext('2d'), W = S.cv.width, H = S.cv.height, now = gnow() / 1000, clock = now - P.clock0;
   v3Tick(); trailTick(4);
   if (S.round.mode === 'pdaily') dailyClock(P);
-  if (P.state === 'cheer' && (gnow() - P.cheerAt) / PLAY_RATE > (P.cheerAce ? CHEER_ACE : CHEER_MS)){ P.state = 'aim'; cancelAnimationFrame(S.raf); return holeOut(); }
+  if (P.state === 'cheer' && (gnow() - P.cheerAt) / PLAY_RATE > (P.cheerAce ? CHEER_ACE : CHEER_MS)){ P.state = 'aim'; return holeOut(); }   // the hole keeps living behind the card, as it always did
   // where the ball is: at rest, or partway along the putt it is playing back
   var bx = P.ball[0], by = P.ball[1], falling = 0, bz = 0, hidden = false;
   if (P.state === 'roll'){
@@ -3936,7 +3936,7 @@ function frame(){
   if ((P.state === 'aim' && !(P.intro && performance.now() - P.intro < 1300)) || (P.state === 'roll' && (gnow() - P.shotStart) / PLAY_RATE < 900)) drawGolfer(ctx, P, cam);
   if (P.state === 'roll' && !hidden) drawRollTrail(ctx, cam, P, bx, by, bz);
   if (P.state === 'cheer') drawCheer(ctx, P, cam, (gnow() - P.cheerAt) / PLAY_RATE / 1000);
-  else if (!hidden) drawBall(ctx, cam, bx, by, falling, bz);
+  else if (!hidden && !P.sunk) drawBall(ctx, cam, bx, by, falling, bz);   // a ball that dropped is gone: never drawn back on the cup behind the card
   if (cam.v3 && cam.v3.amb) drawFlyers(ctx, C, cam, performance.now() / 1000);
   if (P.fx && cam.v3) drawFxScreen(ctx, W, H, cam.v3.night);
   readChip(P, bx, by);
@@ -3992,7 +3992,7 @@ function settle(){
   else P.ball = sh.rest.slice();
   P.state = 'aim'; P.shot = null;
   if (sh.holed){ if (S.round.mode === 'pdaily' && P.t0) P.tEnd = Math.round(performance.now() - P.t0);
-    P.state = 'cheer'; P.cheerAt = gnow(); P.cheerAce = P.strokes === 1; return; }
+    P.sunk = true; P.state = 'cheer'; P.cheerAt = gnow(); P.cheerAce = P.strokes === 1; return; }
   saveCur(P, P.ball);
   if (S.round.mode === 'ppt' && P.strokes >= C.par){ P.state = 'done'; return tourOut(false); }
   if (P.strokes >= P.cap){ return holeOut(true); }
