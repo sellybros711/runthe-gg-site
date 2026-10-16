@@ -6197,7 +6197,7 @@ function overlayPurchased(screen){
       +'<h3 class="tphead" style="margin:14px 0 4px;font-size:30px">'+esc(passThemeName())+' is ACTIVE!</h3>'
       +'<p class="lede" style="max-width:420px;margin:0 auto 12px">Yours for the rest of Season '+ssn.n+' ('+ssn.daysLeft+' day'+(ssn.daysLeft>1?'s':'')+' left).</p>'
       +'<div style="display:flex;flex-direction:column;gap:6px;margin:0 auto 14px;max-width:320px;text-align:left">'
-      +[['🎟️','PRO lane of the Season '+ssn.n+' Tour Pass track unlocked'],['♾️','Unlimited Daily Challenge plays'],['🪙','+'+coinFmt(TOURPASS.coins)+' coins, already in your wallet'],['🎁',TOURPASS.packs+' seasonal packs, waiting in Pro Shop → Packs'],['⭐',PASS_REWARD_MULT+'× coins from every mode, starting now']]
+      +[['🎟️','PRO lane of the Season '+ssn.n+' Tour Pass track unlocked'],['♾️','Unlimited Daily Challenge plays'],['🪙','+'+coinFmt(TOURPASS.coins)+' coins, already in your wallet'],['🎁',TOURPASS.packs+' seasonal packs, waiting in Pro Shop → Packs'],['⭐',PASS_REWARD_MULT+'× coins from Play 18, Career and Head to Head, starting now']]
         .map(function(x){ return '<div class="small" style="display:flex;gap:8px;align-items:center;color:#eaf5ee"><span style="flex:0 0 auto">'+x[0]+'</span><span>'+esc(x[1])+'</span></div>'; }).join('')
       +'</div>'
       +'<button class="btn tpgo act" style="max-width:360px;margin:0 auto 8px">Open your packs ▸</button>';
@@ -12193,7 +12193,7 @@ function grandfatherLook(){ if(!sbSignedIn()||!S.look) return; const s=coinState
   own('shirt',S.look.polo); own('pat',S.look.shirtPat); own('hat',S.look.hat); own('pants',S.look.pants); own('shoes',S.look.shoes);
   if(ch) coinSave(s);
 }
-function buildPlayer(){const p={name:S.name||'Your Golfer',you:true};
+function buildPlayer(o){const p={name:S.name||'Your Golfer',you:true};
   CATS.forEach(c=>p[c.k]=S.slots[c.k]?S.slots[c.k].value:REPLACEMENT);
   // caddie: bake the always-on part of your caddie's power into your ratings so it shows in OVR + radar
   // (situational major/venue bonuses are added to your event overall in the sim, not here). Clamped so a
@@ -12202,7 +12202,8 @@ function buildPlayer(){const p={name:S.name||'Your Golfer',you:true};
   if(cad && cad.power.base){ for(const k in cad.power.base){ if(p[k]!=null) p[k]=Math.max(40,Math.min(99, p[k]+cad.power.base[k])); } p._caddie=cad.id; }
   // CS325: temporary career-decision effects (injuries / coaching boosts) - display side; career only.
   // The SIM applies the same delta as a course-fit-weighted eo nudge in beginEvent (see careerFxEo).
-  if(typeof careerFxOn==='function' && careerFxOn()){ for(const c of CATS){ const d=careerSkillFx(c.k); if(d && p[c.k]!=null) p[c.k]=Math.max(40,Math.min(99, p[c.k]+d)); } }
+  // o.noFx: the golfer the season sim plays, which takes these as careerFxEo in beginEvent instead (seasonMeSync)
+  if(!(o&&o.noFx) && typeof careerFxOn==='function' && careerFxOn()){ for(const c of CATS){ const d=careerSkillFx(c.k); if(d && p[c.k]!=null) p[c.k]=Math.max(40,Math.min(99, p[c.k]+d)); } }
   // equipped accessory/bag boosts LAST. Applied in CAREER only (Daily/Spotlight/Legend set S.daily=true and stay
   // a neutral field). Online H2H uses its own path (h2hSkills), not buildPlayer. Gear is the ONE thing that may
   // push an effective rating past 99 (up to 99+ACC_SKILL_CAP), so a fully-kitted OVR can read over 99.
@@ -12965,7 +12966,7 @@ function scrRules(){
   perkSection('🎴 Packs','var(--gold)','Open packs, spin the wheel',null,[
     ['🟢','Three tiers','Base, Tour and Champion packs, each pricier with better odds at rare and legendary items. The drop-rate odds for every rarity are published right on the pack screen.'],
     ['🎡','Wheel-spin reveal','Opening a pack spins a wheel that lands on your item. Every duplicate earns a shard; duplicates from packs you BOUGHT also refund coins.'],
-    ['◆','Earn shards by playing','Duplicates earn shards, and so do challenges: finish all your daily quests for a common shard, weekly challenges pay a rare shard (epic on the first two), and the 7-Day Rewards and login calendars drop shards along the way. Legendary shards come only from legendary duplicates.'],
+    ['◆','Earn shards by playing','Duplicates earn shards, and so do challenges: finish all your daily quests for a common shard, weekly challenges pay a rare shard (epic on the first two), and the 7-Day Rewards and login calendars drop shards along the way. Legendary shards come from legendary duplicates and the Tour Pass.'],
     ['🎁','Lots of free packs','Your first pack is on us, weekly challenges and daily streaks hand out free packs, invite a friend and you both get one, and a 5-pack bundle saves you a pack\'s worth of coins.'],
     ['🛡️','No bad-luck streaks','Pity timers guarantee an epic-or-better and a legendary within a set number of opens, and they hit sooner on the higher tiers.'],
   ]);
@@ -16667,7 +16668,7 @@ function closetRandomOutfit(){
 }
 // best outfit: per boost-carrying category, equip the owned item with the highest NET boost (ties keep your pick)
 function closetBestOutfit(){
-  ['hw','ew','pat','club'].forEach(cat=>{ try{
+  ['hw','ew','pat','club','putter'].forEach(cat=>{ try{
     const own=(cosmeticItems(cat)||[]).filter(o=>cosOwned(cat,o.id)); if(!own.length) return;
     let best=null, bs=-1e9;
     own.forEach(o=>{ const b=cosBoost(cat,o.id)||{}; let s=0; for(const k in b) s+=b[k];
@@ -19541,16 +19542,23 @@ function ratNumStyle(v){ return `color:${ratColor(v)}${v>=90?';text-shadow:0 0 1
 const RAD_CX=125, RAD_CY=124, RAD_R=88;
 function radAng(i){ return (-Math.PI/2)+i*(2*Math.PI/CATS.length); }
 function radPt(i,r){ return [RAD_CX+Math.cos(radAng(i))*r, RAD_CY+Math.sin(radAng(i))*r]; }
+// The golfer a rating web draws: the one the chip beside it shows and the sim plays (gear, caddie and career
+// effects on the career draft, gear on an exhibition Head to Head), so its centre OVR is the chip's number.
+// over: the overall may read past 99 (gear on). Any other slots draw as drafted.
+function radarGolfer(slots){
+  try{ if(slots===S.slots){ const p=buildPlayer(); return {vals:CATS.map(c=>p[c.k]), over:!!p._gear}; }
+    if(S.h2h && slots===S.h2h.slots){ const s=h2hSkills(); return {vals:CATS.map(c=>s[c.k]), over:h2hMatchBoosted(S.h2h.seed)}; } }catch(e){}
+  return {vals:CATS.map(c=> slots[c.k]? slots[c.k].value : REPLACEMENT), over:false}; }
 function dynRadar(slots){
   slots=slots||S.slots;   // CS342: optional slots source so online-mode drafts (S.h2h.slots) reuse the same web
   const n=CATS.length;
-  const cur=CATS.map(c=> slots[c.k]? slots[c.k].value : REPLACEMENT);
+  const rg=radarGolfer(slots), cur=rg.vals;
   const filled=CATS.map(c=> !!slots[c.k]);
   const from = (_radarPrev && _radarPrev.length===n) ? _radarPrev.slice() : cur.map(()=>REPLACEMENT);
   let pulseIdx=-1, pulseMax=0.6; cur.forEach((v,i)=>{ const d=Math.abs(v-(from[i]!=null?from[i]:REPLACEMENT)); if(d>pulseMax){pulseMax=d; pulseIdx=i;} });
   _radarPrev = cur.slice();
   const uid='dr'+(_radarN++);
-  const polyPts=vals=>vals.map((v,i)=>radPt(i,RAD_R*(v/100)).map(x=>x.toFixed(1)).join(',')).join(' ');
+  const polyPts=vals=>vals.map((v,i)=>radPt(i,RAD_R*(Math.min(100,v)/100)).map(x=>x.toFixed(1)).join(',')).join(' ');   // a rating past 99 sits on the outer ring, never past it
   let grid='';
   [0.25,0.5,0.75,1].forEach((f,gi)=>{ grid+=`<polygon points="${CATS.map((_,i)=>radPt(i,RAD_R*f).map(v=>v.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="rgba(244,227,201,${gi===3?0.18:0.06})" stroke-width="1"/>`; });
   let axes='', labels='';
@@ -19558,9 +19566,9 @@ function dynRadar(slots){
     const [lx,ly]=radPt(i,RAD_R+15); labels+=`<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" font-size="9.5" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="${filled[i]?ratColor(cur[i]):'#8797a6'}">${RSHORT[c.k]}</text>`; });
   const baseline=CATS.map((_,i)=>radPt(i,RAD_R*(REPLACEMENT/100)).map(v=>v.toFixed(1)).join(',')).join(' ');
   const sheenPoly=CATS.map((_,i)=>radPt(i,RAD_R).map(v=>v.toFixed(1)).join(',')).join(' ');
-  const dotsStr=cur.map((v,i)=>{const[x,y]=radPt(i,RAD_R*(from[i]/100));return `<circle class="dr-dot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${filled[i]?3.4:1.9}" fill="${ratColor(v)}" stroke="rgba(0,0,0,.25)" stroke-width="${filled[i]?0.6:0}"/>`;}).join('');
+  const dotsStr=cur.map((v,i)=>{const[x,y]=radPt(i,RAD_R*(Math.min(100,from[i])/100));return `<circle class="dr-dot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${filled[i]?3.4:1.9}" fill="${ratColor(v)}" stroke="rgba(0,0,0,.25)" stroke-width="${filled[i]?0.6:0}"/>`;}).join('');
   let pulse='';
-  if(pulseIdx>=0){ const [px,py]=radPt(pulseIdx,RAD_R*(cur[pulseIdx]/100)); pulse=`<circle class="dr-pulse" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="3" fill="none" stroke="${ratColor(cur[pulseIdx])}" stroke-width="2.2"/>`; }
+  if(pulseIdx>=0){ const [px,py]=radPt(pulseIdx,RAD_R*(Math.min(100,cur[pulseIdx])/100)); pulse=`<circle class="dr-pulse" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="3" fill="none" stroke="${ratColor(cur[pulseIdx])}" stroke-width="2.2"/>`; }
   const wrap=$(`<div class="dynradar"><svg class="dr-svg" viewBox="0 0 250 252" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <radialGradient id="${uid}f" cx="50%" cy="45%" r="62%">
@@ -19582,19 +19590,19 @@ function dynRadar(slots){
     <text class="dr-ovr" x="${RAD_CX}" y="${RAD_CY+5}" text-anchor="middle" font-weight="800" font-size="27" style="font-family:var(--mono)">--</text>
     <text x="${RAD_CX}" y="${RAD_CY+16}" text-anchor="middle" font-size="8" font-weight="800" letter-spacing="1.5" fill="#9fb0bd" style="font-family:var(--body)">OVR</text>
   </svg></div>`);
-  animateRadar(wrap.querySelector('.dr-svg'), from, cur);
+  animateRadar(wrap.querySelector('.dr-svg'), from, cur, rg.over);
   return wrap;
 }
-function animateRadar(svg, from, to){
+function animateRadar(svg, from, to, over){
   if(!svg) return;
   const poly=svg.querySelector('.dr-poly'), glow=svg.querySelector('.dr-glow'), dots=[...svg.querySelectorAll('.dr-dot')], ovrT=svg.querySelector('.dr-ovr');
   const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
   const dur=reduce?0:580, t0=performance.now();
   const paint=(vals)=>{
-    const pts=vals.map((v,i)=>radPt(i,RAD_R*(v/100)).map(x=>x.toFixed(1)).join(',')).join(' ');
+    const pts=vals.map((v,i)=>radPt(i,RAD_R*(Math.min(100,v)/100)).map(x=>x.toFixed(1)).join(',')).join(' ');
     poly.setAttribute('points',pts); glow.setAttribute('points',pts);
-    dots.forEach((d,i)=>{ const [x,y]=radPt(i,RAD_R*(vals[i]/100)); d.setAttribute('cx',x.toFixed(1)); d.setAttribute('cy',y.toFixed(1)); });
-    const sk={}; CATS.forEach((c,i)=>sk[c.k]=vals[i]); const ov=Math.round(ovrFromSkills(sk)); const tc=ovrTier(ov).c;
+    dots.forEach((d,i)=>{ const [x,y]=radPt(i,RAD_R*(Math.min(100,vals[i])/100)); d.setAttribute('cx',x.toFixed(1)); d.setAttribute('cy',y.toFixed(1)); });
+    const sk={}; CATS.forEach((c,i)=>sk[c.k]=vals[i]); const ov=Math.round(ovrFromSkills(sk, over)); const tc=ovrTier(ov).c;
     ovrT.textContent=ov; ovrT.setAttribute('fill',tc); poly.setAttribute('stroke',tc); glow.setAttribute('stroke',tc);
   };
   if(dur===0){ paint(to); return; }
@@ -20266,7 +20274,15 @@ let _lbRects=null;   // {name: top-within-board} from the previous season render
 let _hvbRects=null;  // {name: top-within-board} of the tracer's floating scoreboard, for crisp FLIP swaps
 var _hvHudHole=null; // TRACER REVAMP: course:hole the HUD chips were last built for (they slide in on a new hole only). `var`: read before this line can execute.
 let _prevScTotal=null;   // your last-rendered rounded to-par, for the scorecard count-up tween
+// THE GOLFER THE SEASON PLAYS. The field holds S.season.me from the day the season started, so a closet changed
+// mid-season (gear, a caddie) never reached the sim that season while every screen showed it at once. Each event
+// re-reads the golfer. Career injuries and coaching (careerFx) stay out of it: beginEvent adds them as
+// careerFxEo, once (the snapshot used to carry any active at the season's start as well, so they counted twice).
+function seasonMeSync(){ const me=S.season&&S.season.me; if(!me||S.daily) return; let p; try{ p=buildPlayer({noFx:true}); }catch(e){ return; }
+  CATS.forEach(c=>{ me[c.k]=p[c.k]; }); me.skill=p.skill;
+  if(p._gear) me._gear=1; else delete me._gear; if(p._caddie) me._caddie=p._caddie; else delete me._caddie; }
 function beginEvent(){
+  seasonMeSync();
   let evt=S.schedule[S.evtIndex];
   let field=S.season.field, stagger=null;
   // THE BREAKAWAY LEAGUE: a major is the one week the two sides still meet. Whichever side you play for,
@@ -28908,7 +28924,7 @@ function bracketGroupStakes(){
     `<div class="bst l">Bottom ${BRACKET_GROUP_SIZE-BRACKET_ADV} → season over</div></div>`;
 }
 function bracketOvr(o){
-  try{ const v=Math.round(ovrFromSkills(o.p)); if(isFinite(v)&&v>0) return v; }catch(e){}
+  try{ const v=Math.round(ovrFromSkills(o.p, !!(o.p&&o.p._gear))); if(isFinite(v)&&v>0) return v; }catch(e){}   // your gear may carry you past 99, as on every other screen
   return (o.p&&isFinite(o.p.skill))?Math.round(o.p.skill):null;
 }
 function bracketFaceoff(me, opp, showOvr){
@@ -30011,6 +30027,8 @@ function playerCardHeadline(info){
    The two cosmetics the old card carried still show: the equipped card background fills the portrait
    window, and the equipped nameplate is the bar behind the name. */
 let _pkLockup=null;
+// the share card's OVR shield: 30 cells, wider for a three digit overall so it prints at full size
+function ovrShieldW(ov){ return Math.max(30, PIXK.textW(String(ov),{scale:2,bold:true})+4); }
 function drawPlayerCard(ctx,W,H,o){
   const P=PIXK, U=4, GW=270, GH=338;
   ctx.imageSmoothingEnabled=false;
@@ -30067,11 +30085,11 @@ function drawPlayerCard(ctx,W,H,o){
   for(let y=wy;y<wy+wh;y++) for(let x=wx;x<wx+ww;x++){ const d=Math.min(x-wx,y-wy,wx+ww-1-x,wy+wh-1-y);
     if(d===0||d===3) top.put(x,y,P.K); else if(d<=2) top.put(x,y,(x-wx+y-wy<(ww+wh)/2)?P.GOLD[1]:P.GOLD[4]); }
   // the OVR shield on the window's corner
-  { const bx=176, by=170, bw=30, bh=32;
+  { const ov=''+(o.ovr==null?'':o.ovr), bw=ovrShieldW(ov), bx=206-bw, by=170, bh=32;   // 100 and up: wider, right edge fixed
     for(let y=by;y<by+bh;y++){ const inset=y>by+bh-10?Math.round((y-(by+bh-10))*1.4):0;
       for(let x=bx+inset;x<bx+bw-inset;x++){ const j=y-by; top.put(x,y, j<2?P.GOLD[0]:j<12?P.GOLD[2]:j<22?P.GOLD[3]:P.GOLD[4]); } }
     P.text(top,'OVR',bx+Math.round((bw-P.textW('OVR'))/2),by+3,{color:'#5a3a08'});
-    const ov=''+(o.ovr==null?'':o.ovr), os=P.textW(ov,{scale:2,bold:true})<=bw-4?2:1;
+    const os=P.textW(ov,{scale:2,bold:true})<=bw-4?2:1;
     P.text(top,ov,bx+Math.round((bw-P.textW(ov,{scale:os,bold:true}))/2),by+12,{scale:os,bold:true,color:'#2a1604'}); }
   // the name, on the equipped nameplate when there is one
   { let nm=(o.name||'Your Golfer'), opt={scale:2,bold:true};
@@ -37984,7 +38002,7 @@ function passPerksHTML(){
     ['target','Unlimited daily plays','Play Beat the Pro as much as you want, all season'],
     ['coin','+'+coinFmt(TOURPASS.coins)+' coins instantly','Straight into your wallet the moment you buy'],
     ['cart',TOURPASS.packs+' seasonal packs on the spot','Rip them in the Pro Shop whenever you want'],
-    ['bolt',PASS_REWARD_MULT+'× coins from every round','Everything you play pays more, all season'],
+    ['bolt',PASS_REWARD_MULT+'× coins in Play 18, Career and Head to Head','Rounds, seasons, sponsor briefs and wins pay more, all season'],
     ['clock','Fast simulation','The quickest sim pace in career mode. Blow through a season in half the time']];
   return rows.map(r=>`<div class="tps-perk"><span class="tps-pi">${ic(r[0],{size:'20px'})}</span><div><b>${esc(r[1])}</b><span>${esc(r[2])}</span></div></div>`).join('');
 }
@@ -38358,7 +38376,7 @@ function shopPreviewNode(){ const pv=S.shopPreview; if(!pv) return $(`<span></sp
       ${lore2?`<div class="small" style="margin-top:6px;color:#bcd3c6;font-style:italic">“${esc(lore2)}”</div>`:''}
       ${boostTxt2?`<div class="small" style="margin-top:5px;color:#8fe0c4;font-weight:800">${boostTxt2}</div>`:''}
       <div class="small" style="margin-top:9px;color:#bcd3c6">Coins can't buy this one. <b>Pull it from packs</b>.</div>
-      <div class="small" style="margin-top:7px;color:${rar?ACC_RARITY[rar].c:'#bcd3c6'}">◆ Got duplicate shards? Trade 5 up a rarity in the <b>Shard Exchange</b>.</div>
+      <div class="small" style="margin-top:7px;color:${rar?ACC_RARITY[rar].c:'#bcd3c6'}">◆ Got duplicate shards? Trade ${EXCHANGE_COST} up a rarity in the <b>Shard Exchange</b>.</div>
       <div class="small" style="margin-top:5px;color:#8fe0c4">Previewing on your golfer above.</div>
       <div style="display:flex;gap:10px;margin-top:14px">
         <button class="btn ghost" id="pv-cancel" style="flex:1;margin:0">Close</button>
@@ -38531,7 +38549,7 @@ function cosTileHTML(cat,o){
     if(owned) return shopTile({thumb,name:o.name,state:'own',sub:bsub,cls:'noeq',rar});
     if(itemDropLocked(cat,o.id)) return '';   // DROPS: an unreleased/out-of-window themed item is HIDDEN from the store
     if(cosPackOnly(cat,o.id)){   // PACK EXCLUSIVE: no coin price - packs or shards only (tap for details)
-      const prar=packRarityOf(cosmeticPriceBase(cat,o.id))||'common', sh=shardBal(prar), need=SHARD_COST[prar];
+      const prar=packRarityOf(cosmeticPriceBase(cat,o.id))||'common', sh=shardBal(prar), need=EXCHANGE_COST;
       return shopTile({thumb,name:o.name,state:'lock',noFoot:true,rar,isNew:cosIsNew(cat,o.id),
         sub:(bsub?bsub+' · ':'')+`<span style="color:${ACC_RARITY[prar].c}">🎁 Packs · ◆ ${sh}/${need}</span>`,
         data:`data-tile data-kind="cos" data-cat="${cat}" data-id="${esc(o.id)}"`});
@@ -39857,7 +39875,7 @@ function packCreditFields(tier){ tier=tier||'base';
    shards of a rarity and feed the Shard Exchange upgrade ladder (below) to trade UP a rarity - a
    deterministic pity path, so packs never go dead once a player owns most of a tier.
    Monotonic earned/spent counters (cloud max-merge safe, same pattern as pack credits). ---- */
-const SHARD_COST={common:3, rare:3, epic:4, legendary:5};
+const SHARD_COST={common:3, rare:3, epic:4, legendary:5};   // read only as the list of shard rarities now: the exchange costs EXCHANGE_COST
 function shardBal(r){ const p=packState(); return Math.max(0,(p['shardE_'+r]||0)-(p['shardS_'+r]||0)); }
 function shardEarn(r,n){ if(!SHARD_COST[r]) return; const p=packState(); p['shardE_'+r]=(p['shardE_'+r]||0)+(n||1); packSave(p); }
 function shardSpend(r,n){ if(!SHARD_COST[r]) return false; const p=packState();
@@ -39956,8 +39974,8 @@ function shardExchangeNode(){
   wrap.appendChild($('<div class="small muted" style="text-align:center;line-height:1.55;margin:0 0 14px">Trade up your shards. '+EXCHANGE_COST+' shards of one rarity spin a wheel for the next rarity up. Guaranteed. A duplicate gives back a shard of that rarity, so you always climb.</div>'));
   ['common','rare','epic','legendary'].forEach(function(r){
     var bal=shardBal(r), can=bal>=EXCHANGE_COST, rc=ACC_RARITY[r].c, next=NEXT_RARITY[r];
-    var sub=(r==='legendary')?'5 → coins + a pack + pick 1 of 3 Legendaries':'5 → a random '+ACC_RARITY[next].label+' item';
-    var btnLabel=(r==='legendary')?(can?'Cash in 5 Legendary shards ▸':'Collect 5 Legendary shards'):(can?'Exchange 5 → '+ACC_RARITY[next].label+' wheel ▸':'Collect 5 '+ACC_RARITY[r].label+' shards');
+    var sub=(r==='legendary')?EXCHANGE_COST+' → coins + a pack + pick 1 of 3 Legendaries':EXCHANGE_COST+' → a random '+ACC_RARITY[next].label+' item';
+    var btnLabel=(r==='legendary')?(can?'Cash in '+EXCHANGE_COST+' Legendary shards ▸':'Collect '+EXCHANGE_COST+' Legendary shards'):(can?'Exchange '+EXCHANGE_COST+' → '+ACC_RARITY[next].label+' wheel ▸':'Collect '+EXCHANGE_COST+' '+ACC_RARITY[r].label+' shards');
     var card=$('<div style="border:1.5px solid '+rc+'55;border-radius:14px;padding:13px 14px;margin:0 0 10px;background:linear-gradient(160deg,'+rc+'14,rgba(0,0,0,.14))">'
       +'<div style="display:flex;align-items:center;gap:11px">'
         +'<span style="font:900 21px var(--body);color:'+rc+';white-space:nowrap">◆ '+bal+'</span>'
@@ -40943,7 +40961,7 @@ function overlayPackWheel(app){
         +(win.dupe?('<div class="prdupe">'
           +(win.refund>0?'<span class="prchip" style="color:#ffd45e;border-color:#ffd45e">Duplicate · +'+coinFmt(win.refund)+' coins</span>'
                         :'<span class="prchip" style="color:#b8c4bd;border-color:#b8c4bd">Duplicate · '+(w.exchange?'shard only':'free pack, no coins')+'</span>')
-          +'<span class="prchip" style="color:'+rc+';border-color:'+rc+'">\u25c6 +1 '+win.rarity+' shard · '+shardBal(win.rarity)+'/'+SHARD_COST[win.rarity]+'</span></div>'):'')
+          +'<span class="prchip" style="color:'+rc+';border-color:'+rc+'">\u25c6 +1 '+win.rarity+' shard · '+shardBal(win.rarity)+'/'+EXCHANGE_COST+'</span></div>'):'')
       +'</div></div>'));
     var btns=$('<div class="packbtns"></div>');
     if((item.kind==='cos'||item.kind==='acc') && !win.dupe){ var eb=$('<button class="btn goldfill">Equip</button>');
@@ -41108,7 +41126,7 @@ function bucketShopNode(focus){
     pc.appendChild($('<div class="tphead" style="font-family:var(--display);font-size:24px;text-align:center;--tp-acc:'+passCol+'">'+esc(passThemeName())+'</div>'));
     pc.appendChild($('<div class="small" style="text-align:center;color:#cfe6d8;margin:2px 0 8px">A 60-day season pass · '+ssn.daysLeft+' day'+(ssn.daysLeft>1?'s':'')+' left in Season '+ssn.n+'</div>'));
     var perks=$('<div style="display:flex;flex-direction:column;gap:5px;margin:0 auto;max-width:300px"></div>');
-    [['🎟️','Unlocks the PRO lane of the Season '+ssn.n+' Tour Pass track'],['♾️','Unlimited daily plays at any course'],['🪙','+'+coinFmt(TOURPASS.coins)+' coins, instantly'],['🎁',TOURPASS.packs+' seasonal packs'],['⭐','Earn '+PASS_REWARD_MULT+'× coins from every mode'],['🕒','Fast sim: the quickest pace in Career Mode']].forEach(function(p){
+    [['🎟️','Unlocks the PRO lane of the Season '+ssn.n+' Tour Pass track'],['♾️','Unlimited daily plays at any course'],['🪙','+'+coinFmt(TOURPASS.coins)+' coins, instantly'],['🎁',TOURPASS.packs+' seasonal packs'],['⭐','Earn '+PASS_REWARD_MULT+'× coins in Play 18, Career and Head to Head'],['🕒','Fast sim: the quickest pace in Career Mode']].forEach(function(p){
       perks.appendChild($('<div class="small" style="display:flex;gap:8px;align-items:center;color:#eaf5ee"><span style="flex:0 0 auto">'+p[0]+'</span><span>'+esc(p[1])+'</span></div>'));
     });
     pc.appendChild(perks);
@@ -43421,7 +43439,7 @@ function h2hFilled(){ let n=0; for(const c of CATS) if(S.h2h.slots[c.k])n++; ret
 function h2hSkills(){ const s={}; for(const c of CATS) s[c.k]=S.h2h.slots[c.k]?S.h2h.slots[c.k].value:REPLACEMENT;
   if(h2hMatchBoosted(S.h2h&&S.h2h.seed)){ const ab=accBoost(); for(const c of CATS){ if(ab[c.k]) s[c.k]=Math.max(40,Math.min(99+ACC_SKILL_CAP, s[c.k]+ab[c.k])); } }   // exhibition: bake YOUR gear into the submitted draft
   return s; }
-function h2hOvr(){ return Math.round(ovrFromSkills(h2hSkills())); }
+function h2hOvr(){ return Math.round(ovrFromSkills(h2hSkills(), h2hMatchBoosted(S.h2h&&S.h2h.seed))); }   // an exhibition plays with gear, so it may read past 99
 function h2hReveal(){
   S.h2h.spinning=true; S.h2h.current=null; render();
   const reel=app.querySelector('.osreel .name')||app.querySelector('.reel .name');   // CS342: online draft uses the .osreel wheel
@@ -43943,7 +43961,7 @@ function scrH2HPreview(){
   add($(`<div class="center" style="margin:8px 0 2px"><span class="tag" style="color:var(--gold);border-color:var(--gold)">📍 ${esc(dShort(course.v))}${course.loc?' · '+esc(course.loc):''} · ${dCondLabel(S.h2h.cond)}</span></div>`));
   add($(`<h1 class="center" style="font-size:24px;margin:8px 0 2px">Tale of the tape</h1>`));
   add($(`<p class="lede center" style="max-width:440px;margin:6px auto 4px">${S.h2h.holes} holes · ${m.teams?'best of each skill is highlighted per team.':'lowest total wins.'}</p>`));
-  const ovrs=units.map(u=>Math.round(ovrFromSkills(u.dispSkills)));
+  const ovrs=units.map(u=>Math.round(ovrFromSkills(u.dispSkills, h2hMatchBoosted(S.h2h.seed))));   // gear is on for everybody in an exhibition
   const maxOvr=Math.max.apply(null,ovrs);
   const wrap=$(`<div style="overflow-x:auto;margin:12px 0 4px"></div>`);
   const grid=$(`<div style="display:grid;grid-template-columns:minmax(40px,auto) repeat(${n},minmax(66px,1fr));gap:5px;min-width:${86+n*72}px;max-width:660px;margin:0 auto"></div>`);
