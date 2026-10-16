@@ -389,6 +389,10 @@ if (!args.includes('--no-browser')){
     // a tester who is NOT on PUTT_ALL_ACCESS, so every gate below is the one an ordinary player meets
     await pg.evaluate(() => { sbUsername = 'SlimeyB3'; });
     claim(await pg.evaluate(() => puttOn() && homeModeList().some(m => m.id === 'putt')), 'signed in as a tester: the door is there');
+    // A tester holds the Tour Pass by default (passTester). Everything below tests the player with no pass, so
+    // the tester's pass is put away for the rest of the check.
+    claim(await pg.evaluate(() => { const on = dailyPassActive() && puttHost().passActive(); sbUsername = 'somebody'; const off = !dailyPassActive(); sbUsername = 'SlimeyB3'; passTester = () => false; return on && off && !dailyPassActive(); }),
+      'a tester holds the Tour Pass by default, and nobody else does');
     // EVERY HOLE OPEN for the accounts on PUTT_ALL_ACCESS, asked and never written: the record keeps the real hole
     const aa = await pg.evaluate(() => { const P = window.RTT_PUTT, T = P.TOURS.main, tp = { lv:1, best:{} }, o = {}; P.close && P.close(); P.summary(puttHost());
       o.plain = { all:P.allAccess(), open40:P.opened(T, tp, 40), shown:P.revealed(T, 5, { tours:{ main:tp }, rv:[] }) };
@@ -1119,6 +1123,20 @@ if (!args.includes('--no-browser')){
     claim(db.posted && db.rows, `a Daily Hole played on its day posts to the board once, with the golfer's look, and the card shows the day's rows (${JSON.stringify(db)})`);
     claim(db.lateQuiet, 'a Daily Hole played late from the calendar never posts');
     claim(db.down, 'a server without the board yet says it is on its way, and nothing breaks');
+    // THE LOCKED GATE IS PART OF ITS FENCE: built to the gap and drawn at the land's size on a smoothed walk (it once stood at half)
+    await pg.evaluate(async () => { window.RTT_PUTT.close(); openPutt(); await new Promise(r => setTimeout(r, 300)); window.RTT_PUTT._walkTo(65); });
+    await pg.waitForFunction(() => window.RTT_PUTT._trail && window.RTT_PUTT._trail() && window.RTT_PUTT._trail().plan(), null, { timeout:120000 });
+    const lk = await pg.evaluate(() => window.RTT_PUTT._trail().lockFt());
+    claim(!!lk && Math.abs(lk.ft / lk.box - 1) < 0.2, `the locked gate is drawn at its real size, as wide as its fence's gap (${JSON.stringify(lk)})`);
+    await pg.evaluate(() => { window.RTT_PUTT.close(); });
+    // the celebration: a putt that drops is a cheer before the card, an ace a longer one, and the stock ball is white
+    await pg.evaluate(() => { if (!document.querySelector('.pt-ov')) openPutt(); window.RTT_PUTT._level(1); });
+    await pg.waitForFunction(() => { const P = window.RTT_PUTT._state().play; return P && P.state === 'aim'; }, null, { timeout:120000 });
+    const ch = await pg.evaluate(() => new Promise(res => { const S = window.RTT_PUTT._state(); window.RTT_PUTT._putt(4.34586983746588, 37); let c0 = null, saw = false;
+      const tick = () => { const st = S.play && S.play.state; if (st === 'cheer'){ saw = true; if (c0 == null) c0 = performance.now(); }
+        if (c0 != null && (S.screen !== 'play' || st === 'done')) return res({ saw, ms:Math.round(performance.now() - c0), sunk:!!S.play.sunk }); requestAnimationFrame(tick); }; requestAnimationFrame(tick); }));
+    claim(ch.saw && ch.ms >= 1800 && ch.ms < 4000, `a hole in one is celebrated for about two seconds before the card (${JSON.stringify(ch)})`);
+    claim(ch.sunk === true, 'a ball that dropped stays gone: it is never drawn back on the cup behind the card');
     claim(errs.length === 0, 'no page errors' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
     await b.close(); srv.close();
   }
