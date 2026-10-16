@@ -10193,7 +10193,11 @@ function dailyTokens(){ return _walletCache?(_walletCache.tokens||0):0; }
 // season counts as no pass, and asks the server again.
 function walletStale(){ return !!(_walletCache && _walletCache.passPeriod && _walletCache.passPeriod!==passPeriodNow()); }
 var _walletRecheck=0;
-function dailyPassActive(){ if(!_walletCache||!_walletCache.passActive) return false;
+// The Putt Putt testers hold the Tour Pass by default, every season (the owner, 2026-10-16), so they test what
+// a pass holder sees. Same server-attributed username as puttOn(); no local override.
+function passTester(){ try{ return sbSignedIn() && PUTT_TESTERS.indexOf((sbUsername||'').toLowerCase())>=0; }catch(e){ return false; } }
+function dailyPassActive(){ if(passTester()) return true;
+  if(!_walletCache||!_walletCache.passActive) return false;
   if(walletStale()){ var t=Date.now(); if(t-_walletRecheck>60000){ _walletRecheck=t; try{ loadWallet(); }catch(e){} } return false; }
   return true; }
 function passRewardMult(){ var m=dailyPassActive()?PASS_REWARD_MULT:1; if(typeof passProActive==='function'&&passProActive()) m=Math.max(m,PASS_PRO_MULT); return m; }
