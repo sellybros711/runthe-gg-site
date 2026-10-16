@@ -2545,8 +2545,8 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "83",
-      "sha": "bd2187da73735d22"
+      "v": "87",
+      "sha": "197884851800a351"
     },
     "putt/land.js": {
       "v": "12",
@@ -2557,16 +2557,16 @@
       "sha": "62a0821ec99b53c3"
     },
     "putt/trail.js": {
-      "v": "36",
-      "sha": "d889f4b7da35dacf"
+      "v": "37",
+      "sha": "2f79be4382000f3b"
     },
     "putt/mapland.js": {
       "v": "6",
       "sha": "726e707d86cd686a"
     },
     "golfer3d.js": {
-      "v": "6",
-      "sha": "d9291665656c19ac"
+      "v": "11",
+      "sha": "27a6a79ce1b75bc1"
     },
     "tracer3d.js": {
       "v": "2",
@@ -2705,24 +2705,24 @@
       "sha": "240d69adebb700f7"
     },
     "scenes.js": {
-      "v": "23",
-      "sha": "1b1702ae3ac7bffc"
+      "v": "24",
+      "sha": "d9fbd8fb756764c1"
     },
     "itemart.js": {
       "v": "3",
       "sha": "dcb77ca252ced228"
     },
     "closet-ui.js": {
-      "v": "10",
-      "sha": "feedcd7223154a72"
+      "v": "11",
+      "sha": "5ef758513d78e621"
     },
     "shop-ui.js": {
       "v": "5",
       "sha": "adecc109a74f9647"
     },
     "daily-ui.js": {
-      "v": "3",
-      "sha": "adbca32c4ee9c7ff"
+      "v": "4",
+      "sha": "84ecae0d2ca0fb60"
     },
     "pass-ui.js": {
       "v": "3",
@@ -2733,8 +2733,8 @@
       "sha": "ed8ffc8721479ed1"
     },
     "career-ui.js": {
-      "v": "61",
-      "sha": "5ffad972cd17a212"
+      "v": "62",
+      "sha": "3a890df14ad2f8e1"
     }
   },
   "ideas/index.html": {

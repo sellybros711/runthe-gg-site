@@ -2141,14 +2141,14 @@ var CSS = '\
 .pp-big{font-family:var(--display,inherit);font-size:38px;color:#F1D04A;font-variant-numeric:tabular-nums}.pp-wide{display:block;width:100%;margin-top:8px}.pp-wide small{display:block;font-size:10.5px;font-weight:700;opacity:.75}.pt-go[disabled]{opacity:.55;cursor:default}\
 .pp-nums{display:flex;justify-content:center;gap:16px;margin:8px 0}.pp-nums span{font-size:10.5px;letter-spacing:.1em;color:#9fbfae;font-weight:800;text-transform:uppercase}.pp-nums b{display:block;font-size:24px;color:#fff;letter-spacing:0}\
 .pp-coins{font-weight:900;color:#ffd45e;font-size:16px;margin:4px 0 6px}.pp-reward{background:rgba(241,208,74,.12);border:1px solid rgba(241,208,74,.45);border-radius:11px;padding:8px;margin:8px 0;font-weight:800;font-size:13px;color:#fff}.pp-fine{font-size:11px!important;opacity:.75}\
-.pp-drows{margin-top:8px}.pp-drow{display:flex;align-items:center;gap:8px;padding:6px 4px;border-top:1px solid rgba(255,255,255,.08);font-weight:800}.pp-drow b{width:22px;text-align:right;opacity:.8}.pp-drow span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}.pp-drow em{font-style:normal;opacity:.85}.pp-drow.me{background:rgba(255,210,74,.14);border-radius:8px}.pp-dav{width:22px;height:22px;border-radius:50%;background:#1d3a5c no-repeat;background-size:230%;background-position:50% 8%;image-rendering:pixelated;flex:0 0 auto}\
+.pp-drows{margin-top:8px}.pp-drow{display:flex;align-items:center;gap:8px;padding:6px 4px;border-top:1px solid rgba(255,255,255,.08);font-weight:800}.pp-drow b{width:22px;text-align:right;opacity:.8}.pp-drow span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}.pp-drow em{font-style:normal;opacity:.85}.pp-drow.me{background:rgba(255,210,74,.14);border-radius:8px}.pp-dav{width:22px;height:22px;border-radius:50%;background:#1d3a5c no-repeat;background-size:230%;background-position:50% 8%;image-rendering:pixelated;flex:0 0 auto}.pp-av.g3,.pp-dav.g3{overflow:hidden}.pp-av.g3 img,.pp-dav.g3 img{display:block;width:100%;height:100%;object-fit:cover;image-rendering:pixelated}\
 .pp-dres{border-radius:16px;padding:16px;text-align:center}.pp-dres .k{font-size:11px;letter-spacing:.14em;font-weight:900;text-transform:uppercase;opacity:.85}.pp-dres .t{font-family:var(--display,inherit);font-size:34px;margin:4px 0}.pp-dres .m{font-size:13px}\
 .pp-hub{position:relative;max-width:none}.pp-hub .pp-map{position:absolute;inset:0;border-top:0;background:#0b1a12}\
 .pp-hdr{position:absolute;left:0;right:0;top:0;z-index:2;display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 26px;background:linear-gradient(rgba(5,10,14,.78),rgba(5,10,14,0));pointer-events:none}\
 .pp-hdr>*{pointer-events:auto}.pp-av{flex:0 0 auto;width:36px;height:36px;border-radius:50%;border:2px solid #F1D04A;background:#1d3a5c no-repeat;background-size:230%;background-position:50% 8%;image-rendering:pixelated;box-shadow:0 2px 0 rgba(0,0,0,.4)}\
 .pp-hdr .pp-hearts{gap:4px}.pp-h{width:20px;height:20px;background:none;clip-path:none;display:block}.pp-h svg{display:block;width:20px;height:20px}.pp-h.on{background:none}\
 .pp-hclock{font-size:12px;font-weight:900;color:#ffd0c8;font-variant-numeric:tabular-nums;background:rgba(0,0,0,.45);border-radius:999px;padding:3px 8px}.pp-hclock:empty{display:none}\
-.pp-sp{flex:1}.pp-cpill{display:flex;align-items:center;gap:6px;background:rgba(10,18,26,.82);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:5px 11px;font-weight:900;font-size:14px;color:#fff;font-variant-numeric:tabular-nums}.pp-cpill:before{content:"";width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff3a8,#f1c232 55%,#b8860b)}\
+.pp-sp{flex:1}.pp-x2s{color:#ffd23a;font-weight:800}.pp-x2b{margin:14px auto 4px;max-width:340px;padding:10px 14px;border-radius:12px;background:rgba(241,182,42,.12);border:1px solid rgba(241,182,42,.45);color:#ffe9a8;font-size:13px;line-height:1.35;text-align:center}.pp-x2b b{display:block;font-size:17px;letter-spacing:.02em;color:#ffd23a;margin-bottom:2px}.pp-x2h{display:inline-block;width:14px;height:14px;vertical-align:-3px;margin-right:4px}.pp-x2h svg{display:block;width:100%;height:100%}.pp-x2b .pp-x2h{width:30px;height:30px;margin:0 auto 4px;display:block}.pp-x2s .pp-x2h{width:16px;height:16px;vertical-align:-3px}@media (min-width:900px){.pp-x2 .pp-x2h{width:18px;height:18px}}.pp-x2{border:0;border-radius:999px;padding:4px 9px;font:900 11px/1 inherit;letter-spacing:.04em;color:#2a1a04;background:linear-gradient(#ffe27a,#f1b62a);box-shadow:0 2px 8px rgba(241,182,42,.35);cursor:pointer;white-space:nowrap}@media (min-width:900px){.pp-x2{font-size:14px;padding:6px 12px}}.pp-cpill{display:flex;align-items:center;gap:6px;background:rgba(10,18,26,.82);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:5px 11px;font-weight:900;font-size:14px;color:#fff;font-variant-numeric:tabular-nums}.pp-cpill:before{content:"";width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff3a8,#f1c232 55%,#b8860b)}\
 .pp-cx{width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(10,18,26,.82);color:#fff;font:inherit;font-size:16px;font-weight:900;cursor:pointer;padding:0}\
 .pp-hub .pp-daily{position:absolute;z-index:2;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 58px);margin:0;max-width:536px;margin:0 auto;grid-template-columns:auto 1fr auto;gap:2px 12px;background:linear-gradient(160deg,#2c1d46,#1a1230)!important;color:#fff!important;border:2px solid #f08a24!important;border-radius:18px;padding:12px}\
 .pp-daily .th{grid-column:1;grid-row:1/4;width:44px;height:66px;border-radius:7px;background:#0d1a12;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}.pp-daily .th canvas{width:100%;height:100%;object-fit:cover;image-rendering:pixelated;display:block}\
@@ -2543,21 +2543,30 @@ function livesCall(fn, extra){ var uid = cloudUid(); if (!uid) return Promise.re
   if (!p || !p.then) return Promise.resolve(false);
   return p.then(function(d){ return livesApply(uid, d); }, function(){ return false; }); }
 function livesSync(){ var st = pload(); return livesCall('putt_lives_state', { p_lives:st.lives }); }
-/* A GUEST PLAYS THE FIRST FEW HOLES FREE and is then asked to sign in to go on, so their progress has an
-   account to live on. What they played signed out is claimed by the account on the way in (pload). The
-   Daily Hole stays open to everybody. A host that cannot say who is signed in gates nobody. */
-var GUEST_HOLES = 5;
+/* GUESTS (the owner, 2026-10-16): a guest walks the opening world, so they see what is here, and plays no hole of
+   it. Walking up to a hole asks them to sign in. The Daily Hole stays open to them, and it posts to no board. A
+   guest never sees a coin count: what they pick up is held for the account (the host's held coins) and the game
+   says so. A host that cannot say who is signed in gates nobody. GUEST_WALK is how many holes of the main tour a
+   guest may walk to (the opening world). */
+var GUEST_WALK = 18;
 function isGuest(){ try{ var h = hostOf(); return !!(h.signedIn && !h.signedIn()); }catch(e){ return false; } }
-function guestSheet(){
-  var sh = el('<div class="pp-sheet"><div class="pp-card"><div class="k">' + GUEST_HOLES + ' FREE HOLES PLAYED</div><div class="t">Sign in to keep going</div>\
-    <div class="m">A free account keeps your stars and your place on the Tour. On every device.</div>\
-    <button class="pt-go pp-wide" data-in>Sign in</button><button class="pt-go pp-wide" data-up>Create a free account</button><button class="pt-bt pp-wide" data-n>Not now</button></div></div>');
+var GUEST_COINS = 'Sign in to collect your coins and open packs.';
+function guestSheet(n, tid){
+  var walk = tid === 'main' && n && n < Math.min(GUEST_WALK, tourOf('main').levels.length);
+  var sh = el('<div class="pp-sheet"><div class="pp-card"><div class="k">' + (n ? 'HOLE ' + n : 'PUTT PUTT TOUR') + '</div><div class="t">Sign in to play</div>\
+    <div class="m">A free account plays every hole, keeps your stars and collects your coins. On every device.</div>\
+    <button class="pt-go pp-wide" data-in>Sign in</button><button class="pt-go pp-wide" data-up>Create a free account</button>' +
+    (walk ? '<button class="pt-bt pp-wide" data-walk>Keep walking</button>' : '') + '<button class="pt-bt pp-wide" data-n>Not now</button></div></div>');
   S.ov.appendChild(sh);
   var go = function(mode){ var h = S.host; close(); try{ if (h.signIn) h.signIn(mode); }catch(e){} };
   sh.querySelector('[data-in]').onclick = function(){ go('signin'); };
   sh.querySelector('[data-up]').onclick = function(){ go('signup'); };
-  sh.querySelector('[data-n]').onclick = function(){ sh.remove(); }; }
-function livesMax(){ try{ var h = hostOf(); return h.passActive && h.passActive() ? 18 : 9; }catch(e){ return 9; } }
+  var wk = sh.querySelector('[data-walk]'); if (wk) wk.onclick = function(){ sh.remove(); walkTo(n, 'main'); };
+  sh.querySelector('[data-n]').onclick = function(){ sh.remove(); if (S.screen === 'trail') showHub('main'); }; }
+/* THE TOUR PASS DOUBLES YOUR LIVES. Every line that sells it reads these two numbers, so the copy is the game. */
+var LIVES_FREE = 9, LIVES_PASS = 18;
+function livesMax(){ try{ var h = hostOf(); return h.passActive && h.passActive() ? LIVES_PASS : LIVES_FREE; }catch(e){ return LIVES_FREE; } }
+function passLivesLine(){ return 'A Tour Pass doubles your lives: ' + LIVES_PASS + ', not ' + LIVES_FREE + '.'; }
 var PER_HEART = 3;
 function loseLife(st){ if (lifeExtra(st) > 0){ st.bspent = (st.bspent || 0) + 1; psave(st); return; } if (st.lives == null) st.lives = livesMax(); if (st.lives <= 0) return; st.lives--; st.back = (st.back || []).concat([Date.now() + LIFE_MS]); st.refillAt = st.back[0]; st.l9 = 1; st.lt = Date.now(); psave(st); livesCall('putt_lives_spend'); }
 function coins(n, label){ try{ if (S.host.coins) S.host.coins(n, label); }catch(e){} var b = balStr(); if (b !== '' && S.ov) S.ov.querySelectorAll('[data-bal]').forEach(function(e){ e.textContent = b; }); }   // the wallet at the top moves the moment coins land
@@ -2642,17 +2651,23 @@ function golferFig(cls){ try{ var f = S.host.figure && S.host.figure(cls); if (f
 // the round picture in the header and the play bar: an aura is a glow round the ring in its colour
 function avStyle(u){ var a = null; try{ a = S.host.aura && S.host.aura(); }catch(e){}
   return (u ? 'background-image:url(' + u + ');' : '') + (a ? 'box-shadow:0 2px 0 rgba(0,0,0,.4),0 0 10px ' + a + ',0 0 3px ' + a : ''); }
+// the head chip the menus draw (the 3D menu golfer), as an <img>, or '' when the page has none
+function chipImg(look){ try{ return (S.host.chip && S.host.chip(look)) || ''; }catch(e){ return ''; } }
+// the ring itself: the menus' 3D head chip inside it, or the flat picture as its background
+function avRing(){ var c = chipImg(); return '<i class="pp-av' + (c ? ' g3' : '') + '" style="' + avStyle(c ? '' : golferUrl()) + '">' + c + '</i>'; }
 // the same aura on a golfer drawn on a canvas: the pulse the course golfer has (hvswGlow), 2.4 s, its colour,
 // k pixels to a figure pixel. Still, and at its middle, when the player asks for less motion.
 function auraGlow(ctx, k, t){ var a = null; try{ a = S.host.aura && S.host.aura(); }catch(e){} if (!a) return;
   var still = false; try{ still = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
   var u = still ? 0.5 : 0.5 - 0.5 * Math.cos((t == null ? performance.now() / 1000 : t) / 2.4 * 2 * Math.PI);
   ctx.shadowColor = a; ctx.shadowBlur = Math.max(2, (1 + 3 * u) * k); ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0; }
-function balStr(){ try{ if (S.host.balance) return Number(S.host.balance()).toLocaleString(); }catch(e){} return ''; }
+function balStr(){ if (isGuest()) return '';   // a guest sees no coin count (their coins are held for the account)
+  try{ if (S.host.balance) return Number(S.host.balance()).toLocaleString(); }catch(e){} return ''; }
 /* THE HEADER FLOATS OVER THE MAP, as the mockup drew it: your golfer in a gold ring, your hearts,
    the refill clock when one is running, your coins and a close button. */
-function hdr(right){ var u = golferUrl(), b = balStr();
-  return '<div class="pp-hdr"><i class="pp-av" style="' + avStyle(u) + '"></i><span class="pp-hearts" data-hearts>' + hearts(pload()) + '</span><span class="pp-hclock" data-clock></span><span class="pp-sp"></span>' +
+function hdr(right){ var b = balStr();
+  return '<div class="pp-hdr">' + avRing() + '<span class="pp-hearts" data-hearts>' + hearts(pload()) + '</span>' +
+    (membersOpen() ? '' : '<button class="pp-x2" data-pass aria-label="' + esc(passLivesLine()) + '"><i class="pp-x2h">' + heartSvg(PER_HEART) + '</i>2× lives</button>') + '<span class="pp-hclock" data-clock></span><span class="pp-sp"></span>' +
     (right != null ? right : (b !== '' ? '<span class="pp-cpill" data-bal>' + b + '</span>' : '')) + '<button class="pp-cx" data-x aria-label="Close">✕</button></div>'; }
 // a small top view of a hole, off the flat painter, for the Daily card
 var THUMBS = {};
@@ -2704,7 +2719,7 @@ function showHub(tid){
         <span class="t">' + esc(dh.name) + '</span>\
         <span class="m">' + (drec && drec.done ? 'You shot ' + drec.s + ' (par ' + drec.par + ')' + (drec.ms != null ? ' in ' + clockTxt(drec.ms) : '') : esc(dT.name) + ' · par ' + buildHole(dh).par + ' · timed, one try') + '</span>\
         <span class="pp-dends">' + (drec && drec.done ? 'Next hole in ' : 'Ends in ') + '<b data-dcount>' + hms(msToNextDay()) + '</b></span></span>\
-      <span class="pp-dside"><span class="g">' + (drec && drec.done ? 'Result' : 'Play') + '</span><span class="rw">' + (drec && drec.done ? 'Played' : '+' + COIN_DAILY + ' coins') + '</span></span></button>') +
+      <span class="pp-dside"><span class="g">' + (drec && drec.done ? 'Result' : 'Play') + '</span><span class="rw">' + (drec && drec.done ? 'Played' : isGuest() ? 'Free to play' : 'Up to ' + (COIN_DAILY + COIN_DAILY_PAR) + ' coins') + '</span></span></button>') +
     '<div class="pp-wchip" data-wchip></div>' + (TOURS.main && !cal ? '<button class="pp-bagb" data-bag aria-label="Your Bag">Bag</button><button class="pp-bagb pp-closb" data-closet aria-label="Your closet">Closet</button>' : '') +
     '<div class="pp-tabs" role="tablist"><button data-tab="main" class="' + (mem || lab || cal ? '' : 'on') + '" role="tab">Putt Putt Tour</button><button data-tab="members" class="' + (mem ? 'on' : '') + '" role="tab"><i>★</i> Members' + (membersOpen() ? '' : ' <s>🔒</s>') + '</button>' + (labOpen() ? '<button data-tab="lab" class="' + (lab ? 'on' : '') + '" role="tab">Lab</button>' : '') +
     '<button data-tab="daily" class="' + (cal ? 'on' : '') + '" role="tab">Daily' + (drec && drec.done ? '' : '<u class="pp-tdot" aria-label="not played today"></u>') + '</button></div>' + '</div>';
@@ -2763,7 +2778,7 @@ function membersSheet(o){
   var sh = el('<div class="pp-sheet pp-memsh"><div class="pp-card"><div class="k">★ MEMBERS TOUR · ' + esc(at.toUpperCase()) + '</div><div class="t">This hole is for Tour Pass members</div>\
     <div class="m">Eighteen holes of the season you won’t find anywhere else: a crypt door on a switch, a coffin to roll into, a cauldron, a haunted mill. Look around all you like. Playing them takes the pass.</div>\
     <div class="pp-memrw"><b>' + tot.toLocaleString() + ' coins</b> to win, a <b>trick or treat bonus</b> on every Hallows hole you beat under par, and rewards only members can earn:<br>' + Pm.sigReward.concat(Pm.worldReward, [Pm.treat.reward]).map(function(r){ return esc(r.replace(' (Members only)', '')); }).join(' · ') + ' · ' + esc(Pm.finish.replace(' (Members only)', '')) + '</div>\
-    <button class="pt-go pp-wide pass" data-pass>Get Tour Pass<small>Opens the Members Tour, and six hearts: 18 lives</small></button>\
+    <button class="pt-go pp-wide pass" data-pass>Get Tour Pass<small>Opens the Members Tour and doubles your lives: ' + LIVES_PASS + '</small></button>\
     <div class="m pp-memfree">No pass? The Putt Putt Tour is free to play: ' + TOURS.main.levels.length + ' holes across ' + TOURS.main.worlds.length + ' worlds.</div>\
     <button class="pt-go pp-wide" data-main>Play the Putt Putt Tour</button>' +
     (o.trail ? '<button class="pt-bt pp-wide" data-look>Keep looking around</button>' : '') +
@@ -2808,7 +2823,9 @@ function drawMap(st, TR){
   // the golfer on the map walks: tap him and the joystick comes up, heading for the hole in front of him
   var meEl = box.querySelector('.pp-me'); if (meEl && trailOk() && tp.lv <= N){ meEl.classList.add('tap'); meEl.setAttribute('role', 'button'); meEl.setAttribute('aria-label', 'Walk to hole ' + tp.lv);
     meEl.onclick = function(){ if (trailOk()) openTrail(TR.id, Math.min(N, tp.lv) - 1); }; }
-  box.querySelectorAll('[data-lv]').forEach(function(b){ b.onclick = function(){ var n = +b.getAttribute('data-lv'); var tq = pload().tours[TR.id]; if (!opened(TR, tq, n)){ var pw = Math.floor((n - 2) / K);
+  box.querySelectorAll('[data-lv]').forEach(function(b){ b.onclick = function(){ var n = +b.getAttribute('data-lv'); var tq = pload().tours[TR.id];
+    if (TR.id === 'main' && isGuest() && n <= GUEST_WALK){ return trailOk() ? openTrail(TR.id, n - 1) : guestSheet(n, TR.id); }   // a guest walks the opening world
+    if (!opened(TR, tq, n)){ var pw = Math.floor((n - 2) / K);
       return toastHub((n - 1) % K === 0 && tq.best[n - 1] != null ? wLabel(TR, pw + 1) + ' opens at ' + worldGate(TR, pw) + ' total stars. You have ' + starsThrough(tq, TR, pw) + '.' : 'Clear level ' + (n - 1) + ' at par or better to open it.'); } skipWarn(n, TR.id); }; });
   box.querySelectorAll('[data-cw]').forEach(function(c){ c.onclick = function(){ var w = +c.getAttribute('data-cw'), tq = pload().tours[TR.id], have = starsThrough(tq, TR, w - 1), need = worldGate(TR, w - 1);
     // standing at the gate with the stars: walk up to it, and the clouds part there
@@ -3229,7 +3246,7 @@ function openTrail(tid, from){
     var st0 = pload(), rec0 = (st0.trail || {})[sp.key] || {};
     var three = L ? threeOf(L) : null; banOut();
     S.trailCtl = window.RTT_PUTT_TRAIL.run(box, P, pic, {
-      host:S.host, found:JSON.parse(JSON.stringify(rec0)), holeLabel:'Hole ' + to, greetDelay:wbn ? 2700 : 400, clouds:clouded,
+      host:S.host, found:JSON.parse(JSON.stringify(rec0)), guestCoins:isGuest() ? GUEST_COINS : null, holeLabel:'Hole ' + to, greetDelay:wbn ? 2700 : 400, clouds:clouded,
       skipLabel:sp.cross && !sp.gateOpen ? 'Map' : 'Play hole ' + to,
       secret:sp.secret ? function(i, resume){ secretFound(i, resume, from); } : null,
       pick:function(kind, id, n){ var st = pload(); st.trail = st.trail || {}; var r = st.trail[sp.key] = st.trail[sp.key] || {}, msg = '';
@@ -3276,11 +3293,12 @@ function openTrail(tid, from){
       arrive:function(){ var tp = pload().tours[TR.id], sw = S.ov.querySelector('.pp-skipw'); if (sw) sw.remove();
         // a walker without the pass reaches the hole and is asked, over the trail they are standing on
         if (TR.members && !membersCanPlay()){ stopTrail(); return membersSheet({ n:to, trail:true }); }
+        if (TR.id === 'main' && isGuest()){ stopTrail(); return guestSheet(to, tid); }
         stopTrail(); if (opened(TR, tp, to)) startLevel(to, tid); else showHub(tid); },
       // Skip keeps its button, and says what it leaves behind first: the same list the map's warning reads, off
       // the record as it stands now, so anything already picked up on this walk is not named.
       skip:function(){ var tp = pload().tours[TR.id], play = opened(TR, tp, to) && !(sp.cross && !sp.gateOpen);
-        function leave(){ stopTrail(); if (play) startLevel(to, tid); else showHub(tid); }
+        function leave(){ stopTrail(); if (TR.id === 'main' && isGuest()) return guestSheet(to, tid); if (play) startLevel(to, tid); else showHub(tid); }
         var left = trailLeft(tid, to); if (!left.length || S.ov.querySelector('.pp-skipw')) return leave();
         var list = left.length === 1 ? left[0] : left.slice(0, -1).join(', ') + ' and ' + left[left.length - 1];
         var sh = el('<div class="pp-sheet pp-skipw"><div class="pp-card"><div class="k">SKIP THE TRAIL?</div><div class="t">Bonus rewards</div><div class="m">This trail still has ' + esc(list) + '. Skip it and ' + (left.length > 1 ? 'they are' : 'it is') + ' gone.</div><button class="pt-go pp-wide" data-n>Keep walking</button><button class="pt-bt pp-wide" data-skip>' + (play ? 'Skip to Hole ' + to : 'Skip to the map') + '</button></div></div>');
@@ -3354,7 +3372,8 @@ function outOfLives(){
   var st = pload(), sh = el('<div class="pp-sheet pp-oolf">' + hdr() + '<div class="pp-oolb"><div class="k">OUT OF LIVES</div><div class="pp-lives">' + hearts(st) + '</div>\
     <div class="lbl">Next life in</div><div class="pp-big" data-c>' + hms((st.refillAt || Date.now()) - Date.now()) + '</div>\
     <div class="m">Each life comes back 24 hours after you lost it. The clocks keep running while you are away.</div>\
-    <button class="pt-go pp-wide pass" data-pass>Get Tour Pass<small>Six hearts: 18 lives</small></button>' +
+    ' + (membersOpen() ? '' : '<div class="pp-x2b"><i class="pp-x2h">' + heartSvg(PER_HEART) + '</i><b>Double your lives</b>The Tour Pass gives you ' + LIVES_PASS + ' lives, not ' + LIVES_FREE + '. It opens the Members Tour too.</div>\
+    <button class="pt-go pp-wide pass" data-pass>Get Tour Pass<small>' + LIVES_PASS + ' lives</small></button>') +
     (bankHeld(st) ? '<button class="pt-go pp-wide" data-spare>Use a spare life<small>' + bankHeld(st) + ' banked from the trails</small></button>' : '') +
     (S.host.tester && S.host.tester() ? '<button class="pt-bt pp-wide" data-free>Tester refill · free</button>' : '') +
     '<button class="pt-bt pp-wide" data-wait>Wait it out</button><div class="m">The Daily Hole never uses a life.</div></div></div>');
@@ -3378,7 +3397,7 @@ function trailLeft(tid, n){ try{ if (tid !== 'main' || n < 2 || !trailOk()) retu
 function skipWarn(n, tid){ var st = pload(), c = st.cur, tr = (st.tours || {})[tid] || {};
   // only a hole being reached for the first time can forfeit anything: its trail is gone once it is beaten. A gate
   // that would refuse the hole anyway (a guest, the Members Tour, no lives) speaks first, from startLevel.
-  if ((c && c.tid === tid && c.n === n && c.s > 0) || (tr.best && tr.best[n] != null) || (tid === 'main' && n > GUEST_HOLES && isGuest()) || livesNow(st) <= 0) return startLevel(n, tid);
+  if ((c && c.tid === tid && c.n === n && c.s > 0) || (tr.best && tr.best[n] != null) || (isGuest() && !tourOf(tid).lab) || livesNow(st) <= 0) return startLevel(n, tid);
   var left = trailLeft(tid, n); if (!left.length) return startLevel(n, tid);
   var list = left.length === 1 ? left[0] : left.slice(0, -1).join(', ') + ' and ' + left[left.length - 1];
   var sh = el('<div class="pp-sheet pp-skipw"><div class="pp-card"><div class="k">SKIP THE WALK?</div><div class="t">Hole ' + n + '</div><div class="m">The trail to Hole ' + n + ' still has ' + esc(list) + '. Skip it and ' + (left.length > 1 ? 'they are' : 'it is') + ' gone.</div><button class="pt-go pp-wide" data-walk>Walk to Hole ' + n + '</button><button class="pt-bt pp-wide" data-skip>Play now and forfeit the rewards</button><button class="pt-bt pp-wide" data-n>Cancel</button></div></div>');
@@ -3403,7 +3422,7 @@ function startLevel(n, tid){
   if (tourOf(tid).members && !membersCanPlay()) return membersSheet({ n:n, trail:S.screen === 'trail' });
   if (tourOf(tid).lab && !labOpen()) return showHub('main');
   if (tourOf(tid).secret && secretsFound(st).indexOf(n) < 0 && !allAccess()) return showHub('main');
-  if (tid === 'main' && n > GUEST_HOLES && isGuest()) return guestSheet();
+  if (isGuest() && !tourOf(tid).lab && !tourOf(tid).members) return guestSheet(n, tid);   // a guest plays no Tour hole
   var c = st.cur, back = c && c.tid === tid && c.n === n && c.s > 0;
   if (c && !back){ clearCur(st); psave(st); }   // only a hole in progress on another device can be left this way
   if (!back && livesNow(st) <= 0 && !tourOf(tid).lab && !tourOf(tid).secret && !allAccess()) return outOfLives();
@@ -3542,8 +3561,9 @@ function tourOut(holed){
     <div class="row"><button class="pt-bt" data-a="map">Map</button><button class="pt-go" data-a="again">Try again</button></div>', { map:function(){ showHub(tid); }, again:function(){ startLevel(n, tid); } }, 'over');
   loseLife(st);
   return popup('<div class="k">OUT OF STROKES</div><div class="t">Over par</div><div class="s">' + par + ' strokes used and still not down.</div>\
-    <div class="pp-lives">' + hearts(st) + '</div><div class="s">' + (livesNow(st) ? livesNow(st) + (livesNow(st) === 1 ? ' life' : ' lives') + ' left' : 'That was your last life.') + '</div>\
-    <div class="row"><button class="pt-bt" data-a="map">Map</button><button class="pt-go" data-a="again">' + (livesNow(st) ? 'Try again' : 'Refill') + '</button></div>',
+    <div class="pp-lives">' + hearts(st) + '</div><div class="s">' + (livesNow(st) ? livesNow(st) + (livesNow(st) === 1 ? ' life' : ' lives') + ' left' : 'That was your last life.') + '</div>' +
+    (membersOpen() ? '' : '<div class="s pp-x2s"><i class="pp-x2h">' + heartSvg(PER_HEART) + '</i> ' + esc(passLivesLine()) + '</div>' + (livesNow(st) <= PER_HEART ? '<button class="pt-go pp-wide pass" data-pass>Get Tour Pass<small>' + LIVES_PASS + ' lives</small></button>' : '')) +
+    '<div class="row"><button class="pt-bt" data-a="map">Map</button><button class="pt-go" data-a="again">' + (livesNow(st) ? 'Try again' : 'Refill') + '</button></div>',
     { map:function(){ showHub(tid); }, again:function(){ if (livesNow(pload()) > 0 || allAccess()) startLevel(n, tid); else { showHub(tid); outOfLives(); } } }, 'over');
 }
 function worldComplete(n, s, par, got, tid, lines){
@@ -3599,7 +3619,8 @@ function dailyBoard(dk){ var box = S.ov && S.ov.querySelector('[data-rows]'); if
   Promise.resolve(p).then(function(rows){ if (!S || !S.ov || !S.ov.contains(box)) return;
     if (!rows || !rows.length){ box.innerHTML = '<div class="m">' + (rows ? 'Nobody has posted yet. Be the first.' : 'The board is on its way.') + '</div>'; return; }
     var n = rows[0].players || rows.length;
-    box.innerHTML = rows.map(function(r){ var im = ''; try{ var c = r.look && h.portrait ? h.portrait(r.look) : null; if (c && c.toDataURL) im = '<i class="pp-dav" style="background-image:url(' + c.toDataURL() + ')"></i>'; }catch(e){}
+    box.innerHTML = rows.map(function(r){ var im = '', g = r.look ? chipImg(r.look) : ''; if (g) im = '<i class="pp-dav g3">' + g + '</i>';
+      else try{ var c = r.look && h.portrait ? h.portrait(r.look) : null; if (c && c.toDataURL) im = '<i class="pp-dav" style="background-image:url(' + c.toDataURL() + ')"></i>'; }catch(e){}
       return '<div class="pp-drow' + (r.mine ? ' me' : '') + '"><b>' + r.rank + '</b>' + im + '<span>' + esc(r.username) + '</span><em>' + r.strokes + ' · ' + (r.ms != null ? clockTxt(r.ms) : '-') + '</em></div>'; }).join('') +
       '<div class="m" style="margin-top:6px;opacity:.75">' + n + (n === 1 ? ' player' : ' players') + ' today.</div>'; }); }
 function dailyResult(got, dk){
@@ -3610,7 +3631,7 @@ function dailyResult(got, dk){
   S.ov.innerHTML = hdr('<span class="pp-strk">Streak ' + (st.streak.n || 1) + '</span>') + '<div class="pt-menu" style="padding-top:4px">\
     <div class="pp-dres"><div class="k">Daily Hole · ' + monthDay(dk) + '</div><div class="nm">' + esc(dh.name) + '</div><div class="m" style="opacity:.8">' + esc(T.name) + '</div><span class="th" data-th></span>\
       <div class="sc"><b>' + rec.s + '</b><span>' + (rec.s === 1 ? 'stroke' : 'strokes') + '<br>par ' + rec.par + '</span>' + (rec.ms != null ? '<b class="pp-tm">' + clockTxt(rec.ms) + '</b><span>time</span>' : '') + '</div>\
-      <div class="m" style="color:#ffd9a8;font-weight:800">' + esc(label) + (rec.s < rec.par ? ' · beat par' : '') + (st.streak.best > 1 ? ' · best streak ' + st.streak.best : '') + '</div>' + (got ? '<div class="pp-coins">+' + got + ' coins</div>' : '') + '</div>\
+      <div class="m" style="color:#ffd9a8;font-weight:800">' + esc(label) + (rec.s < rec.par ? ' · beat par' : '') + (st.streak.best > 1 ? ' · best streak ' + st.streak.best : '') + '</div>' + (got ? (isGuest() ? '<div class="m">' + GUEST_COINS + '</div>' : '<div class="pp-coins">+' + got + ' coins</div>') : '') + '</div>\
     <div class="pt-card pp-dboard" style="cursor:default" data-board><div class="k">Leaderboard</div><div class="m">Fewest strokes wins. The clock breaks a tie.</div><div class="pp-drows" data-rows></div></div>\
     <button class="pt-go" data-share style="background:#12a08f;color:#fff;padding:14px">Share</button><button class="pt-bt" data-menu style="padding:13px">Calendar</button>\
     <div class="m" style="text-align:center;color:#a9a3c9">' + (rec.late ? 'Played late, so the streak did not move. ' : 'Played. ') + 'Next Daily Hole in ' + hm(msToNextDay()) + '.</div></div>';
@@ -3704,8 +3725,8 @@ function playHole(){
   S.ov.innerHTML = top(title, sub, '') + '<div class="pt-stage"><canvas></canvas><div class="pt-read" hidden></div></div>\
     <div class="pt-bar">' + (C.kind === 'real' ? '<button class="pt-bt" data-l aria-label="Aim left">◂</button><button class="pt-bt" data-r aria-label="Aim right">▸</button>' : '') +
     '<div class="pt-hint" data-hint></div><button class="pt-bt" data-ov hidden aria-label="See the whole hole">Overview</button><button class="pt-bt" data-restart aria-label="Restart the hole">↺</button></div>';
-  if (R.mode === 'ppt'){ var tp = S.ov.querySelector('.pt-top'), u = golferUrl(); tp.classList.add('pp-play'); var bx = tp.querySelector('[data-x]'); bx.textContent = '✕'; bx.setAttribute('aria-label', 'Leave the hole');
-    bx.insertAdjacentHTML('afterend', '<i class="pp-av" style="' + avStyle(u) + '"></i><span class="pp-hearts">' + hearts(pload()) + '</span>'); }
+  if (R.mode === 'ppt'){ var tp = S.ov.querySelector('.pt-top'); tp.classList.add('pp-play'); var bx = tp.querySelector('[data-x]'); bx.textContent = '✕'; bx.setAttribute('aria-label', 'Leave the hole');
+    bx.insertAdjacentHTML('afterend', avRing() + '<span class="pp-hearts">' + hearts(pload()) + '</span>'); }
   if (R.mode === 'pdaily'){ var tb = S.ov.querySelector('.pt-top'); if (tb) tb.insertAdjacentHTML('beforeend', '<span class="pp-clock" aria-label="Time"><i></i><b data-dclock>0:00.0</b></span>'); S.clockEl = null; }
   S.ov.querySelector('[data-x]').onclick = function(){ leaveHole(); };
   S.ov.querySelector('[data-restart]').onclick = function(){ restartHole(); };
@@ -4330,6 +4351,8 @@ function scorecard(){
 }
 RTT_PUTT.open = open; RTT_PUTT.close = close; RTT_PUTT.paintCourse = paintCourse; RTT_PUTT.SKIN = SKIN;
 RTT_PUTT._state = function(){ return S; };
+RTT_PUTT.LIVES = { free:LIVES_FREE, pass:LIVES_PASS };
+RTT_PUTT.heart = function(n){ return heartSvg(n == null ? PER_HEART : n); };   // the three-band heart, for the page's double lives pitch
 RTT_PUTT._walkTo = function(n, tid){ return walkTo(n, tid || 'main'); };
 RTT_PUTT._trail = function(){ return S && S.trailCtl; };
 RTT_PUTT._trailPic = function(){ var k = S && S.trailTo ? trailKey(trailSpec(S.trailTo.tid, S.trailTo.to - 1)) : null; return k ? TRC[k] : null; };
@@ -4339,6 +4362,7 @@ RTT_PUTT._holeTips = function(n, tid){ var L = tourOf(tid || 'main').levels[n - 
 RTT_PUTT._loot = trailLoot; RTT_PUTT._bag = function(){ bagSheet(); }; RTT_PUTT._closet = function(){ closetSheet(); }; RTT_PUTT._foot = courseFoot; RTT_PUTT._left = trailLeft;
 RTT_PUTT._covers = function(){ var P = S.play; return P && P.camNow ? golferCovers(P, P.camNow) : null; };
 RTT_PUTT._lose = function(){ loseLife(pload()); };
+RTT_PUTT._overPar = function(){ if (S && S.play && S.round && S.round.mode === 'ppt'){ S.play.strokes = S.play.C.par; S.play.state = 'done'; return tourOut(false); } };   // checks: a hole lost to par
 RTT_PUTT._dailyFinish = function(s, par, ms){ return dailyFinish(s, par, ms); };
 // the checker's door straight onto a Tour level. Nothing on the page calls it.
 RTT_PUTT._level = function(n, tid){ if (S) startLevel(n, tid || 'main'); };

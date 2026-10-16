@@ -1603,6 +1603,7 @@ async function browser() {
   /* Play it out, pressing the first choice or the next button, reading the
      glass for a field that printed as nothing. */
   let rosAsked = false, rosSigned = false, arcSeen = false;
+  const cutFacts = [];
   let presses = 0, junk = [], reloaded = false, offOpened = false, resumed = null, keyed = false, docked = false, offFold = [], cardsSeen = 0, tall = false, trayed = false, trayBad = [];
   /* The career starts in high school (asserted above), and the double tap
      arm before this loop can press through all of it on a short high school
@@ -1612,10 +1613,12 @@ async function browser() {
     const st = await page.evaluate(() => {
       const s = RTF_CAREER_UI.state();
       const t = document.querySelector('#s-car').innerText;
-      return { cur: !!s.cur, last: !!s.last, junk: /\bundefined\b|\bNaN\b|\[object/.test(t), steps: s.cur ? s.cur.steps : 0, stage: s.cur && s.cur.stage,
+      const cut = [...document.querySelectorAll('#s-car .cr-fact b')].filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent);
+      return { cut, cur: !!s.cur, last: !!s.last, junk: /\bundefined\b|\bNaN\b|\[object/.test(t), steps: s.cur ? s.cur.steps : 0, stage: s.cur && s.cur.stage,
         card: s.cur && s.cur.pending[0] ? s.cur.pending[0].key : null, cid: s.cur && s.cur.pending[0] ? s.cur.pending[0].id : null };
     });
     if (st.junk && junk.length < 3) junk.push('press ' + presses);
+    if (st.cut && st.cut.length && cutFacts.length < 3) cutFacts.push(st.cut.join(', '));
     if (st.stage) stagesSeen[st.stage] = 1;
     if (!st.cur) break;
     /* Once, mid-career: reload and land on the same card. */
@@ -1813,6 +1816,7 @@ async function browser() {
     }
   }
   ok(junk.length === 0, `no field ever printed as undefined or NaN (${junk.join(', ') || 'none'})`);
+  ok(cutFacts.length === 0, `no figure on the career's fact tiles is ever cut short (${cutFacts.join(' | ') || 'none'})`);
   ok(reloaded, 'the reload arm ran');
   ok(tall, 'the tall receipt arm ran');
   ok(trayed, 'the tray arm ran');
@@ -1982,6 +1986,9 @@ async function scenesWalk(b, serve) {
   await page.fill('#cr-name', 'Scene McTest');
   await page.click('#cr-go');
   const look = await page.evaluate(() => RTF_CAREER_UI.state().cur.look);
+  /* a live life, kept for the trade plates below: the Hall record at the end
+     of the walk carries no league, and a trade is only played on a live one */
+  await page.evaluate(() => { window.__liveL = JSON.parse(JSON.stringify(RTF_CAREER_UI.state().cur)); });
   ok(look && look.hair === 'afro', `the builder's look is the career's (${JSON.stringify(look)})`);
   const pic = await page.evaluate(() => !!document.querySelector('.cr-id .rtf-baller'));
   ok(pic, 'the identity card draws the player');
@@ -2096,6 +2103,35 @@ async function scenesWalk(b, serve) {
   ok(underneath, 'and the card a scene asks is on the plain screen underneath');
   const fin = await page.evaluate(() => RTF_CAREER_UI.state().last);
   ok(fin && fin.look && fin.look.hair === 'afro', 'the Hall card keeps the look');
+  /* A TRADE'S GM IS NAMED ON HIS PLATE. The page plays a chained scene over
+     the career's opening context, which has no trade in it, so a plate read
+     there said "General manager, undefined" over no name. Every way a trade
+     reaches you is played here the way the page plays it. */
+  {
+    const plates = await page.evaluate(async () => {
+      const S = window.RTF_SCENES, L = window.__liveL, out = [];
+      const ways = [{ when: 'summer' }, { when: 'deadline' }, { when: 'season' }, { how: 'ask' }];
+      for (let k = 0; k < 12; k++) {
+        const w = ways[k % ways.length];
+        const b = Object.assign({ kind: 'trade', from: 'BRK', to: 'MIA', oldgm: 'Gary Oldfield', newgm: 'Ned Newman', agent: 'Tess Rowe', fam: 'Mom', famRole: 'mom', oldmate: 'Sam Pike' }, w);
+        const L2 = Object.assign({}, L, { year: L.year + k, team: 'MIA' });
+        const pick = S.pickScene({ beats: [b] }, L2);
+        if (!pick) continue;
+        const beats = S.build(L2, pick, null).beats, ctx = S.build(L2, null, null).ctx;
+        S.play(beats, ctx, {});
+        for (let i = 0; i < beats.length; i++) {
+          await new Promise((d) => setTimeout(d, 60));
+          const who = document.querySelector('#scov .sc-who');
+          if (who && /gm$/.test(beats[i].who || '')) out.push(who.innerText.replace(/\s+/g, ' '));
+          const st = document.querySelector('#scov .sc-stage'); if (st) st.click();
+        }
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        await new Promise((d) => setTimeout(d, 60));
+      }
+      return out;
+    });
+    ok(plates.length > 0 && plates.every((p) => /General manager, \w/i.test(p) && !/undefined/i.test(p) && /Oldfield|Newman/i.test(p)), `every trade GM's plate names him and his club (${plates.slice(0, 2).join(' | ') || 'none seen'})`);
+  }
   /* Off means off. */
   await page.evaluate(() => { localStorage.setItem('rtf.scenes.v1', 'off'); const a = document.querySelector('#cr-again'); if (a) a.click(); });
   await page.waitForSelector('#cr-go');

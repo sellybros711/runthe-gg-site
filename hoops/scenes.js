@@ -1448,6 +1448,12 @@ function build(L, pick, card){
      own facts rather than the first scene's. */
   c.vseed = B.hash(L.seed + ':' + L.year + ':' + c.sceneId) % 997;
   beats = beats.map(function(b){ var o = {}; for (var k in b) o[k] = b[k]; o.tx = T(b.tx, c); o.board = T(b.board, c); if (b.feed) o.feed = T(b.feed, c);
+    /* the name plate too: a trade's GMs are named off this moment's facts
+       (oldgm, fromNick), which the scene's opening context does not carry, and
+       read there the plate said "General manager, undefined" over no name */
+    var cw = b.who !== 'me' && CAST[b.who];
+    if (b.name != null || (cw && typeof cw.name === 'function')) o.name = T(b.name != null ? b.name : cw.name, c) || '';
+    if (b.role != null || (cw && typeof cw.role === 'function')) o.role = T(b.role != null ? b.role : cw.role, c) || '';
     /* A shot is played against this moment's own facts too (the pick on
        draft night, the award at the podium), not the scene's opening ones. */
     if (b.shot) o.sx = { pick: c.pick, award: c.sceneId === 'mvp' ? 'Most Valuable Player' : c.award, teamName: c.teamName, nick: c.nick, year: c.year, num: c.num, from: c.from, to: c.to };
