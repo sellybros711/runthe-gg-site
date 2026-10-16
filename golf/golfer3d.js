@@ -593,7 +593,7 @@
     const F=norm(aimV), U=V(0,1,0), T=norm(cross(F,U)), P=(f,u,t)=>add(sc(F,f),sc(U,u),sc(T,t));
     let tag='';   // the item the parts being pushed belong to, so a tile can draw it alone (MO.only)
     const HD=(MO?MO.K:1)>=2, parts=[], push=p=>{ if(tag) p.o.item=tag; parts.push(p); }, top=gear.top, tpal=gear.topPal||{}, cl=gear.cleats, lg=gear.legPal;
-    const body=top==='shacket'?'plaid':'shirt', AX=[F,U,T];
+    const body=top==='shacket'?'plaid':top==='cardigan'?'k:'+tpal['1']:'shirt', AX=[F,U,T];   // a cardigan is knitted (k: is ribbed when painted)
     // THE BUILD: a lean golfer. BW narrows the torso, hips and belt, AW brings the arms, hands and club in to match.
     const BW=0.84, AW=0.87;
     // shoes and legs
@@ -644,10 +644,35 @@
         push(over(tc,AX,TR,body,l=>inT(l)&&l[0]>0.15&&l[1]>-0.40&&l[1]<-0.1&&Math.abs(l[2]*s-(0.95+1.6*l[1]-d))<0.045,{dt:-1,noCast:1}));
         push(over(tc,AX,TR,body,l=>inT(l)&&l[0]>0.15&&l[1]>-0.30&&l[1]<0.02&&Math.abs(l[2]*s-(0.875+1.45*l[1]+d))<0.03,{dt:1,noCast:1})); }   // the lit side of the first fold
       for(const [y,w] of [[-0.385,0.55],[-0.405,0.35]]) push(over(tc,AX,TR,body,l=>inT(l)&&l[0]>0.2&&Math.abs(l[1]-y-0.004*sw)<0.006&&Math.abs(l[2])<w,{dt:-1,noCast:1})); }
-    if(top==='cardigan'||top==='shacket'){ push(over(tc,AX,TR,'polo',l=>inT(l)&&l[0]>0.3&&Math.abs(l[2])<0.13+0.6*Math.max(0,l[1]-0.05)));
-      for(const u of [20.4,23.6,26.8]) push(ellipsoid(P(4.85,u,0.9),AX,[0.5,0.5,0.5],'x:'+(tpal['4']||'#5f4c2e'),{gloss:2,noCast:1})); }
-    else if(top==='blazer'){ push(over(tc,AX,TR,'x:'+tpal['6'],l=>inT(l)&&l[0]>0.25&&l[1]>0.0&&Math.abs(l[2])<0.5*(l[1]+0.05)));
-      push(over(tc,AX,TR.map(v=>v*1.01),'x:'+tpal['7'],l=>inT(l)&&l[0]>0.25&&l[1]>-0.1&&Math.abs(l[2])<0.07));
+    // THE JACKETS, made as the garments: their fronts, bands, pockets and collars (the sleeves are with the arms)
+    const box=(l,y0,y1,x0,x1)=>l[1]>y0&&l[1]<y1&&l[2]>x0&&l[2]<x1, rim=(l,y0,y1,x0,x1,w)=>box(l,y0,y1,x0,x1)&&!box(l,y0+w,y1-w*0.5,x0+w*0.3,x1-w*0.3);
+    if(top==='cardigan'){ const vE=l=>0.13+0.6*Math.max(0,l[1]-0.05), knit=body;
+      push(over(tc,AX,TR,'polo',l=>inT(l)&&l[0]>0.3&&l[1]>0.06&&Math.abs(l[2])<vE(l)-0.1*clamp01((0.14-l[1])/0.08)));            // the shirt in the V, closing to the top button
+      push(over(tc,AX,TR.map(v=>v*1.012),knit,l=>inT(l)&&l[0]>0.25&&Math.abs(l[2])>=vE(l)&&Math.abs(l[2])<vE(l)+0.07&&l[1]>0.05,{dt:1,noCast:1}));   // the button bands up the V
+      push(over(tc,AX,TR.map(v=>v*1.012),knit,l=>inT(l)&&l[0]>0.25&&l[1]<=0.05&&l[1]>lo+0.06&&Math.abs(l[2]-0.06)<0.07,{dt:1,noCast:1}));         // and down the front
+      push(over(tc,AX,TR.map(v=>v*1.014),knit,l=>inT(l)&&l[0]>0.25&&l[1]<=0.05&&Math.abs(l[2]+0.012)<0.012,{dt:-1,noCast:1}));                    // where they overlap
+      push(over(tc,AX,TR.map(v=>v*1.01),knit,l=>inT(l)&&l[1]<lo+0.065,{dt:-1,noCast:1}));                                                       // the ribbed waistband
+      for(const sd of [1,-1]) push(over(tc,AX,TR.map(v=>v*1.012),knit,l=>l[0]>0.2&&rim(l,-0.36,-0.2,sd>0?0.24:-0.58,sd>0?0.58:-0.24,0.03),{dt:-1,noCast:1}));   // patch pockets
+      for(const u of [20.4,22.9,25.4,27.9]) push(ellipsoid(P(4.82,u,0.45),AX,[0.48,0.48,0.48],'x:'+(tpal['4']||'#5f4c2e'),{gloss:2,noCast:1})); }
+    else if(top==='shacket'){ const tri=(x,y,a,b,c)=>{ const e=(p,q)=>(q[0]-p[0])*(y-p[1])-(q[1]-p[1])*(x-p[0]); const d1=e(a,b),d2=e(b,c),d3=e(c,a); return (d1>=0&&d2>=0&&d3>=0)||(d1<=0&&d2<=0&&d3<=0); };
+      push(over(tc,AX,TR,'polo',l=>inT(l)&&l[0]>0.3&&l[1]>0.2&&Math.abs(l[2])<0.04+0.6*Math.max(0,l[1]-0.2)));                     // the shirt at the open neck
+      for(const sd of [1,-1]){ push(over(tc,AX,TR.map(v=>v*1.02),'plaid',l=>l[0]>0.25&&tri(l[2],l[1],[0.07*sd,0.31],[0.5*sd,0.31],[0.32*sd,0.16]),{dt:1,noCast:1}));   // the spread collar
+        push(over(tc,AX,TR.map(v=>v*1.014),'x:'+tpal['3'],l=>l[0]>0.25&&tri(l[2],l[1],[0.05*sd,0.315],[0.53*sd,0.315],[0.32*sd,0.14]),{noCast:1}));
+        push(over(tc,AX,TR.map(v=>v*1.012),'plaid',l=>l[0]>0.2&&rim(l,0.0,0.14,sd>0?0.2:-0.56,sd>0?0.56:-0.2,0.025),{dt:-1,noCast:1}));         // a chest pocket
+        push(over(tc,AX,TR.map(v=>v*1.02),'plaid',l=>l[0]>0.2&&box(l,0.1,0.16,sd>0?0.19:-0.57,sd>0?0.57:-0.19),{dt:1,noCast:1}));             // its flap
+        push(ellipsoid(P(4.9,30.0,3.0*sd),AX,[0.4,0.4,0.4],'x:'+tpal['4'],{gloss:2,noCast:1})); }
+      push(over(tc,AX,TR.map(v=>v*1.012),'plaid',l=>inT(l)&&l[0]>0.25&&l[1]<0.18&&Math.abs(l[2])<0.06,{dt:1,noCast:1}));                       // the placket
+      for(const u of [19.6,22.4,25.2]) push(ellipsoid(P(4.85,u,0),AX,[0.45,0.45,0.45],'x:'+tpal['4'],{gloss:2,noCast:1})); }
+    else if(top==='blazer'){ const vE=l=>0.5*(l[1]+0.05), cl='x:'+tpal['1'], dkc='x:'+tpal['2'];
+      push(over(tc,AX,TR,'x:'+tpal['6'],l=>inT(l)&&l[0]>0.25&&l[1]>0.0&&Math.abs(l[2])<vE(l)));                                   // the shirt
+      push(over(tc,AX,TR.map(v=>v*1.01),'x:'+tpal['7'],l=>inT(l)&&l[0]>0.25&&l[1]>-0.1&&Math.abs(l[2])<0.07));                      // the tie
+      // the lapels: rolled back from the V, wider at the chest, with a notch where they meet the collar
+      const lap=l=>l[0]>0.22&&l[1]>-0.02&&l[1]<0.31&&Math.abs(l[2])>=vE(l)&&Math.abs(l[2])<vE(l)+0.1+0.22*Math.max(0,Math.min(1,(l[1]+0.02)/0.2))*(l[1]>0.2&&l[1]<0.235?0.35:1);
+      push(over(tc,AX,TR.map(v=>v*1.03),cl,lap,{dt:1,noCast:1}));
+      push(over(tc,AX,TR.map(v=>v*1.022),dkc,l=>l[0]>0.22&&l[1]>-0.03&&l[1]<0.31&&Math.abs(l[2])>=vE(l)&&Math.abs(l[2])<vE(l)+0.13+0.24*Math.max(0,Math.min(1,(l[1]+0.02)/0.2)),{noCast:1}));   // its shadow
+      push(over(tc,AX,TR.map(v=>v*1.012),cl,l=>l[0]>0.2&&rim(l,0.04,0.12,-0.6,-0.36,0.022),{dt:-1,noCast:1}));                   // the breast pocket
+      push(over(tc,AX,TR.map(v=>v*1.018),'x:#f4f1e6',l=>l[0]>0.2&&l[1]>0.115&&l[1]<0.145&&l[2]>-0.56&&l[2]<-0.42&&Math.abs(l[2]+0.49)<(0.145-l[1])*2.6,{noCast:1}));   // a pocket square
+      for(const sd of [1,-1]) push(over(tc,AX,TR.map(v=>v*1.012),dkc,l=>l[0]>0.2&&Math.abs(l[1]+0.27)<0.007&&l[2]*sd>0.28&&l[2]*sd<0.66,{noCast:1}));   // the hip pockets
       for(const u of [20.6,22.6]) push(ellipsoid(P(4.85,u,0),AX,[0.5,0.5,0.5],'x:'+tpal['4'],{gloss:2,noCast:1})); }
     else if(HD){ // the polo: the collar folded down into two flat points on the chest, outlined; a placket and two buttons
       const tri=(x,y,a,b,c)=>{ const e=(p,q)=>(q[0]-p[0])*(y-p[1])-(q[1]-p[1])*(x-p[0]); const d1=e(a,b),d2=e(b,c),d3=e(c,a); return (d1>=0&&d2>=0&&d3>=0)||(d1<=0&&d2<=0&&d3<=0); };
@@ -676,7 +701,20 @@
     for(const s of [1,-1]){ const hold=s===dom, slv=top==='blazer'?'x:'+tpal['1']:body;
       const sh=P(-0.2,30.0+0.15*br,9.2*AW*s), el=hold?P(0.9,23.0,10.5*AW*s):P(0.4,23.0,10.4*AW*s), wr=hold?P(2.4,17.7,11.0*AW*s):P(1.3,17.3,10.9*AW*s);
       const se=add(sh,sc(sub(el,sh),0.48)), mid=add(el,sc(sub(wr,el),0.45)), flap=sc(F,0.12*sw*s);
-      if(top==='blazer'){ push(capsule(sh,el,2.15,slv)); push(capsule(el,wr,1.85,slv)); }
+      if(jacket){ // A JACKET'S SLEEVE: long, bending at the elbow, a fold inside it; the cardigan's ends in a ribbed cuff, the
+        // blazer's in a plain cuff with buttons, the shacket's is rolled up to the forearm
+        const roll=top==='shacket', s0=add(sh,sc(norm(sub(sh,se)),1.2),sc(U,0.4)), e1=roll?add(el,sc(sub(wr,el),0.5)):add(el,sc(sub(wr,el),0.86));
+        const L1=dot(sub(el,s0),sub(el,s0)), L2=dot(sub(e1,el),sub(e1,el)), sm=top==='blazer'?'x:'+tpal['1']:slv;
+        push(field(add(s0,sc(sub(e1,s0),0.5)),Math.sqrt(dot(sub(e1,s0),sub(e1,s0)))/2+4,p=>smin(sdCone(p,s0,el,2.2,1.95),sdCone(p,el,e1,1.95,top==='blazer'?1.72:1.68),0.9)-0.1,sm,{mf:p=>{
+            const t1=dot(sub(p,s0),sub(el,s0))/L1, t2=dot(sub(p,el),sub(e1,el))/L2;
+            if(t2>0.985) return [sm,-1];                                                          // the open cuff
+            if(top==='cardigan'&&t2>0.74) return [sm,t2<0.77?-1:0];                               // the ribbed cuff
+            if(top==='blazer'&&t2>0.8&&t2<0.83) return [sm,-1];
+            return Math.abs(t1-0.93)<0.035||Math.abs(t2-0.08)<0.03?[sm,-1]:null; }}));            // the fold at the elbow
+        if(roll){ push(field(e1,4,p=>sdCone(p,add(e1,sc(sub(el,e1),0.14)),add(e1,sc(sub(wr,el),0.03)),2.05,2.05)-0.15,'x:'+tpal['2'],{mf:p=>[ 'x:'+tpal['2'],Math.sin(dot(sub(p,e1),norm(sub(wr,el)))*4)>0.3?1:-1]}));   // the roll
+          push(capsule(e1,mid,1.5,'skin')); push(capsule(mid,wr,1.22,'skin')); }
+        if(top==='blazer') for(const k of [0.88,0.93]) push(ellipsoid(add(el,sc(sub(e1,el),k),sc(F,-0.4),sc(T,1.65*s)),AX,[0.32,0.32,0.32],'x:'+tpal['4'],{gloss:2,noCast:1}));   // cuff buttons
+      }
       else { // THE SLEEVE: a short tube from inside the shoulder, a touch wider at the hem, cut square there with the hem
         // stitched a finger above the edge and a fold across it; the hem swings a little with the breath
         const s0=add(sh,sc(norm(sub(sh,se)),1.2),sc(U,0.4)), s1=add(se,flap), L2=dot(sub(s1,s0),sub(s1,s0));
@@ -1250,7 +1288,8 @@
       return [Math.floor(Math.atan2(dot(q,M.T),dot(q,M.F))*7.4/PC+4000), Math.floor((44-w[1])/PC)]; };
     s.paint(ctx,1,(c,x0,y0)=>{const m=c.m, x=Math.floor(x0/PK), y=Math.floor(y0/PK);
       if((m==='shirt'||m==='polo')&&patFn&&!(m==='shirt'&&top&&top!=='duckfloatie'&&top!=='cape')){ const uv=MO?wrapAt(x0,y0,c.z):[x,y], h=patFn(uv[0],uv[1]); if(h) return rampOf(h); }
-      if(m==='plaid'){ const a=(x%5===0), b=(y%5===0); return rampOf(a&&b?plaidC[2]:(a||b)?plaidC[1]:plaidC[0]); }
+      if(m==='plaid'){ const uv=MO?wrapAt(x0,y0,c.z):[x,y], a=(uv[0]%5===0), b=(uv[1]%5===0); return rampOf(a&&b?plaidC[2]:(a||b)?plaidC[1]:plaidC[0]); }
+      if(m.startsWith('k:')){ const h=m.slice(2), uv=MO?wrapAt(x0,y0,c.z):[x,y]; return rampOf(uv[0]%2?h:pxShade(h,-18)); }   // knit, in ribs
       if(m==='sock'){ const d=((x+y)%4===0)||(((x-y)%4+4)%4===0); return rampOf(d?(lp['4']||'#9a4436'):(y%5===0?(lp['5']||lp['3']):(lp['3']||'#ded3b4'))); }
       if(R[m])return R[m]; if(fixed[m])return fixed[m]; if(m.startsWith('x:'))return rampOf(m.slice(2)); return '#ff00ff'});
     // the figure's height in cells, so the page can size it to the old sprite's figure
