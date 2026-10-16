@@ -534,6 +534,57 @@ async function browser() {
     ok(Math.abs(wide.fy / wide.ch - 0.46) < 0.02, `a landscape screen keeps its broadcast floor line (${(wide.fy / wide.ch * 100).toFixed(0)}%)`);
   }
 
+  section('13. inside a scene: the floor never jumps and nobody leaves it');
+  {
+    /* Found playing the game, with every check above green. In a scene the
+       meter lives in the caption under the court, so it coming and going
+       changed the court's box: the floor line dropped a quarter of a phone
+       screen the moment you let go, with the ball in the air. And the
+       reaction drew only you, so the man guarding you vanished at the end of
+       every play, and a stop that lost shouted LOCKED UP over a tip it never
+       showed. This plays every kind in that layout and samples the stage. */
+    const { ctx, page, boom } = await open(390, 844, false, 1);
+    const kinds = ['three', 'mid', 'drive', 'pass', 'buzzer', 'ft', 'poster', 'stop', 'block', 'post', 'lob', 'steal', 'stop:lose', 'block:lose'];
+    const res = [];
+    for (const kind of kinds) {
+      res.push(await page.evaluate(({ kind, ME }) => new Promise((done) => {
+        const [k0, lose] = kind.split(':');
+        const h = document.getElementById('h'); h.innerHTML = '';
+        h.style.cssText = 'position:relative;width:100vw;height:100vh;display:flex;flex-direction:column';
+        h.innerHTML = '<div id="cs" style="position:relative;flex:1;min-height:0"></div><div style="padding:12px;color:#fff">A caption line.<div id="cc"></div></div>';
+        const host = document.getElementById('cs');
+        const key = (a) => a.who === 'me' ? 'me' : JSON.stringify([a.who.look, a.who.c1]);
+        const S = [];
+        let iv = 0;
+        const m = window.RTF_COURT.moment(host, { kind: k0, rating: 72, rateName: 'Shooting', room: 'nba', c1: ME.c1, c2: ME.c2, oc: '#C8102E', me: ME, mate: { look: { skin: 2, hair: 'fade' }, num: 11 },
+          bug: { home: 'MIL', away: 'CHI', clock: '0:07' }, intro: 'Here we go.', makeCall: 'Yes!', missCall: 'No.', seed: 'cont-' + kind, ctlHost: document.getElementById('cc') },
+          { resolve: () => ({ made: k0 === 'ft' ? 2 : true, won: !lose }), done: () => { clearInterval(iv); m.stop(); done({ kind, S }); } });
+        const cv = host.querySelector('canvas');
+        iv = setInterval(() => {
+          const st = m.stage, kk = cv.offsetHeight / st.ch;
+          const armed = !!document.querySelector('#cc .ct-ctl[data-armed]');
+          S.push({ armed, line: Math.round((host.getBoundingClientRect().top + cv.offsetTop + st.fy * kk) * 10) / 10, who: (st.state.actors || []).map(key) });
+          const ctl = document.querySelector('#cc .ct-ctl[data-armed]');
+          if (ctl && !ctl.dataset.hit) { ctl.dataset.hit = '1'; setTimeout(() => { ctl.querySelector('.ct-go').click(); delete ctl.dataset.hit; }, 450); }
+        }, 40);
+      }), { kind, ME }));
+    }
+    for (const r of res) {
+      const a0 = r.S.findIndex((x) => x.armed), lines = r.S.slice(a0).map((x) => x.line);
+      const moved = a0 < 0 ? -1 : Math.max(...lines) - Math.min(...lines);
+      /* the people on the floor when the last press went in */
+      const lastArmed = r.S.map((x) => x.armed).lastIndexOf(true), at = r.S[lastArmed + 1] || r.S[lastArmed];
+      const lost = r.S.slice(lastArmed + 1).find((x) => !at.who.every((w) => x.who.includes(w)));
+      r.moved = moved; r.lost = lost ? at.who.filter((w) => !lost.who.includes(w)).length : 0;
+      r.most = Math.max(...r.S.slice(lastArmed + 1).map((x) => x.who.length)); r.atPress = at.who.length;
+    }
+    ok(res.every((r) => r.moved === 0), `13 the floor line holds from the first press to the end (${res.filter((r) => r.moved !== 0).map((r) => r.kind + ' ' + r.moved + 'px').join(', ') || 'every kind'})`);
+    ok(res.every((r) => r.lost === 0), `13 nobody on the floor at the press leaves it before the end (${res.filter((r) => r.lost).map((r) => r.kind).join(', ') || 'every kind'})`);
+    ok(res.filter((r) => /:lose/.test(r.kind)).every((r) => r.most > r.atPress), `13 a stop that still loses shows their man tipping it in (${res.filter((r) => /:lose/.test(r.kind)).map((r) => r.kind + ' ' + r.atPress + '->' + r.most).join(', ')})`);
+    ok(!boom.length, '13 and nothing threw (' + boom.join(' | ') + ')');
+    await ctx.close();
+  }
+
   await b.close();
 }
 if (!QUICK) await browser();
