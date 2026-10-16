@@ -446,36 +446,59 @@
      trouser legs and the shoes. Facing the camera along F. */
   // a club head that looks like its type: a driver's pear-shaped head with a dark crown, a fairway wood, an iron or
   // wedge blade with grooves, or a putter. Its colours are the club's own kit (head H, face F, highlight S, trim G).
+  // THE CLUB HEADS AS THE REAL THINGS, each one smooth surface in the head's own frame (a out of the face, y up, s
+  // toward the toe): a driver or wood is a pear shaped head with a flat scored face, a domed crown with an alignment
+  // mark, a skirt and a sole plate; an iron is a lofted blade, thicker at the sole and taller at the toe, grooved, with
+  // a cavity behind; a wedge is the same with more loft and a taller face; a blade putter is a milled bar on a
+  // plumber's neck, a mallet a half moon with sight lines.
   function profileClub(push,hands,h0,F,U,id,pal,outV){
-    const type=id==='persimmon'?'wood':String(id).indexOf('pu_')===0?'putter':(typeof CLUB_RECOLOR!=='undefined'&&CLUB_RECOLOR[id])||(id==='blade'?'iron':'driver');
+    const stock={driver:'driver',wood:'wood',iron:'iron',wedge:'wedge',putter:'putter'};
+    const type=stock[id]||(id==='persimmon'?'wood':String(id).indexOf('pu_')===0?'putter':(typeof CLUB_RECOLOR!=='undefined'&&CLUB_RECOLOR[id])||(id==='blade'?'iron':'driver'));
     const kit=!!(pal&&pal.H), X=h=>'x:'+h;
     const out0=sub(h0,hands); const out=outV?norm(outV):norm([out0[0],0,out0[2]]), cdir=norm(sub(h0,hands));
     const along=t=>add(hands,sc(cdir,t)), hoselTop=add(h0,sc(U,1.6),sc(out,-0.25));
     push(capsule(along(-1.1),along(3.6),0.92,X(kit&&pal.G?pal.G:'#26262e')));                               // the grip
     push(capsule(along(3.6),hoselTop,0.33,X((pal&&pal.l)||'#c4ccd4'),{gloss:2}));                           // the shaft
     push(capsule(add(hoselTop,sc(cdir,-0.3)),hoselTop,0.45,'x:#1b1d22'));                                    // the ferrule
-    const AXc=[F,U,out];
-    if(type==='driver'||type==='wood'){ const big=type==='driver', R=big?[2.45,1.2,2.85]:[1.95,0.95,2.3];
-      const crown=id==='persimmon'||id==='rosewood'?(pal.W||pal.H):kit?pal.H:'#24282f', face=kit?(pal.F||'#cfd3da'):'#3a3f48', sole=kit?(pal.S||'#cfd3da'):'#cfd3da';
-      const C=add(h0,sc(out,R[2]*0.9),sc(U,R[1]-1.3+0.05),sc(F,-0.25));
-      push(capsule(hoselTop,add(C,sc(out,-R[2]*0.82),sc(U,R[1]*0.2)),0.52,X(crown),{gloss:2}));             // the hosel
-      push(ellipsoid(C,AXc,R,X(crown),{gloss:3}));                                                           // the head, crown up
-      push(over(C,AXc,R,X(face),l=>l[0]>0.62&&l[1]<0.55,{gloss:1}));                                         // the face
-      push(over(C,AXc,R,X(sole),l=>l[1]<-0.45,{gloss:2}));                                                   // the sole plate
-      push(over(C,AXc,R.map(v=>v*1.01),X(kit?(pal.S||'#f4f7fa'):'#e8ebf0'),l=>l[1]>0.55&&l[0]>0.15&&Math.abs(l[2])<0.06)); }   // the alignment line on the crown
-    else if(type==='iron'||type==='wedge'){ const R=type==='wedge'?[0.62,1.75,2.0]:[0.55,1.45,2.15];
-      const body=kit?pal.H:'#b7bdc6', face=kit?(pal.F||'#dfe4ea'):'#dfe4ea', C=add(h0,sc(out,R[2]*0.95),sc(U,R[1]-1.15));
-      push(capsule(hoselTop,add(C,sc(out,-R[2]*0.85),sc(U,-R[1]*0.35)),0.45,X(body),{gloss:2}));
-      push(ellipsoid(C,AXc,R,X(body),{gloss:2}));
-      push(over(C,AXc,R,X(face),l=>l[0]>0.35,{gloss:2}));
-      for(const g of [-0.45,-0.15,0.15,0.45]) push(over(C,AXc,R.map(v=>v*1.01),X(kit?(pal.G||'#5a626c'):'#6f7884'),l=>l[0]>0.45&&Math.abs(l[1]-g)<0.05&&Math.abs(l[2])<0.7)); }   // the grooves
-    else { const mallet=id==='mallet'||['pu_halfmoon','pu_counter','pu_scope','pu_bank','pu_buoy'].indexOf(id)>=0, R=mallet?[1.8,0.7,1.9]:[0.75,0.72,2.35], body=kit?pal.H:'#5a636e';
-      const C=add(h0,sc(out,R[2]*0.75),sc(U,R[1]-1.25));
-      push(capsule(hoselTop,add(C,sc(out,-R[2]*0.55),sc(U,R[1]*0.5)),0.42,X(body),{gloss:2}));
-      push(ellipsoid(C,AXc,R,X(body),{gloss:2}));
-      push(over(C,AXc,R.map(v=>v*1.01),X(kit?(pal.S||'#e2e6ec'):'#f4f7fa'),l=>l[1]>0.6&&Math.abs(l[2])<0.06));   // the sight line
-      if(kit&&pal.F) push(over(C,AXc,R,X(pal.F),l=>l[0]>0.55&&Math.abs(l[1])<0.6,{gloss:2}));                          // the face insert
-      if(kit&&pal.G) push(over(C,AXc,R,X(pal.G),l=>l[1]<-0.45)); }                                                      // the sole
+    const head=(C,R,f,mat,mf)=>{ const loc=p=>{ const q=sub(p,C); return {a:dot(q,F),y:dot(q,U),s:dot(q,out)}; };
+      push(field(C,R,p=>f(loc(p)),mat,{gloss:2,mf:mf?(p,n)=>mf(loc(p),n):null})); };
+    if(type==='driver'||type==='wood'){ const big=type==='driver', S=big?1:0.8;
+      const crown=X(id==='persimmon'||id==='rosewood'?(pal.W||pal.H):kit?pal.H:'#24282f'), face=X(kit?(pal.F||'#cfd3da'):'#3a3f48'), sole=X(kit?(pal.S||'#cfd3da'):'#cfd3da');
+      const C=add(h0,sc(out,2.6*S),sc(U,1.25*S-1.25),sc(F,-0.6*S));
+      push(capsule(hoselTop,add(C,sc(out,-2.3*S),sc(F,0.9*S),sc(U,0.3*S)),0.5,crown,{gloss:2}));            // the hosel
+      head(C,4.2*S,L=>{ const s=L.s/S, a=L.a/S, y=L.y/S, w=2.9-0.5*Math.max(0,-s)/2.9;                      // narrower at the heel
+          const q=[a/2.55,y/(1.25+0.12*Math.max(0,-a)/2.5),s/w], k0=Math.hypot(...q), k1=Math.hypot(q[0]/2.55,q[1]/1.3,q[2]/w);
+          return Math.max(k0*(k0-1)/k1,a-1.75,-y-1.05)*S; },crown,(L,n)=>{ const a=L.a/S, y=L.y/S, s=L.s/S;
+          if(a>1.6) return [face,Math.abs(((y+2)*3.2)%1-0.5)<0.12&&Math.abs(s)<1.6?-1:0];            // the face and its score lines
+          if(y<-0.92) return [sole,0];                                                               // the sole plate
+          if(y<-0.45) return [face,-1];                                                              // the skirt
+          return Math.abs(s-0.2)<0.07&&a>0.6&&y>0.6?[sole,1]:[crown,0]; });                          // the alignment mark
+      return; }
+    if(type==='iron'||type==='wedge'){ const wedge=type==='wedge', tl=Math.tan(wedge?0.72:0.42), body=X(kit?pal.H:'#b7bdc6'), face=X(kit?(pal.F||'#dfe4ea'):'#dfe4ea'), grv=X(kit?(pal.G||'#5a626c'):'#6f7884');
+      const C=add(h0,sc(out,2.0),sc(U,-0.5)), top=s=>(wedge?1.15:0.8)+(wedge?0.3:0.42)*(s+1.6)/3.6;
+      push(capsule(hoselTop,add(C,sc(out,-1.75),sc(U,0.45)),0.42,body,{gloss:2}));                        // the hosel
+      head(C,4.4,L=>{ const ap=L.a+L.y*tl*0.6, th=0.22+0.42*clamp01(1-(L.y+0.75)/1.7);
+          const d2=rbox(Math.max(-1.6-L.s,L.s-2.0),Math.max(-0.75-L.y,L.y-top(L.s)),0.45);
+          return Math.max(d2,Math.abs(ap+th*0.5)-th); },body,(L,n)=>{ const ap=L.a+L.y*tl*0.6;
+          if(dot(n,F)>0.3&&L.y>-0.6&&L.y<top(L.s)-0.15){ const g=((L.y+0.75)/0.26)%1; return [Math.abs(g-0.5)<0.14&&L.s>-1.2&&L.s<1.6?grv:face,0]; }   // the face and its grooves
+          if(dot(n,F)<-0.3&&L.y>-0.45&&L.y<top(L.s)-0.35&&L.s>-1.0&&L.s<1.6) return [body,-1];                 // the cavity behind
+          return null; });
+      return; }
+    const mallet=id==='mallet'||['pu_halfmoon','pu_counter','pu_scope','pu_bank','pu_buoy'].indexOf(id)>=0, body=X(kit?pal.H:'#5a636e'), sight=X(kit?(pal.S||'#e2e6ec'):'#f4f7fa');
+    const C=add(h0,sc(out,1.9),sc(U,-0.8));
+    if(mallet){ // a half moon mallet: flat face, round back, sight lines across its top
+      push(capsule(hoselTop,add(C,sc(out,-0.2),sc(U,0.4)),0.4,body,{gloss:2}));
+      head(C,3.4,L=>rbox(Math.max(Math.hypot(L.a-0.45,L.s/1.05)-2.1,L.a-0.45),Math.abs(L.y)-0.42,0.25),body,(L,n)=>{
+        if(L.y>0.3&&(Math.abs(L.s)<0.08||Math.abs(Math.abs(L.s)-0.55)<0.07)) return [sight,1];
+        if(kit&&pal.F&&dot(n,F)>0.6) return [X(pal.F),0]; if(kit&&pal.G&&L.y<-0.3) return [X(pal.G),0]; return null; });
+      return; }
+    // a blade putter: a milled bar with a flange behind and a plumber's neck bending into the heel
+    const neck=add(C,sc(out,-1.2),sc(U,0.45),sc(F,0.1));
+    push(capsule(hoselTop,add(neck,sc(U,1.2),sc(F,0.3)),0.38,body,{gloss:2})); push(capsule(add(neck,sc(U,1.2),sc(F,0.3)),add(neck,sc(U,1.2),sc(out,0.6)),0.36,body,{gloss:2}));
+    push(capsule(add(neck,sc(U,1.2),sc(out,0.6)),add(neck,sc(out,0.6)),0.36,body,{gloss:2}));
+    head(C,3.2,L=>Math.min(rbox(Math.abs(L.s)-1.9,Math.abs(L.y)-0.45,0.15)+Math.max(0,Math.abs(L.a)-0.38),rbox(Math.abs(L.s)-1.6,Math.abs(L.y+0.25)-0.2,0.1)+Math.max(0,Math.abs(L.a+0.6)-0.55)),body,(L,n)=>{
+      if(L.y>0.38&&Math.abs(L.s)<0.07&&L.a>-0.4) return [sight,1];
+      if(kit&&pal.F&&dot(n,F)>0.6&&Math.abs(L.s)<1.4) return [X(pal.F),0]; if(kit&&pal.G&&L.y<-0.3) return [X(pal.G),0]; return null; });
   }
 
   /* THE MENU GOLFER'S NOVELTY CLUBS. Each is modelled as the thing it is, at the menu golfer's scale, held in the
@@ -1370,7 +1393,7 @@
      off centre), a square head chip, or one item drawn alone for its tile. A drawing costs 10 to 45 ms, so
      cached() lets a page ask without drawing and draw later while idle. */
   const PIC={ fig:{K:3,EL:2,aim:180}, chip:{K:2,EL:2,aim:180}, hat:{K:4,EL:20,aim:200,only:'hat'}, ew:{K:5,EL:6,aim:200,only:'ew'},
-    club:{K:4,EL:24,aim:205,only:'club'}, top:{K:3,EL:10,aim:200,only:'top'}, shirt:{K:3,EL:8,aim:200,only:'shirt'}, pants:{K:3,EL:12,aim:200,only:'pants'}, leg:{K:3,EL:10,aim:200,only:'leg'}, shoe:{K:5,EL:20,aim:235,only:'shoe'} };
+    club:{K:6,EL:24,aim:205,only:'club'}, top:{K:3,EL:10,aim:200,only:'top'}, shirt:{K:3,EL:8,aim:200,only:'shirt'}, pants:{K:3,EL:12,aim:200,only:'pants'}, leg:{K:3,EL:10,aim:200,only:'leg'}, shoe:{K:5,EL:20,aim:235,only:'shoe'} };
   function menu(look,aimDeg,o){ MO={K:o.K||3,EL:o.EL!=null?o.EL:2,phase:o.phase||0,only:o.only||''};
     try{ return draw(look,aimDeg,'walk','ws').cv; } finally{ MO=null; } }
   const pcache=new Map();
