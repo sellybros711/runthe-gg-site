@@ -72,7 +72,7 @@ export async function readEconomy(page) {
       items: rows, packs, pool: { size: pool.length, byRarity: poolByRar, list: pool.map((e) => ({ key: e.key, cat: e.cat, id: e.id, rarity: e.rarity })) }, legacy,
       ovr: { w: CATS.map((c) => [c.k, c.w]), K: OVR_IMBALANCE_K, DD: OVR_DEADBAND, REPLACEMENT, MAX_OVER: 112 },
       exchange: { cost: EXCHANGE_COST, legCoins: LEG_EXCHANGE_COINS },
-      drops: DROPS.map((d) => ({ id: d.id, name: d.name, window: d.window || null, n: d.items.length, reward: DROP_REWARDS[d.id] || null })),
+      drops: DROPS.map((d) => ({ id: d.id, name: d.name, window: d.window || null, n: d.items.length, items: d.items.map((ci) => cosKey(ci[0], ci[1])), reward: DROP_REWARDS[d.id] || null })),
     };
   });
 }

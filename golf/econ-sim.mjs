@@ -20,7 +20,7 @@ import fs from 'node:fs';
 import { readEconomy, openPage } from './econ-audit.mjs';
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
-const RUNS = +arg('--runs', 200);
+const RUNS = +arg('--runs', 200), DAYS = +arg('--days', 60);
 
 /* What each player earns. Numbers from the source audit of 2026-10-16 (the Run The Tour economy note in the
  * vault has the table): Daily round EV ~160 coins, a played career season ~3,000, the wheel 449 to ~650 a spin,
@@ -55,6 +55,11 @@ export function makeModel(E, fw) {
     for (const s in add) b[s] = (b[s] || 0) + add[s]; }
   const itemByKey = {}; E.items.forEach((r) => { itemByKey[r.key] = r; });
   const W = Object.fromEntries(E.ovr.w), KEYS = E.ovr.w.map((x) => x[0]);
+  // collection sets (framework B): a finished collection is +1 on its stat, outside the gear caps, up to setCap
+  const sets = fw.sets || null, setCap = fw.setCap || 0, dropItems = Object.fromEntries((E.drops || []).map((d) => [d.id, d.items || []]));
+  function setBonus(owned) { const o = {}; if (!sets) return o; const have = new Set(owned); let n = 0;
+    for (const id in sets) { const it = dropItems[id] || []; if (it.length && it.every((k) => have.has(k)) && n < setCap) { o[sets[id]] = (o[sets[id]] || 0) + 1; n++; } }
+    return o; }
   // the page's accBoost: clamp each skill to +-cap, then trim the largest positive first past the total cap
   function capped(sum) { const o = {}; for (const k in sum) o[k] = Math.max(-skillCap, Math.min(skillCap, sum[k]));
     let t = Object.values(o).reduce((a, b) => a + b, 0);
@@ -66,25 +71,27 @@ export function makeModel(E, fw) {
     const below = v.filter((x) => x < mean).map((x) => mean - x);
     const dd = below.length ? Math.sqrt(below.reduce((a, b) => a + b * b, 0) / v.length) : 0;
     return Math.max(40, Math.min(over ? E.ovr.MAX_OVER : 99, wm - E.ovr.K * Math.max(0, dd - E.ovr.DD))); }
-  function apply(raw, b) { const s = {}; KEYS.forEach((k) => { s[k] = Math.max(40, Math.min(99 + skillCap, raw[k] + (b[k] || 0))); }); return s; }
+  function apply(raw, b, sb) { const s = {}; KEYS.forEach((k) => { s[k] = Math.max(40, Math.min(99 + skillCap, raw[k] + (b[k] || 0))) + ((sb && sb[k]) || 0); }); return s; }
   // best closet: one item per counted slot, coordinate ascent on the overall from the per-slot best net
   function bestCloset(owned, raw) {
+    const sb = setBonus(owned);
     const cand = {}; slots.forEach((sl) => { cand[sl] = [null]; });
     owned.forEach((k) => { const it = itemByKey[k]; if (it && boostOf[k] && cand[it.cat]) cand[it.cat].push(k); });
     const net = (k) => { let s = 0; const b = boostOf[k] || {}; for (const x in b) s += b[x]; return s; };
     const pick = {}; slots.forEach((sl) => { pick[sl] = cand[sl].reduce((a, k) => (k && (a === null || net(k) > net(a))) ? k : a, null); });
     const score = (p) => { const sum = {}; for (const sl in p) { const b = p[sl] ? boostOf[p[sl]] : null; if (b) for (const x in b) sum[x] = (sum[x] || 0) + b[x]; }
-      const cb = capped(sum); return { o: ovr(apply(raw, cb), true), cb, sum }; };
+      const cb = capped(sum); return { o: ovr(apply(raw, cb, sb), true), cb, sum }; };
     let best = score(pick);
     for (let pass = 0; pass < 3; pass++) { let moved = false;
       slots.forEach((sl) => { cand[sl].forEach((k) => { if (k === pick[sl]) return; const t = Object.assign({}, pick, { [sl]: k }); const s = score(t);
         if (s.o > best.o + 1e-9) { pick[sl] = k; best = s; moved = true; } }); });
       if (!moved) break; }
     const rawSum = Object.values(best.sum).reduce((a, b) => a + b, 0), cappedSum = Object.values(best.cb).reduce((a, b) => a + b, 0);
-    const st = apply(raw, best.cb);
-    return { pick, boost: best.cb, rawSum, cappedSum, ovr: best.o, stats: st, bestStat: Math.max(...KEYS.map((k) => st[k])) };
+    const st = apply(raw, best.cb, sb), setSum = Object.values(sb).reduce((a, b) => a + b, 0);
+    const eff = {}; KEYS.forEach((k) => { if (st[k] !== raw[k]) eff[k] = st[k] - raw[k]; });
+    return { pick, boost: eff, rawSum: rawSum + setSum, cappedSum: cappedSum + setSum, sets: setSum, ovr: best.o, stats: st, bestStat: Math.max(...KEYS.map((k) => st[k])) };
   }
-  return { slots, skillCap, totalCap, boostOf, itemByKey, capped, ovr, apply, bestCloset, KEYS };
+  return { slots, skillCap, totalCap, boostOf, itemByKey, capped, ovr, apply, bestCloset, setBonus, KEYS };
 }
 
 export function simulate(E, M, prof, seed, days = 60) {
@@ -128,14 +135,14 @@ export function simulate(E, M, prof, seed, days = 60) {
     for (const t in prof.packsWeek) { const n = prof.packsWeek[t] / 7; credits[t] += n; }
     for (const r in prof.shardsWeek) shards[r] += prof.shardsWeek[r] / 7;
     // Tour Pass lanes: tier reached by today, lane packs pro rata
-    const tierToday = prof.passTier * d / days, lane = (L) => { for (const t in LANE_PACKS[L]) credits[t] += LANE_PACKS[L][t] / 60 * prof.passTier / days; };
+    const tierToday = prof.passTier * (((d - 1) % 60) + 1) / 60, lane = (L) => { for (const t in LANE_PACKS[L]) credits[t] += LANE_PACKS[L][t] / 60 * prof.passTier / 60; };   // a Tour Pass season is 60 days; each one repeats
     lane('free'); if (prof.pro) { lane('prem'); passItems.forEach((r) => { const m = /t(\d+)$/.exec(r.src.find((s) => s.startsWith('pass S2'))); if (m && +m[1] <= tierToday) owned.add(r.key); }); }
     for (const t of ['base', 'tour', 'champ']) while (credits[t] >= 1) { credits[t]--; open(t, false); }
     // spend: the profile's pack, while affordable
     const price = PT[prof.buy].price; while (coins >= price) { coins -= price; spent += price; open(prof.buy, true); }
     for (const r in shards) shards[r] = Math.round(shards[r] * 1000) / 1000;
     exchange();
-    if ([1, 7, 14, 30, 45, 60].includes(d)) {
+    if ([1, 7, 14, 30, 45, 60, 90, 120, 180, 240, 365].includes(d) && d <= days) {
       const c = M.bestCloset([...owned], raw);
       const boosted = [...owned].filter((k) => M.boostOf[k]).length;
       out.push({ d, coins: Math.round(coins), earned: Math.round(earned), spent, opened, owned: owned.size, boosted,
@@ -148,7 +155,7 @@ export function simulate(E, M, prof, seed, days = 60) {
 // the page plays a season of the real schedule against the real living-world field
 export async function winRates(page, builds, seasons = 40) {
   return page.evaluate(([builds, seasons]) => {
-    S.career = {}; S.year = 1; S.careerSeed = 20261016; RNG = Math.random;
+    S.career = {}; S.year = 1; S.careerSeed = 20261016; RNG = mulberry32(20261016);
     const sched = seasonSchedule(1, 20261016), roster = worldField(FIELDSIZE - 1);
     const one = (sk) => { let wins = 0, top10 = 0, majors = 0;
       sched.forEach((evt) => { const ew = eventWeights(evt), ca = gauss() * (evt.major ? SIM.maj.csd : SIM.reg.csd);
@@ -158,7 +165,8 @@ export async function winRates(page, builds, seasons = 40) {
         ps.sort((a, b) => a.t - b.t); const pos = ps.indexOf(me); if (pos === 0) { wins++; if (evt.major) majors++; } if (pos < 10) top10++; });
       return { wins, top10, majors }; };
     const res = {};
-    for (const name in builds) { let w = 0, t = 0, m = 0; for (let i = 0; i < seasons; i++) { const s = one(builds[name]); w += s.wins; t += s.top10; m += s.majors; }
+    // common random numbers: season i draws the same luck for every build, so only the golfer differs
+    for (const name in builds) { let w = 0, t = 0, m = 0; for (let i = 0; i < seasons; i++) { RNG = mulberry32(7919 * (i + 1)); const s = one(builds[name]); w += s.wins; t += s.top10; m += s.majors; }
       res[name] = { wins: w / seasons, top10: t / seasons, majors: m / seasons, events: sched.length }; }
     return res;
   }, [builds, seasons]);
@@ -177,7 +185,7 @@ if (import.meta.url === 'file://' + process.argv[1]) {
     const report = { framework: fwFile || 'today', slots: M.slots, caps: [M.skillCap, M.totalCap], profiles: {} };
     for (const pk in PROFILES) {
       const prof = PROFILES[pk]; const runs = [];
-      for (let i = 0; i < RUNS; i++) runs.push(simulate(E, M, prof, 1000 + i));
+      for (let i = 0; i < RUNS; i++) runs.push(simulate(E, M, prof, 1000 + i, DAYS));
       const rows = runs[0].map((_, j) => { const col = (f) => med(runs.map((r) => r[j][f]));
         return { d: runs[0][j].d, coins: col('coins'), earned: col('earned'), opened: col('opened'), owned: col('owned'), boosted: col('boosted'), rawSum: col('rawSum'), capped: col('capped'), bestStat: col('bestStat'), ovr: col('ovr') }; });
       const last = runs.map((r) => r[r.length - 1]); const typ = last.find((x) => x.ovr === med(last.map((y) => y.ovr))) || last[0];
@@ -192,7 +200,7 @@ if (import.meta.url === 'file://' + process.argv[1]) {
     // wins, raw against geared, at the season's end closet
     const builds = { max_raw: maxRaw, max_geared: top.stats };
     for (const pk in PROFILES) { const p = PROFILES[pk], raw = Object.fromEntries(M.KEYS.map((k) => [k, p.draft]));
-      builds[pk + '_raw'] = raw; builds[pk + '_geared'] = M.apply(raw, report.profiles[pk].typical.boost); }
+      builds[pk + '_raw'] = raw; builds[pk + '_geared'] = Object.fromEntries(M.KEYS.map((k) => [k, raw[k] + (report.profiles[pk].typical.boost[k] || 0)])); }
     report.wins = await winRates(page, builds, +arg('--seasons', 40));
     if (jsonOut) fs.writeFileSync(jsonOut, JSON.stringify(report, null, 1));
     console.log('framework', report.framework, '· slots', M.slots.join(','), '· caps +' + M.skillCap + ' a stat, +' + M.totalCap + ' total', '· runs', RUNS);
