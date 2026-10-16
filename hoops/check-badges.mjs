@@ -26,6 +26,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { pageSource } from './build/page-source.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -535,7 +536,7 @@ function longWay(g, pz, clock) {
  *
  * A badge dark and not on this list fails the file. A badge ON the list that
  * lit anyway fails it too, so the list cannot rot into a blanket. */
-const pageSrc = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8')
+const pageSrc = pageSource()
   + fs.readFileSync(path.join(HERE, 'modes-ui.js'), 'utf8');
 const writes = (key) => pageSrc.includes("'" + key + "'");
 const moved = (key) => Object.keys(career.feats).some((k) => k.indexOf(key) === 0 && career.feats[k] > 0);
@@ -794,7 +795,7 @@ ok(B.evaluate(null).length === all.length, 'a missing career does not throw');
 
 /* ── the page writes the fields this file reads ──────────────────────────── */
 {
-  const src = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+  const src = pageSource();
   const sample = rowOf({ roster: [], outcome: { wins: 0, losses: 0, rating: 0, chemistry: { bonus: 0 } },
     playoffs: null });
   const missing = Object.keys(sample).filter((k) => !new RegExp(`\\b${k}:`).test(src));

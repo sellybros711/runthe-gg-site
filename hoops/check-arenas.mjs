@@ -15,13 +15,14 @@ import { createRequire } from 'module';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { pageSource } from './build/page-source.mjs';
 
 const require = createRequire(import.meta.url);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(HERE, '..');
 const CT = require('./courts.js');
 const QUICK = process.argv.includes('--quick');
-const PAGE_SRC = fs.readFileSync(path.join(HERE, 'index.html'), 'utf8');
+const PAGE_SRC = pageSource();
 
 let fails = 0, passes = 0;
 const claim = (ok, what, why) => {
