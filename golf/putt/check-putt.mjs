@@ -885,20 +885,38 @@ if (!args.includes('--no-browser')){
       return { first:a.lives, wound, spent:calls.includes('putt_lives_spend'), after:after.lives, srv:row.lives, clocks:(after.back || []).length }; });
     claim(lvs.first === 0 && lvs.wound === 0, `a fresh browser takes the server's lives, and a wound clock does not refill them (${lvs.first}, then ${lvs.wound})`);
     claim(lvs.spent && lvs.srv === 1 && lvs.after === 1 && lvs.clocks === 8, `a lost life is spent on the server, with a clock of its own (server ${lvs.srv}, browser ${lvs.after}, ${lvs.clocks} clocks)`);
-    // A GUEST PLAYS THE FIRST FEW HOLES FREE, then is asked to sign in. The Daily Hole stays open.
-    const gst = await pg.evaluate(async () => { const best = {}; for (let n = 1; n <= 8; n++) best[n] = 2;
-      localStorage.setItem('bag_ppt_v1', JSON.stringify({ v:2, tours:{ main:{ lv:9, best, ace:{}, paid:{}, wpaid:{} } } })); sbUser = null; window.RTT_PUTT.open(puttHost());
-      for (let t = 0; t < 100 && !document.querySelector('.pp-map [data-lv="6"]'); t++) await new Promise(r => setTimeout(r, 50));
-      document.querySelector('.pp-map [data-lv="6"]').click(); const sheet = !!document.querySelector('.pp-sheet [data-in]'), txt = sheet ? document.querySelector('.pp-sheet').innerText : '';
-      document.querySelector('.pp-sheet [data-n]').click(); document.querySelector('.pp-map [data-lv="5"]').click();
-      const played = window.RTT_PUTT._state().screen === 'play' && !document.querySelector('.pp-sheet');
+    // A GUEST WALKS THE OPENING WORLD AND PLAYS NO TOUR HOLE (the owner, 2026-10-16). A hole asks them to sign in,
+    // the Daily Hole stays open, and a guest never sees a coin count.
+    const gst = await pg.evaluate(async () => {
+      localStorage.removeItem('bag_ppt_v1'); sbUser = null; window.RTT_PUTT.open(puttHost());
+      for (let t = 0; t < 100 && !document.querySelector('.pp-map [data-lv="1"]'); t++) await new Promise(r => setTimeout(r, 50));
+      const S0 = window.RTT_PUTT._state(), pill = !!document.querySelector('.pp-hdr [data-bal]');
+      window.RTT_PUTT._level(1, 'main'); const sh = document.querySelector('.pp-sheet'), txt = sh ? sh.innerText : '';
+      const walkBtn = !!document.querySelector('.pp-sheet [data-walk]'), notPlayed = S0.screen !== 'play';
+      document.querySelector('.pp-sheet [data-n]').click();
+      document.querySelector('.pp-map [data-lv="3"]').click(); await new Promise(r => setTimeout(r, 100));
+      const tap = S0.screen === 'trail' ? 'trail' : document.querySelector('.pp-sheet [data-walk]') ? 'sheet' : S0.screen;
       window.RTT_PUTT.close(); window.RTT_PUTT.open(puttHost());
-      for (let t = 0; t < 100 && !document.querySelector('.pp-map [data-lv="6"]'); t++) await new Promise(r => setTimeout(r, 50));
-      document.querySelector('.pp-map [data-lv="6"]').click(); document.querySelector('.pp-sheet [data-in]').click();
+      for (let t = 0; t < 100 && !document.querySelector('.pp-map [data-lv="1"]'); t++) await new Promise(r => setTimeout(r, 50));
+      const dcb = document.querySelector('[data-daily]'), card = (dcb || {}).innerText || ''; if (dcb) dcb.click(); await new Promise(r => setTimeout(r, 150));
+      const S1 = window.RTT_PUTT._state(), daily = S1.screen === 'play' && !!S1.round && !document.querySelector('.pp-sheet [data-in]');
+      if (S1.round) window.RTT_PUTT._dailyFinish(3, 3, 30000); const res = S1.ov.innerText;
+      window.RTT_PUTT.close(); window.RTT_PUTT.open(puttHost());
+      for (let t = 0; t < 100 && !document.querySelector('.pp-map [data-lv="1"]'); t++) await new Promise(r => setTimeout(r, 50));
+      window.RTT_PUTT._level(19, 'main'); const deep = !!document.querySelector('.pp-sheet [data-in]') && !document.querySelector('.pp-sheet [data-walk]');
+      document.querySelector('.pp-sheet [data-in]').click();
       const toAcct = !document.querySelector('.pt-ov') && S.overlay === 'account' && S.acctMode === 'signin'; S.overlay = null; render();
-      localStorage.removeItem('bag_ppt_v1'); sbUser = { id:'chk' }; localStorage.removeItem('bag_ppt_v1@chk'); openPutt(); return { sheet, txt, played, toAcct }; });
+      localStorage.removeItem('bag_ppt_v1'); localStorage.removeItem('bag_ppt_v1@chk'); sbUser = { id:'chk' }; openPutt();
+      return { pill, txt, walkBtn, notPlayed, tap, card, res, daily, deep, toAcct }; });
     await pg.waitForSelector('.pp-map [data-lv="1"]');
-    claim(gst.sheet && /Sign in to keep going/.test(gst.txt) && gst.played && gst.toAcct, `a guest plays holes 1 to 5 free, hole 6 asks them to sign in, and the button opens the sign in sheet (sheet ${gst.sheet}, hole 5 played ${gst.played}, sign in ${gst.toAcct})`);
+    claim(gst.notPlayed && /Sign in to play/.test(gst.txt) && gst.walkBtn, `a guest's hole 1 asks them to sign in and offers to keep walking (${JSON.stringify(gst.txt.slice(0, 60))})`);
+    claim(gst.tap === 'trail' || gst.tap === 'sheet', `a guest tapping hole 3 on the map walks to it, never plays it (${gst.tap})`);
+    claim(gst.deep && gst.toAcct, `past the opening world the sheet offers no walk, and Sign in opens the sign in sheet (${gst.deep}, ${gst.toAcct})`);
+    claim(gst.daily, `a guest can still play the Daily Hole (${gst.daily})`);
+    claim(!gst.pill && !/\bcoins?\b|\+\d/i.test(gst.card) && /Sign in to collect your coins/.test(gst.res) && !/\+\d+ coins/.test(gst.res), `a guest sees no coin count: no wallet, the Daily card ${JSON.stringify(gst.card.slice(-30))}, the result says sign in`);
+    { const tr = fs.readFileSync(new URL('./trail.js', import.meta.url), 'utf8');
+      claim(/if \(!api\.guestCoins\) floatText\('\+' \+ COIN_V/.test(tr) && /if \(!api\.guestCoins\) floatText\('\+' \+ BRK_V/.test(tr) && /api\.guestCoins \? 'Sign in' : '\+' \+ coinsGot/.test(tr),
+        'a guest\'s trail floats no +coins and its counter reads Sign in'); }
     // every world painted means every world revealed: a record that has walked through all eleven gates
     await pg.evaluate(() => { window.RTT_PUTT.close(); const K = 'bag_ppt_v1@chk', st = JSON.parse(localStorage.getItem(K)) || { v:2, tours:{} }; st.rv = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(w => 'main:' + w); localStorage.setItem(K, JSON.stringify(st)); openPutt(); });
     await pg.waitForSelector('.pp-map [data-lv="1"]');
