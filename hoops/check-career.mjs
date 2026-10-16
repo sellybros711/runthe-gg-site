@@ -1896,6 +1896,9 @@ async function scenesWalk(b, serve) {
   await page.fill('#cr-name', 'Scene McTest');
   await page.click('#cr-go');
   const look = await page.evaluate(() => RTF_CAREER_UI.state().cur.look);
+  /* a live life, kept for the trade plates below: the Hall record at the end
+     of the walk carries no league, and a trade is only played on a live one */
+  await page.evaluate(() => { window.__liveL = JSON.parse(JSON.stringify(RTF_CAREER_UI.state().cur)); });
   ok(look && look.hair === 'afro', `the builder's look is the career's (${JSON.stringify(look)})`);
   const pic = await page.evaluate(() => !!document.querySelector('.cr-id .rtf-baller'));
   ok(pic, 'the identity card draws the player');
@@ -2016,7 +2019,7 @@ async function scenesWalk(b, serve) {
      reaches you is played here the way the page plays it. */
   {
     const plates = await page.evaluate(async () => {
-      const S = window.RTF_SCENES, L = RTF_CAREER_UI.state().last, out = [];
+      const S = window.RTF_SCENES, L = window.__liveL, out = [];
       const ways = [{ when: 'summer' }, { when: 'deadline' }, { when: 'season' }, { how: 'ask' }];
       for (let k = 0; k < 12; k++) {
         const w = ways[k % ways.length];
@@ -2037,7 +2040,7 @@ async function scenesWalk(b, serve) {
       }
       return out;
     });
-    ok(plates.length > 0 && plates.every((p) => /General manager, \w/i.test(p) && !/undefined/i.test(p) && /Oldfield|Newman/.test(p)), `every trade GM's plate names him and his club (${plates.slice(0, 2).join(' | ') || 'none seen'})`);
+    ok(plates.length > 0 && plates.every((p) => /General manager, \w/i.test(p) && !/undefined/i.test(p) && /Oldfield|Newman/i.test(p)), `every trade GM's plate names him and his club (${plates.slice(0, 2).join(' | ') || 'none seen'})`);
   }
   /* Off means off. */
   await page.evaluate(() => { localStorage.setItem('rtf.scenes.v1', 'off'); const a = document.querySelector('#cr-again'); if (a) a.click(); });

@@ -903,7 +903,8 @@ function jersey(L){
     + '<text x="32" y="50" text-anchor="middle" font-family="Anton, Impact, sans-serif" font-size="24" fill="' + k.secondary + '" stroke="rgba(0,0,0,.35)" stroke-width=".6">' + esc(String(num)) + '</text>'
     + '</svg>';
 }
-function money(m){ return C.money(m); }
+/* a debt reads -$300K, the sign before the dollar */
+function money(m){ return m < 0 ? '-' + C.money(-m) : C.money(m); }
 function teamName(c){ return c ? E.teamName(c) : 'No club'; }
 /* A scout's letter for the ceiling, because the number would be a promise. */
 function grade(L){
@@ -2745,6 +2746,13 @@ function startSon(c){
 // ─── the screen ─────────────────────────────────────────────────────────────
 
 var lastTeam = null;
+/* A fact tile's figure is never cut: one too wide for its tile (a debt, a
+   long contract) steps down a size at a time until it fits. */
+function fitFacts(body){
+  [].forEach.call(body.querySelectorAll('.cr-fact b'), function(b){
+    for (var px = parseFloat(getComputedStyle(b).fontSize), i = 0; i < 6 && b.scrollWidth > b.clientWidth + 1 && px > 8; i++) { px -= 1; b.style.fontSize = px + 'px'; }
+  });
+}
 function render(){
   var root = $('s-car');
   if (!root) return;
@@ -2777,6 +2785,7 @@ function render(){
   }
   else if (st.last) { body.innerHTML = finalView(st.last); wireFinal(st.last); }
   else { body.innerHTML = buildView(); wireBuild(); }
+  fitFacts(body);
   /* The chip in the top bar says who you are mid-career and nothing otherwise:
      it sits beside the Career button, and a second "Career" there reads as
      the same button twice. */
