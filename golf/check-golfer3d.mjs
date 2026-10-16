@@ -203,6 +203,9 @@ const mn = await pg.evaluate(async () => {
   for (const t of Object.keys(PXG_TOPS)) jobs.push(['top', g3dItemLook({ top: t }), t]);
   for (const t of Object.keys(PXG_LEGS)) jobs.push(['leg', g3dItemLook({ leg: t }), t]);
   for (const t of Object.keys(PXG_BALL)) jobs.push(['ball', g3dItemLook({ ball: t }), t]);
+  for (const t of Object.keys(PXPAT_BY)) jobs.push(['shirt', g3dItemLook({ shirtPat: t }), 'pattern ' + t]);
+  for (const o of allShirts().slice(0, 12)) jobs.push(['shirt', g3dItemLook({ polo: o.id, shirtPat: 'none' }), 'shirt ' + o.id]);
+  for (const o of PANTS) jobs.push(['pants', g3dItemLook({ pants: o.id }), 'trousers ' + o.id]);
   // every novelty club in the hand is a real object: its tile is no smaller than a stock club's head
   for (const c of ['scepter','candycane','excalibur','wand','hockey','glizzy','poolnoodle','coffin','broomstick','pitchfork']) jobs.push(['fig', Object.assign({}, DEFLOOK, { club: c }), 'holding ' + c]);
   for (const t of Object.keys(PXG_TOPS)) jobs.push(['fig', Object.assign({}, DEFLOOK, { top: t }), 'wearing ' + t]);
@@ -220,7 +223,7 @@ const mn = await pg.evaluate(async () => {
 ok('signed out keeps today\'s menu golfer', mn.out === false);
 ok('a player who is not a tester keeps today\'s menu golfer', mn.other === false && mn.otherFig === true);
 ok('a tester gets the 3D menu golfer', mn.tester === true);
-ok(`every hat, pair of glasses, club, putter, top, legwear, ball, pair of cleats, hairstyle and chip draws (${mn.n})`, mn.ex.length === 0, mn.ex.slice(0, 4));
+ok(`every hat, pair of glasses, club, putter, top, legwear, ball, pattern, shirt, trousers, pair of cleats, hairstyle and chip draws (${mn.n})`, mn.ex.length === 0, mn.ex.slice(0, 4));
 ok('only paint (eyeblack) has nothing to draw alone, so its tile keeps today\'s art', mn.none.every(x => !/^(hat|club|shoe|fig|chip):/.test(x)), mn.none);
 ok('no menu picture has a magenta (unknown material) pixel', mn.magenta.length === 0, mn.magenta);
 ok('the closet tiles use the 3D pictures for a tester (hats, clubs, putters, the cape, balls, the scythe)', mn.tile === true);

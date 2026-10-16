@@ -532,7 +532,7 @@
     const HD=(MO?MO.K:1)>=2, parts=[], push=p=>{ if(tag) p.o.item=tag; parts.push(p); }, top=gear.top, tpal=gear.topPal||{}, cl=gear.cleats, lg=gear.legPal;
     const body=top==='shacket'?'plaid':'shirt', AX=[F,U,T];
     // shoes and legs
-    for(const s of [1,-1]){ const t=4.15*s; tag=lg?'leg':'';
+    for(const s of [1,-1]){ const t=4.15*s; tag=lg?'leg':'pants';
       if(lg){ const knee=P(0.4,9.2,t*1.02); push(capsule(P(0,15.8,t),knee,3.85,'pants')); push(ellipsoid(add(knee,sc(U,-0.6)),AX,[3.9,1.9,3.9],'pants',{dt:-1})); push(capsule(add(knee,sc(U,-1.6)),P(0,3.2,t),2.7,'sock')); }
       else { push(capsule(P(0,15.8,t),P(0.15,9.4,t*1.01),3.75,'pants')); push(capsule(P(0.15,9.4,t*1.01),P(0.1,4.6,t*1.02),3.3,'pants'));
         if(HD){ push(capsule(P(3.7,14.6,t),P(3.55,9.4,t*1.01),0.45,'pants',{dt:1,noCast:1})); push(capsule(P(3.55,9.4,t*1.01),P(3.25,5.0,t*1.02),0.42,'pants',{dt:1,noCast:1})); } }
@@ -553,14 +553,14 @@
       if(HD) for(const k of [0.9,1.85,2.8]) push(capsule(Q(k,3.2+0.09*(2.8-k),-1.15),Q(k,3.2+0.09*(2.8-k),1.15),0.28,'lace',{noCast:1}));
       for(let i=n0;i<parts.length;i++){ parts[i].o.item='shoe'; parts[i].o.side=s; } }
     // hips and belt
-    tag=lg?'leg':''; push(ellipsoid(P(0,15.6,0),AX,[4.55,3.1,8.5],'pants')); tag='';
+    tag=lg?'leg':'pants'; push(ellipsoid(P(0,15.6,0),AX,[4.55,3.1,8.5],'pants')); tag='';
     push(ellipsoid(P(0.05,17.75,0),AX,[4.95,0.72,8.95],'belt',{gloss:1}));
     if(HD){ push(ellipsoid(P(4.95,17.75,0),AX,[0.5,0.85,1.15],'x:#d6a640',{gloss:2,noCast:1})); push(ellipsoid(P(5.2,17.75,0),AX,[0.4,0.42,0.6],'belt',{noCast:1})); }
     // THE SHIRT. A tall ellipsoid trimmed top and bottom (nearly straight sides, no barrel), sloped shoulders, a
     // little blousing where it tucks into the belt, and tension folds from each armpit toward the buckle.
     // The menu's phase (0 to 1) breathes it: the chest swells a touch, the shoulders lift, the folds drift.
     const ph=(MO?MO.phase:0)*2*Math.PI, br=Math.sin(ph), sw=Math.sin(ph+1.1);
-    const jacket=top==='cardigan'||top==='blazer'||top==='shacket'; tag=jacket?'top':'';
+    const jacket=top==='cardigan'||top==='blazer'||top==='shacket'; tag=jacket?'top':'shirt';
     const tc=P(0,27,0), TR=[4.75*(1+0.012*br),22,8.55*(1+0.014*br)], lo=-(27-17.4)/22, hi=(33.6-27)/22, inT=l=>l[1]>lo&&l[1]<hi;
     push(ellipsoid(tc,AX,TR,body,{cut:inT}));
     for(const s of [1,-1]) push(capsule(P(-0.2,32.5+0.12*br,2.8*s),P(-0.2,30.5+0.15*br,7.7*s),2.35,body));    // the shoulders, sloping
@@ -818,7 +818,7 @@
         for(const sd of [1,-1]){ const a=on(0.62,sd), b=on(-0.3,sd);
           parts.push(capsule(a,b,0.5,frR.m,{gloss:2,noCast:1})); } } } }
     const ONLY=MO?MO.only:''; if(ONLY){ const hatSet=new Set(parts.slice(M.parts.length));
-      for(let i=parts.length-1;i>=0;i--){ const q=parts[i], keep=ONLY==='hat'?(hatSet.has(q)&&q.mat!=='hair'&&q.mat!=='skin'&&!(q.o&&q.o.item==='ew')):ONLY==='ew'?(q.o&&q.o.item==='ew'):ONLY==='club'?(q.o&&q.o.item==='club'):(ONLY==='top'||ONLY==='leg')?(q.o&&q.o.item===ONLY&&q.mat!=='skin'&&q.mat!=='glove'):(q.o&&q.o.item==='shoe'&&q.o.side===1); if(!keep) parts.splice(i,1); } }
+      for(let i=parts.length-1;i>=0;i--){ const q=parts[i], keep=ONLY==='hat'?(hatSet.has(q)&&q.mat!=='hair'&&q.mat!=='skin'&&!(q.o&&q.o.item==='ew')):ONLY==='ew'?(q.o&&q.o.item==='ew'):ONLY==='club'?(q.o&&q.o.item==='club'):(ONLY==='top'||ONLY==='leg'||ONLY==='shirt'||ONLY==='pants')?(q.o&&q.o.item===ONLY&&q.mat!=='skin'&&q.mat!=='glove'&&q.mat.indexOf('x:#d8b04e')<0):(q.o&&q.o.item==='shoe'&&q.o.side===1); if(!keep) parts.splice(i,1); } }
     const K=MO?MO.K:1; const s=new PQ.Sprite(GW*K,GH*K);
     // each part's box on the screen, so a cell only tests the parts that can reach it
     for(const p of parts){ if(p.k==='e'){ const m=Math.max(...p.r); p.bb=[p.c[0]-m,p.c[1]-m,p.c[0]+m,p.c[1]+m]; }
@@ -913,7 +913,7 @@
      off centre), a square head chip, or one item drawn alone for its tile. A drawing costs 10 to 45 ms, so
      cached() lets a page ask without drawing and draw later while idle. */
   const PIC={ fig:{K:3,EL:2,aim:180}, chip:{K:2,EL:2,aim:180}, hat:{K:4,EL:20,aim:200,only:'hat'}, ew:{K:5,EL:6,aim:200,only:'ew'},
-    club:{K:4,EL:24,aim:205,only:'club'}, top:{K:3,EL:10,aim:200,only:'top'}, leg:{K:3,EL:10,aim:200,only:'leg'}, shoe:{K:5,EL:20,aim:235,only:'shoe'} };
+    club:{K:4,EL:24,aim:205,only:'club'}, top:{K:3,EL:10,aim:200,only:'top'}, shirt:{K:3,EL:8,aim:200,only:'shirt'}, pants:{K:3,EL:12,aim:200,only:'pants'}, leg:{K:3,EL:10,aim:200,only:'leg'}, shoe:{K:5,EL:20,aim:235,only:'shoe'} };
   function menu(look,aimDeg,o){ MO={K:o.K||3,EL:o.EL!=null?o.EL:2,phase:o.phase||0,only:o.only||''};
     try{ return draw(look,aimDeg,'walk','ws').cv; } finally{ MO=null; } }
   const pcache=new Map();

@@ -66,7 +66,7 @@
 <script defer src="putt/trail.js?v=37"></script>
 <script defer src="putt/mapland.js?v=6"></script>
 <!-- The course golfer in the profile style, asked through g3dOn(). -->
-<script defer src="golfer3d.js?v=10"></script>
+<script defer src="golfer3d.js?v=11"></script>
 <script defer src="tracer3d.js?v=2"></script>
 <!-- Google Consent Mode v2 defaults. Advertising storage is denied until the certified CMP (loaded by
      the AdSense tag below) records the user's choice; the CMP then updates these signals automatically,
@@ -15774,7 +15774,7 @@ function ftTopBar(opt){ opt=opt||{};
   if(opt.back){ const b=$(`<button type="button" class="ft-back">‹ Home</button>`); b.onclick=()=>ftGo('title'); tb.appendChild(b); }
   else tb.appendChild($(`<h1 class="ft-word"><img src="logo.png?v=1" alt="Run The Tour" width="416" height="216" decoding="async"></h1>`));
   const ev=ftEvent();
-  if(ev && !opt.back){ const p=$(`<button type="button" class="ft-pennant"><b>${esc(ev.name)}</b> ${esc(ev.txt)}${ev.pct?`<span class="ft-mini"><i style="width:${ev.pct.toFixed(0)}%"></i></span>`:''}${ev.days!=null?` ${ev.days} day${ev.days===1?'':'s'}`:''}</button>`); p.onclick=ev.go; tb.appendChild(p); }
+  if(ev && !opt.back){ const p=$(`<button type="button" class="ft-pennant"><b>${esc(ev.name)}</b><span class="ft-pt"> ${esc(ev.txt)}</span>${ev.pct?`<span class="ft-mini"><i style="width:${ev.pct.toFixed(0)}%"></i></span>`:''}${ev.days!=null?`<span class="ft-pd"> ${ev.days} day${ev.days===1?'':'s'}</span>`:''}</button>`); p.onclick=ev.go; tb.appendChild(p); }
   tb.appendChild($(`<span class="ft-sp"></span>`));
   try{ if(si && xpBoostActive()){ const ms=xpBoostMs(), m=Math.floor(ms/60000), s=Math.floor(ms/1000)%60;
     tb.appendChild($(`<span class="ft-boost" title="2x Pass XP running">${ftIcon('bolt')}<span>2× XP ${m}:${String(s).padStart(2,'0')}</span></span>`)); } }catch(e){}
@@ -16241,6 +16241,12 @@ function ftStyleOnce(){ if(document.getElementById('ft-css')) return; const st=d
 .ft-boost svg{width:15px;height:15px}
 .ft-pennant{display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 24px 0 12px;border:0;background:linear-gradient(90deg,#5b1f0e,#2d1030);color:#ffd2a6;font:700 12px var(--body);clip-path:polygon(0 0,100% 0,93% 50%,100% 100%,0 100%);white-space:nowrap}
 .ft-pennant b{color:#ff9a4d}
+/* the top bar never loses a pill: the pennant gives way first (it shrinks, then drops its bar and its days) */
+.ft-pill,.ft-boost,.ft-ticket,.ft-me,.ft-word{flex:none}
+.ft-pennant{flex:0 1 auto;min-width:0;overflow:hidden}
+@media (max-width:520px){ .ft-tb{gap:6px} .ft-word img{height:38px} .ft-pennant{padding:0 18px 0 10px;gap:6px} .ft-tb .ft-mini,.ft-tb .ft-pd{display:none} .ft-tb .ft-pill{padding:0 8px} }
+@media (max-width:380px){ .ft-pt{display:none} }
+@media (max-width:340px){ .ft-pennant{display:none} }
 .ft-mini{display:inline-block;width:48px;height:5px;border-radius:3px;background:rgba(255,255,255,.18);overflow:hidden}
 .ft-mini i{display:block;height:100%;background:#ff9a4d}
 .ft-ticket{position:relative;display:inline-flex;align-items:center;gap:9px;height:38px;padding:0 14px 0 12px;border-radius:10px;border:0;background:linear-gradient(180deg,#f8dc63,#d39f1d);color:#2a1a00!important;font:800 13px var(--body);letter-spacing:.5px;text-transform:uppercase;box-shadow:0 6px 18px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.6)}
@@ -16701,6 +16707,7 @@ function pxItemThumb(cat,id){
 // CS458: a clean pattern SWATCH (the pattern itself, not on the golfer), sample the pattern fn over the
 // shirt-region coordinates onto a small square so absolute-position patterns (tie-dye, ripple) read right.
 function pxPatThumb(id){
+  { const g=g3dPic(g3dItemLook({shirtPat:PXPAT_BY[id]?id:'none',polo:(S.look||DEFLOOK).polo}),'shirt'); if(g) return g3dTile(g); }
   const base='#54736a', pd=PXPAT_BY[id], none=!pd||id==='none';
   const a1=pxShade(base,42), a2=pxShade(base,80);
   // the polo from the colour tiles at twice the size, so a pattern has room to read; it is sampled at
@@ -38587,6 +38594,7 @@ function cosThumbHTML(cat,o){
      : (cat==='plate') ? `<span class="sthumb color" style="${plateCss(o.id)};display:flex;align-items:center;justify-content:center"><span style="font-weight:900;font-size:8.5px;letter-spacing:.06em">NAME</span></span>`
      : (cat==='hat' && o.pat===undefined) ? pxCapThumb(o.id)
      : (cat==='shoes' && o.pat===undefined) ? pxShoeThumb(Object.assign({},S.look||DEFLOOK,{shoes:o.id,cleats:''}))
+     : (o.pat===undefined && (cat==='shirt'||cat==='pants') && g3dGarmentThumb(cat,o.id)) ? g3dGarmentThumb(cat,o.id)
      : (o.pat===undefined && PXCOLTHUMB[cat] && colOfCos(cat,o)) ? pxColorThumb(cat,colOfCos(cat,o))
      : (o.pat!==undefined
         ? `<span class="sthumb color" style="background:${patSwatchBg(o.id)}"></span>`
@@ -38613,6 +38621,9 @@ function pxIconBig(map){ const big=map.flatMap(r=>{ const w=r.split('').map(c=>c
   return big.map((row,y)=>row.split('').map((c,x)=>{ if(c!=='k') return c;
     const L=fill(row[x-1]), R=fill(row[x+1]), U=fill((big[y-1]||'')[x]), D=fill((big[y+1]||'')[x]);
     return ((L&&R)||(U&&D))?'s':'.'; }).join('')); }
+// a shirt or a pair of trousers in that colour, drawn alone by the 3D golfer (testers, the First Tee switch)
+function g3dGarmentThumb(cat,id){ if(!id||(cat!=='shirt'&&cat!=='pants')) return null;
+  const g=g3dPic(g3dItemLook(cat==='shirt'?{polo:id,shirtPat:'none'}:{pants:id}),cat); return g?g3dTile(g):null; }
 function pxColorThumb(cat,col){ const key=cat+col; if(!_pxColThumb[key]){
     // the garment at twice the size, lit by PXHD like the golfer: the old k outline is dropped (the soft
     // outline inside the shape replaces it) and d and l stay as tone hints on the lit shape
