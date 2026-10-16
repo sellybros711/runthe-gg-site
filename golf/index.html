@@ -10288,11 +10288,9 @@ function decisionPayoutCoins(holes, mult){ const bw=boldWinsIn(holes); return bw
 // ---- PLAY COIN FAUCETS (owner: coins should be earned by playing, visibly). These use addBonusCoins,
 // which bypasses the CS186 reset baseline, so they always accrue for every account (a maxed account whose
 // derived total was baselined to 0 still earns from playing). Tunable amounts. ----
-const COIN_WIN=300, COIN_WIN_MAJOR=1000, COIN_WIN_BIG=500;   // per tournament win (interactive; skipping forfeits)
 const COIN_DAILY=60, COIN_DAILY_BEAT=100;                    // Economy re-anchor: finish a daily = 60 coins, +100 for beating the pro (+ margin) - a heavy grind
 const COIN_DAILY_XP=50, COIN_DAILY_XP_BEAT=50;               // Tour Rep (XP) for completing a daily (+ beat bonus)
 const COIN_H2H_WIN=40;                                        // win an online match
-function winCoins(evt){ if(!evt) return COIN_WIN; if(evt.major) return COIN_WIN_MAJOR; if(evt.big||evt.playoff||evt.type==='finale') return COIN_WIN_BIG; return COIN_WIN; }
 // CS392: every career/circuit season rewards coins scaled by how you PERFORMED (wins/majors/top-10s/cuts +
 // money-list finish), awarded once at season end. Modest by design (coins stay a grind). A season SIMMED to
 // the end (Skip to end) earns COIN_SEASON_SKIP of this (far fewer, not zero).
@@ -11320,16 +11318,6 @@ function accEquipMap(){ const a=(S.look&&S.look.acc)||{}; return (a&&typeof a===
 function accEquipped(slot){ const id=accEquipMap()[slot]; return (id&&accOwned(id))?id:null; }   // only if still owned
 function accEquip(id){ const it=accById(id); if(!it||!accOwned(id)) return; S.look.acc=Object.assign({},accEquipMap()); S.look.acc[it.slot]=id; saveLook(); }
 function accUnequip(slot){ if(!S.look) return; const m=Object.assign({},accEquipMap()); delete m[slot]; S.look.acc=m; saveLook(); }
-function accBuy(id){ const it=accById(id); if(!it) return {ok:false,msg:'Unknown item'};
-  return {ok:false,msg:'Pack exclusive. Pull it from a pack or redeem shards.'};   // pack-only economy: gear is never coin-bought
-  if(!sbSignedIn()) return {ok:false,msg:'Sign in to buy gear'};
-  if(accOwned(id)) return {ok:false,msg:'Already owned'};
-  if(it.rarity==='exclusive') return {ok:false,msg:'Earned, not bought'};
-  const price=accPrice(it); if(coinBalance() < price) return {ok:false,msg:'Not enough coins'};
-  coinCharge(price); const s=coinState(); s.owned[id]=1; coinSave(s); accEquip(id);
-  track('shop_buy',{id:id,price:price,rarity:it.rarity});
-  return {ok:true};
-}
 // ---- boosts: summed over equipped gear, clamped per-skill + total (SOLO ONLY via buildPlayer) ----
 function accBoost(){ if(!SHOP_ENABLED) return {};   // shelved: equipped gear gives no boost while the economy is disabled
   // CS378: boosts come ONLY from gear you can currently see & control - the worn cosmetics (headwear, eyewear,
@@ -12233,26 +12221,6 @@ function bagBoostRows(){ const rows=[]; if(!SHOP_ENABLED) return rows;
     const c=CLUBS_BY[id]; rows.push({club:id,name:(c&&c.name)||id,b:bb});
   } return rows; }
 function bagBoost(){ const o={}; bagBoostRows().forEach(r=>{ for(const k in r.b) o[k]=(o[k]||0)+r.b[k]; }); return o; }
-function bagBuy(club,tier){ const c=BAG_BY[club]; tier=+tier; if(!c||tier<1||tier>3) return {ok:false,msg:'Unknown club'};
-  if(!sbSignedIn()) return {ok:false,msg:'Sign in to buy clubs'};
-  if(bagTierOwned(club)>=tier) return {ok:false,msg:'Already owned'};
-  if(tier>1 && bagTierOwned(club)<tier-1) return {ok:false,msg:'Upgrade the previous tier first'};
-  const price=bagPrice(tier); if(coinBalance()<price) return {ok:false,msg:'Not enough coins'};
-  coinCharge(price); const s=coinState(); s.owned[bagKey(club,tier)]=1; coinSave(s);
-  track('shop_buy',{id:bagKey(club,tier),price:price,rarity:'bag'});
-  return {ok:true};
-}
-function bagTileHTML(club,tier){ const c=BAG_BY[club]; const ti=c.tiers[tier-1]; const own=bagTierOwned(club);
-  const active=(bagActiveTier(club)===tier), owned=(own>=tier), price=bagPrice(tier), needPrev=(tier>1&&own<tier-1);   // active = the tier the player CHOSE to run
-  const thumb=pxBagThumb(club,tier);   // each tier club has its own unique pixel look
-  let state,data;
-  if(active){ state='eq'; data=''; }
-  else if(owned){ state='own'; data=''; }
-  else if(needPrev){ state='lock'; data=`data-tile data-kind="bag-locked" data-club="${club}" data-tier="${tier}"`; }   // CS483g: tappable → explains why it's locked
-  else { state='lock'; data=`data-tile data-kind="bag-buy" data-club="${club}" data-tier="${tier}"`; }
-  return shopTile({thumb,name:ti.n,sub:shopBoostTxt(ti.b)+(needPrev?' <span style="color:#c9a520">· upgrade prev first</span>':''),
-    state,price,afford:coinBalance()>=price,data});
-}
 function cosmeticItems(cat){
   if(cat==='shirt'||cat==='hat') return allShirts().map(o=>({id:o.id,name:o.name||cosTitle(o.id),col:o.m}));
   if(cat==='pat')   return [{id:'none',name:'None',pat:'none'}].concat(PXPAT.map(p=>({id:p.id,name:p.name,pat:p.id,hist:p.hist})));
@@ -19498,23 +19466,8 @@ function proShopLinkRow(){
   return b;
 }
 // CS343: accessories you can equip right in the setup screen. Owned gear only (unlocks live in the Pro Shop),
-// one row per slot with items, a "None" chip + a chip per owned item (icon + name), tap to equip/unequip.
 function ownedAccIn(slot){ const own=coinState().owned||{}; return ACCESSORIES.concat(MILESTONE_ITEMS).filter(a=>a.slot===slot && own[a.id]); }
 function anyGearLocked(){ const own=coinState().owned||{}; return ACCESSORIES.some(a=>!own[a.id]); }
-function accSelectRow(slot){
-  const sl=ACC_SLOT_BY[slot]; if(!sl) return null;
-  const items=ownedAccIn(slot); if(!items.length) return null;
-  const cur=accEquipped(slot);
-  const row=$(`<div style="margin:8px 0"></div>`);
-  row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">${esc(sl.name)}</div>`));
-  const wrap=$(`<div class="accchips"></div>`);
-  const chip=(inner,sel,title)=>$(`<button class="accchip${sel?' sel':''}" title="${esc(title||'')}">${inner}</button>`);
-  const none=chip('None', cur==null, 'No '+sl.name.toLowerCase()); none.onclick=()=>{ accUnequip(slot); render(); };
-  wrap.appendChild(none);
-  items.forEach(it=>{ const c=chip(`<span class="acci">${ic(sl.icon)}</span>${esc(it.name)}`, cur===it.id, it.name);
-    c.onclick=()=>{ accEquip(it.id); render(); }; wrap.appendChild(c); });
-  row.appendChild(wrap); return row;
-}
 // CS344: live summary of the total stat boost your equipped accessories give (the CLAMPED effective boost
 // that buildPlayer bakes into your career/daily golfer), so you know what's boosted before you draft.
 function accBoostSummaryNode(){
@@ -38403,22 +38356,6 @@ function overlayPassClaim(screen){
   screen.appendChild(ov);
 }
 function shopBoostTxt(boost){ if(!boost) return ''; return Object.keys(boost).map(k=>{ const v=boost[k]; return `<span style="color:${v>=0?'#35d6a0':'#e2554e'}">${v>=0?'+':''}${v} ${RSHORT[k]||k}</span>`; }).join(' · '); }
-function shopCard(it){ const r=ACC_RARITY[it.rarity]||ACC_RARITY.common, owned=accOwned(it.id), eq=accEquipped(it.slot)===it.id;
-  const price=accPrice(it), afford=coinBalance()>=price, sl=ACC_SLOT_BY[it.slot]||{icon:'gear'};
-  let action;
-  if(eq) action=`<button class="btn ghost" data-uneq="${it.slot}" style="width:100%;padding:8px;font-size:12px">Equipped ✓ · Unequip</button>`;
-  else if(owned) action=`<button class="btn gold" data-equip="${it.id}" style="width:100%;padding:8px;font-size:12px">Equip</button>`;
-  else if(it.rarity==='exclusive') action=`<div class="small muted center" style="padding:6px 0;font-size:10px">Earned · ${esc(it.note||'milestone')}</div>`;
-  else action=`<button class="btn ${afford?'goldfill':'ghost'}" data-buy="${it.id}"${afford?'':' disabled'} style="width:100%;padding:8px;font-size:12px;display:flex;align-items:center;justify-content:center;gap:5px"><span style="width:15px;height:15px">${ic('coin',{size:'15px'})}</span>${coinFmt(price)}</button>`;
-  return `<div style="border:1.5px solid ${eq?'var(--gold)':r.c+'55'};border-radius:13px;padding:11px;background:${eq?'rgba(241,208,74,.09)':'rgba(255,255,255,.03)'};display:flex;flex-direction:column;gap:6px">
-    <div style="display:flex;align-items:center;gap:8px">
-      <span style="width:30px;height:30px;color:${r.c};flex:0 0 auto">${ic(sl.icon,{size:'28px'})}</span>
-      <div style="min-width:0"><div style="font-weight:800;font-size:12.5px;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(it.name)}</div>
-        <div style="font:800 8.5px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:${r.c};margin-top:2px">${r.label}</div></div></div>
-    <div style="font-weight:700;font-size:11px;color:#8fe0c4">${shopBoostTxt(accItemBoost(it))}</div>
-    <div class="small muted" style="font-size:10px;flex:1 1 auto">${esc(it.desc||'')}</div>
-    ${action}</div>`;
-}
 // equip a purchased cosmetic (set the look key; a hat color also turns the cap on)
 function cosEquip(cat,id){ if(!S.look) return; const c=COS_CATS.find(x=>x.k===cat); if(!c) return;
   if(cat==='hw'){ if(id==='none'){ S.look.cap=false; } else { S.look.cap=true; S.look.hatStyle=id; } saveLook(); return; }   // CS356g headwear = hat shape
@@ -38454,10 +38391,8 @@ function shopEffLook(){ const p=S.shopPreview; if(!p || !inShopCtx() || p.kind!=
   return L; }
 function shopConfirmBuy(){ const p=S.shopPreview; if(!p) return;
   if(!sbSignedIn()){ S.shopPreview=null; toast('🔒 Create a free account to buy Pro Shop items.'); S.overlay='account'; S.acctMode='signup'; S.acctErr=''; render(); return; }   // CS401: store is signed-in only
-  let r, okMsg='Purchased & equipped!';
-  if(p.kind==='cos'){ r=cosBuy(p.cat,p.id); if(r&&r.ok) cosEquip(p.cat,p.id); }
-  else if(p.kind==='bag'){ r=bagBuy(p.club,p.tier); okMsg='Club upgraded!'; }
-  else { r=accBuy(p.id); }   // accBuy auto-equips
+  if(p.kind!=='cos') return;   // only cosmetics are bought here
+  const okMsg='Purchased & equipped!', r=cosBuy(p.cat,p.id); if(r&&r.ok) cosEquip(p.cat,p.id);
   S.shopPreview=null;
   // The balance is re-checked inside each buy, so it can still come up short here even though the card
   // said it would not (a pack opened in another tab, a cross-device merge). That is the same moment as
@@ -38728,17 +38663,6 @@ function cosTileHTML(cat,o){
   return shopTile({thumb,name:o.name,state,price,afford:coinBalance()>=price,sub:bsub,isNew:cosIsNew(cat,o.id),rar,
     data:`data-tile data-kind="cos" data-cat="${cat}" data-id="${esc(o.id)}"`});
 }
-function accTileHTML(it){
-  const r=ACC_RARITY[it.rarity]||ACC_RARITY.common, sl=ACC_SLOT_BY[it.slot]||{icon:'gear'};
-  const owned=accOwned(it.id), equipped=accEquipped(it.slot)===it.id, price=accPrice(it), excl=it.rarity==='exclusive';
-  const thumb=`<span class="sthumb" style="color:${r.c}"><span style="width:32px;height:32px">${ic(sl.icon,{size:'32px'})}</span></span>`;
-  const boost=shopBoostTxt(accItemBoost(it));
-  let state,data;
-  if(equipped){ state='eq'; data=`data-tile data-kind="acc-uneq" data-slot="${it.slot}"`; }
-  else if(owned){ state='own'; data=`data-tile data-kind="acc-eq" data-id="${it.id}"`; }
-  else { state='lock'; data=excl?`data-tile`:`data-tile data-kind="acc-buy" data-id="${it.id}"`; }
-  return shopTile({thumb,name:it.name,sub:boost,state,price:excl?0:price,afford:coinBalance()>=price,rarColor:r.c,rar:it.rarity,data});
-}
 function shopTileClick(b){
   if(b.getAttribute('data-kind')==='cos-reward'){ const did=b.getAttribute('data-drop');
     toast('Collection reward. Own the whole collection to earn it. It can\'t be bought or pulled.');
@@ -38754,14 +38678,6 @@ function shopTileClick(b){
       S.shopPreview={kind:'cos', cat, id, name:(it&&it.name)||id, price:cosmeticPrice(cat,id)};
     }
   }
-  else if(kind==='acc-uneq'){ accUnequip(b.getAttribute('data-slot')); }
-  else if(kind==='acc-eq'){ accEquip(b.getAttribute('data-id')); }
-  else if(kind==='acc-buy'){ const id=b.getAttribute('data-id'), it=accById(id);   // LOCKED gear → preview + confirm
-    S.shopPreview={kind:'acc', id, slot:(it&&it.slot)||null, name:(it&&it.name)||'Item', price:it?accPrice(it):0}; }
-  else if(kind==='bag-buy'){ const club=b.getAttribute('data-club'), tier=+b.getAttribute('data-tier'); const c=BAG_BY[club], ti=c&&c.tiers[tier-1];
-    S.shopPreview={kind:'bag', club, tier, name:(ti&&ti.n)||'Club', price:bagPrice(tier)}; }
-  else if(kind==='bag-locked'){ const club=b.getAttribute('data-club'), tier=+b.getAttribute('data-tier'); const c=BAG_BY[club], prev=c&&c.tiers[tier-2];   // CS483g: upgrade in order
-    try{ toast(`Buy the ${prev?esc(prev.n):'previous tier'} first. Then you can upgrade to this one.`); }catch(e){} return; }
   else if(kind==='cos-req'){ try{ toast('🔒 '+(b.getAttribute('data-req')||'Locked')); }catch(e){} return; }   // earned Legend gear: show the requirement
   // CS483g: opening a preview REPLACES the tile grid with the confirm card. The shop overlay keeps its scroll,
   // so a tile tapped far down the list would leave the (short) confirm card off-screen - "nothing happened".
@@ -38779,7 +38695,6 @@ const PACK_HIKE=2;                           // direct-buy prices x2 the day pac
 const PACK_PRICE=12000;                      // coins per pack (owner: cheaper than 20k, undercuts most direct buys post-hike)
 const PACK_BUNDLE_N=5;                        // bundle: 5 packs...
 const PACK_BUNDLE_PAY=4;                      // ...for the price of 4 (owner) → 48,000 for 5, one pack free
-function packBundlePrice(){ return PACK_PRICE*PACK_BUNDLE_PAY; }
 const PACK_RCOL={common:'#b8c4bd',rare:'#4aa3ff',epic:'#b06be0',legendary:'#F1D04A'};
 const PACK_RLABEL={common:'Common',rare:'Rare',epic:'Epic',legendary:'Legendary'};
 const PACK_ODDS=[['common',0.55],['rare',0.30],['epic',0.12],['legendary',0.03]];
@@ -40506,28 +40421,6 @@ function pickPackItem(rar, bias){ var pool=packPool();
   return pool.length?pool[Math.floor(Math.random()*pool.length)]:null; }
 function packAffordable(tier){ return coinBalance()>=packPrice(tier); }
 function packErr(e){ return e==='coins'?'Not enough coins':e==='signin'?'Sign in to open packs':'Couldn\'t open that pack'; }
-function openPack(){
-  if(!packsOn()) return {err:'off'};
-  if(!sbSignedIn()) return {err:'signin'};
-  if(!packAffordable()) return {err:'coins'};
-  coinCharge(PACK_PRICE);          // pay (earned first, then purchased)
-  var p=packState(); p.opened++;
-  try{ passChalProgress('packsOpened',1); }catch(e){}
-  var rar;                                                        // pity-aware rarity
-  if(p.sinceLeg+1>=PACK_PITY_LEG) rar='legendary';
-  else if(p.sinceEpic+1>=PACK_PITY_EPIC) rar='epic';
-  else rar=rollPackRarity();
-  if(rar==='legendary'){ p.sinceLeg=0; p.sinceEpic=0; }
-  else if(rar==='epic'){ p.sinceEpic=0; p.sinceLeg++; }
-  else { p.sinceEpic++; p.sinceLeg++; }
-  var item=pickPackItem(rar); if(!item){ packSave(p); return {err:'empty'}; }
-  packSave(p);
-  var dupe=packOwns(item), refund=0;
-  if(dupe) refund=dupeRefund(item.rarity, true);   // this path charged PACK_PRICE above, so it's always paid
-  else packGrant(item);
-  try{ track('pack_open',{rarity:item.rarity,dupe:dupe,kind:item.kind,paid:true}); }catch(e){}
-  return {item:item, rarity:item.rarity, dupe:dupe, refund:refund};
-}
 
 // CS404, the WHEEL SPIN: a single pity-aware roll decides the winner (identical odds to the old pick-1-of-3
 // distribution, since a picked card == one roll). The coin charge lives upstream in startPackDeal, so this
@@ -40541,7 +40434,7 @@ function rollPackWin(tier, paid){
   var pt=packType(tier);                                          // CS406: the tier's odds + pity floors
   var p=packState(); p.opened++;
   try{ passChalProgress('packsOpened',1); }catch(e){}
-  var rar;                                                        // pity-aware rarity (same guarantee as openPack)
+  var rar;                                                        // pity-aware rarity (the same pity guarantee as every pack)
   if(p.sinceLeg+1>=pt.pityLeg) rar='legendary';
   else if(p.sinceEpic+1>=pt.pityEpic) rar='epic';
   else rar=rollPackRarity(pt.odds);
