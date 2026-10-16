@@ -93,3 +93,6 @@ node golf/check-tracer3d.mjs                every course draws, nothing the ball
 - A screen claims the full screen tracer only through `hvFullSet(mode)`. Change a chip's height and
   change its row in `HV_FULL_SIZE`.
 - `G3D_LIVE = false` is the 3D golfer's kill switch.
+- **One golfer in every mode.** A mode draws your golfer through `modeLook(look, kind)`: the equipped putter on
+  every green and walk, and the career's age stamped on. An aura shows wherever the golfer is drawn (the
+  `hvsw-glow` pulse, `host.aura()` on a canvas). `check-golfer3d.mjs` section 4 holds all of it.

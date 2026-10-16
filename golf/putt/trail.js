@@ -1382,7 +1382,12 @@ function run(box, P, pic, api){
   function drawFigure(f, x, y, see, who){ if (!f || !f.url){ if (!who || !lastFig[who]) return null; f = lastFig[who].f; }
     var im = img(f.url); if (!im.complete || !im.naturalWidth){ var lf = who && lastFig[who]; if (!lf) return null; f = lf.f; im = lf.im; } else if (who) lastFig[who] = { f:f, im:im };
     var hgt = GH * CE / ART * kk, k2 = hgt / f.fig, p = scr(x, y), rx = Math.round(p[0] - f.ball[0] * k2), ry = Math.round(p[1] - f.ball[1] * k2), rw = Math.round(f.W * k2), rh = Math.round(f.H * k2);
-    ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(im, rx, ry, rw, rh); ctx.restore(); occlude(rx, ry, rw, rh, x, y, pic.zAt(x, y), see); return [rx, ry, rw, rh]; }
+    ctx.save(); ctx.imageSmoothingEnabled = false; if (who === 'me') meGlow(k2); ctx.drawImage(im, rx, ry, rw, rh); ctx.restore(); occlude(rx, ry, rw, rh, x, y, pic.zAt(x, y), see); return [rx, ry, rw, rh]; }
+  // your aura walks with you: the course golfer's pulse (hvswGlow, 2.4 s) in its colour, k pixels to a figure pixel
+  function meGlow(k){ var a = null; try{ a = api.host.aura && api.host.aura(); }catch(e){} if (!a) return;
+    var still = false; try{ still = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+    var u = still ? 0.5 : 0.5 - 0.5 * Math.cos(performance.now() / 1000 / 2.4 * 2 * Math.PI);
+    ctx.shadowColor = a; ctx.shadowBlur = Math.max(2, (1 + 3 * u) * k); ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0; }
   // a coin is drawn at the scene's own pixel size, so it sits in it
   function drawCoin(t, now){ var f = t.fly;
     if (f && now < f.t0 + f.dur){ if (now < f.t0) return; var u = (now - f.t0) / f.dur, fx = f.x0 + (t.x - f.x0) * u, fy = f.y0 + (t.y - f.y0) * u, fz = f.z0 + (pic.zAt(t.x, t.y) + 0.4 - f.z0) * u + Math.sin(u * Math.PI) * 3.2;
