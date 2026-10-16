@@ -2543,20 +2543,26 @@ function livesCall(fn, extra){ var uid = cloudUid(); if (!uid) return Promise.re
   if (!p || !p.then) return Promise.resolve(false);
   return p.then(function(d){ return livesApply(uid, d); }, function(){ return false; }); }
 function livesSync(){ var st = pload(); return livesCall('putt_lives_state', { p_lives:st.lives }); }
-/* A GUEST PLAYS THE FIRST FEW HOLES FREE and is then asked to sign in to go on, so their progress has an
-   account to live on. What they played signed out is claimed by the account on the way in (pload). The
-   Daily Hole stays open to everybody. A host that cannot say who is signed in gates nobody. */
-var GUEST_HOLES = 5;
+/* GUESTS (the owner, 2026-10-16): a guest walks the opening world, so they see what is here, and plays no hole of
+   it. Walking up to a hole asks them to sign in. The Daily Hole stays open to them, and it posts to no board. A
+   guest never sees a coin count: what they pick up is held for the account (the host's held coins) and the game
+   says so. A host that cannot say who is signed in gates nobody. GUEST_WALK is how many holes of the main tour a
+   guest may walk to (the opening world). */
+var GUEST_WALK = 18;
 function isGuest(){ try{ var h = hostOf(); return !!(h.signedIn && !h.signedIn()); }catch(e){ return false; } }
-function guestSheet(){
-  var sh = el('<div class="pp-sheet"><div class="pp-card"><div class="k">' + GUEST_HOLES + ' FREE HOLES PLAYED</div><div class="t">Sign in to keep going</div>\
-    <div class="m">A free account keeps your stars and your place on the Tour. On every device.</div>\
-    <button class="pt-go pp-wide" data-in>Sign in</button><button class="pt-go pp-wide" data-up>Create a free account</button><button class="pt-bt pp-wide" data-n>Not now</button></div></div>');
+var GUEST_COINS = 'Sign in to collect your coins and open packs.';
+function guestSheet(n, tid){
+  var walk = tid === 'main' && n && n < Math.min(GUEST_WALK, tourOf('main').levels.length);
+  var sh = el('<div class="pp-sheet"><div class="pp-card"><div class="k">' + (n ? 'HOLE ' + n : 'PUTT PUTT TOUR') + '</div><div class="t">Sign in to play</div>\
+    <div class="m">A free account plays every hole, keeps your stars and collects your coins. On every device.</div>\
+    <button class="pt-go pp-wide" data-in>Sign in</button><button class="pt-go pp-wide" data-up>Create a free account</button>' +
+    (walk ? '<button class="pt-bt pp-wide" data-walk>Keep walking</button>' : '') + '<button class="pt-bt pp-wide" data-n>Not now</button></div></div>');
   S.ov.appendChild(sh);
   var go = function(mode){ var h = S.host; close(); try{ if (h.signIn) h.signIn(mode); }catch(e){} };
   sh.querySelector('[data-in]').onclick = function(){ go('signin'); };
   sh.querySelector('[data-up]').onclick = function(){ go('signup'); };
-  sh.querySelector('[data-n]').onclick = function(){ sh.remove(); }; }
+  var wk = sh.querySelector('[data-walk]'); if (wk) wk.onclick = function(){ sh.remove(); walkTo(n, 'main'); };
+  sh.querySelector('[data-n]').onclick = function(){ sh.remove(); if (S.screen === 'trail') showHub('main'); }; }
 function livesMax(){ try{ var h = hostOf(); return h.passActive && h.passActive() ? 18 : 9; }catch(e){ return 9; } }
 var PER_HEART = 3;
 function loseLife(st){ if (lifeExtra(st) > 0){ st.bspent = (st.bspent || 0) + 1; psave(st); return; } if (st.lives == null) st.lives = livesMax(); if (st.lives <= 0) return; st.lives--; st.back = (st.back || []).concat([Date.now() + LIFE_MS]); st.refillAt = st.back[0]; st.l9 = 1; st.lt = Date.now(); psave(st); livesCall('putt_lives_spend'); }
@@ -2648,7 +2654,8 @@ function auraGlow(ctx, k, t){ var a = null; try{ a = S.host.aura && S.host.aura(
   var still = false; try{ still = matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
   var u = still ? 0.5 : 0.5 - 0.5 * Math.cos((t == null ? performance.now() / 1000 : t) / 2.4 * 2 * Math.PI);
   ctx.shadowColor = a; ctx.shadowBlur = Math.max(2, (1 + 3 * u) * k); ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0; }
-function balStr(){ try{ if (S.host.balance) return Number(S.host.balance()).toLocaleString(); }catch(e){} return ''; }
+function balStr(){ if (isGuest()) return '';   // a guest sees no coin count (their coins are held for the account)
+  try{ if (S.host.balance) return Number(S.host.balance()).toLocaleString(); }catch(e){} return ''; }
 /* THE HEADER FLOATS OVER THE MAP, as the mockup drew it: your golfer in a gold ring, your hearts,
    the refill clock when one is running, your coins and a close button. */
 function hdr(right){ var u = golferUrl(), b = balStr();
@@ -2704,7 +2711,7 @@ function showHub(tid){
         <span class="t">' + esc(dh.name) + '</span>\
         <span class="m">' + (drec && drec.done ? 'You shot ' + drec.s + ' (par ' + drec.par + ')' + (drec.ms != null ? ' in ' + clockTxt(drec.ms) : '') : esc(dT.name) + ' · par ' + buildHole(dh).par + ' · timed, one try') + '</span>\
         <span class="pp-dends">' + (drec && drec.done ? 'Next hole in ' : 'Ends in ') + '<b data-dcount>' + hms(msToNextDay()) + '</b></span></span>\
-      <span class="pp-dside"><span class="g">' + (drec && drec.done ? 'Result' : 'Play') + '</span><span class="rw">' + (drec && drec.done ? 'Played' : '+' + COIN_DAILY + ' coins') + '</span></span></button>') +
+      <span class="pp-dside"><span class="g">' + (drec && drec.done ? 'Result' : 'Play') + '</span><span class="rw">' + (drec && drec.done ? 'Played' : isGuest() ? 'Free to play' : 'Up to ' + (COIN_DAILY + COIN_DAILY_PAR) + ' coins') + '</span></span></button>') +
     '<div class="pp-wchip" data-wchip></div>' + (TOURS.main && !cal ? '<button class="pp-bagb" data-bag aria-label="Your Bag">Bag</button><button class="pp-bagb pp-closb" data-closet aria-label="Your closet">Closet</button>' : '') +
     '<div class="pp-tabs" role="tablist"><button data-tab="main" class="' + (mem || lab || cal ? '' : 'on') + '" role="tab">Putt Putt Tour</button><button data-tab="members" class="' + (mem ? 'on' : '') + '" role="tab"><i>★</i> Members' + (membersOpen() ? '' : ' <s>🔒</s>') + '</button>' + (labOpen() ? '<button data-tab="lab" class="' + (lab ? 'on' : '') + '" role="tab">Lab</button>' : '') +
     '<button data-tab="daily" class="' + (cal ? 'on' : '') + '" role="tab">Daily' + (drec && drec.done ? '' : '<u class="pp-tdot" aria-label="not played today"></u>') + '</button></div>' + '</div>';
@@ -2808,7 +2815,9 @@ function drawMap(st, TR){
   // the golfer on the map walks: tap him and the joystick comes up, heading for the hole in front of him
   var meEl = box.querySelector('.pp-me'); if (meEl && trailOk() && tp.lv <= N){ meEl.classList.add('tap'); meEl.setAttribute('role', 'button'); meEl.setAttribute('aria-label', 'Walk to hole ' + tp.lv);
     meEl.onclick = function(){ if (trailOk()) openTrail(TR.id, Math.min(N, tp.lv) - 1); }; }
-  box.querySelectorAll('[data-lv]').forEach(function(b){ b.onclick = function(){ var n = +b.getAttribute('data-lv'); var tq = pload().tours[TR.id]; if (!opened(TR, tq, n)){ var pw = Math.floor((n - 2) / K);
+  box.querySelectorAll('[data-lv]').forEach(function(b){ b.onclick = function(){ var n = +b.getAttribute('data-lv'); var tq = pload().tours[TR.id];
+    if (TR.id === 'main' && isGuest() && n <= GUEST_WALK){ return trailOk() ? openTrail(TR.id, n - 1) : guestSheet(n, TR.id); }   // a guest walks the opening world
+    if (!opened(TR, tq, n)){ var pw = Math.floor((n - 2) / K);
       return toastHub((n - 1) % K === 0 && tq.best[n - 1] != null ? wLabel(TR, pw + 1) + ' opens at ' + worldGate(TR, pw) + ' total stars. You have ' + starsThrough(tq, TR, pw) + '.' : 'Clear level ' + (n - 1) + ' at par or better to open it.'); } skipWarn(n, TR.id); }; });
   box.querySelectorAll('[data-cw]').forEach(function(c){ c.onclick = function(){ var w = +c.getAttribute('data-cw'), tq = pload().tours[TR.id], have = starsThrough(tq, TR, w - 1), need = worldGate(TR, w - 1);
     // standing at the gate with the stars: walk up to it, and the clouds part there
@@ -3229,7 +3238,7 @@ function openTrail(tid, from){
     var st0 = pload(), rec0 = (st0.trail || {})[sp.key] || {};
     var three = L ? threeOf(L) : null; banOut();
     S.trailCtl = window.RTT_PUTT_TRAIL.run(box, P, pic, {
-      host:S.host, found:JSON.parse(JSON.stringify(rec0)), holeLabel:'Hole ' + to, greetDelay:wbn ? 2700 : 400, clouds:clouded,
+      host:S.host, found:JSON.parse(JSON.stringify(rec0)), guestCoins:isGuest() ? GUEST_COINS : null, holeLabel:'Hole ' + to, greetDelay:wbn ? 2700 : 400, clouds:clouded,
       skipLabel:sp.cross && !sp.gateOpen ? 'Map' : 'Play hole ' + to,
       secret:sp.secret ? function(i, resume){ secretFound(i, resume, from); } : null,
       pick:function(kind, id, n){ var st = pload(); st.trail = st.trail || {}; var r = st.trail[sp.key] = st.trail[sp.key] || {}, msg = '';
@@ -3276,11 +3285,12 @@ function openTrail(tid, from){
       arrive:function(){ var tp = pload().tours[TR.id], sw = S.ov.querySelector('.pp-skipw'); if (sw) sw.remove();
         // a walker without the pass reaches the hole and is asked, over the trail they are standing on
         if (TR.members && !membersCanPlay()){ stopTrail(); return membersSheet({ n:to, trail:true }); }
+        if (TR.id === 'main' && isGuest()){ stopTrail(); return guestSheet(to, tid); }
         stopTrail(); if (opened(TR, tp, to)) startLevel(to, tid); else showHub(tid); },
       // Skip keeps its button, and says what it leaves behind first: the same list the map's warning reads, off
       // the record as it stands now, so anything already picked up on this walk is not named.
       skip:function(){ var tp = pload().tours[TR.id], play = opened(TR, tp, to) && !(sp.cross && !sp.gateOpen);
-        function leave(){ stopTrail(); if (play) startLevel(to, tid); else showHub(tid); }
+        function leave(){ stopTrail(); if (TR.id === 'main' && isGuest()) return guestSheet(to, tid); if (play) startLevel(to, tid); else showHub(tid); }
         var left = trailLeft(tid, to); if (!left.length || S.ov.querySelector('.pp-skipw')) return leave();
         var list = left.length === 1 ? left[0] : left.slice(0, -1).join(', ') + ' and ' + left[left.length - 1];
         var sh = el('<div class="pp-sheet pp-skipw"><div class="pp-card"><div class="k">SKIP THE TRAIL?</div><div class="t">Bonus rewards</div><div class="m">This trail still has ' + esc(list) + '. Skip it and ' + (left.length > 1 ? 'they are' : 'it is') + ' gone.</div><button class="pt-go pp-wide" data-n>Keep walking</button><button class="pt-bt pp-wide" data-skip>' + (play ? 'Skip to Hole ' + to : 'Skip to the map') + '</button></div></div>');
@@ -3378,7 +3388,7 @@ function trailLeft(tid, n){ try{ if (tid !== 'main' || n < 2 || !trailOk()) retu
 function skipWarn(n, tid){ var st = pload(), c = st.cur, tr = (st.tours || {})[tid] || {};
   // only a hole being reached for the first time can forfeit anything: its trail is gone once it is beaten. A gate
   // that would refuse the hole anyway (a guest, the Members Tour, no lives) speaks first, from startLevel.
-  if ((c && c.tid === tid && c.n === n && c.s > 0) || (tr.best && tr.best[n] != null) || (tid === 'main' && n > GUEST_HOLES && isGuest()) || livesNow(st) <= 0) return startLevel(n, tid);
+  if ((c && c.tid === tid && c.n === n && c.s > 0) || (tr.best && tr.best[n] != null) || (isGuest() && !tourOf(tid).lab) || livesNow(st) <= 0) return startLevel(n, tid);
   var left = trailLeft(tid, n); if (!left.length) return startLevel(n, tid);
   var list = left.length === 1 ? left[0] : left.slice(0, -1).join(', ') + ' and ' + left[left.length - 1];
   var sh = el('<div class="pp-sheet pp-skipw"><div class="pp-card"><div class="k">SKIP THE WALK?</div><div class="t">Hole ' + n + '</div><div class="m">The trail to Hole ' + n + ' still has ' + esc(list) + '. Skip it and ' + (left.length > 1 ? 'they are' : 'it is') + ' gone.</div><button class="pt-go pp-wide" data-walk>Walk to Hole ' + n + '</button><button class="pt-bt pp-wide" data-skip>Play now and forfeit the rewards</button><button class="pt-bt pp-wide" data-n>Cancel</button></div></div>');
@@ -3403,7 +3413,7 @@ function startLevel(n, tid){
   if (tourOf(tid).members && !membersCanPlay()) return membersSheet({ n:n, trail:S.screen === 'trail' });
   if (tourOf(tid).lab && !labOpen()) return showHub('main');
   if (tourOf(tid).secret && secretsFound(st).indexOf(n) < 0 && !allAccess()) return showHub('main');
-  if (tid === 'main' && n > GUEST_HOLES && isGuest()) return guestSheet();
+  if (isGuest() && !tourOf(tid).lab && !tourOf(tid).members) return guestSheet(n, tid);   // a guest plays no Tour hole
   var c = st.cur, back = c && c.tid === tid && c.n === n && c.s > 0;
   if (c && !back){ clearCur(st); psave(st); }   // only a hole in progress on another device can be left this way
   if (!back && livesNow(st) <= 0 && !tourOf(tid).lab && !tourOf(tid).secret && !allAccess()) return outOfLives();
@@ -3610,7 +3620,7 @@ function dailyResult(got, dk){
   S.ov.innerHTML = hdr('<span class="pp-strk">Streak ' + (st.streak.n || 1) + '</span>') + '<div class="pt-menu" style="padding-top:4px">\
     <div class="pp-dres"><div class="k">Daily Hole · ' + monthDay(dk) + '</div><div class="nm">' + esc(dh.name) + '</div><div class="m" style="opacity:.8">' + esc(T.name) + '</div><span class="th" data-th></span>\
       <div class="sc"><b>' + rec.s + '</b><span>' + (rec.s === 1 ? 'stroke' : 'strokes') + '<br>par ' + rec.par + '</span>' + (rec.ms != null ? '<b class="pp-tm">' + clockTxt(rec.ms) + '</b><span>time</span>' : '') + '</div>\
-      <div class="m" style="color:#ffd9a8;font-weight:800">' + esc(label) + (rec.s < rec.par ? ' · beat par' : '') + (st.streak.best > 1 ? ' · best streak ' + st.streak.best : '') + '</div>' + (got ? '<div class="pp-coins">+' + got + ' coins</div>' : '') + '</div>\
+      <div class="m" style="color:#ffd9a8;font-weight:800">' + esc(label) + (rec.s < rec.par ? ' · beat par' : '') + (st.streak.best > 1 ? ' · best streak ' + st.streak.best : '') + '</div>' + (got ? (isGuest() ? '<div class="m">' + GUEST_COINS + '</div>' : '<div class="pp-coins">+' + got + ' coins</div>') : '') + '</div>\
     <div class="pt-card pp-dboard" style="cursor:default" data-board><div class="k">Leaderboard</div><div class="m">Fewest strokes wins. The clock breaks a tie.</div><div class="pp-drows" data-rows></div></div>\
     <button class="pt-go" data-share style="background:#12a08f;color:#fff;padding:14px">Share</button><button class="pt-bt" data-menu style="padding:13px">Calendar</button>\
     <div class="m" style="text-align:center;color:#a9a3c9">' + (rec.late ? 'Played late, so the streak did not move. ' : 'Played. ') + 'Next Daily Hole in ' + hm(msToNextDay()) + '.</div></div>';

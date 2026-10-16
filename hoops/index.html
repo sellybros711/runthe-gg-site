@@ -1220,6 +1220,9 @@
   .spot .nm.long{white-space:normal;overflow-wrap:anywhere;font-size:8.8px;line-height:1.1;}
   .spot .yr{display:block;font-size:8.5px;color:var(--mut);text-shadow:0 1px 3px rgba(0,0,0,.95),0 0 2px rgba(0,0,0,.8);}
   .spot:not(.on) .nm,.spot:not(.on) .yr{color:var(--dim);}
+  /* the court's lines ran through the label ("oper" on the lane's hash
+     marks): a dark plate as wide as the word keeps them off it */
+  .spot .nm{display:inline-block;max-width:100%;vertical-align:top;padding:0 4px;border-radius:3px;background:rgba(5,7,13,.55);}
 
   /* ── slot tabs and the player list ──────────────────────────────────────*/
   .tabs{display:flex;gap:6px;margin:12px 0 0;overflow-x:auto;padding-bottom:2px;
@@ -1810,9 +1813,6 @@
   .ch-p.s .rtf-baller{height:160px;width:110px;}
   .ch-p.s.r .rtf-baller{transform:scaleX(-1);}
   .ch-p.s.swap{opacity:0;transform:translateY(8px);}
-  .ch-tags{position:absolute;left:12px;top:12px;z-index:3;display:flex;gap:4px;margin:0;padding:0;list-style:none;}
-  .ch-tags li{font-family:var(--pixel);font-size:8px;line-height:1;padding:5px 6px 4px;color:#ffd166;
-    background:rgba(11,15,23,.78);box-shadow:0 0 0 1px rgba(255,209,102,.35);}
   .ch-body{position:relative;z-index:2;padding:4px 16px 16px;}
   .career-hero .ch-eye{display:inline-flex;gap:8px;align-items:center;font-family:var(--pixel);font-size:8px;line-height:1.6;letter-spacing:.02em;text-transform:uppercase;color:#ffd166;}
   .career-hero h2{font-size:30px;line-height:1.02;margin:6px 0 6px;display:block;}
@@ -1856,7 +1856,6 @@
     .ch-cast{bottom:30px;}
     .ch-p.c{margin:0 -40px;} .ch-p.c .rtf-baller{height:320px;width:220px;} .ch-p.s .rtf-baller{height:256px;width:176px;}
     .ch-stage:after{display:none;}
-    .ch-tags{left:auto;right:12px;top:auto;bottom:12px;}
     .career-hero .ch-chip{display:none;}
   }
   .frg-eyebrow{font-size:10px;letter-spacing:.16em;text-transform:uppercase;
@@ -2533,13 +2532,19 @@
      rather than as a logo printed on the page. */
   .appbar .mark:active{opacity:.6;}
   @media(max-width:374px){ .appbar .wm{font-size:8px;} }
+  /* THE NAME IS NEVER CUT. A phone has room for the name or for a chip (the
+     career, a puzzle's day, a mode), not both, and squeezed together the bar
+     read "RUN THE F..." and "RUN ...". With a chip up, the ball alone is the
+     way home and the chip gets the row; the name is whole on every screen
+     without one. */
+  @media(max-width:560px){ .appbar:has(.state:not([hidden])) .wm{display:none;} }
 
   /* The capwrap now sticks UNDER the bar rather than over it. */
   .capwrap{top:var(--hdr);}
 
   .dock{position:fixed;left:0;right:0;bottom:0;z-index:55;
     padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));
-    background:linear-gradient(180deg,rgba(13,17,23,.72),var(--bg) 42%);
+    background:linear-gradient(180deg,rgba(13,17,23,.9),var(--bg) 42%);
     backdrop-filter:blur(9px);border-top:1px solid var(--line);
     display:flex;gap:8px;align-items:center;}
   .dock > *{flex:1 1 auto;margin:0;min-width:0;}
@@ -2663,7 +2668,6 @@
   <section class="card career-hero" id="career" aria-labelledby="ch-title">
     <div class="ch-stage" id="ch-stage" aria-hidden="true">
       <div class="ch-cast" id="ch-cast"></div>
-      <ul class="ch-tags"><li>Face</li><li>Hair</li><li>Height</li><li>Kit</li></ul>
     </div>
     <div class="ch-body">
       <span class="ch-eye">Career mode</span>
@@ -3576,11 +3580,11 @@
 <script src="stage3d.js?v=1"></script>
 <script src="scenes.js?v=25"></script>
 <script src="itemart.js?v=3"></script>
-<script src="closet-ui.js?v=10"></script>
+<script src="closet-ui.js?v=11"></script>
 <script src="shop-ui.js?v=5"></script>
-<script src="daily-ui.js?v=3"></script>
+<script src="daily-ui.js?v=4"></script>
 <script src="pass-ui.js?v=3"></script>
 <script src="card-ui.js?v=1"></script>
-<script src="career-ui.js?v=61"></script>
+<script src="career-ui.js?v=62"></script>
 </body>
 </html>

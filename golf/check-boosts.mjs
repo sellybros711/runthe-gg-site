@@ -18,6 +18,8 @@
  *             mid-season, and match play reads the same golfer.
  *   SCREENS   the build and draft screens, the radar, the closet, the player card, the bracket, Head to
  *             Head and the share card each show the boosted number the sim plays.
+ *   MILESTONE the World No.1 Cap, Major Marker Ball and Legend's Driver are closet items with their milestone's
+ *             boost, priced 0 (never in a pack), owned once the milestone is. The two charms stay data only.
  *   OVER 99   an all-99 golfer in the strongest closet: the sim plays every round to a finite score and
  *             beats the 99, and every number above shows in full at 390x844 and 1440x900 with nothing
  *             clipped, wrapped or past its track.
@@ -371,6 +373,26 @@ try {
     });
     ok('over 99 at ' + vp.width + 'x' + vp.height + ': every rating fits on one line in its box', L.res.length === 0, L.res.slice(0, 6));
     ok('over 99 at ' + vp.width + 'x' + vp.height + ': no sideways scroll', !L.side);
+  }
+
+  head('MILESTONE: three milestone items are real items, with the boosts their old rows carry');
+  {
+    const M = await page.evaluate(() => {
+      const keys = Object.keys(MILESTONE_GEAR), out = [];
+      const catOf = (k) => COS_CATS.find((c) => c.pk === k.split(':')[0]).k;
+      const s0 = coinState(); keys.forEach((id) => { delete s0.owned[id]; delete s0.owned[MILESTONE_GEAR[id]]; }); coinSave(s0);
+      keys.forEach((id) => { const key = MILESTONE_GEAR[id], cat = catOf(key), it = key.split(':')[1], mi = MILESTONE_ITEMS.find((x) => x.id === id);
+        out.push({ id, key, before: cosOwned(cat, it), price: cosmeticPrice(cat, it), listed: (cosmeticItems(cat) || []).some((o) => o.id === it),
+          same: JSON.stringify(COS_BOOST[key]) === JSON.stringify(mi.boost), pack: packPool().some((e) => cosKey(e.cat, e.id) === key) }); });
+      const s = coinState(); keys.forEach((id) => { s.owned[id] = 1; }); coinSave(s);
+      out.forEach((r) => { r.after = cosOwned(catOf(r.key), r.key.split(':')[1]); });
+      keys.forEach((id) => { delete s.owned[id]; }); coinSave(s);
+      const charms = MILESTONE_ITEMS.filter((m) => m.slot === 'charm').map((m) => m.id).filter((id) => MILESTONE_GEAR[id]);
+      return { out, charms };
+    });
+    M.out.forEach((r) => ok(r.key + ': listed, ' + r.id + '\'s boost, never sold or pulled, owned once the milestone is',
+      r.listed && r.same && r.price === 0 && !r.pack && !r.before && r.after, r));
+    ok('the two charms stay data only (no slot)', M.charms.length === 0, M.charms);
   }
 
   head('ICON: the tier above ELITE, 100 and up, on the First Tee switch');
