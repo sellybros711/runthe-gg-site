@@ -64,7 +64,9 @@ const clone = (x) => JSON.parse(JSON.stringify(x));
 const SYSTEM = new Set(['training', 'hs_summer', 'injury', 'clutch', 'amclutch', 'moment', 'presser', 'fa', 'extension', 'workout', 'interview', 'pworkout', 'nooffer', 'offers',
   'allstar', 'retire', 'declare', 'portal', 'commit', 'signing', 'build_arch', 'build_pos', 'build_sig', 'goal', 'nickname',
   // the front office and the bench: a deadline, a talk and a review come every season they apply
-  'deadline', 'coach_talk', 'coach_review']);
+  'deadline', 'coach_talk', 'coach_review',
+  // a career's own moves and the brands that call some summers (moves.js, deals.js)
+  'deal', 'holdout', 'posmove', 'legendcamp', 'bodymove', 'shoemove']);
 /* Your club's moments (career.js TEAM_EV) come back whenever the club gives
    the career something to answer, which is the point of them. */
 const RECURS = { has: (id) => SYSTEM.has(id) || C.recurs(id) || !!(C.TEAM_EV && C.TEAM_EV[id]) };

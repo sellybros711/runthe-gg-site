@@ -775,7 +775,7 @@ story({
     tag: 'Your phone', t: 'The Olympic roster is out.', x: (L) => recall(L, 'intl.flag') ? 'You played for your country every summer. The federation names you captain.' : 'You skipped a national team window once. The federation left you off the roster.',
     o: [O('Make the call home', { morale: 5 }, '', { sub: 'Say something', do: (L) => { if (recall(L, 'intl.flag')) { bump(L, { fame: 4 }); return 'Your mom cries on the phone. The whole country is watching in August.'; } bump(L, { morale: -6 }); return 'You call the federation president. He doesn\'t pick up.'; } }),
       O('Post about it', { fame: 2 }, '', { sub: 'Go public', do: (L) => recall(L, 'intl.flag') ? 'A photo in the national jersey. Your most liked post ever.' : 'A long post about loyalty. It starts a week of arguments back home.' })] },
-  pay_cc_dm: { at: 'off', req: { mem: ['cc.help'], seasons: [3, null] }, w: 4, cb: 'cc.help',
+  pay_cc_dm: { at: 'off', req: { seasons: [3, null] }, when: (L) => !!(recall(L, 'cc.help') || recall(L, 'arc.cc.growth')), w: 5, cb: 'cc.help',
     tag: 'Your phone', t: 'A rookie DMs you at 2 a.m.', x: 'He can\'t sleep. He saw you talk about getting help once. He asks if it really works.',
     o: [O('Call him right now', { morale: 6, trust: 4 }, 'An hour on the phone. He books his first session in the morning.', { sub: 'Pay it forward', set: 'pay.cc.called' }),
       O('Send him your counselor\'s number', { morale: 3 }, 'He sends back a thumbs up. A month later, a longer message.', { sub: 'Point him the right way' })] },

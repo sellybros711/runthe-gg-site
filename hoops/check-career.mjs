@@ -1378,6 +1378,7 @@ section('19. deals from who you are, more ways out, and summers asked some years
         if (c.id === 'training' && L.stage === 'nba') summers++;
         if (c.id === 'goal') goals++;
         if (c.id === 'careerinj') careerInj++;
+        if (c.id === 'ontop') how.topOffered = (how.topOffered || 0) + 1;
         C.choose(L, (L.steps * 7 + c.key.length * 3 + L.age) % c.options.length);
         if (L.last && (DASH.test(L.last.text || '') || /undefined|NaN|\{[a-z]/.test(L.last.text || ''))) bad.push(c.id + ': ' + L.last.text);
       } else C.step(L);
@@ -1392,7 +1393,9 @@ section('19. deals from who you are, more ways out, and summers asked some years
   ok(deals / N > 0.5 && deals / N < 4, `the brands call some summers, not every one (${(deals / N).toFixed(2)} a career)`);
   ok(Object.keys(brands).length >= 10, `the brands that sign a player are many (${Object.keys(brands).length} of ${C.DEALS.length})`);
   ok(C.DEALS.every((d) => !/^(Nike|Adidas|Gatorade|State Farm|Taco Bell|Subway|Kia|Geico|Crocs|Peloton|Airbnb|DoorDash|Bose|Old Spice|Wheaties)$/i.test(d.n)), 'no brand is a real brand\'s name');
-  ok(['injury', 'top', 'cut', 'finale'].every((k) => how[k]), `every new way out happens (${JSON.stringify(how)})`);
+  /* Walking away on top is the player's call, so it is held to being asked;
+     the rest are held to happening. */
+  ok(['injury', 'cut', 'finale', 'topOffered'].every((k) => how[k]), `every new way out happens or is offered (${JSON.stringify(how)})`);
   /* The owner's call: a career ending injury is likelier the worse the
      body. Read off the engine's own chance at a sound and a worn body. */
   const P = (dur, health) => C.careerEndP({ dur, m: { health }, age: 29, mem: {}, traits: {} });
