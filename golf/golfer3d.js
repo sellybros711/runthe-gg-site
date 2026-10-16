@@ -1096,13 +1096,16 @@
       const dx=(mx>=0&&nL>0&&nR>0)?Math.round(22-(mn+mx)/2):0, dy=ew==='visorband'?0:(ly<99?Math.max(0,Math.min(3,15-ly)):1);
       if(MO&&novel==='knight'){}   // a closed great helm hides the glasses under it
       else if(MO&&EW_SHAPE[ew]){ const e3=eyewear3D(M,ew,map,P); e3.forEach(q=>{ q.o.item='ew'; }); parts.push(...e3); } else {
-      parts.push(hull(map,ch=>roleFor(ch,null,P,true),M,{decal:1,dx,dy}));
+      // an item with its own eyewear palette (the page's PXG_EW_PAL, the Putt Putt rewards) reads its colours there first
+      const ep=typeof PXG_EW_PAL!=='undefined'&&PXG_EW_PAL[ew], EP=ep?Object.assign({},P,ep):P;
+      const dv=hull(map,ch=>roleFor(ch,null,EP,true),M,{decal:1,dx,dy}); parts.push(dv);
+      const tagEw=MO&&ep?q=>{ q.o=Object.assign({},q.o||{},{item:'ew'}); }:()=>{}; tagEw(dv);   // so its closet tile can draw it alone
       // the arms run back over the ears, which is most of what shows of a pair of glasses from above
-      const fr=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0], frR=fr&&roleFor(fr,null,P,true);
+      const fr=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0], frR=fr&&roleFor(fr,null,EP,true);
       if(frR&&nL>0&&nR>0&&ew!=='eyeblack'){ const {hc,look:g,hup,Lf,hr}=M, eu=-hr*0.1;
         const rr=hr*Math.max(1.08,(M.hairK||1.03)+0.06), on=(f,sd)=>add(hc,sc(norm(add(sc(g,f),sc(Lf,sd*Math.sqrt(1-f*f)))),rr),sc(hup,eu));
         for(const sd of [1,-1]){ const a=on(0.62,sd), b=on(-0.3,sd);
-          parts.push(capsule(a,b,0.5,frR.m,{gloss:2,noCast:1})); } } } }
+          const cq=capsule(a,b,0.5,frR.m,{gloss:2,noCast:1}); tagEw(cq); parts.push(cq); } } } }
     const ONLY=MO?MO.only:''; if(ONLY){ const hatSet=new Set(parts.slice(M.parts.length));
       for(let i=parts.length-1;i>=0;i--){ const q=parts[i], keep=ONLY==='hat'?(hatSet.has(q)&&q.mat!=='hair'&&q.mat!=='skin'&&!(q.o&&q.o.item==='ew')):ONLY==='ew'?(q.o&&q.o.item==='ew'):ONLY==='club'?(q.o&&q.o.item==='club'):(ONLY==='top'||ONLY==='leg'||ONLY==='shirt'||ONLY==='pants')?(q.o&&q.o.item===ONLY&&q.mat!=='skin'&&q.mat!=='glove'&&q.mat.indexOf('x:#d8b04e')<0):(q.o&&q.o.item==='shoe'&&q.o.side===1); if(!keep) parts.splice(i,1); } }
     const K=MO?MO.K:1; const s=new PQ.Sprite(GW*K,GH*K);
