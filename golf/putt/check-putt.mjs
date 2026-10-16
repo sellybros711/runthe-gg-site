@@ -1119,6 +1119,12 @@ if (!args.includes('--no-browser')){
     claim(db.posted && db.rows, `a Daily Hole played on its day posts to the board once, with the golfer's look, and the card shows the day's rows (${JSON.stringify(db)})`);
     claim(db.lateQuiet, 'a Daily Hole played late from the calendar never posts');
     claim(db.down, 'a server without the board yet says it is on its way, and nothing breaks');
+    // THE LOCKED GATE IS PART OF ITS FENCE: built to the gap and drawn at the land's size on a smoothed walk (it once stood at half)
+    await pg.evaluate(async () => { window.RTT_PUTT.close(); openPutt(); await new Promise(r => setTimeout(r, 300)); window.RTT_PUTT._walkTo(65); });
+    await pg.waitForFunction(() => window.RTT_PUTT._trail && window.RTT_PUTT._trail() && window.RTT_PUTT._trail().plan(), null, { timeout:120000 });
+    const lk = await pg.evaluate(() => window.RTT_PUTT._trail().lockFt());
+    claim(!!lk && Math.abs(lk.ft / lk.box - 1) < 0.2, `the locked gate is drawn at its real size, as wide as its fence's gap (${JSON.stringify(lk)})`);
+    await pg.evaluate(() => { window.RTT_PUTT.close(); });
     // the celebration: a putt that drops is a cheer before the card, an ace a longer one, and the stock ball is white
     await pg.evaluate(() => { if (!document.querySelector('.pt-ov')) openPutt(); window.RTT_PUTT._level(1); });
     await pg.waitForFunction(() => { const P = window.RTT_PUTT._state().play; return P && P.state === 'aim'; }, null, { timeout:120000 });

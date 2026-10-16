@@ -922,7 +922,16 @@ BUILD.wall = function(B, t, i, P){ var kx = kitOf(P.spec.kitAs || P.spec.theme),
 BUILD.fence = function(B, t, i, P){ ringFence(B, P.fence, t.th); };
 // a puzzle's pen: the same fence round its own centre, its gap the gate (or the crate's gap)
 BUILD.pen = function(B, t){ ringFence(B, t, t.th); };
-function ringFence(B, F, th){ var n = 40, kx = kitOf(th), post = baseTh(th) === 'neon' ? '#ff2bd6' : '#7a5a3a', rail = baseTh(th) === 'neon' ? '#2bf0ff' : '#a8865a';
+function fencePal(th){ return baseTh(th) === 'neon' ? { post:'#ff2bd6', rail:'#2bf0ff' } : { post:'#7a5a3a', rail:'#a8865a' }; }
+/* THE GAP IN A RING FENCE, as ringFence leaves it (whole segments of 40 drop out): its middle on the chord, its
+   width post to post and the chord's direction, so the gate fills the gap exactly and lies along the fence. */
+function fenceGap(F){ var n = 40, lo = 9, hi = -9;
+  for (var k = 0; k < n; k++){ var a0 = k / n * 6.2832, a1 = (k + 1) / n * 6.2832, mid = (a0 + a1) / 2, dA = Math.atan2(Math.sin(mid - F.a), Math.cos(mid - F.a)); if (Math.abs(dA) >= F.half + 0.08) continue;
+    var r0 = Math.atan2(Math.sin(a0 - F.a), Math.cos(a0 - F.a)), r1 = r0 + (a1 - a0); lo = Math.min(lo, r0); hi = Math.max(hi, r1); }
+  if (hi < lo){ lo = -F.half; hi = F.half; }
+  var e0 = [F.x + Math.cos(F.a + lo) * F.r, F.y + Math.sin(F.a + lo) * F.r], e1 = [F.x + Math.cos(F.a + hi) * F.r, F.y + Math.sin(F.a + hi) * F.r];
+  return { x:(e0[0] + e1[0]) / 2, y:(e0[1] + e1[1]) / 2, w:Math.hypot(e1[0] - e0[0], e1[1] - e0[1]), ta:Math.atan2(e1[1] - e0[1], e1[0] - e0[0]) }; }
+function ringFence(B, F, th){ var n = 40, kx = kitOf(th), pal = fencePal(th), post = pal.post, rail = pal.rail;
   for (var k = 0; k < n; k++){ var a0 = k / n * 6.2832, a1 = (k + 1) / n * 6.2832, mid = (a0 + a1) / 2, dA = Math.atan2(Math.sin(mid - F.a), Math.cos(mid - F.a)); if (Math.abs(dA) < F.half + 0.08) continue;
     (function(a0, a1){ var ax = F.x + Math.cos(a0) * F.r, ay = F.y + Math.sin(a0) * F.r, bx = F.x + Math.cos(a1) * F.r, by = F.y + Math.sin(a1) * F.r, zb = B.gz(ax, ay);
       B.solid(Math.min(ax, bx) - 0.2, Math.min(ay, by) - 0.2, zb - 0.1, Math.max(ax, bx) + 0.2, Math.max(ay, by) + 0.2, zb + 2.6, function(px, py, pz){ var tt = pz - zb, sd = segD(px, py, ax, ay, bx, by);
@@ -1238,9 +1247,19 @@ function brazierFn(th){ var kx = kitOf(th), c1 = (kx.wall || ['#c8b890'])[0], c2
     if (tt < 1.2) return r < 0.26 ? (tt < 0.16 || tt > 1.06 ? c2 : c1) : (tt < 0.2 && r < 0.55 ? c2 : null);
     if (tt < 1.62){ var rr = 0.3 + (tt - 1.2) * 1.05; if (r > rr) return null; if (tt > 1.48 && r < rr - 0.14) return '#2a1a10'; return ((Math.atan2(dy, dx) * 4 + 10) | 0) % 2 ? c2 : '#4a3a2c'; }
     return null; }, 0.125); }; }
-function lockGateFn(open){ return function(B){ box(B, 0, 0, 3.4, 1, 3, function(dx, dy, tt){ if (Math.abs(dy) > 0.15 || tt > 2.7) return null;
-  if (open) return Math.abs(Math.abs(dx) - 1.5) < 0.15 ? '#7a5a3a' : null; if (Math.abs(dx) > 1.6) return null;
-  if (Math.abs(dx) < 0.3 && Math.abs(tt - 1.4) < 0.3) return '#ffd23a'; return (Math.abs(tt - 0.6) < 0.12 || Math.abs(tt - 2.2) < 0.12 || (dx * 2.5 | 0) % 2 === 0) ? '#7a5a3a' : null; }, 0.125); }; }
+/* THE LOCKED GATE IS PART OF ITS FENCE: the fence's own posts and rails (neon in the arcade, wood elsewhere), as
+   tall as the fence and as wide as its gap, lying along it, with a gold lock plate in the middle. Open, its two
+   leaves stand swung in toward the chest. g is fenceGap's answer. */
+function fenceGateFn(open, g, pal){ var hw = g.w / 2, cs = Math.cos(g.ta), sn = Math.sin(g.ta), S = 3 * hw + 1.2;
+  return function(B){ box(B, 0, 0, S, S, 3.2, function(dx, dy, tt){ var u = dx * cs + dy * sn, v = -dx * sn + dy * cs;
+    if (Math.abs(Math.abs(u) - hw) < 0.2 && Math.abs(v) < 0.2 && tt < 2.95) return tt > 2.75 ? pal.rail : pal.post;   // a gate post at each end, capped
+    var leaf = function(along, off){ if (tt > 2.45 || tt < 0.18) return null; if (Math.abs(tt - 1.0) < 0.13 || Math.abs(tt - 2.15) < 0.13) return pal.rail;
+      return (Math.floor(along / 0.42) % 2 === 0) && Math.abs(off) < 0.09 ? pal.post : null; };
+    if (!open){ if (Math.abs(v) > 0.12 || Math.abs(u) > hw - 0.18) return null;
+      if (Math.abs(u) < 0.34 && Math.abs(tt - 1.55) < 0.32) return Math.abs(u) < 0.07 && Math.abs(tt - 1.5) < 0.13 ? '#3a2a14' : '#ffd23a';
+      return leaf(u + hw, v); }
+    for (var sd = -1; sd <= 1; sd += 2){ var uu = u - sd * (hw - 0.3); if (Math.abs(uu) < 0.12 && v > 0.15 && v < hw - 0.25) return leaf(v, uu); }
+    return null; }, 0.125); }; }
 
 /* -------------------------------------------------------------------------------- the walk */
 /* A SMOOTHED WALK (spec.smooth): a walk is too big a scene to paint more finely in the time a player waits, so a fine world's
@@ -1345,10 +1364,17 @@ function run(box, P, pic, api){
     ctx.drawImage(sp2.cv, rx, ry, w, h); if (!noOcc) occlude(rx, ry, w, h, x, y, z); }
   var brkKind = function(t){ return kitOf(t.th || sp.theme).brk; };
   function prop(name, fn, w, d, h){ return propSprite(name, P, fn, w, d, h); }
+  // a fence's gate, built to its gap in its own colours; the thing that drew the fence names the world it is in
+  function fenceGate(F, kind, open){ var t = P.things.filter(function(x){ return x.k === kind; })[0], th = (t && t.th) || sp.theme, g = fenceGap(F), pal = fencePal(th), S = 3 * g.w / 2 + 1.2;
+    var key = 'fgate:' + (open ? 1 : 0) + ':' + pal.post + ':' + g.w.toFixed(2) + ':' + Math.round(g.ta * 100), sp0 = prop(key, fenceGateFn(open, g, pal), S, S, 3.2);
+    // a smoothed walk doubles its land (up2), so the gate is doubled the same way, or it stands at half the fence's size
+    if (sp0 && P.spec.smooth){ var k2 = key + '|x2'; if (!PROPS[k2]){ var u = up2({ cv:sp0.cv, pr:function(){ return [0, 0]; } }); PROPS[k2] = { cv:u.cv, ax:sp0.ax * 2, ay:sp0.ay * 2 }; } sp0 = PROPS[k2]; }
+    return sp0 ? { s:sp0, x:g.x, y:g.y } : null; }
   var SPR = {
     chest:[0, 0.22, 0.5, 0.78, 1].map(function(l){ return prop('chestv4:' + l, chestFn(l), 4.4, 6.4, 5.4); }),
     gate0:P.gate ? prop('gate0:' + sp.theme, gateFn(false, P), PW * 2 + 1, 1.2, 7) : null, gate1:P.gate ? prop('gate1:' + sp.theme, gateFn(true, P), PW * 2 + 1, 1.2, 7) : null,
-    lock0:P.fence || (P.pen && P.pen.gated) ? prop('lock0', lockGateFn(false), 3.4, 1, 3) : null, lock1:P.fence || (P.pen && P.pen.gated) ? prop('lock1', lockGateFn(true), 3.4, 1, 3) : null,
+    fence0:P.fence ? fenceGate(P.fence, 'fence', false) : null, fence1:P.fence ? fenceGate(P.fence, 'fence', true) : null,
+    pen0:P.pen && P.pen.gated ? fenceGate(P.pen, 'pen', false) : null, pen1:P.pen && P.pen.gated ? fenceGate(P.pen, 'pen', true) : null,
     crate:P.puzzle && P.puzzle.crate ? prop('pzcrate', function(B){ BRK.crate(B, 0, 0); }, 1.8, 1.8, 2) : null
   };
   function fireSprite(t){ return prop('pzfire:' + t.th, brazierFn(t.th), 1.6, 1.6, 2.2); }
@@ -1807,7 +1833,7 @@ function run(box, P, pic, api){
       else if (LOOT[t.k] && t.k !== 'chest' && t.k !== 'prize') drawLoot(t, tsec);
       else if (t.k === 'chest' || t.k === 'prize') drawChest(t, tsec);
       else if (t.k === 'fire') drawFire(t, tsec);
-      else if (t.k === 'pzgate'){ var gs = pzGateOpen() ? SPR.lock1 : SPR.lock0; if (gs) drawSprite(gs, t.x, t.y, pic.zAt(t.x, t.y)); }
+      else if (t.k === 'pzgate'){ var gs = pzGateOpen() ? SPR.pen1 : SPR.pen0; if (gs) drawSprite(gs.s, gs.x, gs.y, pic.zAt(gs.x, gs.y)); }
       else if (t.k === 'crate') drawSprite(SPR.crate, t.x, t.y, pic.zAt(t.x, t.y));
       else if (t.k === 'brk') drawSprite(brkSprite(t), t.x, t.y, pic.zAt(t.x, t.y));
       else if (t.k === 'npc') drawFigure(npcFrame(t), t.x, t.y);
@@ -1816,7 +1842,7 @@ function run(box, P, pic, api){
         if (hs.ph === 'wait'){ var ep = scr(t.x, t.y, pic.zAt(t.x, t.y) + GH + 1.4 + Math.sin(tsec * 4) * 0.25), es = Math.max(2, Math.round(kk)); ctx.fillStyle = '#3a2a14'; ctx.fillRect(Math.round(ep[0] - 2 * es), Math.round(ep[1] - 7 * es), 4 * es, 9 * es); ctx.fillRect(Math.round(ep[0] - 2 * es), Math.round(ep[1] + 3 * es), 4 * es, 4 * es);
           ctx.fillStyle = '#ffd24a'; ctx.fillRect(Math.round(ep[0] - es), Math.round(ep[1] - 6 * es), 2 * es, 7 * es); ctx.fillRect(Math.round(ep[0] - es), Math.round(ep[1] + 4 * es), 2 * es, 2 * es); } }
       else if (t.k === 'gate') drawSprite(gate && gate.open ? SPR.gate1 : SPR.gate0, t.x, P.gate.y, pic.zAt(t.x, P.gate.y));
-      else if (t.k === 'lock'){ var ls = lockOpen ? SPR.lock1 : SPR.lock0; if (ls){ ctx.save(); drawSprite(ls, t.x, t.y, pic.zAt(t.x, t.y)); ctx.restore(); } } }
+      else if (t.k === 'lock'){ var ls = lockOpen ? SPR.fence1 : SPR.fence0; if (ls){ ctx.save(); drawSprite(ls.s, ls.x, ls.y, pic.zAt(ls.x, ls.y)); ctx.restore(); } } }
     lifeAir(tsec);
     if (cloud) drawClouds(tsec);
     // bits that fly
@@ -1889,7 +1915,10 @@ function run(box, P, pic, api){
     stop:function(){ alive = false; if (dlg && dlg.kill) dlg.kill(); window.removeEventListener('resize', onRs); box.removeEventListener('pointerdown', pdn); window.removeEventListener('pointermove', pmv); window.removeEventListener('pointerup', pup);
       window.removeEventListener('pointercancel', pup); window.removeEventListener('blur', pup); window.removeEventListener('keydown', kd, true); window.removeEventListener('keyup', ku, true); },
     // for the checks: where he is, and a way to hold the stick
-    pos:function(){ return [g.x, g.y]; }, fx:function(){ return fxs.length; }, stick:function(vx, vy){ stickV = [vx, vy]; },
+    // the locked gate's sprite measured on screen, in feet, against the box it was built in (a half size one is the bug it fixes)
+    lockFt:function(){ var L = SPR.fence0 || SPR.pen0, F = P.fence || P.pen; if (!L || !F) return null; var a = scr(0, 0, 0), b = scr(1, 0, 0), ppf = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      return { ft:L.s.cv.width * kk / ppf, box:3 * fenceGap(F).w / 2 + 1.2 + 2, gap:fenceGap(F).w }; },
+    pos:function(){ return [g.x, g.y]; }, warp:function(x, y){ g.x = x; g.y = y; g.vx = g.vy = 0; }, fx:function(){ return fxs.length; }, stick:function(vx, vy){ stickV = [vx, vy]; },
     plan:function(){ return P; }, gate:function(){ return gate; }, clouds:function(){ return cloud ? (cloud.part ? 'parting' : 'on') : 'off'; }, life:function(){ return { theme:sp.theme, ships:ships.map(function(s1){ var y1 = shipY(s1); return { x:shipX(y1), y:y1 }; }), flyers:flyers.length, motes:motes.length, balloons:balloons.length, tumbles:tumbles.length, ghosts:ghosts.length, puffs:puffs.length, smoke:smokeSrc.length }; }, host:function(){ return hs ? { x:hs.x, y:hs.y, ph:hs.ph, talking:!!dlg } : null; }, items:function(){ return items; }, goTo:function(x, y){ g.x = x; g.y = y; }, blocked:function(x, y){ return blocked(x, y); }, pz:function(){ return PZ; }, bubble:function(){ return bubble ? bubble.txt : ''; }, plants:function(){ return plants.map(function(q){ return { x:q.x, y:q.y, k:q.t.k, b:q.b, in:q.in }; }); }, view:function(){ return { kk:kk, W:W, H:H, ox:ox, oy:oy }; }, scr:scr };
   return ctl;
 }
