@@ -50,7 +50,10 @@ var BUILDS = [['lean', 'Lean'], ['standard', 'Standard'], ['strong', 'Muscular']
    id stays 'strong' because it is in saves; only the label changed. */
 var BODY = { lean: { bw: -1.5, am: -0.42, dl: 1.45 }, standard: { bw: -0.95, am: -0.26, dl: 1.65 }, strong: { bw: 0.1, am: 0.06, dl: 2.2 } };
 function bodyOf(b){ return BODY[b] || BODY.standard; }
-var FACELESS = '#4a5266';
+/* A real man's skin: one warm mid tone, the same for every real player, so
+   none is given a skin of his own (the owner, 2026-10-16). It was slate grey,
+   which read as a mannequin on the court. */
+var FACELESS = '#9a6b4f';
 var FIXED = { white: '#f2f2f0', black: '#1d1f24', red: '#d13a32', gold: '#e8b33c' };
 
 function ids(list){ return list.map(function(x){ return x[0]; }); }

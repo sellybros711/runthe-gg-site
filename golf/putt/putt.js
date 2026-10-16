@@ -2141,6 +2141,7 @@ var CSS = '\
 .pp-big{font-family:var(--display,inherit);font-size:38px;color:#F1D04A;font-variant-numeric:tabular-nums}.pp-wide{display:block;width:100%;margin-top:8px}.pp-wide small{display:block;font-size:10.5px;font-weight:700;opacity:.75}.pt-go[disabled]{opacity:.55;cursor:default}\
 .pp-nums{display:flex;justify-content:center;gap:16px;margin:8px 0}.pp-nums span{font-size:10.5px;letter-spacing:.1em;color:#9fbfae;font-weight:800;text-transform:uppercase}.pp-nums b{display:block;font-size:24px;color:#fff;letter-spacing:0}\
 .pp-coins{font-weight:900;color:#ffd45e;font-size:16px;margin:4px 0 6px}.pp-reward{background:rgba(241,208,74,.12);border:1px solid rgba(241,208,74,.45);border-radius:11px;padding:8px;margin:8px 0;font-weight:800;font-size:13px;color:#fff}.pp-fine{font-size:11px!important;opacity:.75}\
+.pp-drows{margin-top:8px}.pp-drow{display:flex;align-items:center;gap:8px;padding:6px 4px;border-top:1px solid rgba(255,255,255,.08);font-weight:800}.pp-drow b{width:22px;text-align:right;opacity:.8}.pp-drow span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}.pp-drow em{font-style:normal;opacity:.85}.pp-drow.me{background:rgba(255,210,74,.14);border-radius:8px}.pp-dav{width:22px;height:22px;border-radius:50%;background:#1d3a5c no-repeat;background-size:230%;background-position:50% 8%;image-rendering:pixelated;flex:0 0 auto}\
 .pp-dres{border-radius:16px;padding:16px;text-align:center}.pp-dres .k{font-size:11px;letter-spacing:.14em;font-weight:900;text-transform:uppercase;opacity:.85}.pp-dres .t{font-family:var(--display,inherit);font-size:34px;margin:4px 0}.pp-dres .m{font-size:13px}\
 .pp-hub{position:relative;max-width:none}.pp-hub .pp-map{position:absolute;inset:0;border-top:0;background:#0b1a12}\
 .pp-hdr{position:absolute;left:0;right:0;top:0;z-index:2;display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 26px;background:linear-gradient(rgba(5,10,14,.78),rgba(5,10,14,0));pointer-events:none}\
@@ -3593,10 +3594,24 @@ function dailyFinish(s, par, ms){
   if (!late){ st.streak.n = st.streak.last === y ? st.streak.n + 1 : (st.streak.last === dk ? st.streak.n : 1); st.streak.last = dk; st.streak.best = Math.max(st.streak.best || 0, st.streak.n);
   if (STREAK_REWARD[st.streak.n]) grant(st, STREAK_REWARD[st.streak.n]); }
   psave(st); coins(got, 'Daily Hole');
-  if (!late){ hq('ppDaily', 1); try{ S.host.questDaily && S.host.questDaily(); }catch(e){} try{ S.host.dayPlayed && S.host.dayPlayed(); }catch(e){} }
+  if (!late){ hq('ppDaily', 1); try{ S.host.questDaily && S.host.questDaily(); }catch(e){} try{ S.host.dayPlayed && S.host.dayPlayed(); }catch(e){}
+    // the day's shared board (148_putt_daily_board.sql): the first round of the day stands, a late one never posts
+    try{ if (S.host.signedIn && S.host.signedIn() && S.host.rpc) S.host.rpc('putt_daily_submit', { p_day:dk, p_strokes:s, p_par:par, p_ms:ms == null ? null : Math.round(ms), p_look:S.host.boardLook ? S.host.boardLook() : null }); }catch(e){} }
   if (s < par) try{ S.host.sfx && S.host.sfx('holeGood'); }catch(e){}
   dailyResult(got, dk);
 }
+/* THE DAILY HOLE BOARD. The day's top ten and the player's own row, off the server (putt_daily_board). Signed out
+   it says to sign in; a server that does not answer yet (148 not run) says the board is coming, and nothing breaks. */
+function dailyBoard(dk){ var box = S.ov && S.ov.querySelector('[data-rows]'); if (!box) return; var h = S.host;
+  if (!(h.signedIn && h.signedIn())){ box.innerHTML = '<div class="m">Sign in to see how you stack up.</div>'; return; }
+  box.innerHTML = '<div class="m">Loading the board.</div>';
+  var p = null; try{ p = h.rpc('putt_daily_board', { p_day:dk, p_limit:10 }); }catch(e){}
+  Promise.resolve(p).then(function(rows){ if (!S || !S.ov || !S.ov.contains(box)) return;
+    if (!rows || !rows.length){ box.innerHTML = '<div class="m">' + (rows ? 'Nobody has posted yet. Be the first.' : 'The board is on its way.') + '</div>'; return; }
+    var n = rows[0].players || rows.length;
+    box.innerHTML = rows.map(function(r){ var im = ''; try{ var c = r.look && h.portrait ? h.portrait(r.look) : null; if (c && c.toDataURL) im = '<i class="pp-dav" style="background-image:url(' + c.toDataURL() + ')"></i>'; }catch(e){}
+      return '<div class="pp-drow' + (r.mine ? ' me' : '') + '"><b>' + r.rank + '</b>' + im + '<span>' + esc(r.username) + '</span><em>' + r.strokes + ' · ' + (r.ms != null ? clockTxt(r.ms) : '-') + '</em></div>'; }).join('') +
+      '<div class="m" style="margin-top:6px;opacity:.75">' + n + (n === 1 ? ' player' : ' players') + ' today.</div>'; }); }
 function dailyResult(got, dk){
   var st = pload(); dk = dk || (S.round && S.round.day) || today(); var rec = st.daily[dk], dh = dailyHole(dk), T = THEMES[dh.theme];
   if (!rec) return showHub();
@@ -3606,10 +3621,11 @@ function dailyResult(got, dk){
     <div class="pp-dres"><div class="k">Daily Hole · ' + monthDay(dk) + '</div><div class="nm">' + esc(dh.name) + '</div><div class="m" style="opacity:.8">' + esc(T.name) + '</div><span class="th" data-th></span>\
       <div class="sc"><b>' + rec.s + '</b><span>' + (rec.s === 1 ? 'stroke' : 'strokes') + '<br>par ' + rec.par + '</span>' + (rec.ms != null ? '<b class="pp-tm">' + clockTxt(rec.ms) + '</b><span>time</span>' : '') + '</div>\
       <div class="m" style="color:#ffd9a8;font-weight:800">' + esc(label) + (rec.s < rec.par ? ' · beat par' : '') + (st.streak.best > 1 ? ' · best streak ' + st.streak.best : '') + '</div>' + (got ? (isGuest() ? '<div class="m">' + GUEST_COINS + '</div>' : '<div class="pp-coins">+' + got + ' coins</div>') : '') + '</div>\
-    <div class="pt-card" style="cursor:default"><div class="k">Leaderboard</div><div class="m">Fewest strokes wins and the clock breaks a tie. The shared board needs the server ledger, which is not built yet. Your own result is saved.</div></div>\
+    <div class="pt-card pp-dboard" style="cursor:default" data-board><div class="k">Leaderboard</div><div class="m">Fewest strokes wins. The clock breaks a tie.</div><div class="pp-drows" data-rows></div></div>\
     <button class="pt-go" data-share style="background:#12a08f;color:#fff;padding:14px">Share</button><button class="pt-bt" data-menu style="padding:13px">Calendar</button>\
     <div class="m" style="text-align:center;color:#a9a3c9">' + (rec.late ? 'Played late, so the streak did not move. ' : 'Played. ') + 'Next Daily Hole in ' + hm(msToNextDay()) + '.</div></div>';
   setTimeout(function(){ if (S && S.screen === 'card') thumb(S.ov.querySelector('[data-th]'), dh, 'd' + dk); }, 30);
+  dailyBoard(dk);
   S.ov.querySelector('[data-x]').onclick = function(){ showHub(); }; S.ov.querySelector('[data-menu]').onclick = function(){ showHub('daily'); };
   S.ov.querySelector('[data-share]').onclick = function(e){ var txt = 'Run The Tour · Putt Putt Tour Daily Hole ' + dk + '\n' + T.name + ': ' + dh.name + '\n' + label + ' (' + rec.s + ', par ' + rec.par + ')' + (rec.ms != null ? ' in ' + clockTxt(rec.ms) : '') + '\nrunthe.gg/golf';
     try{ navigator.clipboard.writeText(txt); e.currentTarget.textContent = 'Copied'; }catch(err){} };

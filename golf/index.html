@@ -60,13 +60,13 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- The Putting Green: a tester preview. It draws nothing until puttOn() opens it (see PUTT_TESTERS). -->
-<script defer src="putt/putt.js?v=84"></script>
+<script defer src="putt/putt.js?v=85"></script>
 <script defer src="putt/land.js?v=12"></script>
 <script defer src="putt/hole3d.js?v=16"></script>
 <script defer src="putt/trail.js?v=37"></script>
 <script defer src="putt/mapland.js?v=6"></script>
 <!-- The course golfer in the profile style, asked through g3dOn(). -->
-<script defer src="golfer3d.js?v=5"></script>
+<script defer src="golfer3d.js?v=6"></script>
 <script defer src="tracer3d.js?v=2"></script>
 <!-- Google Consent Mode v2 defaults. Advertising storage is denied until the certified CMP (loaded by
      the AdSense tag below) records the user's choice; the CMP then updates these signals automatically,
@@ -16619,7 +16619,8 @@ function skinSliderNode(){
 // Every tile in the catalog is drawn by PXHD.renderMap: the same light from the top left, the same hue
 // shifted ramps and the same soft outline as the golfer wearing it, so the tile and the sprite agree.
 function pxThumbFrom(cv){ return cv?`<span class="sthumb"><img src="${cv.toDataURL()}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`:pxNoneThumb(); }
-function pxClubThumb(id){ const map=PXG_CLUBS[id]||PXG_CLUBS.driver; const pal=PXG_CLUB_PAL[id]; const P={l:PXG_FIX.l,g:PXG_FIX.g,G:PXG_FIX.G,H:PXG_FIX.H,F:PXG_FIX.F,S:'#e8ebf0'};
+function pxClubThumb(id){ if(String(id).indexOf('pu_')!==0&&PXG_CLUBS[id]){ const g=g3dPic(g3dItemLook({club:id}),'club'); if(g) return g3dTile(g); }
+  const map=PXG_CLUBS[id]||PXG_CLUBS.driver; const pal=PXG_CLUB_PAL[id]; const P={l:PXG_FIX.l,g:PXG_FIX.g,G:PXG_FIX.G,H:PXG_FIX.H,F:PXG_FIX.F,S:'#e8ebf0'};
   const col=(ch)=>{ if(ch==='.'||ch===' ')return null; return (pal&&pal[ch])||P[ch]||null; };
   // zoom onto the club's DISTINCTIVE parts: bbox of everything except the generic shaft ('l'), so a
   // stock set's thumb is its head shape, while decorated clubs (sword/wand/hockey) keep their full art
@@ -16642,13 +16643,15 @@ function pxBallThumb(id){ const map=PXG_BALL[id], pal=PXG_BALL_PAL[id];
   return pxThumbFrom(PXHD.renderMap(map,ch=>ch==='T'?{hex:pal.T||'#e8ebf0',t:3}:(pal[ch]||null),{crop:[32,46,41,55],fitSkip:'T',gloss:2,px:8})); }   /* the ball is six wide at x 34, so 32 centres it */
 // CS414: rocket-cleats thumbnail (a zoomed crop of the boot overlay; 'none' → empty placeholder)
 function pxCleatsThumb(id){ if(!PXG_CLEATS[id]) return `<span class="sthumb color" style="background:#12251b;display:flex;align-items:center;justify-content:center;color:#5e7468;font:700 10px var(--body)">None</span>`;
+  const g=g3dPic(g3dItemLook({cleats:id}),'shoe'); if(g) return g3dTile(g);
   return pxShoeThumb(Object.assign({},S.look||DEFLOOK,{cleats:id})); }
 // One shoe as the golfer wears it (the trail-side foot), drawn by PXHD and cropped close.
 function pxShoeThumb(look){ try{ const src=pxGolferCanvas(look,{only:'shoe',noClub:true,noBall:true}), c=src.width/PXG_W;
     const cv=document.createElement('canvas'), x0=23, y0=48, w=11, h=8; cv.width=w*c; cv.height=h*c;
     cv.getContext('2d').drawImage(src,x0*c,y0*c,cv.width,cv.height,0,0,cv.width,cv.height); return pxThumbFrom(cv); }catch(e){ return pxNoneThumb(); } }
 // A hat colour is the redrawn ball cap in that colour, the same picture the Ball Cap tile shows.
-function pxCapThumb(hatId){ try{ const src=pxGolferCanvas(Object.assign({},S.look||DEFLOOK,{cap:true,hatStyle:'cap',hat:hatId}),{only:'hat',noClub:true,noBall:true}), c=src.width/PXG_W;
+function pxCapThumb(hatId){ const g=g3dPic(g3dItemLook({cap:true,hatStyle:'cap',hat:hatId}),'hat'); if(g) return g3dTile(g);
+  try{ const src=pxGolferCanvas(Object.assign({},S.look||DEFLOOK,{cap:true,hatStyle:'cap',hat:hatId}),{only:'hat',noClub:true,noBall:true}), c=src.width/PXG_W;
     const cv=document.createElement('canvas'), x0=12, y0=2, w=21, h=14; cv.width=w*c; cv.height=h*c;
     cv.getContext('2d').drawImage(src,x0*c,y0*c,cv.width,cv.height,0,0,cv.width,cv.height); return pxThumbFrom(cv); }catch(e){ return pxNoneThumb(); } }
 // CS458: a clean standalone picture of a wearable ITEM by itself (headwear/eyewear/outerwear/legwear) 
@@ -16657,6 +16660,7 @@ function pxNoneThumb(){ return `<span class="sthumb color" style="background:#12
 function pxItemThumb(cat,id){
   if(!id||id==='none') return pxNoneThumb();
   const look=S.look||DEFLOOK, av=avLook(look);
+  if(cat==='hw'||(cat==='ew'&&PXG_EYEWEAR[id])){ const g=g3dPic(g3dItemLook(cat==='hw'?{cap:true,hatStyle:id,hat:look.hat||DEFLOOK.hat}:{eyewear:id}),cat==='hw'?'hat':'ew'); if(g) return g3dTile(g); }
   // The tile shows the item exactly as the golfer wears it: drawn by PXHD on your golfer, then only
   // that item's own pixels kept and cropped. An authored map painted flat would be a second, older
   // picture of the same thing.
@@ -19106,8 +19110,9 @@ function pxIdleSrcAttrs(look){
   return `src="${cur}" data-base="${base}"${br?` data-breathe="${br}"`:''}`;
 }
 function pxAvatarHTML(look,cls){ let au=null; try{ au=auraOf(look); }catch(e){}
-  if(!au) return `<div class="avatarfig pxfig ${cls||''}"><img class="pximg pxidle" ${pxIdleSrcAttrs(look)} alt="Your golfer"></div>`;
-  return `<div class="avatarfig pxfig ${auraCls(au)} ${cls||''}" style="${auraVars(au)}">${auraBack(au)}<img class="pximg pxidle au-fig" ${pxIdleSrcAttrs(look)} alt="Your golfer">${auraParts(au,11)}</div>`; }
+  const g=g3dPic(look||DEFLOOK,'fig'), src=g?g3dSrc(g):pxIdleSrcAttrs(look), idle=g?'':' pxidle';
+  if(!au) return `<div class="avatarfig pxfig ${cls||''}"><img class="pximg${idle}" ${src} alt="Your golfer"></div>`;
+  return `<div class="avatarfig pxfig ${auraCls(au)} ${cls||''}" style="${auraVars(au)}">${auraBack(au)}<img class="pximg${idle} au-fig" ${src} alt="Your golfer">${auraParts(au,11)}</div>`; }
 // CS356f: tiny head-and-shoulders chip of the pixel golfer, for the profile pill etc.
 // crops the 44x56 sprite to the head+shoulders band (rows ~4-26) and centers it in an sz x sz box.
 function pxAvatarChip(look,sz){ sz=sz||22; const pr=sz/22, w=Math.round(44*pr), mt=Math.round(-4*pr), ml=Math.round(-(w-sz)/2);
@@ -19115,11 +19120,14 @@ function pxAvatarChip(look,sz){ sz=sz||22; const pr=sz/22, w=Math.round(44*pr), 
   // are many and rebuilt often, so nothing on them animates
   let au=null; try{ au=auraOf(look||S.look||DEFLOOK); }catch(e){}
   const ast=au?`;--ac:${au.f.col};--aA:${hexRgba(au.f.col,.55)};--aB:${hexRgba(au.f.col,.28)}`:'';
-  return `<span class="pxchip${au?' au-chip':''}" style="width:${sz}px;height:${sz}px${ast}" aria-hidden="true"><img src="${pxGolferURL(look||S.look||DEFLOOK)}" alt="" style="width:${w}px;margin-top:${mt}px;margin-left:${ml}px"></span>`; }
+  const g=g3dPic(look||S.look||DEFLOOK,'chip');
+  const img=g?`<img ${g3dSrc(g)} alt="" style="width:${sz}px;height:${sz}px">`:`<img src="${pxGolferURL(look||S.look||DEFLOOK)}" alt="" style="width:${w}px;margin-top:${mt}px;margin-left:${ml}px">`;
+  return `<span class="pxchip${au?' au-chip':''}" style="width:${sz}px;height:${sz}px${ast}" aria-hidden="true">${img}</span>`; }
 // the FULL standing pixel golfer at a given height (not the head-crop chip) - for the resume card etc.
 function pxFigureHTML(look,h){ h=h||60; look=look||S.look||DEFLOOK;
   let au=null; try{ au=auraOf(look); }catch(e){}
-  const img=`<img class="pxfigsm pxidle${au?' au-fig':''}" ${pxIdleSrcAttrs(look)} alt="Your golfer" style="height:${h}px;width:auto;image-rendering:pixelated;display:block;flex:0 0 auto">`;
+  const g=g3dPic(look,'fig');
+  const img=`<img class="pxfigsm${g?'':' pxidle'}${au?' au-fig':''}" ${g?g3dSrc(g):pxIdleSrcAttrs(look)} alt="Your golfer" style="height:${h}px;width:auto;image-rendering:pixelated;display:block;flex:0 0 auto">`;
   if(!au) return img;
   return `<span class="pxfxwrap ${auraCls(au)}" style="${auraVars(au)}">${auraBack(au)}${img}${auraParts(au, Math.max(6,Math.round(h*0.11)))}</span>`; }
 // the global idle ticker: swap every .pxidle img between its base + breathe frames, all in sync.
@@ -23274,7 +23282,7 @@ var PUTT_ALL_ACCESS=['csel8','runnyj','malikwillislover'];   // every Putt Putt 
    module, or a draw that throws, falls back to the old sprites. ---- */
 var G3D_LIVE=true;
 var G3D_TESTERS=['csel8','runnyj','malikwillislover','slimeyb3','jordantest'];   // tester accounts (lowercased usernames)
-const G3D_API=1;                                          // the golfer3d.js API this page was written against
+const G3D_API=2;                                          // the golfer3d.js API this page was written against (2: pic, cached)
 /* ---- THE 3D COURSE (golf/tracer3d.js): Tour Tracer's tile with volume and light, in the golfer's style.
    Live for everybody. T3D_LIVE=false is the kill switch, back to the tester list. A blocked or stale module, or a draw that
    throws, falls back to the flat tile, so nobody is ever shown a blank hole. ---- */
@@ -23295,6 +23303,35 @@ function g3dOn(){
     return sbSignedIn() && G3D_TESTERS.indexOf((sbUsername||'').toLowerCase())>=0;
   }catch(e){ return false; }
 }
+/* ---- THE 3D MENU GOLFER (golfer3d.js pic()): the golfer at x3 in the menus (the First Tee, Me, the closet, player
+   cards, leaderboards) and the hat, glasses, club and cleat tiles drawn from the same model. It rides the First
+   Tee's switch (ftLive), so testers see it now and everybody sees it when the new home goes live. Anything it
+   cannot draw falls back to today's picture. A drawing costs 10 to 45 ms: a task draws up to G3M_BUDGET ms of new
+   pictures at once, and the rest go up blank and are drawn while the page is idle (a leaderboard of new looks). ---- */
+const G3M_BUDGET=90;
+const G3M_BLANK='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+function g3dMenuOn(){ try{ return ftLive() && g3dOn() && typeof RTT_G3D.pic==='function'; }catch(e){ return false; } }
+let _g3mSpent=0, _g3mN=0; const _g3mQ=[], _g3mIds=new Map();
+function g3dPic(look,part){
+  if(!g3dMenuOn()) return null;
+  try{
+    if(RTT_G3D.cached(look,part)) return RTT_G3D.pic(look,part);
+    if(_g3mSpent<G3M_BUDGET){ if(!_g3mSpent) setTimeout(()=>{ _g3mSpent=0; },0);
+      const t=performance.now(), r=RTT_G3D.pic(look,part); _g3mSpent+=Math.max(1,performance.now()-t); return r; }
+    const k=part+'|'+JSON.stringify(look); let id=_g3mIds.get(k);
+    if(!id){ id='g'+(++_g3mN); _g3mIds.set(k,id); _g3mQ.push([look,part,id]); if(_g3mQ.length===1) g3dDrain(); }
+    return {url:G3M_BLANK,pend:id};
+  }catch(e){ return null; }
+}
+function g3dDrain(){ const idle=window.requestIdleCallback||(f=>setTimeout(()=>f({timeRemaining:()=>12}),40));
+  idle(dl=>{ while(_g3mQ.length&&dl.timeRemaining()>8){ const [look,part,id]=_g3mQ.shift(); _g3mIds.delete(part+'|'+JSON.stringify(look));
+      let r=null; try{ r=RTT_G3D.pic(look,part); }catch(e){}
+      document.querySelectorAll('img[data-g3d="'+id+'"]').forEach(im=>{ im.removeAttribute('data-g3d'); if(r) im.src=r.url; }); }
+    if(_g3mQ.length) g3dDrain(); }); }
+function g3dSrc(g){ return `src="${g.url}"${g.pend?` data-g3d="${g.pend}"`:''}`; }
+function g3dTile(g){ return `<span class="sthumb"><img ${g3dSrc(g)} style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`; }
+// an item drawn alone: on the default golfer, so a tile is the item and not the player's own look
+function g3dItemLook(o){ return Object.assign({},DEFLOOK,{cap:false},o); }
 // screen vector -> the golfer's frames. 0 degrees is up the screen.
 // THE PUTTER YOU EQUIPPED IS THE ONE IN YOUR HANDS on a putt, whatever club set you carry: the 3D golfer draws
 // it in its own finish (its sprite is registered as pu_<id>), and The Magic Wand is the wand.
@@ -23351,6 +23388,8 @@ function puttHost(){
     // the game's own weekly challenges, daily quests and play streak hear about Putt Putt
     quest:function(metric,n){ try{ questWeekly(metric,n); }catch(e){} },
     questDaily:function(){ try{ questDaily('putt'); }catch(e){} },
+    // the look the Daily Hole board draws a player's golfer from, as the other boards keep it
+    boardLook:function(){ try{ return lookForBoard(); }catch(e){ return null; } },
     dayPlayed:function(){ try{ if(sbSignedIn()) bumpStreak(); }catch(e){} },
     balance:function(){ try{ return coinBalance(); }catch(e){ return 0; } },
     passActive:function(){ try{ return dailyPassActive(); }catch(e){ return false; } },
