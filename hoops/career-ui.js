@@ -548,7 +548,8 @@ var CSS = [
 '.cr-namefix{display:inline-block;margin:4px 0 0;padding:4px 8px;border:0;font:800 12px var(--k-f-text);color:var(--k-accent-ink);background:var(--k-accent);cursor:pointer;}',
 '.cr-namefix:focus-visible{outline:2px solid var(--k-gold);outline-offset:2px;}',
 '.cr-chips{display:flex;gap:4px;flex-wrap:wrap;}',
-'.cr-size{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}',
+/* room between the two, or the height ran into the next label: "6\'7\" WEIGHT" */
+'.cr-size{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 22px;}',
 '.cr-step{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto auto;align-items:center;gap:4px 6px;}',
 '.cr-step .k-label{grid-column:1/-1;display:flex;justify-content:space-between;align-items:baseline;gap:6px;}',
 '.cr-step .k-label output{font:700 14px var(--k-f-text);text-transform:none;letter-spacing:0;color:var(--k-ink);font-variant-numeric:tabular-nums;}',
@@ -607,7 +608,9 @@ var CSS = [
 '.cr-look-nofig [aria-label="Facial hair color"] button.dot{width:26px;height:26px;}',
 '.cr-look-nofig [aria-label="Facial hair color"] button:first-child{padding:6px 8px;}',
 '.cr-look-nofig .cr-sw button{padding:6px 9px;}',
-'.cr-cta{position:sticky;bottom:0;z-index:5;display:flex;gap:6px;margin:16px -16px -16px;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(13,17,32,.86),#0d1120 40%);}',
+/* solid, with a short shadow above: through a see-through bar the line
+   above the buttons read as cut in half */
+'.cr-cta{position:sticky;bottom:0;z-index:5;display:flex;gap:6px;margin:16px -16px -16px;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:#0d1120;box-shadow:0 -16px 14px -4px rgba(13,17,32,.92);}',
 '.cr-cta #cr-go{flex:1 1 auto;margin:0;font-size:15px;padding:0 10px;}',
 '.cr-cta #cr-bnext{flex:0 0 auto;margin:0;min-height:52px;display:inline-flex;align-items:center;gap:8px;}',
 '@media (min-width:720px){.cr-opts.cr-pick{grid-template-columns:repeat(3,minmax(0,1fr));}}',
@@ -826,7 +829,7 @@ var CSS = [
 '#s-car .cr-build .lab{display:flex;align-items:center;gap:8px;font:400 8px/1.5 var(--k-f-pixel);color:#fff;letter-spacing:.06em;}',
 '#s-car .cr-build .lab::after{content:"";flex:1;height:2px;background:repeating-linear-gradient(90deg,rgba(143,160,214,.3) 0 4px,transparent 4px 8px);}',
 '#s-car .cr-name input{background:#05070d;}',
-'#s-car .cr-cta{background:linear-gradient(180deg,rgba(7,9,18,0),#070912 40%);}',
+'#s-car .cr-cta{background:#070912;box-shadow:0 -16px 14px -4px rgba(7,9,18,.92);}',
 '/* sheets wear the same plate */',
 '#rtf-locker button{border-radius:0;}',
 '.lk-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px;}',
@@ -842,6 +845,9 @@ var CSS = [
 '.lk-tt{position:relative;}',
 '.lk-tt .k-h1{margin:0;text-shadow:0 3px 0 rgba(0,0,0,.6);}',
 '.lk-sub{margin:4px 0 0;font:700 11px var(--k-f-text);text-transform:uppercase;letter-spacing:.12em;color:var(--k-gold);text-shadow:0 2px 0 rgba(0,0,0,.6);}',
+/* the Locker's tabs stay at the top of the sheet as it scrolls, so Shop, Off
+   court and On court are one tap away from the bottom of a long closet */
+'.lk-tabs{position:sticky;top:calc(-1 * var(--k-s-5));z-index:4;background:var(--k-panel);margin-left:calc(-1 * var(--k-s-4));margin-right:calc(-1 * var(--k-s-4));padding:6px var(--k-s-4) 0;}',
 '.lk-tabs .k-tab{display:inline-flex;flex-direction:column;align-items:center;gap:4px;}',
 '.lk-ti{width:22px;height:22px;image-rendering:pixelated;opacity:.7;}',
 '.lk-tabs .k-tab[aria-selected="true"] .lk-ti{opacity:1;filter:drop-shadow(0 0 6px rgba(242,194,58,.7));}',
@@ -1412,8 +1418,11 @@ function facts(L){
   var s = L.season, v = C.view(L);
   var rec = s ? s.w + '-' + s.l : '-';
   var recSub = s ? seasonTag(s.year) + (s.g ? ' · game ' + s.g : ' · not started') : (L.year ? seasonTag(L.year) : '');
-  var line = v.line ? v.line.pts + ' pts' : '-';
-  var lineSub = v.line ? v.line.reb + ' reb · ' + v.line.ast + ' ast' : 'This season';
+  /* the number alone is the big figure and its unit leads the line under
+     it: "20.1 pts" in the pixel face is wider than a third of a phone, and a
+     number a player reads is never cut ("20. 1...") */
+  var line = v.line ? String(v.line.pts) : '-';
+  var lineSub = v.line ? v.line.pts + ' pts · ' + v.line.reb + ' reb · ' + v.line.ast + ' ast' : 'This season';
   return '<div class="cr-facts">'
     + '<div class="cr-fact"><span class="k">Record</span><b>' + rec + '</b><small>' + esc(recSub) + '</small></div>'
     + '<div class="cr-fact"><span class="k">Your line</span><b>' + line + '</b><small>' + lineSub + '</small></div>'
