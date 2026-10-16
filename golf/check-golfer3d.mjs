@@ -186,6 +186,35 @@ ok('the age reaches the putt and the walk', md.puttAge === 52 && md.walkAge === 
 ok('a birthday draws a new 3D golfer rather than the cached one', md.ageDraws === true);
 ok('a leaderboard look carries the putter', md.board === md.a, md.board);
 
+head('5. THE MENU GOLFER: testers only on the First Tee switch, every item drawn alone, nothing magenta');
+const mn = await pg.evaluate(async () => {
+  const r = { ex: [], none: [], magenta: [], n: 0 }, keepU = sbUser, keepN = sbUsername;
+  sbUser = null; sbUsername = ''; r.out = g3dMenuOn();
+  sbUser = { id: 'x' }; sbUsername = 'somebodyelse'; r.other = g3dMenuOn();
+  r.otherFig = /pxidle/.test(pxFigureHTML(DEFLOOK, 60));
+  sbUser = { id: 't' }; sbUsername = 'CSel8'; r.tester = g3dMenuOn();
+  const magenta = (url) => new Promise(res => { const im = new Image(); im.onload = () => { const c = document.createElement('canvas'); c.width = im.width; c.height = im.height;
+    const x = c.getContext('2d'); x.drawImage(im, 0, 0); const d = x.getImageData(0, 0, c.width, c.height).data; let m = 0;
+    for (let i = 0; i < d.length; i += 4) if (d[i] === 255 && d[i + 1] === 0 && d[i + 2] === 255 && d[i + 3]) m++; res(m); }; im.src = url; });
+  const jobs = [];
+  for (const h of ['cap', 'visor'].concat(Object.keys(PXG_HATS))) jobs.push(['hat', g3dItemLook({ cap: true, hatStyle: h }), h]);
+  for (const e of Object.keys(PXG_EYEWEAR)) jobs.push(['ew', g3dItemLook({ eyewear: e }), e]);
+  for (const c of Object.keys(PXG_CLUBS)) if (c.indexOf('pu_') !== 0) jobs.push(['club', g3dItemLook({ club: c }), c]);
+  for (const c of Object.keys(PXG_CLEATS)) jobs.push(['shoe', g3dItemLook({ cleats: c }), c]);
+  const hairs = Object.keys(PXG_HAIR), tops = Object.keys(PXG_TOPS);
+  hairs.forEach((h, i) => { const L = Object.assign({}, DEFLOOK, { hairStyle: h, cap: i % 2 === 0, top: i % 3 === 1 ? tops[i % tops.length] : '', lefty: i % 2 === 1 }); jobs.push(['fig', L, h]); jobs.push(['chip', L, h]); });
+  for (const [part, L, id] of jobs) { let p; try { p = RTT_G3D.pic(L, part); } catch (e) { r.ex.push(part + ':' + id + ' ' + e); continue; }
+    r.n++; if (!p) { r.none.push(part + ':' + id); continue; } if (await magenta(p.url)) r.magenta.push(part + ':' + id); }
+  r.tile = /data:image\/png/.test(pxItemThumb('hw', 'cowboy')) && /data:image\/png/.test(pxClubThumb('driver'));
+  sbUser = keepU; sbUsername = keepN; return r; });
+ok('signed out keeps today\'s menu golfer', mn.out === false);
+ok('a player who is not a tester keeps today\'s menu golfer', mn.other === false && mn.otherFig === true);
+ok('a tester gets the 3D menu golfer', mn.tester === true);
+ok(`every hat, pair of glasses, club, pair of cleats, hairstyle and chip draws (${mn.n})`, mn.ex.length === 0, mn.ex.slice(0, 4));
+ok('only paint (eyeblack) has nothing to draw alone, so its tile keeps today\'s art', mn.none.every(x => !/^(hat|club|shoe|fig|chip):/.test(x)), mn.none);
+ok('no menu picture has a magenta (unknown material) pixel', mn.magenta.length === 0, mn.magenta);
+ok('the closet tiles use the 3D pictures for a tester', mn.tile === true);
+
 ok('no page errors', errs.length === 0, errs.slice(0, 3));
 await b.close();
 console.log(bad ? `\n${bad} failed` : '\nall good');
