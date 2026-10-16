@@ -10,6 +10,9 @@ name: Golf boost check
 #   (python3 -m http.server 8099 &)
 #   node golf/check-boosts.mjs
 #
+# golf/check-payouts.mjs runs beside it: the weekly Mulli-Spin, lifetime coin achievements, the Head to
+# Head daily cap and the Putt Putt Daily card.
+#
 # No secrets, no deploy.
 
 on:
@@ -17,6 +20,8 @@ on:
     paths:
       - 'golf/index.html'
       - 'golf/check-boosts.mjs'
+      - 'golf/check-payouts.mjs'
+      - 'golf/putt/putt.js'
       - 'golf/boosts-baseline.json'
       - 'supabase/**'
       - '.github/workflows/boost-check.yml'
@@ -25,6 +30,8 @@ on:
     paths:
       - 'golf/index.html'
       - 'golf/check-boosts.mjs'
+      - 'golf/check-payouts.mjs'
+      - 'golf/putt/putt.js'
       - 'golf/boosts-baseline.json'
       - 'supabase/**'
       - '.github/workflows/boost-check.yml'
@@ -51,3 +58,8 @@ jobs:
           (python3 -m http.server 8099 >/dev/null 2>&1 &)
           sleep 2
           node golf/check-boosts.mjs
+      - name: What the economy promises is what it pays
+        run: |
+          (python3 -m http.server 8099 >/dev/null 2>&1 &)
+          sleep 2
+          node golf/check-payouts.mjs

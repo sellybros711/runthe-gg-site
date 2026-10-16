@@ -60,7 +60,7 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- The Putting Green: a tester preview. It draws nothing until puttOn() opens it (see PUTT_TESTERS). -->
-<script defer src="putt/putt.js?v=83"></script>
+<script defer src="putt/putt.js?v=84"></script>
 <script defer src="putt/land.js?v=12"></script>
 <script defer src="putt/hole3d.js?v=16"></script>
 <script defer src="putt/trail.js?v=36"></script>
@@ -4858,9 +4858,10 @@ const ACH=[].concat(
   // ================= EXPANSION 4 (CS290): progression, reputation/sponsors, the moment, course mastery =================
   // ---- Progression: Tour Rep earned from Challenges (CS294: quests/challenges feed your tier, no level) ----
   aT('chalrep','Progression','challengePts',[[1000,'Rising Talent','Earn 1,000 Tour Rep from challenges.',20],[3000,'Seasoned','Earn 3,000 Tour Rep from challenges.',35],[10000,'Well Established','Earn 10,000 Tour Rep from challenges.',60],[25000,'Dedicated','Earn 25,000 Tour Rep from challenges.',100],[60000,'Challenge Legend','Earn 60,000 Tour Rep from challenges.',175]]),
-  // ---- Progression: coins earned (lifetime). get() reads coinsEarnedRaw() DIRECTLY (not via metrics) to
-  // avoid recursion, since coinsEarnedRaw() itself calls achMetrics(). ----
-  [[5000,'Pocket Change','Earn 5,000 coins.',15],[25000,'Well Off','Earn 25,000 coins.',35],[100000,'Coin Collector','Earn 100,000 coins.',60],[500000,'Coin Baron','Earn 500,000 coins.',100],[1000000,'Coin Tycoon','Earn 1,000,000 coins.',175],[5000000,'Coin Mogul','Earn 5,000,000 coins.',250]].map(([g,nm,d,p])=>({id:'coin_'+g,cat:'Progression',name:nm,desc:d,goal:g,pts:p,get:()=>{try{return Math.round(coinsEarnedRaw());}catch(e){return 0;}}})),
+  // ---- Progression: coins earned (lifetime). get() reads lifetimeCoinsEarned() DIRECTLY (not via metrics) to
+  // avoid recursion, since coinsEarnedRaw() itself calls achMetrics(). The owner, 2026-10-16: these count every
+  // coin a player has earned (play, rewards, achievements), never what they spent or bought. ----
+  [[5000,'Pocket Change','Earn 5,000 coins.',15],[25000,'Well Off','Earn 25,000 coins.',35],[100000,'Coin Collector','Earn 100,000 coins.',60],[500000,'Coin Baron','Earn 500,000 coins.',100],[1000000,'Coin Tycoon','Earn 1,000,000 coins.',175],[5000000,'Coin Mogul','Earn 5,000,000 coins.',250]].map(([g,nm,d,p])=>({id:'coin_'+g,cat:'Progression',name:nm,desc:d,goal:g,pts:p,get:()=>{try{return Math.round(lifetimeCoinsEarned());}catch(e){return 0;}}})),
   // ---- Progression: Pro Shop cosmetics owned ----
   [{id:'cos_1', cat:'Progression',name:'Dressed Up',   desc:'Own your first Pro Shop item.',   goal:1, pts:15, get:m=>m.cosmeticsOwned},
    {id:'cos_10',cat:'Progression',name:'Full Wardrobe',desc:'Own 10 Pro Shop items.',          goal:10,pts:40, get:m=>m.cosmeticsOwned},
@@ -4929,7 +4930,7 @@ const ACH=[].concat(
    {id:'leg_years100',cat:'Career & Legacy',name:'Timeless',       desc:'Play 100 tour seasons across your careers.',goal:100,pts:250,get:m=>m.seasons}],
   aT('dailyxl','Daily Challenge','dailyPlayed',[[365,'A Year of Golf','Play the Daily Challenge 365 times.',150],[1000,'Every Single Day','Play the Daily Challenge 1,000 times.',300]]),
   aT('h2hxl','Online','h2hWins',[[2000,'Online Deity','Win 2,000 online matches.',400]]),
-  [{id:'coin_10m',cat:'Progression',name:'Coin Emperor',   desc:'Earn 10,000,000 coins.',  goal:10000000,pts:350,get:()=>{try{return Math.round(coinsEarnedRaw());}catch(e){return 0;}}}],
+  [{id:'coin_10m',cat:'Progression',name:'Coin Emperor',   desc:'Earn 10,000,000 coins.',  goal:10000000,pts:350,get:()=>{try{return Math.round(lifetimeCoinsEarned());}catch(e){return 0;}}}],
   // ---- The Build ----
   [{id:'bld_99',cat:'The Build',name:'The Perfect Golfer',desc:'Build a 99 OVR golfer.',goal:99,pts:250,get:m=>m.maxOvr}]
 );
@@ -6416,6 +6417,7 @@ const DAILY_QUEST_XP=120;      // Tour Rep awarded once/day for finishing all th
 const WEEKLY_CHAL_XP=250;      // Tour Rep awarded per weekly challenge completed
 const WEEKLY_PACK_N=2;         // how many of the week's challenges pay a free pack (the rest pay coins)
 const WEEKLY_CHAL_COINS=750;   // coins paid by a weekly challenge that doesn't carry a pack (halved from 1500, cf. economy trim)
+const WEEKLY_MULLI=1;          // Mulli-Spins every weekly challenge pays, as the Challenges screen has always said (owner, 2026-10-16)
 // Shard faucets. A shard is worth RARITY_PRICE/SHARD_COST in coins: a RARE shard is 15,000 and an EPIC
 // 27,500 (3.4× a Base pack), so these two lines were quietly the largest reward faucet in the game
 // (~215,000 coins/week between them, i.e. ~3 hand-picked items every week). Halved: the daily all-done
@@ -6508,7 +6510,7 @@ function questWeekly(metric,n){ if(!sbSignedIn()||!(n>0)) return; try{ passChalP
   // is worth ~27,500 coins (3.4× a base pack), so paying in shards would have made the leak bigger, not smaller.
   // Every weekly still pays its Tour Rep + a shard, so the targeted-item path is untouched.
   const wset=weeklySet();
-  newly.forEach(c=>{ addXp(WEEKLY_CHAL_XP);
+  newly.forEach(c=>{ addXp(WEEKLY_CHAL_XP); addMulliSpin(WEEKLY_MULLI);
     const idx=wset.findIndex(x=>x&&x.id===c.id);
     const top=(idx>=0 && idx<WEEKLY_PACK_N);
     if(top){ if(typeof grantFreePack==='function') grantFreePack(1,{silent:true}); }
@@ -6544,7 +6546,7 @@ function challengesNode(){
   const wr=set.map(c=>{ const v=Math.min(w.prog[c.metric]||0,c.target), ok=!!w.done[c.id];
     return `<div class="wg-row${ok?' done':''}"><span>${ok?'✓ ':''}${c.label}</span><span class="wg-v" style="${ok?'':'color:var(--muted)'}">${v}/${c.target}</span></div>`; }).join('');
   const wDone=weekChalDoneCount(w), wTot=set.length;
-  el.appendChild($(`<div class="wg-panel${wDone>=wTot?' done':''}"><div class="wg-hd"><span>Weekly Challenges</span><span class="small muted" style="letter-spacing:0;text-transform:none">${wDone}/${wTot} · each → +${WEEKLY_CHAL_XP} Rep · ◆1 shard · first ${WEEKLY_PACK_N} → 🎁 pack + ◆epic</span></div>${wr}</div>`));
+  el.appendChild($(`<div class="wg-panel${wDone>=wTot?' done':''}"><div class="wg-hd"><span>Weekly Challenges</span><span class="small muted" style="letter-spacing:0;text-transform:none">${wDone}/${wTot} · each → +${WEEKLY_CHAL_XP} Rep · 🌀${WEEKLY_MULLI} · ◆1 shard · first ${WEEKLY_PACK_N} → 🎁 pack + ◆epic</span></div>${wr}</div>`));
   try{ const pc=passChalHTML(); if(pc) el.appendChild($(pc)); }catch(e){}   // the Tour Pass's own three, below the Rep ones
   return el;
 }
@@ -10147,6 +10149,9 @@ function coinSave(s){ LS.set(acctKey('bag_coins'), s); if(typeof cloudPush==='fu
 function coinsEarned(){ const s=coinState();
   const derived=Math.max(0, coinsEarnedRaw()-s.baseline-(s.forfeit||0));
   return derived + (s.bonus||0); }
+// every coin ever earned, for the coin achievements: the derived pool before the COIN_EPOCH re-baseline counts
+// (it was earned), skipped seasons' forfeits do not, and spending or bought coins never move it
+function lifetimeCoinsEarned(){ const s=coinState(); return Math.max(0, coinsEarnedRaw()-(s.forfeit||0)) + (s.bonus||0); }
 let _coinsSuppressToast=false;   // set while finalizing a skipped season so the "+N coins" toast doesn't flash
 // deterministic RAW earned total - every entry here is a "way to earn coins"; add terms to add more
 function coinsEarnedRaw(){ let e=0; const ac=(achState().unlocked)||{};
@@ -43832,6 +43837,12 @@ function h2hFinishWatch(){ if(S.h2h.reported) return; S.h2h.reported=true;
   h2hCaptureAch();
   if(S.h2h.bots){ h2hRecordBotMatch(); return; }
   h2hReport(); }
+// Head to Head win coins stop at H2H_COIN_DAY_CAP a day (the owner, 2026-10-16), bot matches included, so wins
+// can't be farmed. The cap counts base coins; the Tour Pass multiplier still applies to what is paid.
+const H2H_COIN_DAY_CAP=10000;
+function h2hWinCoins(){ const d=todayKey(); let r=LS.get(acctKey('bag_h2hcoins'),null);
+  if(!r||typeof r!=='object'||r.day!==d) r={day:d,n:0};
+  const pay=Math.max(0, Math.min(COIN_H2H_WIN, H2H_COIN_DAY_CAP-(r.n|0))); r.n=(r.n|0)+pay; LS.set(acctKey('bag_h2hcoins'),r); return pay; }
 // online-match achievement flags: matches played + wins (overall + per mode; deterministic local win
 // determination, same on every client). Fires once per finished match.
 function h2hCaptureAch(){ if(!sbSignedIn()) return;
@@ -43839,7 +43850,7 @@ function h2hCaptureAch(){ if(!sbSignedIn()) return;
   const key={'1v1':'h2h1v1Wins','bestball':'h2hBbWins','scramble':'h2hScWins','ffa':'h2hFfaWins'}[mode]||'h2hXWins';
   const inc={h2hMatches:1}; if(won){ inc.h2hWins=1; inc[key]=1; }
   recordAchEvent({inc}); const fresh=evaluateAch&&evaluateAch(); if(fresh&&fresh.length&&typeof achToast==='function') achToast(fresh);
-  if(won && !S.h2h._coined){ S.h2h._coined=true; awardPlayCoins(COIN_H2H_WIN, 'online win'); }   // coins for winning an online match
+  if(won && !S.h2h._coined){ S.h2h._coined=true; const c=h2hWinCoins(); if(c>0) awardPlayCoins(c, 'online win'); }   // coins for winning an online match, to H2H_COIN_DAY_CAP a day
   // Challenges: daily quest "Play a Head to Head match" + weekly matches/wins
   questDaily('h2h'); questWeekly('h2hMatches',1); if(won) questWeekly('h2hWins',1); }
 async function h2hReport(){

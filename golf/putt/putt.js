@@ -2704,7 +2704,7 @@ function showHub(tid){
         <span class="t">' + esc(dh.name) + '</span>\
         <span class="m">' + (drec && drec.done ? 'You shot ' + drec.s + ' (par ' + drec.par + ')' + (drec.ms != null ? ' in ' + clockTxt(drec.ms) : '') : esc(dT.name) + ' · par ' + buildHole(dh).par + ' · timed, one try') + '</span>\
         <span class="pp-dends">' + (drec && drec.done ? 'Next hole in ' : 'Ends in ') + '<b data-dcount>' + hms(msToNextDay()) + '</b></span></span>\
-      <span class="pp-dside"><span class="g">' + (drec && drec.done ? 'Result' : 'Play') + '</span><span class="rw">' + (drec && drec.done ? 'Played' : '+' + COIN_DAILY + ' coins') + '</span></span></button>') +
+      <span class="pp-dside"><span class="g">' + (drec && drec.done ? 'Result' : 'Play') + '</span><span class="rw">' + (drec && drec.done ? 'Played' : 'Up to ' + (COIN_DAILY + COIN_DAILY_PAR) + ' coins') + '</span></span></button>') +
     '<div class="pp-wchip" data-wchip></div>' + (TOURS.main && !cal ? '<button class="pp-bagb" data-bag aria-label="Your Bag">Bag</button><button class="pp-bagb pp-closb" data-closet aria-label="Your closet">Closet</button>' : '') +
     '<div class="pp-tabs" role="tablist"><button data-tab="main" class="' + (mem || lab || cal ? '' : 'on') + '" role="tab">Putt Putt Tour</button><button data-tab="members" class="' + (mem ? 'on' : '') + '" role="tab"><i>★</i> Members' + (membersOpen() ? '' : ' <s>🔒</s>') + '</button>' + (labOpen() ? '<button data-tab="lab" class="' + (lab ? 'on' : '') + '" role="tab">Lab</button>' : '') +
     '<button data-tab="daily" class="' + (cal ? 'on' : '') + '" role="tab">Daily' + (drec && drec.done ? '' : '<u class="pp-tdot" aria-label="not played today"></u>') + '</button></div>' + '</div>';
