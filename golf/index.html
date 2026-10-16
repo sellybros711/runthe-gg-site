@@ -60,10 +60,10 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- Putt Putt Tour. It draws nothing until puttOn() opens it (see PUTT_TESTERS and PUTT_LIVE). -->
-<script defer src="putt/putt.js?v=87"></script>
+<script defer src="putt/putt.js?v=88"></script>
 <script defer src="putt/land.js?v=12"></script>
 <script defer src="putt/hole3d.js?v=16"></script>
-<script defer src="putt/trail.js?v=37"></script>
+<script defer src="putt/trail.js?v=38"></script>
 <script defer src="putt/mapland.js?v=6"></script>
 <!-- The course golfer in the profile style, asked through g3dOn(). -->
 <script defer src="golfer3d.js?v=11"></script>
@@ -23390,6 +23390,11 @@ function puttHost(){
     // a Putt Putt greeter's face for the dialogue box: the profile picture renderer, in their look
     // the menus' 3D head chip, as an <img> (a pending one is filled in when the page is idle), or '' without it
     chip:function(look){ try{ const g=g3dPic(look?Object.assign({},DEFLOOK,look):modeLook(S.look,'putt'),'chip'); return g?`<img ${g3dSrc(g)} alt="">`:''; }catch(e){ return ''; } },
+    // the ball you wear, painted from its closet art for the Putt Putt green (looks only), or null for the white ball
+    ballArt:function(){ try{ const id=(S.look||{}).ball, map=PXG_BALL[id], pal=PXG_BALL_PAL[id]; if(!map||!pal) return null;
+      const cv=PXHD.renderMap(map,ch=>ch==='T'?null:(pal[ch]||null),{crop:[33,46,40,53],gloss:2,px:4}); return cv?{cv,k:8/6,tint:pal.C||pal.h||'#ffffff'}:null; }catch(e){ return null; } },
+    // the golfer facing you, standing, putter in hand: the hole-out celebration hops this frame
+    golferCheer:function(){ try{ if(!g3dOn()||!window.RTT_G3D.frame) return null; return window.RTT_G3D.frame(modeLook(S.look,'walk'),180,'walk',8); }catch(e){ return null; } },
     portrait:function(look){ try{ return pxGolferCanvas(Object.assign({},DEFLOOK,look||{}),{noBall:true}); }catch(e){ return null; } },
     // the 3D modelled golfer the tracer plays with, standing side-on to the putt: address, take back, through
     golfer3:function(vx,vy){ return g3dOn()?g3dSet(S.look,vx,vy,'putt'):null; },
