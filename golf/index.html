@@ -60,7 +60,7 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- The Putting Green: a tester preview. It draws nothing until puttOn() opens it (see PUTT_TESTERS). -->
-<script defer src="putt/putt.js?v=80"></script>
+<script defer src="putt/putt.js?v=83"></script>
 <script defer src="putt/land.js?v=12"></script>
 <script defer src="putt/hole3d.js?v=16"></script>
 <script defer src="putt/trail.js?v=36"></script>
@@ -4926,7 +4926,14 @@ const ACH=[].concat(
   [{id:'bld_99',cat:'The Build',name:'The Perfect Golfer',desc:'Build a 99 OVR golfer.',goal:99,pts:250,get:m=>m.maxOvr}]
 );
 const ACH_BY_CAT=ACH_CATS.map(c=>({cat:c, list:ACH.filter(a=>a.cat===c)}));
-const ACH_TOTAL=ACH.length, ACH_TOTAL_PTS=ACH.reduce((s,a)=>s+a.pts,0);
+// The Pro Tour's own achievements, counted before Putt Putt hands over its list (achAddPutt). G.O.A.T. is every
+// one of these; Putt Putt's grow with its tour (a new world brings its own), so they add Rep but never move the summit.
+const ACH_TOUR_CATS=ACH_BY_CAT.length, ACH_TOUR_TOTAL=ACH.length, ACH_TOTAL_PTS=ACH.reduce((s,a)=>s+a.pts,0), ACH_TOUR_IDS=new Set(ACH.map(a=>a.id));
+let ACH_TOTAL=ACH_TOUR_TOTAL;
+// TOUR REP RANKS ON FIXED POINTS (owner, 2026-10-16). They were fractions of every point available, so each new
+// achievement would have pushed everybody's rank down. REP_BASE is that total as it stood (39,100), so every rank
+// sits exactly where it did, and no achievement added since, Putt Putt's or the Pro Tour's, moves one.
+const REP_BASE=39100;
 // Tour Rep ranks scale to the total points available (thresholds as % of all points). A long ladder -
 // cheap early ranks (quick first rank-ups) that get progressively more expensive, so climbing to the top
 // is a genuine long-haul grind. The milestone names the rest of the game couples to (Amateur / Journeyman /
@@ -4938,7 +4945,7 @@ const REP_TIERS=[
   ['Tour Pro',.10],    ['Established Pro',.135],['Contender',.175], ['Challenger',.22],   ['Rising Star',.27],
   ['Star',.33],        ['All-Star',.40],      ['Standout',.47],    ['Champion',.55],     ['Elite',.63],
   ['Superstar',.72],   ['Legend',.81],        ['Immortal',.90],    ['Icon',.965]
-].map(([name,f])=>({name, at:Math.round(f*ACH_TOTAL_PTS)}));
+].map(([name,f])=>({name, at:Math.round(f*REP_BASE)}));
 // LS.get's default only applies when the key is missing entirely, a key whose stored value is the
 // literal `null` (see mergeAch/mergeStreak/etc. below) comes back as null, not the default, so every
 // reader here also needs its own `||{...}` fallback before touching a sub-property.
@@ -4956,7 +4963,8 @@ function collectorMetrics(){
       if(paid>0 && have>=paid) out.setsComplete++; });
   }catch(e){}
   return out; }
-function achMetrics(){ const lt=badgeMetrics(); const f=achState().flags; const ds=dailyStats(); const sk=LS.get(acctKey('bag_streak'),{})||{};
+function achMetrics(){ achAddPutt(); return Object.assign(achMetrics0(), puttAchStats()); }
+function achMetrics0(){ const lt=badgeMetrics(); const f=achState().flags; const ds=dailyStats(); const sk=LS.get(acctKey('bag_streak'),{})||{};
   return Object.assign({}, f, {
     wins:lt.wins, majors:lt.majors, top10:lt.top10, made:lt.made, played:lt.played, earnings:lt.earnings, net:lt.net,
     profitSeasons:lt.profitSeasons, ironSeasons:lt.ironSeasons, moneyLeaderSeasons:lt.moneyLeaderSeasons,
@@ -5019,24 +5027,47 @@ function captureDailyFeats(holes,total,courseKey,isRec){ const st=achState(), f=
 function achDone(id){ return !!achState().unlocked[id]; }
 // CS294: Tour Rep = achievement points + challenge points (daily quests / weekly challenges feed your tier;
 // there is no separate "level"). Kept in a separate store (bag_xp) and summed only here, so the two pools
-// never corrupt each other at rest. GOAT still requires completing every achievement (see repTierFor).
+// never corrupt each other at rest. GOAT still requires completing every Pro Tour achievement (see repTierFor).
 function challengeRepPts(){ try{ return xpTotal(); }catch(e){ return 0; } }
 function achPoints(){ return (achState().pts||0) + challengeRepPts(); }
 function achCount(){ const u=achState().unlocked; return Object.keys(u).length; }
-const GOAT_TIER={name:'G.O.A.T.', at:ACH_TOTAL_PTS};   // the apex rank, every achievement complete
+// PUTT PUTT'S ACHIEVEMENTS join the Trophy Room once the module is here and the player has Putt Putt (puttOn): its own
+// list (RTT_PUTT.achDefs, which grows with its worlds, read off its record so they are retroactive) and the Two Tours
+// ones, which need both games. They are marked pp: they add Rep and coins, and G.O.A.T. does not count them.
+const ACH_TWO_TOURS=[
+  {id:'tt_both',     cat:'Two Tours',name:'Two Tours',              desc:'Win a Pro Tour event and beat a Putt Putt world.',               goal:1,pts:40, get:m=>(m.wins>0&&m.pp_worlds>0)?1:0},
+  {id:'tt_built',    cat:'Two Tours',name:'Built for the Big Stage',desc:'Win a Pro Tour event with a putter you built in Putt Putt.',     goal:1,pts:60, get:m=>m.ppPutterWins||0},
+  {id:'tt_built5',   cat:'Two Tours',name:'Workshop Wonder',        desc:'Win 5 Pro Tour events with a putter you built in Putt Putt.',    goal:5,pts:100,get:m=>m.ppPutterWins||0},
+  {id:'tt_homemade', cat:'Two Tours',name:'Homemade Major',         desc:'Win a major with a putter you built in Putt Putt.',              goal:1,pts:120,get:m=>m.ppPutterMajors||0},
+  {id:'tt_range',    cat:'Two Tours',name:'Full Range',             desc:'Win a major and perfect a Putt Putt world.',                     goal:1,pts:100,get:m=>(m.majors>0&&m.pp_perfect>0)?1:0}];
+let _achPutt=false;
+function achAddPutt(){ if(_achPutt) return true;
+  try{ if(!puttOn()||!window.RTT_PUTT.achDefs) return false;
+    RTT_PUTT.achDefs().map(d=>Object.assign({},d,{get:m=>m[d.key]||0})).concat(ACH_TWO_TOURS).forEach(d=>{
+      if(ACH_TOUR_IDS.has(d.id)||ACH.some(a=>a.id===d.id)) return;
+      const a=Object.assign({},d,{pp:true}); ACH.push(a);
+      let c=ACH_BY_CAT.find(x=>x.cat===a.cat); if(!c){ c={cat:a.cat,list:[]}; ACH_BY_CAT.push(c); ACH_CATS.push(a.cat); } c.list.push(a); });
+    // Putt Putt's shelves sit together after the Pro Tour's, in its own order, and Two Tours closes the room
+    const order=(RTT_PUTT.achCats?RTT_PUTT.achCats():[]).concat(['Two Tours']), rank=c=>{ const i=order.indexOf(c); return i<0?order.length:i; };
+    const tail=ACH_BY_CAT.splice(ACH_TOUR_CATS).sort((x,y)=>rank(x.cat)-rank(y.cat)); ACH_BY_CAT.push(...tail);
+    ACH_CATS.splice(ACH_TOUR_CATS); ACH_CATS.push(...tail.map(x=>x.cat));
+    ACH_TOTAL=ACH.length; _achPutt=true; return true; }catch(e){ return false; } }
+function puttAchStats(){ try{ return (_achPutt&&window.RTT_PUTT.achStats)?RTT_PUTT.achStats(puttHost()):{}; }catch(e){ return {}; } }
+function achTourCount(){ const u=achState().unlocked; return Object.keys(u).filter(id=>ACH_TOUR_IDS.has(id)).length; }   // G.O.A.T. counts these
+const GOAT_TIER={name:'G.O.A.T.', at:ACH_TOTAL_PTS};   // the apex rank, every Pro Tour achievement complete
 const REP_ORDER=REP_TIERS.map(t=>t.name).concat(['G.O.A.T.']);   // rank ladder, low → high
 function repRankIndex(name){ return REP_ORDER.indexOf(name); }
 // core tier resolver: pts + completion-count. GOAT requires 100% (count) OR maxed points (other players).
 function repTierFor(pts, count){
-  // GOAT = every achievement complete. (Challenge points can lift you to Icon, but the summit needs 100%.)
+  // GOAT = every Pro Tour achievement complete. (Challenge points can lift you to Icon, but the summit needs 100%.)
   // count==null is the leaderboard "other player" path where only pts are known → allow maxed pts to show GOAT.
-  if(count!=null ? count>=ACH_TOTAL : pts>=ACH_TOTAL_PTS) return {tier:GOAT_TIER, next:null};
+  if(count!=null ? count>=ACH_TOUR_TOTAL : pts>=ACH_TOTAL_PTS) return {tier:GOAT_TIER, next:null};
   let t=REP_TIERS[0],nx=null; for(let i=0;i<REP_TIERS.length;i++){ if(pts>=REP_TIERS[i].at){t=REP_TIERS[i]; nx=REP_TIERS[i+1]||null;} }
   if(!nx) nx=GOAT_TIER;
   return {tier:t, next:nx}; }
-function repTier(pts){ pts=pts==null?achPoints():pts; return repTierFor(pts, achCount()); }
+function repTier(pts){ pts=pts==null?achPoints():pts; return repTierFor(pts, achTourCount()); }
 function repAtLeast(name){ return repRankIndex(repTier().tier.name) >= repRankIndex(name); }   // for rep-gated cosmetics
-function repTierName(pts){ return repTierFor(pts, pts>=ACH_TOTAL_PTS?ACH_TOTAL:0).tier.name; }   // pts-only (e.g. other players on the board)
+function repTierName(pts){ return repTierFor(pts, pts>=ACH_TOTAL_PTS?ACH_TOUR_TOTAL:0).tier.name; }   // pts-only (e.g. other players on the board)
 // each Tour Rep tier gets its OWN distinct text effect (CSS classes .rept-*) on the leaderboard, escalating
 // from flat hues at the bottom to gradients + glow in the middle to animated shimmers at the very top.
 const REP_CLASS={
@@ -5164,10 +5195,11 @@ function evaluateAch(){ if(!sbSignedIn()) return [];
     if(S.career && S.career.sponsors){ const sps=S.career.sponsors; if(['hat','shirt'].filter(sl=>sps[sl]&&sps[sl].brand).length>=2) recordAchEvent({set:{bothSponsors:1}}); }
   }catch(e){}
   const s=achState(); const m=achMetrics(); const fresh=[]; const cp=challengeRepPts();
-  const beforeRank=repTierFor((s.pts||0)+cp, Object.keys(s.unlocked).length).tier.name;
+  const tourDone=()=>Object.keys(s.unlocked).filter(id=>ACH_TOUR_IDS.has(id)).length;
+  const beforeRank=repTierFor((s.pts||0)+cp, tourDone()).tier.name;
   ACH.forEach(a=>{ if(!s.unlocked[a.id] && a.get(m)>=a.goal){ s.unlocked[a.id]=todayKey(); s.pts=(s.pts||0)+a.pts; fresh.push(a); } });
   if(fresh.length){
-    const afterRank=repTierFor((s.pts||0)+cp, Object.keys(s.unlocked).length).tier.name;
+    const afterRank=repTierFor((s.pts||0)+cp, tourDone()).tier.name;
     if(repRankIndex(afterRank)>repRankIndex(beforeRank)){ S.freshRep={from:beforeRank,to:afterRank}; track('rep_up',{to:afterRank}); }
     LS.set(acctKey('bag_ach'),s); sbSyncStats&&sbSyncStats(); cloudPush(); track('ach_unlocked',{n:fresh.length,ids:fresh.map(a=>a.id).join(',')});
   }
@@ -5178,7 +5210,7 @@ function repUpHTML(r){ if(!r) return ''; const goat=r.to==='G.O.A.T.';
   return `<div class="scout" style="margin:4px auto 12px;max-width:520px;text-align:center;border-color:#f6cd74;background:linear-gradient(180deg,rgba(241,208,74,.16),rgba(241,208,74,.03))">
     <div class="small" style="letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:800">Tour Rep promotion</div>
     <div style="font-family:var(--serif);font-weight:800;font-size:24px;color:var(--gold);margin:4px 0 1px">${goat?'🐐 ':'🏅 '}You're now ${goat?'the ':'a '}${esc(r.to)}!</div>
-    <div class="small muted">Climbed from ${esc(r.from)}${goat?', every achievement complete.':'. Keep playing to climb the next rank.'}</div></div>`; }
+    <div class="small muted">Climbed from ${esc(r.from)}${goat?', every Pro Tour achievement complete.':'. Keep playing to climb the next rank.'}</div></div>`; }
 // celebratory list of just-unlocked achievements (shown on the summary / career-end)
 function achEarnedHTML(list){ if(!list||!list.length) return '';
   // one achievement per row: name (with points) on the LEFT, description on the RIGHT, single line, no wrap
@@ -5201,7 +5233,7 @@ function repHeaderHTML(){ const pts=achPoints(), r=repTier(pts), done=achCount()
       <div style="text-align:right"><div style="font-weight:800;font-size:18px;color:var(--oncard)">${pts} pts</div>
         <div class="small muted">${done}/${ACH_TOTAL} done</div></div></div>
     <div style="margin-top:9px;height:8px;border-radius:5px;background:rgba(255,255,255,.08);overflow:hidden"><span style="display:block;height:100%;width:${Math.round(frac*100)}%;background:linear-gradient(90deg,#e6a91f,#f6cd74)"></span></div>
-    <div class="small muted center" style="margin-top:5px">${goat?'<b style="color:#f6cd74">Every achievement complete. You are the Greatest Of All Time.</b>':(r.next?`${hi-pts} pts to <b style="color:var(--gold)">${r.next.name}</b>${r.next.name==='G.O.A.T.'?' (complete every achievement)':''}`:'')}</div></div>`; }
+    <div class="small muted center" style="margin-top:5px">${goat?'<b style="color:#f6cd74">Every Pro Tour achievement complete. You are the Greatest Of All Time.</b>':(r.next?`${hi-pts} pts to <b style="color:var(--gold)">${r.next.name}</b>${r.next.name==='G.O.A.T.'?' (complete every Pro Tour achievement)':''}`:'')}</div></div>`; }
 // LIVE Tour Rep meter for the season summary / career-end: counts pts from old→new and fills the bar in
 // real time, flowing through any rank-up so the player watches their progress climb. Animates once per
 // screen (re-renders show the final state); shown when you unlocked achievements that moment.
@@ -5228,7 +5260,7 @@ function seasonRepNode(oldPts, list){
     const lo=r.tier.at, hi=r.next?r.next.at:ACH_TOTAL_PTS, frac=hi>lo?Math.max(0,Math.min(1,(cur-lo)/(hi-lo))):1;
     tierEl.innerHTML=(goat?ic('goat')+' ':'')+esc(r.tier.name); ptsEl.textContent=c+' pts'; barEl.style.width=(frac*100).toFixed(1)+'%';
     if(gainEl) gainEl.textContent='+'+(c-oldPts);
-    footEl.innerHTML=goat?'<b style="color:#f6cd74">Every achievement complete.</b>':(r.next?`${hi-c} pts to <b style="color:var(--gold)">${esc(r.next.name)}</b>`:''); }
+    footEl.innerHTML=goat?'<b style="color:#f6cd74">Every Pro Tour achievement complete.</b>':(r.next?`${hi-c} pts to <b style="color:var(--gold)">${esc(r.next.name)}</b>`:''); }
   // --- the unlocked-achievement list, revealed one at a time ---
   // CS483: cap the visible rows (mobile fit) - the meter still climbs the full gain; any overflow shows a "+N more".
   const REP_MAX=4, shown=list.slice(0,REP_MAX), extra=list.length-shown.length;
@@ -5252,7 +5284,7 @@ function seasonRepNode(oldPts, list){
   return wrap;
 }
 // collapsible achievement checklist by category (checkbox fills on completion; progress bar while in progress)
-function achListHTML(){ const m=achMetrics(), u=achState().unlocked, open=S.achOpen||{};
+function achListHTML(){ achAddPutt(); const m=achMetrics(), u=achState().unlocked, open=S.achOpen||{};
   return ACH_BY_CAT.map(({cat,list})=>{ const got=list.filter(a=>u[a.id]).length, isOpen=!!open[cat];
     const rows=list.map(a=>{ const done=!!u[a.id], prog=a.get(m), pct=Math.min(100,Math.round(100*prog/a.goal));
       return `<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 4px;border-top:1px solid rgba(255,255,255,.05)">
@@ -6413,9 +6445,13 @@ const DAILY_QUEST_DEFS=[
   {k:'h2h',    label:'Play a Head to Head match',     hint:'Play Online'},
   {k:'share',  label:'Share a result',                hint:'Friend or social'},
 ];
+// PUTT PUTT IN THE DAILY QUESTS. With Putt Putt (puttOn) the day's quests carry its Daily Hole too, so the all-done
+// Tour Rep reward asks for a little of both games. Everything that lists or counts the quests reads dailyQuestDefs().
+const PUTT_QUEST={k:'putt', label:'Play the Putt Putt Daily Hole', hint:'Putt Putt'};
+function dailyQuestDefs(){ let on=false; try{ on=puttOn(); }catch(e){} return on?DAILY_QUEST_DEFS.concat([PUTT_QUEST]):DAILY_QUEST_DEFS; }
 function dailyQuests(){ const t=todayKey(); let q=LS.get(acctKey('bag_dailyquests'),null);
   if(!q||typeof q!=='object'||q.day!==t) q={day:t,daily:0,season:0,h2h:0,share:0,xpDone:0}; return q; }
-function dailyQuestsAllDone(q){ q=q||dailyQuests(); return DAILY_QUEST_DEFS.every(d=>q[d.k]); }
+function dailyQuestsAllDone(q){ q=q||dailyQuests(); return dailyQuestDefs().every(d=>q[d.k]); }
 function questDaily(type){ if(!sbSignedIn()) return; const q=dailyQuests(); q[type]=1;
   let leveled=null;
   if(dailyQuestsAllDone(q) && !q.xpDone){ q.xpDone=1; LS.set(acctKey('bag_dailyquests'),q); if(typeof cloudPush==='function')cloudPush(); leveled=addXp(DAILY_QUEST_XP); try{ shardEarn(DAILY_QUEST_SHARD,1); }catch(e){} S.questDailyJustDone=true; try{ recordAchEvent({inc:{questDaysDone:1}}); evaluateAch(); }catch(e){} track('daily_quests_done'); }
@@ -6435,12 +6471,22 @@ const WEEKLY_POOL=[
   {id:'beat3', label:'Beat the Pro 3 times',        metric:'dailyBeats',  target:3,  mode:'daily'},
   {id:'beat5', label:'Beat the Pro 5 times',        metric:'dailyBeats',  target:5,  mode:'daily'},
   {id:'daily5',label:'Play the Daily 5 times',      metric:'dailyPlays',  target:5,  mode:'daily'},
+  // Putt Putt's (mode putt): one of these takes the week's fourth slot when the player has Putt Putt, fed by host.quest
+  {id:'pph10', label:'Beat 10 Putt Putt holes',      metric:'ppHolesWon',  target:10, mode:'putt'},
+  {id:'pph25', label:'Beat 25 Putt Putt holes',      metric:'ppHolesWon',  target:25, mode:'putt'},
+  {id:'pps30', label:'Earn 30 new Putt Putt stars',  metric:'ppStars',     target:30, mode:'putt'},
+  {id:'ppd5',  label:'Play the Putt Putt Daily Hole 5 times', metric:'ppDaily', target:5, mode:'putt'},
+  {id:'ppc5',  label:'Open 5 chests on the Putt Putt trails', metric:'ppChests', target:5, mode:'putt'},
 ];
 // deterministic weekly set: one challenge from EACH mode (forces all modes) + one extra, stable within a week.
 function weeklySet(){ const wk=weekKey();
   const one=(mode,salt)=>{ const g=WEEKLY_POOL.filter(x=>x.mode===mode); return seededShuffle(g, (wk*17+salt)>>>0)[0]; };
   const pick=[one('career',1),one('online',2),one('daily',3)];
-  const rest=WEEKLY_POOL.filter(x=>!pick.includes(x)); const extra=seededShuffle(rest,(wk*29+7)>>>0)[0];
+  // With Putt Putt the fourth slot (the extra) is Putt Putt's own, so the week still pays out four challenges:
+  // the same coins, packs and shards as before (golf-tour-economy), only one of them is earned on a green.
+  let pp=false; try{ pp=puttOn(); }catch(e){}
+  if(pp){ pick.push(one('putt',4)); return pick; }
+  const rest=WEEKLY_POOL.filter(x=>!pick.includes(x)&&x.mode!=='putt'); const extra=seededShuffle(rest,(wk*29+7)>>>0)[0];
   if(extra) pick.push(extra); return pick; }
 function weekChal(){ const wk=weekKey(); let w=LS.get(acctKey('bag_weeklychal'),null);
   if(!w||typeof w!=='object'||w.week!==wk) w={week:wk,prog:{},done:{}}; w.prog=w.prog||{}; w.done=w.done||{}; return w; }
@@ -6470,8 +6516,8 @@ function mulliSpinOff(){ if(!useMulliSpin())return; S.offseason.reSpins=(S.offse
 function repTierBarHTML(ms){
   const pts=achPoints(), r=repTier(pts), goat=(r.tier.name==='G.O.A.T.');
   const lo=r.tier.at, hi=r.next?r.next.at:ACH_TOTAL_PTS, frac=hi>lo?Math.max(0,Math.min(1,(pts-lo)/(hi-lo))):1;
-  const foot = goat ? '<b style="color:#f6cd74">Every achievement done. You\'re at the summit.</b>'
-    : (r.next ? (r.next.name==='G.O.A.T.' ? 'Complete every achievement to reach <b style="color:var(--gold)">G.O.A.T.</b>'
+  const foot = goat ? '<b style="color:#f6cd74">Every Pro Tour achievement done. You\'re at the summit.</b>'
+    : (r.next ? (r.next.name==='G.O.A.T.' ? 'Complete every Pro Tour achievement to reach <b style="color:var(--gold)">G.O.A.T.</b>'
         : `<b style="color:var(--gold)">${esc(r.next.name)}</b> in ${Math.max(0,hi-pts)} rep`) : '');
   return `<div class="reptbar-wrap">
     <div class="reptbar-hd"><span class="reptbar-tier">${goat?'🐐 ':''}${esc(r.tier.name)}</span><span class="small muted">${pts} Tour Rep${ms>0?' · 🌀 '+ms+' mulli-spin'+(ms===1?'':'s'):''}</span></div>
@@ -6484,9 +6530,9 @@ function challengesNode(){
   const q=dailyQuests(), w=weekChal(), set=weeklySet(), ms=mulliSpins();
   const el=$(`<div class="chalpanel"></div>`);
   el.appendChild($(repTierBarHTML(ms)));
-  const dq=DAILY_QUEST_DEFS.map(d=>`<div class="wg-row${q[d.k]?' done':''}"><span>${q[d.k]?'✓ ':'○ '}${d.label} <span class="small muted" style="letter-spacing:0;text-transform:none">· ${d.hint}</span></span><span class="wg-v">${q[d.k]?'done':''}</span></div>`).join('');
+  const dq=dailyQuestDefs().map(d=>`<div class="wg-row${q[d.k]?' done':''}"><span>${q[d.k]?'✓ ':'○ '}${d.label} <span class="small muted" style="letter-spacing:0;text-transform:none">· ${d.hint}</span></span><span class="wg-v">${q[d.k]?'done':''}</span></div>`).join('');
   const dqDone=dailyQuestsAllDone(q);
-  el.appendChild($(`<div class="wg-panel${dqDone?' done':''}"><div class="wg-hd"><span>Daily Quests</span>${dqDone?'<span style="color:#35d6a0">+'+DAILY_QUEST_XP+' Rep ✓</span>':'<span class="small muted" style="letter-spacing:0;text-transform:none">all '+DAILY_QUEST_DEFS.length+' → +'+DAILY_QUEST_XP+' Rep & ◆1 '+DAILY_QUEST_SHARD+' shard</span>'}</div>${dq}</div>`));
+  el.appendChild($(`<div class="wg-panel${dqDone?' done':''}"><div class="wg-hd"><span>Daily Quests</span>${dqDone?'<span style="color:#35d6a0">+'+DAILY_QUEST_XP+' Rep ✓</span>':'<span class="small muted" style="letter-spacing:0;text-transform:none">all '+dailyQuestDefs().length+' → +'+DAILY_QUEST_XP+' Rep & ◆1 '+DAILY_QUEST_SHARD+' shard</span>'}</div>${dq}</div>`));
   const wr=set.map(c=>{ const v=Math.min(w.prog[c.metric]||0,c.target), ok=!!w.done[c.id];
     return `<div class="wg-row${ok?' done':''}"><span>${ok?'✓ ':''}${c.label}</span><span class="wg-v" style="${ok?'':'color:var(--muted)'}">${v}/${c.target}</span></div>`; }).join('');
   const wDone=weekChalDoneCount(w), wTot=set.length;
@@ -6501,7 +6547,7 @@ function maybeChallengesPopup(){
   if(document.querySelector('.chalpop')) return;
   const cn=challengesNode(); if(!cn) return;
   const q=dailyQuests(), w=weekChal(), set=weeklySet();
-  const dqLeft=DAILY_QUEST_DEFS.filter(d=>!q[d.k]).length, wLeft=set.filter(c=>!w.done[c.id]).length;
+  const dqLeft=dailyQuestDefs().filter(d=>!q[d.k]).length, wLeft=set.filter(c=>!w.done[c.id]).length;
   const ov=$(`<div class="chalpop" style="position:fixed;inset:0;z-index:62;display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto;background:radial-gradient(120% 90% at 50% 12%, rgba(10,30,20,.82), rgba(2,7,5,.96) 70%)">
     <div style="max-width:440px;width:100%;background:linear-gradient(180deg,#0d2036,#0a1626);border:1px solid rgba(241,208,74,.4);border-radius:18px;padding:18px 17px;box-shadow:0 20px 60px -18px rgba(0,0,0,.7)">
       <div style="text-align:center;font:800 12px/1 var(--body);letter-spacing:.24em;text-transform:uppercase;color:var(--gold)">🎯 Your Challenges</div>
@@ -9146,6 +9192,7 @@ function finalizeBracket(B){
   if(you && !S.daily){
     const ev={inc:{},max:{},set:{}};
     if(you.pos===1){ ev.set.wonSignature=1; ev.inc.bracketWins=1;
+      try{ const pu=PUTTERS_BY[puttEquippedId()]; if(pu&&pu.kind==='pp') ev.inc.ppPutterWins=1; }catch(e){}   // Two Tours
       if(evt.stage===3 || evt.type==='finale') ev.set.wonFinale=1; }
     if(you.pos<=2) ev.set.bracketFinal=1;
     recordAchEvent(ev);
@@ -10095,7 +10142,7 @@ function coinsEarned(){ const s=coinState();
 let _coinsSuppressToast=false;   // set while finalizing a skipped season so the "+N coins" toast doesn't flash
 // deterministic RAW earned total - every entry here is a "way to earn coins"; add terms to add more
 function coinsEarnedRaw(){ let e=0; const ac=(achState().unlocked)||{};
-  ACH.forEach(a=>{ if(ac[a.id]) e+=a.pts*3; });                 // every achievement pays out (points ×3)
+  achAddPutt(); ACH.forEach(a=>{ if(ac[a.id]) e+=a.pts*3; });                 // every achievement pays out (points ×3)
   const m=achMetrics();
   e+=(m.wins||0)*60 + (m.majors||0)*400;                        // tour wins / majors
   e+=(m.cupWins||0)*300 + (m.cupApps||0)*40 + (m.fedexCups||0)*800;
@@ -15628,7 +15675,7 @@ function ftPins(){
     else if(today) pins.push({id:'gift', icon:'gift', name:'Login gift', sub:`Day ${ls.n} of 7 · ${loginRewLabel(loginReward(ls.n))}`, state:'done', val:'Collected', go:()=>{ S.loginReward=loginReward(ls.n); S.overlay='login'; render(); }, short:'Gift'});
   } else pins.push({id:'gift', icon:'gift', name:'Login gift', sub:'Sign in for a gift every day', state:'lock', val:'Sign in', go:()=>{ S.overlay='account'; S.acctMode='signup'; S.acctErr=''; render(); }, short:'Gift'});
   if(si){ let q={}; try{ q=dailyQuests()||{}; }catch(e){}
-    const n=DAILY_QUEST_DEFS.filter(d=>q[d.k]).length, tot=DAILY_QUEST_DEFS.length, next=DAILY_QUEST_DEFS.find(d=>!q[d.k]);
+    const QD=dailyQuestDefs(), n=QD.filter(d=>q[d.k]).length, tot=QD.length, next=QD.find(d=>!q[d.k]);
     pins.push({id:'quests', icon:'scroll', name:'Daily quests', sub: n>=tot?`All ${tot} done · +${DAILY_QUEST_XP} Tour Rep`:(next?next.label:''), state: n>=tot?'done':'part', part:n, of:tot, val:`${n} of ${tot}`,
       go:()=>{ S.overlay='challenges'; render(); }, short:'Quests'}); }
   try{ if(puttOn()){ const m=window.RTT_PUTT.summary(puttHost()), d=m.daily||{};
@@ -15935,7 +15982,7 @@ function scrTitleClassic(){
   // Compact icon row (owner: reduce home scrolling) - short labels, no sub-lines; the dots still flag
   // anything waiting (new gear / a free pack), and every one of these also lives in the bottom nav or menu.
   const _dq=(signedIn && typeof dailyQuests==='function')?dailyQuests():null;
-  const _dqLeft=_dq?DAILY_QUEST_DEFS.filter(d=>!_dq[d.k]).length:0;
+  const _dqLeft=_dq?dailyQuestDefs().filter(d=>!_dq[d.k]).length:0;
   mkTile(PXI.target,'#16b5a6','Quests','', ()=>{S.overlay='challenges';render();}, {dot:_dqLeft>0});
   mkTile(PXI.podium,'#4aa3ff','Ranks','', ()=>{S.overlay='leaderboard';render();});
   mkTile(PXI.cup,'#F1D04A','Profile','', ()=>{S.overlay='record';render();});
@@ -23294,7 +23341,14 @@ function puttHost(){
     signIn:function(mode){ S.overlay='account'; S.acctMode=mode==='signup'?'signup':'signin'; S.acctErr=''; try{ render(); }catch(e){} },
     // Get Tour Pass from inside Putt Putt: the game's own Tour Pass, where the pass is bought
     pass:function(){ S.overlay='tourpass'; try{ render(); }catch(e){} },
-    coins:function(n,label){ try{ addBonusCoins(n,{label:label}); }catch(e){} },
+    // a guest's coins are held on this browser and paid when they sign in, rather than lost (holdGuestCoins)
+    coins:function(n,label){ try{ if(sbSignedIn()) addBonusCoins(n,{label:label}); else holdGuestCoins(n); }catch(e){} },
+    // the game's own weekly challenges, daily quests and play streak hear about Putt Putt
+    quest:function(metric,n){ try{ questWeekly(metric,n); }catch(e){} },
+    questDaily:function(){ try{ questDaily('putt'); }catch(e){} },
+    // the look the Daily Hole board draws a player's golfer from, as the other boards keep it
+    boardLook:function(){ try{ return lookForBoard(); }catch(e){ return null; } },
+    dayPlayed:function(){ try{ if(sbSignedIn()) bumpStreak(); }catch(e){} },
     balance:function(){ try{ return coinBalance(); }catch(e){ return 0; } },
     passActive:function(){ try{ return dailyPassActive(); }catch(e){ return false; } },
     // THE PUTTER IN YOUR CLOSET: how far its aim dots reach (0 to 3), and the putter itself. A Putt Putt putter
@@ -23309,8 +23363,19 @@ function puttHost(){
     closet:function(){ try{ window.RTT_PUTT.close(); }catch(e){} S.shopPreview=null; S.overlay=null; S.setupEdit=true; S.setupReturn={screen:'title',overlay:null,putt:true}; S.screen='setup'; S.setupCat='putter'; render(); },
     tester:function(){ return sbSignedIn() && PUTT_TESTERS.indexOf((sbUsername||'').toLowerCase())>=0; },
     allAccess:function(){ return sbSignedIn() && PUTT_ALL_ACCESS.indexOf((sbUsername||'').toLowerCase())>=0; },
-    onClose:function(){ try{ render(); }catch(e){} } };
+    // back from Putt Putt: what was earned there lands in the Trophy Room, with its toast
+    onClose:function(){ try{ const fresh=evaluateAch(); render(); if(fresh.length||S.freshRep) achToast(fresh); }catch(e){ try{ render(); }catch(e2){} } } };
 }
+// GUEST COINS ARE HELD, NOT LOST. Signed out, the wallet takes nothing (addBonusCoins), and on sign-in the guest's
+// Putt Putt record is folded into the account's with every hole marked paid, so those coins could never be paid
+// again. They wait under a bare key on this browser (capped, so a long guest run is not a jackpot) and are paid
+// once the account's cloud copy has landed, so a merge cannot write over them.
+const HELD_COINS_KEY='bag_coins_held', HELD_COINS_MAX=2000;
+function holdGuestCoins(n){ n=Math.round(n||0); if(n<=0) return; try{ const h=LS.get(HELD_COINS_KEY,null)||{n:0};
+  h.n=Math.min(HELD_COINS_MAX,(h.n||0)+n); LS.set(HELD_COINS_KEY,h); }catch(e){} }
+function heldGuestCoins(){ try{ const h=LS.get(HELD_COINS_KEY,null); return (h&&h.n)||0; }catch(e){ return 0; } }
+function flushHeldCoins(){ if(!sbSignedIn()) return 0; const n=heldGuestCoins(); if(!n) return 0;
+  try{ localStorage.removeItem(HELD_COINS_KEY); }catch(e){} return addBonusCoins(n,{label:'from Putt Putt as a guest'}); }
 function openPutt(){ if(!puttOn()) return; try{ track('putt_open'); }catch(e){} window.RTT_PUTT.open(puttHost()); }
 // The Putt Putt Tour card: today's Daily Hole, your place on the 90 hole tour, and your lives.
 function puttCard(){
@@ -26780,6 +26845,7 @@ function finalizeEvent(){
         if(/Tour Championship|Finale/i.test(evt.name)||evt.type==='finale') ev.set.wonFinale=1;
         if(/Stadium Classic/i.test(evt.name)) ev.set.wonPlayers=1;
         if(evt.big) ev.set.wonSignature=1;
+        try{ const pu=PUTTERS_BY[puttEquippedId()]; if(pu&&pu.kind==='pp'){ ev.inc.ppPutterWins=1; if(evt.major) ev.inc.ppPutterMajors=1; } }catch(e){}   // Two Tours
         const cum=(k)=>{ let s=0; for(let i=0;i<=k;i++) s+=(you.rounds[i]||0); return s; };
         const lead=(k)=>{ let best=Infinity; ce.players.forEach(o=>{ let s=0,ok=true; for(let i=0;i<=k;i++){ if(o.rounds[i]==null){ok=false;break;} s+=o.rounds[i]; } if(ok)best=Math.min(best,s); }); return best; };
         // margin over the runner-up
@@ -42093,7 +42159,7 @@ async function sbApply(session){
     // the player happens to open the records overlay, otherwise a signed-in session on a fresh browser
     // shows "unclaimed"/stale local state until something else happens to trigger the fetch.
     bumpBoardEpoch(); crCache=null; crLoad(); reconcileDailyAttempts();
-    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ pushProfileLook(); }catch(e){} try{ checkNameFlag(); }catch(e){} try{ proLoad(true); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeBundleRewards(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybePackGrant(); }catch(e){} try{ maybeFirstBuySpin(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} try{ maybePassEventNote(); }catch(e){} try{ loadWallet(function(){ try{ maybePassRewards(); }catch(e){} try{ maybeBucketRewards(); }catch(e){} try{ if(Object.keys(passSettle()).length) maybePassSettleNote(); }catch(e){} }); }catch(e){} try{ purchaseCheck(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461) + purchased-coin wallet (Stripe) + a post-checkout return
+    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ pushProfileLook(); }catch(e){} try{ checkNameFlag(); }catch(e){} try{ proLoad(true); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ flushHeldCoins(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeBundleRewards(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybePackGrant(); }catch(e){} try{ maybeFirstBuySpin(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} try{ maybePassEventNote(); }catch(e){} try{ loadWallet(function(){ try{ maybePassRewards(); }catch(e){} try{ maybeBucketRewards(); }catch(e){} try{ if(Object.keys(passSettle()).length) maybePassSettleNote(); }catch(e){} }); }catch(e){} try{ purchaseCheck(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461) + purchased-coin wallet (Stripe) + a post-checkout return
     maybeAdoptGuestCareer();   // guest signed in via the 10-season login wall → persist their in-memory career + continue
     maybeResumeCareerOnReload();   // a refresh happened mid-career → now that the account is loaded, drop back into it
     if(S._dailyClaimFlow && sbSignedIn()){ S.overlay=null; S.screen='dailyresult'; }   // return to the result screen
