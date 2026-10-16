@@ -199,21 +199,32 @@ const mn = await pg.evaluate(async () => {
   const jobs = [];
   for (const h of ['cap', 'visor'].concat(Object.keys(PXG_HATS))) jobs.push(['hat', g3dItemLook({ cap: true, hatStyle: h }), h]);
   for (const e of Object.keys(PXG_EYEWEAR)) jobs.push(['ew', g3dItemLook({ eyewear: e }), e]);
-  for (const c of Object.keys(PXG_CLUBS)) if (c.indexOf('pu_') !== 0) jobs.push(['club', g3dItemLook({ club: c }), c]);
+  for (const c of Object.keys(PXG_CLUBS)) jobs.push(['club', g3dItemLook({ club: c }), c]);
+  for (const t of Object.keys(PXG_TOPS)) jobs.push(['top', g3dItemLook({ top: t }), t]);
+  for (const t of Object.keys(PXG_LEGS)) jobs.push(['leg', g3dItemLook({ leg: t }), t]);
+  for (const t of Object.keys(PXG_BALL)) jobs.push(['ball', g3dItemLook({ ball: t }), t]);
+  // every novelty club in the hand is a real object: its tile is no smaller than a stock club's head
+  for (const c of ['scepter','candycane','excalibur','wand','hockey','glizzy','poolnoodle','coffin','broomstick','pitchfork']) jobs.push(['fig', Object.assign({}, DEFLOOK, { club: c }), 'holding ' + c]);
+  for (const t of Object.keys(PXG_TOPS)) jobs.push(['fig', Object.assign({}, DEFLOOK, { top: t }), 'wearing ' + t]);
   for (const c of Object.keys(PXG_CLEATS)) jobs.push(['shoe', g3dItemLook({ cleats: c }), c]);
   const hairs = Object.keys(PXG_HAIR), tops = Object.keys(PXG_TOPS);
   hairs.forEach((h, i) => { const L = Object.assign({}, DEFLOOK, { hairStyle: h, cap: i % 2 === 0, top: i % 3 === 1 ? tops[i % tops.length] : '', lefty: i % 2 === 1 }); jobs.push(['fig', L, h]); jobs.push(['chip', L, h]); });
   for (const [part, L, id] of jobs) { let p; try { p = RTT_G3D.pic(L, part); } catch (e) { r.ex.push(part + ':' + id + ' ' + e); continue; }
     r.n++; if (!p) { r.none.push(part + ':' + id); continue; } if (await magenta(p.url)) r.magenta.push(part + ':' + id); }
-  r.tile = /data:image\/png/.test(pxItemThumb('hw', 'cowboy')) && /data:image\/png/.test(pxClubThumb('driver'));
+  r.tile = /data:image\/png/.test(pxItemThumb('hw', 'cowboy')) && /data:image\/png/.test(pxClubThumb('driver')) && /data:image\/png/.test(pxItemThumb('top', 'cape'))
+    && /data:image\/png/.test(pxBallThumb('eight')) && /data:image\/png/.test(pxClubThumb('pu_milled')) && /data:image\/png/.test(pxClubThumb('coffin'));
+  // a top, a novelty club or a ball must change the picture (the cape and the floatie once drew nothing on the menu golfer)
+  const base = RTT_G3D.pic(DEFLOOK, 'fig').url; r.same = [];
+  for (const L of [{ top: 'cape' }, { top: 'duckfloatie' }, { club: 'coffin' }, { club: 'excalibur' }, { ball: 'eight' }]) if (RTT_G3D.pic(Object.assign({}, DEFLOOK, L), 'fig').url === base) r.same.push(L);
   sbUser = keepU; sbUsername = keepN; return r; });
 ok('signed out keeps today\'s menu golfer', mn.out === false);
 ok('a player who is not a tester keeps today\'s menu golfer', mn.other === false && mn.otherFig === true);
 ok('a tester gets the 3D menu golfer', mn.tester === true);
-ok(`every hat, pair of glasses, club, pair of cleats, hairstyle and chip draws (${mn.n})`, mn.ex.length === 0, mn.ex.slice(0, 4));
+ok(`every hat, pair of glasses, club, putter, top, legwear, ball, pair of cleats, hairstyle and chip draws (${mn.n})`, mn.ex.length === 0, mn.ex.slice(0, 4));
 ok('only paint (eyeblack) has nothing to draw alone, so its tile keeps today\'s art', mn.none.every(x => !/^(hat|club|shoe|fig|chip):/.test(x)), mn.none);
 ok('no menu picture has a magenta (unknown material) pixel', mn.magenta.length === 0, mn.magenta);
-ok('the closet tiles use the 3D pictures for a tester', mn.tile === true);
+ok('the closet tiles use the 3D pictures for a tester (hats, clubs, putters, the cape, balls, the scythe)', mn.tile === true);
+ok('the cape, the floatie, the scythe, the sword and a ball each show on the menu golfer', mn.same.length === 0, mn.same);
 
 ok('no page errors', errs.length === 0, errs.slice(0, 3));
 await b.close();
