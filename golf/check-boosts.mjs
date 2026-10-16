@@ -373,6 +373,19 @@ try {
     ok('over 99 at ' + vp.width + 'x' + vp.height + ': no sideways scroll', !L.side);
   }
 
+  head('ICON: the tier above ELITE, 100 and up, on the First Tee switch');
+  {
+    const T = await page.evaluate(() => { const r = {}, kU = sbUser, kN = sbUsername;
+      sbUser = { id: 't' }; sbUsername = 'CSel8';
+      r.t99 = ovrTier(99).lab; r.t100 = ovrTier(100).lab; r.t112 = ovrTier(112).lab;
+      S.cardView = { self: true, name: 'x', look: S.look, ovr: 103 }; S.cardFlipped = false; r.card = /pcovr icon/.test(playerCardHTML(S.cardView));
+      sbUser = { id: 'x' }; sbUsername = 'somebodyelse'; r.other = ovrTier(103).lab;
+      sbUser = kU; sbUsername = kN; return r; });
+    ok('a tester: 99 is ELITE, 100 and 112 are ICON', T.t99 === 'ELITE' && T.t100 === 'ICON' && T.t112 === 'ICON', T);
+    ok('a tester\'s player card wears the ICON badge at 103', T.card === true);
+    ok('anybody else keeps ELITE until the switch flips', T.other === 'ELITE', T.other);
+  }
+
   head('SERVER: what the boards store');
   {
     const dir = path.join(path.dirname(BASE), '..', 'supabase');
