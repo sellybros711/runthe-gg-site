@@ -45,6 +45,7 @@ const BUNDLES = [
       'story',         // the Phase D compiler, your club's cards, origins, routes, endings
       'stories',       // the authored storylines and epilogues: content only
       'turns',         // answering a card, the step machine, things to do between cards
+      'moves',         // your moves: the trade ask, the holdout, the supermax, the shoe, the body, the podcast
       'api',           // what the page reads, the generated road, a son, the public object
     ],
     head: "'use strict';\n(function() {\n\n",
