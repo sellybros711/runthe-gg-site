@@ -1571,7 +1571,7 @@ function run(box, P, pic, api){
      or WASD, so a desktop gets no stick on screen and a drag does not walk him. */
   var coarse = false; try{ coarse = matchMedia('(pointer: coarse)').matches; }catch(e){}
   var ui = document.createElement('div'); ui.className = 'pp-tui'; ui.innerHTML = (coarse ? '<div class="pp-stick" data-stick><i></i></div>' : '') + '<div class="pp-way" data-way><i></i><b></b></div><div class="pp-pin" data-pin><b></b><i></i></div>' +
-    '<div class="pp-thud"><span data-coins>+0</span><span data-gold></span></div><div class="pp-tlist" data-tlist></div><div class="pp-rbar"><button class="pp-rb pp-talkb" data-talk hidden></button><button class="pp-rb" data-skip></button></div><div class="pp-rhint" data-hint></div><div class="pp-bub" data-bub hidden></div>';
+    '<div class="pp-thud"><span data-coins>' + (api.guestCoins ? 'Sign in' : '+0') + '</span><span data-gold></span></div><div class="pp-tlist" data-tlist></div><div class="pp-rbar"><button class="pp-rb pp-talkb" data-talk hidden></button><button class="pp-rb" data-skip></button></div><div class="pp-rhint" data-hint></div><div class="pp-bub" data-bub hidden></div>';
   box.appendChild(ui);
   var stick = ui.querySelector('[data-stick]'), knob = stick && stick.firstChild, way = ui.querySelector('[data-way]'), pin = ui.querySelector('[data-pin]'), bubEl = ui.querySelector('[data-bub]'), hint = ui.querySelector('[data-hint]');
   var wayB = way.querySelector('b'), wayI = way.querySelector('i'), pinB = pin.querySelector('b'), pinI = pin.querySelector('i');
@@ -1608,7 +1608,10 @@ function run(box, P, pic, api){
   function sayLater(txt, ms, wait, who){ setTimeout(function(){ if (alive) say(txt, ms, who); }, (reduce ? 0.1 : wait) * 1000); }
   function say(txt, ms, who){ bubble = { txt:txt, until:performance.now() + (ms || 3200), who:who || null }; bubEl.textContent = txt; bubEl.hidden = false; }
   function burst(x, y, z, cols, n, sz, pow){ pow = pow || 1; for (var i = 0; i < n; i++){ var a = Math.random() * 6.28, sp2 = (2 + Math.random() * 4) * pow; parts.push({ x:x, y:y, z:z, vx:Math.cos(a) * sp2, vy:Math.sin(a) * sp2 * 0.6, vz:(3 + Math.random() * 4) * pow, c:cols[i % cols.length], t:0, sz:sz ? sz * (0.6 + Math.random() * 0.8) : 0 }); } }
-  function hudCoins(){ ui.querySelector('[data-coins]').textContent = '+' + coinsGot; }
+  // a guest never sees a coin count: their coins are held for the account, and the walk says so once
+  function hudCoins(){ ui.querySelector('[data-coins]').textContent = api.guestCoins ? 'Sign in' : '+' + coinsGot; }
+  var guestTold = false;
+  function guestCoin(){ if (api.guestCoins && !guestTold){ guestTold = true; say(api.guestCoins, 3600); } }
   /* WHAT IS ON THIS TRAIL, said up front: a list of every find with its picture, ticked off as it is picked up,
      so a player always knows what they are looking for. Coins are not on it: they come out of the chest. */
   function hudList(){ var el = ui.querySelector('[data-tlist]'), fs = items.filter(function(t){ return LOOT[t.k]; });
@@ -1682,7 +1685,7 @@ function run(box, P, pic, api){
     var hr = ui.querySelector('[data-tlist] [data-id="' + prizeIt.id + '"]'); if (hr) hr.classList.add('near'); }
   function take(t, now){ take0(t, now); if (LOOT[t.k]) hudList(); }
   function take0(t, now){ var z = pic.zAt(t.x, t.y);
-    if (t.k === 'coin'){ t.done = true; coinsGot += COIN_V; hudCoins(); burst(t.x, t.y, z + 1.2, ['#ffd23a', '#fff3a8', '#ffffff'], 8); collect(t, now, 'coin'); floatText('+' + COIN_V, t.x, t.y, z + 2.2); pick('coin', t.id, COIN_V); api.sfx && api.sfx('coin'); }
+    if (t.k === 'coin'){ t.done = true; coinsGot += COIN_V; hudCoins(); burst(t.x, t.y, z + 1.2, ['#ffd23a', '#fff3a8', '#ffffff'], 8); collect(t, now, 'coin'); if (!api.guestCoins) floatText('+' + COIN_V, t.x, t.y, z + 2.2); guestCoin(); pick('coin', t.id, COIN_V); api.sfx && api.sfx('coin'); }
     else if (t.k === 'chest'){ t.done = true; t.openAt = now; pick('chest', t.id, 0); hudChests(); api.sfx && api.sfx('coin');
       // the lock pops as it starts to rattle; the lid lifts; light, a ring and a shower of gold as it comes open
       burst(t.x, t.y + 0.8, z + 1.0, ['#ffd23a', '#fff1a0'], 6, 1.2, 0.6);
@@ -1706,7 +1709,7 @@ function run(box, P, pic, api){
     else if (t.k === 'part'){ t.done = true; burst(t.x, t.y, z + 1.2, ['#cfd8e2', '#ffffff', '#ffd23a'], 22, 1.3, 1.2); collect(t, now); floatText('Putter part', t.x, t.y, z + 3, '#cfe2ff', true); sayLater(pick('part', t.id, 0) || ('A putter part: ' + t.name + '.'), 3800, 1.1); }
     else if (t.k === 'brk'){ t.done = true; var k = brkKind(t), cols = k === 'ice' ? ['#a8dcf4', '#e2f6ff'] : k === 'neoncube' ? ['#2bf0ff', '#1a1430'] : k === 'pumpkin' ? ['#e8761f', '#d0621a'] : k === 'hay' ? ['#e2bc5c', '#c8a04a'] : k === 'pot' ? ['#b8643a', '#f0e0b0'] : k === 'trashcan' ? ['#8a929c', '#cfd5dc'] : ['#c08a4e', '#8a5a2a'];
       burst(t.x, t.y, z + 0.8, cols, 10, 2.4, 1.1); burst(t.x, t.y, z + 0.6, cols, 12); burst(t.x, t.y, z + 0.2, ['rgba(220,210,190,.7)'], 8, 1.8, 0.5); ring(t.x, t.y, '230,220,200');
-      if ((found.b || []).indexOf(t.id) < 0){ (found.b = found.b || []).push(t.id); coinsGot += BRK_V; hudCoins(); pick('brk', t.id, BRK_V); burst(t.x, t.y, z + 1, ['#ffd23a'], 4); collect({ x:t.x, y:t.y, k:'coin', id:t.id }, now, 'coin'); floatText('+' + BRK_V, t.x, t.y, z + 2); } else pick('brk', t.id, 0); } }
+      if ((found.b || []).indexOf(t.id) < 0){ (found.b = found.b || []).push(t.id); coinsGot += BRK_V; hudCoins(); pick('brk', t.id, BRK_V); burst(t.x, t.y, z + 1, ['#ffd23a'], 4); collect({ x:t.x, y:t.y, k:'coin', id:t.id }, now, 'coin'); if (!api.guestCoins) floatText('+' + BRK_V, t.x, t.y, z + 2); guestCoin(); } else pick('brk', t.id, 0); } }
 
   var last = performance.now(), lastSafe = 0, nearNpc = false;
   function j7(t){ return Math.round(t.x * 7 + t.y * 13); }
