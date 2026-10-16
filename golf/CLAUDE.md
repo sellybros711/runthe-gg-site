@@ -96,6 +96,10 @@ node golf/econ-sim.mjs                      a casual, regular and heavy player t
 - A screen claims the full screen tracer only through `hvFullSet(mode)`. Change a chip's height and
   change its row in `HV_FULL_SIZE`.
 - `G3D_LIVE = false` is the 3D golfer's kill switch.
+- **The 3D menu golfer** (`RTT_G3D.pic`, `g3dPic` in index.html) draws the golfer and the hat, glasses, club and
+  cleat tiles in the menus. It rides the First Tee switch (`g3dMenuOn` asks `ftLive()`), and anything it cannot
+  draw falls back to today's picture. Every menu change in `golfer3d.js` runs only while `MO` is set: the course
+  golfer must stay the same pixel for pixel (hash its frames before and after).
 - **One golfer in every mode.** A mode draws your golfer through `modeLook(look, kind)`: the equipped putter on
   every green and walk, and the career's age stamped on. An aura shows wherever the golfer is drawn (the
   `hvsw-glow` pulse, `host.aura()` on a canvas). `check-golfer3d.mjs` section 4 holds all of it.
