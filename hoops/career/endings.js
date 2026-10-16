@@ -14,7 +14,10 @@
      waived        the club cuts a man who has fallen out of its rotation, with
                    a contract still running; then free agency, and if nobody
                    calls, a last wait for a ten day contract
-     finale        one last season in Europe, offered on the retirement card */
+     finale        one last season in Europe, offered on the retirement card to
+                   a man below FINALE_BELOW: stars do not finish abroad, and
+                   offering it to them cut the greatest careers short */
+const FINALE_BELOW = 74;
 
 /* THE CAREER ENDING INJURY, per major injury, off how healthy the body is.
    The health meter refills every summer, so the body is read as durability
@@ -53,12 +56,12 @@ ANSWER.careerinj = function(L, card, i, opt, rng, beats) {
 };
 
 /* WALK AWAY ON TOP. Once, the summer after a ring or an MVP, for a man past
-   his peak (33 or older, his overall below his best): the way real careers
+   his peak (32 or older, his overall below his best): the way real careers
    end on top. Asked of a man still climbing, it cut the greatest careers
    short in the sweep. */
 function onTopCard(L) {
-  if (L.age < 33 || L.flags.onTop) return;
-  if (ovrOf(L) >= Math.max(...L.history.map((h) => h.ovr || 0)) - 2) return;
+  if (L.age < 32 || L.flags.onTop) return;
+  if (ovrOf(L) >= Math.max(...L.history.map((h) => h.ovr || 0))) return;
   const h = L.history[L.history.length - 1];
   if (!h || (h.po !== 'Champion' && (h.aw || []).indexOf('mvp') < 0)) return;
   if (rngAt(L, 'ontop')() >= 0.5) return;

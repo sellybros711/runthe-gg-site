@@ -1774,7 +1774,7 @@ function retireCard(L) {
     /* Each answer names what it does (`act`), so the overseas finale can sit
        between playing on and retiring without moving either. */
     options: [{ label: 'Play one more season', hint: "See what's left", act: 'more' }]
-      .concat(L.age >= 32 && !L.flags.finale ? [{ label: 'One last year in Europe', hint: 'Finish somewhere new', act: 'finale' }] : [])
+      .concat(L.age >= 32 && ovrOf(L) < FINALE_BELOW && !L.flags.finale ? [{ label: 'One last year in Europe', hint: 'Finish somewhere new', act: 'finale' }] : [])
       .concat([{ label: 'Retire', hint: 'Go out on your own terms', act: 'retire' }]),
   };
 }
