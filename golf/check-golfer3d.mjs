@@ -152,6 +152,40 @@ const tr = await pg.evaluate(() => {
 ok('a tee shot draws the 3D golfer', tr.live !== '' && tr.live !== tr.off, tr);
 ok('with the kill switch, a tee shot keeps the old sprite', tr.off !== '' && tr.live !== tr.off, tr);
 
+head('4. ONE GOLFER IN EVERY MODE: the putter you equipped, your aura and your age, wherever you are drawn');
+const md = await pg.evaluate(() => {
+  const r = {}, keepCos = cosOwned, keepAge = playerAge, keepYear = S.year;
+  cosOwned = (cat, id) => cat === 'putter' || keepCos(cat, id);          // own every putter for the test
+  const pu = PUTTERS.filter(p => p.id !== 'stock' && p.shape !== 'wand' && PXG_CLUBS['pu_' + p.id]);
+  const a = pu[0], z = pu.find(p => p.shape !== a.shape) || pu[1];
+  S.look = Object.assign({}, DEFLOOK, { putter: a.id, fx: 'gold' });
+  const H = puttHost();
+  // the walk carries the equipped putter: two putters walk differently, and the walk's look names it
+  r.walkClub = modeLook(S.look, 'walk').club;
+  const w1 = H.golferWalk(0, 1, 2).url; S.look.putter = z.id; const w2 = H.golferWalk(0, 1, 2).url; S.look.putter = a.id;
+  r.walkDiffers = w1 !== w2; r.a = a.id; r.z = z.id;
+  // the putt and the flat golfer (the map, the header and the fallback) hold it too
+  r.puttClub = modeLook(S.look, 'putt').club;
+  const flat = H.golfer().toDataURL(), club = pxGolferCanvas(S.look, { noBall: true }).toDataURL(); r.flatPutter = flat !== club;
+  // the aura: the figure on the map wears it, and a canvas golfer is handed its colour
+  const fig = H.figure('x'); r.figAura = /pxfxwrap/.test(fig) && /class="x pxfigsm/.test(fig) && !/height:56px/.test(fig);
+  r.auraCol = H.aura(); r.gold = PXFX_BY.gold.col; S.look.fx = 'none'; r.noAura = H.aura(); S.look.fx = 'gold';
+  // the age reaches a putt (a copy of the look) and a walk, and turns the 3D cache over at a birthday
+  playerAge = () => 52; r.puttAge = modeLook(S.look, 'putt').age; r.walkAge = modeLook(S.look, 'walk').age;
+  const old = H.golfer3(1, 0).urls[0]; playerAge = () => 22; const young = H.golfer3(1, 0).urls[0]; r.ageDraws = old !== young;
+  // a leaderboard look carries the putter, so other players see the one you putt with
+  r.board = lookForBoard(S.look).putter;
+  cosOwned = keepCos; playerAge = keepAge; S.year = keepYear; S.look = Object.assign({}, DEFLOOK);
+  return r; });
+ok('a walk carries the equipped putter, not the club set', md.walkClub === 'pu_' + md.a && md.walkDiffers, md);
+ok('a putt holds the equipped putter', md.puttClub === 'pu_' + md.a, md.puttClub);
+ok('the flat golfer (map, header, fallback) holds the putter too', md.flatPutter === true);
+ok('the golfer on the Putt Putt map wears its aura, sized by its class', md.figAura === true);
+ok('a golfer drawn on a canvas is handed its aura colour, and none without one', md.auraCol === md.gold && md.noAura === null, [md.auraCol, md.noAura]);
+ok('the age reaches the putt and the walk', md.puttAge === 52 && md.walkAge === 52, [md.puttAge, md.walkAge]);
+ok('a birthday draws a new 3D golfer rather than the cached one', md.ageDraws === true);
+ok('a leaderboard look carries the putter', md.board === md.a, md.board);
+
 ok('no page errors', errs.length === 0, errs.slice(0, 3));
 await b.close();
 console.log(bad ? `\n${bad} failed` : '\nall good');

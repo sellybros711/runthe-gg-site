@@ -60,10 +60,10 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- The Putting Green: a tester preview. It draws nothing until puttOn() opens it (see PUTT_TESTERS). -->
-<script defer src="putt/putt.js?v=79"></script>
+<script defer src="putt/putt.js?v=80"></script>
 <script defer src="putt/land.js?v=12"></script>
 <script defer src="putt/hole3d.js?v=16"></script>
-<script defer src="putt/trail.js?v=35"></script>
+<script defer src="putt/trail.js?v=36"></script>
 <script defer src="putt/mapland.js?v=6"></script>
 <!-- The course golfer in the profile style, asked through g3dOn(). -->
 <script defer src="golfer3d.js?v=5"></script>
@@ -6197,7 +6197,7 @@ function overlayPurchased(screen){
       +'<h3 class="tphead" style="margin:14px 0 4px;font-size:30px">'+esc(passThemeName())+' is ACTIVE!</h3>'
       +'<p class="lede" style="max-width:420px;margin:0 auto 12px">Yours for the rest of Season '+ssn.n+' ('+ssn.daysLeft+' day'+(ssn.daysLeft>1?'s':'')+' left).</p>'
       +'<div style="display:flex;flex-direction:column;gap:6px;margin:0 auto 14px;max-width:320px;text-align:left">'
-      +[['🎟️','PRO lane of the Season '+ssn.n+' Tour Pass track unlocked'],['♾️','Unlimited Daily Challenge plays'],['🪙','+'+coinFmt(TOURPASS.coins)+' coins, already in your wallet'],['🎁',TOURPASS.packs+' seasonal packs, waiting in Pro Shop → Packs'],['⭐',PASS_REWARD_MULT+'× coins from every mode, starting now']]
+      +[['🎟️','PRO lane of the Season '+ssn.n+' Tour Pass track unlocked'],['♾️','Unlimited Daily Challenge plays'],['🪙','+'+coinFmt(TOURPASS.coins)+' coins, already in your wallet'],['🎁',TOURPASS.packs+' seasonal packs, waiting in Pro Shop → Packs'],['⭐',PASS_REWARD_MULT+'× coins from Play 18, Career and Head to Head, starting now']]
         .map(function(x){ return '<div class="small" style="display:flex;gap:8px;align-items:center;color:#eaf5ee"><span style="flex:0 0 auto">'+x[0]+'</span><span>'+esc(x[1])+'</span></div>'; }).join('')
       +'</div>'
       +'<button class="btn tpgo act" style="max-width:360px;margin:0 auto 8px">Open your packs ▸</button>';
@@ -9988,7 +9988,7 @@ function sgCardHTML(sg, opts){
    In-game currency + a shop of equippable gear that grants small stat boosts. Design guarantees:
    - Coins are DERIVED from permanent progress (achievements + lifetime milestones) minus a `spent`
      counter, so they can never be farmed by replaying and stay identical across devices.
-   - Boosts apply in SOLO play only: they're baked in buildPlayer(), which feeds Career + Daily; online
+   - Boosts apply in the CAREER only: they're baked in buildPlayer() when S.daily is false (the Daily is neutral); online
      H2H builds its own draft and never calls buildPlayer, so bought gear can't touch ranked / the H2H
      board. Per-skill + total caps keep career from being trivialized.
    - Account-scoped (acctKey) + cloud-synced. Signed-in feature (like achievements). ------------------- */
@@ -11272,8 +11272,8 @@ function accBuy(id){ const it=accById(id); if(!it) return {ok:false,msg:'Unknown
 }
 // ---- boosts: summed over equipped gear, clamped per-skill + total (SOLO ONLY via buildPlayer) ----
 function accBoost(){ if(!SHOP_ENABLED) return {};   // shelved: equipped gear gives no boost while the economy is disabled
-  // CS378: boosts come ONLY from gear you can currently see & control - the worn cosmetics (headwear /
-  // eyewear / patterns / special shirts) and the golf bag. The legacy per-slot ACCESSORIES catalog
+  // CS378: boosts come ONLY from gear you can currently see & control - the worn cosmetics (headwear, eyewear,
+  // heritage patterns, the putter, and since the ladder of 2026-10-16 the ball and cleats) and the club set. The legacy per-slot ACCESSORIES catalog
   // (glove/shoes/driver/putter/ball/charm + milestone gear stored in look.acc) is no longer exposed by the
   // shop, so summing it credited invisible boosts the player never equipped (and double-counted headwear/
   // eyewear against the cosmetic system) - which read as "boosts from clubs I don't even own".
@@ -11285,8 +11285,20 @@ function accBoost(){ if(!SHOP_ENABLED) return {};   // shelved: equipped gear gi
   // enforce the total cap by trimming largest-first if needed
   total=Object.values(out).reduce((a,b)=>a+b,0);
   while(total>ACC_TOTAL_CAP){ let mk=null; for(const k in out){ if(out[k]>0 && (mk===null||out[k]>out[mk])) mk=k; } if(mk===null) break; out[mk]--; total--; }
+  // collection sets ride on top of the capped gear, outside its caps (setBoostRows)
+  setBoostRows().forEach(r=>{ for(const k in r.b) out[k]=(out[k]||0)+r.b[k]; });
+  for(const k in out) if(!out[k]) delete out[k];
   return out;
 }
+// COLLECTION SETS (the owner's pick, 2026-10-16): a finished collection is +1 on its own stat for good, wherever gear
+// counts (the career and an exhibition Head to Head), outside the gear caps. One stat a collection, so the eight cover
+// all eight. A themed drop's pieces stay owned out of season, so its set does too.
+const COLLECTION_SETS={drop1:'acc', drop2:'clu', rungames:'app', summer:'scr', spooky:'put', winter:'sht', harvest:'bnk', biggame:'dist'};
+const SET_STAT_MAX=1;   // what a finished collection adds to its stat (and all sets can add to one)
+function setBoostRows(){ const rows=[]; if(!SHOP_ENABLED) return rows; const per={};
+  try{ for(const id in COLLECTION_SETS){ const d=dropById(id), k=COLLECTION_SETS[id]; if(!d) continue; const pr=dropProgress(d);
+    if(pr.tot>0 && pr.own>=pr.tot && (per[k]||0)<SET_STAT_MAX){ per[k]=(per[k]||0)+1; rows.push({drop:id, name:d.name, b:{[k]:SET_STAT_MAX}}); } } }catch(e){}
+  return rows; }
 function accBoostTotal(){ const b=accBoost(); return Object.values(b).reduce((a,x)=>a+x,0); }
 // CS410, the EFFECT LAYER: animated glow auras (legendary cosmetics) + a matching hole-view tracer skin.
 // An effect is a DISPLAY-layer treatment (animated CSS drop-shadow on the avatar img + the shot tracer color),
@@ -12062,11 +12074,26 @@ const COS_BOOST={
   'cl:steeldriver':{dist:3}, 'cl:finderdriver':{acc:3}, 'cl:speeddriver':{dist:4,acc:-1}, 'cl:tourwood':{dist:2,app:1},
   'cl:forgediron':{app:3}, 'cl:bladeirons':{app:4,scr:-1}, 'cl:milledwedge':{sht:2,bnk:1}, 'cl:sandwedge':{bnk:3},
   'cl:lobwedge':{sht:3,scr:1,dist:-1}, 'cl:mallet':{put:3}, 'cl:scoringiron':{app:3,scr:1},
-  'cl:persimmon':{dist:3,acc:1}, 'cl:blade':{put:3}, 'cl:excalibur':{dist:5,acc:1}, 'cl:wand':{put:5}, 'cl:hockey':{put:4,scr:1},
+  'cl:persimmon':{dist:3,acc:1}, 'cl:blade':{put:4}, 'cl:excalibur':{dist:5,acc:1}, 'cl:wand':{put:5}, 'cl:hockey':{put:4,scr:1},
   'cl:scepter':{put:4,app:1}, 'cl:candycane':{put:3,clu:1}, 'cl:onyxdriver':{dist:5}, 'cl:emeraldirons':{app:5},
   'cl:frostdriver':{dist:3,acc:1}, 'cl:rubywedge':{sht:3,bnk:1,dist:-1}, 'cl:sapphireputter':{put:3,clu:1},
   'cl:voidputter':{put:4,scr:1}, 'cl:rosewood':{dist:2,app:2}, 'cl:scramblewedge':{scr:4,sht:1}, 'cl:golden':{dist:2,app:2,put:2}, 'cl:platinum':{acc:2,app:2,put:2}, 'cl:diamond':{dist:1,acc:1,app:1,sht:1,put:1,clu:1}, 'cl:glizzy':{sht:2,scr:1,clu:2}, 'cl:coffin':{dist:3,scr:1}, 'cl:poolnoodle':{scr:2,clu:2}
 };
+// THE LADDER (the owner's pick, 2026-10-16): an item carries the power its rarity buys. An accessory is worth 1, 2, 3
+// or 4 points from common to legendary, a club set 1, 3, 4 or 5, and an item that can only be earned counts as rare.
+// Balls and cleats count as gear, and their boosts lean on the stats gear barely touched (bunker, short game,
+// accuracy). These are ADDED: a boost written above is frozen and never lowered, removed or moved (the owner's boost
+// rule; golf/check-boosts.mjs holds the baseline). An item that sat above its rung keeps what it had.
+Object.assign(COS_BOOST,{
+  // headwear
+  'hw:tweed':{app:2,clu:1}, 'hw:straw':{scr:2,clu:1}, 'hw:laurel':{clu:2,app:2}, 'hw:backwards':{clu:1,scr:1}, 'hw:pirate':{scr:2,bnk:1}, 'hw:grad':{app:1,acc:1}, 'hw:witch':{put:2,sht:1}, 'hw:reaperhood':{clu:2,put:2}, 'hw:elf':{sht:1,scr:1}, 'hw:antlers':{dist:2,acc:1}, 'hw:football':{dist:2,clu:1}, 'hw:floppy':{acc:1,scr:1}, 'hw:knight':{clu:2,bnk:2}, 'hw:turkey':{scr:2,sht:1},
+  // eyewear
+  'ew:prismshades':{app:2,put:2}, 'ew:goldshades':{clu:2,app:1}, 'ew:beach':{acc:1,scr:1}, 'ew:eyeblack':{clu:1,dist:1}, 'ew:wayfarer':{app:1,clu:1}, 'ew:sport':{acc:1,dist:1}, 'ew:cateye':{put:1,app:1}, 'ew:readers':{put:1}, 'ew:rose':{clu:1,put:1}, 'ew:steampunk':{app:2,sht:1}, 'ew:cyber':{acc:2,app:1}, 'ew:patriot':{clu:2,acc:1}, 'ew:groucho':{scr:2,sht:1}, 'ew:diamond':{clu:2,put:2},
+  // balls
+  'bl:featherie':{sht:2,scr:1}, 'bl:comet':{app:2,sht:2}, 'bl:red':{clu:1}, 'bl:neon':{dist:1,app:1}, 'bl:marble':{put:1,app:1}, 'bl:eight':{scr:1,bnk:1}, 'bl:gold':{app:2,put:1}, 'bl:frost':{acc:2,sht:1}, 'bl:obsidian':{dist:2,scr:1}, 'bl:flamingo':{sht:1,scr:1}, 'bl:ghost':{scr:1,bnk:1}, 'bl:eyeball':{app:1,put:1}, 'bl:snowball':{sht:1,bnk:1}, 'bl:pigskin':{dist:2,scr:1}, 'bl:rungames':{app:2,scr:1}, 'bl:cranberry':{sht:1,bnk:1}, 'bl:blackcat':{scr:1,bnk:1},
+  // cleats
+  'ct:saddle':{acc:1}, 'ct:sunday':{clu:1,acc:1}, 'ct:neon':{dist:1,acc:1}, 'ct:golden':{acc:2,bnk:1}, 'ct:rocket':{dist:2,acc:2}, 'ct:phantom':{bnk:2,acc:2}, 'ct:bone':{bnk:2,sht:1}, 'ct:rungames':{acc:1,dist:1}
+});
 function cosBoost(cat,id){ return COS_BOOST[cosKey(cat,id)]||null; }
 // the WORN, OWNED, boost-carrying cosmetics right now - the single source of truth the boost math AND the
 // on-screen "active boosts" breakdown both read, so the display can never drift from what's applied.
@@ -12075,6 +12102,7 @@ function cosmeticBoostRows(){ const rows=[]; const L=S.look||{};
     const o=(cosmeticItems(cat)||[]).find(x=>x.id===id); rows.push({cat,id,name:(o&&o.name)||id,b}); };
   if(L.cap) push('hw', L.hatStyle||'cap');   // headwear boost only counts while a hat is actually worn
   push('ew', L.eyewear); push('pat', L.shirtPat); push('putter', puttEquippedId());   // colors never boost (owner), so shirt color isn't read
+  push('ball', L.ball); push('cleats', L.cleats);   // the ladder (2026-10-16): balls and cleats are gear
   return rows;
 }
 function cosmeticBoost(){ const o={}; cosmeticBoostRows().forEach(r=>{ for(const k in r.b) o[k]=(o[k]||0)+r.b[k]; }); return o; }
@@ -12193,24 +12221,28 @@ function grandfatherLook(){ if(!sbSignedIn()||!S.look) return; const s=coinState
   own('shirt',S.look.polo); own('pat',S.look.shirtPat); own('hat',S.look.hat); own('pants',S.look.pants); own('shoes',S.look.shoes);
   if(ch) coinSave(s);
 }
-function buildPlayer(){const p={name:S.name||'Your Golfer',you:true};
+function buildPlayer(o){const p={name:S.name||'Your Golfer',you:true};
   CATS.forEach(c=>p[c.k]=S.slots[c.k]?S.slots[c.k].value:REPLACEMENT);
   // caddie: bake the always-on part of your caddie's power into your ratings so it shows in OVR + radar
   // (situational major/venue bonuses are added to your event overall in the sim, not here). Clamped so a
   // boost can't push a rating out of range or a -1 (Two Shot Lynch) below the floor.
   const cad=equippedCaddie();
-  if(cad && cad.power.base){ for(const k in cad.power.base){ if(p[k]!=null) p[k]=Math.max(40,Math.min(99, p[k]+cad.power.base[k])); } p._caddie=cad.id; }
+  // Past 99 (the owner's call, 2026-10-16): in the career a caddie, coaching and gear may each carry a stat past 99.
+  // Each is held by its own cap (a caddie's few points, an effect's amount, ACC_SKILL_CAP and SET_STAT_MAX), so only
+  // the floor clamps here. The Daily keeps every stat at 99, as it always has.
+  const top=S.daily?99:Infinity;
+  if(cad && cad.power.base){ for(const k in cad.power.base){ if(p[k]!=null) p[k]=Math.max(40,Math.min(top, p[k]+cad.power.base[k])); } p._caddie=cad.id; }
   // CS325: temporary career-decision effects (injuries / coaching boosts) - display side; career only.
   // The SIM applies the same delta as a course-fit-weighted eo nudge in beginEvent (see careerFxEo).
-  if(typeof careerFxOn==='function' && careerFxOn()){ for(const c of CATS){ const d=careerSkillFx(c.k); if(d && p[c.k]!=null) p[c.k]=Math.max(40,Math.min(99, p[c.k]+d)); } }
-  // equipped accessory/bag boosts LAST. Applied in CAREER only (Daily/Spotlight/Legend set S.daily=true and stay
-  // a neutral field). Online H2H uses its own path (h2hSkills), not buildPlayer. Gear is the ONE thing that may
-  // push an effective rating past 99 (up to 99+ACC_SKILL_CAP), so a fully-kitted OVR can read over 99.
-  let over=false;
-  if(!S.daily){ const ab=accBoost(); for(const k in ab){ if(p[k]!=null) p[k]=Math.max(40,Math.min(99+ACC_SKILL_CAP, p[k]+ab[k])); }
-    if(accBoostTotal()>0){ p._gear=1; over=true; } }
+  // o.noFx: the golfer the season sim plays, which takes these as careerFxEo in beginEvent instead (seasonMeSync)
+  if(!(o&&o.noFx) && typeof careerFxOn==='function' && careerFxOn()){ for(const c of CATS){ const d=careerSkillFx(c.k); if(d && p[c.k]!=null) p[c.k]=Math.max(40,Math.min(top, p[c.k]+d)); } }
+  // equipped gear and collection sets LAST. Applied in CAREER only (Daily/Spotlight/Legend set S.daily=true and stay
+  // a neutral field). Online H2H uses its own path (h2hSkills), not buildPlayer.
+  if(!S.daily){ const ab=accBoost(); for(const k in ab){ if(p[k]!=null) p[k]=Math.max(40, p[k]+ab[k]); }
+    if(accBoostTotal()>0) p._gear=1; }
+  p._over=!S.daily;   // the career golfer's overall may read past 99 (ovrFromSkills allowOver); the Daily's never does
   p.country=(S.look&&S.look.country)||'United States'; p.nation=playerNation();
-  p.skill=ovrFromSkills(p, over); return p;}
+  p.skill=ovrFromSkills(p, p._over); return p;}
 
 /* ---------- build identity ---------- */
 function ovrTier(o){
@@ -12965,7 +12997,7 @@ function scrRules(){
   perkSection('🎴 Packs','var(--gold)','Open packs, spin the wheel',null,[
     ['🟢','Three tiers','Base, Tour and Champion packs, each pricier with better odds at rare and legendary items. The drop-rate odds for every rarity are published right on the pack screen.'],
     ['🎡','Wheel-spin reveal','Opening a pack spins a wheel that lands on your item. Every duplicate earns a shard; duplicates from packs you BOUGHT also refund coins.'],
-    ['◆','Earn shards by playing','Duplicates earn shards, and so do challenges: finish all your daily quests for a common shard, weekly challenges pay a rare shard (epic on the first two), and the 7-Day Rewards and login calendars drop shards along the way. Legendary shards come only from legendary duplicates.'],
+    ['◆','Earn shards by playing','Duplicates earn shards, and so do challenges: finish all your daily quests for a common shard, weekly challenges pay a rare shard (epic on the first two), and the 7-Day Rewards and login calendars drop shards along the way. Legendary shards come from legendary duplicates and the Tour Pass.'],
     ['🎁','Lots of free packs','Your first pack is on us, weekly challenges and daily streaks hand out free packs, invite a friend and you both get one, and a 5-pack bundle saves you a pack\'s worth of coins.'],
     ['🛡️','No bad-luck streaks','Pity timers guarantee an epic-or-better and a legendary within a set number of opens, and they hit sooner on the higher tiers.'],
   ]);
@@ -12974,7 +13006,7 @@ function scrRules(){
     ['🆚','Four modes','1v1, Best Ball and Scramble (2v2 teams), and Free-for-All (4 players). Everyone drafts their own golfer.'],
     ['⚡','Quick or private','Quick Match finds you an opponent, or create a private room and share the code with friends. A private host can open the room to the public to fill empty seats.'],
     ['⛳','Watch it play out','Every golfer plays the same course on the tracer. A tie goes to a sudden-death playoff until someone wins outright.'],
-    ['📊','W/L leaderboards','Each mode has its own win/loss leaderboard. Online is a fair fight, gear boosts apply only in career and the daily, never here.'],
+    ['📊','W/L leaderboards','Each mode has its own win/loss leaderboard. Online is a fair fight. Gear boosts count in Career, never here.'],
   ]);
 
   perkSection('🏅 Progress & Rewards','var(--gold)','Level up your profile',null,[
@@ -16667,7 +16699,7 @@ function closetRandomOutfit(){
 }
 // best outfit: per boost-carrying category, equip the owned item with the highest NET boost (ties keep your pick)
 function closetBestOutfit(){
-  ['hw','ew','pat','club'].forEach(cat=>{ try{
+  ['hw','ew','pat','club','putter','ball','cleats'].forEach(cat=>{ try{
     const own=(cosmeticItems(cat)||[]).filter(o=>cosOwned(cat,o.id)); if(!own.length) return;
     let best=null, bs=-1e9;
     own.forEach(o=>{ const b=cosBoost(cat,o.id)||{}; let s=0; for(const k in b) s+=b[k];
@@ -17094,7 +17126,7 @@ const CLUBS=[
  {id:'mallet',name:'Pure Roll Clubs',tag:'Pure Roll',rar:'rare',kind:'store',b:{put:3},hist:'A forgiving high-MOI set, pure roll'},
  {id:'scoringiron',name:'Scoring Clubs',tag:'Scoring',rar:'epic',kind:'store',b:{app:3,scr:1},hist:'Flag-hunting from everywhere'},
  {id:'persimmon',name:'Wooden Clubs',tag:'Wooden',rar:'epic',kind:'pack',b:{dist:3,acc:1},hist:'Hand-turned persimmon & hickory, the classic set'},
- {id:'blade',name:'Heritage Clubs',tag:'Heritage',rar:'epic',kind:'pack',b:{put:3},hist:'Milled carbon-steel classics'},
+ {id:'blade',name:'Heritage Clubs',tag:'Heritage',rar:'epic',kind:'pack',b:{put:4},hist:'Milled carbon-steel classics'},
  {id:'excalibur',name:'Excalibur Clubs',tag:'Excalibur',rar:'legendary',kind:'pack',b:{dist:5,acc:1},hist:'The sword in the fairway'},
  {id:'wand',name:'Wizard Clubs',tag:'Wizard',rar:'legendary',kind:'pack',b:{put:5},hist:'Wands and staffs, sink everything like magic'},
  {id:'hockey',name:'Hockey Clubs',tag:'Hockey',rar:'legendary',kind:'pack',b:{put:4,scr:1},hist:'A full set of hockey sticks, trouble all week'},
@@ -17133,9 +17165,9 @@ const PUTTERS=[
  {id:'copper',name:'Copper Tour Blade',rar:'epic',kind:'pack',b:{put:3},reach:2,shape:'putter',pal:{H:'#b5652a',F:'#e39a5c',S:'#ffd0a3',G:'#6a3410'},hist:'Soft copper inlay, a tour player\'s touch'},
  {id:'magicwand',name:'The Magic Wand',rar:'legendary',kind:'pack',b:{put:4},reach:3,shape:'wand',pal:null,hist:'It just goes in'},
  {id:'goldplated',name:'Gold Plated Putter',rar:'legendary',kind:'pack',b:{put:4,clu:1},reach:3,shape:'putter',pal:{H:'#c99a1a',F:'#ffe98a',S:'#fff6c4',G:'#7a5a08'},hist:'Twenty four karat, made for Sunday'},
- {id:'scope',name:'Scope Putter',rar:'epic',kind:'pp',b:{put:2},reach:2,perk:'scope',shape:'putter',pal:{H:'#1f8fd6',F:'#7fd0ff',S:'#e0f4ff',G:'#0a3a5a'},hist:'Putt Putt: the aim line reaches four feet further'},
- {id:'bank',name:'Bank Shot Putter',rar:'epic',kind:'pp',b:{put:2},reach:2,perk:'bank',shape:'putter',pal:{H:'#2e9e52',F:'#8fe0a8',S:'#e2ffe9',G:'#0e4a24'},hist:'Putt Putt: the aim line bends off the walls'},
- {id:'buoy',name:'Lifeguard Putter',rar:'epic',kind:'pp',b:{put:2},reach:2,perk:'buoy',shape:'putter',pal:{H:'#e5483a',F:'#ffffff',S:'#ffd0cb',G:'#7a1a12'},hist:'Putt Putt: once a hole, water costs no stroke'}];
+ {id:'scope',name:'Scope Putter',rar:'epic',kind:'pp',b:{put:3},reach:2,perk:'scope',shape:'putter',pal:{H:'#1f8fd6',F:'#7fd0ff',S:'#e0f4ff',G:'#0a3a5a'},hist:'Putt Putt: the aim line reaches four feet further'},
+ {id:'bank',name:'Bank Shot Putter',rar:'epic',kind:'pp',b:{put:3},reach:2,perk:'bank',shape:'putter',pal:{H:'#2e9e52',F:'#8fe0a8',S:'#e2ffe9',G:'#0e4a24'},hist:'Putt Putt: the aim line bends off the walls'},
+ {id:'buoy',name:'Lifeguard Putter',rar:'epic',kind:'pp',b:{put:3},reach:2,perk:'buoy',shape:'putter',pal:{H:'#e5483a',F:'#ffffff',S:'#ffd0cb',G:'#7a1a12'},hist:'Putt Putt: once a hole, water costs no stroke'}];
 const PUTTERS_BY={}; PUTTERS.forEach(function(p){ PUTTERS_BY[p.id]=p; if(p.b && Object.keys(p.b).length) COS_BOOST['pu:'+p.id]=p.b; PXG_CLUBS['pu_'+p.id]=PXG_CLUBS[p.shape]; if(p.pal) PXG_CLUB_PAL['pu_'+p.id]=p.pal; else if(PXG_CLUB_PAL[p.shape]) PXG_CLUB_PAL['pu_'+p.id]=PXG_CLUB_PAL[p.shape]; });
 const PUTTER_REACH_FT=[5,7,9,11];   // the Putt Putt aim line at each reach (putt.js AIM_FEET)
 // the equipped putter, only if it is owned (a synced choice this device has no record of falls back to Stock)
@@ -19302,7 +19334,8 @@ function hvAddressGolfer(hole, holeIdx, courseKey, look){
   let anch=g3?g3.ball:(useSw4?(PXG_SW4_ANCH.N||[12,18]):dir8Anchor('N','full', !!look.lefty));
   if(useSw4) anch=[anch[0], anch[1]+SW4_HR];
   const x0=A[0]-GW*(anch[0]/W), y0=A[1]-GH*(anch[1]/H);   // stands over the ball facing up the hole (no rotation)
-  return `<g class="hvswing hvsw-full"><image class="hvsw hvsw-static" href="${addr}" x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${GW.toFixed(1)}" height="${GH.toFixed(1)}" preserveAspectRatio="none"/></g>`;
+  const fx=fxOf(look), glow=fx?' hvsw-glow':'', gsty=fx?` style="--fxc:${fx.col};animation-delay:${auraPhase().toFixed(3)}s"`:'';   // the aura glows at address as it does on the swing
+  return `<g class="hvswing hvsw-full${glow}"${gsty}><image class="hvsw hvsw-static" href="${addr}" x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${GW.toFixed(1)}" height="${GH.toFixed(1)}" preserveAspectRatio="none"/></g>`;
 }
 // in the Pro Shop, preview pending COLOR purchases live (worn gear is dropped, so only colors preview)
 // true in the Pro Shop overlay AND the customization (setup) screen, which share the tile/preview UI
@@ -19412,27 +19445,33 @@ function accBoostSummaryNode(){
   const node=$(`<div class="accboost"></div>`);
   const clubs=(typeof bagBoostRows==='function')?bagBoostRows():[];
   const worn=(typeof cosmeticBoostRows==='function')?cosmeticBoostRows():[];
-  if(!order.length && !clubs.length && !worn.length){
+  const sets=setBoostRows();
+  if(!order.length && !clubs.length && !worn.length && !sets.length){
     node.appendChild($(`<div class="small muted">No boosts on yet. Gear up and give your golfer an edge.</div>`));
     return node;
   }
   const total=order.reduce((a,k)=>a+b[k],0);
-  let raw=0; clubs.concat(worn).forEach(r=>{ for(const k in r.b) raw+=r.b[k]; });
+  let raw=0; clubs.concat(worn,sets).forEach(r=>{ for(const k in r.b) raw+=r.b[k]; });
+  // say which cap bit: a stat past +ACC_SKILL_CAP, the +ACC_TOTAL_CAP total, or both (sets sit outside both)
+  const gsum={}; clubs.concat(worn).forEach(r=>{ for(const k in r.b) gsum[k]=(gsum[k]||0)+r.b[k]; });
+  const statHit=Object.values(gsum).some(v=>v>ACC_SKILL_CAP), totHit=Object.values(gsum).reduce((a,v)=>a+Math.max(-ACC_SKILL_CAP,Math.min(ACC_SKILL_CAP,v)),0)>ACC_TOTAL_CAP;
+  const capTxt=statHit&&totHit?`capped at +${ACC_SKILL_CAP} a stat and +${ACC_TOTAL_CAP} in all`:statHit?`capped at +${ACC_SKILL_CAP} a stat`:totHit?`capped at +${ACC_TOTAL_CAP} in all`:'';
   // compact summary (owner: "way too much reading"): one line + the per-skill chips; the per-item
   // breakdown lives behind a details expander.
-  node.appendChild($(`<div class="small" style="margin-bottom:6px"><b style="color:var(--gold)">Active boosts</b> · <b style="color:${total>=0?'#41dea6':'#e2554e'}">${total>=0?'+':''}${total}</b> total <span class="muted">·${raw>total?' capped at +'+ACC_TOTAL_CAP+' ·':''} Career only</span></div>`));
+  node.appendChild($(`<div class="small" style="margin-bottom:6px"><b style="color:var(--gold)">Active boosts</b> · <b style="color:${total>=0?'#41dea6':'#e2554e'}">${total>=0?'+':''}${total}</b> total <span class="muted">·${capTxt?' '+capTxt+' ·':''} Career only</span></div>`));
   if(order.length){
     const chips=$(`<div class="boostchips" style="margin-top:2px"></div>`);
     order.forEach(k=>{ const v=b[k]; chips.appendChild($(`<span class="boostchip" style="${v<0?'color:#e2554e;border-color:rgba(226,85,78,.4)':''}">${v>=0?'+':''}${v} ${esc(CATS.find(c=>c.k===k).short)}</span>`)); });
     node.appendChild(chips);
   }
-  if(clubs.length||worn.length){
+  if(clubs.length||worn.length||sets.length){
     const det=$(`<details style="margin-top:7px"><summary class="small" style="cursor:pointer;color:var(--gold);font-weight:700;list-style:none">What's boosting you ▾</summary></details>`);
     det.open=!!S.boostDetOpen; det.addEventListener('toggle',()=>{ S.boostDetOpen=det.open; });
     const inner=$(`<div style="padding-top:4px"></div>`);
     const rowTxt=r=>`<b style="color:var(--oncard)">${esc(r.name)}</b> ${shopBoostTxt(r.b)}`;
     if(clubs.length) inner.appendChild($(`<div class="small" style="margin:3px 0;line-height:1.6"><span style="color:var(--gold);font-weight:800;letter-spacing:.04em">CLUBS</span> · ${clubs.map(rowTxt).join(' <span class="muted">·</span> ')}</div>`));
     if(worn.length) inner.appendChild($(`<div class="small" style="margin:3px 0;line-height:1.6"><span style="color:var(--gold);font-weight:800;letter-spacing:.04em">APPAREL</span> · ${worn.map(rowTxt).join(' <span class="muted">·</span> ')}</div>`));
+    if(sets.length) inner.appendChild($(`<div class="small" style="margin:3px 0;line-height:1.6"><span style="color:var(--gold);font-weight:800;letter-spacing:.04em">COLLECTIONS</span> · ${sets.map(rowTxt).join(' <span class="muted">·</span> ')} <span class="muted">(on top of the cap)</span></div>`));
     inner.appendChild($(`<div class="small muted" style="margin-top:3px">Boosts apply in Career · the Daily &amp; ranked online stay neutral.</div>`));
     det.appendChild(inner); node.appendChild(det);
   }
@@ -19540,16 +19579,23 @@ function ratNumStyle(v){ return `color:${ratColor(v)}${v>=90?';text-shadow:0 0 1
 const RAD_CX=125, RAD_CY=124, RAD_R=88;
 function radAng(i){ return (-Math.PI/2)+i*(2*Math.PI/CATS.length); }
 function radPt(i,r){ return [RAD_CX+Math.cos(radAng(i))*r, RAD_CY+Math.sin(radAng(i))*r]; }
+// The golfer a rating web draws: the one the chip beside it shows and the sim plays (gear, caddie and career
+// effects on the career draft, gear on an exhibition Head to Head), so its centre OVR is the chip's number.
+// over: the overall may read past 99 (gear on). Any other slots draw as drafted.
+function radarGolfer(slots){
+  try{ if(slots===S.slots){ const p=buildPlayer(); return {vals:CATS.map(c=>p[c.k]), over:!!p._over}; }
+    if(S.h2h && slots===S.h2h.slots){ const s=h2hSkills(); return {vals:CATS.map(c=>s[c.k]), over:h2hMatchBoosted(S.h2h.seed)}; } }catch(e){}
+  return {vals:CATS.map(c=> slots[c.k]? slots[c.k].value : REPLACEMENT), over:false}; }
 function dynRadar(slots){
   slots=slots||S.slots;   // CS342: optional slots source so online-mode drafts (S.h2h.slots) reuse the same web
   const n=CATS.length;
-  const cur=CATS.map(c=> slots[c.k]? slots[c.k].value : REPLACEMENT);
+  const rg=radarGolfer(slots), cur=rg.vals;
   const filled=CATS.map(c=> !!slots[c.k]);
   const from = (_radarPrev && _radarPrev.length===n) ? _radarPrev.slice() : cur.map(()=>REPLACEMENT);
   let pulseIdx=-1, pulseMax=0.6; cur.forEach((v,i)=>{ const d=Math.abs(v-(from[i]!=null?from[i]:REPLACEMENT)); if(d>pulseMax){pulseMax=d; pulseIdx=i;} });
   _radarPrev = cur.slice();
   const uid='dr'+(_radarN++);
-  const polyPts=vals=>vals.map((v,i)=>radPt(i,RAD_R*(v/100)).map(x=>x.toFixed(1)).join(',')).join(' ');
+  const polyPts=vals=>vals.map((v,i)=>radPt(i,RAD_R*(Math.min(100,v)/100)).map(x=>x.toFixed(1)).join(',')).join(' ');   // a rating past 99 sits on the outer ring, never past it
   let grid='';
   [0.25,0.5,0.75,1].forEach((f,gi)=>{ grid+=`<polygon points="${CATS.map((_,i)=>radPt(i,RAD_R*f).map(v=>v.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="rgba(244,227,201,${gi===3?0.18:0.06})" stroke-width="1"/>`; });
   let axes='', labels='';
@@ -19557,9 +19603,9 @@ function dynRadar(slots){
     const [lx,ly]=radPt(i,RAD_R+15); labels+=`<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" font-size="9.5" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="${filled[i]?ratColor(cur[i]):'#8797a6'}">${RSHORT[c.k]}</text>`; });
   const baseline=CATS.map((_,i)=>radPt(i,RAD_R*(REPLACEMENT/100)).map(v=>v.toFixed(1)).join(',')).join(' ');
   const sheenPoly=CATS.map((_,i)=>radPt(i,RAD_R).map(v=>v.toFixed(1)).join(',')).join(' ');
-  const dotsStr=cur.map((v,i)=>{const[x,y]=radPt(i,RAD_R*(from[i]/100));return `<circle class="dr-dot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${filled[i]?3.4:1.9}" fill="${ratColor(v)}" stroke="rgba(0,0,0,.25)" stroke-width="${filled[i]?0.6:0}"/>`;}).join('');
+  const dotsStr=cur.map((v,i)=>{const[x,y]=radPt(i,RAD_R*(Math.min(100,from[i])/100));return `<circle class="dr-dot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${filled[i]?3.4:1.9}" fill="${ratColor(v)}" stroke="rgba(0,0,0,.25)" stroke-width="${filled[i]?0.6:0}"/>`;}).join('');
   let pulse='';
-  if(pulseIdx>=0){ const [px,py]=radPt(pulseIdx,RAD_R*(cur[pulseIdx]/100)); pulse=`<circle class="dr-pulse" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="3" fill="none" stroke="${ratColor(cur[pulseIdx])}" stroke-width="2.2"/>`; }
+  if(pulseIdx>=0){ const [px,py]=radPt(pulseIdx,RAD_R*(Math.min(100,cur[pulseIdx])/100)); pulse=`<circle class="dr-pulse" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="3" fill="none" stroke="${ratColor(cur[pulseIdx])}" stroke-width="2.2"/>`; }
   const wrap=$(`<div class="dynradar"><svg class="dr-svg" viewBox="0 0 250 252" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <radialGradient id="${uid}f" cx="50%" cy="45%" r="62%">
@@ -19581,19 +19627,19 @@ function dynRadar(slots){
     <text class="dr-ovr" x="${RAD_CX}" y="${RAD_CY+5}" text-anchor="middle" font-weight="800" font-size="27" style="font-family:var(--mono)">--</text>
     <text x="${RAD_CX}" y="${RAD_CY+16}" text-anchor="middle" font-size="8" font-weight="800" letter-spacing="1.5" fill="#9fb0bd" style="font-family:var(--body)">OVR</text>
   </svg></div>`);
-  animateRadar(wrap.querySelector('.dr-svg'), from, cur);
+  animateRadar(wrap.querySelector('.dr-svg'), from, cur, rg.over);
   return wrap;
 }
-function animateRadar(svg, from, to){
+function animateRadar(svg, from, to, over){
   if(!svg) return;
   const poly=svg.querySelector('.dr-poly'), glow=svg.querySelector('.dr-glow'), dots=[...svg.querySelectorAll('.dr-dot')], ovrT=svg.querySelector('.dr-ovr');
   const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
   const dur=reduce?0:580, t0=performance.now();
   const paint=(vals)=>{
-    const pts=vals.map((v,i)=>radPt(i,RAD_R*(v/100)).map(x=>x.toFixed(1)).join(',')).join(' ');
+    const pts=vals.map((v,i)=>radPt(i,RAD_R*(Math.min(100,v)/100)).map(x=>x.toFixed(1)).join(',')).join(' ');
     poly.setAttribute('points',pts); glow.setAttribute('points',pts);
-    dots.forEach((d,i)=>{ const [x,y]=radPt(i,RAD_R*(vals[i]/100)); d.setAttribute('cx',x.toFixed(1)); d.setAttribute('cy',y.toFixed(1)); });
-    const sk={}; CATS.forEach((c,i)=>sk[c.k]=vals[i]); const ov=Math.round(ovrFromSkills(sk)); const tc=ovrTier(ov).c;
+    dots.forEach((d,i)=>{ const [x,y]=radPt(i,RAD_R*(Math.min(100,vals[i])/100)); d.setAttribute('cx',x.toFixed(1)); d.setAttribute('cy',y.toFixed(1)); });
+    const sk={}; CATS.forEach((c,i)=>sk[c.k]=vals[i]); const ov=Math.round(ovrFromSkills(sk, over)); const tc=ovrTier(ov).c;
     ovrT.textContent=ov; ovrT.setAttribute('fill',tc); poly.setAttribute('stroke',tc); glow.setAttribute('stroke',tc);
   };
   if(dur===0){ paint(to); return; }
@@ -20265,7 +20311,15 @@ let _lbRects=null;   // {name: top-within-board} from the previous season render
 let _hvbRects=null;  // {name: top-within-board} of the tracer's floating scoreboard, for crisp FLIP swaps
 var _hvHudHole=null; // TRACER REVAMP: course:hole the HUD chips were last built for (they slide in on a new hole only). `var`: read before this line can execute.
 let _prevScTotal=null;   // your last-rendered rounded to-par, for the scorecard count-up tween
+// THE GOLFER THE SEASON PLAYS. The field holds S.season.me from the day the season started, so a closet changed
+// mid-season (gear, a caddie) never reached the sim that season while every screen showed it at once. Each event
+// re-reads the golfer. Career injuries and coaching (careerFx) stay out of it: beginEvent adds them as
+// careerFxEo, once (the snapshot used to carry any active at the season's start as well, so they counted twice).
+function seasonMeSync(){ const me=S.season&&S.season.me; if(!me||S.daily) return; let p; try{ p=buildPlayer({noFx:true}); }catch(e){ return; }
+  CATS.forEach(c=>{ me[c.k]=p[c.k]; }); me.skill=p.skill;
+  if(p._gear) me._gear=1; else delete me._gear; if(p._caddie) me._caddie=p._caddie; else delete me._caddie; me._over=p._over; }
 function beginEvent(){
+  seasonMeSync();
   let evt=S.schedule[S.evtIndex];
   let field=S.season.field, stagger=null;
   // THE BREAKAWAY LEAGUE: a major is the one week the two sides still meet. Whichever side you play for,
@@ -23194,8 +23248,14 @@ function g3dOn(){
 // it in its own finish (its sprite is registered as pu_<id>), and The Magic Wand is the wand.
 function puttLook(look){ try{ const mine=look===S.look, id=mine?puttEquippedId():(look&&look.putter); const p=PUTTERS_BY[id]; if(!p) return look;
   return Object.assign({},look,{club:p.shape==='wand'?'wand':'pu_'+p.id}); }catch(e){ return look; } }
+// ONE GOLFER IN EVERY MODE. The look a mode draws: the putter you equipped on every green and every walk (both
+// games), and the career's age stamped on, so a copy of the look still greys and tans like the golfer it came from,
+// and the 3D golfer's cache (keyed on the look) draws a new golfer at a birthday instead of keeping last year's.
+function modeLook(look,kind){ let L=look||S.look||DEFLOOK; const age=avAgeOf(L);
+  if(kind==='putt'||kind==='walk') L=puttLook(L);
+  return (age>0&&L.age==null)?withAge(L,age):L; }
 function g3dSet(look,vx,vy,kind){
-  if(kind==='putt') look=puttLook(look);
+  look=modeLook(look,kind);
   try{ const a=Math.atan2(vx,-vy)*180/Math.PI; const r=window.RTT_G3D.set(look,a,kind); window.RTT_G3D.warm(look,kind); return r; }
   catch(e){ return null; }
 }
@@ -23211,16 +23271,21 @@ function puttHost(){
   return { courses:DAILY_COURSES, keys:DAILY_KEYS, dHash:dHash, hvGeom:hvGeom, hvBiome:hvBiome,
     todayKey:todayKey, dailyCourseKey:dailyCourseKey,
     sfx:function(n){ try{ sfx(n); }catch(e){} }, buzz:function(p){ try{ buzz(p); }catch(e){} },
-    golfer:function(){ return pxGolferCanvas(S.look,{noBall:true}); },
+    golfer:function(){ return pxGolferCanvas(modeLook(S.look,'putt'),{noBall:true}); },
+    // the same golfer as the page's own figure, putter in hand and wearing its aura (the map and the header)
+    // (the class sizes it, so the figure's own fixed height is taken off)
+    figure:function(cls){ try{ return pxFigureHTML(modeLook(S.look,'putt'),56).replace('class="pxfigsm','class="'+(cls||'')+' pxfigsm').replace('height:56px;width:auto;','width:auto;'); }catch(e){ return ''; } },
+    // the aura's colour, for a golfer drawn on a canvas: it glows as the course golfer's does (hvswGlow)
+    aura:function(){ try{ const f=fxOf(S.look); return f?f.col:null; }catch(e){ return null; } },
     // a Putt Putt greeter's face for the dialogue box: the profile picture renderer, in their look
     portrait:function(look){ try{ return pxGolferCanvas(Object.assign({},DEFLOOK,look||{}),{noBall:true}); }catch(e){ return null; } },
     // the 3D modelled golfer the tracer plays with, standing side-on to the putt: address, take back, through
     golfer3:function(vx,vy){ return g3dOn()?g3dSet(S.look,vx,vy,'putt'):null; },
     // the same golfer walking the tour map: one frame of the step (0 to 7), facing the screen vector, drawn on first ask
-    golferWalk:function(vx,vy,i){ try{ if(!g3dOn()||!window.RTT_G3D.frame) return null; return window.RTT_G3D.frame(S.look,Math.atan2(vx,-vy)*180/Math.PI,'walk',i); }catch(e){ return null; } },
-    golferWalkHas:function(vx,vy,i){ try{ return !!(g3dOn()&&window.RTT_G3D.has&&window.RTT_G3D.has(S.look,Math.atan2(vx,-vy)*180/Math.PI,'walk',i)); }catch(e){ return false; } },
-    golferWalkWarm:function(vx,vy){ try{ if(g3dOn()&&window.RTT_G3D.warmAim) window.RTT_G3D.warmAim(S.look,Math.atan2(vx,-vy)*180/Math.PI,'walk'); }catch(e){} },
-    // the Tour's record is kept per account, coins land in the game's own wallet, a Tour Pass means 6 lives
+    golferWalk:function(vx,vy,i){ try{ if(!g3dOn()||!window.RTT_G3D.frame) return null; return window.RTT_G3D.frame(modeLook(S.look,'walk'),Math.atan2(vx,-vy)*180/Math.PI,'walk',i); }catch(e){ return null; } },
+    golferWalkHas:function(vx,vy,i){ try{ return !!(g3dOn()&&window.RTT_G3D.has&&window.RTT_G3D.has(modeLook(S.look,'walk'),Math.atan2(vx,-vy)*180/Math.PI,'walk',i)); }catch(e){ return false; } },
+    golferWalkWarm:function(vx,vy){ try{ if(g3dOn()&&window.RTT_G3D.warmAim) window.RTT_G3D.warmAim(modeLook(S.look,'walk'),Math.atan2(vx,-vy)*180/Math.PI,'walk'); }catch(e){} },
+    // the Tour's record is kept per account, coins land in the game's own wallet, a Tour Pass means 18 lives
     storeKey:function(k){ return acctKey(k); },
     // the record is the account's: who is signed in, the server call the Tour saves through, and the sign in sheet
     uid:function(){ try{ return (sbUser&&sbUser.id)||null; }catch(e){ return null; } },
@@ -28896,7 +28961,7 @@ function bracketGroupStakes(){
     `<div class="bst l">Bottom ${BRACKET_GROUP_SIZE-BRACKET_ADV} → season over</div></div>`;
 }
 function bracketOvr(o){
-  try{ const v=Math.round(ovrFromSkills(o.p)); if(isFinite(v)&&v>0) return v; }catch(e){}
+  try{ const v=Math.round(ovrFromSkills(o.p, !!(o.p&&o.p._over))); if(isFinite(v)&&v>0) return v; }catch(e){}   // your career golfer may read past 99, as on every other screen
   return (o.p&&isFinite(o.p.skill))?Math.round(o.p.skill):null;
 }
 function bracketFaceoff(me, opp, showOvr){
@@ -29999,6 +30064,8 @@ function playerCardHeadline(info){
    The two cosmetics the old card carried still show: the equipped card background fills the portrait
    window, and the equipped nameplate is the bar behind the name. */
 let _pkLockup=null;
+// the share card's OVR shield: 30 cells, wider for a three digit overall so it prints at full size
+function ovrShieldW(ov){ return Math.max(30, PIXK.textW(String(ov),{scale:2,bold:true})+4); }
 function drawPlayerCard(ctx,W,H,o){
   const P=PIXK, U=4, GW=270, GH=338;
   ctx.imageSmoothingEnabled=false;
@@ -30024,8 +30091,13 @@ function drawPlayerCard(ctx,W,H,o){
   //    whole 8px a sprite pixel (two of the card's cells) so his pixels are square and sit on its grid
   try{ const glf=pxGolferCanvas(o.look), gsc=glf.height/PXG_H, SP=8, r1=34, rows=Math.min(r1,Math.floor(ih*U/SP)), r0=r1-rows;
     ctx.save(); ctx.beginPath(); ctx.rect(ix*U,iy*U,iw*U,ih*U); ctx.clip();
-    ctx.drawImage(glf, 0, Math.round(r0*gsc), glf.width, Math.round(rows*gsc),
-      Math.round((ix+iw/2)*U - PXG_W*SP/2), (iy+ih)*U - rows*SP, PXG_W*SP, rows*SP);
+    const gx=Math.round((ix+iw/2)*U - PXG_W*SP/2), gy=(iy+ih)*U - rows*SP;
+    // an aura is a rim of its colour one sprite pixel round the golfer, square on the card's grid like the rest
+    const fx=fxOf(o.look); if(fx){ const rim=document.createElement('canvas'); rim.width=glf.width; rim.height=glf.height; const rc=rim.getContext('2d');
+      rc.drawImage(glf,0,0); rc.globalCompositeOperation='source-in'; rc.fillStyle=fx.col; rc.fillRect(0,0,rim.width,rim.height);
+      ctx.globalAlpha=0.7; for(const d of [[-1,0],[1,0],[0,-1],[0,1]]) ctx.drawImage(rim, 0, Math.round(r0*gsc), rim.width, Math.round(rows*gsc), gx+d[0]*SP, gy+d[1]*SP, PXG_W*SP, rows*SP);
+      ctx.globalAlpha=1; }
+    ctx.drawImage(glf, 0, Math.round(r0*gsc), glf.width, Math.round(rows*gsc), gx, gy, PXG_W*SP, rows*SP);
     ctx.restore(); }catch(e){}
   // 5. everything on top
   const top=P.grid(GW,GH), txt=P.grid(GW,GH);
@@ -30050,11 +30122,11 @@ function drawPlayerCard(ctx,W,H,o){
   for(let y=wy;y<wy+wh;y++) for(let x=wx;x<wx+ww;x++){ const d=Math.min(x-wx,y-wy,wx+ww-1-x,wy+wh-1-y);
     if(d===0||d===3) top.put(x,y,P.K); else if(d<=2) top.put(x,y,(x-wx+y-wy<(ww+wh)/2)?P.GOLD[1]:P.GOLD[4]); }
   // the OVR shield on the window's corner
-  { const bx=176, by=170, bw=30, bh=32;
+  { const ov=''+(o.ovr==null?'':o.ovr), bw=ovrShieldW(ov), bx=206-bw, by=170, bh=32;   // 100 and up: wider, right edge fixed
     for(let y=by;y<by+bh;y++){ const inset=y>by+bh-10?Math.round((y-(by+bh-10))*1.4):0;
       for(let x=bx+inset;x<bx+bw-inset;x++){ const j=y-by; top.put(x,y, j<2?P.GOLD[0]:j<12?P.GOLD[2]:j<22?P.GOLD[3]:P.GOLD[4]); } }
     P.text(top,'OVR',bx+Math.round((bw-P.textW('OVR'))/2),by+3,{color:'#5a3a08'});
-    const ov=''+(o.ovr==null?'':o.ovr), os=P.textW(ov,{scale:2,bold:true})<=bw-4?2:1;
+    const os=P.textW(ov,{scale:2,bold:true})<=bw-4?2:1;
     P.text(top,ov,bx+Math.round((bw-P.textW(ov,{scale:os,bold:true}))/2),by+12,{scale:os,bold:true,color:'#2a1604'}); }
   // the name, on the equipped nameplate when there is one
   { let nm=(o.name||'Your Golfer'), opt={scale:2,bold:true};
@@ -37967,7 +38039,7 @@ function passPerksHTML(){
     ['target','Unlimited daily plays','Play Beat the Pro as much as you want, all season'],
     ['coin','+'+coinFmt(TOURPASS.coins)+' coins instantly','Straight into your wallet the moment you buy'],
     ['cart',TOURPASS.packs+' seasonal packs on the spot','Rip them in the Pro Shop whenever you want'],
-    ['bolt',PASS_REWARD_MULT+'× coins from every round','Everything you play pays more, all season'],
+    ['bolt',PASS_REWARD_MULT+'× coins in Play 18, Career and Head to Head','Rounds, seasons, sponsor briefs and wins pay more, all season'],
     ['clock','Fast simulation','The quickest sim pace in career mode. Blow through a season in half the time']];
   return rows.map(r=>`<div class="tps-perk"><span class="tps-pi">${ic(r[0],{size:'20px'})}</span><div><b>${esc(r[1])}</b><span>${esc(r[2])}</span></div></div>`).join('');
 }
@@ -38341,7 +38413,7 @@ function shopPreviewNode(){ const pv=S.shopPreview; if(!pv) return $(`<span></sp
       ${lore2?`<div class="small" style="margin-top:6px;color:#bcd3c6;font-style:italic">“${esc(lore2)}”</div>`:''}
       ${boostTxt2?`<div class="small" style="margin-top:5px;color:#8fe0c4;font-weight:800">${boostTxt2}</div>`:''}
       <div class="small" style="margin-top:9px;color:#bcd3c6">Coins can't buy this one. <b>Pull it from packs</b>.</div>
-      <div class="small" style="margin-top:7px;color:${rar?ACC_RARITY[rar].c:'#bcd3c6'}">◆ Got duplicate shards? Trade 5 up a rarity in the <b>Shard Exchange</b>.</div>
+      <div class="small" style="margin-top:7px;color:${rar?ACC_RARITY[rar].c:'#bcd3c6'}">◆ Got duplicate shards? Trade ${EXCHANGE_COST} up a rarity in the <b>Shard Exchange</b>.</div>
       <div class="small" style="margin-top:5px;color:#8fe0c4">Previewing on your golfer above.</div>
       <div style="display:flex;gap:10px;margin-top:14px">
         <button class="btn ghost" id="pv-cancel" style="flex:1;margin:0">Close</button>
@@ -38514,7 +38586,7 @@ function cosTileHTML(cat,o){
     if(owned) return shopTile({thumb,name:o.name,state:'own',sub:bsub,cls:'noeq',rar});
     if(itemDropLocked(cat,o.id)) return '';   // DROPS: an unreleased/out-of-window themed item is HIDDEN from the store
     if(cosPackOnly(cat,o.id)){   // PACK EXCLUSIVE: no coin price - packs or shards only (tap for details)
-      const prar=packRarityOf(cosmeticPriceBase(cat,o.id))||'common', sh=shardBal(prar), need=SHARD_COST[prar];
+      const prar=packRarityOf(cosmeticPriceBase(cat,o.id))||'common', sh=shardBal(prar), need=EXCHANGE_COST;
       return shopTile({thumb,name:o.name,state:'lock',noFoot:true,rar,isNew:cosIsNew(cat,o.id),
         sub:(bsub?bsub+' · ':'')+`<span style="color:${ACC_RARITY[prar].c}">🎁 Packs · ◆ ${sh}/${need}</span>`,
         data:`data-tile data-kind="cos" data-cat="${cat}" data-id="${esc(o.id)}"`});
@@ -39840,7 +39912,7 @@ function packCreditFields(tier){ tier=tier||'base';
    shards of a rarity and feed the Shard Exchange upgrade ladder (below) to trade UP a rarity - a
    deterministic pity path, so packs never go dead once a player owns most of a tier.
    Monotonic earned/spent counters (cloud max-merge safe, same pattern as pack credits). ---- */
-const SHARD_COST={common:3, rare:3, epic:4, legendary:5};
+const SHARD_COST={common:3, rare:3, epic:4, legendary:5};   // read only as the list of shard rarities now: the exchange costs EXCHANGE_COST
 function shardBal(r){ const p=packState(); return Math.max(0,(p['shardE_'+r]||0)-(p['shardS_'+r]||0)); }
 function shardEarn(r,n){ if(!SHARD_COST[r]) return; const p=packState(); p['shardE_'+r]=(p['shardE_'+r]||0)+(n||1); packSave(p); }
 function shardSpend(r,n){ if(!SHARD_COST[r]) return false; const p=packState();
@@ -39939,8 +40011,8 @@ function shardExchangeNode(){
   wrap.appendChild($('<div class="small muted" style="text-align:center;line-height:1.55;margin:0 0 14px">Trade up your shards. '+EXCHANGE_COST+' shards of one rarity spin a wheel for the next rarity up. Guaranteed. A duplicate gives back a shard of that rarity, so you always climb.</div>'));
   ['common','rare','epic','legendary'].forEach(function(r){
     var bal=shardBal(r), can=bal>=EXCHANGE_COST, rc=ACC_RARITY[r].c, next=NEXT_RARITY[r];
-    var sub=(r==='legendary')?'5 → coins + a pack + pick 1 of 3 Legendaries':'5 → a random '+ACC_RARITY[next].label+' item';
-    var btnLabel=(r==='legendary')?(can?'Cash in 5 Legendary shards ▸':'Collect 5 Legendary shards'):(can?'Exchange 5 → '+ACC_RARITY[next].label+' wheel ▸':'Collect 5 '+ACC_RARITY[r].label+' shards');
+    var sub=(r==='legendary')?EXCHANGE_COST+' → coins + a pack + pick 1 of 3 Legendaries':EXCHANGE_COST+' → a random '+ACC_RARITY[next].label+' item';
+    var btnLabel=(r==='legendary')?(can?'Cash in '+EXCHANGE_COST+' Legendary shards ▸':'Collect '+EXCHANGE_COST+' Legendary shards'):(can?'Exchange '+EXCHANGE_COST+' → '+ACC_RARITY[next].label+' wheel ▸':'Collect '+EXCHANGE_COST+' '+ACC_RARITY[r].label+' shards');
     var card=$('<div style="border:1.5px solid '+rc+'55;border-radius:14px;padding:13px 14px;margin:0 0 10px;background:linear-gradient(160deg,'+rc+'14,rgba(0,0,0,.14))">'
       +'<div style="display:flex;align-items:center;gap:11px">'
         +'<span style="font:900 21px var(--body);color:'+rc+';white-space:nowrap">◆ '+bal+'</span>'
@@ -40926,7 +40998,7 @@ function overlayPackWheel(app){
         +(win.dupe?('<div class="prdupe">'
           +(win.refund>0?'<span class="prchip" style="color:#ffd45e;border-color:#ffd45e">Duplicate · +'+coinFmt(win.refund)+' coins</span>'
                         :'<span class="prchip" style="color:#b8c4bd;border-color:#b8c4bd">Duplicate · '+(w.exchange?'shard only':'free pack, no coins')+'</span>')
-          +'<span class="prchip" style="color:'+rc+';border-color:'+rc+'">\u25c6 +1 '+win.rarity+' shard · '+shardBal(win.rarity)+'/'+SHARD_COST[win.rarity]+'</span></div>'):'')
+          +'<span class="prchip" style="color:'+rc+';border-color:'+rc+'">\u25c6 +1 '+win.rarity+' shard · '+shardBal(win.rarity)+'/'+EXCHANGE_COST+'</span></div>'):'')
       +'</div></div>'));
     var btns=$('<div class="packbtns"></div>');
     if((item.kind==='cos'||item.kind==='acc') && !win.dupe){ var eb=$('<button class="btn goldfill">Equip</button>');
@@ -41091,7 +41163,7 @@ function bucketShopNode(focus){
     pc.appendChild($('<div class="tphead" style="font-family:var(--display);font-size:24px;text-align:center;--tp-acc:'+passCol+'">'+esc(passThemeName())+'</div>'));
     pc.appendChild($('<div class="small" style="text-align:center;color:#cfe6d8;margin:2px 0 8px">A 60-day season pass · '+ssn.daysLeft+' day'+(ssn.daysLeft>1?'s':'')+' left in Season '+ssn.n+'</div>'));
     var perks=$('<div style="display:flex;flex-direction:column;gap:5px;margin:0 auto;max-width:300px"></div>');
-    [['🎟️','Unlocks the PRO lane of the Season '+ssn.n+' Tour Pass track'],['♾️','Unlimited daily plays at any course'],['🪙','+'+coinFmt(TOURPASS.coins)+' coins, instantly'],['🎁',TOURPASS.packs+' seasonal packs'],['⭐','Earn '+PASS_REWARD_MULT+'× coins from every mode'],['🕒','Fast sim: the quickest pace in Career Mode']].forEach(function(p){
+    [['🎟️','Unlocks the PRO lane of the Season '+ssn.n+' Tour Pass track'],['♾️','Unlimited daily plays at any course'],['🪙','+'+coinFmt(TOURPASS.coins)+' coins, instantly'],['🎁',TOURPASS.packs+' seasonal packs'],['⭐','Earn '+PASS_REWARD_MULT+'× coins in Play 18, Career and Head to Head'],['🕒','Fast sim: the quickest pace in Career Mode']].forEach(function(p){
       perks.appendChild($('<div class="small" style="display:flex;gap:8px;align-items:center;color:#eaf5ee"><span style="flex:0 0 auto">'+p[0]+'</span><span>'+esc(p[1])+'</span></div>'));
     });
     pc.appendChild(perks);
@@ -41413,6 +41485,7 @@ function overlayShop(screen){
           <div class="drop-name">${esc(d.name)}</div>
           <div class="drop-meta">${d.window?(live?`<span class="droplive">● LIVE NOW</span> · ends ${_DROP_MON[d.window[1][0]-1]} ${d.window[1][1]}`:`⏳ ${esc(dropReturnsLabel(d))} · ${esc(dropWindowLabel(d))}`):'Always available'}</div>
           <div class="drop-progress"><div class="drop-bar"><i style="width:${Math.round(pr.own/pr.tot*100)}%"></i></div><span>${claimable?'🏆 COMPLETE':done?'✓ COMPLETE':pr.own+' / '+pr.tot}</span></div>
+          ${COLLECTION_SETS[d.id]?`<div class="drop-meta">${done?'Set bonus':'Finish it for'} +${SET_STAT_MAX} ${esc(CAT_LABEL[COLLECTION_SETS[d.id]])} in Career, for good</div>`:''}
           ${claimable?'<div style="margin-top:9px"><span class="drop-claimpill">🏆 CLAIM ▸</span></div>':''}
           <span class="drop-go">▸</span>
         </button>`);
@@ -42526,7 +42599,7 @@ const PENDING_SEASONS_KEY='bag_pending_seasons';
 // CS393: a minimal golfer-appearance snapshot for the public boards - only the keys the pixel figure reads
 // (drops _ts/acc/caddie/country/title, which don't affect the rendered golfer). Keeps the payload tiny.
 function lookForBoard(look){ const L=look||S.look||DEFLOOK; const o={};
-  ['skin','skinTone','hair','hairStyle','polo','pants','shoes','cap','hatStyle','hat','shirtPat','hatPat','eyewear','club','top','leg','fx','ball','cleats','lefty','gender','plate','cardbg','body'].forEach(k=>{ if(L[k]!==undefined) o[k]=L[k]; });
+  ['skin','skinTone','hair','hairStyle','polo','pants','shoes','cap','hatStyle','hat','shirtPat','hatPat','eyewear','club','top','leg','fx','ball','cleats','lefty','gender','plate','cardbg','body','putter'].forEach(k=>{ if(L[k]!==undefined) o[k]=L[k]; });
   // ITEM 20: carry the golfer's AGE, so a board shows a rookie and a grey-templed veteran as what they are.
   try{ if(!S.daily && typeof playerAge==='function'){ const a=playerAge(); if(a>0) o.age=a; } }catch(e){}
   try{ if(!look){ const sc=passStampsCode(); if(sc) o.stamps=sc; } }catch(e){}   // your own Tour Pass stamps, shown on your card to other players
@@ -43402,9 +43475,9 @@ function h2hBeginDraft(){
 function h2hGolfersLeft(){ return GOLFERS.length-(S.h2h.revealed?S.h2h.revealed.size:0); }
 function h2hFilled(){ let n=0; for(const c of CATS) if(S.h2h.slots[c.k])n++; return n; }
 function h2hSkills(){ const s={}; for(const c of CATS) s[c.k]=S.h2h.slots[c.k]?S.h2h.slots[c.k].value:REPLACEMENT;
-  if(h2hMatchBoosted(S.h2h&&S.h2h.seed)){ const ab=accBoost(); for(const c of CATS){ if(ab[c.k]) s[c.k]=Math.max(40,Math.min(99+ACC_SKILL_CAP, s[c.k]+ab[c.k])); } }   // exhibition: bake YOUR gear into the submitted draft
+  if(h2hMatchBoosted(S.h2h&&S.h2h.seed)){ const ab=accBoost(); for(const c of CATS){ if(ab[c.k]) s[c.k]=Math.max(40,Math.min(99+ACC_SKILL_CAP+SET_STAT_MAX, s[c.k]+ab[c.k])); } }   // exhibition: bake YOUR gear into the submitted draft
   return s; }
-function h2hOvr(){ return Math.round(ovrFromSkills(h2hSkills())); }
+function h2hOvr(){ return Math.round(ovrFromSkills(h2hSkills(), h2hMatchBoosted(S.h2h&&S.h2h.seed))); }   // an exhibition plays with gear, so it may read past 99
 function h2hReveal(){
   S.h2h.spinning=true; S.h2h.current=null; render();
   const reel=app.querySelector('.osreel .name')||app.querySelector('.reel .name');   // CS342: online draft uses the .osreel wheel
@@ -43926,7 +43999,7 @@ function scrH2HPreview(){
   add($(`<div class="center" style="margin:8px 0 2px"><span class="tag" style="color:var(--gold);border-color:var(--gold)">📍 ${esc(dShort(course.v))}${course.loc?' · '+esc(course.loc):''} · ${dCondLabel(S.h2h.cond)}</span></div>`));
   add($(`<h1 class="center" style="font-size:24px;margin:8px 0 2px">Tale of the tape</h1>`));
   add($(`<p class="lede center" style="max-width:440px;margin:6px auto 4px">${S.h2h.holes} holes · ${m.teams?'best of each skill is highlighted per team.':'lowest total wins.'}</p>`));
-  const ovrs=units.map(u=>Math.round(ovrFromSkills(u.dispSkills)));
+  const ovrs=units.map(u=>Math.round(ovrFromSkills(u.dispSkills, h2hMatchBoosted(S.h2h.seed))));   // gear is on for everybody in an exhibition
   const maxOvr=Math.max.apply(null,ovrs);
   const wrap=$(`<div style="overflow-x:auto;margin:12px 0 4px"></div>`);
   const grid=$(`<div style="display:grid;grid-template-columns:minmax(40px,auto) repeat(${n},minmax(66px,1fr));gap:5px;min-width:${86+n*72}px;max-width:660px;margin:0 auto"></div>`);

@@ -19,6 +19,7 @@ fix that only touches code can go ahead without it.
 | trails, chests, puzzles, finds, putters | `golf-putt-trails.md`, `golf-putt-trail-loot.md` |
 | drawing holes and trails, render speed | `golf-putt-rendering.md` |
 | the tracer, the 3D golfer | `golf-tour-tracer.md`, `golf-tour-golfer3d.md` |
+| coins, packs, shards, items, boosts, ratings past 99 | `golf-tour-economy.md` (the Golf Economy Agent's) |
 
 After a meaningful change, update the matching note by pull request on the knowledge base. Decisions
 there are append-only: a changed decision is a new dated note that supersedes the old one.
@@ -35,6 +36,8 @@ node golf/putt/fair.mjs --tour main         how often each hole's route goes wet
 node golf/putt/build-cards.mjs              re-cut the home cards from the signature holes (then bump CARD_V)
 node golf/check-golfer3d.mjs                every look, every aim, every shot (server on :8099)
 node golf/check-tracer3d.mjs                every course draws, nothing the ball rests on moves (server on :8099)
+node golf/check-boosts.mjs                  every boost from item to golfer, sim and screen; the frozen baseline (server on :8099)
+node golf/econ-sim.mjs                      a casual, regular and heavy player through a season, then their wins
 ```
 
 ## Rules a change here must keep
@@ -93,3 +96,17 @@ node golf/check-tracer3d.mjs                every course draws, nothing the ball
 - A screen claims the full screen tracer only through `hvFullSet(mode)`. Change a chip's height and
   change its row in `HV_FULL_SIZE`.
 - `G3D_LIVE = false` is the 3D golfer's kill switch.
+- **One golfer in every mode.** A mode draws your golfer through `modeLook(look, kind)`: the equipped putter on
+  every green and walk, and the career's age stamped on. An aura shows wherever the golfer is drawn (the
+  `hvsw-glow` pulse, `host.aura()` on a canvas). `check-golfer3d.mjs` section 4 holds all of it.
+
+**Economy**
+
+- **A boost in `golf/boosts-baseline.json` is never lowered, removed, moved or re-statted** (the owner,
+  2026-10-16). New boosts are added; check-boosts fails on the rest. Never rewrite the baseline.
+- **A new item gets the power its rarity buys** (the ladder in `golf-tour-economy.md`), on its slot's
+  stats. A Tour Pass piece, a colour, a pattern or a free item carries none.
+- **A career stat and overall may pass 99.** Never clamp the player's golfer back to 99 outside the
+  Daily. A screen that shows a rating shows `buildPlayer()`'s, in three digits that fit.
+- **Run check-boosts and econ-sim before and after** any change to an item, a price, a pack or a boost.
+

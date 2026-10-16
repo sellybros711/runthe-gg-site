@@ -2545,8 +2545,8 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "79",
-      "sha": "391be5f56e9b9955"
+      "v": "80",
+      "sha": "2dc0515bc725298e"
     },
     "putt/land.js": {
       "v": "12",
@@ -2557,8 +2557,8 @@
       "sha": "62a0821ec99b53c3"
     },
     "putt/trail.js": {
-      "v": "35",
-      "sha": "820caa939067d0e8"
+      "v": "36",
+      "sha": "d889f4b7da35dacf"
     },
     "putt/mapland.js": {
       "v": "6",
