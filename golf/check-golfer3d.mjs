@@ -216,7 +216,16 @@ const mn = await pg.evaluate(async () => {
   // a top, a novelty club or a ball must change the picture (the cape and the floatie once drew nothing on the menu golfer)
   const base = RTT_G3D.pic(DEFLOOK, 'fig').url; r.same = [];
   for (const L of [{ top: 'cape' }, { top: 'duckfloatie' }, { club: 'coffin' }, { club: 'excalibur' }, { ball: 'eight' }]) if (RTT_G3D.pic(Object.assign({}, DEFLOOK, L), 'fig').url === base) r.same.push(L);
+  // Putt Putt's header ring and Daily Hole rows draw the menus' 3D head chip; a player without it keeps the flat picture
+  const H = puttHost(); r.ppChip = /^<img src="data:image\/(png|gif)/.test(H.chip()) && /^<img /.test(H.chip({ polo: 'red' }));
+  // the career card on Me reads both tours' records
+  const pp = window.RTT_PUTT.achStats(H), rec = ftRecord().textContent;
+  r.rec = /Pro Tour/.test(rec) && /Putt Putt/.test(rec) && rec.includes(Number(pp.pp_stars || 0).toLocaleString() + (pp.pp_stars === 1 ? 'star' : 'stars'));
+  sbUser = { id: 'x' }; sbUsername = 'somebodyelse'; r.ppFlat = H.chip() === '';
   sbUser = keepU; sbUsername = keepN; return r; });
+ok('Putt Putt\'s header ring and Daily Hole rows draw the 3D head chip for a tester', mn.ppChip === true);
+ok('a player without the 3D menu golfer keeps the flat picture in Putt Putt', mn.ppFlat === true);
+ok('the career card on Me shows the Pro Tour and Putt Putt records', mn.rec === true);
 ok('signed out keeps today\'s menu golfer', mn.out === false);
 ok('a player who is not a tester keeps today\'s menu golfer', mn.other === false && mn.otherFig === true);
 ok('a tester gets the 3D menu golfer', mn.tester === true);

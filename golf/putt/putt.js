@@ -2141,7 +2141,7 @@ var CSS = '\
 .pp-big{font-family:var(--display,inherit);font-size:38px;color:#F1D04A;font-variant-numeric:tabular-nums}.pp-wide{display:block;width:100%;margin-top:8px}.pp-wide small{display:block;font-size:10.5px;font-weight:700;opacity:.75}.pt-go[disabled]{opacity:.55;cursor:default}\
 .pp-nums{display:flex;justify-content:center;gap:16px;margin:8px 0}.pp-nums span{font-size:10.5px;letter-spacing:.1em;color:#9fbfae;font-weight:800;text-transform:uppercase}.pp-nums b{display:block;font-size:24px;color:#fff;letter-spacing:0}\
 .pp-coins{font-weight:900;color:#ffd45e;font-size:16px;margin:4px 0 6px}.pp-reward{background:rgba(241,208,74,.12);border:1px solid rgba(241,208,74,.45);border-radius:11px;padding:8px;margin:8px 0;font-weight:800;font-size:13px;color:#fff}.pp-fine{font-size:11px!important;opacity:.75}\
-.pp-drows{margin-top:8px}.pp-drow{display:flex;align-items:center;gap:8px;padding:6px 4px;border-top:1px solid rgba(255,255,255,.08);font-weight:800}.pp-drow b{width:22px;text-align:right;opacity:.8}.pp-drow span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}.pp-drow em{font-style:normal;opacity:.85}.pp-drow.me{background:rgba(255,210,74,.14);border-radius:8px}.pp-dav{width:22px;height:22px;border-radius:50%;background:#1d3a5c no-repeat;background-size:230%;background-position:50% 8%;image-rendering:pixelated;flex:0 0 auto}\
+.pp-drows{margin-top:8px}.pp-drow{display:flex;align-items:center;gap:8px;padding:6px 4px;border-top:1px solid rgba(255,255,255,.08);font-weight:800}.pp-drow b{width:22px;text-align:right;opacity:.8}.pp-drow span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}.pp-drow em{font-style:normal;opacity:.85}.pp-drow.me{background:rgba(255,210,74,.14);border-radius:8px}.pp-dav{width:22px;height:22px;border-radius:50%;background:#1d3a5c no-repeat;background-size:230%;background-position:50% 8%;image-rendering:pixelated;flex:0 0 auto}.pp-av.g3,.pp-dav.g3{overflow:hidden}.pp-av.g3 img,.pp-dav.g3 img{display:block;width:100%;height:100%;object-fit:cover;image-rendering:pixelated}\
 .pp-dres{border-radius:16px;padding:16px;text-align:center}.pp-dres .k{font-size:11px;letter-spacing:.14em;font-weight:900;text-transform:uppercase;opacity:.85}.pp-dres .t{font-family:var(--display,inherit);font-size:34px;margin:4px 0}.pp-dres .m{font-size:13px}\
 .pp-hub{position:relative;max-width:none}.pp-hub .pp-map{position:absolute;inset:0;border-top:0;background:#0b1a12}\
 .pp-hdr{position:absolute;left:0;right:0;top:0;z-index:2;display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 26px;background:linear-gradient(rgba(5,10,14,.78),rgba(5,10,14,0));pointer-events:none}\
@@ -2648,6 +2648,10 @@ function golferFig(cls){ try{ var f = S.host.figure && S.host.figure(cls); if (f
 // the round picture in the header and the play bar: an aura is a glow round the ring in its colour
 function avStyle(u){ var a = null; try{ a = S.host.aura && S.host.aura(); }catch(e){}
   return (u ? 'background-image:url(' + u + ');' : '') + (a ? 'box-shadow:0 2px 0 rgba(0,0,0,.4),0 0 10px ' + a + ',0 0 3px ' + a : ''); }
+// the head chip the menus draw (the 3D menu golfer), as an <img>, or '' when the page has none
+function chipImg(look){ try{ return (S.host.chip && S.host.chip(look)) || ''; }catch(e){ return ''; } }
+// the ring itself: the menus' 3D head chip inside it, or the flat picture as its background
+function avRing(){ var c = chipImg(); return '<i class="pp-av' + (c ? ' g3' : '') + '" style="' + avStyle(c ? '' : golferUrl()) + '">' + c + '</i>'; }
 // the same aura on a golfer drawn on a canvas: the pulse the course golfer has (hvswGlow), 2.4 s, its colour,
 // k pixels to a figure pixel. Still, and at its middle, when the player asks for less motion.
 function auraGlow(ctx, k, t){ var a = null; try{ a = S.host.aura && S.host.aura(); }catch(e){} if (!a) return;
@@ -2658,8 +2662,8 @@ function balStr(){ if (isGuest()) return '';   // a guest sees no coin count (th
   try{ if (S.host.balance) return Number(S.host.balance()).toLocaleString(); }catch(e){} return ''; }
 /* THE HEADER FLOATS OVER THE MAP, as the mockup drew it: your golfer in a gold ring, your hearts,
    the refill clock when one is running, your coins and a close button. */
-function hdr(right){ var u = golferUrl(), b = balStr();
-  return '<div class="pp-hdr"><i class="pp-av" style="' + avStyle(u) + '"></i><span class="pp-hearts" data-hearts>' + hearts(pload()) + '</span><span class="pp-hclock" data-clock></span><span class="pp-sp"></span>' +
+function hdr(right){ var b = balStr();
+  return '<div class="pp-hdr">' + avRing() + '<span class="pp-hearts" data-hearts>' + hearts(pload()) + '</span><span class="pp-hclock" data-clock></span><span class="pp-sp"></span>' +
     (right != null ? right : (b !== '' ? '<span class="pp-cpill" data-bal>' + b + '</span>' : '')) + '<button class="pp-cx" data-x aria-label="Close">✕</button></div>'; }
 // a small top view of a hole, off the flat painter, for the Daily card
 var THUMBS = {};
@@ -3609,7 +3613,8 @@ function dailyBoard(dk){ var box = S.ov && S.ov.querySelector('[data-rows]'); if
   Promise.resolve(p).then(function(rows){ if (!S || !S.ov || !S.ov.contains(box)) return;
     if (!rows || !rows.length){ box.innerHTML = '<div class="m">' + (rows ? 'Nobody has posted yet. Be the first.' : 'The board is on its way.') + '</div>'; return; }
     var n = rows[0].players || rows.length;
-    box.innerHTML = rows.map(function(r){ var im = ''; try{ var c = r.look && h.portrait ? h.portrait(r.look) : null; if (c && c.toDataURL) im = '<i class="pp-dav" style="background-image:url(' + c.toDataURL() + ')"></i>'; }catch(e){}
+    box.innerHTML = rows.map(function(r){ var im = '', g = r.look ? chipImg(r.look) : ''; if (g) im = '<i class="pp-dav g3">' + g + '</i>';
+      else try{ var c = r.look && h.portrait ? h.portrait(r.look) : null; if (c && c.toDataURL) im = '<i class="pp-dav" style="background-image:url(' + c.toDataURL() + ')"></i>'; }catch(e){}
       return '<div class="pp-drow' + (r.mine ? ' me' : '') + '"><b>' + r.rank + '</b>' + im + '<span>' + esc(r.username) + '</span><em>' + r.strokes + ' · ' + (r.ms != null ? clockTxt(r.ms) : '-') + '</em></div>'; }).join('') +
       '<div class="m" style="margin-top:6px;opacity:.75">' + n + (n === 1 ? ' player' : ' players') + ' today.</div>'; }); }
 function dailyResult(got, dk){
@@ -3714,8 +3719,8 @@ function playHole(){
   S.ov.innerHTML = top(title, sub, '') + '<div class="pt-stage"><canvas></canvas><div class="pt-read" hidden></div></div>\
     <div class="pt-bar">' + (C.kind === 'real' ? '<button class="pt-bt" data-l aria-label="Aim left">◂</button><button class="pt-bt" data-r aria-label="Aim right">▸</button>' : '') +
     '<div class="pt-hint" data-hint></div><button class="pt-bt" data-ov hidden aria-label="See the whole hole">Overview</button><button class="pt-bt" data-restart aria-label="Restart the hole">↺</button></div>';
-  if (R.mode === 'ppt'){ var tp = S.ov.querySelector('.pt-top'), u = golferUrl(); tp.classList.add('pp-play'); var bx = tp.querySelector('[data-x]'); bx.textContent = '✕'; bx.setAttribute('aria-label', 'Leave the hole');
-    bx.insertAdjacentHTML('afterend', '<i class="pp-av" style="' + avStyle(u) + '"></i><span class="pp-hearts">' + hearts(pload()) + '</span>'); }
+  if (R.mode === 'ppt'){ var tp = S.ov.querySelector('.pt-top'); tp.classList.add('pp-play'); var bx = tp.querySelector('[data-x]'); bx.textContent = '✕'; bx.setAttribute('aria-label', 'Leave the hole');
+    bx.insertAdjacentHTML('afterend', avRing() + '<span class="pp-hearts">' + hearts(pload()) + '</span>'); }
   if (R.mode === 'pdaily'){ var tb = S.ov.querySelector('.pt-top'); if (tb) tb.insertAdjacentHTML('beforeend', '<span class="pp-clock" aria-label="Time"><i></i><b data-dclock>0:00.0</b></span>'); S.clockEl = null; }
   S.ov.querySelector('[data-x]').onclick = function(){ leaveHole(); };
   S.ov.querySelector('[data-restart]').onclick = function(){ restartHole(); };
