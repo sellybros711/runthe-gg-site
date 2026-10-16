@@ -332,6 +332,10 @@ function stage(host, opts){
     st.k = k; st.cw = cw; st.ch = ch; st.R = R;
     cv.width = cw * R; cv.height = ch * R;
     cv.style.width = (cw * k) + 'px'; cv.style.height = (ch * k) + 'px';
+    /* pinned from the top where the bottom would put it: the box can grow a
+       frame before this refit runs (the controls going away), and a canvas
+       pinned to the bottom rode down with it for that frame */
+    st.top = H - ch * k; cv.style.top = st.top + 'px'; cv.style.bottom = 'auto';
     /* Anything laid over the bottom of the court (the meter) pushes the
        floor up so it never covers the man. */
     st.floorY = ch - 6 - Math.ceil((opts.pad || 0) / k);
