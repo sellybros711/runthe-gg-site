@@ -276,6 +276,8 @@ function careerStory(L) {
     if (L.parent) end.push(T.pts > L.parent.pts ? 'You passed your father\'s ' + L.parent.pts.toLocaleString('en-US') + ' points.' : 'Your father finished with more points: ' + L.parent.pts.toLocaleString('en-US') + '.');
     out.push({ h: 'The end', p: end.join(' ') });
   }
+  const cc = H.length ? careerComps(L) : [];
+  if (cc.length) out.push({ h: 'Who you were like', p: 'Your career reads like ' + listWords(cc) + '.' });
   if (f.epilogue) out.push({ h: 'Years later', p: f.epilogue });
   return out;
 }
@@ -332,7 +334,7 @@ const fatherYears = (L) => L.parent ? L.parent.seasons : 9;
 const yearsWord = (n) => n === 1 ? 'one season' : (NUMWORDS[n] ? NUMWORDS[n].toLowerCase() : n) + ' seasons';
 
 const publicAPI = {
-  generateRoad, tradeTo, roadStory, careerStory, cleanParent, leagueEnd, LEGACY_LEAGUE,
+  generateRoad, tradeTo, roadStory, careerStory, shadesOf, careerComps, cleanParent, leagueEnd, LEGACY_LEAGUE,
   DIFFS, DIFF_KEYS, CHALLENGES, CHALLENGE_KEYS, challengeOf,
   CAREER_API_VERSION, LIFE_VERSION,
   CONF, CLUBS, confOf, POS, POS_NAME, RATINGS, RATING_NAME, RATING_SHORT, WEIGHTS,
