@@ -4333,6 +4333,86 @@ RTT_PUTT.COINS = { hole:COIN_HOLE, sig:COIN_SIG, ace:COIN_ACE, world:COIN_WORLD,
 // what the home screen card shows: today's Daily Hole, your level and your lives
 // the page calls this on sign in, so the home card shows the account's place before the mode is opened
 RTT_PUTT.sync = function(host){ HOSTX = host || HOSTX; return cloudPull(); };
+/* ACHIEVEMENTS, for the game's Trophy Room (golf/index.html, achAddPutt). Putt Putt hands the page its own list, built
+   from the worlds it has, so a new world brings its own achievements with it, and the counts they are measured by.
+   Every one is read off the record, so a player has on day one what they have already done. The counts have no top
+   and nothing says "every world": the tour keeps growing (owner, 2026-10-15). Each is { id, cat, name, desc, goal,
+   pts, key }, met when stats()[key] reaches goal. */
+// in the order the Trophy Room shows them
+var ACH_CAT = { tour:'Putt Putt Tour', worlds:'Putt Putt Worlds', secrets:'Putt Putt Secrets', trails:'Putt Putt Trails', daily:'Putt Putt Daily Hole', members:'Putt Putt Members Tour' };
+function achTier(id, cat, key, rows){ return rows.map(function(r){ return { id:id + '_' + r[0], cat:cat, name:r[1], desc:r[2], goal:r[0], pts:r[3], key:key }; }); }
+function achDefs(){ var C = ACH_CAT, out = [].concat(
+    achTier('pp_holes', C.tour, 'pp_holes', [[1, 'First Win', 'Beat your first Putt Putt Tour hole (under par).', 10], [10, 'Ten Down', 'Beat 10 Putt Putt Tour holes.', 15],
+      [25, 'Course Regular', 'Beat 25 Putt Putt Tour holes.', 25], [50, 'Half a Hundred', 'Beat 50 Putt Putt Tour holes.', 40], [100, 'Century of Holes', 'Beat 100 Putt Putt Tour holes.', 60],
+      [150, 'Putt Putt Pro', 'Beat 150 Putt Putt Tour holes.', 80], [200, 'Two Hundred Club', 'Beat 200 Putt Putt Tour holes.', 100], [300, 'Mini Golf Marathon', 'Beat 300 Putt Putt Tour holes.', 150]]),
+    achTier('pp_stars', C.tour, 'pp_stars', [[25, 'Starstruck', 'Earn 25 stars on the Putt Putt Tour.', 15], [100, 'Star Collector', 'Earn 100 stars.', 30], [250, 'Constellation', 'Earn 250 stars.', 50],
+      [400, 'Night Sky', 'Earn 400 stars.', 75], [600, 'Galaxy', 'Earn 600 stars.', 120], [900, 'Universe', 'Earn 900 stars.', 180]]),
+    achTier('pp_aces', C.tour, 'pp_aces', [[1, 'Hole in One', 'Ace a Putt Putt hole.', 15], [5, 'Ace Machine', 'Make 5 aces.', 25], [15, 'Ace of Clubs', 'Make 15 aces.', 40],
+      [30, 'Ace High', 'Make 30 aces.', 60], [50, 'Full House of Aces', 'Make 50 aces.', 90], [100, 'One Hundred Aces', 'Make 100 aces.', 150]]),
+    achTier('pp_worlds', C.tour, 'pp_worlds', [[1, 'World Beater', 'Beat all 18 holes of a world.', 20], [3, 'Globetrotter', 'Beat 3 worlds.', 40], [5, 'Explorer', 'Beat 5 worlds.', 60],
+      [8, 'Voyager', 'Beat 8 worlds.', 90], [12, 'Pathfinder', 'Beat 12 worlds.', 130], [16, 'Far and Wide', 'Beat 16 worlds.', 180]]),
+    achTier('pp_perfect', C.tour, 'pp_perfect', [[1, 'Perfect World', 'Three stars on every hole of a world.', 50], [3, 'Perfectionist', 'Perfect 3 worlds.', 100],
+      [6, 'Flawless Traveller', 'Perfect 6 worlds.', 160], [10, 'Not a Star Dropped', 'Perfect 10 worlds.', 250]]),
+    achTier('pp_sfound', C.secrets, 'pp_sfound', [[1, 'Off the Path', 'Find a secret hole.', 20], [3, 'Hidden Doors', 'Find 3 secret holes.', 35], [6, 'Secret Keeper', 'Find 6 secret holes.', 55],
+      [10, 'Nothing Stays Hidden', 'Find 10 secret holes.', 80], [15, 'Treasure Map', 'Find 15 secret holes.', 110]]),
+    achTier('pp_sbeat', C.secrets, 'pp_sbeat', [[1, 'Secret Solved', 'Beat a secret hole.', 25], [3, 'Behind Closed Doors', 'Beat 3 secret holes.', 45], [6, 'Underground Champion', 'Beat 6 secret holes.', 70],
+      [10, 'Diamond Hands', 'Beat 10 secret holes.', 100], [15, 'Master of Secrets', 'Beat 15 secret holes.', 140]]),
+    achTier('pp_chests', C.trails, 'pp_chests', [[5, 'Treasure Hunter', 'Open 5 chests on the trails.', 10], [25, 'Chest Cracker', 'Open 25 chests.', 25], [75, 'Loot Lover', 'Open 75 chests.', 45],
+      [150, 'Hoarder', 'Open 150 chests.', 70], [300, 'Dragon’s Hoard', 'Open 300 chests.', 110]]),
+    achTier('pp_puzzles', C.trails, 'pp_puzzles', [[3, 'Puzzler', 'Solve 3 trail puzzles.', 10], [15, 'Brain Teaser', 'Solve 15 trail puzzles.', 25], [40, 'Riddle Master', 'Solve 40 trail puzzles.', 45],
+      [80, 'Mastermind', 'Solve 80 trail puzzles.', 70], [150, 'Grand Puzzler', 'Solve 150 trail puzzles.', 110]]),
+    achTier('pp_golden', C.trails, 'pp_golden', [[5, 'Gold Rush', 'Find 5 golden balls.', 10], [25, 'Gold Digger', 'Find 25 golden balls.', 25], [75, 'Golden Touch', 'Find 75 golden balls.', 45],
+      [150, 'Fort Knox', 'Find 150 golden balls.', 70], [300, 'Midas', 'Find 300 golden balls.', 110]]),
+    achTier('pp_trinkets', C.trails, 'pp_trinkets', [[3, 'Keepsake', 'Collect 3 trinkets.', 10], [12, 'Curio Shelf', 'Collect 12 trinkets.', 25], [24, 'Cabinet of Curiosities', 'Collect 24 trinkets.', 45],
+      [36, 'Museum Piece', 'Collect 36 trinkets.', 70], [60, 'Curator', 'Collect 60 trinkets.', 110]]),
+    achTier('pp_built', C.trails, 'pp_built', [[1, 'Tinkerer', 'Build a putter from its trail parts.', 30], [2, 'Workshop', 'Build 2 putters.', 50], [3, 'Master Builder', 'Build 3 putters.', 80]]),
+    achTier('pp_daily', C.daily, 'pp_daily', [[1, 'Daily Putter', 'Play the Daily Hole.', 10], [7, 'Week of Putts', 'Play 7 Daily Holes.', 20], [30, 'Month of Putts', 'Play 30 Daily Holes.', 45],
+      [100, 'Daily Devotee', 'Play 100 Daily Holes.', 90], [365, 'Every Day for a Year', 'Play 365 Daily Holes.', 200]]),
+    achTier('pp_streak', C.daily, 'pp_streak', [[3, 'On a Roll', 'Play the Daily Hole 3 days running.', 15], [7, 'Week Streak', 'A 7 day Daily Hole streak.', 35], [30, 'Month Streak', 'A 30 day streak.', 90],
+      [100, 'Unbroken', 'A 100 day streak.', 200]]),
+    achTier('pp_mholes', C.members, 'pp_mholes', [[1, 'Member’s Welcome', 'Beat a Members Tour hole.', 15], [9, 'Front Nine', 'Beat 9 Members Tour holes.', 40], [18, 'Full Round', 'Beat 18 Members Tour holes.', 80]]));
+  // each world's own: beat it, perfect it, an ace in it (where a hole can be aced), its secret, its trinkets, its golden balls
+  WORLDS.forEach(function(W, w){ var t = W.theme, sec = SECRETS.filter(function(x){ return x.theme === t; })[0];
+    out.push({ id:'pp_wc_' + t, cat:C.worlds, name:W.name + ' Beaten', desc:'Beat all 18 holes of ' + W.name + '.', goal:1, pts:40, key:'pp_wc_' + t });
+    out.push({ id:'pp_wp_' + t, cat:C.worlds, name:W.name + ' Perfect', desc:'Three stars on every hole of ' + W.name + '.', goal:1, pts:100, key:'pp_wp_' + t });
+    if (achAceable(TOURS.main, w)) out.push({ id:'pp_wa_' + t, cat:C.worlds, name:'Ace in ' + W.name, desc:'Make a hole in one in ' + W.name + '.', goal:1, pts:25, key:'pp_wa_' + t });
+    if (sec){ out.push({ id:'pp_sf_' + t, cat:C.secrets, name:'Found: ' + sec.name, desc:'Find the secret hole in ' + W.name + '.', goal:1, pts:30, key:'pp_sf_' + t });
+      out.push({ id:'pp_sb_' + t, cat:C.secrets, name:sec.name, desc:'Beat the secret hole in ' + W.name + '.', goal:1, pts:50, key:'pp_sb_' + t }); }
+    if (TRINKETS[t]) out.push({ id:'pp_tk_' + t, cat:C.worlds, name:W.name + ' Keepsakes', desc:'Collect the three trinkets in ' + W.name + '.', goal:1, pts:30, key:'pp_tk_' + t });
+    out.push({ id:'pp_gb_' + t, cat:C.worlds, name:W.name + ' Golden Balls', desc:'Find the golden ball on each of the 18 trails of ' + W.name + '.', goal:1, pts:40, key:'pp_gb_' + t }); });
+  MEMBER_WORLDS.forEach(function(W){ var t = W.id;
+    out.push({ id:'pp_mc_' + t, cat:C.members, name:W.name + ' Beaten', desc:'Beat all 9 holes of ' + W.name + '.', goal:1, pts:60, key:'pp_mc_' + t });
+    out.push({ id:'pp_mp_' + t, cat:C.members, name:W.name + ' Perfect', desc:'Three stars on every hole of ' + W.name + '.', goal:1, pts:120, key:'pp_mp_' + t }); });
+  return out; }
+// a world can be aced fairly where a hole's three stars is the ace (threeOf 1): an ace achievement only goes where one can
+function achAceable(TR, w){ var K = TR.per || PER; for (var n = w * K + 1; n <= Math.min(TR.levels.length, w * K + K); n++){ var L = TR.levels[n - 1]; if (threeOf(L.par, L.three) === 1) return true; } return false; }
+function achStats(host){ HOSTX = host || HOSTX; var st = pload(), o = {}, beat = function(tp, TR, n){ var b = tp.best[n]; return b != null && b < TR.levels[n - 1].par; };
+  var TR = TOURS.main, tp = st.tours.main, K = TR.per || PER, N = TR.levels.length, holes = 0, stars = 0, worlds = 0, perfect = 0;
+  for (var n = 1; n <= N; n++){ if (beat(tp, TR, n)) holes++; stars += starsOf(tp.best[n], TR.levels[n - 1].par, TR.levels[n - 1].three); }
+  WORLDS.forEach(function(W, w){ var t = W.theme, all = true, ace = false;
+    for (var n = w * K + 1; n <= Math.min(N, w * K + K); n++){ if (!beat(tp, TR, n)) all = false; if (tp.ace[n]) ace = true; }
+    var pf = worldStars(tp, TR, w) === worldMax(TR, w), g = goldenOf(st, 'main', w);
+    o['pp_wc_' + t] = all ? 1 : 0; o['pp_wp_' + t] = pf ? 1 : 0; o['pp_wa_' + t] = ace ? 1 : 0; o['pp_gb_' + t] = g.have >= g.total ? 1 : 0;
+    o['pp_tk_' + t] = (st.tk || []).filter(function(x){ return x.split(':')[0] === t; }).length >= 3 ? 1 : 0;
+    if (all) worlds++; if (pf) perfect++; });
+  var found = secretsFound(st), won = (st.tours.secret || {}).paid || {};
+  SECRETS.forEach(function(x, i){ o['pp_sf_' + x.theme] = found.indexOf(i + 1) >= 0 ? 1 : 0; o['pp_sb_' + x.theme] = won[i + 1] ? 1 : 0; });
+  var MT = TOURS.members, mp = st.tours.members, MK = MT.per, mh = 0;
+  for (var m = 1; m <= MT.levels.length; m++) if (beat(mp, MT, m)) mh++;
+  MEMBER_WORLDS.forEach(function(W, w){ var all = true; for (var m = w * MK + 1; m <= Math.min(MT.levels.length, w * MK + MK); m++) if (!beat(mp, MT, m)) all = false;
+    o['pp_mc_' + W.id] = all ? 1 : 0; o['pp_mp_' + W.id] = worldStars(mp, MT, w) === worldMax(MT, w) ? 1 : 0; });
+  var chests = 0, puzzles = 0, golden = 0; Object.keys(st.trail || {}).forEach(function(k){ var r = st.trail[k] || {}; chests += (r.ch || []).length; if (r.pz) puzzles++; if (r.g) golden++; });
+  // a putter is built once its three parts are found: read off the record, never the closet (whose ownership check
+  // can reach the page's achievement count, which asks for these stats)
+  var daily = Object.keys(st.daily || {}).filter(function(d){ return st.daily[d] && st.daily[d].done; }).length,
+    built = PP_PUTTERS.filter(function(pt){ return partsOf(st, pt.id) >= 3; }).length;
+  o.pp_holes = holes; o.pp_stars = stars; o.pp_aces = Object.keys(tp.ace || {}).filter(function(k){ return tp.ace[k]; }).length; o.pp_worlds = worlds; o.pp_perfect = perfect;
+  o.pp_sfound = found.length; o.pp_sbeat = SECRETS.filter(function(x, i){ return won[i + 1]; }).length;
+  o.pp_chests = chests; o.pp_puzzles = puzzles; o.pp_golden = golden; o.pp_trinkets = (st.tk || []).length; o.pp_built = built;
+  o.pp_daily = daily; o.pp_streak = Math.max((st.streak && st.streak.best) || 0, (st.streak && st.streak.n) || 0); o.pp_mholes = mh;
+  return o; }
+RTT_PUTT.achDefs = achDefs; RTT_PUTT.achCats = function(){ return Object.keys(ACH_CAT).map(function(k){ return ACH_CAT[k]; }); };
+RTT_PUTT.achStats = function(host){ try{ return achStats(host); }catch(e){ return {}; } };
 RTT_PUTT.summary = function(host){ HOSTX = host || HOSTX; var st = pload(), dk = today(), dh = dailyHole(dk), rec = st.daily[dk];
   var tm = st.tours.main, lv = Math.min(tm.lv, LEVELS.length), wv = Math.floor((lv - 1) / PER);
   while (wv > 0 && !revealed(TOURS.main, wv, st)) wv--;   // a world still under cloud is not named on the home card either
