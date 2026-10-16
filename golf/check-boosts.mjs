@@ -20,6 +20,10 @@
  *             Head and the share card each show the boosted number the sim plays.
  *   MILESTONE the World No.1 Cap, Major Marker Ball and Legend's Driver are closet items with their milestone's
  *             boost, priced 0 (never in a pack), owned once the milestone is. The two charms stay data only.
+ *   PUTT PUTT the 29 Putt Putt rewards: every name a tour pays is a real item with its art, priced 0 and never in a
+ *             pack, owned only by what Putt Putt's record holds (a fresh record owns none, world 1 cleared owns the
+ *             Clubhouse Visor and the Clubhouse Cleats, an old reward name still counts), with exactly the owner's
+ *             boosts, and shown locked only once Putt Putt is open to the player.
  *   OVER 99   an all-99 golfer in the strongest closet: the sim plays every round to a finite score and
  *             beats the 99, and every number above shows in full at 390x844 and 1440x900 with nothing
  *             clipped, wrapped or past its track.
@@ -143,7 +147,10 @@ try {
     for (let t = 0; t < n; t++) {
       __B.naked(); const worn = [];
       Object.keys(by).forEach((cat) => { if (R() < 0.2) return; const it = by[cat][Math.floor(R() * by[cat].length)]; __B.wear(it.cat, it.id); worn.push(it); });
-      const sum = {}; worn.forEach((i) => { for (const k in i.b) sum[k] = (sum[k] || 0) + i.b[k]; });
+      // summed in the order the page sums a closet (cosmeticBoostRows, then the club), because the +20 trim takes the
+      // largest stat first and two stats level on the largest go in that order
+      const ORD = ['hw', 'ew', 'pat', 'putter', 'ball', 'cleats', 'club'], sum = {};
+      worn.slice().sort((x, y) => ORD.indexOf(x.cat) - ORD.indexOf(y.cat)).forEach((i) => { for (const k in i.b) sum[k] = (sum[k] || 0) + i.b[k]; });
       const rows = cosmeticBoostRows().length + bagBoostRows().length;
       out.push({ worn: worn.map((i) => i.key), sum, ab: Object.assign({}, accBoost()), rows, sets: __B.sets() }); }
     // the club level bonus: 45 reps on the worn club is level 9, +3 on its primary stat
@@ -393,6 +400,63 @@ try {
     M.out.forEach((r) => ok(r.key + ': listed, ' + r.id + '\'s boost, never sold or pulled, owned once the milestone is',
       r.listed && r.same && r.price === 0 && !r.pack && !r.before && r.after, r));
     ok('the two charms stay data only (no slot)', M.charms.length === 0, M.charms);
+  }
+
+  head('PUTT PUTT: the 29 world rewards are earned items with the owner\'s boosts');
+  {
+    // the owner's table (2026-10-16): +2 on one stat for a world item (never Putting), +2 Putting a putter, +4 the
+    // Diamond Putter, nothing on the Members Champion Jacket
+    const WANT = { 'hw:ppvisor': { acc: 2 }, 'hw:pphallcap': { clu: 2 }, 'hw:pptricorn': { dist: 2 }, 'hw:ppminer': { app: 2 }, 'hw:ppexplorer': { bnk: 2 },
+      'hw:pphallowscrown': { scr: 2 }, 'ew:pppixelshades': { app: 2 }, 'ew:ppeyepatch': { acc: 2 }, 'ew:ppaviatorgoggles': { clu: 2 }, 'ew:ppsnowgoggles': { sht: 2 },
+      'ew:ppphantommask': { dist: 2 }, 'bl:ppgoldstar': { sht: 2 }, 'bl:ppsprinkle': { scr: 2 }, 'bl:ppnugget': { dist: 2 }, 'bl:pplava': { dist: 2 }, 'bl:ppcloud': { acc: 2 },
+      'bl:ppdinoegg': { scr: 2 }, 'bl:ppgoldleaf': { app: 2 }, 'bl:ppjackolantern': { bnk: 2 }, 'ct:ppclubhouse': { sht: 2 }, 'ct:pplavarock': { bnk: 2 }, 'ct:ppdinoclaw': { sht: 2 },
+      'pu:pplollipop': { put: 2 }, 'pu:ppneon': { put: 2 }, 'pu:ppjadeidol': { put: 2 }, 'pu:pptusk': { put: 2 }, 'pu:ppharvest': { put: 2 }, 'pu:ppdiamond': { put: 4 },
+      'tp:ppchampjacket': null };
+    const R = await page.evaluate((WANT) => {
+      const P = window.RTT_PUTT, out = { bad: [] }, catOf = (k) => COS_CATS.find((c) => c.pk === k.split(':')[0]).k;
+      const items = P.rewardItems(), names = items.map((r) => r.name);
+      // every name a tour pays (signature hole, world clear, the Members finish and candy bag, the secret holes)
+      const paid = [];
+      ['main', 'members'].forEach((t) => { const PY = P.PAY[t]; paid.push(...(PY.sigReward || []), ...(PY.worldReward || [])); if (PY.finish) paid.push(PY.finish); if (PY.treat) paid.push(PY.treat.reward); });
+      paid.push(P.PAY.secret.allReward);
+      out.paid = paid.length; out.unmapped = paid.map((n) => n.replace(' (Members only)', '')).filter((n) => names.indexOf(n) < 0);
+      out.keys = Object.keys(WANT).sort().join() === items.map((r) => r.key).sort().join();
+      const s0 = coinState(); items.forEach((r) => { delete s0.owned[r.key]; }); coinSave(s0);
+      const rec = acctKey('bag_ppt_v1'), set = (v) => { if (v) localStorage.setItem(rec, JSON.stringify(v)); else localStorage.removeItem(rec); localStorage.removeItem('bag_ppt_v1'); };
+      const owns = () => items.filter((r) => cosOwned(catOf(r.key), r.key.split(':')[1])).map((r) => r.name);
+      items.forEach((r) => { const cat = catOf(r.key), id = r.key.split(':')[1], it = (cosmeticItems(cat) || []).find((o) => o.id === id);
+        const art = cat === 'hw' ? PXG_HATS[id] && PXG_HERITAGE_HAT_PAL[id] : cat === 'ew' ? PXG_EYEWEAR[id] && PXG_EW_PAL[id] : cat === 'ball' ? PXG_BALL[id] && PXG_BALL_PAL[id]
+          : cat === 'cleats' ? PXG_CLEATS[id] && PXG_CLEATS_PAL[id] : cat === 'top' ? PXG_TOPS[id] && PXG_TOP_PAL[id] : PXG_CLUBS['pu_' + id] && PXG_CLUB_PAL['pu_' + id] && PXG_CLUBS['pu_' + id] !== PXG_CLUBS.putter;
+        const b = cosBoost(cat, id), w = WANT[r.key];
+        const row = { key: r.key, listed: !!it, named: !!it && it.name.replace(/'/g, '’') === r.name.replace(/'/g, '’'), art: !!art, price: cosmeticPrice(cat, id), packOnly: cosPackOnly(cat, id),
+          pack: packPool().some((e) => cosKey(e.cat, e.id) === r.key), boost: JSON.stringify(b) === JSON.stringify(w), hint: !!CARD_EARN[r.key] && / in Putt Putt\./.test(CARD_EARN[r.key].hint) };
+        if (cat === 'putter'){ const pu = PUTTERS_BY[id]; row.reach = pu && pu.reach === (id === 'ppdiamond' ? 3 : 2) && pu.kind === 'earn' && pu.rar === (id === 'ppdiamond' ? 'legendary' : 'rare'); }
+        if (!(row.listed && row.named && row.art && row.price === 0 && !row.packOnly && !row.pack && row.boost && row.hint && row.reach !== false)) out.bad.push(row); });
+      // ownership follows the record, and only the record
+      set(null); out.fresh = owns();
+      set({ v: 2, tours: { main: { wpaid: { 0: 1 } } } }); out.world1 = owns();
+      set({ v: 2, tours: { main: { best: { 18: 3 } } } }); out.sig1 = owns();
+      set({ v: 2, tours: {}, rewards: ['Thaw Celebration', 'Phantom Trail (Members only)', 'Jack-o’-Lantern Ball (Members only)'] }); out.old = owns();
+      const ten = {}; for (let i = 1; i <= P.PAY.secret.ten; i++) ten[i] = 1; set({ v: 2, tours: { secret: { paid: ten } } }); out.secret = owns();
+      set({ v: 2, tours: { members: { wpaid: { 0: 1, 1: 1 } } } }); out.members = owns();
+      // worn alone, a won world item moves its own stat by its boost
+      set({ v: 2, tours: { main: { wpaid: { 0: 1 } } } }); __B.raw(80); __B.naked(); const a = __B.stats(); __B.wear('hw', 'ppvisor'); const z = __B.stats(); out.wear = z.st.acc - a.st.acc;
+      set(null); __B.naked(); __B.wear('hw', 'ppvisor'); out.wearLocked = __B.stats().st.acc - a.st.acc; __B.naked();
+      // shown locked only once Putt Putt is open to the player
+      const live = PUTT_LIVE; PUTT_LIVE = false; out.hidden = cosTileHTML('hw', { id: 'ppvisor', name: 'Clubhouse Visor' }) === '';
+      PUTT_LIVE = true; const h = cosTileHTML('hw', { id: 'ppvisor', name: 'Clubhouse Visor' }); out.shown = /Clear The Clubhouse in Putt Putt/.test(h); PUTT_LIVE = live;
+      return out; }, WANT);
+    ok('every name the tours pay (' + R.paid + ') is a Putt Putt reward item', R.unmapped.length === 0, R.unmapped);
+    ok('the 29 items are the owner\'s 29', R.keys);
+    ok('each is listed, named, drawn, priced 0, never pack only or in a pack, with exactly its boost and a hint', R.bad.length === 0, R.bad.slice(0, 4));
+    ok('a fresh record owns none', R.fresh.length === 0, R.fresh);
+    ok('world 1 cleared owns the Clubhouse Visor and the Clubhouse Cleats', R.world1.join() === 'Clubhouse Visor,Clubhouse Cleats', R.world1);
+    ok('world 1 signature hole beaten (no payout on the record) owns the same two', R.sig1.join() === 'Clubhouse Visor,Clubhouse Cleats', R.sig1);
+    ok('an old reward name on the record owns its item', R.old.sort().join() === 'Jack-o-Lantern Ball,Phantom Mask,Snow Goggles', R.old);
+    ok('the secret holes owns the Diamond Putter', R.secret.join() === 'Diamond Putter', R.secret);
+    ok('the Members Tour cleared owns its five', R.members.sort().join() === 'Golden Leaf Ball,Hallows Crown,Harvest Moon Putter,Members Champion Jacket,Phantom Mask', R.members);
+    ok('the Clubhouse Visor won moves Accuracy by 2, and not won moves nothing', R.wear === 2 && R.wearLocked === 0, [R.wear, R.wearLocked]);
+    ok('a locked reward is hidden before Putt Putt is open, and shows where to win it after', R.hidden && R.shown, [R.hidden, R.shown]);
   }
 
   head('ICON: the tier above ELITE, 100 and up, on the First Tee switch');

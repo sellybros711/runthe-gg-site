@@ -2394,14 +2394,14 @@ function top(title, sub, right){
 var PAY = {
   main:{ hole:80, sig:280, ace:20, world:2000,
     sigReward:['Clubhouse Visor', 'Hall Monitor Cap', 'Lollipop Putter', 'Neon Putter', 'Tricorn Hat', 'Jade Idol Putter', 'Miner’s Lamp Cap', 'Lava Ball', 'Cloud Ball', 'Dino Egg Ball', 'Mammoth Tusk Putter'],
-    worldReward:['Clubhouse Polo', 'Gold Star Ball', 'Sprinkle Trail', 'High Score Celebration', 'Treasure Trail', 'Explorer Hat', 'Gold Nugget Ball', 'Eruption Celebration', 'Rainbow Trail', 'Footprint Trail', 'Thaw Celebration'] },
+    worldReward:['Clubhouse Cleats', 'Gold Star Ball', 'Sprinkle Ball', 'Pixel Shades', 'Pirate Eyepatch', 'Explorer Hat', 'Gold Nugget Ball', 'Lava Rock Cleats', 'Aviator Goggles', 'Dino Claw Cleats', 'Snow Goggles'] },
   members:{ hole:300, sig:1200, ace:60, world:2500, exclusive:true,
     sigReward:['Hallows Crown (Members only)', 'Harvest Moon Putter (Members only)'],
-    worldReward:['Phantom Trail (Members only)', 'Golden Leaf Ball (Members only)'], finish:'Members Champion Jacket (Members only)',
+    worldReward:['Phantom Mask (Members only)', 'Golden Leaf Ball (Members only)'], finish:'Members Champion Jacket (Members only)',
     /* TRICK OR TREAT, the Hallows Night bonus: the first time a Hallows hole is beaten UNDER par it hands out a
        treat (coins on top of the hole's own), and all nine fill the candy bag for a reward nobody else has.
        Under par and not just par, so the treat is for playing a hole well rather than for getting round it. */
-    treat:{ w:0, each:150, all:600, reward:'Jack-o’-Lantern Ball (Members only)' } },
+    treat:{ w:0, each:150, all:600, reward:'Jack-o-Lantern Ball (Members only)' } },
   lab:{ hole:0, sig:0, ace:0, world:0, sigReward:[], worldReward:[] },
   // a secret hole pays like a signature hole the first time it is beaten; ten of them beaten wins the Diamond Putter and a bonus
   secret:{ hole:280, sig:280, ace:20, world:0, sigReward:[], worldReward:[], ten:10, all:1000, allReward:'Diamond Putter' }
@@ -2410,6 +2410,68 @@ var COIN_HOLE = PAY.main.hole, COIN_SIG = PAY.main.sig, COIN_ACE = PAY.main.ace,
 var LIFE_MS = 24 * 3600 * 1000;
 var ACE_REWARD = { 5:'Hole in One Charm', 15:'Golden Putter', 30:'Ace Crown' };
 var STREAK_REWARD = { 7:'Week Streak Ball', 30:'Month Streak Visor', 100:'Century Streak Trail' };
+/* EVERY TOUR REWARD IS A CLOSET ITEM (the owner's call, 2026-10-16). Each name a tour pays is one item in the page's
+   closet, worn on the Pro Tour, the First Tee and here. The item is keyed the way the page keys what a player owns
+   (its cosKey, cat:id: hw headwear, ew eyewear, bl ball, ct cleats, pu putter, tp outerwear), and the page prices each
+   one 0, so it is never sold and never in a pack. A name is matched without its ' (Members only)'.
+   REWARD_OLD is what a saved record may still carry from before the trails and celebrations became items (and the
+   curly Jack-o'-Lantern): an old name reads as its new one, so a record never has to be rewritten. */
+var REWARD_ITEM = {
+  'Clubhouse Visor':'hw:ppvisor', 'Hall Monitor Cap':'hw:pphallcap', 'Lollipop Putter':'pu:pplollipop', 'Neon Putter':'pu:ppneon',
+  'Tricorn Hat':'hw:pptricorn', 'Jade Idol Putter':'pu:ppjadeidol', 'Miner’s Lamp Cap':'hw:ppminer', 'Lava Ball':'bl:pplava',
+  'Cloud Ball':'bl:ppcloud', 'Dino Egg Ball':'bl:ppdinoegg', 'Mammoth Tusk Putter':'pu:pptusk',
+  'Clubhouse Cleats':'ct:ppclubhouse', 'Gold Star Ball':'bl:ppgoldstar', 'Sprinkle Ball':'bl:ppsprinkle', 'Pixel Shades':'ew:pppixelshades',
+  'Pirate Eyepatch':'ew:ppeyepatch', 'Explorer Hat':'hw:ppexplorer', 'Gold Nugget Ball':'bl:ppnugget', 'Lava Rock Cleats':'ct:pplavarock',
+  'Aviator Goggles':'ew:ppaviatorgoggles', 'Dino Claw Cleats':'ct:ppdinoclaw', 'Snow Goggles':'ew:ppsnowgoggles',
+  'Hallows Crown':'hw:pphallowscrown', 'Harvest Moon Putter':'pu:ppharvest', 'Phantom Mask':'ew:ppphantommask', 'Golden Leaf Ball':'bl:ppgoldleaf',
+  'Members Champion Jacket':'tp:ppchampjacket', 'Jack-o-Lantern Ball':'bl:ppjackolantern', 'Diamond Putter':'pu:ppdiamond' };
+var REWARD_OLD = { 'Clubhouse Polo':'Clubhouse Cleats', 'Sprinkle Trail':'Sprinkle Ball', 'High Score Celebration':'Pixel Shades',
+  'Treasure Trail':'Pirate Eyepatch', 'Eruption Celebration':'Lava Rock Cleats', 'Rainbow Trail':'Aviator Goggles', 'Footprint Trail':'Dino Claw Cleats',
+  'Thaw Celebration':'Snow Goggles', 'Phantom Trail':'Phantom Mask', 'Jack-o’-Lantern Ball':'Jack-o-Lantern Ball' };
+function rewardName(r){ var b = String(r || '').replace(' (Members only)', ''); return REWARD_OLD[b] || b; }
+/* WHAT PAYS EACH ONE: a world's two names pay when its signature hole is beaten (which clears the world), the
+   Members Tour's finish when its last world is cleared, the candy bag when every hole of its world has had its
+   treat, and the Diamond Putter at PAY.secret.ten secret holes beaten. Read off PAY, so a reward moved there moves here. */
+var REWARD_SRC = null;
+function rewardSrc(){ if (REWARD_SRC) return REWARD_SRC; var o = {};
+  ['main', 'members'].forEach(function(tid){ var PY = PAY[tid], TR = TOURS[tid];
+    [PY.sigReward || [], PY.worldReward || []].forEach(function(L){ L.forEach(function(r, w){ o[rewardName(r)] = { tid:tid, w:w }; }); });
+    if (PY.finish) o[rewardName(PY.finish)] = { tid:tid, w:TR.worlds.length - 1, fin:1 };
+    if (PY.treat) o[rewardName(PY.treat.reward)] = { tid:tid, w:PY.treat.w, treat:1 }; });
+  o[rewardName(PAY.secret.allReward)] = { secret:1 };
+  return (REWARD_SRC = o); }
+function sigHole(TR, w){ var K = TR.per || PER; for (var n = Math.min(TR.levels.length, w * K + K); n > w * K; n--) if (TR.levels[n - 1].sig) return n; return 0; }
+// does this record hold the reward: the name is in its rewards, or what pays it has happened (a record from before
+// the reward was paid, or from before it was an item, owns it all the same)
+function rewardHeld(st, name){
+  if ((st.rewards || []).some(function(r){ return rewardName(r) === name; })) return true;
+  var s = rewardSrc()[name], tours = st.tours || {}; if (!s) return false;
+  if (s.secret){ var pd = (tours.secret || {}).paid || {}; return Object.keys(pd).filter(function(k){ return pd[k]; }).length >= PAY.secret.ten; }
+  var TR = TOURS[s.tid], tp = tours[s.tid] || {}, K = TR.per || PER;
+  if (s.treat){ var tk = 0; for (var n = s.w * K + 1; n <= s.w * K + K; n++) if ((tp.treat || {})[n]) tk++; return tk >= K; }
+  var sg = sigHole(TR, s.w), b = sg ? (tp.best || {})[sg] : null;
+  return !!((tp.wpaid || {})[s.w] || (b != null && b <= TR.levels[sg - 1].par)); }
+/* THE RECORD, READ ONLY. The page asks about ownership while it draws its closet, so this never writes, never folds and
+   never runs the lives clock: it reads the account's record and the bare signed-out one (which pload would fold in) and
+   answers for both. The answer is kept until either record changes. */
+var RCACHE = { a:null, b:null, own:null, st:null };
+function rewardRec(host){
+  var key = host && host.storeKey ? host.storeKey('bag_ppt_v1') : pkey(), a = praw(key), b = null;
+  if (key !== 'bag_ppt_v1'){ try{ b = localStorage.getItem('bag_ppt_v1'); }catch(e){} }
+  if (RCACHE.own && a === RCACHE.a && b === RCACHE.b) return RCACHE;
+  var recs = [a, b].map(function(r){ try{ return r ? JSON.parse(r) : null; }catch(e){ return null; } }).filter(function(r){ return r && typeof r === 'object'; });
+  var own = {}; Object.keys(REWARD_ITEM).forEach(function(nm){ if (recs.some(function(st){ return rewardHeld(st, nm); })) own[nm] = 1; });
+  var st0 = recs[0] || {}; RCACHE = { a:a, b:b, own:own, st:{ tours:st0.tours || {}, rv:st0.rv || [] } }; return RCACHE; }
+function rewardKey(x){ x = rewardName(x); if (REWARD_ITEM[x]) return x; for (var nm in REWARD_ITEM) if (REWARD_ITEM[nm] === x) return nm; return null; }
+// where to win it, in a few short words for the closet's locked tile. A world still in the clouds is not named.
+function rewardHint(name, st){ var s = rewardSrc()[name]; if (!s) return '';
+  if (s.secret) return 'Beat ' + PAY.secret.ten + ' secret holes in Putt Putt.';
+  var TR = TOURS[s.tid], W = TR.worlds[s.w], K = TR.per || PER;
+  if (s.treat) return 'Beat all ' + K + ' ' + W.name + ' holes under par in Putt Putt.';
+  if (s.fin) return 'Finish the Members Tour in Putt Putt.';
+  if (TR.members) return 'Clear ' + W.name + ' on the Members Tour in Putt Putt.';
+  var seen = false; try{ seen = revealed(TR, s.w, st || { tours:{}, rv:[] }); }catch(e){}
+  return seen ? 'Clear ' + W.name + ' in Putt Putt. Beat its signature hole, ' + TR.names[sigHole(TR, s.w) - 1] + '.' : 'Clear World ' + (s.w + 1) + ' in Putt Putt.'; }
 var HOSTX = null;   // the host when the mode is closed, for the home screen card
 function hostOf(){ return (S && S.host) || HOSTX || {}; }
 function pkey(){ try{ var h = hostOf(); return h.storeKey ? h.storeKey('bag_ppt_v1') : 'bag_ppt_v1'; }catch(e){ return 'bag_ppt_v1'; } }
@@ -3005,7 +3067,7 @@ function putterRows(st){ var L = hostPutters(); if (!L) return null; var TR = TO
   var order = function(p){ return p.owned ? 0 : p.kind === 'pp' ? 1 : 2; };
   return L.slice().sort(function(a, b){ return order(a) - order(b); }).map(function(p){
     var pt = PP_PUTTERS.filter(function(q){ return q.id === p.id; })[0], n = pt ? partsOf(st, p.id) : 0;
-    var how = p.owned ? esc(p.txt) : pt ? n + ' of 3 parts · found on the trails of ' + pt.worlds.map(function(w){ return esc(revealed(TR, w) ? TR.worlds[w].name : 'World ' + (w + 1)); }).join(', ') : 'Pull it from a pack in the Pro Shop';
+    var how = p.owned ? esc(p.txt) : pt ? n + ' of 3 parts · found on the trails of ' + pt.worlds.map(function(w){ return esc(revealed(TR, w) ? TR.worlds[w].name : 'World ' + (w + 1)); }).join(', ') : p.hint ? esc(p.hint) : 'Pull it from a pack in the Pro Shop';
     return '<div class="pp-bput' + (p.owned ? ' built' : ' locked') + (p.on ? ' on' : '') + '"><span class="pp-pth">' + p.thumb + '</span><div class="pp-bpn"><b>' + esc(p.name) + '</b><span>' + how + '</span></div>' +
       (p.owned ? '<button class="' + (p.on ? 'pt-go' : 'pt-bt') + '" data-peq="' + p.id + '">' + (p.on ? 'Equipped' : 'Equip') + '</button>' : pt ? '<i class="pp-bpp">' + [0, 1, 2].map(function(j){ return '<u class="' + (((st.pp || {}).parts || []).indexOf(pt.id + ':' + j) >= 0 ? 'on' : '') + '"></u>'; }).join('') + '</i>' : '<i class="pp-plock">Locked</i>') + '</div>'; }).join(''); }
 /* THE CLOSET, IN PUTT PUTT: your putters, the one equipped, and a way into the full closet. */
@@ -4518,6 +4580,11 @@ RTT_PUTT.summary = function(host){ HOSTX = host || HOSTX; var st = pload(), dk =
   while (wv > 0 && !revealed(TOURS.main, wv, st)) wv--;   // a world still under cloud is not named on the home card either
   return { lv:lv, levels:LEVELS.length, world:WORLDS[wv].name, theme:WORLDS[wv].theme, members:membersOpen(), lives:st.lives, max:livesMax(), refillAt:st.refillAt || null,
     daily:{ name:dh.name, theme:THEMES[dh.theme].name, kick:THEMES[dh.theme].kick, done:!!(rec && rec.done), s:rec && rec.s, par:rec && rec.par, ms:rec && rec.ms }, nextMs:msToNextDay() }; };
+/* THE REWARDS AS CLOSET ITEMS, for the page: every name with its item, whether the record holds it, and where to win it.
+   Each reads the record only (rewardRec), so the page can ask while it works out what a player owns. */
+RTT_PUTT.rewardItems = function(){ return Object.keys(REWARD_ITEM).map(function(nm){ return { name:nm, key:REWARD_ITEM[nm] }; }); };
+RTT_PUTT.rewardOwned = function(x, host){ try{ var nm = rewardKey(x); return !!(nm && rewardRec(host).own[nm]); }catch(e){ return false; } };
+RTT_PUTT.rewardHint = function(x, host){ try{ var nm = rewardKey(x); return nm ? rewardHint(nm, rewardRec(host).st) : ''; }catch(e){ return ''; } };
 // the checker's door: start a round at a given hole. Nothing on the page calls it.
 RTT_PUTT._go = function(mode, arg, i){ if (!S) return; startRound(mode, arg); if (i){ S.round.i = i; playHole(); } };
 
