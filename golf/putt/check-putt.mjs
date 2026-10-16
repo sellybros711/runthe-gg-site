@@ -1044,6 +1044,29 @@ if (!args.includes('--no-browser')){
     await pg.waitForFunction(() => { const P = window.RTT_PUTT._state().play; return P && (P.v3 || P.art); }, null, { timeout:60000 });
     claim(await pg.evaluate(() => { const P = window.RTT_PUTT._state().play; return !P.v3 && !!P.art; }), 'a 3D render that throws falls back to the flat hole');
     await pg.evaluate(() => { window.RTT_PUTT_3D.render = window.__keep; });
+    /* ACHIEVEMENTS IN THE TROPHY ROOM. Putt Putt hands the page its own list, built from its worlds, so a new world
+       brings its set with it; they are read off the record, so a player has what they already did; the Rep ranks sit
+       on fixed points, so adding achievements never drops anybody a rank; G.O.A.T. is the Pro Tour's own; and the
+       tour keeps growing, so nothing says "every world" (owner, 2026-10-15). */
+    const ac = await pg.evaluate(() => { const T = window.RTT_PUTT, r = {}, keepU = sbUser, keepN = sbUsername, keepOn = puttOn;
+      sbUser = { id:'achk' }; sbUsername = 'achk'; puttOn = () => true;
+      r.tiers = REP_TIERS.map(t => t.at).join(',');
+      const best = {}, ace = {}; for (let n = 1; n <= 18; n++) best[n] = 1; ace[1] = 1;
+      localStorage.setItem(acctKey('bag_ppt_v1'), JSON.stringify({ v:2, tours:{ main:{ lv:19, best, ace, paid:{}, wpaid:{} } } }));
+      const fresh = evaluateAch().map(a => a.id), defs = T.achDefs(), worlds = Math.ceil(T.summary(puttHost()).levels / 18);
+      r.perWorld = defs.filter(d => /^pp_wc_/.test(d.id)).length === worlds && defs.filter(d => /^pp_wp_/.test(d.id)).length === worlds;
+      r.retro = ['pp_holes_10', 'pp_worlds_1', 'pp_perfect_1', 'pp_aces_1', 'pp_wc_clubhouse', 'pp_wp_clubhouse'].every(id => fresh.indexOf(id) >= 0);
+      r.notYet = fresh.indexOf('pp_wc_school') < 0 && fresh.indexOf('pp_holes_25') < 0;
+      r.inRoom = ACH.filter(a => a.pp).length === defs.length + ACH_TWO_TOURS.length && ACH_BY_CAT.some(c => c.cat === 'Putt Putt Worlds');
+      r.goat = ACH_TOUR_TOTAL === ACH.filter(a => !a.pp).length && achTourCount() <= ACH_TOUR_TOTAL;
+      r.words = ACH.filter(a => a.pp && (/every world|all (the )?worlds/i.test(a.name + ' ' + a.desc) || [...a.name + a.desc].some(c => c.charCodeAt(0) === 8211 || c.charCodeAt(0) === 8212))).map(a => a.id);   // the two dashes, by code
+      localStorage.removeItem(acctKey('bag_ach')); localStorage.removeItem(acctKey('bag_ppt_v1')); sbUser = keepU; sbUsername = keepN; puttOn = keepOn;
+      return r; });
+    claim(ac.tiers === '0,391,978,1760,2737,3910,5279,6843,8602,10557,12903,15640,18377,21505,24633,28152,31671,35190,37732', `the Tour Rep ranks sit on fixed points, where they were before Putt Putt's achievements (${ac.tiers})`);
+    claim(ac.perWorld && ac.inRoom, 'each Putt Putt world brings its own achievements, and they and the Two Tours ones are in the Trophy Room');
+    claim(ac.retro && ac.notYet, 'Putt Putt achievements are read off the record: a cleared, perfect world unlocks its own at once, and only those');
+    claim(ac.goat, 'G.O.A.T. counts the Pro Tour achievements alone, so a new Putt Putt world never moves it');
+    claim(ac.words.length === 0, 'no Putt Putt achievement says "every world" or carries a dash' + (ac.words.length ? ': ' + ac.words.join(', ') : ''));
     claim(errs.length === 0, 'no page errors' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
     await b.close(); srv.close();
   }
