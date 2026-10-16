@@ -531,14 +531,16 @@
     let tag='';   // the item the parts being pushed belong to, so a tile can draw it alone (MO.only)
     const HD=(MO?MO.K:1)>=2, parts=[], push=p=>{ if(tag) p.o.item=tag; parts.push(p); }, top=gear.top, tpal=gear.topPal||{}, cl=gear.cleats, lg=gear.legPal;
     const body=top==='shacket'?'plaid':'shirt', AX=[F,U,T];
+    // THE BUILD: a lean golfer. BW narrows the torso, hips and belt, AW brings the arms, hands and club in to match.
+    const BW=0.84, AW=0.87;
     // shoes and legs
-    for(const s of [1,-1]){ const t=4.15*s; tag=lg?'leg':'pants';
-      if(lg){ const knee=P(0.4,9.2,t*1.02); push(capsule(P(0,15.8,t),knee,3.85,'pants')); push(ellipsoid(add(knee,sc(U,-0.6)),AX,[3.9,1.9,3.9],'pants',{dt:-1})); push(capsule(add(knee,sc(U,-1.6)),P(0,3.2,t),2.7,'sock')); }
-      else { push(capsule(P(0,15.8,t),P(0.15,9.4,t*1.01),3.75,'pants')); push(capsule(P(0.15,9.4,t*1.01),P(0.1,4.6,t*1.02),3.3,'pants'));
-        if(HD){ push(capsule(P(3.7,14.6,t),P(3.55,9.4,t*1.01),0.45,'pants',{dt:1,noCast:1})); push(capsule(P(3.55,9.4,t*1.01),P(3.25,5.0,t*1.02),0.42,'pants',{dt:1,noCast:1})); } }
+    for(const s of [1,-1]){ const t=3.6*s; tag=lg?'leg':'pants';
+      if(lg){ const knee=P(0.4,9.2,t*1.02); push(capsule(P(0,15.8,t),knee,3.3,'pants')); push(ellipsoid(add(knee,sc(U,-0.6)),AX,[3.35,1.9,3.35],'pants',{dt:-1})); push(capsule(add(knee,sc(U,-1.6)),P(0,3.2,t),2.35,'sock')); }
+      else { push(capsule(P(0,15.8,t),P(0.15,9.4,t*1.01),3.2,'pants')); push(capsule(P(0.15,9.4,t*1.01),P(0.1,4.6,t*1.02),2.8,'pants'));
+        if(HD){ push(capsule(P(3.15,14.6,t),P(3.0,9.4,t*1.01),0.42,'pants',{dt:1,noCast:1})); push(capsule(P(3.0,9.4,t*1.01),P(2.75,5.0,t*1.02),0.4,'pants',{dt:1,noCast:1})); } }
       tag='';
       // a golf shoe, toes turned out a little as a golfer stands, so its saddle and laces show
-      const z=4.4*s, sole=cl?'x:'+cl.sole:'sole', sad='x:'+gear.saddleHex, toe=12*D2R;
+      const z=3.95*s, sole=cl?'x:'+cl.sole:'sole', sad='x:'+gear.saddleHex, toe=12*D2R;
       const Fs=norm(add(sc(F,Math.cos(toe)),sc(T,s*Math.sin(toe)))), Ts=norm(cross(Fs,U)), AXs=[Fs,U,Ts], b0=P(0.2,0,z);
       const Q=(f,u,t)=>add(b0,sc(Fs,f),sc(U,u),sc(Ts,t||0)), n0=parts.length;
       push(ellipsoid(Q(1.5,0.6),AXs,[5.4,0.62,3.15],sole,{gloss:1}));                                    // the sole
@@ -553,18 +555,18 @@
       if(HD) for(const k of [0.9,1.85,2.8]) push(capsule(Q(k,3.2+0.09*(2.8-k),-1.15),Q(k,3.2+0.09*(2.8-k),1.15),0.28,'lace',{noCast:1}));
       for(let i=n0;i<parts.length;i++){ parts[i].o.item='shoe'; parts[i].o.side=s; } }
     // hips and belt
-    tag=lg?'leg':'pants'; push(ellipsoid(P(0,15.6,0),AX,[4.55,3.1,8.5],'pants')); tag='';
-    push(ellipsoid(P(0.05,17.75,0),AX,[4.95,0.72,8.95],'belt',{gloss:1}));
-    if(HD){ push(ellipsoid(P(4.95,17.75,0),AX,[0.5,0.85,1.15],'x:#d6a640',{gloss:2,noCast:1})); push(ellipsoid(P(5.2,17.75,0),AX,[0.4,0.42,0.6],'belt',{noCast:1})); }
+    tag=lg?'leg':'pants'; push(ellipsoid(P(0,15.6,0),AX,[4.4,3.1,8.5*BW],'pants')); tag='';
+    push(ellipsoid(P(0.05,17.75,0),AX,[4.8,0.72,8.95*BW],'belt',{gloss:1}));
+    if(HD){ push(ellipsoid(P(4.8,17.75,0),AX,[0.5,0.85,1.15],'x:#d6a640',{gloss:2,noCast:1})); push(ellipsoid(P(5.05,17.75,0),AX,[0.4,0.42,0.6],'belt',{noCast:1})); }
     // THE SHIRT. A tall ellipsoid trimmed top and bottom (nearly straight sides, no barrel), sloped shoulders, a
     // little blousing where it tucks into the belt, and tension folds from each armpit toward the buckle.
     // The menu's phase (0 to 1) breathes it: the chest swells a touch, the shoulders lift, the folds drift.
     const ph=(MO?MO.phase:0)*2*Math.PI, br=Math.sin(ph), sw=Math.sin(ph+1.1);
     const jacket=top==='cardigan'||top==='blazer'||top==='shacket'; tag=jacket?'top':'shirt';
-    const tc=P(0,27,0), TR=[4.75*(1+0.012*br),22,8.55*(1+0.014*br)], lo=-(27-17.4)/22, hi=(33.6-27)/22, inT=l=>l[1]>lo&&l[1]<hi;
+    const tc=P(0,27,0), TR=[4.6*(1+0.012*br),22,8.55*BW*(1+0.014*br)], lo=-(27-17.4)/22, hi=(33.6-27)/22, inT=l=>l[1]>lo&&l[1]<hi;
     push(ellipsoid(tc,AX,TR,body,{cut:inT}));
-    for(const s of [1,-1]) push(capsule(P(-0.2,32.5+0.12*br,2.8*s),P(-0.2,30.5+0.15*br,7.7*s),2.35,body));    // the shoulders, sloping
-    push(ellipsoid(P(0.2,19.0,0),AX,[4.95,1.35,8.75+0.08*sw],body,{dt:0}));                                     // blousing over the belt
+    for(const s of [1,-1]) push(capsule(P(-0.2,32.5+0.12*br,2.6*s),P(-0.2,30.6+0.15*br,6.5*s),2.1,body));    // the shoulders, sloping
+    push(ellipsoid(P(0.2,19.0,0),AX,[4.8,1.35,8.75*BW+0.08*sw],body,{dt:0}));                                     // blousing over the belt
     push(capsule(P(0.3,32.2,0),P(0.6,35.8,0),2.85,'skin',{dt:-1}));                                              // the neck, under the head
     push(ellipsoid(P(0.7,33.5,0),AX,[3.7,1.15,4.7],body,{dt:1}));                                                // the collar
     if(HD&&top!=='blazer'){ const d=0.02*sw;
@@ -590,7 +592,7 @@
     if(scare&&!jacket){ const pc=P(4.6,24.2,-3.2);   // a burlap patch on the chest, stitched at its corners
       push(ellipsoid(pc,AX,[0.4,1.55,1.5],'x:#a8844e',{noCast:1}));
       for(const a of [-1,1]) for(const b of [-1,1]) push(ellipsoid(add(pc,sc(F,0.25),sc(U,1.2*a),sc(T,1.15*b)),AX,[0.3,0.32,0.32],'x:#5a4428',{noCast:1}));
-      push(ellipsoid(P(3.6,10.2,4.15),AX,[0.45,1.5,1.45],'x:#8a6a3c',{noCast:1})); }        // and one on the knee
+      push(ellipsoid(P(3.1,10.2,3.6),AX,[0.45,1.4,1.3],'x:#8a6a3c',{noCast:1})); }        // and one on the knee
     if(zomb&&!jacket){ const skn='skin', fr='x:#2e241a', n=(u,t)=>0.35*Math.sin(u*90+t*23)+0.25*Math.sin(u*37-t*61);   // ragged edges
       const tear=(u0,t0,ru,rt)=>l=>{ const a=(l[1]-u0)/ru, b=(l[2]-t0)/rt, du=0.8*a+0.6*b, dt2=-0.6*a+0.8*b; return du*du*2.4+dt2*dt2*0.55+n(l[1],l[2])<1; };   // a rip, on the diagonal
       const ring=(u0,t0,ru,rt)=>l=>{ const a=(l[1]-u0)/ru, b=(l[2]-t0)/rt, du=0.8*a+0.6*b, dt2=-0.6*a+0.8*b, d=du*du*2.4+dt2*dt2*0.55+n(l[1],l[2]); return d>=1&&d<1.6; };
@@ -601,13 +603,13 @@
       push(over(tc,AX,TR.map(v=>v*1.01),skn,l=>inT(l)&&l[0]>0.1&&l[1]<-0.37&&((l[2]*7+9)%2)<0.9&&l[1]<-0.37-0.04*Math.abs(Math.sin(l[2]*11)),{noCast:1}));   // the hem, torn into strips
     }
     for(const s of [1,-1]){ const hold=s===dom, slv=top==='blazer'?'x:'+tpal['1']:body;
-      const sh=P(-0.2,30.0+0.15*br,9.2*s), el=hold?P(0.9,23.0,10.5*s):P(0.4,23.0,10.4*s), wr=hold?P(2.4,17.7,11.0*s):P(1.3,17.3,10.9*s);
+      const sh=P(-0.2,30.0+0.15*br,9.2*AW*s), el=hold?P(0.9,23.0,10.5*AW*s):P(0.4,23.0,10.4*AW*s), wr=hold?P(2.4,17.7,11.0*AW*s):P(1.3,17.3,10.9*AW*s);
       const se=add(sh,sc(sub(el,sh),0.48)), mid=add(el,sc(sub(wr,el),0.45)), flap=sc(F,0.12*sw*s);
-      if(top==='blazer'){ push(capsule(sh,el,2.4,slv)); push(capsule(el,wr,2.05,slv)); }
-      else { push(capsule(sh,add(se,flap),2.65,slv)); if(HD) push(capsule(add(sh,sc(sub(se,sh),0.78)),add(se,flap),2.78,slv,{dt:-1,noCast:1}));   // the sleeve, its hem moving a little
-        if(HD) push(over(add(sh,sc(sub(se,sh),0.45)),AX,[2.75,2.75,2.75],slv,l=>Math.abs(l[1]+0.35*l[0]*s-0.1)<0.07&&l[0]>-0.2,{dt:-1,noCast:1}));   // a crease across the sleeve
-        push(capsule(se,el,1.72,'skin')); push(ellipsoid(el,AX,[1.65,1.6,1.7],'skin'));                                  // the upper arm and elbow
-        push(capsule(el,mid,1.62,'skin')); push(capsule(mid,wr,1.3,'skin'));                                             // the forearm, to the wrist
+      if(top==='blazer'){ push(capsule(sh,el,2.15,slv)); push(capsule(el,wr,1.85,slv)); }
+      else { push(capsule(sh,add(se,flap),2.3,slv)); if(HD) push(capsule(add(sh,sc(sub(se,sh),0.78)),add(se,flap),2.42,slv,{dt:-1,noCast:1}));   // the sleeve, its hem moving a little
+        if(HD) push(over(add(sh,sc(sub(se,sh),0.45)),AX,[2.4,2.4,2.4],slv,l=>Math.abs(l[1]+0.35*l[0]*s-0.1)<0.07&&l[0]>-0.2,{dt:-1,noCast:1}));   // a crease across the sleeve
+        push(capsule(se,el,1.6,'skin')); push(ellipsoid(el,AX,[1.55,1.5,1.6],'skin'));                                  // the upper arm and elbow
+        push(capsule(el,mid,1.5,'skin')); push(capsule(mid,wr,1.22,'skin'));                                             // the forearm, to the wrist
         if(scare){ const strw='x:'+(bp.straw||'#d8b04e'), dk='x:#a8843a';   // straw arms, tufts out of the sleeve and the cuff
           for(let k=0;k<6;k++){ const a=k*Math.PI/3, o=add(sc(F,Math.cos(a)*1.9),sc(T,Math.sin(a)*1.9*s));
             push(capsule(add(se,o),add(se,sc(o,1.35),sc(U,-1.4)),0.32,k%2?strw:dk,{noCast:1}));
@@ -625,17 +627,17 @@
     if(top==='cape'){ tag='top';
       // the sheet: one shell behind the golfer, cut to a flare (narrow at the shoulders, wide at the calves), with a
       // red lining a touch inside it, which is what shows past the arms and legs from the front
-      const cc=P(-3.8,14,0), CR=[4.2,30,16.5], zl=l=>0.885-(l[1]+0.27)*0.342, keep=l=>l[0]<0.1&&l[1]<0.65&&l[1]>-0.29&&Math.abs(l[2])<zl(l);
+      const cc=P(-3.8,14,0), CR=[4.2,30,16.5*BW], zl=l=>0.885-(l[1]+0.27)*0.342, keep=l=>l[0]<0.1&&l[1]<0.65&&l[1]>-0.29&&Math.abs(l[2])<zl(l);
       push(ellipsoid(cc,AX,CR,'x:'+tpal['1'],{cut:keep}));
       push(ellipsoid(add(cc,sc(F,0.3)),AX,CR.map(v=>v*0.96),'x:'+tpal['4'],{cut:keep,dt:-1}));
-      push(ellipsoid(P(-0.8,32.7,0),AX,[5.0,1.9,9.6],'x:'+tpal['1'],{cut:l=>l[0]<0.45}));                        // over the shoulders
+      push(ellipsoid(P(-0.8,32.7,0),AX,[5.0,1.9,9.6*BW],'x:'+tpal['1'],{cut:l=>l[0]<0.45}));                        // over the shoulders
       push(ellipsoid(P(-2.6,36.4,0),AX,[2.2,3.4,7.0],'x:'+tpal['4'],{cut:l=>l[0]<0.3&&l[1]>-0.6}));               // the high collar
       for(const s of [1,-1]) push(capsule(P(-1.8,34.0,4.6*s),P(-1.4,40.2,7.4*s),0.95,'x:'+tpal['4'],{gloss:1}));   // its two points
       for(const s of [1,-1]) push(ellipsoid(P(4.6,32.6,3.2*s),AX,[0.7,0.8,0.8],'x:'+tpal['5'],{gloss:3,noCast:1}));
       push(capsule(P(4.7,32.6,-3.0),P(4.7,32.6,3.0),0.2,'x:'+tpal['5'],{noCast:1}));
       tag=''; }
     // THE RUBBER DUCKY FLOATIE: an inflated ring round the waist with the duck's head and beak at the front
-    if(top==='duckfloatie'){ tag='top'; const fc=P(0.4,18.6,0), ring=a=>add(fc,sc(F,7.4*Math.cos(a)),sc(T,11.2*Math.sin(a)));
+    if(top==='duckfloatie'){ tag='top'; const fc=P(0.4,18.6,0), ring=a=>add(fc,sc(F,7.4*Math.cos(a)),sc(T,11.2*BW*Math.sin(a)));
       const N=26; for(let i=0;i<N;i++) push(capsule(ring(i/N*2*Math.PI),ring((i+1)/N*2*Math.PI),2.5,'x:'+tpal['1'],{gloss:2,bias:.15}));
       for(let i=0;i<N;i+=2) push(capsule(add(ring(i/N*2*Math.PI),sc(U,1.9)),add(ring((i+1)/N*2*Math.PI),sc(U,1.9)),0.7,'x:'+tpal['3'],{noCast:1}));   // the shine
       const ha=-28*D2R, rp=ring(ha), o2=norm(add(sc(F,Math.cos(ha)),sc(T,Math.sin(ha)))), sd2=norm(cross(o2,U)), hd=add(rp,sc(U,5.0),sc(o2,0.6));
@@ -646,7 +648,7 @@
     // the club, gripped in the dominant hand, its head on the grass just outside that foot
     if(gear.ballC){ const bp=P(6.2,3.2,-10.2*dom); push(capsule(P(6.2,0.2,-10.2*dom),P(6.2,1.5,-10.2*dom),0.32,'x:#e8ebf0'));   // the tee
       push(ellipsoid(add(bp,sc(U,-1.0)),AX,[0.8,0.35,0.8],'x:#e8ebf0')); push(ellipsoid(bp,AX,[1.8,1.8,1.8],'x:'+gear.ballC,{gloss:3})); }
-    const hands=add(P(2.75,16.0,11.15*dom)), clubHead=P(3.8,1.3,12.9*dom), out=sc(T,dom);
+    const hands=add(P(2.75,16.0,11.15*AW*dom)), clubHead=P(3.8,1.3,12.9*AW*dom), out=sc(T,dom);
     const id=gear.club||'driver', c0=parts.length;
     if(NOVELTY[id]||id==='pu_magicwand'){ profileNovelty(push,hands,clubHead,F,U,out,id==='pu_magicwand'?'wand':id,gear.clubPal||{}); }
     else profileClub(push,hands,clubHead,F,U,id,gear.clubPal||{},out);
