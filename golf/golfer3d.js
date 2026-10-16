@@ -1097,6 +1097,30 @@
         HP.box(rh*0.92+0.2,H*0.78,-H*0.3,0.4,H*0.18,H*0.2,0.1,patch,{rot:0.3}),
         HP.brim(H*0.3,H*1.95,0.8,st,{r0:rh,Rth:th=>1+0.07*Math.sin(9*th)+0.04*Math.sin(23*th),tex:TEX.straw(st),curl:(L,u)=>-H*0.32*u*u*(0.5+0.5*Math.sin(5*L.th+1))})],
         {tilt:0.14,R:H*2.3}) ]; },
+    // a knight's close helm, in polished steel (the owner's reference, 2026-10-16: a burgonet, a knight in shining
+    // armour): a rounded skull with a tall crest from brow to nape, a sight slit, a pointed visor jutting over the
+    // face with a row of slots under its edge and pierced crosses down its sides, a chin bevor, a pivot rivet at each
+    // side, and a gorget flaring onto the shoulders in overlapping plates. It hides all the hair (M.noHair).
+    knight(M,c){ const H=M.hr, steel=X('#c9ced6'), dk=X('#16181d'), lame=X('#9aa1ab'), vis=X('#b4bac4');
+      const vTop=-H*0.08, vBot=-H*0.78;
+      const skullTex=L=>{ if(L.a>H*0.35&&Math.abs(L.y-(vTop+H*0.07))<H*0.045) return [dk,0];   // the sight slit
+        return [steel,0]; };
+      const visorTex=L=>{ if(L.y>vTop-H*0.13&&L.y<vTop-H*0.05&&Math.sin(L.s*2.6)>0.15) return [dk,0];   // the slots under the edge
+        const u=(L.a/(H*0.3)), v=(L.y-vBot)/(H*0.26), fu=u-Math.floor(u), fv=v-Math.floor(v);
+        if(Math.abs(L.s)>H*0.5&&L.y<vTop-H*0.2&&L.y>vBot+H*0.1&&((Math.abs(fu-0.5)<0.11&&Math.abs(fv-0.5)<0.36)||(Math.abs(fv-0.5)<0.11&&Math.abs(fu-0.5)<0.34))) return [dk,0];   // the crosses
+        if(Math.abs(L.s)<H*0.04) return [vis,1];                                              // the keel of the visor
+        return [vis,0]; };
+      const prow=L=>Math.abs(L.s)-(H*1.62-L.a)*0.9;                                            // the visor comes to a point
+      const ps=[
+        HP.egg(-H*0.05,H*0.1,0,H*1.16,H*1.14,H*1.19,steel,{cut:L=>-L.y-H*0.95,tex:skullTex}),                  // the skull
+        HP.egg(-H*0.2,H*0.3,0,H*1.2,H*1.24,H*0.17,steel,{k:0.6,cut:L=>H*0.6-L.y}),                         // the crest
+        {m:vis,k:0.5,b:[H*0.6,(vTop+vBot)/2,0,H*1.3],tex:visorTex,d:L=>{ const q=[(L.a-H*0.28)/(H*1.3),(L.y-(vTop+vBot)/2)/((vTop-vBot)/2),L.s/(H*1.08)], k0=Math.hypot(...q), k1=Math.hypot(q[0]/(H*1.3),q[1]/((vTop-vBot)/2),q[2]/(H*1.08));
+          return Math.max(k0*(k0-1)/k1,prow(L)*0.7); }},                                                       // the visor
+        HP.egg(H*0.12,-H*0.92,0,H*1.02,H*0.34,H*1.0,steel,{k:0.6}),                                           // the bevor at the chin
+        HP.crown(-H*1.42,-H*0.88,H*1.24,H*1.04,steel,{rr:0.5,k:0.6,tex:L=>[steel,Math.sin((L.y+H*1.42)/(H*0.54)*Math.PI*3)>0.8?-1:0]}),   // the gorget, in lames
+        HP.band(-H*1.4,H*1.24,0.55,lame)];
+      for(const sd of [1,-1]) ps.push(HP.ball(-H*0.12,-H*0.22,sd*H*1.19,1.0,lame));                        // the visor pivots
+      return [hatSolid(M,ps,{tilt:0,R:H*2.2,cy:H*0.0,gloss:3,bias:.08})]; },
     // caps: a flat brim snapback, a cap worn backwards, and the No. 1 cap with its gold numeral
     flatbrim(M,c){ return capParts(M,hairR(M)/M.hr,{crown:cx(c,1,'#2e78be'),brim:cx(c,0,'#40424a'),btn:cx(c,0,'#40424a'),flat:true,mark0:false}); },
     backwards(M,c){ return capParts(M,hairR(M)/M.hr,{crown:cx(c,0,'#2e78be'),brim:cx(c,1,'#1a1a1f'),btn:cx(c,1,'#1a1a1f'),dir:-1,mark0:false}); },
@@ -1126,6 +1150,7 @@
     // the menu's modelled cone hats, the beret and Santa's hat go over the hair, as real hats do (the flat art perches them)
     const closed=!!novel&&(!(typeof PXG_HAT_OPEN!=='undefined'&&PXG_HAT_OPEN[novel])||!!(MO&&HAT_MODEL[novel]&&HAT_OVER_HAIR[novel]));
     const hs=look.hairStyle||'short'; M.hairStyle=hs; M.hairK=closed?1.06:hs==='afro'?1.32:hs==='curly'?1.08:1.03;   // a band sits on the hair, not in it
+    if(MO&&novel==='knight') M.noHair=true;   // the great helm covers every hair
     const parts=M.parts.concat(hairHat(M,L,closed));
     if(novel){ const cfg=HAT3D[novel]||{}, pal=PXG_HERITAGE_HAT_PAL[novel]||null;
       if(MO&&HAT_MODEL[novel]) parts.push(...HAT_MODEL[novel](M,hatColours(PXG_HATS[novel],pal,P)));
