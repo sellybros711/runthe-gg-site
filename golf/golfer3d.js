@@ -35,15 +35,45 @@
   // A SMOOTH SURFACE, for the menu golfer only: f(world point) is the signed distance to it, and it is ray marched.
   // It draws what ellipsoids and capsules cannot: a ring, a brim that curves down at its sides, curls carved into
   // one head of hair, a duck's neck grown out of its float. c and R bound it. o.mf(p, n) may answer [material, dt].
-  const field=(c,R,f,mat,o)=>({k:'f',c:cam(c),R,f,mat,o:o||{}});
+  // Its screen box and depth range are found once, from a coarse grid over the bounding ball, so the rays only
+  // march where the surface can be.
+  const field=(c,R,f,mat,o)=>{ const P={k:'f',c:cam(c),R,f,mat,o:o||{}}, n=10, st=R/n; let x0=1e9,y0=1e9,z0=1e9,x1=-1e9,y1=-1e9,z1=-1e9;
+    for(let i=-n;i<=n;i++) for(let j=-n;j<=n;j++) for(let k=-n;k<=n;k++){ if(i*i+j*j+k*k>(n+1)*(n+1)) continue;
+      const p=add(c,[i*st,j*st,k*st]); if(f(p)>st*0.9) continue; const q=cam(p);
+      if(q[0]<x0)x0=q[0]; if(q[0]>x1)x1=q[0]; if(q[1]<y0)y0=q[1]; if(q[1]>y1)y1=q[1]; if(q[2]<z0)z0=q[2]; if(q[2]>z1)z1=q[2]; }
+    if(x1>=x0) P.box=[x0-st,y0-st,x1+st,y1+st,z0-st,z1+st]; return P; };
   const sdE=(p,c,AX,R)=>{ const q=sub(p,c), a=dot(q,AX[0])/R[0], b=dot(q,AX[1])/R[1], d=dot(q,AX[2])/R[2];
     const k0=Math.hypot(a,b,d), k1=Math.hypot(a/R[0],b/R[1],d/R[2]); return k1<1e-6?-Math.min(...R):k0*(k0-1)/k1; };
   const sdCap=(p,a,b,r)=>{ const pa=sub(p,a), ba=sub(b,a), h=Math.max(0,Math.min(1,dot(pa,ba)/dot(ba,ba))); return Math.hypot(...sub(pa,sc(ba,h)))-r; };
   const smin=(a,b,k)=>{ const h=Math.max(k-Math.abs(a-b),0)/k; return Math.min(a,b)-h*h*k/4; };
+  // THE MENU CAP: a six panel crown that comes down over the hair at the temples and the back, its seams sewn in,
+  // and a pre-curved brim that pitches down and bends down at its sides, as a real golf cap's does. One piece
+  // (field) so it reads as a brim from the front, its underside a shade darker. cw is the crown's width (wider over
+  // an afro). o: crown, brim, btn, patch and mark materials, dir -1 to wear it backwards, flat for a flat brim,
+  // mark0 false for no badge, badge(pc, AX) to draw its own.
+  function capParts(M,cw,o){ const {hc,hup,hr}=M, d=o.dir||1, look=sc(M.look,d), Lf=sc(M.Lf,d), out=[], AXc=[look,hup,Lf];
+    const cr=o.crown||'hat', bm=o.brim||cr, cc=add(hc,sc(hup,hr*0.12)), CR=[hr*cw,hr*1.12,hr*cw], rim=l=>l[1]>0.07-0.12*(1-l[0]);
+    // worn backwards, the back of the cap faces out: its strap opening over the forehead, the strap across it
+    out.push(ellipsoid(cc,AXc,CR,cr,{cut:l=>rim(l)&&!(o.dir===-1&&l[0]<-0.55&&l[1]<0.3&&Math.abs(l[2])<0.3*(1-Math.max(0,l[1]-0.05)*1.6))}));
+    if(o.dir===-1) out.push(over(cc,AXc,CR,o.brim||cr,l=>l[0]<-0.5&&Math.abs(l[1]-0.1)<0.05&&Math.abs(l[2])<0.34,{noCast:1}));
+    for(let k=0;k<3;k++){ const a=k*Math.PI/3+Math.PI/6;   // the panel seams, over the crown from rim to button
+      out.push(over(cc,AXc,CR,cr,l=>rim(l)&&Math.abs(l[0]*Math.sin(a)-l[2]*Math.cos(a))<0.025&&l[1]>0.12,{dt:-1,noCast:1})); }
+    out.push(ellipsoid(add(cc,sc(hup,CR[1]-0.3)),AXc,[1.15,0.75,1.15],o.btn||'hatbtn'));
+    const RB=o.flat?[hr*3,hr*1.5,hr*14]:[hr*4.0,hr*1.2,hr*2.0], Cb=add(hc,sc(hup,hr*0.24-RB[1]*Math.sqrt(1-(0.9*hr/RB[0])**2)));
+    out.push(field(add(hc,sc(look,hr*1.2)),hr*1.45,p=>{ const q=sub(p,hc), a=dot(q,look), sd=dot(q,Lf);
+        const shell=Math.abs(sdE(p,Cb,AXc,RB))-0.42, foot=(Math.hypot((a-hr*0.9)/(hr*1.0),sd/(hr*(cw+0.09)))-1)*hr*1.0;
+        return Math.max(shell,foot,hr*0.55-a); },bm,{mf:(p,n)=>dot(n,hup)<-0.2?[bm,-1]:null}));
+    if(o.mark0===false) return out;
+    const pc=add(cc,sc(look,hr*(cw-0.15)),sc(hup,hr*0.45));
+    if(o.badge) out.push(...o.badge(pc,AXc));
+    else { out.push(ellipsoid(pc,AXc,[0.62,2.5,2.7],o.patch||'patch',{t:2,cut:l=>Math.abs(l[1])<0.7&&Math.abs(l[2])<0.7}));
+      out.push(ellipsoid(add(pc,sc(look,0.38)),AXc,[0.5,0.62,1.05],o.mark||'patchmark',{t:2,noCast:1})); }
+    return out; }
   function hitF(P,x,y){ const e2=P.R*P.R-(x-P.c[0])**2-(y-P.c[1])**2; if(e2<=0) return null;
-    const f=z=>P.f(cam([x,y,z])), z1=P.c[2]-Math.sqrt(e2); let z=P.c[2]+Math.sqrt(e2), d=f(z);
-    for(let i=0;i<160&&z>z1;i++){ if(d<0.01) break; z-=Math.max(d*0.7,0.02); d=f(z); }
-    if(d>=0.01||z<=z1) return null;
+    const B=P.box; if(B&&(x<B[0]||x>B[2]||y<B[1]||y>B[3])) return null;
+    const f=z=>P.f(cam([x,y,z])), z1=Math.max(P.c[2]-Math.sqrt(e2),B?B[4]:-1e9); let z=Math.min(P.c[2]+Math.sqrt(e2),B?B[5]:1e9), d=f(z);
+    for(let i=0;i<110&&z>z1;i++){ if(d<0.03) break; z-=Math.max(d*0.8,0.05); d=f(z); }   // a cell is a third of a unit, so 0.03 is exact enough
+    if(d>=0.03||z<=z1) return null;
     const p=cam([x,y,z]), e=0.03, g=[0,1,2].map(i=>{ const a=p.slice(), b=p.slice(); a[i]+=e; b[i]-=e; return P.f(a)-P.f(b); }), nw=norm(g);
     const h={D:z,n:cam(nw)}, mm=P.o.mf&&P.o.mf(p,nw);
     if(mm){ h.m=mm[0]||P.mat; h.dt=mm[1]||0; h.gloss=P.o.gloss||0; }
@@ -288,18 +318,7 @@
     // THE MENU CAP: a six panel crown that comes down over the hair at the temples and the back, its seams sewn in,
     // and a pre-curved brim that pitches down and bends down at its sides, as a real golf cap's does. One piece
     // (field) so it reads as a brim from the front, its underside a shade darker.
-    if(cap&&MO){ const AXc=[look,hup,Lf], cw=style==='afro'?1.19:1.07, cc=add(hc,sc(hup,hr*0.12)), CR=[hr*cw,hr*1.12,hr*cw], rim=l=>l[1]>0.07-0.12*(1-l[0]);
-      out.push(ellipsoid(cc,AXc,CR,'hat',{cut:rim}));
-      for(let k=0;k<3;k++){ const a=k*Math.PI/3+Math.PI/6;   // the panel seams, over the crown from rim to button
-        out.push(over(cc,AXc,CR,'hat',l=>rim(l)&&Math.abs(l[0]*Math.sin(a)-l[2]*Math.cos(a))<0.025&&l[1]>0.12,{dt:-1,noCast:1})); }
-      out.push(ellipsoid(add(cc,sc(hup,CR[1]-0.3)),AXc,[1.15,0.75,1.15],'hatbtn'));
-      const Cb=add(hc,sc(hup,hr*(0.24-1.169))), RB=[hr*4.0,hr*1.2,hr*2.0];
-      out.push(field(add(hc,sc(look,hr*1.2)),hr*1.45,p=>{ const q=sub(p,hc), a=dot(q,look), sd=dot(q,Lf);
-          const shell=Math.abs(sdE(p,Cb,AXc,RB))-0.42, foot=(Math.hypot((a-hr*0.9)/(hr*1.0),sd/(hr*(cw+0.09)))-1)*hr*1.0;
-          return Math.max(shell,foot,hr*0.55-a); },'hat',{mf:(p,n)=>dot(n,hup)<-0.2?['hat',-1]:null}));
-      const pc=add(cc,sc(look,hr*(cw-0.15)),sc(hup,hr*0.45));
-      out.push(ellipsoid(pc,AXc,[0.62,2.5,2.7],'patch',{t:2,cut:l=>Math.abs(l[1])<0.7&&Math.abs(l[2])<0.7}));
-      out.push(ellipsoid(add(pc,sc(look,0.38)),AXc,[0.5,0.62,1.05],'patchmark',{t:2,noCast:1})); }
+    if(cap&&MO) out.push(...capParts(M,style==='afro'?1.19:1.07,{}));
     else if(cap){ out.push(ellipsoid(add(hc,sc(hup,hr*0.18+lift)),[look,hup,Lf],[hr*1.06,hr*0.95,hr*1.06],'hat',{cut:l=>l[1]>-0.12}));
       out.push(MO?ellipsoid(add(hc,sc(look,hr*0.98),sc(hup,hr*0.0+lift)),[look,hup,Lf],[hr*1.0,0.85,hr*1.0],'hat',{dt:-1,cut:l=>l[0]>-0.2})
         :ellipsoid(add(hc,sc(look,hr*0.95),sc(hup,hr*0.02+lift)),[look,hup,Lf],[hr*0.75,0.75,hr*0.82],'hat',{dt:-1,cut:l=>l[0]>-0.15}));
@@ -777,6 +796,56 @@
     for(const row of map) for(const ch of row){ if(ch==='.'||ch===' ') continue; cnt[ch]=(cnt[ch]||0)+1; }
     const out=[]; for(const ch of Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])){ const r=roleFor(ch,pal,P,false); if(r&&r.m&&r.m.startsWith('x:')&&out.indexOf(r.m)<0) out.push(r.m); }
     return out; }
+  // ---------------------------------------------------------------------------------------------------
+  // MODELLED HATS, for the menu golfer. Most hats are solids of revolution round the head's up axis: a crown (a
+  // rounded cylinder or cone that can taper, bend, dent and pinch), a brim (a disc that can roll up at the sides,
+  // droop, snap down at the front or turn up into a tricorn), a band, a ball. hatSolid() makes them ONE smooth
+  // surface (field), each piece in its own material, with an optional texture (knit, straw, tweed, stars).
+  // A piece reads L: a forward, y up, s to the side, r out from the axis and th round it, in units from the head's
+  // centre, in the hat's own frame, which is tipped forward by tilt so a brim shows from the menu's level camera.
+  const clamp01=v=>v<0?0:v>1?1:v;
+  const rbox=(dx,dy,rr)=>{ const qx=dx+rr, qy=dy+rr; return Math.hypot(Math.max(qx,0),Math.max(qy,0))+Math.min(Math.max(qx,qy),0)-rr; };
+  const HP={
+    // a crown from y0 to y1, radius r0 at the bottom to r1 at the top. o: rr rounding, sq (front to back squash),
+    // bend (the top swept back), dent (a crease down the middle of the top), pinch (the front pinched), grow, clip
+    crown:(y0,y1,r0,r1,m,o)=>{ o=o||{}; const rr=o.rr==null?0.6:o.rr, sl=Math.hypot(1,(r1-r0)/(y1-y0));
+      return {m,dt:o.dt,k:o.k,tex:o.tex,b:[(o.a0||0)-(o.bend||0)/2,(y0+y1)/2,0,Math.hypot(Math.max(r0,r1)*(o.sq||1)+(o.bend||0)/2+(o.grow||0)+1,(y1-y0)/2+1)],d:L=>{ const t=clamp01((L.y-y0)/(y1-y0)); let a=L.a-(o.a0||0)+(o.bend||0)*t*t, s2=L.s;
+        if(o.pinch&&a>0) s2=s2/(1-o.pinch*clamp01(a/r0)*t);
+        const r=Math.hypot(a/(o.sq||1),s2), R=r0+(r1-r0)*t, top=y1-(o.dent?o.dent*Math.exp(-(L.s*L.s)/(r1*r1*0.18))*clamp01(1-Math.abs(L.a)/(r1*1.4)):0);
+        let d=rbox((r-R)/sl,Math.max(y0-L.y,L.y-top),rr)-(o.grow||0);
+        if(o.clip) d=Math.max(d,o.clip[0]-L.y,L.y-o.clip[1]); return d; }}; },
+    // a brim at height yb out to radius R, t thick. o.r0 where it leaves the crown, o.curl(L,u) lifts it (u is 0 at
+    // the crown and 1 at the edge), o.Rth(th) varies its radius round the hat
+    brim:(yb,R,t,m,o)=>{ o=o||{}; return {m,dt:o.dt,k:o.k,tex:o.tex,b:[0,yb,0,R*1.45],d:L=>{ const Rr=R*(o.Rth?o.Rth(L.th):1), r0=o.r0||R*0.5, u=clamp01((L.r-r0)/(Rr-r0));
+        const off=o.curl?o.curl(L,u):0; return rbox(L.r-Rr,Math.abs(L.y-yb-off)-t/2,t/2)/(o.lip||1); }}; },
+    band:(yc,R,rt,m,o)=>({m,dt:o&&o.dt,b:[0,yc,0,R+rt],d:L=>Math.hypot(L.r-R,L.y-yc)-rt}),
+    ball:(a,y,s,rad,m,o)=>({m,dt:o&&o.dt,k:o&&o.k,tex:o&&o.tex,b:[a,y,s,rad],d:L=>Math.hypot(L.a-a,L.y-y,L.s-s)-rad}),
+    stick:(a0,y0,s0,a1,y1,s1,rad,m,o)=>({m,dt:o&&o.dt,k:o&&o.k,b:[(a0+a1)/2,(y0+y1)/2,(s0+s1)/2,Math.hypot(a1-a0,y1-y0,s1-s0)/2+rad],d:L=>sdCap([L.a,L.y,L.s],[a0,y0,s0],[a1,y1,s1],rad)}),
+    egg:(a,y,s,ra,ry,rs,m,o)=>({m,dt:o&&o.dt,k:o&&o.k,tex:o&&o.tex,b:[a,y,s,Math.max(ra,ry,rs)],d:L=>{ const q=[(L.a-a)/ra,(L.y-y)/ry,(L.s-s)/rs], k0=Math.hypot(...q), k1=Math.hypot(q[0]/ra,q[1]/ry,q[2]/rs);
+      let d=k1<1e-6?-Math.min(ra,ry,rs):k0*(k0-1)/k1; if(o&&o.cut) d=Math.max(d,o.cut(L)); return d; }}) };
+  // a box (half sizes ha, hy, hs), turned by rot round the up axis
+  HP.box=(a,y,s,ha,hy,hs,rr,m,o)=>{ o=o||{}; const c=Math.cos(o.rot||0), sn=Math.sin(o.rot||0);
+    return {m,dt:o.dt,k:o.k,tex:o.tex,b:[a,y,s,Math.hypot(ha,hy,hs)],d:L=>{ const x=(L.a-a)*c+(L.s-s)*sn, z=-(L.a-a)*sn+(L.s-s)*c, qx=Math.abs(x)-ha+rr, qy=Math.abs(L.y-y)-hy+rr, qz=Math.abs(z)-hs+rr;
+      return Math.hypot(Math.max(qx,0),Math.max(qy,0),Math.max(qz,0))+Math.min(Math.max(qx,qy,qz),0)-rr; }}; };
+  // textures: [material or null, dt]
+  const TEX={
+    knit:(m)=>L=>{ const v=Math.sin(L.th*26); return [m,v>0.35?1:v<-0.35?-1:0]; },
+    straw:(m)=>L=>{ const w=(Math.floor(L.th*22/Math.PI)+Math.floor(L.y*0.9)+Math.floor(L.r*0.9))%2; return [m,w?1:-1]; },
+    tweed:(m)=>L=>{ const v=Math.sin(L.th*34+(Math.sin(L.y*1.6+L.r*1.6)>0?1:-1)*(L.y+L.r)*2.2); return [m,v>0.8?1:v<-0.8?-1:0]; },
+    stars:(m,st)=>L=>{ const u=Math.sin(L.th*9+L.y*0.9)*Math.sin(L.y*1.7-L.th*3); return u>0.9?[st,1]:[m,0]; } };
+  function hatSolid(M,pieces,o){ o=o||{}; const {hc,look,hup,Lf,hr}=M, ct=Math.cos(o.tilt||0), st=Math.sin(o.tilt||0);
+    const loc=p=>{ const q=sub(p,hc), a0=dot(q,look), y0=dot(q,hup), s=dot(q,Lf), a=a0*ct-y0*st, y=y0*ct+a0*st; return {a,y,s,r:Math.hypot(a,s),th:Math.atan2(s,a)}; };
+    const all=L=>pieces.map(pc=>pc.d(L));
+    // a piece whose bounding ball is farther than the surface found so far cannot change the answer, so it is skipped
+    const f=p=>{ const L=loc(p); let d=pieces[0].d(L);
+      for(let i=1;i<pieces.length;i++){ const pc=pieces[i], b=pc.b, k=pc.k||0;
+        if(b&&Math.hypot(L.a-b[0],L.y-b[1],L.s-b[2])-b[3]>d+k) continue;
+        const di=pc.d(L); d=k?smin(d,di,k):Math.min(d,di); }
+      return d; };
+    return field(add(hc,sc(hup,o.cy==null?hr*1.0:o.cy)),o.R||hr*2.4,f,pieces[0].m,{gloss:o.gloss==null?1:o.gloss,bias:o.bias||0,mf:p=>{ const L=loc(p), ds=all(L); let b=0;
+      for(let i=1;i<ds.length;i++) if(ds[i]<ds[b]) b=i; const pc=pieces[b]; if(pc.tex){ const t=pc.tex(L); return [t[0]||pc.m,t[1]||0]; } return [pc.m,pc.dt||0]; }}); }
+  // how wide the hair under a closed hat is, so the hat goes over it
+  const hairR=M=>M.hr*(M.hairStyle==='afro'?1.17:1.07);
   const HAT_MODEL={
     // a great helm that closes over the whole head: a visor slit at the eyes, breaths below it, a ridge down the
     // front, a rolled rim and a red plume
@@ -821,6 +890,220 @@
         out.push(capsule(a,b,1.45,brown,{gloss:2})); out.push(capsule(b,add(b,sc(look,1.2),sc(hup,0.5)),0.55,bone)); out.push(ellipsoid(add(b,sc(look,1.6),sc(hup,0.7)),[look,hup,Lf],[0.75,0.75,0.75],bone)); }
       out.push(ellipsoid(add(hc,sc(hup,hr*0.5)),[look,hup,Lf],[hr*1.04,1.0,hr*1.04],'x:#e8dcc0',{cut:l=>Math.hypot(l[0],l[2])>0.88}));   // the platter it sits on
       return out; } };
+
+  // THE HATS AS THE REAL THINGS. Each is modelled from the hat itself (its crown, brim, band and trim), never
+  // from the old flat art; only the colours are the item's own (c, its art's colours, most used first).
+  const X=h=>'x:'+h, cx=(c,i,d)=>c[i]||X(d), HAT_OVER_HAIR={santa:1,witch:1,wizard:1,elf:1,beret:1};
+  Object.assign(HAT_MODEL,{
+    // a western hat: an oval crown with a deep crease down the middle and pinched at the front, a band, and a
+    // wide brim rolled up hard at the sides and dipping front and back
+    cowboy(M,c){ const H=M.hr, rh=hairR(M), felt=cx(c,0,'#a86e38'), band=cx(c,1,'#6e4420');
+      return [hatSolid(M,[
+        HP.crown(H*0.28,H*1.22,rh,H*0.86,felt,{rr:1.4,sq:1.16,dent:H*0.34,pinch:0.32}),
+        HP.crown(H*0.28,H*1.22,rh,H*0.86,band,{rr:1.4,sq:1.16,grow:0.25,clip:[H*0.3,H*0.5]}),
+        HP.brim(H*0.3,H*1.95,1.0,felt,{r0:rh,lip:1.8,curl:(L,u)=>{ const sn=L.s/(L.r||1); return H*0.62*u*u*sn*sn-H*0.12*u*(1-sn*sn); }})],
+        {tilt:0.12,R:H*2.5}) ]; },
+    // a sombrero: a tall peaked crown and a huge brim, flat out to a lip rolled up at its edge, braided trim
+    sombrero(M,c){ const H=M.hr, rh=hairR(M), straw=cx(c,1,'#a86e38'), dk=cx(c,0,'#6e4420'), gold=cx(c,3,'#c9a52a');
+      return [hatSolid(M,[
+        HP.crown(H*0.3,H*2.05,rh,H*0.42,straw,{rr:2.2,tex:TEX.straw(straw)}),
+        HP.crown(H*0.3,H*2.05,rh,H*0.42,gold,{rr:2.2,grow:0.3,clip:[H*0.32,H*0.62]}),
+        HP.brim(H*0.32,H*2.85,1.0,straw,{r0:rh,tex:TEX.straw(straw),curl:(L,u)=>H*0.55*Math.pow(clamp01((u-0.62)/0.38),2)}),
+        HP.band(H*0.32+H*0.55+0.4,H*2.85-0.6,0.7,dk)],
+        {tilt:0.1,R:H*3.2,cy:H*0.9}) ]; },
+    // a bucket hat: a short soft crown and a brim sloping down all round, stitched in rings
+    bucket(M,c){ const H=M.hr, rh=hairR(M);
+      return [hatSolid(M,[
+        HP.crown(H*0.28,H*1.18,rh*1.02,H*0.9,'hat',{rr:2.0}),
+        HP.brim(H*0.32,H*1.6,0.9,'hat',{r0:rh,curl:(L,u)=>-H*0.5*u,tex:L=>['hat',Math.sin(L.r*2.4)>0.75?-1:0]})],
+        {tilt:0.08,R:H*2.0}) ]; },
+    // a flat cap: a crown sloping forward over a short stiff peak, snug at the back
+    flat(M,c){ const H=M.hr, rh=hairR(M);
+      return [hatSolid(M,[
+        HP.crown(H*0.3,H*1.16,rh*1.04,rh*1.0,'hat',{rr:2.4,sq:1.24,a0:H*0.2}),
+        HP.brim(H*0.4,H*1.4,0.8,'hat',{r0:H*0.9,Rth:th=>Math.cos(th)>0.45?1:0.5,curl:(L,u)=>-H*0.12*u})],
+        {tilt:0.22,R:H*2.0}) ]; },
+    // a tweed newsboy: a full eight panel crown with a button, a short peak, in herringbone
+    tweed(M,c){ const H=M.hr, rh=hairR(M), t1=cx(c,1,'#7a6a48'), t0=cx(c,0,'#5c4f34');
+      return [hatSolid(M,[
+        HP.crown(H*0.3,H*1.18,rh*1.04,rh*1.16,t1,{rr:3.2,sq:1.2,a0:H*0.16,tex:TEX.tweed(t1)}),
+        HP.ball(H*0.16,H*1.21,0,0.9,t0),
+        HP.brim(H*0.4,H*1.4,0.8,t0,{r0:H*0.9,Rth:th=>Math.cos(th)>0.45?1:0.5,curl:(L,u)=>-H*0.12*u,tex:TEX.tweed(t0)})],
+        {tilt:0.22,R:H*2.0}) ]; },
+    // a fedora: a tapered crown with a centre dent and front pinches, a band, a brim snapped down in front and up behind
+    fedora(M,c){ const H=M.hr, rh=hairR(M), felt=cx(c,0,'#f2ecd6'), band=cx(c,1,'#40424a');
+      return [hatSolid(M,[
+        HP.crown(H*0.28,H*1.2,rh,H*0.88,felt,{rr:1.3,sq:1.12,dent:H*0.3,pinch:0.38}),
+        HP.crown(H*0.28,H*1.2,rh,H*0.88,band,{rr:1.3,sq:1.12,grow:0.28,clip:[H*0.3,H*0.56]}),
+        HP.brim(H*0.3,H*1.58,0.9,felt,{r0:rh,curl:(L,u)=>{ const cs=L.a/(L.r||1); return u*(cs>0?-H*0.26*cs:H*0.3*-cs)+H*0.08*u*u; }})],
+        {tilt:0.1,R:H*2.0}) ]; },
+    // a top hat: a tall cylinder flaring a touch at the top, a band, a brim rolled up at the sides
+    tophat(M,c){ const H=M.hr, rh=hairR(M), silk=cx(c,0,'#1a1a1f'), band=cx(c,1,'#30303a');
+      return [hatSolid(M,[
+        HP.crown(H*0.28,H*2.0,rh,rh*1.07,silk,{rr:0.5}),
+        HP.crown(H*0.28,H*2.0,rh,rh*1.07,band,{rr:0.5,grow:0.25,clip:[H*0.3,H*0.62]}),
+        HP.brim(H*0.3,H*1.48,0.8,silk,{r0:rh,curl:(L,u)=>{ const sn=L.s/(L.r||1); return H*0.3*u*u*sn*sn-H*0.05*u; }})],
+        {tilt:0.08,R:H*2.4,cy:H*1.1,gloss:2}) ]; },
+    // a straw boater: a flat topped cylinder, a ribbon, a flat brim, all woven
+    straw(M,c){ const H=M.hr, rh=hairR(M), st=cx(c,1,'#f2e3b0'), rib=cx(c,2,'#2a4d8f');
+      return [hatSolid(M,[
+        HP.crown(H*0.28,H*0.98,rh,rh*0.98,st,{rr:0.4,tex:TEX.straw(st)}),
+        HP.crown(H*0.28,H*0.98,rh,rh*0.98,rib,{rr:0.4,grow:0.25,clip:[H*0.3,H*0.58]}),
+        HP.brim(H*0.3,H*1.65,0.75,st,{r0:rh,tex:TEX.straw(st)})],
+        {tilt:0.12,R:H*2.0}) ]; },
+    // a pilgrim's capotain: a tall tapered flat topped crown, a band with a square gold buckle, a flat brim
+    pilgrim(M,c){ const H=M.hr, rh=hairR(M), bk=cx(c,0,'#1f1c24'), band=cx(c,1,'#3a3642'), gold=cx(c,3,'#d8b24a');
+      return [hatSolid(M,[
+        HP.crown(H*0.28,H*1.7,rh,H*0.8,bk,{rr:0.6}),
+        HP.crown(H*0.28,H*1.7,rh,H*0.8,band,{rr:0.6,grow:0.25,clip:[H*0.32,H*0.66]}),
+        HP.box(rh+0.1,H*0.49,0,0.45,H*0.2,H*0.2,0.15,gold,{}),
+        HP.box(rh+0.35,H*0.49,0,0.3,H*0.1,H*0.1,0.1,band,{}),
+        HP.brim(H*0.3,H*1.6,0.8,bk,{r0:rh,curl:(L,u)=>-H*0.06*u})],
+        {tilt:0.1,R:H*2.3,cy:H*1.0}) ]; },
+    // a pith helmet: a long dome with a vent on top, a band, and a brim that sweeps down all round, longer front and back
+    safari(M,c){ const H=M.hr, rh=hairR(M), cl=cx(c,0,'#f2ecd6'), band=cx(c,1,'#237038');
+      return [hatSolid(M,[
+        HP.egg(0,H*0.3,0,rh*1.18,H*0.95,rh*1.08,cl,{cut:L=>H*0.26-L.y}),
+        HP.band(H*0.4,rh*1.12,0.75,band),
+        HP.ball(0,H*1.25,0,1.0,cl),
+        HP.brim(H*0.3,H*1.5,0.8,cl,{r0:rh,Rth:th=>1+0.16*Math.cos(th)**2,curl:(L,u)=>-H*0.32*u,k:1.0})],
+        {tilt:0.08,R:H*2.1}) ]; },
+    // a witch's hat: a tall cone bent back at the tip, a band with a buckle, and a wide brim with a wavy droop
+    witch(M,c){ const H=M.hr, rh=hairR(M), felt=cx(c,0,'#4a3568'), band=cx(c,1,'#1a1a1f'), gold=cx(c,3,'#f2d24a');
+      return [hatSolid(M,[
+        HP.crown(H*0.28,H*2.55,rh,H*0.08,felt,{rr:0.5,bend:H*0.9}),
+        HP.crown(H*0.28,H*2.55,rh,H*0.08,band,{rr:0.5,bend:H*0.9,grow:0.28,clip:[H*0.3,H*0.62]}),
+        HP.box(rh*0.94+0.2,H*0.46,0,0.4,H*0.15,H*0.17,0.12,gold,{}),
+        HP.brim(H*0.3,H*2.05,0.8,felt,{r0:rh,curl:(L,u)=>-H*0.24*u*u*(0.6+0.4*Math.sin(3*L.th+0.5))})],
+        {tilt:0.1,R:H*3.0,cy:H*1.3}) ]; },
+    // a wizard's hat: a tall cone with a soft bend, scattered with stars, over a drooping brim
+    wizard(M,c){ const H=M.hr, rh=hairR(M), felt=cx(c,0,'#5a2f8f'), band=cx(c,1,'#3f1f68'), star=cx(c,2,'#fff7cc');
+      return [hatSolid(M,[
+        HP.crown(H*0.28,H*2.35,rh,H*0.12,felt,{rr:0.5,bend:H*0.55,tex:TEX.stars(felt,star)}),
+        HP.crown(H*0.28,H*2.35,rh,H*0.12,band,{rr:0.5,bend:H*0.55,grow:0.25,clip:[H*0.3,H*0.55]}),
+        HP.brim(H*0.3,H*1.8,0.8,felt,{r0:rh,curl:(L,u)=>-H*0.2*u*u,tex:TEX.stars(felt,star)})],
+        {tilt:0.1,R:H*2.8,cy:H*1.2}) ]; },
+    // a party hat: a striped cone on top of the head with a pompom
+    party(M,c){ const H=M.hr, y=cx(c,0,'#f2c53d'), w=cx(c,1,'#e8e8e8'), b=cx(c,2,'#3a9bd9'), pk=cx(c,3,'#ec5aa8');
+      return [hatSolid(M,[
+        HP.crown(H*0.6,H*2.3,H*0.8,H*0.05,y,{rr:0.3,tex:L=>{ const v=((Math.floor((L.th/Math.PI*3+L.y*0.35)%3)+3)%3); return [[y,b,pk][v],0]; }}),
+        HP.ball(0,H*2.33,0,1.8,w,{k:0.5})],
+        {tilt:-0.15,R:H*2.0,cy:H*1.4}) ]; },
+    // an elf's hat: a soft cone flopping back to a bell, over a folded cuff cut in points
+    elf(M,c){ const H=M.hr, rh=hairR(M), gr=cx(c,0,'#39b56b'), cuff=cx(c,2,'#f2ecd6');
+      return [hatSolid(M,[
+        HP.crown(H*0.28,H*1.95,rh,H*0.12,gr,{rr:0.6,bend:H*1.05}),
+        HP.crown(H*0.28,H*1.95,rh,H*0.12,cuff,{rr:0.6,bend:H*1.05,grow:0.55,clip:[H*0.26,H*0.5]}),
+        HP.ball(-H*1.05,H*1.92,0,1.5,'x:#f2d24a')],
+        {tilt:0.08,R:H*2.6,cy:H*1.1,gloss:1}) ]; },
+    // Santa's hat: a red cone flopping back and down, a thick fur cuff and a fur pompom
+    santa(M,c){ const H=M.hr, rh=hairR(M), red=cx(c,1,'#d23a34'), fur=cx(c,0,'#f2ecd6'), fuzz=L=>[fur,Math.sin(L.th*31+L.y*3)>0.6?-1:0];
+      return [hatSolid(M,[
+        HP.crown(H*0.3,H*1.7,rh,H*0.16,red,{rr:0.9,bend:H*1.35}),
+        HP.band(H*0.38,rh+0.5,H*0.2,fur,{}),
+        HP.ball(-H*1.35,H*1.62,0,H*0.27,fur,{k:0.6})],
+        {tilt:0.08,R:H*2.6,cy:H*1.0,gloss:0}) ]; },
+    // a knit beanie: a ribbed dome, a folded cuff, a pompom
+    beanie(M,c){ const H=M.hr, rh=hairR(M), knit=cx(c,0,'#d23a34'), pom=cx(c,1,'#f2ecd6'), cuff=cx(c,2,'#c23b34');
+      return [hatSolid(M,[
+        HP.crown(H*0.25,H*1.22,rh,H*0.5,knit,{rr:2.6,tex:TEX.knit(knit)}),
+        HP.crown(H*0.25,H*1.22,rh,H*0.5,cuff,{rr:2.6,grow:0.55,clip:[H*0.22,H*0.58],tex:TEX.knit(cuff)}),
+        HP.ball(0,H*1.28,0,H*0.3,pom,{k:0.8,tex:L=>[pom,Math.sin(L.th*19+L.y*4)>0.5?-1:0]})],
+        {tilt:0.05,R:H*1.8}) ]; },
+    // the harvest beanie: a knit beanie ribbed into pumpkin lobes, a cuff, and a stem and leaf on top
+    harvestbeanie(M,c){ const H=M.hr, rh=hairR(M), knit=cx(c,0,'#c8641e'), cuff=cx(c,5,'#b0561a'), stem=cx(c,4,'#7a4a22'), leaf=cx(c,6,'#4f7a2a');
+      const lobes=L=>{ const v=Math.cos(L.th*8); return [knit,v>0.75?1:v<-0.6?-1:0]; };
+      return [hatSolid(M,[
+        HP.crown(H*0.25,H*1.14,rh*1.03,H*0.72,knit,{rr:2.8,tex:lobes}),
+        HP.crown(H*0.25,H*1.14,rh*1.03,H*0.72,cuff,{rr:2.8,grow:0.55,clip:[H*0.22,H*0.56],tex:TEX.knit(cuff)}),
+        HP.stick(0,H*1.05,0,-0.6,H*1.5,0.3,0.75,stem,{k:0.5}),
+        HP.egg(-0.4,H*1.22,H*0.32,H*0.32,0.35,H*0.18,leaf,{})],
+        {tilt:0.05,R:H*1.9}) ]; },
+    // a beret: a soft flat disc worn tilted to one side, a band and a stub on top
+    beret(M,c){ const H=M.hr, rh=hairR(M), wool=cx(c,0,'#d23a34'), dk=cx(c,1,'#1a1a1f');
+      return [hatSolid(M,[
+        HP.egg(-H*0.05,H*0.78,H*0.2,H*1.28,H*0.32,H*1.3,wool,{}),
+        HP.band(H*0.48,rh*0.98,0.75,wool,{k:1.6}),
+        HP.stick(0,H*1.05,H*0.2,0,H*1.25,H*0.2,0.45,dk,{})],
+        {tilt:0.12,R:H*1.9}) ]; },
+    // a football helmet: a hard shell over the whole head, open at the face, a stripe down the middle,
+    // ear holes, and a cage of bars across the face
+    football(M,c){ const H=M.hr, shell=cx(c,0,'#3a9bd9'), bar=cx(c,2,'#b0b5bd'), stripe=cx(c,3,'#e8e8e8');
+      const face=L=>Math.max(L.a-H*0.4,Math.min(L.y-H*0.2,H*0.82-Math.abs(L.s)))<0?0:1;
+      const shellP={m:shell,d:L=>{ const q=[L.a/(H*1.2),(L.y-H*0.1)/(H*1.22),L.s/(H*1.16)], k0=Math.hypot(...q), k1=Math.hypot(q[0]/(H*1.2),q[1]/(H*1.22),q[2]/(H*1.16));
+          let d=Math.abs(k0*(k0-1)/k1)-0.7;
+          d=Math.max(d,-L.y-H*0.7);                                                             // the bottom edge
+          d=Math.max(d,-(Math.max(H*0.25-L.a,L.y-H*0.18,Math.abs(L.s)-H*0.78)));               // the face opening
+          return Math.max(d,-(Math.hypot(Math.abs(L.s)-H*1.1,L.y+H*0.15,L.a+H*0.05)-H*0.18)); },  // the ear holes
+        tex:L=>[Math.abs(L.s)<H*0.12&&L.y>H*0.05?stripe:shell,0]};
+      const ps=[shellP];
+      for(const yb of [-H*0.18,-H*0.48]) for(const sd of [1,-1]) ps.push(HP.stick(H*0.95,yb,0,H*0.62,yb+H*0.08,sd*H*0.85,0.42,bar,{}));
+      ps.push(HP.stick(H*1.0,-H*0.15,0,H*0.98,-H*0.6,0,0.42,bar,{}));
+      return [hatSolid(M,ps,{tilt:0,R:H*1.9,cy:H*0.1,gloss:3})]; },
+    // a viking helmet: an iron dome with a gold brow band and a nose guard, and two horns curving up and out
+    viking(M,c){ const H=M.hr, rh=hairR(M), iron=cx(c,0,'#b0b5bd'), horn=cx(c,1,'#f2ecd6'), gold=cx(c,2,'#c9a52a');
+      const ps=[HP.egg(0,H*0.22,0,rh*1.06,H*1.02,rh*1.06,iron,{cut:L=>H*0.2-L.y}),
+        HP.band(H*0.28,rh*1.07,0.9,gold),
+        HP.box(rh*1.05,H*0.0,0,0.45,H*0.3,0.55,0.25,iron,{})];
+      for(const sd of [1,-1]){ let prev=[0,H*0.55,sd*rh*0.95];
+        for(let i=1;i<=6;i++){ const t=i/6, q=[-H*0.1*t,H*0.5+H*1.15*t*t+H*0.3*t,sd*(rh*0.95+H*0.95*Math.sin(t*1.7))];
+          ps.push(HP.stick(...prev,...q,1.9*(1-t)+0.35,horn,{k:0.4})); prev=q; } }
+      return [hatSolid(M,ps,{tilt:0.05,R:H*2.4,cy:H*0.9,gloss:2})]; },
+    // a pirate's tricorn: a round crown with the brim turned up into three walls, gold trimmed, a skull at the front
+    pirate(M,c){ const H=M.hr, rh=hairR(M), felt=cx(c,0,'#30303a'), gold=cx(c,2,'#f2d24a'), bone=cx(c,3,'#e8e8e8');
+      return [hatSolid(M,[
+        HP.crown(H*0.28,H*1.02,rh,H*0.78,felt,{rr:2.2}),
+        HP.brim(H*0.3,H*1.62,0.8,felt,{r0:rh*0.98,Rth:th=>0.8+0.2*Math.cos(3*th),curl:(L,u)=>H*0.55*Math.pow(u,1.6),lip:2.2,tex:L=>[L.y>H*0.85-0.7&&L.r>rh*1.05?gold:felt,0]}),
+        HP.egg(H*1.35,H*0.72,0,0.5,H*0.16,H*0.14,bone,{})],
+        {tilt:0.08,R:H*2.2}) ]; },
+    // a graduate's mortarboard: a skull cap, a square board on top, a button and a tassel hanging over the side
+    grad(M,c){ const H=M.hr, rh=hairR(M), bk=cx(c,1,'#1a1a1f'), cap=cx(c,0,'#30303a'), gold=cx(c,2,'#f2d24a');
+      return [hatSolid(M,[
+        HP.crown(H*0.24,H*0.9,rh,H*0.92,cap,{rr:0.8}),
+        HP.box(0,H*0.98,0,H*1.25,0.4,H*1.25,0.2,bk,{rot:Math.PI/4}),
+        HP.ball(0,H*1.06,0,0.75,gold),
+        HP.stick(0,H*1.06,0,0,H*1.04,H*1.2,0.3,gold),
+        HP.stick(0,H*1.04,H*1.2,0.2,H*0.4,H*1.32,0.55,gold,{k:0.3})],
+        {tilt:0.22,R:H*2.1}) ]; },
+    // a propeller beanie: a four panel dome with a short peak, a stalk and a two bladed propeller
+    propeller(M,c){ const H=M.hr, rh=hairR(M), cols=[cx(c,0,'#e34b4b'),cx(c,1,'#39b56b'),cx(c,2,'#3a9bd9'),cx(c,4,'#f2c53d')], dk=cx(c,5,'#30303a');
+      return [hatSolid(M,[
+        HP.crown(H*0.25,H*1.15,rh,H*0.5,cols[0],{rr:2.6,tex:L=>[cols[((Math.floor((L.th+Math.PI)/(Math.PI/2))%4)+4)%4],0]}),
+        HP.brim(H*0.28,H*1.45,0.75,cols[2],{r0:H*0.9,Rth:th=>Math.cos(th)>0.5?1:0.5,curl:(L,u)=>-H*0.1*u}),
+        HP.stick(0,H*1.1,0,0,H*1.42,0,0.45,dk),
+        HP.egg(0,H*1.45,H*0.55,0.6,0.9,H*0.5,cols[3],{}),
+        HP.egg(0,H*1.45,-H*0.55,0.6,0.9,H*0.5,cols[0],{})],
+        {tilt:0.05,R:H*1.9}) ]; },
+    // headphones: a padded band over the top and two round ear cups with cushions
+    headphones(M,c){ const H=M.hr, band=cx(c,0,'#40424a'), cup=cx(c,1,'#2e78be'), pad=cx(c,3,'#1a1a1f'), R=H*1.13;
+      return [hatSolid(M,[
+        {m:band,d:L=>Math.max(Math.hypot(Math.hypot(L.s,L.y+H*0.05)-R,L.a)-0.75,-L.y-H*0.05)},
+        {m:cup,d:L=>rbox(Math.hypot(L.a,L.y+H*0.08)-H*0.5,Math.abs(Math.abs(L.s)-R-0.3)-0.9,0.5)},
+        {m:pad,d:L=>rbox(Math.hypot(L.a,L.y+H*0.08)-H*0.42,Math.abs(Math.abs(L.s)-R+0.9)-0.5,0.4)}],
+        {tilt:0,R:H*1.7,cy:H*0.3,gloss:2}) ]; },
+    // a floppy sun hat: a low crown with a ribbon and a wide brim drooping in soft waves
+    floppy(M,c){ const H=M.hr, rh=hairR(M), st=cx(c,1,'#f2c53d'), rib=cx(c,2,'#ec5aa8');
+      return [hatSolid(M,[
+        HP.crown(H*0.28,H*1.0,rh,rh*0.95,st,{rr:1.6,tex:TEX.straw(st)}),
+        HP.crown(H*0.28,H*1.0,rh,rh*0.95,rib,{rr:1.6,grow:0.25,clip:[H*0.3,H*0.56]}),
+        HP.egg(-H*0.3,H*0.44,-rh-0.4,H*0.22,H*0.16,0.5,rib,{}),
+        HP.brim(H*0.32,H*2.25,0.8,st,{r0:rh,tex:TEX.straw(st),curl:(L,u)=>-H*0.38*u*u*(0.65+0.35*Math.cos(4*L.th))})],
+        {tilt:0.12,R:H*2.6}) ]; },
+    // a scarecrow's hat: a battered straw hat, its crown crushed, its brim ragged and drooping, a patch sewn on
+    scarecrow(M,c){ const H=M.hr, rh=hairR(M), st=cx(c,0,'#d9b15a'), band=cx(c,3,'#5a3a1e'), patch=cx(c,5,'#7a3a8a');
+      return [hatSolid(M,[
+        HP.crown(H*0.28,H*1.05,rh,H*0.84,st,{rr:1.2,dent:H*0.18,tex:TEX.straw(st)}),
+        HP.crown(H*0.28,H*1.05,rh,H*0.84,band,{rr:1.2,grow:0.25,clip:[H*0.3,H*0.5]}),
+        HP.box(rh*0.92+0.2,H*0.78,-H*0.3,0.4,H*0.18,H*0.2,0.1,patch,{rot:0.3}),
+        HP.brim(H*0.3,H*1.95,0.8,st,{r0:rh,Rth:th=>1+0.07*Math.sin(9*th)+0.04*Math.sin(23*th),tex:TEX.straw(st),curl:(L,u)=>-H*0.32*u*u*(0.5+0.5*Math.sin(5*L.th+1))})],
+        {tilt:0.14,R:H*2.3}) ]; },
+    // caps: a flat brim snapback, a cap worn backwards, and the No. 1 cap with its gold numeral
+    flatbrim(M,c){ return capParts(M,hairR(M)/M.hr,{crown:cx(c,1,'#2e78be'),brim:cx(c,0,'#40424a'),btn:cx(c,0,'#40424a'),flat:true,mark0:false}); },
+    backwards(M,c){ return capParts(M,hairR(M)/M.hr,{crown:cx(c,0,'#2e78be'),brim:cx(c,1,'#1a1a1f'),btn:cx(c,1,'#1a1a1f'),dir:-1,mark0:false}); },
+    no1cap(M,c){ const gold=cx(c,2,'#d9ae32');
+      return capParts(M,hairR(M)/M.hr,{crown:cx(c,0,'#1f1d26'),brim:cx(c,1,'#2c2a34'),btn:gold,badge:(pc,AX)=>{ const [f,u,s]=AX, o=add(pc,sc(f,0.5));
+        return [capsule(add(o,sc(u,1.9)),add(o,sc(u,-1.9)),0.5,gold,{gloss:2,noCast:1}), capsule(add(o,sc(u,1.9)),add(o,sc(u,1.1),sc(s,-1.0)),0.45,gold,{gloss:2,noCast:1}),
+          capsule(add(o,sc(u,-1.9),sc(s,-0.9)),add(o,sc(u,-1.9),sc(s,0.9)),0.45,gold,{gloss:2,noCast:1})]; }}); } });
   function draw(look,aimDeg,kind,poseKey){
     if(kind==='walk'){ setEl(MO?MO.EL:WALK_EL); try{ return draw0(look,aimDeg,kind,poseKey); } finally{ setEl(26); } }
     return draw0(look,aimDeg,kind,poseKey); }
@@ -840,8 +1123,9 @@
     { gear.lefty=!!look.lefty; gear.body=look.body||''; gear.bodyPal=(look.body&&typeof BODY_SKINS!=='undefined'&&BODY_SKINS[look.body])||null; const bpal=look.ball&&typeof PXG_BALL_PAL!=='undefined'&&PXG_BALL_PAL[look.ball]; gear.ballC=bpal?(bpal.C||null):null; const sh=cleats?cleats.main:av.shoesHex; gear.saddleHex=cleats&&cleats.acc?cleats.acc:(PQ.lum(sh)>0.6?'#2c3a58':mix(sh,'#ffffff',0.55)); }
     const M=MO?profileModel(aim,gear):model(aim,!!look.lefty,kind,kind==='walk'?walkPose(poseKey):POSES[poseKey],gear);
     const P=Object.assign({k:PXG_FIX.k,l:PXG_FIX.l,g:PXG_FIX.g,n:PXG_FIX.n,G:PXG_FIX.G,H:PXG_FIX.H,F:PXG_FIX.F,E:'#20242c',S:'#e8ebf0'},typeof PXG_NOV!=='undefined'?PXG_NOV:{});
-    const closed=!!novel&&!(typeof PXG_HAT_OPEN!=='undefined'&&PXG_HAT_OPEN[novel]);
-    const hs=look.hairStyle||'short'; M.hairK=closed?1.06:hs==='afro'?1.32:hs==='curly'?1.08:1.03;   // a band sits on the hair, not in it
+    // the menu's modelled cone hats, the beret and Santa's hat go over the hair, as real hats do (the flat art perches them)
+    const closed=!!novel&&(!(typeof PXG_HAT_OPEN!=='undefined'&&PXG_HAT_OPEN[novel])||!!(MO&&HAT_MODEL[novel]&&HAT_OVER_HAIR[novel]));
+    const hs=look.hairStyle||'short'; M.hairStyle=hs; M.hairK=closed?1.06:hs==='afro'?1.32:hs==='curly'?1.08:1.03;   // a band sits on the hair, not in it
     const parts=M.parts.concat(hairHat(M,L,closed));
     if(novel){ const cfg=HAT3D[novel]||{}, pal=PXG_HERITAGE_HAT_PAL[novel]||null;
       if(MO&&HAT_MODEL[novel]) parts.push(...HAT_MODEL[novel](M,hatColours(PXG_HATS[novel],pal,P)));
@@ -871,7 +1155,7 @@
     // each part's box on the screen, so a cell only tests the parts that can reach it
     for(const p of parts){ if(p.k==='e'){ const m=Math.max(...p.r); p.bb=[p.c[0]-m,p.c[1]-m,p.c[0]+m,p.c[1]+m]; }
       else if(p.k==='v') p.bb=p.bb2;
-      else if(p.k==='f'){ p.bb=[p.c[0]-p.R,p.c[1]-p.R,p.c[0]+p.R,p.c[1]+p.R];
+      else if(p.k==='f'){ p.bb=p.box?p.box.slice(0,4):[p.c[0]-p.R,p.c[1]-p.R,p.c[0]+p.R,p.c[1]+p.R];
         if(p.o.pts){ const q=p.o.pts.map(cam); p.bb=[Math.min(...q.map(v=>v[0])),Math.min(...q.map(v=>v[1])),Math.max(...q.map(v=>v[0])),Math.max(...q.map(v=>v[1]))]; } }
       else p.bb=[Math.min(p.a[0],p.b[0])-p.r,Math.min(p.a[1],p.b[1])-p.r,Math.max(p.a[0],p.b[0])+p.r,Math.max(p.a[1],p.b[1])+p.r]; }
     for(let y=0;y<GH*K;y++){ const Y=(y+.5)/K-OY, row=parts.filter(p=>Y>=p.bb[1]&&Y<=p.bb[3]); if(!row.length) continue;
