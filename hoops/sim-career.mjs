@@ -239,6 +239,19 @@ if (!SCRIPT && !ONLY) for (let i = 0; i < Math.min(300, Math.ceil(N / 10)); i++)
   try { OFF.push(run('off' + i, i % 2 ? 'hs' : 'draft', 'random', null, false)); } catch (e) { crashes++; }
 }
 const T = (x) => C.totals(x.L);
+/* THE RARE ENDINGS ARE COUNTED ON MORE CAREERS (the owner's call,
+   2026-10-16). A band under one percent read off 1,000 careers turns on two
+   or three of them: the GOAT ending read 0.1% to 0.3% on careers whose best
+   legacies were unchanged. Its band stays where it was; it is counted over
+   the first sweep plus RARE_X times as many careers again, on their own
+   seeds, keeping only the ending of each. */
+const RARE_X = 2;
+const rareEnds = results.map(endOf);
+if (!SCRIPT && !ONLY) for (let i = 0; i < N * RARE_X; i++) {
+  const pol = POLICIES[i % POLICIES.length];
+  try { rareEnds.push(endOf(run('rare' + i, i % 2 ? 'hs' : 'draft', pol))); } catch (e) { crashes++; if (crashes <= 3) console.error('crash rare' + i + ': ' + e.stack.split('\n').slice(0, 3).join(' | ')); }
+}
+const rarePct = (f) => 100 * rareEnds.filter(f).length / Math.max(1, rareEnds.length);
 const hs = results.filter((x) => routeOf(x.L).start === 'hs');
 const routes = {}, slots = {}, pros = {}, verdicts = {};
 for (const x of results) {
@@ -264,8 +277,8 @@ const M = {
   'route: undrafted or rec league': 100 * hs.filter((x) => routeOf(x.L).pre === 'rec' || routeOf(x.L).slot === 'undrafted').length / Math.max(1, hs.length),
   'Hall of Fame (any tier)': pct(count((x) => endOf(x).hof)),
   'first ballot or better': pct(count((x) => endOf(x).tier === 'hof_first')),
-  'GOAT debate ending': pct(count((x) => endOf(x).outcomes.indexOf('lo_goat') >= 0)),
-  'a secret ending': pct(count((x) => !!endOf(x).secret)),
+  'GOAT debate ending': rarePct((e) => e.outcomes.indexOf('lo_goat') >= 0),
+  'a secret ending': rarePct((e) => !!e.secret),
   'a legend event (switch on)': pct(count((x) => x.legendSeen.length > 0)),
   'a legend event (switch off)': OFF.length ? 100 * OFF.filter((x) => x.legendSeen.length > 0).length / OFF.length : 0,
   'events in the catalog': allIds.size,
@@ -358,6 +371,7 @@ const TARGETS = [
 const out = [];
 const P = (s) => { out.push(s); console.log(s); };
 P(`# Career simulator report\n\n${n} careers (${POLICIES.join(', ')}), ${secs}s, phase ${PHASE}.\n`);
+P(`The rare endings (GOAT debate, a secret ending) are counted on ${rareEnds.length} careers.\n`);
 const problems = [];
 if (crashes) problems.push(crashes + ' careers crashed');
 for (const x of results.concat(exAll)) for (const p of x.problems) problems.push(x.L.seed + ' ' + x.pol + ': ' + p);
