@@ -1067,6 +1067,21 @@ if (!args.includes('--no-browser')){
     claim(ac.retro && ac.notYet, 'Putt Putt achievements are read off the record: a cleared, perfect world unlocks its own at once, and only those');
     claim(ac.goat, 'G.O.A.T. counts the Pro Tour achievements alone, so a new Putt Putt world never moves it');
     claim(ac.words.length === 0, 'no Putt Putt achievement says "every world" or carries a dash' + (ac.words.length ? ': ' + ac.words.join(', ') : ''));
+    /* ONE PROGRESSION. With Putt Putt the day's quests carry its Daily Hole and the week's challenges a Putt Putt slot,
+       and what is played here feeds them and the one play streak; without it nothing changes. A guest's coins are held
+       on the browser and paid once at sign-in, not dropped. */
+    const pg2 = await pg.evaluate(() => { const r = {}, keepU = sbUser, keepN = sbUsername, keepOn = puttOn;
+      try{ localStorage.removeItem('bag_coins_held'); }catch(e){}
+      sbUser = null; puttOn = () => true; const H = puttHost(); H.coins(60, 'chk'); r.held = heldGuestCoins();
+      sbUser = { id:'pchk' }; sbUsername = 'pchk'; const b0 = coinBalance(); flushHeldCoins(); r.gain = coinBalance() - b0; r.once = flushHeldCoins() === 0 && heldGuestCoins() === 0;
+      r.quest = dailyQuestDefs().some(d => d.k === 'putt'); const pp = weeklySet().filter(c => c.mode === 'putt'); r.slot = pp.length === 1 && weeklySet().length === 4;
+      H.quest(pp[0].metric, pp[0].target); r.week = !!weekChal().done[pp[0].id]; H.questDaily(); r.dq = !!dailyQuests().putt;
+      H.dayPlayed(); r.streak = (LS.get(acctKey('bag_streak'), {}) || {}).last === todayKey();
+      puttOn = () => false; r.off = dailyQuestDefs().length === 4 && weeklySet().length === 4;
+      sbUser = keepU; sbUsername = keepN; puttOn = keepOn; return r; });
+    claim(pg2.held === 60 && pg2.gain === 60 && pg2.once, `a guest's Putt Putt coins are held and paid once at sign-in (${JSON.stringify(pg2)})`);
+    claim(pg2.quest && pg2.slot && pg2.week && pg2.dq && pg2.streak, 'with Putt Putt the daily quests carry its Daily Hole, the week\'s fourth challenge is Putt Putt\'s (still four, the same payouts), and both count, as does the play streak');
+    claim(pg2.off, 'without Putt Putt the daily quests and weekly challenges are as they were');
     claim(errs.length === 0, 'no page errors' + (errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''));
     await b.close(); srv.close();
   }

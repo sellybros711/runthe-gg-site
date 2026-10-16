@@ -60,7 +60,7 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- The Putting Green: a tester preview. It draws nothing until puttOn() opens it (see PUTT_TESTERS). -->
-<script defer src="putt/putt.js?v=81"></script>
+<script defer src="putt/putt.js?v=82"></script>
 <script defer src="putt/land.js?v=12"></script>
 <script defer src="putt/hole3d.js?v=16"></script>
 <script defer src="putt/trail.js?v=36"></script>
@@ -6445,9 +6445,13 @@ const DAILY_QUEST_DEFS=[
   {k:'h2h',    label:'Play a Head to Head match',     hint:'Play Online'},
   {k:'share',  label:'Share a result',                hint:'Friend or social'},
 ];
+// PUTT PUTT IN THE DAILY QUESTS. With Putt Putt (puttOn) the day's quests carry its Daily Hole too, so the all-done
+// Tour Rep reward asks for a little of both games. Everything that lists or counts the quests reads dailyQuestDefs().
+const PUTT_QUEST={k:'putt', label:'Play the Putt Putt Daily Hole', hint:'Putt Putt'};
+function dailyQuestDefs(){ let on=false; try{ on=puttOn(); }catch(e){} return on?DAILY_QUEST_DEFS.concat([PUTT_QUEST]):DAILY_QUEST_DEFS; }
 function dailyQuests(){ const t=todayKey(); let q=LS.get(acctKey('bag_dailyquests'),null);
   if(!q||typeof q!=='object'||q.day!==t) q={day:t,daily:0,season:0,h2h:0,share:0,xpDone:0}; return q; }
-function dailyQuestsAllDone(q){ q=q||dailyQuests(); return DAILY_QUEST_DEFS.every(d=>q[d.k]); }
+function dailyQuestsAllDone(q){ q=q||dailyQuests(); return dailyQuestDefs().every(d=>q[d.k]); }
 function questDaily(type){ if(!sbSignedIn()) return; const q=dailyQuests(); q[type]=1;
   let leveled=null;
   if(dailyQuestsAllDone(q) && !q.xpDone){ q.xpDone=1; LS.set(acctKey('bag_dailyquests'),q); if(typeof cloudPush==='function')cloudPush(); leveled=addXp(DAILY_QUEST_XP); try{ shardEarn(DAILY_QUEST_SHARD,1); }catch(e){} S.questDailyJustDone=true; try{ recordAchEvent({inc:{questDaysDone:1}}); evaluateAch(); }catch(e){} track('daily_quests_done'); }
@@ -6467,12 +6471,22 @@ const WEEKLY_POOL=[
   {id:'beat3', label:'Beat the Pro 3 times',        metric:'dailyBeats',  target:3,  mode:'daily'},
   {id:'beat5', label:'Beat the Pro 5 times',        metric:'dailyBeats',  target:5,  mode:'daily'},
   {id:'daily5',label:'Play the Daily 5 times',      metric:'dailyPlays',  target:5,  mode:'daily'},
+  // Putt Putt's (mode putt): one of these takes the week's fourth slot when the player has Putt Putt, fed by host.quest
+  {id:'pph10', label:'Beat 10 Putt Putt holes',      metric:'ppHolesWon',  target:10, mode:'putt'},
+  {id:'pph25', label:'Beat 25 Putt Putt holes',      metric:'ppHolesWon',  target:25, mode:'putt'},
+  {id:'pps30', label:'Earn 30 new Putt Putt stars',  metric:'ppStars',     target:30, mode:'putt'},
+  {id:'ppd5',  label:'Play the Putt Putt Daily Hole 5 times', metric:'ppDaily', target:5, mode:'putt'},
+  {id:'ppc5',  label:'Open 5 chests on the Putt Putt trails', metric:'ppChests', target:5, mode:'putt'},
 ];
 // deterministic weekly set: one challenge from EACH mode (forces all modes) + one extra, stable within a week.
 function weeklySet(){ const wk=weekKey();
   const one=(mode,salt)=>{ const g=WEEKLY_POOL.filter(x=>x.mode===mode); return seededShuffle(g, (wk*17+salt)>>>0)[0]; };
   const pick=[one('career',1),one('online',2),one('daily',3)];
-  const rest=WEEKLY_POOL.filter(x=>!pick.includes(x)); const extra=seededShuffle(rest,(wk*29+7)>>>0)[0];
+  // With Putt Putt the fourth slot (the extra) is Putt Putt's own, so the week still pays out four challenges:
+  // the same coins, packs and shards as before (golf-tour-economy), only one of them is earned on a green.
+  let pp=false; try{ pp=puttOn(); }catch(e){}
+  if(pp){ pick.push(one('putt',4)); return pick; }
+  const rest=WEEKLY_POOL.filter(x=>!pick.includes(x)&&x.mode!=='putt'); const extra=seededShuffle(rest,(wk*29+7)>>>0)[0];
   if(extra) pick.push(extra); return pick; }
 function weekChal(){ const wk=weekKey(); let w=LS.get(acctKey('bag_weeklychal'),null);
   if(!w||typeof w!=='object'||w.week!==wk) w={week:wk,prog:{},done:{}}; w.prog=w.prog||{}; w.done=w.done||{}; return w; }
@@ -6516,9 +6530,9 @@ function challengesNode(){
   const q=dailyQuests(), w=weekChal(), set=weeklySet(), ms=mulliSpins();
   const el=$(`<div class="chalpanel"></div>`);
   el.appendChild($(repTierBarHTML(ms)));
-  const dq=DAILY_QUEST_DEFS.map(d=>`<div class="wg-row${q[d.k]?' done':''}"><span>${q[d.k]?'✓ ':'○ '}${d.label} <span class="small muted" style="letter-spacing:0;text-transform:none">· ${d.hint}</span></span><span class="wg-v">${q[d.k]?'done':''}</span></div>`).join('');
+  const dq=dailyQuestDefs().map(d=>`<div class="wg-row${q[d.k]?' done':''}"><span>${q[d.k]?'✓ ':'○ '}${d.label} <span class="small muted" style="letter-spacing:0;text-transform:none">· ${d.hint}</span></span><span class="wg-v">${q[d.k]?'done':''}</span></div>`).join('');
   const dqDone=dailyQuestsAllDone(q);
-  el.appendChild($(`<div class="wg-panel${dqDone?' done':''}"><div class="wg-hd"><span>Daily Quests</span>${dqDone?'<span style="color:#35d6a0">+'+DAILY_QUEST_XP+' Rep ✓</span>':'<span class="small muted" style="letter-spacing:0;text-transform:none">all '+DAILY_QUEST_DEFS.length+' → +'+DAILY_QUEST_XP+' Rep & ◆1 '+DAILY_QUEST_SHARD+' shard</span>'}</div>${dq}</div>`));
+  el.appendChild($(`<div class="wg-panel${dqDone?' done':''}"><div class="wg-hd"><span>Daily Quests</span>${dqDone?'<span style="color:#35d6a0">+'+DAILY_QUEST_XP+' Rep ✓</span>':'<span class="small muted" style="letter-spacing:0;text-transform:none">all '+dailyQuestDefs().length+' → +'+DAILY_QUEST_XP+' Rep & ◆1 '+DAILY_QUEST_SHARD+' shard</span>'}</div>${dq}</div>`));
   const wr=set.map(c=>{ const v=Math.min(w.prog[c.metric]||0,c.target), ok=!!w.done[c.id];
     return `<div class="wg-row${ok?' done':''}"><span>${ok?'✓ ':''}${c.label}</span><span class="wg-v" style="${ok?'':'color:var(--muted)'}">${v}/${c.target}</span></div>`; }).join('');
   const wDone=weekChalDoneCount(w), wTot=set.length;
@@ -6533,7 +6547,7 @@ function maybeChallengesPopup(){
   if(document.querySelector('.chalpop')) return;
   const cn=challengesNode(); if(!cn) return;
   const q=dailyQuests(), w=weekChal(), set=weeklySet();
-  const dqLeft=DAILY_QUEST_DEFS.filter(d=>!q[d.k]).length, wLeft=set.filter(c=>!w.done[c.id]).length;
+  const dqLeft=dailyQuestDefs().filter(d=>!q[d.k]).length, wLeft=set.filter(c=>!w.done[c.id]).length;
   const ov=$(`<div class="chalpop" style="position:fixed;inset:0;z-index:62;display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto;background:radial-gradient(120% 90% at 50% 12%, rgba(10,30,20,.82), rgba(2,7,5,.96) 70%)">
     <div style="max-width:440px;width:100%;background:linear-gradient(180deg,#0d2036,#0a1626);border:1px solid rgba(241,208,74,.4);border-radius:18px;padding:18px 17px;box-shadow:0 20px 60px -18px rgba(0,0,0,.7)">
       <div style="text-align:center;font:800 12px/1 var(--body);letter-spacing:.24em;text-transform:uppercase;color:var(--gold)">🎯 Your Challenges</div>
@@ -15661,7 +15675,7 @@ function ftPins(){
     else if(today) pins.push({id:'gift', icon:'gift', name:'Login gift', sub:`Day ${ls.n} of 7 · ${loginRewLabel(loginReward(ls.n))}`, state:'done', val:'Collected', go:()=>{ S.loginReward=loginReward(ls.n); S.overlay='login'; render(); }, short:'Gift'});
   } else pins.push({id:'gift', icon:'gift', name:'Login gift', sub:'Sign in for a gift every day', state:'lock', val:'Sign in', go:()=>{ S.overlay='account'; S.acctMode='signup'; S.acctErr=''; render(); }, short:'Gift'});
   if(si){ let q={}; try{ q=dailyQuests()||{}; }catch(e){}
-    const n=DAILY_QUEST_DEFS.filter(d=>q[d.k]).length, tot=DAILY_QUEST_DEFS.length, next=DAILY_QUEST_DEFS.find(d=>!q[d.k]);
+    const QD=dailyQuestDefs(), n=QD.filter(d=>q[d.k]).length, tot=QD.length, next=QD.find(d=>!q[d.k]);
     pins.push({id:'quests', icon:'scroll', name:'Daily quests', sub: n>=tot?`All ${tot} done · +${DAILY_QUEST_XP} Tour Rep`:(next?next.label:''), state: n>=tot?'done':'part', part:n, of:tot, val:`${n} of ${tot}`,
       go:()=>{ S.overlay='challenges'; render(); }, short:'Quests'}); }
   try{ if(puttOn()){ const m=window.RTT_PUTT.summary(puttHost()), d=m.daily||{};
@@ -15968,7 +15982,7 @@ function scrTitleClassic(){
   // Compact icon row (owner: reduce home scrolling) - short labels, no sub-lines; the dots still flag
   // anything waiting (new gear / a free pack), and every one of these also lives in the bottom nav or menu.
   const _dq=(signedIn && typeof dailyQuests==='function')?dailyQuests():null;
-  const _dqLeft=_dq?DAILY_QUEST_DEFS.filter(d=>!_dq[d.k]).length:0;
+  const _dqLeft=_dq?dailyQuestDefs().filter(d=>!_dq[d.k]).length:0;
   mkTile(PXI.target,'#16b5a6','Quests','', ()=>{S.overlay='challenges';render();}, {dot:_dqLeft>0});
   mkTile(PXI.podium,'#4aa3ff','Ranks','', ()=>{S.overlay='leaderboard';render();});
   mkTile(PXI.cup,'#F1D04A','Profile','', ()=>{S.overlay='record';render();});
@@ -23327,7 +23341,12 @@ function puttHost(){
     signIn:function(mode){ S.overlay='account'; S.acctMode=mode==='signup'?'signup':'signin'; S.acctErr=''; try{ render(); }catch(e){} },
     // Get Tour Pass from inside Putt Putt: the game's own Tour Pass, where the pass is bought
     pass:function(){ S.overlay='tourpass'; try{ render(); }catch(e){} },
-    coins:function(n,label){ try{ addBonusCoins(n,{label:label}); }catch(e){} },
+    // a guest's coins are held on this browser and paid when they sign in, rather than lost (holdGuestCoins)
+    coins:function(n,label){ try{ if(sbSignedIn()) addBonusCoins(n,{label:label}); else holdGuestCoins(n); }catch(e){} },
+    // the game's own weekly challenges, daily quests and play streak hear about Putt Putt
+    quest:function(metric,n){ try{ questWeekly(metric,n); }catch(e){} },
+    questDaily:function(){ try{ questDaily('putt'); }catch(e){} },
+    dayPlayed:function(){ try{ if(sbSignedIn()) bumpStreak(); }catch(e){} },
     balance:function(){ try{ return coinBalance(); }catch(e){ return 0; } },
     passActive:function(){ try{ return dailyPassActive(); }catch(e){ return false; } },
     // THE PUTTER IN YOUR CLOSET: how far its aim dots reach (0 to 3), and the putter itself. A Putt Putt putter
@@ -23345,6 +23364,16 @@ function puttHost(){
     // back from Putt Putt: what was earned there lands in the Trophy Room, with its toast
     onClose:function(){ try{ const fresh=evaluateAch(); render(); if(fresh.length||S.freshRep) achToast(fresh); }catch(e){ try{ render(); }catch(e2){} } } };
 }
+// GUEST COINS ARE HELD, NOT LOST. Signed out, the wallet takes nothing (addBonusCoins), and on sign-in the guest's
+// Putt Putt record is folded into the account's with every hole marked paid, so those coins could never be paid
+// again. They wait under a bare key on this browser (capped, so a long guest run is not a jackpot) and are paid
+// once the account's cloud copy has landed, so a merge cannot write over them.
+const HELD_COINS_KEY='bag_coins_held', HELD_COINS_MAX=2000;
+function holdGuestCoins(n){ n=Math.round(n||0); if(n<=0) return; try{ const h=LS.get(HELD_COINS_KEY,null)||{n:0};
+  h.n=Math.min(HELD_COINS_MAX,(h.n||0)+n); LS.set(HELD_COINS_KEY,h); }catch(e){} }
+function heldGuestCoins(){ try{ const h=LS.get(HELD_COINS_KEY,null); return (h&&h.n)||0; }catch(e){ return 0; } }
+function flushHeldCoins(){ if(!sbSignedIn()) return 0; const n=heldGuestCoins(); if(!n) return 0;
+  try{ localStorage.removeItem(HELD_COINS_KEY); }catch(e){} return addBonusCoins(n,{label:'from Putt Putt as a guest'}); }
 function openPutt(){ if(!puttOn()) return; try{ track('putt_open'); }catch(e){} window.RTT_PUTT.open(puttHost()); }
 // The Putt Putt Tour card: today's Daily Hole, your place on the 90 hole tour, and your lives.
 function puttCard(){
@@ -42128,7 +42157,7 @@ async function sbApply(session){
     // the player happens to open the records overlay, otherwise a signed-in session on a fresh browser
     // shows "unclaimed"/stale local state until something else happens to trigger the fetch.
     bumpBoardEpoch(); crCache=null; crLoad(); reconcileDailyAttempts();
-    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ pushProfileLook(); }catch(e){} try{ checkNameFlag(); }catch(e){} try{ proLoad(true); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeBundleRewards(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybePackGrant(); }catch(e){} try{ maybeFirstBuySpin(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} try{ maybePassEventNote(); }catch(e){} try{ loadWallet(function(){ try{ maybePassRewards(); }catch(e){} try{ maybeBucketRewards(); }catch(e){} try{ if(Object.keys(passSettle()).length) maybePassSettleNote(); }catch(e){} }); }catch(e){} try{ purchaseCheck(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461) + purchased-coin wallet (Stripe) + a post-checkout return
+    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ pushProfileLook(); }catch(e){} try{ checkNameFlag(); }catch(e){} try{ proLoad(true); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ flushHeldCoins(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} try{ maybeBundleRewards(); }catch(e){} try{ maybeCoinGrant(); }catch(e){} try{ maybePackGrant(); }catch(e){} try{ maybeFirstBuySpin(); }catch(e){} try{ maybeLoginBonus(); }catch(e){} try{ maybePassEventNote(); }catch(e){} try{ loadWallet(function(){ try{ maybePassRewards(); }catch(e){} try{ maybeBucketRewards(); }catch(e){} try{ if(Object.keys(passSettle()).length) maybePassSettleNote(); }catch(e){} }); }catch(e){} try{ purchaseCheck(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403) + one-time coin grant (CS459) + daily-login bonus (CS461) + purchased-coin wallet (Stripe) + a post-checkout return
     maybeAdoptGuestCareer();   // guest signed in via the 10-season login wall → persist their in-memory career + continue
     maybeResumeCareerOnReload();   // a refresh happened mid-career → now that the account is loaded, drop back into it
     if(S._dailyClaimFlow && sbSignedIn()){ S.overlay=null; S.screen='dailyresult'; }   // return to the result screen

@@ -3234,7 +3234,7 @@ function openTrail(tid, from){
       pick:function(kind, id, n){ var st = pload(); st.trail = st.trail || {}; var r = st.trail[sp.key] = st.trail[sp.key] || {}, msg = '';
         if (kind === 'coin'){ r.c = r.c || []; if (r.c.indexOf(id) < 0) r.c.push(id); else n = 0; }
         else if (kind === 'brk'){ r.b = r.b || []; if (r.b.indexOf(id) < 0) r.b.push(id); else n = 0; }
-        else if (kind === 'chest'){ r.ch = r.ch || []; if (r.ch.indexOf(id) < 0) r.ch.push(id); }   // a chest pays nothing itself: its coins are picked up off the ground
+        else if (kind === 'chest'){ r.ch = r.ch || []; if (r.ch.indexOf(id) < 0){ r.ch.push(id); hq('ppChests', 1); } }   // a chest pays nothing itself: its coins are picked up off the ground
         else if (kind === 'key') r.key = 1;
         else if (kind === 'pz') r.pz = 1;   // the trail's puzzle is solved; its coin bonus comes out of its chest as coins
         else if (kind === 'life'){ r.life = 1; st.bank = st.bank || []; if (st.bank.indexOf(sp.loot.life.id) < 0) st.bank.push(sp.loot.life.id);
@@ -3498,6 +3498,9 @@ function secretOut(holed){
   return popup('<div class="k">OUT OF STROKES</div><div class="t">Over par</div><div class="s">' + par + ' strokes used and still not down. Secret holes cost no lives.</div>    <div class="row"><button class="pt-bt" data-a="back">Back to the trail</button><button class="pt-go" data-a="again">Try again</button></div>', { back:back, again:again }, 'over');
 }
 // a Tour hole ends one of three ways
+/* THE GAME'S OWN QUESTS AND STREAK hear about Putt Putt: a hole won, new stars, an ace, a chest, the Daily Hole
+   (host.quest feeds the weekly challenges, host.questDaily the daily quests, host.dayPlayed the one streak). */
+function hq(metric, n){ try{ if (n > 0 && S.host.quest) S.host.quest(metric, n); }catch(e){} }
 function tourOut(holed){
   if (S.round && S.round.tid === 'secret') return secretOut(holed);
   var P = S.play, R = S.round, C = P.C, n = R.lv, tid = R.tid || 'main', TR = tourOf(tid), PY = PAY[TR.id], K = TR.per || PER, N = TR.levels.length;
@@ -3518,11 +3521,12 @@ function tourOut(holed){
     var w = Math.floor((n - 1) / K), worldDone = TR.levels[n - 1].sig && !tp.wpaid[w];
     if (worldDone){ tp.wpaid[w] = 1; grant(st, PY.sigReward[w]); grant(st, PY.worldReward[w]); if (PY.finish && n === N) grant(st, PY.finish); }
     psave(st); if (got || worldDone) coins(got + (worldDone ? PY.world : 0), TR.name + ' ' + wl(n, tid));
+    if (!TR.lab){ if (s < par) hq('ppHolesWon', 1); hq('ppStars', stars - had); if (s === 1 && ac) hq('ppAces', 1); }
     try{ S.host.sfx && S.host.sfx('holeGood'); }catch(e){}
     if (worldDone) return worldComplete(n, s, par, got, tid, lines);
     var sec = !!P.foundSecret; if (sec){ tp.secret = tp.secret || {}; if (!tp.secret[n]){ tp.secret[n] = 1; psave(st); } }
     var nextOpen = n < N && opened(TR, tp, n + 1), have = starsThrough(tp, TR, gw), gate = worldGate(TR, gw);
-    var openLine = n >= N ? 'That is the whole ' + esc(TR.name) + '.' : nextOpen ? (wasLv <= n ? 'Level ' + (n + 1) + ' is open.' : '') :
+    var openLine = n >= N ? 'More holes are on the way.' : nextOpen ? (wasLv <= n ? 'Level ' + (n + 1) + ' is open.' : '') :
       esc(wLabel(TR, gw + 1)) + ' opens at ' + gate + ' total stars. You have ' + have + '.';
     return popup('<div class="k">' + (sec ? 'SECRET LINE FOUND' : s === 1 ? 'HOLE IN ONE' : s < par ? 'UNDER PAR' : 'PAR') + '</div><div class="t">' + esc(scoreName(s, par)) + '</div>\
       <div class="pp-stars">' + starRow(stars) + '</div>' + (stars > had && !first ? '<div class="s">New best on this hole.</div>' : stars < 3 ? '<div class="s">' + (stars === 1 ? (threeOf(par, th) >= par - 1 ? 'Beat par for 3 stars.' : 'Beat par for 2 stars, ' + threeLine(par, th) + ' for 3.') : threeLine(par, th).replace(/^./, function(c){ return c.toUpperCase(); }) + ' for 3 stars.') + '</div>' : '') + '\
@@ -3579,6 +3583,7 @@ function dailyFinish(s, par, ms){
   if (!late){ st.streak.n = st.streak.last === y ? st.streak.n + 1 : (st.streak.last === dk ? st.streak.n : 1); st.streak.last = dk; st.streak.best = Math.max(st.streak.best || 0, st.streak.n);
   if (STREAK_REWARD[st.streak.n]) grant(st, STREAK_REWARD[st.streak.n]); }
   psave(st); coins(got, 'Daily Hole');
+  if (!late){ hq('ppDaily', 1); try{ S.host.questDaily && S.host.questDaily(); }catch(e){} try{ S.host.dayPlayed && S.host.dayPlayed(); }catch(e){} }
   if (s < par) try{ S.host.sfx && S.host.sfx('holeGood'); }catch(e){}
   dailyResult(got, dk);
 }
