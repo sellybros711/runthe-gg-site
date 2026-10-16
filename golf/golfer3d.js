@@ -763,7 +763,7 @@
       const sh=P(-0.2,30.0+0.15*br,9.2*AW*s), el=hold?P(0.9,23.0,10.5*AW*s):P(0.4,23.0,10.4*AW*s), wr=hold?P(2.4,17.7,11.0*AW*s):P(1.3,17.3,10.9*AW*s);
       const se=add(sh,sc(sub(el,sh),0.48)), mid=add(el,sc(sub(wr,el),0.45)), flap=sc(F,0.12*sw*s);
       if(blz){ push(capsule(sh,el,2.15,slv)); push(capsule(el,wr,1.85,slv));
-        if(top==='ppchampjacket'&&HD) for(const k of [0.1,0.22]) push(ellipsoid(add(wr,sc(sub(el,wr),k),sc(T,1.75*s),sc(F,-0.3)),AX,[0.4,0.4,0.4],'x:'+tpal['4'],{gloss:3,noCast:1})); }   // gold cuff buttons
+        if(top==='ppchampjacket'&&HD) for(const k of [0.1,0.22]) push(ellipsoid(add(wr,sc(sub(el,wr),k),sc(T,1.5*s),sc(F,0.25)),AX,[0.38,0.38,0.38],'x:'+tpal['4'],{gloss:3,noCast:1})); }   // gold cuff buttons
       else { push(capsule(sh,add(se,flap),2.3,slv)); if(HD) push(capsule(add(sh,sc(sub(se,sh),0.78)),add(se,flap),2.42,slv,{dt:-1,noCast:1}));   // the sleeve, its hem moving a little
         if(HD) push(over(add(sh,sc(sub(se,sh),0.45)),AX,[2.4,2.4,2.4],slv,l=>Math.abs(l[1]+0.35*l[0]*s-0.1)<0.07&&l[0]>-0.2,{dt:-1,noCast:1}));   // a crease across the sleeve
         push(capsule(se,el,1.6,'skin')); push(ellipsoid(el,AX,[1.55,1.5,1.6],'skin'));                                  // the upper arm and elbow
@@ -1053,12 +1053,12 @@
           const q=u-Math.abs(v)*0.9; if(Math.abs(((q%0.24)+0.24)%0.24-0.12)<0.025) return {c:P.l,gloss:3};
           return {c:P.L,gloss:3}; } } }
       return {c:p[1]>0.55?P.h:P.C}; } },
-    // an iron lantern cage: eight bars, a band round its middle and caps top and bottom, purple glass between them
+    // an iron lantern cage: six bars, a band round its back and caps top and bottom, purple glass between them
     // and a white-violet flame burning at the heart of the face that looks at you
-    pphallowslantern:{ f:(p,P)=>{ const ph=Math.atan2(p[0],p[2]), rb=Math.abs(((ph*8/(2*Math.PI))%1+1)%1-0.5);
-      if(rb>0.4||Math.abs(p[1])<0.07||Math.abs(p[1])>0.84) return {c:P.o,gloss:3};
-      if(p[2]>0.72&&Math.hypot(p[0],p[1]+0.08)<0.3) return {c:P.W,dt:1,gloss:0};
-      return {c:p[2]>0.35?P.L:P.P,dt:1,gloss:1}; } } };
+    pphallowslantern:{ f:(p,P)=>{ const ph=Math.atan2(p[0],p[2]), rb=Math.abs(((ph*6/(2*Math.PI)+0.5)%1+1)%1-0.5);
+      if(rb>0.43||Math.abs(p[1])>0.8||(Math.abs(p[1])<0.06&&p[2]<0.55)) return {c:P.o,gloss:3};
+      const fl=Math.hypot(p[0]*1.25,p[1]+0.1); if(p[2]>0.6&&fl<0.36) return {c:fl<0.2?P.W:P.L,dt:1,gloss:0};
+      return {c:p[2]>0.5?P.C:P.P,dt:1,gloss:1}; } } };
   // the menu golfer's teed ball, painted with its motif: p is (x right, y up, z front) of the ball facing the camera
   function ppBall(push,bp,AX,U,T,id,P){ const B=BALL_PP[id], ry=B.ry||1, c=add(bp,sc(U,1.8*(ry-1)));
     push(ellipsoid(c,AX,[1.8,1.8*ry,1.8],'x:'+P.C,{gloss:3,paint:l=>{ const q=B.f([-l[2],l[1],l[0]],P); return {m:'x:'+q.c,dt:q.dt||0,gloss:q.gloss!=null?q.gloss:3,n:q.n?[q.n[2],q.n[1],-q.n[0]]:null}; }}));
