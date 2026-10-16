@@ -66,7 +66,7 @@
 <script defer src="putt/trail.js?v=36"></script>
 <script defer src="putt/mapland.js?v=6"></script>
 <!-- The course golfer in the profile style, asked through g3dOn(). -->
-<script defer src="golfer3d.js?v=5"></script>
+<script defer src="golfer3d.js?v=6"></script>
 <script defer src="tracer3d.js?v=2"></script>
 <!-- Google Consent Mode v2 defaults. Advertising storage is denied until the certified CMP (loaded by
      the AdSense tag below) records the user's choice; the CMP then updates these signals automatically,
@@ -1894,6 +1894,14 @@ window.GA_ID='G-L29P5MRWKE';
     box-shadow:0 5px 14px rgba(0,0,0,.55); white-space:nowrap}
   .ovrchip b{font-family:var(--mono); font-weight:800; font-size:19px; color:var(--tc,#cd7f32); line-height:1; transition:color .2s}
   .ovrchip i{font:800 8.5px/1 var(--body); letter-spacing:.13em; color:var(--tc,#cd7f32); font-style:normal; opacity:.92}
+  /* ICON (100 and up): a prism border, the number and label in the prism, a slow sheen across them */
+  :root{ --prism:linear-gradient(100deg,#ff9bd6,#c59bff 22%,#7fe3ff 44%,#9ff5c8 64%,#ffe27a 82%,#ff9bd6) }
+  .ovrchip.icon,.pcovr.icon{border-color:transparent; background:linear-gradient(rgba(6,16,26,.95),rgba(6,16,26,.95)) padding-box, var(--prism) border-box;
+    box-shadow:0 5px 14px rgba(0,0,0,.55), 0 0 16px rgba(127,227,255,.38)}
+  .ovrchip.icon b,.ovrchip.icon i,.pcovr.icon b,.pcovr.icon span{background:var(--prism); background-size:220% 100%; -webkit-background-clip:text; background-clip:text;
+    color:transparent; animation:prismsheen 4.5s linear infinite}
+  @keyframes prismsheen{ from{background-position:0% 0} to{background-position:220% 0} }
+  @media (prefers-reduced-motion: reduce){ .ovrchip.icon b,.ovrchip.icon i,.pcovr.icon b,.pcovr.icon span{animation:none} }
   .heroname{font-family:var(--serif); font-weight:700; font-size:17px; color:var(--oncard); margin-top:9px; text-align:center; line-height:1.1; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .herometa{font:800 9.5px/1 var(--body); letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-top:5px}
   .radarwrap{flex:0 1 auto; min-width:0; display:flex; justify-content:center}
@@ -12307,7 +12315,14 @@ function buildPlayer(o){const p={name:S.name||'Your Golfer',you:true};
   p.skill=ovrFromSkills(p, p._over); return p;}
 
 /* ---------- build identity ---------- */
+/* ICON: the tier above ELITE, for an overall of 100 and up. Only the player's own career golfer gets there (world
+   golfers and the Daily clamp at 99). A prism instead of one colour: c is its solid colour (the rating web), and
+   the chip, the player card and the share card wear the full prism. It rides the First Tee switch, so it goes live
+   with the new home. */
+const ICON_PRISM=['#ff9bd6','#c59bff','#7fe3ff','#9ff5c8','#ffe27a'];
+function ovrIcon(o){ try{ return o>=100 && ftLive(); }catch(e){ return false; } }
 function ovrTier(o){
+  if(ovrIcon(o)) return {c:'#7fe3ff', glow:'0 0 16px rgba(127,227,255,.55)', lab:'ICON', icon:true};
   if(o>=90) return {c:'#35d6a0', glow:'0 0 14px rgba(53,214,160,.45)', lab:'ELITE'};
   if(o>=86) return {c:'#F1D04A', glow:'0 0 12px rgba(241,208,74,.40)', lab:'GOLD'};
   if(o>=82) return {c:'#c7ced8', glow:'none', lab:'SILVER'};
@@ -13999,7 +14014,7 @@ function playerCardHTML(cv){
         <img class="pcbg" src="${pxCardBgURL(bg)}" alt="">
         <div class="pcscrim"></div>
         ${cv.rep?`<div class="pctier">${esc(cv.rep)}</div>`:''}
-        ${cv.ovr!=null?`<div class="pcovr"><b>${cv.ovr}</b><span>OVR</span></div>`:''}
+        ${cv.ovr!=null?(ovrIcon(+cv.ovr)?`<div class="pcovr icon"><b>${cv.ovr}</b><span>ICON</span></div>`:`<div class="pcovr"><b>${cv.ovr}</b><span>OVR</span></div>`):''}
         <div class="pcgolfer">${pxFigureHTML(cv.look,280)}</div>
         <div class="pcplate" style="${plateCss(plate)}">${(function(){ try{ return cv.self?passStampsHTML(null,'pcstamps'):passStampsHTML(passStampsDecode(cv.look&&cv.look.stamps),'pcstamps'); }catch(e){ return ''; } })()}<div class="pcpn">${proNameHTML(cv.name, cv.self?(sbUser&&sbUser.id):cv.uid)}</div>${sub?`<div class="pcps">${esc(sub)}</div>`:''}</div>
       </div>
@@ -16629,7 +16644,8 @@ function skinSliderNode(){
 // Every tile in the catalog is drawn by PXHD.renderMap: the same light from the top left, the same hue
 // shifted ramps and the same soft outline as the golfer wearing it, so the tile and the sprite agree.
 function pxThumbFrom(cv){ return cv?`<span class="sthumb"><img src="${cv.toDataURL()}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`:pxNoneThumb(); }
-function pxClubThumb(id){ const map=PXG_CLUBS[id]||PXG_CLUBS.driver; const pal=PXG_CLUB_PAL[id]; const P={l:PXG_FIX.l,g:PXG_FIX.g,G:PXG_FIX.G,H:PXG_FIX.H,F:PXG_FIX.F,S:'#e8ebf0'};
+function pxClubThumb(id){ if(String(id).indexOf('pu_')!==0&&PXG_CLUBS[id]){ const g=g3dPic(g3dItemLook({club:id}),'club'); if(g) return g3dTile(g); }
+  const map=PXG_CLUBS[id]||PXG_CLUBS.driver; const pal=PXG_CLUB_PAL[id]; const P={l:PXG_FIX.l,g:PXG_FIX.g,G:PXG_FIX.G,H:PXG_FIX.H,F:PXG_FIX.F,S:'#e8ebf0'};
   const col=(ch)=>{ if(ch==='.'||ch===' ')return null; return (pal&&pal[ch])||P[ch]||null; };
   // zoom onto the club's DISTINCTIVE parts: bbox of everything except the generic shaft ('l'), so a
   // stock set's thumb is its head shape, while decorated clubs (sword/wand/hockey) keep their full art
@@ -16652,13 +16668,15 @@ function pxBallThumb(id){ const map=PXG_BALL[id], pal=PXG_BALL_PAL[id];
   return pxThumbFrom(PXHD.renderMap(map,ch=>ch==='T'?{hex:pal.T||'#e8ebf0',t:3}:(pal[ch]||null),{crop:[32,46,41,55],fitSkip:'T',gloss:2,px:8})); }   /* the ball is six wide at x 34, so 32 centres it */
 // CS414: rocket-cleats thumbnail (a zoomed crop of the boot overlay; 'none' → empty placeholder)
 function pxCleatsThumb(id){ if(!PXG_CLEATS[id]) return `<span class="sthumb color" style="background:#12251b;display:flex;align-items:center;justify-content:center;color:#5e7468;font:700 10px var(--body)">None</span>`;
+  const g=g3dPic(g3dItemLook({cleats:id}),'shoe'); if(g) return g3dTile(g);
   return pxShoeThumb(Object.assign({},S.look||DEFLOOK,{cleats:id})); }
 // One shoe as the golfer wears it (the trail-side foot), drawn by PXHD and cropped close.
 function pxShoeThumb(look){ try{ const src=pxGolferCanvas(look,{only:'shoe',noClub:true,noBall:true}), c=src.width/PXG_W;
     const cv=document.createElement('canvas'), x0=23, y0=48, w=11, h=8; cv.width=w*c; cv.height=h*c;
     cv.getContext('2d').drawImage(src,x0*c,y0*c,cv.width,cv.height,0,0,cv.width,cv.height); return pxThumbFrom(cv); }catch(e){ return pxNoneThumb(); } }
 // A hat colour is the redrawn ball cap in that colour, the same picture the Ball Cap tile shows.
-function pxCapThumb(hatId){ try{ const src=pxGolferCanvas(Object.assign({},S.look||DEFLOOK,{cap:true,hatStyle:'cap',hat:hatId}),{only:'hat',noClub:true,noBall:true}), c=src.width/PXG_W;
+function pxCapThumb(hatId){ const g=g3dPic(g3dItemLook({cap:true,hatStyle:'cap',hat:hatId}),'hat'); if(g) return g3dTile(g);
+  try{ const src=pxGolferCanvas(Object.assign({},S.look||DEFLOOK,{cap:true,hatStyle:'cap',hat:hatId}),{only:'hat',noClub:true,noBall:true}), c=src.width/PXG_W;
     const cv=document.createElement('canvas'), x0=12, y0=2, w=21, h=14; cv.width=w*c; cv.height=h*c;
     cv.getContext('2d').drawImage(src,x0*c,y0*c,cv.width,cv.height,0,0,cv.width,cv.height); return pxThumbFrom(cv); }catch(e){ return pxNoneThumb(); } }
 // CS458: a clean standalone picture of a wearable ITEM by itself (headwear/eyewear/outerwear/legwear) 
@@ -16667,6 +16685,7 @@ function pxNoneThumb(){ return `<span class="sthumb color" style="background:#12
 function pxItemThumb(cat,id){
   if(!id||id==='none') return pxNoneThumb();
   const look=S.look||DEFLOOK, av=avLook(look);
+  if(cat==='hw'||(cat==='ew'&&PXG_EYEWEAR[id])){ const g=g3dPic(g3dItemLook(cat==='hw'?{cap:true,hatStyle:id,hat:look.hat||DEFLOOK.hat}:{eyewear:id}),cat==='hw'?'hat':'ew'); if(g) return g3dTile(g); }
   // The tile shows the item exactly as the golfer wears it: drawn by PXHD on your golfer, then only
   // that item's own pixels kept and cropped. An authored map painted flat would be a second, older
   // picture of the same thing.
@@ -19127,8 +19146,9 @@ function pxIdleSrcAttrs(look){
   return `src="${cur}" data-base="${base}"${br?` data-breathe="${br}"`:''}`;
 }
 function pxAvatarHTML(look,cls){ let au=null; try{ au=auraOf(look); }catch(e){}
-  if(!au) return `<div class="avatarfig pxfig ${cls||''}"><img class="pximg pxidle" ${pxIdleSrcAttrs(look)} alt="Your golfer"></div>`;
-  return `<div class="avatarfig pxfig ${auraCls(au)} ${cls||''}" style="${auraVars(au)}">${auraBack(au)}<img class="pximg pxidle au-fig" ${pxIdleSrcAttrs(look)} alt="Your golfer">${auraParts(au,11)}</div>`; }
+  const g=g3dPic(look||DEFLOOK,'fig'), src=g?g3dSrc(g):pxIdleSrcAttrs(look), idle=g?'':' pxidle';
+  if(!au) return `<div class="avatarfig pxfig ${cls||''}"><img class="pximg${idle}" ${src} alt="Your golfer"></div>`;
+  return `<div class="avatarfig pxfig ${auraCls(au)} ${cls||''}" style="${auraVars(au)}">${auraBack(au)}<img class="pximg${idle} au-fig" ${src} alt="Your golfer">${auraParts(au,11)}</div>`; }
 // CS356f: tiny head-and-shoulders chip of the pixel golfer, for the profile pill etc.
 // crops the 44x56 sprite to the head+shoulders band (rows ~4-26) and centers it in an sz x sz box.
 function pxAvatarChip(look,sz){ sz=sz||22; const pr=sz/22, w=Math.round(44*pr), mt=Math.round(-4*pr), ml=Math.round(-(w-sz)/2);
@@ -19136,11 +19156,14 @@ function pxAvatarChip(look,sz){ sz=sz||22; const pr=sz/22, w=Math.round(44*pr), 
   // are many and rebuilt often, so nothing on them animates
   let au=null; try{ au=auraOf(look||S.look||DEFLOOK); }catch(e){}
   const ast=au?`;--ac:${au.f.col};--aA:${hexRgba(au.f.col,.55)};--aB:${hexRgba(au.f.col,.28)}`:'';
-  return `<span class="pxchip${au?' au-chip':''}" style="width:${sz}px;height:${sz}px${ast}" aria-hidden="true"><img src="${pxGolferURL(look||S.look||DEFLOOK)}" alt="" style="width:${w}px;margin-top:${mt}px;margin-left:${ml}px"></span>`; }
+  const g=g3dPic(look||S.look||DEFLOOK,'chip');
+  const img=g?`<img ${g3dSrc(g)} alt="" style="width:${sz}px;height:${sz}px">`:`<img src="${pxGolferURL(look||S.look||DEFLOOK)}" alt="" style="width:${w}px;margin-top:${mt}px;margin-left:${ml}px">`;
+  return `<span class="pxchip${au?' au-chip':''}" style="width:${sz}px;height:${sz}px${ast}" aria-hidden="true">${img}</span>`; }
 // the FULL standing pixel golfer at a given height (not the head-crop chip) - for the resume card etc.
 function pxFigureHTML(look,h){ h=h||60; look=look||S.look||DEFLOOK;
   let au=null; try{ au=auraOf(look); }catch(e){}
-  const img=`<img class="pxfigsm pxidle${au?' au-fig':''}" ${pxIdleSrcAttrs(look)} alt="Your golfer" style="height:${h}px;width:auto;image-rendering:pixelated;display:block;flex:0 0 auto">`;
+  const g=g3dPic(look,'fig');
+  const img=`<img class="pxfigsm${g?'':' pxidle'}${au?' au-fig':''}" ${g?g3dSrc(g):pxIdleSrcAttrs(look)} alt="Your golfer" style="height:${h}px;width:auto;image-rendering:pixelated;display:block;flex:0 0 auto">`;
   if(!au) return img;
   return `<span class="pxfxwrap ${auraCls(au)}" style="${auraVars(au)}">${auraBack(au)}${img}${auraParts(au, Math.max(6,Math.round(h*0.11)))}</span>`; }
 // the global idle ticker: swap every .pxidle img between its base + breathe frames, all in sync.
@@ -19728,7 +19751,7 @@ function buildHero(){
   const node=$(`<div class="buildhero">
     <div class="herocol">
       <div class="herofig${sbSignedIn()?' hasfull':''}">${avatarShowHTML()}
-        <div class="ovrchip" style="--tc:${t.c}"><b>${ovr}</b><i>${t.lab}</i></div></div>
+        <div class="ovrchip${t.icon?' icon':''}" style="--tc:${t.c}"><b>${ovr}</b><i>${t.lab}</i></div></div>
       <div class="heroname">${esc(S.name||'Your Golfer')}</div>
       <div class="herometa">${filledCount()}/8 drafted</div>
     </div>
@@ -23295,7 +23318,7 @@ var PUTT_ALL_ACCESS=['csel8','runnyj','malikwillislover'];   // every Putt Putt 
    module, or a draw that throws, falls back to the old sprites. ---- */
 var G3D_LIVE=true;
 var G3D_TESTERS=['csel8','runnyj','malikwillislover','slimeyb3','jordantest'];   // tester accounts (lowercased usernames)
-const G3D_API=1;                                          // the golfer3d.js API this page was written against
+const G3D_API=2;                                          // the golfer3d.js API this page was written against (2: pic, cached)
 /* ---- THE 3D COURSE (golf/tracer3d.js): Tour Tracer's tile with volume and light, in the golfer's style.
    Live for everybody. T3D_LIVE=false is the kill switch, back to the tester list. A blocked or stale module, or a draw that
    throws, falls back to the flat tile, so nobody is ever shown a blank hole. ---- */
@@ -23316,6 +23339,35 @@ function g3dOn(){
     return sbSignedIn() && G3D_TESTERS.indexOf((sbUsername||'').toLowerCase())>=0;
   }catch(e){ return false; }
 }
+/* ---- THE 3D MENU GOLFER (golfer3d.js pic()): the golfer at x3 in the menus (the First Tee, Me, the closet, player
+   cards, leaderboards) and the hat, glasses, club and cleat tiles drawn from the same model. It rides the First
+   Tee's switch (ftLive), so testers see it now and everybody sees it when the new home goes live. Anything it
+   cannot draw falls back to today's picture. A drawing costs 10 to 45 ms: a task draws up to G3M_BUDGET ms of new
+   pictures at once, and the rest go up blank and are drawn while the page is idle (a leaderboard of new looks). ---- */
+const G3M_BUDGET=90;
+const G3M_BLANK='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+function g3dMenuOn(){ try{ return ftLive() && g3dOn() && typeof RTT_G3D.pic==='function'; }catch(e){ return false; } }
+let _g3mSpent=0, _g3mN=0; const _g3mQ=[], _g3mIds=new Map();
+function g3dPic(look,part){
+  if(!g3dMenuOn()) return null;
+  try{
+    if(RTT_G3D.cached(look,part)) return RTT_G3D.pic(look,part);
+    if(_g3mSpent<G3M_BUDGET){ if(!_g3mSpent) setTimeout(()=>{ _g3mSpent=0; },0);
+      const t=performance.now(), r=RTT_G3D.pic(look,part); _g3mSpent+=Math.max(1,performance.now()-t); return r; }
+    const k=part+'|'+JSON.stringify(look); let id=_g3mIds.get(k);
+    if(!id){ id='g'+(++_g3mN); _g3mIds.set(k,id); _g3mQ.push([look,part,id]); if(_g3mQ.length===1) g3dDrain(); }
+    return {url:G3M_BLANK,pend:id};
+  }catch(e){ return null; }
+}
+function g3dDrain(){ const idle=window.requestIdleCallback||(f=>setTimeout(()=>f({timeRemaining:()=>12}),40));
+  idle(dl=>{ while(_g3mQ.length&&dl.timeRemaining()>8){ const [look,part,id]=_g3mQ.shift(); _g3mIds.delete(part+'|'+JSON.stringify(look));
+      let r=null; try{ r=RTT_G3D.pic(look,part); }catch(e){}
+      document.querySelectorAll('img[data-g3d="'+id+'"]').forEach(im=>{ im.removeAttribute('data-g3d'); if(r) im.src=r.url; }); }
+    if(_g3mQ.length) g3dDrain(); }); }
+function g3dSrc(g){ return `src="${g.url}"${g.pend?` data-g3d="${g.pend}"`:''}`; }
+function g3dTile(g){ return `<span class="sthumb"><img ${g3dSrc(g)} style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`; }
+// an item drawn alone: on the default golfer, so a tile is the item and not the player's own look
+function g3dItemLook(o){ return Object.assign({},DEFLOOK,{cap:false},o); }
 // screen vector -> the golfer's frames. 0 degrees is up the screen.
 // THE PUTTER YOU EQUIPPED IS THE ONE IN YOUR HANDS on a putt, whatever club set you carry: the 3D golfer draws
 // it in its own finish (its sprite is registered as pu_<id>), and The Magic Wand is the wand.
@@ -30214,10 +30266,11 @@ function drawPlayerCard(ctx,W,H,o){
   for(let y=wy;y<wy+wh;y++) for(let x=wx;x<wx+ww;x++){ const d=Math.min(x-wx,y-wy,wx+ww-1-x,wy+wh-1-y);
     if(d===0||d===3) top.put(x,y,P.K); else if(d<=2) top.put(x,y,(x-wx+y-wy<(ww+wh)/2)?P.GOLD[1]:P.GOLD[4]); }
   // the OVR shield on the window's corner
-  { const ov=''+(o.ovr==null?'':o.ovr), bw=ovrShieldW(ov), bx=206-bw, by=170, bh=32;   // 100 and up: wider, right edge fixed
+  { const ov=''+(o.ovr==null?'':o.ovr), bw=ovrShieldW(ov), bx=206-bw, by=170, bh=32, icon=ovrIcon(+o.ovr);   // 100 and up: wider, right edge fixed
     for(let y=by;y<by+bh;y++){ const inset=y>by+bh-10?Math.round((y-(by+bh-10))*1.4):0;
-      for(let x=bx+inset;x<bx+bw-inset;x++){ const j=y-by; top.put(x,y, j<2?P.GOLD[0]:j<12?P.GOLD[2]:j<22?P.GOLD[3]:P.GOLD[4]); } }
-    P.text(top,'OVR',bx+Math.round((bw-P.textW('OVR'))/2),by+3,{color:'#5a3a08'});
+      for(let x=bx+inset;x<bx+bw-inset;x++){ const j=y-by;
+        top.put(x,y, icon?ICON_PRISM[Math.floor(((x-bx)+(y-by)*0.6)/7)%ICON_PRISM.length]:j<2?P.GOLD[0]:j<12?P.GOLD[2]:j<22?P.GOLD[3]:P.GOLD[4]); } }   // ICON: prism bands on the diagonal
+    const lab=icon?'ICON':'OVR'; P.text(top,lab,bx+Math.round((bw-P.textW(lab))/2),by+3,{color:icon?'#1b1430':'#5a3a08'});
     const os=P.textW(ov,{scale:2,bold:true})<=bw-4?2:1;
     P.text(top,ov,bx+Math.round((bw-P.textW(ov,{scale:os,bold:true}))/2),by+12,{scale:os,bold:true,color:'#2a1604'}); }
   // the name, on the equipped nameplate when there is one
