@@ -1021,7 +1021,7 @@ function resignings(L, R, Y, news) {
         e.k = Y + yrs - 1;
         e.sal = round1(Math.min(dealPay(L, e.c, a, Y) * (0.92 + r() * 0.16), capFor(Y) * 0.35));
         delete e.pay;
-        if (s >= 84) news.push({ w: s - 80, k: 'deal', c, t: e.n + ' re-signs with the ' + nick(c) + ': ' + NUMW[yrs] + ' years, ' + moneyWords(e.sal * yrs) + '.' });
+        if (s >= 84) news.push({ w: s - 80, k: 'deal', c, t: e.n + ' re-signs with the ' + nick(c) + ': ' + (yrs === 1 ? 'one year' : NUMW[yrs] + ' years') + ', ' + moneyWords(e.sal * yrs) + '.' });
       } else {
         R[c].splice(R[c].indexOf(e), 1);
         e.from = c;
