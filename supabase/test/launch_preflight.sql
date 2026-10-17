@@ -708,7 +708,14 @@ check_rows(sort, migration, what, breaks, ok) as (
       'Bought Putt Putt lives are filed once a checkout session and handed back on the server',
       'A paid lives checkout is charged and the webhook fails until this runs.',
       (select count(*) > 0 from col where tbl = 'putt_lives_buys' and name = 'given')
-      and (select count(*) > 0 from proc where name = 'putt_lives_buy'))
+      and (select count(*) > 0 from proc where name = 'putt_lives_buy')),
+  -- SPARE LIVES FILL THE HEARTS. Without it a signed in player's spares are never
+  -- spent: they wait as +N and come out only from the out of lives sheet. Nothing throws.
+  (61, '150_putt_lives_spares',
+      'A Putt Putt spare life fills a heart on the server, once a spare',
+      'Spares do not fill the hearts. They wait until the player is out of lives.',
+      (select count(*) > 0 from col where tbl = 'putt_lives_spares' and name = 'spare_id')
+      and (select count(*) > 0 from proc where name = 'putt_lives_spare'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

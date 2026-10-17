@@ -88,6 +88,9 @@ node golf/econ-sim.mjs                      a casual, regular and heavy player t
 - `putt_lives_refill` carries its own copy of `PUTT_TESTERS`: keep the two lists in step.
 - **A heart is three lives**: 9, or 18 with a Tour Pass, and every lost life comes back 24 hours after it went
   (`146_putt_lives_nine.sql`, `st.back`). Deploy 146 before the page that reads `back_at`.
+- **A spare life fills a heart** whenever the hearts are below the max (`spareFill`). Signed in, only the server
+  fills it (`putt_lives_spare`, `150_putt_lives_spares.sql`, keyed by the spare's id), cancelling the clock due
+  back last. Deploy 150 before the page. Its SQL test runs in `putt-check.yml`.
 - **Paid lives** (nine for $4.99, three for $2.99, `PUTT_LIVES_ENABLED`) sell through the site's own checkout, not
   `create-checkout`. The Store Agent owns them. The switch, `LIVES_BUY` (packs, prices and their order) and the
   server's `PUTT_LIVES` move together: `node scripts/stripe/check-putt-lives.mjs`.
