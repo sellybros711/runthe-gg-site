@@ -35,6 +35,8 @@ var RLABEL = { common: 'Common', rare: 'Rare', epic: 'Epic', legendary: 'Legenda
 var RCOL = { common: '#aeb4bf', rare: '#5b9bff', epic: '#b47cff', legendary: '#f2c23a' };
 var LOOKNAME = { street: 'Off court', court: 'On court', both: 'Either look' };
 var REEL_N = 34, REEL_WIN = 28, CELL = 92, GAP = 8, SPIN_MS = 4600;
+/* how long each piece of five holds the spotlight, and the most the five may take */
+var DWELL = { common: 950, rare: 1200, epic: 1650, legendary: 2000 }, SPOT_MAX = 6200;
 
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 function money(n){ return Math.round(n).toLocaleString('en-US'); }
@@ -90,9 +92,9 @@ function pane(host, o){
       + (r.refund ? '<span class="sh-chip gold">' + coin('sh-coini') + '+' + money(r.refund) + '</span>' : '');
   }
   /* the small card: the bundle's flip and the summary */
-  function card(r){
+  function card(r, best){
     var it = r.item;
-    return '<div class="sh-card r-' + it.rarity + '" style="--rc:' + RCOL[it.rarity] + '" data-id="' + it.id + '"><div class="sh-cfig">' + figFor(it, 2) + '</div>'
+    return '<div class="sh-card r-' + it.rarity + (best ? ' is-best' : '') + '" style="--rc:' + RCOL[it.rarity] + '" data-id="' + it.id + '">' + (best ? '<span class="sh-ribbon">Best pull</span>' : '') + '<div class="sh-cfig">' + figFor(it, best ? 3 : 2) + '</div>'
       + '<b class="sh-cr">' + RLABEL[it.rarity] + '</b><span class="sh-cn">' + esc(it.name) + '</span>'
       + '<span class="sh-cl">' + LOOKNAME[it.ctx] + (it.slot === 'idle' ? ' · Idle' : '') + '</span>'
       + '<span class="sh-cd' + (r.dup ? ' dup' : '') + '">' + (r.dup ? 'Duplicate' : 'New') + '</span></div>';
@@ -299,14 +301,62 @@ function pane(host, o){
     ov.querySelector('.sh-skip').onclick = land;
   }
 
+  /* FIVE AT ONCE IS FIVE MOMENTS, not a list. The five are dealt face down
+     in a row; then each comes up into the spotlight in turn, the commons
+     first and the rarest last, in its rarity's light (a shake before an
+     epic or better, and the confetti when it lands). A tap moves on, Skip
+     goes to the hand, and the whole show is held under SPOT_MAX so five
+     legendaries do not keep a player waiting. Every granted item has its
+     turn in the spotlight and its card in the hand (check-closet 9). */
   function flip(res, title, show){
     var pack = show.pack || 'street';
-    phase('flip', '<div class="sh-ovt">' + esc(title) + '</div><div class="sh-flips">' + res.map(function(r){
-      return '<span class="sh-fl" style="--rc:' + RCOL[r.item.rarity] + '"><span class="sh-fli"><span class="sh-flb">' + packImg(pack, 'sh-flimg') + '</span><span class="sh-flf">' + card(r) + '</span></span></span>';
-    }).join('') + '</div><div class="sh-ovfoot"></div>');
-    var fl = ov.querySelectorAll('.sh-fl');
-    fl.forEach(function(el, i){ setTimeout(function(){ if (!live()) return; el.classList.add('on'); var rr = res[i].item.rarity; if (rr === 'epic' || rr === 'legendary') { el.classList.add('big'); boom(RCOL[rr]); } }, 380 + i * 460); });
-    setTimeout(function(){ if (live()) reveal(res, title, show); }, 380 + res.length * 460 + 700);
+    var order = res.map(function(r, i){ return i; }).sort(function(a, b){ return PK.RANK.indexOf(res[a].item.rarity) - PK.RANK.indexOf(res[b].item.rarity) || a - b; });
+    var dw = order.map(function(i){ return DWELL[res[i].item.rarity] || DWELL.common; });
+    var sum = dw.reduce(function(a, b){ return a + b; }, 0), fit = Math.min(1, SPOT_MAX / sum);
+    dw = dw.map(function(d){ return Math.round(d * fit); });
+    phase('flip', '<div class="sh-ovt">' + esc(title) + '</div><div class="sh-spot" aria-live="polite"></div><div class="sh-n5"></div><div class="sh-flips">' + res.map(function(r, i){
+      var it = r.item;
+      return '<span class="sh-fl" data-i="' + i + '" style="--rc:' + RCOL[it.rarity] + '"><span class="sh-fli"><span class="sh-flb">' + packImg(pack, 'sh-flimg') + '</span><span class="sh-flf"><span class="sh-thumb"><b>' + RLABEL[it.rarity] + '</b>' + icon(it, 'sh-ticon') + '</span></span></span></span>';
+    }).join('') + '</div><button type="button" class="sh-skip">Skip</button>');
+    var fl = ov.querySelectorAll('.sh-fl'), spot = ov.querySelector('.sh-spot'), n5 = ov.querySelector('.sh-n5');
+    var k = -1, timer = null, done = false;
+    function finish(){ if (done || !live()) return; done = true; clearTimeout(timer); reveal(res, title, show); }
+    function step(){
+      if (!live() || done) return;
+      k++;
+      if (k >= order.length) { finish(); return; }
+      var i = order[k], r = res[i], rr = r.item.rarity, big = rr === 'epic' || rr === 'legendary', el = fl[i];
+      fl.forEach(function(x){ x.classList.remove('lit'); });
+      var pre = big ? 420 : 0;
+      if (big) el.classList.add('shake');
+      setTimeout(function(){
+        if (!live() || done) return;
+        el.classList.remove('shake'); el.classList.add('on', 'lit');
+        spot.innerHTML = spotCard(r);
+        spot.style.setProperty('--rc', RCOL[rr]);
+        n5.textContent = (k + 1) + ' of ' + order.length;
+        flash(RCOL[rr]);
+        if (big) boom(RCOL[rr]);
+      }, pre);
+      timer = setTimeout(step, dw[k] + (k === order.length - 1 ? 500 : 0));
+    }
+    spot.onclick = function(){ if (k >= 0 && !done) { clearTimeout(timer); step(); } };
+    ov.querySelector('.sh-skip').onclick = finish;
+    timer = setTimeout(step, 420);
+  }
+  /* the spotlight's card: the single reveal's card, a size down */
+  function spotCard(r){
+    var it = r.item;
+    return '<div class="sh-card sh-scard r-' + it.rarity + '" data-id="' + it.id + '" style="--rc:' + RCOL[it.rarity] + '"><span class="sh-ribbon">' + RLABEL[it.rarity] + '</span>'
+      + '<div class="sh-cfig">' + figFor(it, 3) + '</div>'
+      + '<span class="sh-rmeta">' + icon(it, 'sh-ricon') + '<span><span class="sh-cn">' + esc(it.name) + '</span><span class="sh-cl">' + LOOKNAME[it.ctx] + (it.slot === 'idle' ? ' · Idle' : '') + '</span></span></span>'
+      + '<span class="sh-chips">' + dupNote(r) + '</span></div>';
+  }
+  /* the room lights in the rarity's colour for a beat as a piece lands */
+  function flash(col){
+    if (reduced() || !ov) return;
+    var f = document.createElement('span'); f.className = 'sh-flash'; f.style.setProperty('--fc', col); ov.appendChild(f);
+    setTimeout(function(){ if (f.parentNode) f.parentNode.removeChild(f); }, 700);
   }
 
   function reveal(res, title, show){
@@ -321,13 +371,16 @@ function pane(host, o){
         + '<span class="sh-chips">' + dupNote(r) + '</span></div></div>';
     } else {
       var gained = res.filter(function(x){ return !x.dup; }).length, back = res.reduce(function(a, x){ return a + (x.refund || 0); }, 0);
-      html += '<div class="sh-cards many">' + res.map(card).join('') + '</div>'
+      /* THE HAND: best first, and the best pull stands bigger than the rest */
+      var hand = res.slice().sort(function(a, b){ return PK.RANK.indexOf(b.item.rarity) - PK.RANK.indexOf(a.item.rarity); });
+      html += '<div class="sh-cards many sh-hand">' + hand.map(function(x, j){ return j ? card(x) : card(x, true); }).join('') + '</div>'
         + '<p class="sh-ovs">' + gained + ' new' + (back ? ' · ' + money(back) + ' coins back for duplicates' : '') + '</p>';
     }
     html += '<div class="sh-ovbtns">';
     if (one && !r.dup && it.slot) html += '<button type="button" class="k-btn sh-wear">Put it on</button>';
     html += '<button type="button" class="k-btn k-sec sh-done">' + (one ? 'Nice' : 'Done') + '</button></div></div>';
     phase('reveal', html);
+    if (one) flash(RCOL[it.rarity]);
     if (big) boom(RCOL[it.rarity]);
     var w = ov.querySelector('.sh-wear');
     if (w) w.onclick = function(){ var ctx = it.ctx === 'court' ? 'court' : 'street'; W.equip(ctx, it.slot, it.id); w.disabled = true; w.textContent = 'On him now'; };
@@ -383,9 +436,10 @@ var CSS = [
 '@keyframes sh-coinspin{0%,72%,100%{transform:scaleX(1);}80%{transform:scaleX(.15);}88%{transform:scaleX(1);}}',
 '.sh-bal b{font:400 16px var(--k-f-pixel);color:var(--k-gold);text-shadow:0 2px 0 #5a3e0a,0 0 12px rgba(242,194,58,.35);font-variant-numeric:tabular-nums;}',
 '.sh-bal i{font:700 11px var(--k-f-text);font-style:normal;color:var(--k-ink-3);text-transform:uppercase;letter-spacing:.08em;}',
-'.sh-gems{display:flex;gap:3px;}',
-'.sh-gemc{display:flex;align-items:center;gap:3px;padding:3px 5px;background:#0e111c;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--rc) 45%,transparent);}',
-'.sh-gem{width:12px;height:12px;}',
+'.sh-gems{display:flex;gap:2px;}',
+'.sh-gemc{display:flex;align-items:center;gap:2px;padding:3px 4px;background:#0e111c;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--rc) 45%,transparent);}',
+/* a gem is 7 cells and a coin 12: each is drawn at a whole number of pixels a cell */
+'.sh-gem{width:14px;height:14px;}',
 '.sh-gemc i{font:800 12px var(--k-f-text);font-style:normal;color:var(--rc);font-variant-numeric:tabular-nums;}',
 '.sh-coll{display:grid;gap:5px;margin:-4px 0 12px;}',
 '.sh-colt{font:600 12px var(--k-f-text);color:var(--k-ink-3);}.sh-colt b{color:var(--k-gold);font-variant-numeric:tabular-nums;}',
@@ -397,7 +451,7 @@ var CSS = [
 '.sh-count{font:800 11px var(--k-f-text);color:#16181f;background:var(--k-gold);padding:1px 7px;}',
 '.sh-note{margin:0;font-size:12px;color:var(--k-ink-3);}',
 '.sh-welcome{margin:0 0 10px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:center;}',
-'.sh-wpack{width:54px;display:block;transform:rotate(-8deg);filter:drop-shadow(0 6px 8px rgba(0,0,0,.5));animation:sh-bob 3s ease-in-out infinite;}',
+'.sh-wpack{width:40px;display:block;transform:rotate(-8deg);filter:drop-shadow(0 6px 8px rgba(0,0,0,.5));animation:sh-bob 3s ease-in-out infinite;}',
 '.sh-welcome p{margin:6px 0;}',
 '.sh-free{display:grid;gap:8px;}',
 '.sh-buckets{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;}',
@@ -411,7 +465,7 @@ var CSS = [
 ' background:linear-gradient(100deg,color-mix(in srgb,var(--pa) 30%,#141826),#141826 70%);box-shadow:inset 0 0 0 2px var(--pa),0 0 18px -6px var(--pa);position:relative;overflow:hidden;}',
 '.sh-freecard::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.14) 50%,transparent 60%);background-size:260% 100%;animation:sh-foil 3.6s ease-in-out infinite;pointer-events:none;}',
 '.sh-fstage{position:relative;height:70px;display:flex;align-items:center;justify-content:center;}',
-'.sh-fpack{width:44px;position:relative;z-index:1;animation:sh-bob 2.6s ease-in-out infinite;filter:drop-shadow(0 0 8px var(--pa));}',
+'.sh-fpack{width:40px;position:relative;z-index:1;animation:sh-bob 2.6s ease-in-out infinite;filter:drop-shadow(0 0 8px var(--pa));}',
 '.sh-ftx b{display:block;font:400 11px var(--k-f-pixel);line-height:1.5;color:var(--k-ink);}',
 '.sh-ftx i{font:800 11px var(--k-f-text);font-style:normal;color:#7fe0a0;text-transform:uppercase;letter-spacing:.08em;}',
 '.sh-fgo{font:800 13px var(--k-f-text);text-transform:uppercase;letter-spacing:.08em;color:#16181f;background:var(--k-gold);padding:10px 14px;box-shadow:inset 0 -3px 0 #a87a12;}',
@@ -433,7 +487,8 @@ var CSS = [
 '.sh-fstage .sh-rays{width:100px;height:100px;margin:-50px 0 0 -50px;opacity:.4;}',
 '@keyframes sh-spin{to{transform:rotate(360deg);}}',
 '.sh-floor{position:absolute;left:18%;right:18%;bottom:6px;height:9px;border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.6),transparent 70%);animation:sh-shad 3.2s ease-in-out infinite;}',
-'.sh-bob{position:relative;width:72px;animation:sh-bob 3.2s ease-in-out infinite;filter:drop-shadow(0 0 10px color-mix(in srgb,var(--pa) 70%,transparent));}',
+/* the pack art is 40 by 60 cells: it is 40, 80 or 120 wide, never between */
+'.sh-bob{position:relative;width:80px;animation:sh-bob 3.2s ease-in-out infinite;filter:drop-shadow(0 0 10px color-mix(in srgb,var(--pa) 70%,transparent));}',
 '.sh-bob::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.32) 50%,transparent 62%);background-size:260% 100%;animation:sh-foil 4.2s ease-in-out 1s infinite;pointer-events:none;mix-blend-mode:screen;}',
 '.sh-packimg{width:100%;display:block;}',
 '@keyframes sh-bob{0%,100%{transform:translateY(0) rotate(-2deg);}50%{transform:translateY(-7px) rotate(2deg);}}',
@@ -443,7 +498,7 @@ var CSS = [
 '.sh-pt{display:flex;flex-direction:column;gap:4px;}',
 '.sh-pt b{font:400 12px/1.45 var(--k-f-pixel);color:var(--k-ink);text-shadow:0 2px 0 rgba(0,0,0,.5);}',
 '.sh-price{display:inline-flex;align-items:center;gap:5px;font:800 15px var(--k-f-text);color:var(--k-gold);font-variant-numeric:tabular-nums;}',
-'.sh-coini{width:14px;height:14px;}',
+'.sh-coini{width:12px;height:12px;}',
 '.sh-pb{margin:6px 0 6px;font-size:12.5px;}',
 '.sh-obar{display:flex;height:6px;gap:1px;margin:0 0 4px;}',
 '.sh-obar i{display:block;min-width:2px;}',
@@ -459,7 +514,7 @@ var CSS = [
 '.sh-exr{display:grid;grid-template-columns:24px minmax(0,6.5em) minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 8px;background:#121625;box-shadow:inset 3px 0 0 var(--rc);}',
 '.sh-exr.ready{background:linear-gradient(90deg,color-mix(in srgb,var(--rc) 22%,#121625),#121625);animation:sh-ready 1.6s ease-in-out infinite;}',
 '@keyframes sh-ready{50%{box-shadow:inset 3px 0 0 var(--rc),0 0 14px -4px var(--rc);}}',
-'.sh-gembig{width:22px;height:22px;filter:drop-shadow(0 0 4px var(--rc));}',
+'.sh-gembig{width:21px;height:21px;filter:drop-shadow(0 0 4px var(--rc));}',
 '.sh-exn{display:flex;flex-direction:column;line-height:1.15;}',
 '.sh-exn b{color:var(--rc);font-size:12px;}.sh-exn i{font-style:normal;font-size:11px;color:var(--k-ink-3);font-variant-numeric:tabular-nums;}',
 '.sh-exbar{display:flex;gap:2px;}',
@@ -479,7 +534,7 @@ var CSS = [
 '.sh-hero{position:relative;width:240px;height:260px;border:0;background:none;cursor:pointer;padding:0;}',
 '.sh-hrays{width:340px;height:340px;margin:-170px 0 0 -170px;opacity:.3;animation-duration:14s;}',
 '.sh-halo{position:absolute;left:50%;top:46%;width:200px;height:200px;margin:-100px 0 0 -100px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--pa) 70%,transparent),transparent 70%);pointer-events:none;}',
-'.sh-float{position:absolute;left:50%;top:50%;width:128px;height:192px;margin:-104px 0 0 -64px;animation:sh-bob 2.6s ease-in-out infinite;}',
+'.sh-float{position:absolute;left:50%;top:50%;width:120px;height:180px;margin:-98px 0 0 -60px;animation:sh-bob 2.6s ease-in-out infinite;}',
 '.sh-pbody,.sh-ptop{position:absolute;inset:0;}',
 '.sh-heroimg{width:100%;height:100%;display:block;filter:drop-shadow(0 12px 16px rgba(0,0,0,.6));}',
 '.sh-ptop{clip-path:inset(0 0 88% 0);}.sh-pbody{clip-path:inset(12% 0 0 0);}',
@@ -504,7 +559,7 @@ var CSS = [
 '.sh-cell{flex:0 0 ' + CELL + 'px;height:132px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:6px 4px;',
 ' background:linear-gradient(180deg,color-mix(in srgb,var(--rc) 26%,#121625),#121625 64%);box-shadow:inset 0 0 0 2px var(--rc);}',
 '.sh-cell b{font:800 8.5px var(--k-f-text);text-transform:uppercase;letter-spacing:.08em;color:var(--rc);}',
-'.sh-cicon{width:56px;height:56px;filter:drop-shadow(0 4px 4px rgba(0,0,0,.5));}',
+'.sh-cicon{width:64px;height:64px;filter:drop-shadow(0 4px 4px rgba(0,0,0,.5));}',
 '.sh-cell i{font:700 10px/1.15 var(--k-f-text);font-style:normal;color:var(--k-ink);max-height:24px;overflow:hidden;}',
 '.sh-cell.win{box-shadow:inset 0 0 0 3px var(--rc),0 0 26px var(--rc);animation:sh-pop .55s ease;}',
 '@keyframes sh-pop{45%{transform:scale(1.1);}}',
@@ -513,13 +568,32 @@ var CSS = [
 '.sh-ptr::before,.sh-ptr::after{content:"";position:absolute;left:50%;transform:translateX(-50%);border-left:8px solid transparent;border-right:8px solid transparent;}',
 '.sh-ptr::before{top:0;border-top:10px solid var(--k-gold);}.sh-ptr::after{bottom:0;border-bottom:10px solid var(--k-gold);}',
 '.sh-skip{border:0;background:none;color:var(--k-ink-3);font:800 12px var(--k-f-text);text-transform:uppercase;letter-spacing:.1em;text-decoration:underline;text-underline-offset:3px;min-height:40px;cursor:pointer;}',
-'.sh-flips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-width:520px;}',
-'.sh-fl{width:92px;height:160px;perspective:900px;}',
+'.sh-flips{display:flex;flex-wrap:nowrap;justify-content:center;gap:6px;max-width:520px;}',
+'.sh-fl{width:62px;height:93px;perspective:700px;transition:transform .25s ease;}',
+'.sh-fl.lit{transform:translateY(-8px);}',
+'.sh-fl.shake .sh-fli{animation:sh-shake .42s linear;}',
+'.sh-thumb{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:linear-gradient(180deg,color-mix(in srgb,var(--rc) 30%,#161a2a),#121625 70%);box-shadow:inset 0 0 0 2px var(--rc);}',
+'.sh-fl.lit .sh-thumb{box-shadow:inset 0 0 0 2px var(--rc),0 0 16px var(--rc);}',
+'.sh-thumb b{font:800 7.5px var(--k-f-text);letter-spacing:.08em;text-transform:uppercase;color:var(--rc);}',
+'.sh-ticon{width:48px;height:48px;}',
+'.sh-spot{position:relative;min-height:330px;width:min(100%,300px);display:flex;align-items:center;justify-content:center;cursor:pointer;}',
+'.sh-spot::before{content:"";position:absolute;left:50%;top:50%;width:460px;height:460px;margin:-230px 0 0 -230px;border-radius:50%;pointer-events:none;opacity:.22;background:repeating-conic-gradient(from 0deg,var(--rc,transparent) 0deg 6deg,transparent 6deg 20deg);-webkit-mask:radial-gradient(circle,#000 12%,transparent 64%);mask:radial-gradient(circle,#000 12%,transparent 64%);animation:sh-spin 18s linear infinite;}',
+'.sh-scard{width:100%;padding:20px 12px 12px;z-index:1;animation:sh-rpop .45s cubic-bezier(.2,1.5,.4,1) backwards;}',
+'.sh-scard.r-epic,.sh-scard.r-legendary{box-shadow:inset 0 0 0 3px var(--rc),0 0 40px -4px var(--rc);}',
+'.sh-scard .sh-cfig{min-height:192px;background:radial-gradient(60% 18% at 50% 96%,rgba(0,0,0,.55),transparent 70%);}',
+'.sh-scard .sh-cfig img,.sh-scard .sh-cfig canvas{width:132px;}',
+'.sh-scard .sh-rmeta .sh-cn{font-size:22px;}',
+'.sh-n5{font:800 11px var(--k-f-text);letter-spacing:.14em;text-transform:uppercase;color:var(--k-ink-3);min-height:14px;font-variant-numeric:tabular-nums;}',
+'.sh-flash{position:fixed;inset:0;pointer-events:none;z-index:1;background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--fc) 55%,transparent),transparent 65%);animation:sh-flashout .6s ease-out forwards;}',
+'@keyframes sh-flashout{from{opacity:1;}to{opacity:0;}}',
+'.sh-hand .sh-card.is-best{grid-column:span 2;grid-row:span 2;justify-content:center;padding-top:22px;box-shadow:inset 0 0 0 3px var(--rc),0 0 30px -6px var(--rc);}',
+'.sh-hand .sh-card.is-best .sh-cfig{min-height:192px;}',
+'.sh-hand .sh-card.is-best .sh-cfig img,.sh-hand .sh-card.is-best .sh-cfig canvas{width:132px;}',
 '.sh-fli{position:relative;display:block;width:100%;height:100%;transition:transform .6s cubic-bezier(.2,.7,.2,1);transform-style:preserve-3d;}',
 '.sh-fl.on .sh-fli{transform:rotateY(180deg);}',
 '.sh-flb,.sh-flf{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;align-items:center;justify-content:center;}',
 '.sh-flf{transform:rotateY(180deg);}',
-'.sh-flimg{width:84px;}',
+'.sh-flimg{width:40px;}',
 '.sh-flf .sh-card{width:100%;height:100%;}',
 '.sh-fl.big .sh-flf .sh-card{box-shadow:inset 0 0 0 2px var(--rc),0 0 22px var(--rc);}',
 '.sh-reveal{display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;max-width:520px;}',
@@ -536,19 +610,21 @@ var CSS = [
 '.sh-rcard::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.14) 50%,transparent 60%);background-size:260% 100%;animation:sh-foil 3.8s ease-in-out .7s infinite;}',
 '@keyframes sh-rpop{0%{transform:scale(.55);opacity:0;}70%{transform:scale(1.06);}100%{transform:scale(1);opacity:1;}}',
 '.sh-ribbon{position:absolute;top:0;left:50%;transform:translateX(-50%);background:var(--rc);color:#10131d;font:800 10.5px var(--k-f-text);letter-spacing:.14em;text-transform:uppercase;padding:4px 16px;}',
-'.sh-cfig{line-height:0;min-height:96px;display:flex;align-items:flex-end;justify-content:center;}',
-'.sh-cfig img,.sh-cfig canvas{width:68px;height:auto;image-rendering:pixelated;}',
-'.sh-rcard .sh-cfig{min-height:236px;background:radial-gradient(60% 18% at 50% 96%,rgba(0,0,0,.55),transparent 70%);}',
-'.sh-rcard .sh-cfig img,.sh-rcard .sh-cfig canvas{width:172px;}',
+/* a figure is 44 art pixels wide: he is shown at 2, 3 or 4 CSS pixels to
+   one (88, 132, 176), never between, or his outline shimmers */
+'.sh-cfig{line-height:0;min-height:128px;display:flex;align-items:flex-end;justify-content:center;}',
+'.sh-cfig img,.sh-cfig canvas{width:88px;height:auto;image-rendering:pixelated;}',
+'.sh-rcard .sh-cfig{min-height:256px;background:radial-gradient(60% 18% at 50% 96%,rgba(0,0,0,.55),transparent 70%);}',
+'.sh-rcard .sh-cfig img,.sh-rcard .sh-cfig canvas{width:176px;}',
 '.sh-rmeta{display:flex;align-items:center;gap:8px;margin-top:8px;text-align:left;}',
-'.sh-ricon{width:40px;height:40px;flex:0 0 auto;}',
+'.sh-ricon{width:48px;height:48px;flex:0 0 auto;}',
 '.sh-rmeta .sh-cn{display:block;font:400 26px/1 var(--k-f-display);letter-spacing:.01em;text-transform:uppercase;color:var(--k-ink);}',
 '.sh-rmeta .sh-cl{display:block;}',
 '.sh-chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px;}',
 '.sh-chip{display:inline-flex;align-items:center;gap:4px;font:800 11px var(--k-f-text);padding:3px 9px;box-shadow:inset 0 0 0 1px var(--rc,#7fe0a0);color:var(--rc,#7fe0a0);}',
 '.sh-chip.new{--rc:#7fe0a0;text-transform:uppercase;letter-spacing:.12em;}',
 '.sh-chip.gold{--rc:var(--k-gold);}',
-'.sh-gemi,.sh-coini{width:12px;height:12px;}',
+'.sh-gemi{width:14px;height:14px;}.sh-coini{width:12px;height:12px;}',
 '.sh-cards{display:flex;justify-content:center;gap:8px;margin:4px 0;width:100%;}',
 '.sh-cards.many{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));}',
 '.sh-choose .sh-card{animation:sh-rpop .5s cubic-bezier(.2,1.5,.4,1) backwards;}',
@@ -560,7 +636,7 @@ var CSS = [
 '.sh-ovbtns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}',
 '.sh-ovbtns .k-btn{min-height:46px;padding:12px 22px;}',
 '.sh-conf{position:fixed;inset:0;pointer-events:none;z-index:2;}',
-'@media (prefers-reduced-motion:reduce){.sh-ov,.sh-rays,.sh-hrays,.sh-rrays,.sh-bob,.sh-bob::after,.sh-floor,.sh-fpack,.sh-wpack,.sh-freecard::after,.sh-coinbig,.sh-rcard,.sh-rcard::after,.sh-burst,.sh-exr.ready,.sh-choose .sh-card{animation:none!important;}.sh-burst{display:none;}}',
+'@media (prefers-reduced-motion:reduce){.sh-ov,.sh-rays,.sh-hrays,.sh-rrays,.sh-bob,.sh-bob::after,.sh-floor,.sh-fpack,.sh-wpack,.sh-freecard::after,.sh-coinbig,.sh-rcard,.sh-rcard::after,.sh-burst,.sh-exr.ready,.sh-choose .sh-card,.sh-scard,.sh-spot::before{animation:none!important;}.sh-burst,.sh-flash{display:none;}}',
 ].join('\n');
 if (typeof document !== 'undefined' && !document.getElementById('rtf-shop-css')) {
   var st = document.createElement('style'); st.id = 'rtf-shop-css'; st.textContent = CSS; document.head.appendChild(st);

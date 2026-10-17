@@ -18,6 +18,10 @@
  *      wears it and keeps it, a press on another tries it on and keeps
  *      nothing, an outfit saves, the career's figure wears what was chosen,
  *      and nothing on a phone runs off the side
+ *   9. the Locker up close, on a 390 phone with motion on: every coin, gem,
+ *      icon and pack a whole number of pixels a cell, the top bar's coin the
+ *      pixel coin, a zoom for every piece, and five packs as five moments
+ *      that show every piece they granted
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -230,6 +234,112 @@ async function browser(){
   const figAfter = await page.evaluate(() => { const i = document.querySelector('#s-car img.rtf-baller, #s-car canvas'); return i ? (i.src || i.toDataURL()) : ''; });
   ok(figAfter && figAfter !== figBefore, '7 the career\'s figure wears what was chosen');
   ok(!boom.length, '7 nothing threw (' + boom.join(' | ') + ')');
+
+  /* 9. THE LOCKER, LOOKED AT CLOSELY (B13, B14, B23; 2026-10-17), on a 390
+     phone at three device pixels a CSS pixel with motion on, the way it is
+     played. */
+  const ctx9 = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true, reducedMotion: 'no-preference' });
+  const p9 = await ctx9.newPage();
+  const boom9 = [];
+  p9.setDefaultTimeout(8000);
+  p9.on('pageerror', (e) => boom9.push(String(e).slice(0, 200)));
+  await p9.addInitScript(() => { try { localStorage.setItem('rtf.guide.v1', '1'); localStorage.setItem('rtf.scenes.v1', 'off'); } catch (e) {} window.RTF_BOARD_URL = 'http://local.test/sb'; });
+  await p9.route('**/*', serve);
+  await p9.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
+  await p9.waitForSelector('#b-career:not([disabled])', { state: 'attached', timeout: 30000 });
+  await p9.evaluate(() => { const st = RTF_AUTH.state; RTF_AUTH.state = () => Object.assign({}, st(), { signedIn: true }); RTF_EARN.settle({}); RTF_WARD.shop.seenWelcome(); RTF_WALLET.award('give', 200000, 'x'); RTF_CAREER_UI.openLocker('street'); });
+  await p9.waitForSelector('#lk-pane .cl-tile');
+  /* every coin, icon and pack on screen is a whole number of CSS pixels a
+     cell: a coin 12 cells, an icon 16, a pack 40, a gem 7. Measured as drawn. */
+  const cells = () => p9.evaluate(() => {
+    const A = RTF_ART, bad = [], seen = {};
+    const rule = [['.k-cb', A.COIN_N, 'coin'], ['img.cl-coin,img.sh-coinbig,img.sh-coini', A.COIN_N, 'coin'], ['img.cl-ic,img.sh-cicon,img.sh-ricon,img.cl-si', A.ICON, 'icon'], ['img.sh-packimg,img.cl-pkimg,img.sh-fpack', A.PW, 'pack'], ['img.sh-gem,img.sh-gembig,img.sh-gemi', A.GEM_N || 7, 'gem']];
+    for (const [sel, n, what] of rule) for (const el of document.querySelectorAll(sel)) {
+      if (!el.offsetParent && getComputedStyle(el).position !== 'fixed') continue;
+      const w = el.offsetWidth; seen[what] = (seen[what] || 0) + 1;
+      if (!n || w % n) bad.push(el.className + ' ' + w + 'px');
+    }
+    return { bad: [...new Set(bad)], seen };
+  });
+  const c1 = await cells();
+  ok(c1.seen.coin >= 2 && c1.seen.icon >= 10, '9 the closet and the top bar draw coins and icons (' + JSON.stringify(c1.seen) + ')');
+  ok(!c1.bad.length, '9 every coin and icon in the closet and the top bar is a whole number of pixels a cell (' + c1.bad.slice(0, 6).join(', ') + ')');
+  ok(await p9.evaluate(() => { const cb = document.querySelector('#ab-coins .k-cb'); return !!cb && getComputedStyle(cb).backgroundImage.indexOf(RTF_ART.coinURL()) >= 0; }), '9 the top bar\'s coin is the pixel coin, the one the shop and the closet draw');
+  /* B13: a piece can be seen big. The picture is the zoom key: a button over
+     the swatch, a sibling of the tile and never inside it */
+  const z0 = await p9.evaluate(() => {
+    const keys = [...document.querySelectorAll('#lk-pane .cl-zoomb[data-zoom]')], tiles = document.querySelectorAll('#lk-pane .cl-tile[data-id]:not([data-id=""])');
+    const off = keys.filter((k) => { const sw = k.parentNode.querySelector('.cl-sw'), a = k.getBoundingClientRect(), b = sw && sw.getBoundingClientRect(); return !b || Math.abs(a.left - b.left) > 1 || Math.abs(a.top - b.top) > 1 || Math.abs(a.width - b.width) > 1; }).length;
+    return { keys: keys.length, tiles: tiles.length, nested: !!document.querySelector('#lk-pane .cl-tile .cl-zoomb'), small: keys.filter((k) => k.offsetWidth < 44 || k.offsetHeight < 44).length, off };
+  });
+  ok(z0.keys > 0 && z0.keys === z0.tiles && !z0.nested, '9 every piece in the closet has a zoom key, a sibling of its tile and not inside it (' + z0.keys + ' of ' + z0.tiles + ')');
+  ok(!z0.small && !z0.off, '9 and each key is its picture, a thumb wide (' + z0.small + ' under 44px, ' + z0.off + ' off the picture)');
+  /* a step that cannot happen (no zoom key, no spotlight) is a failure, said
+     as one, and the section goes on */
+  const step9 = async (name, f) => { try { await f(); } catch (e) { ok(false, '9 ' + name + ' (' + String(e.message || e).split('\n')[0] + ')'); } };
+  await step9('the zoom opens', async () => {
+  const zid = await p9.evaluate(() => { const t = document.querySelector('#lk-pane .cl-tile.own[data-id]:not(.is-on):not([data-id=""])'); return t && t.dataset.id; });
+  const lo0 = await p9.evaluate(() => JSON.stringify(RTF_WARD.loadout('street')));
+  await p9.click('#lk-pane .cl-zoomb[data-zoom="' + zid + '"]');
+  await p9.waitForSelector('.cl-zoom .cl-zimg');
+  const z1 = await p9.evaluate((id) => {
+    const im = document.querySelector('.cl-zoom .cl-zimg'), r = im.getBoundingClientRect(), tile = document.querySelector('#lk-pane .cl-tile[data-id="' + id + '"] img.cl-ic');
+    return { id: document.querySelector('.cl-zoom').getAttribute('data-id'), w: r.width, h: r.height, x: r.left, y: r.top, same: !!tile && tile.src === im.src, pix: getComputedStyle(im).imageRendering, in: r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight, lo: JSON.stringify(RTF_WARD.loadout('street')) };
+  }, zid);
+  ok(z1.id === zid && z1.same, '9 the zoom key opens that piece, its own picture (' + z1.id + ')');
+  ok(z1.w >= 128 && z1.w % 16 === 0 && z1.w === z1.h, '9 the zoom draws its 16 cells at a whole number of pixels each, at least 8 (' + z1.w + 'px, ' + (z1.w / 16) + ' a cell)');
+  ok(Number.isInteger(z1.x * 3) && Number.isInteger(z1.y * 3) && /pixelated|crisp/.test(z1.pix), '9 on whole device pixels, unsmoothed (' + z1.x + ', ' + z1.y + ', ' + z1.pix + ')');
+  ok(z1.in, '9 and the whole of it is on a 390 phone');
+  ok(z1.lo === lo0, '9 opening the zoom puts nothing on');
+  await p9.click('.cl-zoom .cl-zstep[data-zstep="1"]');
+  ok(await p9.evaluate((id) => document.querySelector('.cl-zoom').getAttribute('data-id') !== id, zid), '9 next walks to the next piece');
+  await p9.click('.cl-zoom .cl-zstep[data-zstep="-1"]');
+  await p9.click('.cl-zoom [data-zgo="wear"]');
+  ok(await p9.evaluate((id) => RTF_WARD.loadout('street')[RTF_CATALOG.item(id).slot] === id && !!document.querySelector('.cl-zoom .cl-zgo[disabled]'), zid), '9 Put it on wears the piece he owns, and says so');
+  await p9.keyboard.press('Escape');
+  ok(await p9.evaluate(() => !document.querySelector('.cl-zoom') && !document.getElementById('rtf-locker').hidden), '9 Escape closes the zoom and leaves the Locker open');
+  const lock = await p9.evaluate(() => { const t = document.querySelector('#lk-pane .cl-tile.lock[data-id]'); return t && t.dataset.id; });
+  await p9.click('#lk-pane .cl-zoomb[data-zoom="' + lock + '"]');
+  await p9.click('.cl-zoom [data-zgo="try"]');
+  ok(await p9.evaluate((id) => !document.querySelector('.cl-zoom') && !!document.querySelector('#lk-pane .cl-try') && RTF_WARD.loadout('street')[RTF_CATALOG.item(id).slot] !== id, lock), '9 Try it on on a piece he does not own tries it on and keeps nothing');
+  });
+  await p9.evaluate(() => { const z = document.querySelector('.cl-zoom'); if (z) z.remove(); });
+  /* the shop: the same whole cells, and the figure at a whole scale */
+  await p9.click('[data-ktab="shop"]');
+  await p9.waitForSelector('#lk-pane .sh-pack');
+  const c2 = await cells();
+  ok(c2.seen.coin >= 3 && c2.seen.pack >= 3 && c2.seen.gem >= 4, '9 the shop draws coins, packs and gems (' + JSON.stringify(c2.seen) + ')');
+  ok(!c2.bad.length, '9 every coin, gem and pack in the shop is a whole number of pixels a cell (' + c2.bad.slice(0, 6).join(', ') + ')');
+  /* B23: five packs are five moments. Each granted piece comes up into the
+     spotlight once, the rarest last, and the hand at the end holds all five */
+  await step9('five packs play as five moments', async () => {
+  const po0 = await p9.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('rtf.ward.v1')).po || {}));
+  await p9.click('#lk-pane [data-open5="street"]'); await p9.click('#lk-pane [data-open5="street"]');
+  await p9.waitForSelector('.sh-ov .sh-tear');
+  await p9.evaluate(() => {
+    window.__spot = []; window.__figw = [];
+    new MutationObserver(() => { const c = document.querySelector('.sh-ov .sh-spot .sh-scard'); if (c && c !== window.__last) { window.__last = c; window.__spot.push(c.getAttribute('data-id')); } }).observe(document.body, { subtree: true, childList: true });
+    document.querySelector('.sh-ov .sh-tear').click();
+  });
+  await p9.waitForSelector('.sh-ov .sh-spot', { timeout: 5000 });
+  const dealt = await p9.evaluate(() => document.querySelectorAll('.sh-ov .sh-fl').length);
+  await p9.waitForSelector('.sh-ov .sh-reveal .sh-hand', { timeout: 12000 });
+  const five = await p9.evaluate((before) => {
+    const po = JSON.parse(localStorage.getItem('rtf.ward.v1')).po, got = Object.keys(po).filter((k) => before.indexOf(k) < 0).map((k) => po[k][3]);
+    const RANK = RTF_PACKS.RANK, rk = (id) => RANK.indexOf(RTF_CATALOG.item(id).rarity);
+    const hand = [...document.querySelectorAll('.sh-ov .sh-reveal .sh-card')].map((c) => c.getAttribute('data-id'));
+    const figs = [...document.querySelectorAll('.sh-ov .sh-reveal .sh-cfig > img, .sh-ov .sh-reveal .sh-cfig > canvas, .sh-ov .sh-reveal .sh-cfig > * > img, .sh-ov .sh-reveal .sh-cfig > * > canvas')].map((i) => i.offsetWidth);
+    return { got: got.sort(), spot: window.__spot.slice(), hand, best: hand.length && rk(hand[0]) === Math.max(...hand.map(rk)), lastRarest: window.__spot.length && rk(window.__spot[window.__spot.length - 1]) === Math.max(...window.__spot.map(rk)), figs };
+  }, po0);
+  ok(dealt === 5, '9 five packs are dealt face down (' + dealt + ')');
+  ok(five.got.length === 5 && JSON.stringify(five.spot.slice().sort()) === JSON.stringify(five.got), '9 every granted piece has its turn in the spotlight, once (' + five.spot.join(', ') + ' / ' + five.got.join(', ') + ')');
+  ok(five.lastRarest, '9 the rarest comes up last');
+  ok(JSON.stringify(five.hand.slice().sort()) === JSON.stringify(five.got) && five.best, '9 the hand shows every piece granted, the best pull first (' + five.hand.join(', ') + ')');
+  ok(five.figs.length === 5 && five.figs.every((w) => w % 44 === 0), '9 and every figure in it is a whole number of pixels to his 44 (' + five.figs.join(', ') + ')');
+  await p9.click('.sh-ov .sh-done');
+  });
+  ok(!boom9.length, '9 nothing threw (' + boom9.join(' | ') + ')');
+  await ctx9.close();
   await b.close();
 }
 
