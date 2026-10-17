@@ -10,6 +10,7 @@ name: Shut The Door data
 #   verify_scenarios.py  every candidate spot's facts (data/verify)
 #   closers.py           the regular-season scenario search (data/verify)
 #   closer_pool.py       the 2015+ closer pool's policies (data/closers.json)
+#   pros.py              the lesson's pro examples, real pitches (cache/pros.json)
 #   build_packs.py       the ten packs, staged
 #   pool.js              hold% tables, the closer pool's 2,000+ outings per pack
 #                        (data/packs)
@@ -85,15 +86,17 @@ jobs:
       - name: The regular-season search
         run: python3 closers.py
 
-      - name: The closer pool
-        run: python3 closer_pool.py
+      - name: The closer pool, and the lesson's pro examples
+        run: |
+          python3 closer_pool.py
+          python3 pros.py
 
       - name: The packs
         run: |
           python3 build_packs.py ${{ inputs.only }}
           mkdir -p ../data/packs
           for f in cache/stage/*.json; do
-            node ../pool.js "$f" ../data/closers.json "../data/packs/$(basename "$f")" --runs 2000
+            node ../pool.js "$f" ../data/closers.json "../data/packs/$(basename "$f")" --runs 2000 --pros cache/pros.json
           done
           node build_schedule.mjs
           python3 calibrate.py
@@ -103,7 +106,9 @@ jobs:
         run: |
           node test/packs.mjs | tee pipeline/packs-test.txt || true
           node test/api.mjs
+          node test/lesson.mjs
           node check-replays.mjs --self-test
+          cd pipeline && python3 check_pros.py
 
       - name: Report
         if: ${{ always() }}

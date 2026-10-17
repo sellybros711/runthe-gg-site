@@ -40,6 +40,8 @@ const NODE = typeof module !== 'undefined' && module.exports;
 const K = NODE ? require('./contract.js') : window.STD_CONTRACT;
 const R = NODE ? require('./rng.js') : window.STD_RNG;
 const G = NODE ? require('./grade.js') : window.STD_GRADE;
+/* lesson.js is optional at load: without it the result has lesson null */
+const L = NODE ? require('./lesson.js') : (window.STD_LESSON || null);
 
 const ENGINE_VERSION = 1;
 const PACK_VERSION = 1;
@@ -90,7 +92,7 @@ function createOuting(pack, opts) {
     rng: R.mulberry32(seed),
     st, status: 'live', outcome: null,
     score: { us: sc.situation.score.us, them: sc.situation.score.them },
-    log: [], grades: [], calls: [],
+    log: [], grades: [], calls: [], before: [],
   };
   return o;
 }
@@ -110,6 +112,7 @@ function throwPitch(o, call) {
 
   // 1. the grade, before anything is drawn
   const grade = G.gradeCall(model, st, call);
+  o.before.push({ bi: st.bi, b: st.b, s: st.s, outs: st.outs, bases: st.bases, margin: st.margin });
 
   // 2. the four draws, always all four
   const d = R.pitchDraws(o.rng);
@@ -291,6 +294,7 @@ function finishOuting(o, extra) {
     reveal,
     vsReal: vsReal(o.outcome, runs, reveal),
     runs,
+    lesson: L ? L.lessonFor(o) : null,
     share: (extra && extra.share) || '',
   };
 }

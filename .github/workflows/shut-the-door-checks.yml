@@ -56,13 +56,15 @@ jobs:
         run: node shut-the-door/test/packs.mjs
       - name: The four calls and the daily's promises
         run: node shut-the-door/test/api.mjs
+      - name: The lesson
+        run: node shut-the-door/test/lesson.mjs
       - name: Stored results replay
         run: node shut-the-door/check-replays.mjs --self-test
       - name: No em or en dashes
         run: node scripts/check-dashes.mjs shut-the-door
       - name: The copy rules, on the files that hold player copy
         run: |
-          for f in shut-the-door/grade.js shut-the-door/engine.js shut-the-door/share.js shut-the-door/api.js; do
+          for f in shut-the-door/grade.js shut-the-door/engine.js shut-the-door/share.js shut-the-door/api.js shut-the-door/lesson.js; do
             node scripts/check-copy.mjs "$f"
           done
 

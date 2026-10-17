@@ -1,7 +1,7 @@
 /* Shut The Door: the closer pool, run through a scenario with the engine.
  *
  * Node only, at build time (the page never loads it):
- *   node shut-the-door/pool.js <staged pack.json> <closers.json> <out pack.json> [--runs 2000]
+ *   node shut-the-door/pool.js <staged pack.json> <closers.json> <out pack.json> [--runs 2000] [--pros cache/pros.json]
  *
  * What it does to a staged pack (pipeline/build_packs.py writes those):
  *   1. solves hold% for every state under best play (grade.js) and stores the
@@ -11,7 +11,8 @@
  *      the sorted outing scores as pack.pool.scores
  *   3. keeps each closer's name, style vector and reason as pack.pool.closers,
  *      for pitched like
- *   4. reports the calibration the brief asks for (band spread, the pool's
+ *   4. keeps the lesson's pro examples this pack can show (attachPros)
+ *   5. reports the calibration the brief asks for (band spread, the pool's
  *      hold rate) in pack.build.pool, and writes the pack minified
  *
  * A CLOSER'S CALL
@@ -131,6 +132,51 @@ function quantiles(xs, qs) {
   return qs.map(q => s[Math.min(s.length - 1, Math.floor(q * s.length))]);
 }
 
+/* The pro examples this pack can use (CONTRACT.md section 15). A lesson's pro
+   matches the best call's family and batter-relative cell (or a neighbour), in
+   the state's count bucket and platoon. The best calls of every state are in
+   the hold table, so only rows within one cell of one of those can ever be
+   shown: those are kept, and the rest stay out of the download. */
+function attachPros(pack, pros, model) {
+  if (!pros) return;
+  const thr = pack.scenario.pitcher.throws;
+  const want = new Map();             // bucket|platoon|family -> Set(rel cells)
+  const h = pack.hold;
+  for (let bi = 0; bi < model.N; bi++) {
+    const bats = pack.scenario.batters[bi].bats;
+    const platoon = bats === thr ? 'same' : 'opp';
+    for (let b = 0; b < 4; b++) for (let s = 0; s < 3; s++) for (let o = 0; o < 3; o++) for (let bs = 0; bs < 8; bs++)
+      for (let m = 1; m <= model.M; m++) {
+        const i = G.stateIndex(model.N, model.M, bi, b, s, o, bs, m);
+        const bc = h.b[i];
+        if (bc == null) continue;
+        const type = model.types[Math.floor(bc / 25)], cell = bc % 25;
+        const rel = bats === 'L' ? K.rowOf(cell) * 5 + (4 - K.colOf(cell)) : cell;
+        const key = `${G.BUCKETS[G.bucketOf(b, s)]}|${platoon}|${K.FAMILY_OF[type]}`;
+        if (!want.has(key)) want.set(key, new Set());
+        want.get(key).add(rel);
+      }
+  }
+  const near = (a, set) => { for (const c of set) if (Math.max(Math.abs(K.rowOf(a) - K.rowOf(c)), Math.abs(K.colOf(a) - K.colOf(c))) <= 1) return true; return false; };
+  const rows = {}, pi = new Map(), bi2 = new Map(), pitchers = [], batters = [];
+  for (const [key, list] of Object.entries(pros.rows)) {
+    const rest = key.slice(key.indexOf('|') + 1);
+    const set = want.get(rest);
+    if (!set) continue;
+    const kept = [];
+    for (const r of list) {
+      const rel = r[10] === 'L' ? K.rowOf(r[9]) * 5 + (4 - K.colOf(r[9])) : r[9];
+      if (!near(rel, set)) continue;
+      const pn = pros.pitchers[r[0]], bn = pros.batters[r[1]];
+      if (!pi.has(pn)) { pi.set(pn, pitchers.length); pitchers.push(pn); }
+      if (!bi2.has(bn)) { bi2.set(bn, batters.length); batters.push(bn); }
+      kept.push([pi.get(pn), bi2.get(bn)].concat(r.slice(2)));
+    }
+    if (kept.length) rows[key] = kept;
+  }
+  pack.pros = { pitchers, batters, rows };
+}
+
 function build(pack, closersFile, opts) {
   const runs = (opts && opts.runs) || 2000;
   const t0 = Date.now();
@@ -138,6 +184,7 @@ function build(pack, closersFile, opts) {
   pack.hold = fresh.holdTable();
   const solveMs = Date.now() - t0;
   const model = new G.Model(pack);
+  attachPros(pack, opts && opts.pros, model);
   const closers = closersFile.closers;
   const pool = runPool(pack, closers, runs, model);
   pack.pool = {
@@ -163,10 +210,12 @@ if (NODE && require.main === module) {
   const a = process.argv.slice(2);
   const runsAt = a.indexOf('--runs');
   const runs = runsAt >= 0 ? +a[runsAt + 1] : 2000;
-  const [inPath, closersPath, outPath] = a.filter((x, i) => !x.startsWith('--') && a[i - 1] !== '--runs');
+  const prosAt = a.indexOf('--pros');
+  const pros = prosAt >= 0 && fs.existsSync(a[prosAt + 1]) ? JSON.parse(fs.readFileSync(a[prosAt + 1], 'utf8')) : null;
+  const [inPath, closersPath, outPath] = a.filter((x, i) => !x.startsWith('--') && a[i - 1] !== '--runs' && a[i - 1] !== '--pros');
   const pack = JSON.parse(fs.readFileSync(inPath, 'utf8'));
   const closers = JSON.parse(fs.readFileSync(closersPath, 'utf8'));
-  build(pack, closers, { runs });
+  build(pack, closers, { runs, pros });
   fs.writeFileSync(outPath, JSON.stringify(pack));
   const b = pack.build;
   console.log(`${pack.scenario.id}: ${(fs.statSync(outPath).size / 1e6).toFixed(2)} MB, start hold ${b.startHold}%, ` +

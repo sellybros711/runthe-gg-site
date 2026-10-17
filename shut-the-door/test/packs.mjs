@@ -99,6 +99,18 @@ function shapeChecks(pack, file) {
     const nb = n => [1, 2, 4].filter(m => n & m).length;
     for (const r of rows) if (o + r[3] < 3 && nb(r[1]) + r[2] + r[3] !== nb(b) + 1) errs.push(`advance ${cat} ${o} ${b} does not conserve`);
   }
+  // the lesson's pro examples: well formed (pipeline/check_pros.py checks each
+  // against the library)
+  const pr = pack.pros;
+  if (!pr || !pr.rows) errs.push('no pros');
+  else for (const [key, rows] of Object.entries(pr.rows)) {
+    const [principle, bucket, platoon, fam] = key.split('|');
+    if (!require('../lesson.js').PRINCIPLES.includes(principle) || !G.BUCKETS.includes(bucket) || !['same', 'opp'].includes(platoon)) errs.push('pros key ' + key);
+    for (const r of rows) {
+      if (r.length !== 13 || pr.pitchers[r[0]] == null || pr.batters[r[1]] == null || !/^\d+:\d+:\d+$/.test(r[12])) { errs.push('pros row ' + key); break; }
+      if (K.FAMILY_OF[r[8]] !== fam || G.BUCKETS[G.bucketOf(r[4], r[5])] !== bucket) { errs.push('pros row out of its key ' + key); break; }
+    }
+  }
   const model = new G.Model(pack);
   if (pack.hold.h.length !== model.N * 12 * 3 * 8 * model.M) errs.push('hold table size');
   if (!(pack.pool.scores.length >= 2000)) errs.push('pool has ' + pack.pool.scores.length + ' runs');
