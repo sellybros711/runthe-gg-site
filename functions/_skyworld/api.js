@@ -7,6 +7,8 @@
  *   GET agent   ?id=<agent>: its last few runs, from its log in the vault
  *   GET tasks   with the page cookie: tasks waiting for the dispatcher, and what it delivered
  *   POST task   with the page cookie: { agent, text, game, layer } queued for that agent's chat
+ *   GET whoami  with the page cookie: { role }, so the page knows whether to offer Merge
+ *   POST merge  an admin's cookie only: { pr, sha } merges an agent's PR (merge.js says what must hold)
  *
  * Anybody who is not on the tester list, signed in or not, gets exactly what an unknown path gets:
  * 404 {"error":"not_found"}. A database or GitHub that fails answers the same, so the world's
@@ -19,7 +21,8 @@ export const NOT_FOUND = { status: 404, body: { error: 'not_found' } };
 
 export async function handle(req, deps){
   const { method, path, bearerUid, cookieUid, query = {}, body = null } = req;
-  if (method !== 'GET' && !(method === 'POST' && path === 'task')) return NOT_FOUND;
+  const writes = path === 'task' || path === 'merge';   // the two writes are POST only, and everything else GET only
+  if (writes ? method !== 'POST' : method !== 'GET') return NOT_FOUND;
   try {
     if (path === 'me') {
       if (!bearerUid || !isTester(await deps.db.role(bearerUid))) return NOT_FOUND;
@@ -30,8 +33,18 @@ export async function handle(req, deps){
       const w = await deps.world();
       return { status: 200, body: { asOf: w.asOf, games: w.games, layers: LAYERS, art: w.art } };
     }
-    if (['ideas', 'agents', 'agent', 'tasks', 'task'].includes(path)) {
-      if (!cookieUid || !isTester(await deps.db.role(cookieUid))) return NOT_FOUND;
+    if (['ideas', 'agents', 'agent', 'tasks', 'task', 'whoami', 'merge'].includes(path)) {
+      const role = cookieUid ? await deps.db.role(cookieUid) : null;
+      if (!isTester(role)) return NOT_FOUND;
+      if (path === 'whoami') return { status: 200, body: { role } };
+      if (path === 'merge') {
+        if (role !== 'admin') return { status: 403, body: { error: 'admins_only' } };
+        if (!deps.canMerge()) return { status: 503, body: { error: 'merge_off' } };
+        const n = Number((body || {}).pr), sha = String((body || {}).sha || '');
+        if (!Number.isInteger(n) || n < 1 || !/^[0-9a-f]{40}$/.test(sha)) return { status: 400, body: { error: 'bad_merge' } };
+        const r = await deps.merge(n, sha);
+        return { status: r.ok ? 200 : 409, body: r };
+      }
       if (path === 'ideas') return { status: 200, body: await deps.ideas() };
       if (path === 'agents') return { status: 200, body: await deps.agents() };
       if (path === 'agent') return /^[a-z0-9-]{2,64}$/.test(query.id || '') ? { status: 200, body: await deps.agent(query.id) } : NOT_FOUND;

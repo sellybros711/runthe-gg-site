@@ -20,7 +20,7 @@ async function gh(env, method, path, body){
   return r.json(); }
 
 export function newId(now = Date.now()){ return new Date(now).toISOString().replace(/[-:]/g, '').replace(/\..*$/, '') + '-' + Math.random().toString(36).slice(2, 7); }
-export function clean(t){ return { agent: String(t.agent || '').slice(0, 64), text: String(t.text || '').trim().slice(0, 4000),
+export function clean(t){ return { agent: String(t.agent || '').slice(0, 64), kind: t.kind === 'answer' ? 'answer' : 'task', text: String(t.text || '').trim().slice(0, 4000),
   place: { game: t.game ? String(t.game).slice(0, 64) : null, layer: t.layer ? String(t.layer).slice(0, 32) : null } }; }
 
 export async function queueTask(env, task){

@@ -13,7 +13,7 @@
  * 404 page (or {"error":"not_found"} for the API), status 404. The cookie is Stumpire's, so one
  * sign in opens every tester page. The tester list is asked again on every request.
  *
- * Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE, SUPABASE_ANON, SKY_GITHUB_TOKEN, and SKY_VAULT_TOKEN for tasks.
+ * Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE, SUPABASE_ANON, SKY_GITHUB_TOKEN, SKY_VAULT_TOKEN for tasks, SKY_MERGE_TOKEN for Merge.
  */
 import { verifyUser } from '../api/stripe/_verify.js';
 import { verify, sign, readCookie, setCookie, secretOf } from '../_stumpire/cookie.js';
@@ -23,6 +23,7 @@ import { buildWorld, artVersions } from '../_skyworld/world.js';
 import { ideas } from '../_skyworld/ideas.js';
 import { readAgents, githubAgents, registry, lastRuns } from '../_skyworld/agents.js';
 import { queueTask, listTasks } from '../_skyworld/tasks.js';
+import { mergePR } from '../_skyworld/merge.js';
 import { SHELL, MODULES } from '../_skyworld/pages.js';
 
 const HTML = { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' };
@@ -73,7 +74,13 @@ async function api(context, path) {
       agentIds: async () => { need(); return cached('agent-ids/v1', 600, async () => { const s = githubAgents(env); return registry(await s.siteTree(), await s.vaultTree()).map(a => a.id); }); },
       canTask: () => !!env.SKY_VAULT_TOKEN,
       tasks: () => listTasks(env),
-      queue: t => queueTask(env, t)
+      queue: t => queueTask(env, t),
+      canMerge: () => !!env.SKY_MERGE_TOKEN,
+      merge: async (n, sha) => { need(); const s = githubAgents(env), st = (await s.status()) || { sessions: [] };
+        const ids = registry(await s.siteTree(), await s.vaultTree()).map(a => a.id), branches = (st.sessions || []).filter(x => x.agent && x.branch).map(x => x.branch);
+        const r = await mergePR(env, n, sha, ids, branches);
+        if (r.ok && globalThis.caches) await caches.default.delete('https://skyworld.cache/agents/v1');   // the PR is gone from its agent's list now
+        return r; }
     });
   } catch (e) { res = { status: 404, body: { error: 'not_found' } }; }
   if (res.mint && secretOf(env)) headers['Set-Cookie'] = setCookie(await sign(secretOf(env), res.mint, Date.now()));

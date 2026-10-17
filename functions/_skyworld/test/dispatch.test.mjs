@@ -48,6 +48,8 @@ test('a task goes to the agent\'s chat; with no chat in 30 days it starts one; a
   assert.match(lines[0].message, /Tasks from the Sky World/);
   assert.equal(lines[1].action, 'create'); assert.equal(lines[1].title, 'QA Agent'); assert.match(lines[1].prompt, /\.claude\/agents\/qa\.md[\s\S]*Sweep golf/);
   assert.deepEqual(lines[2], { task: 't3', action: 'fail', note: 'no such agent' });
+  const ans = plan({ sessionsText: TEXT, prev: null, agents: AGENTS, queued: [{ id: 't4', agent: 'golf-ui', kind: 'answer', text: 'Yes, the left menu.', by: 'sel' }], now: NOW }).lines[0];
+  assert.match(ans.message, /^An answer from sel to what you asked, sent through the Sky World:\n\nYes, the left menu\./);
 });
 
 test('recording moves a task to the top of the log, which keeps the newest 200', () => {
