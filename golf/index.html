@@ -60,13 +60,13 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- Putt Putt Tour. It draws nothing until puttOn() opens it (see PUTT_TESTERS and PUTT_LIVE). -->
-<script defer src="putt/putt.js?v=88"></script>
+<script defer src="putt/putt.js?v=89"></script>
 <script defer src="putt/land.js?v=12"></script>
 <script defer src="putt/hole3d.js?v=16"></script>
 <script defer src="putt/trail.js?v=38"></script>
 <script defer src="putt/mapland.js?v=6"></script>
 <!-- The course golfer in the profile style, asked through g3dOn(). -->
-<script defer src="golfer3d.js?v=18"></script>
+<script defer src="golfer3d.js?v=19"></script>
 <script defer src="tracer3d.js?v=2"></script>
 <!-- Google Consent Mode v2 defaults. Advertising storage is denied until the certified CMP (loaded by
      the AdSense tag below) records the user's choice; the CMP then updates these signals automatically,
@@ -11461,6 +11461,44 @@ function auraParts(au,fs){ const p=au&&au.a.p; if(!p) return '';
 }catch(e){} })();
 // kept for older callers: the particle layer for a look
 function pxFxParts(look,fs){ try{ return auraParts(auraOf(look),fs); }catch(e){ return ''; } }
+/* THE PUTT PUTT REWARDS (the owner's call, 2026-10-16). What each Putt Putt world pays at its signature hole and
+   its clear, and the Members Tour's and the secret holes' prizes: real closet items worn in every mode, earned only
+   by play. putt.js names each one (REWARD_ITEM) and answers whether the player's record holds it; CARD_EARN prices
+   each 0 (so never in a pack or the shop) and asks it. Boosts are in COS_BOOST (a world item is +2 on one stat,
+   never Putting, the Members Champion Jacket none); the putters are in PUTTERS; the art is at PUTT PUTT REWARD ART. */
+const PP_REWARDS=[
+ {cat:'hw',id:'ppvisor',name:'Clubhouse Visor',hist:'A Putt Putt world prize'},
+ {cat:'cleats',id:'ppclubhouse',name:'Clubhouse Cleats',hist:'A Putt Putt world prize'},
+ {cat:'hw',id:'pphallcap',name:'Hall Monitor Cap',hist:'A Putt Putt world prize'},
+ {cat:'ball',id:'ppgoldstar',name:'Gold Star Ball',hist:'A Putt Putt world prize',col:'#eaa514',tracer:{g:'rgba(234,165,20,.5)',c:'#ffd25a'}},
+ {cat:'putter',id:'pplollipop',name:'Lollipop Putter',hist:'A Putt Putt world prize'},
+ {cat:'ball',id:'ppsprinkle',name:'Sprinkle Ball',hist:'A Putt Putt world prize',col:'#ff86bf',tracer:{g:'rgba(255,134,191,.5)',c:'#ffd2e8'}},
+ {cat:'putter',id:'ppneon',name:'Neon Putter',hist:'A Putt Putt world prize'},
+ {cat:'ew',id:'pppixelshades',name:'Pixel Shades',hist:'A Putt Putt world prize'},
+ {cat:'hw',id:'pptricorn',name:'Tricorn Hat',hist:'A Putt Putt world prize'},
+ {cat:'ew',id:'ppeyepatch',name:'Pirate Eyepatch',hist:'A Putt Putt world prize'},
+ {cat:'putter',id:'ppjadeidol',name:'Jade Idol Putter',hist:'A Putt Putt world prize'},
+ {cat:'hw',id:'ppexplorer',name:'Explorer Hat',hist:'A Putt Putt world prize'},
+ {cat:'hw',id:'ppminer',name:'Miner\'s Lamp Cap',hist:'A Putt Putt world prize'},
+ {cat:'ball',id:'ppnugget',name:'Gold Nugget Ball',hist:'A Putt Putt world prize',col:'#eebc2c',tracer:{g:'rgba(238,188,44,.5)',c:'#fff0a0'}},
+ {cat:'ball',id:'pplava',name:'Lava Ball',hist:'A Putt Putt world prize',col:'#3e2c30',tracer:{g:'rgba(255,106,18,.55)',c:'#ffd23a'}},
+ {cat:'cleats',id:'pplavarock',name:'Lava Rock Cleats',hist:'A Putt Putt world prize'},
+ {cat:'ball',id:'ppcloud',name:'Cloud Ball',hist:'A Putt Putt world prize',col:'#86c8ff',tracer:{g:'rgba(134,200,255,.5)',c:'#c4e6ff'}},
+ {cat:'ew',id:'ppaviatorgoggles',name:'Aviator Goggles',hist:'A Putt Putt world prize'},
+ {cat:'ball',id:'ppdinoegg',name:'Dino Egg Ball',hist:'A Putt Putt world prize',col:'#f2ecc4',tracer:{g:'rgba(242,236,196,.5)',c:'#fffbea'}},
+ {cat:'cleats',id:'ppdinoclaw',name:'Dino Claw Cleats',hist:'A Putt Putt world prize'},
+ {cat:'putter',id:'pptusk',name:'Mammoth Tusk Putter',hist:'A Putt Putt world prize'},
+ {cat:'ew',id:'ppsnowgoggles',name:'Snow Goggles',hist:'A Putt Putt world prize'},
+ {cat:'hw',id:'pphallowscrown',name:'Hallows Crown',hist:'A Members Tour prize'},
+ {cat:'ew',id:'ppphantommask',name:'Phantom Mask',hist:'A Members Tour prize'},
+ {cat:'putter',id:'ppharvest',name:'Harvest Moon Putter',hist:'A Members Tour prize'},
+ {cat:'ball',id:'ppgoldleaf',name:'Golden Leaf Ball',hist:'A Members Tour prize',col:'#b8501a',tracer:{g:'rgba(184,80,26,.5)',c:'#e88a4a'}},
+ {cat:'top',id:'ppchampjacket',name:'Members Champion Jacket',hist:'A Members Tour prize'},
+ {cat:'ball',id:'pphallowslantern',name:'Hallows Lantern Ball',hist:'The Members Tour candy bag prize',col:'#7a4ad8',tracer:{g:'rgba(122,74,216,.5)',c:'#b48cff'}},
+ {cat:'putter',id:'ppdiamond',name:'Diamond Putter',hist:'The secret holes prize'} ];
+const PP_REWARD_PK={hw:'hw',ew:'ew',ball:'bl',cleats:'ct',putter:'pu',top:'tp'};
+const PP_REWARD_BY={}; PP_REWARDS.forEach(function(o){ o.key=PP_REWARD_PK[o.cat]+':'+o.id; PP_REWARD_BY[o.key]=o; });
+function ppRewardItems(cat){ return PP_REWARDS.filter(function(o){ return o.cat===cat; }).map(function(o){ const r={id:o.id,name:o.name,hist:o.hist}; r[cat]=1; return r; }); }
 // CS414, BALL cosmetics. A ball is a small teed sprite beside the standing golfer (PXG_BALL overlay) plus
 // an optional hole-view tint on the shot ball/tracer. `tracer` recolors the in-play ball (Comet → fire).
 const PXBALL=[
@@ -11487,7 +11525,9 @@ const PXBALL=[
   // the Spooky Szn hunt prize: price 0, so it is never in a pack, the shop or the shard exchange (HUNT_PRIZES)
   {id:'blackcat',     name:'Black Cat Ball',   hist:'Haunted Links hunt prize',      price:0, col:'#2a2433', tracer:{g:'rgba(150,120,200,.5)', c:'#ffd23a'}},
   // milestone gear (MILESTONE_GEAR): earned with a first major, never sold
-  {id:'majormarker',  name:'Major Marker Ball', hist:'Win a major',                  price:0, col:'#e2b93b', tracer:{g:'rgba(226,185,59,.55)', c:'#fff2b8'}} ];
+  {id:'majormarker',  name:'Major Marker Ball', hist:'Win a major',                  price:0, col:'#e2b93b', tracer:{g:'rgba(226,185,59,.55)', c:'#fff2b8'}} ]
+  // the Putt Putt reward balls: price 0, earned only (PP_REWARDS)
+  .concat(PP_REWARDS.filter(function(o){ return o.cat==='ball'; }).map(function(o){ return {id:o.id, name:o.name, hist:o.hist, price:0, col:o.col, tracer:o.tracer}; }));
 const PXBALL_BY={}; PXBALL.forEach(function(o){ PXBALL_BY[o.id]=o; });
 function ballOf(look){ var id=(look&&look.ball)||'none'; return (id&&id!=='none'&&PXBALL_BY[id])?PXBALL_BY[id]:null; }
 /* ==== PLAYER CARDS (owner): a collectible flip card of your golfer. Customize the NAMEPLATE + CARD
@@ -12010,6 +12050,13 @@ const CARD_EARN={
 };
 // milestone gear (MILESTONE_GEAR): the hint is the milestone's own note, and the item is owned once the milestone is
 Object.keys(MILESTONE_GEAR).forEach(id=>{ const mi=MILESTONE_ITEMS.find(x=>x.id===id); CARD_EARN[MILESTONE_GEAR[id]]={hint:MILESTONE_GEAR_HINT[id]||mi.note, req:()=>{ try{ return !!coinState().owned[id]; }catch(e){ return false; } }}; });
+// the Putt Putt rewards (PP_REWARDS): owned once Putt Putt's record holds one (won, or what pays it has happened, so a
+// tester who won it before it was an item owns it), and the hint is where to win it. Both read the record only.
+function puttRewardOwned(key){ try{ return !!(window.RTT_PUTT && RTT_PUTT.rewardOwned && RTT_PUTT.rewardOwned(key,{storeKey:acctKey})); }catch(e){ return false; } }
+function puttRewardHint(key){ try{ return (window.RTT_PUTT && RTT_PUTT.rewardHint && RTT_PUTT.rewardHint(key,{storeKey:acctKey})) || 'Win it in Putt Putt.'; }catch(e){ return 'Win it in Putt Putt.'; } }
+PP_REWARDS.forEach(function(o){ const k=o.key; CARD_EARN[k]={ get hint(){ return puttRewardHint(k); }, req:function(){ return puttRewardOwned(k); } }; });
+// before Putt Putt is live for a player, a reward they cannot win yet is not shown to them locked
+function ppRewardHidden(cat,id){ try{ return !!PP_REWARD_BY[cosKey(cat,id)] && !puttOn(); }catch(e){ return true; } }
 // ---- cosmetics (colors + patterns) are PURCHASED too (same coin economy, namespaced owned keys) ----
 // keys: sh:<shirt>  sp:<pattern>  ht:<hat color>  pt:<pants>  so:<shoes>  fx:<effect>. Free defaults below.
 // CS353: the 6 BASIC shirt/hat colors are FREE (so the retro creator always offers a shirt + hat color pick);
@@ -12161,6 +12208,17 @@ Object.assign(COS_BOOST,{
   // cleats
   'ct:saddle':{acc:1}, 'ct:sunday':{clu:1,acc:1}, 'ct:neon':{dist:1,acc:1}, 'ct:golden':{acc:2,bnk:1}, 'ct:rocket':{dist:2,acc:2}, 'ct:phantom':{bnk:2,acc:2}, 'ct:bone':{bnk:2,sht:1}, 'ct:rungames':{acc:1,dist:1}
 });
+// THE PUTT PUTT REWARDS (owner, 2026-10-16): earned only, so each counts as rare on the ladder, +2 on one stat and never
+// Putting (the putters carry Putting, in PUTTERS). Members Tour rewards boost too, the one exception to "a Tour Pass piece
+// carries none", because they are won on the Members Tour, not given by the pass. The Members Champion Jacket is
+// outerwear, which is style, so it carries none.
+Object.assign(COS_BOOST,{
+  'hw:ppvisor':{acc:2}, 'hw:pphallcap':{clu:2}, 'hw:pptricorn':{dist:2}, 'hw:ppminer':{app:2}, 'hw:ppexplorer':{bnk:2}, 'hw:pphallowscrown':{scr:2},
+  'ew:pppixelshades':{app:2}, 'ew:ppeyepatch':{acc:2}, 'ew:ppaviatorgoggles':{clu:2}, 'ew:ppsnowgoggles':{sht:2}, 'ew:ppphantommask':{dist:2},
+  'bl:ppgoldstar':{sht:2}, 'bl:ppsprinkle':{scr:2}, 'bl:ppnugget':{dist:2}, 'bl:pplava':{dist:2}, 'bl:ppcloud':{acc:2}, 'bl:ppdinoegg':{scr:2},
+  'bl:ppgoldleaf':{app:2}, 'bl:pphallowslantern':{bnk:2},
+  'ct:ppclubhouse':{sht:2}, 'ct:pplavarock':{bnk:2}, 'ct:ppdinoclaw':{sht:2}
+});
 function cosBoost(cat,id){ return COS_BOOST[cosKey(cat,id)]||null; }
 // the WORN, OWNED, boost-carrying cosmetics right now - the single source of truth the boost math AND the
 // on-screen "active boosts" breakdown both read, so the display can never drift from what's applied.
@@ -12245,16 +12303,16 @@ function cosmeticItems(cat){
   if(cat==='pat')   return [{id:'none',name:'None',pat:'none'}].concat(PXPAT.map(p=>({id:p.id,name:p.name,pat:p.id,hist:p.hist})));
   if(cat==='pants') return PANTS.map(o=>({id:o.id,name:cosTitle(o.id),col:o.a}));
   if(cat==='shoes') return SHOES.map(o=>({id:o.id,name:cosTitle(o.id),col:o.a}));
-  if(cat==='hw')    return [{id:'none',name:'No Hat',hw:1},{id:'cap',name:'Ball Cap',hw:1},{id:'visor',name:'Visor',hw:1},{id:'bucket',name:'Bucket Hat',hw:1,hist:'Rainy-day links staple'},{id:'flat',name:'Flat Cap',hw:1,hist:'Early-1900s golf classic'},{id:'cowboy',name:'Cowboy Hat',hw:1,hist:'Yeehaw off the tee'},{id:'wizard',name:'Wizard Hat',hw:1,hist:'Magic on the greens'},{id:'crown',name:'Champion Crown',hw:1,hist:'Rule the leaderboard'},{id:'party',name:'Party Hat',hw:1,hist:'Every round is a celebration'},{id:'tophat',name:'Top Hat',hw:1,hist:'Dapper on the fairway'},{id:'propeller',name:'Propeller Beanie',hw:1,hist:'Pure fun'},{id:'headband',name:'Sweatband',hw:1,hist:'Clutch under pressure'},{id:'beanie',name:'Knit Beanie',hw:1,hist:'Cold-morning warmup'},{id:'fedora',name:'Fedora',hw:1,hist:'Old-school cool'},{id:'sombrero',name:'Sombrero',hw:1,hist:'Sun-drenched swagger'},{id:'halo',name:'Halo',hw:1,hist:'Angel of the greens'},{id:'viking',name:'Viking Helmet',hw:1,hist:'Conquer the course'},{id:'chef',name:'Chef Hat',hw:1,hist:'Cooking up birdies'},{id:'beret',name:'Beret',hw:1,hist:'Artist of the short game'},{id:'headphones',name:'Headphones',hw:1,hist:'In the zone'},{id:'flatbrim',name:'Snapback',hw:1,hist:'Flat-brim flex'},{id:'santa',name:'Santa Hat',hw:1,hist:'Season\u2019s greetings'},{id:'safari',name:'Safari Hat',hw:1,hist:'On expedition'},{id:'tweed',name:'Tweed Cap',hw:1,hist:'Old-money links tweed'},{id:'straw',name:'Straw Boater',hw:1,hist:'Roaring-20s summer golf'},{id:'laurel',name:'Laurel Wreath',hw:1,hist:'Crown of champions'},{id:'backwards',name:'Backwards Cap',hw:1,hist:'Rally-cap energy'},{id:'pirate',name:'Pirate Tricorn',hw:1,hist:'X marks the pin'},{id:'grad',name:'Graduation Cap',hw:1,hist:'Top of the class'},{id:'witch',name:'Witch Hat',hw:1,hist:'Brews birdies at midnight'},{id:'reaperhood',name:'Reaper Hood',hw:1,hist:'Comes for every pin'},{id:'elf',name:'Elf Hat',hw:1,hist:'Workshop-approved'},{id:'antlers',name:'Antlers',hw:1,hist:'Leading the sleigh'},{id:'football',name:'Football Helmet',hw:1,hist:'Built for contact'},{id:'floppy',name:'Sun Floppy Hat',hw:1,hist:'Beach-day shade'},{id:'knight',name:'Knight\u2019s Helm',hw:1,hist:'Armored up the fairway'},{id:'turkey',name:'Turkey Hat',hw:1,hist:'Seconds, anyone?'},{id:'harvestbeanie',name:'Harvest Knit',hw:1,hist:'Season 2 Tour Pass'},{id:'scarecrow',name:'Scarecrow Hat',hw:1,hist:'Season 2 Tour Pass'},{id:'horns',name:'Devil Horns',hw:1,hist:'Season 2 Tour Pass'},{id:'pilgrim',name:'Pilgrim Hat',hw:1,hist:'Season 2 Tour Pass'},{id:'no1cap',name:'World No.1 Cap',hw:1,hist:'Reach World No.1'}];
-  if(cat==='ew')    return [{id:'none',name:'None',ew:1},{id:'shades',name:'Shooter Shades',ew:1,hist:'Ice-cold Sunday stare'},{id:'heart',name:'Heart Shades',ew:1,hist:'Crowd charmer'},{id:'star',name:'Star Shades',ew:1,hist:'Superstar swagger'},{id:'threed',name:'3D Glasses',ew:1,hist:'See the line in 3D'},{id:'monocle',name:'Monocle',ew:1,hist:'Distinguished gentleman'},{id:'aviators',name:'Aviators',ew:1,hist:'Top-gun style'},{id:'round',name:'Round Glasses',ew:1,hist:'Retro intellectual'},{id:'goggles',name:'Ski Goggles',ew:1,hist:'Downhill focus'},{id:'eyepatch',name:'Eye Patch',ew:1,hist:'Pirate of the fairways'},{id:'visorband',name:'Shield Shades',ew:1,hist:'Wraparound cool'},{id:'prismshades',name:'Prism Shades',ew:1,hist:'Refract the sun'},{id:'goldshades',name:'Gilded Shades',ew:1,hist:'24-karat stare'},{id:'beach',name:'Beach Shades',ew:1,hist:'Boardwalk cool'},{id:'eyeblack',name:'Eye Black',ew:1,hist:'Game face on'},{id:'wayfarer',name:'Wayfarers',ew:1,hist:'Timeless clubhouse classic'},{id:'sport',name:'Sport Wraps',ew:1,hist:'Built for the wind'},{id:'cateye',name:'Cat-Eye Glasses',ew:1,hist:'Vintage flair'},{id:'readers',name:'Half-Rim Readers',ew:1,hist:'Reading every break'},{id:'rose',name:'Rose-Tinted Glasses',ew:1,hist:'Every round looks great'},{id:'steampunk',name:'Brass Goggles',ew:1,hist:'Inventor of the stinger'},{id:'cyber',name:'Cyber Visor',ew:1,hist:'Scanning the fairway'},{id:'patriot',name:'Patriot Shades',ew:1,hist:'Playing for the flag'},{id:'groucho',name:'Disguise Glasses',ew:1,hist:'Incognito round'},{id:'diamond',name:'Diamond Shades',ew:1,hist:'Ice in the veins'},{id:'ghoulglow',name:'Ghoul Glow Specs',ew:1,hist:'Season 2 Tour Pass'}];
+  if(cat==='hw')    return [{id:'none',name:'No Hat',hw:1},{id:'cap',name:'Ball Cap',hw:1},{id:'visor',name:'Visor',hw:1},{id:'bucket',name:'Bucket Hat',hw:1,hist:'Rainy-day links staple'},{id:'flat',name:'Flat Cap',hw:1,hist:'Early-1900s golf classic'},{id:'cowboy',name:'Cowboy Hat',hw:1,hist:'Yeehaw off the tee'},{id:'wizard',name:'Wizard Hat',hw:1,hist:'Magic on the greens'},{id:'crown',name:'Champion Crown',hw:1,hist:'Rule the leaderboard'},{id:'party',name:'Party Hat',hw:1,hist:'Every round is a celebration'},{id:'tophat',name:'Top Hat',hw:1,hist:'Dapper on the fairway'},{id:'propeller',name:'Propeller Beanie',hw:1,hist:'Pure fun'},{id:'headband',name:'Sweatband',hw:1,hist:'Clutch under pressure'},{id:'beanie',name:'Knit Beanie',hw:1,hist:'Cold-morning warmup'},{id:'fedora',name:'Fedora',hw:1,hist:'Old-school cool'},{id:'sombrero',name:'Sombrero',hw:1,hist:'Sun-drenched swagger'},{id:'halo',name:'Halo',hw:1,hist:'Angel of the greens'},{id:'viking',name:'Viking Helmet',hw:1,hist:'Conquer the course'},{id:'chef',name:'Chef Hat',hw:1,hist:'Cooking up birdies'},{id:'beret',name:'Beret',hw:1,hist:'Artist of the short game'},{id:'headphones',name:'Headphones',hw:1,hist:'In the zone'},{id:'flatbrim',name:'Snapback',hw:1,hist:'Flat-brim flex'},{id:'santa',name:'Santa Hat',hw:1,hist:'Season\u2019s greetings'},{id:'safari',name:'Safari Hat',hw:1,hist:'On expedition'},{id:'tweed',name:'Tweed Cap',hw:1,hist:'Old-money links tweed'},{id:'straw',name:'Straw Boater',hw:1,hist:'Roaring-20s summer golf'},{id:'laurel',name:'Laurel Wreath',hw:1,hist:'Crown of champions'},{id:'backwards',name:'Backwards Cap',hw:1,hist:'Rally-cap energy'},{id:'pirate',name:'Pirate Tricorn',hw:1,hist:'X marks the pin'},{id:'grad',name:'Graduation Cap',hw:1,hist:'Top of the class'},{id:'witch',name:'Witch Hat',hw:1,hist:'Brews birdies at midnight'},{id:'reaperhood',name:'Reaper Hood',hw:1,hist:'Comes for every pin'},{id:'elf',name:'Elf Hat',hw:1,hist:'Workshop-approved'},{id:'antlers',name:'Antlers',hw:1,hist:'Leading the sleigh'},{id:'football',name:'Football Helmet',hw:1,hist:'Built for contact'},{id:'floppy',name:'Sun Floppy Hat',hw:1,hist:'Beach-day shade'},{id:'knight',name:'Knight\u2019s Helm',hw:1,hist:'Armored up the fairway'},{id:'turkey',name:'Turkey Hat',hw:1,hist:'Seconds, anyone?'},{id:'harvestbeanie',name:'Harvest Knit',hw:1,hist:'Season 2 Tour Pass'},{id:'scarecrow',name:'Scarecrow Hat',hw:1,hist:'Season 2 Tour Pass'},{id:'horns',name:'Devil Horns',hw:1,hist:'Season 2 Tour Pass'},{id:'pilgrim',name:'Pilgrim Hat',hw:1,hist:'Season 2 Tour Pass'},{id:'no1cap',name:'World No.1 Cap',hw:1,hist:'Reach World No.1'}].concat(ppRewardItems('hw'));
+  if(cat==='ew')    return [{id:'none',name:'None',ew:1},{id:'shades',name:'Shooter Shades',ew:1,hist:'Ice-cold Sunday stare'},{id:'heart',name:'Heart Shades',ew:1,hist:'Crowd charmer'},{id:'star',name:'Star Shades',ew:1,hist:'Superstar swagger'},{id:'threed',name:'3D Glasses',ew:1,hist:'See the line in 3D'},{id:'monocle',name:'Monocle',ew:1,hist:'Distinguished gentleman'},{id:'aviators',name:'Aviators',ew:1,hist:'Top-gun style'},{id:'round',name:'Round Glasses',ew:1,hist:'Retro intellectual'},{id:'goggles',name:'Ski Goggles',ew:1,hist:'Downhill focus'},{id:'eyepatch',name:'Eye Patch',ew:1,hist:'Pirate of the fairways'},{id:'visorband',name:'Shield Shades',ew:1,hist:'Wraparound cool'},{id:'prismshades',name:'Prism Shades',ew:1,hist:'Refract the sun'},{id:'goldshades',name:'Gilded Shades',ew:1,hist:'24-karat stare'},{id:'beach',name:'Beach Shades',ew:1,hist:'Boardwalk cool'},{id:'eyeblack',name:'Eye Black',ew:1,hist:'Game face on'},{id:'wayfarer',name:'Wayfarers',ew:1,hist:'Timeless clubhouse classic'},{id:'sport',name:'Sport Wraps',ew:1,hist:'Built for the wind'},{id:'cateye',name:'Cat-Eye Glasses',ew:1,hist:'Vintage flair'},{id:'readers',name:'Half-Rim Readers',ew:1,hist:'Reading every break'},{id:'rose',name:'Rose-Tinted Glasses',ew:1,hist:'Every round looks great'},{id:'steampunk',name:'Brass Goggles',ew:1,hist:'Inventor of the stinger'},{id:'cyber',name:'Cyber Visor',ew:1,hist:'Scanning the fairway'},{id:'patriot',name:'Patriot Shades',ew:1,hist:'Playing for the flag'},{id:'groucho',name:'Disguise Glasses',ew:1,hist:'Incognito round'},{id:'diamond',name:'Diamond Shades',ew:1,hist:'Ice in the veins'},{id:'ghoulglow',name:'Ghoul Glow Specs',ew:1,hist:'Season 2 Tour Pass'}].concat(ppRewardItems('ew'));
   if(cat==='fx')    return [{id:'none',name:'None',fx:'none'}].concat(PXFX.map(function(f){ return {id:f.id,name:f.name,fx:f.id,hist:f.hist,col:f.col}; }));   // CS410
   if(cat==='body')  return [{id:'none',name:'No Skin',body:1},{id:'zombie',name:'Zombie',body:1,hist:'Haunted Links collection reward'},{id:'pumpkinhead',name:'Pumpkin Head',body:1,hist:'Season 2 Tour Pass, tier 60'}];
-  if(cat==='top')   return [{id:'none',name:'None',top:1},{id:'cardigan',name:'Cardigan',top:1,hist:'Old-school knit'},{id:'blazer',name:'Champion\'s Blazer',top:1,hist:'Draped on the winner'},{id:'cape',name:'Vampire Cape',top:1,hist:'Out for blood on Sunday'},{id:'shacket',name:'Corduroy Shacket',top:1,hist:'Season 2 Tour Pass'},{id:'duckfloatie',name:'Rubber Ducky Floatie',top:1,reward:1,hist:'Own the whole Summer Smash collection. The only way to float.'}];   // CS411
+  if(cat==='top')   return [{id:'none',name:'None',top:1},{id:'cardigan',name:'Cardigan',top:1,hist:'Old-school knit'},{id:'blazer',name:'Champion\'s Blazer',top:1,hist:'Draped on the winner'},{id:'cape',name:'Vampire Cape',top:1,hist:'Out for blood on Sunday'},{id:'shacket',name:'Corduroy Shacket',top:1,hist:'Season 2 Tour Pass'},{id:'duckfloatie',name:'Rubber Ducky Floatie',top:1,reward:1,hist:'Own the whole Summer Smash collection. The only way to float.'}].concat(ppRewardItems('top'));   // CS411
   if(cat==='leg')   return [{id:'none',name:'None',leg:1},{id:'plusfours',name:'Plus-Fours',leg:1,hist:'Knickerbockers & argyle socks'}];   // CS411
   if(cat==='club')  return CLUBS.map(function(c){ return {id:c.id,name:c.name,club:1,hist:c.hist||'',rar:c.rar}; });
   if(cat==='putter') return PUTTERS.map(function(p){ return {id:p.id,name:p.name,putter:1,hist:p.hist||'',rar:p.rar}; });   // one club, one list
   if(cat==='ball')  return [{id:'none',name:'None',ball:1}].concat(PXBALL.map(function(o){ return {id:o.id,name:o.name,ball:1,hist:o.hist,col:o.col}; }));   // CS414
-  if(cat==='cleats') return [{id:'none',name:'None',cleats:1},{id:'saddle',name:'Saddle Shoes',cleats:1,hist:'Classic two-tone clubhouse style'},{id:'sunday',name:'Sunday Kicks',cleats:1,hist:'Fresh sneakers for the final round'},{id:'neon',name:'Neon Trainers',cleats:1,hist:'Loud on the fairway'},{id:'golden',name:'Golden Spikes',cleats:1,hist:'Walk the walk'},{id:'rocket',name:'Rocket Cleats',cleats:1,hist:'Blast off the tee box'},{id:'phantom',name:'Phantom Cleats',cleats:1,hist:'Silent steps, loud scores'},{id:'bone',name:'Bone Cleats',cleats:1,hist:'Walks out of the graveyard'},{id:'hayride',name:'Hayride Boots',cleats:1,hist:'Season 2 Tour Pass'},{id:'rungames',name:'Run The Games Cleats',cleats:1,hist:'House kit, green flash, navy sole'}];   // CS414
+  if(cat==='cleats') return [{id:'none',name:'None',cleats:1},{id:'saddle',name:'Saddle Shoes',cleats:1,hist:'Classic two-tone clubhouse style'},{id:'sunday',name:'Sunday Kicks',cleats:1,hist:'Fresh sneakers for the final round'},{id:'neon',name:'Neon Trainers',cleats:1,hist:'Loud on the fairway'},{id:'golden',name:'Golden Spikes',cleats:1,hist:'Walk the walk'},{id:'rocket',name:'Rocket Cleats',cleats:1,hist:'Blast off the tee box'},{id:'phantom',name:'Phantom Cleats',cleats:1,hist:'Silent steps, loud scores'},{id:'bone',name:'Bone Cleats',cleats:1,hist:'Walks out of the graveyard'},{id:'hayride',name:'Hayride Boots',cleats:1,hist:'Season 2 Tour Pass'},{id:'rungames',name:'Run The Games Cleats',cleats:1,hist:'House kit, green flash, navy sole'}].concat(ppRewardItems('cleats'));   // CS414
   if(cat==='plate')  return PLATES.map(o=>({id:o.id,name:o.name,plate:1,hist:o.hist}));
   if(cat==='cardbg') return CARDBGS.map(o=>({id:o.id,name:o.name,cardbg:1,hist:o.hist}));
   return [];
@@ -16705,7 +16763,7 @@ function pxItemThumb(cat,id){
   const P=Object.assign({ k:PXG_FIX.k, g:PXG_FIX.g, l:PXG_FIX.l, n:PXG_FIX.n, G:PXG_FIX.G, H:PXG_FIX.H, F:PXG_FIX.F, c:av.hatHex, b:pxShade(av.hatHex,-24), w:pxShade(av.hatHex,26), E:'#20242c', S:'#e8ebf0' }, PXG_NOV);
   let map=null, pal=null;
   if(cat==='hw'){ map=(id==='visor')?PXG_VISOR:(PXG_HATS[id]||PXG_CAP); pal=PXG_HERITAGE_HAT_PAL[id]||null; }
-  else if(cat==='ew'){ map=PXG_EYEWEAR[id]; }
+  else if(cat==='ew'){ map=PXG_EYEWEAR[id]; pal=PXG_EW_PAL[id]||null; }
   else if(cat==='top'){ map=PXG_TOPS[id]; pal=PXG_TOP_PAL[id]; }
   else if(cat==='leg'){ map=PXG_LEGS[id]; pal=PXG_LEG_PAL[id]; }
   if(!map) return pxNoneThumb();
@@ -16923,14 +16981,14 @@ function scrSetup(){
     let tiles;
     if(isLook){ tiles=setupLookTiles(cat); }
     else {   // LOCKER: show only the items you OWN in this category, tap to equip. No buying here.
-      tiles=cosmeticItems(cat).filter(o=>cosOwned(cat,o.id) || (cat==='putter' && PUTTERS_BY[o.id] && PUTTERS_BY[o.id].kind==='pp') || ((cat==='plate'||cat==='cardbg') && (CARD_EARN[cosKey(cat,o.id)]||cosRewardOnly(cat,o.id))) || (Object.values(MILESTONE_GEAR).indexOf(cosKey(cat,o.id))>=0)).map(o=>cosTileHTML(cat,o));   // card cosmetics also show LOCKED earned + collection-reward items with how to earn them
+      tiles=cosmeticItems(cat).filter(o=>cosOwned(cat,o.id) || (cat==='putter' && PUTTERS_BY[o.id] && PUTTERS_BY[o.id].kind==='pp') || (PP_REWARD_BY[cosKey(cat,o.id)] && !ppRewardHidden(cat,o.id)) || ((cat==='plate'||cat==='cardbg') && (CARD_EARN[cosKey(cat,o.id)]||cosRewardOnly(cat,o.id))) || (Object.values(MILESTONE_GEAR).indexOf(cosKey(cat,o.id))>=0)).map(o=>cosTileHTML(cat,o));   // card cosmetics also show LOCKED earned + collection-reward items with how to earn them
     }
     const catLabel=(cats.find(c=>c[0]===cat)||[,cat])[1];
     grid.innerHTML=emojifyIcons(tiles.length?tiles.join('')
       :`<div class="shop-empty">You don't own any ${esc(catPlural(catLabel))} yet. Grab some in the Pro Shop.</div>`);
     wrap.appendChild(grid);
     if(cat==='putter' && !guest){
-      wrap.appendChild($(`<div class="small muted" style="margin-top:9px;line-height:1.5">Your putter is apart from your club set. Whichever you equip is the one you putt with in Run The Tour and in Putt Putt. In the Tour it adds its Putting boost. In Putt Putt a better putter runs a longer aim line. Pull putters from packs, or build the three Putt Putt putters from parts found on its trails.</div>`));
+      wrap.appendChild($(`<div class="small muted" style="margin-top:9px;line-height:1.5">Your putter is apart from your club set. Whichever you equip is the one you putt with in Run The Tour and in Putt Putt. In the Tour it adds its Putting boost. In Putt Putt a better putter runs a longer aim line. Pull putters from packs, or build the three Putt Putt putters from parts found on its trails.${puttOn()?` Win ${PUTTERS.filter(p=>p.kind==='earn').length} more on the Putt Putt tours.`:''}</div>`));
       markCatSeen('putter');
     }
     if((cat==='plate'||cat==='cardbg') && !guest){
@@ -17250,7 +17308,12 @@ const PUTTERS=[
  {id:'goldplated',name:'Gold Plated Putter',rar:'legendary',kind:'pack',b:{put:4,clu:1},reach:3,shape:'putter',pal:{H:'#c99a1a',F:'#ffe98a',S:'#fff6c4',G:'#7a5a08'},hist:'Twenty four karat, made for Sunday'},
  {id:'scope',name:'Scope Putter',rar:'epic',kind:'pp',b:{put:3},reach:2,perk:'scope',shape:'putter',pal:{H:'#1f8fd6',F:'#7fd0ff',S:'#e0f4ff',G:'#0a3a5a'},hist:'Putt Putt: the aim line reaches four feet further'},
  {id:'bank',name:'Bank Shot Putter',rar:'epic',kind:'pp',b:{put:3},reach:2,perk:'bank',shape:'putter',pal:{H:'#2e9e52',F:'#8fe0a8',S:'#e2ffe9',G:'#0e4a24'},hist:'Putt Putt: the aim line bends off the walls'},
- {id:'buoy',name:'Lifeguard Putter',rar:'epic',kind:'pp',b:{put:3},reach:2,perk:'buoy',shape:'putter',pal:{H:'#e5483a',F:'#ffffff',S:'#ffd0cb',G:'#7a1a12'},hist:'Putt Putt: once a hole, water costs no stroke'}];
+ {id:'buoy',name:'Lifeguard Putter',rar:'epic',kind:'pp',b:{put:3},reach:2,perk:'buoy',shape:'putter',pal:{H:'#e5483a',F:'#ffffff',S:'#ffd0cb',G:'#7a1a12'},hist:'Putt Putt: once a hole, water costs no stroke'}]
+ // the Putt Putt reward putters (PP_REWARDS), won on its tours, never sold: +2 Putting and a 9 ft aim line, and the
+ // Diamond Putter (the secret holes' prize) +4 and 11 ft, level with the best putters in the game. Each has its own
+ // art (PUTT PUTT REWARD ART), so `shape` is only what it draws before that table is read.
+ .concat(PP_REWARDS.filter(function(o){ return o.cat==='putter'; }).map(function(o){ const top=o.id==='ppdiamond';
+   return {id:o.id,name:o.name,rar:top?'legendary':'rare',kind:'earn',b:{put:top?4:2},reach:top?3:2,shape:'putter',pal:null,hist:o.hist}; }));
 const PUTTERS_BY={}; PUTTERS.forEach(function(p){ PUTTERS_BY[p.id]=p; if(p.b && Object.keys(p.b).length) COS_BOOST['pu:'+p.id]=p.b; PXG_CLUBS['pu_'+p.id]=PXG_CLUBS[p.shape]; if(p.pal) PXG_CLUB_PAL['pu_'+p.id]=p.pal; else if(PXG_CLUB_PAL[p.shape]) PXG_CLUB_PAL['pu_'+p.id]=PXG_CLUB_PAL[p.shape]; });
 const PUTTER_REACH_FT=[5,7,9,11];   // the Putt Putt aim line at each reach (putt.js AIM_FEET)
 // the equipped putter, only if it is owned (a synced choice this device has no record of falls back to Stock)
@@ -18339,6 +18402,98 @@ PXG_CLEATS_PAL.hayride={C:'#7a4a24',m:'#a8703a',d:'#5a3418',k:'#2a1a10',u:'#6a5a
 // Corduroy Shacket: the cardigan's cut with the knit flecks taken out and a vertical wale in their place.
 PXG_TOPS.shacket=PXG_CARDIGAN.map(function(r){ return r.split('').map(function(ch,x){ if(ch==='5') ch='1'; return (ch==='1'&&x%2===0)?'5':ch; }).join(''); });
 PXG_TOP_PAL.shacket={'1':'#9a4f24','2':'#74391a','3':'#5a2a12','4':'#ecd29a','5':'#b4673a'};
+// PUTT PUTT REWARD ART (PP_REWARDS). The art the 3D golfer models these from, and what the flat golfer draws, each in
+// its own palette. Eyewear has a palette of its own here too (PXG_EW_PAL), because the shared eyewear colours (PXG_NOV)
+// give the lens keys a meaning of their own: the closet tile, the flat golfer and the 3D golfer read it for these only.
+const PXG_EW_PAL={};
+// Clubhouse Visor
+PXG_HATS.ppvisor=pxgRows([[7,15,'YGGGGGGGGGGGGGH'],[8,14,'AAAAAAGYNYGBBBBBC'],[9,14,'AAAAAAGNYNGBBBBCC'],[10,14,'BAAAAAAGHGBBBBCCC'],[11,12,'AAAAAAAAAAAAAAAABBBBC'],[12,12,'YGGGGGGGGGGGGGGGGGGGH'],[13,13,'MLLLLLNNNNNNNNNNNNM']]);
+PXG_HERITAGE_HAT_PAL.ppvisor={A:'#fdf8e8',B:'#ece0bd',C:'#cdb98c',G:'#f2c94c',H:'#b7862c',Y:'#fff3b0',N:'#1e6b3d',M:'#10432a',L:'#3a9a5e'};
+// Hall Monitor Cap
+PXG_HATS.pphallcap=pxgRows([[4,22,'Y'],[5,18,'RRRYYGQQQ'],[6,16,'RRRYYYGGGHQQQ'],[7,15,'RRRRRGGGGHQPQQQ'],[8,14,'RRRRRQGHQGHQQPQQQ'],[9,14,'LLLLLLLLLLLLLFFFF'],[10,14,'KKKKKKKKKKKKKJJJJ'],[11,14,'LLLLLLLLLLLLLFFFF'],[12,13,'QQQRRRRRRRRRRRRQQQQD'],[13,14,'EPPPPPPPPPPPPPPPE.D'],[14,32,'D'],[15,31,'KS'],[16,31,'JS']]);
+PXG_HERITAGE_HAT_PAL.pphallcap={R:'#5f93ec',Q:'#2f5fc8',P:'#1f3f8f',E:'#142a60',L:'#d6f53c',F:'#9fbd1c',K:'#f4f8fa',J:'#9aa8b4',G:'#f6c63a',Y:'#fff4a8',H:'#b9821c',D:'#d8342c',S:'#8e9aa6'};
+// Tricorn Hat
+PXG_HATS.pptricorn=pxgRows([[1,31,'F'],[2,30,'FR'],[3,19,'TTUUUUV...RRD'],[4,18,'TTTUUUUUV.RD'],[5,9,'G.......TTTTUUUUUUVD......H'],[6,9,'TGG....TTTTTUUUUUUUV....HHV'],[7,9,'TTTGGG.TTTTUUUUUUUUV.HHHUUV'],[8,9,'TTTTTTGGGTTUUUUUUUHHHUUUUUV'],[9,9,'TTTTTTTTTYGGGGGGGHUUUUUUUUV'],[10,9,'TTTTTTTTTYTKKKKJUGUUUUUUVVV'],[11,9,'VTTTTTTTTTGKEKEJHUUUUUUUVVW'],[12,10,'VTTTTTTTGGUJKJUHHUUUUVVVW'],[13,12,'YGGGGGGGGGGGGGGGGGGGH']]);
+PXG_HERITAGE_HAT_PAL.pptricorn={T:'#7a4b2e',U:'#553220',V:'#371f13',W:'#1c0f09',G:'#f2c94c',H:'#b5862a',Y:'#fff1a6',K:'#f3eee0',J:'#b8b2a0',E:'#181019',R:'#e8402e',D:'#a02018',F:'#ff9a78'};
+// Miner's Lamp Cap
+PXG_HATS.ppminer=pxgRows([[3,19,'AAABBBC'],[4,17,'AAAAALBBBBC'],[5,16,'AASOAGGHBOBBC'],[6,15,'AAAAAGGGGHBBBCC'],[7,15,'ASALBGWWLHBLSCC'],[8,14,'AAAABBGWLOHBBBCCC'],[9,14,'AAABBBGLOOHBBBCCC'],[10,14,'ABBBBBHHHHHBBBCCC'],[11,14,'CRCCCCRCCCRCCCCRD'],[12,11,'BAAAAAAAAAAAAAAAAAAABBC'],[13,12,'DCCCCCCCCCCCCCCCCCCCD']]);
+PXG_HERITAGE_HAT_PAL.ppminer={A:'#626874',B:'#434752',C:'#2c2f38',D:'#1a1c22',S:'#8a909c',R:'#d9a84a',G:'#e0b04c',H:'#9a6e22',Y:'#fff4b8',W:'#fffbe8',L:'#ffe066',O:'#ffaa2a'};
+// Explorer Hat
+PXG_HATS.ppexplorer=pxgRows([[2,21,'ABC'],[3,18,'AAABBBBCC'],[4,17,'AAAABBBBBCC'],[5,16,'AAAAABBBBBBCC'],[6,15,'AAAAABBBBBBBBCC'],[7,15,'AAAABBBBBBBBBCC'],[8,14,'AAAABBBYGHBBBBCCC'],[9,14,'JJJJKKKEGEKKKKNNN'],[10,14,'JKKKKKKGGHKKKKNNN'],[11,12,'BAAAAAAAAHAHAAAAAAABC'],[12,11,'CBBBBBBBBBBBBBBBBBBBBCD'],[13,12,'DCCCCCCCCCCCCCCCCCCCD']]);
+PXG_HERITAGE_HAT_PAL.ppexplorer={A:'#f1e3b4',B:'#d9c48c',C:'#b49a62',D:'#806a3e',J:'#4fd39a',K:'#1f9466',N:'#0d5a3e',G:'#f2c94c',H:'#a8781e',Y:'#fff1a6',E:'#181019'};
+// Hallows Crown
+PXG_HATS.pphallowscrown=pxgRows([[1,22,'F'],[2,21,'FYO'],[3,18,'F..OFR..F'],[4,17,'FYO..L..FYO'],[5,15,'F.OFR..LJ.OFR.F'],[6,15,'O..L..LIJ..L..O'],[7,15,'L.LJK.LIJ.LJK.K'],[8,15,'IJLIJLIIJKLIJJK'],[9,15,'LIIIIIIIIJJJJJK'],[10,14,'LIUPIIIYFOJJUPJKK'],[11,14,'IIPQIIIEOEJJPQJKK'],[12,14,'JJJJJJJOEOKKKKKKK'],[13,16,'KKKKKKKKKKKKK']]);
+PXG_HERITAGE_HAT_PAL.pphallowscrown={L:'#6e6684',I:'#4a4458',J:'#2e2a3a',K:'#1a1622',F:'#ffb030',O:'#ff7a1a',R:'#c83c10',Y:'#fff0a0',P:'#a654ff',Q:'#6a22c0',U:'#e4b8ff',E:'#181019'};
+// Pixel Shades
+PXG_EYEWEAR.pppixelshades=pxgRows([[13,14,'%@@%%%%%%%%%%%%%%'],[14,14,'%PEEEEE%%%PEEEEE&'],[15,14,'*QQQQQQ*.*QQQQQQ+'],[16,14,'*OOOOOO*.*OOOOOO+'],[17,15,'*++++*...*++++*']]);
+PXG_EW_PAL.pppixelshades={'#':'#181019','@':'#ffb3f0','%':'#ff3ec8','&':'#b0218a','*':'#3ff0ff','+':'#1f9fc0',P:'#f2ffff',E:'#1a0f3a',Q:'#38d6f0',O:'#c43aa8'};
+// Pirate Eyepatch
+PXG_EYEWEAR.ppeyepatch=pxgRows([[10,14,'==~'],[11,14,'#+=~=....######'],[12,16,'#+=~=.#@@%%%%#'],[13,18,'#+=#@%^~~<%#=~'],[14,20,'##%~#~#~&#='],[15,21,'#%&~~~<&#'],[16,21,'#%&~*~&*#'],[17,22,'#&&&&**#'],[18,23,'######']]);
+PXG_EW_PAL.ppeyepatch={'#':'#181019','@':'#9a6438','%':'#6b4226','&':'#4a2c18','*':'#2e1a0e','+':'#8a5a32','=':'#5a3820','~':'#f2c53d','^':'#fff1a0','<':'#b0801e'};
+// Aviator Goggles
+PXG_EYEWEAR.ppaviatorgoggles=pxgRows([[12,15,'######...######'],[13,14,'#@@%%%&#.#@@%%%&#'],[14,11,'#=*@PPQQQR&@@PQQQRR&=*#'],[15,11,'#++%PQQRRR&&%QQRRRE&++#'],[16,14,'%RRRRRE&.%RRRRRE&'],[17,14,'#&&&&&&#.#&&&&&&#'],[18,15,'######...######']]);
+PXG_EW_PAL.ppaviatorgoggles={'#':'#181019','@':'#ffe08a','%':'#d9a441','&':'#8f6020','*':'#7a4a2a','+':'#4a2c18','=':'#ffe08a',P:'#ffffff',Q:'#9ee0ff',R:'#4fb0ee',E:'#2a72c0'};
+// Snow Goggles
+PXG_EYEWEAR.ppsnowgoggles=pxgRows([[12,15,'###############'],[13,14,'#@@@%%%%%%%%%%%&#'],[14,10,'#+=#@%PPPPPPffPfPPP%&#=+#'],[15,10,'#~+#@%QQQQQffQfQQQQ&&#+~#'],[16,10,'#~~#%&RRRRfRRRRRRRR&&#~~#'],[17,13,'#%&OOOOOO###OOOOO&#'],[18,14,'#&&&&&#...#&&&**#'],[19,15,'#####.....#####']]);
+PXG_EW_PAL.ppsnowgoggles={'#':'#181019','@':'#ffffff','%':'#e6eef8','&':'#b4c4da','*':'#8496b4','+':'#d8eefa','=':'#ffffff','~':'#94b8d4',f:'#ffffff',P:'#e4f4ff',Q:'#a6d8f6',R:'#8fa6f0',O:'#8a62dc'};
+// Phantom Mask
+PXG_EYEWEAR.ppphantommask=pxgRows([[10,13,'#.................#'],[11,13,'##......###......##'],[12,13,'#@#...##%=%##...#&#'],[13,13,'#@@###%%*=*%%###&&#'],[14,13,'#@@aaaaa%*%aaaaa&&#'],[15,13,'#%aEEEEa%+%aEEEEa&#'],[16,14,'#*%aaaa%%%%aaaa&*#'],[17,15,'#*%%%%##.##%%&*#'],[18,16,'#####.....####']]);
+PXG_EW_PAL.ppphantommask={'#':'#181019','@':'#ffffff','%':'#e8e4f2','&':'#b2a8cc','*':'#9a4ae0','+':'#5e2496','=':'#ff8a1f',a:'#d7b4ff',E:'#3a1660'};
+// Gold Star Ball
+PXG_BALL.ppgoldstar=pxgRows([[46,39,'G'],[47,35,'oooo'],[48,34,'ohCSCo'],[49,34,'oSSSSS'],[50,34,'oCSSCo'],[51,34,'ohScSo'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
+PXG_BALL_PAL.ppgoldstar={o:'#6a3e04',C:'#eaa514',h:'#ffd25a',s:'#b87408',c:'#c98612',S:'#ffffff',G:'#fff2a0',T:'#e8ebf0'};
+// Sprinkle Ball
+PXG_BALL.ppsprinkle=pxgRows([[47,35,'oooo'],[48,34,'ohCbCo'],[49,34,'oyCCgo'],[50,34,'oCwCro'],[51,34,'obCyso'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
+PXG_BALL_PAL.ppsprinkle={o:'#9a2a62',C:'#ff86bf',h:'#ffd2e8',s:'#de5a9c',y:'#ffe23a',b:'#3ab4ff',g:'#5ae06a',w:'#ffffff',r:'#ff4a4a',T:'#e8ebf0'};
+// Lava Ball
+PXG_BALL.pplava=pxgRows([[46,37,'e'],[47,35,'oooo'],[48,34,'ohCrCo'],[49,34,'oCryCo'],[50,34,'orCyro'],[51,34,'oCrCso'],[52,35,'oroo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
+PXG_BALL_PAL.pplava={o:'#120a0c',C:'#3e2c30',h:'#6e565c',s:'#251a1e',r:'#ff6a12',y:'#ffd23a',e:'#ff8a2a',T:'#e8ebf0'};
+// Cloud Ball
+PXG_BALL.ppcloud=pxgRows([[47,35,'oooo'],[48,34,'ohCWCo'],[49,34,'oWWWWo'],[50,34,'WWWWwW'],[51,34,'oCwwBo'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
+PXG_BALL_PAL.ppcloud={o:'#3a78b8',W:'#ffffff',w:'#d0e4f6',C:'#86c8ff',h:'#c4e6ff',B:'#5aa8ec',T:'#e8ebf0'};
+// Dino Egg Ball
+PXG_BALL.ppdinoegg=pxgRows([[46,36,'oo'],[47,35,'ohCo'],[48,34,'ohCgCo'],[49,34,'ogCCdo'],[50,34,'oCdCgo'],[51,34,'oCgsso'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
+PXG_BALL_PAL.ppdinoegg={o:'#4e5a2a',C:'#f2ecc4',h:'#fffbea',s:'#c8c690',g:'#5aae3a',d:'#2f6e2a',T:'#e8ebf0'};
+// Gold Nugget Ball
+PXG_BALL.ppnugget=pxgRows([[46,33,'*...oo'],[47,35,'oohCo'],[48,34,'ohwCCso'],[49,34,'oCCdCo'],[50,33,'ohCCswo'],[51,34,'osCddo'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
+PXG_BALL_PAL.ppnugget={o:'#4a2e08',C:'#eebc2c',h:'#fff0a0',s:'#c08818',d:'#8a5a10',w:'#ffffff','*':'#fff6c0',T:'#e8ebf0'};
+// Golden Leaf Ball
+PXG_BALL.ppgoldleaf=pxgRows([[47,35,'oooL'],[48,34,'ohCLLo'],[49,34,'oCLlLo'],[50,34,'oLlLCo'],[51,34,'vLCCso'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
+PXG_BALL_PAL.ppgoldleaf={o:'#4a1e06',C:'#b8501a',h:'#e88a4a',s:'#8a3610',L:'#ffd23a',l:'#d98a10',v:'#ffd23a',T:'#e8ebf0'};
+// Hallows Lantern Ball: an iron lantern cage round a ghostly purple flame, so it reads apart from the Tour Pass pumpkin
+PXG_BALL.pphallowslantern=pxgRows([[46,36,'oo'],[47,35,'oPPo'],[48,34,'oPLLPo'],[49,33,'GoLWWLoG'],[50,34,'oPLLPo'],[51,34,'ooPPoo'],[52,35,'oooo'],[53,35,'TTTT'],[54,36,'TT'],[55,36,'T']]);
+PXG_BALL_PAL.pphallowslantern={o:'#24202c',C:'#7a4ad8',P:'#5a2fa8',L:'#b48cff',W:'#f4ecff',s:'#3a3346',G:'#b48cff',T:'#e8ebf0'};
+// Clubhouse Cleats
+PXG_CLEATS.ppclubhouse=pxgRows([[50,15,'kYYyk.....kYYyk'],[51,13,'kMgYyyMMk.kMgYyyMMk'],[52,13,'kTHMgMTLk.kTHMgMTLk'],[53,13,'kHTTTTTLk.kHTTTTTLk'],[54,13,'kHCcCCCLk.kHCcCCCLk'],[55,13,'kskskskSk.kskskskSk']]);
+PXG_CLEATS_PAL.ppclubhouse={k:'#181019',T:'#ece4cc',H:'#fffbee',L:'#bfb28c',M:'#1f5a36',g:'#3f8a54',Y:'#ffd65a',y:'#b8862a',C:'#123d24',c:'#a8f0bc',s:'#e6c25a',S:'#b8862a'};
+// Lava Rock Cleats
+PXG_CLEATS.pplavarock=pxgRows([[48,31,'y'],[49,13,'o'],[50,15,'kqRRk.....kqRRk'],[51,13,'kqRoRRrrk.kqRRoRrrk'],[52,13,'kRRyoRRrk.kRoyRRRrk'],[53,13,'kRoRRoyrk.kRRoRyork'],[54,13,'koyRRRosk.ksoRRoyRk'],[55,13,'sysosyoos.soosysoys']]);
+PXG_CLEATS_PAL.pplavarock={k:'#181019',R:'#2e2629',r:'#1f1a1d',q:'#6e5e5c',M:'#4a3e40',o:'#ff7a1a',y:'#ffd04a',s:'#e0401a'};
+// Dino Claw Cleats
+PXG_CLEATS.ppdinoclaw=pxgRows([[50,15,'kgTTk.....kgTTk'],[51,13,'kgTgTgTbk.kgTgTgTbk'],[52,13,'kgfFfgTbk.kgfFfgTbk'],[53,13,'kTcTcTcbk.kTcTcTcbk'],[54,13,'kbcbcbcbk.kbcbcbcbk'],[55,14,'ksssssk...ksssssk']]);
+PXG_CLEATS_PAL.ppdinoclaw={k:'#181019',g:'#7ccc4a',T:'#3e8a34',b:'#235224',f:'#efe6c4',F:'#a89c74',c:'#fffaf0',s:'#14301a'};
+// Lollipop Putter
+PXG_CLUBS.pu_pplollipop=pxgRows([[40,34,'K'],[41,35,'K'],[42,35,'L'],[43,36,'K'],[44,36,'L'],[45,37,'K'],[46,37,'L'],[47,38,'K'],[48,37,'ooooo'],[49,36,'ohPPPWo'],[50,35,'oPWWWWPWo'],[51,35,'oPWPPWPWo'],[52,35,'oPWPWWPWo'],[53,35,'oPWPPPPWo'],[54,36,'oWWWWWo'],[55,37,'ooooo']]);
+PXG_CLUB_PAL.pu_pplollipop={o:'#181019',K:'#ff4f9a',L:'#fff4f8',l:'#ff8fc0',G:'#ff4f9a',H:'#ff4f9a',P:'#f0287e',W:'#fff1f7',h:'#ffffff',F:'#fff1f7',S:'#ffffff'};
+// Neon Putter
+PXG_CLUBS.pu_ppneon=pxgRows([[40,34,'G'],[41,35,'G'],[42,35,'l'],[43,36,'l'],[44,36,'l'],[45,37,'l'],[46,37,'l'],[47,38,'l'],[48,39,'l'],[49,39,'l'],[50,33,'oooooooooo'],[51,32,'oMmmmmmmmmMo'],[52,32,'omkkkkkkkkmo'],[53,32,'omkCcccccCmo'],[54,33,'oMmmmmmmMo'],[55,34,'oooooooo']]);
+PXG_CLUB_PAL.pu_ppneon={o:'#181019',G:'#14101e',l:'#3a3350',M:'#d10fb4',m:'#ff4fe0',k:'#120a1e',C:'#00c8e8',c:'#7ff6ff',H:'#d10fb4',F:'#2ef2ff',S:'#d8ffff'};
+// Jade Idol Putter
+PXG_CLUBS.pu_ppjadeidol=pxgRows([[40,34,'G'],[41,35,'G'],[42,35,'l'],[43,36,'l'],[44,36,'l'],[45,37,'l'],[46,37,'l'],[47,38,'l'],[48,36,'ojoJoJo'],[49,35,'ojjJJJJdo'],[50,35,'oJddJddJo'],[51,35,'oJYoJYodo'],[52,35,'oJJJjJJdo'],[53,35,'oJdooodJo'],[54,35,'ojJJJJJdo'],[55,36,'ooooooo']]);
+PXG_CLUB_PAL.pu_ppjadeidol={o:'#181019',G:'#3a2412',l:'#c9a227',Y:'#ffd34a',J:'#1d8a56',j:'#5fd496',d:'#0f4f30',H:'#1d8a56',F:'#86e8b0',S:'#ffd34a'};
+// Mammoth Tusk Putter
+PXG_CLUBS.pu_pptusk=pxgRows([[40,34,'Ff'],[41,35,'Ff'],[42,35,'fF'],[43,36,'w'],[44,36,'w'],[45,37,'w'],[46,37,'w'],[47,38,'w'],[48,31,'oo......w'],[49,31,'oho.....w'],[50,31,'oIo.....w'],[51,31,'oIIo...oFFo'],[52,31,'ohIIoooIIIIo'],[53,32,'oIIIIIIIIio'],[54,32,'ohiIIIIIiio'],[55,33,'ooiiiiioo']]);
+PXG_CLUB_PAL.pu_pptusk={o:'#181019',F:'#eaf8ff',f:'#9fd4f2',w:'#7a5634',I:'#f7eed4',h:'#fffdf5',i:'#d2bf90',l:'#7a5634',G:'#9fd4f2',H:'#efe4c4',S:'#fffaf0'};
+// Harvest Moon Putter
+PXG_CLUBS.pu_ppharvest=pxgRows([[40,34,'G'],[41,35,'G'],[42,35,'l'],[43,36,'l'],[44,36,'l'],[45,37,'l'],[46,37,'l'],[47,38,'l'],[48,39,'l'],[49,31,'oo......l..oo'],[50,31,'oYo.....l.oAo'],[51,31,'ohAo....l.oAo'],[52,31,'ohYAo..oloAAo'],[53,32,'oYYAoooooAAo'],[54,32,'ohYYAAAAAAo'],[55,33,'ooooooooo']]);
+PXG_CLUB_PAL.pu_ppharvest={o:'#181019',G:'#5a2f0c',l:'#b8732a',h:'#fff2b0',Y:'#ffbf1f',A:'#d9700f',H:'#f29a1a',F:'#ffcf3a',S:'#fff2b0'};
+// Diamond Putter
+PXG_CLUBS.pu_ppdiamond=pxgRows([[40,34,'G'],[41,35,'D'],[42,35,'G'],[43,36,'l'],[44,36,'l'],[45,37,'l'],[46,37,'l'],[47,38,'l'],[48,32,'h......l'],[49,34,'ooooooo'],[50,33,'owWhWwWbo.h'],[51,32,'owWBWwBWbbo'],[52,31,'oWWBbWWwBbBbo'],[53,32,'obWwBWbBbbo'],[54,34,'obWBbbo'],[55,36,'obo']]);
+PXG_CLUB_PAL.pu_ppdiamond={o:'#181019',G:'#2a2f3a',D:'#bff4ff',l:'#eef2f7',W:'#ffffff',w:'#d6f8ff',h:'#ffffff',B:'#8fe0f6',b:'#4aa8d8',H:'#bff4ff',F:'#ffffff',S:'#ffffff'};
+// Members Champion Jacket
+PXG_TOPS.ppchampjacket=pxgRows([[23,16,'1111.....1111'],[24,12,'11111111.....11111111'],[25,12,'111111186776811112211'],[26,10,'1111111118677681882221111'],[27,10,'1111111186677668122cc1111'],[28,10,'111111118667.668122cC1111'],[29,10,'1111111866677666822CC1111'],[30,10,'1111111866677666822221111'],[31,10,'1111111111124211122221111'],[32,10,'111111111112.211122221111'],[33,14,'11111112221112222'],[34,14,'11111112421112222'],[35,14,'11111112221112222'],[36,14,'11111112221112222'],[37,14,'11111112421112222'],[38,14,'22222222222222222'],[39,14,'22222222222222222']]);
+PXG_TOP_PAL.ppchampjacket={'1':'#4a1f7a','2':'#321456','3':'#6a37a0','4':'#e8b923','6':'#ece3cf','7':'#2a1840','8':'#7a4ab8',c:'#ffe680',C:'#c9961a'};
+PXG_HAT_OPEN.pphallowscrown=1; PXG_HAT_OPEN.ppvisor=1;   // a crown and a visor sit on the hair, so it is not clipped
 const PXG_FIX={ k:'#181019', l:'#cfd2d7', g:'#c99a2a', n:'#232733', G:'#2d323c', H:'#525a68', F:'#cfd3da' };   // outline · club-shaft · buckle · belt · driver head/crown/face
 function pxShade(hex,amt){ hex=(hex||'#888888').replace('#',''); if(hex.length<6) hex='888888';
   const f=v=>Math.max(0,Math.min(255,parseInt(v,16)+amt)).toString(16).padStart(2,'0');
@@ -18796,7 +18951,8 @@ function build(o){ const s=new Sprite();
       if(x<mn)mn=x; if(x>mx)mx=x; if(y<ly)ly=y; if(x<22)nL++; else if(x>22)nR++; } }
     const dx=(mx>=0&&nL>0&&nR>0)?Math.round(22-(mn+mx)/2):0;
     const dy=ew==='visorband'?0:(ly<99?Math.max(0,Math.min(3,15-ly)):1);
-    importMap(s,map,ch=>{ if(ch==='E') return {m:'dlens',t:1}; const r=roleBase(null)(ch); return r; },{dx,dy,t:2,nl:1,noCast:1,noEdge:1});
+    const ep=o.ewPal||null;   // an item with its own eyewear palette (PXG_EW_PAL) is drawn in it (the dark lens tint stays, as on the 3D golfer)
+    importMap(s,map,ch=>{ if(ch!=='E'&&ep&&ep[ch]) return {m:'x:'+ep[ch]}; if(ch==='E') return {m:'dlens',t:1}; const r=roleBase(null)(ch); return r; },{dx,dy,t:2,nl:1,noCast:1,noEdge:1});
   }
   s.tag='';
   // the club and the ball go last: an address club crosses the waist and the legs
@@ -18876,7 +19032,7 @@ function pxGolferCanvas(look,opts){
   const cv=PXHD.render({ av, pants:pantsHex, style, capOn, hatStyle, openTop:!!PXG_HAT_OPEN[hatStyle], pat:patFn, hairAt,
     head:(bodySkin&&bodySkin.head)||'', straw:(bodySkin&&bodySkin.straw)||'',
     shades, top, leg:legw, cleats, lefty:!!look.lefty, P,
-    hairMaps:{full:PXG_HAIR, hat:PXG_HAIR_HAT}, hats:PXG_HATS, heritage:PXG_HERITAGE_HAT_PAL, eyewear:PXG_EYEWEAR,
+    hairMaps:{full:PXG_HAIR, hat:PXG_HAIR_HAT}, hats:PXG_HATS, heritage:PXG_HERITAGE_HAT_PAL, eyewear:PXG_EYEWEAR, ewPal:shades?PXG_EW_PAL[shades]||null:null,
     tops:PXG_TOPS, topPal:PXG_TOP_PAL, legs:legw?PXG_LEGS[legw]:null, legPal:legw?PXG_LEG_PAL[legw]:null,
     cleatsMap:cleats?PXG_CLEATS[cleats]:null, cleatsPal:cleats?PXG_CLEATS_PAL[cleats]:null,
     clubMap:pxClubAddress(PXG_CLUBS[club]), clubPal:PXG_CLUB_PAL[club],
@@ -23429,7 +23585,7 @@ function puttHost(){
     putter:function(){ try{ const p=PUTTERS_BY[puttEquippedId()]; return Math.max(p?p.reach|0:0, bagActiveTier('putter')); }catch(e){ return 0; } },
     putterNow:function(){ try{ const id=puttEquippedId(), p=PUTTERS_BY[id]; return {id:id,name:p.name,perk:p.perk||null,reach:p.reach|0}; }catch(e){ return null; } },
     putters:function(){ try{ return PUTTERS.map(p=>({id:p.id,name:p.name,rar:p.rar,kind:p.kind,perk:p.perk||null,owned:sbSignedIn()&&cosOwned('putter',p.id),on:puttEquippedId()===p.id,
-      thumb:pxClubThumb('pu_'+p.id),txt:puttEffectTxt(p)})); }catch(e){ return []; } },
+      thumb:pxClubThumb('pu_'+p.id),txt:puttEffectTxt(p),hint:p.kind==='earn'?CARD_EARN['pu:'+p.id].hint:''})); }catch(e){ return []; } },
     equipPutter:function(id){ try{ if(!cosOwned('putter',id)) return false; cosEquip('putter',id); return true; }catch(e){ return false; } },
     grantPutter:function(id){ try{ return puttGrant(id); }catch(e){ return false; } },
     // the full closet, opened on its Putters page; Back from it comes straight back into Putt Putt
@@ -38687,6 +38843,7 @@ function cosTileHTML(cat,o){
     const sub=`<span style="color:#c9a520">🔒 Build it in Putt Putt</span>`;
     return shopTile({thumb,name:o.name,state:'lock',noFoot:true,sub,data:`data-tile data-kind="cos-req" data-req="Find its grip, shaft and head on the Putt Putt Tour trails"`});
   }
+  if(!owned && ppRewardHidden(cat,o.id)) return '';   // a Putt Putt reward, before Putt Putt is open to this player
   const cardE=(typeof CARD_EARN!=='undefined')&&CARD_EARN[cosKey(cat,o.id)];
   if(cardE && !owned){   // earned player-card plate/background: show HOW to earn it, never a buy
     const sub=(bt?shopBoostTxt(bt)+' · ':'')+`<span style="color:#c9a520">🔒 ${esc(cardE.hint)}</span>`;   // milestone gear shows its boost too
@@ -41607,8 +41764,9 @@ function overlayShop(screen){
     if(byKind.pack.length){ tiles.push(grp('Pull from packs','#b69bff')); byKind.pack.forEach(o=>tiles.push(cosTileHTML('club',o))); }
     // PUTTERS: their own slot, apart from the sets. Pack putters, then the three built in Putt Putt
     const pu=cosmeticItems('putter')||[];
-    tiles.push(grp('Putters · pull from packs','#b69bff')); pu.filter(o=>PUTTERS_BY[o.id].kind!=='pp').forEach(o=>tiles.push(cosTileHTML('putter',o)));
+    tiles.push(grp('Putters · pull from packs','#b69bff')); pu.filter(o=>PUTTERS_BY[o.id].kind!=='pp'&&PUTTERS_BY[o.id].kind!=='earn').forEach(o=>tiles.push(cosTileHTML('putter',o)));
     tiles.push(grp('Putters · build in Putt Putt','#4fe0d0')); pu.filter(o=>PUTTERS_BY[o.id].kind==='pp').forEach(o=>tiles.push(cosTileHTML('putter',o)));
+    { const won=pu.filter(o=>PUTTERS_BY[o.id].kind==='earn').map(o=>cosTileHTML('putter',o)).filter(Boolean); if(won.length){ tiles.push(grp('Putters · win in Putt Putt','#4fe0d0')); tiles.push(...won); } }
   }
   else {  // My Items: everything you've unlocked (colors, patterns, headwear, eyewear, clubs) beyond the free basics
     COS_CATS.forEach(c=>{ cosmeticItems(c.k).forEach(o=>{ if(cosOwned(c.k,o.id)&&!FREE_COSMETICS[cosKey(c.k,o.id)]) tiles.push(cosTileHTML(c.k,o)); }); });

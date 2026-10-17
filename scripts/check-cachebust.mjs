@@ -87,7 +87,8 @@ const DATA = /fetch\(\s*['"]([A-Za-z0-9_./-]+\.json)\?v=([A-Za-z0-9_.-]+)['"]/g;
 
 function pages(dir, out = []) {
   for (const name of fs.readdirSync(dir)) {
-    if (name === '.git' || name === 'node_modules') continue;
+    // .claude holds agent worktrees (whole copies of the site) in a cloud session: never part of it
+    if (name === '.git' || name === 'node_modules' || name === '.claude') continue;
     const full = path.join(dir, name);
     const st = fs.statSync(full);
     if (st.isDirectory()) { pages(full, out); continue; }

@@ -2545,8 +2545,8 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "88",
-      "sha": "76368f061295314b"
+      "v": "89",
+      "sha": "1a2a0bdc7f193d0d"
     },
     "putt/land.js": {
       "v": "12",
@@ -2565,8 +2565,8 @@
       "sha": "726e707d86cd686a"
     },
     "golfer3d.js": {
-      "v": "18",
-      "sha": "8607df53c51515e1"
+      "v": "19",
+      "sha": "27f866d67f965cc7"
     },
     "tracer3d.js": {
       "v": "2",
@@ -2765,8 +2765,8 @@
       "sha": "51637c7e8598cb9d"
     },
     "/golf/pxgolfer.js": {
-      "v": "2",
-      "sha": "e47f62989dca7e2c"
+      "v": "3",
+      "sha": "96bda416e37a468b"
     }
   },
   "mythiball/proto3d/index.html": {
@@ -2802,7 +2802,7 @@
     },
     "stage.js": {
       "v": "11",
-      "sha": "e3f13345ceddd26f"
+      "sha": "030665643b3b7e17"
     },
     "venues.js": {
       "v": "2",
@@ -2911,8 +2911,8 @@
   },
   "setlist/stage.js": {
     "pxhd.js": {
-      "v": "1",
-      "sha": "aa371adb6a4d1640"
+      "v": "2",
+      "sha": "82d8338da1a8ffd3"
     },
     "rooms.js": {
       "v": "3",

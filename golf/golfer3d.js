@@ -87,6 +87,8 @@
     const lo=P.u.map((u,i)=>dot(d,u)/P.r[i]), ld=P.u.map((u,i)=>dot(dir,u)/P.r[i]);
     const A=dot(ld,ld),B=2*dot(lo,ld),C=dot(lo,lo)-1,disc=B*B-4*A*C; if(disc<0) return null;
     for(const t of [(-B-Math.sqrt(disc))/(2*A),(-B+Math.sqrt(disc))/(2*A)]){ const l=add(lo,sc(ld,t)); if(P.o.cut&&!P.o.cut(l)) continue;
+      if(P.o.paint){ let q=P.o.paint(l); if(!q) continue; if(typeof q==='string') q={m:q}; const ln=q.n||l;   // a painted part: its colour (and a facet's normal) by where on it
+        let n=[0,0,0]; for(let i=0;i<3;i++) n=add(n,sc(P.u[i],ln[i]/P.r[i])); return {D:1000-t,n:norm(n),m:q.m,dt:q.dt||0,gloss:q.gloss!=null?q.gloss:(P.o.gloss||0)}; }
       let n=[0,0,0]; for(let i=0;i<3;i++) n=add(n,sc(P.u[i],l[i]/P.r[i])); return {D:1000-t,n:norm(n)}; }
     return null; }
   function hitC(P,x,y){ const ax=P.b[0]-P.a[0],ay=P.b[1]-P.a[1],L=ax*ax+ay*ay; let best=null;
@@ -114,6 +116,9 @@
     const X=h=>'x:'+h, grip=(c,r)=>push(capsule(along(-2.6),along(3.6),r||0.95,X(c||'#26262e')));
     const shaft=(c,r,from)=>push(capsule(along(from==null?3.6:from),head,r||0.6,X(c||'#c4ccd4'),{gloss:2}));
     const AX=[face,cdir,n3];
+    // at one cell a unit the head is turned square to the camera (heel to toe across the screen), so it reads as itself
+    if(PP_PUTTER[id]){ const u0=norm(add(V(0,1,0),sc(cdir,-1))), sd=V(1,0,0), up=norm(sub(u0,sc(sd,dot(u0,sd)))), k=1.35;
+      ppPutter(push,id,pal,hands,cdir,add(head,sc(up,-1.15),sc(sd,-1.9*k)),[norm(cross(sd,up)),up,sd],k,1); return; }
     if(NOVELTY[id]){
       if(id==='scepter'){ push(ellipsoid(along(-3.1),AX,[1,1,1],X(pal['4']),{gloss:2})); push(capsule(along(-2.8),head,0.72,X(pal['4']),{gloss:2}));
         push(ellipsoid(head,AX,[2.3,2.3,2.3],X(pal['4']),{gloss:2})); push(ellipsoid(add(head,sc(face,1.9)),AX,[1.05,1.05,1.05],X(pal.A),{gloss:3}));
@@ -171,6 +176,104 @@
   }
   const mix2=(a,b,t)=>{ try{ return PQ.mix(a,b,t); }catch(e){ return a; } };
 
+  /* THE PUTT PUTT WORLD PUTTERS (pu_pp...), modelled as what they are and the same in both models: a swirled
+     lollipop on a striped candy stick, a neon tube mallet, a carved jade idol with gold eyes, a mammoth tusk curving
+     along the grass from a frosted collar, a harvest moon crescent, and a brilliant-cut diamond on platinum. A head
+     is built in its own frame: G on the grass at the heel, AX=[fw,up,sd] (sd runs heel to toe), k its scale and lo
+     for the course golfer. The grip and shaft run from the hands A down cdir to the head, in each putter's finish. */
+  const PP_PUTTER={pu_pplollipop:1,pu_ppneon:1,pu_ppjadeidol:1,pu_pptusk:1,pu_ppharvest:1,pu_ppdiamond:1};
+  // a convex block or gem as a raymarched volume: inside every plane {n:[s,u,f],d}, painted by the facet nearest the ray
+  function polyV(O,AX,k,box,planes){ planes.forEach(p=>{ const l=Math.hypot(...p.n); p.n=p.n.map(v=>v/l); p.d/=l; });
+    const g=camv(AX[0]), h=camv(AX[1]), l=camv(AX[2]), Oc=cam(O), B={s:box.s.map(v=>v*k),u:box.u.map(v=>v*k),f:box.f.map(v=>v*k)};
+    const test=(s,u,f)=>{ s/=k; u/=k; f/=k; let best=null,bd=-1e9; for(const p of planes){ const v=p.n[0]*s+p.n[1]*u+p.n[2]*f-p.d; if(v>0) return null; if(v>bd){ bd=v; best=p; } }
+      return {r:{m:'x:'+(typeof best.c==='function'?best.c(s,u,f):best.c),dt:best.dt||0,gloss:best.gloss!=null?best.gloss:2},n:best.n}; };
+    let bb=[1e9,1e9,-1e9,-1e9]; for(const a of B.s) for(const b of B.u) for(const c of B.f){ const p=add(Oc,sc(l,a),sc(h,b),sc(g,c)); bb=[Math.min(bb[0],p[0]),Math.min(bb[1],p[1]),Math.max(bb[2],p[0]),Math.max(bb[3],p[1])]; }
+    return {k:'v',O:Oc,g,h,l,test,mat:'x:#ffffff',o:{},box:B,bb2:bb}; }
+  // a bevelled box: its six faces and twelve chamfers, each face painted by c(face) (a colour or a function of s,u,f)
+  function ppBox(s0,s1,u0,u1,fh,bev,c){ const P=[], sm=(s0+s1)/2, um=(u0+u1)/2, hs=(s1-s0)/2, hu=(u1-u0)/2;
+    for(const [n,d,key] of [[[1,0,0],hs,'s'],[[-1,0,0],hs,'s'],[[0,1,0],hu,'top'],[[0,-1,0],hu,'bot'],[[0,0,1],fh,'f'],[[0,0,-1],fh,'f']]) P.push({n,d,c:c(key)});
+    for(const [a,b] of [[0,1],[0,2],[1,2]]) for(const x of [1,-1]) for(const y of [1,-1]){ const n=[0,0,0]; n[a]=x; n[b]=y; const hh=[hs,hu,fh]; P.push({n,d:hh[a]+hh[b]-bev,c:c('bev')}); }
+    return {planes:P.map(p=>({n:p.n,d:p.d+p.n[0]*sm+p.n[1]*um,c:p.c,gloss:p.gloss})),centre:[sm,um]}; }
+  function ppPutter(push,id,pal,A,cdir,G,AX,k,lo){
+    const X=h=>'x:'+h, [fw,up,sd]=AX, L=(f,u,s)=>add(G,sc(fw,f*k),sc(up,u*k),sc(sd,s*k)), along=t=>add(A,sc(cdir,t));
+    const E=(f,u,s,R,c,o)=>push(ellipsoid(L(f,u,s),AX,R.map(v=>v*k),X(c),o)), Cp=(a,b,r,c,o)=>push(capsule(L(...a),L(...b),r*k,X(c),o));
+    const g0=lo?-2.6:-1.1, gr=lo?0.95:0.92, sr=lo?0.6:0.36;
+    const grip=(c,band)=>{ push(capsule(along(g0),along(3.6),gr,X(c))); if(band) for(const t of [g0+0.5,3.0]) push(capsule(along(t-0.25),along(t+0.25),gr*1.06,X(band),{gloss:2})); };
+    const shaft=(to,c,o)=>push(capsule(along(3.6),to,sr,X(c),Object.assign({gloss:2},o||{})));
+    const stripes=(to,c1,c2,n)=>{ const a=along(3.6), d=sub(to,a); for(let i=0;i<n;i++) push(capsule(add(a,sc(d,i/n)),add(a,sc(d,(i+1)/n)),sr*1.15,X(i%2?c2:c1),{gloss:2})); };
+    const s0=lo?0:0.2, f1=lo?1:0;   // the course golfer's head sits a little nearer the heel
+    if(id==='pu_pplollipop'){ // a lollipop: a white disc swirled pink, standing on its edge, on a striped candy stick
+      const c=[0,2.75,1.75+s0], R=[0.7,2.7,2.7]; grip(pal.K||'#ff4f9a');
+      stripes(L(...c),pal.K||'#ff4f9a',pal.L||'#fff4f8',lo?9:11);
+      push(ellipsoid(L(...c),AX,R.map(v=>v*k),X(pal.W||'#fff1f7'),{gloss:2}));
+      push(over(L(...c),AX,R.map(v=>v*k),X(pal.P||'#f0287e'),l=>{ const r=Math.hypot(l[1],l[2]); if(r>0.94) return false; const a=Math.atan2(l[1],l[2]); return (((a/(2*Math.PI)+r*(lo?1.0:1.5))%1)+1)%1<0.5; },{gloss:2}));
+      push(over(L(...c),AX,R.map(v=>v*k*1.01),X(pal.l||'#ff8fc0'),l=>Math.hypot(l[1],l[2])>0.94&&Math.abs(l[0])<0.75,{gloss:1}));   // the rolled rim
+      for(const z of [1,-1]) E(0.62*z,3.8,1.0+s0,[0.2,0.5,0.32],pal.h||'#ffffff',{gloss:3,noCast:1});
+      return; }
+    if(id==='pu_ppneon'){ // a neon sign of a mallet: a black box framed in a lit magenta tube, a cyan bar across it and a cyan sight line
+      const bx=ppBox(0,3.8,0.05,2.25,0.75,0.32,()=>pal.k||'#120a1e'); grip(pal.G||'#14101e',pal.c||'#7ff6ff');
+      shaft(L(0,2.2,0.7+s0),pal.l||'#3a3350');
+      push(capsule(L(0,2.15,0.7+s0),L(0,2.65,0.7+s0),0.55*k,X(pal.C||'#00c8e8'),{gloss:3,bias:.4,noCast:1}));   // a lit ferrule
+      push(polyV(L(0,0,s0),AX,k,{s:[-0.2,4],u:[-0.1,2.4],f:[-0.9,0.9]},bx.planes));
+      const tube=(pts,c,glow,r)=>{ for(let i=1;i<pts.length;i++){ Cp(pts[i-1],pts[i],r+0.07,glow,{noCast:1}); Cp(pts[i-1],pts[i],r,c,{gloss:3,bias:.5,noCast:1}); } };
+      for(const z of [0.8,-0.8]){ const pts=[], u0=0.38, u1=1.92, a0=0.4+s0, a1=3.4+s0, rr=0.32;
+        const arc=(cu,cs,b0)=>{ for(let i=0;i<=3;i++){ const b=(b0+i*30)*D2R; pts.push([z,cu+rr*Math.sin(b),cs+rr*Math.cos(b)]); } };
+        arc(u1-rr,a1-rr,0); arc(u1-rr,a0+rr,90); arc(u0+rr,a0+rr,180); arc(u0+rr,a1-rr,270); pts.push(pts[0]);
+        tube(pts,pal.m||'#ff4fe0',pal.M||'#d10fb4',lo?0.42:0.25);
+        tube([[z,1.15,1.05+s0],[z,1.15,2.75+s0]],pal.c||'#7ff6ff',pal.C||'#00c8e8',0.22); }
+      tube([[0,2.32,1.3+s0],[0,2.32,3.4+s0]],pal.c||'#7ff6ff',pal.C||'#00c8e8',0.22);
+      return; }
+    if(id==='pu_ppjadeidol'){ // a carved jade idol: a squat block head with a crown of nubs, a brow, a broad nose, a grim mouth and gold eyes
+      const J=pal.J||'#1d8a56', j=pal.j||'#5fd496', d=pal.d||'#0f4f30', Y=pal.Y||'#ffd34a', H=lo?3.4:4.0, W=lo?3.4:3.8;
+      const face=(s,u)=>{ const x=s-W/2;   // the carving, on the front and the back
+        if(u>H*0.66&&u<H*0.72) return d;
+        if(Math.abs(x)>0.3&&Math.abs(x)<1.45&&u>H*0.44&&u<H*0.64) return d;
+        if(Math.abs(x)<0.32&&u>H*0.36&&u<H*0.64) return j;
+        if(Math.abs(x)<1.15&&u>H*0.17&&u<H*0.29) return Math.abs(x)<1.0&&u>H*0.2&&u<H*0.26&&(Math.floor((x+1)*2.5)%2===0)?j:d;
+        return J; };
+      const bx=ppBox(0,W,0.05,H,1.25,0.4,key=>key==='f'?(s,u)=>face(s,u):key==='top'||key==='bev'?j:key==='s'?(s,u)=>(Math.floor(u*1.6)%2?J:d):d);
+      grip(pal.G||'#3a2412'); shaft(L(0,H,W/2+s0),pal.l||'#c9a227',{gloss:3});
+      push(polyV(L(0,0,s0),AX,k,{s:[-0.2,W+0.2],u:[-0.1,H+0.2],f:[-1.4,1.4]},bx.planes));
+      for(const s of [0.55,W-0.55]) E(0,H+0.35,s+s0,[0.85,0.5,0.5],j,{gloss:2});
+      E(0,H+0.3,W/2+s0,[0.7,0.55,0.7],Y,{gloss:3});                                   // a gold collar where the shaft goes in
+      for(const z of [1,-1]) for(const x of [-0.85,0.85]) E(z*1.18,H*0.54,W/2+x+s0,lo?[0.3,0.42,0.42]:[0.28,0.34,0.36],Y,{gloss:3,noCast:1,bias:.3});
+      return; }
+    if(id==='pu_pptusk'){ // a mammoth tusk lying along the grass, its root in a frosted collar at the shaft, its point curling up
+      const I=pal.I||'#f7eed4', i0=pal.i||'#d2bf90', hh=pal.h||'#fffdf5', F=pal.F||'#eaf8ff', f=pal.f||'#9fd4f2';
+      grip(f,F); shaft(L(0,1.9,0.05+s0),pal.w||'#7a5634',{gloss:1});
+      const N=12, pt=t=>[1.6*t*t,0.95+(lo?1.9:2.2)*Math.pow(t,2.6),0.5+s0+(lo?4.6:5.4)*t], rad=t=>(lo?1.3:1.1)*(1-t*0.84);
+      for(let n=1;n<=N;n++){ const a=(n-1)/N, b=n/N; Cp(pt(a),pt(b),rad(b),n>N-2?hh:I,{gloss:2}); }
+      for(const t of [0.2,0.38,0.56]){ const p=pt(t), q=pt(t+0.025); Cp(p,q,rad(t)*1.07,i0,{noCast:1}); }
+      E(0,0.95,0.38+s0,[1.28,1.28,0.42],F,{gloss:3});                                  // the frosted collar
+      for(let n=0;n<8;n++){ const a=n*45*D2R; E(1.25*Math.cos(a),0.95+1.25*Math.sin(a),0.38+s0,[0.32,0.32,0.5],n%2?f:F,{gloss:3,noCast:1}); }
+      return; }
+    if(id==='pu_ppharvest'){ // a harvest moon: a fat golden crescent on its back, horns up, with craters and a lit inner rim
+      const c=[0,2.7,2.0+s0], R=[0.8,2.6,2.6], bite=l=>Math.hypot(l[1]-0.42,l[2]-0.38);
+      grip(pal.G||'#5a2f0c'); shaft(L(0,3.5,0.15+s0),pal.l||'#b8732a');
+      push(ellipsoid(L(...c),AX,R.map(v=>v*k),X(pal.Y||'#ffbf1f'),{gloss:2,cut:l=>bite(l)>0.74}));
+      push(over(L(...c),AX,R.map(v=>v*k),X(pal.A||'#d9700f'),l=>bite(l)>0.74&&Math.hypot(l[1],l[2])>0.8,{gloss:1}));
+      push(over(L(...c),AX,R.map(v=>v*k*1.01),X(pal.h||'#fff2b0'),l=>bite(l)>0.74&&bite(l)<0.84&&Math.hypot(l[1],l[2])<0.8,{gloss:3,noCast:1}));
+      for(const [u,s,r] of [[-0.5,-0.3,0.13],[-0.6,0.3,0.1],[-0.05,-0.6,0.1],[0.45,-0.62,0.08]]) push(over(L(...c),AX,R.map(v=>v*k*1.012),X(pal.A||'#d9700f'),l=>Math.hypot(l[1]-u,l[2]-s)<r*(lo?1.5:1)&&bite(l)>0.74,{noCast:1}));
+      return; }
+    if(id==='pu_ppdiamond'){ // a brilliant-cut diamond, table up and point down, on a platinum shaft, throwing glints
+      const Rg=lo?2.5:2.8, Ht=lo?0.85:0.95, Hp=lo?2.25:2.5, gd=0.14, ce=Math.cos(50*D2R), se=Math.sin(50*D2R), c2=Math.cos(38*D2R), s2=Math.sin(38*D2R), P=[];
+      const W=pal.W||'#ffffff', w=pal.w||'#d6f8ff', B=pal.B||'#8fe0f6', b=pal.b||'#4aa8d8';
+      P.push({n:[0,1,0],d:Ht,c:W,gloss:3});
+      for(let i=0;i<8;i++){ const a=i*45*D2R, a2=a+22.5*D2R;
+        P.push({n:[Math.cos(a)*ce,se,Math.sin(a)*ce],d:Rg*ce+gd*se,c:i%2?w:B,gloss:3});
+        P.push({n:[Math.cos(a2)*c2,s2,Math.sin(a2)*c2],d:Rg*c2+gd*s2,c:i%2?W:w,gloss:3});
+        for(const [az,hp,c] of [[a,Hp,i%2?b:B],[a2,Hp*0.93,i%2?B:w]]){ const n=[Math.cos(az)*hp,-Rg,Math.sin(az)*hp]; P.push({n,d:Rg*hp+gd*Rg,c,gloss:3}); }
+        P.push({n:[Math.cos(a2),0,Math.sin(a2)],d:Rg,c:W,gloss:3}); P.push({n:[Math.cos(a),0,Math.sin(a)],d:Rg,c:W,gloss:3}); }
+      const O=[0,Hp+0.05,Rg+0.1+s0];
+      grip(pal.G||'#2a2f3a',pal.D||'#bff4ff'); shaft(L(O[0],O[1]+Ht+0.2,O[2]),pal.l||'#eef2f7',{gloss:3});
+      Cp([0,O[1]+Ht,O[2]],[0,O[1]+Ht+0.55,O[2]],0.62,pal.l||'#eef2f7',{gloss:3});        // the platinum setting
+      push(polyV(L(...O),AX,k,{s:[-Rg-0.2,Rg+0.2],u:[-Hp-0.3,Ht+0.2],f:[-Rg-0.2,Rg+0.2]},P));
+      const glint=(f,u,s,z)=>{ const o={gloss:3,noCast:1,t:4}; Cp([f,u,s-z],[f,u,s+z],lo?0.34:0.17,W,o); Cp([f,u-z,s],[f,u+z,s],lo?0.34:0.17,W,o); if(!lo) E(f,u,s,[0.3,0.3,0.3],W,o); };
+      if(lo) glint(Rg,O[1]+1.4,O[2]+Rg*0.8,1.2);
+      else { glint(Rg+0.4,O[1]+1.7,O[2]+Rg*0.75,1.0); glint(Rg+0.4,O[1]-0.9,O[2]-Rg*0.85,0.65); glint(Rg+0.4,O[1]+0.2,O[2]+Rg+0.9,0.45); }
+      return; }
+  }
+
   function model(aimV,lefty,kind,pose,gear){
     gear=gear||{};
     /* WALKING the golfer faces the way he goes (F), so T is his carrying side, and the frame's phase (pose.ph,
@@ -204,6 +307,7 @@
       const tip=walk?(lift>0?-0.12*lift:fw<0?0.22*(-fw/5.2):0):0;   // a lifted foot toes down, the trailing one rolls onto its toe
       const sF=walk?rot(F,T,tip):F, sU=walk?rot(U,T,tip):U;
       const sc0=walk?add(ank,sc(sF,1.0),sc(sU,-1.7)):add(P(1.4,1.5+heel*1.2,l),sc(T,heel*1.4)), sax=[sF,sU,T], sr=[4.6,1.7,2.5];
+      if(cl&&CLEAT_COURSE[cl.id]){ CLEAT_COURSE[cl.id](push,sc0,sax,sr,cl.pal,ank); continue; }
       push(ellipsoid(sc0,sax,sr,'shoe',{gloss:2,bias:.15}));
       push(over(sc0,sax,sr,cl?'x:'+cl.sole:'sole',l=>l[1]<-0.5));
       if(cl&&cl.acc) push(over(sc0,sax,sr,'x:'+cl.acc,l=>l[0]>-0.38&&l[0]<0.08&&l[1]>-0.5,{gloss:1})); }
@@ -212,7 +316,7 @@
     // the torso turns about the spine
     const tc=walk?P(0.4,23,0):P(1.2,23,0), tr=v=>rot(v,spine,turnA(pose.turn)), tp=p=>rotAbout(p,tc,spine,turnA(pose.turn));
     const TAX=[tr(F),spine,tr(T)], TR=[5.6,7.6,8.3], top=gear.top, tpal=gear.topPal||{};
-    const body=top==='shacket'?'plaid':'shirt';
+    const body=top==='shacket'?'plaid':'shirt', blz=top==='blazer'||top==='ppchampjacket';
     const tsurf=(v,z)=>add(tc,sc(TAX[0],5.6*1.04*Math.sqrt(Math.max(0,1-v*v-(z/8.3)*(z/8.3)))),sc(TAX[1],7.6*v),sc(TAX[2],z));
     push(ellipsoid(tc,TAX,TR,body));
     push(capsule(tp(Pu(3.2,28.8,0)),tp(Pu(4.2,30.4,0)),2.6,'skin',{dt:-1}));
@@ -220,9 +324,12 @@
     // the outerwear, over the torso
     if(top==='cardigan'||top==='shacket'){ push(over(tc,TAX,TR,'polo',l=>l[0]>0.3&&Math.abs(l[2])<0.15+0.1*Math.max(0,l[1])));
       for(const v of [-0.35,0.05,0.42]) push(ellipsoid(tsurf(v,1.9),TAX,[0.55,0.55,0.55],'x:'+(tpal['4']||'#5f4c2e'),{gloss:2})); }
-    if(top==='blazer'){ push(over(tc,TAX,TR,'x:'+tpal['6'],l=>l[0]>0.25&&l[1]>-0.2&&Math.abs(l[2])<0.36*(l[1]+0.2)));
+    if(blz){ push(over(tc,TAX,TR,'x:'+tpal['6'],l=>l[0]>0.25&&l[1]>-0.2&&Math.abs(l[2])<0.36*(l[1]+0.2)));
       push(over(tc,TAX,TR.map(v=>v*1.01),'x:'+tpal['7'],l=>l[0]>0.25&&l[1]>-0.62&&Math.abs(l[2])<0.075));
-      for(const v of [-0.42,-0.22]) push(ellipsoid(tsurf(v,1.6),TAX,[0.5,0.5,0.5],'x:'+tpal['4'],{gloss:2})); }
+      for(const v of [-0.42,-0.22]) push(ellipsoid(tsurf(v,1.6),TAX,[0.5,0.5,0.5],'x:'+tpal['4'],{gloss:2}));
+      if(top==='ppchampjacket'){ const zs=(walk?-1:1)*(lefty?-1:1);   // the Members jacket: its lapels, and the gold crest on the wearer's left chest
+        push(over(tc,TAX,TR.map(v=>v*1.005),'x:'+tpal['8'],l=>l[0]>0.25&&l[1]>-0.2&&Math.abs(l[2])>=0.36*(l[1]+0.2)&&Math.abs(l[2])<0.36*(l[1]+0.2)+0.13));
+        push(ellipsoid(tsurf(0.24,zs*3.7),TAX,[0.55,1.05,0.95],'x:'+tpal.C,{gloss:2})); push(ellipsoid(add(tsurf(0.26,zs*3.7),sc(TAX[0],0.2)),TAX,[0.5,0.6,0.55],'x:'+tpal.c,{gloss:3})); } }
     if(top==='cape'){ const cc=tp(Pu(-4.9,19.5,0)); push(ellipsoid(cc,TAX,[1.6,11.2,8.8],'x:'+tpal['1'],{cut:l=>l[1]<0.55||l[0]<0.2}));
       push(over(cc,TAX,[1.6,11.2,8.8],'x:'+tpal['4'],l=>l[0]>0.55&&l[1]<0.4));
       push(ellipsoid(tp(Pu(0.4,29.4,0)),TAX,[5.4,1.6,6.8],'x:'+tpal['4'],{cut:l=>l[0]<0.35}));
@@ -349,7 +456,7 @@
   // The art rides with the head, so a hat tips when the golfer looks down at the ball.
   const HAT3D={ halo:{ring:1}, headphones:{flat:1,T:2.3}, antlers:{flat:1,T:1.0}, horns:{flat:1,T:1.5},
     pirate:{dz:.42}, grad:{sq:1}, turkey:{fF:-3.2}, laurel:{wrapAll:1,w:1.7,snug:1}, crown:{wrapAll:1,w:1.25,dy:-2,snug:1},
-    headband:{wrapAll:1,w:1.3} };
+    headband:{wrapAll:1,w:1.3}, pphallowscrown:{wrapAll:1,w:1.25,dy:-2,snug:1}, ppvisor:{wrapAll:1,w:1.3}, pptricorn:{dz:.6} };
   function roleFor(ch,pal,P,lens){
     if(lens&&ch==='E') return {m:'x:#14161e',gloss:3};
     if(pal&&pal[ch]) return {m:'x:'+pal[ch]};
@@ -616,7 +723,7 @@
     const F=norm(aimV), U=V(0,1,0), T=norm(cross(F,U)), P=(f,u,t)=>add(sc(F,f),sc(U,u),sc(T,t));
     let tag='';   // the item the parts being pushed belong to, so a tile can draw it alone (MO.only)
     const HD=(MO?MO.K:1)>=2, parts=[], push=p=>{ if(tag) p.o.item=tag; parts.push(p); }, top=gear.top, tpal=gear.topPal||{}, cl=gear.cleats, lg=gear.legPal;
-    const body=top==='shacket'?'plaid':top==='cardigan'?'k:'+tpal['1']:'shirt', AX=[F,U,T];   // a cardigan is knitted (k: is ribbed when painted)
+    const body=top==='shacket'?'plaid':top==='cardigan'?'k:'+tpal['1']:'shirt', AX=[F,U,T], blz=top==='blazer'||top==='ppchampjacket';   // a cardigan is knitted (k: is ribbed when painted)
     // THE BUILD: a lean golfer. BW narrows the torso, hips and belt, AW brings the arms, hands and club in to match.
     const BW=0.84, AW=0.87;
     // THE LEGS AND SHOES, as the real things. Trousers: each leg a straight, slightly tapered tube with a pressed
@@ -641,11 +748,13 @@
       tag='';
       // the shoe, toes turned out a little as a golfer stands
       const z=3.95*s, sole=cl?'x:'+cl.sole:'sole', sad='x:'+gear.saddleHex, toe=12*D2R;
-      const Fs=norm(add(sc(F,Math.cos(toe)),sc(T,s*Math.sin(toe)))), Ts=norm(cross(Fs,U)), b0=P(0.2,0,z);
+      const Fs=norm(add(sc(F,Math.cos(toe)),sc(T,s*Math.sin(toe)))), Ts=norm(cross(Fs,U)), b0=P(0.2,0,z), AXs=[Fs,U,Ts];
+      const Q=(f,u,t)=>add(b0,sc(Fs,f),sc(U,u),sc(Ts,t||0));   // a reward cleat (CLEAT_MENU) is modelled in the foot's own frame
       const loc=p=>{ const q=sub(p,b0); return [dot(q,Fs),dot(q,U),dot(q,Ts)]; };
       const foot=(f,tt)=>{ const w=2.95*(f<1.5?1-0.16*((1.5-f)/5.4)**2:1); return (Math.hypot((f-1.5)/5.4,tt/w)-1)*2.9; };
       const top=(f,tt)=>{ const h=f>2.5?1.3+1.5*(1-((f-2.5)/4.4)**2):f>-1.6?2.8+(2.5-f)/4.1*1.35:4.15-(-1.6-f)*0.35; return h-0.85*(tt/2.95)**2*h/3; };
       const n0=parts.length;
+      if(cl&&CLEAT_MENU[cl.id]) CLEAT_MENU[cl.id](push,Q,AXs,s,cl.pal,HD); else
       push(field(add(b0,sc(Fs,1.5),sc(U,2)),7.5,p=>{ const [f,u,tt]=loc(p);
           const dS=Math.max(foot(f,tt)-0.12,Math.abs(u-0.45)-0.45), dU=Math.max(foot(f,tt)+0.32*clamp01((u-1)/3),u-top(f,tt),0.75-u);
           return smin(dS,dU,0.25); },'shoe',{gloss:2,bias:.1,mf:p=>{ const [f,u,tt]=loc(p), h=top(f,tt);
@@ -667,19 +776,19 @@
     // little blousing where it tucks into the belt, and tension folds from each armpit toward the buckle.
     // The menu's phase (0 to 1) breathes it: the chest swells a touch, the shoulders lift, the folds drift.
     const ph=(MO?MO.phase:0)*2*Math.PI, br=Math.sin(ph), sw=Math.sin(ph+1.1);
-    const jacket=top==='cardigan'||top==='blazer'||top==='shacket'; tag=jacket?'top':'shirt';
+    const jacket=top==='cardigan'||blz||top==='shacket'; tag=jacket?'top':'shirt';
     const tc=P(0,27,0), TR=[4.6*(1+0.012*br),22,8.55*BW*(1+0.014*br)], lo=-(27-17.4)/22, hi=(33.6-27)/22, inT=l=>l[1]>lo&&l[1]<hi;
     push(ellipsoid(tc,AX,TR,body,{cut:inT}));
     for(const s of [1,-1]) push(capsule(P(-0.2,32.5+0.12*br,2.6*s),P(-0.2,30.6+0.15*br,6.5*s),2.1,body));    // the shoulders, sloping
     push(ellipsoid(P(0.2,19.0,0),AX,[4.8,1.35,8.75*BW+0.08*sw],body,{dt:0}));                                     // blousing over the belt
     push(capsule(P(0.3,32.2,0),P(0.6,35.8,0),2.85,'skin',{dt:-1}));                                              // the neck, under the head
     // the collar: a jacket's or the cape's is the old soft roll; a polo's is a real band round the neck, open at the front
-    const polo=!jacket&&top!=='blazer';
+    const polo=!jacket&&!blz;
     if(!polo||!HD) push(ellipsoid(P(0.7,33.5,0),AX,[3.7,1.15,4.7],body,{dt:1}));
     else { const n0=P(0.45,32.9,0), n1=P(0.6,34.5,0);
       push(field(add(n0,sc(U,0.8)),5.5,p=>{ const q=sub(p,n0), a=dot(q,F), sd=dot(q,T);
           return Math.max(Math.abs(sdCone(p,n0,n1,3.55,3.2))-0.32,-(a-2.2+Math.abs(sd)*1.4)); },'polo',{mf:p=>dot(sub(p,n0),U)>1.35?['polo',1]:null})); }
-    if(HD&&top!=='blazer'){ const d=0.02*sw;
+    if(HD&&!blz){ const d=0.02*sw;
       // folds: two from each armpit in toward the buckle, and creases just above the belt
       for(const s of [1,-1]){
         push(over(tc,AX,TR,body,l=>inT(l)&&l[0]>0.15&&l[1]>-0.36&&l[1]<0.04&&Math.abs(l[2]*s-(0.80+1.45*l[1]+d))<0.05,{dt:-1,noCast:1}));
@@ -705,7 +814,7 @@
         push(ellipsoid(P(4.9,30.0,3.0*sd),AX,[0.4,0.4,0.4],'x:'+tpal['4'],{gloss:2,noCast:1})); }
       push(over(tc,AX,TR.map(v=>v*1.012),'plaid',l=>inT(l)&&l[0]>0.25&&l[1]<0.18&&Math.abs(l[2])<0.06,{dt:1,noCast:1}));                       // the placket
       for(const u of [19.6,22.4,25.2]) push(ellipsoid(P(4.85,u,0),AX,[0.45,0.45,0.45],'x:'+tpal['4'],{gloss:2,noCast:1})); }
-    else if(top==='blazer'){ const vE=l=>0.5*(l[1]+0.05), cl='x:'+tpal['1'], dkc='x:'+tpal['2'];
+    else if(blz){ const champ=top==='ppchampjacket', vE=l=>0.5*(l[1]+0.05), cl='x:'+tpal['1'], dkc='x:'+tpal['2'];
       push(over(tc,AX,TR,'x:'+tpal['6'],l=>inT(l)&&l[0]>0.25&&l[1]>0.0&&Math.abs(l[2])<vE(l)));                                   // the shirt
       push(over(tc,AX,TR.map(v=>v*1.01),'x:'+tpal['7'],l=>inT(l)&&l[0]>0.25&&l[1]>-0.1&&Math.abs(l[2])<0.07));                      // the tie
       // the lapels: rolled back from the V, wider at the chest, with a notch where they meet the collar
@@ -713,7 +822,15 @@
       push(over(tc,AX,TR.map(v=>v*1.03),cl,lap,{dt:1,noCast:1}));
       push(over(tc,AX,TR.map(v=>v*1.022),dkc,l=>l[0]>0.22&&l[1]>-0.03&&l[1]<0.31&&Math.abs(l[2])>=vE(l)&&Math.abs(l[2])<vE(l)+0.13+0.24*Math.max(0,Math.min(1,(l[1]+0.02)/0.2)),{noCast:1}));   // its shadow
       push(over(tc,AX,TR.map(v=>v*1.012),cl,l=>l[0]>0.2&&rim(l,0.04,0.12,-0.6,-0.36,0.022),{dt:-1,noCast:1}));                   // the breast pocket
-      push(over(tc,AX,TR.map(v=>v*1.018),'x:#f4f1e6',l=>l[0]>0.2&&l[1]>0.115&&l[1]<0.145&&l[2]>-0.56&&l[2]<-0.42&&Math.abs(l[2]+0.49)<(0.145-l[1])*2.6,{noCast:1}));   // a pocket square
+      if(!champ) push(over(tc,AX,TR.map(v=>v*1.018),'x:#f4f1e6',l=>l[0]>0.2&&l[1]>0.115&&l[1]<0.145&&l[2]>-0.56&&l[2]<-0.42&&Math.abs(l[2]+0.49)<(0.145-l[1])*2.6,{noCast:1}));   // a pocket square
+      if(champ){ const X=h=>'x:'+h;
+        // THE MEMBERS CHAMPION JACKET: the blazer made in deep purple, its lapels piped in a lit violet along the
+        // edge, gold buttons, and the gold crest (a shield on a lighter ground) on the breast pocket
+        push(over(tc,AX,TR.map(v=>v*1.032),X(tpal['8']),l=>lap(l)&&Math.abs(l[2])>=vE(l)+0.075+0.22*Math.max(0,Math.min(1,(l[1]+0.02)/0.2))*(l[1]>0.2&&l[1]<0.235?0.35:1),{dt:1,noCast:1}));
+        const cv=0.075, cz=-0.48, cp=add(tc,sc(F,TR[0]*Math.sqrt(Math.max(0,1-cv*cv-cz*cz))+0.2),sc(U,22*cv),sc(T,TR[2]*cz)), sh=l=>l[1]>-0.25||Math.abs(l[0])<0.95*(l[1]+1);
+        push(ellipsoid(cp,AX,[0.3,1.3,1.1],X(tpal.C),{gloss:2,noCast:1,cut:l=>sh([l[2],l[1]])}));
+        push(ellipsoid(add(cp,sc(F,0.12)),AX,[0.3,1.0,0.82],X(tpal.c),{gloss:3,noCast:1,cut:l=>sh([l[2],l[1]])}));
+        push(ellipsoid(add(cp,sc(F,0.28),sc(U,0.1)),AX,[0.2,0.48,0.2],X(tpal.C),{noCast:1})); push(ellipsoid(add(cp,sc(F,0.28),sc(U,0.25)),AX,[0.2,0.17,0.46],X(tpal.C),{noCast:1})); }
       for(const sd of [1,-1]) push(over(tc,AX,TR.map(v=>v*1.012),dkc,l=>l[0]>0.2&&Math.abs(l[1]+0.27)<0.007&&l[2]*sd>0.28&&l[2]*sd<0.66,{noCast:1}));   // the hip pockets
       for(const u of [20.6,22.6]) push(ellipsoid(P(4.85,u,0),AX,[0.5,0.5,0.5],'x:'+tpal['4'],{gloss:2,noCast:1})); }
     else if(HD){ // the polo: the collar folded down into two flat points on the chest, outlined; a placket and two buttons
@@ -740,22 +857,22 @@
       push(over(tc,AX,TR.map(v=>v*1.005),'x:#6a2424',l=>inT(l)&&l[0]>0.1&&tear(0.2,-0.62,0.06,0.16)(l),{noCast:1}));        // old blood at the shoulder
       push(over(tc,AX,TR.map(v=>v*1.01),skn,l=>inT(l)&&l[0]>0.1&&l[1]<-0.37&&((l[2]*7+9)%2)<0.9&&l[1]<-0.37-0.04*Math.abs(Math.sin(l[2]*11)),{noCast:1}));   // the hem, torn into strips
     }
-    for(const s of [1,-1]){ const hold=s===dom, slv=top==='blazer'?'x:'+tpal['1']:body;
+    for(const s of [1,-1]){ const hold=s===dom, slv=blz?'x:'+tpal['1']:body;
       const sh=P(-0.2,30.0+0.15*br,9.2*AW*s), el=hold?P(0.9,23.0,10.5*AW*s):P(0.4,23.0,10.4*AW*s), wr=hold?P(2.4,17.7,11.0*AW*s):P(1.3,17.3,10.9*AW*s);
       const se=add(sh,sc(sub(el,sh),0.48)), mid=add(el,sc(sub(wr,el),0.45)), flap=sc(F,0.12*sw*s);
       if(jacket){ // A JACKET'S SLEEVE: long, bending at the elbow, a fold inside it; the cardigan's ends in a ribbed cuff, the
         // blazer's in a plain cuff with buttons, the shacket's is rolled up to the forearm
         const roll=top==='shacket', s0=add(sh,sc(norm(sub(sh,se)),1.2),sc(U,0.4)), e1=roll?add(el,sc(sub(wr,el),0.5)):add(el,sc(sub(wr,el),0.86));
-        const L1=dot(sub(el,s0),sub(el,s0)), L2=dot(sub(e1,el),sub(e1,el)), sm=top==='blazer'?'x:'+tpal['1']:slv;
-        push(field(add(s0,sc(sub(e1,s0),0.5)),Math.sqrt(dot(sub(e1,s0),sub(e1,s0)))/2+4,p=>smin(sdCone(p,s0,el,2.2,1.95),sdCone(p,el,e1,1.95,top==='blazer'?1.72:1.68),0.9)-0.1,sm,{mf:p=>{
+        const L1=dot(sub(el,s0),sub(el,s0)), L2=dot(sub(e1,el),sub(e1,el)), sm=blz?'x:'+tpal['1']:slv;
+        push(field(add(s0,sc(sub(e1,s0),0.5)),Math.sqrt(dot(sub(e1,s0),sub(e1,s0)))/2+4,p=>smin(sdCone(p,s0,el,2.2,1.95),sdCone(p,el,e1,1.95,blz?1.72:1.68),0.9)-0.1,sm,{mf:p=>{
             const t1=dot(sub(p,s0),sub(el,s0))/L1, t2=dot(sub(p,el),sub(e1,el))/L2;
             if(t2>0.985) return [sm,-1];                                                          // the open cuff
             if(top==='cardigan'&&t2>0.74) return [sm,t2<0.77?-1:0];                               // the ribbed cuff
-            if(top==='blazer'&&t2>0.8&&t2<0.83) return [sm,-1];
+            if(blz&&t2>0.8&&t2<0.83) return [sm,-1];
             return Math.abs(t1-0.93)<0.035||Math.abs(t2-0.08)<0.03?[sm,-1]:null; }}));            // the fold at the elbow
         if(roll){ push(field(e1,4,p=>sdCone(p,add(e1,sc(sub(el,e1),0.14)),add(e1,sc(sub(wr,el),0.03)),2.05,2.05)-0.15,'x:'+tpal['2'],{mf:p=>[ 'x:'+tpal['2'],Math.sin(dot(sub(p,e1),norm(sub(wr,el)))*4)>0.3?1:-1]}));   // the roll
           push(capsule(e1,mid,1.5,'skin')); push(capsule(mid,wr,1.22,'skin')); }
-        if(top==='blazer') for(const k of [0.88,0.93]) push(ellipsoid(add(el,sc(sub(e1,el),k),sc(F,-0.4),sc(T,1.65*s)),AX,[0.32,0.32,0.32],'x:'+tpal['4'],{gloss:2,noCast:1}));   // cuff buttons
+        if(blz) for(const k of [0.88,0.93]) push(ellipsoid(add(el,sc(sub(e1,el),k),sc(F,-0.4),sc(T,1.65*s)),AX,[0.32,0.32,0.32],'x:'+tpal['4'],{gloss:2,noCast:1}));   // cuff buttons
       }
       else { // THE SLEEVE: a short tube from inside the shoulder, a touch wider at the hem, cut square there with the hem
         // stitched a finger above the edge and a fold across it; the hem swings a little with the breath
@@ -809,10 +926,12 @@
       tag=''; }
     // the club, gripped in the dominant hand, its head on the grass just outside that foot
     if(gear.ballC){ const bp=P(6.2,3.2,-10.2*dom); push(capsule(P(6.2,0.2,-10.2*dom),P(6.2,1.5,-10.2*dom),0.32,'x:#e8ebf0'));   // the tee
-      push(ellipsoid(add(bp,sc(U,-1.0)),AX,[0.8,0.35,0.8],'x:#e8ebf0')); push(ellipsoid(bp,AX,[1.8,1.8,1.8],'x:'+gear.ballC,{gloss:3})); }
+      push(ellipsoid(add(bp,sc(U,-1.0)),AX,[0.8,0.35,0.8],'x:#e8ebf0'));
+      if(gear.ballId) ppBall(push,bp,AX,U,T,gear.ballId,PXG_BALL_PAL[gear.ballId]); else push(ellipsoid(bp,AX,[1.8,1.8,1.8],'x:'+gear.ballC,{gloss:3})); }
     const hands=add(P(2.75,16.0,11.15*AW*dom)), clubHead=P(3.8,1.3,12.9*AW*dom), out=sc(T,dom);
     const id=gear.club||'driver', c0=parts.length;
     if(NOVELTY[id]||id==='pu_magicwand'){ profileNovelty(push,hands,clubHead,F,U,out,id==='pu_magicwand'?'wand':id,gear.clubPal||{}); }
+    else if(PP_PUTTER[id]) ppPutter(push,id,gear.clubPal||{},hands,norm(sub(clubHead,hands)),add(clubHead,sc(U,-1.3)),[F,U,out],1,0);
     else profileClub(push,hands,clubHead,F,U,id,gear.clubPal||{},out);
     for(let i=c0;i<parts.length;i++) parts[i].o.item='club';
     // THE AURA, in the menu, as a thing in the scene rather than stickers on the picture: a low glowing band standing
@@ -885,7 +1004,15 @@
   // domed on a strap across the head; the Groucho is a nose, a moustache and brows on heavy black frames.
   const EW_METAL={aviators:1,goldshades:1,round:1,readers:1,rose:1,monocle:1,ghoulglow:1,star:1,diamond:1,heart:1};
   const EW_CLEAR={readers:1,threed:0};
-  function eyewear3D(M,ew,map,P){ const out=[], {hc,look:lk,hup,Lf,hr}=M, t=EW_SHAPE[ew]||'rect', col=ewColours(map,P);
+  /* THE PUTT PUTT GLASSES, made by the real pairs they are (as), in their own colours (the art keys, read through
+     the page's PXG_EW_PAL): the frame, the lens, a strap, a trim and the inside of a mask. The Phantom Mask is its
+     own shape: a masquerade half mask over the brow and both eyes, swept up to points, a jewel between the brows. */
+  const EW_PP={ pppixelshades:{as:'shades',frame:'%',lens:'Q'}, ppeyepatch:{as:'eyepatch',frame:'%',strap:'=',mark:'~'},
+    ppaviatorgoggles:{as:'steampunk',frame:'%',lens:'R',strap:'*'}, ppsnowgoggles:{as:'goggles',frame:'%',lens:'R',strap:'~'},
+    ppphantommask:{as:'mask',frame:'%',trim:'*',inner:'a',mark:'=',strap:'+'} };
+  function ewColoursPP(d,EP){ const o={}; for(const k of ['frame','lens','strap','trim','inner','mark']) if(d[k]&&EP[d[k]]) o[k]='x:'+EP[d[k]];
+    o.lens=o.lens||'x:#14161e'; o.frame=o.frame||'x:#26272d'; return o; }
+  function eyewear3D(M,ew,map,P,cO){ const out=[], {hc,look:lk,hup,Lf,hr}=M, t=ew==='mask'?'mask':EW_SHAPE[ew]||'rect', col=cO||ewColours(map,P);
     const face=(v,h,off)=>add(hc,sc(lk,Math.sqrt(Math.max(0,hr*hr-v*v-h*h))+(off||0)),sc(Lf,h),sc(hup,v));
     const AXl=[lk,hup,Lf], metal=!!EW_METAL[ew], EV=ew==='readers'?-2.3:-1.5, EH=3.0, OFF=1.05, fw=metal?0.3:0.62, fd=metal?0.32:0.62;
     const temples=(fr,y0,r)=>{ for(const sd of [1,-1]){ let prev=add(face(y0,sd*(EH+ewSize(t)[1]*0.95),OFF*0.8));
@@ -906,19 +1033,31 @@
       return out; }
     if(t==='goggle'){
       if(ew==='goggles'){ // ski goggles: one wide curved lens in a foam frame, a strap round the head
-        strap(col.frame,EV+0.1,1.3); const C=add(hc,sc(hup,EV)), R=hr*1.04+1.3;
+        strap(col.strap||col.frame,EV+0.1,1.3); const C=add(hc,sc(hup,EV)), R=hr*1.04+1.3;
         out.push(field(add(C,sc(lk,R*0.7)),R*1.2,p=>{ const q=sub(p,C), a=dot(q,lk), y=dot(q,hup), sd=dot(q,Lf), th=Math.atan2(sd,a);
             return rbox(Math.hypot(a,sd)-R,Math.max(Math.abs(th)/1.05*5-3.4,Math.abs(y+(Math.abs(th)<0.3?(0.3-Math.abs(th))*2:0)*0.5)-2.3),0.7); },col.frame,{gloss:1,mf:(p,n)=>{ const q=sub(p,C), y=dot(q,hup), th=Math.atan2(dot(q,Lf),dot(q,lk));
             return Math.abs(y)<1.65&&Math.abs(th)<0.86&&dot(n,lk)>0.6?[col.lens,y>0.3?1:0]:null; }}));
         return out; }
-      strap('x:#5a3a22',EV+0.1,1.05);   // steampunk: brass cups on a leather strap, a glass ring and rivets round each
+      strap(col.strap||'x:#5a3a22',EV+0.1,1.05);   // steampunk: brass cups on a leather strap, a glass ring and rivets round each
       for(const sd of [1,-1]){ const c=face(EV,sd*EH,0.9); out.push(ellipsoid(c,AXl,[1.25,2.25,2.25],col.frame,{gloss:3,noCast:1,cut:l=>l[0]>-0.2}));
         out.push(ellipsoid(add(c,sc(lk,1.05)),AXl,[0.35,1.6,1.6],col.lens,{gloss:3,noCast:1}));
         out.push(field(add(c,sc(lk,1.0)),3,p=>{ const q=sub(p,add(c,sc(lk,1.0))); return Math.hypot(Math.hypot(dot(q,hup),dot(q,Lf))-1.75,dot(q,lk))-0.42; },col.frame,{gloss:3}));
         for(let k=0;k<8;k++){ const a=k*Math.PI/4; out.push(ellipsoid(add(c,sc(lk,1.1),sc(hup,2.05*Math.cos(a)),sc(Lf,2.05*Math.sin(a))),AXl,[0.3,0.3,0.3],'x:#6a4a1c',{gloss:2,noCast:1})); } }
       out.push(capsule(face(EV,1.6,1.4),face(EV,-1.6,1.4),0.55,col.frame,{gloss:2,noCast:1})); return out; }
-    if(t==='patch'){ strap(col.frame,EV+1.6,0.3,0.55); const c=face(EV,EH,0.35);   // the patch, domed over the eye, its strap across the head
+    if(t==='patch'){ strap(col.strap||col.frame,EV+1.6,0.3,0.55); const c=face(EV,EH,0.35);
+      if(col.mark) out.push(ellipsoid(face(EV+0.1,EH,1.45),AXl,[0.3,0.75,0.75],col.mark,{gloss:3,noCast:1}));   // a gold boss on the patch   // the patch, domed over the eye, its strap across the head
       out.push(field(c,3.5,p=>{ const q=sub(p,c), a=dot(q,lk), y=dot(q,hup), sd=dot(q,Lf); return Math.max(Math.hypot(a*2.4,y/1.05,sd/1.15)-2.1,-a-0.2); },col.frame,{gloss:1,mf:(p,n)=>{ const q=sub(p,c), y=dot(q,hup), sd=dot(q,Lf); return Math.hypot(y/1.05,sd/1.15)>1.7?[col.frame,1]:null; }}));
+      return out; }
+    if(t==='mask'){ strap(col.strap||col.frame,EV+0.5,0.3);
+      const C=add(hc,sc(hup,EV)), R=hr+0.6, SP=1.25, edge=th=>{ const e=Math.abs(th)/SP; return {top:1.7+1.6*e*e*e, bot:-2.1+1.3*e*e+(Math.abs(th)<0.3?(0.3-Math.abs(th))*5:0)}; };
+      const hole=(y,sd)=>Math.hypot((Math.abs(sd)-EH)/1.55,(y+0.05)/1.05);
+      out.push(field(add(C,sc(lk,R*0.7)),R*1.25,p=>{ const q=sub(p,C), a=dot(q,lk), y=dot(q,hup), sd=dot(q,Lf), th=Math.atan2(sd,a), E=edge(th);
+          return Math.max(Math.abs(Math.hypot(a,sd)-R)-0.3,Math.abs(th)-SP,y-E.top,E.bot-y,(1-hole(y,sd))*1.2); },col.frame,{gloss:2,mf:(p,n)=>{
+          const q=sub(p,C), y=dot(q,hup), sd=dot(q,Lf), th=Math.atan2(sd,dot(q,lk)), E=edge(th);
+          if(hole(y,sd)<1.3) return [col.inner||col.frame,1];                                        // the lit rim round each eye
+          return y>E.top-0.45||y<E.bot+0.4||Math.abs(th)>SP-0.07?[col.trim||col.frame,0]:null; }}));      // its edge, trimmed
+      for(const sd of [1,-1]) out.push(ellipsoid(face(EV,sd*EH,0.2),AXl,[0.25,1.0,1.45],'x:#14161e',{noCast:1}));   // the eyes behind it, in shadow
+      if(col.mark) out.push(ellipsoid(face(EV+1.15,0,1.0),AXl,[0.45,0.6,0.5],col.mark,{gloss:3,noCast:1}));        // the jewel between the brows
       return out; }
     const [h,w]=ewSize(t), sides=t==='mono'?[1]:[1,-1], tinted=!EW_CLEAR[ew]&&ew!=='threed';
     for(const sd of sides){ const c=face(EV,sd*EH,OFF), K=1.5;
@@ -1288,6 +1427,173 @@
       return capParts(M,hairR(M)/M.hr,{crown:cx(c,0,'#1f1d26'),brim:cx(c,1,'#2c2a34'),btn:gold,badge:(pc,AX)=>{ const [f,u,s]=AX, o=add(pc,sc(f,0.5));
         return [capsule(add(o,sc(u,1.9)),add(o,sc(u,-1.9)),0.5,gold,{gloss:2,noCast:1}), capsule(add(o,sc(u,1.9)),add(o,sc(u,1.1),sc(s,-1.0)),0.45,gold,{gloss:2,noCast:1}),
           capsule(add(o,sc(u,-1.9),sc(s,-0.9)),add(o,sc(u,-1.9),sc(s,0.9)),0.45,gold,{gloss:2,noCast:1})]; }}); } });
+  HAT_MODEL.pptricorn=(M,c,P)=>tricorn(M,c,P);   // the Putt Putt tricorn, modelled (and on the course golfer too)
+  const HAT_COURSE={pptricorn:1};   // a modelled hat that is modelled on the course golfer too
+  /* THE PUTT PUTT WORLD REWARDS, each modelled as the thing it is and keyed by its own id, so nothing else changes.
+     A painted part (o.paint) picks its colour cell by cell from where on it the cell is (its unit coordinates),
+     which is how a crack, a scale or a sprinkle follows the surface. Colours are the item's own palette. */
+  const h01=i=>{ const x=Math.sin(i*127.1+311.7)*43758.5453; return x-Math.floor(x); };
+  const fib=(i,n)=>{ const y=1-2*(i+.5)/n, r=Math.sqrt(1-y*y), a=i*2.39996323; return [r*Math.cos(a),y,r*Math.sin(a)]; };
+  const seeds=(n,o)=>Array.from({length:n},(_,i)=>norm(add(fib(i,n),[h01(i+o)*.6-.3,h01(i+o+50)*.6-.3,h01(i+o+90)*.6-.3])));
+  const vor=(p,S)=>{ let d1=9,d2=9,k=0; for(let i=0;i<S.length;i++){ const d=Math.hypot(p[0]-S[i][0],p[1]-S[i][1],p[2]-S[i][2]); if(d<d1){ d2=d1; d1=d; k=i; } else if(d<d2) d2=d; } return {e:d2-d1,k}; };
+  // magma between plates of rock (a lava cleat, the lava ball): a, b are how wide the glow and its hot core are
+  const magma=(P,S,a,b)=>l=>{ const v=vor(norm(l),S); if(v.e<b) return {m:'x:'+(P.y||'#ffd04a'),dt:1,gloss:0}; if(v.e<a) return {m:'x:'+(P.o||P.r||'#ff7a1a'),gloss:0};
+    return {m:'x:'+(v.k%4===1?(P.r||P.s):v.k%5===2?(P.q||P.h||P.R||P.C):(P.R||P.C)),n:norm(add(sc(norm(l),.55),sc(S[v.k],.45))),gloss:1}; };
+  // scales: offset rows round the part, each scale lit on top and dark at its edge (the dino claw)
+  const scales=(P,na,nb)=>l=>{ const a=Math.atan2(l[2],l[0])/Math.PI*na, b=l[1]*nb, row=Math.floor(b), x=a+(row&1)*0.5, fa=x-Math.floor(x)-0.5, fb=b-row-0.5, d=fa*fa+fb*fb*1.4;
+    if(d>0.19) return {m:'x:'+P.b,dt:0}; return {m:'x:'+(fb>0.08?P.g:P.T),n:norm(add(l,[fa*0.5,fb*0.6,0]))}; };
+  /* THE CLEATS. Menu: the golf shoe rebuilt per pair (Q is the shoe's own frame: f toe-ward, u up, t across).
+     Clubhouse: cream saddle shoes, a deep green saddle piped in green, a gold crest on the outer side and the tongue,
+     a deep green sole on gold studs. Lava Rock: black rock boots cracked with glowing magma, on a molten sole.
+     Dino Claw: green scaly boots with three bone-white claws curling off the toe and spines down the back. */
+  const CLEAT_MENU={
+    ppclubhouse(push,Q,AXs,s,P,HD){ const X=h=>'x:'+h;
+      push(ellipsoid(Q(1.5,0.6),AXs,[5.4,0.62,3.15],X(P.C),{gloss:1}));                                      // the sole
+      push(ellipsoid(Q(1.5,1.12),AXs,[5.32,0.27,3.12],X(P.y),{gloss:2,noCast:1}));                             // a gold welt
+      for(const f of [-2.8,-0.5,1.8,4.1]) for(const d of [1,-1]) push(ellipsoid(Q(1.5+f,0.12,d*2.45),AXs,[0.66,0.5,0.66],X(P.s),{gloss:3,noCast:1}));   // gold studs
+      push(ellipsoid(Q(4.0,1.85),AXs,[2.75,1.3,2.85],'shoe',{gloss:2,bias:.12}));                               // the toe box
+      push(ellipsoid(Q(1.1,2.4),AXs,[3.2,1.95,2.85],'shoe',{gloss:2,bias:.12}));                                // the vamp
+      push(ellipsoid(Q(-1.8,2.2),AXs,[1.85,1.85,2.7],'shoe',{gloss:1}));                                        // the heel counter
+      push(over(Q(1.1,2.4),AXs,[3.2,1.95,2.85],X(P.M),l=>l[0]>-0.62&&l[0]<0.4&&l[1]>-0.55,{gloss:1}));          // the saddle
+      push(over(Q(1.1,2.4),AXs,[3.24,1.98,2.89],X(P.g),l=>(Math.abs(l[0]-0.4)<0.05||Math.abs(l[0]+0.62)<0.05)&&l[1]>-0.55,{noCast:1}));   // its piping
+      push(over(Q(1.5,0.6),AXs,[5.4,0.62,3.15],X(P.c),l=>Math.abs(l[1]-0.3)<0.12&&l[0]>-0.7,{noCast:1}));        // a mint stripe round the sole
+      const cr=Q(1.0,2.75,2.68*s);                                                                               // the crest, on the outer side
+      push(ellipsoid(cr,AXs,[1.05,1.15,0.32],X(P.y),{gloss:2,noCast:1,cut:l=>l[1]>-0.25||Math.abs(l[0])<0.95*(l[1]+1)}));
+      push(ellipsoid(add(cr,sc(AXs[2],0.12*s)),AXs,[0.78,0.88,0.3],X(P.Y),{gloss:3,noCast:1,cut:l=>l[1]>-0.25||Math.abs(l[0])<0.95*(l[1]+1)}));
+      push(over(Q(4.0,1.85),AXs,[2.75,1.3,2.85],X(P.M),l=>l[0]<0.05&&l[1]>0.2,{gloss:1}));                     // the saddle runs on over the instep
+      push(ellipsoid(Q(1.9,3.75),AXs,[1.35,0.45,1.15],X(P.M),{noCast:1}));                                     // the tongue
+      push(ellipsoid(Q(2.35,4.0),AXs,[0.55,0.62,0.62],X(P.Y),{gloss:3,noCast:1}));                              // its gold crest
+      push(ellipsoid(Q(-3.45,3.4),AXs,[0.45,1.0,0.85],X(P.Y),{gloss:3,noCast:1}));                              // the gold heel tab
+      if(HD) for(const k of [0.9,1.85]) push(capsule(Q(k,3.2+0.09*(2.8-k),-1.15),Q(k,3.2+0.09*(2.8-k),1.15),0.28,X(P.H),{noCast:1})); },
+    pplavarock(push,Q,AXs,s,P,HD){ const X=h=>'x:'+h, S1=seeds(11,s>0?3:17), S2=seeds(9,s>0?31:47), S3=seeds(12,s>0?61:77);
+      push(ellipsoid(Q(1.5,0.55),AXs,[5.6,0.72,3.3],X(P.s),{gloss:0,dt:1}));                                    // the molten sole
+      push(ellipsoid(Q(1.5,1.15),AXs,[5.5,0.3,3.25],X(P.y),{gloss:0,dt:1,noCast:1}));                           // its white-hot edge
+      for(const [f,d,r] of [[-2.2,1,0.55],[0.6,-1,0.7],[2.6,1,0.5],[4.6,-1,0.45]]) push(ellipsoid(Q(1.5+f,-0.05,d*2.7),AXs,[r,r*1.3,r],X(P.o),{gloss:0,dt:1,noCast:1}));   // drips
+      push(ellipsoid(Q(4.0,1.95),AXs,[2.9,1.45,3.0],'shoe',{paint:magma(P,S1,0.14,0.05)}));                     // the toe, a rock
+      push(ellipsoid(Q(1.0,2.55),AXs,[3.3,2.1,3.0],'shoe',{paint:magma(P,S2,0.13,0.05)}));
+      push(ellipsoid(Q(-1.6,2.3),AXs,[2.0,2.0,2.85],'shoe',{paint:magma(P,S1,0.13,0.05)}));
+      push(ellipsoid(Q(-0.2,4.8),AXs,[3.75,3.0,3.8],'shoe',{paint:magma(P,S3,0.11,0.04)}));                     // the boot, up over the trouser hem
+      push(ellipsoid(Q(-0.2,7.3),AXs,[3.0,0.5,3.05],X('#120a0c'),{noCast:1}));                                 // its dark mouth
+      for(let i=0;i<9;i++){ const a=i/9*2*Math.PI+0.4*s, r=0.85+0.45*h01(i+s), c=Q(-0.2+3.35*Math.cos(a),7.0+0.4*h01(i*3),3.4*Math.sin(a));   // a jagged rock rim
+        push(ellipsoid(c,AXs,[r,r*1.2,r],'shoe',{paint:magma(P,S2,0.16,0.06)})); }
+      for(const [f,u,t,r] of [[4.9,2.6,1.4,0.9],[2.5,3.5,-1.9,1.0],[0.2,1.6,2.6,0.9],[-2.6,3.6,-2.0,0.95]]) push(ellipsoid(Q(f,u,t*s),AXs,[r,r*0.8,r],'shoe',{paint:magma(P,S3,0.2,0.07)})); },   // lumps of rock
+    ppdinoclaw(push,Q,AXs,s,P,HD){ const X=h=>'x:'+h;
+      push(ellipsoid(Q(1.6,0.6),AXs,[5.6,0.66,3.3],X(P.s),{gloss:1}));                                      // the sole
+      push(ellipsoid(Q(4.1,1.9),AXs,[2.9,1.4,3.1],'shoe',{paint:scales(P,7,4),gloss:2}));                    // the toe
+      push(ellipsoid(Q(1.1,2.5),AXs,[3.3,2.05,3.0],'shoe',{paint:scales(P,8,5),gloss:2}));
+      push(ellipsoid(Q(-1.7,2.3),AXs,[2.0,2.0,2.85],'shoe',{paint:scales(P,7,4),gloss:1}));
+      push(ellipsoid(Q(-0.2,4.8),AXs,[3.75,3.0,3.8],'shoe',{paint:scales(P,9,5),gloss:2}));                  // the boot, up over the trouser hem
+      push(ellipsoid(Q(-0.2,7.2),AXs,[3.9,0.8,3.95],X(P.b),{gloss:1,cut:l=>Math.hypot(l[0],l[2])>0.78}));   // its collar
+      push(ellipsoid(Q(-0.2,7.3),AXs,[3.1,0.5,3.15],X('#0c1a0e'),{noCast:1}));                             // and the dark inside
+      for(let j=0;j<4;j++) push(ellipsoid(Q(-3.9-0.1*j,7.0-1.5*j,0),[AXs[0],AXs[1],AXs[2]],[0.9,0.75,0.42],X(P.g),{gloss:2,noCast:1}));   // spines down the back
+      for(const k of [-1.55,0,1.55]){ let prev=Q(5.9,1.75,k*1.05);                                          // three claws, curling down off the toe
+        for(let j=0;j<5;j++){ const c=Q(6.3+0.72*j,1.75-0.075*j*j-0.05*j,k*(1.05+0.06*j)), r=0.78*(1-0.16*j);
+          push(ellipsoid(c,AXs,[r*1.15,r,r],X(j<1?P.F:j<2?P.f:P.c),{gloss:3,noCast:j>0?1:0})); prev=c; } } } };
+  // On the course a shoe is one rounded block (sc0, axes sax, radii sr) a few cells long: each pair keeps its colours,
+  // its band and its signature (the saddle and gold welt, the magma cracks and molten sole, the white claws).
+  const CLEAT_COURSE={
+    ppclubhouse(push,sc0,sax,sr,P){ push(ellipsoid(sc0,sax,sr,'shoe',{gloss:2,bias:.15}));
+      push(over(sc0,sax,sr,'x:'+P.C,l=>l[1]<-0.5)); push(over(sc0,sax,sr,'x:'+P.Y,l=>l[1]>=-0.5&&l[1]<-0.28,{gloss:2}));
+      push(over(sc0,sax,sr,'x:'+P.M,l=>l[0]>-0.42&&l[0]<0.18&&l[1]>=-0.28,{gloss:1})); },
+    pplavarock(push,sc0,sax,sr,P,ank){ const S=seeds(7,5); push(ellipsoid(sc0,sax,sr,'shoe',{paint:magma(P,S,0.2,0.08),gloss:1}));
+      push(over(sc0,sax,sr,'x:'+P.s,l=>l[1]<-0.45,{dt:1,gloss:0})); push(over(sc0,sax,sr.map(v=>v*1.01),'x:'+P.y,l=>l[1]>=-0.45&&l[1]<-0.25,{dt:1,gloss:0}));
+      push(ellipsoid(add(ank,sc(sax[1],0.4)),sax,[2.75,2.3,2.85],'shoe',{paint:magma(P,seeds(6,9),0.2,0.08),gloss:1})); },
+    ppdinoclaw(push,sc0,sax,sr,P,ank){ push(ellipsoid(sc0,sax,sr,'shoe',{paint:scales(P,4,2),gloss:2}));
+      push(over(sc0,sax,sr,'x:'+P.s,l=>l[1]<-0.5));
+      push(ellipsoid(add(ank,sc(sax[1],0.4)),sax,[2.75,2.3,2.85],'shoe',{paint:scales(P,4,2),gloss:2}));
+      for(const k of [-1.2,0,1.2]) push(ellipsoid(add(sc0,sc(sax[0],sr[0]*0.98),sc(sax[1],-0.2),sc(sax[2],k)),sax,[1.0,0.55,0.5],'x:'+P.c,{gloss:3})); } };
+
+  /* THE BALLS. Each motif is drawn on the ball's own sphere (p: x right, y up, z toward the viewer), the same for
+     its tile and for the ball teed by the menu golfer's feet: a white star, sprinkles, magma cracks between rock
+     plates, a cloud on a blue sky, a speckled egg (taller), a faceted nugget with a glint, a golden leaf, and a
+     carved face lit from inside (with its stem). ry stretches it tall, lump roughs the tile's outline. */
+  const starR=(th,Ro,Ri)=>{ const k=2*Math.PI/5, a0=((th%k)+k)%k, a=Math.min(a0,k-a0); return Ro*Ri*Math.sin(k/2)/(Ro*Math.sin(a)+Ri*Math.sin(k/2-a)); };
+  const SPR=Array.from({length:34},(_,i)=>{ const c=fib(i,34), t0=norm(cross(c,[0.3,1,0.2])), t1=cross(c,t0), a=h01(i+7)*Math.PI; return {c,t:add(sc(t0,Math.cos(a)),sc(t1,Math.sin(a))),k:i%5}; });
+  const LAV=seeds(13,101), NUG=seeds(11,211), SPOT=Array.from({length:24},(_,i)=>({c:norm(add(fib(i,24),[h01(i+3)*.3-.15,0,h01(i+5)*.3-.15])),r:0.09+0.12*h01(i+13),k:h01(i+11)<0.42}));
+  const jackEye=(x,y)=>y>-0.02&&y<0.36&&x>0.12&&x<0.56&&(y+0.02)<0.38*(1-Math.abs(x-0.34)/0.22);
+  const jackMouth=(x,y)=>{ if(Math.abs(x)>0.6||y>-0.12||y<-0.52) return false; const lo=-0.52+0.17*(1-(x/0.6)**2), hi=-0.12-0.1*(x/0.6)**2;
+    if(y<lo||y>hi) return false; const t=((x+0.6)/0.2)|0; return !((t%2===0)&&(y>hi-0.1||y<lo+0.1)); };
+  const BALL_PP={
+    ppgoldstar:{ f:(p,P)=>{ if(p[2]>0){ const r=Math.hypot(p[0],p[1]), th=Math.atan2(p[0],p[1]), R=starR(th,0.7,0.3);
+        if(r<R-0.09) return {c:P.S,gloss:3}; if(r<R) return {c:P.G,gloss:3}; }
+      for(const [x,y] of [[-0.62,0.5],[0.66,-0.42],[-0.5,-0.62]]) if(Math.hypot(p[0]-x,p[1]-y)<0.07&&p[2]>0) return {c:P.G};   // twinkles
+      return {c:P.C}; } },
+    ppsprinkle:{ f:(p,P)=>{ for(const s of SPR){ const d=sub(p,s.c), al=dot(d,s.t); if(Math.abs(al)>0.17) continue; if(Math.hypot(...sub(d,sc(s.t,al)))<0.065) return {c:[P.y,P.b,P.g,P.w,P.r][s.k],gloss:2}; }
+      return {c:P.C}; } },
+    pplava:{ f:(p,P)=>{ const v=vor(p,LAV); if(v.e<0.04) return {c:P.y,dt:1,gloss:0}; if(v.e<0.1) return {c:P.r,gloss:0}; if(v.e<0.14) return {c:P.e||P.r,dt:-1,gloss:0};
+      return {c:v.k%3?P.C:P.s,n:norm(add(sc(p,.55),sc(LAV[v.k],.45))),gloss:1}; } },
+    ppcloud:{ f:(p,P)=>{ const x=p[0],y=p[1]; if(p[2]>0.05){ let c=y>-0.27&&y<0.02&&x>-0.62&&x<0.68;
+        for(const [a,b,r] of [[-0.32,0.0,0.3],[0.04,0.17,0.37],[0.38,0.02,0.29],[-0.56,-0.11,0.2],[0.6,-0.11,0.19]]) if(Math.hypot(x-a,y-b)<r) c=true;
+        if(c) return {c:y<-0.15?P.w:P.W,gloss:1}; }
+      if(p[2]<-0.1&&Math.hypot(x+0.3,y-0.35)<0.3) return {c:P.W,gloss:1};                                      // a little one round the back
+      return {c:y>0.6?P.h:P.C}; } },
+    ppdinoegg:{ ry:1.2, f:(p,P)=>{ for(const s of SPOT) if(Math.hypot(...sub(p,s.c))<s.r) return {c:s.k?P.d:P.g,gloss:2}; return {c:P.C,gloss:2}; } },
+    ppnugget:{ lump:th=>0.07*Math.sin(5*th+0.5)+0.05*Math.sin(3*th+2.1), f:(p,P)=>{ const v=vor(p,NUG), n=norm(add(sc(p,.4),sc(NUG[v.k],.6)));
+      if(v.e<0.045) return {c:P.s,n,gloss:2}; if((v.k===2||v.k===7)&&Math.hypot(...sub(p,NUG[v.k]))<0.13) return {c:P.w,n,gloss:3};
+      return {c:[P.C,P.h,P.C,P.s][v.k%4],n,gloss:3}; } },
+    ppgoldleaf:{ f:(p,P)=>{ if(p[2]>0.05){ const a=0.85, u=p[0]*Math.cos(a)+p[1]*Math.sin(a), v=-p[0]*Math.sin(a)+p[1]*Math.cos(a);
+        if(u>-0.82&&u<-0.56&&Math.abs(v)<0.045) return {c:P.l};                                                // the stem
+        if(u>-0.6&&u<0.66){ const w=0.37*Math.pow(Math.sin(Math.PI*(u+0.6)/1.26),0.8); if(Math.abs(v)<w){
+          if(Math.abs(v)<0.04||Math.abs(v)>w-0.05) return {c:P.l,gloss:3};
+          const q=u-Math.abs(v)*0.9; if(Math.abs(((q%0.24)+0.24)%0.24-0.12)<0.025) return {c:P.l,gloss:3};
+          return {c:P.L,gloss:3}; } } }
+      return {c:p[1]>0.55?P.h:P.C}; } },
+    // an iron lantern cage: six bars, a band round its back and caps top and bottom, purple glass between them
+    // and a white-violet flame burning at the heart of the face that looks at you
+    pphallowslantern:{ f:(p,P)=>{ const ph=Math.atan2(p[0],p[2]), rb=Math.abs(((ph*6/(2*Math.PI)+0.5)%1+1)%1-0.5);
+      if(rb>0.43||Math.abs(p[1])>0.8||(Math.abs(p[1])<0.06&&p[2]<0.55)) return {c:P.o,gloss:3};
+      const fl=Math.hypot(p[0]*1.25,p[1]+0.1); if(p[2]>0.6&&fl<0.36) return {c:fl<0.2?P.W:P.L,dt:1,gloss:0};
+      return {c:p[2]>0.5?P.C:P.P,dt:1,gloss:1}; } } };
+  // the menu golfer's teed ball, painted with its motif: p is (x right, y up, z front) of the ball facing the camera
+  function ppBall(push,bp,AX,U,T,id,P){ const B=BALL_PP[id], ry=B.ry||1, c=add(bp,sc(U,1.8*(ry-1)));
+    push(ellipsoid(c,AX,[1.8,1.8*ry,1.8],'x:'+P.C,{gloss:3,paint:l=>{ const q=B.f([-l[2],l[1],l[0]],P); return {m:'x:'+q.c,dt:q.dt||0,gloss:q.gloss!=null?q.gloss:3,n:q.n?[q.n[2],q.n[1],-q.n[0]]:null}; }}));
+    if(B.stem) push(capsule(add(c,sc(U,1.5)),add(c,sc(U,2.5),sc(T,-0.35)),0.36,'x:'+(P.g||'#3f7a2a'),{gloss:1})); }
+  // its tile: the same sphere, big, on a white tee
+  function ballPicPP(id,B,pal){ const R=22, ry=B.ry||1, N=2*R+8, TH=16, PAD=B.stem?8:3, cx=N/2, cy=PAD+R*ry+1, H=Math.ceil(cy+R*ry*0.92)+TH+1, s=new PQ.Sprite(N,H);
+    for(let y=0;y<H;y++) for(let x=0;x<N;x++){ const nx=(x+.5-cx)/R, ny=(y+.5-cy)/(R*ry), rr=1+(B.lump?B.lump(Math.atan2(ny,nx)):0), r2=(nx*nx+ny*ny)/(rr*rr);
+      if(r2<=1){ const nz=Math.sqrt(1-r2), p=norm([nx/rr,-ny/rr,nz]), q=B.f(p,pal), m=q.n||p, n=norm([m[0],-m[1]/ry,m[2]]);
+        s.g[y][x]={m:'x:'+q.c,n:()=>n,z:nz*R,dt:q.dt||0,gloss:q.gloss!=null?q.gloss:3,bias:0,t:null,noCast:0,tag:''}; continue; }
+      if(B.stem){ const top=cy-R*ry, sx=cx+(top-(y+.5))*0.3+1, tx=(x+.5-sx)/2.4; if(y+.5>top-6&&y+.5<top+3&&Math.abs(tx)<1){ const n=[tx,-0.3,Math.sqrt(1-tx*tx)];
+        s.g[y][x]={m:'x:'+(pal.g||'#3f7a2a'),n:()=>n,z:R*0.5,dt:0,gloss:1,bias:0,t:null,noCast:0,tag:''}; continue; } }
+      const ty=y-(cy+R*ry*0.92); if(ty>=0&&ty<TH){ const w=ty<4?5.5-ty*0.6:3.0-ty*0.08, tx=(x+.5-cx)/w;
+        if(Math.abs(tx)<1){ const n=[tx,0,Math.sqrt(1-tx*tx)]; s.g[y][x]={m:'x:'+(pal.T||'#e8ebf0'),n:()=>n,z:-5,dt:0,gloss:1,bias:0,t:null,noCast:0,tag:''}; } } }
+    const cv=document.createElement('canvas'); cv.width=N; cv.height=H; const rc=new Map();
+    s.paint(cv.getContext('2d'),1,c=>{ const h=c.m.slice(2); let r=rc.get(h); if(!r){ r=PQ.ramp(h); rc.set(h,r); } return r; });
+    return {url:cv.toDataURL('image/png'),w:cv.width,h:cv.height}; }
+
+  /* A HAT'S OWN VOLUME: a part whose surface is a test in the head's frame (s across, u up, f forward), marched like
+     a hull, for a shape no ellipsoid holds. */
+  function vol(M,test,box){ const {hc,look:g,hup:h,Lf:l}=M, O=cam(hc), lc=camv(l), hcv=camv(h), gc=camv(g);
+    let bb=[1e9,1e9,-1e9,-1e9]; for(const a of box.s) for(const b of box.u) for(const c of box.f){ const p=add(O,sc(lc,a),sc(hcv,b),sc(gc,c)); bb=[Math.min(bb[0],p[0]),Math.min(bb[1],p[1]),Math.max(bb[2],p[0]),Math.max(bb[3],p[1])]; }
+    return {k:'v',O,g:gc,h:hcv,l:lc,test,mat:'hat',o:{},box,bb2:bb}; }
+  /* THE TRICORN: a brown crown, and its brim turned up into three peaks (one at the front, two behind), trimmed in
+     gold along the top edge. The brim is one sheet that runs out flat from the crown and curls up to a rounded
+     triangle, highest at its corners. A skull and crossbones on the front, and a red feather up the side. */
+  function tricorn(M,c,P){ const {hc,look,hup,Lf,hr}=M, out=[], X=h=>'x:'+h, AXh=[look,hup,Lf];
+    const br=P.T||'#7a4b2e', dk=P.U||'#553220', gold=P.G||'#f2c94c', y0=hr*0.06, Ri=hr*0.93, ri=hr*1.1, TH=hr*0.08;
+    out.push(ellipsoid(add(hc,sc(hup,hr*0.22)),AXh,[hr*1.05,hr*0.98,hr*1.05],X(br),{gloss:1,cut:l=>l[1]>-0.17}));      // the crown
+    out.push(over(add(hc,sc(hup,hr*0.22)),AXh,[hr*1.05,hr*0.98,hr*1.05],X(dk),l=>l[1]>-0.17&&l[1]<0.0,{noCast:1}));   // its band
+    const edge=th=>{ const k=2*Math.PI/3, d=((th%k)+k)%k-k/2, cs=Math.cos(d); const cn=(1-cs)*2; return {re:ri/Math.pow(cs,0.62),Hb:hr*(0.3+cn*(0.62+0.22*Math.max(0,Math.cos(th))))}; };
+    const surf=(th,t)=>{ const {re,Hb}=edge(th), r=Ri+t*(re-Ri); return add(hc,sc(look,r*Math.cos(th)),sc(Lf,r*Math.sin(th)),sc(hup,y0+Hb*Math.pow(t,1.8))); };
+    const test=(s,u,f)=>{ const r=Math.hypot(s,f); if(r<Ri) return null; const {re,Hb}=edge(Math.atan2(s,f)); if(r>re) return null;
+      const t=(r-Ri)/(re-Ri), ub=y0+Hb*Math.pow(t,1.8), sl=Hb*1.8*Math.pow(t,0.8)/(re-Ri), du=u-ub;
+      if(Math.abs(du)>TH*Math.sqrt(1+sl*sl)) return null; const sg=du>=0?1:-1;
+      return {r:{m:X(sg>0?dk:br),dt:0,gloss:1},n:[-sl*s/r*sg,sg,-sl*f/r*sg]}; };
+    const RM=ri/Math.pow(0.5,0.62)+1, UM=y0+hr*1.15+1;
+    out.push(vol(M,test,{s:[-RM,RM],u:[y0-1,UM],f:[-RM,RM]}));
+    for(let i=0;i<48;i++) out.push(capsule(surf(i/48*2*Math.PI,1),surf((i+1)/48*2*Math.PI,1),hr*0.075,X(gold),{gloss:3}));   // the gold braid along the brim's edge
+    // the skull and crossbones, on the front peak
+    const sk=add(surf(0,0.62),sc(look,1.5),sc(hup,-0.3)), kw=P.K||'#f3eee0', ks=P.J||'#b8b2a0', ke=P.E||'#181019';
+    for(const d of [1,-1]) out.push(capsule(add(sk,sc(Lf,1.45*d),sc(hup,-1.25),sc(look,-0.3)),add(sk,sc(Lf,-1.45*d),sc(hup,1.05),sc(look,-0.3)),0.34,X(ks),{gloss:2,noCast:1}));
+    out.push(ellipsoid(add(sk,sc(hup,0.25)),AXh,[0.7,1.05,1.0],X(kw),{gloss:2,noCast:1}));
+    out.push(ellipsoid(add(sk,sc(hup,-0.65)),AXh,[0.6,0.5,0.62],X(kw),{gloss:2,noCast:1}));
+    for(const d of [1,-1]) out.push(ellipsoid(add(sk,sc(look,0.55),sc(hup,0.2),sc(Lf,0.42*d)),AXh,[0.25,0.32,0.3],X(ke),{noCast:1}));
+    // the feather, up and back off the side
+    let prev=add(hc,sc(hup,hr*0.75),sc(Lf,-hr*0.62),sc(look,-hr*0.15));
+    for(let j=1;j<=8;j++){ const k=j/8, p=add(hc,sc(hup,hr*(0.75+1.0*k)),sc(Lf,-hr*(0.62+0.5*k)),sc(look,-hr*(0.15+0.55*k*k))), w=1.7*Math.sin(Math.PI*Math.min(1,k*1.1))+0.35;
+      const d=norm(sub(p,prev)), sd=norm(cross(d,look)); out.push(ellipsoid(sc(add(p,prev),0.5),[d,sd,norm(cross(d,sd))],[hr*0.09+0.5,w,0.4],X(j>6?(P.F||'#ff9a78'):(P.R||'#e8402e')),{gloss:2}));
+      out.push(capsule(prev,p,0.2,X(P.D||'#a02018'),{noCast:1})); prev=p; }
+    return out; }
   function draw(look,aimDeg,kind,poseKey){
     if(kind==='walk'){ setEl(MO?MO.EL:WALK_EL); try{ return draw0(look,aimDeg,kind,poseKey); } finally{ setEl(26); } }
     return draw0(look,aimDeg,kind,poseKey); }
@@ -1301,10 +1607,10 @@
     const top=(look.top&&PXG_TOPS[look.top])?look.top:'', legw=(look.leg&&PXG_LEGS[look.leg])?look.leg:'', cle=(look.cleats&&PXG_CLEATS[look.cleats])?look.cleats:'';
     const cid=(typeof normClub==='function'?normClub(look.club):look.club)||'driver';
     let cleats=null; if(cle){ const p=PXG_CLEATS_PAL[cle]||{}, v=Object.values(p);
-      cleats={main:p.T||p.R||p.D||v[0], acc:p.M||p.W||p.b||p.f||v[1], sole:p.s||p.k||p.p||p.B||'#2a2f38'}; }
+      cleats={main:p.T||p.R||p.D||v[0], acc:p.M||p.W||p.b||p.f||v[1], sole:p.s||p.k||p.p||p.B||'#2a2f38', id:cle, pal:p}; }
     const gear={top, topPal:top?PXG_TOP_PAL[top]:null, legPal:legw?PXG_LEG_PAL[legw]:null, cleats,
       club:PXG_CLUBS[cid]?cid:'driver', clubPal:Object.assign({},PXG_CLUB_PAL[cid]||{})};
-    { gear.lefty=!!look.lefty; gear.fx=look.fx||''; gear.body=look.body||''; gear.bodyPal=(look.body&&typeof BODY_SKINS!=='undefined'&&BODY_SKINS[look.body])||null; const bpal=look.ball&&typeof PXG_BALL_PAL!=='undefined'&&PXG_BALL_PAL[look.ball]; gear.ballC=bpal?(bpal.C||null):null; const sh=cleats?cleats.main:av.shoesHex; gear.saddleHex=cleats&&cleats.acc?cleats.acc:(PQ.lum(sh)>0.6?'#2c3a58':mix(sh,'#ffffff',0.55)); }
+    { gear.lefty=!!look.lefty; gear.fx=look.fx||''; gear.body=look.body||''; gear.bodyPal=(look.body&&typeof BODY_SKINS!=='undefined'&&BODY_SKINS[look.body])||null; const bpal=look.ball&&typeof PXG_BALL_PAL!=='undefined'&&PXG_BALL_PAL[look.ball]; gear.ballC=bpal?(bpal.C||null):null; gear.ballId=bpal&&BALL_PP[look.ball]?look.ball:''; const sh=cleats?cleats.main:av.shoesHex; gear.saddleHex=cleats&&cleats.acc?cleats.acc:(PQ.lum(sh)>0.6?'#2c3a58':mix(sh,'#ffffff',0.55)); }
     const M=MO?profileModel(aim,gear):model(aim,!!look.lefty,kind,kind==='walk'?walkPose(poseKey):POSES[poseKey],gear);
     const P=Object.assign({k:PXG_FIX.k,l:PXG_FIX.l,g:PXG_FIX.g,n:PXG_FIX.n,G:PXG_FIX.G,H:PXG_FIX.H,F:PXG_FIX.F,E:'#20242c',S:'#e8ebf0'},typeof PXG_NOV!=='undefined'?PXG_NOV:{});
     // the menu's modelled cone hats, the beret and Santa's hat go over the hair, as real hats do (the flat art perches them)
@@ -1313,7 +1619,7 @@
     if(MO&&novel==='knight') M.noHair=true;   // the great helm covers every hair
     const parts=M.parts.concat(hairHat(M,L,closed));
     if(novel){ const cfg=HAT3D[novel]||{}, pal=PXG_HERITAGE_HAT_PAL[novel]||null;
-      if(MO&&HAT_MODEL[novel]) parts.push(...HAT_MODEL[novel](M,hatColours(PXG_HATS[novel],pal,P)));
+      if((MO||HAT_COURSE[novel])&&HAT_MODEL[novel]) parts.push(...HAT_MODEL[novel](M,hatColours(PXG_HATS[novel],pal,P),pal||{}));
       else if(cfg.ring) parts.push(...haloParts(M,Object.assign({},P,pal||{})));
       else { const hv=hull(PXG_HATS[novel],ch=>{ if('sjxhi'.indexOf(ch)>=0&&!(pal&&pal[ch])) return null;   // the face and hair under a brim are the model's own
           return roleFor(ch,pal,P,false); },M,cfg); parts.push(hv);
@@ -1326,14 +1632,18 @@
         if(LENS.indexOf(c)<0){ cnt[c]=(cnt[c]||0)+1; continue; } if(x<mn)mn=x; if(x>mx)mx=x; if(y<ly)ly=y; if(x<22)nL++; else if(x>22)nR++; } }
       const dx=(mx>=0&&nL>0&&nR>0)?Math.round(22-(mn+mx)/2):0, dy=ew==='visorband'?0:(ly<99?Math.max(0,Math.min(3,15-ly)):1);
       if(MO&&novel==='knight'){}   // a closed great helm hides the glasses under it
+      else if(MO&&EW_PP[ew]&&typeof PXG_EW_PAL!=='undefined'&&PXG_EW_PAL[ew]){ const e3=eyewear3D(M,EW_PP[ew].as,map,P,ewColoursPP(EW_PP[ew],PXG_EW_PAL[ew])); e3.forEach(q=>{ q.o.item='ew'; }); parts.push(...e3); }
       else if(MO&&EW_SHAPE[ew]){ const e3=eyewear3D(M,ew,map,P); e3.forEach(q=>{ q.o.item='ew'; }); parts.push(...e3); } else {
-      parts.push(hull(map,ch=>roleFor(ch,null,P,true),M,{decal:1,dx,dy}));
+      // an item with its own eyewear palette (the page's PXG_EW_PAL, the Putt Putt rewards) reads its colours there first
+      const ep=typeof PXG_EW_PAL!=='undefined'&&PXG_EW_PAL[ew], EP=ep?Object.assign({},P,ep):P;
+      const dv=hull(map,ch=>roleFor(ch,null,EP,true),M,{decal:1,dx,dy}); parts.push(dv);
+      const tagEw=MO&&ep?q=>{ q.o=Object.assign({},q.o||{},{item:'ew'}); }:()=>{}; tagEw(dv);   // so its closet tile can draw it alone
       // the arms run back over the ears, which is most of what shows of a pair of glasses from above
-      const fr=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0], frR=fr&&roleFor(fr,null,P,true);
+      const fr=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0], frR=fr&&roleFor(fr,null,EP,true);
       if(frR&&nL>0&&nR>0&&ew!=='eyeblack'){ const {hc,look:g,hup,Lf,hr}=M, eu=-hr*0.1;
         const rr=hr*Math.max(1.08,(M.hairK||1.03)+0.06), on=(f,sd)=>add(hc,sc(norm(add(sc(g,f),sc(Lf,sd*Math.sqrt(1-f*f)))),rr),sc(hup,eu));
         for(const sd of [1,-1]){ const a=on(0.62,sd), b=on(-0.3,sd);
-          parts.push(capsule(a,b,0.5,frR.m,{gloss:2,noCast:1})); } } } }
+          const cq=capsule(a,b,0.5,frR.m,{gloss:2,noCast:1}); tagEw(cq); parts.push(cq); } } } }
     const ONLY=MO?MO.only:''; if(ONLY){ const hatSet=new Set(parts.slice(M.parts.length));
       for(let i=parts.length-1;i>=0;i--){ const q=parts[i], keep=ONLY==='hat'?(hatSet.has(q)&&q.mat!=='hair'&&q.mat!=='skin'&&!(q.o&&q.o.item==='ew')):ONLY==='ew'?(q.o&&q.o.item==='ew'):ONLY==='club'?(q.o&&q.o.item==='club'):(ONLY==='top'||ONLY==='leg'||ONLY==='shirt'||ONLY==='pants')?(q.o&&q.o.item===ONLY&&q.mat!=='skin'&&q.mat!=='glove'&&q.mat.indexOf('x:#d8b04e')<0):(q.o&&q.o.item==='shoe'&&q.o.side===1); if(!keep) parts.splice(i,1); } }
     const K=MO?MO.K:1; const s=new PQ.Sprite(GW*K,GH*K);
@@ -1472,6 +1782,7 @@
      the base colour, since the light now does that job), sat on a white tee. */
   function ballPic(id){ const map=typeof PXG_BALL!=='undefined'&&PXG_BALL[id], pal=typeof PXG_BALL_PAL!=='undefined'&&PXG_BALL_PAL[id];
     if(!map||!pal) return null;
+    if(BALL_PP[id]) return ballPicPP(id,BALL_PP[id],pal);
     let bx0=99,by0=99,bx1=-1,by1=-1; map.forEach((row,y)=>{ for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.'||ch===' '||ch==='T') continue;
       if(x<bx0)bx0=x; if(x>bx1)bx1=x; if(y<by0)by0=y; if(y>by1)by1=y; } });
     if(bx1<0) return null;

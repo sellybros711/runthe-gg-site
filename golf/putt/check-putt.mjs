@@ -90,6 +90,40 @@ for (const s of [9, 11, 13.5]){
   claim(JSON.stringify(a.pts) === JSON.stringify(b.pts), 'the same putt does the same thing, every time');
 }
 
+/* ================================================================= 1b. EVERY REWARD IS A CLOSET ITEM */
+/* What the tours pay is worn on the golfer (the owner's call, 2026-10-16): each name maps to one closet item, an old
+   name on a saved record still reads as its item, and ownership is the record's alone. The page side (prices, packs,
+   boosts, art) is golf/check-boosts.mjs. */
+head('1b. EVERY REWARD IS A CLOSET ITEM');
+{
+  const items = P.rewardItems(), names = items.map(r => r.name), paid = [];
+  ['main', 'members'].forEach(t => { const PY = P.PAY[t]; paid.push(...(PY.sigReward || []), ...(PY.worldReward || [])); if (PY.finish) paid.push(PY.finish); if (PY.treat) paid.push(PY.treat.reward); });
+  paid.push(P.PAY.secret.allReward);
+  const bare = paid.map(n => n.replace(' (Members only)', ''));
+  claim(bare.every(n => names.includes(n)) && names.every(n => bare.includes(n)), `every name the tours pay (${paid.length}) is one reward item, and every item is paid by a tour`);
+  claim(new Set(items.map(r => r.key)).size === items.length && items.every(r => /^(hw|ew|bl|ct|pu|tp):pp[a-z]+$/.test(r.key)), 'each maps to its own pp item key (cat:id)');
+  claim(paid.includes('Hallows Lantern Ball (Members only)') && !paid.some(n => /Jack-o/.test(n)), 'the Members candy bag pays the Hallows Lantern Ball, not a second Jack-o-Lantern');
+  const had = globalThis.localStorage, mem = {};
+  globalThis.localStorage = { getItem: k => (k in mem ? mem[k] : null), setItem: (k, v) => { mem[k] = String(v); }, removeItem: k => { delete mem[k]; } };
+  const owns = rec => { if (rec) mem.bag_ppt_v1 = JSON.stringify(rec); else delete mem.bag_ppt_v1; return items.filter(r => P.rewardOwned(r.key)).map(r => r.name); };
+  claim(owns(null).length === 0, 'a fresh record owns none');
+  claim(owns({ v:2, tours:{ main:{ wpaid:{ 0:1 } } } }).join() === 'Clubhouse Visor,Clubhouse Cleats', 'world 1 cleared owns the Clubhouse Visor and the Clubhouse Cleats');
+  claim(owns({ v:2, tours:{ main:{ best:{ 18:3 } } } }).join() === 'Clubhouse Visor,Clubhouse Cleats', 'world 1\'s signature hole beaten owns the same two, payout or not (a tester\'s old record)');
+  claim(owns({ v:2, tours:{ main:{ best:{ 18:9 } } } }).length === 0, 'the signature hole over par owns nothing');
+  const old = { 'Clubhouse Polo':'Clubhouse Cleats', 'Sprinkle Trail':'Sprinkle Ball', 'High Score Celebration':'Pixel Shades', 'Treasure Trail':'Pirate Eyepatch',
+    'Eruption Celebration':'Lava Rock Cleats', 'Rainbow Trail':'Aviator Goggles', 'Footprint Trail':'Dino Claw Cleats', 'Thaw Celebration':'Snow Goggles',
+    'Phantom Trail (Members only)':'Phantom Mask', 'Jack-o’-Lantern Ball (Members only)':'Hallows Lantern Ball' };
+  claim(Object.keys(old).every(o => owns({ v:2, tours:{}, rewards:[o] }).join() === old[o]), 'each old reward name on a saved record owns its new item');
+  const nine = {}; for (let i = 1; i <= 9; i++) nine[i] = 1;
+  claim(owns({ v:2, tours:{ members:{ treat:nine } } }).join() === 'Hallows Lantern Ball', 'a full candy bag owns the Hallows Lantern Ball');
+  const ten = {}; for (let i = 1; i <= P.PAY.secret.ten; i++) ten[i] = 1;
+  claim(owns({ v:2, tours:{ secret:{ paid:ten } } }).join() === 'Diamond Putter', `${P.PAY.secret.ten} secret holes beaten owns the Diamond Putter`);
+  delete ten[P.PAY.secret.ten]; claim(owns({ v:2, tours:{ secret:{ paid:ten } } }).length === 0, 'one fewer owns nothing');
+  const hints = items.map(r => P.rewardHint(r.key));
+  claim(hints.every(h => / in Putt Putt\./.test(h) && !new RegExp('[' + String.fromCharCode(8211, 8212) + ']').test(h)), 'every item says where to win it, with no dash');
+  if (had === undefined) delete globalThis.localStorage; else globalThis.localStorage = had;
+}
+
 /* ======================================================================== 2. THE REAL GREENS */
 head('2. THE REAL GREENS');
 /* The courses are read out of the game itself, so a course added to the Daily rotation is checked
