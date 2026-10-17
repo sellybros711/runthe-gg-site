@@ -2579,8 +2579,8 @@
   },
   "hoops/design/style-guide.html": {
     "../career-kit.js": {
-      "v": "10",
-      "sha": "0857f50670050cfc"
+      "v": "11",
+      "sha": "8b1be2303905d953"
     },
     "../baller.js": {
       "v": "28",
@@ -2689,8 +2689,8 @@
       "sha": "bc4fd85f6f528926"
     },
     "career-kit.js": {
-      "v": "10",
-      "sha": "0857f50670050cfc"
+      "v": "11",
+      "sha": "8b1be2303905d953"
     },
     "sound.js": {
       "v": "2",
@@ -2709,8 +2709,8 @@
       "sha": "240d69adebb700f7"
     },
     "scenes.js": {
-      "v": "25",
-      "sha": "97c039a8b376fb20"
+      "v": "26",
+      "sha": "411833ae1362f777"
     },
     "itemart.js": {
       "v": "3",
@@ -2737,8 +2737,8 @@
       "sha": "ed8ffc8721479ed1"
     },
     "career-ui.js": {
-      "v": "62",
-      "sha": "3a890df14ad2f8e1"
+      "v": "63",
+      "sha": "8967bd348ae8b624"
     }
   },
   "ideas/index.html": {
