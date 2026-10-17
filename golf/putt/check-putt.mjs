@@ -347,6 +347,36 @@ if (!QUICK){
   claim(escapes === 0, `no shot left the course through a wall (${escapes})`);
   claim(stuck === 0, `no shot was still rolling at the time limit (${stuck})`);
 }
+/* ============================================================== 5b. THE TRAIL GYMS, PROVEN */
+/* A GYM NOBODY CAN SOLVE LOOKS EXACTLY LIKE ONE THEY CAN. So every gym in gyms.js is searched to the end: every state a
+   player can reach (where he stands, where every barrel is, which holes are filled), the fewest steps to the vault, and
+   from every one of those states either the vault or the lever is still reachable, or the walk test the game uses to
+   offer its own reset says the lever is out of reach. The fewest steps are recorded in the gym (moves, proof), and the
+   recorded proof is played step by step to the vault. Unsolvable fails; so does a softlock, and a stale record. */
+head('5b. THE TRAIL GYMS, PROVEN');
+const GYMS = (() => { const ctx = { console }; ctx.globalThis = ctx; vm.createContext(ctx); vm.runInContext(fs.readFileSync(new URL('./gyms.js', import.meta.url), 'utf8'), ctx); return ctx.RTT_PUTT_GYMS; })();
+{ const byWorld = {};
+  for (const G of GYMS.GYMS){ (byWorld[G.world] = byWorld[G.world] || []).push(G);
+    const s = GYMS.solve(G), a = GYMS.audit(G), Q = GYMS.parse(G);
+    console.log(`        ${G.id} ${G.name}: ${G.rows[0].length} x ${G.rows.length} tiles, ${Q.barrels.length} barrels, ${Q.holes.length} holes, ${s.states} states, fewest steps ${s.moves}`);
+    claim(s.ok, `${G.id} ${G.name} is solvable from its gate` + (s.ok ? '' : ': ' + s.why));
+    claim(s.ok && s.moves === G.moves, `${G.id}: its recorded fewest steps are the solver's (${G.moves} recorded, ${s.moves} found)`);
+    // the recorded proof, played: every step a real one, the last opens the vault, and nothing before it does
+    let st = GYMS.init(G), evs = []; for (const d of GYMS.proof(G)){ const r = GYMS.step(G, st, d); evs.push(r.ev); st = r.s; }
+    claim(GYMS.proof(G).length === G.moves && evs[evs.length - 1] === 'open' && evs.slice(0, -1).every(e => e !== 'open' && e !== 'reset' && e !== 'exit' && e !== 'bump' && e !== 'edge'),
+      `${G.id}: the recorded proof walks ${G.moves} steps to the vault`);
+    claim(a.ok, `${G.id}: no softlock in ${a.states} states (${a.dead} need the lever after a wrong move, ${a.stuck} shut the lever off and get the game's reset button, ${a.missed} missed, ${a.alarms} false alarms)`);
+    // the lever puts every piece back: from a state with pieces moved, a step into it is the start again, and the start is solvable
+    { let s1 = GYMS.init(G); for (const d of GYMS.proof(G).slice(0, 12)) s1 = GYMS.step(G, s1, d).s; const lv = Q.lever, adj = [0, 1, 2, 3].map(d => { const c = lv % Q.W + GYMS.DIRS[d][0], r = ((lv / Q.W) | 0) + GYMS.DIRS[d][1]; return [d, r * Q.W + c]; }).filter(x => GYMS.deck(G, s1, x[1]));
+      const at = adj[0], r = GYMS.step(G, { p:at[1], b:s1.b, f:s1.f }, (at[0] + 2) % 4);
+      claim(r.ev === 'reset' && GYMS.key(r.s) === GYMS.key(GYMS.init(G)) && s1.b.join() !== GYMS.init(G).b.join(), `${G.id}: the lever puts every piece back where it started, and that start is the solvable one`); }
+    claim(G.say.length === 2 && G.say.every(l => l.length > 20 && !l.split('').some(ch => ch.charCodeAt(0) === 8211 || ch.charCodeAt(0) === 8212)), `${G.id}: the civilian has a nudge and a plainer line for after two resets`);
+    claim(G.mech[0] === 'barrel' || G.world !== 'pirate', `${G.id}: Pirate Cove's gyms are its barrels first`); }
+  for (const w in byWorld){ const gs = byWorld[w], legs = gs.map(g => g.leg).sort((a, b) => a - b), keep = gs.find(g => g.leg === 18), mid = gs.find(g => g.leg !== 18);
+    claim(gs.length === 2 && legs[1] === 18 && legs[0] >= 7 && legs[0] <= 11 && keep.keeper && keep.mech.length === 2 && mid.mech.length === 1,
+      `${w}: two gyms, one mid-world (hole ${legs[0]}) and a gatekeeper on the trail into hole 18 that pairs its barrels with an earlier world's ${keep.mech[1]}`);
+    claim(mid.pay === 2000 && keep.pay === 3000 && keep.moves > mid.moves, `${w}: the vaults pay ${mid.pay} and ${keep.pay} coins, and the gatekeeper is the longer solve (${mid.moves}, ${keep.moves})`); }
+  claim(GYMS.MASTER.badges === 22 && GYMS.MASTER.wired === false, 'all 22 badges unlock the Puzzle Master, recorded and not yet wired (its art waits for the owner)'); }
 /* ============================================================== 6. THE PAGE, IN A BROWSER */
 /* The node half proves the module. This half proves the door: that it is shut for everybody but
    the testers, that the greens are built off the page's REAL hvGeom for every course in the
@@ -666,6 +696,66 @@ if (!args.includes('--no-browser')){
     claim(pzr.digHidden && pzr.dug && pzr.digPaid, `the footprints: the chest is buried until he stands where they stop, then it comes up and pays (${JSON.stringify([pzr.digHidden, pzr.dug, pzr.digPaid])})`);
     claim(pzr.shut && pzr.opened && pzr.shutAgain && pzr.plateOpen && pzr.staysOpen && pzr.platePaid, `the plate: the pen's gate is shut, opens off the plate, shuts again, and stays open once the chest is had (${JSON.stringify([pzr.shut, pzr.opened, pzr.shutAgain, pzr.plateOpen, pzr.staysOpen, pzr.platePaid])})`);
     claim(pzr.blockedAtFirst && pzr.jam <= 0.65 && pzr.stillShut && pzr.pushed >= 1.7 && pzr.cleared && pzr.pushOpen && pzr.pushPaid, `the crate: pushed toward its rock it jams (${pzr.jam} ft), pushed from the rock's side it clears the gap (${pzr.pushed} ft), and the chest pays (${JSON.stringify([pzr.blockedAtFirst, pzr.stillShut, pzr.cleared, pzr.pushOpen, pzr.pushPaid])})`);
+    /* THE GYMS ON THEIR TRAILS (gyms.js, trail.js, putt.js). Every gym the tour carries stands on its trail clear of the
+       walk, its gate a few steps off the path and reachable, the trail still walkable from start to arch, with its
+       civilian at the gate and its vault on the list; and a world with gyms has none of the small puzzles. Then a gym is
+       played for real: walked into at its gate, a wrong push undone with the lever (twice, so the civilian's plainer
+       line comes), walked out of and back into, and solved by its recorded proof, one tile a step. The vault pays its
+       coins once and the badge is kept; opened again the gym shows as it was left solved. */
+    const gyr = await pg.evaluate(async () => { const out = { trails:[] }, sleep = ms => new Promise(r => setTimeout(r, ms)), best = {}, GL = window.RTT_PUTT_GYMS;
+      for (let n = 1; n <= 198; n++) best[n] = 3;
+      localStorage.setItem('bag_ppt_v1@gyc', JSON.stringify({ v:2, met:['clubhouse', 'temple', 'pirate', 'canyon', 'volcano', 'dino', 'sky', 'neon', 'school', 'iceage', 'candy'], tours:{ main:{ lv:198, best, ace:{}, paid:{}, wpaid:{} } } }));
+      window.RTT_PUTT.close(); sbUser = { id:'gyc' }; openPutt(); await sleep(300);
+      const segMin = (P, x, y) => { let m = 1e9; for (let i = 0; i < P.path.length - 1; i++){ const a = P.path[i], c = P.path[i + 1], dx = c[0] - a[0], dy = c[1] - a[1], L = dx * dx + dy * dy || 1e-9, u = Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / L)); m = Math.min(m, Math.hypot(x - a[0] - dx * u, y - a[1] - dy * u)); } return m; };
+      const want = GL.GYMS.map(g => g.id).sort().join(), got = []; out.pzGymWorld = 0;
+      for (let f = 1; f < 198; f++){ const P = window.RTT_PUTT._trailPlan(f); if (P.puzzle && GL.GYMS.some(g => g.world === P.spec.theme)) out.pzGymWorld++; if (!P.spec.gym) continue; got.push(P.spec.gym);
+        const G = P.gym, o = { f, id:P.spec.gym, has:!!G }; out.trails.push(o); if (!G) continue;
+        let near = 1e9; for (let y = G.y0; y <= G.y0 + G.d; y += 0.5) for (let x = G.x0; x <= G.x0 + G.w; x += 0.5) near = Math.min(near, segMin(P, x, y));
+        o.clear = +near.toFixed(2); o.gateOff = +segMin(P, G.ax, G.ay).toFixed(2);
+        const FL = P._fl, G0 = FL.flood(false); o.gateReach = FL.near(G0, G.ax, G.ay + 0.3, 0.9); o.archReach = FL.near(G0, P.arch.x, 1.2, 2);
+        o.inside = P.items.filter(t => t.k !== 'vault' && P.inGym(t.x, t.y, 0.3)).length + P.things.filter(t => t.k !== 'gym' && P.inGym(t.x, t.y, 0.3)).length;
+        o.civ = !!P.civ && FL.near(G0, P.civ.x, P.civ.y + 1.4, 1.2); o.vault = P.items.some(t => t.k === 'vault'); o.leftNames = window.RTT_PUTT._trailLeft ? window.RTT_PUTT._trailLeft(f + 1) : null; }
+      out.all = got.sort().join() === want;
+      // play the first gym
+      const paid = []; let hk = null, hc = null; const S = () => window.RTT_PUTT._state(), T = () => window.RTT_PUTT._trail();
+      const hook = () => { const h = S().host; if (h !== hk){ if (hk) hk.coins = hc; hk = h; hc = h.coins; h.coins = n => { paid.push(n); }; } };
+      const open = async n => { window.RTT_PUTT.close(); openPutt(); await sleep(200); hook(); window.RTT_PUTT._walkTo(n); for (let i = 0; i < 900 && !T(); i++) await sleep(50); await sleep(300); hook(); return T(); };
+      const idle = async t => { for (let i = 0; i < 200 && t.gymBusy(); i++) await sleep(20); };
+      const play = async (t, ds) => { for (const d of ds){ await idle(t); t.gymStep(d); await sleep(30); } await idle(t); };
+      const enter = async t => { const G = t.plan().gym; t.goTo(G.ax, G.ay + 0.25); t.stick(0, -1); for (let i = 0; i < 60 && !t.gym().in; i++) await sleep(40); t.stick(0, 0); await idle(t); return t.gym().in; };
+      // the way to the lever from where he stands: a search over the gym's own steps, ending in a reset
+      const toLever = t => { const g = t.gym(), seen = new Set([GL.key(g.s)]), q = [[g.s, []]];
+        while (q.length){ const [s, ds] = q.shift(); for (let d = 0; d < 4; d++){ const r = GL.step(g.G, s, d); if (r.ev === 'reset') return ds.concat([d]); if (r.ev !== 'walk' || seen.has(GL.key(r.s))) continue; seen.add(GL.key(r.s)); q.push([r.s, ds.concat([d])]); } } return null; };
+      const f0 = out.trails.find(o => o.has); if (!f0) return out;
+      const t = await open(f0.f), G = t.gym().G, proof = GL.proof(G);
+      out.entered = await enter(t); out.startOk = t.gym().s.p === GL.parse(G).start;
+      await play(t, proof.slice(0, 10)); const moved = t.gym().s.b.join() !== GL.init(G).b.join();
+      for (let k = 0; k < 2; k++){ const way = toLever(t); if (!way) break; await play(t, way); }
+      out.reset = moved && t.gym().resets === 2 && GL.key(t.gym().s) === GL.key(GL.init(G));
+      await sleep(200); out.plain = t.bubble() === G.say[1];
+      // out through the gate, and the civilian says the plainer line to him outside too
+      await play(t, [2]); await sleep(200); out.left = !t.gym().in;
+      const cv = t.plan().civ; t.goTo(cv.x + 5, cv.y + 4); await sleep(250); t.goTo(cv.x - 1.6, cv.y + 1.2); await sleep(400); out.civSays = t.bubble() === G.say[1];
+      out.reentered = await enter(t); paid.length = 0;
+      await play(t, proof); await sleep(2200);
+      out.solved = t.gym().solved && t.items().find(i => i.k === 'vault').done; out.paid = paid.reduce((a, b) => a + b, 0); out.pay = G.pay;
+      const rec = JSON.parse(localStorage.getItem('bag_ppt_v1@gyc')); out.badge = (rec.gym || []).indexOf(G.id) >= 0;
+      out.msg = t.bubble();
+      // again: no second payout, and the gym shows solved
+      await play(t, [2, 2]); paid.length = 0; await sleep(100);
+      const t2 = await open(f0.f), g2 = t2.gym(); out.keptSolved = g2.solved && g2.s.f > 0 && t2.items().find(i => i.k === 'vault').done;
+      await enter(t2); await play(t2, proof); await sleep(600); out.paidAgain = paid.reduce((a, b) => a + b, 0);
+      out.leftAfter = window.RTT_PUTT._trailLeft ? window.RTT_PUTT._trailLeft(f0.f + 1) : null;
+      if (hk) hk.coins = hc; window.RTT_PUTT.close(); sbUser = { id:'chk' }; return out; });
+    claim(gyr.all && gyr.trails.length && gyr.trails.every(o => o.has), `every gym in gyms.js stands on its trail (${gyr.trails.map(o => o.id + ' on the trail into ' + (o.f + 1)).join(', ')})`);
+    claim(gyr.trails.every(o => o.clear > 2.2 + 1.2 && o.gateOff < 9.5 && o.inside === 0), `each gym is clear of the walk, its gate a few steps off the path, and nothing else stands in it (${JSON.stringify(gyr.trails.map(o => [o.clear, o.gateOff, o.inside]))})`);
+    claim(gyr.trails.every(o => o.gateReach && o.archReach && o.civ && o.vault), `each gym's gate and civilian can be walked to and its trail is still walkable to the arch, its vault on the list (${JSON.stringify(gyr.trails.map(o => [o.gateReach, o.archReach, o.civ, o.vault]))})`);
+    claim(gyr.pzGymWorld === 0, `a world with gyms carries none of the small trail puzzles (${gyr.pzGymWorld})`);
+    claim(gyr.trails.every(o => !o.leftNames || o.leftNames.indexOf('a gym') >= 0) && gyr.leftAfter && gyr.leftAfter.indexOf('a gym') < 0, `skipping a gym's trail warns that its gym is left, and not once it is solved (${JSON.stringify(gyr.leftAfter)})`);
+    claim(gyr.entered && gyr.startOk && gyr.reset, `walked into at its gate he moves a tile a step, and the lever puts every piece back (${JSON.stringify([gyr.entered, gyr.startOk, gyr.reset])})`);
+    claim(gyr.plain && gyr.civSays, `after two resets the civilian's plainer line comes, in the gym and at the gate (${JSON.stringify([gyr.plain, gyr.civSays])})`);
+    claim(gyr.left && gyr.reentered && gyr.solved && gyr.paid === gyr.pay && gyr.badge, `out through the gate and in again, the recorded proof solves it: the vault opens, pays ${gyr.paid} of ${gyr.pay} coins and the badge is kept`);
+    claim(gyr.keptSolved && gyr.paidAgain === 0, `opened again the gym shows solved, barrels down in their holes, and its vault never pays twice (${gyr.paidAgain})`);
     // THE WORLD IS WHERE THE MODE OPENS. Opening the Tour drops the player's own golfer onto the trail to the
     // next hole, with Map top right, and the map's close goes back to the world. The first trail of every
     // world has its greeter, who walks up and talks the first time and waits by the path after.

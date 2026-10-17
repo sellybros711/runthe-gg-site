@@ -17,6 +17,7 @@
  */
 import { chromium } from 'playwright';
 import fs from 'node:fs';
+import vm from 'node:vm';
 import { readEconomy, openPage } from './econ-audit.mjs';
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
@@ -39,6 +40,13 @@ const PROFILES = {
              passTier: 60, pro: true, buy: 'champ', note: 'the regular\'s play with the Tour Pass bought (x1.5 play coins, 30,000 coins, 2 seasonal packs, the Pro lane)' },
 };
 const PUTT_WORLDS = 11, PUTT_WORLD_COINS = 4000 + 13000;
+/* THE TRAIL GYMS (golf/putt/gyms.js) replace a world's small trail puzzles: its two vaults pay (read off gyms.js) and
+   its puzzles, each 6 coins of 50, no longer do. PZ_WORLD is how many puzzles each world's trails carried, counted off
+   the plans on 2026-10-17 (103 over the tour, 30,900 coins). A world with no gyms yet is as it was. */
+const PZ_WORLD = { clubhouse: 7, school: 6, candy: 12, neon: 7, pirate: 11, temple: 10, canyon: 12, volcano: 9, sky: 12, dino: 10, iceage: 7 }, PZ_PAY = 6 * 50;
+const WORLD_ORDER = ['clubhouse', 'school', 'candy', 'neon', 'pirate', 'temple', 'canyon', 'volcano', 'sky', 'dino', 'iceage'];
+const GYMS = (() => { try { const ctx = {}; ctx.globalThis = ctx; vm.createContext(ctx); vm.runInContext(fs.readFileSync(new URL('./putt/gyms.js', import.meta.url), 'utf8'), ctx); return ctx.RTT_PUTT_GYMS.GYMS; } catch (e) { return []; } })();
+const gymDelta = (w) => { const gs = GYMS.filter((g) => g.world === WORLD_ORDER[w]); return gs.length ? gs.reduce((a, g) => a + g.pay, 0) - PZ_WORLD[WORLD_ORDER[w]] * PZ_PAY : 0; };
 // Tour Pass lane packs over 60 tiers (passTierReward, Season 2): free 6 base + 2 seasonal + 1 tour; Pro 3 tour + 4 champ
 const LANE_PACKS = { free: { base: 6, tour: 3 }, prem: { tour: 3, champ: 4 } };
 
@@ -129,7 +137,7 @@ export function simulate(E, M, prof, seed, days = 60) {
     pay(prof.coinsDay);
     // Putt Putt worlds, one-time
     const want = Math.min(PUTT_WORLDS, Math.floor(d * prof.puttWorldsWeek / 7));
-    while (worldsDone < want) { worldsDone++; pay(PUTT_WORLD_COINS); }
+    while (worldsDone < want) { pay(PUTT_WORLD_COINS + gymDelta(worldsDone)); worldsDone++; }
     if (worldsDone >= 3) ppPutters.slice(0, Math.min(3, worldsDone - 2)).forEach((r) => owned.add(r.key));
     // free packs and shards, spread evenly over the week
     for (const t in prof.packsWeek) { const n = prof.packsWeek[t] / 7; credits[t] += n; }
