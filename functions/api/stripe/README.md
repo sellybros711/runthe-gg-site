@@ -642,7 +642,13 @@ session. It calls `putt_lives_buy` (keyed on the checkout session, so a retried
 delivery pays once), which cancels the clocks of the lives due back last, and the page
 asks `putt_lives_state` again. A paid session naming no pack we sell is a 500, so
 Stripe retries it and it shows in the dashboard. A buy is filed in `putt_lives_buys`.
-**No promotion codes**: a free code here is free lives. A refund does not take lives back.
+**No promotion codes**: a free code here is free lives.
+
+**A full refund or a chargeback takes the lives back** (the owner, 2026-10-17). The webhook
+reads the checkout session the refunded payment came from and, when it was a lives buy, calls
+`putt_lives_reclaim` (`supabase/152_putt_lives_refund.sql`): the pack's lives, extras first, then
+hearts on a 24 hour clock, never below nought, once a buy. A partial refund takes nothing. The
+webhook endpoint must send `charge.refunded` and `charge.dispute.created`. Preflight row 63.
 
 ### Go-live, in this order
 
@@ -661,7 +667,7 @@ Stripe retries it and it shows in the dashboard. A buy is filed in `putt_lives_b
 5. **Test before the switch, with the switch on in one sitting.** A pack takes no
    promotion code, so a test is a real charge: buy the $2.99 pack on a test account
    that is out of lives, check `putt_lives_buys` has the session with `given = 3`,
-   then refund it in the Dashboard. A refund does not take lives back.
+   then refund it in the Dashboard. The refund takes the three lives back (152).
 6. **Flip `PUTT_LIVES_ENABLED` in BOTH files in one commit**, bump `putt.js?v=` in
    `golf/index.html`, run `node scripts/check-cachebust.mjs --update` and
    `node scripts/stripe/check-putt-lives.mjs`, and push.

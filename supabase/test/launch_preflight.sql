@@ -725,7 +725,16 @@ check_rows(sort, migration, what, breaks, ok) as (
       'Bought Putt Putt lives can go over the max, and are lost first',
       'Every Putt Putt lives checkout answers try again, and nothing sells.',
       (select count(*) > 0 from col where tbl = 'putt_lives' and name = 'extra')
-      and (select count(*) > 0 from proc where name = 'putt_lives_spend' and body like '%extra%'))
+      and (select count(*) > 0 from proc where name = 'putt_lives_spend' and body like '%extra%')),
+  -- A REFUNDED LIVES BUY TAKES ITS LIVES BACK. Without it the webhook 500s on that refund
+  -- and Stripe retries for three days; nothing else is touched.
+  (63, '152_putt_lives_refund',
+      'A refunded or charged-back Putt Putt lives buy takes its lives back, once',
+      'A lives refund is retried by Stripe and the lives stay until this runs.',
+      (select count(*) > 0 from col where tbl = 'putt_lives_buys' and name = 'reclaimed')
+      and (select count(*) > 0 from proc where name = 'putt_lives_reclaim')
+      and (not exists (select 1 from pg_roles where rolname = 'service_role')
+           or has_function_privilege('service_role', 'public.putt_lives_reclaim(text)', 'execute')))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on
