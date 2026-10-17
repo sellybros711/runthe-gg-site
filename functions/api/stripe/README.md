@@ -588,6 +588,42 @@ select public.rtf_coin_refund('<cs_live_... session id>');
 A refunded bucket's packs stay filed if the page already filed them; that is rare and
 small enough to leave to the refund itself.
 
+## Putt Putt lives, nine back for $4.99 (shipped dark)
+
+The owner's call (2026-10-16). A signed in player who is out of lives can buy nine
+lives back. It is built and **off**. The button sits on Putt Putt's Out of Lives sheet.
+
+| switch | price env var | migration | what is bought |
+|---|---|---|---|
+| `PUTT_LIVES_ENABLED` in `_bundles.js` AND `golf/putt/putt.js` | `STRIPE_PRICE_PUTT_LIVES` | `149_putt_lives_buy.sql` | nine lives on the server's `putt_lives` row |
+
+**This is the site's checkout, not golf's `create-checkout` edge function.** The page
+posts `{ putt_lives: true }` to `/api/stripe/checkout-bundle` and comes back to
+`/golf/?putt=lives_paid` (never `?purchase=`, which is the edge function's return).
+
+**It sells only to a player missing at least nine lives** on the server, so a Tour
+Pass holder can buy once they are down to nine of eighteen. Anybody else gets 409
+`lives_left`. A guest is sent to sign in: bought lives are the account's.
+
+**Lives are the server's.** The webhook calls `putt_lives_buy` (keyed on the checkout
+session, so a retried delivery pays once). It cancels the clocks of the nine lives
+due back last, and the page asks `putt_lives_state` again. A buy is filed in
+`putt_lives_buys`. No promotion codes: a free code here is free lives.
+
+### Go-live, in this order
+
+1. **Run `supabase/149_putt_lives_buy.sql`** in the Supabase SQL editor (146 must be in).
+2. **Create the Price**: `STRIPE_SECRET_KEY=sk_live_... node scripts/stripe/setup-premium-bundles.mjs`
+   mints `putt_lives_nine` ($4.99 one-time). It is idempotent.
+3. **Add `STRIPE_PRICE_PUTT_LIVES` in Cloudflare Pages** (Production) and redeploy.
+4. **Flip `PUTT_LIVES_ENABLED` in BOTH files in one commit**, bump `putt.js?v=` in
+   `golf/index.html`, run `node scripts/check-cachebust.mjs --update` and
+   `node scripts/stripe/check-putt-lives.mjs`, and push.
+5. **Nothing to change on the webhook.** It is `checkout.session.completed` with
+   `metadata.putt_lives`.
+6. **Test with one real $4.99 buy** on a test account that is out of lives, then
+   refund it in the Dashboard. A refund does not take lives back.
+
 ## Before public launch
 
 - Flip `arcade/tokens.js` `TESTING = false` to enforce the tiers.

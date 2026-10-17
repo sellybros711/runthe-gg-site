@@ -34,7 +34,7 @@
  * before repeating it in any copy.
  */
 
-import { BUCKETS } from '../../functions/api/stripe/_bundles.js';
+import { BUCKETS, PUTT_LIVES } from '../../functions/api/stripe/_bundles.js';
 
 const CATALOG = [
   {
@@ -113,6 +113,18 @@ const CATALOG = [
       metadata: { site_bundle: key },
     },
   })),
+  /* Putt Putt lives, SHIPPED DARK until PUTT_LIVES_ENABLED and 149. $4.99 for
+   * nine lives back, one-time, bought as often as anybody runs out. */
+  {
+    lookupKey: 'putt_lives_nine',
+    envVar: PUTT_LIVES.envPrice,
+    amountCents: PUTT_LIVES.cents,
+    product: {
+      name: PUTT_LIVES.name,
+      description: PUTT_LIVES.lives + ' lives back in Putt Putt Tour, right away. For when you are out of lives.',
+      metadata: { site_bundle: 'putt-lives' },
+    },
+  },
 ];
 
 const KEY = process.env.STRIPE_SECRET_KEY;

@@ -69,7 +69,7 @@
  * _verify.js explains.
  */
 import { verifyUser } from './_verify.js';
-import { bundleByKey, bucketByKey, BUCKETS_ENABLED, BUCKET_RETURN } from './_bundles.js';
+import { bundleByKey, bucketByKey, BUCKETS_ENABLED, BUCKET_RETURN, PUTT_LIVES, PUTT_LIVES_ENABLED, PUTT_LIVES_RETURN } from './_bundles.js';
 import { siteBase } from './_site.js';
 import { currentPlan } from './_offer.js';
 
@@ -96,6 +96,8 @@ async function handle(context) {
   try { body = await request.json(); } catch (e) {}
   /* A COIN BUCKET is a consumable, not a bundle: its own path, below. */
   if (body.bucket != null) return bucket(env, request, body);
+  /* So are Putt Putt's lives. */
+  if (body.putt_lives != null) return puttLives(env, request, body);
   const key = String(body.bundle || '');
   const bundle = bundleByKey(key);
   if (!bundle) return json({ error: 'unknown_bundle' }, 400);
@@ -254,6 +256,66 @@ async function bucket(env, request, body) {
   }
   if (!attempt.res.ok) return json({ error: 'stripe_error', detail: attempt.data.error && attempt.data.error.message }, 400);
   return json({ url: attempt.data.url });
+}
+
+/* PUTT PUTT LIVES, shipped dark behind PUTT_LIVES_ENABLED. A one-time payment
+ * for PUTT_LIVES.lives lives back, sold only to a player missing at least that
+ * many on the server: a lost life is one entry in putt_lives.back_at that has
+ * not come back yet (146). A player with lives to spare is told so (409), and a
+ * read that fails is a retryable 503, never a sale. The webhook delivers. No
+ * promotion codes: a 100% off code here is free lives, not a comp.
+ *
+ * The page comes back to /golf/ with ?putt=lives_paid or ?putt=lives_cancelled,
+ * never ?purchase=, which is the golf edge function's return and its own poll. */
+async function puttLives(env, request, body) {
+  if (!PUTT_LIVES_ENABLED) return json({ error: 'not_on_sale' }, 403);
+  const price = env[PUTT_LIVES.envPrice];
+  if (!env.STRIPE_SECRET_KEY || !price) return json({ error: 'stripe_not_configured' }, 503);
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE) return json({ error: 'stripe_not_configured' }, 503);
+  const userId = await verifyUser(env, request);
+  if (!userId) return json({ error: 'unauthorized' }, 401);
+  const missing = await puttLivesMissing(env, userId);
+  if (missing == null) return json({ error: 'try_again' }, 503);
+  if (missing < PUTT_LIVES.lives) return json({ error: 'lives_left' }, 409);
+  const site = siteBase(env, request);
+  const ret = typeof body.return_path === 'string' && body.return_path.indexOf(PUTT_LIVES_RETURN) === 0 ? body.return_path : PUTT_LIVES_RETURN;
+  const sep = ret.indexOf('?') >= 0 ? '&' : '?';
+  const form = new URLSearchParams({
+    mode: 'payment',
+    'line_items[0][price]': price,
+    'line_items[0][quantity]': '1',
+    client_reference_id: userId,
+    'metadata[supabase_user_id]': userId,
+    'metadata[putt_lives]': String(PUTT_LIVES.lives),
+    success_url: site + ret + sep + 'putt=lives_paid',
+    cancel_url: site + ret + sep + 'putt=lives_cancelled',
+    customer_creation: 'always'
+  });
+  const customer = await lookupCustomer(env, userId);
+  if (customer) { form.set('customer', customer); form.delete('customer_creation'); }
+  else if (body.email) form.set('customer_email', String(body.email));
+  let attempt = await createSession(env, form);
+  if (!attempt.res.ok && customer && isMissingCustomer(attempt.data)) {
+    form.delete('customer');
+    form.set('customer_creation', 'always');
+    if (body.email) form.set('customer_email', String(body.email));
+    attempt = await createSession(env, form);
+  }
+  if (!attempt.res.ok) return json({ error: 'stripe_error', detail: attempt.data.error && attempt.data.error.message }, 400);
+  return json({ url: attempt.data.url });
+}
+
+/* How many lives this account is waiting on, or null when the read failed. No
+ * row is nothing lost: a row is made the first time the page asks for lives. */
+async function puttLivesMissing(env, userId) {
+  const h = { apikey: env.SUPABASE_SERVICE_ROLE, Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE };
+  try {
+    const r = await fetch(env.SUPABASE_URL + '/rest/v1/putt_lives?user_id=eq.' + encodeURIComponent(userId) + '&select=back_at', { headers: h });
+    if (!r.ok) return null;
+    const rows = (await r.json()) || [];
+    const now = Date.now();
+    return ((rows[0] && rows[0].back_at) || []).filter(function (t) { return Date.parse(t) > now; }).length;
+  } catch (e) { return null; }
 }
 
 async function createSession(env, form) {

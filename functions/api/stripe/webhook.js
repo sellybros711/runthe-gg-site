@@ -46,7 +46,7 @@
  * order, which is load bearing: a yearly plan (price, then metadata) first, then a
  * recurring bundle (metadata), then the Arcade Card.
  */
-import { bundleByKey, yearlyBonus, bundleForYearPrice, bucketByKey, passSeason } from './_bundles.js';
+import { bundleByKey, yearlyBonus, bundleForYearPrice, bucketByKey, passSeason, PUTT_LIVES } from './_bundles.js';
 
 export async function onRequestPost(context) {
   const { env, request } = context;
@@ -109,6 +109,12 @@ export async function handleEvent(env, type, obj) {
       // is owed its coins even if the switch went off while it was open.
       if (obj.payment_status === 'paid' || obj.payment_status === 'no_payment_required') {
         await grantBucket(env, userId, obj.metadata.bucket, obj);
+      }
+    } else if (userId && obj.mode === 'payment' && obj.metadata && obj.metadata.putt_lives) {
+      // Putt Putt lives: filed once, keyed on the session, and delivered whatever
+      // PUTT_LIVES_ENABLED says now, for the bucket's reason above.
+      if (obj.payment_status === 'paid' || obj.payment_status === 'no_payment_required') {
+        await grantPuttLives(env, userId, obj);
       }
     } else if (userId && obj.mode === 'payment' && bundleKey) {
       // one-time premium bundle: grant once nothing is owed on the session.
@@ -523,6 +529,27 @@ async function grantBucket(env, userId, bucketKey, session) {
     var detail = '';
     try { detail = await res.text(); } catch (e) {}
     throw new Error('rtf_coin_buy ' + res.status + ' ' + detail);
+  }
+}
+
+/* PUTT PUTT LIVES, filed in putt_lives_buys (149) through putt_lives_buy, keyed on the
+ * session, so a retried delivery hands lives back once. The count is read off the
+ * catalog, never off the session. The same call cancels the clocks of the lives it
+ * returns, on the server's own row (146), so the page only has to ask again. */
+async function grantPuttLives(env, userId, session) {
+  const res = await fetch(env.SUPABASE_URL + '/rest/v1/rpc/putt_lives_buy', {
+    method: 'POST',
+    headers: {
+      apikey: env.SUPABASE_SERVICE_ROLE,
+      Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ p_session: session.id, p_user: userId, p_lives: PUTT_LIVES.lives })
+  });
+  if (!res.ok) {
+    var detail = '';
+    try { detail = await res.text(); } catch (e) {}
+    throw new Error('putt_lives_buy ' + res.status + ' ' + detail);
   }
 }
 
