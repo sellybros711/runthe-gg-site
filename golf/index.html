@@ -60,7 +60,7 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- Putt Putt Tour. It draws nothing until puttOn() opens it (see PUTT_TESTERS and PUTT_LIVE). -->
-<script defer src="putt/putt.js?v=94"></script>
+<script defer src="putt/putt.js?v=95"></script>
 <script defer src="putt/land.js?v=12"></script>
 <script defer src="putt/hole3d.js?v=16"></script>
 <script defer src="putt/trail.js?v=38"></script>
@@ -19426,7 +19426,6 @@ function pxIdleSrcAttrs(look){
 function pxAvatarHTML(look,cls){ let au=null; try{ au=auraOf(look); }catch(e){}
   const g=g3dPic(look||DEFLOOK,'fig'), src=g?g3dSrc(g):pxIdleSrcAttrs(look), idle=g?'':' pxidle';
   if(!au) return `<div class="avatarfig pxfig ${cls||''}"><img class="pximg${idle}" ${src} alt="Your golfer"></div>`;
-  if(g) return `<div class="avatarfig pxfig ${auraCls(au)} ${cls||''}" style="${auraVars(au)}"><span class="au-halo" aria-hidden="true"></span><img class="pximg au-fig" ${src} alt="Your golfer"></div>`;   // the 3D golfer carries its own aura
   return `<div class="avatarfig pxfig ${auraCls(au)} ${cls||''}" style="${auraVars(au)}">${auraBack(au)}<img class="pximg${idle} au-fig" ${src} alt="Your golfer">${auraParts(au,11)}</div>`; }
 // CS356f: tiny head-and-shoulders chip of the pixel golfer, for the profile pill etc.
 // crops the 44x56 sprite to the head+shoulders band (rows ~4-26) and centers it in an sz x sz box.
@@ -19444,8 +19443,6 @@ function pxFigureHTML(look,h){ h=h||60; look=look||S.look||DEFLOOK;
   const g=g3dPic(look,'fig');
   const img=`<img class="pxfigsm${g?'':' pxidle'}${au?' au-fig':''}" ${g?g3dSrc(g):pxIdleSrcAttrs(look)} alt="Your golfer" style="height:${h}px;width:auto;image-rendering:pixelated;display:block;flex:0 0 auto">`;
   if(!au) return img;
-  // the 3D golfer carries its aura in the picture (its band, motes and ribbon), so only the halo's glow is added here
-  if(g) return `<span class="pxfxwrap ${auraCls(au)}" style="${auraVars(au)}"><span class="au-halo" aria-hidden="true"></span>${img}</span>`;
   return `<span class="pxfxwrap ${auraCls(au)}" style="${auraVars(au)}">${auraBack(au)}${img}${auraParts(au, Math.max(6,Math.round(h*0.11)))}</span>`; }
 // the global idle ticker: swap every .pxidle img between its base + breathe frames, all in sync.
 (function(){

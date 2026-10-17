@@ -89,3 +89,4 @@ select pg_temp.claim(not has_function_privilege('authenticated', 'public.putt_li
 select pg_temp.claim(not has_function_privilege('anon', 'public.putt_lives_buy(text, uuid, int)', 'execute'), 'nor can a guest');
 select pg_temp.claim(not has_table_privilege('authenticated', 'public.putt_lives_buys', 'select'), 'nor read the ledger');
 select pg_temp.claim(not has_table_privilege('authenticated', 'public.putt_lives_buys', 'insert'), 'nor write to it');
+select pg_temp.claim(has_function_privilege('service_role', 'public.putt_lives_buy(text, uuid, int)', 'execute'), 'the webhook (service_role) can call the writer');

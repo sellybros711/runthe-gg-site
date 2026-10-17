@@ -631,6 +631,11 @@ so without 151 every lives checkout answers 503 and nothing sells, rather than t
 money the webhook could only half deliver. **Re-running 146 after 151 undoes 151**; run
 151 again, and preflight row 62 says when that has happened.
 
+**The webhook needs `execute` on `putt_lives_buy` as `service_role`.** 149 and 151 revoke the
+function from everyone else and grant it back to that role by name. Without the grant every paid
+buy is a 500 `permission denied for function putt_lives_buy` (the first live buy, 2026-10-17), and
+preflight row 60 reads NO.
+
 **Lives are the server's.** The session carries the pack's key in
 `metadata.putt_lives`, and the webhook reads the lives off `PUTT_LIVES`, never off the
 session. It calls `putt_lives_buy` (keyed on the checkout session, so a retried
