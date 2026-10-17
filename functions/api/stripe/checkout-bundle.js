@@ -69,7 +69,7 @@
  * _verify.js explains.
  */
 import { verifyUser } from './_verify.js';
-import { bundleByKey, bucketByKey, BUCKETS_ENABLED, BUCKET_RETURN, PUTT_LIVES, PUTT_LIVES_ENABLED, PUTT_LIVES_RETURN } from './_bundles.js';
+import { bundleByKey, bucketByKey, BUCKETS_ENABLED, BUCKET_RETURN, puttLivesPack, PUTT_LIVES_ENABLED, PUTT_LIVES_RETURN } from './_bundles.js';
 import { siteBase } from './_site.js';
 import { currentPlan } from './_offer.js';
 
@@ -258,25 +258,29 @@ async function bucket(env, request, body) {
   return json({ url: attempt.data.url });
 }
 
-/* PUTT PUTT LIVES, shipped dark behind PUTT_LIVES_ENABLED. A one-time payment
- * for PUTT_LIVES.lives lives back, sold only to a player missing at least that
- * many on the server: a lost life is one entry in putt_lives.back_at that has
+/* PUTT PUTT LIVES, shipped dark behind PUTT_LIVES_ENABLED. The body names a
+ * pack (`putt_lives: 'nine'` or `'three'`, keys of PUTT_LIVES). A one-time
+ * payment for that pack's lives back, sold only to a player missing at least
+ * that many on the server: a lost life is one entry in putt_lives.back_at that has
  * not come back yet (146). A player with lives to spare is told so (409), and a
  * read that fails is a retryable 503, never a sale. The webhook delivers. No
  * promotion codes: a 100% off code here is free lives, not a comp.
  *
- * The page comes back to /golf/ with ?putt=lives_paid or ?putt=lives_cancelled,
+ * The page comes back to /golf/ with ?putt=lives_paid&pack=<key> or ?putt=lives_cancelled,
  * never ?purchase=, which is the golf edge function's return and its own poll. */
 async function puttLives(env, request, body) {
   if (!PUTT_LIVES_ENABLED) return json({ error: 'not_on_sale' }, 403);
-  const price = env[PUTT_LIVES.envPrice];
+  const key = String(body.putt_lives);
+  const pack = puttLivesPack(key);
+  if (!pack) return json({ error: 'unknown_pack' }, 400);
+  const price = env[pack.envPrice];
   if (!env.STRIPE_SECRET_KEY || !price) return json({ error: 'stripe_not_configured' }, 503);
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE) return json({ error: 'stripe_not_configured' }, 503);
   const userId = await verifyUser(env, request);
   if (!userId) return json({ error: 'unauthorized' }, 401);
   const missing = await puttLivesMissing(env, userId);
   if (missing == null) return json({ error: 'try_again' }, 503);
-  if (missing < PUTT_LIVES.lives) return json({ error: 'lives_left' }, 409);
+  if (missing < pack.lives) return json({ error: 'lives_left' }, 409);
   const site = siteBase(env, request);
   const ret = typeof body.return_path === 'string' && body.return_path.indexOf(PUTT_LIVES_RETURN) === 0 ? body.return_path : PUTT_LIVES_RETURN;
   const sep = ret.indexOf('?') >= 0 ? '&' : '?';
@@ -286,8 +290,8 @@ async function puttLives(env, request, body) {
     'line_items[0][quantity]': '1',
     client_reference_id: userId,
     'metadata[supabase_user_id]': userId,
-    'metadata[putt_lives]': String(PUTT_LIVES.lives),
-    success_url: site + ret + sep + 'putt=lives_paid',
+    'metadata[putt_lives]': key,
+    success_url: site + ret + sep + 'putt=lives_paid&pack=' + key,
     cancel_url: site + ret + sep + 'putt=lives_cancelled',
     customer_creation: 'always'
   });

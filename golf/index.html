@@ -60,7 +60,7 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- Putt Putt Tour. It draws nothing until puttOn() opens it (see PUTT_TESTERS and PUTT_LIVE). -->
-<script defer src="putt/putt.js?v=90"></script>
+<script defer src="putt/putt.js?v=91"></script>
 <script defer src="putt/land.js?v=12"></script>
 <script defer src="putt/hole3d.js?v=16"></script>
 <script defer src="putt/trail.js?v=38"></script>
@@ -23571,7 +23571,7 @@ function puttHost(){
     // Get Tour Pass from inside Putt Putt: the game's own Tour Pass, where the pass is bought
     pass:function(){ S.overlay='tourpass'; try{ render(); }catch(e){} },
     // Putt Putt's paid lives: the site's own Stripe checkout (functions/api/stripe), not create-checkout. Answers {url} or {error}.
-    buyLives:function(){ return puttBuyLives(); },
+    buyLives:function(pack){ return puttBuyLives(pack); },
     // a guest's coins are held on this browser and paid when they sign in, rather than lost (holdGuestCoins)
     coins:function(n,label){ try{ if(sbSignedIn()) addBonusCoins(n,{label:label}); else holdGuestCoins(n); }catch(e){} },
     // the game's own weekly challenges, daily quests and play streak hear about Putt Putt
@@ -23607,16 +23607,16 @@ function holdGuestCoins(n){ n=Math.round(n||0); if(n<=0) return; try{ const h=LS
 function heldGuestCoins(){ try{ const h=LS.get(HELD_COINS_KEY,null); return (h&&h.n)||0; }catch(e){ return 0; } }
 function flushHeldCoins(){ if(!sbSignedIn()) return 0; const n=heldGuestCoins(); if(!n) return 0;
   try{ localStorage.removeItem(HELD_COINS_KEY); }catch(e){} return addBonusCoins(n,{label:'from Putt Putt as a guest'}); }
-// PUTT PUTT LIVES FOR SALE (functions/api/stripe/_bundles.js PUTT_LIVES). The checkout answers {url} to send the
+// PUTT PUTT LIVES FOR SALE (functions/api/stripe/_bundles.js PUTT_LIVES), a pack by its key ('nine' or 'three'). The checkout answers {url} to send the
 // player to Stripe, or {error}: lives_left when they are not out, not_on_sale while the switch is off.
-function puttBuyLives(){
+function puttBuyLives(pack){
   if(!sb||!sbSignedIn()) return Promise.resolve({error:'signin'});
-  try{ track('putt_lives_checkout'); }catch(e){}
+  try{ track('putt_lives_checkout',{pack:pack}); }catch(e){}
   // the lives held now, so the return knows the buy has landed (a Tour Pass holder can be at nine before it does)
   try{ sessionStorage.setItem('putt_lives_before', String(RTT_PUTT.summary(puttHost()).lives||0)); }catch(e){}
   return sb.auth.getSession().then(function(r){ var t=r&&r.data&&r.data.session&&r.data.session.access_token; if(!t) return {error:'signin'};
     return fetch('/api/stripe/checkout-bundle',{ method:'POST', headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},
-      body:JSON.stringify({ putt_lives:true, return_path:'/golf/' }) }).then(function(x){ return x.json().catch(function(){ return {}; }); }); })
+      body:JSON.stringify({ putt_lives:pack, return_path:'/golf/' }) }).then(function(x){ return x.json().catch(function(){ return {}; }); }); })
     .catch(function(){ return {}; });
 }
 // BACK FROM STRIPE with ?putt=lives_paid or ?putt=lives_cancelled (never ?purchase=, which is create-checkout's).
@@ -23624,14 +23624,17 @@ function puttBuyLives(){
 var _puttLivesHandled=false;
 function puttLivesReturn(){
   if(_puttLivesHandled) return; var st=null;
-  try{ st=new URL(location.href).searchParams.get('putt'); }catch(e){}
+  var pk=null;
+  try{ const q=new URL(location.href).searchParams; st=q.get('putt'); pk=q.get('pack'); }catch(e){}
   if(st!=='lives_paid'&&st!=='lives_cancelled') return;
   _puttLivesHandled=true;
-  try{ const u=new URL(location.href); u.searchParams.delete('putt'); history.replaceState(null,'',u.pathname+(u.search||'')+(u.hash||'')); }catch(e){}
+  try{ const u=new URL(location.href); u.searchParams.delete('putt'); u.searchParams.delete('pack'); history.replaceState(null,'',u.pathname+(u.search||'')+(u.hash||'')); }catch(e){}
   if(st==='lives_cancelled'){ try{ toast('Checkout cancelled. No charge was made.', 3600); }catch(e){} return; }
-  try{ track('purchase_return',{status:'success',kind:'putt_lives'}); }catch(e){}
+  try{ track('purchase_return',{status:'success',kind:'putt_lives',pack:pk}); }catch(e){}
   if(!window.RTT_PUTT||!RTT_PUTT.livesRefresh) return;
-  var want=(RTT_PUTT.LIVES_BUY&&RTT_PUTT.LIVES_BUY.lives)||9, before=0, tries=0;
+  // the pack bought rides on the return (&pack=); an unknown one waits for the smallest pack, so nobody waits for lives never sold
+  var packs=RTT_PUTT.LIVES_BUY||[], bought=packs.filter(function(p){ return p.pack===pk; })[0];
+  var want=bought?bought.lives:Math.min.apply(null,packs.map(function(p){ return p.lives; }).concat([3])), before=0, tries=0;
   try{ before=+sessionStorage.getItem('putt_lives_before')||0; sessionStorage.removeItem('putt_lives_before'); }catch(e){}
   (function ask(){ RTT_PUTT.livesRefresh(puttHost()).then(function(n){
     if(n>=before+want){ try{ toast(want+' lives back. Go play.', 3600); }catch(e){} openPutt(); return; }

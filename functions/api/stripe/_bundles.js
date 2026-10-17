@@ -267,23 +267,32 @@ export function bucketByKey(key) {
   return Object.prototype.hasOwnProperty.call(BUCKETS, key) ? BUCKETS[key] : null;
 }
 
-/* PUTT PUTT LIVES, $4.99 for nine lives back, SHIPPED DARK (PUTT_LIVES_ENABLED).
- * The owner's call (2026-10-16), and it supersedes "no paid refill at launch".
+/* PUTT PUTT LIVES, two packs, SHIPPED DARK (PUTT_LIVES_ENABLED). The owner's calls:
+ * nine lives for $4.99 (2026-10-16), and three for $2.99 beside it (2026-10-17).
  *
- * A CONSUMABLE, like a coin bucket: bought as often as anybody runs out. It is
- * sold only to a signed in player who is missing at least `lives` lives on the
- * server (checkout answers 409 lives_left otherwise), so nobody pays for lives
- * they could not hold. The webhook files the paid session in putt_lives_buys
- * (supabase/149_putt_lives_buy.sql) through putt_lives_buy, keyed on the
- * session, and that same call cancels the clocks of the lives it hands back.
- * Lives are the server's (146): the page only ever reads them.
+ * CONSUMABLES, like a coin bucket: bought as often as anybody runs out. A pack is
+ * sold only to a signed in player missing at least its `lives` on the server
+ * (checkout answers 409 lives_left otherwise), so nobody pays for lives they
+ * could not hold. The page sends the pack's KEY and the session carries the key;
+ * the webhook reads the lives off this catalog, never off the session, and files
+ * the paid session in putt_lives_buys (supabase/149_putt_lives_buy.sql) through
+ * putt_lives_buy, keyed on the session. That same call cancels the clocks of the
+ * lives it hands back. Lives are the server's (146): the page only ever reads them.
  *
- * OFF IS NOT THE ONLY GATE. It needs STRIPE_PRICE_PUTT_LIVES set (503 without)
- * and 149 deployed (the webhook fails loudly without it and Stripe retries).
- * golf/putt/putt.js carries the switch, the lives and the price for the page,
- * and scripts/stripe/check-putt-lives.mjs holds the two copies together. */
+ * The order here is the order the Out of Lives sheet shows them: nine first.
+ *
+ * OFF IS NOT THE ONLY GATE. Each pack needs its own price env var set (503
+ * without) and 149 deployed (the webhook fails loudly without it and Stripe
+ * retries). golf/putt/putt.js carries the switch and a copy of these packs for
+ * the page, and scripts/stripe/check-putt-lives.mjs holds the two together. */
 export const PUTT_LIVES_ENABLED = false;
-export const PUTT_LIVES = { name: 'Putt Putt Lives', envPrice: 'STRIPE_PRICE_PUTT_LIVES', cents: 499, lives: 9 };
+export const PUTT_LIVES = {
+  nine:  { name: 'Putt Putt Lives: 9', envPrice: 'STRIPE_PRICE_PUTT_LIVES_9', lookupKey: 'putt_lives_nine',  cents: 499, lives: 9 },
+  three: { name: 'Putt Putt Lives: 3', envPrice: 'STRIPE_PRICE_PUTT_LIVES_3', lookupKey: 'putt_lives_three', cents: 299, lives: 3 },
+};
+export function puttLivesPack(key) {
+  return Object.prototype.hasOwnProperty.call(PUTT_LIVES, key) ? PUTT_LIVES[key] : null;
+}
 export const PUTT_LIVES_RETURN = '/golf/';
 
 /* THE PASS SEASON, the same arithmetic as hoops/pass.js: sixty Eastern days

@@ -11,8 +11,9 @@ name: Stripe checks
 #                     webhook against a fake Stripe and Supabase
 #   check-floor-money Run The Floor's coin buckets and Floor Pass, shipped dark: the
 #                     switches are off and agree, and each is driven on in a scratch copy
-#   check-putt-lives  Putt Putt's nine lives for $4.99, the same way: page and server
-#                     agree, checkout sells only to a player who is out, the webhook files it
+#   check-putt-lives  Putt Putt's two lives packs (nine for $4.99, three for $2.99), the
+#                     same way: page and server agree, checkout sells a pack only when all
+#                     of it would land, the webhook files the catalog's lives
 #   hoops_wallet      supabase/141's paid coin rules, in SQL
 #   putt_lives_buy    supabase/149's bought lives, in SQL
 #   replay-webhook    every yearly plan event through the real webhook, against a real

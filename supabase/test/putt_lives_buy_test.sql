@@ -8,7 +8,8 @@
 \set ON_ERROR_STOP on
 create table if not exists public.profiles (id uuid primary key, username text);
 insert into auth.users values ('00000000-0000-0000-0000-00000000000a'), ('00000000-0000-0000-0000-00000000000b'),
-  ('00000000-0000-0000-0000-00000000000c'), ('00000000-0000-0000-0000-00000000000d') on conflict do nothing;
+  ('00000000-0000-0000-0000-00000000000c'), ('00000000-0000-0000-0000-00000000000d'),
+  ('00000000-0000-0000-0000-00000000000e'), ('00000000-0000-0000-0000-00000000000f') on conflict do nothing;
 
 create or replace function pg_temp.claim(ok boolean, what text) returns void language plpgsql as $$
 begin if not coalesce(ok, false) then raise exception 'FAIL: %', what; end if; raise notice 'ok  %', what; end $$;
@@ -56,6 +57,32 @@ select pg_temp.claim((select given from putt_lives_buys where session_id = 'cs_t
 select putt_lives_buy('cs_test_four', '00000000-0000-0000-0000-00000000000d', 9);
 set test.uid = '00000000-0000-0000-0000-00000000000d';
 select pg_temp.claim((select lives from putt_lives_state(9)) = 9, 'an account with no row ends on nine');
+
+-- THE THREE-PACK (the owner, 2026-10-17): three back, the three clocks due back last cancelled
+set test.uid = '00000000-0000-0000-0000-00000000000e';
+select putt_lives_spend(9) from generate_series(1, 9);
+update putt_lives set back_at = (select array_agg(now() + make_interval(hours => g) order by g) from generate_series(1, 9) g)
+ where user_id = '00000000-0000-0000-0000-00000000000e';
+select pg_temp.claim(putt_lives_buy('cs_test_three_a', '00000000-0000-0000-0000-00000000000e', 3), 'a three-pack session is filed');
+select pg_temp.claim((select lives from putt_lives_state(9)) = 3, 'three of nine are back');
+select pg_temp.claim((select coalesce(array_length(back_at, 1), 0) from putt_lives_state(9)) = 6, 'six clocks still run');
+select pg_temp.claim((select max(b) from putt_lives, unnest(back_at) b where user_id = '00000000-0000-0000-0000-00000000000e') < now() + interval '7 hours',
+  'the three it cancelled were the last due');
+select pg_temp.claim((select refill_at from putt_lives_state(9)) < now() + interval '90 minutes', 'the next life is still the one due first');
+select pg_temp.claim((select lives = 3 and given = 3 from putt_lives_buys where session_id = 'cs_test_three_a'), 'filed as three, gave three');
+select pg_temp.claim(not putt_lives_buy('cs_test_three_a', '00000000-0000-0000-0000-00000000000e', 3)
+  and (select lives from putt_lives_state(9)) = 3, 'Stripe delivering the three-pack again gives nothing');
+select pg_temp.claim(putt_lives_buy('cs_test_three_b', '00000000-0000-0000-0000-00000000000e', 3)
+  and (select lives from putt_lives_state(9)) = 6, 'a second three-pack is its own session, six back');
+
+-- A THREE-PACK BEFORE NOUGHT: two lost, one clock already ran out. It gives what is owed.
+set test.uid = '00000000-0000-0000-0000-00000000000f';
+select putt_lives_spend(9) from generate_series(1, 3);
+update putt_lives set back_at = array[now() - interval '1 minute', now() + interval '2 hours', now() + interval '3 hours']
+ where user_id = '00000000-0000-0000-0000-00000000000f';
+select putt_lives_buy('cs_test_three_c', '00000000-0000-0000-0000-00000000000f', 3);
+select pg_temp.claim((select lives from putt_lives_state(9)) = 9, 'back to a full nine, never past it');
+select pg_temp.claim((select given from putt_lives_buys where session_id = 'cs_test_three_c') = 2, 'and records that it gave two');
 
 -- NOBODY BUT THE WEBHOOK
 select pg_temp.claim(not has_function_privilege('authenticated', 'public.putt_lives_buy(text, uuid, int)', 'execute'), 'a signed in player cannot call the writer');

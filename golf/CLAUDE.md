@@ -88,8 +88,9 @@ node golf/econ-sim.mjs                      a casual, regular and heavy player t
 - `putt_lives_refill` carries its own copy of `PUTT_TESTERS`: keep the two lists in step.
 - **A heart is three lives**: 9, or 18 with a Tour Pass, and every lost life comes back 24 hours after it went
   (`146_putt_lives_nine.sql`, `st.back`). Deploy 146 before the page that reads `back_at`.
-- **Paid lives** (nine for $4.99, `PUTT_LIVES_ENABLED`) sell through the site's own checkout, not `create-checkout`.
-  The switch, `LIVES_BUY` and the server's `PUTT_LIVES` move together: `node scripts/stripe/check-putt-lives.mjs`.
+- **Paid lives** (nine for $4.99, three for $2.99, `PUTT_LIVES_ENABLED`) sell through the site's own checkout, not
+  `create-checkout`. The Store Agent owns them. The switch, `LIVES_BUY` (packs, prices and their order) and the
+  server's `PUTT_LIVES` move together: `node scripts/stripe/check-putt-lives.mjs`.
 - `LIGHT` in `hole3d.js` is copied from PXHD: change one and change both.
 - **When the picture changes, bump the `?v=` of putt.js, trail.js or hole3d.js**, or a returning player
   sees the old cached trail. A renderer speedup must match the old render pixel for pixel: hash the

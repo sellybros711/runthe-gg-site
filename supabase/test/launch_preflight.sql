@@ -701,7 +701,14 @@ check_rows(sort, migration, what, breaks, ok) as (
       'Putt Putt lives are three hearts of three, each life back 24 hours after it went',
       'Lives still work on 138: three a heart, and none come back until all are gone.',
       (select count(*) > 0 from col where tbl = 'putt_lives' and name = 'back_at')
-      and (select count(*) > 0 from proc where name = 'putt_lives_state' and body like '%back_at%'))
+      and (select count(*) > 0 from proc where name = 'putt_lives_state' and body like '%back_at%')),
+  -- PUTT PUTT LIVES FOR SALE (nine for $4.99, three for $2.99), shipped dark.
+  -- Without it a paid session 500s in the webhook and Stripe retries until it runs.
+  (60, '149_putt_lives_buy',
+      'Bought Putt Putt lives are filed once a checkout session and handed back on the server',
+      'A paid lives checkout is charged and the webhook fails until this runs.',
+      (select count(*) > 0 from col where tbl = 'putt_lives_buys' and name = 'given')
+      and (select count(*) > 0 from proc where name = 'putt_lives_buy'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

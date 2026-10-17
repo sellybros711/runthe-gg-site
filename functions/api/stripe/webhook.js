@@ -46,7 +46,7 @@
  * order, which is load bearing: a yearly plan (price, then metadata) first, then a
  * recurring bundle (metadata), then the Arcade Card.
  */
-import { bundleByKey, yearlyBonus, bundleForYearPrice, bucketByKey, passSeason, PUTT_LIVES } from './_bundles.js';
+import { bundleByKey, yearlyBonus, bundleForYearPrice, bucketByKey, passSeason, puttLivesPack } from './_bundles.js';
 
 export async function onRequestPost(context) {
   const { env, request } = context;
@@ -533,10 +533,14 @@ async function grantBucket(env, userId, bucketKey, session) {
 }
 
 /* PUTT PUTT LIVES, filed in putt_lives_buys (149) through putt_lives_buy, keyed on the
- * session, so a retried delivery hands lives back once. The count is read off the
- * catalog, never off the session. The same call cancels the clocks of the lives it
+ * session, so a retried delivery hands lives back once. The session names the pack
+ * (`metadata.putt_lives`, a key of PUTT_LIVES) and the count is read off the
+ * catalog, never off the session. A paid session naming no pack we sell is thrown,
+ * so Stripe retries and it shows in the dashboard rather than vanishing. The same call cancels the clocks of the lives it
  * returns, on the server's own row (146), so the page only has to ask again. */
 async function grantPuttLives(env, userId, session) {
+  const pack = puttLivesPack(session.metadata.putt_lives);
+  if (!pack) throw new Error('putt_lives unknown pack ' + session.metadata.putt_lives);
   const res = await fetch(env.SUPABASE_URL + '/rest/v1/rpc/putt_lives_buy', {
     method: 'POST',
     headers: {
@@ -544,7 +548,7 @@ async function grantPuttLives(env, userId, session) {
       Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ p_session: session.id, p_user: userId, p_lives: PUTT_LIVES.lives })
+    body: JSON.stringify({ p_session: session.id, p_user: userId, p_lives: pack.lives })
   });
   if (!res.ok) {
     var detail = '';
