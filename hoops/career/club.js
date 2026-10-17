@@ -681,6 +681,19 @@ function summerFrame(L) {
   if (h.po === 'Missed' || h.po === 'Play-in') return SUMMER_FRAME.missed;
   return pick(figRng(L, 'sframe:' + L.year), SUMMER_FRAME.plain);
 }
+/* An eventful year: a new club, half a season lost, a ring or an MVP. */
+function eventful(L) {
+  const H = L.history, h = H[H.length - 1], p = H[H.length - 2];
+  if (!h) return true;
+  return h.gp < 55 || h.po === 'Champion' || (h.aw || []).indexOf('mvp') >= 0 || !!(p && p.t !== h.t) || h.t !== L.team;
+}
+/* The goal is asked some years (the owner's call, 2026-10-16): always the
+   first two seasons, after an eventful year, otherwise about half the time.
+   The summer was made occasional too and went back to every year: a summer
+   not asked cost the sweep's ring share (19.5% to 17.3%) however the quiet
+   summer was chosen, so the owner's fallback stands. */
+const ASK_P = 0.5;
+const askGoal = (L) => L.seasonsDone < 2 || eventful(L) || rngAt(L, 'ask:goal')() < ASK_P;
 function summerKeys(L) {
   const H = L.history, h = H[H.length - 1];
   const r = figRng(L, 'summer:' + L.year);

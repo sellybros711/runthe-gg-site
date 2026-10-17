@@ -46,6 +46,8 @@ const BUNDLES = [
       'stories',       // the authored storylines and epilogues: content only
       'turns',         // answering a card, the step machine, things to do between cards
       'moves',         // your moves: the trade ask, the holdout, the supermax, the shoe, the body, the podcast
+      'deals',         // endorsement offers from who you are, from pun brands
+      'endings',       // more ways out: the career ending injury, on top, waived, the ten day, the finale
       'api',           // what the page reads, the generated road, a son, the public object
     ],
     head: "'use strict';\n(function() {\n\n",
@@ -96,6 +98,14 @@ for (const b of BUNDLES) {
     continue;
   }
   const built = banner(b) + b.head + b.parts.map((p) => fs.readFileSync(path.join(dir, p + '.js'), 'utf8').replace(/\n*$/, '\n')).join('\n') + b.tail;
+  /* ONE NAME, ONE FUNCTION. Two parts declaring the same top-level function
+     is no error in JavaScript: the later one silently replaces the earlier
+     everywhere, which is how a new part once stopped every story card being
+     dealt (2026-10-16). A `const` twin is a load error already. */
+  const names = {};
+  for (const m of built.matchAll(/^function ([A-Za-z0-9_$]+)\s*\(/gm)) names[m[1]] = (names[m[1]] || 0) + 1;
+  const twins = Object.keys(names).filter((n) => names[n] > 1);
+  if (twins.length) { console.error(`hoops/${b.name}/ declares a function twice: ${twins.join(', ')}. Rename one.`); bad++; continue; }
   if (process.argv.includes('--check')) {
     const now = fs.existsSync(out) ? fs.readFileSync(out, 'utf8') : '';
     if (now !== built) {

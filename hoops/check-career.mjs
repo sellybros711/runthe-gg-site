@@ -1361,6 +1361,50 @@ section('18. your moves: every one is open somewhere, does what it says, and a c
   ok(contenderAsk > 0 && contenderTo > 0, `asking out to a contender gets you traded in the summer (${contenderTo} of ${contenderAsk})`);
 }
 
+section('19. deals from who you are, more ways out, and goals asked some years');
+{
+  /* Stage D, E and F of the paths (the owner's calls, 2026-10-16). Played by
+     the plain answering bot, so the careers are the careers anyone gets. */
+  const N = 300;
+  const how = {}, brands = {}, bad = [];
+  let deals = 0, seasons = 0, summers = 0, goals = 0, careerInj = 0;
+  for (let i = 0; i < N; i++) {
+    const L = C.newLife({ seed: 'en' + i, league, start: i % 2 ? 'hs' : 'draft' });
+    let g = 0;
+    while (!L.retired && g++ < 6000) {
+      if (L.pending.length) {
+        const c = L.pending[0];
+        if (c.id === 'deal') { deals++; for (const o of c.options) if (o.label.length > 40) bad.push(o.label); }
+        if (c.id === 'training' && L.stage === 'nba') summers++;
+        if (c.id === 'goal') goals++;
+        if (c.id === 'careerinj') careerInj++;
+        if (c.id === 'ontop') how.topOffered = (how.topOffered || 0) + 1;
+        C.choose(L, (L.steps * 7 + c.key.length * 3 + L.age) % c.options.length);
+        if (L.last && (DASH.test(L.last.text || '') || /undefined|NaN|\{[a-z]/.test(L.last.text || ''))) bad.push(c.id + ': ' + L.last.text);
+      } else C.step(L);
+    }
+    seasons += L.history.length;
+    for (const x of L.deals || []) brands[x.n] = 1;
+    const t = (L.log.filter((l) => /injury ended|Walked away on top|Cut, and never|one last season in Europe/.test(l.t)).pop() || {}).t || '';
+    const k = /injury ended/.test(t) ? 'injury' : /Walked away/.test(t) ? 'top' : /Cut, and never/.test(t) ? 'cut' : /Europe/.test(t) ? 'finale' : '';
+    if (k) how[k] = (how[k] || 0) + 1;
+  }
+  ok(!bad.length, `deals and endings read clean (${bad.slice(0, 2).join(' | ') || 'all'})`);
+  ok(deals / N > 0.5 && deals / N < 4, `the brands call some summers, not every one (${(deals / N).toFixed(2)} a career)`);
+  ok(Object.keys(brands).length >= 10, `the brands that sign a player are many (${Object.keys(brands).length} of ${C.DEALS.length})`);
+  ok(C.DEALS.every((d) => !/^(Nike|Adidas|Gatorade|State Farm|Taco Bell|Subway|Kia|Geico|Crocs|Peloton|Airbnb|DoorDash|Bose|Old Spice|Wheaties)$/i.test(d.n)), 'no brand is a real brand\'s name');
+  /* Walking away on top is the player's call, so it is held to being asked;
+     the rest are held to happening. */
+  ok(['injury', 'cut', 'finale', 'topOffered'].every((k) => how[k]), `every new way out happens or is offered (${JSON.stringify(how)})`);
+  /* The owner's call: a career ending injury is likelier the worse the
+     body. Read off the engine's own chance at a sound and a worn body. */
+  const P = (dur, health) => C.careerEndP({ dur, m: { health }, age: 29, mem: {}, traits: {} });
+  ok(P(40, 60) > P(65, 90) * 2.5 && P(65, 90) > P(90, 100), `a worn body is far likelier to end on an injury (${P(40, 60).toFixed(3)}, ${P(65, 90).toFixed(3)}, ${P(90, 100).toFixed(3)})`);
+  ok(careerInj > 0, `the career ending injury card is dealt (${careerInj})`);
+  ok(summers / seasons > 0.9, `the summer is asked every year (${(summers / seasons).toFixed(2)} a season)`);
+  ok(goals / seasons > 0.45 && goals / seasons < 0.85, `the goal is asked some years, not every year (${(goals / seasons).toFixed(2)} a season)`);
+}
+
 if (!QUICK) await browser();
 
 console.log('');
