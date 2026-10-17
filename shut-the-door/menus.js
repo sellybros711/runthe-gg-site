@@ -56,9 +56,12 @@ function wire() {
 /* ---- how to play -------------------------------------------------------- */
 
 function renderHow(ctx) {
-  var bands = C.BANDS.map(function (b, i) {
-    var prev = i ? C.BANDS[i - 1].maxLost : null;
-    var t = b.maxLost === Infinity ? 'more than ' + prev.toFixed(1) + ' points lost' : 'within ' + b.maxLost.toFixed(1) + ' of the best';
+  /* The bands are relative to the moment (CONTRACT.md section 7), so the
+     words say what each colour means rather than printing a cutoff. */
+  var MEANS = { green: 'the best call, or close to it.', yellow: 'gave a little away.',
+    orange: 'a real cost in this spot.', red: 'a big miss for this spot.' };
+  var bands = C.BANDS.map(function (b) {
+    var t = MEANS[b.band];
     return '<li><span class="sq ' + b.band + '"></span><b>' + b.band + '</b> ' + t + '</li>';
   }).join('');
   setTimeout(function () {
@@ -76,6 +79,7 @@ function renderHow(ctx) {
     '<p>the ball misses by his command. then a real pitch from that spot plays out: take, swing, foul or in play.</p>' +
     '<h3>the grade</h3>' +
     '<p>every pitch is graded before it lands. the grade is the hold chance your call kept, against the best call you had. a good pitch that gets hit stays good.</p>' +
+    '<p>colors are measured against the moment. in a tight spot a small miss shows. with a big lead it takes a big one.</p>' +
     '<ul class="bands">' + bands + '</ul>' +
     '<h3>how it ends</h3>' +
     '<ul class="ends"><li><b>' + esc(C.OUTCOME_LABEL.door_shut) + '</b> three outs with the lead</li>' +

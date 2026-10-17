@@ -58,15 +58,20 @@ const FAMILY_OF = Object.freeze({
   CH: 'offspeed', FS: 'offspeed', FO: 'offspeed', KN: 'offspeed',
 });
 
-/* Bands: hold% points lost against the best call. Tuned by Agent A against
-   the tests; a change goes through the lead. */
+/* Bands, RELATIVE to the moment (the owner's call, 2026-10-17): rel = the
+   hold% points a call lost / the mean points lost over every legal call in
+   that state. Fixed point cutoffs failed on the real packs: one pitch moves
+   hold% under a point in a one-run ninth and almost nothing with a big lead.
+   Set from pipeline/band_sweep.mjs --relative: heart fastballs mostly orange
+   and red in 9 of 10 packs (Chapman's three-run lead is the honest
+   exception), the closer pool's calls about 23/34/29/14. */
 const BANDS = Object.freeze([
-  Object.freeze({ band: 'green', maxLost: 0.5 }),
-  Object.freeze({ band: 'yellow', maxLost: 1.5 }),
-  Object.freeze({ band: 'orange', maxLost: 4.0 }),
+  Object.freeze({ band: 'green', maxLost: 0.45 }),
+  Object.freeze({ band: 'yellow', maxLost: 0.9 }),
+  Object.freeze({ band: 'orange', maxLost: 1.5 }),
   Object.freeze({ band: 'red', maxLost: Infinity }),
 ]);
-function bandOf(lost) { for (const b of BANDS) if (lost <= b.maxLost) return b.band; return 'red'; }
+function bandOf(rel) { for (const b of BANDS) if (rel <= b.maxLost) return b.band; return 'red'; }
 
 const SQUARE = Object.freeze({ green: '🟩', yellow: '🟨', orange: '🟧', red: '🟥' });
 const SQUARES_PER_LINE = 10;
@@ -88,7 +93,7 @@ function countBucket(b, s) {
 
 /* The daily. Eastern day, like every daily on the site. */
 const ZONE = 'America/New_York';
-const EPOCH = '2026-10-20';           // daily #1; the lead sets it when the packs are ready
+const EPOCH = '2026-10-26';           // daily #1, set by the lead (2026-10-17)
 function easternDay(date) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: ZONE, year: 'numeric', month: '2-digit', day: '2-digit' })
     .format(date || new Date());

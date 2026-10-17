@@ -98,7 +98,7 @@ function closerCall(closer, o, rng) {
 function runPool(pack, closers, runs, model) {
   const per = Math.ceil(runs / closers.length);
   const scores = [];
-  const lostAll = [];
+  const lostAll = [], bandAll = [];
   let holds = 0, n = 0, pitches = 0;
   const outcomes = { door_shut: 0, doors_open: 0, walk_off: 0 };
   closers.forEach((c, ci) => {
@@ -110,7 +110,7 @@ function runPool(pack, closers, runs, model) {
       while (o.status === 'live' && guard++ < 150) E.throwPitch(o, closerCall(c, o, policy));
       if (o.status !== 'over') continue;
       scores.push(E.outingScore(o));
-      for (const g of o.grades) lostAll.push(g.lost);
+      for (const g of o.grades) { lostAll.push(g.lost); bandAll.push(g.band); }
       outcomes[o.outcome]++;
       if (o.outcome === 'door_shut') holds++;
       n++;
@@ -118,12 +118,12 @@ function runPool(pack, closers, runs, model) {
     }
   });
   scores.sort((a, b) => a - b);
-  return { scores, lostAll, holdRate: holds / n, outcomes, runs: n, meanPitches: pitches / n };
+  return { scores, lostAll, bandAll, holdRate: holds / n, outcomes, runs: n, meanPitches: pitches / n };
 }
 
-function bandsOf(lostList) {
+function bandsOf(bandList) {
   const out = { green: 0, yellow: 0, orange: 0, red: 0 };
-  for (const l of lostList) out[K.bandOf(l)]++;
+  for (const b of bandList) out[b]++;
   return out;
 }
 
@@ -196,7 +196,7 @@ function build(pack, closersFile, opts) {
     pool: {
       runs: pool.runs, closers: closers.length, holdRate: Math.round(pool.holdRate * 1000) / 1000,
       outcomes: pool.outcomes, meanPitches: Math.round(pool.meanPitches * 10) / 10,
-      bands: bandsOf(pool.lostAll), lostQuantiles: quantiles(pool.lostAll, [0.25, 0.5, 0.75, 0.9, 0.97]),
+      bands: bandsOf(pool.bandAll), lostQuantiles: quantiles(pool.lostAll, [0.25, 0.5, 0.75, 0.9, 0.97]),
       scoreQuantiles: quantiles(pool.scores, [0.1, 0.25, 0.5, 0.75, 0.9]),
     },
     startHold: Math.round(start.hold * 10000) / 100,

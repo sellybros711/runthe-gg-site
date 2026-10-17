@@ -245,6 +245,21 @@ Model.prototype.solve = function (st) {
   return best;
 };
 
+/* The mean hold% points lost over every legal call in a state: what a
+   typical call costs here. Bands are measured against it (CONTRACT.md
+   section 7), so a tight spot and a quiet one both grade in real colours. */
+Model.prototype.meanLost = function (st) {
+  const idx = stateIndex(this.N, this.M, st.bi, st.b, st.s, st.outs, st.bases, st.margin);
+  if (!this._ML) this._ML = new Map();
+  if (this._ML.has(idx)) return this._ML.get(idx);
+  const best = this.solve(st).hold;
+  let sum = 0, n = 0;
+  for (const type of this.types) for (let cell = 0; cell < 25; cell++) { sum += (best - this.callValue(st, type, cell).hold) * 100; n++; }
+  const m = sum / n;
+  this._ML.set(idx, m);
+  return m;
+};
+
 Model.prototype.startState = function () {
   const s = this.pack.scenario.situation;
   return { bi: 0, b: 0, s: 0, outs: s.outs, bases: s.bases, margin: this.lead0 };
@@ -294,13 +309,13 @@ function fmt3(x) { return x.toFixed(3).replace(/^0/, ''); }
 
 /* The reason line: one fact from the batter's profile or the state, with its
    number from the pack. House voice: lowercase, short. */
-function reasonFor(model, st, call, best, value, lost) {
+function reasonFor(model, st, call, best, value, lost, band) {
   const batter = model.pack.scenario.batters[st.bi % model.N];
   const pr = batter.profile || {};
   const bestTxt = `${pitchName(model, best.type)} ${placeOf(best.cell, batter.bats)}`;
   // a note is quoted only where it argues the point: good = it favours the pitcher
   const noteAbout = (type, cell, good) => (pr.notesFor || []).find(n => n.type === type && (n.cells || []).includes(cell) && !!n.good === good);
-  if (lost <= K.BANDS[0].maxLost) {
+  if (band === 'green') {
     const n = noteAbout(call.type, call.cell, true);
     if (n) return n.text + '.';
     if (call.type === best.type && call.cell === best.cell) return `the best call here. it holds ${pct(best.hold)}%.`;
@@ -328,13 +343,16 @@ function gradeCall(model, st, call) {
   const cv = model.callValue(st, call.type, call.cell);
   const lost = Math.max(0, (best.hold - cv.hold) * 100);
   const lostR = Math.round(lost * 100) / 100;
+  const rel = lost <= 1e-9 ? 0 : Math.round(lost / Math.max(1e-9, model.meanLost(st)) * 1000) / 1000;
+  const band = K.bandOf(rel);
   return {
-    band: K.bandOf(lostR),
+    band,
+    rel,
     value: Math.round(cv.hold * 1000) / 10,
     best: Math.round(best.hold * 1000) / 10,
     lost: lostR,
     bestCall: { type: best.type, cell: best.cell },
-    reason: reasonFor(model, st, call, best, cv.hold, lostR),
+    reason: reasonFor(model, st, call, best, cv.hold, lostR, band),
     reDelta: Math.round((cv.runs - best.runs) * 1000) / 1000,
   };
 }

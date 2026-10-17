@@ -224,6 +224,7 @@ the best call available in that state. The outcome never changes the grade.
  * @property {number} value          hold% of the call, 0..100
  * @property {number} best           hold% of the best call
  * @property {number} lost           best - value, pts, >= 0
+ * @property {number} rel            lost / the state's mean lost over every call; decides the band
  * @property {PitchCall} bestCall
  * @property {string} reason         one line, from the batter's profile or the state:
  *                                   'chases sliders down and away 48% with two strikes'
@@ -231,15 +232,20 @@ the best call available in that state. The outcome never changes the grade.
  */
 ```
 
-Bands (constants in `contract.js`, tuned by Agent A against the tests and reported to the lead
-before they change):
+Bands are **relative to the moment** (the owner's call, 2026-10-17): `rel = lost / meanLost`,
+where `meanLost` is the mean hold% points lost over every legal call (each arsenal pitch, each cell)
+in that state. Fixed point cutoffs failed on the real packs, because one pitch moves hold% by under
+a point in a one-run ninth and by almost nothing with a three-run lead. Constants in `contract.js`,
+set from `pipeline/band_sweep.mjs --relative`:
 
-| band | lost |
+| band | rel |
 |---|---|
-| green | `<= 0.5` pts (the best call, or within half a point, as Two-Minute Drill does) |
-| yellow | `<= 1.5` pts |
-| orange | `<= 4.0` pts |
-| red | `> 4.0` pts |
+| green | `<= 0.45` (the best call has rel 0) |
+| yellow | `<= 0.9` |
+| orange | `<= 1.5` |
+| red | `> 1.5` |
+
+`PitchGrade` carries `rel` beside `lost`. The score and the percentile stay on absolute `lost`.
 
 Why hold% and not run expectancy: for a closer only the hold matters. Hold% already sees the cases
 where run expectancy misleads (tying run on third with one out, a three-run lead with nobody on), so
