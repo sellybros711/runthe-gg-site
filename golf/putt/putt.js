@@ -1701,9 +1701,11 @@ var SECRET_LEVELS = [
   // Detention: rows of desks, a gap down one side, and the teacher's chair rolling up and down the front.
   { par:3, f:function(T){ var H = hole([rm(-6, 0, 6, -32)], [0, -2.5], [-3, -28]); blk(H, T, -6, -10, -3.6, -11.2); blk(H, T, -1.2, -10, 1.2, -11.2); blk(H, T, 3.6, -10, 6, -11.2);
     blk(H, T, -4.8, -16, -2.4, -17.2); blk(H, T, 2.4, -16, 4.8, -17.2); vslider(H, T, 0, -20, -25, 2.6, 0.3, 1.8); bumps(H, T, [[4, -24, 0.5]]); bowl(H, -3, -28, 1.7, 0.12); return H; } },
-  // Secret Recipe: the mixing floor turns in the middle, with a pool of chocolate either side of it.
-  { par:3, three:2, f:function(T){ var H = hole([rm(-7, 0, 7, -34)], [0, -2.5], [0, -30]); disc(H, 0, -17, 2.8, 1.3); zoneC(H, M.WATER, -5, -17, 1.4); zoneC(H, M.WATER, 5, -17, 1.4);
-    bumps(H, T, [[-2.5, -9, 0.55], [2.5, -9, 0.55], [0, -24, 0.5]]); zoneR(H, M.ICE, -7, -26, 7, -27.5); bowl(H, 0, -30, 1.7, 0.12); return H; } },
+  // Secret Recipe: the candy boat waits at the foot of the chocolate falls. Roll aboard, ride the river down to the far landing
+  // (it stops hard and puts the ball ashore), then over the jump across the chocolate to the cup in front of the great kettle.
+  // The boat waits long (2.4) so a putt rolled up gently finds it there; the channel is walled on both long sides.
+  { par:3, three:2, f:function(T){ var H = hole([rm(2, 0, 8, -14.1), rm(-14, -13.9, 8, -18.1), rm(-14, -17.9, -6, -22), rm(-14, -21.9, -6, -23.5), rm(-14, -23.4, -6, -33)], [5, -2.5], [-10, -29]);
+    zoneR(H, M.WATER, -6, -14, 8, -18); ferry(H, 3.6, -13.6, 8, -18, -10, 0, 2.2, 2.4, 0); jump(H, -10, -22, 0, -1, 1.4, 8); bowl(H, -10, -29, 1.7, 0.12); return H; } },
   // Glitch Level: a hidden pinball room. The pads throw it, and the posts guard the cup.
   { par:3, three:2, f:function(T){ var H = hole([pg([[-4, 0], [4, 0], [7, -8], [7, -26], [3, -32], [-3, -32], [-7, -26], [-7, -8]])], [0, -2.5], [0, -28]);
     pads(H, [[-4, -12, 0.65], [4, -12, 0.65], [0, -18, 0.7]]); bumps(H, T, [[-2, -25, 0.45], [2, -25, 0.45], [-5, -20, 0.5], [5, -20, 0.5]]); bowl(H, 0, -28, 1.7, 0.12); return H; } },
@@ -4118,6 +4120,69 @@ function drawAmbient(ctx, C, cam, t){ var A = cam.v3.amb, k = cam.k, ox = cam.ox
   A.lights.forEach(function(L, j){ var p = w2s(cam, L[0], L[1], L[2]), f = 0.78 + 0.14 * Math.sin(t * 9.1 + j * 2.3) + 0.08 * Math.sin(t * 23.7 + j), r = cam.s * 1.35 * f;
     var g = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], r); g.addColorStop(0, L[3]); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.globalAlpha = (cam.v3.night ? 0.6 : 0.32) * f; ctx.fillStyle = g;
     ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, 6.29); ctx.fill(); });
+  ctx.restore();
+  if (A.anim) drawAnim(ctx, cam, A.anim, t); }
+/* WHAT A PLACE MOVES. A land can hand over more that moves (land.js, anim): a waterfall pouring, a river running, steam
+   off the vats, a pot bubbling, a whisk turning, a taffy puller pulling. Drawn over the picture every frame through the
+   same projection as the ball, and left out wherever something in the picture stands in front of it. None of it is
+   anything the ball can touch, so the physics and the solver never hear of it. */
+function drawAnim(ctx, cam, N, t){ var V = cam.v3, u = cam.s, hid = V.hid, P = function(x, y, z){ return w2s(cam, x, y, z); }, i, k;
+  ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  // the river: streaks riding the current along each run, in three lanes
+  (N.flow || []).forEach(function(fl, fi){ var pts = fl.pts, segs = [], tot = 0;
+    for (i = 0; i < pts.length - 1; i++){ var a = pts[i], b = pts[i + 1], l = Math.hypot(b[0] - a[0], b[1] - a[1]); if (l < 0.01) continue; segs.push([a, b, tot, l]); tot += l; }
+    ctx.strokeStyle = fl.inside ? 'rgba(255,226,190,.42)' : 'rgba(255,214,170,.5)'; ctx.lineWidth = Math.max(1.5, u * 0.09);
+    var gap = 1.3, ph = (t * fl.v) % gap;
+    for (var lane = -1; lane <= 1; lane++) for (var s = ph + (lane & 1) * gap * 0.5 + ahash(fi, lane + 5) * 0.3; s < tot; s += gap){
+      var g = null; for (k = 0; k < segs.length; k++) if (s >= segs[k][2] && s <= segs[k][2] + segs[k][3]){ g = segs[k]; break; } if (!g) continue;
+      var q = (s - g[2]) / g[3], tx = (g[1][0] - g[0][0]) / g[3], ty = (g[1][1] - g[0][1]) / g[3], off = lane * fl.w * 0.3 + (ahash(Math.floor(s * 3), fi + lane * 7) - 0.5) * 0.25;
+      var x0 = g[0][0] + (g[1][0] - g[0][0]) * q - ty * off, y0 = g[0][1] + (g[1][1] - g[0][1]) * q + tx * off, z0 = g[0][2] + (g[1][2] - g[0][2]) * q;
+      if (Math.abs(g[1][2] - g[0][2]) > 0.3 || hid(x0, y0, z0)) continue;   // a run that steps up into the course is only a join: draw nothing on it
+      var A = P(x0, y0, z0), B = P(x0 + tx * 0.45, y0 + ty * 0.45, z0); ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.stroke(); } });
+  // the falls: streaks of light chocolate pouring down the sheet as it bows out, and the churn at its foot
+  if (N.falls){ var f = N.falls, n = Math.max(6, Math.round((f.x1 - f.x0) * 3.2)), Hf = f.z0 - f.z1, fy = function(z){ var w = (z - f.z1) / Hf; return f.y + (f.bow || 0.5) * (1 - w) * (1 - w); };
+    for (i = 0; i < n; i++){ var fx = f.x0 + (i + 0.5) / n * (f.x1 - f.x0), sp = 0.55 + ahash(i, 3) * 0.3, Ls = 0.8 + ahash(i, 5) * 1.6;
+      for (k = 0; k < 2; k++){ var p0 = (t * sp + ahash(i, 7) + k * 0.5) % 1, za = f.z0 - p0 * p0 * Hf, zb = Math.max(f.z1, za - Ls * (0.5 + p0)); if (za <= f.z1 + 0.1) continue;
+        if (hid(fx, fy(za), za) && hid(fx, fy(zb), zb)) continue;
+        var a2 = P(fx, fy(za), za), b2 = P(fx, fy(zb), zb); ctx.strokeStyle = k ? 'rgba(196,128,74,.75)' : 'rgba(236,176,120,.55)'; ctx.lineWidth = Math.max(1.2, u * (k ? 0.1 : 0.06));
+        ctx.beginPath(); ctx.moveTo(a2[0], a2[1]); ctx.lineTo(b2[0], b2[1]); ctx.stroke(); } } }
+  if (N.foam){ var fo = N.foam; ctx.fillStyle = N.col && N.col.foam || '#f4e2c8';
+    for (i = 0; i < 14; i++){ var cyc = Math.floor(t * 1.4 + ahash(i, 11)), pf = (t * 1.4 + ahash(i, 11)) % 1, bx = fo.x0 + ahash(i * 31 + cyc, 13) * (fo.x1 - fo.x0), by = fo.y + (ahash(i * 17 + cyc, 15) - 0.3) * 1.4;
+      if (hid(bx, by, fo.z)) continue; var c2 = P(bx, by, fo.z + pf * 0.5); ctx.globalAlpha = 0.85 * (1 - pf); ctx.beginPath(); ctx.ellipse(c2[0], c2[1], u * (0.12 + pf * 0.3), u * (0.08 + pf * 0.2), 0, 0, 6.29); ctx.fill(); }
+    ctx.globalAlpha = 1; }
+  // spray thrown up where the falls lands
+  (N.spray || []).forEach(function(sq, qi){ for (i = 0; i < 3; i++){ var pq = (t * 0.9 + i / 3 + ahash(qi, 29)) % 1, x = sq[0] + (ahash(qi * 3 + i, Math.floor(t * 0.9 + i / 3 + ahash(qi, 29))) - 0.5) * 0.7, z = sq[2] + pq * 1.1;
+      if (hid(x, sq[1], z)) continue; var c7 = P(x, sq[1], z); ctx.globalAlpha = 0.55 * (1 - pq); ctx.fillStyle = N.col && N.col.foam || '#f6e6cc';
+      ctx.beginPath(); ctx.arc(c7[0], c7[1], u * (0.14 + pq * 0.32), 0, 6.29); ctx.fill(); } });
+  ctx.globalAlpha = 1;
+  // the recipe and the vats bubbling: a bubble swells on the surface and pops
+  (N.bubbles || []).forEach(function(bb, bi){ for (i = 0; i < 4; i++){ var rate = 0.9 + ahash(bi, i) * 0.5, cyc = Math.floor(t * rate + ahash(i, bi + 3)), pb = (t * rate + ahash(i, bi + 3)) % 1, ang = ahash(cyc * 7 + i, bi) * 6.283, rr = Math.sqrt(ahash(cyc * 5 + i, bi + 9)) * bb[3];
+      var x = bb[0] + Math.cos(ang) * rr, y = bb[1] + Math.sin(ang) * rr * 0.9; if (hid(x, y, bb[2])) continue; var c3 = P(x, y, bb[2]), r3 = u * (0.08 + pb * 0.22);
+      ctx.globalAlpha = pb < 0.85 ? 0.9 : (1 - pb) * 6; ctx.fillStyle = bb[4]; ctx.beginPath(); ctx.ellipse(c3[0], c3[1] - r3 * 0.4, r3, r3 * 0.75, 0, 0, 6.29); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = Math.max(1, u * 0.03); ctx.stroke(); } });
+  ctx.globalAlpha = 1;
+  // the great kettle's whisk, turning on its shaft
+  if (N.whisk){ var w = N.whisk, zc = w.z0 + 0.55, hh = 0.85, th = t * 1.6, top = P(w.x, w.y, w.z1), bot = P(w.x, w.y, zc + hh);
+    ctx.strokeStyle = '#4a4e56'; ctx.lineWidth = Math.max(2, u * 0.16); ctx.beginPath(); ctx.moveTo(top[0], top[1]); ctx.lineTo(bot[0], bot[1]); ctx.stroke();
+    ctx.strokeStyle = '#d8dee6'; ctx.lineWidth = Math.max(1, u * 0.09); ctx.beginPath(); ctx.moveTo(top[0], top[1]); ctx.lineTo(bot[0], bot[1]); ctx.stroke();
+    for (k = 0; k < 4; k++){ var a4 = th + k * Math.PI / 4, ca4 = Math.cos(a4), sa4 = Math.sin(a4), last = null;
+      ctx.strokeStyle = (Math.sin(a4) > 0) ? '#eef2f6' : '#aab0b8'; ctx.lineWidth = Math.max(1, u * 0.07);
+      for (var sI = 0; sI <= 24; sI++){ var s4 = sI / 24 * 6.283, rr4 = w.r * Math.sin(s4), x4 = w.x + ca4 * rr4, y4 = w.y + sa4 * rr4 * 0.8, z4 = zc + hh * Math.cos(s4), p4 = hid(x4, y4, z4) ? null : P(x4, y4, z4);
+        if (p4 && last){ ctx.beginPath(); ctx.moveTo(last[0], last[1]); ctx.lineTo(p4[0], p4[1]); ctx.stroke(); } last = p4; } } }
+  // the taffy puller: two arms turn about the hub and stretch the taffy round the two pegs that stand still
+  if (N.puller){ var pl = N.puller, ta = t * 0.9, ends = [0, Math.PI].map(function(o){ return P(pl.x + Math.cos(ta + o) * pl.r, pl.y, pl.z + Math.sin(ta + o) * pl.r * 0.9); }),
+      hub = P(pl.x, pl.y, pl.z), pegs = [P(pl.x - 0.38, pl.y, pl.z - 0.15), P(pl.x + 0.38, pl.y, pl.z - 0.15)];
+    if (!hid(pl.x, pl.y, pl.z)){
+      ctx.strokeStyle = '#8a8e96'; ctx.lineWidth = Math.max(2, u * 0.14); ends.forEach(function(e){ ctx.beginPath(); ctx.moveTo(hub[0], hub[1]); ctx.lineTo(e[0], e[1]); ctx.stroke(); });
+      var loop = [ends[0], pegs[1], ends[1], pegs[0]]; ctx.lineWidth = Math.max(3, u * 0.3); ctx.strokeStyle = '#ff8ab8';
+      ctx.beginPath(); for (k = 0; k < 4; k++){ var a5 = loop[k], b5 = loop[(k + 1) % 4], m5 = [(a5[0] + b5[0]) / 2, (a5[1] + b5[1]) / 2 + u * 0.18]; if (!k) ctx.moveTo(a5[0], a5[1]); ctx.quadraticCurveTo(m5[0], m5[1], b5[0], b5[1]); } ctx.closePath(); ctx.stroke();
+      ctx.lineWidth = Math.max(1, u * 0.09); ctx.strokeStyle = '#ffd0e4'; ctx.stroke();
+      ctx.fillStyle = '#ffd23f'; ends.concat(pegs).forEach(function(e){ ctx.beginPath(); ctx.arc(e[0], e[1], Math.max(2, u * 0.12), 0, 6.29); ctx.fill(); });
+      ctx.fillStyle = '#e8233f'; ctx.beginPath(); ctx.arc(hub[0], hub[1], Math.max(2, u * 0.14), 0, 6.29); ctx.fill(); } }
+  // steam: soft puffs that rise off the vats, swell and fade
+  (N.steam || []).forEach(function(sv, si){ for (i = 0; i < 4; i++){ var ps = (t * 0.32 + i / 4 + ahash(si, 21)) % 1, x = sv[0] + Math.sin(ps * 3 + si) * 0.35 * ps, y = sv[1], z = sv[2] + 0.2 + ps * 3.2;
+      if (hid(x, y, z)) continue; var c6 = P(x, y, z), r6 = u * (0.25 + ps * 0.75);
+      ctx.globalAlpha = 0.5 * (1 - ps) * Math.min(1, ps * 6); ctx.fillStyle = N.col && N.col.steam || '#ffffff'; ctx.beginPath(); ctx.arc(c6[0], c6[1], r6, 0, 6.29); ctx.fill(); } });
   ctx.restore(); }
 // the birds of the place: gulls over the sea, parrots in the jungle. Each goes round its own circle at its own height
 // a stop names its birds in land.js (FLY['world~stop'] = a kind here). A world adds a kind here when none of these fit
@@ -4267,6 +4332,33 @@ function drawPieces(ctx, C, cam, clock){
       var mid = rk.slice(1, -1).map(function(p, i){ var q2 = cam.v3 ? w2s(cam, x0 + (x1 - x0) * i / 12, y1, zf - 0.15) : w2s(cam, x0 + (x1 - x0) * i / 12, y1); return [p[0] * 0.45 + q2[0] * 0.55, p[1] * 0.45 + q2[1] * 0.55]; });
       poly([c[3]].concat(mid).concat([c[2]]), '#9a6e44');
       poly(c, '#6cbf58', '#3f8a3e'); ctx.fillStyle = '#86d46c'; ctx.beginPath(); ctx.moveTo(c[0][0], c[0][1]); ctx.lineTo(c[1][0], c[1][1]); var ti = [c[1][0] * 0.8 + c[2][0] * 0.2, c[1][1] * 0.8 + c[2][1] * 0.2], tj = [c[0][0] * 0.8 + c[3][0] * 0.2, c[0][1] * 0.8 + c[3][1] * 0.2]; ctx.lineTo(ti[0], ti[1]); ctx.lineTo(tj[0], tj[1]); ctx.closePath(); ctx.fill();
+      return; }
+    /* IN CANDY WORKS IT IS A CANDY BOAT: a pink and white striped hull curling up at both ends, a wafer deck (the same deck to
+       the physics, its on and off edges striped as everywhere), candy cane rails down its long sides and a lollipop for a mast. */
+    if (C.theme === 'candy'){ var hl = [], hn = 14, along2 = Math.abs(f.dx) >= Math.abs(f.dy);
+      for (var hi = 0; hi <= hn; hi++){ var hu = hi / hn, hz = zf - 0.62 * Math.pow(Math.sin(hu * Math.PI), 0.6) + 0.42 * Math.pow(Math.abs(hu * 2 - 1), 6);
+        hl.push(cam.v3 ? (along2 ? w2s(cam, x0 + (x1 - x0) * hu, y1, hz) : w2s(cam, x1, y0 + (y1 - y0) * hu, hz)) : (along2 ? w2s(cam, x0 + (x1 - x0) * hu, y1 + 0.35 * Math.sin(hu * Math.PI)) : w2s(cam, x1 + 0.35 * Math.sin(hu * Math.PI), y0 + (y1 - y0) * hu))); }
+      var nearE = along2 ? [c[2], c[3]] : [c[1], c[2]];
+      ctx.save(); ctx.beginPath(); ctx.moveTo(nearE[1][0], nearE[1][1]); hl.forEach(function(p){ ctx.lineTo(p[0], p[1]); }); ctx.lineTo(nearE[0][0], nearE[0][1]); ctx.closePath();
+      ctx.fillStyle = '#ff5fa2'; ctx.fill(); ctx.clip(); ctx.strokeStyle = '#fff4f8'; ctx.lineWidth = Math.max(2, cam.s * 0.22);
+      for (var si = 1; si < 9; si += 2){ var sa = w2s(cam, along2 ? x0 + (x1 - x0) * si / 9 : x1, along2 ? y1 : y0 + (y1 - y0) * si / 9, zf + 1), sb = w2s(cam, along2 ? x0 + (x1 - x0) * (si + 0.6) / 9 : x1, along2 ? y1 : y0 + (y1 - y0) * (si + 0.6) / 9, zf - 1);
+        ctx.beginPath(); ctx.moveTo(sa[0], sa[1]); ctx.lineTo(sb[0], sb[1]); ctx.stroke(); }
+      ctx.restore(); ctx.strokeStyle = '#9a2a5a'; ctx.lineWidth = Math.max(1.5, d * 1.2); ctx.beginPath(); ctx.moveTo(nearE[1][0], nearE[1][1]); hl.forEach(function(p){ ctx.lineTo(p[0], p[1]); }); ctx.lineTo(nearE[0][0], nearE[0][1]); ctx.stroke();
+      poly(c, '#ecc070', '#b8863a');
+      ctx.strokeStyle = 'rgba(184,134,58,.7)'; ctx.lineWidth = Math.max(1, d);
+      for (var gq = 1; gq < 6; gq++){ var gf = gq / 6, ga = [c[0][0] + (c[1][0] - c[0][0]) * gf, c[0][1] + (c[1][1] - c[0][1]) * gf], gb = [c[3][0] + (c[2][0] - c[3][0]) * gf, c[3][1] + (c[2][1] - c[3][1]) * gf];
+        ctx.beginPath(); ctx.moveTo(ga[0], ga[1]); ctx.lineTo(gb[0], gb[1]); ctx.stroke(); var gc = [c[0][0] + (c[3][0] - c[0][0]) * gf, c[0][1] + (c[3][1] - c[0][1]) * gf], gd = [c[1][0] + (c[2][0] - c[1][0]) * gf, c[1][1] + (c[2][1] - c[1][1]) * gf];
+        ctx.beginPath(); ctx.moveTo(gc[0], gc[1]); ctx.lineTo(gd[0], gd[1]); ctx.stroke(); }
+      var ends2 = along2 ? [[0, 3], [1, 2]] : [[0, 1], [3, 2]], sides2 = along2 ? [[0, 1], [3, 2]] : [[0, 3], [1, 2]];
+      ctx.lineWidth = Math.max(2, cam.s * 0.16); ctx.strokeStyle = '#fff6f0'; sides2.forEach(function(e){ ctx.beginPath(); ctx.moveTo(c[e[0]][0], c[e[0]][1]); ctx.lineTo(c[e[1]][0], c[e[1]][1]); ctx.stroke(); });
+      ctx.setLineDash([Math.max(3, cam.s * 0.24), Math.max(3, cam.s * 0.24)]); ctx.strokeStyle = '#e8233f'; sides2.forEach(function(e){ ctx.beginPath(); ctx.moveTo(c[e[0]][0], c[e[0]][1]); ctx.lineTo(c[e[1]][0], c[e[1]][1]); ctx.stroke(); });
+      ctx.setLineDash([Math.max(3, cam.s * 0.2), Math.max(3, cam.s * 0.2)]); ctx.strokeStyle = '#ffd36a'; ends2.forEach(function(e){ ctx.beginPath(); ctx.moveTo(c[e[0]][0], c[e[0]][1]); ctx.lineTo(c[e[1]][0], c[e[1]][1]); ctx.stroke(); }); ctx.setLineDash([]);
+      // the mast: a lollipop on a white stick at the stern, on the far rail, clear of where a ball rides
+      var mx = (f.dx < 0 ? x1 - 0.35 : x0 + 0.35), my = along2 ? y0 + 0.15 : (f.dy < 0 ? y1 - 0.35 : y0 + 0.35), mxx = along2 ? mx : x0 + 0.15, mb = w2s(cam, mxx, my, zf), mt = w2s(cam, mxx, my, zf + 1.7), mr = Math.max(4, cam.s * 0.5);
+      ctx.strokeStyle = '#f6f1ea'; ctx.lineWidth = Math.max(2, cam.s * 0.1); ctx.beginPath(); ctx.moveTo(mb[0], mb[1]); ctx.lineTo(mt[0], mt[1]); ctx.stroke();
+      ctx.fillStyle = '#fff4f8'; ctx.beginPath(); ctx.arc(mt[0], mt[1], mr, 0, 6.29); ctx.fill();
+      ctx.strokeStyle = '#ff3b7a'; ctx.lineWidth = Math.max(1.5, mr * 0.28); ctx.beginPath(); for (var sw = 0; sw <= 40; sw++){ var swa = sw / 40 * 6.283 * 2.2 + clock * 0.8, swr = mr * 0.92 * sw / 40; if (!sw) ctx.moveTo(mt[0], mt[1]); else ctx.lineTo(mt[0] + Math.cos(swa) * swr, mt[1] + Math.sin(swa) * swr); } ctx.stroke();
+      ctx.strokeStyle = '#c81a5a'; ctx.lineWidth = Math.max(1, d); ctx.beginPath(); ctx.arc(mt[0], mt[1], mr, 0, 6.29); ctx.stroke();
       return; }
     // in Neon Arcade it is a hover pad: dark, ringed in neon, glowing underneath
     if (C.theme === 'neon'){ ctx.save(); ctx.shadowColor = '#2bf0ff'; ctx.shadowBlur = Math.max(6, cam.s * 0.6); poly(c, '#1a1440'); ctx.restore();
