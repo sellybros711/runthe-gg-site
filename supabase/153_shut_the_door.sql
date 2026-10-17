@@ -1,5 +1,5 @@
 -- ---------------------------------------------------------------------------
--- 152_shut_the_door.sql : Shut The Door's daily outings, streaks and board.
+-- 153_shut_the_door.sql : Shut The Door's daily outings, streaks and board.
 --
 -- Safe to run more than once. Needs profiles (usernames).
 --

@@ -212,6 +212,8 @@ const ordinal = (n) => {
   const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 };
+/* A count and its word, singular at exactly one: "1 assist", not "1 assists". */
+const per = (n, w) => n + ' ' + (n === 1 ? w.replace(/s$/, '') : w);
 const money = (m) => !m ? '$0' : m >= 1 ? '$' + (Math.round(m * 10) / 10).toFixed(m >= 10 ? 0 : 1) + 'M'
   : '$' + Math.round(m * 1000) + 'K';
 

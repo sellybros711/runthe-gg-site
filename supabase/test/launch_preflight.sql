@@ -709,7 +709,10 @@ check_rows(sort, migration, what, breaks, ok) as (
       'Bought Putt Putt lives are filed once a checkout session and handed back on the server',
       'A paid lives checkout is charged and the webhook fails until this runs.',
       (select count(*) > 0 from col where tbl = 'putt_lives_buys' and name = 'given')
-      and (select count(*) > 0 from proc where name = 'putt_lives_buy')),
+      and (select count(*) > 0 from proc where name = 'putt_lives_buy')
+      -- and the webhook may call it: without this a paid buy 500s with "permission denied"
+      and (not exists (select 1 from pg_roles where rolname = 'service_role')
+           or has_function_privilege('service_role', 'public.putt_lives_buy(text, uuid, int)', 'execute'))),
   -- SPARE LIVES FILL THE HEARTS. Without it a signed in player's spares are never
   -- spent: they wait as +N and come out only from the out of lives sheet. Nothing throws.
   (61, '150_putt_lives_spares',
@@ -724,9 +727,18 @@ check_rows(sort, migration, what, breaks, ok) as (
       'Every Putt Putt lives checkout answers try again, and nothing sells.',
       (select count(*) > 0 from col where tbl = 'putt_lives' and name = 'extra')
       and (select count(*) > 0 from proc where name = 'putt_lives_spend' and body like '%extra%')),
+  -- A REFUNDED LIVES BUY TAKES ITS LIVES BACK. Without it the webhook 500s on that refund
+  -- and Stripe retries for three days; nothing else is touched.
+  (63, '152_putt_lives_refund',
+      'A refunded or charged-back Putt Putt lives buy takes its lives back, once',
+      'A lives refund is retried by Stripe and the lives stay until this runs.',
+      (select count(*) > 0 from col where tbl = 'putt_lives_buys' and name = 'reclaimed')
+      and (select count(*) > 0 from proc where name = 'putt_lives_reclaim')
+      and (not exists (select 1 from pg_roles where rolname = 'service_role')
+           or has_function_privilege('service_role', 'public.putt_lives_reclaim(text)', 'execute'))),
   -- SHUT THE DOOR'S DAILY, signed in. Without it the outing plays and finishes
   -- and the submit is refused: no streak, no board row, nothing said.
-  (63, '152_shut_the_door',
+  (64, '153_shut_the_door',
       'Shut The Door keeps a signed in daily outing, the doors shut streak and the day''s board',
       'A signed in daily is played and never recorded. The streak and the board stay empty.',
       (select count(*) > 0 from has_table where name = 'shutdoor_outings')

@@ -382,6 +382,8 @@ const ordinal = (n) => {
   const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 };
+/* A count and its word, singular at exactly one: "1 assist", not "1 assists". */
+const per = (n, w) => n + ' ' + (n === 1 ? w.replace(/s$/, '') : w);
 const money = (m) => !m ? '$0' : m >= 1 ? '$' + (Math.round(m * 10) / 10).toFixed(m >= 10 ? 0 : 1) + 'M'
   : '$' + Math.round(m * 1000) + 'K';
 
@@ -1463,7 +1465,7 @@ function resignings(L, R, Y, news) {
         e.k = Y + yrs - 1;
         e.sal = round1(Math.min(dealPay(L, e.c, a, Y) * (0.92 + r() * 0.16), capFor(Y) * 0.35));
         delete e.pay;
-        if (s >= 84) news.push({ w: s - 80, k: 'deal', c, t: e.n + ' re-signs with the ' + nick(c) + ': ' + NUMW[yrs] + ' years, ' + moneyWords(e.sal * yrs) + '.' });
+        if (s >= 84) news.push({ w: s - 80, k: 'deal', c, t: e.n + ' re-signs with the ' + nick(c) + ': ' + (yrs === 1 ? 'one year' : NUMW[yrs] + ' years') + ', ' + moneyWords(e.sal * yrs) + '.' });
       } else {
         R[c].splice(R[c].indexOf(e), 1);
         e.from = c;
@@ -2439,7 +2441,7 @@ function saySeasonComp(L, beats) {
   const c = seasonComp(L, h, L.history.length, L.flags.compLast);
   if (!c) return;
   L.flags.compLast = c.n + c.s;
-  const t = 'Your season looked like ' + c.n + '\'s ' + seasonName(c.s) + ': ' + c.pts + ' points, ' + c.reb + ' rebounds, ' + c.ast + ' assists.';
+  const t = 'Your season looked like ' + c.n + '\'s ' + seasonName(c.s) + ': ' + per(c.pts, 'points') + ', ' + per(c.reb, 'rebounds') + ', ' + per(c.ast, 'assists') + '.';
   logIt(L, t, '');
   if (h.pts >= 18 || (h.aw || []).indexOf('star') >= 0) beats.push({ kind: 'comp', text: t, tone: '' });
 }
@@ -6431,7 +6433,7 @@ const SUMMER_FACTS = [
   ['down', (L, h, p) => p && p.pts - h.pts >= 2.5, (L, h) => 'Your scoring slipped to ' + h.pts + ' a night.'],
   ['rec', (L, h) => !!h.t && h.w + h.l > 0, (L, h) => 'The ' + nick(h.t) + ' went ' + h.w + '-' + h.l + '.'],
   ['star', (L, h) => (h.aw || []).indexOf('allstar') >= 0 || (h.aw || []).indexOf('star') >= 0, () => 'You were an All-Star.'],
-  ['line', (L, h) => h.pts >= 8, (L, h) => h.pts + ' points, ' + h.reb + ' boards, ' + h.ast + ' assists.'],
+  ['line', (L, h) => h.pts >= 8, (L, h) => per(h.pts, 'points') + ', ' + per(h.reb, 'boards') + ', ' + per(h.ast, 'assists') + '.'],
   ['yrs', (L) => seasonsWithClub(L) >= 3, (L) => 'That was year ' + seasonsWithClub(L) + ' with this club.'],
   ['bench', (L, h) => h.role === 'End of bench' || h.role === 'Rotation', (L, h) => 'You were ' + (h.role === 'Rotation' ? 'a rotation player' : 'at the end of the bench') + '.'],
   ['rings', (L, h) => totals(L).rings >= 1 && h.po !== 'Champion', (L) => { const n = totals(L).rings; return n === 1 ? 'You have one ring. One is not enough.' : 'You have ' + n + ' rings. You want another.'; }],
@@ -8332,7 +8334,7 @@ function hsSecondHalf(L, beats) {
   s.qual = s.w >= 13;
   const pg = perGame(s);
   beats.unshift({ kind: 'record', text: s.w + '-' + s.l + (s.qual ? '. Into the state playoffs.' : '. No playoffs.'), tone: s.qual ? 'good' : 'bad' });
-  beats.push({ kind: 'record', text: 'You: ' + pg.pts + ' points, ' + pg.reb + ' rebounds, ' + pg.ast + ' assists.', tone: '' });
+  beats.push({ kind: 'record', text: 'You: ' + per(pg.pts, 'points') + ', ' + per(pg.reb, 'rebounds') + ', ' + per(pg.ast, 'assists') + '.', tone: '' });
   logIt(L, GRADE[L.am.grade][0].toUpperCase() + GRADE[L.am.grade].slice(1) + ' year: ' + s.w + '-' + s.l + ', ' + pg.pts + ' a night.', '');
   L.phase = 'hs_reg';
 
@@ -8459,7 +8461,7 @@ function proYear(L, beats) {
   const pg = perGame(s);
   const where = { intl: 'A season overseas against grown men', gl: 'A season in the G League', juco: 'A junior college season',
     prep: 'A prep school season', gap: 'A year of private runs', rec: 'A year of rec league and pro-ams' }[route] || 'A season';
-  beats.push({ kind: 'record', text: where + ': ' + pg.pts + ' points, ' + pg.reb + ' rebounds, ' + pg.ast + ' assists.', tone: 'good' });
+  beats.push({ kind: 'record', text: where + ': ' + per(pg.pts, 'points') + ', ' + per(pg.reb, 'rebounds') + ', ' + per(pg.ast, 'assists') + '.', tone: 'good' });
   bump(L, { cash: route === 'intl' ? 0.5 : route === 'gl' ? 0.6 : route === 'rec' ? 0.03 : 0, iq: 2 });
   L.am.stock = (L.am.stock || 0) + (route === 'rec' ? -1.5 : route === 'gap' ? 0.4 : 1) + Math.max(0, (pg.pts - 12) * 0.15);
   s.finish = ALT_TEAM[route] === 'Overseas' ? 'Pro' : ALT_TEAM[route] || 'G League';
@@ -10012,6 +10014,17 @@ const H_TIER = (L, score, T) => L.history.length && !L.flags.banned ? hofTier(L,
 /* THE EPILOGUE (NARRATIVE.md section 8.4). The after card offers the paths
    this career has earned, then a short chapter is played and the career is
    over only once that is answered. */
+/* What the after card says back, one line a path. It said "New city, new
+   chapter." to everyone, including the man who chose to go home. */
+const AFTER_SAY = {
+  head_coach: 'A bench of your own. The whistle fits.', assistant: 'A film room, a laptop and a lot of coffee.',
+  gm: 'An office with a view of the practice floor.', owner: 'Your name on the ownership group. The players call you boss.',
+  broadcast: 'A desk, a suit and a red light. You are good at this.', league: 'An office in the league building. You fight for the players.',
+  college: 'Back on campus. The students chant your name at the press conference.', hs: 'The gym where it started. The same leaky roof.',
+  business: 'A boardroom and a plan. The money starts working.', actor: 'A trailer on a set. Your first line is three words.',
+  politics: 'Yard signs with your name on them. The first debate is Tuesday.', podcast: 'Three microphones and no filter. Episode one drops Monday.',
+  comeback: 'You call your agent. You are not done.', family: 'Home. Your family. Nothing to prove.',
+};
 const AFTER_PATHS = [
   ['head_coach', 'Head coach', 'A bench of your own.', (L) => L.rt.iq >= 70 || trait(L, 'coachable') || !!recall(L, 'v.coachy')],
   ['assistant', 'Assistant coach', 'Start in the film room. Work up.', () => true],
@@ -10048,7 +10061,7 @@ ANSWER.after = function(L, card, i, opt, rng, beats, touch, touches) {
     L.final = legacy(L);
     L.final.path = path;
     L.final.after = AFTER_PATHS.find((p) => p[0] === path)[1] + '.';
-    text = 'New city, new chapter.'; tone = 'gold';
+    text = AFTER_SAY[path] || 'A new chapter.'; tone = 'gold';
     if (!dealNamed(L, 'post', 'ep_' + path)) finishLife(L, '');
     return { text, tone, made, won, shots, contest };
   }
@@ -11098,6 +11111,8 @@ function banIt(L) {
   remember(L, 'bet.banned', true);
   bump(L, { fame: -12, trust: -30, morale: -10 });
   logIt(L, 'Banned for life by the league over a bet on your own game.', 'bad');
+  /* Every brand walks the same day (deals.js). */
+  for (const x of dealsNow(L)) { x.until = L.year - 1; x.dropped = L.year; }
 }
 function burgerVerdict(L, r) {
   if (ok(r, 0.5)) { arcEnd(L, 'burger', 'won'); bump(L, { cash: 7, fame: 3 }); return 'A national chain buys you out for triple. Your mom gets a lifetime card.'; }
@@ -11729,7 +11744,7 @@ function step(L) {
 }
 function recordBeat(L, when) {
   const s = L.season, pg = perGame(s);
-  return { kind: 'record', text: when + ': ' + s.w + '-' + s.l + '. You: ' + pg.pts + ' points, ' + pg.reb + ' rebounds, ' + pg.ast + ' assists.', tone: s.w >= s.l ? 'good' : '' };
+  return { kind: 'record', text: when + ': ' + s.w + '-' + s.l + '. You: ' + per(pg.pts, 'points') + ', ' + per(pg.reb, 'rebounds') + ', ' + per(pg.ast, 'assists') + '.', tone: s.w >= s.l ? 'good' : '' };
 }
 function pay(L, beats) {
   const c = L.contract;
@@ -11882,7 +11897,7 @@ const ACTS = {
   },
   party: {
     name: 'Throw a party', blurb: 'Morale. Risky.', cost: () => 0.15,
-    when: () => true,
+    when: (L) => !!L.team,
     run(L, r) {
       if (r() < 0.7) { bump(L, { morale: 8, trust: 2 }); return 'The whole team comes. Good night, good vibes.'; }
       bump(L, { morale: 4, fame: 4, trust: -6 }); return 'It ends up online. {gm} has questions.';
@@ -12141,6 +12156,7 @@ Object.assign(ACTS, {
     run(L) {
       L.flags.pod = L.year;
       remember(L, 'move.podcast', true);
+      remember(L, 'media.pod', true);
       bump(L, { fame: 6, trust: -3, cash: 0.3 });
       relate(L, 'critic', -10, 'You started a podcast and named him.');
       return 'Episode one is two hours long. Episode two has a sponsor. {critic} hates it.';

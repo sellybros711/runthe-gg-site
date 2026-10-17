@@ -214,6 +214,7 @@ Object.assign(ACTS, {
     run(L) {
       L.flags.pod = L.year;
       remember(L, 'move.podcast', true);
+      remember(L, 'media.pod', true);
       bump(L, { fame: 6, trust: -3, cash: 0.3 });
       relate(L, 'critic', -10, 'You started a podcast and named him.');
       return 'Episode one is two hours long. Episode two has a sponsor. {critic} hates it.';

@@ -161,7 +161,7 @@
 
   const token = () => (session && session.access_token) || null;
 
-  /* ---------------- Shut The Door (supabase/152_shut_the_door.sql) ---------------- */
+  /* ---------------- Shut The Door (supabase/153_shut_the_door.sql) ---------------- */
 
   /* Post today's finished daily. {taken, streak, best, rank, players} or null.
      The first post for (user, day) stands; a repeat answers what the server

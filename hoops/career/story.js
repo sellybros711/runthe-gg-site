@@ -545,6 +545,17 @@ const H_TIER = (L, score, T) => L.history.length && !L.flags.banned ? hofTier(L,
 /* THE EPILOGUE (NARRATIVE.md section 8.4). The after card offers the paths
    this career has earned, then a short chapter is played and the career is
    over only once that is answered. */
+/* What the after card says back, one line a path. It said "New city, new
+   chapter." to everyone, including the man who chose to go home. */
+const AFTER_SAY = {
+  head_coach: 'A bench of your own. The whistle fits.', assistant: 'A film room, a laptop and a lot of coffee.',
+  gm: 'An office with a view of the practice floor.', owner: 'Your name on the ownership group. The players call you boss.',
+  broadcast: 'A desk, a suit and a red light. You are good at this.', league: 'An office in the league building. You fight for the players.',
+  college: 'Back on campus. The students chant your name at the press conference.', hs: 'The gym where it started. The same leaky roof.',
+  business: 'A boardroom and a plan. The money starts working.', actor: 'A trailer on a set. Your first line is three words.',
+  politics: 'Yard signs with your name on them. The first debate is Tuesday.', podcast: 'Three microphones and no filter. Episode one drops Monday.',
+  comeback: 'You call your agent. You are not done.', family: 'Home. Your family. Nothing to prove.',
+};
 const AFTER_PATHS = [
   ['head_coach', 'Head coach', 'A bench of your own.', (L) => L.rt.iq >= 70 || trait(L, 'coachable') || !!recall(L, 'v.coachy')],
   ['assistant', 'Assistant coach', 'Start in the film room. Work up.', () => true],
@@ -581,7 +592,7 @@ ANSWER.after = function(L, card, i, opt, rng, beats, touch, touches) {
     L.final = legacy(L);
     L.final.path = path;
     L.final.after = AFTER_PATHS.find((p) => p[0] === path)[1] + '.';
-    text = 'New city, new chapter.'; tone = 'gold';
+    text = AFTER_SAY[path] || 'A new chapter.'; tone = 'gold';
     if (!dealNamed(L, 'post', 'ep_' + path)) finishLife(L, '');
     return { text, tone, made, won, shots, contest };
   }

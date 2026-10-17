@@ -62,6 +62,7 @@ const env = {
   SITE_URL: 'https://runthe.gg', STRIPE_PRICE_PUTT_LIVES_9: 'price_lives9', STRIPE_PRICE_PUTT_LIVES_3: 'price_lives3',
 };
 const later = (h) => new Date(Date.now() + h * 3600e3).toISOString();
+const sessionsByPI = {};
 let lives = null, extra = 0, livesFail = false, signedIn = true, sessions = [], posts = [], escaped = [];
 globalThis.fetch = async (url, init = {}) => {
   const u = new URL(String(url));
@@ -72,6 +73,10 @@ globalThis.fetch = async (url, init = {}) => {
     if (u.pathname === '/rest/v1/premium_subscriptions' || u.pathname === '/rest/v1/subscriptions') return J(200, []);
     if (init.method === 'POST') { posts.push({ path: u.pathname, body: JSON.parse(String(init.body || 'null')) }); return J(200, true); }
     return J(200, []);
+  }
+  if (u.host === 'api.stripe.com' && u.pathname === '/v1/checkout/sessions' && (init.method || 'GET') === 'GET') {
+    const pi = u.searchParams.get('payment_intent');
+    return J(200, { data: sessionsByPI[pi] ? [sessionsByPI[pi]] : [] });
   }
   if (u.host === 'api.stripe.com' && u.pathname === '/v1/checkout/sessions' && init.method === 'POST') {
     sessions.push(new URLSearchParams(String(init.body)));
@@ -186,6 +191,27 @@ try {
   posts = [];
   await off.wh.handleEvent(env, 'checkout.session.completed', { id: 'cs_live_lives3', mode: 'payment', payment_status: 'paid', client_reference_id: 'u-1', metadata: { putt_lives: 'nine' } });
   ok('a session paid before the switch went off is still delivered', posts.some((p) => p.path === '/rest/v1/rpc/putt_lives_buy'));
+  /* ─── 3b. a refund or a chargeback takes the lives back (152) ─────────── */
+  console.log('3b. a full refund or a chargeback takes a lives buy back; nothing else does');
+  sessionsByPI.pi_lives = { id: 'cs_live_three', mode: 'payment', metadata: { putt_lives: 'three', supabase_user_id: 'u-1' } };
+  sessionsByPI.pi_bundle = { id: 'cs_live_bundle', mode: 'payment', metadata: { bundle: 'perfect-season', supabase_user_id: 'u-1' } };
+  const reclaims = () => posts.filter((p) => p.path === '/rest/v1/rpc/putt_lives_reclaim');
+  posts = [];
+  await on.wh.handleEvent(env, 'charge.refunded', { id: 'ch_1', object: 'charge', invoice: null, payment_intent: 'pi_lives', amount: 299, amount_refunded: 299, refunded: true });
+  ok('a full refund of a lives buy is taken back, keyed on its session', reclaims().length === 1 && reclaims()[0].body.p_session === 'cs_live_three', JSON.stringify(posts));
+  posts = [];
+  await on.wh.handleEvent(env, 'charge.refunded', { id: 'ch_2', object: 'charge', invoice: null, payment_intent: 'pi_lives', amount: 299, amount_refunded: 100, refunded: false });
+  ok('a partial refund takes nothing', reclaims().length === 0);
+  posts = [];
+  await on.wh.handleEvent(env, 'charge.dispute.created', { id: 'dp_1', object: 'dispute', charge: { id: 'ch_1', object: 'charge', invoice: null, payment_intent: 'pi_lives', amount: 299 } });
+  ok('a chargeback takes it back too', reclaims().length === 1 && reclaims()[0].body.p_session === 'cs_live_three');
+  posts = [];
+  await on.wh.handleEvent(env, 'charge.refunded', { id: 'ch_3', object: 'charge', invoice: null, payment_intent: 'pi_bundle', amount: 1999, amount_refunded: 1999, refunded: true });
+  ok('a refunded bundle is still left alone', reclaims().length === 0 && posts.length === 0, JSON.stringify(posts));
+  posts = [];
+  await off.wh.handleEvent(env, 'charge.refunded', { id: 'ch_4', object: 'charge', invoice: null, payment_intent: 'pi_lives', amount: 299, amount_refunded: 299, refunded: true });
+  ok('a refund still takes lives back with the switch off', reclaims().length === 1);
+  ok('the migration that does it grants the webhook', /grant execute on function public\.putt_lives_reclaim\(text\) to service_role/.test(read('supabase/152_putt_lives_refund.sql')));
 } finally {
   rmSync(off.dir, { recursive: true, force: true });
   rmSync(on.dir, { recursive: true, force: true });
@@ -215,7 +241,7 @@ if (canSrc) {
   ok('91 over: three only', make(true, h, 9)({ lives: 100 }, P3) && !make(true, h, 9)({ lives: 100 }, P9));
   ok('a host with no checkout, never', !make(true, {}, 9)({ lives: 0 }, P3));
 }
-const copy = /function buyLabel\(p\)\{ return 'Get ' \+ p\.lives \+ ' lives · \$' \+ \(p\.cents \/ 100\)\.toFixed\(2\); \}/.test(puttSrc) && /'">' \+ buyLabel\(p\) \+ '<small>'/.test(puttSrc);
+const copy = /function buyLabel\(p\)\{ return 'Get ' \+ p\.lives \+ ' lives · \$' \+ \(p\.cents \/ 100\)\.toFixed\(2\); \}/.test(puttSrc) && /'">' \+ buyLabel\(p\) \+ \(p\.tag \? '<small>'/.test(puttSrc);
 ok('each button\'s lives and price come from LIVES_BUY', copy);
 ok('the buttons are drawn in LIVES_BUY\'s order, which is nine first', /LIVES_BUY\.map\(function\(p\)\{ return canBuyLives\(st, p\)/.test(puttSrc) && page[0] && page[0].pack === 'nine');
 ok('the page\'s cap is the server\'s', /^var LIVES_EXTRA_MAX = 99;$/m.test(puttSrc) && /check \(extra between 0 and 99\)/.test(read('supabase/151_putt_lives_extra.sql')));

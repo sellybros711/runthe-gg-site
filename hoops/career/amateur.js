@@ -396,7 +396,7 @@ function hsSecondHalf(L, beats) {
   s.qual = s.w >= 13;
   const pg = perGame(s);
   beats.unshift({ kind: 'record', text: s.w + '-' + s.l + (s.qual ? '. Into the state playoffs.' : '. No playoffs.'), tone: s.qual ? 'good' : 'bad' });
-  beats.push({ kind: 'record', text: 'You: ' + pg.pts + ' points, ' + pg.reb + ' rebounds, ' + pg.ast + ' assists.', tone: '' });
+  beats.push({ kind: 'record', text: 'You: ' + per(pg.pts, 'points') + ', ' + per(pg.reb, 'rebounds') + ', ' + per(pg.ast, 'assists') + '.', tone: '' });
   logIt(L, GRADE[L.am.grade][0].toUpperCase() + GRADE[L.am.grade].slice(1) + ' year: ' + s.w + '-' + s.l + ', ' + pg.pts + ' a night.', '');
   L.phase = 'hs_reg';
 
@@ -523,7 +523,7 @@ function proYear(L, beats) {
   const pg = perGame(s);
   const where = { intl: 'A season overseas against grown men', gl: 'A season in the G League', juco: 'A junior college season',
     prep: 'A prep school season', gap: 'A year of private runs', rec: 'A year of rec league and pro-ams' }[route] || 'A season';
-  beats.push({ kind: 'record', text: where + ': ' + pg.pts + ' points, ' + pg.reb + ' rebounds, ' + pg.ast + ' assists.', tone: 'good' });
+  beats.push({ kind: 'record', text: where + ': ' + per(pg.pts, 'points') + ', ' + per(pg.reb, 'rebounds') + ', ' + per(pg.ast, 'assists') + '.', tone: 'good' });
   bump(L, { cash: route === 'intl' ? 0.5 : route === 'gl' ? 0.6 : route === 'rec' ? 0.03 : 0, iq: 2 });
   L.am.stock = (L.am.stock || 0) + (route === 'rec' ? -1.5 : route === 'gap' ? 0.4 : 1) + Math.max(0, (pg.pts - 12) * 0.15);
   s.finish = ALT_TEAM[route] === 'Overseas' ? 'Pro' : ALT_TEAM[route] || 'G League';

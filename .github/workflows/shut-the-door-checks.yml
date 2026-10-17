@@ -12,7 +12,7 @@ name: Shut The Door checks
 #   engine     the engine on a synthetic pack, every built pack against the
 #              contract with the brief's three tests, the replay check, the
 #              dash ban and the copy rules on the files that hold player copy
-#   migration  supabase/152_shut_the_door.sql applied TWICE to a real Postgres,
+#   migration  supabase/153_shut_the_door.sql applied TWICE to a real Postgres,
 #              then supabase/test/shut_the_door_test.sql
 #
 # Runs locally, unchanged:
@@ -78,12 +78,12 @@ jobs:
         run: |
           sudo systemctl start postgresql.service
           sudo -u postgres createuser -s "$USER"
-      - name: 152 applied twice, then its test
+      - name: 153 applied twice, then its test
         run: |
           createdb std
           P="psql -X -q -v ON_ERROR_STOP=1 -d std"
           $P -f supabase/test/baseball_pro_base.sql
           $P -c "create table if not exists public.profiles (id uuid primary key, username text)"
-          $P -f supabase/152_shut_the_door.sql
-          $P -f supabase/152_shut_the_door.sql
+          $P -f supabase/153_shut_the_door.sql
+          $P -f supabase/153_shut_the_door.sql
           $P -f supabase/test/shut_the_door_test.sql

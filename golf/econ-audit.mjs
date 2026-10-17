@@ -3,6 +3,7 @@
  *   (nohup python3 -m http.server 8099 &)
  *   node golf/econ-audit.mjs                 prints a summary
  *   node golf/econ-audit.mjs --json FILE     writes every item, pack and price as JSON
+ *   add --launch to either tool to read the game as it will be when PUTT_LIVE flips
  *
  * Nothing here is a copy of a number: every row is asked of the page's own functions (cosmeticItems,
  * cosmeticPriceBase, cosmeticPrice, cosPackOnly, cosRewardOnly, passItemOf, packPool, cosBoost), so the
@@ -94,6 +95,8 @@ export async function openPage(b, viewport) {
   await page.route(/supabase|googlesyndication|google-analytics|googletagmanager|jsdelivr/, (r) => r.abort());
   await page.goto(HOST + '/golf/index.html', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => typeof buildPlayer === 'function' && typeof packPool === 'function', null, { timeout: 30000 });
+  // --launch models the economy as it will be when PUTT_LIVE flips (the Pro Shop line and the rest of the launch on)
+  if (process.argv.includes('--launch')) await page.evaluate(() => { PUTT_LIVE = true; });
   page._errs = errs;
   return page;
 }

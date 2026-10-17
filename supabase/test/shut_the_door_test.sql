@@ -1,8 +1,8 @@
--- Shut The Door's outings, streaks and board (152). Chain:
+-- Shut The Door's outings, streaks and board (153). Chain:
 --   psql -d std -f supabase/test/baseball_pro_base.sql   (auth.users, auth.uid() off test.uid, the roles)
 --   psql -d std -c "create table if not exists public.profiles (id uuid primary key, username text)"
---   psql -d std -f supabase/152_shut_the_door.sql
---   psql -d std -f supabase/152_shut_the_door.sql        (twice: it is safe to rerun)
+--   psql -d std -f supabase/153_shut_the_door.sql
+--   psql -d std -f supabase/153_shut_the_door.sql        (twice: it is safe to rerun)
 --   psql -d std -f supabase/test/shut_the_door_test.sql
 \set ON_ERROR_STOP on
 create table if not exists public.profiles (id uuid primary key, username text);
@@ -27,8 +27,8 @@ $$;
 
 delete from public.shutdoor_outings;
 delete from public.shutdoor_streaks;
-\i supabase/152_shut_the_door.sql
-select pg_temp.claim(true, 'running 152 again is safe');
+\i supabase/153_shut_the_door.sql
+select pg_temp.claim(true, 'running 153 again is safe');
 
 set test.uid = '';
 select pg_temp.claim(pg_temp.fails($$select pg_temp.post(shutdoor_today(), 'door_shut', 10, 800)$$), 'a guest cannot post');

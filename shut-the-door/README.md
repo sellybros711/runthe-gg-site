@@ -199,7 +199,7 @@ that type, hand and velocity band (2021-2025); the similar tier is matched on se
 
 ## Accounts
 
-`supabase/152_shut_the_door.sql`: `shutdoor_outings` (user, day: the calls, outcome, pitches,
+`supabase/153_shut_the_door.sql`: `shutdoor_outings` (user, day: the calls, outcome, pitches,
 score, percentile, pitched like, strip), `shutdoor_streaks`, and three functions, all security
 definer: `shutdoor_submit` (Eastern day within one, the first submit stands, streak of doors shut on
 consecutive days, a blown save or a missed day resets it, returns `{taken, streak, best, rank,

@@ -369,7 +369,7 @@ runthe.gg/shut-the-door
 Squares: green 🟩, yellow 🟨, orange 🟧, red 🟥, ten to a line. The URL line is one constant in
 `share.js`.
 
-## 12. Storage (own tables, migration `152_shut_the_door.sql` or the next free number)
+## 12. Storage (own tables, migration `153_shut_the_door.sql` or the next free number)
 
 | table | key | holds |
 |---|---|---|

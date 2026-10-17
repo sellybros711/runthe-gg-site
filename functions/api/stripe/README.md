@@ -631,13 +631,24 @@ so without 151 every lives checkout answers 503 and nothing sells, rather than t
 money the webhook could only half deliver. **Re-running 146 after 151 undoes 151**; run
 151 again, and preflight row 62 says when that has happened.
 
+**The webhook needs `execute` on `putt_lives_buy` as `service_role`.** 149 and 151 revoke the
+function from everyone else and grant it back to that role by name. Without the grant every paid
+buy is a 500 `permission denied for function putt_lives_buy` (the first live buy, 2026-10-17), and
+preflight row 60 reads NO.
+
 **Lives are the server's.** The session carries the pack's key in
 `metadata.putt_lives`, and the webhook reads the lives off `PUTT_LIVES`, never off the
 session. It calls `putt_lives_buy` (keyed on the checkout session, so a retried
 delivery pays once), which cancels the clocks of the lives due back last, and the page
 asks `putt_lives_state` again. A paid session naming no pack we sell is a 500, so
 Stripe retries it and it shows in the dashboard. A buy is filed in `putt_lives_buys`.
-**No promotion codes**: a free code here is free lives. A refund does not take lives back.
+**No promotion codes**: a free code here is free lives.
+
+**A full refund or a chargeback takes the lives back** (the owner, 2026-10-17). The webhook
+reads the checkout session the refunded payment came from and, when it was a lives buy, calls
+`putt_lives_reclaim` (`supabase/152_putt_lives_refund.sql`): the pack's lives, extras first, then
+hearts on a 24 hour clock, never below nought, once a buy. A partial refund takes nothing. The
+webhook endpoint must send `charge.refunded` and `charge.dispute.created`. Preflight row 63.
 
 ### Go-live, in this order
 
@@ -656,7 +667,7 @@ Stripe retries it and it shows in the dashboard. A buy is filed in `putt_lives_b
 5. **Test before the switch, with the switch on in one sitting.** A pack takes no
    promotion code, so a test is a real charge: buy the $2.99 pack on a test account
    that is out of lives, check `putt_lives_buys` has the session with `given = 3`,
-   then refund it in the Dashboard. A refund does not take lives back.
+   then refund it in the Dashboard. The refund takes the three lives back (152).
 6. **Flip `PUTT_LIVES_ENABLED` in BOTH files in one commit**, bump `putt.js?v=` in
    `golf/index.html`, run `node scripts/check-cachebust.mjs --update` and
    `node scripts/stripe/check-putt-lives.mjs`, and push.

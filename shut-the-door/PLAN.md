@@ -19,7 +19,7 @@ Status: approved with the owner's changes (2026-10-17). The contract is `CONTRAC
 | folder | `shut-the-door/` at the site root, plain scripts, each sibling with `?v=N` recorded by `check-cachebust` |
 | shell | its own header, footer, theme (`runthegrid_theme`, light and dark) and `auth.js` copy, as every top-level game carries. One sign-in covers the site |
 | daily | the Eastern day, `dayNumberOf(day)` from an epoch, the daily seed from the day, the outing in localStorage keyed by day so rollover needs no reset |
-| account | migration `152_shut_the_door.sql`: `shutdoor_outings`, `shutdoor_streaks`, `shutdoor_submit`, `shutdoor_board`, `shutdoor_my_stats`, granted to `authenticated`, with a `supabase/test/` pair and a line in `launch_preflight.sql` |
+| account | migration `153_shut_the_door.sql`: `shutdoor_outings`, `shutdoor_streaks`, `shutdoor_submit`, `shutdoor_board`, `shutdoor_my_stats`, granted to `authenticated`, with a `supabase/test/` pair and a line in `launch_preflight.sql` |
 | hidden | `shut-the-door/check-posture.mjs`: INDEXED and LINKED both false, run on every PR (no path filter) |
 | checks | `.github/workflows/shut-the-door-checks.yml`: posture, engine tests, dashes, copy, the migration applied twice against Postgres |
 
@@ -50,7 +50,7 @@ environment's allowed domains would make it fast, any time.
 |---|---|---|
 | `engine.js`, `grade.js`, `pool.js`, `rng.js`, `api.js`, `share.js`, `auth.js` (client and account calls, no UI) | `index.html`, `ui.js`, `mound.js`, `sprites.js`, `anim.js`, `menus.js`, `style.css`, `mock-api.js` | `CONTRACT.md`, `contract.js`, `fixtures/`, `check-posture.mjs` |
 | `pipeline/`, `data/`, `scenarios/`, `test/` (engine), `README.md` | `test/check-browser.mjs`, screenshots | `CONTRACT_REQUESTS.md` answers, `scripts/cachebust.json` at merge |
-| `supabase/152_shut_the_door.sql` and its tests, both workflows | | |
+| `supabase/153_shut_the_door.sql` and its tests, both workflows | | |
 
 ## Seed scenarios (candidates; Agent A verifies every fact first)
 
