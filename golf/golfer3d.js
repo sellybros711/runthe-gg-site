@@ -301,8 +301,9 @@
       const fw=walk?5.2*s*cyc:0, lift=walk?Math.max(0,-s*syc)*2.6:0;
       const ank=walk?P0(fw,3.2+lift,l):add(P(0.4,3.2+heel*1.8,l),sc(T,heel*1.6));
       const hip=rotAbout(P(walk?0:-1,14,l*0.95),hipC,U,turnA(pose.hip)), knee=add(sc(add(hip,ank),0.5),sc(F,1.1+lift*0.9));
-      if(lg){ push(capsule(hip,knee,3.05,'pants')); push(ellipsoid(add(knee,sc(U,-0.8)),[F,U,T],[3.2,1.6,3.2],'pants',{dt:-1}));
+      if(lg&&(!gear.leg||gear.leg==='plusfours')){ push(capsule(hip,knee,3.05,'pants')); push(ellipsoid(add(knee,sc(U,-0.8)),[F,U,T],[3.2,1.6,3.2],'pants',{dt:-1}));
         push(capsule(add(knee,sc(U,-1.4)),ank,2.35,'sock')); }
+      else if(gear.leg==='shorts'){ push(capsule(hip,add(knee,sc(U,1.2)),2.95,'pants')); push(capsule(add(knee,sc(U,1.0)),ank,2.0,'skin')); }   // shorts: bare from the knee
       else { push(capsule(hip,knee,2.7,'pants')); push(capsule(knee,ank,2.7,'pants')); }
       const tip=walk?(lift>0?-0.12*lift:fw<0?0.22*(-fw/5.2):0):0;   // a lifted foot toes down, the trailing one rolls onto its toe
       const sF=walk?rot(F,T,tip):F, sU=walk?rot(U,T,tip):U;
@@ -723,7 +724,9 @@
     const F=norm(aimV), U=V(0,1,0), T=norm(cross(F,U)), P=(f,u,t)=>add(sc(F,f),sc(U,u),sc(T,t));
     let tag='';   // the item the parts being pushed belong to, so a tile can draw it alone (MO.only)
     const HD=(MO?MO.K:1)>=2, parts=[], push=p=>{ if(tag) p.o.item=tag; parts.push(p); }, top=gear.top, tpal=gear.topPal||{}, cl=gear.cleats, lg=gear.legPal;
-    const body=top==='shacket'?'plaid':top==='cardigan'?'k:'+tpal['1']:'shirt', AX=[F,U,T], blz=top==='blazer'||top==='ppchampjacket';   // a cardigan is knitted (k: is ribbed when painted)
+    // the Pro Shop line's tops: long sleeved (PLL), vests over the polo's own sleeves (PLV), and the mock neck
+    const PLL={quarterzip:1,windbreaker:1,hoodie:1,rainjacket:1,argyle:1}, PLV={sweatervest:1,puffervest:1}, pl=!!(PLL[top]||PLV[top]||top==='mockneck');
+    const body=top==='shacket'?'plaid':(top==='cardigan'||top==='sweatervest'||top==='argyle')?'k:'+tpal['1']:'shirt', AX=[F,U,T], blz=top==='blazer'||top==='ppchampjacket';   // a cardigan is knitted (k: is ribbed when painted)
     // THE BUILD: a lean golfer. BW narrows the torso, hips and belt, AW brings the arms, hands and club in to match.
     const BW=0.84, AW=0.87;
     // THE LEGS AND SHOES, as the real things. Trousers: each leg a straight, slightly tapered tube with a pressed
@@ -731,15 +734,38 @@
     // knee, blousing over it, with argyle socks. Shoes: a golf shoe built on a last: a sole unit with a stitched welt,
     // a toe that rises to the instep and the heel collar, the toe cap, saddle and heel tab in the accent, laces over
     // a tongue.
+    const legId=lg?(gear.leg||'plusfours'):'', lp=gear.legPal||{}, LX=h=>'x:'+h;
     for(const s of [1,-1]){ const t=3.6*s; tag=lg?'leg':'pants';
       const hip=P(0,16.4,t*0.94);
-      if(lg){ const lp2=gear.legPal||{}, cuffM='x:'+(lp2['2']||lp2['1']||'#6a6040'), band=P(0.25,7.4,t*1.03);
+      // THE PRO SHOP LINE'S LEGWEAR. Shorts: a tailored leg cut square above the knee, a pressed crease, the bare leg below
+      // and a low white sock. Joggers: a looser tapered leg gathered into a ribbed cuff at the ankle, a seam down the side.
+      // Tartan trousers: the trouser, woven in its tartan (a set of bands each way, a fine line through the middle).
+      if(legId==='shorts'){ const hem=P(0.3,10.4,t*1.02), L2=dot(sub(hem,hip),sub(hem,hip)), ank=P(0.2,3.3,t*1.02), kn=P(0.55,8.0,t*1.02);
+        push(field(add(hip,sc(sub(hem,hip),0.5)),6.5,p=>sdCone(p,hip,hem,3.3,3.25)-0.1,'pants',{mf:(p,n)=>{ const q=sub(p,hip), tt=dot(q,sub(hem,hip))/L2, sd=dot(q,T)-(dot(sub(hem,hip),T))*tt;
+            if(tt>0.94) return ['pants',tt>0.985?-1:0];                                                         // the turned hem
+            if(tt>0.88&&tt<0.91) return ['pants',-1];                                                           // its stitching
+            return dot(n,F)>0.55&&Math.abs(sd)<0.2?['pants',1]:null; }}));                                     // the crease
+        tag='';
+        push(field(kn,7,p=>smin(smin(sdCap(p,add(hem,sc(U,0.6)),kn,1.95),sdCap(p,kn,ank,1.75),0.6),sdE(p,P(-0.15,6.6,t*1.02),AX,[1.75,1.9,1.6]),0.8),'skin',{}));   // the knee, the calf, the shin
+        push(field(add(ank,sc(U,0.4)),3,p=>sdCone(p,add(ank,sc(U,-0.4)),add(ank,sc(U,1.1)),1.95,1.85)-0.05,LX(lp.w||'#f4f4f0'),{mf:p=>dot(sub(p,ank),U)>0.9?[LX(lp.w||'#f4f4f0'),1]:null}));   // the low sock
+        tag=lg?'leg':'pants'; }
+      else if(legId==='joggers'){ const ank=P(0.2,3.9,t*1.02), kn=P(0.55,9.6,t*1.04), L2=dot(sub(ank,hip),sub(ank,hip)), cuff=LX(lp['3']||'#15171b');
+        push(field(kn,10,p=>smin(smin(sdCone(p,hip,kn,3.45,3.15),sdCone(p,kn,ank,3.15,2.15),0.8),sdE(p,kn,AX,[3.3,2.2,3.3]),0.9)-0.08,'pants',{mf:(p,n)=>{ const q=sub(p,hip), tt=dot(q,sub(ank,hip))/L2;
+            const side=dot(n,T)*s; if(Math.abs(side-0.92)<0.06) return ['pants',-1];                          // the side seam
+            if(Math.abs(tt-0.48)<0.02&&dot(n,F)>0.3) return ['pants',-1];                                      // a soft fold at the knee
+            return dot(n,F)>0.6&&Math.sin(tt*40+dot(q,T)*2)>0.94?['pants',1]:null; }}));                       // gentle wrinkles
+        push(field(ank,3.4,p=>sdCone(p,add(ank,sc(U,-0.9)),add(ank,sc(U,0.6)),2.2,2.25)-0.06,cuff,{mf:p=>{ const q=sub(p,ank); return [cuff,Math.sin(Math.atan2(dot(q,T),dot(q,F))*14)>0.2?1:-1]; }}));   // the ribbed cuff
+        push(capsule(add(ank,sc(U,-0.7)),P(0.2,3.0,t*1.02),1.7,'skin')); }                                  // a bare ankle above the shoe
+      else if(lg&&legId==='plusfours'){ const lp2=gear.legPal||{}, cuffM='x:'+(lp2['2']||lp2['1']||'#6a6040'), band=P(0.25,7.4,t*1.03);
         push(field(P(0.2,11.5,t),9,p=>smin(sdCone(p,hip,P(0.3,8.6,t*1.05),3.3,3.75),sdE(p,P(0.35,8.6,t*1.05),AX,[3.75,1.6,3.8]),1.2),'pants',{mf:p=>{ const y=dot(sub(p,band),U);
             return y>0.3&&y<1.6&&Math.sin(Math.atan2(dot(sub(p,band),T),dot(sub(p,band),F))*9)>0.4?['pants',-1]:null; }}));     // the knickers, puffed over the cuff
         push(field(band,4,p=>sdCone(p,add(band,sc(U,-0.55)),add(band,sc(U,0.55)),2.55,2.55)-0.15,cuffM,{}));                       // the gathered cuff
         push(capsule(add(band,sc(U,-0.5)),P(0.1,3.4,t*1.02),2.3,'sock')); }                                                        // argyle socks
-      else { const ank=P(0.2,3.3,t*1.02), L2=dot(sub(ank,hip),sub(ank,hip));
+      else { const ank=P(0.2,3.3,t*1.02), L2=dot(sub(ank,hip),sub(ank,hip)), tart=legId==='tartan';
+        const sett=p=>{ const v=((dot(p,U)/3.4)%1+1)%1, h=(((dot(p,T)+dot(p,F)*0.6)/3.4)%1+1)%1, bv=v<0.3, bh=h<0.3;   // the tartan's sett, in the trouser's own space
+          if(Math.abs(v-0.15)<0.03||Math.abs(h-0.15)<0.03) return LX(lp['4']||'#f2d24a'); return bv&&bh?LX(mix2(lp['2']||'#1e2f52','#000000',0.25)):bv||bh?LX(lp['2']||'#1e2f52'):'pants'; };
         push(field(add(hip,sc(sub(ank,hip),0.5)),9.5,p=>sdCone(p,hip,ank,3.3,2.7)-0.1,'pants',{mf:(p,n)=>{ const q=sub(p,hip), tt=dot(q,sub(ank,hip))/L2, sd=dot(q,T)-(dot(sub(ank,hip),T))*tt;
+            if(tart){ const m=sett(p); if(tt>0.975) return [m,-1]; return [m,dot(n,F)>0.55&&Math.abs(sd)<0.22?1:0]; }
             if(tt>0.975) return ['pants',-1];                                                                     // the hem
             if(dot(n,F)>0.55&&Math.abs(sd)<0.22) return ['pants',1];                                            // the pressed crease
             if(dot(n,F)>0.55&&Math.abs(Math.abs(sd)-0.32)<0.1) return ['pants',-1];                            // its shadow
@@ -767,6 +793,10 @@
       for(let i=n0;i<parts.length;i++){ parts[i].o.item='shoe'; parts[i].o.side=s; } }
     // hips and belt
     tag=lg?'leg':'pants'; push(ellipsoid(P(0,15.6,0),AX,[4.4,3.1,8.5*BW],'pants'));
+    if(legId==='tartan'){ const HR=[4.4,3.1,8.5*BW], hp=P(0,15.6,0), at=l=>add(hp,sc(F,l[0]*HR[0]),sc(U,l[1]*HR[1]),sc(T,l[2]*HR[2])), fr=v=>v-Math.floor(v);   // the tartan carries on over the seat
+      const bands=l=>{ const p=at(l), v=fr(dot(p,U)/3.4), h=fr((dot(p,T)+dot(p,F)*0.6)/3.4); return [v<0.3,h<0.3,Math.abs(v-0.15)<0.03||Math.abs(h-0.15)<0.03]; };
+      push(over(hp,AX,HR.map(v=>v*1.004),LX(lp['2']||'#1e2f52'),l=>{ const b=bands(l); return (b[0]||b[1])&&!b[2]; },{noCast:1}));
+      push(over(hp,AX,HR.map(v=>v*1.006),LX(lp['4']||'#f2d24a'),l=>bands(l)[2],{noCast:1})); }
     if(HD){ push(over(P(0,15.6,0),AX,[4.4,3.1,8.5*BW],'pants',l=>l[0]>0.5&&Math.abs(l[2]-0.04)<0.03&&l[1]<0.6,{dt:-1,noCast:1}));     // the fly
       for(const sd of [1,-1]) push(over(P(0,15.6,0),AX,[4.4,3.1,8.5*BW],'pants',l=>l[0]>0.2&&Math.abs(l[2]*sd-0.62+0.25*(0.6-l[1]))<0.035&&l[1]>-0.1,{dt:-1,noCast:1})); }   // slant pockets
     tag='';
@@ -776,15 +806,15 @@
     // little blousing where it tucks into the belt, and tension folds from each armpit toward the buckle.
     // The menu's phase (0 to 1) breathes it: the chest swells a touch, the shoulders lift, the folds drift.
     const ph=(MO?MO.phase:0)*2*Math.PI, br=Math.sin(ph), sw=Math.sin(ph+1.1);
-    const jacket=top==='cardigan'||blz||top==='shacket'; tag=jacket?'top':'shirt';
-    const tc=P(0,27,0), TR=[4.6*(1+0.012*br),22,8.55*BW*(1+0.014*br)], lo=-(27-17.4)/22, hi=(33.6-27)/22, inT=l=>l[1]>lo&&l[1]<hi;
+    const jacket=top==='cardigan'||blz||top==='shacket'||!!PLL[top]; tag=jacket||pl?'top':'shirt';
+    const puff=top==='puffervest'?1.08:1, tc=P(0,27,0), TR=[4.6*(1+0.012*br)*puff,22,8.55*BW*(1+0.014*br)*(puff>1?1.04:1)], lo=-(27-17.4)/22, hi=(33.6-27)/22, inT=l=>l[1]>lo&&l[1]<hi;
     push(ellipsoid(tc,AX,TR,body,{cut:inT}));
     for(const s of [1,-1]) push(capsule(P(-0.2,32.5+0.12*br,2.6*s),P(-0.2,30.6+0.15*br,6.5*s),2.1,body));    // the shoulders, sloping
     push(ellipsoid(P(0.2,19.0,0),AX,[4.8,1.35,8.75*BW+0.08*sw],body,{dt:0}));                                     // blousing over the belt
     push(capsule(P(0.3,32.2,0),P(0.6,35.8,0),2.85,'skin',{dt:-1}));                                              // the neck, under the head
     // the collar: a jacket's or the cape's is the old soft roll; a polo's is a real band round the neck, open at the front
-    const polo=!jacket&&!blz;
-    if(!polo||!HD) push(ellipsoid(P(0.7,33.5,0),AX,[3.7,1.15,4.7],body,{dt:1}));
+    const polo=!jacket&&!blz&&top!=='mockneck';
+    if((!polo||!HD)&&!(pl&&HD)) push(ellipsoid(P(0.7,33.5,0),AX,[3.7,1.15,4.7],body,{dt:1}));
     else { const n0=P(0.45,32.9,0), n1=P(0.6,34.5,0);
       push(field(add(n0,sc(U,0.8)),5.5,p=>{ const q=sub(p,n0), a=dot(q,F), sd=dot(q,T);
           return Math.max(Math.abs(sdCone(p,n0,n1,3.55,3.2))-0.32,-(a-2.2+Math.abs(sd)*1.4)); },'polo',{mf:p=>dot(sub(p,n0),U)>1.35?['polo',1]:null})); }
@@ -795,6 +825,65 @@
         push(over(tc,AX,TR,body,l=>inT(l)&&l[0]>0.15&&l[1]>-0.40&&l[1]<-0.1&&Math.abs(l[2]*s-(0.95+1.6*l[1]-d))<0.045,{dt:-1,noCast:1}));
         push(over(tc,AX,TR,body,l=>inT(l)&&l[0]>0.15&&l[1]>-0.30&&l[1]<0.02&&Math.abs(l[2]*s-(0.875+1.45*l[1]+d))<0.03,{dt:1,noCast:1})); }   // the lit side of the first fold
       for(const [y,w] of [[-0.385,0.55],[-0.405,0.35]]) push(over(tc,AX,TR,body,l=>inT(l)&&l[0]>0.2&&Math.abs(l[1]-y-0.004*sw)<0.006&&Math.abs(l[2])<w,{dt:-1,noCast:1})); }
+    // the polo: the collar folded down into two flat points on the chest, outlined; a placket and two buttons
+    function poloFront(){
+      const tri=(x,y,a,b,c)=>{ const e=(p,q)=>(q[0]-p[0])*(y-p[1])-(q[1]-p[1])*(x-p[0]); const d1=e(a,b),d2=e(b,c),d3=e(c,a); return (d1>=0&&d2>=0&&d3>=0)||(d1<=0&&d2<=0&&d3<=0); };
+      for(const s of [1,-1]){ const A=[0.06*s,0.305], B=[0.46*s,0.31], C=[0.32*s,0.19], A2=[0.1*s,0.3], B2=[0.42*s,0.302], C2=[0.315*s,0.205];
+        push(over(tc,AX,TR.map(v=>v*1.012),'polo',l=>l[0]>0.25&&tri(l[2],l[1],A,B,C),{noCast:1,dt:-1}));                 // its edge
+        push(over(tc,AX,TR.map(v=>v*1.02),'polo',l=>l[0]>0.25&&tri(l[2],l[1],A2,B2,C2),{noCast:1,dt:1})); }              // the flap
+      push(over(tc,AX,TR,'polo',l=>inT(l)&&l[0]>0.45&&Math.abs(l[2])<0.075&&l[1]>0.1&&l[1]<0.29));
+      for(const u of [30.0,28.2]) push(ellipsoid(P(4.82,u,0),AX,[0.42,0.45,0.45],'polo',{dt:-1,gloss:2,noCast:1})); }
+    // THE PRO SHOP LINE'S TOPS, as the garments. A collar is a ring of cloth standing round the neck (ring: open says how
+    // wide its front slit is). Quarter-zip: a stand collar split by a zip that runs to mid chest, ribbed hem and cuffs.
+    // Mock neck: a closed tube collar folded at the top, short sleeves. Sweater vest: knitted, a V with a trim band over the
+    // polo and its collar, the polo's own sleeves. Windbreaker: a contrast yoke over the chest and shoulders, a half zip,
+    // elastic hem and cuffs. Hoodie: a hood lying in a roll behind the neck, drawstrings, a kangaroo pocket. Rain jacket: a
+    // tall zipped collar with a packed hood at the back, a full zip under a storm flap, a chest pocket zip, a taped seam.
+    // Argyle sweater: a knitted V-neck over the polo, its diamonds and dashed lines knitted in. Puffer vest: a puffed
+    // body quilted into baffles, a stand collar, a full zip, over the polo's sleeves.
+    function proTop(){ const X2=h=>'x:'+h, trim=X2(tpal['3']||mix2(tpal['1']||'#555555','#000000',0.45)), TRo=TR.map(v=>v*1.012);
+      const ring=(y0,y1,r0,r1,m,open)=>{ const n0=P(0.45,y0,0), n1=P(0.6,y1,0);
+        push(field(add(n0,sc(U,(y1-y0)/2)),6,p=>{ const q=sub(p,n0), a=dot(q,F), sd=dot(q,T); let d=Math.abs(sdCone(p,n0,n1,r0,r1))-0.34;
+            if(open) d=Math.max(d,-(a-2.6+Math.abs(sd)*open)); return d; },m,{mf:p=>dot(sub(p,n0),U)>y1-y0-0.4?[m,1]:null})); };
+      const zip=(y0,y1)=>{ push(over(tc,AX,TRo,trim,l=>inT(l)&&l[0]>0.3&&Math.abs(l[2])<0.022&&l[1]>y0&&l[1]<y1,{noCast:1}));
+        push(ellipsoid(P(4.78,27+22*y0-0.7,0.15),AX,[0.3,0.75,0.4],X2('#c9ced6'),{gloss:3,noCast:1})); };   // the zip and its pull
+      const hemRib=m=>{ push(over(tc,AX,TR.map(v=>v*1.01),m,l=>inT(l)&&l[1]<lo+0.07,{noCast:1}));
+        push(over(tc,AX,TR.map(v=>v*1.014),m,l=>inT(l)&&l[1]<lo+0.07&&Math.sin(Math.atan2(l[2],l[0])*34)>0.2,{dt:-1,noCast:1})); };
+      const vE=l=>0.1+0.62*Math.max(0,l[1]), vNeck=(band)=>{ push(over(tc,AX,TR,'polo',l=>inT(l)&&l[0]>0.3&&l[1]>0.0&&Math.abs(l[2])<vE(l)));
+        push(over(tc,AX,TRo,band,l=>inT(l)&&l[0]>0.25&&l[1]>-0.02&&Math.abs(l[2])>=vE(l)&&Math.abs(l[2])<vE(l)+0.075,{dt:1,noCast:1})); poloFront(); };
+      if(top==='quarterzip'){ ring(32.5,35.5,3.65,3.35,body,7); zip(0.02,0.3);
+        push(capsule(P(3.95,32.9,0),P(3.6,35.3,0),0.16,trim,{noCast:1})); hemRib(body); }
+      else if(top==='mockneck'){ ring(32.5,35.9,3.6,3.3,body,0); push(over(tc,AX,TRo,body,l=>l[0]>0.2&&Math.abs(l[1]-0.24)<0.006&&Math.abs(l[2])<0.35,{dt:-1,noCast:1})); }
+      else if(top==='sweatervest'){ vNeck('k:'+(tpal['4']||'#e7dcc6')); hemRib(body); }
+      else if(top==='windbreaker'){ const yk=X2(tpal['4']||'#f2f0ea');
+        push(over(tc,AX,TRo,yk,l=>inT(l)&&l[1]>0.02&&l[1]<0.16,{noCast:1}));                                                  // the colour block across the chest
+        for(const y of [0.02,0.16]) push(over(tc,AX,TR.map(v=>v*1.016),trim,l=>inT(l)&&Math.abs(l[1]-y)<0.008,{noCast:1}));        // its piping
+        ring(32.5,35.4,3.65,3.35,body,7); zip(0.04,0.3); hemRib(trim); }
+      else if(top==='hoodie'){ const Ra=4.1, Rb=5.3, hcN=P(0.0,33.6,0);
+        const roll=p=>{ const q=sub(p,hcN), a=dot(q,F), b=dot(q,T), h=dot(q,U), t2=Math.atan2(b/Rb,a/Ra); return Math.hypot(a-Ra*Math.cos(t2),b-Rb*Math.sin(t2),h)-1.05; };
+        push(field(P(-1.4,34.6,0),9,p=>smin(roll(p),sdE(p,P(-3.4,35.6,0),AX,[2.6,3.3,5.4]),1.2),body,{mf:(p,n)=>dot(sub(p,hcN),F)>2.4&&dot(n,U)>0.3?[body,-1]:null}));   // the hood
+        for(const s of [1,-1]){ push(capsule(P(4.25,33.0,1.25*s),P(4.95,27.6,1.5*s),0.2,X2(tpal['5']||'#f2f2f2'),{noCast:1}));
+          push(capsule(P(4.95,27.6,1.5*s),P(5.0,26.9,1.52*s),0.27,X2('#c9ced6'),{gloss:2,noCast:1})); }                      // drawstrings and aglets
+        const pk=(l,k)=>l[1]>-0.36+k&&l[1]<-0.08-k&&Math.abs(l[2])<0.36-k+(-0.08-l[1])*0.7;
+        push(over(tc,AX,TRo,body,l=>l[0]>0.2&&pk(l,0),{dt:1,noCast:1}));
+        push(over(tc,AX,TR.map(v=>v*1.016),body,l=>l[0]>0.2&&pk(l,0)&&!pk(l,0.02),{dt:-1,noCast:1}));                          // the kangaroo pocket
+        hemRib(body); }
+      else if(top==='rainjacket'){ ring(32.3,36.3,3.8,3.5,body,0);
+        push(capsule(P(-2.3,35.5,-3.4),P(-2.3,35.5,3.4),1.45,body));                                                           // the packed hood
+        push(capsule(P(4.0,32.6,0),P(3.65,36.1,0),0.15,trim,{noCast:1})); zip(lo+0.02,0.3);
+        push(over(tc,AX,TR.map(v=>v*1.02),body,l=>inT(l)&&l[0]>0.3&&l[2]>0.02&&l[2]<0.085,{dt:1,noCast:1}));                  // the storm flap
+        push(over(tc,AX,TR.map(v=>v*1.016),trim,l=>l[0]>0.2&&Math.abs(l[1]-0.08-(l[2]-0.25)*0.35)<0.008&&l[2]>0.22&&l[2]<0.55,{noCast:1}));   // a chest pocket zip
+        push(over(tc,AX,TR.map(v=>v*1.01),body,l=>inT(l)&&Math.abs(l[1]-0.2)<0.007,{dt:-1,noCast:1})); }                       // the taped seam
+      else if(top==='argyle'){ const dmd=X2(tpal['4']||'#b9a46a'), ln=X2(tpal['5']||'#e7dcc6'), fr=v=>v-Math.floor(v);
+        const front=l=>inT(l)&&l[0]>0.15&&l[1]>lo+0.07&&l[1]<0.24&&!(l[1]>0.0&&Math.abs(l[2])<vE(l)+0.075);
+        push(over(tc,AX,TRo,'k:'+(tpal['4']||'#b9a46a'),l=>{ if(!front(l)) return false; const u=l[2]*3.2+l[1]*5.2, v=l[2]*3.2-l[1]*5.2; return ((Math.floor(u)+Math.floor(v))&1)===0; },{noCast:1}));
+        push(over(tc,AX,TR.map(v=>v*1.016),ln,l=>{ if(!front(l)) return false; const u=l[2]*3.2+l[1]*5.2+0.5, v=l[2]*3.2-l[1]*5.2+0.5;
+            return (fr(u)<0.05&&fr(v*2)<0.5)||(fr(v)<0.05&&fr(u*2)<0.5); },{noCast:1}));
+        vNeck(trim); hemRib(trim); void dmd; }
+      else if(top==='puffervest'){ const fr=v=>v-Math.floor(v);
+        push(over(tc,AX,TR.map(v=>v*1.004),body,l=>inT(l)&&fr((l[1]-lo)/0.105)<0.07,{dt:-1,noCast:1}));                       // the baffle seams
+        push(over(tc,AX,TR.map(v=>v*1.006),body,l=>inT(l)&&l[0]>0.45&&Math.abs(fr((l[1]-lo)/0.105)-0.55)<0.08,{dt:1,noCast:1}));   // each baffle's puff
+        ring(32.5,35.6,3.95,3.75,body,7); zip(lo+0.02,0.3); } }
     // THE JACKETS, made as the garments: their fronts, bands, pockets and collars (the sleeves are with the arms)
     const box=(l,y0,y1,x0,x1)=>l[1]>y0&&l[1]<y1&&l[2]>x0&&l[2]<x1, rim=(l,y0,y1,x0,x1,w)=>box(l,y0,y1,x0,x1)&&!box(l,y0+w,y1-w*0.5,x0+w*0.3,x1-w*0.3);
     if(top==='cardigan'){ const vE=l=>0.13+0.6*Math.max(0,l[1]-0.05), knit=body;
@@ -833,13 +922,8 @@
         push(ellipsoid(add(cp,sc(F,0.28),sc(U,0.1)),AX,[0.2,0.48,0.2],X(tpal.C),{noCast:1})); push(ellipsoid(add(cp,sc(F,0.28),sc(U,0.25)),AX,[0.2,0.17,0.46],X(tpal.C),{noCast:1})); }
       for(const sd of [1,-1]) push(over(tc,AX,TR.map(v=>v*1.012),dkc,l=>l[0]>0.2&&Math.abs(l[1]+0.27)<0.007&&l[2]*sd>0.28&&l[2]*sd<0.66,{noCast:1}));   // the hip pockets
       for(const u of [20.6,22.6]) push(ellipsoid(P(4.85,u,0),AX,[0.5,0.5,0.5],'x:'+tpal['4'],{gloss:2,noCast:1})); }
-    else if(HD){ // the polo: the collar folded down into two flat points on the chest, outlined; a placket and two buttons
-      const tri=(x,y,a,b,c)=>{ const e=(p,q)=>(q[0]-p[0])*(y-p[1])-(q[1]-p[1])*(x-p[0]); const d1=e(a,b),d2=e(b,c),d3=e(c,a); return (d1>=0&&d2>=0&&d3>=0)||(d1<=0&&d2<=0&&d3<=0); };
-      for(const s of [1,-1]){ const A=[0.06*s,0.305], B=[0.46*s,0.31], C=[0.32*s,0.19], A2=[0.1*s,0.3], B2=[0.42*s,0.302], C2=[0.315*s,0.205];
-        push(over(tc,AX,TR.map(v=>v*1.012),'polo',l=>l[0]>0.25&&tri(l[2],l[1],A,B,C),{noCast:1,dt:-1}));                 // its edge
-        push(over(tc,AX,TR.map(v=>v*1.02),'polo',l=>l[0]>0.25&&tri(l[2],l[1],A2,B2,C2),{noCast:1,dt:1})); }              // the flap
-      push(over(tc,AX,TR,'polo',l=>inT(l)&&l[0]>0.45&&Math.abs(l[2])<0.075&&l[1]>0.1&&l[1]<0.29));
-      for(const u of [30.0,28.2]) push(ellipsoid(P(4.82,u,0),AX,[0.42,0.45,0.45],'polo',{dt:-1,gloss:2,noCast:1})); }
+    else if(pl&&HD) proTop();
+    else if(HD) poloFront(); // the polo
     // THE ARMS, at rest. Each joins the body only at the shoulder and hangs clear of the shirt. The dominant hand
     // (the right for a righty) holds the club, its head on the grass beside that foot; the other hand wears the glove.
     const dom=gear.lefty?-1:1, scare=gear.body==='pumpkinhead', zomb=gear.body==='zombie', bp=gear.bodyPal||{};
@@ -857,7 +941,7 @@
       push(over(tc,AX,TR.map(v=>v*1.005),'x:#6a2424',l=>inT(l)&&l[0]>0.1&&tear(0.2,-0.62,0.06,0.16)(l),{noCast:1}));        // old blood at the shoulder
       push(over(tc,AX,TR.map(v=>v*1.01),skn,l=>inT(l)&&l[0]>0.1&&l[1]<-0.37&&((l[2]*7+9)%2)<0.9&&l[1]<-0.37-0.04*Math.abs(Math.sin(l[2]*11)),{noCast:1}));   // the hem, torn into strips
     }
-    for(const s of [1,-1]){ const hold=s===dom, slv=blz?'x:'+tpal['1']:body;
+    for(const s of [1,-1]){ const hold=s===dom, slv=blz?'x:'+tpal['1']:PLV[top]?'polo':body;
       const sh=P(-0.2,30.0+0.15*br,9.2*AW*s), el=hold?P(0.9,23.0,10.5*AW*s):P(0.4,23.0,10.4*AW*s), wr=hold?P(2.4,17.7,11.0*AW*s):P(1.3,17.3,10.9*AW*s);
       const se=add(sh,sc(sub(el,sh),0.48)), mid=add(el,sc(sub(wr,el),0.45)), flap=sc(F,0.12*sw*s);
       if(jacket){ // A JACKET'S SLEEVE: long, bending at the elbow, a fold inside it; the cardigan's ends in a ribbed cuff, the
@@ -868,6 +952,9 @@
             const t1=dot(sub(p,s0),sub(el,s0))/L1, t2=dot(sub(p,el),sub(e1,el))/L2;
             if(t2>0.985) return [sm,-1];                                                          // the open cuff
             if(top==='cardigan'&&t2>0.74) return [sm,t2<0.77?-1:0];                               // the ribbed cuff
+            if((top==='quarterzip'||top==='hoodie'||top==='argyle')&&t2>0.8) return [sm,Math.sin(Math.atan2(dot(sub(p,e1),U),dot(sub(p,e1),F))*12)>0.2?-1:0];   // ribbed cuffs
+            if(top==='windbreaker'&&t2>0.82) return ['x:'+(tpal['3']||'#2a2d33'),t2<0.84?-1:0];   // an elastic cuff
+            if(top==='rainjacket'&&t2>0.8&&t2<0.84) return [sm,-1];                                 // the cuff's tab
             if(blz&&t2>0.8&&t2<0.83) return [sm,-1];
             return Math.abs(t1-0.93)<0.035||Math.abs(t2-0.08)<0.03?[sm,-1]:null; }}));            // the fold at the elbow
         if(roll){ push(field(e1,4,p=>sdCone(p,add(e1,sc(sub(el,e1),0.14)),add(e1,sc(sub(wr,el),0.03)),2.05,2.05)-0.15,'x:'+tpal['2'],{mf:p=>[ 'x:'+tpal['2'],Math.sin(dot(sub(p,e1),norm(sub(wr,el)))*4)>0.3?1:-1]}));   // the roll
@@ -1427,7 +1514,36 @@
       return capParts(M,hairR(M)/M.hr,{crown:cx(c,0,'#1f1d26'),brim:cx(c,1,'#2c2a34'),btn:gold,badge:(pc,AX)=>{ const [f,u,s]=AX, o=add(pc,sc(f,0.5));
         return [capsule(add(o,sc(u,1.9)),add(o,sc(u,-1.9)),0.5,gold,{gloss:2,noCast:1}), capsule(add(o,sc(u,1.9)),add(o,sc(u,1.1),sc(s,-1.0)),0.45,gold,{gloss:2,noCast:1}),
           capsule(add(o,sc(u,-1.9),sc(s,-0.9)),add(o,sc(u,-1.9),sc(s,0.9)),0.45,gold,{gloss:2,noCast:1})]; }}); } });
-  HAT_MODEL.pptricorn=(M,c,P)=>tricorn(M,c,P);   // the Putt Putt tricorn, modelled (and on the course golfer too)
+  HAT_MODEL.pptricorn=(M,c,P)=>tricorn(M,c,P);
+  /* THE PRO SHOP LINE'S HATS. Rope cap: a structured cap with a braided rope across the peak. Trucker: a tall foam front
+     panel with a patch, mesh round the sides and back. Tam o' Shanter: a wide, flat knitted bonnet in tartan on a ribbed
+     band, the toorie (a pompom) on top. Panama: a pinched, dented crown in woven straw, a black band, a brim snapped down
+     in front. Colours are each hat's own palette. */
+  Object.assign(HAT_MODEL,{
+    ropecap(M,c,P){ const X2=h=>'x:'+h, cw=hairR(M)/M.hr, out=capParts(M,cw,{crown:X2(P.A),brim:X2(P.C),btn:X2(P.N),mark0:false});
+      const {hc,look,hup,Lf,hr}=M;
+      for(let i=-9;i<=9;i++){ const a=i/9*0.8, d=add(sc(look,Math.cos(a)),sc(Lf,Math.sin(a))), r=hr*(cw+0.42);   // the braid across the peak
+        out.push(ellipsoid(add(hc,sc(d,r),sc(hup,hr*0.27-0.012*i*i)),[d,hup,norm(cross(hup,d))],[0.6,0.55,0.8],X2(i&1?P.R:P.r),{gloss:1,noCast:1})); }
+      return out; },
+    trucker(M,c,P){ const X2=h=>'x:'+h, cw=hairR(M)/M.hr, out=capParts(M,cw,{crown:X2(P.A),brim:X2(P.C),btn:X2(P.N),patch:X2(P.P),mark:X2(P.A)});
+      const {hc,look,hup,Lf,hr}=M, cc=add(hc,sc(hup,hr*0.12)), CR=[hr*cw*1.004,hr*1.12*1.004,hr*cw*1.004], AXc=[look,hup,Lf];
+      out.push(over(cc,AXc,CR,X2(P.M),l=>l[0]<0.42&&l[1]>0.07-0.12*(1-l[0]),{noCast:1}));                         // the mesh panels
+      out.push(over(cc,AXc,CR.map(v=>v*1.002),X2(P.m),l=>l[0]<0.42&&l[1]>0.07-0.12*(1-l[0])&&Math.sin(l[1]*70)*Math.sin(Math.atan2(l[2],l[0])*48)>0.35,{noCast:1}));   // its holes
+      return out; },
+    tam(M,c,P){ const H=M.hr, rh=hairR(M), X2=h=>'x:'+h, G=X2(P.G), K=X2(P.K), R=X2(P.R);
+      const sett=L=>{ const fr=v=>v-Math.floor(v), u=fr(L.a/3.2), v=fr(L.s/3.2); if(Math.abs(u-0.5)<0.05||Math.abs(v-0.5)<0.05) return [R,0];
+        return [(u<0.3)||(v<0.3)?K:G,(u<0.3)&&(v<0.3)?-1:0]; };
+      return [hatSolid(M,[
+        HP.crown(H*0.22,H*0.62,rh*1.01,rh*1.0,X2(P.k),{rr:0.6,tex:TEX.knit(X2(P.k))}),
+        HP.egg(-H*0.08,H*0.98,H*0.12,H*1.55,H*0.4,H*1.6,G,{tex:sett}),
+        HP.ball(-H*0.08,H*1.42,H*0.12,H*0.32,X2(P.P),{k:0.6,tex:L=>[X2(P.P),Math.sin(L.th*19+L.y*4)>0.5?-1:0]})],
+        {tilt:0.16,R:H*2.2}) ]; },
+    panama(M,c,P){ const H=M.hr, rh=hairR(M), X2=h=>'x:'+h, st=X2(P.S), band=X2(P.K);
+      return [hatSolid(M,[
+        HP.crown(H*0.28,H*1.18,rh,H*0.86,st,{rr:1.3,sq:1.14,dent:H*0.3,pinch:0.4,tex:TEX.straw(st)}),
+        HP.crown(H*0.28,H*1.18,rh,H*0.86,band,{rr:1.3,sq:1.14,grow:0.28,clip:[H*0.3,H*0.52]}),
+        HP.brim(H*0.3,H*1.72,0.8,st,{r0:rh,tex:TEX.straw(st),curl:(L,u)=>{ const cs=L.a/(L.r||1); return u*(cs>0?-H*0.3*cs:H*0.22*-cs)+H*0.05*u*u; }})],
+        {tilt:0.1,R:H*2.1}) ]; } });   // the Putt Putt tricorn, modelled (and on the course golfer too)
   const HAT_COURSE={pptricorn:1};   // a modelled hat that is modelled on the course golfer too
   /* THE PUTT PUTT WORLD REWARDS, each modelled as the thing it is and keyed by its own id, so nothing else changes.
      A painted part (o.paint) picks its colour cell by cell from where on it the cell is (its unit coordinates),
@@ -1489,6 +1605,44 @@
       for(const k of [-1.55,0,1.55]){ let prev=Q(5.9,1.75,k*1.05);                                          // three claws, curling down off the toe
         for(let j=0;j<5;j++){ const c=Q(6.3+0.72*j,1.75-0.075*j*j-0.05*j,k*(1.05+0.06*j)), r=0.78*(1-0.16*j);
           push(ellipsoid(c,AXs,[r*1.15,r,r],X(j<1?P.F:j<2?P.f:P.c),{gloss:3,noCast:j>0?1:0})); prev=c; } } } };
+  /* THE PRO SHOP LINE'S SHOES. Spikeless: a knit upper on a deep white foam midsole and a grey rubber outsole of nubs,
+     a coloured stripe along the side, white laces. Kiltie brogues: polished leather on a thin welted sole, a wingtip toe
+     cap punched with brogueing, and the kiltie: a fringed leather flap laid over the laces. Tour dial: a sleek white
+     athletic shoe, a coloured heel and side panel, and the dial on the tongue that its cables run from. */
+  Object.assign(CLEAT_MENU,{
+    spikeless(push,Q,AXs,s,P,HD){ const X=h=>'x:'+h;
+      push(ellipsoid(Q(1.5,0.35),AXs,[5.4,0.42,3.15],X(P.s),{gloss:1,paint:l=>({m:X(P.s),dt:Math.sin(l[0]*22)*Math.sin(l[2]*14)>0.3&&l[1]<0?-1:0})}));   // the nubbed outsole
+      push(ellipsoid(Q(1.5,1.0),AXs,[5.36,0.62,3.14],X(P.W),{gloss:1}));                                         // the foam midsole
+      const knit=l=>({m:'shoe',dt:Math.sin(l[0]*30+Math.sin(l[1]*9))>0.85?-1:0});
+      push(ellipsoid(Q(4.0,1.9),AXs,[2.75,1.3,2.85],'shoe',{paint:knit}));                                        // the toe box
+      push(ellipsoid(Q(1.1,2.45),AXs,[3.2,1.95,2.85],'shoe',{paint:knit}));                                       // the vamp
+      push(ellipsoid(Q(-1.8,2.25),AXs,[1.85,1.85,2.7],'shoe',{paint:knit}));                                      // the heel
+      push(over(Q(1.1,2.45),AXs,[3.24,1.98,2.89],X(P.M),l=>Math.abs(l[2])>0.45&&Math.abs(l[1]+0.1-l[0]*0.55)<0.16,{noCast:1}));   // the side stripe
+      push(ellipsoid(Q(-2.4,3.2),AXs,[0.5,0.9,1.0],X(P.M),{noCast:1}));                                         // the heel tab
+      if(HD) for(const k of [0.6,1.5,2.4]) push(capsule(Q(k,3.75-0.12*k,-1.1),Q(k,3.75-0.12*k,1.1),0.24,X(P.L||'#ffffff'),{noCast:1})); },
+    kiltie(push,Q,AXs,s,P,HD){ const X=h=>'x:'+h;
+      push(ellipsoid(Q(1.5,0.45),AXs,[5.5,0.5,3.2],X(P.s),{gloss:1}));                                          // the sole
+      push(ellipsoid(Q(1.5,0.95),AXs,[5.45,0.22,3.18],X(P.p),{noCast:1}));                                       // the welt
+      push(ellipsoid(Q(4.0,1.75),AXs,[2.8,1.2,2.8],'shoe',{gloss:3}));                                           // the toe
+      push(ellipsoid(Q(1.1,2.3),AXs,[3.2,1.9,2.8],'shoe',{gloss:3}));                                            // the vamp
+      push(ellipsoid(Q(-1.8,2.15),AXs,[1.85,1.8,2.65],'shoe',{gloss:2}));                                        // the heel
+      const wing=l=>l[0]>0.15-0.35*Math.abs(l[2])&&l[0]<0.3-0.35*Math.abs(l[2]);
+      push(over(Q(4.0,1.75),AXs,[2.84,1.23,2.84],X(P.p),l=>wing(l),{noCast:1}));                                // the wingtip's edge
+      push(over(Q(4.0,1.75),AXs,[2.86,1.25,2.86],X(P.p),l=>l[0]>0.33-0.35*Math.abs(l[2])&&l[0]<0.39-0.35*Math.abs(l[2])&&Math.sin(Math.atan2(l[2],l[1])*30)>0.6,{noCast:1}));   // the brogueing along the wing
+      push(over(Q(4.0,1.75),AXs,[2.86,1.25,2.86],X(P.p),l=>l[0]>0.8&&Math.hypot(l[2],l[1]-0.35)<0.32&&Math.sin(l[2]*44)*Math.sin(l[1]*44)>0.7,{noCast:1}));   // the medallion on the toe
+      push(ellipsoid(Q(2.0,4.1),[norm(add(AXs[0],sc(AXs[1],-0.45))),norm(add(AXs[1],sc(AXs[0],0.45))),AXs[2]],[1.9,0.3,2.1],X(P.M),{gloss:1}));   // the kiltie flap, laid on the laces
+      for(let k=-3;k<=3;k++) push(capsule(Q(3.55,3.4,k*0.5),Q(4.25,2.55,k*0.53),0.24,X(k&1?P.M:P.m),{gloss:1,noCast:1}));   // its fringe, over the toe
+      if(HD) for(const k of [-1,1]) push(ellipsoid(Q(1.2,4.55,k*0.6),AXs,[0.3,0.3,0.3],X(P.p),{noCast:1})); },   // the lace ends
+    tourdial(push,Q,AXs,s,P,HD){ const X=h=>'x:'+h;
+      push(ellipsoid(Q(1.5,0.35),AXs,[5.4,0.4,3.15],X(P.s),{gloss:1}));                                         // the outsole
+      push(ellipsoid(Q(1.5,0.95),AXs,[5.36,0.58,3.14],X(P.W),{gloss:1}));                                        // the midsole
+      push(ellipsoid(Q(4.0,1.9),AXs,[2.75,1.3,2.85],'shoe',{gloss:2}));
+      push(ellipsoid(Q(1.1,2.45),AXs,[3.2,1.95,2.85],'shoe',{gloss:2}));
+      push(ellipsoid(Q(-1.8,2.25),AXs,[1.9,1.9,2.72],X(P.M),{gloss:2}));                                         // the coloured heel
+      push(over(Q(1.1,2.45),AXs,[3.24,1.98,2.89],X(P.M),l=>Math.abs(l[2])>0.5&&l[0]<0.1&&l[1]<0.35-l[0]*0.6,{noCast:1}));   // the side panel
+      if(HD) for(const k of [0.5,1.4,2.3]) push(capsule(Q(k,3.75-0.12*k,-1.15),Q(1.6,4.05,0),0.13,X(P.k||'#c9ced6'),{noCast:1}));   // the cables
+      push(ellipsoid(Q(1.6,4.05),AXs,[0.95,0.45,0.95],X(P.d),{gloss:2}));                                        // the dial
+      push(ellipsoid(Q(1.6,4.35),AXs,[0.55,0.2,0.55],X(P.M),{gloss:3,noCast:1})); } });
   // On the course a shoe is one rounded block (sc0, axes sax, radii sr) a few cells long: each pair keeps its colours,
   // its band and its signature (the saddle and gold welt, the magma cracks and molten sole, the white claws).
   const CLEAT_COURSE={
@@ -1514,6 +1668,10 @@
   const jackMouth=(x,y)=>{ if(Math.abs(x)>0.6||y>-0.12||y<-0.52) return false; const lo=-0.52+0.17*(1-(x/0.6)**2), hi=-0.12-0.1*(x/0.6)**2;
     if(y<lo||y>hi) return false; const t=((x+0.6)/0.2)|0; return !((t%2===0)&&(y>hi-0.1||y<lo+0.1)); };
   const BALL_PP={
+    // the Pro Shop line's balls: dimpled, a range ball's red band, a bright optic yellow, an alignment line to aim down
+    range:{ f:(p,P)=>Math.abs(p[1])<0.2?{c:P.R,gloss:2}:{c:P.C,dt:Math.sin(p[0]*24)*Math.sin(p[1]*24)>0.75?-1:0} },
+    optic:{ f:(p,P)=>({c:P.C,dt:Math.sin(p[0]*24)*Math.sin(p[1]*24)>0.75?-1:0,gloss:2}) },
+    alignment:{ f:(p,P)=>Math.abs(p[1])<0.075&&p[2]>-0.2?{c:P.L,gloss:2}:{c:P.C,dt:Math.sin(p[0]*24)*Math.sin(p[1]*24)>0.75?-1:0} },
     ppgoldstar:{ f:(p,P)=>{ if(p[2]>0){ const r=Math.hypot(p[0],p[1]), th=Math.atan2(p[0],p[1]), R=starR(th,0.7,0.3);
         if(r<R-0.09) return {c:P.S,gloss:3}; if(r<R) return {c:P.G,gloss:3}; }
       for(const [x,y] of [[-0.62,0.5],[0.66,-0.42],[-0.5,-0.62]]) if(Math.hypot(p[0]-x,p[1]-y)<0.07&&p[2]>0) return {c:P.G};   // twinkles
@@ -1608,7 +1766,7 @@
     const cid=(typeof normClub==='function'?normClub(look.club):look.club)||'driver';
     let cleats=null; if(cle){ const p=PXG_CLEATS_PAL[cle]||{}, v=Object.values(p);
       cleats={main:p.T||p.R||p.D||v[0], acc:p.M||p.W||p.b||p.f||v[1], sole:p.s||p.k||p.p||p.B||'#2a2f38', id:cle, pal:p}; }
-    const gear={top, topPal:top?PXG_TOP_PAL[top]:null, legPal:legw?PXG_LEG_PAL[legw]:null, cleats,
+    const gear={top, topPal:top?PXG_TOP_PAL[top]:null, leg:legw, legPal:legw?PXG_LEG_PAL[legw]:null, cleats,
       club:PXG_CLUBS[cid]?cid:'driver', clubPal:Object.assign({},PXG_CLUB_PAL[cid]||{})};
     { gear.lefty=!!look.lefty; gear.fx=look.fx||''; gear.body=look.body||''; gear.bodyPal=(look.body&&typeof BODY_SKINS!=='undefined'&&BODY_SKINS[look.body])||null; const bpal=look.ball&&typeof PXG_BALL_PAL!=='undefined'&&PXG_BALL_PAL[look.ball]; gear.ballC=bpal?(bpal.C||null):null; gear.ballId=bpal&&BALL_PP[look.ball]?look.ball:''; const sh=cleats?cleats.main:av.shoesHex; gear.saddleHex=cleats&&cleats.acc?cleats.acc:(PQ.lum(sh)>0.6?'#2c3a58':mix(sh,'#ffffff',0.55)); }
     const M=MO?profileModel(aim,gear):model(aim,!!look.lefty,kind,kind==='walk'?walkPose(poseKey):POSES[poseKey],gear);

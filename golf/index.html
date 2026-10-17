@@ -66,7 +66,7 @@
 <script defer src="putt/trail.js?v=38"></script>
 <script defer src="putt/mapland.js?v=6"></script>
 <!-- The course golfer in the profile style, asked through g3dOn(). -->
-<script defer src="golfer3d.js?v=19"></script>
+<script defer src="golfer3d.js?v=20"></script>
 <script defer src="tracer3d.js?v=2"></script>
 <!-- Google Consent Mode v2 defaults. Advertising storage is denied until the certified CMP (loaded by
      the AdSense tag below) records the user's choice; the CMP then updates these signals automatically,
@@ -11499,6 +11499,38 @@ const PP_REWARDS=[
 const PP_REWARD_PK={hw:'hw',ew:'ew',ball:'bl',cleats:'ct',putter:'pu',top:'tp'};
 const PP_REWARD_BY={}; PP_REWARDS.forEach(function(o){ o.key=PP_REWARD_PK[o.cat]+':'+o.id; PP_REWARD_BY[o.key]=o; });
 function ppRewardItems(cat){ return PP_REWARDS.filter(function(o){ return o.cat===cat; }).map(function(o){ const r={id:o.id,name:o.name,hist:o.hist}; r[cat]=1; return r; }); }
+/* THE PRO SHOP LINE (the owner's call, 2026-10-17). Packs come from everywhere, so the common and rare tiers get a batch
+   of real golf gear, year round and in no drop: tour caps, a tam, a Panama, quarter-zips, vests, rain gear, shorts,
+   joggers, tartan trousers, spikeless shoes, kilties and practice balls. `price` is the base price, which picks the
+   rarity (packRarityOf: under 9,000 common, under 16,000 rare). Boosts follow the ladder (COS_BOOST, a common item 1
+   point, a rare 2); outerwear and legwear are style and carry none. Pack only, like every unique item. It rides the
+   First Tee switch with the rest of the launch: off it, the line is not in the closet, the shop or a pack.
+   The art is at THE PRO SHOP LINE'S ART; the 3D models are in golfer3d.js. */
+const PRO_LINE=[
+ {cat:'hw',id:'ropecap',name:'Rope Cap',price:7000,hist:'Old tour style. A braided rope across the peak.'},
+ {cat:'hw',id:'trucker',name:'Trucker Cap',price:6000,hist:'Foam front, mesh back. Range day ready.'},
+ {cat:'hw',id:'tam',name:'Tam o\' Shanter',price:12000,hist:'Born on the Scottish links.'},
+ {cat:'hw',id:'panama',name:'Panama Hat',price:13000,hist:'Woven straw for long, hot rounds.'},
+ {cat:'top',id:'quarterzip',name:'Quarter-Zip',price:7000,hist:'The golf staple. Zip it up on the first tee.'},
+ {cat:'top',id:'mockneck',name:'Mock Neck',price:6000,hist:'No collar. Still tour approved.'},
+ {cat:'top',id:'sweatervest',name:'Sweater Vest',price:7000,hist:'A warm core and free arms.'},
+ {cat:'top',id:'windbreaker',name:'Windbreaker',price:8000,hist:'Built for a links wind.'},
+ {cat:'top',id:'hoodie',name:'Golf Hoodie',price:10000,hist:'Range sessions and early tee times.'},
+ {cat:'top',id:'rainjacket',name:'Rain Jacket',price:11000,hist:'Taped seams. Play right through it.'},
+ {cat:'top',id:'argyle',name:'Argyle Sweater',price:12000,hist:'Diamonds on a V-neck. Pure heritage.'},
+ {cat:'top',id:'puffervest',name:'Puffer Vest',price:13000,hist:'Quilted warmth for frosty mornings.'},
+ {cat:'leg',id:'shorts',name:'Golf Shorts',price:6000,hist:'Tailored shorts for warm days.'},
+ {cat:'leg',id:'joggers',name:'Golf Joggers',price:7000,hist:'Tapered and stretchy. Swing free.'},
+ {cat:'leg',id:'tartan',name:'Tartan Trousers',price:12000,hist:'Loud trousers. Louder birdies.'},
+ {cat:'cleats',id:'spikeless',name:'Spikeless Shoes',price:7000,hist:'Course to clubhouse in one pair.'},
+ {cat:'cleats',id:'kiltie',name:'Kiltie Brogues',price:12000,hist:'The fringed flap of the old links.'},
+ {cat:'cleats',id:'tourdial',name:'Tour Dial Shoes',price:13000,hist:'Dial them tight and swing hard.'},
+ {cat:'ball',id:'range',name:'Range Ball',price:6000,hist:'Striped and well travelled.',col:'#f2f2ec',tracer:{g:'rgba(226,59,46,.45)',c:'#ffd0c8'}},
+ {cat:'ball',id:'optic',name:'Optic Yellow',price:7000,hist:'Easy to find in the rough.',col:'#e6f03a',tracer:{g:'rgba(230,240,58,.5)',c:'#f8ffc0'}},
+ {cat:'ball',id:'alignment',name:'Alignment Ball',price:11000,hist:'A line to aim down.',col:'#f4f6fb',tracer:{g:'rgba(40,110,220,.45)',c:'#cfe0ff'}} ];
+const PRO_LINE_BY={}; PRO_LINE.forEach(function(o){ PRO_LINE_BY[o.cat+':'+o.id]=o; });
+function proLineOn(){ try{ return ftLive(); }catch(e){ return false; } }
+function proLineItems(cat){ if(!proLineOn()) return []; return PRO_LINE.filter(function(o){ return o.cat===cat; }).map(function(o){ const r={id:o.id,name:o.name,hist:o.hist}; r[cat]=1; if(o.col) r.col=o.col; return r; }); }
 // CS414, BALL cosmetics. A ball is a small teed sprite beside the standing golfer (PXG_BALL overlay) plus
 // an optional hole-view tint on the shot ball/tracer. `tracer` recolors the in-play ball (Comet → fire).
 const PXBALL=[
@@ -11529,6 +11561,7 @@ const PXBALL=[
   // the Putt Putt reward balls: price 0, earned only (PP_REWARDS)
   .concat(PP_REWARDS.filter(function(o){ return o.cat==='ball'; }).map(function(o){ return {id:o.id, name:o.name, hist:o.hist, price:0, col:o.col, tracer:o.tracer}; }));
 const PXBALL_BY={}; PXBALL.forEach(function(o){ PXBALL_BY[o.id]=o; });
+PRO_LINE.forEach(function(o){ if(o.cat==='ball') PXBALL_BY[o.id]=o; });   // the Pro Shop line's balls: their price and tracer (they list through proLineItems)
 function ballOf(look){ var id=(look&&look.ball)||'none'; return (id&&id!=='none'&&PXBALL_BY[id])?PXBALL_BY[id]:null; }
 /* ==== PLAYER CARDS (owner): a collectible flip card of your golfer. Customize the NAMEPLATE + CARD
    BACKGROUND (earned-only starter set + seasonal pack pulls); the frame follows your Tour Rep tier.
@@ -12091,6 +12124,7 @@ function cosmeticPriceBase(cat,id){
   if(cat==='hat'){ const cs=COSMETIC_SHIRTS.find(s=>s.id===id); return (cs&&cs.earn)?0:4000; }   // hat colors share the shirt color list, same flat price
   if(cat==='pants') return 4000;   // ALL colors one flat price (owner)
   if(cat==='shoes') return 4000;
+  if(PRO_LINE_BY[cat+':'+id]) return PRO_LINE_BY[cat+':'+id].price;   // the Pro Shop line
   if(cat==='hw'){ if(id==='cap'||id==='visor'||id==='none') return 0; return {turkey:20000,witch:20000,reaperhood:30000,elf:12000,antlers:18000,football:18000,floppy:12000,knight:30000,bucket:11000,flat:11000,headband:6000,cowboy:14000,tophat:16000,party:9000,propeller:12000,wizard:20000,crown:30000,beanie:8000,fedora:15000,sombrero:13000,halo:40000,viking:22000,chef:10000,beret:9000,headphones:18000,flatbrim:11000,santa:12000,safari:13000,tweed:16000,straw:16000,laurel:30000,backwards:12000,pirate:20000,grad:13000}[id]||12000; }   // CS411 tweed/straw = epic · CS418 laurel legendary
   if(cat==='ew'){ if(id==='none') return 0; return {goldshades:16000,beach:12000,eyeblack:9000,shades:10000,heart:9000,star:12000,threed:8000,monocle:15000,aviators:12000,round:9000,goggles:11000,eyepatch:10000,visorband:8000,prismshades:30000,wayfarer:10000,sport:12000,cateye:10000,readers:8000,rose:9000,steampunk:18000,cyber:20000,patriot:16000,groucho:16000,diamond:30000}[id]||10000; }   // CS418 prism shades legendary
   if(cat==='fx'){ if(id==='none') return 0; return (PXFX_BY[id]?PXFX_BY[id].price:0); }   // CS410: effect auras (epic/legendary)
@@ -12218,6 +12252,13 @@ Object.assign(COS_BOOST,{
   'bl:ppgoldleaf':{app:2}, 'bl:pphallowslantern':{bnk:2},
   'ct:ppclubhouse':{sht:2}, 'ct:pplavarock':{bnk:2}, 'ct:ppdinoclaw':{sht:2}
 });
+// THE PRO SHOP LINE (PRO_LINE): the ladder's power for its rarity, a common 1 point and a rare 2, leaning on the stats gear
+// touches least (Bunker, Short Game, Accuracy, Scrambling). Its outerwear and legwear are style and carry none.
+Object.assign(COS_BOOST,{
+  'hw:ropecap':{acc:1}, 'hw:trucker':{dist:1}, 'hw:tam':{bnk:1,sht:1}, 'hw:panama':{scr:1,acc:1},
+  'ct:spikeless':{sht:1}, 'ct:kiltie':{bnk:1,sht:1}, 'ct:tourdial':{acc:1,dist:1},
+  'bl:range':{scr:1}, 'bl:optic':{acc:1}, 'bl:alignment':{put:1,app:1}
+});
 function cosBoost(cat,id){ return COS_BOOST[cosKey(cat,id)]||null; }
 // the WORN, OWNED, boost-carrying cosmetics right now - the single source of truth the boost math AND the
 // on-screen "active boosts" breakdown both read, so the display can never drift from what's applied.
@@ -12302,16 +12343,16 @@ function cosmeticItems(cat){
   if(cat==='pat')   return [{id:'none',name:'None',pat:'none'}].concat(PXPAT.map(p=>({id:p.id,name:p.name,pat:p.id,hist:p.hist})));
   if(cat==='pants') return PANTS.map(o=>({id:o.id,name:cosTitle(o.id),col:o.a}));
   if(cat==='shoes') return SHOES.map(o=>({id:o.id,name:cosTitle(o.id),col:o.a}));
-  if(cat==='hw')    return [{id:'none',name:'No Hat',hw:1},{id:'cap',name:'Ball Cap',hw:1},{id:'visor',name:'Visor',hw:1},{id:'bucket',name:'Bucket Hat',hw:1,hist:'Rainy-day links staple'},{id:'flat',name:'Flat Cap',hw:1,hist:'Early-1900s golf classic'},{id:'cowboy',name:'Cowboy Hat',hw:1,hist:'Yeehaw off the tee'},{id:'wizard',name:'Wizard Hat',hw:1,hist:'Magic on the greens'},{id:'crown',name:'Champion Crown',hw:1,hist:'Rule the leaderboard'},{id:'party',name:'Party Hat',hw:1,hist:'Every round is a celebration'},{id:'tophat',name:'Top Hat',hw:1,hist:'Dapper on the fairway'},{id:'propeller',name:'Propeller Beanie',hw:1,hist:'Pure fun'},{id:'headband',name:'Sweatband',hw:1,hist:'Clutch under pressure'},{id:'beanie',name:'Knit Beanie',hw:1,hist:'Cold-morning warmup'},{id:'fedora',name:'Fedora',hw:1,hist:'Old-school cool'},{id:'sombrero',name:'Sombrero',hw:1,hist:'Sun-drenched swagger'},{id:'halo',name:'Halo',hw:1,hist:'Angel of the greens'},{id:'viking',name:'Viking Helmet',hw:1,hist:'Conquer the course'},{id:'chef',name:'Chef Hat',hw:1,hist:'Cooking up birdies'},{id:'beret',name:'Beret',hw:1,hist:'Artist of the short game'},{id:'headphones',name:'Headphones',hw:1,hist:'In the zone'},{id:'flatbrim',name:'Snapback',hw:1,hist:'Flat-brim flex'},{id:'santa',name:'Santa Hat',hw:1,hist:'Season\u2019s greetings'},{id:'safari',name:'Safari Hat',hw:1,hist:'On expedition'},{id:'tweed',name:'Tweed Cap',hw:1,hist:'Old-money links tweed'},{id:'straw',name:'Straw Boater',hw:1,hist:'Roaring-20s summer golf'},{id:'laurel',name:'Laurel Wreath',hw:1,hist:'Crown of champions'},{id:'backwards',name:'Backwards Cap',hw:1,hist:'Rally-cap energy'},{id:'pirate',name:'Pirate Tricorn',hw:1,hist:'X marks the pin'},{id:'grad',name:'Graduation Cap',hw:1,hist:'Top of the class'},{id:'witch',name:'Witch Hat',hw:1,hist:'Brews birdies at midnight'},{id:'reaperhood',name:'Reaper Hood',hw:1,hist:'Comes for every pin'},{id:'elf',name:'Elf Hat',hw:1,hist:'Workshop-approved'},{id:'antlers',name:'Antlers',hw:1,hist:'Leading the sleigh'},{id:'football',name:'Football Helmet',hw:1,hist:'Built for contact'},{id:'floppy',name:'Sun Floppy Hat',hw:1,hist:'Beach-day shade'},{id:'knight',name:'Knight\u2019s Helm',hw:1,hist:'Armored up the fairway'},{id:'turkey',name:'Turkey Hat',hw:1,hist:'Seconds, anyone?'},{id:'harvestbeanie',name:'Harvest Knit',hw:1,hist:'Season 2 Tour Pass'},{id:'scarecrow',name:'Scarecrow Hat',hw:1,hist:'Season 2 Tour Pass'},{id:'horns',name:'Devil Horns',hw:1,hist:'Season 2 Tour Pass'},{id:'pilgrim',name:'Pilgrim Hat',hw:1,hist:'Season 2 Tour Pass'},{id:'no1cap',name:'World No.1 Cap',hw:1,hist:'Reach World No.1'}].concat(ppRewardItems('hw'));
+  if(cat==='hw')    return [{id:'none',name:'No Hat',hw:1},{id:'cap',name:'Ball Cap',hw:1},{id:'visor',name:'Visor',hw:1},{id:'bucket',name:'Bucket Hat',hw:1,hist:'Rainy-day links staple'},{id:'flat',name:'Flat Cap',hw:1,hist:'Early-1900s golf classic'},{id:'cowboy',name:'Cowboy Hat',hw:1,hist:'Yeehaw off the tee'},{id:'wizard',name:'Wizard Hat',hw:1,hist:'Magic on the greens'},{id:'crown',name:'Champion Crown',hw:1,hist:'Rule the leaderboard'},{id:'party',name:'Party Hat',hw:1,hist:'Every round is a celebration'},{id:'tophat',name:'Top Hat',hw:1,hist:'Dapper on the fairway'},{id:'propeller',name:'Propeller Beanie',hw:1,hist:'Pure fun'},{id:'headband',name:'Sweatband',hw:1,hist:'Clutch under pressure'},{id:'beanie',name:'Knit Beanie',hw:1,hist:'Cold-morning warmup'},{id:'fedora',name:'Fedora',hw:1,hist:'Old-school cool'},{id:'sombrero',name:'Sombrero',hw:1,hist:'Sun-drenched swagger'},{id:'halo',name:'Halo',hw:1,hist:'Angel of the greens'},{id:'viking',name:'Viking Helmet',hw:1,hist:'Conquer the course'},{id:'chef',name:'Chef Hat',hw:1,hist:'Cooking up birdies'},{id:'beret',name:'Beret',hw:1,hist:'Artist of the short game'},{id:'headphones',name:'Headphones',hw:1,hist:'In the zone'},{id:'flatbrim',name:'Snapback',hw:1,hist:'Flat-brim flex'},{id:'santa',name:'Santa Hat',hw:1,hist:'Season\u2019s greetings'},{id:'safari',name:'Safari Hat',hw:1,hist:'On expedition'},{id:'tweed',name:'Tweed Cap',hw:1,hist:'Old-money links tweed'},{id:'straw',name:'Straw Boater',hw:1,hist:'Roaring-20s summer golf'},{id:'laurel',name:'Laurel Wreath',hw:1,hist:'Crown of champions'},{id:'backwards',name:'Backwards Cap',hw:1,hist:'Rally-cap energy'},{id:'pirate',name:'Pirate Tricorn',hw:1,hist:'X marks the pin'},{id:'grad',name:'Graduation Cap',hw:1,hist:'Top of the class'},{id:'witch',name:'Witch Hat',hw:1,hist:'Brews birdies at midnight'},{id:'reaperhood',name:'Reaper Hood',hw:1,hist:'Comes for every pin'},{id:'elf',name:'Elf Hat',hw:1,hist:'Workshop-approved'},{id:'antlers',name:'Antlers',hw:1,hist:'Leading the sleigh'},{id:'football',name:'Football Helmet',hw:1,hist:'Built for contact'},{id:'floppy',name:'Sun Floppy Hat',hw:1,hist:'Beach-day shade'},{id:'knight',name:'Knight\u2019s Helm',hw:1,hist:'Armored up the fairway'},{id:'turkey',name:'Turkey Hat',hw:1,hist:'Seconds, anyone?'},{id:'harvestbeanie',name:'Harvest Knit',hw:1,hist:'Season 2 Tour Pass'},{id:'scarecrow',name:'Scarecrow Hat',hw:1,hist:'Season 2 Tour Pass'},{id:'horns',name:'Devil Horns',hw:1,hist:'Season 2 Tour Pass'},{id:'pilgrim',name:'Pilgrim Hat',hw:1,hist:'Season 2 Tour Pass'},{id:'no1cap',name:'World No.1 Cap',hw:1,hist:'Reach World No.1'}].concat(ppRewardItems('hw'),proLineItems('hw'));
   if(cat==='ew')    return [{id:'none',name:'None',ew:1},{id:'shades',name:'Shooter Shades',ew:1,hist:'Ice-cold Sunday stare'},{id:'heart',name:'Heart Shades',ew:1,hist:'Crowd charmer'},{id:'star',name:'Star Shades',ew:1,hist:'Superstar swagger'},{id:'threed',name:'3D Glasses',ew:1,hist:'See the line in 3D'},{id:'monocle',name:'Monocle',ew:1,hist:'Distinguished gentleman'},{id:'aviators',name:'Aviators',ew:1,hist:'Top-gun style'},{id:'round',name:'Round Glasses',ew:1,hist:'Retro intellectual'},{id:'goggles',name:'Ski Goggles',ew:1,hist:'Downhill focus'},{id:'eyepatch',name:'Eye Patch',ew:1,hist:'Pirate of the fairways'},{id:'visorband',name:'Shield Shades',ew:1,hist:'Wraparound cool'},{id:'prismshades',name:'Prism Shades',ew:1,hist:'Refract the sun'},{id:'goldshades',name:'Gilded Shades',ew:1,hist:'24-karat stare'},{id:'beach',name:'Beach Shades',ew:1,hist:'Boardwalk cool'},{id:'eyeblack',name:'Eye Black',ew:1,hist:'Game face on'},{id:'wayfarer',name:'Wayfarers',ew:1,hist:'Timeless clubhouse classic'},{id:'sport',name:'Sport Wraps',ew:1,hist:'Built for the wind'},{id:'cateye',name:'Cat-Eye Glasses',ew:1,hist:'Vintage flair'},{id:'readers',name:'Half-Rim Readers',ew:1,hist:'Reading every break'},{id:'rose',name:'Rose-Tinted Glasses',ew:1,hist:'Every round looks great'},{id:'steampunk',name:'Brass Goggles',ew:1,hist:'Inventor of the stinger'},{id:'cyber',name:'Cyber Visor',ew:1,hist:'Scanning the fairway'},{id:'patriot',name:'Patriot Shades',ew:1,hist:'Playing for the flag'},{id:'groucho',name:'Disguise Glasses',ew:1,hist:'Incognito round'},{id:'diamond',name:'Diamond Shades',ew:1,hist:'Ice in the veins'},{id:'ghoulglow',name:'Ghoul Glow Specs',ew:1,hist:'Season 2 Tour Pass'}].concat(ppRewardItems('ew'));
   if(cat==='fx')    return [{id:'none',name:'None',fx:'none'}].concat(PXFX.map(function(f){ return {id:f.id,name:f.name,fx:f.id,hist:f.hist,col:f.col}; }));   // CS410
   if(cat==='body')  return [{id:'none',name:'No Skin',body:1},{id:'zombie',name:'Zombie',body:1,hist:'Haunted Links collection reward'},{id:'pumpkinhead',name:'Pumpkin Head',body:1,hist:'Season 2 Tour Pass, tier 60'}];
-  if(cat==='top')   return [{id:'none',name:'None',top:1},{id:'cardigan',name:'Cardigan',top:1,hist:'Old-school knit'},{id:'blazer',name:'Champion\'s Blazer',top:1,hist:'Draped on the winner'},{id:'cape',name:'Vampire Cape',top:1,hist:'Out for blood on Sunday'},{id:'shacket',name:'Corduroy Shacket',top:1,hist:'Season 2 Tour Pass'},{id:'duckfloatie',name:'Rubber Ducky Floatie',top:1,reward:1,hist:'Own the whole Summer Smash collection. The only way to float.'}].concat(ppRewardItems('top'));   // CS411
-  if(cat==='leg')   return [{id:'none',name:'None',leg:1},{id:'plusfours',name:'Plus-Fours',leg:1,hist:'Knickerbockers & argyle socks'}];   // CS411
+  if(cat==='top')   return [{id:'none',name:'None',top:1},{id:'cardigan',name:'Cardigan',top:1,hist:'Old-school knit'},{id:'blazer',name:'Champion\'s Blazer',top:1,hist:'Draped on the winner'},{id:'cape',name:'Vampire Cape',top:1,hist:'Out for blood on Sunday'},{id:'shacket',name:'Corduroy Shacket',top:1,hist:'Season 2 Tour Pass'},{id:'duckfloatie',name:'Rubber Ducky Floatie',top:1,reward:1,hist:'Own the whole Summer Smash collection. The only way to float.'}].concat(ppRewardItems('top'),proLineItems('top'));   // CS411
+  if(cat==='leg')   return [{id:'none',name:'None',leg:1},{id:'plusfours',name:'Plus-Fours',leg:1,hist:'Knickerbockers & argyle socks'}].concat(proLineItems('leg'));   // CS411
   if(cat==='club')  return CLUBS.map(function(c){ return {id:c.id,name:c.name,club:1,hist:c.hist||'',rar:c.rar}; });
   if(cat==='putter') return PUTTERS.map(function(p){ return {id:p.id,name:p.name,putter:1,hist:p.hist||'',rar:p.rar}; });   // one club, one list
-  if(cat==='ball')  return [{id:'none',name:'None',ball:1}].concat(PXBALL.map(function(o){ return {id:o.id,name:o.name,ball:1,hist:o.hist,col:o.col}; }));   // CS414
-  if(cat==='cleats') return [{id:'none',name:'None',cleats:1},{id:'saddle',name:'Saddle Shoes',cleats:1,hist:'Classic two-tone clubhouse style'},{id:'sunday',name:'Sunday Kicks',cleats:1,hist:'Fresh sneakers for the final round'},{id:'neon',name:'Neon Trainers',cleats:1,hist:'Loud on the fairway'},{id:'golden',name:'Golden Spikes',cleats:1,hist:'Walk the walk'},{id:'rocket',name:'Rocket Cleats',cleats:1,hist:'Blast off the tee box'},{id:'phantom',name:'Phantom Cleats',cleats:1,hist:'Silent steps, loud scores'},{id:'bone',name:'Bone Cleats',cleats:1,hist:'Walks out of the graveyard'},{id:'hayride',name:'Hayride Boots',cleats:1,hist:'Season 2 Tour Pass'},{id:'rungames',name:'Run The Games Cleats',cleats:1,hist:'House kit, green flash, navy sole'}].concat(ppRewardItems('cleats'));   // CS414
+  if(cat==='ball')  return [{id:'none',name:'None',ball:1}].concat(PXBALL.map(function(o){ return {id:o.id,name:o.name,ball:1,hist:o.hist,col:o.col}; }),proLineItems('ball'));   // CS414
+  if(cat==='cleats') return [{id:'none',name:'None',cleats:1},{id:'saddle',name:'Saddle Shoes',cleats:1,hist:'Classic two-tone clubhouse style'},{id:'sunday',name:'Sunday Kicks',cleats:1,hist:'Fresh sneakers for the final round'},{id:'neon',name:'Neon Trainers',cleats:1,hist:'Loud on the fairway'},{id:'golden',name:'Golden Spikes',cleats:1,hist:'Walk the walk'},{id:'rocket',name:'Rocket Cleats',cleats:1,hist:'Blast off the tee box'},{id:'phantom',name:'Phantom Cleats',cleats:1,hist:'Silent steps, loud scores'},{id:'bone',name:'Bone Cleats',cleats:1,hist:'Walks out of the graveyard'},{id:'hayride',name:'Hayride Boots',cleats:1,hist:'Season 2 Tour Pass'},{id:'rungames',name:'Run The Games Cleats',cleats:1,hist:'House kit, green flash, navy sole'}].concat(ppRewardItems('cleats'),proLineItems('cleats'));   // CS414
   if(cat==='plate')  return PLATES.map(o=>({id:o.id,name:o.name,plate:1,hist:o.hist}));
   if(cat==='cardbg') return CARDBGS.map(o=>({id:o.id,name:o.name,cardbg:1,hist:o.hist}));
   return [];
@@ -18492,6 +18533,88 @@ PXG_CLUB_PAL.pu_ppdiamond={o:'#181019',G:'#2a2f3a',D:'#bff4ff',l:'#eef2f7',W:'#f
 // Members Champion Jacket
 PXG_TOPS.ppchampjacket=pxgRows([[23,16,'1111.....1111'],[24,12,'11111111.....11111111'],[25,12,'111111186776811112211'],[26,10,'1111111118677681882221111'],[27,10,'1111111186677668122cc1111'],[28,10,'111111118667.668122cC1111'],[29,10,'1111111866677666822CC1111'],[30,10,'1111111866677666822221111'],[31,10,'1111111111124211122221111'],[32,10,'111111111112.211122221111'],[33,14,'11111112221112222'],[34,14,'11111112421112222'],[35,14,'11111112221112222'],[36,14,'11111112221112222'],[37,14,'11111112421112222'],[38,14,'22222222222222222'],[39,14,'22222222222222222']]);
 PXG_TOP_PAL.ppchampjacket={'1':'#4a1f7a','2':'#321456','3':'#6a37a0','4':'#e8b923','6':'#ece3cf','7':'#2a1840','8':'#7a4ab8',c:'#ffe680',C:'#c9961a'};
+// THE PRO SHOP LINE'S ART (PRO_LINE): what the flat golfer draws and the course golfer models its hats from. pxgSpan paints
+// row spans [row, from, to, tag] cell by cell through f(x, y, tag), so a pattern (a tartan, a quilt, an argyle) follows the
+// cells. A top is cut from the cardigan's own silhouette, so each sits on the torso exactly where the cardigan does.
+function pxgSpan(spans,f){ const rows=[]; spans.forEach(function(sp){ let t=''; for(let x=sp[1];x<=sp[2];x++){ const c=f(x,sp[0],sp[3]); t+=(c||'.'); } rows.push([sp[0],sp[1],t]); }); return pxgRows(rows); }
+function pxgCut(base,f){ return base.map(function(r,y){ return r.split('').map(function(ch,x){ return ch==='.'?'.':(f(x,y,ch)||'.'); }).join(''); }); }
+function pxgOver(map,rows){ const o=map.map(function(r){ return r.split(''); }); rows.forEach(function(r){ for(let i=0;i<r[2].length;i++){ const c=r[2][i]; if(c!=='.') o[r[0]][r[1]+i]=c; } }); return o.map(function(a){ return a.join(''); }); }
+const pxgSlv=function(x,y){ return y>=26&&y<=33&&(x<=13||x>=31); };   // the cardigan's sleeves
+// Rope Cap: a structured crown, a curved peak with a braided rope across it
+PXG_HATS.ropecap=pxgSpan([[5,21,22,'n'],[6,18,26],[7,17,27],[8,16,28],[9,15,29],[10,15,29],[11,14,30],[12,13,31,'b'],[13,14,30,'u']],function(x,y,t){
+  if(t==='n') return 'N'; if(t==='u') return 'D'; if(t==='b') return (x>=16&&x<=28)?((x%2)?'R':'r'):'C'; return x>=24?'B':'A'; });
+PXG_HERITAGE_HAT_PAL.ropecap={A:'#f2efe6',B:'#d9d4c4',C:'#1f3a5f',D:'#142740',R:'#f6f2e4',r:'#c9a24a',N:'#1f3a5f'};
+// Trucker Cap: a foam front panel with a patch, mesh round the sides, a navy peak
+PXG_HATS.trucker=pxgSpan([[5,21,22,'n'],[6,18,26],[7,17,27],[8,16,28],[9,15,29],[10,15,29],[11,14,30],[12,13,31,'b'],[13,14,30,'u']],function(x,y,t){
+  if(t==='n') return 'N'; if(t==='b') return 'C'; if(t==='u') return 'D';
+  const front=Math.abs(x-22)<=4+Math.max(0,y-8)*0.5; if(!front) return ((x+y)%2)?'M':'m';
+  return (y>=8&&y<=10&&Math.abs(x-22)<=2)?'P':'A'; });
+PXG_HERITAGE_HAT_PAL.trucker={A:'#f6f5f0',M:'#2a4a7a',m:'#16294a',C:'#2a4a7a',D:'#16294a',P:'#c8402e',N:'#2a4a7a'};
+// Tam o' Shanter: a wide flat knitted bonnet in tartan, a ribbed band, a red pompom (the toorie) on top
+PXG_HATS.tam=pxgSpan([[2,21,22,'p'],[3,20,23,'p'],[4,20,23,'p'],[5,16,28],[6,13,31],[7,11,33],[8,11,33],[9,12,32],[10,14,30,'s'],[11,15,29,'b'],[12,15,29,'b']],function(x,y,t){
+  if(t==='p') return ((x+y)%3)?'P':'p'; if(t==='b') return (x%2)?'K':'k'; if(t==='s') return 'k';
+  const v=((x-22)%6+6)%6, h=((y-5)%4+4)%4; if(v===0&&h===1) return 'R'; if(v===0||h===1) return 'K'; return 'G'; });
+PXG_HERITAGE_HAT_PAL.tam={G:'#2f6b46',K:'#1e2f52',k:'#16223c',R:'#c83a2e',P:'#d23a2e',p:'#9c2a20'};
+// Panama Hat: a pinched straw crown, a black band, a wide brim snapped down in front
+PXG_HATS.panama=pxgSpan([[4,20,24],[5,18,26],[6,17,27],[7,17,27],[8,16,28,'k'],[9,16,28,'k'],[10,11,33],[11,10,34],[12,12,32,'u']],function(x,y,t){
+  if(t==='k') return 'K'; if(t==='u') return 'D'; if(y<=5&&Math.abs(x-22)<=0) return 'D';
+  return ((x+y)%2)?'S':'s'; });
+PXG_HERITAGE_HAT_PAL.panama={S:'#efe2b8',s:'#d8c690',D:'#b9a46a',K:'#1e1c22'};
+// the tops: '1' the cloth, '2' its shade, '3' a dark trim (zip, rib), '4' a contrast, '5' a light, 't' the shirt under it
+PXG_TOPS.quarterzip=pxgOver(pxgCut(PXG_CARDIGAN,function(x,y){
+  if(x===22&&y>=24&&y<=30) return y===30?'5':'3'; if(y>=39) return '2'; if(pxgSlv(x,y)&&y>=32) return '2'; return x>=27?'2':'1'; }),[[22,19,'1111111'],[23,19,'2111112']]);
+PXG_TOP_PAL.quarterzip={'1':'#2c4a6e','2':'#223a57','3':'#16263a','5':'#dfe6ee'};
+PXG_TOPS.mockneck=pxgOver(pxgCut(PXG_CARDIGAN,function(x,y){
+  if(pxgSlv(x,y)) return y>=31?'.':y===30?'2':'1'; if(y>=39) return '2'; return x>=27?'2':'1'; }),[[22,19,'5555555'],[23,19,'1111112']]);
+PXG_TOP_PAL.mockneck={'1':'#3b3f47','2':'#2c2f36','5':'#4e535d'};
+PXG_TOPS.sweatervest=pxgCut(PXG_CARDIGAN,function(x,y){
+  if(pxgSlv(x,y)||(y<=26&&(x<=14||x>=30))) return '.'; const v=Math.abs(x-22);
+  if(y<=31&&v<(32-y)/1.7) return v>=(32-y)/1.7-1?'4':'.'; if(y>=39) return (x%2)?'2':'3';
+  if(x===14||x===30) return '2'; return (x+y)%4?'1':'5'; });
+PXG_TOP_PAL.sweatervest={'1':'#7c2f3a','2':'#5e222b','3':'#4a1a22','4':'#e7dcc6','5':'#8e3a46'};
+PXG_TOPS.windbreaker=pxgOver(pxgCut(PXG_CARDIGAN,function(x,y){
+  if(x===22&&y>=24&&y<=29) return '3'; if(y>=39||(pxgSlv(x,y)&&y>=32)) return '3'; if(y<=28) return '4'; return x>=27?'2':'1'; }),[[22,19,'4444444'],[23,19,'4444444']]);
+PXG_TOP_PAL.windbreaker={'1':'#d84a2a','2':'#b13a20','3':'#2a2d33','4':'#f2f0ea'};
+PXG_TOPS.hoodie=pxgOver(pxgCut(PXG_CARDIGAN,function(x,y){
+  if((x===20||x===24)&&y>=25&&y<=29) return '5'; if(y>=34&&y<=37&&x>=17&&x<=27) return (y===34||x===17||x===27)?'2':'1';
+  if(y>=39||(pxgSlv(x,y)&&y>=32)) return '2'; return x>=27?'2':'1'; }),[[21,16,'222.......222'],[22,15,'2222.......2222'],[23,15,'22222222222222']]);
+PXG_TOP_PAL.hoodie={'1':'#6b7480','2':'#555d68','5':'#f2f2f2'};
+PXG_TOPS.rainjacket=pxgOver(pxgCut(PXG_CARDIGAN,function(x,y){
+  if(x===22&&y>=24) return '3'; if(y===29&&x>=25&&x<=28) return '3'; if(x===15||x===16) return '5'; return x>=27?'2':'1'; }),[[21,18,'111111111'],[22,18,'211111112'],[23,18,'221111122']]);
+PXG_TOP_PAL.rainjacket={'1':'#1f6f5c','2':'#175647','3':'#0f2c26','5':'#3c9a84'};
+PXG_TOPS.argyle=pxgCut(PXG_CARDIGAN,function(x,y){ const v=Math.abs(x-22);
+  if(y<=31&&v<(32-y)/1.7) return v>=(32-y)/1.7-1?'3':'t'; if(y>=39||(pxgSlv(x,y)&&y>=32)) return '3';
+  if(y>=29&&!pxgSlv(x,y)){ const a=((x-22+y)%8+8)%8, b=((x-22-y)%8+8)%8; if(a===0||b===0) return '5'; return (Math.floor((x-22+y)/4)+Math.floor((x-22-y+64)/4))%2?'4':'1'; }
+  return '1'; });
+PXG_TOP_PAL.argyle={'1':'#1f3a5f','2':'#182e4c','3':'#132438','4':'#b9a46a','5':'#e7dcc6'};
+PXG_TOPS.puffervest=pxgOver(pxgCut(PXG_CARDIGAN,function(x,y){
+  if(pxgSlv(x,y)||(y<=26&&(x<=14||x>=30))) return '.'; if(x===22) return '3'; if(x===14||x===30) return '2';
+  return ((y-24)%3===2)?'2':'1'; }),[[22,18,'111111111'],[23,18,'211111112']]);
+PXG_TOP_PAL.puffervest={'1':'#2b2f38','2':'#1d2028','3':'#0f1116'};
+// the legwear: '1' the cloth, '2' its shade or hem, '3' a cuff, '4' a line, 's' bare skin, 'w' a sock
+const pxgLegSp=function(y0,y1){ const o=[]; for(let y=y0;y<=y1;y++){ o.push([y,15,21,'L']); o.push([y,23,29,'R']); } return o; };
+PXG_LEGS.shorts=pxgSpan(pxgLegSp(39,51),function(x,y){ if(y<=44) return y===44?'2':(x===18||x===26)&&y>=41?'2':'1'; if(y>=50) return 'w'; return 's'; });
+PXG_LEG_PAL.shorts={'1':'#d9cfb0','2':'#b9ae8c',w:'#f4f4f0'};
+PXG_LEGS.joggers=pxgSpan(pxgLegSp(39,51),function(x,y,t){ const c=t==='L'?18:26;
+  if(y>=48) return Math.abs(x-c)>2?'s':(x%2?'3':'2'); if(y===40&&Math.abs(x-c)>=2) return '2'; return '1'; });
+PXG_LEG_PAL.joggers={'1':'#2b2e35','2':'#1f2127','3':'#15171b'};
+PXG_LEGS.tartan=pxgSpan(pxgLegSp(39,51),function(x,y){ const v=((x-15)%5+5)%5, h=((y-39)%5+5)%5;
+  if(v===2&&h===2) return '4'; if(v===2||h===2) return '2'; return '1'; });
+PXG_LEG_PAL.tartan={'1':'#b52a2e','2':'#1e2f52','4':'#f2d24a'};
+// the shoes: T the upper, M its accent, s the sole (the course golfer reads those three), k the outline
+PXG_CLEATS.spikeless=pxgRows([[52,13,'kTTLTTk...kTTLTTk'],[53,13,'TTTTMMMM..TTTTMMMM'],[54,13,'WWWWWWWW..WWWWWWWW'],[55,13,'ssssssss..ssssssss']]);
+PXG_CLEATS_PAL.spikeless={T:'#c9ccd2',M:'#2f8a5a',W:'#f6f6f2',L:'#ffffff',s:'#7a7f88',k:'#3a3f48'};
+PXG_CLEATS.kiltie=pxgRows([[52,13,'.TMmMmT...TMmMmT.'],[53,13,'TTMmMmTT..TTMmMmTT'],[54,13,'TpTpTpTT..TpTpTpTT'],[55,13,'ssssssss..ssssssss']]);
+PXG_CLEATS_PAL.kiltie={T:'#6b3b1f',M:'#b8834e',m:'#8e5c30',p:'#3a1e0c',s:'#24160c'};
+PXG_CLEATS.tourdial=pxgRows([[52,13,'.TTdTTk...TTdTTk.'],[53,13,'TMTTTTMM..TMTTTTMM'],[54,13,'WWWWWWWW..WWWWWWWW'],[55,13,'ssssssss..ssssssss']]);
+PXG_CLEATS_PAL.tourdial={T:'#f4f6f8',M:'#2563c9',d:'#1a1d22',W:'#e6e9ee',k:'#c9ced6',s:'#3a3f48'};
+// the balls, teed beside the golfer
+PXG_BALL.range=pxgRows([[47,35,'oooo'],[48,34,'ohCCCo'],[49,34,'oRRRRo'],[50,34,'oCCCso'],[51,35,'oooo'],[52,35,'TTTT'],[53,36,'TT'],[54,36,'T']]);
+PXG_BALL_PAL.range={o:'#9a9a90',C:'#f2f2ec',h:'#ffffff',s:'#d6d6cc',R:'#d23a2e',T:'#e8ebf0'};
+PXG_BALL.optic=pxgRows([[47,35,'oooo'],[48,34,'ohCCCo'],[49,34,'oCCCCo'],[50,34,'oCCCso'],[51,35,'oooo'],[52,35,'TTTT'],[53,36,'TT'],[54,36,'T']]);
+PXG_BALL_PAL.optic={o:'#8a8a1a',C:'#e6f03a',h:'#fbffb0',s:'#c4cc22',T:'#e8ebf0'};
+PXG_BALL.alignment=pxgRows([[47,35,'oooo'],[48,34,'ohCCCo'],[49,34,'LLLLLL'],[50,34,'oCCCso'],[51,35,'oooo'],[52,35,'TTTT'],[53,36,'TT'],[54,36,'T']]);
+PXG_BALL_PAL.alignment={o:'#9aa0aa',C:'#f4f6fb',h:'#ffffff',s:'#d6dae2',L:'#2a6ed8',T:'#e8ebf0'};
 PXG_HAT_OPEN.pphallowscrown=1; PXG_HAT_OPEN.ppvisor=1;   // a crown and a visor sit on the hair, so it is not clipped
 const PXG_FIX={ k:'#181019', l:'#cfd2d7', g:'#c99a2a', n:'#232733', G:'#2d323c', H:'#525a68', F:'#cfd3da' };   // outline · club-shaft · buckle · belt · driver head/crown/face
 function pxShade(hex,amt){ hex=(hex||'#888888').replace('#',''); if(hex.length<6) hex='888888';
