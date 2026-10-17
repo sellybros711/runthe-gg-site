@@ -14,7 +14,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const MODULE_FILES = ['boot.js', 'noise.js', 'landmarks.js', 'ui.js', 'status.js', 'layout.js', 'land.js', 'props.js', 'paint.js',
-  'camera.js', 'input.js', 'world.js', 'ideas.js'];
+  'camera.js', 'input.js', 'world.js', 'agents.js', 'ideas.js'];
 const LOAD = 'var LOAD = [];';
 export function render(){
   const read = f => fs.readFileSync(path.join(ROOT, 'web', f), 'utf8');

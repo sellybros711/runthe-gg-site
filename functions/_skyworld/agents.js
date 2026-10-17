@@ -72,7 +72,8 @@ export async function readAgents(src, games, opt = {}){
   const gameKey = s => { const k = key(s); const g = games.find(x => x.id === k || key(x.name) === k); return g ? g.id : null; };
   for (const a of reg) {
     const spec = a.spec ? await src.vaultFile(a.spec) : null, game = spec && front(spec, 'game');
-    const home = game && !['all', 'platform'].includes(game) ? gameKey(game) : 'site';
+    const own = games.find(x => x.id === key(a.id));   // an agent named for a place lives there (Marketing)
+    const home = own ? own.id : game && !['all', 'platform'].includes(game) ? (gameKey(game) || 'site') : 'site';
     const chat = sessions.filter(s => s.agent === a.id).sort((x, y) => String(y.updated).localeCompare(String(x.updated)))[0] || null;
     let at = null;
     if (chat && chat.branch && chat.branch !== 'main') at = locate(await src.branchFiles(chat.branch), games);

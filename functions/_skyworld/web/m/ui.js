@@ -105,6 +105,8 @@ window.SKY_UI = {
         '<div class="sw-asof">As of ' + esc(et(W.asOf)) + '</div></div>';
       [].forEach.call($.pc.querySelectorAll('[data-d]'), function(b){ b.onclick = function(){ var d = g2.dist.filter(function(k){ return k.id === b.dataset.d; })[0]; SKY.select({ g:g2, d:d }); }; });   // select() focuses on it
       SKY.focus(g2.x, g2.y, g2.z); }
+    // a world's district or island panel ends with a box to ask one of the agents (agents.js)
+    var extra = !h.p && window.SKY_PANEL_EXTRA && window.SKY_PANEL_EXTRA(h); if (extra){ $.pc.insertAdjacentHTML('beforeend', extra.html); extra.bind(); }
     var x = $.pc.querySelector('.sw-x'); if (x) x.onclick = function(){ SKY.select(null); };
     $.panel.classList.add('on'); }
 };
