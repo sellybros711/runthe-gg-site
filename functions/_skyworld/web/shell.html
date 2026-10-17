@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#7fc4ef">
+<title>RunThe.GG</title>
+<link rel="icon" href="/assets/runthegames-icon_32.png">
+<style>
+:root{ --ink:#1d3550; --card:#fffdf6; --line:#e3dcc8; --mute:#6b7a8c; --go:#2f6fd0; }
+*{ box-sizing:border-box; }
+html,body{ margin:0; height:100%; background:linear-gradient(#7fc4ef,#cfe6f6); font:15px/1.4 system-ui,-apple-system,Segoe UI,sans-serif; color:var(--ink); }
+#gate{ min-height:100%; display:grid; place-items:center; padding:24px 16px; }
+.card{ width:100%; max-width:360px; background:var(--card); border:1px solid var(--line); border-radius:18px; padding:22px 20px; box-shadow:0 10px 30px rgba(29,53,80,.18); }
+.card img{ width:44px; height:44px; border-radius:10px; display:block; margin-bottom:10px; }
+h1{ margin:0 0 4px; font-size:22px; }
+p{ margin:0 0 14px; color:var(--mute); }
+label{ display:block; font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--mute); margin:10px 0 4px; }
+input{ width:100%; height:44px; border:1px solid var(--line); border-radius:10px; padding:0 12px; font:inherit; background:#fff; color:var(--ink); }
+button{ width:100%; height:46px; border:0; border-radius:12px; font:inherit; font-weight:800; cursor:pointer; margin-top:14px; }
+.go{ background:var(--go); color:#fff; }
+.alt{ background:#fff; color:var(--ink); border:1px solid var(--line); }
+.err{ color:#b8342a; font-weight:700; min-height:20px; margin-top:10px; font-size:14px; }
+.hide{ display:none !important; }
+</style></head>
+<body>
+<div id="gate">
+  <div class="card" id="card">
+    <img src="/assets/runthegames-icon_192.png" alt="">
+    <div id="wait"><h1>One moment</h1><p>Checking your account.</p></div>
+    <form id="form" class="hide">
+      <h1>Sign in</h1>
+      <p>Use your RunThe.GG account.</p>
+      <label for="id">Email or username</label><input id="id" autocomplete="username" required>
+      <label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password" required>
+      <button class="go" type="submit">Sign in</button>
+      <button class="alt" type="button" id="google">Continue with Google</button>
+      <div class="err" id="err"></div>
+    </form>
+    <div id="no" class="hide"><h1>Not found</h1><p>This page is for testers.</p><button class="alt" type="button" id="out">Sign out</button></div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+/* The site's own account, the same session key every game reads, so a player signed in anywhere on
+   runthe.gg is signed in here. Nothing past this screen loads until the server says this account is
+   on the tester list. */
+(function(){
+  var URL_ = 'https://jcrrxqfpdelrmvjuihnm.supabase.co';
+  var ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjcnJ4cWZwZGVscm12anVpaG5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3OTY5NjIsImV4cCI6MjA5NjM3Mjk2Mn0.wyjoZpa2yRW-l38-KMGqBvEgTlW9v1KheNye7csWAlM';
+  var $ = function(id){ return document.getElementById(id); };
+  function show(id){ ['wait', 'form', 'no'].forEach(function(k){ $(k).classList.toggle('hide', k !== id); }); }
+  if (!(window.supabase && window.supabase.createClient)){ show('form'); $('err').textContent = 'Sign in could not load. Check your connection and reload.'; return; }
+  var sb = window.supabase.createClient(URL_, ANON, { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true } });
+  var started = false;
+  function enter(session){
+    if (started) return;
+    fetch('/skyworld/api/me', { headers:{ Authorization:'Bearer ' + session.access_token }, credentials:'same-origin' }).then(function(r){
+      if (!r.ok){ show('no'); return; }
+      started = true;
+      var s = document.createElement('script'); s.src = '/skyworld/m/boot.js'; document.body.appendChild(s);
+    }).catch(function(){ show('form'); $('err').textContent = 'Could not reach the server. Try again.'; });
+  }
+  sb.auth.getSession().then(function(r){ var s = r && r.data && r.data.session; if (s) enter(s); else show('form'); });
+  sb.auth.onAuthStateChange(function(evt, s){ if (s && evt === 'SIGNED_IN') enter(s); });
+  $('form').addEventListener('submit', function(e){ e.preventDefault(); $('err').textContent = '';
+    var id = $('id').value.trim(), pw = $('pw').value;
+    var pre = id.indexOf('@') < 0 ? sb.rpc('email_for_login', { p_username:id, p_password:pw }).then(function(r){ if (r.error || !r.data) throw new Error('Wrong username or password.'); return r.data; }) : Promise.resolve(id);
+    pre.then(function(email){ return sb.auth.signInWithPassword({ email:email, password:pw }); })
+      .then(function(r){ if (r.error) throw new Error('Wrong email, username or password.'); show('wait'); enter(r.data.session); })
+      .catch(function(er){ $('err').textContent = er.message || 'Sign in failed.'; }); });
+  $('google').addEventListener('click', function(){ sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: location.origin + '/skyworld/' } }); });
+  $('out').addEventListener('click', function(){ sb.auth.signOut().then(function(){ location.reload(); }); });
+})();
+</script>
+</body></html>
