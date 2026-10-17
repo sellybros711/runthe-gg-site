@@ -215,7 +215,7 @@ if (canSrc) {
   ok('91 over: three only', make(true, h, 9)({ lives: 100 }, P3) && !make(true, h, 9)({ lives: 100 }, P9));
   ok('a host with no checkout, never', !make(true, {}, 9)({ lives: 0 }, P3));
 }
-const copy = /function buyLabel\(p\)\{ return 'Get ' \+ p\.lives \+ ' lives · \$' \+ \(p\.cents \/ 100\)\.toFixed\(2\); \}/.test(puttSrc) && /'">' \+ buyLabel\(p\) \+ '<small>'/.test(puttSrc);
+const copy = /function buyLabel\(p\)\{ return 'Get ' \+ p\.lives \+ ' lives · \$' \+ \(p\.cents \/ 100\)\.toFixed\(2\); \}/.test(puttSrc) && /'">' \+ buyLabel\(p\) \+ \(p\.tag \? '<small>'/.test(puttSrc);
 ok('each button\'s lives and price come from LIVES_BUY', copy);
 ok('the buttons are drawn in LIVES_BUY\'s order, which is nine first', /LIVES_BUY\.map\(function\(p\)\{ return canBuyLives\(st, p\)/.test(puttSrc) && page[0] && page[0].pack === 'nine');
 ok('the page\'s cap is the server\'s', /^var LIVES_EXTRA_MAX = 99;$/m.test(puttSrc) && /check \(extra between 0 and 99\)/.test(read('supabase/151_putt_lives_extra.sql')));
