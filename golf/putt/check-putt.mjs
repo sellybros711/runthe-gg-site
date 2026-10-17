@@ -409,7 +409,7 @@ const GYMS = (() => { const ctx = { console }; ctx.globalThis = ctx; vm.createCo
   for (const w in byWorld){ const gs = byWorld[w], legs = gs.map(g => g.leg).sort((a, b) => a - b), keep = gs.find(g => g.leg === 18), mid = gs.find(g => g.leg !== 18);
     claim(gs.length === 2 && legs[1] === 18 && legs[0] >= 7 && legs[0] <= 11 && keep.keeper && keep.mech.length === 2 && mid.mech.length === 1,
       `${w}: two gyms, one mid-world (hole ${legs[0]}) and a gatekeeper on the trail into hole 18 that pairs its barrels with an earlier world's ${keep.mech[1]}`);
-    claim(mid.pay === 2000 && keep.pay === 3000 && keep.moves > mid.moves, `${w}: the vaults pay ${mid.pay} and ${keep.pay} coins, and the gatekeeper is the longer solve (${mid.moves}, ${keep.moves})`); }
+    claim(mid.pay === 500 && keep.pay === 1000 && keep.moves > mid.moves, `${w}: the vaults pay ${mid.pay} and ${keep.pay} coins, and the gatekeeper is the longer solve (${mid.moves}, ${keep.moves})`); }
   claim(GYMS.MASTER.badges === 22 && GYMS.MASTER.wired === false, 'all 22 badges unlock the Puzzle Master, recorded and not yet wired (its art waits for the owner)'); }
 /* ============================================================== 6. THE PAGE, IN A BROWSER */
 /* The node half proves the module. This half proves the door: that it is shut for everybody but
@@ -752,7 +752,7 @@ if (!args.includes('--no-browser')){
       out.all = got.sort().join() === want;
       // play the first gym
       const paid = []; let hk = null, hc = null; const S = () => window.RTT_PUTT._state(), T = () => window.RTT_PUTT._trail();
-      const hook = () => { const h = S().host; if (h !== hk){ if (hk) hk.coins = hc; hk = h; hc = h.coins; h.coins = n => { paid.push(n); }; } };
+      const packs = [], hook = () => { const h = S().host; if (h !== hk){ if (hk){ hk.coins = hc; delete hk.pack; } hk = h; hc = h.coins; h.coins = n => { paid.push(n); }; h.pack = (tier) => { packs.push(tier); return 1; }; } };
       const open = async n => { window.RTT_PUTT.close(); openPutt(); await sleep(200); hook(); window.RTT_PUTT._walkTo(n); for (let i = 0; i < 900 && !T(); i++) await sleep(50); await sleep(300); hook(); return T(); };
       const idle = async t => { for (let i = 0; i < 200 && t.gymBusy(); i++) await sleep(20); };
       const play = async (t, ds) => { for (const d of ds){ await idle(t); t.gymStep(d); await sleep(30); } await idle(t); };
@@ -772,7 +772,7 @@ if (!args.includes('--no-browser')){
       const cv = t.plan().civ; t.goTo(cv.x + 5, cv.y + 4); await sleep(250); t.goTo(cv.x - 1.6, cv.y + 1.2); await sleep(400); out.civSays = t.bubble() === G.say[1];
       out.reentered = await enter(t); paid.length = 0;
       await play(t, proof); await sleep(2200);
-      out.solved = t.gym().solved && t.items().find(i => i.k === 'vault').done; out.paid = paid.reduce((a, b) => a + b, 0); out.pay = G.pay;
+      out.solved = t.gym().solved && t.items().find(i => i.k === 'vault').done; out.paid = paid.reduce((a, b) => a + b, 0); out.pay = G.pay; out.packs = packs.slice(); out.keeper = !!G.keeper;
       const rec = JSON.parse(localStorage.getItem('bag_ppt_v1@gyc')); out.badge = (rec.gym || []).indexOf(G.id) >= 0;
       out.msg = t.bubble();
       // again: no second payout, and the gym shows solved
@@ -780,7 +780,8 @@ if (!args.includes('--no-browser')){
       const t2 = await open(f0.f), g2 = t2.gym(); out.keptSolved = g2.solved && g2.s.f > 0 && t2.items().find(i => i.k === 'vault').done;
       await enter(t2); await play(t2, proof); await sleep(600); out.paidAgain = paid.reduce((a, b) => a + b, 0);
       out.leftAfter = window.RTT_PUTT._trailLeft ? window.RTT_PUTT._trailLeft(f0.f + 1) : null;
-      if (hk) hk.coins = hc; window.RTT_PUTT.close(); sbUser = { id:'chk' }; return out; });
+      out.packsAgain = packs.length;
+      if (hk){ hk.coins = hc; delete hk.pack; } window.RTT_PUTT.close(); sbUser = { id:'chk' }; return out; });
     claim(gyr.all && gyr.trails.length && gyr.trails.every(o => o.has), `every gym in gyms.js stands on its trail (${gyr.trails.map(o => o.id + ' on the trail into ' + (o.f + 1)).join(', ')})`);
     claim(gyr.trails.every(o => o.clear > 2.2 + 1.2 && o.gateOff < 9.5 && o.inside === 0), `each gym is clear of the walk, its gate a few steps off the path, and nothing else stands in it (${JSON.stringify(gyr.trails.map(o => [o.clear, o.gateOff, o.inside]))})`);
     claim(gyr.trails.every(o => o.gateReach && o.archReach && o.civ && o.vault), `each gym's gate and civilian can be walked to and its trail is still walkable to the arch, its vault on the list (${JSON.stringify(gyr.trails.map(o => [o.gateReach, o.archReach, o.civ, o.vault]))})`);
@@ -790,6 +791,31 @@ if (!args.includes('--no-browser')){
     claim(gyr.plain && gyr.civSays, `after two resets the civilian's plainer line comes, in the gym and at the gate (${JSON.stringify([gyr.plain, gyr.civSays])})`);
     claim(gyr.left && gyr.reentered && gyr.solved && gyr.paid === gyr.pay && gyr.badge, `out through the gate and in again, the recorded proof solves it: the vault opens, pays ${gyr.paid} of ${gyr.pay} coins and the badge is kept`);
     claim(gyr.keptSolved && gyr.paidAgain === 0, `opened again the gym shows solved, barrels down in their holes, and its vault never pays twice (${gyr.paidAgain})`);
+    claim(gyr.packs.length === 1 && gyr.packs[0] === (gyr.keeper ? 'tour' : 'base') && gyr.packsAgain === 1, `the vault pays a free pack once: a Pro Shop pack for a world's first gym, a Tour pack for its gatekeeper (${JSON.stringify(gyr.packs)}, ${gyr.packsAgain} in all)`);
+    // THE GATEKEEPER GUARDS THE WORLD'S LAST HOLE (the owner, 2026-10-17), and CHESTS ROLL THEIR ODDS once, fixed
+    const gk = await pg.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), GL = window.RTT_PUTT_GYMS, K = 'bag_ppt_v1@gk';
+      const keep = GL.GYMS.filter(g => g.keeper), mid = GL.GYMS.filter(g => !g.keeper), W = window.RTT_PUTT._trailPlan; out.keepers = keep.length;
+      const n = (() => { for (let f = 1; f < 198; f++){ const P = W(f); if (P.spec.gym === keep[0].id) return f + 1; } return 0; })(); out.n = n;
+      const best = {}; for (let i = 1; i < n; i++) best[i] = 3;
+      const rec = (gym) => localStorage.setItem(K, JSON.stringify({ v:2, lives:9, l9:1, back:[], gym, tours:{ main:{ lv:n, best, ace:{}, paid:{}, wpaid:{} } } }));
+      window.RTT_PUTT.close(); sbUser = { id:'gk' }; window.RTT_PUTT_MAPFIRST = true; rec([]); openPutt(); await sleep(400);
+      out.blocks = !!window.RTT_PUTT._keeperBlocks(n); window.RTT_PUTT._level(n, 'main'); await sleep(200);
+      const sh = [...document.querySelectorAll('.pp-sheet .t')].map(e => e.textContent).join('|'); out.sheet = sh.indexOf(keep[0].name) >= 0; out.notPlaying = window.RTT_PUTT._state().screen !== 'play';
+      out.walkBtn = !!document.querySelector('.pp-sheet [data-walk]');
+      window.RTT_PUTT.close(); rec([keep[0].id]); openPutt(); await sleep(300); out.openAfter = !window.RTT_PUTT._keeperBlocks(n);
+      best[n] = 4; window.RTT_PUTT.close(); rec([]); openPutt(); await sleep(300); out.playedStaysOpen = !window.RTT_PUTT._keeperBlocks(n);
+      // chest odds: fixed for a key, and near the table over many chests
+      const R = window.RTT_PUTT._chestRoll, cnt = { coins:0, haul:0, item:0, pack:0 }; out.fixed = R('main:7', 'ch0') === R('main:7', 'ch0');
+      for (let i = 0; i < 4000; i++) cnt[R('main:' + (i % 198 + 1), 'ch' + i)]++; out.cnt = cnt;
+      const h = window.RTT_PUTT._state().host, hp = h.pack, hi = h.commonItem; h.pack = () => 0; h.commonItem = () => null;
+      let k = null; for (let i = 0; i < 4000 && !k; i++) if (R('main:' + (i % 198 + 1), 'x' + i) === 'pack') k = ['main:' + (i % 198 + 1), 'x' + i];
+      out.fallback = k ? window.RTT_PUTT._chestLuck(k[0], k[1], 600) : null;
+      h.pack = () => 1; out.packMsg = k ? window.RTT_PUTT._chestLuck(k[0], k[1], 600) : null; h.pack = hp; h.commonItem = hi;
+      window.RTT_PUTT.close(); localStorage.removeItem(K); sbUser = { id:'chk' }; return out; });
+    claim(gk.keepers >= 1 && gk.n > 0 && gk.blocks && gk.sheet && gk.notPlaying && gk.walkBtn, `the gatekeeper guards the world's last hole: Hole ${gk.n} asks for it to be solved first, with a way to walk to it (${JSON.stringify(gk)})`);
+    claim(gk.openAfter && gk.playedStaysOpen, `solved, the hole opens; a hole already played is never taken away (${JSON.stringify([gk.openAfter, gk.playedStaysOpen])})`);
+    claim(gk.fixed && gk.cnt.coins > 2900 && gk.cnt.coins < 3350 && gk.cnt.haul > 450 && gk.cnt.haul < 750 && gk.cnt.item > 120 && gk.cnt.item < 290 && gk.cnt.pack > 40 && gk.cnt.pack < 130, `a chest's roll is fixed, and over 4,000 chests the odds come out near 78/15/5/2 (${JSON.stringify(gk.cnt)})`);
+    claim(gk.fallback && gk.fallback.coins === 1200 && gk.packMsg && gk.packMsg.coins === 0 && /pack/.test(gk.packMsg.msg), `a lucky pack that cannot land is a big haul instead (${JSON.stringify([gk.fallback, gk.packMsg])})`);
     // THE WORLD IS WHERE THE MODE OPENS. Opening the Tour drops the player's own golfer onto the trail to the
     // next hole, with Map top right, and the map's close goes back to the world. The first trail of every
     // world has its greeter, who walks up and talks the first time and waits by the path after.

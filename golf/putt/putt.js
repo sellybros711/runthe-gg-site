@@ -3277,7 +3277,38 @@ function gymWin(id, wname){ var G = gymLib(), gd = G && G.byId(id); if (!gd) ret
   if (st.gym.indexOf(id) >= 0) return { coins:0, first:false, msg:'The vault\'s empty. You already cleaned it out.' };
   st.gym.push(id); psave(st); var n = st.gym.length;
   if (gd.pay > 0) coins(gd.pay, wname + ' gym');
-  return { coins:gd.pay, first:true, badge:gd.badge, n:n, msg:'The ' + gd.name + ' is solved. ' + gd.pay.toLocaleString() + ' coins and the ' + gd.badge + '. That\'s ' + n + ' of ' + G.MASTER.badges + ' badges.' }; }
+  // THE VAULT PAYS A PACK (the owner, 2026-10-17): a Pro Shop pack for the world's first gym, a Tour pack for its gatekeeper
+  var tier = gymPack(gd), pk = 0; try{ if (S.host.pack) pk = S.host.pack(tier, gd.name) || 0; }catch(e){}
+  var pname = tier === 'tour' ? 'a Tour pack' : 'a Pro Shop pack';
+  return { coins:gd.pay, pack:pk ? tier : null, first:true, badge:gd.badge, n:n, msg:'The ' + gd.name + ' is solved. ' + (pk ? cap(pname) + ', ' : '') + gd.pay.toLocaleString() + ' coins and the ' + gd.badge + '. That\'s ' + n + ' of ' + G.MASTER.badges + ' badges.' }; }
+function gymPack(gd){ return gd && gd.keeper ? 'tour' : 'base'; }
+function cap(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
+/* THE GATEKEEPER GUARDS THE WORLD'S LAST HOLE (the owner, 2026-10-17: story mode). The gym on the trail into a
+   world's last hole must be solved before that hole is played. A hole already played stays open, and an all access
+   account is never stopped. The trail itself stays open, since the gym is on it. */
+function keeperFor(n, tid){ if (tid !== 'main') return null; var TR = tourOf('main'), K = TR.per || PER, w = Math.floor((n - 1) / K), Wd = TR.worlds[w];
+  if (!Wd) return null; var gd = gymAt(Wd.theme, (n - 1) % K + 1); return gd && gd.keeper ? gd : null; }
+function keeperBlocks(st, n, tid){ var gd = keeperFor(n, tid); if (!gd || allAccess()) return null;
+  if (((st.tours[tid] || {}).best || {})[n] != null) return null; return gymsWon(st).indexOf(gd.id) < 0 ? gd : null; }
+function keeperSheet(gd, n){
+  var sh = el('<div class="pp-sheet"><div class="pp-card"><div class="k">HOLE ' + n + '</div><div class="t">' + esc(gd.name) + ' guards it</div>\
+    <div class="m">Solve ' + esc(gd.name) + ' on the trail to play Hole ' + n + '. Its vault pays a Tour pack.</div>' +
+    (S.screen === 'trail' ? '' : '<button class="pt-go pp-wide" data-walk>Walk to it</button>') + '<button class="pt-bt pp-wide" data-n>Not now</button></div></div>');
+  S.ov.appendChild(sh);
+  var wk = sh.querySelector('[data-walk]'); if (wk) wk.onclick = function(){ sh.remove(); walkTo(n, 'main'); };
+  sh.querySelector('[data-n]').onclick = function(){ sh.remove(); }; }
+/* CHEST ODDS (the owner, 2026-10-17): a chest is not always the same pile of coins. Each rolls once, the first time
+   it opens, fixed by the account and the trail so a reload never rolls again: CHEST_ODDS in percent, in order. A big
+   haul pays twice the chest's coins again (three times in all); an item is a common one the player does not own;
+   a pack is a free Pro Shop pack. An item or pack that cannot land (a guest, or every common owned) is a big haul. */
+var CHEST_ODDS = [['coins', 78], ['haul', 15], ['item', 5], ['pack', 2]], CHEST_HAUL = 2, CHEST_MIN = 300;
+function chestRoll(key, id){ var r = hstr('chest:' + (cloudUid() || 'guest') + ':' + key + ':' + id) % 100, a = 0;
+  for (var i = 0; i < CHEST_ODDS.length; i++){ a += CHEST_ODDS[i][1]; if (r < a) return CHEST_ODDS[i][0]; } return 'coins'; }
+function chestLuck(key, id, base){ var k = chestRoll(key, id), h = S.host || {}, extra = Math.max(CHEST_MIN, (base || 0) * CHEST_HAUL);
+  if (k === 'pack'){ var pk = 0; try{ pk = h.pack ? h.pack('base', 'A lucky chest') : 0; }catch(e){} if (pk) return { coins:0, msg:'A lucky chest! A free Pro Shop pack is waiting for you.' }; k = 'haul'; }
+  if (k === 'item'){ var nm = null; try{ nm = h.commonItem ? h.commonItem() : null; }catch(e){} if (nm) return { coins:0, msg:'Something else in there. The ' + nm + ' is in your closet.' }; k = 'haul'; }
+  if (k === 'haul') return { coins:extra, msg:'A big haul! +' + extra.toLocaleString() + ' coins on top.' };
+  return { coins:0, msg:'' }; }
 function trailSpec(tid, from){
   var TR = tourOf(tid), K = TR.per || PER, to = from + 1, w = Math.min(TR.worlds.length - 1, Math.floor((to - 1) / K)), th = TR.worlds[w].theme;
   var cross = from >= 1 && from % K === 0, th0 = cross ? TR.worlds[w - 1].theme : th, tp = pload().tours[TR.id];
@@ -3394,7 +3425,7 @@ function openTrail(tid, from){
       pick:function(kind, id, n){ var st = pload(); st.trail = st.trail || {}; var r = st.trail[sp.key] = st.trail[sp.key] || {}, msg = '';
         if (kind === 'coin'){ r.c = r.c || []; if (r.c.indexOf(id) < 0) r.c.push(id); else n = 0; }
         else if (kind === 'brk'){ r.b = r.b || []; if (r.b.indexOf(id) < 0) r.b.push(id); else n = 0; }
-        else if (kind === 'chest'){ r.ch = r.ch || []; if (r.ch.indexOf(id) < 0){ r.ch.push(id); hq('ppChests', 1); } }   // a chest pays nothing itself: its coins are picked up off the ground
+        else if (kind === 'chest'){ var cn = n; n = 0; r.ch = r.ch || []; if (r.ch.indexOf(id) < 0){ r.ch.push(id); hq('ppChests', 1); var lk = chestLuck(sp.key, id, cn); msg = lk.msg; n = lk.coins; } }   // its coins are picked up off the ground; n is what they come to, and the roll may add to it
         else if (kind === 'key') r.key = 1;
         else if (kind === 'pz') r.pz = 1;   // the trail's puzzle is solved; its coin bonus comes out of its chest as coins
         else if (kind === 'life'){ r.life = 1; st.bank = st.bank || []; if (st.bank.indexOf(sp.loot.life.id) < 0) st.bank.push(sp.loot.life.id);
@@ -3598,6 +3629,7 @@ function startLevel(n, tid){
   if (tourOf(tid).secret && secretsFound(st).indexOf(n) < 0 && !allAccess()) return showHub('main');
   if (isGuest() && !tourOf(tid).lab && !tourOf(tid).members) return guestSheet(n, tid);   // a guest plays no Tour hole
   var c = st.cur, back = c && c.tid === tid && c.n === n && c.s > 0;
+  var kp = !back && keeperBlocks(st, n, tid); if (kp) return keeperSheet(kp, n);
   if (c && !back){ clearCur(st); psave(st); }   // only a hole in progress on another device can be left this way
   if (!back && livesNow(st) <= 0 && !tourOf(tid).lab && !tourOf(tid).secret && !allAccess()) return outOfLives();
   var d = tourDesc(n, S.host, tid), TRs = tourOf(tid);
@@ -4597,6 +4629,7 @@ RTT_PUTT._loot = trailLoot; RTT_PUTT._bag = function(){ bagSheet(); }; RTT_PUTT.
 RTT_PUTT._putt = function(ang, ft){ var P = S && S.play; if (!P || P.state !== 'aim') return false; P.aimAng = ang; P.pow = ft / maxFt(P.C); strike(); return true; };
 RTT_PUTT._covers = function(){ var P = S.play; return P && P.camNow ? golferCovers(P, P.camNow) : null; };
 RTT_PUTT._lose = function(){ loseLife(pload()); };
+RTT_PUTT._chestRoll = chestRoll; RTT_PUTT._chestLuck = chestLuck; RTT_PUTT._keeperBlocks = function(n){ return keeperBlocks(pload(), n, 'main'); };
 RTT_PUTT._overPar = function(){ if (S && S.play && S.round && S.round.mode === 'ppt'){ S.play.strokes = S.play.C.par; S.play.state = 'done'; return tourOut(false); } };   // checks: a hole lost to par
 RTT_PUTT._dailyFinish = function(s, par, ms){ return dailyFinish(s, par, ms); };
 // the checker's door straight onto a Tour level. Nothing on the page calls it.

@@ -1843,7 +1843,7 @@ function run(box, P, pic, api){
   function gymReset(tsec, s0){ gym.leverAt = tsec; gym.resets++; api.sfx && api.sfx('blip');
     gymDisp.forEach(function(o){ burst(o.x, o.y, o.z + 1, ['rgba(230,220,200,.85)', '#c8a070'], 8, 1.4, 0.6); });
     gym.s = s0; gymLay(); var q = gT(GY.Q.start); g.x = q[0]; g.y = q[1]; burst(q[0], q[1], GYM_DECK + 1.2, ['rgba(255,255,255,.8)'], 8, 1.2, 0.5); gymCheck();
-    if (gym.resets === 2 && civIt) say(GL.clue(gym.G, 2), 7000, civIt); else say('Everything\'s back where it started.', 2200); }
+    if ((gym.resets === 2 || gym.resets === 5) && civIt) say(GL.clue(gym.G, gym.resets), 7000, civIt); else say('Everything\'s back where it started.', 2200); }
   function gymOpen(tsec){ var V = gym.vault; if (!V) return;
     if (gym.solved){ say('The vault\'s empty. You already cleaned it out.', 2400); return; }
     gym.solved = true; V.done = true; V.openAt = tsec; api.sfx && api.sfx('coin'); var z = pic.zAt(V.x, V.y), res = null;
@@ -1903,7 +1903,7 @@ function run(box, P, pic, api){
   function take(t, now){ take0(t, now); if (LOOT[t.k]) hudList(); }
   function take0(t, now){ var z = pic.zAt(t.x, t.y);
     if (t.k === 'coin'){ t.done = true; coinsGot += COIN_V; hudCoins(); burst(t.x, t.y, z + 1.2, ['#ffd23a', '#fff3a8', '#ffffff'], 8); collect(t, now, 'coin'); if (!api.guestCoins) floatText('+' + COIN_V, t.x, t.y, z + 2.2); guestCoin(); pick('coin', t.id, COIN_V); api.sfx && api.sfx('coin'); }
-    else if (t.k === 'chest'){ t.done = true; t.openAt = now; pick('chest', t.id, 0); hudChests(); api.sfx && api.sfx('coin');
+    else if (t.k === 'chest'){ t.done = true; t.openAt = now; var cs0 = items.filter(function(c){ return c.k === 'coin' && c.ch === t; }), luck = pick('chest', t.id, cs0.length * COIN_V); hudChests(); api.sfx && api.sfx('coin');
       // the lock pops as it starts to rattle; the lid lifts; light, a ring and a shower of gold as it comes open
       burst(t.x, t.y + 0.8, z + 1.0, ['#ffd23a', '#fff1a0'], 6, 1.2, 0.6);
       setTimeout(function(){ if (!alive) return; burst(t.x, t.y, z + 1.5, ['#ffd23a', '#fff3a8', '#ffffff', '#ffb43a'], 26, 1.5, 1.3); ring(t.x, t.y, '255,214,64'); }, (CH_SHAKE + 0.15) * 1000);
@@ -1911,7 +1911,7 @@ function run(box, P, pic, api){
       var cs = items.filter(function(c){ return c.k === 'coin' && c.ch === t; });
       cs.forEach(function(c, i){ c.out = true; c.fly = { t0:now + CH_COINS + i * 0.05, dur:0.6 + (i % 3) * 0.08, x0:t.x, y0:t.y, z0:z + 1.6 }; });
       setTimeout(function(){ if (alive) floatText(cs.length ? (cs.length * COIN_V) + ' coins!' : 'Treasure!', t.x, t.y, z + 3.2, '#ffd23a', true); }, CH_COINS * 1000);
-      sayLater(cs.length ? 'Walk over the coins to pick them up.' : 'An empty chest.', 2600, 1.7); }
+      sayLater(luck ? luck + (cs.length ? ' Walk over the coins too.' : '') : cs.length ? 'Walk over the coins to pick them up.' : 'An empty chest.', luck ? 4200 : 2600, 1.7); }
     else if (t.k === 'prize'){ t.done = true; t.openAt = now; PZ.solved = true; pick('pz', t.id, 0); api.sfx && api.sfx('coin');
       burst(t.x, t.y + 0.8, z + 1.0, ['#ffd23a', '#fff1a0'], 6, 1.2, 0.6);
       setTimeout(function(){ if (!alive) return; burst(t.x, t.y, z + 1.5, ['#ffd23a', '#fff3a8', '#ffffff', '#7cc8ff'], 30, 1.5, 1.3); ring(t.x, t.y, '120,200,255'); }, (CH_SHAKE + 0.15) * 1000);

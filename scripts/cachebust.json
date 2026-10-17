@@ -2545,8 +2545,8 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "95",
-      "sha": "c53134fdc8969d8f"
+      "v": "96",
+      "sha": "f5e3a7c6db893aa4"
     },
     "putt/land.js": {
       "v": "12",
@@ -2557,12 +2557,12 @@
       "sha": "62a0821ec99b53c3"
     },
     "putt/gyms.js": {
-      "v": "1",
-      "sha": "18d56742b8df9c9d"
+      "v": "2",
+      "sha": "50a8dce841aaf4d8"
     },
     "putt/trail.js": {
-      "v": "39",
-      "sha": "89327e01db9af90b"
+      "v": "40",
+      "sha": "6da51fe00c61748f"
     },
     "putt/mapland.js": {
       "v": "6",

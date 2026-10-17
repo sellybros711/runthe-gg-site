@@ -60,11 +60,11 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- Putt Putt Tour. It draws nothing until puttOn() opens it (see PUTT_TESTERS and PUTT_LIVE). -->
-<script defer src="putt/putt.js?v=95"></script>
+<script defer src="putt/putt.js?v=96"></script>
 <script defer src="putt/land.js?v=12"></script>
 <script defer src="putt/hole3d.js?v=16"></script>
-<script defer src="putt/gyms.js?v=1"></script>
-<script defer src="putt/trail.js?v=39"></script>
+<script defer src="putt/gyms.js?v=2"></script>
+<script defer src="putt/trail.js?v=40"></script>
 <script defer src="putt/mapland.js?v=6"></script>
 <!-- The course golfer in the profile style, asked through g3dOn(). -->
 <script defer src="golfer3d.js?v=19"></script>
@@ -23590,6 +23590,11 @@ function puttHost(){
       thumb:pxClubThumb('pu_'+p.id),txt:puttEffectTxt(p),hint:p.kind==='earn'?CARD_EARN['pu:'+p.id].hint:''})); }catch(e){ return []; } },
     equipPutter:function(id){ try{ if(!cosOwned('putter',id)) return false; cosEquip('putter',id); return true; }catch(e){ return false; } },
     grantPutter:function(id){ try{ return puttGrant(id); }catch(e){ return false; } },
+    // a free pack for a Putt Putt gym vault or a lucky chest: 'base' (Pro Shop) or 'tour'. Signed in only; 0 when it could not land.
+    pack:function(tier,why){ try{ return grantFreePack(1,{tier:tier||'base',why:why||'Putt Putt'}); }catch(e){ return 0; } },
+    // a lucky chest's common item: one the player does not own yet, or null when they own them all
+    commonItem:function(){ try{ if(!sbSignedIn()||!packsOn()) return null; const L=packPool().filter(e=>e.rarity==='common'&&!packOwns(e)); if(!L.length) return null;
+      const e=L[Math.floor(Math.random()*L.length)]; packGrant(e); return e.name||null; }catch(e){ return null; } },
     // the full closet, opened on its Putters page; Back from it comes straight back into Putt Putt
     closet:function(){ try{ window.RTT_PUTT.close(); }catch(e){} S.shopPreview=null; S.overlay=null; S.setupEdit=true; S.setupReturn={screen:'title',overlay:null,putt:true}; S.screen='setup'; S.setupCat='putter'; render(); },
     tester:function(){ return sbSignedIn() && PUTT_TESTERS.indexOf((sbUsername||'').toLowerCase())>=0; },

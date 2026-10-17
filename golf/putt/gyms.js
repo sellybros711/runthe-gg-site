@@ -47,11 +47,12 @@ var GYMS = [
   /* THE POWDER STORE, mid-world (the trail into hole 9): barrels and holes, two rooms. The lesson is that a filled hole
      is deck, so a barrel can be pushed over one barrel into the hole beyond it, and so you can walk where a hole was
      to get behind a barrel you could not reach. */
-  { id:'pirate1', world:'pirate', leg:9, name:'The Powder Store', badge:'Powder Badge', mech:['barrel'], pay:2000, look:{ wall:'stone' },
+  { id:'pirate1', world:'pirate', leg:9, name:'The Powder Store', badge:'Powder Badge', mech:['barrel'], pay:500, look:{ wall:'stone' },
     moves:52, proof:'UURRRULLDLUUDDLLLURRDRUUUURRRRUULLLLLLLRDDLLUUUURRRR',
     who:{ look:{ skin:'medium', polo:'gold', hat:'red', pants:'navy', hair:'black', hairStyle:'ponytail', cap:false, gender:'female' } },
     say:['Careful with those barrels. You can push them, but you can\'t pull them back. My brother learned that the hard way.',
-      'Here\'s what got me. A barrel in a hole is just more floor.'],
+      'Here\'s what got me. A barrel in a hole is just more floor.',
+      'Still stuck? That barrel in the middle isn\'t the one for the vault. Ask yourself what it\'s really for.'],
     rows:[
       '###########',
       '#.b.oC#...#',
@@ -71,11 +72,12 @@ var GYMS = [
      lesson is that a belt carries a barrel as readily as it carries you, so the holes up in the hold that no walk can
      reach are filled by sending barrels up the belt, and they arrive in the order they were sent. The belt down the
      left side is the way back. */
-  { id:'pirate2', world:'pirate', leg:18, name:'The Cargo Hold', badge:'Cargo Badge', mech:['barrel', 'conveyor'], pay:3000, keeper:true, look:{ wall:'plank' },
+  { id:'pirate2', world:'pirate', leg:18, name:'The Cargo Hold', badge:'Cargo Badge', mech:['barrel', 'conveyor'], pay:1000, keeper:true, look:{ wall:'plank' },
     moves:60, proof:'ULLUUUULLULURRRRRRLLDLDLULURRRRRRULLDURDDLRUULDDLRRDLLDLUUUU',
     who:{ look:{ skin:'tan', polo:'navy', hat:'white', pants:'khaki', hair:'brown', hairStyle:'short', cap:true, hatStyle:'cap', gender:'male' } },
     say:['Those belts in there don\'t care what\'s riding them. You, a barrel, whatever. Took my kids forever to figure out why that matters.',
-      'You\'ll never walk to every hole in there. Doesn\'t mean a barrel can\'t get there.'],
+      'You\'ll never walk to every hole in there. Doesn\'t mean a barrel can\'t get there.',
+      'Once you ride that belt up, there\'s no carrying anything with you. Whatever you need up there has to go first.'],
     rows:[
       '###########',
       '#v..#C#...#',
@@ -217,8 +219,8 @@ function explore0(G, X){ var N = X.list.length, back = [], i; for (i = 0; i < N;
 // the gym on a trail: the world's two, by the leg of the hole the trail leads into
 function at(world, leg){ for (var i = 0; i < GYMS.length; i++) if (GYMS[i].world === world && GYMS[i].leg === leg) return GYMS[i]; return null; }
 function byId(id){ for (var i = 0; i < GYMS.length; i++) if (GYMS[i].id === id) return GYMS[i]; return null; }
-// what the civilian says: the nudge, and after two resets the plainer one
-function clue(G, resets){ return G.say[resets >= 2 && G.say[1] ? 1 : 0]; }
+// what the civilian says: the nudge, after two resets the plainer one, and after five a warmer one still (never the moves)
+function clue(G, resets){ return G.say[resets >= 5 && G.say[2] ? 2 : resets >= 2 && G.say[1] ? 1 : 0]; }
 /* ALL 22 BADGES (two gyms a world, eleven worlds) unlock the Puzzle Master item. The item is not in the game yet: it
    needs art the owner approves first. This is the condition it will be wired to. */
 var MASTER = { badges:22, item:'Puzzle Master', wired:false };
