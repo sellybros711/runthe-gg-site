@@ -1327,7 +1327,7 @@
     if(cleats) shoes=cleats.main||shoes;
     const pat=(!top||top==='duckfloatie'||top==='cape')&&look.shirtPat&&PXPAT_BY[look.shirtPat]?look.shirtPat:''; let patFn=null;
     if(pat){ const pd=PXPAT_BY[pat]; if(pd.fixed){const cols=pd.cols||[];patFn=(x,y)=>cols[pd.f(x,y)|0]||cols[0]||null}
-      else { const light=pxLum(shirt)>0.55, k=MO?1.7:1, a1=pxShade(shirt,Math.round((light?-52:46)*k)),a2=pxShade(shirt,Math.round((light?-90:82)*k)); patFn=(x,y)=>{const a=pd.f(x,y);return a?(a===2?a2:a1):null}; } }   // the menu lights the cloth, so its tints are stronger
+      else { const light=pxLum(shirt)>0.55, a1=pxShade(shirt,MO?(light?-140:110):(light?-52:46)),a2=pxShade(shirt,MO?(light?-190:150):(light?-90:82)); patFn=(x,y)=>{const a=pd.f(x,y);return a?(a===2?a2:a1):null}; } }   // the menu lights the cloth, so its tints are stronger
     // a body skin's rags: its tears are placed on the profile torso, so the torso's cells are mapped onto it
     const bodySkin=(look.body&&typeof BODY_SKINS!=='undefined'&&BODY_SKINS[look.body])||null;
     if(bodySkin&&bodySkin.rags&&!MO){ const t0=cam(M.tc), under=patFn, tx=t0[0]+OX, ty=t0[1]+OY;
@@ -1343,8 +1343,14 @@
     // THE MENU'S PATTERNS WRAP THE CLOTH. A cell is turned back into its point on the body, and the pattern is read
     // by the distance round the torso (its angle times its girth) and the height, so stripes run round the body and
     // down the sleeves rather than lying flat on the picture. PC is a pattern cell, in units.
-    const PC=0.9, wrapAt=(x0,y0,z)=>{ const w=cam([(x0+.5)/K-OX,(y0+.5)/K-OY,z]), q=sub(w,M.tc);
-      return [Math.floor(Math.atan2(dot(q,M.T),dot(q,M.F))*7.4/PC+4000), Math.floor((44-w[1])/PC)]; };
+    // The pattern's own frame is the flat art's (44 by 56, the shirt's front centred on column 22 from row 24 at the
+    // neckline down to the belt), so a pattern drawn at set places on it (flames low down, a cow's spots, a ripple's
+    // centre) lands where its art puts it.
+    // A sparse pattern (stars, dots, hearts, bolts: under 15% of the cloth) is drawn at one and a half times the size,
+    // so its marks read at the menu's scale.
+    let dens=0; if(patFn&&MO){ let n=0; for(let y=20;y<44;y++) for(let x=10;x<34;x++){ n++; if(patFn(x,y)) dens++; } dens/=n; }
+    const PC=dens>0&&dens<0.15?1.5:1.0, wrapAt=(x0,y0,z)=>{ const w=cam([(x0+.5)/K-OX,(y0+.5)/K-OY,z]), q=sub(w,M.tc);
+      return [Math.max(0,Math.floor(22+Math.atan2(dot(q,M.T),dot(q,M.F))*7.4/PC)), Math.max(0,Math.floor(24+(33.6-w[1])/PC))]; };
     s.paint(ctx,1,(c,x0,y0)=>{const m=c.m, x=Math.floor(x0/PK), y=Math.floor(y0/PK);
       if((m==='shirt'||m==='polo')&&patFn&&!(m==='shirt'&&top&&top!=='duckfloatie'&&top!=='cape')){ const uv=MO?wrapAt(x0,y0,c.z):[x,y], h=patFn(uv[0],uv[1]); if(h) return rampOf(h); }
       if(m==='plaid'){ const uv=MO?wrapAt(x0,y0,c.z):[x,y], a=(uv[0]%5===0), b=(uv[1]%5===0); return rampOf(a&&b?plaidC[2]:(a||b)?plaidC[1]:plaidC[0]); }
