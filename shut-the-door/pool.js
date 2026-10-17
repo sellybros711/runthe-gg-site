@@ -19,10 +19,9 @@
  *   pitch of that family (the most used one; a family he lacks goes to the
  *   nearest he has: offspeed to breaking to hard); the target from where that
  *   closer's pitches of that family went in that count, in the batter-relative
- *   grid, mirrored back for a left-handed batter. Where his pitches went is
- *   used as where he aimed, so the engine's miss is added on top: the pool is
- *   a little wilder than the men in it were. The policy draws from its own
- *   seeded stream, never the outing's.
+ *   grid, mirrored back for a left-handed batter, with his misses taken out
+ *   first (aimOf below), since the engine adds this pitcher's miss on top.
+ *   The policy draws from its own seeded stream, never the outing's.
  */
 
 'use strict';
@@ -50,12 +49,46 @@ function typeForFamily(arsenal, fam) {
   return arsenal[0].type;
 }
 
+/* WHERE HE AIMED, NOT WHERE IT WENT. A closer's location table is where his
+   pitches crossed, which already holds his misses, and the engine adds this
+   pitcher's miss on top. So the aim is recovered first: Richardson-Lucy
+   deconvolution of the crossing table through the league-average miss table
+   (BASE_SIGMA_FT, the pack's zone height), 40 rounds, which keeps it a
+   probability over the 25 cells. Cached per closer and pack. */
+const BASE_SIGMA_FT = 0.45;
+const aims = new WeakMap();
+function deconvolve(seen, ker) {
+  let t = seen.slice();
+  for (let it = 0; it < 40; it++) {
+    const blur = new Array(25).fill(0);
+    for (let a = 0; a < 25; a++) for (let b = 0; b < 25; b++) blur[b] += t[a] * ker[a * 25 + b];
+    const next = new Array(25).fill(0);
+    for (let a = 0; a < 25; a++) {
+      let s = 0;
+      for (let b = 0; b < 25; b++) if (blur[b] > 0) s += ker[a * 25 + b] * seen[b] / blur[b];
+      next[a] = t[a] * s;
+    }
+    const z = next.reduce((x, y) => x + y, 0) || 1;
+    t = next.map(x => x / z);
+  }
+  return t;
+}
+function aimOf(closer, pack) {
+  let byPack = aims.get(closer);
+  if (!byPack) { byPack = new Map(); aims.set(closer, byPack); }
+  if (byPack.has(pack)) return byPack.get(pack);
+  const ker = G.kernelFor(BASE_SIGMA_FT, pack.kernelZoneFt);
+  const out = closer.loc.map(fam => fam.map(row => deconvolve(row, ker)));
+  byPack.set(pack, out);
+  return out;
+}
+
 function closerCall(closer, o, rng) {
   const st = o.st;
   const bk = G.bucketOf(st.b, st.s);
   const fi = pick(closer.fam[bk], rng());
   const type = typeForFamily(o.pack.scenario.pitcher.arsenal, FAMS[fi]);
-  let cell = pick(closer.loc[fi][bk], rng());
+  let cell = pick(aimOf(closer, o.pack)[fi][bk], rng());
   const bats = o.pack.scenario.batters[st.bi % o.model.N].bats;
   if (bats === 'L') cell = K.rowOf(cell) * 5 + (4 - K.colOf(cell));
   return { type, cell };
