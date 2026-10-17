@@ -273,7 +273,7 @@ export function bucketByKey(key) {
  *
  * CONSUMABLES, like a coin bucket: bought as often as anybody likes, by a signed
  * in player. Lives on a clock come back first and the rest go over the max as
- * extra lives (supabase/150), up to PUTT_LIVES_EXTRA_MAX held at once
+ * extra lives (supabase/151), up to PUTT_LIVES_EXTRA_MAX held at once
  * (checkout answers 409 lives_full past it). The page sends the pack's KEY and the session carries the key;
  * the webhook reads the lives off this catalog, never off the session, and files
  * the paid session in putt_lives_buys (supabase/149_putt_lives_buy.sql) through
@@ -291,7 +291,7 @@ export const PUTT_LIVES = {
   nine:  { name: 'Putt Putt Lives: 9', envPrice: 'STRIPE_PRICE_PUTT_LIVES_9', lookupKey: 'putt_lives_nine',  cents: 499, lives: 9 },
   three: { name: 'Putt Putt Lives: 3', envPrice: 'STRIPE_PRICE_PUTT_LIVES_3', lookupKey: 'putt_lives_three', cents: 299, lives: 3 },
 };
-export const PUTT_LIVES_EXTRA_MAX = 99;   // 150's check on putt_lives.extra
+export const PUTT_LIVES_EXTRA_MAX = 99;   // 151's check on putt_lives.extra
 export function puttLivesPack(key) {
   return Object.prototype.hasOwnProperty.call(PUTT_LIVES, key) ? PUTT_LIVES[key] : null;
 }

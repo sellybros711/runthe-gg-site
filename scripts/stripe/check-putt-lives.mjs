@@ -149,7 +149,7 @@ try {
   ok('on: an account the server has no row for may buy', r.status === 200);
   lives = out; livesFail = true;
   r = await press(on.co, { putt_lives: 'nine' });
-  ok('on: a lives read that fails sells nothing (503), which is a database without 150 too', r.status === 503, String(r.status));
+  ok('on: a lives read that fails sells nothing (503), which is a database without 151 too', r.status === 503, String(r.status));
   livesFail = false; signedIn = false;
   r = await press(on.co, { putt_lives: 'three' });
   ok('on: a guest is refused (401)', r.status === 401);
@@ -218,7 +218,7 @@ if (canSrc) {
 const copy = /function buyLabel\(p\)\{ return 'Get ' \+ p\.lives \+ ' lives · \$' \+ \(p\.cents \/ 100\)\.toFixed\(2\); \}/.test(puttSrc) && /'">' \+ buyLabel\(p\) \+ '<small>'/.test(puttSrc);
 ok('each button\'s lives and price come from LIVES_BUY', copy);
 ok('the buttons are drawn in LIVES_BUY\'s order, which is nine first', /LIVES_BUY\.map\(function\(p\)\{ return canBuyLives\(st, p\)/.test(puttSrc) && page[0] && page[0].pack === 'nine');
-ok('the page\'s cap is the server\'s', /^var LIVES_EXTRA_MAX = 99;$/m.test(puttSrc) && /check \(extra between 0 and 99\)/.test(read('supabase/150_putt_lives_extra.sql')));
+ok('the page\'s cap is the server\'s', /^var LIVES_EXTRA_MAX = 99;$/m.test(puttSrc) && /check \(extra between 0 and 99\)/.test(read('supabase/151_putt_lives_extra.sql')));
 ok('the buttons are on all three screens: out of lives, over par, the Lives sheet', (puttSrc.match(/buyRow\(st\)/g) || []).length >= 3 && /wireBuy\(over\)/.test(puttSrc) && /function livesSheet\(\)/.test(puttSrc));
 ok('the hearts open the Lives sheet', /closest\('\.pp-hearts'\)[^\n]*livesSheet\(\)/.test(puttSrc));
 ok('a bought life over the max is lost first and starts no clock', /if \(st\.lives > livesMax\(\)\)\{ st\.lives--; st\.lt = Date\.now\(\); psave\(st\); livesCall\('putt_lives_spend'\); return; \}/.test(puttSrc));

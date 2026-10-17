@@ -820,10 +820,49 @@ if (!args.includes('--no-browser')){
       T().goTo(q.x + 6, q.y + 0.1); await sleep(1500); out.back = Math.abs(T().plants().find(p => p.x === q.x).b) < 0.02;
       window.RTT_PUTT.close(); localStorage.removeItem(K); sbUser = { id:'chk' }; return out; });
     claim(pl.n > 10 && pl.noWall && pl.bent && pl.inside && pl.back, `bushes and ferns are walked through, bend away from him and spring back once he is past (${JSON.stringify(pl)})`);
-    // A SPARE LIFE IS SPENT WHEN THE HEARTS ARE GONE, and a built putter is equipped from the Bag
+    // SPARE LIVES FILL THE HEARTS (the owner, 2026-10-17). On this device: below the max a spare goes straight in and
+    // cancels the clock due back last; with the hearts full it waits as +N, and fills the next life lost.
+    const sf = await pg.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), K = 'bag_ppt_v1@sfill', now = Date.now(),
+        rec = o => JSON.stringify(Object.assign({ v:2, l9:1, lt:now, tours:{ main:{ lv:3, best:{ 1:2, 2:2 }, ace:{}, paid:{}, wpaid:{} } } }, o)), get = () => JSON.parse(localStorage.getItem(K));
+      window.RTT_PUTT.close(); sbUser = { id:'sfill' };
+      localStorage.setItem(K, rec({ lives:6, back:[now + 3600e3, now + 7200e3, now + 10800e3], refillAt:now + 3600e3, bank:['life:9', 'life:12'] }));
+      openPutt(); for (let i = 0; i < 60 && get().lives !== 8; i++) await sleep(50);
+      let st = get(); out.lives = st.lives; out.clocks = st.back.length; out.kept = st.back[0] === now + 3600e3; out.filled = (st.bfill || []).length;
+      window.RTT_PUTT.close();
+      localStorage.setItem(K, rec({ lives:9, back:[], refillAt:null, bank:['life:9', 'life:12', 'life:15'], bfill:['life:9', 'life:12'] }));
+      openPutt(); await sleep(1300); out.chip = (document.querySelector('.pt-ov .pp-hbank') || {}).textContent || '';
+      const bag = window.RTT_PUTT._state().ov.querySelector('[data-bag]'); if (bag){ bag.click(); await sleep(60); } out.bag = /1 saved/.test((document.querySelector('.pp-bag') || {}).textContent || '');
+      const bn = document.querySelector('.pp-bag [data-n]'); if (bn) bn.click();
+      window.RTT_PUTT._lose(); for (let i = 0; i < 40 && get().lives !== 9; i++) await sleep(50); await sleep(1100);
+      st = get(); out.after = st.lives; out.afterClocks = st.back.length; out.left = (st.bfill || []).length; out.chipGone = !document.querySelector('.pt-ov .pp-hbank');
+      window.RTT_PUTT.close(); localStorage.removeItem(K); sbUser = { id:'chk' }; return out; });
+    claim(sf.lives === 8 && sf.clocks === 1 && sf.kept && sf.filled === 2, `below the max, spares go straight into the hearts and cancel the clocks due back last (6 and 2 spares: ${JSON.stringify(sf)})`);
+    claim(sf.chip === '+1' && sf.bag, `with the hearts full a spare waits, shown as +1 and in the Bag (${JSON.stringify([sf.chip, sf.bag])})`);
+    claim(sf.after === 9 && sf.afterClocks === 0 && sf.left === 3 && sf.chipGone, `a life lost with a spare waiting is filled straight away (${JSON.stringify(sf)})`);
+    // SIGNED IN, a spare fills a heart on the server (150), keyed by its id: the page takes the server's answer, and a
+    // second device holding the same spare is told it was used and given nothing.
+    const sv = await pg.evaluate(async () => { const sb0 = sb, calls = [], hr = h => new Date(Date.now() + h * 3600e3).toISOString(), K = 'bag_ppt_v1@ssrv',
+        row = { lives:6, back:[hr(1), hr(2), hr(3)], used:[] }, ans = u => ({ data:[{ lives:row.lives, refill_at:row.back[0] || null, max_lives:9, back_at:row.back.slice(), used:u }], error:null });
+      sb = { rpc(fn, a){ calls.push(fn + (a && a.p_spare ? ':' + a.p_spare : ''));
+        if (fn === 'putt_lives_state') return Promise.resolve(ans());
+        if (fn === 'putt_lives_spare'){ const was = row.used.includes(a.p_spare); if (!was && row.lives < 9){ row.used.push(a.p_spare); row.back.pop(); row.lives++; return Promise.resolve(ans(true)); } return Promise.resolve(ans(was)); }
+        if (fn === 'ps_save_get') return Promise.resolve({ data:[], error:null });
+        if (fn === 'ps_save_put') return Promise.resolve({ data:[{ ok:true }], error:null });
+        return Promise.resolve({ data:null, error:{ message:'no' } }); } };
+      const dev = async (spares, lives) => { window.RTT_PUTT.close(); localStorage.setItem(K, JSON.stringify({ v:2, l9:1, lives, back:[], lt:Date.now(), bank:spares, tours:{ main:{ lv:3, best:{}, ace:{}, paid:{}, wpaid:{} } } }));
+        sbUser = { id:'ssrv' }; openPutt(); for (let t = 0; t < 80 && calls.filter(c => /^putt_lives_spare/.test(c)).length < spares.length; t++) await new Promise(r => setTimeout(r, 50));
+        await new Promise(r => setTimeout(r, 200)); return JSON.parse(localStorage.getItem(K)); };
+      const a = await dev(['life:9', 'life:12'], 6), srvA = row.lives;
+      const b = await dev(['life:9', 'life:12'], 8), srvB = row.lives;
+      window.RTT_PUTT.close(); localStorage.removeItem(K); sb = sb0; sbUser = { id:'chk' };
+      return { pageA:a.lives, fillA:(a.bfill || []).length, srvA, pageB:b.lives, fillB:(b.bfill || []).length, srvB, sent:calls.filter(c => /^putt_lives_spare/.test(c)) }; });
+    claim(sv.srvA === 8 && sv.pageA === 8 && sv.fillA === 2, `signed in, spares fill hearts on the server and the page shows its answer (server ${sv.srvA}, page ${sv.pageA})`);
+    claim(sv.srvB === 8 && sv.pageB === 8 && sv.fillB === 2, `a second device holding the same spares gets nothing more (server ${sv.srvB}, page ${sv.pageB}, ${sv.sent.join(' ')})`);
+    // A DATABASE WITHOUT 150 cannot fill a heart, so a spare can still be held at nought: the out of lives sheet offers it,
+    // it plays a hole, and losing it spends it and not the server's lives. And a built putter is equipped from the Bag.
     const sp = await pg.evaluate(async () => { const out = {}, sleep = ms => new Promise(r => setTimeout(r, ms)), K = 'bag_ppt_v1@spare';
       window.RTT_PUTT.close(); sbUser = { id:'spare' };
-      localStorage.setItem(K, JSON.stringify({ v:2, lives:0, refillAt:Date.now() + 3600e3, lt:Date.now(), bank:['life:9'], pp:{ parts:['scope:0', 'scope:1', 'scope:2', 'bank:0'] }, tours:{ main:{ lv:3, best:{ 1:2, 2:2 }, ace:{}, paid:{}, wpaid:{} } } }));
+      localStorage.setItem(K, JSON.stringify({ v:2, l9:1, lsrv:true, lives:0, back:Array.from({ length:9 }, () => Date.now() + 3600e3), refillAt:Date.now() + 3600e3, lt:Date.now(), bank:['life:9'], pp:{ parts:['scope:0', 'scope:1', 'scope:2', 'bank:0'] }, tours:{ main:{ lv:3, best:{ 1:2, 2:2 }, ace:{}, paid:{}, wpaid:{} } } }));
       openPutt(); await sleep(300);
       window.RTT_PUTT._state().ov.querySelector('[data-lv="3"]').click(); await sleep(150);
       out.sheet = !!document.querySelector('.pp-oolf [data-spare]'); document.querySelector('.pp-oolf [data-spare]').click(); await sleep(200);
@@ -841,7 +880,7 @@ if (!args.includes('--no-browser')){
       const sc = document.querySelector('.pp-bag [data-peq="scope"]'); if (sc) sc.click(); await sleep(60); out.back = puttEquippedId(); out.reach2 = window.RTT_PUTT._state().host.putter();
       out.full = !!document.querySelector('.pp-bag [data-full]');
       window.RTT_PUTT.close(); S.look.putter = 'stock'; sbUser = { id:'chk' }; return out; });
-    claim(sp.sheet && sp.used === 1 && sp.play && sp.spent === 1 && sp.lives === 0, `out of lives, a banked spare life is offered, plays a hole, and losing it spends it and not the server's lives (${JSON.stringify(sp)})`);
+    claim(sp.sheet && sp.used === 1 && sp.play && sp.spent === 1 && sp.lives === 0, `with no server to fill a heart, out of lives a saved spare is offered, plays a hole, and losing it spends it and not the server's lives (${JSON.stringify(sp)})`);
     claim(sp.owned && sp.on === 'scope' && sp.boost >= 2, `a putter built from its three parts goes into the closet, equipped, and adds its Putting boost in the Tour; one part builds nothing (${JSON.stringify([sp.owned, sp.on, sp.boost])})`);
     claim(sp.closetBtn && sp.rows >= 11 && sp.thumbs === sp.rows && sp.eqBtn && sp.stock === 'stock' && sp.reach === 0 && sp.back === 'scope' && sp.reach2 === 2 && sp.full, `the closet opens in Putt Putt: every putter with its picture, equip any owned one, and the full closet one tap away (${JSON.stringify(sp)})`);
     // ---- THE TOUR'S RULES, through the page. Each life is real: a fresh record for a fresh account.

@@ -1,10 +1,11 @@
--- Putt Putt lives bought over the max (150). Chain:
+-- Putt Putt lives bought over the max (151). Chain:
 --   psql -d pbuy -f supabase/test/baseball_pro_base.sql      (auth.users, auth.uid() off test.uid, the roles)
 --   psql -d pbuy -f supabase/138_putt_lives.sql
 --   psql -d pbuy -f supabase/146_putt_lives_nine.sql
 --   psql -d pbuy -f supabase/149_putt_lives_buy.sql
---   psql -d pbuy -f supabase/150_putt_lives_extra.sql
---   psql -d pbuy -f supabase/150_putt_lives_extra.sql            (twice: it is safe to re-run)
+--   psql -d pbuy -f supabase/150_putt_lives_spares.sql
+--   psql -d pbuy -f supabase/151_putt_lives_extra.sql
+--   psql -d pbuy -f supabase/151_putt_lives_extra.sql            (twice: it is safe to re-run)
 --   psql -d pbuy -f supabase/test/putt_lives_extra_test.sql
 \set ON_ERROR_STOP on
 create table if not exists public.profiles (id uuid primary key, username text);

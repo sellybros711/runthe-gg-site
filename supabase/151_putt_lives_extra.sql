@@ -1,5 +1,5 @@
 -- ---------------------------------------------------------------------------
--- 150_putt_lives_extra.sql : bought Putt Putt lives can go over the max.
+-- 151_putt_lives_extra.sql : bought Putt Putt lives can go over the max.
 --
 -- Safe to run more than once. Needs 146_putt_lives_nine.sql and
 -- 149_putt_lives_buy.sql. Run it BEFORE the page and checkout that sell over
@@ -19,8 +19,8 @@
 --               which already draws more hearts than the max, needs no new field
 -- RE-RUNNING 146 AFTER THIS UNDOES IT. 146 redefines putt_lives_state and
 -- putt_lives_spend, so extras would sit unseen and a lost life would start a
--- clock while extras are held. Run 150 again after any re-run of 146.
--- supabase/test/launch_preflight.sql row 61 reads NO when that has happened.
+-- clock while extras are held. Run 151 again after any re-run of 146.
+-- supabase/test/launch_preflight.sql row 62 reads NO when that has happened.
 --
 -- So a clock only ever runs while extra is nought, and extra only grows while
 -- no clock runs. extra is capped at 99; the checkout refuses a pack that would

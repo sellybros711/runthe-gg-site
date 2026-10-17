@@ -262,9 +262,9 @@ async function bucket(env, request, body) {
  * (`putt_lives: 'nine'` or `'three'`, keys of PUTT_LIVES). A one-time payment
  * for that many lives, sold to a signed in player at any time (the owner,
  * 2026-10-17): lives on a clock come back first, and the rest go over the max
- * as extra lives (150). The one refusal is the cap: a pack that would take the
+ * as extra lives (151). The one refusal is the cap: a pack that would take the
  * extras past PUTT_LIVES_EXTRA_MAX is 409 lives_full, so the webhook never has
- * to drop a paid life. The read also needs 150's `extra` column, so until 150
+ * to drop a paid life. The read also needs 151's `extra` column, so until 151
  * is in it fails, and a read that fails is a retryable 503, never a sale. The
  * webhook delivers. No promotion codes: a 100% off code here is free lives.
  *
@@ -312,7 +312,7 @@ async function puttLives(env, request, body) {
 }
 
 /* What this account holds on the server: the lives it is waiting on (a clock in
- * back_at not yet run out, 146) and its extra lives over the max (150), or null
+ * back_at not yet run out, 146) and its extra lives over the max (151), or null
  * when the read failed, which includes a database without 150. No row is
  * nothing lost and nothing extra: a row is made the first time the page asks. */
 async function puttLivesHeld(env, userId) {

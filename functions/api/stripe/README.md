@@ -620,16 +620,16 @@ value is 400 `unknown_pack`.
 
 **A pack sells at any time.** Lives on a clock come back first (the clocks due back
 last are cancelled), and the rest of the pack goes over the max as extra lives
-(`putt_lives.extra`, `supabase/150_putt_lives_extra.sql`). A lost life comes out of the
+(`putt_lives.extra`, `supabase/151_putt_lives_extra.sql`). A lost life comes out of the
 extras first and starts no clock. The page shows extras as a red +N after full hearts.
 The one refusal is the cap: a pack that would take the extras past 99
 (`PUTT_LIVES_EXTRA_MAX`) is 409 `lives_full`. A guest is sent to sign in: bought lives
 are the account's.
 
-**150 must be in before the page that sells over the max.** The checkout reads `extra`,
-so without 150 every lives checkout answers 503 and nothing sells, rather than taking
-money the webhook could only half deliver. **Re-running 146 after 150 undoes 150**; run
-150 again, and preflight row 61 says when that has happened.
+**151 must be in before the page that sells over the max.** The checkout reads `extra`,
+so without 151 every lives checkout answers 503 and nothing sells, rather than taking
+money the webhook could only half deliver. **Re-running 146 after 151 undoes 151**; run
+151 again, and preflight row 62 says when that has happened.
 
 **Lives are the server's.** The session carries the pack's key in
 `metadata.putt_lives`, and the webhook reads the lives off `PUTT_LIVES`, never off the
@@ -641,9 +641,9 @@ Stripe retries it and it shows in the dashboard. A buy is filed in `putt_lives_b
 
 ### Go-live, in this order
 
-1. **Run `supabase/149_putt_lives_buy.sql`, then `supabase/150_putt_lives_extra.sql`**, in the
+1. **Run `supabase/149_putt_lives_buy.sql`, then `supabase/151_putt_lives_extra.sql`**, in the
    Supabase SQL editor (146 must be in). Both are safe to run twice. Then paste
-   `supabase/test/launch_preflight.sql`: rows 60 and 61 read **yes**.
+   `supabase/test/launch_preflight.sql`: rows 60 and 62 read **yes**.
 2. **Create both Prices**: `STRIPE_SECRET_KEY=sk_live_... node scripts/stripe/setup-premium-bundles.mjs`
    mints `putt_lives_nine` ($4.99) and `putt_lives_three` ($2.99), one-time, and prints
    both env lines. It is idempotent. Or by hand in the Dashboard: two Products,
@@ -664,7 +664,7 @@ Stripe retries it and it shows in the dashboard. A buy is filed in `putt_lives_b
 ```
 node scripts/stripe/check-putt-lives.mjs     both packs, page and server, checkout and webhook
 psql -d pbuy -f supabase/test/putt_lives_buy_test.sql     (its header lists the chain)
-psql -d pbuy -f supabase/test/putt_lives_extra_test.sql   150, lives over the max
+psql -d pbuy -f supabase/test/putt_lives_extra_test.sql   151, lives over the max
 ```
 
 ## Before public launch
