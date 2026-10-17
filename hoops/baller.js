@@ -585,7 +585,8 @@ function build(L, o, J){
         return (Math.floor(p[0] * 3) + Math.floor(p[1] * 3)) % 3 === 0 ? { m: 'shoe', dt: -1 } : 'shoe'; };
     } else if (suit || sk === 'dress') {
       shoeF = cut(ell([fx, fy, fz], [2.4, 1.9, 3.9]), function(p){ return p[1] - fl; });
-      shoeM = function(p){ return p[1] - a[1] > 3.35 ? 'sole' : { m: 'shoe', gloss: 2 }; };
+      shoeM = sk === 'dress' ? function(p){ var ly = p[1] - a[1]; return ly > 3.35 ? 'sole' : ly > 2.9 ? 'trim' : { m: 'shoe', gloss: 2 }; }
+        : function(p){ return p[1] - a[1] > 3.35 ? 'sole' : { m: 'shoe', gloss: 2 }; };
     } else {
       /* A BASKETBALL SNEAKER, NOT AN EGG: a flat cupsole with a rounded toe,
          a low toe box, a tall heel counter and a padded high-top collar
@@ -906,8 +907,27 @@ function build(L, o, J){
     if (kd === 'sweats') return uni([cone(top, G.kn, 2.85 + g * 0.3, 2.6 + g * 0.16), cone(G.kn, [G.ank[0], G.ank[1] - 0.5, G.ank[2]], 2.6 + g * 0.12, 1.95)]);
     if (kd === 'cargos') return uni([cone(top, G.kn, 2.95 + g * 0.3, 2.7 + g * 0.16), cone(G.kn, [G.ank[0], G.ank[1] + 0.2, G.ank[2]], 2.7 + g * 0.1, 2.35)]);
     if (kd === 'trousers') return uni([cone(top, G.kn, 2.55 + g * 0.3, 2.3 + g * 0.14), cone(G.kn, [G.ank[0], G.ank[1] + 0.9, G.ank[2]], 2.3 + g * 0.1, 2.25)]);
+    if (ST.socks) {
+      /* SOCKS SHOW UNDER JEANS. Jeans ran to the shoe, so a pair of socks
+         changed no pixel and a try-on in the closet did nothing. With socks
+         on, the jeans are rolled a turn higher and the sock fills the gap
+         down to the shoe: a calf in the sock's colour (or bare skin above an
+         ankle sock) under a rolled cuff. */
+      var cy = jeansCuffY(G), jl = uni([cone(top, G.kn, 2.6 + g * 0.3, 2.35 + g * 0.14), cone(G.kn, [G.ank[0], cy, G.ank[2]], 2.35 + g * 0.1, 2.4)]);
+      var ankF = cone([G.ank[0], cy - 0.6, G.ank[2]], [G.ank[0], G.ank[1] + 0.6, G.ank[2] + 0.2], Math.max(1.3, 1.75 + am * 0.4 + g * 0.06), Math.max(1.2, 1.55 + am * 0.4 + g * 0.06));
+      return function(p){ return Math.min(jl(p), ankF(p)); };
+    }
     return uni([cone(top, G.kn, 2.6 + g * 0.3, 2.35 + g * 0.14), cone(G.kn, [G.ank[0], G.ank[1] + 0.4, G.ank[2]], 2.35 + g * 0.1, 2.25)]);
   }
+  /* woodland blotches: waves crossed at three angles, three or four cells
+     across, so a blotch is a shape at the closet's trace and still a shape on
+     court. 2 is the print's dark colour, 1 a lighter patch of the ground. */
+  function camoAt(u, v, w, s){
+    var a = Math.sin(v * 0.95 + u * 0.8 + s * 1.7) * Math.sin(w * 0.9 - v * 0.6 + s * 0.6) + 0.5 * Math.sin(u * 1.1 - w * 0.7 + v * 0.45);
+    var b = Math.sin(v * 0.8 - u * 0.9 + 2.1 + s) * Math.sin(w * 1.0 + v * 0.5 + 1.3) + 0.5 * Math.sin(u * 0.9 + w * 0.8 - v * 0.5 + 0.7);
+    return a > 0.62 ? 2 : b > 0.72 ? 1 : 0; }
+  /* where rolled jeans end, over a pair of socks */
+  function jeansCuffY(G){ return G.ank[1] - 3.6; }
   function streetLegMat(G, s){
     var kd = streetBottom();
     return function(p){
@@ -931,6 +951,10 @@ function build(L, o, J){
         /* a bellows pocket on the side of each thigh, with its flap */
         if (lx > 1.6 && tA > 0.28 && tA < 0.5) return tA < 0.31 ? { m: 'btm', dt: -1 } : Math.abs(p[2]) < 0.4 ? { m: 'btm', dt: -1 } : { m: 'btm', dt: 0 };
         if (toAnk < 0.8) return { m: 'btm', dt: -1 };
+        /* a second colour on cargos is a woodland print: broad blotches laid
+           on the leg in its own frame, so they ride with the leg in every pose.
+           Woodland Cargos named it and were drawn as Olive Cargos. */
+        if (ST.bottom.c[1]) { var cm = camoAt(lx, p[1] - G.hip[1], p[2] - G.kn[2] * tA, s); if (cm) return cm > 1 ? 'btm2' : { m: 'btm', dt: 1 }; }
         return 'btm';
       }
       if (kd === 'trousers') {
@@ -940,7 +964,13 @@ function build(L, o, J){
         return 'btm';
       }
       /* jeans: a rolled cuff, a lighter fade down the front of the thigh, and the outer seam */
-      if (toAnk < 0.9) return { m: 'btm', dt: 1 };
+      if (ST.socks) {
+        /* rolled over socks: under the cuff the sock, its top a lit rib; an ankle sock leaves skin above it */
+        var cy = jeansCuffY(G), ys = p[1] - cy;
+        if (ys > 0.15) { var stop = ST.socks.k === 'ankle' ? 1.9 : 0.15; return ys < stop ? 'skin' : ys < stop + 0.55 ? { m: 'sock', dt: 1 } : 'sock'; }
+        if (ys > -1.0) return { m: 'btm', dt: 1 };
+      }
+      else if (toAnk < 0.9) return { m: 'btm', dt: 1 };
       if (lx > 1.95 && Math.abs(p[2]) < 0.7) return { m: 'btm', dt: -1 };
       if (p[2] > 1.4 && tA > 0.12 && tA < 0.45 && (Math.floor(p[0] * 1.7) + Math.floor(p[1] * 1.1)) % 3 === 0) return { m: 'btm', dt: 1 };
       return 'btm';
@@ -972,20 +1002,20 @@ function build(L, o, J){
     return function(p){
       var sx = p[0] - CX, dx = Math.abs(sx), y = tY(p), front = p[2] > 0.6, hemY = W0[1] + D.hem * ts;
       var N = function(w, d){ return neckAt(dx, front, w, d); };
-      if (D.neck === 'turtle') { if (y < N(2.6) - 1.2) return 'skin'; if (y < N(3.4) + 1.2) return { m: 'top', dt: Math.floor(y * 2.4) % 2 ? -1 : 0 }; }
+      if (D.neck === 'turtle') { if (y < N(2.6) - 1.2) return 'skin'; if (y < N(3.4) + 1.2) return { m: 'top2', dt: Math.floor(y * 2.4) % 2 ? -1 : 0 }; }
       else if (D.neck === 'vee') { if (front && dx < Math.max(0, 27.4 - y) * 0.7) return y < 23.6 ? 'skin' : 'skin'; if (y < N(2.9)) return 'skin'; if (front && y < 28.2 && dx < Math.max(0, 28.2 - y) * 0.7 + 0.6) return 'top2'; if (y < N(3.5) + 0.5) return 'top2'; }
-      else if (D.neck === 'scoop') { if (y < N(3.0, 2.2)) return 'skin'; if (y < N(3.6, 2.2) + 0.45) return { m: 'top', dt: -1 }; }
-      else { if (y < N(2.7)) return 'skin'; if (D.neck === 'crew' && y < N(3.4) + 0.65) return kd === 'knit' ? { m: 'top', dt: -1 } : 'top2'; if (D.neck === 'hood' && y < N(3.4) + 0.45) return { m: 'top', dt: -1 }; }
+      else if (D.neck === 'scoop') { if (y < N(3.0, 2.2)) return 'skin'; if (y < N(3.6, 2.2) + 0.45) return 'top2'; }
+      else { if (y < N(2.7)) return 'skin'; if (D.neck === 'crew' && y < N(3.4) + 0.65) return 'top2'; if (D.neck === 'hood' && y < N(3.4) + 0.45) return { m: 'top', dt: -1 }; }
       /* armholes, for a top with no sleeves: the jersey's and the tank's cut */
       if (!D.sleeve) { var edge = cR[0] + 0.3, ax = edge + 0.9, rx = ax - Math.min(6.2, edge - 1.4), ae = Math.pow((dx - ax) / rx, 2) + Math.pow((y - 24.8) / 5.2, 2);
-        if (ae < 1) return 'skin'; if (ae < 1.3) return kd === 'jersey' ? 'top2' : { m: 'top', dt: -1 }; }
+        if (ae < 1) return 'skin'; if (ae < 1.3) return 'top2'; }
       if (D.neck === 'collar') {
         /* a shirt collar, its two points, and the button placket */
         if (y < N(3.3) + 1.3 && !(front && dx < 0.7)) return { m: 'top', dt: y < N(3.3) + 0.4 ? 1 : -1 };
         if (front && dx < 0.55 && y > 24) return Math.floor(y * 0.9) % 3 === 0 && dx < 0.35 ? { m: 'top2', t: 3 } : { m: 'top', dt: -1 };
         if (kd === 'polo' && front && y > 27.6 && dx < 0.6) return 'top';
       }
-      if (p[1] > hemY - 0.8) return { m: 'top', dt: kd === 'hoodie' || kd === 'knit' ? (Math.floor(p[0] * 2) % 2 ? -1 : 0) : -1 };
+      if (p[1] > hemY - 0.8) return kd === 'knit' ? 'top2' : { m: 'top', dt: kd === 'hoodie' ? (Math.floor(p[0] * 2) % 2 ? -1 : 0) : -1 };
       if (kd === 'hoodie' && front) {
         /* the drawstrings, and the kangaroo pocket across the belly */
         if (Math.abs(dx - 1.25) < 0.32 && y > 24.4 && y < 28.6) return { m: 'top2', t: y > 28.0 ? 3 : 2 };
@@ -1004,14 +1034,14 @@ function build(L, o, J){
       var sx = p[0] - CX, dx = Math.abs(sx), y = tY(p), front = p[2] > 0.8, N = function(w){ return neckAt(dx, front, w); };
       if (y < N(3.0)) return 'skin';
       if (D.rib && y < N(3.9) + 0.9) return (Math.floor(y * 2.2) % 2) ? 'out3' : 'out2';
-      if (D.quilt && y < N(3.9) + 1.6) return { m: 'out1', dt: y < N(3.9) + 0.6 ? 1 : 0 };
+      if (D.quilt && y < N(3.9) + 1.6) return { m: 'out2', dt: y < N(3.9) + 0.6 ? 1 : 0 };
       if (D.collar && y < N(4.0) + 1.1) return { m: 'out1', dt: y < N(4.0) + 0.4 ? 1 : -1 };
       if (D.open) {
         /* worn open: the front shows the top underneath, widening to the
            collar; lapels fold back on a blazer and a trench */
         var open = (D.lapel ? 0.6 : 1.05) + Math.max(0, (D.lapel ? 31.6 : 27.4) - y) * (D.lapel ? 0.62 : 0.55);
         if (front && dx < open) return 'top';
-        if (D.lapel && front && dx < open + 1.3 && y < 31.6) return { m: 'out1', dt: sx < 0 ? 1 : -1 };
+        if (D.lapel && front && dx < open + 1.3 && y < 31.6) return { m: 'out2', dt: sx < 0 ? 1 : -1 };
         if (front && dx < open + 0.5) return { m: 'out1', dt: -1 };
         if (!D.lapel && front && Math.abs(dx - (open + 1.1)) < 0.35 && Math.floor(y) % 3 === 0) return { m: 'out3', t: 3 };
         if (D.lapel && front && Math.abs(dx - (open + 0.9)) < 0.4 && (Math.abs(y - 33.4) < 0.45 || Math.abs(y - 35.8) < 0.45)) return { m: 'out3', t: 3 };
@@ -1069,7 +1099,7 @@ function build(L, o, J){
       return { r: r, d: ok_ === 'varsity' ? 'out2' : 'out1', m: function(p){
         if (ok_ === 'varsity') return nearWr(p, 1.5) ? (rib(p) ? 'out3' : 'out2') : 'out2';
         if (OD.rib && nearWr(p, 1.5)) return rib(p) ? 'out3' : { m: 'out1', dt: -1 };
-        if (OD.quilt) { var t = along(p); return nearWr(p, 1.3) ? { m: 'out1', dt: -1 } : (t * 4) % 1 < 0.2 || ((t - 1) * 3 + 10) % 1 < 0.12 ? { m: 'out1', dt: -1 } : 'out1'; }
+        if (OD.quilt) { var t = along(p); return nearWr(p, 1.3) ? 'out2' : (t * 4) % 1 < 0.2 || ((t - 1) * 3 + 10) % 1 < 0.12 ? { m: 'out1', dt: -1 } : 'out1'; }
         if (OD.stripe) {
           /* a stripe down the outside of each sleeve: the axis is read at this point along the arm */
           var t2 = clamp01(along(p) * 0.5), axX = sh[0] + (wr[0] - sh[0]) * t2, lx2 = (p[0] - axX) * (sh[0] < CX ? -1 : 1);
@@ -1082,7 +1112,7 @@ function build(L, o, J){
       if (nearWr(p, 1.5)) return kd === 'hoodie' || kd === 'knit' || kd === 'longsleeve' || kd === 'turtleneck' ? { m: 'top', dt: rib(p) ? -1 : 0 } : { m: 'top', dt: -1 };
       if (kd === 'flannel') { var gx = ((p[0] * 0.55) % 2 + 2) % 2 < 0.55, gy = ((p[1] * 0.55) % 2 + 2) % 2 < 0.55; if (gx && gy) return { m: 'top2', dt: -1 }; if (gx || gy) return 'top2'; }
       return 'top'; } };
-    if (D.sleeve === 1) return { r: 0.12, d: 'top', m: function(p){ var t = along(p); return t < 0.5 ? 'top' : t < 0.6 ? (kd === 'polo' ? { m: 'top2' } : { m: 'top', dt: -1 }) : 'skin'; } };
+    if (D.sleeve === 1) return { r: 0.12, d: 'top', m: function(p){ var t = along(p); return t < 0.5 ? 'top' : t < 0.6 ? (kd === 'polo' || kd === 'tee' ? { m: 'top2' } : { m: 'top', dt: -1 }) : 'skin'; } };
     return { r: 0, d: 'skin', m: 'skin' };
   }
   function streetNeck(){
@@ -1094,13 +1124,13 @@ function build(L, o, J){
     }
     if (streetTop() === 'turtleneck') {
       /* the roll of a turtleneck, standing up round the neck */
-      add('turtle', 'torso', function(p){ return Math.floor(p[1] * 2.2) % 2 ? { m: 'top', dt: -1 } : 'top'; },
+      add('turtle', 'torso', function(p){ return Math.floor(p[1] * 2.2) % 2 ? { m: 'top2', dt: -1 } : 'top2'; },
         cone([CX, J.neck[1] + 0.8 * ts, -0.4], [CX, J.neck[1] - 1.4, -0.4], 2.9 + g * 0.15, 2.5 + g * 0.1), J.neck, 5);
     }
     var OD = outDef();
     if (OD && OD.quilt) {
       /* a puffer's stand collar */
-      add('pcollar', 'outer', { m: 'out1', dt: 0 }, cone([CX, J.neck[1] + 1.6 * ts, -0.4], [CX, J.neck[1] - 0.6, -0.4], 3.6 + g * 0.2, 3.2 + g * 0.15), J.neck, 6);
+      add('pcollar', 'outer', { m: 'out2', dt: 0 }, cone([CX, J.neck[1] + 1.6 * ts, -0.4], [CX, J.neck[1] - 0.6, -0.4], 3.6 + g * 0.2, 3.2 + g * 0.15), J.neck, 6);
     }
     var ck = ST.chain && ST.chain.k;
     if (ck === 'chain' || ck === 'cuban' || ck === 'beads') {
@@ -1174,10 +1204,26 @@ function build(L, o, J){
   function courtHead(shellF, local, hx, hy, hz){
     var b = CW.band;
     if (b) {
-      var bw2 = b.k === 'wide' ? 1.7 : 1.0;
-      add('band', 'band', function(p){ var l = local(p); return Math.abs(Math.abs(l[1] + 4.6) - bw2) < 0.3 ? { m: 'cband', dt: -1 } : 'cband'; },
-        cut(shellF(0.6), function(p){ var l = local(p); return Math.abs(l[1] + 4.6) - bw2; }), H, 9);
-      if (b.k === 'tied') add('tails', 'band', 'cband', smf(cone([hx - 5.4, hy - 4.6, hz - 5.6], [hx - 8.6, hy + 1.6, hz - 6.4], 0.8, 0.6), cone([hx - 5.0, hy - 4.6, hz - 6.0], [hx - 7.6, hy + 2.6, hz - 7.6], 0.8, 0.6), 0.5), [hx - 7, hy - 1.5, hz - 6.5], 5.5);
+      /* A BAND GOES ROUND THE HAIR, NOT THROUGH IT. It was a shell 0.6 off
+         the skull, and a fade stands 1.3 off it, so the band was hidden in
+         the hair everywhere but the forehead: 4 pixels on court, and a black
+         band on black hair was not there at all. Now it is the hair's own
+         surface pushed out a little (and the skin's, where there is no hair),
+         so it sits on top of any style. Its top edge is lit and its bottom
+         edge is in shadow, so it reads on hair of its own colour (R6). */
+      var bw2 = b.k === 'wide' ? 2.0 : 1.2, bY = b.k === 'wide' ? -4.9 : -4.6;
+      var hairFs = P.slice(headFrom).filter(function(q){ return q.g === 'hair'; }).map(function(q){ return q.f; });
+      var skinF = shellF(0.6);
+      var overF = function(p){ var d = skinF(p); for (var i = 0; i < hairFs.length; i++) d = smin(d, hairFs[i](p) - 0.45, 0.8); return d; };
+      var bandF = cut(overF, function(p){ var l = local(p); return Math.abs(l[1] - bY) - bw2; });
+      add('band', 'band', function(p){ var e = local(p)[1] - bY; return e < -bw2 + 0.5 ? { m: 'cband', t: 4 } : e > bw2 - 0.45 ? { m: 'cband', t: 0 } : 'cband'; },
+        bandF, H, 12.5);
+      if (b.k === 'tied') {
+        /* the knot sits on the band at the back, wherever the hair puts it */
+        var kd = [-0.694, 0, -0.72], surfR = function(f){ var r = 3; while (r < 15 && f([hx + kd[0] * r, hy + bY, hz + kd[2] * r]) < 0) r += 0.1; return r; };
+        var kr = surfR(overF) - surfR(skinF), ko = [kd[0] * kr, 0, kd[2] * kr];
+        add('tails', 'band', 'cband', smf(cone([hx - 5.4 + ko[0], hy - 4.6, hz - 5.6 + ko[2]], [hx - 8.6 + ko[0], hy + 1.6, hz - 6.4 + ko[2]], 0.8, 0.6), cone([hx - 5.0 + ko[0], hy - 4.6, hz - 6.0 + ko[2]], [hx - 7.6 + ko[0], hy + 2.6, hz - 7.6 + ko[2]], 0.8, 0.6), 0.5), [hx - 7 + ko[0], hy - 1.5, hz - 6.5 + ko[2]], 5.5);
+      }
     }
     if (CW.goggles) {
       /* rec specs: two round lenses in a thick frame on a strap round the head */
@@ -1188,7 +1234,9 @@ function build(L, o, J){
       add('gbridge', 'eyes', 'gframe', rbox([hx, hy + 0.1, hz + 8.0], [1.0, 0.4, 0.45], 0.3), [hx, hy, hz + 8], 1.4);
       add('gstrap', 'eyes', 'gframe', cut(shellF(0.55), function(p){ var l = local(p); return Math.max(Math.abs(l[1] - 0.2) - 0.55, l[2] - 5.6); }), H, 9.5);
     }
-    if (CW.guard) add('guard', 'head', 'guard', ell([hx, hy + 4.4, hz + 6.9], [2.5, 0.85, 1.0]), [hx, hy + 4.4, hz + 6.9], 2.8, { gloss: 2 });
+    /* a mouthguard, chewed half out of the mouth: the owner's call (2026-10-17) was to draw it bigger
+       and accept it is a close-up item. It was 1 pixel on court and 5 in the closet, all four alike. */
+    if (CW.guard) add('guard', 'head', function(p){ return p[1] - hy < 3.3 ? { m: 'guard', t: 4 } : 'guard'; }, ell([hx, hy + 4.3, hz + 7.7], [3.8, 1.6, 1.7]), [hx, hy + 4.3, hz + 7.7], 4.2, { gloss: 2 });
   }
   /* a ring of radius R round an axis through c */
   function ringF(c, ax, R, r){ var l = Math.hypot(ax[0], ax[1], ax[2]) || 1, u = [ax[0] / l, ax[1] / l, ax[2] / l];
@@ -1266,7 +1314,9 @@ function build(L, o, J){
     }
     if (ek === 'sport') {
       /* wraparound sport shades: one lens across both eyes */
-      add('lens0', 'eyes', function(p){ return p[1] - hy < -0.5 ? { m: 'lens', t: 4 } : 'lens'; }, cut(ell([hx, hy + 0.2, hz + 1.2], [8.0, 1.65, 7.0]), function(p){ return -(local(p)[2] - 3.0); }), [hx, hy, hz + 6], 8.4, { gloss: 2 });
+      /* the frame is the catalogue's first colour: a bar along the top of the lens. It was never drawn. */
+      add('lens0', 'eyes', function(p){ var v = p[1] - hy; return v < -0.75 ? 'frame' : v < -0.3 ? { m: 'lens', t: 4 } : 'lens'; }, cut(ell([hx, hy + 0.2, hz + 1.2], [8.0, 1.65, 7.0]), function(p){ return -(local(p)[2] - 3.0); }), [hx, hy, hz + 6], 8.4, { gloss: 2 });
+      [-1, 1].forEach(function(s){ add('temple' + s, 'eyes', 'frame', cone([hx + s * 7.0, hy - 0.4, hz + 3.6], [hx + s * 7.45, hy + 0.4, hz - 0.8], 0.4, 0.32), [hx + s * 7.2, hy, hz + 1.4], 3.4); });
       return;
     }
     if (ek !== 'shades') return;
