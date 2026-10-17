@@ -1,0 +1,112 @@
+{
+ "std-1988-ws1-eckersley": {
+  "half": "Bot",
+  "inning": 9,
+  "outs": 0,
+  "bases": 0,
+  "lead": 1,
+  "startHold": 87.84,
+  "poolHold": 0.737,
+  "realSpots": 2760,
+  "realHold": 0.768
+ },
+ "std-2001-ws7-rivera": {
+  "half": "Bot",
+  "inning": 9,
+  "outs": 0,
+  "bases": 0,
+  "lead": 1,
+  "startHold": 82.54,
+  "poolHold": 0.719,
+  "realSpots": 2760,
+  "realHold": 0.768
+ },
+ "std-2011-ws6-feliz": {
+  "half": "Bot",
+  "inning": 9,
+  "outs": 0,
+  "bases": 0,
+  "lead": 2,
+  "startHold": 95.73,
+  "poolHold": 0.844,
+  "realSpots": 2240,
+  "realHold": 0.895
+ },
+ "std-2016-ws7-chapman": {
+  "half": "Bot",
+  "inning": 8,
+  "outs": 2,
+  "bases": 1,
+  "lead": 3,
+  "startHold": 99.78,
+  "poolHold": 0.98,
+  "realSpots": 531,
+  "realHold": 0.972
+ },
+ "std-2019-nlwc-hader": {
+  "half": "Bot",
+  "inning": 8,
+  "outs": 0,
+  "bases": 0,
+  "lead": 2,
+  "startHold": 95.79,
+  "poolHold": 0.85,
+  "realSpots": 2295,
+  "realHold": 0.885
+ },
+ "std-2022-ws6-pressly": {
+  "half": "Top",
+  "inning": 9,
+  "outs": 0,
+  "bases": 0,
+  "lead": 3,
+  "startHold": 99.12,
+  "poolHold": 0.937,
+  "realSpots": 1869,
+  "realHold": 0.957
+ },
+ "std-2024-ws5-buehler": {
+  "half": "Bot",
+  "inning": 9,
+  "outs": 0,
+  "bases": 0,
+  "lead": 1,
+  "startHold": 88.47,
+  "poolHold": 0.713,
+  "realSpots": 2760,
+  "realHold": 0.768
+ },
+ "std-2025-diaz-cin": {
+  "half": "Bot",
+  "inning": 9,
+  "outs": 0,
+  "bases": 0,
+  "lead": 1,
+  "startHold": 87.29,
+  "poolHold": 0.755,
+  "realSpots": 2760,
+  "realHold": 0.768
+ },
+ "std-2025-scott-kc": {
+  "half": "Bot",
+  "inning": 9,
+  "outs": 0,
+  "bases": 0,
+  "lead": 1,
+  "startHold": 88.42,
+  "poolHold": 0.719,
+  "realSpots": 2760,
+  "realHold": 0.768
+ },
+ "std-2025-ws7-yamamoto": {
+  "half": "Bot",
+  "inning": 11,
+  "outs": 0,
+  "bases": 0,
+  "lead": 1,
+  "startHold": 89.85,
+  "poolHold": 0.692,
+  "realSpots": 2760,
+  "realHold": 0.768
+ }
+}

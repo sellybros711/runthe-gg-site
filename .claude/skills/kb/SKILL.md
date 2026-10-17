@@ -34,7 +34,8 @@ Never read the vault wholesale. In order:
    the live notes do not answer. Do not edit it.
 
 Game folders: `football` (The Perfect Season and the Fantasy Challenge), `cfb`, `hoops`, `baseball`,
-`golf` (Run The Tour and Putt Putt), `mythiball`, `wrestling`, `setlist` (Segue), `arcade`.
+`golf` (Run The Tour and Putt Putt), `shut-the-door` (Shut The Door), `mythiball`, `wrestling`, `setlist` (Segue),
+`arcade`, `last-shot`.
 Site-wide rules: `platform/`. Bugs and QA findings: `qa/issues/`. Agent specs: `agents/`.
 
 ## 3. Write back after a meaningful change
