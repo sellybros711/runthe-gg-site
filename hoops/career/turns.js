@@ -203,7 +203,7 @@ function step(L) {
 }
 function recordBeat(L, when) {
   const s = L.season, pg = perGame(s);
-  return { kind: 'record', text: when + ': ' + s.w + '-' + s.l + '. You: ' + pg.pts + ' points, ' + pg.reb + ' rebounds, ' + pg.ast + ' assists.', tone: s.w >= s.l ? 'good' : '' };
+  return { kind: 'record', text: when + ': ' + s.w + '-' + s.l + '. You: ' + per(pg.pts, 'points') + ', ' + per(pg.reb, 'rebounds') + ', ' + per(pg.ast, 'assists') + '.', tone: s.w >= s.l ? 'good' : '' };
 }
 function pay(L, beats) {
   const c = L.contract;
@@ -356,7 +356,7 @@ const ACTS = {
   },
   party: {
     name: 'Throw a party', blurb: 'Morale. Risky.', cost: () => 0.15,
-    when: () => true,
+    when: (L) => !!L.team,
     run(L, r) {
       if (r() < 0.7) { bump(L, { morale: 8, trust: 2 }); return 'The whole team comes. Good night, good vibes.'; }
       bump(L, { morale: 4, fame: 4, trust: -6 }); return 'It ends up online. {gm} has questions.';
