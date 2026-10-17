@@ -109,7 +109,9 @@ dense in the pack (`hold.h`, `hold.r` expected runs, `hold.b` the best call); th
 from it.
 
 A call's value is the mix over the miss table of each outcome's next state. `lost = best - value`
-in points of hold%. The band is `contract.js bandOf(lost)`. `reDelta` is the call's expected runs
+in points of hold%. The band is `contract.js bandOf(lost)`. The thresholds are the lead's, and
+`pipeline/band_sweep.mjs` measures any candidate set on the real packs (absolute, or `--relative`
+to the state's mean lost). `reDelta` is the call's expected runs
 minus the best call's.
 
 **The reason line** is one fact with its number from the pack: green, a note about that pitch and
@@ -154,6 +156,29 @@ little wilder than the men in it). The sorted scores are `pool.scores`.
 **Pitched like** is the nearest closer by a 15-number vector: family share in each count bucket
 (12), then the share of targets in the zone, on its ring and out of it. The player's vector is
 built from his calls (`engine.js styleVector`), each closer's from his real pitches.
+
+## The lesson (CONTRACT.md section 15)
+
+`lesson.js`, loaded before `engine.js` (which reads `window.STD_LESSON`). After the outing, the pitch
+with the most hold% lost. In the state before it, the gap between the best call and yours splits
+exactly over the outcome keys: `sum (p_best - p_call) x (value after the key - value of your
+call)`, with p each call's outcome mix through the miss table. The keys group into walk risk (the
+takes: ball, hit by pitch, called strike), whiffs (swinging strike, foul), damage (hits, errors)
+and outs in play. The group that explains the most picks the kind of principle; the count, the
+bases, the platoon and the two calls pick which one, and each principle must be shown by its own
+numbers (`SHOWS`) before it is used. The copy is templates, every number from the pack or the
+grade. `pattern` is one note on the whole outing when one is true (mostly fastballs against a
+lineup that misses the breaking ball, mostly out of the zone with walks, mostly in the zone).
+
+**The pro** is a real pitch: `pipeline/pros.py` tags every pitch by a closer pool pitcher
+(2015-2025) with each principle it shows and keeps the best per (principle, count bucket, platoon,
+family, batter-relative cell): postseason first, then leverage. `pool.js` keeps in each pack only
+the rows within one cell of a best call that pack's hold table can produce. The lesson takes the
+one in the best call's cell, else a neighbour; none, and `pro` is null.
+`pipeline/check_pros.py` checks every one against the library (count, type, cell, result).
+
+When no principle is shown by the numbers for the worst pitch (about 1 in 400 non-green outings
+on the real packs), the lesson is null rather than invented.
 
 ## The proxy path (before 2008)
 

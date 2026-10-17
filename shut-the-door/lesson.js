@@ -122,6 +122,7 @@
   function isAway(cell, bats) { return K.colOf(rel(cell, bats)) >= 3; }
   function countWords(b, s) {
     if (b === 0 && s === 0) return 'on the first pitch';
+    if (b === 3 && s === 2) return 'full count';
     if (s === 2 && b < 3) return `ahead ${b}-${s}`;
     if (b > s) return `behind ${b}-${s}`;
     if (s > b) return `ahead ${b}-${s}`;
@@ -332,7 +333,7 @@
     if (!hit) return null;
     return {
       pitcher: P.pitchers[hit[0]], batter: P.batters[hit[1]], date: hit[2], game: hit[3],
-      count: { b: hit[4], s: hit[5] }, outs: hit[6], bases: hit[7], type: hit[8], cell: hit[9],
+      count: { b: hit[4], s: hit[5] }, outs: hit[6], bases: hit[7], type: hit[8], cell: hit[9], bats: hit[10],
       result: hit[11], id: hit[12],
     };
   }

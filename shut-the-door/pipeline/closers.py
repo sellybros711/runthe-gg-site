@@ -1,6 +1,6 @@
 """The regular-season search: a top closer's highest-leverage ninth, 2023-2025.
 
-Reads the ninth-inning slices of the library (slices named 'ninth-YYYY').
+Reads the ninth inning of 2023-2025 from the library.
 
   A save here is a ninth-inning half the fielding team finished ahead, by the
   pitcher who threw its last pitch, who entered in that half with a save-rule
@@ -45,8 +45,9 @@ def load():
     if not os.path.exists(LIBRARY):
         return None
     con = sqlite3.connect(LIBRARY)
-    names = [r[0] for r in con.execute("SELECT slice FROM fetched WHERE slice LIKE 'ninth-%'")]
-    if not names:
+    names = [r[0] for r in con.execute("SELECT slice FROM fetched WHERE slice LIKE 'season-%' OR slice LIKE 'ninth-%'")]
+    have = {int(n.split('-')[1]) for n in names if n.split('-')[1].isdigit()}
+    if not set(SEASONS) <= have:
         return None
     q = ('SELECT * FROM pitches WHERE inning = 9 AND game_type = "R" AND game_year IN (%s)'
          % ','.join(map(str, SEASONS)))

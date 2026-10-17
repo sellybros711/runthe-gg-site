@@ -11,6 +11,7 @@ expected wOBA), which come back empty.
 
 import io
 import os
+import threading
 import sqlite3
 from datetime import date, timedelta
 from urllib.parse import urlencode
@@ -115,7 +116,8 @@ def fetch_trimmed(url, cache_key):
         return df[LIB], []
     df, missing = _parse(get(url))
     df = df[LIB]
-    tmp = path + '.tmp'
+    # unique per process and thread: two fetchers can land the same chunk
+    tmp = f'{path}.{os.getpid()}.{threading.get_ident()}.tmp'
     df.to_csv(tmp, index=False, compression='gzip')
     os.replace(tmp, path)
     return df, missing

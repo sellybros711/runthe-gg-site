@@ -33,9 +33,14 @@ from common import CACHE, DATA, log, write_json
 YEARS = list(range(2015, 2026))
 CLOSER_ENTRIES = 15
 POOL_SIZE = 40
-# Not in the pool (so never 'pitched like'): the lead's ruling, CONTRACT.md
-# section 14, that Clase is not used.
-EXCLUDE = {661403}
+# Not in the pool (so never 'pitched like', and never a lesson's pro):
+#   661403 Emmanuel Clase: the lead's ruling, CONTRACT.md section 14.
+#   553878 Felipe Vazquez: convicted in 2021 of crimes involving a minor.
+#   532077 Roberto Osuna: suspended in 2018 under MLB's domestic violence policy.
+# The last two are Agent A's call on the same principle as the first, flagged
+# to the lead for the owner. Whoever is named on a share card should be someone
+# the site is glad to name.
+EXCLUDE = {661403, 553878, 532077}
 FAMS = ['hard', 'breaking', 'offspeed']
 RING = [6, 7, 8, 11, 13, 16, 17, 18]
 COLS = ['game_pk', 'at_bat_number', 'pitch_number', 'game_year', 'game_type', 'pitcher', 'player_name', 'batter',
