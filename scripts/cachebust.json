@@ -1,4 +1,54 @@
 {
+  "4th-and-what/index.html": {
+    "/arcade/auth.js": {
+      "v": "4",
+      "sha": "c71a149f3b8da69e"
+    },
+    "/arcade/auth-ui.js": {
+      "v": "9",
+      "sha": "1891cdfef9c19253"
+    },
+    "config.js": {
+      "v": "1",
+      "sha": "7fc7924051909af5"
+    },
+    "formations.js": {
+      "v": "1",
+      "sha": "0b1f739abed51077"
+    },
+    "rng.js": {
+      "v": "1",
+      "sha": "9c6a7e1575b377f0"
+    },
+    "engine.js": {
+      "v": "1",
+      "sha": "7675f4a2f30bf7b3"
+    },
+    "rig.js": {
+      "v": "1",
+      "sha": "d5be652ec6dbd043"
+    },
+    "stage.js": {
+      "v": "1",
+      "sha": "62f6c8c3d1c0bfd0"
+    },
+    "share.js": {
+      "v": "1",
+      "sha": "ddf3f027cc22c5ac"
+    },
+    "clipboard.js": {
+      "v": "2",
+      "sha": "e9e622d825327b22"
+    },
+    "play.js": {
+      "v": "1",
+      "sha": "3dc28a7e95923a28"
+    },
+    "ui.js": {
+      "v": "1",
+      "sha": "93758a342a647e1e"
+    }
+  },
   "arcade/almamater/index.html": {
     "/arcade/icons.js": {
       "v": "3",

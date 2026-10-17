@@ -24,6 +24,7 @@ on:
       - 'assets/**'
       - 'baseball/**'
       - 'wrestling/**'
+      - '4th-and-what/**'
       - 'scripts/check-copy.mjs'
       - '.github/workflows/copy-check.yml'
   push:
@@ -34,6 +35,7 @@ on:
       - 'assets/**'
       - 'baseball/**'
       - 'wrestling/**'
+      - '4th-and-what/**'
       - 'scripts/check-copy.mjs'
       - '.github/workflows/copy-check.yml'
   workflow_dispatch: {}
