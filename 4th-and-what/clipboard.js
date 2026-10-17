@@ -121,10 +121,13 @@
         if (y > goal) continue;
         if (five) { marker('rgba(60,90,140,.28)', fy % 10 === 0 ? 1.6 : 1); ctx.beginPath(); ctx.moveTo(0, sy(y)); ctx.lineTo(W, sy(y)); ctx.stroke(); }
         else { marker('rgba(60,90,140,.22)', 1); [-3.1, 3.1].forEach(function (hx) { ctx.beginPath(); ctx.moveTo(sx(hx - 0.35), sy(y)); ctx.lineTo(sx(hx + 0.35), sy(y)); ctx.stroke(); }); }
-        if (fy % 10 === 0 && fy > 0 && fy < 100) {
+        /* the yard numbers sit just above their line, inside the board, and
+           never under the line of scrimmage or the line to gain */
+        var onMarker = Math.abs(y) < 1.6 || Math.abs(y - Math.min(goal, dist)) < 1.6;
+        if (fy % 10 === 0 && fy > 0 && fy < 100 && !onMarker && sy(y) > S * 1.2) {
           var n = fy <= 50 ? fy : 100 - fy;
-          ctx.fillStyle = 'rgba(60,90,140,.45)'; ctx.font = '700 ' + Math.round(S * 0.9) + 'px Inter, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-          ctx.fillText(String(n), 4, sy(y)); ctx.textAlign = 'right'; ctx.fillText(String(n), W - 4, sy(y));
+          ctx.fillStyle = 'rgba(60,90,140,.45)'; ctx.font = '700 ' + Math.round(S * 0.9) + 'px Inter, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+          ctx.fillText(String(n), 5, sy(y) - 2); ctx.textAlign = 'right'; ctx.fillText(String(n), W - 5, sy(y) - 2);
         }
       }
       /* the box */
@@ -133,10 +136,9 @@
       var fd = Math.min(goal, dist);
       line([[X0, fd], [X1, fd]], '#e3a21a', 4);
       line([[X0, 0], [X1, 0]], '#2a6fd6', 4);
-      ctx.fillStyle = '#b37800'; ctx.font = Math.round(S * 0.85) + 'px "Permanent Marker", cursive'; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
-      ctx.fillText(fd >= goal ? 'goal line' : 'line to gain', W - 6, sy(fd) - 3);
 
       var O = pos(), D = defense();
+
       /* the defense: X's in red marker */
       D.forEach(function (d) {
         var x = sx(d.at[0]), y2 = sy(d.at[1]), r = S * 0.55;
@@ -167,12 +169,51 @@
         if (path.length > 1) { line(path, '#2f9e57', 5); arrow(path[path.length - 2], path[path.length - 1], '#2f9e57'); }
       }
       /* targets */
+      /* each mark sits beside the end of its route, on whichever side is
+         clearest of every other route, player and mark */
+      var taken = [];
+      var segs = [];
+      P.routes.forEach(function (r) { var pts = [O[r.who]].concat(r.pts); for (var k = 1; k < pts.length; k++) segs.push([pts[k - 1], pts[k], r.who]); });
+      var segDist = function (p, a, b) {
+        var dx = b[0] - a[0], dy = b[1] - a[1], L2 = dx * dx + dy * dy || 1, t = clamp(((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / L2, 0, 1);
+        return len(p[0] - a[0] - dx * t, p[1] - a[1] - dy * t);
+      };
       P.targets.forEach(function (id, i) {
         var r = routeOf(id); if (!r) return;
-        var e = r.pts[r.pts.length - 1];
-        if (i === 0) star(sx(e[0]) + S * 0.9, sy(e[1]) - S * 0.6, S * 0.85, '#ffd23f');
-        else badge(sx(e[0]) + S * 0.9, sy(e[1]) - S * 0.6, '2', '#ffd23f', '#3a2a00');
+        var e = r.pts[r.pts.length - 1], best = null, bs = -1;
+        for (var k = 0; k < 8; k++) {
+          var ang = k * Math.PI / 4, c = [e[0] + Math.cos(ang) * 1.3, e[1] + Math.sin(ang) * 1.3], m = 1e9;
+          segs.forEach(function (sg) { m = Math.min(m, segDist(c, sg[0], sg[1]) * (sg[2] === id ? 1.6 : 1)); });
+          Object.keys(O).forEach(function (pid) { m = Math.min(m, len(O[pid][0] - c[0], O[pid][1] - c[1]) - 0.4); });
+          taken.forEach(function (q) { m = Math.min(m, len(q[0] - c[0], q[1] - c[1]) - 0.5); });
+          if (c[0] < X0 + 0.6 || c[0] > X1 - 0.6 || c[1] > ytop - 0.6) m -= 5;
+          if (m > bs) { bs = m; best = c; }
+        }
+        taken.push(best);
+        if (i === 0) star(sx(best[0]), sy(best[1]), S * 0.85, '#ffd23f');
+        else badge(sx(best[0]), sy(best[1]), '2', '#ffd23f', '#3a2a00');
       });
+
+      /* the line to gain's label: on a little card just above or below the
+         line, wherever along it is clearest of X's, routes and players.
+         Drawn after the routes so nothing crosses it. */
+      var label = fd >= goal ? 'goal line' : 'line to gain';
+      ctx.font = Math.round(S * 0.85) + 'px "Permanent Marker", cursive';
+      var lw = ctx.measureText(label).width / S + 0.8, lh = 1.2, lb = null, ls = -1;
+      [X1 - 0.3 - lw, X0 + 0.3, -lw / 2, 8 - lw / 2, -8 - lw / 2].forEach(function (x0) {
+        [fd + 0.3, fd - 0.3 - lh].forEach(function (y0) {
+          var m = 1e9;
+          var inBox = function (q) { var dx = Math.max(x0 - q[0], 0, q[0] - (x0 + lw)), dy = Math.max(y0 - q[1], 0, q[1] - (y0 + lh)); return len(dx, dy); };
+          D.forEach(function (d) { m = Math.min(m, inBox(d.at)); });
+          Object.keys(O).forEach(function (pid) { m = Math.min(m, inBox(O[pid])); });
+          segs.forEach(function (sg) { for (var k = 0; k <= 10; k++) { var t = k / 10; m = Math.min(m, inBox([sg[0][0] + (sg[1][0] - sg[0][0]) * t, sg[0][1] + (sg[1][1] - sg[0][1]) * t])); } });
+          taken.forEach(function (q) { m = Math.min(m, inBox(q)); });
+          if (m > ls + 0.01) { ls = m; lb = [x0, y0]; }
+        });
+      });
+      ctx.fillStyle = 'rgba(246,244,238,.94)'; ctx.fillRect(sx(lb[0]), sy(lb[1] + lh), lw * S, lh * S);
+      ctx.fillStyle = '#b37800'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText(label, sx(lb[0] + 0.4), sy(lb[1] + lh / 2));
 
       /* the offense */
       FM.LINEMEN.forEach(function (id) {
