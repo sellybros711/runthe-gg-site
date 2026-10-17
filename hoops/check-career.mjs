@@ -2391,6 +2391,95 @@ async function scenesWalk(b, serve) {
     ok(wk.sameCell != null && wk.sameCell < 0.01 && wk.feet < 2, `the walk is on the room's own cell grid, his feet on the stage spot (cell off ${(wk.sameCell || 0).toFixed(3)}px, feet off ${(wk.feet || 0).toFixed(2)}px)`);
     ok(wk.com, 'the commissioner who shakes his hand is the one who read the pick: the same face');
   }
+  /* EVERY SCENE FILLS ITS FRAME (the owner, on batch 4: "I don't want to see
+     any empty space around the scenes. You should be immersed"). A phone's
+     wide shot sat under a band of the void above the walls; a desktop's room
+     was a small box in the dark, with black beside and under the caption, and
+     a medium shot clipped the room to its own scaled box. This walks every 3D
+     room, a wide beat and a medium beat, on a phone and a desktop, and samples
+     the outer rows and columns of the scene (and its foot above the caption)
+     every 4px: a point the room's canvas does not cover, or one the room
+     painted as the void over its walls (the renderer's _void mask), is empty,
+     and a run of three is a fail. The people the shot is about stay in it. */
+  {
+    const fillWalk = async () => {
+  const S = window.RTF_STAGE, SC = window.RTF_SCENES, st0 = RTF_CAREER_UI.state(), L = window.__liveL || st0.cur || st0.last;
+  const sleep = (ms) => new Promise((d) => setTimeout(d, ms));
+  const esc = () => { for (let i = 0; i < 8 && SC.isOpen(); i++) document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); };
+  const out = [];
+  const ROOMS = S.ROOMS.slice();
+  for (const room of ROOMS) {
+    const who = room === 'studio' ? 'hollis' : room === 'draft' ? 'commish' : 'kim';
+    const beats = [{ who, room, pic: null, tx: 'The first line in this room.' }, { who, room, pic: room === 'studio' || room === 'draft' ? null : 'me', pose: 'suit', tx: 'The second line, a little longer, so the caption wraps on a phone screen.' }];
+    esc(); await sleep(60);
+    const ctx = SC.build(L, null, null).ctx;
+    SC.play(beats, ctx, {});
+    for (let bi = 0; bi < beats.length; bi++) {
+      const ov = document.querySelector('#scov');
+      for (let w = 0; w < 120; w++) { const rm = ov.querySelector('.sc-3d'); if (rm && rm.getAttribute('data-fine') === '1') break; await sleep(60); }
+      await sleep(250);
+      const rm = ov.querySelector('.sc-3d'), back = rm && rm.querySelector('.st-back');
+      const W = window.innerWidth, H = window.innerHeight;
+      const hud = ov.querySelector('.sc-hud').getBoundingClientRect(), cap = ov.querySelector('.sc-cap').getBoundingClientRect();
+      const br = back ? back.getBoundingClientRect() : null, stage = ov.querySelector('.sc-stage');
+      const top = Math.ceil(hud.bottom) + 1, bot = H - 2;
+      const pts = [];
+      for (let x = 1; x < W - 1; x += 4) pts.push(['top', x, top]);
+      for (let x = 1; x < W - 1; x += 4) pts.push(['bottom', x, bot]);
+      /* and the scene's own foot, just above the caption, where a phone's stage ends */
+      for (let x = 1; x < W - 1; x += 4) pts.push(['foot', x, Math.floor(cap.top) - 2]);
+      for (let y = top; y < bot; y += 4) { pts.push(['left', 1, y]); pts.push(['right', W - 2, y]); }
+      const inCap = (x, y) => x >= cap.left && x <= cap.right && y >= cap.top && y <= cap.bottom;
+      const runs = {}, cur = {}, worst = {};
+      for (const [edge, x, y] of pts) {
+        let bad = 0;
+        if (inCap(x, y)) { cur[edge] = 0; continue; }
+        const el = document.elementFromPoint(x, y);
+        if (!el || el === stage || !stage.contains(el)) bad = 1;
+        else if (!br || x < br.left || x >= br.right || y < br.top || y >= br.bottom) bad = 1;
+        else {
+          const u = Math.floor((x - br.left) / br.width * back.width), v = Math.floor((y - br.top) / br.height * back.height);
+          if (back._void && back._void[v * back.width + u]) bad = 2;
+        }
+        cur[edge] = bad ? (cur[edge] || 0) + 1 : 0;
+        if (bad) { worst[edge] = Math.max(worst[edge] || 0, cur[edge]); runs[edge + (bad === 1 ? ':uncovered' : ':void')] = (runs[edge + (bad === 1 ? ':uncovered' : ':void')] || 0) + 1; }
+      }
+      /* the people the shot is about stay in it, under the bar and above the caption */
+      const visBot = Math.min(cap.top, stage.getBoundingClientRect().bottom);
+      const shot = ov._shot, figs = [...ov.querySelectorAll('.sc-cast [data-slot]')].filter((f) => !shot || f.dataset.slot === shot);
+      const off = figs.map((f) => { const r = f.getBoundingClientRect(); const head = r.top + r.height * 0.06, feet = r.top + r.height * 0.91; return { slot: f.dataset.slot, head: Math.round(head - hud.bottom), feet: Math.round(visBot - feet), l: Math.round(r.left + r.width * 0.25), r: Math.round(W - (r.left + r.width * 0.75)) }; })
+        .filter((o) => o.head < -2 || o.feet < -2 || o.l < -2 || o.r < -2);
+      out.push({ room, beat: bi, shot: shot || 'wide', worst: Math.max(0, ...Object.values(worst)), runs, off, lens: (ov.querySelector('.sc-lens') || {}).style ? ov.querySelector('.sc-lens').style.transform : '' });
+      if (bi < beats.length - 1) { document.querySelector('#scov .sc-stage').click(); await sleep(40); }
+    }
+    esc(); await sleep(60);
+  }
+  return out;
+};
+    const fillOk = (res) => res.filter((r) => r.worst >= 3 || r.off.length);
+    const phoneFill = await page.evaluate(fillWalk);
+    const dctx = await b.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, reducedMotion: 'reduce' });
+    const dp = await dctx.newPage();
+    const dboom = [];
+    dp.on('pageerror', (e) => dboom.push(String(e).slice(0, 200)));
+    await dp.addInitScript(() => { try { localStorage.setItem('rtf.guide.v1', '1'); } catch (e) {} window.RTF_BOARD_URL = 'http://local.test/sb'; });
+    await dp.route('**/*', serve);
+    await dp.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
+    await dp.waitForSelector('#b-career:not([disabled])', { state: 'attached', timeout: 30000 });
+    await dp.evaluate(() => document.querySelector('#b-career').click());
+    await dp.waitForSelector('#cr-go');
+    await dp.click('#cr-go');
+    await dp.waitForTimeout(600);
+    await dp.evaluate(() => { for (let i = 0; i < 8 && window.RTF_SCENES.isOpen(); i++) document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); window.__liveL = JSON.parse(JSON.stringify(RTF_CAREER_UI.state().cur)); });
+    const deskFill = await dp.evaluate(fillWalk);
+    const show = (res) => fillOk(res).slice(0, 4).map((r) => r.room + ' ' + r.shot + (r.worst >= 3 ? ' ' + JSON.stringify(r.runs) : '') + (r.off.length ? ' off ' + JSON.stringify(r.off) : '')).join('; ');
+    const rooms3 = [...new Set(phoneFill.map((r) => r.room))];
+    ok(rooms3.length >= 10 && phoneFill.length === rooms3.length * 2 && deskFill.length === phoneFill.length, `the fill walk plays every 3D room twice, wide and medium, at both sizes (${rooms3.join(', ')})`);
+    ok(fillOk(phoneFill).length === 0, `on a phone every scene fills its frame, edge to edge, with its people in it (${fillOk(phoneFill).length} of ${phoneFill.length} not: ${show(phoneFill) || 'none'})`);
+    ok(fillOk(deskFill).length === 0, `on a desktop every scene fills the window behind its caption, with its people in it (${fillOk(deskFill).length} of ${deskFill.length} not: ${show(deskFill) || 'none'})`);
+    ok(!dboom.length, `and nothing threw on the desktop walk (${dboom.join(' | ') || 'none'})`);
+    await dctx.close();
+  }
   /* Off means off. */
   await page.evaluate(() => { localStorage.setItem('rtf.scenes.v1', 'off'); const a = document.querySelector('#cr-again'); if (a) a.click(); });
   await page.waitForSelector('#cr-go');

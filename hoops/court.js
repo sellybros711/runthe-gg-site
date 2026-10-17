@@ -315,7 +315,7 @@ function stage(host, opts){
        camera moves it: the scene's lens frames the shot. */
     var gd = opts.grid && opts.grid();
     if (gd) {
-      var Rg = fineRes(gd.k);
+      var Rg = gd.R || fineRes(gd.k);
       if (st.bare && gd.cw === st.cw && gd.ch === st.ch && Rg === st.R && gd.k === st.k && gd.left === st.left && gd.top === st.top) return;
       st.bare = true; st.k = gd.k; st.cw = gd.cw; st.ch = gd.ch; st.R = Rg; st.left = gd.left; st.top = gd.top; st.H = H;
       cv.width = gd.cw * Rg; cv.height = gd.ch * Rg;

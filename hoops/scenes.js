@@ -182,7 +182,10 @@ var CSS = [
 '.rm-hall .floor{position:absolute;left:0;right:0;bottom:0;height:26%;background:linear-gradient(#5a4a26,#2a2212);border-top:3px solid #e8b33c;}',
 '.rm-hall .plaque{position:absolute;left:50%;top:6%;transform:translateX(-50%);padding:6px 14px;border:2px solid #e8b33c;border-radius:6px;background:rgba(0,0,0,.4);font-family:var(--display,Impact);letter-spacing:.12em;color:#ffd36b;font-size:clamp(14px,3.6vw,22px);white-space:nowrap;}',
 '.sc-pix{overflow:hidden;background:#05070d;}',
-'.sc-3d{overflow:hidden;background:#05070d;}',
+/* the room is not clipped to its own box: the lens scales and moves that box,
+   and a clipped one showed a dark band at the foot of a medium shot. The
+   stage clips, and the room's canvas is held over every edge of it (lens). */
+'.sc-3d{overflow:visible;background:#05070d;}',
 '.sc-3d .sc-pflash{z-index:5;}',
 '.st3{position:absolute;}',
 '.st3 canvas{position:absolute;left:0;top:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;pointer-events:none;}',
@@ -190,7 +193,7 @@ var CSS = [
 '.st3 .st-glow{z-index:1;image-rendering:auto;mix-blend-mode:screen;opacity:.55;filter:blur(10px);}',
 '.st3 .st-l1{z-index:3;}',
 '.st3 .st-l2{z-index:5;}',
-'.sc-3d::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:5;background:radial-gradient(ellipse 80% 75% at 50% 55%,rgba(3,4,10,0) 58%,rgba(3,4,10,.55) 100%);}',
+'.sc-3d::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:5;background:radial-gradient(ellipse 80% 75% at 50% 55%,rgba(3,4,10,0) 62%,rgba(3,4,10,.3) 100%);}',
 '.scov.s3 .sc-cast{display:block;inset:0;top:0;bottom:0;z-index:auto;}',
 /* the camera: the room and the cast move as one picture (a medium shot is a
    whole-pixel scale of both), so the figures stay between the furniture */
@@ -230,6 +233,8 @@ var CSS = [
 '@keyframes scFall{to{transform:translateY(120vh) rotate(540deg)}}',
 '@media (prefers-reduced-motion:reduce){.sc-pflash{animation:none}.sc-confetti,.rm-press .flash{display:none}.sc-cast img.in,.sc-cast canvas.in,.sc-feed li{animation:none}.rm-arena .crowd.loud{animation:none}}',
 '@media (min-width:760px){.sc-cap{max-width:720px;margin:0 auto;width:100%;}}',
+/* a wide screen: the 3D room runs behind the caption, edge to edge (fitPix sets .sc-full) */
+'.scov.sc-full .sc-stage{position:absolute;inset:0;}','.scov.sc-full .sc-cap{margin-top:auto;}',
 ].join('\n');
 function cssOnce(){
   if (document.getElementById('sc-css')) return;
@@ -306,6 +311,9 @@ function fitPix(ov){
   var st = ov.querySelector('.sc-stage'), set = ov.querySelector('.sc-pset');
   if (!st) return;
   ov.classList.toggle('s3', !!ov.querySelector('.sc-3d'));
+  /* a 3D room on a wide screen fills the window, the caption over its foot;
+     a playable moment keeps the stage above the caption, where its meter is */
+  ov.classList.toggle('sc-full', !!ov.querySelector('.sc-3d') && !ov._mom && (window.innerWidth || 0) >= 760);
   if (fit3(ov)) return;
   var W = st.clientWidth, H = st.clientHeight;
   if (!W || !H) return;
@@ -372,16 +380,33 @@ function plan3(ov){
      shrinks whenever the caption grows (a decision is taller than a line),
      and a cell that moved with it would leave a figure traced for one size
      shown at another, soft. */
-  var Hs = Math.max(80, H - hh), vh = (typeof window !== 'undefined' && window.innerHeight) || H + 260;
-  var kd = Math.max(2.5, Math.min(W / 80, Math.max(160, vh * 0.66 - hh) / 120, 9));
+  var vh = (typeof window !== 'undefined' && window.innerHeight) || H + 260;
+  /* On a wide screen the room runs on behind the caption (.sc-full), so the
+     stage is the whole window and the caption floats over its foot. under is
+     how much of the stage the caption covers: the picture is framed on what
+     is left above it, and traced down to the bottom of the window. */
+  var cap = ov.querySelector('.sc-cap'), full = ov.classList.contains('sc-full');
+  var under = full && cap ? Math.max(0, Math.round(st.getBoundingClientRect().bottom - cap.getBoundingClientRect().top)) : 0;
+  var Hs = Math.max(80, H - hh - under);
+  /* A desktop's cell was set by a phone's budget (two thirds of the window
+     over 120 rows), four pixels at 1440 by 900: the room was a small lit box
+     in a lot of dark. Behind the caption it is sized on the window's own
+     visible height, about 110 rows, so the room fills the frame. */
+  var kd = Math.max(2.5, Math.min(W / 80, full ? Math.max(160, vh - hh - 170) / 110 : Math.max(160, vh * 0.66 - hh) / 120, 9));
   var dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1, best = null;
   for (var r = 3; r >= 1; r--) {
-    var q = Math.max(1, Math.round(kd * dpr / r)), k = r * q / dpr, cost = (W / k * r) * (Hs / k * r);
+    /* behind the caption the trace also covers the pad rows and the caption's
+       foot, so they count: a desktop chose two fine pixels a cell and took
+       five seconds to draw its first room */
+    var q = Math.max(1, Math.round(kd * dpr / r)), k = r * q / dpr, cost = (W / k * r) * ((Hs / k + (full ? PAD3 * 2 + (vh * 0.52 + 24) / k : 0)) * r);
     if (cost > 160000 && r > 1) continue;
     var sc = Math.abs(k - kd) / kd - r * 0.05;
     if (!best || sc < best.sc) best = { sc: sc, r: r, k: k };
   }
-  return { k: best.k, r: best.r, cw: Math.ceil(W / best.k), ch: Math.ceil(Hs / best.k), W: W, Hs: Hs, hh: hh, dpr: dpr };
+  return { k: best.k, r: best.r, cw: Math.ceil(W / best.k), ch: Math.ceil(Hs / best.k), W: W, Hs: Hs, hh: hh, dpr: dpr, under: under, full: full,
+    /* rows traced under the framed ones: the PAD, and on a wide screen the
+       tallest caption there can be (52vh) plus a row, so its foot is room */
+    below: full ? Math.ceil((vh * 0.52 + 24) / best.k) : 0 };
 }
 function fit3(ov){
   var rm = ov.querySelector('.sc-3d'), S = S3();
@@ -396,11 +421,11 @@ function fit3(ov){
      caption under it grows for a decision) the picture slides by the
      difference in where the focus belongs, whole device pixels, and nothing
      is traced again. */
-  var PAD = PAD3, key = spec.key + '@' + pl.cw + 'x' + pl.r + 'x' + pl.k;
+  var PAD = PAD3, key = spec.key + '@' + pl.cw + 'x' + pl.r + 'x' + pl.k + 'x' + pl.below;
   if (rm._key !== key) {
     rm._key = key; rm.removeAttribute('data-fine'); if (rm._stop) rm._stop();
     var c0 = S.frame(spec, pl.cw, pl.ch);
-    rm._cam = { ox: c0.ox, oy: c0.oy + PAD }; rm._ch0 = pl.ch; rm._rows = pl.ch + PAD * 2;
+    rm._cam = { ox: c0.ox, oy: c0.oy + PAD }; rm._ch0 = pl.ch; rm._rows = pl.ch + PAD * 2 + pl.below;
     var put = function(out, fine){
       if (rm._key !== key || (!fine && rm._fine)) return;
       [['st-back', out.back], ['st-glow', out.glow], ['st-l1', out.l1], ['st-l2', out.l2]].forEach(function(a){
@@ -449,7 +474,7 @@ function fit3(ov){
    device pixels a fine pixel, so nothing is resampled soft, and held so the
    room still fills the frame. The first beat in a room stays wide, to show
    where you are. ov._shot names the figure's slot, or nothing for wide. */
-var SHOT_ZOOM = 1.75;
+var SHOT_ZOOM = 1.75, SHOT_FILL = 0.72;
 /* THE DRAFT WALK IS SHOT ON THE DRAFT STAGE (B19). It played on the court's
    flat set: a dark wall, a grey screen with nothing on it, and half a phone
    of seat squares under two men 54 cells of a 130 cell frame. Now the walk is
@@ -459,26 +484,33 @@ var SHOT_ZOOM = 1.75;
    up to the jersey over them, by the least zoom of at least CER_ZOOM that
    keeps every fine pixel of the room and of the men whole. */
 var CER_ZOOM = 1.2, CER_COM = 32, CER_UP = 52;
+/* The zoom and the men's trace: the least zoom of at least CER_ZOOM whose
+   cell holds the walk from the feet to the top of the jersey (CER_TALL rows)
+   in what the caption leaves, else the most that does, never under 1; and
+   the finest trace (4 down to 1 fine pixels a cell) that lands every fine
+   pixel on whole device pixels. */
+var CER_TALL = 104;
 function cerScale(pl){
-  var q = Math.max(1, Math.round(pl.k / pl.r * pl.dpr));
-  for (var n = Math.ceil(CER_ZOOM * q - 1e-6); n <= Math.ceil(1.8 * q); n++) {
-    var d = n / q * pl.k * pl.dpr;
-    /* court.js traces the men at 2 to 4 fine pixels a cell (fineRes): one of
-       those must land on whole device pixels too */
-    for (var r = 4; r >= 2; r--) { var f = d / r; if (f >= 1 && Math.abs(f - Math.round(f)) < 0.01) return n / q; }
-  }
-  return 1;
+  var q = Math.max(1, Math.round(pl.k / pl.r * pl.dpr)), fits = [];
+  for (var n = q; n <= Math.ceil(1.8 * q); n++) if (n === q || CER_TALL * n / q * pl.k <= pl.Hs) fits.push(n);
+  var pick = fits.filter(function(n){ return n / q >= CER_ZOOM; })[0] || fits[fits.length - 1];
+  var d = pick / q * pl.k * pl.dpr, res = 1;
+  for (var r = 4; r >= 1; r--) { var f = d / r; if (f >= 1 && Math.abs(f - Math.round(f)) < 0.01) { res = r; break; } }
+  return { s: pick / q, R: res };
 }
 function cerLens(ov, L, rm, st){
   var S = S3(), pl = plan3(ov), box = rm.querySelector('.st3');
   if (!S || !pl || !box || !box.style.width || !rm._cam) return;
   var spec = S.build(rm.getAttribute('data-room'), JSON.parse(rm.getAttribute('data-o') || '{}'));
   if (!spec || !spec.spots || !spec.spots.main) return;
-  var s = cerScale(pl), n = function(v){ return parseFloat(v) || 0; };
+  var cz = cerScale(pl), s = cz.s, n = function(v){ return parseFloat(v) || 0; };
   var W = st.clientWidth, H = st.clientHeight, bl = n(box.style.left), bt = n(box.style.top), bw = n(box.style.width), bh = n(box.style.height);
   var pa = S.project(rm._cam, spec.spots.main);
   var mx = bl + (pa[0] + CER_COM / 2) * pl.k, my = bt + (pa[1] - CER_UP) * pl.k;
-  var tx = W / 2 - s * mx, ty = pl.hh + (H - pl.hh) * 0.5 - s * my;
+  var tx = W / 2 - s * mx, ty = pl.hh + pl.Hs * 0.5 - s * my;
+  /* where the walk is taller than what the caption leaves (a desktop's close
+     wide shot), his feet sit just above the caption rather than under it */
+  ty = Math.min(ty, pl.hh + pl.Hs - 4 * s * pl.k - s * (bt + pa[1] * pl.k));
   tx = Math.min(-s * bl, Math.max(W - s * (bl + bw), tx));
   ty = Math.min(-s * bt, Math.max(H - s * (bt + bh), ty));
   tx = Math.round((s * bl + tx) * pl.dpr) / pl.dpr - s * bl;
@@ -491,24 +523,44 @@ function cerLens(ov, L, rm, st){
   ov._cerG = { k: K, left: Math.round(left * pl.dpr) / pl.dpr, top: Math.round(top * pl.dpr) / pl.dpr, cw: Math.ceil((W - left) / K) + 1, ch: Math.ceil((H - pl.hh - top) / K) + 1,
     /* court.js stands a man 22 cells right of x and his sprite's top 62 above
        y; the room's spot is his feet, FOOT_X and FOOT_Y into the sprite */
-    floorY: pa[1] - b - S.FOOT_Y + 62, cx: pa[0] - a + (22 - S.FOOT_X) + CER_COM / 2, zoom: s };
+    floorY: pa[1] - b - S.FOOT_Y + 62, cx: pa[0] - a + (22 - S.FOOT_X) + CER_COM / 2, zoom: s, R: cz.R };
   if (ov._cerFit) ov._cerFit();
+}
+/* A WIDE SHOT KEEPS EVERYONE ABOVE THE CAPTION. On a wide screen the room
+   runs on under the caption, and a room whose spot is near the front (the
+   office) stood the man with his feet behind it. The picture rises by whole
+   device pixels until the lowest feet clear the caption, never so far that
+   the room's foot leaves the bottom of the window. */
+function liftWide(ov, L, rm, st){
+  var pl = plan3(ov), box = rm.querySelector('.st3'); if (!pl || !box || !box.style.height) return;
+  var n = function(v){ return parseFloat(v) || 0; }, low = 0;
+  ov.querySelectorAll('.sc-cast [data-slot]').forEach(function(f){ low = Math.max(low, n(f.style.top) + n(f.style.height) * 0.93); });
+  var over = low - (pl.hh + pl.Hs - 6); if (over <= 0) return;
+  var room = n(box.style.top) + n(box.style.height) - st.clientHeight;
+  var ty = -Math.min(over, Math.max(0, room));
+  ty = Math.round(ty * pl.dpr) / pl.dpr;
+  if (ty < 0) L.style.transform = 'translate(0px,' + ty.toFixed(3) + 'px)';
 }
 function lens(ov){
   var L = ov.querySelector('.sc-lens'); if (!L) return;
   L.style.transform = '';
   var slot = ov._shot, rm = ov.querySelector('.sc-3d'), st = ov.querySelector('.sc-stage');
   if (ov._cer && rm && st) { cerLens(ov, L, rm, st); return; }
+  if (!slot && rm && st) { liftWide(ov, L, rm, st); return; }
   if (!slot || !rm || !st) return;
   var fig = ov.querySelector('.sc-cast [data-slot="' + slot + '"]'), box = rm.querySelector('.st3');
   if (!fig || !fig.style.width || !box || !box.style.width) return;
   var pl = plan3(ov); if (!pl) return;
-  var q = Math.max(1, Math.round(pl.k / pl.r * pl.dpr)), s = Math.round(SHOT_ZOOM * q) / q;
-  if (s < 1.2) return;
+  /* SHOT_ZOOM, or less where his whole height would not fit in what the
+     caption leaves (a desktop's wide shot is already close): the man at
+     most SHOT_FILL of it, on whole device pixels */
+  var q = Math.max(1, Math.round(pl.k / pl.r * pl.dpr));
+  var s = Math.min(Math.round(SHOT_ZOOM * q), Math.floor(SHOT_FILL * pl.Hs / (54 * pl.k) * q)) / q;
+  if (s <= 1) return;
   var n = function(v){ return parseFloat(v) || 0; };
   var W = st.clientWidth, H = st.clientHeight;
   var px = n(fig.style.left) + n(fig.style.width) / 2, py = n(fig.style.top) + n(fig.style.height) * 0.4;
-  var tx = W / 2 - s * px, ty = pl.hh + (H - pl.hh) * 0.46 - s * py;
+  var tx = W / 2 - s * px, ty = pl.hh + pl.Hs * 0.46 - s * py;
   var bl = n(box.style.left), bt = n(box.style.top), bw = n(box.style.width), bh = n(box.style.height);
   tx = Math.min(-s * bl, Math.max(W - s * (bl + bw), tx));
   ty = Math.min(-s * bt, Math.max(H - s * (bt + bh), ty));
@@ -1190,7 +1242,10 @@ function play(beats, ctx, opts){
     /* The caption grows and shrinks with what it says (a decision is taller
        than a line), so the set is refitted whenever the stage changes size. */
     var stg = ov.querySelector('.sc-stage');
-    if (window.ResizeObserver) new ResizeObserver(function(){ if (!ov.hidden) fitPix(ov); }).observe(stg);
+    /* On a wide screen the stage is the whole window and keeps its size while
+       the caption over it grows, so the caption is watched too: the framing
+       keeps everyone above it. */
+    if (window.ResizeObserver) { var ro3 = new ResizeObserver(function(){ if (!ov.hidden) fitPix(ov); }); ro3.observe(stg); ro3.observe(ov.querySelector('.sc-cap')); }
     else window.addEventListener('resize', function(){ if (ov && !ov.hidden) fitPix(ov); });
   }
   ov.hidden = false;
@@ -1204,6 +1259,7 @@ function play(beats, ctx, opts){
     if (done) return;
     done = true; stopType();
     if (moment) { moment.stop(); moment = null; }
+    ov._mom = false;
     clearShot(); setTape({});
     var ch = ov.querySelector('.sc-court'); if (ch) ch.parentNode.removeChild(ch);
     ov.hidden = true;
@@ -1254,7 +1310,13 @@ function play(beats, ctx, opts){
     var rk = roomOf(bt, r);
     if (rk.key !== room) {
       room = rk.key;
+      /* the same room with something new on its wall (draft night's LED wall
+         turning from the year to the club): the last picture holds until the
+         new one is traced, rather than an empty box under the walk */
+      var was = ov.querySelector('.sc-3d'), held = was && was.getAttribute('data-room') === stageRoom(r, rk.c) ? [].slice.call(was.querySelectorAll('.st3 canvas')) : [], hs = held.length ? was.querySelector('.st3').style.cssText : '';
       $('.sc-rooms').innerHTML = roomHTML(r, rk.c);
+      var nb = ov.querySelector('.sc-3d .st3');
+      if (nb && held.length) { nb.innerHTML = ''; held.forEach(function(c){ nb.appendChild(c); }); nb.style.cssText = hs; }
     }
     $('.sc-conf').innerHTML = bt.confetti ? confettiHTML(ctx) : '';
     fitPix(ov);
@@ -1275,7 +1337,7 @@ function play(beats, ctx, opts){
     var spec = S.build(stageRoom(r, rk.c), stageO(r, rk.c)), pl = plan3(ov);
     if (!spec || !pl) return;
     var c0 = S.frame(spec, pl.cw, pl.ch);
-    S.draw(spec, pl.cw, pl.ch + PAD3 * 2, pl.r, function(){}, { ox: c0.ox, oy: c0.oy + PAD3 });
+    S.draw(spec, pl.cw, pl.ch + PAD3 * 2 + pl.below, pl.r, function(){}, { ox: c0.ox, oy: c0.oy + PAD3 });
   }
   function setCast(bt){
     var old = bt.club === 'from' && ctx.fc1;
@@ -1511,6 +1573,7 @@ function play(beats, ctx, opts){
   function playMoment(card, n, spec){
     var host = document.createElement('div');
     host.className = 'sc-court';
+    ov._mom = true; ov.classList.remove('sc-full');
     $('.sc-stage').appendChild(host);
     $('.sc-cast').style.visibility = 'hidden';
     var body = $('.sc-body');
@@ -1528,6 +1591,7 @@ function play(beats, ctx, opts){
         playing = false;
         if (moment) { moment.stop(); moment = null; }
         if (host.parentNode) host.parentNode.removeChild(host);
+        ov._mom = false;
         $('.sc-cast').style.visibility = '';
         castKey = ''; room = null;
         var tail = aftermath(card, card.options[n], res).concat(opts.follow && res ? opts.follow(res) || [] : []);

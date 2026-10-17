@@ -136,6 +136,10 @@ function Room(key){
   this.D = 70; this.R = 120; this.Hc = 120; this.focus = [0, 0, 0]; this.fy = 0.86; this.bg = '#05070d';
   this.floor = { c: '#3a3a44' }; this.back = { c: '#20232e' }; this.right = { c: '#1a1c26' };
   this.void = '#06070c';
+  /* what the walls carry above their top (rigAt): a lighting grid in the
+     broadcast and arena rooms, an upper wall with sconces in the rooms
+     people live and work in */
+  this.rig = /^(locker|office|home|hotel)$/.test(key) ? 'wall' : 'grid';
 }
 /* m: a material, or a function (p, n, uv) => material. layer 0, 1 or 2. */
 Room.prototype.box = function(x0, y0, z0, x1, y1, z1, m, o){
@@ -985,7 +989,31 @@ function aoAt(R, p, k){
   occ = clamp01(occ);
   return occ * occ * 0.85;
 }
+/* THE WALLS NEVER END (the owner, on batch 4: "I don't want to see any empty
+   space around the scenes"). Above a wall's top every room painted the flat
+   dark of the void, and a phone's wide shot and every desktop shot had a
+   band of it along the top. The walls run on instead, as part of the room:
+   the lighting grid a studio, a press room, a draft stage, an arena or the
+   Hall hangs its lamps from, or the upper wall of a room people live in,
+   with a crown moulding and a sconce to each bay. rig marks it as drawn. */
+function rigAt(R, p, k){
+  var h = -p[1] - R.Hc, u = k === 2 ? p[0] : p[2], base = R.rigC || mix(R.bg, '#2a3046', 0.4);
+  if (R.rig === 'wall') {
+    if (h < 2.2) return M(mix(base, '#ffffff', 0.16), { rig: 1 });
+    var bay = ((u + 400) % 40 + 40) % 40;
+    if (Math.abs(bay - 20) < 1.4 && Math.abs(h - 13) < 1.8) return M('#ffe1a8', { e: 1, rig: 1 });
+    if (Math.abs(bay - 20) < 2.6 && Math.abs(h - 12.4) < 3.4) return M(darken(base, 0.25), { rig: 1 });
+    return M(bay < 0.8 ? darken(base, 0.3) : base, { rig: 1, b: -0.2 });
+  }
+  var hb = ((h % 20) + 20) % 20, ub = ((u + 400) % 26 + 26) % 26;
+  if (hb < 1.6) return M('#2b3142', { rig: 1, g: 1 });
+  if (ub < 1) return M('#1f2433', { rig: 1 });
+  if (Math.abs(ub - 13) < 2 && Math.abs(hb - 5.2) < 1.2) return M('#fff0cf', { e: 1, rig: 1 });
+  if (Math.abs(ub - 13) < 3 && hb > 1.6 && hb < 7.6) return M('#161a26', { rig: 1 });
+  return M(base, { rig: 1, b: -0.5 });
+}
 function matOf(R, h){
+  if ((h.k === 2 || h.k === 3) && -h.p[1] > R.Hc) return rigAt(R, h.p, h.k);
   if (h.k === 1) return typeof R.floor === 'function' ? R.floor(h.p) : R.floor;
   if (h.k === 2) return typeof R.back === 'function' ? R.back(h.p) : R.back;
   if (h.k === 3) return typeof R.right === 'function' ? R.right(h.p) : R.right;
@@ -1013,6 +1041,10 @@ function reflectAt(R, P, cam, p){
 function renderer(R, cw, ch, res, camIn){
   var cam = camIn ? { ox: camIn.ox, oy: camIn.oy, cw: cw, ch: ch } : frame(R, cw, ch), P = prep(R, cam, res), W = cw * res, H = ch * res;
   var tone = new Float32Array(W * H), ramp = new Array(W * H), id = new Int32Array(W * H), dep = new Float32Array(W * H), emis = new Uint8Array(W * H), extra = new Array(W * H), lay = new Uint8Array(W * H);
+  /* what the room did not draw: a ray that met nothing, or a wall above its
+     top (R.Hc) painted the flat dark of the void rather than as part of the
+     room (m.rig). The checker reads it off the back canvas (_void). */
+  var vd = new Uint8Array(W * H);
   var y = 0;
   var lights = R.lights.map(function(L){
     var a = project(cam, [L.x, L.top, L.z - 0]), b = project(cam, [L.x, 0, L.z]);
@@ -1021,8 +1053,9 @@ function renderer(R, cw, ch, res, camIn){
   function px(x, yy){
     var sx = (x + 0.5) / res, sy = (yy + 0.5) / res, i = yy * W + x;
     var h = cast(R, cam, P, sx, sy);
-    if (!h) { id[i] = 0; ramp[i] = rampOf(R.void); tone[i] = 1; dep[i] = -1e9; return; }
+    if (!h) { id[i] = 0; ramp[i] = rampOf(R.void); tone[i] = 1; dep[i] = -1e9; vd[i] = 1; return; }
     var m = matOf(R, h) || { c: '#ff00ff' };
+    if ((h.k === 2 || h.k === 3) && -h.p[1] > R.Hc && !m.rig) vd[i] = 1;
     id[i] = h.k; dep[i] = Z0 - h.s; lay[i] = h.o ? h.o.layer : 0;
     if (m.e) { emis[i] = 1; extra[i] = m.c; ramp[i] = rampOf(m.c); tone[i] = 2 + (m.k || 0) * 2; return; }
     var nv = rot(h.n), d = nv[0] * LV[0] + nv[1] * LV[1] + nv[2] * LV[2];
@@ -1082,6 +1115,7 @@ function renderer(R, cw, ch, res, camIn){
     for (var g = 0; g < gw * gh; g++) { var n = gacc[g * 4 + 3]; if (!n) continue; var a2 = Math.min(1, n / 16); gimg.data[g * 4] = gacc[g * 4] / n; gimg.data[g * 4 + 1] = gacc[g * 4 + 1] / n; gimg.data[g * 4 + 2] = gacc[g * 4 + 2] / n; gimg.data[g * 4 + 3] = 255 * a2; }
     gctx.putImageData(gimg, 0, 0);
     for (var c2 = 0; c2 < 3; c2++) ctx[c2].putImageData(img[c2], 0, 0);
+    cv[0]._void = vd; cv[0]._res = res;
     return { back: cv[0], l1: cv[1], l2: cv[2], glow: glow, cam: cam, res: res, cw: cw, ch: ch, W: W, H: H };
   }
   var done = null;
