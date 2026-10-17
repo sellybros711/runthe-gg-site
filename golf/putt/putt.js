@@ -2324,6 +2324,120 @@ var CSS = '\
 .pp-cday.done:after{content:"✓";position:absolute;right:-7px;top:-8px;width:18px;height:18px;border-radius:50%;background:#1f9d55;color:#fff;font-size:11px;font-weight:900;line-height:18px;box-shadow:0 2px 4px rgba(0,0,0,.4)}\
 @media (prefers-reduced-motion:reduce){.pp-cday.cur{animation:none}}\
 .pp-hub[data-wt] .pp-cpill,.pp-hub[data-wt] .pp-cx{background:var(--wt)}.pp-hub[data-wt] .pp-av{border-color:var(--wa)}'
+/* THE CLUBHOUSE GLASS SKIN (the owner's pick, 2026-10-17: direction A, with every button its own colour and an icon drawn
+   for what it does). One layer over the styles above, so no control changes what it does. Panels are smoked green glass
+   with a brass edge, so the scenery shows through. There are three kinds of button: the gold primary with a pressed
+   edge, the glass secondary, and the icon button. An icon button carries a chip in its own colour with its own icon
+   (ICO, ICOL): the map is parchment, the bag is leather, the closet is plum, reset is amber, the overview is sky,
+   talking is teal and lives are ruby. Every button presses down, shows a focus ring, and is at least 40 px across. */
+var ICO = {
+  close:'<path d="M7 7l10 10M17 7L7 17" stroke="#fff8e6" stroke-width="3" stroke-linecap="round"/>',
+  map:'<path d="M3 6l5-2 8 2 5-2v14l-5 2-8-2-5 2z" fill="#fff2d0" stroke="#5a3a12" stroke-width="1.6" stroke-linejoin="round"/><path d="M8 4v14M16 6v14" stroke="#5a3a12" stroke-width="1.3"/><path d="M12 7c-1.7 0-3 1.3-3 2.9 0 2.2 3 5.1 3 5.1s3-2.9 3-5.1C15 8.3 13.7 7 12 7z" fill="#e5483a" stroke="#7a1a10" stroke-width="1"/><circle cx="12" cy="9.9" r="1" fill="#fff"/>',
+  bag:'<path d="M9.5 9V3.5M12 9V2.5M14.5 9V4" stroke="#dfe4ea" stroke-width="1.6" stroke-linecap="round"/><path d="M8.3 3.6h2.4M10.8 2.5h2.6M13.4 4h2.4" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round"/><rect x="7" y="8.5" width="10" height="13" rx="3" fill="#7a4416" stroke="#2e1606" stroke-width="1.3"/><path d="M7 12.5h10M7 18h10" stroke="#f2c46a" stroke-width="1.5"/><path d="M17 10c2.4 1.4 2.4 6.6 0 8" fill="none" stroke="#2e1606" stroke-width="1.4"/>',
+  closet:'<path d="M12 6V5a1.6 1.6 0 1 1 1.6-1.6" fill="none" stroke="#fff8e6" stroke-width="1.6" stroke-linecap="round"/><path d="M12 6L3 10.5h18z" fill="none" stroke="#fff8e6" stroke-width="1.6" stroke-linejoin="round"/><path d="M8 10.5L4.5 13l1.8 2.4 1.7-1V21h8v-6.6l1.7 1 1.8-2.4-3.5-2.5-1.8 1a2.6 2.6 0 0 1-4.4 0z" fill="#f6d8ff" stroke="#4a1a6a" stroke-width="1.2" stroke-linejoin="round"/>',
+  reset:'<path d="M5.5 10a7.5 7.5 0 1 1 .9 6.5" fill="none" stroke="#fff8e6" stroke-width="2.4" stroke-linecap="round"/><path d="M3.5 4.8v5.4h5.4" fill="none" stroke="#fff8e6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12.6" cy="12.6" r="3.4" fill="#ffffff" stroke="#8a4a0e" stroke-width="1.1"/><circle cx="11.6" cy="11.8" r=".65" fill="#b9c0c8"/><circle cx="13.6" cy="13.4" r=".65" fill="#b9c0c8"/><circle cx="13.4" cy="11.4" r=".55" fill="#b9c0c8"/>',
+  view:'<path d="M3.5 8.5V3.5h5M15.5 3.5h5v5M20.5 15.5v5h-5M8.5 20.5h-5v-5" fill="none" stroke="#fff8e6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><ellipse cx="12" cy="16.4" rx="4" ry="1.4" fill="#1f7a3e"/><path d="M11 16.4V7.5" stroke="#fff8e6" stroke-width="1.6"/><path d="M11 7.5l5 1.9-5 1.9z" fill="#ff5a4a"/>',
+  left:'<path d="M14.5 5.5L8 12l6.5 6.5" fill="none" stroke="#fff8e6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>',
+  right:'<path d="M9.5 5.5L16 12l-6.5 6.5" fill="none" stroke="#fff8e6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>',
+  flag:'<ellipse cx="12" cy="19.5" rx="7.5" ry="2.4" fill="#2f8a4a" stroke="#14401f" stroke-width="1"/><ellipse cx="12" cy="19.5" rx="2" ry=".8" fill="#0d2a16"/><path d="M12 19.5V3.5" stroke="#3a2a14" stroke-width="1.8" stroke-linecap="round"/><path d="M12 3.5l7.5 2.8L12 9.1z" fill="#e5483a" stroke="#7a1a10" stroke-width=".9" stroke-linejoin="round"/>',
+  talk:'<path d="M4 4.5h16a1.5 1.5 0 0 1 1.5 1.5v8.5A1.5 1.5 0 0 1 20 16h-9l-5 4v-4H4a1.5 1.5 0 0 1-1.5-1.5V6A1.5 1.5 0 0 1 4 4.5z" fill="#fff8e6"/><circle cx="8" cy="10.3" r="1.3" fill="#1f7a6e"/><circle cx="12" cy="10.3" r="1.3" fill="#1f7a6e"/><circle cx="16" cy="10.3" r="1.3" fill="#1f7a6e"/>',
+  heart:'<path d="M12 20.5s-8.5-5.2-8.5-11A4.4 4.4 0 0 1 12 7a4.4 4.4 0 0 1 8.5 2.5c0 5.8-8.5 11-8.5 11z" fill="#ff5a6a" stroke="#6a0c18" stroke-width="1.3"/><path d="M7.4 9.6a2.2 2.2 0 0 1 2.1-2" stroke="#ffd6dc" stroke-width="1.5" fill="none" stroke-linecap="round"/>',
+  share:'<path d="M12 3.5v11M7.5 8L12 3.5 16.5 8" fill="none" stroke="#fff8e6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 11.5v8h13v-8" fill="none" stroke="#fff8e6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',
+  play:'<path d="M8 5l11 7-11 7z" fill="#2a1c05"/>',
+  walk:'<ellipse cx="8.5" cy="8.5" rx="2.7" ry="4.2" fill="#fff8e6" transform="rotate(-12 8.5 8.5)"/><ellipse cx="8" cy="15" rx="1.9" ry="1.5" fill="#fff8e6"/><ellipse cx="15.5" cy="11" rx="2.7" ry="4.2" fill="#fff8e6" transform="rotate(12 15.5 11)"/><ellipse cx="16.2" cy="17.5" rx="1.9" ry="1.5" fill="#fff8e6"/>' };
+// each icon chip's colour, top and bottom of its gradient and the dark edge under it
+var ICOL = { map:['#f6dea6','#cf9a3e','#7a5212'], bag:['#d0945a','#7e4718','#3e1f06'], closet:['#bd8aea','#6c3aa0','#3a1660'],
+  reset:['#ffbe5c','#e06a16','#7a3204'], view:['#78c8ff','#2a76cc','#123c6e'], talk:['#56d8c0','#1d8c7a','#0c4a40'],
+  heart:['#ff8a98','#c42a42','#5e0c18'], share:['#56d8c0','#1d8c7a','#0c4a40'], walk:['#8ad66a','#2f8a3e','#14401c'],
+  close:null, left:null, right:null, flag:null, play:null };
+function icoUrl(n){ return 'url("data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">' + ICO[n] + '</svg>') + '")'; }
+function skinCss(){
+  // a chip in the icon's colour (or bare, for the glass icons), drawn as the button's ::before
+  function chip(sel, n, sz){ var c = ICOL[n], s = sz || 30;
+    return sel + '::before{content:"";flex:none;width:' + s + 'px;height:' + s + 'px;border-radius:' + Math.round(s * 0.32) + 'px;background:' + icoUrl(n) + ' center/' + Math.round(s * 0.66) + 'px no-repeat' +
+      (c ? ',linear-gradient(' + c[0] + ',' + c[1] + ');box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(0,0,0,.18),0 2px 0 ' + c[2] : '') + '}'; }
+  var G = 'rgba(13,32,22,.74)', G2 = 'rgba(13,32,22,.56)', BR = 'rgba(226,190,104,.55)';
+  var glass = 'background:' + G + ';border:1px solid ' + BR + ';-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:#f8efd6;box-shadow:0 2px 0 rgba(0,0,0,.32),0 6px 16px rgba(0,0,0,.18)';
+  var ibtn = 'display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;font:800 13px/1 var(--display,system-ui,sans-serif);letter-spacing:.04em;text-transform:uppercase;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .08s,box-shadow .08s;' + glass;
+  var gold = 'background:linear-gradient(#ffe07a,#ebb02e);color:#2a1c05;border:0;box-shadow:0 3px 0 #a5700f,0 8px 18px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.75);font-family:var(--display,inherit);text-transform:uppercase;letter-spacing:.04em';
+  var press = 'transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.3)';
+  return [
+    // the three kinds of button, everywhere in Putt Putt
+    '.pt-ov .pt-go{' + gold + ';border-radius:14px;padding:12px 18px;font-size:16px;font-weight:800}',
+    '.pt-ov .pt-go:active{transform:translateY(2px);box-shadow:0 1px 0 #a5700f,inset 0 1px 0 rgba(255,255,255,.75)}',
+    '.pt-ov .pt-bt{' + ibtn + ';border-radius:14px;padding:8px 14px}',
+    '.pt-ov .pt-bt:active,.pt-ov .pp-bagb:active,.pt-ov .pp-cx:active,.pt-ov .pt-x:active,.pt-ov .pp-mapb:active,.pt-ov .pp-rb:active{' + press + '}',
+    '.pt-ov .pt-bt.on{background:linear-gradient(#ffe07a,#ebb02e);color:#2a1c05;border-color:transparent}',
+    '.pt-ov button:focus-visible{outline:3px solid #ffe07a;outline-offset:2px}',
+    // the header over the map and the trail: glass pieces on a soft shade
+    '.pt-ov .pp-hdr{background:linear-gradient(rgba(4,12,8,.55),rgba(4,12,8,0))}',
+    '.pt-ov .pp-hearts{' + glass + ';border-radius:999px;padding:5px 8px;gap:2px;align-items:center}',
+    '@media (max-width:430px){.pt-ov .pp-hdr{gap:6px;padding-left:10px;padding-right:10px}.pt-ov .pp-hdr .pp-h,.pt-ov .pp-hdr .pp-h svg{width:14px;height:14px}.pt-ov .pp-mapb{font-size:0;gap:0;padding:4px}.pt-ov .pp-hdr .pp-cpill{padding:5px 9px;font-size:13px}}',
+    '.pt-ov .pp-cpill{' + glass + ';border-radius:999px;font-family:var(--display,inherit);letter-spacing:.02em}',
+    '.pt-ov .pp-av{border-color:#e7c66c;box-shadow:0 2px 0 rgba(0,0,0,.35)}',
+    '.pt-ov .pp-cx,.pt-ov .pt-x{width:44px;height:44px;border-radius:50%;' + glass + ';font-size:0;padding:0;display:grid;place-items:center;cursor:pointer}',
+    chip('.pt-ov .pp-cx,.pt-ov .pt-x', 'close', 26),
+    '.pt-ov .pp-x2{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(#ff8a98,#c42a42);color:#fff;box-shadow:0 2px 0 #5e0c18,inset 0 1px 0 rgba(255,255,255,.45);font-family:var(--display,inherit);letter-spacing:.04em;text-transform:uppercase;padding:6px 11px}',
+    // the map button: parchment, its own map
+    '.pt-ov .pp-mapb{' + ibtn + ';height:auto;border-radius:16px;padding:4px 14px 4px 5px}',
+    '.pt-ov .pp-mapb svg{display:none}',
+    chip('.pt-ov .pp-mapb', 'map', 34),
+    // Bag and Closet stand down the right side, each its own colour and picture
+    '.pt-ov .pp-bagb{' + ibtn + ';flex-direction:column;gap:3px;width:62px;min-height:62px;padding:6px 4px 5px;border-radius:18px;font-size:11px;right:12px}',
+    '.pt-ov .pp-bagb.pp-closb{right:12px}',
+    '.pt-ov .pp-wv>.pp-bagb{top:calc(env(safe-area-inset-top,0px) + 132px)}.pt-ov .pp-wv>.pp-bagb.pp-closb{top:calc(env(safe-area-inset-top,0px) + 202px)}',
+    '.pt-ov .pp-hub>.pp-bagb{top:calc(env(safe-area-inset-top,0px) + 70px)}.pt-ov .pp-hub>.pp-bagb.pp-closb{top:calc(env(safe-area-inset-top,0px) + 140px)}',
+    '.pt-ov .pp-hub:has(.pp-daily)>.pp-bagb{top:calc(env(safe-area-inset-top,0px) + 186px)}.pt-ov .pp-hub:has(.pp-daily)>.pp-bagb.pp-closb{top:calc(env(safe-area-inset-top,0px) + 256px)}',
+    chip('.pt-ov .pp-bagb[data-bag]', 'bag', 34), chip('.pt-ov .pp-bagb.pp-closb', 'closet', 34),
+    // the trail: what you are walking to is a glass plate, what is on it sits in glass chips
+    '.pt-ov .pp-tgoal{' + glass + ';border-radius:16px;padding:6px 14px}',
+    '.pt-ov .pp-tgoal i{color:#e7c66c}.pt-ov .pp-tgoal b{font-family:var(--display,inherit);font-size:17px;font-weight:800;letter-spacing:.02em;text-transform:uppercase}',
+    '.pt-ov .pp-wv .pp-thud{top:calc(env(safe-area-inset-top,0px) + 124px)}.pt-ov .pp-tlist{top:calc(env(safe-area-inset-top,0px) + 166px)}',
+    '.pt-ov .pp-thud span{' + glass + ';border-radius:999px;padding:4px 11px;font-family:var(--display,inherit);font-size:14px;letter-spacing:.02em}',
+    '.pt-ov .pp-tlist span{' + glass + ';border-radius:12px;padding:4px 10px 4px 6px}',
+    '.pt-ov .pp-tlist b{color:#e7c66c}',
+    '.pt-ov .pp-rb{' + ibtn + ';border-radius:16px;padding:6px 14px 6px 6px;font-size:14px}',
+    '.pt-ov .pp-rb[data-skip]{' + gold + ';padding:6px 16px 6px 6px;font-size:16px;font-weight:800;min-height:48px}',
+    chip('.pt-ov .pp-rb[data-skip]', 'flag', 36),
+    '.pt-ov .pp-rb[data-skip]::before{background-color:rgba(255,255,255,.45);border-radius:12px}',
+    '.pt-ov .pp-talkb{background:' + G + '!important}', chip('.pt-ov .pp-talkb', 'talk', 32),
+    '.pt-ov .pp-stick{border-color:rgba(248,239,214,.6);background:rgba(13,32,22,.35)}',
+    '.pt-ov .pp-stick i{border-color:#2a1c05;background:radial-gradient(circle at 38% 34%,#fff6d6,#ffe07a 55%,#c98e14)}',
+    '.pt-ov .pp-rhint{' + glass + ';border-radius:999px}',
+    // the map: the Daily card, the world chip and the tour tabs on the same glass
+    '.pt-ov .pp-wchip{' + glass + ';border-radius:999px}',
+    '.pt-ov .pp-tabs{' + glass + ';border-radius:16px;padding:4px}',
+    '.pt-ov .pp-tabs button{border-radius:12px;min-height:38px;color:#f8efd6}',
+    '.pt-ov .pp-tabs button.on{background:linear-gradient(#ffe07a,#ebb02e);color:#2a1c05;box-shadow:0 2px 0 #a5700f}',
+    // a hole: a slim glass bar on top, a dock at the foot, the read and the star goals as chips over the green
+    '.pt-ov .pt-top{background:linear-gradient(#0d2016,#0a1a12);border-bottom:1px solid ' + BR + '}',
+    '.pt-ov .pt-top.pp-play{background:linear-gradient(#0d2016,#0a1a12);border-bottom-color:' + BR + '}',
+    '.pt-ov .pp-play .pt-hd b{font-family:var(--display,inherit);font-size:18px;letter-spacing:.02em;text-transform:uppercase;color:#f8efd6}',
+    '.pt-ov .pp-play .pt-hd span{background:none;color:#e7c66c;padding:0;margin-top:1px;font-size:12px;font-weight:700;letter-spacing:.01em;border-radius:0}',
+    '.pt-ov .pt-bar{background:linear-gradient(#0a1a12,#0d2016);border-top:1px solid ' + BR + ';gap:8px;padding-top:10px}',
+    '.pt-ov .pt-bar .pt-bt{flex-direction:column;gap:3px;min-width:58px;min-height:58px;padding:5px 6px;border-radius:16px;font-size:10px}',
+    '.pt-ov .pt-bar .pt-bt[data-l],.pt-ov .pt-bar .pt-bt[data-r]{font-size:0;min-width:52px}',
+    chip('.pt-ov .pt-bt[data-restart]', 'reset', 32), chip('.pt-ov .pt-bt[data-ov]', 'view', 32),
+    chip('.pt-ov .pt-bt[data-l]', 'left', 30), chip('.pt-ov .pt-bt[data-r]', 'right', 30),
+    '.pt-ov .pt-bt[data-ov].on::before{box-shadow:0 0 0 2px #2a1c05}',
+    '.pt-ov .pt-hint{text-align:center;color:#d8e6dc}',
+    '.pt-ov .pt-read{' + glass + ';border-radius:14px;padding:6px 11px;color:#f8efd6;font-family:var(--display,inherit);font-size:17px;letter-spacing:.02em}',
+    '.pt-ov .pt-read span{font-family:var(--body,inherit);color:#cfe0d8}',
+    '.pt-ov .pt-stars{display:flex;gap:4px;padding:0;background:none;border:0;line-height:1}',
+    '.pt-ov .pt-stars div{' + glass + ';border-radius:999px;padding:6px 9px;gap:5px;align-items:center;font-family:var(--display,inherit);font-size:15px}',
+    '.pt-ov .pt-stars div:first-child{border-color:#ffe07a;box-shadow:0 0 0 1px rgba(255,224,122,.35) inset,0 2px 0 rgba(0,0,0,.32)}',
+    '.pt-ov .pt-stars i{font-size:11px;letter-spacing:0;color:#ffd24a}.pt-ov .pt-stars span{display:none}',
+    // sheets, results and pop ups: one glass card, gold edge on the title
+    '.pt-ov .pp-card,.pt-ov .pt-pop{background:linear-gradient(170deg,rgba(18,46,31,.94),rgba(8,24,16,.96));border:1px solid ' + BR + ';border-radius:22px;box-shadow:0 18px 50px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.08)}',
+    '.pt-ov .pp-card .t,.pt-ov .pt-pop .t{font-family:var(--display,inherit);letter-spacing:.02em}',
+    '.pt-ov .pp-sheet{background:rgba(3,10,7,.6);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}',
+    '.pt-ov .pp-daily{border-width:1px!important;border-radius:20px;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}',
+    '.pt-ov .pp-daily .g{' + gold + ';border-radius:14px}',
+    '@media (min-width:900px){.pt-ov .pp-wv .pp-thud{top:136px}.pt-ov .pp-tlist{top:172px}.pt-ov .pp-cx,.pt-ov .pt-x{width:52px;height:52px}.pt-ov .pp-bagb{width:72px;min-height:72px;font-size:12px;right:28px}.pt-ov .pp-bagb.pp-closb{right:28px}' +
+      '.pt-ov .pt-bar .pt-bt{min-width:66px;min-height:62px}.pt-ov .pp-rb[data-skip]{font-size:18px}}',
+    '@media (prefers-reduced-motion:reduce){.pt-ov .pt-bt,.pt-ov .pt-go,.pt-ov .pp-bagb{transition:none}}'
+  ].join('\n'); }
+
 
 var S = null;   // the open game, or null
 function el(html){ var d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstChild; }
@@ -2337,7 +2451,7 @@ function fmtPar(d){ return d === 0 ? 'E' : (d > 0 ? '+' + d : String(d)); }
 
 function open(host){
   if (S) close();
-  if (!document.getElementById('pt-css')){ var st = document.createElement('style'); st.id = 'pt-css'; st.textContent = CSS; document.head.appendChild(st); }
+  if (!document.getElementById('pt-css')){ var st = document.createElement('style'); st.id = 'pt-css'; st.textContent = CSS + '\n' + skinCss(); document.head.appendChild(st); }
   var ov = el('<div class="pt-ov" role="dialog" aria-modal="true" aria-label="Putt Putt Tour"></div>');
   document.body.appendChild(ov);
   S = { host:host || {}, ov:ov, prevOverflow:document.body.style.overflow };
@@ -3936,7 +4050,7 @@ function playHole(){
   var sub = tourSub(R, C, S.play), title = R.mode === 'ppt' ? levelName(R.lv, R.tid) : R.title;
   S.ov.innerHTML = top(title, sub, '') + '<div class="pt-stage"><canvas></canvas><div class="pt-read" hidden></div></div>\
     <div class="pt-bar">' + (C.kind === 'real' ? '<button class="pt-bt" data-l aria-label="Aim left">◂</button><button class="pt-bt" data-r aria-label="Aim right">▸</button>' : '') +
-    '<div class="pt-hint" data-hint></div><button class="pt-bt" data-ov hidden aria-label="See the whole hole">Overview</button><button class="pt-bt" data-restart aria-label="Restart the hole">↺</button></div>';
+    '<div class="pt-hint" data-hint></div><button class="pt-bt" data-ov hidden aria-label="See the whole hole">View</button><button class="pt-bt" data-restart aria-label="Restart the hole">Reset</button></div>';
   if (R.mode === 'ppt'){ var tp = S.ov.querySelector('.pt-top'); tp.classList.add('pp-play'); var bx = tp.querySelector('[data-x]'); bx.textContent = '✕'; bx.setAttribute('aria-label', 'Leave the hole');
     bx.insertAdjacentHTML('afterend', avRing() + '<span class="pp-hearts">' + hearts(pload()) + '</span>'); }
   if (R.mode === 'pdaily'){ var tb = S.ov.querySelector('.pt-top'); if (tb) tb.insertAdjacentHTML('beforeend', '<span class="pp-clock" aria-label="Time"><i></i><b data-dclock>0:00.0</b></span>'); S.clockEl = null; }
@@ -4822,7 +4936,7 @@ RTT_PUTT.achStats = function(host){ try{ return achStats(host); }catch(e){ retur
 RTT_PUTT.summary = function(host){ HOSTX = host || HOSTX; var st = pload(), dk = today(), dh = dailyHole(dk), rec = st.daily[dk];
   var tm = st.tours.main, lv = Math.min(tm.lv, LEVELS.length), wv = Math.floor((lv - 1) / PER);
   while (wv > 0 && !revealed(TOURS.main, wv, st)) wv--;   // a world still under cloud is not named on the home card either
-  return { lv:lv, levels:LEVELS.length, world:WORLDS[wv].name, theme:WORLDS[wv].theme, members:membersOpen(), lives:st.lives, max:livesMax(), refillAt:st.refillAt || null,
+  return { lv:lv, levels:LEVELS.length, world:WORLDS[wv].name, theme:WORLDS[wv].theme, w:wv + 1, worlds:WORLDS.length, wStars:worldStars(tm, TOURS.main, wv), wMax:worldMax(TOURS.main, wv), members:membersOpen(), lives:st.lives, max:livesMax(), refillAt:st.refillAt || null,
     daily:{ name:dh.name, theme:THEMES[dh.theme].name, kick:THEMES[dh.theme].kick, done:!!(rec && rec.done), s:rec && rec.s, par:rec && rec.par, ms:rec && rec.ms }, nextMs:msToNextDay() }; };
 /* THE REWARDS AS CLOSET ITEMS, for the page: every name with its item, whether the record holds it, and where to win it.
    Each reads the record only (rewardRec), so the page can ask while it works out what a player owns. */
