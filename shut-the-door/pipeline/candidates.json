@@ -1,0 +1,19 @@
+{
+ "_about": "The candidate scenarios from PLAN.md, as the pipeline looks them up. Every field here is a search key, not a fact: the facts come back in data/verify/<id>.json with their sources. 'inning' picks the half-inning the spot starts in when the pitcher worked more than one.",
+ "real": [
+  {"id": "yamamoto-2025-ws7", "plan": 1, "date": "2025-11-01", "gameType": "W", "pitcher": "Yamamoto", "inning": 11},
+  {"id": "buehler-2024-ws5", "plan": 2, "date": "2024-10-30", "gameType": "W", "pitcher": "Buehler"},
+  {"id": "montgomery-2016-ws7", "plan": 3, "date": "2016-11-02", "gameType": "W", "pitcher": "Montgomery"},
+  {"id": "chapman-2016-ws7", "plan": 4, "date": "2016-11-02", "gameType": "W", "pitcher": "Chapman", "inning": 8},
+  {"id": "hader-2019-nlwc", "plan": 5, "date": "2019-10-01", "gameType": "F", "pitcher": "Hader"},
+  {"id": "feliz-2011-ws6", "plan": 6, "date": "2011-10-27", "gameType": "W", "pitcher": "Feliz"},
+  {"id": "jansen-2017-ws2", "plan": "alternate", "date": "2017-10-25", "gameType": "W", "pitcher": "Jansen", "inning": 9},
+  {"id": "pressly-2022-ws6", "plan": "alternate", "date": "2022-11-05", "gameType": "W", "pitcher": "Pressly"}
+ ],
+ "proxy": [
+  {"id": "eckersley-1988-ws1", "plan": 9, "season": 1988, "file": "1988WS.EVE", "game": "LAN198810150", "pitcher": "ecked001"},
+  {"id": "rivera-2001-ws7", "plan": 10, "season": 2001, "file": "2001WS.EVE", "game": "ARI200111040", "pitcher": "rivem002", "inning": 9},
+  {"id": "williams-1993-ws6", "plan": "alternate", "season": 1993, "file": "1993WS.EVE", "game": "TOR199310230", "pitcher": "willm002"},
+  {"id": "lidge-2005-nlcs5", "plan": "alternate", "season": 2005, "file": "2005NLCS.EVE", "game": "HOU200510170", "pitcher": "lidgb001"}
+ ]
+}

@@ -1,0 +1,115 @@
+name: Shut The Door data
+
+# Builds Shut The Door's data on GitHub's runners, because the data hosts
+# (baseballsavant.mlb.com, statsapi.mlb.com, www.retrosheet.org) do not answer
+# from the cloud development container and do answer from here.
+#
+# What it does, in order:
+#   build_library.py     the trimmed Statcast pitch library (pipeline/slices.json)
+#   verify_scenarios.py  every candidate spot in pipeline/candidates.json, from data
+#   closers.py           the regular-season search for the two open slots
+#   report.py            pipeline/report.md
+#
+# THE LIBRARY NEVER GOES IN GIT. Pages refuses any file over 25 MB, and the
+# library is far past that once it is widened. It lives in actions/cache,
+# restored at the start of a run and saved at the end (even on a failure, so a
+# long fetch is never asked for twice). Only small outputs are committed back:
+# shut-the-door/data/** and shut-the-door/pipeline/report.md.
+
+on:
+  push:
+    branches: [claude/shut-the-door-engine]
+    paths: ['shut-the-door/pipeline/**']
+  workflow_dispatch:
+    inputs:
+      only:
+        description: 'Verify only these candidate ids (space separated); empty for all'
+        type: string
+        default: ''
+
+concurrency:
+  group: shut-the-door-data-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    defaults:
+      run:
+        working-directory: shut-the-door/pipeline
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install
+        run: pip install -r requirements.txt
+
+      - name: Restore the library
+        uses: actions/cache/restore@v4
+        with:
+          path: shut-the-door/pipeline/cache
+          key: std-library-v1-${{ github.run_id }}
+          restore-keys: std-library-v1-
+
+      - name: The library
+        run: python3 build_library.py
+
+      - name: Verify the candidate scenarios
+        run: python3 verify_scenarios.py ${{ inputs.only }}
+
+      - name: The regular-season search
+        run: python3 closers.py
+
+      - name: Report
+        if: ${{ always() }}
+        run: python3 report.py
+
+      - name: Save the library
+        if: ${{ always() }}
+        uses: actions/cache/save@v4
+        with:
+          path: shut-the-door/pipeline/cache
+          key: std-library-v1-${{ github.run_id }}
+
+      - name: Keep the outputs
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: shut-the-door-data
+          path: |
+            shut-the-door/data
+            shut-the-door/pipeline/report.md
+          retention-days: 7
+
+  commit:
+    needs: build
+    if: ${{ always() && needs.build.result != 'cancelled' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: shut-the-door-data
+          path: shut-the-door
+      - name: Commit the small outputs, if they moved
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add shut-the-door/data shut-the-door/pipeline/report.md
+          if git diff --cached --quiet; then
+            echo "Nothing moved."
+            exit 0
+          fi
+          git commit -m "Shut The Door: data and report from shut-the-door-data.yml"
+          for i in 1 2 3 4 5; do
+            git push && exit 0
+            echo "push rejected, rebasing (attempt $i)"
+            git pull --rebase origin "${GITHUB_REF_NAME}" || exit 1
+          done
+          exit 1

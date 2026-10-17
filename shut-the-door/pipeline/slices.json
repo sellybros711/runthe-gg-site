@@ -1,0 +1,9 @@
+{
+ "_about": "What the pitch library holds. Each slice is fetched once and kept in the actions/cache library; widen by adding a slice. innings null means every inning. ninth-YYYY slices feed the regular-season scenario search (closers.py).",
+ "slices": [
+  {"name": "2023-opening-week", "start": "2023-03-30", "end": "2023-04-05", "gameTypes": "R|", "innings": null, "stepDays": 1},
+  {"name": "ninth-2023", "start": "2023-03-30", "end": "2023-10-01", "gameTypes": "R|", "innings": [9], "stepDays": 7},
+  {"name": "ninth-2024", "start": "2024-03-20", "end": "2024-09-30", "gameTypes": "R|", "innings": [9], "stepDays": 7},
+  {"name": "ninth-2025", "start": "2025-03-18", "end": "2025-09-28", "gameTypes": "R|", "innings": [9], "stepDays": 7}
+ ]
+}
