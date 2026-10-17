@@ -665,6 +665,8 @@ function rollInjury(L, chunk, beats) {
     : pick(rng, ['high ankle sprain', 'strained calf', 'groin strain']);
   const g = major ? 30 + Math.floor(rng() * 26) : 10 + Math.floor(rng() * 12);
   s.injury = { from, until: from + g, kind, pendingDecision: true };
+  /* Some major injuries end a career (endings.js), read on their own stream. */
+  if (major && L.stage === 'nba' && L.seasonsDone >= 1 && rngAt(L, 'careerend:' + chunk)() < careerEndP(L)) { L.pending.push(careerInjuryCard(L, kind)); return; }
   L.pending.push({
     id: 'injury', kind: 'event', key: 'injury:' + chunk, eyebrow: 'Injury report', scene: "The trainer's room",
     title: "It's a " + kind + '. Now what?',
@@ -686,7 +688,7 @@ ANSWER.injury = function(L, card, i, opt, rng, beats, touch, touches) {
   const s = L.season, inj = s && s.injury;
   const g = card.ctx.g;
   if (inj) {
-    if (card.ctx.major) remember(L, 'inj.major', L.age);
+    if (card.ctx.major) { remember(L, 'inj.major', L.age); remember(L, 'inj.majors', ((L.mem['inj.majors'] && L.mem['inj.majors'].v) || 0) + 1); }
     if (card.ctx.major) {
       if (i === 0) { inj.until = inj.from + g; bump(L, { ath: -2, health: -8 }); text = 'The surgery goes well. Now comes the long part.'; }
       else if (i === 1) {
@@ -1769,16 +1771,28 @@ function retireCard(L) {
     id: 'retire', kind: 'event', key: 'retire',
     eyebrow: 'The summer', scene: 'Home', title: 'Is it time to hang them up?',
     text: "You're " + L.age + '. Your overall is ' + ovT(L, ovrOf(L)) + ". Your knees have an opinion, and it isn't quiet.",
-    options: [
-      { label: 'Play one more season', hint: "See what's left" },
-      { label: 'Retire', hint: 'Go out on your own terms' },
-    ],
+    /* Each answer names what it does (`act`), so the overseas finale can sit
+       between playing on and retiring without moving either. */
+    options: [{ label: 'Play one more season', hint: "See what's left", act: 'more' }]
+      .concat(L.age >= 32 && ovrOf(L) < FINALE_BELOW && !L.flags.finale ? [{ label: 'One last year in Europe', hint: 'Finish somewhere new', act: 'finale' }] : [])
+      .concat([{ label: 'Retire', hint: 'Go out on your own terms', act: 'retire' }]),
   };
 }
 /* The answers to the retirement question (choose() runs them). */
 ANSWER.retire = function(L, card, i, opt, rng, beats, touch, touches) {
   let text = '', tone = '', made = null, won = null, shots = null, contest = null;
-  if (i === 1) { L.pending = []; retire(L, beats); text = 'You walk away.'; tone = 'gold'; }
+  const act = (opt && opt.act) || (i === 1 ? 'retire' : 'more');
+  if (act === 'retire') { L.pending = []; retire(L, beats); text = 'You walk away.'; tone = 'gold'; }
+  else if (act === 'finale') {
+    /* The overseas finale (endings.js): a year abroad, then the end. */
+    L.flags.finale = L.year;
+    remember(L, 'end.finale', true);
+    L.pending = L.pending.filter((c) => c.id !== 'fa' && c.id !== 'nooffer' && c.id !== 'extension');
+    L.team = null;
+    L.contract = { years: 1, total: 1, salary: 1.2, kind: 'overseas', start: L.year + 1 };
+    text = 'A club in Europe offers a year and a big apartment. You say yes before the call ends.'; tone = 'gold';
+    logIt(L, 'Signed overseas for one last season.', '');
+  }
   else { text = varyRes(L, card, 'retire_more', 'One more year. Let\'s go.'); bump(L, { morale: 3 }); }
   return { text, tone, made, won, shots, contest };
 };
@@ -1789,7 +1803,7 @@ function offseason(L, beats) {
   buildCards(L);
   if (!L.pending.some((c) => /^build_/.test(c.id))) nicknameCard(L);
   /* Contracts. */
-  const c = L.contract;
+  let c = L.contract;
   if (c) c.years--;
   const o = ovrOf(L);
   if (L.flags.tradeAsk && c && c.years > 0) {
@@ -1804,6 +1818,10 @@ function offseason(L, beats) {
   }
   if (L.age >= BAL.maxAge) { retire(L, beats, 'The body made the call at ' + L.age + '.'); return; }
   if (L.flags.farewell === L.year) { retire(L, beats, 'Retired at ' + L.age + ' after a farewell season.'); return; }
+  /* The other ways out (endings.js): cut with a deal still running, or the
+     question of walking away on top. */
+  if (waiveCheck(L, beats)) c = null;
+  onTopCard(L);
   const tired = L.age >= BAL.tired || (L.age >= 31 && o < 70);
   if (c && c.years === 1 && c.kind === 'rookie' && o >= 66) {
     const sal = round1(marketSalary(L, o + 2) * 0.97);
@@ -1841,8 +1859,9 @@ function offseason(L, beats) {
         scene: 'Your phone', title: 'Free agency opens. Nobody calls.',
         text: 'Your overall is ' + ovT(L, o) + ". {agent:first} has tried every team. The league's moved on.",
         options: [
-          { label: 'Retire', hint: 'It was a real career' },
-          { label: 'Play overseas', hint: 'A year away, then try again' },
+          { label: 'Retire', hint: 'It was a real career', act: 'retire' },
+          { label: 'Wait for a ten day', hint: 'One more phone call', act: 'tenday' },
+          { label: 'Play overseas', hint: 'A year away, then try again', act: 'overseas' },
         ],
       });
     } else {
@@ -1851,13 +1870,16 @@ function offseason(L, beats) {
   } else if (tired) {
     L.pending.push(retireCard(L));
   }
-  /* Something off the court, most summers. */
+  /* Something off the court, most summers, and now and then the brands. */
+  brandCard(L);
   queueEvents(L, 'off', 1);
 }
 /* The answers to no offer this summer (choose() runs them). */
 ANSWER.nooffer = function(L, card, i, opt, rng, beats, touch, touches) {
   let text = '', tone = '', made = null, won = null, shots = null, contest = null;
-  if (i === 0) { L.pending = []; retire(L, beats); text = 'You walk away.'; tone = 'gold'; }
+  const act = (opt && opt.act) || (i === 0 ? 'retire' : 'overseas');
+  if (act === 'retire') { L.pending = []; retire(L, beats); text = 'You walk away.'; tone = 'gold'; }
+  else if (act === 'tenday') return tenDay(L, beats, rng);
   else {
     L.flags.overseas = (L.flags.overseas || 0) + 1;
     if (L.history.length && !recall(L, 'route.detour.left')) remember(L, 'route.detour.left', true);

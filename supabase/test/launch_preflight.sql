@@ -701,7 +701,28 @@ check_rows(sort, migration, what, breaks, ok) as (
       'Putt Putt lives are three hearts of three, each life back 24 hours after it went',
       'Lives still work on 138: three a heart, and none come back until all are gone.',
       (select count(*) > 0 from col where tbl = 'putt_lives' and name = 'back_at')
-      and (select count(*) > 0 from proc where name = 'putt_lives_state' and body like '%back_at%'))
+      and (select count(*) > 0 from proc where name = 'putt_lives_state' and body like '%back_at%')),
+  -- PUTT PUTT LIVES FOR SALE (nine for $4.99, three for $2.99), shipped dark.
+  -- Without it a paid session 500s in the webhook and Stripe retries until it runs.
+  (60, '149_putt_lives_buy',
+      'Bought Putt Putt lives are filed once a checkout session and handed back on the server',
+      'A paid lives checkout is charged and the webhook fails until this runs.',
+      (select count(*) > 0 from col where tbl = 'putt_lives_buys' and name = 'given')
+      and (select count(*) > 0 from proc where name = 'putt_lives_buy')),
+  -- SPARE LIVES FILL THE HEARTS. Without it a signed in player's spares are never
+  -- spent: they wait as +N and come out only from the out of lives sheet. Nothing throws.
+  (61, '150_putt_lives_spares',
+      'A Putt Putt spare life fills a heart on the server, once a spare',
+      'Spares do not fill the hearts. They wait until the player is out of lives.',
+      (select count(*) > 0 from col where tbl = 'putt_lives_spares' and name = 'spare_id')
+      and (select count(*) > 0 from proc where name = 'putt_lives_spare')),
+  -- PUTT PUTT LIVES OVER THE MAX. Without it the checkout cannot read `extra`
+  -- and answers 503 to every lives buy, so nothing is sold it could not deliver.
+  (62, '151_putt_lives_extra',
+      'Bought Putt Putt lives can go over the max, and are lost first',
+      'Every Putt Putt lives checkout answers try again, and nothing sells.',
+      (select count(*) > 0 from col where tbl = 'putt_lives' and name = 'extra')
+      and (select count(*) > 0 from proc where name = 'putt_lives_spend' and body like '%extra%'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on

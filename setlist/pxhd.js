@@ -294,7 +294,8 @@ function build(o){ const s=new Sprite();
       if(x<mn)mn=x; if(x>mx)mx=x; if(y<ly)ly=y; if(x<22)nL++; else if(x>22)nR++; } }
     const dx=(mx>=0&&nL>0&&nR>0)?Math.round(22-(mn+mx)/2):0;
     const dy=ew==='visorband'?0:(ly<99?Math.max(0,Math.min(3,15-ly)):1);
-    importMap(s,map,ch=>{ if(ch==='E') return {m:'dlens',t:1}; const r=roleBase(null)(ch); return r; },{dx,dy,t:2,nl:1,noCast:1,noEdge:1});
+    const ep=o.ewPal||null;   // an item with its own eyewear palette (PXG_EW_PAL) is drawn in it (the dark lens tint stays, as on the 3D golfer)
+    importMap(s,map,ch=>{ if(ch!=='E'&&ep&&ep[ch]) return {m:'x:'+ep[ch]}; if(ch==='E') return {m:'dlens',t:1}; const r=roleBase(null)(ch); return r; },{dx,dy,t:2,nl:1,noCast:1,noEdge:1});
   }
   s.tag='';
   // the club and the ball go last: an address club crosses the waist and the legs

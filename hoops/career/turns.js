@@ -211,7 +211,7 @@ function pay(L, beats) {
   const sal = c.salary;
   const fame = L.m.fame;
   const endorse = round1((fame > 45 ? Math.pow(fame - 45, 1.6) * 0.035 : 0) * AGENTS[L.agent].endorse
-    * (BIG_MARKET[L.team] ? 1.3 : 1) + (L.endorseBonus || 0));
+    * (BIG_MARKET[L.team] ? 1.3 : 1) + (L.endorseBonus || 0) + dealIncome(L));
   L.endorse = endorse;
   L.earned = round1(L.earned + sal + endorse);
   const habit = trait(L, 'spender') ? 0.05 : trait(L, 'saver') ? -0.03 : 0;
@@ -241,6 +241,7 @@ function closeSeason(L, beats) {
   rp.fans = Math.round(50 + (rp.fans - 50) * 0.8);
   rp.resp = Math.round(50 + (rp.resp - 50) * 0.8);
   milestones(L, before, beats);
+  dealsSeason(L, beats);
   sayPassed(L, before, beats);
   saySeasonComp(L, beats);
   sayShadeShift(L);
@@ -274,6 +275,7 @@ function overseasYear(L, beats) {
   L.season = null;
   L.contract = null;
   L.phase = 'off';
+  if (L.flags.finale) { retire(L, beats, 'Played one last season in Europe. Retired at ' + L.age + '.'); return; }
   /* A stashed pick comes back to the club that holds his rights. */
   if (L.flags.rights) {
     const c = L.flags.rights;
@@ -317,7 +319,8 @@ function openYear(L) {
   if (!L.team) return;
   newSeason(L);
   L.pending.push(summerCard(L));
-  goalCard(L);
+  /* The goal is asked some years (askGoal). */
+  if (askGoal(L)) goalCard(L);
   if (L.seasonsDone > 0) queueEvents(L, 'pre', rngAt(L, 'n:pre')() < 0.6 ? 1 : 0);
   rollInjury(L, 'early', []);
 }

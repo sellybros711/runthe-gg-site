@@ -943,7 +943,9 @@ function clutchHit(L, beats) {
 }
 /* The answers that go looking for a fight. */
 const HOT_PICKS = { ref_heat: 0, heckler: 0, teammate_fight: 0, arc_feud_2: 0, online_beef: 0 };
-const SPEND_PICKS = { wedding: 0, body_care: 0, charity: 0, investment: 0, family_money: 0 };
+/* The answer that spends: the old five, and the money cards (the car,
+   something ridiculous, a loan to a broke teammate). */
+const SPEND_PICKS = { wedding: 0, body_care: 0, charity: 0, investment: 0, family_money: 0, money_first_buy: 0, money_generational: 1, pay_broke_mate: 1 };
 function watchPick(L, id, i, beats) {
 
   if (SPEND_PICKS[id] === i) watchMark(L, 'spend', beats);

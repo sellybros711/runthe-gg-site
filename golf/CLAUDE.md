@@ -95,6 +95,15 @@ node golf/econ-sim.mjs                      a casual, regular and heavy player t
 - `putt_lives_refill` carries its own copy of `PUTT_TESTERS`: keep the two lists in step.
 - **A heart is three lives**: 9, or 18 with a Tour Pass, and every lost life comes back 24 hours after it went
   (`146_putt_lives_nine.sql`, `st.back`). Deploy 146 before the page that reads `back_at`.
+- **A spare life fills a heart** whenever the hearts are below the max (`spareFill`). Signed in, only the server
+  fills it (`putt_lives_spare`, `150_putt_lives_spares.sql`, keyed by the spare's id), cancelling the clock due
+  back last. Deploy 150 before the page. Its SQL test runs in `putt-check.yml`.
+- **Paid lives** (nine for $4.99, three for $2.99, `PUTT_LIVES_ENABLED`) sell through the site's own checkout, not
+  `create-checkout`. The Store Agent owns them. They sell at any time and can go over the max: the extras are
+  `putt_lives.extra` (151), lost before a heart, drawn as a red +N. The buttons are on the Out of Lives sheet, the
+  Over par card and the Lives sheet the hearts open (`buyRow`, `wireBuy`, `livesSheet`). The switch, `LIVES_BUY`,
+  `LIVES_EXTRA_MAX` and the server's `PUTT_LIVES` move together: `node scripts/stripe/check-putt-lives.mjs`.
+  **Re-running 146 after 151 undoes 151.**
 - `LIGHT` in `hole3d.js` is copied from PXHD: change one and change both.
 - **When the picture changes, bump the `?v=` of putt.js, trail.js or hole3d.js**, or a returning player
   sees the old cached trail. A renderer speedup must match the old render pixel for pixel: hash the

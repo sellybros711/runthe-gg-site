@@ -2074,7 +2074,7 @@ var CSS = '\
 .pt-card table{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px;font-variant-numeric:tabular-nums}.pt-card td{padding:3px 2px;border-bottom:1px solid rgba(255,255,255,.07)}\
 .pt-card td:last-child{text-align:right;font-weight:800}\
 .pp-stat{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-weight:800;font-size:11px;color:#cfe0d8}.pp-coin{color:#ffd45e}.pp-coin:before{content:"\\25CF ";color:#ffd45e}\
-.pp-hearts,.pp-lives{display:flex;gap:3px}.pp-lives{justify-content:center;margin:6px 0 2px}.pp-h{width:14px;height:12px;background:rgba(255,255,255,.18);clip-path:path("M7 12 L1 6 A3 3 0 0 1 7 2 A3 3 0 0 1 13 6 Z")}.pp-h.on{background:#ff4d6d}\
+.pp-hearts,.pp-lives{display:flex;gap:3px}.pp-hearts{cursor:pointer}.pp-lives{justify-content:center;margin:6px 0 2px}.pp-h{width:14px;height:12px;background:rgba(255,255,255,.18);clip-path:path("M7 12 L1 6 A3 3 0 0 1 7 2 A3 3 0 0 1 13 6 Z")}.pp-h.on{background:#ff4d6d}\
 .pp-clock{color:#9fbfae;font-variant-numeric:tabular-nums}\
 .pp-hub{flex:1;min-height:0;display:flex;flex-direction:column;max-width:560px;width:100%;margin:0 auto}\
 .pp-daily{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 10px;margin:10px 12px 8px;padding:12px 14px;border-radius:16px;border:2px solid;text-align:left;font:inherit;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.35)}\
@@ -2251,7 +2251,7 @@ var CSS = '\
 .pp-bpp{display:flex;gap:4px}.pp-bpp u{width:12px;height:12px;border-radius:3px;background:rgba(255,255,255,.18)}.pp-bpp u.on{background:#ffd24a}\
 .pp-bw{padding:6px 10px;border-left:4px solid var(--wc);margin:6px 0;background:rgba(255,255,255,.04);border-radius:6px}.pp-bw b{font-size:13px}.pp-bw em{display:block;font-size:11px;font-style:normal;opacity:.75}\
 .pp-btk{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0}.pp-btk i{font-style:normal;font-size:11px;padding:2px 7px;border-radius:8px;background:rgba(255,255,255,.08);opacity:.55}.pp-btk i.on{opacity:1;background:var(--wc);color:#1a1420;font-weight:800}\
-.pp-hbank{margin-left:4px;font:900 12px system-ui,sans-serif;color:#ffd24a}.pp-hx{filter:drop-shadow(0 0 3px #ffd24a)}\
+.pp-hbank{margin-left:4px;font:900 12px system-ui,sans-serif;color:#ffd24a}.pp-hmore{margin-left:4px;font:900 12px system-ui,sans-serif;color:#ff5a4a}.pp-hx{filter:drop-shadow(0 0 3px #ffd24a)}\
 .pp-bump{animation:ppbump .42s cubic-bezier(.3,1.6,.5,1)}@keyframes ppbump{0%{transform:scale(1)}35%{transform:scale(1.35);filter:brightness(1.5)}100%{transform:scale(1)}}.pp-thud{position:absolute;left:10px;top:10px;display:flex;gap:6px}.pp-thud span{font-size:13px;font-weight:900;color:#3a2a14;background:#ffd24a;border:2px solid #3a2a14;border-radius:10px;padding:3px 9px}.pp-thud span:empty{display:none}\
 .pp-bub{position:absolute;transform:translate(-50%,-100%);max-width:min(78vw,300px);font-size:14px;font-weight:800;line-height:1.3;color:#1d2a20;background:#fffdf5;border:2px solid #3a2a14;border-radius:12px;padding:8px 11px;box-shadow:0 3px 0 rgba(0,0,0,.35)}.pp-bub[hidden]{display:none}\
 .pp-way{position:absolute;display:none;transform:translate(-50%,-50%);flex-direction:column;align-items:center;gap:3px}.pp-way.on{display:flex}\
@@ -2339,6 +2339,8 @@ function open(host){
   var ov = el('<div class="pt-ov" role="dialog" aria-modal="true" aria-label="Putt Putt Tour"></div>');
   document.body.appendChild(ov);
   S = { host:host || {}, ov:ov, prevOverflow:document.body.style.overflow };
+  // the hearts in the header and the play bar open the Lives sheet, where lives are bought (the owner, 2026-10-17)
+  ov.addEventListener('click', function(e){ var hs = e.target && e.target.closest && e.target.closest('.pp-hearts'); if (hs && ov.contains(hs)) livesSheet(); });
   document.body.style.overflow = 'hidden';
   S.onKey = function(e){ onKey(e); }; window.addEventListener('keydown', S.onKey);
   // GET TOUR PASS, from any sheet: the page's own Tour Pass, with Putt Putt closed behind it
@@ -2394,22 +2396,98 @@ function top(title, sub, right){
 var PAY = {
   main:{ hole:80, sig:280, ace:20, world:2000,
     sigReward:['Clubhouse Visor', 'Hall Monitor Cap', 'Lollipop Putter', 'Neon Putter', 'Tricorn Hat', 'Jade Idol Putter', 'Miner’s Lamp Cap', 'Lava Ball', 'Cloud Ball', 'Dino Egg Ball', 'Mammoth Tusk Putter'],
-    worldReward:['Clubhouse Polo', 'Gold Star Ball', 'Sprinkle Trail', 'High Score Celebration', 'Treasure Trail', 'Explorer Hat', 'Gold Nugget Ball', 'Eruption Celebration', 'Rainbow Trail', 'Footprint Trail', 'Thaw Celebration'] },
+    worldReward:['Clubhouse Cleats', 'Gold Star Ball', 'Sprinkle Ball', 'Pixel Shades', 'Pirate Eyepatch', 'Explorer Hat', 'Gold Nugget Ball', 'Lava Rock Cleats', 'Aviator Goggles', 'Dino Claw Cleats', 'Snow Goggles'] },
   members:{ hole:300, sig:1200, ace:60, world:2500, exclusive:true,
     sigReward:['Hallows Crown (Members only)', 'Harvest Moon Putter (Members only)'],
-    worldReward:['Phantom Trail (Members only)', 'Golden Leaf Ball (Members only)'], finish:'Members Champion Jacket (Members only)',
+    worldReward:['Phantom Mask (Members only)', 'Golden Leaf Ball (Members only)'], finish:'Members Champion Jacket (Members only)',
     /* TRICK OR TREAT, the Hallows Night bonus: the first time a Hallows hole is beaten UNDER par it hands out a
        treat (coins on top of the hole's own), and all nine fill the candy bag for a reward nobody else has.
        Under par and not just par, so the treat is for playing a hole well rather than for getting round it. */
-    treat:{ w:0, each:150, all:600, reward:'Jack-o’-Lantern Ball (Members only)' } },
+    treat:{ w:0, each:150, all:600, reward:'Hallows Lantern Ball (Members only)' } },
   lab:{ hole:0, sig:0, ace:0, world:0, sigReward:[], worldReward:[] },
   // a secret hole pays like a signature hole the first time it is beaten; ten of them beaten wins the Diamond Putter and a bonus
   secret:{ hole:280, sig:280, ace:20, world:0, sigReward:[], worldReward:[], ten:10, all:1000, allReward:'Diamond Putter' }
 };
 var COIN_HOLE = PAY.main.hole, COIN_SIG = PAY.main.sig, COIN_ACE = PAY.main.ace, COIN_WORLD = PAY.main.world, COIN_DAILY = 40, COIN_DAILY_PAR = 40;
 var LIFE_MS = 24 * 3600 * 1000;
+/* LIVES FOR SALE, the owner's calls: nine for $4.99 (2026-10-16) and three for $2.99 (2026-10-17), bought at any time
+   and over the max if the player wants (2026-10-17). They are offered on the Out of Lives sheet, on the Over par card
+   every time a life goes, and on the Lives sheet the hearts open. The server sells them
+   (functions/api/stripe/_bundles.js PUTT_LIVES) and the webhook hands them over on the server's own row: lives on a
+   clock come back first, the rest are extra lives over the max (151_putt_lives_extra.sql), spent before a heart. This
+   page only shows the buttons and asks for lives again. The switch, the packs, their prices and the cap are the
+   server's, copied, in the order the buttons show (nine first): scripts/stripe/check-putt-lives.mjs holds them together. */
+var PUTT_LIVES_ENABLED = true;
+var LIVES_BUY = [
+  { pack:'nine', lives:9, cents:499, tag:'Best value. Ready right now.' },
+  { pack:'three', lives:3, cents:299, tag:'Ready right now.' }
+];
+var LIVES_EXTRA_MAX = 99;
+function buyLabel(p){ return 'Get ' + p.lives + ' lives · $' + (p.cents / 100).toFixed(2); }
 var ACE_REWARD = { 5:'Hole in One Charm', 15:'Golden Putter', 30:'Ace Crown' };
 var STREAK_REWARD = { 7:'Week Streak Ball', 30:'Month Streak Visor', 100:'Century Streak Trail' };
+/* EVERY TOUR REWARD IS A CLOSET ITEM (the owner's call, 2026-10-16). Each name a tour pays is one item in the page's
+   closet, worn on the Pro Tour, the First Tee and here. The item is keyed the way the page keys what a player owns
+   (its cosKey, cat:id: hw headwear, ew eyewear, bl ball, ct cleats, pu putter, tp outerwear), and the page prices each
+   one 0, so it is never sold and never in a pack. A name is matched without its ' (Members only)'.
+   REWARD_OLD is what a saved record may still carry from before the trails and celebrations became items (and the
+   curly Jack-o'-Lantern): an old name reads as its new one, so a record never has to be rewritten. */
+var REWARD_ITEM = {
+  'Clubhouse Visor':'hw:ppvisor', 'Hall Monitor Cap':'hw:pphallcap', 'Lollipop Putter':'pu:pplollipop', 'Neon Putter':'pu:ppneon',
+  'Tricorn Hat':'hw:pptricorn', 'Jade Idol Putter':'pu:ppjadeidol', 'Miner’s Lamp Cap':'hw:ppminer', 'Lava Ball':'bl:pplava',
+  'Cloud Ball':'bl:ppcloud', 'Dino Egg Ball':'bl:ppdinoegg', 'Mammoth Tusk Putter':'pu:pptusk',
+  'Clubhouse Cleats':'ct:ppclubhouse', 'Gold Star Ball':'bl:ppgoldstar', 'Sprinkle Ball':'bl:ppsprinkle', 'Pixel Shades':'ew:pppixelshades',
+  'Pirate Eyepatch':'ew:ppeyepatch', 'Explorer Hat':'hw:ppexplorer', 'Gold Nugget Ball':'bl:ppnugget', 'Lava Rock Cleats':'ct:pplavarock',
+  'Aviator Goggles':'ew:ppaviatorgoggles', 'Dino Claw Cleats':'ct:ppdinoclaw', 'Snow Goggles':'ew:ppsnowgoggles',
+  'Hallows Crown':'hw:pphallowscrown', 'Harvest Moon Putter':'pu:ppharvest', 'Phantom Mask':'ew:ppphantommask', 'Golden Leaf Ball':'bl:ppgoldleaf',
+  'Members Champion Jacket':'tp:ppchampjacket', 'Hallows Lantern Ball':'bl:pphallowslantern', 'Diamond Putter':'pu:ppdiamond' };
+var REWARD_OLD = { 'Clubhouse Polo':'Clubhouse Cleats', 'Sprinkle Trail':'Sprinkle Ball', 'High Score Celebration':'Pixel Shades',
+  'Treasure Trail':'Pirate Eyepatch', 'Eruption Celebration':'Lava Rock Cleats', 'Rainbow Trail':'Aviator Goggles', 'Footprint Trail':'Dino Claw Cleats',
+  'Thaw Celebration':'Snow Goggles', 'Phantom Trail':'Phantom Mask', 'Jack-o’-Lantern Ball':'Hallows Lantern Ball', 'Jack-o-Lantern Ball':'Hallows Lantern Ball' };
+function rewardName(r){ var b = String(r || '').replace(' (Members only)', ''); return REWARD_OLD[b] || b; }
+/* WHAT PAYS EACH ONE: a world's two names pay when its signature hole is beaten (which clears the world), the
+   Members Tour's finish when its last world is cleared, the candy bag when every hole of its world has had its
+   treat, and the Diamond Putter at PAY.secret.ten secret holes beaten. Read off PAY, so a reward moved there moves here. */
+var REWARD_SRC = null;
+function rewardSrc(){ if (REWARD_SRC) return REWARD_SRC; var o = {};
+  ['main', 'members'].forEach(function(tid){ var PY = PAY[tid], TR = TOURS[tid];
+    [PY.sigReward || [], PY.worldReward || []].forEach(function(L){ L.forEach(function(r, w){ o[rewardName(r)] = { tid:tid, w:w }; }); });
+    if (PY.finish) o[rewardName(PY.finish)] = { tid:tid, w:TR.worlds.length - 1, fin:1 };
+    if (PY.treat) o[rewardName(PY.treat.reward)] = { tid:tid, w:PY.treat.w, treat:1 }; });
+  o[rewardName(PAY.secret.allReward)] = { secret:1 };
+  return (REWARD_SRC = o); }
+function sigHole(TR, w){ var K = TR.per || PER; for (var n = Math.min(TR.levels.length, w * K + K); n > w * K; n--) if (TR.levels[n - 1].sig) return n; return 0; }
+// does this record hold the reward: the name is in its rewards, or what pays it has happened (a record from before
+// the reward was paid, or from before it was an item, owns it all the same)
+function rewardHeld(st, name){
+  if ((st.rewards || []).some(function(r){ return rewardName(r) === name; })) return true;
+  var s = rewardSrc()[name], tours = st.tours || {}; if (!s) return false;
+  if (s.secret){ var pd = (tours.secret || {}).paid || {}; return Object.keys(pd).filter(function(k){ return pd[k]; }).length >= PAY.secret.ten; }
+  var TR = TOURS[s.tid], tp = tours[s.tid] || {}, K = TR.per || PER;
+  if (s.treat){ var tk = 0; for (var n = s.w * K + 1; n <= s.w * K + K; n++) if ((tp.treat || {})[n]) tk++; return tk >= K; }
+  var sg = sigHole(TR, s.w), b = sg ? (tp.best || {})[sg] : null;
+  return !!((tp.wpaid || {})[s.w] || (b != null && b <= TR.levels[sg - 1].par)); }
+/* THE RECORD, READ ONLY. The page asks about ownership while it draws its closet, so this never writes, never folds and
+   never runs the lives clock: it reads the account's record and the bare signed-out one (which pload would fold in) and
+   answers for both. The answer is kept until either record changes. */
+var RCACHE = { a:null, b:null, own:null, st:null };
+function rewardRec(host){
+  var key = host && host.storeKey ? host.storeKey('bag_ppt_v1') : pkey(), a = praw(key), b = null;
+  if (key !== 'bag_ppt_v1'){ try{ b = localStorage.getItem('bag_ppt_v1'); }catch(e){} }
+  if (RCACHE.own && a === RCACHE.a && b === RCACHE.b) return RCACHE;
+  var recs = [a, b].map(function(r){ try{ return r ? JSON.parse(r) : null; }catch(e){ return null; } }).filter(function(r){ return r && typeof r === 'object'; });
+  var own = {}; Object.keys(REWARD_ITEM).forEach(function(nm){ if (recs.some(function(st){ return rewardHeld(st, nm); })) own[nm] = 1; });
+  var st0 = recs[0] || {}; RCACHE = { a:a, b:b, own:own, st:{ tours:st0.tours || {}, rv:st0.rv || [] } }; return RCACHE; }
+function rewardKey(x){ x = rewardName(x); if (REWARD_ITEM[x]) return x; for (var nm in REWARD_ITEM) if (REWARD_ITEM[nm] === x) return nm; return null; }
+// where to win it, in a few short words for the closet's locked tile. A world still in the clouds is not named.
+function rewardHint(name, st){ var s = rewardSrc()[name]; if (!s) return '';
+  if (s.secret) return 'Beat ' + PAY.secret.ten + ' secret holes in Putt Putt.';
+  var TR = TOURS[s.tid], W = TR.worlds[s.w], K = TR.per || PER;
+  if (s.treat) return 'Beat all ' + K + ' ' + W.name + ' holes under par in Putt Putt.';
+  if (s.fin) return 'Finish the Members Tour in Putt Putt.';
+  if (TR.members) return 'Clear ' + W.name + ' on the Members Tour in Putt Putt.';
+  var seen = false; try{ seen = revealed(TR, s.w, st || { tours:{}, rv:[] }); }catch(e){}
+  return seen ? 'Clear ' + W.name + ' in Putt Putt. Beat its signature hole, ' + TR.names[sigHole(TR, s.w) - 1] + '.' : 'Clear World ' + (s.w + 1) + ' in Putt Putt.'; }
 var HOSTX = null;   // the host when the mode is closed, for the home screen card
 function hostOf(){ return (S && S.host) || HOSTX || {}; }
 function pkey(){ try{ var h = hostOf(); return h.storeKey ? h.storeKey('bag_ppt_v1') : 'bag_ppt_v1'; }catch(e){ return 'bag_ppt_v1'; } }
@@ -2433,7 +2511,7 @@ function pmerge(st, g){
     ['c', 'b', 'ch'].forEach(function(f){ if (b[f]){ a[f] = a[f] || []; b[f].forEach(function(v){ if (a[f].indexOf(v) < 0) a[f].push(v); }); } });
     ['k', 'g', 'key', 'life', 'tk', 'pt', 'pz'].forEach(function(f){ if (b[f]) a[f] = 1; }); });
   // the rare things: lists only grow, and the spare life counters only go up, so the larger is the newer
-  ['bank', 'tk', 'met', 'rv', 'sf', 'gym'].forEach(function(f){ (g[f] || []).forEach(function(v){ st[f] = st[f] || []; if (st[f].indexOf(v) < 0) st[f].push(v); }); });
+  ['bank', 'bfill', 'tk', 'met', 'rv', 'sf', 'gym'].forEach(function(f){ (g[f] || []).forEach(function(v){ st[f] = st[f] || []; if (st[f].indexOf(v) < 0) st[f].push(v); }); });
   ['bused', 'bspent'].forEach(function(f){ st[f] = Math.max(st[f] || 0, g[f] || 0); });
   if (g.pp){ st.pp = st.pp || { parts:[] }; st.pp.parts = st.pp.parts || []; (g.pp.parts || []).forEach(function(v){ if (st.pp.parts.indexOf(v) < 0) st.pp.parts.push(v); }); if (!st.pp.eq && g.pp.eq) st.pp.eq = g.pp.eq; }
   st.rewards = st.rewards || []; (g.rewards || []).forEach(function(r){ if (st.rewards.indexOf(r) < 0) st.rewards.push(r); });
@@ -2491,7 +2569,7 @@ function cloudUid(){ try{ var h = hostOf(); return h.rpc && h.uid ? h.uid() || n
 function cloudProg(st){ var n = 0, c = function(o){ return Object.keys(o || {}).length; };
   Object.keys(st.tours || {}).forEach(function(k){ var t = st.tours[k] || {}; n += (t.lv || 1) + c(t.best) + c(t.ace) + c(t.paid) + c(t.wpaid) + c(t.treat); });
   Object.keys(st.trail || {}).forEach(function(k){ var t = st.trail[k] || {}; n += (t.c || []).length + (t.b || []).length + (t.ch || []).length + (t.k ? 1 : 0) + (t.g ? 1 : 0) + (t.key ? 1 : 0) + (t.life ? 1 : 0) + (t.tk ? 1 : 0) + (t.pt ? 1 : 0) + (t.pz ? 1 : 0); });
-  n += (st.bank || []).length + (st.tk || []).length + (st.gym || []).length + (st.met || []).length + (st.rv || []).length + ((st.pp && st.pp.parts) || []).length + (st.bused || 0) + (st.bspent || 0);
+  n += (st.bank || []).length + (st.bfill || []).length + (st.tk || []).length + (st.gym || []).length + (st.met || []).length + (st.rv || []).length + ((st.pp && st.pp.parts) || []).length + (st.bused || 0) + (st.bspent || 0);
   return n + c(st.daily) + (st.rewards || []).length; }
 // fold a copy of the record into this one: everything earned is kept, lives come from the newer copy
 function cloudMerge(st, g){ if (!g || g.v !== 2 || !g.tours) return st;
@@ -2542,7 +2620,7 @@ function livesCall(fn, extra){ var uid = cloudUid(); if (!uid) return Promise.re
   var p = null; try{ p = hostOf().rpc(fn, Object.assign({ p_max:livesMax() }, extra || {})); }catch(e){ p = null; }
   if (!p || !p.then) return Promise.resolve(false);
   return p.then(function(d){ return livesApply(uid, d); }, function(){ return false; }); }
-function livesSync(){ var st = pload(); return livesCall('putt_lives_state', { p_lives:st.lives }); }
+function livesSync(){ var st = pload(); return livesCall('putt_lives_state', { p_lives:st.lives }).then(function(ch){ return spareFill().then(function(f){ return ch || f; }); }); }
 /* GUESTS (the owner, 2026-10-16): a guest walks the opening world, so they see what is here, and plays no hole of
    it. Walking up to a hole asks them to sign in. The Daily Hole stays open to them, and it posts to no board. A
    guest never sees a coin count: what they pick up is held for the account (the host's held coins) and the game
@@ -2568,7 +2646,13 @@ var LIVES_FREE = 9, LIVES_PASS = 18;
 function livesMax(){ try{ var h = hostOf(); return h.passActive && h.passActive() ? LIVES_PASS : LIVES_FREE; }catch(e){ return LIVES_FREE; } }
 function passLivesLine(){ return 'A Tour Pass doubles your lives: ' + LIVES_PASS + ', not ' + LIVES_FREE + '.'; }
 var PER_HEART = 3;
-function loseLife(st){ if (lifeExtra(st) > 0){ st.bspent = (st.bspent || 0) + 1; psave(st); return; } if (st.lives == null) st.lives = livesMax(); if (st.lives <= 0) return; st.lives--; st.back = (st.back || []).concat([Date.now() + LIFE_MS]); st.refillAt = st.back[0]; st.l9 = 1; st.lt = Date.now(); psave(st); livesCall('putt_lives_spend'); }
+function loseLife(st){ if (lifeExtra(st) > 0){ st.bspent = (st.bspent || 0) + 1; psave(st); return; } if (st.lives == null) st.lives = livesMax(); if (st.lives <= 0) return;
+  // a bought life over the max goes first and starts no clock; the server takes it out of its extras (151). The
+  // hearts are still full after it, so no spare is wanted.
+  if (st.lives > livesMax()){ st.lives--; st.lt = Date.now(); psave(st); livesCall('putt_lives_spend'); return; }
+  st.lives--; st.back = (st.back || []).concat([Date.now() + LIFE_MS]); st.refillAt = st.back[0]; st.l9 = 1; st.lt = Date.now(); psave(st);
+  // a spare that was waiting fills the gap straight away: on the server once it has the lost life, else here
+  if (cloudUid()) livesCall('putt_lives_spend').then(function(){ spareFill(); }); else spareFill(); }
 function coins(n, label){ try{ if (S.host.coins) S.host.coins(n, label); }catch(e){} var b = balStr(); if (b !== '' && S.ov) S.ov.querySelectorAll('[data-bal]').forEach(function(e){ e.textContent = b; }); }   // the wallet at the top moves the moment coins land
 function hms(ms){ ms = Math.max(0, ms); var s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return h + ':' + (m < 10 ? '0' : '') + m + ':' + (x < 10 ? '0' : '') + x; }
 function hm(ms){ var m = Math.max(0, Math.round(ms / 60000)); return Math.floor(m / 60) + 'h ' + (m % 60) + 'm'; }
@@ -2639,11 +2723,13 @@ function heartSvg(n){ if (n === true) n = PER_HEART; if (!n) n = 0; var on = '',
     for (var x = 0; x < r.length; x++) if (r[x] === '1'){ var c = 'M' + x + ' ' + y + 'h1v1h-1z'; if (lit) on += c; else off += c; } });
   return '<svg viewBox="0 0 10 10" shape-rendering="crispEdges">' + (off ? '<path d="' + off + '" fill="#5b6670"/>' : '') + (on ? '<path d="' + on + '" fill="#e5483a"/>' : '') +
     (n === PER_HEART ? '<path d="M1 1h1v1h-1zM2 2h1v1h-1z" fill="#ff9d8a"/>' : '') + '</svg>'; }
-function hearts(st){ var mx = Math.max(livesMax(), st.lives || 0), nh = Math.ceil(mx / PER_HEART), out = '';
+// lives bought over the max (151) are a red +N after full hearts, not more hearts, so a header never overflows
+function hearts(st){ var mx = livesMax(), nh = Math.ceil(mx / PER_HEART), out = '', over = Math.max(0, (st.lives || 0) - mx);
   for (var i = 0; i < nh; i++){ var k = Math.max(0, Math.min(PER_HEART, (st.lives || 0) - i * PER_HEART)); out += '<i class="pp-h' + (k ? ' on' : '') + '" title="' + k + ' of ' + PER_HEART + '">' + heartSvg(k) + '</i>'; }
+  if (over) out += '<b class="pp-hmore" title="Extra lives over the max">+' + over + '</b>';
   var x = lifeExtra(st), bk = bankHeld(st);
   if (x) out += '<i class="pp-h on pp-hx" title="A spare life in play">' + heartSvg(1) + '</i>';
-  if (bk) out += '<b class="pp-hbank" title="Spare lives banked">+' + bk + '</b>'; return out; }
+  if (bk) out += '<b class="pp-hbank" title="Spare lives. Each fills a heart when you lose a life.">+' + bk + '</b>'; return out; }
 function golferImg(cls){ try{ var c = S.host.golfer && S.host.golfer(); if (c && c.toDataURL) return '<img class="' + cls + '" alt="" src="' + c.toDataURL() + '">'; }catch(e){} return ''; }
 function golferUrl(){ try{ var c = S.host.golfer && S.host.golfer(); if (c && c.toDataURL) return c.toDataURL(); }catch(e){} return ''; }
 // the golfer on the map is the page's own figure, putter in hand and wearing its aura, sized by the class
@@ -2702,6 +2788,7 @@ function home(tid){ var t = window.RTT_PUTT_MAPFIRST ? null : tid && worldOk(tid
   S.tour = t; var r = openTrail(t, n - 1); if (S.trailTo) S.trailTo.home = true; return r; }
 function showHub(tid){
   stopTrail(); cancelAnimationFrame(S.raf); S.screen = 'menu'; S.play = null; clearInterval(S.tick);
+  if (!cloudUid()) spareFill();   // this device's lives: a spare kept from before fills any gap (signed in, livesSync does it)
   var st = pload(), dk = today(), dh = dailyHole(dk), dT = THEMES[dh.theme], drec = st.daily[dk];
   // which tour the map shows: the one asked for, else the one last looked at; the Members Tour only when it is open
   if (tid) S.tour = tid; if (!S.tour) S.tour = st.view || 'main';
@@ -2758,7 +2845,7 @@ function bagSheet(){
       return '<i class="' + (got ? 'on' : '') + '">' + (got ? esc(g.badge) : '???') + '</i>'; }).join('') + '</span></div>'; }).join('') : '';
   var sh = el('<div class="pp-sheet pp-bag"><div class="pp-card"><div class="k">YOUR BAG</div><div class="t">Found on the trails</div>\
     <div class="pp-bsec">' + (cl ? 'Your putters' : 'Putt Putt putters') + '</div>' + puts + (!cl && eq && partsOf(st, eq) >= 3 ? '<button class="pt-bt pp-wide" data-uneq>Play with no special putter</button>' : '') + (cl && S.host.closet ? '<button class="pt-bt pp-wide" data-full>Open the full closet</button>' : '') + '\
-    <div class="pp-bsec">Spare lives</div><div class="m">' + (bankHeld(st) ? bankHeld(st) + ' banked. Use one from the out of lives screen.' : 'None banked. A heart turns up on a trail now and then.') + '</div>\
+    <div class="pp-bsec">Spare lives</div><div class="m">' + (bankHeld(st) ? bankHeld(st) + ' saved. Your hearts are full. Each one fills a heart the moment you lose a life.' : 'None saved. A heart turns up on a trail now and then. It goes straight into your hearts.') + '</div>\
     <div class="pp-bsec">Trinkets and golden balls</div>' + worlds + '\
     ' + (GLb ? '<div class="pp-bsec">Gym badges · ' + won.length + ' of ' + GLb.MASTER.badges + '</div>' + (badges || '') : '') + '\
     <div class="pp-bsec">Secrets found · ' + secretsFound(st).length + ' of ' + SECRETS.length + '</div>' + (secretsFound(st).length ? secretsFound(st).sort(function(a, b){ return a - b; }).map(function(i){ var won = !!((st.tours.secret || {}).paid || {})[i];
@@ -3010,7 +3097,7 @@ function putterRows(st){ var L = hostPutters(); if (!L) return null; var TR = TO
   var order = function(p){ return p.owned ? 0 : p.kind === 'pp' ? 1 : 2; };
   return L.slice().sort(function(a, b){ return order(a) - order(b); }).map(function(p){
     var pt = PP_PUTTERS.filter(function(q){ return q.id === p.id; })[0], n = pt ? partsOf(st, p.id) : 0;
-    var how = p.owned ? esc(p.txt) : pt ? n + ' of 3 parts · found on the trails of ' + pt.worlds.map(function(w){ return esc(revealed(TR, w) ? TR.worlds[w].name : 'World ' + (w + 1)); }).join(', ') : 'Pull it from a pack in the Pro Shop';
+    var how = p.owned ? esc(p.txt) : pt ? n + ' of 3 parts · found on the trails of ' + pt.worlds.map(function(w){ return esc(revealed(TR, w) ? TR.worlds[w].name : 'World ' + (w + 1)); }).join(', ') : p.hint ? esc(p.hint) : 'Pull it from a pack in the Pro Shop';
     return '<div class="pp-bput' + (p.owned ? ' built' : ' locked') + (p.on ? ' on' : '') + '"><span class="pp-pth">' + p.thumb + '</span><div class="pp-bpn"><b>' + esc(p.name) + '</b><span>' + how + '</span></div>' +
       (p.owned ? '<button class="' + (p.on ? 'pt-go' : 'pt-bt') + '" data-peq="' + p.id + '">' + (p.on ? 'Equipped' : 'Equip') + '</button>' : pt ? '<i class="pp-bpp">' + [0, 1, 2].map(function(j){ return '<u class="' + (((st.pp || {}).parts || []).indexOf(pt.id + ':' + j) >= 0 ? 'on' : '') + '"></u>'; }).join('') + '</i>' : '<i class="pp-plock">Locked</i>') + '</div>'; }).join(''); }
 /* THE CLOSET, IN PUTT PUTT: your putters, the one equipped, and a way into the full closet. */
@@ -3026,7 +3113,43 @@ function closetSheet(){
   var fu = sh.querySelector('[data-full]'); if (fu) fu.onclick = function(){ var h = S.host; sh.remove(); h.closet(); };
   sh.querySelectorAll('[data-peq]').forEach(function(b){ b.onclick = function(){ if (S.host.equipPutter(b.getAttribute('data-peq'))){ sh.remove(); closetSheet(); } }; });
 }
-function bankHeld(st){ return Math.max(0, (st.bank || []).length - (st.bused || 0)); }
+/* SPARE LIVES FILL THE HEARTS (the owner, 2026-10-17). A spare picked up on a trail (its id in st.bank) goes
+   straight into the hearts whenever they are below the max, and cancels the clock of the lost life due back
+   last, the way a bought life does (149). Only with the hearts full is one kept, shown as +N beside them, and it
+   fills the gap the moment a life is lost. st.bfill holds the ids that filled a heart.
+   A signed in player's lives are the server's, so a spare fills one there (putt_lives_spare, 150), keyed by its
+   id so two devices never spend one spare twice, and the page takes the server's answer rather than adding the
+   life itself. A guest, or a browser the server has not answered yet, fills on this device. st.bused and
+   st.bspent are the old rule's (a spare spent from the out of lives sheet as an extra heart): they still count,
+   and that sheet's button is left for a database without 150, the one way a spare can be held at nought. */
+function sparesHeld(st){ var f = st.bfill || []; return (st.bank || []).filter(function(id){ return f.indexOf(id) < 0; }).sort().slice(st.bused || 0); }
+function bankHeld(st){ return sparesHeld(st).length; }
+// fill what it can on this device: each spare takes back the lost life due last. True when one went in.
+function spareFillHere(st){ var mx = livesMax(), n = 0, h;
+  while (!st.lsrv && st.lives != null && st.lives < mx && (st.back || []).length && (h = sparesHeld(st)).length){
+    st.back = st.back.slice().sort(function(a, b){ return a - b; }); st.back.pop(); st.lives = Math.min(mx, st.lives + 1);
+    st.bfill = (st.bfill || []).concat([h[0]]); n++; }
+  if (n){ st.refillAt = st.back.length ? st.back[0] : null; st.l9 = 1; st.lt = Date.now(); }
+  return n > 0; }
+// one spare at a time to the server, while it has a heart to fill. Resolves true when a heart was filled.
+var SPARE = { busy:false, again:false };
+function spareFill(){ var st0 = pload(); if (!sparesHeld(st0).length) return Promise.resolve(false);
+  var uid = cloudUid();
+  if (!uid){ if (spareFillHere(st0)){ psave(st0); return Promise.resolve(true); } return Promise.resolve(false); }
+  if (SPARE.busy){ SPARE.again = true; return Promise.resolve(false); }
+  SPARE.busy = true; var any = false;
+  var step = function(){ var s = pload(), id = sparesHeld(s)[0];
+    if (!id || (s.lsrv && (s.lives || 0) >= livesMax())) return Promise.resolve(false);
+    var p = null; try{ p = hostOf().rpc('putt_lives_spare', { p_max:livesMax(), p_spare:id }); }catch(e){ p = null; }
+    if (!p || !p.then) return Promise.resolve(null);
+    return p.then(function(d){ var r = cloudRow(d); if (!r || r.lives == null || cloudUid() !== uid) return null;
+      livesApply(uid, d); if (!r.used) return false;
+      var s2 = pload(); s2.bfill = s2.bfill || []; if (s2.bfill.indexOf(id) < 0) s2.bfill.push(id); psave(s2); any = true; return step(); }, function(){ return null; }); };
+  return step().then(function(v){ SPARE.busy = false;
+    // no answer (a database without 150, or offline) before the server has ever answered: this device holds the lives
+    if (v === null){ var s = pload(); if (!s.lsrv && spareFillHere(s)){ psave(s); any = true; } }
+    if (SPARE.again){ SPARE.again = false; return spareFill().then(function(f){ return any || f; }); }
+    return any; }); }
 function lifeExtra(st){ return Math.max(0, (st.bused || 0) - (st.bspent || 0)); }
 function livesNow(st){ return (st.lives || 0) + lifeExtra(st); }
 /* THE GREETERS. Every world has one: a local who walks up the moment you step into their world, the way a
@@ -3275,7 +3398,8 @@ function openTrail(tid, from){
         else if (kind === 'key') r.key = 1;
         else if (kind === 'pz') r.pz = 1;   // the trail's puzzle is solved; its coin bonus comes out of its chest as coins
         else if (kind === 'life'){ r.life = 1; st.bank = st.bank || []; if (st.bank.indexOf(sp.loot.life.id) < 0) st.bank.push(sp.loot.life.id);
-          msg = 'A spare life. ' + bankHeld(st) + ' banked for when your hearts run out.'; }
+          // below the max it goes straight into the hearts (spareFill, once this pick is saved); full, it is kept
+          msg = st.lives != null && st.lives < livesMax() ? 'A spare life. It went straight into your hearts.' : 'A spare life. Your hearts are full, so it\'s saved. It fills the next one you lose.'; }
         else if (kind === 'trinket'){ r.tk = 1; var tk = sp.loot.trinket; st.tk = st.tk || []; if (st.tk.indexOf(tk.id) < 0) st.tk.push(tk.id);
           var th = tk.id.split(':')[0], got = st.tk.filter(function(x){ return x.split(':')[0] === th; }).length, rt = 'Trinket Set: ' + Wd.name;
           msg = 'Found the ' + tk.name + '. ' + got + ' of 3 from ' + Wd.name + '.';
@@ -3288,7 +3412,7 @@ function openTrail(tid, from){
         else if (kind === 'golden'){ var was = !!r.g; r.g = 1; var gd = goldenOf(st, tid, sp.w), done = gd.have >= gd.total, rw = 'Golden Ball Set: ' + Wd.name;
           msg = 'Golden ball. ' + gd.have + ' of ' + gd.total + ' in ' + Wd.name + '.';
           if (done && !was && st.rewards.indexOf(rw) < 0){ st.rewards.push(rw); n = TRAIL_GOLD_COINS; msg += ' Set complete: +' + TRAIL_GOLD_COINS + ' coins.'; } }
-        psave(st); if (n > 0) coins(n, TR.name + ' trail'); return msg; },
+        psave(st); if (n > 0) coins(n, TR.name + ' trail'); if (kind === 'life') spareFill(); return msg; },
       golden:function(){ return goldenOf(pload(), tid, sp.w); },
       gym:function(id){ return gymWin(id, Wd.name); }, gymSolved:function(id){ return gymsWon(pload()).indexOf(id) >= 0; },
       portrait:function(look){ try{ var c = S.host.portrait && S.host.portrait(look); return c && c.toDataURL ? c.toDataURL() : ''; }catch(e){ return ''; } },
@@ -3394,7 +3518,9 @@ function outOfLives(){
     <div class="m">Each life comes back 24 hours after you lost it. The clocks keep running while you are away.</div>\
     ' + (membersOpen() ? '' : '<div class="pp-x2b"><i class="pp-x2h">' + heartSvg(PER_HEART) + '</i><b>Double your lives</b>The Tour Pass gives you ' + LIVES_PASS + ' lives, not ' + LIVES_FREE + '. It opens the Members Tour too.</div>\
     <button class="pt-go pp-wide pass" data-pass>Get Tour Pass<small>' + LIVES_PASS + ' lives</small></button>') +
-    (bankHeld(st) ? '<button class="pt-go pp-wide" data-spare>Use a spare life<small>' + bankHeld(st) + ' banked from the trails</small></button>' : '') +
+    buyRow(st) +
+    // spares fill the hearts on their own (spareFill), so this shows only when the server could not take one
+    (bankHeld(st) && livesNow(st) <= 0 ? '<button class="pt-go pp-wide" data-spare>Use a spare life<small>' + bankHeld(st) + ' saved from the trails</small></button>' : '') +
     (S.host.tester && S.host.tester() ? '<button class="pt-bt pp-wide" data-free>Tester refill · free</button>' : '') +
     '<button class="pt-bt pp-wide" data-wait>Wait it out</button><div class="m">The Daily Hole never uses a life.</div></div></div>');
   S.ov.appendChild(sh);
@@ -3402,7 +3528,35 @@ function outOfLives(){
   sh.querySelector('[data-wait]').onclick = function(){ sh.remove(); };
   sh.querySelector('[data-x]').onclick = function(){ sh.remove(); };
   var spb = sh.querySelector('[data-spare]'); if (spb) spb.onclick = function(){ var s2 = pload(); if (!bankHeld(s2)) return; s2.bused = (s2.bused || 0) + 1; psave(s2); clearInterval(iv); sh.remove(); showHub(); };
+  wireBuy(sh);
   var fr = sh.querySelector('[data-free]'); if (fr) fr.onclick = function(){ var s2 = pload(); s2.lives = livesMax(); s2.back = []; s2.refillAt = null; s2.lt = Date.now(); psave(s2); livesCall('putt_lives_refill'); sh.remove(); showHub(); };
+}
+
+/* THE PAID LIVES are offered at any time, full or not, up to the cap on extra lives over the max (past it the server
+   answers lives_full). A guest is sent to sign in, since bought lives are the account's. The page leaves for Stripe,
+   and comes back to /golf/?putt=lives_paid, where the host asks for lives again (RTT_PUTT.livesRefresh). */
+function canBuyLives(st, p){ var h = hostOf(); return PUTT_LIVES_ENABLED && !!h.buyLives && (st.lives || 0) + p.lives - livesMax() <= LIVES_EXTRA_MAX; }
+function buyRow(st){ var any = LIVES_BUY.some(function(p){ return canBuyLives(st, p); });
+  return LIVES_BUY.map(function(p){ return canBuyLives(st, p) ? '<button class="pt-go pp-wide" data-buy="' + p.pack + '">' + buyLabel(p) + '<small>' + p.tag + '</small></button>' : ''; }).join('') +
+    (any ? '<div class="m" data-buym hidden></div>' : ''); }
+function wireBuy(sh){ sh.querySelectorAll('[data-buy]').forEach(function(bb){ bb.onclick = function(){ buyLives(sh, bb, bb.getAttribute('data-buy')); }; }); }
+/* THE LIVES SHEET, opened by tapping the hearts anywhere in Putt Putt: what is held, the next life's clock, the buttons. */
+function livesSheet(){ if (S.ov.querySelector('.pp-livesh')) return; var st = pload(), n = livesNow(st);
+  var sh = el('<div class="pp-sheet pp-livesh"><div class="pp-card"><div class="k">LIVES</div><div class="pp-lives">' + hearts(st) + '</div>\
+    <div class="t">' + n + (n === 1 ? ' life' : ' lives') + '</div>' +
+    (st.refillAt ? '<div class="m">Next life back in ' + hms(st.refillAt - Date.now()) + '.</div>' : '') +
+    (bankHeld(st) ? '<div class="m">' + bankHeld(st) + ' spare ' + (bankHeld(st) === 1 ? 'life' : 'lives') + ' banked from the trails.</div>' : '') +
+    buyRow(st) + '<button class="pt-bt pp-wide" data-n>Close</button></div></div>');
+  S.ov.appendChild(sh); wireBuy(sh); sh.querySelector('[data-n]').onclick = function(){ sh.remove(); }; }
+function buyLives(sh, b, pack){
+  if (isGuest()){ var h = S.host; sh.remove(); close(); try{ h.signIn('signin'); }catch(e){} return; }
+  var m = sh.querySelector('[data-buym]'), bs = sh.querySelectorAll('[data-buy]'),
+      say = function(t){ if (m){ m.textContent = t; m.hidden = false; } bs.forEach(function(x){ x.disabled = false; }); };
+  bs.forEach(function(x){ x.disabled = true; });
+  Promise.resolve(S.host.buyLives(pack)).then(function(d){
+    if (d && d.url){ location.href = d.url; return; }
+    say(d && d.error === 'lives_full' ? 'You hold all the extra lives you can. Play some first.' : 'Checkout did not start. Try again.');
+  }, function(){ say('Checkout did not start. Try again.'); });
 }
 
 /* ---------------------------------------------------------------------------- a Tour level */
@@ -3580,11 +3734,13 @@ function tourOut(holed){
   if (TR.lab) return popup('<div class="k">OUT OF STROKES</div><div class="t">Over par</div><div class="s">' + par + ' strokes used and still not down. The Lab costs no lives.</div>\
     <div class="row"><button class="pt-bt" data-a="map">Map</button><button class="pt-go" data-a="again">Try again</button></div>', { map:function(){ showHub(tid); }, again:function(){ startLevel(n, tid); } }, 'over');
   loseLife(st);
-  return popup('<div class="k">OUT OF STROKES</div><div class="t">Over par</div><div class="s">' + par + ' strokes used and still not down.</div>\
+  var over = popup('<div class="k">OUT OF STROKES</div><div class="t">Over par</div><div class="s">' + par + ' strokes used and still not down.</div>\
     <div class="pp-lives">' + hearts(st) + '</div><div class="s">' + (livesNow(st) ? livesNow(st) + (livesNow(st) === 1 ? ' life' : ' lives') + ' left' : 'That was your last life.') + '</div>' +
     (membersOpen() ? '' : '<div class="s pp-x2s"><i class="pp-x2h">' + heartSvg(PER_HEART) + '</i> ' + esc(passLivesLine()) + '</div>' + (livesNow(st) <= PER_HEART ? '<button class="pt-go pp-wide pass" data-pass>Get Tour Pass<small>' + LIVES_PASS + ' lives</small></button>' : '')) +
+    buyRow(st) +
     '<div class="row"><button class="pt-bt" data-a="map">Map</button><button class="pt-go" data-a="again">' + (livesNow(st) ? 'Try again' : 'Refill') + '</button></div>',
     { map:function(){ showHub(tid); }, again:function(){ if (livesNow(pload()) > 0 || allAccess()) startLevel(n, tid); else { showHub(tid); outOfLives(); } } }, 'over');
+  wireBuy(over); return over;
 }
 function worldComplete(n, s, par, got, tid, lines){
   var TR = tourOf(tid), PY = PAY[TR.id], K = TR.per || PER, w = Math.floor((n - 1) / K), Wd = TR.worlds[w], last = n === TR.levels.length;
@@ -4423,6 +4579,9 @@ function scorecard(){
   S.ov.querySelector('[data-menu]').onclick = showMenu;
   S.ov.querySelector('[data-again]').onclick = function(){ R.i = 0; R.cards = []; playHole(); };
 }
+// back from a paid checkout: the server has the lives (or will in a moment). Answers the lives this account now has.
+RTT_PUTT.livesRefresh = function(host){ HOSTX = host || HOSTX; return livesSync().then(function(){ return pload().lives || 0; }, function(){ return pload().lives || 0; }); };
+RTT_PUTT.LIVES_BUY = LIVES_BUY; RTT_PUTT.buyLabel = buyLabel; RTT_PUTT.LIVES_MAX = livesMax;
 RTT_PUTT.open = open; RTT_PUTT.close = close; RTT_PUTT.paintCourse = paintCourse; RTT_PUTT.SKIN = SKIN;
 RTT_PUTT._state = function(){ return S; };
 RTT_PUTT.LIVES = { free:LIVES_FREE, pass:LIVES_PASS };
@@ -4540,6 +4699,11 @@ RTT_PUTT.summary = function(host){ HOSTX = host || HOSTX; var st = pload(), dk =
   while (wv > 0 && !revealed(TOURS.main, wv, st)) wv--;   // a world still under cloud is not named on the home card either
   return { lv:lv, levels:LEVELS.length, world:WORLDS[wv].name, theme:WORLDS[wv].theme, members:membersOpen(), lives:st.lives, max:livesMax(), refillAt:st.refillAt || null,
     daily:{ name:dh.name, theme:THEMES[dh.theme].name, kick:THEMES[dh.theme].kick, done:!!(rec && rec.done), s:rec && rec.s, par:rec && rec.par, ms:rec && rec.ms }, nextMs:msToNextDay() }; };
+/* THE REWARDS AS CLOSET ITEMS, for the page: every name with its item, whether the record holds it, and where to win it.
+   Each reads the record only (rewardRec), so the page can ask while it works out what a player owns. */
+RTT_PUTT.rewardItems = function(){ return Object.keys(REWARD_ITEM).map(function(nm){ return { name:nm, key:REWARD_ITEM[nm] }; }); };
+RTT_PUTT.rewardOwned = function(x, host){ try{ var nm = rewardKey(x); return !!(nm && rewardRec(host).own[nm]); }catch(e){ return false; } };
+RTT_PUTT.rewardHint = function(x, host){ try{ var nm = rewardKey(x); return nm ? rewardHint(nm, rewardRec(host).st) : ''; }catch(e){ return ''; } };
 // the checker's door: start a round at a given hole. Nothing on the page calls it.
 RTT_PUTT._go = function(mode, arg, i){ if (!S) return; startRound(mode, arg); if (i){ S.round.i = i; playHole(); } };
 

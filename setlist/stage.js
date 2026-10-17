@@ -33,7 +33,7 @@
  * VENUES are a table so the next one is a row. A venue changes the room and how many people it holds.
  * It never changes a score.
  */
-import PXHD from './pxhd.js?v=1';
+import PXHD from './pxhd.js?v=2';
 import { ROOMS, RIGS } from './rooms.js?v=3';
 
 /* The rooms a night can be played in, by id. setlist/venues.js says how each is earned and
