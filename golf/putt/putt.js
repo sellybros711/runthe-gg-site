@@ -2419,8 +2419,8 @@ var LIFE_MS = 24 * 3600 * 1000;
    server's, copied, in the order the buttons show (nine first): scripts/stripe/check-putt-lives.mjs holds them together. */
 var PUTT_LIVES_ENABLED = true;
 var LIVES_BUY = [
-  { pack:'nine', lives:9, cents:499, tag:'Best value. Ready right now.' },
-  { pack:'three', lives:3, cents:299, tag:'Ready right now.' }
+  { pack:'nine', lives:9, cents:499, tag:'Best value.' },
+  { pack:'three', lives:3, cents:299, tag:'' }
 ];
 var LIVES_EXTRA_MAX = 99;
 function buyLabel(p){ return 'Get ' + p.lives + ' lives · $' + (p.cents / 100).toFixed(2); }
@@ -3568,7 +3568,7 @@ function outOfLives(){
    and comes back to /golf/?putt=lives_paid, where the host asks for lives again (RTT_PUTT.livesRefresh). */
 function canBuyLives(st, p){ var h = hostOf(); return PUTT_LIVES_ENABLED && !!h.buyLives && (st.lives || 0) + p.lives - livesMax() <= LIVES_EXTRA_MAX; }
 function buyRow(st){ var any = LIVES_BUY.some(function(p){ return canBuyLives(st, p); });
-  return LIVES_BUY.map(function(p){ return canBuyLives(st, p) ? '<button class="pt-go pp-wide" data-buy="' + p.pack + '">' + buyLabel(p) + '<small>' + p.tag + '</small></button>' : ''; }).join('') +
+  return LIVES_BUY.map(function(p){ return canBuyLives(st, p) ? '<button class="pt-go pp-wide" data-buy="' + p.pack + '">' + buyLabel(p) + (p.tag ? '<small>' + p.tag + '</small>' : '') + '</button>' : ''; }).join('') +
     (any ? '<div class="m" data-buym hidden></div>' : ''); }
 function wireBuy(sh){ sh.querySelectorAll('[data-buy]').forEach(function(bb){ bb.onclick = function(){ buyLives(sh, bb, bb.getAttribute('data-buy')); }; }); }
 /* THE LIVES SHEET, opened by tapping the hearts anywhere in Putt Putt: what is held, the next life's clock, the buttons. */
