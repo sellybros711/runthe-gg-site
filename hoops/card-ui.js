@@ -34,7 +34,7 @@ var API_VERSION = 1;
 var CAT = window.RTF_CATALOG, W = window.RTF_WARD, B = window.RTF_BALLER, A = window.RTF_ART;
 
 function $(id){ return document.getElementById(id); }
-function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+var esc = window.RTF_UTIL.esc;
 function reduced(){ try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } }
 function fine(){ try { return matchMedia('(hover: hover) and (pointer: fine)').matches; } catch (e) { return false; } }
 

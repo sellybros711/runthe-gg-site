@@ -581,16 +581,12 @@ function modeChip(r){
 var DAILY_EPOCH = '2026-09-18';          // day 1
 var DAILYKEY = 'rtf.daily.v1';
 
+/* The Eastern calendar day is economy.js's dayOf, the one clock every daily on
+   this site rolls on. Without it (the file failed to load) the page answers
+   the local date, which is what dayOf answers with no time zone data. */
 function easternISO(now){
-  var d = now || new Date();
-  try {
-    /* en-CA formats as YYYY-MM-DD, which is the one locale that gives the
-       shape wanted without reassembling parts. Tested rather than trusted:
-       anything else falls through to the local date below. */
-    var s = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York',
-      year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
-    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-  } catch (e) {}
+  var X = window.RTF_ECON, d = now || new Date();
+  if (X) return X.dayOf(d);
   var p = function(n){ return (n < 10 ? '0' : '') + n; };
   return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
 }

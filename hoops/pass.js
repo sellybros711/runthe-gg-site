@@ -52,11 +52,7 @@ function season(t){
 }
 /* Midnight Eastern at the start of a day, as an instant. The season ends at
    the END of its last day, so a countdown runs to the midnight after it. */
-function etMidnight(dayN){
-  var base = dayN * 864e5;
-  try { var h = +new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric', hourCycle: 'h23' }).format(new Date(base + 12 * 36e5)); return base + (12 - h) * 36e5; }
-  catch (e) { return base; }
-}
+function etMidnight(dayN){ return X.dayStart(dstr(dayN)); }
 function endsAt(n){ return etMidnight(dnum(EPOCH) + n * LEN); }
 function countdown(n, now){
   var ms = Math.max(0, endsAt(n) - (now == null ? Date.now() : now)), s = Math.floor(ms / 1000);

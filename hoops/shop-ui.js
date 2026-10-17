@@ -36,8 +36,8 @@ var RCOL = { common: '#aeb4bf', rare: '#5b9bff', epic: '#b47cff', legendary: '#f
 var LOOKNAME = { street: 'Off court', court: 'On court', both: 'Either look' };
 var REEL_N = 34, REEL_WIN = 28, CELL = 92, GAP = 8, SPIN_MS = 4600;
 
-function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-function money(n){ return Math.round(n).toLocaleString('en-US'); }
+var esc = window.RTF_UTIL.esc;
+var money = window.RTF_UTIL.coins;
 function reduced(){ try { return !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return false; } }
 function errText(e){
   return { signin: 'Sign in to open packs and keep what you get.', coins: 'Not enough coins.', shards: 'Not enough shards yet.',
