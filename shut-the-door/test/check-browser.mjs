@@ -85,6 +85,8 @@ async function run(w, h) {
     const u = new URL(route.request().url());
     if (u.hostname === '127.0.0.1') return route.continue();
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
+    // supabase-js from the CDN: an empty script, so auth.js stays signed out with no network
+    if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     return route.abort();
   });
   const shot = async (name, full) => {
@@ -279,6 +281,8 @@ async function ending(w, h, end, extra) {
     const u = new URL(route.request().url());
     if (u.hostname === '127.0.0.1') return route.continue();
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
+    // supabase-js from the CDN: an empty script, so auth.js stays signed out with no network
+    if (u.hostname === 'cdn.jsdelivr.net') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
     return route.abort();
   });
   const shot = async (name, full) => { if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `${tag}-${nextN(tag)}-${end}-${name}.png`), fullPage: !!full }); };

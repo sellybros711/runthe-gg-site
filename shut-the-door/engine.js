@@ -268,7 +268,38 @@ function pitchedLike(o) {
     for (let i = 0; i < v.length; i++) d += (v[i] - (c.vec[i] || 0)) ** 2;
     if (!best || d < best.d) best = { d, c };
   }
-  return { name: best.c.name, reason: best.c.reason || '' };
+  return { name: best.c.name, reason: likeReason(v, best.c, closers, o) };
+}
+
+/* Why he is the match, in the player's own numbers beside his: the trait
+   where the two agree and he stands furthest from the pool's average, so the
+   line names what is his and yours, not just his. Every number interpolated
+   from the outing and the pack. */
+const FAM_WORD = ['fastballs', 'breaking balls', 'offspeed'];
+const BUCKET_WORD = ['in even counts', 'when ahead', 'when behind', 'with two strikes'];   // grade.js BUCKET_INDEX order
+function likeReason(v, closer, closers, o) {
+  const counts = o.log.map(p => p.countBefore);
+  const per = [0, 0, 0, 0];
+  counts.forEach(c => per[G.bucketOf(c.b, c.s)]++);
+  const mean = v.map((_, i) => closers.reduce((a, c) => a + (c.vec[i] || 0), 0) / closers.length);
+  let pick = -1, score = -Infinity;
+  for (let i = 0; i < v.length; i++) {
+    if (i < 12 && !per[Math.floor(i / 3)]) continue;
+    const his = closer.vec[i] || 0;
+    if (v[i] < 0.2 || his < 0.2) continue;   // a trait you both actually show
+    const s = (his - mean[i]) - 2 * Math.abs(v[i] - his);
+    if (s > score) { score = s; pick = i; }
+  }
+  const pc = x => Math.round(x * 100);
+  if (pick < 0) pick = v[12] >= v[14] ? 12 : 14;   // always true of somebody: in the zone or out of it
+  const his = closer.vec[pick] || 0;
+  if (pick >= 12) {
+    const what = ['in the zone', 'on the edges of the zone', 'out of the zone'][pick - 12];
+    return `${pc(v[pick])}% of your pitches ${what}. he throws ${pc(his)}% there.`;
+  }
+  const bk = Math.floor(pick / 3), fam = FAM_WORD[pick % 3];
+  const when = BUCKET_WORD[bk];
+  return `${fam} on ${pc(v[pick])}% of your pitches ${when}. he throws ${pc(his)}%.`;
 }
 
 function vsReal(outcome, runs, reveal) {

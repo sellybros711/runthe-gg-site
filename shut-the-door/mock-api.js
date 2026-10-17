@@ -18,6 +18,12 @@
  * so a reload replays the stored calls to the same state.
  */
 (function () {
+
+/* A mock test switch in the address (?mockEnd=, ?mockLesson= and the rest)
+   puts the mock in front of the real files, for test/check-browser.mjs.
+   Without one, the real api.js, share.js and auth.js stand. */
+var FORCE = /[?&]mock/i.test(location.search);
+
 'use strict';
 var C = window.STD_CONTRACT;
 if (!C) return;
@@ -34,14 +40,14 @@ function shareText(r, number) {
   lines.push(C.SHARE_URL);
   return lines.join('\n');
 }
-if (!window.STD_SHARE) window.STD_SHARE = { text: shareText, MOCK: true };
+if (!window.STD_SHARE || FORCE) window.STD_SHARE = { text: shareText, MOCK: true };
 
 /* ---- accounts stub (the RTD_AUTH shape) --------------------------------- */
 
 /* ?mockAuth=1 signs the stub in as a fictional player, so the account paths
    (the stats sheet's myStats(), the result's account block) can be built and
    checked before auth.js lands. */
-if (!window.STD_AUTH) {
+if (!window.STD_AUTH || FORCE) {
   var none = function () { return Promise.resolve({ error: 'accounts are not available here yet.' }); };
   var mockIn = /[?&]mockAuth=1(&|$)/.test(location.search);
   window.STD_AUTH = {
@@ -67,7 +73,7 @@ if (!window.STD_AUTH) {
   };
 }
 
-if (window.STD_API) return;
+if (window.STD_API && !FORCE) return;
 
 /* Test switches, read off the page's own address. Mock only; they never
    reach the real API. ?mockEnd= door_shut | doors_open | walk_off forces a

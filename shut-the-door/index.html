@@ -192,16 +192,25 @@
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </div>
 
-<!-- The contract first, then the drawing, then the API. At integration the
-     lead puts Agent A's api.js, share.js and auth.js in front of mock-api.js,
-     which then steps aside: it only fills STD_API, STD_SHARE and STD_AUTH
-     when they are absent. -->
-<script src="contract.js?v=1"></script>
+<!-- The contract first, then the drawing, then the engine and its API
+     (rng, grade and lesson before engine), then accounts. mock-api.js only
+     takes over when the address carries a mock test switch (?mockEnd= and
+     the rest, used by test/check-browser.mjs); a player always gets the real
+     engine. -->
+<script src="contract.js?v=2"></script>
 <script src="sprites.js?v=2"></script>
 <script src="mound.js?v=2"></script>
 <script src="anim.js?v=2"></script>
-<script src="menus.js?v=3"></script>
-<script src="mock-api.js?v=3"></script>
+<script src="menus.js?v=4"></script>
+<script src="rng.js?v=1"></script>
+<script src="grade.js?v=2"></script>
+<script src="lesson.js?v=1"></script>
+<script src="engine.js?v=2"></script>
+<script src="share.js?v=1"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="auth.js?v=1"></script>
+<script src="api.js?v=2"></script>
+<script src="mock-api.js?v=4"></script>
 <script src="ui.js?v=3"></script>
 </body>
 </html>
