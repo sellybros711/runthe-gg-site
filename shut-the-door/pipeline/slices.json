@@ -1,9 +1,6 @@
 {
- "_about": "What the pitch library holds. Each slice is fetched once and kept in the actions/cache library; widen by adding a slice. innings null means every inning. ninth-YYYY slices feed the regular-season scenario search (closers.py).",
- "slices": [
-  {"name": "2023-opening-week", "start": "2023-03-30", "end": "2023-04-05", "gameTypes": "R|", "innings": null, "stepDays": 1},
-  {"name": "ninth-2023", "start": "2023-03-30", "end": "2023-10-01", "gameTypes": "R|", "innings": [9], "stepDays": 7},
-  {"name": "ninth-2024", "start": "2024-03-20", "end": "2024-09-30", "gameTypes": "R|", "innings": [9], "stepDays": 7},
-  {"name": "ninth-2025", "start": "2025-03-18", "end": "2025-09-28", "gameTypes": "R|", "innings": [9], "stepDays": 7}
- ]
+ "_about": "What the pitch library holds: every pitch of these seasons (regular season and postseason), trimmed to savant.LIB. 'priority' is only the fetch order: the seasons the ten scenarios and their batters need come first. 'slices' takes extra date ranges if one is ever needed.",
+ "seasons": "2008-2025",
+ "priority": [2025, 2024, 2022, 2016, 2019, 2011, 2023, 2021, 2018, 2015, 2010, 2017, 2020, 2012, 2013, 2014, 2009, 2008],
+ "slices": []
 }

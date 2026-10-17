@@ -87,6 +87,24 @@ console.log(`     start hold ${(start.hold * 100).toFixed(1)}%, best first call 
   calib('the start state offers more than one band', Object.values(bands).filter(Boolean).length >= 3);
 }
 
+{
+  // the stored hold table (what the browser reads) grades like a fresh solve
+  const p2 = synthPack();
+  p2.hold = new G.Model(p2, { fresh: true }).holdTable();
+  const fresh = new G.Model(synthPack(), { fresh: true }), stored = new G.Model(p2);
+  const rng = testRng(11);
+  let worst = 0, same = true;
+  for (let i = 0; i < 300; i++) {
+    const st = { bi: Math.floor(rng() * 9), b: Math.floor(rng() * 4), s: Math.floor(rng() * 3), outs: Math.floor(rng() * 3), bases: Math.floor(rng() * 8), margin: 1 };
+    const call = { type: fresh.types[Math.floor(rng() * 3)], cell: Math.floor(rng() * 25) };
+    const a = G.gradeCall(fresh, st, call), b = G.gradeCall(stored, st, call);
+    worst = Math.max(worst, Math.abs(a.lost - b.lost));
+    if (a.band !== b.band) same = false;
+  }
+  check('the stored hold table grades like a fresh solve', worst <= 0.02 && same, 'worst ' + worst);
+  check('the hold table is dense and full', p2.hold.h.every(v => v != null), String(p2.hold.h.length));
+}
+
 /* ---- outings ---- */
 function play(seed, chooser) {
   const o = E.createOuting(pack, { seed, mode: 'practice', model });
@@ -129,16 +147,24 @@ const heartFastball = () => ({ type: 'FF', cell: 12 });
   check('four draws per pitch, always', ref() === o.rng());
   // the shape a UI reads
   const p = o.log[0];
+  const k = o.log.find(q => q.paOver && q.outs > q.countBefore.b * 0 && q.runnerMoves.some(m => m.to === -1));
+  check('a batter put out shows as to: -1', !!k || o.log.every(q => !q.paOver || q.runs || q.runnerMoves.length));
   check('a pitch result carries the contract fields', ['n', 'call', 'actual', 'actualCell', 'velo', 'batter', 'result', 'countBefore', 'count', 'outs', 'bases', 'runnerMoves', 'runs', 'paOver', 'drawn'].every(k => k in p));
 }
 {
   // end rules: every pitch a home run. Lead 1, a man on: the first pitch
   // puts them ahead. walkOffLive decides walk-off against door's open.
   const allHr = (walkOffLive, lead, bases = 1) => {
-    const p = synthPack({ walkOffLive, lead, bases, perList: 4 });
-    const hr = p.pitches.length;
-    p.pitches.push(['synth:hr', 95, 'in_play', 'fly', 105, 28, 0, 'home_run']);
-    for (const lib of p.library) for (const t in lib) for (const cell of lib[t]) for (let b = 0; b < 4; b++) cell[b] = [[hr, 0]];
+    const hrIdx = G.KEYS.indexOf('home_run');
+    const p = synthPack({ walkOffLive, lead, bases, override: (library, pitches, pitchFor) => {
+      for (const lib of library) for (const t in lib) {
+        const ref = pitchFor(t, 'home_run') * 3;
+        for (let cell = 0; cell < 25; cell++) {
+          lib[t].p[cell] = [0, 1, 2, 3].map(() => G.KEYS.map((k, i) => (i === hrIdx ? 1000 : 0)));
+          lib[t].x[cell] = G.KEYS.map((k, i) => (i === hrIdx ? ref : -1));
+        }
+      }
+    } });
     const o = E.createOuting(p, { seed: 1 });
     E.throwPitch(o, { type: 'FF', cell: 12 });
     return o;

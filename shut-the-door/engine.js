@@ -118,113 +118,105 @@ function throwPitch(o, call) {
   const actual = { x: t.x + d.missX * arsenal.sigmaFt, zn: t.zn + d.missZ * arsenal.sigmaFt / pack.kernelZoneFt };
   const actualCell = K.cellAt(actual.x, actual.zn);
 
-  // 3. the real pitch
+  // 3. the outcome key, from the same per mille row the grade priced, then
+  //    that key's real pitch
   const bucket = G.bucketOf(st.b, st.s);
-  const list = model.list(st.bi, call.type, actualCell, bucket);
-  const [pi, tier] = list[Math.min(list.length - 1, Math.floor(d.library * list.length))];
-  const row = pack.pitches[pi];
-  const key = G.keyOf(row);
+  const entry = model.entry(st.bi, call.type);
+  const row = entry.p[actualCell][bucket];
+  const u = d.library * 1000;
+  let k = -1, acc = 0;
+  for (let i = 0; i < row.length; i++) { if (!row[i]) continue; acc += row[i]; k = i; if (u < acc) break; }
+  const ref = entry.x[actualCell][k];
+  if (ref == null || ref < 0) throw new Error(`no real pitch for ${G.KEYS[k]} at cell ${actualCell}`);
+  const pitch = pack.pitches[Math.floor(ref / 3)];
+  const tier = ref % 3;
+  const cls = G.CLASS[k];
 
-  // 4. what it does to the state
-  const trans = model.transitions(st, key);
-  let pickIdx = 0;
+  // 4. what it does to the state, the runner draw choosing among the rows
+  const trans = model.transitions(st, cls);
+  let pickIdx = trans.length - 1;
   if (trans.length > 1) {
-    let acc = 0;
-    pickIdx = trans.length - 1;
-    for (let i = 0; i < trans.length; i++) { acc += trans[i][0]; if (d.runner < acc) { pickIdx = i; break; } }
+    let a2 = 0;
+    for (let i = 0; i < trans.length; i++) { a2 += trans[i][0]; if (d.runner < a2) { pickIdx = i; break; } }
   }
   const t2 = trans[pickIdx][1];
 
   const countBefore = { b: st.b, s: st.s };
   const basesBefore = st.bases;
-  const outsBefore = st.outs;
-  let paOver = false;
-  let runs = t2.runs || 0;
-  if (t2.self) {
-    // a two-strike foul: nothing moves
-  } else if (t2.st) {
-    paOver = t2.st.bi !== st.bi || t2.st.outs !== st.outs || t2.st.bases !== st.bases || t2.st.margin !== st.margin
-      || (t2.st.b === 0 && t2.st.s === 0);
-    o.st = t2.st;
-  } else {
-    paOver = true;
-  }
+  const runs = t2.runs || 0;
+  const paOver = !t2.self && (!!t2.end || (t2.st.b === 0 && t2.st.s === 0));
+  if (t2.st) o.st = t2.st;
   o.score.them += runs;
 
-  let inPlay;
-  if (row[2] === 'in_play') {
-    const label = t2.label || 'out';
-    inPlay = { bb: row[3], ev: row[4], la: row[5], spray: row[6], result: label, text: inPlayText(label, runs) };
-  }
-
-  const outsAfter = t2.end === 'hold' ? 3 : (t2.st ? t2.st.outs : outsBefore);
-  const basesAfter = t2.st ? t2.st.bases : (t2.self ? basesBefore : basesBefore);
   if (t2.end) {
     o.status = 'over';
     if (t2.end === 'hold') o.outcome = 'door_shut';
-    else {
-      const ahead = o.score.them > o.score.us;
-      o.outcome = ahead && sc.situation.walkOffLive ? 'walk_off' : 'doors_open';
-    }
+    else o.outcome = o.score.them > o.score.us && sc.situation.walkOffLive ? 'walk_off' : 'doors_open';
   }
 
+  const res = pitch[2];
   const pr = {
     n: o.log.length + 1,
     call: { type: call.type, cell: call.cell },
     actual: { x: round3(actual.x), zn: round3(actual.zn) },
     actualCell,
-    velo: row[1],
-    batter: ['ball', 'called_strike', 'hit_by_pitch'].includes(row[2]) ? 'take' : 'swing',
-    result: row[2],
+    velo: pitch[1],
+    batter: (res === 'ball' || res === 'called_strike' || res === 'hit_by_pitch') ? 'take' : 'swing',
+    result: res,
     countBefore,
-    count: paOver || t2.end ? { b: 0, s: 0 } : { b: o.st.b, s: o.st.s },
-    outs: outsAfter,
-    bases: t2.end ? basesBefore : basesAfter,
-    runnerMoves: runnerMoves(basesBefore, t2.end ? basesBefore : basesAfter, runs, key, t2),
+    count: paOver ? { b: 0, s: 0 } : { b: o.st.b, s: o.st.s },
+    outs: t2.end === 'hold' ? 3 : (t2.st ? t2.st.outs : st.outs),
+    bases: t2.st ? t2.st.bases : (t2.end ? endBases(basesBefore, t2.moves) : basesBefore),
+    runnerMoves: (t2.moves || []).map(([from, to]) => ({ from, to })),
     runs,
-    paOver: paOver || !!t2.end,
-    drawn: { id: row[0], tier: TIER_NAME[tier] },
+    paOver,
+    drawn: { id: pitch[0], tier: TIER_NAME[tier] },
   };
-  if (inPlay) pr.inPlay = inPlay;
+  if (cls.startsWith('ip:')) {
+    const label = t2.label || 'out';
+    pr.inPlay = { bb: pitch[3], ev: pitch[4], la: pitch[5], spray: pitch[6], result: label, text: inPlayText(label, pitch[3], pitch[6], runs) };
+  }
   o.log.push(pr);
   o.grades.push(grade);
   o.calls.push({ type: call.type, cell: call.cell });
   return { pitchResult: pr, pitchGrade: grade, state: publicState(o) };
 }
 
-function round3(x) { return Math.round(x * 1000) / 1000; }
-
-const IN_PLAY_TEXT = {
-  single: 'single', double: 'double', triple: 'triple', home_run: 'home run', out: 'out',
-  double_play: 'double play', sac_fly: 'sac fly', error: 'reached on an error', fielders_choice: "fielder's choice",
-};
-function inPlayText(label, runs) {
-  const base = IN_PLAY_TEXT[label] || label;
-  return runs ? `${base}. ${runs} in.` : `${base}.`;
+/* Where runners stand when the outing ends on the play (the diamond's last
+   picture): the moves applied to the bases before it. */
+function endBases(before, moves) {
+  let b = before;
+  for (const [from] of moves || []) if (from >= 1 && from <= 3) b &= ~(1 << (from - 1));
+  for (const [, to] of moves || []) if (to >= 1 && to <= 3) b |= 1 << (to - 1);
+  return b;
 }
 
-/* A best-effort picture of who moved, for the diamond: occupied bases before
-   and after, the batter, and the runs. The engine's state is the bases mask;
-   this list is for drawing only. */
-function runnerMoves(before, after, runs, key, t2) {
-  const moves = [];
-  if (t2 && t2.self) return moves;
-  if (key === 'ball' || key === 'strike' || key === 'foul') {
-    if (before === after && !runs) return moves;
+function round3(x) { return Math.round(x * 1000) / 1000; }
+
+/* The field, from the spray angle (degrees, 0 centre, negative the left
+   field side) and the batted ball. */
+const INFIELD = ['third', 'short', 'second', 'first'];
+function fieldOf(bb, spray) {
+  if (spray == null) return '';
+  if (bb === 'ground') return INFIELD[Math.max(0, Math.min(3, Math.floor((spray + 45) / 22.5)))];
+  return spray < -15 ? 'left' : spray > 15 ? 'right' : 'center';
+}
+function inPlayText(label, bb, spray, runs) {
+  const f = fieldOf(bb, spray);
+  const to = f ? ' to ' + f : '';
+  let base;
+  switch (label) {
+    case 'single': case 'double': case 'triple': base = label + to; break;
+    case 'home_run': base = 'home run' + to; break;
+    case 'error': base = 'error' + (f ? ' at ' + f : ''); break;
+    case 'double_play': base = 'double play'; break;
+    case 'sac_fly': base = 'sac fly' + to; break;
+    case 'fielders_choice': base = "fielder's choice"; break;
+    default:
+      base = bb === 'ground' ? 'grounded out' + to : bb === 'line' ? 'lined out' + to
+        : bb === 'popup' ? 'popped out' : 'flied out' + to;
   }
-  const occ = [1, 2, 3].filter(b => before & (1 << (b - 1)));
-  const dest = [1, 2, 3].filter(b => after & (1 << (b - 1)));
-  let scored = runs;
-  // lead runners first: a runner scores while runs remain, else takes the highest free base
-  const free = dest.slice().sort((a, b) => b - a);
-  for (const b of occ.sort((a, c) => c - a)) {
-    if (scored > 0) { moves.push({ from: b, to: 4 }); scored--; continue; }
-    const to = free.find(f => f >= b);
-    if (to) { moves.push({ from: b, to }); free.splice(free.indexOf(to), 1); }
-  }
-  if (free.length) moves.push({ from: 0, to: free[free.length - 1] });
-  else if (scored > 0) moves.push({ from: 0, to: 4 });
-  return moves;
+  return runs ? `${base}. ${runs} in.` : `${base}.`;
 }
 
 /* ---- the result -------------------------------------------------------- */

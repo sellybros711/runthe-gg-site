@@ -39,6 +39,20 @@ KEEP = [
     'delta_home_win_exp', 'home_win_exp', 'bat_win_exp',
 ]
 
+# The bulk library: what grading, the tiers, the pool and the advancement
+# table read. Narrower than KEEP (no play text, no duplicate score columns), so
+# 2008 to the present stays a few hundred MB of gzipped chunks. A single game
+# for a scenario is fetched with KEEP, play text and all.
+LIB = [
+    'game_pk', 'game_date', 'game_type', 'game_year', 'at_bat_number', 'pitch_number',
+    'pitcher', 'batter', 'player_name', 'stand', 'p_throws', 'home_team', 'away_team',
+    'inning', 'inning_topbot', 'outs_when_up', 'on_1b', 'on_2b', 'on_3b',
+    'balls', 'strikes', 'bat_score', 'fld_score', 'post_bat_score', 'post_fld_score',
+    'pitch_type', 'release_speed', 'pfx_x', 'pfx_z', 'plate_x', 'plate_z', 'sz_top', 'sz_bot',
+    'type', 'description', 'events', 'bb_type', 'launch_speed', 'launch_angle', 'hc_x', 'hc_y',
+    'estimated_woba_using_speedangle', 'delta_run_exp', 'delta_home_win_exp',
+]
+
 # Regular season and every postseason round. Spring training never.
 GT_REGULAR = 'R|'
 GT_POST = 'F|D|L|W|'
@@ -95,8 +109,12 @@ def fetch_trimmed(url, cache_key):
     path = os.path.join(CHUNKS, cache_key)
     if os.path.exists(path) and os.path.getsize(path) > 0:
         df = pd.read_csv(path, low_memory=False)
-        return df, []
+        for c in LIB:
+            if c not in df.columns:
+                df[c] = None
+        return df[LIB], []
     df, missing = _parse(get(url))
+    df = df[LIB]
     tmp = path + '.tmp'
     df.to_csv(tmp, index=False, compression='gzip')
     os.replace(tmp, path)
@@ -127,7 +145,7 @@ def fetch_range(start, end, *, game_types=GT_REGULAR + GT_POST, innings=None, st
             raise RuntimeError(f'{a}: one day is over the {CAP} row cap')
         log(f'  {a}..{b}: {len(df)} rows')
         frames.append(df)
-    df = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=KEEP)
+    df = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=LIB)
     return df, sorted(missing_all)
 
 
@@ -135,13 +153,13 @@ def to_library(df, table='pitches'):
     """Upsert into the SQLite library, keyed by (game_pk, at_bat_number, pitch_number)."""
     ensure_dirs()
     con = sqlite3.connect(LIBRARY)
-    cols = ', '.join(f'"{c}"' for c in KEEP)
+    cols = ', '.join(f'"{c}"' for c in LIB)
     con.execute(f'CREATE TABLE IF NOT EXISTS {table} ({cols}, '
                 'PRIMARY KEY (game_pk, at_bat_number, pitch_number))')
     con.execute('CREATE TABLE IF NOT EXISTS fetched (slice TEXT PRIMARY KEY, rows INTEGER, at TEXT)')
     if len(df):
-        ph = ', '.join('?' for _ in KEEP)
-        rows = df[KEEP].astype(object).where(pd.notna(df[KEEP]), None).values.tolist()
+        ph = ', '.join('?' for _ in LIB)
+        rows = df[LIB].astype(object).where(pd.notna(df[LIB]), None).values.tolist()
         con.executemany(f'INSERT OR REPLACE INTO {table} ({cols}) VALUES ({ph})', rows)
     con.commit()
     return con
