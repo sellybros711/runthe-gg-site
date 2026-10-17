@@ -17,8 +17,8 @@
  */
 import { chromium } from 'playwright';
 import fs from 'node:fs';
-import vm from 'node:vm';
 import { readEconomy, openPage } from './econ-audit.mjs';
+import { loadGyms } from './putt/gyms-node.mjs';
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 const RUNS = +arg('--runs', 200), DAYS = +arg('--days', 60);
@@ -45,7 +45,8 @@ const PUTT_WORLDS = 11, PUTT_WORLD_COINS = 4000 + 13000;
    the plans on 2026-10-17 (103 over the tour, 30,900 coins). A world with no gyms yet is as it was. */
 const PZ_WORLD = { clubhouse: 7, school: 6, candy: 12, neon: 7, pirate: 11, temple: 10, canyon: 12, volcano: 9, sky: 12, dino: 10, iceage: 7 }, PZ_PAY = 6 * 50;
 const WORLD_ORDER = ['clubhouse', 'school', 'candy', 'neon', 'pirate', 'temple', 'canyon', 'volcano', 'sky', 'dino', 'iceage'];
-const GYMS = (() => { try { const ctx = {}; ctx.globalThis = ctx; vm.createContext(ctx); vm.runInContext(fs.readFileSync(new URL('./putt/gyms.js', import.meta.url), 'utf8'), ctx); return ctx.RTT_PUTT_GYMS.GYMS; } catch (e) { return []; } })();
+// every gym of every kind (gyms.js and gymkinds/, loaded as the page loads them), the test kind's out of every world
+const GYMS = (() => { try { return loadGyms().GYMS.filter((g) => g.world); } catch (e) { return []; } })();
 const gymDelta = (w) => { const gs = GYMS.filter((g) => g.world === WORLD_ORDER[w]); return gs.length ? gs.reduce((a, g) => a + g.pay, 0) - PZ_WORLD[WORLD_ORDER[w]] * PZ_PAY : 0; };
 /* THE GYM VAULTS PAY A PACK and CHESTS ROLL ODDS (the owner, 2026-10-17; CHEST_ODDS in putt.js). A world's first gym
    pays a free Pro Shop pack and its gatekeeper a Tour pack. A chest rolls a big haul (twice its coins again) 15% of
