@@ -1,33 +1,40 @@
 name: Shut The Door data
 
-# Builds Shut The Door's data on GitHub's runners, because the data hosts
-# (baseballsavant.mlb.com, statsapi.mlb.com, www.retrosheet.org) do not answer
-# from the cloud development container and do answer from here.
+# Builds Shut The Door's data on GitHub's runners: the reproducible build of
+# everything the game downloads. The same steps run locally from
+# shut-the-door/pipeline (README.md has them).
 #
-# What it does, in order:
-#   build_library.py     the trimmed Statcast pitch library (pipeline/slices.json)
-#   verify_scenarios.py  every candidate spot in pipeline/candidates.json, from data
-#   closers.py           the regular-season search for the two open slots
-#   report.py            pipeline/report.md
+#   build_library.py     the trimmed Statcast pitch library, 2008 to 2025
+#                        (pipeline/slices.json), as cached gzipped chunks and a
+#                        SQLite file rebuilt from them
+#   verify_scenarios.py  every candidate spot's facts (data/verify)
+#   closers.py           the regular-season scenario search (data/verify)
+#   closer_pool.py       the 2015+ closer pool's policies (data/closers.json)
+#   build_packs.py       the ten packs, staged
+#   pool.js              hold% tables, the closer pool's 2,000+ outings per pack
+#                        (data/packs)
+#   build_schedule.mjs   data/schedule.json
+#   test/packs.mjs       every pack against the contract, and the three tests
 #
-# THE LIBRARY NEVER GOES IN GIT. Pages refuses any file over 25 MB, and the
-# library is far past that once it is widened. It lives in actions/cache,
-# restored at the start of a run and saved at the end (even on a failure, so a
-# long fetch is never asked for twice). Only small outputs are committed back:
-# shut-the-door/data/** and shut-the-door/pipeline/report.md.
+# THE LIBRARY NEVER GOES IN GIT. Pages refuses any file over 25 MB. The chunks
+# and the HTTP cache live in actions/cache, restored at the start and saved at
+# the end, EVEN ON A FAILURE, so a long fetch is never asked for twice: a cold
+# first run is several hours of polite Savant requests and may need a second
+# run to finish, which then reads what the first one saved. Only small outputs
+# are committed back: shut-the-door/data/** and shut-the-door/pipeline/report.md.
 
 on:
   push:
     branches: [claude/shut-the-door-engine]
-    paths: ['shut-the-door/pipeline/**']
+    paths: ['shut-the-door/pipeline/**', 'shut-the-door/scenarios/scenarios.json']
   workflow_dispatch:
     inputs:
       only:
-        description: 'Verify only these candidate ids (space separated); empty for all'
+        description: 'Build only these pack ids (space separated); empty for all'
         type: string
         default: ''
       seasons:
-        description: 'Whole seasons to add to the library, e.g. 2008-2025 (the full build); empty for slices.json only'
+        description: 'Library seasons, e.g. 2015-2025 for a quicker run; empty for slices.json'
         type: string
         default: ''
 
@@ -38,7 +45,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 300
+    timeout-minutes: 350
     defaults:
       run:
         working-directory: shut-the-door/pipeline
@@ -49,35 +56,65 @@ jobs:
         with:
           python-version: '3.11'
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Install
         run: pip install -r requirements.txt
 
-      - name: Restore the library
+      - name: Restore the library chunks
         uses: actions/cache/restore@v4
         with:
-          path: shut-the-door/pipeline/cache
-          key: std-library-v1-${{ github.run_id }}
-          restore-keys: std-library-v1-
+          path: |
+            shut-the-door/pipeline/cache/chunks
+            shut-the-door/pipeline/cache/http
+          key: std-chunks-v2-${{ github.run_id }}
+          restore-keys: std-chunks-v2-
+
+      - name: The grid is contract.js's grid
+        run: python3 prep.py
 
       - name: The library
-        run: python3 build_library.py ${{ inputs.seasons && format('--seasons {0}', inputs.seasons) || '' }}
+        run: python3 build_library.py --workers 4 ${{ inputs.seasons && format('--seasons {0}', inputs.seasons) || '' }}
 
       - name: Verify the candidate scenarios
-        run: python3 verify_scenarios.py ${{ inputs.only }}
+        run: python3 verify_scenarios.py
 
       - name: The regular-season search
         run: python3 closers.py
+
+      - name: The closer pool
+        run: python3 closer_pool.py
+
+      - name: The packs
+        run: |
+          python3 build_packs.py ${{ inputs.only }}
+          mkdir -p ../data/packs
+          for f in cache/stage/*.json; do
+            node ../pool.js "$f" ../data/closers.json "../data/packs/$(basename "$f")" --runs 2000
+          done
+          node build_schedule.mjs
+
+      - name: Every pack against the contract, and the three tests
+        working-directory: shut-the-door
+        run: |
+          node test/packs.mjs | tee pipeline/packs-test.txt || true
+          node test/api.mjs
+          node check-replays.mjs --self-test
 
       - name: Report
         if: ${{ always() }}
         run: python3 report.py
 
-      - name: Save the library
+      - name: Save the library chunks
         if: ${{ always() }}
         uses: actions/cache/save@v4
         with:
-          path: shut-the-door/pipeline/cache
-          key: std-library-v1-${{ github.run_id }}
+          path: |
+            shut-the-door/pipeline/cache/chunks
+            shut-the-door/pipeline/cache/http
+          key: std-chunks-v2-${{ github.run_id }}
 
       - name: Keep the outputs
         if: ${{ always() }}
@@ -91,7 +128,7 @@ jobs:
 
   commit:
     needs: build
-    if: ${{ always() && needs.build.result != 'cancelled' }}
+    if: ${{ always() && needs.build.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write

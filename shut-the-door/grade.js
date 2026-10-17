@@ -298,22 +298,21 @@ function reasonFor(model, st, call, best, value, lost) {
   const batter = model.pack.scenario.batters[st.bi % model.N];
   const pr = batter.profile || {};
   const bestTxt = `${pitchName(model, best.type)} ${placeOf(best.cell, batter.bats)}`;
-  const green = lost <= K.BANDS[0].maxLost;
-  // 1. a note about the pitch and place that was called, if one fits
-  for (const n of pr.notesFor || []) {
-    if (n.type === call.type && (n.cells || []).includes(call.cell)) return n.text + '.';
-  }
-  if (green) {
+  const noteAbout = (type, cell) => (pr.notesFor || []).find(n => n.type === type && (n.cells || []).includes(cell));
+  if (lost <= K.BANDS[0].maxLost) {
+    const n = noteAbout(call.type, call.cell);
+    if (n) return n.text + '.';
     if (call.type === best.type && call.cell === best.cell) return `the best call here. it holds ${pct(best.hold)}%.`;
     return `as good as the best call. ${bestTxt} holds ${pct(best.hold)}%.`;
   }
-  // 2. the place: his damage there
+  // not green: say why the best call was better
+  const nb = noteAbout(best.type, best.cell);
+  if (nb) return `${bestTxt} was the call. ${nb.text}.`;
   const heat = pr.heat && pr.heat[call.cell];
   if (K.inZone(call.cell) && heat != null && heat >= 0.4) {
     return `he does damage there. ${fmt3(heat)} xwoba on contact. ${bestTxt} was the call.`;
   }
-  // 3. the count
-  if (st.b === 3 && !K.inZone(call.cell)) return `three balls, and he chases ${Math.round((pr.chase || 0) * 100)}%. ${bestTxt} was the call.`;
+  if (st.b === 3 && !K.inZone(call.cell)) return `three balls. he chases ${Math.round((pr.chase || 0) * 100)}%. ${bestTxt} was the call.`;
   if (st.s === 2 && pr.whiff && pr.whiff[best.type] != null && best.type !== call.type) {
     return `two strikes. he whiffs on ${Math.round(pr.whiff[best.type] * 100)}% of his swings at the ${pitchName(model, best.type)}.`;
   }

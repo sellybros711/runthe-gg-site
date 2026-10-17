@@ -1,0 +1,188 @@
+/* Shut The Door: the built packs, against the contract and the brief's tests.
+ *   node shut-the-door/test/packs.mjs                 every pack in data/packs
+ *   node shut-the-door/test/packs.mjs path/to/pack.json ...
+ *   node shut-the-door/test/packs.mjs --calib         the band calibration lines only
+ *
+ * Per pack:
+ *   the pack against CONTRACT.md (scenario, arsenal, batters, profiles, reveal,
+ *   library rows, advancement rows, hold table, pool) and under 1.5 MB
+ *   determinism on the real pack
+ *   the brief's three tests:
+ *     fastballs down the middle grade mostly orange and red
+ *     a scripted best-call outing is all green
+ *     a scripted median outing lands at the 40th to 60th percentile
+ *   and the band spread of the pool's calls (reported, the lead's to read)
+ */
+import { createRequire } from 'module';
+import { readFileSync, readdirSync, statSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+const require = createRequire(import.meta.url);
+const K = require('../contract.js');
+const R = require('../rng.js');
+const G = require('../grade.js');
+const E = require('../engine.js');
+const P = require('../pool.js');
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const PACKS = join(HERE, '..', 'data', 'packs');
+const MAX_BYTES = 1.5e6;
+const CLOSERS = join(HERE, '..', 'data', 'closers.json');
+let closersFull = null;
+try { closersFull = JSON.parse(readFileSync(CLOSERS, 'utf8')).closers; } catch (e) { closersFull = null; }
+
+let fails = 0;
+function check(name, cond, detail) {
+  if (cond) console.log('ok   ' + name);
+  else { fails++; console.log('FAIL ' + name + (detail ? ': ' + detail : '')); }
+}
+
+function shapeChecks(pack, file) {
+  const id = pack.scenario.id;
+  const sc = pack.scenario;
+  const errs = [];
+  const need = (o, keys, where) => { for (const k of keys) if (!(k in o)) errs.push(`${where} lacks ${k}`); };
+  need(pack, ['v', 'scenario', 'library', 'advance', 'hold', 'kernel' in pack ? 'kernel' : 'kernelZoneFt', 'pool', 'reveal', 'pitches', 'keys'], 'pack');
+  need(sc, ['id', 'title', 'setup', 'pitcher', 'situation', 'batters', 'realFaced', 'resolution', 'sources'], 'scenario');
+  if ('reveal' in sc) errs.push('scenario carries the reveal');
+  const ars = sc.pitcher.arsenal;
+  const usage = ars.reduce((a, x) => a + x.usage, 0);
+  if (Math.abs(usage - 1) > 1e-6) errs.push('arsenal usage sums to ' + usage);
+  for (const a of ars) {
+    need(a, ['type', 'name', 'usage', 'velo', 'pfxX', 'pfxZ', 'shape', 'command', 'sigmaFt'], 'arsenal ' + a.type);
+    if (!K.PITCH_TYPES.includes(a.type)) errs.push('pitch type ' + a.type);
+    if (K.SHAPE_OF[a.type] !== a.shape) errs.push('shape of ' + a.type);
+    if (!(a.command >= 20 && a.command <= 80)) errs.push('command ' + a.command);
+  }
+  const s = sc.situation;
+  const lead = s.score.us - s.score.them;
+  if (!(lead >= 1)) errs.push('us does not lead');
+  if (s.walkOffLive !== (!s.usHome && s.inning >= 9)) errs.push('walkOffLive does not follow the rule');
+  if (sc.batters.length < 9) errs.push('fewer than 9 batters');
+  if (sc.realFaced > sc.batters.length) errs.push('realFaced past the batters');
+  if (!['real', 'proxy'].includes(sc.resolution)) errs.push('resolution');
+  if (sc.resolution === 'real' && sc.pitcher.year < 2008) errs.push('real before 2008');
+  if (sc.resolution === 'proxy' && sc.pitcher.year >= 2008) errs.push('proxy from 2008 on');
+  for (const b of sc.batters) {
+    need(b, ['id', 'name', 'bats', 'line', 'szTop', 'szBot', 'profile', 'profileTier'], 'batter ' + b.name);
+    const p = b.profile;
+    if (!p || p.heat.length !== 25 || p.swing.length !== 25) errs.push('profile grids of ' + b.name);
+    if (!['L', 'R'].includes(b.bats)) errs.push('bats of ' + b.name);
+    for (const a of ars) if (!(a.type in p.whiff)) errs.push(`whiff ${a.type} for ${b.name}`);
+    if (sc.resolution === 'proxy' && !String(b.id).startsWith('retro:')) errs.push('proxy id ' + b.id);
+  }
+  const rv = pack.reveal;
+  need(rv, ['outcome', 'pitches', 'runs', 'summary', 'plateAppearances'], 'reveal');
+  if (rv.pitches == null && !rv.pitchesNote) errs.push('null reveal pitches without a note');
+  if (!K.OUTCOMES.includes(rv.outcome)) errs.push('reveal outcome');
+  // the library: every row sums to 1000, every key with a chance has a real pitch
+  for (let bi = 0; bi < sc.batters.length; bi++) {
+    for (const a of ars) {
+      const e = pack.library[bi][a.type];
+      for (let c = 0; c < 25; c++) {
+        for (let b = 0; b < 4; b++) {
+          const row = e.p[c][b];
+          const sum = row.reduce((x, y) => x + y, 0);
+          if (sum !== 1000) { errs.push(`row sum ${sum} at ${bi} ${a.type} ${c} ${b}`); break; }
+          row.forEach((v, k) => { if (v > 0 && !(e.x[c][k] >= 0)) errs.push(`no pitch for ${pack.keys[k]} at ${bi} ${a.type} ${c}`); });
+        }
+      }
+    }
+  }
+  // advancement rows: sum to 1, conserve runners
+  for (const cat of G.IN_PLAY) for (let o = 0; o < 3; o++) for (let b = 0; b < 8; b++) {
+    const rows = pack.advance[cat][o * 8 + b];
+    if (!rows) { errs.push(`no advance ${cat} ${o} ${b}`); continue; }
+    const sum = rows.reduce((x, r) => x + r[0], 0);
+    if (Math.abs(sum - 1) > 1e-3) errs.push(`advance ${cat} ${o} ${b} sums ${sum}`);
+    const nb = n => [1, 2, 4].filter(m => n & m).length;
+    for (const r of rows) if (o + r[3] < 3 && nb(r[1]) + r[2] + r[3] !== nb(b) + 1) errs.push(`advance ${cat} ${o} ${b} does not conserve`);
+  }
+  const model = new G.Model(pack);
+  if (pack.hold.h.length !== model.N * 12 * 3 * 8 * model.M) errs.push('hold table size');
+  if (!(pack.pool.scores.length >= 2000)) errs.push('pool has ' + pack.pool.scores.length + ' runs');
+  for (let i = 1; i < pack.pool.scores.length; i++) if (pack.pool.scores[i] < pack.pool.scores[i - 1]) { errs.push('pool scores unsorted'); break; }
+  const bytes = statSync(file).size;
+  check(`${id}: the pack holds the contract (${(bytes / 1e6).toFixed(2)} MB)`, !errs.length && bytes < MAX_BYTES, errs.slice(0, 5).join('; '));
+}
+
+/* the brief's tests ------------------------------------------------------------ */
+
+function playOut(pack, model, seed, chooser) {
+  const o = E.createOuting(pack, { seed, mode: 'practice', model });
+  let guard = 0;
+  while (o.status === 'live' && guard++ < 200) E.throwPitch(o, chooser(o));
+  return o;
+}
+
+function calibration(pack) {
+  const id = pack.scenario.id;
+  const model = new G.Model(pack);
+  const ars = pack.scenario.pitcher.arsenal;
+  const hard = ars.filter(a => K.FAMILY_OF[a.type] === 'hard').sort((a, b) => b.usage - a.usage)[0] || ars[0];
+  const mid = { green: 0, yellow: 0, orange: 0, red: 0 };
+  let allGreen = true;
+  for (let seed = 1; seed <= 40; seed++) {
+    for (const g of playOut(pack, model, seed, () => ({ type: hard.type, cell: 12 })).grades) mid[g.band]++;
+    const ob = playOut(pack, model, 1000 + seed, o => { const b = model.solve(o.st); return { type: b.type, cell: b.cell }; });
+    if (!ob.grades.every(g => g.band === 'green')) allGreen = false;
+  }
+  const tot = mid.green + mid.yellow + mid.orange + mid.red;
+  const midShare = (mid.orange + mid.red) / tot;
+  // a scripted median outing: a closer from the pool, drawn at random, with
+  // seeds the pool never used. The median of their percentiles.
+  const closers = closersFull;
+  const pcts = [];
+  if (closers) {
+    const pick = R.mulberry32(99);
+    for (let i = 0; i < 400; i++) {
+      const c = closers[Math.floor(pick() * closers.length)];
+      const policy = R.mulberry32(R.hashSeed(`${id}|median|${i}`));
+      const o = playOut(pack, model, R.hashSeed(`${id}|median-seed|${i}`), oo => P.closerCall(c, oo, policy));
+      pcts.push(E.percentileOf(E.outingScore(o), pack.pool.scores));
+    }
+  }
+  pcts.sort((a, b) => a - b);
+  const median = pcts.length ? pcts[Math.floor(pcts.length / 2)] : null;
+  return { id, mid, midShare, allGreen, median, pool: pack.build && pack.build.pool, startHold: pack.build && pack.build.startHold };
+}
+
+function determinism(pack) {
+  const model = new G.Model(pack);
+  const rng = R.mulberry32(7);
+  const types = model.types;
+  const calls = Array.from({ length: 80 }, () => ({ type: types[Math.floor(rng() * types.length)], cell: Math.floor(rng() * 25) }));
+  const a = JSON.stringify(E.replay(pack, 4242, calls, { model: new G.Model(pack) }).log);
+  const b = JSON.stringify(E.replay(pack, 4242, calls, { model }).log);
+  check(`${pack.scenario.id}: the same seed and calls give the same outing`, a === b);
+}
+
+/* run ---------------------------------------------------------------------------- */
+
+const args = process.argv.slice(2);
+const calibOnly = args.includes('--calib');
+let files = args.filter(a => !a.startsWith('--'));
+if (!files.length) {
+  try { files = readdirSync(PACKS).filter(f => f.endsWith('.json')).map(f => join(PACKS, f)); } catch (e) { files = []; }
+}
+if (!files.length) { console.log('no packs to check'); process.exit(0); }
+const rows = [];
+for (const f of files) {
+  const pack = JSON.parse(readFileSync(f, 'utf8'));
+  if (!calibOnly) { shapeChecks(pack, f); determinism(pack); }
+  const c = calibration(pack);
+  rows.push(c);
+  check(`${c.id}: fastballs down the middle grade mostly orange and red`, c.midShare > 0.5, JSON.stringify(c.mid));
+  check(`${c.id}: a scripted best-call outing is all green`, c.allGreen);
+  check(`${c.id}: a scripted median outing lands at the 40th to 60th percentile`, c.median != null && c.median >= 40 && c.median <= 60, 'median ' + c.median);
+}
+console.log('\nband spread of the closer pool\'s calls, per scenario:');
+for (const c of rows) {
+  const b = c.pool ? c.pool.bands : {};
+  const t = Object.values(b).reduce((x, y) => x + y, 0) || 1;
+  const pc = k => Math.round((b[k] || 0) / t * 100);
+  console.log(`  ${c.id.padEnd(26)} green ${pc('green')}%  yellow ${pc('yellow')}%  orange ${pc('orange')}%  red ${pc('red')}%  ` +
+    `| heart fastballs orange+red ${Math.round(c.midShare * 100)}% | start hold ${c.startHold}% | pool holds ${c.pool && Math.round(c.pool.holdRate * 100)}% | median outing ${c.median}th`);
+}
+console.log(fails ? `${fails} FAILED` : 'all ok');
+process.exit(fails ? 1 : 0);
