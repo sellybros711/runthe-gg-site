@@ -5,6 +5,7 @@ read the batting order, and for the leverage index the regular-season search
 ranks by. Pitch-level facts (type, velo, location) come from Savant.
 """
 
+import hashlib
 import json
 
 from common import get
@@ -44,8 +45,9 @@ def people(ids, season=None):
     for k in range(0, len(ids), 50):
         chunk = ids[k:k + 50]
         hyd = f'&hydrate=stats(group=[hitting,pitching],type=[season],season={season})' if season else ''
-        data = _json(f'/v1/people?personIds={",".join(map(str, chunk))}{hyd}',
-                     f'people-{season}-{chunk[0]}-{chunk[-1]}-{len(chunk)}')
+        # keyed on the whole list: two batches can share first, last and count
+        key = hashlib.sha1(','.join(map(str, chunk)).encode()).hexdigest()[:16]
+        data = _json(f'/v1/people?personIds={",".join(map(str, chunk))}{hyd}', f'people-{season}-{key}')
         for p in data.get('people', []):
             out[p['id']] = p
     return out

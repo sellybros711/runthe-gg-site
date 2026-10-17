@@ -168,14 +168,25 @@ LINE_FEATS = ['avg', 'obp', 'slg', 'hr_pa']
 
 def spread(df):
     """Root-mean-square distance (ft, per axis) of pitches from their own mean
-    location within each (count bucket, batter side)."""
+    location within each (count bucket, batter side). Groups under 10 pitches
+    are left out, and each group's variance carries the n / (n - 1)
+    correction: a small group sits closer to its own fitted mean, which read
+    as fine command (Yamamoto's few cutters scored the 80 cap)."""
     if len(df) < 30:
         return None
     zf = df['zn'] * (df['sz_top'] - df['sz_bot'])
-    g = df.assign(zf=zf).groupby(['bucket', 'stand'])
-    dx = df['plate_x'] - g['plate_x'].transform('mean')
-    dz = zf - g['zf'].transform('mean')
-    return float(np.sqrt(((dx ** 2 + dz ** 2) / 2).mean()))
+    d = df.assign(zf=zf)
+    num = den = 0.0
+    for _, g in d.groupby(['bucket', 'stand']):
+        n = len(g)
+        if n < 10:
+            continue
+        v = (((g['plate_x'] - g['plate_x'].mean()) ** 2 + (g['zf'] - g['zf'].mean()) ** 2) / 2).sum()
+        num += v * n / (n - 1)
+        den += n
+    if den < 30:
+        return None
+    return float(np.sqrt(num / den))
 
 
 def league_spreads(df, ptype, min_n=200):
@@ -188,10 +199,18 @@ def league_spreads(df, ptype, min_n=200):
     return np.array(s)
 
 
-def command_of(his, league):
+K_COMMAND = 150.0
+
+
+def command_of(his, league, n=None):
+    """(command 20-80, sigmaFt). His spread is shrunk toward the league mean by
+    his pitch count (K_COMMAND pitches of prior), so a pitch he threw a few
+    hundred times cannot pin the scale on its own."""
     if his is None or len(league) < 10:
         return 50, BASE_SIGMA_FT
     mu, sd = league.mean(), league.std()
+    if n is not None:
+        his = (n * his + K_COMMAND * mu) / (n + K_COMMAND)
     z = (mu - his) / sd if sd > 0 else 0
     return int(max(20, min(80, round(50 + 10 * z)))), round(BASE_SIGMA_FT * his / mu, 3)
 

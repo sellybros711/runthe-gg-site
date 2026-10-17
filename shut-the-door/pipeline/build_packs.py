@@ -189,7 +189,7 @@ def build_one(spec, adv):
             sy = year if not proxy else spec['proxyArsenal']['fromSeason']
             mine = season(sy)
             mine = mine[(mine['pitcher'] == pid) & (mine['pitch_type'] == a['type'])]
-            a['command'], a['sigmaFt'] = M.command_of(M.spread(mine), league_sp)
+            a['command'], a['sigmaFt'] = M.command_of(M.spread(mine), league_sp, n=len(mine))
         a['name'] = prep.NAME[a['type']]
         a['shape'] = SHAPE[a['type']]
         a['usage'] = round(a['usage'], 4)
@@ -519,7 +519,7 @@ def setup_of(v, spec, us_team, batters):
 EVENT_SHORT = {'strikeout': 'struck out', 'walk': 'walked', 'single': 'singled', 'double': 'doubled',
                'triple': 'tripled', 'home_run': 'homered', 'hit_by_pitch': 'hit by a pitch',
                'grounded_into_double_play': 'grounded into a double play', 'field_out': 'out',
-               'force_out': 'out on a force', 'sac_bunt': 'sacrifice bunt', 'sac_fly': 'sac fly',
+               'force_out': 'out on a force', 'sac_bunt': 'bunted', 'sac_fly': 'sac fly',
                'fielders_choice': "fielder's choice", 'fielders_choice_out': "fielder's choice",
                'field_error': 'reached on an error', 'double_play': 'double play', 'intent_walk': 'walked'}
 RETRO_SHORT = [('HR', 'homered'), ('HP', 'hit by a pitch'), ('IW', 'walked'), ('W', 'walked'), ('K', 'struck out'),

@@ -118,6 +118,15 @@ in the called cell (xwOBA on contact), the count (three balls, two strikes), or 
 Notes come from the batter's own data: chase rates in a region with two strikes (only when above
 the league's), whiff rates by pitch, xwOBA on contact by part of the zone.
 
+## Command
+
+`model.py command_of`. For each pitch type, his location spread (the root-mean-square distance of
+his pitches from his own mean location in each count bucket and batter side, groups of 10 or more,
+with the small-group correction) against the league's for that type and hand. His spread is
+shrunk toward the league mean by his pitch count (150 pitches of prior). `sigmaFt = 0.45 x his /
+league`, and `command = 50 + 10 z`, clamped to 20-80. 0.45 ft is a game setting (the average
+pitcher's miss per axis): Statcast does not record the catcher's target, so it is not measured.
+
 ## The outing score and percentile
 
 ```
