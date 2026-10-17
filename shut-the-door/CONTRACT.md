@@ -1,6 +1,6 @@
 # Shut The Door: the shared contract
 
-Status: DRAFT for owner approval (2026-10-17). Owned by the lead. Agent A (engine, data, backend)
+Status: approved with the owner's changes (2026-10-17): unlisted not gated, pitcher's view, 2008+ real. Owned by the lead. Agent A (engine, data, backend)
 and Agent B (UI) both build against this file and change it only through the lead. Anything B
 needs that is missing goes in `CONTRACT_REQUESTS.md`; the lead answers there and edits this file.
 
@@ -10,17 +10,21 @@ import the constants from there rather than retyping a number.
 
 ## 0. Where it lives and how it is served
 
-Tester-only games keep all code under `functions/_<game>/`, because any folder at the site root is
-served to the public (the vault's `platform-tester-gate`). So the "self-contained game folder" is:
+A public, unlisted page at `runthe.gg/shut-the-door`, like Run The Floor before its launch: anyone
+with the link can play, and nothing on the site points to it. Until the owner puts it live it is in
+no nav, no home page card, no sitemap, no newsletter list, and it is `noindex`. A posture check holds
+that (baseball's `check-posture.mjs` pattern, with INDEXED and LINKED both false).
 
 ```
-functions/_shutthedoor/            everything, never served as files (_redirects 404s /functions/*)
-functions/shut-the-door/[[path]].js   the page Function: /shut-the-door and /shut-the-door/m/<file>.js
-functions/api/shut-the-door/[[path]].js  the API Function: /api/shut-the-door/*
+shut-the-door/              the game, a top-level folder like baseball/ and hoops/
+  index.html                one page, sibling scripts each with ?v=N (check-cachebust)
+  engine.js ...             plain scripts: window.STD_* in the browser, module.exports in node
+  data/packs/<n>.json?v=N   one pack per scenario
+  data/schedule.json?v=N    day to pack
+  pipeline/                 Python, never loaded by the page
 ```
 
-Browser code is plain ES modules, built into `pages.js` as strings and served only through the gate
-(the Last Shot pattern). A non-tester gets the site's `404.html` with a 404 on every route.
+No bundler and no build step, as for every top-level game.
 
 ## 1. Words and units
 
@@ -29,7 +33,7 @@ Browser code is plain ES modules, built into `pages.js` as strings and served on
 | us | the closer's team. The player always pitches for us |
 | them | the batting team |
 | day | the Eastern calendar day, `YYYY-MM-DD` (`America/New_York`), like every daily on the site |
-| daily number | `floor((day - EPOCH) / 1 day) + 1`, EPOCH = the first tester day |
+| daily number | `floor((day - EPOCH) / 1 day) + 1`, EPOCH = the first day it is playable |
 | hold | the outing ends with 3 outs and our lead intact |
 | hold% | the probability of a hold from a state, under best play from here on. The grading unit |
 | pts | percentage points of hold%. `0.5 pts` = half a point of hold chance |
@@ -58,8 +62,11 @@ Geometry, in Statcast units:
   beyond still lands in the chase row.
 - A cell's **target point** is its centre (for a chase cell, the centre of its one-width band).
 
-If the owner picks the centre-field camera, the UI mirrors the picture left to right for display
-only. The data, the engine and every cell index stay in catcher's view.
+**The camera is the pitcher's view** (the owner's call). The pitcher looks in at the plate, so his
+left is the catcher's right. The UI draws the grid mirrored left to right: cell 4 is drawn on the
+pitcher's left, cell 0 on his right. The data, the engine and every cell index stay in catcher's
+view. The throw grid and the heat map are one component, so they mirror together. Copy says
+"inside" and "away" (relative to the batter), never "left" and "right".
 
 ```js
 /** @typedef {number} Cell            0..24, as above */
@@ -302,18 +309,23 @@ Deterministic: the same scenario, seed and calls give the same results on any de
 stream (`mulberry32`), drawn in a fixed order per pitch: miss x, miss z, the library draw, the
 runner draw. No `Math.random`, no wall clock.
 
-How it runs (lead's proposal, see the plan):
+How it runs:
 
-- `engine.js` is pure and synchronous. `api.js` wraps it with the four async calls above.
-- Pitches resolve in the browser for an instant animation, from the day's pack.
-- Daily mode: `startOuting` asks the server for the seed (one per player per day), and each
-  `throwPitch` also records the call on the server, so a reload resumes the same outing and a
-  bad result cannot be rerolled. `finishOuting` sends nothing new: the server replays the recorded
-  calls with the same engine, writes the result and streak, and returns the reveal and percentile.
-- Practice mode never touches the server.
-- `debug: {seed, tiers}` is exposed on the state behind the tester debug toggle.
+- `engine.js` is pure and synchronous. `api.js` wraps it with the four async calls above. All
+  of it runs in the browser from the day's pack, as every daily on the site does.
+- Daily mode: the seed is `hashSeed('shut-the-door-' + day)`, the same for everyone (Run The
+  Diamond's daily does the same). The same calls get the same luck for every player. `startOuting`
+  ignores a passed seed in daily mode.
+- One daily per day: the outing (day, calls) is kept in localStorage (`std_outing_v1`) after every
+  pitch, so a reload resumes it by replaying the calls. Signed in, `finishOuting` submits it and the
+  first submit for (user, day) stands.
+- Practice mode ("run it back"): a fresh random seed, never stored or submitted.
+- `debug: {seed, tiers}` is on the state, shown when the page is opened with `?debug=1`.
 
-## 10. The daily pack (what the server stores per day, and the browser downloads)
+## 10. The daily pack (a static file per scenario, which the browser downloads)
+
+`data/schedule.json` maps each day to a pack and a daily number. The pack carries the reveal too:
+what the real pitcher did is public history, and the UI shows it only after the outing.
 
 ```js
 /**
@@ -345,25 +357,30 @@ runthe.gg/shut-the-door
 ```
 
 Squares: green 🟩, yellow 🟨, orange 🟧, red 🟥, ten to a line. The URL line is one constant in
-`share.js` (see the open question in the plan about linking a gated path).
+`share.js`.
 
 ## 12. Storage (own tables, migration `152_shut_the_door.sql` or the next free number)
 
 | table | key | holds |
 |---|---|---|
-| `shutdoor_days` | `day` | number, scenario id, pack (jsonb), reveal (jsonb), published at |
-| `shutdoor_outings` | `(user_id, day)` | seed, calls (jsonb), version, status, outcome, score, percentile, pitched like, strip |
+| `shutdoor_outings` | `(user_id, day)` | daily number, scenario id, calls (jsonb), outcome, pitches, score, percentile, pitched like, strip |
 | `shutdoor_streaks` | `user_id` | current doors shut in a row, best, last day |
 
-RLS on with no policies, every RPC `security definer`, execute granted to `service_role` only: the
-API Function is the only caller, as for every tester-only game. The tester list is the one
-`stumpire_testers`, read directly (not `stumpire_access()`), as Last Shot does.
+The schedule is the static `schedule.json`, so there is no day table. Written only by
+`shutdoor_submit(day, ...)`, `security definer`, granted to `authenticated`, the way every
+top-level game writes its board (template: `148_putt_daily_board.sql`, streak from
+`52_grid_daily.sql`). It reads the username from `profiles`, refuses a day more than one off the
+Eastern day, keeps the first submit, updates the streak and returns `{streak, best, rank, players}`.
+`shutdoor_board(day, limit)` and `shutdoor_my_stats()` read. Trophies: a marked v2 hook.
+
+The calls are stored with every result, so `check-replays.mjs` can replay any row offline with the
+engine and flag a score the calls do not produce.
 
 The streak is "doors shut in a row": a door shut on consecutive days. A blown save or a missed day
 resets it.
 
 ## 13. The mock
 
-`fixtures/mock-scenario.json` (written by the lead on approval) is one complete scenario in this
+`shut-the-door/fixtures/mock-scenario.json` (written by the lead on approval) is one complete scenario in this
 shape, with a tiny pack, so Agent B builds and tests the whole UI before Agent A's engine exists.
 Agent B's `mock-api.js` implements the four calls over it.
