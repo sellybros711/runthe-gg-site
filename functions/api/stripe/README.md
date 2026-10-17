@@ -588,6 +588,73 @@ select public.rtf_coin_refund('<cs_live_... session id>');
 A refunded bucket's packs stay filed if the page already filed them; that is rare and
 small enough to leave to the refund itself.
 
+## Putt Putt lives, two packs
+
+The owner's calls: nine lives for $4.99 (2026-10-16), and three for $2.99 beside it
+(2026-10-17). A signed in player who is out of lives can buy either. Both are built
+behind one switch, **on since 2026-10-17**. The buttons sit on Putt Putt's Out of
+Lives sheet, under Get Tour Pass, nine first. Putt Putt itself is still testers only
+(`PUTT_LIVE` in `golf/index.html`), so only testers see them until it launches.
+
+| pack | price | sold when the player is missing | price env var | Stripe lookup key |
+|---|---|---|---|---|
+| `nine` | $4.99 one-time | at least 9 lives | `STRIPE_PRICE_PUTT_LIVES_9` | `putt_lives_nine` |
+| `three` | $2.99 one-time | at least 3 lives | `STRIPE_PRICE_PUTT_LIVES_3` | `putt_lives_three` |
+
+Live prices, created 2026-10-17 and set in Cloudflare Production:
+`STRIPE_PRICE_PUTT_LIVES_9` = `price_1URPuvHiw1zsFcnXz9NC5jul` and
+`STRIPE_PRICE_PUTT_LIVES_3` = `price_1URPvzHiw1zsFcnXZ4M8JBE6`. 149 is run.
+`false` in both files is the kill switch.
+
+| switch | migration | what is bought |
+|---|---|---|
+| `PUTT_LIVES_ENABLED` in `_bundles.js` AND `golf/putt/putt.js` | `149_putt_lives_buy.sql` | the pack's lives on the server's `putt_lives` row |
+
+**This is the site's checkout, not golf's `create-checkout` edge function.** The page
+posts `{ putt_lives: 'nine' }` or `{ putt_lives: 'three' }` to
+`/api/stripe/checkout-bundle` and comes back to `/golf/?putt=lives_paid&pack=<key>`
+(never `?purchase=`, which is the edge function's return). Any other `putt_lives`
+value is 400 `unknown_pack`.
+
+**A pack sells only when every life in it would land.** Missing fewer than its lives
+on the server is 409 `lives_left`. The Out of Lives sheet opens only at zero, so there
+both packs always show; the rule is what holds the endpoint itself. A guest is sent to
+sign in: bought lives are the account's.
+
+**Lives are the server's.** The session carries the pack's key in
+`metadata.putt_lives`, and the webhook reads the lives off `PUTT_LIVES`, never off the
+session. It calls `putt_lives_buy` (keyed on the checkout session, so a retried
+delivery pays once), which cancels the clocks of the lives due back last, and the page
+asks `putt_lives_state` again. A paid session naming no pack we sell is a 500, so
+Stripe retries it and it shows in the dashboard. A buy is filed in `putt_lives_buys`.
+**No promotion codes**: a free code here is free lives. A refund does not take lives back.
+
+### Go-live, in this order
+
+1. **Run `supabase/149_putt_lives_buy.sql`** in the Supabase SQL editor (146 must be in).
+   It is safe to run twice. Then paste `supabase/test/launch_preflight.sql`: row 60 reads **yes**.
+2. **Create both Prices**: `STRIPE_SECRET_KEY=sk_live_... node scripts/stripe/setup-premium-bundles.mjs`
+   mints `putt_lives_nine` ($4.99) and `putt_lives_three` ($2.99), one-time, and prints
+   both env lines. It is idempotent. Or by hand in the Dashboard: two Products,
+   **Putt Putt Lives: 9** and **Putt Putt Lives: 3**, each a **one-time** USD price
+   with the lookup key above.
+3. **Add both env vars in Cloudflare Pages** (Production), then redeploy (push any
+   commit). A pack whose var is missing answers 503 on its own; the other still sells.
+4. **Nothing to change on the webhook.** It is `checkout.session.completed` (and
+   `checkout.session.async_payment_succeeded`) with `metadata.putt_lives`.
+5. **Test before the switch, with the switch on in one sitting.** A pack takes no
+   promotion code, so a test is a real charge: buy the $2.99 pack on a test account
+   that is out of lives, check `putt_lives_buys` has the session with `given = 3`,
+   then refund it in the Dashboard. A refund does not take lives back.
+6. **Flip `PUTT_LIVES_ENABLED` in BOTH files in one commit**, bump `putt.js?v=` in
+   `golf/index.html`, run `node scripts/check-cachebust.mjs --update` and
+   `node scripts/stripe/check-putt-lives.mjs`, and push.
+
+```
+node scripts/stripe/check-putt-lives.mjs     both packs, page and server, checkout and webhook
+psql -d pbuy -f supabase/test/putt_lives_buy_test.sql   (its header lists the chain)
+```
+
 ## Before public launch
 
 - Flip `arcade/tokens.js` `TESTING = false` to enforce the tiers.
