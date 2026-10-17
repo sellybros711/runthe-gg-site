@@ -38,20 +38,49 @@ if (!window.STD_SHARE) window.STD_SHARE = { text: shareText, MOCK: true };
 
 /* ---- accounts stub (the RTD_AUTH shape) --------------------------------- */
 
+/* ?mockAuth=1 signs the stub in as a fictional player, so the account paths
+   (the stats sheet's myStats(), the result's account block) can be built and
+   checked before auth.js lands. */
 if (!window.STD_AUTH) {
   var none = function () { return Promise.resolve({ error: 'accounts are not available here yet.' }); };
+  var mockIn = /[?&]mockAuth=1(&|$)/.test(location.search);
   window.STD_AUTH = {
     API_VERSION: 0,
     MOCK: true,
     boot: function () { return false; },
-    state: function () { return { ready: false, waiting: false, signedIn: false }; },
+    state: function () { return mockIn ? { ready: true, waiting: false, signedIn: true, name: 'mockplayer', email: 'mock@example.com', userId: 'mock-user' } : { ready: false, waiting: false, signedIn: false }; },
     onChange: function () { return function () {}; },
     signIn: none, signUp: none, signInGoogle: none, signOut: function () { return Promise.resolve({ error: null }); },
     token: function () { return null; },
+    /* the shape assumed for shutdoor_my_stats(): CONTRACT_REQUESTS.md B8 */
+    myStats: function () {
+      if (!mockIn) return Promise.resolve(null);
+      return Promise.resolve({
+        played: 12, shut: 7, streak: 3, best: 5, avgPercentile: 61,
+        bands: { green: 71, yellow: 30, orange: 14, red: 6 },
+        recent: [
+          { day: '2026-10-16', number: 12, outcome: 'door_shut', strip: ['green', 'green', 'yellow', 'green', 'green'] },
+          { day: '2026-10-15', number: 11, outcome: 'walk_off', strip: ['yellow', 'orange', 'green', 'red'] },
+        ],
+      });
+    },
   };
 }
 
 if (window.STD_API) return;
+
+/* Test switches, read off the page's own address. Mock only; they never
+   reach the real API. ?mockEnd= door_shut | doors_open | walk_off forces a
+   scripted outing that ends that way (the second and third run a runner put
+   out, runs scoring, the end rules); ?mockProxy=1 marks the spot proxy;
+   ?mockNull=1 gives the reveal no pitch count, only its note. */
+var QS = (function () { try { return new URLSearchParams(location.search); } catch (e) { return { get: function () { return null; } }; } })();
+var SCRIPTS = {
+  door_shut: ['K'],
+  doors_open: ['single', 'double_play', 'home_run'],
+  walk_off: ['single', 'single', 'home_run'],
+};
+var MOCK = { script: SCRIPTS[QS.get('mockEnd')] || null, proxy: QS.get('mockProxy') === '1', nullPitches: QS.get('mockNull') === '1' };
 
 /* ---- the seeded stream ---------------------------------------------------- */
 
@@ -175,6 +204,7 @@ function advance(bases, plan) {
   for (var b = 3; b >= 0; b--) {
     if (b > 0 && !occ[b]) continue;
     var to = Math.min(4, plan(b));
+    if (b === 0 && to <= 0) continue;            // the batter is out: the caller says so with to -1
     if (to < 4 && to >= lead) to = lead - 1;
     if (to <= b && b > 0) { lead = b; nb |= (1 << (b - 1)); continue; }
     moves.push({ from: b, to: to });
@@ -205,6 +235,8 @@ function resolve(scn, st, call, rng) {
   /* the library draw, cut into the decisions a real pitch would carry */
   var u1 = lib, u2 = (lib * 7.13) % 1, u3 = (lib * 31.7) % 1, u4 = (lib * 97.3) % 1;
   var swing = u1 < sw;
+  var forcedR = MOCK.script ? MOCK.script[Math.min(st.pitchNo, MOCK.script.length - 1)] : null;
+  if (forcedR) swing = true;
   var res = { batter: swing ? 'swing' : 'take' };
   var inBatterSide = bt.bats === 'R' ? C.colOf(cell) === 0 : C.colOf(cell) === 4;
   if (!swing) {
@@ -213,6 +245,7 @@ function resolve(scn, st, call, rng) {
   } else if (u2 < whf) res.result = 'swinging_strike';
   else if (u3 < (z ? 0.42 : 0.55)) res.result = (s === 2 && u4 < 0.12) ? 'foul_tip' : 'foul';
   else res.result = 'in_play';
+  if (forcedR) res.result = forcedR === 'K' ? 'swinging_strike' : 'in_play';
 
   var out = { n: st.pitchNo + 1, call: { type: call.type, cell: call.cell }, actual: actual, actualCell: cell,
     velo: Math.round((ap.velo + gauss(u4) * 0.8) * 10) / 10, batter: res.batter, result: res.result,
@@ -233,17 +266,18 @@ function resolve(scn, st, call, rng) {
   } else {
     /* in play: a batted ball off the heat map */
     var dmg = pr.heat[cell] * (z ? 1 : 0.6);
-    var hit = u2 < dmg * 1.15;
+    var hit = forcedR ? /single|double$|triple|home_run/.test(forcedR) : u2 < dmg * 1.15;
     var spray = Math.round((u3 * 90 - 45) * 10) / 10;
     var bb, r, ev, la;
     if (hit) {
-      r = u4 < 0.1 + dmg * 0.25 ? 'home_run' : u4 < 0.38 ? 'double' : u4 < 0.41 ? 'triple' : u4 < 0.44 ? 'error' : 'single';
+      r = forcedR || (u4 < 0.1 + dmg * 0.25 ? 'home_run' : u4 < 0.38 ? 'double' : u4 < 0.41 ? 'triple' : u4 < 0.44 ? 'error' : 'single');
       bb = r === 'home_run' ? 'fly' : r === 'single' || r === 'error' ? (u3 < 0.5 ? 'ground' : 'line') : 'line';
     } else {
       bb = u4 < 0.45 ? 'ground' : u4 < 0.75 ? 'fly' : u4 < 0.88 ? 'line' : 'popup';
       r = 'out';
       if (bb === 'ground' && outs < 2 && (bases & 1) && run < 0.45) r = 'double_play';
       if (bb === 'fly' && outs < 2 && (bases & 4) && run < 0.7) r = 'sac_fly';
+      if (forcedR) { r = forcedR; bb = r === 'double_play' ? 'ground' : bb; }
     }
     ev = bb === 'ground' ? 84 + u2 * 16 : bb === 'line' ? 95 + u2 * 13 : bb === 'fly' ? (r === 'home_run' ? 104 : 88) + u2 * 10 : 70 + u2 * 10;
     la = bb === 'ground' ? -10 + u3 * 14 : bb === 'line' ? 10 + u3 * 12 : bb === 'fly' ? 24 + u3 * 14 : 52 + u3 * 12;
@@ -256,17 +290,17 @@ function resolve(scn, st, call, rng) {
       outs += 2;
       var rest = bases & ~1;
       adv = outs >= 3 ? { bases: rest, moves: [], runs: 0 } : advance(rest, function (bb2) { return bb2 === 0 ? 0 : bb2 + 1; });
-      adv.moves = adv.moves.filter(function (m) { return m.from !== 0; });
+      adv.moves = [{ from: 1, to: -1 }, { from: 0, to: -1 }].concat(adv.moves);
     } else if (r === 'sac_fly') {
       outs += 1;
       adv = advance(bases, function (bb2) { return bb2 === 3 ? 4 : bb2 === 0 ? 0 : bb2; });
-      adv.moves = adv.moves.filter(function (m) { return m.from !== 0; });
+      adv.moves = [{ from: 0, to: -1 }].concat(adv.moves);
     } else {
       outs += 1;
       if (outs >= 3) adv = { bases: bases, moves: [], runs: 0 };
       else if (bb === 'ground') adv = advance(bases, function (bb2) { return bb2 === 0 ? 0 : bb2 === 3 ? (run < 0.5 ? 4 : 3) : bb2 + 1; });
       else adv = { bases: bases, moves: [], runs: 0 };
-      if (adv.moves) adv.moves = adv.moves.filter(function (m) { return m.from !== 0; });
+      adv.moves = [{ from: 0, to: -1 }].concat(adv.moves);
     }
     bases = adv.bases; out.runnerMoves = adv.moves; out.runs = adv.runs; out.paOver = true;
     var f = fieldOf(spray, bb === 'ground');
@@ -317,6 +351,7 @@ function getScenario(day) {
     var s = clone(j.scenario);
     delete s.reveal;
     s.day = day || s.day;
+    if (MOCK.proxy) s.resolution = 'proxy';
     return s;
   });
 }
@@ -373,6 +408,7 @@ function finishOuting(outingId) {
     var n = Math.max(1, o.calls.length);
     var pl = fam.breaking / n > 0.45 ? j.pool.closers[0] : fam.hard / n > 0.6 ? j.pool.closers[2] : j.pool.closers[1];
     var rv = clone(o.scn.reveal);
+    if (MOCK.nullPitches) { rv.pitches = null; rv.pitchesNote = 'at least 13 pitches'; }
     var runs = st.score.them - o.scn.situation.score.them;
     var mine = C.OUTCOME_RANK[st.outcome], his = C.OUTCOME_RANK[rv.outcome];
     var vs = mine > his ? 'beat' : mine < his ? 'lost' : runs < rv.runs ? 'beat' : runs > rv.runs ? 'lost' : 'matched';
@@ -382,6 +418,8 @@ function finishOuting(outingId) {
       reveal: rv, vsReal: vs,
     };
     r.share = window.STD_SHARE.text(r, o.scn.number);
+    var au = window.STD_AUTH && window.STD_AUTH.state && window.STD_AUTH.state();
+    if (o.st.mode === 'daily' && au && au.signedIn) r.account = { streak: st.outcome === 'door_shut' ? 4 : 0, best: 5, rank: 18, players: 240 };
     o.result = r;
     return clone(r);
   });

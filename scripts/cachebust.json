@@ -2815,28 +2815,28 @@
       "sha": "f8ca8edc1ad1af36"
     },
     "sprites.js": {
-      "v": "1",
-      "sha": "4d293b194e1c2aad"
+      "v": "2",
+      "sha": "20a348fc8d984cf5"
     },
     "mound.js": {
-      "v": "1",
-      "sha": "c292c3654f4e3ecd"
+      "v": "2",
+      "sha": "c4b2ea4934533331"
     },
     "anim.js": {
-      "v": "1",
-      "sha": "b7b21e7f574346b8"
+      "v": "2",
+      "sha": "3619a23768894990"
     },
     "menus.js": {
-      "v": "1",
-      "sha": "abb287971138d325"
+      "v": "2",
+      "sha": "d6ee4a0218dd5439"
     },
     "mock-api.js": {
-      "v": "1",
-      "sha": "b0d1e8089a1db059"
+      "v": "2",
+      "sha": "4cc2014135dabdfe"
     },
     "ui.js": {
-      "v": "1",
-      "sha": "ae971257162fa72e"
+      "v": "2",
+      "sha": "02108754a05d1434"
     }
   },
   "soccer/index.html": {

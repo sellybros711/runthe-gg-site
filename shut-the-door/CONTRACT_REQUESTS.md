@@ -1,5 +1,7 @@
 # Shut The Door: contract requests
 
+B1 to B7 are answered in `CONTRACT.md` section 14 (all accepted). B8 and B9 are new.
+
 Agent B writes requests here. The lead answers each one below it and edits `CONTRACT.md` when one
 is accepted. Until an answer lands, the UI runs on the stub described in each request.
 
@@ -85,3 +87,37 @@ The mound draws two scales. The people, the plate and the boxes are to scale wit
 to-scale grid beside a to-scale hitter leaves 39 pixel cells on a 390 phone. Everything the ball
 does (target, where it crossed, the mitt) is in grid space, so what the grid shows is exactly what
 the engine played. Mirroring is `screenCol()` and nothing else.
+
+## B8. The shape assumed for `STD_AUTH.myStats()`
+
+Section 14 adds `myStats()` reading `shutdoor_my_stats()` and names no shape. The stats sheet reads:
+
+```js
+/** @returns {Promise<null | {
+ *   played: number, shut: number, streak: number, best: number,
+ *   avgPercentile: number|null,
+ *   bands: {green: number, yellow: number, orange: number, red: number},   pitches graded, all time
+ *   recent: {day: string, number: number, outcome: Outcome, strip: Band[]}[]   newest first, up to 7
+ * }>} */
+```
+
+Null, a rejection, or a non-object falls back to the device history, so a server without the
+function costs the account view and nothing else. If `shutdoor_my_stats()` returns other names,
+the mapping is one place (`renderStats` in `menus.js`).
+
+## B9. Mock switches (no change asked, for the record)
+
+`mock-api.js` reads four test switches off the page address. They exist only in the mock and are
+what `test/check-browser.mjs` uses to play every ending:
+
+| switch | does |
+|---|---|
+| `?mockEnd=door_shut` | every pitch a swinging strike: nine pitches, door shut |
+| `?mockEnd=doors_open` | single, double play (two runners `to: -1`), solo home run: the tying run |
+| `?mockEnd=walk_off` | single, single, three-run home run: the winning run |
+| `?mockProxy=1` | `resolution: 'proxy'`, so the quiet "modern pitch data" note shows |
+| `?mockNull=1` | `reveal.pitches` null with `pitchesNote: 'at least 13 pitches'` |
+| `?mockAuth=1` | the `STD_AUTH` stub signed in, with `myStats()` and an `account` block on the result |
+
+The mock also now reports an in-play out as `{from: 0, to: -1}` (section 6 as amended), and a
+double play as two of them.

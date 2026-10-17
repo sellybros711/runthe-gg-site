@@ -248,6 +248,17 @@ var BATTER = {
     sF: [31, 38], sB: [41, 39], head: [35, 29],
     eF: [29, 47], hnF: [27, 54], eB: [33, 50], hnB: [29, 53], bat: [4, 64], batBehind: false,
   },
+  /* running to first, the bat dropped: two frames, arms and legs swapped */
+  runA: {
+    aF: [22, 79], kF: [26, 69], hF: [32, 58], aB: [46, 75], kB: [42, 68], hB: [38, 58],
+    sF: [30, 38], sB: [40, 38], head: [34, 28],
+    eF: [26, 46], hnF: [22, 40], eB: [45, 45], hnB: [48, 39], noBat: true,
+  },
+  runB: {
+    aF: [41, 80], kF: [38, 69], hF: [36, 58], aB: [27, 74], kB: [30, 67], hB: [33, 58],
+    sF: [30, 38], sB: [40, 38], head: [34, 28],
+    eF: [43, 46], hnF: [46, 40], eB: [28, 46], hnB: [24, 40], noBat: true,
+  },
   follow: {
     aF: [25, 81], kF: [25, 69], hF: [31, 57], aB: [42, 79], kB: [37, 70], hB: [38, 57],
     sF: [31, 37], sB: [40, 38], head: [34, 27],
@@ -293,7 +304,7 @@ function drawHelmetHead(s, head, k, facing) {
 function batter(pose, k) {
   var J = BATTER[pose] || BATTER.stance;
   var s = new Spr(BW, BH);
-  if (J.batBehind) drawBat(s, J.hnB, J.bat);
+  if (J.batBehind && !J.noBat) drawBat(s, J.hnB, J.bat);
   drawLeg(s, J.hB, J.kB, J.aB, k, false);
   drawArm(s, J.sB, J.eB, J.hnB, k);
   drawLeg(s, J.hF, J.kF, J.aF, k, true);
@@ -306,7 +317,7 @@ function batter(pose, k) {
   s.fill(seg(px, py + 1, px - 0.6, J.hF[1] - 3, 0.5), M(k.trim, { flat: 1, t: 2 }));
   drawHelmetHead(s, J.head, k, -1);
   drawArm(s, J.sF, J.eF, J.hnF, k);
-  if (!J.batBehind) drawBat(s, J.hnF, J.bat);
+  if (!J.batBehind && !J.noBat) drawBat(s, J.hnF, J.bat);
   return s.paint();
 }
 
@@ -469,8 +480,26 @@ function get(who, pose, colors, role) {
   return cv;
 }
 
+/* The lit pixels of a drawn figure, [x0, y0, x1, y1] inclusive, cached. The
+   framing reserves room from these, never from the canvas, because a cell is
+   mostly transparent margin (mythiball's camera notes learned that one). */
+var BOUNDS = typeof WeakMap !== 'undefined' ? new WeakMap() : null;
+function litBounds(cv) {
+  if (BOUNDS && BOUNDS.has(cv)) return BOUNDS.get(cv);
+  var d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+  var x0 = cv.width, y0 = cv.height, x1 = -1, y1 = -1;
+  for (var y = 0; y < cv.height; y++) for (var x = 0; x < cv.width; x++) {
+    if (d[(y * cv.width + x) * 4 + 3] < 8) continue;
+    if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+  }
+  var r = [x0, y0, x1, y1];
+  if (BOUNDS) BOUNDS.set(cv, r);
+  return r;
+}
+
 window.STD_SPRITES = {
   get: get,
+  litBounds: litBounds,
   mix: mix,
   ramp: ramp,
   releasePoint: releasePoint,

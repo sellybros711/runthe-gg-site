@@ -123,18 +123,28 @@ Scene.prototype.layout = function () {
     colPx = Math.min(colPx, Math.floor(H * 0.56 / 5 / (thirdFt / C.GRID.COL_FT)));
     colPx = Math.max(36, Math.min(64, colPx));
     gppf = colPx / C.GRID.COL_FT;
+    /* the people shrink before the grid does: the grid, a margin, and all of
+       the batter (front shoulder at the grid's edge, back to his bat's end)
+       must fit across */
+    var litB = SP.litBounds(SP.get('batter', 'stance', null, 'them'));
+    var back = litB[2] - SP.size.batter.hip + 1;
+    b = Math.max(2, Math.min(b, Math.floor((W - 5 * colPx - 26) / (back + 4))));
   }
   var ppf = b * ROWS_PER_FT;
   var cols = Math.floor(W / b), rows = Math.floor(H / b);
   var gw = 2.5 * colPx, gh = 2.5 * thirdFt * gppf;
-  var hipOff = this.hero ? 21 : Math.ceil(gw / b) + 5;
+  /* the batter stands with his front shoulder at the grid's outer edge */
+  var hipOff = this.hero ? 21 : Math.ceil(gw / b) + 2;
+  var lit = SP.litBounds(SP.get('batter', 'stance', null, 'them'));
+  var backCols = lit[2] - SP.size.batter.hip + 1;
   var plateX;
   if (this.hero) plateX = (cols / 2 - side * Math.min(cols * 0.12, 6)) * b;
   else {
     /* the plate leans away from the batter so his body fits; what a narrow
        phone crops is his back, never the grid */
     plateX = W / 2;
-    var need = (hipOff + 9) * b;
+    /* all of him: from the plate to his back elbow and the bat's end */
+    var need = (hipOff + backCols) * b + 10;
     if (side > 0) plateX = Math.min(plateX, W - need); else plateX = Math.max(plateX, need);
     plateX = Math.max(gw + 4, Math.min(W - gw - 4, plateX));
   }
@@ -165,6 +175,28 @@ Scene.prototype.gridRect = function () {
 };
 Scene.prototype.cellCenter = function (cell) { return this.toScreen(C.targetOf(cell)); };
 
+/* Where each figure's lit pixels land on screen, for the browser check: the
+   batter, the catcher and the umpire must be wholly in frame on any phone. */
+Scene.prototype.figureBoxes = function () {
+  var L = this.L, b = L.b, S = SP.size, out = {};
+  function box(cv, x, y, flip) {
+    var r = SP.litBounds(cv), w = cv.width;
+    var x0 = flip ? w - 1 - r[2] : r[0], x1 = flip ? w - 1 - r[0] : r[2];
+    return { x0: x + x0 * b, x1: x + (x1 + 1) * b, y0: y + r[1] * b, y1: y + (r[3] + 1) * b };
+  }
+  var bp = this.batterPos();
+  out.batter = box(SP.get('batter', 'stance', null, 'them'), bp.x, bp.y, bp.flip);
+  out.catcher = box(SP.get('catcher', 'set', null, 'them'), (L.plateCol - S.catcher.mid) * b, (L.gr - 2 - S.catcher.ground) * b, false);
+  out.umpire = box(SP.get('umpire', 'set'), (L.plateCol - L.side * 3 - S.umpire.mid) * b, (L.gr - 5 - S.umpire.ground) * b, false);
+  out.W = L.W; out.H = L.H;
+  return out;
+};
+Scene.prototype.batterPos = function () {
+  var L = this.L, S = SP.size, flip = L.bats === 'L';
+  var anchor = L.plateCol + L.side * L.hipOff;
+  return { anchor: anchor, flip: flip, x: (flip ? anchor - (S.batter.w - S.batter.hip) : anchor - S.batter.hip) * L.b, y: (L.gr + 1 - S.batter.ground) * L.b };
+};
+
 /* where the ball leaves the pitcher's hand, on screen */
 Scene.prototype.releaseAt = function (pose) {
   var P = this.pitcherBox(), rp = SP.releasePoint(pose || 'release');
@@ -175,7 +207,7 @@ Scene.prototype.pitcherBox = function () {
   var L = this.L, s = SP.size.pitcher;
   var throwsL = this.scn && this.scn.pitcher && this.scn.pitcher.throws === 'L';
   var pside = -L.side;
-  var midCol = L.plateCol + pside * (this.hero ? 13 : Math.ceil(2.5 * L.colPx / L.b) - 1);
+  var midCol = L.plateCol + pside * (this.hero ? 13 : Math.ceil(2.5 * L.colPx / L.b) - 6);
   var x = (midCol - (throwsL ? s.w - s.mid : s.mid)) * L.b;
   var y = (L.gr - (this.hero ? 13 : 9)) * L.b;
   return { x: x, y: y, b: L.b, flip: throwsL };
@@ -332,7 +364,17 @@ Scene.prototype.draw = function (frame) {
   var bx = (flipB ? anchor - (S.batter.w - S.batter.hip) : anchor - S.batter.hip) * b;
   var by = (L.gr + 1 - S.batter.ground) * b;
   shadow(ctx, anchor * b, (L.gr + 1) * b, 14 * b, 2 * b);
-  blit(ctx, bt, bx, by, b, flipB);
+  if (!frame.batterGone) blit(ctx, bt, bx, by, b, flipB);
+  /* people running on the field: the batter to first (always the screen's
+     left, whichever box he left), a runner coming home down the third base
+     line from the screen's right */
+  (frame.runnersOnField || []).forEach(function (r) {
+    var sp = SP.get('batter', r.pose, null, 'them');
+    var x = Math.round(r.x / b - S.batter.hip) * b, y = (L.gr + 1 - S.batter.ground) * b;
+    ctx.globalAlpha = r.alpha == null ? 1 : r.alpha;
+    blit(ctx, sp, x, y, b, false);
+    ctx.globalAlpha = 1;
+  });
   /* where it went */
   if (frame.marker) ring(ctx, frame.marker.x, frame.marker.y, b);
   /* the ball, behind the pitcher only while it is still in his hand */
@@ -341,8 +383,67 @@ Scene.prototype.draw = function (frame) {
   var P = this.pitcherBox();
   blit(ctx, SP.get('pitcher', frame.pitcher || 'set', colors, 'us'), P.x, P.y, b, P.flip);
   if (frame.ball && !ballFirst) drawBall(ctx, frame.ball, b);
+  if (frame.field) drawField(ctx, frame.field, L);
   ctx.restore();
 };
+
+/* The field, from above, in the top corner away from the batter: a pixel
+   diamond with every runner on it. Positions are on the base paths, 0 home,
+   1..3 the bases, 4 home again; a runner put out gets a red cross. Oriented
+   like the scorebar's diamond (first base on the right), as every broadcast's
+   is, so the two read the same. */
+var BASE_XY = [[0, 1], [1, 0], [0, -1], [-1, 0], [0, 1]];
+function pathXY(p) {
+  p = Math.max(0, Math.min(4, p));
+  var k = Math.min(3, Math.floor(p)), t = p - k, a = BASE_XY[k], c = BASE_XY[k + 1];
+  return [a[0] + (c[0] - a[0]) * t, a[1] + (c[1] - a[1]) * t];
+}
+function drawField(ctx, f, L) {
+  var s = Math.round(Math.max(96, Math.min(132, L.W * 0.3)));
+  var x0 = L.side > 0 ? 8 : L.W - s - 8, y0 = 8, u = 2;
+  var cx = x0 + s / 2, cy = y0 + s / 2 + 2, r = s * 0.34;
+  ctx.globalAlpha = f.alpha == null ? 1 : f.alpha;
+  ctx.fillStyle = 'rgba(10,14,22,.82)';
+  ctx.fillRect(x0, y0, s, s);
+  function dia(rr, col) {
+    for (var yy = -rr; yy <= rr; yy += u) {
+      var w = rr - Math.abs(yy);
+      ctx.fillStyle = col;
+      ctx.fillRect(Math.round((cx - w) / u) * u, Math.round((cy + yy) / u) * u, Math.round(2 * w / u) * u + u, u);
+    }
+  }
+  dia(r * 1.32, '#2c6b3a');
+  dia(r * 1.08, '#9a6a42');
+  dia(r * 0.82, '#2f7a40');
+  BASE_XY.slice(0, 4).forEach(function (q, i) {
+    ctx.fillStyle = '#f1eee6';
+    var bx = Math.round((cx + q[0] * r) / u) * u, by = Math.round((cy + q[1] * r) / u) * u;
+    ctx.fillRect(bx - 2 * u, by - 2 * u, 4 * u, 4 * u);
+  });
+  (f.runners || []).forEach(function (rn) {
+    var q = pathXY(rn.p), x = Math.round((cx + q[0] * r) / u) * u, y = Math.round((cy + q[1] * r) / u) * u;
+    ctx.globalAlpha = (f.alpha == null ? 1 : f.alpha) * (rn.alpha == null ? 1 : rn.alpha);
+    /* a runner: helmet, face, a white road jersey, ringed dark so he reads on the grass */
+    ctx.fillStyle = '#0d1119'; ctx.fillRect(x - 4 * u, y - 6 * u, 8 * u, 11 * u);
+    ctx.fillStyle = '#2e3440'; ctx.fillRect(x - 2 * u, y - 5 * u, 4 * u, 2 * u);
+    ctx.fillStyle = '#c99a72'; ctx.fillRect(x - 2 * u, y - 3 * u, 4 * u, 2 * u);
+    ctx.fillStyle = '#f1eee6'; ctx.fillRect(x - 3 * u, y - 1 * u, 6 * u, 4 * u);
+    ctx.fillStyle = '#9aa0aa'; ctx.fillRect(x - 2 * u, y + 3 * u, 4 * u, 1 * u);
+    if (rn.out) {
+      ctx.globalAlpha = f.alpha == null ? 1 : f.alpha;
+      ctx.fillStyle = '#e0473a';
+      for (var i = -5; i <= 5; i++) { ctx.fillRect(x + i * u - u, y + i * u - u, 2 * u, 2 * u); ctx.fillRect(x - i * u - u, y + i * u - u, 2 * u, 2 * u); }
+    }
+  });
+  ctx.globalAlpha = f.alpha == null ? 1 : f.alpha;
+  if (f.runs) {
+    ctx.fillStyle = '#f6cd5f';
+    ctx.font = '700 ' + Math.round(s * 0.16) + 'px Silkscreen, ui-monospace, monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText('+' + f.runs, x0 + s - 5, y0 + Math.round(s * 0.18));
+  }
+  ctx.globalAlpha = 1;
+}
 
 function shadow(ctx, cx, cy, rx, ry) {
   ctx.fillStyle = 'rgba(0,0,0,.22)';
@@ -466,5 +567,5 @@ Grid.prototype.setHeat = function (profile, mode) {
   }
 };
 
-window.STD_MOUND = { Scene: Scene, Grid: Grid, cellWords: cellWords, HEAT: HEAT, heatColor: heatColor, ROWS_PER_FT: ROWS_PER_FT };
+window.STD_MOUND = { pathXY: pathXY, Scene: Scene, Grid: Grid, cellWords: cellWords, HEAT: HEAT, heatColor: heatColor, ROWS_PER_FT: ROWS_PER_FT };
 })();

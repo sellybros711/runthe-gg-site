@@ -168,6 +168,8 @@ function renderStreak() {
   var st = streakNow();
   var line = '<b>' + st.cur + '</b> ' + (st.cur === 1 ? 'door' : 'doors') + ' shut in a row' + (st.best > st.cur ? ' · best ' + st.best : '');
   $('h-streak').innerHTML = line;
+  var acct = S.mode === 'daily' && S.dailyResult && S.dailyResult.account;
+  if (acct && acct.rank != null) line += ' · #' + acct.rank + ' of ' + acct.players + ' today';
   $('r-streak').innerHTML = S.mode === 'daily' ? line : '';
 }
 
@@ -279,6 +281,18 @@ function renderHud(st) {
   $('m-strip').innerHTML = stripHTML(st.strip) + (st.status === 'live' ? '<i class="sq next"></i>' : '');
 }
 
+/* the scorebar's diamond during a play: a dot per runner on the same base
+   paths the field inset uses, a red one for a runner put out */
+function hudRunners(list) {
+  var g = $('m-runners'), svg = $('m-bases');
+  if (!list) { g.innerHTML = ''; svg.classList.remove('running'); return; }
+  svg.classList.add('running');
+  g.innerHTML = list.map(function (r) {
+    var q = M.pathXY(r.p);
+    return '<circle cx="' + (19.5 + 11 * q[0]).toFixed(1) + '" cy="' + (17.5 + 10.5 * q[1]).toFixed(1) + '" r="3.2" class="' + (r.out ? 'out' : '') + '" opacity="' + (r.alpha == null ? 1 : r.alpha) + '"/>';
+  }).join('');
+}
+
 function pickType(t) {
   if (S.busy) return;
   S.type = t;
@@ -368,11 +382,12 @@ function throwIt() {
     var pr = res.pitchResult;
     return AN.play(S.scene, {
       pr: pr, ap: pitchOf(pr.call.type), quick: !!prefs.quick,
-      hooks: { call: callout, sound: sound },
+      hooks: { call: callout, sound: sound, field: hudRunners },
     }).then(function () {
       S.lastMarker = S.scene.toScreen(pr.actual);
       $('m-scene').classList.remove('flying');
       S.grid.setMarks({ target: pr.call.cell, actual: pr.actualCell });
+      hudRunners(null);
       renderHud(res.state);
       if (pr.runs) flash('+' + pr.runs + (pr.runs === 1 ? ' run' : ' runs'));
       return gradeCard(pr, res.pitchGrade, res.state);
@@ -486,7 +501,7 @@ function renderResult() {
   }).join('');
   $('r-reveal').innerHTML =
     '<p class="lbl">what ' + esc(s.pitcher.name) + ' did</p>' +
-    '<p class="rv-out ' + esc(rv.outcome) + '">' + esc(C.OUTCOME_LABEL[rv.outcome] || '') + '<span class="quiet"> · ' + esc(rv.pitches) + ' pitches · ' + esc(rv.runs) + (rv.runs === 1 ? ' run' : ' runs') + '</span></p>' +
+    '<p class="rv-out ' + esc(rv.outcome) + '">' + esc(C.OUTCOME_LABEL[rv.outcome] || '') + '<span class="quiet"> · ' + esc(rv.pitches == null ? (rv.pitchesNote || 'pitch count unknown') : rv.pitches + ' pitches') + ' · ' + esc(rv.runs) + (rv.runs === 1 ? ' run' : ' runs') + '</span></p>' +
     '<p>' + esc(rv.summary) + '.</p>' +
     (pas ? '<ul class="pas">' + pas + '</ul>' : '') +
     '<p class="vs ' + esc(r.vsReal) + '">' + vs + '</p>';

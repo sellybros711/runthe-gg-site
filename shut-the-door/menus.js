@@ -105,30 +105,55 @@ function streakOf(hist, today) {
 function dayDiff(a, b) { return Math.round((Date.parse(b + 'T12:00:00Z') - Date.parse(a + 'T12:00:00Z')) / 864e5); }
 function shiftDay(d, n) { return new Date(Date.parse(d + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10); }
 
-function renderStats(hist, today) {
+/* One renderer, two sources. Signed in, the account's record from
+   STD_AUTH.myStats() (shutdoor_my_stats() on the server). Signed out, or when
+   that read fails, this device's history. */
+function deviceStats(hist, today) {
   var rows = Object.keys(hist).sort().map(function (d) { return hist[d]; });
-  var n = rows.length, shut = rows.filter(function (r) { return r.outcome === 'door_shut'; }).length;
   var st = streakOf(hist, today);
-  var pct = n ? Math.round(rows.reduce(function (a, r) { return a + (r.percentile || 0); }, 0) / n) : null;
-  var tally = { green: 0, yellow: 0, orange: 0, red: 0 }, all = 0;
-  rows.forEach(function (r) { (r.strip || []).forEach(function (b) { if (tally[b] != null) { tally[b]++; all++; } }); });
+  var tally = { green: 0, yellow: 0, orange: 0, red: 0 };
+  rows.forEach(function (r) { (r.strip || []).forEach(function (b) { if (tally[b] != null) tally[b]++; }); });
+  return {
+    src: 'device', played: rows.length, shut: rows.filter(function (r) { return r.outcome === 'door_shut'; }).length,
+    streak: st.cur, best: st.best,
+    avgPercentile: rows.length ? Math.round(rows.reduce(function (a, r) { return a + (r.percentile || 0); }, 0) / rows.length) : null,
+    bands: tally, recent: rows.slice(-7).reverse(),
+  };
+}
+function renderStats(m) {
+  var n = m.played || 0, shut = m.shut || 0;
+  var tally = m.bands || {}, all = 0;
+  C.BANDS.forEach(function (b) { all += tally[b.band] || 0; });
   function tile(v, l) { return '<div class="tile"><b>' + (v == null ? '-' : esc(v)) + '</b><span>' + l + '</span></div>'; }
   var bar = all ? C.BANDS.map(function (b) {
-    var w = tally[b.band] / all * 100;
+    var w = (tally[b.band] || 0) / all * 100;
     return w ? '<i class="' + b.band + '" style="width:' + w.toFixed(1) + '%" title="' + b.band + ' ' + tally[b.band] + '"></i>' : '';
   }).join('') : '';
-  var recent = rows.slice(-7).reverse().map(function (r) {
+  var recent = (m.recent || []).slice(0, 7).map(function (r) {
     return '<li><span class="rd">#' + esc(r.number) + '</span><span class="ro">' + esc(C.OUTCOME_LABEL[r.outcome] || '') + '</span><span class="rs">' +
-      (r.strip || []).map(function (b) { return '<i class="sq ' + b + '"></i>'; }).join('') + '</span></li>';
+      (r.strip || []).map(function (b) { return '<i class="sq ' + esc(b) + '"></i>'; }).join('') + '</span></li>';
   }).join('');
   $('stats-body').innerHTML =
+    '<p class="src-tag ' + m.src + '">' + (m.src === 'account' ? 'your account' : 'this device') + '</p>' +
     '<div class="tiles">' + tile(n, 'played') + tile(shut, 'doors shut') + tile(n ? Math.round(shut / n * 100) + '%' : null, 'shut rate') +
-    tile(st.cur, 'streak') + tile(st.best, 'best streak') + tile(pct == null ? null : pct, 'avg percentile') + '</div>' +
+    tile(m.streak, 'streak') + tile(m.best, 'best streak') + tile(m.avgPercentile, 'avg percentile') + '</div>' +
     '<h3>your pitches</h3>' +
-    (all ? '<div class="bandbar">' + bar + '</div><p class="quiet">' + C.BANDS.map(function (b) { return tally[b.band] + ' ' + b.band; }).join(' · ') + '</p>'
+    (all ? '<div class="bandbar">' + bar + '</div><p class="quiet">' + C.BANDS.map(function (b) { return (tally[b.band] || 0) + ' ' + b.band; }).join(' \u00b7 ') + '</p>'
       : '<p class="quiet">no pitches graded yet.</p>') +
     (recent ? '<h3>recent</h3><ul class="recent">' + recent + '</ul>' : '') +
-    '<p class="quiet">kept on this device. signed in, your account keeps the streak.</p>';
+    (m.src === 'account' ? '<p class="quiet">kept on your account, on every device.</p>' : '<p class="quiet">kept on this device. sign in to keep it on your account.</p>');
+}
+function showStats() {
+  var A = window.STD_AUTH, st = {};
+  try { st = (A && A.state && A.state()) || {}; } catch (e) {}
+  var dev = function () { renderStats(deviceStats(ctx.hist(), ctx.today)); };
+  if (st.signedIn && A.myStats) {
+    $('stats-body').innerHTML = '<p class="quiet">loading your record.</p>';
+    Promise.resolve().then(function () { return A.myStats(); }).then(function (m) {
+      if (m && typeof m === 'object') { m.src = 'account'; renderStats(m); } else dev();
+    }).catch(dev);
+  } else dev();
+  openSheet('sheet-stats');
 }
 
 /* ---- past dailies (locked in v1) ---------------------------------------- */
@@ -222,7 +247,7 @@ var api = {
   renderAuth: renderAuth,
   show: function (which) {
     if (which === 'how') { renderHow({ proxy: ctx.scn && ctx.scn.resolution === 'proxy' }); openSheet('sheet-how'); }
-    else if (which === 'stats') { renderStats(ctx.hist(), ctx.today); openSheet('sheet-stats'); }
+    else if (which === 'stats') showStats();
     else if (which === 'past') { renderPast(ctx.scn); openSheet('sheet-past'); }
     else if (which === 'settings') { renderSettings(ctx.prefs, ctx.onPref); openSheet('sheet-settings'); }
     else if (which === 'auth') { renderAuth(); openSheet('sheet-auth'); }

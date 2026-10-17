@@ -51,7 +51,18 @@ function play(scene, opts) {
   var T_ARR = T_REL + FLIGHT;
   var inPlay = pr.result === 'in_play';
   var caught = pr.result === 'ball' || pr.result === 'called_strike' || pr.result === 'swinging_strike' || pr.result === 'foul_tip';
-  var T_END = T_ARR + (inPlay ? 1350 : pr.result === 'foul' ? 1000 : 900) * speed;
+  /* The runners. Where everybody started: every move's base, plus anybody
+     on a base after the play that no move reached (he stood still). */
+  var moves = (pr.runnerMoves || []).slice();
+  if (inPlay && !moves.some(function (m) { return m.from === 0; })) moves.push({ from: 0, to: -1 });
+  var stay = [];
+  [1, 2, 3].forEach(function (bs) {
+    if ((pr.bases & (1 << (bs - 1))) && !moves.some(function (m) { return m.to === bs; })) stay.push(bs);
+  });
+  var running = moves.length > 0 && (inPlay || moves.some(function (m) { return m.from > 0; }));
+  var T_RUN = T_ARR + (inPlay ? 260 : 220) * speed;
+  var RUN = (inPlay ? 1150 : 700) * speed;
+  var T_END = T_ARR + (inPlay ? 1700 : pr.result === 'foul' ? 1000 : running ? 1050 : 900) * speed;
   var row = C.rowOf(pr.actualCell);
   var swingPose = row <= 1 ? 'swingHi' : row >= 3 ? 'swingLo' : 'swingMid';
   var r0 = Math.max(4, b * 1.7), r1 = Math.max(3, 0.121 * L.gppf);
@@ -116,6 +127,21 @@ function play(scene, opts) {
     return caught ? m : target;
   }
 
+  /* a runner's place on the base paths at time t: 0 home, 1..3 bases, 4 home */
+  function runnersAt(t) {
+    var u = Math.max(0, Math.min(1, (t - T_RUN) / RUN));
+    var e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
+    var list = stay.map(function (bs) { return { p: bs }; }), runs = 0;
+    moves.forEach(function (m) {
+      var dest = m.to === -1 ? m.from + (m.from === 0 ? 0.85 : 0.55) : m.to;
+      var p = m.from + (dest - m.from) * e;
+      var out = m.to === -1 && u >= 1;
+      if (m.to === 4 && p >= 4) runs++;
+      list.push({ p: p, out: out, alpha: out ? Math.max(0.35, 1 - (t - T_RUN - RUN) / 600) : (m.to === 4 && p >= 4 ? 0.5 : 1), from: m.from, to: m.to });
+    });
+    return { runners: list, runs: runs, u: u };
+  }
+
   function frameAt(t) {
     var f = { marker: null, ball: null, umpire: 'set' };
     f.pitcher = t < 120 * speed ? 'set' : t < 300 * speed ? 'kick' : t < 430 * speed ? 'cock' : t < T_REL + 60 ? 'release' : 'follow';
@@ -143,6 +169,26 @@ function play(scene, opts) {
       f.ball = null;
     }
     if (t >= T_ARR && t < T_ARR + 90 && (caught || inPlay)) f.shake = (caught ? 1 : 2) * (t % 40 < 20 ? 1 : -1);
+    if (running && t >= T_ARR) {
+      var R = runnersAt(t);
+      f.field = { runners: R.runners, runs: R.runs, alpha: Math.min(1, (t - T_ARR) / 150) };
+      if (hooks.field) hooks.field(R.runners);
+      /* on the field itself */
+      var on = [], frameN = Math.floor(t / 90) % 2 ? 'runA' : 'runB';
+      if (inPlay && t >= T_ARR + 160 * speed) {
+        var bp = scene.batterPos();
+        var k = Math.min(1, (t - T_ARR - 160 * speed) / (900 * speed));
+        f.batterGone = true;
+        on.push({ pose: frameN, x: bp.anchor * L.b - k * (bp.anchor * L.b + 30 * L.b), alpha: 1 });
+      }
+      R.runners.forEach(function (r) {
+        if (r.to === 4 && r.p > 3) {
+          var q = Math.min(1, r.p - 3);
+          on.push({ pose: frameN, x: L.W + 12 * L.b + (L.plateX - L.W - 12 * L.b) * q, alpha: r.p >= 4 ? 0.6 : 1 });
+        }
+      });
+      f.runnersOnField = on;
+    }
     return f;
   }
 
@@ -156,6 +202,8 @@ function play(scene, opts) {
       if (!called) { called = true; var w = words(); if (hooks.call) hooks.call(w[0], w[1]); }
       var f = frameAt(T_END);
       f.ball = null; f.pitcher = 'set'; f.batter = 'stance';
+      f.batterGone = false; f.runnersOnField = null;
+      if (f.field) f.field.alpha = 1;
       scene.draw(f);
       done();
     }

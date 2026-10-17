@@ -18,6 +18,14 @@
  *   7. run it back is practice; a reload shows today as done
  *   8. ?debug=1 shows the seed
  *   9. no page error and no console error anywhere
+ *  10. the framing: the whole batter, catcher and umpire are in frame for a
+ *      left and a right handed hitter
+ *  11. all three endings, forced through the mock (?mockEnd=): door shut,
+ *      door's open (a runner put out on a double play, then the tying run)
+ *      and walk-off (runners moving up, then scoring), with the runners on
+ *      the field and on the scorebar's diamond; the proxy note and a reveal
+ *      with no pitch count; the stats sheet from the account and from the
+ *      device
  *
  * Runs on the mock (mock-api.js) until api.js lands; the steps only use the
  * page, so they hold for the real engine too.
@@ -56,6 +64,9 @@ await new Promise((r) => server.listen(0, '127.0.0.1', r));
 const BASE = 'http://127.0.0.1:' + server.address().port + '/shut-the-door/';
 
 const pw = loadPlaywright();
+/* one running number per screen size, across the main run and the endings */
+const SHOT_N = {};
+const nextN = (tag) => { SHOT_N[tag] = (SHOT_N[tag] || 0) + 1; return String(SHOT_N[tag]).padStart(2, '0'); };
 const browser = await pw.chromium.launch(CHROME ? { executablePath: CHROME } : {});
 
 async function run(w, h) {
@@ -74,11 +85,9 @@ async function run(w, h) {
     if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
     return route.abort();
   });
-  let n = 0;
   const shot = async (name, full) => {
     if (!SHOTS) return;
-    n++;
-    await page.screenshot({ path: path.join(SHOTS, `${tag}-${String(n).padStart(2, '0')}-${name}.png`), fullPage: !!full });
+    await page.screenshot({ path: path.join(SHOTS, `${tag}-${nextN(tag)}-${name}.png`), fullPage: !!full });
   };
 
   /* 1 */
@@ -139,6 +148,24 @@ async function run(w, h) {
   await shot('scout-swings');
   await page.click('#m-batter');
   ok(await page.evaluate(() => document.getElementById('m-scout').hidden), '4 scouting closes on a second tap');
+
+  /* 10 */
+  for (const hand of ['L', 'R']) {
+    const fr = await page.evaluate((hand) => {
+      const S = window.STD_UI.state, was = S.scene.bat;
+      const b = S.scn.batters.find((x) => x.bats === hand);
+      S.scene.setBatter(b); S.grid.place(S.scene.gridRect()); S.scene.draw({});
+      const f = S.scene.figureBoxes();
+      const c = document.querySelector('#m-scene .grid .cell[data-cell="12"]').getBoundingClientRect();
+      return { f, cell: [c.width, c.height], was: S.scn.batters.indexOf(was) };
+    }, hand);
+    const inside = (bx) => bx.x0 >= 0 && bx.x1 <= fr.f.W && bx.y0 >= 0 && bx.y1 <= fr.f.H;
+    ok(inside(fr.f.batter) && inside(fr.f.catcher) && inside(fr.f.umpire),
+      '10 a ' + (hand === 'L' ? 'left' : 'right') + ' handed hitter, the catcher and the umpire are all in frame (batter ' + fr.f.batter.x0 + '-' + fr.f.batter.x1 + ' of ' + fr.f.W + ')');
+    ok(fr.cell[0] >= 44 && fr.cell[1] >= 44, '10 cells stay tappable with him in frame (' + Math.round(fr.cell[0]) + 'x' + Math.round(fr.cell[1]) + ')');
+    await shot('framing-' + hand);
+    await page.evaluate((i) => { const S = window.STD_UI.state; S.scene.setBatter(S.scn.batters[i]); S.grid.place(S.scene.gridRect()); S.scene.draw({}); }, fr.was);
+  }
 
   /* 5 */
   const CELLS = [23, 12, 7, 21, 18, 3, 16, 13, 22, 8, 11, 24];
@@ -221,9 +248,87 @@ async function run(w, h) {
   await ctx.close();
 }
 
+/* 11: one forced outing per ending */
+async function ending(w, h, end, extra) {
+  const tag = String(w);
+  const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2 });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push('pageerror: ' + String(e).slice(0, 200)));
+  page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text().slice(0, 200)); });
+  await page.route('**/*', (route) => {
+    const u = new URL(route.request().url());
+    if (u.hostname === '127.0.0.1') return route.continue();
+    if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
+    return route.abort();
+  });
+  const shot = async (name, full) => { if (SHOTS) await page.screenshot({ path: path.join(SHOTS, `${tag}-${nextN(tag)}-${end}-${name}.png`), fullPage: !!full }); };
+  await page.goto(BASE + '?mockEnd=' + end + (extra || ''), { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#b-take', { state: 'visible', timeout: 15000 });
+  const proxy = /mockProxy/.test(extra || '');
+  if (proxy) {
+    ok(await page.isVisible('#h-proxy'), '11 ' + end + ': the proxy note is on the home screen');
+    await shot('home-proxy', true);
+  }
+  await page.click('#b-take');
+  await page.waitForSelector('#s-mound.on .grid .cell');
+  if (proxy) ok(await page.isVisible('#m-proxy'), '11 ' + end + ': the proxy note is on the mound, small');
+  let sawOut = false, sawRun = false, sawMove = false, k = 0;
+  for (; k < 30; k++) {
+    if (await page.evaluate(() => document.getElementById('s-result').classList.contains('on'))) break;
+    await page.click('#m-arsenal .pitch >> nth=0');
+    await page.click('#m-scene .grid .cell[data-cell="12"]');
+    await page.click('#m-throw');
+    /* watch the runners for this play, then let the card come */
+    let shotTaken = false;
+    for (let t = 0; t < 60; t++) {
+      await page.waitForTimeout(50);
+      const r = await page.evaluate(() => ({ dots: document.querySelectorAll('#m-runners circle').length, outs: document.querySelectorAll('#m-runners circle.out').length, card: document.getElementById('g-card').classList.contains('on') }));
+      if (r.dots) sawMove = true;
+      if (r.outs) sawOut = true;
+      if (r.dots && !shotTaken && t > 22) { shotTaken = true; await shot('runners-p' + (k + 1)); }
+      if (r.card) break;
+    }
+    await page.waitForSelector('#g-card.on', { timeout: 8000 });
+    await page.waitForTimeout(300);
+    await page.mouse.click(w / 2, Math.round(h * 0.3));
+    await page.waitForSelector('#g-card', { state: 'hidden', timeout: 3000 });
+    await page.waitForFunction(() => document.getElementById('s-result').classList.contains('on') || !document.getElementById('m-throw').textContent.includes('pitching'), null, { timeout: 5000 });
+  }
+  await page.waitForSelector('#s-result.on', { timeout: 5000 });
+  const res = await page.evaluate(() => ({ o: document.getElementById('r-outcome').textContent, cls: document.getElementById('r-outcome').className, rv: document.getElementById('r-reveal').textContent, st: document.getElementById('r-streak').textContent, them: window.STD_UI.state.outing.score.them, start: window.STD_UI.state.scn.situation.score.them }));
+  sawRun = res.them > res.start;
+  ok(res.cls.includes(end), '11 ' + end + ': the outing ends ' + res.o + ' after ' + k + ' pitches');
+  if (end !== 'door_shut') {
+    ok(sawMove, '11 ' + end + ': runners move on the field and the diamond');
+    ok(sawRun, '11 ' + end + ': runs score (' + res.start + ' to ' + res.them + ')');
+  }
+  if (end === 'doors_open') ok(sawOut, '11 doors_open: the double play shows a runner put out');
+  if (/mockNull/.test(extra || '')) ok(/at least 13 pitches/.test(res.rv), '11 ' + end + ': a reveal with no pitch count shows its note');
+  const auth = /mockAuth/.test(extra || '');
+  if (auth) ok(/#\d+ of \d+ today/.test(res.st), '11 ' + end + ': signed in, the result shows the account\'s rank');
+  await shot('result', true);
+  await page.click('#r-home');
+  await page.click('#h-main [data-open="stats"]');
+  await page.waitForSelector('#sheet-stats.on');
+  await page.waitForFunction(() => !/loading/.test(document.getElementById('stats-body').textContent), null, { timeout: 3000 });
+  const src = await page.textContent('#stats-body .src-tag');
+  ok(auth ? src === 'your account' : src === 'this device', '11 ' + end + ': the stats sheet reads ' + src);
+  await page.waitForTimeout(250);
+  await shot('stats-' + (auth ? 'account' : 'device'));
+  ok(errors.length === 0, '11 ' + end + ': no page or console errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  await ctx.close();
+}
+
 try {
   await run(390, 844);
   await run(1440, 900);
+  console.log('\nthe three endings');
+  await ending(390, 844, 'door_shut', '');
+  await ending(390, 844, 'doors_open', '');
+  await ending(390, 844, 'walk_off', '&mockProxy=1&mockNull=1&mockAuth=1');
+  await ending(1440, 900, 'doors_open', '&mockAuth=1');
+  await ending(1440, 900, 'walk_off', '');
 } catch (e) {
   fails++;
   console.log('  FAIL ' + (e && e.message ? e.message.split('\n')[0] : e));
