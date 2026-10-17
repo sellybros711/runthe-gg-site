@@ -253,12 +253,33 @@
   var FACINGS = 16;
   function snapYaw(deg) { var st = 360 / FACINGS; return ((Math.round(deg / st) * st) % 360 + 360) % 360; }
 
-  var cache = {}, count = 0;
+  /* A sprite is cached by everything that changes it. Size snaps to a third
+     of a cell a foot and the camera's tilt to a few degrees, so a play needs
+     a few dozen traces, not one a frame. */
+  var cache = {}, family = {}, count = 0;
+  function norm(o) {
+    return { pose: o.pose || 'idle', frame: o.frame | 0, yaw: snapYaw(o.yaw || 0), team: o.team || 'offense', skin: o.skin | 0, big: !!o.big,
+      k: Math.round((o.k || 4.33) * 3) / 3, pitch: Math.round((o.pitch == null ? 0.7 : o.pitch) / 0.06) * 0.06 };
+  }
+  function keyOf(n) { return [n.pose, n.frame, n.yaw, n.team, n.skin, n.big ? 1 : 0, n.k.toFixed(3), n.pitch.toFixed(2)].join('|'); }
+  function cached(o) { return !!cache[keyOf(norm(o))]; }
+  /* The nearest sprite already traced for this pose, side and size of man,
+     scaled to stand in until the exact one is ready. */
+  function nearest(o) {
+    var n = norm(o), fam = family[[n.pose, n.frame, n.team, n.big ? 1 : 0].join('|')], best = null, bs = 1e9;
+    if (!fam) fam = family[[n.pose, 0, n.team, n.big ? 1 : 0].join('|')];
+    if (!fam) return null;
+    for (var i = 0; i < fam.length; i++) {
+      var e = fam[i], dy = Math.abs(((e.yaw - n.yaw) % 360 + 540) % 360 - 180), s2 = dy / 22.5 + Math.abs(e.k - n.k) * 2;
+      if (s2 < bs) { bs = s2; best = e; }
+    }
+    if (!best) return null;
+    var k = n.k / best.k;
+    return { canvas: best.s.canvas, footX: best.s.footX, footY: best.s.footY, w: best.s.w, h: best.s.h, scale: k };
+  }
   function sprite(o) {
     if (!PX || typeof document === 'undefined') return null;
-    var yaw = snapYaw(o.yaw || 0);
-    var kq = Math.round((o.k || 4.33) * 4) / 4, pq = Math.round((o.pitch == null ? 0.7 : o.pitch) / 0.05) * 0.05;
-    var key = [o.pose, o.frame | 0, yaw, o.team, o.skin | 0, o.big ? 1 : 0, kq, pq].join('|');
+    var n = norm(o), yaw = n.yaw, kq = n.k, pq = n.pitch, key = keyOf(n);
     if (cache[key]) return cache[key];
     var g = trace(poseOf(o), { k: kq, pitch: pq, yaw: yaw, big: o.big });
     var t = TEAMS[o.team] || TEAMS.offense;
@@ -269,8 +290,11 @@
       shoe: PX.ramp('#24262e', { spread: 0.7 }), glove: PX.ramp(t.glove || '#f1ede4', { spread: 0.7 }), ball: PX.ramp('#8a4b22'), lace: PX.ramp('#f4efe4', { spread: 0.6 })
     };
     var cv = paintGrid(g, R);
-    if (++count > 2500) { cache = {}; count = 0; }
-    return (cache[key] = { canvas: cv, footX: g.footX, footY: g.footY, w: g.w, h: g.h });
+    if (++count > 2500) { cache = {}; family = {}; count = 0; }
+    var out = cache[key] = { canvas: cv, footX: g.footX, footY: g.footY, w: g.w, h: g.h };
+    var fk = [n.pose, n.frame, n.team, n.big ? 1 : 0].join('|');
+    (family[fk] = family[fk] || []).push({ yaw: yaw, k: kq, s: out });
+    return out;
   }
 
   /* Paint a traced grid with PXHD, each material on its ramp. */
@@ -319,7 +343,7 @@
     return true;
   }
 
-  var API = { init: init, goalpost: goalpost, TEAMS: TEAMS, SKINS: SKINS, POSES: Object.keys(POSES), FACINGS: FACINGS,
+  var API = { init: init, goalpost: goalpost, cached: cached, nearest: nearest, TEAMS: TEAMS, SKINS: SKINS, POSES: Object.keys(POSES), FACINGS: FACINGS,
     frameCount: frameCount, grid: grid, sprite: sprite, draw: draw, snapYaw: snapYaw };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.FAW_RIG = API;

@@ -48,7 +48,7 @@
   /* A camera behind the line, looking downfield. W and H are cells. */
   function camera(W, H, X, Ylos, opt) {
     opt = opt || {};
-    var back = opt.back || 16, high = opt.high || 28, ahead = opt.ahead || 16, hfov = (opt.fov || 46) * Math.PI / 180;
+    var back = opt.back || 16, high = opt.high || 28, ahead = opt.ahead || 16, hfov = (opt.fov || 52) * Math.PI / 180;
     var pos = [X, Ylos - back, high];
     var dy = ahead + back, dz = -high, L = Math.hypot(dy, dz);
     var F = [0, dy / L, dz / L], U = [0, -dz / L, dy / L], Rt = [1, 0, 0];
