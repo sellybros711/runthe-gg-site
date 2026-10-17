@@ -446,7 +446,8 @@ function* steps(C, opt){
   /* WHAT A LIVING HOLE MOVES (a fine picture only): a sample of the water's pixels, which glint in turn, and the lights. The
      picture itself is never touched again; putt.js draws over it. */
   var amb = null;
-  if (FINE && !SC){ amb = { water:[], lights:LIGHTS }; var WSET = { haz:1, flow:1, 't:sea':1, 't:lagoon':1, 't:jpool':1, 't:water':1, 't:sea0':1 }, nr = Math.min(S.g.length, cv.height);
+  // a land may name more that moves (land.js anim: a waterfall, a river's flow, steam): handed on as it is, never touched here
+  if (FINE && !SC){ amb = { water:[], lights:LIGHTS, anim:(LD && LD.anim) || null }; var WSET = { haz:1, flow:1, 't:sea':1, 't:lagoon':1, 't:jpool':1, 't:water':1, 't:sea0':1 }, nr = Math.min(S.g.length, cv.height);
     for (var ay = 0; ay < nr; ay++){ var grow = S.g[ay]; if (!grow) continue; for (var ax = 0; ax < W; ax++){ var gc = grow[ax]; if (!gc || !WSET[gc.m]) continue;
       var hh = Math.imul(ax, 374761393) + Math.imul(ay, 668265263) | 0; hh = Math.imul(hh ^ (hh >>> 13), 1274126177); if (((hh ^ (hh >>> 16)) >>> 0) / 4294967296 < 0.01) amb.water.push(ax, ay); } } }
   return { amb:amb, ART:ART, cv:cv, bg:fxBg, sky:fxSky, night:FX && fxNight, pr:pr, un:un, zAt:SC ? function(x, y){ return gz(x, y); } : surf, hid:hid, mill:mill, se:se, ce:ce, K:K, carp:CARP, Z:Z, ZW:W, zy0:y0, b:b,

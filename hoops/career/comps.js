@@ -178,7 +178,7 @@ function saySeasonComp(L, beats) {
   const c = seasonComp(L, h, L.history.length, L.flags.compLast);
   if (!c) return;
   L.flags.compLast = c.n + c.s;
-  const t = 'Your season looked like ' + c.n + '\'s ' + seasonName(c.s) + ': ' + c.pts + ' points, ' + c.reb + ' rebounds, ' + c.ast + ' assists.';
+  const t = 'Your season looked like ' + c.n + '\'s ' + seasonName(c.s) + ': ' + per(c.pts, 'points') + ', ' + per(c.reb, 'rebounds') + ', ' + per(c.ast, 'assists') + '.';
   logIt(L, t, '');
   if (h.pts >= 18 || (h.aw || []).indexOf('star') >= 0) beats.push({ kind: 'comp', text: t, tone: '' });
 }

@@ -1024,6 +1024,8 @@ function banIt(L) {
   remember(L, 'bet.banned', true);
   bump(L, { fame: -12, trust: -30, morale: -10 });
   logIt(L, 'Banned for life by the league over a bet on your own game.', 'bad');
+  /* Every brand walks the same day (deals.js). */
+  for (const x of dealsNow(L)) { x.until = L.year - 1; x.dropped = L.year; }
 }
 function burgerVerdict(L, r) {
   if (ok(r, 0.5)) { arcEnd(L, 'burger', 'won'); bump(L, { cash: 7, fame: 3 }); return 'A national chain buys you out for triple. Your mom gets a lifetime card.'; }
