@@ -1006,7 +1006,31 @@ if (!args.includes('--no-browser')){
     // own clock, and the sheet shows the next one back, sells nothing for coins or money, and offers the Tour Pass
     await pg.evaluate(() => { const k = 'bag_ppt_v1@chk', a = JSON.parse(localStorage.getItem(k)); a.lives = 2; a.back = Array.from({ length:7 }, () => Date.now() + 3 * 3600e3); a.lt = Date.now(); localStorage.setItem(k, JSON.stringify(a)); });
     await pg.click('.pp-pop [data-a="next"]'); await pg.waitForFunction(() => { const S = window.RTT_PUTT._state(); return S.screen === 'play' || window.RTT_PUTT._trail(); }, null, { timeout:60000 }); if (await pg.$('.pp-trail [data-skip]')) await pg.click('.pp-trail [data-skip]'); if (await pg.$('.pp-skipw [data-skip]')) await pg.click('.pp-skipw [data-skip]');
-    for (let t = 0; t < 2; t++){ for (let k = 0; k < 3; k++) await putt(0.03); await pg.waitForSelector('.pp-pop'); await pg.click('.pp-pop [data-a="again"]'); }
+    // paid lives are offered every time a life goes, and the hearts open the Lives sheet (the owner, 2026-10-17).
+    // PUTT_SHOTS=<dir> saves a picture of each, for a person to look at.
+    const livesOn0 = /^var PUTT_LIVES_ENABLED = true;$/m.test(fs.readFileSync(new URL('./putt.js', import.meta.url), 'utf8'));
+    for (let t = 0; t < 2; t++){ for (let k = 0; k < 3; k++) await putt(0.03); await pg.waitForSelector('.pp-pop');
+      if (t === 0){
+        const ob = await pg.$$eval('.pp-pop [data-buy]', (bs) => bs.map((b) => b.getAttribute('data-buy')));
+        claim(livesOn0 ? ob.join() === 'nine,three' : ob.length === 0, `over par: the paid lives are offered when a life goes, nine first (${ob.join() || 'none'})`);
+        if (process.env.PUTT_SHOTS) await pg.screenshot({ path: process.env.PUTT_SHOTS + '/over-par.png' });
+        await pg.click('.pt-ov .pp-hearts'); const ls = await pg.waitForSelector('.pp-livesh', { timeout:5000 }).catch(() => null);
+        const lb = ls ? await pg.$$eval('.pp-livesh [data-buy]', (bs) => bs.map((b) => b.getAttribute('data-buy'))) : [];
+        claim(!!ls && (livesOn0 ? lb.join() === 'nine,three' : lb.length === 0), `the hearts open the Lives sheet, with the paid lives (${ls ? lb.join() || 'none' : 'no sheet'})`);
+        if (process.env.PUTT_SHOTS && ls) await pg.screenshot({ path: process.env.PUTT_SHOTS + '/lives-sheet.png' });
+        if (ls) await pg.click('.pp-livesh [data-n]');
+        // lives bought over the max are full hearts and a red +N, never more hearts than the max holds. Only an
+        // account's lives (the server's, lsrv) go over: a device's own record is redone from its clocks.
+        const was = await pg.evaluate(() => { const k = 'bag_ppt_v1@chk', a = JSON.parse(localStorage.getItem(k)), w = { lives: a.lives, lsrv: a.lsrv, back: a.back }; a.lives = window.RTT_PUTT.LIVES_MAX() + 5; a.back = []; a.lsrv = true; localStorage.setItem(k, JSON.stringify(a)); return w; });
+        await pg.click('.pt-ov .pp-hearts'); await pg.waitForSelector('.pp-livesh');
+        const ov5 = await pg.evaluate(() => ({ more: (document.querySelector('.pp-livesh .pp-hmore') || {}).textContent, hearts: document.querySelectorAll('.pp-livesh .pp-lives .pp-h').length,
+          full: document.querySelectorAll('.pp-livesh .pp-lives .pp-h.on').length, max: window.RTT_PUTT.LIVES_MAX() }));
+        claim(ov5.more === '+5' && ov5.hearts === ov5.max / 3 && ov5.full === ov5.hearts, `five over the max: full hearts and a red +5 (${JSON.stringify(ov5)})`);
+        if (process.env.PUTT_SHOTS) await pg.screenshot({ path: process.env.PUTT_SHOTS + '/over-max.png' });
+        await pg.click('.pp-livesh [data-n]');
+        await pg.evaluate((w) => { const k = 'bag_ppt_v1@chk', a = JSON.parse(localStorage.getItem(k)); a.lives = w.lives; a.back = w.back; if (w.lsrv) a.lsrv = w.lsrv; else delete a.lsrv; localStorage.setItem(k, JSON.stringify(a)); }, was);
+      }
+      await pg.click('.pp-pop [data-a="again"]'); }
     await pg.waitForSelector('.pp-sheet');
     const r2 = await rec();
     // the only money on the sheet is the paid lives (the owner, 2026-10-17): nine then three, at LIVES_BUY's prices,
@@ -1014,7 +1038,7 @@ if (!args.includes('--no-browser')){
     { const tx = await pg.textContent('.pp-sheet'), last = Math.max.apply(null, r2.back || [0]);
       const buys = await pg.$$eval('.pp-sheet [data-buy]', (bs) => bs.map((b) => b.textContent));
       const livesOn = /^var PUTT_LIVES_ENABLED = true;$/m.test(fs.readFileSync(new URL('./putt.js', import.meta.url), 'utf8'));
-      const want = livesOn ? await pg.evaluate(() => (window.RTT_PUTT.LIVES_BUY || []).map((p) => 'Get ' + p.lives + ' lives back · $' + (p.cents / 100).toFixed(2))) : [];
+      const want = livesOn ? await pg.evaluate(() => (window.RTT_PUTT.LIVES_BUY || []).map((p) => window.RTT_PUTT.buyLabel(p))) : [];
       const rest = buys.reduce((t, b) => t.replace(b, ''), tx);
       claim(r2.lives === 0 && (r2.back || []).length === 9 && Math.abs(last - Date.now() - 24 * 3600e3) < 120e3 && Math.abs(r2.refillAt - Date.now() - 3 * 3600e3) < 120e3
         && /Next life in/.test(tx) && !/\$|coin/i.test(rest) && !!(await pg.$('.pp-sheet [data-pass]')),

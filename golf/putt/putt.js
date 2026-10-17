@@ -2074,7 +2074,7 @@ var CSS = '\
 .pt-card table{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px;font-variant-numeric:tabular-nums}.pt-card td{padding:3px 2px;border-bottom:1px solid rgba(255,255,255,.07)}\
 .pt-card td:last-child{text-align:right;font-weight:800}\
 .pp-stat{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-weight:800;font-size:11px;color:#cfe0d8}.pp-coin{color:#ffd45e}.pp-coin:before{content:"\\25CF ";color:#ffd45e}\
-.pp-hearts,.pp-lives{display:flex;gap:3px}.pp-lives{justify-content:center;margin:6px 0 2px}.pp-h{width:14px;height:12px;background:rgba(255,255,255,.18);clip-path:path("M7 12 L1 6 A3 3 0 0 1 7 2 A3 3 0 0 1 13 6 Z")}.pp-h.on{background:#ff4d6d}\
+.pp-hearts,.pp-lives{display:flex;gap:3px}.pp-hearts{cursor:pointer}.pp-lives{justify-content:center;margin:6px 0 2px}.pp-h{width:14px;height:12px;background:rgba(255,255,255,.18);clip-path:path("M7 12 L1 6 A3 3 0 0 1 7 2 A3 3 0 0 1 13 6 Z")}.pp-h.on{background:#ff4d6d}\
 .pp-clock{color:#9fbfae;font-variant-numeric:tabular-nums}\
 .pp-hub{flex:1;min-height:0;display:flex;flex-direction:column;max-width:560px;width:100%;margin:0 auto}\
 .pp-daily{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 10px;margin:10px 12px 8px;padding:12px 14px;border-radius:16px;border:2px solid;text-align:left;font:inherit;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.35)}\
@@ -2251,7 +2251,7 @@ var CSS = '\
 .pp-bpp{display:flex;gap:4px}.pp-bpp u{width:12px;height:12px;border-radius:3px;background:rgba(255,255,255,.18)}.pp-bpp u.on{background:#ffd24a}\
 .pp-bw{padding:6px 10px;border-left:4px solid var(--wc);margin:6px 0;background:rgba(255,255,255,.04);border-radius:6px}.pp-bw b{font-size:13px}.pp-bw em{display:block;font-size:11px;font-style:normal;opacity:.75}\
 .pp-btk{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0}.pp-btk i{font-style:normal;font-size:11px;padding:2px 7px;border-radius:8px;background:rgba(255,255,255,.08);opacity:.55}.pp-btk i.on{opacity:1;background:var(--wc);color:#1a1420;font-weight:800}\
-.pp-hbank{margin-left:4px;font:900 12px system-ui,sans-serif;color:#ffd24a}.pp-hx{filter:drop-shadow(0 0 3px #ffd24a)}\
+.pp-hbank{margin-left:4px;font:900 12px system-ui,sans-serif;color:#ffd24a}.pp-hmore{margin-left:4px;font:900 12px system-ui,sans-serif;color:#ff5a4a}.pp-hx{filter:drop-shadow(0 0 3px #ffd24a)}\
 .pp-bump{animation:ppbump .42s cubic-bezier(.3,1.6,.5,1)}@keyframes ppbump{0%{transform:scale(1)}35%{transform:scale(1.35);filter:brightness(1.5)}100%{transform:scale(1)}}.pp-thud{position:absolute;left:10px;top:10px;display:flex;gap:6px}.pp-thud span{font-size:13px;font-weight:900;color:#3a2a14;background:#ffd24a;border:2px solid #3a2a14;border-radius:10px;padding:3px 9px}.pp-thud span:empty{display:none}\
 .pp-bub{position:absolute;transform:translate(-50%,-100%);max-width:min(78vw,300px);font-size:14px;font-weight:800;line-height:1.3;color:#1d2a20;background:#fffdf5;border:2px solid #3a2a14;border-radius:12px;padding:8px 11px;box-shadow:0 3px 0 rgba(0,0,0,.35)}.pp-bub[hidden]{display:none}\
 .pp-way{position:absolute;display:none;transform:translate(-50%,-50%);flex-direction:column;align-items:center;gap:3px}.pp-way.on{display:flex}\
@@ -2339,6 +2339,8 @@ function open(host){
   var ov = el('<div class="pt-ov" role="dialog" aria-modal="true" aria-label="Putt Putt Tour"></div>');
   document.body.appendChild(ov);
   S = { host:host || {}, ov:ov, prevOverflow:document.body.style.overflow };
+  // the hearts in the header and the play bar open the Lives sheet, where lives are bought (the owner, 2026-10-17)
+  ov.addEventListener('click', function(e){ var hs = e.target && e.target.closest && e.target.closest('.pp-hearts'); if (hs && ov.contains(hs)) livesSheet(); });
   document.body.style.overflow = 'hidden';
   S.onKey = function(e){ onKey(e); }; window.addEventListener('keydown', S.onKey);
   // GET TOUR PASS, from any sheet: the page's own Tour Pass, with Putt Putt closed behind it
@@ -2408,16 +2410,20 @@ var PAY = {
 };
 var COIN_HOLE = PAY.main.hole, COIN_SIG = PAY.main.sig, COIN_ACE = PAY.main.ace, COIN_WORLD = PAY.main.world, COIN_DAILY = 40, COIN_DAILY_PAR = 40;
 var LIFE_MS = 24 * 3600 * 1000;
-/* LIVES FOR SALE, the owner's calls: out of lives, nine back for $4.99 (2026-10-16) or three for $2.99 (2026-10-17).
-   SHIPPED DARK. The server sells them (functions/api/stripe/_bundles.js PUTT_LIVES) and the webhook hands them back on
-   the server's own row (149_putt_lives_buy.sql); this page only shows the buttons and asks for lives again. The
-   switch, the packs and their prices are the server's, copied, in the order the sheet shows them (nine first):
-   scripts/stripe/check-putt-lives.mjs holds the two together. */
+/* LIVES FOR SALE, the owner's calls: nine for $4.99 (2026-10-16) and three for $2.99 (2026-10-17), bought at any time
+   and over the max if the player wants (2026-10-17). They are offered on the Out of Lives sheet, on the Over par card
+   every time a life goes, and on the Lives sheet the hearts open. The server sells them
+   (functions/api/stripe/_bundles.js PUTT_LIVES) and the webhook hands them over on the server's own row: lives on a
+   clock come back first, the rest are extra lives over the max (150_putt_lives_extra.sql), spent before a heart. This
+   page only shows the buttons and asks for lives again. The switch, the packs, their prices and the cap are the
+   server's, copied, in the order the buttons show (nine first): scripts/stripe/check-putt-lives.mjs holds them together. */
 var PUTT_LIVES_ENABLED = true;
 var LIVES_BUY = [
-  { pack:'nine', lives:9, cents:499, tag:'Best value. Back right now.' },
-  { pack:'three', lives:3, cents:299, tag:'Back right now.' }
+  { pack:'nine', lives:9, cents:499, tag:'Best value. Ready right now.' },
+  { pack:'three', lives:3, cents:299, tag:'Ready right now.' }
 ];
+var LIVES_EXTRA_MAX = 99;
+function buyLabel(p){ return 'Get ' + p.lives + ' lives · $' + (p.cents / 100).toFixed(2); }
 var ACE_REWARD = { 5:'Hole in One Charm', 15:'Golden Putter', 30:'Ace Crown' };
 var STREAK_REWARD = { 7:'Week Streak Ball', 30:'Month Streak Visor', 100:'Century Streak Trail' };
 /* EVERY TOUR REWARD IS A CLOSET ITEM (the owner's call, 2026-10-16). Each name a tour pays is one item in the page's
@@ -2640,7 +2646,9 @@ var LIVES_FREE = 9, LIVES_PASS = 18;
 function livesMax(){ try{ var h = hostOf(); return h.passActive && h.passActive() ? LIVES_PASS : LIVES_FREE; }catch(e){ return LIVES_FREE; } }
 function passLivesLine(){ return 'A Tour Pass doubles your lives: ' + LIVES_PASS + ', not ' + LIVES_FREE + '.'; }
 var PER_HEART = 3;
-function loseLife(st){ if (lifeExtra(st) > 0){ st.bspent = (st.bspent || 0) + 1; psave(st); return; } if (st.lives == null) st.lives = livesMax(); if (st.lives <= 0) return; st.lives--; st.back = (st.back || []).concat([Date.now() + LIFE_MS]); st.refillAt = st.back[0]; st.l9 = 1; st.lt = Date.now(); psave(st); livesCall('putt_lives_spend'); }
+function loseLife(st){ if (lifeExtra(st) > 0){ st.bspent = (st.bspent || 0) + 1; psave(st); return; } if (st.lives == null) st.lives = livesMax(); if (st.lives <= 0) return;
+  // a bought life over the max goes first and starts no clock; the server takes it out of its extras (150)
+  if (st.lives > livesMax()){ st.lives--; st.lt = Date.now(); psave(st); livesCall('putt_lives_spend'); return; } st.lives--; st.back = (st.back || []).concat([Date.now() + LIFE_MS]); st.refillAt = st.back[0]; st.l9 = 1; st.lt = Date.now(); psave(st); livesCall('putt_lives_spend'); }
 function coins(n, label){ try{ if (S.host.coins) S.host.coins(n, label); }catch(e){} var b = balStr(); if (b !== '' && S.ov) S.ov.querySelectorAll('[data-bal]').forEach(function(e){ e.textContent = b; }); }   // the wallet at the top moves the moment coins land
 function hms(ms){ ms = Math.max(0, ms); var s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return h + ':' + (m < 10 ? '0' : '') + m + ':' + (x < 10 ? '0' : '') + x; }
 function hm(ms){ var m = Math.max(0, Math.round(ms / 60000)); return Math.floor(m / 60) + 'h ' + (m % 60) + 'm'; }
@@ -2711,8 +2719,10 @@ function heartSvg(n){ if (n === true) n = PER_HEART; if (!n) n = 0; var on = '',
     for (var x = 0; x < r.length; x++) if (r[x] === '1'){ var c = 'M' + x + ' ' + y + 'h1v1h-1z'; if (lit) on += c; else off += c; } });
   return '<svg viewBox="0 0 10 10" shape-rendering="crispEdges">' + (off ? '<path d="' + off + '" fill="#5b6670"/>' : '') + (on ? '<path d="' + on + '" fill="#e5483a"/>' : '') +
     (n === PER_HEART ? '<path d="M1 1h1v1h-1zM2 2h1v1h-1z" fill="#ff9d8a"/>' : '') + '</svg>'; }
-function hearts(st){ var mx = Math.max(livesMax(), st.lives || 0), nh = Math.ceil(mx / PER_HEART), out = '';
+// lives bought over the max (150) are a red +N after full hearts, not more hearts, so a header never overflows
+function hearts(st){ var mx = livesMax(), nh = Math.ceil(mx / PER_HEART), out = '', over = Math.max(0, (st.lives || 0) - mx);
   for (var i = 0; i < nh; i++){ var k = Math.max(0, Math.min(PER_HEART, (st.lives || 0) - i * PER_HEART)); out += '<i class="pp-h' + (k ? ' on' : '') + '" title="' + k + ' of ' + PER_HEART + '">' + heartSvg(k) + '</i>'; }
+  if (over) out += '<b class="pp-hmore" title="Extra lives over the max">+' + over + '</b>';
   var x = lifeExtra(st), bk = bankHeld(st);
   if (x) out += '<i class="pp-h on pp-hx" title="A spare life in play">' + heartSvg(1) + '</i>';
   if (bk) out += '<b class="pp-hbank" title="Spare lives banked">+' + bk + '</b>'; return out; }
@@ -3446,8 +3456,7 @@ function outOfLives(){
     <div class="m">Each life comes back 24 hours after you lost it. The clocks keep running while you are away.</div>\
     ' + (membersOpen() ? '' : '<div class="pp-x2b"><i class="pp-x2h">' + heartSvg(PER_HEART) + '</i><b>Double your lives</b>The Tour Pass gives you ' + LIVES_PASS + ' lives, not ' + LIVES_FREE + '. It opens the Members Tour too.</div>\
     <button class="pt-go pp-wide pass" data-pass>Get Tour Pass<small>' + LIVES_PASS + ' lives</small></button>') +
-    LIVES_BUY.map(function(p){ return canBuyLives(st, p) ? '<button class="pt-go pp-wide" data-buy="' + p.pack + '">Get ' + p.lives + ' lives back · $' + (p.cents / 100).toFixed(2) + '<small>' + p.tag + '</small></button>' : ''; }).join('') +
-    (LIVES_BUY.some(function(p){ return canBuyLives(st, p); }) ? '<div class="m" data-buym hidden></div>' : '') +
+    buyRow(st) +
     (bankHeld(st) ? '<button class="pt-go pp-wide" data-spare>Use a spare life<small>' + bankHeld(st) + ' banked from the trails</small></button>' : '') +
     (S.host.tester && S.host.tester() ? '<button class="pt-bt pp-wide" data-free>Tester refill · free</button>' : '') +
     '<button class="pt-bt pp-wide" data-wait>Wait it out</button><div class="m">The Daily Hole never uses a life.</div></div></div>');
@@ -3456,15 +3465,26 @@ function outOfLives(){
   sh.querySelector('[data-wait]').onclick = function(){ sh.remove(); };
   sh.querySelector('[data-x]').onclick = function(){ sh.remove(); };
   var spb = sh.querySelector('[data-spare]'); if (spb) spb.onclick = function(){ var s2 = pload(); if (!bankHeld(s2)) return; s2.bused = (s2.bused || 0) + 1; psave(s2); clearInterval(iv); sh.remove(); showHub(); };
-  sh.querySelectorAll('[data-buy]').forEach(function(bb){ bb.onclick = function(){ buyLives(sh, bb, bb.getAttribute('data-buy')); }; });
+  wireBuy(sh);
   var fr = sh.querySelector('[data-free]'); if (fr) fr.onclick = function(){ var s2 = pload(); s2.lives = livesMax(); s2.back = []; s2.refillAt = null; s2.lt = Date.now(); psave(s2); livesCall('putt_lives_refill'); sh.remove(); showHub(); };
 }
 
-/* THE PAID LIVES are only offered when every one of them would land: missing fewer than a pack's lives, the server
-   answers lives_left and nobody pays for lives they could not hold. A guest is sent to sign in, since bought lives
-   are the account's. The page leaves for Stripe, and comes back to /golf/?putt=lives_paid, where the host asks for
-   lives again (RTT_PUTT.livesRefresh). */
-function canBuyLives(st, p){ var h = hostOf(); return PUTT_LIVES_ENABLED && !!h.buyLives && livesMax() - (st.lives || 0) >= p.lives; }
+/* THE PAID LIVES are offered at any time, full or not, up to the cap on extra lives over the max (past it the server
+   answers lives_full). A guest is sent to sign in, since bought lives are the account's. The page leaves for Stripe,
+   and comes back to /golf/?putt=lives_paid, where the host asks for lives again (RTT_PUTT.livesRefresh). */
+function canBuyLives(st, p){ var h = hostOf(); return PUTT_LIVES_ENABLED && !!h.buyLives && (st.lives || 0) + p.lives - livesMax() <= LIVES_EXTRA_MAX; }
+function buyRow(st){ var any = LIVES_BUY.some(function(p){ return canBuyLives(st, p); });
+  return LIVES_BUY.map(function(p){ return canBuyLives(st, p) ? '<button class="pt-go pp-wide" data-buy="' + p.pack + '">' + buyLabel(p) + '<small>' + p.tag + '</small></button>' : ''; }).join('') +
+    (any ? '<div class="m" data-buym hidden></div>' : ''); }
+function wireBuy(sh){ sh.querySelectorAll('[data-buy]').forEach(function(bb){ bb.onclick = function(){ buyLives(sh, bb, bb.getAttribute('data-buy')); }; }); }
+/* THE LIVES SHEET, opened by tapping the hearts anywhere in Putt Putt: what is held, the next life's clock, the buttons. */
+function livesSheet(){ if (S.ov.querySelector('.pp-livesh')) return; var st = pload(), n = livesNow(st);
+  var sh = el('<div class="pp-sheet pp-livesh"><div class="pp-card"><div class="k">LIVES</div><div class="pp-lives">' + hearts(st) + '</div>\
+    <div class="t">' + n + (n === 1 ? ' life' : ' lives') + '</div>' +
+    (st.refillAt ? '<div class="m">Next life back in ' + hms(st.refillAt - Date.now()) + '.</div>' : '') +
+    (bankHeld(st) ? '<div class="m">' + bankHeld(st) + ' spare ' + (bankHeld(st) === 1 ? 'life' : 'lives') + ' banked from the trails.</div>' : '') +
+    buyRow(st) + '<button class="pt-bt pp-wide" data-n>Close</button></div></div>');
+  S.ov.appendChild(sh); wireBuy(sh); sh.querySelector('[data-n]').onclick = function(){ sh.remove(); }; }
 function buyLives(sh, b, pack){
   if (isGuest()){ var h = S.host; sh.remove(); close(); try{ h.signIn('signin'); }catch(e){} return; }
   var m = sh.querySelector('[data-buym]'), bs = sh.querySelectorAll('[data-buy]'),
@@ -3472,7 +3492,7 @@ function buyLives(sh, b, pack){
   bs.forEach(function(x){ x.disabled = true; });
   Promise.resolve(S.host.buyLives(pack)).then(function(d){
     if (d && d.url){ location.href = d.url; return; }
-    say(d && d.error === 'lives_left' ? 'You still have lives. Play those first.' : 'Checkout did not start. Try again.');
+    say(d && d.error === 'lives_full' ? 'You hold all the extra lives you can. Play some first.' : 'Checkout did not start. Try again.');
   }, function(){ say('Checkout did not start. Try again.'); });
 }
 
@@ -3651,11 +3671,13 @@ function tourOut(holed){
   if (TR.lab) return popup('<div class="k">OUT OF STROKES</div><div class="t">Over par</div><div class="s">' + par + ' strokes used and still not down. The Lab costs no lives.</div>\
     <div class="row"><button class="pt-bt" data-a="map">Map</button><button class="pt-go" data-a="again">Try again</button></div>', { map:function(){ showHub(tid); }, again:function(){ startLevel(n, tid); } }, 'over');
   loseLife(st);
-  return popup('<div class="k">OUT OF STROKES</div><div class="t">Over par</div><div class="s">' + par + ' strokes used and still not down.</div>\
+  var over = popup('<div class="k">OUT OF STROKES</div><div class="t">Over par</div><div class="s">' + par + ' strokes used and still not down.</div>\
     <div class="pp-lives">' + hearts(st) + '</div><div class="s">' + (livesNow(st) ? livesNow(st) + (livesNow(st) === 1 ? ' life' : ' lives') + ' left' : 'That was your last life.') + '</div>' +
     (membersOpen() ? '' : '<div class="s pp-x2s"><i class="pp-x2h">' + heartSvg(PER_HEART) + '</i> ' + esc(passLivesLine()) + '</div>' + (livesNow(st) <= PER_HEART ? '<button class="pt-go pp-wide pass" data-pass>Get Tour Pass<small>' + LIVES_PASS + ' lives</small></button>' : '')) +
+    buyRow(st) +
     '<div class="row"><button class="pt-bt" data-a="map">Map</button><button class="pt-go" data-a="again">' + (livesNow(st) ? 'Try again' : 'Refill') + '</button></div>',
     { map:function(){ showHub(tid); }, again:function(){ if (livesNow(pload()) > 0 || allAccess()) startLevel(n, tid); else { showHub(tid); outOfLives(); } } }, 'over');
+  wireBuy(over); return over;
 }
 function worldComplete(n, s, par, got, tid, lines){
   var TR = tourOf(tid), PY = PAY[TR.id], K = TR.per || PER, w = Math.floor((n - 1) / K), Wd = TR.worlds[w], last = n === TR.levels.length;
@@ -4496,7 +4518,7 @@ function scorecard(){
 }
 // back from a paid checkout: the server has the lives (or will in a moment). Answers the lives this account now has.
 RTT_PUTT.livesRefresh = function(host){ HOSTX = host || HOSTX; return livesSync().then(function(){ return pload().lives || 0; }, function(){ return pload().lives || 0; }); };
-RTT_PUTT.LIVES_BUY = LIVES_BUY;
+RTT_PUTT.LIVES_BUY = LIVES_BUY; RTT_PUTT.buyLabel = buyLabel; RTT_PUTT.LIVES_MAX = livesMax;
 RTT_PUTT.open = open; RTT_PUTT.close = close; RTT_PUTT.paintCourse = paintCourse; RTT_PUTT.SKIN = SKIN;
 RTT_PUTT._state = function(){ return S; };
 RTT_PUTT.LIVES = { free:LIVES_FREE, pass:LIVES_PASS };

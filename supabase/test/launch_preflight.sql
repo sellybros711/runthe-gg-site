@@ -708,7 +708,14 @@ check_rows(sort, migration, what, breaks, ok) as (
       'Bought Putt Putt lives are filed once a checkout session and handed back on the server',
       'A paid lives checkout is charged and the webhook fails until this runs.',
       (select count(*) > 0 from col where tbl = 'putt_lives_buys' and name = 'given')
-      and (select count(*) > 0 from proc where name = 'putt_lives_buy'))
+      and (select count(*) > 0 from proc where name = 'putt_lives_buy')),
+  -- PUTT PUTT LIVES OVER THE MAX. Without it the checkout cannot read `extra`
+  -- and answers 503 to every lives buy, so nothing is sold it could not deliver.
+  (61, '150_putt_lives_extra',
+      'Bought Putt Putt lives can go over the max, and are lost first',
+      'Every Putt Putt lives checkout answers try again, and nothing sells.',
+      (select count(*) > 0 from col where tbl = 'putt_lives' and name = 'extra')
+      and (select count(*) > 0 from proc where name = 'putt_lives_spend' and body like '%extra%'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on
