@@ -53,7 +53,7 @@ test('readAgents: the chat, the place, the PRs and their checks; and builders fr
   assert.equal(gc.name, 'Golf Course Agent'); assert.equal(gc.home, 'golf');
   assert.equal(gc.chat.id, 'session_a', 'the newest chat'); assert.equal(gc.chat.link, 'https://claude.ai/code/session_a');
   assert.deepEqual(gc.at, { game: 'golf', layer: 'art', how: 'branch' });
-  assert.deepEqual(gc.prs, [{ n: 7, title: 'Holes', url: 'u7', checks: 'pass' }]);
+  assert.deepEqual(gc.prs, [{ n: 7, title: 'Holes', url: 'u7', checks: 'pass', sha: 's7', ready: false, conflict: false }]);
   assert.equal(qa.chat, null); assert.equal(qa.home, 'site'); assert.deepEqual(qa.prs.map(p => [p.n, p.checks]), [[8, 'running']], 'found by its Agent line');
   assert.deepEqual(r.builders.map(b => [b.name, b.at.game]), [['Shut The Door game build', 'shutthedoor']]);
 });
@@ -67,7 +67,7 @@ const deps = (role, more = {}) => ({ db: { role: async () => role, name: async (
 
 test('a non-tester gets 404 on every agent and task route, the same as an unknown path', async () => {
   for (const role of [null, 'player'])
-    for (const [m, p] of [['GET', 'agents'], ['GET', 'agent'], ['GET', 'tasks'], ['POST', 'task'], ['POST', 'agents'], ['DELETE', 'task']]) {
+    for (const [m, p] of [['GET', 'agents'], ['GET', 'agent'], ['GET', 'tasks'], ['POST', 'task'], ['POST', 'agents'], ['DELETE', 'task'], ['GET', 'task']]) {
       const r = await handle({ method: m, path: p, cookieUid: 'u', query: { id: 'qa' }, body: { agent: 'golf-course', text: 'do it' } }, deps(role));
       assert.deepEqual(r, { status: 404, body: { error: 'not_found' } }, role + ' ' + m + ' ' + p); }
   assert.equal((await handle({ method: 'POST', path: 'task', cookieUid: null, body: { agent: 'golf-course', text: 'do it' } }, deps('tester'))).status, 404, 'no cookie');
@@ -75,7 +75,7 @@ test('a non-tester gets 404 on every agent and task route, the same as an unknow
 
 test('a tester tasks a real agent; a bad agent or an empty task is refused; no vault token says so', async () => {
   const ok = await handle({ method: 'POST', path: 'task', cookieUid: 'u', body: { agent: 'golf-course', text: '  Add a windmill hole  ', game: 'golf', layer: 'art' } }, deps('tester'));
-  assert.equal(ok.status, 200); assert.deepEqual(ok.body, { id: 'x', agent: 'golf-course', text: 'Add a windmill hole', place: { game: 'golf', layer: 'art' }, by: 'sel' });
+  assert.equal(ok.status, 200); assert.deepEqual(ok.body, { id: 'x', agent: 'golf-course', kind: 'task', text: 'Add a windmill hole', place: { game: 'golf', layer: 'art' }, by: 'sel' });
   assert.equal((await handle({ method: 'POST', path: 'task', cookieUid: 'u', body: { agent: 'nobody', text: 'hello' } }, deps('tester'))).status, 400);
   assert.equal((await handle({ method: 'POST', path: 'task', cookieUid: 'u', body: { agent: 'golf-course', text: ' ' } }, deps('tester'))).status, 400);
   assert.deepEqual((await handle({ method: 'POST', path: 'task', cookieUid: 'u', body: { agent: 'golf-course', text: 'hello' } }, deps('admin', { canTask: () => false }))).body, { error: 'tasking_off' });

@@ -111,7 +111,7 @@ window.SKY_DRAW = function(o, now, sc){ if (!people.length || !S.R) return false
     if (p === sel || p === hov){ o.strokeStyle = p === sel ? '#ffd23f' : '#ffffff'; o.lineWidth = Math.max(2, u * 0.5); o.strokeRect(s[0] - 6.5 * u, s[1] - 16.5 * u, 13 * u, 17.5 * u); }
     // the state over its head: a dot, and "!" when it is waiting on you
     var st = state(p); o.fillStyle = '#1d3550'; o.fillRect(s[0] - 1.6 * u, s[1] - 19.2 * u, 3.2 * u, 3.2 * u); o.fillStyle = st[1]; o.fillRect(s[0] - u, s[1] - 18.6 * u, 2 * u, 2 * u);
-    if (p.a.chat && (p.a.chat.state === 'blocked' || p.a.chat.state === 'review_ready')){ o.fillStyle = '#ffffff'; o.font = '900 ' + Math.round(7 * u) + 'px system-ui'; o.textAlign = 'center'; o.fillText('!', s[0] + 4.5 * u, s[1] - 16 * u); o.textAlign = 'left'; }
+    if (window.SKY_ATTENTION) SKY_ATTENTION.bubble(o, p, s, u, now, sc);
     p.sx = s[0] / DPR; p.sy = s[1] / DPR; p.su = u / DPR; });
   return moving; };
 window.SKY_HIT = function(sx, sy){ var hit = null;
@@ -128,8 +128,10 @@ window.SKY_PANEL = function(h){ var p = h.p, a = p.a, st = state(p), c = a.chat,
     return '<div class="sw-row"><span class="k"><a href="' + esc(r.url) + '" target="_blank" rel="noopener">#' + r.n + '</a> ' + esc(r.title) + '</span><span style="font-size:11px;font-weight:800;border-radius:6px;padding:1px 6px;background:' + cl[1] + ';color:' + cl[2] + '">' + cl[0] + '</span></div>'; }).join('') : '<div class="sw-asof">None open.</div>';
   var mine = tasks ? tasks.queued.concat(tasks.log).filter(function(t){ return t.agent === a.id; }).slice(0, 4) : [];
   setTimeout(function(){ bindTask(a); if (!R0 && !a.builder) fetchRuns(a); }, 0);
+  var att = window.SKY_ATTENTION ? SKY_ATTENTION.section(a) : '';
+  if (att) setTimeout(function(){ SKY_ATTENTION.bind(a); }, 0);
   return '<div class="sw-ph"><button class="sw-x" aria-label="Close">×</button><h2>' + esc(a.name) + '</h2><span class="sw-pill" style="background:' + st[1] + '">' + st[0] + '</span>' +
-      (c && busy(p) ? ' <span class="sw-asof">for ' + esc(ago(c.since)) + '</span>' : '') + '</div>' +
+      (c && busy(p) ? ' <span class="sw-asof">for ' + esc(ago(c.since)) + '</span>' : '') + '</div>' + att +
     '<div class="sw-sec"><h3>Now</h3>' + (c ? esc(c.summary || c.title) : 'No chat in the last two weeks.') + '<br><span class="sw-asof">' + esc(where(a)) + ' · from its chat, as of ' + esc(data.asOf ? et(data.asOf) : 'never yet') + '</span></div>' +
     (a.builder ? '' : '<div class="sw-sec"><h3>Open pull requests</h3>' + prs + '<div class="sw-asof">GitHub as of ' + esc(et(data.fetchedAt)) + '</div></div>' +
       '<div class="sw-sec"><h3>Last runs</h3><div id="sw-runs">' + (R0 ? runsHtml(R0) : '<div class="sw-asof">Loading.</div>') + '</div><div class="sw-asof">From its log in the vault</div></div>') +
@@ -146,7 +148,7 @@ function taskList(list){ return list.length ? list.map(function(t){ var s = TSTA
 function taskBox(a, mine, picker){ return '<div class="sw-sec"><h3>' + (picker ? 'Ask an agent' : 'Give it a task') + '</h3>' + (picker || '') +
   '<textarea id="sw-task" rows="3" maxlength="4000" placeholder="What should ' + (picker ? 'it' : esc(a.name.replace(/ Agent$/, ''))) + ' do?" style="width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font:inherit;font-size:14px;resize:vertical;margin-top:4px"></textarea>' +
   '<button id="sw-send" style="width:auto;margin:8px 0 0;height:36px;padding:0 16px;border:0;border-radius:10px;background:#2f6fd0;color:#fff;font:inherit;font-weight:800;cursor:pointer">Send</button>' +
-  '<div id="sw-task-note" class="sw-asof" style="margin-top:6px">It reaches the agent\'s chat when the dispatcher next runs (every 15 minutes, 8am to midnight ET).</div>' +
+  '<div id="sw-task-note" class="sw-asof" style="margin-top:6px">It reaches the agent\'s chat when the dispatcher next runs (every hour, 8am to midnight ET).</div>' +
   '<div id="sw-task-list">' + taskList(mine || []) + '</div></div>'; }
 function bindTask(a, place){ var b = document.getElementById('sw-send'), t = document.getElementById('sw-task'), n = document.getElementById('sw-task-note'), pick = document.getElementById('sw-task-agent'); if (!b) return;
   b.onclick = function(){ var text = t.value.trim(), id = pick ? pick.value : a.id; if (text.length < 3){ n.textContent = 'Write a few words first.'; return; }
@@ -168,7 +170,14 @@ function loadTasks(){ fetch('/skyworld/api/tasks', { credentials:'same-origin' }
 
 // ---- the data, now and every three minutes
 function load(){ return fetch('/skyworld/api/agents', { credentials:'same-origin' }).then(function(r){ if (!r.ok) throw 0; return r.json(); })
-  .then(function(d){ var first = !data; data = d; build(); if (first) loadTasks(); }).catch(function(){}); }
+  .then(function(d){ var first = !data; data = d; build(); if (first) loadTasks(); if (window.SKY_ATTENTION) SKY_ATTENTION.update(d); }).catch(function(){}); }
 function start(){ load(); setInterval(function(){ if (!document.hidden) { load(); loadTasks(); } }, 180000); }
+// what attention.js reads: the agents, finding one, going to one, and sending one a task or an answer
+function go(id){ var p = people.filter(function(x){ return x.a.id === id; })[0]; if (!p) return;
+  function pick(){ var q = people.filter(function(x){ return x.a.id === id; })[0]; if (q) S.select({ p:q }); }
+  if (S.cur.world && S.cur.g === p.g) pick(); else { S.enter(p.g); var t = setInterval(function(){ if (S.cur.world && !S.moving()){ clearInterval(t); setTimeout(pick, 200); } }, 150); setTimeout(function(){ clearInterval(t); }, 15000); } }
+function post(id, text, kind, place){ return fetch('/skyworld/api/task', { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json' },
+  body:JSON.stringify({ agent:id, kind:kind || 'task', text:text, game:place && place.game, layer:place && place.layer }) }).then(function(r){ return r.json().then(function(j){ return { ok:r.ok, j:j }; }); }).then(function(x){ if (x.ok) loadTasks(); return x; }); }
+window.SKY_AGENTS = { data:function(){ return data; }, people:function(){ return people; }, go:go, post:post, reload:load, tasks:function(){ return tasks; } };
 if (window.SKY) start(); else window.addEventListener('sky-ready', start, { once:true });
 })();

@@ -56,7 +56,8 @@ export function githubAgents(env){ return {
   status: async () => { const t = await gh(env, '/repos/' + OWNER + '/' + VAULT + '/contents/status/agents.json?ref=' + STATUS_BRANCH, true); try { return t ? JSON.parse(t) : null; } catch (e) { return null; } },
   branchFiles: async b => (((await gh(env, '/repos/' + OWNER + '/' + SITE + '/compare/main...' + encodeURIComponent(b))) || {}).files || []).map(f => f.filename),
   pulls: async () => (await gh(env, '/repos/' + OWNER + '/' + SITE + '/pulls?state=open&per_page=50')) || [],
-  checks: async sha => { const r = await gh(env, '/repos/' + OWNER + '/' + SITE + '/commits/' + sha + '/check-runs?per_page=50'); return (r && r.check_runs) || []; }
+  checks: async sha => { const r = await gh(env, '/repos/' + OWNER + '/' + SITE + '/commits/' + sha + '/check-runs?per_page=50'); return (r && r.check_runs) || []; },
+  pull: n => gh(env, '/repos/' + OWNER + '/' + SITE + '/pulls/' + n)
 }; }
 
 function verdict(runs){ if (!runs.length) return 'none'; if (runs.some(r => r.status !== 'completed')) return 'running';
@@ -81,16 +82,19 @@ export async function readAgents(src, games, opt = {}){
     if (!at) at = { game: home, layer: null, how: 'home' };
     const mine = pulls.filter(p => (chat && chat.branch && p.head && p.head.ref === chat.branch) || new RegExp('^Agent:\\s*' + a.id + '\\s*$', 'mi').test(p.body || ''));
     const prs = [];
-    for (const p of mine.slice(0, 4)) prs.push({ n: p.number, title: p.title, url: p.html_url, checks: verdict(await src.checks(p.head.sha)) });
+    for (const p of mine.slice(0, 4)) { const checks = verdict(await src.checks(p.head.sha));
+      // ready to merge: checks green, not a draft, and GitHub says it merges cleanly (one more call, only for a green PR)
+      const full = checks === 'pass' && !p.draft && src.pull ? await src.pull(p.number) : null;
+      prs.push({ n: p.number, title: p.title, url: p.html_url, checks, sha: p.head.sha, ready: !!(full && full.mergeable_state === 'clean'), conflict: !!(full && full.mergeable_state === 'dirty') }); }
     out.push({ id: a.id, name: nameOf(a.id, spec), summary: (spec && front(spec, 'summary')) || '', home, at, prs,
-      chat: chat ? { id: chat.id, title: chat.title, state: chat.bucket || 'idle', summary: chat.summary || '', updated: chat.updated, since: chat.since || chat.updated,
+      chat: chat ? { id: chat.id, title: chat.title, state: chat.bucket || 'idle', summary: chat.summary || '', ask: chat.ask || null, updated: chat.updated, since: chat.since || chat.updated,
         link: 'https://claude.ai/code/' + chat.id } : null });
   }
   // chats that are no agent's but name a game, and are at work now (in the last three days): builders on that game's island
   const live = s => ['working', 'blocked', 'review_ready'].includes(s.bucket) && Date.now() - Date.parse(s.updated) < 3 * 864e5;
   const builders = sessions.filter(s => !s.agent && live(s)).map(s => ({ s, at: named(s.title + ' ' + (s.summary || ''), games) })).filter(x => x.at).map(({ s, at }) => ({
     id: 'chat-' + s.id.slice(-8), name: s.title, builder: true, home: at.game, at, prs: [],
-    chat: { id: s.id, title: s.title, state: s.bucket || 'idle', summary: s.summary || '', updated: s.updated, since: s.since || s.updated, link: 'https://claude.ai/code/' + s.id } }));
+    chat: { id: s.id, title: s.title, state: s.bucket || 'idle', summary: s.summary || '', ask: s.ask || null, updated: s.updated, since: s.since || s.updated, link: 'https://claude.ai/code/' + s.id } }));
   return { asOf: status.asOf, agents: out, builders };
 }
 

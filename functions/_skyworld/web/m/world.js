@@ -49,6 +49,7 @@ function draw(now){ var R = S.R, cur = S.cur, hov = S.hov, sel = S.sel;
     w.dist.forEach(function(d){ var on = (hov && hov.d === d) || (sel && sel.d === d); sign(LN[d.id] || d.id, d.x, d.y + 1.9 * w.bs, distZ(w, d), on, null, d); });
   }
   octx.textAlign = 'left';
+  if (window.SKY_DRAW_TOP && window.SKY_DRAW_TOP(octx, now, cur)) hookAnim = true;   // badges over the signs (agents.js)
 }
 
 // ---- warming: a world's picture painted before it is asked for, once the pointer has rested on its island a moment
@@ -80,7 +81,7 @@ function leave(){ if (moving || !S.cur.world) return; moving = true;
     .catch(function(){})
     .finally(function(){ return SKY_UI.fade(false).then(function(){ moving = false; }); }); }
 
-S.wake = wake; S.repaint = repaint; S.select = select; S.enter = enter; S.leave = leave; S.restOn = restOn;
+S.wake = wake; S.repaint = repaint; S.overlay = function(){ overDirty = true; wake(); }; S.select = select; S.enter = enter; S.leave = leave; S.restOn = restOn;
 S.moving = function(){ return moving; };
 
 // ---- start: the map, at once; on a first visit a flat map stands in while the islands are painted

@@ -68,7 +68,7 @@ window.SKY_UI = {
     var c1 = document.createElement('canvas'); c1.id = 'world'; document.body.appendChild(c1);
     var c2 = document.createElement('canvas'); c2.id = 'over'; document.body.appendChild(c2);
     var counts = {}; gs.forEach(function(g){ counts[g.status] = (counts[g.status] || 0) + 1; });
-    $.top = mk('div', 'sw-top', '<div class="sw-brand">SKY WORLD</div><button class="sw-back" aria-label="Back to the map">‹ Map</button><div class="sw-title"></div><div class="sw-chips"><span class="sw-chip m">Games as of <b>' + esc(et(W.asOf)) + '</b></span>' +
+    $.top = mk('div', 'sw-top', '<div class="sw-brand">SKY WORLD</div><button class="sw-back" aria-label="Back to the map">‹ Map</button><div class="sw-title"></div><div class="sw-chips"><span class="sw-chip m"><span class="l">Games as of </span><b>' + esc(et(W.asOf)) + '</b></span>' +
       '<span class="sw-chip">' + esc(plural(gs.length, 'game')) + ' · ' + (counts.live || 0) + ' live · ' + (counts.testers || 0) + ' for testers · ' + ((counts.dev || 0) + (counts.unlisted || 0)) + ' more</span></div><div class="sw-sp"></div>');
     mk('div', 'sw-legend', Object.keys(S.STATUS).filter(function(k){ return S.STATUS[k].legend; }).map(function(k){ var st = S.STATUS[k]; return '<span><i class="sw-dot" style="background:' + st.col + '"></i>' + esc(st.legend) + '</span>'; }).join(''));
     var z = mk('div', 'sw-zoom', '<button class="sw-btn" aria-label="Zoom in">+</button><button class="sw-btn" aria-label="Zoom out">-</button>');

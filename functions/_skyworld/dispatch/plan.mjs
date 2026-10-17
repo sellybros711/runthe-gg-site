@@ -4,7 +4,8 @@
  *
  *   node functions/_skyworld/dispatch/plan.mjs <sessions-file> <vault-status-checkout> <site-checkout> <vault-main-checkout>
  *
- * Writes <vault-status-checkout>/status/agents.json. Prints lines of
+ * Writes <vault-status-checkout>/status/agents.json, and status/waiting.json: the chats waiting on the owner,
+ * whose last words the dispatcher reads for dispatch/asks.mjs. Prints lines of
  *   { "task": id, "action": "send", "session": id, "message": "..." }
  *   { "task": id, "action": "create", "title": "...", "prompt": "..." }
  * A chat stays an agent's for 30 days after it was last used; after that a task starts a new chat. */
@@ -25,7 +26,7 @@ export function plan({ sessionsText, prev, agents, queued, now = Date.now() }){
     const a = agents.find(x => x.id === t.agent); if (!a) { lines.push({ task: t.id, action: 'fail', note: 'no such agent' }); continue; }
     const chat = all.filter(s => ownerOf(s.title, agents) === a.id && now - Date.parse(s.updated) < 30 * 864e5).sort((x, y) => String(y.updated).localeCompare(String(x.updated)))[0];
     const where = t.place && t.place.game ? '\n\nWhere: ' + t.place.game + (t.place.layer ? ' · ' + t.place.layer : '') + '.' : '';
-    const message = 'A task from ' + (t.by || 'a tester') + ', sent through the Sky World:\n\n' + t.text + where +
+    const message = (t.kind === 'answer' ? 'An answer from ' + (t.by || 'a tester') + ' to what you asked, sent through the Sky World:\n\n' : 'A task from ' + (t.by || 'a tester') + ', sent through the Sky World:\n\n') + t.text + where +
       '\n\nThis came through the Sky World tasking queue (agents/README.md, "Tasks from the Sky World"). Do it if it is your job. If it belongs to another agent, say which here and stop.';
     if (chat) lines.push({ task: t.id, action: 'send', session: chat.id, message });
     else lines.push({ task: t.id, action: 'create', title: a.name, prompt: 'You are the ' + a.name + ' for Run The Games. This chat is yours and does that job only. Read .claude/agents/' + a.id +
@@ -43,5 +44,6 @@ if (process.argv[1] === new URL(import.meta.url).pathname) {
   fs.mkdirSync(path.join(statusDir, 'status'), { recursive: true });
   fs.writeFileSync(path.join(statusDir, 'status/agents.json'), JSON.stringify(out.status, null, 1) + '\n');
   for (const l of out.lines) console.log(JSON.stringify(l));
+  fs.writeFileSync(path.join(statusDir, 'status/waiting.json'), JSON.stringify(out.status.sessions.filter(s => ['blocked', 'review_ready'].includes(s.bucket)).map(s => s.id)) + '\n');
   console.error(out.status.sessions.length + ' chats, ' + out.status.sessions.filter(s => s.agent).length + ' of them agents\'; ' + out.lines.length + ' tasks to deliver');
 }
