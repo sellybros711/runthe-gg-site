@@ -17,12 +17,12 @@ body.sw-in .sw-ideas-btn{ display:none; }\
 .sw-ideas .chip{ width:auto; margin:0; height:30px; padding:0 11px; border-radius:999px; border:1px solid var(--line); background:#fff; color:var(--ink); font:inherit; font-size:12.5px; font-weight:700; cursor:pointer; }\
 .sw-ideas .chip.on{ background:var(--ink); color:#fff; border-color:var(--ink); }\
 .sw-ideas .list{ overflow:auto; padding:12px 18px 24px; flex:1; }\
-.sw-ideas .card{ border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin:0 0 10px; background:#fff; }\
-.sw-ideas .card h3{ margin:0 0 6px; font-size:16px; }\
+.sw-ideas .idea{ border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin:0 0 10px; background:#fff; }\
+.sw-ideas .idea h3{ margin:0 0 6px; font-size:16px; }\
 .sw-ideas .tags{ display:flex; gap:5px; flex-wrap:wrap; margin-bottom:6px; font-size:11.5px; font-weight:800; }\
 .sw-ideas .tag{ border-radius:6px; padding:2px 7px; background:#efe9d8; color:var(--ink); }\
 .sw-ideas .txt{ font-size:14px; line-height:1.45; max-height:4.4em; overflow:hidden; }\
-.sw-ideas .card.open .txt{ max-height:none; }\
+.sw-ideas .idea.open .txt{ max-height:none; }\
 .sw-ideas .txt p{ margin:0 0 8px; } .sw-ideas .txt ul{ margin:0 0 8px; padding-left:18px; }\
 .sw-ideas .more{ all:unset; cursor:pointer; color:#2a6fd0; font-weight:800; font-size:13px; margin-top:4px; display:inline-block; }\
 .sw-ideas .empty{ color:var(--mute); padding:30px 4px; text-align:center; }\
@@ -40,7 +40,7 @@ function md(s){ var out = [], list = null;
     if (lines.every(function(l){ return /^\s*[-*]\s+/.test(l); })) out.push('<ul>' + lines.map(function(l){ return '<li>' + inline(l.replace(/^\s*[-*]\s+/, '')) + '</li>'; }).join('') + '</ul>');
     else out.push('<p>' + inline(block.replace(/\n/g, ' ')) + '</p>'); });
   return out.join(''); }
-function who(id){ if (!id) return ''; if (id === 'owner') return 'You'; return id.split('-').map(function(w){ return w.charAt(0).toUpperCase() + w.slice(1); }).join(' ') + ' Agent'; }
+function who(id){ if (!id) return ''; if (id === 'owner') return 'You'; return id.split('-').map(function(w){ return /^(ui|qa|gm|ai)$/.test(w) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1); }).join(' ') + ' Agent'; }
 function render(){ var box = root.querySelector('.list'), bar = root.querySelector('.bar'), sub = root.querySelector('.sub');
   if (!data){ box.innerHTML = '<div class="empty">Loading ideas.</div>'; return; }
   if (data.error){ box.innerHTML = '<div class="empty">Could not load the ideas. Try again in a minute.</div>'; return; }
@@ -53,13 +53,13 @@ function render(){ var box = root.querySelector('.list'), bar = root.querySelect
     ['all'].concat(Object.keys(CAT)).filter(function(c){ return c === 'all' || n[c]; }).map(function(c){ return '<button class="chip' + (c === cat ? ' on' : '') + '" data-c="' + c + '">' + (c === 'all' ? 'All' : CAT[c][0]) + ' ' + (n[c] || 0) + '</button>'; }).join('');
   var shown = items.filter(function(it){ return cat === 'all' || it.category === cat; });
   box.innerHTML = shown.length ? shown.map(function(it, i){ var c = CAT[it.category], v = VERDICT[it.verdict] || VERDICT['new'];
-    return '<div class="card"><h3>' + esc(it.title) + '</h3><div class="tags">' +
+    return '<div class="idea"><h3>' + esc(it.title) + '</h3><div class="tags">' +
       (c ? '<span class="tag" style="background:' + c[1] + ';color:#fff">' + c[0] + '</span>' : '') +
       '<span class="tag" style="background:' + v[1] + ';color:#fff">' + v[0] + '</span>' +
       (it.impact ? '<span class="tag">' + esc(it.impact) + ' impact</span>' : '') + (it.effort ? '<span class="tag">' + esc(it.effort) + ' effort</span>' : '') +
       (it['for'] ? '<span class="tag">For: ' + esc(who(it['for'])) + '</span>' : '') +
       '</div><div class="txt">' + md(it.body) + '</div><button class="more">More</button></div>'; }).join('') : '<div class="empty">Nothing here this week.</div>';
-  [].forEach.call(box.querySelectorAll('.card'), function(cd){ var t = cd.querySelector('.txt'), m = cd.querySelector('.more'); if (t.scrollHeight <= t.clientHeight + 2) m.style.display = 'none';
+  [].forEach.call(box.querySelectorAll('.idea'), function(cd){ var t = cd.querySelector('.txt'), m = cd.querySelector('.more'); if (t.scrollHeight <= t.clientHeight + 2) m.style.display = 'none';
     m.onclick = function(){ var o = cd.classList.toggle('open'); m.textContent = o ? 'Less' : 'More'; }; });
   [].forEach.call(bar.querySelectorAll('[data-w]'), function(b){ b.onclick = function(){ wk = +b.dataset.w; cat = 'all'; render(); }; });
   [].forEach.call(bar.querySelectorAll('[data-c]'), function(b){ b.onclick = function(){ cat = b.dataset.c; render(); }; }); }
