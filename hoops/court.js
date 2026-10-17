@@ -179,29 +179,75 @@ var UX = Math.sin(PSI), UY = Math.cos(PSI) * SN_, VX = -Math.cos(PSI), VY = Math
 /* clips are written along the play line; a step toward the rim on screen is
    also a step up or down it, by this much */
 var SLOPE = UY / UX;
-var FINE = {}, FINEN = 0, FINEASK = {};
+/* THE FINE TRACES, KEPT ACROSS MOMENTS: keyed by the look, the kit, the pose,
+   the turn and the trace size, and dropped oldest first past FINE_MAX (about
+   three moments' worth), so a career's next moment finds his whole vocabulary
+   already traced. It was emptied outright at 300, which threw the moment
+   that was playing away with it. */
+var FINE = new Map(), FINE_MAX = 300, FINEASK = {}, FINEPEND = {};
 function spriteKey(who, pose, yaw){
   return JSON.stringify([who.look, who.c1, who.c2, who.num, pose, who.age, who.dress || '', who.faceless ? 1 : 0, yaw == null ? CAM.yaw : yaw, who.faceless ? null : who.cwear || null]);
 }
 /* Has the worker handed back this figure's fine trace yet? */
 var HITSTOP = 110;
-function fineReady(who, pose, yaw, R){ return R < 2 || !B.paintAsync || !!FINE[spriteKey(who, pose, yaw) + '|' + R]; }
-function sprite(who, pose, yaw, R, urgent){
+function fineReady(who, pose, yaw, R){ return R < 2 || !B.paintAsync || FINE.has(spriteKey(who, pose, yaw) + '|' + R); }
+function fineGet(fk){ var cv = FINE.get(fk); if (cv) { FINE.delete(fk); FINE.set(fk, cv); } return cv; }
+function finePut(fk, cv){
+  FINE.set(fk, cv);
+  while (FINE.size > FINE_MAX) { var old = FINE.keys().next().value; FINE.delete(old); delete FINEASK[old]; }
+}
+/* Ask the worker for a fine trace, once, and paint nothing here. A warm-up
+   (a clip read ahead, the cast, his vocabulary) only asks: painting the
+   blocky stand-in on the main thread as well cost a desktop a second and a
+   half of frozen page at the start of every moment, for frames most of which
+   were never drawn blocky. */
+function askFine(who, pose, yaw, R, urgent, owner, clip){
+  if (yaw == null) yaw = CAM.yaw;
+  if (!(R > 1 && B.paintAsync)) return null;
+  var fk = spriteKey(who, pose, yaw) + '|' + R, have = fineGet(fk);
+  if (have) return have;
+  /* asked again sooner than it was (the reaction, once the play knows which
+     way it went, asks for the cast's poses at the front): it moves up, rather
+     than the second ask being dropped as a repeat */
+  var rank = urgent === 2 ? 1 : urgent ? 2 : 0, pend = FINEPEND[fk];
+  if (FINEASK[fk] && pend && rank > pend.rank && B.paintDrop(pend.j)) { delete FINEPEND[fk]; delete FINEASK[fk]; }
+  if (!FINEASK[fk]) {
+    FINEASK[fk] = 1;
+    var job = B.paintAsync(who.look, { pose: pose, c1: who.c1, c2: who.c2, num: who.num, age: who.age, dress: who.dress, faceless: who.faceless, yaw: yaw, cwear: who.faceless ? null : who.cwear, res: R }, function(img){
+      delete FINEPEND[fk];
+      if (!img) return;
+      finePut(fk, B.gridCanvas(img));
+    }, urgent === 2 ? 2 : !!urgent);
+    if (job && FINEASK[fk]) FINEPEND[fk] = { j: job, R: R, rank: rank, owner: owner || null, clip: !!clip, who: who, pose: pose, yaw: yaw };
+  }
+  return null;
+}
+/* A stage that lands on a new trace size takes back the frames it asked for
+   at the old one and has not had traced yet, so the workers go straight to
+   the size it draws. A frame taken back can be asked for again. */
+function dropStale(R){ dropIf(function(p){ return p.R !== R; }); }
+/* a frame still waiting at the front for a clip that has played moves to
+   the back: wanted later (his frames come round again), not now */
+function demote(fk){
+  var p = FINEPEND[fk];
+  if (!p || !B.paintDrop || !B.paintDrop(p.j)) return;
+  delete FINEPEND[fk]; delete FINEASK[fk];
+  askFine(p.who, p.pose, p.yaw, p.R, false, p.owner);
+}
+function dropIf(test){
+  if (!B.paintDrop) return;
+  Object.keys(FINEPEND).forEach(function(fk){
+    var p = FINEPEND[fk];
+    if (test(p) && B.paintDrop(p.j)) { delete FINEPEND[fk]; delete FINEASK[fk]; }
+  });
+}
+function sprite(who, pose, yaw, R, urgent, noAsk, owner){
   if (yaw == null) yaw = CAM.yaw;
   var k = spriteKey(who, pose, yaw);
-  /* the fine trace, if the worker has handed it back; asked for once */
-  if (R > 1 && B.paintAsync) {
-    var fk = k + '|' + R;
-    if (FINE[fk]) return FINE[fk];
-    if (!FINEASK[fk]) {
-      FINEASK[fk] = 1;
-      B.paintAsync(who.look, { pose: pose, c1: who.c1, c2: who.c2, num: who.num, age: who.age, dress: who.dress, faceless: who.faceless, yaw: yaw, cwear: who.faceless ? null : who.cwear, res: R }, function(img){
-        if (!img) return;
-        if (++FINEN > 300) { FINE = {}; FINEASK = {}; FINEN = 0; }
-        FINE[fk] = B.gridCanvas(img);
-      }, urgent === 2 ? 2 : !!urgent);
-    }
-  }
+  /* the fine trace, if the worker has handed it back; asked for once (not
+     before the stage has settled on its size: noAsk) */
+  var fine = noAsk ? (R > 1 && B.paintAsync ? fineGet(k + '|' + R) : null) : askFine(who, pose, yaw, R, urgent, owner);
+  if (fine) return fine;
   if (SPR[k]) return SPR[k];
   if (++SPRN > 400) { SPR = {}; SPRN = 0; }
   /* the court gear he chose (hoops/wardrobe.js); a real man has none */
@@ -281,6 +327,9 @@ function courtFloor(cw, ch, fy, rimX, playY, c1, RF){
      opts.hoop   draw the basket (a court) or not (a room)
      opts.c1, c2 the home colours (the building's), opts.oc the other club's
      opts.me     { look, c1, c2, num, age } */
+/* two frames on: a stage fits again once its host has its real size, and
+   a desk screen's first fit is a trace size coarser than where it lands */
+function settle(fn){ if (typeof requestAnimationFrame === 'function') requestAnimationFrame(function(){ requestAnimationFrame(fn); }); else fn(); }
 /* FINE PIXELS A CELL: the most (up to the tracer's 4) that make one fine
    pixel a whole number of device pixels at k CSS pixels a cell. A screen
    where none divides (a 5 pixel cell on a 1x desktop) gets 4 and a near
@@ -324,6 +373,7 @@ function stage(host, opts){
       st.floorY = gd.floorY; st.playY = gd.floorY; st.fy = gd.ch; st.cx = gd.cx;
       st.yaw = CAM.yaw; st.rim = [gd.cx, 0]; st.floor = null; st.room = null; st.soft = null;
       if (st.warmCast) st.warmCast();
+      rewarm();
       draw();
       return;
     }
@@ -378,7 +428,15 @@ function stage(host, opts){
        next moment of this career starts fine from its first frame */
     /* the men on the floor now come before his vocabulary for later */
     if (st.warmCast) st.warmCast();
-    if (R > 1 && opts.me && opts.hoop && !st.warmed) { st.warmed = 1; Object.keys(B.SETS || {}).forEach(function(n){ for (var i = 0; i < B.SETS[n]; i++) sprite(opts.me, n + i, st.yaw, R, false); }); }
+    rewarm();
+    /* asked once the stage has settled on its trace size (a desk screen
+       first fits a size coarser for a frame, and that first ask traced all
+       43 frames at a size nothing drew, while the real size was never asked) */
+    if (R > 1 && opts.me && opts.hoop && st.warmed !== R) settle(function(){
+      if (st.dead || st.R !== R || st.warmed === R) return;
+      st.warmed = R;
+      Object.keys(B.SETS || {}).forEach(function(n){ for (var i = 0; i < B.SETS[n]; i++) askFine(opts.me, n + i, st.yaw, R, false, st); });
+    });
     var art = K.room(opts.room || 'nba', cw, ch, { c1: roomC1, c2: roomC2, floorAt: st.fy / ch, seed: 'court:' + (opts.room || 'nba'), spotAt: 0.5 });
     var im = new Image();
     /* only a court's stands are soft: a ceremony's room IS the shot, and blurred
@@ -463,7 +521,7 @@ function stage(host, opts){
   function drawActor(a, refl){
     var who = a.who === 'me' ? opts.me : a.who;
     if (!who) return;
-    var ay = sy(a.x, a.y), sp = sprite(who, a.pose, st.yaw, st.R);
+    var ay = sy(a.x, a.y), sp = sprite(who, a.pose, st.yaw, st.R, false, !st.settled, st);
     var j = a.jump || 0, x = fine(a.x) - 22, y = fine(ay - 62 - j);
     if (refl) {
       /* the floor is varnished: a faint, upside-down copy under the feet */
@@ -666,7 +724,19 @@ function stage(host, opts){
      queue, so the fine trace is usually back before the frame that needs it.
      at() is cheap and draws no random number, so reading ahead is free. */
   st.warm = function(clips, urgent){
+    if (urgent && !clips.every(function(c){ return warmList.indexOf(c) >= 0; })) warmList = clips;
+    /* nothing is asked until the stage has its real size (settled, two
+       frames on): it is warmed then, at the size it will draw */
+    if (urgent && !st.settled) return;
+    if (urgent) warmR = st.R;
     if (st.R < 2 || !B.paintAsync) return;
+    var want = framesOf(clips);
+    if (urgent) want.reverse();
+    want.forEach(function(w){ askFine(w[0], w[1], st.yaw, st.R, urgent, st, true); });
+  };
+  /* every man and pose the clips show, first tick first, and the cast's
+     answer to any mood they set */
+  function framesOf(clips){
     var seen = {}, want = [], moods = {};
     st.warming = true;
     clips.forEach(function(c){
@@ -683,13 +753,39 @@ function stage(host, opts){
     });
     /* an urgent ask goes to the FRONT of the worker's queue, so they are
        asked last tick first and the first frame's men are traced first */
-    Object.keys(moods).forEach(function(m){ want = want.concat(st.castPoses ? st.castPoses(m) : []); });
+    /* and a man who is not back yet cannot answer at all, so the stands
+       come with them (asked last, so first) */
+    Object.keys(moods).forEach(function(m){ want = want.concat(st.castPoses ? st.castPoses(m) : [], (st.cast || []).map(function(c){ return [c.who, 'stand']; })); });
     st.warming = false;
-    if (urgent) want.reverse();
-    want.forEach(function(w){ sprite(w[0], w[1], st.yaw, st.R, urgent); });
-  };
+    return want;
+  }
+  /* THE PLAY IS ASKED AGAIN AT THE SIZE IT IS DRAWN. A desk screen's
+     first fit is a trace size coarser, so the clips handed over then were
+     asked at a size nothing draws, and the real size was only asked frame
+     by frame from the back of the queue: the blocky first second (B4). */
+  var warmList = [], warmR = 0, seenR = 0;
+  function rewarm(){
+    if (!st.settled || seenR === st.R) return;
+    seenR = st.R;
+    dropStale(st.R);
+    if (warmList.length && warmR !== st.R) st.warm(warmList, true);
+  }
+  /* THE FRONT OF THE QUEUE IS WHAT IS ABOUT TO PLAY. When a clip starts,
+     the frames still waiting at the front for clips that have played (the
+     dribble he was holding before the press) move to the back, so the play
+     and the men on the floor are traced before them. The rest of a run
+     keeps its place. */
+  var runRest = [];
+  function settleFront(clip, rest){
+    if (!st.settled || st.R < 2 || !B.paintAsync) return;
+    var keep = {};
+    framesOf([clip].concat(rest)).forEach(function(w){ keep[spriteKey(w[0], w[1], st.yaw) + '|' + st.R] = 1; });
+    Object.keys(FINEPEND).forEach(function(fk){ var p = FINEPEND[fk]; if (p.owner === st && p.clip && p.rank === 2 && !keep[fk]) demote(fk); });
+  }
   st.play = function(clip, done){
     cancelAnimationFrame(st.raf); clearTimeout(st.timer);
+    var rest = runRest; runRest = [];
+    settleFront(clip, rest);
     st.warm([clip], true);
     YAW_NOW = st.yaw;
     var t = 0, last = 0, acc = 0, per = TICK * (clip.slow || 1);
@@ -739,6 +835,7 @@ function stage(host, opts){
       var c = list[i++];
       if (typeof c === 'function') c = c();
       if (!c) return next();
+      runRest = list.slice(i);
       st.play(c, next);
     })();
   };
@@ -776,12 +873,15 @@ function stage(host, opts){
   st.warmCast = function(){
     if (!st.cast || st.R < 2 || !B.paintAsync || castR === st.R) return;
     castR = st.R;
-    st.cast.forEach(function(c){ sprite(c.who, 'stand', st.yaw, st.R, true); });
+    st.cast.forEach(function(c){ askFine(c.who, 'stand', st.yaw, st.R, true, st); });
     /* and how they answer either way, traced while he lines it up */
     /* one pose each before anyone's second: a man with only cheer0 back
-       pumps between it and standing, which still reads */
-    var all = st.castPoses('us').concat(st.castPoses('them'));
-    ['cheer0', 'sad0', 'sad1', 'cheer1'].forEach(function(p){ all.forEach(function(w){ if (w[1] === p) sprite(w[0], w[1], st.yaw, st.R, 2); }); });
+       pumps between it and standing, which still reads. And a whole floor's
+       answer to one way the play can go before the other's: every man has a
+       pose for one result after six traces, not twelve, and for the other
+       after twelve as before */
+    var us = st.castPoses('us'), them = st.castPoses('them'), first = function(l){ return l.filter(function(w){ return w[1] !== 'cheer1'; }); };
+    first(us).concat(first(them), us, them).forEach(function(w){ askFine(w[0], w[1], st.yaw, st.R, 2, st); });
   };
   /* the poses the cast answers a mood with (floorCast), asked for by st.warm
      when it is handed the reaction, right behind the reaction's own men */
@@ -798,8 +898,7 @@ function stage(host, opts){
      are thrown away */
   st.setCast = function(list){
     st.cast = list; castR = 0;
-    var go = function(){ if (!st.dead) st.warmCast(); };
-    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(function(){ requestAnimationFrame(go); }); else go();
+    settle(function(){ if (!st.dead) st.warmCast(); });
   };
   /* a point on the floor, u along the court toward the rim and v across it
      toward the camera, in cells from the rim's own spot on the floor */
@@ -822,9 +921,9 @@ function stage(host, opts){
            again here only after that (a first ask here would go to the back,
            and the warm's ask would then be dropped as a repeat) */
         var ask = castR === st.R;
-        if (!fineReady(c.who, 'stand', st.yaw, st.R)) { if (ask) sprite(c.who, 'stand', st.yaw, st.R, true); return; }
+        if (!fineReady(c.who, 'stand', st.yaw, st.R)) { if (ask) askFine(c.who, 'stand', st.yaw, st.R, true, st); return; }
         if (!castIn[i]) castIn[i] = now;
-        if (!fineReady(c.who, pose, st.yaw, st.R)) { if (ask) sprite(c.who, pose, st.yaw, st.R, 2); pose = 'stand'; }
+        if (!fineReady(c.who, pose, st.yaw, st.R)) { if (ask) askFine(c.who, pose, st.yaw, st.R, 2, st); pose = 'stand'; }
       } else if (!castIn[i]) castIn[i] = now - 1000;
       var a = Math.min(1, (now - castIn[i]) / 320);
       out.push({ who: c.who, x: p.x + (pose === 'stand' && !REDUCED ? Math.sin((t + c.ph * 3) / 7) * 0.5 : 0), y: p.y, pose: pose, jump: up && Math.floor(t / 3) % 2 ? 2 : 0, flip: c.flip, z: -3, alpha: a < 1 ? a : null });
@@ -846,8 +945,21 @@ function stage(host, opts){
     }) };
   };
   st.replay = function(on){ el.classList.toggle('ct-bars', !!on); el.querySelector('.ct-rp').hidden = !on; };
-  st.stop = function(){ st.dead = true; cancelAnimationFrame(st.raf); clearTimeout(st.timer); if (ro) ro.disconnect(); if (el.parentNode) el.parentNode.removeChild(el); };
+  /* a stage that is gone takes back the frames it wanted soon and never got
+     (the reaction it did not play, the men of a play that is over), so the
+     next screen's frames are not traced behind them; his vocabulary, asked
+     for the next moment, stays in the background */
+  st.stop = function(){ dropIf(function(p){ return p.owner === st && p.rank > 0; }); st.dead = true; cancelAnimationFrame(st.raf); clearTimeout(st.timer); if (ro) ro.disconnect(); if (el.parentNode) el.parentNode.removeChild(el); };
   fit();
+  /* the paint workers start now, while the stage settles, rather than at
+     its first ask */
+  if (B.paintWarm && st.R > 1) B.paintWarm();
+  settle(function(){
+    if (st.dead) return;
+    st.settled = true; seenR = st.R;
+    dropStale(st.R);
+    if (warmList.length) st.warm(warmList, true);
+  });
   return st;
 }
 

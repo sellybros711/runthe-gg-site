@@ -612,6 +612,122 @@ async function browser() {
     await ctx.close();
   }
 
+  section('14. the paint pool: the same pixels, in order, and fast enough for the cast');
+  {
+    /* B22. One paint worker traced a desktop's moment a frame at a time, about
+       a quarter of a second each, so the men on the floor stood for a second
+       and a half and their reaction poses came back five seconds in: pressed
+       quickly, they stood through the reaction. A pool traces several at once,
+       and has to hand back the very pixels the main thread paints, in the
+       queue's order (the front, then soon, then the back). */
+    const { ctx, page, boom } = await open(1440, 900, false, 1);
+    const pool = await page.evaluate(async (ME) => {
+      const B = window.RTF_BALLER, hc = navigator.hardwareConcurrency || 0;
+      /* the order frames reach a worker, read off the messages */
+      const sent = [], PM = Worker.prototype.postMessage;
+      Worker.prototype.postMessage = function(d){ if (d && d.o) sent.push(d.o.pose + ':' + (d.o.tag || '')); return PM.apply(this, arguments); };
+      /* (a page from before the pool has one worker and no _pool) */
+      const PL = () => B._pool ? B._pool() : { max: 1, workers: 1, ok: true, queued: -1 };
+      const P0 = PL();
+      const ask = (pose, res, u, tag, extra) => new Promise((r) => B.paintAsync(ME.look, Object.assign({ pose, res, c1: ME.c1, c2: ME.c2, num: ME.num, age: ME.age, yaw: 60, tag }, extra || {}), r, u));
+      /* a frame for the front goes to a worker at once; one for the back
+         waits while anything is being traced, even with a worker free */
+      const fill = [ask('stand', 3, true, 'fill0')], bg = ask('walk1', 3, false, 'bA');
+      const bgWaits = PL().queued === 1 && PL().workers === 1;
+      /* fill every worker, then ask in a muddle */
+      for (let i = 1; i < P0.max; i++) fill.push(ask('stand', 3, true, 'fill' + i));
+      fill.push(bg);
+      const rest = [ask('cheer0', 3, false, 'b1'), ask('cheer1', 3, true, 'f1'), ask('sad0', 3, 2, 's1'), ask('sad1', 3, false, 'b2'), ask('shot2', 3, true, 'f2'), ask('dunk3', 3, 2, 's2'),
+        ask('bounce5', 2, true, 'f3', { faceless: true, c1: '#C8102E', c2: '#000000', num: '' })];
+      const queuedNow = PL().queued;
+      const imgs = await Promise.all(fill.concat(rest));
+      Worker.prototype.postMessage = PM;
+      /* every one against the main thread's own paint of it */
+      const opts = [...Array(P0.max)].map(() => ['stand', 3]).concat([['walk1', 3], ['cheer0', 3], ['cheer1', 3], ['sad0', 3], ['sad1', 3], ['shot2', 3], ['dunk3', 3], ['bounce5', 2, { faceless: true, c1: '#C8102E', c2: '#000000', num: '' }]]);
+      let same = 0;
+      imgs.forEach((im, i) => {
+        const o = opts[i], g = B._gridData(B.paint(ME.look, Object.assign({ pose: o[0], res: o[1], c1: ME.c1, c2: ME.c2, num: ME.num, age: ME.age, yaw: 60 }, o[2] || {})));
+        if (im && im.w === g.w && im.h === g.h && im.d.length === g.d.length && im.d.every((v, k) => v === g.d[k])) same++;
+      });
+      return { hc, max: P0.max, workers: PL().workers, ok: PL().ok, queuedNow, bgWaits, same, n: imgs.length, order: sent.slice(P0.max).map((s) => s.split(':')[1]) };
+    }, ME);
+    const wantMax = Math.max(1, Math.min(4, (pool.hc || 2) - 1));
+    ok(pool.max === wantMax && (pool.hc < 3 || pool.max >= 2), `14 a pool of ${pool.max} paint workers for ${pool.hc} cores (one left for the page, four at most)`);
+    ok(pool.ok && pool.workers === pool.max && pool.queuedNow === 8, `14 with every worker busy, the rest wait in the one queue (${pool.workers} workers, ${pool.queuedNow} waiting)`);
+    ok(pool.bgWaits, '14 a frame for the background waits while a wanted one is traced, so it never takes their cores');
+    ok(pool.same === pool.n && pool.n === pool.max + 8, `14 a frame from the pool is the main thread's paint, pixel for pixel (${pool.same} of ${pool.n})`);
+    ok(pool.order.join(' ') === 'f3 f2 f1 s1 s2 bA b1 b2', `14 and they leave the queue front first (the last asked first), then soon, then the back (${pool.order.join(' ')})`);
+
+    /* A QUICK PRESS ON A DESKTOP, in a scene's layout. Every man on the
+       floor needs two frames back to answer the play: his stand (or he is
+       not drawn) and a pose for the way it went. With one worker in the
+       order the frames were asked, they came back after his whole
+       vocabulary, and he stood through the reaction. Now they come within
+       first ANSWER_BY rounds of tracing (a round is one frame on every
+       worker of the pool): at about a fifth of a second a frame, an idle
+       desktop traces them in under three seconds, before a quick press's
+       reaction starts (an estimate from the trace time: the machine this
+       was built on was never idle). One worker took 32 to 41 rounds.
+       Counted in rounds rather than seconds, so a busy machine cannot fail
+       it by being slow and cannot pass it by being fast; the seconds are
+       printed beside it. */
+    const ANSWER_BY = 12, WORKERS = pool.max;
+    const quick = [];
+    for (const kind of ['three', 'stop', 'drive']) {
+      quick.push(await page.evaluate(({ kind, ME }) => new Promise((done) => {
+        const B = window.RTF_BALLER;
+        if (!window.__doneAt) {
+          window.__doneAt = {};
+          const PA = B.paintAsync;
+          window.__backs = [];
+          B.paintAsync = function(l, o, cb, u){ const k = JSON.stringify(l) + '|' + o.pose + '|' + o.res; return PA.call(this, l, o, function(img){ window.__backs.push(performance.now()); if (img && !window.__doneAt[k]) window.__doneAt[k] = performance.now(); cb(img); }, u); };
+        }
+        const h = document.getElementById('h'); h.innerHTML = '';
+        h.style.cssText = 'position:relative;width:100vw;height:100vh;display:flex;flex-direction:column';
+        h.innerHTML = '<div id="cs" style="position:relative;flex:1;min-height:0"></div><div style="padding:12px;color:#fff">A caption line.<div id="cc"></div></div>';
+        const host = document.getElementById('cs'), S = [];
+        let iv = 0;
+        const t0 = performance.now();
+        const m = window.RTF_COURT.moment(host, { kind, rating: 72, rateName: 'Shooting', room: 'nba', c1: ME.c1, c2: ME.c2, oc: '#C8102E', me: ME, mate: { look: { skin: 2, hair: 'fade' }, num: 11 },
+          bug: { home: 'MIL', away: 'CHI', clock: '0:07' }, intro: 'Here we go.', makeCall: 'Yes!', missCall: 'No.', seed: 'quick-' + kind, ctlHost: document.getElementById('cc') },
+          { resolve: () => ({ made: true, won: true }), done: () => {
+            clearInterval(iv);
+            const st = m.stage, end = performance.now(), moodAt = S.find((x) => x.mood), mood = moodAt ? moodAt.mood : '';
+            const at = (who, pose) => window.__doneAt[JSON.stringify(who.look) + '|' + pose + '|' + st.R] || Infinity;
+            const vis = (st.cast || []).filter((c) => st.spot(c.u, c.v));
+            const menAt = () => vis.map((c) => Math.max(at(c.who, 'stand'), Math.min(...st.castPoses(mood || 'us').filter((w) => w[0] === c.who).map((w) => at(c.who, w[1])))));
+            /* the stage is held (not stopped) until every man's frames are
+               back, up to 20 seconds, so the count does not depend on how
+               long the play happened to last on a busy machine */
+            const finish = () => {
+              const men = menAt(), last = Math.max(...men);
+              if (!isFinite(last) && performance.now() - end < 20000) return setTimeout(finish, 100);
+              /* how many frames the queue handed back, from the start of this
+                 moment, before the last man had his answer */
+              const frames = isFinite(last) ? window.__backs.filter((x) => x >= t0 && x <= last).length : Infinity;
+              m.stop();
+              done({ kind, R: st.R, mood, men: men.length, frames, secs: isFinite(last) ? Math.round((last - t0) / 100) / 10 : null, react: moodAt ? Math.round((moodAt.at - t0) / 100) / 10 : null,
+                inTime: men.filter((t) => t < end).length, best: Math.max(0, ...S.filter((x) => x.mood).map((x) => x.moved)) });
+            };
+            finish();
+          } });
+        iv = setInterval(() => {
+          const st = m.stage;
+          S.push({ mood: st.state.mood || '', moved: st.castMoved || 0, at: performance.now() });
+          /* pressed as soon as it is armed, 900ms in at the earliest */
+          const ctl = document.querySelector('#cc .ct-ctl[data-armed]');
+          if (ctl && !ctl.dataset.hit && performance.now() - t0 > 900) { ctl.dataset.hit = '1'; ctl.querySelector('.ct-go').click(); delete ctl.dataset.hit; }
+        }, 40);
+      }), { kind, ME }));
+    }
+    quick.forEach((q) => { q.rounds = q.frames != null && isFinite(q.frames) ? Math.ceil(q.frames / WORKERS) : Infinity; });
+    const tell = (q) => `${q.kind}: ${q.men} men answer ${isFinite(q.rounds) ? 'after ' + q.rounds + ' rounds (' + q.frames + ' frames on ' + WORKERS + '), ' + q.secs + 's in' : 'not within 20s'}, the reaction ${q.react}s in`;
+    ok(quick.every((q) => q.R === 4), `14 the desktop court is traced at 4 (${quick.map((q) => q.R).join(', ')})`);
+    ok(quick.every((q) => q.mood && q.men >= 4 && q.rounds <= ANSWER_BY), `14 pressed quickly on a desktop, every man on the floor has his answer to the play within ${ANSWER_BY} rounds of tracing (${quick.map(tell).join('; ')})`);
+    ok(!boom.length, '14 and nothing threw (' + boom.join(' | ') + ')');
+    await ctx.close();
+  }
+
   await b.close();
 }
 if (!QUICK) await browser();

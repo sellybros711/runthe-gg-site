@@ -264,14 +264,40 @@ var OX = -1;
 function toView(p){ var v = rotV([p[0] - CX, p[1] - GY, p[2]]); return [CX + OX + v[0], GY + v[1], v[2]]; }
 function toWorld(q){ var x = q[0] - CX - OX, y = q[1] - GY, z = q[2], dy = y * CP - z * SN, rz = y * SN + z * CP;
   return [CX + x * CY - rz * SY, GY + dy, x * SY + rz * CY]; }
-var LIGHT = (function(){ var v = [-0.55, -0.72, 0.72], l = Math.hypot(v[0], v[1], v[2]); return v.map(function(a){ return a / l; }); })();
+var LIGHT = (function(){ var v = [-0.55, -0.72, 0.72], l = hyp3(v[0], v[1], v[2]); return v.map(function(a){ return a / l; }); })();
 
 /* ── shapes, as distances ── */
 function clamp01(t){ return t < 0 ? 0 : t > 1 ? 1 : t; }
-function sph(c, r){ return function(p){ return Math.hypot(p[0] - c[0], p[1] - c[1], p[2] - c[2]) - r; }; }
+/* THE LENGTH OF A VECTOR, SIX TIMES FASTER THAN Math.hypot AND THE SAME TO THE
+   LAST BIT. A trace spends most of its time here (every shape is a distance),
+   and Math.hypot takes its arguments as a list. This is Chrome's own Math.hypot
+   (V8's: scale by the largest, sum the squares with Kahan's compensation,
+   root, scale back) written out, so every figure is traced to exactly the
+   pixels it was: check-sprite holds 960 single traces and 72 fine ones, and
+   compares these two with Math.hypot bit for bit. Infinity wins over NaN, as
+   in the spec. */
+function hyp3(a, b, c){
+  a = a < 0 ? -a : a; b = b < 0 ? -b : b; c = c < 0 ? -c : c;
+  if (a === Infinity || b === Infinity || c === Infinity) return Infinity;
+  if (a !== a || b !== b || c !== c) return NaN;
+  var m = a > b ? a : b; if (c > m) m = c;
+  if (m === 0) return 0;
+  var x = a / m, y = b / m, z = c / m, s = x * x, q = y * y, p = s + q, k = (p - s) - q;
+  return Math.sqrt(p + (z * z - k)) * m;
+}
+function hyp2(a, b){
+  a = a < 0 ? -a : a; b = b < 0 ? -b : b;
+  if (a === Infinity || b === Infinity) return Infinity;
+  if (a !== a || b !== b) return NaN;
+  var m = a > b ? a : b;
+  if (m === 0) return 0;
+  var x = a / m, y = b / m;
+  return Math.sqrt(x * x + y * y) * m;
+}
+function sph(c, r){ return function(p){ return hyp3(p[0] - c[0], p[1] - c[1], p[2] - c[2]) - r; }; }
 function ell(c, r){ return function(p){
   var a = (p[0] - c[0]) / r[0], b = (p[1] - c[1]) / r[1], d = (p[2] - c[2]) / r[2];
-  var k0 = Math.hypot(a, b, d), k1 = Math.hypot(a / r[0], b / r[1], d / r[2]);
+  var k0 = hyp3(a, b, d), k1 = hyp3(a / r[0], b / r[1], d / r[2]);
   return k1 > 1e-6 ? k0 * (k0 - 1) / k1 : -Math.min(r[0], r[1], r[2]); }; }
 /* a round cone: a limb, thick at one end and thinner at the other */
 function cone(a, b, ra, rb){
@@ -279,12 +305,12 @@ function cone(a, b, ra, rb){
   return function(p){
     var px = p[0] - a[0], py = p[1] - a[1], pz = p[2] - a[2];
     var t = clamp01((px * bx + py * by + pz * bz) / ll);
-    return Math.hypot(px - bx * t, py - by * t, pz - bz * t) - (ra + (rb - ra) * t);
+    return hyp3(px - bx * t, py - by * t, pz - bz * t) - (ra + (rb - ra) * t);
   };
 }
 function rbox(c, h, r){ return function(p){
   var qx = Math.abs(p[0] - c[0]) - h[0] + r, qy = Math.abs(p[1] - c[1]) - h[1] + r, qz = Math.abs(p[2] - c[2]) - h[2] + r;
-  return Math.hypot(Math.max(qx, 0), Math.max(qy, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qy, qz), 0) - r; }; }
+  return hyp3(Math.max(qx, 0), Math.max(qy, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qy, qz), 0) - r; }; }
 function smin(a, b, k){ var h = clamp01(0.5 + 0.5 * (b - a) / k); return b + (a - b) * h - k * h * (1 - h); }
 function cut(f, keep){ return function(p){ return Math.max(f(p), keep(p)); }; }       /* keep(p) <= 0 inside what stays */
 function minus(f, g){ return function(p){ return Math.max(f(p), -g(p)); }; }
@@ -624,7 +650,10 @@ function build(L, o, J){
   var pecs = [-1, 1].map(function(s){ return ell([CX + s * 2.5 * sw, C0[1] - 1.6 * ts, cR[2] - 1.3], [2.6 * sw + Math.max(0, bw) * 0.5, 2.0 * ts, 1.4 + Math.max(0, bw) * 0.3]); });
   var lats = [-1, 1].map(function(s){ return ell([CX + s * (cR[0] - 2.2), C0[1] + 0.6 * ts, -1.2], [2.4, 4.4 * ts, 2.6]); });
   var blades = [-1, 1].map(function(s){ return ell([CX + s * 3.0 * sw, C0[1] - 2.2 * ts, -cR[2] + 1.0], [2.6, 2.6 * ts, 1.4]); });
-  var torsoF = function(p){ var d = smin(ell(C0, cR)(p), ell(W0, wR)(p), 2.2);
+  /* each shape is made once, not on every step of every ray (the same
+     numbers, so the same pixels, and a trace a good deal faster) */
+  var chestF = ell(C0, cR), waistF = ell(W0, wR);
+  var torsoF = function(p){ var d = smin(chestF(p), waistF(p), 2.2);
     for (var i = 0; i < 2; i++) { d = smin(d, pecs[i](p), 1.2); d = smin(d, lats[i](p), 1.4); d = smin(d, blades[i](p), 1.0); }
     return d; };
   var bodyN = function(p){ return p; };
@@ -710,7 +739,8 @@ function build(L, o, J){
     }, cut(shortsF, function(p){ return Math.max(sy0 - p[1], p[1] - (sy0 + sd + sl + 0.2)); }), [CX, sy0 + (sd + sl) / 2, 0], 6 + (sd + sl) / 2 + Math.max(0, g));
   } else {
     var jR = [cR[0] + 0.8, cR[1] + 0.4, cR[2] + 0.7], jW = [wR[0] + 1.2, 6.4 * ts, wR[2] + 0.9];
-    var jacketF = function(p){ return smin(ell(C0, jR)(p), ell([CX, W0[1] + 1.4 * ts, 0], jW)(p), 2.4); };
+    var jChestF = ell(C0, jR), jWaistF = ell([CX, W0[1] + 1.4 * ts, 0], jW);
+    var jacketF = function(p){ return smin(jChestF(p), jWaistF(p), 2.4); };
     add('jacket', 'torso', function(p){
       var dx = p[0] - CX, ad = Math.abs(dx), y = 29.2 + (p[1] - C0[1]) / ts, front = p[2] > 1.2;
       var vee = y > 34 ? -1 : 3.4 - (y - 23) * 0.3;
@@ -727,8 +757,9 @@ function build(L, o, J){
   /* the neck: short, narrow under the jaw and flaring into the traps at the
      base, so it reads as part of the shoulders rather than a tube */
   var nb = Math.max(0, bw * 0.3);
-  var neckF = function(p){ return smin(cone([CX, J.neck[1] - 2.2, -0.5], [CX, J.neck[1] + 1.2 * ts, -0.5], 1.95 + nb + g * 0.1, 2.6 + nb + g * 0.15)(p),
-    ell([CX, J.neck[1] + 2.4 * ts, -0.9], [3.3 + nb * 1.6 + g * 0.25, 1.3, 1.9])(p), 1.4); };
+  var neckC = cone([CX, J.neck[1] - 2.2, -0.5], [CX, J.neck[1] + 1.2 * ts, -0.5], 1.95 + nb + g * 0.1, 2.6 + nb + g * 0.15),
+    trapE = ell([CX, J.neck[1] + 2.4 * ts, -0.9], [3.3 + nb * 1.6 + g * 0.25, 1.3, 1.9]);
+  var neckF = function(p){ return smin(neckC(p), trapE(p), 1.4); };
   /* the same piece as the torso, so no contour line is drawn where they meet */
   add('neck', 'torso', CW && CW.under ? function(p){ return p[1] > J.neck[1] + 0.9 * ts ? 'under' : 'skin'; } : 'skin', neckF, J.neck, 7, { bias: -0.25 });
   if (ST) streetNeck();
@@ -748,10 +779,11 @@ function build(L, o, J){
     var sh0 = [A.sh[0] + (A.el[0] - A.sh[0]) * 0.1, A.sh[1] + (A.el[1] - A.sh[1]) * 0.1, A.sh[2] + (A.el[2] - A.sh[2]) * 0.1];
     var bi = [A.sh[0] + (A.el[0] - A.sh[0]) * 0.5, A.sh[1] + (A.el[1] - A.sh[1]) * 0.5, A.sh[2] + (A.el[2] - A.sh[2]) * 0.5];
     var fo = [A.el[0] + (A.wr[0] - A.el[0]) * 0.25, A.el[1] + (A.wr[1] - A.el[1]) * 0.25, A.el[2] + (A.wr[2] - A.el[2]) * 0.25];
+    var upC = cone(sh0, A.el, r0 * 0.74, r1 * 0.9), biE = ell(bi, [r0 * 0.92, r0 * 1.3, r0 * 0.92]), loC = cone(A.el, A.wr, r1 * 0.96, r2 * 0.8), foE = ell(fo, [r1 * 1.02, r1 * 1.6, r1 * 1.0]);
     var armF = suit ? uni([cone(A.sh, A.el, r0, r1), cone(A.el, A.wr, r1, r2)])
-      : function(p){ return smin(smin(cone(sh0, A.el, r0 * 0.74, r1 * 0.9)(p), ell(bi, [r0 * 0.92, r0 * 1.3, r0 * 0.92])(p), 1.4), smin(cone(A.el, A.wr, r1 * 0.96, r2 * 0.8)(p), ell(fo, [r1 * 1.02, r1 * 1.6, r1 * 1.0])(p), 2.0), 0.8); };
+      : function(p){ return smin(smin(upC(p), biE(p), 1.4), smin(loC(p), foE(p), 2.0), 0.8); };
     add('arm' + s, 'arm' + s, suit ? function(p){
-      var t = Math.hypot(p[0] - A.wr[0], p[1] - A.wr[1], p[2] - A.wr[2]);
+      var t = hyp3(p[0] - A.wr[0], p[1] - A.wr[1], p[2] - A.wr[2]);
       return t < 1.3 ? 'cuff' : 'jacket';
     } : mat, armF, A.el, 10);
     /* a hand grows with the man: a fixed size was lost inside a big man's jacket */
@@ -767,7 +799,7 @@ function build(L, o, J){
     var hd = J.arm[1].hand, bc = [heldX(hd[0]), hd[1] + 3.2, hd[2] + 1.0];
     add('ball', 'ball', function(p){
       var u = p[0] - bc[0], v = p[1] - bc[1], w = p[2] - bc[2];
-      if (Math.abs(v + u * 0.1) < 0.45 || Math.abs(u - v * 0.15) < 0.45 || Math.abs(Math.hypot(u + 5.2, v) - 3.9) < 0.42) return { m: 'ball', t: 0 };
+      if (Math.abs(v + u * 0.1) < 0.45 || Math.abs(u - v * 0.15) < 0.45 || Math.abs(hyp2(u + 5.2, v) - 3.9) < 0.42) return { m: 'ball', t: 0 };
       return 'ball';
     }, sph(bc, 3.7), bc, 3.9, { gloss: 1 });
   }
@@ -958,7 +990,7 @@ function build(L, o, J){
     var rxT = shX * 0.9 + off, rxB = cR[0] * 0.8 + off + g * 0.45, rzT = cR[2] * 0.88 + off * 0.8, rzB = cR[2] * 0.74 + off * 0.8 + Math.max(0, g) * 0.75;
     var colF = function(p){
       var t = clamp01((p[1] - yT) / (yB - yT)), rx = rxT + (rxB - rxT) * t, rz = rzT + (rzB - rzT) * t;
-      var e = Math.hypot((p[0] - CX) / rx, (p[2] + 0.2) / rz);
+      var e = hyp2((p[0] - CX) / rx, (p[2] + 0.2) / rz);
       return Math.max((e - 1) * Math.min(rx, rz) * 0.9, yT - p[1]);
     };
     var dome = ell([CX, yT + 0.4, -0.3], [shX + off * 0.6, 2.4 * ts + off * 0.5, cR[2] * 0.82 + off * 0.8]);
@@ -1052,7 +1084,7 @@ function build(L, o, J){
         var kY = (J.leg[-1].kn[1] + J.leg[1].kn[1]) / 2 + 1.0, s0 = W0[1] + 3.0 * ts;
         add('skirt', 'outer', function(p){ return p[2] > 1.8 && Math.abs(p[0] - CX) < 0.9 + (p[1] - s0) * 0.18 ? 'btm' : p[1] > kY - 0.7 ? { m: 'out1', dt: -1 } : 'out1'; },
           cut(function(p){ var t = clamp01((p[1] - s0) / (kY - s0)), rx = cR[0] * 0.85 + D.infl + OD.infl + t * 1.6, rz = cR[2] * 0.85 + 1 + t * 1.2;
-            return Math.max((Math.hypot((p[0] - CX) / rx, (p[2] + 0.2) / rz) - 1) * Math.min(rx, rz) * 0.85, s0 - p[1]); }, function(q){ return q[1] - kY; }), [CX, (s0 + kY) / 2, 0], (kY - s0) / 2 + 9);
+            return Math.max((hyp2((p[0] - CX) / rx, (p[2] + 0.2) / rz) - 1) * Math.min(rx, rz) * 0.85, s0 - p[1]); }, function(q){ return q[1] - kY; }), [CX, (s0 + kY) / 2, 0], (kY - s0) / 2 + 9);
       }
     }
   }
@@ -1062,7 +1094,7 @@ function build(L, o, J){
     var OD = outDef(), kd = streetTop(), D = topDef(), wr = A.wr, el = A.el, sh = A.sh;
     var along = function(p){ var ux = el[0] - sh[0], uy = el[1] - sh[1], uz = el[2] - sh[2], L2 = ux * ux + uy * uy + uz * uz || 1;
       return ((p[0] - sh[0]) * ux + (p[1] - sh[1]) * uy + (p[2] - sh[2]) * uz) / L2; };
-    var nearWr = function(p, r){ return Math.hypot(p[0] - wr[0], p[1] - wr[1], p[2] - wr[2]) < r; };
+    var nearWr = function(p, r){ return hyp3(p[0] - wr[0], p[1] - wr[1], p[2] - wr[2]) < r; };
     var rib = function(p){ return Math.floor(p[1] * 2.6) % 2; };
     if (OD) {
       var ok_ = ST.outer.k, r = Math.min(1.2, OD.infl * 0.8 + 0.25);
@@ -1113,7 +1145,7 @@ function build(L, o, J){
         if (ck === 'beads') return Math.floor(Math.atan2(p[0] - cc[0], p[2] - cc[2]) * 9 + 40) % 2 ? 'chainc' : { m: 'chainc', dt: -1 };
         return Math.floor((p[0] + p[2]) * (ck === 'cuban' ? 1.5 : 2.2)) % 2 ? { m: 'chainc', dt: 1 } : 'chainc'; }, function(p){
         var x = p[0] - cc[0], y = p[1] - cc[1], z = p[2] - cc[2], yy = y * ca - z * sa, zz = y * sa + z * ca;
-        return Math.hypot(Math.hypot(x, zz) - R, yy) - th; }, cc, R + 1.5, { gloss: 2 });
+        return hyp2(hyp2(x, zz) - R, yy) - th; }, cc, R + 1.5, { gloss: 2 });
       if (ck === 'chain') { var pc = [CX, cc[1] + R * sa + 1.0, cc[2] + R * ca + 0.2]; add('pendant', 'chain', 'chainc', rbox(pc, [0.95, 1.2, 0.4], 0.35), pc, 1.9, { gloss: 2 }); }
     }
   }
@@ -1128,7 +1160,7 @@ function build(L, o, J){
     if (kd === 'bucket') {
       add('hat', 'hat', function(p){ var l = local(p); return Math.abs(l[1] + 4.2) < 0.5 ? 'hat2' : 'hat'; },
         cut(smf(shellF(1.6), ell([hx, hy - 8.0, hz - 0.3], [6.4, 3.0, 6.0]), 1.4), function(p){ return local(p)[1] + 3.6; }), [hx, hy - 5, hz], 11);
-      add('brim', 'hat', { m: 'hat', dt: -1 }, function(p){ var l = local(p), rr = Math.hypot(l[0], (l[2] - 0.4) / 0.96), ys = -3.9 + (rr - 7.6) * 0.62;
+      add('brim', 'hat', { m: 'hat', dt: -1 }, function(p){ var l = local(p), rr = hyp2(l[0], (l[2] - 0.4) / 0.96), ys = -3.9 + (rr - 7.6) * 0.62;
         return Math.max(Math.abs(l[1] - ys) - 0.42, Math.max(7.2 - rr, rr - 11.0)) * 0.6; }, [hx, hy - 3, hz], 12.5);
     }
   }
@@ -1161,7 +1193,7 @@ function build(L, o, J){
   }
   function courtArm(A, s, mat){
     var sl = CW[s < 0 ? 'sleeveL' : 'sleeveR'], un = CW.under, nm = s < 0 ? 'cslL' : 'cslR';
-    var L2 = Math.hypot(A.wr[0] - A.sh[0], A.wr[1] - A.sh[1], A.wr[2] - A.sh[2]) || 1;
+    var L2 = hyp3(A.wr[0] - A.sh[0], A.wr[1] - A.sh[1], A.wr[2] - A.sh[2]) || 1;
     var tOf = function(p){ return ((p[0] - A.sh[0]) * (A.wr[0] - A.sh[0]) + (p[1] - A.sh[1]) * (A.wr[1] - A.sh[1]) + (p[2] - A.sh[2]) * (A.wr[2] - A.sh[2])) / (L2 * L2); };
     if (!sl && !un) return null;
     var tee = un && un.k === 'tee' ? 0.34 : un ? 0.97 : 0, sleeveFrom = sl ? (sl.k === 'half' ? 0.36 : 0) : 2;
@@ -1191,8 +1223,8 @@ function build(L, o, J){
     if (CW.guard) add('guard', 'head', 'guard', ell([hx, hy + 4.4, hz + 6.9], [2.5, 0.85, 1.0]), [hx, hy + 4.4, hz + 6.9], 2.8, { gloss: 2 });
   }
   /* a ring of radius R round an axis through c */
-  function ringF(c, ax, R, r){ var l = Math.hypot(ax[0], ax[1], ax[2]) || 1, u = [ax[0] / l, ax[1] / l, ax[2] / l];
-    return function(p){ var d = [p[0] - c[0], p[1] - c[1], p[2] - c[2]], h = d[0] * u[0] + d[1] * u[1] + d[2] * u[2], q = Math.hypot(d[0] - h * u[0], d[1] - h * u[1], d[2] - h * u[2]) - R; return Math.hypot(q, h) - r; }; }
+  function ringF(c, ax, R, r){ var l = hyp3(ax[0], ax[1], ax[2]) || 1, u = [ax[0] / l, ax[1] / l, ax[2] / l];
+    return function(p){ var d = [p[0] - c[0], p[1] - c[1], p[2] - c[2]], h = d[0] * u[0] + d[1] * u[1] + d[2] * u[2], q = hyp3(d[0] - h * u[0], d[1] - h * u[1], d[2] - h * u[2]) - R; return hyp2(q, h) - r; }; }
   function streetGear(){
     var off = topDef().infl + (outDef() ? outDef().infl : 0), fz = cR[2] * 0.85 + off;
     if (ST.watch) {
@@ -1295,24 +1327,37 @@ function trace(P, res){
   /* each part's bounds on screen, so a pixel only asks the parts it can see */
   var B = P.map(function(p){ var v = toView(p.c); return [v[0] - p.r, v[1] - p.r, v[0] + p.r, v[1] + p.r, v[2] + p.r, v[2] - p.r]; });
   var hit = [];
+  /* one point and one candidate list reused along every ray (no shape keeps
+     the point it is asked about; the hit point is copied out) */
+  var PF = P.map(function(p){ return p.f; }), cand = [], candF = [], pp = [0, 0, 0];
   for (var y = 0; y < HH; y++) {
-    var row = [];
+    var row = [], sy = (y + 0.5) / res;
+    /* the parts whose bounds cross this row, in the same order, so a pixel
+       tests only those (the same candidates as testing every part) */
+    var rowP = [];
+    for (var i0 = 0; i0 < P.length; i0++) if (sy >= B[i0][1] && sy <= B[i0][3]) rowP.push(i0);
+    /* toWorld for this row, written out: the same arithmetic in the same
+       order, without two arrays made on every step of the ray */
+    var vy = sy - GY;
     for (var x = 0; x < WW; x++) {
-      var sx = (x + 0.5) / res, sy = (y + 0.5) / res, cand = [], t0 = -1e9, t1 = 1e9;
-      for (var i = 0; i < P.length; i++) { var b = B[i];
-        if (sx >= b[0] && sx <= b[2] && sy >= b[1] && sy <= b[3]) { cand.push(i); if (b[4] > t0) t0 = b[4]; if (b[5] < t1) t1 = b[5]; } }
+      var sx = (x + 0.5) / res, t0 = -1e9, t1 = 1e9;
+      cand.length = 0; candF.length = 0;
+      for (var ri = 0; ri < rowP.length; ri++) { var i = rowP[ri], b = B[i];
+        if (sx >= b[0] && sx <= b[2]) { cand.push(i); candF.push(PF[i]); if (b[4] > t0) t0 = b[4]; if (b[5] < t1) t1 = b[5]; } }
       if (!cand.length) { row.push(null); continue; }
-      var t = t0, found = -1, wp = null;
+      var t = t0, found = -1, wp = null, vx = sx - CX - OX;
       for (var k = 0; k < 90 && t >= t1; k++) {
-        var p = toWorld([sx, sy, t]), d = 1e9, at = -1;
-        for (var j = 0; j < cand.length; j++) { var v = P[cand[j]].f(p); if (v < d) { d = v; at = cand[j]; } }
-        if (d < 0.02) { found = at; wp = p; break; }
+        var dy = vy * CP - t * SN, rz = vy * SN + t * CP;
+        pp[0] = CX + vx * CY - rz * SY; pp[1] = GY + dy; pp[2] = vx * SY + rz * CY;
+        var d = 1e9, at = -1, nc = candF.length;
+        for (var j = 0; j < nc; j++) { var v = candF[j](pp); if (v < d) { d = v; at = cand[j]; } }
+        if (d < 0.02) { found = at; wp = [pp[0], pp[1], pp[2]]; break; }
         t -= Math.max(d * 0.85, 0.03);
       }
       if (found < 0) { row.push(null); continue; }
       var f = P[found].f, e = 0.07;
       var n = [f([wp[0] + e, wp[1], wp[2]]) - f([wp[0] - e, wp[1], wp[2]]), f([wp[0], wp[1] + e, wp[2]]) - f([wp[0], wp[1] - e, wp[2]]), f([wp[0], wp[1], wp[2] + e]) - f([wp[0], wp[1], wp[2] - e])];
-      var nl = Math.hypot(n[0], n[1], n[2]) || 1;
+      var nl = hyp3(n[0], n[1], n[2]) || 1;
       n = [n[0] / nl, n[1] / nl, n[2] / nl];
       var vn = rotV(n);
       row.push({ i: found, p: wp, n: vn, z: t });
@@ -1480,8 +1525,8 @@ function paint0(look, o){
   var gid = function(c){ return model[c.i].g; };
   var baseOf = function(c){ var m = model[c.i].m; return typeof m === 'string' ? m : model[c.i].n; };
   /* a contact shadow: a part with another IN FRONT of it just above or beside */
+  var dirs = [[0, -1], [1, 0], [-1, 0]], dd = [[0, 1], [1, 0], [-1, 0]];
   for (var y2 = 0; y2 < HH; y2++) for (var x2 = 0; x2 < WW; x2++) { var c2_ = hit[y2][x2]; if (!c2_) continue;
-    var dirs = [[0, -1], [1, 0], [-1, 0]];
     for (var k = 0; k < 3; k++) { var q = g(x2 + dirs[k][0], y2 + dirs[k][1]);
       if (q && gid(q) !== gid(c2_) && q.z > c2_.z + 1.2) { T[y2][x2] = Math.max(0, T[y2][x2] - 1); break; } } }
   var out = [];
@@ -1489,7 +1534,7 @@ function paint0(look, o){
     if (!hit[y3][x3]) continue; var r = R[M[y3][x3]] || R.skin; out[y3][x3] = r[T[y3][x3]]; } }
   /* the inner contour: a front part's edge where it crosses a part behind it */
   for (var y4 = 0; y4 < HH; y4++) for (var x4 = 0; x4 < WW; x4++) { var c4 = hit[y4][x4]; if (!c4) continue;
-    var r4 = R[M[y4][x4]] || R.skin, dd = [[0, 1], [1, 0], [-1, 0]];
+    var r4 = R[M[y4][x4]] || R.skin;
     for (var k4 = 0; k4 < 3; k4++) { var q4 = g(x4 + dd[k4][0], y4 + dd[k4][1]);
       if (q4 && gid(q4) !== gid(c4) && q4.z < c4.z - 1.2 && (baseOf(q4) !== baseOf(c4) || q4.z < c4.z - 2.4)) { out[y4][x4] = r4[Math.min(T[y4][x4], 1)]; break; } } }
   /* the soft outline, one pixel inside the silhouette, in the part's own shadow */
@@ -1539,7 +1584,7 @@ function paint0(look, o){
   var pupil = mix(SK[0], '#120a0c', 0.55), brow = L.hair === 'bald' || L.hc === 5 ? mix(SK[0], '#120a0c', 0.25) : mix(HRm[0], '#120a0c', 0.2);
   var big = res >= 3, ew = big ? 2 : 1, eh = big ? 2 : 1;
   /* how squarely a point on the face is turned to the camera: 1 facing, 0 edge on */
-  var faces = function(lx, lz){ var n = rotV([lx / 7.3, 0, lz / 7.6]), l = Math.hypot(n[0], n[1], n[2]) || 1; return n[2] / l; };
+  var faces = function(lx, lz){ var n = rotV([lx / 7.3, 0, lz / 7.6]), l = hyp3(n[0], n[1], n[2]) || 1; return n[2] / l; };
   [-1, 1].forEach(function(sd){
     var lx = sd * 2.6, lz = 7.6 * Math.sqrt(1 - Math.pow(lx / 7.3, 2)), fc = faces(lx, lz);
     if (fc < 0.15) return;
@@ -1584,8 +1629,8 @@ function handOf0(pose, s, build){
    player, so a ceremony is one picture rather than a man pasted onto flat
    boxes. A prop is its own little world on its own grid, seen from the same
    camera (12 degrees down, light from the top left). */
-function torus(c, R, r){ return function(p){ var q = Math.hypot(p[0] - c[0], p[2] - c[2]) - R; return Math.hypot(q, p[1] - c[1]) - r; }; }
-function torusV(c, R, r){ return function(p){ var q = Math.hypot(p[0] - c[0], p[1] - c[1]) - R; return Math.hypot(q, p[2] - c[2]) - r; }; }
+function torus(c, R, r){ return function(p){ var q = hyp2(p[0] - c[0], p[2] - c[2]) - R; return hyp2(q, p[1] - c[1]) - r; }; }
+function torusV(c, R, r){ return function(p){ var q = hyp2(p[0] - c[0], p[1] - c[1]) - R; return hyp2(q, p[2] - c[2]) - r; }; }
 function propModel(kind, o){
   var P = [], add = function(n, m, f, c, r, x){ var q = { n: n, g: n, m: m, f: f, c: c, r: r }; for (var k in x || {}) q[k] = x[k]; P.push(q); };
   if (kind === 'ball') {
@@ -1593,12 +1638,12 @@ function propModel(kind, o){
     add('ball', function(p){
       var x = (p[0] - c[0]) / R, y = (p[1] - c[1]) / R, z = p[2] / R;
       var u = x * Math.cos(a) - y * Math.sin(a), v = x * Math.sin(a) + y * Math.cos(a);
-      if (Math.abs(u) < 0.11 || Math.abs(v) < 0.11 || Math.abs(Math.hypot(u - 0.95, z) - 0.62) < 0.09 || Math.abs(Math.hypot(u + 0.95, z) - 0.62) < 0.09) return { m: 'seam', dt: -1 };
+      if (Math.abs(u) < 0.11 || Math.abs(v) < 0.11 || Math.abs(hyp2(u - 0.95, z) - 0.62) < 0.09 || Math.abs(hyp2(u + 0.95, z) - 0.62) < 0.09) return { m: 'seam', dt: -1 };
       return 'ball';
     }, sq ? ell(c, [R * (1 + sq * 0.5), R * (1 - sq), R * (1 + sq * 0.5)]) : sph(c, R), c, R * (1 + sq) + 0.2, { gloss: 1 });
   } else if (kind === 'trophy') {
     var cx = o.w / 2;
-    add('ball', function(p){ var x = p[0] - cx, y = p[1] - 3.6; return Math.abs(x) < 0.45 || Math.abs(y) < 0.45 || Math.abs(Math.hypot(x - 3.2, y) - 2.1) < 0.4 ? { m: 'goldd' } : 'tball'; }, sph([cx, 3.6, 0], 3.3), [cx, 3.6, 0], 3.5, { gloss: 1 });
+    add('ball', function(p){ var x = p[0] - cx, y = p[1] - 3.6; return Math.abs(x) < 0.45 || Math.abs(y) < 0.45 || Math.abs(hyp2(x - 3.2, y) - 2.1) < 0.4 ? { m: 'goldd' } : 'tball'; }, sph([cx, 3.6, 0], 3.3), [cx, 3.6, 0], 3.5, { gloss: 1 });
     add('net', function(p){ return (Math.floor(p[0] * 1.2) + Math.floor(p[1] * 1.2)) % 2 ? { m: 'gold', dt: -1 } : 'gold'; }, cone([cx, 7.2, 0], [cx, 13.4, 0], 4.6, 1.2), [cx, 10.3, 0], 5.4, { gloss: 2 });
     add('lip', 'gold', torus([cx, 7.0, 0], 4.2, 0.6), [cx, 7, 0], 5, { gloss: 2 });
     add('stem', 'gold', cone([cx, 13.4, 0], [cx, 17.6, 0], 1.0, 1.7), [cx, 15.5, 0], 2.8, { gloss: 2 });
@@ -1648,7 +1693,7 @@ function prop(kind, opts){
     if (found < 0) { row.push(null); continue; }
     var f = P[found].f, e = 0.07;
     var n = [f([wp[0] + e, wp[1], wp[2]]) - f([wp[0] - e, wp[1], wp[2]]), f([wp[0], wp[1] + e, wp[2]]) - f([wp[0], wp[1] - e, wp[2]]), f([wp[0], wp[1], wp[2] + e]) - f([wp[0], wp[1], wp[2] - e])];
-    var nl = Math.hypot(n[0], n[1], n[2]) || 1; n = [n[0] / nl, n[1] / nl, n[2] / nl];
+    var nl = hyp3(n[0], n[1], n[2]) || 1; n = [n[0] / nl, n[1] / nl, n[2] / nl];
     var c = { n: rotV(n) };
     var part = P[found], mm = typeof part.m === 'function' ? part.m(wp) : part.m;
     if (typeof mm === 'string') mm = { m: mm };
@@ -1812,23 +1857,71 @@ function toCanvas(img){
   cv.getContext('2d').putImageData(new ImageData(img.d, img.w, img.h), 0, 0);
   return cv;
 }
-var worker = null, workerOk = true, jobs = {}, jobN = 0;
-function getWorker(){
-  if (worker || !workerOk) return worker;
+/* A SMALL POOL OF PAINT WORKERS, one per spare core up to POOL_MAX (a core is
+   left for the page). A moment asks for about a hundred frames at a quarter
+   of a second each on a desktop's fine trace, and one worker made the men on
+   the floor wait five seconds for their reaction. Each worker traces one frame
+   at a time with the same paint(), so a frame is the same pixels whichever
+   worker drew it (check-moments compares them). Workers start when a stage
+   is about to ask for frames (paintWarm), or as the queue needs them. */
+var POOL_MAX = (function(){
+  var n = typeof navigator !== 'undefined' && +navigator.hardwareConcurrency || 2;
+  return Math.max(1, Math.min(4, n - 1));
+})();
+var POOL = [], workerOk = true, jobs = {}, jobN = 0, workerUrl = '';
+function spawn(){
   try {
     if (!SRC || typeof Worker === 'undefined' || typeof Blob === 'undefined') throw 0;
-    var code = 'importScripts(' + JSON.stringify(SRC) + ');self.onmessage=function(e){var d=e.data,B=self.RTF_BALLER;'
-      + 'try{var g=B._gridData(B.paint(d.look,d.o));self.postMessage({id:d.id,w:g.w,h:g.h,d:g.d},[g.d.buffer]);}catch(x){self.postMessage({id:d.id,err:String(x)});}};';
-    worker = new Worker(URL.createObjectURL(new Blob([code], { type: 'text/javascript' })));
-    worker.onmessage = function(e){ var j = jobs[e.data.id]; delete jobs[e.data.id]; if (j) j(e.data.err ? null : { w: e.data.w, h: e.data.h, d: e.data.d }); };
-    worker.onerror = function(){ workerOk = false; worker = null; var js = jobs; jobs = {}; for (var k in js) js[k](null, true); };
-  } catch (x) { workerOk = false; worker = null; }
-  return worker;
+    if (!workerUrl) {
+      var code = 'importScripts(' + JSON.stringify(SRC) + ');self.onmessage=function(e){var d=e.data,B=self.RTF_BALLER;'
+        + 'try{var g=B._gridData(B.paint(d.look,d.o));self.postMessage({id:d.id,w:g.w,h:g.h,d:g.d},[g.d.buffer]);}catch(x){self.postMessage({id:d.id,err:String(x)});}};';
+      workerUrl = URL.createObjectURL(new Blob([code], { type: 'text/javascript' }));
+    }
+    var w = new Worker(workerUrl);
+    w.busy = false;
+    w.onmessage = function(e){ var j = jobs[e.data.id]; delete jobs[e.data.id]; w.busy = false; if (j) j.j.cb(e.data.err ? null : { w: e.data.w, h: e.data.h, d: e.data.d }); pump(); };
+    w.onerror = workerFailed;
+    POOL.push(w);
+    return w;
+  } catch (x) { workerOk = false; return null; }
 }
-/* ONE QUEUE for every frame on the page, painted one at a time, so two
-   figures never fight for the worker and a frame needed first (the walk-in)
-   can go to the front of it. Off the main thread if we can, one per idle
-   moment if not. */
+/* A worker that cannot run (a blocked blob, a failed import) ends the pool:
+   every frame it or its siblings were tracing goes back to the front of the
+   queue, in the order it was asked, and is painted on the main thread. */
+function workerFailed(){
+  workerOk = false;
+  POOL.forEach(function(w){ try { w.terminate(); } catch (x) {} });
+  POOL = [];
+  var back = Object.keys(jobs).map(Number).sort(function(a, b){ return b - a; });
+  back.forEach(function(id){ if (!jobs[id].warm) QUEUE.unshift(jobs[id].j); });
+  jobs = {};
+  pump();
+}
+/* START THE POOL BEFORE IT IS NEEDED. A worker loads this file and its
+   first trace runs cold, so a stage about to ask for frames starts every
+   worker on a small one (a single resolution stand, a few milliseconds)
+   while it settles, and the frames it asks for next run warm. */
+function paintWarm(){
+  while (workerOk && POOL.length < POOL_MAX) {
+    var w = spawn();
+    if (!w) return;
+    var id = ++jobN;
+    w.busy = true; jobs[id] = { j: { cb: function(){} }, w: w, warm: true };
+    w.postMessage({ id: id, look: DEFAULT, o: { pose: 'stand', res: 1 } });
+  }
+}
+/* an idle worker, a new one if the pool has room, 0 if every one is tracing,
+   null if this page has no workers */
+function freeWorker(){
+  if (!workerOk) return null;
+  for (var i = 0; i < POOL.length; i++) if (!POOL[i].busy) return POOL[i];
+  if (POOL.length < POOL_MAX) return spawn() || (workerOk ? 0 : null);
+  return 0;
+}
+/* ONE QUEUE for every frame on the page, so a frame needed first (the
+   walk-in, the men in the play) goes to the front of it and every worker
+   takes the next frame from its head. Off the main thread if we can, one per
+   idle moment if not. */
 var QUEUE = [], qBusy = false;
 /* first: true for the front, 2 for soon (behind everything asked for the
    front or soon, ahead of the background), anything else for the back */
@@ -1837,14 +1930,37 @@ function paintAsync(look, o, cb, first){
   if (first === 2) { var i = 0; while (i < QUEUE.length && QUEUE[i].u) i++; QUEUE.splice(i, 0, j); }
   else QUEUE[first ? 'unshift' : 'push'](j);
   pump();
+  return j;
 }
+/* Take back a frame that is still waiting (a stage that changed its trace
+   size no longer wants it). One already being traced is left to finish. */
+function paintDrop(j){
+  var i = QUEUE.indexOf(j);
+  if (i < 0) return false;
+  QUEUE.splice(i, 1);
+  return true;
+}
+/* how many frames the workers are tracing now */
+function inFlight(){ var n = 0; for (var i = 0; i < POOL.length; i++) if (POOL[i].busy) n++; return n; }
 function pump(){
+  while (QUEUE.length) {
+    /* THE BACKGROUND TAKES ONE WORKER, AND ONLY AN IDLE POOL'S. A frame
+       nobody is waiting for (his vocabulary for later) starts only when no
+       other frame is being traced, so it never splits the cores with the
+       frames a moment is waiting on; anything asked for the front or soon
+       after it still finds the other workers free. */
+    if (!QUEUE[0].u && inFlight() > 0) return;
+    var w = freeWorker();
+    if (w === 0) return;
+    if (!w) break;
+    var j = QUEUE.shift(), id = ++jobN;
+    w.busy = true; jobs[id] = { j: j, w: w };
+    w.postMessage({ id: id, look: j.look, o: j.o });
+  }
   if (qBusy || !QUEUE.length) return;
-  var j = QUEUE.shift(), w = getWorker();
+  var jj = QUEUE.shift();
   qBusy = true;
-  var fin = function(img){ qBusy = false; j.cb(img); pump(); };
-  if (w) { var id = ++jobN; jobs[id] = function(img, failed){ if (failed) { qBusy = false; QUEUE.unshift(j); pump(); } else fin(img); }; w.postMessage({ id: id, look: j.look, o: j.o }); return; }
-  var run = function(){ var g = null; try { g = gridData(paint(j.look, j.o)); } catch (x) {} fin(g); };
+  var run = function(){ var g = null; try { g = gridData(paint(jj.look, jj.o)); } catch (x) {} qBusy = false; jj.cb(g); pump(); };
   if (typeof requestIdleCallback === 'function') requestIdleCallback(run, { timeout: 400 }); else setTimeout(run, 30);
 }
 /* the frames a live figure needs, painted once per look and shared */
@@ -2051,13 +2167,15 @@ var API = {
   SETS: Object.keys(SETS).reduce(function(m, k){ m[k] = SETS[k].length; return m; }, {}), isFrame: function(p){ return !!ANIM[p]; },
   DEFAULT: DEFAULT, normal: normal, lookFor: lookFor, hash: hash, inkOn: inkOn, contrast: contrast,
   paint: paint, canvas: canvas, url: url, img: img, breathe: breathe, live: live, warm: warm, _gridData: gridData,
-  prop: prop, propCanvas: propCanvas, paintAsync: paintAsync, gridCanvas: toCanvas, ramp: ramp, PROPS: Object.keys(PROP_SIZE),
+  prop: prop, propCanvas: propCanvas, paintAsync: paintAsync, paintDrop: paintDrop, paintWarm: paintWarm, gridCanvas: toCanvas, ramp: ramp, PROPS: Object.keys(PROP_SIZE),
   WEAR_KINDS: WEAR_KINDS, wearNorm: wearNorm, CWEAR_KINDS: CWEAR_KINDS, cwearNorm: cwearNorm,
   /* 1 is the first version with the street look. A page that needs it pins
      this, the way it pins board.js: a stale cached copy would ignore ctx and
      draw the uniform with nothing thrown. */
   /* 2: an idle (o.idle, from hoops/idles.js) plays as a live figure */
   API_VERSION: 2, _frOf: frOf, _idleStep: idleStep, _idleStill: idleStill,
+  /* for the checks: the fast lengths, and the paint pool's size */
+  _hyp2: hyp2, _hyp3: hyp3, _pool: function(){ return { max: POOL_MAX, workers: POOL.length, ok: workerOk, queued: QUEUE.length }; },
 };
 if (typeof module !== 'undefined' && module.exports) module.exports = API;
 if (typeof window !== 'undefined') { window.RTF_BALLER = API; breathe(); }
