@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Scorecard mockup</title>
+<style>
+@font-face { font-family: 'Alfa Slab One'; src: url(../shared/fonts/alfaslabone-400.woff2) format('woff2'); }
+@font-face { font-family: 'Zilla Slab'; src: url(../shared/fonts/zillaslab-500.woff2) format('woff2'); font-weight: 500; }
+@font-face { font-family: 'Zilla Slab'; src: url(../shared/fonts/zillaslab-700.woff2) format('woff2'); font-weight: 700; }
+@font-face { font-family: 'Courier Prime'; src: url(../shared/fonts/courierprime-400.woff2) format('woff2'); font-weight: 400; }
+@font-face { font-family: 'Courier Prime'; src: url(../shared/fonts/courierprime-700.woff2) format('woff2'); font-weight: 700; }
+@font-face { font-family: 'Caveat'; src: url(../shared/fonts/caveat-600.woff2) format('woff2'); font-weight: 600; }
+:root {
+  --paper: #f3e9d3; --paper2: #eadcbe; --paper3: #e0cfa9; --rule: #c9b48a; --rule2: rgba(31, 43, 69, 0.18);
+  --ink: #1f2b45; --ink2: #44506b; --pencil: #5e5a52; --red: #b3362b; --red2: #d24a3a;
+  --board: #24452e; --board2: #2f5b3c; --boardDeep: #18301f; --chalk: #f6f1e2; --mustard: #d9a62e; --bulb: #ffd36b;
+  --g: #4c8a3c; --y: #d9a62e; --o: #d4742a; --r: #b3362b;
+  --slab: 'Alfa Slab One', Georgia, serif; --body: 'Zilla Slab', Georgia, serif; --type: 'Courier Prime', 'Courier New', monospace; --hand: 'Caveat', cursive;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--paper); color: var(--ink); font-family: var(--body); -webkit-font-smoothing: antialiased; }
+body { min-height: 100vh; position: relative; background-image: radial-gradient(rgba(120, 90, 40, 0.07) 1px, transparent 1.2px), radial-gradient(rgba(120, 90, 40, 0.05) 1px, transparent 1.2px); background-size: 7px 7px, 11px 11px; background-position: 0 0, 3px 5px; }
+section[hidden] { display: none !important; }
+.mock { position: absolute; right: 8px; bottom: 6px; font: 700 9px/1 var(--type); letter-spacing: 0.06em; text-transform: uppercase; color: rgba(31,43,69,0.4); z-index: 50; }
+.screen { position: relative; width: 100%; min-height: 100vh; overflow: hidden; }
+.r3d, .r2d { position: absolute; left: 0; top: 0; display: block; }
+.r3d { image-rendering: pixelated; }
+.num { font-variant-numeric: tabular-nums; }
+.slab { font-family: var(--slab); font-weight: 400; letter-spacing: 0.01em; }
+
+/* the scoreboard tiles lockup */
+.tiles { display: inline-flex; flex-direction: column; gap: 4px; padding: 8px; background: var(--board); border-radius: 6px; box-shadow: 0 0 0 3px var(--boardDeep), 0 0 0 5px var(--mustard), 0 6px 0 5px rgba(0,0,0,0.25); }
+.tiles .row { display: flex; gap: 4px; justify-content: center; }
+.tiles .t { width: 1em; height: 1.18em; display: grid; place-items: center; background: var(--boardDeep); color: var(--chalk); font: 400 0.84em/1 var(--slab); border-radius: 2px; box-shadow: inset 0 -2px 0 rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06); }
+.tiles .t.r { color: var(--bulb); }
+.tiles .gap { width: 0.25em; }
+.tiles .small .t { width: 0.62em; height: 0.74em; font-size: 0.52em; }
+.lockline { display: flex; align-items: center; gap: 10px; }
+.lockline .tiles { font-size: 18px; padding: 5px; gap: 3px; box-shadow: 0 0 0 2px var(--boardDeep), 0 0 0 3.5px var(--mustard); }
+.lockline .tiles .row { gap: 2px; }
+
+/* paper buttons */
+.ticket { position: relative; display: flex; align-items: stretch; height: 70px; background: var(--red); color: var(--chalk); border-radius: 6px; box-shadow: 0 4px 0 #7d2219; }
+.ticket::before, .ticket::after { content: ''; position: absolute; top: 50%; width: 18px; height: 18px; margin-top: -9px; border-radius: 50%; background: var(--paper); }
+.ticket::before { left: -9px; } .ticket::after { right: -9px; }
+.ticket .main { flex: 1; display: flex; flex-direction: column; justify-content: center; padding-left: 24px; }
+.ticket .main b { font: 400 22px/1 var(--slab); white-space: nowrap; letter-spacing: 0.02em; text-transform: uppercase; }
+.ticket .main small { font: 700 11px/1 var(--type); letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.85; margin-top: 6px; }
+.ticket .stub { width: 76px; border-left: 2px dashed rgba(246,241,226,0.6); display: grid; place-items: center; text-align: center; font: 700 10px/1.2 var(--type); letter-spacing: 0.1em; text-transform: uppercase; }
+.ticket .stub b { display: block; font: 400 24px/1 var(--slab); }
+.pbtn { display: flex; align-items: center; justify-content: center; gap: 8px; height: 48px; border-radius: 6px; border: 2px solid var(--ink); background: var(--paper); font: 700 14px/1 var(--type); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); box-shadow: 0 3px 0 var(--ink); }
+.label { font: 700 11px/1 var(--type); letter-spacing: 0.16em; text-transform: uppercase; color: var(--red); }
+.hand { font-family: var(--hand); font-weight: 600; color: var(--pencil); }
+
+/* ---------------- index */
+.idx { padding: 28px 20px 60px; max-width: 760px; margin: 0 auto; }
+.idx h1 { font: 400 28px/1.1 var(--slab); margin: 22px 0 8px; }
+.idx p { color: var(--ink2); line-height: 1.5; font-size: 17px; }
+.idx ul { list-style: none; margin-top: 18px; display: grid; gap: 8px; }
+.idx a { display: block; padding: 14px 16px; border: 2px solid var(--ink); border-radius: 6px; color: var(--ink); text-decoration: none; font: 700 15px/1 var(--type); text-transform: uppercase; letter-spacing: 0.06em; }
+
+/* ---------------- brand */
+.brand { padding: 22px 18px 34px; }
+.brand .top { text-align: center; }
+.brand .hero-tiles { font-size: 46px; margin: 18px auto 0; }
+.brand .sub { margin-top: 22px; font: 400 19px/1 var(--slab); color: var(--red); text-align: center; letter-spacing: 0.02em; }
+.brand .sub2 { margin-top: 6px; font: 700 11px/1 var(--type); letter-spacing: 0.2em; color: var(--ink2); text-align: center; text-transform: uppercase; }
+.brand h3 { margin: 24px 0 10px; display: flex; align-items: center; gap: 10px; font: 700 11px/1 var(--type); letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink2); }
+.brand h3::after { content: ''; flex: 1; border-top: 1.5px dashed var(--rule); }
+.chips { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.chips div { height: 76px; border-radius: 4px; padding: 6px; display: flex; flex-direction: column; justify-content: flex-end; font: 700 9.5px/1.25 var(--type); box-shadow: 0 0 0 1px rgba(0,0,0,0.12) inset; }
+.spec { display: grid; gap: 8px; }
+.spec > div { background: var(--paper2); border-radius: 6px; padding: 12px; border: 1px solid var(--rule); display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 6px; }
+.spec small { font: 700 10px/1.3 var(--type); color: var(--ink2); letter-spacing: 0.04em; text-align: right; }
+.voice { background: var(--paper2); border: 1px solid var(--rule); border-radius: 6px; padding: 14px; }
+.voice .say { font: 600 26px/1.05 var(--hand); color: var(--ink); }
+.voice p { margin-top: 10px; font-size: 14px; line-height: 1.45; color: var(--ink2); }
+.marks { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; }
+.icon { width: 92px; height: 92px; border-radius: 20px; background: var(--board); display: grid; place-items: center; box-shadow: 0 0 0 3px var(--mustard) inset, 0 4px 0 var(--boardDeep); }
+.pennant { height: 58px; position: relative; }
+.pennant svg { display: block; }
+.share { margin-top: 10px; background: #fffaf0; border: 1px solid var(--rule); border-radius: 4px; padding: 12px 14px; font: 400 13px/1.55 var(--type); color: var(--ink); white-space: pre-wrap; box-shadow: 0 2px 0 var(--rule); }
+
+/* ---------------- home */
+.home { padding-bottom: 26px; }
+.mast { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px 10px; border-bottom: 3px double var(--ink); }
+.mast .r { display: flex; gap: 8px; }
+.ibtn { width: 40px; height: 40px; border-radius: 6px; border: 2px solid var(--ink); display: grid; place-items: center; color: var(--ink); background: var(--paper); box-shadow: 0 2px 0 var(--ink); }
+.prog { display: flex; justify-content: space-between; padding: 8px 16px; font: 700 11px/1 var(--type); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink2); border-bottom: 1px solid var(--rule); }
+.photo { position: relative; margin: 14px 14px 0; height: 300px; border: 6px solid #fffaf0; box-shadow: 0 0 0 1px var(--rule), 0 6px 14px rgba(60,40,10,0.18); transform: rotate(-0.6deg); background: #345; overflow: hidden; }
+.photo .cap { position: absolute; left: -6px; right: -6px; bottom: -6px; height: 34px; background: #fffaf0; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; font: 600 19px/1 var(--hand); color: var(--pencil); z-index: 3; }
+.home h1 { margin: 22px 16px 0; font: 400 34px/1.02 var(--slab); }
+.home h1 small { display: block; font: 700 12px/1 var(--type); letter-spacing: 0.16em; color: var(--red); margin-bottom: 8px; text-transform: uppercase; }
+.linescore { margin: 14px 16px 0; background: var(--board); border-radius: 6px; padding: 8px 10px; color: var(--chalk); box-shadow: 0 0 0 2px var(--boardDeep), 0 0 0 3.5px var(--mustard); display: grid; grid-template-columns: 1fr auto auto auto; gap: 4px 6px; align-items: center; font: 400 15px/1 var(--slab); }
+.linescore .h { font: 700 10px/1 var(--type); letter-spacing: 0.1em; color: rgba(246,241,226,0.6); text-align: center; }
+.linescore .cell { width: 38px; height: 30px; display: grid; place-items: center; background: var(--boardDeep); border-radius: 3px; box-shadow: inset 0 -2px 0 rgba(0,0,0,0.3); }
+.linescore .cell.hi { color: var(--bulb); }
+.linescore .tm { font: 400 15px/1 var(--slab); letter-spacing: 0.04em; }
+.linescore .note { grid-column: 1 / -1; display: flex; gap: 14px; font: 700 11px/1 var(--type); letter-spacing: 0.08em; text-transform: uppercase; padding-top: 6px; color: rgba(246,241,226,0.8); }
+.linescore .note b { color: var(--bulb); font-weight: 700; }
+.setup { margin: 14px 16px 0; font-size: 17px; line-height: 1.5; color: var(--ink2); }
+.bcard { margin: 18px 16px 0; background: #fffaf0; border: 2px solid var(--ink); border-radius: 8px; overflow: hidden; box-shadow: 4px 4px 0 var(--ink); }
+.bcard .bh { display: flex; align-items: stretch; border-bottom: 2px solid var(--ink); }
+.bcard .bh .port { width: 92px; height: 104px; background: #6b95c9; position: relative; border-right: 2px solid var(--ink); overflow: hidden; }
+.bcard .bh .nm { flex: 1; padding: 10px 12px; display: flex; flex-direction: column; justify-content: flex-end; background: linear-gradient(180deg, #0c4f93, #005a9c); color: var(--chalk); }
+.bcard .bh .nm small { font: 700 12px/1 var(--type); letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.85; }
+.bcard .bh .nm b { font: 400 30px/1 var(--slab); margin-top: 4px; }
+.bcard .bh .nm span { font: 700 11px/1.3 var(--type); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 6px; color: #ffe39a; }
+.tbl { width: 100%; border-collapse: collapse; font-family: var(--type); }
+.tbl th { font: 700 10px/1 var(--type); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink2); text-align: left; padding: 9px 12px 6px; border-bottom: 1.5px solid var(--ink); }
+.tbl td { padding: 0 12px; height: 36px; border-bottom: 1px solid var(--rule2); font-size: 15px; }
+.tbl tr:last-child td { border-bottom: 0; }
+.tbl td.n { font: 700 16px/1 var(--body); }
+.tbl td.gl { width: 34px; padding-right: 0; color: var(--red); }
+.tbl .r { text-align: right; }
+.tbl .pips { display: inline-flex; gap: 2px; vertical-align: middle; }
+.tbl .pips i { width: 5px; height: 10px; background: var(--rule); }
+.tbl .pips i.on { background: var(--ink); }
+.lineup { margin: 18px 16px 0; background: #fffaf0; border: 1px solid var(--rule); border-radius: 4px; box-shadow: 0 2px 0 var(--rule); padding: 4px 0 6px; background-image: repeating-linear-gradient(180deg, transparent 0 39px, rgba(31,43,69,0.12) 39px 40px); background-position: 0 30px; }
+.lineup .t { padding: 10px 14px 8px; }
+.lineup .r { display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 8px; height: 40px; padding: 0 14px; }
+.lineup .r i { font: 400 16px/1 var(--slab); color: var(--red); font-style: normal; }
+.lineup .r b { font: 700 17px/1 var(--body); }
+.lineup .r b em { font: 700 11px/1 var(--type); font-style: normal; margin-left: 6px; color: var(--ink2); border: 1px solid var(--ink2); padding: 2px 4px; border-radius: 3px; }
+.lineup .r span { font: 400 13px/1 var(--type); color: var(--ink2); }
+.home .cta { margin: 22px 16px 0; }
+.home .streak { margin-top: 12px; text-align: center; font: 600 22px/1 var(--hand); color: var(--pencil); }
+.foot { margin: 18px 16px 0; text-align: center; color: var(--ink2); font-size: 12px; line-height: 1.5; font-family: var(--type); }
+
+/* ---------------- menu: the program's contents */
+.menu { padding: 0 0 24px; }
+.menu .mt { padding: 18px 16px 12px; border-bottom: 3px double var(--ink); display: flex; justify-content: space-between; align-items: center; }
+.menu .mt h2 { font: 400 30px/1 var(--slab); }
+.menu .mt h2 small { display: block; font: 700 11px/1 var(--type); letter-spacing: 0.16em; color: var(--red); text-transform: uppercase; margin-bottom: 6px; }
+.toc { padding: 6px 16px 0; }
+.toc .grp { margin: 18px 0 4px; font: 700 11px/1 var(--type); letter-spacing: 0.2em; color: var(--red); text-transform: uppercase; }
+.toc a { display: grid; grid-template-columns: 34px auto 1fr auto; align-items: baseline; gap: 8px; padding: 13px 0 11px; color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--rule2); }
+.toc a .no { font: 400 18px/1 var(--slab); color: var(--red); }
+.toc a b { font: 700 21px/1 var(--body); }
+.toc a .dots { border-bottom: 2px dotted var(--ink2); transform: translateY(-4px); }
+.toc a .pg { font: 700 13px/1 var(--type); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink2); }
+.toc a small { grid-column: 2 / -1; font: 500 14px/1.3 var(--body); color: var(--ink2); margin-top: -2px; }
+.menu .today { margin: 18px 16px 0; padding: 12px 14px; border: 2px solid var(--ink); border-radius: 6px; background: #fffaf0; display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; box-shadow: 4px 4px 0 var(--ink); }
+.menu .today b { font: 400 19px/1.1 var(--slab); }
+.menu .today span { font: 400 13px/1.2 var(--type); color: var(--ink2); }
+.menu .today .go { grid-row: 1 / span 3; grid-column: 2; background: var(--red); color: var(--chalk); border-radius: 4px; padding: 10px 12px; font: 400 14px/1 var(--slab); }
+
+/* ---------------- the scoreboard bar on the field */
+.board { position: absolute; left: 8px; right: 8px; top: 8px; z-index: 5; display: grid; grid-template-columns: auto 1fr auto; gap: 6px; align-items: stretch; background: var(--board); border-radius: 6px; padding: 6px; box-shadow: 0 0 0 2px var(--boardDeep), 0 0 0 3.5px var(--mustard), 0 5px 0 3px rgba(0,0,0,0.25); color: var(--chalk); }
+.board .sc { display: grid; grid-template-columns: auto auto; gap: 3px 6px; align-items: center; font: 400 14px/1 var(--slab); }
+.board .sc .v { width: 26px; height: 22px; display: grid; place-items: center; background: var(--boardDeep); border-radius: 2px; color: var(--bulb); }
+.board .mid { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; }
+.board .mid .inn { font: 400 13px/1 var(--slab); letter-spacing: 0.04em; }
+.board .mid .inn b { color: var(--bulb); font-weight: 400; }
+.board .bulbs { display: grid; grid-template-columns: auto auto; gap: 3px 6px; align-items: center; font: 700 10px/1 var(--type); letter-spacing: 0.08em; }
+.board .bulbs span { display: flex; gap: 3px; }
+.board .bulbs i { width: 9px; height: 9px; border-radius: 50%; background: #13261a; box-shadow: inset 0 1px 1px rgba(0,0,0,0.5); }
+.board .bulbs i.g { background: #7be08a; box-shadow: 0 0 6px #7be08a; }
+.board .bulbs i.rd { background: #ff7b5c; box-shadow: 0 0 6px #ff7b5c; }
+.board .bulbs i.a { background: var(--bulb); box-shadow: 0 0 6px var(--bulb); }
+.board .pc { font: 700 10px/1 var(--type); letter-spacing: 0.08em; text-align: center; color: rgba(246,241,226,0.7); }
+
+/* ---------------- mound */
+.mound { height: 844px; background: #2f5b3c; }
+.mound .stagebox { position: absolute; left: 0; top: 0; width: 390px; height: 610px; }
+.lineupcard { position: absolute; left: 8px; right: 8px; top: 548px; z-index: 4; display: flex; gap: 6px; align-items: stretch; }
+.lineupcard .c { flex: 1; background: #fffaf0; border: 2px solid var(--ink); border-radius: 4px; padding: 6px 10px; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 3px 0 var(--ink); }
+.lineupcard .c b { font: 400 19px/1 var(--slab); }
+.lineupcard .c small { font: 400 12px/1 var(--type); color: var(--ink2); margin-top: 4px; }
+.lineupcard .sc { width: 64px; background: var(--paper); border: 2px solid var(--ink); border-radius: 4px; display: grid; place-items: center; font: 700 10px/1 var(--type); letter-spacing: 0.1em; text-transform: uppercase; box-shadow: 0 3px 0 var(--ink); padding: 6px 0; }
+.mound .dock { position: absolute; left: 0; right: 0; bottom: 0; height: 222px; background: var(--paper); border-top: 3px double var(--ink); padding: 26px 8px 12px; z-index: 3; }
+.cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+.cards .p { height: 92px; background: #fffaf0; border: 2px solid var(--ink); border-radius: 5px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 5px 2px 6px; box-shadow: 0 3px 0 var(--ink); color: var(--ink); }
+.cards .p .gl { color: var(--red); height: 32px; }
+.cards .p b { font: 700 12.5px/1 var(--body); }
+.cards .p small { font: 700 12px/1 var(--type); color: var(--ink2); }
+.cards .p.on { background: var(--red); color: var(--chalk); transform: translateY(-6px); box-shadow: 0 9px 0 #7d2219; border-color: #7d2219; }
+.cards .p.on .gl, .cards .p.on small { color: var(--chalk); }
+.mound .throwrow { display: grid; grid-template-columns: 1fr; margin-top: 14px; }
+.mound .hint { text-align: center; margin-top: 8px; font: 600 19px/1 var(--hand); color: var(--pencil); }
+
+/* ---------------- pitch frames */
+.pitch { height: 844px; background: #2f5b3c; }
+.pitch .stagebox { position: absolute; left: 0; top: 0; width: 390px; height: 844px; }
+.callcard { position: absolute; left: 10px; right: 10px; bottom: 22px; z-index: 4; background: #fffaf0; border: 2px solid var(--ink); border-radius: 6px; box-shadow: 4px 4px 0 var(--ink); display: grid; grid-template-columns: 1fr auto; overflow: hidden; }
+.callcard .a { padding: 11px 14px; }
+.callcard .a b { display: block; font: 400 25px/1 var(--slab); }
+.callcard .a small { display: block; margin-top: 6px; font: 500 15px/1.3 var(--body); color: var(--ink2); }
+.callcard .v { padding: 11px 14px; border-left: 2px solid var(--ink); text-align: center; display: flex; flex-direction: column; justify-content: center; background: var(--paper2); }
+.callcard .v b { font: 400 26px/1 var(--slab); color: var(--red); }
+.callcard .v small { font: 700 10px/1 var(--type); letter-spacing: 0.12em; margin-top: 5px; text-transform: uppercase; color: var(--ink2); }
+.frames { position: absolute; left: 0; right: 0; top: 88px; z-index: 4; display: flex; justify-content: center; gap: 5px; }
+.frames i { width: 10px; height: 10px; border-radius: 50%; background: #13261a; box-shadow: 0 0 0 2px var(--boardDeep); }
+.frames i.on { background: var(--bulb); box-shadow: 0 0 0 2px var(--boardDeep), 0 0 8px var(--bulb); }
+.ptag { position: absolute; z-index: 5; font: 600 21px/1 var(--hand); padding: 1px 6px 3px; border-radius: 3px; white-space: nowrap; }
+
+/* ---------------- end */
+.end { padding: 0 0 24px; }
+.sheet { margin: 12px 10px 0; background: #fffaf0; border: 1px solid var(--rule); box-shadow: 0 3px 0 var(--rule), 0 10px 24px rgba(60,40,10,0.12); padding: 14px 14px 16px; position: relative; }
+.sheet .hd { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 3px double var(--ink); padding-bottom: 8px; }
+.sheet .hd b { font: 400 22px/1 var(--slab); }
+.sheet .hd span { font: 700 11px/1 var(--type); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink2); }
+.final { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 0; margin-top: 10px; border: 1.5px solid var(--ink); }
+.final div { padding: 8px 10px; text-align: center; border-right: 1.5px solid var(--ink); }
+.final div:last-child { border-right: 0; }
+.final b { display: block; font: 400 30px/1 var(--slab); }
+.final small { font: 700 10px/1 var(--type); letter-spacing: 0.12em; color: var(--ink2); text-transform: uppercase; }
+.final .stampcell { display: grid; place-items: center; padding: 4px; }
+.stamp { transform: rotate(-9deg); border: 4px solid var(--red); color: var(--red); border-radius: 8px; padding: 5px 9px 4px; font: 400 25px/0.92 var(--slab); text-align: center; letter-spacing: 0.02em; opacity: 0.92; mix-blend-mode: multiply; background: rgba(255,250,240,0.4); }
+.stamp small { display: block; font: 700 10px/1 var(--type); letter-spacing: 0.2em; margin-top: 3px; }
+.boxes { margin-top: 16px; }
+.boxes .t { display: flex; justify-content: space-between; font: 700 11px/1 var(--type); letter-spacing: 0.14em; color: var(--ink2); text-transform: uppercase; }
+.boxes .row { display: grid; grid-template-columns: repeat(12, 1fr); border: 1.5px solid var(--ink); margin-top: 8px; }
+.boxes .row div { height: 44px; border-right: 1px solid var(--ink); position: relative; display: grid; place-items: center; }
+.boxes .row div:last-child { border-right: 0; }
+.boxes .row div::before { content: attr(data-n); position: absolute; left: 3px; top: 2px; font: 700 8.5px/1 var(--type); color: var(--ink2); }
+.boxes .row div i { width: 18px; height: 18px; border-radius: 50%; display: block; transform: rotate(-8deg); }
+.boxes .row div.green i { background: var(--g); } .boxes .row div.yellow i { background: var(--y); } .boxes .row div.orange i { background: var(--o); } .boxes .row div.red i { background: var(--r); }
+.boxes .key { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; font: 400 12px/1 var(--type); color: var(--ink2); }
+.boxes .key span { display: inline-flex; gap: 5px; align-items: center; }
+.boxes .key i { width: 10px; height: 10px; border-radius: 50%; }
+.notes { margin-top: 14px; display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; }
+.ring { width: 96px; height: 96px; position: relative; display: grid; place-items: center; }
+.ring svg { position: absolute; inset: 0; }
+.ring b { font: 400 34px/1 var(--slab); }
+.ring b sup { font-size: 14px; }
+.notes p { font: 500 15px/1.4 var(--body); color: var(--ink2); }
+.notes p b { color: var(--ink); }
+.notes .hand { font-size: 22px; line-height: 1; color: var(--red); display: block; margin-top: 4px; }
+.pl { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--rule); display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; }
+.pl .label { color: var(--ink2); }
+.pl b { font: 400 22px/1.1 var(--slab); }
+.pl small { grid-column: 1 / -1; font: 500 14px/1.35 var(--body); color: var(--ink2); }
+.pl .sc { grid-row: 1 / span 2; grid-column: 2; text-align: right; }
+.pl .sc b { color: var(--red); }
+.realrow { margin-top: 10px; font: 500 14.5px/1.4 var(--body); color: var(--ink2); background: var(--paper2); padding: 10px 12px; border-radius: 4px; }
+.realrow b { color: var(--ink); }
+.coachsign { margin: 16px 10px 0; display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: center; background: linear-gradient(180deg, #8a5a32, #6e4524); border-radius: 6px; padding: 8px 14px 8px 8px; box-shadow: 0 4px 0 #4b2e16, inset 0 0 0 2px rgba(255,255,255,0.08); color: var(--chalk); position: relative; }
+.coachsign::before { content: ''; position: absolute; inset: 0; border-radius: 6px; background: repeating-linear-gradient(90deg, rgba(0,0,0,0.05) 0 3px, transparent 3px 11px); pointer-events: none; }
+.coachsign .av { width: 64px; height: 64px; background: #3f6a46; border-radius: 4px; position: relative; overflow: hidden; box-shadow: inset 0 0 0 2px rgba(0,0,0,0.3); }
+.coachsign b { display: block; font: 400 21px/1 var(--slab); letter-spacing: 0.01em; text-shadow: 0 2px 0 rgba(0,0,0,0.3); }
+.coachsign small { display: block; margin-top: 5px; font: 600 19px/1 var(--hand); color: #ffe39a; }
+.end .btnrow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 10px 0; }
+
+/* ---------------- coach */
+.coach { padding-bottom: 20px; }
+.dugout { position: relative; height: 290px; overflow: hidden; background: linear-gradient(180deg, #5a6064 0, #4c5256 60%, #3a3f42 100%); }
+.dugout::before { content: ''; position: absolute; inset: 0; background-image: linear-gradient(90deg, rgba(0,0,0,0.12) 2px, transparent 2px), linear-gradient(180deg, rgba(0,0,0,0.12) 2px, transparent 2px); background-size: 46px 22px; }
+.dugout .roof { position: absolute; left: 0; right: 0; top: 0; height: 26px; background: #2b3a2f; box-shadow: 0 4px 0 #1c271f; z-index: 2; }
+.dugout .bench { position: absolute; left: 0; right: 0; bottom: 34px; height: 22px; background: #8a5a32; box-shadow: 0 6px 0 #5e3b1f; z-index: 1; }
+.dugout .rail { position: absolute; left: 0; right: 0; bottom: 0; height: 40px; background: #2f5b3c; border-top: 6px solid #24452e; z-index: 3; }
+.dugout .fig { position: absolute; left: 50%; bottom: 0; width: 300px; height: 280px; margin-left: -150px; z-index: 2; }
+.dugout .rack { position: absolute; left: 18px; top: 50px; width: 70px; height: 110px; z-index: 1; display: flex; gap: 6px; align-items: flex-end; }
+.dugout .rack i { width: 8px; background: #c79a5e; border-radius: 3px 3px 2px 2px; box-shadow: inset -2px 0 0 rgba(0,0,0,0.2); }
+.dugout .who { position: absolute; right: 12px; bottom: 50px; z-index: 4; background: #fffaf0; border: 2px solid var(--ink); border-radius: 4px; padding: 6px 10px; box-shadow: 3px 3px 0 var(--ink); transform: rotate(1.5deg); }
+.dugout .who b { display: block; font: 400 18px/1 var(--slab); }
+.dugout .who small { font: 700 10px/1 var(--type); letter-spacing: 0.12em; color: var(--red); text-transform: uppercase; }
+.dugout .back { position: absolute; left: 12px; top: 38px; z-index: 4; }
+.pad { margin: -14px 10px 0; position: relative; z-index: 5; background: #fffaf0; border: 1px solid var(--rule); box-shadow: 0 3px 0 var(--rule); padding: 8px 14px 14px 46px; background-image: linear-gradient(90deg, transparent 34px, rgba(179,54,43,0.35) 34px 35.5px, transparent 35.5px), repeating-linear-gradient(180deg, transparent 0 29px, rgba(31,43,69,0.13) 29px 30px); }
+.line { font: 500 17px/30px var(--body); color: var(--ink); }
+.line b { font-weight: 700; }
+.line .n { color: var(--red); font-weight: 700; }
+.line.you { font: 600 23px/30px var(--hand); color: var(--red); }
+.pad .sketch { margin: 6px 0 4px; display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; }
+.pad .sketch .k { font: 600 20px/1.15 var(--hand); color: var(--pencil); }
+.pad .sketch .k b { color: var(--ink); }
+.pad .odds { margin: 8px 0 2px; display: grid; gap: 6px; }
+.pad .odds div { display: grid; grid-template-columns: 74px 1fr 52px; gap: 8px; align-items: center; font: 400 13px/1 var(--type); color: var(--ink2); }
+.pad .odds div span.bar { height: 12px; border: 1.5px solid var(--ink); position: relative; }
+.pad .odds div span.bar i { position: absolute; left: 0; top: 0; bottom: 0; background-image: repeating-linear-gradient(135deg, var(--ink) 0 1.5px, transparent 1.5px 5px); }
+.pad .odds div b { font: 700 15px/1 var(--type); color: var(--ink); text-align: right; }
+.clip { margin: 10px 0 2px; border: 2px solid var(--ink); border-radius: 4px; background: var(--paper2); padding: 8px 10px; display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; box-shadow: 3px 3px 0 var(--ink); }
+.clip .label { display: block; margin-bottom: 4px; }
+.clip b { font: 400 17px/1.1 var(--slab); display: block; }
+.clip span { font: 500 14px/1.4 var(--body); color: var(--ink2); display: block; margin-top: 4px; }
+.replies { display: flex; gap: 6px; flex-wrap: wrap; margin: 14px 10px 0; }
+.replies span { padding: 10px 12px; border: 2px solid var(--ink); border-radius: 4px; background: var(--paper); font: 700 12.5px/1 var(--type); letter-spacing: 0.04em; text-transform: uppercase; box-shadow: 0 3px 0 var(--ink); }
+.replies span.go { background: var(--red); color: var(--chalk); border-color: #7d2219; box-shadow: 0 3px 0 #7d2219; }
+
+/* ---------------- wide mound */
+@media (min-width: 900px) {
+  .mound { height: 100vh; }
+  .mound .stagebox { width: calc(100vw - 400px); height: 100vh; }
+  .board { right: auto; width: 520px; left: 18px; top: 18px; }
+  .lineupcard { left: auto; right: 18px; top: 22px; width: 364px; flex-wrap: wrap; }
+  .lineupcard .c { flex: 1 1 100%; }
+  .lineupcard .sc { width: 100%; height: 42px; grid-auto-flow: column; gap: 8px; }
+  .mound .dock { left: auto; right: 0; top: 0; bottom: 0; width: 400px; height: auto; border-top: 0; border-left: 3px double var(--ink); padding: 292px 18px 18px; }
+  .cards { grid-template-columns: 1fr; gap: 9px; }
+  .cards .p { height: 54px; flex-direction: row; padding: 0 14px; gap: 12px; justify-content: flex-start; }
+  .cards .p b { flex: 1; text-align: left; font-size: 17px; }
+  .cards .p small { font-size: 15px; }
+  .cards .p.on { transform: translateX(-8px); }
+  .wideonly { display: block !important; }
+}
+.wideonly { display: none; }
+.scoutkey { width: 100%; background: #fffaf0; border: 2px solid var(--ink); border-radius: 4px; padding: 10px 12px; box-shadow: 0 3px 0 var(--ink); }
+.scoutkey .g { display: flex; height: 12px; margin-top: 8px; border: 1.5px solid var(--ink); }
+.scoutkey .g i { flex: 1; }
+.scoutkey .l { display: flex; justify-content: space-between; margin-top: 5px; font: 400 12px/1 var(--type); color: var(--ink2); }
+.scoutkey p { margin-top: 8px; font: 600 19px/1.1 var(--hand); color: var(--pencil); }
+</style>
+</head>
+<body>
+<div class="mock">mockup · scorecard</div>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2.4" fill="none"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.4" fill="none"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2.6" fill="none"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="9" r="3.6" stroke="currentColor" stroke-width="2.2" fill="none"/><path d="M5 20a7 7 0 0114 0" stroke="currentColor" stroke-width="2.2" fill="none"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="12" cy="12" r="3" fill="currentColor"/></symbol>
+    <symbol id="door2" viewBox="0 0 40 52"><rect x="3" y="3" width="34" height="46" rx="2" fill="#f6f1e2"/><rect x="8" y="8" width="24" height="17" fill="none" stroke="#24452e" stroke-width="2.5"/><rect x="8" y="29" width="24" height="15" fill="none" stroke="#24452e" stroke-width="2.5"/><circle cx="29" cy="27" r="2.6" fill="#b3362b"/></symbol>
+  </defs>
+</svg>
+
+<section data-s="index">
+  <div class="idx">
+    <div class="tiles" style="font-size:26px"><div class="row small"><span class="t">S</span><span class="t">H</span><span class="t">U</span><span class="t">T</span><span class="gap"></span><span class="t r">T</span><span class="t r">H</span><span class="t r">E</span></div><div class="row"><span class="t">D</span><span class="t">O</span><span class="t">O</span><span class="t">R</span></div></div>
+    <h1>Direction B: Scorecard</h1>
+    <p>An old ballpark on a summer afternoon. The game is a program you hold: a hand-hung scoreboard, a pencilled scorecard, and a pitching coach in the dugout. Drawn as pixel art from a 3D model.</p>
+    <ul>
+      <li><a href="?s=brand">Brand</a></li><li><a href="?s=home">Home</a></li><li><a href="?s=menu">Menu</a></li>
+      <li><a href="?s=mound">Mound (try it 1440 wide too)</a></li><li><a href="?s=pitch1">Pitch, frame 1</a></li><li><a href="?s=pitch2">Pitch, frame 2</a></li><li><a href="?s=pitch3">Pitch, frame 3</a></li>
+      <li><a href="?s=end">The end</a></li><li><a href="?s=coach">Pitching coach</a></li>
+    </ul>
+  </div>
+</section>
+
+<section data-s="brand">
+  <div class="screen brand">
+    <div class="top">
+      <div class="label">Est. 2026 · a daily closer game</div>
+      <div class="tiles hero-tiles"><div class="row small"><span class="t">S</span><span class="t">H</span><span class="t">U</span><span class="t">T</span><span class="gap"></span><span class="t r">T</span><span class="t r">H</span><span class="t r">E</span></div><div class="row"><span class="t">D</span><span class="t">O</span><span class="t">O</span><span class="t">R</span></div></div>
+      <div class="sub">Three outs. Your arm.</div>
+      <div class="sub2">runthe.gg · today's program</div>
+    </div>
+    <h3>Paint</h3>
+    <div class="chips">
+      <div style="background:#24452e;color:#f6f1e2">Board<br>#24452E</div>
+      <div style="background:#f3e9d3;color:#1f2b45">Program<br>#F3E9D3</div>
+      <div style="background:#1f2b45;color:#f6f1e2">Ink<br>#1F2B45</div>
+      <div style="background:#b3362b;color:#f6f1e2">Scorer<br>#B3362B</div>
+      <div style="background:#d9a62e;color:#1f2b45">Brass<br>#D9A62E</div>
+    </div>
+    <h3>Type</h3>
+    <div class="spec">
+      <div><span class="slab" style="font-size:34px;line-height:1">Door shut</span><small>Alfa Slab One<br>signs, names</small></div>
+      <div><span style="font:700 22px/1.1 var(--body)">Up one. Nobody on.</span><small>Zilla Slab<br>reading</small></div>
+      <div><span style="font:700 20px/1 var(--type)">91.7 MPH · 29%</span><small>Courier Prime<br>stats</small></div>
+      <div><span class="hand" style="font-size:30px;line-height:1">Bury the curve.</span><small>Caveat<br>the pencil</small></div>
+    </div>
+    <h3>Voice</h3>
+    <div class="voice">
+      <div class="say">"Up one. Nobody on. Get three."</div>
+      <p>The old pitching coach. Plain words, a little dry. Talks after the game, never during it.</p>
+    </div>
+    <h3>Marks</h3>
+    <div class="marks">
+      <div class="icon"><svg width="40" height="52"><use href="#door2"/></svg></div>
+      <div class="pennant"><svg width="240" height="58" viewBox="0 0 240 58"><path d="M2 4 L238 29 L2 54 Z" fill="#b3362b"/><path d="M2 4 L14 4 L14 54 L2 54Z" fill="#7d2219"/><text x="22" y="34.5" font-family="Alfa Slab One" font-size="14" fill="#f6f1e2">SHUT THE DOOR</text></svg></div>
+    </div>
+    <div class="share">Shut The Door #1
+door shut · better than 75% of closers
+pitched like Corey Knebel
+🟩🟨🟩🟨🟩🟨🟩🟧🟩🟥
+🟩🟥
+runthe.gg/shut-the-door</div>
+  </div>
+</section>
+
+<section data-s="home">
+  <div class="screen home">
+    <div class="mast">
+      <div class="lockline"><div class="tiles"><div class="row small"><span class="t">S</span><span class="t">H</span><span class="t">U</span><span class="t">T</span><span class="gap"></span><span class="t r">T</span><span class="t r">H</span><span class="t r">E</span></div><div class="row"><span class="t">D</span><span class="t">O</span><span class="t">O</span><span class="t">R</span></div></div></div>
+      <div class="r"><span class="ibtn"><svg width="20" height="20"><use href="#i-user"/></svg></span><span class="ibtn"><svg width="20" height="20"><use href="#i-menu"/></svg></span></div>
+    </div>
+    <div class="prog"><span>Today's program</span><span>No. 1 · Mon Oct 26</span></div>
+    <div class="photo" id="homePhoto"><div class="cap"><span>Game 7, bottom 11</span><span>real spot</span></div></div>
+    <h1><small>Game 7 · 2025 World Series</small>Up one. Nobody on. Get three.</h1>
+    <div class="linescore">
+      <span></span><span class="h">inn</span><span class="h">R</span><span></span>
+      <span class="tm">LAD</span><span class="cell">11</span><span class="cell hi">5</span><span></span>
+      <span class="tm">TOR</span><span class="cell hi">▼</span><span class="cell hi">4</span><span></span>
+      <div class="note"><span>Outs <b>0</b></span><span>On base <b>none</b></span><span>Walk-off <b>live</b></span></div>
+    </div>
+    <p class="setup">The Dodgers lead 5-4 in Toronto. Guerrero Jr. leads off. Three outs and the door is shut. Two runs and it is over.</p>
+    <div class="bcard">
+      <div class="bh"><div class="port" id="homePort"></div><div class="nm"><small>Yoshinobu</small><b>Yamamoto</b><span>Dodgers · 2025 · RHP</span></div></div>
+      <table class="tbl" id="homeArs"></table>
+    </div>
+    <div class="lineup" id="homeDue"><div class="t label">Due up</div></div>
+    <div class="cta"><div class="ticket"><div class="main"><b>Take the mound</b><small>Admit one · today only</small></div><div class="stub">No.<b>1</b></div></div></div>
+    <div class="streak">0 doors shut in a row</div>
+    <div class="foot">Pitch data from Baseball Savant. An unofficial fan project, not affiliated with or endorsed by MLB or any club.</div>
+  </div>
+</section>
+
+<section data-s="menu">
+  <div class="screen menu">
+    <div class="mt"><h2><small>Today's program</small>Contents</h2><span class="ibtn"><svg width="20" height="20"><use href="#i-x"/></svg></span></div>
+    <div class="today"><b>Game 7, 2025 World Series</b><span>Yamamoto · bottom 11 · up 5-4</span><span class="go">Play</span></div>
+    <div class="toc">
+      <div class="grp">Before you pitch</div>
+      <a><span class="no">1</span><b>How to play</b><span class="dots"></span><span class="pg">2 min</span><small>A pitch and a spot. Three outs.</small></a>
+      <a><span class="no">2</span><b>Pitching 101</b><span class="dots"></span><span class="pg">11 ideas</span><small>What the coach looks for.</small></a>
+      <div class="grp">Your scorebook</div>
+      <a><span class="no">3</span><b>Stats</b><span class="dots"></span><span class="pg">0 shut</span><small>Streak, best, every outing.</small></a>
+      <a><span class="no">4</span><b>Past dailies</b><span class="dots"></span><span class="pg">from No. 2</span><small>Every spot so far.</small></a>
+      <div class="grp">The office</div>
+      <a><span class="no">5</span><b>Settings</b><span class="dots"></span><span class="pg">sound, motion</span><small>Make it yours.</small></a>
+      <a><span class="no">6</span><b>Account</b><span class="dots"></span><span class="pg">sign in</span><small>Keep your streak.</small></a>
+    </div>
+    <div class="foot" style="margin-top:22px">Privacy · Terms · Disclaimer<br>Pitch data from Baseball Savant.</div>
+  </div>
+</section>
+
+<section data-s="mound">
+  <div class="screen mound">
+    <div class="stagebox" id="moundStage"></div>
+    <div class="board" id="moundBoard"></div>
+    <div class="lineupcard">
+      <div class="c"><b>Daulton Varsho</b><small>bats L · .238/.284/.548, 20 HR</small></div>
+      <div class="sc"><svg width="18" height="18"><use href="#i-eye"/></svg>scout</div>
+      <div class="scoutkey wideonly"><span class="label">Scouting: damage on contact</span><div class="g"><i style="background:#e9e2cf"></i><i style="background:#e7c48a"></i><i style="background:#d99a5a"></i><i style="background:#c8643f"></i><i style="background:#b3362b"></i></div><div class="l"><span>.176</span><span>xwOBA</span><span>.484</span></div><p>Chases splitters in the dirt. 64% with two strikes.</p></div>
+    </div>
+    <div class="dock">
+      <div class="cards" id="moundCards"></div>
+      <div class="throwrow"><div class="ticket" style="height:56px"><div class="main"><b style="font-size:21px">Throw the curve</b></div><div class="stub" style="width:64px">0-1</div></div></div>
+      <div class="hint">Tap the spot again to throw.</div>
+    </div>
+  </div>
+</section>
+
+<section data-s="pitch1"><div class="screen pitch" data-f="release"></div></section>
+<section data-s="pitch2"><div class="screen pitch" data-f="mid"></div></section>
+<section data-s="pitch3"><div class="screen pitch" data-f="arrive"></div></section>
+
+<section data-s="end">
+  <div class="screen end">
+    <div class="sheet">
+      <div class="hd"><b>Final</b><span>No. 1 · Game 7, 2025 WS</span></div>
+      <div class="final"><div><b>12</b><small>pitches</small></div><div><b>0</b><small>runs</small></div><div class="stampcell"><div class="stamp">Door shut<small>LAD 5 · TOR 4</small></div></div></div>
+      <div class="boxes">
+        <div class="t"><span>Your calls, graded</span><span>pitch by pitch</span></div>
+        <div class="row" id="endBoxes"></div>
+        <div class="key"><span><i style="background:var(--g)"></i>the call</span><span><i style="background:var(--y)"></i>close</span><span><i style="background:var(--o)"></i>costly</span><span><i style="background:var(--r)"></i>wrong idea</span></div>
+      </div>
+      <div class="notes">
+        <div class="ring"><svg viewBox="0 0 96 96"><circle cx="48" cy="48" r="40" fill="none" stroke="#e0cfa9" stroke-width="8"/><circle cx="48" cy="48" r="40" fill="none" stroke="#b3362b" stroke-width="8" stroke-dasharray="188.5 251.3" transform="rotate(-90 48 48)" stroke-linecap="butt"/></svg><b class="num">75<sup>th</sup></b></div>
+        <p>Better than <b>75%</b> of closers in this spot. Score <b>764</b>.<span class="hand">not bad, kid.</span></p>
+      </div>
+      <div class="pl"><span class="label">You pitched like</span><b>Corey Knebel</b><small>Breaking balls on 33% of your pitches in even counts. He throws 35%.</small></div>
+      <div class="realrow"><b>The real one.</b> Yamamoto shut it in 14 pitches. You matched him.</div>
+    </div>
+    <div class="coachsign"><span class="av" id="endAv"></span><span><b>Talk to pitching coach</b><small>He saw one he didn't like.</small></span></div>
+    <div class="btnrow"><div class="pbtn">Share</div><div class="pbtn">Run it back</div></div>
+  </div>
+</section>
+
+<section data-s="coach">
+  <div class="screen coach">
+    <div class="dugout">
+      <div class="roof"></div>
+      <div class="rack"><i style="height:96px"></i><i style="height:104px"></i><i style="height:92px"></i><i style="height:100px"></i><i style="height:88px"></i></div>
+      <div class="bench"></div>
+      <div class="fig" id="coachFig"></div>
+      <div class="rail"></div>
+      <span class="ibtn back"><svg width="20" height="20"><use href="#i-back"/></svg></span>
+      <div class="who"><small>Pitching coach</small><b>Coach Hank</b></div>
+    </div>
+    <div class="pad" id="coachPad"></div>
+    <div class="replies"><span class="go">Show me the pitch</span><span>Next pitch</span><span>Done</span></div>
+  </div>
+</section>
+
+<script src="../shared/std3d.js"></script>
+<script src="../shared/std-figures.js"></script>
+<script src="../shared/std-scene.js"></script>
+<script src="../shared/std-overlay.js"></script>
+<script src="../shared/std-sample.js"></script>
+<script src="../shared/std-page.js"></script>
+<script>
+(function () {
+  'use strict';
+  const D = window.STD_SAMPLE, OV = window.STD_OV, P = window.STD_PAGE;
+  const wide = () => window.innerWidth >= 900;
+  const RES = 0.4;
+
+  function board(el, count, pitchNo) {
+    const [b, s] = count.split('-').map(Number);
+    const bulbs = (n, on, cls) => Array.from({ length: n }, (_, i) => `<i class="${i < on ? cls : ''}"></i>`).join('');
+    el.innerHTML = `<div class="sc"><span>LAD</span><span class="v">5</span><span>TOR</span><span class="v">4</span></div>
+      <div class="mid"><span class="inn">Bottom <b>11</b></span><svg width="34" height="22" viewBox="0 0 34 22"><g fill="#13261a" stroke="#f6f1e2" stroke-width="1.4"><rect x="13" y="2" width="8" height="8" transform="rotate(45 17 6)"/><rect x="22" y="10" width="8" height="8" transform="rotate(45 26 14)"/><rect x="4" y="10" width="8" height="8" transform="rotate(45 8 14)"/></g></svg><span class="pc">pitch ${pitchNo}</span></div>
+      <div class="bulbs"><span>B</span><span>${bulbs(3, b, 'g')}</span><span>S</span><span>${bulbs(2, s, 'rd')}</span><span>O</span><span>${bulbs(2, 0, 'a')}</span></div>`;
+  }
+  /* a 50% screen in pixel art: every other pixel, as a pattern one render cell to a dot */
+  const CHECK = {};
+  function checker(g, col) {
+    if (!CHECK[col]) {
+      const c = document.createElement('canvas'); c.width = c.height = 2; const x = c.getContext('2d');
+      x.fillStyle = col; x.fillRect(0, 0, 1, 1); x.fillRect(1, 1, 1, 1);
+      const pat = g.createPattern(c, 'repeat'); pat.setTransform(new DOMMatrix().scale(1 / RES)); CHECK[col] = pat;
+    }
+    return CHECK[col];
+  }
+  /* pencil and chalk on the pixel layer */
+  function gridB(gp, cam, o) {
+    OV.drawGrid(gp, cam, {
+      heat: o.heat ? D.batter.heat : null, heatInset: 0.06,
+      heatColor: (v) => { const t = Math.max(0, Math.min(1, (v - 0.17) / 0.32)); const cs = ['#e9e2cf', '#e7c48a', '#d99a5a', '#c8643f', '#b3362b']; return checker(gp, cs[Math.min(4, Math.floor(t * 5))]); },
+      chase: 'rgba(214,224,200,0.95)', chaseW: 2.5, dash: [5, 5],
+      zone: '#f6f1e2', zoneW: 2.6,
+      sel: o.sel,
+      selStyle: (g2, q) => {
+        const cx = (q[0][0] + q[2][0]) / 2, cy = (q[0][1] + q[2][1]) / 2, r = Math.abs(q[1][0] - q[0][0]) * 0.55;
+        g2.save(); g2.strokeStyle = '#d24a3a'; g2.lineWidth = 4; g2.beginPath(); g2.ellipse(cx, cy, r, r * 0.92, -0.2, 0.3, Math.PI * 2 + 0.05); g2.stroke();
+        g2.fillStyle = '#d24a3a'; g2.fillRect(cx - 1.5, cy - 1.5, 3, 3); g2.restore();
+      },
+    }, D.batter);
+  }
+
+  P.on('home', (el) => {
+    const t = el.querySelector('#homeArs');
+    t.innerHTML = '<tr><th></th><th>Pitch</th><th class="r">MPH</th><th class="r">Use</th></tr>' + D.pitcher.arsenal.map((a) => {
+      const pips = Math.round(a.usage * 20);
+      return `<tr><td class="gl">${OV.glyph(a, { size: 24, scale: 0.45, w: 2.2 })}</td><td class="n">${a.name}</td><td class="r num">${a.velo.toFixed(1)}</td><td class="r num"><span class="pips">${Array.from({ length: 6 }, (_, i) => `<i class="${i < pips ? 'on' : ''}"></i>`).join('')}</span> ${Math.round(a.usage * 100)}%</td></tr>`;
+    }).join('');
+    el.querySelector('#homeDue').innerHTML += D.dueUp.map((b, i) => `<div class="r"><i>${i + 1}</i><b>${b.short}<em>${b.bats}</em></b><span class="num">${b.line}</span></div>`).join('');
+    OV.stage(el.querySelector('#homePhoto'), { look: 'day', view: 'hero', frame: 'aim', pitcher: true, cell: 12, w: 350, h: 288, res: 0.42 });
+    P.coach(el.querySelector('#homePort'), 'day', { kind: 'pitcher', pose: 'set', w: 88, h: 104, eye: [3.0, 12, 6.4], look: [0.1, 0, 5.3], frame: 2.3, res: 0.6 });
+  });
+
+  P.on('menu', () => {});
+
+  P.on('mound', (el) => {
+    const W = wide();
+    board(el.querySelector('#moundBoard'), '0-1', 8);
+    el.querySelector('#moundCards').innerHTML = D.pitcher.arsenal.map((a) =>
+      `<div class="p ${a.type === D.moundState.selected ? 'on' : ''}"><span class="gl">${OV.glyph(a, { size: W ? 28 : 32, scale: 0.55, w: 2.4 })}</span><b>${a.name}</b><small class="num">${a.velo.toFixed(1)}</small></div>`).join('');
+    const w = W ? window.innerWidth - 400 : 390, h = W ? window.innerHeight : 610;
+    const st = OV.stage(el.querySelector('#moundStage'), { look: 'day', view: 'mound', frame: 'aim', cell: D.moundState.cell, w, h, res: RES, pixelOverlay: true });
+    gridB(st.gp, st.cam, { sel: D.moundState.cell, heat: W });
+    st.crisp();
+  });
+
+  function pitchFrame(el) {
+    const scr = el.querySelector('.screen'), f = scr.dataset.f;
+    scr.innerHTML = `<div class="stagebox"></div><div class="board"></div><div class="frames"><i class="${f === 'release' ? 'on' : ''}"></i><i class="${f === 'mid' ? 'on' : ''}"></i><i class="${f === 'arrive' ? 'on' : ''}"></i></div><div class="callcard"></div>`;
+    board(scr.querySelector('.board'), f === 'arrive' ? '0-2' : '0-1', 8);
+    const st = OV.stage(scr.querySelector('.stagebox'), { look: 'day', view: 'pitch', frame: f, cell: 21, mitt: f === 'arrive' ? OV.pitch().actual : null, w: 390, h: 844, res: RES, pixelOverlay: true });
+    const gp = st.gp, cam = st.cam, p = OV.pitch(), k = OV.FRAME_K[f];
+    // the chalk trail: square dots, every other sample, growing toward the ball
+    const sp = p.pts.slice(0, k + 1).map((q) => cam.project(q));
+    for (let i = 0; i < sp.length; i += 2) { const u = i / Math.max(1, sp.length - 1), s = 2.5 + 3 * u; gp.fillStyle = `rgba(246,241,226,${0.5 + 0.5 * u})`; gp.fillRect(sp[i][0] - s / 2, sp[i][1] - s / 2, s, s); }
+    if (f === 'arrive') {
+      OV.drawGrid(gp, cam, { zone: '#f6f1e2', zoneW: 2.4, chase: null }, D.batter);
+      const a = cam.project(p.aimed);
+      gp.save(); gp.strokeStyle = '#1f2b45'; gp.lineWidth = 5; gp.beginPath(); gp.moveTo(a[0] - 9, a[1] - 9); gp.lineTo(a[0] + 9, a[1] + 9); gp.moveTo(a[0] + 9, a[1] - 9); gp.lineTo(a[0] - 9, a[1] + 9); gp.stroke(); gp.restore();
+    }
+    // the ball, as a pixel sprite
+    const b = cam.project(p.pts[k]), r = Math.max(3, 0.121 * cam.scaleAt(p.pts[k]) * (f === 'release' ? 1 : 1.5));
+    gp.fillStyle = '#5e5a52'; gp.beginPath(); gp.arc(b[0] + 0.8, b[1] + 0.8, r, 0, 7); gp.fill();
+    gp.fillStyle = '#fffaf0'; gp.beginPath(); gp.arc(b[0], b[1], r, 0, 7); gp.fill();
+    gp.strokeStyle = '#b3362b'; gp.lineWidth = Math.max(1.2, r * 0.22); gp.beginPath(); gp.arc(b[0] - r * 0.95, b[1], r * 0.7, -0.9, 0.9); gp.stroke(); gp.beginPath(); gp.arc(b[0] + r * 0.95, b[1], r * 0.7, Math.PI - 0.9, Math.PI + 0.9); gp.stroke();
+    if (f === 'arrive') { gp.strokeStyle = '#d24a3a'; gp.lineWidth = 3; gp.beginPath(); gp.arc(b[0], b[1], r + 6, 0, 7); gp.stroke(); }
+    st.crisp();
+    if (f === 'arrive') {
+      const a = cam.project(p.aimed);
+      const t1 = document.createElement('span'); t1.className = 'ptag'; t1.textContent = 'aimed here'; t1.style.cssText = `left:${a[0] + 12}px;top:${a[1] + 4}px;color:#1f2b45;background:rgba(255,250,240,0.85)`; scr.appendChild(t1);
+      const t2 = document.createElement('span'); t2.className = 'ptag'; t2.textContent = 'went here'; t2.style.cssText = `left:${b[0] - 104}px;top:${b[1] - 34}px;color:#b3362b;background:rgba(255,250,240,0.85)`; scr.appendChild(t2);
+    }
+    const cc = scr.querySelector('.callcard');
+    if (f === 'arrive') cc.innerHTML = `<div class="a"><b>Swinging strike</b><small>The curve. Aimed low and away. It stayed up a row.</small></div><div class="v"><b>0-2</b><small>count</small></div>`;
+    else cc.innerHTML = `<div class="a"><b>The curve</b><small>${f === 'release' ? 'Out of the hand. Tap to skip.' : 'Dropping, and bending in on the lefty.'}</small></div><div class="v"><b class="num">77.9</b><small>mph</small></div>`;
+  }
+  P.on('pitch1', pitchFrame); P.on('pitch2', pitchFrame); P.on('pitch3', pitchFrame);
+
+  P.on('end', (el) => {
+    el.querySelector('#endBoxes').innerHTML = D.outing.strip.map((b, i) => `<div class="${b}" data-n="${i + 1}"><i></i></div>`).join('');
+    P.coach(el.querySelector('#endAv'), 'day', { w: 64, h: 64, eye: [1.2, 11, 5.6], look: [0, 0, 5.4], frame: 1.45, res: 0.7 });
+  });
+
+  P.on('coach', (el) => {
+    P.coach(el.querySelector('#coachFig'), 'day', { w: 300, h: 280, res: 0.42 });
+    const L = D.lesson;
+    const mini = OV.miniGrid([{ cell: L.call.cell, fill: '#b3362b', label: 'S' }, { cell: L.best.cell, fill: '#1f2b45', label: 'C' }], { cell: 17, gap: 3, rx: 1, zone: '#e0cfa9', chase: '#efe4ca', font: 'Courier Prime, monospace' });
+    const proMini = OV.miniGrid([{ cell: L.pro.cell, fill: '#1f2b45', label: 'F' }], { cell: 11, gap: 2, rx: 1, zone: '#e0cfa9', chase: '#f3e9d3', font: 'Courier Prime, monospace' });
+    el.querySelector('#coachPad').innerHTML = `
+      <div class="line">Door shut. That's the job.</div>
+      <div class="line">One pitch, though. <b>0-2 to Varsho.</b></div>
+      <div class="line">You threw a <b>splitter, middle.</b></div>
+      <div class="line you">what should it have been?</div>
+      <div class="line">A <b>cutter up and away.</b> Out of the zone.</div>
+      <div class="sketch">${mini}<div class="k"><b>S</b> your splitter<br><b>C</b> the cutter<br>stay out of his damage</div></div>
+      <div class="odds"><div>your call<span class="bar"><i style="width:87.5%"></i></span><b>87.5%</b></div><div>the best<span class="bar"><i style="width:93.2%"></i></span><b>93.2%</b></div></div>
+      <div class="line" style="font-size:13px;color:var(--ink2);font-family:var(--type)">chance the door stays shut</div>
+      <div class="line">Middle is where he hits: <span class="n">.412</span> xwOBA.</div>
+      <div class="line">Your splitter there: a hit <span class="n">12%</span> of the time.</div>
+      <div class="line">Up and away: <span class="n">1%</span>.</div>
+      <div class="line"><b>Next time, ahead 0-2:</b> up and away, off the plate.</div>
+      <div class="clip"><div><span class="label">Clipped from 2016</span><b>Chapman to Pence</b><span>NLDS at San Francisco. 2-2, two on, nobody out. Four-seam up and away. Swinging strike three.</span></div>${proMini}</div>`;
+  });
+
+  P.start();
+})();
+</script>
+</body>
+</html>

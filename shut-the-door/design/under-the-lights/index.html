@@ -1,0 +1,643 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Under The Lights mockup</title>
+<style>
+@font-face { font-family: 'Oswald'; src: url(../shared/fonts/oswald-500.woff2) format('woff2'); font-weight: 200 700; }
+:root {
+  --bg: #05080f; --bg2: #0a1020; --glass: rgba(8, 13, 25, 0.74); --glass2: rgba(14, 21, 38, 0.86);
+  --line: rgba(255, 255, 255, 0.11); --line2: rgba(255, 255, 255, 0.2);
+  --text: #f2f4f8; --dim: #9aa6ba; --dim2: #6c7890;
+  --amber: #ffb23f; --amber2: #ff8f1f; --amberGlow: rgba(255, 178, 63, 0.45);
+  --live: #ff3b30; --dodger: #005a9c; --royal: #1d4b8f;
+  --g: #34c759; --y: #ffd60a; --o: #ff9f0a; --r: #ff453a;
+  --disp: 'Oswald', 'Inter', sans-serif; --body: 'Inter', system-ui, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); color: var(--text); font-family: var(--body); -webkit-font-smoothing: antialiased; }
+body { min-height: 100vh; position: relative; }
+section[hidden] { display: none !important; }
+.disp { font-family: var(--disp); text-transform: uppercase; letter-spacing: 0.04em; }
+.num { font-variant-numeric: tabular-nums; }
+.mock { position: absolute; right: 8px; bottom: 6px; font: 600 9px/1 var(--body); letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.35); z-index: 50; pointer-events: none; }
+.screen { position: relative; width: 100%; min-height: 100vh; overflow: hidden; }
+.r3d, .r2d { position: absolute; left: 0; top: 0; display: block; }
+
+/* the lockup */
+.lock { display: flex; align-items: center; gap: 12px; }
+.lock .mark { flex: none; }
+.lock .words { font-family: var(--disp); text-transform: uppercase; line-height: 0.86; }
+.lock .w1 { font-size: 0.42em; letter-spacing: 0.32em; color: var(--dim); font-weight: 500; display: block; padding-left: 0.08em; }
+.lock .w2 { font-size: 1em; letter-spacing: 0.02em; font-weight: 700; display: block; color: var(--text); text-shadow: 0 0 18px rgba(255, 178, 63, 0.25); }
+.lock .w2 em { font-style: normal; color: var(--amber); }
+
+/* the score bug */
+.bug { position: absolute; left: 10px; right: 10px; top: 10px; height: 46px; display: flex; align-items: stretch; background: var(--glass2); border: 1px solid var(--line); border-radius: 10px; backdrop-filter: blur(10px); overflow: hidden; z-index: 5; box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
+.bug > div { display: flex; align-items: center; justify-content: center; padding: 0 10px; border-right: 1px solid var(--line); }
+.bug > div:last-child { border-right: 0; }
+.bug .teams { flex-direction: column; align-items: stretch; justify-content: center; gap: 2px; padding: 0 0 0 0; min-width: 88px; }
+.bug .tm { display: flex; align-items: center; gap: 7px; height: 20px; padding: 0 10px 0 0; font: 600 13px/1 var(--disp); letter-spacing: 0.06em; }
+.bug .tm i { width: 5px; align-self: stretch; }
+.bug .tm b { margin-left: auto; font: 700 16px/1 var(--disp); }
+.bug .tm.us b { color: var(--amber); }
+.bug .inn { font: 700 17px/1 var(--disp); gap: 4px; }
+.bug .inn small { font-size: 10px; color: var(--dim); }
+.bug .outs { gap: 5px; }
+.bug .outs i { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--dim); }
+.bug .outs i.on { background: var(--amber); border-color: var(--amber); }
+.bug .count { flex: 1; flex-direction: column; gap: 2px; }
+.bug .count b { font: 700 19px/1 var(--disp); letter-spacing: 0.05em; }
+.bug .count small, .bug .pc small { font: 600 8.5px/1 var(--body); letter-spacing: 0.14em; color: var(--dim); text-transform: uppercase; }
+.bug .pc { flex-direction: column; gap: 2px; }
+.bug .pc b { font: 700 15px/1 var(--disp); }
+
+/* buttons */
+.btn { display: flex; align-items: center; justify-content: center; gap: 10px; height: 58px; border-radius: 14px; border: 0; font: 700 19px/1 var(--disp); letter-spacing: 0.12em; text-transform: uppercase; color: #1a0f00; background: linear-gradient(180deg, #ffc35c, var(--amber2)); box-shadow: 0 0 0 1px rgba(255,255,255,0.15) inset, 0 10px 30px rgba(255, 143, 31, 0.35); width: 100%; }
+.btn.ghost { background: rgba(255,255,255,0.06); color: var(--text); box-shadow: 0 0 0 1px var(--line2) inset; font-size: 15px; height: 48px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: 6px; background: rgba(0,0,0,0.55); border: 1px solid var(--line); font: 600 11px/1 var(--disp); letter-spacing: 0.1em; text-transform: uppercase; color: var(--text); }
+.chip.live { background: rgba(255, 59, 48, 0.16); border-color: rgba(255, 59, 48, 0.55); color: #ffd2cf; }
+.chip.live::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--live); box-shadow: 0 0 8px var(--live); }
+.eyebrow { font: 600 11px/1 var(--disp); letter-spacing: 0.22em; text-transform: uppercase; color: var(--amber); }
+
+/* ---------------- index */
+.idx { padding: 28px 20px 60px; max-width: 760px; margin: 0 auto; }
+.idx h1 { font: 700 28px/1.1 var(--disp); text-transform: uppercase; letter-spacing: 0.04em; margin: 18px 0 8px; }
+.idx p { color: var(--dim); line-height: 1.5; font-size: 15px; }
+.idx ul { list-style: none; margin-top: 18px; display: grid; gap: 8px; }
+.idx a { display: block; padding: 14px 16px; border-radius: 12px; background: var(--bg2); border: 1px solid var(--line); color: var(--text); text-decoration: none; font-weight: 600; }
+
+/* ---------------- brand */
+.brand { padding: 26px 20px 28px; background: radial-gradient(120% 60% at 50% -10%, rgba(255, 178, 63, 0.22), transparent 60%), radial-gradient(60% 30% at 15% 0%, rgba(120, 160, 255, 0.18), transparent 70%), var(--bg); min-height: 844px; }
+.brand .hero-lock { font-size: 64px; justify-content: center; margin: 22px 0 6px; }
+.brand .tag { text-align: center; font: 600 13px/1 var(--disp); letter-spacing: 0.34em; color: var(--dim); text-transform: uppercase; }
+.brand h3 { font: 600 11px/1 var(--disp); letter-spacing: 0.24em; color: var(--dim2); text-transform: uppercase; margin: 26px 0 10px; }
+.sw { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.sw div { border-radius: 10px; height: 64px; padding: 8px; display: flex; flex-direction: column; justify-content: flex-end; font: 600 10px/1.25 var(--body); border: 1px solid var(--line); }
+.sw div span { opacity: 0.7; font-weight: 500; }
+.typ { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.typ > div { background: var(--bg2); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+.typ .a { font: 700 40px/0.95 var(--disp); text-transform: uppercase; }
+.typ .b { font: 600 22px/1.1 var(--body); }
+.typ small { display: block; margin-top: 8px; color: var(--dim); font-size: 11px; }
+.voice { background: var(--bg2); border: 1px solid var(--line); border-radius: 12px; padding: 14px 14px; display: grid; gap: 9px; }
+.voice p { font: 600 15px/1.3 var(--body); }
+.voice p.q { font: 700 17px/1.1 var(--disp); text-transform: uppercase; letter-spacing: 0.05em; color: var(--amber); }
+.voice small { color: var(--dim); font-size: 12px; line-height: 1.45; }
+.brand .row2 { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.brand .icons { display: flex; align-items: flex-end; gap: 14px; }
+.brand .icons .appicon.s { width: 60px; height: 60px; border-radius: 14px; }
+.brand .icons .appicon.xs { width: 36px; height: 36px; border-radius: 9px; }
+.appicon { width: 96px; height: 96px; border-radius: 22px; background: radial-gradient(90% 70% at 50% 0%, #1b2b4d, #070b14); display: grid; place-items: center; border: 1px solid var(--line2); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+.share { background: #0c1222; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font: 500 12.5px/1.55 ui-monospace, 'DejaVu Sans Mono', monospace; color: #dfe5f1; white-space: pre-wrap; }
+
+/* ---------------- home */
+.home { background: var(--bg); padding-bottom: 28px; }
+.topbar { position: absolute; left: 0; right: 0; top: 0; height: 58px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px 0 16px; z-index: 4; background: linear-gradient(180deg, rgba(5,8,15,0.85), rgba(5,8,15,0)); }
+.topbar .lock { font-size: 25px; gap: 8px; }
+.iconbtn { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: rgba(255,255,255,0.07); border: 1px solid var(--line); color: var(--text); }
+.hero { position: relative; height: 430px; }
+.hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5,8,15,0) 50%, rgba(5,8,15,0.92) 88%, var(--bg)); pointer-events: none; }
+.hero .over { position: absolute; left: 16px; right: 16px; bottom: 6px; z-index: 2; }
+.hero .over .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.hero h1 { font: 700 34px/0.98 var(--disp); text-transform: uppercase; letter-spacing: 0.02em; }
+.hero h1 small { display: block; font-size: 13px; letter-spacing: 0.26em; color: var(--amber); margin-bottom: 8px; font-weight: 600; }
+.l3 { display: flex; margin: 12px 16px 0; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); background: var(--glass2); }
+.l3 > div { flex: 1; padding: 9px 10px; border-right: 1px solid var(--line); }
+.l3 > div:last-child { border-right: 0; }
+.l3 b { display: block; font: 700 17px/1 var(--disp); letter-spacing: 0.04em; text-transform: uppercase; }
+.l3 small { display: block; font: 600 9px/1 var(--body); letter-spacing: 0.14em; color: var(--dim); text-transform: uppercase; margin-top: 5px; }
+.setup { margin: 16px 16px 0; font-size: 15.5px; line-height: 1.5; color: #d6dbe6; }
+.card { margin: 16px 16px 0; border-radius: 16px; background: linear-gradient(180deg, #0e1628, #0a1020); border: 1px solid var(--line); overflow: hidden; }
+.pcard .head { display: flex; align-items: flex-end; gap: 12px; padding: 14px 14px 12px; background: linear-gradient(90deg, rgba(0, 90, 156, 0.55), rgba(0, 90, 156, 0) 75%); border-bottom: 1px solid var(--line); }
+.pcard .head .nm small { display: block; font: 600 12px/1 var(--body); color: #c8d4ea; margin-bottom: 4px; }
+.pcard .head .nm b { font: 700 30px/0.9 var(--disp); text-transform: uppercase; letter-spacing: 0.02em; }
+.pcard .head .meta { margin-left: auto; text-align: right; font: 600 11px/1.45 var(--disp); letter-spacing: 0.12em; color: #c8d4ea; text-transform: uppercase; }
+.ars { padding: 6px 14px 10px; }
+.ars .r { display: grid; grid-template-columns: 30px 1fr 44px 76px 34px; align-items: center; gap: 8px; height: 38px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.ars .r:last-child { border-bottom: 0; }
+.ars .r .gl { color: var(--amber); display: grid; place-items: center; }
+.ars .r .n { font: 600 15px/1 var(--body); }
+.ars .r .v { font: 700 15px/1 var(--disp); text-align: right; }
+.ars .r .bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,0.08); overflow: hidden; }
+.ars .r .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--amber2), var(--amber)); border-radius: 3px; }
+.ars .r .u { font: 600 12px/1 var(--body); color: var(--dim); text-align: right; }
+.ars .hd { display: grid; grid-template-columns: 30px 1fr 44px 76px 34px; gap: 8px; font: 600 9px/1 var(--body); letter-spacing: 0.14em; color: var(--dim2); text-transform: uppercase; padding-top: 8px; }
+.ars .hd span:nth-child(3), .ars .hd span:nth-child(5) { text-align: right; }
+.due { padding: 4px 14px 8px; }
+.due .t { font: 600 11px/1 var(--disp); letter-spacing: 0.22em; color: var(--dim); text-transform: uppercase; padding: 10px 0 6px; }
+.due .r { display: grid; grid-template-columns: 18px 1fr auto; align-items: center; gap: 10px; height: 40px; border-top: 1px solid rgba(255,255,255,0.06); }
+.due .r i { font: 700 13px/1 var(--disp); color: var(--dim2); font-style: normal; }
+.due .r b { font: 600 15px/1.1 var(--body); }
+.due .r b em { font-style: normal; font-size: 11px; color: var(--dim); margin-left: 6px; font-weight: 600; padding: 2px 5px; border-radius: 4px; border: 1px solid var(--line2); }
+.due .r span { font: 500 12.5px/1 var(--body); color: var(--dim); }
+.cta { margin: 20px 16px 0; }
+.streak { text-align: center; margin-top: 10px; font: 600 12px/1 var(--disp); letter-spacing: 0.16em; color: var(--dim); text-transform: uppercase; }
+.streak b { color: var(--text); }
+.foot { margin: 22px 16px 0; text-align: center; color: var(--dim2); font-size: 11.5px; line-height: 1.55; }
+
+/* ---------------- menu */
+.menu { min-height: 844px; background: radial-gradient(100% 50% at 50% 0%, rgba(255,178,63,0.12), transparent 60%), #060a13; padding: 0 0 24px; }
+.menu .mh { display: flex; align-items: center; justify-content: space-between; height: 64px; padding: 0 14px 0 16px; border-bottom: 1px solid var(--line); }
+.menu .mh .lock { font-size: 25px; gap: 8px; }
+.menu .now { margin: 16px; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: linear-gradient(90deg, rgba(255,178,63,0.16), rgba(255,178,63,0.02)); padding: 14px; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; }
+.menu .now .eyebrow { grid-column: 1 / -1; }
+.menu .now b { font: 700 21px/1.05 var(--disp); text-transform: uppercase; letter-spacing: 0.02em; }
+.menu .now span { color: var(--dim); font-size: 13px; }
+.menu .now .go { grid-row: 2 / span 2; grid-column: 2; width: 48px; height: 48px; border-radius: 14px; background: var(--amber); color: #1a0f00; display: grid; place-items: center; }
+.menu nav { margin: 6px 16px 0; border-radius: 16px; border: 1px solid var(--line); overflow: hidden; background: rgba(255,255,255,0.025); }
+.menu nav a { display: grid; grid-template-columns: 42px 1fr auto; align-items: center; gap: 12px; padding: 14px 14px; border-bottom: 1px solid var(--line); color: var(--text); text-decoration: none; }
+.menu nav a:last-child { border-bottom: 0; }
+.menu nav a .ic { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: rgba(255,255,255,0.06); color: var(--amber); }
+.menu nav a b { display: block; font: 700 17px/1 var(--disp); text-transform: uppercase; letter-spacing: 0.06em; }
+.menu nav a small { display: block; margin-top: 5px; color: var(--dim); font-size: 13px; }
+.menu nav a .tail { font: 700 15px/1 var(--disp); color: var(--dim); display: flex; align-items: center; gap: 6px; }
+.menu nav a .tail .lk { font: 600 10px/1 var(--disp); letter-spacing: 0.12em; padding: 4px 6px; border-radius: 5px; border: 1px solid var(--line2); color: var(--dim); }
+.menu .grp { margin: 18px 16px 8px; font: 600 11px/1 var(--disp); letter-spacing: 0.24em; color: var(--dim2); text-transform: uppercase; }
+
+/* ---------------- mound */
+.mound { height: 844px; background: #000; }
+.mound .stagebox { position: absolute; left: 0; top: 0; width: 390px; height: 628px; }
+.mound .stagebox::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 120px; background: linear-gradient(180deg, transparent, rgba(5,8,15,0.95)); pointer-events: none; }
+.bat3 { position: absolute; left: 10px; right: 10px; top: 538px; z-index: 4; display: flex; align-items: center; gap: 10px; }
+.bat3 .nm { flex: 1; display: flex; align-items: stretch; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); background: var(--glass2); }
+.bat3 .nm .stub { width: 6px; background: var(--royal); }
+.bat3 .nm div { padding: 8px 10px; }
+.bat3 .nm b { display: block; font: 700 18px/1 var(--disp); text-transform: uppercase; letter-spacing: 0.04em; }
+.bat3 .nm small { display: block; margin-top: 4px; font: 500 12px/1 var(--body); color: var(--dim); }
+.bat3 .nm small em { font-style: normal; color: var(--text); font-weight: 600; }
+.scout { height: 52px; width: 64px; border-radius: 10px; border: 1px solid var(--line2); background: var(--glass2); display: grid; place-items: center; font: 600 10px/1 var(--disp); letter-spacing: 0.14em; color: var(--dim); text-transform: uppercase; gap: 3px; padding-top: 6px; }
+.dock { position: absolute; left: 0; right: 0; bottom: 0; height: 216px; background: linear-gradient(180deg, rgba(5,8,15,0.96), #05080f); padding: 12px 10px 14px; z-index: 3; }
+.rail { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.rail .p { height: 82px; border-radius: 12px; background: rgba(255,255,255,0.045); border: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--text); }
+.rail .p .gl { color: var(--dim); height: 30px; }
+.rail .p b { font: 600 11.5px/1 var(--disp); letter-spacing: 0.06em; text-transform: uppercase; }
+.rail .p small { font: 500 11px/1 var(--body); color: var(--dim); }
+.rail .p.on { background: linear-gradient(180deg, rgba(255,178,63,0.26), rgba(255,178,63,0.08)); border-color: var(--amber); box-shadow: 0 0 22px rgba(255,178,63,0.25), 0 0 0 1px var(--amber) inset; }
+.rail .p.on .gl, .rail .p.on b { color: var(--amber); }
+.dock .throw { margin-top: 12px; }
+.dock .hint { text-align: center; margin-top: 9px; font: 500 12px/1 var(--body); color: var(--dim); }
+
+/* ---------------- pitch frames */
+.pitch { height: 844px; background: #000; }
+.pitch .stagebox { position: absolute; left: 0; top: 0; width: 390px; height: 844px; }
+.pitch .l3b { position: absolute; left: 10px; right: 10px; bottom: 26px; z-index: 4; display: flex; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: var(--glass2); }
+.pitch .l3b .stub { width: 6px; background: var(--amber); }
+.pitch .l3b .a { flex: 1; padding: 12px 12px; }
+.pitch .l3b .a b { display: block; font: 700 24px/1 var(--disp); text-transform: uppercase; letter-spacing: 0.04em; }
+.pitch .l3b .a small { display: block; margin-top: 6px; color: var(--dim); font-size: 12.5px; }
+.pitch .l3b .v { padding: 12px 14px; border-left: 1px solid var(--line); text-align: right; }
+.pitch .l3b .v b { display: block; font: 700 26px/1 var(--disp); color: var(--amber); }
+.pitch .l3b .v small { display: block; margin-top: 5px; font: 600 9px/1 var(--body); letter-spacing: 0.14em; color: var(--dim); text-transform: uppercase; }
+.pitch .fr { position: absolute; left: 0; right: 0; top: 66px; z-index: 4; display: flex; justify-content: center; gap: 6px; }
+.pitch .fr i { width: 22px; height: 3px; border-radius: 2px; background: rgba(255,255,255,0.25); }
+.pitch .fr i.on { background: var(--amber); }
+.pitch .result { position: absolute; left: 0; right: 0; top: 96px; text-align: center; z-index: 4; }
+
+/* ---------------- end */
+.end { min-height: 844px; background: #04070d; }
+.end .bgstage { position: absolute; left: 0; top: 0; width: 390px; height: 380px; opacity: 0.55; }
+.end .bgstage::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(4,7,13,0.2), #04070d 92%); }
+.end .wrap { position: relative; z-index: 2; padding: 74px 16px 24px; }
+.end .out { text-align: center; }
+.end .out .eyebrow { letter-spacing: 0.3em; }
+.end .out h1 { font: 700 76px/0.88 var(--disp); text-transform: uppercase; letter-spacing: 0.01em; margin-top: 12px; color: #fff; text-shadow: 0 0 30px rgba(255,178,63,0.55), 0 0 2px #fff; }
+.end .out h1 em { font-style: normal; color: var(--amber); }
+.end .out p { margin-top: 12px; color: #cfd6e3; font-size: 15px; }
+.stripbox { margin-top: 22px; padding: 14px; border-radius: 16px; background: var(--glass2); border: 1px solid var(--line); }
+.stripbox .t { display: flex; justify-content: space-between; align-items: baseline; font: 600 11px/1 var(--disp); letter-spacing: 0.2em; color: var(--dim); text-transform: uppercase; }
+.strip { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; margin-top: 12px; }
+.strip i { height: 26px; border-radius: 5px; position: relative; }
+.strip i::after { content: attr(data-n); position: absolute; left: 0; right: 0; top: 31px; text-align: center; font: 600 9.5px/1 var(--body); color: var(--dim2); font-style: normal; }
+.strip .green { background: var(--g); } .strip .yellow { background: var(--y); } .strip .orange { background: var(--o); } .strip .red { background: var(--r); }
+.legend { display: flex; gap: 10px; margin-top: 26px; font: 500 11px/1 var(--body); color: var(--dim); flex-wrap: wrap; }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend i { width: 9px; height: 9px; border-radius: 2px; }
+.stats3 { display: grid; grid-template-columns: 1.3fr 1fr; gap: 8px; margin-top: 8px; }
+.stats3 > div { padding: 12px 14px; border-radius: 14px; background: var(--glass2); border: 1px solid var(--line); }
+.stats3 .pct b { font: 700 40px/1 var(--disp); color: var(--amber); }
+.stats3 .pct b sup { font-size: 16px; vertical-align: 14px; }
+.stats3 small { display: block; color: var(--dim); font-size: 12px; margin-top: 4px; line-height: 1.35; }
+.stats3 .sc b { font: 700 40px/1 var(--disp); }
+.like { margin-top: 8px; padding: 12px 14px; border-radius: 14px; background: var(--glass2); border: 1px solid var(--line); display: grid; grid-template-columns: 1fr; gap: 4px; }
+.like .eyebrow { color: var(--dim); letter-spacing: 0.2em; }
+.like b { font: 700 20px/1.1 var(--disp); text-transform: uppercase; letter-spacing: 0.03em; }
+.like small { color: var(--dim); font-size: 12.5px; line-height: 1.4; }
+.real { margin-top: 8px; padding: 12px 14px; border-radius: 14px; border: 1px dashed var(--line2); font-size: 13px; color: #cfd6e3; line-height: 1.45; }
+.real b { color: var(--text); }
+.coachbtn { margin-top: 16px; display: grid; grid-template-columns: 54px 1fr 24px; align-items: center; gap: 12px; padding: 8px 14px 8px 8px; border-radius: 16px; background: linear-gradient(180deg, #ffc35c, var(--amber2)); color: #1a0f00; box-shadow: 0 10px 34px rgba(255,143,31,0.35); }
+.coachbtn .av { width: 54px; height: 54px; border-radius: 12px; background: #0d1830; position: relative; overflow: hidden; }
+.coachbtn b { display: block; font: 700 19px/1 var(--disp); letter-spacing: 0.08em; text-transform: uppercase; }
+.coachbtn small { display: block; font: 600 12px/1.2 var(--body); margin-top: 4px; opacity: 0.8; }
+.end .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+
+/* ---------------- coach */
+.coach { min-height: 844px; background: #060a13; }
+.coach .top { position: relative; height: 300px; overflow: hidden; background: radial-gradient(70% 60% at 70% 20%, rgba(255,190,90,0.35), transparent 60%), radial-gradient(40% 40% at 15% 30%, rgba(90,140,255,0.25), transparent 70%), linear-gradient(180deg, #0b1427, #060a13); }
+.coach .top .bok { position: absolute; border-radius: 50%; filter: blur(2px); opacity: 0.5; }
+.coach .top .rail { position: absolute; left: 0; right: 0; bottom: 0; height: 64px; background: linear-gradient(180deg, #1a1f2b, #0d1019); border-top: 2px solid #2b3345; z-index: 3; }
+.coach .top .fig { position: absolute; left: 50%; bottom: 0; width: 320px; height: 300px; margin-left: -160px; z-index: 2; }
+.coach .top .back { position: absolute; left: 14px; top: 14px; z-index: 4; }
+.coach .top .who { position: absolute; left: 16px; bottom: 14px; z-index: 4; }
+.coach .top .who b { display: block; font: 700 24px/1 var(--disp); text-transform: uppercase; letter-spacing: 0.04em; }
+.coach .top .who small { font: 600 11px/1 var(--disp); letter-spacing: 0.2em; color: var(--amber); text-transform: uppercase; }
+.chat { padding: 14px 14px 20px; display: grid; gap: 8px; }
+.msg { max-width: 88%; padding: 11px 13px; border-radius: 16px 16px 16px 5px; background: #121b30; border: 1px solid var(--line); font-size: 15px; line-height: 1.42; color: #e8ecf4; }
+.msg.me { justify-self: end; border-radius: 16px 16px 5px 16px; background: rgba(255,178,63,0.16); border-color: rgba(255,178,63,0.4); color: #ffe7c2; font-weight: 600; }
+.msg b { color: #fff; }
+.msg .n { color: var(--amber); font-weight: 700; }
+.diag { max-width: 92%; padding: 12px; border-radius: 16px; background: #0e1628; border: 1px solid var(--line); display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; }
+.diag .k { display: grid; gap: 8px; font-size: 13px; color: #cfd6e3; }
+.diag .k span { display: flex; align-items: center; gap: 8px; }
+.diag .k i { width: 14px; height: 14px; border-radius: 3px; flex: none; }
+.bars { display: grid; gap: 6px; margin-top: 2px; }
+.bars .b { display: grid; grid-template-columns: 70px 1fr 44px; align-items: center; gap: 8px; font-size: 12px; color: var(--dim); }
+.bars .b > div { height: 8px; border-radius: 4px; background: rgba(255,255,255,0.08); overflow: hidden; }
+.bars .b > div i { display: block; height: 100%; border-radius: 4px; }
+.bars .b b { font: 700 14px/1 var(--disp); color: var(--text); text-align: right; }
+.pro { max-width: 92%; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,178,63,0.35); background: linear-gradient(180deg, rgba(255,178,63,0.12), rgba(255,178,63,0.03)); }
+.pro .h { padding: 10px 13px; border-bottom: 1px solid rgba(255,178,63,0.25); display: flex; justify-content: space-between; align-items: center; }
+.pro .h b { font: 700 16px/1 var(--disp); text-transform: uppercase; letter-spacing: 0.04em; }
+.pro .b { padding: 11px 13px; display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; font-size: 13.5px; line-height: 1.45; color: #e8ecf4; }
+.replies { display: flex; gap: 6px; flex-wrap: wrap; padding: 0 14px 18px; }
+.replies span { padding: 10px 14px; border-radius: 999px; border: 1px solid var(--amber); color: var(--amber); font: 600 13.5px/1 var(--body); }
+
+/* ---------------- wide mound (1440) */
+@media (min-width: 900px) {
+  .mound { height: 100vh; }
+  .mound .stagebox { width: calc(100vw - 380px); height: 100vh; }
+  .mound .stagebox::after { display: none; }
+  .bug { right: auto; width: 560px; left: 20px; top: 20px; height: 54px; }
+  .bat3 { left: auto; right: 20px; top: 20px; width: 340px; flex-direction: column; align-items: stretch; gap: 10px; }
+  .bat3 .nm { width: 100%; }
+  .dock { left: auto; right: 0; top: 0; bottom: 0; width: 380px; height: auto; padding: 352px 20px 20px; border-left: 1px solid var(--line); background: linear-gradient(180deg, #070b15, #05080f); }
+  .rail { grid-template-columns: 1fr; gap: 8px; }
+  .rail .p { height: 56px; flex-direction: row; justify-content: flex-start; padding: 0 14px; gap: 14px; }
+  .rail .p b { font-size: 17px; flex: 1; text-align: left; }
+  .rail .p small { font-size: 14px; }
+  .wideonly { display: block !important; }
+  .scout { width: 100%; height: 40px; grid-auto-flow: column; padding-top: 0; }
+}
+.wideonly { display: none; }
+.heatkey { margin-top: 0; padding: 14px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,0.03); }
+.heatkey .t { font: 600 11px/1 var(--disp); letter-spacing: 0.2em; color: var(--dim); text-transform: uppercase; }
+.heatkey .g { height: 10px; border-radius: 5px; margin-top: 10px; background: linear-gradient(90deg, rgba(60,120,255,0.55), rgba(255,178,63,0.6), rgba(255,69,58,0.8)); }
+.heatkey .l { display: flex; justify-content: space-between; margin-top: 6px; color: var(--dim); font-size: 12px; }
+.heatkey p { margin-top: 10px; color: #cfd6e3; font-size: 13px; line-height: 1.45; }
+</style>
+</head>
+<body>
+<div class="mock">mockup · under the lights</div>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="beam" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffe2a6"/><stop offset="1" stop-color="#ff8f1f" stop-opacity="0"/></linearGradient>
+    <symbol id="door" viewBox="0 0 64 80">
+      <rect x="6" y="4" width="52" height="72" rx="5" fill="none" stroke="#f2f4f8" stroke-width="5"/>
+      <path d="M40 9 L53 9 L53 71 L40 71 Z" fill="url(#beam)"/>
+      <path d="M11 9 L40 12 L40 68 L11 71 Z" fill="#f2f4f8"/>
+      <circle cx="34" cy="41" r="2.6" fill="#05080f"/>
+    </symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z" fill="currentColor"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M5 4h9a4 4 0 014 4v12H9a4 4 0 01-4-4z M5 16a4 4 0 014-4h9" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linejoin="round"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M9.3 4v16M14.7 4v16M4 9.3h16M4 14.7h16" stroke="currentColor" stroke-width="1.4"/></symbol>
+    <symbol id="i-stats" viewBox="0 0 24 24"><path d="M5 20V11M12 20V5M19 20v-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2.5" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M4 10h16M9 3v4M15 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="9" r="3.6" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M5 20a7 7 0 0114 0" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4M5 13v6h14v-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" stroke="currentColor" stroke-width="1.8" fill="none"/><circle cx="12" cy="12" r="3" fill="currentColor"/></symbol>
+  </defs>
+</svg>
+
+<!-- =============================================================== INDEX -->
+<section data-s="index">
+  <div class="idx">
+    <div class="lock" style="font-size:40px"><svg class="mark" width="34" height="42"><use href="#door"/></svg><span class="words"><span class="w1">Shut the</span><span class="w2">Door</span></span></div>
+    <h1>Direction A: Under The Lights</h1>
+    <p>A night game broadcast. Every screen is the telecast: a score bug, lower thirds, and a lit, modelled park with a soft crowd behind the plate.</p>
+    <ul>
+      <li><a href="?s=brand">Brand</a></li><li><a href="?s=home">Home</a></li><li><a href="?s=menu">Menu</a></li>
+      <li><a href="?s=mound">Mound (try it 1440 wide too)</a></li><li><a href="?s=pitch1">Pitch, frame 1</a></li><li><a href="?s=pitch2">Pitch, frame 2</a></li><li><a href="?s=pitch3">Pitch, frame 3</a></li>
+      <li><a href="?s=end">The end</a></li><li><a href="?s=coach">Pitching coach</a></li>
+    </ul>
+  </div>
+</section>
+
+<!-- =============================================================== BRAND -->
+<section data-s="brand">
+  <div class="screen brand">
+    <div class="eyebrow" style="text-align:center">a daily closer game · runthe.gg</div>
+    <div class="lock hero-lock"><svg class="mark" width="64" height="80"><use href="#door"/></svg><span class="words"><span class="w1">Shut the</span><span class="w2">D<em>oo</em>r</span></span></div>
+    <div class="tag">Three outs. Your call.</div>
+
+    <h3>Colour</h3>
+    <div class="sw">
+      <div style="background:#05080f;color:#f2f4f8">Midnight<span>#05080F</span></div>
+      <div style="background:#ffb23f;color:#1a0f00">Tower light<span>#FFB23F</span></div>
+      <div style="background:#f2f4f8;color:#05080f">Chalk<span>#F2F4F8</span></div>
+      <div style="background:#ff3b30;color:#fff">On air<span>#FF3B30</span></div>
+    </div>
+
+    <h3>Type</h3>
+    <div class="typ">
+      <div><div class="a">Door<br>shut</div><small>Oswald, condensed caps. The bug, the calls, the headline.</small></div>
+      <div><div class="b">Bottom 11. Up one. Nobody on.</div><small>Inter. Everything you read at length.</small></div>
+    </div>
+
+    <h3>Voice</h3>
+    <div class="voice">
+      <p class="q">The booth at midnight</p>
+      <p>Bottom 11. Up one. Guerrero leads off.</p>
+      <p>Swinging strike. 0-2.</p>
+      <small>Present tense. Calm. The call says what happened and stops. No grades while you pitch. The coach talks after.</small>
+    </div>
+
+    <h3>Icon and share</h3>
+    <div class="row2">
+      <div class="icons"><div class="appicon"><svg width="50" height="62"><use href="#door"/></svg></div><div class="appicon s"><svg width="30" height="38"><use href="#door"/></svg></div><div class="appicon xs"><svg width="18" height="22"><use href="#door"/></svg></div></div>
+      <div class="share">Shut The Door #1
+door shut · better than 75% of closers
+pitched like Corey Knebel
+🟩🟨🟩🟨🟩🟨🟩🟧🟩🟥
+🟩🟥
+runthe.gg/shut-the-door</div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================== HOME -->
+<section data-s="home">
+  <div class="screen home">
+    <div class="topbar">
+      <div class="lock"><svg class="mark" width="22" height="28"><use href="#door"/></svg><span class="words"><span class="w1">Shut the</span><span class="w2">Door</span></span></div>
+      <div style="display:flex;gap:8px"><span class="iconbtn"><svg width="20" height="20"><use href="#i-user"/></svg></span><span class="iconbtn"><svg width="22" height="22"><use href="#i-menu"/></svg></span></div>
+    </div>
+    <div class="hero" id="homeHero">
+      <div class="over">
+        <div class="chips"><span class="chip live">tonight · #1</span><span class="chip">mon oct 26</span><span class="chip">real spot</span></div>
+        <h1><small>Game 7 · 2025 World Series</small>Bottom 11.<br>Up one.</h1>
+      </div>
+    </div>
+    <div class="l3">
+      <div><b class="num">LAD 5-4</b><small>at Toronto</small></div>
+      <div><b>Nobody on</b><small>no outs</small></div>
+      <div><b style="color:#ff8a80">Walk-off</b><small>is live</small></div>
+    </div>
+    <p class="setup">The Dodgers lead 5-4. Guerrero Jr. is up. Three outs and the door is shut. Two runs and it is over.</p>
+
+    <div class="card pcard">
+      <div class="head"><div class="nm"><small>Yoshinobu</small><b>Yamamoto</b></div><div class="meta">LAD · 2025<br>throws right</div></div>
+      <div class="ars" id="homeArs"></div>
+    </div>
+    <div class="card">
+      <div class="due" id="homeDue"><div class="t">Due up</div></div>
+    </div>
+    <div class="cta"><div class="btn"><svg width="18" height="22"><use href="#door"/></svg>Take the mound</div></div>
+    <div class="streak"><b>0</b> doors shut in a row</div>
+    <div class="foot">Pitch data from Baseball Savant. An unofficial fan project, not affiliated with or endorsed by MLB or any club.</div>
+  </div>
+</section>
+
+<!-- =============================================================== MENU -->
+<section data-s="menu">
+  <div class="screen menu">
+    <div class="mh">
+      <div class="lock"><svg class="mark" width="22" height="28"><use href="#door"/></svg><span class="words"><span class="w1">Shut the</span><span class="w2">Door</span></span></div>
+      <span class="iconbtn"><svg width="20" height="20"><use href="#i-x"/></svg></span>
+    </div>
+    <div class="now">
+      <div class="eyebrow">On now · #1</div>
+      <b>Game 7, 2025 World Series</b>
+      <span>Yamamoto · bottom 11 · up 5-4</span>
+      <span class="go"><svg width="20" height="20"><use href="#i-play"/></svg></span>
+    </div>
+    <div class="grp">Learn</div>
+    <nav>
+      <a><span class="ic"><svg width="22" height="22"><use href="#i-book"/></svg></span><span><b>How to play</b><small>Two taps a pitch. Three outs.</small></span><span class="tail"><svg width="18" height="18"><use href="#i-chev"/></svg></span></a>
+      <a><span class="ic"><svg width="22" height="22"><use href="#i-grid"/></svg></span><span><b>Pitching 101</b><small>Eleven ideas the coach uses.</small></span><span class="tail"><svg width="18" height="18"><use href="#i-chev"/></svg></span></a>
+    </nav>
+    <div class="grp">You</div>
+    <nav>
+      <a><span class="ic"><svg width="22" height="22"><use href="#i-stats"/></svg></span><span><b>Stats</b><small>Doors shut, streak, best.</small></span><span class="tail num">0</span></a>
+      <a><span class="ic"><svg width="22" height="22"><use href="#i-cal"/></svg></span><span><b>Past dailies</b><small>Every spot so far.</small></span><span class="tail"><span class="lk">from #2</span></span></a>
+      <a><span class="ic"><svg width="22" height="22"><use href="#i-gear"/></svg></span><span><b>Settings</b><small>Sound, motion, theme.</small></span><span class="tail"><svg width="18" height="18"><use href="#i-chev"/></svg></span></a>
+      <a><span class="ic"><svg width="22" height="22"><use href="#i-user"/></svg></span><span><b>Account</b><small>Sign in to keep your streak.</small></span><span class="tail"><svg width="18" height="18"><use href="#i-chev"/></svg></span></a>
+    </nav>
+    <div class="foot" style="margin-top:20px">Privacy · Terms · Disclaimer<br>Pitch data from Baseball Savant.</div>
+  </div>
+</section>
+
+<!-- =============================================================== MOUND -->
+<section data-s="mound">
+  <div class="screen mound">
+    <div class="stagebox" id="moundStage"></div>
+    <div class="bug" id="moundBug"></div>
+    <div class="bat3">
+      <div class="nm"><span class="stub"></span><div><b>Daulton Varsho</b><small>bats left · <em>.238/.284/.548, 20 HR</em></small></div></div>
+      <div class="scout"><svg width="18" height="18"><use href="#i-eye"/></svg>scout</div>
+      <div class="heatkey wideonly">
+        <div class="t">Scouting: damage on contact</div>
+        <div class="g"></div><div class="l"><span>.176</span><span>xwOBA</span><span>.484</span></div>
+        <p>Chases splitters in the dirt 64% with two strikes.</p>
+      </div>
+    </div>
+    <div class="dock">
+      <div class="rail" id="moundRail"></div>
+      <div class="btn throw">Throw curveball</div>
+      <div class="hint">Pitch and spot picked. Tap the spot again to throw.</div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================== PITCH -->
+<section data-s="pitch1"><div class="screen pitch" data-f="release"></div></section>
+<section data-s="pitch2"><div class="screen pitch" data-f="mid"></div></section>
+<section data-s="pitch3"><div class="screen pitch" data-f="arrive"></div></section>
+
+<!-- =============================================================== END -->
+<section data-s="end">
+  <div class="screen end">
+    <div class="bgstage" id="endStage"></div>
+    <div class="wrap">
+      <div class="out">
+        <div class="eyebrow">Final · #1 · Game 7</div>
+        <h1>Door<br><em>shut</em></h1>
+        <p>12 pitches. 0 runs. Dodgers win 5-4.</p>
+      </div>
+      <div class="stripbox">
+        <div class="t"><span>Your calls, graded</span><span>12 pitches</span></div>
+        <div class="strip" id="endStrip"></div>
+        <div class="legend"><span><i style="background:var(--g)"></i>the call</span><span><i style="background:var(--y)"></i>close</span><span><i style="background:var(--o)"></i>costly</span><span><i style="background:var(--r)"></i>the wrong idea</span></div>
+      </div>
+      <div class="stats3">
+        <div class="pct"><b class="num">75<sup>th</sup></b><small>Better than 75% of closers in this spot.</small></div>
+        <div class="sc"><b class="num">764</b><small>Score</small></div>
+      </div>
+      <div class="like"><span class="eyebrow">You pitched like</span><b>Corey Knebel</b><small>Breaking balls on 33% of your pitches in even counts. He throws 35%.</small></div>
+      <div class="real"><b>The real one.</b> Yamamoto shut it in 14 pitches. You matched him: door shut, no runs.</div>
+      <div class="coachbtn"><span class="av" id="endAv"></span><span><b>Talk to pitching coach</b><small>One pitch to talk about.</small></span><svg width="20" height="20"><use href="#i-chev"/></svg></div>
+      <div class="row"><div class="btn ghost"><svg width="18" height="18"><use href="#i-share"/></svg>Share</div><div class="btn ghost">Run it back</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================== COACH -->
+<section data-s="coach">
+  <div class="screen coach">
+    <div class="top">
+      <span class="bok" style="left:40px;top:40px;width:26px;height:26px;background:#ffd28a"></span>
+      <span class="bok" style="left:300px;top:24px;width:40px;height:40px;background:#ffc46b"></span>
+      <span class="bok" style="left:250px;top:110px;width:18px;height:18px;background:#9fbaff"></span>
+      <span class="bok" style="left:90px;top:130px;width:14px;height:14px;background:#fff1d1"></span>
+      <span class="iconbtn back"><svg width="20" height="20"><use href="#i-back"/></svg></span>
+      <div class="fig" id="coachFig"></div>
+      <div class="rail"></div>
+      <div class="who"><small>Pitching coach</small><b>Coach Hank</b></div>
+    </div>
+    <div class="chat" id="coachChat"></div>
+    <div class="replies"><span>Show me Chapman's pitch</span><span>Next pitch</span><span>Done</span></div>
+  </div>
+</section>
+
+<script src="../shared/std3d.js"></script>
+<script src="../shared/std-figures.js"></script>
+<script src="../shared/std-scene.js"></script>
+<script src="../shared/std-overlay.js"></script>
+<script src="../shared/std-sample.js"></script>
+<script src="../shared/std-page.js"></script>
+<script>
+(function () {
+  'use strict';
+  const D = window.STD_SAMPLE, OV = window.STD_OV, P = window.STD_PAGE;
+  const wide = () => window.innerWidth >= 900;
+  const pct = (u) => Math.round(u * 100) + '%';
+
+  function arsenalRows(el) {
+    el.innerHTML = '<div class="hd"><span></span><span>pitch</span><span>mph</span><span>usage</span><span></span></div>' + D.pitcher.arsenal.map((a) =>
+      `<div class="r"><span class="gl">${OV.glyph(a, { size: 26, scale: 0.5, w: 2 })}</span><span class="n">${a.name}</span><span class="v num">${a.velo.toFixed(1)}</span><span class="bar"><i style="width:${(a.usage / 0.3 * 100).toFixed(0)}%"></i></span><span class="u num">${pct(a.usage)}</span></div>`).join('');
+  }
+  function bug(el, count, pitchNo) {
+    el.innerHTML = `<div class="teams"><div class="tm us"><i style="background:${D.pitcher.color}"></i>LAD<b>5</b></div><div class="tm"><i style="background:#1d4b8f"></i>TOR<b>4</b></div></div>
+      <div class="inn"><small>BOT</small>11</div>
+      <div class="bases"><svg width="34" height="26" viewBox="0 0 34 26"><g fill="none" stroke="#9aa6ba" stroke-width="1.6"><rect x="12.5" y="2.5" width="9" height="9" transform="rotate(45 17 7)"/><rect x="21.5" y="11.5" width="9" height="9" transform="rotate(45 26 16)"/><rect x="3.5" y="11.5" width="9" height="9" transform="rotate(45 8 16)"/></g></svg></div>
+      <div class="outs"><i></i><i></i></div>
+      <div class="count"><b class="num">${count}</b><small>count</small></div>
+      <div class="pc"><b class="num">${pitchNo}</b><small>pitch</small></div>`;
+  }
+
+  /* the grid, A style: a broadcast K-zone. chase cells as faint dashes, the zone as lit chalk */
+  function gridA(g, cam, o) {
+    const heat = o.heat ? D.batter.heat : null;
+    OV.drawGrid(g, cam, {
+      heat, heatInset: 0.04,
+      heatColor: (v) => { const t = Math.max(0, Math.min(1, (v - 0.17) / 0.32)); const c = t < 0.5 ? [60 + t * 2 * 195, 120 + t * 2 * 58, 255 - t * 2 * 192] : [255, 178 - (t - 0.5) * 2 * 109, 63 - (t - 0.5) * 2 * 5]; return `rgba(${c.map(Math.round).join(',')},${0.28 + t * 0.32})`; },
+      chase: 'rgba(255,255,255,0.22)', chaseW: 1, dash: [3, 3],
+      zone: 'rgba(255,255,255,0.92)', zoneW: 1.6, zoneShadow: 'rgba(160,200,255,0.9)',
+      sel: o.sel,
+      selStyle: (g2, q) => {
+        g2.save(); OV.quadPath(g2, q, 0.04); g2.fillStyle = 'rgba(255,178,63,0.28)'; g2.fill();
+        g2.strokeStyle = '#ffb23f'; g2.lineWidth = 2; g2.shadowColor = 'rgba(255,178,63,0.9)'; g2.shadowBlur = 10; g2.stroke();
+        const cx = (q[0][0] + q[2][0]) / 2, cy = (q[0][1] + q[2][1]) / 2, r = Math.abs(q[1][0] - q[0][0]) * 0.22;
+        g2.beginPath(); g2.arc(cx, cy, r, 0, 7); g2.lineWidth = 1.6; g2.stroke();
+        g2.beginPath(); g2.moveTo(cx - r * 1.8, cy); g2.lineTo(cx - r * 0.6, cy); g2.moveTo(cx + r * 0.6, cy); g2.lineTo(cx + r * 1.8, cy); g2.moveTo(cx, cy - r * 1.8); g2.lineTo(cx, cy - r * 0.6); g2.moveTo(cx, cy + r * 0.6); g2.lineTo(cx, cy + r * 1.8); g2.stroke();
+        g2.restore();
+      },
+    }, D.batter);
+  }
+
+  P.on('home', (el) => {
+    arsenalRows(el.querySelector('#homeArs'));
+    el.querySelector('#homeDue').innerHTML += D.dueUp.map((b, i) => `<div class="r"><i>${i + 1}</i><b>${b.short}<em>${b.bats}</em></b><span class="num">${b.line}</span></div>`).join('');
+    const host = el.querySelector('#homeHero');
+    OV.stage(host, { look: 'night', view: 'hero', frame: 'aim', pitcher: true, cell: 12, w: 390, h: 430, res: 0.9 });
+  });
+
+  P.on('mound', (el) => {
+    const W = wide(), host = el.querySelector('#moundStage');
+    bug(el.querySelector('#moundBug'), '0-1', 8);
+    const sel = D.moundState.selected;
+    el.querySelector('#moundRail').innerHTML = D.pitcher.arsenal.map((a) =>
+      `<div class="p ${a.type === sel ? 'on' : ''}"><span class="gl">${OV.glyph(a, { size: W ? 28 : 30, scale: 0.55 })}</span><b>${a.name}</b><small class="num">${a.velo.toFixed(1)}</small></div>`).join('');
+    const w = W ? window.innerWidth - 380 : 390, h = W ? window.innerHeight : 628;
+    const st = OV.stage(host, { look: 'night', view: 'mound', frame: 'aim', cell: D.moundState.cell, w, h, res: W ? 0.8 : 1 });
+    gridA(st.g, st.cam, { sel: D.moundState.cell, heat: W });
+    // the selected pitch's expected shape into the target, faint
+    const p = OV.pitch();
+    st.g.save(); st.g.setLineDash([2, 5]); st.g.strokeStyle = 'rgba(255,178,63,0.55)'; st.g.lineWidth = 1.6; st.g.lineCap = 'round';
+    const tail = p.pts.slice(40).map((q) => { const sh = [q[0] + (p.aimed[0] - p.actual[0]), q[1], q[2] + (p.aimed[2] - p.actual[2])]; return st.cam.project(sh); });
+    st.g.beginPath(); tail.forEach((s, i) => i ? st.g.lineTo(s[0], s[1]) : st.g.moveTo(s[0], s[1])); st.g.stroke(); st.g.restore();
+  });
+
+  function pitchFrame(el) {
+    const scr = el.querySelector('.screen'), f = scr.dataset.f;
+    scr.innerHTML = `<div class="stagebox"></div><div class="bug"></div><div class="fr"><i class="${f === 'release' ? 'on' : ''}"></i><i class="${f === 'mid' ? 'on' : ''}"></i><i class="${f === 'arrive' ? 'on' : ''}"></i></div><div class="l3b"></div>`;
+    bug(scr.querySelector('.bug'), f === 'arrive' ? '0-2' : '0-1', 8);
+    const st = OV.stage(scr.querySelector('.stagebox'), { look: 'night', view: 'pitch', frame: f, cell: 21, mitt: f === 'arrive' ? OV.pitch().actual : null, w: 390, h: 844, res: 0.9 });
+    const g = st.g, cam = st.cam, p = OV.pitch(), k = OV.FRAME_K[f];
+    // the spinless line: where the same throw with no spin would have gone (frame 3 only)
+    if (f === 'arrive') {
+      g.save(); g.setLineDash([3, 5]); g.strokeStyle = 'rgba(170,195,255,0.6)'; g.lineWidth = 1.3;
+      g.beginPath(); p.spinless.slice(20, k + 1).forEach((q, i) => { const s2 = cam.project(q); i ? g.lineTo(s2[0], s2[1]) : g.moveTo(s2[0], s2[1]); }); g.stroke(); g.restore();
+      const e = cam.project(p.spinless[40]); OV.tag(g, Math.min(e[0] + 10, st.w - 64), e[1], 'NO SPIN', { font: '600 9.5px Oswald, sans-serif', color: '#c9d6ff', bg: 'rgba(8,13,25,0.8)' });
+    }
+    // the tracer: a lit ribbon, thin and faint at the hand, full at the ball
+    const sp = p.pts.slice(0, k + 1).map((q) => cam.project(q));
+    for (let i = 1; i < sp.length; i++) {
+      const u = i / sp.length;
+      g.strokeStyle = `rgba(255,${180 + 40 * u | 0},${70 + 60 * u | 0},${0.25 + 0.75 * u})`; g.lineWidth = 1.5 + 3.5 * u; g.lineCap = 'round';
+      g.shadowColor = 'rgba(255,150,40,0.9)'; g.shadowBlur = 10;
+      g.beginPath(); g.moveTo(sp[i - 1][0], sp[i - 1][1]); g.lineTo(sp[i][0], sp[i][1]); g.stroke();
+    }
+    g.shadowBlur = 0;
+    if (f === 'arrive') {
+      OV.drawGrid(g, cam, { zone: 'rgba(255,255,255,0.7)', zoneW: 1.2, chase: null }, D.batter);
+      const a = cam.project(p.aimed), b = cam.project(p.actual);
+      g.save(); g.strokeStyle = 'rgba(255,255,255,0.95)'; g.setLineDash([3, 3]); g.lineWidth = 1.5; g.beginPath(); g.arc(a[0], a[1], 10, 0, 7); g.stroke();
+      g.beginPath(); g.moveTo(a[0] - 4, a[1] - 4); g.lineTo(a[0] + 4, a[1] + 4); g.moveTo(a[0] + 4, a[1] - 4); g.lineTo(a[0] - 4, a[1] + 4); g.setLineDash([]); g.stroke(); g.restore();
+      OV.tag(g, a[0] - 16, a[1] + 4, 'AIMED', { align: 'right', font: '600 10px Oswald, sans-serif' });
+      OV.tag(g, b[0] - 22, b[1] - 6, 'WENT', { align: 'right', font: '600 10px Oswald, sans-serif', color: '#1a0f00', bg: '#ffb23f' });
+    }
+    OV.ballAt(g, cam, p.pts[k], { prev: p.pts[Math.max(0, k - 3)], blur: 'rgba(255,255,255,0.35)', glow: 'rgba(255,220,160,0.9)', seam: '#c8372d', grow: f === 'release' ? 1.0 : 1.5 });
+    const l3 = scr.querySelector('.l3b');
+    if (f === 'arrive') l3.innerHTML = `<span class="stub" style="background:#ff453a"></span><div class="a"><b>Swinging strike</b><small>Curveball. Aimed down and away. It stayed up.</small></div><div class="v"><b class="num">0-2</b><small>count</small></div>`;
+    else l3.innerHTML = `<span class="stub"></span><div class="a"><b>Curveball</b><small>${f === 'release' ? 'Out of the hand. Tap to skip.' : 'Dropping, and bending in toward the lefty.'}</small></div><div class="v"><b class="num">77.9</b><small>mph</small></div>`;
+  }
+  P.on('pitch1', pitchFrame); P.on('pitch2', pitchFrame); P.on('pitch3', pitchFrame);
+
+  P.on('end', (el) => {
+    el.querySelector('#endStrip').innerHTML = D.outing.strip.map((b, i) => `<i class="${b}" data-n="${i + 1}"></i>`).join('');
+    OV.stage(el.querySelector('#endStage'), { look: 'night', view: 'cf', frame: 'arrive', pitcher: true, w: 390, h: 380, res: 0.6 });
+    P.coach(el.querySelector('#endAv'), 'night', { w: 54, h: 54, eye: [1.2, 11, 5.6], look: [0, 0, 5.45], frame: 1.35, res: 2 });
+  });
+
+  P.on('coach', (el) => {
+    P.coach(el.querySelector('#coachFig'), 'night', { w: 320, h: 300, res: 1.2 });
+    const L = D.lesson;
+    const mini = OV.miniGrid([{ cell: L.call.cell, fill: '#ff453a', label: 'S' }, { cell: L.best.cell, fill: '#ffb23f', label: 'C', labelColor: '#1a0f00' }], { cell: 17, gap: 3, zone: 'rgba(255,255,255,0.16)', chase: 'rgba(255,255,255,0.06)', font: 'Oswald, sans-serif' });
+    const proMini = OV.miniGrid([{ cell: L.pro.cell, fill: '#ffb23f', label: 'F', labelColor: '#1a0f00' }], { cell: 11, gap: 2, zone: 'rgba(255,255,255,0.16)', chase: 'rgba(255,255,255,0.06)', font: 'Oswald, sans-serif' });
+    el.querySelector('#coachChat').innerHTML = `
+      <div class="msg">Door shut. Good work tonight.</div>
+      <div class="msg">One pitch I want back. <b>0-2 to Varsho.</b> You threw a <b>splitter, middle</b>.</div>
+      <div class="msg me">What should it have been?</div>
+      <div class="msg">A <b>cutter up and away</b>. Out of the zone. Stay out of his damage.</div>
+      <div class="diag">${mini}<div class="k"><span><i style="background:#ff453a"></i>Your splitter, middle</span><span><i style="background:#ffb23f"></i>Cutter, up and away</span>
+        <div class="bars"><div class="b">your call<div><i style="width:87.5%;background:#ff453a"></i></div><b class="num">87.5%</b></div><div class="b">the best<div><i style="width:93.2%;background:#ffb23f"></i></div><b class="num">93.2%</b></div></div><span style="color:var(--dim);font-size:11.5px">chance the door stays shut</span></div></div>
+      <div class="msg">Middle is where Varsho hits. <span class="n">.412</span> xwOBA on contact. Your splitter there gives up a hit <span class="n">12%</span> of the time. Up and away: <span class="n">1%</span>.</div>
+      <div class="msg"><b>Next time, ahead 0-2:</b> keep it up and away, out of the zone.</div>
+      <div class="msg">Here's a closer doing it.</div>
+      <div class="pro"><div class="h"><b>Chapman to Pence</b><span class="chip">2016 · NLDS at SF</span></div>
+        <div class="b"><span>2-2. Runners on first and second. Nobody out. Four-seam, up and away. <b>Swinging strike three.</b></span>${proMini}</div></div>`;
+  });
+
+  P.start();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Pitch Lab mockup</title>
+<style>
+@font-face { font-family: 'Space Grotesk'; src: url(../shared/fonts/spacegrotesk-500.woff2) format('woff2'); font-weight: 300 700; }
+:root {
+  --bg: #f4f5f7; --card: #ffffff; --ink: #0d1220; --ink2: #3a4254; --slate: #6b7385; --line: #e4e7ed; --line2: #d5d9e1;
+  --sig: #ff4f1f; --sigSoft: #fff0eb; --blue: #2b59ff; --blueSoft: #edf1ff;
+  --g: #1fb85a; --y: #f2c230; --o: #ff8a1f; --r: #f03e3e;
+  --disp: 'Space Grotesk', 'Inter', sans-serif; --body: 'Inter', system-ui, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); color: var(--ink); font-family: var(--body); -webkit-font-smoothing: antialiased; }
+body { min-height: 100vh; position: relative; }
+section[hidden] { display: none !important; }
+.mock { position: absolute; right: 8px; bottom: 6px; font: 600 9px/1 var(--body); letter-spacing: 0.06em; color: rgba(13,18,32,0.35); z-index: 50; }
+.screen { position: relative; width: 100%; min-height: 100vh; overflow: hidden; }
+.r3d, .r2d { position: absolute; left: 0; top: 0; display: block; }
+.num { font-variant-numeric: tabular-nums; }
+.d { font-family: var(--disp); }
+
+/* the mark: the strike zone, its third column swung shut */
+.wm { display: inline-flex; align-items: center; gap: 9px; white-space: nowrap; font: 700 21px/1 var(--disp); letter-spacing: -0.02em; color: var(--ink); }
+.wm i { color: var(--sig); font-style: normal; }
+.btn { display: flex; align-items: center; justify-content: center; gap: 10px; height: 58px; border-radius: 999px; background: var(--ink); color: #fff; font: 600 17px/1 var(--disp); letter-spacing: -0.01em; }
+.btn .ar { width: 30px; height: 30px; border-radius: 50%; background: var(--sig); display: grid; place-items: center; }
+.btn.light { background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--line2); height: 50px; font-size: 15px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 999px; background: rgba(255,255,255,0.92); font: 600 12px/1 var(--body); color: var(--ink); box-shadow: 0 1px 2px rgba(13,18,32,0.08); }
+.pill.dark { background: var(--ink); color: #fff; }
+.pill.sig { background: var(--sig); color: #fff; }
+.cap { font: 600 11px/1 var(--body); letter-spacing: 0.06em; text-transform: uppercase; color: var(--slate); }
+.card { background: var(--card); border-radius: 20px; box-shadow: 0 1px 2px rgba(13,18,32,0.05), 0 0 0 1px var(--line); }
+
+/* ---------------- index */
+.idx { padding: 28px 20px 60px; max-width: 760px; margin: 0 auto; }
+.idx h1 { font: 700 28px/1.1 var(--disp); letter-spacing: -0.02em; margin: 20px 0 8px; }
+.idx p { color: var(--ink2); line-height: 1.5; }
+.idx ul { list-style: none; margin-top: 18px; display: grid; gap: 8px; }
+.idx a { display: block; padding: 14px 16px; border-radius: 14px; background: var(--card); box-shadow: 0 0 0 1px var(--line); color: var(--ink); text-decoration: none; font-weight: 600; }
+
+/* ---------------- brand */
+.brand { padding: 24px 18px 30px; background: var(--card); }
+.brand .bhero { display: grid; place-items: center; gap: 16px; padding: 30px 0 26px; border-radius: 24px; background: var(--bg); }
+.brand .bhero .wm { font-size: 34px; gap: 12px; }
+.brand .bhero p { font: 500 15px/1 var(--disp); color: var(--slate); }
+.brand h3 { margin: 24px 0 10px; }
+.sw { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 8px; }
+.sw div { height: 78px; border-radius: 14px; padding: 9px; display: flex; flex-direction: column; justify-content: flex-end; font: 600 11px/1.3 var(--body); }
+.sw div span { font-weight: 500; opacity: 0.75; }
+.ty { display: grid; gap: 8px; }
+.ty > div { border-radius: 14px; background: var(--bg); padding: 12px 14px; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.ty small { color: var(--slate); font-size: 11px; text-align: right; }
+.voice { border-radius: 14px; background: var(--bg); padding: 14px; }
+.voice .say { font: 600 22px/1.15 var(--disp); letter-spacing: -0.02em; }
+.voice p { margin-top: 8px; color: var(--ink2); font-size: 14px; line-height: 1.45; }
+.icons { display: flex; gap: 14px; align-items: flex-end; }
+.appicon { width: 92px; height: 92px; border-radius: 22px; background: var(--ink); display: grid; place-items: center; box-shadow: 0 10px 24px rgba(13,18,32,0.25); }
+.appicon.l { background: #fff; box-shadow: 0 0 0 1px var(--line), 0 10px 24px rgba(13,18,32,0.08); }
+.share { margin-top: 12px; border-radius: 14px; background: var(--bg); padding: 12px 14px; font: 500 12.5px/1.55 ui-monospace, 'DejaVu Sans Mono', monospace; white-space: pre-wrap; }
+
+/* ---------------- app bars */
+.appbar { display: flex; align-items: center; justify-content: space-between; height: 58px; padding: 0 14px 0 16px; }
+.ib { width: 40px; height: 40px; border-radius: 50%; background: var(--card); box-shadow: 0 0 0 1px var(--line); display: grid; place-items: center; color: var(--ink); }
+.tabs { position: fixed; left: 10px; right: 10px; bottom: 12px; height: 64px; border-radius: 22px; background: rgba(255,255,255,0.94); backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(13,18,32,0.14), 0 0 0 1px var(--line); display: grid; grid-template-columns: repeat(5, 1fr); z-index: 20; }
+.tabs a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; color: var(--slate); font: 600 10.5px/1 var(--body); text-decoration: none; }
+.tabs a.on { color: var(--ink); }
+.tabs a.on svg { color: var(--sig); }
+
+/* ---------------- home */
+.home { padding-bottom: 96px; }
+.hero { margin: 0 12px; height: 330px; border-radius: 24px; overflow: hidden; position: relative; background: #dfe5ee; }
+.hero .top { position: absolute; left: 12px; right: 12px; top: 12px; display: flex; gap: 6px; z-index: 3; }
+.hero .bot { position: absolute; left: 0; right: 0; bottom: 0; padding: 40px 16px 14px; z-index: 3; background: linear-gradient(180deg, rgba(13,18,32,0), rgba(13,18,32,0.78)); color: #fff; }
+.hero .bot small { font: 600 12px/1 var(--body); opacity: 0.85; }
+.hero .bot h1 { font: 700 30px/1.02 var(--disp); letter-spacing: -0.03em; margin-top: 6px; }
+.state { margin: 10px 12px 0; display: grid; grid-template-columns: 1.15fr 1fr 1fr 1fr; gap: 6px; }
+.state > div { background: var(--card); border-radius: 16px; box-shadow: 0 0 0 1px var(--line); padding: 10px 10px 9px; }
+.state b { display: block; font: 700 19px/1 var(--disp); letter-spacing: -0.02em; }
+.state small { display: block; margin-top: 5px; font: 500 11px/1 var(--body); color: var(--slate); }
+.state .wl b { color: var(--sig); }
+.setup { margin: 14px 18px 0; font-size: 15px; line-height: 1.5; color: var(--ink2); }
+.pc { margin: 12px 12px 0; padding: 14px; }
+.pc .hd { display: flex; align-items: center; gap: 12px; }
+.pc .hd .av { width: 50px; height: 50px; border-radius: 50%; background: #e8eef8; position: relative; overflow: hidden; box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px #005a9c; }
+.pc .hd b { display: block; font: 700 20px/1.1 var(--disp); letter-spacing: -0.02em; }
+.pc .hd small { font: 500 12.5px/1.2 var(--body); color: var(--slate); }
+.pc .body { display: grid; grid-template-columns: 132px 1fr; gap: 12px; margin-top: 14px; align-items: center; }
+.mvchart { width: 132px; height: 132px; border-radius: 14px; background: var(--bg); position: relative; }
+.mvlist .r { display: grid; grid-template-columns: 10px 1fr auto auto; gap: 8px; align-items: center; height: 26px; font-size: 13.5px; }
+.mvlist .r i { width: 10px; height: 10px; border-radius: 50%; }
+.mvlist .r b { font-weight: 600; }
+.mvlist .r span { font: 600 13px/1 var(--disp); color: var(--ink); }
+.mvlist .r em { font-style: normal; font: 500 12px/1 var(--body); color: var(--slate); width: 30px; text-align: right; }
+.due { margin: 12px 12px 0; padding: 6px 14px 8px; }
+.due .r { display: grid; grid-template-columns: 26px 1fr auto; gap: 10px; align-items: center; height: 44px; border-bottom: 1px solid var(--line); }
+.due .r:last-child { border-bottom: 0; }
+.due .r i { width: 26px; height: 26px; border-radius: 50%; background: var(--bg); display: grid; place-items: center; font: 700 12px/1 var(--disp); font-style: normal; color: var(--slate); }
+.due .r b { font-weight: 600; font-size: 15px; }
+.due .r b em { font-style: normal; font-size: 11px; color: var(--slate); margin-left: 6px; }
+.due .r span { font: 500 12.5px/1 var(--disp); color: var(--slate); }
+.home .cta { margin: 16px 12px 0; }
+.home .streak { text-align: center; margin-top: 10px; color: var(--slate); font-size: 13px; }
+
+/* ---------------- menu sheet */
+.menu { background: rgba(13,18,32,0.42); min-height: 844px; }
+.menu .under { position: absolute; inset: 0; filter: blur(1.5px); opacity: 0.6; }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--bg); border-radius: 26px 26px 0 0; padding: 10px 12px 96px; box-shadow: 0 -10px 40px rgba(13,18,32,0.2); }
+.sheet .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line2); margin: 0 auto 12px; }
+.sheet h2 { font: 700 24px/1 var(--disp); letter-spacing: -0.02em; padding: 4px 6px 12px; }
+.statsrow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.statsrow > div { background: var(--card); border-radius: 16px; box-shadow: 0 0 0 1px var(--line); padding: 12px; }
+.statsrow b { display: block; font: 700 26px/1 var(--disp); letter-spacing: -0.03em; }
+.statsrow small { display: block; margin-top: 5px; color: var(--slate); font-size: 11.5px; }
+.grp { margin-top: 10px; background: var(--card); border-radius: 18px; box-shadow: 0 0 0 1px var(--line); overflow: hidden; }
+.grp a { display: grid; grid-template-columns: 36px 1fr auto; gap: 12px; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--line); color: var(--ink); text-decoration: none; }
+.grp a:last-child { border-bottom: 0; }
+.grp a .ic { width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; }
+.grp a b { display: block; font: 600 15.5px/1.1 var(--body); }
+.grp a small { display: block; margin-top: 3px; color: var(--slate); font-size: 12.5px; }
+.grp a .t { color: var(--slate); font: 600 12px/1 var(--body); display: flex; align-items: center; gap: 4px; }
+.lock { font: 600 11px/1 var(--body); padding: 5px 8px; border-radius: 999px; background: var(--bg); color: var(--slate); }
+
+/* ---------------- mound */
+.mound { height: 844px; background: var(--bg); }
+.mound .stagebox { position: absolute; left: 0; top: 0; width: 390px; height: 600px; }
+.hud { position: absolute; left: 10px; right: 10px; top: 10px; z-index: 5; display: flex; gap: 6px; align-items: stretch; }
+.hud .st { flex: 1; display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.94); border-radius: 18px; padding: 0 12px; height: 54px; box-shadow: 0 4px 14px rgba(13,18,32,0.12); }
+.hud .st .sc { font: 700 17px/1 var(--disp); letter-spacing: -0.02em; white-space: nowrap; }
+.hud .st .sc span { color: var(--slate); font-weight: 500; font-size: 12px; margin-left: 4px; }
+.hud .st .sep { width: 1px; align-self: stretch; margin: 12px 0; background: var(--line2); }
+.hud .st .outs { display: flex; gap: 4px; }
+.hud .st .outs i { width: 8px; height: 8px; border-radius: 50%; background: var(--line2); }
+.hud .ct { width: 78px; background: var(--ink); color: #fff; border-radius: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(13,18,32,0.2); }
+.hud .ct b { font: 700 24px/1 var(--disp); letter-spacing: -0.02em; }
+.hud .ct small { font: 500 10px/1 var(--body); opacity: 0.7; margin-top: 3px; }
+.batchip { position: absolute; left: 10px; top: 520px; z-index: 5; display: flex; gap: 6px; right: 10px; }
+.batchip .b { flex: 1; display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.95); border-radius: 16px; padding: 8px 12px; box-shadow: 0 4px 14px rgba(13,18,32,0.12); }
+.batchip .b .h { width: 30px; height: 30px; border-radius: 50%; background: var(--blueSoft); color: var(--blue); display: grid; place-items: center; font: 700 13px/1 var(--disp); }
+.batchip .b b { display: block; font: 600 15px/1.1 var(--body); }
+.batchip .b small { font: 500 12px/1 var(--disp); color: var(--slate); }
+.batchip .s { width: 64px; background: rgba(255,255,255,0.95); border-radius: 16px; display: grid; place-items: center; font: 600 11px/1 var(--body); color: var(--ink2); box-shadow: 0 4px 14px rgba(13,18,32,0.12); padding: 6px 0; }
+.mound .dock { position: absolute; left: 0; right: 0; bottom: 0; height: 244px; background: var(--card); border-radius: 26px 26px 0 0; box-shadow: 0 -8px 30px rgba(13,18,32,0.08); padding: 16px 12px 14px; z-index: 4; }
+.seg { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.seg .p { height: 92px; border-radius: 16px; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--ink); }
+.seg .p .gl { color: var(--slate); }
+.seg .p b { font: 600 12px/1 var(--body); }
+.seg .p small { font: 600 12px/1 var(--disp); color: var(--slate); }
+.seg .p.on { background: var(--ink); color: #fff; }
+.seg .p.on .gl { color: var(--sig); }
+.seg .p.on small { color: rgba(255,255,255,0.7); }
+.mound .btn { margin-top: 12px; }
+.mound .hint { text-align: center; margin-top: 9px; color: var(--slate); font-size: 12.5px; }
+
+/* ---------------- pitch */
+.pitch { height: 844px; background: var(--bg); }
+.pitch .stagebox { position: absolute; left: 0; top: 0; width: 390px; height: 844px; }
+.res { position: absolute; left: 10px; right: 10px; bottom: 14px; z-index: 5; background: rgba(255,255,255,0.96); border-radius: 22px; box-shadow: 0 10px 30px rgba(13,18,32,0.15); padding: 14px; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; }
+.res b { font: 700 24px/1.05 var(--disp); letter-spacing: -0.02em; }
+.res small { grid-column: 1; color: var(--ink2); font-size: 13.5px; line-height: 1.35; }
+.res .v { grid-row: 1 / span 2; grid-column: 2; text-align: right; }
+.res .v b { display: block; font-size: 30px; color: var(--sig); }
+.res .v small { font: 500 11px/1 var(--body); color: var(--slate); }
+.res .mv { grid-column: 1 / -1; margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--line); display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.res .mv div { background: var(--bg); border-radius: 12px; padding: 8px 10px; }
+.res .mv div b { font-size: 18px; display: block; }
+.res .mv div span { font-size: 11.5px; color: var(--slate); }
+.prog { position: absolute; left: 0; right: 0; top: 74px; z-index: 5; display: flex; justify-content: center; gap: 5px; }
+.prog i { width: 26px; height: 4px; border-radius: 2px; background: rgba(13,18,32,0.18); }
+.prog i.on { background: var(--sig); }
+
+/* ---------------- end */
+.end { padding: 0 0 24px; }
+.end .top { padding: 20px 18px 6px; }
+.end h1 { font: 700 56px/0.92 var(--disp); letter-spacing: -0.05em; }
+.end h1 i { color: var(--sig); font-style: normal; }
+.end .sub { margin-top: 10px; color: var(--ink2); font-size: 15px; }
+.blk { margin: 12px 12px 0; padding: 14px; }
+.blk .t { display: flex; justify-content: space-between; align-items: baseline; }
+.blk .t b { font: 600 15px/1 var(--body); }
+.blk .t span { color: var(--slate); font-size: 12px; }
+.strip { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; margin-top: 12px; }
+.strip div { aspect-ratio: 1; border-radius: 7px; display: grid; place-items: center; font: 700 11px/1 var(--disp); color: rgba(255,255,255,0.95); }
+.strip .green { background: var(--g); } .strip .yellow { background: var(--y); color: rgba(13,18,32,0.7); } .strip .orange { background: var(--o); } .strip .red { background: var(--r); }
+.key { display: flex; gap: 12px; margin-top: 10px; font-size: 11.5px; color: var(--slate); flex-wrap: wrap; }
+.key span { display: inline-flex; align-items: center; gap: 5px; }
+.key i { width: 9px; height: 9px; border-radius: 3px; }
+.dist { margin-top: 10px; }
+.dist .big { display: flex; align-items: baseline; gap: 10px; }
+.dist .big b { font: 700 42px/1 var(--disp); letter-spacing: -0.04em; }
+.dist .big b sup { font-size: 16px; vertical-align: 18px; }
+.dist .big span { color: var(--ink2); font-size: 13.5px; line-height: 1.35; }
+.hist { position: relative; height: 72px; margin-top: 24px; display: flex; align-items: flex-end; gap: 2px; }
+.hist i { flex: 1; background: var(--line2); border-radius: 3px 3px 0 0; }
+.hist i.mine { background: var(--sig); }
+.hist .mk { position: absolute; top: -18px; transform: translateX(-50%); font: 700 11px/1 var(--disp); color: var(--sig); white-space: nowrap; }
+.histx { display: flex; justify-content: space-between; color: var(--slate); font: 500 11px/1 var(--disp); margin-top: 5px; }
+.histn { margin-top: 8px; color: var(--slate); font-size: 11.5px; line-height: 1.4; }
+.duo { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 6px 12px 0; }
+.duo > div { padding: 12px 14px; }
+.duo b { display: block; font: 700 18px/1.15 var(--disp); letter-spacing: -0.02em; margin-top: 6px; }
+.duo small { display: block; margin-top: 4px; color: var(--slate); font-size: 12px; line-height: 1.35; }
+.coachcta { margin: 12px 12px 0; display: grid; grid-template-columns: 50px 1fr 34px; gap: 12px; align-items: center; padding: 10px 12px 10px 10px; border-radius: 22px; background: var(--ink); color: #fff; }
+.coachcta .av { width: 50px; height: 50px; border-radius: 50%; background: #2a3247; position: relative; overflow: hidden; }
+.coachcta b { display: block; font: 600 17px/1.1 var(--disp); }
+.coachcta small { display: block; margin-top: 3px; color: rgba(255,255,255,0.7); font-size: 12.5px; }
+.coachcta .ar { width: 34px; height: 34px; border-radius: 50%; background: var(--sig); display: grid; place-items: center; }
+.end .two { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 8px 12px 0; }
+
+/* ---------------- coach chat */
+.coach { background: var(--card); padding-bottom: 20px; }
+.ch { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.ch .av { width: 46px; height: 46px; border-radius: 50%; background: #e8eef8; position: relative; overflow: hidden; }
+.ch b { display: block; font: 600 16px/1.1 var(--disp); }
+.ch small { color: var(--slate); font-size: 12px; }
+.coachhero { margin: 12px 12px 0; height: 210px; border-radius: 24px; background: radial-gradient(80% 90% at 70% 10%, #ffe2d6, transparent 60%), linear-gradient(180deg, #eef2f9, #e2e8f2); position: relative; overflow: hidden; }
+.coachhero .fig { position: absolute; right: 6px; bottom: 0; width: 230px; height: 210px; }
+.coachhero .q { position: absolute; left: 16px; top: 18px; width: 170px; }
+.coachhero .q small { font: 600 11px/1 var(--body); letter-spacing: 0.06em; text-transform: uppercase; color: var(--sig); }
+.coachhero .q b { display: block; margin-top: 8px; font: 700 23px/1.08 var(--disp); letter-spacing: -0.02em; }
+.thread { padding: 12px 12px 8px; display: grid; gap: 6px; }
+.bub { max-width: 84%; padding: 10px 13px; border-radius: 20px 20px 20px 6px; background: var(--bg); font-size: 15px; line-height: 1.42; color: var(--ink); }
+.bub.me { justify-self: end; border-radius: 20px 20px 6px 20px; background: var(--ink); color: #fff; }
+.bub b { font-weight: 650; }
+.bub .n { color: var(--sig); font-weight: 700; font-family: var(--disp); }
+.cmp { max-width: 92%; border-radius: 20px; box-shadow: 0 0 0 1px var(--line); padding: 12px; display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; }
+.cmp .lg { display: grid; gap: 7px; font-size: 13px; color: var(--ink2); }
+.cmp .lg span { display: flex; gap: 7px; align-items: center; }
+.cmp .lg i { width: 12px; height: 12px; border-radius: 4px; }
+.cmp .bar { display: grid; grid-template-columns: 56px 1fr 42px; gap: 8px; align-items: center; font-size: 12px; color: var(--slate); }
+.cmp .bar div { height: 8px; border-radius: 4px; background: var(--bg); overflow: hidden; }
+.cmp .bar div i { display: block; height: 100%; border-radius: 4px; }
+.cmp .bar b { font: 700 13px/1 var(--disp); color: var(--ink); text-align: right; }
+.clip { max-width: 92%; border-radius: 20px; overflow: hidden; box-shadow: 0 0 0 1px var(--line); }
+.clip .h { padding: 10px 13px; display: flex; justify-content: space-between; align-items: center; background: var(--ink); color: #fff; }
+.clip .h b { font: 600 15px/1 var(--disp); }
+.clip .h span { font-size: 11.5px; opacity: 0.75; }
+.clip .b { padding: 11px 13px; display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; font-size: 13.5px; line-height: 1.45; color: var(--ink2); }
+.qr { display: flex; gap: 6px; flex-wrap: wrap; padding: 6px 12px 0; }
+.qr span { padding: 10px 14px; border-radius: 999px; box-shadow: inset 0 0 0 1.5px var(--line2); font: 600 13.5px/1 var(--body); }
+.qr span.go { background: var(--sig); color: #fff; box-shadow: none; }
+
+@media (min-width: 900px) {
+  .mound { height: 100vh; }
+  .mound .stagebox { width: calc(100vw - 400px); height: 100vh; }
+  .hud { right: auto; width: 520px; left: 20px; top: 20px; }
+  .batchip { left: auto; right: 20px; top: 20px; width: 360px; flex-wrap: wrap; }
+  .batchip .b { flex: 1 1 100%; box-shadow: 0 0 0 1px var(--line); }
+  .batchip .s { width: 100%; height: 42px; grid-auto-flow: column; gap: 8px; box-shadow: 0 0 0 1px var(--line); }
+  .mound .dock { left: auto; right: 0; top: 0; bottom: 0; width: 400px; height: auto; border-radius: 0; padding: 300px 20px 20px; box-shadow: -1px 0 0 var(--line); }
+  .seg { grid-template-columns: 1fr; gap: 8px; }
+  .seg .p { height: 56px; flex-direction: row; justify-content: flex-start; padding: 0 16px; gap: 14px; }
+  .seg .p b { flex: 1; text-align: left; font-size: 16px; }
+  .seg .p small { font-size: 15px; }
+  .wideonly { display: block !important; }
+}
+.wideonly { display: none; }
+.hk { width: 100%; background: #fff; border-radius: 16px; box-shadow: 0 0 0 1px var(--line); padding: 12px 14px; }
+.hk .g { height: 10px; border-radius: 5px; margin-top: 10px; background: linear-gradient(90deg, #edf1ff, #ffd0c0, #ff4f1f); }
+.hk .l { display: flex; justify-content: space-between; margin-top: 6px; color: var(--slate); font: 500 12px/1 var(--disp); }
+.hk p { margin-top: 8px; color: var(--ink2); font-size: 13px; line-height: 1.4; }
+</style>
+</head>
+<body>
+<div class="mock">mockup · pitch lab</div>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="mark" viewBox="0 0 40 40">
+      <rect x="1.5" y="1.5" width="37" height="37" rx="10" fill="none" stroke="currentColor" stroke-width="3"/>
+      <path d="M14.3 2.5v35M2.5 14.3h24M2.5 25.7h24" stroke="currentColor" stroke-width="2.2" opacity="0.4"/>
+      <path d="M26.2 3 h4.3 a7 7 0 0 1 6.5 7 v20 a7 7 0 0 1 -6.5 7 h-4.3 z" fill="#ff4f1f"/>
+      <circle cx="29.8" cy="21" r="1.7" fill="#fff"/>
+    </symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M5 8h14M5 16h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="9" r="3.6" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M5 20a7 7 0 0114 0" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9H4z" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linejoin="round"/></symbol>
+    <symbol id="i-stats" viewBox="0 0 24 24"><path d="M5 19V11M12 19V5M19 19v-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="3" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M4 10h16M9 3v4M15 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-learn" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M9.3 4v16M14.7 4v16M4 9.3h16M4 14.7h16" stroke="currentColor" stroke-width="1.3"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M5 4h9a4 4 0 014 4v12H9a4 4 0 01-4-4z" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linejoin="round"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" stroke="currentColor" stroke-width="1.8" fill="none"/><circle cx="12" cy="12" r="3" fill="currentColor"/></symbol>
+  </defs>
+</svg>
+
+<section data-s="index">
+  <div class="idx">
+    <span class="wm"><svg width="30" height="30"><use href="#mark"/></svg><span>shut the door<i>.</i></span></span>
+    <h1>Direction C: Pitch Lab</h1>
+    <p>A modern sports app. Clean white surfaces, a cel-shaded illustrated park, and the pitch drawn like tracking data. The data is the hero.</p>
+    <ul>
+      <li><a href="?s=brand">Brand</a></li><li><a href="?s=home">Home</a></li><li><a href="?s=menu">Menu</a></li>
+      <li><a href="?s=mound">Mound (try it 1440 wide too)</a></li><li><a href="?s=pitch1">Pitch, frame 1</a></li><li><a href="?s=pitch2">Pitch, frame 2</a></li><li><a href="?s=pitch3">Pitch, frame 3</a></li>
+      <li><a href="?s=end">The end</a></li><li><a href="?s=coach">Pitching coach</a></li>
+    </ul>
+  </div>
+</section>
+
+<section data-s="brand">
+  <div class="screen brand">
+    <div class="bhero"><span class="wm"><svg width="44" height="44"><use href="#mark"/></svg><span>shut the door<i>.</i></span></span><p>one inning. your calls.</p></div>
+    <h3 class="cap">The mark</h3>
+    <p style="color:var(--ink2);font-size:14px;line-height:1.45">The strike zone, with its last column swung shut. The grid is the game. The door is the job.</p>
+    <h3 class="cap">Colour</h3>
+    <div class="sw">
+      <div style="background:#ff4f1f;color:#fff">Signal<span>#FF4F1F</span></div>
+      <div style="background:#0d1220;color:#fff">Ink<span>#0D1220</span></div>
+      <div style="background:#f4f5f7;color:#0d1220;box-shadow:inset 0 0 0 1px #e4e7ed">Field<span>#F4F5F7</span></div>
+      <div style="background:#2b59ff;color:#fff">Data<span>#2B59FF</span></div>
+    </div>
+    <h3 class="cap">Type</h3>
+    <div class="ty">
+      <div><span class="d" style="font:700 34px/1 var(--disp);letter-spacing:-0.04em">door shut.</span><small>Space Grotesk<br>display, numbers</small></div>
+      <div><span style="font:600 18px/1.2 var(--body)">ahead 0-2, make him chase.</span><small>Inter<br>reading</small></div>
+    </div>
+    <h3 class="cap">Voice</h3>
+    <div class="voice"><div class="say">needed 3 outs. got them in 12.</div><p>Lowercase. Numbers first. One fact a sentence. It sounds like the stat line, not the announcer.</p></div>
+    <h3 class="cap">Icon and share</h3>
+    <div class="icons"><div class="appicon"><svg width="50" height="50" style="color:#fff"><use href="#mark"/></svg></div><div class="appicon l" style="width:60px;height:60px;border-radius:15px"><svg width="32" height="32" style="color:#0d1220"><use href="#mark"/></svg></div></div>
+    <div class="share">Shut The Door #1
+door shut · better than 75% of closers
+pitched like Corey Knebel
+🟩🟨🟩🟨🟩🟨🟩🟧🟩🟥
+🟩🟥
+runthe.gg/shut-the-door</div>
+  </div>
+</section>
+
+<section data-s="home">
+  <div class="screen home">
+    <div class="appbar"><span class="wm"><svg width="28" height="28"><use href="#mark"/></svg><span>shut the door<i>.</i></span></span><span class="ib"><svg width="20" height="20"><use href="#i-user"/></svg></span></div>
+    <div class="hero" id="homeHero">
+      <div class="top"><span class="pill sig">#1 · today</span><span class="pill">mon oct 26</span><span class="pill">real spot</span></div>
+      <div class="bot"><small>game 7 · 2025 world series</small><h1>bottom 11. up one.<br>three outs to win it.</h1></div>
+    </div>
+    <div class="state">
+      <div><b class="num">5-4</b><small>LAD leads</small></div>
+      <div><b>0</b><small>outs</small></div>
+      <div><b>none</b><small>on base</small></div>
+      <div class="wl"><b>live</b><small>walk-off</small></div>
+    </div>
+    <p class="setup">guerrero jr. leads off. three outs and the door is shut. two runs and it is over.</p>
+    <div class="card pc">
+      <div class="hd"><span class="av" id="homeAv"></span><div><b>Yoshinobu Yamamoto</b><small>Dodgers · 2025 postseason mix · throws right</small></div></div>
+      <div class="body"><div class="mvchart" id="mvchart"></div><div class="mvlist" id="mvlist"></div></div>
+    </div>
+    <div class="card due" id="homeDue"></div>
+    <div class="cta"><div class="btn">take the mound<span class="ar"><svg width="16" height="16"><use href="#i-arrow"/></svg></span></div></div>
+    <div class="streak">0 doors shut in a row</div>
+    <nav class="tabs"><a class="on"><svg width="22" height="22"><use href="#i-home"/></svg>today</a><a><svg width="22" height="22"><use href="#i-stats"/></svg>stats</a><a><svg width="22" height="22"><use href="#i-cal"/></svg>past</a><a><svg width="22" height="22"><use href="#i-learn"/></svg>learn</a><a><svg width="22" height="22"><use href="#i-gear"/></svg>settings</a></nav>
+  </div>
+</section>
+
+<section data-s="menu">
+  <div class="screen menu">
+    <div class="sheet">
+      <div class="grab"></div>
+      <h2>you</h2>
+      <div class="statsrow"><div><b class="num">0</b><small>doors shut in a row</small></div><div><b class="num">0</b><small>best streak</small></div><div><b>-</b><small>last percentile</small></div></div>
+      <div class="grp">
+        <a><span class="ic" style="background:var(--sigSoft);color:var(--sig)"><svg width="20" height="20"><use href="#i-book"/></svg></span><span><b>how to play</b><small>a pitch and a spot. three outs.</small></span><span class="t"><svg width="16" height="16"><use href="#i-chev"/></svg></span></a>
+        <a><span class="ic" style="background:var(--blueSoft);color:var(--blue)"><svg width="20" height="20"><use href="#i-learn"/></svg></span><span><b>pitching 101</b><small>eleven ideas the coach uses.</small></span><span class="t"><svg width="16" height="16"><use href="#i-chev"/></svg></span></a>
+      </div>
+      <div class="grp">
+        <a><span class="ic" style="background:var(--bg)"><svg width="20" height="20"><use href="#i-stats"/></svg></span><span><b>stats</b><small>every outing, every grade.</small></span><span class="t"><svg width="16" height="16"><use href="#i-chev"/></svg></span></a>
+        <a><span class="ic" style="background:var(--bg)"><svg width="20" height="20"><use href="#i-cal"/></svg></span><span><b>past dailies</b><small>every spot so far.</small></span><span class="t"><span class="lock">from #2</span></span></a>
+        <a><span class="ic" style="background:var(--bg)"><svg width="20" height="20"><use href="#i-gear"/></svg></span><span><b>settings</b><small>sound, motion, theme.</small></span><span class="t"><svg width="16" height="16"><use href="#i-chev"/></svg></span></a>
+        <a><span class="ic" style="background:var(--bg)"><svg width="20" height="20"><use href="#i-user"/></svg></span><span><b>account</b><small>sign in to keep your streak.</small></span><span class="t"><svg width="16" height="16"><use href="#i-chev"/></svg></span></a>
+      </div>
+      <p style="text-align:center;color:var(--slate);font-size:11.5px;margin-top:14px">privacy · terms · disclaimer · pitch data from baseball savant</p>
+    </div>
+    <nav class="tabs"><a><svg width="22" height="22"><use href="#i-home"/></svg>today</a><a class="on"><svg width="22" height="22"><use href="#i-stats"/></svg>you</a><a><svg width="22" height="22"><use href="#i-cal"/></svg>past</a><a><svg width="22" height="22"><use href="#i-learn"/></svg>learn</a><a><svg width="22" height="22"><use href="#i-gear"/></svg>settings</a></nav>
+  </div>
+</section>
+
+<section data-s="mound">
+  <div class="screen mound">
+    <div class="stagebox" id="moundStage"></div>
+    <div class="hud"><div class="st"><span class="sc num">5-4<span>bot 11</span></span><span class="sep"></span><svg width="30" height="22" viewBox="0 0 30 22"><g fill="none" stroke="#b7bdc9" stroke-width="1.6"><rect x="11" y="2" width="8" height="8" rx="1.5" transform="rotate(45 15 6)"/><rect x="19.5" y="10" width="8" height="8" rx="1.5" transform="rotate(45 23.5 14)"/><rect x="2.5" y="10" width="8" height="8" rx="1.5" transform="rotate(45 6.5 14)"/></g></svg><span class="outs"><i></i><i></i></span><span class="sep"></span><span class="sc num">8<span>pitches</span></span></div><div class="ct"><b class="num">0-1</b><small>count</small></div></div>
+    <div class="batchip"><div class="b"><span class="h">L</span><span><b>Daulton Varsho</b><small class="num">.238/.284/.548 · 20 HR</small></span></div><div class="s"><svg width="18" height="18"><use href="#i-eye"/></svg>scout</div>
+      <div class="hk wideonly"><span class="cap">scouting · damage on contact</span><div class="g"></div><div class="l"><span>.176</span><span>xwOBA</span><span>.484</span></div><p>chases splitters in the dirt 64% with two strikes.</p></div></div>
+    <div class="dock">
+      <div class="seg" id="moundSeg"></div>
+      <div class="btn">throw curveball<span class="ar"><svg width="16" height="16"><use href="#i-arrow"/></svg></span></div>
+      <div class="hint">pitch and spot picked. tap the spot again to throw.</div>
+    </div>
+  </div>
+</section>
+
+<section data-s="pitch1"><div class="screen pitch" data-f="release"></div></section>
+<section data-s="pitch2"><div class="screen pitch" data-f="mid"></div></section>
+<section data-s="pitch3"><div class="screen pitch" data-f="arrive"></div></section>
+
+<section data-s="end">
+  <div class="screen end">
+    <div class="top"><span class="cap">#1 · final · LAD 5, TOR 4</span><h1 style="margin-top:12px">door<br>shut<i>.</i></h1><p class="sub">needed 3 outs. got them in 12 pitches. 0 runs.</p></div>
+    <div class="card blk">
+      <div class="t"><b>your calls, graded</b><span>12 pitches</span></div>
+      <div class="strip" id="endStrip"></div>
+      <div class="key"><span><i style="background:var(--g)"></i>the call</span><span><i style="background:var(--y)"></i>close</span><span><i style="background:var(--o)"></i>costly</span><span><i style="background:var(--r)"></i>wrong idea</span></div>
+    </div>
+    <div class="card blk">
+      <div class="t"><b>vs every closer in this spot</b><span>score 764</span></div>
+      <div class="dist">
+        <div class="big"><b class="num">75<sup>th</sup></b><span>better than 75% of the closer pool's outings here.</span></div>
+        <div class="hist" id="endHist"></div>
+        <div class="histx"><span>600</span><span>700</span><span>800</span><span>900</span><span>1000</span></div>
+        <p class="histn">943 of 2,000 pool outings scored under 600 and are off the left edge.</p>
+      </div>
+    </div>
+    <div class="duo"><div class="card"><span class="cap">pitched like</span><b>Corey Knebel</b><small>breaking balls on 33% of your pitches in even counts. he throws 35%.</small></div><div class="card"><span class="cap">the real one</span><b>matched</b><small>Yamamoto shut it in 14 pitches. 0 runs.</small></div></div>
+    <div class="coachcta"><span class="av" id="endAv"></span><span><b>talk to pitching coach</b><small>one pitch worth a look.</small></span><span class="ar"><svg width="16" height="16"><use href="#i-arrow"/></svg></span></div>
+    <div class="two"><div class="btn light">share</div><div class="btn light">run it back</div></div>
+  </div>
+</section>
+
+<section data-s="coach">
+  <div class="screen coach">
+    <div class="ch"><span class="ib"><svg width="20" height="20"><use href="#i-back"/></svg></span><span class="av" id="chAv"></span><span><b>coach hank</b><small>pitching coach · on your 12 pitches</small></span></div>
+    <div class="coachhero"><div class="q"><small>the one to fix</small><b>stay out of his damage.</b></div><div class="fig" id="coachFig"></div></div>
+    <div class="thread" id="coachThread"></div>
+    <div class="qr"><span class="go">show me Chapman's pitch</span><span>next pitch</span><span>done</span></div>
+  </div>
+</section>
+
+<script src="../shared/std3d.js"></script>
+<script src="../shared/std-figures.js"></script>
+<script src="../shared/std-scene.js"></script>
+<script src="../shared/std-overlay.js"></script>
+<script src="../shared/std-sample.js"></script>
+<script src="../shared/std-page.js"></script>
+<script>
+(function () {
+  'use strict';
+  const D = window.STD_SAMPLE, OV = window.STD_OV, P = window.STD_PAGE;
+  const wide = () => window.innerWidth >= 900;
+  const COL = { FS: '#ff4f1f', FF: '#2b59ff', CU: '#8a5cf6', FC: '#14b8a6', SI: '#f59e0b' };
+  // the closer pool's scores for this pack, 600 to 1000 in 20 point bins (pool.scores in the Yamamoto pack)
+  const HIST = [54, 67, 60, 66, 63, 69, 71, 86, 97, 67, 72, 71, 55, 68, 43, 26, 13, 6, 2, 1];
+
+  /* a break chart from the pitcher's view: each pitch's average movement, sized by how often he throws it */
+  function mvChart(el) {
+    const W = 132, c = W / 2, k = 2.9;
+    let svg = `<svg viewBox="0 0 ${W} ${W}" width="${W}" height="${W}"><g stroke="#d5d9e1" stroke-width="1"><path d="M${c} 8V${W - 8}M8 ${c}H${W - 8}"/></g><circle cx="${c}" cy="${c}" r="${12 * k}" fill="none" stroke="#e4e7ed" stroke-dasharray="2 3"/>`;
+    for (const a of D.pitcher.arsenal) {
+      const x = c - a.pfxX * k, y = c - a.pfxZ * k, r = 4 + a.usage * 22;
+      svg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" fill="${COL[a.type]}" opacity="0.9"/>`;
+    }
+    svg += `<text x="${W - 6}" y="${W - 6}" text-anchor="end" font-size="8.5" fill="#6b7385" font-family="Inter">arm side ›</text><text x="6" y="12" font-size="8.5" fill="#6b7385" font-family="Inter">more rise</text></svg>`;
+    el.innerHTML = svg;
+  }
+  function gridC(g, cam, o) {
+    OV.drawGrid(g, cam, {
+      heat: o.heat ? D.batter.heat : null, heatInset: 0.07,
+      heatColor: (v) => { const t = Math.max(0, Math.min(1, (v - 0.17) / 0.32)); return `rgba(255,${Math.round(240 - 161 * t)},${Math.round(235 - 204 * t)},${0.35 + 0.45 * t})`; },
+      cell: (g2, q, cell, inZ) => { g2.save(); OV.quadPath(g2, q, 0.06); g2.strokeStyle = inZ ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.45)'; g2.lineWidth = inZ ? 1.6 : 1.1; g2.stroke(); g2.restore(); },
+      sel: o.sel,
+      selStyle: (g2, q) => {
+        g2.save(); OV.quadPath(g2, q, 0.06); g2.fillStyle = 'rgba(255,79,31,0.85)'; g2.fill(); g2.strokeStyle = '#fff'; g2.lineWidth = 2; g2.stroke();
+        const cx = (q[0][0] + q[2][0]) / 2, cy = (q[0][1] + q[2][1]) / 2; g2.fillStyle = '#fff'; g2.beginPath(); g2.arc(cx, cy, 3.2, 0, 7); g2.fill(); g2.restore();
+      },
+    }, D.batter);
+  }
+
+  P.on('home', (el) => {
+    mvChart(el.querySelector('#mvchart'));
+    el.querySelector('#mvlist').innerHTML = D.pitcher.arsenal.map((a) => `<div class="r"><i style="background:${COL[a.type]}"></i><b>${a.name}</b><span class="num">${a.velo.toFixed(1)}</span><em class="num">${Math.round(a.usage * 100)}%</em></div>`).join('');
+    el.querySelector('#homeDue').innerHTML = '<div class="cap" style="padding:10px 0 4px">due up</div>' + D.dueUp.map((b, i) => `<div class="r"><i>${i + 1}</i><b>${b.short}<em>bats ${b.bats}</em></b><span class="num">${b.line}</span></div>`).join('');
+    OV.stage(el.querySelector('#homeHero'), { look: 'clay', view: 'hero', frame: 'aim', pitcher: true, cell: 12, w: 366, h: 330, res: 1.2 });
+    P.coach(el.querySelector('#homeAv'), 'clay', { kind: 'pitcher', pose: 'set', w: 50, h: 50, eye: [1.4, 11, 6.0], look: [0, 0, 5.6], frame: 1.5, res: 2.5 });
+  });
+
+  P.on('menu', (el) => {
+    const u = document.createElement('div'); u.className = 'under'; el.querySelector('.screen').prepend(u);
+    OV.stage(u, { look: 'clay', view: 'hero', frame: 'aim', pitcher: true, w: 390, h: 844, res: 0.5 });
+  });
+
+  P.on('mound', (el) => {
+    const W = wide();
+    el.querySelector('#moundSeg').innerHTML = D.pitcher.arsenal.map((a) => `<div class="p ${a.type === D.moundState.selected ? 'on' : ''}"><span class="gl">${OV.glyph(a, { size: W ? 26 : 30, scale: 0.55, w: 2.4 })}</span><b>${a.name}</b><small class="num">${a.velo.toFixed(1)}</small></div>`).join('');
+    const w = W ? window.innerWidth - 400 : 390, h = W ? window.innerHeight : 600;
+    const st = OV.stage(el.querySelector('#moundStage'), { look: 'clay', view: 'mound', frame: 'aim', cell: D.moundState.cell, w, h, res: W ? 0.9 : 1.2 });
+    gridC(st.g, st.cam, { sel: D.moundState.cell, heat: W });
+  });
+
+  function pitchFrame(el) {
+    const scr = el.querySelector('.screen'), f = scr.dataset.f;
+    scr.innerHTML = `<div class="stagebox"></div><div class="hud"><div class="st"><span class="sc num">5-4<span>bot 11</span></span><span class="sep"></span><span class="outs"><i></i><i></i></span><span class="sep"></span><span class="sc">curveball<span>sample</span></span></div><div class="ct"><b class="num">${f === 'arrive' ? '0-2' : '0-1'}</b><small>count</small></div></div><div class="prog"><i class="${f === 'release' ? 'on' : ''}"></i><i class="${f === 'mid' ? 'on' : ''}"></i><i class="${f === 'arrive' ? 'on' : ''}"></i></div><div class="res"></div>`;
+    const st = OV.stage(scr.querySelector('.stagebox'), { look: 'clay', view: 'pitch', frame: f, cell: 21, mitt: f === 'arrive' ? OV.pitch().actual : null, w: 390, h: 844, res: 1.1 });
+    const g = st.g, cam = st.cam, p = OV.pitch(), k = OV.FRAME_K[f];
+    // the spinless path: the same throw with no spin, as a ghost
+    g.save(); g.setLineDash([2, 5]); g.lineCap = 'round'; g.strokeStyle = 'rgba(43,89,255,0.75)'; g.lineWidth = 2;
+    g.beginPath(); p.spinless.slice(16, k + 1).forEach((q, i) => { const s = cam.project(q); i ? g.lineTo(s[0], s[1]) : g.moveTo(s[0], s[1]); }); g.stroke(); g.restore();
+    // the tracking dots: one per sample, every one a moment of flight
+    for (let i = 14; i <= k; i++) { const s = cam.project(p.pts[i]), u = (i - 14) / Math.max(1, k - 14); g.fillStyle = `rgba(255,79,31,${0.35 + 0.65 * u})`; g.beginPath(); g.arc(s[0], s[1], 1.6 + 2.6 * u, 0, 7); g.fill(); }
+    if (f === 'arrive') {
+      gridC(g, cam, { sel: null });
+      const a = cam.project(p.aimed), b = cam.project(p.actual), e = cam.project(p.spinless[60]);
+      g.save(); g.strokeStyle = '#0d1220'; g.lineWidth = 2; g.setLineDash([3, 3]); g.beginPath(); g.arc(a[0], a[1], 9, 0, 7); g.stroke(); g.restore();
+      OV.tag(g, a[0] - 14, a[1] + 2, 'aimed', { align: 'right', font: '600 11px Inter, sans-serif', bg: '#0d1220' });
+      OV.tag(g, b[0] - 16, b[1] - 16, 'went', { align: 'right', font: '600 11px Inter, sans-serif', bg: '#ff4f1f' });
+      OV.tag(g, Math.min(e[0], st.w - 10), e[1] + 22, 'no spin', { align: 'right', font: '600 11px Inter, sans-serif', bg: '#2b59ff' });
+    }
+    OV.ballAt(g, cam, p.pts[k], { prev: p.pts[Math.max(0, k - 2)], blur: 'rgba(255,255,255,0.5)', seam: '#e0442a', grow: f === 'release' ? 1.0 : 1.4, edge: '#c9ccd4' });
+    const r = scr.querySelector('.res');
+    if (f === 'arrive') r.innerHTML = `<b>swinging strike</b><small>aimed down and away. it stayed up a row.</small><div class="v"><b class="num">0-2</b><small>count</small></div>`;
+    else if (f === 'mid') r.innerHTML = `<b>curveball</b><small>dropping, and bending in on the lefty.</small><div class="v"><b class="num">77.9</b><small>mph, his average</small></div>
+      <div class="mv"><div><b class="d num">12.9 in</b><span>across, glove side</span></div><div><b class="d num">16.1 in</b><span>more drop than no spin</span></div></div>`;
+    else r.innerHTML = `<b>curveball</b><small>out of the hand. tap to skip.</small><div class="v"><b class="num">77.9</b><small>mph, his average</small></div>`;
+  }
+  P.on('pitch1', pitchFrame); P.on('pitch2', pitchFrame); P.on('pitch3', pitchFrame);
+
+  P.on('end', (el) => {
+    el.querySelector('#endStrip').innerHTML = D.outing.strip.map((b, i) => `<div class="${b}">${i + 1}</div>`).join('');
+    const max = Math.max(...HIST), mine = Math.floor((764 - 600) / 20);
+    el.querySelector('#endHist').innerHTML = HIST.map((n, i) => `<i class="${i === mine ? 'mine' : ''}" style="height:${(n / max * 100).toFixed(0)}%"></i>`).join('') + `<span class="mk" style="left:${((764 - 600) / 400 * 100).toFixed(1)}%">you, 764</span>`;
+    P.coach(el.querySelector('#endAv'), 'clay', { w: 50, h: 50, eye: [1.2, 11, 5.6], look: [0, 0, 5.4], frame: 1.4, res: 2.5 });
+  });
+
+  P.on('coach', (el) => {
+    P.coach(el.querySelector('#chAv'), 'clay', { w: 46, h: 46, eye: [1.2, 11, 5.6], look: [0, 0, 5.4], frame: 1.4, res: 2.5 });
+    P.coach(el.querySelector('#coachFig'), 'clay', { w: 230, h: 210, res: 1.4, eye: [2.6, 11, 5.3], look: [0, 0, 4.85], frame: 3.6 });
+    const L = D.lesson;
+    const mini = OV.miniGrid([{ cell: L.call.cell, fill: '#f03e3e', label: 'S' }, { cell: L.best.cell, fill: '#ff4f1f', label: 'C' }], { cell: 17, gap: 3, rx: 4, zone: '#e4e7ed', chase: '#f4f5f7', font: 'Space Grotesk, sans-serif' });
+    const proMini = OV.miniGrid([{ cell: L.pro.cell, fill: '#ff4f1f', label: 'F' }], { cell: 11, gap: 2, rx: 3, zone: '#e4e7ed', chase: '#f4f5f7', font: 'Space Grotesk, sans-serif' });
+    el.querySelector('#coachThread').innerHTML = `
+      <div class="bub">door shut. nice work.</div>
+      <div class="bub">one pitch to look at. <b>0-2 to Varsho.</b> you threw a <b>splitter, middle.</b></div>
+      <div class="bub me">what was better?</div>
+      <div class="bub">a <b>cutter up and away.</b> out of the zone.</div>
+      <div class="cmp">${mini}<div class="lg"><span><i style="background:#f03e3e"></i>your splitter, middle</span><span><i style="background:#ff4f1f"></i>cutter, up and away</span>
+        <div class="bar">yours<div><i style="width:87.5%;background:#f03e3e"></i></div><b class="num">87.5%</b></div><div class="bar">best<div><i style="width:93.2%;background:#ff4f1f"></i></div><b class="num">93.2%</b></div><span style="color:var(--slate);font-size:11.5px">chance the door stays shut</span></div></div>
+      <div class="bub">middle is where Varsho hits. <span class="n">.412</span> xwOBA on contact. your splitter there gives up a hit <span class="n">12%</span> of the time. up and away: <span class="n">1%</span>.</div>
+      <div class="bub"><b>next time ahead 0-2,</b> keep it up and away, out of the zone.</div>
+      <div class="clip"><div class="h"><b>Chapman to Pence</b><span>2016 nlds at sf</span></div><div class="b"><span>2-2. two on, nobody out. four-seam up and away. <b style="color:var(--ink)">swinging strike three.</b></span>${proMini}</div></div>`;
+  });
+
+  P.start();
+})();
+</script>
+</body>
+</html>
