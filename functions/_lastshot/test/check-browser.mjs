@@ -81,7 +81,7 @@ try {
   await page.waitForSelector('#bShare', { timeout: 40000 });
   const verdict = await page.textContent('.verdict');
   ok(/^(WINNER|LOSE)$/.test(verdict), 'a verdict: ' + verdict);
-  ok(/^\d+-\d+$/.test(await page.textContent('.final')), 'a final score');
+  ok(/^\d+-\d+$/.test(await page.textContent('#card .finalscore')), 'a final score');
   ok(/Their call on screens: (Switch|Fight over|Go under)\./.test(await page.textContent('.facts')), 'the scheme is revealed');
   const reason = await page.textContent('.reason');
   ok(reason.length > 10 && !DASHES.test(reason), 'a reason with no dashes: ' + reason);

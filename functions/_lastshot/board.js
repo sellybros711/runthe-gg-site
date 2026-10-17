@@ -7,10 +7,14 @@
  *   Shoot    tap the man with the ball to make him the shooter (a wavy line)
  *
  * Pointer events only, so a thumb and a mouse are the same input. Every step
- * is numbered in the order it was drawn, which is the order it runs. */
+ * is numbered in the order it was drawn, which is the order it runs (the
+ * order rule, with its overlaps, is at the top of playbook.js). A cut that
+ * comes off a screen is labelled with what a coach would call it (pin-down,
+ * flare, pick and roll), from the same code the sim uses. */
 import { fitView, sizeCanvas, courtLines } from './view.js';
 import { COURT, dist } from './court-geo.js';
-import { IDS, holderAfter, spotsAfter, shooterOf, problems } from './playbook.js';
+import { IDS, holderAfter, spotsAfter, shooterOf, problems, labelsOf } from './playbook.js';
+import { startSpots } from './defense.js';
 
 const HIT = 3.4;          // feet: how close a tap must land to a player
 const MIN_ROUTE = 2.5;    // feet: shorter than this is a tap, not a route
@@ -60,7 +64,7 @@ export function createBoard(cv, sc, getPlay, setPlay, ui) {
       }
       if (!who || who === pickFrom) { pickFrom = null; ui.hint('Pass cancelled.'); draw(); return; }
       const p = clone(play()); p.steps.push({ kind: 'pass', from: pickFrom, to: who }); pickFrom = null;
-      ui.hint(''); commit(p); return;
+      commit(p); feedback(p); return;
     }
     if (tool === 'shoot') {
       if (locked()) return;
@@ -88,7 +92,20 @@ export function createBoard(cv, sc, getPlay, setPlay, ui) {
     const len = pathLen([d.raw[0], ...pts]);
     if (len < MIN_ROUTE) { ui.hint('Drag farther to draw a route.'); draw(); return; }
     const p = clone(play()); p.steps.push({ kind: d.kind, who: d.who, pts: pts.map(r1) });
-    ui.hint(''); commit(p);
+    commit(p); feedback(p);
+  }
+
+  /* One line on what the step just drawn will do, in the words the sim uses. */
+  function feedback(p) {
+    const i = p.steps.length - 1, s = p.steps[i], label = labelsOf(sc, p)[i];
+    const cap = t => t.charAt(0).toUpperCase() + t.slice(1);
+    if (label === 'handoff') ui.hint('Handoff. He takes it on the run.');
+    else if (label === 'roll') ui.hint('He rolls once the screen is used.');
+    else if (label === 'pop') ui.hint('He pops once the screen is used.');
+    else if (label) ui.hint(cap(label) + '. He waits for the screen, then comes off it.');
+    else if (s.kind === 'screen') ui.hint('Screen set. Draw the cut off it next.');
+    else if (s.kind === 'pass') ui.hint('The pass is timed to meet him.');
+    else ui.hint('');
   }
 
   cv.addEventListener('pointerdown', down);
@@ -113,20 +130,17 @@ export function createBoard(cv, sc, getPlay, setPlay, ui) {
 
     // the steps, in order
     const p = play();
-    const before = [];
+    const before = [], labels = labelsOf(sc, p);
     p.steps.forEach((s, i) => {
       const at = spotsAfter(p, before);
-      drawStep(ctx, s, at, i + 1);
+      drawStep(ctx, s, at, i + 1, labels[i]);
       before.push(s);
     });
     if (drag && drag.kind !== 'spot') drawRoute(ctx, drag.pts, drag.kind, 'rgba(34,50,77,.55)');
 
     // defenders where they start (their own spots follow the starting floor)
-    for (const [xid, man] of Object.entries(sc.matchups)) {
-      const m = p.spots[man], r = COURT.RIM, L = dist(m, r) || 1;
-      const g = Math.min(4, L * 0.5);
-      drawX(ctx, V.px({ x: m.x + (r.x - m.x) / L * g, y: m.y + (r.y - m.y) / L * g }));
-    }
+    const xs = startSpots(sc, p);
+    for (const xid of Object.keys(sc.matchups)) drawX(ctx, V.px(xs[xid]));
     // players: where they start, ghosted where they end up
     const end = spotsAfter(p, p.steps);
     const holder = holderAfter(sc, p.steps);
@@ -138,18 +152,21 @@ export function createBoard(cv, sc, getPlay, setPlay, ui) {
     ui.changed(p);
   }
 
-  function drawStep(ctx, s, at, n) {
+  function drawStep(ctx, s, at, n, label) {
     const ink = '#22324d';
     if (s.kind === 'move' || s.kind === 'screen') {
       const pts = [at[s.who], ...s.pts];
       drawRoute(ctx, pts, s.kind, ink);
-      num(ctx, V.px(midOf(pts)), n);
+      const m = V.px(midOf(pts));
+      num(ctx, m, n);
+      if (label) tag(ctx, { x: m.x, y: m.y + 16 }, label, ink);
     } else if (s.kind === 'pass') {
       const a = V.px(at[s.from]), b = V.px(at[s.to]);
       ctx.strokeStyle = ink; ctx.lineWidth = 2.2; ctx.setLineDash([7, 6]);
       poly(ctx, [a, b]); ctx.setLineDash([]);
       arrow(ctx, a, b, ink);
       num(ctx, { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, n);
+      if (label) tag(ctx, { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 + 16 }, label, ink);
     } else if (s.kind === 'shoot') {
       const a = V.px(at[s.who]), b = V.px(COURT.RIM);
       wavy(ctx, a, b, '#E0533D');
@@ -231,6 +248,12 @@ function num(ctx, p, n, ink = '#22324d') {
   ctx.beginPath(); ctx.arc(p.x, p.y, 8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
   ctx.fillStyle = ink; ctx.font = '700 10px DM Sans, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(String(n), p.x, p.y + 0.5);
+}
+function tag(ctx, p, text, ink) {
+  ctx.font = '700 10px DM Sans, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const w = ctx.measureText(text).width + 8;
+  ctx.fillStyle = 'rgba(251,250,246,.92)'; ctx.fillRect(p.x - w / 2, p.y - 7, w, 14);
+  ctx.fillStyle = ink; ctx.fillText(text, p.x, p.y + 0.5);
 }
 function drawO(ctx, p, id, o = {}) {
   ctx.globalAlpha = o.ghost ? 0.28 : 1;

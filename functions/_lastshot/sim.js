@@ -309,7 +309,8 @@ function shoot(sc, st, T, rng, cap, who, bailout) {
   const p = st.O[who];
   const caughtAt = st.catchAt ? st.catchAt[who] : null, endAt = p.routeEndAt;
   // catch and shoot: he caught it and did not dribble anywhere after
-  const cs = caughtAt != null && (endAt == null || endAt >= caughtAt - 1e-6) && !p.path.length;
+  // (a catch in the last step or two of his route counts: he caught it on the run)
+  const cs = caughtAt != null && (endAt == null || endAt >= caughtAt - 0.35) && !p.path.length;
   const running = cs && endAt != null && endAt - caughtAt < 0.25 || (bailout && p.path.length > 0 && st.ball.holder !== who);
   const pullup = !cs && (st.ball.holder === who) && (endAt != null || p.path.length > 0);
   const defenders = st.X.map(x => ({ id: x.id, pos: x.pos, arch: x.arch || st.O[sc.matchups[x.id]].arch }));
@@ -520,6 +521,8 @@ export function reasonOf(sc, st) {
   const edge = ((T.size && T.size[byArch]) || 3) - ((T.size && T.size[mine]) || 3);
   if (st.shotHelp && s.q.by === st.shotHelp) d = ' The help came from ' + s.q.by + '.';
   else if (use && use.scheme === 'switch' && Math.abs(edge) >= 2) d = ' The switch left a ' + byArch + ' on him.';
+  else if (use && role === 'screen' && use.scheme === 'over') d = s.q.open >= 4 ? ' His man showed on the ball and never got back.' : ' His man showed on the ball and got back.';
+  else if (use && role === 'screen' && use.scheme === 'under') d = ' His man stayed home.';
   else if (use && use.scheme === 'switch') d = ' They switched it.';
   else if (use && use.scheme === 'under') d = s.q.zone === 'rim' ? ' They went under and sat in the lane.' : s.q.open >= 4 ? ' They went under and gave him room.' : ' They went under and still got there.';
   else if (use && use.scheme === 'over') d = s.q.open >= 4 ? ' His man got caught on the screen.' : ' They fought over and got a hand up.';

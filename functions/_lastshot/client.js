@@ -166,7 +166,7 @@ function showResult(res) {
   c.innerHTML = '';
   const add = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; c.appendChild(e); return e; };
   add('h2', 'verdict ' + (win ? 'win' : 'lose'), win ? 'WINNER' : 'LOSE');
-  add('div', 'final', res.us + '-' + res.them);
+  add('div', 'finalscore', res.us + '-' + res.them);
   add('p', 'facts', when + ' Their call on screens: ' + res.schemeName + '.');
   add('p', 'reason', res.reason);
   const row = add('div', 'row');
@@ -200,7 +200,8 @@ async function doShare(text, btn) {
 }
 
 /* For the browser check: run a play with a fixed seed and read the result. */
-window.__lastShot = { run, get result() { return lastResult; }, get play() { return play; }, setPlay(p) { play = p; board.draw(); } };
+window.__lastShot = { run, get result() { return lastResult; }, get play() { return play; }, setPlay(p) { play = p; board.draw(); },
+  view: () => board.view(), simulate: seed => { const r = simulate(SC, play, seed); return { outcome: r.outcome, reason: r.reason, shotAt: r.shotAt }; } };
 
 setScore(SC.us, SC.them, SC.clock);
 board.draw();

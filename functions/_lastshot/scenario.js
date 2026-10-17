@@ -58,7 +58,7 @@ export const SCENARIO = Object.freeze({
   tuning: {
     /* Movement, in feet per second. runSpeed is a hard cut. dribbleSpeed is
        a handler working with the ball in a half court set, not a fast break. */
-    runSpeed: 13, dribbleSpeed: 8, defSpeed: 12.5,
+    runSpeed: 13, dribbleSpeed: 8, defSpeed: 14,
     /* How long a defender takes to react, in seconds (the lag). */
     defLag: 0.22,
     /* How a body moves (motion.js). runSpeed is the pace a route averages:
@@ -96,7 +96,7 @@ export const SCENARIO = Object.freeze({
     /* Fight over: the defender is stuck on the screener this long, then
        trails. The screener's man shows on the ball (or bumps a curl) for
        showTime so the cutter cannot turn the corner clean. */
-    overHold: 0.45, showTime: 0.7,
+    overHold: 0.35, showTime: 0.7,
     /* Go under: how far the defender sags off, and for how long. */
     underGap: 8, underTime: 2.2,
     /* Switch: the two defenders take a beat to call it and swap. */
@@ -108,7 +108,7 @@ export const SCENARIO = Object.freeze({
     /* A pass longer than longPass feet, or thrown past a defender within
        laneCover feet of its line, risks a turnover. The risk is per pass:
        up to passRiskLong for distance and passRiskLane for a crowded lane. */
-    longPass: 28, laneCover: 3, passRiskLong: 0.06, passRiskLane: 0.10,
+    longPass: 28, laneCover: 3, passRiskLong: 0.05, passRiskLane: 0.07,
     /* Catch to release, in seconds: a catch and shoot jumper, a pull up off
        the dribble, a finish at the rim. The defense closes out meanwhile. */
     gatherCatch: 0.45, gatherDribble: 0.35, gatherRim: 0.2,

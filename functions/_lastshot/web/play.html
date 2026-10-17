@@ -54,7 +54,7 @@ canvas.surface{position:absolute;inset:0;width:100%;height:100%;touch-action:non
 .card{background:var(--card);border:1px solid var(--edge);border-radius:20px 20px 0 0;width:100%;padding:20px 18px;padding-bottom:max(20px,env(safe-area-inset-bottom));box-shadow:0 -10px 30px rgba(0,0,0,.08);max-height:92%;overflow:auto}
 .verdict{font-family:'Russo One','Outfit',sans-serif;font-size:40px;line-height:1;margin:0}
 .verdict.win{color:var(--green)}.verdict.lose{color:var(--red)}
-.final{font-family:'Outfit',sans-serif;font-size:30px;font-weight:800;margin:6px 0 2px;font-variant-numeric:tabular-nums}
+.finalscore{font-family:'Outfit',sans-serif;font-size:30px;font-weight:800;margin:6px 0 2px;font-variant-numeric:tabular-nums}
 .card p{margin:6px 0;line-height:1.4}
 .facts{color:var(--dim);font-size:14px}
 .reason{font-size:17px;font-weight:600}
@@ -94,9 +94,14 @@ canvas.surface{position:absolute;inset:0;width:100%;height:100%;touch-action:non
     <button class="btn go" id="bRun" disabled>Run It</button>
   </div>
 </div>
-<!-- Run The Floor's player rig, for the live play. Public, versioned like
-     hoops/index.html loads it. Missing or another API_VERSION: disc tokens. -->
-<script defer src="/hoops/baller.js?v=28"></script>
+<!-- Run The Floor's player rig, for the live play (read only, never edited
+     from here). UNVERSIONED ON PURPOSE: a ?v= here would be recorded by
+     scripts/check-cachebust.mjs, and every later bump of baller.js in hoops
+     would fail that check on this page, so the hoops agents would have to edit
+     Last Shot to ship. Unversioned, Pages revalidates it and this page always
+     gets the current file. court.js uses it only at API_VERSION 2; missing or
+     any other version draws the disc tokens instead. -->
+<script defer src="/hoops/baller.js"></script>
 <script type="module" src="/last-shot/m/client.js?b=__BUILD__"></script>
 </body>
 </html>
