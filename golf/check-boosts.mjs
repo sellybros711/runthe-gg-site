@@ -108,11 +108,18 @@ try {
     console.log('  recorded', Object.keys(now).length, 'boosts'); process.exit(0);
   }
   const base = JSON.parse(fs.readFileSync(BASE, 'utf8')).boosts;
+  // The owner's own exceptions to the boost rule, each with its date. The baseline file is never rewritten: a
+  // boost the owner retired is listed here, checked to be gone, and every other one still has to stand.
+  const RETIRED = { '2026-10-17 patterns carry no boost': ['pinstripe', 'polka', 'gingham', 'argyle', 'tartan', 'houndstooth', 'chevron', 'colorblock'].map((id) => 'cos sp:' + id) };
+  const retired = new Set(Object.values(RETIRED).flat());
   const lost = [];
-  for (const k in base) { const was = base[k], is = now[k];
+  for (const k in base) { if (retired.has(k)) continue; const was = base[k], is = now[k];
     if (!is) { lost.push(k + ' removed'); continue; }
     for (const s in was) { if (is[s] == null) lost.push(k + ' lost ' + s); else if (is[s] < was[s]) lost.push(k + ' ' + s + ' ' + was[s] + ' -> ' + is[s]); } }
-  ok(Object.keys(base).length + ' recorded boosts all stand, none lower', lost.length === 0, lost);
+  ok((Object.keys(base).length - retired.size) + ' recorded boosts all stand, none lower', lost.length === 0, lost);
+  for (const why in RETIRED) { const back = RETIRED[why].filter((k) => now[k]);
+    ok('retired by the owner (' + why + '): ' + RETIRED[why].length + ' boosts are gone', back.length === 0, back); }
+  ok('no pattern carries a boost', !Object.keys(now).some((k) => / sp:/.test(k)), Object.keys(now).filter((k) => / sp:/.test(k)));
   const added = Object.keys(now).filter((k) => !base[k] || Object.keys(now[k]).some((s) => (now[k][s] || 0) > (base[k][s] || 0)));
   info('new or raised since the baseline', added.length);
 
