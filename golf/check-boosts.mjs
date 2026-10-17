@@ -466,6 +466,22 @@ try {
     ok('a locked reward is hidden before Putt Putt is open, and shows where to win it after', R.hidden && R.shown, [R.hidden, R.shown]);
   }
 
+  head('The Pro Shop line: real golf gear in the common and rare tiers, on the First Tee switch');
+  {
+    const PL = await page.evaluate(() => { const out = { bad: [] }, live = PUTT_LIVE, has = (o) => (cosmeticItems(o.cat) || []).some((x) => x.id === o.id);
+      PUTT_LIVE = false; out.offList = PRO_LINE.filter(has).map((o) => o.id); out.offPool = packPool().filter((e) => PRO_LINE_BY[e.cat + ':' + e.id]).map((e) => e.id);
+      PUTT_LIVE = true; const pool = packPool();
+      PRO_LINE.forEach((o) => { const rar = packRarityOf(cosmeticPriceBase(o.cat, o.id)), b = cosBoost(o.cat, o.id);
+        const pts = b ? Object.values(b).filter((v) => v > 0).reduce((a, v) => a + v, 0) : 0, want = (o.cat === 'top' || o.cat === 'leg') ? 0 : rar === 'common' ? 1 : 2;
+        const art = { hw: [PXG_HATS, PXG_HERITAGE_HAT_PAL], top: [PXG_TOPS, PXG_TOP_PAL], leg: [PXG_LEGS, PXG_LEG_PAL], cleats: [PXG_CLEATS, PXG_CLEATS_PAL], ball: [PXG_BALL, PXG_BALL_PAL] }[o.cat];
+        const pe = pool.find((e) => e.cat === o.cat && e.id === o.id), row = { key: o.cat + ':' + o.id, rar, pts, want, listed: has(o), pool: pe ? pe.rarity : null,
+          packOnly: cosPackOnly(o.cat, o.id), art: !!(art && art[0][o.id] && art[1][o.id]), drop: !!itemDropLocked(o.cat, o.id) };
+        if (!(rar === 'common' || rar === 'rare') || pts !== want || !row.listed || row.pool !== rar || !row.packOnly || !row.art || row.drop) out.bad.push(row); });
+      out.n = PRO_LINE.length; out.common = PRO_LINE.filter((o) => packRarityOf(o.price) === 'common').length; PUTT_LIVE = live; return out; });
+    ok('off the switch the line is in no list and no pack', PL.offList.length === 0 && PL.offPool.length === 0, [PL.offList, PL.offPool]);
+    ok('on it, all ' + PL.n + ' are common or rare (' + PL.common + ' common), listed, pack only, in the pool at their rarity, drawn, with the ladder\'s power (outerwear and legwear none)', PL.bad.length === 0, PL.bad.slice(0, 4));
+  }
+
   head('ICON: the tier above ELITE, 100 and up, on the First Tee switch');
   {
     const T = await page.evaluate(() => { const r = {}, kU = sbUser, kN = sbUsername;
