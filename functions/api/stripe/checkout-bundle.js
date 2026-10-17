@@ -69,7 +69,7 @@
  * _verify.js explains.
  */
 import { verifyUser } from './_verify.js';
-import { bundleByKey, bucketByKey, BUCKETS_ENABLED, BUCKET_RETURN, puttLivesPack, PUTT_LIVES_ENABLED, PUTT_LIVES_RETURN } from './_bundles.js';
+import { bundleByKey, bucketByKey, BUCKETS_ENABLED, BUCKET_RETURN, puttLivesPack, PUTT_LIVES_ENABLED, PUTT_LIVES_EXTRA_MAX, PUTT_LIVES_RETURN } from './_bundles.js';
 import { siteBase } from './_site.js';
 import { currentPlan } from './_offer.js';
 
@@ -258,13 +258,15 @@ async function bucket(env, request, body) {
   return json({ url: attempt.data.url });
 }
 
-/* PUTT PUTT LIVES, shipped dark behind PUTT_LIVES_ENABLED. The body names a
- * pack (`putt_lives: 'nine'` or `'three'`, keys of PUTT_LIVES). A one-time
- * payment for that pack's lives back, sold only to a player missing at least
- * that many on the server: a lost life is one entry in putt_lives.back_at that has
- * not come back yet (146). A player with lives to spare is told so (409), and a
- * read that fails is a retryable 503, never a sale. The webhook delivers. No
- * promotion codes: a 100% off code here is free lives, not a comp.
+/* PUTT PUTT LIVES, behind PUTT_LIVES_ENABLED. The body names a pack
+ * (`putt_lives: 'nine'` or `'three'`, keys of PUTT_LIVES). A one-time payment
+ * for that many lives, sold to a signed in player at any time (the owner,
+ * 2026-10-17): lives on a clock come back first, and the rest go over the max
+ * as extra lives (151). The one refusal is the cap: a pack that would take the
+ * extras past PUTT_LIVES_EXTRA_MAX is 409 lives_full, so the webhook never has
+ * to drop a paid life. The read also needs 151's `extra` column, so until 151
+ * is in it fails, and a read that fails is a retryable 503, never a sale. The
+ * webhook delivers. No promotion codes: a 100% off code here is free lives.
  *
  * The page comes back to /golf/ with ?putt=lives_paid&pack=<key> or ?putt=lives_cancelled,
  * never ?purchase=, which is the golf edge function's return and its own poll. */
@@ -278,9 +280,9 @@ async function puttLives(env, request, body) {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE) return json({ error: 'stripe_not_configured' }, 503);
   const userId = await verifyUser(env, request);
   if (!userId) return json({ error: 'unauthorized' }, 401);
-  const missing = await puttLivesMissing(env, userId);
-  if (missing == null) return json({ error: 'try_again' }, 503);
-  if (missing < pack.lives) return json({ error: 'lives_left' }, 409);
+  const held = await puttLivesHeld(env, userId);
+  if (held == null) return json({ error: 'try_again' }, 503);
+  if (held.extra + Math.max(0, pack.lives - held.missing) > PUTT_LIVES_EXTRA_MAX) return json({ error: 'lives_full' }, 409);
   const site = siteBase(env, request);
   const ret = typeof body.return_path === 'string' && body.return_path.indexOf(PUTT_LIVES_RETURN) === 0 ? body.return_path : PUTT_LIVES_RETURN;
   const sep = ret.indexOf('?') >= 0 ? '&' : '?';
@@ -309,16 +311,21 @@ async function puttLives(env, request, body) {
   return json({ url: attempt.data.url });
 }
 
-/* How many lives this account is waiting on, or null when the read failed. No
- * row is nothing lost: a row is made the first time the page asks for lives. */
-async function puttLivesMissing(env, userId) {
+/* What this account holds on the server: the lives it is waiting on (a clock in
+ * back_at not yet run out, 146) and its extra lives over the max (151), or null
+ * when the read failed, which includes a database without 150. No row is
+ * nothing lost and nothing extra: a row is made the first time the page asks. */
+async function puttLivesHeld(env, userId) {
   const h = { apikey: env.SUPABASE_SERVICE_ROLE, Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE };
   try {
-    const r = await fetch(env.SUPABASE_URL + '/rest/v1/putt_lives?user_id=eq.' + encodeURIComponent(userId) + '&select=back_at', { headers: h });
+    const r = await fetch(env.SUPABASE_URL + '/rest/v1/putt_lives?user_id=eq.' + encodeURIComponent(userId) + '&select=back_at,extra', { headers: h });
     if (!r.ok) return null;
     const rows = (await r.json()) || [];
-    const now = Date.now();
-    return ((rows[0] && rows[0].back_at) || []).filter(function (t) { return Date.parse(t) > now; }).length;
+    const now = Date.now(), row = rows[0] || {};
+    return {
+      missing: (row.back_at || []).filter(function (t) { return Date.parse(t) > now; }).length,
+      extra: +row.extra || 0,
+    };
   } catch (e) { return null; }
 }
 
