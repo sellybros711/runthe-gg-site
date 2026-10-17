@@ -18,6 +18,7 @@
  *      R1 an item reads at size, R2 every catalogue colour is drawn,
  *      R3 no two items in a slot look alike. What waits for the item
  *      redraws (PR 2) is listed in WAITS and printed on every run.
+ *      9b: a headband is worn across the forehead, on every hair style.
  */
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
@@ -306,6 +307,35 @@ for (const build of ['lean', 'standard', 'strong']) for (const pose of ['stand',
     console.log('  ' + why + ':');
     if (s1.length) console.log('    R1: ' + s1.map((id) => id + ' ' + r1[id].join('/')).join(', '));
     if (s3.length) console.log('    R3: ' + s3.join(', '));
+  }
+}
+
+/* 9b: A HEADBAND IS WORN ACROSS THE FOREHEAD. Drawn over the hair's own
+   surface it rose onto the crown with a ragged top and read as a halo (the
+   owner, 2026-10-17). On every hair style, in the closet, in the column of
+   the near eye: the band's bottom edge leaves the brow showing and sits just
+   above it, no band pixel anywhere climbs more than a band's height above
+   the eye, and its top edge steps at most 3 fine pixels from one column to
+   the next. The eye row is found by painting a blink, so no face geometry is
+   copied here. */
+{
+  const UNI2 = { c1: '#1d428a', c2: '#ffc72c', num: '23', res: 2 };
+  const MAX_UP = { band: 7, tied: 7, wide: 9 };
+  for (const [h] of B.HAIRS) {
+    const L = Object.assign({}, LOOK, { hair: h }), open = B.paint(L, UNI2), shut = B.paint(L, Object.assign({ blink: 1 }, UNI2));
+    let ey = 1e9, ex = -1;
+    open.forEach((r, y) => r.forEach((c, x) => { if (c !== shut[y][x] && (y < ey || (y === ey && x > ex))) { ey = y; ex = x; } }));
+    ok(ex >= 0, '9b the eye is found on ' + h);
+    for (const k of ['band', 'wide', 'tied']) {
+      const P = B.paint(L, Object.assign({ parts: 1, cwear: { band: { k, c: ['#16181f'] } } }, UNI2));
+      const rowsAt = (x) => { const r = []; P.forEach((row, y) => { if (row[x] === 'band') r.push(y); }); return r; };
+      const atEye = rowsAt(ex), low = atEye.length ? ey - atEye[atEye.length - 1] : -1;
+      ok(low >= 2 && low <= 4, '9b a ' + k + ' band on ' + h + ' sits just above the brow: its bottom edge is ' + low + ' fine pixels over the eye (needs 2 to 4)');
+      let top = 1e9, step = 0, prev = null;
+      for (let x = 0; x < P[0].length; x++) { const r = rowsAt(x); if (!r.length) { prev = null; continue; } top = Math.min(top, r[0]); if (prev != null) step = Math.max(step, Math.abs(r[0] - prev)); prev = r[0]; }
+      ok(ey - top <= MAX_UP[k], '9b a ' + k + ' band on ' + h + ' stays on the forehead: its highest pixel is ' + (ey - top) + ' over the eye (at most ' + MAX_UP[k] + ')');
+      ok(step <= 3, '9b a ' + k + ' band on ' + h + ' has an even top edge: it steps ' + step + ' fine pixels between columns (at most 3)');
+    }
   }
 }
 

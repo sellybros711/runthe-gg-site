@@ -1204,25 +1204,40 @@ function build(L, o, J){
   function courtHead(shellF, local, hx, hy, hz){
     var b = CW.band;
     if (b) {
-      /* A BAND GOES ROUND THE HAIR, NOT THROUGH IT. It was a shell 0.6 off
-         the skull, and a fade stands 1.3 off it, so the band was hidden in
-         the hair everywhere but the forehead: 4 pixels on court, and a black
-         band on black hair was not there at all. Now it is the hair's own
-         surface pushed out a little (and the skin's, where there is no hair),
-         so it sits on top of any style. Its top edge is lit and its bottom
-         edge is in shadow, so it reads on hair of its own colour (R6). */
-      var bw2 = b.k === 'wide' ? 2.0 : 1.2, bY = b.k === 'wide' ? -4.9 : -4.6;
+      /* A BAND GOES ROUND THE HEAD, ACROSS THE FOREHEAD. It was a shell 0.6
+         off the skull, and a fade stands 1.3 off it, so it was hidden in the
+         hair everywhere but the forehead: 4 pixels on court, and a black band
+         on black hair was not there at all. Pushing it out over the hair's own
+         surface made a ragged ring high on the crown. So it is one smooth shell
+         round the skull, as thick as the hair is at that height (no more than
+         a short style's), tilted the way a player wears one: its bottom edge
+         just above the brows at the front, dropping a little toward the back,
+         where a big style simply covers it. Its top edge is lit and its bottom
+         edge in shadow, so it reads on hair of its own colour (R6). */
+      var bw2 = b.k === 'wide' ? 2.0 : 1.3, TILT = 0.28, FRONT = 7.6;
+      var bY = -2.9 - bw2;                                     /* the centre line at the front */
+      var mid = function(l){ return bY + TILT * (FRONT - l[2]); };
+      var skullF = P.slice(headFrom).filter(function(q){ return q.n === 'head'; })[0].f;
       var hairFs = P.slice(headFrom).filter(function(q){ return q.g === 'hair'; }).map(function(q){ return q.f; });
-      var skinF = shellF(0.6);
-      var overF = function(p){ var d = skinF(p); for (var i = 0; i < hairFs.length; i++) d = smin(d, hairFs[i](p) - 0.45, 0.8); return d; };
-      var bandF = cut(overF, function(p){ var l = local(p); return Math.abs(l[1] - bY) - bw2; });
-      add('band', 'band', function(p){ var e = local(p)[1] - bY; return e < -bw2 + 0.5 ? { m: 'cband', t: 4 } : e > bw2 - 0.45 ? { m: 'cband', t: 0 } : 'cband'; },
+      /* how thick the hair is across the band's height, round the front and sides */
+      var thick = 0;
+      for (var a = -100; a <= 100; a += 10) for (var eh = -1; eh <= 1; eh++) {
+        var dx = Math.sin(a * Math.PI / 180), dz = Math.cos(a * Math.PI / 180);
+        var at = function(r){ var q = [hx + dx * r, 0, hz + dz * r]; q[1] = hy + mid(local(q)) + eh * (bw2 - 0.3); return q; };
+        var rs = 3; while (rs < 16 && skullF(at(rs)) < 0) rs += 0.05;
+        var rh = rs; for (var r = rs; r < rs + 4; r += 0.05) { var q = at(r), inH = false; for (var hi2 = 0; hi2 < hairFs.length; hi2++) if (hairFs[hi2](q) < 0) inH = true; if (inH) rh = r; }
+        thick = Math.max(thick, rh - rs);
+      }
+      var off = Math.min(1.5, Math.max(0.55, thick)) + 0.3;
+      var bandF = cut(function(p){ return skullF(p) - off; }, function(p){ var l = local(p); return Math.abs(l[1] - mid(l)) - bw2; });
+      add('band', 'band', function(p){ var l = local(p), e = l[1] - mid(l); return e < -bw2 + 0.9 ? { m: 'cband', t: 4 } : e > bw2 - 0.7 ? { m: 'cband', t: 0 } : 'cband'; },
         bandF, H, 12.5);
       if (b.k === 'tied') {
-        /* the knot sits on the band at the back, wherever the hair puts it */
-        var kd = [-0.694, 0, -0.72], surfR = function(f){ var r = 3; while (r < 15 && f([hx + kd[0] * r, hy + bY, hz + kd[2] * r]) < 0) r += 0.1; return r; };
-        var kr = surfR(overF) - surfR(skinF), ko = [kd[0] * kr, 0, kd[2] * kr];
-        add('tails', 'band', 'cband', smf(cone([hx - 5.4 + ko[0], hy - 4.6, hz - 5.6 + ko[2]], [hx - 8.6 + ko[0], hy + 1.6, hz - 6.4 + ko[2]], 0.8, 0.6), cone([hx - 5.0 + ko[0], hy - 4.6, hz - 6.0 + ko[2]], [hx - 7.6 + ko[0], hy + 2.6, hz - 7.6 + ko[2]], 0.8, 0.6), 0.5), [hx - 7 + ko[0], hy - 1.5, hz - 6.5 + ko[2]], 5.5);
+        /* the knot sits on the band at the back, at the band's own height */
+        var kd = [-0.694, -0.72], kat = function(r){ var q = [hx + kd[0] * r, 0, hz + kd[1] * r]; q[1] = hy + mid(local(q)); return q; };
+        var kr = 3; while (kr < 16 && bandF(kat(kr)) < 0) kr += 0.05;
+        var K = kat(kr), t0 = [hx - 5.4, hy - 4.6, hz - 5.6], ko = [K[0] - t0[0] + 0.3, K[1] - t0[1], K[2] - t0[2] + 0.3];
+        add('tails', 'band', 'cband', smf(cone([hx - 5.4 + ko[0], hy - 4.6 + ko[1], hz - 5.6 + ko[2]], [hx - 8.6 + ko[0], hy + 1.6 + ko[1], hz - 6.4 + ko[2]], 0.8, 0.6), cone([hx - 5.0 + ko[0], hy - 4.6 + ko[1], hz - 6.0 + ko[2]], [hx - 7.6 + ko[0], hy + 2.6 + ko[1], hz - 7.6 + ko[2]], 0.8, 0.6), 0.5), [hx - 7 + ko[0], hy - 1.5 + ko[1], hz - 6.5 + ko[2]], 5.5);
       }
     }
     if (CW.goggles) {
