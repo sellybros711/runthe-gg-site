@@ -82,6 +82,7 @@ function pickOf(r, list){ return list[Math.floor(r() * list.length) % list.lengt
 var CSS = [
 '.ct{position:absolute;inset:0;overflow:hidden;background:#05070d;z-index:3;}',
 '.ct canvas{position:absolute;left:50%;bottom:0;transform:translateX(-50%);image-rendering:pixelated;image-rendering:crisp-edges;}',
+'.ct.ct-bare{background:transparent;}','.ct.ct-bare canvas{transform:none;}',
 '.ct-bug{position:absolute;left:8px;top:8px;z-index:4;display:flex;align-items:stretch;font-family:var(--k-f-pixel,"Press Start 2P",var(--display,Impact));font-size:9px;line-height:1;color:#fff;background:#05070d;box-shadow:0 -2px 0 0 #2d3a66,0 2px 0 0 #2d3a66,-2px 0 0 0 #2d3a66,2px 0 0 0 #2d3a66;}',
 '.ct-bug span{display:flex;align-items:center;padding:6px 7px;}',
 '.ct-bug .tm{background:var(--c1);color:var(--ink1);}',
@@ -299,12 +300,33 @@ function stage(host, opts){
   el.style.setProperty('--ink1', B.inkOn(opts.bug1 || opts.c1 || '#c8102e'));
   el.style.setProperty('--ink2', B.inkOn(opts.oc || '#3a4566'));
   el.innerHTML = '<canvas aria-hidden="true"></canvas><div class="ct-call" aria-live="polite"></div><div class="ct-rp" hidden>Replay</div>';
+  if (opts.grid) el.classList.add('ct-bare');
   host.appendChild(el);
   var cv = el.querySelector('canvas'), ctx = cv.getContext('2d');
   var st = { el: el, cw: 160, ch: 128, k: 3, R: 1, room: null, floor: null, fy: 70, floorY: 120, playY: 120, rim: [120, 30], tick: 0, state: {}, opts: opts, raf: 0, timer: 0, dead: false, slow: 1 };
   var roomC1 = opts.roomC1 || opts.c1, roomC2 = opts.roomC2 || opts.c2;
   function fit(){
     var W = el.clientWidth || 360, H = el.clientHeight || 280;
+    /* A CEREMONY ON A 3D STAGE (opts.grid, from scenes.js): the room is the
+       scene's own, traced behind this canvas, and this canvas is clear. The
+       caller hands the cell (CSS pixels), where the room's cell grid falls on
+       this box, where its stage floor is and where the man stands, so his
+       feet land on the 3D stage, on its grid. No room is drawn here, no
+       camera moves it: the scene's lens frames the shot. */
+    var gd = opts.grid && opts.grid();
+    if (gd) {
+      var Rg = fineRes(gd.k);
+      if (st.bare && gd.cw === st.cw && gd.ch === st.ch && Rg === st.R && gd.k === st.k && gd.left === st.left && gd.top === st.top) return;
+      st.bare = true; st.k = gd.k; st.cw = gd.cw; st.ch = gd.ch; st.R = Rg; st.left = gd.left; st.top = gd.top; st.H = H;
+      cv.width = gd.cw * Rg; cv.height = gd.ch * Rg;
+      cv.style.width = (gd.cw * gd.k) + 'px'; cv.style.height = (gd.ch * gd.k) + 'px';
+      cv.style.left = gd.left + 'px'; cv.style.top = gd.top + 'px'; cv.style.bottom = 'auto';
+      st.floorY = gd.floorY; st.playY = gd.floorY; st.fy = gd.ch; st.cx = gd.cx;
+      st.yaw = CAM.yaw; st.rim = [gd.cx, 0]; st.floor = null; st.room = null; st.soft = null;
+      if (st.warmCast) st.warmCast();
+      draw();
+      return;
+    }
     /* Wide enough for a three: 130 cells across at least, so a phone gets a
        smaller man on a real court rather than a big man cut off at the edge,
        and tall enough for a dunk. Whichever binds sets the cell. */
@@ -489,11 +511,13 @@ function stage(host, opts){
       else ctx.drawImage(st.room, 0, 0, st.cw, fy, 0, -bump, st.cw, fy);
       ctx.drawImage(st.room, 0, fy, st.cw, st.ch - fy, 0, fy, st.cw, st.ch - fy);
       if (bump) rect(0, fy - 1, st.cw, 1, '#05070d');
-    } else rect(0, 0, st.cw, st.ch, '#0b0e1a');
+    } else if (!st.bare) rect(0, 0, st.cw, st.ch, '#0b0e1a');
     /* depth: the upper deck falls into the dark */
-    var gr = ctx.createLinearGradient(0, 0, 0, fy);
-    gr.addColorStop(0, 'rgba(4,6,14,.62)'); gr.addColorStop(0.7, 'rgba(4,6,14,.18)'); gr.addColorStop(1, 'rgba(4,6,14,0)');
-    ctx.fillStyle = gr; ctx.fillRect(0, 0, st.cw, fy);
+    if (!st.bare) {
+      var gr = ctx.createLinearGradient(0, 0, 0, fy);
+      gr.addColorStop(0, 'rgba(4,6,14,.62)'); gr.addColorStop(0.7, 'rgba(4,6,14,.18)'); gr.addColorStop(1, 'rgba(4,6,14,0)');
+      ctx.fillStyle = gr; ctx.fillRect(0, 0, st.cw, fy);
+    }
     if (st.floor) {
       ctx.drawImage(st.floor, 0, 0, st.cw, st.ch);
       /* the scorer's table ribbon, in the building's colours, scrolling when it's loud */
@@ -543,8 +567,7 @@ function stage(host, opts){
       conf.forEach(function(p){ p.y += p.v; p.x += Math.sin((p.y + p.v * 9) / 6) * 0.4; rect(p.x, p.y, (p.y | 0) % 3 ? 2 : 1, 1, p.c); });
       conf = conf.filter(function(p){ return p.y < st.ch; });
     } else if (!s.confetti) conf = [];
-    lens(s);
-    camera(s);
+    if (!st.bare) { lens(s); camera(s); }
   }
   /* THE BROADCAST CAMERA. It leans in when the building gets loud and further
      on a replay, toward wherever the ball is, and kicks when the rim shakes.
@@ -1856,8 +1879,10 @@ function mates(c, n){
 }
 var CEREMONY = {
   jersey: function(st, c){
-    var me = suitOf(st.opts.me, 'suit'), cap = suitOf(st.opts.me, 'cap'), cx = Math.round(st.cw / 2);
-    var com = { look: B.lookFor('commish:' + (c.commish || '')), c1: '#1b2238', c2: '#c9ccd6', num: '', age: 58, dress: 'suit' };
+    var me = suitOf(st.opts.me, 'suit'), cap = suitOf(st.opts.me, 'cap'), cx = st.cx != null ? st.cx : Math.round(st.cw / 2);
+    /* the commissioner is the man who read the pick at the podium a beat
+       before (c.com, from scenes.js): the same face and the same suit */
+    var com = c.com && c.com.look ? { look: c.com.look, c1: c.com.c1, c2: c.com.c2, num: '', dress: 'suit' } : { look: B.lookFor('commish:' + (c.commish || '')), c1: '#1b2238', c2: '#c9ccd6', num: '', age: 58, dress: 'suit' };
     var comA = function(pose){ return { who: com, x: cx + 16, y: st.floorY, pose: pose || 'suit' }; };
     st.l3(c.name, c.pick ? 'Pick ' + c.pick + ' · ' + (c.teamName || '') : (c.teamName || ''));
     return [
@@ -1941,7 +1966,7 @@ function ceremony(host, name, c, opts){
   var make = CEREMONY[name];
   if (!make) return null;
   var STAND = { draft: 0.585, hall: 0.73 };
-  var st = stage(host, { room: opts.room || 'nba', hoop: false, c1: c.c1, c2: c.c2, me: opts.me, confetti: true, stand: STAND[opts.room] });
+  var st = stage(host, { room: opts.room || 'nba', hoop: false, c1: c.c1, c2: c.c2, me: opts.me, confetti: true, stand: STAND[opts.room], grid: opts.grid || null });
   var clips = make(st, c);
   st.run(clips, function(){ if (opts.done) opts.done(); });
   return { stop: st.stop, stage: st };

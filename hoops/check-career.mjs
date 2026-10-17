@@ -2323,6 +2323,74 @@ async function scenesWalk(b, serve) {
     });
     ok(plates.length > 0 && plates.every((p) => /General manager, \w/i.test(p) && !/undefined/i.test(p) && /Oldfield|Newman/i.test(p)), `every trade GM's plate names him and his club (${plates.slice(0, 2).join(' | ') || 'none seen'})`);
   }
+  /* THE BIG ROOMS (the art agent's batch 4, B17 to B19). Found by looking:
+     every check was green while the studio's back wall was an empty plane,
+     the press room's step and repeat was one word floor to ceiling (LOCKER
+     ROOM with no club, MFGIC on a desktop's one cell trace), and the draft
+     walk played on a flat set, two men a quarter of a phone high over half a
+     screen of seat squares, beside a commissioner with another man's face. */
+  {
+    const rooms5 = await page.evaluate(async () => {
+      const S = window.RTF_STAGE, BL = window.RTF_BALLER, out = {};
+      const trace = (R, cw, ch) => new Promise((d) => S.draw(R, cw, ch, 1, d));
+      /* a word on the wall keeps every stroke on a one cell trace: a texel of
+         WT is a cell or more across and down once the camera turns the wall */
+      const a = S.project({ ox: 0, oy: 0 }, [0, 0, -50]), bx = S.project({ ox: 0, oy: 0 }, [S.WT || 1, 0, -50]), by = S.project({ ox: 0, oy: 0 }, [0, -(S.WT || 1), -50]);
+      out.texel = [Math.abs(bx[0] - a[0]), Math.abs(by[1] - a[1])];
+      /* the studio: the show's name over the video wall, every stroke lit */
+      const st = S.build('studio', { c1: '#1d428a', c2: '#ffc72c', oc: '#c06bff', board: '', nick: 'Lakers', kind: 'studio', loud: false, tex: '', outlet: 'THE PAINT ROOM' });
+      const word = S.textTex('THE PAINT ROOM', '#ffffff', 1);
+      let lit = 0; for (let y = 0; y < word.h; y++) for (let x = 0; x < word.w; x++) if (word.at(x, y) === '#ffffff') lit++;
+      const so = await trace(st, 180, 140), sd = so.back.getContext('2d').getImageData(0, 0, so.back.width, so.back.height).data;
+      let white = 0; for (let i = 0; i < sd.length; i += 4) if (sd[i] === 255 && sd[i + 1] === 255 && sd[i + 2] === 255) white++;
+      out.studio = { fascia: !!st.fascia, lit, white };
+      /* the press room: a backdrop in the club's colours, its words the
+         club's name and the game's own sponsors, never a real brand */
+      const pr = S.build('press', { c1: '#0077c0', c2: '#c4ced4', oc: '', board: '', nick: 'Magic', kind: 'press', loud: false, tex: '' });
+      const bare = S.build('press', { c1: '#0077c0', c2: '#c4ced4', oc: '', board: '', nick: '', kind: 'press', loud: false, tex: '' });
+      const po = await trace(pr, 180, 140), pd = po.back.getContext('2d').getImageData(0, 0, po.back.width, po.back.height).data;
+      const band = new Set(BL.ramp('#c4ced4').map((h) => h.toLowerCase()));
+      const hx = (i) => '#' + [pd[i], pd[i + 1], pd[i + 2]].map((v) => v.toString(16).padStart(2, '0')).join('');
+      let bandPx = 0; for (let i = 0; i < pd.length; i += 4) if (band.has(hx(i))) bandPx++;
+      out.press = { backdrop: !!pr.backdrop, words: pr.words || null, bare: bare.words || null, bandPx };
+      /* draft night: the LED wall says the club once, not MAGIC over MAGIC */
+      out.draftWall = (S.build('draft', { c1: '#0077c0', c2: '#c4ced4', oc: '', board: 'MAGIC', nick: 'Magic', kind: 'draft', loud: false, tex: '' }).screenWords || null);
+      /* the walk itself, played the way the page plays draft night */
+      const SC = window.RTF_SCENES, L = window.__liveL, bb = SC.build(L, { id: 'draft', x: { pick: (L.draft && L.draft.pick) || 7 } }, null);
+      SC.play(bb.beats, bb.ctx, {});
+      await new Promise((d) => setTimeout(d, 400));
+      document.querySelector('#scov .sc-stage').click();
+      await new Promise((d) => setTimeout(d, 600));
+      const ov = document.querySelector('#scov'), cs = ov._shotStage, rm = ov.querySelector('.sc-3d.rm-draft');
+      const stg = ov.querySelector('.sc-stage').getBoundingClientRect(), cv = ov.querySelector('.sc-shot canvas');
+      const w = { shot: !!cv, stage3d: !!(rm && rm.offsetParent), bare: !!ov.querySelector('.sc-shot .ct-bare'), cs: !!cs };
+      if (cs && rm && cv) {
+        const box = rm.querySelector('.st3'), br = box.getBoundingClientRect(), cell = br.height / rm._rows;
+        const spec = S.build(rm.getAttribute('data-room'), JSON.parse(rm.getAttribute('data-o'))), cam = (rm.getAttribute('data-cam') || '0,0').split(',').map(Number);
+        const p = S.project({ ox: cam[0], oy: cam[1] }, spec.spots.main), cr = cv.getBoundingClientRect();
+        w.man = 54 * cs.k / stg.height; w.sameCell = Math.abs(cs.k - cell);
+        w.feet = Math.abs(cr.top + (cs.floorY - 62 + S.FOOT_Y) * cs.k - (br.top + p[1] * cell));
+        const com = (cs.state.actors || []).find((x) => x.who && x.who !== 'me' && x.who.dress === 'suit' && x.who.age == null && x.who.num === '');
+        w.com = !!com && JSON.stringify(com.who.look) === JSON.stringify(BL.lookFor('speaker:' + bb.ctx.commish));
+      }
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      out.walk = w;
+      return out;
+    });
+    const REAL = ['NIKE', 'ADIDAS', 'GATORADE', 'STATE FARM', 'KIA', 'BOSE', 'CROCS', 'SUBWAY', 'DOORDASH', 'PELOTON', 'JORDAN', 'PUMA', 'REEBOK', 'UNDER ARMOUR', 'NEW BALANCE', 'SPALDING', 'WILSON', 'TACO BELL', 'AIRBNB', 'GEICO', 'NBA'];
+    const words = (rooms5.press.words || []).concat(rooms5.press.bare || []);
+    ok(rooms5.texel[0] >= 1 && rooms5.texel[1] >= 1, `a word on a back wall is a cell or more a stroke on the screen, so a one cell trace drops none (${rooms5.texel.map((v) => v.toFixed(2)).join(' by ')})`);
+    ok(rooms5.studio.fascia && rooms5.studio.white >= rooms5.studio.lit * 0.9, `the studio wall carries the show's name, every stroke lit on a one cell trace (${rooms5.studio.white} of ${rooms5.studio.lit} texels)`);
+    ok(rooms5.press.backdrop && rooms5.press.bandPx >= 150, `the press room has a step and repeat with a band in the club's second colour (${rooms5.press.bandPx} px)`);
+    ok(rooms5.press.words && rooms5.press.words.includes('MAGIC') && rooms5.press.bare && !rooms5.press.bare.some((x) => /LOCKER/.test(x)), `the backdrop names the club, and a room with no club never reads LOCKER ROOM (${JSON.stringify(rooms5.press.words)})`);
+    ok(words.length > 0 && !words.some((x) => REAL.some((r) => new RegExp('\\b' + r + '\\b').test(x))), `no real brand on the backdrop: the club and the game's own puns only (${[...new Set(words)].join(', ')})`);
+    ok(rooms5.draftWall && rooms5.draftWall.length === 1, `once the pick is in, the draft wall names the club one time (${JSON.stringify(rooms5.draftWall)})`);
+    const wk = rooms5.walk;
+    ok(wk.shot && wk.stage3d && wk.bare && wk.cs, `the draft walk is played on the 3D draft stage, not the court's flat set (${JSON.stringify({ shot: wk.shot, stage3d: wk.stage3d, bare: wk.bare })})`);
+    ok(wk.man >= 0.36, `on a phone the man on the stage is more than a third of its height (${((wk.man || 0) * 100).toFixed(0)}%)`);
+    ok(wk.sameCell != null && wk.sameCell < 0.01 && wk.feet < 2, `the walk is on the room's own cell grid, his feet on the stage spot (cell off ${(wk.sameCell || 0).toFixed(3)}px, feet off ${(wk.feet || 0).toFixed(2)}px)`);
+    ok(wk.com, 'the commissioner who shakes his hand is the one who read the pick: the same face');
+  }
   /* Off means off. */
   await page.evaluate(() => { localStorage.setItem('rtf.scenes.v1', 'off'); const a = document.querySelector('#cr-again'); if (a) a.click(); });
   await page.waitForSelector('#cr-go');

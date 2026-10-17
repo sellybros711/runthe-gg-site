@@ -102,6 +102,17 @@ function textTex(str, col, s, opts){
   }
   return { w: w, h: h, at: function(x, y){ var c = px[y * w + x]; return c === 'sh' ? opts.sh || null : c || null; } };
 }
+/* WORDS ON A WALL ARE A QUARTER BIGGER THAN A CELL. The camera turns the back
+   wall 35 degrees and looks down 30, so one cell of wall is 0.82 of a cell
+   across and 0.87 down on the screen. A one cell stroke drawn there fell
+   between the samples of a one cell trace (the desktop's), and the press
+   room's MAGIC read MFGIC. At WT a stroke is a cell or more on the screen,
+   so none is dropped. (u, v) is the wall point from the word's top left. */
+var WT = 1.25;
+function onWall(t, u, v){
+  var x = Math.floor(u / WT), y = Math.floor(v / WT);
+  return t && u >= 0 && v >= 0 && x < t.w && y < t.h ? t.at(x, y) : null;
+}
 
 // ─── shapes ────────────────────────────────────────────────────────────────
 /* A box is an axis-aligned slab set, traced exactly: [x0, y0, z0, x1, y1, z1]
@@ -170,11 +181,19 @@ BUILD.studio = function(o){
     if (ring) return M(oc, { e: 1, k: 0.55 });
     return M((u + v) % 2 ? '#15141f' : '#121119', { g: 1, rf: 0.34 });
   };
+  /* THE WALL IS A SET, NOT A FLAT (B17). It was one dark plane above the
+     screens, the top half of every studio shot. Now: a lit cove along its
+     foot, LED seams in the network's colour between the panels, the show's
+     name on a fascia over the video wall, and a scores tower to the left. */
+  var vx0 = -3 * 26 - 2.5 * 2 + 44 - 4;            /* the video wall's left edge */
   R.back = function(p){
-    var h = -p[1];
+    var h = -p[1], x = p[0];
     if (h > R.Hc) return M('#07060d', { b: -1 });
-    var col = Math.floor((p[0] + 400) / 14);
-    if (h < 7) return M('#1b1828', {});
+    if (h < 6) return M('#1b1828', {});
+    if (h < 7.4) return M(mix(oc, '#ffffff', 0.15), { e: 1 });
+    var seam = x < vx0 - 2 && Math.abs(((x - vx0 + 400) % 24) - 12) > 11.3 && h < R.Hc * 0.86;
+    if (seam) return M(darken(oc, 0.3), { e: 1 });
+    var col = Math.floor((x + 400) / 12);
     return M(col % 2 ? '#1a1526' : '#171322', { b: h > R.Hc * 0.8 ? -0.6 : 0 });
   };
   /* the right wall is glass on a city at night */
@@ -198,8 +217,9 @@ BUILD.studio = function(o){
     var isMain = i === 2 || i === 3;
     var t1 = sx, t2 = sx + sw;
     var b = R.box(t1, top, -R.D + 3, t2, -2.6 * F, -R.D + 5, isMain ? (function(){ return function(p){
-      var sc = R.screen, tx = TEX[o.tex], u = Math.floor(p[0] - sc.x0), v = Math.floor(p[1] - sc.y0);
-      var c = tx && u >= 0 && v >= 0 && u < tx.w && v < tx.h ? tx.at(u, v) : null;
+      /* his portrait, a quarter bigger than a cell (WT) so the name under
+         it keeps every stroke on a one cell trace */
+      var sc = R.screen, c = onWall(TEX[o.tex], p[0] - sc.x0, p[1] - sc.y0);
       if (Math.floor(p[0] - sc.x0) % 27 === 26) return M('#0b0a12', {});      /* the seam between the two panels */
       return M(c || mix(darken(oc, 0.55), '#05070d', (p[1] - sc.y0) / (sc.y1 - sc.y0) * 0.5), { e: 1 });
     }; })() : (function(k){ return function(p){
@@ -211,6 +231,30 @@ BUILD.studio = function(o){
     b.panel = i;
   }
   R.screen = { x0: x0 + 2 * (sw + gap), x1: x0 + 3 * (sw + gap) + sw, y0: top, y1: -2.6 * F, z: -R.D + 5 };
+  /* the show's name on a fascia over the video wall, lit in its colour */
+  var show = textTex(String(o.outlet || '').toUpperCase().slice(0, 18), '#ffffff', 1, { sh: darken(oc, 0.6) });
+  var fy0 = -9.8 * F, fy1 = top - 5, fmid = (R.screen.x0 + R.screen.x1) / 2, ftx = fmid - show.w * WT / 2;
+  R.fascia = { x0: x0 - 4, x1: R.R, y0: fy0, y1: fy1, words: o.outlet ? [String(o.outlet).toUpperCase()] : [] };
+  R.box(x0 - 4, fy0, -R.D, R.R, fy1, -R.D + 4, function(p, n){
+    if (n[2] < 0.5) return M('#0b0a12', {});
+    var v = p[1] - fy0, Hh = fy1 - fy0;
+    if (v < 1.2 || v > Hh - 1.6) return M(oc, { e: 1 });
+    var c = o.outlet ? onWall(show, p[0] - ftx, v - (Hh - show.h * WT) / 2) : null;
+    if (c) return M(c, { e: 1 });
+    return M(Math.floor((p[0] + 400) / 3) % 2 ? '#0d0b16' : '#100d1a', {});
+  });
+  /* the scores tower, left of the desk: six games, a chip for each club, a
+     bar for the score, all in the network's colour */
+  var gx0 = vx0 - 38, gx1 = vx0 - 8, gy0 = -8.8 * F, gy1 = -2.6 * F;
+  R.box(gx0 - 2, gy0 - 2, -R.D, gx1 + 2, gy1 + 2, -R.D + 3, M('#0b0a12', {}));
+  R.box(gx0, gy0, -R.D + 3, gx1, gy1, -R.D + 4.5, function(p){
+    var u = p[0] - gx0, v = p[1] - gy0, row = Math.floor(v / 7.5), w = v - row * 7.5;
+    if (row === 0) return M(w < 5.5 ? oc : '#120c26', { e: 1 });
+    if (w > 5.6) return M('#0d0a1c', { e: 1 });
+    if (u > 2 && u < 6) return M(row % 2 ? lighten(oc, 0.3) : mix('#ffffff', oc, 0.2), { e: 1 });
+    if (u > 8 && u < 9 + hashI(row, 2, 5) * (gx1 - gx0 - 13)) return M(mix('#2a1d50', oc, 0.55), { e: 1 });
+    return M(mix('#0d0a1c', oc, 0.12), { e: 1 });
+  });
   /* the anchor desk: a long block with a rounded top, a lit band in front */
   var dz0 = -10, dz1 = 8, dx0 = -46, dx1 = 58, dh = 3.2 * F;
   R.round(sdBox([(dx0 + dx1) / 2, -dh / 2, (dz0 + dz1) / 2], [(dx1 - dx0) / 2, dh / 2, (dz1 - dz0) / 2], 1.6), [(dx0 + dx1) / 2, -dh / 2, (dz0 + dz1) / 2], Math.hypot((dx1 - dx0) / 2, dh / 2, (dz1 - dz0) / 2) + 2, function(p){
@@ -227,7 +271,8 @@ BUILD.studio = function(o){
   /* a low stool behind each anchor, glimpsed */
   /* the truss of lamps overhead, in the dark */
   for (var tx = -110; tx < 120; tx += 36) {
-    R.round(sdCyl([tx, -R.Hc + 6, -20], 2.4, 5, 0.6), [tx, -R.Hc + 3.5, -20], 6, function(p){ return p[1] > -R.Hc + 5 ? M('#fff3d6', { e: 1 }) : M('#2a2734', {}); }, { cast: false });
+    /* far enough back that they hang above the fascia, never across its words */
+    R.round(sdCyl([tx, -R.Hc + 6, -40], 2.4, 5, 0.6), [tx, -R.Hc + 3.5, -40], 6, function(p){ return p[1] > -R.Hc + 5 ? M('#fff3d6', { e: 1 }) : M('#2a2734', {}); }, { cast: false });
   }
   R.light(-18, 0, 52, 1.2, { beam: true, top: -R.Hc + 6 });
   R.light(28, 0, 52, 1.2, { beam: true, top: -R.Hc + 6 });
@@ -245,17 +290,67 @@ BUILD.press = function(o){
   var R = new Room('press'), c1 = safe(o.c1, '#c8102e'), c2 = safe(o.c2, '#ffffff'), F = FT;
   R.D = 46; R.R = 92; R.Hc = 12 * F; R.amb = -0.2; R.bg = '#07080e';
   R.floor = function(p){ var t = hashI(Math.floor(p[0] / 2), Math.floor(p[2] / 2), 5); return M(t > 0.9 ? '#2a2c38' : '#232530', {}); };
-  var name = String(o.nick || o.team || 'LOCKER ROOM').toUpperCase().slice(0, 12);
-  var tile = textTex(name, c2 === '#ffffff' || lum(c2) > 0.6 ? '#f4f1ea' : c2, 1, { sh: darken(c1, 0.55) });
+  /* THE STEP AND REPEAT (B18). It was the whole wall, floor to ceiling, one
+     word over and over at one cell a stroke: LOCKER ROOM when there was no
+     club, and MFGIC on a desktop. Now it is a backdrop on its own frame, the
+     way a real one stands: the club's crest and name, staggered with two of
+     the game's own sponsors (puns, in the game's font, never a real mark),
+     a band of the second colour along the top. */
+  var name = String(o.nick || '').toUpperCase().slice(0, 12);
+  var SPONSORS = ['GATORGAID', 'KIYA MOTORS', 'BOZE', 'SUBWAYE', 'DOORDISH', 'CROX', 'PELOATHON'];
+  var sk = hashI(name.length, name.charCodeAt(0) || 7, 3), s1 = Math.floor(sk * SPONSORS.length), s2 = (s1 + 2 + Math.floor(sk * 31) % 3) % SPONSORS.length;
+  var bg = wallOf(c1), ink = '#f4f1ea', spInk = lighten(c1, lum(c1) > 0.5 ? 0.15 : 0.5), crestC = lum(c2) > 0.25 ? c2 : lighten(c1, 0.6);
+  var shd = { sh: darken(c1, 0.75) };
+  /* the crest: a ball in the second colour, seamed in the first. No club's
+     real mark: the same ball for everyone, in their colours. */
+  var crest = { w: 9, h: 9, at: function(x, y){
+    var dx = x - 4, dy = y - 4, r = Math.hypot(dx, dy);
+    if (r > 4.4) return null;
+    var seam = dx === 0 || dy === 0 || Math.abs(Math.hypot(dx - 4.5, dy) - 3.2) < 0.55 || Math.abs(Math.hypot(dx + 4.5, dy) - 3.2) < 0.55;
+    return seam ? darken(c1, 0.25) : r > 3.6 ? darken(crestC, 0.25) : crestC;
+  } };
+  function strip(items){
+    var parts = [], w = 0;
+    items.forEach(function(it){ parts.push({ x: w, t: it.t, dy: it.dy }); w += it.t.w + it.gap; });
+    return { w: w, h: 13, at: function(x, y){
+      x = ((x % w) + w) % w;
+      for (var i = 0; i < parts.length; i++) { var q = parts[i], u = x - q.x, v = y - q.dy; if (u >= 0 && u < q.t.w && v >= 0 && v < q.t.h) return q.t.at(u, v); }
+      return null;
+    } };
+  }
+  var nickT = name ? textTex(name, ink, 1, shd) : null;
+  var spA = textTex(SPONSORS[s1], spInk, 1, shd), spB = textTex(SPONSORS[s2], spInk, 1, shd);
+  var club = name ? [{ t: crest, dy: 2, gap: 3 }, { t: nickT, dy: 3, gap: 15 }] : [{ t: crest, dy: 2, gap: 15 }];
+  var rowA = strip(club.concat([{ t: spA, dy: 3, gap: 15 }])), rowB = strip([{ t: spB, dy: 3, gap: 15 }].concat(club));
+  R.words = (name ? [name] : []).concat([SPONSORS[s1], SPONSORS[s2]]);
+  var bx0 = -82, bx1 = 82, bh = 10.2 * F, band = 4;
+  R.backdrop = { x0: bx0, x1: bx1, h: bh };
   R.back = function(p){
     var h = -p[1], x = p[0];
     if (h > R.Hc) return M('#07080e', { b: -1 });
-    if (x < -96 || x > 96 || h > 11.2 * F) return M('#14161f', {});
-    var row = Math.floor(h / 13), u = ((x + 400 + (row % 2) * (tile.w / 2 + 6)) % (tile.w + 12)), v = 10 - (h - row * 13) + 0;
-    var c = u >= 0 && u < tile.w && v >= 0 && v < tile.h ? tile.at(Math.floor(u), Math.floor(v)) : null;
-    return M(c || (row % 2 ? wallOf(c1) : darken(wallOf(c1), 0.08)), { b: c ? 0.3 : 0 });
+    /* acoustic panels behind the backdrop, in the dark */
+    var pnl = Math.floor((x + 400) / 16), seam = ((x + 400) % 16) < 0.8 || (h % 24) < 0.8;
+    return M(seam ? '#0f1118' : pnl % 2 ? '#15171f' : '#13151d', {});
   };
-  R.right = function(p){ var h = -p[1]; return M(h > R.Hc ? '#07080e' : '#171923', { b: h > R.Hc ? -1 : 0 }); };
+  /* the backdrop: a panel on its own frame, a hand's width off the wall */
+  R.box(bx0 - 1.5, -bh - 1.5, -R.D + 1, bx1 + 1.5, 0, -R.D + 2.5, M('#2a2e38', { g: 1 }));
+  R.box(bx0, -bh, -R.D + 2.5, bx1, -1.5, -R.D + 3.2, function(p, n){
+    if (n[2] < 0.5) return M(darken(c1, 0.3), {});
+    var x = p[0] - bx0, v = p[1] + bh;
+    if (v < band * WT) return M(v < 0.9 ? lighten(c2, 0.2) : c2, { b: 0.2 });
+    var vv = v - band * WT, row = Math.floor(vv / (13 * WT)), sx = (x + (row % 2) * 31 + row * 7) / WT, sy = (vv - row * 13 * WT) / WT;
+    var c = (row % 2 ? rowB : rowA).at(Math.floor(sx), Math.floor(sy));
+    return M(c || (row % 2 ? bg : darken(bg, 0.06)), { b: c ? 0.35 : 0 });
+  });
+  /* the right wall is a curtain, pleated */
+  R.right = function(p){ var h = -p[1]; if (h > R.Hc) return M('#07080e', { b: -1 }); var pl = Math.floor((p[2] + 400) / 2.5) % 3; return M(pl === 0 ? '#1b1e29' : pl === 1 ? '#171923' : '#13151e', {}); };
+  /* two soft boxes on stands, either side, lighting the man at the table */
+  [[-74, -24, 1], [76, -30, -1]].forEach(function(sb){
+    var lx = sb[0], lz = sb[1], ly = 7.2 * F;
+    R.box(lx - 6, -ly - 8, lz - 2, lx + 6, -ly, lz + 2, function(p, n){ return n[2] > 0.5 ? M('#fff3dc', { e: 1 }) : M('#22252e', {}); }, { cast: false });
+    R.round(sdCap([lx, 0, lz], [lx, -ly, lz], 0.6), [lx, -ly / 2, lz], ly / 2 + 2, M('#2c2f38', { g: 1 }), { cast: false });
+    [[-5, -3], [5, -3], [0, 5]].forEach(function(l){ R.round(sdCap([lx, -10, lz], [lx + l[0], 0, lz + l[1]], 0.5), [lx + l[0] / 2, -5, lz + l[1] / 2], 9, M('#2c2f38', {}), { cast: false }); });
+  });
   /* the table, with a skirt to the floor in the club colour */
   var tz0 = -6, tz1 = 10, tx0 = -52, tx1 = 52, th = 3.6 * F;
   R.box(tx0, -th, tz0, tx1, -th + 2.2, tz1, M('#f2efe7', {}), { layer: 2 });
@@ -281,6 +376,7 @@ BUILD.press = function(o){
   });
   R.light(0, -4, 44, 1.1, { beam: true });
   R.light(-60, -30, 50, 0.35, {});
+  R.light(-40, -18, 34, 0.35, {}); R.light(42, -20, 34, 0.35, {});
   R.spots = { main: [0, 0, -16], host: [-30, 0, -16] };
   R.focus = [0, 0, -4]; R.fy = 0.9;
   return R;
@@ -309,14 +405,19 @@ BUILD.draft = function(o){
   var sx0 = -30, sx1 = 98, sy0 = -14 * F, sy1 = -4.6 * F;
   R.box(sx0 - 4, sy0 - 4, -R.D, sx1 + 4, sy1 + 4, -R.D + 3, M('#05070d', {}));
   var big = textTex(o.board || 'DRAFT', '#ffffff', 2, { sh: darken(c1, 0.6) });
-  var sub = textTex(String(o.nick || '').toUpperCase().slice(0, 14), lighten(c2, 0.1), 1, { sh: darken(c1, 0.6) });
+  /* the line under the board: the club, unless the board already says it
+     (the pick is in and the wall reads MAGIC: once, not MAGIC over MAGIC) */
+  var subW = String(o.nick || '').toUpperCase().slice(0, 14);
+  if (subW && subW === String(o.board || '').toUpperCase()) subW = '';
+  var sub = textTex(subW, lighten(c2, 0.1), 1, { sh: darken(c1, 0.6) });
+  R.screenWords = [String(o.board || 'DRAFT'), subW].filter(Boolean);
   R.box(sx0, sy0, -R.D + 3, sx1, sy1, -R.D + 5, function(p){
     var u = p[0] - sx0, v = p[1] - sy0, W = sx1 - sx0, Hh = sy1 - sy0;
     var bx = Math.floor((W - big.w) / 2), by = Math.floor(Hh * 0.3 - big.h / 2);
     var c = big.at(Math.floor(u - bx), Math.floor(v - by));
     if (c && u - bx >= 0 && u - bx < big.w && v - by >= 0 && v - by < big.h) return M(c, { e: 1 });
-    var sbx = Math.floor((W - sub.w) / 2), sby = Math.floor(Hh * 0.68);
-    var c2t = u - sbx >= 0 && u - sbx < sub.w && v - sby >= 0 && v - sby < sub.h ? sub.at(Math.floor(u - sbx), Math.floor(v - sby)) : null;
+    var sbx = Math.floor((W - sub.w * WT) / 2), sby = Math.floor(Hh * 0.68);
+    var c2t = subW ? onWall(sub, u - sbx, v - sby) : null;
     if (c2t) return M(c2t, { e: 1 });
     var g = v / Hh, stripe = Math.floor((u + v * 0.6) / 6) % 2;
     var bg = mix(darken(c1, 0.15), darken(c1, 0.55), g);
@@ -1036,7 +1137,7 @@ function shadow(res){
 }
 
 window.RTF_STAGE = {
-  API_VERSION: 1, FT: FT, FOOT_X: FOOT_X, FOOT_Y: FOOT_Y, ROOMS: Object.keys(ROOM_OF),
+  API_VERSION: 1, FT: FT, FOOT_X: FOOT_X, FOOT_Y: FOOT_Y, WT: WT, ROOMS: Object.keys(ROOM_OF),
   build: build, frame: frame, project: project, draw: draw, shadow: shadow, textTex: textTex, setTex: setTex,
   /* the checker's: the camera this file shares with baller.js */
   _cam: { pitch: PITCH, yaw: YAW, light: LV, rot: rot, unrot: unrot }

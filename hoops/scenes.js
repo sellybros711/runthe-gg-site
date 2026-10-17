@@ -275,6 +275,8 @@ function pixRoomHTML(room, c){
    A room with a stage (STAND) puts his feet on the stage line, not in the
    seats in front of it. */
 var STAND = { draft: 0.56 };
+/* the court ceremonies played on a 3D room's own stage: ceremony to room */
+var CER3 = { jersey: 'draft' };
 function castPlan(ov){
   var st = ov.querySelector('.sc-stage'); if (!st) return null;
   var H = st.clientHeight || 600, set = ov.querySelector('.sc-pset'), hud = ov.querySelector('.sc-hud'), hh = hud ? hud.offsetHeight : 58;
@@ -345,9 +347,16 @@ function fitPix(ov){
    stage3d.js is blocked or stale gets the flat pixel sets above. */
 function S3(){ var S = window.RTF_STAGE; return S && S.API_VERSION >= 1 && B && B.paint ? S : null; }
 function stageRoom(room, c){ var kind = pixKind(room, c); return room === 'arena' && kind === 'hs' ? 'gym' : room; }
+/* rows traced above and below the stage, so it can grow without a new trace */
+var PAD3 = 40;
+function stageO(room, c){
+  var o = { c1: c.c1, c2: c.c2, oc: c.oc, board: c.board || '', nick: c.nick || '', kind: pixKind(room, c), loud: !!c.loud, tex: c.tex || '' };
+  /* the studio wears its show's name over the video wall */
+  if (room === 'studio' && c.outlet) o.outlet = c.outlet;
+  return o;
+}
 function stageHTML(room, c){
-  var kind = pixKind(room, c);
-  var o = { c1: c.c1, c2: c.c2, oc: c.oc, board: c.board || '', nick: c.nick || '', kind: kind, loud: !!c.loud, tex: c.tex || '' };
+  var o = stageO(room, c);
   return '<div class="sc-room sc-3d rm-' + room + '" data-room="' + stageRoom(room, c) + '" data-o="' + esc(JSON.stringify(o)) + '">'
     + '<div class="st3"><canvas class="st-back"></canvas><canvas class="st-glow"></canvas><canvas class="st-l1"></canvas><canvas class="st-l2"></canvas></div>'
     + (c.loud ? '<i class="sc-pflash"></i>' : '') + '</div>';
@@ -387,7 +396,7 @@ function fit3(ov){
      caption under it grows for a decision) the picture slides by the
      difference in where the focus belongs, whole device pixels, and nothing
      is traced again. */
-  var PAD = 40, key = spec.key + '@' + pl.cw + 'x' + pl.r + 'x' + pl.k;
+  var PAD = PAD3, key = spec.key + '@' + pl.cw + 'x' + pl.r + 'x' + pl.k;
   if (rm._key !== key) {
     rm._key = key; rm.removeAttribute('data-fine'); if (rm._stop) rm._stop();
     var c0 = S.frame(spec, pl.cw, pl.ch);
@@ -401,8 +410,10 @@ function fit3(ov){
       rm.setAttribute('data-res', out.res); if (fine) rm.setAttribute('data-fine', '1');
     };
     rm._fine = false;
-    if (pl.r > 1) S.draw(spec, pl.cw, rm._rows, 1, function(out){ put(out, false); }, rm._cam);
+    /* the fine trace first: one traced ahead (warmNext) comes back at once,
+       and then no coarse preview is traced at all */
     rm._stop = S.draw(spec, pl.cw, rm._rows, pl.r, function(out){ rm._fine = true; put(out, true); }, rm._cam);
+    if (pl.r > 1 && !rm._fine) S.draw(spec, pl.cw, rm._rows, 1, function(out){ put(out, false); }, rm._cam);
   }
   var slide = S.frame(spec, pl.cw, pl.ch).oy - S.frame(spec, pl.cw, rm._ch0).oy;
   var top = pl.hh + Math.round((slide - PAD) * pl.k * pl.dpr) / pl.dpr;
@@ -439,10 +450,55 @@ function fit3(ov){
    room still fills the frame. The first beat in a room stays wide, to show
    where you are. ov._shot names the figure's slot, or nothing for wide. */
 var SHOT_ZOOM = 1.75;
+/* THE DRAFT WALK IS SHOT ON THE DRAFT STAGE (B19). It played on the court's
+   flat set: a dark wall, a grey screen with nothing on it, and half a phone
+   of seat squares under two men 54 cells of a 130 cell frame. Now the walk is
+   drawn over the 3D room the pick was read in (court.js, opts.grid): the LED
+   wall with the club on it, the podium, the families' tables. The camera
+   pushes in on the handshake, between the player and the commissioner and
+   up to the jersey over them, by the least zoom of at least CER_ZOOM that
+   keeps every fine pixel of the room and of the men whole. */
+var CER_ZOOM = 1.2, CER_COM = 32, CER_UP = 52;
+function cerScale(pl){
+  var q = Math.max(1, Math.round(pl.k / pl.r * pl.dpr));
+  for (var n = Math.ceil(CER_ZOOM * q - 1e-6); n <= Math.ceil(1.8 * q); n++) {
+    var d = n / q * pl.k * pl.dpr;
+    /* court.js traces the men at 2 to 4 fine pixels a cell (fineRes): one of
+       those must land on whole device pixels too */
+    for (var r = 4; r >= 2; r--) { var f = d / r; if (f >= 1 && Math.abs(f - Math.round(f)) < 0.01) return n / q; }
+  }
+  return 1;
+}
+function cerLens(ov, L, rm, st){
+  var S = S3(), pl = plan3(ov), box = rm.querySelector('.st3');
+  if (!S || !pl || !box || !box.style.width || !rm._cam) return;
+  var spec = S.build(rm.getAttribute('data-room'), JSON.parse(rm.getAttribute('data-o') || '{}'));
+  if (!spec || !spec.spots || !spec.spots.main) return;
+  var s = cerScale(pl), n = function(v){ return parseFloat(v) || 0; };
+  var W = st.clientWidth, H = st.clientHeight, bl = n(box.style.left), bt = n(box.style.top), bw = n(box.style.width), bh = n(box.style.height);
+  var pa = S.project(rm._cam, spec.spots.main);
+  var mx = bl + (pa[0] + CER_COM / 2) * pl.k, my = bt + (pa[1] - CER_UP) * pl.k;
+  var tx = W / 2 - s * mx, ty = pl.hh + (H - pl.hh) * 0.5 - s * my;
+  tx = Math.min(-s * bl, Math.max(W - s * (bl + bw), tx));
+  ty = Math.min(-s * bt, Math.max(H - s * (bt + bh), ty));
+  tx = Math.round((s * bl + tx) * pl.dpr) / pl.dpr - s * bl;
+  ty = Math.round((s * bt + ty) * pl.dpr) / pl.dpr - s * bt;
+  L.style.transform = 'translate(' + tx.toFixed(3) + 'px,' + ty.toFixed(3) + 'px) scale(' + s + ')';
+  /* the court canvas on the room's cell grid: K CSS pixels a cell, from the
+     whole cell at or above and left of the stage's corner */
+  var K = s * pl.k, X0 = tx + s * bl, Y0 = ty + s * bt, a = Math.floor(-X0 / K), b = Math.floor((pl.hh - Y0) / K);
+  var left = X0 + a * K, top = Y0 + b * K - pl.hh;
+  ov._cerG = { k: K, left: Math.round(left * pl.dpr) / pl.dpr, top: Math.round(top * pl.dpr) / pl.dpr, cw: Math.ceil((W - left) / K) + 1, ch: Math.ceil((H - pl.hh - top) / K) + 1,
+    /* court.js stands a man 22 cells right of x and his sprite's top 62 above
+       y; the room's spot is his feet, FOOT_X and FOOT_Y into the sprite */
+    floorY: pa[1] - b - S.FOOT_Y + 62, cx: pa[0] - a + (22 - S.FOOT_X) + CER_COM / 2, zoom: s };
+  if (ov._cerFit) ov._cerFit();
+}
 function lens(ov){
   var L = ov.querySelector('.sc-lens'); if (!L) return;
   L.style.transform = '';
   var slot = ov._shot, rm = ov.querySelector('.sc-3d'), st = ov.querySelector('.sc-stage');
+  if (ov._cer && rm && st) { cerLens(ov, L, rm, st); return; }
   if (!slot || !rm || !st) return;
   var fig = ov.querySelector('.sc-cast [data-slot="' + slot + '"]'), box = rm.querySelector('.st3');
   if (!fig || !fig.style.width || !box || !box.style.width) return;
@@ -1163,33 +1219,63 @@ function play(beats, ctx, opts){
     var name = 'me:' + B.hash(JSON.stringify([ctx.look, ctx.c1, ctx.c2, ctx.num, oc, ctx.name]));
     if (portraitTex[name]) return name;
     var g = B.paint(ctx.look, dressMe({ c1: ctx.c1, c2: ctx.c2, num: ctx.num, pose: 'stand', age: ctx.age, res: 1 }, 'court'));
-    var nm = S.textTex(String(ctx.last || ctx.name || '').toUpperCase().slice(0, 8), '#ffffff', 1, { sh: '#05070d' });
-    var W = 54, H = 32, bx = 5, by = -3;
+    /* his name over the picture, or his number when the name is longer than
+       the two panels hold (seven letters): never a name cut in half */
+    var last = String(ctx.last || ctx.name || '').toUpperCase(), label = last.length <= 7 ? last : '#' + ctx.num;
+    var nm = S.textTex(label, '#ffffff', 1, { sh: '#05070d' });
+    /* The wall shows a texel at 1.25 cells (stage3d's WT), so 43 by 26
+       texels fill the two middle panels. The name runs along the top and the
+       bust sits left of middle, so the hosts' heads in front of the wall
+       never cover either. */
+    var W = 43, H = 26, bx = -6, by = -3;
     S.setTex(name, { w: W, h: H, at: function(x, y){
-      if (y >= 23 && y < 32) { if (y === 23) return oc; var u = x - 4, v = y - 24; var c = u >= 0 && u < nm.w && v >= 0 && v < nm.h ? nm.at(u, v) : null; return c || (x < 2 ? oc : '#0d0b18'); }
-      var gx = x - bx, gy = y - by, row = g[gy];
+      if (y < 10) { if (y === 9) return oc; var u = x - 3, v = y - 1; var c = u >= 0 && u < nm.w && v >= 0 && v < nm.h ? nm.at(u, v) : null; return c || (x < 2 ? oc : '#0d0b18'); }
+      var gx = x - bx, gy = y + by, row = g[gy];
       var c2 = row && gx >= 0 && gx < row.length ? row[gx] : null;
       if (c2) return c2;
       var band = (x + y) % 9 < 1;
-      return band ? '#2a1d44' : (y < 12 ? '#1c1430' : '#160f28');
+      return band ? '#21173a' : (y < 18 ? '#1c1430' : '#160f28');
     } });
     portraitTex[name] = 1;
     return name;
   }
-  function setRoom(bt){
-    var r = bt.room || roomName;
-    roomName = r;
+  /* the room a beat is set in: its name, its key and what it is drawn from */
+  function roomOf(bt, r){
     var oc = OUTLETS[CAST[bt.who] ? CAST[bt.who].outlet : 'night'].c;
     /* A beat set at the club you are leaving wears that club's colours. */
     var k1 = bt.club === 'from' && ctx.fc1 ? ctx.fc1 : ctx.c1, k2 = bt.club === 'from' && ctx.fc2 ? ctx.fc2 : ctx.c2;
     var key = r + '|' + T(bt.board, ctx) + '|' + (bt.loud ? 1 : 0) + '|' + (r === 'studio' ? oc : '') + '|' + k1;
-    if (key !== room) {
-      room = key;
-      var on2 = OUTLETS[CAST[bt.who] ? CAST[bt.who].outlet : 'night'];
-      $('.sc-rooms').innerHTML = roomHTML(r, { c1: k1, c2: k2, oc: oc, level: ctx.level, loud: bt.loud, board: T(bt.board, ctx), outlet: on2 ? on2.name.toUpperCase() : '', nick: ctx.nick || ctx.teamName || '', tex: r === 'studio' ? portraitTex(oc) : '' });
+    var on2 = OUTLETS[CAST[bt.who] ? CAST[bt.who].outlet : 'night'];
+    return { r: r, key: key, c: { c1: k1, c2: k2, oc: oc, level: ctx.level, loud: bt.loud, board: T(bt.board, ctx), outlet: on2 ? on2.name.toUpperCase() : '', nick: ctx.nick || ctx.teamName || '', tex: r === 'studio' ? portraitTex(oc) : '' } };
+  }
+  function setRoom(bt){
+    var r = bt.room || roomName;
+    roomName = r;
+    var rk = roomOf(bt, r);
+    if (rk.key !== room) {
+      room = rk.key;
+      $('.sc-rooms').innerHTML = roomHTML(r, rk.c);
     }
     $('.sc-conf').innerHTML = bt.confetti ? confettiHTML(ctx) : '';
     fitPix(ov);
+  }
+  /* THE NEXT ROOM IS TRACED WHILE THIS LINE IS READ. Draft night changes the
+     LED wall from DRAFT 2026 to the club between two beats, and the new room
+     was traced on the main thread while the walk played: the walk skipped
+     half its frames and the stage swapped from coarse to fine under his
+     feet. stage3d.js keeps what it traced, so the next beat's room is drawn
+     ahead, at the size and camera fit3 will ask for. That size is read off
+     the stage, which the caption shapes, so it runs once the line is all
+     on the screen. */
+  function warmNext(){
+    var S = S3(), nx = list[i + 1];
+    if (!S || !nx || !ov.querySelector('.sc-3d')) return;
+    var r = nx.room || roomName, rk = roomOf(nx, r);
+    if (rk.key === room || !STAGE_ROOM[r]) return;
+    var spec = S.build(stageRoom(r, rk.c), stageO(r, rk.c)), pl = plan3(ov);
+    if (!spec || !pl) return;
+    var c0 = S.frame(spec, pl.cw, pl.ch);
+    S.draw(spec, pl.cw, pl.ch + PAD3 * 2, pl.r, function(){}, { ox: c0.ox, oy: c0.oy + PAD3 });
   }
   function setCast(bt){
     var old = bt.club === 'from' && ctx.fc1;
@@ -1290,7 +1376,7 @@ function play(beats, ctx, opts){
     if (shotLive) { shotLive.stop(); shotLive = null; }
     var h = ov.querySelector('.sc-shot'); if (h) h.parentNode.removeChild(h);
     $('.sc-cast').style.visibility = '';
-    shotKey = '';
+    shotKey = ''; ov._cer = null; ov._cerG = null; ov._cerFit = null; ov._shotStage = null;
   }
   function setShot(bt){
     var CT = window.RTF_COURT;
@@ -1305,7 +1391,19 @@ function play(beats, ctx, opts){
     $('.sc-cast').style.visibility = 'hidden';
     var x = {}; for (var k in ctx) x[k] = ctx[k];
     for (var k2 in bt.sx || {}) if (bt.sx[k2] != null) x[k2] = bt.sx[k2];
-    shotLive = CT.ceremony(host, key, x, { room: pixKind(bt.room || roomName, ctx), me: dressMe({ look: ctx.look, c1: ctx.c1, c2: ctx.c2, num: ctx.num, age: ctx.age }, 'court') });
+    /* the walk on the 3D draft stage, by the commissioner who read the pick */
+    var grid = null;
+    if (CER3[key] && ov.querySelector('.sc-3d.rm-' + CER3[key]) && CT.API_VERSION >= 2) {
+      ov._cer = key; ov._cerG = null; lens(ov);
+      if (ov._cerG) grid = function(){ return ov._cerG; };
+      else ov._cer = null;
+      var cw2 = CAST.commish, nm2 = T(cw2.name, ctx) || 'commish';
+      x.com = { look: B.lookFor('speaker:' + nm2), c1: mix3((OUTLETS[cw2.outlet] || OUTLETS.night).c), c2: '#11141f' };
+    }
+    shotLive = CT.ceremony(host, key, x, { room: pixKind(bt.room || roomName, ctx), me: dressMe({ look: ctx.look, c1: ctx.c1, c2: ctx.c2, num: ctx.num, age: ctx.age }, 'court'), grid: grid });
+    if (shotLive && grid) ov._cerFit = function(){ if (shotLive && shotLive.stage && shotLive.stage.fit) shotLive.stage.fit(); };
+    /* the checker's: the court stage the shot is playing on */
+    ov._shotStage = shotLive ? shotLive.stage : null;
     if (!shotLive) clearShot();
   }
   /* Tale of the tape: you and your draft-class rival, side by side, on the
@@ -1349,6 +1447,7 @@ function play(beats, ctx, opts){
       body.innerHTML = '<p class="sc-tx' + cls + '">' + esc(full) + '</p>' + feed;
       typing = false;
       $('.sc-tap').hidden = false;
+      warmNext();
       return;
     }
     body.innerHTML = '<p class="sc-tx' + cls + '"></p>';
@@ -1362,6 +1461,7 @@ function play(beats, ctx, opts){
         tx.textContent = full;
         if (feed) body.insertAdjacentHTML('beforeend', feed);
         $('.sc-tap').hidden = false;
+        warmNext();
         return;
       }
       tx.innerHTML = esc(full.slice(0, shown)) + '<span class="sc-caret">|</span>';
@@ -1460,6 +1560,7 @@ function play(beats, ctx, opts){
       var body = $('.sc-body');
       body.innerHTML = '<p class="sc-tx' + (bt.quote ? ' q' : '') + '">' + esc(bt._full) + '</p>' + (bt._feed || '');
       $('.sc-tap').hidden = false;
+      warmNext();
       return;
     }
     i++;
