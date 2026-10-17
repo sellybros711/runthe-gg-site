@@ -404,7 +404,7 @@ const GYMS = (() => { const ctx = { console }; ctx.globalThis = ctx; vm.createCo
     { let s1 = GYMS.init(G); for (const d of GYMS.proof(G).slice(0, 12)) s1 = GYMS.step(G, s1, d).s; const lv = Q.lever, adj = [0, 1, 2, 3].map(d => { const c = lv % Q.W + GYMS.DIRS[d][0], r = ((lv / Q.W) | 0) + GYMS.DIRS[d][1]; return [d, r * Q.W + c]; }).filter(x => GYMS.deck(G, s1, x[1]));
       const at = adj[0], r = GYMS.step(G, { p:at[1], b:s1.b, f:s1.f }, (at[0] + 2) % 4);
       claim(r.ev === 'reset' && GYMS.key(r.s) === GYMS.key(GYMS.init(G)) && s1.b.join() !== GYMS.init(G).b.join(), `${G.id}: the lever puts every piece back where it started, and that start is the solvable one`); }
-    claim(G.say.length === 2 && G.say.every(l => l.length > 20 && !l.split('').some(ch => ch.charCodeAt(0) === 8211 || ch.charCodeAt(0) === 8212)), `${G.id}: the civilian has a nudge and a plainer line for after two resets`);
+    claim(G.say.length === 3 && G.say.every(l => l.length > 20 && !l.split('').some(ch => ch.charCodeAt(0) === 8211 || ch.charCodeAt(0) === 8212)), `${G.id}: the civilian has a nudge, a plainer line after two resets and a warmer one after five`);
     claim(G.mech[0] === 'barrel' || G.world !== 'pirate', `${G.id}: Pirate Cove's gyms are its barrels first`); }
   for (const w in byWorld){ const gs = byWorld[w], legs = gs.map(g => g.leg).sort((a, b) => a - b), keep = gs.find(g => g.leg === 18), mid = gs.find(g => g.leg !== 18);
     claim(gs.length === 2 && legs[1] === 18 && legs[0] >= 7 && legs[0] <= 11 && keep.keeper && keep.mech.length === 2 && mid.mech.length === 1,
