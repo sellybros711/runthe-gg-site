@@ -11,6 +11,8 @@
  *   unlisted   a public folder whose page is not noindexed
  *   dev        anything else, including a game that so far lives only on a branch
  *
+ * Two islands are places, not games (status hub): RunThe.GG itself, and Marketing.
+ *
  * discover(src) takes a source (github.js in production, a fixture in the tests):
  *   src.siteTree()           every file path on the site's main
  *   src.siteFile(path)       a file's text on main, or null
@@ -95,7 +97,19 @@ export async function discover(src){
     o.kind = kindOf(o.key, o.name + ' ' + o.summary);
     o.col = PALETTE[hash(o.key) % PALETTE.length];
   }
-  return [...games.values()].map(o => ({ id:o.key, name:o.name, status:o.status, note:o.note, kind:o.kind, col:o.col, layers:o.layers,
+  const out = [...games.values()].map(o => ({ id:o.key, name:o.name, status:o.status, note:o.note, kind:o.kind, col:o.col, layers:o.layers,
     where:o.route || (o.dir ? '/' + o.dir + '/' : null), branch:o.branch || null, found:o.found }))
     .sort((a, b) => a.name.localeCompare(b.name));
+
+  /* Two places that are not games, read from the site the same way. The home island is the landing page and
+     everything the games share: the files at the root, assets/, and every shared script, workflow, API and
+     migration no game claims. Marketing is marketing/ and the scripts and workflows named for it. */
+  const claimed = new Set([].concat(...[...games.values()].map(o => o.files)));
+  const mkt = paths.filter(p => /^marketing\//.test(p) || (/^(scripts|\.github\/workflows)\//.test(p) && /marketing/i.test(p)));
+  mkt.forEach(p => claimed.add(p));
+  const site = paths.filter(p => !claimed.has(p) && (!p.includes('/') || /^assets\//.test(p) || /^(scripts|\.github\/workflows|functions\/api|supabase)\//.test(p)));
+  const place = (id, name, kind, files) => ({ id, name, status:'hub', note:'', kind, col:PALETTE[hash(id) % PALETTE.length], layers:countLayers(files), where:id === 'site' ? '/' : '/' + id + '/', branch:null, found:['the site'] });
+  if (has.has('index.html')) out.unshift(place('site', 'RunThe.GG', 'hq', site));
+  if (mkt.length) out.splice(1, 0, place('marketing', 'Marketing', 'broadcast', mkt));
+  return out;
 }
