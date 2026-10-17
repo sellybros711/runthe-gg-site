@@ -146,7 +146,7 @@ function taskList(list){ return list.length ? list.map(function(t){ var s = TSTA
 function taskBox(a, mine, picker){ return '<div class="sw-sec"><h3>' + (picker ? 'Ask an agent' : 'Give it a task') + '</h3>' + (picker || '') +
   '<textarea id="sw-task" rows="3" maxlength="4000" placeholder="What should ' + (picker ? 'it' : esc(a.name.replace(/ Agent$/, ''))) + ' do?" style="width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font:inherit;font-size:14px;resize:vertical;margin-top:4px"></textarea>' +
   '<button id="sw-send" style="width:auto;margin:8px 0 0;height:36px;padding:0 16px;border:0;border-radius:10px;background:#2f6fd0;color:#fff;font:inherit;font-weight:800;cursor:pointer">Send</button>' +
-  '<div id="sw-task-note" class="sw-asof" style="margin-top:6px">It reaches the agent\'s chat when the dispatcher next runs (every 15 minutes, 8am to midnight ET).</div>' +
+  '<div id="sw-task-note" class="sw-asof" style="margin-top:6px">It reaches the agent\'s chat when the dispatcher next runs (every hour, 8am to midnight ET).</div>' +
   '<div id="sw-task-list">' + taskList(mine || []) + '</div></div>'; }
 function bindTask(a, place){ var b = document.getElementById('sw-send'), t = document.getElementById('sw-task'), n = document.getElementById('sw-task-note'), pick = document.getElementById('sw-task-agent'); if (!b) return;
   b.onclick = function(){ var text = t.value.trim(), id = pick ? pick.value : a.id; if (text.length < 3){ n.textContent = 'Write a few words first.'; return; }
