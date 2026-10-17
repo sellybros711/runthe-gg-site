@@ -172,8 +172,9 @@ export async function handleEvent(env, type, obj) {
     /* A FULL REFUND OR A CHARGEBACK ON A SUBSCRIPTION'S INVOICE ends that subscription's
        access now: a yearly plan through premium_sub_apply, Run The Diamond Pro through
        grantRecurring. A partial refund is a goodwill gesture and changes nothing. A
-       charge that no subscription made (a one-time bundle, a coin bucket) is left alone
-       here: a lifetime row is never cut by anything. The Arcade Card has never been cut
+       Putt Putt lives buy gives its lives back (below). Any other charge that no
+       subscription made (a one-time bundle, a coin bucket) is left alone here: a
+       lifetime row is never cut by anything. The Arcade Card has never been cut
        by a refund either, and still is not. */
     let charge = obj;
     if (type === 'charge.dispute.created') {
@@ -200,6 +201,13 @@ export async function handleEvent(env, type, obj) {
       } else if (rec && rec.recurring && meta.supabase_user_id) {
         await grantRecurring(env, meta.supabase_user_id, meta.bundle, sub, true);
       }
+    } else if (charge && charge.payment_intent) {
+      /* A PUTT PUTT LIVES BUY takes its lives back (the owner, 2026-10-17): the checkout
+         session this payment came from names the pack, and putt_lives_reclaim (152) takes
+         that many, extras first, never below nought, once a buy. Any other one-time charge
+         (a bundle, a coin bucket) is still left alone. */
+      const session = await sessionOfPayment(env, stripeId(charge.payment_intent));
+      if (session && session.metadata && session.metadata.putt_lives) await reclaimPuttLives(env, session.id);
     }
   }
 }
@@ -554,6 +562,32 @@ async function grantPuttLives(env, userId, session) {
     var detail = '';
     try { detail = await res.text(); } catch (e) {}
     throw new Error('putt_lives_buy ' + res.status + ' ' + detail);
+  }
+}
+
+/* The checkout session a payment came from, or null. */
+async function sessionOfPayment(env, pi) {
+  const list = await stripeGet(env, '/v1/checkout/sessions?payment_intent=' + encodeURIComponent(pi) + '&limit=1');
+  return (list && list.data && list.data[0]) || null;
+}
+
+/* A REFUNDED OR DISPUTED LIVES BUY, taken back through putt_lives_reclaim (152), keyed on
+ * the session, so a second refund event or a refund then a chargeback takes nothing more.
+ * A database without 152 answers 404 here, which is thrown so Stripe retries until it runs. */
+async function reclaimPuttLives(env, sessionId) {
+  const res = await fetch(env.SUPABASE_URL + '/rest/v1/rpc/putt_lives_reclaim', {
+    method: 'POST',
+    headers: {
+      apikey: env.SUPABASE_SERVICE_ROLE,
+      Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ p_session: sessionId })
+  });
+  if (!res.ok) {
+    var detail = '';
+    try { detail = await res.text(); } catch (e) {}
+    throw new Error('putt_lives_reclaim ' + res.status + ' ' + detail);
   }
 }
 

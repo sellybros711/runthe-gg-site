@@ -15,7 +15,7 @@ name: Stripe checks
 #                     same way: page and server agree, checkout sells a pack only when all
 #                     of it would land, the webhook files the catalog's lives
 #   hoops_wallet      supabase/141's paid coin rules, in SQL
-#   putt_lives_buy    supabase/149's bought lives, in SQL, then 151's lives over the max, with 150's spares beside them
+#   putt_lives_buy    supabase/149's bought lives, in SQL, then 151's lives over the max, with 150's spares beside them, then 152's refunds
 #   replay-webhook    every yearly plan event through the real webhook, against a real
 #                     Postgres built from the migrations, asserting after every event
 #                     that no lifetime row moved and no Fantasy pass was cut short
@@ -132,3 +132,6 @@ jobs:
           $P -f supabase/151_putt_lives_extra.sql
           $P -f supabase/test/putt_lives_extra_test.sql
           $P -f supabase/test/putt_lives_spare_test.sql
+          $P -f supabase/152_putt_lives_refund.sql
+          $P -f supabase/152_putt_lives_refund.sql
+          $P -f supabase/test/putt_lives_refund_test.sql
