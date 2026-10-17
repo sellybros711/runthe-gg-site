@@ -138,7 +138,9 @@ Statcast codes. The shape tells the UI how to draw the flight.
 /**
  * @typedef {Object} Reveal          withheld from the browser until the outing is finished
  * @property {'door_shut'|'doors_open'|'walk_off'} outcome
- * @property {number} pitches       what the real pitcher threw in this spot
+ * @property {number|null} pitches  what the real pitcher threw in this spot; null when the record
+ *                                  is incomplete (then pitchesNote says what is known)
+ * @property {string} [pitchesNote]  'at least 13 pitches' when pitches is null
  * @property {number} runs          runs he allowed in the spot
  * @property {string} summary       one line: 'struck out 2, walked Davis, then Gibson homered'
  * @property {{batter: string, result: string, pitches: number}[]} plateAppearances
@@ -190,12 +192,14 @@ Statcast codes. The shape tells the UI how to draw the flight.
  * @property {'take'|'swing'} batter
  * @property {PitchCallResult} result
  * @property {{bb: 'ground'|'line'|'fly'|'popup', ev: number, la: number, spray: number,
- *             result: InPlayResult, text: string}} [inPlay]   spray: degrees, 0 = centre field
+ *             result: InPlayResult, text: string}} [inPlay]   spray: degrees, 0 = centre field,
+ *                                    negative = the left field side
  * @property {{b: number, s: number}} countBefore
  * @property {{b: number, s: number}} count     after; resets to 0-0 when the plate appearance ends
  * @property {number} outs           after
  * @property {number} bases          after
- * @property {{from: number, to: number}[]} runnerMoves   0 = batter, 1..3 bases, 4 = scored
+ * @property {{from: number, to: number}[]} runnerMoves   0 = batter, 1..3 bases, 4 = scored,
+ *                                    -1 = put out on the play
  * @property {number} runs           scored on this pitch
  * @property {boolean} paOver
  * @property {{id: string, tier: 'batter'|'similar'|'league'}} drawn   the real pitch used
@@ -384,3 +388,28 @@ resets it.
 `shut-the-door/fixtures/mock-scenario.json` (written by the lead on approval) is one complete scenario in this
 shape, with a tiny pack, so Agent B builds and tests the whole UI before Agent A's engine exists.
 Agent B's `mock-api.js` implements the four calls over it.
+
+## 14. Lead rulings (2026-10-17, after the first pass)
+
+Scenarios (owner approved): Yamamoto 2025 WS G7, Buehler 2024 WS G5, **Pressly 2022 WS G6** (replaces
+Montgomery: one batter, two pitches), Chapman 2016 WS G7, Hader 2019 NL WC, Feliz 2011 WS G6, **Díaz
+2025-09-05 at CIN**, **Tanner Scott 2025-06-27 at KC**, Eckersley 1988 WS G1 (proxy), Rivera 2001 WS
+G7 (proxy). The verified facts are in `scenarios/CANDIDATES.md`.
+
+- **Starters' arsenals** (Yamamoto, Buehler): the owner chose their postseason mix that October.
+- **Rivera** is `doors_open` under the end rules (Womack's double ties it). The reveal tells the rest.
+- **Eckersley**: `reveal.pitches` is null with `pitchesNote`, since Retrosheet lacks two at-bats' pitches.
+- **Bunts**: none in v1. A real bunt shows only in the reveal.
+- **Clase**: not used. Savant's pitch labels stand as published (Hader's sinker draws as `run`).
+- **Bands**: Agent A retunes them on the real packs and reports the spread per scenario to the
+  lead before `contract.js` changes. Hold% may move less per pitch than 0.5/1.5/4.0 assumes.
+- **B1**: accepted. `startOuting` in daily mode never writes or submits at `pitchNo` 0, and
+  `finishOuting` on an outing that is over returns the same result and never submits twice.
+- **B2**: accepted. `to: -1` is a runner put out (section 6).
+- **B3**: confirmed. Negative spray is the left field side.
+- **B4**: yes, a guest streak on the device (`std_ui_hist_v1`). Signed in, the server's streak wins.
+  `STD_AUTH.myStats()` reads `shutdoor_my_stats()`.
+- **B5**: accepted as written, `myStats()` added. `STD_SHARE.text(result, dailyNumber)`.
+- **B6**: accepted. `api.js`, `share.js`, `auth.js` load before `mock-api.js`; the lead removes the
+  mock's tag at integration.
+- **B7**: accepted.
