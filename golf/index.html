@@ -60,11 +60,12 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- Putt Putt Tour. It draws nothing until puttOn() opens it (see PUTT_TESTERS and PUTT_LIVE). -->
-<script defer src="putt/putt.js?v=98"></script>
+<script defer src="putt/putt.js?v=99"></script>
 <script defer src="putt/land.js?v=13"></script>
 <script defer src="putt/hole3d.js?v=17"></script>
-<script defer src="putt/gyms.js?v=2"></script>
-<script defer src="putt/trail.js?v=40"></script>
+<script defer src="putt/gyms.js?v=3"></script>
+<script defer src="putt/gymkinds/push.js?v=1"></script>
+<script defer src="putt/trail.js?v=41"></script>
 <script defer src="putt/mapland.js?v=6"></script>
 <!-- The course golfer in the profile style, asked through g3dOn(). -->
 <script defer src="golfer3d.js?v=21"></script>
@@ -23693,7 +23694,7 @@ function puttHost(){
     // Putt Putt's paid lives: the site's own Stripe checkout (functions/api/stripe), not create-checkout. Answers {url} or {error}.
     buyLives:function(pack){ return puttBuyLives(pack); },
     // a guest's coins are held on this browser and paid when they sign in, rather than lost (holdGuestCoins)
-    coins:function(n,label){ try{ if(sbSignedIn()) addBonusCoins(n,{label:label}); else holdGuestCoins(n); }catch(e){} },
+    coins:function(n,label,o){ try{ if(sbSignedIn()) addBonusCoins(n,{label:label,silent:!!(o&&o.silent)}); else holdGuestCoins(n); }catch(e){} },
     // the game's own weekly challenges, daily quests and play streak hear about Putt Putt
     quest:function(metric,n){ try{ questWeekly(metric,n); }catch(e){} },
     questDaily:function(){ try{ questDaily('putt'); }catch(e){} },
@@ -23711,7 +23712,8 @@ function puttHost(){
     equipPutter:function(id){ try{ if(!cosOwned('putter',id)) return false; cosEquip('putter',id); return true; }catch(e){ return false; } },
     grantPutter:function(id){ try{ return puttGrant(id); }catch(e){ return false; } },
     // a free pack for a Putt Putt gym vault or a lucky chest: 'base' (Pro Shop) or 'tour'. Signed in only; 0 when it could not land.
-    pack:function(tier,why){ try{ return grantFreePack(1,{tier:tier||'base',why:why||'Putt Putt'}); }catch(e){ return 0; } },
+    // o.silent: no toast (a gym vault says it in its own panel, so nothing lands over the board)
+    pack:function(tier,why,o){ try{ return grantFreePack(1,{tier:tier||'base',why:why||'Putt Putt',silent:!!(o&&o.silent)}); }catch(e){ return 0; } },
     // a lucky chest's common item: one the player does not own yet, or null when they own them all
     commonItem:function(){ try{ if(!sbSignedIn()||!packsOn()) return null; const L=packPool().filter(e=>e.rarity==='common'&&!packOwns(e)); if(!L.length) return null;
       const e=L[Math.floor(Math.random()*L.length)]; packGrant(e); return e.name||null; }catch(e){ return null; } },
