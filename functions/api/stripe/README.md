@@ -588,17 +588,23 @@ select public.rtf_coin_refund('<cs_live_... session id>');
 A refunded bucket's packs stay filed if the page already filed them; that is rare and
 small enough to leave to the refund itself.
 
-## Putt Putt lives, two packs (shipped dark)
+## Putt Putt lives, two packs
 
 The owner's calls: nine lives for $4.99 (2026-10-16), and three for $2.99 beside it
 (2026-10-17). A signed in player who is out of lives can buy either. Both are built
-and **off** behind one switch. The buttons sit on Putt Putt's Out of Lives sheet,
-under Get Tour Pass, nine first.
+behind one switch, **on since 2026-10-17**. The buttons sit on Putt Putt's Out of
+Lives sheet, under Get Tour Pass, nine first. Putt Putt itself is still testers only
+(`PUTT_LIVE` in `golf/index.html`), so only testers see them until it launches.
 
 | pack | price | sold when the player is missing | price env var | Stripe lookup key |
 |---|---|---|---|---|
 | `nine` | $4.99 one-time | at least 9 lives | `STRIPE_PRICE_PUTT_LIVES_9` | `putt_lives_nine` |
 | `three` | $2.99 one-time | at least 3 lives | `STRIPE_PRICE_PUTT_LIVES_3` | `putt_lives_three` |
+
+Live prices, created 2026-10-17 and set in Cloudflare Production:
+`STRIPE_PRICE_PUTT_LIVES_9` = `price_1URPuvHiw1zsFcnXz9NC5jul` and
+`STRIPE_PRICE_PUTT_LIVES_3` = `price_1URPvzHiw1zsFcnXZ4M8JBE6`. 149 is run.
+`false` in both files is the kill switch.
 
 | switch | migration | what is bought |
 |---|---|---|

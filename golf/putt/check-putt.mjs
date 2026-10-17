@@ -1009,10 +1009,18 @@ if (!args.includes('--no-browser')){
     for (let t = 0; t < 2; t++){ for (let k = 0; k < 3; k++) await putt(0.03); await pg.waitForSelector('.pp-pop'); await pg.click('.pp-pop [data-a="again"]'); }
     await pg.waitForSelector('.pp-sheet');
     const r2 = await rec();
+    // the only money on the sheet is the paid lives (the owner, 2026-10-17): nine then three, at LIVES_BUY's prices,
+    // and only while PUTT_LIVES_ENABLED is on. Everything else on it is still free: no coin price, no other price.
     { const tx = await pg.textContent('.pp-sheet'), last = Math.max.apply(null, r2.back || [0]);
+      const buys = await pg.$$eval('.pp-sheet [data-buy]', (bs) => bs.map((b) => b.textContent));
+      const livesOn = /^var PUTT_LIVES_ENABLED = true;$/m.test(fs.readFileSync(new URL('./putt.js', import.meta.url), 'utf8'));
+      const want = livesOn ? await pg.evaluate(() => (window.RTT_PUTT.LIVES_BUY || []).map((p) => 'Get ' + p.lives + ' lives back · $' + (p.cents / 100).toFixed(2))) : [];
+      const rest = buys.reduce((t, b) => t.replace(b, ''), tx);
       claim(r2.lives === 0 && (r2.back || []).length === 9 && Math.abs(last - Date.now() - 24 * 3600e3) < 120e3 && Math.abs(r2.refillAt - Date.now() - 3 * 3600e3) < 120e3
-        && /Next life in/.test(tx) && !/\$|coin/i.test(tx) && !!(await pg.$('.pp-sheet [data-pass]')),
-        `out of lives: each life on its own clock, the next one back shown, no price in coins or money, and the Tour Pass on offer (${(r2.back || []).length} clocks)`); }
+        && /Next life in/.test(tx) && !/\$|coin/i.test(rest) && !!(await pg.$('.pp-sheet [data-pass]')),
+        `out of lives: each life on its own clock, the next one back shown, no price in coins or money but the paid lives, and the Tour Pass on offer (${(r2.back || []).length} clocks)`);
+      claim(buys.length === want.length && (!livesOn || want.length === 2) && buys.every((b, i) => b.indexOf(want[i]) === 0),
+        `out of lives: the paid lives, when on, are nine then three at the catalog's prices (${buys.map((b) => b.split('·')[1]).join(', ') || 'off'})`); }
     await pg.click('.pp-sheet [data-free]'); await pg.waitForSelector('.pp-map');
     claim((await rec()).lives === 9, 'a tester can refill for free');
     // EVERYBODY CAN WALK HALLOWS NIGHT, AND PLAYING IT IS THE PASS'S: without a pass the Members tab opens the

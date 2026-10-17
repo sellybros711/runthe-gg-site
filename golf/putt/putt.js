@@ -2413,7 +2413,7 @@ var LIFE_MS = 24 * 3600 * 1000;
    the server's own row (149_putt_lives_buy.sql); this page only shows the buttons and asks for lives again. The
    switch, the packs and their prices are the server's, copied, in the order the sheet shows them (nine first):
    scripts/stripe/check-putt-lives.mjs holds the two together. */
-var PUTT_LIVES_ENABLED = false;
+var PUTT_LIVES_ENABLED = true;
 var LIVES_BUY = [
   { pack:'nine', lives:9, cents:499, tag:'Best value. Back right now.' },
   { pack:'three', lives:3, cents:299, tag:'Back right now.' }

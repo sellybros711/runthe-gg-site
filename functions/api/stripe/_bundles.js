@@ -285,7 +285,7 @@ export function bucketByKey(key) {
  * without) and 149 deployed (the webhook fails loudly without it and Stripe
  * retries). golf/putt/putt.js carries the switch and a copy of these packs for
  * the page, and scripts/stripe/check-putt-lives.mjs holds the two together. */
-export const PUTT_LIVES_ENABLED = false;
+export const PUTT_LIVES_ENABLED = true;
 export const PUTT_LIVES = {
   nine:  { name: 'Putt Putt Lives: 9', envPrice: 'STRIPE_PRICE_PUTT_LIVES_9', lookupKey: 'putt_lives_nine',  cents: 499, lives: 9 },
   three: { name: 'Putt Putt Lives: 3', envPrice: 'STRIPE_PRICE_PUTT_LIVES_3', lookupKey: 'putt_lives_three', cents: 299, lives: 3 },
