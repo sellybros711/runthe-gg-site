@@ -853,6 +853,131 @@ var CSS = [
 '.lk-tabs .k-tab[aria-selected="true"] .lk-ti{opacity:1;filter:drop-shadow(0 0 6px rgba(242,194,58,.7));}',
 '@media (prefers-reduced-motion:reduce){.lk-rays,.lk-fp::after{animation:none!important;}}',
 '#cr-sheet .k-sheet,#rtf-locker .k-sheet{box-shadow:0 -3px 0 0 var(--k-team-ring),inset 0 2px 0 rgba(255,255,255,.06);}',
+/* ═══ CAREER PATHS: your moves, shades of, the card back, deals, endings ═══ */
+/* the stage button: the one that opens your moves, lit, with a count */
+'.cr-acts .cr-mvbtn{flex:1 1 100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:50px;font-size:14px;letter-spacing:.08em;}',
+'.cr-mvbtn i{min-width:24px;height:22px;padding:0 6px;font:400 10px/22px var(--k-f-pixel);font-style:normal;color:#ffd166;background:#05070d;box-shadow:inset 0 0 0 2px #2a1a08;}',
+'@media (min-width:720px){.cr-acts .cr-mvbtn{flex:1 1 0;}}',
+/* the sheet: wider on a desktop, two tiles a row */
+'@media (min-width:760px){#cr-sheet .k-sheet.cr-mvsheet{max-width:780px;}#cr-sheet .cr-mvlist{grid-template-columns:1fr 1fr;}}',
+'.cr-mvhead .cash{margin-bottom:12px!important;}',
+'.cr-mvtabs{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin:0 0 12px;padding:6px 6px 0;background:#080b16;border-bottom:3px solid var(--k-frame);}',
+'.cr-mvtab{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;min-height:58px;padding:7px 2px 6px;font:800 11px var(--k-f-text);letter-spacing:.06em;text-transform:uppercase;color:var(--k-ink-2);',
+'  background:linear-gradient(180deg,#1b2242,#131934);box-shadow:inset 0 0 0 2px #262f57;border:0;cursor:pointer;}',
+'.cr-mvtab i{position:absolute;top:4px;right:4px;min-width:16px;height:16px;padding:0 3px;font:400 8px/16px var(--k-f-pixel);font-style:normal;color:#05070d;background:var(--g);}',
+'.cr-mvtab.none{opacity:.45;}.cr-mvtab.none i{display:none;}',
+'.cr-mvtab[aria-selected="true"]{color:#fff;background:linear-gradient(180deg,color-mix(in srgb,var(--g) 30%,#1b2242),#151b36);box-shadow:inset 0 3px 0 var(--g),inset 0 0 0 2px color-mix(in srgb,var(--g) 50%,#262f57);}',
+'.cr-mvtab[aria-selected="true"]::after{display:none;}',
+'.cr-mvtab:focus-visible{outline:2px solid var(--k-gold);outline-offset:2px;}',
+'.cr-mvlist{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:8px;}',
+'.cr-mv{display:grid;grid-template-columns:52px minmax(0,1fr);gap:12px;align-items:center;width:100%;min-height:76px;padding:10px 12px 10px 10px;border:0;text-align:left;cursor:pointer;color:var(--k-ink);font:inherit;',
+'  background:linear-gradient(180deg,#1d2546,#151b36);box-shadow:inset 4px 0 0 var(--g),inset 0 0 0 2px #29335e,0 3px 0 #05070d;transition:box-shadow var(--k-m-snap),transform var(--k-m-snap);}',
+'.cr-mv:hover,.cr-mv:focus-visible{outline:none;box-shadow:inset 4px 0 0 var(--g),inset 0 0 0 2px var(--g),0 3px 0 #05070d;}',
+'.cr-mv:active{transform:translateY(2px);box-shadow:inset 4px 0 0 var(--g),inset 0 0 0 2px var(--g);}',
+'.cr-mvic{display:grid;place-items:center;width:52px;height:52px;background:color-mix(in srgb,var(--g) 18%,#0a0e1c);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--g) 45%,transparent),inset 0 -3px 0 rgba(0,0,0,.3);}',
+'.cr-mvic.big{float:right;width:72px;height:72px;margin:0 0 8px 12px;}',
+'.cr-mvt{min-width:0;display:grid;gap:3px;}',
+'.cr-mvt b{font:800 15.5px/1.25 var(--k-f-text);color:#fff;}',
+'.cr-mvt small{font:600 12.5px/1.35 var(--k-f-text);color:var(--k-ink-2);}',
+'.cr-mvchips{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px;}',
+'.cr-mvchip{padding:2px 6px;font:800 10.5px/1.4 var(--k-f-text);letter-spacing:.04em;color:var(--k-ink);background:rgba(143,160,214,.14);}',
+'.cr-mvchip.dec{color:#120b04;background:var(--g);}',
+'.cr-mvchip.why{color:#ffd0a0;background:rgba(255,140,40,.12);box-shadow:inset 0 0 0 1px rgba(255,160,80,.45);}',
+'.cr-mv.is-off{background:#0d1122;box-shadow:inset 4px 0 0 #3a4366,inset 0 0 0 2px #1f2645;}',
+'.cr-mv.is-off .cr-mvic{filter:grayscale(1);opacity:.55;}',
+'.cr-mv.is-off b{color:var(--k-ink-2);}',
+'.cr-dnone{margin:4px 2px 12px;}',
+/* the decision a move is */
+'.cr-mvdec{margin:0 0 14px;background:radial-gradient(120% 80% at 50% 0%,color-mix(in srgb,var(--g) 18%,transparent),transparent 65%),#0c1022;box-shadow:0 0 0 2px var(--g),0 0 0 4px #05070d,0 0 26px color-mix(in srgb,var(--g) 25%,transparent);}',
+'.cr-mvband{display:flex;align-items:center;gap:8px;padding:9px 14px;font:400 9px/1.2 var(--k-f-pixel);letter-spacing:.06em;text-transform:uppercase;color:#120b04;background:var(--g);}',
+'.cr-mvdbody{padding:16px;}',
+'.cr-mvdbody::after{content:"";display:block;clear:both;}',
+'.cr-mvdbody .k-h1{font-size:34px;line-height:1;color:#fff;text-shadow:0 3px 0 #05070d;margin:0 0 8px;}',
+'.cr-mvdbody .k-h1:focus{outline:none;}',
+'.cr-mvdbody > p{margin:0 0 12px;font-size:15.5px;line-height:1.5;color:#d9dcef;}',
+'.cr-mvfacts{clear:both;display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0;}',
+'.cr-mvfacts div{padding:8px 10px;background:#05070d;box-shadow:inset 3px 0 0 var(--g);}',
+'.cr-mvfacts div.wide{grid-column:1/-1;}',
+'.cr-mvfacts dt{font:400 7px/1.4 var(--k-f-pixel);letter-spacing:.06em;color:var(--k-ink-3);text-transform:uppercase;}',
+'.cr-mvfacts dd{margin:4px 0 0;font:700 14.5px/1.35 var(--k-f-text);color:#fff;}',
+'.cr-mvwhy{display:flex;align-items:center;gap:8px;margin:12px 0 0;padding:8px 10px;font:700 13.5px var(--k-f-text);color:#ffd0a0;background:rgba(255,140,40,.1);box-shadow:inset 0 0 0 1px rgba(255,160,80,.45);}',
+'.cr-mvgo .k-btn{min-height:56px;}',
+'.cr-mvgo .k-btn:first-child{flex:2 1 200px;font-size:16px;letter-spacing:.08em;}',
+/* deals and brand marks */
+'.cr-bmark{flex:none;display:inline-grid;place-items:center;width:40px;height:40px;background:#f4f1e8;box-shadow:inset 0 0 0 2px #05070d,inset 0 -4px 0 rgba(0,0,0,.18);}',
+'.cr-bmark.big{width:56px;height:56px;}',
+'.cr-deals{margin:0 0 14px;}.cr-deals .cr-sub{margin-top:4px;}.cr-lifeline + .cr-deals{margin-top:18px;}',
+'.cr-dlist,.cr-cbbrands{list-style:none;margin:0;padding:0;display:grid;gap:4px;}',
+'.cr-deal,.cr-cbbrands li{display:grid;grid-template-columns:40px minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:7px 10px 7px 7px;background:rgba(255,255,255,.03);box-shadow:inset 3px 0 0 var(--k-gold),inset 0 0 0 1px rgba(255,209,102,.16);}',
+'.cr-deal.shoe{grid-template-columns:40px minmax(0,1fr) auto;}',
+'.cr-deal .who,.cr-cbbrands .who{min-width:0;display:grid;}',
+'.cr-deal .who b,.cr-cbbrands .who b{font:800 14.5px/1.25 var(--k-f-text);color:#fff;overflow-wrap:anywhere;}',
+'.cr-deal small,.cr-cbbrands small{font:600 11.5px/1.3 var(--k-f-text);color:var(--k-ink-2);}',
+'.cr-deal .pay,.cr-deal .end,.cr-cbbrands .v{display:grid;text-align:right;}',
+'.cr-deal .pay b,.cr-deal .end b,.cr-cbbrands .v b{font:400 10px/1.5 var(--k-f-pixel);color:#ffb347;white-space:nowrap;}',
+'@media (max-width:380px){.cr-deal,.cr-cbbrands li{grid-template-columns:40px minmax(0,1fr) auto;}.cr-deal .end,.cr-cbbrands .v:last-child{grid-column:2/-1;text-align:left;display:flex;gap:6px;align-items:baseline;}}',
+/* a brand on the deal card wears its mark */
+'.cr-choice.cr-hasmark .cr-bmark{margin:0 2px 0 -2px;}',
+/* cards that carry a line above the title: an ending, a move, the brands */
+'#s-car .cr-card .cr-cbody > p.cr-eye{margin:0 0 6px;font:400 9px/1.5 var(--k-f-pixel);letter-spacing:.06em;text-transform:uppercase;color:var(--cr-edge);}',
+'.cr-card.cr-mvcard,.cr-card.cr-end{box-shadow:0 0 0 2px var(--cr-edge),0 0 0 4px #05070d,0 0 30px color-mix(in srgb,var(--cr-edge) 32%,transparent),0 14px 30px rgba(3,5,10,.6);}',
+'.cr-card.cr-mvcard{background:radial-gradient(120% 70% at 50% 0%,color-mix(in srgb,var(--cr-edge) 18%,transparent),transparent 60%),linear-gradient(180deg,#171a2c,#100f1d 55%,#0d0c17);}',
+'.cr-card.cr-dealcard{--cr-edge:var(--k-gold);--cr-edge-ink:#1a1303;}',
+/* THE ENDINGS: the weight is colour and light, never height */
+'.cr-card.end-inj{--cr-edge:#ff5a4e;--cr-edge-ink:#1a0505;background:radial-gradient(120% 70% at 50% 0%,rgba(229,72,63,.24),transparent 62%),linear-gradient(180deg,#1f1016,#120c15 60%,#0b0a12);}',
+'.cr-card.end-top{--cr-edge:var(--k-gold);--cr-edge-ink:#1a1303;background:linear-gradient(180deg,#241c0c,#141019 60%,#0d0c17);}',
+'.cr-card.end-ret{--cr-edge:#b79bff;--cr-edge-ink:#120a24;background:radial-gradient(130% 70% at 50% 0%,rgba(155,123,234,.22),transparent 62%),linear-gradient(180deg,#1b1530,#110f1f 60%,#0b0a14);}',
+'.cr-card.end-wait{--cr-edge:#9fb0e0;--cr-edge-ink:#0b0e1a;background:radial-gradient(130% 70% at 50% 0%,rgba(143,160,214,.18),transparent 62%),linear-gradient(180deg,#141a2c,#0e1120 60%,#0a0c15);}',
+'.cr-card.cr-end .cr-band{position:relative;}',
+'.cr-card.end-inj .cr-band::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,transparent,#fff 50%,transparent) 0 0/35% 100% no-repeat;animation:cr-ekg 1.8s steps(18) infinite;opacity:.7;}',
+'@keyframes cr-ekg{from{background-position:-40% 0;}to{background-position:140% 0;}}',
+'.cr-card.end-top::before{content:"";position:absolute;left:50%;top:-220px;width:560px;height:560px;margin-left:-280px;pointer-events:none;opacity:.2;',
+'  background:repeating-conic-gradient(from 0deg,rgba(255,209,102,.7) 0 6deg,transparent 6deg 18deg);-webkit-mask:radial-gradient(circle,#000 0,#000 16%,transparent 56%);mask:radial-gradient(circle,#000 0,#000 16%,transparent 56%);animation:cr-spin 50s linear infinite;}',
+'.cr-card.cr-end .cr-cbody{position:relative;}',
+'.cr-card.cr-end .k-h1{font-size:34px;}',
+'.cr-etag{display:inline-flex;align-items:center;gap:5px;margin:0 0 3px;font:400 7px/1.4 var(--k-f-pixel);letter-spacing:.06em;text-transform:uppercase;color:var(--k-ink-2);}',
+'.cr-etag + .cr-ol{display:block;}',
+'.cr-choice.cr-last{background:linear-gradient(180deg,color-mix(in srgb,var(--cr-edge) 22%,#1d1830),#14111f);box-shadow:inset 0 0 0 2px var(--cr-edge),inset 0 -4px 0 rgba(0,0,0,.3);}',
+'.cr-choice.cr-last .cr-etag{color:var(--cr-edge);}',
+'@media (max-width:719px){',
+'  #s-car .cr-card.cr-mvcard,#s-car .cr-card.cr-end{box-shadow:0 -2px 0 0 var(--cr-edge),0 -4px 0 0 #05070d,0 -16px 34px color-mix(in srgb,var(--cr-edge) 28%,transparent),0 -24px 40px rgba(3,5,10,.7);}',
+'  #s-car .cr-card.cr-end .k-h1{font-size:26px;}',
+'  #s-car .cr-card .cr-cbody > p.cr-eye{margin:0 0 4px;font-size:8px;}',
+'  #s-car .cr-card.end-top::before{top:-260px;}',
+'}',
+'@media (prefers-reduced-motion:reduce){.cr-card.end-inj .cr-band::after,.cr-card.end-top::before{animation:none;}}',
+/* SHADES OF: three plates turn over, one at a time */
+'.cr-shades{position:relative;margin:0 var(--k-px) 18px;padding:12px 12px 10px;text-align:center;overflow:hidden;',
+'  background:radial-gradient(90% 120% at 50% 0%,rgba(255,209,102,.16),transparent 62%),#090c1a;box-shadow:0 0 0 3px var(--k-gold),0 0 0 5px #05070d,0 0 30px rgba(255,209,102,.2),0 8px 0 5px rgba(3,5,10,.75);}',
+'.cr-shh{display:flex;align-items:center;gap:10px;margin:0 0 10px;font:400 9px/1.4 var(--k-f-pixel);letter-spacing:.08em;text-transform:uppercase;color:var(--k-gold);}',
+'.cr-shh::before,.cr-shh::after{content:"";flex:1;height:2px;background:repeating-linear-gradient(90deg,rgba(255,209,102,.55) 0 4px,transparent 4px 8px);}',
+'.cr-shl{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;perspective:600px;}',
+'.cr-shades.shift .cr-shl{grid-template-columns:1fr;max-width:340px;margin:0 auto;}',
+'.cr-shp{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:86px;padding:10px 6px;',
+'  background:linear-gradient(180deg,#2a2412,#15110a);box-shadow:inset 0 0 0 2px #6a4f18,inset 0 3px 0 rgba(255,236,170,.25),0 4px 0 #05070d;}',
+'.cr-shp .no{font:400 12px/1 var(--k-f-pixel);color:#05070d;background:var(--k-gold);padding:4px 6px;}',
+'.cr-shp .nm{font:400 18px/1.05 var(--k-f-display);text-transform:uppercase;letter-spacing:.02em;color:#fff3c4;text-shadow:2px 2px 0 #05070d;overflow-wrap:anywhere;}',
+'@media (min-width:720px){.cr-shp .nm{font-size:26px;}.cr-shp{min-height:104px;}}',
+'.cr-shades.play .cr-shl li{animation:cr-shflip 520ms steps(6,end) both;animation-delay:calc(250ms + var(--i) * 420ms);}',
+'.cr-shades.play .cr-shl li .cr-shp{animation:cr-shglow 900ms ease-out both;animation-delay:calc(700ms + var(--i) * 420ms);}',
+'@keyframes cr-shflip{from{opacity:0;transform:rotateY(90deg);}to{opacity:1;transform:none;}}',
+'@keyframes cr-shglow{0%{box-shadow:inset 0 0 0 2px #ffd166,inset 0 3px 0 rgba(255,236,170,.25),0 4px 0 #05070d,0 0 24px rgba(255,209,102,.7);}100%{box-shadow:inset 0 0 0 2px #6a4f18,inset 0 3px 0 rgba(255,236,170,.25),0 4px 0 #05070d;}}',
+'.cr-shnote{margin:9px 0 0;font:600 12.5px/1.35 var(--k-f-text);color:var(--k-ink-2);}',
+/* THE BACK OF THE CARD: a ruled card back, rows not prose */
+'#s-car .cr-cback{padding:0;margin:0 var(--k-px) 18px;background:repeating-linear-gradient(135deg,rgba(255,255,255,.018) 0 6px,transparent 6px 12px),#0b0f20;}',
+'.cr-cbhead{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--k-team-1);color:var(--k-team-on);box-shadow:inset 0 -3px 0 rgba(0,0,0,.25);}',
+'.cr-cbhead .no{font:400 12px/1 var(--k-f-pixel);padding:5px 6px;background:#05070d;color:#ffd166;}',
+'.cr-cbhead b{min-width:0;flex:1;font:400 20px/1.05 var(--k-f-display);text-transform:uppercase;overflow-wrap:anywhere;}',
+'.cr-cbhead .yr{font:800 10.5px var(--k-f-text);letter-spacing:.1em;white-space:nowrap;opacity:.85;}',
+'.cr-cbsec{padding:12px 14px 14px;}',
+'.cr-cbsec + .cr-cbsec{border-top:2px dashed rgba(143,160,214,.2);}',
+'.cr-cbh{margin:0 0 8px;font:400 9px/1.5 var(--k-f-pixel);letter-spacing:.06em;text-transform:uppercase;color:var(--k-gold);}',
+'.cr-cbcomps{list-style:none;margin:0;padding:0;display:grid;gap:4px;}',
+'.cr-cbcomps li{display:flex;align-items:center;gap:10px;padding:8px 10px 8px 8px;background:rgba(255,255,255,.03);box-shadow:inset 0 0 0 1px rgba(143,160,214,.12);}',
+'.cr-cbcomps .rk{flex:none;display:grid;place-items:center;width:28px;height:28px;font:400 11px var(--k-f-pixel);color:#05070d;background:#8fa0d6;}',
+'.cr-cbcomps li:first-child .rk{background:var(--k-gold);}',
+'.cr-cbcomps .nm{min-width:0;flex:1;font:400 20px/1.05 var(--k-f-display);text-transform:uppercase;color:#fff;overflow-wrap:anywhere;}',
+'.cr-cbcomps i{flex:none;font:400 7px/1.4 var(--k-f-pixel);font-style:normal;letter-spacing:.06em;color:var(--k-gold);text-transform:uppercase;}',
 ].join('\n');
 (function(){
   if (document.getElementById('cr-css')) return;
@@ -1321,7 +1446,7 @@ function wireBuild(){
     store().cur = L;
     var gen = form.start !== 'hs';
     form = null;
-    stage = { beats: [], result: null, reveal: gen };
+    stage = { beats: [], result: null, reveal: gen, shades: true };
     save();
     K.wipe();
     render();
@@ -1338,7 +1463,7 @@ function wireBuild(){
    replay them. */
 var stage = { beats: [], result: null, draft: null };
 var tab = 'log';
-function snap(L){ return { ovr: C.show(C.ovrOf(L)), m: Object.assign({}, L.m), rt: Object.assign({}, L.rt), team: L.team }; }
+function snap(L){ return { ovr: C.show(C.ovrOf(L)), m: Object.assign({}, L.m), rt: Object.assign({}, L.rt), team: L.team, sh: (L.shades || []).join('|') }; }
 
 var TIPS = {
   health: ['Health', 'Your body. Under 40 and injuries come more often and last longer. Rest and treatment bring it back.'],
@@ -1366,6 +1491,7 @@ function idCard(L){
   var cs = C.challengeOf ? C.challengeOf(L) : null;
   if (cs) spec.push(['Challenge', cs.name + ' · ' + (cs.met ? 'Done' : cs.out ? 'Out of reach' : cs.prog)]);
   if (L.opt && L.opt.diff) spec.push(['Difficulty', C.DIFFS[L.opt.diff].name]);
+  if (L.shades && L.shades.length && L.stage === 'nba') spec.push(['Shades of', L.shades.join(' · ')]);
   var per = C.personaOf ? C.personaOf(L) : '';
   var strip = tag(L.pos + ' · ' + C.ARCHES[L.arch].name, 'k-team') + tag('#' + L.num + (L.ht ? ' · ' + C.heightText(L.ht) + ' ' + L.wt : ''))
     + (per && per !== 'Still writing it' ? '<span class="k-tag k-gold cr-persona" title="How the league sees you">' + esc(per) + '</span>' : '');
@@ -1445,14 +1571,41 @@ function thirdFact(L){
 
 /* A decision. Numbered so a keyboard can answer it (1 to 4), and the hint
    under each answer is the consequence, written plainly. */
+/* THE ENDINGS (career/endings.js and the retirement card). The biggest
+   moments of a career wear their own card: a band in the ending's colour,
+   a line above the title, and the answer that ends it all marked as the
+   last one. An ending card is never taller than any other card. */
+var ENDINGS = {
+  careerinj: { cls: 'end-inj', eye: 'This could be the end', icon: 'bandage' },
+  ontop: { cls: 'end-top', eye: 'Go out on top', icon: 'crown' },
+  retire: { cls: 'end-ret', eye: 'The last chapter', icon: 'home' },
+  nooffer: { cls: 'end-wait', eye: 'The phone is quiet', icon: 'clock' },
+};
+/* What an answer on an ending card does, read off its own act or words. */
+var END_ACT = { retire: ['home', 'The end'], tenday: ['clock', 'One more call'], finale: ['globe', 'One last year'], overseas: ['arrow', 'A year away'], more: ['ball', 'Play on'], top: ['crown', 'The end'] };
+function endAct(c, o){
+  if (o.act && END_ACT[o.act]) return o.act;
+  if (/^retire$/i.test(o.label) || /walk away on top/i.test(o.label)) return /on top/i.test(o.label) ? 'top' : 'retire';
+  return null;
+}
 function cardHtml(L, c, fresh){
   var cls = c.kind === 'clutch' ? ' clutch k-gold' : c.kind === 'fa' ? ' fa' : '';
+  var end = ENDINGS[c.id] || null, mv = moveOfCard(c), mg = mv ? GROUP_BY[(C.ACTS[mv] && C.ACTS[mv].group) || 'life'] : null;
+  var deal = c.id === 'deal' && c.ctx && c.ctx.list ? c.ctx.list : null;
+  if (end) cls += ' cr-end ' + end.cls;
+  if (mg) cls += ' cr-mvcard';
+  if (deal) cls += ' cr-dealcard';
   var opts = c.options.map(function(o, i){
     /* An answer that is a club carries a second, smaller button: the club's
        roster, so a man can see who he would be playing with before he signs. */
     var ros = o.club && C.clubView ? '<button type="button" class="cr-ros" data-ros="' + i + '" aria-label="See the ' + esc(o.club) + ' roster">' + K.iconHtml('clip', 2) + '<span>Roster</span></button>' : '';
-    return '<li' + (ros ? ' class="cr-hasros"' : '') + '><button class="k-opt cr-choice" data-i="' + i + '"' + (i < 9 ? ' aria-keyshortcuts="' + (i + 1) + '"' : '') + '>'
-      + '<span class="k-key" aria-hidden="true">' + (i + 1) + '</span><span><span class="cr-ol">' + esc(o.label) + '</span>' + (o.hint ? '<small>' + esc(o.hint) + '</small>' : '') + '</span></button>' + ros + '</li>';
+    /* a brand on the deal card wears its mark; an answer on an ending card
+       says what kind of answer it is */
+    var mark = deal && deal[i] ? brandMark(deal[i].id) : '';
+    var ea = end ? endAct(c, o) : null, oc = ea ? ' cr-ea-' + ea + (ea === 'retire' || ea === 'top' ? ' cr-last' : '') : '';
+    var tagE = ea ? '<span class="cr-etag">' + K.iconHtml(END_ACT[ea][0], 2) + esc(END_ACT[ea][1]) + '</span>' : '';
+    return '<li' + (ros ? ' class="cr-hasros"' : '') + '><button class="k-opt cr-choice' + (mark ? ' cr-hasmark' : '') + oc + '" data-i="' + i + '"' + (i < 9 ? ' aria-keyshortcuts="' + (i + 1) + '"' : '') + '>'
+      + '<span class="k-key" aria-hidden="true">' + (i + 1) + '</span>' + mark + '<span>' + tagE + '<span class="cr-ol">' + esc(o.label) + '</span>' + (o.hint ? '<small>' + esc(o.hint) + '</small>' : '') + '</span></button>' + ros + '</li>';
   }).join('');
   /* On a phone the card is the tray: it rises once when a decision arrives
      and fades its contents when one replaces another, and never moves when a
@@ -1465,16 +1618,19 @@ function cardHtml(L, c, fresh){
      the date where the place would be. */
   var when = c.eyebrow || 'Your call';
   var scene = c.scene ? c.scene : when;
-  var icon = c.kind === 'clutch' ? 'ball' : sceneIcon(scene);
-  return '<div class="k-panel k-decision cr-card' + cls + motion + '" id="cr-card" role="group" aria-labelledby="cr-card-h">'
+  var icon = c.kind === 'clutch' ? 'ball' : end ? end.icon : mv ? MOVE_ICON[mv] : sceneIcon(scene);
+  /* A card a move left wears the move's colour and says so, so the step
+     from the moves screen to the card reads as one decision. */
+  var tagline = end ? '<p class="cr-eye">' + esc(end.eye) + '</p>' : mg ? '<p class="cr-eye cr-mvtag">Your move · ' + esc(mg[1]) + '</p>' : deal ? '<p class="cr-eye cr-dealtag">Endorsements · pick one or none</p>' : '';
+  return '<div class="k-panel k-decision cr-card' + cls + motion + '" id="cr-card" role="group" aria-labelledby="cr-card-h"' + (mg ? ' style="--cr-edge:' + mg[3] + ';--cr-edge-ink:#120b04"' : '') + '>'
     + '<span class="cr-grip" aria-hidden="true"></span>'
     + '<div class="cr-band">' + K.iconHtml(icon, 2) + '<span class="cr-scene">' + esc(scene) + '</span>' + (c.scene ? '<span class="cr-when">' + esc(when) + '</span>' : '') + '</div>'
-    + '<div class="cr-cbody">' + (c.lead ? '<p class="cr-lead" id="cr-card-lead">' + esc(c.lead) + '</p>' : '') + '<h3 class="k-h1" id="cr-card-h">' + esc(c.title) + '</h3>'
+    + '<div class="cr-cbody">' + tagline + (c.lead ? '<p class="cr-lead" id="cr-card-lead">' + esc(c.lead) + '</p>' : '') + '<h3 class="k-h1" id="cr-card-h">' + esc(c.title) + '</h3>'
     + (c.text ? '<p class="cr-clamp" id="cr-card-p">' + esc(c.text) + '</p><button type="button" class="cr-more" id="cr-card-more" hidden>More</button>' : '')
     + '<ol class="k-opts">' + opts + '</ol></div></div>';
 }
 /* An icon for the place, read off the words in it. */
-var SCENE_ICONS = [[/plane|road|flight|hotel|airport|bus/i, 'plane'], [/home|house|kitchen|mom|family|couch|living/i, 'home'],
+var SCENE_ICONS = [[/trainer|doctor|surgeon|hospital|rehab|medical|treatment|surgery/i, 'heart'], [/plane|road|flight|hotel|airport|bus/i, 'plane'], [/home|house|kitchen|mom|family|couch|living/i, 'home'],
   [/bank|agent|office|contract|money|sponsor|deal|bill/i, 'cash'], [/media|press|mic|podcast|interview|studio|camera|tv|show/i, 'mic'],
   [/trainer|doctor|hospital|rehab|medical|treatment|surgery/i, 'heart'], [/draft|stage|green room/i, 'star'],
   [/phone|text|dm|group chat|feed|timeline/i, 'share'], [/shoe|sneaker|store|mall/i, 'shoe'], [/trophy|award|banquet|parade|hall/i, 'trophy']];
@@ -1571,7 +1727,9 @@ function stageHtml(L, fresh){
       out += '<div class="cr-acts">';
       if (acts.some(function(a){ return a.id === 'coach'; })) out += btnAct(acts, 'coach');
       if (acts.some(function(a){ return a.id === 'trade'; })) out += btnAct(acts, 'trade');
-      out += '<button class="k-btn k-sec" id="cr-off">Off the court</button></div>';
+      var nm = movesOf(L).filter(function(a){ return a.ok; }).length;
+      out += '<button class="k-btn cr-mvbtn" id="cr-off" type="button">' + K.iconHtml('bolt', 2) + '<span>Your moves</span>'
+        + (nm ? '<i aria-label="' + nm + ' you can make">' + nm + '</i>' : '') + '</button></div>';
     }
     out += tk;
   }
@@ -1829,7 +1987,7 @@ function trophies(L){
   var aw = awardCounts(L);
   var chips = aw.length ? '<div class="cr-aw">' + awardTags(aw) + '</div>' : '<p class="k-small">Nothing yet. Go get something.</p>';
   return totalsHtml(T) + chips + rivalHtml(L)
-    + '<p class="cr-lifeline">Off the floor: <b>' + esc(C.lifeLine(L)) + '</b></p>';
+    + '<p class="cr-lifeline">Off the floor: <b>' + esc(C.lifeLine(L)) + '</b></p>' + dealsHtml(L);
 }
 /* You against the man drafted next to you. */
 function rivalHtml(L){
@@ -1862,12 +2020,33 @@ function hud(L){
   var where = rv ? rv.what : L.team ? (E.TEAM_NAMES && E.TEAM_NAMES[L.team] ? teamName(L.team).split(' ').slice(-1)[0] : teamName(L.team)) + (s ? ' ' + s.w + '-' + s.l : '') : 'Draft prospect';
   return '<div class="cr-hud"><b>' + esc(when) + '</b><span>' + esc(where) + '</span></div>';
 }
+/* SHADES OF (career/comps.js). On the first screen of a new career, the
+   three real players his game has shades of, the way NBA 2K says it: three
+   plates turn over one at a time. NAMES ONLY: a real player is never drawn
+   here, not even as the faceless rig. The names are L.shades, the ones the
+   Story log says, so the reveal and the log never disagree. When the lead
+   name changes later ("Your game looks more like X's now"), the press that
+   changed it shows the new name on one plate. */
+function shadesHtml(L, d){
+  var sh = L.shades || [];
+  if (!sh.length) return '';
+  var shift = d && d.sh != null && d.sh !== '' && d.sh !== sh.join('|') && !stage.shades;
+  if (!stage.shades && !shift) return '';
+  var list = shift ? [sh[0]] : sh;
+  return '<section class="cr-shades' + (shift ? ' shift' : '') + (REDUCED ? '' : ' play') + '" id="cr-shades" aria-label="' + (shift ? 'Your game looks more like' : 'Scouts see shades of') + '">'
+    + '<div class="cr-shh"><span>' + (shift ? 'Your game looks more like' : 'Scouts see shades of') + '</span></div>'
+    + '<ol class="cr-shl">' + list.map(function(n, i){
+      return '<li style="--i:' + i + '"><span class="cr-shp"><b class="no">' + (shift ? 'NOW' : i + 1) + '</b><span class="nm">' + esc(n) + '</span></span></li>';
+    }).join('') + '</ol>'
+    + '<p class="cr-shnote">' + (shift ? 'The comparison moves with your game.' : 'Real players your game looks like. Play your way and they change.') + '</p></section>';
+}
 function lifeView(L, d){
   var SC = window.RTF_SCENES, SN = window.RTF_SOUND;
   return '<div class="cr-top"><div class="cr-topl"><h2 class="k-h1">Career</h2>' + hud(L) + '</div><div class="cr-topbtns">'
     + (window.RTF_BALLER ? ib('cr-lookbtn', 'shirt', 'Look') : '')
     + (SC && SN ? ib('cr-sound', SN.on() ? 'sound' : 'mute', SN.on() ? 'Sound' : 'Muted', { cls: 'cr-snd', attr: 'aria-pressed="' + SN.on() + '" aria-label="Sound in scenes, ' + (SN.on() ? 'on' : 'off') + '"' }) : '')
     + ib('cr-home', 'home', 'Home', { cls: 'cr-home', attr: 'aria-label="Home"' }) + '</div></div>'
+    + shadesHtml(L, d)
     + '<div class="cr-grid"><div class="cr-side">' + idCard(L) + meters(L, d) + '</div>'
     + '<div class="cr-main">' + stageHtml(L, !!d) + facts(L) + ratingsHtml(L, d) + tabsHtml(L)
     + (L.phase === 'after' ? '' : '<button class="k-btn k-quiet k-block" id="cr-quit">Retire now</button>')
@@ -2235,25 +2414,132 @@ function animateDraft(){
 /* One sheet for everything off the main line: a phone gets it from the
    bottom, a desktop a centred modal, and focus stays inside it. */
 var dlg = null;
-function openSheet(html, label){
+function openSheet(html, label, cls){
   var sh = $('cr-sheet');
+  sh.querySelector('.in').className = 'k-sheet in' + (cls ? ' ' + cls : '');
   sh.querySelector('.in').innerHTML = html;
   if (dlg) { dlg = null; }
   dlg = K.dialog(sh, { label: label, onClose: function(){ dlg = null; } });
   K.wireTips(sh);
 }
+/* ─── YOUR MOVES (career/moves.js) ─────────────────────────────────────────
+   The things a player does on purpose, by the five groups the engine files
+   them under. A move is a decision, not a setting: a tile says what it is,
+   what it costs, whether a choice follows and, when it cannot be taken, why;
+   a tap turns the sheet into that one decision, and only Make the move runs
+   it (C.act, as before). A move that leaves a card hands it to the tray in
+   the same colour, so the move and its card read as one decision. The coach
+   talk and the trade request stay on the stage. */
+var MOVE_GROUPS = [['team', 'Team', 'shirt', '#ff8a3d'], ['court', 'Court', 'ball', '#7fb2ff'], ['body', 'Body', 'dumbbell', '#3ecf8e'], ['brand', 'Brand', 'star', '#ffd166'], ['life', 'Life', 'home', '#f29ab0']];
+var GROUP_BY = {}; MOVE_GROUPS.forEach(function(g){ GROUP_BY[g[0]] = g; });
+var MOVE_ICON = { contender: 'ring', recruit: 'people', holdout: 'lock', supermax: 'moneybag', discount: 'home', buyout: 'cash', ringchase: 'trophy', agent: 'paper',
+  rest: 'clock', position: 'arrow', mentor: 'sprout', legend: 'crown', body: 'dumbbell', proam: 'flame', trainer: 'bolt', shoe: 'shoe', podcast: 'mic', stake: 'chart',
+  union: 'megaphone', speak: 'spotlight', vacation: 'globe', party: 'tophat', house: 'home', foundation: 'heart', coach: 'whistle', trade: 'plane' };
+/* The moves that put a decision on the table (a card in L.pending), and the
+   card each one leaves. check-career holds this table to what C.act really
+   does, so a move the engine changes cannot quietly lie on its tile. */
+var MOVE_CARD = { holdout: 'holdout', position: 'posmove', legend: 'legendcamp', body: 'bodymove', shoe: 'shoemove', supermax: 'smax' };
+var MOVE_LATER = { contender: 1, ringchase: 1 };
+function moveOfCard(c){
+  if (!c) return null;
+  for (var k in MOVE_CARD) if (MOVE_CARD[k] === c.id || (c.id === 'extension' && c.key === MOVE_CARD[k])) return k;
+  return null;
+}
+/* Why a move shows and cannot be taken: actsOpen lists only moves that are
+   open, so ok is false for one of two reasons. */
+function moveWhy(L, a){
+  if (a.ok) return '';
+  if (a.used) return 'Done this season';
+  if (L.cash < a.cost) return 'Costs ' + money(a.cost) + '. You have ' + money(L.cash) + '.';
+  return 'Not open right now';
+}
+function movesOf(L){ return C.actsOpen(L).filter(function(a){ return a.id !== 'coach' && a.id !== 'trade'; }); }
+var mvTab = null, mvSel = null;
+function moveTile(L, a){
+  var g = GROUP_BY[a.group] || GROUP_BY.life, why = moveWhy(L, a);
+  var chips = '<span class="cr-mvchip">' + (a.cost ? esc(money(a.cost)) : 'Free') + '</span>'
+    + (MOVE_CARD[a.id] ? '<span class="cr-mvchip dec">Then you decide</span>' : MOVE_LATER[a.id] ? '<span class="cr-mvchip">In the summer</span>' : '')
+    + (why ? '<span class="cr-mvchip why">' + esc(why) + '</span>' : '');
+  return '<li><button type="button" class="cr-mv' + (a.ok ? '' : ' is-off') + '" data-mv="' + a.id + '" data-g="' + g[0] + '" style="--g:' + g[3] + '"'
+    + ' aria-label="' + esc(a.name + '. ' + a.blurb + (why ? ' ' + why + '.' : '')) + '">'
+    + '<span class="cr-mvic">' + K.iconHtml(MOVE_ICON[a.id] || g[2], 4) + '</span>'
+    + '<span class="cr-mvt"><b>' + esc(a.name) + '</b><small>' + esc(a.blurb) + '</small><span class="cr-mvchips">' + chips + '</span></span></button></li>';
+}
+/* YOUR DEALS: every brand paying you now, what it pays and when it ends. */
+function dealsNow(L){ return (L.deals || []).filter(function(x){ return !x.dropped && x.until >= L.year; }); }
+var DEAL_WHAT = null;
+function dealWhat(id){
+  if (!DEAL_WHAT) { DEAL_WHAT = {}; (C.DEALS || []).forEach(function(d){ DEAL_WHAT[d.id] = d.what; }); }
+  return DEAL_WHAT[id] || '';
+}
+function brandMark(id, big){
+  var ic = K.ICON16 && K.ICON16.indexOf('b_' + id) >= 0 ? 'b_' + id : 'shoe';
+  return '<span class="cr-bmark' + (big ? ' big' : '') + '" aria-hidden="true">' + K.iconHtml(ic, big ? 6 : 4) + '</span>';
+}
+function dealsHtml(L, empty){
+  var D = dealsNow(L), shoe = L.flags && typeof L.flags.shoe === 'string' ? L.flags.shoe : null;
+  if (!D.length && !shoe) return empty ? '<p class="k-small cr-dnone">No deals yet. The brands call when your name sells.</p>' : '';
+  var rows = D.map(function(x){
+    return '<li class="cr-deal" data-deal="' + esc(x.id) + '">' + brandMark(x.id) + '<span class="who"><b>' + esc(x.n) + '</b><small>' + esc(dealWhat(x.id)) + '</small></span>'
+      + '<span class="pay"><b>' + esc(money(x.pay)) + '</b><small>a year</small></span>'
+      + '<span class="end"><b>' + esc(seasonTag(x.until)) + '</b><small>final season</small></span></li>';
+  }).join('');
+  if (shoe) rows += '<li class="cr-deal shoe">' + brandMark('shoe') + '<span class="who"><b>' + esc(shoe) + '</b><small>your signature shoe</small></span><span class="pay"><b>Signed</b><small>your name on it</small></span></li>';
+  return '<div class="cr-deals"><h3 class="cr-sub">Your deals</h3><ul class="cr-dlist" aria-label="Your deals">' + rows + '</ul></div>';
+}
 function openOff(){
   var L = store().cur;
   if (!L) return;
-  var acts = C.actsOpen(L).filter(function(a){ return a.id !== 'coach' && a.id !== 'trade'; });
-  openSheet('<h3 class="k-h1">Off the court</h3><p class="cash">In the bank: <b>' + money(L.cash) + '</b>. One of each a season.</p>'
-    + acts.map(function(a){
-      return '<div class="cr-actrow"><div><b>' + esc(a.name) + '</b><small>' + esc(a.blurb) + (a.cost ? ' · ' + money(a.cost) : '') + '</small></div>'
-        + '<button class="k-btn' + (a.ok ? '' : ' k-sec') + '" data-oact="' + a.id + '"' + (a.ok ? '' : ' disabled') + '>' + (a.used ? 'Done' : 'Do it') + '</button></div>';
-    }).join('')
-    + '<button class="k-btn k-sec k-block" id="cr-sheet-x" style="margin-top:12px">Close</button>', 'Off the court');
-  var sh = $('cr-sheet');
-  sh.querySelectorAll('[data-oact]').forEach(function(b){ b.onclick = function(){ doAct(b.getAttribute('data-oact')); }; });
+  var acts = movesOf(L);
+  if (!mvTab || !acts.some(function(a){ return a.group === mvTab; })) {
+    var first = MOVE_GROUPS.filter(function(g){ return acts.some(function(a){ return a.group === g[0] && a.ok; }); })[0]
+      || MOVE_GROUPS.filter(function(g){ return acts.some(function(a){ return a.group === g[0]; }); })[0];
+    mvTab = first ? first[0] : 'brand';
+  }
+  mvSel = null;
+  openSheet('<div class="cr-mvroot"></div>', 'Your moves', 'cr-mvsheet');
+  drawMoves();
+}
+function drawMoves(){
+  var L = store().cur, root = $('cr-sheet').querySelector('.cr-mvroot');
+  if (!L || !root) return;
+  var acts = movesOf(L), sel = mvSel && acts.filter(function(a){ return a.id === mvSel; })[0];
+  if (sel) {
+    var g = GROUP_BY[sel.group] || GROUP_BY.life, why = moveWhy(L, sel);
+    var next = MOVE_CARD[sel.id] ? 'A decision comes next.' : MOVE_LATER[sel.id] ? 'It plays out in the summer.' : 'It happens now.';
+    root.innerHTML = '<div class="cr-mvdec" style="--g:' + g[3] + '">'
+      + '<div class="cr-mvband">' + K.iconHtml(g[2], 2) + '<span>Your move · ' + esc(g[1]) + '</span></div>'
+      + '<div class="cr-mvdbody"><span class="cr-mvic big">' + K.iconHtml(MOVE_ICON[sel.id] || g[2], 6) + '</span>'
+      + '<h3 class="k-h1" id="cr-mv-h" tabindex="-1">' + esc(sel.name) + '</h3><p>' + esc(sel.blurb) + '</p>'
+      + '<dl class="cr-mvfacts"><div><dt>It costs</dt><dd>' + (sel.cost ? esc(money(sel.cost)) : 'Nothing') + '</dd></div>'
+      + '<div><dt>In the bank</dt><dd>' + esc(money(L.cash)) + '</dd></div><div class="wide"><dt>Then</dt><dd>' + next + '</dd></div></dl>'
+      + (why ? '<p class="cr-mvwhy" role="note">' + K.iconHtml('lock', 2) + '<span>' + esc(why) + '</span></p>' : '') + '</div></div>'
+      + '<div class="cr-btnrow cr-mvgo"><button class="k-btn k-big" type="button" data-oact="' + sel.id + '"' + (sel.ok ? '' : ' disabled') + '>Make the move</button>'
+      + '<button class="k-btn k-sec" type="button" id="cr-mv-back">Back</button></div>';
+    root.querySelector('[data-oact]').onclick = function(){ doAct(sel.id); };
+    $('cr-mv-back').onclick = function(){ mvSel = null; drawMoves(); var t = root.querySelector('[data-mv="' + sel.id + '"]'); if (t) t.focus(); };
+    var h = $('cr-mv-h'); if (h) h.focus({ preventScroll: true });
+    $('cr-sheet').querySelector('.in').scrollTop = 0;
+    return;
+  }
+  var count = function(g){ return acts.filter(function(a){ return a.group === g && a.ok; }).length; };
+  var tabs = MOVE_GROUPS.map(function(g){
+    var n = count(g[0]), any = acts.some(function(a){ return a.group === g[0]; }) || (g[0] === 'brand' && dealsHtml(L));
+    return '<button type="button" class="k-tab cr-mvtab' + (any ? '' : ' none') + '" role="tab" data-mgroup="' + g[0] + '" style="--g:' + g[3] + '" aria-selected="' + (g[0] === mvTab) + '">'
+      + K.iconHtml(g[2], 2) + '<span>' + g[1] + '</span><i>' + n + '</i></button>';
+  }).join('');
+  var mine = acts.filter(function(a){ return a.group === mvTab; });
+  mine.sort(function(a, b){ return (b.ok ? 1 : 0) - (a.ok ? 1 : 0); });
+  var g = GROUP_BY[mvTab];
+  root.innerHTML = '<div class="cr-mvhead"><h3 class="k-h1">Your moves</h3><p class="cash">Bank <b>' + esc(money(L.cash)) + '</b> · each move once a season</p></div>'
+    + '<div class="k-tabs cr-mvtabs" role="tablist" aria-label="Kinds of move">' + tabs + '</div>'
+    + '<div class="cr-mvpane" role="tabpanel" style="--g:' + g[3] + '">'
+    + (mvTab === 'brand' ? dealsHtml(L, true) : '')
+    + (mine.length ? '<ul class="cr-mvlist">' + mine.map(function(a){ return moveTile(L, a); }).join('') + '</ul>'
+      : '<p class="k-small cr-dnone">Nothing to do here right now. Moves open with the calendar and your name.</p>')
+    + '</div><button class="k-btn k-sec k-block" id="cr-sheet-x" type="button">Close</button>';
+  root.querySelectorAll('[data-mgroup]').forEach(function(b){ b.onclick = function(){ mvTab = b.getAttribute('data-mgroup'); drawMoves(); var t = root.querySelector('[data-mgroup="' + mvTab + '"]'); if (t) t.focus(); }; });
+  root.querySelectorAll('[data-mv]').forEach(function(b){ b.onclick = function(){ mvSel = b.getAttribute('data-mv'); drawMoves(); }; });
   $('cr-sheet-x').onclick = closeOff;
 }
 /* A CLUB'S ROSTER, from a card that offers it: who is there, best first,
@@ -2333,6 +2619,11 @@ function finish(){
        league as he left it for a son to start in. */
     id: String(L.seed), parent: L.parent ? L.parent.id : null, gen: L.parent ? (L.parent.gen || 1) + 1 : 1,
     story: C.careerStory ? C.careerStory(L) : null,
+    /* The back of the card: the two chapters careerStory writes as sentences
+       ("Who you were like", "Your face sold"), kept as the rows they are.
+       The same calls and the same filter the chapters use. */
+    comps: L.history.length && C.careerComps ? C.careerComps(L) : [],
+    brands: (L.deals || []).filter(function(x){ return !x.dropped; }).map(function(x){ return { id: x.id, n: x.n, pay: x.pay, until: x.until }; }),
     ids: f.ending ? { tier: f.ending.tier, outs: f.ending.outcomes || [], secret: f.ending.secret || null,
       routes: C.routesOf ? C.routesOf(L) : [], origin: L.origin || null } : null,
     lg: C.leagueEnd ? trimLeague(C.leagueEnd(L)) : null,
@@ -2500,7 +2791,8 @@ function finalView(card){
     + (card.ch && C.CHALLENGES && C.CHALLENGES[card.ch.id] ? '<div class="k-panel k-tight ' + (card.ch.met ? 'k-gold' : '') + ' cr-chres"><div class="k-eyebrow">' + K.iconHtml(card.ch.met ? 'check' : 'lock', 2) + 'Challenge · ' + esc(C.CHALLENGES[card.ch.id].name) + '</div><p>' + (card.ch.met ? 'Met. It is in the Vault.' : 'Not met. ' + esc(C.CHALLENGES[card.ch.id].blurb)) + '</p></div>' : '')
     + (card.diff === 'easy' ? '<p class="k-small cr-easy">Played on Easy. Not on the Career board and no badges.</p>' : '')
     + foundHtml(card)
-    + storyHtml(card.story)
+    + cardBack(card)
+    + storyHtml(card.story, card)
     + '<details class="k-panel cr-sec k-fold"><summary class="k-eyebrow">' + K.iconHtml('up', 2) + 'Season by season<span class="k-foldn">' + T.seasons + '</span></summary>' + seasonsTable(hist) + '</details>';
 }
 function shareText(card){
@@ -2587,10 +2879,32 @@ function wireFinal(card){
 // ─── the Vault (Phase E) ────────────────────────────────────────────────────
 
 /* The written story, one heading a chapter. */
-function storyHtml(story){
+function storyHtml(story, card){
   if (!story || !story.length) return '';
-  return '<details class="k-panel cr-sec cr-story k-fold"><summary class="k-eyebrow">' + K.iconHtml('clip', 2) + 'Your story<span class="k-foldn">' + story.length + ' chapters</span></summary>'
-    + story.map(function(x){ return '<h3 class="cr-sub">' + esc(x.h) + '</h3><p>' + esc(x.p) + '</p>'; }).join('') + '</details>';
+  /* the chapters the back of the card shows as rows are not told twice */
+  var on = backOn(card);
+  var list = story.filter(function(x){ return !(on.comps && x.h === BACK_COMPS) && !(on.brands && x.h === BACK_BRANDS); });
+  if (!list.length) return '';
+  return '<details class="k-panel cr-sec cr-story k-fold"><summary class="k-eyebrow">' + K.iconHtml('clip', 2) + 'Your story<span class="k-foldn">' + list.length + (list.length === 1 ? ' chapter' : ' chapters') + '</span></summary>'
+    + list.map(function(x){ return '<h3 class="cr-sub">' + esc(x.h) + '</h3><p>' + esc(x.p) + '</p>'; }).join('') + '</details>';
+}
+/* THE BACK OF THE CARD. A trading card's back is rows, not prose: the real
+   careers his read like, numbered from the closest, and every brand that
+   paid for his face, with what it sold, what it paid and when it ran out.
+   Names only for the real men. A card finished before these were kept has
+   neither, and its story tells them as before. */
+var BACK_COMPS = 'Who you were like', BACK_BRANDS = 'Your face sold';
+function backOn(card){ return { comps: !!(card && card.comps && card.comps.length), brands: !!(card && card.brands && card.brands.length) }; }
+function cardBack(card){
+  var on = backOn(card);
+  if (!on.comps && !on.brands) return '';
+  var head = '<div class="cr-cbhead"><span class="no">#' + esc(String(card.num)) + '</span><b>' + esc(card.name) + '</b><span class="yr">' + esc(card.pos || '') + ' · ' + card.from + '-' + card.to + '</span></div>';
+  var comps = on.comps ? '<div class="cr-cbsec"><h3 class="cr-cbh">' + BACK_COMPS + '</h3><ol class="cr-cbcomps" aria-label="' + BACK_COMPS + '">' + card.comps.map(function(n, i){
+    return '<li><b class="rk">' + (i + 1) + '</b><span class="nm">' + esc(n) + '</span>' + (i === 0 ? '<i>Closest</i>' : '') + '</li>'; }).join('') + '</ol></div>' : '';
+  var brands = on.brands ? '<div class="cr-cbsec"><h3 class="cr-cbh">' + BACK_BRANDS + '</h3><ul class="cr-cbbrands" aria-label="' + BACK_BRANDS + '">' + card.brands.map(function(x){
+    return '<li>' + brandMark(x.id) + '<span class="who"><b>' + esc(x.n) + '</b><small>' + esc(dealWhat(x.id)) + '</small></span>'
+      + '<span class="v"><b>' + esc(money(x.pay)) + '</b><small>a year</small></span><span class="v"><b>' + esc(seasonTag(x.until)) + '</b><small>final season</small></span></li>'; }).join('') + '</ul></div>' : '';
+  return '<section class="k-panel cr-cback" aria-label="The back of the card">' + head + comps + brands + '</section>';
 }
 /* What this career put in the Vault for the first time. */
 function foundHtml(card){
@@ -2665,7 +2979,7 @@ function careersHtml(st){
       var c = fullCard(a.id);
       return '<button class="k-btn k-quiet" id="cr-vlist" type="button">All careers</button>' + entryHtml(a, true)
         + (canFather(a) ? '<button class="k-btn k-sec k-block cr-sonbtn" data-son="' + esc(a.id) + '" type="button">' + K.iconHtml('tree', 2) + ' Play as his son' + (proOpen() ? '' : ' <span class="k-tag k-gold cr-pro">Pro</span>') + '</button>' : '')
-        + (c && c.story ? storyHtml(c.story) : '<p class="k-small">The full story is kept for your last twenty careers.</p>');
+        + (c ? cardBack(c) : '') + (c && c.story ? storyHtml(c.story, c) : '<p class="k-small">The full story is kept for your last twenty careers.</p>');
     }
   }
   return '<ul class="cr-arc">' + st.arc.map(function(a){ return '<li>' + entryHtml(a, false) + '</li>'; }).join('') + '</ul>';
