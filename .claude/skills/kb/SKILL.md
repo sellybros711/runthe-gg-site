@@ -35,7 +35,7 @@ Never read the vault wholesale. In order:
 
 Game folders: `football` (The Perfect Season and the Fantasy Challenge), `cfb`, `hoops`, `baseball`,
 `golf` (Run The Tour and Putt Putt), `shut-the-door` (Shut The Door), `mythiball`, `wrestling`, `setlist` (Segue),
-`arcade`, `last-shot`.
+`arcade`, `last-shot`, `4th-and-what` (4th and What).
 Site-wide rules: `platform/`. Bugs and QA findings: `qa/issues/`. Agent specs: `agents/`.
 
 ## 3. Write back after a meaningful change

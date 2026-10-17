@@ -38,8 +38,8 @@ var REEL_N = 34, REEL_WIN = 28, CELL = 92, GAP = 8, SPIN_MS = 4600;
 /* how long each piece of five holds the spotlight, and the most the five may take */
 var DWELL = { common: 950, rare: 1200, epic: 1650, legendary: 2000 }, SPOT_MAX = 6200;
 
-function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-function money(n){ return Math.round(n).toLocaleString('en-US'); }
+var esc = window.RTF_UTIL.esc;
+var money = window.RTF_UTIL.coins;
 function reduced(){ try { return !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return false; } }
 function errText(e){
   return { signin: 'Sign in to open packs and keep what you get.', coins: 'Not enough coins.', shards: 'Not enough shards yet.',

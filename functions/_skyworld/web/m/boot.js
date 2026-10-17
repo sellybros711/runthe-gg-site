@@ -1,6 +1,8 @@
 /* Loads the world once the server has said yes: the world's data, then the Putt Putt renderer at the
- * versions Golf ships today (read by the server from golf/index.html), then the world's own modules. */
+ * versions Golf ships today (read by the server from golf/index.html), then the world's own modules, one after another. */
 (function(){
+  // the world's modules, in order. Filled in by build/pages.mjs from its MODULE_FILES, so there is one list.
+  var LOAD = [];
   function script(src){ return new Promise(function(ok, no){ var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.body.appendChild(s); }); }
   fetch('/skyworld/api/world', { credentials:'same-origin' }).then(function(r){ if (!r.ok) throw new Error('world ' + r.status); return r.json(); }).then(function(W){
     window.SKY_WORLD = W; var v = W.art || {};
@@ -11,8 +13,6 @@
       .then(function(){ return script('/golf/putt/land.js?v=' + (v.land || '')); })
       .then(function(){ return script('/golf/putt/hole3d.js?v=' + (v.hole3d || '')); })
       .catch(function(){ /* the world falls back to a flat map */ })
-      .then(function(){ return script('/skyworld/m/landmarks.js'); })
-      .then(function(){ return script('/skyworld/m/ui.js'); })
-      .then(function(){ return script('/skyworld/m/world.js'); });
+      .then(function(){ return LOAD.reduce(function(p, f){ return p.then(function(){ return script('/skyworld/m/' + f); }); }, Promise.resolve()); });
   }).catch(function(){ var c = document.getElementById('wait'); if (c) c.innerHTML = '<h1>Could not load</h1><p>Reload to try again.</p>'; });
 })();

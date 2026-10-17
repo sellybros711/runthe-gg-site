@@ -60,11 +60,12 @@
 <!-- The release newsletter checkbox in the menu's Account section. See supabase/121_newsletter.sql. -->
 <script defer src="/assets/newsletter.js?v=2"></script>
 <!-- Putt Putt Tour. It draws nothing until puttOn() opens it (see PUTT_TESTERS and PUTT_LIVE). -->
-<script defer src="putt/putt.js?v=98"></script>
+<script defer src="putt/putt.js?v=100"></script>
 <script defer src="putt/land.js?v=13"></script>
 <script defer src="putt/hole3d.js?v=17"></script>
-<script defer src="putt/gyms.js?v=2"></script>
-<script defer src="putt/trail.js?v=40"></script>
+<script defer src="putt/gyms.js?v=3"></script>
+<script defer src="putt/gymkinds/push.js?v=1"></script>
+<script defer src="putt/trail.js?v=41"></script>
 <script defer src="putt/mapland.js?v=6"></script>
 <!-- The course golfer in the profile style, asked through g3dOn(). -->
 <script defer src="golfer3d.js?v=21"></script>
@@ -12931,12 +12932,15 @@ const NAV_H2H_SCR=['h2hhome','h2hlobby','h2hdraft','h2hplay','h2hpreview','h2hwa
 // CS430: the nav is built ONCE and kept mounted (see render). Handlers read live S at click time, so a
 // persisted node is never stale; navSetActive() refreshes the highlighted tab in place each render.
 function bottomNav(){
-  // THE FIRST TEE's tabs (owner, 2026-10-15): Home, Pro Tour, the Pass, Putt Putt, Me
+  // THE FIRST TEE's tabs (owner, 2026-10-15; Shop and Leaders added 2026-10-17):
+  // Home, Pro Tour, Shop, the Pass, Putt Putt, Leaders, Me
   const ft=ftLive();
   const tabs=ft?[
     {id:'home',    ico:'home',  label:'Home',      go:()=>ftGo('title')},
     {id:'protour', ico:'flag',  label:'Pro Tour',  go:()=>ftGo('protour')},
+    {id:'shop',    ico:'cart',  label:'Shop',      go:()=>{ S.overlay='shop'; render(); }},
     {id:'putthub', ico:'green', label:'Putt Putt', go:()=>ftGo('putthub')},
+    {id:'leaderboard', ico:'trophy', label:'Leaders', go:()=>{ S.overlay='leaderboard'; render(); }},
     {id:'me',      ico:'user',  label:'Me',        go:()=>ftGo('me')},
   ]:[
     {id:'home',   ico:'home',   label:'Home',        go:()=>{ S.overlay=null; S.screen='title'; render(); }},
@@ -12953,7 +12957,7 @@ function bottomNav(){
     b.onclick=()=>{ try{ track('botnav',{tab:t.id}); }catch(e){} t.go(); };
     inner.appendChild(b);
   };
-  tabs.slice(0,ft?2:3).forEach(mk);
+  tabs.slice(0,3).forEach(mk);
   // The Tour Pass is the raised gold centre button (owner) - the six tabs keep their slots, and the
   // season track gets the one spot the thumb naturally lands on.
   if(passEnabled()){
@@ -12961,7 +12965,7 @@ function bottomNav(){
     fab.onclick=()=>{ try{ track('botnav',{tab:'pass'}); }catch(e){} S.overlay='tourpass'; render(); };
     inner.appendChild(fab);
   }
-  tabs.slice(ft?2:3).forEach(mk);
+  tabs.slice(3).forEach(mk);
   return nav;
 }
 // CS516-nav: self-healing watchdog for the recurring iOS bug where the position:fixed bar stops tracking
@@ -13024,7 +13028,9 @@ function navActiveTab(){
   if(!ftLive()) return navActiveTabClassic();
   const scr=S.screen, ov=S.overlay;
   if(ov==='tourpass') return 'pass';
-  if(ov==='record'||ov==='shop'||ov==='menu') return 'me';
+  if(ov==='shop') return 'shop';
+  if(ov==='leaderboard') return 'leaderboard';
+  if(ov==='record'||ov==='menu') return 'me';
   if(ov) return '';
   if(scr==='title') return 'home';
   if(scr==='protour'||NAV_CAREER_SCR.includes(scr)||NAV_DAILY_SCR.includes(scr)||NAV_H2H_SCR.includes(scr)||scr==='rules') return 'protour';
@@ -13059,7 +13065,7 @@ function navSetActive(nav){
   nav.querySelectorAll('[data-nav]').forEach(b=>{ const id=b.getAttribute('data-nav'), on=id===active;
     b.classList.toggle('on', on); if(on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current');
     let gift=false; try{ gift=!!loginPend(); }catch(e){}
-    const want=(id==='me' && (nFree>0 || newN>0 || gift)) || (id==='pass' && passClaim>0) || (id==='protour' && dailyTodo)
+    const want=(id==='me' && (newN>0 || gift)) || (id==='pass' && passClaim>0) || (id==='protour' && dailyTodo)
       || (id==='shop' && nFree>0) || (id==='profile' && newN>0) || (id==='daily' && dailyTodo);
     const num=(id==='pass' && passClaim>0) ? String(Math.min(99,passClaim)) : '';
     let dot=b.querySelector('.navdot');
@@ -16214,12 +16220,21 @@ function scrPuttHub(){
   if(!m){ body.appendChild($(`<div class="ft-card"><b>Putt Putt Tour did not load.</b><p>Check your connection and open it again.</p></div>`)); root.appendChild(body); add(root); return; }
   let art=''; try{ art=window.RTT_PUTT.cardArt(m.theme); }catch(e){}
   const d=m.daily||{}, out=m.lives<=0;
-  const card=$(`<div class="ft-score">
-    <div class="ft-stop">${art}<div class="ft-stopt"><div class="ft-k">Hole ${m.lv} of ${m.levels}</div><div class="ft-st">${esc(m.world)}</div><div class="ft-sl">${ftHearts(m.lives,m.max)}${out&&m.refillAt?` · next life in ${esc(hmShort(m.refillAt-Date.now()))}`:''}</div></div></div>
-    <button type="button" class="ft-big">Into the world <small>${out?'Out of lives: the Daily Hole is free':'Hole '+m.lv}</small></button>
-    <button type="button" class="ft-srow" data-k="daily"><span><b>Daily Hole · ${esc(d.name||'Today')}</b><span>${d.done?`Done · ${d.s} on a par ${d.par}`:'Timed, one try, never costs a life'}</span></span><span class="ft-sv">${d.done?'Done':'+'+window.RTT_PUTT.COINS.daily+' coins'}</span></button>
-    <button type="button" class="ft-srow" data-k="members"><span><b>Members Tour</b><span>Hallows Night · Harvest Moon</span></span><span class="ft-sv">${m.members?'Open':'Tour Pass'}</span></button>
-    <div class="ft-srow ft-static"><span><b>Lives</b><span>A heart is three lives. Each comes back 24 hours after you lose it.${(function(){ const PL=puttPassLives(); return PL&&m.max<PL.pass?` ${puttHeartIcon()} A Tour Pass doubles them: ${PL.pass} lives.`:''; })()}</span></span><span class="ft-sv">${m.lives}/${m.max}</span></div>
+  // the hero is your world: its picture, its stars, how far into the tour you are, and the way in. Then a tile each
+  // for the Daily Hole, the Members Tour and your lives, each with its own colour and icon (Clubhouse glass).
+  const ws=m.wStars!=null?`${m.wStars}/${m.wMax}`:'', pct=Math.round(100*Math.max(0,Math.min(1,(m.lv-1)/Math.max(1,m.levels))));
+  const PL=(function(){ try{ return puttPassLives(); }catch(e){ return null; } })();
+  const card=$(`<div class="ft-pp">
+    <div class="ft-pp-hero">
+      <div class="ft-pp-art">${art}<div class="ft-k">${m.w?`World ${m.w} of ${m.worlds}`:`Hole ${m.lv} of ${m.levels}`}</div><b>${esc(m.world)}</b></div>
+      <div class="ft-pp-prog">${ws?`<span class="st">★</span><span>${ws}</span>`:''}<div class="ft-pp-bar"><i style="width:${pct}%"></i></div><span class="dim">Hole ${m.lv} of ${m.levels}</span></div>
+      <button type="button" class="ft-big">Into the world <small>${out?'Out of lives: the Daily Hole is free':'Hole '+m.lv}</small></button>
+    </div>
+    <div class="ft-pp-tiles">
+      <button type="button" class="ft-pp-tile" data-k="daily"><b>Daily Hole</b><span>${esc(d.name||'Today')} · ${d.done?`${d.s} on a par ${d.par}`:'one try, never costs a life'}</span><em>${d.done?'Done':'+'+window.RTT_PUTT.COINS.daily+' coins'}</em></button>
+      <button type="button" class="ft-pp-tile" data-k="members"><b>Members Tour</b><span>Hallows Night · Harvest Moon</span><em>${m.members?'Open':'Tour Pass'}</em></button>
+      <div class="ft-pp-tile wide" data-k="lives"><div><b>Lives</b><span>${ftHearts(m.lives,m.max)}</span><span>${out&&m.refillAt?`Next life in ${esc(hmShort(m.refillAt-Date.now()))}`:'Each one comes back 24 hours after you lose it.'}${PL&&m.max<PL.pass?` A Tour Pass doubles them: ${PL.pass}.`:''}</span></div><em>${m.lives}/${m.max}</em></div>
+    </div>
   </div>`);
   card.querySelector('.ft-big').onclick=openPutt;
   card.querySelector('[data-k="daily"]').onclick=openPutt;
@@ -16338,7 +16353,7 @@ function ftStyleOnce(){ if(document.getElementById('ft-css')) return; const st=d
 /* Halloween: a moonlit dusk, the webs and pumpkins the classic home had, and a low fog */
 .ft-spksky{position:absolute;left:0;right:0;top:0;height:47%;pointer-events:none;background:linear-gradient(180deg,rgba(20,8,40,.9),rgba(54,24,86,.66) 45%,rgba(150,64,70,.22) 85%,transparent)}
 .ft-scene.spooky .ft-haze{background:linear-gradient(rgba(214,110,70,.75),transparent)}
-.ft-moon{position:absolute;top:calc(env(safe-area-inset-top,0px) + 82px);left:6%;width:min(17vw,120px);image-rendering:pixelated;filter:drop-shadow(0 0 24px rgba(255,236,170,.45))}
+.ft-moon{position:absolute;top:calc(env(safe-area-inset-top,0px) + 62px);right:5%;width:min(15vw,96px);image-rendering:pixelated;filter:drop-shadow(0 0 24px rgba(255,236,170,.45))}
 .ft-scene .spk-scene-web{opacity:.5}
 .ft-scene .spk-pk{display:block}
 .ft-pk1{left:4%;top:45%} .ft-pk2{left:15%;top:48.5%} .ft-pk3{right:5%;top:46%}
@@ -16566,7 +16581,7 @@ function ftStyleOnce(){ if(document.getElementById('ft-css')) return; const st=d
   .ft-go{display:inline-block}
   .ft-play{height:54px;padding:0 22px 0 18px;font-size:28px;border-radius:14px} .ft-play small{font-size:12px;max-width:none}
   .ft-tri{border-width:9px 0 9px 14px}
-  .ft-moon{top:84px;left:9%;width:110px}
+  .ft-moon{top:70px;right:3%;width:96px}
   .ft-pk1{left:3%;top:47%} .ft-pk2{left:9%;top:50%} .ft-pk3{right:30%;top:47%}
   .ft-door:hover .ft-go,.ft-door:focus-visible .ft-go{color:var(--gold)}
   .ft-home .ft-sheet{position:absolute;z-index:14;right:56px;top:96px;width:360px}
@@ -16633,6 +16648,84 @@ body.ftcloset .setup-actionbar .btn.ghost{border-color:rgba(216,180,90,.45);colo
 /* the tab bar's ticket for the Pass, and room for the home's ad slot under the doors */
 body.ftmode #app{padding:0}
 body.ftmode .topmask{display:none}
+/* THE HUBS IN CLUBHOUSE GLASS (the owner's pick, 2026-10-17). Every mode is a glass card with a chip in its own colour
+   and an icon drawn for it: Play 18 a flag on gold, Career a trophy on blue, Head to Head two golfers on teal, the
+   Spotlight a star on purple. The first card is the hero, the rest are rows; the links are chips with icons. */
+.ft-protour .ft-cards .gcard{background:linear-gradient(180deg,rgba(22,52,36,.78),rgba(12,30,20,.84))!important;-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2);border:1px solid rgba(226,190,104,.5)!important;box-shadow:0 14px 34px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.08)!important;border-radius:20px;display:grid!important;grid-template-columns:auto minmax(0,1fr) auto;column-gap:12px;row-gap:4px;align-items:center;padding:12px 14px!important;text-align:left}
+.ft-protour .ft-cards .gcard::before{grid-column:1;grid-row:1/3;align-self:start}
+.ft-protour .ft-cards .gcard .gc-top{grid-column:2/4;grid-row:1;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;min-width:0}
+.ft-protour .ft-cards .gcard .gc-mid{grid-column:2/4;grid-row:2;font-size:12.5px;line-height:1.3;opacity:.92}
+.ft-protour .ft-cards .gcard .gc-row,.ft-protour .ft-cards .gcard .oc-row{grid-column:1/4;grid-row:3;display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px}
+.ft-protour .ft-cards .gcard .oc-btn{flex:1;min-height:52px;background:rgba(255,255,255,.08)!important;border:1px solid rgba(226,190,104,.45)!important;border-radius:14px!important;color:var(--cream)!important;box-shadow:0 2px 0 rgba(0,0,0,.3)}
+.ft-protour .ft-cards .gcard .oc-btn:active{transform:translateY(2px)}
+.ft-protour .ft-cards .gcard.hasart::before{grid-row:2/4} .ft-protour .ft-cards .gcard.hasart .gc-top{grid-row:2} .ft-protour .ft-cards .gcard.hasart .gc-mid{grid-row:3} .ft-protour .ft-cards .gcard.hasart .gc-row{grid-row:4}
+.ft-protour .ft-cards .gcard .gc-strip{grid-column:1/-1;grid-row:1;position:relative;height:96px;margin:0 -14px 6px;overflow:hidden;border-radius:0}
+.ft-protour .ft-cards .gcard .gc-strip img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ft-protour .ft-cards .gcard .gc-strip::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 40%,rgba(10,26,18,.85))}
+.ft-protour .ft-cards .gcard .gc-striplab{position:absolute;left:14px;bottom:8px;z-index:1;font:800 12px var(--body);color:var(--cream)}
+.ft-protour .ft-cards .gcard .gc-title{font:400 26px/1 var(--display)!important;text-transform:uppercase;letter-spacing:.01em}
+.ft-protour .ft-cards .gcard .gc-kick{font:800 10px var(--body)!important;letter-spacing:1.6px;text-transform:uppercase;color:#e7c66c!important}
+.ft-protour .ft-cards .gcard .gc-badge{background:rgba(255,255,255,.1)!important;border:1px solid rgba(255,255,255,.18);color:var(--cream)!important;border-radius:999px;padding:4px 9px;font:800 10px var(--body);letter-spacing:1px}
+.ft-protour .ft-cards .gcard .gc-chip{background:rgba(255,255,255,.08)!important;border:1px solid rgba(255,255,255,.14);border-radius:999px;color:var(--cream)!important}
+.ft-protour .ft-cards .gcard .gc-go{background:linear-gradient(#ffe07a,#ebb02e)!important;color:#2a1c05!important;box-shadow:0 3px 0 #a5700f,0 8px 18px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.75);margin-left:auto;border-radius:13px!important;padding:9px 16px!important;font:400 17px/1 var(--display)!important;text-transform:uppercase;letter-spacing:.04em}
+.ft-protour .ft-cards .gcard:active .gc-go{transform:translateY(2px);box-shadow:0 1px 0 #a5700f!important}
+.ft-protour .ft-cards .gcard:focus-visible{outline:3px solid #ffe07a;outline-offset:2px}
+.ft-protour .ft-cards .gcard.hasart{padding-top:0!important;overflow:hidden}
+.ft-protour .ft-cards .gcard.gc-gold::before{content:"";flex:none;width:44px;height:44px;border-radius:14px;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cellipse%20cx%3D%2212%22%20cy%3D%2219.5%22%20rx%3D%227.5%22%20ry%3D%222.4%22%20fill%3D%22%232f8a4a%22%20stroke%3D%22%2314401f%22%20stroke-width%3D%221%22%2F%3E%3Cellipse%20cx%3D%2212%22%20cy%3D%2219.5%22%20rx%3D%222%22%20ry%3D%22.8%22%20fill%3D%22%230d2a16%22%2F%3E%3Cpath%20d%3D%22M12%2019.5V3.5%22%20stroke%3D%22%233a2a14%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%2F%3E%3Cpath%20d%3D%22M12%203.5l7.5%202.8L12%209.1z%22%20fill%3D%22%23e5483a%22%20stroke%3D%22%237a1a10%22%20stroke-width%3D%22.9%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E") center/27px no-repeat,linear-gradient(#ffe07a,#d39a1c);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(0,0,0,.18),0 2px 0 #7a5206}
+.ft-protour .ft-cards .gcard.gc-blue::before{content:"";flex:none;width:44px;height:44px;border-radius:14px;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M7%205H4v1.5A3.5%203.5%200%200%200%207.5%2010M17%205h3v1.5A3.5%203.5%200%200%201%2016.5%2010%22%20fill%3D%22none%22%20stroke%3D%22%23fff8e6%22%20stroke-width%3D%221.7%22%2F%3E%3Cpath%20d%3D%22M7%203.5h10v5a5%205%200%200%201-10%200z%22%20fill%3D%22%23ffe07a%22%20stroke%3D%22%236a4a06%22%20stroke-width%3D%221.2%22%2F%3E%3Cpath%20d%3D%22M10.5%2013.5h3l.8%204h-4.6z%22%20fill%3D%22%23ffe07a%22%20stroke%3D%22%236a4a06%22%20stroke-width%3D%221%22%2F%3E%3Crect%20x%3D%227.5%22%20y%3D%2217.5%22%20width%3D%229%22%20height%3D%223%22%20rx%3D%221%22%20fill%3D%22%23fff8e6%22%2F%3E%3C%2Fsvg%3E") center/27px no-repeat,linear-gradient(#78b8ff,#2a62c8);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(0,0,0,.18),0 2px 0 #122e6e}
+.ft-protour .ft-cards .gcard.gc-teal::before{content:"";flex:none;width:44px;height:44px;border-radius:14px;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Ccircle%20cx%3D%226%22%20cy%3D%228.5%22%20r%3D%223%22%20fill%3D%22%23fff8e6%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%228.5%22%20r%3D%223%22%20fill%3D%22%23fff8e6%22%2F%3E%3Cpath%20d%3D%22M1.5%2019.5a4.5%204.5%200%200%201%209%200zM13.5%2019.5a4.5%204.5%200%200%201%209%200z%22%20fill%3D%22%23fff8e6%22%2F%3E%3Cpath%20d%3D%22M13%204.5l-2.8%205.2h2.4l-1.4%205.3%204.2-6.6h-2.5L14.6%204.5z%22%20fill%3D%22%23ffe07a%22%20stroke%3D%22%230c4a40%22%20stroke-width%3D%22.8%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E") center/27px no-repeat,linear-gradient(#56d8c0,#1d8c7a);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(0,0,0,.18),0 2px 0 #0c4a40}
+.ft-protour .ft-cards .gcard.gc-purple::before{content:"";flex:none;width:44px;height:44px;border-radius:14px;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M4%203l3%203M20%203l-3%203M12%201.5v3%22%20stroke%3D%22%23ffe07a%22%20stroke-width%3D%221.6%22%20stroke-linecap%3D%22round%22%2F%3E%3Cpath%20d%3D%22M12%206l2.2%204.6%205%20.6-3.7%203.4%201%205-4.5-2.5-4.5%202.5%201-5L4.8%2011.2l5-.6z%22%20fill%3D%22%23fff8e6%22%20stroke%3D%22%233a1660%22%20stroke-width%3D%221%22%2F%3E%3C%2Fsvg%3E") center/27px no-repeat,linear-gradient(#c08aff,#6c3aa0);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(0,0,0,.18),0 2px 0 #3a1660}
+.ft-protour .ft-cards > .gcard:first-child .gc-title{font-size:34px!important}
+.ft-protour .ft-cards > .gcard:first-child .gc-go{font-size:21px!important;padding:12px 22px!important}
+.ft-protour .ft-cards > .gcard:first-child::before{width:54px;height:54px;border-radius:17px;background-size:34px,auto}
+.ft-protour .ft-links{gap:8px}
+.ft-protour .ft-chipbtn{background:linear-gradient(180deg,rgba(22,52,36,.78),rgba(12,30,20,.84))!important;-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2);border:1px solid rgba(226,190,104,.5)!important;box-shadow:0 14px 34px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.08)!important;border-radius:20px;border-radius:14px;min-height:42px;padding:6px 12px 6px 6px;font:700 13px var(--body);color:var(--cream)}
+.ft-protour .ft-chipbtn:active{transform:translateY(1px)}
+.ft-protour .ft-links > .ft-chipbtn:nth-child(1)::before{content:"";flex:none;width:30px;height:30px;border-radius:10px;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Crect%20x%3D%229%22%20y%3D%229%22%20width%3D%226%22%20height%3D%2211.5%22%20rx%3D%22.8%22%20fill%3D%22%23fff8e6%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%2212.5%22%20width%3D%226%22%20height%3D%228%22%20rx%3D%22.8%22%20fill%3D%22%23e7c66c%22%2F%3E%3Crect%20x%3D%2215%22%20y%3D%2214.5%22%20width%3D%226%22%20height%3D%226%22%20rx%3D%22.8%22%20fill%3D%22%23d39a5a%22%2F%3E%3Cpath%20d%3D%22M12%202.8l1%202%202.2.3-1.6%201.5.4%202.2-2-1-2%201%20.4-2.2-1.6-1.5%202.2-.3z%22%20fill%3D%22%23ffd24a%22%2F%3E%3C%2Fsvg%3E") center/18px no-repeat,linear-gradient(#ffe07a,#d39a1c);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(0,0,0,.18),0 2px 0 #7a5206}
+.ft-protour .ft-links > .ft-chipbtn:nth-child(2)::before{content:"";flex:none;width:30px;height:30px;border-radius:10px;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M3.5%204.5H10a2%202%200%200%201%202%202v13a2%202%200%200%200-2-2H3.5z%22%20fill%3D%22%23fff8e6%22%2F%3E%3Cpath%20d%3D%22M20.5%204.5H14a2%202%200%200%200-2%202v13a2%202%200%200%201%202-2h6.5z%22%20fill%3D%22%23e7c66c%22%2F%3E%3Cpath%20d%3D%22M15%208h3.5M15%2011h3.5%22%20stroke%3D%22%238a5a06%22%20stroke-width%3D%221.2%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E") center/18px no-repeat,linear-gradient(#8ad66a,#2f8a3e);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(0,0,0,.18),0 2px 0 #14401c}
+.ft-protour .ft-links > .ft-chipbtn:nth-child(3)::before{content:"";flex:none;width:30px;height:30px;border-radius:10px;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Crect%20x%3D%225%22%20y%3D%222.5%22%20width%3D%2214%22%20height%3D%2219%22%20rx%3D%222%22%20fill%3D%22%232a76cc%22%20stroke%3D%22%23123c6e%22%20stroke-width%3D%221%22%2F%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2210%22%20r%3D%223.8%22%20fill%3D%22none%22%20stroke%3D%22%23ffe07a%22%20stroke-width%3D%221.4%22%2F%3E%3Cpath%20d%3D%22M8.2%2010h7.6M12%206.2c1.5%201.2%201.5%206.4%200%207.6M12%206.2c-1.5%201.2-1.5%206.4%200%207.6%22%20stroke%3D%22%23ffe07a%22%20stroke-width%3D%221%22%20fill%3D%22none%22%2F%3E%3Cpath%20d%3D%22M8.5%2017.5h7%22%20stroke%3D%22%23ffe07a%22%20stroke-width%3D%221.4%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E") center/18px no-repeat,linear-gradient(#78b8ff,#2a62c8);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(0,0,0,.18),0 2px 0 #122e6e}
+.ft-protour .ft-links > .ft-chipbtn:nth-child(4)::before{content:"";flex:none;width:30px;height:30px;border-radius:10px;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%229.5%22%20fill%3D%22%23fff8e6%22%2F%3E%3Cpath%20d%3D%22M9.4%209.4a2.7%202.7%200%201%201%203.7%202.5c-.8.4-1.1.9-1.1%201.7v.6%22%20fill%3D%22none%22%20stroke%3D%22%231f5a3a%22%20stroke-width%3D%222.1%22%20stroke-linecap%3D%22round%22%2F%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2217.4%22%20r%3D%221.25%22%20fill%3D%22%231f5a3a%22%2F%3E%3C%2Fsvg%3E") center/18px no-repeat,linear-gradient(#56d8c0,#1d8c7a);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(0,0,0,.18),0 2px 0 #0c4a40}
+.ft-protour .ft-links > .ft-chipbtn:nth-child(5)::before{content:"";flex:none;width:30px;height:30px;border-radius:10px;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%229%22%20fill%3D%22%23ffe07a%22%20stroke%3D%22%238a5a06%22%20stroke-width%3D%221.3%22%2F%3E%3Cpath%20d%3D%22M12%206.5l1.7%203.5%203.8.5-2.8%202.6.7%203.8L12%2015.1l-3.4%201.8.7-3.8-2.8-2.6%203.8-.5z%22%20fill%3D%22%23fff8e6%22%2F%3E%3C%2Fsvg%3E") center/18px no-repeat,linear-gradient(#ffe07a,#d39a1c);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(0,0,0,.18),0 2px 0 #7a5206}
+.ft-protour .ft-plaque{background:linear-gradient(180deg,rgba(22,52,36,.78),rgba(12,30,20,.84))!important;-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2);border:1px solid rgba(226,190,104,.5)!important;box-shadow:0 14px 34px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.08)!important;border-radius:20px;color:var(--cream);background:linear-gradient(180deg,rgba(22,52,36,.78),rgba(12,30,20,.84))} .ft-protour .ft-plaque b{color:#ffe07a} .ft-protour .ft-plaque span{color:#e7c66c}
+.ft-pp{max-width:560px;display:grid;gap:10px}
+.ft-pp-hero{background:linear-gradient(180deg,rgba(22,52,36,.78),rgba(12,30,20,.84))!important;-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2);border:1px solid rgba(226,190,104,.5)!important;box-shadow:0 14px 34px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.08)!important;border-radius:20px;overflow:hidden;padding:10px;display:grid;gap:10px}
+.ft-pp-art{position:relative;gap:6px;min-height:140px;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;padding:12px 14px;background:#163a26}
+.ft-pp-art .gc-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;image-rendering:pixelated}
+.ft-pp-art::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 30%,rgba(4,14,9,.82))}
+.ft-pp-art > *{position:relative;z-index:1}
+.ft-pp-art .ft-k{position:absolute;left:10px;top:10px;padding:4px 9px;border-radius:999px;background:rgba(10,26,18,.78);border:1px solid rgba(226,190,104,.5)}
+.ft-pp-art b{font:400 36px/1.15 var(--display);text-transform:uppercase;text-shadow:0 3px 10px rgba(0,0,0,.6)}
+.ft-pp-prog{display:flex;align-items:center;gap:10px;font:400 17px var(--display);padding:0 4px}
+.ft-pp-prog .st{color:#ffd24a} .ft-pp-prog .dim{margin-left:auto;font:700 12px var(--body);color:var(--soft)}
+.ft-pp-bar{flex:1;height:9px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden} .ft-pp-bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#ffe07a,#ebb02e)}
+.ft-pp .ft-big{background:linear-gradient(#ffe07a,#ebb02e)!important;color:#2a1c05!important;box-shadow:0 3px 0 #a5700f,0 8px 18px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.75);width:100%;margin:0;border-radius:16px;padding:14px 18px;font:400 24px/1 var(--display);text-transform:uppercase;letter-spacing:.03em}
+.ft-pp .ft-big:active{transform:translateY(2px);box-shadow:0 1px 0 #a5700f!important}
+.ft-pp .ft-big small{font:800 11px var(--body);letter-spacing:1px;opacity:.8}
+.ft-pp-tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ft-pp-tile{background:linear-gradient(180deg,rgba(22,52,36,.78),rgba(12,30,20,.84))!important;-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2);border:1px solid rgba(226,190,104,.5)!important;box-shadow:0 14px 34px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.08)!important;border-radius:20px;display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:12px;text-align:left;color:var(--cream);min-height:132px;cursor:pointer}
+.ft-pp-tile:active{transform:translateY(2px)} .ft-pp-tile:focus-visible{outline:3px solid #ffe07a;outline-offset:2px}
+.ft-pp-tile::before{margin-bottom:6px}
+.ft-pp-tile b{font:400 21px/1.05 var(--display);text-transform:uppercase} .ft-pp-tile span{font:600 12px/1.3 var(--body);color:#d8e6dc}
+.ft-pp-tile em{margin-top:auto;padding-top:6px;font:400 15px var(--display);font-style:normal;text-transform:uppercase;letter-spacing:.04em;color:#ffe07a}
+.ft-pp-tile.wide{grid-column:1/-1;min-height:0;flex-direction:row;align-items:center;gap:12px} .ft-pp-tile.wide::before{margin:0} .ft-pp-tile.wide > div{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px} .ft-pp-tile.wide em{margin:0;padding:0}
+.ft-pp-tile .ft-hrts{display:inline-flex;gap:2px}
+.ft-pp-tile[data-k="daily"]::before{content:"";flex:none;width:44px;height:44px;border-radius:14px;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Crect%20x%3D%223.5%22%20y%3D%225%22%20width%3D%2217%22%20height%3D%2215.5%22%20rx%3D%222.5%22%20fill%3D%22%23fff8e6%22%2F%3E%3Cpath%20d%3D%22M3.5%207.5A2.5%202.5%200%200%201%206%205h12a2.5%202.5%200%200%201%202.5%202.5V10h-17z%22%20fill%3D%22%23e5483a%22%2F%3E%3Cpath%20d%3D%22M8%203v4M16%203v4%22%20stroke%3D%22%23fff8e6%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%2F%3E%3Cpath%20d%3D%22M8.2%2014.6l2.5%202.4%205-5%22%20fill%3D%22none%22%20stroke%3D%22%231f7a3e%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E") center/27px no-repeat,linear-gradient(#ff8a7a,#d8442e);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(0,0,0,.18),0 2px 0 #6e1a0c}
+.ft-pp-tile[data-k="members"]::before{content:"";flex:none;width:44px;height:44px;border-radius:14px;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M12%202.5l8%203v6c0%205-3.6%208.6-8%2010-4.4-1.4-8-5-8-10v-6z%22%20fill%3D%22%23fff8e6%22%20stroke%3D%22%233a1660%22%20stroke-width%3D%221.2%22%2F%3E%3Cpath%20d%3D%22M12%207l1.6%203.3%203.6.4-2.7%202.4.8%203.6L12%2015l-3.3%201.7.8-3.6-2.7-2.4%203.6-.4z%22%20fill%3D%22%23ffd24a%22%20stroke%3D%22%238a5a06%22%20stroke-width%3D%22.6%22%2F%3E%3C%2Fsvg%3E") center/27px no-repeat,linear-gradient(#c08aff,#6c3aa0);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(0,0,0,.18),0 2px 0 #3a1660}
+.ft-pp-tile[data-k="lives"]::before{content:"";flex:none;width:44px;height:44px;border-radius:14px;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M12%2020.5s-8.5-5.2-8.5-11A4.4%204.4%200%200%201%2012%207a4.4%204.4%200%200%201%208.5%202.5c0%205.8-8.5%2011-8.5%2011z%22%20fill%3D%22%23ff5a6a%22%20stroke%3D%22%236a0c18%22%20stroke-width%3D%221.3%22%2F%3E%3Cpath%20d%3D%22M7.4%209.6a2.2%202.2%200%200%201%202.1-2%22%20stroke%3D%22%23ffd6dc%22%20stroke-width%3D%221.5%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E") center/27px no-repeat,linear-gradient(#ff8a98,#c42a42);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(0,0,0,.18),0 2px 0 #5e0c18}
+@media (min-width:900px) and (min-height:560px){
+  .ft-protour .ft-body{grid-template-columns:minmax(0,1fr) minmax(0,560px);grid-template-rows:auto auto auto auto auto 1fr;column-gap:32px;align-content:start}
+  .ft-protour .ft-cards{display:contents}
+  .ft-protour .ft-cards > *{grid-column:2}
+  .ft-protour .ft-cards > .gcard:first-child{grid-column:1;grid-row:2/6;align-self:start;max-width:620px}
+  .ft-protour .ft-cards > .gcard:first-child .gc-title{font-size:52px!important}
+  .ft-protour .ft-cards > .gcard:first-child::before{width:64px;height:64px}
+  .ft-protour .ft-cards > .gcard:first-child .gc-strip{height:210px}
+  .ft-protour .ft-cards .gcard .gc-title{font-size:30px!important} .ft-protour .ft-cards .gcard .gc-mid{font-size:14px}
+  .ft-protour .ft-plaque{grid-row:6;align-self:start}
+  .ft-putthub .ft-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,560px);column-gap:32px;align-content:start}
+  .ft-putthub .ft-hhead{grid-column:1} .ft-putthub .ft-pp{grid-column:2;grid-row:1/3;max-width:none}
+  .ft-pp-art{min-height:220px} .ft-pp-art b{font-size:52px;line-height:1.15} .ft-pp-tile{min-height:150px}
+}
 `; document.head.appendChild(st); }
 function startRoll(){
   clearInterval(rollTimer);
@@ -23693,7 +23786,7 @@ function puttHost(){
     // Putt Putt's paid lives: the site's own Stripe checkout (functions/api/stripe), not create-checkout. Answers {url} or {error}.
     buyLives:function(pack){ return puttBuyLives(pack); },
     // a guest's coins are held on this browser and paid when they sign in, rather than lost (holdGuestCoins)
-    coins:function(n,label){ try{ if(sbSignedIn()) addBonusCoins(n,{label:label}); else holdGuestCoins(n); }catch(e){} },
+    coins:function(n,label,o){ try{ if(sbSignedIn()) addBonusCoins(n,{label:label,silent:!!(o&&o.silent)}); else holdGuestCoins(n); }catch(e){} },
     // the game's own weekly challenges, daily quests and play streak hear about Putt Putt
     quest:function(metric,n){ try{ questWeekly(metric,n); }catch(e){} },
     questDaily:function(){ try{ questDaily('putt'); }catch(e){} },
@@ -23711,7 +23804,8 @@ function puttHost(){
     equipPutter:function(id){ try{ if(!cosOwned('putter',id)) return false; cosEquip('putter',id); return true; }catch(e){ return false; } },
     grantPutter:function(id){ try{ return puttGrant(id); }catch(e){ return false; } },
     // a free pack for a Putt Putt gym vault or a lucky chest: 'base' (Pro Shop) or 'tour'. Signed in only; 0 when it could not land.
-    pack:function(tier,why){ try{ return grantFreePack(1,{tier:tier||'base',why:why||'Putt Putt'}); }catch(e){ return 0; } },
+    // o.silent: no toast (a gym vault says it in its own panel, so nothing lands over the board)
+    pack:function(tier,why,o){ try{ return grantFreePack(1,{tier:tier||'base',why:why||'Putt Putt',silent:!!(o&&o.silent)}); }catch(e){ return 0; } },
     // a lucky chest's common item: one the player does not own yet, or null when they own them all
     commonItem:function(){ try{ if(!sbSignedIn()||!packsOn()) return null; const L=packPool().filter(e=>e.rarity==='common'&&!packOwns(e)); if(!L.length) return null;
       const e=L[Math.floor(Math.random()*L.length)]; packGrant(e); return e.name||null; }catch(e){ return null; } },

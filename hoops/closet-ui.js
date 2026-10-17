@@ -66,8 +66,8 @@ var RARITY_ORDER = { common: 0, rare: 1, epic: 2, legendary: 3 };
 var EARN = { draft_first: 'Go 1st overall', title: 'Win a title', hof: 'Hall of Fame', career_first: 'First career' };
 function earnText(it){ var m = /^pass:(\d+)$/.exec(it.earn || ''); if (m) return 'Floor Pass, Season ' + m[1]; return /^drop:/.test(it.earn) ? 'Finish the drop' : EARN[it.earn] || 'Earned'; }
 
-function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-function money(n){ return Math.round(n).toLocaleString('en-US'); }
+var esc = window.RTF_UTIL.esc;
+var money = window.RTF_UTIL.coins;
 /* a tile is half a phone wide: 275,000 does not fit beside the rarity, 275K does */
 function short(n){ return n >= 10000 ? Math.round(n / 1000) + 'K' : money(n); }
 

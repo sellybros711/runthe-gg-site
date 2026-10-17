@@ -50,6 +50,7 @@ function play(L, n, extraFor) {
 function loadCourt() {
   const src = fs.readFileSync(path.join(HERE, 'court.js'), 'utf8');
   const win = { RTF_BALLER: B, RTF_KIT: {}, matchMedia: () => ({ matches: false }), RTF_SOUND: { cue() {}, crowd() {} } };
+  new Function('window', 'module', fs.readFileSync(path.join(HERE, 'util.js'), 'utf8'))(win, undefined);
   new Function('window', 'document', src)(win, { getElementById: () => null, createElement: () => ({ style: {} }), head: { appendChild() {} } });
   return win.RTF_COURT;
 }
@@ -306,7 +307,7 @@ async function browser() {
       return r.fulfill({ body: SHELL, contentType: 'text/html; charset=utf-8' });
     });
     await page.goto('http://local.test/shell.html');
-    for (const s of ['hoops/career-kit.js', 'hoops/baller.js', 'hoops/sound.js', 'hoops/court.js', 'hoops/ticker.js']) await page.addScriptTag({ url: 'http://local.test/' + s });
+    for (const s of ['hoops/util.js', 'hoops/career-kit.js', 'hoops/baller.js', 'hoops/sound.js', 'hoops/court.js', 'hoops/ticker.js']) await page.addScriptTag({ url: 'http://local.test/' + s });
     return { ctx, page, boom };
   }
   const ME = { look: { skin: 5, hair: 'braids', hc: 0, build: 'strong', shoes: 'club' }, c1: '#00471B', c2: '#EEE1C6', num: 34, age: 26 };

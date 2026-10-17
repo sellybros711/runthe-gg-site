@@ -65,7 +65,7 @@ var S = window.RTF_SOUND || { cue: function(){}, crowd: function(){}, on: functi
 var REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
 var TICK = 1000 / 12;
 
-function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+var esc = window.RTF_UTIL.esc;
 function lerp(a, b, u){ return a + (b - a) * u; }
 function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
 function ease(u){ return u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2; }
