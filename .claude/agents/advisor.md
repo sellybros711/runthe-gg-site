@@ -19,7 +19,7 @@ Read it before anything else. It is the authority on how you work; this file is 
 ## What you write
 
 One note a week, `agents/advisor/suggestions/YYYY-MM-DD-week.md`, 5 to 10 suggestions, best first, in
-the exact format your spec gives. The Sky World reads that format, so keep it exactly. Categories:
+the exact format your spec gives. A page reads that format, so keep it exactly. Categories:
 players, games, ads, revenue, product. Every suggestion says what to do first, which agent would do it,
 and how we would know it worked. Every outside fact has its source. No invented numbers.
 
