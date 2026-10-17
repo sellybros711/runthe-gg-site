@@ -1,0 +1,188 @@
+{
+ "id": "rivera-2001-ws7",
+ "plan": 10,
+ "resolution": "proxy",
+ "retroGame": "ARI200111040",
+ "date": "2001/11/04",
+ "game": "NYA at ARI",
+ "pitcher": {
+  "retroId": "rivem002",
+  "mlbamId": 121250,
+  "name": "Mariano Rivera",
+  "throws": "R",
+  "seasonLine": "2.34 ERA, 50 SV, 80.2 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "bottom",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 2,
+   "them": 1
+  },
+  "usHome": false,
+  "walkOffLive": true
+ },
+ "plateAppearances": [
+  {
+   "batterId": "gracm001",
+   "records": [
+    "S8"
+   ],
+   "runs": 0,
+   "outs": 0,
+   "seq": "BX",
+   "count": "10",
+   "pitcher": "rivem002",
+   "name": "Mark Grace",
+   "bats": "L",
+   "batsListed": "L",
+   "pitches": 2,
+   "event": "S8",
+   "mlbamId": 115007,
+   "fullName": "Mark Grace",
+   "batSideListed": "L",
+   "seasonLine": ".298/.386/.466, 15 HR",
+   "inSpot": true
+  },
+  {
+   "batterId": "milld002",
+   "records": [
+    "NP",
+    "FC1/BG1.1-2(E1/TH2);B-1"
+   ],
+   "runs": 0,
+   "outs": 0,
+   "seq": "LX",
+   "count": "01",
+   "pitcher": "rivem002",
+   "name": "Damian Miller",
+   "bats": "R",
+   "batsListed": "R",
+   "pitches": 2,
+   "event": "FC1/BG1.1-2(E1/TH2);B-1",
+   "mlbamId": 119064,
+   "fullName": "Damian Miller",
+   "batSideListed": "R",
+   "seasonLine": ".271/.337/.424, 13 HR",
+   "inSpot": true
+  },
+  {
+   "batterId": "bellj001",
+   "records": [
+    "15(2)/FO/BG15S.1-2"
+   ],
+   "runs": 0,
+   "outs": 1,
+   "seq": "X",
+   "count": "00",
+   "pitcher": "rivem002",
+   "name": "Jay Bell",
+   "bats": "R",
+   "batsListed": "R",
+   "pitches": 1,
+   "event": "15(2)/FO/BG15S.1-2",
+   "mlbamId": 110826,
+   "fullName": "Jay Bell",
+   "batSideListed": "R",
+   "seasonLine": ".248/.349/.400, 13 HR",
+   "inSpot": true
+  },
+  {
+   "batterId": "womat001",
+   "records": [
+    "NP",
+    "D9/L9L.2-H(UR);1-3"
+   ],
+   "runs": 1,
+   "outs": 0,
+   "seq": "BBCFX",
+   "count": "22",
+   "pitcher": "rivem002",
+   "name": "Tony Womack",
+   "bats": "L",
+   "batsListed": "L",
+   "pitches": 5,
+   "event": "D9/L9L.2-H(UR);1-3",
+   "mlbamId": 124523,
+   "fullName": "Tony Womack",
+   "batSideListed": "L",
+   "seasonLine": ".266/.307/.345, 3 HR",
+   "inSpot": true
+  },
+  {
+   "batterId": "counc001",
+   "records": [
+    "HP"
+   ],
+   "runs": 0,
+   "outs": 0,
+   "seq": "FH",
+   "count": "01",
+   "pitcher": "rivem002",
+   "name": "Craig Counsell",
+   "bats": "L",
+   "batsListed": "L",
+   "pitches": 2,
+   "event": "HP",
+   "mlbamId": 112736,
+   "fullName": "Craig Counsell",
+   "batSideListed": "L",
+   "seasonLine": ".275/.359/.362, 4 HR",
+   "inSpot": false
+  },
+  {
+   "batterId": "gonzl001",
+   "records": [
+    "S8/F6MD.3-H;2-3;1-2"
+   ],
+   "runs": 1,
+   "outs": 0,
+   "seq": "FX",
+   "count": "01",
+   "pitcher": "rivem002",
+   "name": "Luis Gonzalez",
+   "bats": "L",
+   "batsListed": "L",
+   "pitches": 2,
+   "event": "S8/F6MD.3-H;2-3;1-2",
+   "mlbamId": 114935,
+   "fullName": "Luis Gonzalez",
+   "batSideListed": "L",
+   "seasonLine": ".325/.429/.688, 57 HR",
+   "inSpot": false
+  }
+ ],
+ "realFaced": 4,
+ "real": {
+  "outcome": "doors_open",
+  "pitches": 10,
+  "pitchesKnown": 10,
+  "pitchesUnknownPAs": 0,
+  "runs": 1
+ },
+ "scoreCheck": {
+  "lineScore": {
+   "away": "000000110",
+   "home": "000001002",
+   "awayRuns": 2,
+   "homeRuns": 3,
+   "log": "gamelog/GLWS.TXT"
+  },
+  "replay": {
+   "away": 2,
+   "home": 3
+  },
+  "agrees": true
+ },
+ "arsenal": null,
+ "sources": [
+  "Retrosheet event file 2001WS.EVE, game ARI200111040 (via github.com/chadwickbureau/retrosheet)",
+  "Retrosheet rosters NYA2001.ROS and ARI2001.ROS for bat and throw hands",
+  "Retrosheet game log gamelog/GLWS.TXT for the line score check",
+  "Chadwick Bureau register (github.com/chadwickbureau/register) for Retrosheet to MLBAM ids",
+  "MLB Stats API people with 2001 season stats for names and season lines",
+  "The information used here was obtained free of charge from and is copyrighted by Retrosheet. Interested parties may contact Retrosheet at www.retrosheet.org."
+ ]
+}

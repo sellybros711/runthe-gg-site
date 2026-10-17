@@ -1,0 +1,145 @@
+{
+ "id": "eckersley-1988-ws1",
+ "plan": 9,
+ "resolution": "proxy",
+ "retroGame": "LAN198810150",
+ "date": "1988/10/15",
+ "game": "OAK at LAN",
+ "pitcher": {
+  "retroId": "ecked001",
+  "mlbamId": 113726,
+  "name": "Dennis Eckersley",
+  "throws": "R",
+  "seasonLine": "2.35 ERA, 45 SV, 72.2 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "bottom",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 4,
+   "them": 3
+  },
+  "usHome": false,
+  "walkOffLive": true
+ },
+ "plateAppearances": [
+  {
+   "batterId": "sciom001",
+   "records": [
+    "6/P"
+   ],
+   "runs": 0,
+   "outs": 1,
+   "seq": "",
+   "count": "??",
+   "pitcher": "ecked001",
+   "name": "Mike Scioscia",
+   "bats": "L",
+   "batsListed": "L",
+   "pitches": null,
+   "event": "6/P",
+   "mlbamId": 121919,
+   "fullName": "Mike Scioscia",
+   "batSideListed": "L",
+   "seasonLine": ".257/.318/.324, 3 HR",
+   "inSpot": true
+  },
+  {
+   "batterId": "hamij001",
+   "records": [
+    "K/C"
+   ],
+   "runs": 0,
+   "outs": 1,
+   "seq": "",
+   "count": "??",
+   "pitcher": "ecked001",
+   "name": "Jeff Hamilton",
+   "bats": "R",
+   "batsListed": "R",
+   "pitches": null,
+   "event": "K/C",
+   "mlbamId": 115382,
+   "fullName": "Jeff Hamilton",
+   "batSideListed": "R",
+   "seasonLine": ".236/.268/.353, 6 HR",
+   "inSpot": true
+  },
+  {
+   "batterId": "davim002",
+   "records": [
+    "W"
+   ],
+   "runs": 0,
+   "outs": 0,
+   "seq": "FBBBB",
+   "count": "31",
+   "pitcher": "ecked001",
+   "name": "Mike Davis",
+   "bats": "L",
+   "batsListed": "L",
+   "pitches": 5,
+   "event": "W",
+   "mlbamId": 113127,
+   "fullName": "Mike Davis",
+   "batSideListed": "L",
+   "seasonLine": ".196/.260/.270, 2 HR",
+   "inSpot": true
+  },
+  {
+   "batterId": "gibsk001",
+   "records": [
+    "SB2",
+    "HR/L9D.2-H"
+   ],
+   "runs": 2,
+   "outs": 0,
+   "seq": "FFFBFB1BX",
+   "count": "32",
+   "pitcher": "ecked001",
+   "name": "Kirk Gibson",
+   "bats": "L",
+   "batsListed": "L",
+   "pitches": 8,
+   "event": "HR/L9D.2-H",
+   "mlbamId": 114752,
+   "fullName": "Kirk Gibson",
+   "batSideListed": "L",
+   "seasonLine": ".290/.377/.483, 25 HR",
+   "inSpot": true
+  }
+ ],
+ "realFaced": 4,
+ "real": {
+  "outcome": "walk_off",
+  "pitches": null,
+  "pitchesKnown": 13,
+  "pitchesUnknownPAs": 2,
+  "runs": 2
+ },
+ "scoreCheck": {
+  "lineScore": {
+   "away": "040000000",
+   "home": "200001002",
+   "awayRuns": 4,
+   "homeRuns": 5,
+   "log": "gamelog/GLWS.TXT"
+  },
+  "replay": {
+   "away": 4,
+   "home": 5
+  },
+  "agrees": true
+ },
+ "arsenal": null,
+ "sources": [
+  "Retrosheet event file 1988WS.EVE, game LAN198810150 (via github.com/chadwickbureau/retrosheet)",
+  "Retrosheet rosters OAK1988.ROS and LAN1988.ROS for bat and throw hands",
+  "Retrosheet game log gamelog/GLWS.TXT for the line score check",
+  "Chadwick Bureau register (github.com/chadwickbureau/register) for Retrosheet to MLBAM ids",
+  "MLB Stats API people with 1988 season stats for names and season lines",
+  "The information used here was obtained free of charge from and is copyrighted by Retrosheet. Interested parties may contact Retrosheet at www.retrosheet.org."
+ ]
+}

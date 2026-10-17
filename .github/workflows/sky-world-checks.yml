@@ -1,0 +1,31 @@
+name: Sky World checks
+
+# The Sky World is for testers only (functions/_skyworld/README.md). This runs on every PR, whatever it
+# touches, because a link to the world could be added anywhere: the posture check reads the whole site.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: sky-world-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Posture (testers only, linked from nowhere, no secrets)
+        run: node functions/_skyworld/check-posture.mjs
+      - name: The gate side by side with Stumpire, discovery, layers, pages.js
+        run: node --test functions/_skyworld/test/*.test.mjs
+      - name: No dashes
+        run: node scripts/check-dashes.mjs functions/_skyworld functions/skyworld
+      - name: Pages Functions build like Cloudflare's
+        run: npx --yes wrangler@3.20.0 pages functions build --outdir "$RUNNER_TEMP/fn"
