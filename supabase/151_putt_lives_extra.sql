@@ -126,3 +126,11 @@ revoke all on function public.putt_lives_spend(int)            from public;
 revoke all on function public.putt_lives_buy(text, uuid, int)  from public, anon, authenticated;
 grant execute on function public.putt_lives_state(int, int) to authenticated;
 grant execute on function public.putt_lives_spend(int)      to authenticated;
+-- the webhook calls this as service_role. Revoking from public took that away too (a live buy
+-- failed with "permission denied for function putt_lives_buy", 2026-10-17), so it is granted back
+-- by name. Guarded, because a test database may have no service_role.
+do $$ begin
+  if exists (select 1 from pg_roles where rolname = 'service_role') then
+    execute 'grant execute on function public.putt_lives_buy(text, uuid, int) to service_role';
+  end if;
+end $$;
