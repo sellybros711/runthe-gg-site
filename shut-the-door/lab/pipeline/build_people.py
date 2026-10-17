@@ -1,0 +1,196 @@
+"""Build the lab's people as glTF: MakeHuman body, clothes, gear, and CMU motion fitted on.
+
+  uv venv --python /usr/bin/python3.11 venv && uv pip install bpy==4.2.0 numpy
+  venv/bin/python -I shut-the-door/lab/pipeline/build_people.py ASSETS OUT [who ...]
+
+ASSETS holds the downloads (see LICENSES.md for every source):
+  ASSETS/makehuman/...         the CC0 MakeHuman files (3dobjs, targets, rigs, skins, clothes, ...)
+  ASSETS/cmu-bvh/...           the CMU BVH clips (the Poser friendly 2012 release, 30 fps)
+  ASSETS/polyhaven-textures/files/...   the CC0 Poly Haven cloth and leather maps
+OUT gets one raw .glb per person. pack.sh then compresses them (gltfpack, meshopt) into lab/assets.
+who: batter catcher umpire coach (all four when left out).
+"""
+import os, sys, math, json
+import numpy as np
+import bpy
+from mathutils import Vector, Matrix, Quaternion, Euler
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import mh            # noqa: E402
+import gear          # noqa: E402
+import retarget      # noqa: E402
+import textures      # noqa: E402
+
+ASSETS, OUT = sys.argv[1], sys.argv[2]
+WHO = sys.argv[3:] or ['batter', 'catcher', 'umpire', 'coach']
+MHA = f'{ASSETS}/makehuman'
+BVH = f'{ASSETS}/cmu-bvh'
+PH = f'{ASSETS}/polyhaven-textures/files'
+WORK = os.path.join(OUT, 'work')
+os.makedirs(WORK, exist_ok=True)
+
+# Team colours. The batter is a generic road team: grey with navy trim, no names or logos.
+NAVY = (0.035, 0.06, 0.14, 1)
+ROAD_GREY = (0.52, 0.53, 0.55, 1)
+UMP_NAVY = (0.03, 0.035, 0.06, 1)
+UMP_SLACKS = (0.22, 0.23, 0.25, 1)
+
+
+def _lin(hexs):
+    c = [int(hexs[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+    return tuple((x / 12.92 if x <= 0.04045 else ((x + 0.055) / 1.055) ** 2.4) for x in c) + (1,)
+
+
+# the closer's side (the catcher's gear, the coach): the pack's team colour, no logo
+_FACTS = json.load(open(os.path.join(HERE, '..', 'assets', 'pitch.json')))
+TEAM = _lin(_FACTS['pitcher']['teamColors'][0])
+COACH_BLUE = TEAM
+
+
+def reset():
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    bpy.context.scene.render.fps = 30
+
+
+def skin_material(name, skin, size):
+    tex = textures.skin(f'{MHA}/skins/{skin}', WORK, size)
+    m = mh.principled(name, base_tex=tex['color'], rough=0.52, normal_tex=tex.get('normal'), normal_strength=0.6)
+    return m
+
+
+def cloth_material(name, color, mhclo_dir, base, pattern='jogging_melange', uv_scale=6.0, rough=0.85, color2=None):
+    """The proxy's own normal map (its folds) with a flat team colour, its fabric weave from Poly Haven
+    tinted. Trims are painted later, once the mesh exists (paint_trim)."""
+    tex = textures.cloth(mhclo_dir, base, color, PH, pattern, WORK, color2=color2)
+    m = mh.principled(name, base_tex=tex['color'], normal_tex=tex['normal'], rough=rough, normal_strength=1.0)
+    m['color_png'] = tex['color']
+    return m
+
+
+def paint_trim(ob, trim, placket=False, width=0.022):
+    """Navy piping where a road jersey has it: the collar and the sleeve ends (the mesh's open edges
+    above the waist), and down the front placket."""
+    import bmesh as _bm
+    me = ob.data
+    bm = _bm.new(); bm.from_mesh(me)
+    bnd = [v for v in bm.verts if any(e.is_boundary for e in v.link_edges) and v.co.z > 1.15]
+    pts = np.array([list(v.co) for v in bnd]) if bnd else np.zeros((0, 3))
+    bm.free()
+    def pred(c, p):
+        if len(pts) and np.min(np.linalg.norm(pts - np.array(c), axis=1)) < width:
+            return True
+        return placket and abs(c.x) < 0.007 and p.normal.y < -0.5 and 0.98 < c.z < 1.5
+    png = me.materials[0]['color_png']
+    textures.paint_faces(png, ob, pred, trim)
+    for im in bpy.data.images:
+        if im.filepath and os.path.abspath(bpy.path.abspath(im.filepath)) == os.path.abspath(png):
+            im.reload()
+
+
+def body(cfg):
+    h = mh.Human(MHA, mh.macro_targets(f'{MHA}/targets', **cfg['shape']))
+    arm = h.build_armature(f'{MHA}/rigs/standard/rig.game_engine.json', cfg['name'])
+    h.load_weights(f'{MHA}/rigs/standard/weights.game_engine.json')
+    parts = []
+    for c in cfg.get('clothes', []):
+        d = f'{MHA}/clothes/{c["id"]}'
+        mat = None if c.get('own') else cloth_material(c['id'], c['color'], d, c['id'], c.get('pattern', 'jogging_melange'), color2=c.get('color2'))
+        ob = h.proxy(f'{d}/{c["id"]}.mhclo', c['id'], mat, offset_scale=c.get('offset', 1.0))
+        if c.get('trim'):
+            paint_trim(ob, c['trim'], placket=c.get('placket', False))
+        parts.append(ob)
+    eyes = mh.principled('eyes', base_tex=f'{MHA}/eyes/materials/brown_eye.png', rough=0.05)
+    parts.append(h.proxy(f'{MHA}/eyes/high-poly/high-poly.mhclo', 'eyes', eyes, delete=False))
+    for p in cfg.get('hairs', ['eyebrows/eyebrow001/eyebrow001', 'eyelashes/eyelashes02/eyelashes02']):
+        parts.append(h.proxy(f'{MHA}/{p}.mhclo', os.path.basename(p), delete=False))
+    if cfg.get('hair'):
+        parts.append(h.proxy(f'{MHA}/{cfg["hair"]}.mhclo', 'hair', delete=False))
+    skin = skin_material('skin', cfg['skin'], cfg.get('skin_size', 1024))
+    parts.insert(0, h.body_object('body', skin))
+    for p in parts:
+        if p.data.materials and p.data.materials[0].blend_method == 'CLIP':
+            pass
+    return h, arm, parts
+
+
+def export(name):
+    path = os.path.join(OUT, f'{name}.glb')
+    bpy.ops.export_scene.gltf(filepath=path, export_format='GLB', export_image_format='WEBP',
+                              export_animations=True, export_animation_mode='ACTIONS',
+                              export_force_sampling=True, export_frame_step=1,
+                              export_optimize_animation_size=True, export_def_bones=False,
+                              export_skins=True, export_morph=False, export_yup=True,
+                              export_apply=False, export_texcoords=True, export_normals=True,
+                              export_tangents=False, export_materials='EXPORT', export_cameras=False,
+                              export_lights=False)
+    print('wrote', path, os.path.getsize(path))
+
+
+PEOPLE = {
+    # Daulton Varsho's side (bats left, from the Yamamoto pack). Generic body and face.
+    'batter': dict(
+        name='batter', skin='young_caucasian_male2', skin_size=1024,
+        shape=dict(age=0.52, muscle=0.75, weight=0.55, height=0.5, race={'caucasian': 0.8, 'african': 0.1, 'asian': 0.1}),
+        hair='hair/short02/short02',
+        clothes=[
+            dict(id='male_casualsuit06', color=ROAD_GREY, color2=ROAD_GREY, pattern='jogging_melange', trim=NAVY, placket=True),
+            dict(id='shoes06', own=True, color=NAVY),
+        ],
+        gear=[],
+        clips=[('swing', '124/124_07.bvh', 22, 140, True, 'grip'), ('take', '124/124_08.bvh', 15, 150, True, 'grip')],
+    ),
+    'catcher': dict(
+        name='catcher', skin='young_african_male', skin_size=1024,
+        shape=dict(age=0.55, muscle=0.7, weight=0.7, height=0.4, race={'african': 0.6, 'caucasian': 0.3, 'asian': 0.1}),
+        hair='hair/short04/short04',
+        clothes=[
+            dict(id='male_casualsuit06', color=(0.88, 0.88, 0.9, 1), color2=(0.88, 0.88, 0.9, 1), pattern='jogging_melange'),
+            dict(id='shoes06', own=True, color=(0.05, 0.05, 0.06, 1)),
+        ],
+        gear=[],
+        clips=[('idle', '120/120_21.bvh', 90, 280, False, {'l': 'open', 'r': 'fist'})],
+    ),
+    'umpire': dict(
+        name='umpire', skin='middleage_caucasian_male', skin_size=1024,
+        shape=dict(age=0.68, muscle=0.5, weight=0.75, height=0.6, race={'caucasian': 0.7, 'african': 0.2, 'asian': 0.1}),
+        hair='hair/short02/short02',
+        clothes=[
+            dict(id='male_casualsuit06', color=UMP_NAVY, color2=UMP_SLACKS, pattern='cotton_jersey'),
+            dict(id='shoes01', own=True, color=(0.03, 0.03, 0.03, 1)),
+        ],
+        gear=[],
+        clips=[('idle', '142/142_03.bvh', 90, 280, False, 'relaxed')],
+    ),
+    'coach': dict(
+        name='coach', skin='middleage_caucasian_male', skin_size=2048,
+        shape=dict(age=0.74, muscle=0.45, weight=0.62, height=0.5, race={'caucasian': 0.75, 'african': 0.15, 'asian': 0.1}),
+        hair='hair/short02/short02',
+        clothes=[dict(id='male_casualsuit06', color=COACH_BLUE, color2=(0.2, 0.21, 0.23, 1), pattern='cotton_jersey')],
+        gear=[],
+        clips=[('idle', '142/142_03.bvh', 90, 280, False, 'relaxed')],
+    ),
+}
+
+
+def build(who):
+    cfg = PEOPLE[who]
+    reset()
+    h, arm, parts = body(cfg)
+    if cfg.get('gear'):
+        # soft gear is lifted off the whole skin, including what the clothes hide
+        saved, h.deleted = h.deleted, set()
+        full = h.body_object('full_tmp', parts[0].data.materials[0])
+        h.deleted = saved
+        for g in cfg['gear']:
+            fn = getattr(gear, g)
+            fn(h, arm, full, color=UMP_NAVY if g == 'ump_bulk' else TEAM)
+        bpy.data.objects.remove(full, do_unlink=True)
+    for (clip, path, a, b, mirror, hands) in cfg['clips']:
+        retarget.apply_bvh(arm, f'{BVH}/{path}', clip, a, b, mirror=mirror, hands=hands)
+    export(who)
+
+
+if __name__ == '__main__':
+    for w in WHO:
+        build(w)

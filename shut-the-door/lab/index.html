@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Shut The Door 3D lab</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0b0d10; overflow: hidden; }
+  canvas { display: block; width: 100vw; height: 100vh; height: 100dvh; touch-action: manipulation; }
+  #hint { position: fixed; left: 0; right: 0; bottom: calc(14px + env(safe-area-inset-bottom)); text-align: center;
+          font: 500 13px/1.3 system-ui, sans-serif; color: rgba(255,255,255,.72); pointer-events: none;
+          transition: opacity .4s; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+  #hint.off { opacity: 0; }
+  #load { position: fixed; inset: 0; display: grid; place-items: center; color: rgba(255,255,255,.6);
+          font: 500 13px system-ui, sans-serif; background: #0b0d10; transition: opacity .5s; }
+  #load.off { opacity: 0; pointer-events: none; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "./vendor/three/three.module.min.js",
+  "three/addons/": "./vendor/three/addons/"
+} }
+</script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="load">Loading the park</div>
+<div id="hint" class="off">Tap to throw it again</div>
+<script type="module" src="./scene.js"></script>
+</body>
+</html>
