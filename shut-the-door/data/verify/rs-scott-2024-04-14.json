@@ -1,0 +1,308 @@
+{
+ "id": "rs-scott-2024-04-14",
+ "plan": "regular season L-blown",
+ "resolution": "real",
+ "gamePk": 746079,
+ "date": "2024-04-14",
+ "game": "Regular Season Game 3: Atlanta Braves at Miami Marlins",
+ "gameType": "R",
+ "pitcher": {
+  "id": 656945,
+  "name": "Tanner Scott",
+  "throws": "L",
+  "team": "Miami Marlins",
+  "seasonLine": "1.75 ERA, 22 SV, 72.0 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "top",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 7,
+   "them": 6
+  },
+  "usHome": true,
+  "walkOffLive": false,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 71,
+   "batterId": 660670,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "656945": 4
+   },
+   "pitches": 4,
+   "event": "single",
+   "des": "Ronald Acuña Jr. singles on a ground ball to left fielder Nick Gordon.",
+   "feedEvent": "single",
+   "feedDescription": "Ronald Acuña Jr. singles on a ground ball to left fielder Nick Gordon.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Ronald Acuña Jr.",
+   "batSideListed": "R",
+   "seasonLine": ".250/.351/.365, 4 HR"
+  },
+  {
+   "atBat": 72,
+   "batterId": 645277,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "656945": 4
+   },
+   "pitches": 4,
+   "event": "strikeout",
+   "des": "Ozzie Albies strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Ozzie Albies strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Ozzie Albies",
+   "batSideListed": "S",
+   "seasonLine": ".251/.303/.404, 10 HR"
+  },
+  {
+   "atBat": 73,
+   "batterId": 663586,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "656945": 8
+   },
+   "pitches": 8,
+   "event": "field_out",
+   "des": "Austin Riley lines out sharply to center fielder Jazz Chisholm Jr.",
+   "feedEvent": "field_out",
+   "feedDescription": "Austin Riley lines out sharply to center fielder Jazz Chisholm Jr.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Austin Riley",
+   "batSideListed": "R",
+   "seasonLine": ".256/.322/.461, 19 HR"
+  },
+  {
+   "atBat": 74,
+   "batterId": 621566,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "656945": 4
+   },
+   "pitches": 4,
+   "event": "walk",
+   "des": "Matt Olson walks. Ronald Acuña Jr. to 2nd.",
+   "feedEvent": "walk",
+   "feedDescription": "Matt Olson walks. Ronald Acuña Jr. to 2nd.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Matt Olson",
+   "batSideListed": "L",
+   "seasonLine": ".247/.333/.457, 29 HR"
+  },
+  {
+   "atBat": 75,
+   "batterId": 542303,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "656945": 3
+   },
+   "pitches": 3,
+   "event": "home_run",
+   "des": "Marcell Ozuna homers (7) on a fly ball to center field. Ronald Acuña Jr. scores. Matt Olson scores.",
+   "feedEvent": "home_run",
+   "feedDescription": "Marcell Ozuna homers (7) on a fly ball to center field. Ronald Acuña Jr. scores. Matt Olson scores.",
+   "runs": 3,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Marcell Ozuna",
+   "batSideListed": "R",
+   "seasonLine": ".302/.378/.546, 39 HR"
+  },
+  {
+   "atBat": 76,
+   "batterId": 594807,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "656945": 3
+   },
+   "pitches": 3,
+   "event": "field_out",
+   "des": "Adam Duvall pops out softly to catcher Nick Fortes in foul territory.",
+   "feedEvent": "field_out",
+   "feedDescription": "Adam Duvall pops out softly to catcher Nick Fortes in foul territory.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": false,
+   "name": "Adam Duvall",
+   "batSideListed": "R",
+   "seasonLine": ".182/.245/.323, 11 HR"
+  }
+ ],
+ "realFaced": 5,
+ "real": {
+  "outcome": "doors_open",
+  "pitches": 23,
+  "runs": 3,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 594807,
+   "name": "Adam Duvall",
+   "batSideListed": "R"
+  },
+  {
+   "id": 606115,
+   "name": "Orlando Arcia",
+   "batSideListed": "R"
+  },
+  {
+   "id": 671739,
+   "name": "Michael Harris II",
+   "batSideListed": "L"
+  },
+  {
+   "id": 518595,
+   "name": "Travis d'Arnaud",
+   "batSideListed": "R"
+  },
+  {
+   "id": 660670,
+   "name": "Ronald Acuña Jr.",
+   "batSideListed": "R"
+  },
+  {
+   "id": 645277,
+   "name": "Ozzie Albies",
+   "batSideListed": "S"
+  },
+  {
+   "id": 663586,
+   "name": "Austin Riley",
+   "batSideListed": "R"
+  },
+  {
+   "id": 621566,
+   "name": "Matt Olson",
+   "batSideListed": "L"
+  },
+  {
+   "id": 542303,
+   "name": "Marcell Ozuna",
+   "batSideListed": "R"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 1163,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 688,
+     "usage": 0.5916,
+     "velo": 97.0,
+     "pfxXin": 5.0,
+     "pfxZin": 16.8
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 473,
+     "usage": 0.4067,
+     "velo": 88.5,
+     "pfxXin": -7.0,
+     "pfxZin": -1.1
+    },
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 1,
+     "usage": 0.0009,
+     "velo": 92.0,
+     "pfxXin": 12.6,
+     "pfxZin": 4.2
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 1,
+     "usage": 0.0009,
+     "velo": 97.7,
+     "pfxXin": 5.8,
+     "pfxZin": 16.9
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2024%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=656945"
+  },
+  "postseason": {
+   "pitches": 62,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 41,
+     "usage": 0.6613,
+     "velo": 98.0,
+     "pfxXin": 5.0,
+     "pfxZin": 16.8
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 21,
+     "usage": 0.3387,
+     "velo": 88.6,
+     "pfxXin": -7.7,
+     "pfxZin": -3.4
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2024%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=656945"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 746079: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=746079",
+  "MLB Stats API schedule 2024-04-14 and live feed /api/v1.1/game/746079/feed/live",
+  "MLB Stats API people with 2024 season stats",
+  "Baseball Savant 656945 2024 season search (regular season and postseason) for the arsenal"
+ ],
+ "search": {
+  "gamePk": 746079,
+  "date": "2024-04-14",
+  "year": 2024,
+  "half": "Top",
+  "pitcher": 656945,
+  "name": "Scott, Tanner",
+  "throws": "L",
+  "home": "MIA",
+  "away": "ATL",
+  "outs": 0,
+  "bases": 0,
+  "lead": 1,
+  "midPA": false,
+  "li9": 2.39,
+  "li9n": 758,
+  "swing": 1.422,
+  "held": false,
+  "endLead": -2,
+  "faced": 6,
+  "pitches": 26
+ },
+ "mlbWinProbabilityAtEntry": {
+  "leverageIndex": 2.87,
+  "atBatIndex": 70
+ }
+}

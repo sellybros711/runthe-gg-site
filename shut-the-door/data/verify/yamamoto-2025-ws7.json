@@ -1,0 +1,305 @@
+{
+ "id": "yamamoto-2025-ws7",
+ "plan": 1,
+ "resolution": "real",
+ "gamePk": 813024,
+ "date": "2025-11-01",
+ "game": "World Series Game 7: Los Angeles Dodgers at Toronto Blue Jays",
+ "gameType": "W",
+ "pitcher": {
+  "id": 808967,
+  "name": "Yoshinobu Yamamoto",
+  "throws": "R",
+  "team": "Los Angeles Dodgers",
+  "seasonLine": "2.49 ERA, 0 SV, 173.2 IP"
+ },
+ "situation": {
+  "inning": 11,
+  "half": "bottom",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 5,
+   "them": 4
+  },
+  "usHome": false,
+  "walkOffLive": true,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 96,
+   "batterId": 665489,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "808967": 6
+   },
+   "pitches": 6,
+   "event": "double",
+   "des": "Vladimir Guerrero Jr. doubles (5) on a line drive to left fielder Enrique Hernández.",
+   "feedEvent": "double",
+   "feedDescription": "Vladimir Guerrero Jr. doubles (5) on a line drive to left fielder Enrique Hernández.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Vladimir Guerrero Jr.",
+   "batSideListed": "R",
+   "seasonLine": ".292/.381/.467, 23 HR"
+  },
+  {
+   "atBat": 97,
+   "batterId": 643396,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "808967": 1
+   },
+   "pitches": 1,
+   "event": "sac_bunt",
+   "des": "Isiah Kiner-Falefa out on a sacrifice bunt, pitcher Yoshinobu Yamamoto to second baseman Hyeseong Kim. Vladimir Guerrero Jr. to 3rd.",
+   "feedEvent": "sac_bunt",
+   "feedDescription": "Isiah Kiner-Falefa out on a sacrifice bunt, pitcher Yoshinobu Yamamoto to second baseman Hyeseong Kim. Vladimir Guerrero Jr. to 3rd.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Isiah Kiner-Falefa",
+   "batSideListed": "R",
+   "seasonLine": ".262/.297/.334, 2 HR"
+  },
+  {
+   "atBat": 98,
+   "batterId": 680718,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "808967": 4
+   },
+   "pitches": 4,
+   "event": "walk",
+   "des": "Addison Barger walks.",
+   "feedEvent": "walk",
+   "feedDescription": "Addison Barger walks.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Addison Barger",
+   "batSideListed": "L",
+   "seasonLine": ".243/.301/.454, 21 HR"
+  },
+  {
+   "atBat": 99,
+   "batterId": 672386,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "808967": 3
+   },
+   "pitches": 3,
+   "event": "grounded_into_double_play",
+   "des": "Alejandro Kirk grounds into a double play, shortstop Mookie Betts to first baseman Freddie Freeman. Addison Barger out at 2nd. Alejandro Kirk out at 1st.",
+   "feedEvent": "grounded_into_double_play",
+   "feedDescription": "Alejandro Kirk grounds into a double play, shortstop Mookie Betts to first baseman Freddie Freeman. Addison Barger out at 2nd. Alejandro Kirk out at 1st.",
+   "runs": 0,
+   "outs": 2,
+   "inSpot": true,
+   "name": "Alejandro Kirk",
+   "batSideListed": "R",
+   "seasonLine": ".282/.348/.421, 15 HR"
+  }
+ ],
+ "realFaced": 4,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 14,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 662139,
+   "name": "Daulton Varsho",
+   "batSideListed": "L"
+  },
+  {
+   "id": 676391,
+   "name": "Ernie Clement",
+   "batSideListed": "R"
+  },
+  {
+   "id": 665926,
+   "name": "Andrés Giménez",
+   "batSideListed": "L"
+  },
+  {
+   "id": 543807,
+   "name": "George Springer",
+   "batSideListed": "R"
+  },
+  {
+   "id": 664702,
+   "name": "Myles Straw",
+   "batSideListed": "R"
+  },
+  {
+   "id": 665489,
+   "name": "Vladimir Guerrero Jr.",
+   "batSideListed": "R"
+  },
+  {
+   "id": 643396,
+   "name": "Isiah Kiner-Falefa",
+   "batSideListed": "R"
+  },
+  {
+   "id": 680718,
+   "name": "Addison Barger",
+   "batSideListed": "L"
+  },
+  {
+   "id": 672386,
+   "name": "Alejandro Kirk",
+   "batSideListed": "R"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 2789,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 982,
+     "usage": 0.3521,
+     "velo": 95.4,
+     "pfxXin": -6.9,
+     "pfxZin": 16.0
+    },
+    {
+     "type": "FS",
+     "name": "Split-Finger",
+     "n": 710,
+     "usage": 0.2546,
+     "velo": 90.9,
+     "pfxXin": -11.3,
+     "pfxZin": 2.0
+    },
+    {
+     "type": "CU",
+     "name": "Curveball",
+     "n": 491,
+     "usage": 0.176,
+     "velo": 76.8,
+     "pfxXin": 12.0,
+     "pfxZin": -16.1
+    },
+    {
+     "type": "FC",
+     "name": "Cutter",
+     "n": 311,
+     "usage": 0.1115,
+     "velo": 91.1,
+     "pfxXin": 3.5,
+     "pfxZin": 7.8
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 217,
+     "usage": 0.0778,
+     "velo": 94.8,
+     "pfxXin": -13.6,
+     "pfxZin": 12.0
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 77,
+     "usage": 0.0276,
+     "velo": 86.3,
+     "pfxXin": 5.9,
+     "pfxZin": 0.7
+    },
+    {
+     "type": "ST",
+     "name": "Sweeper",
+     "n": 1,
+     "usage": 0.0004,
+     "velo": 84.2,
+     "pfxXin": 14.9,
+     "pfxZin": -8.8
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2025%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=808967"
+  },
+  "postseason": {
+   "pitches": 526,
+   "types": [
+    {
+     "type": "FS",
+     "name": "Split-Finger",
+     "n": 149,
+     "usage": 0.2833,
+     "velo": 91.7,
+     "pfxXin": -11.0,
+     "pfxZin": 0.9
+    },
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 146,
+     "usage": 0.2776,
+     "velo": 96.2,
+     "pfxXin": -7.2,
+     "pfxZin": 16.2
+    },
+    {
+     "type": "CU",
+     "name": "Curveball",
+     "n": 117,
+     "usage": 0.2224,
+     "velo": 77.9,
+     "pfxXin": 12.9,
+     "pfxZin": -16.1
+    },
+    {
+     "type": "FC",
+     "name": "Cutter",
+     "n": 63,
+     "usage": 0.1198,
+     "velo": 91.5,
+     "pfxXin": 4.6,
+     "pfxZin": 6.6
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 37,
+     "usage": 0.0703,
+     "velo": 95.3,
+     "pfxXin": -14.0,
+     "pfxZin": 13.1
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 14,
+     "usage": 0.0266,
+     "velo": 87.1,
+     "pfxXin": 6.2,
+     "pfxZin": 0.3
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2025%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=808967"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 813024: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=813024",
+  "MLB Stats API schedule 2025-11-01 and live feed /api/v1.1/game/813024/feed/live",
+  "MLB Stats API people with 2025 season stats",
+  "Baseball Savant 808967 2025 season search (regular season and postseason) for the arsenal"
+ ]
+}

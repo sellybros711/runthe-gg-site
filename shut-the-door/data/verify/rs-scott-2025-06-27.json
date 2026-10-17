@@ -1,0 +1,259 @@
+{
+ "id": "rs-scott-2025-06-27",
+ "plan": "regular season L-held",
+ "resolution": "real",
+ "gamePk": 777335,
+ "date": "2025-06-27",
+ "game": "Regular Season Game 1: Los Angeles Dodgers at Kansas City Royals",
+ "gameType": "R",
+ "pitcher": {
+  "id": 656945,
+  "name": "Tanner Scott",
+  "throws": "L",
+  "team": "Los Angeles Dodgers",
+  "seasonLine": "4.74 ERA, 23 SV, 57.0 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "bottom",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 5,
+   "them": 4
+  },
+  "usHome": false,
+  "walkOffLive": true,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 74,
+   "batterId": 677951,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "656945": 6
+   },
+   "pitches": 6,
+   "event": "strikeout",
+   "des": "Bobby Witt Jr. called out on strikes.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Bobby Witt Jr. called out on strikes.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Bobby Witt Jr.",
+   "batSideListed": "R",
+   "seasonLine": ".295/.351/.501, 23 HR"
+  },
+  {
+   "atBat": 75,
+   "batterId": 672580,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "656945": 2
+   },
+   "pitches": 2,
+   "event": "single",
+   "des": "Maikel Garcia singles on a ground ball to right fielder Teoscar Hernández.",
+   "feedEvent": "single",
+   "feedDescription": "Maikel Garcia singles on a ground ball to right fielder Teoscar Hernández.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Maikel Garcia",
+   "batSideListed": "R",
+   "seasonLine": ".286/.351/.449, 16 HR"
+  },
+  {
+   "atBat": 76,
+   "batterId": 686469,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "656945": 4
+   },
+   "pitches": 4,
+   "event": "walk",
+   "des": "Vinnie Pasquantino walks. Maikel Garcia to 2nd.",
+   "feedEvent": "walk",
+   "feedDescription": "Vinnie Pasquantino walks. Maikel Garcia to 2nd.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Vinnie Pasquantino",
+   "batSideListed": "L",
+   "seasonLine": ".264/.323/.475, 32 HR"
+  },
+  {
+   "atBat": 77,
+   "batterId": 521692,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "656945": 3
+   },
+   "pitches": 3,
+   "event": "single",
+   "des": "Salvador Perez singles on a fly ball to right fielder Teoscar Hernández. Maikel Garcia to 3rd. Drew Waters to 2nd.",
+   "feedEvent": "single",
+   "feedDescription": "Salvador Perez singles on a fly ball to right fielder Teoscar Hernández. Maikel Garcia to 3rd. Drew Waters to 2nd.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Salvador Perez",
+   "batSideListed": "R",
+   "seasonLine": ".236/.284/.446, 30 HR"
+  },
+  {
+   "atBat": 78,
+   "batterId": 695506,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "656945": 1
+   },
+   "pitches": 1,
+   "event": "grounded_into_double_play",
+   "des": "Jac Caglianone grounds into a double play, second baseman Tommy Edman to shortstop Mookie Betts to first baseman Freddie Freeman. Salvador Perez out at 2nd. Jac Caglianone out at 1st.",
+   "feedEvent": "grounded_into_double_play",
+   "feedDescription": "Jac Caglianone grounds into a double play, second baseman Tommy Edman to shortstop Mookie Betts to first baseman Freddie Freeman. Salvador Perez out at 2nd. Jac Caglianone out at 1st.",
+   "runs": 0,
+   "outs": 2,
+   "inSpot": true,
+   "name": "Jac Caglianone",
+   "batSideListed": "L",
+   "seasonLine": ".157/.237/.295, 7 HR"
+  }
+ ],
+ "realFaced": 5,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 16,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 592192,
+   "name": "Mark Canha",
+   "batSideListed": "R"
+  },
+  {
+   "id": 686475,
+   "name": "Tyler Tolbert",
+   "batSideListed": "R"
+  },
+  {
+   "id": 679845,
+   "name": "Nick Loftin",
+   "batSideListed": "R"
+  },
+  {
+   "id": 663697,
+   "name": "Jonathan India",
+   "batSideListed": "R"
+  },
+  {
+   "id": 677951,
+   "name": "Bobby Witt Jr.",
+   "batSideListed": "R"
+  },
+  {
+   "id": 672580,
+   "name": "Maikel Garcia",
+   "batSideListed": "R"
+  },
+  {
+   "id": 671221,
+   "name": "Drew Waters",
+   "batSideListed": "S"
+  },
+  {
+   "id": 521692,
+   "name": "Salvador Perez",
+   "batSideListed": "R"
+  },
+  {
+   "id": 695506,
+   "name": "Jac Caglianone",
+   "batSideListed": "L"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 911,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 479,
+     "usage": 0.5258,
+     "velo": 96.5,
+     "pfxXin": 6.2,
+     "pfxZin": 16.7
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 430,
+     "usage": 0.472,
+     "velo": 88.9,
+     "pfxXin": -5.7,
+     "pfxZin": 1.0
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 2,
+     "usage": 0.0022,
+     "velo": 94.8,
+     "pfxXin": 12.5,
+     "pfxZin": 6.5
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2025%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=656945"
+  },
+  "postseason": {
+   "pitches": 0,
+   "types": [],
+   "dropped": {}
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 777335: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=777335",
+  "MLB Stats API schedule 2025-06-27 and live feed /api/v1.1/game/777335/feed/live",
+  "MLB Stats API people with 2025 season stats",
+  "Baseball Savant 656945 2025 season search (regular season and postseason) for the arsenal"
+ ],
+ "search": {
+  "gamePk": 777335,
+  "date": "2025-06-27",
+  "year": 2025,
+  "half": "Bot",
+  "pitcher": 656945,
+  "name": "Scott, Tanner",
+  "throws": "L",
+  "home": "KC",
+  "away": "LAD",
+  "outs": 0,
+  "bases": 0,
+  "lead": 1,
+  "midPA": false,
+  "li9": 2.99,
+  "li9n": 702,
+  "swing": 1.272,
+  "held": true,
+  "endLead": 1,
+  "faced": 5,
+  "pitches": 16
+ },
+ "mlbWinProbabilityAtEntry": {
+  "leverageIndex": 3.47,
+  "atBatIndex": 73
+ }
+}
