@@ -303,7 +303,7 @@
       const hip=rotAbout(P(walk?0:-1,14,l*0.95),hipC,U,turnA(pose.hip)), knee=add(sc(add(hip,ank),0.5),sc(F,1.1+lift*0.9));
       if(lg&&(!gear.leg||gear.leg==='plusfours')){ push(capsule(hip,knee,3.05,'pants')); push(ellipsoid(add(knee,sc(U,-0.8)),[F,U,T],[3.2,1.6,3.2],'pants',{dt:-1}));
         push(capsule(add(knee,sc(U,-1.4)),ank,2.35,'sock')); }
-      else if(gear.leg==='shorts'){ push(capsule(hip,add(knee,sc(U,1.2)),2.95,'pants')); push(capsule(add(knee,sc(U,1.0)),ank,2.0,'skin')); }   // shorts: bare from the knee
+      else if(gear.leg==='shorts'){ push(capsule(hip,add(knee,sc(U,1.2)),2.95,'pants')); push(capsule(add(knee,sc(U,1.0)),ank,2.0,'skin')); push(capsule(add(sc(add(knee,ank),0.5),sc(U,-1.2)),ank,2.1,'x:'+((gear.legPal||{}).w||'#f4f4f0'))); }   // shorts: bare from the knee, plain white socks
       else { push(capsule(hip,knee,2.7,'pants')); push(capsule(knee,ank,2.7,'pants')); }
       const tip=walk?(lift>0?-0.12*lift:fw<0?0.22*(-fw/5.2):0):0;   // a lifted foot toes down, the trailing one rolls onto its toe
       const sF=walk?rot(F,T,tip):F, sU=walk?rot(U,T,tip):U;
@@ -747,7 +747,7 @@
             return dot(n,F)>0.55&&Math.abs(sd)<0.2?['pants',1]:null; }}));                                     // the crease
         tag='';
         push(field(kn,7,p=>smin(smin(sdCap(p,add(hem,sc(U,0.6)),kn,1.95),sdCap(p,kn,ank,1.75),0.6),sdE(p,P(-0.15,6.6,t*1.02),AX,[1.75,1.9,1.6]),0.8),'skin',{}));   // the knee, the calf, the shin
-        push(field(add(ank,sc(U,0.4)),3,p=>sdCone(p,add(ank,sc(U,-0.4)),add(ank,sc(U,1.1)),1.95,1.85)-0.05,LX(lp.w||'#f4f4f0'),{mf:p=>dot(sub(p,ank),U)>0.9?[LX(lp.w||'#f4f4f0'),1]:null}));   // the low sock
+        push(field(add(ank,sc(U,1.6)),4.5,p=>sdCone(p,add(ank,sc(U,-0.4)),add(ank,sc(U,3.4)),1.95,1.9)-0.05,LX(lp.w||'#f4f4f0'),{mf:p=>{ const h=dot(sub(p,ank),U); return h>2.6?[LX(lp.w||'#f4f4f0'),Math.sin(Math.atan2(dot(sub(p,ank),T),dot(sub(p,ank),F))*14)>0.2?-1:0]:null; }}));   // a plain white crew sock, ribbed at the top
         tag=lg?'leg':'pants'; }
       else if(legId==='joggers'){ const ank=P(0.2,3.9,t*1.02), kn=P(0.55,9.6,t*1.04), L2=dot(sub(ank,hip),sub(ank,hip)), cuff=LX(lp['3']||'#15171b');
         push(field(kn,10,p=>smin(smin(sdCone(p,hip,kn,3.45,3.15),sdCone(p,kn,ank,3.15,2.15),0.8),sdE(p,kn,AX,[3.3,2.2,3.3]),0.9)-0.08,'pants',{mf:(p,n)=>{ const q=sub(p,hip), tt=dot(q,sub(ank,hip))/L2;
@@ -1522,8 +1522,8 @@
   Object.assign(HAT_MODEL,{
     ropecap(M,c,P){ const X2=h=>'x:'+h, cw=hairR(M)/M.hr, out=capParts(M,cw,{crown:X2(P.A),brim:X2(P.C),btn:X2(P.N),mark0:false});
       const {hc,look,hup,Lf,hr}=M;
-      for(let i=-9;i<=9;i++){ const a=i/9*0.8, d=add(sc(look,Math.cos(a)),sc(Lf,Math.sin(a))), r=hr*(cw+0.42);   // the braid across the peak
-        out.push(ellipsoid(add(hc,sc(d,r),sc(hup,hr*0.27-0.012*i*i)),[d,hup,norm(cross(hup,d))],[0.6,0.55,0.8],X2(i&1?P.R:P.r),{gloss:1,noCast:1})); }
+      for(let i=-9;i<=9;i++){ const a=i/9*0.85, d=add(sc(look,Math.cos(a)),sc(Lf,Math.sin(a))), r=hr*cw+0.42;   // the braid across the peak
+        out.push(ellipsoid(add(hc,sc(d,r),sc(hup,hr*0.27)),[d,hup,norm(cross(hup,d))],[0.55,0.55,0.8],X2(i&1?P.R:P.r),{gloss:1,noCast:1})); }
       return out; },
     trucker(M,c,P){ const X2=h=>'x:'+h, cw=hairR(M)/M.hr, out=capParts(M,cw,{crown:X2(P.A),brim:X2(P.C),btn:X2(P.N),patch:X2(P.P),mark:X2(P.A)});
       const {hc,look,hup,Lf,hr}=M, cc=add(hc,sc(hup,hr*0.12)), CR=[hr*cw*1.004,hr*1.12*1.004,hr*cw*1.004], AXc=[look,hup,Lf];
@@ -1534,10 +1534,11 @@
       const sett=L=>{ const fr=v=>v-Math.floor(v), u=fr(L.a/3.2), v=fr(L.s/3.2); if(Math.abs(u-0.5)<0.05||Math.abs(v-0.5)<0.05) return [R,0];
         return [(u<0.3)||(v<0.3)?K:G,(u<0.3)&&(v<0.3)?-1:0]; };
       return [hatSolid(M,[
-        HP.crown(H*0.22,H*0.62,rh*1.01,rh*1.0,X2(P.k),{rr:0.6,tex:TEX.knit(X2(P.k))}),
-        HP.egg(-H*0.08,H*0.98,H*0.12,H*1.55,H*0.4,H*1.6,G,{tex:sett}),
-        HP.ball(-H*0.08,H*1.42,H*0.12,H*0.32,X2(P.P),{k:0.6,tex:L=>[X2(P.P),Math.sin(L.th*19+L.y*4)>0.5?-1:0]})],
-        {tilt:0.16,R:H*2.2}) ]; },
+        HP.crown(H*0.36,H*1.0,rh*1.03,rh*1.12,G,{rr:1.2,tex:sett}),
+        HP.crown(H*0.18,H*0.4,rh*1.01,rh*1.02,X2(P.k),{rr:0.5,tex:TEX.knit(X2(P.k))}),
+        HP.egg(-H*0.05,H*0.98,H*0.3,H*1.42,H*0.3,H*1.52,G,{k:0.8,tex:sett}),
+        HP.ball(H*0.02,H*1.3,H*0.38,H*0.24,X2(P.P),{k:0.5,tex:L=>[X2(P.P),Math.sin(L.th*19+L.y*4)>0.5?-1:0]})],
+        {tilt:0.12,R:H*2.2}) ]; },
     panama(M,c,P){ const H=M.hr, rh=hairR(M), X2=h=>'x:'+h, st=X2(P.S), band=X2(P.K);
       return [hatSolid(M,[
         HP.crown(H*0.28,H*1.18,rh,H*0.86,st,{rr:1.3,sq:1.14,dent:H*0.3,pinch:0.4,tex:TEX.straw(st)}),
