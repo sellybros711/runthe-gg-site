@@ -1,0 +1,273 @@
+{
+ "id": "hader-2019-nlwc",
+ "plan": 5,
+ "resolution": "real",
+ "gamePk": 599336,
+ "date": "2019-10-01",
+ "game": "NL Wild Card Game Game 1: Milwaukee Brewers at Washington Nationals",
+ "gameType": "F",
+ "pitcher": {
+  "id": 623352,
+  "name": "Josh Hader",
+  "throws": "L",
+  "team": "Milwaukee Brewers",
+  "seasonLine": "2.62 ERA, 37 SV, 75.2 IP"
+ },
+ "situation": {
+  "inning": 8,
+  "half": "bottom",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 3,
+   "them": 1
+  },
+  "usHome": false,
+  "walkOffLive": false,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 58,
+   "batterId": 645302,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "623352": 6
+   },
+   "pitches": 6,
+   "event": "strikeout",
+   "des": "Victor Robles strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Victor Robles strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Victor Robles",
+   "batSideListed": "R",
+   "seasonLine": ".255/.326/.419, 17 HR"
+  },
+  {
+   "atBat": 59,
+   "batterId": 572191,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "623352": 6
+   },
+   "pitches": 6,
+   "event": "hit_by_pitch",
+   "des": "Brewers challenged (hit by pitch), call on the field was upheld: Michael A. Taylor hit by pitch.",
+   "feedEvent": "hit_by_pitch",
+   "feedDescription": "Brewers challenged (hit by pitch), call on the field was upheld: Michael A. Taylor hit by pitch.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Michael A. Taylor",
+   "batSideListed": "R",
+   "seasonLine": ".250/.305/.364, 1 HR"
+  },
+  {
+   "atBat": 60,
+   "batterId": 607208,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "623352": 5
+   },
+   "pitches": 5,
+   "event": "strikeout",
+   "des": "Trea Turner strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Trea Turner strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Trea Turner",
+   "batSideListed": "R",
+   "seasonLine": ".298/.353/.497, 19 HR"
+  },
+  {
+   "atBat": 61,
+   "batterId": 475582,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "623352": 4
+   },
+   "pitches": 4,
+   "event": "single",
+   "des": "Ryan Zimmerman singles on a fly ball to center fielder Lorenzo Cain. Michael A. Taylor to 3rd.",
+   "feedEvent": "single",
+   "feedDescription": "Ryan Zimmerman singles on a fly ball to center fielder Lorenzo Cain. Michael A. Taylor to 3rd.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Ryan Zimmerman",
+   "batSideListed": "R",
+   "seasonLine": ".257/.321/.415, 6 HR"
+  },
+  {
+   "atBat": 62,
+   "batterId": 543685,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "623352": 6
+   },
+   "pitches": 6,
+   "event": "walk",
+   "des": "Anthony Rendon walks. Andrew Stevenson to 2nd.",
+   "feedEvent": "walk",
+   "feedDescription": "Anthony Rendon walks. Andrew Stevenson to 2nd.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Anthony Rendon",
+   "batSideListed": "R",
+   "seasonLine": ".319/.412/.598, 34 HR"
+  },
+  {
+   "atBat": 63,
+   "batterId": 665742,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "623352": 3
+   },
+   "pitches": 3,
+   "event": "single",
+   "des": "Juan Soto singles on a line drive to right fielder Trent Grisham. Michael A. Taylor scores. Andrew Stevenson scores. Anthony Rendon scores. Fielding error by right fielder Trent Grisham. Juan Soto out at 3rd on the throw, right fielder Trent Grisham to shortstop Orlando Arcia to third baseman Mike Moustakas.",
+   "feedEvent": "single",
+   "feedDescription": "Juan Soto singles on a line drive to right fielder Trent Grisham. Michael A. Taylor scores. Andrew Stevenson scores. Anthony Rendon scores. Fielding error by right fielder Trent Grisham. Juan Soto out at 3rd on the throw, right fielder Trent Grisham to shortstop Orlando Arcia to third baseman Mike Moustakas.",
+   "runs": 3,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Juan Soto",
+   "batSideListed": "L",
+   "seasonLine": ".282/.401/.548, 34 HR"
+  }
+ ],
+ "realFaced": 6,
+ "real": {
+  "outcome": "doors_open",
+  "pitches": 30,
+  "runs": 3,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 435062,
+   "name": "Howie Kendrick",
+   "batSideListed": "R"
+  },
+  {
+   "id": 452678,
+   "name": "Asdrúbal Cabrera",
+   "batSideListed": "S"
+  },
+  {
+   "id": 435559,
+   "name": "Kurt Suzuki",
+   "batSideListed": "R"
+  },
+  {
+   "id": 645302,
+   "name": "Victor Robles",
+   "batSideListed": "R"
+  },
+  {
+   "id": 572191,
+   "name": "Michael A. Taylor",
+   "batSideListed": "R"
+  },
+  {
+   "id": 607208,
+   "name": "Trea Turner",
+   "batSideListed": "R"
+  },
+  {
+   "id": 543339,
+   "name": "Daniel Hudson",
+   "batSideListed": "R"
+  },
+  {
+   "id": 543685,
+   "name": "Anthony Rendon",
+   "batSideListed": "R"
+  },
+  {
+   "id": 665742,
+   "name": "Juan Soto",
+   "batSideListed": "L"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 1139,
+   "types": [
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 960,
+     "usage": 0.8428,
+     "velo": 95.5,
+     "pfxXin": 9.6,
+     "pfxZin": 16.9
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 176,
+     "usage": 0.1545,
+     "velo": 81.9,
+     "pfxXin": -7.5,
+     "pfxZin": 1.8
+    },
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 3,
+     "usage": 0.0026,
+     "velo": 86.8,
+     "pfxXin": 13.6,
+     "pfxZin": 6.0
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2019%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=623352"
+  },
+  "postseason": {
+   "pitches": 30,
+   "types": [
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 24,
+     "usage": 0.8,
+     "velo": 97.0,
+     "pfxXin": 9.6,
+     "pfxZin": 17.5
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 6,
+     "usage": 0.2,
+     "velo": 80.1,
+     "pfxXin": -9.7,
+     "pfxZin": 0.2
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2019%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=623352"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 599336: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=599336",
+  "MLB Stats API schedule 2019-10-01 and live feed /api/v1.1/game/599336/feed/live",
+  "MLB Stats API people with 2019 season stats",
+  "Baseball Savant 623352 2019 season search (regular season and postseason) for the arsenal"
+ ]
+}

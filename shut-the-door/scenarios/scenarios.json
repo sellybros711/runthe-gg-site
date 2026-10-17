@@ -1,0 +1,28 @@
+{
+ "_about": "The ten approved scenarios (CONTRACT.md section 14), in daily rotation order. 'verify' names the data/verify file that holds the facts. 'arsenal' is which season mix the pitcher's arsenal uses: 'postseason' for the starters, by the owner's ruling. Proxy spots carry the arsenal source they use.",
+ "scenarios": [
+  {"id": "std-2025-ws7-yamamoto", "verify": "yamamoto-2025-ws7", "title": "Game 7, 2025 World Series", "arsenal": "postseason"},
+  {"id": "std-2011-ws6-feliz", "verify": "feliz-2011-ws6", "title": "Game 6, 2011 World Series", "arsenal": "regular"},
+  {"id": "std-2025-diaz-cin", "verify": "rs-diaz-2025-09-05", "title": "Mets at Reds, September 5, 2025", "arsenal": "regular"},
+  {"id": "std-1988-ws1-eckersley", "verify": "eckersley-1988-ws1", "title": "Game 1, 1988 World Series", "arsenal": "proxy",
+   "proxyArsenal": {
+    "note": "No pitch tracking before 2008. Public reporting: a fastball and a slider, the changeup put away by 1988, elite control (1.38 walks per nine in 1987). Velocity and usage are not in that reporting: the numbers below are the proxy's settings, unverified.",
+    "sources": ["https://www.csmonitor.com/1988/0719/peck.html", "https://www.espn.com/classic/biography/s/Eckersley_Dennis.html"],
+    "command": 72,
+    "pitches": [
+     {"type": "FF", "usage": 0.6, "velo": 91.0, "pfxX": -6.0, "pfxZ": 15.0},
+     {"type": "SL", "usage": 0.4, "velo": 83.0, "pfxX": 3.0, "pfxZ": 1.0}
+    ]
+   }},
+  {"id": "std-2016-ws7-chapman", "verify": "chapman-2016-ws7", "title": "Game 7, 2016 World Series", "arsenal": "regular"},
+  {"id": "std-2024-ws5-buehler", "verify": "buehler-2024-ws5", "title": "Game 5, 2024 World Series", "arsenal": "postseason"},
+  {"id": "std-2025-scott-kc", "verify": "rs-scott-2025-06-27", "title": "Dodgers at Royals, June 27, 2025", "arsenal": "regular"},
+  {"id": "std-2019-nlwc-hader", "verify": "hader-2019-nlwc", "title": "NL Wild Card Game, 2019", "arsenal": "regular"},
+  {"id": "std-2022-ws6-pressly", "verify": "pressly-2022-ws6", "title": "Game 6, 2022 World Series", "arsenal": "regular"},
+  {"id": "std-2001-ws7-rivera", "verify": "rivera-2001-ws7", "title": "Game 7, 2001 World Series", "arsenal": "proxy",
+   "proxyArsenal": {
+    "note": "No pitch tracking before 2008. The arsenal is Rivera's own from 2008, his first tracked season, the nearest data to 2001.",
+    "fromSeason": 2008, "pitcherId": 121250
+   }}
+ ]
+}

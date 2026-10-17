@@ -1,0 +1,299 @@
+{
+ "id": "rs-williams-2023-04-16",
+ "plan": "regular season R-held",
+ "resolution": "real",
+ "gamePk": 718549,
+ "date": "2023-04-16",
+ "game": "Regular Season Game 4: Milwaukee Brewers at San Diego Padres",
+ "gameType": "R",
+ "pitcher": {
+  "id": 642207,
+  "name": "Devin Williams",
+  "throws": "R",
+  "team": "Milwaukee Brewers",
+  "seasonLine": "1.53 ERA, 36 SV, 58.2 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "bottom",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 1,
+   "them": 0
+  },
+  "usHome": false,
+  "walkOffLive": true,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 64,
+   "batterId": 665742,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "642207": 6
+   },
+   "pitches": 6,
+   "event": "walk",
+   "des": "Juan Soto walks.",
+   "feedEvent": "walk",
+   "feedDescription": "Juan Soto walks.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Juan Soto",
+   "batSideListed": "L",
+   "seasonLine": ".275/.410/.519, 35 HR"
+  },
+  {
+   "atBat": 65,
+   "batterId": 443558,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "642207": 7
+   },
+   "pitches": 7,
+   "event": "strikeout",
+   "des": "Nelson Cruz called out on strikes.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Nelson Cruz called out on strikes.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Nelson Cruz",
+   "batSideListed": "R",
+   "seasonLine": ".245/.283/.399, 5 HR"
+  },
+  {
+   "atBat": 66,
+   "batterId": 630105,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "642207": 4
+   },
+   "pitches": 4,
+   "event": "strikeout",
+   "des": "Jake Cronenworth strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Jake Cronenworth strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Jake Cronenworth",
+   "batSideListed": "L",
+   "seasonLine": ".229/.312/.378, 10 HR"
+  },
+  {
+   "atBat": 67,
+   "batterId": 673490,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "642207": 4
+   },
+   "pitches": 4,
+   "event": "single",
+   "des": "Ha-Seong Kim singles on a line drive to left fielder Christian Yelich. Juan Soto to 2nd.",
+   "feedEvent": "single",
+   "feedDescription": "Ha-Seong Kim singles on a line drive to left fielder Christian Yelich. Juan Soto to 2nd.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Ha-Seong Kim",
+   "batSideListed": "R",
+   "seasonLine": ".260/.351/.398, 17 HR"
+  },
+  {
+   "atBat": 68,
+   "batterId": 543592,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "642207": 6
+   },
+   "pitches": 6,
+   "event": "walk",
+   "des": "Austin Nola walks. Juan Soto to 3rd. Ha-Seong Kim to 2nd.",
+   "feedEvent": "walk",
+   "feedDescription": "Austin Nola walks. Juan Soto to 3rd. Ha-Seong Kim to 2nd.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Austin Nola",
+   "batSideListed": "R",
+   "seasonLine": ".146/.260/.192, 1 HR"
+  },
+  {
+   "atBat": 69,
+   "batterId": 663757,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "642207": 6
+   },
+   "pitches": 6,
+   "event": "strikeout",
+   "des": "Trent Grisham called out on strikes.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Trent Grisham called out on strikes.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Trent Grisham",
+   "batSideListed": "L",
+   "seasonLine": ".198/.315/.352, 13 HR"
+  }
+ ],
+ "realFaced": 6,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 33,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 596059,
+   "name": "Rougned Odor",
+   "batSideListed": "L"
+  },
+  {
+   "id": 593428,
+   "name": "Xander Bogaerts",
+   "batSideListed": "R"
+  },
+  {
+   "id": 592518,
+   "name": "Manny Machado",
+   "batSideListed": "R"
+  },
+  {
+   "id": 665742,
+   "name": "Juan Soto",
+   "batSideListed": "L"
+  },
+  {
+   "id": 443558,
+   "name": "Nelson Cruz",
+   "batSideListed": "R"
+  },
+  {
+   "id": 630105,
+   "name": "Jake Cronenworth",
+   "batSideListed": "L"
+  },
+  {
+   "id": 673490,
+   "name": "Ha-Seong Kim",
+   "batSideListed": "R"
+  },
+  {
+   "id": 543592,
+   "name": "Austin Nola",
+   "batSideListed": "R"
+  },
+  {
+   "id": 663757,
+   "name": "Trent Grisham",
+   "batSideListed": "L"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 948,
+   "types": [
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 549,
+     "usage": 0.5791,
+     "velo": 83.8,
+     "pfxXin": -19.8,
+     "pfxZin": -2.0
+    },
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 370,
+     "usage": 0.3903,
+     "velo": 94.2,
+     "pfxXin": -10.8,
+     "pfxZin": 16.8
+    },
+    {
+     "type": "FC",
+     "name": "Cutter",
+     "n": 29,
+     "usage": 0.0306,
+     "velo": 90.7,
+     "pfxXin": -0.8,
+     "pfxZin": 14.8
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2023%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=642207"
+  },
+  "postseason": {
+   "pitches": 31,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 19,
+     "usage": 0.6129,
+     "velo": 94.9,
+     "pfxXin": -9.8,
+     "pfxZin": 16.2
+    },
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 12,
+     "usage": 0.3871,
+     "velo": 83.7,
+     "pfxXin": -18.3,
+     "pfxZin": -2.4
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2023%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=642207"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 718549: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=718549",
+  "MLB Stats API schedule 2023-04-16 and live feed /api/v1.1/game/718549/feed/live",
+  "MLB Stats API people with 2023 season stats",
+  "Baseball Savant 642207 2023 season search (regular season and postseason) for the arsenal"
+ ],
+ "search": {
+  "gamePk": 718549,
+  "date": "2023-04-16",
+  "year": 2023,
+  "half": "Bot",
+  "pitcher": 642207,
+  "name": "Williams, Devin",
+  "throws": "R",
+  "home": "SD",
+  "away": "MIL",
+  "outs": 0,
+  "bases": 0,
+  "lead": 1,
+  "midPA": false,
+  "li9": 2.99,
+  "li9n": 702,
+  "swing": 1.532,
+  "held": true,
+  "endLead": 1,
+  "faced": 6,
+  "pitches": 33
+ },
+ "mlbWinProbabilityAtEntry": {
+  "leverageIndex": 3.47,
+  "atBatIndex": 63
+ }
+}

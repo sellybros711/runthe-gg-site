@@ -1,4 +1,54 @@
 {
+  "4th-and-what/index.html": {
+    "/arcade/auth.js": {
+      "v": "4",
+      "sha": "c71a149f3b8da69e"
+    },
+    "/arcade/auth-ui.js": {
+      "v": "9",
+      "sha": "1891cdfef9c19253"
+    },
+    "config.js": {
+      "v": "1",
+      "sha": "7fc7924051909af5"
+    },
+    "formations.js": {
+      "v": "1",
+      "sha": "0b1f739abed51077"
+    },
+    "rng.js": {
+      "v": "1",
+      "sha": "9c6a7e1575b377f0"
+    },
+    "engine.js": {
+      "v": "1",
+      "sha": "7675f4a2f30bf7b3"
+    },
+    "rig.js": {
+      "v": "1",
+      "sha": "d5be652ec6dbd043"
+    },
+    "stage.js": {
+      "v": "1",
+      "sha": "62f6c8c3d1c0bfd0"
+    },
+    "share.js": {
+      "v": "1",
+      "sha": "ddf3f027cc22c5ac"
+    },
+    "clipboard.js": {
+      "v": "2",
+      "sha": "e9e622d825327b22"
+    },
+    "play.js": {
+      "v": "1",
+      "sha": "3dc28a7e95923a28"
+    },
+    "ui.js": {
+      "v": "1",
+      "sha": "93758a342a647e1e"
+    }
+  },
   "arcade/almamater/index.html": {
     "/arcade/icons.js": {
       "v": "3",
@@ -2545,8 +2595,8 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "98",
-      "sha": "026eaf2a42d5b776"
+      "v": "100",
+      "sha": "7777a946a3375c21"
     },
     "putt/land.js": {
       "v": "13",
@@ -2557,12 +2607,16 @@
       "sha": "3a82bb9bdeeffbb3"
     },
     "putt/gyms.js": {
-      "v": "2",
-      "sha": "50a8dce841aaf4d8"
+      "v": "3",
+      "sha": "74c2f8cb48b7fd3c"
+    },
+    "putt/gymkinds/push.js": {
+      "v": "1",
+      "sha": "3ab166505830a290"
     },
     "putt/trail.js": {
-      "v": "40",
-      "sha": "6da51fe00c61748f"
+      "v": "41",
+      "sha": "262592d9635629ed"
     },
     "putt/mapland.js": {
       "v": "6",
@@ -2621,8 +2675,8 @@
       "sha": "814d6471760c59b4"
     },
     "career.js": {
-      "v": "60",
-      "sha": "45575bbba51dd8b1"
+      "v": "61",
+      "sha": "cd56a943fb901c65"
     },
     "baller.js": {
       "v": "28",
@@ -2811,6 +2865,64 @@
     "venues.js": {
       "v": "2",
       "sha": "e2de218e6c8d793b"
+    }
+  },
+  "shut-the-door/index.html": {
+    "contract.js": {
+      "v": "2",
+      "sha": "e1da9854a9d09bf0"
+    },
+    "sprites.js": {
+      "v": "2",
+      "sha": "20a348fc8d984cf5"
+    },
+    "mound.js": {
+      "v": "2",
+      "sha": "c4b2ea4934533331"
+    },
+    "anim.js": {
+      "v": "2",
+      "sha": "3619a23768894990"
+    },
+    "menus.js": {
+      "v": "4",
+      "sha": "c2e6ac5824c5ccb6"
+    },
+    "rng.js": {
+      "v": "1",
+      "sha": "07b7ca2277fe8038"
+    },
+    "grade.js": {
+      "v": "2",
+      "sha": "88448ddef7cb230f"
+    },
+    "lesson.js": {
+      "v": "1",
+      "sha": "3c217a80d5be0cb2"
+    },
+    "engine.js": {
+      "v": "2",
+      "sha": "a93e40c4ed8b224b"
+    },
+    "share.js": {
+      "v": "1",
+      "sha": "bf930eb34dd91f06"
+    },
+    "auth.js": {
+      "v": "2",
+      "sha": "8ab806f85ec2e0ce"
+    },
+    "api.js": {
+      "v": "2",
+      "sha": "ab71bd0e6b681469"
+    },
+    "mock-api.js": {
+      "v": "4",
+      "sha": "18c9b3c93901ab9a"
+    },
+    "ui.js": {
+      "v": "3",
+      "sha": "307c95a8845f007f"
     }
   },
   "soccer/index.html": {
