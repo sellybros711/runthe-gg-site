@@ -2285,7 +2285,7 @@ var CSS = '\
 .pp-gdp.pic{background-repeat:no-repeat;background-size:230%;background-position:50% 8%;background-color:var(--gc);image-rendering:pixelated}\
 .pp-talkb{background:#ffd24a!important;animation:ppway 1s ease-in-out infinite}.pp-talkb[hidden]{display:none}\
 @media (min-width:900px){.pp-wv .pp-thud{top:120px}.pp-tlist{top:152px}.pp-wv>.pp-bagb{top:118px}.pp-tgoal{top:72px}.pp-gd p{font-size:18px}}\
-.pp-rhint{position:absolute;left:50%;top:70px;transform:translateX(-50%);font-size:13px;font-weight:900;color:#fff;background:rgba(10,18,14,.78);border-radius:12px;padding:6px 12px;white-space:nowrap;transition:opacity .4s}.pp-rhint.gone{opacity:0}\
+.pp-rhint{position:absolute;left:50%;top:70px;transform:translateX(-50%);font-size:13px;font-weight:900;color:#fff;background:rgba(10,18,14,.78);border-radius:12px;padding:6px 12px;white-space:nowrap;transition:opacity .4s}.pp-rhint.gone{opacity:0}.pp-tui.ingym .pp-tlist{display:none}.pp-ghud{position:absolute;left:50%;bottom:calc(max(14px,env(safe-area-inset-bottom)) + 52px);transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none;text-align:center}.pp-ghud[hidden]{display:none}.pp-ghud b{font-size:13px;font-weight:900;color:#fff;background:rgba(58,26,90,.86);border:2px solid #c89cff;border-radius:12px;padding:4px 12px;white-space:nowrap}.pp-ghud i{font-style:normal;font-size:11px;font-weight:800;color:#fff;text-shadow:0 1px 2px #000}.pp-ghud .pp-rb{pointer-events:auto}.pp-ghud .pp-rb[hidden]{display:none}\
 /* A WORLD DOOR: two leaves made of that world, a lock that fills with the stars you have */\
 .pp-door{position:absolute;z-index:6;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .35s;background:radial-gradient(ellipse at center,rgba(0,0,0,.35),rgba(0,0,0,.75))}.pp-door.in{opacity:1}\
 .pp-dl,.pp-dr{position:absolute;top:6%;bottom:6%;width:min(44vw,300px);background:linear-gradient(180deg,var(--dc),var(--db));border:6px solid color-mix(in srgb,var(--da) 70%,#000);box-shadow:inset 0 0 0 4px rgba(0,0,0,.35),0 20px 40px rgba(0,0,0,.6);transition:transform .9s cubic-bezier(.6,0,.3,1)}\
@@ -2511,7 +2511,7 @@ function pmerge(st, g){
     ['c', 'b', 'ch'].forEach(function(f){ if (b[f]){ a[f] = a[f] || []; b[f].forEach(function(v){ if (a[f].indexOf(v) < 0) a[f].push(v); }); } });
     ['k', 'g', 'key', 'life', 'tk', 'pt', 'pz'].forEach(function(f){ if (b[f]) a[f] = 1; }); });
   // the rare things: lists only grow, and the spare life counters only go up, so the larger is the newer
-  ['bank', 'bfill', 'tk', 'met', 'rv', 'sf'].forEach(function(f){ (g[f] || []).forEach(function(v){ st[f] = st[f] || []; if (st[f].indexOf(v) < 0) st[f].push(v); }); });
+  ['bank', 'bfill', 'tk', 'met', 'rv', 'sf', 'gym'].forEach(function(f){ (g[f] || []).forEach(function(v){ st[f] = st[f] || []; if (st[f].indexOf(v) < 0) st[f].push(v); }); });
   ['bused', 'bspent'].forEach(function(f){ st[f] = Math.max(st[f] || 0, g[f] || 0); });
   if (g.pp){ st.pp = st.pp || { parts:[] }; st.pp.parts = st.pp.parts || []; (g.pp.parts || []).forEach(function(v){ if (st.pp.parts.indexOf(v) < 0) st.pp.parts.push(v); }); if (!st.pp.eq && g.pp.eq) st.pp.eq = g.pp.eq; }
   st.rewards = st.rewards || []; (g.rewards || []).forEach(function(r){ if (st.rewards.indexOf(r) < 0) st.rewards.push(r); });
@@ -2569,7 +2569,7 @@ function cloudUid(){ try{ var h = hostOf(); return h.rpc && h.uid ? h.uid() || n
 function cloudProg(st){ var n = 0, c = function(o){ return Object.keys(o || {}).length; };
   Object.keys(st.tours || {}).forEach(function(k){ var t = st.tours[k] || {}; n += (t.lv || 1) + c(t.best) + c(t.ace) + c(t.paid) + c(t.wpaid) + c(t.treat); });
   Object.keys(st.trail || {}).forEach(function(k){ var t = st.trail[k] || {}; n += (t.c || []).length + (t.b || []).length + (t.ch || []).length + (t.k ? 1 : 0) + (t.g ? 1 : 0) + (t.key ? 1 : 0) + (t.life ? 1 : 0) + (t.tk ? 1 : 0) + (t.pt ? 1 : 0) + (t.pz ? 1 : 0); });
-  n += (st.bank || []).length + (st.bfill || []).length + (st.tk || []).length + (st.met || []).length + (st.rv || []).length + ((st.pp && st.pp.parts) || []).length + (st.bused || 0) + (st.bspent || 0);
+  n += (st.bank || []).length + (st.bfill || []).length + (st.tk || []).length + (st.gym || []).length + (st.met || []).length + (st.rv || []).length + ((st.pp && st.pp.parts) || []).length + (st.bused || 0) + (st.bspent || 0);
   return n + c(st.daily) + (st.rewards || []).length; }
 // fold a copy of the record into this one: everything earned is kept, lives come from the newer copy
 function cloudMerge(st, g){ if (!g || g.v !== 2 || !g.tours) return st;
@@ -2839,10 +2839,15 @@ function bagSheet(){
     if (!revealed(TR, w, st)) return '<div class="pp-bw" style="--wc:#b9c6d8"><b>World ' + (w + 1) + ' · ' + CLOUD_NAME + '</b><span class="pp-btk"><i>???</i><i>???</i><i>???</i></span><em>● ?/' + gd.total + ' golden</em></div>';
     return '<div class="pp-bw" style="--wc:' + (TRINKET_COL[Wd.theme] || '#fff') + '"><b>' + esc(Wd.name) + '</b><span class="pp-btk">' + T.map(function(nm, j){ var got = (st.tk || []).indexOf(Wd.theme + ':' + j) >= 0;
       return '<i class="' + (got ? 'on' : '') + '">' + (got ? esc(nm) : '???') + '</i>'; }).join('') + '</span><em>● ' + gd.have + '/' + gd.total + ' golden</em></div>'; }).join('');
+  // the gym badges, two a world (gyms.js): a world with none yet built shows nothing
+  var GLb = gymLib(), won = gymsWon(st), badges = GLb ? TR.worlds.map(function(Wd, w){ var gs = GLb.GYMS.filter(function(g){ return g.world === Wd.theme; }); if (!gs.length) return ''; var shown = revealed(TR, w, st);
+    return '<div class="pp-bw" style="--wc:' + (TRINKET_COL[Wd.theme] || '#fff') + '"><b>' + esc(shown ? Wd.name : 'World ' + (w + 1) + ' · ' + CLOUD_NAME) + '</b><span class="pp-btk">' + gs.map(function(g){ var got = won.indexOf(g.id) >= 0;
+      return '<i class="' + (got ? 'on' : '') + '">' + (got ? esc(g.badge) : '???') + '</i>'; }).join('') + '</span></div>'; }).join('') : '';
   var sh = el('<div class="pp-sheet pp-bag"><div class="pp-card"><div class="k">YOUR BAG</div><div class="t">Found on the trails</div>\
     <div class="pp-bsec">' + (cl ? 'Your putters' : 'Putt Putt putters') + '</div>' + puts + (!cl && eq && partsOf(st, eq) >= 3 ? '<button class="pt-bt pp-wide" data-uneq>Play with no special putter</button>' : '') + (cl && S.host.closet ? '<button class="pt-bt pp-wide" data-full>Open the full closet</button>' : '') + '\
     <div class="pp-bsec">Spare lives</div><div class="m">' + (bankHeld(st) ? bankHeld(st) + ' saved. Your hearts are full. Each one fills a heart the moment you lose a life.' : 'None saved. A heart turns up on a trail now and then. It goes straight into your hearts.') + '</div>\
     <div class="pp-bsec">Trinkets and golden balls</div>' + worlds + '\
+    ' + (GLb ? '<div class="pp-bsec">Gym badges · ' + won.length + ' of ' + GLb.MASTER.badges + '</div>' + (badges || '') : '') + '\
     <div class="pp-bsec">Secrets found · ' + secretsFound(st).length + ' of ' + SECRETS.length + '</div>' + (secretsFound(st).length ? secretsFound(st).sort(function(a, b){ return a - b; }).map(function(i){ var won = !!((st.tours.secret || {}).paid || {})[i];
       return '<div class="pp-bput' + (won ? ' built' : '') + '"><div class="pp-bpn"><b>' + esc(SECRETS[i - 1].name) + '</b><span>' + esc(TR.worlds.filter(function(W){ return W.theme === SECRETS[i - 1].theme; }).map(function(W){ return W.name; })[0] || '') + (won ? ' · beaten' : ' · not beaten yet') + '</span></div><button class="pt-bt" data-sec="' + i + '">Play</button></div>'; }).join('') :
       '<div class="m">None yet. Some places on the trails can be walked into.</div>') + '\
@@ -3261,12 +3266,57 @@ function holeTips(n, tid, three){ var C; try{ C = buildLevel(n, tid); }catch(e){
   if (cand.length) out.push(line(cand[h % Math.min(cand.length, 2)]));
   if (out.length < 2 && three === 1) out.push(line('ace'));
   return out; }
+/* THE GYMS (gyms.js, RTT_PUTT_GYMS): two a world on the main tour, one mid-world and one on the trail into its last hole.
+   Solving one opens its vault: GYM pay coins the first time (the world's gatekeeper pays more) and the gym's badge,
+   kept in st.gym (a list, so pmerge only adds to it). A world that has its gyms has none of the small trail puzzles. */
+function gymLib(){ var G = typeof window !== 'undefined' && window.RTT_PUTT_GYMS; return G && G.API_VERSION === 1 ? G : null; }
+function gymAt(th, leg){ var G = gymLib(); return G ? G.at(th, leg) : null; }
+function gymWorld(th){ var G = gymLib(); return !!G && G.GYMS.some(function(g){ return g.world === th; }); }
+function gymsWon(st){ return (st.gym || []).slice(); }
+function gymWin(id, wname){ var G = gymLib(), gd = G && G.byId(id); if (!gd) return null; var st = pload(); st.gym = st.gym || [];
+  if (st.gym.indexOf(id) >= 0) return { coins:0, first:false, msg:'The vault\'s empty. You already cleaned it out.' };
+  st.gym.push(id); psave(st); var n = st.gym.length;
+  if (gd.pay > 0) coins(gd.pay, wname + ' gym');
+  // THE VAULT PAYS A PACK (the owner, 2026-10-17): a Pro Shop pack for the world's first gym, a Tour pack for its gatekeeper
+  var tier = gymPack(gd), pk = 0; try{ if (S.host.pack) pk = S.host.pack(tier, gd.name) || 0; }catch(e){}
+  var pname = tier === 'tour' ? 'a Tour pack' : 'a Pro Shop pack';
+  return { coins:gd.pay, pack:pk ? tier : null, first:true, badge:gd.badge, n:n, msg:'The ' + gd.name + ' is solved. ' + (pk ? cap(pname) + ', ' : '') + gd.pay.toLocaleString() + ' coins and the ' + gd.badge + '. That\'s ' + n + ' of ' + G.MASTER.badges + ' badges.' }; }
+function gymPack(gd){ return gd && gd.keeper ? 'tour' : 'base'; }
+function cap(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
+/* THE GATEKEEPER GUARDS THE WORLD'S LAST HOLE (the owner, 2026-10-17: story mode). The gym on the trail into a
+   world's last hole must be solved before that hole is played. A hole already played stays open, and an all access
+   account is never stopped. The trail itself stays open, since the gym is on it. */
+function keeperFor(n, tid){ if (tid !== 'main') return null; var TR = tourOf('main'), K = TR.per || PER, w = Math.floor((n - 1) / K), Wd = TR.worlds[w];
+  if (!Wd) return null; var gd = gymAt(Wd.theme, (n - 1) % K + 1); return gd && gd.keeper ? gd : null; }
+function keeperBlocks(st, n, tid){ var gd = keeperFor(n, tid); if (!gd || allAccess()) return null;
+  if (((st.tours[tid] || {}).best || {})[n] != null) return null; return gymsWon(st).indexOf(gd.id) < 0 ? gd : null; }
+function keeperSheet(gd, n){
+  var sh = el('<div class="pp-sheet"><div class="pp-card"><div class="k">HOLE ' + n + '</div><div class="t">' + esc(gd.name) + ' guards it</div>\
+    <div class="m">Solve ' + esc(gd.name) + ' on the trail to play Hole ' + n + '. Its vault pays a Tour pack.</div>' +
+    (S.screen === 'trail' ? '' : '<button class="pt-go pp-wide" data-walk>Walk to it</button>') + '<button class="pt-bt pp-wide" data-n>Not now</button></div></div>');
+  S.ov.appendChild(sh);
+  var wk = sh.querySelector('[data-walk]'); if (wk) wk.onclick = function(){ sh.remove(); walkTo(n, 'main'); };
+  sh.querySelector('[data-n]').onclick = function(){ sh.remove(); }; }
+/* CHEST ODDS (the owner, 2026-10-17): a chest is not always the same pile of coins. Each rolls once, the first time
+   it opens, fixed by the account and the trail so a reload never rolls again: CHEST_ODDS in percent, in order. A big
+   haul pays twice the chest's coins again (three times in all); an item is a common one the player does not own;
+   a pack is a free Pro Shop pack. An item or pack that cannot land (a guest, or every common owned) is a big haul. */
+var CHEST_ODDS = [['coins', 78], ['haul', 15], ['item', 5], ['pack', 2]], CHEST_HAUL = 2, CHEST_MIN = 300;
+function chestRoll(key, id){ var r = hstr('chest:' + (cloudUid() || 'guest') + ':' + key + ':' + id) % 100, a = 0;
+  for (var i = 0; i < CHEST_ODDS.length; i++){ a += CHEST_ODDS[i][1]; if (r < a) return CHEST_ODDS[i][0]; } return 'coins'; }
+function chestLuck(key, id, base){ var k = chestRoll(key, id), h = S.host || {}, extra = Math.max(CHEST_MIN, (base || 0) * CHEST_HAUL);
+  if (k === 'pack'){ var pk = 0; try{ pk = h.pack ? h.pack('base', 'A lucky chest') : 0; }catch(e){} if (pk) return { coins:0, msg:'A lucky chest! A free Pro Shop pack is waiting for you.' }; k = 'haul'; }
+  if (k === 'item'){ var nm = null; try{ nm = h.commonItem ? h.commonItem() : null; }catch(e){} if (nm) return { coins:0, msg:'Something else in there. The ' + nm + ' is in your closet.' }; k = 'haul'; }
+  if (k === 'haul') return { coins:extra, msg:'A big haul! +' + extra.toLocaleString() + ' coins on top.' };
+  return { coins:0, msg:'' }; }
 function trailSpec(tid, from){
   var TR = tourOf(tid), K = TR.per || PER, to = from + 1, w = Math.min(TR.worlds.length - 1, Math.floor((to - 1) / K)), th = TR.worlds[w].theme;
   var cross = from >= 1 && from % K === 0, th0 = cross ? TR.worlds[w - 1].theme : th, tp = pload().tours[TR.id];
   var portrait = (window.innerHeight || 800) >= (window.innerWidth || 400);
   var leg = (to - 1) % K + 1, st = !cross && tid === 'main' ? stopOf(th, leg) : '', kitAs = st ? th + '~' + st : null;   // the walk goes where its holes go (land.js, STOPS)
-  return { fine:false, smooth:fineOn({ theme:th }) && !cross, kitAs:kitAs, secret:tid === 'main' && secretAt(to) ? { i:secretAt(to) } : null, key:tid + ':' + to, tid:tid, from:from, to:to, w:w, seed:hstr('trail:' + tid + ':' + to), theme:th, theme0:th0, cross:cross, plaza:(to - 1) % K === 0, gateOpen:opened(TR, tp, to), T:THEMES[th] || THEMES.clubhouse, halfW:portrait ? 36 : 46, loot:trailLoot(tid, to), holeTo:to <= TR.levels.length ? courseFoot(to, tid) : null, holeFrom:from >= 1 ? courseFoot(from, tid) : null, greet:from % K === 0 ? greetSpec(tid, w, to) : null };
+  // a world with gyms (gyms.js) carries them on its two trails and none of the small puzzles on the rest
+  var gd = !cross && tid === 'main' ? gymAt(th, leg) : null;
+  return { gym:gd ? gd.id : null, pzKind:gymWorld(th) && tid === 'main' ? 'none' : undefined, fine:false, smooth:fineOn({ theme:th }) && !cross, kitAs:kitAs, secret:tid === 'main' && secretAt(to) ? { i:secretAt(to) } : null, key:tid + ':' + to, tid:tid, from:from, to:to, w:w, seed:hstr('trail:' + tid + ':' + to), theme:th, theme0:th0, cross:cross, plaza:(to - 1) % K === 0, gateOpen:opened(TR, tp, to), T:THEMES[th] || THEMES.clubhouse, halfW:portrait ? 36 : 46, loot:trailLoot(tid, to), holeTo:to <= TR.levels.length ? courseFoot(to, tid) : null, holeFrom:from >= 1 ? courseFoot(from, tid) : null, greet:from % K === 0 ? greetSpec(tid, w, to) : null };
 }
 /* THE HOLES ON A TRAIL ARE THE REAL HOLES. The hole you just left lies behind you where the walk starts, and the
    hole you are walking to lies beyond the arch, each drawn from its own layout: its carpet, its rails, its water and
@@ -3303,7 +3353,7 @@ function trailPlan(sp){ var k = trailKey(sp); if (!TRP[k]){ TRP[k] = window.RTT_
 var TRC = {}, TRJ = null, TRC_KEEP = 4, TIDB = null, TIDB_KEEP = 3, TRAIL_V = null;
 function trcPut(k, pic){ TRC[k] = pic; var ks = Object.keys(TRC); if (ks.length > TRC_KEEP) delete TRC[ks[0]]; }
 function trailV(){ if (TRAIL_V) return TRAIL_V;
-  var v = ['putt.js', 'trail.js', 'hole3d.js'].map(function(f){ try{ var e = document.querySelector('script[src*="putt/' + f + '"]'), m = e && /[?&]v=([^&]+)/.exec(e.src); return m ? m[1] : '?'; }catch(e){ return '?'; } });
+  var v = ['putt.js', 'trail.js', 'hole3d.js', 'gyms.js'].map(function(f){ try{ var e = document.querySelector('script[src*="putt/' + f + '"]'), m = e && /[?&]v=([^&]+)/.exec(e.src); return m ? m[1] : '?'; }catch(e){ return '?'; } });
   // PXHD lives in the page, which has no version of its own: its palette is what reaches the picture, so a few ramps stand in
   try{ var R = window.PXHD.ramp; v.push(hstr(['#3a8f4e', '#c08a4e', '#f4efe2', '#2f86c8'].map(function(c){ return R(c).join(); }).join('|'))); }catch(e){ v.push('?'); }
   return TRAIL_V = v.join('.') + '.' + (window.RTT_PUTT_FX === 'off' ? 0 : 1); }
@@ -3375,7 +3425,7 @@ function openTrail(tid, from){
       pick:function(kind, id, n){ var st = pload(); st.trail = st.trail || {}; var r = st.trail[sp.key] = st.trail[sp.key] || {}, msg = '';
         if (kind === 'coin'){ r.c = r.c || []; if (r.c.indexOf(id) < 0) r.c.push(id); else n = 0; }
         else if (kind === 'brk'){ r.b = r.b || []; if (r.b.indexOf(id) < 0) r.b.push(id); else n = 0; }
-        else if (kind === 'chest'){ r.ch = r.ch || []; if (r.ch.indexOf(id) < 0){ r.ch.push(id); hq('ppChests', 1); } }   // a chest pays nothing itself: its coins are picked up off the ground
+        else if (kind === 'chest'){ var cn = n; n = 0; r.ch = r.ch || []; if (r.ch.indexOf(id) < 0){ r.ch.push(id); hq('ppChests', 1); var lk = chestLuck(sp.key, id, cn); msg = lk.msg; n = lk.coins; } }   // its coins are picked up off the ground; n is what they come to, and the roll may add to it
         else if (kind === 'key') r.key = 1;
         else if (kind === 'pz') r.pz = 1;   // the trail's puzzle is solved; its coin bonus comes out of its chest as coins
         else if (kind === 'life'){ r.life = 1; st.bank = st.bank || []; if (st.bank.indexOf(sp.loot.life.id) < 0) st.bank.push(sp.loot.life.id);
@@ -3395,6 +3445,7 @@ function openTrail(tid, from){
           if (done && !was && st.rewards.indexOf(rw) < 0){ st.rewards.push(rw); n = TRAIL_GOLD_COINS; msg += ' Set complete: +' + TRAIL_GOLD_COINS + ' coins.'; } }
         psave(st); if (n > 0) coins(n, TR.name + ' trail'); if (kind === 'life') spareFill(); return msg; },
       golden:function(){ return goldenOf(pload(), tid, sp.w); },
+      gym:function(id){ return gymWin(id, Wd.name); }, gymSolved:function(id){ return gymsWon(pload()).indexOf(id) >= 0; },
       portrait:function(look){ try{ var c = S.host.portrait && S.host.portrait(look); return c && c.toDataURL ? c.toDataURL() : ''; }catch(e){ return ''; } },
       met:function(th){ var st = pload(); st.met = st.met || []; if (st.met.indexOf(th) < 0){ st.met.push(th); psave(st); } if (sp.greet) sp.greet.met = true; },
       secretSeen:function(i){ return (pload().sf || []).indexOf(i) >= 0; },
@@ -3544,9 +3595,9 @@ function buyLives(sh, b, pack){
    things are. So when the trail to this hole still holds anything, the map says what is being left behind and offers
    the walk instead. Nothing is lost for good: the trail and what is on it wait for the next time you walk it. */
 function trailLeft(tid, n){ try{ if (tid !== 'main' || n < 2 || !trailOk()) return []; var sp = trailSpec(tid, n - 1), P = trailPlan(sp), r = (pload().trail || {})[sp.key] || {};
-    var NAME = { chest:'a chest of coins', golden:'a golden ball', trinket:'a trinket', part:'a putter part', life:'a spare life', prize:'a puzzle' };
+    var NAME = { chest:'a chest of coins', golden:'a golden ball', trinket:'a trinket', part:'a putter part', life:'a spare life', prize:'a puzzle', vault:'a gym' }, won = gymsWon(pload());
     return P.items.filter(function(t){ if (!NAME[t.k]) return false;
-      if (t.k === 'chest') return (r.ch || []).indexOf(t.id) < 0 && !(t.main && r.k); if (t.k === 'golden') return !r.g; if (t.k === 'trinket') return !r.tk; if (t.k === 'part') return !r.pt; if (t.k === 'life') return !r.life; if (t.k === 'prize') return !r.pz; return false; })
+      if (t.k === 'chest') return (r.ch || []).indexOf(t.id) < 0 && !(t.main && r.k); if (t.k === 'golden') return !r.g; if (t.k === 'trinket') return !r.tk; if (t.k === 'part') return !r.pt; if (t.k === 'life') return !r.life; if (t.k === 'prize') return !r.pz; if (t.k === 'vault') return won.indexOf(t.gym) < 0; return false; })
       .map(function(t){ return t.k === 'trinket' && t.name ? 'the ' + t.name : t.k === 'part' && t.name ? 'the ' + t.name : NAME[t.k]; }); }catch(e){ return []; } }
 function skipWarn(n, tid){ var st = pload(), c = st.cur, tr = (st.tours || {})[tid] || {};
   // only a hole being reached for the first time can forfeit anything: its trail is gone once it is beaten. A gate
@@ -3578,6 +3629,7 @@ function startLevel(n, tid){
   if (tourOf(tid).secret && secretsFound(st).indexOf(n) < 0 && !allAccess()) return showHub('main');
   if (isGuest() && !tourOf(tid).lab && !tourOf(tid).members) return guestSheet(n, tid);   // a guest plays no Tour hole
   var c = st.cur, back = c && c.tid === tid && c.n === n && c.s > 0;
+  var kp = !back && keeperBlocks(st, n, tid); if (kp) return keeperSheet(kp, n);
   if (c && !back){ clearCur(st); psave(st); }   // only a hole in progress on another device can be left this way
   if (!back && livesNow(st) <= 0 && !tourOf(tid).lab && !tourOf(tid).secret && !allAccess()) return outOfLives();
   var d = tourDesc(n, S.host, tid), TRs = tourOf(tid);
@@ -4570,12 +4622,14 @@ RTT_PUTT._walkTo = function(n, tid){ return walkTo(n, tid || 'main'); };
 RTT_PUTT._trail = function(){ return S && S.trailCtl; };
 RTT_PUTT._trailPic = function(){ var k = S && S.trailTo ? trailKey(trailSpec(S.trailTo.tid, S.trailTo.to - 1)) : null; return k ? TRC[k] : null; };
 RTT_PUTT._trailPlan = function(from, tid){ return trailPlan(trailSpec(tid || 'main', from)); };
+RTT_PUTT._trailLeft = function(n, tid){ return trailLeft(tid || 'main', n); };
 RTT_PUTT._secretFrom = secretFrom;
 RTT_PUTT._holeTips = function(n, tid){ var L = tourOf(tid || 'main').levels[n - 1]; return holeTips(n, tid || 'main', L ? threeOf(L) : null); };
 RTT_PUTT._loot = trailLoot; RTT_PUTT._bag = function(){ bagSheet(); }; RTT_PUTT._closet = function(){ closetSheet(); }; RTT_PUTT._foot = courseFoot; RTT_PUTT._left = trailLeft;
 RTT_PUTT._putt = function(ang, ft){ var P = S && S.play; if (!P || P.state !== 'aim') return false; P.aimAng = ang; P.pow = ft / maxFt(P.C); strike(); return true; };
 RTT_PUTT._covers = function(){ var P = S.play; return P && P.camNow ? golferCovers(P, P.camNow) : null; };
 RTT_PUTT._lose = function(){ loseLife(pload()); };
+RTT_PUTT._chestRoll = chestRoll; RTT_PUTT._chestLuck = chestLuck; RTT_PUTT._keeperBlocks = function(n){ return keeperBlocks(pload(), n, 'main'); };
 RTT_PUTT._overPar = function(){ if (S && S.play && S.round && S.round.mode === 'ppt'){ S.play.strokes = S.play.C.par; S.play.state = 'done'; return tourOut(false); } };   // checks: a hole lost to par
 RTT_PUTT._dailyFinish = function(s, par, ms){ return dailyFinish(s, par, ms); };
 // the checker's door straight onto a Tour level. Nothing on the page calls it.
@@ -4667,7 +4721,8 @@ function achStats(host){ HOSTX = host || HOSTX; var st = pload(), o = {}, beat =
     built = PP_PUTTERS.filter(function(pt){ return partsOf(st, pt.id) >= 3; }).length;
   o.pp_holes = holes; o.pp_stars = stars; o.pp_aces = Object.keys(tp.ace || {}).filter(function(k){ return tp.ace[k]; }).length; o.pp_worlds = worlds; o.pp_perfect = perfect;
   o.pp_sfound = found.length; o.pp_sbeat = SECRETS.filter(function(x, i){ return won[i + 1]; }).length;
-  o.pp_chests = chests; o.pp_puzzles = puzzles; o.pp_golden = golden; o.pp_trinkets = (st.tk || []).length; o.pp_built = built;
+  // a gym is a trail puzzle, and the small puzzles already solved still count
+  o.pp_chests = chests; o.pp_puzzles = puzzles + gymsWon(st).length; o.pp_golden = golden; o.pp_trinkets = (st.tk || []).length; o.pp_built = built;
   o.pp_daily = daily; o.pp_streak = Math.max((st.streak && st.streak.best) || 0, (st.streak && st.streak.n) || 0); o.pp_mholes = mh;
   return o; }
 RTT_PUTT.achDefs = achDefs; RTT_PUTT.achCats = function(){ return Object.keys(ACH_CAT).map(function(k){ return ACH_CAT[k]; }); };

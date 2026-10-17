@@ -59,6 +59,13 @@ node golf/econ-sim.mjs                      a casual, regular and heavy player t
 - **A skin name is global.** A second `snowman` in `SKIN` silently replaces the first everywhere.
 - Never put a real course name on screen.
 
+**Trail gyms** (`golf/putt/gyms.js`, pilot: Pirate Cove)
+
+- A gym is hand designed, never random. check-putt solves every one (section 5b) and fails on an unsolvable gym,
+  a softlock, or a stale `moves`/`proof`: change a layout and record both again from `solve()`.
+- The civilian's lines nudge, never solve: no step order, no positions.
+- A world with gyms carries none of the small trail puzzles (`pzKind:'none'`). A vault pays once (`st.gym`).
+
 **A new world, all in one commit**
 
 | where | what |
