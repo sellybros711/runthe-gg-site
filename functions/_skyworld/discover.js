@@ -26,6 +26,8 @@ import { kindOf, OWN } from './kinds.js';
 
 export const keyOf = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
 const SELF = 'skyworld';
+// sub folder names that say nothing about which game they belong to
+const PLAIN = /^(build|data|test|tests|docs|public|page|assets|fonts|design|home|images|img|icons|art|src|lib|shared|web|roster|rosters|content|games|prompts)$/;
 const STOP = new Set(['run', 'the', 'game', 'games', 'and', 'what', 'perfect', 'season', 'daily', 'tour', 'testers', 'only', 'mode']);
 const PALETTE = ['#2f6fd0', '#b8342a', '#3aa05a', '#1d3550', '#a86ad8', '#ff8a2a', '#ff5a7a', '#d8a83a', '#7a5cff', '#e5483a',
   '#2e8b57', '#ff7a1a', '#c03a8a', '#6a4a9a', '#3f7fd5', '#16a3a3', '#8a6a3a', '#d84a8a'];
@@ -78,7 +80,8 @@ export async function discover(src){
     // the words its other files are named by: its id, its name, its own sub folders
     const words = new Set([o.key, keyOf(o.id), ...(o.dir ? [keyOf(o.dir)] : []), ...(o.priv ? [keyOf(o.priv)] : []),
       ...o.name.toLowerCase().split(/[^a-z0-9]+/).filter(w => w.length > 3 && !STOP.has(w))]);
-    if (o.dir) for (const p of paths) { const m = new RegExp('^' + o.dir.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '/([^/.]+)/').exec(p); if (m && m[1].length > 3 && !/^(build|data|test|tests|docs|public|page|assets|fonts|design|home|images|img|icons|art|src|lib|shared|web|roster|rosters|content|games|prompts)$/.test(m[1])) words.add(keyOf(m[1])); }
+    if (o.dir) { const sub = new RegExp('^' + o.dir.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '/([^/.]+)/');   // one pattern per game, not one per path
+      for (const p of paths) { const m = sub.exec(p); if (m && m[1].length > 3 && !PLAIN.test(m[1])) words.add(keyOf(m[1])); } }
     o.words = [...words].filter(Boolean);
     // its files on main
     const mine = p => (o.dir && p.startsWith(o.dir + '/')) || (o.priv && p.startsWith('functions/' + o.priv + '/')) || (o.route && p.startsWith('functions' + o.route));
