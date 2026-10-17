@@ -726,30 +726,50 @@
     const body=top==='shacket'?'plaid':top==='cardigan'?'k:'+tpal['1']:'shirt', AX=[F,U,T], blz=top==='blazer'||top==='ppchampjacket';   // a cardigan is knitted (k: is ribbed when painted)
     // THE BUILD: a lean golfer. BW narrows the torso, hips and belt, AW brings the arms, hands and club in to match.
     const BW=0.84, AW=0.87;
-    // shoes and legs
+    // THE LEGS AND SHOES, as the real things. Trousers: each leg a straight, slightly tapered tube with a pressed
+    // crease down the front and the hem breaking on the shoe. Plus fours: full knickers gathered into a cuff below the
+    // knee, blousing over it, with argyle socks. Shoes: a golf shoe built on a last: a sole unit with a stitched welt,
+    // a toe that rises to the instep and the heel collar, the toe cap, saddle and heel tab in the accent, laces over
+    // a tongue.
     for(const s of [1,-1]){ const t=3.6*s; tag=lg?'leg':'pants';
-      if(lg){ const knee=P(0.4,9.2,t*1.02); push(capsule(P(0,15.8,t),knee,3.3,'pants')); push(ellipsoid(add(knee,sc(U,-0.6)),AX,[3.35,1.9,3.35],'pants',{dt:-1})); push(capsule(add(knee,sc(U,-1.6)),P(0,3.2,t),2.35,'sock')); }
-      else { push(capsule(P(0,15.8,t),P(0.15,9.4,t*1.01),3.2,'pants')); push(capsule(P(0.15,9.4,t*1.01),P(0.1,4.6,t*1.02),2.8,'pants'));
-        if(HD){ push(capsule(P(3.15,14.6,t),P(3.0,9.4,t*1.01),0.42,'pants',{dt:1,noCast:1})); push(capsule(P(3.0,9.4,t*1.01),P(2.75,5.0,t*1.02),0.4,'pants',{dt:1,noCast:1})); } }
+      const hip=P(0,16.4,t*0.94);
+      if(lg){ const lp2=gear.legPal||{}, cuffM='x:'+(lp2['2']||lp2['1']||'#6a6040'), band=P(0.25,7.4,t*1.03);
+        push(field(P(0.2,11.5,t),9,p=>smin(sdCone(p,hip,P(0.3,8.6,t*1.05),3.3,3.75),sdE(p,P(0.35,8.6,t*1.05),AX,[3.75,1.6,3.8]),1.2),'pants',{mf:p=>{ const y=dot(sub(p,band),U);
+            return y>0.3&&y<1.6&&Math.sin(Math.atan2(dot(sub(p,band),T),dot(sub(p,band),F))*9)>0.4?['pants',-1]:null; }}));     // the knickers, puffed over the cuff
+        push(field(band,4,p=>sdCone(p,add(band,sc(U,-0.55)),add(band,sc(U,0.55)),2.55,2.55)-0.15,cuffM,{}));                       // the gathered cuff
+        push(capsule(add(band,sc(U,-0.5)),P(0.1,3.4,t*1.02),2.3,'sock')); }                                                        // argyle socks
+      else { const ank=P(0.2,3.3,t*1.02), L2=dot(sub(ank,hip),sub(ank,hip));
+        push(field(add(hip,sc(sub(ank,hip),0.5)),9.5,p=>sdCone(p,hip,ank,3.3,2.7)-0.1,'pants',{mf:(p,n)=>{ const q=sub(p,hip), tt=dot(q,sub(ank,hip))/L2, sd=dot(q,T)-(dot(sub(ank,hip),T))*tt;
+            if(tt>0.975) return ['pants',-1];                                                                     // the hem
+            if(dot(n,F)>0.55&&Math.abs(sd)<0.22) return ['pants',1];                                            // the pressed crease
+            if(dot(n,F)>0.55&&Math.abs(Math.abs(sd)-0.32)<0.1) return ['pants',-1];                            // its shadow
+            return tt>0.9&&Math.abs(dot(n,F))>0.4&&Math.sin(sd*3)>0.6?['pants',-1]:null; }}));                // the break over the shoe
+      }
       tag='';
-      // a golf shoe, toes turned out a little as a golfer stands, so its saddle and laces show
+      // the shoe, toes turned out a little as a golfer stands
       const z=3.95*s, sole=cl?'x:'+cl.sole:'sole', sad='x:'+gear.saddleHex, toe=12*D2R;
-      const Fs=norm(add(sc(F,Math.cos(toe)),sc(T,s*Math.sin(toe)))), Ts=norm(cross(Fs,U)), AXs=[Fs,U,Ts], b0=P(0.2,0,z);
-      const Q=(f,u,t)=>add(b0,sc(Fs,f),sc(U,u),sc(Ts,t||0)), n0=parts.length;
-      if(cl&&CLEAT_MENU[cl.id]) CLEAT_MENU[cl.id](push,Q,AXs,s,cl.pal,HD); else {
-      push(ellipsoid(Q(1.5,0.6),AXs,[5.4,0.62,3.15],sole,{gloss:1}));                                    // the sole
-      push(ellipsoid(Q(1.5,1.12),AXs,[5.3,0.27,3.1],'x:#4a3b2e',{noCast:1}));                             // the welt
-      for(const f of [-2.6,1.2,4.4]) for(const d of [1.1,-1.1]) push(ellipsoid(Q(1.5+f,0.05,d),AXs,[0.5,0.32,0.5],'x:#2a2a30',{noCast:1}));   // spikes
-      push(ellipsoid(Q(4.0,1.85),AXs,[2.75,1.3,2.85],'shoe',{gloss:2,bias:.12}));                         // the toe box
-      push(ellipsoid(Q(1.1,2.4),AXs,[3.2,1.95,2.85],'shoe',{gloss:2,bias:.12}));                          // the vamp
-      push(ellipsoid(Q(-1.8,2.2),AXs,[1.85,1.85,2.7],'shoe',{gloss:1}));                                 // the heel counter
-      push(over(Q(1.1,2.4),AXs,[3.2,1.95,2.85],sad,l=>l[0]>-0.5&&l[0]<0.42&&l[1]>-0.5,{gloss:1}));         // the saddle
-      push(over(Q(4.0,1.85),AXs,[2.75,1.3,2.85],sad,l=>l[0]>0.55&&l[1]>-0.4,{gloss:1}));                   // the toe cap
-      push(ellipsoid(Q(1.9,3.75),AXs,[1.35,0.45,1.15],'shoe',{noCast:1}));                                // the tongue
-      if(HD) for(const k of [0.9,1.85,2.8]) push(capsule(Q(k,3.2+0.09*(2.8-k),-1.15),Q(k,3.2+0.09*(2.8-k),1.15),0.28,'lace',{noCast:1})); }
+      const Fs=norm(add(sc(F,Math.cos(toe)),sc(T,s*Math.sin(toe)))), Ts=norm(cross(Fs,U)), b0=P(0.2,0,z), AXs=[Fs,U,Ts];
+      const Q=(f,u,t)=>add(b0,sc(Fs,f),sc(U,u),sc(Ts,t||0));   // a reward cleat (CLEAT_MENU) is modelled in the foot's own frame
+      const loc=p=>{ const q=sub(p,b0); return [dot(q,Fs),dot(q,U),dot(q,Ts)]; };
+      const foot=(f,tt)=>{ const w=2.95*(f<1.5?1-0.16*((1.5-f)/5.4)**2:1); return (Math.hypot((f-1.5)/5.4,tt/w)-1)*2.9; };
+      const top=(f,tt)=>{ const h=f>2.5?1.3+1.5*(1-((f-2.5)/4.4)**2):f>-1.6?2.8+(2.5-f)/4.1*1.35:4.15-(-1.6-f)*0.35; return h-0.85*(tt/2.95)**2*h/3; };
+      const n0=parts.length;
+      if(cl&&CLEAT_MENU[cl.id]) CLEAT_MENU[cl.id](push,Q,AXs,s,cl.pal,HD); else
+      push(field(add(b0,sc(Fs,1.5),sc(U,2)),7.5,p=>{ const [f,u,tt]=loc(p);
+          const dS=Math.max(foot(f,tt)-0.12,Math.abs(u-0.45)-0.45), dU=Math.max(foot(f,tt)+0.32*clamp01((u-1)/3),u-top(f,tt),0.75-u);
+          return smin(dS,dU,0.25); },'shoe',{gloss:2,bias:.1,mf:p=>{ const [f,u,tt]=loc(p), h=top(f,tt);
+          if(u<0.95) return [sole,u>0.8?-1:0];                                                                       // the sole and its welt
+          if(f>4.7) return [sad,0];                                                                                   // the toe cap
+          if(Math.abs(tt)<0.95&&f>-0.9&&f<2.9&&u>h-0.5) return ((f*2.3)%1+1)%1<0.38?['lace',1]:['shoe',-1];            // laces over the tongue
+          if(f>0.1&&f<2.7&&u>1.4) return [sad,0];                                                                     // the saddle
+          if(f<-3.2&&u>2.1) return [sad,0];                                                                           // the heel tab
+          return null; }}));
       for(let i=n0;i<parts.length;i++){ parts[i].o.item='shoe'; parts[i].o.side=s; } }
     // hips and belt
-    tag=lg?'leg':'pants'; push(ellipsoid(P(0,15.6,0),AX,[4.4,3.1,8.5*BW],'pants')); tag='';
+    tag=lg?'leg':'pants'; push(ellipsoid(P(0,15.6,0),AX,[4.4,3.1,8.5*BW],'pants'));
+    if(HD){ push(over(P(0,15.6,0),AX,[4.4,3.1,8.5*BW],'pants',l=>l[0]>0.5&&Math.abs(l[2]-0.04)<0.03&&l[1]<0.6,{dt:-1,noCast:1}));     // the fly
+      for(const sd of [1,-1]) push(over(P(0,15.6,0),AX,[4.4,3.1,8.5*BW],'pants',l=>l[0]>0.2&&Math.abs(l[2]*sd-0.62+0.25*(0.6-l[1]))<0.035&&l[1]>-0.1,{dt:-1,noCast:1})); }   // slant pockets
+    tag='';
     push(ellipsoid(P(0.05,17.75,0),AX,[4.8,0.72,8.95*BW],'belt',{gloss:1}));
     if(HD){ push(ellipsoid(P(4.8,17.75,0),AX,[0.5,0.85,1.15],'x:#d6a640',{gloss:2,noCast:1})); push(ellipsoid(P(5.05,17.75,0),AX,[0.4,0.42,0.6],'belt',{noCast:1})); }
     // THE SHIRT. A tall ellipsoid trimmed top and bottom (nearly straight sides, no barrel), sloped shoulders, a
@@ -914,6 +934,33 @@
     else if(PP_PUTTER[id]) ppPutter(push,id,gear.clubPal||{},hands,norm(sub(clubHead,hands)),add(clubHead,sc(U,-1.3)),[F,U,out],1,0);
     else profileClub(push,hands,clubHead,F,U,id,gear.clubPal||{},out);
     for(let i=c0;i<parts.length;i++) parts[i].o.item='club';
+    // THE AURA, in the menu, as a thing in the scene rather than stickers on the picture: a low glowing band standing
+    // round the feet (rune marked for a legendary), the aura's own motes (sparks, embers, flames, crowns, bolts,
+    // flakes, orbs, bubbles, leaves, bats) on a spiral round the golfer, some in front and some behind him, and for a
+    // legendary a ribbon of light winding up round the body. The page's halo still glows behind it.
+    if(MO&&gear.fx&&MO.part==='fig'&&typeof PXFX_BY!=='undefined'&&PXFX_BY[gear.fx]){ tag='fx';
+      const fx=PXFX_BY[gear.fx], ap=(typeof PXFX_PARTS!=='undefined'&&PXFX_PARTS[gear.fx])||{}, col=fx.col, c2=ap.c2||col, pp=ap.p, legend=!!ap.ring, X2=h=>'x:'+h;
+      const ctr=P(0.4,0,0), Rr=12.5;
+      push(field(add(ctr,sc(U,0.8)),Rr+2,p=>{ const q=sub(p,ctr), y=dot(q,U), r=Math.hypot(dot(q,F),dot(q,T)); return rbox(Math.abs(r-Rr)-0.22,Math.abs(y-0.7)-0.7,0.15); },X2(col),{gloss:3,mf:p=>{ const q=sub(p,ctr), a=Math.atan2(dot(q,T),dot(q,F));
+          return legend&&Math.sin(a*14)>0.55&&Math.abs(dot(q,U)-0.7)<0.4?[X2(c2),1]:[X2(col),1]; }}));        // the band of light round the feet
+      if(legend){ let prev=null; for(let i=0;i<=34;i++){ const t=i/34, a=t*Math.PI*3.2+0.6, q=add(ctr,sc(F,Math.cos(a)*(Rr-1.5)),sc(T,Math.sin(a)*(Rr-1.5)),sc(U,1+t*40));
+          if(prev) push(capsule(prev,q,0.42*(1-t*0.5),X2(i%2?c2:col),{gloss:3,dt:1,noCast:1})); prev=q; } }           // the ribbon of light
+      if(pp){ const n=Math.min(9,pp.n||6);
+        for(let i=0;i<n;i++){ const a=i*2.39+0.4, y=5+i*(36/n), r=Rr-0.5+1.2*Math.sin(i*1.7), c=add(ctr,sc(F,Math.cos(a)*r),sc(T,Math.sin(a)*r),sc(U,y)), m=X2(pp.cols[i%pp.cols.length]), k=1.2+0.25*((i*37)%3);
+          const st={gloss:3,dt:1,noCast:1}, AXm=[F,U,T];
+          switch(pp.s){
+            case 'spark': case 'flash': push(ellipsoid(c,AXm,[0.5*k,1.6*k,0.5*k],m,st)); push(ellipsoid(c,AXm,[0.5*k,0.5*k,1.6*k],m,st)); push(ellipsoid(c,AXm,[0.8*k,0.8*k,0.8*k],m,st)); break;
+            case 'flame': push(field(c,3*k,p=>{ const q=sub(p,c), y2=dot(q,U); return Math.hypot(dot(q,F),dot(q,T))-(0.9*k)*clamp01(1-(y2+0.9*k)/(3*k))-0.05+Math.max(0,-y2-0.9*k); },m,{gloss:2})); break;
+            case 'crown': push(field(c,2.5*k,p=>{ const q=sub(p,c), y2=dot(q,U), r=Math.hypot(dot(q,F),dot(q,T)), th=Math.atan2(dot(q,T),dot(q,F));
+                return Math.max(Math.abs(r-0.9*k)-0.2,-y2-0.5*k,y2-0.4*k-0.7*k*Math.max(0,Math.cos(th*5))); },m,{gloss:3})); break;
+            case 'bolt': { const a0=add(c,sc(U,1.6*k)), a1=add(c,sc(U,0.2*k),sc(T,0.7*k)), a2=add(c,sc(U,-0.2*k),sc(T,-0.5*k)), a3=add(c,sc(U,-1.6*k),sc(T,0.2*k));
+              push(capsule(a0,a1,0.3*k,m,st)); push(capsule(a1,a2,0.3*k,m,st)); push(capsule(a2,a3,0.3*k,m,st)); break; }
+            case 'flake': for(let j=0;j<3;j++){ const d=add(sc(U,Math.cos(j*Math.PI/3)),sc(T,Math.sin(j*Math.PI/3))); push(capsule(add(c,sc(d,1.4*k)),add(c,sc(d,-1.4*k)),0.22*k,m,st)); } break;
+            case 'leaf': push(ellipsoid(c,[norm(add(F,T)),norm(add(U,sc(T,0.6))),norm(cross(add(F,T),add(U,sc(T,0.6))))],[0.25*k,1.5*k,0.9*k],m,{gloss:2,noCast:1})); break;
+            case 'bat': push(ellipsoid(c,AXm,[0.6*k,0.7*k,0.6*k],m,st)); for(const sd of [1,-1]) push(ellipsoid(add(c,sc(T,1.1*k*sd),sc(U,0.2*k)),[F,norm(add(U,sc(T,-0.5*sd))),T],[0.25*k,0.5*k,1.1*k],m,st)); break;
+            case 'bubble': push(field(c,2*k,p=>Math.abs(Math.hypot(...sub(p,c))-0.9*k)-0.12,m,{gloss:3})); push(ellipsoid(add(c,sc(F,0.5*k),sc(U,0.35*k)),AXm,[0.2,0.2,0.2],'x:#ffffff',st)); break;
+            default: push(ellipsoid(c,AXm,[0.75*k,0.75*k,0.75*k],m,st)); push(ellipsoid(add(c,sc(F,0.4*k),sc(U,0.3*k)),AXm,[0.25*k,0.25*k,0.25*k],'x:#ffffff',st)); } } }
+      tag=''; }
     // the head: on the collar, the profile's size
     const hc=P(0.7,42.0,0), gaze=norm(add(F,sc(U,-0.04))), hup=norm(cross(cross(gaze,U),gaze)), side=norm(cross(hup,gaze)), hr=7.8;
     if(gear.body==='pumpkinhead'){ const strw='x:'+((gear.bodyPal||{}).straw||'#d8b04e');
@@ -1563,7 +1610,7 @@
       cleats={main:p.T||p.R||p.D||v[0], acc:p.M||p.W||p.b||p.f||v[1], sole:p.s||p.k||p.p||p.B||'#2a2f38', id:cle, pal:p}; }
     const gear={top, topPal:top?PXG_TOP_PAL[top]:null, legPal:legw?PXG_LEG_PAL[legw]:null, cleats,
       club:PXG_CLUBS[cid]?cid:'driver', clubPal:Object.assign({},PXG_CLUB_PAL[cid]||{})};
-    { gear.lefty=!!look.lefty; gear.body=look.body||''; gear.bodyPal=(look.body&&typeof BODY_SKINS!=='undefined'&&BODY_SKINS[look.body])||null; const bpal=look.ball&&typeof PXG_BALL_PAL!=='undefined'&&PXG_BALL_PAL[look.ball]; gear.ballC=bpal?(bpal.C||null):null; gear.ballId=bpal&&BALL_PP[look.ball]?look.ball:''; const sh=cleats?cleats.main:av.shoesHex; gear.saddleHex=cleats&&cleats.acc?cleats.acc:(PQ.lum(sh)>0.6?'#2c3a58':mix(sh,'#ffffff',0.55)); }
+    { gear.lefty=!!look.lefty; gear.fx=look.fx||''; gear.body=look.body||''; gear.bodyPal=(look.body&&typeof BODY_SKINS!=='undefined'&&BODY_SKINS[look.body])||null; const bpal=look.ball&&typeof PXG_BALL_PAL!=='undefined'&&PXG_BALL_PAL[look.ball]; gear.ballC=bpal?(bpal.C||null):null; gear.ballId=bpal&&BALL_PP[look.ball]?look.ball:''; const sh=cleats?cleats.main:av.shoesHex; gear.saddleHex=cleats&&cleats.acc?cleats.acc:(PQ.lum(sh)>0.6?'#2c3a58':mix(sh,'#ffffff',0.55)); }
     const M=MO?profileModel(aim,gear):model(aim,!!look.lefty,kind,kind==='walk'?walkPose(poseKey):POSES[poseKey],gear);
     const P=Object.assign({k:PXG_FIX.k,l:PXG_FIX.l,g:PXG_FIX.g,n:PXG_FIX.n,G:PXG_FIX.G,H:PXG_FIX.H,F:PXG_FIX.F,E:'#20242c',S:'#e8ebf0'},typeof PXG_NOV!=='undefined'?PXG_NOV:{});
     // the menu's modelled cone hats, the beret and Santa's hat go over the hair, as real hats do (the flat art perches them)
@@ -1709,7 +1756,7 @@
      cached() lets a page ask without drawing and draw later while idle. */
   const PIC={ fig:{K:3,EL:2,aim:180}, chip:{K:2,EL:2,aim:180}, hat:{K:4,EL:20,aim:200,only:'hat'}, ew:{K:5,EL:6,aim:200,only:'ew'},
     club:{K:6,EL:24,aim:205,only:'club'}, top:{K:3,EL:10,aim:200,only:'top'}, shirt:{K:3,EL:8,aim:200,only:'shirt'}, pants:{K:3,EL:12,aim:200,only:'pants'}, leg:{K:3,EL:10,aim:200,only:'leg'}, shoe:{K:5,EL:20,aim:235,only:'shoe'} };
-  function menu(look,aimDeg,o){ MO={K:o.K||3,EL:o.EL!=null?o.EL:2,phase:o.phase||0,only:o.only||''};
+  function menu(look,aimDeg,o){ MO={K:o.K||3,EL:o.EL!=null?o.EL:2,phase:o.phase||0,only:o.only||'',part:o.part||''};
     try{ return draw(look,aimDeg,'walk','ws').cv; } finally{ MO=null; } }
   const pcache=new Map();
   const picKey=(look,part)=>part+'|'+lookKey(look);
@@ -1718,7 +1765,7 @@
     if(part==='ball'){ const r=ballPic(look.ball); if(pcache.size>400) pcache.clear(); pcache.set(k,r); return r; }
     const o=PIC[part]; if(!o) return null;
     // a cape's tile is drawn from behind
-    const cv=menu(look,part==='top'&&look.top==='cape'?20:o.aim,o), W=cv.width, H=cv.height, d=cv.getContext('2d').getImageData(0,0,W,H).data, A=(x,y)=>d[(y*W+x)*4+3]>8;
+    const cv=menu(look,part==='top'&&look.top==='cape'?20:o.aim,Object.assign({part},o)), W=cv.width, H=cv.height, d=cv.getContext('2d').getImageData(0,0,W,H).data, A=(x,y)=>d[(y*W+x)*4+3]>8;
     let x0=W,y0=H,x1=-1,y1=-1; for(let y=0;y<H;y++) for(let x=0;x<W;x++) if(A(x,y)){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
     let r=null;
     if(x1>=0){ let c;
