@@ -118,7 +118,8 @@ node golf/econ-sim.mjs                      a casual, regular and heavy player t
 **Economy**
 
 - **A boost in `golf/boosts-baseline.json` is never lowered, removed, moved or re-statted** (the owner,
-  2026-10-16). New boosts are added; check-boosts fails on the rest. Never rewrite the baseline.
+  2026-10-16). New boosts are added; check-boosts fails on the rest. Never rewrite the baseline. The owner's
+  own exceptions go in `RETIRED` in check-boosts, dated (2026-10-17: patterns carry no boost).
 - **A new item gets the power its rarity buys** (the ladder in `golf-tour-economy.md`), on its slot's
   stats. A Tour Pass piece, a colour, a pattern or a free item carries none.
 - **A career stat and overall may pass 99.** Never clamp the player's golfer back to 99 outside the
