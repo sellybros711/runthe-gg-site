@@ -202,16 +202,38 @@ function flat(){ var k = 1 / ART, w = Math.ceil((B4[2] - B4[0]) * k), h = Math.c
     x.fillStyle = '#66b952'; x.beginPath(); x.ellipse(p[0], p[1], g.r * k, g.r * 0.86 * se * k, 0, 0, 7); x.fill(); x.fillStyle = g.col; x.beginPath(); x.ellipse(p[0], p[1], g.r * 0.4 * k, g.r * 0.3 * se * k, 0, 0, 7); x.fill(); });
   return fromAffine(c, A); }
 
-// ---- the camera: whole screen pixels per art pixel, a smooth glide to wherever is asked
-var cam = { x:0, y:0, k:2, tx:null, ty:null }, VW = 0, VH = 0, DPR = Math.min(2, window.devicePixelRatio || 1), dirty = true;
+// ---- the camera. Everything glides: a target and an exponential approach, timed by the frame, not counted by it.
+// Zoom moves smoothly through any scale while it is being asked for, then settles on a whole number of screen pixels
+// per art pixel, so the pixel art is crisp whenever the camera is still. It never shows past the edge of the clouds.
+var cam = { x:0, y:0, k:2, kt:2, ax:null, ay:null, tx:null, ty:null, vx:0, vy:0, lastZoom:0 }, VW = 0, VH = 0, DPR = Math.min(2, window.devicePixelRatio || 1), dirty = true;
+var keys = {}, yTop = 0, dragging = false;
 function fit(){ VW = innerWidth; VH = innerHeight; [cvs, ov].forEach(function(c){ c.width = Math.round(VW * DPR); c.height = Math.round(VH * DPR); c.style.width = VW + 'px'; c.style.height = VH + 'px'; }); dirty = true; }
-function clampCam(){ cam.x = Math.max(R.cv.width * 0.15, Math.min(R.cv.width * 0.85, cam.x)); cam.y = Math.max(R.cv.height * 0.25, Math.min(R.cv.height * 0.85, cam.y)); }
+function kMin(){ return Math.max(DPR, cvs.width / R.cv.width, cvs.height / (R.cv.height - yTop)); }
+function kMax(){ return 8 * DPR; }
+function clampCam(){ var hw = cvs.width / 2 / cam.k, hh = cvs.height / 2 / cam.k;
+  cam.x = hw * 2 >= R.cv.width ? R.cv.width / 2 : Math.max(hw, Math.min(R.cv.width - hw, cam.x));
+  cam.y = hh * 2 >= R.cv.height - yTop ? (R.cv.height + yTop) / 2 : Math.max(yTop + hh, Math.min(R.cv.height - hh, cam.y)); }
 function toScreen(px, py){ return [(px - cam.x) * cam.k + cvs.width / 2, (py - cam.y) * cam.k + cvs.height / 2]; }
 function toPic(sx, sy){ return [(sx * DPR - cvs.width / 2) / cam.k + cam.x, (sy * DPR - cvs.height / 2) / cam.k + cam.y]; }
 // the ground under a point of the screen: try each island's own height
 function groundAt(sx, sy){ var p = toPic(sx, sy), A = R.A, det = A[1][0] * A[2][1] - A[2][0] * A[1][1], best = null;
   games.forEach(function(g){ var px = p[0] - A[0][0] - A[3][0] * g.z, py = p[1] - A[0][1] - A[3][1] * g.z, x = (px * A[2][1] - A[2][0] * py) / det, y = (A[1][0] * py - px * A[1][1]) / det;
     if (shape(g, x, y) > 0 && (!best || g.y > best.g.y)) best = { g:g, x:x, y:y }; }); return best; }
+// zoom toward a scale, keeping the point under (fx, fy) where it is; null means the middle of the screen
+function zoomTo(kt, fx, fy){ cam.kt = Math.max(kMin(), Math.min(kMax(), kt)); cam.ax = fx == null ? VW / 2 : fx; cam.ay = fy == null ? VH / 2 : fy; cam.lastZoom = performance.now(); }
+function zoom(d, fx, fy){ zoomTo(cam.kt * (d > 0 ? 1.45 : 1 / 1.45), fx, fy); }
+function step(dt){ var moved = false, e;
+  if (cam.tx != null){ e = 1 - Math.exp(-dt * 9); cam.x += (cam.tx - cam.x) * e; cam.y += (cam.ty - cam.y) * e; if (Math.abs(cam.tx - cam.x) + Math.abs(cam.ty - cam.y) < 0.3) cam.tx = cam.ty = null; moved = true; }
+  var kx = (keys.ArrowRight || keys.d ? 1 : 0) - (keys.ArrowLeft || keys.a ? 1 : 0), ky = (keys.ArrowDown || keys.s ? 1 : 0) - (keys.ArrowUp || keys.w ? 1 : 0);
+  if (kx || ky){ var sp = 700 * DPR / cam.k; cam.vx = kx * sp; cam.vy = ky * sp; cam.tx = cam.ty = null; }
+  if (!dragging && (Math.abs(cam.vx) + Math.abs(cam.vy)) * cam.k > 4){ cam.x += cam.vx * dt; cam.y += cam.vy * dt; if (!kx && !ky){ e = Math.exp(-dt * 4.5); cam.vx *= e; cam.vy *= e; } moved = true; }
+  else if (!kx && !ky){ cam.vx = cam.vy = 0; }
+  // settle on a whole number of screen pixels per art pixel once nobody is zooming
+  if (performance.now() - cam.lastZoom > 160 && !pinching){ var r = Math.round(cam.kt); if (r !== cam.kt) cam.kt = Math.max(Math.ceil(kMin() - 1e-6), Math.min(kMax(), r)); }
+  if (cam.kt !== cam.k){ var p = toPic(cam.ax, cam.ay); e = 1 - Math.exp(-dt * 16); cam.k += (cam.kt - cam.k) * e; if (Math.abs(cam.kt - cam.k) < 0.004) cam.k = cam.kt;
+    var q = toPic(cam.ax, cam.ay); cam.x += p[0] - q[0]; cam.y += p[1] - q[1]; moved = true; }
+  if (moved) dirty = true;
+  var ox = cam.x, oy = cam.y; clampCam(); if (ox !== cam.x) cam.vx = 0; if (oy !== cam.y) cam.vy = 0; }
 var hov = null, sel = null;
 function hitAt(sx, sy){
   for (var i = games.length - 1; i >= 0; i--){ var g = games[i]; if (g.sx != null && Math.abs(sx - g.sx) < g.sw / 2 && sy > g.sy && sy < g.sy + 22) return { g:g }; }
@@ -221,8 +243,6 @@ function hitAt(sx, sy){
   return d ? { g:q.g, d:d.k } : { g:q.g }; }
 
 function draw(now){
-  if (cam.tx != null){ cam.x += (cam.tx - cam.x) * 0.18; cam.y += (cam.ty - cam.y) * 0.18; if (Math.abs(cam.tx - cam.x) + Math.abs(cam.ty - cam.y) < 0.5) cam.tx = cam.ty = null; dirty = true; }
-  clampCam();
   if (dirty){ ctx.imageSmoothingEnabled = false; ctx.clearRect(0, 0, cvs.width, cvs.height);
     // only the part of the picture on screen, so a pan costs the screen's pixels and not the world's
     var o = toScreen(0, 0), sx = Math.max(0, Math.floor(-o[0] / cam.k)), sy = Math.max(0, Math.floor(-o[1] / cam.k)),
@@ -243,41 +263,63 @@ function draw(now){
   octx.textAlign = 'left';
 }
 function rr(c, x, y, w, h, r){ c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
-function loop(t){ draw(t); requestAnimationFrame(loop); }
-function zoom(d, fx, fy){ var k0 = cam.k, nk = Math.max(DPR, Math.min(6 * DPR, cam.k + d * DPR)); if (nk === k0) return;
-  if (fx != null){ var p = toPic(fx, fy); cam.k = nk; var q = toPic(fx, fy); cam.x += p[0] - q[0]; cam.y += p[1] - q[1]; } else cam.k = nk; dirty = true; }
+var last = 0;
+function loop(t){ var dt = Math.min(0.05, (t - (last || t)) / 1000); last = t; step(dt); draw(t); requestAnimationFrame(loop); }
 // with a panel open the island goes to the part of the screen still showing: above the sheet on a phone, left of the panel on a desktop
-function focus(x, y, z, open){ var q = R.pr(x, y, z || 1), phone = innerWidth <= 700; cam.tx = q[0]; cam.ty = q[1];
-  if (open !== false){ if (phone) cam.ty += innerHeight * 0.28 * DPR / cam.k; else cam.tx += 200 * DPR / cam.k; } }
+function focus(x, y, z, open){ var q = R.pr(x, y, z || 1), phone = innerWidth <= 700; cam.tx = q[0]; cam.ty = q[1]; cam.vx = cam.vy = 0;
+  if (open !== false){ if (phone) cam.ty += innerHeight * 0.28 * DPR / cam.kt; else cam.tx += 200 * DPR / cam.kt; } }
 function select(h){ sel = h; SKY_UI.select(h); }
 
-// ---- input: drag to pan, wheel or pinch to zoom, hover to preview, click or tap to choose, keys on desktop
-function input(){ var drag = null, pts = {}, pinch = null;
-  ov.addEventListener('pointerdown', function(e){ pts[e.pointerId] = [e.clientX, e.clientY]; ov.setPointerCapture(e.pointerId);
-    var ids = Object.keys(pts); if (ids.length === 2){ var a = pts[ids[0]], b = pts[ids[1]]; pinch = { d:Math.hypot(a[0] - b[0], a[1] - b[1]), k:cam.k }; drag = null; return; }
-    drag = { x:e.clientX, y:e.clientY, cx:cam.x, cy:cam.y, moved:0 }; cam.tx = cam.ty = null; });
+// ---- input. Drag to pan, and it glides on when let go. Mouse wheel zooms at the pointer; a trackpad pans with two fingers
+// and zooms with a pinch (Chrome sends that as a wheel with ctrlKey, Safari as a gesture). Two fingers on a phone pinch.
+// Double click zooms in. Arrows or WASD pan while held, plus and minus zoom, Escape closes the panel.
+var pinching = false;
+function input(){ var pts = {}, drag = null, pinch = null, trail = [];
+  ov.addEventListener('pointerdown', function(e){ pts[e.pointerId] = [e.clientX, e.clientY]; try { ov.setPointerCapture(e.pointerId); } catch (er) {}
+    cam.tx = cam.ty = null; cam.vx = cam.vy = 0;
+    var ids = Object.keys(pts); if (ids.length === 2){ var a = pts[ids[0]], b = pts[ids[1]]; pinch = { d:Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, k:cam.k, mx:(a[0] + b[0]) / 2, my:(a[1] + b[1]) / 2 }; pinching = true; drag = null; return; }
+    drag = { x:e.clientX, y:e.clientY, cx:cam.x, cy:cam.y, moved:0 }; dragging = true; trail = [[performance.now(), cam.x, cam.y]]; });
   ov.addEventListener('pointermove', function(e){ if (pts[e.pointerId]) pts[e.pointerId] = [e.clientX, e.clientY]; var ids = Object.keys(pts);
-    if (pinch && ids.length === 2){ var a = pts[ids[0]], b = pts[ids[1]], k = Math.round(pinch.k * Math.hypot(a[0] - b[0], a[1] - b[1]) / pinch.d / DPR) * DPR;
-      if (k !== cam.k) zoom((k - cam.k) / DPR, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2); return; }
+    if (pinch && ids.length === 2){ var a = pts[ids[0]], b = pts[ids[1]], mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+      cam.x -= (mx - pinch.mx) * DPR / cam.k; cam.y -= (my - pinch.my) * DPR / cam.k; pinch.mx = mx; pinch.my = my;
+      var kt = Math.max(kMin(), Math.min(kMax(), pinch.k * Math.hypot(a[0] - b[0], a[1] - b[1]) / pinch.d)), p = toPic(mx, my);
+      cam.k = cam.kt = kt; var q = toPic(mx, my); cam.x += p[0] - q[0]; cam.y += p[1] - q[1]; cam.ax = mx; cam.ay = my; cam.lastZoom = performance.now(); dirty = true; return; }
     if (drag && pts[e.pointerId]){ var dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.moved = Math.max(drag.moved, Math.abs(dx) + Math.abs(dy));
-      cam.x = drag.cx - dx * DPR / cam.k; cam.y = drag.cy - dy * DPR / cam.k; dirty = true; return; }
+      if (drag.moved > 3){ ov.style.cursor = 'grabbing'; SKY_UI.hover(null); }
+      cam.x = drag.cx - dx * DPR / cam.k; cam.y = drag.cy - dy * DPR / cam.k; dirty = true;
+      var t = performance.now(); trail.push([t, cam.x, cam.y]); while (trail.length > 2 && t - trail[0][0] > 90) trail.shift(); return; }
     if (e.pointerType === 'mouse'){ hov = hitAt(e.clientX, e.clientY); SKY_UI.hover(hov, e.clientX, e.clientY); ov.style.cursor = hov ? 'pointer' : 'grab'; } });
-  function up(e){ delete pts[e.pointerId]; if (Object.keys(pts).length < 2) pinch = null;
-    if (drag && drag.moved < 6) select(hitAt(e.clientX, e.clientY)); drag = null; }
-  ov.addEventListener('pointerup', up); ov.addEventListener('pointercancel', function(e){ delete pts[e.pointerId]; pinch = null; drag = null; });
-  ov.addEventListener('pointerleave', function(){ hov = null; SKY_UI.hover(null); });
-  ov.addEventListener('wheel', function(e){ e.preventDefault(); zoom(e.deltaY < 0 ? 1 : -1, e.clientX, e.clientY); }, { passive:false });
-  addEventListener('keydown', function(e){ if (e.target && /input|textarea/i.test(e.target.tagName)) return; var s = 60 * DPR / cam.k;
-    if (e.key === 'ArrowLeft') cam.x -= s; else if (e.key === 'ArrowRight') cam.x += s; else if (e.key === 'ArrowUp') cam.y -= s; else if (e.key === 'ArrowDown') cam.y += s;
-    else if (e.key === '+' || e.key === '=') zoom(1); else if (e.key === '-') zoom(-1); else if (e.key === 'Escape') select(null); else return;
-    cam.tx = cam.ty = null; dirty = true; });
-  addEventListener('resize', fit); }
+  function up(e){ delete pts[e.pointerId]; if (Object.keys(pts).length < 2 && pinch){ pinch = null; pinching = false; cam.lastZoom = performance.now(); if (Object.keys(pts).length) drag = null; }
+    if (drag){ if (drag.moved < 6) select(hitAt(e.clientX, e.clientY));
+      else { var t = performance.now(), f = trail[0], l = trail[trail.length - 1], dtt = (l[0] - f[0]) / 1000; if (dtt > 0.01 && t - l[0] < 60){ cam.vx = (l[1] - f[1]) / dtt; cam.vy = (l[2] - f[2]) / dtt; } } }
+    drag = null; dragging = false; ov.style.cursor = 'grab'; }
+  ov.addEventListener('pointerup', up);
+  ov.addEventListener('pointercancel', function(e){ delete pts[e.pointerId]; pinch = null; pinching = false; drag = null; dragging = false; });
+  ov.addEventListener('pointerleave', function(){ if (!drag){ hov = null; SKY_UI.hover(null); } });
+  ov.addEventListener('dblclick', function(e){ zoomTo(cam.kt * 1.8, e.clientX, e.clientY); });
+  ov.addEventListener('wheel', function(e){ e.preventDefault(); cam.tx = cam.ty = null; SKY_UI.hover(null);
+    var px = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? VH : 1, dx = e.deltaX * px, dy = e.deltaY * px;
+    var mouse = e.deltaMode !== 0 || (e.wheelDeltaY && Math.abs(e.wheelDeltaY) % 120 === 0 && !e.deltaX);
+    if (e.ctrlKey){ zoomTo(cam.kt * Math.exp(-dy * 0.012), e.clientX, e.clientY); cam.k = cam.kt; return; }   // a trackpad pinch: follow the fingers exactly
+    if (mouse){ zoomTo(cam.kt * Math.exp(-Math.sign(dy) * 0.28), e.clientX, e.clientY); return; }
+    cam.x += dx * DPR / cam.k; cam.y += dy * DPR / cam.k; cam.vx = cam.vy = 0; dirty = true; }, { passive:false });
+  // Safari's trackpad pinch
+  var g0 = null;
+  ov.addEventListener('gesturestart', function(e){ e.preventDefault(); g0 = cam.kt; pinching = true; });
+  ov.addEventListener('gesturechange', function(e){ e.preventDefault(); if (g0 == null) return; zoomTo(g0 * e.scale, e.clientX, e.clientY); cam.k = cam.kt; });
+  ov.addEventListener('gestureend', function(e){ e.preventDefault(); g0 = null; pinching = false; cam.lastZoom = performance.now(); });
+  addEventListener('keydown', function(e){ if (e.target && /input|textarea/i.test(e.target.tagName) || e.metaKey || e.ctrlKey) return;
+    if (/^(Arrow(Left|Right|Up|Down)|[wasd])$/.test(e.key)){ keys[e.key] = true; e.preventDefault(); return; }
+    if (e.key === '+' || e.key === '=') zoom(1); else if (e.key === '-' || e.key === '_') zoom(-1); else if (e.key === 'Escape') select(null); });
+  addEventListener('keyup', function(e){ delete keys[e.key]; });
+  addEventListener('blur', function(){ keys = {}; });
+  addEventListener('resize', function(){ fit(); zoomTo(cam.kt); }); }
 
 // ---- start
 SKY_UI.mount(W, games);
 cvs = SKY_UI.el('world'); ov = SKY_UI.el('over'); ctx = cvs.getContext('2d'); octx = ov.getContext('2d'); fit();
 loadPic().then(function(cached){
-  function go(r, warn, early){ R = r; var phone = innerWidth < 700; cam.k = 2 * DPR; var c = R.pr((bx0 + bx1) / 2 + (phone ? 0 : 10), (by0 + by1) / 2, 1); cam.x = c[0]; cam.y = c[1];
+  function go(r, warn, early){ R = r; yTop = Math.max(0, Math.ceil(R.pr(0, B4[1], 0)[1]) + 2); var phone = innerWidth < 700; cam.k = cam.kt = Math.max(Math.ceil(kMin()), 2 * DPR); var c = R.pr((bx0 + bx1) / 2 + (phone ? 0 : 10), (by0 + by1) / 2, 1); cam.x = c[0]; cam.y = c[1];
     window.SKY = { cam:cam, games:games, bridges:bridges, R:R, se:se, toScreen:toScreen, focus:focus, select:select, zoom:zoom, topAt:topAt, inside:inside, shape:shape, DPR:DPR, dirty:function(){ dirty = true; } };
     input(); if (early) SKY_UI.painting(); else SKY_UI.ready(warn); requestAnimationFrame(loop); window.dispatchEvent(new Event('sky-ready')); }
   if (cached) return go(cached);
@@ -286,5 +328,5 @@ loadPic().then(function(cached){
 // keep the camera on the same piece of the world when the picture under it changes
 function swap(r){ var A = R.A, det = A[1][0] * A[2][1] - A[2][0] * A[1][1], px = cam.x - A[0][0] - A[3][0], py = cam.y - A[0][1] - A[3][1],
   x = (px * A[2][1] - A[2][0] * py) / det, y = (A[1][0] * py - px * A[1][1]) / det, kOld = Math.abs(A[1][0]);
-  R = r; SKY.R = r; var q = R.pr(x, y, 1); cam.x = q[0]; cam.y = q[1]; cam.tx = cam.ty = null; dirty = true; window.dispatchEvent(new Event('sky-repaint')); }
+  R = r; SKY.R = r; yTop = Math.max(0, Math.ceil(R.pr(0, B4[1], 0)[1]) + 2); var q = R.pr(x, y, 1); cam.x = q[0]; cam.y = q[1]; cam.tx = cam.ty = null; dirty = true; window.dispatchEvent(new Event('sky-repaint')); }
 })();
