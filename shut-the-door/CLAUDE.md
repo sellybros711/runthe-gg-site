@@ -39,7 +39,7 @@ node shut-the-door/pipeline/band_sweep.mjs     the bands measured on the real pa
   flagged in the data and the UI. Nothing is invented to fill a gap: a missing pro example is null.
 - **The lesson** picks the worst pitch, and only a principle its own numbers show.
 - **Players left out of the closer pool and the pro examples**: Emmanuel Clase, Felipe Vázquez,
-  Roberto Osuna (the owner kept Chapman's scenario). The list is in the pipeline.
+  Roberto Osuna (the owner kept Chapman's scenario). The list is in `pipeline/closer_pool.py`.
 - **mock-api.js** takes over only on a `?mock...` test switch. A player always gets the real engine.
 - **Cache versions.** Every sibling script carries `?v=`; packs carry their own `v` in
   `data/schedule.json`, fetched with `SCHEDULE_V` in `api.js`. The edit, the bump and the record in one commit.
