@@ -1,0 +1,233 @@
+/* Shut The Door: the sheets.
+ *
+ * window.STD_MENUS. The menu, how to play, stats, past dailies, settings and
+ * the sign-in sheet. Every one of them opens from a button and nothing here
+ * opens by itself: no tutorial, no first-visit tour (the owner's call,
+ * 2026-10-13). A sheet closes on its backdrop, its close button or Escape.
+ *
+ * Numbers in the copy come from the contract (the bands) or from the
+ * player's own history, never typed here.
+ */
+(function () {
+'use strict';
+var C = window.STD_CONTRACT;
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+
+var open = null, lastFocus = null, onClose = null;
+
+function openSheet(id, after) {
+  if (open) closeSheet(true);
+  var el = $(id);
+  if (!el) return;
+  lastFocus = document.activeElement;
+  el.hidden = false;
+  el.setAttribute('aria-hidden', 'false');
+  requestAnimationFrame(function () { el.classList.add('on'); });
+  open = id;
+  onClose = after || null;
+  var f = el.querySelector('[data-autofocus]') || el.querySelector('.sh-x');
+  if (f) setTimeout(function () { try { f.focus({ preventScroll: true }); } catch (e) {} }, 30);
+}
+function closeSheet(silent) {
+  if (!open) return;
+  var el = $(open);
+  el.classList.remove('on');
+  el.hidden = true;
+  el.setAttribute('aria-hidden', 'true');
+  open = null;
+  var cb = onClose; onClose = null;
+  if (!silent && cb) cb();
+  if (lastFocus && lastFocus.focus) try { lastFocus.focus({ preventScroll: true }); } catch (e) {}
+}
+
+function wire() {
+  document.querySelectorAll('.sheet').forEach(function (sh) {
+    sh.addEventListener('click', function (e) {
+      if (e.target === sh || e.target.closest('[data-close]')) closeSheet();
+    });
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && open) closeSheet(); });
+  document.querySelectorAll('[data-open]').forEach(function (b) {
+    b.addEventListener('click', function () { api.show(b.getAttribute('data-open')); });
+  });
+}
+
+/* ---- how to play -------------------------------------------------------- */
+
+function renderHow(ctx) {
+  var bands = C.BANDS.map(function (b, i) {
+    var prev = i ? C.BANDS[i - 1].maxLost : null;
+    var t = b.maxLost === Infinity ? 'more than ' + prev.toFixed(1) + ' points lost' : 'within ' + b.maxLost.toFixed(1) + ' of the best';
+    return '<li><span class="sq ' + b.band + '"></span><b>' + b.band + '</b> ' + t + '</li>';
+  }).join('');
+  $('how-body').innerHTML =
+    '<h3>you are the closer</h3>' +
+    '<p>one real save spot a day. the real batters, in order. his real pitches. the same spot for everybody.</p>' +
+    '<h3>two taps a pitch</h3>' +
+    '<p>pick a pitch from his arsenal. pick a spot on the grid. throw it.</p>' +
+    '<p>the grid is what you see from the mound. the middle nine are the zone. the ring around it is for chasing. inside and away are the batter\'s.</p>' +
+    '<h3>where it goes</h3>' +
+    '<p>the ball misses by his command. then a real pitch from that spot plays out: take, swing, foul or in play.</p>' +
+    '<h3>the grade</h3>' +
+    '<p>every pitch is graded before it lands. the grade is the hold chance your call kept, against the best call you had. a good pitch that gets hit stays good.</p>' +
+    '<ul class="bands">' + bands + '</ul>' +
+    '<h3>how it ends</h3>' +
+    '<ul class="ends"><li><b>' + esc(C.OUTCOME_LABEL.door_shut) + '</b> three outs with the lead</li>' +
+    '<li><b>' + esc(C.OUTCOME_LABEL.doors_open) + '</b> the tying run scores</li>' +
+    '<li><b>' + esc(C.OUTCOME_LABEL.walk_off) + '</b> the winning run scores in their last at-bat</li></ul>' +
+    '<h3>scouting</h3>' +
+    '<p>tap the batter\'s name. the grid turns into his map: where he does damage, and where he swings.</p>' +
+    '<h3>one a day</h3>' +
+    '<p>the daily counts once. run it back to practice. practice is never scored.</p>' +
+    (ctx && ctx.proxy ? '<p class="quiet">older spots have no pitch tracking. their pitches come from modern pitch data.</p>' : '');
+}
+
+/* ---- stats ---------------------------------------------------------------- */
+
+function streakOf(hist, today) {
+  var days = Object.keys(hist).sort();
+  var best = 0, run = 0, prev = null;
+  days.forEach(function (d) {
+    var shut = hist[d].outcome === 'door_shut';
+    if (shut && prev && dayDiff(prev, d) === 1 && hist[prev].outcome === 'door_shut') run++;
+    else run = shut ? 1 : 0;
+    best = Math.max(best, run);
+    prev = d;
+  });
+  /* the current run counts only if it reaches today or yesterday */
+  var cur = 0;
+  var d0 = today;
+  if (!hist[d0]) d0 = shiftDay(today, -1);
+  while (hist[d0] && hist[d0].outcome === 'door_shut') { cur++; d0 = shiftDay(d0, -1); }
+  return { cur: cur, best: best };
+}
+function dayDiff(a, b) { return Math.round((Date.parse(b + 'T12:00:00Z') - Date.parse(a + 'T12:00:00Z')) / 864e5); }
+function shiftDay(d, n) { return new Date(Date.parse(d + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10); }
+
+function renderStats(hist, today) {
+  var rows = Object.keys(hist).sort().map(function (d) { return hist[d]; });
+  var n = rows.length, shut = rows.filter(function (r) { return r.outcome === 'door_shut'; }).length;
+  var st = streakOf(hist, today);
+  var pct = n ? Math.round(rows.reduce(function (a, r) { return a + (r.percentile || 0); }, 0) / n) : null;
+  var tally = { green: 0, yellow: 0, orange: 0, red: 0 }, all = 0;
+  rows.forEach(function (r) { (r.strip || []).forEach(function (b) { if (tally[b] != null) { tally[b]++; all++; } }); });
+  function tile(v, l) { return '<div class="tile"><b>' + (v == null ? '-' : esc(v)) + '</b><span>' + l + '</span></div>'; }
+  var bar = all ? C.BANDS.map(function (b) {
+    var w = tally[b.band] / all * 100;
+    return w ? '<i class="' + b.band + '" style="width:' + w.toFixed(1) + '%" title="' + b.band + ' ' + tally[b.band] + '"></i>' : '';
+  }).join('') : '';
+  var recent = rows.slice(-7).reverse().map(function (r) {
+    return '<li><span class="rd">#' + esc(r.number) + '</span><span class="ro">' + esc(C.OUTCOME_LABEL[r.outcome] || '') + '</span><span class="rs">' +
+      (r.strip || []).map(function (b) { return '<i class="sq ' + b + '"></i>'; }).join('') + '</span></li>';
+  }).join('');
+  $('stats-body').innerHTML =
+    '<div class="tiles">' + tile(n, 'played') + tile(shut, 'doors shut') + tile(n ? Math.round(shut / n * 100) + '%' : null, 'shut rate') +
+    tile(st.cur, 'streak') + tile(st.best, 'best streak') + tile(pct == null ? null : pct, 'avg percentile') + '</div>' +
+    '<h3>your pitches</h3>' +
+    (all ? '<div class="bandbar">' + bar + '</div><p class="quiet">' + C.BANDS.map(function (b) { return tally[b.band] + ' ' + b.band; }).join(' · ') + '</p>'
+      : '<p class="quiet">no pitches graded yet.</p>') +
+    (recent ? '<h3>recent</h3><ul class="recent">' + recent + '</ul>' : '') +
+    '<p class="quiet">kept on this device. signed in, your account keeps the streak.</p>';
+}
+
+/* ---- past dailies (locked in v1) ---------------------------------------- */
+
+function renderPast(scn) {
+  var n = scn ? scn.number : 1, tiles = '';
+  for (var i = n - 1; i >= Math.max(1, n - 12); i--) tiles += '<div class="past-t"><b>#' + i + '</b><span class="lock" aria-hidden="true"></span></div>';
+  $('past-body').innerHTML =
+    '<p>past dailies open later. today\'s is #' + esc(n) + '.</p>' +
+    (tiles ? '<div class="past-grid">' + tiles + '</div>' : '<div class="past-grid"><div class="past-t empty"><span class="lock" aria-hidden="true"></span><span>nothing before #' + esc(n) + '</span></div></div>');
+}
+
+/* ---- settings ---------------------------------------------------------------- */
+
+function renderSettings(prefs, onChange) {
+  var theme = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  function row(id, label, sub, on) {
+    return '<label class="set-row" for="' + id + '"><span><b>' + label + '</b><small>' + sub + '</small></span>' +
+      '<input type="checkbox" class="sw" id="' + id + '"' + (on ? ' checked' : '') + '></label>';
+  }
+  $('set-body').innerHTML =
+    row('set-sound', 'sound', 'the glove, the bat, the call', !!prefs.sound) +
+    row('set-quick', 'quick pitches', 'shorter animation', !!prefs.quick) +
+    row('set-dark', 'dark mode', 'shared with every runthe.gg game', theme === 'dark');
+  $('set-sound').addEventListener('change', function (e) { onChange('sound', e.target.checked); });
+  $('set-quick').addEventListener('change', function (e) { onChange('quick', e.target.checked); });
+  $('set-dark').addEventListener('change', function (e) { onChange('theme', e.target.checked ? 'dark' : 'light'); });
+}
+
+/* ---- sign in ------------------------------------------------------------------ */
+/* Against window.STD_AUTH, shaped like baseball/auth.js's RTD_AUTH: boot,
+   state, onChange, signIn, signUp, signInGoogle, signOut, token. */
+
+var authMode = 'in';
+function renderAuth() {
+  var A = window.STD_AUTH, st = {};
+  try { st = A.state() || {}; } catch (e) {}
+  var body = $('auth-body');
+  if (st.signedIn) {
+    body.innerHTML = '<p>signed in as <b>' + esc(st.name || st.email || 'you') + '</b>.</p>' +
+      '<p class="quiet">your daily result, streak and stats are kept on your account.</p>' +
+      '<button class="btn ghost" id="au-out" type="button">sign out</button>';
+    $('au-out').addEventListener('click', function () {
+      Promise.resolve(A.signOut && A.signOut()).then(function () { renderAuth(); });
+    });
+    return;
+  }
+  var up = authMode === 'up';
+  body.innerHTML =
+    '<div class="seg" role="tablist"><button type="button" role="tab" id="au-tin" aria-selected="' + !up + '">sign in</button>' +
+    '<button type="button" role="tab" id="au-tup" aria-selected="' + up + '">new account</button></div>' +
+    '<form id="au-form" novalidate>' +
+    '<label>email<input type="email" id="au-email" autocomplete="email" required data-autofocus></label>' +
+    '<label>password<input type="password" id="au-pass" autocomplete="' + (up ? 'new-password' : 'current-password') + '" required minlength="6"></label>' +
+    (up ? '<label>username<input type="text" id="au-name" autocomplete="username" required maxlength="20"></label>' : '') +
+    '<p class="au-err" id="au-err" role="alert"></p>' +
+    '<button class="btn go" type="submit">' + (up ? 'create account' : 'sign in') + '</button>' +
+    '</form>' +
+    '<button class="btn ghost" id="au-google" type="button">continue with google</button>' +
+    '<p class="quiet">one account covers every runthe.gg game. it keeps your streak across devices.</p>' +
+    (st.ready === false && !st.waiting ? '<p class="quiet">accounts are not available right now. you can still play.</p>' : '');
+  $('au-tin').addEventListener('click', function () { authMode = 'in'; renderAuth(); });
+  $('au-tup').addEventListener('click', function () { authMode = 'up'; renderAuth(); });
+  $('au-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var em = $('au-email').value, pw = $('au-pass').value, nm = up ? $('au-name').value.trim() : '';
+    var err = $('au-err');
+    if (!em || !pw || (up && !nm)) { err.textContent = 'fill in every field.'; return; }
+    err.textContent = '';
+    var p = up ? A.signUp(em, pw, nm) : A.signIn(em, pw);
+    Promise.resolve(p).then(function (r) {
+      if (r && r.error) { err.textContent = String(r.error).toLowerCase(); return; }
+      if (up) err.textContent = 'check your email to confirm.';
+      else renderAuth();
+    }).catch(function () { err.textContent = 'that did not work. try again.'; });
+  });
+  $('au-google').addEventListener('click', function () {
+    var g = A.signInGoogle || A.google;
+    Promise.resolve(g && g()).then(function (r) { if (r && r.error) $('au-err').textContent = String(r.error).toLowerCase(); });
+  });
+}
+
+var ctx = { hist: function () { return {}; }, today: '', scn: null, prefs: {}, onPref: function () {} };
+var api = {
+  init: function (c) { for (var k in c) ctx[k] = c[k]; if (!api.wired) { api.wired = true; wire(); } },
+  open: openSheet,
+  close: closeSheet,
+  isOpen: function () { return !!open; },
+  current: function () { return open; },
+  streakOf: streakOf,
+  renderAuth: renderAuth,
+  show: function (which) {
+    if (which === 'how') { renderHow({ proxy: ctx.scn && ctx.scn.resolution === 'proxy' }); openSheet('sheet-how'); }
+    else if (which === 'stats') { renderStats(ctx.hist(), ctx.today); openSheet('sheet-stats'); }
+    else if (which === 'past') { renderPast(ctx.scn); openSheet('sheet-past'); }
+    else if (which === 'settings') { renderSettings(ctx.prefs, ctx.onPref); openSheet('sheet-settings'); }
+    else if (which === 'auth') { renderAuth(); openSheet('sheet-auth'); }
+    else if (which === 'menu') openSheet('sheet-menu');
+  },
+};
+window.STD_MENUS = api;
+})();

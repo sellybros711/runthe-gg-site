@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Shut The Door | RunThe.GG</title>
+<!-- UNLISTED UNTIL THE OWNER PUTS IT LIVE: noindex, no ad tag, linked from
+     nowhere. shut-the-door/check-posture.mjs holds all three. -->
+<meta name="robots" content="noindex,nofollow">
+<meta name="description" content="Shut The Door: one real save situation a day. You are the closer. Every pitch graded.">
+<meta name="theme-color" content="#0f131a" id="themeMeta">
+<script>
+/* THEME BOOT, BEFORE FIRST PAINT, as baseball/index.html does it: the key is
+   shared across the suite, so a reader who set dark anywhere arrives dark, and
+   setting it here after first paint would flash the page on the way in. */
+(function(){
+  var t; try{ t = localStorage.getItem('runthegrid_theme'); }catch(e){}
+  if(t !== 'light' && t !== 'dark'){
+    t = (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+    try { localStorage.setItem('runthegrid_theme', t); } catch (e) {}
+  }
+  document.documentElement.setAttribute('data-theme', t);
+  var m = document.getElementById('themeMeta'); if (m) m.setAttribute('content', t === 'dark' ? '#0f131a' : '#eee6d6');
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=1">
+</head>
+<body>
+<div class="app">
+
+<header class="hdr">
+  <a class="lockup" href="./" aria-label="Shut The Door, back to the start">
+    <svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4.5L15 3v18"/><path d="M15 5h4v16"/><path d="M3 21h18"/><circle cx="12.2" cy="12.5" r="1"/></svg>
+    <span class="brand">Shut The <em>Door</em></span>
+  </a>
+  <div class="hdr-r">
+    <button class="hdr-btn" id="b-theme" type="button" aria-label="Switch between light and dark" title="Light or dark">
+      <svg viewBox="0 0 24 24" aria-hidden="true" class="th-sun"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/></svg>
+      <svg viewBox="0 0 24 24" aria-hidden="true" class="th-moon"><path d="M20 14.2A8.2 8.2 0 0 1 9.8 4 8.4 8.4 0 1 0 20 14.2z"/></svg>
+    </button>
+    <button class="hdr-btn" id="b-profile" type="button" data-open="auth" aria-label="Sign in" title="Sign in"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></button>
+    <button class="hdr-btn" id="b-menu" type="button" data-open="menu" aria-label="Menu" title="Menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  </div>
+</header>
+
+<main>
+
+<!-- 1. HOME -->
+<section class="screen on" id="s-home" aria-labelledby="h-name">
+  <div class="load" id="h-load"><span class="dots"><i></i><i></i><i></i></span><span>warming up</span></div>
+  <div id="h-main" hidden>
+    <p class="eyebrow" id="h-day"></p>
+    <h1 class="wordmark" id="h-name">Shut The <em>Door</em></h1>
+    <p class="h-title" id="h-title"></p>
+    <div class="hero" id="h-hero"><canvas id="h-canvas" aria-hidden="true"></canvas><div class="hero-sit" id="h-sit"></div></div>
+    <p class="setup" id="h-setup"></p>
+    <div class="card pcard" id="h-pitcher"></div>
+    <div class="card due" id="h-due"></div>
+    <div class="go-wrap" id="h-go">
+      <button class="btn go big" id="b-take" type="button">take the mound</button>
+      <p class="streak" id="h-streak"></p>
+    </div>
+    <div class="card done" id="h-done" hidden></div>
+    <p class="proxy" id="h-proxy" hidden>modern pitch data</p>
+    <nav class="h-links" aria-label="More">
+      <button type="button" data-open="how">how to play</button>
+      <button type="button" data-open="stats">stats</button>
+      <button type="button" data-open="past">past dailies</button>
+      <button type="button" data-open="settings">settings</button>
+    </nav>
+    <footer class="legal">
+      <p><a href="/privacy.html" target="_blank" rel="noopener">privacy</a><span>&middot;</span><a href="/terms.html" target="_blank" rel="noopener">terms</a><span>&middot;</span><a href="/disclaimer.html" target="_blank" rel="noopener">disclaimer</a><span>&middot;</span><a href="/" target="_blank" rel="noopener">more games</a></p>
+      <p class="src" id="h-src">Pitch data from Baseball Savant. An unofficial fan project, not affiliated with or endorsed by MLB or any club.</p>
+    </footer>
+  </div>
+  <div class="err" id="h-err" hidden></div>
+</section>
+
+<!-- 2 AND 3. THE MOUND AND THE PITCH -->
+<section class="screen" id="s-mound" aria-label="On the mound">
+  <div class="hud">
+    <div class="strip" id="m-strip" aria-label="Your grades so far"></div>
+    <div class="scorebar">
+      <div class="sb-score"><span class="tm">us</span><b id="m-us">0</b><span class="tm">them</span><b id="m-them">0</b></div>
+      <div class="sb-inn" id="m-inn"></div>
+      <svg class="sb-bases" id="m-bases" viewBox="0 0 40 30" aria-label="Bases">
+        <rect class="b2" x="15" y="2" width="9" height="9" transform="rotate(45 19.5 6.5)"/>
+        <rect class="b3" x="4" y="13" width="9" height="9" transform="rotate(45 8.5 17.5)"/>
+        <rect class="b1" x="26" y="13" width="9" height="9" transform="rotate(45 30.5 17.5)"/>
+      </svg>
+      <div class="sb-outs" id="m-outs" aria-label="Outs"><i></i><i></i></div>
+      <div class="sb-count"><b id="m-count">0-0</b><span>count</span></div>
+      <div class="sb-pn"><b id="m-pn">1</b><span>pitch</span></div>
+    </div>
+  </div>
+  <button class="batterbar" id="m-batter" type="button" aria-expanded="false" aria-controls="m-scout">
+    <span class="bb-name"><b id="m-bname"></b><span class="hand" id="m-bhand"></span></span>
+    <span class="bb-line" id="m-bline"></span>
+    <span class="bb-scout">scout</span>
+  </button>
+  <div class="scene" id="m-scene">
+    <canvas id="m-canvas" aria-hidden="true"></canvas>
+    <div class="scout" id="m-scout" hidden></div>
+    <div class="callout" id="m-call" aria-live="polite"></div>
+    <div class="flash" id="m-flash"></div>
+    <div class="dbg" id="m-dbg" hidden></div>
+    <span class="proxy pin" id="m-proxy" hidden>modern pitch data</span>
+  </div>
+  <div class="arsenal" id="m-arsenal" role="group" aria-label="His pitches"></div>
+  <button class="btn throw" id="m-throw" type="button" disabled>pick a pitch</button>
+</section>
+
+<!-- 5. THE RESULT -->
+<section class="screen" id="s-result" aria-labelledby="r-outcome">
+  <p class="eyebrow" id="r-eyebrow"></p>
+  <h2 class="outcome" id="r-outcome"></h2>
+  <p class="r-line" id="r-line"></p>
+  <div class="strip big" id="r-strip"></div>
+  <div class="r-stats">
+    <div class="r-stat"><b id="r-pct"></b><span>better than this share of closers</span></div>
+    <div class="r-stat"><b id="r-like"></b><span id="r-why"></span></div>
+  </div>
+  <div class="card reveal" id="r-reveal"></div>
+  <div class="r-actions">
+    <button class="btn go" id="r-share" type="button">share</button>
+    <button class="btn ghost" id="r-again" type="button">run it back</button>
+    <button class="btn ghost" id="r-home" type="button">home</button>
+  </div>
+  <p class="streak" id="r-streak"></p>
+  <p class="quiet center" id="r-tomorrow"></p>
+</section>
+
+</main>
+
+<!-- 4. THE GRADE CARD. Tap anywhere and it is gone. -->
+<div class="gcard" id="g-card" hidden aria-live="polite">
+  <div class="g-inner">
+    <div class="g-top"><span class="pill" id="g-pill"></span><span class="g-head" id="g-head"></span></div>
+    <div class="g-body">
+      <div class="g-mini" id="g-mini"></div>
+      <div class="g-txt">
+        <p class="g-you" id="g-you"></p>
+        <p class="g-best" id="g-best"></p>
+        <p class="g-reason" id="g-reason"></p>
+        <p class="g-hold" id="g-hold"></p>
+      </div>
+    </div>
+    <p class="g-note" id="g-note" hidden>good pitch. the grade is the decision, not the result.</p>
+    <p class="g-dbg" id="g-dbg" hidden></p>
+    <p class="g-tap">tap to go on</p>
+  </div>
+</div>
+
+<!-- 6. THE SHEETS. Every one opens from a button. None opens by itself. -->
+<div class="sheet" id="sheet-menu" hidden aria-hidden="true" role="dialog" aria-label="Menu">
+  <div class="sh-in">
+    <div class="sh-h"><h2>menu</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div>
+    <div class="menu-list">
+      <button type="button" data-open="how"><b>how to play</b><span>the rules and the grade</span></button>
+      <button type="button" data-open="stats"><b>stats</b><span>your record and your pitches</span></button>
+      <button type="button" data-open="past"><b>past dailies</b><span>open later</span></button>
+      <button type="button" data-open="settings"><b>settings</b><span>sound, speed, theme</span></button>
+      <button type="button" data-open="auth"><b>account</b><span>sign in to keep your streak</span></button>
+    </div>
+  </div>
+</div>
+<div class="sheet" id="sheet-how" hidden aria-hidden="true" role="dialog" aria-label="How to play">
+  <div class="sh-in"><div class="sh-h"><h2>how to play</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div><div class="sh-body prose" id="how-body"></div></div>
+</div>
+<div class="sheet" id="sheet-stats" hidden aria-hidden="true" role="dialog" aria-label="Stats">
+  <div class="sh-in"><div class="sh-h"><h2>stats</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div><div class="sh-body" id="stats-body"></div></div>
+</div>
+<div class="sheet" id="sheet-past" hidden aria-hidden="true" role="dialog" aria-label="Past dailies">
+  <div class="sh-in"><div class="sh-h"><h2>past dailies</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div><div class="sh-body" id="past-body"></div></div>
+</div>
+<div class="sheet" id="sheet-settings" hidden aria-hidden="true" role="dialog" aria-label="Settings">
+  <div class="sh-in"><div class="sh-h"><h2>settings</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div><div class="sh-body" id="set-body"></div></div>
+</div>
+<div class="sheet" id="sheet-auth" hidden aria-hidden="true" role="dialog" aria-label="Account">
+  <div class="sh-in"><div class="sh-h"><h2>account</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div><div class="sh-body auth" id="auth-body"></div></div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+</div>
+
+<!-- The contract first, then the drawing, then the API. At integration the
+     lead puts Agent A's api.js, share.js and auth.js in front of mock-api.js,
+     which then steps aside: it only fills STD_API, STD_SHARE and STD_AUTH
+     when they are absent. -->
+<script src="contract.js?v=1"></script>
+<script src="sprites.js?v=1"></script>
+<script src="mound.js?v=1"></script>
+<script src="anim.js?v=1"></script>
+<script src="menus.js?v=1"></script>
+<script src="mock-api.js?v=1"></script>
+<script src="ui.js?v=1"></script>
+</body>
+</html>

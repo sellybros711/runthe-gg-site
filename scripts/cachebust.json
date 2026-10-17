@@ -2809,6 +2809,36 @@
       "sha": "e2de218e6c8d793b"
     }
   },
+  "shut-the-door/index.html": {
+    "contract.js": {
+      "v": "1",
+      "sha": "f8ca8edc1ad1af36"
+    },
+    "sprites.js": {
+      "v": "1",
+      "sha": "4d293b194e1c2aad"
+    },
+    "mound.js": {
+      "v": "1",
+      "sha": "c292c3654f4e3ecd"
+    },
+    "anim.js": {
+      "v": "1",
+      "sha": "b7b21e7f574346b8"
+    },
+    "menus.js": {
+      "v": "1",
+      "sha": "abb287971138d325"
+    },
+    "mock-api.js": {
+      "v": "1",
+      "sha": "b0d1e8089a1db059"
+    },
+    "ui.js": {
+      "v": "1",
+      "sha": "23b8ff55ad2beadd"
+    }
+  },
   "soccer/index.html": {
     "/assets/newsletter.js": {
       "v": "2",
