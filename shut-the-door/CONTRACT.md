@@ -449,6 +449,8 @@ modal: it is a card on the result screen, read or skipped.
  * @typedef {Object} ProExample         a REAL pitch from the library, never invented
  * @property {string} pitcher
  * @property {string} batter
+ * @property {Hand} bats              the pro example batter's side (B10), so the card can say
+ *                                      inside and away in words
  * @property {string} date              'YYYY-MM-DD'
  * @property {string} game              'nlcs game 5' or 'at cin' (postseason first when one fits)
  * @property {{b: number, s: number}} count
