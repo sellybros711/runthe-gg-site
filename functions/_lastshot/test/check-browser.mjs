@@ -20,6 +20,8 @@ const SHOTS = process.env.SHOTS || null;
 const { server, setWho } = await startDev(PORT);
 const browser = await chromium.launch(EXE ? { executablePath: EXE } : {});
 let fails = 0;
+/* The two banned dashes, built from their code points so this file holds neither. */
+const DASHES = new RegExp('[' + String.fromCharCode(8211, 8212) + ']');
 const ok = (c, m) => { console.log((c ? ' ok   ' : ' FAIL ') + m); if (!c) fails++; };
 
 try {
@@ -82,7 +84,7 @@ try {
   ok(/^\d+-\d+$/.test(await page.textContent('.final')), 'a final score');
   ok(/Their call on screens: (Switch|Fight over|Go under)\./.test(await page.textContent('.facts')), 'the scheme is revealed');
   const reason = await page.textContent('.reason');
-  ok(reason.length > 10 && !/[–—]/.test(reason), 'a reason with no dashes: ' + reason);
+  ok(reason.length > 10 && !DASHES.test(reason), 'a reason with no dashes: ' + reason);
   if (SHOTS) await page.screenshot({ path: SHOTS + '/last-shot-result.png' });
 
   await page.click('#bSeed');

@@ -14,7 +14,7 @@ import { SCENARIO as SC } from './scenario.js';
 import { simulate } from './sim.js';
 import { emptyPlay, problems, playKey } from './playbook.js';
 import { createBoard } from './board.js';
-import { createCourt } from './court.js';
+import { createCourt, between, warm } from './court.js';
 import { shareText } from './share.js';
 import { freshSeed } from './rng.js';
 
@@ -72,42 +72,89 @@ function setScore(us, them, clock) {
   $('sUs').textContent = us; $('sThem').textContent = them; $('clock').textContent = clock.toFixed(1);
 }
 
+/* Where playback slows, in game seconds (the clock runs down, so a is the
+   later time and b the earlier): every pass in the air, the shot from just
+   after the release, and a beat around each screen. */
+function slowWindows(res) {
+  const F = res.frames, out = [];
+  let a = null;
+  for (let i = 0; i < F.length; i++) {
+    const inAir = !F[i].h && F[i].sk == null && i < F.length - 1;
+    if (inAir && a == null) a = F[i].t;
+    if (!inAir && a != null) { out.push({ a: a + 0.25, b: F[i].t - 0.12, rate: 0.4 }); a = null; }
+  }
+  const s = F.find(f => f.sk != null);
+  if (s) out.push({ a: s.t + 0.2, b: -1, rate: 0.45 });
+  for (const e of res.events) if (e.slow && !e.shot && !e.final) out.push({ a: e.t + 0.3, b: e.t - 0.3, rate: 0.6 });
+  return out;
+}
+
+const AFTER = 1.15;   // seconds of the ball playing out at the rim
+
 function run(seed) {
   const res = simulate(SC, play, seed);
   lastResult = res;
   $('board').hidden = true; $('court').hidden = false;
   $('tools').style.visibility = 'hidden'; $('actions').style.visibility = 'hidden';
   $('sheet').classList.remove('on'); $('hint').textContent = '';
-  const slows = res.events.filter(e => e.slow).map(e => e.t);
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  live = { res, i: 0, g: SC.clock, shown: 0, us: SC.us, them: SC.them };
+  const F = res.frames, last = F[F.length - 1];
+  const slows = reduce ? [] : slowWindows(res);
+  const rateAt = g => slows.reduce((r, w) => g <= w.a && g >= w.b ? Math.min(r, w.rate) : r, 1);
+  const shotEnds = !!res.shot && last.sk != null;
+  live = { res, i: 0, g: SC.clock, shown: 0, us: SC.us, them: SC.them, rate: 1, hold: 0.45, after: null, spin: 0, done: false };
+  caps.q = []; caps.until = 0; $('pop').classList.remove('on', 'final');
   setScore(SC.us, SC.them, SC.clock);
-  let last = performance.now();
-  const F = res.frames;
+  let prev = performance.now();
   function tick(now) {
     if (!live || live.res !== res) return;
-    const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    // Slow down near the pass and the shot so they can be read.
-    const near = slows.some(t => Math.abs(live.g - t) < 0.45);
-    live.g -= dt * (near && !reduce ? 0.4 : 1);
-    while (live.i < F.length - 1 && F[live.i + 1].t >= live.g) live.i++;
-    const fr = F[live.i];
-    court.draw(fr, { debug: debugOn });
-    while (live.shown < res.events.length && res.events[live.shown].t >= live.g) {
+    const dt = Math.min(0.05, (now - prev) / 1000); prev = now;
+    let fr;
+    if (live.hold > 0) { live.hold -= dt; fr = F[0]; }   // a beat to see the floor before it moves
+    else if (!live.after) {
+      // ease in and out of the slow parts rather than lurching
+      live.rate += (rateAt(live.g) - live.rate) * Math.min(1, dt * 9);
+      live.g -= dt * live.rate;
+      while (live.i < F.length - 1 && F[live.i + 1].t >= live.g) live.i++;
+      const a = F[live.i], b = F[live.i + 1];
+      const u = b && a.t > b.t ? Math.max(0, Math.min(1, (a.t - live.g) / (a.t - b.t))) : 0;
+      fr = b ? between(a, b, u) : a;
+      if (live.i >= F.length - 1) live.after = { t: 0, made: res.shot ? res.shot.made : false, seed: res.seed };
+    } else { live.after.t += dt; fr = last; }
+    if (!fr.h) live.spin += dt * 9;
+    court.draw(fr, { debug: debugOn, after: live.after && shotEnds ? live.after : null, spin: live.spin });
+    while (live.shown < res.events.length && (res.events[live.shown].t >= live.g || live.after)) {
       const e = res.events[live.shown++];
-      if (!e.quiet) pop(e.text);
+      if (!e.quiet) caption(e);
       if (/Good$/.test(e.text)) live.us = SC.us + res.shot.points;
       if (e.text === 'They answered') live.them = res.them;
     }
+    pumpCaptions(now);
     setScore(live.us, live.them, Math.max(0, fr.t));
-    if (live.i >= F.length - 1 && live.shown >= res.events.length) { setTimeout(() => showResult(res), 650); return; }
+    const played = live.after && live.after.t >= (shotEnds ? AFTER : 0.4);
+    if (played && !caps.q.length && !live.done) { live.done = true; setTimeout(() => { if (live && live.res === res) showResult(res); }, 700); return; }
     requestAnimationFrame(tick);
   }
   requestAnimationFrame(tick);
 }
 
-function pop(text) {
-  const el = $('pop'); el.textContent = text; el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
+/* CAPTIONS, ONE AT A TIME. Each stays up long enough to read on a phone; a
+   backlog drops its oldest middle line rather than stacking, and the last
+   word (final) always shows. */
+const caps = { q: [], until: 0 };
+function caption(e) {
+  caps.q.push(e);
+  while (caps.q.length > 2) { const i = caps.q.findIndex(c => !c.final); if (i < 0) break; caps.q.splice(i, 1); }
+}
+function pumpCaptions(now) {
+  if (now < caps.until || !caps.q.length) return;
+  const e = caps.q.shift();
+  pop(e.text, e.final);
+  caps.until = now + (e.final ? 1300 : 950);
+}
+
+function pop(text, final) {
+  const el = $('pop'); el.textContent = text; el.classList.remove('on'); el.classList.toggle('final', !!final); void el.offsetWidth; el.classList.add('on');
 }
 
 /* ---------- the result ---------- */
@@ -158,3 +205,5 @@ window.__lastShot = { run, get result() { return lastResult; }, get play() { ret
 setScore(SC.us, SC.them, SC.clock);
 board.draw();
 $('hint').textContent = defaultHint();
+/* Trace the players in the background while the coach draws (court.js). */
+warm();
