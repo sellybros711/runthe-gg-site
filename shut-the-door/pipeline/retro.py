@@ -66,6 +66,24 @@ def line_score(game_id, logs=('gamelog/GLWS.TXT', 'gamelog/GLLC.TXT', 'gamelog/G
     return None
 
 
+REGISTER = 'https://raw.githubusercontent.com/chadwickbureau/register/master/data/people-{}.csv'
+
+
+def retro_to_mlbam(retro_ids):
+    """The Chadwick Bureau register: Retrosheet id to MLBAM id. Sixteen files,
+    read whole and cached, since the split is by uuid and not by name."""
+    want = set(retro_ids)
+    out = {}
+    for h in '0123456789abcdef':
+        text = get(REGISTER.format(h), cache_key=f'register-people-{h}.csv')
+        for row in csv.DictReader(text.splitlines()):
+            if row.get('key_retro') in want and row.get('key_mlbam'):
+                out[row['key_retro']] = int(row['key_mlbam'])
+        if len(out) == len(want):
+            break
+    return out
+
+
 def count_pitches(seq):
     if seq is None or '?' in seq:
         return None

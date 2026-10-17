@@ -26,6 +26,10 @@ on:
         description: 'Verify only these candidate ids (space separated); empty for all'
         type: string
         default: ''
+      seasons:
+        description: 'Whole seasons to add to the library, e.g. 2008-2025 (the full build); empty for slices.json only'
+        type: string
+        default: ''
 
 concurrency:
   group: shut-the-door-data-${{ github.ref }}
@@ -34,7 +38,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 300
     defaults:
       run:
         working-directory: shut-the-door/pipeline
@@ -56,7 +60,7 @@ jobs:
           restore-keys: std-library-v1-
 
       - name: The library
-        run: python3 build_library.py
+        run: python3 build_library.py ${{ inputs.seasons && format('--seasons {0}', inputs.seasons) || '' }}
 
       - name: Verify the candidate scenarios
         run: python3 verify_scenarios.py ${{ inputs.only }}

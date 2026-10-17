@@ -10,13 +10,16 @@ expected wOBA), which come back empty.
 """
 
 import io
+import os
 import sqlite3
 from datetime import date, timedelta
 from urllib.parse import urlencode
 
 import pandas as pd
 
-from common import LIBRARY, ensure_dirs, get, log
+from common import CACHE, LIBRARY, ensure_dirs, get, log
+
+CHUNKS = os.path.join(CACHE, 'chunks')
 
 BASE = 'https://baseballsavant.mlb.com/statcast_search/csv'
 CAP = 25000
@@ -83,6 +86,23 @@ def fetch(url, cache_key):
     return _parse(get(url, cache_key=cache_key))
 
 
+def fetch_trimmed(url, cache_key):
+    """Like fetch, but what is kept on disk is the TRIMMED chunk, gzipped. A raw
+    Savant CSV carries about 118 columns, so a season kept raw is near a
+    gigabyte; trimmed and gzipped it is a small fraction of that, which is
+    what lets 2008 to the present fit in actions/cache."""
+    ensure_dirs()
+    path = os.path.join(CHUNKS, cache_key)
+    if os.path.exists(path) and os.path.getsize(path) > 0:
+        df = pd.read_csv(path, low_memory=False)
+        return df, []
+    df, missing = _parse(get(url))
+    tmp = path + '.tmp'
+    df.to_csv(tmp, index=False, compression='gzip')
+    os.replace(tmp, path)
+    return df, missing
+
+
 def fetch_range(start, end, *, game_types=GT_REGULAR + GT_POST, innings=None, step_days=7, tag='range'):
     """Every pitch from start to end inclusive, in chunks under the row cap."""
     frames, missing_all = [], set()
@@ -95,8 +115,8 @@ def fetch_range(start, end, *, game_types=GT_REGULAR + GT_POST, innings=None, st
         d0 = e + timedelta(days=1)
     while todo:
         a, b = todo.pop(0)
-        key = f'savant-{tag}-{a}-{b}-{game_types.replace("|", "")}-{"".join(map(str, innings or []))}.csv'
-        df, missing = fetch(search_url(str(a), str(b), game_types=game_types, innings=innings), key)
+        key = f'savant-{tag}-{a}-{b}-{game_types.replace("|", "")}-{"".join(map(str, innings or []))}.csv.gz'
+        df, missing = fetch_trimmed(search_url(str(a), str(b), game_types=game_types, innings=innings), key)
         missing_all.update(missing)
         if len(df) >= CAP and a < b:
             mid = a + (b - a) // 2

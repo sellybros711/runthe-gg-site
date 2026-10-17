@@ -5,17 +5,38 @@ slices.json lists what the library should hold. A slice already in the
 what is new. Prints the rows per slice and the columns Savant did not send.
 """
 
+import json
 import os
 import sys
 from datetime import datetime, timezone
 
 import savant
-from common import HERE, VERIFY, ensure_dirs, log, read_json, write_json
+from common import HERE, VERIFY, ensure_dirs, get, log, read_json, write_json
+
+
+def season_slices(first, last):
+    """Whole seasons, every inning, regular season and postseason, dated by the
+    Stats API's own season calendar. Three days a chunk: a busy regular-season
+    day is about 4,500 pitches, so three stay under the row cap and a chunk
+    that does not is split by fetch_range."""
+    out = []
+    for y in range(first, last + 1):
+        cal = json.loads(get(f'https://statsapi.mlb.com/api/v1/seasons/{y}?sportId=1',
+                             cache_key=f'statsapi-season-{y}.json'))['seasons'][0]
+        start = cal.get('regularSeasonStartDate')
+        end = cal.get('postSeasonEndDate') or cal.get('seasonEndDate') or cal.get('regularSeasonEndDate')
+        out.append({'name': f'season-{y}', 'start': start, 'end': end,
+                    'gameTypes': savant.GT_REGULAR + savant.GT_POST, 'innings': None, 'stepDays': 3})
+    return out
 
 
 def main(argv):
     ensure_dirs()
     spec = read_json(os.path.join(HERE, 'slices.json'))
+    # --seasons 2008-2025 adds whole seasons to what slices.json lists
+    if '--seasons' in argv:
+        a, _, b = argv[argv.index('--seasons') + 1].partition('-')
+        spec['slices'] += season_slices(int(a), int(b or a))
     con = savant.to_library(savant.pd.DataFrame(columns=savant.KEEP))
     done = {r[0] for r in con.execute('SELECT slice FROM fetched')}
     summary = []

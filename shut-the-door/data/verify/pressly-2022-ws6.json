@@ -1,0 +1,269 @@
+{
+ "id": "pressly-2022-ws6",
+ "plan": "alternate",
+ "resolution": "real",
+ "gamePk": 715719,
+ "date": "2022-11-05",
+ "game": "World Series Game 6: Philadelphia Phillies at Houston Astros",
+ "gameType": "W",
+ "pitcher": {
+  "id": 519151,
+  "name": "Ryan Pressly",
+  "throws": "R",
+  "team": "Houston Astros",
+  "seasonLine": "2.98 ERA, 33 SV, 48.1 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "top",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 4,
+   "them": 1
+  },
+  "usHome": true,
+  "walkOffLive": false,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 61,
+   "batterId": 656555,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "519151": 4
+   },
+   "pitches": 4,
+   "event": "field_out",
+   "des": "Rhys Hoskins flies out to right fielder Kyle Tucker.",
+   "feedEvent": "field_out",
+   "feedDescription": "Rhys Hoskins flies out to right fielder Kyle Tucker.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Rhys Hoskins",
+   "batSideListed": "R",
+   "seasonLine": ".246/.332/.462, 30 HR"
+  },
+  {
+   "atBat": 62,
+   "batterId": 592663,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "519151": 1
+   },
+   "pitches": 1,
+   "event": "single",
+   "des": "J.T. Realmuto singles on a sharp line drive to center fielder Chas McCormick.",
+   "feedEvent": "single",
+   "feedDescription": "J.T. Realmuto singles on a sharp line drive to center fielder Chas McCormick.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "J.T. Realmuto",
+   "batSideListed": "R",
+   "seasonLine": ".276/.342/.478, 22 HR"
+  },
+  {
+   "atBat": 63,
+   "batterId": 547180,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "519151": 1
+   },
+   "pitches": 1,
+   "event": "field_out",
+   "des": "Bryce Harper flies out to left fielder Yordan Alvarez.",
+   "feedEvent": "field_out",
+   "feedDescription": "Bryce Harper flies out to left fielder Yordan Alvarez.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Bryce Harper",
+   "batSideListed": "L",
+   "seasonLine": ".286/.364/.514, 18 HR"
+  },
+  {
+   "atBat": 64,
+   "batterId": 592206,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "519151": 1
+   },
+   "pitches": 1,
+   "event": "field_out",
+   "des": "Nick Castellanos flies out to right fielder Kyle Tucker in foul territory.",
+   "feedEvent": "field_out",
+   "feedDescription": "Nick Castellanos flies out to right fielder Kyle Tucker in foul territory.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Nick Castellanos",
+   "batSideListed": "R",
+   "seasonLine": ".263/.305/.389, 13 HR"
+  }
+ ],
+ "realFaced": 4,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 7,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 664761,
+   "name": "Alec Bohm",
+   "batSideListed": "R"
+  },
+  {
+   "id": 516416,
+   "name": "Jean Segura",
+   "batSideListed": "R"
+  },
+  {
+   "id": 681082,
+   "name": "Bryson Stott",
+   "batSideListed": "L"
+  },
+  {
+   "id": 669016,
+   "name": "Brandon Marsh",
+   "batSideListed": "L"
+  },
+  {
+   "id": 656941,
+   "name": "Kyle Schwarber",
+   "batSideListed": "L"
+  },
+  {
+   "id": 656555,
+   "name": "Rhys Hoskins",
+   "batSideListed": "R"
+  },
+  {
+   "id": 592663,
+   "name": "J.T. Realmuto",
+   "batSideListed": "R"
+  },
+  {
+   "id": 547180,
+   "name": "Bryce Harper",
+   "batSideListed": "L"
+  },
+  {
+   "id": 592206,
+   "name": "Nick Castellanos",
+   "batSideListed": "R"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 711,
+   "types": [
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 262,
+     "usage": 0.3685,
+     "velo": 89.7,
+     "pfxXin": 5.1,
+     "pfxZin": 2.8
+    },
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 229,
+     "usage": 0.3221,
+     "velo": 94.5,
+     "pfxXin": -3.2,
+     "pfxZin": 18.0
+    },
+    {
+     "type": "CU",
+     "name": "Curveball",
+     "n": 192,
+     "usage": 0.27,
+     "velo": 81.0,
+     "pfxXin": 14.8,
+     "pfxZin": -13.8
+    },
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 25,
+     "usage": 0.0352,
+     "velo": 89.1,
+     "pfxXin": -14.7,
+     "pfxZin": 3.8
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 3,
+     "usage": 0.0042,
+     "velo": 94.3,
+     "pfxXin": -6.7,
+     "pfxZin": 17.6
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2022%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=519151"
+  },
+  "postseason": {
+   "pitches": 170,
+   "types": [
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 87,
+     "usage": 0.5118,
+     "velo": 89.1,
+     "pfxXin": 5.0,
+     "pfxZin": 3.2
+    },
+    {
+     "type": "CU",
+     "name": "Curveball",
+     "n": 47,
+     "usage": 0.2765,
+     "velo": 81.0,
+     "pfxXin": 15.3,
+     "pfxZin": -12.6
+    },
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 22,
+     "usage": 0.1294,
+     "velo": 93.9,
+     "pfxXin": -3.8,
+     "pfxZin": 18.4
+    },
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 14,
+     "usage": 0.0824,
+     "velo": 89.0,
+     "pfxXin": -15.5,
+     "pfxZin": 3.7
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2022%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=519151"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 715719: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=715719",
+  "MLB Stats API schedule 2022-11-05 and live feed /api/v1.1/game/715719/feed/live",
+  "MLB Stats API people with 2022 season stats",
+  "Baseball Savant 519151 2022 season search (regular season and postseason) for the arsenal"
+ ]
+}

@@ -296,6 +296,21 @@ def verify_proxy(spec):
         pa['pitches'] = None if ('?' in (pa['count'] or '') and not pa['seq']) else retro.count_pitches(pa['seq'])
         pa['event'] = pa['records'][-1]
     pas = [pa for pa in pas if not all(e == 'NP' for e in pa['records'])]
+    # MLBAM ids through the Chadwick register, then names, bat sides and
+    # season lines from the Stats API (it carries historical seasons)
+    ids = retro.retro_to_mlbam({pa['batterId'] for pa in pas} | {spec['pitcher']})
+    try:
+        ppl = statsapi.people(ids.values(), season=spec['season'])
+    except Exception as e:
+        log('  people failed:', e)
+        ppl = {}
+    for pa in pas:
+        p = ppl.get(ids.get(pa['batterId']), {})
+        pa['mlbamId'] = ids.get(pa['batterId'])
+        pa['fullName'] = p.get('fullName')
+        pa['batSideListed'] = (p.get('batSide') or {}).get('code')
+        pa['seasonLine'] = statsapi.season_line(p, 'hitting') if p else None
+    pp = ppl.get(ids.get(spec['pitcher']), {})
     lead = s['before']['score'][us] - s['before']['score'][team]
     walk_off_live = team == 1 and inning >= 9
     outcome, runs = judge(lead, pas, walk_off_live, s['before']['outs'])
@@ -308,7 +323,9 @@ def verify_proxy(spec):
         'retroGame': spec['game'],
         'date': info.get('date'),
         'game': f'{vis} at {home}',
-        'pitcher': {'retroId': spec['pitcher'], 'name': names.get(spec['pitcher']), 'throws': p_throws},
+        'pitcher': {'retroId': spec['pitcher'], 'mlbamId': ids.get(spec['pitcher']),
+                    'name': pp.get('fullName') or names.get(spec['pitcher']), 'throws': p_throws,
+                    'seasonLine': statsapi.season_line(pp, 'pitching') if pp else None},
         'situation': {
             'inning': inning, 'half': 'bottom' if team == 1 else 'top',
             'outs': s['before']['outs'], 'bases': sum({1: 1, 2: 2, 3: 4}[b] for b in s['before']['bases']),
@@ -330,6 +347,8 @@ def verify_proxy(spec):
             f'Retrosheet event file {spec["file"]}, game {spec["game"]} (via github.com/chadwickbureau/retrosheet)',
             f'Retrosheet rosters {vis}{spec["season"]}.ROS and {home}{spec["season"]}.ROS for bat and throw hands',
             f'Retrosheet game log {ls["log"] if ls else "(not found)"} for the line score check',
+            'Chadwick Bureau register (github.com/chadwickbureau/register) for Retrosheet to MLBAM ids',
+            f'MLB Stats API people with {spec["season"]} season stats for names and season lines',
             'The information used here was obtained free of charge from and is copyrighted by Retrosheet. '
             'Interested parties may contact Retrosheet at www.retrosheet.org.',
         ],

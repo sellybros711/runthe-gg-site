@@ -1,0 +1,279 @@
+{
+ "id": "rs-diaz-2025-09-05",
+ "plan": "regular season R-held",
+ "resolution": "real",
+ "gamePk": 776450,
+ "date": "2025-09-05",
+ "game": "Regular Season Game 1: New York Mets at Cincinnati Reds",
+ "gameType": "R",
+ "pitcher": {
+  "id": 621242,
+  "name": "Edwin Díaz",
+  "throws": "R",
+  "team": "New York Mets",
+  "seasonLine": "1.63 ERA, 28 SV, 66.1 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "bottom",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 5,
+   "them": 4
+  },
+  "usHome": false,
+  "walkOffLive": true,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 76,
+   "batterId": 663647,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "621242": 3
+   },
+   "pitches": 3,
+   "event": "single",
+   "des": "Ke'Bryan Hayes singles on a line drive to center fielder Cedric Mullins.",
+   "feedEvent": "single",
+   "feedDescription": "Ke'Bryan Hayes singles on a line drive to center fielder Cedric Mullins.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Ke'Bryan Hayes",
+   "batSideListed": "R",
+   "seasonLine": ".235/.290/.306, 5 HR"
+  },
+  {
+   "atBat": 77,
+   "batterId": 680574,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "621242": 8
+   },
+   "pitches": 8,
+   "event": "walk",
+   "des": "Matt McLain walks. Ke'Bryan Hayes to 2nd.",
+   "feedEvent": "walk",
+   "feedDescription": "Matt McLain walks. Ke'Bryan Hayes to 2nd.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Matt McLain",
+   "batSideListed": "R",
+   "seasonLine": ".220/.300/.343, 15 HR"
+  },
+  {
+   "atBat": 78,
+   "batterId": 670770,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "621242": 4
+   },
+   "pitches": 4,
+   "event": "walk",
+   "des": "TJ Friedl walks. Ke'Bryan Hayes to 3rd. Matt McLain to 2nd.",
+   "feedEvent": "walk",
+   "feedDescription": "TJ Friedl walks. Ke'Bryan Hayes to 3rd. Matt McLain to 2nd.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "TJ Friedl",
+   "batSideListed": "L",
+   "seasonLine": ".261/.364/.378, 14 HR"
+  },
+  {
+   "atBat": 79,
+   "batterId": 682622,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "621242": 6
+   },
+   "pitches": 6,
+   "event": "strikeout",
+   "des": "Noelvi Marte strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Noelvi Marte strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Noelvi Marte",
+   "batSideListed": "R",
+   "seasonLine": ".263/.300/.448, 14 HR"
+  },
+  {
+   "atBat": 80,
+   "batterId": 682829,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "621242": 5
+   },
+   "pitches": 5,
+   "event": "strikeout",
+   "des": "Elly De La Cruz called out on strikes.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Elly De La Cruz called out on strikes.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Elly De La Cruz",
+   "batSideListed": "S",
+   "seasonLine": ".264/.336/.440, 22 HR"
+  },
+  {
+   "atBat": 81,
+   "batterId": 666158,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "621242": 4
+   },
+   "pitches": 4,
+   "event": "field_out",
+   "des": "Gavin Lux grounds out, second baseman Luisangel Acuña to pitcher Edwin Díaz.",
+   "feedEvent": "field_out",
+   "feedDescription": "Gavin Lux grounds out, second baseman Luisangel Acuña to pitcher Edwin Díaz.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Gavin Lux",
+   "batSideListed": "L",
+   "seasonLine": ".269/.350/.374, 5 HR"
+  }
+ ],
+ "realFaced": 6,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 30,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 669720,
+   "name": "Austin Hays",
+   "batSideListed": "R"
+  },
+  {
+   "id": 668715,
+   "name": "Spencer Steer",
+   "batSideListed": "R"
+  },
+  {
+   "id": 624431,
+   "name": "Jose Trevino",
+   "batSideListed": "R"
+  },
+  {
+   "id": 663647,
+   "name": "Ke'Bryan Hayes",
+   "batSideListed": "R"
+  },
+  {
+   "id": 680574,
+   "name": "Matt McLain",
+   "batSideListed": "R"
+  },
+  {
+   "id": 670770,
+   "name": "TJ Friedl",
+   "batSideListed": "L"
+  },
+  {
+   "id": 682622,
+   "name": "Noelvi Marte",
+   "batSideListed": "R"
+  },
+  {
+   "id": 682829,
+   "name": "Elly De La Cruz",
+   "batSideListed": "S"
+  },
+  {
+   "id": 666158,
+   "name": "Gavin Lux",
+   "batSideListed": "L"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 1067,
+   "types": [
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 561,
+     "usage": 0.5258,
+     "velo": 97.2,
+     "pfxXin": -13.1,
+     "pfxZin": 12.9
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 505,
+     "usage": 0.4733,
+     "velo": 89.1,
+     "pfxXin": 1.7,
+     "pfxZin": 3.8
+    },
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 1,
+     "usage": 0.0009,
+     "velo": 94.5,
+     "pfxXin": -10.1,
+     "pfxZin": 7.6
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2025%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=621242"
+  },
+  "postseason": {
+   "pitches": 0,
+   "types": [],
+   "dropped": {}
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 776450: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=776450",
+  "MLB Stats API schedule 2025-09-05 and live feed /api/v1.1/game/776450/feed/live",
+  "MLB Stats API people with 2025 season stats",
+  "Baseball Savant 621242 2025 season search (regular season and postseason) for the arsenal"
+ ],
+ "search": {
+  "gamePk": 776450,
+  "date": "2025-09-05",
+  "year": 2025,
+  "half": "Bot",
+  "pitcher": 621242,
+  "name": "Díaz, Edwin",
+  "throws": "R",
+  "home": "CIN",
+  "away": "NYM",
+  "outs": 0,
+  "bases": 0,
+  "lead": 1,
+  "midPA": false,
+  "li9": 2.99,
+  "li9n": 702,
+  "swing": 1.938,
+  "held": true,
+  "endLead": 1,
+  "faced": 6,
+  "pitches": 30
+ },
+ "mlbWinProbabilityAtEntry": {
+  "leverageIndex": 3.47,
+  "atBatIndex": 75
+ }
+}

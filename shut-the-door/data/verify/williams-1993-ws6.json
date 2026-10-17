@@ -1,0 +1,144 @@
+{
+ "id": "williams-1993-ws6",
+ "plan": "alternate",
+ "resolution": "proxy",
+ "retroGame": "TOR199310230",
+ "date": "1993/10/23",
+ "game": "PHI at TOR",
+ "pitcher": {
+  "retroId": "willm002",
+  "mlbamId": 124329,
+  "name": "Mitch Williams",
+  "throws": "L",
+  "seasonLine": "3.34 ERA, 43 SV, 62.0 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "bottom",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 6,
+   "them": 5
+  },
+  "usHome": false,
+  "walkOffLive": true
+ },
+ "plateAppearances": [
+  {
+   "batterId": "hendr001",
+   "records": [
+    "W"
+   ],
+   "runs": 0,
+   "outs": 0,
+   "seq": "..BBBB",
+   "count": "30",
+   "pitcher": "willm002",
+   "name": "Rickey Henderson",
+   "bats": "R",
+   "batsListed": "R",
+   "pitches": 4,
+   "event": "W",
+   "mlbamId": 115749,
+   "fullName": "Rickey Henderson",
+   "batSideListed": "R",
+   "seasonLine": ".289/.432/.474, 21 HR",
+   "inSpot": true
+  },
+  {
+   "batterId": "whitd001",
+   "records": [
+    "7/F78D"
+   ],
+   "runs": 0,
+   "outs": 1,
+   "seq": "C11BB1FF1FFBX",
+   "count": "32",
+   "pitcher": "willm002",
+   "name": "Devon White",
+   "bats": "R",
+   "batsListed": "B",
+   "pitches": 9,
+   "event": "7/F78D",
+   "mlbamId": 124164,
+   "fullName": "Devon White",
+   "batSideListed": "S",
+   "seasonLine": ".273/.341/.438, 15 HR",
+   "inSpot": true
+  },
+  {
+   "batterId": "molip001",
+   "records": [
+    "S8/L8LM.1-2"
+   ],
+   "runs": 0,
+   "outs": 0,
+   "seq": "1BFX",
+   "count": "11",
+   "pitcher": "willm002",
+   "name": "Paul Molitor",
+   "bats": "R",
+   "batsListed": "R",
+   "pitches": 3,
+   "event": "S8/L8LM.1-2",
+   "mlbamId": 119236,
+   "fullName": "Paul Molitor",
+   "batSideListed": "R",
+   "seasonLine": ".332/.402/.509, 22 HR",
+   "inSpot": true
+  },
+  {
+   "batterId": "cartj001",
+   "records": [
+    "HR/7LD.2-H;1-H"
+   ],
+   "runs": 3,
+   "outs": 0,
+   "seq": "BBCSX",
+   "count": "22",
+   "pitcher": "willm002",
+   "name": "Joe Carter",
+   "bats": "R",
+   "batsListed": "R",
+   "pitches": 5,
+   "event": "HR/7LD.2-H;1-H",
+   "mlbamId": 112064,
+   "fullName": "Joe Carter",
+   "batSideListed": "R",
+   "seasonLine": ".254/.312/.489, 33 HR",
+   "inSpot": true
+  }
+ ],
+ "realFaced": 4,
+ "real": {
+  "outcome": "walk_off",
+  "pitches": 21,
+  "pitchesKnown": 21,
+  "pitchesUnknownPAs": 0,
+  "runs": 3
+ },
+ "scoreCheck": {
+  "lineScore": {
+   "away": "000100500",
+   "home": "300110003",
+   "awayRuns": 6,
+   "homeRuns": 8,
+   "log": "gamelog/GLWS.TXT"
+  },
+  "replay": {
+   "away": 6,
+   "home": 8
+  },
+  "agrees": true
+ },
+ "arsenal": null,
+ "sources": [
+  "Retrosheet event file 1993WS.EVE, game TOR199310230 (via github.com/chadwickbureau/retrosheet)",
+  "Retrosheet rosters PHI1993.ROS and TOR1993.ROS for bat and throw hands",
+  "Retrosheet game log gamelog/GLWS.TXT for the line score check",
+  "Chadwick Bureau register (github.com/chadwickbureau/register) for Retrosheet to MLBAM ids",
+  "MLB Stats API people with 1993 season stats for names and season lines",
+  "The information used here was obtained free of charge from and is copyrighted by Retrosheet. Interested parties may contact Retrosheet at www.retrosheet.org."
+ ]
+}

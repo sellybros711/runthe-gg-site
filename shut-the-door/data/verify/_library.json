@@ -1,0 +1,44 @@
+{
+ "slices": [
+  {
+   "slice": "2023-opening-week",
+   "rows": 26924,
+   "missing": [],
+   "cached": false
+  },
+  {
+   "slice": "ninth-2023",
+   "rows": 62684,
+   "missing": [],
+   "cached": false
+  },
+  {
+   "slice": "ninth-2024",
+   "rows": 61540,
+   "missing": [],
+   "cached": false
+  },
+  {
+   "slice": "ninth-2025",
+   "rows": 60769,
+   "missing": [],
+   "cached": false
+  }
+ ],
+ "pitches": 209594,
+ "mb": 65.0,
+ "byYear": [
+  [
+   2023,
+   87285
+  ],
+  [
+   2024,
+   61540
+  ],
+  [
+   2025,
+   60769
+  ]
+ ]
+}

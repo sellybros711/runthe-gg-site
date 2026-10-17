@@ -33,7 +33,7 @@ UA = {'User-Agent': 'runthe.gg shut-the-door pipeline (github actions)'}
 
 
 def ensure_dirs():
-    for d in (CACHE, HTTP_CACHE, VERIFY):
+    for d in (CACHE, HTTP_CACHE, os.path.join(CACHE, 'chunks'), VERIFY):
         os.makedirs(d, exist_ok=True)
 
 

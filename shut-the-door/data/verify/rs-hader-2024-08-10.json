@@ -1,0 +1,277 @@
+{
+ "id": "rs-hader-2024-08-10",
+ "plan": "regular season L-held",
+ "resolution": "real",
+ "gamePk": 746922,
+ "date": "2024-08-10",
+ "game": "Regular Season Game 2: Houston Astros at Boston Red Sox",
+ "gameType": "R",
+ "pitcher": {
+  "id": 623352,
+  "name": "Josh Hader",
+  "throws": "L",
+  "team": "Houston Astros",
+  "seasonLine": "3.80 ERA, 34 SV, 71.0 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "bottom",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 5,
+   "them": 4
+  },
+  "usHome": false,
+  "walkOffLive": true,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 70,
+   "batterId": 646240,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "623352": 3
+   },
+   "pitches": 3,
+   "event": "double",
+   "des": "Rafael Devers doubles (30) on a sharp fly ball to center fielder Jake Meyers.",
+   "feedEvent": "double",
+   "feedDescription": "Rafael Devers doubles (30) on a sharp fly ball to center fielder Jake Meyers.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Rafael Devers",
+   "batSideListed": "L",
+   "seasonLine": ".272/.354/.516, 28 HR"
+  },
+  {
+   "atBat": 71,
+   "batterId": 643376,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "623352": 5
+   },
+   "pitches": 5,
+   "event": "field_out",
+   "des": "Danny Jansen pops out to catcher Victor Caratini in foul territory.",
+   "feedEvent": "field_out",
+   "feedDescription": "Danny Jansen pops out to catcher Victor Caratini in foul territory.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Danny Jansen",
+   "batSideListed": "R",
+   "seasonLine": ".205/.309/.349, 9 HR"
+  },
+  {
+   "atBat": 72,
+   "batterId": 608701,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "623352": 2
+   },
+   "pitches": 2,
+   "event": "field_out",
+   "des": "Rob Refsnyder flies out to center fielder Jake Meyers.",
+   "feedEvent": "field_out",
+   "feedDescription": "Rob Refsnyder flies out to center fielder Jake Meyers.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Rob Refsnyder",
+   "batSideListed": "R",
+   "seasonLine": ".283/.359/.471, 11 HR"
+  },
+  {
+   "atBat": 73,
+   "batterId": 663853,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "623352": 6
+   },
+   "pitches": 6,
+   "event": "strikeout",
+   "des": "Romy Gonzalez strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Romy Gonzalez strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Romy Gonzalez",
+   "batSideListed": "R",
+   "seasonLine": ".266/.306/.417, 6 HR"
+  }
+ ],
+ "realFaced": 4,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 16,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 678882,
+   "name": "Ceddanne Rafaela",
+   "batSideListed": "R"
+  },
+  {
+   "id": 666152,
+   "name": "David Hamilton",
+   "batSideListed": "L"
+  },
+  {
+   "id": 680776,
+   "name": "Jarren Duran",
+   "batSideListed": "L"
+  },
+  {
+   "id": 677800,
+   "name": "Wilyer Abreu",
+   "batSideListed": "L"
+  },
+  {
+   "id": 807799,
+   "name": "Masataka Yoshida",
+   "batSideListed": "L"
+  },
+  {
+   "id": 646240,
+   "name": "Rafael Devers",
+   "batSideListed": "L"
+  },
+  {
+   "id": 643376,
+   "name": "Danny Jansen",
+   "batSideListed": "R"
+  },
+  {
+   "id": 608701,
+   "name": "Rob Refsnyder",
+   "batSideListed": "R"
+  },
+  {
+   "id": 663853,
+   "name": "Romy Gonzalez",
+   "batSideListed": "R"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 1166,
+   "types": [
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 832,
+     "usage": 0.7136,
+     "velo": 96.1,
+     "pfxXin": 7.1,
+     "pfxZin": 19.5
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 320,
+     "usage": 0.2744,
+     "velo": 85.5,
+     "pfxXin": -1.3,
+     "pfxZin": 2.3
+    },
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 12,
+     "usage": 0.0103,
+     "velo": 89.3,
+     "pfxXin": 11.9,
+     "pfxZin": 6.5
+    },
+    {
+     "type": "FF",
+     "name": "4-Seam Fastball",
+     "n": 2,
+     "usage": 0.0017,
+     "velo": 95.0,
+     "pfxXin": 6.2,
+     "pfxZin": 19.7
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2024%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=623352"
+  },
+  "postseason": {
+   "pitches": 50,
+   "types": [
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 38,
+     "usage": 0.76,
+     "velo": 96.1,
+     "pfxXin": 8.0,
+     "pfxZin": 19.5
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 11,
+     "usage": 0.22,
+     "velo": 84.9,
+     "pfxXin": -2.2,
+     "pfxZin": 1.0
+    },
+    {
+     "type": "CH",
+     "name": "Changeup",
+     "n": 1,
+     "usage": 0.02,
+     "velo": 89.2,
+     "pfxXin": 12.8,
+     "pfxZin": 9.4
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2024%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=623352"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 746922: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=746922",
+  "MLB Stats API schedule 2024-08-10 and live feed /api/v1.1/game/746922/feed/live",
+  "MLB Stats API people with 2024 season stats",
+  "Baseball Savant 623352 2024 season search (regular season and postseason) for the arsenal"
+ ],
+ "search": {
+  "gamePk": 746922,
+  "date": "2024-08-10",
+  "year": 2024,
+  "half": "Bot",
+  "pitcher": 623352,
+  "name": "Hader, Josh",
+  "throws": "L",
+  "home": "BOS",
+  "away": "HOU",
+  "outs": 0,
+  "bases": 0,
+  "lead": 1,
+  "midPA": false,
+  "li9": 2.99,
+  "li9n": 702,
+  "swing": 0.848,
+  "held": true,
+  "endLead": 1,
+  "faced": 4,
+  "pitches": 16
+ },
+ "mlbWinProbabilityAtEntry": {
+  "leverageIndex": 3.47,
+  "atBatIndex": 69
+ }
+}
