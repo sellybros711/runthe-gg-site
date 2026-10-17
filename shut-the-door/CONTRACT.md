@@ -413,3 +413,69 @@ G7 (proxy). The verified facts are in `scenarios/CANDIDATES.md`.
 - **B6**: accepted. `api.js`, `share.js`, `auth.js` load before `mock-api.js`; the lead removes the
   mock's tag at integration.
 - **B7**: accepted.
+
+## 15. The lesson: teaching from your worst pitch (owner, 2026-10-17)
+
+The game teaches pitching strategy. After the outing, the result screen opens a card on the pitch
+that cost the most hold%: what you threw, what was better, the principle behind it, and a real pitch
+from the data where a pro did it. One lesson per outing, so it lands. It never opens by itself as a
+modal: it is a card on the result screen, read or skipped.
+
+```js
+/**
+ * @typedef {'chase_when_ahead'|'strike_when_behind'|'first_pitch_strike'|'avoid_his_damage'
+ *   |'attack_his_hole'|'same_side_breaker_away'|'change_eye_level'|'double_play_ball'
+ *   |'strikeout_with_runner_on_third'|'dont_walk_the_tying_run'|'use_your_best_pitch'} Principle
+ *
+ * @typedef {Object} Lesson
+ * @property {number} pitchN            which pitch (the one with the most `lost`)
+ * @property {PitchCall} call           what you threw
+ * @property {PitchCall} bestCall
+ * @property {{b: number, s: number}} count
+ * @property {number} outs
+ * @property {number} bases
+ * @property {string} batter
+ * @property {Principle} principle
+ * @property {string} headline          'ahead 0-2, make him chase'
+ * @property {string[]} why             2 or 3 short sentences, numbers from the engine:
+ *                                      'he swings at 41% of sliders below the zone.'
+ *                                      'a fastball over the plate is where he hits .390.'
+ * @property {string} nextTime          one line: 'next time ahead 0-2, bury the slider.'
+ * @property {{lostPts: number, callValue: number, bestValue: number}} numbers
+ * @property {ProExample|null} pro      null when the data has no honest match
+ * @property {string} [pattern]         one outing-level note, when one is true:
+ *                                      'you threw 9 of 12 fastballs. this lineup chased sliders.'
+ *
+ * @typedef {Object} ProExample         a REAL pitch from the library, never invented
+ * @property {string} pitcher
+ * @property {string} batter
+ * @property {string} date              'YYYY-MM-DD'
+ * @property {string} game              'nlcs game 5' or 'at cin' (postseason first when one fits)
+ * @property {{b: number, s: number}} count
+ * @property {number} outs
+ * @property {number} bases
+ * @property {PitchType} type
+ * @property {Cell} cell
+ * @property {string} result            'swinging strike three', 'ground ball double play'
+ * @property {string} id                Statcast game_pk:at_bat_number:pitch_number
+ */
+```
+
+`OutingResult` gains `lesson: Lesson|null` (null only when every pitch was green, and then the card
+says so: `nothing to fix. every pitch was the right idea.`).
+
+Rules:
+
+- **Chosen by the engine, from the grade.** The principle is the one that explains most of the
+  gap between the call and the best call: compare their outcome tables (whiff, chase, walk risk,
+  damage on contact, ground ball rate, platoon) in that state. No principle that the numbers do not
+  show.
+- **Every number interpolated** from the pack and the grade. The copy is templates in `lesson.js`
+  (Agent A), house voice: lowercase, short sentences.
+- **The pro example is a real pitch.** At build time each pack carries a short list of real pitches
+  per principle, count bucket and platoon, from the library, by pitchers in the closer pool,
+  matching the best call's pitch family and cell (or a neighbour) with a good result. Postseason
+  first, then the highest leverage. With no honest match, `pro` is null and the card shows none.
+- **Grade cards** keep their one-line reason during play. The lesson is the one longer moment.
+- **How to play** gains a short "pitching 101" page listing the principles, one line each, behind
+  the menu button like every guide.
