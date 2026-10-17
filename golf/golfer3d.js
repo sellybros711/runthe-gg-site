@@ -934,33 +934,6 @@
     else if(PP_PUTTER[id]) ppPutter(push,id,gear.clubPal||{},hands,norm(sub(clubHead,hands)),add(clubHead,sc(U,-1.3)),[F,U,out],1,0);
     else profileClub(push,hands,clubHead,F,U,id,gear.clubPal||{},out);
     for(let i=c0;i<parts.length;i++) parts[i].o.item='club';
-    // THE AURA, in the menu, as a thing in the scene rather than stickers on the picture: a low glowing band standing
-    // round the feet (rune marked for a legendary), the aura's own motes (sparks, embers, flames, crowns, bolts,
-    // flakes, orbs, bubbles, leaves, bats) on a spiral round the golfer, some in front and some behind him, and for a
-    // legendary a ribbon of light winding up round the body. The page's halo still glows behind it.
-    if(MO&&gear.fx&&MO.part==='fig'&&typeof PXFX_BY!=='undefined'&&PXFX_BY[gear.fx]){ tag='fx';
-      const fx=PXFX_BY[gear.fx], ap=(typeof PXFX_PARTS!=='undefined'&&PXFX_PARTS[gear.fx])||{}, col=fx.col, c2=ap.c2||col, pp=ap.p, legend=!!ap.ring, X2=h=>'x:'+h;
-      const ctr=P(0.4,0,0), Rr=12.5;
-      push(field(add(ctr,sc(U,0.8)),Rr+2,p=>{ const q=sub(p,ctr), y=dot(q,U), r=Math.hypot(dot(q,F),dot(q,T)); return rbox(Math.abs(r-Rr)-0.22,Math.abs(y-0.7)-0.7,0.15); },X2(col),{gloss:3,mf:p=>{ const q=sub(p,ctr), a=Math.atan2(dot(q,T),dot(q,F));
-          return legend&&Math.sin(a*14)>0.55&&Math.abs(dot(q,U)-0.7)<0.4?[X2(c2),1]:[X2(col),1]; }}));        // the band of light round the feet
-      if(legend){ let prev=null; for(let i=0;i<=34;i++){ const t=i/34, a=t*Math.PI*3.2+0.6, q=add(ctr,sc(F,Math.cos(a)*(Rr-1.5)),sc(T,Math.sin(a)*(Rr-1.5)),sc(U,1+t*40));
-          if(prev) push(capsule(prev,q,0.42*(1-t*0.5),X2(i%2?c2:col),{gloss:3,dt:1,noCast:1})); prev=q; } }           // the ribbon of light
-      if(pp){ const n=Math.min(9,pp.n||6);
-        for(let i=0;i<n;i++){ const a=i*2.39+0.4, y=5+i*(36/n), r=Rr-0.5+1.2*Math.sin(i*1.7), c=add(ctr,sc(F,Math.cos(a)*r),sc(T,Math.sin(a)*r),sc(U,y)), m=X2(pp.cols[i%pp.cols.length]), k=1.2+0.25*((i*37)%3);
-          const st={gloss:3,dt:1,noCast:1}, AXm=[F,U,T];
-          switch(pp.s){
-            case 'spark': case 'flash': push(ellipsoid(c,AXm,[0.5*k,1.6*k,0.5*k],m,st)); push(ellipsoid(c,AXm,[0.5*k,0.5*k,1.6*k],m,st)); push(ellipsoid(c,AXm,[0.8*k,0.8*k,0.8*k],m,st)); break;
-            case 'flame': push(field(c,3*k,p=>{ const q=sub(p,c), y2=dot(q,U); return Math.hypot(dot(q,F),dot(q,T))-(0.9*k)*clamp01(1-(y2+0.9*k)/(3*k))-0.05+Math.max(0,-y2-0.9*k); },m,{gloss:2})); break;
-            case 'crown': push(field(c,2.5*k,p=>{ const q=sub(p,c), y2=dot(q,U), r=Math.hypot(dot(q,F),dot(q,T)), th=Math.atan2(dot(q,T),dot(q,F));
-                return Math.max(Math.abs(r-0.9*k)-0.2,-y2-0.5*k,y2-0.4*k-0.7*k*Math.max(0,Math.cos(th*5))); },m,{gloss:3})); break;
-            case 'bolt': { const a0=add(c,sc(U,1.6*k)), a1=add(c,sc(U,0.2*k),sc(T,0.7*k)), a2=add(c,sc(U,-0.2*k),sc(T,-0.5*k)), a3=add(c,sc(U,-1.6*k),sc(T,0.2*k));
-              push(capsule(a0,a1,0.3*k,m,st)); push(capsule(a1,a2,0.3*k,m,st)); push(capsule(a2,a3,0.3*k,m,st)); break; }
-            case 'flake': for(let j=0;j<3;j++){ const d=add(sc(U,Math.cos(j*Math.PI/3)),sc(T,Math.sin(j*Math.PI/3))); push(capsule(add(c,sc(d,1.4*k)),add(c,sc(d,-1.4*k)),0.22*k,m,st)); } break;
-            case 'leaf': push(ellipsoid(c,[norm(add(F,T)),norm(add(U,sc(T,0.6))),norm(cross(add(F,T),add(U,sc(T,0.6))))],[0.25*k,1.5*k,0.9*k],m,{gloss:2,noCast:1})); break;
-            case 'bat': push(ellipsoid(c,AXm,[0.6*k,0.7*k,0.6*k],m,st)); for(const sd of [1,-1]) push(ellipsoid(add(c,sc(T,1.1*k*sd),sc(U,0.2*k)),[F,norm(add(U,sc(T,-0.5*sd))),T],[0.25*k,0.5*k,1.1*k],m,st)); break;
-            case 'bubble': push(field(c,2*k,p=>Math.abs(Math.hypot(...sub(p,c))-0.9*k)-0.12,m,{gloss:3})); push(ellipsoid(add(c,sc(F,0.5*k),sc(U,0.35*k)),AXm,[0.2,0.2,0.2],'x:#ffffff',st)); break;
-            default: push(ellipsoid(c,AXm,[0.75*k,0.75*k,0.75*k],m,st)); push(ellipsoid(add(c,sc(F,0.4*k),sc(U,0.3*k)),AXm,[0.25*k,0.25*k,0.25*k],'x:#ffffff',st)); } } }
-      tag=''; }
     // the head: on the collar, the profile's size
     const hc=P(0.7,42.0,0), gaze=norm(add(F,sc(U,-0.04))), hup=norm(cross(cross(gaze,U),gaze)), side=norm(cross(hup,gaze)), hr=7.8;
     if(gear.body==='pumpkinhead'){ const strw='x:'+((gear.bodyPal||{}).straw||'#d8b04e');
@@ -1683,7 +1656,7 @@
     if(cleats) shoes=cleats.main||shoes;
     const pat=(!top||top==='duckfloatie'||top==='cape')&&look.shirtPat&&PXPAT_BY[look.shirtPat]?look.shirtPat:''; let patFn=null;
     if(pat){ const pd=PXPAT_BY[pat]; if(pd.fixed){const cols=pd.cols||[];patFn=(x,y)=>cols[pd.f(x,y)|0]||cols[0]||null}
-      else { const light=pxLum(shirt)>0.55, a1=pxShade(shirt,MO?(light?-140:110):(light?-52:46)),a2=pxShade(shirt,MO?(light?-190:150):(light?-90:82)); patFn=(x,y)=>{const a=pd.f(x,y);return a?(a===2?a2:a1):null}; } }   // the menu lights the cloth, so its tints are stronger
+      else { const light=pxLum(shirt)>0.55, a1=pxShade(shirt,MO?(light?-108:92):(light?-52:46)),a2=pxShade(shirt,MO?(light?-150:130):(light?-90:82)); patFn=(x,y)=>{const a=pd.f(x,y);return a?(a===2?a2:a1):null}; } }   // the menu lights the cloth, so its tints are stronger
     // a body skin's rags: its tears are placed on the profile torso, so the torso's cells are mapped onto it
     const bodySkin=(look.body&&typeof BODY_SKINS!=='undefined'&&BODY_SKINS[look.body])||null;
     if(bodySkin&&bodySkin.rags&&!MO){ const t0=cam(M.tc), under=patFn, tx=t0[0]+OX, ty=t0[1]+OY;
