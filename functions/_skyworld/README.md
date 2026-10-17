@@ -18,7 +18,10 @@ exactly as Stumpire does: the site's 404 page, or `{"error":"not_found"}`, statu
 | `kinds.js` | which landmark an island gets |
 | `github.js`, `world.js` | the GitHub source and the cached world model (ten minutes) |
 | `web/shell.html` | the sign in screen |
-| `web/m/*.js` | the browser modules: `boot.js`, `landmarks.js`, `ui.js`, `world.js` |
+| `web/m/*.js` | the browser modules, classic scripts sharing `window.SKY_W`. `MODULE_FILES` in `build/pages.mjs` is the one list and its order; `boot.js` loads the rest from it |
+| | `noise.js` the hash and noise · `landmarks.js` each island's landmark · `ui.js` the chrome · `status.js` each status's name, colour and look |
+| | `layout.js` where everything is, and the scenes · `land.js` the ground · `props.js` what stands on it · `paint.js` the pictures and IndexedDB |
+| | `camera.js` · `input.js` · `world.js` drawing, the frame loop, going in and out, the start · `ideas.js` the Advisor's ideas |
 | `pages.js` | generated from `web/` by `build/pages.mjs`; never edit it by hand |
 
 The islands are painted by Putt Putt's renderer (`golf/putt/hole3d.js`), owned by the Golf Course

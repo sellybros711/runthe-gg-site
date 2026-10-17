@@ -6,7 +6,7 @@ import { githubSource } from './github.js';
 export async function buildWorld(env, opt = {}){
   const cache = opt.cache === undefined ? (globalThis.caches && caches.default) : opt.cache, key = 'https://skyworld.cache/world/v1';
   if (cache) { const hit = await cache.match(key); if (hit) return hit.json(); }
-  const games = await discover(opt.source || githubSource(env, { cache: null }));   // one cached answer, not one per call
+  const games = await discover(opt.source || githubSource(env));   // one cached answer, not one per call
   const w = { asOf: new Date().toISOString(), games };
   if (cache) await cache.put(key, new Response(JSON.stringify(w), { headers: { 'Cache-Control': 'max-age=600' } }));
   return w;

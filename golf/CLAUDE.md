@@ -93,7 +93,7 @@ node golf/econ-sim.mjs                      a casual, regular and heavy player t
 - `pmerge` only adds, and every server call fails soft (null is no opinion).
 - `PUTT_LIVE` is the launch. There is no localStorage override, on purpose.
 - **The First Tee home rides the same switch.** `ftLive()` is `puttOn()`: Putt Putt testers (and everybody once
-  `PUTT_LIVE` is true) get the First Tee, its hubs (`protour`, `putthub`, `me`) and five tabs; everybody else gets
+  `PUTT_LIVE` is true) get the First Tee, its hubs (`protour`, `putthub`, `me`) and its phone bar (Home, Pro Tour, Shop, the Pass, Putt Putt, Leaders, Me); everybody else gets
   the classic home (`scrTitleClassic`, the seven tabs, `tourStepsClassic`, `maybeLoginBonusClassic`). Change the
   classic home only for a fix: it is retired at launch. The closet (`setup` with `setupEdit`) wears the Me
   page's dressing room on the same switch (`ftClosetOn`, `body.ftcloset`); a new career's setup does not.

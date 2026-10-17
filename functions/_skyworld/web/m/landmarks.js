@@ -2,7 +2,7 @@
    y south (toward the camera), z up. The server picks the kind (functions/_skyworld/kinds.js): the game's own,
    else its sport, else the big top. LM[kind](box, x, y, z, s, g): s scales it to the island. */
 (function(){
-function h3(x, y, s){ var n = Math.sin(x * 127.1 + y * 311.7 + s * 74.7) * 43758.5453; return n - Math.floor(n); }
+var h3 = window.SKY_W.h3;   // noise.js: one hash for the whole world
 function ell(dx, dy, a, b){ return Math.hypot(dx / a, dy / b); }
 var W = '#f4f1e8', GRASS = ['#3f9a46', '#47a84e'], DIRT = '#b8865a', STEEL = '#8a8e96', SEAT = '#9a968a';
 

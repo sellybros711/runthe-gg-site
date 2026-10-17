@@ -52,7 +52,7 @@ body.sw-in .sw-brand, body.sw-in .sw-chips .sw-chip:not(.m), body.sw-in .sw-lege
   .sw-panel.on{ transform:none; }\
   .sw-grab{ display:block; width:40px; height:5px; border-radius:3px; background:#d8d0bc; margin:8px auto 0; }\
 }';
-var STATUS = { hub:['Always on', 'var(--ink)'], live:['Live', 'var(--live)'], unlisted:['Unlisted', 'var(--unl)'], testers:['Testers only', 'var(--test)'], dev:['In development', 'var(--dev)'] };
+var S = window.SKY_W;   // status.js: each status's name and colour
 var W = null, LN = {}, $ = {}, ticks = 0;
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); }
 function et(iso){ try { return new Date(iso).toLocaleTimeString('en-US', { timeZone:'America/New_York', hour:'numeric', minute:'2-digit' }) + ' ET'; } catch (e) { return '-'; } }
@@ -68,27 +68,29 @@ window.SKY_UI = {
     var c1 = document.createElement('canvas'); c1.id = 'world'; document.body.appendChild(c1);
     var c2 = document.createElement('canvas'); c2.id = 'over'; document.body.appendChild(c2);
     var counts = {}; gs.forEach(function(g){ counts[g.status] = (counts[g.status] || 0) + 1; });
-    $.top = mk('div', 'sw-top', '<div class="sw-brand">SKY WORLD</div><button class="sw-back" aria-label="Back to the map">‹ Map</button><div class="sw-title"></div><div class="sw-chips"><span class="sw-chip m">Games as of <b>' + esc(et(W.asOf)) + '</b></span>' +
+    $.top = mk('div', 'sw-top', '<div class="sw-brand">SKY WORLD</div><button class="sw-back" aria-label="Back to the map">‹ Map</button><div class="sw-title"></div><div class="sw-chips"><span class="sw-chip m"><span class="l">Games as of </span><b>' + esc(et(W.asOf)) + '</b></span>' +
       '<span class="sw-chip">' + esc(plural(gs.length, 'game')) + ' · ' + (counts.live || 0) + ' live · ' + (counts.testers || 0) + ' for testers · ' + ((counts.dev || 0) + (counts.unlisted || 0)) + ' more</span></div><div class="sw-sp"></div>');
-    mk('div', 'sw-legend', '<span><i class="sw-dot" style="background:var(--live)"></i>Live</span><span><i class="sw-dot" style="background:var(--unl)"></i>Unlisted</span><span><i class="sw-dot" style="background:var(--test)"></i>Testers</span><span><i class="sw-dot" style="background:var(--dev)"></i>In development</span>');
+    mk('div', 'sw-legend', Object.keys(S.STATUS).filter(function(k){ return S.STATUS[k].legend; }).map(function(k){ var st = S.STATUS[k]; return '<span><i class="sw-dot" style="background:' + st.col + '"></i>' + esc(st.legend) + '</span>'; }).join(''));
     var z = mk('div', 'sw-zoom', '<button class="sw-btn" aria-label="Zoom in">+</button><button class="sw-btn" aria-label="Zoom out">-</button>');
     z.children[0].onclick = function(){ SKY.zoom(1); }; z.children[1].onclick = function(){ SKY.zoom(-1); };
     $.hover = mk('div', 'sw-hover'); $.panel = mk('div', 'sw-panel', '<div class="sw-grab"></div><div></div>'); $.pc = $.panel.children[1];
-    $.load = mk('div', 'sw-load', 'Raising the islands'); 
+    $.load = mk('div', 'sw-load', 'Raising the islands');
     $.top.querySelector('.sw-back').onclick = function(){ on.leave(); };
     $.fade = mk('div', 'sw-fade', '<span></span>'); },
   fade:function(on){ $.fade.classList.toggle('on', !!on); if (!on) $.fade.firstChild.classList.remove('on'); return new Promise(function(ok){ setTimeout(ok, 400); }); },
   flying:function(g){ $.fade.firstChild.textContent = 'Flying to ' + g.name; $.fade.firstChild.classList.add('on'); },
-  entered:function(g, w){ document.body.classList.add('sw-in'); var st = STATUS[g.status];
-    $.top.querySelector('.sw-title').innerHTML = esc(g.name) + '<span class="sw-pill" style="background:' + st[1] + '">' + (g.status === 'hub' ? (g.id === 'site' ? 'Home' : 'Studio') : st[0]) + '</span>'; document.title = g.name + ' · Sky World'; },
+  entered:function(g, w){ document.body.classList.add('sw-in');
+    $.top.querySelector('.sw-title').innerHTML = esc(g.name) + '<span class="sw-pill" style="background:' + S.status(g).col + '">' + esc(S.statusLabel(g)) + '</span>'; document.title = g.name + ' · Sky World'; },
   left:function(){ document.body.classList.remove('sw-in'); document.title = 'Sky World'; },
   layerNames:function(){ return LN; },
   progress:function(){ ticks++; if ($.load) $.load.textContent = 'Raising the islands' + '...'.slice(0, 1 + (ticks >> 3) % 3); },
   painting:function(){ if ($.load){ $.load.className = 'sw-load sw-small'; } },
-  ready:function(warn){ if ($.load) $.load.remove(); if (warn) mk('div', 'sw-warn', esc(warn)); },
+  ready:function(warn){ if ($.load){ $.load.remove(); $.load = null; } if (arguments.length) SKY_UI.warn(warn); },
+  // the note that this place is a flat map: the map's own, or a world's while it is open
+  warn:function(text){ if (!text){ if ($.warn) $.warn.style.display = 'none'; return; } if (!$.warn) $.warn = mk('div', 'sw-warn'); $.warn.textContent = text; $.warn.style.display = ''; },
   hover:function(h, x, y){ var html = null;
     if (h && h.p && window.SKY_HOVER_CARD) html = window.SKY_HOVER_CARD(h);
-    else if (h && h.g && !h.d && !h.g.world){ var st = STATUS[h.g.status]; html = '<b>' + esc(h.g.name) + '</b><span style="color:' + st[1] + ';font-weight:800">' + (h.g.status === 'hub' ? (h.g.id === 'site' ? 'Home' : 'Studio') : st[0]) + '</span>' + (h.g.note ? ' · ' + esc(h.g.note) : '') + '<br>' + esc(plural(h.g.layers.length, 'district')) + '<br><span class="sw-asof">Click to go in</span>'; }
+    else if (h && h.g && !h.d && !h.g.world){ html = '<b>' + esc(h.g.name) + '</b><span style="color:' + S.status(h.g).col + ';font-weight:800">' + esc(S.statusLabel(h.g)) + '</span>' + (h.g.note ? ' · ' + esc(h.g.note) : '') + '<br>' + esc(plural(h.g.layers.length, 'district')) + '<br><span class="sw-asof">Click to go in</span>'; }
     else if (h && h.d) html = '<b>' + esc(LN[h.d.id]) + '</b>' + esc(h.g.name) + ' · ' + esc(plural(h.g.counts[h.d.id] || 0, 'file')) + '<br><span class="sw-asof">Click for more</span>';
     if (!html){ $.hover.style.display = 'none'; return; }
     $.hover.innerHTML = html; $.hover.style.display = 'block'; $.hover.style.left = Math.min(innerWidth - 270, x + 16) + 'px'; $.hover.style.top = (y + 12) + 'px'; },
@@ -101,10 +103,12 @@ window.SKY_UI = {
         '<div class="sw-sec"><h3>Where it lives</h3>' + (g2.where ? '<code>' + esc(g2.where) + '</code>' : 'Not on the site yet.') + (g2.branch ? '<br><span class="sw-asof">Branch ' + esc(g2.branch) + '</span>' : '') + '</div>' +
         '<div class="sw-sec"><h3>Districts</h3>' + (g2.layers.length ? g2.layers.map(function(l){ return '<div class="sw-row"><button data-d="' + l + '">' + esc(LN[l]) + '</button><span class="sw-asof">' + esc(plural(g2.counts[l] || 0, 'file')) + '</span></div>'; }).join('') : '<div class="sw-asof">No files yet.</div>') +
         '<div class="sw-asof">As of ' + esc(et(W.asOf)) + '</div></div>';
-      [].forEach.call($.pc.querySelectorAll('[data-d]'), function(b){ b.onclick = function(){ var d = g2.dist.filter(function(k){ return k.id === b.dataset.d; })[0]; SKY.focus(d.x, d.y, g2.z); SKY.select({ g:g2, d:d }); }; });
+      [].forEach.call($.pc.querySelectorAll('[data-d]'), function(b){ b.onclick = function(){ var d = g2.dist.filter(function(k){ return k.id === b.dataset.d; })[0]; SKY.select({ g:g2, d:d }); }; });   // select() focuses on it
       SKY.focus(g2.x, g2.y, g2.z); }
+    // a world's district or island panel ends with a box to ask one of the agents (agents.js)
+    var extra = !h.p && window.SKY_PANEL_EXTRA && window.SKY_PANEL_EXTRA(h); if (extra){ $.pc.insertAdjacentHTML('beforeend', extra.html); extra.bind(); }
     var x = $.pc.querySelector('.sw-x'); if (x) x.onclick = function(){ SKY.select(null); };
     $.panel.classList.add('on'); }
 };
-function head(title, g){ var st = STATUS[g.status]; return '<div class="sw-ph"><button class="sw-x" aria-label="Close">×</button><h2>' + esc(title) + '</h2><span class="sw-pill" style="background:' + st[1] + '">' + st[0] + '</span>' + (g.note ? ' <span class="sw-asof">' + esc(g.note) + '</span>' : '') + '</div>'; }
+function head(title, g){ var st = S.status(g); return '<div class="sw-ph"><button class="sw-x" aria-label="Close">×</button><h2>' + esc(title) + '</h2><span class="sw-pill" style="background:' + st.col + '">' + esc(st.label) + '</span>' + (g.note ? ' <span class="sw-asof">' + esc(g.note) + '</span>' : '') + '</div>'; }
 })();
