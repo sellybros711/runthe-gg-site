@@ -35,15 +35,50 @@
   // A SMOOTH SURFACE, for the menu golfer only: f(world point) is the signed distance to it, and it is ray marched.
   // It draws what ellipsoids and capsules cannot: a ring, a brim that curves down at its sides, curls carved into
   // one head of hair, a duck's neck grown out of its float. c and R bound it. o.mf(p, n) may answer [material, dt].
-  const field=(c,R,f,mat,o)=>({k:'f',c:cam(c),R,f,mat,o:o||{}});
+  // Its screen box and depth range are found once, from a coarse grid over the bounding ball, so the rays only
+  // march where the surface can be.
+  const field=(c,R,f,mat,o)=>{ const P={k:'f',c:cam(c),R,f,mat,o:o||{}}, n=10, st=R/n; let x0=1e9,y0=1e9,z0=1e9,x1=-1e9,y1=-1e9,z1=-1e9;
+    for(let i=-n;i<=n;i++) for(let j=-n;j<=n;j++) for(let k=-n;k<=n;k++){ if(i*i+j*j+k*k>(n+1)*(n+1)) continue;
+      const p=add(c,[i*st,j*st,k*st]); if(f(p)>st*0.9) continue; const q=cam(p);
+      if(q[0]<x0)x0=q[0]; if(q[0]>x1)x1=q[0]; if(q[1]<y0)y0=q[1]; if(q[1]>y1)y1=q[1]; if(q[2]<z0)z0=q[2]; if(q[2]>z1)z1=q[2]; }
+    if(x1>=x0) P.box=[x0-st,y0-st,x1+st,y1+st,z0-st,z1+st]; return P; };
   const sdE=(p,c,AX,R)=>{ const q=sub(p,c), a=dot(q,AX[0])/R[0], b=dot(q,AX[1])/R[1], d=dot(q,AX[2])/R[2];
     const k0=Math.hypot(a,b,d), k1=Math.hypot(a/R[0],b/R[1],d/R[2]); return k1<1e-6?-Math.min(...R):k0*(k0-1)/k1; };
   const sdCap=(p,a,b,r)=>{ const pa=sub(p,a), ba=sub(b,a), h=Math.max(0,Math.min(1,dot(pa,ba)/dot(ba,ba))); return Math.hypot(...sub(pa,sc(ba,h)))-r; };
+  // a cone from a (radius ra) to b (radius rb), cut flat at both ends
+  const sdCone=(p,a,b,ra,rb)=>{ const ba=sub(b,a), pa=sub(p,a), baba=dot(ba,ba), papa=dot(pa,pa), paba=dot(pa,ba)/baba, rba=rb-ra;
+    const x=Math.sqrt(Math.max(0,papa-paba*paba*baba)), cax=Math.max(0,x-(paba<0.5?ra:rb)), cay=Math.abs(paba-0.5)-0.5;
+    const k=rba*rba+baba, f=Math.max(0,Math.min(1,(rba*(x-ra)+paba*baba)/k)), cbx=x-ra-f*rba, cby=paba-f, sg=(cbx<0&&cay<0)?-1:1;
+    return sg*Math.sqrt(Math.min(cax*cax+cay*cay*baba,cbx*cbx+cby*cby*baba)); };
   const smin=(a,b,k)=>{ const h=Math.max(k-Math.abs(a-b),0)/k; return Math.min(a,b)-h*h*k/4; };
+  // THE MENU CAP: a six panel crown that comes down over the hair at the temples and the back, its seams sewn in,
+  // and a pre-curved brim that pitches down and bends down at its sides, as a real golf cap's does. One piece
+  // (field) so it reads as a brim from the front, its underside a shade darker. cw is the crown's width (wider over
+  // an afro). o: crown, brim, btn, patch and mark materials, dir -1 to wear it backwards, flat for a flat brim,
+  // mark0 false for no badge, badge(pc, AX) to draw its own.
+  function capParts(M,cw,o){ const {hc,hup,hr}=M, d=o.dir||1, look=sc(M.look,d), Lf=sc(M.Lf,d), out=[], AXc=[look,hup,Lf];
+    const cr=o.crown||'hat', bm=o.brim||cr, cc=add(hc,sc(hup,hr*0.12)), CR=[hr*cw,hr*1.12,hr*cw], rim=l=>l[1]>0.07-0.12*(1-l[0]);
+    // worn backwards, the back of the cap faces out: its strap opening over the forehead, the strap across it
+    out.push(ellipsoid(cc,AXc,CR,cr,{cut:l=>rim(l)&&!(o.dir===-1&&l[0]<-0.55&&l[1]<0.3&&Math.abs(l[2])<0.3*(1-Math.max(0,l[1]-0.05)*1.6))}));
+    if(o.dir===-1) out.push(over(cc,AXc,CR,o.brim||cr,l=>l[0]<-0.5&&Math.abs(l[1]-0.1)<0.05&&Math.abs(l[2])<0.34,{noCast:1}));
+    for(let k=0;k<3;k++){ const a=k*Math.PI/3+Math.PI/6;   // the panel seams, over the crown from rim to button
+      out.push(over(cc,AXc,CR,cr,l=>rim(l)&&Math.abs(l[0]*Math.sin(a)-l[2]*Math.cos(a))<0.025&&l[1]>0.12,{dt:-1,noCast:1})); }
+    out.push(ellipsoid(add(cc,sc(hup,CR[1]-0.3)),AXc,[1.15,0.75,1.15],o.btn||'hatbtn'));
+    const RB=o.flat?[hr*3,hr*1.5,hr*14]:[hr*4.0,hr*1.2,hr*2.0], Cb=add(hc,sc(hup,hr*0.24-RB[1]*Math.sqrt(1-(0.9*hr/RB[0])**2)));
+    out.push(field(add(hc,sc(look,hr*1.2)),hr*1.45,p=>{ const q=sub(p,hc), a=dot(q,look), sd=dot(q,Lf);
+        const shell=Math.abs(sdE(p,Cb,AXc,RB))-0.42, foot=(Math.hypot((a-hr*0.9)/(hr*1.0),sd/(hr*(cw+0.09)))-1)*hr*1.0;
+        return Math.max(shell,foot,hr*0.55-a); },bm,{mf:(p,n)=>dot(n,hup)<-0.2?[bm,-1]:null}));
+    if(o.mark0===false) return out;
+    const pc=add(cc,sc(look,hr*(cw-0.15)),sc(hup,hr*0.45));
+    if(o.badge) out.push(...o.badge(pc,AXc));
+    else { out.push(ellipsoid(pc,AXc,[0.62,2.5,2.7],o.patch||'patch',{t:2,cut:l=>Math.abs(l[1])<0.7&&Math.abs(l[2])<0.7}));
+      out.push(ellipsoid(add(pc,sc(look,0.38)),AXc,[0.5,0.62,1.05],o.mark||'patchmark',{t:2,noCast:1})); }
+    return out; }
   function hitF(P,x,y){ const e2=P.R*P.R-(x-P.c[0])**2-(y-P.c[1])**2; if(e2<=0) return null;
-    const f=z=>P.f(cam([x,y,z])), z1=P.c[2]-Math.sqrt(e2); let z=P.c[2]+Math.sqrt(e2), d=f(z);
-    for(let i=0;i<160&&z>z1;i++){ if(d<0.01) break; z-=Math.max(d*0.7,0.02); d=f(z); }
-    if(d>=0.01||z<=z1) return null;
+    const B=P.box; if(B&&(x<B[0]||x>B[2]||y<B[1]||y>B[3])) return null;
+    const f=z=>P.f(cam([x,y,z])), z1=Math.max(P.c[2]-Math.sqrt(e2),B?B[4]:-1e9); let z=Math.min(P.c[2]+Math.sqrt(e2),B?B[5]:1e9), d=f(z);
+    for(let i=0;i<110&&z>z1;i++){ if(d<0.03) break; z-=Math.max(d*0.8,0.05); d=f(z); }   // a cell is a third of a unit, so 0.03 is exact enough
+    if(d>=0.03||z<=z1) return null;
     const p=cam([x,y,z]), e=0.03, g=[0,1,2].map(i=>{ const a=p.slice(), b=p.slice(); a[i]+=e; b[i]-=e; return P.f(a)-P.f(b); }), nw=norm(g);
     const h={D:z,n:cam(nw)}, mm=P.o.mf&&P.o.mf(p,nw);
     if(mm){ h.m=mm[0]||P.mat; h.dt=mm[1]||0; h.gloss=P.o.gloss||0; }
@@ -395,18 +430,7 @@
     // THE MENU CAP: a six panel crown that comes down over the hair at the temples and the back, its seams sewn in,
     // and a pre-curved brim that pitches down and bends down at its sides, as a real golf cap's does. One piece
     // (field) so it reads as a brim from the front, its underside a shade darker.
-    if(cap&&MO){ const AXc=[look,hup,Lf], cw=style==='afro'?1.19:1.07, cc=add(hc,sc(hup,hr*0.12)), CR=[hr*cw,hr*1.12,hr*cw], rim=l=>l[1]>0.07-0.12*(1-l[0]);
-      out.push(ellipsoid(cc,AXc,CR,'hat',{cut:rim}));
-      for(let k=0;k<3;k++){ const a=k*Math.PI/3+Math.PI/6;   // the panel seams, over the crown from rim to button
-        out.push(over(cc,AXc,CR,'hat',l=>rim(l)&&Math.abs(l[0]*Math.sin(a)-l[2]*Math.cos(a))<0.025&&l[1]>0.12,{dt:-1,noCast:1})); }
-      out.push(ellipsoid(add(cc,sc(hup,CR[1]-0.3)),AXc,[1.15,0.75,1.15],'hatbtn'));
-      const Cb=add(hc,sc(hup,hr*(0.24-1.169))), RB=[hr*4.0,hr*1.2,hr*2.0];
-      out.push(field(add(hc,sc(look,hr*1.2)),hr*1.45,p=>{ const q=sub(p,hc), a=dot(q,look), sd=dot(q,Lf);
-          const shell=Math.abs(sdE(p,Cb,AXc,RB))-0.42, foot=(Math.hypot((a-hr*0.9)/(hr*1.0),sd/(hr*(cw+0.09)))-1)*hr*1.0;
-          return Math.max(shell,foot,hr*0.55-a); },'hat',{mf:(p,n)=>dot(n,hup)<-0.2?['hat',-1]:null}));
-      const pc=add(cc,sc(look,hr*(cw-0.15)),sc(hup,hr*0.45));
-      out.push(ellipsoid(pc,AXc,[0.62,2.5,2.7],'patch',{t:2,cut:l=>Math.abs(l[1])<0.7&&Math.abs(l[2])<0.7}));
-      out.push(ellipsoid(add(pc,sc(look,0.38)),AXc,[0.5,0.62,1.05],'patchmark',{t:2,noCast:1})); }
+    if(cap&&MO) out.push(...capParts(M,style==='afro'?1.19:1.07,{}));
     else if(cap){ out.push(ellipsoid(add(hc,sc(hup,hr*0.18+lift)),[look,hup,Lf],[hr*1.06,hr*0.95,hr*1.06],'hat',{cut:l=>l[1]>-0.12}));
       out.push(MO?ellipsoid(add(hc,sc(look,hr*0.98),sc(hup,hr*0.0+lift)),[look,hup,Lf],[hr*1.0,0.85,hr*1.0],'hat',{dt:-1,cut:l=>l[0]>-0.2})
         :ellipsoid(add(hc,sc(look,hr*0.95),sc(hup,hr*0.02+lift)),[look,hup,Lf],[hr*0.75,0.75,hr*0.82],'hat',{dt:-1,cut:l=>l[0]>-0.15}));
@@ -529,36 +553,59 @@
      trouser legs and the shoes. Facing the camera along F. */
   // a club head that looks like its type: a driver's pear-shaped head with a dark crown, a fairway wood, an iron or
   // wedge blade with grooves, or a putter. Its colours are the club's own kit (head H, face F, highlight S, trim G).
+  // THE CLUB HEADS AS THE REAL THINGS, each one smooth surface in the head's own frame (a out of the face, y up, s
+  // toward the toe): a driver or wood is a pear shaped head with a flat scored face, a domed crown with an alignment
+  // mark, a skirt and a sole plate; an iron is a lofted blade, thicker at the sole and taller at the toe, grooved, with
+  // a cavity behind; a wedge is the same with more loft and a taller face; a blade putter is a milled bar on a
+  // plumber's neck, a mallet a half moon with sight lines.
   function profileClub(push,hands,h0,F,U,id,pal,outV){
-    const type=id==='persimmon'?'wood':String(id).indexOf('pu_')===0?'putter':(typeof CLUB_RECOLOR!=='undefined'&&CLUB_RECOLOR[id])||(id==='blade'?'iron':'driver');
+    const stock={driver:'driver',wood:'wood',iron:'iron',wedge:'wedge',putter:'putter'};
+    const type=stock[id]||(id==='persimmon'?'wood':String(id).indexOf('pu_')===0?'putter':(typeof CLUB_RECOLOR!=='undefined'&&CLUB_RECOLOR[id])||(id==='blade'?'iron':'driver'));
     const kit=!!(pal&&pal.H), X=h=>'x:'+h;
     const out0=sub(h0,hands); const out=outV?norm(outV):norm([out0[0],0,out0[2]]), cdir=norm(sub(h0,hands));
     const along=t=>add(hands,sc(cdir,t)), hoselTop=add(h0,sc(U,1.6),sc(out,-0.25));
     push(capsule(along(-1.1),along(3.6),0.92,X(kit&&pal.G?pal.G:'#26262e')));                               // the grip
     push(capsule(along(3.6),hoselTop,0.33,X((pal&&pal.l)||'#c4ccd4'),{gloss:2}));                           // the shaft
     push(capsule(add(hoselTop,sc(cdir,-0.3)),hoselTop,0.45,'x:#1b1d22'));                                    // the ferrule
-    const AXc=[F,U,out];
-    if(type==='driver'||type==='wood'){ const big=type==='driver', R=big?[2.45,1.2,2.85]:[1.95,0.95,2.3];
-      const crown=id==='persimmon'||id==='rosewood'?(pal.W||pal.H):kit?pal.H:'#24282f', face=kit?(pal.F||'#cfd3da'):'#3a3f48', sole=kit?(pal.S||'#cfd3da'):'#cfd3da';
-      const C=add(h0,sc(out,R[2]*0.9),sc(U,R[1]-1.3+0.05),sc(F,-0.25));
-      push(capsule(hoselTop,add(C,sc(out,-R[2]*0.82),sc(U,R[1]*0.2)),0.52,X(crown),{gloss:2}));             // the hosel
-      push(ellipsoid(C,AXc,R,X(crown),{gloss:3}));                                                           // the head, crown up
-      push(over(C,AXc,R,X(face),l=>l[0]>0.62&&l[1]<0.55,{gloss:1}));                                         // the face
-      push(over(C,AXc,R,X(sole),l=>l[1]<-0.45,{gloss:2}));                                                   // the sole plate
-      push(over(C,AXc,R.map(v=>v*1.01),X(kit?(pal.S||'#f4f7fa'):'#e8ebf0'),l=>l[1]>0.55&&l[0]>0.15&&Math.abs(l[2])<0.06)); }   // the alignment line on the crown
-    else if(type==='iron'||type==='wedge'){ const R=type==='wedge'?[0.62,1.75,2.0]:[0.55,1.45,2.15];
-      const body=kit?pal.H:'#b7bdc6', face=kit?(pal.F||'#dfe4ea'):'#dfe4ea', C=add(h0,sc(out,R[2]*0.95),sc(U,R[1]-1.15));
-      push(capsule(hoselTop,add(C,sc(out,-R[2]*0.85),sc(U,-R[1]*0.35)),0.45,X(body),{gloss:2}));
-      push(ellipsoid(C,AXc,R,X(body),{gloss:2}));
-      push(over(C,AXc,R,X(face),l=>l[0]>0.35,{gloss:2}));
-      for(const g of [-0.45,-0.15,0.15,0.45]) push(over(C,AXc,R.map(v=>v*1.01),X(kit?(pal.G||'#5a626c'):'#6f7884'),l=>l[0]>0.45&&Math.abs(l[1]-g)<0.05&&Math.abs(l[2])<0.7)); }   // the grooves
-    else { const mallet=id==='mallet'||['pu_halfmoon','pu_counter','pu_scope','pu_bank','pu_buoy'].indexOf(id)>=0, R=mallet?[1.8,0.7,1.9]:[0.75,0.72,2.35], body=kit?pal.H:'#5a636e';
-      const C=add(h0,sc(out,R[2]*0.75),sc(U,R[1]-1.25));
-      push(capsule(hoselTop,add(C,sc(out,-R[2]*0.55),sc(U,R[1]*0.5)),0.42,X(body),{gloss:2}));
-      push(ellipsoid(C,AXc,R,X(body),{gloss:2}));
-      push(over(C,AXc,R.map(v=>v*1.01),X(kit?(pal.S||'#e2e6ec'):'#f4f7fa'),l=>l[1]>0.6&&Math.abs(l[2])<0.06));   // the sight line
-      if(kit&&pal.F) push(over(C,AXc,R,X(pal.F),l=>l[0]>0.55&&Math.abs(l[1])<0.6,{gloss:2}));                          // the face insert
-      if(kit&&pal.G) push(over(C,AXc,R,X(pal.G),l=>l[1]<-0.45)); }                                                      // the sole
+    const head=(C,R,f,mat,mf)=>{ const loc=p=>{ const q=sub(p,C); return {a:dot(q,F),y:dot(q,U),s:dot(q,out)}; };
+      push(field(C,R,p=>f(loc(p)),mat,{gloss:2,mf:mf?(p,n)=>mf(loc(p),n):null})); };
+    if(type==='driver'||type==='wood'){ const big=type==='driver', S=big?1:0.8;
+      const crown=X(id==='persimmon'||id==='rosewood'?(pal.W||pal.H):kit?pal.H:'#24282f'), face=X(kit?(pal.F||'#cfd3da'):'#3a3f48'), sole=X(kit?(pal.S||'#cfd3da'):'#cfd3da');
+      const C=add(h0,sc(out,2.6*S),sc(U,1.25*S-1.25),sc(F,-0.6*S));
+      push(capsule(hoselTop,add(C,sc(out,-2.3*S),sc(F,0.9*S),sc(U,0.3*S)),0.5,crown,{gloss:2}));            // the hosel
+      head(C,4.2*S,L=>{ const s=L.s/S, a=L.a/S, y=L.y/S, w=2.9-0.5*Math.max(0,-s)/2.9;                      // narrower at the heel
+          const q=[a/2.55,y/(1.25+0.12*Math.max(0,-a)/2.5),s/w], k0=Math.hypot(...q), k1=Math.hypot(q[0]/2.55,q[1]/1.3,q[2]/w);
+          return Math.max(k0*(k0-1)/k1,a-1.75,-y-1.05)*S; },crown,(L,n)=>{ const a=L.a/S, y=L.y/S, s=L.s/S;
+          if(a>1.6) return [face,Math.abs(((y+2)*3.2)%1-0.5)<0.12&&Math.abs(s)<1.6?-1:0];            // the face and its score lines
+          if(y<-0.92) return [sole,0];                                                               // the sole plate
+          if(y<-0.45) return [face,-1];                                                              // the skirt
+          return Math.abs(s-0.2)<0.07&&a>0.6&&y>0.6?[sole,1]:[crown,0]; });                          // the alignment mark
+      return; }
+    if(type==='iron'||type==='wedge'){ const wedge=type==='wedge', tl=Math.tan(wedge?0.72:0.42), body=X(kit?pal.H:'#b7bdc6'), face=X(kit?(pal.F||'#dfe4ea'):'#dfe4ea'), grv=X(kit?(pal.G||'#5a626c'):'#6f7884');
+      const C=add(h0,sc(out,2.0),sc(U,-0.5)), top=s=>(wedge?1.15:0.8)+(wedge?0.3:0.42)*(s+1.6)/3.6;
+      push(capsule(hoselTop,add(C,sc(out,-1.75),sc(U,0.45)),0.42,body,{gloss:2}));                        // the hosel
+      head(C,4.4,L=>{ const ap=L.a+L.y*tl*0.6, th=0.22+0.42*clamp01(1-(L.y+0.75)/1.7);
+          const d2=rbox(Math.max(-1.6-L.s,L.s-2.0),Math.max(-0.75-L.y,L.y-top(L.s)),0.45);
+          return Math.max(d2,Math.abs(ap+th*0.5)-th); },body,(L,n)=>{ const ap=L.a+L.y*tl*0.6;
+          if(dot(n,F)>0.3&&L.y>-0.6&&L.y<top(L.s)-0.15){ const g=((L.y+0.75)/0.26)%1; return [Math.abs(g-0.5)<0.14&&L.s>-1.2&&L.s<1.6?grv:face,0]; }   // the face and its grooves
+          if(dot(n,F)<-0.3&&L.y>-0.45&&L.y<top(L.s)-0.35&&L.s>-1.0&&L.s<1.6) return [body,-1];                 // the cavity behind
+          return null; });
+      return; }
+    const mallet=id==='mallet'||['pu_halfmoon','pu_counter','pu_scope','pu_bank','pu_buoy'].indexOf(id)>=0, body=X(kit?pal.H:'#5a636e'), sight=X(kit?(pal.S||'#e2e6ec'):'#f4f7fa');
+    const C=add(h0,sc(out,1.9),sc(U,-0.8));
+    if(mallet){ // a half moon mallet: flat face, round back, sight lines across its top
+      push(capsule(hoselTop,add(C,sc(out,-0.2),sc(U,0.4)),0.4,body,{gloss:2}));
+      head(C,3.4,L=>rbox(Math.max(Math.hypot(L.a-0.45,L.s/1.05)-2.1,L.a-0.45),Math.abs(L.y)-0.42,0.25),body,(L,n)=>{
+        if(L.y>0.3&&(Math.abs(L.s)<0.08||Math.abs(Math.abs(L.s)-0.55)<0.07)) return [sight,1];
+        if(kit&&pal.F&&dot(n,F)>0.6) return [X(pal.F),0]; if(kit&&pal.G&&L.y<-0.3) return [X(pal.G),0]; return null; });
+      return; }
+    // a blade putter: a milled bar with a flange behind and a plumber's neck bending into the heel
+    const neck=add(C,sc(out,-1.2),sc(U,0.45),sc(F,0.1));
+    push(capsule(hoselTop,add(neck,sc(U,1.2),sc(F,0.3)),0.38,body,{gloss:2})); push(capsule(add(neck,sc(U,1.2),sc(F,0.3)),add(neck,sc(U,1.2),sc(out,0.6)),0.36,body,{gloss:2}));
+    push(capsule(add(neck,sc(U,1.2),sc(out,0.6)),add(neck,sc(out,0.6)),0.36,body,{gloss:2}));
+    head(C,3.2,L=>Math.min(rbox(Math.abs(L.s)-1.9,Math.abs(L.y)-0.45,0.15)+Math.max(0,Math.abs(L.a)-0.38),rbox(Math.abs(L.s)-1.6,Math.abs(L.y+0.25)-0.2,0.1)+Math.max(0,Math.abs(L.a+0.6)-0.55)),body,(L,n)=>{
+      if(L.y>0.38&&Math.abs(L.s)<0.07&&L.a>-0.4) return [sight,1];
+      if(kit&&pal.F&&dot(n,F)>0.6&&Math.abs(L.s)<1.4) return [X(pal.F),0]; if(kit&&pal.G&&L.y<-0.3) return [X(pal.G),0]; return null; });
   }
 
   /* THE MENU GOLFER'S NOVELTY CLUBS. Each is modelled as the thing it is, at the menu golfer's scale, held in the
@@ -676,7 +723,7 @@
     const F=norm(aimV), U=V(0,1,0), T=norm(cross(F,U)), P=(f,u,t)=>add(sc(F,f),sc(U,u),sc(T,t));
     let tag='';   // the item the parts being pushed belong to, so a tile can draw it alone (MO.only)
     const HD=(MO?MO.K:1)>=2, parts=[], push=p=>{ if(tag) p.o.item=tag; parts.push(p); }, top=gear.top, tpal=gear.topPal||{}, cl=gear.cleats, lg=gear.legPal;
-    const body=top==='shacket'?'plaid':'shirt', AX=[F,U,T], blz=top==='blazer'||top==='ppchampjacket';
+    const body=top==='shacket'?'plaid':top==='cardigan'?'k:'+tpal['1']:'shirt', AX=[F,U,T], blz=top==='blazer'||top==='ppchampjacket';   // a cardigan is knitted (k: is ribbed when painted)
     // THE BUILD: a lean golfer. BW narrows the torso, hips and belt, AW brings the arms, hands and club in to match.
     const BW=0.84, AW=0.87;
     // shoes and legs
@@ -715,7 +762,12 @@
     for(const s of [1,-1]) push(capsule(P(-0.2,32.5+0.12*br,2.6*s),P(-0.2,30.6+0.15*br,6.5*s),2.1,body));    // the shoulders, sloping
     push(ellipsoid(P(0.2,19.0,0),AX,[4.8,1.35,8.75*BW+0.08*sw],body,{dt:0}));                                     // blousing over the belt
     push(capsule(P(0.3,32.2,0),P(0.6,35.8,0),2.85,'skin',{dt:-1}));                                              // the neck, under the head
-    push(ellipsoid(P(0.7,33.5,0),AX,[3.7,1.15,4.7],body,{dt:1}));                                                // the collar
+    // the collar: a jacket's or the cape's is the old soft roll; a polo's is a real band round the neck, open at the front
+    const polo=!jacket&&!blz;
+    if(!polo||!HD) push(ellipsoid(P(0.7,33.5,0),AX,[3.7,1.15,4.7],body,{dt:1}));
+    else { const n0=P(0.45,32.9,0), n1=P(0.6,34.5,0);
+      push(field(add(n0,sc(U,0.8)),5.5,p=>{ const q=sub(p,n0), a=dot(q,F), sd=dot(q,T);
+          return Math.max(Math.abs(sdCone(p,n0,n1,3.55,3.2))-0.32,-(a-2.2+Math.abs(sd)*1.4)); },'polo',{mf:p=>dot(sub(p,n0),U)>1.35?['polo',1]:null})); }
     if(HD&&!blz){ const d=0.02*sw;
       // folds: two from each armpit in toward the buckle, and creases just above the belt
       for(const s of [1,-1]){
@@ -723,23 +775,49 @@
         push(over(tc,AX,TR,body,l=>inT(l)&&l[0]>0.15&&l[1]>-0.40&&l[1]<-0.1&&Math.abs(l[2]*s-(0.95+1.6*l[1]-d))<0.045,{dt:-1,noCast:1}));
         push(over(tc,AX,TR,body,l=>inT(l)&&l[0]>0.15&&l[1]>-0.30&&l[1]<0.02&&Math.abs(l[2]*s-(0.875+1.45*l[1]+d))<0.03,{dt:1,noCast:1})); }   // the lit side of the first fold
       for(const [y,w] of [[-0.385,0.55],[-0.405,0.35]]) push(over(tc,AX,TR,body,l=>inT(l)&&l[0]>0.2&&Math.abs(l[1]-y-0.004*sw)<0.006&&Math.abs(l[2])<w,{dt:-1,noCast:1})); }
-    if(top==='cardigan'||top==='shacket'){ push(over(tc,AX,TR,'polo',l=>inT(l)&&l[0]>0.3&&Math.abs(l[2])<0.13+0.6*Math.max(0,l[1]-0.05)));
-      for(const u of [20.4,23.6,26.8]) push(ellipsoid(P(4.85,u,0.9),AX,[0.5,0.5,0.5],'x:'+(tpal['4']||'#5f4c2e'),{gloss:2,noCast:1})); }
-    else if(blz){ push(over(tc,AX,TR,'x:'+tpal['6'],l=>inT(l)&&l[0]>0.25&&l[1]>0.0&&Math.abs(l[2])<0.5*(l[1]+0.05)));
-      push(over(tc,AX,TR.map(v=>v*1.01),'x:'+tpal['7'],l=>inT(l)&&l[0]>0.25&&l[1]>-0.1&&Math.abs(l[2])<0.07));
-      for(const u of [20.6,22.6]) push(ellipsoid(P(4.85,u,0),AX,[0.5,0.5,0.5],'x:'+tpal['4'],{gloss:2,noCast:1}));
-      if(top==='ppchampjacket'){ const X=h=>'x:'+h, V=l=>0.5*(l[1]+0.05), lw=l=>0.11+0.3*Math.max(0,l[1]-0.08);
-        // THE MEMBERS CHAMPION JACKET: the blazer's cut in deep purple, its lapels lit along their edge and rolling to
-        // the top button, gold buttons, a welt pocket on the wearer's left chest with the gold crest above it
-        push(over(tc,AX,TR.map(v=>v*1.004),X(tpal['3']),l=>inT(l)&&l[0]>0.25&&l[1]>-0.03&&Math.abs(l[2])>=V(l)&&Math.abs(l[2])<V(l)+lw(l),{noCast:1}));
-        push(over(tc,AX,TR.map(v=>v*1.006),X(tpal['8']),l=>inT(l)&&l[0]>0.25&&l[1]>-0.03&&Math.abs(l[2])>=V(l)&&Math.abs(l[2])<V(l)+0.03,{noCast:1}));
-        push(over(tc,AX,TR.map(v=>v*1.006),X(tpal['2']),l=>inT(l)&&l[0]>0.25&&l[1]>-0.03&&Math.abs(Math.abs(l[2])-V(l)-lw(l))<0.022,{noCast:1}));
-        push(over(tc,AX,TR.map(v=>v*1.006),X(tpal['2']),l=>inT(l)&&l[0]>0.2&&Math.abs(l[1]+0.035)<0.011&&l[2]<-0.34&&l[2]>-0.7,{noCast:1}));   // the pocket
-        const cv=0.06, cz=-0.52, cp=add(tc,sc(F,4.75*Math.sqrt(1-cv*cv-cz*cz)+0.12),sc(U,22*cv),sc(T,8.55*cz)), sh=l=>l[1]>-0.25||Math.abs(l[2])<0.95*(l[1]+1);
-        push(ellipsoid(cp,AX,[0.3,1.45,1.2],X(tpal.C),{gloss:2,noCast:1,cut:sh})); push(ellipsoid(add(cp,sc(F,0.12)),AX,[0.3,1.12,0.9],X(tpal.c),{gloss:3,noCast:1,cut:sh}));
-        push(ellipsoid(add(cp,sc(F,0.28),sc(U,0.1)),AX,[0.2,0.5,0.22],X(tpal.C),{noCast:1})); push(ellipsoid(add(cp,sc(F,0.28),sc(U,0.25)),AX,[0.2,0.18,0.5],X(tpal.C),{noCast:1})); } }
-    else if(HD){ // the polo: collar points, a placket and two buttons, in their own material so the seams are drawn
-      for(const s of [1,-1]) push(ellipsoid(P(4.2,32.4,1.9*s),AX,[0.65,1.35,1.55],'polo',{dt:1,noCast:1}));
+    // THE JACKETS, made as the garments: their fronts, bands, pockets and collars (the sleeves are with the arms)
+    const box=(l,y0,y1,x0,x1)=>l[1]>y0&&l[1]<y1&&l[2]>x0&&l[2]<x1, rim=(l,y0,y1,x0,x1,w)=>box(l,y0,y1,x0,x1)&&!box(l,y0+w,y1-w*0.5,x0+w*0.3,x1-w*0.3);
+    if(top==='cardigan'){ const vE=l=>0.13+0.6*Math.max(0,l[1]-0.05), knit=body;
+      push(over(tc,AX,TR,'polo',l=>inT(l)&&l[0]>0.3&&l[1]>0.06&&Math.abs(l[2])<vE(l)-0.1*clamp01((0.14-l[1])/0.08)));            // the shirt in the V, closing to the top button
+      push(over(tc,AX,TR.map(v=>v*1.012),knit,l=>inT(l)&&l[0]>0.25&&Math.abs(l[2])>=vE(l)&&Math.abs(l[2])<vE(l)+0.07&&l[1]>0.05,{dt:1,noCast:1}));   // the button bands up the V
+      push(over(tc,AX,TR.map(v=>v*1.012),knit,l=>inT(l)&&l[0]>0.25&&l[1]<=0.05&&l[1]>lo+0.06&&Math.abs(l[2]-0.06)<0.07,{dt:1,noCast:1}));         // and down the front
+      push(over(tc,AX,TR.map(v=>v*1.014),knit,l=>inT(l)&&l[0]>0.25&&l[1]<=0.05&&Math.abs(l[2]+0.012)<0.012,{dt:-1,noCast:1}));                    // where they overlap
+      push(over(tc,AX,TR.map(v=>v*1.01),knit,l=>inT(l)&&l[1]<lo+0.065,{dt:-1,noCast:1}));                                                       // the ribbed waistband
+      for(const sd of [1,-1]) push(over(tc,AX,TR.map(v=>v*1.012),knit,l=>l[0]>0.2&&rim(l,-0.36,-0.2,sd>0?0.24:-0.58,sd>0?0.58:-0.24,0.03),{dt:-1,noCast:1}));   // patch pockets
+      for(const u of [20.4,22.9,25.4,27.9]) push(ellipsoid(P(4.82,u,0.45),AX,[0.48,0.48,0.48],'x:'+(tpal['4']||'#5f4c2e'),{gloss:2,noCast:1})); }
+    else if(top==='shacket'){ const tri=(x,y,a,b,c)=>{ const e=(p,q)=>(q[0]-p[0])*(y-p[1])-(q[1]-p[1])*(x-p[0]); const d1=e(a,b),d2=e(b,c),d3=e(c,a); return (d1>=0&&d2>=0&&d3>=0)||(d1<=0&&d2<=0&&d3<=0); };
+      push(over(tc,AX,TR,'polo',l=>inT(l)&&l[0]>0.3&&l[1]>0.2&&Math.abs(l[2])<0.04+0.6*Math.max(0,l[1]-0.2)));                     // the shirt at the open neck
+      for(const sd of [1,-1]){ push(over(tc,AX,TR.map(v=>v*1.02),'plaid',l=>l[0]>0.25&&tri(l[2],l[1],[0.07*sd,0.31],[0.5*sd,0.31],[0.32*sd,0.16]),{dt:1,noCast:1}));   // the spread collar
+        push(over(tc,AX,TR.map(v=>v*1.014),'x:'+tpal['3'],l=>l[0]>0.25&&tri(l[2],l[1],[0.05*sd,0.315],[0.53*sd,0.315],[0.32*sd,0.14]),{noCast:1}));
+        push(over(tc,AX,TR.map(v=>v*1.012),'plaid',l=>l[0]>0.2&&rim(l,0.0,0.14,sd>0?0.2:-0.56,sd>0?0.56:-0.2,0.025),{dt:-1,noCast:1}));         // a chest pocket
+        push(over(tc,AX,TR.map(v=>v*1.02),'plaid',l=>l[0]>0.2&&box(l,0.1,0.16,sd>0?0.19:-0.57,sd>0?0.57:-0.19),{dt:1,noCast:1}));             // its flap
+        push(ellipsoid(P(4.9,30.0,3.0*sd),AX,[0.4,0.4,0.4],'x:'+tpal['4'],{gloss:2,noCast:1})); }
+      push(over(tc,AX,TR.map(v=>v*1.012),'plaid',l=>inT(l)&&l[0]>0.25&&l[1]<0.18&&Math.abs(l[2])<0.06,{dt:1,noCast:1}));                       // the placket
+      for(const u of [19.6,22.4,25.2]) push(ellipsoid(P(4.85,u,0),AX,[0.45,0.45,0.45],'x:'+tpal['4'],{gloss:2,noCast:1})); }
+    else if(blz){ const champ=top==='ppchampjacket', vE=l=>0.5*(l[1]+0.05), cl='x:'+tpal['1'], dkc='x:'+tpal['2'];
+      push(over(tc,AX,TR,'x:'+tpal['6'],l=>inT(l)&&l[0]>0.25&&l[1]>0.0&&Math.abs(l[2])<vE(l)));                                   // the shirt
+      push(over(tc,AX,TR.map(v=>v*1.01),'x:'+tpal['7'],l=>inT(l)&&l[0]>0.25&&l[1]>-0.1&&Math.abs(l[2])<0.07));                      // the tie
+      // the lapels: rolled back from the V, wider at the chest, with a notch where they meet the collar
+      const lap=l=>l[0]>0.22&&l[1]>-0.02&&l[1]<0.31&&Math.abs(l[2])>=vE(l)&&Math.abs(l[2])<vE(l)+0.1+0.22*Math.max(0,Math.min(1,(l[1]+0.02)/0.2))*(l[1]>0.2&&l[1]<0.235?0.35:1);
+      push(over(tc,AX,TR.map(v=>v*1.03),cl,lap,{dt:1,noCast:1}));
+      push(over(tc,AX,TR.map(v=>v*1.022),dkc,l=>l[0]>0.22&&l[1]>-0.03&&l[1]<0.31&&Math.abs(l[2])>=vE(l)&&Math.abs(l[2])<vE(l)+0.13+0.24*Math.max(0,Math.min(1,(l[1]+0.02)/0.2)),{noCast:1}));   // its shadow
+      push(over(tc,AX,TR.map(v=>v*1.012),cl,l=>l[0]>0.2&&rim(l,0.04,0.12,-0.6,-0.36,0.022),{dt:-1,noCast:1}));                   // the breast pocket
+      if(!champ) push(over(tc,AX,TR.map(v=>v*1.018),'x:#f4f1e6',l=>l[0]>0.2&&l[1]>0.115&&l[1]<0.145&&l[2]>-0.56&&l[2]<-0.42&&Math.abs(l[2]+0.49)<(0.145-l[1])*2.6,{noCast:1}));   // a pocket square
+      if(champ){ const X=h=>'x:'+h;
+        // THE MEMBERS CHAMPION JACKET: the blazer made in deep purple, its lapels piped in a lit violet along the
+        // edge, gold buttons, and the gold crest (a shield on a lighter ground) on the breast pocket
+        push(over(tc,AX,TR.map(v=>v*1.032),X(tpal['8']),l=>lap(l)&&Math.abs(l[2])>=vE(l)+0.075+0.22*Math.max(0,Math.min(1,(l[1]+0.02)/0.2))*(l[1]>0.2&&l[1]<0.235?0.35:1),{dt:1,noCast:1}));
+        const cv=0.075, cz=-0.48, cp=add(tc,sc(F,TR[0]*Math.sqrt(Math.max(0,1-cv*cv-cz*cz))+0.2),sc(U,22*cv),sc(T,TR[2]*cz)), sh=l=>l[1]>-0.25||Math.abs(l[0])<0.95*(l[1]+1);
+        push(ellipsoid(cp,AX,[0.3,1.3,1.1],X(tpal.C),{gloss:2,noCast:1,cut:l=>sh([l[2],l[1]])}));
+        push(ellipsoid(add(cp,sc(F,0.12)),AX,[0.3,1.0,0.82],X(tpal.c),{gloss:3,noCast:1,cut:l=>sh([l[2],l[1]])}));
+        push(ellipsoid(add(cp,sc(F,0.28),sc(U,0.1)),AX,[0.2,0.48,0.2],X(tpal.C),{noCast:1})); push(ellipsoid(add(cp,sc(F,0.28),sc(U,0.25)),AX,[0.2,0.17,0.46],X(tpal.C),{noCast:1})); }
+      for(const sd of [1,-1]) push(over(tc,AX,TR.map(v=>v*1.012),dkc,l=>l[0]>0.2&&Math.abs(l[1]+0.27)<0.007&&l[2]*sd>0.28&&l[2]*sd<0.66,{noCast:1}));   // the hip pockets
+      for(const u of [20.6,22.6]) push(ellipsoid(P(4.85,u,0),AX,[0.5,0.5,0.5],'x:'+tpal['4'],{gloss:2,noCast:1})); }
+    else if(HD){ // the polo: the collar folded down into two flat points on the chest, outlined; a placket and two buttons
+      const tri=(x,y,a,b,c)=>{ const e=(p,q)=>(q[0]-p[0])*(y-p[1])-(q[1]-p[1])*(x-p[0]); const d1=e(a,b),d2=e(b,c),d3=e(c,a); return (d1>=0&&d2>=0&&d3>=0)||(d1<=0&&d2<=0&&d3<=0); };
+      for(const s of [1,-1]){ const A=[0.06*s,0.305], B=[0.46*s,0.31], C=[0.32*s,0.19], A2=[0.1*s,0.3], B2=[0.42*s,0.302], C2=[0.315*s,0.205];
+        push(over(tc,AX,TR.map(v=>v*1.012),'polo',l=>l[0]>0.25&&tri(l[2],l[1],A,B,C),{noCast:1,dt:-1}));                 // its edge
+        push(over(tc,AX,TR.map(v=>v*1.02),'polo',l=>l[0]>0.25&&tri(l[2],l[1],A2,B2,C2),{noCast:1,dt:1})); }              // the flap
       push(over(tc,AX,TR,'polo',l=>inT(l)&&l[0]>0.45&&Math.abs(l[2])<0.075&&l[1]>0.1&&l[1]<0.29));
       for(const u of [30.0,28.2]) push(ellipsoid(P(4.82,u,0),AX,[0.42,0.45,0.45],'polo',{dt:-1,gloss:2,noCast:1})); }
     // THE ARMS, at rest. Each joins the body only at the shoulder and hangs clear of the shirt. The dominant hand
@@ -762,10 +840,26 @@
     for(const s of [1,-1]){ const hold=s===dom, slv=blz?'x:'+tpal['1']:body;
       const sh=P(-0.2,30.0+0.15*br,9.2*AW*s), el=hold?P(0.9,23.0,10.5*AW*s):P(0.4,23.0,10.4*AW*s), wr=hold?P(2.4,17.7,11.0*AW*s):P(1.3,17.3,10.9*AW*s);
       const se=add(sh,sc(sub(el,sh),0.48)), mid=add(el,sc(sub(wr,el),0.45)), flap=sc(F,0.12*sw*s);
-      if(blz){ push(capsule(sh,el,2.15,slv)); push(capsule(el,wr,1.85,slv));
-        if(top==='ppchampjacket'&&HD) for(const k of [0.1,0.22]) push(ellipsoid(add(wr,sc(sub(el,wr),k),sc(T,1.5*s),sc(F,0.25)),AX,[0.38,0.38,0.38],'x:'+tpal['4'],{gloss:3,noCast:1})); }   // gold cuff buttons
-      else { push(capsule(sh,add(se,flap),2.3,slv)); if(HD) push(capsule(add(sh,sc(sub(se,sh),0.78)),add(se,flap),2.42,slv,{dt:-1,noCast:1}));   // the sleeve, its hem moving a little
-        if(HD) push(over(add(sh,sc(sub(se,sh),0.45)),AX,[2.4,2.4,2.4],slv,l=>Math.abs(l[1]+0.35*l[0]*s-0.1)<0.07&&l[0]>-0.2,{dt:-1,noCast:1}));   // a crease across the sleeve
+      if(jacket){ // A JACKET'S SLEEVE: long, bending at the elbow, a fold inside it; the cardigan's ends in a ribbed cuff, the
+        // blazer's in a plain cuff with buttons, the shacket's is rolled up to the forearm
+        const roll=top==='shacket', s0=add(sh,sc(norm(sub(sh,se)),1.2),sc(U,0.4)), e1=roll?add(el,sc(sub(wr,el),0.5)):add(el,sc(sub(wr,el),0.86));
+        const L1=dot(sub(el,s0),sub(el,s0)), L2=dot(sub(e1,el),sub(e1,el)), sm=blz?'x:'+tpal['1']:slv;
+        push(field(add(s0,sc(sub(e1,s0),0.5)),Math.sqrt(dot(sub(e1,s0),sub(e1,s0)))/2+4,p=>smin(sdCone(p,s0,el,2.2,1.95),sdCone(p,el,e1,1.95,blz?1.72:1.68),0.9)-0.1,sm,{mf:p=>{
+            const t1=dot(sub(p,s0),sub(el,s0))/L1, t2=dot(sub(p,el),sub(e1,el))/L2;
+            if(t2>0.985) return [sm,-1];                                                          // the open cuff
+            if(top==='cardigan'&&t2>0.74) return [sm,t2<0.77?-1:0];                               // the ribbed cuff
+            if(blz&&t2>0.8&&t2<0.83) return [sm,-1];
+            return Math.abs(t1-0.93)<0.035||Math.abs(t2-0.08)<0.03?[sm,-1]:null; }}));            // the fold at the elbow
+        if(roll){ push(field(e1,4,p=>sdCone(p,add(e1,sc(sub(el,e1),0.14)),add(e1,sc(sub(wr,el),0.03)),2.05,2.05)-0.15,'x:'+tpal['2'],{mf:p=>[ 'x:'+tpal['2'],Math.sin(dot(sub(p,e1),norm(sub(wr,el)))*4)>0.3?1:-1]}));   // the roll
+          push(capsule(e1,mid,1.5,'skin')); push(capsule(mid,wr,1.22,'skin')); }
+        if(blz) for(const k of [0.88,0.93]) push(ellipsoid(add(el,sc(sub(e1,el),k),sc(F,-0.4),sc(T,1.65*s)),AX,[0.32,0.32,0.32],'x:'+tpal['4'],{gloss:2,noCast:1}));   // cuff buttons
+      }
+      else { // THE SLEEVE: a short tube from inside the shoulder, a touch wider at the hem, cut square there with the hem
+        // stitched a finger above the edge and a fold across it; the hem swings a little with the breath
+        const s0=add(sh,sc(norm(sub(sh,se)),1.2),sc(U,0.4)), s1=add(se,flap), L2=dot(sub(s1,s0),sub(s1,s0));
+        push(field(add(s0,sc(sub(s1,s0),0.5)),Math.sqrt(L2)/2+3.2,p=>sdCone(p,s0,s1,2.15,2.4)-0.12,slv,{mf:p=>{ const t=dot(sub(p,s0),sub(s1,s0))/L2;
+          if(t>0.985||(t>0.82&&t<0.87)) return [slv,-1];                                       // the open hem and its stitching
+          return HD&&Math.abs(t-0.5-0.12*dot(sub(p,s0),U)*s)<0.035?[slv,-1]:null; }}));       // a fold across it
         push(capsule(se,el,1.6,'skin')); push(ellipsoid(el,AX,[1.55,1.5,1.6],'skin'));                                  // the upper arm and elbow
         push(capsule(el,mid,1.5,'skin')); push(capsule(mid,wr,1.22,'skin'));                                             // the forearm, to the wrist
         if(scare){ const strw='x:'+(bp.straw||'#d8b04e'), dk='x:#a8843a';   // straw arms, tufts out of the sleeve and the cuff
@@ -856,40 +950,96 @@
       case 'diamond': return a+b<1;
       default: return x*x+y*y<1; } }
   function ewSize(t){ return t==='trapbig'?[2.25,2.3]:t==='aviator'?[2.05,2.1]:t==='half'?[1.15,1.95]:t==='heart'||t==='star'?[2.0,2.0]:t==='diamond'?[1.95,1.95]:t==='round'?[1.75,1.75]:[1.55,2.05]; }
-  function eyewear3D(M,ew,map,P){ const out=[], {hc,look:lk,hup,Lf,hr}=M, t=EW_SHAPE[ew]||'rect', col=ewColours(map,P);
+  // GLASSES AS THE REAL THINGS. Acetate frames (wayfarers, shades, cat-eyes) are thick and deep with rivets at the
+  // hinges; wire frames (aviators, round, readers) are thin with nose pads; readers are half rims worn low; tinted
+  // lenses darken toward the top; the sport, cyber and visor lenses are one shield wrapped round the face; ski goggles
+  // are one wide lens in a foam frame on a strap, steampunk goggles brass cups with rings and rivets; the patch is
+  // domed on a strap across the head; the Groucho is a nose, a moustache and brows on heavy black frames.
+  const EW_METAL={aviators:1,goldshades:1,round:1,readers:1,rose:1,monocle:1,ghoulglow:1,star:1,diamond:1,heart:1};
+  const EW_CLEAR={readers:1,threed:0};
+  /* THE PUTT PUTT GLASSES, made by the real pairs they are (as), in their own colours (the art keys, read through
+     the page's PXG_EW_PAL): the frame, the lens, a strap, a trim and the inside of a mask. The Phantom Mask is its
+     own shape: a masquerade half mask over the brow and both eyes, swept up to points, a jewel between the brows. */
+  const EW_PP={ pppixelshades:{as:'shades',frame:'%',lens:'Q'}, ppeyepatch:{as:'eyepatch',frame:'%',strap:'=',mark:'~'},
+    ppaviatorgoggles:{as:'steampunk',frame:'%',lens:'R',strap:'*'}, ppsnowgoggles:{as:'goggles',frame:'%',lens:'R',strap:'~'},
+    ppphantommask:{as:'mask',frame:'%',trim:'*',inner:'a',mark:'=',strap:'+'} };
+  function ewColoursPP(d,EP){ const o={}; for(const k of ['frame','lens','strap','trim','inner','mark']) if(d[k]&&EP[d[k]]) o[k]='x:'+EP[d[k]];
+    o.lens=o.lens||'x:#14161e'; o.frame=o.frame||'x:#26272d'; return o; }
+  function eyewear3D(M,ew,map,P,cO){ const out=[], {hc,look:lk,hup,Lf,hr}=M, t=ew==='mask'?'mask':EW_SHAPE[ew]||'rect', col=cO||ewColours(map,P);
     const face=(v,h,off)=>add(hc,sc(lk,Math.sqrt(Math.max(0,hr*hr-v*v-h*h))+(off||0)),sc(Lf,h),sc(hup,v));
-    const AXl=[lk,hup,Lf], EV=-1.5, EH=3.0, OFF=1.05;
-    const temples=(fr,y0)=>{ for(const sd of [1,-1]){ let prev=add(face(y0,sd*(EH+ewSize(t)[1]*0.95),OFF*0.8));
-        for(const a of [62,80,96]){ const r=a*D2R, q=add(hc,sc(lk,Math.cos(r)*hr*1.06),sc(Lf,sd*Math.sin(r)*hr*1.06),sc(hup,y0-0.25*(a-62)/34));
-          out.push(capsule(prev,q,0.3,fr,{gloss:2,noCast:1})); prev=q; } } };
-    const strap=(m,v,w)=>out.push(ellipsoid(add(hc,sc(hup,v)),[lk,hup,Lf],[hr*1.07,w,hr*1.07],m,{noCast:1,cut:l=>l[0]<0.75}));
-    if(t==='shield'){ // one wrap-round lens, curved to the head
-      out.push(ellipsoid(add(hc,sc(hup,EV+0.5)),[lk,hup,Lf],[hr*1.13,1.75,hr*1.1],col.lens,{gloss:3,noCast:1,cut:l=>l[0]>0.55}));
-      out.push(ellipsoid(add(hc,sc(hup,EV+2.15)),[lk,hup,Lf],[hr*1.12,0.42,hr*1.09],col.frame,{gloss:2,noCast:1,cut:l=>l[0]>0.5}));
-      if(ew==='visorband') strap(col.frame,EV+0.6,0.9); else temples(col.frame,EV+1.2);
+    const AXl=[lk,hup,Lf], metal=!!EW_METAL[ew], EV=ew==='readers'?-2.3:-1.5, EH=3.0, OFF=1.05, fw=metal?0.3:0.62, fd=metal?0.32:0.62;
+    const temples=(fr,y0,r)=>{ for(const sd of [1,-1]){ let prev=add(face(y0,sd*(EH+ewSize(t)[1]*0.95),OFF*0.8));
+        for(const a of [62,80,96]){ const ra=a*D2R, q=add(hc,sc(lk,Math.cos(ra)*hr*1.06),sc(Lf,sd*Math.sin(ra)*hr*1.06),sc(hup,y0-0.25*(a-62)/34));
+          out.push(capsule(prev,q,r||(metal?0.26:0.42),fr,{gloss:2,noCast:1})); prev=q; } } };
+    const strap=(m,v,w,tilt)=>{ const up=tilt?norm(add(hup,sc(Lf,tilt))):hup, side=norm(cross(up,lk)), fw2=norm(cross(side,up));
+      out.push(ellipsoid(add(hc,sc(up,v)),[fw2,up,side],[hr*1.07,w,hr*1.07],m,{noCast:1,cut:l=>l[0]<0.8})); };
+    // ONE SHIELD round the face: a shell at the face's radius, cut to a band across the eyes, notched over the nose
+    const shield=(lens,frame,top,bot,span)=>{ const C=add(hc,sc(hup,EV)), R=hr+0.85;
+      out.push(field(add(C,sc(lk,R*0.7)),R*1.2,p=>{ const q=sub(p,C), a=dot(q,lk), y=dot(q,hup), sd=dot(q,Lf), th=Math.atan2(sd,a), rr=Math.hypot(a,sd);
+          const yb=bot+(Math.abs(th)<0.32?(0.32-Math.abs(th))*5.2:0);                                  // up over the nose
+          return Math.max(Math.abs(rr-R)-0.32,Math.abs(th)-span,y-top,yb-y); },lens,{gloss:3,mf:(p,n)=>{ const y=dot(sub(p,C),hup);
+          return y>top-0.45?[frame,0]:[lens,y>(top+bot)/2?-1:0]; }})); };
+    if(t==='shield'){
+      if(ew==='cyber'){ shield(col.lens,col.frame,1.0,-1.1,1.05); out.push(field(add(hc,sc(hup,EV),sc(lk,hr)),hr*1.2,p=>{ const q=sub(p,add(hc,sc(hup,EV))); return Math.max(Math.abs(Math.hypot(dot(q,lk),dot(q,Lf))-hr-1.22)-0.12,Math.abs(dot(q,hup)+0.1)-0.18,Math.abs(Math.atan2(dot(q,Lf),dot(q,lk)))-0.95); },'x:#ffe8f4',{gloss:3})); strap(col.frame,EV+0.2,0.7); }
+      else if(ew==='visorband'){ shield(col.lens,col.frame,1.4,-1.3,1.12); strap(col.frame,EV+0.4,0.9); }
+      else { shield(col.lens,col.frame,1.3,-1.4,0.98); temples(col.frame,EV+1.0,0.4); }
       return out; }
-    if(t==='goggle'){ strap(col.frame,EV+0.1,1.05);
-      for(const sd of [1,-1]){ const c=face(EV,sd*EH,0.9); out.push(ellipsoid(c,AXl,[1.25,2.25,2.25],col.frame,{gloss:2,noCast:1,cut:l=>l[0]>-0.2}));
-        out.push(ellipsoid(add(c,sc(lk,1.0)),AXl,[0.35,1.6,1.6],col.lens,{gloss:3,noCast:1})); }
+    if(t==='goggle'){
+      if(ew==='goggles'){ // ski goggles: one wide curved lens in a foam frame, a strap round the head
+        strap(col.strap||col.frame,EV+0.1,1.3); const C=add(hc,sc(hup,EV)), R=hr*1.04+1.3;
+        out.push(field(add(C,sc(lk,R*0.7)),R*1.2,p=>{ const q=sub(p,C), a=dot(q,lk), y=dot(q,hup), sd=dot(q,Lf), th=Math.atan2(sd,a);
+            return rbox(Math.hypot(a,sd)-R,Math.max(Math.abs(th)/1.05*5-3.4,Math.abs(y+(Math.abs(th)<0.3?(0.3-Math.abs(th))*2:0)*0.5)-2.3),0.7); },col.frame,{gloss:1,mf:(p,n)=>{ const q=sub(p,C), y=dot(q,hup), th=Math.atan2(dot(q,Lf),dot(q,lk));
+            return Math.abs(y)<1.65&&Math.abs(th)<0.86&&dot(n,lk)>0.6?[col.lens,y>0.3?1:0]:null; }}));
+        return out; }
+      strap(col.strap||'x:#5a3a22',EV+0.1,1.05);   // steampunk: brass cups on a leather strap, a glass ring and rivets round each
+      for(const sd of [1,-1]){ const c=face(EV,sd*EH,0.9); out.push(ellipsoid(c,AXl,[1.25,2.25,2.25],col.frame,{gloss:3,noCast:1,cut:l=>l[0]>-0.2}));
+        out.push(ellipsoid(add(c,sc(lk,1.05)),AXl,[0.35,1.6,1.6],col.lens,{gloss:3,noCast:1}));
+        out.push(field(add(c,sc(lk,1.0)),3,p=>{ const q=sub(p,add(c,sc(lk,1.0))); return Math.hypot(Math.hypot(dot(q,hup),dot(q,Lf))-1.75,dot(q,lk))-0.42; },col.frame,{gloss:3}));
+        for(let k=0;k<8;k++){ const a=k*Math.PI/4; out.push(ellipsoid(add(c,sc(lk,1.1),sc(hup,2.05*Math.cos(a)),sc(Lf,2.05*Math.sin(a))),AXl,[0.3,0.3,0.3],'x:#6a4a1c',{gloss:2,noCast:1})); } }
       out.push(capsule(face(EV,1.6,1.4),face(EV,-1.6,1.4),0.55,col.frame,{gloss:2,noCast:1})); return out; }
-    if(t==='patch'){ strap(col.frame,EV+1.4,0.32); const c=face(EV,EH,0.5);
-      out.push(ellipsoid(c,AXl,[0.6,2.0,1.9],col.frame,{gloss:1,noCast:1})); return out; }
-    const [h,w]=ewSize(t), sides=t==='mono'?[1]:[1,-1];
+    if(t==='patch'){ strap(col.strap||col.frame,EV+1.6,0.3,0.55); const c=face(EV,EH,0.35);
+      if(col.mark) out.push(ellipsoid(face(EV+0.1,EH,1.45),AXl,[0.3,0.75,0.75],col.mark,{gloss:3,noCast:1}));   // a gold boss on the patch   // the patch, domed over the eye, its strap across the head
+      out.push(field(c,3.5,p=>{ const q=sub(p,c), a=dot(q,lk), y=dot(q,hup), sd=dot(q,Lf); return Math.max(Math.hypot(a*2.4,y/1.05,sd/1.15)-2.1,-a-0.2); },col.frame,{gloss:1,mf:(p,n)=>{ const q=sub(p,c), y=dot(q,hup), sd=dot(q,Lf); return Math.hypot(y/1.05,sd/1.15)>1.7?[col.frame,1]:null; }}));
+      return out; }
+    if(t==='mask'){ strap(col.strap||col.frame,EV+0.5,0.3);
+      const C=add(hc,sc(hup,EV)), R=hr+0.6, SP=1.25, edge=th=>{ const e=Math.abs(th)/SP; return {top:1.7+1.6*e*e*e, bot:-2.1+1.3*e*e+(Math.abs(th)<0.3?(0.3-Math.abs(th))*5:0)}; };
+      const hole=(y,sd)=>Math.hypot((Math.abs(sd)-EH)/1.55,(y+0.05)/1.05);
+      out.push(field(add(C,sc(lk,R*0.7)),R*1.25,p=>{ const q=sub(p,C), a=dot(q,lk), y=dot(q,hup), sd=dot(q,Lf), th=Math.atan2(sd,a), E=edge(th);
+          return Math.max(Math.abs(Math.hypot(a,sd)-R)-0.3,Math.abs(th)-SP,y-E.top,E.bot-y,(1-hole(y,sd))*1.2); },col.frame,{gloss:2,mf:(p,n)=>{
+          const q=sub(p,C), y=dot(q,hup), sd=dot(q,Lf), th=Math.atan2(sd,dot(q,lk)), E=edge(th);
+          if(hole(y,sd)<1.3) return [col.inner||col.frame,1];                                        // the lit rim round each eye
+          return y>E.top-0.45||y<E.bot+0.4||Math.abs(th)>SP-0.07?[col.trim||col.frame,0]:null; }}));      // its edge, trimmed
+      for(const sd of [1,-1]) out.push(ellipsoid(face(EV,sd*EH,0.2),AXl,[0.25,1.0,1.45],'x:#14161e',{noCast:1}));   // the eyes behind it, in shadow
+      if(col.mark) out.push(ellipsoid(face(EV+1.15,0,1.0),AXl,[0.45,0.6,0.5],col.mark,{gloss:3,noCast:1}));        // the jewel between the brows
+      return out; }
+    const [h,w]=ewSize(t), sides=t==='mono'?[1]:[1,-1], tinted=!EW_CLEAR[ew]&&ew!=='threed';
     for(const sd of sides){ const c=face(EV,sd*EH,OFF), K=1.5;
       const lensCut=l=>inShape(t,l[1]*K,l[2]*K*sd,sd);
-      out.push(ellipsoid(c,AXl,[0.26,h*K,w*K],col.lens,{gloss:3,noCast:1,cut:lensCut}));
-      const g=0.42, ho=h+g, wo=w+g;                                                       // the frame: the outline of the lens, g wide
-      out.push(ellipsoid(add(c,sc(lk,0.05)),AXl,[0.36,ho*K,wo*K],col.frame,{gloss:2,noCast:1,cut:l=>{ const yo=l[1]*K, xo=l[2]*K*sd;
-        return inShape(t,yo,xo,sd)&&!inShape(t,yo*ho/h,xo*wo/w,sd); }}));
+      const lens=ew==='threed'?(sd>0?'x:#e0453a':'x:#3a8be0'):col.lens;
+      out.push(ellipsoid(c,AXl,[0.26,h*K,w*K],lens,{gloss:3,noCast:1,cut:lensCut}));
+      if(tinted) out.push(ellipsoid(add(c,sc(lk,0.04)),AXl,[0.27,h*K,w*K],lens,{gloss:3,noCast:1,dt:-1,cut:l=>lensCut(l)&&l[1]>0.15}));   // darker toward the top
+      const g=fw, ho=h+g, wo=w+g, half=ew==='readers';                                    // the frame: the outline of the lens
+      out.push(ellipsoid(add(c,sc(lk,0.05)),AXl,[fd,ho*K,wo*K],col.frame,{gloss:2,noCast:1,cut:l=>{ const yo=l[1]*K, xo=l[2]*K*sd;
+        return (!half||yo<0.1)&&inShape(t,yo,xo,sd)&&!inShape(t,yo*ho/h,xo*wo/w,sd); }}));
+      if(half) out.push(capsule(face(EV+h*0.05,sd*(EH-w),OFF+0.1),face(EV+h*0.05,sd*(EH+w),OFF+0.1),0.2,col.frame,{gloss:2,noCast:1}));   // the readers' top line
+      if(t==='cat') out.push(field(face(EV+h*0.85,sd*(EH+w*0.95),OFF),2.4,p=>{ const q=sub(p,face(EV+h*0.85,sd*(EH+w*0.95),OFF)), y=dot(q,hup), x=dot(q,Lf)*sd, a=dot(q,lk);
+          return Math.max(Math.abs(a)-fd*0.8,-y-0.2,y-0.9-x*0.7,x-1.6,-x-0.6); },col.frame,{gloss:2}));      // the swept up wing
+      if(!metal&&t!=='cat') out.push(ellipsoid(face(EV+h*0.75,sd*(EH+w+0.2),OFF+0.35),AXl,[0.2,0.32,0.32],'x:#e8e4d8',{gloss:3,noCast:1}));   // a rivet at the hinge
+      if(metal&&t!=='mono') out.push(ellipsoid(face(EV-h*0.35,sd*(EH-w+0.2),OFF+0.05),AXl,[0.35,0.42,0.3],'x:#f2f0ea',{gloss:3,noCast:1}));   // a nose pad
       out.push(ellipsoid(add(c,sc(lk,0.3),sc(hup,h*0.45),sc(Lf,sd*w*0.4)),AXl,[0.15,0.32,0.45],'x:#ffffff',{noCast:1}));   // a glint on the glass
     }
     if(t==='mono'){ const c=face(EV,EH,OFF); out.push(capsule(add(c,sc(hup,-h-0.3)),add(hc,sc(lk,hr*0.6),sc(Lf,hr*0.75),sc(hup,-hr*1.25)),0.22,col.frame,{gloss:2,noCast:1})); return out; }
-    out.push(capsule(face(EV+0.35,EH-w-0.1,OFF+0.1),face(EV+0.35,-(EH-w-0.1),OFF+0.1),0.32,col.frame,{gloss:2,noCast:1}));   // the bridge
+    out.push(capsule(face(EV+0.35,EH-w-0.1,OFF+0.1),face(EV+0.35,-(EH-w-0.1),OFF+0.1),metal?0.24:0.42,col.frame,{gloss:2,noCast:1}));   // the bridge
     if(t==='aviator') out.push(capsule(face(EV+h*0.9,EH-w*0.4,OFF),face(EV+h*0.9,-(EH-w*0.4),OFF),0.24,col.frame,{gloss:2,noCast:1}));   // the brow bar
     temples(col.frame,EV+h*0.45);
-    if(t==='groucho'){ out.push(ellipsoid(face(EV-2.4,0,0.6),AXl,[1.6,1.5,1.25],'x:#e8a08a',{gloss:1}));                     // the nose
-      out.push(ellipsoid(face(EV-4.0,0,0.25),AXl,[0.8,0.75,2.6],'x:#2a1d16',{noCast:1}));                                  // the moustache
-      for(const sd of [1,-1]) out.push(ellipsoid(face(EV+h+0.6,sd*EH,0.5),AXl,[0.7,0.55,1.7],'x:#2a1d16',{noCast:1})); }   // the brows
+    if(t==='groucho'){ const hair='x:#2a1d16', nose=face(EV-2.2,0,1.2);
+      out.push(field(nose,4,p=>{ const q=sub(p,nose), a=dot(q,lk), y=dot(q,hup), sd=dot(q,Lf);
+          return smin(Math.hypot(a,y+0.6,sd)-1.55,Math.hypot(a*1.6+0.6,y-1.4,sd*1.4)-0.8,1.2); },'x:#e8a08a',{gloss:2}));                    // the big nose
+      const mc=face(EV-4.1,0,0.55);
+      out.push(field(mc,4.5,p=>{ const q=sub(p,mc), a=dot(q,lk), y=dot(q,hup), sd=dot(q,Lf), u=Math.abs(sd);
+          return Math.max(Math.hypot(a*1.5,(y+0.06*u*u)*1.25,u/2.9)-1,-a-0.7); },hair,{mf:p=>{ const sd=dot(sub(p,mc),Lf); return [hair,Math.sin(sd*5)>0.4?1:0]; }}));   // the moustache, bushy
+      for(const sd of [1,-1]){ const bc=face(EV+h+0.85,sd*EH,0.6);
+        out.push(field(bc,3,p=>{ const q=sub(p,bc), a=dot(q,lk), y=dot(q,hup), x=dot(q,Lf)*sd; return Math.hypot(a*1.6,(y-0.12*x)*1.4,x/2.0)-0.85; },hair,{})); } }   // the brows
     return out; }
 
   /* MODELLED HATS for the menu golfer: the shapes a hull spun from the flat art cannot hold. Colours come from the
@@ -898,6 +1048,56 @@
     for(const row of map) for(const ch of row){ if(ch==='.'||ch===' ') continue; cnt[ch]=(cnt[ch]||0)+1; }
     const out=[]; for(const ch of Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])){ const r=roleFor(ch,pal,P,false); if(r&&r.m&&r.m.startsWith('x:')&&out.indexOf(r.m)<0) out.push(r.m); }
     return out; }
+  // ---------------------------------------------------------------------------------------------------
+  // MODELLED HATS, for the menu golfer. Most hats are solids of revolution round the head's up axis: a crown (a
+  // rounded cylinder or cone that can taper, bend, dent and pinch), a brim (a disc that can roll up at the sides,
+  // droop, snap down at the front or turn up into a tricorn), a band, a ball. hatSolid() makes them ONE smooth
+  // surface (field), each piece in its own material, with an optional texture (knit, straw, tweed, stars).
+  // A piece reads L: a forward, y up, s to the side, r out from the axis and th round it, in units from the head's
+  // centre, in the hat's own frame, which is tipped forward by tilt so a brim shows from the menu's level camera.
+  const clamp01=v=>v<0?0:v>1?1:v;
+  const rbox=(dx,dy,rr)=>{ const qx=dx+rr, qy=dy+rr; return Math.hypot(Math.max(qx,0),Math.max(qy,0))+Math.min(Math.max(qx,qy),0)-rr; };
+  const HP={
+    // a crown from y0 to y1, radius r0 at the bottom to r1 at the top. o: rr rounding, sq (front to back squash),
+    // bend (the top swept back), dent (a crease down the middle of the top), pinch (the front pinched), grow, clip
+    crown:(y0,y1,r0,r1,m,o)=>{ o=o||{}; const rr=o.rr==null?0.6:o.rr, sl=Math.hypot(1,(r1-r0)/(y1-y0));
+      return {m,dt:o.dt,k:o.k,tex:o.tex,b:[(o.a0||0)-(o.bend||0)/2,(y0+y1)/2,0,Math.hypot(Math.max(r0,r1)*(o.sq||1)+(o.bend||0)/2+(o.grow||0)+1,(y1-y0)/2+1)],d:L=>{ const t=clamp01((L.y-y0)/(y1-y0)); let a=L.a-(o.a0||0)+(o.bend||0)*t*t, s2=L.s;
+        if(o.pinch&&a>0) s2=s2/(1-o.pinch*clamp01(a/r0)*t);
+        const r=Math.hypot(a/(o.sq||1),s2), R=r0+(r1-r0)*t, top=y1-(o.dent?o.dent*Math.exp(-(L.s*L.s)/(r1*r1*0.18))*clamp01(1-Math.abs(L.a)/(r1*1.4)):0);
+        let d=rbox((r-R)/sl,Math.max(y0-L.y,L.y-top),rr)-(o.grow||0);
+        if(o.clip) d=Math.max(d,o.clip[0]-L.y,L.y-o.clip[1]); return d; }}; },
+    // a brim at height yb out to radius R, t thick. o.r0 where it leaves the crown, o.curl(L,u) lifts it (u is 0 at
+    // the crown and 1 at the edge), o.Rth(th) varies its radius round the hat
+    brim:(yb,R,t,m,o)=>{ o=o||{}; return {m,dt:o.dt,k:o.k,tex:o.tex,b:[0,yb,0,R*1.45],d:L=>{ const Rr=R*(o.Rth?o.Rth(L.th):1), r0=o.r0||R*0.5, u=clamp01((L.r-r0)/(Rr-r0));
+        const off=o.curl?o.curl(L,u):0; return rbox(L.r-Rr,Math.abs(L.y-yb-off)-t/2,t/2)/(o.lip||1); }}; },
+    band:(yc,R,rt,m,o)=>({m,dt:o&&o.dt,b:[0,yc,0,R+rt],d:L=>Math.hypot(L.r-R,L.y-yc)-rt}),
+    ball:(a,y,s,rad,m,o)=>({m,dt:o&&o.dt,k:o&&o.k,tex:o&&o.tex,b:[a,y,s,rad],d:L=>Math.hypot(L.a-a,L.y-y,L.s-s)-rad}),
+    stick:(a0,y0,s0,a1,y1,s1,rad,m,o)=>({m,dt:o&&o.dt,k:o&&o.k,b:[(a0+a1)/2,(y0+y1)/2,(s0+s1)/2,Math.hypot(a1-a0,y1-y0,s1-s0)/2+rad],d:L=>sdCap([L.a,L.y,L.s],[a0,y0,s0],[a1,y1,s1],rad)}),
+    egg:(a,y,s,ra,ry,rs,m,o)=>({m,dt:o&&o.dt,k:o&&o.k,tex:o&&o.tex,b:[a,y,s,Math.max(ra,ry,rs)],d:L=>{ const q=[(L.a-a)/ra,(L.y-y)/ry,(L.s-s)/rs], k0=Math.hypot(...q), k1=Math.hypot(q[0]/ra,q[1]/ry,q[2]/rs);
+      let d=k1<1e-6?-Math.min(ra,ry,rs):k0*(k0-1)/k1; if(o&&o.cut) d=Math.max(d,o.cut(L)); return d; }}) };
+  // a box (half sizes ha, hy, hs), turned by rot round the up axis
+  HP.box=(a,y,s,ha,hy,hs,rr,m,o)=>{ o=o||{}; const c=Math.cos(o.rot||0), sn=Math.sin(o.rot||0);
+    return {m,dt:o.dt,k:o.k,tex:o.tex,b:[a,y,s,Math.hypot(ha,hy,hs)],d:L=>{ const x=(L.a-a)*c+(L.s-s)*sn, z=-(L.a-a)*sn+(L.s-s)*c, qx=Math.abs(x)-ha+rr, qy=Math.abs(L.y-y)-hy+rr, qz=Math.abs(z)-hs+rr;
+      return Math.hypot(Math.max(qx,0),Math.max(qy,0),Math.max(qz,0))+Math.min(Math.max(qx,qy,qz),0)-rr; }}; };
+  // textures: [material or null, dt]
+  const TEX={
+    knit:(m)=>L=>{ const v=Math.sin(L.th*26); return [m,v>0.35?1:v<-0.35?-1:0]; },
+    straw:(m)=>L=>{ const w=(Math.floor(L.th*22/Math.PI)+Math.floor(L.y*0.9)+Math.floor(L.r*0.9))%2; return [m,w?1:-1]; },
+    tweed:(m)=>L=>{ const v=Math.sin(L.th*34+(Math.sin(L.y*1.6+L.r*1.6)>0?1:-1)*(L.y+L.r)*2.2); return [m,v>0.8?1:v<-0.8?-1:0]; },
+    stars:(m,st)=>L=>{ const u=Math.sin(L.th*9+L.y*0.9)*Math.sin(L.y*1.7-L.th*3); return u>0.9?[st,1]:[m,0]; } };
+  function hatSolid(M,pieces,o){ o=o||{}; const {hc,look,hup,Lf,hr}=M, ct=Math.cos(o.tilt||0), st=Math.sin(o.tilt||0);
+    const loc=p=>{ const q=sub(p,hc), a0=dot(q,look), y0=dot(q,hup), s=dot(q,Lf), a=a0*ct-y0*st, y=y0*ct+a0*st; return {a,y,s,r:Math.hypot(a,s),th:Math.atan2(s,a)}; };
+    const all=L=>pieces.map(pc=>pc.d(L));
+    // a piece whose bounding ball is farther than the surface found so far cannot change the answer, so it is skipped
+    const f=p=>{ const L=loc(p); let d=pieces[0].d(L);
+      for(let i=1;i<pieces.length;i++){ const pc=pieces[i], b=pc.b, k=pc.k||0;
+        if(b&&Math.hypot(L.a-b[0],L.y-b[1],L.s-b[2])-b[3]>d+k) continue;
+        const di=pc.d(L); d=k?smin(d,di,k):Math.min(d,di); }
+      return d; };
+    return field(add(hc,sc(hup,o.cy==null?hr*1.0:o.cy)),o.R||hr*2.4,f,pieces[0].m,{gloss:o.gloss==null?1:o.gloss,bias:o.bias||0,mf:p=>{ const L=loc(p), ds=all(L); let b=0;
+      for(let i=1;i<ds.length;i++) if(ds[i]<ds[b]) b=i; const pc=pieces[b]; if(pc.tex){ const t=pc.tex(L); return [t[0]||pc.m,t[1]||0]; } return [pc.m,pc.dt||0]; }}); }
+  // how wide the hair under a closed hat is, so the hat goes over it
+  const hairR=M=>M.hr*(M.hairStyle==='afro'?1.17:1.07);
   const HAT_MODEL={
     // a great helm that closes over the whole head: a visor slit at the eyes, breaths below it, a ridge down the
     // front, a rolled rim and a red plume
@@ -941,8 +1141,246 @@
       for(const s of [1,-1]){ const a=add(top,sc(Lf,s*hr*0.55),sc(look,hr*0.35)), b=add(a,sc(look,hr*0.55),sc(hup,hr*0.25),sc(Lf,s*hr*0.25));
         out.push(capsule(a,b,1.45,brown,{gloss:2})); out.push(capsule(b,add(b,sc(look,1.2),sc(hup,0.5)),0.55,bone)); out.push(ellipsoid(add(b,sc(look,1.6),sc(hup,0.7)),[look,hup,Lf],[0.75,0.75,0.75],bone)); }
       out.push(ellipsoid(add(hc,sc(hup,hr*0.5)),[look,hup,Lf],[hr*1.04,1.0,hr*1.04],'x:#e8dcc0',{cut:l=>Math.hypot(l[0],l[2])>0.88}));   // the platter it sits on
-      return out; },
-    pptricorn:(M,c,P)=>tricorn(M,c,P) };
+      return out; } };
+
+  // THE HATS AS THE REAL THINGS. Each is modelled from the hat itself (its crown, brim, band and trim), never
+  // from the old flat art; only the colours are the item's own (c, its art's colours, most used first).
+  const X=h=>'x:'+h, cx=(c,i,d)=>c[i]||X(d), HAT_OVER_HAIR={santa:1,witch:1,wizard:1,elf:1,beret:1};
+  Object.assign(HAT_MODEL,{
+    // a western hat: an oval crown with a deep crease down the middle and pinched at the front, a band, and a
+    // wide brim rolled up hard at the sides and dipping front and back
+    cowboy(M,c){ const H=M.hr, rh=hairR(M), felt=cx(c,0,'#a86e38'), band=cx(c,1,'#6e4420');
+      return [hatSolid(M,[
+        HP.crown(H*0.28,H*1.22,rh,H*0.86,felt,{rr:1.4,sq:1.16,dent:H*0.34,pinch:0.32}),
+        HP.crown(H*0.28,H*1.22,rh,H*0.86,band,{rr:1.4,sq:1.16,grow:0.25,clip:[H*0.3,H*0.5]}),
+        HP.brim(H*0.3,H*1.95,1.0,felt,{r0:rh,lip:1.8,curl:(L,u)=>{ const sn=L.s/(L.r||1); return H*0.62*u*u*sn*sn-H*0.12*u*(1-sn*sn); }})],
+        {tilt:0.12,R:H*2.5}) ]; },
+    // a sombrero: a tall peaked crown and a huge brim, flat out to a lip rolled up at its edge, braided trim
+    sombrero(M,c){ const H=M.hr, rh=hairR(M), straw=cx(c,1,'#a86e38'), dk=cx(c,0,'#6e4420'), gold=cx(c,3,'#c9a52a');
+      return [hatSolid(M,[
+        HP.crown(H*0.3,H*2.05,rh,H*0.42,straw,{rr:2.2,tex:TEX.straw(straw)}),
+        HP.crown(H*0.3,H*2.05,rh,H*0.42,gold,{rr:2.2,grow:0.3,clip:[H*0.32,H*0.62]}),
+        HP.brim(H*0.32,H*2.85,1.0,straw,{r0:rh,tex:TEX.straw(straw),curl:(L,u)=>H*0.55*Math.pow(clamp01((u-0.62)/0.38),2)}),
+        HP.band(H*0.32+H*0.55+0.4,H*2.85-0.6,0.7,dk)],
+        {tilt:0.1,R:H*3.2,cy:H*0.9}) ]; },
+    // a bucket hat: a short soft crown and a brim sloping down all round, stitched in rings
+    bucket(M,c){ const H=M.hr, rh=hairR(M);
+      return [hatSolid(M,[
+        HP.crown(H*0.28,H*1.18,rh*1.02,H*0.9,'hat',{rr:2.0}),
+        HP.brim(H*0.32,H*1.6,0.9,'hat',{r0:rh,curl:(L,u)=>-H*0.5*u,tex:L=>['hat',Math.sin(L.r*2.4)>0.75?-1:0]})],
+        {tilt:0.08,R:H*2.0}) ]; },
+    // a flat cap: a crown sloping forward over a short stiff peak, snug at the back
+    flat(M,c){ const H=M.hr, rh=hairR(M);
+      return [hatSolid(M,[
+        HP.crown(H*0.3,H*1.16,rh*1.04,rh*1.0,'hat',{rr:2.4,sq:1.24,a0:H*0.2}),
+        HP.brim(H*0.4,H*1.4,0.8,'hat',{r0:H*0.9,Rth:th=>Math.cos(th)>0.45?1:0.5,curl:(L,u)=>-H*0.12*u})],
+        {tilt:0.22,R:H*2.0}) ]; },
+    // a tweed newsboy: a full eight panel crown with a button, a short peak, in herringbone
+    tweed(M,c){ const H=M.hr, rh=hairR(M), t1=cx(c,1,'#7a6a48'), t0=cx(c,0,'#5c4f34');
+      return [hatSolid(M,[
+        HP.crown(H*0.3,H*1.18,rh*1.04,rh*1.16,t1,{rr:3.2,sq:1.2,a0:H*0.16,tex:TEX.tweed(t1)}),
+        HP.ball(H*0.16,H*1.21,0,0.9,t0),
+        HP.brim(H*0.4,H*1.4,0.8,t0,{r0:H*0.9,Rth:th=>Math.cos(th)>0.45?1:0.5,curl:(L,u)=>-H*0.12*u,tex:TEX.tweed(t0)})],
+        {tilt:0.22,R:H*2.0}) ]; },
+    // a fedora: a tapered crown with a centre dent and front pinches, a band, a brim snapped down in front and up behind
+    fedora(M,c){ const H=M.hr, rh=hairR(M), felt=cx(c,0,'#f2ecd6'), band=cx(c,1,'#40424a');
+      return [hatSolid(M,[
+        HP.crown(H*0.28,H*1.2,rh,H*0.88,felt,{rr:1.3,sq:1.12,dent:H*0.3,pinch:0.38}),
+        HP.crown(H*0.28,H*1.2,rh,H*0.88,band,{rr:1.3,sq:1.12,grow:0.28,clip:[H*0.3,H*0.56]}),
+        HP.brim(H*0.3,H*1.58,0.9,felt,{r0:rh,curl:(L,u)=>{ const cs=L.a/(L.r||1); return u*(cs>0?-H*0.26*cs:H*0.3*-cs)+H*0.08*u*u; }})],
+        {tilt:0.1,R:H*2.0}) ]; },
+    // a top hat: a tall cylinder flaring a touch at the top, a band, a brim rolled up at the sides
+    tophat(M,c){ const H=M.hr, rh=hairR(M), silk=cx(c,0,'#1a1a1f'), band=cx(c,1,'#30303a');
+      return [hatSolid(M,[
+        HP.crown(H*0.28,H*2.0,rh,rh*1.07,silk,{rr:0.5}),
+        HP.crown(H*0.28,H*2.0,rh,rh*1.07,band,{rr:0.5,grow:0.25,clip:[H*0.3,H*0.62]}),
+        HP.brim(H*0.3,H*1.48,0.8,silk,{r0:rh,curl:(L,u)=>{ const sn=L.s/(L.r||1); return H*0.3*u*u*sn*sn-H*0.05*u; }})],
+        {tilt:0.08,R:H*2.4,cy:H*1.1,gloss:2}) ]; },
+    // a straw boater: a flat topped cylinder, a ribbon, a flat brim, all woven
+    straw(M,c){ const H=M.hr, rh=hairR(M), st=cx(c,1,'#f2e3b0'), rib=cx(c,2,'#2a4d8f');
+      return [hatSolid(M,[
+        HP.crown(H*0.28,H*0.98,rh,rh*0.98,st,{rr:0.4,tex:TEX.straw(st)}),
+        HP.crown(H*0.28,H*0.98,rh,rh*0.98,rib,{rr:0.4,grow:0.25,clip:[H*0.3,H*0.58]}),
+        HP.brim(H*0.3,H*1.65,0.75,st,{r0:rh,tex:TEX.straw(st)})],
+        {tilt:0.12,R:H*2.0}) ]; },
+    // a pilgrim's capotain: a tall tapered flat topped crown, a band with a square gold buckle, a flat brim
+    pilgrim(M,c){ const H=M.hr, rh=hairR(M), bk=cx(c,0,'#1f1c24'), band=cx(c,1,'#3a3642'), gold=cx(c,3,'#d8b24a');
+      return [hatSolid(M,[
+        HP.crown(H*0.28,H*1.7,rh,H*0.8,bk,{rr:0.6}),
+        HP.crown(H*0.28,H*1.7,rh,H*0.8,band,{rr:0.6,grow:0.25,clip:[H*0.32,H*0.66]}),
+        HP.box(rh+0.1,H*0.49,0,0.45,H*0.2,H*0.2,0.15,gold,{}),
+        HP.box(rh+0.35,H*0.49,0,0.3,H*0.1,H*0.1,0.1,band,{}),
+        HP.brim(H*0.3,H*1.6,0.8,bk,{r0:rh,curl:(L,u)=>-H*0.06*u})],
+        {tilt:0.1,R:H*2.3,cy:H*1.0}) ]; },
+    // a pith helmet: a long dome with a vent on top, a band, and a brim that sweeps down all round, longer front and back
+    safari(M,c){ const H=M.hr, rh=hairR(M), cl=cx(c,0,'#f2ecd6'), band=cx(c,1,'#237038');
+      return [hatSolid(M,[
+        HP.egg(0,H*0.3,0,rh*1.18,H*0.95,rh*1.08,cl,{cut:L=>H*0.26-L.y}),
+        HP.band(H*0.4,rh*1.12,0.75,band),
+        HP.ball(0,H*1.25,0,1.0,cl),
+        HP.brim(H*0.3,H*1.5,0.8,cl,{r0:rh,Rth:th=>1+0.16*Math.cos(th)**2,curl:(L,u)=>-H*0.32*u,k:1.0})],
+        {tilt:0.08,R:H*2.1}) ]; },
+    // a witch's hat: a tall cone bent back at the tip, a band with a buckle, and a wide brim with a wavy droop
+    witch(M,c){ const H=M.hr, rh=hairR(M), felt=cx(c,0,'#4a3568'), band=cx(c,1,'#1a1a1f'), gold=cx(c,3,'#f2d24a');
+      return [hatSolid(M,[
+        HP.crown(H*0.28,H*2.55,rh,H*0.08,felt,{rr:0.5,bend:H*0.9}),
+        HP.crown(H*0.28,H*2.55,rh,H*0.08,band,{rr:0.5,bend:H*0.9,grow:0.28,clip:[H*0.3,H*0.62]}),
+        HP.box(rh*0.94+0.2,H*0.46,0,0.4,H*0.15,H*0.17,0.12,gold,{}),
+        HP.brim(H*0.3,H*2.05,0.8,felt,{r0:rh,curl:(L,u)=>-H*0.24*u*u*(0.6+0.4*Math.sin(3*L.th+0.5))})],
+        {tilt:0.1,R:H*3.0,cy:H*1.3}) ]; },
+    // a wizard's hat: a tall cone with a soft bend, scattered with stars, over a drooping brim
+    wizard(M,c){ const H=M.hr, rh=hairR(M), felt=cx(c,0,'#5a2f8f'), band=cx(c,1,'#3f1f68'), star=cx(c,2,'#fff7cc');
+      return [hatSolid(M,[
+        HP.crown(H*0.28,H*2.35,rh,H*0.12,felt,{rr:0.5,bend:H*0.55,tex:TEX.stars(felt,star)}),
+        HP.crown(H*0.28,H*2.35,rh,H*0.12,band,{rr:0.5,bend:H*0.55,grow:0.25,clip:[H*0.3,H*0.55]}),
+        HP.brim(H*0.3,H*1.8,0.8,felt,{r0:rh,curl:(L,u)=>-H*0.2*u*u,tex:TEX.stars(felt,star)})],
+        {tilt:0.1,R:H*2.8,cy:H*1.2}) ]; },
+    // a party hat: a striped cone on top of the head with a pompom
+    party(M,c){ const H=M.hr, y=cx(c,0,'#f2c53d'), w=cx(c,1,'#e8e8e8'), b=cx(c,2,'#3a9bd9'), pk=cx(c,3,'#ec5aa8');
+      return [hatSolid(M,[
+        HP.crown(H*0.6,H*2.3,H*0.8,H*0.05,y,{rr:0.3,tex:L=>{ const v=((Math.floor((L.th/Math.PI*3+L.y*0.35)%3)+3)%3); return [[y,b,pk][v],0]; }}),
+        HP.ball(0,H*2.33,0,1.8,w,{k:0.5})],
+        {tilt:-0.15,R:H*2.0,cy:H*1.4}) ]; },
+    // an elf's hat: a soft cone flopping back to a bell, over a folded cuff cut in points
+    elf(M,c){ const H=M.hr, rh=hairR(M), gr=cx(c,0,'#39b56b'), cuff=cx(c,2,'#f2ecd6');
+      return [hatSolid(M,[
+        HP.crown(H*0.28,H*1.95,rh,H*0.12,gr,{rr:0.6,bend:H*1.05}),
+        HP.crown(H*0.28,H*1.95,rh,H*0.12,cuff,{rr:0.6,bend:H*1.05,grow:0.55,clip:[H*0.26,H*0.5]}),
+        HP.ball(-H*1.05,H*1.92,0,1.5,'x:#f2d24a')],
+        {tilt:0.08,R:H*2.6,cy:H*1.1,gloss:1}) ]; },
+    // Santa's hat: a red cone flopping back and down, a thick fur cuff and a fur pompom
+    santa(M,c){ const H=M.hr, rh=hairR(M), red=cx(c,1,'#d23a34'), fur=cx(c,0,'#f2ecd6'), fuzz=L=>[fur,Math.sin(L.th*31+L.y*3)>0.6?-1:0];
+      return [hatSolid(M,[
+        HP.crown(H*0.3,H*1.7,rh,H*0.16,red,{rr:0.9,bend:H*1.35}),
+        HP.band(H*0.38,rh+0.5,H*0.2,fur,{}),
+        HP.ball(-H*1.35,H*1.62,0,H*0.27,fur,{k:0.6})],
+        {tilt:0.08,R:H*2.6,cy:H*1.0,gloss:0}) ]; },
+    // a knit beanie: a ribbed dome, a folded cuff, a pompom
+    beanie(M,c){ const H=M.hr, rh=hairR(M), knit=cx(c,0,'#d23a34'), pom=cx(c,1,'#f2ecd6'), cuff=cx(c,2,'#c23b34');
+      return [hatSolid(M,[
+        HP.crown(H*0.25,H*1.22,rh,H*0.5,knit,{rr:2.6,tex:TEX.knit(knit)}),
+        HP.crown(H*0.25,H*1.22,rh,H*0.5,cuff,{rr:2.6,grow:0.55,clip:[H*0.22,H*0.58],tex:TEX.knit(cuff)}),
+        HP.ball(0,H*1.28,0,H*0.3,pom,{k:0.8,tex:L=>[pom,Math.sin(L.th*19+L.y*4)>0.5?-1:0]})],
+        {tilt:0.05,R:H*1.8}) ]; },
+    // the harvest beanie: a knit beanie ribbed into pumpkin lobes, a cuff, and a stem and leaf on top
+    harvestbeanie(M,c){ const H=M.hr, rh=hairR(M), knit=cx(c,0,'#c8641e'), cuff=cx(c,5,'#b0561a'), stem=cx(c,4,'#7a4a22'), leaf=cx(c,6,'#4f7a2a');
+      const lobes=L=>{ const v=Math.cos(L.th*8); return [knit,v>0.75?1:v<-0.6?-1:0]; };
+      return [hatSolid(M,[
+        HP.crown(H*0.25,H*1.14,rh*1.03,H*0.72,knit,{rr:2.8,tex:lobes}),
+        HP.crown(H*0.25,H*1.14,rh*1.03,H*0.72,cuff,{rr:2.8,grow:0.55,clip:[H*0.22,H*0.56],tex:TEX.knit(cuff)}),
+        HP.stick(0,H*1.05,0,-0.6,H*1.5,0.3,0.75,stem,{k:0.5}),
+        HP.egg(-0.4,H*1.22,H*0.32,H*0.32,0.35,H*0.18,leaf,{})],
+        {tilt:0.05,R:H*1.9}) ]; },
+    // a beret: a soft flat disc worn tilted to one side, a band and a stub on top
+    beret(M,c){ const H=M.hr, rh=hairR(M), wool=cx(c,0,'#d23a34'), dk=cx(c,1,'#1a1a1f');
+      return [hatSolid(M,[
+        HP.egg(-H*0.05,H*0.78,H*0.2,H*1.28,H*0.32,H*1.3,wool,{}),
+        HP.band(H*0.48,rh*0.98,0.75,wool,{k:1.6}),
+        HP.stick(0,H*1.05,H*0.2,0,H*1.25,H*0.2,0.45,dk,{})],
+        {tilt:0.12,R:H*1.9}) ]; },
+    // a football helmet: a hard shell over the whole head, open at the face, a stripe down the middle,
+    // ear holes, and a cage of bars across the face
+    football(M,c){ const H=M.hr, shell=cx(c,0,'#3a9bd9'), bar=cx(c,2,'#b0b5bd'), stripe=cx(c,3,'#e8e8e8');
+      const face=L=>Math.max(L.a-H*0.4,Math.min(L.y-H*0.2,H*0.82-Math.abs(L.s)))<0?0:1;
+      const shellP={m:shell,d:L=>{ const q=[L.a/(H*1.2),(L.y-H*0.1)/(H*1.22),L.s/(H*1.16)], k0=Math.hypot(...q), k1=Math.hypot(q[0]/(H*1.2),q[1]/(H*1.22),q[2]/(H*1.16));
+          let d=Math.abs(k0*(k0-1)/k1)-0.7;
+          d=Math.max(d,-L.y-H*0.7);                                                             // the bottom edge
+          d=Math.max(d,-(Math.max(H*0.25-L.a,L.y-H*0.18,Math.abs(L.s)-H*0.78)));               // the face opening
+          return Math.max(d,-(Math.hypot(Math.abs(L.s)-H*1.1,L.y+H*0.15,L.a+H*0.05)-H*0.18)); },  // the ear holes
+        tex:L=>[Math.abs(L.s)<H*0.12&&L.y>H*0.05?stripe:shell,0]};
+      const ps=[shellP];
+      for(const yb of [-H*0.18,-H*0.48]) for(const sd of [1,-1]) ps.push(HP.stick(H*0.95,yb,0,H*0.62,yb+H*0.08,sd*H*0.85,0.42,bar,{}));
+      ps.push(HP.stick(H*1.0,-H*0.15,0,H*0.98,-H*0.6,0,0.42,bar,{}));
+      return [hatSolid(M,ps,{tilt:0,R:H*1.9,cy:H*0.1,gloss:3})]; },
+    // a viking helmet: an iron dome with a gold brow band and a nose guard, and two horns curving up and out
+    viking(M,c){ const H=M.hr, rh=hairR(M), iron=cx(c,0,'#b0b5bd'), horn=cx(c,1,'#f2ecd6'), gold=cx(c,2,'#c9a52a');
+      const ps=[HP.egg(0,H*0.22,0,rh*1.06,H*1.02,rh*1.06,iron,{cut:L=>H*0.2-L.y}),
+        HP.band(H*0.28,rh*1.07,0.9,gold),
+        HP.box(rh*1.05,H*0.0,0,0.45,H*0.3,0.55,0.25,iron,{})];
+      for(const sd of [1,-1]){ let prev=[0,H*0.55,sd*rh*0.95];
+        for(let i=1;i<=6;i++){ const t=i/6, q=[-H*0.1*t,H*0.5+H*1.15*t*t+H*0.3*t,sd*(rh*0.95+H*0.95*Math.sin(t*1.7))];
+          ps.push(HP.stick(...prev,...q,1.9*(1-t)+0.35,horn,{k:0.4})); prev=q; } }
+      return [hatSolid(M,ps,{tilt:0.05,R:H*2.4,cy:H*0.9,gloss:2})]; },
+    // a pirate's tricorn: a round crown with the brim turned up into three walls, gold trimmed, a skull at the front
+    pirate(M,c){ const H=M.hr, rh=hairR(M), felt=cx(c,0,'#30303a'), gold=cx(c,2,'#f2d24a'), bone=cx(c,3,'#e8e8e8');
+      return [hatSolid(M,[
+        HP.crown(H*0.28,H*1.02,rh,H*0.78,felt,{rr:2.2}),
+        HP.brim(H*0.3,H*1.62,0.8,felt,{r0:rh*0.98,Rth:th=>0.8+0.2*Math.cos(3*th),curl:(L,u)=>H*0.55*Math.pow(u,1.6),lip:2.2,tex:L=>[L.y>H*0.85-0.7&&L.r>rh*1.05?gold:felt,0]}),
+        HP.egg(H*1.35,H*0.72,0,0.5,H*0.16,H*0.14,bone,{})],
+        {tilt:0.08,R:H*2.2}) ]; },
+    // a graduate's mortarboard: a skull cap, a square board on top, a button and a tassel hanging over the side
+    grad(M,c){ const H=M.hr, rh=hairR(M), bk=cx(c,1,'#1a1a1f'), cap=cx(c,0,'#30303a'), gold=cx(c,2,'#f2d24a');
+      return [hatSolid(M,[
+        HP.crown(H*0.24,H*0.9,rh,H*0.92,cap,{rr:0.8}),
+        HP.box(0,H*0.98,0,H*1.25,0.4,H*1.25,0.2,bk,{rot:Math.PI/4}),
+        HP.ball(0,H*1.06,0,0.75,gold),
+        HP.stick(0,H*1.06,0,0,H*1.04,H*1.2,0.3,gold),
+        HP.stick(0,H*1.04,H*1.2,0.2,H*0.4,H*1.32,0.55,gold,{k:0.3})],
+        {tilt:0.22,R:H*2.1}) ]; },
+    // a propeller beanie: a four panel dome with a short peak, a stalk and a two bladed propeller
+    propeller(M,c){ const H=M.hr, rh=hairR(M), cols=[cx(c,0,'#e34b4b'),cx(c,1,'#39b56b'),cx(c,2,'#3a9bd9'),cx(c,4,'#f2c53d')], dk=cx(c,5,'#30303a');
+      return [hatSolid(M,[
+        HP.crown(H*0.25,H*1.15,rh,H*0.5,cols[0],{rr:2.6,tex:L=>[cols[((Math.floor((L.th+Math.PI)/(Math.PI/2))%4)+4)%4],0]}),
+        HP.brim(H*0.28,H*1.45,0.75,cols[2],{r0:H*0.9,Rth:th=>Math.cos(th)>0.5?1:0.5,curl:(L,u)=>-H*0.1*u}),
+        HP.stick(0,H*1.1,0,0,H*1.42,0,0.45,dk),
+        HP.egg(0,H*1.45,H*0.55,0.6,0.9,H*0.5,cols[3],{}),
+        HP.egg(0,H*1.45,-H*0.55,0.6,0.9,H*0.5,cols[0],{})],
+        {tilt:0.05,R:H*1.9}) ]; },
+    // headphones: a padded band over the top and two round ear cups with cushions
+    headphones(M,c){ const H=M.hr, band=cx(c,0,'#40424a'), cup=cx(c,1,'#2e78be'), pad=cx(c,3,'#1a1a1f'), R=H*1.13;
+      return [hatSolid(M,[
+        {m:band,d:L=>Math.max(Math.hypot(Math.hypot(L.s,L.y+H*0.05)-R,L.a)-0.75,-L.y-H*0.05)},
+        {m:cup,d:L=>rbox(Math.hypot(L.a,L.y+H*0.08)-H*0.5,Math.abs(Math.abs(L.s)-R-0.3)-0.9,0.5)},
+        {m:pad,d:L=>rbox(Math.hypot(L.a,L.y+H*0.08)-H*0.42,Math.abs(Math.abs(L.s)-R+0.9)-0.5,0.4)}],
+        {tilt:0,R:H*1.7,cy:H*0.3,gloss:2}) ]; },
+    // a floppy sun hat: a low crown with a ribbon and a wide brim drooping in soft waves
+    floppy(M,c){ const H=M.hr, rh=hairR(M), st=cx(c,1,'#f2c53d'), rib=cx(c,2,'#ec5aa8');
+      return [hatSolid(M,[
+        HP.crown(H*0.28,H*1.0,rh,rh*0.95,st,{rr:1.6,tex:TEX.straw(st)}),
+        HP.crown(H*0.28,H*1.0,rh,rh*0.95,rib,{rr:1.6,grow:0.25,clip:[H*0.3,H*0.56]}),
+        HP.egg(-H*0.3,H*0.44,-rh-0.4,H*0.22,H*0.16,0.5,rib,{}),
+        HP.brim(H*0.32,H*2.25,0.8,st,{r0:rh,tex:TEX.straw(st),curl:(L,u)=>-H*0.38*u*u*(0.65+0.35*Math.cos(4*L.th))})],
+        {tilt:0.12,R:H*2.6}) ]; },
+    // a scarecrow's hat: a battered straw hat, its crown crushed, its brim ragged and drooping, a patch sewn on
+    scarecrow(M,c){ const H=M.hr, rh=hairR(M), st=cx(c,0,'#d9b15a'), band=cx(c,3,'#5a3a1e'), patch=cx(c,5,'#7a3a8a');
+      return [hatSolid(M,[
+        HP.crown(H*0.28,H*1.05,rh,H*0.84,st,{rr:1.2,dent:H*0.18,tex:TEX.straw(st)}),
+        HP.crown(H*0.28,H*1.05,rh,H*0.84,band,{rr:1.2,grow:0.25,clip:[H*0.3,H*0.5]}),
+        HP.box(rh*0.92+0.2,H*0.78,-H*0.3,0.4,H*0.18,H*0.2,0.1,patch,{rot:0.3}),
+        HP.brim(H*0.3,H*1.95,0.8,st,{r0:rh,Rth:th=>1+0.07*Math.sin(9*th)+0.04*Math.sin(23*th),tex:TEX.straw(st),curl:(L,u)=>-H*0.32*u*u*(0.5+0.5*Math.sin(5*L.th+1))})],
+        {tilt:0.14,R:H*2.3}) ]; },
+    // a knight's close helm, in polished steel (the owner's reference, 2026-10-16: a burgonet, a knight in shining
+    // armour): a rounded skull with a tall crest from brow to nape, a sight slit, a pointed visor jutting over the
+    // face with a row of slots under its edge and pierced crosses down its sides, a chin bevor, a pivot rivet at each
+    // side, and a gorget flaring onto the shoulders in overlapping plates. It hides all the hair (M.noHair).
+    knight(M,c){ const H=M.hr, steel=X('#c9ced6'), dk=X('#16181d'), lame=X('#9aa1ab'), vis=X('#b4bac4');
+      const vTop=-H*0.08, vBot=-H*0.78;
+      const skullTex=L=>{ if(L.a>H*0.35&&Math.abs(L.y-(vTop+H*0.07))<H*0.045) return [dk,0];   // the sight slit
+        return [steel,0]; };
+      const visorTex=L=>{ if(L.y>vTop-H*0.13&&L.y<vTop-H*0.05&&Math.sin(L.s*2.6)>0.15) return [dk,0];   // the slots under the edge
+        const u=(L.a/(H*0.3)), v=(L.y-vBot)/(H*0.26), fu=u-Math.floor(u), fv=v-Math.floor(v);
+        if(Math.abs(L.s)>H*0.5&&L.y<vTop-H*0.2&&L.y>vBot+H*0.1&&((Math.abs(fu-0.5)<0.11&&Math.abs(fv-0.5)<0.36)||(Math.abs(fv-0.5)<0.11&&Math.abs(fu-0.5)<0.34))) return [dk,0];   // the crosses
+        if(Math.abs(L.s)<H*0.04) return [vis,1];                                              // the keel of the visor
+        return [vis,0]; };
+      const prow=L=>Math.abs(L.s)-(H*1.62-L.a)*0.9;                                            // the visor comes to a point
+      const ps=[
+        HP.egg(-H*0.05,H*0.1,0,H*1.16,H*1.14,H*1.19,steel,{cut:L=>-L.y-H*0.95,tex:skullTex}),                  // the skull
+        HP.egg(-H*0.2,H*0.3,0,H*1.2,H*1.24,H*0.17,steel,{k:0.6,cut:L=>H*0.6-L.y}),                         // the crest
+        {m:vis,k:0.5,b:[H*0.6,(vTop+vBot)/2,0,H*1.3],tex:visorTex,d:L=>{ const q=[(L.a-H*0.28)/(H*1.3),(L.y-(vTop+vBot)/2)/((vTop-vBot)/2),L.s/(H*1.08)], k0=Math.hypot(...q), k1=Math.hypot(q[0]/(H*1.3),q[1]/((vTop-vBot)/2),q[2]/(H*1.08));
+          return Math.max(k0*(k0-1)/k1,prow(L)*0.7); }},                                                       // the visor
+        HP.egg(H*0.12,-H*0.92,0,H*1.02,H*0.34,H*1.0,steel,{k:0.6}),                                           // the bevor at the chin
+        HP.crown(-H*1.42,-H*0.88,H*1.24,H*1.04,steel,{rr:0.5,k:0.6,tex:L=>[steel,Math.sin((L.y+H*1.42)/(H*0.54)*Math.PI*3)>0.8?-1:0]}),   // the gorget, in lames
+        HP.band(-H*1.4,H*1.24,0.55,lame)];
+      for(const sd of [1,-1]) ps.push(HP.ball(-H*0.12,-H*0.22,sd*H*1.19,1.0,lame));                        // the visor pivots
+      return [hatSolid(M,ps,{tilt:0,R:H*2.2,cy:H*0.0,gloss:3,bias:.08})]; },
+    // caps: a flat brim snapback, a cap worn backwards, and the No. 1 cap with its gold numeral
+    flatbrim(M,c){ return capParts(M,hairR(M)/M.hr,{crown:cx(c,1,'#2e78be'),brim:cx(c,0,'#40424a'),btn:cx(c,0,'#40424a'),flat:true,mark0:false}); },
+    backwards(M,c){ return capParts(M,hairR(M)/M.hr,{crown:cx(c,0,'#2e78be'),brim:cx(c,1,'#1a1a1f'),btn:cx(c,1,'#1a1a1f'),dir:-1,mark0:false}); },
+    no1cap(M,c){ const gold=cx(c,2,'#d9ae32');
+      return capParts(M,hairR(M)/M.hr,{crown:cx(c,0,'#1f1d26'),brim:cx(c,1,'#2c2a34'),btn:gold,badge:(pc,AX)=>{ const [f,u,s]=AX, o=add(pc,sc(f,0.5));
+        return [capsule(add(o,sc(u,1.9)),add(o,sc(u,-1.9)),0.5,gold,{gloss:2,noCast:1}), capsule(add(o,sc(u,1.9)),add(o,sc(u,1.1),sc(s,-1.0)),0.45,gold,{gloss:2,noCast:1}),
+          capsule(add(o,sc(u,-1.9),sc(s,-0.9)),add(o,sc(u,-1.9),sc(s,0.9)),0.45,gold,{gloss:2,noCast:1})]; }}); } });
+  HAT_MODEL.pptricorn=(M,c,P)=>tricorn(M,c,P);   // the Putt Putt tricorn, modelled (and on the course golfer too)
   const HAT_COURSE={pptricorn:1};   // a modelled hat that is modelled on the course golfer too
   /* THE PUTT PUTT WORLD REWARDS, each modelled as the thing it is and keyed by its own id, so nothing else changes.
      A painted part (o.paint) picks its colour cell by cell from where on it the cell is (its unit coordinates),
@@ -1128,8 +1566,10 @@
     { gear.lefty=!!look.lefty; gear.body=look.body||''; gear.bodyPal=(look.body&&typeof BODY_SKINS!=='undefined'&&BODY_SKINS[look.body])||null; const bpal=look.ball&&typeof PXG_BALL_PAL!=='undefined'&&PXG_BALL_PAL[look.ball]; gear.ballC=bpal?(bpal.C||null):null; gear.ballId=bpal&&BALL_PP[look.ball]?look.ball:''; const sh=cleats?cleats.main:av.shoesHex; gear.saddleHex=cleats&&cleats.acc?cleats.acc:(PQ.lum(sh)>0.6?'#2c3a58':mix(sh,'#ffffff',0.55)); }
     const M=MO?profileModel(aim,gear):model(aim,!!look.lefty,kind,kind==='walk'?walkPose(poseKey):POSES[poseKey],gear);
     const P=Object.assign({k:PXG_FIX.k,l:PXG_FIX.l,g:PXG_FIX.g,n:PXG_FIX.n,G:PXG_FIX.G,H:PXG_FIX.H,F:PXG_FIX.F,E:'#20242c',S:'#e8ebf0'},typeof PXG_NOV!=='undefined'?PXG_NOV:{});
-    const closed=!!novel&&!(typeof PXG_HAT_OPEN!=='undefined'&&PXG_HAT_OPEN[novel]);
-    const hs=look.hairStyle||'short'; M.hairK=closed?1.06:hs==='afro'?1.32:hs==='curly'?1.08:1.03;   // a band sits on the hair, not in it
+    // the menu's modelled cone hats, the beret and Santa's hat go over the hair, as real hats do (the flat art perches them)
+    const closed=!!novel&&(!(typeof PXG_HAT_OPEN!=='undefined'&&PXG_HAT_OPEN[novel])||!!(MO&&HAT_MODEL[novel]&&HAT_OVER_HAIR[novel]));
+    const hs=look.hairStyle||'short'; M.hairStyle=hs; M.hairK=closed?1.06:hs==='afro'?1.32:hs==='curly'?1.08:1.03;   // a band sits on the hair, not in it
+    if(MO&&novel==='knight') M.noHair=true;   // the great helm covers every hair
     const parts=M.parts.concat(hairHat(M,L,closed));
     if(novel){ const cfg=HAT3D[novel]||{}, pal=PXG_HERITAGE_HAT_PAL[novel]||null;
       if((MO||HAT_COURSE[novel])&&HAT_MODEL[novel]) parts.push(...HAT_MODEL[novel](M,hatColours(PXG_HATS[novel],pal,P),pal||{}));
@@ -1145,6 +1585,7 @@
         if(LENS.indexOf(c)<0){ cnt[c]=(cnt[c]||0)+1; continue; } if(x<mn)mn=x; if(x>mx)mx=x; if(y<ly)ly=y; if(x<22)nL++; else if(x>22)nR++; } }
       const dx=(mx>=0&&nL>0&&nR>0)?Math.round(22-(mn+mx)/2):0, dy=ew==='visorband'?0:(ly<99?Math.max(0,Math.min(3,15-ly)):1);
       if(MO&&novel==='knight'){}   // a closed great helm hides the glasses under it
+      else if(MO&&EW_PP[ew]&&typeof PXG_EW_PAL!=='undefined'&&PXG_EW_PAL[ew]){ const e3=eyewear3D(M,EW_PP[ew].as,map,P,ewColoursPP(EW_PP[ew],PXG_EW_PAL[ew])); e3.forEach(q=>{ q.o.item='ew'; }); parts.push(...e3); }
       else if(MO&&EW_SHAPE[ew]){ const e3=eyewear3D(M,ew,map,P); e3.forEach(q=>{ q.o.item='ew'; }); parts.push(...e3); } else {
       // an item with its own eyewear palette (the page's PXG_EW_PAL, the Putt Putt rewards) reads its colours there first
       const ep=typeof PXG_EW_PAL!=='undefined'&&PXG_EW_PAL[ew], EP=ep?Object.assign({},P,ep):P;
@@ -1162,7 +1603,7 @@
     // each part's box on the screen, so a cell only tests the parts that can reach it
     for(const p of parts){ if(p.k==='e'){ const m=Math.max(...p.r); p.bb=[p.c[0]-m,p.c[1]-m,p.c[0]+m,p.c[1]+m]; }
       else if(p.k==='v') p.bb=p.bb2;
-      else if(p.k==='f'){ p.bb=[p.c[0]-p.R,p.c[1]-p.R,p.c[0]+p.R,p.c[1]+p.R];
+      else if(p.k==='f'){ p.bb=p.box?p.box.slice(0,4):[p.c[0]-p.R,p.c[1]-p.R,p.c[0]+p.R,p.c[1]+p.R];
         if(p.o.pts){ const q=p.o.pts.map(cam); p.bb=[Math.min(...q.map(v=>v[0])),Math.min(...q.map(v=>v[1])),Math.max(...q.map(v=>v[0])),Math.max(...q.map(v=>v[1]))]; } }
       else p.bb=[Math.min(p.a[0],p.b[0])-p.r,Math.min(p.a[1],p.b[1])-p.r,Math.max(p.a[0],p.b[0])+p.r,Math.max(p.a[1],p.b[1])+p.r]; }
     for(let y=0;y<GH*K;y++){ const Y=(y+.5)/K-OY, row=parts.filter(p=>Y>=p.bb[1]&&Y<=p.bb[3]); if(!row.length) continue;
@@ -1195,7 +1636,7 @@
     if(cleats) shoes=cleats.main||shoes;
     const pat=(!top||top==='duckfloatie'||top==='cape')&&look.shirtPat&&PXPAT_BY[look.shirtPat]?look.shirtPat:''; let patFn=null;
     if(pat){ const pd=PXPAT_BY[pat]; if(pd.fixed){const cols=pd.cols||[];patFn=(x,y)=>cols[pd.f(x,y)|0]||cols[0]||null}
-      else { const light=pxLum(shirt)>0.55,a1=pxShade(shirt,light?-52:46),a2=pxShade(shirt,light?-90:82); patFn=(x,y)=>{const a=pd.f(x,y);return a?(a===2?a2:a1):null}; } }
+      else { const light=pxLum(shirt)>0.55, k=MO?1.7:1, a1=pxShade(shirt,Math.round((light?-52:46)*k)),a2=pxShade(shirt,Math.round((light?-90:82)*k)); patFn=(x,y)=>{const a=pd.f(x,y);return a?(a===2?a2:a1):null}; } }   // the menu lights the cloth, so its tints are stronger
     // a body skin's rags: its tears are placed on the profile torso, so the torso's cells are mapped onto it
     const bodySkin=(look.body&&typeof BODY_SKINS!=='undefined'&&BODY_SKINS[look.body])||null;
     if(bodySkin&&bodySkin.rags&&!MO){ const t0=cam(M.tc), under=patFn, tx=t0[0]+OX, ty=t0[1]+OY;
@@ -1207,9 +1648,16 @@
       glove:ramp('#f7f8f5',{spread:.8}),hair:PQ.hairRamp(av.hairHex),sole:ramp('#e8e2d4'),polo:ramp(av.shirtHex),saddle:ramp(shoes)};
     const fixed={socket:mix(R.skin[3]||R.skin[2],'#141410',.55),pupil:av.pupilHex||mix(R.hair[0],'#1a1018',.6),brow:R.hair[0],mouth:av.mouthHex||mix(R.skin[1],'#7a2a34',.30),glint:'#fbfaf2',blush:mix(R.skin[2],'#e0586a',.22),lace:mix(ramp(shoes)[1],'#000000',.25)};
     const rc=new Map(), rampOf=h=>{ let r=rc.get(h); if(!r){ r=ramp(h); rc.set(h,r); } return r; };
-    const PK=Math.max(1,Math.round(K/2)); s.paint(ctx,1,(c,x0,y0)=>{const m=c.m, x=Math.floor(x0/PK), y=Math.floor(y0/PK);
-      if((m==='shirt'||m==='polo')&&patFn&&!(m==='shirt'&&top&&top!=='duckfloatie'&&top!=='cape')){const h=patFn(x,y);if(h)return rampOf(h)}
-      if(m==='plaid'){ const a=(x%5===0), b=(y%5===0); return rampOf(a&&b?plaidC[2]:(a||b)?plaidC[1]:plaidC[0]); }
+    const PK=Math.max(1,Math.round(K/2));
+    // THE MENU'S PATTERNS WRAP THE CLOTH. A cell is turned back into its point on the body, and the pattern is read
+    // by the distance round the torso (its angle times its girth) and the height, so stripes run round the body and
+    // down the sleeves rather than lying flat on the picture. PC is a pattern cell, in units.
+    const PC=0.9, wrapAt=(x0,y0,z)=>{ const w=cam([(x0+.5)/K-OX,(y0+.5)/K-OY,z]), q=sub(w,M.tc);
+      return [Math.floor(Math.atan2(dot(q,M.T),dot(q,M.F))*7.4/PC+4000), Math.floor((44-w[1])/PC)]; };
+    s.paint(ctx,1,(c,x0,y0)=>{const m=c.m, x=Math.floor(x0/PK), y=Math.floor(y0/PK);
+      if((m==='shirt'||m==='polo')&&patFn&&!(m==='shirt'&&top&&top!=='duckfloatie'&&top!=='cape')){ const uv=MO?wrapAt(x0,y0,c.z):[x,y], h=patFn(uv[0],uv[1]); if(h) return rampOf(h); }
+      if(m==='plaid'){ const uv=MO?wrapAt(x0,y0,c.z):[x,y], a=(uv[0]%5===0), b=(uv[1]%5===0); return rampOf(a&&b?plaidC[2]:(a||b)?plaidC[1]:plaidC[0]); }
+      if(m.startsWith('k:')){ const h=m.slice(2), uv=MO?wrapAt(x0,y0,c.z):[x,y]; return rampOf(uv[0]%2?h:pxShade(h,-18)); }   // knit, in ribs
       if(m==='sock'){ const d=((x+y)%4===0)||(((x-y)%4+4)%4===0); return rampOf(d?(lp['4']||'#9a4436'):(y%5===0?(lp['5']||lp['3']):(lp['3']||'#ded3b4'))); }
       if(R[m])return R[m]; if(fixed[m])return fixed[m]; if(m.startsWith('x:'))return rampOf(m.slice(2)); return '#ff00ff'});
     // the figure's height in cells, so the page can size it to the old sprite's figure
@@ -1254,7 +1702,7 @@
      off centre), a square head chip, or one item drawn alone for its tile. A drawing costs 10 to 45 ms, so
      cached() lets a page ask without drawing and draw later while idle. */
   const PIC={ fig:{K:3,EL:2,aim:180}, chip:{K:2,EL:2,aim:180}, hat:{K:4,EL:20,aim:200,only:'hat'}, ew:{K:5,EL:6,aim:200,only:'ew'},
-    club:{K:4,EL:24,aim:205,only:'club'}, top:{K:3,EL:10,aim:200,only:'top'}, shirt:{K:3,EL:8,aim:200,only:'shirt'}, pants:{K:3,EL:12,aim:200,only:'pants'}, leg:{K:3,EL:10,aim:200,only:'leg'}, shoe:{K:5,EL:20,aim:235,only:'shoe'} };
+    club:{K:6,EL:24,aim:205,only:'club'}, top:{K:3,EL:10,aim:200,only:'top'}, shirt:{K:3,EL:8,aim:200,only:'shirt'}, pants:{K:3,EL:12,aim:200,only:'pants'}, leg:{K:3,EL:10,aim:200,only:'leg'}, shoe:{K:5,EL:20,aim:235,only:'shoe'} };
   function menu(look,aimDeg,o){ MO={K:o.K||3,EL:o.EL!=null?o.EL:2,phase:o.phase||0,only:o.only||''};
     try{ return draw(look,aimDeg,'walk','ws').cv; } finally{ MO=null; } }
   const pcache=new Map();
