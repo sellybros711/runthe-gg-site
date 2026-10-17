@@ -1,0 +1,90 @@
+/* The Sky World's chrome: the top bar with its "as of" times, the legend, the zoom buttons, the hover card
+ * (desktop), and the panel for whatever is chosen: a side panel on a desktop, a bottom sheet on a phone. */
+(function(){
+var CSS = '\
+:root{ --ink:#1d3550; --card:#fffdf6; --line:#e3dcc8; --mute:#6b7a8c; --live:#2fa84a; --test:#d99a16; --dev:#7a5cff; --unl:#2a9fd6; }\
+html,body{ overflow:hidden; touch-action:none; overscroll-behavior:none; }\
+#world,#over{ position:fixed; inset:0; image-rendering:pixelated; }\
+#over{ cursor:grab; }\
+.sw-top{ position:fixed; left:12px; right:12px; top:max(10px,env(safe-area-inset-top)); display:flex; gap:8px; align-items:center; pointer-events:none; z-index:3; }\
+.sw-brand{ pointer-events:auto; white-space:nowrap; background:var(--ink); color:#fff; border-radius:12px; padding:8px 12px; font-weight:800; letter-spacing:.06em; font-size:13px; box-shadow:0 2px 0 rgba(0,0,0,.18); }\
+.sw-chips{ display:flex; gap:6px; flex-wrap:wrap; pointer-events:auto; }\
+.sw-chip{ background:rgba(255,253,246,.94); border:1px solid var(--line); border-radius:999px; padding:5px 10px; font-size:12px; font-weight:600; white-space:nowrap; }\
+.sw-chip b{ font-weight:800; }\
+.sw-sp{ flex:1; }\
+.sw-btn{ pointer-events:auto; background:rgba(255,253,246,.94); border:1px solid var(--line); border-radius:10px; height:36px; min-width:36px; padding:0 10px; font:inherit; font-weight:800; color:var(--ink); cursor:pointer; }\
+.sw-legend{ position:fixed; left:12px; bottom:max(14px,env(safe-area-inset-bottom)); background:rgba(255,253,246,.94); border:1px solid var(--line); border-radius:12px; padding:8px 10px; font-size:12px; display:flex; gap:10px; z-index:2; }\
+.sw-dot{ display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:4px; vertical-align:-1px; }\
+.sw-zoom{ position:fixed; right:12px; bottom:max(14px,env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:6px; z-index:2; }\
+.sw-hover{ position:fixed; pointer-events:none; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:8px 10px; box-shadow:0 6px 18px rgba(29,53,80,.18); max-width:260px; font-size:12.5px; display:none; z-index:4; }\
+.sw-hover b{ display:block; font-size:13.5px; }\
+.sw-panel{ position:fixed; top:64px; right:12px; bottom:12px; width:380px; background:var(--card); border:1px solid var(--line); border-radius:16px; box-shadow:0 10px 30px rgba(29,53,80,.22); overflow:auto; transform:translateX(420px); transition:transform .25s ease; z-index:5; }\
+.sw-panel.on{ transform:none; }\
+.sw-ph{ padding:16px 52px 10px 16px; border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--card); }\
+.sw-ph h2{ margin:0 0 6px; font-size:19px; }\
+.sw-pill{ display:inline-block; font-size:11.5px; font-weight:800; border-radius:999px; padding:2px 8px; color:#fff; }\
+.sw-sec{ padding:12px 16px; border-bottom:1px solid var(--line); }\
+.sw-sec h3{ margin:0 0 8px; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--mute); }\
+.sw-row{ display:flex; gap:8px; align-items:flex-start; padding:5px 0; }\
+.sw-row .k{ flex:1; }\
+.sw-row button{ all:unset; cursor:pointer; flex:1; font-weight:600; }\
+.sw-asof{ font-size:11.5px; color:var(--mute); }\
+.sw-x{ position:absolute; right:12px; top:12px; border:0; background:#efe9d8; border-radius:8px; width:32px; height:32px; font-weight:900; color:var(--ink); cursor:pointer; }\
+.sw-grab{ display:none; }\
+.sw-load{ position:fixed; inset:0; display:grid; place-items:center; font-weight:800; color:#fff; text-shadow:0 1px 0 rgba(0,0,0,.2); font-size:16px; z-index:6; pointer-events:none; }\
+.sw-load.sw-small{ inset:auto; left:50%; transform:translateX(-50%); bottom:max(18px,env(safe-area-inset-bottom)); top:auto; background:rgba(29,53,80,.86); color:#fff; text-shadow:none; border-radius:999px; padding:7px 14px; font-size:13px; }\
+.sw-warn{ position:fixed; left:50%; transform:translateX(-50%); top:60px; background:#fff3d6; color:#7a5200; border:1px solid #f0d8a0; border-radius:10px; padding:6px 10px; font-size:12.5px; font-weight:700; z-index:3; }\
+@media (max-width:700px){\
+  .sw-chips .sw-chip:not(.m){ display:none; }\
+  .sw-legend,.sw-zoom{ display:none; }\
+  .sw-panel{ top:auto; left:0; right:0; bottom:0; width:auto; max-height:62vh; border-radius:18px 18px 0 0; transform:translateY(105%); padding-bottom:env(safe-area-inset-bottom); }\
+  .sw-panel.on{ transform:none; }\
+  .sw-grab{ display:block; width:40px; height:5px; border-radius:3px; background:#d8d0bc; margin:8px auto 0; }\
+}';
+var STATUS = { live:['Live', 'var(--live)'], unlisted:['Unlisted', 'var(--unl)'], testers:['Testers only', 'var(--test)'], dev:['In development', 'var(--dev)'] };
+var W = null, LN = {}, $ = {}, ticks = 0;
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); }
+function et(iso){ try { return new Date(iso).toLocaleTimeString('en-US', { timeZone:'America/New_York', hour:'numeric', minute:'2-digit' }) + ' ET'; } catch (e) { return '-'; } }
+function mk(tag, cls, html){ var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; document.body.appendChild(e); return e; }
+function plural(n, w){ return n + ' ' + w + (n === 1 ? '' : 's'); }
+
+window.SKY_UI = {
+  el:function(id){ return document.getElementById(id); },
+  mount:function(world, games){ W = world; (W.layers || []).forEach(function(l){ LN[l.id] = l.name; });
+    var st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
+    var gate = document.getElementById('gate'); if (gate) gate.style.display = 'none';
+    document.title = 'Sky World';
+    var c1 = document.createElement('canvas'); c1.id = 'world'; document.body.appendChild(c1);
+    var c2 = document.createElement('canvas'); c2.id = 'over'; document.body.appendChild(c2);
+    var counts = {}; games.forEach(function(g){ counts[g.status] = (counts[g.status] || 0) + 1; });
+    mk('div', 'sw-top', '<div class="sw-brand">SKY WORLD</div><div class="sw-chips"><span class="sw-chip m">Games as of <b>' + esc(et(W.asOf)) + '</b></span>' +
+      '<span class="sw-chip">' + esc(plural(games.length, 'game')) + ' · ' + (counts.live || 0) + ' live · ' + (counts.testers || 0) + ' for testers · ' + ((counts.dev || 0) + (counts.unlisted || 0)) + ' more</span></div><div class="sw-sp"></div>');
+    mk('div', 'sw-legend', '<span><i class="sw-dot" style="background:var(--live)"></i>Live</span><span><i class="sw-dot" style="background:var(--unl)"></i>Unlisted</span><span><i class="sw-dot" style="background:var(--test)"></i>Testers</span><span><i class="sw-dot" style="background:var(--dev)"></i>In development</span>');
+    var z = mk('div', 'sw-zoom', '<button class="sw-btn" aria-label="Zoom in">+</button><button class="sw-btn" aria-label="Zoom out">-</button>');
+    z.children[0].onclick = function(){ SKY.zoom(1); }; z.children[1].onclick = function(){ SKY.zoom(-1); };
+    $.hover = mk('div', 'sw-hover'); $.panel = mk('div', 'sw-panel', '<div class="sw-grab"></div><div></div>'); $.pc = $.panel.children[1];
+    $.load = mk('div', 'sw-load', 'Raising the islands'); },
+  progress:function(){ ticks++; if ($.load) $.load.textContent = 'Raising the islands' + '...'.slice(0, 1 + (ticks >> 3) % 3); },
+  painting:function(){ if ($.load){ $.load.className = 'sw-load sw-small'; } },
+  ready:function(warn){ if ($.load) $.load.remove(); if (warn) mk('div', 'sw-warn', esc(warn)); },
+  hover:function(h, x, y){ var html = null;
+    if (h && h.p && window.SKY_HOVER_CARD) html = window.SKY_HOVER_CARD(h);
+    else if (h && h.d) html = '<b>' + esc(LN[h.d.id]) + '</b>' + esc(h.g.name) + ' · ' + esc(plural(h.g.counts[h.d.id] || 0, 'file')) + '<br><span class="sw-asof">Click for more</span>';
+    if (!html){ $.hover.style.display = 'none'; return; }
+    $.hover.innerHTML = html; $.hover.style.display = 'block'; $.hover.style.left = Math.min(innerWidth - 270, x + 16) + 'px'; $.hover.style.top = (y + 12) + 'px'; },
+  select:function(h){ $.hover.style.display = 'none'; if (!h){ $.panel.classList.remove('on'); return; }
+    if (h.p && window.SKY_PANEL){ $.pc.innerHTML = window.SKY_PANEL(h); }
+    else if (h.d){ var g = h.g, n = g.counts[h.d.id] || 0;
+      $.pc.innerHTML = head(LN[h.d.id], g) + '<div class="sw-sec"><h3>On ' + esc(g.name) + '</h3>' + esc(plural(n, 'file')) + ' in this layer.<div class="sw-asof">As of ' + esc(et(W.asOf)) + '</div></div>';
+    } else if (h.g){ var g2 = h.g;
+      $.pc.innerHTML = head(g2.name, g2) +
+        '<div class="sw-sec"><h3>Where it lives</h3>' + (g2.where ? '<code>' + esc(g2.where) + '</code>' : 'Not on the site yet.') + (g2.branch ? '<br><span class="sw-asof">Branch ' + esc(g2.branch) + '</span>' : '') + '</div>' +
+        '<div class="sw-sec"><h3>Districts</h3>' + (g2.layers.length ? g2.layers.map(function(l){ return '<div class="sw-row"><button data-d="' + l + '">' + esc(LN[l]) + '</button><span class="sw-asof">' + esc(plural(g2.counts[l] || 0, 'file')) + '</span></div>'; }).join('') : '<div class="sw-asof">No files yet.</div>') +
+        '<div class="sw-asof">As of ' + esc(et(W.asOf)) + '</div></div>';
+      [].forEach.call($.pc.querySelectorAll('[data-d]'), function(b){ b.onclick = function(){ var d = g2.dist.filter(function(k){ return k.id === b.dataset.d; })[0]; SKY.focus(d.x, d.y, g2.z); SKY.select({ g:g2, d:d }); }; });
+      SKY.focus(g2.x, g2.y, g2.z); }
+    var x = $.pc.querySelector('.sw-x'); if (x) x.onclick = function(){ SKY.select(null); };
+    $.panel.classList.add('on'); }
+};
+function head(title, g){ var st = STATUS[g.status]; return '<div class="sw-ph"><button class="sw-x" aria-label="Close">×</button><h2>' + esc(title) + '</h2><span class="sw-pill" style="background:' + st[1] + '">' + st[0] + '</span>' + (g.note ? ' <span class="sw-asof">' + esc(g.note) + '</span>' : '') + '</div>'; }
+})();
