@@ -94,7 +94,7 @@ const env = {
   STRIPE_PRICE_PS_YEAR: 'price_ps_year',
   STRIPE_PRICE_RTB_YEAR: 'price_rtb_year',
 };
-const stripe = { subscriptions: {}, invoices: {}, charges: {}, invoicePayments: {} };
+const stripe = { subscriptions: {}, invoices: {}, charges: {}, invoicePayments: {}, sessionsByPayment: {} };
 const unix = (d) => Math.floor(d / 1000);
 const DAY = 86400000;
 
@@ -187,6 +187,11 @@ globalThis.fetch = async function (url, init = {}) {
       const pi = u.searchParams.get('payment[payment_intent]');
       return reply(200, { data: stripe.invoicePayments[pi] ? [stripe.invoicePayments[pi]] : [] });
     }
+    if (p === '/v1/checkout/sessions' && method === 'GET') {
+      // the session a one-time payment came from, which a refund reads to see whether it was Putt Putt lives
+      const pi = u.searchParams.get('payment_intent');
+      return reply(200, { data: stripe.sessionsByPayment[pi] ? [stripe.sessionsByPayment[pi]] : [] });
+    }
     throw new Error('replay: the webhook asked Stripe for something unexpected: ' + method + ' ' + p);
   }
   throw new Error('replay: a request left the harness: ' + url);
@@ -270,6 +275,7 @@ ok('the one-time bundle is lifetime', row(L, 'ps_premium') && row(L, 'ps_premium
 snapshot();
 
 console.log('\n-- a refund of the one-time purchase itself changes nothing, in either API shape');
+stripe.sessionsByPayment.pi_once = { id: 'cs_L', object: 'checkout.session', mode: 'payment', metadata: { supabase_user_id: L, bundle: 'perfect-season' } };
 await send('charge.refunded', { id: 'ch_once_old', object: 'charge', invoice: null, payment_intent: 'pi_once',
   amount: 1999, amount_refunded: 1999, refunded: true });
 await send('charge.refunded', { id: 'ch_once_new', object: 'charge', payment_intent: 'pi_once',

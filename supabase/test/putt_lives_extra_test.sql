@@ -73,3 +73,4 @@ select pg_temp.claim(not has_function_privilege('authenticated', 'public.putt_li
 select pg_temp.claim(not has_function_privilege('anon', 'public.putt_lives_buy(text, uuid, int)', 'execute'), 'nor can a guest');
 select pg_temp.claim(has_function_privilege('authenticated', 'public.putt_lives_spend(int)', 'execute')
   and not has_function_privilege('anon', 'public.putt_lives_spend(int)', 'execute'), 'spend is still for signed in players only');
+select pg_temp.claim(has_function_privilege('service_role', 'public.putt_lives_buy(text, uuid, int)', 'execute'), 'the webhook (service_role) can call the writer');
