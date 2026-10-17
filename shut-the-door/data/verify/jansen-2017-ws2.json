@@ -1,0 +1,262 @@
+{
+ "id": "jansen-2017-ws2",
+ "plan": "alternate",
+ "resolution": "real",
+ "gamePk": 526512,
+ "date": "2017-10-25",
+ "game": "World Series Game 2: Houston Astros at Los Angeles Dodgers",
+ "gameType": "W",
+ "pitcher": {
+  "id": 445276,
+  "name": "Kenley Jansen",
+  "throws": "R",
+  "team": "Los Angeles Dodgers",
+  "seasonLine": "1.32 ERA, 41 SV, 68.1 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "top",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 3,
+   "them": 2
+  },
+  "usHome": true,
+  "walkOffLive": false,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 62,
+   "batterId": 503556,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "445276": 3
+   },
+   "pitches": 3,
+   "event": "home_run",
+   "des": "Marwin Gonzalez homers (1) on a line drive to center field.",
+   "feedEvent": "home_run",
+   "feedDescription": "Marwin Gonzalez homers (1) on a line drive to center field.",
+   "runs": 1,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Marwin Gonzalez",
+   "batSideListed": "S",
+   "seasonLine": ".303/.377/.530, 23 HR"
+  },
+  {
+   "atBat": 63,
+   "batterId": 502210,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "445276": 2
+   },
+   "pitches": 2,
+   "event": "field_out",
+   "des": "Josh Reddick pops out to second baseman Logan Forsythe.",
+   "feedEvent": "field_out",
+   "feedDescription": "Josh Reddick pops out to second baseman Logan Forsythe.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": false,
+   "name": "Josh Reddick",
+   "batSideListed": "L",
+   "seasonLine": ".314/.363/.484, 13 HR"
+  },
+  {
+   "atBat": 64,
+   "batterId": 136860,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "445276": 2
+   },
+   "pitches": 2,
+   "event": "field_out",
+   "des": "Carlos Beltran flies out to center fielder Chris Taylor.",
+   "feedEvent": "field_out",
+   "feedDescription": "Carlos Beltran flies out to center fielder Chris Taylor.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": false,
+   "name": "Carlos Beltrán",
+   "batSideListed": "S",
+   "seasonLine": ".231/.283/.383, 14 HR"
+  },
+  {
+   "atBat": 65,
+   "batterId": 543807,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "445276": 7
+   },
+   "pitches": 7,
+   "event": "double",
+   "des": "George Springer doubles (1) on a sharp ground ball to left fielder Enrique Hernandez.",
+   "feedEvent": "double",
+   "feedDescription": "George Springer doubles (1) on a sharp ground ball to left fielder Enrique Hernandez.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": false,
+   "name": "George Springer",
+   "batSideListed": "R",
+   "seasonLine": ".283/.367/.522, 34 HR"
+  },
+  {
+   "atBat": 66,
+   "batterId": 608324,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "445276": 2
+   },
+   "pitches": 2,
+   "event": "field_out",
+   "des": "Alex Bregman grounds out sharply, shortstop Corey Seager to first baseman Cody Bellinger.",
+   "feedEvent": "field_out",
+   "feedDescription": "Alex Bregman grounds out sharply, shortstop Corey Seager to first baseman Cody Bellinger.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": false,
+   "name": "Alex Bregman",
+   "batSideListed": "R",
+   "seasonLine": ".284/.352/.475, 19 HR"
+  }
+ ],
+ "realFaced": 1,
+ "real": {
+  "outcome": "doors_open",
+  "pitches": 3,
+  "runs": 1,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 606965,
+   "name": "Chris Devenski",
+   "batSideListed": "R"
+  },
+  {
+   "id": 457727,
+   "name": "Cameron Maybin",
+   "batSideListed": "R"
+  },
+  {
+   "id": 543807,
+   "name": "George Springer",
+   "batSideListed": "R"
+  },
+  {
+   "id": 608324,
+   "name": "Alex Bregman",
+   "batSideListed": "R"
+  },
+  {
+   "id": 514888,
+   "name": "Jose Altuve",
+   "batSideListed": "R"
+  },
+  {
+   "id": 621043,
+   "name": "Carlos Correa",
+   "batSideListed": "R"
+  },
+  {
+   "id": 493329,
+   "name": "Yuli Gurriel",
+   "batSideListed": "R"
+  },
+  {
+   "id": 435263,
+   "name": "Brian McCann",
+   "batSideListed": "L"
+  },
+  {
+   "id": 503556,
+   "name": "Marwin Gonzalez",
+   "batSideListed": "S"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 996,
+   "types": [
+    {
+     "type": "FC",
+     "name": "Cutter",
+     "n": 851,
+     "usage": 0.8544,
+     "velo": 93.2,
+     "pfxXin": 7.1,
+     "pfxZin": 18.2
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 79,
+     "usage": 0.0793,
+     "velo": 83.3,
+     "pfxXin": 7.2,
+     "pfxZin": -0.4
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 66,
+     "usage": 0.0663,
+     "velo": 94.8,
+     "pfxXin": -6.8,
+     "pfxZin": 20.2
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2017%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=445276"
+  },
+  "postseason": {
+   "pitches": 229,
+   "types": [
+    {
+     "type": "FC",
+     "name": "Cutter",
+     "n": 198,
+     "usage": 0.8646,
+     "velo": 93.1,
+     "pfxXin": 8.0,
+     "pfxZin": 17.3
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 22,
+     "usage": 0.0961,
+     "velo": 83.3,
+     "pfxXin": 9.3,
+     "pfxZin": -0.0
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 9,
+     "usage": 0.0393,
+     "velo": 95.0,
+     "pfxXin": -7.1,
+     "pfxZin": 19.8
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=F%7CD%7CL%7CW%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2017%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=445276"
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 526512: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=526512",
+  "MLB Stats API schedule 2017-10-25 and live feed /api/v1.1/game/526512/feed/live",
+  "MLB Stats API people with 2017 season stats",
+  "Baseball Savant 445276 2017 season search (regular season and postseason) for the arsenal"
+ ]
+}

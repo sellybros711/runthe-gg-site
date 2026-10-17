@@ -1,0 +1,279 @@
+{
+ "id": "rs-clase-2025-06-17",
+ "plan": "regular season R-held",
+ "resolution": "real",
+ "gamePk": 777472,
+ "date": "2025-06-17",
+ "game": "Regular Season Game 1: Cleveland Guardians at San Francisco Giants",
+ "gameType": "R",
+ "pitcher": {
+  "id": 661403,
+  "name": "Emmanuel Clase",
+  "throws": "R",
+  "team": "Cleveland Guardians",
+  "seasonLine": "3.23 ERA, 24 SV, 47.1 IP"
+ },
+ "situation": {
+  "inning": 9,
+  "half": "bottom",
+  "outs": 0,
+  "bases": 0,
+  "score": {
+   "us": 3,
+   "them": 2
+  },
+  "usHome": false,
+  "walkOffLive": true,
+  "enteredMidPA": false
+ },
+ "plateAppearances": [
+  {
+   "atBat": 72,
+   "batterId": 808982,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "661403": 5
+   },
+   "pitches": 5,
+   "event": "single",
+   "des": "Jung Hoo Lee singles on a line drive to left fielder Steven Kwan.",
+   "feedEvent": "single",
+   "feedDescription": "Jung Hoo Lee singles on a line drive to left fielder Steven Kwan.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Jung Hoo Lee",
+   "batSideListed": "L",
+   "seasonLine": ".266/.327/.407, 8 HR"
+  },
+  {
+   "atBat": 73,
+   "batterId": 642715,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "661403": 1
+   },
+   "pitches": 1,
+   "event": "field_out",
+   "des": "Willy Adames flies out sharply to left fielder Steven Kwan.",
+   "feedEvent": "field_out",
+   "feedDescription": "Willy Adames flies out sharply to left fielder Steven Kwan.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Willy Adames",
+   "batSideListed": "R",
+   "seasonLine": ".225/.318/.421, 30 HR"
+  },
+  {
+   "atBat": 74,
+   "batterId": 646240,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "661403": 1
+   },
+   "pitches": 1,
+   "event": "single",
+   "des": "Rafael Devers singles on a line drive to left fielder Steven Kwan. Jung Hoo Lee to 2nd.",
+   "feedEvent": "single",
+   "feedDescription": "Rafael Devers singles on a line drive to left fielder Steven Kwan. Jung Hoo Lee to 2nd.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Rafael Devers",
+   "batSideListed": "L",
+   "seasonLine": ".252/.372/.479, 35 HR"
+  },
+  {
+   "atBat": 75,
+   "batterId": 671218,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "661403": 6
+   },
+   "pitches": 6,
+   "event": "walk",
+   "des": "Heliot Ramos walks. Jung Hoo Lee to 3rd. Rafael Devers to 2nd.",
+   "feedEvent": "walk",
+   "feedDescription": "Heliot Ramos walks. Jung Hoo Lee to 3rd. Rafael Devers to 2nd.",
+   "runs": 0,
+   "outs": 0,
+   "inSpot": true,
+   "name": "Heliot Ramos",
+   "batSideListed": "R",
+   "seasonLine": ".256/.328/.400, 21 HR"
+  },
+  {
+   "atBat": 76,
+   "batterId": 642086,
+   "bats": "L",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "661403": 3
+   },
+   "pitches": 3,
+   "event": "field_out",
+   "des": "Dominic Smith flies out to left fielder Steven Kwan.",
+   "feedEvent": "field_out",
+   "feedDescription": "Dominic Smith flies out to left fielder Steven Kwan.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Dominic Smith",
+   "batSideListed": "L",
+   "seasonLine": ".284/.333/.417, 5 HR"
+  },
+  {
+   "atBat": 77,
+   "batterId": 669477,
+   "bats": "R",
+   "countAtEntry": null,
+   "pitchesBy": {
+    "661403": 4
+   },
+   "pitches": 4,
+   "event": "strikeout",
+   "des": "Casey Schmitt strikes out swinging.",
+   "feedEvent": "strikeout",
+   "feedDescription": "Casey Schmitt strikes out swinging.",
+   "runs": 0,
+   "outs": 1,
+   "inSpot": true,
+   "name": "Casey Schmitt",
+   "batSideListed": "R",
+   "seasonLine": ".237/.305/.401, 12 HR"
+  }
+ ],
+ "realFaced": 6,
+ "real": {
+  "outcome": "door_shut",
+  "pitches": 20,
+  "runs": 0,
+  "otherPitchersInSpot": []
+ },
+ "lineupNext": [
+  {
+   "id": 573262,
+   "name": "Mike Yastrzemski",
+   "batSideListed": "L"
+  },
+  {
+   "id": 683766,
+   "name": "Christian Koss",
+   "batSideListed": "R"
+  },
+  {
+   "id": 682515,
+   "name": "Logan Porter",
+   "batSideListed": "R"
+  },
+  {
+   "id": 808982,
+   "name": "Jung Hoo Lee",
+   "batSideListed": "L"
+  },
+  {
+   "id": 642715,
+   "name": "Willy Adames",
+   "batSideListed": "R"
+  },
+  {
+   "id": 646240,
+   "name": "Rafael Devers",
+   "batSideListed": "L"
+  },
+  {
+   "id": 671218,
+   "name": "Heliot Ramos",
+   "batSideListed": "R"
+  },
+  {
+   "id": 642086,
+   "name": "Dominic Smith",
+   "batSideListed": "L"
+  },
+  {
+   "id": 669477,
+   "name": "Casey Schmitt",
+   "batSideListed": "R"
+  }
+ ],
+ "arsenal": {
+  "regular": {
+   "pitches": 746,
+   "types": [
+    {
+     "type": "FC",
+     "name": "Cutter",
+     "n": 514,
+     "usage": 0.689,
+     "velo": 98.9,
+     "pfxXin": 4.1,
+     "pfxZin": 12.5
+    },
+    {
+     "type": "SL",
+     "name": "Slider",
+     "n": 225,
+     "usage": 0.3016,
+     "velo": 88.5,
+     "pfxXin": 8.3,
+     "pfxZin": 1.8
+    },
+    {
+     "type": "SI",
+     "name": "Sinker",
+     "n": 7,
+     "usage": 0.0094,
+     "velo": 98.5,
+     "pfxXin": -5.8,
+     "pfxZin": 13.1
+    }
+   ],
+   "dropped": {},
+   "source": "https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfPT=&hfAB=&hfGT=R%7C&hfPR=&hfZ=&hfStadium=&hfBBL=&hfNewZones=&hfPull=&hfC=&hfSea=2025%7C&hfSit=&player_type=pitcher&hfOuts=&hfOpponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&hfMo=&hfTeam=&home_road=&hfRO=&position=&hfInfield=&hfOutfield=&hfInn=&hfBBT=&hfFlag=&metric_1=&group_by=name&min_pitches=0&min_results=0&min_pas=0&sort_col=pitches&player_event_sort=api_p_release_speed&sort_order=desc&type=details&pitchers_lookup%5B%5D=661403"
+  },
+  "postseason": {
+   "pitches": 0,
+   "types": [],
+   "dropped": {}
+  }
+ },
+ "missingColumns": [],
+ "sources": [
+  "Baseball Savant pitch-by-pitch, game_pk 777472: https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&game_pk=777472",
+  "MLB Stats API schedule 2025-06-17 and live feed /api/v1.1/game/777472/feed/live",
+  "MLB Stats API people with 2025 season stats",
+  "Baseball Savant 661403 2025 season search (regular season and postseason) for the arsenal"
+ ],
+ "search": {
+  "gamePk": 777472,
+  "date": "2025-06-17",
+  "year": 2025,
+  "half": "Bot",
+  "pitcher": 661403,
+  "name": "Clase, Emmanuel",
+  "throws": "R",
+  "home": "SF",
+  "away": "CLE",
+  "outs": 0,
+  "bases": 0,
+  "lead": 1,
+  "midPA": false,
+  "li9": 2.99,
+  "li9n": 702,
+  "swing": 1.43,
+  "held": true,
+  "endLead": 1,
+  "faced": 6,
+  "pitches": 20
+ },
+ "mlbWinProbabilityAtEntry": {
+  "leverageIndex": 3.47,
+  "atBatIndex": 71
+ }
+}

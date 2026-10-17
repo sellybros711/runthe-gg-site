@@ -68,6 +68,14 @@ stub that answers null when they disagree. That fails SILENTLY, so move the pair
 The owner's call (2026-10-13). Every guide is behind a button. Nothing calls one on a timer, on boot
 or on a first screen.
 
+## SQL goes in the chat, ready to copy
+
+The owner's call (2026-10-17). When a change adds or alters SQL (a migration in `supabase/`, a fix,
+a one-off query the owner must run), paste the complete script in the reply in one fenced `sql`
+block. Say where to run it (Supabase, SQL Editor, New query), whether it is safe to run twice, and
+when (before or after the PR merges). Add a short query that confirms it worked. A file path alone
+is not enough.
+
 ## The release newsletter
 
 `scripts/newsletter/README.md` is the runbook. A game goes on `scripts/newsletter/games.json` the day it

@@ -87,7 +87,8 @@ has_table as (
     'rtf_runs','rtd_runs','rtf_plays','rtd_mode_plays','premium_subscriptions',
     'rtd_profiles','rtd_career','rtf_profiles',
     'cfb_fantasy_weeks','cfb_fantasy_entries','cfb_fantasy_prizes','rtf_careers',
-    'sportegories_rulings','stumpire_rulings'
+    'sportegories_rulings','stumpire_rulings',
+    'shutdoor_outings','shutdoor_streaks'
   ]) as t
   where to_regclass('public.' || t) is not null
 ),
@@ -734,7 +735,17 @@ check_rows(sort, migration, what, breaks, ok) as (
       (select count(*) > 0 from col where tbl = 'putt_lives_buys' and name = 'reclaimed')
       and (select count(*) > 0 from proc where name = 'putt_lives_reclaim')
       and (not exists (select 1 from pg_roles where rolname = 'service_role')
-           or has_function_privilege('service_role', 'public.putt_lives_reclaim(text)', 'execute')))
+           or has_function_privilege('service_role', 'public.putt_lives_reclaim(text)', 'execute'))),
+  -- SHUT THE DOOR'S DAILY, signed in. Without it the outing plays and finishes
+  -- and the submit is refused: no streak, no board row, nothing said.
+  (64, '153_shut_the_door',
+      'Shut The Door keeps a signed in daily outing, the doors shut streak and the day''s board',
+      'A signed in daily is played and never recorded. The streak and the board stay empty.',
+      (select count(*) > 0 from has_table where name = 'shutdoor_outings')
+      and (select count(*) > 0 from has_table where name = 'shutdoor_streaks')
+      and (select count(*) > 0 from proc where name = 'shutdoor_submit')
+      and (select count(*) > 0 from proc where name = 'shutdoor_board')
+      and (select count(*) > 0 from proc where name = 'shutdoor_my_stats'))
 )
 -- The summary has to come LAST, and a UNION can only be ordered by an output
 -- column, so the sort key is carried through a subquery rather than sorted on
