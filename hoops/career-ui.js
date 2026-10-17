@@ -131,9 +131,34 @@ var CSS = [
 '#s-car{padding:2px 0 0;}',
 '#s-car.k-root{color:var(--k-ink);}',
 '@media (min-width:920px){.wrap:has(#s-car.active){max-width:1040px;}}',
+'@media (min-width:1240px){.wrap:has(#s-car.active){max-width:1160px;}}',
 '.cr-grid{display:block;}',
-'@media (min-width:920px){.cr-grid{display:grid;grid-template-columns:minmax(0,400px) minmax(0,1fr);gap:20px;align-items:start;}',
-'  .cr-side{position:sticky;top:64px;}}',
+/* THE DESKTOP LAYOUT (920px and up). Three screens are two columns there and
+   one column on a phone, from the same markup in the same order, so a phone
+   is drawn exactly as before:
+     the life view   the player card and meters on the left, held while the
+                     right scrolls; the shades reveal, the stage, the card on
+                     top and the tabs on the right.
+     the builder     the player and his ratings on the left, held; the steps
+                     and the start button on the right.
+     the Hall card   the card itself, Share and New career on the left, held;
+                     its back, the epilogue and the story on the right.
+   check-career 7d asserts the columns sit side by side, nothing scrolls
+   sideways and nothing is cut. */
+'.cr-hgrid,.cr-bgrid{display:block;}',
+'@media (min-width:920px){.cr-grid{display:grid;grid-template-columns:minmax(0,400px) minmax(0,1fr);grid-template-rows:auto 1fr;column-gap:20px;align-items:start;}',
+'  .cr-grid > .cr-side{grid-column:1;grid-row:1 / span 2;position:sticky;top:64px;}',
+'  .cr-grid > .cr-shades{grid-column:2;grid-row:1;}',
+'  .cr-grid > .cr-main{grid-column:2;grid-row:2;min-width:0;}',
+'  .cr-hgrid{display:grid;grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:20px;align-items:start;}',
+'  .cr-hgrid > .cr-hfront{position:sticky;top:64px;}',
+'  .cr-hgrid > .cr-hback{min-width:0;}',
+'  .cr-hgrid .cr-final{margin-top:var(--k-px);}',
+'  .cr-hback > .k-panel:first-child,.cr-hback > section:first-child{margin-top:var(--k-px);}',
+'  .cr-bgrid{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:22px;align-items:start;}',
+'  .cr-bgrid > .cr-preview{position:sticky;top:64px;}',
+'  .cr-bgrid > .cr-bmain{min-width:0;}}',
+'@media (min-width:1240px){.cr-grid{grid-template-columns:minmax(0,420px) minmax(0,1fr);column-gap:24px;}.cr-hgrid{grid-template-columns:minmax(0,460px) minmax(0,1fr);gap:24px;}}',
 /* THE TOP BAR. The title, where you are in one line under it, and four square
    pixel buttons each wearing its word. */
 '.cr-top{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px 10px;margin:2px 0 12px;}',
@@ -605,6 +630,20 @@ var CSS = [
 '.cr-look-nofig .cr-sw{gap:2px;}',
 '.cr-look-nofig .cr-sw button.dot{width:30px;height:30px;margin:2px;}',
 '.cr-build .cr-preview .cr-pfig.cr-zoom .rtf-baller{bottom:auto;top:-4px;}',
+/* the builder on a desktop: the player is a tall portrait on his own set at
+   4px a cell (figScale and setArt draw him one step up), his overall and
+   ratings under him, and the steps beside him with room to breathe */
+'@media (min-width:920px){',
+'  .cr-build .cr-bgrid > .cr-preview{grid-template-columns:1fr;gap:12px;margin:0;}',
+'  .cr-build .cr-bgrid .cr-preview .cr-pfig{width:100%;height:320px;}',
+'  .cr-build .cr-bgrid .cr-preview .cr-pfig.cr-zoom .rtf-baller{top:-8px;}',
+'  .cr-build .cr-bgrid .cr-povr{margin:2px 0 8px;}',
+'  .cr-build .cr-bgrid .cr-povr .k-num{font-size:34px;}',
+'  .cr-build .cr-bgrid .cr-rt{gap:5px;}',
+'  .cr-build .cr-bgrid .cr-rt .k-row{grid-template-columns:96px minmax(0,1fr) 26px 0;font-size:12.5px;}',
+'  .cr-build .cr-bmain > .cr-steps:first-child,.cr-build .cr-bmain > .cr-son:first-child{margin-top:0;}',
+'  .cr-build .cr-bmain .cr-cta{margin-left:0;}',
+'}',
 '.cr-look-nofig [aria-label="Facial hair color"] button.dot{width:26px;height:26px;}',
 '.cr-look-nofig [aria-label="Facial hair color"] button:first-child{padding:6px 8px;}',
 '.cr-look-nofig .cr-sw button{padding:6px 9px;}',
@@ -776,14 +815,37 @@ var CSS = [
 '#s-car .cr-sub::after{content:"";flex:1;height:2px;background:repeating-linear-gradient(90deg,rgba(143,160,214,.3) 0 4px,transparent 4px 8px);}',
 '/* THE HALL CARD: a ceremony. Gold rays turn behind him, the verdict is cast',
 '   in gold and his name is on a ribbon. */',
-'#s-car .cr-final{background:#07091a;}',
+/* THE HALL CARD IS A PREMIUM CARD. A cast metal frame (gold for the Hall,
+   the club's colour in metal for everyone else) with a dark keyline and a
+   pixel notch at each corner, a card inside it on its own set drawn at the
+   card's shape (fitHall: the Hall's own room for a Hall of Famer, his arena
+   for the rest, the floor under his feet), and a foil sheen that crosses it
+   now and then. Weight is colour and light: nothing on it moves a line of
+   what it says. */
+'#s-car .k-panel.cr-final{--cr-f1:#fff1b8;--cr-f2:#e3ad35;--cr-f3:#6e4705;padding:6px;overflow:visible;',
+'  background:linear-gradient(150deg,var(--cr-f1) 0%,var(--cr-f2) 14%,var(--cr-f3) 34%,var(--cr-f2) 52%,var(--cr-f1) 63%,var(--cr-f2) 76%,var(--cr-f3) 100%);',
+'  box-shadow:0 -3px 0 0 #05070d,0 3px 0 0 #05070d,-3px 0 0 0 #05070d,3px 0 0 0 #05070d,inset 0 0 0 1px rgba(255,255,255,.35),0 12px 0 0 rgba(3,5,10,.7),0 0 44px color-mix(in srgb,var(--cr-f2) 28%,transparent);}',
+'#s-car .cr-final.k-team{--cr-f1:color-mix(in srgb,var(--k-team-ring) 30%,#f4f6ff);--cr-f2:color-mix(in srgb,var(--k-team-ring) 80%,#8a93ad);--cr-f3:color-mix(in srgb,var(--k-team-1) 50%,#05070d);}',
+'#s-car .cr-hcard{position:relative;overflow:hidden;background:#07091a;box-shadow:0 0 0 2px #05070d;}',
+'#s-car .cr-hcard::after{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;',
+'  box-shadow:inset 0 0 0 2px #05070d,inset 0 0 0 4px color-mix(in srgb,var(--cr-f1) 55%,transparent),inset 0 0 60px rgba(0,0,0,.55);',
+'  background:linear-gradient(var(--cr-f1),var(--cr-f1)) 6px 6px/8px 8px no-repeat,linear-gradient(var(--cr-f1),var(--cr-f1)) calc(100% - 6px) 6px/8px 8px no-repeat,',
+'    linear-gradient(var(--cr-f1),var(--cr-f1)) 6px calc(100% - 6px)/8px 8px no-repeat,linear-gradient(var(--cr-f1),var(--cr-f1)) calc(100% - 6px) calc(100% - 6px)/8px 8px no-repeat;}',
+'#s-car .cr-final .cr-hset{opacity:.78;}',
+'#s-car .cr-final .cr-hset{justify-content:flex-start;align-items:flex-start;}',
+'#s-car .cr-final .cr-hset img{flex:none;width:var(--cr-setw,auto);height:var(--cr-seth,100%);}',
+'#s-car .cr-foil{position:absolute;inset:0;z-index:2;pointer-events:none;mix-blend-mode:screen;',
+'  background:linear-gradient(112deg,transparent 0 38%,rgba(255,240,200,.0) 40%,rgba(255,240,200,.16) 46%,rgba(170,225,255,.12) 50%,rgba(255,170,230,.08) 53%,transparent 60% 100%) no-repeat;',
+'  background-size:300% 100%;background-position:120% 0;animation:cr-foil 9s ease-in-out 1.2s infinite;}',
+'@keyframes cr-foil{0%{background-position:120% 0;}30%,100%{background-position:-20% 0;}}',
+'@media (prefers-reduced-motion:reduce){#s-car .cr-foil{animation:none;background-position:62% 0;}}',
 '#s-car .cr-rays{position:absolute;left:50%;top:-180px;width:720px;height:720px;margin-left:-360px;pointer-events:none;opacity:.32;',
 '  background:repeating-conic-gradient(from 0deg,rgba(255,209,102,.55) 0 6deg,transparent 6deg 18deg);',
 '  -webkit-mask:radial-gradient(circle,#000 0,#000 18%,transparent 58%);mask:radial-gradient(circle,#000 0,#000 18%,transparent 58%);animation:cr-spin 60s linear infinite;}',
 '#s-car .k-panel.k-team .cr-rays{background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--k-team-ring) 70%,transparent) 0 6deg,transparent 6deg 18deg);opacity:.26;}',
 '@keyframes cr-spin{to{transform:rotate(360deg);}}',
 '@media (prefers-reduced-motion:reduce){#s-car .cr-rays{animation:none;}}',
-'#s-car .cr-final .cr-hin{background:linear-gradient(180deg,rgba(5,7,13,.1),rgba(5,7,13,.78) 50%,#0b0f22);}',
+'#s-car .cr-final .cr-hin{background:linear-gradient(180deg,rgba(5,7,13,.06) 0,rgba(5,7,13,.2) var(--cr-feet,40%),rgba(5,7,13,.7) calc(var(--cr-feet,40%) + 60px),rgba(5,7,13,.88) calc(var(--cr-feet,40%) + 200px),#0b0f22);}',
 '#s-car .cr-final .eye{display:inline-block;padding:6px 10px;background:#05070d;box-shadow:inset 0 0 0 2px var(--k-gold);color:var(--k-gold);}',
 '#s-car .cr-final .v{font-size:54px;color:#fff3c4;text-shadow:3px 3px 0 #8a5a00,6px 6px 0 #05070d,0 0 26px rgba(255,209,102,.45);}',
 '#s-car .k-panel.k-team .cr-final .v,#s-car .cr-final.k-team .v{color:#fff;text-shadow:3px 3px 0 color-mix(in srgb,var(--k-team-1) 80%,#05070d),6px 6px 0 #05070d,0 0 22px color-mix(in srgb,var(--k-team-ring) 50%,transparent);}',
@@ -1046,7 +1108,11 @@ function stageKind(L){
   if (a && C.isAm && C.isAm(L)) return a.level === 'hs' ? 'hs' : a.level === 'col' ? 'col' : a.route === 'intl' ? 'intl' : 'gl';
   return 'nba';
 }
-function setArt(kind, c1, c2, seed){ return K.img(K.room(kind, 132, 80, { c1: c1, c2: c2, spotAt: 0.3, seed: seed }), 3); }
+function setArt(kind, c1, c2, seed, scale){ return K.img(K.room(kind, 132, 80, { c1: c1, c2: c2, spotAt: 0.3, seed: seed }), scale || 3); }
+/* The desktop layout (920px and up, see the CSS) draws the builder's player
+   at twice the phone's whole-number scale, on a set one scale up. */
+function wideNow(){ return !!(window.matchMedia && window.matchMedia('(min-width:920px)').matches); }
+function figScale(look){ var s = look ? 4 : 2; return wideNow() ? s * (look ? 1.5 : 2) : s; }
 
 // ─── the builder ────────────────────────────────────────────────────────────
 
@@ -1272,7 +1338,7 @@ function sizeLive(){
     var B = window.RTF_BALLER, fig = root.querySelector('.cr-pfig .rtf-baller'), L = PV.L;
     if (B && fig && L) {
       var k = C.colorsOf(L), tmp = document.createElement('div');
-      tmp.innerHTML = B.img(withSize(C.cleanLook(form.look), { ht: form.ht, wt: form.wt }), idleIf({ c1: k.primary, c2: k.secondary, num: form.num, pose: bstep === 'look' ? 'stand' : 'ball', scale: bstep === 'look' ? 4 : 2, still: true }));
+      tmp.innerHTML = B.img(withSize(C.cleanLook(form.look), { ht: form.ht, wt: form.wt }), idleIf({ c1: k.primary, c2: k.secondary, num: form.num, pose: bstep === 'look' ? 'stand' : 'ball', scale: figScale(bstep === 'look'), still: true }));
       if (tmp.firstChild) fig.parentNode.replaceChild(tmp.firstChild, fig);
     }
   });
@@ -1333,11 +1399,12 @@ function buildView(){
     + '<div class="k-panel cr-build">'
     /* On the Look step the figure is drawn at twice the size and framed on the
        head and shoulders, because hair is what is being chosen there. */
-    + '<div class="cr-preview"><div class="cr-pfig' + (bstep === 'look' ? ' cr-zoom' : '') + '">' + setArt(stageKind(L), k.primary, k.secondary, form.seed)
-    + (B ? B.img(lookOf(L), idleIf({ c1: k.primary, c2: k.secondary, num: form.num, age: L.age, pose: bstep === 'look' ? 'stand' : 'ball', scale: bstep === 'look' ? 4 : 2 })) : '') + '</div>'
+    + '<div class="cr-bgrid"><div class="cr-preview"><div class="cr-pfig' + (bstep === 'look' ? ' cr-zoom' : '') + '">' + setArt(stageKind(L), k.primary, k.secondary, form.seed, wideNow() ? 4 : 3)
+    + (B ? B.img(lookOf(L), idleIf({ c1: k.primary, c2: k.secondary, num: form.num, age: L.age, pose: bstep === 'look' ? 'stand' : 'ball', scale: figScale(bstep === 'look') })) : '') + '</div>'
     + '<div class="cr-pside"><div class="cr-povr"><span class="k-num">' + C.show(C.ovrOf(L)) + '</span><span class="k-label">Overall</span>'
     + '<span class="cr-ceil">Ceiling <b>' + grade(L) + '</b></span></div>'
     + '<div class="cr-rt k-rows">' + rtRows(L, null, false) + '</div></div></div>'
+    + '<div class="cr-bmain">'
     + (form.parent ? ori : '')
     + tabs
     + pane('player', '<span class="lab k-label">Name and number</span>'
@@ -1358,7 +1425,7 @@ function buildView(){
       + '<p class="cr-grade">Scouts grade your ceiling <b>' + grade(L) + '</b>. Age ' + L.age + '. How high you go is up to you.</p>')
     + '<div class="cr-cta">' + (next ? '<button class="k-btn k-sec" id="cr-bnext" type="button" data-bstep="' + next[0] + '">' + next[1] + ' ' + K.iconHtml('arrow', 1) + '</button>' : '')
     + '<button class="k-btn k-block k-big" id="cr-go">' + goText + '</button></div>'
-    + '</div>';
+    + '</div></div></div>';
 }
 /* THE NAME IS SAID BEFORE THE CAREER STARTS, not found missing at the end.
    The Career board takes a name made of letters, spaces, an apostrophe, a
@@ -2046,8 +2113,9 @@ function lifeView(L, d){
     + (window.RTF_BALLER ? ib('cr-lookbtn', 'shirt', 'Look') : '')
     + (SC && SN ? ib('cr-sound', SN.on() ? 'sound' : 'mute', SN.on() ? 'Sound' : 'Muted', { cls: 'cr-snd', attr: 'aria-pressed="' + SN.on() + '" aria-label="Sound in scenes, ' + (SN.on() ? 'on' : 'off') + '"' }) : '')
     + ib('cr-home', 'home', 'Home', { cls: 'cr-home', attr: 'aria-label="Home"' }) + '</div></div>'
-    + shadesHtml(L, d)
-    + '<div class="cr-grid"><div class="cr-side">' + idCard(L) + meters(L, d) + '</div>'
+    /* the reveal is the grid's first child: above the card on a phone, as it
+       always was, and over the stage beside the card on a desktop */
+    + '<div class="cr-grid">' + shadesHtml(L, d) + '<div class="cr-side">' + idCard(L) + meters(L, d) + '</div>'
     + '<div class="cr-main">' + stageHtml(L, !!d) + facts(L) + ratingsHtml(L, d) + tabsHtml(L)
     + (L.phase === 'after' ? '' : '<button class="k-btn k-quiet k-block" id="cr-quit">Retire now</button>')
     + dockHtml(L) + '</div></div>';
@@ -2759,8 +2827,12 @@ function finalView(card){
   var B = window.RTF_BALLER;
   return '<div class="cr-top"><div class="cr-topl"><h2 class="k-h1">Career over</h2><div class="cr-hud"><b>' + card.from + '-' + card.to + '</b><span>' + esc(card.name) + '</span></div></div><div class="cr-topbtns">' + ib('cr-vault2', 'vault', 'Vault') + ib('cr-home', 'home', 'Home', { cls: 'cr-home', attr: 'aria-label="Home"' }) + '</div></div>'
     + (card.parent ? '<p class="cr-gen">' + K.iconHtml('tree', 2) + ' Generation ' + (card.gen || 2) + '</p>' : '')
-    + '<div class="k-panel ' + (hof ? 'k-gold' : 'k-team') + ' cr-final">'
-    + '<div class="cr-hset">' + setArt('nba', hof ? '#a8761c' : card.c1, hof ? '#ffd166' : card.c2, 'hall' + card.name) + '</div><div class="cr-rays" aria-hidden="true"></div><div class="cr-hin">'
+    /* the front of the card and its buttons, then everything behind it: one
+       column on a phone, two on a desktop (see THE DESKTOP LAYOUT) */
+    + '<div class="cr-hgrid"><div class="cr-hfront">'
+    + '<div class="k-panel ' + (hof ? 'k-gold' : 'k-team') + ' cr-final"><div class="cr-hcard">'
+    + '<div class="cr-hset" data-kind="' + (hof ? 'hall' : 'nba') + '" data-c1="' + esc(hof ? '#a8761c' : card.c1 || '') + '" data-c2="' + esc(hof ? '#ffd166' : card.c2 || '') + '" data-seed="' + esc('hall' + card.name) + '">'
+    + setArt(hof ? 'hall' : 'nba', hof ? '#a8761c' : card.c1, hof ? '#ffd166' : card.c2, 'hall' + card.name) + '</div><div class="cr-rays" aria-hidden="true"></div><div class="cr-hin">'
     + (B && card.look ? B.img(card.look, { c1: card.c1, c2: card.c2, num: card.num, age: card.age, pose: card.totals && card.totals.rings ? 'trophy' : 'suit', scale: 3 }) : '')
     + '<div class="eye">' + (hof ? 'The Hall of Fame' : 'The verdict') + '</div><div class="v">' + esc(card.verdict) + '</div>'
     + '<div class="nm"><span>' + esc(card.name) + ' · #' + esc(String(card.num)) + ' · ' + card.from + '-' + card.to + '</span></div>'
@@ -2770,9 +2842,10 @@ function finalView(card){
     + (card.college ? '<p class="cr-col">' + esc(card.college) + '</p>' : '')
     + (card.jersey ? '<p class="cr-col">Your #' + esc(String(card.num)) + ' hangs in the rafters for the ' + esc(E.TEAM_NAMES[card.jersey] || card.jersey) + '.</p>' : '')
     + totalsHtml(T, '<div><b>' + (T.pts / gp).toFixed(1) + '</b><span>A game</span></div><div><b>' + T.seasons + '</b><span>' + (T.seasons === 1 ? 'Season' : 'Seasons') + '</span></div>')
-    + aw + '</div></div>'
+    + aw + '</div><i class="cr-foil" aria-hidden="true"></i></div></div>'
     + '<div class="cr-btnrow"><button class="k-btn" id="cr-share">Share it</button><button class="k-btn k-sec" id="cr-again">New career</button></div>'
     + (canFather(card) ? '<button class="k-btn k-sec k-block cr-sonbtn" id="cr-son" type="button">' + K.iconHtml('tree', 2) + ' Play as your son' + (proOpen() ? '' : ' <span class="k-tag k-gold cr-pro">Pro</span>') + '</button>' : '')
+    + '</div><div class="cr-hback">'
     + (card.after || card.rival || card.life || card.ending ? '<div class="k-panel cr-sec cr-epi">'
       + (card.ending && card.ending.secretName ? '<p class="cr-secret"><span class="k">A secret ending</span>' + esc(card.ending.secretName) + '</p>' : '')
       + (card.ending ? '<p><span class="k">The Hall</span>' + esc(card.ending.tierName) + '</p>' : '')
@@ -2793,7 +2866,8 @@ function finalView(card){
     + foundHtml(card)
     + cardBack(card)
     + storyHtml(card.story, card)
-    + '<details class="k-panel cr-sec k-fold"><summary class="k-eyebrow">' + K.iconHtml('up', 2) + 'Season by season<span class="k-foldn">' + T.seasons + '</span></summary>' + seasonsTable(hist) + '</details>';
+    + '<details class="k-panel cr-sec k-fold"><summary class="k-eyebrow">' + K.iconHtml('up', 2) + 'Season by season<span class="k-foldn">' + T.seasons + '</span></summary>' + seasonsTable(hist) + '</details>'
+    + '</div></div>';
 }
 function shareText(card){
   var T = card.totals;
@@ -2873,6 +2947,54 @@ function wireFinal(card){
   $('cr-again').onclick = function(){ store().last = null; save(); form = null; K.wipe(); render(); window.scrollTo(0, 0); };
   $('cr-share').onclick = function(){ shareCard(card); };
   paintPlace(card);
+  fitHall();
+}
+/* THE HALL CARD'S SET, drawn at the card's own shape: one cell 4px (3 on a
+   narrow phone), so it is never stretched or cropped to a strip in the
+   middle, with the floor line where his feet are. Refit when the card
+   changes size (a font landing, a window turned), the way fitPix refits a
+   scene. */
+/* A HELD COLUMN NEVER HIDES ITS OWN FOOT. On a desktop the left column of
+   the life view, the builder and the Hall card is sticky. One taller than
+   the window would stick by its top and keep its foot (the meters, Share
+   and New career) off the screen until the right column ran out, so its top
+   is set to where its foot meets the bottom of the window instead: it
+   scrolls until all of it has been seen, then holds. */
+var STICK_TOP = 64;
+function stickFit(){
+  var root = $('s-car');
+  if (!root) return;
+  var list = root.querySelectorAll('.cr-grid > .cr-side,.cr-hgrid > .cr-hfront,.cr-bgrid > .cr-preview');
+  for (var i = 0; i < list.length; i++) {
+    var el = list[i];
+    if (!wideNow()) { el.style.removeProperty('top'); continue; }
+    var h = el.getBoundingClientRect().height;
+    el.style.top = Math.min(STICK_TOP, Math.floor(window.innerHeight - h - 12)) + 'px';
+  }
+}
+window.addEventListener('resize', function(){ if (onScreen()) stickFit(); });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ if (onScreen()) stickFit(); });
+var hallRO = null;
+function fitHall(){
+  var card = document.querySelector('#s-car .cr-hcard'), set = card && card.querySelector('.cr-hset');
+  if (!set || !K.room) return;
+  var r = card.getBoundingClientRect();
+  if (!(r.width > 0 && r.height > 0)) return;
+  var px = r.width < 360 ? 3 : 4, w = Math.ceil(r.width / px), h = Math.ceil(r.height / px / 8) * 8;
+  var fig = card.querySelector('.cr-hin .rtf-baller'), feet = fig ? fig.getBoundingClientRect().bottom - r.top - 4 : r.height * 0.4;
+  var at = Math.max(0.12, Math.min(0.6, Math.round(feet / px) / h));
+  var key = [w, h, at.toFixed(3)].join('|');
+  card.style.setProperty('--cr-feet', Math.round(feet) + 'px');
+  if (set.getAttribute('data-fit') !== key) {
+    set.setAttribute('data-fit', key);
+    set.style.setProperty('--cr-setw', w * px + 'px'); set.style.setProperty('--cr-seth', h * px + 'px');
+    set.innerHTML = K.img(K.room(set.getAttribute('data-kind') || 'nba', w, h, { c1: set.getAttribute('data-c1') || undefined, c2: set.getAttribute('data-c2') || undefined, spotAt: 0.3, floorAt: at, seed: set.getAttribute('data-seed') }), px);
+  }
+  if (window.ResizeObserver && (!hallRO || hallRO.el !== card)) {
+    if (!hallRO) hallRO = new ResizeObserver(function(){ requestAnimationFrame(fitHall); });
+    hallRO.disconnect(); hallRO.observe(card); hallRO.el = card;
+  }
+  stickFit();
 }
 
 
@@ -3100,6 +3222,7 @@ function render(){
   else if (st.last) { body.innerHTML = finalView(st.last); wireFinal(st.last); }
   else { body.innerHTML = buildView(); wireBuild(); }
   fitFacts(body);
+  stickFit();
   /* The chip in the top bar says who you are mid-career and nothing otherwise:
      it sits beside the Career button, and a second "Career" there reads as
      the same button twice. */
