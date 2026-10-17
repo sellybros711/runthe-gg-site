@@ -158,7 +158,7 @@ function pane(host, o){
       return '<div class="cl-cell"><button type="button" class="cl-tile r-' + it.rarity + (it.excl ? ' excl' : '') + (own ? ' own' : ' lock') + (on ? ' is-on' : '') + '" data-id="' + it.id + '" aria-pressed="' + on + '">'
         + '<span class="cl-sw" style="--a:' + a + ';--b:' + b + ';--rc:' + RCOL[it.rarity] + '">' + (art() ? art().icon(it, 'cl-ic') : '') + '</span>'
         + '<span class="cl-n">' + esc(it.name) + '</span>'
-        + '<span class="cl-p">' + (it.excl && !own ? '<b class="cl-x">' + esc(earnText(it)) + '</b>' : '<b class="cl-r">' + it.rarity + '</b><span class="cl-pt">' + esc(priceText(it, own)) + '</span>') + '</span>'
+        + '<span class="cl-p">' + (it.excl && !own ? '<b class="cl-x">' + esc(earnText(it)) + '</b>' : '<b class="cl-r">' + it.rarity + '</b> <span class="cl-pt">' + esc(priceText(it, own)) + '</span>') + '</span>'
         + (own ? '<span class="cl-ck" aria-hidden="true"></span>' : '') + '</button>'
         + (art() ? '<button type="button" class="cl-zoomb" data-zoom="' + it.id + '" aria-label="See ' + esc(it.name) + ' up close">' + zoomGlyph() + '</button>' : '') + '</div>';
     }).join('');
@@ -408,8 +408,8 @@ var CSS = [
 '.cl-n{overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;line-height:1.2;overflow-wrap:anywhere;}',
 '.cl-p{font:600 11px var(--k-f-text);color:var(--k-ink-3);line-height:1.3;}',
 /* "In packs" wraps as one, never "In" over "packs" */
-'.cl-pt{white-space:nowrap;}',
-'.cl-r{font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-right:6px;font-size:9.5px;}',
+'.cl-pt{display:inline-block;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom;}',
+'.cl-r{font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-right:3px;font-size:9.5px;}',
 '.r-common .cl-r{color:#aeb4bf;}.r-rare .cl-r{color:#6fa8ff;}.r-epic .cl-r{color:#c08cff;}.r-legendary .cl-r{color:var(--k-gold);}',
 '.cl-tile.lock .cl-n{color:var(--k-ink-2);}',
 '.cl-tile.lock .cl-sw{filter:saturate(.55) brightness(.85);}',
