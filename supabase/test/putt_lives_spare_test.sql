@@ -56,7 +56,10 @@ select pg_temp.claim((select max(b) from putt_lives, unnest(back_at) b where use
 -- A BUY AFTERWARDS still sees the right number missing: eight, and a nine-pack hands back eight
 select pg_temp.claim(putt_lives_buy('cs_test_spare', '00000000-0000-0000-0000-00000000000b', 9), 'a buy after a spare is filed');
 select pg_temp.claim((select given from putt_lives_buys where session_id = 'cs_test_spare') = 8, 'and gives the eight that were missing');
-select pg_temp.claim((select lives from putt_lives_state(9)) = 9, 'back to nine, never past it');
+-- the ninth life of the pack: past the max once 151 (lives over the max, the owner 2026-10-17) is in, lost without it
+select pg_temp.claim((select lives from putt_lives_state(9)) = case when exists (select 1 from information_schema.columns
+  where table_schema = 'public' and table_name = 'putt_lives' and column_name = 'extra') then 10 else 9 end,
+  'back to nine, and the one left over goes over the max where 151 is in');
 
 -- A TOUR PASS: eighteen is the max
 set test.uid = '00000000-0000-0000-0000-00000000000c';

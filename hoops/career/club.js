@@ -759,7 +759,7 @@ const SUMMER_FACTS = [
   ['down', (L, h, p) => p && p.pts - h.pts >= 2.5, (L, h) => 'Your scoring slipped to ' + h.pts + ' a night.'],
   ['rec', (L, h) => !!h.t && h.w + h.l > 0, (L, h) => 'The ' + nick(h.t) + ' went ' + h.w + '-' + h.l + '.'],
   ['star', (L, h) => (h.aw || []).indexOf('allstar') >= 0 || (h.aw || []).indexOf('star') >= 0, () => 'You were an All-Star.'],
-  ['line', (L, h) => h.pts >= 8, (L, h) => h.pts + ' points, ' + h.reb + ' boards, ' + h.ast + ' assists.'],
+  ['line', (L, h) => h.pts >= 8, (L, h) => per(h.pts, 'points') + ', ' + per(h.reb, 'boards') + ', ' + per(h.ast, 'assists') + '.'],
   ['yrs', (L) => seasonsWithClub(L) >= 3, (L) => 'That was year ' + seasonsWithClub(L) + ' with this club.'],
   ['bench', (L, h) => h.role === 'End of bench' || h.role === 'Rotation', (L, h) => 'You were ' + (h.role === 'Rotation' ? 'a rotation player' : 'at the end of the bench') + '.'],
   ['rings', (L, h) => totals(L).rings >= 1 && h.po !== 'Champion', (L) => { const n = totals(L).rings; return n === 1 ? 'You have one ring. One is not enough.' : 'You have ' + n + ' rings. You want another.'; }],

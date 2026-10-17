@@ -59,6 +59,13 @@ node golf/econ-sim.mjs                      a casual, regular and heavy player t
 - **A skin name is global.** A second `snowman` in `SKIN` silently replaces the first everywhere.
 - Never put a real course name on screen.
 
+**Trail gyms** (`golf/putt/gyms.js`, pilot: Pirate Cove)
+
+- A gym is hand designed, never random. check-putt solves every one (section 5b) and fails on an unsolvable gym,
+  a softlock, or a stale `moves`/`proof`: change a layout and record both again from `solve()`.
+- The civilian's lines nudge, never solve: no step order, no positions.
+- A world with gyms carries none of the small trail puzzles (`pzKind:'none'`). A vault pays once (`st.gym`).
+
 **A new world, all in one commit**
 
 | where | what |
@@ -92,8 +99,11 @@ node golf/econ-sim.mjs                      a casual, regular and heavy player t
   fills it (`putt_lives_spare`, `150_putt_lives_spares.sql`, keyed by the spare's id), cancelling the clock due
   back last. Deploy 150 before the page. Its SQL test runs in `putt-check.yml`.
 - **Paid lives** (nine for $4.99, three for $2.99, `PUTT_LIVES_ENABLED`) sell through the site's own checkout, not
-  `create-checkout`. The Store Agent owns them. The switch, `LIVES_BUY` (packs, prices and their order) and the
-  server's `PUTT_LIVES` move together: `node scripts/stripe/check-putt-lives.mjs`.
+  `create-checkout`. The Store Agent owns them. They sell at any time and can go over the max: the extras are
+  `putt_lives.extra` (151), lost before a heart, drawn as a red +N. The buttons are on the Out of Lives sheet, the
+  Over par card and the Lives sheet the hearts open (`buyRow`, `wireBuy`, `livesSheet`). The switch, `LIVES_BUY`,
+  `LIVES_EXTRA_MAX` and the server's `PUTT_LIVES` move together: `node scripts/stripe/check-putt-lives.mjs`.
+  **Re-running 146 after 151 undoes 151.**
 - `LIGHT` in `hole3d.js` is copied from PXHD: change one and change both.
 - **When the picture changes, bump the `?v=` of putt.js, trail.js or hole3d.js**, or a returning player
   sees the old cached trail. A renderer speedup must match the old render pixel for pixel: hash the
@@ -115,7 +125,8 @@ node golf/econ-sim.mjs                      a casual, regular and heavy player t
 **Economy**
 
 - **A boost in `golf/boosts-baseline.json` is never lowered, removed, moved or re-statted** (the owner,
-  2026-10-16). New boosts are added; check-boosts fails on the rest. Never rewrite the baseline.
+  2026-10-16). New boosts are added; check-boosts fails on the rest. Never rewrite the baseline. The owner's
+  own exceptions go in `RETIRED` in check-boosts, dated (2026-10-17: patterns carry no boost).
 - **A new item gets the power its rarity buys** (the ladder in `golf-tour-economy.md`), on its slot's
   stats. A Tour Pass piece, a colour, a pattern or a free item carries none.
 - **A career stat and overall may pass 99.** Never clamp the player's golfer back to 99 outside the
