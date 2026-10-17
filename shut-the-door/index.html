@@ -26,7 +26,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
 <div class="app">
@@ -124,6 +124,7 @@
     <div class="r-stat"><small>better than</small><b id="r-pct"></b><small>of closers</small></div>
     <div class="r-stat"><small>pitched like</small><b class="nm" id="r-like"></b><span id="r-why"></span></div>
   </div>
+  <section class="card lesson" id="r-lesson" aria-label="Your worst pitch"></section>
   <div class="card reveal" id="r-reveal"></div>
   <div class="r-actions">
     <button class="btn go" id="r-share" type="button">share</button>
@@ -161,6 +162,7 @@
     <div class="sh-h"><h2>menu</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div>
     <div class="menu-list">
       <button type="button" data-open="how"><b>how to play</b><span>the rules and the grade</span></button>
+      <button type="button" data-open="101"><b>pitching 101</b><span>the ideas behind the grade</span></button>
       <button type="button" data-open="stats"><b>stats</b><span>your record and your pitches</span></button>
       <button type="button" data-open="past"><b>past dailies</b><span>open later</span></button>
       <button type="button" data-open="settings"><b>settings</b><span>sound, speed, theme</span></button>
@@ -170,6 +172,9 @@
 </div>
 <div class="sheet" id="sheet-how" hidden aria-hidden="true" role="dialog" aria-label="How to play">
   <div class="sh-in"><div class="sh-h"><h2>how to play</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div><div class="sh-body prose" id="how-body"></div></div>
+</div>
+ <div class="sheet" id="sheet-101" hidden aria-hidden="true" role="dialog" aria-label="Pitching 101">
+  <div class="sh-in"><div class="sh-h"><h2>pitching 101</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div><div class="sh-body prose" id="p101-body"></div></div>
 </div>
 <div class="sheet" id="sheet-stats" hidden aria-hidden="true" role="dialog" aria-label="Stats">
   <div class="sh-in"><div class="sh-h"><h2>stats</h2><button class="sh-x" type="button" data-close aria-label="Close">&times;</button></div><div class="sh-body" id="stats-body"></div></div>
@@ -195,8 +200,8 @@
 <script src="sprites.js?v=2"></script>
 <script src="mound.js?v=2"></script>
 <script src="anim.js?v=2"></script>
-<script src="menus.js?v=2"></script>
-<script src="mock-api.js?v=2"></script>
-<script src="ui.js?v=2"></script>
+<script src="menus.js?v=3"></script>
+<script src="mock-api.js?v=3"></script>
+<script src="ui.js?v=3"></script>
 </body>
 </html>

@@ -26,6 +26,8 @@
  *      the field and on the scorebar's diamond; the proxy note and a reveal
  *      with no pitch count; the stats sheet from the account and from the
  *      device
+ *  12. the lesson card on every result: with a pro example, without one
+ *      (?mockPro=none), and with no lesson (?mockLesson=none); never a modal
  *
  * Runs on the mock (mock-api.js) until api.js lands; the steps only use the
  * page, so they hold for the real engine too.
@@ -118,6 +120,23 @@ async function run(w, h) {
     await page.click('#' + id + ' .sh-x');
     await page.waitForSelector('#' + id, { state: 'hidden', timeout: 3000 });
   }
+  /* pitching 101: from the menu, and from inside how to play */
+  await page.click('header #b-menu');
+  await page.waitForSelector('#sheet-menu.on');
+  await page.click('#sheet-menu [data-open="101"]');
+  await page.waitForSelector('#sheet-101.on', { timeout: 3000 });
+  const p101 = await page.evaluate(() => ({ n: document.querySelectorAll('#p101-body .p101 li').length, keys: [...document.querySelectorAll('#p101-body .p101 li')].map((l) => l.dataset.principle) }));
+  ok(p101.n === 11, '2 pitching 101 opens from the menu with every principle (' + p101.n + ')');
+  await page.waitForTimeout(260);
+  await shot('sheet-101');
+  await page.click('#sheet-101 .sh-x');
+  await page.click('#h-main [data-open="how"]');
+  await page.waitForSelector('#sheet-how.on');
+  await page.click('#how-body [data-open-101]');
+  ok(await page.isVisible('#sheet-101'), '2 how to play links to pitching 101');
+  await page.click('#sheet-101 .sh-x');
+  await page.waitForSelector('#sheet-101', { state: 'hidden' });
+
   /* the theme flips and the scene repaints in the other palette */
   const t0 = await page.evaluate(() => document.documentElement.dataset.theme);
   await page.click('#b-theme');
@@ -307,6 +326,30 @@ async function ending(w, h, end, extra) {
   if (/mockNull/.test(extra || '')) ok(/at least 13 pitches/.test(res.rv), '11 ' + end + ': a reveal with no pitch count shows its note');
   const auth = /mockAuth/.test(extra || '');
   if (auth) ok(/#\d+ of \d+ today/.test(res.st), '11 ' + end + ': signed in, the result shows the account\'s rank');
+  /* 12: the lesson card */
+  const lessonNone = /mockLesson=none/.test(extra || ''), proNone = /mockPro=none/.test(extra || '');
+  const ls = await page.evaluate(() => {
+    const el = document.getElementById('r-lesson');
+    return { text: el.textContent, none: el.classList.contains('none'), head: (el.querySelector('.ls-head') || {}).textContent || '',
+      you: !!el.querySelector('#ls-mini .cell.m-target'), best: !!el.querySelector('#ls-mini .cell.m-best'),
+      modal: [...document.querySelectorAll('.sheet')].some((s) => !s.hidden) };
+  });
+  ok(!ls.modal, '12 ' + end + ': the lesson is a card, nothing opened over the result');
+  if (lessonNone || ls.none) {
+    ok(/nothing to fix\. every pitch was the right idea\./.test(ls.text), '12 ' + end + ': no lesson reads the contract\'s line' + (lessonNone ? '' : ' (every pitch green)'));
+    await shot('lesson-none');
+  } else {
+    ok(ls.head.length > 3 && ls.you && ls.best, '12 ' + end + ': the lesson shows its headline and your pitch against the best on a mini grid');
+    await page.click('#ls-more');
+    const body = await page.evaluate(() => ({ why: document.querySelectorAll('#ls-body .ls-why li').length, num: (document.querySelector('#ls-body .ls-num') || {}).textContent || '',
+      pro: !!document.querySelector('#ls-body .ls-pro'), proCell: !!document.querySelector('#ls-pro-mini .cell.m-actual'), next: document.querySelector('#r-lesson .ls-next').textContent }));
+    ok(body.why >= 2 && body.why <= 3 && /hold [\d.]+% with your pitch/.test(body.num) && body.next.length > 5, '12 ' + end + ': opened, it has ' + body.why + ' why lines, the numbers and next time');
+    ok(proNone ? !body.pro : body.pro && body.proCell, '12 ' + end + ': ' + (proNone ? 'no pro example, no pro block' : 'how the pros do it shows the pro\'s pitch on a mini grid'));
+    await page.evaluate(() => document.getElementById('r-lesson').scrollIntoView({ block: 'start' }));
+    await page.waitForTimeout(120);
+    await shot(proNone ? 'lesson-no-pro' : 'lesson');
+    await page.evaluate(() => window.scrollTo(0, 0));
+  }
   await shot('result', true);
   await page.click('#r-home');
   await page.click('#h-main [data-open="stats"]');
@@ -324,11 +367,12 @@ try {
   await run(390, 844);
   await run(1440, 900);
   console.log('\nthe three endings');
-  await ending(390, 844, 'door_shut', '');
-  await ending(390, 844, 'doors_open', '');
+  await ending(390, 844, 'door_shut', '&mockLesson=none');
+  await ending(390, 844, 'doors_open', '&mockPro=none');
   await ending(390, 844, 'walk_off', '&mockProxy=1&mockNull=1&mockAuth=1');
+  await ending(1440, 900, 'door_shut', '&mockLesson=none');
   await ending(1440, 900, 'doors_open', '&mockAuth=1');
-  await ending(1440, 900, 'walk_off', '');
+  await ending(1440, 900, 'walk_off', '&mockPro=none');
 } catch (e) {
   fails++;
   console.log('  FAIL ' + (e && e.message ? e.message.split('\n')[0] : e));

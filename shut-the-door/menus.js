@@ -61,7 +61,12 @@ function renderHow(ctx) {
     var t = b.maxLost === Infinity ? 'more than ' + prev.toFixed(1) + ' points lost' : 'within ' + b.maxLost.toFixed(1) + ' of the best';
     return '<li><span class="sq ' + b.band + '"></span><b>' + b.band + '</b> ' + t + '</li>';
   }).join('');
+  setTimeout(function () {
+    var b = document.querySelector('#how-body [data-open-101]');
+    if (b) b.addEventListener('click', function () { api.show('101'); });
+  }, 0);
   $('how-body').innerHTML =
+    '<button type="button" class="btn ghost p101-go" data-open-101>pitching 101: the ideas behind the grade</button>' +
     '<h3>you are the closer</h3>' +
     '<p>one real save spot a day. the real batters, in order. his real pitches. the same spot for everybody.</p>' +
     '<h3>two taps a pitch</h3>' +
@@ -81,6 +86,34 @@ function renderHow(ctx) {
     '<h3>one a day</h3>' +
     '<p>the daily counts once. run it back to practice. practice is never scored.</p>' +
     (ctx && ctx.proxy ? '<p class="quiet">older spots have no pitch tracking. their pitches come from modern pitch data.</p>' : '');
+}
+
+/* ---- pitching 101 -----------------------------------------------------------
+   The principles the lesson card teaches (CONTRACT.md section 15), in plain
+   words for somebody who has never thought about pitching. No numbers here:
+   the numbers belong to a batter and a spot, and the lesson card has them. */
+var PRINCIPLES = [
+  ['first_pitch_strike', 'start with a strike', 'strike one changes everything. hitters do much less damage once they are behind in the count.'],
+  ['chase_when_ahead', 'ahead? make him chase', 'with strikes to spare, you do not need the zone. a pitch just off the plate looks hittable and is not.'],
+  ['strike_when_behind', 'behind? throw a strike', 'when the balls pile up, a miss is a free base. come back to the zone and make him hit it.'],
+  ['avoid_his_damage', 'stay out of his hot zone', 'every hitter has spots where he crushes the ball. scout him. the red cells on his map are where not to go.'],
+  ['attack_his_hole', 'pitch to his cold zone', 'every hitter has a hole too. the blue cells are where he swings and gets himself out.'],
+  ['same_side_breaker_away', 'breaking ball away, same side', 'against a hitter on your side (a righty against a righty), a breaking ball starts at him and slides away. it is the hardest pitch for him to reach.'],
+  ['change_eye_level', 'change his eye level', 'go up, then down. a high fastball then a low breaking ball makes him guess. the same spot twice is easier to time.'],
+  ['double_play_ball', 'runner on first? keep it low', 'with fewer than two outs, a low pitch gets a ground ball. one ground ball can be two outs.'],
+  ['strikeout_with_runner_on_third', 'runner on third? go for the strikeout', 'with fewer than two outs, a fly ball or a slow grounder scores him. a strikeout never does.'],
+  ['dont_walk_the_tying_run', 'do not walk the tying run', 'a walk puts the tying run on base for free. make him earn it with a hit.'],
+  ['use_your_best_pitch', 'trust your best pitch', 'his card shows which pitch he throws most. it is the one he trusts. in a big spot, so should you.'],
+];
+var PRINCIPLE = {};
+PRINCIPLES.forEach(function (p) { PRINCIPLE[p[0]] = { title: p[1], line: p[2] }; });
+function render101() {
+  $('p101-body').innerHTML =
+    '<p>the ideas behind every grade. each one is a reason a pitch was right or wrong.</p>' +
+    '<ol class="p101">' + PRINCIPLES.map(function (p) {
+      return '<li data-principle="' + p[0] + '"><b>' + esc(p[1]) + '</b><span>' + esc(p[2]) + '</span></li>';
+    }).join('') + '</ol>' +
+    '<p class="quiet">after every outing, the result screen picks your costliest pitch and shows the idea it missed.</p>';
 }
 
 /* ---- stats ---------------------------------------------------------------- */
@@ -244,10 +277,12 @@ var api = {
   isOpen: function () { return !!open; },
   current: function () { return open; },
   streakOf: streakOf,
+  PRINCIPLE: PRINCIPLE,
   renderAuth: renderAuth,
   show: function (which) {
     if (which === 'how') { renderHow({ proxy: ctx.scn && ctx.scn.resolution === 'proxy' }); openSheet('sheet-how'); }
     else if (which === 'stats') showStats();
+    else if (which === '101') { render101(); openSheet('sheet-101'); }
     else if (which === 'past') { renderPast(ctx.scn); openSheet('sheet-past'); }
     else if (which === 'settings') { renderSettings(ctx.prefs, ctx.onPref); openSheet('sheet-settings'); }
     else if (which === 'auth') { renderAuth(); openSheet('sheet-auth'); }

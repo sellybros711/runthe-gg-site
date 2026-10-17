@@ -73,14 +73,16 @@ if (window.STD_API) return;
    reach the real API. ?mockEnd= door_shut | doors_open | walk_off forces a
    scripted outing that ends that way (the second and third run a runner put
    out, runs scoring, the end rules); ?mockProxy=1 marks the spot proxy;
-   ?mockNull=1 gives the reveal no pitch count, only its note. */
+   ?mockNull=1 gives the reveal no pitch count, only its note;
+   ?mockLesson=none and ?mockPro=none give the result no lesson, or a
+   lesson with no pro example (CONTRACT.md section 15). */
 var QS = (function () { try { return new URLSearchParams(location.search); } catch (e) { return { get: function () { return null; } }; } })();
 var SCRIPTS = {
   door_shut: ['K'],
   doors_open: ['single', 'double_play', 'home_run'],
   walk_off: ['single', 'single', 'home_run'],
 };
-var MOCK = { script: SCRIPTS[QS.get('mockEnd')] || null, proxy: QS.get('mockProxy') === '1', nullPitches: QS.get('mockNull') === '1' };
+var MOCK = { lessonNone: QS.get('mockLesson') === 'none', proNone: QS.get('mockPro') === 'none', script: SCRIPTS[QS.get('mockEnd')] || null, proxy: QS.get('mockProxy') === '1', nullPitches: QS.get('mockNull') === '1' };
 
 /* ---- the seeded stream ---------------------------------------------------- */
 
@@ -321,6 +323,7 @@ function resolve(scn, st, call, rng) {
 
 function apply(scn, st, call, rng) {
   var grade = gradeCall(scn, st, call);
+  (st._pre = st._pre || []).push({ count: { b: st.count.b, s: st.count.s }, outs: st.outs, bases: st.bases, batterIndex: st.batterIndex, margin: st.score.us - st.score.them });
   var pr = resolve(scn, st, call, rng);
   st.pitchNo = pr.n;
   st.count = pr.count; st.outs = pr.outs; st.bases = pr.bases;
@@ -340,7 +343,7 @@ function apply(scn, st, call, rng) {
 /* ---- the four calls ------------------------------------------------------------- */
 
 var OUTINGS = {};
-function snapshot(o) { var s = clone(o.st); delete s.outcome; return s; }
+function snapshot(o) { var s = clone(o.st); delete s.outcome; delete s._pre; return s; }
 function saveDaily(o) {
   if (o.st.mode !== 'daily') return;
   try { localStorage.setItem(C.OUTING_KEY, JSON.stringify({ day: o.day, scenarioId: o.scn.id, calls: o.calls })); } catch (e) {}
@@ -417,12 +420,73 @@ function finishOuting(outingId) {
       percentile: Math.round(below / sc.length * 100), pitchedLike: { name: pl.name, reason: pl.reason },
       reveal: rv, vsReal: vs,
     };
+    r.lesson = MOCK.lessonNone ? null : mockLesson(o);
     r.share = window.STD_SHARE.text(r, o.scn.number);
     var au = window.STD_AUTH && window.STD_AUTH.state && window.STD_AUTH.state();
     if (o.st.mode === 'daily' && au && au.signedIn) r.account = { streak: st.outcome === 'door_shut' ? 4 : 0, best: 5, rank: 18, players: 240 };
     o.result = r;
     return clone(r);
   });
+}
+
+/* ---- the lesson (section 15), FICTIONAL ------------------------------------
+   A stand-in for Agent A's lesson.js: the costliest pitch, a principle picked
+   from that pitch's state by a few plain rules, and copy built from the
+   fixture's own numbers. The pro example is invented and says so: the pitcher
+   is "Mock Pro". The real one is a real pitch from the library. */
+function pct(v) { return Math.round(v * 100) + '%'; }
+function xw(v) { return v.toFixed(3).replace(/^0/, ''); }
+function mockLesson(o) {
+  var st = o.st, scn = o.scn, worst = -1, lost = -1;
+  st.grades.forEach(function (g, i) { if (g.lost > lost) { lost = g.lost; worst = i; } });
+  if (worst < 0 || lost <= C.BANDS[0].maxLost) return null;
+  var g = st.grades[worst], pre = st._pre[worst], call = st.log[worst].call, best = g.bestCall;
+  var bt = batterOf(scn, pre.batterIndex), pr = bt.profile, c = pre.count;
+  var ap = pitchOf(scn, call.type), bp = pitchOf(scn, best.type);
+  var sameSide = bt.bats === scn.pitcher.throws, bestBreaking = C.FAMILY_OF[best.type] === 'breaking';
+  var p;
+  if ((pre.bases & 4) && pre.outs < 2) p = 'strikeout_with_runner_on_third';
+  else if ((pre.bases & 1) && pre.outs < 2 && C.rowOf(best.cell) >= 3) p = 'double_play_ball';
+  else if (c.b === 3 && pre.margin <= 1) p = 'dont_walk_the_tying_run';
+  else if (c.b > c.s) p = 'strike_when_behind';
+  else if (c.s > c.b && !C.inZone(best.cell)) p = 'chase_when_ahead';
+  else if (c.b === 0 && c.s === 0) p = 'first_pitch_strike';
+  else if (C.inZone(call.cell) && pr.heat[call.cell] >= 0.33) p = 'avoid_his_damage';
+  else if (sameSide && bestBreaking) p = 'same_side_breaker_away';
+  else p = 'use_your_best_pitch';
+  var cnt = c.b + '-' + c.s;
+  var bWh = pr.whiff[best.type], cHeat = pr.heat[call.cell], bHeat = pr.heat[best.cell];
+  var T = {
+    strikeout_with_runner_on_third: ['runner on third. go for the strikeout', 'next time, with a man on third, throw the pitch he misses.'],
+    double_play_ball: ['runner on first. get the ground ball', 'next time, with a man on first, keep it down.'],
+    dont_walk_the_tying_run: [cnt + '. do not walk the tying run', 'next time at three balls, make him hit his way on.'],
+    strike_when_behind: ['behind ' + cnt + '. throw a strike', 'next time behind in the count, come back to the zone.'],
+    chase_when_ahead: ['ahead ' + cnt + '. make him chase', 'next time ahead ' + cnt + ', put the ' + bp.name + ' just off the plate.'],
+    first_pitch_strike: ['0-0. get strike one', 'next time, start him with a strike he does not hit.'],
+    avoid_his_damage: ['you went to his hot spot', 'next time, scout him first. stay out of the red.'],
+    same_side_breaker_away: ['same side. breaking ball away', 'next time, against a ' + (bt.bats === 'R' ? 'righty' : 'lefty') + ', slide the ' + bp.name + ' away from him.'],
+    use_your_best_pitch: ['trust the ' + bp.name, 'next time, in a big spot, lean on the ' + bp.name + '.'],
+  }[p];
+  var why = [];
+  if (bWh != null) why.push('he misses the ' + bp.name + ' ' + pct(bWh) + ' of the time he swings.');
+  why.push(C.inZone(call.cell) ? 'where you threw it he hits ' + xw(cHeat) + ' on contact.' : 'he chases ' + pct(pr.chase) + ' of pitches off the plate.');
+  if (bHeat < cHeat) why.push('the better spot drops that to ' + xw(bHeat) + '.');
+  var fam = { hard: 0, breaking: 0, offspeed: 0 };
+  o.calls.forEach(function (x) { fam[C.FAMILY_OF[x.type]]++; });
+  var pattern;
+  if (o.calls.length >= 5 && fam.hard / o.calls.length >= 0.6) pattern = 'you threw ' + fam.hard + ' of ' + o.calls.length + ' fastballs. this lineup chased breaking balls.';
+  return {
+    pitchN: worst + 1, call: { type: call.type, cell: call.cell }, bestCall: { type: best.type, cell: best.cell },
+    count: { b: c.b, s: c.s }, outs: pre.outs, bases: pre.bases, batter: bt.name, principle: p,
+    headline: T[0], why: why.slice(0, 3), nextTime: T[1],
+    numbers: { lostPts: g.lost, callValue: g.value, bestValue: g.best },
+    pro: MOCK.proNone ? null : {
+      pitcher: 'Mock Pro', batter: 'Mock Hitter', date: '2024-10-01', game: 'mock series game 1',
+      count: { b: c.b, s: c.s }, outs: pre.outs, bases: pre.bases, type: best.type, cell: best.cell,
+      result: p === 'double_play_ball' ? 'ground ball double play' : 'swinging strike', id: 'mock:0:0:0',
+    },
+    pattern: pattern,
+  };
 }
 
 window.STD_API = { API_VERSION: 1, MOCK: true, getScenario: getScenario, startOuting: startOuting, throwPitch: throwPitch, finishOuting: finishOuting };

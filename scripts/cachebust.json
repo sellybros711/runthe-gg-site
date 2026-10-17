@@ -2827,16 +2827,16 @@
       "sha": "3619a23768894990"
     },
     "menus.js": {
-      "v": "2",
-      "sha": "d6ee4a0218dd5439"
+      "v": "3",
+      "sha": "caab2913ba0f1a14"
     },
     "mock-api.js": {
-      "v": "2",
-      "sha": "4cc2014135dabdfe"
+      "v": "3",
+      "sha": "43328e9ee849086f"
     },
     "ui.js": {
-      "v": "2",
-      "sha": "02108754a05d1434"
+      "v": "3",
+      "sha": "307c95a8845f007f"
     }
   },
   "soccer/index.html": {

@@ -1,6 +1,7 @@
 # Shut The Door: contract requests
 
-B1 to B7 are answered in `CONTRACT.md` section 14 (all accepted). B8 and B9 are new.
+B1 to B7 are answered in `CONTRACT.md` section 14 (all accepted), B8 in the lead's round 3 note
+(accepted as logged). B9 is for the record. B10 is new.
 
 Agent B writes requests here. The lead answers each one below it and edits `CONTRACT.md` when one
 is accepted. Until an answer lands, the UI runs on the stub described in each request.
@@ -121,3 +122,15 @@ what `test/check-browser.mjs` uses to play every ending:
 
 The mock also now reports an in-play out as `{from: 0, to: -1}` (section 6 as amended), and a
 double play as two of them.
+
+## B10. The pro example's batter hand
+
+`ProExample` (section 15) has the pro's pitch as `type` and `cell` but not which side the batter hit
+from. The card shows that cell on a mirrored mini grid, which needs no hand. It cannot say it in
+words ("slider, down and away"), because inside and away depend on the batter. Proposed:
+`bats: Hand` on `ProExample`. Until then the card shows the pitch name and the grid, no words for
+the spot.
+
+The mock's lesson (`mockLesson()` in `mock-api.js`) is FICTIONAL: its pro is "Mock Pro" to "Mock
+Hitter" in "mock series game 1". Switches: `?mockLesson=none` (a null lesson, the contract's line)
+and `?mockPro=none` (a lesson with `pro: null`, no pro block).

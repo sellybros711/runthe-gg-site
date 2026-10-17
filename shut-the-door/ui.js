@@ -505,9 +505,77 @@ function renderResult() {
     '<p>' + esc(rv.summary) + '.</p>' +
     (pas ? '<ul class="pas">' + pas + '</ul>' : '') +
     '<p class="vs ' + esc(r.vsReal) + '">' + vs + '</p>';
+  renderLesson(r);
   $('r-share').hidden = S.mode !== 'daily';
   $('r-tomorrow').textContent = S.mode === 'daily' ? 'back tomorrow for #' + (s.number + 1) + '.' : '';
   renderStreak();
+}
+
+/* ---- the lesson: the costliest pitch, and the idea it missed ------------------
+   CONTRACT.md section 15. A card on the result screen, never a modal: the
+   headline, the two grids and the next-time line show at once; the why, the
+   numbers and the pro's pitch open with one tap, and scrolling past skips it.
+   Every number comes from result.lesson. */
+var TYPE_NAME = { FF: 'four-seam', SI: 'sinker', FC: 'cutter', SL: 'slider', ST: 'sweeper', SV: 'slurve', CU: 'curveball',
+  KC: 'knuckle curve', CH: 'changeup', FS: 'splitter', FO: 'forkball', KN: 'knuckleball' };
+function typeName(t) { var a = pitchOf(t); return a ? a.name : TYPE_NAME[t] || t; }
+function sitLine(count, outs, bases) { return count.b + '-' + count.s + ' · ' + outsWords(outs) + ' · ' + basesWords(bases); }
+function proDate(d) {
+  var t = Date.parse(d + 'T12:00:00Z');
+  return isFinite(t) ? new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }).toLowerCase() : d;
+}
+function renderLesson(r) {
+  var el = $('r-lesson'), L = r.lesson;
+  if (!L) {
+    el.className = 'card lesson none';
+    el.innerHTML = '<p class="lbl">your worst pitch</p><p class="ls-none">nothing to fix. every pitch was the right idea.</p>';
+    return;
+  }
+  var bt = S.scn.batters.filter(function (b) { return b.name === L.batter; })[0];
+  var bats = bt ? bt.bats : 'R';
+  var pr = MN.PRINCIPLE[L.principle];
+  var why = (L.why || []).map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('');
+  var n = L.numbers || {};
+  var pro = L.pro;
+  el.className = 'card lesson';
+  el.innerHTML =
+    '<p class="lbl">your worst pitch · pitch ' + esc(L.pitchN) + '</p>' +
+    '<h3 class="ls-head">' + esc(L.headline) + '</h3>' +
+    '<div class="ls-top"><div class="ls-mini" id="ls-mini"></div><div class="ls-sit">' +
+    '<p><b>' + esc(L.batter) + '</b> <span class="hand">' + esc(bats) + '</span></p>' +
+    '<p class="quiet">' + esc(sitLine(L.count, L.outs, L.bases)) + '</p>' +
+    '<p class="ls-you"><span class="key you"></span>' + esc(typeName(L.call.type)) + ', ' + esc(M.cellWords(L.call.cell, bats)) + '</p>' +
+    '<p class="ls-best"><span class="key best"></span>' + esc(typeName(L.bestCall.type)) + ', ' + esc(M.cellWords(L.bestCall.cell, bats)) + '</p>' +
+    '</div></div>' +
+    '<p class="ls-next">' + esc(L.nextTime) + '</p>' +
+    '<button type="button" class="ls-more" id="ls-more" aria-expanded="false" aria-controls="ls-body">the full lesson</button>' +
+    '<div class="ls-body" id="ls-body" hidden>' +
+    (pr ? '<p class="ls-pr"><b>' + esc(pr.title) + '.</b> ' + esc(pr.line) + '</p>' : '') +
+    (why ? '<ul class="ls-why">' + why + '</ul>' : '') +
+    (n.callValue != null ? '<p class="ls-num">hold ' + n.callValue.toFixed(1) + '% with your pitch. ' + n.bestValue.toFixed(1) + '% with the best. ' + n.lostPts.toFixed(1) + ' pts lost.</p>' : '') +
+    (pro ? '<div class="ls-pro"><p class="lbl">how the pros do it</p><div class="ls-top"><div class="ls-mini" id="ls-pro-mini"></div><div class="ls-sit">' +
+      '<p><b>' + esc(pro.pitcher) + '</b> to <b>' + esc(pro.batter) + '</b></p>' +
+      '<p class="quiet">' + esc(pro.game) + ' · ' + esc(proDate(pro.date)) + '</p>' +
+      '<p class="quiet">' + esc(sitLine(pro.count, pro.outs, pro.bases)) + '</p>' +
+      '<p>' + esc(TYPE_NAME[pro.type] || pro.type) + '</p>' +
+      '<p class="ls-res">' + esc(pro.result) + '</p></div></div></div>' : '') +
+    (L.pattern ? '<p class="ls-pattern"><span class="lbl">your outing</span>' + esc(L.pattern) + '</p>' : '') +
+    '<button type="button" class="ls-101">pitching 101</button>' +
+    '</div>';
+  var g = new M.Grid($('ls-mini'), { mini: true });
+  g.setHand(bats);
+  g.setMarks({ target: L.call.cell, best: L.bestCall.cell });
+  if (pro) {
+    var g2 = new M.Grid($('ls-pro-mini'), { mini: true });
+    g2.setMarks({ actual: pro.cell });
+  }
+  $('ls-more').addEventListener('click', function () {
+    var open = $('ls-body').hidden;
+    $('ls-body').hidden = !open;
+    this.setAttribute('aria-expanded', open ? 'true' : 'false');
+    this.textContent = open ? 'less' : 'the full lesson';
+  });
+  el.querySelector('.ls-101').addEventListener('click', function () { MN.show('101'); });
 }
 
 function share(r) {
