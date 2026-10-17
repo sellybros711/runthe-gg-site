@@ -478,7 +478,7 @@ function renderResult() {
   $('r-strip').innerHTML = stripHTML(r.strip, true);
   $('r-pct').textContent = Math.round(r.percentile) + '%';
   $('r-like').textContent = r.pitchedLike ? r.pitchedLike.name : '-';
-  $('r-why').textContent = r.pitchedLike ? 'pitched like him: ' + r.pitchedLike.reason : '';
+  $('r-why').textContent = r.pitchedLike ? r.pitchedLike.reason : '';
   var rv = r.reveal || {};
   var vs = { beat: 'you beat him.', matched: 'you matched him.', lost: 'he did better.' }[r.vsReal] || '';
   var pas = (rv.plateAppearances || []).map(function (p) {
