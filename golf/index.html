@@ -12932,12 +12932,15 @@ const NAV_H2H_SCR=['h2hhome','h2hlobby','h2hdraft','h2hplay','h2hpreview','h2hwa
 // CS430: the nav is built ONCE and kept mounted (see render). Handlers read live S at click time, so a
 // persisted node is never stale; navSetActive() refreshes the highlighted tab in place each render.
 function bottomNav(){
-  // THE FIRST TEE's tabs (owner, 2026-10-15): Home, Pro Tour, the Pass, Putt Putt, Me
+  // THE FIRST TEE's tabs (owner, 2026-10-15; Shop and Leaders added 2026-10-17):
+  // Home, Pro Tour, Shop, the Pass, Putt Putt, Leaders, Me
   const ft=ftLive();
   const tabs=ft?[
     {id:'home',    ico:'home',  label:'Home',      go:()=>ftGo('title')},
     {id:'protour', ico:'flag',  label:'Pro Tour',  go:()=>ftGo('protour')},
+    {id:'shop',    ico:'cart',  label:'Shop',      go:()=>{ S.overlay='shop'; render(); }},
     {id:'putthub', ico:'green', label:'Putt Putt', go:()=>ftGo('putthub')},
+    {id:'leaderboard', ico:'trophy', label:'Leaders', go:()=>{ S.overlay='leaderboard'; render(); }},
     {id:'me',      ico:'user',  label:'Me',        go:()=>ftGo('me')},
   ]:[
     {id:'home',   ico:'home',   label:'Home',        go:()=>{ S.overlay=null; S.screen='title'; render(); }},
@@ -12954,7 +12957,7 @@ function bottomNav(){
     b.onclick=()=>{ try{ track('botnav',{tab:t.id}); }catch(e){} t.go(); };
     inner.appendChild(b);
   };
-  tabs.slice(0,ft?2:3).forEach(mk);
+  tabs.slice(0,3).forEach(mk);
   // The Tour Pass is the raised gold centre button (owner) - the six tabs keep their slots, and the
   // season track gets the one spot the thumb naturally lands on.
   if(passEnabled()){
@@ -12962,7 +12965,7 @@ function bottomNav(){
     fab.onclick=()=>{ try{ track('botnav',{tab:'pass'}); }catch(e){} S.overlay='tourpass'; render(); };
     inner.appendChild(fab);
   }
-  tabs.slice(ft?2:3).forEach(mk);
+  tabs.slice(3).forEach(mk);
   return nav;
 }
 // CS516-nav: self-healing watchdog for the recurring iOS bug where the position:fixed bar stops tracking
@@ -13025,7 +13028,9 @@ function navActiveTab(){
   if(!ftLive()) return navActiveTabClassic();
   const scr=S.screen, ov=S.overlay;
   if(ov==='tourpass') return 'pass';
-  if(ov==='record'||ov==='shop'||ov==='menu') return 'me';
+  if(ov==='shop') return 'shop';
+  if(ov==='leaderboard') return 'leaderboard';
+  if(ov==='record'||ov==='menu') return 'me';
   if(ov) return '';
   if(scr==='title') return 'home';
   if(scr==='protour'||NAV_CAREER_SCR.includes(scr)||NAV_DAILY_SCR.includes(scr)||NAV_H2H_SCR.includes(scr)||scr==='rules') return 'protour';
@@ -13060,7 +13065,7 @@ function navSetActive(nav){
   nav.querySelectorAll('[data-nav]').forEach(b=>{ const id=b.getAttribute('data-nav'), on=id===active;
     b.classList.toggle('on', on); if(on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current');
     let gift=false; try{ gift=!!loginPend(); }catch(e){}
-    const want=(id==='me' && (nFree>0 || newN>0 || gift)) || (id==='pass' && passClaim>0) || (id==='protour' && dailyTodo)
+    const want=(id==='me' && (newN>0 || gift)) || (id==='pass' && passClaim>0) || (id==='protour' && dailyTodo)
       || (id==='shop' && nFree>0) || (id==='profile' && newN>0) || (id==='daily' && dailyTodo);
     const num=(id==='pass' && passClaim>0) ? String(Math.min(99,passClaim)) : '';
     let dot=b.querySelector('.navdot');
