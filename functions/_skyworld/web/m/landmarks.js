@@ -34,6 +34,42 @@ function bowl(box, x, y, z, w, d, h, o){
     return '#7a766c'; }); }
 
 var LM = {
+  hq:function(box, x, y, z, s, g){   // RunThe.GG: the town hall, its big R, and a fountain in the square
+    var R7 = ['1110', '1001', '1001', '1110', '1010', '1001', '1001'];
+    box(x, y - 0.9 * s, z, 7.4 * s, 5.4 * s, 6.2 * s, function(dx, dy, t){ var ax = Math.abs(dx);
+      // the hall: navy walls, gold band, tall windows lit
+      if (ax < 2.9 * s && dy > -1.6 * s && dy < 0.7 * s && t < 2.6 * s){
+        if (dy > 0.6 * s && ax < 0.45 * s && t < 1.2 * s) return '#2a1a10';
+        if (dy > 0.6 * s && Math.abs(((dx / s) + 3) % 0.9 - 0.45) < 0.16 && t > 0.7 * s && t < 2.0 * s) return '#ffd77a';
+        if (Math.abs(t - 2.35 * s) < 0.12 * s) return '#d8a83a';
+        return Math.floor(t * 4) % 2 ? '#1d3550' : '#24406a'; }
+      if (ax < 3.1 * s && dy > -1.8 * s && dy < 0.9 * s && t >= 2.6 * s && t < 2.85 * s) return '#f4f1e8';
+      // the tower in the middle, with the R on its face
+      if (ax < 1.0 * s && dy > -1.2 * s && dy < 0.2 * s && t >= 2.85 * s && t < 5.2 * s){
+        if (dy > 0.1 * s){ var cx = Math.floor((dx / s + 0.62) / 0.31), cy = Math.floor((4.95 * s - t) / (0.3 * s)); if (cy >= 0 && cy < 7 && cx >= 0 && cx < 4) return R7[cy][cx] === '1' ? '#ffffff' : '#e5483a'; return '#e5483a'; }
+        return Math.floor(t * 4) % 2 ? '#1d3550' : '#24406a'; }
+      if (ax < 1.2 * (1 - (t - 5.2 * s) / (1.0 * s)) * s && dy > -1.4 * s && dy < 0.4 * s && t >= 5.2 * s && t < 6.2 * s) return '#d8a83a';
+      // the fountain in the square
+      var fr = Math.hypot(dx, (dy - 1.9 * s) * 1.2);
+      if (fr < 1.1 * s && t < 0.35 * s) return fr > 0.9 * s ? '#cfc6b0' : '#5fb3e6';
+      if (fr < 0.18 * s && t < 1.1 * s) return t > 0.9 * s ? '#bff0ff' : '#cfc6b0';
+      return null; }); },
+  broadcast:function(box, x, y, z, s, g){   // Marketing: a broadcast mast, a dish, and billboards of posts going out
+    box(x, y - 0.6 * s, z, 6.6 * s, 4.6 * s, 7.4 * s, function(dx, dy, t){ var ax = Math.abs(dx);
+      // the mast: a red and white lattice narrowing to a light
+      var mx = dx + 1.6 * s, my = dy + 0.6 * s, half = 0.55 * s * (1 - t / (7.2 * s));
+      if (t < 7.0 * s && Math.abs(Math.abs(mx) - half) < 0.06 && Math.abs(Math.abs(my) - half) < 0.06) return Math.floor(t / (0.6 * s)) % 2 ? '#e5483a' : '#ffffff';
+      if (t < 7.0 * s && Math.abs(t % (0.6 * s)) < 0.05 && Math.abs(mx) < half && Math.abs(my) < half && (Math.abs(Math.abs(mx) - half) < 0.06 || Math.abs(Math.abs(my) - half) < 0.06)) return '#c8c8c8';
+      if (Math.hypot(mx, my, t - 7.15 * s) < 0.16 * s) return '#ff3a2a';
+      // the dish
+      var ddx = dx - 1.9 * s, ddy = dy + 0.9 * s; if (Math.hypot(ddx, ddy) < 0.12 * s && t < 1.0 * s) return '#8a8e96';
+      var bowl = Math.hypot(ddx, (t - 1.5 * s)) ; if (Math.abs(ddy - 0.1 * s + bowl * bowl / (2.2 * s)) < 0.06 && bowl < 0.8 * s) return '#e8ecf0';
+      // two billboards of posts, in the brand colours
+      for (var k = 0; k < 2; k++){ var bx = dx - (k ? 1.0 : -0.2) * s, by = dy - (k ? 1.2 : 0.9) * s;
+        if (Math.abs(by) < 0.06 && Math.abs(bx) < 0.9 * s && t > 1.0 * s && t < 2.3 * s){ var e = Math.abs(bx) > 0.8 * s || t < 1.1 * s || t > 2.2 * s; if (e) return '#1d3550';
+          return ['#ff5a7a', '#2bb0ff', '#ffd23f', '#7cff8a'][(Math.floor((bx / s + 1) * 2.2) + Math.floor(t / (0.4 * s)) + k) % 4]; }
+        if (Math.abs(by) < 0.06 && Math.abs(Math.abs(bx) - 0.6 * s) < 0.06 && t <= 1.0 * s) return '#5a3a1e'; }
+      return null; }); },
   football:function(box, x, y, z, s, g){ bowl(box, x, y, z, 8 * s, 5.6 * s, 2.0 * s, { field:'football', col:g.col, seat1:'#2f6fd0', seat2:'#3f7fe0', wall:'#cfd6e0', wall2:'#b8c0cc', end:'#1d3550' }); },
   college:function(box, x, y, z, s, g){ bowl(box, x - 0.6 * s, y, z, 7.4 * s, 5.2 * s, 1.8 * s, { field:'football', col:g.col, seat1:'#b8342a', seat2:'#d8402e', wall:'#a8583a', wall2:'#94482e', open:true });
     // the bell tower beside it

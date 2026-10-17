@@ -23,7 +23,9 @@ const SITE = {
   'functions/arcade/lab/[[path]].js': "import { a } from '../../_arcadelab/gate.js'; import { verify } from '../../_stumpire/cookie.js';",
   'functions/skyworld/[[path]].js': "import { verify } from '../_stumpire/cookie.js'; import { b } from '../_skyworld/db.js';",
   'functions/api/newsletter/subscribe.js': "no cookie here",
-  'supabase/133_stumpire.sql': '', '.github/workflows/hoops-checks.yml': '', 'scripts/stripe/check-floor-money.mjs': ''
+  'supabase/133_stumpire.sql': '', '.github/workflows/hoops-checks.yml': '', 'scripts/stripe/check-floor-money.mjs': '',
+  'index.html': '<title>RunThe.GG</title>', 'assets/logo.png': '', 'scripts/check-dashes.mjs': '', '.github/workflows/dash-check.yml': '',
+  'marketing/queue/post.json': '', '.github/workflows/marketing-publish.yml': ''
 };
 const VAULT = {
   'games/football/football-overview.md': '---\ntitle: Football\nsummary: The NFL game\n---',
@@ -37,7 +39,9 @@ const src = { siteTree: async () => Object.keys(SITE), siteFile: async p => SITE
 
 test('every game is found, once, with the status its sources give it', async () => {
   const G = Object.fromEntries((await discover(src)).map(g => [g.id, g]));
-  assert.deepEqual(Object.keys(G).sort(), ['arcadelab', 'football', 'hoops', 'newthing', 'setlist', 'shutthedoor', 'soccer', 'stumpire']);
+  assert.deepEqual(Object.keys(G).sort(), ['arcadelab', 'football', 'hoops', 'marketing', 'newthing', 'setlist', 'shutthedoor', 'site', 'soccer', 'stumpire']);
+  assert.equal(G.site.status, 'hub'); assert.equal(G.site.name, 'RunThe.GG'); assert.equal(G.site.kind, 'hq');
+  assert.equal(G.marketing.status, 'hub'); assert.equal(G.marketing.kind, 'broadcast');
   assert.equal(G.football.status, 'live'); assert.equal(G.football.name, 'The Perfect Season');
   assert.equal(G.soccer.status, 'live');
   assert.equal(G.stumpire.status, 'testers'); assert.equal(G.stumpire.name, 'Stumpire'); assert.equal(G.stumpire.where, '/arcade/stumpire/');
@@ -50,6 +54,8 @@ test('every game is found, once, with the status its sources give it', async () 
 
 test('districts come from the files, including the ones named for the game elsewhere', async () => {
   const G = Object.fromEntries((await discover(src)).map(g => [g.id, g]));
+  assert.deepEqual(G.site.layers, { ui: 1, art: 1, checks: 2, data: 1, accounts: 1 }, 'the home page, its assets, the newsletter list and API, and the shared checks no game claims');
+  assert.deepEqual(G.marketing.layers, { data: 1, checks: 1 });
   assert.deepEqual(G.football.layers, { engine: 1, checks: 1, data: 1, accounts: 1, art: 1, ui: 1 });
   assert.equal(G.hoops.layers.checks, 1, 'hoops-checks.yml'); assert.equal(G.hoops.layers.payments, 1, 'check-floor-money, named for the floor');
   assert.equal(G.stumpire.layers.accounts >= 1, true, 'its migration');

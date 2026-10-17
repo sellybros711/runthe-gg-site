@@ -6,5 +6,5 @@ export const OWN = { football:'football', cfb:'college', golf:'green', baseball:
 const SPORT = [[/basket|hoop|nba|court/i, 'court'], [/college|cfb/i, 'college'], [/baseball|diamond|mlb|closer|bullpen/i, 'ballpark'],
   [/football|nfl|gridiron/i, 'football'], [/golf|putt/i, 'green'], [/soccer|world cup|futbol/i, 'pitch'], [/wrestl|ropes/i, 'ring'],
   [/music|setlist|concert|band/i, 'stage'], [/arcade|quiz|trivia|puzzle/i, 'arcade']];
-export const KINDS = ['football', 'college', 'green', 'ballpark', 'pitch', 'arcade', 'stage', 'umpire', 'lab', 'court', 'chains', 'arena', 'ruins', 'ring', 'bullpen', 'bigtop'];
+export const KINDS = ['hq', 'broadcast', 'football', 'college', 'green', 'ballpark', 'pitch', 'arcade', 'stage', 'umpire', 'lab', 'court', 'chains', 'arena', 'ruins', 'ring', 'bullpen', 'bigtop'];
 export function kindOf(key, text){ if (OWN[key]) return OWN[key]; for (const [re, k] of SPORT) if (re.test(text || '')) return k; return 'bigtop'; }
