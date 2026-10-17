@@ -2408,6 +2408,16 @@ var PAY = {
 };
 var COIN_HOLE = PAY.main.hole, COIN_SIG = PAY.main.sig, COIN_ACE = PAY.main.ace, COIN_WORLD = PAY.main.world, COIN_DAILY = 40, COIN_DAILY_PAR = 40;
 var LIFE_MS = 24 * 3600 * 1000;
+/* LIVES FOR SALE, the owner's calls: out of lives, nine back for $4.99 (2026-10-16) or three for $2.99 (2026-10-17).
+   SHIPPED DARK. The server sells them (functions/api/stripe/_bundles.js PUTT_LIVES) and the webhook hands them back on
+   the server's own row (149_putt_lives_buy.sql); this page only shows the buttons and asks for lives again. The
+   switch, the packs and their prices are the server's, copied, in the order the sheet shows them (nine first):
+   scripts/stripe/check-putt-lives.mjs holds the two together. */
+var PUTT_LIVES_ENABLED = false;
+var LIVES_BUY = [
+  { pack:'nine', lives:9, cents:499, tag:'Best value. Back right now.' },
+  { pack:'three', lives:3, cents:299, tag:'Back right now.' }
+];
 var ACE_REWARD = { 5:'Hole in One Charm', 15:'Golden Putter', 30:'Ace Crown' };
 var STREAK_REWARD = { 7:'Week Streak Ball', 30:'Month Streak Visor', 100:'Century Streak Trail' };
 /* EVERY TOUR REWARD IS A CLOSET ITEM (the owner's call, 2026-10-16). Each name a tour pays is one item in the page's
@@ -3436,6 +3446,8 @@ function outOfLives(){
     <div class="m">Each life comes back 24 hours after you lost it. The clocks keep running while you are away.</div>\
     ' + (membersOpen() ? '' : '<div class="pp-x2b"><i class="pp-x2h">' + heartSvg(PER_HEART) + '</i><b>Double your lives</b>The Tour Pass gives you ' + LIVES_PASS + ' lives, not ' + LIVES_FREE + '. It opens the Members Tour too.</div>\
     <button class="pt-go pp-wide pass" data-pass>Get Tour Pass<small>' + LIVES_PASS + ' lives</small></button>') +
+    LIVES_BUY.map(function(p){ return canBuyLives(st, p) ? '<button class="pt-go pp-wide" data-buy="' + p.pack + '">Get ' + p.lives + ' lives back · $' + (p.cents / 100).toFixed(2) + '<small>' + p.tag + '</small></button>' : ''; }).join('') +
+    (LIVES_BUY.some(function(p){ return canBuyLives(st, p); }) ? '<div class="m" data-buym hidden></div>' : '') +
     (bankHeld(st) ? '<button class="pt-go pp-wide" data-spare>Use a spare life<small>' + bankHeld(st) + ' banked from the trails</small></button>' : '') +
     (S.host.tester && S.host.tester() ? '<button class="pt-bt pp-wide" data-free>Tester refill · free</button>' : '') +
     '<button class="pt-bt pp-wide" data-wait>Wait it out</button><div class="m">The Daily Hole never uses a life.</div></div></div>');
@@ -3444,7 +3456,24 @@ function outOfLives(){
   sh.querySelector('[data-wait]').onclick = function(){ sh.remove(); };
   sh.querySelector('[data-x]').onclick = function(){ sh.remove(); };
   var spb = sh.querySelector('[data-spare]'); if (spb) spb.onclick = function(){ var s2 = pload(); if (!bankHeld(s2)) return; s2.bused = (s2.bused || 0) + 1; psave(s2); clearInterval(iv); sh.remove(); showHub(); };
+  sh.querySelectorAll('[data-buy]').forEach(function(bb){ bb.onclick = function(){ buyLives(sh, bb, bb.getAttribute('data-buy')); }; });
   var fr = sh.querySelector('[data-free]'); if (fr) fr.onclick = function(){ var s2 = pload(); s2.lives = livesMax(); s2.back = []; s2.refillAt = null; s2.lt = Date.now(); psave(s2); livesCall('putt_lives_refill'); sh.remove(); showHub(); };
+}
+
+/* THE PAID LIVES are only offered when every one of them would land: missing fewer than a pack's lives, the server
+   answers lives_left and nobody pays for lives they could not hold. A guest is sent to sign in, since bought lives
+   are the account's. The page leaves for Stripe, and comes back to /golf/?putt=lives_paid, where the host asks for
+   lives again (RTT_PUTT.livesRefresh). */
+function canBuyLives(st, p){ var h = hostOf(); return PUTT_LIVES_ENABLED && !!h.buyLives && livesMax() - (st.lives || 0) >= p.lives; }
+function buyLives(sh, b, pack){
+  if (isGuest()){ var h = S.host; sh.remove(); close(); try{ h.signIn('signin'); }catch(e){} return; }
+  var m = sh.querySelector('[data-buym]'), bs = sh.querySelectorAll('[data-buy]'),
+      say = function(t){ if (m){ m.textContent = t; m.hidden = false; } bs.forEach(function(x){ x.disabled = false; }); };
+  bs.forEach(function(x){ x.disabled = true; });
+  Promise.resolve(S.host.buyLives(pack)).then(function(d){
+    if (d && d.url){ location.href = d.url; return; }
+    say(d && d.error === 'lives_left' ? 'You still have lives. Play those first.' : 'Checkout did not start. Try again.');
+  }, function(){ say('Checkout did not start. Try again.'); });
 }
 
 /* ---------------------------------------------------------------------------- a Tour level */
@@ -4465,6 +4494,9 @@ function scorecard(){
   S.ov.querySelector('[data-menu]').onclick = showMenu;
   S.ov.querySelector('[data-again]').onclick = function(){ R.i = 0; R.cards = []; playHole(); };
 }
+// back from a paid checkout: the server has the lives (or will in a moment). Answers the lives this account now has.
+RTT_PUTT.livesRefresh = function(host){ HOSTX = host || HOSTX; return livesSync().then(function(){ return pload().lives || 0; }, function(){ return pload().lives || 0; }); };
+RTT_PUTT.LIVES_BUY = LIVES_BUY;
 RTT_PUTT.open = open; RTT_PUTT.close = close; RTT_PUTT.paintCourse = paintCourse; RTT_PUTT.SKIN = SKIN;
 RTT_PUTT._state = function(){ return S; };
 RTT_PUTT.LIVES = { free:LIVES_FREE, pass:LIVES_PASS };
