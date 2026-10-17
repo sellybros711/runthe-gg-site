@@ -22,7 +22,7 @@
 'use strict';
 var REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
 var E = window.RTF_ENGINE;
-function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+var esc = window.RTF_UTIL.esc;
 
 var CSS = [
 '.tk{position:fixed;inset:0;z-index:89;display:flex;flex-direction:column;justify-content:center;align-items:center;background:rgba(3,5,10,.94);color:#f1f3f8;font-family:var(--body,system-ui);padding:calc(14px + env(safe-area-inset-top,0px)) 14px calc(14px + env(safe-area-inset-bottom,0px));}',

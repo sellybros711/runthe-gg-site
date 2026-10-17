@@ -37,7 +37,7 @@ if (!E || !C || !B) return;
 
 var KEY = 'rtf.scenes.v1';
 var REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
-function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+var esc = window.RTF_UTIL.esc;
 /* SCENES ARE ALWAYS ON, the owner's call. There is no switch a player can
    reach. The stored 'off' is read only under automation (navigator.webdriver),
    because the walks that answer a hundred cards would otherwise sit through a
