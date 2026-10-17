@@ -3282,7 +3282,7 @@ function gymWin(id, wname){ var G = gymLib(), gd = G && G.byId(id); if (!gd) ret
   // THE VAULT PAYS A PACK (the owner, 2026-10-17): a Pro Shop pack for the world's first gym, a Tour pack for its gatekeeper
   var tier = gymPack(gd), pk = 0; try{ if (S.host.pack) pk = S.host.pack(tier, gd.name) || 0; }catch(e){}
   var pname = tier === 'tour' ? 'a Tour pack' : 'a Pro Shop pack';
-  return { coins:gd.pay, pack:pk ? tier : null, first:true, badge:gd.badge, n:n, msg:'The ' + gd.name + ' is solved. ' + (pk ? cap(pname) + ', ' : '') + gd.pay.toLocaleString() + ' coins and the ' + gd.badge + '. That\'s ' + n + ' of ' + G.MASTER.badges + ' badges.' }; }
+  return { coins:gd.pay, pack:pk ? tier : null, first:true, badge:gd.badge, n:n, msg:gd.name + ' is solved. ' + (pk ? cap(pname) + ', ' : '') + gd.pay.toLocaleString() + ' coins and the ' + gd.badge + '. That\'s ' + n + ' of ' + G.MASTER.badges + ' badges.' }; }
 function gymPack(gd){ return gd && gd.keeper ? 'tour' : 'base'; }
 function cap(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
 /* THE GATEKEEPER GUARDS THE WORLD'S LAST HOLE (the owner, 2026-10-17: story mode). The gym on the trail into a
