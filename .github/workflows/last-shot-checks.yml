@@ -1,0 +1,44 @@
+name: Last Shot checks
+
+# Last Shot is testers only. These checks hold the gate (a non-tester gets
+# exactly Stumpire's 404, measured against Stumpire's own Function), that
+# nothing public names or links the game, the sim's determinism and the three
+# test plays, and the no dash rule on the game's own code.
+#
+# NO PATH FILTER, ON PURPOSE. The posture check is about the whole site: a
+# nav entry or a sitemap line added anywhere would make the game public, and
+# a filter on functions/_lastshot/** would never see it. It takes a second.
+#
+# Locally, the same commands:
+#   node --test functions/_lastshot/test/*.test.mjs
+#   node functions/_lastshot/check-posture.mjs
+#   node functions/_lastshot/test/check-browser.mjs   (Chromium, not run here)
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: last-shot-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Posture (tester only, linked from nowhere)
+        run: node functions/_lastshot/check-posture.mjs
+      - name: Unit tests (gate, sim, the three plays)
+        run: node --test functions/_lastshot/test/*.test.mjs
+      - name: No em or en dashes in the game's code
+        run: node scripts/check-dashes.mjs functions/_lastshot functions/last-shot
+      # Cloudflare's build image bundles with an older esbuild than current
+      # wrangler (see stumpire-checks.yml). Building with wrangler 3 catches it.
+      - name: Pages Functions build like Cloudflare's
+        run: npx --yes wrangler@3.20.0 pages functions build --outdir "$RUNNER_TEMP/fn"
