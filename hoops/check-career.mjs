@@ -1879,6 +1879,7 @@ async function browser() {
   ok(arcSeen, 'the walk reached a career long enough to read the arc');
   await scenesWalk(b, serve);
   await pathsWalk(b, serve);
+  await deskWalk(b, serve);
   await b.close();
 
   /* PHASE E, through the page: the Vault, the share card, a son, and an Easy
@@ -2115,6 +2116,138 @@ async function browser() {
     await ctx.close();
   }
 
+  /* THE DESKTOP LAYOUT. Career was a phone column stranded on a wide
+     screen: the builder one long form across 1,000px, the Hall card a strip
+     of art in the middle of a wide frame, the shades reveal pushing the card
+     down across both columns. On a desktop the builder, the life view and
+     the Hall card are two columns side by side, nothing scrolls sideways and
+     nothing is cut, and a held column taller than the window still shows its
+     foot. The Hall card's set is drawn at the card's own shape, whole pixels
+     a cell, on a desktop and on a phone. */
+  async function deskWalk(b, serve) {
+    section('7d. the desktop layout and the Hall card');
+    const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, reducedMotion: 'reduce' });
+    const page = await ctx.newPage();
+    const boom = [];
+    page.on('pageerror', (e) => boom.push(String(e).slice(0, 200)));
+    await page.addInitScript(() => { try { localStorage.setItem('rtf.guide.v1', '1'); localStorage.setItem('rtf.scenes.v1', 'off'); } catch (e) {} window.RTF_BOARD_URL = 'http://local.test/sb'; });
+    await page.route('**/*', serve);
+    await page.goto('http://local.test/hoops/', { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#b-career:not([disabled])', { state: 'attached', timeout: 30000 });
+    await page.evaluate(() => document.querySelector('#b-career').click());
+    await page.waitForSelector('#cr-go');
+    /* what every screen must keep: no sideways scroll, and no control or
+       line of copy that runs out of the panel it sits in */
+    const sound = () => page.evaluate(() => {
+      const de = document.documentElement, cut = [];
+      for (const el of document.querySelectorAll('#s-car button, #s-car input, #s-car .k-panel h3, #s-car .cr-final .v, #s-car .cr-final p, #s-car .cr-tot > div')) {
+        const r = el.getBoundingClientRect();
+        if (!r.width || !r.height) continue;
+        const box = el.parentElement.closest('.k-panel, .cr-final, .k-sheet') || document.querySelector('#s-car');
+        const q = box.getBoundingClientRect();
+        if (r.left < q.left - 1 || r.right > q.right + 1 || r.left < 0 || r.right > de.clientWidth) cut.push((el.id || el.className || el.tagName).toString().slice(0, 30));
+        if (el.scrollWidth > el.clientWidth + 1 && getComputedStyle(el).overflowX !== 'visible' && el.tagName !== 'INPUT') cut.push((el.id || el.className || el.tagName) + ' clips its text');
+      }
+      return { side: de.scrollWidth - de.clientWidth, cut };
+    });
+    const beside = (a, b2) => page.evaluate(([a, b2]) => {
+      const x = document.querySelector(a), y = document.querySelector(b2);
+      if (!x || !y) return { ok: false, why: 'missing ' + (!x ? a : b2) };
+      const p = x.getBoundingClientRect(), q = y.getBoundingClientRect();
+      return { ok: p.right <= q.left + 1 && Math.abs(p.top - q.top) < 40 && p.width > 300 && q.width > 300, why: Math.round(p.left) + '-' + Math.round(p.right) + ' | ' + Math.round(q.left) + '-' + Math.round(q.right) };
+    }, [a, b2]);
+    /* THE BUILDER: the player and his ratings on the left, the steps on the
+       right, the player drawn whole-number big, the start button on screen
+       at every step */
+    const bs = await beside('.cr-build .cr-preview', '.cr-build .cr-steps');
+    ok(bs.ok, `on a desktop the builder's player sits beside its steps (${bs.why})`);
+    for (const st of ['player', 'look', 'story', 'start']) {
+      await page.click(`[data-bstep="${st}"]`);
+      const m = await page.evaluate(() => {
+        const go = document.querySelector('#cr-go').getBoundingClientRect(), f = document.querySelector('.cr-pfig .rtf-baller'), set = document.querySelector('.cr-pfig .k-px'), box = document.querySelector('.cr-pfig').getBoundingClientRect();
+        const fr = f ? f.getBoundingClientRect() : null, sr = set ? set.getBoundingClientRect() : null;
+        return { go: go.top >= 0 && go.bottom <= innerHeight, fw: fr ? fr.width : 0, cover: !!sr && sr.left <= box.left + 1 && sr.right >= box.right - 1 && Math.abs(sr.height - box.height) < 1 && Number.isInteger(sr.height / 80) };
+      });
+      const s = await sound();
+      ok(m.go, `on a desktop the start button is on screen on the ${st} step`);
+      ok(m.fw >= 44 * 4 && m.fw % 44 === 0 && m.cover, `on the ${st} step the player is drawn whole-number big on a set that fills his frame (${m.fw}px)`);
+      ok(s.side <= 0 && !s.cut.length, `the ${st} step scrolls nowhere sideways and cuts nothing (${s.side}px, ${s.cut.slice(0, 3).join(', ') || 'none'})`);
+    }
+    await page.click('[data-bstep="player"]');
+    /* THE LIFE VIEW: the card beside the stage, and the shades reveal over
+       the stage rather than across both columns */
+    await page.click('#cr-go');
+    await page.waitForSelector('#cr-shades');
+    const lv = await beside('.cr-grid > .cr-side', '.cr-grid .cr-shades');
+    ok(lv.ok, `on a desktop the shades reveal sits beside the player card, over the stage (${lv.why})`);
+    const lm = await page.evaluate(() => { const s = document.querySelector('.cr-side').getBoundingClientRect(), m = document.querySelector('.cr-main').getBoundingClientRect(); return s.right <= m.left + 1 && m.width >= 560; });
+    ok(lm, 'and the stage and the card on top are the right column, at least 560px wide');
+    let s = await sound();
+    ok(s.side <= 0 && !s.cut.length, `the life view scrolls nowhere sideways and cuts nothing (${s.side}px, ${s.cut.slice(0, 3).join(', ') || 'none'})`);
+    /* a short window: the held column still shows its foot */
+    await page.setViewportSize({ width: 1280, height: 560 });
+    await page.evaluate(() => { const c = document.querySelector('.cr-choice') || document.querySelector('#cr-next'); if (c) c.click(); });
+    await page.waitForTimeout(400);
+    const foot = await page.evaluate(async () => {
+      const side = document.querySelector('.cr-grid > .cr-side'), sh = side.getBoundingClientRect().height, y0 = side.getBoundingClientRect().top + scrollY;
+      window.scrollTo(0, y0 + sh - innerHeight + 40);
+      await new Promise((d) => setTimeout(d, 150));
+      const r = side.getBoundingClientRect();
+      return { b: Math.round(r.bottom), h: innerHeight, tall: Math.round(sh), room: document.documentElement.scrollHeight - innerHeight - scrollY };
+    });
+    ok(foot.tall > 560 - 64 && foot.room > 0 && foot.b <= foot.h + 1, `in a 1280x560 window the player card's column (${foot.tall}px) shows its foot once scrolled past it (bottom ${foot.b} of ${foot.h})`);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    /* THE HALL CARD, found by playing the engine, then retired through the page */
+    const found = await page.evaluate(() => {
+      const C = window.RTF_CAREER, st = RTF_CAREER_UI.state(), lg = st.cur.league;
+      for (let i = 0; i < 200; i++) {
+        const L = C.newLife({ seed: 'desk' + i, league: lg, start: 'draft', pos: C.POS[i % 5] });
+        let g = 0;
+        while (!L.retired && g++ < 6000) {
+          if (!L.pending.length && L.history.length >= 8) { st.cur = L; RTF_CAREER_UI.paintPress({ beats: [], result: null }); return true; }
+          if (L.pending.length) { const c = L.pending[0]; const k = c.options.findIndex((o) => /one more|keep playing|come back|ten day|overseas/i.test(o.label)); C.choose(L, k < 0 ? 0 : k); }
+          else C.step(L);
+        }
+      }
+      return false;
+    });
+    if (found) {
+      await page.click('#cr-quit'); await page.click('#cr-retire-yes');
+      for (let k = 0; k < 8 && !(await page.evaluate(() => !!RTF_CAREER_UI.state().last)); k++) { await page.evaluate(() => { const c = document.querySelector('.cr-choice'); if (c) c.click(); }); await page.waitForTimeout(100); }
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.waitForTimeout(300);
+      const hb = await beside('.cr-final', '.cr-epi, .cr-cback, .cr-story');
+      ok(hb.ok, `on a desktop the Hall card sits beside its back (${hb.why})`);
+      /* the set fills the card, whole pixels a cell, the floor under his feet */
+      const art = () => page.evaluate(() => {
+        const card = document.querySelector('.cr-final'), img = card.querySelector('.cr-hset img'), fig = card.querySelector('.cr-hin .rtf-baller');
+        const inner = (card.querySelector('.cr-hcard') || card).getBoundingClientRect(), r = img.getBoundingClientRect();
+        const px = r.width / img.naturalWidth;
+        return { cover: r.left <= inner.left + 1 && r.top <= inner.top + 1 && r.right >= inner.right - 1 && r.bottom >= inner.bottom - 1,
+          whole: Number.isInteger(Math.round(px * 1000) / 1000) && px >= 3, px: Math.round(px * 100) / 100, w: Math.round(r.width), cw: Math.round(inner.width),
+          frame: getComputedStyle(card).backgroundImage.indexOf('gradient') >= 0, foil: !!card.querySelector('.cr-foil'), feet: fig ? Math.round(fig.getBoundingClientRect().bottom - inner.top) : -1 };
+      });
+      let a = await art();
+      ok(a.cover && a.whole, `the Hall card's set fills the card at whole pixels a cell (${a.w}px over ${a.cw}, ${a.px}px a cell)`);
+      ok(a.frame && a.foil, 'the Hall card wears a cast frame and a foil sheen');
+      s = await sound();
+      ok(s.side <= 0 && !s.cut.length, `the Hall card scrolls nowhere sideways and cuts nothing (${s.side}px, ${s.cut.slice(0, 3).join(', ') || 'none'})`);
+      await page.setViewportSize({ width: 1280, height: 640 });
+      await page.waitForTimeout(300);
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight / 2));
+      await page.waitForTimeout(200);
+      const sh = await page.evaluate(() => { const r = document.querySelector('#cr-again').getBoundingClientRect(); return { b: Math.round(r.bottom), h: innerHeight }; });
+      ok(sh.b > 0 && sh.b <= sh.h, `in a 1280x640 window New career is on screen halfway down the Hall card's back (bottom ${sh.b} of ${sh.h})`);
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.waitForTimeout(400);
+      a = await art();
+      s = await sound();
+      ok(a.cover && a.whole, `on a phone the Hall card's set fills the card at whole pixels a cell (${a.w}px over ${a.cw}, ${a.px}px a cell)`);
+      ok(s.side <= 0 && !s.cut.length, `on a phone the Hall card scrolls nowhere sideways and cuts nothing (${s.side}px, ${s.cut.slice(0, 3).join(', ') || 'none'})`);
+    } else ok(false, 'the desktop walk found a career to retire');
+    ok(boom.length === 0, `no page errors on the desktop walk (${boom.join(' | ') || 'none'})`);
+    await ctx.close();
+  }
   async function boardWalk(fin) {
   await toBoard.click();
   await page.waitForSelector('#s-board.active .bd-ent');
