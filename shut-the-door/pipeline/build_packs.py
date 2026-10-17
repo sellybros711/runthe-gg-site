@@ -459,13 +459,15 @@ def notes_of(base, L, ars, stand, tier, proxy, line, year):
                 if r <= lr:
                     continue                 # a chase note is only worth quoting when he chases more
                 cand.append((abs(r - lr), r > lr, {'text': f'chases {nm}s {where} {round(r * 100)}% with two strikes',
-                                                   'type': t, 'cells': list(cells)}))
+                                                   'type': t, 'cells': list(cells), 'good': True}))
         sw = base[(base['pitch_type'] == t) & base['swing']]
         lsw = L[(L['pitch_type'] == t) & L['swing']]
         if len(sw) >= 40:
             w, lw = (sw['key'] == 'swinging_strike').mean(), (lsw['key'] == 'swinging_strike').mean()
-            cand.append((abs(w - lw), w > lw, {'text': f'whiffs on {round(w * 100)}% of his swings at {nm}s', 'type': t,
-                                               'cells': list(range(25))}))
+            txt = (f'whiffs on {round(w * 100)}% of his swings at {nm}s' if w > lw
+                   else f'misses only {round(w * 100)}% of his swings at {nm}s')
+            cand.append((abs(w - lw), w > lw, {'text': txt, 'type': t,
+                                               'cells': list(range(25)), 'good': bool(w > lw)}))
         for cells, where in ((INSIDE[stand], 'inside'), (AWAY[stand], 'away'), ([7, 12, 17], 'over the middle')):
             ip = base[(base['pitch_type'] == t) & base['cell'].isin(cells) & base['damage'].notna()]
             lip = L[(L['pitch_type'] == t) & L['cell'].isin(cells) & L['damage'].notna()]
@@ -473,7 +475,8 @@ def notes_of(base, L, ars, stand, tier, proxy, line, year):
                 dmg, ldm = ip['damage'].mean(), lip['damage'].mean()
                 txt = f'{"%.3f" % dmg}'.lstrip('0')
                 cand.append((abs(dmg - ldm) * 0.6, dmg > ldm,
-                             {'text': f'{txt} xwoba on contact against {nm}s {where}', 'type': t, 'cells': list(cells)}))
+                             {'text': f'{txt} xwoba on contact against {nm}s {where}', 'type': t, 'cells': list(cells),
+                              'good': bool(dmg < ldm)}))
     cand.sort(key=lambda c: -c[0])
     for _, _, n in cand[:4]:
         notes.append(n['text'])
@@ -533,6 +536,20 @@ def retro_short(ev):
         return 'grounded into a double play'
     if '/BG' in ev or '/BP' in ev or 'BG' in ev:
         return 'bunted'
+    # a fielded out: the modifier says the batted ball, else the fielders do
+    # (one outfielder: a fly; an assist and a putout: a grounder)
+    basic = ev.split('/')[0].split('.')[0]
+    mods = ev.split('.')[0].split('/')[1:]
+    if any(m.startswith('P') for m in mods):
+        return 'popped out'
+    if any(m.startswith('L') for m in mods):
+        return 'lined out'
+    if any(m.startswith('F') and not m.startswith('FO') for m in mods):
+        return 'flied out'
+    if any(m.startswith('G') for m in mods):
+        return 'grounded out'
+    if basic.isdigit():
+        return 'flied out' if len(basic) == 1 and basic in '789' else ('grounded out' if len(basic) > 1 else 'out')
     return 'out'
 
 
@@ -543,6 +560,14 @@ def reveal_of(v):
         name = p.get('name') or p.get('fullName') or ''
         if v['resolution'] == 'real':
             res = EVENT_SHORT.get(p.get('event') or '', (p.get('event') or 'out').replace('_', ' '))
+            if res in ('out', 'out on a force'):
+                des = (p.get('des') or '').lower()
+                for verb, word in (('grounds out', 'grounded out'), ('flies out', 'flied out'), ('lines out', 'lined out'),
+                                   ('pops out', 'popped out'), ('pop out', 'popped out'), ('fouls out', 'fouled out'),
+                                   ('grounds into a force', 'forced out')):
+                    if verb in des:
+                        res = word
+                        break
         else:
             res = retro_short(p.get('event') or '')
         items.append({'batter': name, 'result': res, 'pitches': p.get('pitches')})
@@ -570,6 +595,8 @@ def summary_of(items):
             parts.append(f'hit {last} with a pitch')
         elif res == 'out':
             parts.append(f'got {last}')
+        elif res.endswith(' out'):
+            parts.append(f'{last} {res}')
         else:
             parts.append(f'{last} {res}')
     if len(parts) > 1:

@@ -298,15 +298,18 @@ function reasonFor(model, st, call, best, value, lost) {
   const batter = model.pack.scenario.batters[st.bi % model.N];
   const pr = batter.profile || {};
   const bestTxt = `${pitchName(model, best.type)} ${placeOf(best.cell, batter.bats)}`;
-  const noteAbout = (type, cell) => (pr.notesFor || []).find(n => n.type === type && (n.cells || []).includes(cell));
+  // a note is quoted only where it argues the point: good = it favours the pitcher
+  const noteAbout = (type, cell, good) => (pr.notesFor || []).find(n => n.type === type && (n.cells || []).includes(cell) && !!n.good === good);
   if (lost <= K.BANDS[0].maxLost) {
-    const n = noteAbout(call.type, call.cell);
+    const n = noteAbout(call.type, call.cell, true);
     if (n) return n.text + '.';
     if (call.type === best.type && call.cell === best.cell) return `the best call here. it holds ${pct(best.hold)}%.`;
     return `as good as the best call. ${bestTxt} holds ${pct(best.hold)}%.`;
   }
-  // not green: say why the best call was better
-  const nb = noteAbout(best.type, best.cell);
+  // not green: why this call cost, or why the best call was better
+  const bad = noteAbout(call.type, call.cell, false);
+  if (bad) return `he hurts you there. ${bad.text}. ${bestTxt} was the call.`;
+  const nb = noteAbout(best.type, best.cell, true);
   if (nb) return `${bestTxt} was the call. ${nb.text}.`;
   const heat = pr.heat && pr.heat[call.cell];
   if (K.inZone(call.cell) && heat != null && heat >= 0.4) {

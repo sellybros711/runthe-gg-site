@@ -14,6 +14,7 @@ name: Shut The Door data
 #   pool.js              hold% tables, the closer pool's 2,000+ outings per pack
 #                        (data/packs)
 #   build_schedule.mjs   data/schedule.json
+#   calibrate.py         the model's hold% against how real 2015+ spots ended
 #   test/packs.mjs       every pack against the contract, and the three tests
 #
 # THE LIBRARY NEVER GOES IN GIT. Pages refuses any file over 25 MB. The chunks
@@ -95,6 +96,7 @@ jobs:
             node ../pool.js "$f" ../data/closers.json "../data/packs/$(basename "$f")" --runs 2000
           done
           node build_schedule.mjs
+          python3 calibrate.py
 
       - name: Every pack against the contract, and the three tests
         working-directory: shut-the-door
