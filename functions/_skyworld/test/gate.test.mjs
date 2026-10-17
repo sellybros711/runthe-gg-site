@@ -5,6 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { sign } from '../../_stumpire/cookie.js';
+import { MODULE_FILES } from '../build/pages.mjs';
 
 const PAGE_404 = '<!doctype html><title>Page not found</title><p>404</p>';
 let ROLE = 'tester', SB_DOWN = false;
@@ -26,7 +27,9 @@ async function req(path, { cookie, bearer, env = ENV } = {}) {
   const res = await onRequest({ request: new Request('https://runthe.gg/skyworld/' + path, { headers }), env, params: { path: path.split('/').filter(Boolean) } });
   return { status: res.status, body: await res.text(), headers: res.headers };
 }
-const WORLD = ['m/boot.js', 'm/world.js', 'm/ui.js', 'm/landmarks.js', 'api/world', 'api/me', 'api/nope', 'm/nope.js', 'nonsense', 'admin'];
+// every browser module (the one list, build/pages.mjs), every API route, and things that are not there
+const MODULES = MODULE_FILES.map(f => 'm/' + f);
+const WORLD = [...MODULES, 'api/world', 'api/ideas', 'api/me', 'api/nope', 'm/nope.js', 'nonsense', 'admin'];
 function refused(r, path) {
   assert.equal(r.status, 404, path);
   if (path.split(' ').pop().startsWith('api/')) assert.deepEqual(JSON.parse(r.body), { error: 'not_found' }, path);
@@ -66,7 +69,8 @@ test('a tester and an admin sign in, get the cookie, and then the world', async 
     const me = await req('api/me', { bearer: 'good' });
     assert.equal(me.status, 200); assert.match(me.headers.get('set-cookie'), /^stmp=u1\.\d+\.[\w-]+; Path=\/; Max-Age=43200; HttpOnly; Secure; SameSite=Lax$/);
     const cookie = me.headers.get('set-cookie').split(';')[0].slice(5);
-    for (const m of ['m/boot.js', 'm/world.js', 'm/ui.js', 'm/landmarks.js']) { const r = await req(m, { cookie }); assert.equal(r.status, 200, m); assert.match(r.headers.get('content-type'), /javascript/); }
+    for (const m of MODULES) { const r = await req(m, { cookie }); assert.equal(r.status, 200, m); assert.match(r.headers.get('content-type'), /javascript/); }
+    assert.ok((await req('m/boot.js', { cookie })).body.includes('var LOAD = ' + JSON.stringify(MODULE_FILES.slice(1)) + ';'), 'boot.js loads every module, in order');
     const w = await req('api/world', { cookie }); assert.equal(w.status, 200);
     const body = JSON.parse(w.body); assert.equal(body.games[0].name, 'The Perfect Season'); assert.equal(body.games[0].status, 'live'); assert.equal(body.art.putt, '98');
   }

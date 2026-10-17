@@ -59,10 +59,17 @@ node golf/econ-sim.mjs                      a casual, regular and heavy player t
 - **A skin name is global.** A second `snowman` in `SKIN` silently replaces the first everywhere.
 - Never put a real course name on screen.
 
-**Trail gyms** (`golf/putt/gyms.js`, pilot: Pirate Cove)
+**Trail gyms** (`golf/putt/gyms.js` the kind registry, a kind a world in `golf/putt/gymkinds/`, pilot: Pirate Cove's `push`)
 
+- Every world's gyms are a different KIND of puzzle, each kind in its own file publishing one global
+  (`RTT_GYMKIND_<ID>`) and touching nothing shared. The KINDS README at the top of `gyms.js` is the interface;
+  `gymkinds/example.js` is the worked example. A new kind file needs its script tag in `golf/index.html`.
 - A gym is hand designed, never random. check-putt solves every one (section 5b) and fails on an unsolvable gym,
   a softlock, or a stale `moves`/`proof`: change a layout and record both again from `solve()`.
+- **Nothing covers the board in a gym** (the owner, 2026-10-17). Lines and messages go in the docked panel; the
+  controls (Undo, Restart, Leave, the pad) live there too. check-putt measures it at 390 x 844 and 1440 x 900.
+- A change to a room that should not alter its picture (a refactor of the frame or a kind) is held pixel for pixel:
+  pin the camera with the trail's `gymPin` and hash the room's pixels before and after.
 - The civilian's lines nudge, never solve: no step order, no positions.
 - A world with gyms carries none of the small trail puzzles (`pzKind:'none'`). A vault pays once (`st.gym`).
 
@@ -86,7 +93,7 @@ node golf/econ-sim.mjs                      a casual, regular and heavy player t
 - `pmerge` only adds, and every server call fails soft (null is no opinion).
 - `PUTT_LIVE` is the launch. There is no localStorage override, on purpose.
 - **The First Tee home rides the same switch.** `ftLive()` is `puttOn()`: Putt Putt testers (and everybody once
-  `PUTT_LIVE` is true) get the First Tee, its hubs (`protour`, `putthub`, `me`) and five tabs; everybody else gets
+  `PUTT_LIVE` is true) get the First Tee, its hubs (`protour`, `putthub`, `me`) and its phone bar (Home, Pro Tour, Shop, the Pass, Putt Putt, Leaders, Me); everybody else gets
   the classic home (`scrTitleClassic`, the seven tabs, `tourStepsClassic`, `maybeLoginBonusClassic`). Change the
   classic home only for a fix: it is retired at launch. The closet (`setup` with `setupEdit`) wears the Me
   page's dressing room on the same switch (`ftClosetOn`, `body.ftcloset`); a new career's setup does not.

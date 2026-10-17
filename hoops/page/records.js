@@ -593,12 +593,8 @@ function renderAccount(){
 /* The account row is the one thing on this page that prints text somebody
    else chose, so it is the one place that needs this. A username is validated
    server side and an email is the player's own, and neither is a reason to
-   put an unescaped string into innerHTML. */
-function esc(s){
-  return String(s).replace(/[&<>"']/g, function(c){
-    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-  });
-}
+   put an unescaped string into innerHTML. The one copy is util.js's. */
+var esc = window.RTF_UTIL.esc;
 
 /* ── THE CABINET ───────────────────────────────────────────────────────────
  *

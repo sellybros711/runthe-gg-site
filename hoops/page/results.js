@@ -477,18 +477,11 @@ var BD_FLAME = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c1 4 5
 
 function isPlayDoor(d){ return !!PLAY_DOORS[d]; }
 
-/* The instant an Eastern calendar day starts, as ISO. Asks the zone for its
-   offset at noon that day rather than assuming one, so a clock change is
-   right. Run The Diamond's, for the same reason: the day rolls where the
-   daily's does. */
+/* The instant an Eastern calendar day starts, as ISO: economy.js's dayStart,
+   so the boards' day rolls where the daily's does. */
 function easternStart(iso){
-  var noon = Date.parse(iso + 'T12:00:00Z');
-  var h = 12;
-  try {
-    h = +new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York',
-      hour: '2-digit', hourCycle: 'h23' }).format(new Date(noon));
-  } catch (e) {}
-  return new Date(Date.parse(iso + 'T00:00:00Z') + (12 - h) * 3600e3).toISOString();
+  var X = window.RTF_ECON;
+  return new Date(X ? X.dayStart(iso) : Date.parse(iso + 'T00:00:00Z')).toISOString();
 }
 function boardSince(win){
   if (win !== 'day' && win !== 'week') return null;

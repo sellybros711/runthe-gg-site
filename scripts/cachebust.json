@@ -1,4 +1,54 @@
 {
+  "4th-and-what/index.html": {
+    "/arcade/auth.js": {
+      "v": "4",
+      "sha": "c71a149f3b8da69e"
+    },
+    "/arcade/auth-ui.js": {
+      "v": "9",
+      "sha": "1891cdfef9c19253"
+    },
+    "config.js": {
+      "v": "1",
+      "sha": "7fc7924051909af5"
+    },
+    "formations.js": {
+      "v": "1",
+      "sha": "0b1f739abed51077"
+    },
+    "rng.js": {
+      "v": "1",
+      "sha": "9c6a7e1575b377f0"
+    },
+    "engine.js": {
+      "v": "1",
+      "sha": "7675f4a2f30bf7b3"
+    },
+    "rig.js": {
+      "v": "1",
+      "sha": "d5be652ec6dbd043"
+    },
+    "stage.js": {
+      "v": "1",
+      "sha": "62f6c8c3d1c0bfd0"
+    },
+    "share.js": {
+      "v": "1",
+      "sha": "ddf3f027cc22c5ac"
+    },
+    "clipboard.js": {
+      "v": "2",
+      "sha": "e9e622d825327b22"
+    },
+    "play.js": {
+      "v": "1",
+      "sha": "3dc28a7e95923a28"
+    },
+    "ui.js": {
+      "v": "1",
+      "sha": "93758a342a647e1e"
+    }
+  },
   "arcade/almamater/index.html": {
     "/arcade/icons.js": {
       "v": "3",
@@ -2545,8 +2595,8 @@
       "sha": "260c8dc0bc33a527"
     },
     "putt/putt.js": {
-      "v": "98",
-      "sha": "026eaf2a42d5b776"
+      "v": "100",
+      "sha": "7777a946a3375c21"
     },
     "putt/land.js": {
       "v": "13",
@@ -2557,12 +2607,16 @@
       "sha": "3a82bb9bdeeffbb3"
     },
     "putt/gyms.js": {
-      "v": "2",
-      "sha": "50a8dce841aaf4d8"
+      "v": "3",
+      "sha": "74c2f8cb48b7fd3c"
+    },
+    "putt/gymkinds/push.js": {
+      "v": "1",
+      "sha": "3ab166505830a290"
     },
     "putt/trail.js": {
-      "v": "40",
-      "sha": "6da51fe00c61748f"
+      "v": "41",
+      "sha": "262592d9635629ed"
     },
     "putt/mapland.js": {
       "v": "6",
@@ -2582,6 +2636,10 @@
       "v": "11",
       "sha": "8b1be2303905d953"
     },
+    "../util.js": {
+      "v": "1",
+      "sha": "2d2b7659e3147485"
+    },
     "../baller.js": {
       "v": "28",
       "sha": "deb50269aa464b87"
@@ -2591,15 +2649,19 @@
       "sha": "fbf8ac8bab981947"
     },
     "../court.js": {
-      "v": "15",
-      "sha": "01833a9db5d4e4f4"
+      "v": "16",
+      "sha": "ee81c089f0451aa9"
     },
     "../ticker.js": {
-      "v": "2",
-      "sha": "36759d12852558b2"
+      "v": "3",
+      "sha": "0e1ab395c9ef60e4"
     }
   },
   "hoops/index.html": {
+    "util.js": {
+      "v": "1",
+      "sha": "2d2b7659e3147485"
+    },
     "engine.js": {
       "v": "26",
       "sha": "003dbd2fa2a81fe2"
@@ -2629,8 +2691,8 @@
       "sha": "deb50269aa464b87"
     },
     "economy.js": {
-      "v": "4",
-      "sha": "59e94bea12d27faa"
+      "v": "5",
+      "sha": "52e1319dfb53ea15"
     },
     "catalog.js": {
       "v": "5",
@@ -2649,8 +2711,8 @@
       "sha": "b49b97f74b34ac3a"
     },
     "pass.js": {
-      "v": "1",
-      "sha": "519be239e107831b"
+      "v": "2",
+      "sha": "3baa676831cf117e"
     },
     "wardrobe.js": {
       "v": "9",
@@ -2681,8 +2743,8 @@
       "sha": "ef1dc4f60b3b480b"
     },
     "page.js": {
-      "v": "1",
-      "sha": "c47f04e7c4946094"
+      "v": "2",
+      "sha": "5fbc4037132257c7"
     },
     "modes-ui.js": {
       "v": "27",
@@ -2697,44 +2759,44 @@
       "sha": "fbf8ac8bab981947"
     },
     "court.js": {
-      "v": "15",
-      "sha": "01833a9db5d4e4f4"
+      "v": "16",
+      "sha": "ee81c089f0451aa9"
     },
     "ticker.js": {
-      "v": "2",
-      "sha": "36759d12852558b2"
+      "v": "3",
+      "sha": "0e1ab395c9ef60e4"
     },
     "stage3d.js": {
       "v": "1",
       "sha": "240d69adebb700f7"
     },
     "scenes.js": {
-      "v": "26",
-      "sha": "411833ae1362f777"
+      "v": "27",
+      "sha": "647d38ee658e6fac"
     },
     "itemart.js": {
       "v": "3",
       "sha": "dcb77ca252ced228"
     },
     "closet-ui.js": {
-      "v": "11",
-      "sha": "5ef758513d78e621"
+      "v": "12",
+      "sha": "fb3ead54e7769a1d"
     },
     "shop-ui.js": {
-      "v": "5",
-      "sha": "adecc109a74f9647"
+      "v": "6",
+      "sha": "944cf255b96a23e6"
     },
     "daily-ui.js": {
-      "v": "4",
-      "sha": "84ecae0d2ca0fb60"
+      "v": "5",
+      "sha": "c9ca8341cfda673b"
     },
     "pass-ui.js": {
-      "v": "3",
-      "sha": "e1a0b0d12ed4f4d2"
+      "v": "4",
+      "sha": "b57f042e392bc4a1"
     },
     "card-ui.js": {
-      "v": "1",
-      "sha": "ed8ffc8721479ed1"
+      "v": "2",
+      "sha": "14d401c9313d16be"
     },
     "career-ui.js": {
       "v": "64",
