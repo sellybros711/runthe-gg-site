@@ -2,6 +2,7 @@
  *
  *   GET me      with the player's Supabase token: 200 and the page cookie for a tester, else 404
  *   GET world   with the page cookie: every game, its status, landmark and districts
+ *   GET ideas   with the page cookie: the Advisor Agent's suggestions, newest week first
  *
  * Anybody who is not on the tester list, signed in or not, gets exactly what an unknown path gets:
  * 404 {"error":"not_found"}. A database or GitHub that fails answers the same, so the world's
@@ -23,6 +24,10 @@ export async function handle(req, deps){
       if (!cookieUid || !isTester(await deps.db.role(cookieUid))) return NOT_FOUND;
       const w = await deps.world();
       return { status: 200, body: { asOf: w.asOf, games: w.games, layers: LAYERS, art: w.art } };
+    }
+    if (path === 'ideas') {
+      if (!cookieUid || !isTester(await deps.db.role(cookieUid))) return NOT_FOUND;
+      return { status: 200, body: await deps.ideas() };
     }
   } catch (e) { return NOT_FOUND; }
   return NOT_FOUND;

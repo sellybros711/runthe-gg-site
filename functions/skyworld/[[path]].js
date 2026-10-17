@@ -5,6 +5,7 @@
  *   /skyworld/            the sign in screen. The one thing anybody can load; it names nothing.
  *   /skyworld/api/me      the player's token in, the page cookie out, for a tester only
  *   /skyworld/api/world   the world, for a tester's cookie only
+ *   /skyworld/api/ideas   the Advisor Agent's suggestions, for a tester's cookie only
  *   /skyworld/m/<file>    the world's browser modules, for a tester's cookie only
  *
  * Everything but the sign in screen answers a non-tester exactly as Stumpire does: the site's own
@@ -18,6 +19,7 @@ import { verify, sign, readCookie, setCookie, secretOf } from '../_stumpire/cook
 import { supabaseDb, isTester } from '../_skyworld/db.js';
 import { handle } from '../_skyworld/api.js';
 import { buildWorld, artVersions } from '../_skyworld/world.js';
+import { ideas } from '../_skyworld/ideas.js';
 import { SHELL, MODULES } from '../_skyworld/pages.js';
 
 const HTML = { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' };
@@ -28,7 +30,7 @@ export async function onRequest(context) {
   const sub = parts.join('/');
   if (sub === '' || sub === 'index.html') return new Response(SHELL, { headers: HTML });
   if (parts[0] === 'api') return api(context, parts.slice(1).join('/'));
-  if (parts[0] === 'm' && MODULES[parts.slice(1).join('/')] != null) {
+  if (parts[0] === 'm' && Object.hasOwn(MODULES, parts.slice(1).join('/'))) {
     let ok = false;
     try {
       if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE) {
@@ -55,7 +57,8 @@ async function api(context, path) {
         if (!env.SKY_GITHUB_TOKEN) throw new Error('no token');
         const [w, art] = await Promise.all([buildWorld(env), artVersions(p => env.ASSETS.fetch(new URL(p, request.url)))]);
         return { ...w, art };
-      }
+      },
+      ideas: async () => { if (!env.SKY_GITHUB_TOKEN) throw new Error('no token'); return ideas(env); }
     });
   } catch (e) { res = { status: 404, body: { error: 'not_found' } }; }
   if (res.mint && secretOf(env)) headers['Set-Cookie'] = setCookie(await sign(secretOf(env), res.mint, Date.now()));
